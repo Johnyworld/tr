@@ -8,7 +8,7 @@ import {
   type TranscriptEntry,
 } from "@trpg/core";
 import type { LanguageModel, ModelMessage, ModelStopReason, UserBlock } from "./model.ts";
-import type { Summarizer } from "./summarizer.ts";
+import type { EpitaphWriter, Summarizer } from "./summarizer.ts";
 
 /** 프롬프트에 넣을 최근 플레이어 턴 수. 그 이전은 장면 요약(recap)으로 대신한다 */
 export const MAX_HISTORY_TURNS = 20;
@@ -38,9 +38,11 @@ export type TurnEvent =
  * - MCP 모드에서 쌓인 기록(note, prompt 없는 player)도 이어지게 넣는다
  */
 export function buildHistoryMessages(transcript: readonly TranscriptEntry[]): ModelMessage[] {
-  const playerIndexes = transcript.flatMap((e, i) => (e.kind === "player" ? [i] : []));
+  // 다음 캐릭터로 넘어갔으면 그 경계부터 (새 캐릭터는 이전 캐릭터의 기억을 모른다)
+  const boundary = transcript.findLastIndex((e) => e.kind === "note" && e.characterSwitch === true);
+  const playerIndexes = transcript.flatMap((e, i) => (e.kind === "player" && i > boundary ? [i] : []));
   const start =
-    playerIndexes.length > MAX_HISTORY_TURNS ? playerIndexes[playerIndexes.length - MAX_HISTORY_TURNS]! : 0;
+    playerIndexes.length > MAX_HISTORY_TURNS ? playerIndexes[playerIndexes.length - MAX_HISTORY_TURNS]! : boundary + 1;
 
   const messages: ModelMessage[] = [];
   for (const entry of transcript.slice(start)) {
@@ -66,6 +68,8 @@ export type RunGmTurnOptions = {
   input: string;
   /** 장면 요약을 만들 작은 모델. 없으면 턴 요약만 남긴다 */
   summarizer?: Summarizer;
+  /** 캐릭터가 죽었는데 GM이 묘비명을 남기지 않았으면 이것으로 쓴다 */
+  epitaphWriter?: EpitaphWriter;
   signal?: AbortSignal;
 };
 
@@ -170,6 +174,21 @@ export async function* runGmTurn(options: RunGmTurnOptions): AsyncGenerator<Turn
   if (narration) {
     world.recordSummary("turn", truncate(narration, TURN_SUMMARY_MAX_LENGTH));
     if (summarizer && !signal?.aborted) await summarizeScene(world, summarizer);
+  }
+
+  // 죽었는데 GM이 묘비명을 남기지 않았으면 작은 모델로 쓴다
+  if (world.isPlayerDead() && options.epitaphWriter && !signal?.aborted) {
+    const record = world.state().chronicle.at(-1);
+    if (record && !record.epitaph && record.characterId === world.state().playerId) {
+      try {
+        const facts = world.chronicleText().split("\n\n").at(-1) ?? "";
+        const text = await options.epitaphWriter(`${facts}\n\n마지막 장면:\n${truncate(narration, 1500)}`, { signal });
+        const outcome = text ? world.executeTool("write_epitaph", { text }) : null;
+        if (outcome?.ok) yield { type: "tool", display: outcome.display };
+      } catch (err) {
+        console.error(`[gm] 묘비명 작성 실패: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
   }
 
   if (failure) yield { type: "error", message: failure };

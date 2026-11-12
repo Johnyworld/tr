@@ -33,6 +33,7 @@ export { STRICT_UNSUPPORTED_KEYS } from "./toolkit.ts";
 import { MISSION_TOOLS } from "./missionTools.ts";
 import { REPUTATION_TOOLS } from "./reputationTools.ts";
 import { STORYLET_TOOLS } from "./storyletTools.ts";
+import { SUCCESSION_TOOLS } from "./succession.ts";
 import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
@@ -211,6 +212,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...MISSION_TOOLS,
       ...REPUTATION_TOOLS,
       ...STORYLET_TOOLS,
+      ...SUCCESSION_TOOLS,
     ] as readonly AnyTool[];
     toolCache.set(s, tools);
   }

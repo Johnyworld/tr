@@ -95,3 +95,15 @@ export async function* playTurn(input: string, signal: AbortSignal): AsyncGenera
     }
   }
 }
+
+/** 사망 뒤 다음 캐릭터 (new 또는 인물 id) */
+export async function chooseNextCharacter(characterId: string, name: string | null): Promise<GameView> {
+  const res = await fetch("/api/game/succession", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ characterId, name }),
+  });
+  const body = (await res.json()) as GameView & { error?: string };
+  if (!res.ok) throw new Error(body.error ?? `서버 오류 (${res.status})`);
+  return body;
+}

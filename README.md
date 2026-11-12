@@ -82,7 +82,7 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 
 ### MCP 서버가 여는 것
 
-- tool: `start_session`, `load_world`, `list_worlds`, `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`)
+- tool: `start_session`, `load_world`, `list_worlds`, `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`)
 - prompt: `play` (GM 지침 + 세션 시작 안내)
 - 로그는 stderr로만 쓴다. stdout은 MCP 프로토콜 전용이다
 - 환경 변수: `SCENARIO`(기본 `post_apoc`), `SAVES_DIR`(기본 `saves`)
@@ -103,7 +103,7 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 | `!배급` | 오늘 배급, 무리 창고 사정 (들리는 말) |
 | `!소문` | 최근 들은 소문 |
 | `!일지 [검색어]` | 지난 일 기록. 검색어가 있으면 현재 캐릭터의 기억을 의미 검색 |
-| `!연대기` | 죽은 캐릭터들의 기록 (사망·계승 단계에서 추가) |
+| `!연대기` | 죽은 캐릭터들의 기록, 사망했다면 다음 캐릭터 후보 |
 | `!도움말` | 명령어 목록 |
 
 ## 개발

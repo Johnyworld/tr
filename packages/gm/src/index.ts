@@ -8,7 +8,13 @@ export type {
   UserBlock,
 } from "./model.ts";
 export { createClaudeModel, DEFAULT_GM_MODEL, ModelError, type ClaudeModelOptions } from "./claude.ts";
-export { createClaudeSummarizer, DEFAULT_SUMMARY_MODEL, type Summarizer } from "./summarizer.ts";
+export {
+  createClaudeEpitaphWriter,
+  createClaudeSummarizer,
+  DEFAULT_SUMMARY_MODEL,
+  type EpitaphWriter,
+  type Summarizer,
+} from "./summarizer.ts";
 export {
   runGmTurn,
   buildHistoryMessages,

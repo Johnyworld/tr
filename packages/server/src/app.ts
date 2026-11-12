@@ -43,6 +43,22 @@ export function createApp(session: WebSession) {
     return c.json(session.view());
   });
 
+  // 사망 뒤 다음 캐릭터 (새 캐릭터 또는 이전 캐릭터가 알던 인물). 처리는 core가 한다
+  app.post("/api/game/succession", async (c) => {
+    const parsed = z
+      .object({ characterId: z.string().min(1).max(60), name: z.string().max(20).nullable().optional() })
+      .safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "요청 형식이 올바르지 않습니다." }, 400);
+    try {
+      const result = session.chooseNextCharacter(parsed.data.characterId, parsed.data.name ?? null);
+      if (!result.ok) return c.json({ error: result.error }, 409);
+    } catch (err) {
+      if (err instanceof TurnInProgressError) return c.json({ error: "턴이 진행 중입니다." }, 409);
+      throw err;
+    }
+    return c.json(session.view());
+  });
+
   app.post("/api/game/turn", async (c) => {
     const parsed = turnRequestSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "요청 형식이 올바르지 않습니다." }, 400);
@@ -56,7 +72,7 @@ export function createApp(session: WebSession) {
       throw err;
     }
     if (session.busy) return c.json({ error: "이전 턴이 아직 진행 중입니다." }, 409);
-    if (session.world.isPlayerDead()) return c.json({ error: "캐릭터가 사망했습니다. 새 게임을 시작하세요." }, 409);
+    if (session.world.isPlayerDead()) return c.json({ error: "캐릭터가 사망했습니다. 다음 캐릭터를 고르세요." }, 409);
 
     return streamSSE(c, async (stream) => {
       const abort = new AbortController();

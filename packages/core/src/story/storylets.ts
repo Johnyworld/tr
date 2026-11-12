@@ -1,6 +1,6 @@
 import type { Content, StoryletContent } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
-import { activeMissionOf } from "../game/missions.ts";
+import { activeMissionOf, commanderOf } from "../game/missions.ts";
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
 import { dayOf, MINUTES_PER_DAY, segmentOf, type GameTime } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
@@ -21,7 +21,7 @@ type CastRole = StoryletContent["cast"][string];
 export function castCandidates(state: GameState, content: Content, role: CastRole): string[] {
   const player = state.characters[state.playerId];
   if (!player) return [];
-  const commander = content.roles[state.roleId]?.commander;
+  const commander = commanderOf(state, content);
   const known = new Set(state.known[state.playerId] ?? []);
   return Object.values(state.characters)
     .filter((c) => c.id !== state.playerId && !c.dead && content.npcs[c.id])

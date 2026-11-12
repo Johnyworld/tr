@@ -1,5 +1,5 @@
 import type { GameWorld, PlayerView, TranscriptView, WorldManager } from "@trpg/core";
-import { runGmTurn, type LanguageModel, type Summarizer, type TurnEvent } from "@trpg/gm";
+import { runGmTurn, type EpitaphWriter, type LanguageModel, type Summarizer, type TurnEvent } from "@trpg/gm";
 
 export class TurnInProgressError extends Error {}
 
@@ -10,6 +10,8 @@ export type GameView = {
   player: PlayerView;
   transcript: TranscriptView[];
   busy: boolean;
+  /** 사망했을 때만: 연대기와 다음 캐릭터 후보 */
+  succession: { chronicle: string; options: { id: string; label: string; detail: string }[] } | null;
 };
 
 /**
@@ -25,6 +27,7 @@ export class WebSession {
     private readonly model: LanguageModel,
     private readonly summarizer?: Summarizer,
     world?: GameWorld,
+    private readonly epitaphWriter?: EpitaphWriter,
   ) {
     this.#world = world ?? manager.openLatest("web");
   }
@@ -43,7 +46,16 @@ export class WebSession {
       player: this.#world.playerView(),
       transcript: this.#world.transcriptView(),
       busy: this.#busy,
+      succession: this.#world.isPlayerDead()
+        ? { chronicle: this.#world.chronicleText(), options: this.#world.successionOptions() }
+        : null,
     };
+  }
+
+  /** 사망 뒤 다음 캐릭터로 이어 간다 */
+  chooseNextCharacter(choice: string, name: string | null) {
+    if (this.#busy) throw new TurnInProgressError();
+    return this.#world.chooseNextCharacter(choice, name);
   }
 
   /** 지금 세계를 닫고 새 세계를 연다 (지금 세계는 saves/worlds/에 그대로 남는다) */
@@ -74,6 +86,7 @@ export class WebSession {
       input,
       signal: abort.signal,
       ...(this.summarizer ? { summarizer: this.summarizer } : {}),
+      ...(this.epitaphWriter ? { epitaphWriter: this.epitaphWriter } : {}),
     });
     let step: IteratorResult<TurnEvent, void> | undefined;
     try {

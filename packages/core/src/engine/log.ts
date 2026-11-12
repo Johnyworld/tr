@@ -10,7 +10,8 @@ import type { ToolDisplayEvent } from "./toolkit.ts";
 export type TranscriptEntry =
   | { kind: "player"; text: string; prompt?: string }
   | { kind: "gm"; text: string }
-  | { kind: "note"; text: string }
+  /** characterSwitch: 사망 뒤 다음 캐릭터로 넘어간 경계 (GM 대화 기록은 여기서 새로 시작한다) */
+  | { kind: "note"; text: string; characterSwitch?: boolean }
   | { kind: "tool"; display: ToolDisplayEvent };
 
 /** 모드 전환 때 이야기가 끊기지 않게 남기는 요약 (기획서 11.5) */

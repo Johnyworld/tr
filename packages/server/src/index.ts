@@ -4,6 +4,7 @@ import { serve } from "@hono/node-server";
 import { BgeM3Embedder, ContentError, loadContent, LoreLibrary, WorldLockedError, WorldManager } from "@trpg/core";
 import {
   createClaudeModel,
+  createClaudeEpitaphWriter,
   createClaudeSummarizer,
   DEFAULT_GM_MODEL,
   DEFAULT_SUMMARY_MODEL,
@@ -49,6 +50,8 @@ try {
     manager,
     hasApiKey ? createClaudeModel({ model: modelId }) : missingKeyModel,
     hasApiKey ? createClaudeSummarizer({ model: summaryModelId }) : undefined,
+    undefined,
+    hasApiKey ? createClaudeEpitaphWriter({ model: summaryModelId }) : undefined,
   );
 } catch (err) {
   if (err instanceof ContentError || err instanceof WorldLockedError) {

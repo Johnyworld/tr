@@ -15,6 +15,7 @@ import {
   MISSION_STATUS_LABELS,
   pickDailyOffers,
   type MissionInstance,
+  commanderOf as commanderIdOf,
 } from "../game/missions.ts";
 import { defineTool, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 import { recordDeed } from "./reputationTools.ts";
@@ -35,7 +36,7 @@ export function describeMission(s: Scenario, mission: MissionInstance): string {
 
 /** 플레이어의 직속 상관. 살아 있지 않으면 undefined */
 function commanderOf(state: GameState, ctx: ToolContext) {
-  const id = ctx.content.roles[state.roleId]?.commander;
+  const id = commanderIdOf(state, ctx.content);
   const commander = id ? state.characters[id] : undefined;
   return commander && !commander.dead ? commander : undefined;
 }

@@ -145,3 +145,47 @@ describe("정보 명령어 API", () => {
     session.close();
   });
 });
+
+describe("사망과 다음 캐릭터 API", () => {
+  /** 판정이 늘 1+1 → 선언한 위험(heavy)으로 죽는다 */
+  function deadSession() {
+    const manager = new WorldManager({
+      savesDir: mkdtempSync(join(tmpdir(), "trpg-server-")),
+      content: TEST_CONTENT,
+      rngFactory: () => () => 0,
+    });
+    const session = new WebSession(manager, fakeModel);
+    const lethal = { move: "fight", stat: "strength", difficulty: "hard", harm_on_failure: "heavy", harm_cause: "총상" };
+    const base = { activity: null, deed: null, target: null, narration_summary: null, for_mission: false };
+    for (let i = 0; i < 3 && !session.world.isPlayerDead(); i++) {
+      session.world.executeTool("take_action", { ...base, intent: "돌격", check: lethal });
+    }
+    expect(session.world.isPlayerDead()).toBe(true);
+    return session;
+  }
+
+  it("죽으면 화면 정보에 연대기와 후보가 오고, 턴은 막힌다. 고르면 이어서 플레이한다", async () => {
+    const session = deadSession();
+    const app = createApp(session);
+    const game = (await (await app.request("/api/game")).json()) as { succession: { chronicle: string; options: { id: string }[] } | null };
+    expect(game.succession?.chronicle).toContain("사망: 총상");
+    expect(game.succession?.options.map((o) => o.id)).toEqual(["new", "npc_leader"]);
+    expect((await postTurn(app, "일어난다")).status).toBe(409);
+
+    const bad = await app.request("/api/game/succession", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ characterId: "npc_stranger" }),
+    });
+    expect(bad.status).toBe(409);
+    const res = await app.request("/api/game/succession", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ characterId: "new", name: "둘째" }),
+    });
+    expect(res.status).toBe(200);
+    const next = (await res.json()) as { succession: unknown; player: { name: string; dead: boolean } };
+    expect(next.succession).toBeNull();
+    expect(next.player).toMatchObject({ name: "둘째", dead: false });
+  });
+});

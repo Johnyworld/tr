@@ -69,7 +69,7 @@ export function createMcpServer(manager: WorldManager) {
     }
   };
 
-  const sceneAfter = (w: GameWorld) => (w.isPlayerDead() ? "\n\n캐릭터가 사망했다. get_chronicle로 기록을 보여 주고 choose_next_character를 안내하라." : `\n\n## 현재 장면\n${w.sceneForGm()}`);
+  const sceneAfter = (w: GameWorld) => (w.isPlayerDead() ? "\n\n캐릭터가 사망했다. 죽음을 서술하고 write_epitaph로 묘비명을 남긴 뒤, get_chronicle로 연대기와 다음 캐릭터 후보를 보여 주고 플레이어가 고르면 choose_next_character를 호출하라." : `\n\n## 현재 장면\n${w.sceneForGm()}`);
 
   // ── 세계 ─────────────────────────────────────────
 
@@ -209,17 +209,26 @@ export function createMcpServer(manager: WorldManager) {
 
   server.registerTool(
     "get_chronicle",
-    { description: "죽은 캐릭터들의 기록." },
+    { description: "죽은 캐릭터들의 기록과, 사망했다면 다음 캐릭터 후보." },
     async () => (world ? text(await world.runCommand("!연대기")) : text(NO_WORLD, true)),
   );
 
   server.registerTool(
     "choose_next_character",
     {
-      description: "사망 후 다음 캐릭터를 고른다 (기존 인물 id 또는 \"new\").",
-      inputSchema: z.strictObject({ character_id: z.string() }),
+      description:
+        "사망 후 같은 세계에서 다음 캐릭터로 이어 간다. get_chronicle의 후보 중 하나: \"new\"(새 캐릭터) 또는 인물 id. " +
+        "플레이어가 고른 것만 넘긴다. 새 캐릭터는 이전 캐릭터의 기억을 모른다.",
+      inputSchema: z.strictObject({
+        character_id: z.string(),
+        name: z.string().max(20).nullable().optional().describe("새 캐릭터의 이름 (new일 때만, 없으면 기본 이름)"),
+      }),
     },
-    () => text("캐릭터 교체는 아직 없다 (사망·계승 단계에서 추가된다). 지금은 start_session으로 새 세계를 만들 수 있다.", true),
+    (args) =>
+      withWorld((w) => {
+        const result = w.chooseNextCharacter(args.character_id, args.name ?? null);
+        return result.ok ? text(result.text) : text(result.error, true);
+      }),
   );
 
   // ── GM 지침 ───────────────────────────────────────

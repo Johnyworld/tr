@@ -36,4 +36,5 @@ export type GameView = {
   player: PlayerView;
   transcript: TranscriptView[];
   busy: boolean;
+  succession: { chronicle: string; options: { id: string; label: string; detail: string }[] } | null;
 };

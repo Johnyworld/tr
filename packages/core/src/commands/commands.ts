@@ -2,13 +2,14 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
-import { activeMissionOf, daysServed, MISSION_STATUS_LABELS } from "../game/missions.ts";
+import { activeMissionOf, commanderOf, daysServed, MISSION_STATUS_LABELS } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
 import { conditionPenalty, rankLabel } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
 import { factionOutlook, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
+import { formatChronicle, successionOptions } from "../engine/succession.ts";
 
 /**
  * MUD식 정보 명령어 (기획서 11.7).
@@ -80,7 +81,7 @@ const status: CommandDef = {
     const penalty = conditionPenalty(scenario, player);
     if (penalty !== 0) lines.push(`판정 보정 ${signed(penalty)}`);
     lines.push("");
-    const commanderId = content.roles[state.roleId]?.commander;
+    const commanderId = commanderOf(state, content);
     const commander = commanderId ? state.characters[commanderId] : undefined;
     lines.push(`소속  ${roleLabelOf(ctx)}${commander ? ` (상관 ${commander.name})` : ""}`);
     const trust = commander ? (state.perceived[commander.id]?.trust ?? 0) : null;
@@ -298,7 +299,16 @@ const chronicle: CommandDef = {
   name: "연대기",
   aliases: ["chronicle"],
   description: "죽은 캐릭터들의 기록",
-  run: () => [header("연대기"), NOT_YET("연대기", "사망·계승 단계(11)")].join("\n"),
+  run(ctx) {
+    const options = successionOptions(ctx.state, ctx.content);
+    return [
+      header("연대기"),
+      ...formatChronicle(ctx.state, ctx.content),
+      ...(options.length ? ["다음 캐릭터 후보", ...options.map((o) => `  ${o.id}  ${o.label} — ${o.detail}`)] : []),
+    ]
+      .join("\n")
+      .trimEnd();
+  },
 };
 
 const help: CommandDef = {

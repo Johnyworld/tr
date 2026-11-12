@@ -79,6 +79,23 @@ export const pendingClashSchema = z.strictObject({
 });
 export type PendingClash = z.infer<typeof pendingClashSchema>;
 
+/** 연대기: 죽은 캐릭터 한 명의 기록 (기획서 3.2). 플레이어(사람)가 보는 기록이고, 다음 캐릭터의 지식은 아니다 */
+export const runRecordSchema = z.strictObject({
+  characterId: z.string(),
+  name: z.string(),
+  factionId: z.string(),
+  rank: z.string(),
+  startedAt: z.number().int(),
+  diedAt: z.number().int(),
+  merit: z.number().int(),
+  cause: z.string(),
+  /** 남은 행적 (중대한 것부터) */
+  deeds: z.array(z.string()),
+  /** AI가 쓰는 짧은 회고·묘비명 */
+  epitaph: z.string().nullable(),
+});
+export type RunRecord = z.infer<typeof runRecordSchema>;
+
 /** 진행 중인 전투 장면. 전세는 플레이어 편 기준 (+면 우리가 이기고 있다) */
 export const battleStateSchema = z.strictObject({
   id: z.string(),
@@ -196,6 +213,8 @@ export function createGameSchemas(s: Scenario) {
       .nullable()
       .default(null),
     lastStoryletAt: z.number().int().nullable().default(null),
+    /** 죽은 캐릭터들의 기록 (오래된 것부터) */
+    chronicle: z.array(runRecordSchema).default([]),
   });
 
   /** 상태 변경은 반드시 이벤트로 기록한다 (append-only). 상태는 이벤트를 차례로 적용한 결과다 */
@@ -255,6 +274,15 @@ export function createGameSchemas(s: Scenario) {
       scheduled: z.array(pendingClashSchema).default([]),
     }),
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
+    z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
+    z.strictObject({ type: z.literal("epitaph_written"), index: z.number().int().min(0), text: z.string().min(1).max(300) }),
+    /** 다음 캐릭터로 이어 간다. 새로 만든 캐릭터면 character가 있다 */
+    z.strictObject({
+      type: z.literal("character_switched"),
+      characterId: z.string(),
+      character: character.optional(),
+      known: z.array(z.string()),
+    }),
     z.strictObject({
       type: z.literal("storylet_fired"),
       storyletId: z.string(),
@@ -411,6 +439,7 @@ export const EMPTY_STATE: GameState = {
   storyletLog: {},
   activeStorylet: null,
   lastStoryletAt: null,
+  chronicle: [],
 };
 
 export function applyEvent(state: GameState, event: GameEvent): GameState {
@@ -578,6 +607,37 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
       next.playerZone = event.to;
       break;
+    case "character_died":
+      if (event.record.characterId !== state.playerId) throw new Error("현재 캐릭터의 기록이 아닙니다.");
+      if (!state.characters[state.playerId]?.dead) throw new Error("캐릭터가 아직 살아 있습니다.");
+      next.chronicle.push(structuredClone(event.record));
+      break;
+    case "epitaph_written": {
+      const record = next.chronicle[event.index];
+      if (!record) throw new Error(`없는 연대기: ${event.index}`);
+      record.epitaph = event.text;
+      break;
+    }
+    case "character_switched": {
+      if (!state.characters[state.playerId]?.dead) throw new Error("살아 있는 캐릭터는 바꿀 수 없습니다.");
+      if (event.character) {
+        if (next.characters[event.character.id]) throw new Error(`캐릭터 id 중복: ${event.character.id}`);
+        next.characters[event.character.id] = structuredClone(event.character);
+      }
+      const successor = mustGet(next.characters, event.characterId, "캐릭터");
+      if (successor.dead) throw new Error(`사망한 인물: ${successor.id}`);
+      next.playerId = successor.id;
+      next.runStartedAt = state.time;
+      next.known[successor.id] = [...event.known];
+      // 장면과 플레이어 기준 상태를 새로 시작한다 (새 캐릭터는 다른 곳에서 하루를 시작한다)
+      next.scene.present = [];
+      next.perceived = {};
+      next.offers = null;
+      next.playerZone = null;
+      next.battle = null;
+      next.activeStorylet = null;
+      break;
+    }
     case "storylet_fired": {
       if (state.activeStorylet) throw new Error("이미 진행 중인 스토리렛이 있습니다.");
       next.activeStorylet = { id: event.storyletId, cast: { ...event.cast }, firedAt: state.time, expiresAt: event.expiresAt };

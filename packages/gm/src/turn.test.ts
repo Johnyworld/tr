@@ -158,3 +158,19 @@ describe("RAG 참고 자료", () => {
     expect(world.retrievals()).toHaveLength(1);
   });
 });
+
+describe("다음 캐릭터로 넘어간 뒤의 대화 기록", () => {
+  it("경계(characterSwitch) 뒤의 기록만 GM에게 보낸다 (이전 캐릭터의 서술을 이어받지 않는다)", () => {
+    const transcript: TranscriptEntry[] = [
+      { kind: "player", text: "이전 캐릭터의 행동", prompt: "이전 프롬프트" },
+      { kind: "gm", text: "이전 캐릭터의 서술" },
+      { kind: "note", text: "— 새 이야기 —", characterSwitch: true },
+      { kind: "player", text: "새 캐릭터의 행동", prompt: "새 프롬프트" },
+      { kind: "gm", text: "새 서술" },
+    ];
+    const text = JSON.stringify(buildHistoryMessages(transcript));
+    expect(text).not.toContain("이전");
+    expect(text).toContain("새 프롬프트");
+    expect(buildHistoryMessages(transcript.slice(0, 3))).toEqual([]);
+  });
+});

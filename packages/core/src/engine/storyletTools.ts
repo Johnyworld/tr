@@ -16,6 +16,7 @@ import {
 } from "../story/storylets.ts";
 import { josa, sentence } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
+import { commanderOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -143,7 +144,7 @@ export const resolveStorylet = defineTool({
 
 function whoOf(ctx: ToolContext, who: string, cast: Record<string, string>): string | null {
   if (cast[who]) return cast[who]!;
-  if (who === "commander") return ctx.content.roles[ctx.store.getState().roleId]?.commander ?? null;
+  if (who === "commander") return commanderOf(ctx.store.getState(), ctx.content);
   return null;
 }
 

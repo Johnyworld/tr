@@ -110,6 +110,16 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
           </div>
         </div>
       );
+    case "epitaph":
+      return (
+        <div className="card epitaph">
+          <div className="card-head">
+            <span className="card-kind">묘비명</span>
+            <span>{display.name}</span>
+          </div>
+          <div className="card-intent">“{display.text}”</div>
+        </div>
+      );
     case "storylet":
       if (display.event === "started") return null; // 시작은 GM 서술로 드러난다
       return (

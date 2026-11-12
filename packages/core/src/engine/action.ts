@@ -29,6 +29,7 @@ import { activeMissionOf } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { createStoryletCheck } from "./storyletTools.ts";
+import { recordDeath } from "./succession.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -212,8 +213,10 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       lines.push(harm.text);
       displays.push(harm.display);
       if (harm.fatal) {
-        // 전투 중에 쓰러졌으면 남은 전투는 코드가 굴린다
-        if (store.getState().battle) displays.push(...endBattle(ctx, false).displays);
+        // 연대기 기록 (전투 중이면 그 자리를 원인에 붙인다), 남은 전투는 코드가 굴린다
+        const battle = store.getState().battle;
+        recordDeath(ctx, input.check.harm_cause || input.intent, battle ? (content.locations[battle.zone]?.name ?? battle.zone) + " 전투" : null);
+        if (battle) displays.push(...endBattle(ctx, false).displays);
         return { ok: true, resultText: lines.join("\n"), displays, outcome, dead: true };
       }
     }
@@ -316,7 +319,7 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   const fromLabel = levelOf(track, from).label;
   const toLabel = levelOf(track, to).label;
   const note = fatal
-    ? " 캐릭터가 사망했다. 죽음의 순간을 담담하게 서술하고 장면을 끝내라. 더 이상 행동을 제시하지 마라."
+    ? " 캐릭터가 사망했다. 죽음의 순간을 담담하게 서술하고 장면을 끝내라. 더 이상 행동을 제시하지 마라. 서술한 뒤 write_epitaph로 한두 문장의 묘비명을 남긴다."
     : ` 앞으로 판정에 ${signed(conditionPenalty(content.scenario, after))} 보정을 받는다. 다친 감각을 서술에 반영하라.`;
   return {
     fatal,

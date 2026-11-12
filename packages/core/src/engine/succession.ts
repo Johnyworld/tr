@@ -1,0 +1,193 @@
+import { z } from "zod";
+import type { Content } from "../content/schemas.ts";
+import type { Belief } from "../game/belief.ts";
+import { createCharacterFromRole, type GameState, type RunRecord } from "../game/state.ts";
+import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
+import { rankLabel } from "../scenario/scenario.ts";
+import { josa, sentence } from "../text.ts";
+import { defineTool, type ToolContext } from "./toolkit.ts";
+
+/**
+ * 사망과 계승 (기획서 3.1, 3.2).
+ * - 사망은 부상 트랙으로만 일어나고(원칙 3), 그 순간 코드가 연대기 기록을 만든다
+ * - 다음 캐릭터: 새로 만든 캐릭터, 또는 이 세계에 이미 있는(이전 캐릭터가 알던) 살아 있는 NPC
+ * - 새 캐릭터는 이전 캐릭터의 기억을 모른다. 이전 캐릭터의 죽음과 큰 행적은 소문으로 남는다
+ * - AI는 묘비명(짧은 회고)만 쓴다. 숫자와 사실은 코드가 정한다
+ */
+
+/** 연대기에 남길 행적 수 */
+export const CHRONICLE_DEEDS = 5;
+
+/** 지금 플레이어가 막 죽었을 때의 연대기 기록 */
+export function buildRunRecord(state: GameState, cause: string): RunRecord {
+  const player = state.characters[state.playerId]!;
+  const deeds = Object.values(state.deeds)
+    .filter((d) => d.actorId === player.id)
+    .sort((a, b) => b.severity - a.severity || a.at - b.at)
+    .slice(0, CHRONICLE_DEEDS)
+    .map((d) => d.summary);
+  return {
+    characterId: player.id,
+    name: player.name,
+    factionId: player.factionId,
+    rank: player.rank,
+    startedAt: state.runStartedAt,
+    diedAt: state.time,
+    merit: player.merit,
+    cause,
+    deeds,
+    epitaph: null,
+  };
+}
+
+/** 사망을 기록한다. 전투 중이었으면 그 자리를 원인에 붙인다 */
+export function recordDeath(ctx: ToolContext, cause: string, where: string | null): RunRecord {
+  const state = ctx.store.getState();
+  const record = buildRunRecord(state, where ? `${where}에서 ${cause}` : cause);
+  ctx.store.append({ type: "character_died", record });
+  return record;
+}
+
+export function daysSurvived(record: RunRecord): number {
+  return Math.floor((record.diedAt - record.startedAt) / MINUTES_PER_DAY) + 1;
+}
+
+export type SuccessionOption = { id: string; label: string; detail: string };
+
+/**
+ * 다음 캐릭터 후보. 플레이어가 죽었을 때만 있다.
+ * - new: 시작 역할로 새로 만든 캐릭터
+ * - 이전 캐릭터가 알던, 살아 있고 플레이할 수 있는 NPC
+ */
+export function successionOptions(state: GameState, content: Content): SuccessionOption[] {
+  const dead = state.characters[state.playerId];
+  if (!dead?.dead) return [];
+  const role = content.roles[state.roleId];
+  const options: SuccessionOption[] = [];
+  if (role) options.push({ id: "new", label: `새 캐릭터 (${role.label})`, detail: "이 세계에 막 들어온 사람. 아무도 모른다." });
+  const known = new Set(state.known[state.playerId] ?? []);
+  for (const npc of Object.values(content.npcs)) {
+    const c = state.characters[npc.id];
+    if (!c || c.dead || !npc.playable || !known.has(npc.id)) continue;
+    options.push({
+      id: npc.id,
+      label: `${npc.name} (${content.factions[c.factionId]?.name ?? c.factionId} ${rankLabel(content.scenario, c.rank)})`,
+      detail: npc.reputation,
+    });
+  }
+  return options;
+}
+
+/** 다음 캐릭터로 이어 간다. 이름은 새 캐릭터에만 쓴다 */
+export function switchCharacter(ctx: ToolContext, choice: string, name: string | null): { ok: true; text: string } | { ok: false; error: string } {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const options = successionOptions(state, content);
+  if (options.length === 0) return { ok: false, error: "캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다." };
+  if (!options.some((o) => o.id === choice)) {
+    return { ok: false, error: `고를 수 없는 캐릭터: ${choice} (가능: ${options.map((o) => o.id).join(", ")})` };
+  }
+  const previous = state.characters[state.playerId]!;
+  const record = state.chronicle.at(-1);
+  const role = content.roles[state.roleId]!;
+
+  if (choice === "new") {
+    const id = `pc_${state.chronicle.length + 1}`;
+    const character = createCharacterFromRole(content.scenario, role, id);
+    if (name?.trim()) character.name = name.trim().slice(0, 20);
+    store.append({ type: "character_switched", characterId: id, character, known: [...role.known_npcs] });
+    // 역할의 시작 지식은 이전 캐릭터의 기억이 아니라 그 자리에 오는 사람이면 아는 것이다
+    const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
+    for (const b of preset?.beliefs ?? []) {
+      const s = store.getState();
+      store.append({
+        type: "belief_added",
+        characterId: id,
+        belief: { id: `b_${s.nextBeliefNo}`, fact: b.fact, source: b.source, accuracy: b.accuracy, learnedAt: s.time },
+      });
+    }
+  } else {
+    const successor = state.characters[choice]!;
+    // 같은 무리 사람들은 서로 안다
+    const comrades = Object.values(state.characters)
+      .filter((c) => c.id !== choice && c.id !== previous.id && content.npcs[c.id] && c.factionId === successor.factionId)
+      .map((c) => c.id);
+    store.append({ type: "character_switched", characterId: choice, known: comrades });
+  }
+
+  // 이전 캐릭터의 죽음과 큰 행적은 소문으로 남는다 (기억은 넘어가지 않는다)
+  const now = store.getState();
+  const heir = now.characters[now.playerId]!;
+  const sameFaction = heir.factionId === previous.factionId;
+  const add = (fact: string, source: Belief["source"]) => {
+    const s = store.getState();
+    store.append({
+      type: "belief_added",
+      characterId: s.playerId,
+      belief: { id: `b_${s.nextBeliefNo}`, fact: sentence(fact), source, accuracy: "approximate", learnedAt: s.time },
+    });
+  };
+  if (record) add(`${josa(previous.name, "이/가")} 죽었다고 한다 (${record.cause})`, sameFaction ? "report" : "rumor");
+  const knownDeeds = Object.values(now.deeds).filter((d) => d.actorId === previous.id && now.deedKnowledge[heir.id]?.[d.id]);
+  if (knownDeeds.length > 0) {
+    for (const d of knownDeeds.slice(0, 3)) add(`${previous.name}: ${d.summary}`, now.deedKnowledge[heir.id]![d.id]!);
+  } else {
+    const legend = Object.values(now.deeds)
+      .filter((d) => d.actorId === previous.id && d.severity >= 2)
+      .sort((a, b) => b.severity - a.severity)[0];
+    if (legend) add(`${previous.name}에 대해 이런 말이 돈다: ${legend.summary}`, "rumor");
+  }
+
+  const opening =
+    choice === "new"
+      ? role.opening_scene
+      : `${heir.name}의 하루가 시작된다. ${josa(previous.name, "이/가")} 죽은 뒤의 거점이다.`;
+  return {
+    ok: true,
+    text: [
+      `이제 ${josa(heir.name, "으로/로")} 이어 간다. 새 캐릭터는 이전 캐릭터의 기억을 모른다. 이전 이야기를 이 캐릭터가 아는 것처럼 서술하지 마라.`,
+      `시작 장면: ${opening}`,
+    ].join("\n"),
+  };
+}
+
+export const writeEpitaph = defineTool({
+  name: "write_epitaph",
+  description:
+    "캐릭터가 사망한 뒤, 연대기에 남길 짧은 회고(묘비명)를 쓴다. 한두 문장. 기록(생존 일수, 행적, 사망 원인)에 없는 사실을 지어내지 않는다. 한 번만 쓸 수 있다.",
+  schema: z.strictObject({ text: z.string().min(1).max(300).describe("묘비명 한두 문장") }),
+  run(input, ctx) {
+    const state = ctx.store.getState();
+    const index = state.chronicle.length - 1;
+    const record = state.chronicle[index];
+    if (!record || !state.characters[state.playerId]?.dead || record.characterId !== state.playerId) {
+      return { ok: false, error: "묘비명은 캐릭터가 막 사망했을 때만 쓴다." };
+    }
+    if (record.epitaph) return { ok: false, error: "이미 묘비명이 있다." };
+    ctx.store.append({ type: "epitaph_written", index, text: input.text.trim() });
+    return {
+      ok: true,
+      resultText: "묘비명을 남겼다. 연대기와 다음 캐릭터 후보를 플레이어에게 보여 준다 (get_chronicle).",
+      display: { type: "epitaph", name: record.name, text: input.text.trim() },
+    };
+  },
+});
+
+export const SUCCESSION_TOOLS = [writeEpitaph] as const;
+
+/** 연대기 텍스트 (!연대기, get_chronicle). 플레이어(사람)를 위한 기록이다 */
+export function formatChronicle(state: GameState, content: Content): string[] {
+  if (state.chronicle.length === 0) return ["아직 죽은 캐릭터가 없습니다."];
+  const lines: string[] = [];
+  state.chronicle.forEach((r, i) => {
+    const faction = content.factions[r.factionId]?.name ?? r.factionId;
+    lines.push(
+      `${i + 1}. ${r.name} · ${faction} ${rankLabel(content.scenario, r.rank)} · ${daysSurvived(r)}일 생존 · 공적 ${r.merit}`,
+      `   ${formatTime(r.startedAt)} ~ ${formatTime(r.diedAt)} · 사망: ${r.cause}`,
+      ...r.deeds.map((d) => `   - ${d}`),
+      ...(r.epitaph ? [`   "${r.epitaph}"`] : []),
+      "",
+    );
+  });
+  return lines;
+}

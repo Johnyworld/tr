@@ -15,6 +15,8 @@ import type { LoreLibrary, LoreSearch } from "../rag/library.ts";
 import { memoryItemsOf, type MemoryStore } from "../rag/memory.ts";
 import type { SearchOptions } from "../rag/index.ts";
 import { COMMANDS } from "../commands/commands.ts";
+import { formatChronicle, successionOptions, switchCharacter, type SuccessionOption } from "../engine/succession.ts";
+import { runAfterTimeAdvance } from "../engine/turnStart.ts";
 import type { Viewer } from "../rag/index.ts";
 import type { RetrievalRecord } from "../engine/log.ts";
 import type { TimeSegment } from "../rules/time.ts";
@@ -64,7 +66,7 @@ export class GameWorld {
   /** 세이브의 기억(요약·행적·믿음)을 memory 색인에 맞춘다. 저장 시점에 바로, 백그라운드로 (기획서 11.4) */
   #syncMemory(): void {
     if (!this.#memory || this.#closed) return;
-    void this.#memory.sync(memoryItemsOf(this.state(), this.summaries()));
+    void this.#memory.sync(memoryItemsOf(this.state(), this.summaries({ all: true })));
   }
 
   /** 세계 id = 세이브 파일 이름 (WorldManager.open에 그대로 쓸 수 있다). 파일이 없으면 상태의 worldId */
@@ -145,8 +147,45 @@ export class GameWorld {
     this.#syncMemory();
   }
 
-  summaries(options?: { kind?: TurnSummary["kind"]; limit?: number }): TurnSummary[] {
-    return this.#repo.summaries(options);
+  /**
+   * 요약 기록 (오래된 것부터). 기본은 현재 캐릭터의 것만 (새 캐릭터는 이전 캐릭터의 기억을 모른다).
+   * all이면 모든 캐릭터의 것 (memory 색인은 knownBy로 거른다)
+   */
+  summaries(options: { kind?: TurnSummary["kind"]; limit?: number; all?: boolean } = {}): TurnSummary[] {
+    const state = this.state();
+    // 캐릭터 id가 없던 이전 요약은 첫 캐릭터의 것이다
+    const first = state.chronicle[0]?.characterId ?? state.playerId;
+    const list = this.#repo
+      .summaries(options.kind ? { kind: options.kind } : {})
+      .filter((s) => options.all || (s.characterId || first) === state.playerId);
+    return options.limit === undefined ? list : list.slice(-options.limit);
+  }
+
+  /** 다음 캐릭터 후보 (사망한 뒤에만) */
+  successionOptions(): SuccessionOption[] {
+    return successionOptions(this.state(), this.content);
+  }
+
+  /**
+   * 사망 뒤 다음 캐릭터로 이어 간다. 대화 기록에 경계를 남겨, GM이 이전 캐릭터의 서술을 이어받지 않게 한다
+   */
+  chooseNextCharacter(choice: string, name: string | null = null): { ok: true; text: string } | { ok: false; error: string } {
+    const ctx = this.ctx();
+    const result = switchCharacter(ctx, choice, name);
+    if (!result.ok) return result;
+    const heir = this.state().characters[this.state().playerId]!;
+    this.appendTranscript([{ kind: "note", text: `— ${heir.name}의 이야기가 시작된다 —`, characterSwitch: true }]);
+    runAfterTimeAdvance(ctx); // 구역, 오늘의 임무, 이야기
+    this.#repo.saveSnapshot();
+    this.#syncMemory();
+    return { ok: true, text: `${result.text}
+
+## 현재 장면
+${this.sceneForGm()}` };
+  }
+
+  chronicleText(): string {
+    return formatChronicle(this.state(), this.content).join("\n").trimEnd();
   }
 
   /** 새 세션의 GM이 이어 갈 수 있게: 최근 장면 요약 1개 + 그 뒤의 턴 요약들 */
@@ -256,8 +295,11 @@ export class GameWorld {
 
   /** 화면 머리: 시나리오 이름과 시작 장면 */
   intro(): { worldId: string; scenarioName: string; opening: string } {
-    const role = this.content.roles[this.state().roleId];
-    return { worldId: this.id, scenarioName: this.content.scenario.name, opening: role?.opening_scene ?? "" };
+    const state = this.state();
+    const role = this.content.roles[state.roleId];
+    // 계승한 캐릭터는 역할의 시작 장면 대신 짧은 안내
+    const opening = state.chronicle.length === 0 ? (role?.opening_scene ?? "") : `${state.characters[state.playerId]?.name ?? ""}의 이야기가 이어진다.`;
+    return { worldId: this.id, scenarioName: this.content.scenario.name, opening };
   }
 
   saveSnapshot(): void {

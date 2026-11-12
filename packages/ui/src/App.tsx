@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { fetchCommands, fetchGame, playTurn, resetGame, runCommand, type CommandInfo } from "./api.ts";
+import { chooseNextCharacter, fetchCommands, fetchGame, playTurn, resetGame, runCommand, type CommandInfo } from "./api.ts";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { DevPanel } from "./DevPanel.tsx";
 import { ToolCard } from "./ToolCard.tsx";
-import type { PlayerView, TranscriptView } from "./types.ts";
+import type { GameView, PlayerView, TranscriptView } from "./types.ts";
 
 type Notice = { kind: "error" | "info"; text: string } | null;
 
@@ -18,6 +18,9 @@ export function App() {
   const [commandOutput, setCommandOutput] = useState<{ input: string; output: string } | null>(null);
   const [commands, setCommands] = useState<CommandInfo[]>([]);
   const [notice, setNotice] = useState<Notice>(null);
+  /** 사망했을 때: 연대기와 다음 캐릭터 후보 */
+  const [succession, setSuccession] = useState<GameView["succession"]>(null);
+  const [heirName, setHeirName] = useState("");
   const abortRef = useRef<AbortController | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -25,11 +28,7 @@ export function App() {
 
   useEffect(() => {
     fetchGame()
-      .then((game) => {
-        setPlayer(game.player);
-        setTranscript(game.transcript);
-        setIntro({ scenarioName: game.scenarioName, opening: game.opening });
-      })
+      .then(applyGame)
       .catch((err: unknown) => setNotice({ kind: "error", text: `서버에 연결하지 못했습니다: ${String(err)}` }));
   }, []);
 
@@ -41,11 +40,25 @@ export function App() {
     fetchCommands().then(setCommands).catch(() => undefined);
   }, []);
 
-  async function syncGame() {
-    const game = await fetchGame();
+  function applyGame(game: GameView) {
     setPlayer(game.player);
     setTranscript(game.transcript);
     setIntro({ scenarioName: game.scenarioName, opening: game.opening });
+    setSuccession(game.succession);
+  }
+
+  async function syncGame() {
+    applyGame(await fetchGame());
+  }
+
+  async function pickHeir(id: string) {
+    try {
+      applyGame(await chooseNextCharacter(id, id === "new" && heirName.trim() ? heirName.trim() : null));
+      setHeirName("");
+      setNotice(null);
+    } catch (err) {
+      setNotice({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   async function send(e?: FormEvent) {
@@ -118,12 +131,9 @@ export function App() {
   }
 
   async function newGame() {
-    if (!window.confirm("지금 게임을 버리고 새로 시작할까요?")) return;
+    if (!window.confirm("새 세계를 시작할까요? 지금 세계는 저장된 채로 남습니다.")) return;
     try {
-      const game = await resetGame();
-      setPlayer(game.player);
-      setTranscript(game.transcript);
-      setIntro({ scenarioName: game.scenarioName, opening: game.opening });
+      applyGame(await resetGame());
       setNotice(null);
     } catch (err) {
       setNotice({ kind: "error", text: err instanceof Error ? err.message : String(err) });
@@ -189,9 +199,29 @@ export function App() {
           )}
 
           {dead ? (
-            <div className="composer">
-              <button type="button" onClick={newGame} className="wide">
-                새 캐릭터로 다시 시작
+            <div className="succession">
+              {succession && (
+                <>
+                  <h3>연대기</h3>
+                  <pre>{succession.chronicle}</pre>
+                  <h3>누구로 이어 갈까</h3>
+                  <ul>
+                    {succession.options.map((o) => (
+                      <li key={o.id}>
+                        <button type="button" onClick={() => void pickHeir(o.id)} disabled={busy}>
+                          {o.label}
+                        </button>
+                        <span className="muted small"> {o.detail}</span>
+                        {o.id === "new" && (
+                          <input value={heirName} onChange={(e) => setHeirName(e.target.value)} placeholder="이름 (비우면 기본)" maxLength={20} />
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              <button type="button" onClick={newGame} className="link">
+                이 세계를 두고 새 세계 시작
               </button>
             </div>
           ) : (

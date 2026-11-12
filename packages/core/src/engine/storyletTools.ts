@@ -26,14 +26,32 @@ import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.t
  * - 효과는 콘텐츠가 정한 것만 코드가 적용한다 (원칙 2)
  */
 
+/**
+ * 진행 중인 이야기를 끝낸다 (시간이 지났거나, 자리를 떴거나, 전투가 벌어졌을 때).
+ * 이야기 때문에 들어온 배역은 장면을 떠난다
+ */
+export function endActiveStorylet(ctx: ToolContext, reason: string): ToolDisplayEvent[] {
+  const { store, content } = ctx;
+  const active = store.getState().activeStorylet;
+  if (!active) return [];
+  const s = content.storylets[active.id];
+  store.append({ type: "storylet_expired", storyletId: active.id });
+  const displays: ToolDisplayEvent[] = [];
+  for (const [key, id] of Object.entries(active.cast)) {
+    if (!s?.cast[key]?.enter || !store.getState().scene.present.includes(id)) continue;
+    store.append({ type: "npc_left", npcId: id });
+    displays.push({ type: "presence", npcName: store.getState().characters[id]?.name ?? id, action: "leave" });
+  }
+  if (s) displays.push({ type: "storylet", event: "expired", title: s.title, detail: reason });
+  return displays;
+}
+
 export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
   const { store, content, rng } = ctx;
   const displays: ToolDisplayEvent[] = [];
   let state = store.getState();
   if (state.activeStorylet && state.time >= state.activeStorylet.expiresAt) {
-    const s = content.storylets[state.activeStorylet.id];
-    store.append({ type: "storylet_expired", storyletId: state.activeStorylet.id });
-    if (s) displays.push({ type: "storylet", event: "expired", title: s.title, detail: "지나갔다" });
+    displays.push(...endActiveStorylet(ctx, "지나갔다"));
     state = store.getState();
   }
   const player = state.characters[state.playerId];
@@ -63,11 +81,13 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
 }
 
 /** 빨리감기 중 스토리렛이 열릴 수 있게 되면 멈춘다 */
-export function createStoryletCheck(content: Content): InterruptCheck {
+export function createStoryletCheck(content: Content, options: { asleep?: boolean } = {}): InterruptCheck {
   return ({ state, to }) => {
     if (Object.keys(content.storylets).length === 0) return null;
     if (!storyletWindowOpen(state, content, to)) return null;
-    return eligibleStorylets(state, content, to).length > 0 ? { kind: "storylet", detail: "일이 생겼다", at: to } : null;
+    // 자는 동안에는 급한 일만 깨운다 (나머지는 깬 뒤에 열린다)
+    const eligible = eligibleStorylets(state, content, to).filter((s) => !options.asleep || s.urgent);
+    return eligible.length > 0 ? { kind: "storylet", detail: "일이 생겼다", at: to } : null;
   };
 }
 
@@ -131,7 +151,7 @@ export const resolveStorylet = defineTool({
     for (const e of effects) {
       if ("take_item" in e && (player.inventory[e.take_item.item] ?? 0) < e.take_item.quantity) {
         const name = ctx.content.items[e.take_item.item]?.name ?? e.take_item.item;
-        return { ok: false, error: `${name} ×${e.take_item.quantity}이(가) 없어 이 선택지를 고를 수 없다. 다른 선택지를 고르거나 그대로 둔다.` };
+        return { ok: false, error: `${josa(`${name} ×${e.take_item.quantity}`, "이/가")} 없어 이 선택지를 고를 수 없다. 다른 선택지를 고르거나 그대로 둔다.` };
       }
     }
     const vars = storyletVars(state, ctx.content, a.cast);
@@ -184,7 +204,7 @@ function applyEffect(
     const delta = { trust: 0, affection: 0, respect: 0, [effect.relation.axis]: effect.relation.delta };
     store.append({ type: "relation_changed", from, to: playerId, delta, reason });
     const name = state.characters[from]!.name;
-    return { line: `${name}의 ${RELATION_AXIS_LABELS[effect.relation.axis]}이(가) ${effect.relation.delta > 0 ? "올랐다" : "떨어졌다"}. 그 인물의 태도에 반영하라.` };
+    return { line: `${name}의 ${josa(RELATION_AXIS_LABELS[effect.relation.axis], "이/가")} ${effect.relation.delta > 0 ? "올랐다" : "떨어졌다"}. 그 인물의 태도에 반영하라.` };
   }
   if ("belief" in effect) {
     const fact = sentence(fillStorylet(effect.belief.fact, vars));
@@ -208,15 +228,15 @@ function applyEffect(
       if (!holder || have < quantity) return { line: `${name}은(는) 건네받을 수 없었다 (가진 것이 없다).` };
       store.append({ type: "item_transferred", from: holder, to: playerId, itemId: item, quantity });
       const fromName = state.characters[holder]!.name;
-      return { line: `${josa(fromName, "이/가")} ${name} ×${quantity}을(를) 건넸다.`, display: { type: "item", fromName, toName: state.characters[playerId]!.name, itemName: name, quantity } };
+      return { line: `${josa(fromName, "이/가")} ${josa(`${name} ×${quantity}`, "을/를")} 건넸다.`, display: { type: "item", fromName, toName: state.characters[playerId]!.name, itemName: name, quantity } };
     }
     store.append({ type: "item_granted", to: playerId, itemId: item, quantity });
-    return { line: `${name} ×${quantity}을(를) 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
+    return { line: `${josa(`${name} ×${quantity}`, "을/를")} 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
   }
   if ("take_item" in effect) {
     const { item, quantity } = effect.take_item;
     store.append({ type: "item_consumed", holder: playerId, itemId: item, quantity });
-    return { line: `${content.items[item]?.name ?? item} ×${quantity}을(를) 내주었다.` };
+    return { line: `${josa(`${content.items[item]?.name ?? item} ×${quantity}`, "을/를")} 내주었다.` };
   }
   if ("clock" in effect) {
     if (!state.clocks[effect.clock.id]) return {};

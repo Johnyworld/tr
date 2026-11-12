@@ -176,8 +176,13 @@ export const scenarioFileSchema = z
       .optional(),
     /** 스토리렛 발동 간격 (기획서 10.3). 마지막 스토리렛 뒤 이만큼 지나야 다음 것이 열리고, 열린 것은 이만큼 지나면 지나간다 */
     storylet_pacing: z
-      .strictObject({ min_gap_hours: z.number().min(0), expire_hours: z.number().positive() })
-      .default({ min_gap_hours: 6, expire_hours: 3 }),
+      .strictObject({
+        min_gap_hours: z.number().min(0),
+        expire_hours: z.number().positive(),
+        /** 캐릭터의 이야기가 시작된 뒤 첫 이야기까지 (시작하자마자 끼어들지 않게) */
+        first_after_hours: z.number().min(0).default(2),
+      })
+      .default({ min_gap_hours: 6, expire_hours: 3, first_after_hours: 2 }),
     threats: z.strictObject({
       disturbance_chance_per_hour: z.record(z.enum(TIME_SEGMENTS), z.number().min(0).max(1)),
       disturbance_details: z.array(z.string().min(1)).min(1),

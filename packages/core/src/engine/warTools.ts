@@ -194,6 +194,12 @@ export function zoneOutlook(state: GameState, content: Content) {
     owner: owner(zoneId),
     adjacent: neighbors(content, zoneId).map((id) => ({ id, name: content.locations[id]?.name ?? id, owner: owner(id) })),
     preparations: (state.preparations[zoneId] ?? []).map(prepLabel),
+    /** 플레이어 무리에 적대하는 세력의 구역인지 */
+    hostile: (() => {
+      const owner = state.zones[zoneId]?.owner;
+      const mine = state.characters[state.playerId]?.factionId;
+      return !!owner && !!mine && owner !== mine && disposition(content, mine, owner) <= HOSTILE;
+    })(),
   };
 }
 
@@ -207,6 +213,7 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
       ? [
           `현재 구역: ${z.name} (${z.id}, ${z.owner}) · 인접 구역(move_to): ${z.adjacent.map((a) => `${a.id} ${a.name}(${a.owner})`).join(", ")}` +
             (z.preparations.length ? ` · 설치해 둔 준비물: ${z.preparations.join(", ")}` : ""),
+          ...(z.hostile ? ["  여기는 적대 세력의 땅이다. 들키면 공격받을 수 있다. 위험한 행동은 판정과 몸의 위험을 선언한다."] : []),
         ]
       : []),
     `무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`,

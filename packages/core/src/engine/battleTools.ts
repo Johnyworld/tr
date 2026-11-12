@@ -20,6 +20,7 @@ import { josa } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
+import { endActiveStorylet } from "./storyletTools.ts";
 
 /**
  * 전투 장면 연결 (기획서 9.5).
@@ -57,7 +58,9 @@ export function runPendingClashes(ctx: ToolContext): ToolDisplayEvent[] {
     if (!due) return displays;
     const side = playerInvolvement(state, ctx.content, due);
     if (side) {
-      const battle = startBattle(ctx.content, state, due, side, { id: due.id, at: state.time });
+      // 전투가 벌어지면 진행 중이던 이야기는 끝난다
+      displays.push(...endActiveStorylet(ctx, "전투가 벌어졌다"));
+      const battle = startBattle(ctx.content, ctx.store.getState(), due, side, { id: due.id, at: state.time });
       ctx.store.append({ type: "battle_started", pendingId: due.id, battle });
       displays.push({ type: "battle", event: "started", title: battleTitle(ctx.content, battle), detail: describeStart(ctx.content, battle) });
       return displays;

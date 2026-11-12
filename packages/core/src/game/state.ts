@@ -621,6 +621,11 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       break;
     case "zone_moved":
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
+      // 장면의 인물은 따라오지 않는다 (같이 가려면 도착한 뒤 다시 등장시킨다). 처음 자리를 정할 때(from 없음)는 그대로
+      if (event.from !== null) {
+        for (const id of next.scene.present) perceive(next, id);
+        next.scene.present = [];
+      }
       next.playerZone = event.to;
       break;
     case "harm_healed": {

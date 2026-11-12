@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
@@ -169,7 +170,7 @@ const people: CommandDef = {
     const query = args.trim();
     const id = known.find((k) => state.characters[k]!.name === query || k === query) ??
       known.find((k) => state.characters[k]!.name.includes(query));
-    if (!id) return `아는 인물 중에 "${query}"이(가) 없습니다. 목록: !인물`;
+    if (!id) return `아는 인물 중에 ${josa(`"${query}"`, "이/가")} 없습니다. 목록: !인물`;
     const c = state.characters[id]!;
     const npc = content.npcs[id];
     const met = state.perceived[id] !== undefined;

@@ -73,6 +73,7 @@
 
 - id: desertion_offer
   title: 오지호의 속삭임
+  urgent: true
   tags: [squad_life]
   when:
     own_territory: true
@@ -147,7 +148,7 @@
   repeatable: true
   cooldown_days: 3
   when:
-    own_territory: true
+    zones: [a_base]
     segments: [morning, day, evening]
     own_food_days_lte: 14
   cast:
@@ -221,6 +222,7 @@
 
 - id: post_noise
   title: 초소 아래의 소리
+  urgent: true
   tags: [grunt]
   repeatable: true
   cooldown_days: 1

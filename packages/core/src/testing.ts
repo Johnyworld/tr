@@ -213,7 +213,7 @@ export const TEST_SCENARIO: Scenario = {
       },
     ],
   },
-  storylet_pacing: { min_gap_hours: 6, expire_hours: 3 },
+  storylet_pacing: { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0 },
   threats: {
     disturbance_chance_per_hour: { dawn: 0.05, morning: 0.03, day: 0.03, evening: 0.05, night: 0.08 },
     disturbance_details: ["멀리서 들리는 소리"],

@@ -32,6 +32,7 @@
 
 - id: deserter_surrender
   title: 붉은 완장의 투항자
+  urgent: true
   tags: [grunt]
   when:
     zones: [a_east_post, riverside, old_town]
@@ -106,7 +107,7 @@
     zones: [e_market]
   cast:
     trader: { ids: [e_bongsu] }
-  setup: 금니를 드러낸 상인이 손짓한다. "형님, 담배 있으시죠? 두 갑이면 항생제 한 줄. 요새 이 값 없습니다."
+  setup: 금니를 드러낸 상인이 손짓한다. "형님, 담배 있으시죠? 한 갑이면 항생제 한 줄. 요새 이 값 없습니다."
   ai_direction: 탁봉수는 정보도 판다. 누가 무엇을 사 가는지 다 기억한다. C 이야기가 나오면 웃으며 말을 돌린다.
   choices:
     - id: trade
@@ -226,6 +227,7 @@
 
 - id: infected_at_wall
   title: 담장 틈의 감염체
+  urgent: true
   tags: [grunt]
   repeatable: true
   cooldown_days: 3
@@ -290,7 +292,7 @@
   repeatable: true
   cooldown_days: 3
   when:
-    own_territory: true
+    zones: [a_base]
     segments: [evening, night]
   cast:
     host: { faction: own, ranks: [grunt], known: true }

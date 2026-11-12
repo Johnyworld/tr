@@ -106,8 +106,11 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
 /** 다음 스토리렛을 열 수 있는 때인지 (진행 중인 것·전투가 없고, 간격이 지났다) */
 export function storyletWindowOpen(state: GameState, content: Content, at: GameTime): boolean {
   if (state.activeStorylet || state.battle) return false;
-  if (state.lastStoryletAt === null) return true;
-  return at - state.lastStoryletAt >= content.scenario.storylet_pacing.min_gap_hours * 60;
+  const pacing = content.scenario.storylet_pacing;
+  // 지금 캐릭터의 이야기가 막 시작됐으면 조금 기다린다
+  if (at - state.runStartedAt < pacing.first_after_hours * 60) return false;
+  if (state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt) return true;
+  return at - state.lastStoryletAt >= pacing.min_gap_hours * 60;
 }
 
 /** 무게로 하나 고른다 */

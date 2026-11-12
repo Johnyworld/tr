@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import type { Content } from "../content/schemas.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import type { BattleState, FactionState } from "../game/state.ts";
@@ -60,9 +61,9 @@ export function effectBlocker(
 ): string | null {
   if (!effect.positions.includes(battle.position)) return `지금 위치에서는 쓸 수 없다 (가능: ${effect.positions.join(", ")})`;
   if (effect.max_alarm !== undefined && battle.alarm > effect.max_alarm) return "적이 이미 경계하고 있어 쓸 수 없다";
-  if (effect.requires_item && (have.items[effect.requires_item] ?? 0) < 1) return `${effect.requires_item}이(가) 없다`;
+  if (effect.requires_item && (have.items[effect.requires_item] ?? 0) < 1) return `${josa(effect.requires_item, "이/가")} 없다`;
   if (effect.requires_preparation && !have.preparations.includes(effect.requires_preparation)) {
-    return `이 구역에 설치한 ${effect.requires_preparation}이(가) 없다`;
+    return `이 구역에 설치한 ${josa(effect.requires_preparation, "이/가")} 없다`;
   }
   if (effect.targets_objective && battle.objectives.length === 0) return "남은 목표물이 없다";
   return null;

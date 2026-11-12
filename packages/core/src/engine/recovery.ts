@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import type { GameState } from "../game/state.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { harmTrack, levelOf } from "../scenario/scenario.ts";
@@ -63,11 +64,11 @@ export function applyTreatment(ctx: ToolContext, item: string | null): { ok: tru
   if (index <= 0) return { ok: false, error: "다친 데가 없어 치료할 것이 없다." };
   if (item) {
     const steps = recovery.items[item];
-    if (!steps) return { ok: false, error: `${ctx.content.items[item]?.name ?? item}(으)로는 치료할 수 없다 (가능: ${Object.keys(recovery.items).join(", ")}).` };
-    if ((player.inventory[item] ?? 0) < 1) return { ok: false, error: `${ctx.content.items[item]?.name ?? item}이(가) 없다.` };
+    if (!steps) return { ok: false, error: `${josa(ctx.content.items[item]?.name ?? item, "으로/로")}는 치료할 수 없다 (가능: ${Object.keys(recovery.items).join(", ")}).` };
+    if ((player.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(ctx.content.items[item]?.name ?? item, "이/가")} 없다.` };
     ctx.store.append({ type: "item_consumed", holder: player.id, itemId: item, quantity: 1 });
     const display = heal(ctx, player.id, steps, item)!;
-    return { ok: true, line: `${ctx.content.items[item]?.name ?? item}을(를) 써서 치료했다.`, display };
+    return { ok: true, line: `${josa(ctx.content.items[item]?.name ?? item, "을/를")} 써서 치료했다.`, display };
   }
   const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer);
   if (!healer || recovery.healer_steps <= 0) return { ok: false, error: "치료해 줄 사람이 장면에 없다. 치료 아이템을 쓰거나 치료사를 찾아간다." };

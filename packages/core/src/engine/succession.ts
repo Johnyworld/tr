@@ -68,7 +68,8 @@ export function successionOptions(state: GameState, content: Content): Successio
   const known = new Set(state.known[state.playerId] ?? []);
   for (const npc of Object.values(content.npcs)) {
     const c = state.characters[npc.id];
-    if (!c || c.dead || !npc.playable || !known.has(npc.id)) continue;
+    // MVP: 역할 규칙(상관, 임무, 이야기)이 시작 역할의 것이라 같은 무리 사람으로만 이어 간다
+    if (!c || c.dead || !npc.playable || !known.has(npc.id) || c.factionId !== dead.factionId) continue;
     options.push({
       id: npc.id,
       label: `${npc.name} (${content.factions[c.factionId]?.name ?? c.factionId} ${rankLabel(content.scenario, c.rank)})`,

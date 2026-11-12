@@ -28,7 +28,7 @@ import { runAfterTimeAdvance } from "./turnStart.ts";
 import { activeMissionOf } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
-import { createStoryletCheck } from "./storyletTools.ts";
+import { createStoryletCheck, endActiveStorylet } from "./storyletTools.ts";
 import { recordDeath } from "./succession.ts";
 import { applyTreatment } from "./recovery.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
@@ -188,7 +188,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (!prep) return { ok: false, error: `알 수 없는 준비물: ${input.prepare}` };
     const zone = start.playerZone;
     if (!zone || start.zones[zone]?.owner !== player.factionId) return { ok: false, error: "준비물은 우리 무리의 구역에만 설치할 수 있다." };
-    if (prep.requires_item && (player.inventory[prep.requires_item] ?? 0) < 1) return { ok: false, error: `${prep.label}에는 ${prep.requires_item}이(가) 필요하다.` };
+    if (prep.requires_item && (player.inventory[prep.requires_item] ?? 0) < 1) return { ok: false, error: `${prep.label}에는 ${josa(content.items[prep.requires_item]?.name ?? prep.requires_item, "이/가")} 필요하다.` };
     if (!input.check) return { ok: false, error: `${prep.label} 설치에는 판정(check)이 필요하다.` };
   }
 
@@ -225,7 +225,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
         // 연대기 기록 (전투 중이면 그 자리를 원인에 붙인다), 남은 전투는 코드가 굴린다
         const battle = store.getState().battle;
         recordDeath(ctx, input.check.harm_cause || input.intent, battle ? (content.locations[battle.zone]?.name ?? battle.zone) + " 전투" : null);
-        if (battle) displays.push(...endBattle(ctx, false).displays);
+        if (battle) {
+          const end = endBattle(ctx, false);
+          lines.push(...end.lines.filter((l) => !l.startsWith("결과에 맞게")));
+          displays.push(...end.displays);
+        }
         return { ok: true, resultText: lines.join("\n"), displays, outcome, dead: true };
       }
     }
@@ -236,7 +240,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (prep.requires_item) store.append({ type: "item_consumed", holder: start.playerId, itemId: prep.requires_item, quantity: 1 });
     if (outcome !== "miss") {
       store.append({ type: "preparation_set", zone: start.playerZone!, preparation: prep.id });
-      lines.push(`${prep.label}을(를) 이 구역에 설치했다. 이 구역에서 전투가 벌어지면 쓸 수 있다.`);
+      lines.push(`${josa(prep.label, "을/를")} 이 구역에 설치했다. 이 구역에서 전투가 벌어지면 쓸 수 있다.`);
     } else {
       lines.push(`${prep.label} 설치에 실패했다. 재료는 못 쓰게 됐다.`);
     }
@@ -289,8 +293,10 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.activity || input.move_to) displays.push(time.display);
   displays.push(...time.extra);
   if (input.move_to && !time.interrupted) {
+    // 자리를 뜨면 그 자리의 이야기는 끝난다 (장면의 인물도 따라오지 않는다)
+    displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
     store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to });
-    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.`);
+    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다. 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
   }
 
   // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문, 전쟁, 예정된 교전)
@@ -374,7 +380,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     for (;;) {
       const midnight = dayOf(cursor) * MINUTES_PER_DAY;
       const segmentEnd = Math.min(target, midnight);
-      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario, [createStoryletCheck(content)]) });
+      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario, [createStoryletCheck(content, { asleep: activity === "sleep" })]) });
       store.append({
         type: "time_advanced",
         activity,

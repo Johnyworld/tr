@@ -241,6 +241,8 @@ export function createContentSchemas(s: Scenario) {
     /** 역할의 storylet_tags와 겹쳐야 한다 (비어 있으면 모든 역할) */
     tags: z.array(contentIdSchema).default([]),
     repeatable: z.boolean().default(false),
+    /** 잠을 깨울 만큼 급한 일인지. 아니면 자는 동안에는 열리지 않는다 */
+    urgent: z.boolean().default(false),
     cooldown_days: z.number().min(0).default(0),
     weight: z.number().positive().default(1),
     when: z

@@ -35,7 +35,10 @@ export function createContentSchemas(s: Scenario) {
     age: z.number().int().positive(),
     /** 시작 장면. 화면에 먼저 보여 주고 GM 프롬프트에도 넣는다 */
     opening_scene: z.string().min(1),
-    start_stats: createStatsSchema(s),
+    /** 정해진 능력 (특별한 역할·테스트용). 없으면 시나리오의 ability_array를 무작위로 섞는다 — 능력은 계급과 무관하다 */
+    start_stats: createStatsSchema(s).optional(),
+    /** 이 역할이 받은 훈련 (스킬 id → 수준). 나머지는 스킬의 기본값 */
+    start_skills: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(s.ranges.skill.min).max(s.ranges.skill.max)).default({}),
     start_inventory: z.array(contentIdSchema),
     start_location: contentIdSchema.optional(),
     access: z.array(contentIdSchema).default([]),
@@ -85,6 +88,8 @@ export function createContentSchemas(s: Scenario) {
       })
       .optional(),
     stats: createStatsSchema(s),
+    /** 이 인물의 스킬 (나머지는 기본값) */
+    skills: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(s.ranges.skill.min).max(s.ranges.skill.max)).default({}),
     start_inventory: z.array(contentIdSchema).default([]),
     /** 사망 후 이 인물로 이어서 플레이할 수 있는지 */
     playable: z.boolean().default(false),

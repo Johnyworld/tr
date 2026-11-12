@@ -1,4 +1,5 @@
 import type { Content } from "../content/schemas.ts";
+import { gainMeritXp } from "./growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { BattleState, Clash, GameState, PendingClash } from "../game/state.ts";
 import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
@@ -169,6 +170,8 @@ export function endBattle(ctx: ToolContext, withdrew: boolean): BattleTurn {
       (merit > 0 ? ` 당신의 활약으로 공적 +${merit}.` : ""),
     "결과에 맞게 전투가 끝나는 장면을 서술하라. 사상자 수를 바꾸지 마라.",
   ];
+  const growthNote = gainMeritXp(ctx, player.id, merit);
+  if (growthNote) lines.push(growthNote);
   const displays: ToolDisplayEvent[] = [
     { type: "battle", event: "ended", title: battleTitle(ctx.content, battle), detail: lines[0]! },
     ...reportClash(ctx, clash),

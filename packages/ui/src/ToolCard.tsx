@@ -9,7 +9,7 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
           <div className="card-head">
             <span className="card-kind">판정</span>
             <span>
-              {display.moveLabel} · {display.statLabel} · {display.difficultyLabel}
+              {display.statLabel} + {display.moveLabel} · {display.difficultyLabel}
             </span>
             <span className="badge">{display.outcomeLabel}</span>
           </div>
@@ -18,7 +18,7 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
             <span className="die">{display.dice[0]}</span>
             <span className="die">{display.dice[1]}</span>
             <span className="mods">
-              {display.statLabel} {signed(m.stat)} · 난이도 {signed(m.difficulty)}
+              {display.statLabel} {signed(m.stat)} · {display.moveLabel} {signed(m.skill ?? 0)} · 난이도 {signed(m.difficulty)}
               {m.condition !== 0 && <> · 상태 {signed(m.condition)}</>}
             </span>
             <span className="total">= {display.total}</span>
@@ -107,6 +107,18 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
             <span className="card-kind">기억</span>
             <span>{display.fact}</span>
             <span className="badge">{display.sourceLabel}</span>
+          </div>
+        </div>
+      );
+    case "growth":
+      return (
+        <div className="card heal">
+          <div className="card-head">
+            <span className="card-kind">성장</span>
+            <span>
+              {display.skill}: {display.from} → <strong>{display.to}</strong>
+            </span>
+            <span className="badge">{display.name}</span>
           </div>
         </div>
       );

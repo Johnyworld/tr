@@ -28,7 +28,8 @@
     content: 지난주 C의 사자를 몰래 만났다. 연합을 깨면 B를 건드리지 않겠다는 제안을 받고 아직 답하지 않았다
     reveal_when: B의 앞날을 진심으로 걱정해 주는 사람에게, 둘만 있을 때
     min_trust: 4
-  stats: { strength: 0, agility: 0, nerve: 1, senses: 1, persuasion: 2 }
+  stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: 2, intellect: 1 }
+  skills: { persuade: 2, tactics: 1, shoot: 0 }
   start_inventory: [radio]
   playable: false
   zone: b_base
@@ -61,7 +62,8 @@
     content: B 안에서 C로 넘어가자는 사람들의 이름을 몇 안다. 동생 때문에 아무에게도 말하지 않았다
     reveal_when: 지호의 안전을 약속받았을 때
     min_trust: 3
-  stats: { strength: 1, agility: 1, nerve: 1, senses: 1, persuasion: -1 }
+  stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: 1, charm: -1, intellect: 0 }
+  skills: { fight: 1, shoot: 1, sense_danger: 1, endure: 1 }
   start_inventory: [old_rifle]
   playable: true
   zone: b_base
@@ -96,7 +98,8 @@
     content: 물류창고 수용소에 A의 정찰조 셋이 갇혀 있다. 그중 하나는 오씨 성을 쓴다
     reveal_when: 목숨을 살려 주겠다는 약속을 믿을 수 있을 때
     min_trust: 2
-  stats: { strength: 0, agility: 2, nerve: -1, senses: 2, persuasion: 0 }
+  stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: -1, charm: 0, intellect: 0 }
+  skills: { shoot: 1, stealth: 2, sense_danger: 1, survival: 1 }
   start_inventory: [c_armband, kitchen_knife]
   playable: true
   zone: c_warehouse
@@ -124,7 +127,8 @@
     - 동쪽 공세에 쓸 병력이 고가도로 너머에 모이고 있다
   doesnt_know:
     - 부하 고석진이 탈영을 생각하고 있다
-  stats: { strength: 1, agility: 0, nerve: 3, senses: 1, persuasion: 2 }
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: 1, intellect: 1 }
+  skills: { intimidate: 2, tactics: 2, shoot: 1, deceive: 1, fight: 1 }
   start_inventory: [radio, old_rifle]
   playable: false
   zone: c_warehouse
@@ -158,7 +162,8 @@
     content: 윤채원은 원래 D의 간호사였다. 병원에서 감염된 아이를 살리려고 약을 가지고 나갔고, D는 그를 쫓아냈다
     reveal_when: 윤채원의 안부를 진심으로 묻는 사람에게
     min_trust: 3
-  stats: { strength: -1, agility: 0, nerve: 2, senses: 2, persuasion: 1 }
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 2, charm: 1, intellect: 2 }
+  skills: { first_aid: 2, infected_lore: 2, persuade: 1 }
   start_inventory: [medkit, antibiotics]
   playable: false
   healer: true
@@ -186,7 +191,8 @@
   knows:
     - 병원 지하 약제실로 가는 계단은 무너졌고, 엘리베이터 통로로 내려가야 한다
   doesnt_know: []
-  stats: { strength: 2, agility: 0, nerve: 0, senses: 1, persuasion: 0 }
+  stats: { strength: 2, agility: 0, vitality: 2, senses: 1, nerve: 0, charm: 0, intellect: -1 }
+  skills: { fight: 1, scavenge: 2, survival: 1, infected_lore: 1, endure: 1 }
   start_inventory: [kitchen_knife, water_bottle]
   playable: true
   zone: hospital_ruins
@@ -220,7 +226,8 @@
     content: C에 A 동쪽 초소의 경비 교대 시간을 팔았다. 값으로 탄약 두 상자를 받았다
     reveal_when: 더 큰 이익이나 목숨이 걸렸을 때
     min_trust: 4
-  stats: { strength: -1, agility: 0, nerve: 1, senses: 2, persuasion: 3 }
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: 1, charm: 2, intellect: 1 }
+  skills: { persuade: 2, deceive: 2, history: 1, mechanics: 1 }
   start_inventory: [trade_token, cigarettes]
   playable: false
   zone: e_market
@@ -248,7 +255,8 @@
     - B 거점에 오미나라는 경비병이 동생에게 편지를 보내고 싶어 한다는 것
     - 정수장 펌프는 하루에 두 번만 돌린다
   doesnt_know: []
-  stats: { strength: -1, agility: 2, nerve: 0, senses: 1, persuasion: 1 }
+  stats: { strength: -1, agility: 2, vitality: 1, senses: 1, nerve: 0, charm: 1, intellect: 0 }
+  skills: { stealth: 1, survival: 1, persuade: 0, sense_danger: 1 }
   start_inventory: [water_bottle, cigarettes]
   playable: true
   zone: water_plant

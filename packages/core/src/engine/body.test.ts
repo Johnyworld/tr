@@ -183,3 +183,137 @@ describe("이전 세이브", () => {
     expect(parsed.player.conditions).toEqual({ harm: "none", belly: "full", rot: "clean" });
   });
 });
+
+/** 추위·질병 트랙을 더한 콘텐츠 */
+function wintry(): Content {
+  const c = content();
+  c.scenario.condition_tracks.push(
+    {
+      id: "chill",
+      label: "추위",
+      levels: [
+        { id: "warm", label: "따뜻함", penalty: 0 },
+        { id: "cool", label: "쌀쌀함", penalty: 0 },
+        { id: "cold", label: "추위", penalty: -1 },
+        { id: "freezing", label: "저체온", penalty: -2 },
+      ],
+    },
+    {
+      id: "sick",
+      label: "질병",
+      levels: [
+        { id: "well", label: "없음", penalty: 0 },
+        { id: "latent", label: "잠복", penalty: 0, hidden: true },
+        { id: "ill", label: "앓음", penalty: -1 },
+        { id: "grave", label: "위중", penalty: -2 },
+      ],
+    },
+  );
+  c.scenario.body = {
+    ...c.scenario.body,
+    cold: { track: "chill", season: { winter: 1 }, weather: {}, gear: { rope: 1 }, shelter: { resource: "food", min_days: 1, warm: -2 }, worst_harm: 1 },
+    disease: {
+      track: "sick",
+      chance: { base: 0, starving: 0, cold: 1, thirst: 0 },
+      resist: { ability: "strength", per_point: 0 },
+      recover: { chance: 1, per_point: 0 },
+      worsen: 0,
+      worst_harm: 1,
+    },
+  };
+  c.scenario.consumables = { ...c.scenario.consumables, water_bottle: { chill: 2 } };
+  return c;
+}
+
+const goOut = (env: ReturnType<typeof setup>) => {
+  env.store.getState().playerZone = "wild";
+};
+
+describe("추위", () => {
+  it("겨울에 거점 밖에서 하루마다 추워지고, 저체온이면 다친다", () => {
+    const env = setup(wintry());
+    passDays(env, 1); // 가을 2일차 → 3일차(겨울)로 넘어가는 날
+    goOut(env);
+    env.store.getState().characters.player!.conditions.chill = "cold";
+    passDays(env, 1);
+    expect(level(env, "chill")).toBe("freezing");
+    expect(level(env, "harm")).toBe("light");
+  });
+
+  it("연료가 있는 우리 거점에서는 몸이 녹는다", () => {
+    const env = setup(wintry());
+    env.store.getState().characters.player!.conditions.chill = "freezing";
+    env.store.getState().playerZone = "a_home";
+    passDays(env, 1);
+    expect(level(env, "chill")).toBe("cool");
+  });
+
+  it("방한 장비를 들고 있으면 추위를 덜고, 담요 같은 소모품은 쓰면 녹는다", () => {
+    const env = setup(wintry());
+    passDays(env, 1);
+    goOut(env);
+    env.store.getState().characters.player!.inventory.rope = 1;
+    env.store.getState().characters.player!.conditions.chill = "cool";
+    passDays(env, 1);
+    expect(level(env, "chill")).toBe("warm");
+    env.store.getState().characters.player!.conditions.chill = "freezing";
+    env.store.getState().characters.player!.inventory.water_bottle = 1;
+    executeTool("take_action", act({ use_item: "water_bottle" }), env.ctx);
+    expect(level(env, "chill")).toBe("cool");
+  });
+});
+
+describe("질병", () => {
+  it("확률로 병에 걸린다. 잠복은 숨고, 다음 날 드러난다. 체력이 높으면 덜 걸린다", () => {
+    const c = wintry();
+    c.scenario.body!.disease!.chance.base = 1;
+    const env = setup(c);
+    passDays(env, 1);
+    expect(level(env, "sick")).toBe("latent");
+    passDays(env, 1);
+    expect(level(env, "sick")).toBe("ill");
+
+    const tough = wintry();
+    tough.scenario.body!.disease!.chance.base = 0.5;
+    tough.scenario.body!.disease!.resist.per_point = 0.5; // 근력 1 → 확률 절반 (0.25), rng 0.5면 걸리지 않는다
+    const env2 = setup(tough);
+    passDays(env2, 1);
+    expect(level(env2, "sick")).toBe("well");
+  });
+
+  it("앓다가 배부르고 따뜻하면 낫고, 위중하면 하루마다 다친다", () => {
+    const c = wintry();
+    const env = setup(c);
+    env.store.getState().characters.player!.conditions.sick = "ill";
+    passDays(env, 1);
+    expect(level(env, "sick")).toBe("well");
+
+    const env2 = setup(wintry());
+    goOut(env2);
+    env2.ctx.content.scenario.body!.disease!.recover.chance = 0;
+    env2.store.getState().characters.player!.conditions.sick = "grave";
+    passDays(env2, 1);
+    expect(level(env2, "harm")).toBe("light");
+  });
+
+  it("잠복기는 상태·명령어에 드러나지 않는다", () => {
+    const env = setup(wintry());
+    env.store.getState().characters.player!.conditions.sick = "latent";
+    const s = env.store.getState();
+    expect(runCommand("!상태", { state: s, content: env.content, summaries: [] })).not.toContain("잠복");
+  });
+});
+
+describe("숨은 단계가 새지 않는다", () => {
+  it("잠복기에 약을 쓰려 하면, 아무 일 없을 때와 똑같이 쓸 필요가 없다고 한다", () => {
+    const env = setup();
+    env.store.getState().characters.player!.inventory.radio = 1;
+    const clean = executeTool("take_action", act({ use_item: "radio" }), env.ctx);
+    env.store.getState().characters.player!.conditions.rot = "latent";
+    const latent = executeTool("take_action", act({ use_item: "radio" }), env.ctx);
+    expect(clean.ok && clean.resultText).toContain("쓸 필요가 없다");
+    const first = (o: typeof clean) => (o.ok ? o.resultText.split("\n")[0] : o.error);
+    expect(first(latent)).toBe(first(clean));
+    expect(env.store.getState().characters.player!.inventory.radio).toBe(1);
+  });
+});

@@ -1,5 +1,6 @@
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
 import { conditionPenalty, moveOf, statLabel } from "../scenario/scenario.ts";
+import { gainCheckXp } from "./growth.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 export type PlayerCheckInput = { move: string; stat: string; difficulty: Difficulty; intent: string };
@@ -13,6 +14,8 @@ export type PlayerCheckResult =
       modifier: number;
       total: number;
       display: Extract<ToolDisplayEvent, { type: "check" }>;
+      /** 레벨이 올랐으면 GM에게 알릴 문장 */
+      growthNote: string | null;
     }
   | { ok: false; error: string };
 
@@ -37,12 +40,17 @@ export function rollPlayerCheck(
     return { ok: false, error: `${input.move}에는 ${move.stats.join(" 또는 ")} 능력치만 쓸 수 있습니다.` };
   }
 
+  // 능력 + 스킬은 상한까지만 (기획서 4.2). 몸 상태 보정은 그 뒤에 따로 뺀다
+  const ability = actor.stats[input.stat] ?? 0;
+  const skill = actor.skills[input.move] ?? move.default;
+  const capped = Math.min(scenario.ranges.cap, ability + skill);
   const modifiers = {
-    stat: actor.stats[input.stat] ?? 0,
+    stat: ability,
+    skill: capped - ability,
     difficulty: DIFFICULTY_MODIFIER[input.difficulty],
     condition: conditionPenalty(scenario, actor),
   };
-  const roll = roll2d6(rng, modifiers.stat + modifiers.difficulty + modifiers.condition);
+  const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition);
   const checkId = `chk_${state.nextCheckNo}`;
 
   store.append({
@@ -62,9 +70,12 @@ export function rollPlayerCheck(
     ...(options.forMission ? { forMission: options.forMission } : {}),
   });
 
+  const growthNote = gainCheckXp({ store, rng, content }, actor.id, roll.outcome);
+
   return {
     ok: true,
     checkId,
+    growthNote,
     outcome: roll.outcome,
     dice: roll.dice,
     modifier: roll.modifier,

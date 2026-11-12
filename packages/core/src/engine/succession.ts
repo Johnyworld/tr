@@ -95,7 +95,7 @@ export function switchCharacter(ctx: ToolContext, choice: string, name: string |
 
   if (choice === "new") {
     const id = `pc_${state.chronicle.length + 1}`;
-    const character = createCharacterFromRole(content.scenario, role, id);
+    const character = createCharacterFromRole(content.scenario, role, id, ctx.rng);
     if (name?.trim()) character.name = name.trim().slice(0, 20);
     store.append({ type: "character_switched", characterId: id, character, known: [...role.known_npcs] });
     // 역할의 시작 지식은 이전 캐릭터의 기억이 아니라 그 자리에 오는 사람이면 아는 것이다

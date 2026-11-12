@@ -1,7 +1,8 @@
 import { z } from "zod";
+import type { Rng } from "../rng.ts";
 import { CHECK_OUTCOMES, difficultySchema } from "../rules/check.ts";
 import { harmSeveritySchema } from "../rules/harm.ts";
-import { activitySchema, START_TIME } from "../rules/time.ts";
+import { activitySchema, dayOf, START_TIME } from "../rules/time.ts";
 import { interruptSchema } from "../sim/fastForward.ts";
 import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
 import { idEnum, type Scenario } from "../scenario/schema.ts";
@@ -23,7 +24,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * 필드 추가는 기본값(.default)을 주면 이전 세이브와 호환되므로 올리지 않는다.
  * - 2: 시나리오 팩 분리. 능력치 ID 변경, injury → conditions, scenarioId
  */
-export const SAVE_SCHEMA_VERSION = 2;
+export const SAVE_SCHEMA_VERSION = 3;
 
 /** 장면의 물건 보관 위치. 캐릭터 id 또는 "scene"(현재 장면 바닥) */
 export const SCENE_HOLDER = "scene";
@@ -161,6 +162,8 @@ export function createGameSchemas(s: Scenario) {
     }),
     checks: z.record(z.string(), checkRecord),
     nextCheckNo: z.number().int().positive(),
+    /** 오늘 판정으로 얻은 경험치 (하루 상한, 기획서 4.2) */
+    xpToday: z.strictObject({ day: z.number().int(), amount: z.number().int() }).default({ day: 0, amount: 0 }),
     /** 캐릭터별 Belief State */
     beliefs: z.record(z.string(), z.array(beliefSchema)),
     /** 캐릭터별로 알고 있는 인물 id */
@@ -337,6 +340,16 @@ export function createGameSchemas(s: Scenario) {
     /** 스토리렛 효과 등으로 관계가 바뀌었다 (from이 to를 보는 관계) */
     z.strictObject({ type: z.literal("relation_changed"), from: z.string(), to: z.string(), delta: relationDeltaSchema, reason: z.string() }),
     z.strictObject({ type: z.literal("merit_awarded"), characterId: z.string(), delta: z.number().int(), reason: z.string() }),
+    /** 경험치를 얻었다. level은 얻은 뒤의 레벨 (코드가 계산), source가 check면 하루 상한에 센다 */
+    z.strictObject({
+      type: z.literal("xp_gained"),
+      characterId: z.string(),
+      amount: z.number().int().positive(),
+      source: z.enum(["check", "merit"]),
+      level: z.number().int().nonnegative(),
+    }),
+    /** 레벨업으로 스킬 하나를 올렸다 */
+    z.strictObject({ type: z.literal("skill_learned"), characterId: z.string(), skill: z.string(), from: z.number().int(), to: z.number().int() }),
     z.strictObject({ type: z.literal("item_granted"), to: z.string(), itemId: z.string(), quantity: z.number().int().positive() }),
     z.strictObject({ type: z.literal("clock_adjusted"), clockId: z.string(), delta: z.number().int() }),
     z.strictObject({ type: z.literal("faction_morale_changed"), factionId: z.string(), delta: z.number().int() }),
@@ -388,7 +401,8 @@ export function createGameSchemas(s: Scenario) {
       intent: z.string(),
       dice: z.tuple([z.number().int().min(1).max(6), z.number().int().min(1).max(6)]),
       /** condition: 상태 트랙(부상 등)에서 오는 보정 */
-      modifiers: z.strictObject({ stat: z.number().int(), difficulty: z.number().int(), condition: z.number().int() }),
+      /** stat: 능력, skill: 스킬 (능력 + 스킬은 상한까지), condition: 몸 상태 */
+      modifiers: z.strictObject({ stat: z.number().int(), skill: z.number().int().default(0), difficulty: z.number().int(), condition: z.number().int() }),
       total: z.number().int(),
       outcome: checkOutcomeSchema,
       /** 상대 인물 id */
@@ -448,6 +462,7 @@ export const EMPTY_STATE: GameState = {
   scene: { items: {}, present: [] },
   checks: {},
   nextCheckNo: 1,
+  xpToday: { day: 0, amount: 0 },
   beliefs: {},
   known: {},
   nextBeliefNo: 1,
@@ -744,6 +759,27 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     case "merit_awarded":
       mustGet(next.characters, event.characterId, "캐릭터").merit += event.delta;
       break;
+    case "xp_gained": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      c.xp += event.amount;
+      if (event.level > c.level) {
+        c.skillPoints += event.level - c.level;
+        c.level = event.level;
+      }
+      if (event.source === "check") {
+        const day = dayOf(state.time);
+        next.xpToday = { day, amount: (state.xpToday.day === day ? state.xpToday.amount : 0) + event.amount };
+      }
+      break;
+    }
+    case "skill_learned": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      if (c.skillPoints < 1) throw new Error("올릴 수 있는 레벨업이 없습니다.");
+      if ((c.skills[event.skill] ?? event.from) !== event.from) throw new Error(`스킬 값이 어긋납니다: ${event.skill}`);
+      c.skillPoints -= 1;
+      c.skills[event.skill] = event.to;
+      break;
+    }
     case "item_granted": {
       const inv = holderInventory(next, event.to);
       inv[event.itemId] = (inv[event.itemId] ?? 0) + event.quantity;
@@ -864,14 +900,30 @@ function toInventory(itemIds: readonly string[]): Inventory {
 }
 
 /** 역할 콘텐츠로 시작 캐릭터를 만든다 (기획서 3.4: 역할 = 초기값 묶음) */
-export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player"): Character {
+/**
+ * 새 캐릭터의 능력: 역할에 정해져 있으면 그것, 아니면 시나리오의 능력 배열을 섞어서 (능력은 계급과 무관, 기획서 4.2).
+ * rng가 없으면 섞지 않는다 (테스트·결정적 생성)
+ */
+export function rollAbilities(s: Scenario, rng?: Rng): Record<string, number> {
+  const array = [...(s.ability_array ?? s.stats.map(() => 0))];
+  if (rng) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [array[i], array[j]] = [array[j]!, array[i]!];
+    }
+  }
+  return Object.fromEntries(s.stats.map((x, i) => [x.id, array[i] ?? 0]));
+}
+
+export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player", rng?: Rng): Character {
   return createCharacterSchema(s).parse({
     id,
     name: role.default_name,
     factionId: role.faction,
     rank: role.rank,
     age: role.age,
-    stats: role.start_stats,
+    stats: role.start_stats ?? rollAbilities(s, rng),
+    skills: role.start_skills,
     conditions: initialConditions(s),
     inventory: toInventory(role.start_inventory),
   });
@@ -886,16 +938,17 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
     rank: npc.rank,
     age: npc.age,
     stats: npc.stats,
+    skills: npc.skills,
     conditions: initialConditions(s),
     inventory: toInventory(npc.start_inventory),
   });
 }
 
 /** 새 세계를 여는 첫 이벤트. 시작 캐릭터, 모든 NPC, 시작 지식을 담는다 */
-export function createWorldEvent(content: Content, roleId: string, worldId: string): GameEvent {
+export function createWorldEvent(content: Content, roleId: string, worldId: string, rng?: Rng): GameEvent {
   const role = content.roles[roleId];
   if (!role) throw new Error(`알 수 없는 역할: ${roleId}`);
-  const player = createCharacterFromRole(content.scenario, role);
+  const player = createCharacterFromRole(content.scenario, role, "player", rng);
   const npcs = Object.values(content.npcs).map((npc) => createCharacterFromNpc(content.scenario, npc));
 
   let no = 0;

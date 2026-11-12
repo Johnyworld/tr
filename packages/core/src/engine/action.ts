@@ -52,12 +52,13 @@ export function createTakeActionSchema(s: Scenario) {
     check: z
       .strictObject({
         move: idEnum(moveIds(s)).describe(
-          `기본 행동. ${s.moves.map((m) => `${m.id} ${m.label}${m.description ? `(${m.description})` : ""}`).join(", ")}`,
+          `스킬. ${s.moves.map((m) => `${m.id} ${m.label}${m.description ? `(${m.description})` : ""}`).join(", ")}. ` +
+            "지식 스킬 판정은 아는가/떠올리는가만 정한다. 사실은 검색 결과와 상태에서만 가져오고 지어내지 않는다",
         ),
         stat: idEnum(statIds(s)).describe(
-          `능력치. 행동별 허용: ${s.moves.map((m) => `${m.id}=${m.stats.join("|")}`).join(", ")}`,
+          `능력. 스킬마다 쓸 수 있는 능력 중 상황에 맞는 하나: ${s.moves.map((m) => `${m.id}=${m.stats.join("|")}`).join(", ")}`,
         ),
-        difficulty: difficultySchema.describe("상황의 난이도. 대부분은 normal"),
+        difficulty: difficultySchema.describe("상황의 난이도. 대부분은 normal. very_easy +2 / easy +1 / normal 0 / hard -1 / very_hard -2"),
         harm_on_failure: z
           .enum(["none", "light", "heavy"])
           .describe("판정 전에 선언하는 몸의 위험. 실패·대가 있는 성공이면 시스템이 적용한다. none은 몸을 다칠 위험이 없는 행동"),
@@ -226,6 +227,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
         `주사위 ${roll.dice[0]}+${roll.dice[1]}, 보정 ${signed(roll.modifier)}, 합계 ${roll.total}.`,
       OUTCOME_GUIDE[roll.outcome],
     );
+    if (roll.growthNote) lines.push(roll.growthNote);
     if (roll.outcome !== "success" && input.check.harm_on_failure !== "none") {
       const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent);
       lines.push(harm.text);

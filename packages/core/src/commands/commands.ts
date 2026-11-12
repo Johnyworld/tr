@@ -1,4 +1,5 @@
 import { josa } from "../text.ts";
+import { growthLine, skillLines } from "../engine/growth.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
@@ -70,13 +71,17 @@ const status: CommandDef = {
   id: "status",
   name: "상태",
   aliases: ["스탯", "status"],
-  description: "능력치, 몸 상태, 소속과 등급, 평판",
+  description: "능력, 스킬, 경험치, 몸 상태, 소속과 등급, 평판",
   run(ctx) {
     const { state, content } = ctx;
     const scenario = content.scenario;
     const player = playerOf(ctx);
     const lines = [header(`${player.name} · ${roleLabelOf(ctx)}`), clockLine(state), ""];
     lines.push(scenario.stats.map((s) => `${s.label} ${signed(player.stats[s.id] ?? 0)}`).join("   "), "");
+    lines.push(...skillLines(scenario, player.skills));
+    const growth = growthLine(scenario, player);
+    if (growth) lines.push(growth);
+    lines.push("");
     for (const track of scenario.condition_tracks) {
       // 숨은 단계(잠복기)는 캐릭터가 모르므로 보이는 단계로
       const shown = shownLevel(track, player.conditions[track.id]);

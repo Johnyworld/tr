@@ -59,7 +59,9 @@ export function describePlayerState(state: GameState, content: Content): string 
     [
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
       `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${player.age ? ` · ${player.age}세` : ""}`,
-      `능력치: ${stats}`,
+      `능력: ${stats}`,
+      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
+      ...(player.skillPoints > 0 ? [`레벨업 대기: 올릴 스킬 ${player.skillPoints}개. 적당한 때 플레이어에게 무엇을 올릴지 묻고 learn_skill로 올린다`] : []),
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       `소지품: ${describeInventory(content, player.inventory)}`,
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,

@@ -115,11 +115,11 @@ describe("시나리오", () => {
     expect(() => SqliteRepository.open(path, { ...TEST_SCENARIO, id: "other" })).toThrow(SaveFormatError);
   });
 
-  it("시나리오에 없는 능력치가 든 이벤트는 기록하지 않는다", () => {
+  it("능력치 값이 숫자가 아닌 이벤트는 기록하지 않는다 (없는 능력은 버리고, 빠진 능력은 0으로 읽는다)", () => {
     const repo = SqliteRepository.open(":memory:", TEST_SCENARIO);
     const event = world();
     if (event.type !== "world_created") throw new Error("unreachable");
-    expect(() => repo.append({ ...event, player: { ...event.player, stats: { ...event.player.stats, luck: 3 } } })).toThrow();
+    expect(() => repo.append({ ...event, player: { ...event.player, stats: { ...event.player.stats, strength: "x" } } } as never)).toThrow();
     repo.close();
   });
 });

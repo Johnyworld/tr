@@ -28,7 +28,8 @@ secret:
   content: 배급받은 탄약을 조금씩 빼돌려 E 상인에게 약과 바꾸고 있다
   reveal_when: 신뢰 4 이상
   min_trust: 4
-stats: { strength: 0, agility: 2, nerve: 1, senses: 2, persuasion: -1 }
+stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: 1, charm: -1, intellect: 0 }
+skills: { shoot: 2, stealth: 1, sense_danger: 2, survival: 1 }
 start_inventory: [old_rifle, binoculars]
 playable: true
 zone: a_east_post

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { firstImpression, withCharm } from "./charm.ts";
+import { gainMeritXp } from "./growth.ts";
 import type { Content, StoryletContent, StoryletEffect } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { GameState } from "../game/state.ts";
@@ -74,6 +76,7 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
     const now = store.getState();
     if (now.scene.present.includes(id) || now.characters[id]?.dead) continue;
     store.append({ type: "npc_entered", npcId: id });
+    firstImpression(ctx, id);
     displays.push({ type: "presence", npcName: now.characters[id]?.name ?? id, action: "enter" });
   }
   displays.push({ type: "storylet", event: "started", title: storylet.title, detail: setupText(store.getState(), content) });
@@ -201,7 +204,7 @@ function applyEffect(
   if ("relation" in effect) {
     const from = whoOf(ctx, effect.relation.who, cast);
     if (!from || !state.characters[from]) return {};
-    const delta = { trust: 0, affection: 0, respect: 0, [effect.relation.axis]: effect.relation.delta };
+    const delta = withCharm(ctx, playerId, { trust: 0, affection: 0, respect: 0, [effect.relation.axis]: effect.relation.delta });
     store.append({ type: "relation_changed", from, to: playerId, delta, reason });
     const name = state.characters[from]!.name;
     return { line: `${name}의 ${josa(RELATION_AXIS_LABELS[effect.relation.axis], "이/가")} ${effect.relation.delta > 0 ? "올랐다" : "떨어졌다"}. 그 인물의 태도에 반영하라.` };
@@ -217,7 +220,8 @@ function applyEffect(
   }
   if ("merit" in effect) {
     store.append({ type: "merit_awarded", characterId: playerId, delta: effect.merit, reason });
-    return { line: `공적 ${effect.merit > 0 ? "+" : ""}${effect.merit}.` };
+    const growthNote = gainMeritXp(ctx, playerId, effect.merit);
+    return { line: `공적 ${effect.merit > 0 ? "+" : ""}${effect.merit}.` + (growthNote ? ` ${growthNote}` : "") };
   }
   if ("give_item" in effect) {
     const { item, quantity } = effect.give_item;

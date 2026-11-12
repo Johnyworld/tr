@@ -9,6 +9,8 @@ export type PlayerView = {
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
+  skills: { id: string; label: string; category: string; value: number }[];
+  growth: { level: number; xp: number; next: number; skillPoints: number } | null;
   inventory: { id: string; name: string; quantity: number }[];
   sceneItems: { id: string; name: string; quantity: number }[];
   present: { id: string; name: string; rankLabel: string; look: string; conditionLabel: string | null }[];

@@ -3,6 +3,8 @@ import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { HarmSeverity } from "../rules/harm.ts";
 import { harmTrack, shownLevel, trackOf } from "../scenario/scenario.ts";
 import { daysOfStock } from "../sim/war.ts";
+import { seasonAt } from "../sim/season.ts";
+import { weatherNow } from "../sim/weather.ts";
 import { josa } from "../text.ts";
 import { recordDeath } from "./succession.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
@@ -58,6 +60,12 @@ function levelIndex(ctx: ToolContext, state: GameState, characterId: string, tra
   return Math.max(0, track.levels.findIndex((l) => l.id === state.characters[characterId]?.conditions[trackId]));
 }
 
+/** 캐릭터가 아는 단계의 위치 (숨은 단계는 그 앞의 보이는 단계로). 쓸 필요가 있는지를 이걸로 정해야 잠복기가 새지 않는다 */
+function shownIndex(ctx: ToolContext, state: GameState, characterId: string, trackId: string) {
+  const track = trackOf(ctx.content.scenario, trackId);
+  return track.levels.indexOf(shownLevel(track, state.characters[characterId]?.conditions[trackId] ?? track.levels[0]!.id));
+}
+
 /** 소모품을 쓴다 (구급상자, 항생제, 통조림 등). 나아질 데가 없으면 쓰지 않는다 */
 export function useItem(ctx: ToolContext, item: string): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const { store, content } = ctx;
@@ -67,7 +75,7 @@ export function useItem(ctx: ToolContext, item: string): { ok: true; lines: stri
   const effects = content.scenario.consumables[item];
   if (!effects) return { ok: false, error: `${josa(name, "은/는")} 써서 몸이 나아지는 물건이 아니다 (가능: ${Object.keys(content.scenario.consumables).join(", ")}).` };
   if ((player.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(name, "이/가")} 없다.` };
-  const needed = Object.keys(effects).some((t) => levelIndex(ctx, state, player.id, t) > 0);
+  const needed = Object.keys(effects).some((t) => shownIndex(ctx, state, player.id, t) > 0);
   if (!needed) return { ok: false, error: `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.` };
   store.append({ type: "item_consumed", holder: player.id, itemId: item, quantity: 1 });
   const lines = [`${josa(name, "을/를")} 썼다.`];
@@ -89,7 +97,7 @@ export function applyTreatment(ctx: ToolContext, item: string | null): { ok: tru
   const player = state.characters[state.playerId]!;
   const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer);
   if (!healer) return { ok: false, error: "치료해 줄 사람이 장면에 없다. 치료 아이템을 쓰거나 치료사를 찾아간다." };
-  const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && levelIndex(ctx, state, player.id, t) > 0);
+  const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
   if (!needed) return { ok: false, error: "다친 데가 없어 치료할 것이 없다." };
   if (state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return { ok: false, error: "오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다." };
   const name = ctx.content.npcs[healer]!.name;
@@ -138,6 +146,8 @@ export function maybeInfect(ctx: ToolContext, severity: HarmSeverity | "none"): 
  * 하루가 지날 때의 몸 (전쟁 틱과 함께 하루에 한 번):
  * - 허기: 우리 무리의 배급 수준만큼 바뀐다. 마지막 단계면 굶주림으로 부상
  * - 감염: 걸려 있으면 한 단계 나빠진다. 마지막 단계면 부상
+ * - 추위: 계절·날씨만큼 (거점의 불, 방한 장비가 막는다). 마지막 단계면 부상
+ * - 질병: 확률로 걸리고(잠복), 드러나고, 배부르고 따뜻하면 확률로 낫고 아니면 깊어진다. 마지막 단계면 부상
  */
 export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
   const { content } = ctx;
@@ -180,5 +190,91 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
       }
     }
   }
+  if (body.cold) {
+    const cold = body.cold;
+    const state = ctx.store.getState();
+    const me = player()!;
+    const delta = dailyCold(ctx, state);
+    if (push(changeCondition(ctx, me.id, cold.track, delta.steps, "cold", delta.cause))) return displays;
+    const track = trackOf(content.scenario, cold.track);
+    if (delta.steps >= 0 && levelIndex(ctx, ctx.store.getState(), me.id, track.id) === track.levels.length - 1 && cold.worst_harm > 0) {
+      if (push(changeCondition(ctx, me.id, harm, cold.worst_harm, "cold", "저체온"))) return displays;
+    }
+  }
+  if (body.disease) {
+    const disease = body.disease;
+    const state = ctx.store.getState();
+    const me = player()!;
+    const track = trackOf(content.scenario, disease.track);
+    const index = levelIndex(ctx, state, me.id, track.id);
+    const vitality = me.stats[disease.resist.ability] ?? 0;
+    const suffering = sufferingOf(ctx, state);
+    if (index === 0) {
+      let chance = disease.chance.base;
+      if (suffering.starving) chance += disease.chance.starving;
+      if (suffering.cold) chance += disease.chance.cold;
+      if (suffering.thirst) chance += disease.chance.thirst;
+      chance *= Math.max(0.1, 1 - disease.resist.per_point * vitality);
+      if (ctx.rng() < chance) push(changeCondition(ctx, me.id, track.id, 1, "disease", "병에 걸렸다"));
+    } else if (track.levels[index]!.hidden) {
+      push(changeCondition(ctx, me.id, track.id, 1, "disease", "병이 드러났다"));
+    } else {
+      const resting = !suffering.starving && !suffering.cold;
+      const recover = resting ? Math.max(0, disease.recover.chance + disease.recover.per_point * vitality) : 0;
+      const roll = ctx.rng();
+      if (roll < recover) {
+        // 나으면 숨은 단계를 건너뛰고 한 단계씩 (위중 → 앓음 → 없음)
+        const steps = track.levels[index - 1]?.hidden ? -2 : -1;
+        push(changeCondition(ctx, me.id, track.id, steps, "disease", "몸이 이겨 냈다"));
+      } else if (index < track.levels.length - 1) {
+        if (roll < recover + disease.worsen) push(changeCondition(ctx, me.id, track.id, 1, "disease", "병이 깊어진다"));
+      } else if (disease.worst_harm > 0) {
+        if (push(changeCondition(ctx, me.id, harm, disease.worst_harm, "disease", "병"))) return displays;
+      }
+    }
+  }
   return displays;
+}
+
+/** 지금 몸이 괴로운가 (질병에 걸리기 쉽고 낫기 어렵다): 굶주림·추위는 판정 보정이 있는 단계부터, 목마름은 무리의 물이 하루치보다 적을 때 */
+function sufferingOf(ctx: ToolContext, state: GameState): { starving: boolean; cold: boolean; thirst: boolean } {
+  const s = ctx.content.scenario;
+  const me = state.characters[state.playerId]!;
+  const hurting = (trackId: string | undefined) => {
+    if (!trackId) return false;
+    const track = trackOf(s, trackId);
+    return (track.levels.find((l) => l.id === me.conditions[trackId])?.penalty ?? 0) < 0;
+  };
+  const own = state.factions[me.factionId];
+  const thirstResource = s.body?.disease?.thirst_resource;
+  return {
+    starving: hurting(s.body?.hunger?.track),
+    cold: hurting(s.body?.cold?.track),
+    thirst: !!thirstResource && !!own && daysOfStock(ctx.content, own, thirstResource) < 1,
+  };
+}
+
+/** 우리 거점에서 무리의 연료로 몸을 녹일 수 있는가 */
+export function sheltered(ctx: ToolContext, state: GameState): boolean {
+  const cold = ctx.content.scenario.body?.cold;
+  const me = state.characters[state.playerId];
+  if (!cold || !me || !state.playerZone) return false;
+  if (state.zones[state.playerZone]?.owner !== me.factionId) return false;
+  const own = state.factions[me.factionId];
+  return !!own && daysOfStock(ctx.content, own, cold.shelter.resource) >= cold.shelter.min_days;
+}
+
+/** 오늘의 추위: 양수면 그만큼 추워지고, 음수면 몸이 녹는다 */
+export function dailyCold(ctx: ToolContext, state: GameState): { steps: number; cause: string } {
+  const s = ctx.content.scenario;
+  const cold = s.body!.cold!;
+  if (sheltered(ctx, state)) return { steps: cold.shelter.warm, cause: "불을 땐 거처" };
+  const season = seasonAt(s, state.time);
+  const weather = weatherNow(s, state);
+  const exposure = (season ? (cold.season[season.id] ?? 0) : 0) + (weather ? (cold.weather[weather.id] ?? 0) : 0);
+  const me = state.characters[state.playerId]!;
+  const gear = Object.entries(cold.gear).reduce((n, [item, amount]) => n + ((me.inventory[item] ?? 0) > 0 ? amount : 0), 0);
+  const steps = Math.max(0, exposure - gear);
+  if (steps === 0) return { steps: -1, cause: exposure > 0 ? "방한 장비" : "견딜 만한 날씨" };
+  return { steps, cause: [season && cold.season[season.id] ? season.label : null, weather && cold.weather[weather.id] ? weather.label : null].filter(Boolean).join(", ") + "의 추위" };
 }

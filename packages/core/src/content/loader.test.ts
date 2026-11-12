@@ -36,7 +36,7 @@ faction: faction_a
 rank: grunt
 default_name: 테스트
 age: 20
-start_stats: { strength: 0, agility: 0, nerve: 0, senses: 0, persuasion: 0 }
+start_skills: { fight: 1 }
 opening_scene: 시작
 start_inventory: [${inventory}]
 `;
@@ -72,9 +72,9 @@ describe("loadContent", () => {
     }
   });
 
-  it("시나리오에 없는 능력치·등급은 거부한다 (ID는 시나리오가 정한다)", () => {
+  it("시나리오에 없는 스킬·등급은 거부한다 (ID는 시나리오가 정한다)", () => {
     const dir = tempContent({
-      "roles/x.yaml": role("").replace("nerve: 0", "cool: 0").replace("rank: grunt", "rank: general"),
+      "roles/x.yaml": role("").replace("fight: 1", "cool: 1").replace("rank: grunt", "rank: general"),
     });
     try {
       loadContent(dir);

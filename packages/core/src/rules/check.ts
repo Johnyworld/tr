@@ -12,20 +12,24 @@ export const CHECK_OUTCOME_LABELS: Record<CheckOutcome, string> = {
 };
 
 /** 난이도. AI는 enum만 고르고 보정치는 코드가 정한다 (임시값) */
-export const DIFFICULTIES = ["easy", "normal", "hard"] as const;
+export const DIFFICULTIES = ["very_easy", "easy", "normal", "hard", "very_hard"] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 export const difficultySchema = z.enum(DIFFICULTIES);
 
 export const DIFFICULTY_MODIFIER: Record<Difficulty, number> = {
+  very_easy: 2,
   easy: 1,
   normal: 0,
   hard: -1,
+  very_hard: -2,
 };
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+  very_easy: "매우 쉬움",
   easy: "쉬움",
   normal: "보통",
   hard: "어려움",
+  very_hard: "매우 어려움",
 };
 
 export type CheckRoll = {

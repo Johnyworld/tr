@@ -1,4 +1,5 @@
 import { josa } from "../text.ts";
+import { firstImpression } from "./charm.ts";
 import { z } from "zod";
 import {
   CHECK_OUTCOME_LABELS,
@@ -34,6 +35,7 @@ import { MISSION_TOOLS } from "./missionTools.ts";
 import { REPUTATION_TOOLS } from "./reputationTools.ts";
 import { STORYLET_TOOLS } from "./storyletTools.ts";
 import { SUCCESSION_TOOLS } from "./succession.ts";
+import { createLearnSkillTool } from "./growth.ts";
 import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
@@ -114,7 +116,8 @@ const npcPresence = defineTool({
     npc_id: z.string().describe("인물 id (상태의 '알고 있는 인물'이나 '함께 있는 인물'에 표시된 것)"),
     action: z.enum(["enter", "leave"]),
   }),
-  run(input, { store, content }) {
+  run(input, ctx) {
+    const { store, content } = ctx;
     const state = store.getState();
     const npc = content.npcs[input.npc_id];
     const character = state.characters[input.npc_id];
@@ -126,6 +129,7 @@ const npcPresence = defineTool({
       if (present) return { ok: false, error: `${josa(npc.name, "은/는")} 이미 장면에 있습니다.` };
       if (character.dead) return { ok: false, error: `${josa(npc.name, "은/는")} 사망했습니다.` };
       store.append({ type: "npc_entered", npcId: npc.id });
+      firstImpression(ctx, npc.id);
     } else {
       if (!present) return { ok: false, error: `${josa(npc.name, "은/는")} 장면에 없습니다.` };
       store.append({ type: "npc_left", npcId: npc.id });
@@ -209,6 +213,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       transferItem,
       npcPresence,
       addBelief,
+      createLearnSkillTool(s),
       ...MISSION_TOOLS,
       ...REPUTATION_TOOLS,
       ...STORYLET_TOOLS,

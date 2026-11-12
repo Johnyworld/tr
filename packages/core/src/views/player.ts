@@ -4,6 +4,7 @@ import {
   commanderOf,
   daysServed,
 } from "../game/missions.ts";
+import { xpForLevel } from "../engine/growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
@@ -34,6 +35,10 @@ export type PlayerView = {
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
+  /** 할 줄 아는 스킬 (아마추어 이상) */
+  skills: { id: string; label: string; category: string; value: number }[];
+  /** 레벨·경험치 (성장 규칙이 없으면 null). next: 다음 레벨까지 필요한 누적 경험치 */
+  growth: { level: number; xp: number; next: number; skillPoints: number } | null;
   inventory: { id: string; name: string; quantity: number }[];
   sceneItems: { id: string; name: string; quantity: number }[];
   /** conditionLabel: 상태가 처음과 달라졌을 때만 요약 (예: "부상: 경상") */
@@ -113,6 +118,12 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     conditionPenalty: conditionPenalty(scenario, player),
     dead: player.dead,
     stats: scenario.stats.map((s) => ({ id: s.id, label: s.label, value: player.stats[s.id] ?? 0 })),
+    skills: scenario.moves
+      .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: player.skills[m.id] ?? m.default }))
+      .filter((m) => m.value >= 0),
+    growth: scenario.growth
+      ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, player.level + 1), skillPoints: player.skillPoints }
+      : null,
     inventory: items(player.inventory),
     sceneItems: items(state.scene.items),
     present: state.scene.present.map((id) => {

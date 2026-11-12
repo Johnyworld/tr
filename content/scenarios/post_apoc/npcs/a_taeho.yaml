@@ -28,7 +28,8 @@ secret:
   content: 실종된 정찰조를 두고 혼자 후퇴했다
   reveal_when: 신뢰 4 이상 + 술자리
   min_trust: 4
-stats: { strength: 1, agility: 1, nerve: 2, senses: 1, persuasion: 0 }
+stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: 2, charm: 0, intellect: 0 }
+skills: { fight: 1, shoot: 2, tactics: 1, sense_danger: 1, intimidate: 1, survival: 1 }
 start_inventory: [radio, old_rifle]
 playable: true
 zone: a_base

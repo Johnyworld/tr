@@ -511,3 +511,63 @@
     - id: ignore
       label: 못 본 척한다
       effects: []
+
+# 겨울 장비 (12-4): 추위를 막는 물건이 들어오는 길
+- id: winter_issue
+  title: 겨울옷 나눠 주는 날
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 10
+  weight: 1.2
+  when:
+    seasons: [winter]
+    zones: [a_base]
+    segments: [morning, day]
+  cast:
+    clerk: { ids: [a_doyun] }
+  setup: "{clerk}이 창고 앞에 헌 옷가지를 쌓아 놓고 장부에 이름을 적는다. 방한복은 몇 벌 없고 줄은 길다."
+  ai_direction: 방한복은 모자라다. 원칙대로라면 고참 순이다. 담요는 넉넉한 편이다.
+  choices:
+    - id: ask_coat
+      label: 방한복을 달라고 사정한다
+      check: persuade
+      outcomes:
+        success:
+          - give_item: { item: coat }
+        partial:
+          - give_item: { item: blanket }
+        miss:
+          - give_item: { item: blanket }
+          - relation: { who: clerk, axis: respect, delta: -1 }
+    - id: take_blanket
+      label: 담요만 받고 줄을 비켜 준다
+      effects:
+        - give_item: { item: blanket }
+        - relation: { who: clerk, axis: respect, delta: 1 }
+
+- id: old_pharmacy
+  title: 셔터가 반쯤 내려간 약국
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 5
+  weight: 0.5
+  when:
+    zones: [old_town, hospital_ruins]
+    segments: [morning, day]
+  setup: 셔터가 무릎 높이까지 내려간 약국이 있다. 안쪽 진열대 몇 칸이 아직 쓰러지지 않았다.
+  ai_direction: 안은 어둡고 바닥에 유리 조각이 깔렸다. 기어 들어가야 한다.
+  choices:
+    - id: crawl
+      label: 셔터 밑으로 기어 들어가 뒤진다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: fever_reducer }
+          - give_item: { item: blanket }
+        partial:
+          - give_item: { item: fever_reducer }
+        miss:
+          - belief: { fact: 약국 진열대는 이미 누가 다 털어 갔다, source: seen }
+    - id: leave
+      label: 그냥 지나간다
+      effects: []

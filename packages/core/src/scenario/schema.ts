@@ -24,6 +24,7 @@ export const scenarioFileSchema = z
     name: z.string().min(1),
     resources: z.array(labeled).min(1),
     stats: z.array(labeled).min(1),
+    /** 스킬 (기본 행동). 판정은 능력 하나 + 이 스킬. stats: 쓸 수 있는 능력, default: 배우지 않았을 때의 수준 */
     moves: z
       .array(
         z.strictObject({
@@ -31,11 +32,38 @@ export const scenarioFileSchema = z
           label: z.string().min(1),
           stats: z.array(id).min(1),
           description: z.string().optional(),
+          default: z.number().int().default(0),
+          category: z.string().optional(),
         }),
       )
       .min(1),
+    /** 능력·스킬의 범위와 능력 + 스킬 상한 (기획서 4.2) */
+    ranges: z
+      .strictObject({
+        ability: z.strictObject({ min: z.number().int(), max: z.number().int() }),
+        skill: z.strictObject({ min: z.number().int(), max: z.number().int() }),
+        cap: z.number().int(),
+      })
+      .default({ ability: { min: -1, max: 3 }, skill: { min: -1, max: 2 }, cap: 4 }),
+    /** 새 캐릭터의 능력 배열. 역할에 start_stats가 없으면 이 값을 무작위로 섞어 준다 (능력은 계급과 무관) */
+    ability_array: z.array(z.number().int()).optional(),
+    /** 이름이 바뀐 능력 id (이전 세이브를 읽을 때 옮긴다): 옛 id → 새 id */
+    renamed: z.strictObject({ abilities: z.record(id, id).default({}) }).default({ abilities: {} }),
+    /** 경험치와 레벨업 (기획서 4.2). 없으면 성장하지 않는다 */
+    growth: z
+      .strictObject({
+        /** 첫 레벨업에 필요한 경험치, 그 뒤로 늘어나는 양 */
+        first: z.number().int().positive(),
+        step: z.number().int().min(0),
+        xp: z.strictObject({ success: z.number().int().min(0), partial: z.number().int().min(0), miss: z.number().int().min(0), merit: z.number().int().min(0) }),
+        /** 판정으로 하루에 얻을 수 있는 경험치 상한 */
+        daily_check_cap: z.number().int().positive(),
+      })
+      .optional(),
     /** 시스템이 특정 역할로 쓰는 행동 */
     move_roles: z.strictObject({ notice: id, stealth: id }),
+    /** 매력의 수동 효과 (기획서 4.2): 처음 만난 NPC의 호감 + (능력 ÷ first_impression_per, 내림), 능력이 bonus_at 이상이면 호감이 오를 때 +1 */
+    charm: z.strictObject({ ability: id, first_impression_per: z.number().int().positive(), bonus_at: z.number().int() }).optional(),
     condition_tracks: z
       .array(
         z.strictObject({
@@ -205,6 +233,37 @@ export const scenarioFileSchema = z
             worst_harm: z.number().int().min(0),
           })
           .optional(),
+        /**
+         * 추위 트랙 (12-4). 하루마다 계절·날씨의 추위만큼 나빠진다 (가진 방한 장비만큼 덜).
+         * 우리 거점(소속 무리가 가진 구역)에서 무리의 연료가 있으면 shelter.warm만큼 나아진다. 춥지 않은 날은 1 나아진다
+         */
+        cold: z
+          .strictObject({
+            track: id,
+            season: z.record(id, z.number().int().min(0)).default({}),
+            weather: z.record(id, z.number().int().min(0)).default({}),
+            /** 들고 있으면 추위를 덜어 주는 장비 (쓰지 않는다): 아이템 → 덜어 주는 양 */
+            gear: z.record(id, z.number().int().min(0)).default({}),
+            shelter: z.strictObject({ resource: id, min_days: z.number().min(0), warm: z.number().int().max(0) }),
+            worst_harm: z.number().int().min(0),
+          })
+          .optional(),
+        /**
+         * 질병 트랙 (12-4). 걸리면 숨은 단계(잠복)부터. 하루마다 확률로 걸린다: base + 굶주림·추위·무리의 물 부족마다 더한다.
+         * 능력(resist.ability, 체력)이 높을수록 덜 걸리고 잘 낫는다. 배부르고 따뜻하면 하루마다 확률로 낫고, 아니면 확률로 나빠진다
+         */
+        disease: z
+          .strictObject({
+            track: id,
+            chance: z.strictObject({ base: z.number().min(0).max(1), starving: z.number().min(0).max(1), cold: z.number().min(0).max(1), thirst: z.number().min(0).max(1) }),
+            /** 무리의 이 자원이 하루치보다 적으면 더러운 물을 마신다 */
+            thirst_resource: id.optional(),
+            resist: z.strictObject({ ability: id, per_point: z.number().min(0).max(1) }),
+            recover: z.strictObject({ chance: z.number().min(0).max(1), per_point: z.number().min(0).max(1) }),
+            worsen: z.number().min(0).max(1),
+            worst_harm: z.number().int().min(0),
+          })
+          .optional(),
       })
       .optional(),
     /**
@@ -268,8 +327,14 @@ export const scenarioFileSchema = z
     const stats = new Set(s.stats.map((x) => x.id));
     for (const move of s.moves) {
       for (const stat of move.stats) if (!stats.has(stat)) problem(`moves.${move.id}: 알 수 없는 능력치 ${stat}`);
+      if (move.default < s.ranges.skill.min || move.default > s.ranges.skill.max) problem(`moves.${move.id}: 기본값이 스킬 범위 밖이다`);
     }
+    for (const [from, to] of Object.entries(s.renamed.abilities)) {
+      if (!stats.has(to)) problem(`renamed.abilities.${from}: 알 수 없는 능력 ${to}`);
+    }
+    if (s.ability_array && s.ability_array.length !== s.stats.length) problem("ability_array의 길이는 능력 수와 같아야 한다");
     const moves = new Set(s.moves.map((x) => x.id));
+    if (s.charm && !s.stats.some((x) => x.id === s.charm!.ability)) problem(`charm.ability: 알 수 없는 능력 ${s.charm.ability}`);
     for (const [role, move] of Object.entries(s.move_roles)) {
       if (!moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);
     }
@@ -308,7 +373,7 @@ export const scenarioFileSchema = z
       for (const t of Object.keys(effects)) if (!trackIdSet.has(t)) problem(`consumables.${item}: 알 수 없는 상태 트랙 ${t}`);
     }
     for (const t of Object.keys(s.recovery?.healer ?? {})) if (!trackIdSet.has(t)) problem(`recovery.healer: 알 수 없는 상태 트랙 ${t}`);
-    for (const t of [s.body?.hunger?.track, s.body?.infection?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
+    for (const t of [s.body?.hunger?.track, s.body?.infection?.track, s.body?.cold?.track, s.body?.disease?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
     for (const track of s.condition_tracks) {
       if (track.levels[0]?.hidden) problem(`condition_tracks.${track.id}: 첫 단계는 숨길 수 없다`);
       if (track.id !== s.harm_track && track.levels.some((l) => l.fatal)) problem(`condition_tracks.${track.id}: 사망은 부상 트랙으로만 (fatal은 harm_track에만)`);

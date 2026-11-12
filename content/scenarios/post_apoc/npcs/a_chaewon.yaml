@@ -28,7 +28,8 @@ secret:
   content: D와 몰래 연락하며 약품을 받고, 대가로 A의 경비 상황을 넘기고 있다
   reveal_when: 신뢰 5
   min_trust: 5
-stats: { strength: -1, agility: 0, nerve: 1, senses: 1, persuasion: 2 }
+stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
+skills: { first_aid: 2, infected_lore: 1, persuade: 1 }
 start_inventory: [medkit]
 playable: true
 zone: a_base

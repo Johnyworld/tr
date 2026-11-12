@@ -18,7 +18,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
       </section>
 
       <section>
-        <h3>능력치</h3>
+        <h3>능력</h3>
         <dl className="stats">
           {player.stats.map((s) => (
             <div key={s.id}>
@@ -27,6 +27,26 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
             </div>
           ))}
         </dl>
+      </section>
+
+      <section>
+        <h3>스킬</h3>
+        <dl className="stats">
+          {player.skills.map((s) => (
+            <div key={s.id}>
+              <dt>
+                {s.label} <span className="muted small">{s.category}</span>
+              </dt>
+              <dd>{signed(s.value)}</dd>
+            </div>
+          ))}
+        </dl>
+        {player.growth && (
+          <div className="muted small">
+            레벨 {player.growth.level} · 경험치 {player.growth.xp}/{player.growth.next}
+            {player.growth.skillPoints > 0 && <span className="condition-worse"> · 올릴 스킬 {player.growth.skillPoints}개</span>}
+          </div>
+        )}
       </section>
 
       <section className="mission">

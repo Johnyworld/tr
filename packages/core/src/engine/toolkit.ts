@@ -15,7 +15,7 @@ export type ToolDisplayEvent =
       statLabel: string;
       difficultyLabel: string;
       dice: [number, number];
-      modifiers: { stat: number; difficulty: number; condition: number };
+      modifiers: { stat: number; skill: number; difficulty: number; condition: number };
       total: number;
       outcome: CheckOutcome;
       outcomeLabel: string;
@@ -46,6 +46,7 @@ export type ToolDisplayEvent =
   | { type: "battle"; event: "started" | "round" | "ended"; title: string; detail: string }
   | { type: "storylet"; event: "started" | "resolved" | "expired"; title: string; detail: string }
   | { type: "epitaph"; name: string; text: string }
+  | { type: "growth"; name: string; skill: string; from: string; to: string }
   | { type: "heal"; targetName: string; trackLabel: string; fromLabel: string; toLabel: string; byLabel: string }
   | {
       type: "deed";

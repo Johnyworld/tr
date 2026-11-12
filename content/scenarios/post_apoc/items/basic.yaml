@@ -41,3 +41,12 @@
 - id: canned_food
   name: 통조림
   description: 라벨이 떨어져 나간 통조림. 흔들면 무언가 출렁인다.
+- id: blanket
+  name: 담요
+  description: 군데군데 해진 군용 담요. 덮으면 언 몸이 녹는다 (쓰면 추위 2단계).
+- id: coat
+  name: 방한복
+  description: 솜이 뭉친 두꺼운 방한 외투. 입고 다니면 추위를 덜 탄다.
+- id: fever_reducer
+  name: 해열제
+  description: 유통기한이 지난 해열제 몇 알. 앓는 몸을 조금 낫게 한다 (질병 1단계).

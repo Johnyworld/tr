@@ -24,7 +24,8 @@
     - B 대표 장현우가 요즘 회의에 늦게 나온다는 것
   doesnt_know:
     - E의 탁봉수가 C에 초소 정보를 팔았다
-  stats: { strength: -1, agility: 0, nerve: 2, senses: 1, persuasion: 3 }
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 2, charm: 2, intellect: 2 }
+  skills: { persuade: 2, history: 2, tactics: 1, mechanics: 1 }
   start_inventory: [ledger]
   playable: false
   zone: a_base
@@ -54,7 +55,8 @@
     - 창고 뒷문 열쇠를 박만수가 하나 더 갖고 있다는 소문
   doesnt_know:
     - 박만수가 창고에 폭약을 숨겨 두었다
-  stats: { strength: 0, agility: -1, nerve: 1, senses: 2, persuasion: 2 }
+  stats: { strength: 0, agility: -1, vitality: 2, senses: 2, nerve: 1, charm: 1, intellect: 0 }
+  skills: { persuade: 1, survival: 1, first_aid: 0, scavenge: 1 }
   start_inventory: [kitchen_knife]
   playable: true
   zone: a_base

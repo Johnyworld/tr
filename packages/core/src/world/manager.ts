@@ -79,7 +79,7 @@ export class WorldManager {
     const world = this.#open(this.pathOf(worldId), mode);
     try {
       const ctx = world.ctx();
-      ctx.store.append(createWorldEvent(this.content, role, worldId));
+      ctx.store.append(createWorldEvent(this.content, role, worldId, ctx.rng));
       runAfterTimeAdvance(ctx); // 첫날의 임무 후보, 소문 기준일
       world.saveSnapshot();
       return world;

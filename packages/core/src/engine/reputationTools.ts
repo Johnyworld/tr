@@ -1,4 +1,5 @@
 import { weatherNow } from "../sim/weather.ts";
+import { withCharm } from "./charm.ts";
 import { josa, sentence } from "../text.ts";
 import { z } from "zod";
 import { dayOf } from "../rules/time.ts";
@@ -44,7 +45,7 @@ function noticeMove(ctx: ToolContext) {
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
 function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource) {
   const npc = ctx.content.npcs[npcId];
-  const delta = computeRelationDelta(npc?.values ?? {}, deed.tags, deed.severity, source);
+  const delta = withCharm(ctx, deed.actorId, computeRelationDelta(npc?.values ?? {}, deed.tags, deed.severity, source));
   ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
 }
 
@@ -69,7 +70,7 @@ export function recordDeed(
     for (const npcId of state.scene.present) witnesses.push({ npcId, hidden: false });
     const scenario = ctx.content.scenario;
     const stealth = stealthThisTurn(state, scenario.move_roles.stealth);
-    const noticeStat = noticeMove(ctx).stats[0]!;
+    const notice = noticeMove(ctx);
     for (const character of Object.values(state.characters)) {
       if (character.id === state.playerId || character.dead) continue;
       if (state.scene.present.includes(character.id) || !ctx.content.npcs[character.id]) continue;
@@ -77,7 +78,8 @@ export function recordDeed(
         privacy: input.privacy,
         time: state.time,
         noisy: input.noisy,
-        senseStat: character.stats[noticeStat] ?? 0,
+        // 그 인물의 주의력: 감각 능력 + 경계 스킬 (상한까지)
+        senseStat: Math.min(scenario.ranges.cap, (character.stats[notice.stats[0]!] ?? 0) + (character.skills[notice.id] ?? notice.default)),
         stealth,
         visibility: weatherNow(scenario, state)?.visibility ?? 1,
       });
@@ -128,6 +130,7 @@ const lookForWitnesses = defineTool({
     );
     if (!check.ok) return check;
     ctx.store.append({ type: "witnesses_searched", deedId: deed.id });
+    const growthNote = check.growthNote;
 
     const hidden = deed.witnesses.filter((w) => w.hidden).map((w) => state.characters[w.npcId]?.name ?? w.npcId);
     let finding: string;
@@ -157,7 +160,7 @@ const lookForWitnesses = defineTool({
       ok: true,
       resultText:
         `주변 살피기 판정 ${check.checkId}: ${check.display.outcomeLabel} (주사위 ${check.dice[0]}+${check.dice[1]}, 보정 ${check.modifier >= 0 ? "+" : ""}${check.modifier}, 합계 ${check.total}). ` +
-        `${finding || "아무것도 알아내지 못했다 (누가 봤는지 여부도 모른다)."} 이 결과대로 서술하라.`,
+        `${finding || "아무것도 알아내지 못했다 (누가 봤는지 여부도 모른다)."} 이 결과대로 서술하라.` + (growthNote ? `\n${growthNote}` : ""),
       display: check.display,
       extra,
     };

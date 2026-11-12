@@ -1,4 +1,5 @@
 import { josa } from "../text.ts";
+import { gainMeritXp } from "./growth.ts";
 import { z } from "zod";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
 import { moveLabel, rankLabel } from "../scenario/scenario.ts";
@@ -126,6 +127,8 @@ const reportMission = defineTool({
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.`,
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
     ];
+    const growthNote = gainMeritXp(ctx, mission.assigneeId, result.merit);
+    if (growthNote) lines.push(growthNote);
 
     const after = ctx.store.getState();
     const player = after.characters[after.playerId]!;

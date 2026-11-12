@@ -19,6 +19,9 @@ export type AutoplayStats = {
   successions: number;
   missionsAssigned: number;
   zonesVisited: Set<string>;
+  levelUps: number;
+  /** 상태 트랙별로 판정 보정이 붙는 단계에 있던 턴 수 */
+  sufferingTurns: Record<string, number>;
 };
 
 const pick = <T>(rng: Rng, list: readonly T[]): T => list[Math.floor(rng() * list.length)]!;
@@ -35,6 +38,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     successions: 0,
     missionsAssigned: 0,
     zonesVisited: new Set(),
+    levelUps: 0,
+    sufferingTurns: {},
   };
   const startTime = world.state().time;
   const base = { check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false };
@@ -60,9 +65,20 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       else stats.successions++;
       continue;
     }
+    const me = s.characters[s.playerId]!;
+    for (const track of content.scenario.condition_tracks) {
+      if ((track.levels.find((l) => l.id === me.conditions[track.id])?.penalty ?? 0) < 0) stats.sufferingTurns[track.id] = (stats.sufferingTurns[track.id] ?? 0) + 1;
+    }
+    // 레벨업이 쌓였으면 아무 스킬이나 올린다
+    if (me.skillPoints > 0) {
+      const out = tool("learn_skill", { skill: pick(rng, moves).id });
+      if (out.ok) stats.levelUps++;
+      else if (!out.error.includes("최고 단계")) stats.errors.push(`learn_skill: ${out.error}`);
+      continue;
+    }
     const check = (move: (typeof moves)[number], harm: string) => ({
       move: move.id,
-      stat: move.stats[0]!,
+      stat: pick(rng, move.stats),
       difficulty: "normal",
       harm_on_failure: harm,
       harm_cause: harm === "none" ? "" : "위험",
@@ -114,6 +130,16 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
 
     // 다쳤으면 가끔 치료한다 (치료사·구급상자)
     const harmTrack = content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)!;
+    // 추위·질병 등: 맞는 소모품이 있으면 가끔 쓴다
+    {
+      const usable = Object.entries(content.scenario.consumables).find(
+        ([i, e]) => (me.inventory[i] ?? 0) > 0 && Object.keys(e).some((t) => t !== harmTrack.id && (content.scenario.condition_tracks.find((x) => x.id === t)?.levels.find((l) => l.id === me.conditions[t])?.penalty ?? 0) < 0),
+      );
+      if (usable && rng() < 0.3) {
+        tool("take_action", { ...base, intent: "소모품", use_item: usable[0] });
+        continue;
+      }
+    }
     if (s.characters[s.playerId]!.conditions[harmTrack.id] !== harmTrack.levels[0]!.id && rng() < 0.3) {
       const player = s.characters[s.playerId]!;
       const item = Object.entries(content.scenario.consumables).find(([i, e]) => e[harmTrack.id] && (player.inventory[i] ?? 0) > 0)?.[0] ?? null;

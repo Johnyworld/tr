@@ -257,6 +257,8 @@ export function createContentSchemas(s: Scenario) {
         segments: z.array(z.enum(TIME_SEGMENTS)).optional(),
         /** 계절 id */
         seasons: z.array(contentIdSchema).optional(),
+        /** 날씨 id */
+        weather: z.array(contentIdSchema).optional(),
         day_gte: z.number().int().optional(),
         /** 플레이어가 있는 구역 */
         zones: z.array(contentIdSchema).optional(),

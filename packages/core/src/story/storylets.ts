@@ -60,6 +60,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.ranks && !w.ranks.includes(player.rank)) return false;
   if (w.segments && !w.segments.includes(segmentOf(at))) return false;
   if (w.seasons && !w.seasons.includes(seasonAt(content.scenario, at)?.id ?? "")) return false;
+  if (w.weather && !w.weather.includes(state.weather?.id ?? "")) return false;
   if (w.day_gte !== undefined && dayOf(at) < w.day_gte) return false;
   if (w.zones && (!state.playerZone || !w.zones.includes(state.playerZone))) return false;
   if (w.own_territory !== undefined) {

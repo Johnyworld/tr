@@ -15,6 +15,7 @@ import type { TranscriptEntry } from "../engine/log.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
 import { factionOutlook, zoneOutlook } from "../engine/warTools.ts";
 import { seasonAt, seasonLabel } from "../sim/season.ts";
+import { weatherNow } from "../sim/weather.ts";
 import { alarmLabel, battleTitle, momentumLabel } from "../engine/battleTools.ts";
 
 /**
@@ -100,7 +101,9 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       content.roles[state.roleId]?.rank === player.rank
         ? (content.roles[state.roleId]?.label ?? rankLabel(scenario, player.rank))
         : rankLabel(scenario, player.rank),
-    timeLabel: [formatTime(state.time), seasonLabel(seasonAt(content.scenario, state.time))].filter(Boolean).join(" · "),
+    timeLabel: [formatTime(state.time), seasonLabel(seasonAt(content.scenario, state.time)), weatherNow(content.scenario, state)?.label ?? ""]
+      .filter(Boolean)
+      .join(" · "),
     conditions: scenario.condition_tracks.map((track) => ({
       id: track.id,
       label: track.label,

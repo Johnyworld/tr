@@ -208,6 +208,19 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
+     * 날씨 (12-3). 하루마다 계절별 무게로 고른다. visibility는 숨은 목격자 확률에 곱한다 (비·안개는 잘 안 보인다)
+     */
+    weather: z
+      .strictObject({
+        kinds: z
+          .array(z.strictObject({ id, label: z.string().min(1), description: z.string().min(1), visibility: z.number().min(0).max(2) }))
+          .min(1),
+        /** 계절 id → 날씨 id → 무게. 계절이 없거나 빠졌으면 default */
+        by_season: z.record(id, z.record(id, z.number().min(0))).default({}),
+        default: z.record(id, z.number().min(0)),
+      })
+      .optional(),
+    /**
      * 계절 (12-1). 첫 날은 start의 계절·날짜. 계절마다 하루 소모·산출에 곱하는 배수
      */
     seasons: z
@@ -301,6 +314,15 @@ export const scenarioFileSchema = z
       if (track.id !== s.harm_track && track.levels.some((l) => l.fatal)) problem(`condition_tracks.${track.id}: 사망은 부상 트랙으로만 (fatal은 harm_track에만)`);
     }
     if (s.seasons && !s.seasons.list.some((x) => x.id === s.seasons!.start.season)) problem(`seasons.start: 알 수 없는 계절 ${s.seasons.start.season}`);
+    if (s.weather) {
+      const kinds = new Set(s.weather.kinds.map((k) => k.id));
+      for (const table of [s.weather.default, ...Object.values(s.weather.by_season)]) {
+        for (const k of Object.keys(table)) if (!kinds.has(k)) problem(`weather: 알 수 없는 날씨 ${k}`);
+      }
+      for (const season of Object.keys(s.weather.by_season)) {
+        if (!s.seasons?.list.some((x) => x.id === season)) problem(`weather.by_season: 알 수 없는 계절 ${season}`);
+      }
+    }
     if (s.war) for (const l of s.war.ration.levels) if (s.body?.hunger && l.hunger === undefined) problem(`war.ration.levels: 허기 규칙이 있으면 hunger(하루 변화)를 적는다`);
     const ranks = new Set(s.rank_ladder.map((r) => r.id));
     for (const rank of [s.promotion.from, s.promotion.to]) {

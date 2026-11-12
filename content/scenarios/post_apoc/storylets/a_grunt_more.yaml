@@ -124,7 +124,8 @@
           - belief: { fact: 탁봉수의 말로는 C가 탄약을 넉넉히 사들이고 있다. B 대표가 C의 사자를 만났다는 소문도 있다, source: rumor }
         partial:
           - belief: { fact: 탁봉수의 말로는 요즘 C가 탄약을 많이 사 간다, source: rumor }
-        miss: []
+        miss:
+          - relation: { who: trader, axis: trust, delta: -1 }
     - id: walk
       label: 흥정을 거절하고 지나간다
       effects: []
@@ -160,7 +161,8 @@
           - deed: { summary: D의 수색꾼을 따돌리고 병원 약을 혼자 챙겼다, tags: [selfishness], severity: 1, privacy: private }
         partial:
           - give_item: { item: medkit }
-        miss: []
+        miss:
+          - belief: { fact: 병원 지하에서 감염체 소리에 쫓겨 빈손으로 올라왔다, source: seen }
     - id: back_off
       label: 물러난다
       effects: []
@@ -306,7 +308,8 @@
         success:
           - give_item: { item: cigarettes, quantity: 2 }
           - relation: { who: host, axis: affection, delta: 1 }
-        partial: []
+        partial:
+          - relation: { who: host, axis: affection, delta: 1 }
         miss:
           - relation: { who: host, axis: respect, delta: -1 }
     - id: watch
@@ -421,7 +424,8 @@
         success:
           - relation: { who: a, axis: respect, delta: 1 }
           - relation: { who: b, axis: respect, delta: 1 }
-        partial: []
+        partial:
+          - belief: { fact: 보초 순번 다툼은 일단 멈췄지만 둘 다 아직 씩씩거린다, source: seen }
         miss:
           - relation: { who: a, axis: affection, delta: -1 }
           - relation: { who: b, axis: affection, delta: -1 }
@@ -468,7 +472,8 @@
           - give_item: { item: medkit }
         partial:
           - give_item: { item: canned_food }
-        miss: []
+        miss:
+          - belief: { fact: 잔해를 치우다 콘크리트가 무너져 배낭을 놓쳤다, source: seen }
     - id: leave
       label: 그냥 지나간다
       effects: []
@@ -495,7 +500,9 @@
           - belief: { fact: C 순찰조가 초소 경비 교대 시간을 재고 있었다. 누군가 정보를 흘렸을지 모른다, source: seen }
         partial:
           - belief: { fact: C 순찰조가 초소 쪽을 자주 살폈다, source: seen }
-        miss: []
+        miss:
+          - clock: { id: c_east_offensive, delta: 1 }
+          - belief: { fact: 순찰조를 지켜보다 이쪽이 먼저 들킨 것 같다. 그들은 서둘러 돌아갔다, source: seen }
     - id: report
       label: 바로 보고한다
       effects:

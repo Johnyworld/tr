@@ -1,3 +1,4 @@
+import { weatherNow } from "../sim/weather.ts";
 import { josa, sentence } from "../text.ts";
 import { z } from "zod";
 import { dayOf } from "../rules/time.ts";
@@ -78,6 +79,7 @@ export function recordDeed(
         noisy: input.noisy,
         senseStat: character.stats[noticeStat] ?? 0,
         stealth,
+        visibility: weatherNow(scenario, state)?.visibility ?? 1,
       });
       if (ctx.rng() < chance) witnesses.push({ npcId: character.id, hidden: true });
     }

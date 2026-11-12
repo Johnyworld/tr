@@ -1,3 +1,4 @@
+import { weatherNow } from "../sim/weather.ts";
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
 import {
   conditionPenalty,
@@ -39,6 +40,11 @@ const VALUE_LABELS: Record<string, string> = {
   self_interest: "실리",
 };
 
+function weatherLine(state: GameState, content: Content): string {
+  const w = weatherNow(content.scenario, state);
+  return w ? ` · 날씨: ${w.label} (${w.description})` : "";
+}
+
 export function describePlayerState(state: GameState, content: Content): string {
   const player = state.characters[state.playerId];
   if (!player) throw new Error("플레이어 캐릭터가 없습니다.");
@@ -51,7 +57,7 @@ export function describePlayerState(state: GameState, content: Content): string 
 
   const sections = [
     [
-      `시각: ${formatTime(state.time)}`,
+      `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
       `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${player.age ? ` · ${player.age}세` : ""}`,
       `능력치: ${stats}`,
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,

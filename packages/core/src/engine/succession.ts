@@ -6,6 +6,7 @@ import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import { rankLabel } from "../scenario/scenario.ts";
 import { josa, sentence } from "../text.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
+import { describeClash, WAR_TOPIC } from "./warTools.ts";
 
 /**
  * 사망과 계승 (기획서 3.1, 3.2).
@@ -129,6 +130,17 @@ export function switchCharacter(ctx: ToolContext, choice: string, name: string |
     });
   };
   if (record) add(`${josa(previous.name, "이/가")} 죽었다고 한다 (${record.cause})`, sameFaction ? "report" : "rumor");
+  // 같은 무리라면 지난 하루 우리 무리가 낀 교전은 보고로 들었다 (이전 캐릭터가 죽은 그 전투 포함)
+  for (const { clash, at } of now.recentClashes) {
+    if (now.time - at > MINUTES_PER_DAY) continue;
+    if (clash.attacker !== heir.factionId && clash.defender !== heir.factionId) continue;
+    const s = store.getState();
+    store.append({
+      type: "belief_added",
+      characterId: s.playerId,
+      belief: { id: `b_${s.nextBeliefNo}`, fact: describeClash(content, clash), source: "report", accuracy: "approximate", learnedAt: s.time, topic: WAR_TOPIC },
+    });
+  }
   const knownDeeds = Object.values(now.deeds).filter((d) => d.actorId === previous.id && now.deedKnowledge[heir.id]?.[d.id]);
   if (knownDeeds.length > 0) {
     for (const d of knownDeeds.slice(0, 3)) add(`${previous.name}: ${d.summary}`, now.deedKnowledge[heir.id]![d.id]!);

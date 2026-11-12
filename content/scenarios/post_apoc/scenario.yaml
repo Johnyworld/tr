@@ -105,6 +105,22 @@ body:
     chance: { light: 0.3, heavy: 0.6 }
     worst_harm: 1
 
+# 날씨 (12-3, *임시*). 하루마다 계절별 무게로 고른다. visibility: 숨은 목격자 확률 배수 (작을수록 안 보인다)
+weather:
+  kinds:
+    - { id: clear, label: 맑음, description: 멀리까지 보인다, visibility: 1 }
+    - { id: overcast, label: 흐림, description: 하늘이 낮게 깔려 빛이 흐리다, visibility: 0.9 }
+    - { id: rain, label: 비, description: 빗소리가 발소리를 덮고 길이 미끄럽다, visibility: 0.6 }
+    - { id: fog, label: 안개, description: 몇 걸음 앞도 잘 보이지 않는다. 숨어 움직이기 좋다, visibility: 0.4 }
+    - { id: snow, label: 눈, description: 소리는 묻히지만 발자국이 남는다, visibility: 1.1 }
+    - { id: cold_snap, label: 한파, description: 바깥에 오래 있으면 손발이 얼어붙는다, visibility: 0.9 }
+  by_season:
+    winter: { clear: 3, overcast: 3, snow: 3, fog: 1, cold_snap: 2 }
+    spring: { clear: 4, overcast: 3, rain: 3, fog: 2 }
+    summer: { clear: 4, rain: 4, overcast: 2 }
+    autumn: { clear: 5, overcast: 3, rain: 2, fog: 2 }
+  default: { clear: 1 }
+
 # 계절 (12-1, *임시*). 1일차는 늦가을. 겨울엔 연료를 많이 쓰고 먹을 것이 덜 난다
 seasons:
   start: { season: autumn, day: 14 }

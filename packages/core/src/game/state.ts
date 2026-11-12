@@ -217,6 +217,10 @@ export function createGameSchemas(s: Scenario) {
     recovery: z
       .strictObject({ lastChangeAt: z.record(z.string(), z.number().int()), lastHealerDay: z.record(z.string(), z.number().int()) })
       .default({ lastChangeAt: {}, lastHealerDay: {} }),
+    /** 오늘의 날씨 (12-3) */
+    weather: z.strictObject({ day: z.number().int(), id: z.string() }).nullable().default(null),
+    /** 최근 교전 (오래된 것부터, 최대 RECENT_CLASHES). 계승한 캐릭터가 직전 전황을 듣는 데 쓴다 */
+    recentClashes: z.array(z.strictObject({ clash: clashSchema, at: z.number().int() })).default([]),
     /** 죽은 캐릭터들의 기록 (오래된 것부터) */
     chronicle: z.array(runRecordSchema).default([]),
   });
@@ -278,6 +282,7 @@ export function createGameSchemas(s: Scenario) {
       scheduled: z.array(pendingClashSchema).default([]),
     }),
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
+    z.strictObject({ type: z.literal("weather_set"), day: z.number().int(), weatherId: z.string() }),
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
     /**
      * 몸 상태 트랙이 바뀌었다 (12-1: 치료, 소모품, 배급에 따른 허기, 감염 진행, 굶주림·감염의 부상).
@@ -471,8 +476,18 @@ export const EMPTY_STATE: GameState = {
   activeStorylet: null,
   lastStoryletAt: null,
   recovery: { lastChangeAt: {}, lastHealerDay: {} },
+  weather: null,
+  recentClashes: [],
   chronicle: [],
 };
+
+/** 최근 교전 기록에 남길 수 */
+export const RECENT_CLASHES = 12;
+
+function rememberClashes(next: GameState, clashes: readonly Clash[], at: number) {
+  next.recentClashes.push(...clashes.map((clash) => ({ clash: structuredClone(clash), at })));
+  next.recentClashes = next.recentClashes.slice(-RECENT_CLASHES);
+}
 
 export function applyEvent(state: GameState, event: GameEvent): GameState {
   if (event.type !== "world_created" && !state.worldId) {
@@ -634,7 +649,11 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       for (const [id, clock] of Object.entries(event.clocks)) mustGet(next.clocks, id, "세력 클락").filled = clock.filled;
       next.lastWarDay = event.day;
       next.pendingClashes.push(...structuredClone(event.scheduled));
+      rememberClashes(next, event.clashes, state.time);
       next.nextBattleNo += event.scheduled.length;
+      break;
+    case "weather_set":
+      next.weather = { day: event.day, id: event.weatherId };
       break;
     case "zone_moved":
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
@@ -755,6 +774,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.pendingClashes = next.pendingClashes.filter((p) => p.id !== event.pendingId);
       next.factions = structuredClone(event.factions);
       next.zones = structuredClone(event.zones);
+      rememberClashes(next, [event.clash], state.time);
       break;
     case "battle_started":
       if (state.battle) throw new Error("이미 전투 중입니다.");
@@ -786,6 +806,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.factions = structuredClone(event.factions);
       next.zones = structuredClone(event.zones);
       mustGet(next.characters, state.playerId, "캐릭터").merit += event.merit;
+      rememberClashes(next, [event.clash], state.time);
       break;
     }
     case "secret_revealed":

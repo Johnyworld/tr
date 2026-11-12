@@ -4,6 +4,8 @@ import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import { runStorylets } from "./storyletTools.ts";
 import { runNaturalRecovery } from "./body.ts";
+import { rollWeather } from "../sim/weather.ts";
+import { dayOf } from "../rules/time.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -14,7 +16,18 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
  * 이렇게 하면 다음 장면(GM이 받는 상태)이 항상 처리가 끝난 상태다.
  * 플레이어에게 보여 줄 결과만 돌려준다.
  */
+/** 오늘의 날씨를 정한다 (날이 바뀌면 한 번) */
+function runDailyWeather(ctx: ToolContext) {
+  const s = ctx.content.scenario;
+  const state = ctx.store.getState();
+  const today = dayOf(state.time);
+  if (!s.weather || state.weather?.day === today) return;
+  const id = rollWeather(s, today, ctx.rng);
+  if (id) ctx.store.append({ type: "weather_set", day: today, weatherId: id });
+}
+
 export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
+  runDailyWeather(ctx);
   spreadRumors(ctx);
   // 세력 단위 전쟁 (하루 단위). 자기 무리가 낀 교전 소식은 화면에 보인다
   const war = runWarDays(ctx);

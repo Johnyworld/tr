@@ -26,7 +26,9 @@
           - belief: { fact: 물류창고의 불빛은 우리 정찰조가 쓰던 손전등 신호였다. 그들은 살아서 그 안에 갇혀 있다, source: seen }
         partial:
           - belief: { fact: 물류창고 쪽 불빛이 누군가 보내는 신호 같았다. 끝까지 읽지는 못했다, source: seen }
-        miss: []
+        miss:
+          - clock: { id: c_east_offensive, delta: 1 }
+          - belief: { fact: 불빛을 보려다 망루 난간을 건드려 소리를 냈다. 불빛은 곧 꺼졌다, source: seen }
     - id: report
       label: 바로 분대장에게 알린다
       effects:
@@ -163,7 +165,8 @@
         success:
           - relation: { who: grunt, axis: affection, delta: 1 }
           - faction_morale: { faction: own, delta: 1 }
-        partial: []
+        partial:
+          - belief: { fact: 배급 줄 소란은 겨우 가라앉았지만 사람들 표정이 굳어 있었다, source: seen }
         miss:
           - relation: { who: grunt, axis: trust, delta: -1 }
     - id: share
@@ -242,7 +245,9 @@
           - belief: { fact: 초소 아래에서 C 정찰병이 남긴 발자국과 표식을 찾아 지웠다, source: seen }
         partial:
           - belief: { fact: 초소 아래에 누군가 다녀간 흔적이 있었다, source: seen }
-        miss: []
+        miss:
+          - clock: { id: c_east_offensive, delta: 1 }
+          - belief: { fact: 초소 아래를 살폈지만 아무것도 찾지 못했다. 누군가 이쪽 움직임을 보고 갔을지 모른다, source: seen }
     - id: alert
       label: 동료를 깨운다
       effects:

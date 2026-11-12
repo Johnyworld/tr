@@ -12,6 +12,7 @@ import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
 import { factionOutlook, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
 import { formatChronicle, successionOptions } from "../engine/succession.ts";
 import { seasonAt, seasonLabel } from "../sim/season.ts";
+import { weatherNow } from "../sim/weather.ts";
 
 /**
  * MUD식 정보 명령어 (기획서 11.7).
@@ -152,7 +153,10 @@ const time: CommandDef = {
       formatTime(ctx.state.time),
       "",
       season ? `계절  ${seasonLabel(season)} (${season.label} ${season.dayInSeason}/${season.days}일)` : NOT_YET("계절", "계절 단계"),
-      NOT_YET("날씨", "날씨 단계"),
+      (() => {
+        const w = weatherNow(ctx.content.scenario, ctx.state);
+        return w ? `날씨  ${w.label} — ${w.description}` : NOT_YET("날씨", "날씨 단계");
+      })(),
     ].join("\n");
   },
 };

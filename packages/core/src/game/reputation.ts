@@ -179,6 +179,8 @@ export function hiddenWitnessChance(input: {
   senseStat: number;
   /** 이번 턴 은밀 행동 판정 결과 (없으면 null) */
   stealth: "success" | "partial" | "miss" | null;
+  /** 날씨의 시야 배수 (비·안개는 1보다 작다). 없으면 1 */
+  visibility?: number;
 }): number {
   const alertness = 0.5 + 0.1 * input.senseStat;
   const stealth = input.stealth === "success" ? 0.3 : input.stealth === "partial" ? 0.6 : 1;
@@ -187,7 +189,8 @@ export function hiddenWitnessChance(input: {
     TIME_EXPOSURE[segmentOf(input.time)] *
     (input.noisy ? NOISE_FACTOR : 1) *
     alertness *
-    stealth;
+    stealth *
+    (input.visibility ?? 1);
   return Math.min(0.95, Math.max(0, p));
 }
 

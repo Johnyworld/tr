@@ -1,4 +1,4 @@
-import type { GameWorld, PlayerView, TranscriptView, WorldManager } from "@trpg/core";
+import { creationRules, randomAbilityBuy, createSeededRng, type CharacterChoice, type GameWorld, type PlayerView, type TranscriptView, type WorldManager } from "@trpg/core";
 import { runGmTurn, type EpitaphWriter, type LanguageModel, type Summarizer, type TurnEvent } from "@trpg/gm";
 
 export class TurnInProgressError extends Error {}
@@ -96,12 +96,22 @@ export class WebSession {
     return this.world.chooseNextCharacter(choice, name);
   }
 
-  /** 지금 세계를 닫고 새 세계를 연다 (지금 세계는 saves/worlds/에 그대로 남는다) */
-  newWorld() {
+  /** 지금 세계를 닫고 새 세계를 연다 (지금 세계는 saves/worlds/에 그대로 남는다). 캐릭터 생성에서 고른 것을 받는다 */
+  newWorld(choice?: CharacterChoice) {
     if (this.#busy) throw new TurnInProgressError();
+    const next = this.manager.create("web", undefined, choice); // 규칙 위반이면 지금 세계를 닫기 전에 던진다
     this.#world?.close();
-    this.#world = null;
-    this.#world = this.manager.create("web");
+    this.#world = next;
+  }
+
+  /** 캐릭터 생성 규칙 (첫 시작 역할 기준) */
+  creationRules() {
+    return creationRules(this.manager.content, Object.keys(this.manager.content.roles)[0] ?? "");
+  }
+
+  /** 생성 화면의 "무작위" 버튼 */
+  randomAbilities() {
+    return randomAbilityBuy(this.manager.content.scenario, createSeededRng(Math.floor(Math.random() * 2 ** 31)));
   }
 
   close() {

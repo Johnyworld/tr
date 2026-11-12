@@ -6,6 +6,7 @@
   faction: faction_b
   rank: leader
   age: 47
+  gender: male
   look: 각진 턱에 늘 면도를 한 얼굴. 낡았지만 다림질한 셔츠.
   reputation: B 거점의 대표. A와 연합을 맺은 사람이지만, 요즘 표정이 어둡다.
   want: B 사람들을 살려서 이 전쟁을 끝내는 것
@@ -39,6 +40,7 @@
   faction: faction_b
   rank: grunt
   age: 24
+  gender: female
   look: 오지호와 똑같은 주근깨. 머리를 짧게 자르고 오른손에 붕대를 감았다.
   reputation: B의 경비병. A에 있는 남동생 이야기를 자주 한다.
   want: 동생과 같은 곳에서 사는 것
@@ -74,6 +76,7 @@
   faction: faction_c
   rank: grunt
   age: 27
+  gender: male
   look: 왼팔에 붉은 완장. 광대뼈가 드러날 만큼 말랐고 눈 밑이 검다.
   reputation: C의 정찰병. 물류창고 경비조에 있다.
   want: 살아서 이 전쟁에서 빠져나가는 것
@@ -109,6 +112,7 @@
   faction: faction_c
   rank: officer
   age: 45
+  gender: male
   look: 깔끔하게 빗어 넘긴 머리, 장교 외투. 손이 늘 장갑 속에 있다.
   reputation: C의 간부. 고가도로 너머를 맡고 있다. 포로를 다루는 방식이 잔혹하다는 소문의 주인공.
   want: 동쪽 공세를 성공시켜 지도부에 오르는 것
@@ -139,6 +143,7 @@
   faction: faction_d
   rank: leader
   age: 39
+  gender: female
   look: 소매를 걷은 흰 가운, 안경 한쪽 다리를 철사로 감았다.
   reputation: D의 의사이자 대표. 약을 거래 조건으로 쓴다는 평 때문에 차갑다는 말을 듣는다.
   want: 약이 떨어지기 전에 누구 편에도 서지 않고 겨울을 넘기는 것
@@ -174,6 +179,7 @@
   faction: faction_d
   rank: grunt
   age: 31
+  gender: male
   look: 덩치가 크고 목에 방독면을 걸었다. 등에 빈 배낭을 지고 다닌다.
   reputation: D의 수색꾼. 옛 시립병원을 드나드는 몇 안 되는 사람.
   want: 병원 지하 약제실을 혼자 다 털어 D에서 한자리 얻는 것
@@ -203,6 +209,7 @@
   faction: faction_e
   rank: leader
   age: 58
+  gender: male
   look: 금니가 두 개, 기름때 묻은 가죽 조끼. 손가락에 반지가 여럿이다.
   reputation: E 상인단의 우두머리. 누구에게나 웃으며 판다. 이기는 쪽에 붙을 사람이라는 평.
   want: 전쟁이 끝났을 때 이긴 쪽의 단골이 되는 것
@@ -237,6 +244,7 @@
   faction: faction_e
   rank: grunt
   age: 17
+  gender: female
   look: 빨간 털모자에 큰 배낭. 운동화 끈이 짝짝이다.
   reputation: E의 심부름꾼. 거점 사이로 편지와 소식을 나른다.
   want: 언젠가 자기 장사를 하는 것

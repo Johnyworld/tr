@@ -547,6 +547,7 @@ body {
     display: none;
   }
   .sheet section.beliefs,
+  .sheet section.skills,
   .sheet section.relations,
   .sheet section.service,
   .sheet section.mission .requirements {
@@ -753,8 +754,9 @@ body {
 .slot {
   width: 100%;
   text-align: left;
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
   padding: 14px 16px;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -806,4 +808,183 @@ body {
 
 .slot-foot {
   margin-top: 4px;
+}
+
+.slot-body {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.portrait {
+  flex: none;
+  border-radius: 6px;
+  display: block;
+}
+
+.sheet-hero {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.sheet-hero h2 {
+  margin: 0;
+}
+
+/* ── 캐릭터 생성 ───────────────────────── */
+.creation .back {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.creation-top {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.creation-fields {
+  flex: 1;
+  display: grid;
+  gap: 14px;
+}
+
+.creation-fields label {
+  display: grid;
+  gap: 6px;
+}
+
+.creation-fields label span,
+.field-label {
+  font-size: 13px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.creation-fields input {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.creation-fields input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.choice-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.chip {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.chip.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.portrait-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+}
+
+.portrait-pick {
+  padding: 3px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+}
+
+.portrait-pick.on {
+  border-color: var(--accent);
+}
+
+.points-left {
+  color: var(--accent);
+  margin-left: 8px;
+}
+
+.ability-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.ability-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.stepper button {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.stepper button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.stepper .value {
+  width: 28px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper .value.up {
+  color: var(--success);
+}
+
+.stepper .value.down {
+  color: var(--miss);
 }

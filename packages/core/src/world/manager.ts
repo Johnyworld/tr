@@ -4,7 +4,15 @@ import { basename, join } from "node:path";
 import Database from "better-sqlite3";
 import { createSeededRng, type Rng } from "../rng.ts";
 import type { Content } from "../content/schemas.ts";
-import { createWorldEvent } from "../game/state.ts";
+import { createWorldEvent, type CharacterChoice } from "../game/state.ts";
+import { checkCharacterChoice, randomAbilityBuy } from "../game/creation.ts";
+
+/** 캐릭터 생성에서 고른 것이 규칙에 맞지 않는다 */
+export class CharacterChoiceError extends Error {
+  constructor(readonly problems: string[]) {
+    super(problems.join(" "));
+  }
+}
 import type { PlayMode } from "../engine/log.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
 import { acquireLock, isProcessAlive, readLock, type LockInfo } from "../persistence/lock.ts";
@@ -83,14 +91,20 @@ export class WorldManager {
   }
 
   /** 새 세계를 만들고 연다 */
-  create(mode: PlayMode, roleId?: string): GameWorld {
+  create(mode: PlayMode, roleId?: string, choice?: CharacterChoice): GameWorld {
     const role = roleId ?? Object.keys(this.content.roles)[0];
     if (!role || !this.content.roles[role]) throw new Error(`알 수 없는 시작 역할: ${role}`);
+    if (choice) {
+      const problems = checkCharacterChoice(this.content.scenario, choice);
+      if (problems.length) throw new CharacterChoiceError(problems);
+    }
     const worldId = newWorldId();
     const world = this.#open(this.pathOf(worldId), mode);
     try {
       const ctx = world.ctx();
-      ctx.store.append(createWorldEvent(this.content, role, worldId, ctx.rng));
+      // 능력을 고르지 않았으면(null) 포인트를 무작위로 배분한다
+      const filled = choice && choice.abilities === null ? { ...choice, abilities: randomAbilityBuy(this.content.scenario, ctx.rng) } : choice;
+      ctx.store.append(createWorldEvent(this.content, role, worldId, ctx.rng, filled));
       runAfterTimeAdvance(ctx); // 첫날의 임무 후보, 소문 기준일
       world.saveSnapshot();
       return world;

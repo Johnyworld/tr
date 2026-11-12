@@ -3,6 +3,9 @@ import type { ToolDisplayEvent } from "@trpg/core";
 /** 서버 API 응답 형태 (packages/server/src/session.ts 와 맞춘다) */
 export type PlayerView = {
   name: string;
+  genderLabel: string | null;
+  portrait: string | null;
+  age: number | null;
   roleLabel: string;
   timeLabel: string;
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean }[];
@@ -47,6 +50,8 @@ export type SaveSlotView = {
   hero: {
     name: string;
     age: number | null;
+    genderLabel: string | null;
+    portrait: string | null;
     rankLabel: string;
     factionName: string;
     level: number;
@@ -63,3 +68,16 @@ export type SaveSlotView = {
 };
 
 export type SlotsView = { scenarioName: string; slots: SaveSlotView[]; current: string | null };
+
+/** 캐릭터 생성 규칙 (core CreationRules) */
+export type CreationRulesView = {
+  defaultName: string;
+  points: number;
+  cost: { value: number; cost: number }[];
+  maxLow: number;
+  genders: { id: string; label: string }[];
+  abilities: { id: string; label: string; description: string }[];
+  startSkills: { label: string; value: number }[];
+};
+
+export type CharacterChoiceView = { name: string; gender: string | null; abilities: Record<string, number> | null; portrait: string | null };

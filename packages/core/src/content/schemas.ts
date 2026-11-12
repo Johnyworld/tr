@@ -90,6 +90,8 @@ export function createContentSchemas(s: Scenario) {
     stats: createStatsSchema(s),
     /** 이 인물의 스킬 (나머지는 기본값) */
     skills: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(s.ranges.skill.min).max(s.ranges.skill.max)).default({}),
+    /** 성별 id (시나리오 creation.genders) */
+    gender: (s.creation ? idEnum(s.creation.genders.map((g) => g.id)) : z.string()).optional(),
     start_inventory: z.array(contentIdSchema).default([]),
     /** 사망 후 이 인물로 이어서 플레이할 수 있는지 */
     playable: z.boolean().default(false),

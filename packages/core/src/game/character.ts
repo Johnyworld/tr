@@ -37,6 +37,9 @@ function createSkillsSchema(s: Scenario) {
   );
 }
 
+/** 초상화 id 형식 (화면이 id로 그림을 고른다) */
+export const PORTRAIT_ID = /^[a-z0-9_-]{1,40}$/;
+
 /**
  * 캐릭터 스키마. 플레이어와 NPC가 같은 스키마를 쓴다 (CLAUDE.md 원칙 6).
  * 능력치·등급·상태 트랙의 ID는 시나리오에서 오므로 시나리오를 받아 만든다.
@@ -49,6 +52,10 @@ export function createCharacterSchema(s: Scenario) {
     rank: idEnum(rankIds(s)),
     /** 화법 규칙에 쓴다. 모르면 null */
     age: z.number().int().positive().nullable().default(null),
+    /** 성별 id (시나리오 creation.genders). 정하지 않았으면 null */
+    gender: z.string().nullable().default(null),
+    /** 초상화 id (화면에서 그린다). 없으면 null */
+    portrait: z.string().regex(PORTRAIT_ID).nullable().default(null),
     /** 능력 (기획서 4.2): 타고난 것. 계급과 관계없고 바뀌지 않는다 */
     stats: createAbilitiesSchema(s),
     /** 스킬: 배우는 것. 레벨업으로 오른다 */

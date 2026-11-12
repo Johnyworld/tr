@@ -4,6 +4,7 @@
   faction: faction_a
   rank: leader
   age: 52
+  gender: female
   look: 희끗한 단발에 낡은 교사용 카디건. 늘 공책을 들고 다닌다.
   reputation: A 거점의 대표. 옛 공업고 교사였다. "버리지 않는다"는 원칙을 처음 말한 사람.
   want: 겨울을 넘길 때까지 아무도 버리지 않는 것
@@ -35,6 +36,7 @@
   faction: faction_a
   rank: staff
   age: 61
+  gender: female
   look: 앞치마에 국자를 꽂고 다니는 키 작은 할머니. 목소리가 크다.
   reputation: 식당 천막의 취사 담당. 거점의 소문은 다 이 사람 솥을 거쳐 간다.
   want: 아이들이 배곯지 않는 것

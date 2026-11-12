@@ -14,6 +14,8 @@ export type SaveSlot = {
   hero: {
     name: string;
     age: number | null;
+    genderLabel: string | null;
+    portrait: string | null;
     rankLabel: string;
     factionName: string;
     level: number;
@@ -37,7 +39,7 @@ type RawState = {
   runStartedAt?: number;
   playerZone?: string | null;
   chronicle?: unknown[];
-  characters?: Record<string, { name?: string; age?: number; rank?: string; factionId?: string; level?: number; dead?: boolean; conditions?: Record<string, string> }>;
+  characters?: Record<string, { name?: string; age?: number; gender?: string | null; portrait?: string | null; rank?: string; factionId?: string; level?: number; dead?: boolean; conditions?: Record<string, string> }>;
 };
 
 export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): SaveSlot {
@@ -48,6 +50,8 @@ export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): Sav
     ? {
         name: player.name ?? "?",
         age: player.age ?? null,
+        genderLabel: s.creation?.genders.find((g) => g.id === player.gender)?.label ?? null,
+        portrait: player.portrait ?? null,
         rankLabel: player.rank ? rankLabel(s, player.rank) : "?",
         factionName: (player.factionId && content.factions[player.factionId]?.name) || "",
         level: player.level ?? 0,
@@ -80,7 +84,7 @@ export function formatPlayedAt(iso: string): string {
 export function formatSlotLine(slot: SaveSlot, index: number): string {
   const h = slot.hero;
   if (!h) return `${index}. (읽을 수 없는 세이브) · 마지막 플레이 ${formatPlayedAt(slot.updatedAt)}`;
-  const who = `${h.name}${h.age ? ` (${h.age}세)` : ""} · ${[h.factionName, h.rankLabel].filter(Boolean).join(" ")} · 레벨 ${h.level}`;
+  const who = `${h.name}${h.age || h.genderLabel ? ` (${[h.genderLabel, h.age ? `${h.age}세` : null].filter(Boolean).join(", ")})` : ""} · ${[h.factionName, h.rankLabel].filter(Boolean).join(" ")} · 레벨 ${h.level}`;
   const where = [slot.timeLabel, h.zoneName].filter(Boolean).join(", ");
   const tags = [
     h.dead ? "사망 (다음 주인공을 고를 차례)" : h.conditions.length ? h.conditions.join(", ") : "몸 성함",

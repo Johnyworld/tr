@@ -2,6 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   buildGmGuide,
+  CharacterChoiceError,
+  characterChoiceSchema,
+  creationRules,
+  describeCreationRules,
   formatReferences,
   formatSlotLine,
   createTakeActionSchema,
@@ -31,7 +35,7 @@ const NO_WORLD = "열린 세계가 없습니다. 먼저 start_session(또는 loa
 /** 세션을 시작할 때 GM이 할 일 (MCP prompt `play`, Claude Code 스킬 /play 가 같은 흐름) */
 export const PLAY_START =
   "지금 list_worlds를 호출해 저장된 게임 목록(번호 목록과 새 게임)을 플레이어에게 그대로 보여 주고, 어느 것을 할지 묻는다. " +
-  "플레이어가 번호를 고르면 start_session(slot), 새 게임이면 start_session(new_world: true)로 연다. 고르기 전에는 세계를 열지 않는다. " +
+  "플레이어가 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 start_session(new_world: true)로 캐릭터 생성 규칙을 받아 플레이어에게 이름·성별·능력을 묻고, character와 함께 다시 불러 연다. 고르기 전에는 세계를 열지 않는다. " +
   "플레이어가 그만하자고 하면 end_session으로 닫는다.";
 
 const HELP_HINT = "플레이어에게 한 줄 안내: \"!도움말 로 정보 명령어를 볼 수 있습니다.\"";
@@ -72,6 +76,7 @@ export function createMcpServer(manager: WorldManager) {
       return sessionStart(next);
     } catch (err) {
       if (err instanceof WorldLockedError) return text(err.message, true);
+      if (err instanceof CharacterChoiceError) return text(`캐릭터 설정이 규칙에 맞지 않는다: ${err.message} 플레이어에게 알리고 다시 고르게 한다.`, true);
       return text(err instanceof Error ? err.message : String(err), true);
     }
   };
@@ -117,21 +122,31 @@ export function createMcpServer(manager: WorldManager) {
     "start_session",
     {
       description:
-        "플레이 세션을 시작한다. slot(list_worlds의 번호)이나 world_id를 주면 그 세계를, new_world가 true면 새 세계를 연다. " +
-        "아무것도 주지 않으면: 저장된 게임이 없으면 새로 만들고, 있으면 세계를 열지 않고 슬롯 목록을 돌려준다 (플레이어에게 고르게 한다). " +
+        "플레이 세션을 시작한다. slot(list_worlds의 번호)이나 world_id를 주면 그 세계를 연다. " +
+        "새 게임은 new_world: true. character 없이 부르면 세계를 만들지 않고 캐릭터 생성 규칙을 돌려준다: 플레이어에게 이름·성별·능력을 물은 뒤 character와 함께 다시 부른다. " +
+        "아무것도 주지 않으면 세계를 열지 않고 슬롯 목록(마지막 번호는 새 게임)을 돌려준다. " +
         "세계를 열면 GM 지침, 지난 이야기 요약, 현재 장면을 돌려준다.",
       inputSchema: z.strictObject({
         slot: z.number().int().min(1).nullable().optional().describe("list_worlds의 번호"),
         world_id: z.string().nullable().optional(),
         new_world: z.boolean().optional(),
+        character: characterChoiceSchema().nullable().optional().describe("새 게임의 캐릭터 (플레이어가 정한 것)"),
       }),
     },
     (args) => {
-      if (args.new_world) return openWorld(() => manager.create("mcp"));
-      if (!args.slot && !args.world_id) {
-        if (manager.listSlots().length === 0) return openWorld(() => manager.create("mcp"));
-        return text(slotMenu());
+      if (args.new_world) {
+        if (!args.character) {
+          const rules = creationRules(content, Object.keys(content.roles)[0] ?? "");
+          if (rules) {
+            return text(
+              `${describeCreationRules(rules)}\n\n아직 세계를 만들지 않았다. 위 내용을 플레이어에게 묻고(한 번에 물어도 된다), 정해지면 start_session에 new_world: true와 character({name, gender, abilities, portrait: null})를 넣어 다시 부른다.`,
+            );
+          }
+        }
+        const choice = args.character ? { ...args.character, portrait: args.character.portrait ?? null } : undefined;
+        return openWorld(() => manager.create("mcp", undefined, choice));
       }
+      if (!args.slot && !args.world_id) return text(slotMenu());
       const id = pickWorld(args);
       return typeof id === "string" ? openWorld(() => manager.open(id, "mcp")) : text(id.error, true);
     },

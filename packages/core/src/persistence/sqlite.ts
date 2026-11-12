@@ -9,6 +9,7 @@ import {
   applyEvent,
   createGameSchemas,
   EMPTY_STATE,
+  MIN_READABLE_SAVE_VERSION,
   SAVE_SCHEMA_VERSION,
   type GameEvent,
   type GameState,
@@ -44,8 +45,19 @@ export class SqliteRepository implements GameRepository {
     this.#schemas = createGameSchemas(scenario);
     this.scenarioId = scenario.id;
     migrate(this.#db, { migrationsFolder: MIGRATIONS_DIR });
-    this.#checkMeta();
-    ({ state: this.#state, lastSeq: this.#lastSeq } = this.#loadState());
+    const upgradeFrom = this.#checkMeta();
+    if (upgradeFrom === null) {
+      ({ state: this.#state, lastSeq: this.#lastSeq } = this.#loadState(true));
+    } else {
+      // 이전 형식: 스냅숏은 믿지 않고 이벤트를 처음부터 다시 읽는다 (새 필드는 스키마 기본값으로 채워진다)
+      try {
+        ({ state: this.#state, lastSeq: this.#lastSeq } = this.#loadState(false));
+      } catch (err) {
+        throw new SaveFormatError(`이전 형식(${upgradeFrom})의 세이브를 읽지 못했습니다: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      this.#db.update(schema.meta).set({ value: String(SAVE_SCHEMA_VERSION) }).where(eq(schema.meta.key, "schema_version")).run();
+      if (this.#lastSeq > 0) this.saveSnapshot();
+    }
     this.#transcript = this.#db
       .select()
       .from(schema.transcript)
@@ -173,8 +185,8 @@ export class SqliteRepository implements GameRepository {
     this.#sqlite.close();
   }
 
-  /** 세이브 메타: 형식 버전과 시나리오 (기획서 12.2, 12.3) */
-  #checkMeta() {
+  /** 세이브 메타: 형식 버전과 시나리오 (기획서 12.2, 12.3). 올려 읽어야 하는 이전 형식이면 그 버전 */
+  #checkMeta(): number | null {
     const rows = this.#db.select().from(schema.meta).all();
     const get = (key: string) => rows.find((r) => r.key === key)?.value;
     const version = get("schema_version");
@@ -186,21 +198,21 @@ export class SqliteRepository implements GameRepository {
           { key: "scenario_id", value: this.scenarioId },
         ])
         .run();
-      return;
-    }
-    if (Number(version) !== SAVE_SCHEMA_VERSION) {
-      throw new SaveFormatError(
-        `세이브 형식 버전이 다릅니다 (세이브 ${version}, 현재 ${SAVE_SCHEMA_VERSION}). 이전 세이브를 옮기는 방법이 아직 없습니다.`,
-      );
+      return null;
     }
     const scenarioId = get("scenario_id");
     if (scenarioId !== this.scenarioId) {
-      throw new SaveFormatError(`다른 시나리오의 세이브입니다 (세이브 ${scenarioId}, 현재 ${this.scenarioId}).`);
+      throw new SaveFormatError(`다른 시나리오의 세이브입니다 (세이브 ${scenarioId ?? "없음"}, 현재 ${this.scenarioId}).`);
     }
+    const v = Number(version);
+    if (v === SAVE_SCHEMA_VERSION) return null;
+    // 형식이 바뀌어도 이벤트는 스키마 기본값으로 올려 읽는다 (MIN_READABLE_SAVE_VERSION부터)
+    if (v >= MIN_READABLE_SAVE_VERSION && v < SAVE_SCHEMA_VERSION) return v;
+    throw new SaveFormatError(`세이브 형식 버전이 다릅니다 (세이브 ${version}, 현재 ${SAVE_SCHEMA_VERSION}, 읽을 수 있는 것은 ${MIN_READABLE_SAVE_VERSION}부터).`);
   }
 
-  #loadState(): { state: GameState; lastSeq: number } {
-    const snapshot = this.#db.select().from(schema.snapshots).orderBy(desc(schema.snapshots.seq)).limit(1).get();
+  #loadState(useSnapshot: boolean): { state: GameState; lastSeq: number } {
+    const snapshot = useSnapshot ? this.#db.select().from(schema.snapshots).orderBy(desc(schema.snapshots.seq)).limit(1).get() : undefined;
     let state = snapshot ? this.#schemas.state.parse(snapshot.state) : EMPTY_STATE;
     let lastSeq = snapshot?.seq ?? 0;
     const rows = this.#db

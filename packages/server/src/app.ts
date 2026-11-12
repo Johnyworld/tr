@@ -1,7 +1,15 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import { COMMANDS, InvalidPlayerInputError, MAX_INPUT_LENGTH, normalizePlayerInput, WorldLockedError } from "@trpg/core";
+import {
+  CharacterChoiceError,
+  characterChoiceSchema,
+  COMMANDS,
+  InvalidPlayerInputError,
+  MAX_INPUT_LENGTH,
+  normalizePlayerInput,
+  WorldLockedError,
+} from "@trpg/core";
 import { NoWorldError, TurnInProgressError, type WebSession } from "./session.ts";
 
 const turnRequestSchema = z.object({
@@ -22,6 +30,7 @@ export function createApp(session: WebSession) {
     if (err instanceof NoWorldError) return c.json({ error: err.message, noWorld: true }, 409);
     if (err instanceof TurnInProgressError) return c.json({ error: "턴이 진행 중입니다." }, 409);
     if (err instanceof WorldLockedError) return c.json({ error: err.message }, 409);
+    if (err instanceof CharacterChoiceError) return c.json({ error: err.message, problems: err.problems }, 400);
     console.error(err);
     return c.json({ error: String(err) }, 500);
   });
@@ -31,8 +40,15 @@ export function createApp(session: WebSession) {
     c.json({ scenarioName: session.scenarioName, slots: session.slots(), current: session.hasWorld ? session.world.id : null }),
   );
 
-  app.post("/api/worlds", (c) => {
-    session.newWorld();
+  // 캐릭터 생성 규칙 (이름·성별·능력 포인트). 규칙 검증은 core가 한다
+  app.get("/api/creation", (c) => c.json(session.creationRules()));
+  app.get("/api/creation/random", (c) => c.json(session.randomAbilities()));
+
+  app.post("/api/worlds", async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as unknown;
+    const parsed = z.object({ character: characterChoiceSchema().optional() }).safeParse(body ?? {});
+    if (!parsed.success) return c.json({ error: "요청 형식이 올바르지 않습니다." }, 400);
+    session.newWorld(parsed.data.character);
     return c.json(session.view());
   });
 

@@ -24,7 +24,9 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * 필드 추가는 기본값(.default)을 주면 이전 세이브와 호환되므로 올리지 않는다.
  * - 2: 시나리오 팩 분리. 능력치 ID 변경, injury → conditions, scenarioId
  */
-export const SAVE_SCHEMA_VERSION = 3;
+export const SAVE_SCHEMA_VERSION = 4;
+/** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 (1은 시나리오 팩 분리 전이라 읽지 않는다) */
+export const MIN_READABLE_SAVE_VERSION = 2;
 
 /** 장면의 물건 보관 위치. 캐릭터 id 또는 "scene"(현재 장면 바닥) */
 export const SCENE_HOLDER = "scene";
@@ -128,7 +130,8 @@ export type BattleState = z.infer<typeof battleStateSchema>;
 export function createGameSchemas(s: Scenario) {
   const character = createCharacterSchema(s);
   const move = idEnum(moveIds(s));
-  const stat = idEnum(statIds(s));
+  // 이름이 바뀐 능력은 새 id로 읽는다 (이전 세이브의 판정 기록)
+  const stat = z.preprocess((v) => (typeof v === "string" ? (s.renamed.abilities[v] ?? v) : v), idEnum(statIds(s)));
   const rank = idEnum(rankIds(s));
   const track = idEnum(trackIds(s));
 
@@ -915,14 +918,19 @@ export function rollAbilities(s: Scenario, rng?: Rng): Record<string, number> {
   return Object.fromEntries(s.stats.map((x, i) => [x.id, array[i] ?? 0]));
 }
 
-export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player", rng?: Rng): Character {
+/** 플레이어가 캐릭터 생성에서 고른 것 (검증은 creation.ts의 checkCharacterChoice) */
+export type CharacterChoice = { name: string; gender: string | null; abilities: Record<string, number> | null; portrait: string | null };
+
+export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player", rng?: Rng, choice?: CharacterChoice): Character {
   return createCharacterSchema(s).parse({
     id,
-    name: role.default_name,
+    name: choice?.name.trim() || role.default_name,
+    gender: choice?.gender ?? null,
+    portrait: choice?.portrait ?? null,
     factionId: role.faction,
     rank: role.rank,
     age: role.age,
-    stats: role.start_stats ?? rollAbilities(s, rng),
+    stats: choice?.abilities ?? role.start_stats ?? rollAbilities(s, rng),
     skills: role.start_skills,
     conditions: initialConditions(s),
     inventory: toInventory(role.start_inventory),
@@ -939,16 +947,17 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
     age: npc.age,
     stats: npc.stats,
     skills: npc.skills,
+    gender: npc.gender ?? null,
     conditions: initialConditions(s),
     inventory: toInventory(npc.start_inventory),
   });
 }
 
 /** 새 세계를 여는 첫 이벤트. 시작 캐릭터, 모든 NPC, 시작 지식을 담는다 */
-export function createWorldEvent(content: Content, roleId: string, worldId: string, rng?: Rng): GameEvent {
+export function createWorldEvent(content: Content, roleId: string, worldId: string, rng?: Rng, choice?: CharacterChoice): GameEvent {
   const role = content.roles[roleId];
   if (!role) throw new Error(`알 수 없는 역할: ${roleId}`);
-  const player = createCharacterFromRole(content.scenario, role, "player", rng);
+  const player = createCharacterFromRole(content.scenario, role, "player", rng, choice);
   const npcs = Object.values(content.npcs).map((npc) => createCharacterFromNpc(content.scenario, npc));
 
   let no = 0;

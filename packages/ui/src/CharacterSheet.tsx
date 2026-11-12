@@ -1,11 +1,20 @@
+import { Portrait } from "./Portrait.tsx";
 import { signed } from "./ToolCard.tsx";
 import type { PlayerView } from "./types.ts";
 
 export function CharacterSheet({ player }: { player: PlayerView }) {
   return (
     <aside className="sheet" aria-label="캐릭터 시트">
-      <h2>{player.name}</h2>
-      <div className="sheet-sub">{player.roleLabel}</div>
+      <div className="sheet-hero">
+        <Portrait id={player.portrait} size={56} />
+        <div>
+          <h2>{player.name}</h2>
+          <div className="sheet-sub">
+            {[player.genderLabel, player.age ? `${player.age}세` : null].filter(Boolean).join(" · ")}
+          </div>
+          <div className="sheet-sub">{player.roleLabel}</div>
+        </div>
+      </div>
 
       <section>
         <h3>상태</h3>
@@ -29,7 +38,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         </dl>
       </section>
 
-      <section>
+      <section className="skills">
         <h3>스킬</h3>
         <dl className="stats">
           {player.skills.map((s) => (

@@ -62,6 +62,18 @@ export const scenarioFileSchema = z
       .optional(),
     /** 시스템이 특정 역할로 쓰는 행동 */
     move_roles: z.strictObject({ notice: id, stealth: id }),
+    /**
+     * 캐릭터 생성 (12-6): 능력은 포인트 구매. 모두 0에서 시작해 points를 나눠 쓴다.
+     * cost: 능력 값 → 드는 포인트 (음수면 돌려받는다), max_low: 기본값보다 낮출 수 있는 능력 수. genders: 고를 수 있는 성별
+     */
+    creation: z
+      .strictObject({
+        points: z.number().int().min(0),
+        cost: z.record(z.string().regex(/^-?\d+$/), z.number().int()),
+        max_low: z.number().int().min(0),
+        genders: z.array(labeled).min(1),
+      })
+      .optional(),
     /** 매력의 수동 효과 (기획서 4.2): 처음 만난 NPC의 호감 + (능력 ÷ first_impression_per, 내림), 능력이 bonus_at 이상이면 호감이 오를 때 +1 */
     charm: z.strictObject({ ability: id, first_impression_per: z.number().int().positive(), bonus_at: z.number().int() }).optional(),
     condition_tracks: z
@@ -334,6 +346,13 @@ export const scenarioFileSchema = z
     }
     if (s.ability_array && s.ability_array.length !== s.stats.length) problem("ability_array의 길이는 능력 수와 같아야 한다");
     const moves = new Set(s.moves.map((x) => x.id));
+    if (s.creation) {
+      for (const key of Object.keys(s.creation.cost)) {
+        const v = Number(key);
+        if (v < s.ranges.ability.min || v > s.ranges.ability.max) problem(`creation.cost: 능력 범위 밖의 값 ${key}`);
+      }
+      if (s.creation.cost["0"] !== 0) problem("creation.cost: 0의 값은 0이어야 한다");
+    }
     if (s.charm && !s.stats.some((x) => x.id === s.charm!.ability)) problem(`charm.ability: 알 수 없는 능력 ${s.charm.ability}`);
     for (const [role, move] of Object.entries(s.move_roles)) {
       if (!moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);

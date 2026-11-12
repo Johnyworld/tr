@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { chooseNextCharacter, closeGame, fetchCommands, fetchGame, fetchSlots, playTurn, runCommand, type CommandInfo } from "./api.ts";
 import { TitleScreen } from "./TitleScreen.tsx";
+import { CharacterCreation } from "./CharacterCreation.tsx";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { DevPanel } from "./DevPanel.tsx";
 import { ToolCard } from "./ToolCard.tsx";
@@ -12,6 +13,7 @@ type Notice = { kind: "error" | "info"; text: string } | null;
 export function App() {
   const [game, setGame] = useState<GameView | null>(null);
   const [checked, setChecked] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   // 새로고침: 이미 열린 세계가 있으면 그대로 이어서 보여 준다
   useEffect(() => {
@@ -24,7 +26,18 @@ export function App() {
   }, []);
 
   if (!checked) return null;
-  if (!game) return <TitleScreen onStart={setGame} />;
+  if (!game && creating) {
+    return (
+      <CharacterCreation
+        onStart={(g) => {
+          setCreating(false);
+          setGame(g);
+        }}
+        onBack={() => setCreating(false)}
+      />
+    );
+  }
+  if (!game) return <TitleScreen onStart={setGame} onCreate={() => setCreating(true)} />;
   return <Game key={game.worldId} initial={game} onExit={() => setGame(null)} />;
 }
 

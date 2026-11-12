@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { fetchSlots, newGame, openSlot } from "./api.ts";
+import { fetchSlots, openSlot } from "./api.ts";
+import { Portrait } from "./Portrait.tsx";
 import type { GameView, SaveSlotView, SlotsView } from "./types.ts";
 
 /** 시작 화면: 세이브 슬롯을 고르거나 새 게임을 시작한다 */
-export function TitleScreen({ onStart }: { onStart: (game: GameView) => void }) {
+export function TitleScreen({ onStart, onCreate }: { onStart: (game: GameView) => void; onCreate: () => void }) {
   const [data, setData] = useState<SlotsView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
@@ -18,10 +19,11 @@ export function TitleScreen({ onStart }: { onStart: (game: GameView) => void }) 
   }, []);
 
   async function start(id: string | null) {
-    setOpening(id ?? "new");
+    if (!id) return onCreate();
+    setOpening(id);
     setError(null);
     try {
-      onStart(id ? await openSlot(id) : await newGame());
+      if (id) onStart(await openSlot(id));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setOpening(null);
@@ -58,9 +60,11 @@ function SlotCard({ slot, busy, onOpen }: { slot: SaveSlotView; busy: boolean; o
   const locked = slot.lockedBy !== null;
   return (
     <button type="button" className={`slot ${h?.dead ? "dead" : ""}`} onClick={onOpen} disabled={busy || locked}>
+      <Portrait id={h?.portrait ?? null} size={64} />
+      <div className="slot-body">
       <div className="slot-head">
         <strong>{h?.name ?? "읽을 수 없는 세이브"}</strong>
-        {h?.age && <span className="muted">{h.age}세</span>}
+        {(h?.genderLabel || h?.age) && <span className="muted">{[h.genderLabel, h.age ? `${h.age}세` : null].filter(Boolean).join(" · ")}</span>}
         {h && <span className="slot-level">Lv {h.level}</span>}
         {h && h.generation > 1 && <span className="badge">{h.generation}대째</span>}
         {h?.dead && <span className="badge dead">사망</span>}
@@ -78,6 +82,7 @@ function SlotCard({ slot, busy, onOpen }: { slot: SaveSlotView; busy: boolean; o
       )}
       <div className="slot-foot muted small">
         {locked ? `지금 ${slot.lockedBy === "mcp" ? "Claude 세션(MCP)" : "다른 웹 앱"}에서 플레이 중` : `마지막 플레이 ${playedAt(slot.updatedAt)}`}
+      </div>
       </div>
     </button>
   );

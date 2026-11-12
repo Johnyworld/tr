@@ -28,6 +28,10 @@ import { alarmLabel, battleTitle, momentumLabel } from "../engine/battleTools.ts
 /** UI에 보여 줄 플레이어 시트 */
 export type PlayerView = {
   name: string;
+  /** 성별 이름 (정하지 않았으면 null), 초상화 id */
+  genderLabel: string | null;
+  portrait: string | null;
+  age: number | null;
   roleLabel: string;
   timeLabel: string;
   /** 상태 트랙별 현재 단계 (예: 부상 경상). worsened: 첫 단계에서 나빠졌는지 */
@@ -102,6 +106,9 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         : null,
     faction: outlook.own ? { name: outlook.own.name, moraleLabel: outlook.own.moraleLabel, rationLabel: outlook.own.rationLabel } : null,
     name: player.name,
+    genderLabel: scenario.creation?.genders.find((g) => g.id === player.gender)?.label ?? null,
+    portrait: player.portrait,
+    age: player.age,
     roleLabel:
       content.roles[state.roleId]?.rank === player.rank
         ? (content.roles[state.roleId]?.label ?? rankLabel(scenario, player.rank))

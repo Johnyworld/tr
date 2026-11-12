@@ -66,7 +66,7 @@ describe("MCP tool", () => {
 
   it("start_session → take_action → 결과와 다음 장면, 의도와 요약은 세이브에 남는다", async () => {
     const { call, app } = await connect();
-    const start = await call("start_session");
+    const start = await call("start_session", { new_world: true });
     expect(start.text).toContain("## 현재 장면");
     expect(start.text).toContain("!도움말");
     // play 프롬프트를 부르지 않아도 지침이 전달된다 (플레이 테스트 1회차: 지침을 못 읽음)
@@ -85,7 +85,7 @@ describe("MCP tool", () => {
 
   it("run_command는 읽기 전용이다", async () => {
     const { call, app } = await connect();
-    await call("start_session");
+    await call("start_session", { new_world: true });
     const before = JSON.stringify(app.world!.state());
     const out = await call("run_command", { input: "!상태" });
     expect(out.text).toContain("━━━ 신병");
@@ -94,7 +94,7 @@ describe("MCP tool", () => {
 
   it("같은 세계는 동시에 열 수 없다 (다른 MCP 세션·웹 앱과 잠금으로 막는다)", async () => {
     const first = await connect();
-    await first.call("start_session");
+    await first.call("start_session", { new_world: true });
     const worldId = first.app.world!.id;
     const second = createMcpServer(first.manager);
     opened.push(second);
@@ -111,7 +111,7 @@ describe("MCP tool", () => {
 describe("세이브 슬롯과 종료", () => {
   it("저장된 게임이 있으면 start_session은 세계를 열지 않고 번호 목록을 준다. 번호로 열고, end_session으로 닫는다", async () => {
     const { call, app } = await connect();
-    await call("start_session"); // 저장된 게임이 없으면 새로 만든다
+    await call("start_session", { new_world: true }); // 이 테스트 콘텐츠에는 생성 규칙이 없어 바로 만든다
     const first = app.world!.id;
     await call("take_action", action());
     const closed = await call("end_session");
@@ -135,11 +135,29 @@ describe("세이브 슬롯과 종료", () => {
   });
 });
 
+describe("MCP 캐릭터 생성", () => {
+  it("새 게임은 먼저 생성 규칙을 주고, character와 함께 부르면 그대로 만든다. 규칙 위반은 오류", async () => {
+    const { call, app } = await connect(REAL_CONTENT);
+    const rules = await call("start_session", { new_world: true });
+    expect(app.world).toBeNull();
+    expect(rules.text).toContain("캐릭터 생성");
+    expect(rules.text).toContain("여성(female)");
+    const bad = await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: { strength: 2, agility: 2 }, portrait: null } });
+    expect(bad.isError).toBe(true);
+    expect(app.world).toBeNull();
+    const ok = await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: { intellect: 2, charm: 1 }, portrait: null } });
+    expect(ok.isError).toBe(false);
+    const p = app.world!.state().characters[app.world!.state().playerId]!;
+    expect(p).toMatchObject({ name: "윤하", gender: "female", stats: { intellect: 2, charm: 1, strength: 0 } });
+    expect(ok.text).toContain("여성");
+  });
+});
+
 describe("MCP 정보 필터", () => {
   it("모든 tool 결과에 비밀·세계의 진실·믿음의 정확도가 섞이지 않는다 (위반 0건)", async () => {
     const { call } = await connect(REAL_CONTENT, 0, () => 0); // 모든 확률 통과: 숨은 목격자가 생긴다
     const outputs: string[] = [];
-    outputs.push((await call("start_session")).text);
+    outputs.push((await call("start_session", { new_world: true })).text);
     outputs.push(
       (
         await call(

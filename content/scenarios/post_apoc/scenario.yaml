@@ -46,8 +46,17 @@ ranges:
   ability: { min: -1, max: 2 }
   skill: { min: -1, max: 2 }
   cap: 4
-# 새 캐릭터의 능력: 이 배열을 코드가 무작위로 섞어 준다 (역할과 무관)
+# 역할에 능력이 없고 플레이어가 고르지도 않았을 때(이어 가는 새 신병 등): 이 배열을 코드가 무작위로 섞어 준다
 ability_array: [2, 1, 1, 0, 0, 0, -1]
+# 캐릭터 생성 (*임시*): 능력은 모두 0에서 시작해 4포인트를 나눠 쓴다. +1은 1, +2는 3, -1로 낮추면 1을 돌려받는다 (최대 2개)
+# 4포인트면 위 배열(+2 +1 +1 0 0 0 -1)과 같은 무게다
+creation:
+  points: 4
+  cost: { "-1": -1, "0": 0, "1": 1, "2": 3 }
+  max_low: 2
+  genders:
+    - { id: male, label: 남성 }
+    - { id: female, label: 여성 }
 # 이전 세이브의 옛 능력 id
 renamed:
   abilities: { persuasion: charm }

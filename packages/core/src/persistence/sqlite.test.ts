@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
-import { createWorldEvent } from "../game/state.ts";
+import { createWorldEvent, SAVE_SCHEMA_VERSION } from "../game/state.ts";
 import { TEST_CONTENT, TEST_SCENARIO } from "../testing.ts";
 import { archiveSave, SaveFormatError, SqliteRepository } from "./sqlite.ts";
 
@@ -121,5 +121,43 @@ describe("시나리오", () => {
     if (event.type !== "world_created") throw new Error("unreachable");
     expect(() => repo.append({ ...event, player: { ...event.player, stats: { ...event.player.stats, strength: "x" } } } as never)).toThrow();
     repo.close();
+  });
+});
+
+describe("이전 형식의 세이브", () => {
+  const setVersion = (path: string, v: string) => {
+    const db = new Database(path);
+    db.prepare("UPDATE meta SET value = ? WHERE key = 'schema_version'").run(v);
+    db.close();
+  };
+
+  it("읽을 수 있는 이전 버전은 이벤트를 다시 읽어 현재 버전으로 올린다. 이름이 바뀐 능력도 옮긴다", () => {
+    const path = tempPath();
+    const scenario = { ...TEST_SCENARIO, renamed: { abilities: { old_persuasion: "persuasion" } } };
+    const repo = SqliteRepository.open(path, scenario);
+    repo.append(createWorldEvent(TEST_CONTENT, "role_test", "w"));
+    repo.append({
+      type: "check_rolled", checkId: "chk_1", turn: 0, actorId: "player", move: "persuade", stat: "old_persuasion" as never,
+      difficulty: "normal", intent: "설득", dice: [3, 3], modifiers: { stat: 0, skill: 0, difficulty: 0, condition: 0 }, total: 6, outcome: "miss",
+    });
+    repo.saveSnapshot();
+    repo.close();
+    setVersion(path, "2");
+
+    const reopened = SqliteRepository.open(path, scenario);
+    expect(reopened.getState().checks.chk_1?.outcome).toBe("miss");
+    reopened.close();
+    const db = new Database(path, { readonly: true });
+    expect((db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as { value: string }).value).toBe(String(SAVE_SCHEMA_VERSION));
+    db.close();
+  });
+
+  it("너무 오래된 버전(1)은 열지 않는다", () => {
+    const path = tempPath();
+    const repo = SqliteRepository.open(path, TEST_SCENARIO);
+    repo.append(createWorldEvent(TEST_CONTENT, "role_test", "w"));
+    repo.close();
+    setVersion(path, "1");
+    expect(() => SqliteRepository.open(path, TEST_SCENARIO)).toThrow(SaveFormatError);
   });
 });

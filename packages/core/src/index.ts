@@ -27,6 +27,7 @@ export * from "./game/belief.ts";
 export {
   applyEvent,
   createCharacterFromRole,
+  type CharacterChoice,
   createCharacterFromNpc,
   createWorldEvent,
   EMPTY_STATE,
@@ -74,7 +75,17 @@ export { normalizePlayerInput, InvalidPlayerInputError, MAX_INPUT_LENGTH } from 
 export type { TranscriptEntry, TurnSummary, SummaryKind, PlayMode, RetrievalRecord } from "./engine/log.ts";
 
 export { GameWorld, RECAP_TURNS } from "./world/world.ts";
-export { WorldManager, type WorldInfo } from "./world/manager.ts";
+export { CharacterChoiceError, WorldManager, type WorldInfo } from "./world/manager.ts";
+export {
+  abilitySpend,
+  characterChoiceSchema,
+  checkCharacterChoice,
+  creationRules,
+  describeCreationRules,
+  randomAbilityBuy,
+  MAX_NAME_LENGTH,
+  type CreationRules,
+} from "./game/creation.ts";
 export { formatPlayedAt, formatSlotLine, type SaveSlot } from "./world/slots.ts";
 export {
   buildPlayerView,

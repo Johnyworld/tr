@@ -1,5 +1,5 @@
 import type { TurnEvent } from "@trpg/gm";
-import type { GameView, PlayerView, SlotsView } from "./types.ts";
+import type { CharacterChoiceView, CreationRulesView, GameView, PlayerView, SlotsView } from "./types.ts";
 
 export type StreamEvent = TurnEvent | { type: "player"; player: PlayerView };
 
@@ -61,7 +61,28 @@ export async function fetchSlots(): Promise<SlotsView> {
   return (await res.json()) as SlotsView;
 }
 
-export const newGame = () => postJson<GameView>("/api/worlds");
+export async function newGame(character: CharacterChoiceView | null): Promise<GameView> {
+  const res = await fetch("/api/worlds", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(character ? { character } : {}),
+  });
+  const body = (await res.json()) as GameView & { error?: string };
+  if (!res.ok) throw new Error(body.error ?? `서버 오류 (${res.status})`);
+  return body;
+}
+
+/** 캐릭터 생성 규칙 (없으면 null) */
+export async function fetchCreation(): Promise<CreationRulesView | null> {
+  const res = await fetch("/api/creation");
+  if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+  return (await res.json()) as CreationRulesView | null;
+}
+
+export async function fetchRandomAbilities(): Promise<Record<string, number>> {
+  const res = await fetch("/api/creation/random");
+  return (await res.json()) as Record<string, number>;
+}
 export const openSlot = (id: string) => postJson<GameView>(`/api/worlds/${encodeURIComponent(id)}/open`);
 /** 게임을 닫고 시작 화면으로 (세이브는 남는다) */
 export const closeGame = () => postJson<{ ok: true }>("/api/game/close");

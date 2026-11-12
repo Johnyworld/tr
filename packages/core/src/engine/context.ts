@@ -45,6 +45,11 @@ function weatherLine(state: GameState, content: Content): string {
   return w ? ` · 날씨: ${w.label} (${w.description})` : "";
 }
 
+const genderOf = (s: { creation?: { genders: { id: string; label: string }[] } }, id: string | null) => {
+  const label = s.creation?.genders.find((g) => g.id === id)?.label;
+  return label ? ` · ${label}` : "";
+};
+
 export function describePlayerState(state: GameState, content: Content): string {
   const player = state.characters[state.playerId];
   if (!player) throw new Error("플레이어 캐릭터가 없습니다.");
@@ -58,7 +63,7 @@ export function describePlayerState(state: GameState, content: Content): string 
   const sections = [
     [
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
-      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${player.age ? ` · ${player.age}세` : ""}`,
+      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
       `능력: ${stats}`,
       `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
       ...(player.skillPoints > 0 ? [`레벨업 대기: 올릴 스킬 ${player.skillPoints}개. 적당한 때 플레이어에게 무엇을 올릴지 묻고 learn_skill로 올린다`] : []),
@@ -138,7 +143,7 @@ function describeNpcCard(
   })();
 
   return [
-    `### ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)} · ${npc.age}세`,
+    `### ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
     `외모: ${npc.look}`,
     `상태: ${describeConditions(content.scenario, character)} / 소지품: ${describeInventory(content, character.inventory)}`,
     `화법: 이 인물의 말투 — ${npc.voice.style} (말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer})`,
@@ -176,7 +181,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
     const initial = initialConditions(content.scenario);
     const changed = Object.entries(initial).some(([track, level]) => character.conditions[track] !== level);
     const status = character.dead ? " · 사망" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
-    return `- ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)}${status}: ${npc.look} ${npc.reputation}`;
+    return `- ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)}${status}: ${npc.look} ${npc.reputation}`;
   });
   return `알고 있는 인물 (지금 장면에는 없다):\n${lines.join("\n")}`;
 }

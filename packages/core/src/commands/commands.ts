@@ -51,7 +51,7 @@ function roleLabelOf(ctx: CommandContext) {
 function clockLine(state: GameState) {
   const m = minuteOfDay(state.time);
   const hhmm = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-  return `D+${daysServed(state.time, state.runStartedAt)} · ${dayOf(state.time)}일차 · ${hhmm} · ${SEGMENT_LABELS[segmentOf(state.time)]}`;
+  return `${dayOf(state.time)}일차 · ${hhmm} · ${SEGMENT_LABELS[segmentOf(state.time)]} · 복무 ${daysServed(state.time, state.runStartedAt) + 1}일째`;
 }
 
 /** 관계 축 하나를 게이지로 (-5 ~ +5를 0 ~ 10으로) */
@@ -156,14 +156,21 @@ const people: CommandDef = {
     if (!id) return `아는 인물 중에 "${query}"이(가) 없습니다. 목록: !인물`;
     const c = state.characters[id]!;
     const npc = content.npcs[id];
+    const met = state.perceived[id] !== undefined;
     const r = state.perceived[id] ?? NEUTRAL_RELATION;
     const facts = (state.beliefs[state.playerId] ?? []).filter((b) => b.fact.includes(c.name)).slice(-5);
     return [
       header(`${c.name} · ${rankLabel(content.scenario, c.rank)}`),
       ...(npc ? [npc.look, npc.reputation] : []),
       "",
-      "나에 대한 태도 (마지막으로 만났을 때)",
-      ...RELATION_AXES.map((axis) => gaugeLine(RELATION_AXIS_LABELS[axis], r[axis] - RELATION_MIN, RELATION_MAX - RELATION_MIN, `${relationLabel(r[axis])} ${signed(r[axis])}`)),
+      ...(met
+        ? [
+            "나에 대한 태도 (마지막으로 만났을 때)",
+            ...RELATION_AXES.map((axis) =>
+              gaugeLine(RELATION_AXIS_LABELS[axis], r[axis] - RELATION_MIN, RELATION_MAX - RELATION_MIN, `${relationLabel(r[axis])} ${signed(r[axis])}`),
+            ),
+          ]
+        : ["아직 직접 만나 본 적이 없다. 태도는 만나 봐야 안다."]),
       ...(facts.length ? ["", "이 인물에 대해 아는 것", ...facts.map((b) => `  [${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`)] : []),
     ].join("\n");
   },
@@ -232,12 +239,14 @@ const journal: CommandDef = {
     // RAG(6-1) 전까지는 현재 캐릭터의 요약 기록에서 단순 검색한다
     const query = args.trim();
     const entries = ctx.summaries.filter((s) => !query || s.text.includes(query));
-    const shown = (query ? entries : entries.slice(-JOURNAL_RECENT)).slice(-JOURNAL_RECENT).reverse();
+    const shown = entries.slice(-JOURNAL_RECENT).reverse();
+    const hiddenCount = entries.length - shown.length;
     return [
       header(query ? `일지: ${query}` : "일지"),
       ...(shown.length
         ? shown.map((s) => `  ${formatTime(s.time)}${s.kind === "scene" ? " [장면]" : ""}  ${s.text.replace(/\s+/g, " ")}`)
         : ["  기록이 없습니다."]),
+      ...(hiddenCount > 0 ? ["", `최근 ${shown.length}개만 보여 줍니다 (전체 ${entries.length}개). 검색어로 찾을 수 있습니다: !일지 검색어`] : []),
       ...(query ? ["", "(의미 검색은 RAG 단계에서 연결됩니다)"] : []),
     ].join("\n");
   },

@@ -23,6 +23,7 @@ describe("정보 명령어", () => {
       deed: { summary: "통조림을 훔쳤다", tags: ["theft"], severity: 2, privacy: "public", noisy: false, condition: "always" },
       target: null,
       narration_summary: "막사에서 일어났다.",
+      for_mission: false,
     });
     return w;
   }
@@ -58,7 +59,8 @@ describe("정보 명령어", () => {
     // 행적·목격자 정보를 보여 주는 명령어는 없다
     expect(all).not.toContain("목격");
     if (hidden.length > 0) expect(w.state().relations.npc_leader?.player).toBeDefined();
-    expect(w.runCommand("!인물 강분대")).toContain("보통 0"); // 만나기 전이므로 느낀 태도는 그대로
+    // 만나기 전이므로 태도를 모른다 (진짜 관계가 바뀌었어도 드러나지 않는다)
+    expect(w.runCommand("!인물 강분대")).toContain("아직 직접 만나 본 적이 없다");
   });
 
   it("비밀과 세계의 진실은 어떤 명령어에도 나오지 않는다", () => {

@@ -38,13 +38,17 @@ export function createMcpServer(manager: WorldManager) {
   const fromOutcome = (outcome: ToolOutcome, extra = ""): TextResult =>
     outcome.ok ? text(outcome.resultText + extra) : text(outcome.error, true);
 
-  /** 새 세션의 GM이 바로 이어 갈 수 있게: 세계 정보, 지난 이야기, 현재 장면 */
+  /**
+   * 새 세션의 GM이 바로 이어 갈 수 있게: GM 지침, 세계 정보, 지난 이야기, 현재 장면.
+   * Claude Code에서는 MCP prompt(play)를 사용자가 직접 불러야 보이므로 지침을 여기에도 넣는다.
+   */
   const sessionStart = (w: GameWorld) => {
     const intro = w.intro();
     const recap = w.recap();
     return text(
       [
-        `세계 ${intro.worldId} (${intro.scenarioName})를 열었다.`,
+        `# GM 지침 (이 세션 내내 따른다)\n\n${w.guide()}`,
+        `\n---\n\n세계 ${intro.worldId} (${intro.scenarioName})를 열었다.`,
         recap ? `\n${recap}` : `\n새로 시작하는 세계다. 시작 장면: ${intro.opening}`,
         `\n## 현재 장면\n${w.sceneForGm()}`,
         `\n${HELP_HINT}`,
@@ -113,6 +117,12 @@ export function createMcpServer(manager: WorldManager) {
   );
 
   // ── 장면과 턴 ─────────────────────────────────────
+
+  server.registerTool(
+    "get_gm_guide",
+    { description: "GM 지침(진행 규칙, 시나리오 톤, 형식)을 다시 읽는다. start_session 결과에도 들어 있다." },
+    () => text(world ? world.guide() : buildGmGuide(content, Object.keys(content.roles)[0] ?? "", "mcp")),
+  );
 
   server.registerTool(
     "get_scene",

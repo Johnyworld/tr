@@ -47,6 +47,8 @@ export function createGameSchemas(s: Scenario) {
     actorId: z.string(),
     /** 은밀 행동이 목격 확률을 낮춘다 */
     move: move.optional(),
+    /** 판정의 상대 인물 (그 인물의 물건을 옮길 근거가 된다) */
+    target: z.string().optional(),
     outcome: checkOutcomeSchema,
     /** 이 판정의 대가로 이미 피해를 적용했는지 */
     harmApplied: z.boolean(),
@@ -152,6 +154,10 @@ export function createGameSchemas(s: Scenario) {
       modifiers: z.strictObject({ stat: z.number().int(), difficulty: z.number().int(), condition: z.number().int() }),
       total: z.number().int(),
       outcome: checkOutcomeSchema,
+      /** 상대 인물 id */
+      target: z.string().optional(),
+      /** 이 판정이 수행 중인 임무를 위한 것이면 그 임무 id (임무 진행으로 집계) */
+      forMission: z.string().optional(),
     }),
     z.strictObject({
       type: z.literal("harm_applied"),
@@ -173,6 +179,8 @@ export function createGameSchemas(s: Scenario) {
       to: z.number().int().nonnegative(),
       /** 빨리감기가 중간에 멈췄다면 그 이유 */
       interrupt: interruptSchema.optional(),
+      /** 이 활동이 수행 중인 임무를 위한 것이면 그 임무 id (임무 진행으로 집계) */
+      forMission: z.string().optional(),
     }),
     z.strictObject({
       type: z.literal("item_transferred"),
@@ -271,8 +279,9 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.turn = event.turn;
       break;
     case "check_rolled": {
+      // 임무를 위한 판정만 임무 진행으로 센다 (거점 안의 사적인 행동이 정찰 조건을 채우지 않게)
       const mission = activeMissionOf(next.missions, event.actorId);
-      mission?.requirements.forEach((r, i) => {
+      if (mission && mission.id === event.forMission) mission.requirements.forEach((r, i) => {
         if ("check" in r && r.check === event.move && outcomeAtLeast(event.outcome, r.min_outcome)) {
           mission.progress[i] = 1;
         }
@@ -282,6 +291,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         turn: event.turn,
         actorId: event.actorId,
         move: event.move,
+        ...(event.target ? { target: event.target } : {}),
         outcome: event.outcome,
         harmApplied: false,
       };
@@ -301,7 +311,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.time = event.to;
       {
         const mission = activeMissionOf(next.missions, state.playerId);
-        mission?.requirements.forEach((r, i) => {
+        if (mission && mission.id === event.forMission) mission.requirements.forEach((r, i) => {
           if ("activity" in r && r.activity === event.activity && !isRequirementMet(r, mission.progress[i] ?? 0)) {
             mission.progress[i] = (mission.progress[i] ?? 0) + (event.to - event.from);
           }
@@ -318,6 +328,8 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (activeMissionOf(next.missions, m.assigneeId)) throw new Error("이미 수행 중인 임무가 있습니다.");
       next.missions[m.id] = structuredClone(m);
       next.nextMissionNo += 1;
+      // 받은 임무는 그날 후보에서 빠진다 (같은 임무를 하루에 여러 번 받지 않게)
+      if (next.offers) next.offers.templateIds = next.offers.templateIds.filter((id) => id !== m.templateId);
       break;
     }
     case "mission_reported":

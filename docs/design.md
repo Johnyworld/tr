@@ -431,7 +431,8 @@ const hiddenWitnesses = nearbyNpcs.filter(
 ### 8.6 임무와 진급 (구현)
 
 - **배정**: 날이 바뀌면 코드가 역할의 임무 목록(`content/missions/`)에서 오늘의 후보 2개를 고른다. 상관(역할의 `commander`)이 장면에 있을 때 GM이 `assign_mission`으로 그중 하나를 배정한다. 기한은 템플릿이 정한다
-- **수행**: 임무의 요구 조건은 활동 시간(`activity`, 누적 분)이나 판정 결과(`check`, 최소 결과)다. 임무를 받은 뒤의 `time_advanced`, `check_rolled` 이벤트로 코드가 집계한다
+- **수행**: 임무의 요구 조건은 활동 시간(`activity`, 누적 분)이나 판정 결과(`check`, 최소 결과)다. 임무를 받은 뒤 `take_action`에 `for_mission: true`로 넘긴 판정·활동만 코드가 집계한다
+- 받은 임무는 그날 후보에서 빠진다 (하루에 같은 임무를 다시 받지 않는다)
 - **보고**: 상관이 장면에 있을 때 `report_mission`. 결과는 코드가 판정한다 (모두 충족 = 완수, 일부 = 일부 완수, 없음 = 실패). 플레이어의 말로 결과가 바뀌지 않는다
 - **불복종**: 플레이어가 임무를 거부·포기하면 `abandon_mission`, 기한이 지나면 턴 시작에 기한 초과로 끝난다. 둘 다 불복종 1회
 - 공적 (*임시*): 완수 +3, 일부 완수 +1, 실패 0, 늦은 보고 -1, 포기·기한 초과 -2
@@ -546,7 +547,7 @@ repeatable: false
 |---|---|
 | `take_action(intent, check, activity, deed, target, narration_summary)` | **턴 진행의 유일한 입구.** 아래 순서로 코드가 처리한다 |
 | `npc_presence(npc_id, enter\|leave)` | 이름 있는 인물의 장면 등장·퇴장 |
-| `transfer_item(from, to, item_id, quantity)` | 아이템 이동 (존재 검증). 보관 위치는 플레이어, 장면에 있는 NPC, `scene`. 새 아이템은 만들 수 없음 |
+| `transfer_item(from, to, item_id, quantity)` | 아이템 이동 (존재 검증). 보관 위치는 플레이어, 장면에 있는 NPC, `scene`. 새 아이템은 만들 수 없음. **NPC의 물건은 근거가 있어야 가져온다**: 이번 턴 그 NPC를 `target`으로 한 판정이 성공·대가 있는 성공이었거나, 그 NPC의 신뢰가 2 이상(*임시*) |
 | `add_belief(fact, source)` | 플레이어 캐릭터가 새 정보를 알게 됨 (진위는 unknown으로 기록) |
 | `assign_mission(template_id)` / `report_mission()` / `abandon_mission(reason)` | 임무 배정·보고·포기 (8.6) |
 | `look_for_witnesses(deed_id)` | 누가 봤는지 살피기 (낌새 판정을 코드가 굴림) |
@@ -559,6 +560,7 @@ repeatable: false
 - `deed`: `{ summary, tags, severity, privacy, noisy, condition }` 또는 null. `condition`이 `on_success`면 판정이 실패했을 때 기록하지 않는다
 - `activity`: `{ kind, until }` 또는 null(잠깐의 행동 5분)
 - `target`: 상대 인물 id (장면에 있어야 함) 또는 null
+- `for_mission`: 수행 중인 임무를 위한 행동이면 true. **true인 판정·활동만 임무 진행으로 센다** (거점 안의 사적인 행동이 정찰 조건을 채우지 않게. 목격자 살피기 판정은 세지 않는다)
 - `narration_summary`: MCP 모드 전용, 직전 서술 요약 (웹 앱 모드는 GM 루프가 자동 저장)
 - 처리 순서: 턴 시작 → 판정 → 선언한 위험의 피해(사망이면 여기서 끝) → 행적·목격자 → 시간 경과(빨리감기·끼어들기) → 시간이 흐른 뒤 세계 처리(임무 기한, 오늘의 임무, 소문)
 - 웹 앱 모드에서 GM이 한 입력에 `take_action`을 한 번도 부르지 않으면 GM 루프가 잠깐의 행동으로 자동 처리한다 (MCP 모드와 같은 결과)

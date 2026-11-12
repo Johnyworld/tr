@@ -1,3 +1,4 @@
+import { josa, sentence } from "../text.ts";
 import { z } from "zod";
 import { CHECK_OUTCOME_LABELS, difficultySchema, type CheckOutcome } from "../rules/check.ts";
 import { HARM_LABELS, type HarmSeverity } from "../rules/harm.ts";
@@ -24,6 +25,7 @@ import { createInterruptChecks, fastForward } from "../sim/fastForward.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
+import { activeMissionOf } from "../game/missions.ts";
 import { signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -82,6 +84,9 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .describe("남들이 알면 평판이 달라질 행동일 때만. 이미 기록된 행적은 다시 넣지 않는다"),
     target: z.string().nullable().describe("행동의 상대 인물 id (장면에 있어야 한다). 없으면 null"),
+    for_mission: z
+      .boolean()
+      .describe("수행 중인 임무를 위한 행동이면 true. true일 때만 판정과 활동이 임무 진행으로 집계된다 (임무 장소·목적과 맞는 행동만)"),
     narration_summary: z
       .string()
       .max(1000)
@@ -110,7 +115,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (!player) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
   if (player.dead) return { ok: false, error: "캐릭터가 사망했습니다." };
   if (input.target && !start.scene.present.includes(input.target)) {
-    return { ok: false, error: `${input.target}은(는) 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
+    return { ok: false, error: `${josa(input.target, "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
   }
   if (input.activity) {
     const cost = ACTIVITY_COSTS[input.activity.kind];
@@ -120,6 +125,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
+  const forMission = input.for_mission ? (activeMissionOf(start.missions, start.playerId)?.id ?? null) : null;
   const lines: string[] = [];
   const displays: ToolDisplayEvent[] = [];
   let outcome: CheckOutcome | null = null;
@@ -129,6 +135,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const roll = rollPlayerCheck(
       { move: input.check.move, stat: input.check.stat, difficulty: input.check.difficulty, intent: input.intent },
       ctx,
+      { target: input.target, forMission },
     );
     if (!roll.ok) {
       // 턴은 이미 시작됐으므로 잠깐의 시간만 흐르게 하고 오류를 알린다
@@ -158,8 +165,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (happened) {
       const { deed, visible } = recordDeed(ctx, input.deed);
       lines.push(
-        `행적 ${deed.id} 기록: ${deed.summary}. ` +
-          (visible.length > 0 ? `장면에 있던 ${visible.join(", ")}이(가) 보았다. 그들의 반응을 서술에 반영하라.` : "장면에 아무도 없었다.") +
+        `행적 ${deed.id} 기록: ${sentence(deed.summary)} ` +
+          (visible.length > 0 ? `장면에 있던 ${josa(visible.join(", "), "이/가")} 보았다. 그들의 반응을 서술에 반영하라.` : "장면에 아무도 없었다.") +
           " 숨은 목격자가 있었는지는 아무도 모른다.",
       );
       displays.push({
@@ -172,7 +179,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const time = advanceTime(ctx, input.activity?.kind ?? "brief", input.activity?.until ?? null);
+  const time = advanceTime(ctx, input.activity?.kind ?? "brief", input.activity?.until ?? null, forMission);
   lines.push(time.text);
   if (input.activity) displays.push(time.display);
 
@@ -230,7 +237,7 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
 }
 
 /** 활동만큼 시간을 흘린다. 보초·잠·기다림은 빨리감기로, 도중에 끼어들기가 생기면 멈춘다 */
-export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null) {
+export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null) {
   const { store, rng, content } = ctx;
   const state = store.getState();
   const cost = ACTIVITY_COSTS[activity];
@@ -252,16 +259,23 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   } else {
     to = from + Math.max(MIN_TURN_MINUTES, rollActivityMinutes(cost, rng));
   }
-  store.append({ type: "time_advanced", activity, from, to, ...(interrupt ? { interrupt } : {}) });
+  store.append({
+    type: "time_advanced",
+    activity,
+    from,
+    to,
+    ...(interrupt ? { interrupt } : {}),
+    ...(forMission ? { forMission } : {}),
+  });
 
   const label = ACTIVITY_LABELS[activity];
   const lines = [`${label}: ${formatDuration(to - from)} 경과. 현재 ${formatTime(to)}.`];
   if (segmentOf(from) !== segmentOf(to)) {
-    lines.push(`시간대가 ${SEGMENT_LABELS[segmentOf(from)]}에서 ${SEGMENT_LABELS[segmentOf(to)]}(으)로 바뀌었다. 빛과 소리의 변화를 서술에 반영하라.`);
+    lines.push(`시간대가 ${SEGMENT_LABELS[segmentOf(from)]}에서 ${josa(SEGMENT_LABELS[segmentOf(to)], "으로/로")} 바뀌었다. 빛과 소리의 변화를 서술에 반영하라.`);
   }
   if (interrupt) {
     lines.push(
-      `${label}이(가) 중간에 끊겼다: ${interrupt.detail}. 정체는 아직 모른다. ` +
+      `${josa(label, "이/가")} 중간에 끊겼다: ${interrupt.detail}. 정체는 아직 모른다. ` +
         "캐릭터가 이를 알아차리는 장면으로 서술하고, 정체를 확정하지 말고 플레이어의 반응을 기다려라.",
     );
   }

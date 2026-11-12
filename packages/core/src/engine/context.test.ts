@@ -52,7 +52,7 @@ describe("정보 필터", () => {
     state = applyEvent(state, { type: "npc_entered", npcId: "npc_leader" });
     const here = describePlayerState(state, TEST_CONTENT);
     expect(here).toContain("원하는 것: 분대원을 지키는 것");
-    expect(here).toContain("이 인물은 당신에게 기본적으로 반말, 당신은 이 인물에게 존댓말");
+    expect(here).toContain("말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 반말, 당신은 이 인물에게 존댓말");
     expect(here).toContain("동쪽 초소 교대 시간");
     expect(here).toContain("무전기(radio)");
   });

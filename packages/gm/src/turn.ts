@@ -68,7 +68,7 @@ export type RunGmTurnOptions = {
   signal?: AbortSignal;
 };
 
-const NO_ACTION = { check: null, activity: null, deed: null, target: null, narration_summary: null };
+const NO_ACTION = { check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false };
 
 /**
  * 웹 앱 모드의 플레이어 입력 하나를 처리한다.

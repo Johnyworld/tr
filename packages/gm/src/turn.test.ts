@@ -30,7 +30,7 @@ const takeAction = (id: string, input: Record<string, unknown>) => ({
   type: "tool_call" as const,
   id,
   name: "take_action",
-  input: { check: null, activity: null, deed: null, target: null, narration_summary: null, ...input },
+  input: { check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input },
 });
 
 describe("runGmTurn", () => {

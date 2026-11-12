@@ -15,7 +15,7 @@ const ACTIONS: Record<string, unknown>[] = [
   { intent: "몰래 통조림을 챙긴다", check: { move: "stealth", stat: "agility", difficulty: "hard", harm_on_failure: "none", harm_cause: "" }, activity: null, deed: { summary: "통조림을 챙겼다", tags: ["theft"], severity: 1, privacy: "semi_private", noisy: false, condition: "on_success" } },
   { intent: "보초를 선다", check: null, activity: { kind: "guard_duty", until: null }, deed: null },
   { intent: "잠을 잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null },
-].map((a) => ({ target: null, narration_summary: null, ...a }));
+].map((a) => ({ target: null, narration_summary: null, for_mission: false, ...a }));
 
 function manager(seed = 42) {
   return new WorldManager({

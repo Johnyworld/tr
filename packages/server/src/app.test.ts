@@ -31,7 +31,7 @@ const fakeModel: LanguageModel = async function* (request) {
           activity: null,
           deed: null,
           target: null,
-          narration_summary: null,
+          narration_summary: null, for_mission: false,
         },
       },
     ],

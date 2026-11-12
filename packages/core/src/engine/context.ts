@@ -119,7 +119,7 @@ function describeNpcCard(
     `### ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)} · ${npc.age}세`,
     `외모: ${npc.look}`,
     `상태: ${describeConditions(content.scenario, character)} / 소지품: ${describeInventory(content, character.inventory)}`,
-    `화법: 이 인물은 당신에게 기본적으로 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer}. 말투: ${npc.voice.style}`,
+    `화법: 이 인물의 말투 — ${npc.voice.style} (말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer})`,
     `예시 대사: ${npc.voice.samples.map((s) => `"${s}"`).join(" / ")}`,
     `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다]`,
     `당신에 대한 태도: ${attitude}`,
@@ -140,7 +140,7 @@ function describeOwnDeeds(state: GameState): string {
     .filter((d) => d.actorId === state.playerId)
     .slice(-5);
   if (deeds.length === 0) return "";
-  return `이미 기록된 당신의 행적 (다시 record_deed 하지 않는다):\n${deeds.map((d) => `- ${d.id}: ${d.summary}`).join("\n")}`;
+  return `이미 기록된 당신의 행적 (take_action의 deed로 다시 넣지 않는다):\n${deeds.map((d) => `- ${d.id}: ${d.summary}`).join("\n")}`;
 }
 
 /** 장면에 없지만 플레이어가 아는 인물. 공개 정보만 */

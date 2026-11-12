@@ -53,9 +53,9 @@ describe("임무 배정", () => {
 describe("임무 수행과 보고", () => {
   it("임무를 받은 뒤의 활동만 진행도로 집계되고, 보고 결과는 코드가 정한다", () => {
     const env = withLeader(setup(sixes));
-    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, activity: { kind: "guard_duty", until: null } }, env.ctx); // 배정 전: 집계 안 됨
+    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: false, activity: { kind: "guard_duty", until: null } }, env.ctx); // 배정 전: 집계 안 됨
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
-    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, activity: { kind: "guard_duty", until: null } }, env.ctx);
+    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: true, activity: { kind: "guard_duty", until: null } }, env.ctx);
     expect(env.store.getState().missions.m_1?.progress).toEqual([240]);
 
     const out = executeTool("report_mission", {}, env.ctx);
@@ -75,7 +75,7 @@ describe("임무 수행과 보고", () => {
         activity: null,
         deed: null,
         target: null,
-        narration_summary: null,
+        narration_summary: null, for_mission: true,
       },
       env.ctx,
     );
@@ -108,7 +108,7 @@ describe("명령 불복종", () => {
     // 05:30 → 20:00 (기한 17:30)
     const out = executeTool(
       "take_action",
-      { intent: "잔다", check: null, deed: null, target: null, narration_summary: null, activity: { kind: "sleep", until: "night" } },
+      { intent: "잔다", check: null, deed: null, target: null, narration_summary: null, for_mission: false, activity: { kind: "sleep", until: "night" } },
       env.ctx,
     );
     expect(out.ok && out.extra).toContainEqual(expect.objectContaining({ type: "mission", event: "expired" }));
@@ -137,7 +137,7 @@ describe("진급", () => {
     env.store.append({ type: "time_advanced", activity: "wait", from: 330, to: 330 + 4 * 24 * 60 });
     env.store.append({ type: "missions_offered", day: 5, templateIds: ["m_guard"] });
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
-    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, activity: { kind: "guard_duty", until: null } }, env.ctx);
+    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: true, activity: { kind: "guard_duty", until: null } }, env.ctx);
     const out = executeTool("report_mission", {}, env.ctx);
     expect(out.ok && out.extra).toMatchObject([{ type: "promotion", toLabel: "분대장" }]);
     expect(env.store.getState().characters.player?.rank).toBe(PROMO.to);
@@ -152,5 +152,50 @@ describe("GM 컨텍스트", () => {
     const text = describeMissionsForGm(env.store.getState(), env.ctx);
     expect(text).toContain("수행 중인 임무");
     expect(text).toContain("보초 4시간 (지금까지 0분, 미충족)");
+  });
+});
+
+describe("임무 진행 집계 (플레이 테스트 1회차 버그)", () => {
+  const scoutCheck = (forMission: boolean) => ({
+    intent: "살핀다",
+    check: { move: "sense_danger", stat: "sense", difficulty: "normal", harm_on_failure: "none", harm_cause: "" },
+    activity: null,
+    deed: null,
+    target: null,
+    narration_summary: null,
+    for_mission: forMission,
+  });
+
+  it("임무를 위한 행동(for_mission)만 진행으로 센다", () => {
+    const env = withLeader(setup(sixes));
+    executeTool("assign_mission", { template_id: "m_scout" }, env.ctx);
+    executeTool("take_action", scoutCheck(false), env.ctx);
+    expect(env.store.getState().missions.m_1?.progress).toEqual([0, 0]);
+    executeTool("take_action", scoutCheck(true), env.ctx);
+    expect(env.store.getState().missions.m_1?.progress).toEqual([1, 0]);
+  });
+
+  it("목격자 살피기 판정은 임무 진행으로 세지 않는다", () => {
+    const env = withLeader(setup(sixes));
+    executeTool("assign_mission", { template_id: "m_scout" }, env.ctx);
+    executeTool(
+      "take_action",
+      {
+        ...scoutCheck(true),
+        check: null,
+        deed: { summary: "몰래 챙겼다", tags: ["theft"], severity: 1, privacy: "private", noisy: false, condition: "always" },
+      },
+      env.ctx,
+    );
+    executeTool("look_for_witnesses", { deed_id: "d_1" }, env.ctx);
+    expect(env.store.getState().missions.m_1?.progress).toEqual([0, 0]);
+  });
+
+  it("받은 임무는 그날 후보에서 빠진다 (같은 임무를 하루에 다시 받지 않는다)", () => {
+    const env = withLeader(setup(sixes));
+    executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
+    expect(env.store.getState().offers?.templateIds).not.toContain("m_guard");
+    executeTool("abandon_mission", { reason: "x" }, env.ctx);
+    expect(executeTool("assign_mission", { template_id: "m_guard" }, env.ctx).ok).toBe(false);
   });
 });

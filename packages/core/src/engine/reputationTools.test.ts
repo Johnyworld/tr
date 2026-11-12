@@ -56,7 +56,7 @@ describe("look_for_witnesses", () => {
     const { store, ctx } = setup(rng);
     recordDeed(ctx, theft);
     const out = executeTool("look_for_witnesses", { deed_id: "d_1" }, ctx);
-    expect(out.ok && out.extra).toMatchObject([{ type: "belief", fact: "강분대이(가) 보고 있었다." }]);
+    expect(out.ok && out.extra).toMatchObject([{ type: "belief", fact: "강분대가 보고 있었다." }]);
     expect(store.getState().beliefs.player?.at(-1)?.fact).toContain("강분대");
     expect(executeTool("look_for_witnesses", { deed_id: "d_1" }, ctx).ok).toBe(false);
   });
@@ -106,7 +106,7 @@ describe("임무와 평판", () => {
     store.append({ type: "missions_offered", day: 1, templateIds: ["m_guard", "m_scout"] });
     executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
     executeTool("assign_mission", { template_id: "m_guard" }, ctx);
-    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, activity: { kind: "guard_duty", until: null } }, ctx);
+    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: true, activity: { kind: "guard_duty", until: null } }, ctx);
     executeTool("report_mission", {}, ctx);
     expect(store.getState().relations.npc_leader?.player?.trust).toBe(1);
 

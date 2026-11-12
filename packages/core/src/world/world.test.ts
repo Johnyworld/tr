@@ -8,7 +8,7 @@ import { SqliteRepository } from "../persistence/sqlite.ts";
 import { createTestWorld, TEST_CONTENT, TEST_SCENARIO } from "../testing.ts";
 import { WorldManager } from "./manager.ts";
 
-const NO_ACTION = { check: null, activity: null, deed: null, target: null, narration_summary: null };
+const NO_ACTION = { check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false };
 
 describe("GameWorld", () => {
   it("MCP 모드의 take_action은 플레이어 의도와 서술 요약을 기록에 남긴다", () => {

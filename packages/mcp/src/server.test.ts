@@ -43,7 +43,7 @@ const action = (overrides: Record<string, unknown> = {}) => ({
   activity: null,
   deed: null,
   target: null,
-  narration_summary: null,
+  narration_summary: null, for_mission: false,
   ...overrides,
 });
 
@@ -51,7 +51,7 @@ describe("MCP tool", () => {
   it("턴 단위 tool과 run_command 하나만 연다 (정보용 개별 tool은 없다)", async () => {
     const { client } = await connect();
     const names = (await client.listTools()).tools.map((t) => t.name);
-    for (const name of ["start_session", "load_world", "list_worlds", "get_scene", "take_action", "fast_forward", "recall", "record_turn_summary", "run_command"]) {
+    for (const name of ["get_gm_guide", "start_session", "load_world", "list_worlds", "get_scene", "take_action", "fast_forward", "recall", "record_turn_summary", "run_command"]) {
       expect(names).toContain(name);
     }
     for (const removed of ["get_character_sheet", "get_map", "get_relations", "request_check", "spend_time"]) {
@@ -69,6 +69,9 @@ describe("MCP tool", () => {
     const start = await call("start_session");
     expect(start.text).toContain("## 현재 장면");
     expect(start.text).toContain("!도움말");
+    // play 프롬프트를 부르지 않아도 지침이 전달된다 (플레이 테스트 1회차: 지침을 못 읽음)
+    expect(start.text).toContain("# GM 지침");
+    expect(start.text).toContain("record_turn_summary");
 
     const result = await call("take_action", action({ activity: { kind: "talk", until: null }, narration_summary: "막사에서 깨어났다." }));
     expect(result.isError).toBe(false);

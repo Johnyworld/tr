@@ -106,3 +106,44 @@ describe("add_belief", () => {
     expect(executeTool("add_belief", input, ctx).ok).toBe(false);
   });
 });
+
+describe("NPC 물건 옮기기의 근거 (플레이 테스트 1회차 버그)", () => {
+  const take = { from: "npc_leader", to: "player", item_id: "radio", quantity: 1 };
+  const persuade = () => ({
+    intent: "무전기를 빌려 달라고 한다",
+    check: { move: "persuade", stat: "persuasion", difficulty: "normal", harm_on_failure: "none", harm_cause: "" },
+    activity: null,
+    deed: null,
+    target: "npc_leader",
+    narration_summary: null,
+    for_mission: false,
+  });
+
+  it("근거 없이 NPC 물건을 가져올 수 없다", () => {
+    const { ctx } = setup();
+    executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
+    expect(executeTool("transfer_item", take, ctx).ok).toBe(false);
+  });
+
+  it("그 NPC를 상대로 한 판정이 성공하면 가져올 수 있다", () => {
+    const { store, ctx } = setup(() => 0.99); // 6+6
+    executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
+    expect(executeTool("take_action", persuade(), ctx).ok).toBe(true);
+    expect(executeTool("transfer_item", take, ctx).ok).toBe(true);
+    expect(store.getState().characters.player?.inventory.radio).toBe(1);
+  });
+
+  it("판정이 실패하면 가져올 수 없다", () => {
+    const { ctx } = setup(() => 0); // 1+1
+    executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
+    executeTool("take_action", persuade(), ctx);
+    expect(executeTool("transfer_item", take, ctx).ok).toBe(false);
+  });
+
+  it("믿음이 충분한 NPC는 기꺼이 건넨다", () => {
+    const { store, ctx } = setup();
+    executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
+    store.getState().relations.npc_leader = { player: { trust: 2, affection: 0, respect: 0 } };
+    expect(executeTool("transfer_item", take, ctx).ok).toBe(true);
+  });
+});

@@ -147,7 +147,7 @@ export class GameWorld {
       activity: { kind: "wait", until },
       deed: null,
       target: null,
-      narration_summary: null,
+      narration_summary: null, for_mission: false,
     });
   }
 

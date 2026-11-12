@@ -20,7 +20,11 @@ export type PlayerCheckResult =
  * 플레이어 캐릭터의 2d6 판정을 굴리고 check_rolled 이벤트로 기록한다.
  * 행동과 능력치는 시나리오에서 오고, 보정은 능력치 + 난이도 + 상태 트랙 보정이다.
  */
-export function rollPlayerCheck(input: PlayerCheckInput, { store, rng, content }: ToolContext): PlayerCheckResult {
+export function rollPlayerCheck(
+  input: PlayerCheckInput,
+  { store, rng, content }: ToolContext,
+  options: { target?: string | null; forMission?: string | null } = {},
+): PlayerCheckResult {
   const scenario = content.scenario;
   const state = store.getState();
   const actor = state.characters[state.playerId];
@@ -54,6 +58,8 @@ export function rollPlayerCheck(input: PlayerCheckInput, { store, rng, content }
     modifiers,
     total: roll.total,
     outcome: roll.outcome,
+    ...(options.target ? { target: options.target } : {}),
+    ...(options.forMission ? { forMission: options.forMission } : {}),
   });
 
   return {

@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { z } from "zod";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
 import { moveLabel, rankLabel } from "../scenario/scenario.ts";
@@ -130,7 +131,7 @@ const reportMission = defineTool({
       ctx.store.append({ type: "promoted", characterId: player.id, from: promotion.from, to: promotion.to });
       const fromLabel = rankLabel(scenario, promotion.from);
       const toLabel = rankLabel(scenario, promotion.to);
-      lines.push(`진급: ${player.name}이(가) ${fromLabel}에서 ${toLabel}(으)로 진급했다. 상관이 이를 알리는 장면을 서술하라.`);
+      lines.push(`진급: ${josa(player.name, "이/가")} ${fromLabel}에서 ${josa(toLabel, "으로/로")} 진급했다. 상관이 이를 알리는 장면을 서술하라.`);
       extra.push({ type: "promotion", name: player.name, fromLabel, toLabel });
     }
     return {

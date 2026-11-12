@@ -26,12 +26,23 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 7;
+export const SAVE_SCHEMA_VERSION = 8;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
 /** 장면의 물건 보관 위치. 캐릭터 id 또는 "scene"(현재 장면 바닥) */
 export const SCENE_HOLDER = "scene";
+
+/** 자유 시나리오의 역할 id (콘텐츠의 역할 id와 겹치지 않는다) */
+export const CUSTOM_ROLE_ID = "custom";
+
+/** 자유 시나리오의 역할. 코드가 검증된 고르기로 만들어 세이브에 넣는다 (game/customStart.ts) */
+const customRoleSchema = z.custom<RoleContent>((v) => typeof v === "object" && v !== null && typeof (v as { id?: unknown }).id === "string");
+
+/** 지금 주인공의 역할: 콘텐츠의 역할, 자유 시나리오면 세이브에 든 역할 */
+export function roleOf(content: Content, state: Pick<GameState, "roleId" | "customRole">): RoleContent | undefined {
+  return content.roles[state.roleId] ?? state.customRole ?? undefined;
+}
 
 const checkOutcomeSchema = z.enum(CHECK_OUTCOMES);
 
@@ -155,6 +166,8 @@ export function createGameSchemas(s: Scenario) {
     scenarioId: z.string(),
     worldId: z.string(),
     roleId: z.string(),
+    /** 자유 시나리오로 시작했으면 그때 코드가 만든 역할 (콘텐츠에 없다, 기획서 12.5). roleId는 CUSTOM_ROLE_ID */
+    customRole: customRoleSchema.nullable().default(null),
     turn: z.number().int().nonnegative(),
     /** 게임 시간 (1일차 00:00부터 흐른 분) */
     time: z.number().int().nonnegative(),
@@ -246,6 +259,7 @@ export function createGameSchemas(s: Scenario) {
       scenarioId: z.string().min(1),
       worldId: z.string().min(1),
       roleId: z.string().min(1),
+      customRole: customRoleSchema.nullable().default(null),
       player: character,
       npcs: z.array(character),
       beliefs: z.record(z.string(), z.array(beliefSchema)),
@@ -489,6 +503,7 @@ export const EMPTY_STATE: GameState = {
   scenarioId: "",
   worldId: "",
   roleId: "",
+  customRole: null,
   turn: 0,
   time: START_TIME,
   playerId: "",
@@ -560,6 +575,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         scenarioId: event.scenarioId,
         worldId: event.worldId,
         roleId: event.roleId,
+        customRole: event.customRole ? structuredClone(event.customRole) : null,
         playerId: event.player.id,
         characters,
         beliefs: structuredClone(event.beliefs),
@@ -1058,9 +1074,12 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
   });
 }
 
-/** 새 세계를 여는 첫 이벤트. 시작 캐릭터, 모든 NPC, 시작 지식을 담는다 */
-export function createWorldEvent(content: Content, roleId: string, worldId: string, rng?: Rng, choice?: CharacterChoice): GameEvent {
-  const role = content.roles[roleId];
+/**
+ * 새 세계를 여는 첫 이벤트. 시작 캐릭터, 모든 NPC, 시작 지식을 담는다.
+ * customRole을 주면 콘텐츠의 역할 대신 그것으로 시작한다 (자유 시나리오, roleId는 CUSTOM_ROLE_ID)
+ */
+export function createWorldEvent(content: Content, roleId: string, worldId: string, rng?: Rng, choice?: CharacterChoice, customRole?: RoleContent, background?: string[]): GameEvent {
+  const role = customRole ?? content.roles[roleId];
   if (!role) throw new Error(`알 수 없는 역할: ${roleId}`);
   const player = createCharacterFromRole(content.scenario, role, "player", rng, choice);
   const npcs = Object.values(content.npcs).map((npc) => createCharacterFromNpc(content.scenario, npc));
@@ -1076,6 +1095,8 @@ export function createWorldEvent(content: Content, roleId: string, worldId: stri
   const beliefs: Record<string, Belief[]> = {};
   const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
   beliefs[player.id] = (preset?.beliefs ?? []).map((b) => belief(b.fact, b.source, b.accuracy));
+  // 자유 시나리오에서 플레이어가 쓴 지난 삶: 캐릭터 자신의 기억이다 (세계의 사실로 확정되지 않는다)
+  for (const fact of background ?? []) beliefs[player.id]!.push(belief(fact, "seen", "approximate"));
   for (const npc of Object.values(content.npcs)) {
     beliefs[npc.id] = npc.knows.map((fact) => belief(fact, "seen", "exact"));
   }
@@ -1084,7 +1105,8 @@ export function createWorldEvent(content: Content, roleId: string, worldId: stri
     type: "world_created",
     scenarioId: content.scenario.id,
     worldId,
-    roleId,
+    roleId: customRole ? CUSTOM_ROLE_ID : roleId,
+    customRole: customRole ?? null,
     player,
     npcs,
     beliefs,

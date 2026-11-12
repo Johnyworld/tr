@@ -25,7 +25,7 @@ Node 22 이상, pnpm 10이 필요하다. 로컬 설정이 필요하면 `cp .env.
 
 Claude Code에서는 **`/play`**(저장된 게임 번호 목록 → 고르기, 0번이 새 게임, `/play 2`·`/play 0`도 된다), 끝낼 때는 **`/quit`**. Claude 데스크톱에서는 `play` 프롬프트를 고르거나 "TRPG 시작해 줘"라고 하면 된다.
 진행은 행동마다 자동 저장된다. 같은 세계를 두 세션에서 동시에 열 수는 없다 (잠금 파일 `<세계>.db.lock`).
-새 게임은 **월드 → 시나리오 → 캐릭터** 순서로 고른다. 월드는 세계관(지금은 "무너진 도시, 가람" 하나), 시나리오는 그 월드에서 어떤 사람으로 어디서 시작하는지("청솔형제단의 하급 전투원")다. GM이 월드 이야기와 지금 상황을 들려주고, 캐릭터는 채팅에서 한 단계씩(이름 → 성별 → 능력 → 트레잇 → 확인) 만든다. 사망 뒤 새 캐릭터는 같은 월드에서 캐릭터 만들기부터 한다.
+새 게임은 **월드 → 시나리오 → 캐릭터** 순서로 고른다. 월드는 세계관(지금은 "무너진 도시, 가람" 하나), 시나리오는 그 월드에서 어떤 사람으로 어디서 시작하는지("청솔형제단의 하급 전투원")다. **직접 쓰기**를 고르면 시작을 글로 쓰고, GM이 월드에 있는 세력·계급·장소·소지품으로 옮긴다 (무리의 우두머리 자리는 안 된다). GM이 월드 이야기와 지금 상황을 들려주고, 캐릭터는 채팅에서 한 단계씩(이름 → 성별 → 능력 → 트레잇 → 확인) 만든다. 사망 뒤 새 캐릭터는 같은 월드에서 캐릭터 만들기부터 한다.
 게임을 열면 GM이 **상태 화면** 주소(`http://127.0.0.1:8790`, 세션마다 다음 포트)를 알려 준다. 앱의 브라우저 패널에 띄워 두면 캐릭터 시트가 바로바로 갱신된다. Claude Code에서는 저장소의 훅(`.claude/settings.json`)이 답변이 끝난 뒤에 시트를 갱신해, 채팅에 결과가 나온 다음 화면이 바뀐다. `TRPG_STATUS=off`로 끈다.
 
 ## MCP 서버 등록
@@ -70,7 +70,7 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 
 ### MCP 서버가 여는 것
 
-- tool: `start_session`, `load_world`, `list_worlds`, `end_session`, `delete_world`(목록을 보고 있을 때만), `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, `create_character`, `learn_skill`, `spawn_extra`, `learn_name`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`)
+- tool: `start_session`, `load_world`, `list_worlds`, `end_session`, `delete_world`(목록을 보고 있을 때만), `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, `create_character`(새 게임·직접 쓰는 시나리오 포함), `learn_skill`, `spawn_extra`, `learn_name`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`)
 - prompt: `play` (GM 지침 + 세션 시작 안내)
 - 로그는 stderr로만 쓴다. stdout은 MCP 프로토콜 전용이다
 - 월드 팩: `content/scenarios/` 아래 폴더마다 하나. 모두 읽는다 (`SCENARIO=<id>`로 하나만). 새 월드를 더하는 법은 기획서 12.4

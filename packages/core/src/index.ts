@@ -52,8 +52,10 @@ export {
   heirDraft,
   newGameDraft,
   newGameStep,
+  setCustomStart,
   type NewGameDraft,
 } from "./game/newGame.ts";
+export { customStartSchema, buildCustomRole, checkCustomStart, type CustomStartInput } from "./game/customStart.ts";
 export { loadContent, ContentError } from "./content/loader.ts";
 
 export { InMemoryRepository, type GameRepository } from "./persistence/repository.ts";

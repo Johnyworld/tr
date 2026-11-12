@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from
 import { basename, join } from "node:path";
 import Database from "better-sqlite3";
 import { createSeededRng, type Rng } from "../rng.ts";
-import type { Content } from "../content/schemas.ts";
+import type { Content, RoleContent } from "../content/schemas.ts";
 import { createWorldEvent, type CharacterChoice } from "../game/state.ts";
 import { checkCharacterChoice, fillCharacterChoice } from "../game/creation.ts";
 
@@ -109,11 +109,20 @@ export class WorldManager {
       .map((w) => toSaveSlot({ ...w, lockedBy: w.lockedBy && isProcessAlive(w.lockedBy.pid) ? w.lockedBy : null }, w.raw, this.packs.get(w.scenarioId!)!));
   }
 
-  /** 새 세계를 만들고 연다. packId를 주지 않으면 기본 월드 */
-  create(mode: PlayMode, roleId?: string, choice?: CharacterChoice, packId?: string): GameWorld {
+  /**
+   * 새 세계를 만들고 연다. packId를 주지 않으면 기본 월드.
+   * custom을 주면 자유 시나리오: 콘텐츠의 역할 대신 그 역할로, background는 주인공의 지난 삶 기억 (기획서 12.5)
+   */
+  create(
+    mode: PlayMode,
+    roleId?: string,
+    choice?: CharacterChoice,
+    packId?: string,
+    custom?: { role: RoleContent; background: string[] },
+  ): GameWorld {
     const content = packId ? this.pack(packId) : this.content;
-    const role = roleId ?? Object.keys(content.roles)[0];
-    if (!role || !content.roles[role]) throw new Error(`알 수 없는 시작 역할: ${role}`);
+    const role = custom ? custom.role.id : (roleId ?? Object.keys(content.roles)[0]);
+    if (!custom && (!role || !content.roles[role])) throw new Error(`알 수 없는 시작 역할: ${role}`);
     if (choice) {
       const problems = checkCharacterChoice(content.scenario, choice);
       if (problems.length) throw new CharacterChoiceError(problems);
@@ -124,7 +133,7 @@ export class WorldManager {
       const ctx = world.ctx();
       // 능력을 고르지 않았으면(null) 포인트를 무작위로 배분한다
       const filled = choice ? fillCharacterChoice(content.scenario, choice, ctx.rng) : choice;
-      ctx.store.append(createWorldEvent(content, role, worldId, ctx.rng, filled));
+      ctx.store.append(createWorldEvent(content, role!, worldId, ctx.rng, filled, custom?.role, custom?.background));
       runAfterTimeAdvance(ctx); // 첫날의 임무 후보, 소문 기준일
       world.saveSnapshot();
       return world;

@@ -12,6 +12,8 @@ import {
   describeNewGameStep,
   heirDraft,
   newGameDraft,
+  setCustomStart,
+  customStartSchema,
   worldInfo,
   type Content,
   type NewGameDraft,
@@ -220,14 +222,21 @@ export function createMcpServer(
         "플레이어가 이번 단계에 답한 것을 answer로 넘긴다 (보기가 있으면 그 값, 트레잇은 이름이나 id 목록, 없으면 \"없음\"). " +
         "back: true면 한 단계 뒤로, 아무것도 없으면 지금 단계를 다시 돌려준다. 마지막 확인에서 \"start\"를 넘기면 세계(또는 새 캐릭터)가 만들어진다. 대신 답하지 않는다.",
       inputSchema: z.strictObject({
-        answer: z.union([z.string().max(200), z.array(z.string().max(40)).max(10)]).nullable().optional(),
+        answer: z.union([z.string().max(1500), z.array(z.string().max(40)).max(10)]).nullable().optional(),
         back: z.boolean().optional(),
+        custom_start: customStartSchema().nullable().optional().describe("직접 쓰는 시나리오의 옮기기 단계에서만: 플레이어의 글을 월드의 부품으로 옮긴 것"),
       }),
     },
     (args) => {
       if (!draft) return text("만들고 있는 캐릭터가 없다. 새 게임은 start_session(new_world: true), 사망 뒤 새 캐릭터는 choose_next_character(new)로 시작한다.", true);
       if (args.back) {
         draft = backNewGame(draft);
+        return creationStep(draft);
+      }
+      if (args.custom_start) {
+        const set = setCustomStart(packs, draft, args.custom_start);
+        if (!set.ok) return text(`${set.error} 고쳐서 다시 넘긴다.\n\n${describeNewGameStep(packs, draft)}`, true);
+        draft = set.draft;
         return creationStep(draft);
       }
       if (args.answer == null) return creationStep(draft);
@@ -247,7 +256,7 @@ export function createMcpServer(
         if (!result.isError) draft = null;
         return result;
       }
-      const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId));
+      const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId, r.custom ?? undefined));
       if (result.isError) return result;
       return { ...result, content: [{ type: "text", text: `캐릭터를 만들었다. 월드 이야기와 지금 상황은 이미 했으니 되풀이하지 말고, 지금 만든 사람으로 바로 첫 장면을 서술한다.\n\n${result.content[0]?.text ?? ""}` }] };
     },
@@ -465,7 +474,7 @@ export function createMcpServer(
       const roleId = world.state().roleId;
       if (args.character_id === "new" && !args.character && !args.name && creationRules(world.content, roleId)) {
         if (!world.isPlayerDead()) return text("캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다.", true);
-        draft = heirDraft(world.content.scenario.id, roleId);
+        draft = heirDraft(world.content.scenario.id, roleId, world.state().customRole);
         return creationStep(draft);
       }
       return withWorld((w) => {

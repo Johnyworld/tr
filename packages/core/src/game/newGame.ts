@@ -10,7 +10,16 @@ import {
   type CreationDraft,
   type CreationReply,
 } from "./creationFlow.ts";
-import type { CharacterChoice } from "./state.ts";
+import { CUSTOM_ROLE_ID, type CharacterChoice } from "./state.ts";
+import type { RoleContent } from "../content/schemas.ts";
+import {
+  buildCustomRole,
+  checkCustomStart,
+  describeCustomRole,
+  describeCustomStartOptions,
+  MAX_STORY_LENGTH,
+  type CustomStartInput,
+} from "./customStart.ts";
 
 /**
  * 새 게임 (기획서 4.2, 12-15): 월드 고르기 → 시나리오(시작 역할) 고르기 → 캐릭터 만들기(creationFlow).
@@ -21,29 +30,54 @@ export type NewGameDraft = {
   mode: CreationDraft["mode"];
   packId: string | null;
   roleId: string | null;
+  /** 자유 시나리오 (roleId가 CUSTOM_ROLE_ID): 플레이어가 쓴 글 → GM이 옮긴 고르기 → 확인 (기획서 12.5) */
+  custom?: { story: string | null; input: CustomStartInput | null; confirmed: boolean };
+  /** 확인된 자유 시나리오의 역할 (사망 뒤 새 캐릭터면 세이브에 든 것) */
+  customRole?: RoleContent | null;
   character: CreationDraft;
 };
 
-export type NewGameStep = "world" | "scenario" | "character";
+export type NewGameStep = "world" | "scenario" | "custom_story" | "custom_setup" | "custom_confirm" | "character";
 
 export function newGameDraft(): NewGameDraft {
   return { mode: "new_world", packId: null, roleId: null, character: newCreationDraft("new_world") };
 }
 
-/** 사망 뒤 같은 세계의 새 캐릭터: 월드·시나리오는 정해져 있다 */
-export function heirDraft(packId: string, roleId: string): NewGameDraft {
-  return { mode: "heir", packId, roleId, character: newCreationDraft("heir") };
+/** 사망 뒤 같은 세계의 새 캐릭터: 월드·시나리오는 정해져 있다 (자유 시나리오였으면 그 역할 그대로) */
+export function heirDraft(packId: string, roleId: string, customRole: RoleContent | null = null): NewGameDraft {
+  return { mode: "heir", packId, roleId, customRole, character: newCreationDraft("heir") };
 }
 
 export function newGameStep(draft: NewGameDraft): NewGameStep {
   if (!draft.packId) return "world";
   if (!draft.roleId) return "scenario";
+  if (draft.roleId === CUSTOM_ROLE_ID && draft.mode === "new_world") {
+    if (!draft.custom?.story) return "custom_story";
+    if (!draft.custom.input) return "custom_setup";
+    if (!draft.custom.confirmed) return "custom_confirm";
+  }
   return "character";
+}
+
+/** 이 초안의 월드 콘텐츠 (자유 시나리오의 역할을 넣어서) */
+export function draftContent(packs: ReadonlyMap<string, Content>, draft: NewGameDraft): Content {
+  const content = packs.get(draft.packId!)!;
+  const role = draft.customRole;
+  return role ? { ...content, roles: { ...content.roles, [role.id]: role } } : content;
 }
 
 export type NewGameReply =
   | { ok: true; draft: NewGameDraft; done: false }
-  | { ok: true; draft: NewGameDraft; done: true; packId: string; roleId: string; choice: CharacterChoice }
+  | {
+      ok: true;
+      draft: NewGameDraft;
+      done: true;
+      packId: string;
+      roleId: string;
+      choice: CharacterChoice;
+      /** 자유 시나리오면 만든 역할과 캐릭터의 지난 삶 기억 */
+      custom: { role: RoleContent; background: string[] } | null;
+    }
   | { ok: false; error: string };
 
 const norm = (x: string) => x.trim().toLowerCase();
@@ -59,21 +93,69 @@ export function answerNewGame(packs: ReadonlyMap<string, Content>, draft: NewGam
   }
   const content = packs.get(draft.packId!)!;
   if (step === "scenario") {
-    const hit = scenarioInfos(content).find((r) => norm(r.id) === norm(text) || norm(r.title) === norm(text));
-    if (!hit) return { ok: false, error: `시나리오는 ${scenarioInfos(content).map((r) => r.title).join(", ")} 중 하나다.` };
-    return { ok: true, draft: { ...draft, roleId: hit.id }, done: false };
+    const options = scenarioOptions(content);
+    const hit = options.find((r) => norm(r.id) === norm(text) || norm(r.title) === norm(text));
+    if (!hit) return { ok: false, error: `시나리오는 ${options.map((r) => r.title).join(", ")} 중 하나다.` };
+    return { ok: true, draft: { ...draft, roleId: hit.id, ...(hit.id === CUSTOM_ROLE_ID ? { custom: { story: null, input: null, confirmed: false } } : {}) }, done: false };
+  }
+  if (step === "custom_story") {
+    const story = text.trim();
+    if (!story || story.length > MAX_STORY_LENGTH) return { ok: false, error: `시작 이야기는 1~${MAX_STORY_LENGTH}자로 쓴다.` };
+    return { ok: true, draft: { ...draft, custom: { story, input: null, confirmed: false } }, done: false };
+  }
+  if (step === "custom_setup") {
+    return { ok: false, error: "이 단계는 플레이어의 글을 옮겨 create_character(custom_start: {...})로 넘긴다." };
+  }
+  if (step === "custom_confirm") {
+    const v = norm(text);
+    if (["confirm", "이대로", "좋아"].includes(v)) {
+      const role = buildCustomRole(content, draft.custom!.input!);
+      return { ok: true, draft: { ...draft, custom: { ...draft.custom!, confirmed: true }, customRole: role }, done: false };
+    }
+    if (["remap", "다시 옮기기"].includes(v)) return { ok: true, draft: { ...draft, custom: { ...draft.custom!, input: null } }, done: false };
+    if (["rewrite", "다시 쓰기"].includes(v)) return { ok: true, draft: { ...draft, custom: { story: null, input: null, confirmed: false } }, done: false };
+    return { ok: false, error: "이대로(confirm), 다시 옮기기(remap), 다시 쓰기(rewrite) 중에서 고른다." };
   }
   const r: CreationReply = answerCreation(content.scenario, draft.character, answer, rng);
   if (!r.ok) return r;
   const next = { ...draft, character: r.draft };
-  return r.done ? { ok: true, draft: next, done: true, packId: draft.packId!, roleId: draft.roleId!, choice: r.choice } : { ok: true, draft: next, done: false };
+  if (!r.done) return { ok: true, draft: next, done: false };
+  const custom = draft.mode === "new_world" && draft.customRole ? { role: draft.customRole, background: draft.custom?.input?.background ?? [] } : null;
+  return { ok: true, draft: next, done: true, packId: draft.packId!, roleId: draft.roleId!, choice: r.choice, custom };
 }
 
-/** 한 단계 뒤로 (캐릭터 만들기의 처음에서 뒤로 가면 시나리오, 그다음 월드) */
+/** 자유 시나리오: GM이 플레이어의 글을 옮긴 고르기. 코드가 검증한다 */
+export function setCustomStart(packs: ReadonlyMap<string, Content>, draft: NewGameDraft, input: CustomStartInput): NewGameReply {
+  if (newGameStep(draft) !== "custom_setup") return { ok: false, error: "지금은 자유 시나리오를 옮기는 단계가 아니다." };
+  const problems = checkCustomStart(packs.get(draft.packId!)!, input);
+  if (problems.length) return { ok: false, error: problems.join(" ") };
+  return { ok: true, draft: { ...draft, custom: { ...draft.custom!, input, confirmed: false } }, done: false };
+}
+
+/** 시나리오 보기: 콘텐츠의 시나리오들 + 자유 시나리오(월드가 열었으면) */
+function scenarioOptions(content: Content): { id: string; title: string; pitch: string }[] {
+  const list = scenarioInfos(content);
+  if (content.scenario.custom_start) {
+    list.push({
+      id: CUSTOM_ROLE_ID,
+      title: "직접 쓰기",
+      pitch: "누구로, 어디서 시작할지 직접 쓴다. 세력·계급·시작 장소·소지품은 이 월드에 있는 것 중에서 정해진다 (한 자리뿐인 지도부는 안 된다).",
+    });
+  }
+  return list;
+}
+
+/** 한 단계 뒤로 (캐릭터 만들기의 처음에서 뒤로 가면 시나리오(자유 시나리오면 그 확인 → 옮기기 → 글), 그다음 월드) */
 export function backNewGame(draft: NewGameDraft): NewGameDraft {
   if (draft.character.answers.length > 0) return { ...draft, character: backCreation(draft.character) };
   if (draft.mode === "heir") return draft;
-  if (draft.roleId) return { ...draft, roleId: null };
+  const c = draft.custom;
+  if (draft.roleId === CUSTOM_ROLE_ID && c) {
+    if (c.confirmed) return { ...draft, custom: { ...c, confirmed: false }, customRole: null };
+    if (c.input) return { ...draft, custom: { ...c, input: null } };
+    if (c.story) return { ...draft, custom: { ...c, story: null } };
+  }
+  if (draft.roleId) return { ...draft, roleId: null, custom: undefined, customRole: null };
   return { ...draft, packId: null };
 }
 
@@ -99,7 +181,7 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
   const content = packs.get(draft.packId!)!;
   if (step === "scenario") {
     const world = worldInfo(content);
-    const scenarios = scenarioInfos(content);
+    const scenarios = scenarioOptions(content);
     return [
       `## 새 게임: ${world.title} — 시나리오 고르기`,
       "먼저: 아래 월드 이야기를 바탕으로, 이 세계가 어떻게 무너졌고 지금 어떤 곳인지 GM의 목소리로 들려준다 (서너 문단, 목록 말고 이야기로). 소개에 없는 사실은 만들지 않는다. 그다음 시나리오를 고르게 한다.",
@@ -115,7 +197,43 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
       FOOTER,
     ].join("\n");
   }
-  return describeCreationStep(content, draft.character, draft.roleId!);
+  if (step === "custom_story") {
+    return [
+      `## 새 게임: ${worldInfo(content).title} — 직접 쓰는 시나리오`,
+      "물을 것: 누구로, 어디서 시작하는지 플레이어가 직접 쓴다 (서너 문장). 무엇을 쓰면 좋은지 짧게 알려 준다: 어느 무리 사람인지(또는 무리 없이 떠도는지), 어떤 자리인지, 어디서 무엇을 하다가 이야기가 시작되는지, 무엇을 지니고 있는지, 몇 살쯤인지, 지난 삶에서 기억할 일.",
+      "이 월드에 있는 세력·장소 안에서 정해진다는 것과, 한 자리뿐인 지도부(무리의 우두머리)는 될 수 없다는 것을 함께 알린다. 대신 쓰지 않는다.",
+      "",
+      `플레이어의 글을 그대로 create_character(answer)로 넘긴다 (${MAX_STORY_LENGTH}자 안). 되돌리려면 create_character(back: true).`,
+    ].join("\n");
+  }
+  if (step === "custom_setup") {
+    return [
+      `## 새 게임: 직접 쓴 시나리오 옮기기`,
+      "플레이어가 쓴 시작:",
+      `> ${draft.custom!.story!.replace(/\n/g, "\n> ")}`,
+      "",
+      "할 일: 이 글을 아래 목록 안에서 옮겨 create_character(custom_start: {...})로 넘긴다. 목록에 없는 세력·장소·물건을 만들지 않는다. 글에 없는 것은 글의 분위기에 가장 맞는 것으로 고르고, 글과 다르게 옮긴 것(지도부를 원했다 등)은 다음 단계에서 플레이어에게 알린다. 숫자(나이·훈련)는 글에 있으면 범위 안에서 그대로, 없으면 무난하게.",
+      "",
+      describeCustomStartOptions(content),
+      "",
+      "opening은 시작 장소에서 이야기가 시작되는 순간을 2인칭으로 한두 문장, background는 플레이어가 쓴 지난 삶을 캐릭터의 기억 몇 문장으로 (세계의 사실이 아니라 이 사람의 기억이다).",
+    ].join("\n");
+  }
+  if (step === "custom_confirm") {
+    const role = buildCustomRole(content, draft.custom!.input!);
+    return [
+      "## 새 게임: 직접 쓴 시나리오 확인",
+      "옮긴 결과 (코드가 정한 상관·아는 사람·임무 포함):",
+      describeCustomRole(content, role),
+      ...(draft.custom!.input!.background.length ? [`지난 삶 (캐릭터의 기억): ${draft.custom!.input!.background.join(" / ")}`] : []),
+      "",
+      "물을 것: 이대로 갈지. 글과 다르게 옮긴 것이 있으면 이유와 함께 알린다.",
+      '보기 (클릭으로 고르는 도구가 있으면 그것으로): 이대로 → "confirm" / 다시 옮기기 → "remap" / 다시 쓰기 → "rewrite"',
+      "",
+      FOOTER,
+    ].join("\n");
+  }
+  return describeCreationStep(draftContent(packs, draft), draft.character, draft.roleId!);
 }
 
 export { currentStep };

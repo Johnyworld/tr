@@ -427,3 +427,25 @@ describe("월드가 여럿일 때 (MCP)", () => {
     expect(r.isError, r.content[0]!.text).not.toBe(true);
   });
 });
+
+describe("자유 시나리오 (MCP)", () => {
+  it("직접 쓰기를 고르면 글 → custom_start로 옮기기 → 확인 → 캐릭터 만들기로 이어진다", async () => {
+    const { call, app } = await connect(REAL_CONTENT);
+    await call("start_session", { new_world: true });
+    await call("create_character", { answer: "post_apoc" });
+    expect((await call("create_character", { answer: "직접 쓰기" })).text).toContain("직접 쓰는 시나리오");
+    expect((await call("create_character", { answer: "나는 청솔형제단의 분대장이다." })).text).toContain("옮기기");
+    const input = {
+      faction: "faction_a", rank: "squad_leader", title: "청솔형제단 분대장", location: "a_base", kit: "fighter",
+      skills: { fight: 1, tactics: 1 }, age: 34, opening: "새벽, 당신은 분대원들을 깨운다.", background: ["붕괴 전에는 소방관이었다."],
+    };
+    const bad = await call("create_character", { custom_start: { ...input, rank: "leader" } });
+    expect(bad.isError).toBe(true);
+    expect((await call("create_character", { custom_start: input })).text).toContain("상관: 한도윤");
+    expect((await call("create_character", { answer: "confirm" })).text).toContain("분대원들을 깨운다");
+    for (const a of ["강민", "male", "random", "none"]) await call("create_character", { answer: a });
+    const done = await call("create_character", { answer: "start" });
+    expect(done.isError).toBe(false);
+    expect(app.world!.state().characters.player).toMatchObject({ name: "강민", rank: "squad_leader" });
+  });
+});

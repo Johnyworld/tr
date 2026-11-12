@@ -21,6 +21,7 @@ function tempContent(files: Record<string, string>) {
   delete scenario.battle;
   delete scenario.recovery;
   delete scenario.consumables;
+  delete scenario.custom_start;
   writeFileSync(join(dir, "scenario.yaml"), stringify(scenario));
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(join(dir, path, ".."), { recursive: true });

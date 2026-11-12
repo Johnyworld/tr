@@ -32,7 +32,9 @@ export const RECAP_TURNS = 5;
  */
 export class GameWorld {
   readonly mode: PlayMode;
-  readonly content: Content;
+  #content: Content;
+  /** 자유 시나리오의 역할을 넣은 콘텐츠 (역할이 바뀔 때만 다시 만든다) */
+  #withRole: { role: unknown; content: Content } | null = null;
   readonly path: string | null;
   #repo: GameRepository;
   #rng: Rng;
@@ -55,7 +57,7 @@ export class GameWorld {
   }) {
     this.#lore = options.lore ?? null;
     this.#memory = options.memory ?? null;
-    this.content = options.content;
+    this.#content = options.content;
     this.mode = options.mode;
     this.path = options.path ?? null;
     this.#repo = options.repo;
@@ -72,6 +74,18 @@ export class GameWorld {
   }
 
   /** 세계 id = 세이브 파일 이름 (WorldManager.open에 그대로 쓸 수 있다). 파일이 없으면 상태의 worldId */
+  /**
+   * 이 세계의 월드 콘텐츠. 자유 시나리오로 시작했으면 그 역할(세이브의 customRole)이 roles에 들어 있어,
+   * content.roles[state.roleId]를 쓰는 곳이 모두 그대로 동작한다 (기획서 12.5)
+   */
+  get content(): Content {
+    const role = this.#repo.getState().customRole;
+    if (!role) return this.#content;
+    // 상태는 이벤트마다 새로 복제되므로 역할은 id로 비교한다 (만든 뒤에는 바뀌지 않는다)
+    if (this.#withRole?.role !== role.id) this.#withRole = { role: role.id, content: { ...this.#content, roles: { ...this.#content.roles, [role.id]: role } } };
+    return this.#withRole.content;
+  }
+
   get id(): string {
     return this.path ? basename(this.path, ".db") : this.#repo.getState().worldId;
   }

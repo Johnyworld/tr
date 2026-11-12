@@ -179,6 +179,25 @@ export const scenarioFileSchema = z
     mcp_guide: z.string().min(1),
     /** 새 게임을 시작할 때 들려주는 세계 이야기 (시작 캐릭터가 아는 것만). 지금 상황은 시나리오(역할)의 intro */
     intro: z.string().min(1).optional(),
+    /**
+     * 자유 시나리오 (기획서 12.5): 플레이어가 쓴 시작을 이 범위 안의 부품으로 옮긴다. 없으면 자유 시나리오를 열지 않는다
+     */
+    custom_start: z
+      .strictObject({
+        /** 세력에 속해 시작할 때 고를 수 있는 계급 (한 자리뿐인 지도부는 뺀다) */
+        ranks: z.array(id).min(1),
+        /** 무소속으로 시작할 때의 계급. 없으면 무소속 시작을 막는다 */
+        free_rank: id.optional(),
+        /** 무소속으로 시작할 수 있는 장소 (세력에 속하면 그 세력의 구역 중에서) */
+        free_locations: z.array(id).default([]),
+        /** 시작 훈련 포인트와 스킬 하나의 최대 */
+        skill_points: z.number().int().min(0),
+        skill_max: z.number().int().min(0),
+        age: z.strictObject({ min: z.number().int().positive(), max: z.number().int().positive() }),
+        /** 시작 소지품 꾸러미 */
+        kits: z.array(z.strictObject({ id, label: z.string().min(1), description: z.string().default(""), items: z.array(id) })).min(1),
+      })
+      .optional(),
     /** 새 게임의 월드 고르기에 보이는 것 (기획서 12.3). 없으면 name만 */
     world: z
       .strictObject({

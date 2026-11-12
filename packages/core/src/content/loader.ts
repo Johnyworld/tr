@@ -141,6 +141,18 @@ function checkReferences(content: Content): string[] {
       problems.push(`roles.${role.id}: 알 수 없는 시작 구역 ${role.start_location}`);
     }
   }
+  const custom = content.scenario.custom_start;
+  if (custom) {
+    const ranks = new Set(content.scenario.rank_ladder.map((r) => r.id));
+    for (const r of [...custom.ranks, ...(custom.free_rank ? [custom.free_rank] : [])]) {
+      if (!ranks.has(r)) problems.push(`scenario.custom_start: 알 수 없는 계급 ${r}`);
+    }
+    for (const l of custom.free_locations) if (!content.locations[l]) problems.push(`scenario.custom_start.free_locations: 알 수 없는 구역 ${l}`);
+    for (const k of custom.kits) {
+      for (const i of k.items) if (!content.items[i]) problems.push(`scenario.custom_start.kits.${k.id}: 알 수 없는 아이템 ${i}`);
+    }
+    if (custom.age.min > custom.age.max) problems.push("scenario.custom_start.age: min이 max보다 크다");
+  }
   problems.push(...checkStorylets(content));
   const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));
   for (const m of Object.values(content.missions)) {

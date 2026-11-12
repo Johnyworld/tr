@@ -73,6 +73,25 @@ creation:
     abilities: "이 세상을 몇 해 버텨 온 몸과 머리. 무엇이 남달랐는지 떠올리게 한다"
     ability: "그 능력이 살아남는 데 어떻게 드러났는지 짧은 장면 하나로 비추고 묻는다 (예: 근력이면 모래주머니를 나르던 날)"
     traits: "타고난 기질과 버릇. 무리 사람들이 당신을 뭐라고 수군거리는지로 풀어 간다"
+# 자유 시나리오 (기획서 12.5): 플레이어가 쓴 시작을 이 범위 안의 부품으로 옮긴다
+custom_start:
+  # 세력에 속할 때 고를 수 있는 계급. 지도부(leader)는 무리마다 한 자리뿐이라 뺀다. 참모·간부급은 officer
+  ranks: [grunt, staff, squad_leader, officer]
+  # 무소속으로 시작할 때의 계급과 장소 (누구의 땅도 아닌 곳)
+  free_rank: loner
+  free_locations: [old_town, riverside, hospital_ruins]
+  # 시작 훈련 (하급 전투원의 근접전 +1, 사격 +1과 같은 무게)
+  skill_points: 2
+  skill_max: 1
+  age: { min: 16, max: 65 }
+  kits:
+    - { id: fighter, label: 싸울 채비, description: 몸으로 부딪치는 사람, items: [crowbar, water_bottle, dry_ration] }
+    - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, kitchen_knife, water_bottle] }
+    - { id: medic, label: 의무 채비, description: 다친 사람을 돌보는 사람, items: [medkit, fever_reducer, water_bottle] }
+    - { id: trader, label: 거래 채비, description: 말과 물건으로 사는 사람, items: [cigarettes, canned_food, water_bottle] }
+    - { id: clerk, label: 장부 채비, description: 숫자와 소식을 다루는 사람, items: [ledger, radio, water_bottle] }
+    - { id: wanderer, label: 떠돌이 채비, description: 담 밖에서 버텨 온 사람, items: [blanket, kitchen_knife, dry_ration] }
+
 # 이전 세이브의 옛 능력 id
 renamed:
   abilities: { persuasion: charm }

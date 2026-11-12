@@ -41,7 +41,7 @@ export const PLAY_START =
 
 const HELP_HINT = "플레이어에게 한 줄 안내: \"?도움말 로 정보 명령어를 볼 수 있습니다.\" (이 모드에서는 \"!\" 대신 \"?\"를 쓴다. Claude 앱은 줄 맨 앞의 !를 셸 명령으로 바꾼다)";
 
-export function createMcpServer(manager: WorldManager) {
+export function createMcpServer(manager: WorldManager, options: { statusUrl?: () => string | null } = {}) {
   const content = manager.content;
   const scenario = content.scenario;
   const server = new McpServer({ name: "trpg", version: "0.0.0" });
@@ -65,6 +65,7 @@ export function createMcpServer(manager: WorldManager) {
         recap ? `\n${recap}` : `\n새로 시작하는 세계다. 시작 장면: ${intro.opening}`,
         `\n## 현재 장면\n${w.sceneForGm()}`,
         `\n${HELP_HINT}`,
+        ...(options.statusUrl?.() ? [`\n상태 화면: ${options.statusUrl()} — 플레이어에게 한 번 알려 준다: "캐릭터 시트를 옆에 띄워 두려면 이 주소를 앱의 브라우저 패널(또는 브라우저)에서 여세요."`] : []),
       ].join("\n"),
     );
   };

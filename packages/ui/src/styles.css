@@ -525,11 +525,11 @@ body {
 }
 
 @media (max-width: 760px) {
-  .body {
+  .app .body {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
   }
-  .sheet {
+  .app .sheet {
     order: -1;
     padding: 12px 0 0;
     display: flex;
@@ -539,39 +539,39 @@ body {
     border-bottom: 1px solid var(--border);
     padding-bottom: 8px;
   }
-  .sheet section {
+  .app .sheet section {
     margin-top: 0;
   }
-  .sheet h3,
-  .sheet-sub {
+  .app .sheet h3,
+  .app .sheet-sub {
     display: none;
   }
-  .sheet section.beliefs,
-  .sheet section.skills,
-  .sheet section.relations,
-  .sheet section.service,
-  .sheet section.mission .requirements {
+  .app .sheet section.beliefs,
+  .app .sheet section.skills,
+  .app .sheet section.relations,
+  .app .sheet section.service,
+  .app .sheet section.mission .requirements {
     display: none;
   }
-  .sheet section.scene,
-  .sheet section.present {
+  .app .sheet section.scene,
+  .app .sheet section.present {
     display: flex;
     gap: 6px;
     align-items: baseline;
   }
-  .sheet section.scene h3,
-  .sheet section.present h3 {
+  .app .sheet section.scene h3,
+  .app .sheet section.present h3 {
     display: inline;
     margin: 0;
   }
-  .stats {
+  .app .stats {
     display: flex;
     gap: 10px;
   }
-  .stats div {
+  .app .stats div {
     gap: 4px;
   }
-  .items {
+  .app .items {
     padding: 0;
     list-style: none;
     display: flex;
@@ -1018,4 +1018,33 @@ body {
 .slot-delete:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/* ── MCP 상태 화면 (status.html) ───────────────────────── */
+.status-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 16px 32px;
+}
+
+.status-page .sheet {
+  padding: 16px 0;
+  overflow: visible;
+}
+
+.status-live {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.status-empty {
+  padding: 24px 0;
+}
+
+.status-recent h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin: 8px 0;
 }

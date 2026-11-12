@@ -33,7 +33,7 @@
 packages/core     엔진: 판정, 시뮬레이션, 상태, 저장, RAG, 정보 필터, 명령어 (UI·HTTP·LLM을 모르는 순수 TS)
 packages/gm       LLM 오케스트레이션: 의도 분류, 컨텍스트 조립, GM 호출, 요약 (웹 앱 모드 전용)
 packages/server   웹 앱용 HTTP·SSE 어댑터 (Hono, core + gm)
-packages/mcp      MCP 서버 어댑터 (core만 사용, stdio)
+packages/mcp      MCP 서버 어댑터 (core만 사용, stdio). 읽기 전용 상태 화면(ui/status.html)을 127.0.0.1에 함께 띄운다
 packages/ui       Vite + React SPA (웹 앱 화면)
 content/scenarios/<id>/   시나리오 팩: scenario.yaml, YAML 콘텐츠(factions, npcs, locations, roles, items, storylets),
                           lore/(RAG 원문), speech/, prompts/, eval/(검색 평가 세트)

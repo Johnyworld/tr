@@ -69,6 +69,9 @@ importers:
       '@trpg/core':
         specifier: workspace:*
         version: link:../core
+      vite:
+        specifier: 8.3.8
+        version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1)
       zod:
         specifier: 4.6.7
         version: 4.6.7

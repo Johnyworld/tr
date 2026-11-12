@@ -220,3 +220,25 @@ describe("MCP 정보 필터", () => {
     expect(all).not.toMatch(/accuracy|approximate|hidden/);
   });
 });
+
+describe("상태 화면", () => {
+  it("열린 게임이 없으면 open: false, 열면 시트와 최근 결과(최신 먼저). 세션 시작 안내에 주소가 나온다", async () => {
+    const { statusPayload } = await import("./statusServer.ts");
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-status-")), content: TEST_CONTENT, rngFactory: () => createSeededRng(7) });
+    const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8790" });
+    opened.push(app);
+    const source = { get world() { return app.world; }, scenarioName: "테스트" };
+    expect(statusPayload(source)).toEqual({ open: false, scenarioName: "테스트" });
+    const [c, s] = InMemoryTransport.createLinkedPair();
+    await app.server.connect(s);
+    const client = new Client({ name: "t", version: "0" });
+    await client.connect(c);
+    const start = (await client.callTool({ name: "start_session", arguments: { new_world: true } })) as { content: { text: string }[] };
+    expect(start.content[0]!.text).toContain("상태 화면: http://127.0.0.1:8790");
+    await client.callTool({ name: "take_action", arguments: action({ narration_summary: "첫 장면", check: { move: "fight", stat: "strength", difficulty: "normal", harm_on_failure: "none", harm_cause: "" } }) });
+    const status = statusPayload(source) as { open: boolean; player: { name: string }; recent: { kind: string }[] };
+    expect(status.open).toBe(true);
+    expect(status.player.name).toBe("신병");
+    expect(status.recent[0]!.kind).toBe("tool");
+  });
+});

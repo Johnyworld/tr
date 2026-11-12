@@ -363,3 +363,24 @@ describe("주인공 사망: 서술 먼저, 상태 화면은 뒤에", () => {
     expect((statusPayload(source) as { player: { dead: boolean } }).player.dead).toBe(true);
   });
 });
+
+describe("턴 문 (Claude Code 훅)", () => {
+  it("세계 id가 맞으면 멈추고 풀고, 다르면 무시한다. 세션 시작 결과에 세계 id 표식이 있다", async () => {
+    const { statusPayload, TurnGate } = await import("./statusServer.ts");
+    const { call, app } = await connect();
+    const start = await call("start_session", { new_world: true });
+    const id = app.world!.id;
+    expect(start.text).toContain(`[trpg-world:${id}]`);
+    const source = { get world() { return app.world; }, scenarioName: "x" };
+    const gate = new TurnGate();
+    const time = () => (statusPayload(source, gate) as { player: { timeLabel: string } }).player.timeLabel;
+    expect(gate.start(source, "other")).toBe(false);
+    expect(gate.start(source, id)).toBe(true);
+    const before = time();
+    await call("take_action", action({ activity: { kind: "wait", until: null } }));
+    expect(time()).toBe(before); // 서술이 끝날 때까지 그대로
+    expect(gate.end("other")).toBe(false);
+    expect(gate.end(id)).toBe(true);
+    expect(time()).not.toBe(before);
+  });
+});

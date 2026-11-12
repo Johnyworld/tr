@@ -98,7 +98,7 @@ export function createMcpServer(
     return text(
       [
         `# GM 지침 (이 세션 내내 따른다)\n\n${w.guide()}`,
-        `\n---\n\n세계 ${intro.worldId} (${intro.scenarioName})를 열었다.`,
+        `\n---\n\n세계 ${intro.worldId} (${intro.scenarioName})를 열었다. [trpg-world:${intro.worldId}]`,
         recap ? `\n${recap}` : `\n새로 시작하는 세계다. 시작 장면: ${intro.opening}`,
         `\n## 현재 장면\n${w.sceneForGm()}`,
         `\n${HELP_HINT}`,

@@ -33,14 +33,54 @@ export type StatusSource = {
   readonly rules?: () => CreationRules | null;
 };
 
-export function statusPayload(source: StatusSource): unknown {
-  if (source.frozenStatus) return source.frozenStatus;
+export function statusPayload(source: StatusSource, gate?: TurnGate): unknown {
   // 캐릭터 생성 중이면 생성 화면을 먼저 보여 준다
   if (source.creation?.pending) return { open: false, creating: true, scenarioName: source.scenarioName };
   const w = source.world;
   if (!w) return { open: false, scenarioName: source.scenarioName };
   if (source.sheetHeld) return { open: false, created: true, scenarioName: source.scenarioName, name: w.playerView().name };
+  // GM이 아직 서술하는 중이면 그 턴 전의 모습 (훅의 턴 문, 또는 사망 직후)
+  const held = gate?.held(source);
+  if (held) return held;
+  if (source.frozenStatus) return source.frozenStatus;
   return { open: true, scenarioName: source.scenarioName, worldId: w.id, player: w.playerView() };
+}
+
+/** 턴 문이 풀리지 않아도 이만큼 지나면 푼다 (훅의 끝 신호를 놓쳤을 때) */
+const TURN_GATE_MAX_MS = 5 * 60 * 1000;
+
+/**
+ * 턴 문 (Claude Code 훅, 기획서 11.6): 플레이어가 메시지를 보내면 상태 화면을 지금 모습에서 멈추고,
+ * Claude의 답변(서술)이 끝나면 푼다. 그래서 "행동 → 채팅에 결과 서술 → 시트 갱신" 순서가 된다.
+ * 신호에는 세계 id가 붙고, 이 서버가 연 세계와 같을 때만 따른다 (세션이 여럿이어도 서로 섞이지 않는다).
+ * 훅이 없는 앱에서는 신호가 오지 않으니 지금처럼 바로 갱신된다
+ */
+export class TurnGate {
+  #frozen: { worldId: string; payload: unknown; at: number } | null = null;
+
+  start(source: StatusSource, worldId: string): boolean {
+    const w = source.world;
+    if (!w || w.id !== worldId) return false;
+    if (!this.#frozen) this.#frozen = { worldId, payload: statusPayload(source), at: Date.now() };
+    return true;
+  }
+
+  end(worldId: string): boolean {
+    if (!this.#frozen || this.#frozen.worldId !== worldId) return false;
+    this.#frozen = null;
+    return true;
+  }
+
+  /** 멈춰 있으면 그때의 모습. 세계가 바뀌었거나 너무 오래됐으면 푼다 */
+  held(source: StatusSource): unknown {
+    const f = this.#frozen;
+    if (!f) return null;
+    if (source.world?.id !== f.worldId || Date.now() - f.at > TURN_GATE_MAX_MS) {
+      this.#frozen = null;
+      return null;
+    }
+    return f.payload;
+  }
 }
 
 /** 상태 서버를 띄운다. 포트가 쓰이고 있으면 다음 포트로 (MCP 세션이 여럿일 수 있다). 주소를 돌려준다 */
@@ -64,10 +104,11 @@ export async function startStatusServer(
 
   // SSE: 바뀔 때만 밀어 준다
   const clients = new Set<ServerResponse>();
+  const gate = new TurnGate();
   let last = "";
   const snapshot = () => {
     try {
-      return JSON.stringify(statusPayload(source));
+      return JSON.stringify(statusPayload(source, gate));
     } catch (err) {
       return JSON.stringify({ open: false, scenarioName: source.scenarioName, error: String(err) });
     }
@@ -89,6 +130,15 @@ export async function startStatusServer(
       res.end();
       return;
     }
+    // 턴 문 (Claude Code 훅): /api/turn/start?world=ID, /api/turn/end?world=ID
+    if (url.startsWith("/api/turn/") && req.method === "POST") {
+      const parsed = new URL(url, "http://127.0.0.1");
+      const worldId = parsed.searchParams.get("world") ?? "";
+      const applied = parsed.pathname === "/api/turn/start" ? gate.start(source, worldId) : parsed.pathname === "/api/turn/end" ? gate.end(worldId) : false;
+      res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ applied }));
+      return;
+    }
     if (url.startsWith("/api/status/stream")) {
       res.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", connection: "keep-alive" });
       clients.add(res);
@@ -99,7 +149,7 @@ export async function startStatusServer(
     }
     if (url.startsWith("/api/status")) {
       try {
-        const body = JSON.stringify(statusPayload(source));
+        const body = JSON.stringify(statusPayload(source, gate));
         res.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
         res.end(body);
       } catch (err) {

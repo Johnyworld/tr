@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [{ "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/scripts/status-hook.sh\" start", "timeout": 5 }]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/scripts/status-hook.sh\" end", "timeout": 5 }]
+      }
+    ]
+  }
+}

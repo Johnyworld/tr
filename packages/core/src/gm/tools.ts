@@ -1,0 +1,311 @@
+import { z } from "zod";
+import type { Rng } from "../rng.ts";
+import {
+  CHECK_OUTCOME_LABELS,
+  DIFFICULTY_LABELS,
+  DIFFICULTY_MODIFIER,
+  difficultySchema,
+  roll2d6,
+  type CheckOutcome,
+} from "../rules/check.ts";
+import {
+  HARM_LABELS,
+  harmSeveritySchema,
+  INJURY_LABELS,
+  INJURY_PENALTY,
+  worsenInjury,
+  type InjuryLevel,
+} from "../rules/injury.ts";
+import { MOVE_LABELS, MOVE_STATS, moveSchema } from "../rules/moves.ts";
+import { STAT_LABELS, statSchema } from "../rules/stats.ts";
+import { findHolderInventory, SCENE_HOLDER, type GameEvent, type GameState } from "../game/state.ts";
+import type { GameStore } from "../game/store.ts";
+import type { ToolSpec } from "./model.ts";
+
+/** UI에 보여 줄 tool 실행 결과 */
+export type ToolDisplayEvent =
+  | {
+      type: "check";
+      checkId: string;
+      actorName: string;
+      intent: string;
+      moveLabel: string;
+      statLabel: string;
+      difficultyLabel: string;
+      dice: [number, number];
+      modifiers: { stat: number; difficulty: number; injury: number };
+      total: number;
+      outcome: CheckOutcome;
+      outcomeLabel: string;
+    }
+  | {
+      type: "harm";
+      targetName: string;
+      severityLabel: string;
+      from: InjuryLevel;
+      to: InjuryLevel;
+      fromLabel: string;
+      toLabel: string;
+      cause: string;
+    }
+  | { type: "item"; fromName: string; toName: string; itemName: string; quantity: number };
+
+export type ToolOutcome =
+  | { ok: true; resultText: string; display: ToolDisplayEvent }
+  | { ok: false; error: string };
+
+export type ToolContext = { store: GameStore; rng: Rng };
+
+type ToolDef<S extends z.ZodType> = {
+  name: string;
+  description: string;
+  schema: S;
+  run: (input: z.infer<S>, ctx: ToolContext) => ToolOutcome;
+};
+
+function defineTool<S extends z.ZodType>(def: ToolDef<S>) {
+  return def;
+}
+
+const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
+  success: "의도한 대로 이루어진다. 깔끔하게 성공한 장면을 서술하라.",
+  partial:
+    "이루어지지만 대가가 따른다. 피해, 시간·자원 손실, 상황의 복잡화, 어려운 선택 중 하나를 붙여 서술하라. 대가가 몸을 다치는 것이라면 apply_harm을 호출하라.",
+  miss: "실패한다. 상황이 악화된다. 몸을 다친다면 apply_harm을 호출하고, 아니면 새로운 위협이나 손실을 서술하라.",
+};
+
+const requestCheck = defineTool({
+  name: "request_check",
+  description:
+    "플레이어 캐릭터가 결과가 불확실하고 실패하면 대가가 있는 행동을 시도할 때 2d6 판정을 요청한다. " +
+    "사소하거나 확실한 행동에는 쓰지 않는다. 판정 결과는 시스템이 정하며, 그 결과에 맞춰 서술해야 한다. " +
+    "행동별 능력치: fight=strength|agility, search=sense, sense_danger=sense, stealth=agility, endure=cool, persuade=persuasion.",
+  schema: z.strictObject({
+    move: moveSchema.describe(
+      "기본 행동. fight 싸우기, search 수색하기, sense_danger 위험 감지, stealth 은밀 행동, endure 버티기(압박·공포·고통), persuade 설득·압박",
+    ),
+    stat: statSchema.describe("사용할 능력치. 행동에 허용된 것만 고를 수 있다"),
+    difficulty: difficultySchema.describe("상황의 난이도. 대부분은 normal"),
+    intent: z.string().min(1).max(200).describe("캐릭터가 이루려는 것 한 문장 (예: 잠긴 사물함을 비틀어 연다)"),
+  }),
+  run(input, { store, rng }) {
+    const state = store.getState();
+    const actor = state.characters[state.playerId];
+    if (!actor) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
+    if (actor.injury === "dead") return { ok: false, error: "사망한 캐릭터는 판정할 수 없습니다." };
+
+    const allowed = MOVE_STATS[input.move];
+    if (!allowed.includes(input.stat)) {
+      return {
+        ok: false,
+        error: `${input.move}에는 ${allowed.join(" 또는 ")} 능력치만 쓸 수 있습니다.`,
+      };
+    }
+
+    const modifiers = {
+      stat: actor.stats[input.stat],
+      difficulty: DIFFICULTY_MODIFIER[input.difficulty],
+      injury: INJURY_PENALTY[actor.injury],
+    };
+    const roll = roll2d6(rng, modifiers.stat + modifiers.difficulty + modifiers.injury);
+    const checkId = `chk_${state.nextCheckNo}`;
+
+    store.append({
+      type: "check_rolled",
+      checkId,
+      turn: state.turn,
+      actorId: actor.id,
+      move: input.move,
+      stat: input.stat,
+      difficulty: input.difficulty,
+      intent: input.intent,
+      dice: roll.dice,
+      modifiers,
+      total: roll.total,
+      outcome: roll.outcome,
+    });
+
+    return {
+      ok: true,
+      resultText:
+        `판정 ${checkId}: ${CHECK_OUTCOME_LABELS[roll.outcome]} (${roll.outcome}). ` +
+        `주사위 ${roll.dice[0]}+${roll.dice[1]}, 보정 ${signed(roll.modifier)}, 합계 ${roll.total}.\n` +
+        OUTCOME_GUIDE[roll.outcome],
+      display: {
+        type: "check",
+        checkId,
+        actorName: actor.name,
+        intent: input.intent,
+        moveLabel: MOVE_LABELS[input.move],
+        statLabel: STAT_LABELS[input.stat],
+        difficultyLabel: DIFFICULTY_LABELS[input.difficulty],
+        dice: roll.dice,
+        modifiers,
+        total: roll.total,
+        outcome: roll.outcome,
+        outcomeLabel: CHECK_OUTCOME_LABELS[roll.outcome],
+      },
+    };
+  },
+});
+
+/** 대가 있는 성공은 최대 1단계, 실패는 강도에 따라 1~2단계 악화 (임시값) */
+export function harmSteps(outcome: CheckOutcome, severity: "light" | "heavy"): number {
+  if (outcome === "partial") return 1;
+  return severity === "heavy" ? 2 : 1;
+}
+
+const applyHarm = defineTool({
+  name: "apply_harm",
+  description:
+    "이번 턴의 판정이 실패(miss)했거나 대가 있는 성공(partial)의 대가로 캐릭터가 몸을 다쳤을 때 부상을 적용한다. " +
+    "반드시 그 원인이 된 판정의 check_id를 넘긴다. 판정 하나에 한 번만 쓸 수 있다. 부상이 얼마나 악화될지는 시스템이 정한다.",
+  schema: z.strictObject({
+    target: z.string().describe("다친 캐릭터 id. 판정을 한 캐릭터여야 한다"),
+    check_id: z.string().describe("원인이 된 이번 턴 판정의 id (예: chk_3)"),
+    severity: harmSeveritySchema.describe("light: 베이거나 맞음, heavy: 총상·깊은 자상·추락 등"),
+    cause: z.string().min(1).max(200).describe("부상 원인 한 문장"),
+  }),
+  run(input, { store }) {
+    const state = store.getState();
+    const target = state.characters[input.target];
+    if (!target) return { ok: false, error: `알 수 없는 캐릭터: ${input.target}` };
+    const check = state.checks[input.check_id];
+    if (!check) return { ok: false, error: `알 수 없는 판정: ${input.check_id}` };
+    if (check.turn !== state.turn) return { ok: false, error: "이번 턴의 판정만 피해의 근거가 될 수 있습니다." };
+    if (check.actorId !== target.id) return { ok: false, error: "판정을 한 캐릭터에게만 피해를 줄 수 있습니다." };
+    if (check.outcome === "success") return { ok: false, error: "성공한 판정으로는 피해를 줄 수 없습니다." };
+    if (check.harmApplied) return { ok: false, error: "이 판정의 피해는 이미 적용되었습니다." };
+    if (target.injury === "dead") return { ok: false, error: "이미 사망한 캐릭터입니다." };
+
+    const steps = harmSteps(check.outcome, input.severity);
+    const to = worsenInjury(target.injury, steps);
+    store.append({
+      type: "harm_applied",
+      targetId: target.id,
+      checkId: check.checkId,
+      severity: input.severity,
+      steps,
+      from: target.injury,
+      to,
+      cause: input.cause,
+    });
+
+    const deathNote =
+      to === "dead"
+        ? " 캐릭터가 사망했다. 죽음의 순간을 담담하게 서술하고 장면을 끝내라. 더 이상 행동을 제시하지 마라."
+        : ` 앞으로 판정에 ${signed(INJURY_PENALTY[to])} 보정을 받는다. 부상의 감각을 서술에 반영하라.`;
+    return {
+      ok: true,
+      resultText: `${target.name}의 부상: ${INJURY_LABELS[target.injury]} → ${INJURY_LABELS[to]}.${deathNote}`,
+      display: {
+        type: "harm",
+        targetName: target.name,
+        severityLabel: HARM_LABELS[input.severity],
+        from: target.injury,
+        to,
+        fromLabel: INJURY_LABELS[target.injury],
+        toLabel: INJURY_LABELS[to],
+        cause: input.cause,
+      },
+    };
+  },
+});
+
+const transferItem = defineTool({
+  name: "transfer_item",
+  description:
+    "아이템을 옮긴다: 건네기, 내려놓기(to=scene), 장면에 놓인 것을 줍기(from=scene). " +
+    "보관 위치는 캐릭터 id 또는 scene. 없는 아이템이나 가진 것보다 많은 수량은 옮길 수 없다. 새 아이템을 만들어 내는 데는 쓸 수 없다.",
+  schema: z.strictObject({
+    from: z.string().describe("보내는 쪽: 캐릭터 id 또는 scene"),
+    to: z.string().describe("받는 쪽: 캐릭터 id 또는 scene"),
+    item_id: z.string().describe("아이템 id (상태에 표시된 것)"),
+    quantity: z.number().int().min(1).describe("옮길 수량 (1 이상의 정수)"),
+  }),
+  run(input, { store }) {
+    const state = store.getState();
+    if (input.from === input.to) return { ok: false, error: "보내는 쪽과 받는 쪽이 같습니다." };
+    const fromInv = findHolderInventory(state, input.from);
+    if (!fromInv) return { ok: false, error: `알 수 없는 보관 위치: ${input.from}` };
+    if (!findHolderInventory(state, input.to)) return { ok: false, error: `알 수 없는 보관 위치: ${input.to}` };
+    const item = state.items[input.item_id];
+    if (!item) return { ok: false, error: `알 수 없는 아이템: ${input.item_id}` };
+    const have = fromInv[input.item_id] ?? 0;
+    if (have < input.quantity) {
+      return { ok: false, error: `${holderName(state, input.from)}에게 ${item.name}이(가) ${have}개뿐입니다.` };
+    }
+
+    store.append({
+      type: "item_transferred",
+      from: input.from,
+      to: input.to,
+      itemId: item.id,
+      quantity: input.quantity,
+    });
+    return {
+      ok: true,
+      resultText: `${item.name} ${input.quantity}개: ${holderName(state, input.from)} → ${holderName(state, input.to)}.`,
+      display: {
+        type: "item",
+        fromName: holderName(state, input.from),
+        toName: holderName(state, input.to),
+        itemName: item.name,
+        quantity: input.quantity,
+      },
+    };
+  },
+});
+
+const TOOLS = [requestCheck, applyHarm, transferItem] as const;
+
+/** LLM에 넘길 tool 명세 (JSON Schema) */
+export const GM_TOOL_SPECS: ToolSpec[] = TOOLS.map((tool) => ({
+  name: tool.name,
+  description: tool.description,
+  inputSchema: toToolJsonSchema(tool.schema),
+}));
+
+/** tool 호출을 검증하고 실행한다. 입력이 스키마에 맞지 않으면 실행하지 않는다 */
+export function executeTool(name: string, input: unknown, ctx: ToolContext): ToolOutcome {
+  const tool = TOOLS.find((t) => t.name === name);
+  if (!tool) return { ok: false, error: `알 수 없는 tool: ${name}` };
+  const parsed = tool.schema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: `입력이 올바르지 않습니다: ${z.prettifyError(parsed.error)}` };
+  }
+  // 각 tool의 run은 자기 스키마로 파싱된 입력만 받는다
+  return (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
+}
+
+/**
+ * zod 스키마를 strict tool용 JSON Schema로 바꾼다.
+ * 숫자 범위 같은 제약은 strict 모드가 지원하지 않을 수 있어 지우고, 검증은 zod가 한다.
+ */
+function toToolJsonSchema(schema: z.ZodType): ToolSpec["inputSchema"] {
+  const json = z.toJSONSchema(schema) as Record<string, unknown>;
+  return stripKeys(json, ["$schema", "minimum", "maximum", "minLength", "maxLength"]) as ToolSpec["inputSchema"];
+}
+
+function stripKeys(value: unknown, keys: string[]): unknown {
+  if (Array.isArray(value)) return value.map((v) => stripKeys(v, keys));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([k]) => !keys.includes(k))
+        .map(([k, v]) => [k, stripKeys(v, keys)]),
+    );
+  }
+  return value;
+}
+
+function holderName(state: GameState, holder: string): string {
+  if (holder === SCENE_HOLDER) return "장면";
+  return state.characters[holder]?.name ?? holder;
+}
+
+function signed(n: number): string {
+  return n >= 0 ? `+${n}` : `${n}`;
+}
+
+export type { GameEvent };

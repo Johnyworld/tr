@@ -1,0 +1,154 @@
+import type { Rng } from "../rng.ts";
+import type { GameStore } from "../game/store.ts";
+import { buildPlayerPrompt } from "./context.ts";
+import type { LanguageModel, ModelMessage, ModelStopReason, UserBlock } from "./model.ts";
+import { GM_SYSTEM_PROMPT } from "./prompt.ts";
+import { executeTool, GM_TOOL_SPECS, type ToolDisplayEvent } from "./tools.ts";
+
+/** 플레이어 한 번의 입력 최대 길이 (문자 수) */
+export const MAX_INPUT_LENGTH = 2000;
+
+/** 프롬프트에 넣을 최근 플레이어 턴 수. 이후 단계에서 턴 요약으로 대체한다 */
+export const MAX_HISTORY_TURNS = 20;
+
+/** 한 턴에서 tool 호출 → 결과 반환을 반복할 최대 횟수 */
+export const MAX_TOOL_ROUNDS = 6;
+
+/** 대화 기록. UI 표시와 다음 턴 프롬프트 조립에 함께 쓴다 */
+export type TranscriptEntry =
+  | { kind: "player"; text: string; /** 실제로 모델에 보낸 user 메시지 */ prompt: string }
+  | { kind: "gm"; text: string }
+  | { kind: "tool"; display: ToolDisplayEvent };
+
+export type TurnStopReason = "end" | "max_tokens" | "refusal" | "other";
+
+/** 턴 진행 중에 흘러나오는 이벤트 */
+export type TurnEvent =
+  | { type: "text"; text: string }
+  | { type: "tool"; display: ToolDisplayEvent }
+  | { type: "done"; stopReason: TurnStopReason }
+  | { type: "error"; message: string };
+
+export class InvalidPlayerInputError extends Error {
+  override name = "InvalidPlayerInputError";
+}
+
+export function normalizePlayerInput(input: string): string {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) throw new InvalidPlayerInputError("입력이 비어 있습니다.");
+  if (trimmed.length > MAX_INPUT_LENGTH) {
+    throw new InvalidPlayerInputError(`입력은 ${MAX_INPUT_LENGTH}자 이하여야 합니다.`);
+  }
+  return trimmed;
+}
+
+export function isPlayerDead(store: GameStore): boolean {
+  const state = store.getState();
+  return state.characters[state.playerId]?.injury === "dead";
+}
+
+/**
+ * 지난 대화를 모델 메시지로 바꾼다.
+ * - 지난 턴은 텍스트만 남긴다 (thinking 블록은 모두 빼도 된다)
+ * - user 메시지는 당시 보낸 그대로 넣어 기록이 append-only가 되게 한다 (프롬프트 캐시 유지)
+ */
+export function buildHistoryMessages(transcript: readonly TranscriptEntry[]): ModelMessage[] {
+  const playerIndexes = transcript.flatMap((e, i) => (e.kind === "player" ? [i] : []));
+  const start =
+    playerIndexes.length > MAX_HISTORY_TURNS ? playerIndexes[playerIndexes.length - MAX_HISTORY_TURNS]! : 0;
+
+  const messages: ModelMessage[] = [];
+  for (const entry of transcript.slice(start)) {
+    if (entry.kind === "tool") continue;
+    const role = entry.kind === "player" ? "user" : "assistant";
+    const text = entry.kind === "player" ? entry.prompt : entry.text;
+    if (!text.trim()) continue;
+    if (messages.length === 0 && role === "assistant") continue; // 첫 메시지는 user여야 한다
+    const last = messages.at(-1);
+    if (last && last.role === role) {
+      last.content.push({ type: "text", text });
+    } else {
+      messages.push({ role, content: [{ type: "text", text }] } as ModelMessage);
+    }
+  }
+  return messages;
+}
+
+export type RunTurnOptions = {
+  model: LanguageModel;
+  store: GameStore;
+  transcript: readonly TranscriptEntry[];
+  input: string;
+  rng: Rng;
+  signal?: AbortSignal;
+};
+
+/**
+ * 플레이어 입력 하나를 처리한다.
+ * GM이 tool을 요청하면 코드가 검증·실행하고 결과를 돌려준 뒤 서술을 이어 간다.
+ * 이벤트를 yield하고, 이번 턴에 새로 생긴 대화 기록을 return한다 (중단·오류 시에도).
+ */
+export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEvent, TranscriptEntry[]> {
+  const { model, store, transcript, rng, signal } = options;
+  const input = normalizePlayerInput(options.input);
+  if (isPlayerDead(store)) throw new InvalidPlayerInputError("캐릭터가 사망했습니다.");
+
+  const state = store.append({ type: "turn_started", turn: store.getState().turn + 1, input });
+  const prompt = buildPlayerPrompt(state, input);
+  const entries: TranscriptEntry[] = [{ kind: "player", text: input, prompt }];
+
+  const messages: ModelMessage[] = [
+    ...buildHistoryMessages(transcript),
+    { role: "user", content: [{ type: "text", text: prompt }] },
+  ];
+
+  let stopReason: ModelStopReason = "other";
+  /** 지금 받고 있는 서술 조각. 중단·오류 시에도 기록에 남긴다 */
+  let segment = "";
+  try {
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      segment = "";
+      const call = model({ system: GM_SYSTEM_PROMPT, tools: GM_TOOL_SPECS, messages }, { signal });
+      let step = await call.next();
+      while (!step.done) {
+        segment += step.value;
+        yield { type: "text", text: step.value };
+        step = await call.next();
+      }
+      const response = step.value;
+      stopReason = response.stopReason;
+      if (segment) entries.push({ kind: "gm", text: segment });
+      segment = "";
+      messages.push({ role: "assistant", content: response.content, raw: response.raw });
+
+      // tool은 모델이 정상적으로 tool_use로 멈췄을 때만 실행한다 (잘리거나 거절된 입력은 실행하지 않음)
+      if (stopReason !== "tool_use") break;
+
+      const results: UserBlock[] = [];
+      for (const block of response.content) {
+        if (block.type !== "tool_call") continue;
+        const outcome = executeTool(block.name, block.input, { store, rng });
+        if (outcome.ok) {
+          entries.push({ kind: "tool", display: outcome.display });
+          yield { type: "tool", display: outcome.display };
+          results.push({ type: "tool_result", toolCallId: block.id, content: outcome.resultText });
+        } else {
+          results.push({ type: "tool_result", toolCallId: block.id, content: outcome.error, isError: true });
+        }
+      }
+      messages.push({ role: "user", content: results });
+    }
+
+    if (stopReason === "tool_use") {
+      yield { type: "error", message: "GM이 tool을 너무 많이 호출해 이번 턴을 멈췄습니다." };
+      return entries;
+    }
+    yield { type: "done", stopReason: stopReason === "end" ? "end" : stopReason };
+  } catch (err) {
+    if (segment) entries.push({ kind: "gm", text: segment });
+    if (!signal?.aborted) {
+      yield { type: "error", message: err instanceof Error ? err.message : String(err) };
+    }
+  }
+  return entries;
+}

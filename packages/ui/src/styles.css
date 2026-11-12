@@ -7,6 +7,9 @@
   --accent: #c08a3e;
   --player: #9fb3a1;
   --error: #d26a5c;
+  --success: #8fb07a;
+  --partial: #d1a54b;
+  --miss: #c46a5a;
   color-scheme: dark;
   font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
 }
@@ -31,9 +34,23 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-width: 760px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 0 16px;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 24px;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .header {
@@ -42,6 +59,20 @@ body {
   gap: 12px;
   padding: 20px 0 12px;
   border-bottom: 1px solid var(--border);
+}
+
+.header .link {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.header .link:hover:not(:disabled) {
+  color: var(--text);
 }
 
 .header h1 {
@@ -64,8 +95,14 @@ body {
   font-size: 16px;
 }
 
-.empty {
+.opening {
   color: var(--muted);
+  margin: 0 0 20px;
+}
+
+.death {
+  color: var(--error);
+  letter-spacing: 0.05em;
 }
 
 .turn {
@@ -157,4 +194,212 @@ body {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border);
+}
+
+.composer button.wide {
+  flex: 1;
+  padding: 12px;
+}
+
+/* tool 결과 카드 */
+.card {
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 6px;
+  background: var(--panel);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.card-kind {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.card-intent {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.badge {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--border);
+}
+
+.card.check.success {
+  border-left-color: var(--success);
+}
+.card.check.success .badge {
+  color: var(--success);
+}
+.card.check.partial {
+  border-left-color: var(--partial);
+}
+.card.check.partial .badge {
+  color: var(--partial);
+}
+.card.check.miss {
+  border-left-color: var(--miss);
+}
+.card.check.miss .badge {
+  color: var(--miss);
+}
+.card.harm,
+.card.harm.dead {
+  border-left-color: var(--error);
+}
+
+.dice-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.die {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--muted);
+  border-radius: 5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mods {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 캐릭터 시트 */
+.sheet {
+  padding: 24px 0;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+.sheet h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.sheet-sub,
+.muted,
+.penalty {
+  color: var(--muted);
+}
+
+.sheet section {
+  margin-top: 20px;
+}
+
+.sheet h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.stats {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.stats div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.stats dt,
+.stats dd {
+  margin: 0;
+}
+
+.stats dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.injury-light,
+.injury-serious {
+  color: var(--partial);
+}
+
+.injury-critical,
+.injury-dead {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.items {
+  margin: 0;
+  padding-left: 18px;
+}
+
+@media (max-width: 760px) {
+  .body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .sheet {
+    order: -1;
+    padding: 12px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    align-items: baseline;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+  .sheet section {
+    margin-top: 0;
+  }
+  .sheet h3,
+  .sheet-sub {
+    display: none;
+  }
+  .sheet section.scene {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+  .sheet section.scene h3 {
+    display: inline;
+    margin: 0;
+  }
+  .stats {
+    display: flex;
+    gap: 10px;
+  }
+  .stats div {
+    gap: 4px;
+  }
+  .items {
+    padding: 0;
+    list-style: none;
+    display: flex;
+    gap: 8px;
+  }
 }

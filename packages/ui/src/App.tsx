@@ -1,49 +1,86 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import type { ChatTurn } from "@trpg/core";
 import { OPENING_SCENE } from "@trpg/core/scene";
-import { streamChat } from "./api.ts";
+import { fetchGame, playTurn, resetGame } from "./api.ts";
+import { CharacterSheet } from "./CharacterSheet.tsx";
+import { ToolCard } from "./ToolCard.tsx";
+import type { PlayerView, TranscriptView } from "./types.ts";
 
 type Notice = { kind: "error" | "info"; text: string } | null;
 
 export function App() {
-  const [turns, setTurns] = useState<ChatTurn[]>([]);
-  const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [player, setPlayer] = useState<PlayerView | null>(null);
+  const [transcript, setTranscript] = useState<TranscriptView[]>([]);
+  /** 진행 중인 턴의 기록. null이면 진행 중이 아님 */
+  const [live, setLive] = useState<TranscriptView[] | null>(null);
   const [input, setInput] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
   const abortRef = useRef<AbortController | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
-  const busy = streamingText !== null;
+  const busy = live !== null;
+
+  useEffect(() => {
+    fetchGame()
+      .then((game) => {
+        setPlayer(game.player);
+        setTranscript(game.transcript);
+      })
+      .catch((err: unknown) => setNotice({ kind: "error", text: `서버에 연결하지 못했습니다: ${String(err)}` }));
+  }, []);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
-  }, [turns, streamingText]);
+  }, [transcript, live]);
+
+  async function syncGame() {
+    const game = await fetchGame();
+    setPlayer(game.player);
+    setTranscript(game.transcript);
+  }
 
   async function send(e?: FormEvent) {
     e?.preventDefault();
     const text = input.trim();
     if (!text || busy) return;
 
-    const history = turns;
     const controller = new AbortController();
     abortRef.current = controller;
-    setTurns([...history, { role: "player", text }]);
     setInput("");
     setNotice(null);
-    setStreamingText("");
+    let turn: TranscriptView[] = [{ kind: "player", text }];
+    setLive(turn);
+    let narrated = false;
 
-    let narration = "";
     try {
-      for await (const event of streamChat(history, text, controller.signal)) {
-        if (event.type === "text") {
-          narration += event.text;
-          setStreamingText(narration);
-        } else if (event.type === "error") {
-          setNotice({ kind: "error", text: event.message });
-        } else if (event.stopReason === "refusal") {
-          setNotice({ kind: "error", text: "GM이 이 장면의 서술을 거절했습니다. 다른 행동을 시도해 보세요." });
-        } else if (event.stopReason === "max_tokens") {
-          setNotice({ kind: "info", text: "서술이 길이 제한으로 잘렸습니다." });
+      for await (const event of playTurn(text, controller.signal)) {
+        switch (event.type) {
+          case "text": {
+            narrated = true;
+            const last = turn.at(-1);
+            turn =
+              last?.kind === "gm"
+                ? [...turn.slice(0, -1), { kind: "gm", text: last.text + event.text }]
+                : [...turn, { kind: "gm", text: event.text }];
+            setLive(turn);
+            break;
+          }
+          case "tool":
+            turn = [...turn, { kind: "tool", display: event.display }];
+            setLive(turn);
+            break;
+          case "player":
+            setPlayer(event.player);
+            break;
+          case "error":
+            setNotice({ kind: "error", text: event.message });
+            break;
+          case "done":
+            if (event.stopReason === "refusal") {
+              setNotice({ kind: "error", text: "GM이 이 장면의 서술을 거절했습니다. 다른 행동을 시도해 보세요." });
+            } else if (event.stopReason === "max_tokens") {
+              setNotice({ kind: "info", text: "서술이 길이 제한으로 잘렸습니다." });
+            }
+            break;
         }
       }
     } catch (err) {
@@ -52,19 +89,23 @@ export function App() {
       }
     } finally {
       abortRef.current = null;
-      setStreamingText(null);
-      if (narration) {
-        setTurns((prev) => [...prev, { role: "gm", text: narration }]);
-      } else {
-        // 서술이 하나도 안 왔으면 입력을 되돌려 다시 보낼 수 있게 한다
-        setTurns(history);
-        setInput(text);
-      }
+      // 서버가 진짜 기록을 들고 있으므로 끝나면 다시 받아 온다
+      await syncGame().catch(() => undefined);
+      setLive(null);
+      if (!narrated && turn.length === 1) setInput(text);
     }
   }
 
-  function stop() {
-    abortRef.current?.abort();
+  async function newGame() {
+    if (!window.confirm("지금 게임을 버리고 새로 시작할까요?")) return;
+    try {
+      const game = await resetGame();
+      setPlayer(game.player);
+      setTranscript(game.transcript);
+      setNotice(null);
+    } catch (err) {
+      setNotice({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -74,64 +115,73 @@ export function App() {
     }
   }
 
+  const entries = live ? [...transcript, ...live] : transcript;
+  const dead = player?.dead ?? false;
+
   return (
     <div className="app">
       <header className="header">
         <h1>TRPG</h1>
         <span className="subtitle">세력 A · 하급 전투원</span>
+        <button type="button" className="link" onClick={newGame} disabled={busy}>
+          새 게임
+        </button>
       </header>
 
-      <div className="log" ref={logRef} aria-live="polite">
-        {turns.length === 0 && !busy && (
-          <p className="empty">
-            {OPENING_SCENE}
-            <br />
-            무엇을 하시겠습니까?
-          </p>
-        )}
-        {turns.map((turn, i) => (
-          <Turn key={i} turn={turn} />
-        ))}
-        {busy && (
-          <div className="turn gm">
-            <p>
-              {streamingText}
-              <span className="cursor" />
-            </p>
+      <div className="body">
+        <main className="main">
+          <div className="log" ref={logRef} aria-live="polite">
+            <p className="opening">{OPENING_SCENE}</p>
+            {entries.map((entry, i) => (
+              <Entry key={i} entry={entry} />
+            ))}
+            {busy && <span className="cursor" />}
+            {dead && !busy && <p className="death">당신의 이야기는 여기서 끝났다.</p>}
           </div>
-        )}
+
+          {notice && <div className={`notice ${notice.kind}`}>{notice.text}</div>}
+
+          {dead ? (
+            <div className="composer">
+              <button type="button" onClick={newGame} className="wide">
+                새 캐릭터로 다시 시작
+              </button>
+            </div>
+          ) : (
+            <form className="composer" onSubmit={send}>
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="행동이나 대사를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
+                rows={2}
+                disabled={busy}
+                autoFocus
+              />
+              {busy ? (
+                <button type="button" onClick={() => abortRef.current?.abort()} className="secondary">
+                  중단
+                </button>
+              ) : (
+                <button type="submit" disabled={!input.trim()}>
+                  행동
+                </button>
+              )}
+            </form>
+          )}
+        </main>
+
+        {player && <CharacterSheet player={player} />}
       </div>
-
-      {notice && <div className={`notice ${notice.kind}`}>{notice.text}</div>}
-
-      <form className="composer" onSubmit={send}>
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="행동이나 대사를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
-          rows={2}
-          disabled={busy}
-          autoFocus
-        />
-        {busy ? (
-          <button type="button" onClick={stop} className="secondary">
-            중단
-          </button>
-        ) : (
-          <button type="submit" disabled={!input.trim()}>
-            행동
-          </button>
-        )}
-      </form>
     </div>
   );
 }
 
-function Turn({ turn }: { turn: ChatTurn }) {
+function Entry({ entry }: { entry: TranscriptView }) {
+  if (entry.kind === "tool") return <ToolCard display={entry.display} />;
   return (
-    <div className={`turn ${turn.role}`}>
-      {turn.text.split(/\n{2,}/).map((para, i) => (
+    <div className={`turn ${entry.kind}`}>
+      {entry.text.split(/\n{2,}/).map((para, i) => (
         <p key={i}>{para}</p>
       ))}
     </div>

@@ -1,18 +1,30 @@
-import type { ChatTurn, NarrationEvent } from "@trpg/core";
+import type { TurnEvent } from "@trpg/core";
+import type { GameView, PlayerView } from "./types.ts";
+
+export type StreamEvent = TurnEvent | { type: "player"; player: PlayerView };
+
+export async function fetchGame(): Promise<GameView> {
+  const res = await fetch("/api/game");
+  if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+  return (await res.json()) as GameView;
+}
+
+export async function resetGame(): Promise<GameView> {
+  const res = await fetch("/api/game/reset", { method: "POST" });
+  const body = (await res.json()) as GameView & { error?: string };
+  if (!res.ok) throw new Error(body.error ?? `서버 오류 (${res.status})`);
+  return body;
+}
 
 /**
- * POST /api/chat 를 호출하고 SSE 이벤트를 하나씩 돌려준다.
+ * POST /api/game/turn 을 호출하고 SSE 이벤트를 하나씩 돌려준다.
  * EventSource는 GET만 지원하므로 fetch 스트림을 직접 파싱한다.
  */
-export async function* streamChat(
-  history: ChatTurn[],
-  input: string,
-  signal: AbortSignal,
-): AsyncGenerator<NarrationEvent> {
-  const res = await fetch("/api/chat", {
+export async function* playTurn(input: string, signal: AbortSignal): AsyncGenerator<StreamEvent> {
+  const res = await fetch("/api/game/turn", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ history, input }),
+    body: JSON.stringify({ input }),
     signal,
   });
 
@@ -32,12 +44,16 @@ export async function* streamChat(
     while ((boundary = buffer.indexOf("\n\n")) !== -1) {
       const chunk = buffer.slice(0, boundary);
       buffer = buffer.slice(boundary + 2);
-      const data = chunk
-        .split("\n")
-        .filter((line) => line.startsWith("data:"))
-        .map((line) => line.slice(5).trimStart())
-        .join("\n");
-      if (data) yield JSON.parse(data) as NarrationEvent;
+      let event = "message";
+      const data: string[] = [];
+      for (const line of chunk.split("\n")) {
+        if (line.startsWith("event:")) event = line.slice(6).trim();
+        else if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
+      }
+      if (data.length === 0) continue;
+      const payload = JSON.parse(data.join("\n")) as unknown;
+      if (event === "player") yield { type: "player", player: payload as PlayerView };
+      else yield payload as TurnEvent;
     }
   }
 }

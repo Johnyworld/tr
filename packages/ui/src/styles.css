@@ -1111,3 +1111,13 @@ body {
 .trait-chip.negative {
   border-color: var(--miss);
 }
+
+.status-creation {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.status-creation .title-screen {
+  padding-top: 16px;
+}

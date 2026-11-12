@@ -5,7 +5,7 @@ import { signed } from "./ToolCard.tsx";
 import type { CreationRulesView, GameView } from "./types.ts";
 
 /** 캐릭터 생성: 이름, 성별, 능력(포인트 구매), 초상화. 규칙 검증은 서버(core)가 한다 */
-export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameView) => void; onBack: () => void }) {
+export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameView) => void; onBack?: () => void }) {
   const [rules, setRules] = useState<CreationRulesView | null>(null);
   const [name, setName] = useState("");
   const [gender, setGender] = useState<string | null>(null);
@@ -95,9 +95,11 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
 
   return (
     <div className="title-screen creation">
-      <button type="button" className="link back" onClick={onBack}>
-        ← 돌아가기
-      </button>
+      {onBack && (
+        <button type="button" className="link back" onClick={onBack}>
+          ← 돌아가기
+        </button>
+      )}
       <h1>새 캐릭터</h1>
       <p className="muted">시작 역할: {rules.roleLabel}. 직업·출신은 아직 고를 수 없다.</p>
 

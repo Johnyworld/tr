@@ -1,7 +1,8 @@
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { GameWorld } from "@trpg/core";
+import { characterChoiceSchema, createSeededRng, randomAbilityBuy, randomTraits, type Content, type CreationRules, type GameWorld } from "@trpg/core";
+import { z } from "zod";
 
 /**
  * MCP 모드의 상태 화면 서버 (127.0.0.1만). Claude 앱의 브라우저 패널에 띄워 두는 읽기 전용 캐릭터 시트.
@@ -16,9 +17,21 @@ const UI_DIR = fileURLToPath(new URL("../../ui/", import.meta.url));
 /** 바뀌었는지 살피는 간격 */
 const WATCH_MS = 250;
 
-export type StatusSource = { readonly world: GameWorld | null; readonly scenarioName: string };
+export type StatusSource = {
+  readonly world: GameWorld | null;
+  readonly scenarioName: string;
+  /** 브라우저 캐릭터 생성 (Claude 세션이 start_session(create_in_browser)로 열었을 때만 pending) */
+  readonly creation?: {
+    readonly pending: boolean;
+    submit(choice: z.infer<ReturnType<typeof characterChoiceSchema>>): { ok: true } | { ok: false; error: string };
+  };
+  readonly content?: Content;
+  readonly rules?: () => CreationRules | null;
+};
 
 export function statusPayload(source: StatusSource): unknown {
+  // 캐릭터 생성 중이면 생성 화면을 먼저 보여 준다
+  if (source.creation?.pending) return { open: false, creating: true, scenarioName: source.scenarioName };
   const w = source.world;
   if (!w) return { open: false, scenarioName: source.scenarioName };
   return { open: true, scenarioName: source.scenarioName, worldId: w.id, player: w.playerView() };
@@ -87,6 +100,35 @@ export async function startStatusServer(
         res.writeHead(500, { "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: String(err) }));
       }
+      return;
+    }
+    // 캐릭터 생성 (웹 앱과 같은 경로라 같은 생성 화면 컴포넌트가 그대로 쓴다)
+    const json = (code: number, body: unknown) => {
+      res.writeHead(code, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify(body));
+    };
+    const rng = () => createSeededRng(Math.floor(Math.random() * 2 ** 31));
+    if (url === "/api/creation" && req.method === "GET") return json(200, source.rules?.() ?? null);
+    if (url === "/api/creation/random" && source.content) return json(200, randomAbilityBuy(source.content.scenario, rng()));
+    if (url === "/api/creation/random-traits" && source.content) return json(200, randomTraits(source.content.scenario, rng()));
+    if (url === "/api/worlds" && req.method === "POST") {
+      let body = "";
+      req.on("data", (chunk: Buffer) => {
+        body += chunk.toString("utf8");
+        if (body.length > 20000) req.destroy();
+      });
+      req.on("end", () => {
+        let parsed;
+        try {
+          parsed = z.object({ character: characterChoiceSchema() }).safeParse(JSON.parse(body || "{}"));
+        } catch {
+          return json(400, { error: "요청 형식이 올바르지 않습니다." });
+        }
+        if (!parsed.success) return json(400, { error: "요청 형식이 올바르지 않습니다." });
+        if (!source.creation) return json(409, { error: "캐릭터 생성은 Claude 세션에서 새 게임을 고른 뒤에 합니다." });
+        const r = source.creation.submit(parsed.data.character);
+        return r.ok ? json(200, { ok: true }) : json(400, { error: r.error });
+      });
       return;
     }
     if (url.startsWith("/api/")) {

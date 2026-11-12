@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { BgeM3Embedder, ContentError, loadContent, LoreLibrary, WorldManager } from "@trpg/core";
+import { BgeM3Embedder, ContentError, creationRules, loadContent, LoreLibrary, WorldManager, type Content } from "@trpg/core";
 import { createMcpServer } from "./server.ts";
 import { startStatusServer } from "./statusServer.ts";
 
@@ -16,6 +16,7 @@ const savesDir = resolve(ROOT, process.env.SAVES_DIR ?? "saves");
 
 let app: ReturnType<typeof createMcpServer>;
 let scenarioName = "";
+let contentRef: Content | null = null;
 /** 상태 화면 주소 (TRPG_STATUS=off면 띄우지 않는다). 못 띄워도 게임은 그대로 한다 */
 let statusUrl: string | null = null;
 let closeStatus: (() => Promise<void>) | null = null;
@@ -32,6 +33,7 @@ try {
     : null;
   app = createMcpServer(new WorldManager({ savesDir, content, lore, memoryEmbedder: embedder }), { statusUrl: () => statusUrl });
   scenarioName = content.scenario.name;
+  contentRef = content;
 } catch (err) {
   console.error(`[mcp] ${err instanceof ContentError ? err.message : String(err)}`);
   process.exit(1);
@@ -43,7 +45,16 @@ await app.server.connect(transport);
 console.error(`[mcp] 준비됨 (시나리오 ${scenarioId}, 세이브 ${savesDir})`);
 
 if (process.env.TRPG_STATUS !== "off") {
-  const source = { get world() { return app.world; }, scenarioName };
+  const roleId = Object.keys(contentRef!.roles)[0] ?? "";
+  const source = {
+    get world() {
+      return app.world;
+    },
+    scenarioName,
+    creation: app.browserCreation,
+    content: contentRef!,
+    rules: () => creationRules(contentRef!, roleId),
+  };
   startStatusServer(source, Number(process.env.TRPG_STATUS_PORT ?? 8790))
     .then((s) => {
       statusUrl = s.url;

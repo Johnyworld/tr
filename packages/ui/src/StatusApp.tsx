@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
+import { CharacterCreation } from "./CharacterCreation.tsx";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import type { PlayerView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
-type StatusView = { open: false; scenarioName: string } | { open: true; scenarioName: string; worldId: string; player: PlayerView };
+type StatusView =
+  | { open: false; scenarioName: string; creating?: boolean }
+  | { open: true; scenarioName: string; worldId: string; player: PlayerView };
 
 /**
  * MCP 모드의 상태 화면: Claude 앱 옆(브라우저 패널)에 띄워 두는 읽기 전용 캐릭터 시트.
@@ -13,6 +16,12 @@ type StatusView = { open: false; scenarioName: string } | { open: true; scenario
 export function StatusApp() {
   const [status, setStatus] = useState<StatusView | null>(null);
   const [connected, setConnected] = useState(false);
+  /** 브라우저에서 생성을 마쳤다 (Claude 세션이 이어 받을 때까지 잠깐) */
+  const [submitted, setSubmitted] = useState(false);
+  useEffect(() => {
+    if (status?.open) setSubmitted(false);
+    window.scrollTo({ top: 0 }); // 생성 화면에서 시트로 바뀌면 맨 위부터
+  }, [status?.open]);
 
   useEffect(() => {
     let stop = false;
@@ -63,6 +72,13 @@ export function StatusApp() {
       </header>
       {!status ? (
         <p className="muted status-empty">불러오는 중…</p>
+      ) : !status.open && status.creating && !submitted ? (
+        // Claude 세션이 브라우저 생성을 기다리고 있다: 웹 앱과 같은 생성 화면
+        <div className="status-creation">
+          <CharacterCreation onStart={() => setSubmitted(true)} />
+        </div>
+      ) : !status.open && submitted ? (
+        <p className="muted status-empty">캐릭터를 만들었다. Claude 세션에서 이야기가 이어진다.</p>
       ) : !status.open ? (
         <p className="muted status-empty">열린 게임이 없다. Claude 세션에서 /play 로 게임을 열면 여기에 캐릭터 시트가 나온다.</p>
       ) : (

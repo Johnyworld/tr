@@ -242,3 +242,52 @@ describe("상태 화면", () => {
     expect(Object.keys(status)).toEqual(["open", "scenarioName", "worldId", "player"]); // 시트만 (서술은 채팅에)
   });
 });
+
+describe("브라우저에서 캐릭터 생성", () => {
+  async function setup(waitMs = 5000, statusUrl: string | null = "http://127.0.0.1:8790") {
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-bcreate-")), content: REAL_CONTENT, rngFactory: () => createSeededRng(3) });
+    const app = createMcpServer(manager, { statusUrl: () => statusUrl, creationWaitMs: waitMs });
+    opened.push(app);
+    const [c, s] = InMemoryTransport.createLinkedPair();
+    await app.server.connect(s);
+    const client = new Client({ name: "t", version: "0" });
+    await client.connect(c);
+    const call = async (args: Record<string, unknown>) =>
+      ((await client.callTool({ name: "start_session", arguments: args })) as { content: { text: string }[] }).content[0]!.text;
+    return { app, call };
+  }
+  const choice = { name: "한서진", gender: "female", abilities: { senses: 2, agility: 1 }, portrait: "p3", traits: [] };
+
+  it("시작을 누를 때까지 기다렸다가 그 세계로 이어 간다", async () => {
+    const { app, call } = await setup();
+    const waiting = call({ create_in_browser: true });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(app.browserCreation.pending).toBe(true);
+    const { statusPayload } = await import("./statusServer.ts");
+    expect(statusPayload({ world: app.world, scenarioName: "x", creation: app.browserCreation })).toMatchObject({ creating: true });
+    expect(app.browserCreation.submit(choice)).toEqual({ ok: true });
+    const out = await waiting;
+    expect(out).toContain("브라우저에서 캐릭터를 만들었다");
+    expect(out).toContain("# GM 지침");
+    expect(app.world!.state().characters.player).toMatchObject({ name: "한서진", portrait: "p3" });
+    expect(app.browserCreation.pending).toBe(false);
+  });
+
+  it("규칙에 맞지 않으면 만들지 않고 계속 기다린다. 시간이 넘으면 '다 했어'로 이어 간다", async () => {
+    const { app, call } = await setup(100);
+    const waiting = call({ create_in_browser: true });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(app.browserCreation.submit({ ...choice, abilities: { senses: 2, agility: 2 } }).ok).toBe(false);
+    expect(await waiting).toContain("다 했어");
+    expect(app.browserCreation.pending).toBe(true);
+    expect(app.browserCreation.submit(choice).ok).toBe(true); // 시간이 넘은 뒤 만들었다
+    expect(await call({ create_in_browser: true })).toContain("# GM 지침");
+  });
+
+  it("생성을 열지 않았으면 브라우저에서 만들 수 없고, 상태 화면이 없으면 채팅으로 만든다", async () => {
+    const { app } = await setup();
+    expect(app.browserCreation.submit(choice).ok).toBe(false);
+    const none = await setup(5000, null);
+    expect(await none.call({ create_in_browser: true })).toContain("채팅으로 만든다");
+  });
+});

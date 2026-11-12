@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   buildGmGuide,
+  isCommand,
   CharacterChoiceError,
   characterChoiceSchema,
   creationRules,
@@ -38,7 +39,7 @@ export const PLAY_START =
   "플레이어가 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 start_session(new_world: true)로 캐릭터 생성 규칙을 받아 플레이어에게 이름·성별·능력을 묻고, character와 함께 다시 불러 연다. 고르기 전에는 세계를 열지 않는다. " +
   "플레이어가 그만하자고 하면 end_session으로 닫는다.";
 
-const HELP_HINT = "플레이어에게 한 줄 안내: \"!도움말 로 정보 명령어를 볼 수 있습니다.\"";
+const HELP_HINT = "플레이어에게 한 줄 안내: \"?도움말 로 정보 명령어를 볼 수 있습니다.\" (이 모드에서는 \"!\" 대신 \"?\"를 쓴다. Claude 앱은 줄 맨 앞의 !를 셸 명령으로 바꾼다)";
 
 export function createMcpServer(manager: WorldManager) {
   const content = manager.content;
@@ -261,12 +262,13 @@ export function createMcpServer(manager: WorldManager) {
   server.registerTool(
     "run_command",
     {
-      description: "정보 명령어(!상태, !소지품, !인물 등)를 실행한다. 읽기 전용이며 시간이 흐르지 않는다. 결과를 코드 블록으로 그대로 보여 준다.",
+      description:
+        "정보 명령어(?상태, ?소지품, ?인물 강태호 등)를 실행한다. 플레이어 입력이 ?로 시작하면 이것을 부른다 (!도 받는다). 읽기 전용이며 시간이 흐르지 않는다. 결과를 코드 블록으로 그대로 보여 준다.",
       inputSchema: z.strictObject({ input: z.string().min(1).max(200) }),
     },
     async (args) => {
       if (!world) return text(NO_WORLD, true);
-      return text(await world.runCommand(args.input.startsWith("!") ? args.input : `!${args.input}`));
+      return text(await world.runCommand(isCommand(args.input) ? args.input : `?${args.input}`));
     },
   );
 

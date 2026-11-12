@@ -30,6 +30,8 @@ export type CommandContext = {
   readonly summaries: readonly TurnSummary[];
   /** !일지 검색어로 memory를 의미 검색한 결과 (정보 필터를 거친 것). 없으면 단순 문자열 검색 */
   readonly memoryHits?: readonly { text: string }[] | null;
+  /** 결과에 보여 줄 명령어 접두사 (웹 "!", MCP "?"). 없으면 "!" */
+  readonly prefix?: string;
 };
 
 export type CommandDef = {
@@ -186,13 +188,13 @@ const people: CommandDef = {
           return `${c.name}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : ""}${here}  (신뢰 ${relationLabel(r.trust)})`;
         }),
         "",
-        "자세히: !인물 이름",
+        `자세히: ${ctx.prefix ?? "!"}인물 이름`,
       ].join("\n");
     }
     const query = args.trim();
     const id = known.find((k) => state.characters[k]!.name === query || k === query) ??
       known.find((k) => state.characters[k]!.name.includes(query));
-    if (!id) return `아는 인물 중에 ${josa(`"${query}"`, "이/가")} 없습니다. 목록: !인물`;
+    if (!id) return `아는 인물 중에 ${josa(`"${query}"`, "이/가")} 없습니다. 목록: ${ctx.prefix ?? "!"}인물`;
     const c = state.characters[id]!;
     const npc = content.npcs[id];
     const met = state.perceived[id] !== undefined;
@@ -315,7 +317,7 @@ const journal: CommandDef = {
       ...(shown.length
         ? shown.map((s) => `  ${formatTime(s.time)}${s.kind === "scene" ? " [장면]" : ""}  ${s.text.replace(/\s+/g, " ")}`)
         : ["  기록이 없습니다."]),
-      ...(hiddenCount > 0 ? ["", `최근 ${shown.length}개만 보여 줍니다 (전체 ${entries.length}개). 검색어로 찾을 수 있습니다: !일지 검색어`] : []),
+      ...(hiddenCount > 0 ? ["", `최근 ${shown.length}개만 보여 줍니다 (전체 ${entries.length}개). 검색어로 찾을 수 있습니다: ${ctx.prefix ?? "!"}일지 검색어`] : []),
 
     ].join("\n");
   },
@@ -343,10 +345,10 @@ const help: CommandDef = {
   name: "도움말",
   aliases: ["help", "?"],
   description: "명령어 목록",
-  run: () =>
+  run: (ctx) =>
     [
       header("명령어"),
-      ...COMMANDS.map((c) => `!${c.name}${c.args ? ` ${c.args}` : ""}`.padEnd(14) + c.description),
+      ...COMMANDS.map((c) => `${ctx.prefix ?? "!"}${c.name}${c.args ? ` ${c.args}` : ""}`.padEnd(14) + c.description),
       "",
       "행동은 명령어가 아니라 자연어로 입력하세요. 명령어는 시간을 쓰지 않습니다.",
     ].join("\n"),
@@ -369,21 +371,41 @@ export const COMMANDS: readonly CommandDef[] = [
 ];
 
 export const COMMAND_PREFIX = "!";
+/**
+ * 정보 명령어로 받는 접두사. Claude 앱은 줄 맨 앞의 "!"를 셸 명령으로 가로채므로 MCP 모드는 "?"를 쓴다.
+ * 두 모드 모두 둘 다 받는다 (전각 문자 포함)
+ */
+export const COMMAND_PREFIXES = ["!", "?", "！", "？"] as const;
 
-export function isCommand(input: string): boolean {
-  return input.trim().startsWith(COMMAND_PREFIX);
+/** 플레이 모드별로 안내에 보여 주는 접두사 */
+export function commandPrefixFor(mode: "web" | "mcp"): string {
+  return mode === "mcp" ? "?" : "!";
 }
 
-/** "!인물 강태호" → 명령어 실행 결과 텍스트. 알 수 없는 명령어면 가까운 것을 제안한다 */
+export function isCommand(input: string): boolean {
+  const t = input.trim();
+  return COMMAND_PREFIXES.some((p) => t.startsWith(p));
+}
+
+/** 접두사를 뗀 명령어 본문 ("?인물 강태호" → "인물 강태호") */
+export function stripCommandPrefix(input: string): string {
+  const t = input.trim();
+  const p = COMMAND_PREFIXES.find((x) => t.startsWith(x));
+  return (p ? t.slice(p.length) : t).trim();
+}
+
+/** "!인물 강태호"(또는 "?인물 강태호") → 명령어 실행 결과 텍스트. 알 수 없는 명령어면 가까운 것을 제안한다 */
 export function runCommand(input: string, ctx: CommandContext, commands: readonly CommandDef[] = COMMANDS): string {
-  const body = input.trim().replace(/^!/, "").trim();
+  const body = stripCommandPrefix(input);
+  const p = ctx.prefix ?? "!";
   const [word = "", ...rest] = body.split(/\s+/);
   const args = rest.join(" ");
-  const command = commands.find((c) => c.name === word || c.aliases.includes(word));
+  // 접두사만 쳤으면 ("?") 도움말
+  const command = word ? commands.find((c) => c.name === word || c.aliases.includes(word)) : commands.find((c) => c.id === "help");
   if (command) return command.run(ctx, args);
 
   const names = commands.flatMap((c) => [c.name, ...c.aliases].map((n) => ({ n, c })));
   const best = names.map((x) => ({ ...x, d: editDistance(word, x.n) })).sort((a, b) => a.d - b.d)[0];
-  const suggestion = best && best.d <= Math.max(1, Math.floor(word.length / 2)) ? ` 혹시 !${best.c.name} 인가요?` : "";
-  return `알 수 없는 명령어: !${word || ""}.${suggestion} 전체 목록은 !도움말`;
+  const suggestion = best && best.d <= Math.max(1, Math.floor(word.length / 2)) ? ` 혹시 ${p}${best.c.name} 인가요?` : "";
+  return `알 수 없는 명령어: ${p}${word || ""}.${suggestion} 전체 목록은 ${p}도움말`;
 }

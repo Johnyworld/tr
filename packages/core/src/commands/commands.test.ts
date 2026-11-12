@@ -48,8 +48,9 @@ describe("정보 명령어", () => {
   it("별칭으로도 실행되고, 모르는 명령어는 가까운 것을 제안한다", async () => {
     const w = world();
     expect(await w.runCommand("!스탯")).toBe(await w.runCommand("!상태"));
-    expect(await w.runCommand("!상테")).toContain("혹시 !상태 인가요?");
-    expect(await w.runCommand("!아무거나길게")).toContain("!도움말");
+    // 이 테스트 세계는 MCP 모드라 안내는 "?"로 나온다 (Claude 앱이 줄 맨 앞의 !를 셸 명령으로 가로챈다)
+    expect(await w.runCommand("!상테")).toContain("혹시 ?상태 인가요?");
+    expect(await w.runCommand("!아무거나길게")).toContain("?도움말");
   });
 
   it("숨은 목격자와 진짜 관계는 출력에 나오지 않는다 (플레이어가 느낀 태도만)", async () => {
@@ -80,5 +81,19 @@ describe("정보 명령어", () => {
   it("!도움말은 모든 명령어를 보여 준다", async () => {
     const out = runCommand("!도움말", { state: world().state(), content: TEST_CONTENT, summaries: [] });
     for (const c of COMMANDS) expect(out).toContain(`!${c.name}`);
+  });
+});
+
+describe("명령어 접두사", () => {
+  it("! 와 ? (전각 포함) 모두 받는다. 안내에는 모드의 접두사를 쓴다", async () => {
+    const { runCommand, isCommand, stripCommandPrefix } = await import("./commands.ts");
+    const { TEST_CONTENT, createTestStore } = await import("../testing.ts");
+    const ctx = { state: createTestStore().getState(), content: TEST_CONTENT, summaries: [] };
+    expect(["!상태", "?상태", "？상태", "  ?도움말"].every(isCommand)).toBe(true);
+    expect(isCommand("상태 어때?")).toBe(false);
+    expect(stripCommandPrefix("？인물 강분대")).toBe("인물 강분대");
+    expect(runCommand("?상태", ctx)).toBe(runCommand("!상태", ctx));
+    expect(runCommand("?", { ...ctx, prefix: "?" })).toContain("?상태");
+    expect(runCommand("?상텨", { ...ctx, prefix: "?" })).toContain("혹시 ?상태");
   });
 });

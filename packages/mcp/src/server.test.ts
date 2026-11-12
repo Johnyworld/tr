@@ -68,7 +68,7 @@ describe("MCP tool", () => {
     const { call, app } = await connect();
     const start = await call("start_session", { new_world: true });
     expect(start.text).toContain("## 현재 장면");
-    expect(start.text).toContain("!도움말");
+    expect(start.text).toContain("?도움말");
     // play 프롬프트를 부르지 않아도 지침이 전달된다 (플레이 테스트 1회차: 지침을 못 읽음)
     expect(start.text).toContain("# GM 지침");
     expect(start.text).toContain("record_turn_summary");
@@ -89,6 +89,8 @@ describe("MCP tool", () => {
     const before = JSON.stringify(app.world!.state());
     const out = await call("run_command", { input: "!상태" });
     expect(out.text).toContain("━━━ 신병");
+    expect((await call("run_command", { input: "?상태" })).text).toBe(out.text);
+    expect((await call("run_command", { input: "?" })).text).toContain("?상태");
     expect(JSON.stringify(app.world!.state())).toBe(before);
   });
 

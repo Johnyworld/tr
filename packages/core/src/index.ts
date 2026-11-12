@@ -97,6 +97,9 @@ export {
 export {
   COMMANDS,
   COMMAND_PREFIX,
+  COMMAND_PREFIXES,
+  commandPrefixFor,
+  stripCommandPrefix,
   JOURNAL_RECENT,
   isCommand,
   runCommand,

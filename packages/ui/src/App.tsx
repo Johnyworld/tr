@@ -7,6 +7,9 @@ import { DevPanel } from "./DevPanel.tsx";
 import { ToolCard } from "./ToolCard.tsx";
 import type { GameView, PlayerView, TranscriptView } from "./types.ts";
 
+/** 정보 명령어 입력인지 (core COMMAND_PREFIXES와 같다. UI는 core 런타임을 번들하지 않는다) */
+const isCommandInput = (text: string) => /^\s*[!?！？]/.test(text);
+
 type Notice = { kind: "error" | "info"; text: string } | null;
 
 /** 시작 화면(세이브 슬롯)과 게임 화면 */
@@ -98,8 +101,8 @@ function Game({ initial, onExit }: { initial: GameView; onExit: () => void }) {
     const text = input.trim();
     if (!text || busy) return;
 
-    // "!"로 시작하면 정보 명령어: GM에게 보내지 않고 시간도 흐르지 않는다
-    if (text.startsWith("!")) {
+    // "!"(또는 "?")로 시작하면 정보 명령어: GM에게 보내지 않고 시간도 흐르지 않는다
+    if (isCommandInput(text)) {
       try {
         setCommandOutput({ input: text, output: await runCommand(text) });
         setInput("");
@@ -218,10 +221,10 @@ function Game({ initial, onExit }: { initial: GameView; onExit: () => void }) {
             </div>
           )}
 
-          {input.startsWith("!") && !busy && (
+          {isCommandInput(input) && !busy && (
             <div className="command-palette">
               {commands
-                .filter((c) => `!${c.name}`.startsWith(input.trim().split(/\s/)[0] ?? "!"))
+                .filter((c) => c.name.startsWith(input.trim().slice(1).split(/\s/)[0] ?? ""))
                 .map((c) => (
                   <button key={c.name} type="button" onClick={() => setInput(`!${c.name}${c.args ? " " : ""}`)} title={c.description}>
                     !{c.name}

@@ -10,7 +10,7 @@ import { buildGmGuide } from "../engine/prompt.ts";
 import { executeTool, gmToolSpecs } from "../engine/tools.ts";
 import type { ToolContext, ToolOutcome, ToolSpec } from "../engine/toolkit.ts";
 import { buildPlayerView, buildTranscriptView, type PlayerView, type TranscriptView } from "../views/player.ts";
-import { runCommand } from "../commands/commands.ts";
+import { commandPrefixFor, runCommand, stripCommandPrefix } from "../commands/commands.ts";
 import type { LoreLibrary, LoreSearch } from "../rag/library.ts";
 import { memoryItemsOf, type MemoryStore } from "../rag/memory.ts";
 import type { SearchOptions } from "../rag/index.ts";
@@ -263,14 +263,14 @@ ${this.sceneForGm()}` };
    * !일지에 검색어가 있으면 memory 컬렉션을 의미 검색한다 (현재 캐릭터의 기억만).
    */
   async runCommand(input: string): Promise<string> {
-    const [word = "", ...rest] = input.trim().replace(/^!/, "").trim().split(/\s+/);
+    const [word = "", ...rest] = stripCommandPrefix(input).split(/\s+/);
     const query = rest.join(" ").trim();
     const journal = COMMANDS.find((c) => c.id === "journal")!;
     let memoryHits: { text: string }[] | null = null;
     if (query && this.#memory && (journal.name === word || journal.aliases.includes(word))) {
       memoryHits = (await this.searchMemory(query, "recall", { topK: 8, charBudget: 4000 })).hits;
     }
-    return runCommand(input, { state: this.state(), content: this.content, summaries: this.summaries(), memoryHits });
+    return runCommand(input, { state: this.state(), content: this.content, summaries: this.summaries(), memoryHits, prefix: commandPrefixFor(this.mode) });
   }
 
   /** 빨리감기: 지정한 시간대가 될 때까지 기다린다 (끼어들기가 생기면 멈춤). take_action과 같은 경로다 */

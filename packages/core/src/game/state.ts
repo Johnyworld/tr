@@ -9,6 +9,14 @@ import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
 import { beliefSchema, type Belief } from "./belief.ts";
 import { rankSchema } from "../rules/ranks.ts";
 import { activeMissionOf, isRequirementMet, missionInstanceSchema, outcomeAtLeast } from "./missions.ts";
+import {
+  applyRelationDelta,
+  deedSchema,
+  NEUTRAL_RELATION,
+  relationDeltaSchema,
+  relationSchema,
+} from "./reputation.ts";
+import { beliefSourceSchema } from "./belief.ts";
 import { characterSchema, inventorySchema, type Character, type Inventory } from "./character.ts";
 
 /**
@@ -27,6 +35,8 @@ export const checkRecordSchema = z.strictObject({
   checkId: z.string(),
   turn: z.number().int(),
   actorId: z.string(),
+  /** 8단계에서 추가 (은밀 행동이 목격 확률을 낮춘다) */
+  move: moveSchema.optional(),
   outcome: checkOutcomeSchema,
   /** 이 판정의 대가로 이미 피해를 적용했는지 */
   harmApplied: z.boolean(),
@@ -63,6 +73,22 @@ export const gameStateSchema = z.strictObject({
   nextMissionNo: z.number().int().positive().default(1),
   /** 지금 캐릭터의 런이 시작된 시각 (복무 기간 계산) */
   runStartedAt: z.number().int().default(START_TIME),
+  /** 행적 (8단계에서 추가). 숨은 목격자가 들어 있으므로 UI·프롬프트로 그대로 보내지 않는다 */
+  deeds: z.record(z.string(), deedSchema).default({}),
+  /** NPC가 어떤 행적을 어떤 출처로 알고 있는지: npcId → deedId → source */
+  deedKnowledge: z.record(z.string(), z.record(z.string(), beliefSourceSchema)).default({}),
+  /** 관계: fromId → toId → 신뢰·호감·존중 */
+  relations: z.record(z.string(), z.record(z.string(), relationSchema)).default({}),
+  /**
+   * 플레이어가 느끼는 NPC의 태도. 그 NPC와 같은 장면에 있을 때만 갱신된다.
+   * 진짜 관계(relations)를 바로 보여 주면 숨은 목격자가 드러나므로 UI는 이것만 쓴다
+   */
+  perceived: z.record(z.string(), relationSchema).default({}),
+  /** 비밀을 털어놓은 NPC */
+  revealedSecrets: z.array(z.string()).default([]),
+  /** 소문이 마지막으로 퍼진 날 */
+  lastSpreadDay: z.number().int().nullable().default(null),
+  nextDeedNo: z.number().int().positive().default(1),
 });
 export type GameState = z.infer<typeof gameStateSchema>;
 
@@ -84,6 +110,13 @@ export const EMPTY_STATE: GameState = {
   offers: null,
   nextMissionNo: 1,
   runStartedAt: START_TIME,
+  deeds: {},
+  deedKnowledge: {},
+  relations: {},
+  perceived: {},
+  revealedSecrets: [],
+  lastSpreadDay: null,
+  nextDeedNo: 1,
 };
 
 /**
@@ -116,6 +149,18 @@ export const gameEventSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("mission_abandoned"), missionId: z.string(), merit: z.number().int(), reason: z.string() }),
   z.strictObject({ type: z.literal("mission_expired"), missionId: z.string(), merit: z.number().int() }),
   z.strictObject({ type: z.literal("promoted"), characterId: z.string(), from: rankSchema, to: rankSchema }),
+  z.strictObject({ type: z.literal("deed_recorded"), deed: deedSchema }),
+  z.strictObject({
+    type: z.literal("deed_learned"),
+    deedId: z.string(),
+    npcId: z.string(),
+    source: beliefSourceSchema,
+    /** 이 NPC의 행위자에 대한 관계 변화 (코드가 계산) */
+    delta: relationDeltaSchema,
+  }),
+  z.strictObject({ type: z.literal("witnesses_searched"), deedId: z.string() }),
+  z.strictObject({ type: z.literal("rumors_spread"), day: z.number().int() }),
+  z.strictObject({ type: z.literal("secret_revealed"), npcId: z.string() }),
   z.strictObject({ type: z.literal("turn_started"), turn: z.number().int().positive(), input: z.string() }),
   z.strictObject({
     type: z.literal("check_rolled"),
@@ -190,6 +235,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (npc.injury === "dead") throw new Error(`사망한 인물: ${npc.id}`);
       if (next.scene.present.includes(npc.id)) throw new Error(`이미 장면에 있음: ${npc.id}`);
       next.scene.present.push(npc.id);
+      perceive(next, npc.id);
       // 만난 인물은 알게 된다
       const known = (next.known[state.playerId] ??= []);
       if (!known.includes(npc.id)) known.push(npc.id);
@@ -197,6 +243,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     }
     case "npc_left":
       if (!next.scene.present.includes(event.npcId)) throw new Error(`장면에 없음: ${event.npcId}`);
+      perceive(next, event.npcId);
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
       break;
     case "belief_added":
@@ -218,6 +265,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         checkId: event.checkId,
         turn: event.turn,
         actorId: event.actorId,
+        move: event.move,
         outcome: event.outcome,
         harmApplied: false,
       };
@@ -269,6 +317,36 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       }
       break;
     }
+    case "deed_recorded": {
+      const deed = event.deed;
+      mustGet(next.characters, deed.actorId, "캐릭터");
+      if (next.deeds[deed.id]) throw new Error(`행적 id 중복: ${deed.id}`);
+      next.deeds[deed.id] = structuredClone(deed);
+      next.nextDeedNo += 1;
+      break;
+    }
+    case "deed_learned": {
+      const deed = mustGet(next.deeds, event.deedId, "행적");
+      mustGet(next.characters, event.npcId, "캐릭터");
+      const known = (next.deedKnowledge[event.npcId] ??= {});
+      if (known[deed.id]) throw new Error(`이미 아는 행적: ${event.npcId} ${deed.id}`);
+      known[deed.id] = event.source;
+      const toward = (next.relations[event.npcId] ??= {});
+      toward[deed.actorId] = applyRelationDelta(toward[deed.actorId] ?? NEUTRAL_RELATION, event.delta);
+      if (next.scene.present.includes(event.npcId)) perceive(next, event.npcId);
+      break;
+    }
+    case "witnesses_searched":
+      mustGet(next.deeds, event.deedId, "행적").searched = true;
+      break;
+    case "rumors_spread":
+      next.lastSpreadDay = event.day;
+      break;
+    case "secret_revealed":
+      mustGet(next.characters, event.npcId, "캐릭터");
+      if (next.revealedSecrets.includes(event.npcId)) throw new Error(`이미 공개된 비밀: ${event.npcId}`);
+      next.revealedSecrets.push(event.npcId);
+      break;
     case "promoted": {
       const character = mustGet(next.characters, event.characterId, "캐릭터");
       if (character.rank !== event.from) throw new Error(`등급이 어긋납니다: ${character.rank} ≠ ${event.from}`);
@@ -287,6 +365,11 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     }
   }
   return next;
+}
+
+/** 플레이어가 지금 이 NPC의 태도를 느낀다 (같은 장면에 있을 때) */
+function perceive(state: GameState, npcId: string) {
+  state.perceived[npcId] = { ...(state.relations[npcId]?.[state.playerId] ?? NEUTRAL_RELATION) };
 }
 
 /** 보관 위치의 인벤토리. 없으면 undefined */

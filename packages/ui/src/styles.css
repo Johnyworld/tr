@@ -454,6 +454,64 @@ body {
   color: var(--success);
 }
 
+.card.deed {
+  border-left-color: var(--partial);
+}
+
+.relations summary,
+.relations summary h3 {
+  cursor: pointer;
+  display: inline;
+}
+
+.relations summary {
+  list-style: none;
+}
+
+.relations summary::-webkit-details-marker {
+  display: none;
+}
+
+.relations summary h3::after {
+  content: " ▸";
+}
+
+.relations details[open] summary h3::after {
+  content: " ▾";
+}
+
+.relations table {
+  width: 100%;
+  margin-top: 6px;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.relations th {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: right;
+}
+
+.relations td {
+  padding: 2px 0;
+  text-align: right;
+}
+
+.relations td:first-child {
+  text-align: left;
+}
+
+.rel-pos {
+  color: var(--success);
+}
+
+.rel-neg {
+  color: var(--error);
+}
+
 .card.presence,
 .card.belief {
   padding: 6px 14px;
@@ -483,6 +541,7 @@ body {
     display: none;
   }
   .sheet section.beliefs,
+  .sheet section.relations,
   .sheet section.service,
   .sheet section.mission .requirements {
     display: none;

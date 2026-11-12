@@ -78,6 +78,19 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
           </div>
         </div>
       );
+    case "deed":
+      return (
+        <div className="card deed">
+          <div className="card-head">
+            <span className="card-kind">행적</span>
+            <span>{display.summary}</span>
+            <span className="badge">{display.tagLabels.join("·")}</span>
+          </div>
+          <div className="card-intent">
+            {display.visibleWitnesses.length > 0 ? `본 사람: ${display.visibleWitnesses.join(", ")}` : "이름이 알려진 목격자는 없다"}
+          </div>
+        </div>
+      );
     case "presence":
       return (
         <div className="card presence">

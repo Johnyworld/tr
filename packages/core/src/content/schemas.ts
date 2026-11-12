@@ -69,7 +69,15 @@ export const npcContentSchema = z.strictObject({
   /** 이 인물이 모르는 것 (세계의 진실). 작성자 메모이며 GM 프롬프트에 절대 넣지 않는다 */
   doesnt_know: z.array(z.string().min(1)).default([]),
   /** 비밀. 공개 조건이 충족되기 전에는 GM 프롬프트에 넣지 않는다 */
-  secret: z.strictObject({ content: z.string().min(1), reveal_when: z.string().min(1) }).optional(),
+  secret: z
+    .strictObject({
+      content: z.string().min(1),
+      /** 공개 상황 (GM이 판단하는 서술 조건) */
+      reveal_when: z.string().min(1),
+      /** 공개에 필요한 이 인물의 플레이어에 대한 신뢰 (코드가 검사) */
+      min_trust: z.number().int().min(1).max(5),
+    })
+    .optional(),
   stats: statsSchema,
   start_inventory: z.array(contentIdSchema).default([]),
   /** 사망 후 이 인물로 이어서 플레이할 수 있는지 */

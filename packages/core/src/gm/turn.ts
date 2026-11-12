@@ -6,7 +6,7 @@ import type { LanguageModel, ModelMessage, ModelStopReason, UserBlock } from "./
 import { GM_SYSTEM_PROMPT } from "./prompt.ts";
 import { MIN_TURN_MINUTES } from "../rules/time.ts";
 import { executeTool, GM_TOOL_SPECS, type ToolDisplayEvent } from "./tools.ts";
-import { runStartOfTurn } from "./missionTools.ts";
+import { runStartOfTurn } from "./turnStart.ts";
 
 /** 플레이어 한 번의 입력 최대 길이 (문자 수) */
 export const MAX_INPUT_LENGTH = 2000;

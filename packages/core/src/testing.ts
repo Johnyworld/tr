@@ -47,7 +47,7 @@ export const TEST_CONTENT: Content = {
       rules: ["불복종을 싫어한다"],
       knows: ["동쪽 초소 교대 시간"],
       doesnt_know: ["정찰조는 C의 포로다 (진실)"],
-      secret: { content: "정찰조를 버리고 후퇴했다 (비밀)", reveal_when: "신뢰 4" },
+      secret: { content: "정찰조를 버리고 후퇴했다 (비밀)", reveal_when: "술자리", min_trust: 4 },
       stats: { strength: 1, agility: 1, cool: 2, sense: 1, persuasion: 0 },
       start_inventory: ["radio"],
       playable: true,

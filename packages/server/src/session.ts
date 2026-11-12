@@ -6,6 +6,8 @@ import {
   BELIEF_SOURCE_LABELS,
   checkPromotion,
   daysServed,
+  DEED_TAG_LABELS,
+  NEUTRAL_RELATION,
   describeRequirement,
   formatTime,
   INJURY_LABELS,
@@ -44,6 +46,10 @@ export type PlayerView = {
     promotionMissing: string[] | null;
   };
   mission: { title: string; briefing: string; deadlineLabel: string; requirements: string[] } | null;
+  /** 아는 인물의 당신에 대한 관계 */
+  relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
+  /** 내 행적 (최근 것부터). 보이는 목격자만 담는다 */
+  deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   /** 최근 것부터 */
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
 };
@@ -142,8 +148,13 @@ export class GameSession {
         merit: player.merit,
         disobedience: player.disobedience,
         daysServed: daysServed(state.time, state.runStartedAt),
-        promotionMissing:
-          player.rank === "grunt" ? checkPromotion(player, state.time, state.runStartedAt).missing : null,
+        promotionMissing: (() => {
+          if (player.rank !== "grunt") return null;
+          const commanderId = content.roles[state.roleId]?.commander;
+          // 화면에는 플레이어가 느끼는 신뢰를 보여 준다 (실제 진급 판정은 진짜 관계로 한다)
+          const trust = commanderId ? (state.perceived[commanderId]?.trust ?? 0) : null;
+          return checkPromotion(player, state.time, state.runStartedAt, trust).missing;
+        })(),
       },
       mission: (() => {
         const m = activeMissionOf(state.missions, player.id);
@@ -155,6 +166,21 @@ export class GameSession {
           requirements: m.requirements.map((r, i) => describeRequirement(r, m.progress[i] ?? 0)),
         };
       })(),
+      // 진짜 관계가 아니라 플레이어가 마지막으로 느낀 태도 (숨은 목격자가 드러나지 않게)
+      relations: (state.known[player.id] ?? []).map((id) => {
+        const r = state.perceived[id] ?? NEUTRAL_RELATION;
+        return { id, name: state.characters[id]?.name ?? id, ...r };
+      }),
+      // 숨은 목격자는 UI에도 보내지 않는다
+      deeds: Object.values(state.deeds)
+        .filter((d) => d.actorId === player.id)
+        .map((d) => ({
+          id: d.id,
+          summary: d.summary,
+          tagLabels: d.tags.map((t) => DEED_TAG_LABELS[t]),
+          visibleWitnesses: d.witnesses.filter((w) => !w.hidden).map((w) => state.characters[w.npcId]?.name ?? w.npcId),
+        }))
+        .reverse(),
       // 진짜 정확도(accuracy)는 UI에도 보내지 않는다
       beliefs: (state.beliefs[state.playerId] ?? [])
         .map((b) => ({

@@ -65,6 +65,7 @@ describe("runTurn", () => {
     expect(store.events().map((e) => e.type)).toEqual([
       "world_created",
       "turn_started",
+      "rumors_spread", // 턴 시작 처리: 소문 전파 기준일
       "missions_offered", // 턴 시작 처리: 오늘의 임무 후보
       "check_rolled",
       "time_advanced", // GM이 시간을 쓰지 않아 잠깐의 행동으로 처리
@@ -104,6 +105,7 @@ describe("runTurn", () => {
     expect(store.events().map((e) => e.type)).toEqual([
       "world_created",
       "turn_started",
+      "rumors_spread",
       "missions_offered",
       "time_advanced",
     ]);

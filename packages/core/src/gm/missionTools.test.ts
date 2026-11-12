@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Rng } from "../rng.ts";
 import { checkPromotion, evaluateMission, PROMOTION } from "../game/missions.ts";
 import { createTestStore, TEST_CONTENT } from "../testing.ts";
-import { describeMissionsForGm, runStartOfTurn } from "./missionTools.ts";
+import { describeMissionsForGm } from "./missionTools.ts";
+import { runStartOfTurn } from "./turnStart.ts";
 import { executeTool } from "./tools.ts";
 
 const first: Rng = () => 0; // 후보는 목록 순서대로, 판정은 1+1
@@ -105,18 +106,21 @@ describe("명령 불복종", () => {
 describe("진급", () => {
   const base = createTestStore().getState().characters.player!;
 
-  it("공적·복무 기간·불복종 조건을 모두 채워야 한다", () => {
+  it("공적·복무 기간·불복종·상관 신뢰 조건을 모두 채워야 한다", () => {
     const day = 24 * 60;
-    expect(checkPromotion({ ...base, merit: 9 }, 330 + 4 * day, 330).eligible).toBe(true);
-    expect(checkPromotion({ ...base, merit: 8 }, 330 + 4 * day, 330).missing).toEqual(["공적 8/9"]);
-    expect(checkPromotion({ ...base, merit: 9 }, 330 + 3 * day, 330).missing).toEqual(["복무 3/4일"]);
-    expect(checkPromotion({ ...base, merit: 9, disobedience: 2 }, 330 + 4 * day, 330).eligible).toBe(false);
+    expect(checkPromotion({ ...base, merit: 9 }, 330 + 4 * day, 330, 2).eligible).toBe(true);
+    expect(checkPromotion({ ...base, merit: 8 }, 330 + 4 * day, 330, 2).missing).toEqual(["공적 8/9"]);
+    expect(checkPromotion({ ...base, merit: 9 }, 330 + 3 * day, 330, 2).missing).toEqual(["복무 3/4일"]);
+    expect(checkPromotion({ ...base, merit: 9, disobedience: 2 }, 330 + 4 * day, 330, 2).eligible).toBe(false);
+    expect(checkPromotion({ ...base, merit: 9 }, 330 + 4 * day, 330, 1).missing).toEqual(["상관 신뢰 1/2"]);
+    expect(checkPromotion({ ...base, merit: 9 }, 330 + 4 * day, 330, null).eligible).toBe(true);
   });
 
   it("조건을 채운 상태로 보고하면 진급한다", () => {
     const env = withLeader(setup(sixes));
-    // 복무 4일이 지났고 공적 6이 쌓인 상태로 만든다
+    // 복무 4일이 지났고 공적 6, 상관 신뢰 1이 쌓인 상태로 만든다
     env.store.getState().characters.player!.merit = 6;
+    env.store.getState().relations.npc_leader = { player: { trust: 1, affection: 0, respect: 0 } };
     env.store.append({ type: "time_advanced", activity: "wait", from: 330, to: 330 + 4 * 24 * 60 });
     env.store.append({ type: "missions_offered", day: 5, templateIds: ["m_guard"] });
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);

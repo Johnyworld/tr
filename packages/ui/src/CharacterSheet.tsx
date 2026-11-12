@@ -84,6 +84,54 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
           <ItemList items={player.sceneItems} />
         </section>
       )}
+      {player.relations.length > 0 && (
+        <section className="relations">
+          <details>
+            <summary>
+              <h3>관계</h3>
+            </summary>
+            <table>
+              <thead>
+                <tr>
+                  <th />
+                  <th>신뢰</th>
+                  <th>호감</th>
+                  <th>존중</th>
+                </tr>
+              </thead>
+              <tbody>
+                {player.relations.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.name}</td>
+                    <RelationCell value={r.trust} />
+                    <RelationCell value={r.affection} />
+                    <RelationCell value={r.respect} />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        </section>
+      )}
+
+      {player.deeds.length > 0 && (
+        <section className="beliefs deeds">
+          <details>
+            <summary>
+              <h3>내 행적 ({player.deeds.length})</h3>
+            </summary>
+            <ul>
+              {player.deeds.map((d) => (
+                <li key={d.id}>
+                  <span className="belief-source">{d.tagLabels.join("·")}</span> {d.summary}
+                  {d.visibleWitnesses.length > 0 && <span className="muted"> — 본 사람: {d.visibleWitnesses.join(", ")}</span>}
+                </li>
+              ))}
+            </ul>
+          </details>
+        </section>
+      )}
+
       <section className="beliefs">
         <details>
           <summary>
@@ -100,6 +148,10 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
       </section>
     </aside>
   );
+}
+
+function RelationCell({ value }: { value: number }) {
+  return <td className={value > 0 ? "rel-pos" : value < 0 ? "rel-neg" : "muted"}>{signed(value)}</td>;
 }
 
 function ItemList({ items }: { items: PlayerView["inventory"] }) {

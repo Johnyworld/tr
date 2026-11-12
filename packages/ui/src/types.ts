@@ -15,6 +15,8 @@ export type PlayerView = {
   present: { id: string; name: string; rankLabel: string; look: string; injuryLabel: string }[];
   service: { merit: number; disobedience: number; daysServed: number; promotionMissing: string[] | null };
   mission: { title: string; briefing: string; deadlineLabel: string; requirements: string[] } | null;
+  relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
+  deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
 };
 

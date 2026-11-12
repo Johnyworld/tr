@@ -34,8 +34,12 @@ import { fastForward } from "../sim/fastForward.ts";
 import { BELIEF_SOURCE_LABELS, beliefSourceSchema } from "../game/belief.ts";
 import { findHolderInventory, SCENE_HOLDER, type GameEvent, type GameState } from "../game/state.ts";
 import type { ToolSpec } from "./model.ts";
-import { defineTool, signed, type ToolContext, type ToolOutcome } from "./toolkit.ts";
+import { defineTool, signed, STRICT_UNSUPPORTED_KEYS, type ToolContext, type ToolOutcome } from "./toolkit.ts";
+
+export { STRICT_UNSUPPORTED_KEYS } from "./toolkit.ts";
 import { MISSION_TOOLS } from "./missionTools.ts";
+import { REPUTATION_TOOLS } from "./reputationTools.ts";
+import { rollPlayerCheck } from "./checks.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome } from "./toolkit.ts";
 
@@ -60,63 +64,16 @@ const requestCheck = defineTool({
     difficulty: difficultySchema.describe("상황의 난이도. 대부분은 normal"),
     intent: z.string().min(1).max(200).describe("캐릭터가 이루려는 것 한 문장 (예: 잠긴 사물함을 비틀어 연다)"),
   }),
-  run(input, { store, rng }) {
-    const state = store.getState();
-    const actor = state.characters[state.playerId];
-    if (!actor) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
-    if (actor.injury === "dead") return { ok: false, error: "사망한 캐릭터는 판정할 수 없습니다." };
-
-    const allowed = MOVE_STATS[input.move];
-    if (!allowed.includes(input.stat)) {
-      return {
-        ok: false,
-        error: `${input.move}에는 ${allowed.join(" 또는 ")} 능력치만 쓸 수 있습니다.`,
-      };
-    }
-
-    const modifiers = {
-      stat: actor.stats[input.stat],
-      difficulty: DIFFICULTY_MODIFIER[input.difficulty],
-      injury: INJURY_PENALTY[actor.injury],
-    };
-    const roll = roll2d6(rng, modifiers.stat + modifiers.difficulty + modifiers.injury);
-    const checkId = `chk_${state.nextCheckNo}`;
-
-    store.append({
-      type: "check_rolled",
-      checkId,
-      turn: state.turn,
-      actorId: actor.id,
-      move: input.move,
-      stat: input.stat,
-      difficulty: input.difficulty,
-      intent: input.intent,
-      dice: roll.dice,
-      modifiers,
-      total: roll.total,
-      outcome: roll.outcome,
-    });
-
+  run(input, ctx) {
+    const result = rollPlayerCheck(input, ctx);
+    if (!result.ok) return result;
     return {
       ok: true,
       resultText:
-        `판정 ${checkId}: ${CHECK_OUTCOME_LABELS[roll.outcome]} (${roll.outcome}). ` +
-        `주사위 ${roll.dice[0]}+${roll.dice[1]}, 보정 ${signed(roll.modifier)}, 합계 ${roll.total}.\n` +
-        OUTCOME_GUIDE[roll.outcome],
-      display: {
-        type: "check",
-        checkId,
-        actorName: actor.name,
-        intent: input.intent,
-        moveLabel: MOVE_LABELS[input.move],
-        statLabel: STAT_LABELS[input.stat],
-        difficultyLabel: DIFFICULTY_LABELS[input.difficulty],
-        dice: roll.dice,
-        modifiers,
-        total: roll.total,
-        outcome: roll.outcome,
-        outcomeLabel: CHECK_OUTCOME_LABELS[roll.outcome],
-      },
+        `판정 ${result.checkId}: ${CHECK_OUTCOME_LABELS[result.outcome]} (${result.outcome}). ` +
+        `주사위 ${result.dice[0]}+${result.dice[1]}, 보정 ${signed(result.modifier)}, 합계 ${result.total}.\n` +
+        OUTCOME_GUIDE[result.outcome],
+      display: result.display,
     };
   },
 });
@@ -375,7 +332,7 @@ const addBelief = defineTool({
   },
 });
 
-const TOOLS = [requestCheck, applyHarm, transferItem, spendTime, npcPresence, addBelief, ...MISSION_TOOLS] as const;
+const TOOLS = [requestCheck, applyHarm, transferItem, spendTime, npcPresence, addBelief, ...MISSION_TOOLS, ...REPUTATION_TOOLS] as const;
 
 /** LLM에 넘길 tool 명세 (JSON Schema) */
 export const GM_TOOL_SPECS: ToolSpec[] = TOOLS.map((tool) => ({
@@ -396,13 +353,14 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   return (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
 }
 
+
 /**
  * zod 스키마를 strict tool용 JSON Schema로 바꾼다.
  * 숫자 범위 같은 제약은 strict 모드가 지원하지 않을 수 있어 지우고, 검증은 zod가 한다.
  */
 function toToolJsonSchema(schema: z.ZodType): ToolSpec["inputSchema"] {
   const json = z.toJSONSchema(schema) as Record<string, unknown>;
-  return stripKeys(json, ["$schema", "minimum", "maximum", "minLength", "maxLength"]) as ToolSpec["inputSchema"];
+  return stripKeys(json, STRICT_UNSUPPORTED_KEYS) as ToolSpec["inputSchema"];
 }
 
 function stripKeys(value: unknown, keys: string[]): unknown {

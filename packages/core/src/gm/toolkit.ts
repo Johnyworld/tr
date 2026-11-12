@@ -44,6 +44,13 @@ export type ToolDisplayEvent =
     }
   | { type: "promotion"; name: string; fromLabel: string; toLabel: string }
   | {
+      type: "deed";
+      summary: string;
+      tagLabels: string[];
+      /** 보이는 목격자만. 숨은 목격자는 절대 넣지 않는다 */
+      visibleWitnesses: string[];
+    }
+  | {
       type: "time";
       activityLabel: string;
       durationLabel: string;
@@ -74,3 +81,17 @@ export function defineTool<S extends z.ZodType>(def: ToolDef<S>) {
 export function signed(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
 }
+
+/** strict tool에서 지원하지 않을 수 있는 제약. 지우고 zod로 검증한다 */
+export const STRICT_UNSUPPORTED_KEYS = [
+  "$schema",
+  "minimum",
+  "maximum",
+  "exclusiveMinimum",
+  "exclusiveMaximum",
+  "minLength",
+  "maxLength",
+  "minItems",
+  "maxItems",
+  "pattern",
+];

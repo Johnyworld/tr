@@ -56,6 +56,8 @@ export const PROMOTION = {
   minMerit: 9,
   minDaysServed: 4,
   maxDisobedience: 1,
+  /** 직속 상관의 신뢰 */
+  minCommanderTrust: 2,
 } as const;
 
 /** 하루에 상관이 내놓는 임무 수 */
@@ -94,7 +96,13 @@ export function daysServed(now: GameTime, runStartedAt: GameTime): number {
 
 export type PromotionCheck = { eligible: boolean; missing: string[] };
 
-export function checkPromotion(character: Character, now: GameTime, runStartedAt: GameTime): PromotionCheck {
+/** commanderTrust: 직속 상관의 이 캐릭터에 대한 신뢰. 상관이 없으면 null (조건 생략) */
+export function checkPromotion(
+  character: Character,
+  now: GameTime,
+  runStartedAt: GameTime,
+  commanderTrust: number | null,
+): PromotionCheck {
   const missing: string[] = [];
   if (character.rank !== PROMOTION.from) return { eligible: false, missing: ["진급 대상 등급이 아님"] };
   if (character.merit < PROMOTION.minMerit) missing.push(`공적 ${character.merit}/${PROMOTION.minMerit}`);
@@ -102,6 +110,9 @@ export function checkPromotion(character: Character, now: GameTime, runStartedAt
   if (days < PROMOTION.minDaysServed) missing.push(`복무 ${days}/${PROMOTION.minDaysServed}일`);
   if (character.disobedience > PROMOTION.maxDisobedience) {
     missing.push(`불복종 ${character.disobedience}회 (최대 ${PROMOTION.maxDisobedience}회)`);
+  }
+  if (commanderTrust !== null && commanderTrust < PROMOTION.minCommanderTrust) {
+    missing.push(`상관 신뢰 ${commanderTrust}/${PROMOTION.minCommanderTrust}`);
   }
   return { eligible: missing.length === 0, missing };
 }

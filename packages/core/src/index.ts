@@ -34,6 +34,7 @@ export {
 } from "./game/state.ts";
 export { InMemoryGameStore, type GameStore } from "./game/store.ts";
 export * from "./game/missions.ts";
+export * from "./game/reputation.ts";
 export { describeRequirement, describeMission } from "./gm/missionTools.ts";
 
 export * from "./content/schemas.ts";

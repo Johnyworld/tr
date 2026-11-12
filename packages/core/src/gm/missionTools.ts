@@ -17,6 +17,7 @@ import {
   type MissionInstance,
 } from "../game/missions.ts";
 import { defineTool, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
+import { recordDeed } from "./reputationTools.ts";
 
 /** 요구 조건 한 줄 설명 */
 export function describeRequirement(requirement: MissionRequirement, progress: number): string {
@@ -105,6 +106,14 @@ const reportMission = defineTool({
 
     const result = evaluateMission(mission, state.time);
     ctx.store.append({ type: "mission_reported", missionId: mission.id, ...result });
+    // 완수는 상관이 직접 확인한 성실함으로 남는다 (관계 변화는 상관의 가치관으로 계산)
+    if (result.outcome === "success") {
+      recordDeed(
+        ctx,
+        { summary: `임무 완수: ${mission.title}`, tags: ["diligence"], severity: 1, privacy: "public", noisy: false },
+        { npcId: giver.id, source: "seen" },
+      );
+    }
     const label = MISSION_STATUS_LABELS[result.outcome === "success" ? "completed" : result.outcome];
     const lines = [
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.`,
@@ -114,7 +123,9 @@ const reportMission = defineTool({
     const after = ctx.store.getState();
     const player = after.characters[after.playerId]!;
     const extra: ToolDisplayEvent[] = [];
-    if (checkPromotion(player, after.time, after.runStartedAt).eligible) {
+    const commander = commanderOf(after, ctx);
+    const commanderTrust = commander ? (after.relations[commander.id]?.[player.id]?.trust ?? 0) : null;
+    if (checkPromotion(player, after.time, after.runStartedAt, commanderTrust).eligible) {
       ctx.store.append({ type: "promoted", characterId: player.id, from: PROMOTION.from, to: PROMOTION.to });
       lines.push(
         `진급: ${player.name}이(가) ${RANK_LABELS[PROMOTION.from]}에서 ${RANK_LABELS[PROMOTION.to]}(으)로 진급했다. 상관이 이를 알리는 장면을 서술하라.`,
@@ -148,6 +159,11 @@ const abandonMission = defineTool({
     const mission = activeMissionOf(state.missions, state.playerId);
     if (!mission) return { ok: false, error: "수행 중인 임무가 없습니다." };
     ctx.store.append({ type: "mission_abandoned", missionId: mission.id, merit: MERIT.abandoned, reason: input.reason });
+    recordDeed(
+      ctx,
+      { summary: `임무 포기: ${mission.title} (${input.reason})`, tags: ["disobedience"], severity: 2, privacy: "public", noisy: false },
+      { npcId: mission.giverId, source: state.scene.present.includes(mission.giverId) ? "seen" : "report" },
+    );
     return {
       ok: true,
       resultText:
@@ -161,16 +177,21 @@ const abandonMission = defineTool({
 export const MISSION_TOOLS = [assignMission, reportMission, abandonMission] as const;
 
 /**
- * 턴 시작 처리 (코드가 하는 일, AI 요청 없음).
+ * 임무의 턴 시작 처리 (코드가 하는 일, AI 요청 없음).
  * - 기한이 지난 임무는 기한 초과(명령 불이행)로 끝낸다
  * - 날이 바뀌면 상관이 오늘의 임무 후보를 정한다
  */
-export function runStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
+export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
   const displays: ToolDisplayEvent[] = [];
   const state = ctx.store.getState();
   for (const mission of Object.values(state.missions)) {
     if (mission.status === "active" && state.time > mission.deadline) {
       ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: MERIT.expired });
+      recordDeed(
+        ctx,
+        { summary: `임무 기한 초과: ${mission.title}`, tags: ["disobedience"], severity: 2, privacy: "public", noisy: false },
+        { npcId: mission.giverId, source: "report" },
+      );
       displays.push({ type: "mission", event: "expired", title: mission.title, detail: "기한 초과 (불복종)", merit: MERIT.expired });
     }
   }

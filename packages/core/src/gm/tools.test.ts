@@ -3,7 +3,7 @@ import { createSeededRng, type Rng } from "../rng.ts";
 import { createWorldEvent, type GameState } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { TEST_CONTENT } from "../testing.ts";
-import { executeTool, GM_TOOL_SPECS, harmSteps } from "./tools.ts";
+import { executeTool, GM_TOOL_SPECS, harmSteps, STRICT_UNSUPPORTED_KEYS } from "./tools.ts";
 
 /** 주사위 눈을 그대로 지정하는 RNG */
 function diceRng(...faces: number[]): Rng {
@@ -32,10 +32,9 @@ const check = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe("tool 명세", () => {
-  it("strict용 JSON Schema에 $schema와 숫자 범위가 없다", () => {
+  it("strict용 JSON Schema에 지원하지 않는 제약(숫자 범위, 배열 길이 등)이 없다", () => {
     const json = JSON.stringify(GM_TOOL_SPECS);
-    expect(json).not.toContain("$schema");
-    expect(json).not.toContain("minimum");
+    for (const key of STRICT_UNSUPPORTED_KEYS) expect(json, key).not.toContain(`"${key}"`);
     for (const spec of GM_TOOL_SPECS) {
       expect(spec.inputSchema.type).toBe("object");
       expect(spec.inputSchema.additionalProperties).toBe(false);

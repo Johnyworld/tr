@@ -27,6 +27,7 @@ doesnt_know:
 secret:
   content: 실종된 정찰조에 친형이 있었다. 정찰조에 들어가려는 것도 형을 찾기 위해서다
   reveal_when: 신뢰 3 이상
+  min_trust: 3
 stats: { strength: 0, agility: 1, cool: -1, sense: 1, persuasion: 1 }
 start_inventory: [water_bottle]
 playable: true

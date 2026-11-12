@@ -28,7 +28,8 @@ export function loadScenario(dir: string): Scenario {
     tone: read(file.data.gm_tone).trim(),
     rules: read(file.data.gm_rules).trim(),
     mcpGuide: read(file.data.mcp_guide).trim(),
-    introText: file.data.intro ? read(file.data.intro).trim() : null,
+    // 작성자용 HTML 주석은 GM에게 보내지 않는다
+    introText: file.data.intro ? read(file.data.intro).replace(/<!--[\s\S]*?-->/g, "").trim() : null,
   };
 }
 

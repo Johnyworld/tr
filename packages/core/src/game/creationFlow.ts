@@ -350,6 +350,11 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
     );
   } else {
     lines.push("물을 것: 이대로 시작할지. 정한 것을 한 사람의 모습으로 그려 보여 준 뒤 묻는다.");
+    const { spent } = abilitySpend(s, collect(draft).abilities);
+    const left = (s.creation?.points ?? 0) - spent;
+    if (collect(draft).abilityMethod === "manual" && Number.isFinite(spent) && left > 0) {
+      lines.push(`능력 포인트 ${left}을(를) 쓰지 않았다. 이대로 시작하면 사라진다고 알려 주고, 쓰고 싶으면 "처음부터 다시"나 뒤로 가기로 고치게 한다.`);
+    }
   }
 
   if (options.length) {

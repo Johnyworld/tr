@@ -37,6 +37,7 @@ describe("대화로 하는 캐릭터 생성", () => {
     expect(first).toContain("세계와 지금 상황");
     expect(first).toContain("청솔형제단");
     expect(first).toContain("1/5: 이름");
+    expect(first).not.toContain("<!--");
     const heir = describeCreationStep(content, newCreationDraft("heir"), roleId);
     expect(heir).not.toContain("세계와 지금 상황");
     expect(heir).toContain("이름");
@@ -74,6 +75,11 @@ describe("대화로 하는 캐릭터 생성", () => {
     const r = answerCreation(s, none, "marksman", createSeededRng(1));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain("모자란다");
+  });
+
+  it("능력 포인트를 남기면 확인 단계에서 알린다", () => {
+    const { draft } = run(["서진", "male", "manual", "0", "0", "0", "1", "0", "0", "0", "none"]);
+    expect(describeCreationStep(content, draft, roleId)).toContain("능력 포인트 3을(를) 쓰지 않았다");
   });
 
   it("운에 맡기면 규칙에 맞는 값을 바로 굴려 확인 단계에서 보여 준다", () => {

@@ -123,8 +123,8 @@ function checkReferences(content: Content): string[] {
     }
     if (loc.kind === "base" && !loc.owner) problems.push(`locations.${loc.id}: 거점에는 소유 세력이 있어야 한다`);
   }
-  for (const item of Object.keys(content.scenario.recovery?.items ?? {})) {
-    if (!content.items[item]) problems.push(`scenario.recovery.items: 알 수 없는 아이템 ${item}`);
+  for (const item of Object.keys(content.scenario.consumables)) {
+    if (!content.items[item]) problems.push(`scenario.consumables: 알 수 없는 아이템 ${item}`);
   }
   const battle = content.scenario.battle;
   if (battle) {

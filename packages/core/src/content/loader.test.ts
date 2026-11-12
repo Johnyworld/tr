@@ -20,6 +20,7 @@ function tempContent(files: Record<string, string>) {
   const scenario = parse(readFileSync(join(REAL_CONTENT, "scenario.yaml"), "utf8")) as Record<string, unknown>;
   delete scenario.battle;
   delete scenario.recovery;
+  delete scenario.consumables;
   writeFileSync(join(dir, "scenario.yaml"), stringify(scenario));
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(join(dir, path, ".."), { recursive: true });

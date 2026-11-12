@@ -279,7 +279,24 @@ export function createGameSchemas(s: Scenario) {
     }),
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
-    /** 부상이 나았다 (치료 또는 저절로). by: rest | healer | 아이템 id */
+    /**
+     * 몸 상태 트랙이 바뀌었다 (12-1: 치료, 소모품, 배급에 따른 허기, 감염 진행, 굶주림·감염의 부상).
+     * 판정에 묶인 피해는 harm_applied를 쓴다. by: healer | rest | daily | infection | 아이템 id
+     */
+    z.strictObject({
+      type: z.literal("condition_changed"),
+      targetId: z.string(),
+      track: z.string(),
+      from: z.string(),
+      to: z.string(),
+      fatal: z.boolean(),
+      by: z.string(),
+      cause: z.string(),
+      day: z.number().int(),
+      /** 부상 트랙이면 회복 기준 시각을 새로 잡는다 */
+      harmTrack: z.boolean(),
+    }),
+    /** (이전 형식) 부상이 나았다. 새 기록은 condition_changed를 쓴다 */
     z.strictObject({
       type: z.literal("harm_healed"),
       targetId: z.string(),
@@ -628,6 +645,15 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       }
       next.playerZone = event.to;
       break;
+    case "condition_changed": {
+      const target = mustGet(next.characters, event.targetId, "캐릭터");
+      if (target.dead) throw new Error("사망한 캐릭터의 상태는 바뀌지 않습니다.");
+      target.conditions[event.track] = event.to;
+      if (event.fatal) target.dead = true;
+      if (event.harmTrack) next.recovery.lastChangeAt[event.targetId] = state.time;
+      if (event.by === "healer") next.recovery.lastHealerDay[event.targetId] = event.day;
+      break;
+    }
     case "harm_healed": {
       const target = mustGet(next.characters, event.targetId, "캐릭터");
       if (target.dead) throw new Error("사망한 캐릭터는 낫지 않습니다.");

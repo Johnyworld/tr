@@ -9,11 +9,12 @@ import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
 import type { Content } from "../content/schemas.ts";
 import { formatTime } from "../rules/time.ts";
-import { conditionPenalty, describeConditions, initialConditions, rankLabel } from "../scenario/scenario.ts";
+import { conditionPenalty, describeConditions, initialConditions, rankLabel, shownLevel } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import type { TranscriptEntry } from "../engine/log.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
 import { factionOutlook, zoneOutlook } from "../engine/warTools.ts";
+import { seasonAt, seasonLabel } from "../sim/season.ts";
 import { alarmLabel, battleTitle, momentumLabel } from "../engine/battleTools.ts";
 
 /**
@@ -99,12 +100,12 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       content.roles[state.roleId]?.rank === player.rank
         ? (content.roles[state.roleId]?.label ?? rankLabel(scenario, player.rank))
         : rankLabel(scenario, player.rank),
-    timeLabel: formatTime(state.time),
+    timeLabel: [formatTime(state.time), seasonLabel(seasonAt(content.scenario, state.time))].filter(Boolean).join(" · "),
     conditions: scenario.condition_tracks.map((track) => ({
       id: track.id,
       label: track.label,
-      levelLabel: track.levels.find((l) => l.id === player.conditions[track.id])?.label ?? "?",
-      worsened: player.conditions[track.id] !== initial[track.id],
+      levelLabel: shownLevel(track, player.conditions[track.id]).label,
+      worsened: shownLevel(track, player.conditions[track.id]).id !== initial[track.id],
     })),
     conditionPenalty: conditionPenalty(scenario, player),
     dead: player.dead,

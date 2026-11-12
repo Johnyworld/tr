@@ -13,7 +13,8 @@ const ones: Rng = () => 0;
 
 function content(): Content {
   const c = structuredClone(TEST_CONTENT);
-  c.scenario.recovery = { natural_days: 2, natural_max_level: "serious", items: { radio: 1, bomb: 2 }, healer_steps: 1 };
+  c.scenario.recovery = { natural_days: 2, natural_max_level: "serious", healer: { harm: 1 } };
+  c.scenario.consumables = { radio: { harm: 1 }, bomb: { harm: 2 } };
   c.npcs.npc_leader!.healer = true;
   for (const f of Object.values(c.factions)) f.aggression = 0;
   return c;
@@ -51,7 +52,7 @@ describe("치료", () => {
     const env = setup();
     wound(env);
     env.store.getState().characters.player!.inventory.bomb = 1;
-    const out = executeTool("take_action", act({ treatment: { item: "bomb" } }), env.ctx);
+    const out = executeTool("take_action", act({ use_item: "bomb" }), env.ctx);
     expect(out.ok).toBe(true);
     expect(harm(env)).toBe("none");
     expect(env.store.getState().characters.player!.inventory.bomb).toBeUndefined();
@@ -73,8 +74,9 @@ describe("치료", () => {
 
   it("다친 데가 없거나 치료에 못 쓰는 아이템이면 낫지 않는다", () => {
     const env = setup();
-    const out = executeTool("take_action", act({ treatment: { item: "radio" } }), env.ctx);
-    expect(out.ok && out.resultText).toContain("다친 데가 없어");
+    env.store.getState().characters.player!.inventory.radio = 1;
+    const out = executeTool("take_action", act({ use_item: "radio" }), env.ctx);
+    expect(out.ok && out.resultText).toContain("쓸 필요가 없다");
   });
 });
 

@@ -63,6 +63,13 @@ export function initialConditions(s: Scenario): Record<string, string> {
   return Object.fromEntries(s.condition_tracks.map((t) => [t.id, t.levels[0]!.id]));
 }
 
+/** 화면·GM에 보이는 단계: 숨은 단계(감염 잠복기 등)는 바로 앞의 보이는 단계로 */
+export function shownLevel(track: ConditionTrack, levelId: string | undefined) {
+  let index = Math.max(0, track.levels.findIndex((l) => l.id === levelId));
+  while (index > 0 && track.levels[index]!.hidden) index--;
+  return track.levels[index]!;
+}
+
 /** 상태 트랙들의 판정 보정 합 */
 export function conditionPenalty(s: Scenario, character: Pick<Character, "conditions">): number {
   return s.condition_tracks.reduce((sum, track) => {
@@ -74,7 +81,7 @@ export function conditionPenalty(s: Scenario, character: Pick<Character, "condit
 /** "부상: 경상, 감염: 없음" 같은 상태 요약 */
 export function describeConditions(s: Scenario, character: Pick<Character, "conditions">): string {
   return s.condition_tracks
-    .map((t) => `${t.label}: ${t.levels.find((l) => l.id === character.conditions[t.id])?.label ?? "?"}`)
+    .map((t) => `${t.label}: ${shownLevel(t, character.conditions[t.id]).label}`)
     .join(", ");
 }
 

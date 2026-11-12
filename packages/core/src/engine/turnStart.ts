@@ -3,7 +3,7 @@ import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import { runStorylets } from "./storyletTools.ts";
-import { runNaturalRecovery } from "./recovery.ts";
+import { runNaturalRecovery } from "./body.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**

@@ -66,6 +66,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       difficulty: "normal",
       harm_on_failure: harm,
       harm_cause: harm === "none" ? "" : "위험",
+      // 위험한 판정의 일부는 감염체에게서 오는 것으로
+      infected_source: harm !== "none" && rng() < 0.4,
     });
 
     // 전투 중: 쓸 수 있는 효과 하나
@@ -114,10 +116,10 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     const harmTrack = content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)!;
     if (s.characters[s.playerId]!.conditions[harmTrack.id] !== harmTrack.levels[0]!.id && rng() < 0.3) {
       const player = s.characters[s.playerId]!;
-      const item = Object.keys(content.scenario.recovery?.items ?? {}).find((i) => (player.inventory[i] ?? 0) > 0) ?? null;
+      const item = Object.entries(content.scenario.consumables).find(([i, e]) => e[harmTrack.id] && (player.inventory[i] ?? 0) > 0)?.[0] ?? null;
       const healer = Object.values(content.npcs).find((n) => n.healer && n.zone === s.playerZone && !s.characters[n.id]?.dead);
       if (!item && healer && !s.scene.present.includes(healer.id)) tool("npc_presence", { npc_id: healer.id, action: "enter" });
-      const out = tool("take_action", { ...base, intent: "치료", treatment: { item } });
+      const out = tool("take_action", item ? { ...base, intent: "치료", use_item: item } : { ...base, intent: "치료", treatment: { item: null } });
       if (!out.ok) stats.errors.push(`치료: ${out.error}`);
       continue;
     }

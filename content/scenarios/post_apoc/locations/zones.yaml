@@ -8,7 +8,7 @@
   kind: base
   owner: faction_a
   adjacent: [a_east_post, old_town, riverside, b_base]
-  yields: { food: 55, water: 60, fuel: 10, ammo: 3 }
+  yields: { food: 58, water: 75, fuel: 12, ammo: 3 }
 
 - id: a_east_post
   name: 동쪽 초소
@@ -31,7 +31,7 @@
   kind: base
   owner: faction_c
   adjacent: [old_town]
-  yields: { food: 140, water: 150, fuel: 15 }
+  yields: { food: 150, water: 185, fuel: 20 }
 
 - id: riverside
   name: 강변 공장 지대
@@ -54,14 +54,14 @@
   description: A 거점 서쪽의 옛 아파트 단지.
   kind: base
   owner: faction_b
-  yields: { food: 34, water: 36, fuel: 6, ammo: 1 }
+  yields: { food: 36, water: 42, fuel: 6, ammo: 1 }
 
 - id: d_clinic
   name: D의 진료소
   description: 옛 보건소 건물. 약을 구하려는 사람들이 찾아온다.
   kind: base
   owner: faction_d
-  yields: { food: 30, water: 30, fuel: 5, medicine: 4 }
+  yields: { food: 30, water: 33, fuel: 5, medicine: 4 }
 
 - id: e_market
   name: E의 장터

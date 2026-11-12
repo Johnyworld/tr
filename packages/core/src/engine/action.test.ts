@@ -3,7 +3,7 @@ import type { Rng } from "../rng.ts";
 import { createWorldEvent, type GameState } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { TEST_CONTENT, TEST_SCENARIO } from "../testing.ts";
-import { harmSteps, takeAction, type TakeActionInput } from "./action.ts";
+import { createTakeActionSchema, harmSteps, takeAction, type TakeActionArgs, type TakeActionInput } from "./action.ts";
 import { executeTool, gmToolSpecs } from "./tools.ts";
 
 /** 주사위 눈을 그대로 지정하는 RNG (끼어들기·숨은 목격자 확률도 같은 값으로 굴려진다) */
@@ -18,17 +18,14 @@ function setup(rng: Rng, mutate?: (s: GameState) => void) {
   return { store, ctx: { store, rng, content: TEST_CONTENT } };
 }
 
-const act = (overrides: Partial<TakeActionInput> = {}): TakeActionInput => ({
+const actSchema = createTakeActionSchema(TEST_CONTENT.scenario);
+const act = (overrides: Partial<TakeActionArgs> = {}): TakeActionInput => actSchema.parse({
   intent: "사물함을 뒤진다",
   check: null,
   activity: null,
   deed: null,
   target: null,
   narration_summary: null, for_mission: false,
-  move_to: null,
-  prepare: null,
-  treatment: null,
-  battle: null,
   ...overrides,
 });
 

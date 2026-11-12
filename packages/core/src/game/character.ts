@@ -30,7 +30,11 @@ export function createCharacterSchema(s: Scenario) {
     age: z.number().int().positive().nullable().default(null),
     stats: createStatsSchema(s),
     /** 상태 트랙별 현재 단계 (예: harm → light) */
-    conditions: z.record(idEnum(trackIds(s)), z.string()).superRefine((conditions, ctx) => {
+    // 새 상태 트랙이 생기기 전의 세이브는 그 트랙을 첫 단계로 본다
+    conditions: z.preprocess(
+      (value) => ({ ...Object.fromEntries(s.condition_tracks.map((t) => [t.id, t.levels[0]!.id])), ...(value as object) }),
+      z.record(idEnum(trackIds(s)), z.string()),
+    ).superRefine((conditions, ctx) => {
       for (const track of s.condition_tracks) {
         if (!track.levels.some((l) => l.id === conditions[track.id])) {
           ctx.addIssue({ code: "custom", message: `${track.id}: 알 수 없는 단계 ${conditions[track.id]}` });

@@ -7,6 +7,7 @@ import type { Rng } from "../rng.ts";
 import { harmTrack } from "../scenario/scenario.ts";
 import { daysOfStock } from "../sim/war.ts";
 import { fill } from "../text.ts";
+import { seasonAt } from "../sim/season.ts";
 
 /**
  * 스토리렛 엔진 (기획서 10.3). 조건과 배역은 코드가 판정한다.
@@ -58,6 +59,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   const own = state.factions[player.factionId];
   if (w.ranks && !w.ranks.includes(player.rank)) return false;
   if (w.segments && !w.segments.includes(segmentOf(at))) return false;
+  if (w.seasons && !w.seasons.includes(seasonAt(content.scenario, at)?.id ?? "")) return false;
   if (w.day_gte !== undefined && dayOf(at) < w.day_gte) return false;
   if (w.zones && (!state.playerZone || !w.zones.includes(state.playerZone))) return false;
   if (w.own_territory !== undefined) {

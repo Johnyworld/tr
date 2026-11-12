@@ -38,3 +38,6 @@
 - id: trade_token
   name: E 통행패
   description: 구멍 뚫린 동전에 끈을 꿴 것. E의 장터에서 신원 보증으로 쓴다.
+- id: canned_food
+  name: 통조림
+  description: 라벨이 떨어져 나간 통조림. 흔들면 무언가 출렁인다.

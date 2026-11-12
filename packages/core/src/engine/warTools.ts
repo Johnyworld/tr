@@ -4,6 +4,8 @@ import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
 import { daysOfStock, HOSTILE, disposition, initialWarWorld, neighbors, simulateWarDay } from "../sim/war.ts";
 import { playerInvolvement, scheduleTime } from "./battleTools.ts";
+import { runDailyBody } from "./body.ts";
+import { seasonAt, seasonLabel, seasonOfDay } from "../sim/season.ts";
 import { fill, sentence } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
@@ -39,6 +41,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     const canDefer = day === today && at > state.time;
     const result = simulateWarDay({ factions: state.factions, zones: state.zones, clocks: state.clocks }, content, ctx.rng, {
       defer: (spec) => canDefer && playerInvolvement(state, content, spec) !== null,
+      season: seasonOfDay(content.scenario, day),
     });
     const scheduled = result.deferred.map((spec, i) => ({ ...spec, id: `battle_${state.nextBattleNo + i}`, at }));
     store.append({
@@ -51,6 +54,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       scheduled,
     });
     displays.push(...deliverNews(ctx, result.clashes));
+    // 하루가 지난 몸: 배급에 따른 허기, 감염 진행
+    displays.push(...runDailyBody(ctx));
   }
   return displays;
 }
@@ -218,6 +223,7 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
       : []),
     `무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`,
     `세력 관계: ${o.others.map((f) => `${f.name} ${f.stance}`).join(", ")}`,
+    ...(content.scenario.seasons ? [`계절: ${seasonLabel(seasonAt(content.scenario, state.time))}`] : []),
     "전황은 캐릭터가 들은 보고·소문(믿음)으로만 안다. 교전 결과·사상자·점령을 지어내지 않는다.",
   ].join("\n");
 }

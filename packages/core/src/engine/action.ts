@@ -30,7 +30,7 @@ import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { createStoryletCheck, endActiveStorylet } from "./storyletTools.ts";
 import { recordDeath } from "./succession.ts";
-import { applyTreatment } from "./recovery.ts";
+import { applyTreatment, maybeInfect, useItem } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -62,6 +62,10 @@ export function createTakeActionSchema(s: Scenario) {
           .enum(["none", "light", "heavy"])
           .describe("판정 전에 선언하는 몸의 위험. 실패·대가 있는 성공이면 시스템이 적용한다. none은 몸을 다칠 위험이 없는 행동"),
         harm_cause: z.string().max(120).describe("다친다면 그 원인 한 문장 (위험이 none이면 빈 문자열)"),
+        infected_source: z
+          .boolean()
+          .default(false)
+          .describe("그 위험이 감염체에게 물리거나 긁히는 것이면 true. 다치면 시스템이 감염 여부를 정한다 (캐릭터는 바로 알지 못한다)"),
       })
       .nullable()
       .describe("결과가 불확실하고 실패하면 대가가 있는 행동일 때만. 사소하거나 확실한 행동은 null"),
@@ -102,13 +106,18 @@ export function createTakeActionSchema(s: Scenario) {
       .describe(
         `전투에 대비해 지금 구역(우리 땅)에 준비물을 설치하면 그 id. ${(s.battle?.preparations ?? []).map((p) => `${p.id} ${p.label}(${p.description})`).join(", ") || "없음"}. 판정(check)이 필요하고, 성공·대가 있는 성공이면 설치된다. 아니면 null`,
       ),
+    use_item: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("몸 상태가 나아지는 물건을 쓰면 그 아이템 id (먹을 것, 구급상자, 약 등. 가진 것만). 효과는 시스템이 정한다. 아니면 null"),
     treatment: z
       .strictObject({
         item: z.string().nullable().describe("치료에 쓸 아이템 id (구급상자 등). 장면에 있는 치료사에게 받으면 null"),
       })
       .nullable()
       .default(null)
-      .describe("다친 데를 치료하면. 아이템을 쓰거나 장면의 치료사에게 받는다(하루 한 번). 얼마나 낫는지는 시스템이 정한다. activity는 treat로 둔다. 아니면 null"),
+      .describe("장면의 치료사에게 치료받으면 {item: null} (하루 한 번). 아이템은 use_item을 쓴다. 얼마나 낫는지는 시스템이 정한다. 아니면 null"),
     battle: z
       .strictObject({
         effect: z.string().describe("상태의 '지금 쓸 수 있는 전투 효과' 중 하나의 id"),
@@ -165,7 +174,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (input.activity && input.activity.kind !== "brief") return { ok: false, error: "전투 중에는 잠·보초·기다림 같은 활동을 할 수 없다. activity는 null로 둔다 (한 라운드가 흐른다)." };
     if (input.move_to) return { ok: false, error: "전투 중에는 구역을 옮길 수 없다. 빠지려면 물러나는 전투 효과를 쓴다." };
     if (input.prepare) return { ok: false, error: "전투 중에는 준비물을 설치할 수 없다." };
-    if (input.treatment) return { ok: false, error: "전투 중에는 치료할 수 없다. 먼저 물러난다." };
+    if (input.treatment || input.use_item) return { ok: false, error: "전투 중에는 치료하거나 물건을 쓸 수 없다. 먼저 물러난다." };
     if (input.battle && !input.check) return { ok: false, error: "전투 효과에는 판정(check)을 함께 선언한다." };
     const effect = input.battle ? scenario.battle?.effects.find((e) => e.id === input.battle!.effect) : undefined;
     const HARM_RANK = { none: 0, light: 1, heavy: 2 } as const;
@@ -221,6 +230,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent);
       lines.push(harm.text);
       displays.push(harm.display);
+      // 감염체에게 입은 상처는 감염될 수 있다 (잠복기는 캐릭터도 GM도 모른다)
+      if (!harm.fatal && input.check.infected_source) maybeInfect(ctx, input.check.harm_on_failure);
       if (harm.fatal) {
         // 연대기 기록 (전투 중이면 그 자리를 원인에 붙인다), 남은 전투는 코드가 굴린다
         const battle = store.getState().battle;
@@ -247,13 +258,17 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 1-1-1. 치료 (낫는 정도는 시스템이 정한다)
-  if (input.treatment) {
-    const t = applyTreatment(ctx, input.treatment.item);
+  for (const [request, run] of [
+    [input.treatment, () => applyTreatment(ctx, input.treatment!.item)],
+    [input.use_item, () => useItem(ctx, input.use_item!)],
+  ] as const) {
+    if (!request) continue;
+    const t = run();
     if (t.ok) {
-      lines.push(`${t.line} ${t.display.type === "heal" ? `${t.display.trackLabel}: ${t.display.fromLabel} → ${t.display.toLabel}.` : ""}`);
-      displays.push(t.display);
+      lines.push(...t.lines);
+      displays.push(...t.displays);
     } else {
-      lines.push(`치료하지 못했다: ${t.error}`);
+      lines.push(`몸을 돌보지 못했다: ${t.error}`);
     }
   }
 
@@ -287,11 +302,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? "eat" : "brief"));
   const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission);
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);
   displays.push(...time.extra);
+  lines.push(...bodyLines(time.extra));
   if (input.move_to && !time.interrupted) {
     // 자리를 뜨면 그 자리의 이야기는 끝난다 (장면의 인물도 따라오지 않는다)
     displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
@@ -300,7 +316,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문, 전쟁, 예정된 교전)
-  for (const display of runAfterTimeAdvance(ctx)) {
+  const after = runAfterTimeAdvance(ctx);
+  lines.push(...bodyLines(after));
+  for (const display of after) {
     displays.push(display);
     if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);
     if (display.type === "storylet" && display.event === "started") {
@@ -312,6 +330,17 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   return { ok: true, resultText: lines.join("\n"), displays, outcome, dead: false };
+}
+
+/** 시간이 흐르며 바뀐 몸 상태(허기, 감염, 저절로 낫기)를 GM에게 알린다 */
+function bodyLines(displays: readonly ToolDisplayEvent[]): string[] {
+  return displays.flatMap((d) =>
+    d.type === "heal"
+      ? [`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.byLabel}).`]
+      : d.type === "harm" && d.trackLabel !== ""
+        ? [`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.cause}). 몸의 변화를 서술에 반영하라.${d.fatal ? " 캐릭터가 사망했다. 죽음을 담담하게 서술하고 write_epitaph로 묘비명을 남긴다." : ""}`]
+        : [],
+  );
 }
 
 function lastCheckId(ctx: ToolContext): string {

@@ -34,6 +34,8 @@ export type WarDayResult = WarWorld & {
 };
 
 export type WarDayOptions = {
+  /** 이 날의 계절 배수 (소모·산출). 없으면 1 */
+  season?: { upkeep: Record<string, number>; yields: Record<string, number> } | null;
   /** true면 이 교전을 계산하지 않고 미룬다 (플레이어가 그 자리에 있을 때) */
   defer?: (spec: ClashSpec) => boolean;
 };
@@ -126,19 +128,30 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     .sort();
   const troubled = new Set<string>();
 
-  // 1-2. 생산과 소모
+  // 1-2. 생산과 소모. 산출은 일할 사람 수에 따라 줄고 는다 (시작 인원 대비, 0.7 ~ 1.2배)
   for (const id of alive) {
     const f = next.factions[id]!;
+    const startPop = content.factions[id]?.population ?? f.population;
+    const workforce = clamp(f.population / Math.max(1, startPop), 0.7, 1.2);
     for (const loc of Object.values(content.locations)) {
       if (next.zones[loc.id]?.owner !== id) continue;
-      for (const [r, amount] of Object.entries(loc.yields)) f.resources[r] = (f.resources[r] ?? 0) + Math.round(amount ?? 0);
+      for (const [r, amount] of Object.entries(loc.yields)) {
+        f.resources[r] = (f.resources[r] ?? 0) + Math.round((amount ?? 0) * (options.season?.yields[r] ?? 1) * workforce);
+      }
     }
     let short = false;
+    let hardship = false;
     for (const [r, rate] of Object.entries(war.upkeep)) {
-      const need = Math.ceil(rate * f.population);
+      const need = Math.ceil(rate * (options.season?.upkeep[r] ?? 1) * f.population);
       const have = f.resources[r] ?? 0;
       if (have < need && war.vital.includes(r)) short = true;
+      if (have < need && war.hardship.includes(r)) hardship = true;
       f.resources[r] = Math.max(0, have - need);
+    }
+    if (hardship && !short && rng() < 0.3) {
+      // 추위 같은 고생: 사람이 죽지는 않지만 분위기가 가라앉는다
+      troubled.add(id);
+      f.morale = clamp(f.morale - 1, -3, 3);
     }
     if (short) {
       troubled.add(id);

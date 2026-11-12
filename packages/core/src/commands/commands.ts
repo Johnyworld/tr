@@ -6,11 +6,12 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { activeMissionOf, commanderOf, daysServed, MISSION_STATUS_LABELS } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
-import { conditionPenalty, rankLabel } from "../scenario/scenario.ts";
+import { conditionPenalty, rankLabel, shownLevel } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
 import { factionOutlook, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
 import { formatChronicle, successionOptions } from "../engine/succession.ts";
+import { seasonAt, seasonLabel } from "../sim/season.ts";
 
 /**
  * MUD식 정보 명령어 (기획서 11.7).
@@ -76,8 +77,10 @@ const status: CommandDef = {
     const lines = [header(`${player.name} · ${roleLabelOf(ctx)}`), clockLine(state), ""];
     lines.push(scenario.stats.map((s) => `${s.label} ${signed(player.stats[s.id] ?? 0)}`).join("   "), "");
     for (const track of scenario.condition_tracks) {
-      const index = Math.max(0, track.levels.findIndex((l) => l.id === player.conditions[track.id]));
-      lines.push(gaugeLine(track.label, index, track.levels.length - 1, track.levels[index]!.label));
+      // 숨은 단계(잠복기)는 캐릭터가 모르므로 보이는 단계로
+      const shown = shownLevel(track, player.conditions[track.id]);
+      const index = track.levels.indexOf(shown);
+      lines.push(gaugeLine(track.label, index, track.levels.length - 1, shown.label));
     }
     const penalty = conditionPenalty(scenario, player);
     if (penalty !== 0) lines.push(`판정 보정 ${signed(penalty)}`);
@@ -141,7 +144,17 @@ const time: CommandDef = {
   name: "시간",
   aliases: ["시각", "time"],
   description: "날짜, 시각, 계절, 날씨",
-  run: (ctx) => [header("시간"), clockLine(ctx.state), formatTime(ctx.state.time), "", NOT_YET("계절·날씨", "세계 시뮬레이션")].join("\n"),
+  run: (ctx) => {
+    const season = seasonAt(ctx.content.scenario, ctx.state.time);
+    return [
+      header("시간"),
+      clockLine(ctx.state),
+      formatTime(ctx.state.time),
+      "",
+      season ? `계절  ${seasonLabel(season)} (${season.label} ${season.dayInSeason}/${season.days}일)` : NOT_YET("계절", "계절 단계"),
+      NOT_YET("날씨", "날씨 단계"),
+    ].join("\n");
+  },
 };
 
 const people: CommandDef = {

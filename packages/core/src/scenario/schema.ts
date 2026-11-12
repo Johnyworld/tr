@@ -48,6 +48,8 @@ export const scenarioFileSchema = z
                 label: z.string().min(1),
                 penalty: z.number().int(),
                 fatal: z.boolean().optional(),
+                /** 캐릭터가 아직 모르는 단계 (예: 감염 잠복기). 화면·GM에는 바로 앞 단계로 보인다 */
+                hidden: z.boolean().optional(),
               }),
             )
             .min(2),
@@ -71,6 +73,8 @@ export const scenarioFileSchema = z
         upkeep: z.record(id, z.number().min(0)),
         /** 모자라면 사기가 떨어지고 사람이 죽는 자원 */
         vital: z.array(id).min(1),
+        /** 모자라면 사기만 떨어지는 자원 (예: 겨울의 연료) */
+        hardship: z.array(id).default([]),
         ammo: id,
         medicine: id,
         ammo_per_clash: z.number().int().min(0),
@@ -80,7 +84,18 @@ export const scenarioFileSchema = z
         /** 배급 수준: 무리의 이 자원이 며칠 치 남았는지로 정한다. min_days 내림차순 */
         ration: z.strictObject({
           resource: id,
-          levels: z.array(z.strictObject({ min_days: z.number().min(0), label: z.string().min(1) })).min(1),
+          levels: z
+            .array(
+              z.strictObject({
+                min_days: z.number().min(0),
+                label: z.string().min(1),
+                /** 이 배급을 받는 하루 동안 허기 트랙이 움직이는 단계 (음수면 나아진다) */
+                hunger: z.number().int().optional(),
+                /** 이 배급으로는 이 단계보다 더 배고파지지 않는다 */
+                hunger_max: id.optional(),
+              }),
+            )
+            .min(1),
         }),
         /** 사기 -3 ~ +3을 부르는 말 (7개) */
         morale_labels: z.array(z.string().min(1)).length(7),
@@ -159,7 +174,7 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
-     * 부상 회복 (플레이 테스트 1회차 문제 4). 치료(아이템·치료사)와 저절로 낫기.
+     * 부상 회복 (플레이 테스트 1회차 문제 4). 치료사와 저절로 낫기. 아이템 치료는 consumables
      * 없으면 회복하지 않는다
      */
     recovery: z
@@ -168,10 +183,47 @@ export const scenarioFileSchema = z
         natural_days: z.number().positive(),
         /** 이 단계까지만 저절로 낫는다 (더 나쁘면 치료가 필요하다) */
         natural_max_level: id,
-        /** 치료에 쓰는 아이템 → 낫는 단계 수 (하나 쓴다) */
-        items: z.record(id, z.number().int().positive()),
-        /** 치료사(장면에 있는 healer NPC)에게 받으면 낫는 단계 수. 하루에 한 번 */
-        healer_steps: z.number().int().min(0),
+        /** 치료사(장면에 있는 healer NPC)에게 받으면 트랙별로 낫는 단계 수. 하루에 한 번 */
+        healer: z.record(id, z.number().int().min(0)),
+      })
+      .optional(),
+    /** 쓰면 몸 상태가 나아지는 아이템: 아이템 → 상태 트랙 → 나아지는 단계 수 (take_action.use_item) */
+    consumables: z.record(id, z.record(id, z.number().int().positive())).default({}),
+    /** 몸 상태 (12-1): 허기와 감염. 없으면 그 규칙을 쓰지 않는다 */
+    body: z
+      .strictObject({
+        /** 허기 트랙. 하루마다 배급 수준(war.ration.levels[].hunger)만큼 바뀐다. 마지막 단계에서는 하루마다 부상 */
+        hunger: z.strictObject({ track: id, starving_harm: z.number().int().min(0) }).optional(),
+        /**
+         * 감염 트랙. 감염체에게 다치면(take_action.check.infected_source) 확률로 두 번째 단계(잠복)가 된다.
+         * 하루마다 한 단계씩 나빠지고, 마지막 단계에서는 하루마다 부상
+         */
+        infection: z
+          .strictObject({
+            track: id,
+            chance: z.strictObject({ light: z.number().min(0).max(1), heavy: z.number().min(0).max(1) }),
+            worst_harm: z.number().int().min(0),
+          })
+          .optional(),
+      })
+      .optional(),
+    /**
+     * 계절 (12-1). 첫 날은 start의 계절·날짜. 계절마다 하루 소모·산출에 곱하는 배수
+     */
+    seasons: z
+      .strictObject({
+        start: z.strictObject({ season: id, day: z.number().int().positive() }),
+        list: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              days: z.number().int().positive(),
+              upkeep: z.record(id, z.number().min(0)).default({}),
+              yields: z.record(id, z.number().min(0)).default({}),
+            }),
+          )
+          .min(1),
       })
       .optional(),
     /** 스토리렛 발동 간격 (기획서 10.3). 마지막 스토리렛 뒤 이만큼 지나야 다음 것이 열리고, 열린 것은 이만큼 지나면 지나간다 */
@@ -238,6 +290,18 @@ export const scenarioFileSchema = z
       const level = s.recovery.natural_max_level;
       if (harm && !harm.levels.some((l) => l.id === level)) problem(`recovery.natural_max_level: 알 수 없는 단계 ${level}`);
     }
+    const trackIdSet = new Set(s.condition_tracks.map((t) => t.id));
+    for (const [item, effects] of Object.entries(s.consumables)) {
+      for (const t of Object.keys(effects)) if (!trackIdSet.has(t)) problem(`consumables.${item}: 알 수 없는 상태 트랙 ${t}`);
+    }
+    for (const t of Object.keys(s.recovery?.healer ?? {})) if (!trackIdSet.has(t)) problem(`recovery.healer: 알 수 없는 상태 트랙 ${t}`);
+    for (const t of [s.body?.hunger?.track, s.body?.infection?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
+    for (const track of s.condition_tracks) {
+      if (track.levels[0]?.hidden) problem(`condition_tracks.${track.id}: 첫 단계는 숨길 수 없다`);
+      if (track.id !== s.harm_track && track.levels.some((l) => l.fatal)) problem(`condition_tracks.${track.id}: 사망은 부상 트랙으로만 (fatal은 harm_track에만)`);
+    }
+    if (s.seasons && !s.seasons.list.some((x) => x.id === s.seasons!.start.season)) problem(`seasons.start: 알 수 없는 계절 ${s.seasons.start.season}`);
+    if (s.war) for (const l of s.war.ration.levels) if (s.body?.hunger && l.hunger === undefined) problem(`war.ration.levels: 허기 규칙이 있으면 hunger(하루 변화)를 적는다`);
     const ranks = new Set(s.rank_ladder.map((r) => r.id));
     for (const rank of [s.promotion.from, s.promotion.to]) {
       if (!ranks.has(rank)) problem(`promotion: 알 수 없는 등급 ${rank}`);

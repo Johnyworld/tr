@@ -466,7 +466,7 @@
         success:
           - give_item: { item: medkit }
         partial:
-          - give_item: { item: cigarettes }
+          - give_item: { item: canned_food }
         miss: []
     - id: leave
       label: 그냥 지나간다

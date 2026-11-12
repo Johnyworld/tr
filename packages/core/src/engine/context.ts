@@ -73,7 +73,7 @@ export function describePlayerState(state: GameState, content: Content): string 
 export function buildPlayerPrompt(state: GameState, content: Content, input: string, recap = "", references = ""): string {
   const recapBlock = recap ? `<지난 이야기>\n${recap}\n</지난 이야기>\n\n` : "";
   const refBlock = references
-    ? `<참고 자료>\n캐릭터가 알 수 있는 세계 배경이다. 필요할 때만 쓰고, 여기 없는 사실을 지어내지 않는다.\n\n${references}\n</참고 자료>\n\n`
+    ? `<참고 자료>\n캐릭터가 알 수 있는 세계 배경과 지난 기억이다. 필요할 때만 쓰고, 여기 없는 사실을 지어내지 않는다. 기억은 캐릭터가 그때 보고 들은 것이라 틀렸을 수 있다.\n\n${references}\n</참고 자료>\n\n`
     : "";
   return `${recapBlock}<상태>\n${describePlayerState(state, content)}\n</상태>\n\n${refBlock}<플레이어 입력>\n${input}\n</플레이어 입력>`;
 }

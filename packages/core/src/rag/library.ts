@@ -54,3 +54,11 @@ export class LoreLibrary {
 export function formatLoreHits(hits: readonly SearchHit[]): string {
   return hits.map((h) => h.text).join("\n\n");
 }
+
+/** 세계 배경(lore)과 지난 기억(memory)을 한 블록으로 */
+export function formatReferences(lore: readonly SearchHit[], memory: readonly SearchHit[]): string {
+  const parts: string[] = [];
+  if (lore.length) parts.push(`## 세계 배경\n${formatLoreHits(lore)}`);
+  if (memory.length) parts.push(`## 지난 기억 (캐릭터가 겪거나 들은 것)\n${memory.map((h) => h.text).join("\n")}`);
+  return parts.join("\n\n");
+}

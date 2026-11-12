@@ -27,7 +27,7 @@ export function createApp(session: WebSession) {
   app.post("/api/command", async (c) => {
     const parsed = z.object({ input: z.string().min(1).max(200) }).safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "요청 형식이 올바르지 않습니다." }, 400);
-    return c.json({ output: session.world.runCommand(parsed.data.input) });
+    return c.json({ output: await session.world.runCommand(parsed.data.input) });
   });
 
   // 개발용: 최근 RAG 검색 기록 (무엇이 왜 들어갔는지)

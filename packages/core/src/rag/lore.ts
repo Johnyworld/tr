@@ -8,7 +8,7 @@ import type { SourceDoc } from "./index.ts";
  * lore 적재 (기획서 11.4): content/scenarios/<id>/lore/*.md 를 읽어 청크로 나눈다.
  * 파일 해시를 함께 넘겨, 색인이 바뀐 파일만 다시 임베딩하게 한다.
  */
-export function readLoreDocs(loreDir: string): SourceDoc[] {
+export function readLoreDocs(loreDir: string, maxChars?: number): SourceDoc[] {
   let names: string[];
   try {
     if (!statSync(loreDir).isDirectory()) return [];
@@ -22,6 +22,6 @@ export function readLoreDocs(loreDir: string): SourceDoc[] {
     .map((name) => {
       const raw = readFileSync(join(loreDir, name), "utf8");
       const sourceId = `lore/${basename(name, ".md")}`;
-      return { sourceId, hash: createHash("sha256").update(raw).digest("hex"), chunks: chunkLore(sourceId, raw) };
+      return { sourceId, hash: createHash("sha256").update(raw).digest("hex"), chunks: chunkLore(sourceId, raw, maxChars) };
     });
 }

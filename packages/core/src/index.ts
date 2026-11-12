@@ -100,6 +100,8 @@ export { chunkLore, parseLoreFile, LoreFormatError, MAX_CHUNK_CHARS, type LoreCh
 export {
   RagIndex,
   canSee,
+  canSeeChunk,
+  type IndexChunk,
   keywordQuery,
   DEFAULT_SEARCH,
   type Viewer,
@@ -110,4 +112,5 @@ export {
   type SyncReport,
 } from "./rag/index.ts";
 export { readLoreDocs } from "./rag/lore.ts";
-export { LoreLibrary, formatLoreHits, type LoreSearch } from "./rag/library.ts";
+export { LoreLibrary, formatLoreHits, formatReferences, type LoreSearch } from "./rag/library.ts";
+export { MemoryStore, memoryItemsOf, type MemoryKind } from "./rag/memory.ts";

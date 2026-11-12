@@ -12,7 +12,8 @@
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck",
     "content:check": "pnpm --filter @trpg/core content:check",
-    "mcp": "pnpm --silent --filter @trpg/mcp start"
+    "mcp": "pnpm --silent --filter @trpg/mcp start",
+    "rag:eval": "pnpm --silent --filter @trpg/core rag:eval"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

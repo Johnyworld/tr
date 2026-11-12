@@ -1,6 +1,6 @@
 import {
   buildPlayerPrompt,
-  formatLoreHits,
+  formatReferences,
   InvalidPlayerInputError,
   normalizePlayerInput,
   type GameWorld,
@@ -85,13 +85,18 @@ export async function* runGmTurn(options: RunGmTurnOptions): AsyncGenerator<Turn
   const transcript = world.transcript();
   const history = buildHistoryMessages(transcript);
   // RAG: 플레이어 입력 + 장면 요약 + 함께 있는 인물로 lore를 찾는다 (캐릭터가 볼 수 있는 것만)
-  const lore = await world.searchLore(world.contextQuery(input), "gm_context");
+  // 지난 기억(memory)도 같은 질의로 찾는다. 최근 턴 요약은 대화 기록·지난 이야기에 이미 있으니 뺀다
+  const query = world.contextQuery(input);
+  const [lore, memory] = await Promise.all([
+    world.searchLore(query, "gm_context"),
+    world.searchMemory(query, "gm_context", { topK: 4, charBudget: 1600, exclude: (c) => c.kind === "turn_summary" }),
+  ]);
   const prompt = buildPlayerPrompt(
     world.state(),
     world.content,
     input,
     needsRecap(transcript) ? world.recap() : "",
-    formatLoreHits(lore.hits),
+    formatReferences(lore.hits, memory.hits),
   );
   world.appendTranscript([{ kind: "player", text: input, prompt }]);
 

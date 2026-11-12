@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   buildGmGuide,
-  formatLoreHits,
+  formatReferences,
   createTakeActionSchema,
   gmTools,
   timeSegmentSchema,
@@ -166,10 +166,14 @@ export function createMcpServer(manager: WorldManager) {
     async (args) => {
       if (!world) return text(NO_WORLD, true);
       const w = world;
-      const lore = await w.searchLore(args.query, "recall");
+      const [lore, memory] = await Promise.all([
+        w.searchLore(args.query, "recall"),
+        w.searchMemory(args.query, "recall", { topK: 6, charBudget: 3000 }),
+      ]);
+      const empty = (r: { error?: string }) => (r.error ? `(검색할 수 없다: ${r.error})` : "(찾은 것이 없다)");
       const sections = [
-        `## 세계 자료\n${lore.hits.length ? formatLoreHits(lore.hits) : lore.error ? `(검색할 수 없다: ${lore.error})` : "(찾은 자료가 없다)"}`,
-        `## 일지\n${w.runCommand(`!일지 ${args.query}`)}`,
+        lore.hits.length ? formatReferences(lore.hits, []) : `## 세계 배경\n${empty(lore)}`,
+        memory.hits.length ? formatReferences([], memory.hits) : `## 지난 기억\n${empty(memory)}`,
       ];
       return text(sections.join("\n\n"));
     },
@@ -197,13 +201,16 @@ export function createMcpServer(manager: WorldManager) {
       description: "정보 명령어(!상태, !소지품, !인물 등)를 실행한다. 읽기 전용이며 시간이 흐르지 않는다. 결과를 코드 블록으로 그대로 보여 준다.",
       inputSchema: z.strictObject({ input: z.string().min(1).max(200) }),
     },
-    (args) => withWorld((w) => text(w.runCommand(args.input.startsWith("!") ? args.input : `!${args.input}`))),
+    async (args) => {
+      if (!world) return text(NO_WORLD, true);
+      return text(await world.runCommand(args.input.startsWith("!") ? args.input : `!${args.input}`));
+    },
   );
 
   server.registerTool(
     "get_chronicle",
     { description: "죽은 캐릭터들의 기록." },
-    () => withWorld((w) => text(w.runCommand("!연대기"))),
+    async () => (world ? text(await world.runCommand("!연대기")) : text(NO_WORLD, true)),
   );
 
   server.registerTool(

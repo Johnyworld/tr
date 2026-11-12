@@ -12,6 +12,8 @@ import { archiveSave, SaveFormatError, SqliteRepository } from "../persistence/s
 import { formatTime } from "../rules/time.ts";
 import { GameWorld } from "./world.ts";
 import type { LoreLibrary } from "../rag/library.ts";
+import { MemoryStore } from "../rag/memory.ts";
+import type { Embedder } from "../rag/embedder.ts";
 
 export type WorldInfo = {
   id: string;
@@ -36,9 +38,18 @@ export class WorldManager {
   readonly content: Content;
   #rngFactory: () => Rng;
   readonly lore: LoreLibrary | null;
+  readonly memoryEmbedder: Embedder | null;
 
-  constructor(options: { savesDir: string; content: Content; rngFactory?: () => Rng; lore?: LoreLibrary | null }) {
+  constructor(options: {
+    savesDir: string;
+    content: Content;
+    rngFactory?: () => Rng;
+    lore?: LoreLibrary | null;
+    /** memory 컬렉션에 쓸 임베더. 없으면 장기 기억 검색 없이 진행 */
+    memoryEmbedder?: Embedder | null;
+  }) {
     this.lore = options.lore ?? null;
+    this.memoryEmbedder = options.memoryEmbedder ?? null;
     this.savesDir = options.savesDir;
     this.worldsDir = join(options.savesDir, "worlds");
     this.content = options.content;
@@ -55,7 +66,7 @@ export class WorldManager {
   /** 세계 목록 (최근에 플레이한 것부터). 잠금 없이 읽기만 한다 */
   listWorlds(): WorldInfo[] {
     return readdirSync(this.worldsDir)
-      .filter((name) => name.endsWith(".db"))
+      .filter((name) => name.endsWith(".db") && !name.endsWith(".memory.db"))
       .map((name) => readWorldInfo(join(this.worldsDir, name)))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
@@ -107,7 +118,9 @@ export class WorldManager {
     const release = acquireLock(path, mode);
     try {
       const repo = SqliteRepository.open(path, this.content.scenario);
-      return new GameWorld({ content: this.content, repo, mode, rng: this.#rngFactory(), path, release, lore: this.lore });
+      // memory 색인은 세이브 옆의 파생 파일이다 (세이브로부터 다시 만들 수 있다)
+      const memory = this.memoryEmbedder ? MemoryStore.open(path.replace(/\.db$/, ".memory.db"), this.memoryEmbedder) : null;
+      return new GameWorld({ content: this.content, repo, mode, rng: this.#rngFactory(), path, release, lore: this.lore, memory });
     } catch (err) {
       release();
       throw err;

@@ -43,6 +43,13 @@
       "when": 1794467108913,
       "tag": "0005_retrievals_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794467476282,
+      "tag": "0006_summary_character",
+      "breakpoints": true
     }
   ]
 }

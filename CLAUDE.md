@@ -46,7 +46,7 @@ docs/design.md    기획서
 - DB 접근은 저장소(repository) 레이어로 모은다 (나중에 Postgres 전환 대비)
 - 콘텐츠 YAML은 zod 스키마로 검증한다. 스키마를 바꾸면 기존 콘텐츠도 함께 갱신한다
 - 임베딩은 core의 `Embedder` 인터페이스 뒤에 둔다. 저장 시 모델 ID와 차원을 기록하고, 모델이 바뀌면 재임베딩한다
-- RAG 검색 결과는 정보 필터 위반 0건을 테스트로 확인한다
+- RAG 검색 결과는 정보 필터 위반 0건을 테스트로 확인한다. 검색 평가 세트는 `content/scenarios/<id>/eval/retrieval.yaml`
 - 이벤트 로그는 append-only. 상태 변경은 반드시 이벤트로 기록한다
 
 ## 작업 규칙
@@ -65,14 +65,15 @@ cp .env.example .env  # 처음 한 번. ANTHROPIC_API_KEY를 채운다
 pnpm dev            # 서버(127.0.0.1:8787) + UI(localhost:5173) 동시 실행
 pnpm test           # 단위 테스트 (vitest, LLM 호출 없음)
 pnpm typecheck      # 전체 타입 체크
-pnpm content:check  # 시나리오 팩(post_apoc) 검증
+pnpm content:check  # 시나리오 팩(post_apoc) 검증 (검색 평가 세트 포함)
+pnpm rag:eval       # RAG 검색 평가 (bge-m3). --compare로 설정 비교, --hash로 모델 없이
 pnpm mcp            # MCP 서버 실행 (stdio). Claude 앱 등록 방법은 README
 pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마이그레이션 생성
 ```
 
 - UI는 Vite 프록시로 `/api`를 서버에 넘긴다. 서버 포트는 `SERVER_PORT`로 바꾼다 (`PORT`는 쓰지 않는다)
 - GM 모델은 `GM_MODEL`(기본 `claude-opus-5-5`), 장면 요약 모델은 `SUMMARY_MODEL`(기본 `claude-haiku-5-5`)로 바꾼다
-- RAG: 첫 실행 때 bge-m3 모델(약 570MB)을 `.cache/models/`에 받고, lore 색인을 `.cache/rag/`에 만든다 (둘 다 git 제외). `RAG=off`로 끈다
+- RAG: 첫 실행 때 bge-m3 모델(약 570MB)을 `.cache/models/`에 받고, lore 색인을 `.cache/rag/`에 만든다 (둘 다 git 제외). 세계별 memory 색인은 `saves/worlds/<worldId>.memory.db` (세이브에서 다시 만들 수 있는 파생 파일). `RAG=off`로 끈다
 - 시나리오는 `SCENARIO`로 고른다 (기본 `post_apoc`, `content/scenarios/<id>/`)
 - 세이브는 `saves/worlds/<worldId>.db` (`SAVES_DIR`로 폴더 변경). 열려 있는 세계는 `<worldId>.db.lock`으로 잠긴다. 형식·시나리오가 맞지 않는 세이브는 `saves/archive/`로 옮겨진다
 - 게임 상태나 이벤트 형태를 바꾸면 `SAVE_SCHEMA_VERSION`을 올린다 (`packages/core/src/game/state.ts`)

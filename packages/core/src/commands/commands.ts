@@ -22,6 +22,8 @@ export type CommandContext = {
   readonly content: Content;
   /** 현재 캐릭터의 요약 기록 (오래된 것부터) */
   readonly summaries: readonly TurnSummary[];
+  /** !일지 검색어로 memory를 의미 검색한 결과 (정보 필터를 거친 것). 없으면 단순 문자열 검색 */
+  readonly memoryHits?: readonly { text: string }[] | null;
 };
 
 export type CommandDef = {
@@ -236,8 +238,14 @@ const journal: CommandDef = {
   args: "[검색어]",
   description: "지난 일 기록 (검색어로 찾기)",
   run(ctx, args) {
-    // RAG(6-1) 전까지는 현재 캐릭터의 요약 기록에서 단순 검색한다
     const query = args.trim();
+    if (query && ctx.memoryHits) {
+      return [
+        header(`일지: ${query}`),
+        ...(ctx.memoryHits.length ? ctx.memoryHits.map((h) => `  ${h.text.replace(/\s+/g, " ")}`) : ["  찾은 기억이 없습니다."]),
+      ].join("\n");
+    }
+    // memory 색인이 없으면 현재 캐릭터의 요약 기록에서 단순 검색한다
     const entries = ctx.summaries.filter((s) => !query || s.text.includes(query));
     const shown = entries.slice(-JOURNAL_RECENT).reverse();
     const hiddenCount = entries.length - shown.length;
@@ -247,7 +255,7 @@ const journal: CommandDef = {
         ? shown.map((s) => `  ${formatTime(s.time)}${s.kind === "scene" ? " [장면]" : ""}  ${s.text.replace(/\s+/g, " ")}`)
         : ["  기록이 없습니다."]),
       ...(hiddenCount > 0 ? ["", `최근 ${shown.length}개만 보여 줍니다 (전체 ${entries.length}개). 검색어로 찾을 수 있습니다: !일지 검색어`] : []),
-      ...(query ? ["", "(의미 검색은 RAG 단계에서 연결됩니다)"] : []),
+
     ].join("\n");
   },
 };

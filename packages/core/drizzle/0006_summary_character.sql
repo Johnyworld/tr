@@ -1,0 +1,1 @@
+ALTER TABLE `summaries` ADD `character_id` text DEFAULT '' NOT NULL;

@@ -35,4 +35,6 @@ export type TurnSummary = {
   turn: number;
   time: number;
   mode: PlayMode;
+  /** 요약을 남긴 시점의 플레이어 캐릭터. 캐릭터가 바뀌면 이전 캐릭터의 기억은 검색되지 않는다 */
+  characterId: string;
 };

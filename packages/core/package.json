@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "content:check": "tsx src/content/check.ts ../../content/scenarios/post_apoc",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "rag:eval": "tsx src/rag/evalCli.ts"
   },
   "dependencies": {
     "@huggingface/transformers": "4.3.2",

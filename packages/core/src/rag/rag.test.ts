@@ -54,6 +54,9 @@ describe("키워드 검색어", () => {
     expect(keywordQuery("강태호는 어디 있나")).toBe('"강태호는" OR "강태호"');
     // "고가도로"의 "로"는 조사가 아니다: 원래 말도 함께 찾는다 (회귀)
     expect(keywordQuery("고가도로 감염체")).toBe('"고가도로" OR "고가도" OR "감염체"');
+    // 의문사 같은 흔한 말은 빼고 찾는다 (본문 아무 데나 걸린다)
+    expect(keywordQuery("물린 상처는 어떻게 되나")).toBe('"상처는"');
+    expect(keywordQuery("어떻게")).toBeNull();
     expect(keywordQuery("응")).toBeNull();
   });
 });

@@ -134,6 +134,7 @@ export class SqliteRepository implements GameRepository {
       turn: r.turn,
       time: r.time,
       mode: r.mode as TurnSummary["mode"],
+      characterId: r.characterId,
     }));
   }
 

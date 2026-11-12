@@ -1,0 +1,238 @@
+# RAG 검색 평가 세트 (기획서 11.4)
+# - pnpm rag:eval 로 실제 임베딩 모델(bge-m3)로 돌린다. 단위 테스트는 해시 임베더로 정보 필터 위반 0건을 확인한다
+# - 기대 청크는 청크 번호가 아니라 "문서 > 절"로 적는다 (청크 크기를 바꿔도 세트를 고치지 않게)
+#   lore/<문서>            그 문서의 어떤 청크든
+#   lore/<문서> > <절>     그 절의 청크
+#   memory:<id>            아래 memory 목록의 기억
+# - forbid: 이 검색자에게 절대 나오면 안 되는 것 (정보 필터 위반). 결과뿐 아니라 검색 기록(trace)에도 없어야 한다
+# - 검색자(viewer): character(현재 캐릭터 id), faction, flags
+
+viewers:
+  a_recruit: { character: player, faction: faction_a, flags: [] }
+  c_soldier: { character: c_soldier, faction: faction_c, flags: [] }
+  a_knows_scouts: { character: player, faction: faction_a, flags: [scouts_captured] }
+  a_successor: { character: npc_kim, faction: faction_a, flags: [] }
+
+# memory 컬렉션 평가용 합성 기억 (세이브 없이 검색 품질과 필터만 본다)
+memory:
+  - id: theft
+    kind: deed
+    known_by: [player]
+    text: "[1일차 05:40 · 행적] 보급 창고 뒷문으로 들어가 통조림 두 개를 몰래 챙겼다 (절도)"
+  - id: theft_rumor
+    kind: deed
+    known_by: [player, npc_leader]
+    text: "[1일차 21:00 · 행적] 식당 배급 줄에서 새치기를 하다 다른 대원과 몸싸움을 벌였다 (폭력)"
+  - id: scene_overpass
+    kind: scene_summary
+    known_by: [player]
+    text: "[2일차 18:00 · 장면 요약] 고가도로 정찰 중 총성이 울려 감염체 물결이 몰려왔고, 분대장과 함께 강변 쪽으로 겨우 빠져나왔다."
+  - id: scene_medic
+    kind: scene_summary
+    known_by: [player]
+    text: "[3일차 09:00 · 장면 요약] 의무실 간호병이 팔의 긁힌 상처를 소독해 주며, 열이 오르면 바로 말하라고 했다."
+  - id: belief_trader
+    kind: belief
+    known_by: [player]
+    text: "[2일차 12:00 · 소문] 상인 무리가 매주 목요일 남쪽 담장 근처를 지나간다고 한다."
+  - id: kim_secret
+    kind: belief
+    known_by: [npc_kim]
+    text: "[1일차 10:00 · 직접 봄] 보급 담당 간부가 밤마다 창고에서 약품을 빼돌리는 것을 봤다."
+  - id: c_memory
+    kind: scene_summary
+    known_by: [c_soldier]
+    text: "[2일차 03:00 · 장면 요약] 고가도로 너머 물류창고에서 붙잡은 A 정찰조를 지켰다."
+  # ── 방해 기억: 같은 장소·인물이 나오지만 질의와는 다른 일 (실제 플레이처럼 기억이 쌓인 상태) ──
+  - id: d_warehouse_guard
+    kind: turn_summary
+    known_by: [player]
+    text: "[1일차 14:00 · 지난 일] 보급 창고 앞에서 두 시간 동안 보초를 섰다. 아무 일도 없었다."
+  - id: d_warehouse_count
+    kind: turn_summary
+    known_by: [player]
+    text: "[2일차 08:00 · 지난 일] 보급 담당 간부를 도와 창고의 탄약 상자 수를 셌다."
+  - id: d_canteen_meal
+    kind: turn_summary
+    known_by: [player]
+    text: "[1일차 12:00 · 지난 일] 식당 천막에서 묽은 죽 한 그릇을 받았다. 옆자리 대원이 고향 이야기를 했다."
+  - id: d_canteen_rumor
+    kind: belief
+    known_by: [player]
+    text: "[2일차 12:30 · 소문] 식당 취사병이 배급량을 몰래 줄인다는 말이 돈다."
+  - id: d_overpass_scout
+    kind: turn_summary
+    known_by: [player]
+    text: "[2일차 15:00 · 지난 일] 고가도로 위에 올라가 망원경으로 C의 영역 쪽을 살폈다. 연기 두 줄이 보였다."
+  - id: d_overpass_order
+    kind: belief
+    known_by: [player]
+    text: "[2일차 07:00 · 보고] 분대장이 오늘부터 고가도로 정찰은 둘씩 짝지어 나가라고 했다."
+  - id: d_river_water
+    kind: turn_summary
+    known_by: [player]
+    text: "[3일차 16:00 · 지난 일] 강변 공장 지대에서 물통 네 개를 채워 돌아왔다."
+  - id: d_medic_queue
+    kind: turn_summary
+    known_by: [player]
+    text: "[1일차 17:00 · 지난 일] 의무실 앞에 다친 대원들이 줄을 서 있었다. 약이 모자란다고 했다."
+  - id: d_leader_praise
+    kind: belief
+    known_by: [player]
+    text: "[3일차 19:00 · 직접 봄] 분대장이 보초 근무를 잘했다며 담배 한 개비를 줬다."
+  - id: d_wall_repair
+    kind: turn_summary
+    known_by: [player]
+    text: "[2일차 10:00 · 지난 일] 남쪽 담장 보수 작업에 불려가 모래주머니를 날랐다."
+  - id: d_trader_price
+    kind: belief
+    known_by: [player]
+    text: "[3일차 11:00 · 소문] 상인들은 탄약 열 발에 통조림 하나를 쳐준다고 한다."
+  - id: d_sleep
+    kind: turn_summary
+    known_by: [player]
+    text: "[1일차 22:00 · 지난 일] 막사에서 잠을 청했지만 멀리서 들리는 총성에 몇 번 깼다."
+  # 다른 캐릭터들의 비슷한 기억 (현재 캐릭터에게 나오면 위반)
+  - id: kim_warehouse
+    kind: turn_summary
+    known_by: [npc_kim]
+    text: "[1일차 23:00 · 지난 일] 창고 뒷문이 열려 있어 안을 들여다봤다. 통조림 상자가 비어 있었다."
+  - id: leader_canteen
+    kind: belief
+    known_by: [npc_leader]
+    text: "[1일차 21:10 · 직접 봄] 식당에서 신병이 새치기하다 싸움을 벌였다. 혼을 내야겠다."
+
+cases:
+  # ── lore: 공개 문서 ──
+  - id: lore_wave
+    query: 총을 쏘면 감염체가 몰려올까?
+    viewer: a_recruit
+    expect: ["lore/infected > 습성", "lore/infected > 무리"]
+  - id: lore_bitten
+    query: 물린 상처는 어떻게 되나
+    viewer: a_recruit
+    expect: ["lore/infected > 물렸을 때"]
+  - id: lore_overpass
+    query: 북쪽 고가도로로 정찰 나간다
+    viewer: a_recruit
+    expect: ["lore/city > 북쪽 고가도로"]
+    forbid: ["lore/faction_c_inside", "lore/secret_scouts"]
+  - id: lore_winter
+    query: 첫 겨울에 무슨 일이 있었지
+    viewer: a_recruit
+    expect: ["lore/collapse > 첫 겨울"]
+  - id: lore_currency
+    query: 요즘은 뭘로 거래해?
+    viewer: a_recruit
+    expect: ["lore/collapse > 그 뒤"]
+  - id: lore_medicine_faction
+    query: 약을 구할 수 있는 무리
+    viewer: a_recruit
+    expect: ["lore/factions > 세력 D"]
+  - id: lore_traders
+    query: 상인들은 언제 오나
+    viewer: a_recruit
+    expect: ["lore/factions > 세력 E"]
+
+  # ── lore: 세력 문서 ──
+  - id: lore_a_rules
+    query: 배급은 어디서 받나
+    viewer: a_recruit
+    expect: ["lore/faction_a > 규칙"]
+  - id: lore_a_backdoor
+    query: 창고 뒷문
+    viewer: a_recruit
+    expect: ["lore/faction_a > 거점의 구역"]
+  - id: lore_c_inside_hidden
+    query: 세력 C 병사들은 지도부를 두려워한다
+    viewer: a_recruit
+    expect: ["lore/factions > 세력 C"]
+    forbid: ["lore/faction_c_inside"]
+  - id: lore_c_offensive_hidden
+    query: C가 동쪽 초소를 공격할 계획
+    viewer: a_recruit
+    expect: []
+    forbid: ["lore/faction_c_inside"]
+  - id: lore_c_inside_visible
+    query: 동쪽 공세 계획
+    viewer: c_soldier
+    expect: ["lore/faction_c_inside > 동쪽 공세"]
+    forbid: ["lore/faction_a"]
+
+  # ── lore: 비밀 ──
+  - id: lore_scouts_hidden
+    query: 실종된 정찰조는 어디 있나
+    viewer: a_recruit
+    expect: []
+    forbid: ["lore/secret_scouts"]
+  - id: lore_scouts_flag
+    query: 실종된 정찰조는 어디 있나
+    viewer: a_knows_scouts
+    expect: ["lore/secret_scouts > 수용소"]
+
+  # ── memory ──
+  - id: mem_theft
+    query: 창고에서 뭘 훔쳤었지
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:theft"]
+    forbid: ["memory:kim_secret", "memory:c_memory", "memory:kim_warehouse"]
+  - id: mem_fight
+    query: 식당에서 싸운 일
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:theft_rumor"]
+    forbid: ["memory:leader_canteen"]
+  - id: mem_wave
+    query: 고가도로에서 물결을 만났을 때
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:scene_overpass"]
+    forbid: ["memory:c_memory"]
+  - id: mem_wound
+    query: 팔 상처 치료
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:scene_medic"]
+  - id: mem_trader
+    query: 상인이 언제 지나가지
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:belief_trader"]
+  - id: mem_successor
+    query: 창고에서 몰래 빼돌린 것
+    viewer: a_successor
+    collection: memory
+    expect: ["memory:kim_secret"]
+    forbid: ["memory:theft", "memory:theft_rumor", "memory:scene_overpass", "memory:d_warehouse_count"]
+  - id: mem_c_soldier
+    query: 고가도로 너머 물류창고
+    viewer: c_soldier
+    collection: memory
+    expect: ["memory:c_memory"]
+    forbid: ["memory:scene_overpass", "memory:theft"]
+  - id: mem_scout_order
+    query: 정찰은 몇 명이서 나가라고 했지
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:d_overpass_order"]
+  - id: mem_trade_rate
+    query: 탄약으로 통조림을 바꾸면 얼마나
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:d_trader_price"]
+  - id: mem_ammo_count
+    query: 탄약 상자를 세었던 날
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:d_warehouse_count"]
+  - id: mem_leader_gift
+    query: 분대장한테 칭찬받은 일
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:d_leader_praise"]
+  - id: mem_rations_cut
+    query: 배급이 줄어든다는 얘기
+    viewer: a_recruit
+    collection: memory
+    expect: ["memory:d_canteen_rumor"]

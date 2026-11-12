@@ -35,16 +35,16 @@ if (!hasApiKey) console.warn(`[server] ${MISSING_KEY_MESSAGE}`);
 let session: WebSession;
 try {
   const content = loadContent(contentDir);
-  // RAG lore 색인: 모델 로딩·임베딩은 백그라운드로 (RAG=off면 끈다)
-  const lore =
-    process.env.RAG === "off"
-      ? null
-      : LoreLibrary.open({
-          indexPath: resolve(ROOT, `.cache/rag/${content.scenario.id}-lore.db`),
-          loreDir: resolve(contentDir, "lore"),
-          embedder: new BgeM3Embedder({ cacheDir: resolve(ROOT, ".cache/models") }),
-        });
-  const manager = new WorldManager({ savesDir, content, lore });
+  // RAG: 임베딩 모델은 lore와 memory가 함께 쓴다. 모델 로딩·임베딩은 백그라운드로 (RAG=off면 끈다)
+  const embedder = process.env.RAG === "off" ? null : new BgeM3Embedder({ cacheDir: resolve(ROOT, ".cache/models") });
+  const lore = embedder
+    ? LoreLibrary.open({
+        indexPath: resolve(ROOT, `.cache/rag/${content.scenario.id}-lore.db`),
+        loreDir: resolve(contentDir, "lore"),
+        embedder,
+      })
+    : null;
+  const manager = new WorldManager({ savesDir, content, lore, memoryEmbedder: embedder });
   session = new WebSession(
     manager,
     hasApiKey ? createClaudeModel({ model: modelId }) : missingKeyModel,

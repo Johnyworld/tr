@@ -12,6 +12,9 @@ import type { ToolContext, ToolOutcome, ToolSpec } from "../engine/toolkit.ts";
 import { buildPlayerView, buildTranscriptView, type PlayerView, type TranscriptView } from "../views/player.ts";
 import { runCommand } from "../commands/commands.ts";
 import type { LoreLibrary, LoreSearch } from "../rag/library.ts";
+import { memoryItemsOf, type MemoryStore } from "../rag/memory.ts";
+import type { SearchOptions } from "../rag/index.ts";
+import { COMMANDS } from "../commands/commands.ts";
 import type { Viewer } from "../rag/index.ts";
 import type { RetrievalRecord } from "../engine/log.ts";
 import type { TimeSegment } from "../rules/time.ts";
@@ -31,6 +34,7 @@ export class GameWorld {
   #rng: Rng;
   #release: () => void;
   #lore: LoreLibrary | null;
+  #memory: MemoryStore | null;
   #closed = false;
 
   constructor(options: {
@@ -42,14 +46,25 @@ export class GameWorld {
     release?: () => void;
     /** 시나리오 lore 컬렉션 (없으면 lore 검색 없이 진행) */
     lore?: LoreLibrary | null;
+    /** 이 세계의 memory 컬렉션 (없으면 장기 기억 검색 없이 진행) */
+    memory?: MemoryStore | null;
   }) {
     this.#lore = options.lore ?? null;
+    this.#memory = options.memory ?? null;
     this.content = options.content;
     this.mode = options.mode;
     this.path = options.path ?? null;
     this.#repo = options.repo;
     this.#rng = options.rng;
     this.#release = options.release ?? (() => {});
+    // 세이브와 memory 색인을 맞춘다 (모델이 바뀌었거나 지난번에 못 맞춘 기억까지)
+    if (this.state().worldId) this.#syncMemory();
+  }
+
+  /** 세이브의 기억(요약·행적·믿음)을 memory 색인에 맞춘다. 저장 시점에 바로, 백그라운드로 (기획서 11.4) */
+  #syncMemory(): void {
+    if (!this.#memory || this.#closed) return;
+    void this.#memory.sync(memoryItemsOf(this.state(), this.summaries()));
   }
 
   /** 세계 id = 세이브 파일 이름 (WorldManager.open에 그대로 쓸 수 있다). 파일이 없으면 상태의 worldId */
@@ -105,6 +120,7 @@ export class GameWorld {
       this.appendTranscript(outcome.extra.map((display) => ({ kind: "tool", display })));
     }
     if (outcome.ok && name === "take_action") this.#repo.saveSnapshot();
+    if (outcome.ok) this.#syncMemory();
     return outcome;
   }
 
@@ -118,7 +134,15 @@ export class GameWorld {
 
   recordSummary(kind: TurnSummary["kind"], text: string): void {
     const state = this.state();
-    this.#repo.appendSummary({ kind, text: text.trim(), turn: state.turn, time: state.time, mode: this.mode });
+    this.#repo.appendSummary({
+      kind,
+      text: text.trim(),
+      turn: state.turn,
+      time: state.time,
+      mode: this.mode,
+      characterId: state.playerId,
+    });
+    this.#syncMemory();
   }
 
   summaries(options?: { kind?: TurnSummary["kind"]; limit?: number }): TurnSummary[] {
@@ -145,7 +169,25 @@ export class GameWorld {
   viewer(): Viewer {
     const state = this.state();
     const player = state.characters[state.playerId];
-    return { factionId: player?.factionId ?? "", flags: new Set<string>() };
+    return { characterId: state.playerId, factionId: player?.factionId ?? "", flags: new Set<string>() };
+  }
+
+  /**
+   * memory 검색 (기획서 11.4): 현재 캐릭터가 보거나 전해 들은 기억만. 캐릭터가 바뀌면 이전 캐릭터의 기억은 나오지 않는다.
+   */
+  async searchMemory(query: string, purpose: RetrievalRecord["purpose"], options?: SearchOptions): Promise<LoreSearch> {
+    if (!this.#memory) return { hits: [], trace: null, error: "memory 색인이 없다" };
+    let result: LoreSearch;
+    try {
+      result = await this.#memory.search(query, this.viewer(), options);
+    } catch (err) {
+      return { hits: [], trace: null, error: err instanceof Error ? err.message : String(err) };
+    }
+    if (result.trace && !this.#closed) {
+      const state = this.state();
+      this.#repo.appendRetrieval({ turn: state.turn, time: state.time, mode: this.mode, collection: "memory", purpose, trace: result.trace });
+    }
+    return result;
   }
 
   /**
@@ -176,9 +218,19 @@ export class GameWorld {
     return this.#repo.retrievals(limit);
   }
 
-  /** 정보 명령어 (읽기 전용, 시간을 쓰지 않는다) */
-  runCommand(input: string): string {
-    return runCommand(input, { state: this.state(), content: this.content, summaries: this.summaries() });
+  /**
+   * 정보 명령어 (읽기 전용, 시간을 쓰지 않는다).
+   * !일지에 검색어가 있으면 memory 컬렉션을 의미 검색한다 (현재 캐릭터의 기억만).
+   */
+  async runCommand(input: string): Promise<string> {
+    const [word = "", ...rest] = input.trim().replace(/^!/, "").trim().split(/\s+/);
+    const query = rest.join(" ").trim();
+    const journal = COMMANDS.find((c) => c.id === "journal")!;
+    let memoryHits: { text: string }[] | null = null;
+    if (query && this.#memory && (journal.name === word || journal.aliases.includes(word))) {
+      memoryHits = (await this.searchMemory(query, "recall", { topK: 8, charBudget: 4000 })).hits;
+    }
+    return runCommand(input, { state: this.state(), content: this.content, summaries: this.summaries(), memoryHits });
   }
 
   /** 빨리감기: 지정한 시간대가 될 때까지 기다린다 (끼어들기가 생기면 멈춤). take_action과 같은 경로다 */
@@ -214,6 +266,7 @@ export class GameWorld {
   close(): void {
     if (this.#closed) return;
     this.#closed = true;
+    void this.#memory?.close();
     try {
       this.#repo.close();
     } finally {

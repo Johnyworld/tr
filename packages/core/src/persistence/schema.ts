@@ -42,6 +42,8 @@ export const summaries = sqliteTable("summaries", {
   turn: integer("turn").notNull(),
   time: integer("time").notNull(),
   mode: text("mode").notNull(),
+  /** 요약을 남긴 시점의 플레이어 캐릭터 (memory 검색의 knownBy) */
+  characterId: text("character_id").notNull().default(""),
   createdAt: text("created_at").notNull(),
 });
 

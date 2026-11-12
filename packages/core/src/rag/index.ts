@@ -12,7 +12,27 @@ import type { LoreChunk } from "./chunk.ts";
  */
 
 /** 검색하는 캐릭터. 이 캐릭터가 볼 수 없는 청크는 결과에 절대 나오지 않는다 (원칙 4) */
-export type Viewer = { factionId: string; flags: ReadonlySet<string> };
+export type Viewer = { characterId?: string; factionId: string; flags: ReadonlySet<string> };
+
+/** 색인 스키마 버전. 바뀌면 색인을 비우고 다시 만든다 */
+const INDEX_SCHEMA = "2";
+
+/**
+ * 색인에 넣는 청크. lore는 visibility로, memory는 knownBy(아는 캐릭터 목록)로 거른다.
+ */
+export type IndexChunk = LoreChunk & {
+  kind?: string;
+  /** 이 기억을 아는 캐릭터 id. 있으면 visibility 대신 이것으로 거른다 */
+  knownBy?: readonly string[] | null;
+  /** 게임 시각 (memory) */
+  createdAt?: number | null;
+};
+
+/** 청크 하나를 이 캐릭터가 볼 수 있는지 */
+export function canSeeChunk(chunk: { visibility: string; knownBy: readonly string[] | null }, viewer: Viewer): boolean {
+  if (chunk.knownBy) return viewer.characterId !== undefined && chunk.knownBy.includes(viewer.characterId);
+  return canSee(chunk.visibility, viewer);
+}
 
 /** 공개 범위 판정: public | faction:<id> | secret:<flag> */
 export function canSee(visibility: string, viewer: Viewer): boolean {
@@ -34,9 +54,11 @@ export type SearchOptions = {
   weights?: { vector: number; keyword: number };
   /** RRF 상수 */
   rrfK?: number;
+  /** 결과에서 뺄 청크 (예: 이미 대화 기록에 있는 최근 턴). 필터와 함께 순위 전에 적용한다 */
+  exclude?: (chunk: { id: string; kind: string; createdAt: number | null }) => boolean;
 };
 
-export const DEFAULT_SEARCH: Required<SearchOptions> = {
+export const DEFAULT_SEARCH: Required<Omit<SearchOptions, "exclude">> = {
   topK: 4,
   charBudget: 2400,
   candidates: 20,
@@ -46,6 +68,8 @@ export const DEFAULT_SEARCH: Required<SearchOptions> = {
 
 export type SearchHit = {
   id: string;
+  kind: string;
+  createdAt: number | null;
   sourceId: string;
   title: string;
   section: string;
@@ -76,6 +100,12 @@ export type SourceDoc = { sourceId: string; hash: string; chunks: LoreChunk[] };
 /** 한국어 조사를 떼어 키워드 검색어를 만든다 ("강태호는" → "강태호") */
 const JOSA = /(으로|에서|에게|한테|까지|부터|이다|이랑|은|는|이|가|을|를|의|에|와|과|도|로|만)$/;
 
+/**
+ * 키워드 검색에서 뺄 흔한 말 (의문사·접속어). 뜻이 없는데 본문 아무 데나 걸려 엉뚱한 청크를 올린다.
+ * 검색 평가 세트에서 "물린 상처는 어떻게 되나"가 "어떻게"로 세력 문서를 1위에 올린 일로 추가했다.
+ */
+const STOPWORDS = new Set(["어떻게", "어디서", "어디에", "어디로", "무엇을", "무엇이", "얼마나", "그리고", "하지만", "그래서", "있었지", "했었지", "있었나", "했었나"]);
+
 export function keywordQuery(query: string): string | null {
   const terms = new Set<string>();
   for (const raw of query.split(/[\s,.!?'"“”‘’()[\]{}:;·…~\-]+/)) {
@@ -83,7 +113,7 @@ export function keywordQuery(query: string): string | null {
     // 끝 글자가 조사인지 단어의 일부인지("고가도로"의 "로") 알 수 없으므로 원래 말과 뗀 말을 둘 다 찾는다
     const stripped = term.length > 3 ? term.replace(JOSA, "") : term;
     // trigram 토크나이저는 3글자 이상이어야 찾을 수 있다
-    for (const t of [term, stripped]) if (t.length >= 3) terms.add(t);
+    for (const t of [term, stripped]) if (t.length >= 3 && !STOPWORDS.has(t)) terms.add(t);
   }
   return terms.size ? [...terms].map((t) => `"${t}"`).join(" OR ") : null;
 }
@@ -112,7 +142,11 @@ export class RagIndex {
     const db = this.#db;
     db.exec("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
     const get = (key: string) => (db.prepare("SELECT value FROM meta WHERE key = ?").get(key) as { value: string } | undefined)?.value;
-    if (get("model_id") !== this.embedder.id || get("dimensions") !== String(this.embedder.dimensions)) {
+    if (
+      get("model_id") !== this.embedder.id ||
+      get("dimensions") !== String(this.embedder.dimensions) ||
+      get("schema") !== INDEX_SCHEMA
+    ) {
       // 모델이 바뀌면 재임베딩 (기획서 11.4)
       db.exec(`
         DROP TABLE IF EXISTS chunks_vec;
@@ -123,6 +157,7 @@ export class RagIndex {
       const set = db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)");
       set.run("model_id", this.embedder.id);
       set.run("dimensions", String(this.embedder.dimensions));
+      set.run("schema", INDEX_SCHEMA);
     }
     db.exec(`
       CREATE TABLE IF NOT EXISTS sources (source_id TEXT PRIMARY KEY, hash TEXT NOT NULL);
@@ -133,7 +168,10 @@ export class RagIndex {
         title TEXT NOT NULL,
         section TEXT NOT NULL,
         visibility TEXT NOT NULL,
-        text TEXT NOT NULL
+        text TEXT NOT NULL,
+        kind TEXT NOT NULL DEFAULT 'lore',
+        known_by TEXT,
+        created_at INTEGER
       );
       CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(text, content='chunks', content_rowid='rowid', tokenize='trigram');
       CREATE VIRTUAL TABLE IF NOT EXISTS chunks_vec USING vec0(embedding float[${this.embedder.dimensions}] distance_metric=cosine);
@@ -183,17 +221,82 @@ export class RagIndex {
       let i = 0;
       for (const doc of changed) {
         deleteSource(doc.sourceId);
-        for (const chunk of doc.chunks) {
-          const { lastInsertRowid } = db
-            .prepare("INSERT INTO chunks (id, source_id, title, section, visibility, text) VALUES (?, ?, ?, ?, ?, ?)")
-            .run(chunk.id, chunk.sourceId, chunk.title, chunk.section, chunk.visibility, chunk.text);
-          db.prepare("INSERT INTO chunks_fts (rowid, text) VALUES (?, ?)").run(lastInsertRowid, chunk.text);
-          db.prepare("INSERT INTO chunks_vec (rowid, embedding) VALUES (?, ?)").run(BigInt(lastInsertRowid), vectors[i++]!);
-        }
+        for (const chunk of doc.chunks) this.#insert(chunk, vectors[i++]!);
         db.prepare("INSERT INTO sources (source_id, hash) VALUES (?, ?)").run(doc.sourceId, doc.hash);
       }
     })();
     return report;
+  }
+
+  /** 청크 하나를 넣는다 (임베딩은 미리 해 둔다) */
+  #insert(chunk: IndexChunk, vector: Float32Array) {
+    const db = this.#db;
+    const { lastInsertRowid } = db
+      .prepare(
+        "INSERT INTO chunks (id, source_id, title, section, visibility, text, kind, known_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      )
+      .run(
+        chunk.id,
+        chunk.sourceId,
+        chunk.title,
+        chunk.section,
+        chunk.visibility,
+        chunk.text,
+        chunk.kind ?? "lore",
+        chunk.knownBy ? JSON.stringify(chunk.knownBy) : null,
+        chunk.createdAt ?? null,
+      );
+    db.prepare("INSERT INTO chunks_fts (rowid, text) VALUES (?, ?)").run(lastInsertRowid, chunk.text);
+    db.prepare("INSERT INTO chunks_vec (rowid, embedding) VALUES (?, ?)").run(BigInt(lastInsertRowid), vector);
+  }
+
+  #deleteById(id: string) {
+    const db = this.#db;
+    const row = db.prepare("SELECT rowid, text FROM chunks WHERE id = ?").get(id) as { rowid: number; text: string } | undefined;
+    if (!row) return;
+    db.prepare("INSERT INTO chunks_fts (chunks_fts, rowid, text) VALUES ('delete', ?, ?)").run(row.rowid, row.text);
+    db.prepare("DELETE FROM chunks_vec WHERE rowid = ?").run(BigInt(row.rowid));
+    db.prepare("DELETE FROM chunks WHERE rowid = ?").run(row.rowid);
+  }
+
+  /**
+   * 청크를 하나씩 맞춘다 (memory용, 기획서 11.4 "저장 시점에 바로 임베딩").
+   * - 새 청크와 본문이 바뀐 청크만 임베딩한다
+   * - 본문은 같고 아는 사람(knownBy)만 바뀌었으면 메타데이터만 고친다 (소문이 퍼질 때)
+   * - items에 없는 청크는 지운다 (prefix로 범위를 정한 경우)
+   */
+  async upsert(items: readonly IndexChunk[], options: { removeMissingWithPrefix?: string } = {}) {
+    const db = this.#db;
+    const existing = new Map(
+      (db.prepare("SELECT id, text, known_by FROM chunks").all() as { id: string; text: string; known_by: string | null }[]).map((r) => [
+        r.id,
+        r,
+      ]),
+    );
+    const toEmbed = items.filter((c) => existing.get(c.id)?.text !== c.text);
+    const vectors = await this.embedder.embed(toEmbed.map((c) => c.text));
+    let metaUpdated = 0;
+    db.transaction(() => {
+      toEmbed.forEach((c, i) => {
+        this.#deleteById(c.id);
+        this.#insert(c, vectors[i]!);
+      });
+      for (const c of items) {
+        const old = existing.get(c.id);
+        const knownBy = c.knownBy ? JSON.stringify(c.knownBy) : null;
+        if (old && old.text === c.text && old.known_by !== knownBy) {
+          db.prepare("UPDATE chunks SET known_by = ? WHERE id = ?").run(knownBy, c.id);
+          metaUpdated++;
+        }
+      }
+      if (options.removeMissingWithPrefix !== undefined) {
+        const keep = new Set(items.map((c) => c.id));
+        for (const id of existing.keys()) {
+          if (id.startsWith(options.removeMissingWithPrefix) && !keep.has(id)) this.#deleteById(id);
+        }
+      }
+    })();
+    return { embedded: toEmbed.length, metaUpdated };
   }
 
   /**
@@ -203,7 +306,18 @@ export class RagIndex {
   async search(query: string, viewer: Viewer, options: SearchOptions = {}): Promise<{ hits: SearchHit[]; trace: SearchTrace }> {
     const opts = { ...DEFAULT_SEARCH, ...options, weights: { ...DEFAULT_SEARCH.weights, ...options.weights } };
     const db = this.#db;
-    type Row = { rowid: number; id: string; source_id: string; title: string; section: string; visibility: string; text: string };
+    type Row = {
+      rowid: number;
+      id: string;
+      source_id: string;
+      title: string;
+      section: string;
+      visibility: string;
+      text: string;
+      kind: string;
+      known_by: string | null;
+      created_at: number | null;
+    };
     const byRowid = (rowid: number) => db.prepare("SELECT rowid, * FROM chunks WHERE rowid = ?").get(rowid) as Row | undefined;
 
     const [vector] = await this.embedder.embed([query]);
@@ -222,10 +336,13 @@ export class RagIndex {
 
     const all = new Map<number, Row>();
     for (const r of [...vectorRows, ...keywordRows]) if (r) all.set(r.rowid, r);
-    const visible = (r: Row | undefined): r is Row => r !== undefined && canSee(r.visibility, viewer);
+    const allowed = (r: Row) =>
+      canSeeChunk({ visibility: r.visibility, knownBy: r.known_by ? (JSON.parse(r.known_by) as string[]) : null }, viewer);
+    const excluded = (r: Row) => options.exclude?.({ id: r.id, kind: r.kind, createdAt: r.created_at }) ?? false;
+    const visible = (r: Row | undefined): r is Row => r !== undefined && allowed(r) && !excluded(r);
     const vectorRanked = vectorRows.filter(visible);
     const keywordRanked = keywordRows.filter(visible);
-    const filtered = [...all.values()].filter((r) => !canSee(r.visibility, viewer)).length;
+    const filtered = [...all.values()].filter((r) => !allowed(r)).length;
 
     const scores = new Map<number, { row: Row; score: number; vectorRank: number | null; keywordRank: number | null }>();
     const add = (rows: Row[], weight: number, key: "vectorRank" | "keywordRank") =>
@@ -250,6 +367,8 @@ export class RagIndex {
       used += e.row.text.length;
       hits.push({
         id: e.row.id,
+        kind: e.row.kind,
+        createdAt: e.row.created_at,
         sourceId: e.row.source_id,
         title: e.row.title,
         section: e.row.section,

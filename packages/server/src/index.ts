@@ -7,6 +7,7 @@ import {
   createClaudeModel,
   DEFAULT_GM_MODEL,
   loadContent,
+  SaveFormatError,
   SqliteRepository,
   type LanguageModel,
 } from "@trpg/core";
@@ -16,7 +17,8 @@ import { GameSession } from "./session.ts";
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const port = Number(process.env.SERVER_PORT ?? 8787);
 const modelId = process.env.GM_MODEL ?? DEFAULT_GM_MODEL;
-const contentDir = resolve(ROOT, process.env.CONTENT_DIR ?? "content");
+const scenarioId = process.env.SCENARIO ?? "post_apoc";
+const contentDir = resolve(ROOT, process.env.CONTENT_DIR ?? `content/scenarios/${scenarioId}`);
 const savePath = resolve(ROOT, process.env.SAVE_PATH ?? "saves/world.db");
 const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
 
@@ -45,7 +47,17 @@ const session = new GameSession({
   model: hasApiKey ? createClaudeModel({ model: modelId }) : missingKeyModel,
   content,
   roleId: "role_a_grunt",
-  openRepository: () => SqliteRepository.open(savePath),
+  openRepository: () => {
+    try {
+      return SqliteRepository.open(savePath, content.scenario);
+    } catch (err) {
+      // 형식 버전이나 시나리오가 다른 세이브는 지우지 않고 보관한 뒤 새 세계를 연다
+      if (!(err instanceof SaveFormatError)) throw err;
+      const archived = archiveSave(savePath);
+      console.warn(`[server] ${err.message} 이전 세이브를 보관하고 새로 시작합니다: ${archived}`);
+      return SqliteRepository.open(savePath, content.scenario);
+    }
+  },
   archiveRepository: () => {
     const archived = archiveSave(savePath);
     if (archived) console.log(`[server] 이전 세계를 보관했습니다: ${archived}`);

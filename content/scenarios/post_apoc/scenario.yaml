@@ -1,0 +1,74 @@
+# 포스트아포칼립스 시나리오 팩 (기획서 12.3)
+# 게임 시스템이 쓰는 장르 요소의 이름과 목록. 규칙(2d6, 시간, 정보 필터 등)은 core에 있다
+id: post_apoc
+name: 포스트아포칼립스
+
+# 자원 (9단계에서 사용)
+resources:
+  - { id: food, label: 식량 }
+  - { id: water, label: 물 }
+  - { id: ammo, label: 탄약 }
+  - { id: medicine, label: 의약품 }
+  - { id: fuel, label: 연료 }
+
+# 능력치 (범위는 core 규칙: -1 ~ +3)
+stats:
+  - { id: strength, label: 근력, description: "힘, 근접 전투, 운반" }
+  - { id: agility, label: 민첩, description: "사격, 회피, 은밀" }
+  - { id: nerve, label: 냉정, description: "압박 속에서 버티기, 공포 저항" }
+  - { id: senses, label: 감각, description: "위험 감지, 수색, 상황 읽기" }
+  - { id: persuasion, label: 교섭, description: "설득, 협상, 거짓말" }
+
+# 기본 행동과 쓰는 능력치. aid(돕기·방해)는 규칙을 구현할 때 추가한다
+moves:
+  - { id: fight, label: 싸우기, stats: [strength, agility], description: "근접·사격 전투" }
+  - { id: scavenge, label: 수색하기, stats: [senses], description: "자원과 단서 찾기" }
+  - { id: sense_danger, label: 위험 감지, stats: [senses], description: "낌새·숨은 목격자·함정 알아차리기" }
+  - { id: stealth, label: 은밀 행동, stats: [agility], description: "들키지 않고 움직이기" }
+  - { id: endure, label: 버티기, stats: [nerve], description: "압박·공포·고통 속에서 행동" }
+  - { id: persuade, label: 설득·압박, stats: [persuasion], description: "NPC를 움직이기" }
+
+# 시스템이 특정 역할로 쓰는 행동 (목격자 살피기, 목격 확률 낮추기)
+move_roles:
+  notice: sense_danger
+  stealth: stealth
+
+# 상태 트랙. 앞에서 뒤로 악화된다. fatal 단계에 이르면 사망 (판정 보정은 임시값)
+# infection(감염)은 규칙을 구현할 때 추가한다
+condition_tracks:
+  - id: harm
+    label: 부상
+    levels:
+      - { id: none, label: 무사, penalty: 0 }
+      - { id: light, label: 경상, penalty: -1 }
+      - { id: serious, label: 중상, penalty: -2 }
+      - { id: critical, label: 치명상, penalty: -3 }
+      - { id: dead, label: 사망, penalty: 0, fatal: true }
+# apply_harm이 쓰는 트랙
+harm_track: harm
+
+# 소속 등급 사다리. level은 지휘 계통상의 높이 (화법 규칙에 쓴다)
+# staff(지원 인력)와 leader(지도부)는 기획서 12.3 예시에 더해 쓰는 곳이 있어 둔다
+rank_ladder:
+  - { id: loner, label: 혼자, level: 0 }
+  - { id: outsider, label: 외부 무리 일원, level: 0 }
+  - { id: grunt, label: 하급 전투원, level: 1 }
+  - { id: staff, label: 지원 인력, level: 1 }
+  - { id: squad_leader, label: 분대장, level: 2 }
+  - { id: officer, label: 간부, level: 3 }
+  - { id: leader, label: 지도부, level: 4 }
+# 진급 경로 (MVP: 하급 전투원 → 분대장)
+promotion: { from: grunt, to: squad_leader }
+
+speech_rules: speech/post_apoc.yaml
+gm_tone: prompts/post_apoc_tone.md
+
+# 환경 위협: 빨리감기 중 끼어드는 이상 징후 (임시값). 조우 테이블이 생기면 바꾼다
+threats:
+  disturbance_chance_per_hour: { dawn: 0.05, morning: 0.03, day: 0.03, evening: 0.05, night: 0.08 }
+  disturbance_details:
+    - 멀리서 들리는 소리
+    - 가까운 곳의 인기척
+    - 어둠 속의 움직임
+    - 낯선 냄새
+    - 거점 쪽의 소란

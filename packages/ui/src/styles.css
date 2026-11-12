@@ -364,13 +364,11 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.injury-light,
-.injury-serious {
+.condition-worse {
   color: var(--partial);
 }
 
-.injury-critical,
-.injury-dead {
+.condition-dead {
   color: var(--error);
   font-weight: 600;
 }

@@ -148,7 +148,7 @@ describe("runTurn", () => {
     await expect(run(model, "  ")).rejects.toThrow(InvalidPlayerInputError);
 
     const store = createTestStore();
-    store.getState().characters.player!.injury = "dead";
+    store.getState().characters.player!.dead = true;
     const gen = runTurn({ model, store, content: TEST_CONTENT, transcript: [], input: "일어난다", rng: fixedDice });
     await expect(gen.next()).rejects.toThrow("사망");
   });

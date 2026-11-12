@@ -14,6 +14,7 @@ import {
   type Privacy,
 } from "../game/reputation.ts";
 import { rollPlayerCheck } from "./checks.ts";
+import { moveOf } from "../scenario/scenario.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
 export type DeedInput = {
@@ -24,12 +25,18 @@ export type DeedInput = {
   noisy: boolean;
 };
 
-/** 이번 턴 플레이어의 은밀 행동 판정 중 가장 좋은 결과 */
-function stealthThisTurn(state: GameState): "success" | "partial" | "miss" | null {
+/** 이번 턴 플레이어의 은밀 행동 판정 중 가장 좋은 결과 (은밀 행동은 시나리오의 move_roles.stealth) */
+function stealthThisTurn(state: GameState, stealthMove: string): "success" | "partial" | "miss" | null {
   const outcomes = Object.values(state.checks)
-    .filter((c) => c.turn === state.turn && c.actorId === state.playerId && c.move === "stealth")
+    .filter((c) => c.turn === state.turn && c.actorId === state.playerId && c.move === stealthMove)
     .map((c) => c.outcome);
   return outcomes.includes("success") ? "success" : outcomes.includes("partial") ? "partial" : outcomes[0] ?? null;
+}
+
+/** 낌새를 알아차리는 행동 (시나리오의 move_roles.notice). 첫 번째 능력치를 쓴다 */
+function noticeMove(ctx: ToolContext) {
+  const s = ctx.content.scenario;
+  return moveOf(s, s.move_roles.notice)!;
 }
 
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
@@ -58,15 +65,17 @@ export function recordDeed(
     witnesses.push({ npcId: official.npcId, hidden: !state.scene.present.includes(official.npcId) });
   } else {
     for (const npcId of state.scene.present) witnesses.push({ npcId, hidden: false });
-    const stealth = stealthThisTurn(state);
+    const scenario = ctx.content.scenario;
+    const stealth = stealthThisTurn(state, scenario.move_roles.stealth);
+    const noticeStat = noticeMove(ctx).stats[0]!;
     for (const character of Object.values(state.characters)) {
-      if (character.id === state.playerId || character.injury === "dead") continue;
+      if (character.id === state.playerId || character.dead) continue;
       if (state.scene.present.includes(character.id) || !ctx.content.npcs[character.id]) continue;
       const chance = hiddenWitnessChance({
         privacy: input.privacy,
         time: state.time,
         noisy: input.noisy,
-        senseStat: character.stats.sense,
+        senseStat: character.stats[noticeStat] ?? 0,
         stealth,
       });
       if (ctx.rng() < chance) witnesses.push({ npcId: character.id, hidden: true });
@@ -109,7 +118,7 @@ const recordDeedTool = defineTool({
   }),
   run(input, ctx) {
     const state = ctx.store.getState();
-    if (state.characters[state.playerId]?.injury === "dead") return { ok: false, error: "사망한 캐릭터입니다." };
+    if (state.characters[state.playerId]?.dead) return { ok: false, error: "사망한 캐릭터입니다." };
     const { deed, visible } = recordDeed(ctx, input);
     return {
       ok: true,
@@ -132,7 +141,7 @@ const recordDeedTool = defineTool({
 const lookForWitnesses = defineTool({
   name: "look_for_witnesses",
   description:
-    "플레이어 캐릭터가 방금 한 일을 누가 보지 않았는지 주변을 살핀다 (위험 감지 판정을 시스템이 굴린다). " +
+    "플레이어 캐릭터가 방금 한 일을 누가 보지 않았는지 주변을 살핀다 (낌새를 알아차리는 판정을 시스템이 굴린다). " +
     "행적 하나에 한 번만 살필 수 있다. 성공하면 누가 봤는지, 대가 있는 성공이면 누군가 본 것 같다는 느낌만, 실패하면 아무것도 모른다.",
   schema: z.strictObject({
     deed_id: z.string().describe("살펴볼 행적 id (record_deed 결과에 나온 것)"),
@@ -145,7 +154,12 @@ const lookForWitnesses = defineTool({
     if (state.time - deed.at > 60) return { ok: false, error: "너무 오래전 일이라 살필 수 없습니다." };
 
     const check = rollPlayerCheck(
-      { move: "sense_danger", stat: "sense", difficulty: "normal", intent: "누가 보지 않았는지 주변을 살핀다" },
+      {
+        move: noticeMove(ctx).id,
+        stat: noticeMove(ctx).stats[0]!,
+        difficulty: "normal",
+        intent: "누가 보지 않았는지 주변을 살핀다",
+      },
       ctx,
     );
     if (!check.ok) return check;
@@ -230,7 +244,7 @@ export function spreadRumors(ctx: ToolContext): void {
   for (let d = last + 1; d <= Math.min(day, last + 3); d++) {
     const state = ctx.store.getState();
     const npcIds = Object.values(state.characters)
-      .filter((c) => c.id !== state.playerId && c.injury !== "dead" && ctx.content.npcs[c.id])
+      .filter((c) => c.id !== state.playerId && !c.dead && ctx.content.npcs[c.id])
       .map((c) => c.id);
     const learned = spreadOneDay({
       deeds: Object.values(state.deeds),

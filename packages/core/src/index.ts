@@ -1,31 +1,36 @@
 export { createSeededRng, rollDie, type Rng } from "./rng.ts";
 
-export * from "./rules/stats.ts";
-export * from "./rules/moves.ts";
-export * from "./rules/injury.ts";
+export * from "./rules/harm.ts";
 export * from "./rules/check.ts";
 export * from "./rules/time.ts";
 export {
   fastForward,
-  disturbanceCheck,
-  DEFAULT_INTERRUPT_CHECKS,
-  DISTURBANCE_CHANCE_PER_HOUR,
+  createDisturbanceCheck,
+  createInterruptChecks,
   type Interrupt,
   type InterruptCheck,
   type FastForwardResult,
 } from "./sim/fastForward.ts";
 
-export { characterSchema, inventorySchema, type Character, type Inventory } from "./game/character.ts";
+export {
+  createCharacterSchema,
+  createStatsSchema,
+  inventorySchema,
+  STAT_MAX,
+  STAT_MIN,
+  type Character,
+  type Inventory,
+} from "./game/character.ts";
+export * from "./scenario/schema.ts";
+export * from "./scenario/scenario.ts";
 export * from "./game/belief.ts";
-export * from "./rules/ranks.ts";
 export {
   applyEvent,
   createCharacterFromRole,
   createCharacterFromNpc,
   createWorldEvent,
   EMPTY_STATE,
-  gameEventSchema,
-  gameStateSchema,
+  createGameSchemas,
   SAVE_SCHEMA_VERSION,
   SCENE_HOLDER,
   type CheckRecord,
@@ -43,10 +48,9 @@ export { loadContent, ContentError } from "./content/loader.ts";
 export { InMemoryRepository, type GameRepository } from "./persistence/repository.ts";
 export { SqliteRepository, SaveFormatError, archiveSave } from "./persistence/sqlite.ts";
 
-export { GM_SYSTEM_PROMPT } from "./gm/prompt.ts";
-export { OPENING_SCENE } from "./gm/scene.ts";
+export { GM_RULES, buildSystemPrompt } from "./gm/prompt.ts";
 export { describePlayerState, buildPlayerPrompt } from "./gm/context.ts";
-export { executeTool, GM_TOOL_SPECS, harmSteps, type ToolDisplayEvent, type ToolOutcome } from "./gm/tools.ts";
+export { executeTool, gmToolSpecs, gmTools, harmSteps, type ToolDisplayEvent, type ToolOutcome } from "./gm/tools.ts";
 export {
   runTurn,
   buildHistoryMessages,

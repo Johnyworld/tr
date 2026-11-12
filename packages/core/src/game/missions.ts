@@ -2,7 +2,8 @@ import { z } from "zod";
 import type { Rng } from "../rng.ts";
 import { CHECK_OUTCOMES, type CheckOutcome } from "../rules/check.ts";
 import { dayOf, MINUTES_PER_DAY, type GameTime } from "../rules/time.ts";
-import { missionRequirementSchema, type Content, type MissionRequirement } from "../content/schemas.ts";
+import { ACTIVITIES } from "../rules/time.ts";
+import type { Content, MissionRequirement } from "../content/schemas.ts";
 import type { Character } from "./character.ts";
 
 /**
@@ -21,6 +22,12 @@ export const MISSION_STATUS_LABELS: Record<MissionStatus, string> = {
   abandoned: "포기",
   expired: "기한 초과",
 };
+
+/** 세이브 안의 요구 조건. 콘텐츠에서 검증된 것을 복사하므로 행동 ID는 문자열로 둔다 */
+const missionRequirementSchema = z.union([
+  z.strictObject({ activity: z.enum(ACTIVITIES), minutes: z.number().int().positive() }),
+  z.strictObject({ check: z.string(), min_outcome: z.enum(["success", "partial"]) }),
+]);
 
 export const missionInstanceSchema = z.strictObject({
   id: z.string(),
@@ -49,10 +56,8 @@ export const MERIT = {
   expired: -2,
 } as const;
 
-/** 진급 조건: 하급 전투원 → 분대장 (임시값). 상관 신뢰는 관계 시스템(8단계)과 함께 추가한다 */
+/** 진급 조건 (임시값). 어느 등급에서 어느 등급으로 오르는지는 시나리오(promotion)가 정한다 */
 export const PROMOTION = {
-  from: "grunt",
-  to: "squad_leader",
   minMerit: 9,
   minDaysServed: 4,
   maxDisobedience: 1,
@@ -99,12 +104,13 @@ export type PromotionCheck = { eligible: boolean; missing: string[] };
 /** commanderTrust: 직속 상관의 이 캐릭터에 대한 신뢰. 상관이 없으면 null (조건 생략) */
 export function checkPromotion(
   character: Character,
+  promotion: { from: string; to: string },
   now: GameTime,
   runStartedAt: GameTime,
   commanderTrust: number | null,
 ): PromotionCheck {
   const missing: string[] = [];
-  if (character.rank !== PROMOTION.from) return { eligible: false, missing: ["진급 대상 등급이 아님"] };
+  if (character.rank !== promotion.from) return { eligible: false, missing: ["진급 대상 등급이 아님"] };
   if (character.merit < PROMOTION.minMerit) missing.push(`공적 ${character.merit}/${PROMOTION.minMerit}`);
   const days = daysServed(now, runStartedAt);
   if (days < PROMOTION.minDaysServed) missing.push(`복무 ${days}/${PROMOTION.minDaysServed}일`);

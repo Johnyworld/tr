@@ -18,7 +18,12 @@ export function createApp(session: GameSession) {
   app.get("/api/health", (c) => c.json({ ok: true }));
 
   app.get("/api/game", (c) =>
-    c.json({ player: session.playerView(), transcript: session.transcriptView(), busy: session.busy }),
+    c.json({
+      ...session.intro(),
+      player: session.playerView(),
+      transcript: session.transcriptView(),
+      busy: session.busy,
+    }),
   );
 
   app.post("/api/game/reset", (c) => {
@@ -28,7 +33,7 @@ export function createApp(session: GameSession) {
       if (err instanceof TurnInProgressError) return c.json({ error: "턴이 진행 중입니다." }, 409);
       throw err;
     }
-    return c.json({ player: session.playerView(), transcript: session.transcriptView(), busy: false });
+    return c.json({ ...session.intro(), player: session.playerView(), transcript: session.transcriptView(), busy: false });
   });
 
   app.post("/api/game/turn", async (c) => {

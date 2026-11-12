@@ -8,11 +8,13 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
       <div className="sheet-sub">{player.roleLabel}</div>
 
       <section>
-        <h3>부상</h3>
-        <div className={`injury injury-${player.injury}`}>
-          {player.injuryLabel}
-          {player.injuryPenalty !== 0 && <span className="penalty"> (판정 {signed(player.injuryPenalty)})</span>}
-        </div>
+        <h3>상태</h3>
+        {player.conditions.map((c) => (
+          <div key={c.id} className={player.dead ? "condition-dead" : c.worsened ? "condition-worse" : ""}>
+            {c.label} {c.levelLabel}
+          </div>
+        ))}
+        {player.conditionPenalty !== 0 && <div className="penalty">판정 {signed(player.conditionPenalty)}</div>}
       </section>
 
       <section>
@@ -50,7 +52,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         <h3>복무</h3>
         <div>
           공적 {player.service.merit} · 복무 {player.service.daysServed}일
-          {player.service.disobedience > 0 && <span className="injury-light"> · 불복종 {player.service.disobedience}</span>}
+          {player.service.disobedience > 0 && <span className="condition-worse"> · 불복종 {player.service.disobedience}</span>}
         </div>
         {player.service.promotionMissing && player.service.promotionMissing.length > 0 && (
           <div className="muted small">진급까지: {player.service.promotionMissing.join(", ")}</div>
@@ -66,7 +68,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
             {player.present.map((p) => (
               <li key={p.id} title={p.look}>
                 {p.name} <span className="muted">· {p.rankLabel}</span>
-                {p.injuryLabel !== "무사" && <span className="injury-light"> · {p.injuryLabel}</span>}
+                {p.conditionLabel && <span className="condition-worse"> · {p.conditionLabel}</span>}
               </li>
             ))}
           </ul>

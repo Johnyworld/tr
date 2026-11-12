@@ -28,6 +28,6 @@ secret:
   content: 배급 장부를 조작해 지도부 몰래 겨울용 비상 식량을 창고에 따로 숨겨 두었다
   reveal_when: 신뢰 5
   min_trust: 5
-stats: { strength: -1, agility: 0, cool: 1, sense: 1, persuasion: 2 }
+stats: { strength: -1, agility: 0, nerve: 1, senses: 1, persuasion: 2 }
 start_inventory: [ledger]
 playable: true

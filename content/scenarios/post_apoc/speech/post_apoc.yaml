@@ -1,0 +1,10 @@
+# 화법 규칙 (기획서 7.4). NPC의 voice.style이 이보다 우선한다
+# 지휘 계통상 높은 쪽이 낮은 쪽에게 어떤 말을 쓰는지, 같은 높이면 나이로 정한다
+forms:
+  casual: 반말
+  polite: 존댓말
+to_lower_rank: casual
+to_higher_rank: polite
+same_rank_older_or_same_age: casual
+same_rank_younger: polite
+unknown_age: polite

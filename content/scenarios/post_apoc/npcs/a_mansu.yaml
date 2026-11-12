@@ -28,6 +28,6 @@ secret:
   content: 붕괴 초기 자기 판단으로 피란민 무리를 거점 밖에 버려두었다. 그 일 뒤로 지휘를 거절한다
   reveal_when: 신뢰 4 이상 + 술자리
   min_trust: 4
-stats: { strength: 1, agility: -1, cool: 2, sense: 1, persuasion: 1 }
+stats: { strength: 1, agility: -1, nerve: 2, senses: 1, persuasion: 1 }
 start_inventory: [cigarettes, kitchen_knife]
 playable: true

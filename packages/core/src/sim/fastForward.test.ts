@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
 import { createTestStore } from "../testing.ts";
-import { disturbanceCheck, fastForward, type InterruptCheck } from "./fastForward.ts";
+import { createDisturbanceCheck, fastForward, type InterruptCheck } from "./fastForward.ts";
+import { TEST_SCENARIO } from "../testing.ts";
+
+const disturbanceCheck = createDisturbanceCheck(TEST_SCENARIO);
 
 const state = createTestStore().getState();
 

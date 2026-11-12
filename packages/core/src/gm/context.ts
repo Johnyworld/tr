@@ -1,7 +1,11 @@
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
-import { INJURY_LABELS, INJURY_PENALTY } from "../rules/injury.ts";
-import { RANK_LABELS, speechLevel } from "../rules/ranks.ts";
-import { STAT_LABELS, STATS } from "../rules/stats.ts";
+import {
+  conditionPenalty,
+  describeConditions,
+  initialConditions,
+  rankLabel,
+  speechLevel,
+} from "../scenario/scenario.ts";
 import { formatTime } from "../rules/time.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { Character, Inventory } from "../game/character.ts";
@@ -36,7 +40,8 @@ export function describePlayerState(state: GameState, content: Content): string 
   const player = state.characters[state.playerId];
   if (!player) throw new Error("플레이어 캐릭터가 없습니다.");
 
-  const stats = STATS.map((s) => `${STAT_LABELS[s]}(${s}) ${signed(player.stats[s])}`).join(", ");
+  const scenario = content.scenario;
+  const stats = scenario.stats.map((s) => `${s.label}(${s.id}) ${signed(player.stats[s.id] ?? 0)}`).join(", ");
   const difficulty = Object.entries(DIFFICULTY_MODIFIER)
     .map(([k, v]) => `${k} ${signed(v)}`)
     .join(", ");
@@ -44,9 +49,9 @@ export function describePlayerState(state: GameState, content: Content): string 
   const sections = [
     [
       `시각: ${formatTime(state.time)}`,
-      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.label ?? RANK_LABELS[player.rank]}${player.age ? ` · ${player.age}세` : ""}`,
+      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${player.age ? ` · ${player.age}세` : ""}`,
       `능력치: ${stats}`,
-      `부상: ${INJURY_LABELS[player.injury]} (판정 보정 ${signed(INJURY_PENALTY[player.injury])})`,
+      `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       `소지품: ${describeInventory(content, player.inventory)}`,
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
       `난이도 보정: ${difficulty}`,
@@ -83,8 +88,8 @@ function describeNpcCard(
   character: Character,
   player: Character,
 ): string {
-  const toPlayer = speechLevel(character, player);
-  const fromPlayer = speechLevel(player, character);
+  const toPlayer = speechLevel(content.scenario, character, player);
+  const fromPlayer = speechLevel(content.scenario, player, character);
   const values = Object.entries(npc.values)
     .map(([k, v]) => `${VALUE_LABELS[k] ?? k} ${signed(v)}`)
     .join(", ");
@@ -110,9 +115,9 @@ function describeNpcCard(
   })();
 
   return [
-    `### ${npc.name} (${npc.id}) · ${RANK_LABELS[character.rank]} · ${npc.age}세`,
+    `### ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)} · ${npc.age}세`,
     `외모: ${npc.look}`,
-    `부상: ${INJURY_LABELS[character.injury]} / 소지품: ${describeInventory(content, character.inventory)}`,
+    `상태: ${describeConditions(content.scenario, character)} / 소지품: ${describeInventory(content, character.inventory)}`,
     `화법: 이 인물은 당신에게 기본적으로 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer}. 말투: ${npc.voice.style}`,
     `예시 대사: ${npc.voice.samples.map((s) => `"${s}"`).join(" / ")}`,
     `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다]`,
@@ -145,8 +150,10 @@ function describeKnownPeople(state: GameState, content: Content): string {
     const npc = content.npcs[id];
     const character = state.characters[id];
     if (!npc || !character) return `- ${id}`;
-    const status = character.injury === "none" ? "" : ` · ${INJURY_LABELS[character.injury]}`;
-    return `- ${npc.name} (${npc.id}) · ${RANK_LABELS[character.rank]}${status}: ${npc.look} ${npc.reputation}`;
+    const initial = initialConditions(content.scenario);
+    const changed = Object.entries(initial).some(([track, level]) => character.conditions[track] !== level);
+    const status = character.dead ? " · 사망" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
+    return `- ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)}${status}: ${npc.look} ${npc.reputation}`;
   });
   return `알고 있는 인물 (지금 장면에는 없다):\n${lines.join("\n")}`;
 }

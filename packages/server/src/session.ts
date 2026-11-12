@@ -9,14 +9,13 @@ import {
   DEED_TAG_LABELS,
   NEUTRAL_RELATION,
   describeRequirement,
+  conditionPenalty,
+  describeConditions,
   formatTime,
-  INJURY_LABELS,
-  RANK_LABELS,
-  INJURY_PENALTY,
+  initialConditions,
   isPlayerDead,
+  rankLabel,
   runTurn,
-  STAT_LABELS,
-  STATS,
   type Content,
   type GameRepository,
   type LanguageModel,
@@ -30,14 +29,15 @@ export type PlayerView = {
   name: string;
   roleLabel: string;
   timeLabel: string;
-  injury: string;
-  injuryLabel: string;
-  injuryPenalty: number;
+  /** 상태 트랙별 현재 단계 (예: 부상 경상). worsened: 첫 단계에서 나빠졌는지 */
+  conditions: { id: string; label: string; levelLabel: string; worsened: boolean }[];
+  conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
   inventory: { id: string; name: string; quantity: number }[];
   sceneItems: { id: string; name: string; quantity: number }[];
-  present: { id: string; name: string; rankLabel: string; look: string; injuryLabel: string }[];
+  /** conditionLabel: 상태가 처음과 달라졌을 때만 요약 (예: "부상: 경상") */
+  present: { id: string; name: string; rankLabel: string; look: string; conditionLabel: string | null }[];
   service: {
     merit: number;
     disobedience: number;
@@ -89,6 +89,12 @@ export class GameSession {
     this.#rng = this.#newRng();
   }
 
+  /** 화면 머리에 보여 줄 시나리오 이름과 시작 장면 */
+  intro(): { scenarioName: string; opening: string } {
+    const role = this.options.content.roles[this.#repo.getState().roleId];
+    return { scenarioName: this.options.content.scenario.name, opening: role?.opening_scene ?? "" };
+  }
+
   get busy() {
     return this.#busy;
   }
@@ -116,22 +122,30 @@ export class GameSession {
 
   playerView(): PlayerView {
     const { content } = this.options;
+    const scenario = content.scenario;
     const state = this.#repo.getState();
     const player = state.characters[state.playerId]!;
+    const initial = initialConditions(scenario);
+    const changed = (c: { conditions: Record<string, string> }) =>
+      Object.entries(initial).some(([track, level]) => c.conditions[track] !== level);
     const items = (inv: Record<string, number>) =>
       Object.entries(inv).map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity }));
     return {
       name: player.name,
       roleLabel:
         content.roles[state.roleId]?.rank === player.rank
-          ? (content.roles[state.roleId]?.label ?? RANK_LABELS[player.rank])
-          : RANK_LABELS[player.rank],
+          ? (content.roles[state.roleId]?.label ?? rankLabel(scenario, player.rank))
+          : rankLabel(scenario, player.rank),
       timeLabel: formatTime(state.time),
-      injury: player.injury,
-      injuryLabel: INJURY_LABELS[player.injury],
-      injuryPenalty: INJURY_PENALTY[player.injury],
-      dead: player.injury === "dead",
-      stats: STATS.map((id) => ({ id, label: STAT_LABELS[id], value: player.stats[id] })),
+      conditions: scenario.condition_tracks.map((track) => ({
+        id: track.id,
+        label: track.label,
+        levelLabel: track.levels.find((l) => l.id === player.conditions[track.id])?.label ?? "?",
+        worsened: player.conditions[track.id] !== initial[track.id],
+      })),
+      conditionPenalty: conditionPenalty(scenario, player),
+      dead: player.dead,
+      stats: scenario.stats.map((s) => ({ id: s.id, label: s.label, value: player.stats[s.id] ?? 0 })),
       inventory: items(player.inventory),
       sceneItems: items(state.scene.items),
       present: state.scene.present.map((id) => {
@@ -139,9 +153,9 @@ export class GameSession {
         return {
           id,
           name: npc.name,
-          rankLabel: RANK_LABELS[npc.rank],
+          rankLabel: rankLabel(scenario, npc.rank),
           look: content.npcs[id]?.look ?? "",
-          injuryLabel: INJURY_LABELS[npc.injury],
+          conditionLabel: npc.dead ? "사망" : changed(npc) ? describeConditions(scenario, npc) : null,
         };
       }),
       service: {
@@ -149,11 +163,11 @@ export class GameSession {
         disobedience: player.disobedience,
         daysServed: daysServed(state.time, state.runStartedAt),
         promotionMissing: (() => {
-          if (player.rank !== "grunt") return null;
+          if (player.rank !== scenario.promotion.from) return null;
           const commanderId = content.roles[state.roleId]?.commander;
           // 화면에는 플레이어가 느끼는 신뢰를 보여 준다 (실제 진급 판정은 진짜 관계로 한다)
           const trust = commanderId ? (state.perceived[commanderId]?.trust ?? 0) : null;
-          return checkPromotion(player, state.time, state.runStartedAt, trust).missing;
+          return checkPromotion(player, scenario.promotion, state.time, state.runStartedAt, trust).missing;
         })(),
       },
       mission: (() => {
@@ -163,7 +177,7 @@ export class GameSession {
           title: m.title,
           briefing: m.briefing,
           deadlineLabel: formatTime(m.deadline),
-          requirements: m.requirements.map((r, i) => describeRequirement(r, m.progress[i] ?? 0)),
+          requirements: m.requirements.map((r, i) => describeRequirement(scenario, r, m.progress[i] ?? 0)),
         };
       })(),
       // 진짜 관계가 아니라 플레이어가 마지막으로 느낀 태도 (숨은 목격자가 드러나지 않게)

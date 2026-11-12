@@ -2,14 +2,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
-import {
-  beliefPresetSchema,
-  itemContentSchema,
-  missionContentSchema,
-  npcContentSchema,
-  roleContentSchema,
-  type Content,
-} from "./schemas.ts";
+import { createContentSchemas, type Content } from "./schemas.ts";
+import { loadScenario, ScenarioError } from "../scenario/scenario.ts";
 
 export class ContentError extends Error {
   override name = "ContentError";
@@ -18,25 +12,34 @@ export class ContentError extends Error {
   }
 }
 
-/** 종류별 하위 폴더와 스키마. 폴더가 아직 없으면 빈 목록으로 본다 */
-const KINDS = {
-  items: itemContentSchema,
-  roles: roleContentSchema,
-  npcs: npcContentSchema,
-  beliefs: beliefPresetSchema,
-  missions: missionContentSchema,
-} as const;
+type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions";
 
 /**
- * content/ 폴더의 YAML을 읽어 검증한다.
- * - 한 파일에 객체 하나 또는 목록을 둘 수 있다
+ * 시나리오 팩 폴더(content/scenarios/<id>/)를 읽어 검증한다.
+ * - scenario.yaml을 먼저 읽고, 그 ID들로 콘텐츠 스키마를 만든다
+ * - 한 파일에 객체 하나 또는 목록을 둘 수 있다. 종류별 폴더가 없으면 빈 목록으로 본다
  * - 문제는 한 번에 모아서 보고한다 (첫 오류에서 멈추지 않음)
  */
 export function loadContent(contentDir: string): Content {
+  let scenario;
+  try {
+    scenario = loadScenario(contentDir);
+  } catch (err) {
+    if (err instanceof ScenarioError) throw new ContentError([err.message]);
+    throw err;
+  }
+  const schemas = createContentSchemas(scenario);
+  const KINDS: Record<Kind, z.ZodType> = {
+    items: schemas.item,
+    roles: schemas.role,
+    npcs: schemas.npc,
+    beliefs: schemas.beliefPreset,
+    missions: schemas.mission,
+  };
   const problems: string[] = [];
-  const content: Content = { items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {} };
+  const content: Content = { scenario, items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {} };
 
-  for (const [kind, schema] of Object.entries(KINDS) as [keyof typeof KINDS, z.ZodType][]) {
+  for (const [kind, schema] of Object.entries(KINDS) as [Kind, z.ZodType][]) {
     const dir = join(contentDir, kind);
     for (const file of listYamlFiles(dir)) {
       const where = relative(contentDir, file);

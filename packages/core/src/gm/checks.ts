@@ -1,10 +1,8 @@
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
-import { INJURY_PENALTY } from "../rules/injury.ts";
-import { MOVE_LABELS, MOVE_STATS, type Move } from "../rules/moves.ts";
-import { STAT_LABELS, type Stat } from "../rules/stats.ts";
+import { conditionPenalty, moveOf, statLabel } from "../scenario/scenario.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
-export type PlayerCheckInput = { move: Move; stat: Stat; difficulty: Difficulty; intent: string };
+export type PlayerCheckInput = { move: string; stat: string; difficulty: Difficulty; intent: string };
 
 export type PlayerCheckResult =
   | {
@@ -20,25 +18,27 @@ export type PlayerCheckResult =
 
 /**
  * 플레이어 캐릭터의 2d6 판정을 굴리고 check_rolled 이벤트로 기록한다.
- * request_check와, 판정이 들어가는 다른 tool(목격자 살피기 등)이 같이 쓴다.
+ * 행동과 능력치는 시나리오에서 오고, 보정은 능력치 + 난이도 + 상태 트랙 보정이다.
  */
-export function rollPlayerCheck(input: PlayerCheckInput, { store, rng }: ToolContext): PlayerCheckResult {
+export function rollPlayerCheck(input: PlayerCheckInput, { store, rng, content }: ToolContext): PlayerCheckResult {
+  const scenario = content.scenario;
   const state = store.getState();
   const actor = state.characters[state.playerId];
   if (!actor) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
-  if (actor.injury === "dead") return { ok: false, error: "사망한 캐릭터는 판정할 수 없습니다." };
+  if (actor.dead) return { ok: false, error: "사망한 캐릭터는 판정할 수 없습니다." };
 
-  const allowed = MOVE_STATS[input.move];
-  if (!allowed.includes(input.stat)) {
-    return { ok: false, error: `${input.move}에는 ${allowed.join(" 또는 ")} 능력치만 쓸 수 있습니다.` };
+  const move = moveOf(scenario, input.move);
+  if (!move) return { ok: false, error: `알 수 없는 행동: ${input.move}` };
+  if (!move.stats.includes(input.stat)) {
+    return { ok: false, error: `${input.move}에는 ${move.stats.join(" 또는 ")} 능력치만 쓸 수 있습니다.` };
   }
 
   const modifiers = {
-    stat: actor.stats[input.stat],
+    stat: actor.stats[input.stat] ?? 0,
     difficulty: DIFFICULTY_MODIFIER[input.difficulty],
-    injury: INJURY_PENALTY[actor.injury],
+    condition: conditionPenalty(scenario, actor),
   };
-  const roll = roll2d6(rng, modifiers.stat + modifiers.difficulty + modifiers.injury);
+  const roll = roll2d6(rng, modifiers.stat + modifiers.difficulty + modifiers.condition);
   const checkId = `chk_${state.nextCheckNo}`;
 
   store.append({
@@ -68,8 +68,8 @@ export function rollPlayerCheck(input: PlayerCheckInput, { store, rng }: ToolCon
       checkId,
       actorName: actor.name,
       intent: input.intent,
-      moveLabel: MOVE_LABELS[input.move],
-      statLabel: STAT_LABELS[input.stat],
+      moveLabel: move.label,
+      statLabel: statLabel(scenario, input.stat),
       difficultyLabel: DIFFICULTY_LABELS[input.difficulty],
       dice: roll.dice,
       modifiers,

@@ -1,7 +1,6 @@
 import type { z } from "zod";
 import type { Rng } from "../rng.ts";
 import type { CheckOutcome } from "../rules/check.ts";
-import type { InjuryLevel } from "../rules/injury.ts";
 import type { GameStore } from "../game/store.ts";
 import type { Content } from "../content/schemas.ts";
 
@@ -16,7 +15,7 @@ export type ToolDisplayEvent =
       statLabel: string;
       difficultyLabel: string;
       dice: [number, number];
-      modifiers: { stat: number; difficulty: number; injury: number };
+      modifiers: { stat: number; difficulty: number; condition: number };
       total: number;
       outcome: CheckOutcome;
       outcomeLabel: string;
@@ -24,9 +23,10 @@ export type ToolDisplayEvent =
   | {
       type: "harm";
       targetName: string;
+      /** 상태 트랙 이름 (예: 부상) */
+      trackLabel: string;
       severityLabel: string;
-      from: InjuryLevel;
-      to: InjuryLevel;
+      fatal: boolean;
       fromLabel: string;
       toLabel: string;
       cause: string;

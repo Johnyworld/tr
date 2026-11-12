@@ -3,7 +3,8 @@ import { createSeededRng, type Rng } from "../rng.ts";
 import { createWorldEvent, type GameState } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { TEST_CONTENT } from "../testing.ts";
-import { executeTool, GM_TOOL_SPECS, harmSteps, STRICT_UNSUPPORTED_KEYS } from "./tools.ts";
+import { executeTool, gmToolSpecs, harmSteps, STRICT_UNSUPPORTED_KEYS } from "./tools.ts";
+import { TEST_SCENARIO } from "../testing.ts";
 
 /** 주사위 눈을 그대로 지정하는 RNG */
 function diceRng(...faces: number[]): Rng {
@@ -33,9 +34,9 @@ const check = (overrides: Record<string, unknown> = {}) => ({
 
 describe("tool 명세", () => {
   it("strict용 JSON Schema에 지원하지 않는 제약(숫자 범위, 배열 길이 등)이 없다", () => {
-    const json = JSON.stringify(GM_TOOL_SPECS);
+    const json = JSON.stringify(gmToolSpecs(TEST_SCENARIO));
     for (const key of STRICT_UNSUPPORTED_KEYS) expect(json, key).not.toContain(`"${key}"`);
-    for (const spec of GM_TOOL_SPECS) {
+    for (const spec of gmToolSpecs(TEST_SCENARIO)) {
       expect(spec.inputSchema.type).toBe("object");
       expect(spec.inputSchema.additionalProperties).toBe(false);
     }
@@ -45,7 +46,7 @@ describe("tool 명세", () => {
 describe("request_check", () => {
   it("능력치·난이도·부상 보정을 더해 판정하고 이벤트를 남긴다", () => {
     const { store, ctx } = setup(diceRng(4, 3), (s) => {
-      s.characters.player!.injury = "light"; // -1
+      s.characters.player!.conditions.harm = "light"; // -1
     });
     const out = executeTool("request_check", check({ difficulty: "hard" }), ctx);
     expect(out.ok).toBe(true);
@@ -55,7 +56,7 @@ describe("request_check", () => {
       type: "check_rolled",
       checkId: "chk_1",
       dice: [4, 3],
-      modifiers: { stat: 1, difficulty: -1, injury: -1 },
+      modifiers: { stat: 1, difficulty: -1, condition: -1 },
       total: 6,
       outcome: "miss",
     });
@@ -96,13 +97,13 @@ describe("apply_harm", () => {
     const { store, ctx } = failedCheck([1, 1]); // 1+1+1 = 3 → 실패
     const out = executeTool("apply_harm", harm(), ctx);
     expect(out.ok).toBe(true);
-    expect(store.getState().characters.player?.injury).toBe("serious");
+    expect(store.getState().characters.player?.conditions.harm).toBe("serious");
   });
 
   it("대가 있는 성공은 heavy여도 1단계만 악화된다", () => {
     const { store, ctx } = failedCheck([3, 4]); // 3+4+1 = 8 → 대가 있는 성공
     executeTool("apply_harm", harm(), ctx);
-    expect(store.getState().characters.player?.injury).toBe("light");
+    expect(store.getState().characters.player?.conditions.harm).toBe("light");
     expect(harmSteps("partial", "heavy")).toBe(1);
   });
 
@@ -124,11 +125,11 @@ describe("apply_harm", () => {
 
   it("사망은 부상 트랙을 따라서만 일어난다", () => {
     const { store, ctx } = setup(diceRng(1, 1), (s) => {
-      s.characters.player!.injury = "critical";
+      s.characters.player!.conditions.harm = "critical";
     });
     executeTool("request_check", check({ move: "fight", stat: "strength" }), ctx);
     executeTool("apply_harm", harm({ severity: "light" }), ctx);
-    expect(store.getState().characters.player?.injury).toBe("dead");
+    expect(store.getState().characters.player?.dead).toBe(true);
     expect(executeTool("request_check", check(), ctx).ok).toBe(false);
   });
 });

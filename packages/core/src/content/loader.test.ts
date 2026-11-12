@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,10 +6,14 @@ import { describe, expect, it } from "vitest";
 import { ContentError, loadContent } from "./loader.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
-const REAL_CONTENT = resolve(here, "../../../../content");
+const REAL_CONTENT = resolve(here, "../../../../content/scenarios/post_apoc");
 
+/** 실제 시나리오 설정(scenario.yaml, 화법, 톤)만 복사한 임시 시나리오 폴더 */
 function tempContent(files: Record<string, string>) {
   const dir = mkdtempSync(join(tmpdir(), "trpg-content-"));
+  for (const file of ["scenario.yaml", "speech", "prompts"]) {
+    cpSync(join(REAL_CONTENT, file), join(dir, file), { recursive: true });
+  }
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(join(dir, path, ".."), { recursive: true });
     writeFileSync(join(dir, path), body);
@@ -24,7 +28,8 @@ faction: faction_a
 rank: grunt
 default_name: 테스트
 age: 20
-start_stats: { strength: 0, agility: 0, cool: 0, sense: 0, persuasion: 0 }
+start_stats: { strength: 0, agility: 0, nerve: 0, senses: 0, persuasion: 0 }
+opening_scene: 시작
 start_inventory: [${inventory}]
 `;
 
@@ -57,6 +62,26 @@ describe("loadContent", () => {
       expect(problems).toContain("YAML 문법 오류");
       expect(problems).toContain("알 수 없는 아이템 ghost_item");
     }
+  });
+
+  it("시나리오에 없는 능력치·등급은 거부한다 (ID는 시나리오가 정한다)", () => {
+    const dir = tempContent({
+      "roles/x.yaml": role("").replace("nerve: 0", "cool: 0").replace("rank: grunt", "rank: general"),
+    });
+    try {
+      loadContent(dir);
+      expect.unreachable();
+    } catch (err) {
+      const problems = (err as ContentError).problems.join("\n");
+      expect(problems).toContain("cool");
+      expect(problems).toContain("rank");
+    }
+  });
+
+  it("scenario.yaml이 깨져 있으면 무엇이 문제인지 알려 준다", () => {
+    const dir = tempContent({});
+    writeFileSync(join(dir, "scenario.yaml"), "id: x\nname: 테스트\n");
+    expect(() => loadContent(dir)).toThrow(/scenario\.yaml/);
   });
 
   it("스키마에 없는 필드와 범위를 벗어난 능력치를 거부한다", () => {

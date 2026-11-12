@@ -5,12 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./scene": "./src/gm/scene.ts",
     "./testing": "./src/testing.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "content:check": "tsx src/content/check.ts ../../content",
+    "content:check": "tsx src/content/check.ts ../../content/scenarios/post_apoc",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

@@ -3,9 +3,9 @@ import type { GameStore } from "../game/store.ts";
 import type { Content } from "../content/schemas.ts";
 import { buildPlayerPrompt } from "./context.ts";
 import type { LanguageModel, ModelMessage, ModelStopReason, UserBlock } from "./model.ts";
-import { GM_SYSTEM_PROMPT } from "./prompt.ts";
+import { buildSystemPrompt } from "./prompt.ts";
 import { MIN_TURN_MINUTES } from "../rules/time.ts";
-import { executeTool, GM_TOOL_SPECS, type ToolDisplayEvent } from "./tools.ts";
+import { executeTool, gmToolSpecs, type ToolDisplayEvent } from "./tools.ts";
 import { runStartOfTurn } from "./turnStart.ts";
 
 /** 플레이어 한 번의 입력 최대 길이 (문자 수) */
@@ -47,7 +47,7 @@ export function normalizePlayerInput(input: string): string {
 
 export function isPlayerDead(store: GameStore): boolean {
   const state = store.getState();
-  return state.characters[state.playerId]?.injury === "dead";
+  return state.characters[state.playerId]?.dead === true;
 }
 
 /**
@@ -112,6 +112,9 @@ export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEven
     { role: "user", content: [{ type: "text", text: prompt }] },
   ];
 
+  // 한 세계 안에서 바뀌지 않는 부분 (프롬프트 캐시)
+  const system = buildSystemPrompt(content.scenario, content.roles[store.getState().roleId]);
+  const tools = gmToolSpecs(content.scenario);
   let stopReason: ModelStopReason = "other";
   let timeSpent = false;
   /** 지금 받고 있는 서술 조각. 중단·오류 시에도 기록에 남긴다 */
@@ -119,7 +122,7 @@ export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEven
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       segment = "";
-      const call = model({ system: GM_SYSTEM_PROMPT, tools: GM_TOOL_SPECS, messages }, { signal });
+      const call = model({ system, tools, messages }, { signal });
       let step = await call.next();
       while (!step.done) {
         segment += step.value;

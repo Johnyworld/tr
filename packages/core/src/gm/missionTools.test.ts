@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Rng } from "../rng.ts";
-import { checkPromotion, evaluateMission, PROMOTION } from "../game/missions.ts";
+import { checkPromotion, evaluateMission } from "../game/missions.ts";
+
+const PROMO = TEST_CONTENT.scenario.promotion;
 import { createTestStore, TEST_CONTENT } from "../testing.ts";
 import { describeMissionsForGm } from "./missionTools.ts";
 import { runStartOfTurn } from "./turnStart.ts";
@@ -108,12 +110,12 @@ describe("진급", () => {
 
   it("공적·복무 기간·불복종·상관 신뢰 조건을 모두 채워야 한다", () => {
     const day = 24 * 60;
-    expect(checkPromotion({ ...base, merit: 9 }, 330 + 4 * day, 330, 2).eligible).toBe(true);
-    expect(checkPromotion({ ...base, merit: 8 }, 330 + 4 * day, 330, 2).missing).toEqual(["공적 8/9"]);
-    expect(checkPromotion({ ...base, merit: 9 }, 330 + 3 * day, 330, 2).missing).toEqual(["복무 3/4일"]);
-    expect(checkPromotion({ ...base, merit: 9, disobedience: 2 }, 330 + 4 * day, 330, 2).eligible).toBe(false);
-    expect(checkPromotion({ ...base, merit: 9 }, 330 + 4 * day, 330, 1).missing).toEqual(["상관 신뢰 1/2"]);
-    expect(checkPromotion({ ...base, merit: 9 }, 330 + 4 * day, 330, null).eligible).toBe(true);
+    expect(checkPromotion({ ...base, merit: 9 }, PROMO, 330 + 4 * day, 330, 2).eligible).toBe(true);
+    expect(checkPromotion({ ...base, merit: 8 }, PROMO, 330 + 4 * day, 330, 2).missing).toEqual(["공적 8/9"]);
+    expect(checkPromotion({ ...base, merit: 9 }, PROMO, 330 + 3 * day, 330, 2).missing).toEqual(["복무 3/4일"]);
+    expect(checkPromotion({ ...base, merit: 9, disobedience: 2 }, PROMO, 330 + 4 * day, 330, 2).eligible).toBe(false);
+    expect(checkPromotion({ ...base, merit: 9 }, PROMO, 330 + 4 * day, 330, 1).missing).toEqual(["상관 신뢰 1/2"]);
+    expect(checkPromotion({ ...base, merit: 9 }, PROMO, 330 + 4 * day, 330, null).eligible).toBe(true);
   });
 
   it("조건을 채운 상태로 보고하면 진급한다", () => {
@@ -127,7 +129,7 @@ describe("진급", () => {
     executeTool("spend_time", { activity: "guard_duty", until: null }, env.ctx);
     const out = executeTool("report_mission", {}, env.ctx);
     expect(out.ok && out.extra).toMatchObject([{ type: "promotion", toLabel: "분대장" }]);
-    expect(env.store.getState().characters.player?.rank).toBe(PROMOTION.to);
+    expect(env.store.getState().characters.player?.rank).toBe(PROMO.to);
   });
 });
 

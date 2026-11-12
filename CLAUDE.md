@@ -8,9 +8,10 @@
 1. **코드 = 세계의 물리 법칙, AI = GM 겸 연출가.** 판정, 상태 변경, 시뮬레이션은 전부 `packages/core`의 코드가 담당한다.
 2. **AI는 숫자를 만들지 않는다.** 피해, 가격, 시간, 병력, 관계 변화량은 코드가 계산한다. AI는 tool call로 요청만 하고, 코드가 검증 후 적용한다.
 3. **AI는 캐릭터를 죽일 수 없다.** 사망은 부상 트랙과 판정 결과로만 발생한다.
-4. **AI 프롬프트에는 현재 캐릭터의 Belief State만 넣는다.** World State(진짜 상태), 숨은 목격자, 다른 캐릭터의 비밀이 프롬프트로 새지 않게 한다.
+4. **AI 프롬프트에는 현재 캐릭터의 Belief State만 넣는다.** World State(진짜 상태), 숨은 목격자, 다른 캐릭터의 비밀이 프롬프트로 새지 않게 한다. **RAG 검색 결과도 포함한다**: 현재 캐릭터가 알 수 없는 청크(visibility, knownBy)는 검색 결과에 절대 들어가지 않는다.
 5. **플레이어 입력은 의도일 뿐이다.** 서술된 결과를 사실로 받아들이지 않는다.
 6. **플레이어와 NPC는 같은 캐릭터 스키마를 쓴다.** 사망 후 기존 NPC로 이어서 플레이할 수 있어야 한다.
+7. **core에 장르 요소를 하드코딩하지 않는다.** 자원, 능력치, 기본 행동, 상태 트랙, 등급 사다리, 화법 규칙, GM 톤, 위협·조우 테이블은 시나리오 팩(`content/scenarios/<id>/scenario.yaml`)에서 읽는다. 이름과 목록을 데이터로 빼는 데까지만 하고, 규칙 자체의 플러그인화는 두 번째 장르를 만들 때 한다.
 
 ## 핵심 규칙 요약
 
@@ -23,17 +24,20 @@
 ## 구조
 
 ```
-packages/core     게임 로직, 판정, 시뮬레이션, LLM 호출 (UI·HTTP를 모르는 순수 TS)
+packages/core     게임 로직, 판정, 시뮬레이션, LLM 호출, RAG (UI·HTTP를 모르는 순수 TS)
 packages/server   core를 HTTP·SSE로 노출하는 얇은 레이어 (Hono)
 packages/ui       Vite + React SPA
-content/          YAML 콘텐츠 (factions, npcs, locations, roles, items, storylets)
+content/scenarios/<id>/   시나리오 팩: scenario.yaml, YAML 콘텐츠(factions, npcs, locations, roles, items, storylets),
+                          lore/(RAG 원문), speech/, prompts/, eval/(검색 평가 세트)
 docs/design.md    기획서
 ```
 
-- 스택: TypeScript, pnpm workspaces, Vite + React, Hono, SQLite + Drizzle, zod, Claude API
+- 스택: TypeScript, pnpm workspaces, Vite + React, Hono, SQLite + Drizzle, zod, Claude API, RAG(bge-m3 로컬 임베딩, sqlite-vec, FTS5)
 - `core`는 `server`나 `ui`를 import하지 않는다
 - DB 접근은 저장소(repository) 레이어로 모은다 (나중에 Postgres 전환 대비)
 - 콘텐츠 YAML은 zod 스키마로 검증한다. 스키마를 바꾸면 기존 콘텐츠도 함께 갱신한다
+- 임베딩은 core의 `Embedder` 인터페이스 뒤에 둔다. 저장 시 모델 ID와 차원을 기록하고, 모델이 바뀌면 재임베딩한다
+- RAG 검색 결과는 정보 필터 위반 0건을 테스트로 확인한다
 - 이벤트 로그는 append-only. 상태 변경은 반드시 이벤트로 기록한다
 
 ## 작업 규칙
@@ -52,11 +56,12 @@ cp .env.example .env  # 처음 한 번. ANTHROPIC_API_KEY를 채운다
 pnpm dev            # 서버(127.0.0.1:8787) + UI(localhost:5173) 동시 실행
 pnpm test           # 단위 테스트 (vitest, LLM 호출 없음)
 pnpm typecheck      # 전체 타입 체크
-pnpm content:check  # 콘텐츠 YAML 검증
+pnpm content:check  # 시나리오 팩(post_apoc) 검증
 pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마이그레이션 생성
 ```
 
 - UI는 Vite 프록시로 `/api`를 서버에 넘긴다. 서버 포트는 `SERVER_PORT`로 바꾼다 (`PORT`는 쓰지 않는다)
 - GM 모델은 `GM_MODEL`로 바꾼다 (기본 `claude-opus-5-5`)
-- 세이브는 `saves/world.db` (`SAVE_PATH`로 변경). "새 게임"을 누르면 `saves/archive/`로 옮겨진다
+- 시나리오는 `SCENARIO`로 고른다 (기본 `post_apoc`, `content/scenarios/<id>/`)
+- 세이브는 `saves/world.db` (`SAVE_PATH`로 변경). "새 게임"을 누르거나 형식·시나리오가 맞지 않으면 `saves/archive/`로 옮겨진다
 - 게임 상태나 이벤트 형태를 바꾸면 `SAVE_SCHEMA_VERSION`을 올린다 (`packages/core/src/game/state.ts`)

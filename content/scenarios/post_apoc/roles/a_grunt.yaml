@@ -4,13 +4,15 @@ label: 세력 A 하급 전투원
 faction: faction_a
 rank: grunt
 default_name: 신병
+# 시작 장면. 화면에 먼저 보여 주고 GM 프롬프트에도 넣는다
+opening_scene: 새벽, 세력 A의 거점. 당신은 막사의 낡은 간이침대에서 눈을 뜬다. 바깥에서 보초 교대를 알리는 낮은 목소리가 들린다.
 age: 23
 # 시작 능력치 (임시값, 기획서 4.2)
 start_stats:
   strength: 1
   agility: 2
-  cool: 0
-  sense: 1
+  nerve: 0
+  senses: 1
   persuasion: -1
 start_inventory: [kitchen_knife, water_bottle]
 # 아래 필드는 해당 시스템이 생기면 쓰인다 (장소·배급·Belief·스토리렛)

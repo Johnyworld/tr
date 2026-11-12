@@ -7,9 +7,8 @@ import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3"
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import {
   applyEvent,
+  createGameSchemas,
   EMPTY_STATE,
-  gameEventSchema,
-  gameStateSchema,
   SAVE_SCHEMA_VERSION,
   type GameEvent,
   type GameState,
@@ -17,6 +16,7 @@ import {
 import type { TranscriptEntry } from "../gm/turn.ts";
 import type { GameRepository } from "./repository.ts";
 import * as schema from "./schema.ts";
+import type { Scenario } from "../scenario/schema.ts";
 
 const MIGRATIONS_DIR = fileURLToPath(new URL("../../drizzle", import.meta.url));
 
@@ -35,12 +35,16 @@ export class SqliteRepository implements GameRepository {
   #state: GameState;
   #lastSeq: number;
   #transcript: TranscriptEntry[];
+  #schemas: ReturnType<typeof createGameSchemas>;
+  readonly scenarioId: string;
 
-  private constructor(sqlite: Database.Database) {
+  private constructor(sqlite: Database.Database, scenario: Scenario) {
     this.#sqlite = sqlite;
     this.#db = drizzle(sqlite, { schema });
+    this.#schemas = createGameSchemas(scenario);
+    this.scenarioId = scenario.id;
     migrate(this.#db, { migrationsFolder: MIGRATIONS_DIR });
-    this.#checkVersion();
+    this.#checkMeta();
     ({ state: this.#state, lastSeq: this.#lastSeq } = this.#loadState());
     this.#transcript = this.#db
       .select()
@@ -50,13 +54,21 @@ export class SqliteRepository implements GameRepository {
       .map((row) => row.entry as TranscriptEntry);
   }
 
-  /** 파일을 연다. 없으면 새로 만든다. ":memory:"는 테스트용 */
-  static open(path: string): SqliteRepository {
+  /**
+   * 파일을 연다. 없으면 새로 만든다. ":memory:"는 테스트용.
+   * 세이브는 시나리오 하나에 묶인다. 다른 시나리오의 세이브나 형식 버전이 다른 세이브는 열지 않는다.
+   */
+  static open(path: string, scenario: Scenario): SqliteRepository {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     const sqlite = new Database(path);
     sqlite.pragma("journal_mode = WAL");
     sqlite.pragma("synchronous = NORMAL");
-    return new SqliteRepository(sqlite);
+    try {
+      return new SqliteRepository(sqlite, scenario);
+    } catch (err) {
+      sqlite.close();
+      throw err;
+    }
   }
 
   getState(): GameState {
@@ -64,7 +76,7 @@ export class SqliteRepository implements GameRepository {
   }
 
   append(event: GameEvent): GameState {
-    const valid = gameEventSchema.parse(event);
+    const valid = this.#schemas.event.parse(event);
     const next = applyEvent(this.#state, valid);
     const row = this.#db
       .insert(schema.events)
@@ -82,7 +94,7 @@ export class SqliteRepository implements GameRepository {
       .from(schema.events)
       .orderBy(asc(schema.events.seq))
       .all()
-      .map((row) => gameEventSchema.parse(row.payload));
+      .map((row) => this.#schemas.event.parse(row.payload));
   }
 
   hasWorld(): boolean {
@@ -116,22 +128,35 @@ export class SqliteRepository implements GameRepository {
     this.#sqlite.close();
   }
 
-  #checkVersion() {
-    const row = this.#db.select().from(schema.meta).all().find((r) => r.key === "schema_version");
-    if (!row) {
-      this.#db.insert(schema.meta).values({ key: "schema_version", value: String(SAVE_SCHEMA_VERSION) }).run();
+  /** 세이브 메타: 형식 버전과 시나리오 (기획서 12.2, 12.3) */
+  #checkMeta() {
+    const rows = this.#db.select().from(schema.meta).all();
+    const get = (key: string) => rows.find((r) => r.key === key)?.value;
+    const version = get("schema_version");
+    if (version === undefined) {
+      this.#db
+        .insert(schema.meta)
+        .values([
+          { key: "schema_version", value: String(SAVE_SCHEMA_VERSION) },
+          { key: "scenario_id", value: this.scenarioId },
+        ])
+        .run();
       return;
     }
-    if (Number(row.value) !== SAVE_SCHEMA_VERSION) {
+    if (Number(version) !== SAVE_SCHEMA_VERSION) {
       throw new SaveFormatError(
-        `세이브 형식 버전이 다릅니다 (세이브 ${row.value}, 현재 ${SAVE_SCHEMA_VERSION}). 이전 세이브를 옮기는 방법이 아직 없습니다.`,
+        `세이브 형식 버전이 다릅니다 (세이브 ${version}, 현재 ${SAVE_SCHEMA_VERSION}). 이전 세이브를 옮기는 방법이 아직 없습니다.`,
       );
+    }
+    const scenarioId = get("scenario_id");
+    if (scenarioId !== this.scenarioId) {
+      throw new SaveFormatError(`다른 시나리오의 세이브입니다 (세이브 ${scenarioId}, 현재 ${this.scenarioId}).`);
     }
   }
 
   #loadState(): { state: GameState; lastSeq: number } {
     const snapshot = this.#db.select().from(schema.snapshots).orderBy(desc(schema.snapshots.seq)).limit(1).get();
-    let state = snapshot ? gameStateSchema.parse(snapshot.state) : EMPTY_STATE;
+    let state = snapshot ? this.#schemas.state.parse(snapshot.state) : EMPTY_STATE;
     let lastSeq = snapshot?.seq ?? 0;
     const rows = this.#db
       .select()
@@ -140,7 +165,7 @@ export class SqliteRepository implements GameRepository {
       .orderBy(asc(schema.events.seq))
       .all();
     for (const row of rows) {
-      state = applyEvent(state, gameEventSchema.parse(row.payload));
+      state = applyEvent(state, this.#schemas.event.parse(row.payload));
       lastSeq = row.seq;
     }
     return { state, lastSeq };

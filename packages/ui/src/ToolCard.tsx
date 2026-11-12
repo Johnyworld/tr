@@ -19,7 +19,7 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
             <span className="die">{display.dice[1]}</span>
             <span className="mods">
               {display.statLabel} {signed(m.stat)} · 난이도 {signed(m.difficulty)}
-              {m.injury !== 0 && <> · 부상 {signed(m.injury)}</>}
+              {m.condition !== 0 && <> · 상태 {signed(m.condition)}</>}
             </span>
             <span className="total">= {display.total}</span>
           </div>
@@ -28,9 +28,9 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
     }
     case "harm":
       return (
-        <div className={`card harm ${display.to === "dead" ? "dead" : ""}`}>
+        <div className={`card harm ${display.fatal ? "dead" : ""}`}>
           <div className="card-head">
-            <span className="card-kind">부상</span>
+            <span className="card-kind">{display.trackLabel}</span>
             <span>
               {display.fromLabel} → <strong>{display.toLabel}</strong>
             </span>

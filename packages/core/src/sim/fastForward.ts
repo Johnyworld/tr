@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Rng } from "../rng.ts";
-import { segmentOf, type GameTime, type TimeSegment } from "../rules/time.ts";
+import { segmentOf, type GameTime } from "../rules/time.ts";
+import type { Scenario } from "../scenario/schema.ts";
 import type { GameState } from "../game/state.ts";
 
 /** 빨리감기를 멈추게 한 사건 */
@@ -27,37 +28,27 @@ export type InterruptCheck = (input: {
   rng: Rng;
 }) => Interrupt | null;
 
-/** 시간대별 시간당 이상 징후 확률 (임시값) */
-export const DISTURBANCE_CHANCE_PER_HOUR: Record<TimeSegment, number> = {
-  dawn: 0.05,
-  morning: 0.03,
-  day: 0.03,
-  evening: 0.05,
-  night: 0.08,
-};
-
-const DISTURBANCE_DETAILS = [
-  "멀리서 들리는 소리",
-  "가까운 곳의 인기척",
-  "어둠 속의 움직임",
-  "낯선 냄새",
-  "거점 쪽의 소란",
-] as const;
-
 /**
  * 이상 징후: 무언가가 일어났다는 낌새만 정한다. 정체는 정하지 않는다.
- * 조우 테이블(장소·감염체)이 생기면 그쪽으로 바꾼다.
+ * 시간대별 확률과 낌새 문구는 시나리오의 환경 위협(threats)에서 온다.
+ * 조우 테이블(장소·위협)이 생기면 그쪽으로 바꾼다.
  */
-export const disturbanceCheck: InterruptCheck = ({ from, to, rng }) => {
-  const hours = (to - from) / 60;
-  const chance = DISTURBANCE_CHANCE_PER_HOUR[segmentOf(from)] * hours;
-  if (rng() >= chance) return null;
-  const detail = DISTURBANCE_DETAILS[Math.floor(rng() * DISTURBANCE_DETAILS.length)]!;
-  const at = from + Math.max(1, Math.ceil(rng() * (to - from)));
-  return { kind: "disturbance", detail, at };
-};
+export function createDisturbanceCheck(s: Scenario): InterruptCheck {
+  const { disturbance_chance_per_hour: chances, disturbance_details: details } = s.threats;
+  return ({ from, to, rng }) => {
+    const hours = (to - from) / 60;
+    const chance = (chances[segmentOf(from)] ?? 0) * hours;
+    if (rng() >= chance) return null;
+    const detail = details[Math.floor(rng() * details.length)]!;
+    const at = from + Math.max(1, Math.ceil(rng() * (to - from)));
+    return { kind: "disturbance", detail, at };
+  };
+}
 
-export const DEFAULT_INTERRUPT_CHECKS: readonly InterruptCheck[] = [disturbanceCheck];
+/** 시나리오의 기본 끼어들기 검사 목록 */
+export function createInterruptChecks(s: Scenario): readonly InterruptCheck[] {
+  return [createDisturbanceCheck(s)];
+}
 
 export type FastForwardResult = {
   /** 멈춘 시각 */
@@ -74,10 +65,10 @@ export function fastForward(options: {
   start: GameTime;
   until: GameTime;
   rng: Rng;
-  checks?: readonly InterruptCheck[];
+  checks: readonly InterruptCheck[];
   tickMinutes?: number;
 }): FastForwardResult {
-  const { state, start, until, rng, checks = DEFAULT_INTERRUPT_CHECKS, tickMinutes = 60 } = options;
+  const { state, start, until, rng, checks, tickMinutes = 60 } = options;
   let time = start;
   while (time < until) {
     const next = Math.min(time + tickMinutes, until);

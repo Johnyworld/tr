@@ -24,7 +24,7 @@
   giver_rank: squad_leader
   deadline_hours: 10
   requirements:
-    - check: search
+    - check: scavenge
       min_outcome: partial
 - id: scout_north_overpass
   title: 북쪽 고가도로 정찰

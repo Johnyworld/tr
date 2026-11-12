@@ -7,16 +7,9 @@ import {
   roll2d6,
   type CheckOutcome,
 } from "../rules/check.ts";
-import {
-  HARM_LABELS,
-  harmSeveritySchema,
-  INJURY_LABELS,
-  INJURY_PENALTY,
-  worsenInjury,
-  type InjuryLevel,
-} from "../rules/injury.ts";
-import { MOVE_LABELS, MOVE_STATS, moveSchema } from "../rules/moves.ts";
-import { STAT_LABELS, statSchema } from "../rules/stats.ts";
+import { HARM_LABELS, harmSeveritySchema } from "../rules/harm.ts";
+import { idEnum, type Scenario } from "../scenario/schema.ts";
+import { conditionPenalty, harmTrack, levelOf, moveIds, statIds, worsen } from "../scenario/scenario.ts";
 import {
   ACTIVITY_COSTS,
   ACTIVITY_LABELS,
@@ -30,7 +23,7 @@ import {
   segmentOf,
   timeSegmentSchema,
 } from "../rules/time.ts";
-import { fastForward } from "../sim/fastForward.ts";
+import { createInterruptChecks, fastForward } from "../sim/fastForward.ts";
 import { BELIEF_SOURCE_LABELS, beliefSourceSchema } from "../game/belief.ts";
 import { findHolderInventory, SCENE_HOLDER, type GameEvent, type GameState } from "../game/state.ts";
 import type { ToolSpec } from "./model.ts";
@@ -50,17 +43,21 @@ const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
   miss: "실패한다. 상황이 악화된다. 몸을 다친다면 apply_harm을 호출하고, 아니면 새로운 위협이나 손실을 서술하라.",
 };
 
-const requestCheck = defineTool({
+/** 판정 tool. 행동·능력치 목록이 시나리오에서 오므로 시나리오를 받아 만든다 */
+const createRequestCheck = (s: Scenario) =>
+  defineTool({
   name: "request_check",
   description:
     "플레이어 캐릭터가 결과가 불확실하고 실패하면 대가가 있는 행동을 시도할 때 2d6 판정을 요청한다. " +
     "사소하거나 확실한 행동에는 쓰지 않는다. 판정 결과는 시스템이 정하며, 그 결과에 맞춰 서술해야 한다. " +
-    "행동별 능력치: fight=strength|agility, search=sense, sense_danger=sense, stealth=agility, endure=cool, persuade=persuasion.",
+    `행동별 능력치: ${s.moves.map((m) => `${m.id}=${m.stats.join("|")}`).join(", ")}.`,
   schema: z.strictObject({
-    move: moveSchema.describe(
-      "기본 행동. fight 싸우기, search 수색하기, sense_danger 위험 감지, stealth 은밀 행동, endure 버티기(압박·공포·고통), persuade 설득·압박",
+    move: idEnum(moveIds(s)).describe(
+      `기본 행동. ${s.moves.map((m) => `${m.id} ${m.label}${m.description ? `(${m.description})` : ""}`).join(", ")}`,
     ),
-    stat: statSchema.describe("사용할 능력치. 행동에 허용된 것만 고를 수 있다"),
+    stat: idEnum(statIds(s)).describe(
+      `사용할 능력치. 행동에 허용된 것만 고를 수 있다. ${s.stats.map((x) => `${x.id} ${x.label}`).join(", ")}`,
+    ),
     difficulty: difficultySchema.describe("상황의 난이도. 대부분은 normal"),
     intent: z.string().min(1).max(200).describe("캐릭터가 이루려는 것 한 문장 (예: 잠긴 사물함을 비틀어 연다)"),
   }),
@@ -95,8 +92,9 @@ const applyHarm = defineTool({
     severity: harmSeveritySchema.describe("light: 베이거나 맞음, heavy: 총상·깊은 자상·추락 등"),
     cause: z.string().min(1).max(200).describe("부상 원인 한 문장"),
   }),
-  run(input, { store }) {
+  run(input, { store, content }) {
     const state = store.getState();
+    const track = harmTrack(content.scenario);
     const target = state.characters[input.target];
     if (!target) return { ok: false, error: `알 수 없는 캐릭터: ${input.target}` };
     const check = state.checks[input.check_id];
@@ -105,36 +103,41 @@ const applyHarm = defineTool({
     if (check.actorId !== target.id) return { ok: false, error: "판정을 한 캐릭터에게만 피해를 줄 수 있습니다." };
     if (check.outcome === "success") return { ok: false, error: "성공한 판정으로는 피해를 줄 수 없습니다." };
     if (check.harmApplied) return { ok: false, error: "이 판정의 피해는 이미 적용되었습니다." };
-    if (target.injury === "dead") return { ok: false, error: "이미 사망한 캐릭터입니다." };
+    if (target.dead) return { ok: false, error: "이미 사망한 캐릭터입니다." };
 
     const steps = harmSteps(check.outcome, input.severity);
-    const to = worsenInjury(target.injury, steps);
+    const from = target.conditions[track.id] ?? track.levels[0]!.id;
+    const { to, fatal } = worsen(track, from, steps);
     store.append({
       type: "harm_applied",
       targetId: target.id,
       checkId: check.checkId,
+      track: track.id,
       severity: input.severity,
       steps,
-      from: target.injury,
+      from,
       to,
+      fatal,
       cause: input.cause,
     });
 
-    const deathNote =
-      to === "dead"
-        ? " 캐릭터가 사망했다. 죽음의 순간을 담담하게 서술하고 장면을 끝내라. 더 이상 행동을 제시하지 마라."
-        : ` 앞으로 판정에 ${signed(INJURY_PENALTY[to])} 보정을 받는다. 부상의 감각을 서술에 반영하라.`;
+    const after = store.getState().characters[target.id]!;
+    const deathNote = fatal
+      ? " 캐릭터가 사망했다. 죽음의 순간을 담담하게 서술하고 장면을 끝내라. 더 이상 행동을 제시하지 마라."
+      : ` 앞으로 판정에 ${signed(conditionPenalty(content.scenario, after))} 보정을 받는다. 다친 감각을 서술에 반영하라.`;
+    const fromLabel = levelOf(track, from).label;
+    const toLabel = levelOf(track, to).label;
     return {
       ok: true,
-      resultText: `${target.name}의 부상: ${INJURY_LABELS[target.injury]} → ${INJURY_LABELS[to]}.${deathNote}`,
+      resultText: `${target.name}의 ${track.label}: ${fromLabel} → ${toLabel}.${deathNote}`,
       display: {
         type: "harm",
         targetName: target.name,
+        trackLabel: track.label,
         severityLabel: HARM_LABELS[input.severity],
-        from: target.injury,
-        to,
-        fromLabel: INJURY_LABELS[target.injury],
-        toLabel: INJURY_LABELS[to],
+        fatal,
+        fromLabel,
+        toLabel,
         cause: input.cause,
       },
     };
@@ -204,9 +207,9 @@ const spendTime = defineTool({
       .nullable()
       .describe("sleep·wait 전용. dawn 새벽, morning 아침, day 낮, evening 저녁, night 밤이 시작될 때까지"),
   }),
-  run(input, { store, rng }) {
+  run(input, { store, rng, content }) {
     const state = store.getState();
-    if (state.characters[state.playerId]?.injury === "dead") {
+    if (state.characters[state.playerId]?.dead) {
       return { ok: false, error: "사망한 캐릭터의 시간은 흐르지 않습니다." };
     }
     const cost = ACTIVITY_COSTS[input.activity];
@@ -219,7 +222,13 @@ const spendTime = defineTool({
         return { ok: false, error: `${input.activity}에는 until을 쓸 수 없습니다. null을 넣으세요.` };
       }
       const target = input.until ? nextSegmentStart(from, input.until) : from + cost.minutes;
-      const result = fastForward({ state, start: from, until: Math.min(target, from + MAX_FAST_FORWARD_MINUTES), rng });
+      const result = fastForward({
+        state,
+        start: from,
+        until: Math.min(target, from + MAX_FAST_FORWARD_MINUTES),
+        rng,
+        checks: createInterruptChecks(content.scenario),
+      });
       to = result.end;
       interrupt = result.interrupt;
     } else {
@@ -281,7 +290,7 @@ const npcPresence = defineTool({
     const present = state.scene.present.includes(npc.id);
     if (input.action === "enter") {
       if (present) return { ok: false, error: `${npc.name}은(는) 이미 장면에 있습니다.` };
-      if (character.injury === "dead") return { ok: false, error: `${npc.name}은(는) 사망했습니다.` };
+      if (character.dead) return { ok: false, error: `${npc.name}은(는) 사망했습니다.` };
       store.append({ type: "npc_entered", npcId: npc.id });
     } else {
       if (!present) return { ok: false, error: `${npc.name}은(는) 장면에 없습니다.` };
@@ -332,18 +341,48 @@ const addBelief = defineTool({
   },
 });
 
-const TOOLS = [requestCheck, applyHarm, transferItem, spendTime, npcPresence, addBelief, ...MISSION_TOOLS, ...REPUTATION_TOOLS] as const;
+type AnyTool = { name: string; description: string; schema: z.ZodType; run: (input: never, ctx: ToolContext) => ToolOutcome };
+
+const toolCache = new WeakMap<Scenario, readonly AnyTool[]>();
+
+/** 시나리오에 맞춘 GM tool 목록 (같은 시나리오면 같은 목록을 돌려준다: 프롬프트 캐시 유지) */
+export function gmTools(s: Scenario): readonly AnyTool[] {
+  let tools = toolCache.get(s);
+  if (!tools) {
+    tools = [
+      createRequestCheck(s),
+      applyHarm,
+      transferItem,
+      spendTime,
+      npcPresence,
+      addBelief,
+      ...MISSION_TOOLS,
+      ...REPUTATION_TOOLS,
+    ] as readonly AnyTool[];
+    toolCache.set(s, tools);
+  }
+  return tools;
+}
+
+const specCache = new WeakMap<Scenario, ToolSpec[]>();
 
 /** LLM에 넘길 tool 명세 (JSON Schema) */
-export const GM_TOOL_SPECS: ToolSpec[] = TOOLS.map((tool) => ({
-  name: tool.name,
-  description: tool.description,
-  inputSchema: toToolJsonSchema(tool.schema),
-}));
+export function gmToolSpecs(s: Scenario): ToolSpec[] {
+  let specs = specCache.get(s);
+  if (!specs) {
+    specs = gmTools(s).map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: toToolJsonSchema(tool.schema),
+    }));
+    specCache.set(s, specs);
+  }
+  return specs;
+}
 
 /** tool 호출을 검증하고 실행한다. 입력이 스키마에 맞지 않으면 실행하지 않는다 */
 export function executeTool(name: string, input: unknown, ctx: ToolContext): ToolOutcome {
-  const tool = TOOLS.find((t) => t.name === name);
+  const tool = gmTools(ctx.content.scenario).find((t) => t.name === name);
   if (!tool) return { ok: false, error: `알 수 없는 tool: ${name}` };
   const parsed = tool.schema.safeParse(input);
   if (!parsed.success) {

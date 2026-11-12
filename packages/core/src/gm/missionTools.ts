@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
-import { MOVE_LABELS } from "../rules/moves.ts";
-import { RANK_LABELS } from "../rules/ranks.ts";
+import { moveLabel, rankLabel } from "../scenario/scenario.ts";
+import type { Scenario } from "../scenario/schema.ts";
 import { ACTIVITY_LABELS, dayOf, formatDuration, formatTime } from "../rules/time.ts";
 import type { MissionRequirement } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
@@ -13,23 +13,22 @@ import {
   MERIT,
   MISSION_STATUS_LABELS,
   pickDailyOffers,
-  PROMOTION,
   type MissionInstance,
 } from "../game/missions.ts";
 import { defineTool, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 import { recordDeed } from "./reputationTools.ts";
 
 /** 요구 조건 한 줄 설명 */
-export function describeRequirement(requirement: MissionRequirement, progress: number): string {
+export function describeRequirement(s: Scenario, requirement: MissionRequirement, progress: number): string {
   const done = isRequirementMet(requirement, progress) ? "충족" : "미충족";
   if ("activity" in requirement) {
     return `${ACTIVITY_LABELS[requirement.activity]} ${formatDuration(requirement.minutes)} (지금까지 ${formatDuration(progress)}, ${done})`;
   }
-  return `${MOVE_LABELS[requirement.check]} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (${done})`;
+  return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (${done})`;
 }
 
-export function describeMission(mission: MissionInstance): string {
-  const reqs = mission.requirements.map((r, i) => `  - ${describeRequirement(r, mission.progress[i] ?? 0)}`).join("\n");
+export function describeMission(s: Scenario, mission: MissionInstance): string {
+  const reqs = mission.requirements.map((r, i) => `  - ${describeRequirement(s, r, mission.progress[i] ?? 0)}`).join("\n");
   return `${mission.title} (id: ${mission.id}, 기한 ${formatTime(mission.deadline)})\n  ${mission.briefing}\n${reqs}`;
 }
 
@@ -37,7 +36,7 @@ export function describeMission(mission: MissionInstance): string {
 function commanderOf(state: GameState, ctx: ToolContext) {
   const id = ctx.content.roles[state.roleId]?.commander;
   const commander = id ? state.characters[id] : undefined;
-  return commander && commander.injury !== "dead" ? commander : undefined;
+  return commander && !commander.dead ? commander : undefined;
 }
 
 const assignMission = defineTool({
@@ -51,7 +50,7 @@ const assignMission = defineTool({
   run(input, ctx) {
     const state = ctx.store.getState();
     const player = state.characters[state.playerId];
-    if (!player || player.injury === "dead") return { ok: false, error: "사망한 캐릭터는 임무를 받을 수 없습니다." };
+    if (!player || player.dead) return { ok: false, error: "사망한 캐릭터는 임무를 받을 수 없습니다." };
     const commander = commanderOf(state, ctx);
     if (!commander) return { ok: false, error: "임무를 내릴 상관이 없습니다." };
     if (!state.scene.present.includes(commander.id)) {
@@ -82,7 +81,7 @@ const assignMission = defineTool({
     return {
       ok: true,
       resultText:
-        `임무 배정: ${describeMission(mission)}\n` +
+        `임무 배정: ${describeMission(ctx.content.scenario, mission)}\n` +
         "상관이 임무를 지시하는 장면을 서술하라. 해야 할 일과 기한(대략적인 표현으로)을 상관의 말투로 전한다.",
       display: { type: "mission", event: "assigned", title: mission.title, detail: `기한 ${formatTime(mission.deadline)}` },
     };
@@ -125,17 +124,14 @@ const reportMission = defineTool({
     const extra: ToolDisplayEvent[] = [];
     const commander = commanderOf(after, ctx);
     const commanderTrust = commander ? (after.relations[commander.id]?.[player.id]?.trust ?? 0) : null;
-    if (checkPromotion(player, after.time, after.runStartedAt, commanderTrust).eligible) {
-      ctx.store.append({ type: "promoted", characterId: player.id, from: PROMOTION.from, to: PROMOTION.to });
-      lines.push(
-        `진급: ${player.name}이(가) ${RANK_LABELS[PROMOTION.from]}에서 ${RANK_LABELS[PROMOTION.to]}(으)로 진급했다. 상관이 이를 알리는 장면을 서술하라.`,
-      );
-      extra.push({
-        type: "promotion",
-        name: player.name,
-        fromLabel: RANK_LABELS[PROMOTION.from],
-        toLabel: RANK_LABELS[PROMOTION.to],
-      });
+    const scenario = ctx.content.scenario;
+    const promotion = scenario.promotion;
+    if (checkPromotion(player, promotion, after.time, after.runStartedAt, commanderTrust).eligible) {
+      ctx.store.append({ type: "promoted", characterId: player.id, from: promotion.from, to: promotion.to });
+      const fromLabel = rankLabel(scenario, promotion.from);
+      const toLabel = rankLabel(scenario, promotion.to);
+      lines.push(`진급: ${player.name}이(가) ${fromLabel}에서 ${toLabel}(으)로 진급했다. 상관이 이를 알리는 장면을 서술하라.`);
+      extra.push({ type: "promotion", name: player.name, fromLabel, toLabel });
     }
     return {
       ok: true,
@@ -207,9 +203,9 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   const player = state.characters[state.playerId];
   if (!player) return "";
   const active = activeMissionOf(state.missions, player.id);
-  const lines = [`복무: ${RANK_LABELS[player.rank]} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회`];
+  const lines = [`복무: ${rankLabel(ctx.content.scenario, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회`];
   if (active) {
-    lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(active)}`);
+    lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
   } else if (state.offers?.day === dayOf(state.time) && state.offers.templateIds.length > 0) {
     const offers = state.offers.templateIds
       .map((id) => ctx.content.missions[id])

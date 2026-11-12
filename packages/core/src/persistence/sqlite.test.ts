@@ -4,7 +4,7 @@ import { join } from "node:path";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { createWorldEvent } from "../game/state.ts";
-import { TEST_CONTENT } from "../testing.ts";
+import { TEST_CONTENT, TEST_SCENARIO } from "../testing.ts";
 import { archiveSave, SaveFormatError, SqliteRepository } from "./sqlite.ts";
 
 const world = () => createWorldEvent(TEST_CONTENT, "role_test", "world_test");
@@ -22,14 +22,14 @@ function playSomeEvents(repo: SqliteRepository) {
 describe("SqliteRepository", () => {
   it("다시 열면 이벤트로 상태를 복원한다", () => {
     const path = tempPath();
-    const repo = SqliteRepository.open(path);
+    const repo = SqliteRepository.open(path, TEST_SCENARIO);
     expect(repo.hasWorld()).toBe(false);
     playSomeEvents(repo);
     repo.appendTranscript([{ kind: "player", text: "물병을 내려놓는다", prompt: "p" }]);
     const before = repo.getState();
     repo.close();
 
-    const reopened = SqliteRepository.open(path);
+    const reopened = SqliteRepository.open(path, TEST_SCENARIO);
     expect(reopened.hasWorld()).toBe(true);
     expect(reopened.getState()).toEqual(before);
     expect(reopened.getState().scene.items.water_bottle).toBe(1);
@@ -40,7 +40,7 @@ describe("SqliteRepository", () => {
 
   it("스냅샷 이후의 이벤트만 다시 적용한다", () => {
     const path = tempPath();
-    const repo = SqliteRepository.open(path);
+    const repo = SqliteRepository.open(path, TEST_SCENARIO);
     playSomeEvents(repo);
     repo.saveSnapshot();
     repo.append({ type: "turn_started", turn: 2, input: "줍는다" });
@@ -48,14 +48,14 @@ describe("SqliteRepository", () => {
     const before = repo.getState();
     repo.close();
 
-    const reopened = SqliteRepository.open(path);
+    const reopened = SqliteRepository.open(path, TEST_SCENARIO);
     expect(reopened.getState()).toEqual(before);
     expect(reopened.getState().turn).toBe(2);
     reopened.close();
   });
 
   it("적용할 수 없는 이벤트는 기록하지 않는다", () => {
-    const repo = SqliteRepository.open(":memory:");
+    const repo = SqliteRepository.open(":memory:", TEST_SCENARIO);
     expect(() =>
       repo.append({ type: "turn_started", turn: 1, input: "" }), // 세계가 만들어지기 전
     ).toThrow();
@@ -69,7 +69,7 @@ describe("SqliteRepository", () => {
 
   it("이벤트와 대화 기록은 수정·삭제할 수 없다 (append-only)", () => {
     const path = tempPath();
-    const repo = SqliteRepository.open(path);
+    const repo = SqliteRepository.open(path, TEST_SCENARIO);
     playSomeEvents(repo);
     repo.appendTranscript([{ kind: "gm", text: "서술" }]);
     repo.close();
@@ -83,16 +83,16 @@ describe("SqliteRepository", () => {
 
   it("세이브 형식 버전이 다르면 열지 않는다", () => {
     const path = tempPath();
-    SqliteRepository.open(path).close();
+    SqliteRepository.open(path, TEST_SCENARIO).close();
     const raw = new Database(path);
     raw.prepare("UPDATE meta SET value = '999' WHERE key = 'schema_version'").run();
     raw.close();
-    expect(() => SqliteRepository.open(path)).toThrow(SaveFormatError);
+    expect(() => SqliteRepository.open(path, TEST_SCENARIO)).toThrow(SaveFormatError);
   });
 
   it("새 게임을 시작하면 이전 세이브를 지우지 않고 보관한다", () => {
     const path = tempPath();
-    const repo = SqliteRepository.open(path);
+    const repo = SqliteRepository.open(path, TEST_SCENARIO);
     playSomeEvents(repo);
     repo.close();
 
@@ -101,27 +101,25 @@ describe("SqliteRepository", () => {
     expect(existsSync(path)).toBe(false);
     expect(readdirSync(join(path, "..", "archive"))).toContain("world-2026-11-12T04-05-06.db");
 
-    const old = SqliteRepository.open(archived!);
+    const old = SqliteRepository.open(archived!, TEST_SCENARIO);
     expect(old.events()).toHaveLength(3);
     old.close();
-    expect(SqliteRepository.open(path).hasWorld()).toBe(false);
+    expect(SqliteRepository.open(path, TEST_SCENARIO).hasWorld()).toBe(false);
   });
 });
 
-describe("이전 세이브 호환", () => {
-  it("time 필드가 없던 스냅샷(5단계 이전)도 시작 시각으로 불러온다", () => {
+describe("시나리오", () => {
+  it("다른 시나리오의 세이브는 열지 않는다", () => {
     const path = tempPath();
-    const repo = SqliteRepository.open(path);
-    repo.append(world());
-    const { time: _time, ...legacy } = repo.getState();
+    SqliteRepository.open(path, TEST_SCENARIO).close();
+    expect(() => SqliteRepository.open(path, { ...TEST_SCENARIO, id: "other" })).toThrow(SaveFormatError);
+  });
+
+  it("시나리오에 없는 능력치가 든 이벤트는 기록하지 않는다", () => {
+    const repo = SqliteRepository.open(":memory:", TEST_SCENARIO);
+    const event = world();
+    if (event.type !== "world_created") throw new Error("unreachable");
+    expect(() => repo.append({ ...event, player: { ...event.player, stats: { ...event.player.stats, luck: 3 } } })).toThrow();
     repo.close();
-
-    const raw = new Database(path);
-    raw.prepare("INSERT INTO snapshots (seq, state, created_at) VALUES (1, ?, 'x')").run(JSON.stringify(legacy));
-    raw.close();
-
-    const reopened = SqliteRepository.open(path);
-    expect(reopened.getState().time).toBe(330);
-    reopened.close();
   });
 });

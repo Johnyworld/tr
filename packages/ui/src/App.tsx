@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { OPENING_SCENE } from "@trpg/core/scene";
 import { fetchGame, playTurn, resetGame } from "./api.ts";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { ToolCard } from "./ToolCard.tsx";
@@ -9,6 +8,7 @@ type Notice = { kind: "error" | "info"; text: string } | null;
 
 export function App() {
   const [player, setPlayer] = useState<PlayerView | null>(null);
+  const [intro, setIntro] = useState<{ scenarioName: string; opening: string } | null>(null);
   const [transcript, setTranscript] = useState<TranscriptView[]>([]);
   /** 진행 중인 턴의 기록. null이면 진행 중이 아님 */
   const [live, setLive] = useState<TranscriptView[] | null>(null);
@@ -24,6 +24,7 @@ export function App() {
       .then((game) => {
         setPlayer(game.player);
         setTranscript(game.transcript);
+        setIntro({ scenarioName: game.scenarioName, opening: game.opening });
       })
       .catch((err: unknown) => setNotice({ kind: "error", text: `서버에 연결하지 못했습니다: ${String(err)}` }));
   }, []);
@@ -36,6 +37,7 @@ export function App() {
     const game = await fetchGame();
     setPlayer(game.player);
     setTranscript(game.transcript);
+    setIntro({ scenarioName: game.scenarioName, opening: game.opening });
   }
 
   async function send(e?: FormEvent) {
@@ -102,6 +104,7 @@ export function App() {
       const game = await resetGame();
       setPlayer(game.player);
       setTranscript(game.transcript);
+      setIntro({ scenarioName: game.scenarioName, opening: game.opening });
       setNotice(null);
     } catch (err) {
       setNotice({ kind: "error", text: err instanceof Error ? err.message : String(err) });
@@ -121,7 +124,7 @@ export function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>TRPG</h1>
+        <h1>{intro?.scenarioName ?? "TRPG"}</h1>
         <span className="subtitle">{player?.roleLabel}</span>
         {player && <span className="clock">{player.timeLabel}</span>}
         <button type="button" className="link" onClick={newGame} disabled={busy}>
@@ -132,7 +135,7 @@ export function App() {
       <div className="body">
         <main className="main">
           <div className="log" ref={logRef} aria-live="polite">
-            <p className="opening">{OPENING_SCENE}</p>
+            {intro && <p className="opening">{intro.opening}</p>}
             {entries.map((entry, i) => (
               <Entry key={i} entry={entry} />
             ))}

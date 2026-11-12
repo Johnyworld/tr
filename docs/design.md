@@ -14,6 +14,12 @@
 - 영감: Project Zomboid(어려움, 죽음이 끝), Apocalypse World(2d6 판정, 장르), Crusader Kings(이벤트, 계승), Fallen London(스토리렛)
 - 형태: 로컬에서 띄우는 웹앱 (혼자 플레이)
 
+**프로젝트 목표**
+
+1. 위 게임을 만든다
+2. **RAG를 직접 구현해 본다.** 임베딩 모델과 벡터 검색은 가져다 쓰고, 청킹·메타데이터 설계·검색 시점·프롬프트 조립·평가를 직접 만든다. 끝없이 진행되는 게임이라 장기 기억이 계속 커지므로 RAG가 실제로 필요한 구조다 (11.4)
+3. 게임 시스템은 그대로 두고 다른 세계관을 **시나리오 팩**으로 추가할 수 있게 한다 (12.3). 이 문서의 세계관·능력치·자원 등은 첫 시나리오 팩 `post_apoc`의 내용이다
+
 ---
 
 ## 1. 핵심 원칙
@@ -23,7 +29,7 @@
 1. **코드는 세계의 물리 법칙, AI는 GM 겸 연출가.** 판정, 상태 변경, 시뮬레이션은 전부 코드가 한다. AI는 상황을 해석하고 결과를 서술한다.
 2. **AI는 숫자를 만들지 않는다.** 피해량, 가격, 병력 수, 시간, 관계 변화량은 모두 코드가 계산한다. AI가 세계를 바꾸고 싶으면 반드시 tool call로 요청하고, 코드가 검증한 뒤 적용한다.
 3. **AI는 캐릭터를 죽일 수 없다.** 사망은 오직 코드의 부상 트랙과 판정 결과로만 일어난다.
-4. **AI는 캐릭터가 아는 것만 안다.** AI 프롬프트에는 세계의 진짜 상태(World State)가 아니라, 현재 캐릭터의 인식 상태(Belief State)만 들어간다.
+4. **AI는 캐릭터가 아는 것만 안다.** AI 프롬프트에는 세계의 진짜 상태(World State)가 아니라, 현재 캐릭터의 인식 상태(Belief State)만 들어간다. **RAG 검색 결과도 마찬가지다.** 현재 캐릭터가 알 수 없는 청크는 검색 결과에 절대 포함되지 않는다.
 5. **어렵지만 억울하지 않게.** 위험은 미리 암시하고, 눈치챌 판정 기회를 준다. 실패는 끝이 아니라 다른 갈래로 이어진다.
 6. **플레이어 입력은 의도일 뿐이다.** "금화 1만 개를 얻는다" 같은 서술은 사실이 아니라 행동 의도로 해석하고, 결과는 코드가 판정한다.
 
@@ -140,7 +146,7 @@ storylet_tags: [grunt, squad_life]
 
 ### 4.2 능력치 (*초안*)
 
-범위 -1 ~ +3
+범위 -1 ~ +3. 능력치의 이름과 목록은 시나리오 팩이 정한다 (12.3). 아래는 `post_apoc` (ID: strength, agility, nerve, senses, persuasion)
 
 - **근력**: 힘, 근접 전투, 운반
 - **민첩**: 사격, 회피, 은밀
@@ -150,6 +156,8 @@ storylet_tags: [grunt, squad_life]
 - 시작 캐릭터 분배 (*임시*): +2, +1, +1, 0, -1 (하급 전투원: 민첩 +2, 근력 +1, 감각 +1, 냉정 0, 교섭 -1)
 
 ### 4.3 기본 행동 (*초안*)
+
+시나리오 팩이 정한다. `post_apoc` ID: fight, scavenge, sense_danger, stealth, endure, persuade (aid는 규칙 구현 때 추가)
 
 | 행동 | 능력치 | 용도 |
 |---|---|---|
@@ -162,6 +170,8 @@ storylet_tags: [grunt, squad_life]
 | 돕기·방해 | 관계 | 다른 인물의 판정에 개입 (관계 시스템과 함께 추가) |
 
 ### 4.4 부상 (*초안*)
+
+상태 트랙의 이름·단계·보정은 시나리오 팩이 정한다. 사망은 `harm_track`의 마지막(fatal) 단계로만 일어난다
 
 - 부상 트랙: 무사 → 경상 → 중상 → 치명상 → 사망
 - 부상 패널티 (*임시*): 경상 -1 / 중상 -2 / 치명상 -3
@@ -563,9 +573,51 @@ repeatable: false
 
 ### 11.4 RAG
 
-- MVP에서는 쓰지 않는다. 이 규모의 로어는 프롬프트에 들어간다
-- 나중에 로어와 장기 기억(과거 플레이 사건)이 커지면 도입
-- 대부분의 데이터는 벡터 검색이 아니라 ID·조건으로 조회한다
+MVP에 포함한다. 프로젝트 목표 중 하나다 (0장).
+
+**원칙**
+
+- 임베딩 모델과 벡터 검색은 "구현"이 아니라 "사용"한다. 직접 만드는 것은 청킹, 메타데이터 설계, 검색 시점, 결과를 프롬프트에 조립하는 방식, 평가
+- **검색도 정보 필터를 따른다.** 현재 캐릭터가 알 수 없는 청크는 검색 결과에 절대 포함되지 않는다 (원칙 4)
+- 구조화된 상태(능력치, 소지품, 관계, 임무 등)는 지금처럼 ID·조건으로 조회해 상태 블록에 넣는다. RAG는 그 밖의 서술형 지식과 장기 기억에 쓴다
+
+**컬렉션**
+
+| 컬렉션 | 내용 | 작성·적재 |
+|---|---|---|
+| `lore` | 세계 역사, 지역, 세력 배경, 소문과 전설 | `content/scenarios/<id>/lore/*.md`. 한 번에 프롬프트에 다 넣지 않을 분량으로 쓴다 |
+| `memory` | 플레이 중 쌓이는 장기 기억: 턴 요약, 장면 요약, 행적(deed), NPC와의 주요 대화 | 저장 시점에 바로 임베딩. 게임이 끝없이 진행되며 계속 커지므로 RAG의 핵심 용도 |
+
+**메타데이터 (필터링용)**
+
+- 공통: `scenarioId`, `collection`, `sourceId`(엔티티 ID), `createdAt`(게임 시간)
+- `lore`: `visibility` = `public` | `faction:<id>` | `secret:<flag>` (캐릭터의 소속·플래그·Belief로 접근 판정)
+- `memory`: `knownBy` = [characterId...] (그 장면을 보거나 전해 들은 캐릭터만)
+- 캐릭터 교체 시 새 캐릭터 기준으로 필터가 바뀐다. 이전 캐릭터의 기억은 검색되지 않는다
+
+**기술 선택**
+
+- 임베딩: 로컬 모델 bge-m3 (Ollama 또는 transformers.js). 다국어 지원, 키 불필요
+  - core에 `Embedder` 인터페이스를 두고 구현체를 바꿀 수 있게 한다 (나중에 Voyage AI 등)
+- 벡터 검색: SQLite + sqlite-vec
+- 키워드 검색: SQLite FTS5 (한국어 고유명사·지명 대응)
+- 하이브리드: 벡터 + 키워드 결과를 RRF(Reciprocal Rank Fusion)로 병합
+- 저장 시 임베딩 모델 ID와 차원을 함께 기록한다. 모델이 바뀌면 재임베딩한다
+
+**파이프라인**
+
+- 적재(ingestion): 콘텐츠 로드 시 lore를 청킹 → 임베딩 → 저장. 파일 해시로 변경분만 다시 처리한다
+- 검색(retrieval): 컨텍스트 조립 단계에서 실행
+  - 쿼리 = 플레이어 입력 + 현재 장면 요약 (+ 등장 NPC 이름)
+  - 메타데이터 필터 → 하이브리드 검색 → top-k와 토큰 예산으로 자르기
+- 프롬프트 배치: 고정 부분(시스템 프롬프트, 세계 규칙, 시나리오 톤)을 앞에 두고 캐싱, RAG 결과는 그 뒤에 넣는다
+- 디버깅: 매 턴 어떤 청크가 왜(점수, 경로) 들어갔는지 이벤트 로그와 개발용 UI 패널에서 볼 수 있게 한다
+
+**평가**
+
+- 검색 평가 세트: (쿼리, 캐릭터 상태, 기대 청크 ID) 목록을 `content/scenarios/<id>/eval/`에 둔다
+- recall@k, 정보 필터 위반(보면 안 되는 청크가 나온 경우) 0건을 테스트로 확인한다
+- 청킹 전략, top-k, 하이브리드 가중치를 바꿔 가며 비교할 수 있게 한다
 
 ---
 
@@ -573,11 +625,11 @@ repeatable: false
 
 ### 12.1 콘텐츠
 
-- 세력, NPC, 장소, 역할, 아이템, 스토리렛은 **YAML 파일로 Git에 관리**
+- 세력, NPC, 장소, 역할, 아이템, 스토리렛은 **YAML 파일로 Git에 관리**. 시나리오 팩마다 `content/scenarios/<id>/` 아래에 둔다 (12.3)
 - 서버 시작 시 메모리로 읽는다. 세이브에는 콘텐츠를 복사하지 않고 id로만 참조한다
 - **zod 스키마**로 콘텐츠와 런타임 양쪽 검증. 한 파일에 객체 하나 또는 목록을 둘 수 있다
 - 검증은 오류를 한 번에 모아 보고하고, 콘텐츠끼리의 참조(역할의 시작 아이템 등)도 검사한다
-- 현재 구현된 종류: 아이템, 역할. 나머지는 해당 단계에서 스키마를 추가한다
+- 현재 구현된 종류: 아이템, 역할, NPC, 시작 지식, 임무. 나머지는 해당 단계에서 스키마를 추가한다
 
 ### 12.2 세이브
 
@@ -595,7 +647,7 @@ repeatable: false
 
 ```ts
 type WorldSave = {
-  meta: { schemaVersion: number; worldId: string; day: number; updatedAt: string };
+  meta: { schemaVersion: number; scenarioId: string; worldId: string; day: number; updatedAt: string };
   time: GameTime;
   factions: Record<string, FactionState>;
   characters: Record<string, CharacterState>;   // 플레이어와 NPC 동일 스키마
@@ -613,6 +665,54 @@ type WorldSave = {
 };
 ```
 
+### 12.3 시나리오 팩
+
+게임 시스템(판정, 시간, 정보 필터, 평판, RAG 파이프라인)은 그대로 두고, 세계관을 시나리오 팩으로 갈아 끼울 수 있게 한다 (예: 나중에 중세 판타지).
+
+**core에 하드코딩하지 않는 것 (시나리오 설정)**
+
+- 자원 종류 (`post_apoc`: 식량, 물, 탄약, 의약품, 연료)
+- 능력치, 기본 행동(move)과 각 행동이 쓰는 능력치
+- 상태 트랙 (`post_apoc`: 부상, 감염)
+- 소속 등급 사다리
+- 화법 규칙, GM 톤 프롬프트, 환경 위협·조우 테이블
+
+**콘텐츠 구조**
+
+```
+content/scenarios/post_apoc/
+  scenario.yaml
+  factions/ npcs/ locations/ roles/ items/ storylets/
+  lore/ speech/ prompts/ eval/
+```
+
+```yaml
+# scenario.yaml (예시)
+id: post_apoc
+resources: [food, water, ammo, medicine, fuel]
+stats: [strength, agility, nerve, senses, persuasion]
+moves: [fight, scavenge, sense_danger, stealth, endure, persuade, aid]
+condition_tracks: [harm, infection]
+rank_ladder: [loner, outsider, grunt, squad_leader, officer]
+speech_rules: speech/post_apoc.yaml
+gm_tone: prompts/post_apoc_tone.md
+```
+
+**구현 규칙**
+
+- 위 항목은 문자열 리터럴 타입이 아니라 시나리오에서 로드한 ID로 다룬다. zod 스키마는 시나리오 설정을 받아 동적으로 검증한다
+- 세이브 메타(`WorldSave.meta`)와 RAG 메타데이터에 `scenarioId`를 기록한다
+- 과하게 일반화하지 않는다. 지금은 "이름과 목록을 데이터로 뺀다"까지만 한다. 규칙 자체의 플러그인화는 두 번째 장르를 실제로 만들 때 한다
+
+**구현 (`post_apoc`)**
+
+- `scenario.yaml`의 목록은 `{ id, label }` 객체로 쓴다 (화면·프롬프트에 한국어 이름이 필요해서)
+- 위 예시에 더해 둔 항목: `move_roles`(낌새 알아차리기·은밀 행동에 쓰는 행동), `harm_track`(`apply_harm`이 쓰는 트랙, 마지막 단계는 반드시 사망), `promotion`(진급 경로), `threats`(빨리감기 이상 징후 확률·문구)
+- 시작 장면은 역할(`roles/*.yaml`의 `opening_scene`)에 둔다. GM 프롬프트 = 공통 규칙(core) + 시나리오 톤(`prompts/`) + 시작 장면
+- ID는 예시를 따랐다 (`nerve`, `senses`, `scavenge`, `outsider`). 예시에 없지만 쓰는 곳이 있는 `staff`(지원 인력)와 `leader`(지도부)는 남겼다. `aid`(돕기)와 `infection`(감염)은 규칙을 구현할 때 목록에 넣는다
+- 캐릭터의 부상은 `conditions`(트랙별 단계)와 `dead`로 바뀌었다. 세이브 형식 2. 형식이나 시나리오가 다른 세이브는 서버가 `saves/archive/`로 보관하고 새 세계를 연다
+- 아직 core에 있는 장르 후보: 가치관 축(규율·의리 등), 행동 태그 13종, 활동 시간표(보초 등). 두 번째 장르를 만들 때 시나리오로 옮길지 정한다
+
 ---
 
 ## 13. 기술 스택과 구조
@@ -625,7 +725,9 @@ type WorldSave = {
 | DB | SQLite + Drizzle (나중에 Postgres 전환 가능하게 저장소 레이어 분리) |
 | 검증 | zod |
 | LLM | Claude API (**claude.ai 구독과 별도 결제**, Console에서 키 발급·월 한도 설정) |
-| 벡터 검색 | MVP 없음. 필요 시 sqlite-vec 또는 코드 내 코사인 유사도 |
+| 임베딩 | bge-m3 로컬 실행 (Ollama 또는 transformers.js). `Embedder` 인터페이스로 교체 가능 |
+| 벡터 검색 | SQLite + sqlite-vec |
+| 키워드 검색 | SQLite FTS5. 벡터 결과와 RRF로 병합 |
 | 패키지 | pnpm workspaces 모노레포 |
 
 ```
@@ -637,12 +739,14 @@ trpg/
 │   ├── server/             # core를 HTTP·SSE로 노출하는 얇은 레이어
 │   └── ui/                 # React 화면
 └── content/
-    ├── factions/
-    ├── npcs/
-    ├── locations/
-    ├── roles/
-    ├── items/
-    └── storylets/
+    └── scenarios/
+        └── post_apoc/          # 시나리오 팩 (12.3)
+            ├── scenario.yaml   # 자원·능력치·행동·상태 트랙·등급 사다리·화법·톤
+            ├── factions/  npcs/  locations/  roles/  items/  storylets/
+            ├── lore/           # RAG lore 컬렉션 원문 (*.md)
+            ├── speech/         # 화법 규칙
+            ├── prompts/        # GM 톤 프롬프트
+            └── eval/           # RAG 검색 평가 세트
 ```
 
 - `core`는 UI와 서버를 모른다. 나중에 Electron이든 호스팅 웹이든 껍데기만 바꿔 끼운다
@@ -683,6 +787,8 @@ trpg/
 | 시나리오 | 고정 스토리렛 10개 + 템플릿 15~20개, 세력 클락, 계절 |
 | 사망·계승 | 아이언맨, 연대기, 다음 캐릭터 선택 (기존 NPC 포함) |
 | 저장 | 세계 세이브, 이벤트 로그 |
+| RAG | lore·memory 컬렉션, 정보 필터를 따르는 하이브리드 검색(sqlite-vec + FTS5, RRF), 검색 평가 세트 (11.4) |
+| 시나리오 팩 | 장르 요소를 `post_apoc` 시나리오 설정으로 분리 (12.3) |
 
 ### 15.2 제외 (2차 이후)
 
@@ -692,7 +798,7 @@ trpg/
 - 소문 왜곡, 세력 간 전파, 소문 조작
 - 교역망과 복잡한 경제
 - 연애
-- RAG
+- 두 번째 시나리오 팩, 규칙 자체의 플러그인화
 
 ### 15.3 완성 기준
 
@@ -717,25 +823,32 @@ trpg/
   - 연애 대상은 이성 간으로 한정 (NPC 데이터의 연애 가능 필드로 설정)
   - 연인이 위험 요소가 되는 전개 (부상, 포로, 명령과의 충돌), 연인으로 계승
 - 교역망과 경제
-- RAG (로어, 장기 기억)
+- 두 번째 시나리오 팩 (예: 중세 판타지)과 그에 필요한 규칙 플러그인화
 - 배포 형태 결정 (Electron 또는 호스팅 웹)
 
 ---
 
 ## 17. 개발 순서
 
-1. 모노레포 세팅, `core` / `server` / `ui` 뼈대
-2. Claude API 연결, **입력 → 서술 스트리밍** 채팅 화면
-3. tool calling: 판정(2d6), 부상, 아이템 이동
-4. zod 스키마 + YAML 콘텐츠 로더, SQLite 세이브·불러오기, 이벤트 로그
-5. 시간 모델 (행동 비용, 빨리감기)
-6. NPC 프로필 주입, Belief State, 정보 필터
-7. 임무와 진급
-8. 평판·목격자·소문
-9. 세력 시뮬레이션과 전쟁 틱
-10. 스토리렛 엔진 (고정 + 템플릿)
-11. 사망·연대기·캐릭터 교체
-12. 콘텐츠 작성 (세력, 장소, NPC, 스토리렛) 및 플레이 테스트
+| 순서 | 내용 | 상태 |
+|---|---|---|
+| 1 | 모노레포 세팅, `core` / `server` / `ui` 뼈대 | 완료 |
+| 2 | Claude API 연결, **입력 → 서술 스트리밍** 채팅 화면 | 완료 |
+| 3 | tool calling: 판정(2d6), 부상, 아이템 이동 | 완료 |
+| 4 | zod 스키마 + YAML 콘텐츠 로더, SQLite 세이브·불러오기, 이벤트 로그 | 완료 |
+| 4-1 | **RAG 기반**: Embedder, sqlite-vec, FTS5, lore 적재와 검색 | |
+| 5 | 시간 모델 (행동 비용, 빨리감기) | 완료 |
+| 6 | NPC 프로필 주입, Belief State, 정보 필터 | 완료 |
+| 6-1 | **memory 컬렉션과 정보 필터 연동, 검색 평가 세트** | |
+| 7 | 임무와 진급 | 완료 |
+| 8 | 평판·목격자·소문 | 완료 |
+| 9 | 세력 시뮬레이션과 전쟁 틱 | |
+| 10 | 스토리렛 엔진 (고정 + 템플릿) | |
+| 11 | 사망·연대기·캐릭터 교체 | |
+| 12 | 콘텐츠 작성 (세력, 장소, NPC, 스토리렛) 및 플레이 테스트 | |
+
+- 4-1, 6-1은 설계 변경(RAG를 MVP에 포함)으로 추가됐다. 기존 단계 번호는 커밋 기록과 맞추기 위해 그대로 둔다
+- 시나리오 팩 분리(12.3)는 4-1의 lore 경로(`content/scenarios/<id>/lore/`)와 9단계의 자원 종류에 걸리므로 그보다 먼저 했다 (완료)
 
 각 단계에서 core 로직은 AI 없이 단위 테스트하고, 가능하면 랜덤 자동 플레이로 막힘과 밸런스를 점검한다.
 
@@ -750,3 +863,4 @@ trpg/
 - 진급 조건 수치 (현재 *임시* 값으로 구현: 8.6)
 - 행동별 소요 시간 테이블 (현재 *임시* 값으로 구현: 5.1)
 - 사용할 Claude 모델 구성 (서술용 / 분류·요약용)
+- 임베딩 실행 방식: Ollama 또는 transformers.js

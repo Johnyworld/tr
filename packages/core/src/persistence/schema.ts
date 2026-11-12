@@ -1,0 +1,35 @@
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+
+/**
+ * 세계 세이브 DB 스키마. 세계 하나 = DB 파일 하나 (기획서 12.2).
+ * events와 transcript는 append-only다 (UPDATE/DELETE를 트리거로 막는다).
+ * 스키마를 바꾸면 `pnpm --filter @trpg/core db:generate` 로 마이그레이션을 만든다.
+ */
+
+export const meta = sqliteTable("meta", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
+/** 상태 변경의 원본 기록 */
+export const events = sqliteTable("events", {
+  seq: integer("seq").primaryKey({ autoIncrement: true }),
+  type: text("type").notNull(),
+  payload: text("payload", { mode: "json" }).notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+/** 불러오기를 빠르게 하는 상태 사본. seq까지의 이벤트를 적용한 결과다 */
+export const snapshots = sqliteTable("snapshots", {
+  seq: integer("seq").primaryKey(),
+  state: text("state", { mode: "json" }).notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+/** 화면과 GM 프롬프트에 쓰는 대화 기록 */
+export const transcript = sqliteTable("transcript", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  turn: integer("turn").notNull(),
+  entry: text("entry", { mode: "json" }).notNull(),
+  createdAt: text("created_at").notNull(),
+});

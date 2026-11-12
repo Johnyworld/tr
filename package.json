@@ -10,7 +10,8 @@
     "dev": "pnpm --parallel --filter @trpg/server --filter @trpg/ui dev",
     "build": "pnpm -r build",
     "test": "vitest run",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "content:check": "pnpm --filter @trpg/core content:check"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

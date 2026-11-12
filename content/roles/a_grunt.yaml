@@ -1,0 +1,19 @@
+# 세력 A의 하급 전투원 (MVP 고정 시작 역할, 기획서 3.4)
+id: role_a_grunt
+label: 세력 A 하급 전투원
+faction: faction_a
+rank: grunt
+default_name: 신병
+# 시작 능력치 (임시값, 기획서 4.2)
+start_stats:
+  strength: 1
+  agility: 2
+  cool: 0
+  sense: 1
+  persuasion: -1
+start_inventory: [kitchen_knife, water_bottle]
+# 아래 필드는 해당 시스템이 생기면 쓰인다 (장소·배급·Belief·스토리렛)
+start_location: a_base
+access: [ration, mission_board]
+beliefs_preset: a_grunt
+storylet_tags: [grunt, squad_life]

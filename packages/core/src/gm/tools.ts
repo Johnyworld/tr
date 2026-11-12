@@ -20,6 +20,7 @@ import { MOVE_LABELS, MOVE_STATS, moveSchema } from "../rules/moves.ts";
 import { STAT_LABELS, statSchema } from "../rules/stats.ts";
 import { findHolderInventory, SCENE_HOLDER, type GameEvent, type GameState } from "../game/state.ts";
 import type { GameStore } from "../game/store.ts";
+import type { Content } from "../content/schemas.ts";
 import type { ToolSpec } from "./model.ts";
 
 /** UI에 보여 줄 tool 실행 결과 */
@@ -54,7 +55,7 @@ export type ToolOutcome =
   | { ok: true; resultText: string; display: ToolDisplayEvent }
   | { ok: false; error: string };
 
-export type ToolContext = { store: GameStore; rng: Rng };
+export type ToolContext = { store: GameStore; rng: Rng; content: Content };
 
 type ToolDef<S extends z.ZodType> = {
   name: string;
@@ -223,13 +224,13 @@ const transferItem = defineTool({
     item_id: z.string().describe("아이템 id (상태에 표시된 것)"),
     quantity: z.number().int().min(1).describe("옮길 수량 (1 이상의 정수)"),
   }),
-  run(input, { store }) {
+  run(input, { store, content }) {
     const state = store.getState();
     if (input.from === input.to) return { ok: false, error: "보내는 쪽과 받는 쪽이 같습니다." };
     const fromInv = findHolderInventory(state, input.from);
     if (!fromInv) return { ok: false, error: `알 수 없는 보관 위치: ${input.from}` };
     if (!findHolderInventory(state, input.to)) return { ok: false, error: `알 수 없는 보관 위치: ${input.to}` };
-    const item = state.items[input.item_id];
+    const item = content.items[input.item_id];
     if (!item) return { ok: false, error: `알 수 없는 아이템: ${input.item_id}` };
     const have = fromInv[input.item_id] ?? 0;
     if (have < input.quantity) {

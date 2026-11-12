@@ -1,0 +1,7 @@
+# 기본 아이템. 한 파일에 목록으로 여러 개를 둘 수 있다
+- id: kitchen_knife
+  name: 부엌칼
+  description: 날이 군데군데 이가 빠진 부엌칼. 무기라기보다는 도구에 가깝다.
+- id: water_bottle
+  name: 물병
+  description: 찌그러진 알루미늄 물병.

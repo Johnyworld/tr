@@ -122,7 +122,7 @@ export function App() {
     <div className="app">
       <header className="header">
         <h1>TRPG</h1>
-        <span className="subtitle">세력 A · 하급 전투원</span>
+        <span className="subtitle">{player?.roleLabel}</span>
         <button type="button" className="link" onClick={newGame} disabled={busy}>
           새 게임
         </button>

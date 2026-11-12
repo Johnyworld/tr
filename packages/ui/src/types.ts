@@ -3,6 +3,7 @@ import type { ToolDisplayEvent } from "@trpg/core";
 /** 서버 API 응답 형태 (packages/server/src/session.ts 와 맞춘다) */
 export type PlayerView = {
   name: string;
+  roleLabel: string;
   injury: string;
   injuryLabel: string;
   injuryPenalty: number;

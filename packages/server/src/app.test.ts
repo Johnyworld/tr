@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { LanguageModel, Rng } from "@trpg/core";
+import { InMemoryRepository, type LanguageModel, type Rng } from "@trpg/core";
+import { TEST_CONTENT } from "@trpg/core/testing";
 import { createApp } from "./app.ts";
 import { GameSession } from "./session.ts";
 
@@ -26,8 +27,18 @@ const fakeModel: LanguageModel = async function* (request) {
   };
 };
 
+function newSession(model: LanguageModel = fakeModel) {
+  return new GameSession({
+    model,
+    content: TEST_CONTENT,
+    roleId: "role_test",
+    openRepository: () => new InMemoryRepository(),
+    rngFactory: () => sixes,
+  });
+}
+
 function setup() {
-  return createApp(new GameSession(fakeModel, () => sixes));
+  return createApp(newSession());
 }
 
 function postTurn(app: ReturnType<typeof setup>, input: string) {
@@ -89,7 +100,7 @@ describe("GameSession", () => {
       });
       return { stopReason: "end", content: [] };
     };
-    const session = new GameSession(slowModel, () => sixes);
+    const session = newSession(slowModel);
     for await (const event of session.playTurn("기다린다")) {
       if (event.type === "text") break; // 연결이 끊긴 것처럼 중간에 멈춘다
     }
@@ -99,5 +110,28 @@ describe("GameSession", () => {
       { kind: "player", text: "기다린다" },
       { kind: "gm", text: "첫 문장." },
     ]);
+  });
+});
+
+describe("GameSession 저장", () => {
+  it("턴이 끝나면 대화 기록과 스냅샷을 저장하고, 다시 열면 이어진다", async () => {
+    const repo = new InMemoryRepository();
+    let snapshots = 0;
+    repo.saveSnapshot = () => void snapshots++;
+    const options = {
+      model: fakeModel,
+      content: TEST_CONTENT,
+      roleId: "role_test",
+      openRepository: () => repo,
+      rngFactory: () => sixes,
+    };
+    const session = new GameSession(options);
+    for await (const _ of session.playTurn("문을 부순다"));
+    expect(snapshots).toBeGreaterThanOrEqual(1);
+
+    // 같은 저장소로 다시 열면 새 세계를 만들지 않고 이어진다
+    const reopened = new GameSession(options);
+    expect(reopened.transcriptView().map((e) => e.kind)).toEqual(["player", "gm", "tool", "gm"]);
+    expect(repo.events().filter((e) => e.type === "world_created")).toHaveLength(1);
   });
 });

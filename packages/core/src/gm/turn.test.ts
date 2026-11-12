@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Rng } from "../rng.ts";
-import { createInitialState } from "../game/state.ts";
-import { InMemoryGameStore } from "../game/store.ts";
+import { createTestStore, TEST_CONTENT } from "../testing.ts";
 import type { LanguageModel, ModelRequest, ModelResponse } from "./model.ts";
 import {
   buildHistoryMessages,
@@ -33,8 +32,8 @@ const fixedDice: Rng = (() => {
 })();
 
 async function run(model: LanguageModel, input = "사물함을 뒤진다", transcript: TranscriptEntry[] = []) {
-  const store = new InMemoryGameStore(createInitialState());
-  const gen = runTurn({ model, store, transcript, input, rng: fixedDice });
+  const store = createTestStore();
+  const gen = runTurn({ model, store, content: TEST_CONTENT, transcript, input, rng: fixedDice });
   const events: TurnEvent[] = [];
   let step = await gen.next();
   while (!step.done) {
@@ -63,7 +62,7 @@ describe("runTurn", () => {
 
     expect(events.map((e) => e.type)).toEqual(["text", "tool", "text", "done"]);
     expect(events[1]).toMatchObject({ type: "tool", display: { type: "check", total: 11, outcome: "success" } });
-    expect(store.events().map((e) => e.type)).toEqual(["turn_started", "check_rolled"]);
+    expect(store.events().map((e) => e.type)).toEqual(["world_created", "turn_started", "check_rolled"]);
     expect(entries.map((e) => e.kind)).toEqual(["player", "gm", "tool", "gm"]);
 
     // 두 번째 호출: 원본 응답(thinking 포함)을 그대로 돌려보내고 tool 결과를 붙인다
@@ -96,7 +95,7 @@ describe("runTurn", () => {
     ]);
     const { store, events } = await run(model);
     expect(events.some((e) => e.type === "tool")).toBe(false);
-    expect(store.events().map((e) => e.type)).toEqual(["turn_started"]);
+    expect(store.events().map((e) => e.type)).toEqual(["world_created", "turn_started"]);
     expect(requests[1]!.messages.at(-1)).toMatchObject({
       content: [{ type: "tool_result", isError: true }],
     });
@@ -106,7 +105,7 @@ describe("runTurn", () => {
     const { model, requests } = scriptedModel([{ response: { stopReason: "max_tokens", content: [checkCall] } }]);
     const { store, events } = await run(model);
     expect(requests).toHaveLength(1);
-    expect(store.events().map((e) => e.type)).toEqual(["turn_started"]);
+    expect(store.events().map((e) => e.type)).toEqual(["world_created", "turn_started"]);
     expect(events.at(-1)).toEqual({ type: "done", stopReason: "max_tokens" });
   });
 
@@ -135,9 +134,9 @@ describe("runTurn", () => {
     const { model } = scriptedModel([]);
     await expect(run(model, "  ")).rejects.toThrow(InvalidPlayerInputError);
 
-    const store = new InMemoryGameStore(createInitialState());
+    const store = createTestStore();
     store.getState().characters.player!.injury = "dead";
-    const gen = runTurn({ model, store, transcript: [], input: "일어난다", rng: fixedDice });
+    const gen = runTurn({ model, store, content: TEST_CONTENT, transcript: [], input: "일어난다", rng: fixedDice });
     await expect(gen.next()).rejects.toThrow("사망");
   });
 });

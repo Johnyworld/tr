@@ -5,13 +5,24 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./scene": "./src/gm/scene.ts"
+    "./scene": "./src/gm/scene.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "content:check": "tsx src/content/check.ts ../../content",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.8.0",
+    "better-sqlite3": "13.1.1",
+    "drizzle-orm": "0.45.4",
+    "yaml": "2.9.1",
     "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15"
   }
 }

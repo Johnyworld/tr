@@ -1,5 +1,6 @@
 import type { Rng } from "../rng.ts";
 import type { GameStore } from "../game/store.ts";
+import type { Content } from "../content/schemas.ts";
 import { buildPlayerPrompt } from "./context.ts";
 import type { LanguageModel, ModelMessage, ModelStopReason, UserBlock } from "./model.ts";
 import { GM_SYSTEM_PROMPT } from "./prompt.ts";
@@ -77,6 +78,7 @@ export function buildHistoryMessages(transcript: readonly TranscriptEntry[]): Mo
 export type RunTurnOptions = {
   model: LanguageModel;
   store: GameStore;
+  content: Content;
   transcript: readonly TranscriptEntry[];
   input: string;
   rng: Rng;
@@ -89,12 +91,12 @@ export type RunTurnOptions = {
  * 이벤트를 yield하고, 이번 턴에 새로 생긴 대화 기록을 return한다 (중단·오류 시에도).
  */
 export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEvent, TranscriptEntry[]> {
-  const { model, store, transcript, rng, signal } = options;
+  const { model, store, content, transcript, rng, signal } = options;
   const input = normalizePlayerInput(options.input);
   if (isPlayerDead(store)) throw new InvalidPlayerInputError("캐릭터가 사망했습니다.");
 
   const state = store.append({ type: "turn_started", turn: store.getState().turn + 1, input });
-  const prompt = buildPlayerPrompt(state, input);
+  const prompt = buildPlayerPrompt(state, content, input);
   const entries: TranscriptEntry[] = [{ kind: "player", text: input, prompt }];
 
   const messages: ModelMessage[] = [
@@ -127,7 +129,7 @@ export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEven
       const results: UserBlock[] = [];
       for (const block of response.content) {
         if (block.type !== "tool_call") continue;
-        const outcome = executeTool(block.name, block.input, { store, rng });
+        const outcome = executeTool(block.name, block.input, { store, rng, content });
         if (outcome.ok) {
           entries.push({ kind: "tool", display: outcome.display });
           yield { type: "tool", display: outcome.display };

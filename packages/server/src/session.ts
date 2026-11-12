@@ -1,14 +1,15 @@
+import { randomUUID } from "node:crypto";
 import {
-  createInitialState,
   createSeededRng,
-  InMemoryGameStore,
+  createWorldEvent,
   INJURY_LABELS,
   INJURY_PENALTY,
   isPlayerDead,
   runTurn,
   STAT_LABELS,
   STATS,
-  type GameStore,
+  type Content,
+  type GameRepository,
   type LanguageModel,
   type Rng,
   type TranscriptEntry,
@@ -18,6 +19,7 @@ import {
 /** UI에 보여 줄 플레이어 시트 */
 export type PlayerView = {
   name: string;
+  roleLabel: string;
   injury: string;
   injuryLabel: string;
   injuryPenalty: number;
@@ -35,50 +37,67 @@ export type TranscriptView =
 
 export class TurnInProgressError extends Error {}
 
+export type GameSessionOptions = {
+  model: LanguageModel;
+  content: Content;
+  /** 새 세계를 만들 때 쓸 시작 역할 (MVP: role_a_grunt 고정) */
+  roleId: string;
+  /** 세이브를 연다 (없으면 빈 세이브) */
+  openRepository: () => GameRepository;
+  /** 닫힌 세이브를 보관함으로 옮긴다 (새 게임) */
+  archiveRepository?: () => void;
+  rngFactory?: () => Rng;
+};
+
 /**
- * 1인용 로컬 게임이므로 서버에 게임 하나만 둔다.
- * 4단계에서 GameStore와 대화 기록을 SQLite로 옮긴다.
+ * 1인용 로컬 게임이므로 서버에 세계 하나만 둔다.
+ * 상태·대화 기록은 저장소(SQLite)에 있고, 서버를 다시 켜면 이어서 한다 (아이언맨: 자동 저장만).
  */
 export class GameSession {
-  #store: GameStore;
-  #transcript: TranscriptEntry[] = [];
+  #repo: GameRepository;
   #rng: Rng;
   #busy = false;
 
-  constructor(
-    private readonly model: LanguageModel,
-    private readonly rngFactory: () => Rng = () => createSeededRng(Math.floor(Math.random() * 2 ** 32)),
-  ) {
-    this.#store = new InMemoryGameStore(createInitialState());
-    this.#rng = rngFactory();
+  constructor(private readonly options: GameSessionOptions) {
+    if (!options.content.roles[options.roleId]) throw new Error(`알 수 없는 시작 역할: ${options.roleId}`);
+    this.#repo = this.#open();
+    this.#rng = this.#newRng();
   }
 
   get busy() {
     return this.#busy;
   }
 
+  /** 지금 세계를 보관하고 새 세계를 시작한다 */
   reset() {
     if (this.#busy) throw new TurnInProgressError();
-    this.#store = new InMemoryGameStore(createInitialState());
-    this.#transcript = [];
-    this.#rng = this.rngFactory();
+    this.#repo.close();
+    this.options.archiveRepository?.();
+    this.#repo = this.#open();
+    this.#rng = this.#newRng();
+  }
+
+  close() {
+    this.#repo.close();
   }
 
   isPlayerDead() {
-    return isPlayerDead(this.#store);
+    return isPlayerDead(this.#repo);
   }
 
   transcriptView(): TranscriptView[] {
-    return this.#transcript.map((e) => (e.kind === "player" ? { kind: "player", text: e.text } : e));
+    return this.#repo.transcript().map((e) => (e.kind === "player" ? { kind: "player", text: e.text } : e));
   }
 
   playerView(): PlayerView {
-    const state = this.#store.getState();
+    const { content } = this.options;
+    const state = this.#repo.getState();
     const player = state.characters[state.playerId]!;
     const items = (inv: Record<string, number>) =>
-      Object.entries(inv).map(([id, quantity]) => ({ id, name: state.items[id]?.name ?? id, quantity }));
+      Object.entries(inv).map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity }));
     return {
       name: player.name,
+      roleLabel: content.roles[state.roleId]?.label ?? player.rank,
       injury: player.injury,
       injuryLabel: INJURY_LABELS[player.injury],
       injuryPenalty: INJURY_PENALTY[player.injury],
@@ -90,9 +109,9 @@ export class GameSession {
   }
 
   /**
-   * 턴을 실행한다. 이벤트를 흘려보내고, 끝나면 대화 기록에 붙인다.
+   * 턴을 실행한다. 이벤트를 흘려보내고, 끝나면 대화 기록과 스냅샷을 저장한다.
    * 소비자가 중간에 멈추면(연결 끊김) 모델 호출을 중단하고 그때까지의 기록을 남긴다.
-   * 상태 이벤트는 이미 적용됐으므로 기록이 빠지면 안 된다.
+   * 상태 이벤트는 이미 저장됐으므로 기록이 빠지면 안 된다.
    */
   async *playTurn(input: string, signal?: AbortSignal): AsyncGenerator<TurnEvent> {
     if (this.#busy) throw new TurnInProgressError();
@@ -102,9 +121,10 @@ export class GameSession {
     signal?.addEventListener("abort", onAbort);
 
     const turn = runTurn({
-      model: this.model,
-      store: this.#store,
-      transcript: this.#transcript,
+      model: this.options.model,
+      store: this.#repo,
+      content: this.options.content,
+      transcript: this.#repo.transcript(),
       input,
       rng: this.#rng,
       signal: abort.signal,
@@ -121,9 +141,25 @@ export class GameSession {
         abort.abort();
         while (!step.done) step = await turn.next();
       }
-      if (step?.done) this.#transcript.push(...step.value);
+      if (step?.done) {
+        this.#repo.appendTranscript(step.value);
+        this.#repo.saveSnapshot();
+      }
       signal?.removeEventListener("abort", onAbort);
       this.#busy = false;
     }
+  }
+
+  #open(): GameRepository {
+    const repo = this.options.openRepository();
+    if (!repo.hasWorld()) {
+      repo.append(createWorldEvent(this.options.content.roles[this.options.roleId]!, randomUUID()));
+      repo.saveSnapshot();
+    }
+    return repo;
+  }
+
+  #newRng(): Rng {
+    return this.options.rngFactory?.() ?? createSeededRng(Math.floor(Math.random() * 2 ** 32));
   }
 }

@@ -14,6 +14,7 @@ build/
 !.env.example
 
 # SQLite DB / 세이브 데이터
+saves/
 *.db
 *.db-journal
 *.db-shm

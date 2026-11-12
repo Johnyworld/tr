@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createSeededRng, type Rng } from "../rng.ts";
-import { applyEvent, createInitialState, type GameState } from "../game/state.ts";
+import { createWorldEvent, type GameState } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
+import { TEST_CONTENT } from "../testing.ts";
 import { executeTool, GM_TOOL_SPECS, harmSteps } from "./tools.ts";
 
 /** 주사위 눈을 그대로 지정하는 RNG */
@@ -11,11 +12,16 @@ function diceRng(...faces: number[]): Rng {
 }
 
 function setup(rng: Rng = createSeededRng(1), mutate?: (s: GameState) => void) {
-  let state = applyEvent(createInitialState(), { type: "turn_started", turn: 1, input: "" });
-  mutate?.(state);
-  const store = new InMemoryGameStore(state);
-  return { store, ctx: { store, rng } };
+  const store = new InMemoryGameStore([
+    createWorldEvent(TEST_CONTENT.roles.role_test!, "world_test"),
+    { type: "turn_started", turn: 1, input: "" },
+  ]);
+  mutate?.(store.getState());
+  return { store, ctx: { store, rng, content: TEST_CONTENT } };
 }
+
+/** setup이 넣은 이벤트(world_created, turn_started) 이후의 이벤트 */
+const newEvents = (store: InMemoryGameStore) => store.events().slice(2);
 
 const check = (overrides: Record<string, unknown> = {}) => ({
   move: "search",
@@ -62,7 +68,7 @@ describe("request_check", () => {
     const { store, ctx } = setup();
     const out = executeTool("request_check", check({ move: "search", stat: "strength" }), ctx);
     expect(out.ok).toBe(false);
-    expect(store.events()).toHaveLength(0);
+    expect(newEvents(store)).toHaveLength(0);
   });
 
   it("스키마에 없는 값이나 추가 필드는 거부한다", () => {
@@ -152,6 +158,6 @@ describe("transfer_item", () => {
     expect(
       executeTool("transfer_item", { from: "scene", to: "player", item_id: "kitchen_knife", quantity: 1 }, ctx).ok,
     ).toBe(false);
-    expect(store.events()).toHaveLength(0);
+    expect(newEvents(store)).toHaveLength(0);
   });
 });

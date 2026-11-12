@@ -5,7 +5,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
   return (
     <aside className="sheet" aria-label="캐릭터 시트">
       <h2>{player.name}</h2>
-      <div className="sheet-sub">세력 A · 하급 전투원</div>
+      <div className="sheet-sub">{player.roleLabel}</div>
 
       <section>
         <h3>부상</h3>

@@ -99,8 +99,11 @@ A + B 연합이 C와 전쟁 중이다. 연합(110명)은 C(200명)에 약 2:1로
 ```yaml
 # content/roles/a_grunt.yaml
 id: role_a_grunt
+label: 세력 A 하급 전투원
 faction: faction_a
 rank: grunt
+default_name: 신병
+start_stats: { strength: 1, agility: 2, cool: 0, sense: 1, persuasion: -1 }
 start_location: a_base
 start_inventory: [kitchen_knife, water_bottle]
 access: [ration, mission_board]
@@ -501,14 +504,23 @@ repeatable: false
 ### 12.1 콘텐츠
 
 - 세력, NPC, 장소, 역할, 아이템, 스토리렛은 **YAML 파일로 Git에 관리**
-- 게임 시작 시 SQLite로 로드
-- **zod 스키마**로 콘텐츠와 런타임 양쪽 검증
+- 서버 시작 시 메모리로 읽는다. 세이브에는 콘텐츠를 복사하지 않고 id로만 참조한다
+- **zod 스키마**로 콘텐츠와 런타임 양쪽 검증. 한 파일에 객체 하나 또는 목록을 둘 수 있다
+- 검증은 오류를 한 번에 모아 보고하고, 콘텐츠끼리의 참조(역할의 시작 아이템 등)도 검사한다
+- 현재 구현된 종류: 아이템, 역할. 나머지는 해당 단계에서 스키마를 추가한다
 
 ### 12.2 세이브
 
-- **SQLite** (로컬 파일). 세계 하나 = DB 파일 하나
+- **SQLite** (로컬 파일). 세계 하나 = DB 파일 하나 (`saves/world.db`)
 - 구조: **세계 세이브 1개 + 캐릭터 런 기록 여러 개**
 - **이벤트 로그가 원본**, 상태는 스냅샷. 판정, 굴린 값, 상태 변경을 append-only로 기록
+  - 첫 이벤트는 `world_created`(시작 캐릭터 포함). 상태는 이벤트를 차례로 적용한 결과다
+  - 이벤트는 상태에 먼저 적용해 보고, 성공한 것만 기록한다
+  - 매 턴이 끝나면 스냅샷을 남기고, 불러올 때는 마지막 스냅샷 + 이후 이벤트로 복원한다
+  - `events`, `transcript` 테이블은 트리거로 UPDATE·DELETE를 막는다
+- 세이브 형식 버전(`SAVE_SCHEMA_VERSION`)이 다르면 열지 않는다. 형식을 바꾸면 버전을 올리고 이전 세이브를 옮기는 방법을 만든다
+- "새 게임"은 지금 세계를 지우지 않고 `saves/archive/`로 옮긴 뒤 새 세계를 연다
+- 아래 타입은 최종 목표 형태다. 현재 구현은 단계별로 필드를 늘려 간다
 
 ```ts
 type WorldSave = {

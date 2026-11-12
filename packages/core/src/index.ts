@@ -6,17 +6,26 @@ export * from "./rules/injury.ts";
 export * from "./rules/check.ts";
 
 export { characterSchema, inventorySchema, type Character, type Inventory } from "./game/character.ts";
-export { TEMP_ITEMS, itemDefSchema, type ItemDef } from "./game/items.ts";
 export {
   applyEvent,
-  createInitialState,
-  createStartingPlayer,
+  createCharacterFromRole,
+  createWorldEvent,
+  EMPTY_STATE,
+  gameEventSchema,
+  gameStateSchema,
+  SAVE_SCHEMA_VERSION,
   SCENE_HOLDER,
   type CheckRecord,
   type GameEvent,
   type GameState,
 } from "./game/state.ts";
 export { InMemoryGameStore, type GameStore } from "./game/store.ts";
+
+export * from "./content/schemas.ts";
+export { loadContent, ContentError } from "./content/loader.ts";
+
+export { InMemoryRepository, type GameRepository } from "./persistence/repository.ts";
+export { SqliteRepository, SaveFormatError, archiveSave } from "./persistence/sqlite.ts";
 
 export { GM_SYSTEM_PROMPT } from "./gm/prompt.ts";
 export { OPENING_SCENE } from "./gm/scene.ts";

@@ -1,2 +1,7 @@
 packages:
   - packages/*
+
+# 네이티브 빌드가 필요한 패키지 (pnpm은 기본적으로 빌드 스크립트를 막는다)
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild

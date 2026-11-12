@@ -52,8 +52,11 @@ cp .env.example .env  # 처음 한 번. ANTHROPIC_API_KEY를 채운다
 pnpm dev            # 서버(127.0.0.1:8787) + UI(localhost:5173) 동시 실행
 pnpm test           # 단위 테스트 (vitest, LLM 호출 없음)
 pnpm typecheck      # 전체 타입 체크
+pnpm content:check  # 콘텐츠 YAML 검증
+pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마이그레이션 생성
 ```
 
 - UI는 Vite 프록시로 `/api`를 서버에 넘긴다. 서버 포트는 `SERVER_PORT`로 바꾼다 (`PORT`는 쓰지 않는다)
 - GM 모델은 `GM_MODEL`로 바꾼다 (기본 `claude-opus-5-5`)
-- 콘텐츠 검증 명령은 4단계(YAML 로더)에서 추가한다
+- 세이브는 `saves/world.db` (`SAVE_PATH`로 변경). "새 게임"을 누르면 `saves/archive/`로 옮겨진다
+- 게임 상태나 이벤트 형태를 바꾸면 `SAVE_SCHEMA_VERSION`을 올린다 (`packages/core/src/game/state.ts`)

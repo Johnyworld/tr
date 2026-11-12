@@ -33,7 +33,7 @@ import { createStoryletCheck, endActiveStorylet } from "./storyletTools.ts";
 import { recordDeath } from "./succession.ts";
 import { applyTreatment, maybeInfect, useItem } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
-import { signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
+import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -354,7 +354,7 @@ function bodyLines(displays: readonly ToolDisplayEvent[]): string[] {
     d.type === "heal"
       ? [`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.byLabel}).`]
       : d.type === "harm" && d.trackLabel !== ""
-        ? [`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.cause}). 몸의 변화를 서술에 반영하라.${d.fatal ? " 캐릭터가 사망했다. 죽음을 담담하게 서술하고 write_epitaph로 묘비명을 남긴다." : ""}`]
+        ? [`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.cause}). 몸의 변화를 서술에 반영하라.${d.fatal ? DEATH_GUIDE : ""}`]
         : [],
   );
 }
@@ -372,7 +372,7 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
   const steps = outcome === "success" ? (severity === "heavy" ? 2 : 1) : outcome === "partial" ? 1 : 0;
   if (steps === 0) return { lines: [`${josa(target.name, "은/는")} 다치지 않았다.`], displays };
   const change = changeCondition(ctx, targetId, ctx.content.scenario.harm_track, steps, "attack", cause);
-  if (change?.line) lines.push(change.line.replace(" 캐릭터가 사망했다. 죽음을 담담하게 서술하고 write_epitaph로 묘비명을 남긴다.", ""));
+  if (change?.line) lines.push(change.line);
   if (change?.display) displays.push(change.display);
   const after = ctx.store.getState().characters[targetId]!;
   if (after.dead) lines.push(`${josa(after.name, "이/가")} 죽었다. 죽음을 서술에 반영하라.`);
@@ -417,7 +417,7 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   const fromLabel = levelOf(track, from).label;
   const toLabel = levelOf(track, to).label;
   const note = fatal
-    ? " 캐릭터가 사망했다. 죽음의 순간을 담담하게 서술하고 장면을 끝내라. 더 이상 행동을 제시하지 마라. 서술한 뒤 write_epitaph로 한두 문장의 묘비명을 남긴다."
+    ? `${DEATH_GUIDE} 장면을 끝내고 더 이상 행동을 제시하지 마라.`
     : ` 앞으로 판정에 ${signed(conditionPenalty(content.scenario, after))} 보정을 받는다. 다친 감각을 서술에 반영하라.`;
   return {
     fatal,

@@ -345,3 +345,21 @@ describe("엑스트라 (실제 콘텐츠)", () => {
     expect(app.world!.state().characters.ex_1!.name).not.toBe("엽총 든 보초");
   });
 });
+
+describe("주인공 사망: 서술 먼저, 상태 화면은 뒤에", () => {
+  it("죽으면 GM에게 무슨 일이 있었는지부터 쓰라고 하고, 묘비명을 남길 때까지 상태 화면은 죽기 직전 모습", async () => {
+    const { statusPayload } = await import("./statusServer.ts");
+    const { call, app } = await connect(TEST_CONTENT, 0, () => 0); // 1+1 실패
+    await call("start_session", { new_world: true });
+    const source = { get world() { return app.world; }, scenarioName: "x", get frozenStatus() { return app.frozenStatus; } };
+    const lethal = { move: "fight", stat: "strength", difficulty: "hard", harm_on_failure: "heavy", harm_cause: "목이 졸려" };
+    let out = { text: "" };
+    for (let i = 0; i < 3 && !app.world!.isPlayerDead(); i++) out = await call("take_action", action({ intent: "몸싸움", check: lethal }));
+    expect(app.world!.isPlayerDead()).toBe(true);
+    expect(out.text).toContain("무슨 일이 있었는지 서술한다");
+    expect(out.text).toContain("목이 졸려");
+    expect((statusPayload(source) as { player: { dead: boolean } }).player.dead).toBe(false); // 아직 죽기 전 모습
+    await call("write_epitaph", { text: "목이 졸려 죽었다." });
+    expect((statusPayload(source) as { player: { dead: boolean } }).player.dead).toBe(true);
+  });
+});

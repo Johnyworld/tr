@@ -10,7 +10,7 @@ import { seasonAt } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { josa } from "../text.ts";
 import { recordDeath } from "./succession.ts";
-import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { DEATH_GUIDE, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
 /**
  * 몸 상태 (기획서 4.4, 4.5): 부상 회복, 소모품, 허기, 감염. 수치는 시나리오(recovery, consumables, body)에서 온다.
@@ -50,7 +50,7 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
   if (shownFrom.id === shownTo.id) return { line: "", display: null, died: false }; // 캐릭터는 아직 모른다
   const better = nextIndex < index;
   return {
-    line: `${character.name}의 ${track.label}: ${shownFrom.label} → ${shownTo.label} (${cause}).${to.fatal ? " 캐릭터가 사망했다. 죽음을 담담하게 서술하고 write_epitaph로 묘비명을 남긴다." : ""}`,
+    line: `${character.name}의 ${track.label}: ${shownFrom.label} → ${shownTo.label} (${cause}).${to.fatal && characterId === state.playerId ? DEATH_GUIDE : ""}`,
     display: better
       ? { type: "heal", targetName: character.name, trackLabel: track.label, fromLabel: shownFrom.label, toLabel: shownTo.label, byLabel: cause }
       : { type: "harm", targetName: character.name, trackLabel: track.label, severityLabel: cause, fatal: to.fatal === true, fromLabel: shownFrom.label, toLabel: shownTo.label, cause },

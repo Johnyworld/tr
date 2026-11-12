@@ -26,12 +26,15 @@ export type StatusSource = {
     submit(choice: z.infer<ReturnType<typeof characterChoiceSchema>>): { ok: true } | { ok: false; error: string };
   };
   readonly content?: Content;
+  /** 주인공이 죽은 직후 GM이 서술하는 동안 보여 줄 죽기 직전 모습 */
+  readonly frozenStatus?: unknown;
   /** 브라우저 생성 직후, GM이 첫 장면을 쓰는 동안 (시트 대신 "만들었다" 안내) */
   readonly sheetHeld?: boolean;
   readonly rules?: () => CreationRules | null;
 };
 
 export function statusPayload(source: StatusSource): unknown {
+  if (source.frozenStatus) return source.frozenStatus;
   // 캐릭터 생성 중이면 생성 화면을 먼저 보여 준다
   if (source.creation?.pending) return { open: false, creating: true, scenarioName: source.scenarioName };
   const w = source.world;

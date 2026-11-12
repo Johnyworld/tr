@@ -45,6 +45,8 @@ const HELP_HINT = "플레이어에게 한 줄 안내: \"?도움말 로 정보 �
 const CREATION_WAIT_MS = Number(process.env.TRPG_CREATE_WAIT_MS ?? 10 * 60 * 1000);
 /** 생성 직후 첫 장면을 기다리는 최대 시간 (GM이 open_sheet를 잊어도 시트가 열린다) */
 const SHEET_HOLD_MS = 90 * 1000;
+/** 주인공이 죽은 뒤 GM이 서술할 동안 상태 화면에 사망을 미루는 최대 시간 */
+const DEATH_HOLD_MS = 120 * 1000;
 
 export type CharacterChoiceInput = z.infer<ReturnType<typeof characterChoiceSchema>>;
 
@@ -65,9 +67,23 @@ export function createMcpServer(
   const releaseSheet = () => {
     sheetHeldUntil = 0;
   };
+  /**
+   * 주인공이 죽은 순간: GM이 무슨 일이 있었는지 채팅에 서술할 때까지 상태 화면은 죽기 직전 모습을 보여 준다.
+   * GM이 서술 뒤에 부르는 write_epitaph·get_chronicle·choose_next_character, 또는 시간이 지나면 풀린다
+   */
+  let frozen: { payload: unknown; until: number } | null = null;
+  const releaseFrozen = () => {
+    frozen = null;
+  };
+  const sheetPayload = (w: GameWorld) => ({ open: true, scenarioName: scenario.name, worldId: w.id, player: w.playerView() });
   const withWorld = (fn: (w: GameWorld) => TextResult): TextResult => {
     releaseSheet();
-    return world ? fn(world) : text(NO_WORLD, true);
+    if (!world) return text(NO_WORLD, true);
+    const wasDead = world.isPlayerDead();
+    const before = wasDead ? null : sheetPayload(world);
+    const result = fn(world);
+    if (before && world?.isPlayerDead() && !frozen) frozen = { payload: before, until: Date.now() + DEATH_HOLD_MS };
+    return result;
   };
   const fromOutcome = (outcome: ToolOutcome, extra = ""): TextResult =>
     outcome.ok ? text(outcome.resultText + extra) : text(outcome.error, true);
@@ -366,9 +382,12 @@ export function createMcpServer(
   // 장면 정리 tool (인물 등장, 물건, 기억, 임무, 목격자, 비밀): core 정의를 그대로 연다
   for (const tool of gmTools(scenario)) {
     if (tool.name === "take_action") continue;
-    server.registerTool(tool.name, { description: tool.description, inputSchema: tool.schema }, (args: unknown) =>
-      withWorld((w) => fromOutcome(w.executeTool(tool.name, args))),
-    );
+    server.registerTool(tool.name, { description: tool.description, inputSchema: tool.schema }, (args: unknown) => {
+      const result = withWorld((w) => fromOutcome(w.executeTool(tool.name, args)));
+      // 묘비명은 죽음을 서술한 뒤에 남긴다: 이제 상태 화면에 사망을 보여 준다
+      if (tool.name === "write_epitaph") releaseFrozen();
+      return result;
+    });
   }
 
   // ── 기억과 정보 ───────────────────────────────────
@@ -427,7 +446,10 @@ export function createMcpServer(
   server.registerTool(
     "get_chronicle",
     { description: "죽은 캐릭터들의 기록과, 사망했다면 다음 캐릭터 후보." },
-    async () => (world ? text(await world.runCommand("!연대기")) : text(NO_WORLD, true)),
+    async () => {
+      releaseFrozen();
+      return world ? text(await world.runCommand("!연대기")) : text(NO_WORLD, true);
+    },
   );
 
   server.registerTool(
@@ -443,6 +465,7 @@ export function createMcpServer(
     },
     (args) =>
       withWorld((w) => {
+        releaseFrozen();
         const result = w.chooseNextCharacter(args.character_id, args.name ?? null);
         return result.ok ? text(result.text) : text(result.error, true);
       }),
@@ -472,6 +495,11 @@ export function createMcpServer(
     /** 브라우저 생성 직후 첫 장면을 기다리는 중 (상태 화면은 시트 대신 안내) */
     get sheetHeld() {
       return sheetHeldUntil > Date.now();
+    },
+    /** 주인공이 죽은 직후 GM이 서술하는 동안 상태 화면에 보여 줄 죽기 직전 모습 (없으면 null) */
+    get frozenStatus() {
+      if (frozen && frozen.until <= Date.now()) frozen = null;
+      return frozen?.payload ?? null;
     },
     get world() {
       return world;

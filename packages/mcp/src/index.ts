@@ -55,6 +55,9 @@ if (process.env.TRPG_STATUS !== "off") {
     get sheetHeld() {
       return app.sheetHeld;
     },
+    get frozenStatus() {
+      return app.frozenStatus;
+    },
     content: contentRef!,
     rules: () => creationRules(contentRef!, roleId),
   };

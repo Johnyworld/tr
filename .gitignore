@@ -1,0 +1,40 @@
+# 의존성
+node_modules/
+.pnpm-store/
+
+# 빌드 산출물
+dist/
+build/
+*.tsbuildinfo
+.vite/
+
+# 환경 변수 (API 키는 .env에만 둔다. 절대 커밋하지 않는다)
+.env
+.env.*
+!.env.example
+
+# SQLite DB / 세이브 데이터
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# 로그
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# 테스트 / 커버리지
+coverage/
+
+# OS / 에디터
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Claude Code 로컬 설정
+.claude/settings.local.json

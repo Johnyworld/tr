@@ -41,7 +41,7 @@ API 키는 필요 없다.
 
 ### Claude Code
 
-저장소 루트에 `.mcp.json`을 만든다 (Claude Code를 이 폴더에서 실행할 때).
+저장소 루트의 `.mcp.json`에 등록돼 있다. 이 폴더에서 Claude Code 세션을 새로 시작하면 서버 사용을 허용할지 묻는다.
 
 ```json
 {

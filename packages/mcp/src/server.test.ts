@@ -291,3 +291,24 @@ describe("브라우저에서 캐릭터 생성", () => {
     expect(await none.call({ create_in_browser: true })).toContain("채팅으로 만든다");
   });
 });
+
+describe("브라우저 생성 직후 시트 미루기", () => {
+  it("만든 직후엔 '만들었다' 안내, GM이 open_sheet를 부르거나 다른 tool을 부르면 시트", async () => {
+    const { statusPayload } = await import("./statusServer.ts");
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-hold-")), content: REAL_CONTENT, rngFactory: () => createSeededRng(3) });
+    const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8790" });
+    opened.push(app);
+    const [c, s] = InMemoryTransport.createLinkedPair();
+    await app.server.connect(s);
+    const client = new Client({ name: "t", version: "0" });
+    await client.connect(c);
+    const source = { get world() { return app.world; }, scenarioName: "x", creation: app.browserCreation, get sheetHeld() { return app.sheetHeld; } };
+    const waiting = client.callTool({ name: "start_session", arguments: { create_in_browser: true } }) as Promise<{ content: { text: string }[] }>;
+    await new Promise((r) => setTimeout(r, 30));
+    app.browserCreation.submit({ name: "서진", gender: "female", abilities: { senses: 2, agility: 1 }, portrait: "p2", traits: [] });
+    expect((await waiting).content[0]!.text).toContain("open_sheet");
+    expect(statusPayload(source)).toMatchObject({ open: false, created: true, name: "서진" });
+    await client.callTool({ name: "open_sheet", arguments: {} });
+    expect(statusPayload(source)).toMatchObject({ open: true });
+  });
+});

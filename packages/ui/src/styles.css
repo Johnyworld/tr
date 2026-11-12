@@ -1121,3 +1121,24 @@ body {
 .status-creation .title-screen {
   padding-top: 16px;
 }
+
+.status-created {
+  margin: 48px auto 0;
+  max-width: 420px;
+  text-align: center;
+  padding: 28px 24px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.status-created h2 {
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.status-created p {
+  margin: 8px 0 0;
+  line-height: 1.7;
+}

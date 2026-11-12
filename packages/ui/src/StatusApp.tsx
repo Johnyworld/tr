@@ -5,7 +5,7 @@ import type { PlayerView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
 type StatusView =
-  | { open: false; scenarioName: string; creating?: boolean }
+  | { open: false; scenarioName: string; creating?: boolean; created?: boolean; name?: string }
   | { open: true; scenarioName: string; worldId: string; player: PlayerView };
 
 /**
@@ -77,8 +77,13 @@ export function StatusApp() {
         <div className="status-creation">
           <CharacterCreation onStart={() => setSubmitted(true)} />
         </div>
-      ) : !status.open && submitted ? (
-        <p className="muted status-empty">캐릭터를 만들었다. Claude 세션에서 이야기가 이어진다.</p>
+      ) : !status.open && (submitted || status.created) ? (
+        // 만들고 나서 GM이 첫 장면을 쓰는 동안: 세션으로 돌아가라는 안내. 첫 장면이 끝나면 시트가 열린다
+        <div className="status-created">
+          <h2>캐릭터를 만들었습니다</h2>
+          <p>{status.created && status.name ? `${status.name}의 이야기가` : "이야기가"} Claude 세션에서 시작됩니다. 세션으로 돌아가 첫 장면을 확인하세요.</p>
+          <p className="muted small">첫 장면이 나오면 이곳에 캐릭터 시트가 열립니다.</p>
+        </div>
       ) : !status.open ? (
         <p className="muted status-empty">열린 게임이 없다. Claude 세션에서 /play 로 게임을 열면 여기에 캐릭터 시트가 나온다.</p>
       ) : (

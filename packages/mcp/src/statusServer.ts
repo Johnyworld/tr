@@ -26,6 +26,8 @@ export type StatusSource = {
     submit(choice: z.infer<ReturnType<typeof characterChoiceSchema>>): { ok: true } | { ok: false; error: string };
   };
   readonly content?: Content;
+  /** 브라우저 생성 직후, GM이 첫 장면을 쓰는 동안 (시트 대신 "만들었다" 안내) */
+  readonly sheetHeld?: boolean;
   readonly rules?: () => CreationRules | null;
 };
 
@@ -34,6 +36,7 @@ export function statusPayload(source: StatusSource): unknown {
   if (source.creation?.pending) return { open: false, creating: true, scenarioName: source.scenarioName };
   const w = source.world;
   if (!w) return { open: false, scenarioName: source.scenarioName };
+  if (source.sheetHeld) return { open: false, created: true, scenarioName: source.scenarioName, name: w.playerView().name };
   return { open: true, scenarioName: source.scenarioName, worldId: w.id, player: w.playerView() };
 }
 

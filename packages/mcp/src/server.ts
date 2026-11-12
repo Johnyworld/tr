@@ -43,6 +43,8 @@ const HELP_HINT = "플레이어에게 한 줄 안내: \"?도움말 로 정보 �
 
 /** 브라우저 생성을 기다리는 시간 (넘으면 "다 했어"로 이어 간다) */
 const CREATION_WAIT_MS = Number(process.env.TRPG_CREATE_WAIT_MS ?? 10 * 60 * 1000);
+/** 생성 직후 첫 장면을 기다리는 최대 시간 (GM이 open_sheet를 잊어도 시트가 열린다) */
+const SHEET_HOLD_MS = 90 * 1000;
 
 export type CharacterChoiceInput = z.infer<ReturnType<typeof characterChoiceSchema>>;
 
@@ -55,7 +57,18 @@ export function createMcpServer(
   const server = new McpServer({ name: "trpg", version: "0.0.0" });
   let world: GameWorld | null = null;
 
-  const withWorld = (fn: (w: GameWorld) => TextResult): TextResult => (world ? fn(world) : text(NO_WORLD, true));
+  /**
+   * 브라우저 생성 직후: GM이 첫 장면을 다 쓸 때까지 상태 화면은 "만들었다" 안내를 보여 주고 시트를 미룬다.
+   * GM이 open_sheet를 부르거나, 다른 tool을 부르거나, 시간이 지나면 시트를 연다
+   */
+  let sheetHeldUntil = 0;
+  const releaseSheet = () => {
+    sheetHeldUntil = 0;
+  };
+  const withWorld = (fn: (w: GameWorld) => TextResult): TextResult => {
+    releaseSheet();
+    return world ? fn(world) : text(NO_WORLD, true);
+  };
   const fromOutcome = (outcome: ToolOutcome, extra = ""): TextResult =>
     outcome.ok ? text(outcome.resultText + extra) : text(outcome.error, true);
 
@@ -96,6 +109,7 @@ export function createMcpServer(
       const result = openWorld(() => manager.create("mcp", undefined, { ...choice, portrait: choice.portrait ?? null }));
       if (result.isError) return { ok: false, error: result.content[0]?.text ?? "만들지 못했습니다." };
       creation.done = result;
+      sheetHeldUntil = Date.now() + SHEET_HOLD_MS;
       for (const w of creation.waiters) w(result);
       creation.waiters.clear();
       return { ok: true };
@@ -236,7 +250,7 @@ export function createMcpServer(
       });
       if (result) {
         creation = null;
-        return { ...result, content: [{ type: "text", text: `플레이어가 브라우저에서 캐릭터를 만들었다. 바로 첫 장면을 서술한다.\n\n${result.content[0]?.text ?? ""}` }] };
+        return { ...result, content: [{ type: "text", text: `플레이어가 브라우저에서 캐릭터를 만들었다. 바로 첫 장면을 서술하고, 다 쓴 뒤 open_sheet를 불러 상태 화면에 캐릭터 시트를 연다 (그 뒤엔 더 쓰지 않는다).\n\n${result.content[0]?.text ?? ""}` }] };
       }
       return text(
         `아직 브라우저에서 만드는 중이다 (${url}). 플레이어에게 "다 만들고 시작을 누른 뒤 여기에 '다 했어'라고 입력해 주세요"라고 안내하고, 그러면 start_session(create_in_browser: true)를 다시 부른다. 채팅으로 만들고 싶다고 하면 start_session(new_world: true).`,
@@ -245,6 +259,17 @@ export function createMcpServer(
       if (keepAlive) clearInterval(keepAlive);
     }
   }
+
+  server.registerTool(
+    "open_sheet",
+    {
+      description: "브라우저에서 캐릭터를 만든 직후, 첫 장면 서술을 다 쓴 뒤 부른다: 상태 화면의 \"만들었다\" 안내를 캐릭터 시트로 바꾼다. 게임 상태는 바꾸지 않는다.",
+    },
+    () => {
+      releaseSheet();
+      return text("상태 화면에 캐릭터 시트를 열었다. 더 쓰지 말고 플레이어의 행동을 기다린다.");
+    },
+  );
 
   server.registerTool(
     "load_world",
@@ -442,6 +467,10 @@ export function createMcpServer(
   return {
     server,
     browserCreation,
+    /** 브라우저 생성 직후 첫 장면을 기다리는 중 (상태 화면은 시트 대신 안내) */
+    get sheetHeld() {
+      return sheetHeldUntil > Date.now();
+    },
     get world() {
       return world;
     },

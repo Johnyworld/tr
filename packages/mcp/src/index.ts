@@ -52,6 +52,9 @@ if (process.env.TRPG_STATUS !== "off") {
     },
     scenarioName,
     creation: app.browserCreation,
+    get sheetHeld() {
+      return app.sheetHeld;
+    },
     content: contentRef!,
     rules: () => creationRules(contentRef!, roleId),
   };

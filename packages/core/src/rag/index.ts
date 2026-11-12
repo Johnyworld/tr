@@ -58,6 +58,9 @@ export type SearchOptions = {
   exclude?: (chunk: { id: string; kind: string; createdAt: number | null }) => boolean;
 };
 
+/** 후보를 넓혀 가며 가져올 때 한 번에 가져오는 최대 수 (sqlite-vec의 k 상한) */
+const MAX_FETCH = 4096;
+
 export const DEFAULT_SEARCH: Required<Omit<SearchOptions, "exclude">> = {
   topK: 4,
   charBudget: 2400,
@@ -320,28 +323,46 @@ export class RagIndex {
     };
     const byRowid = (rowid: number) => db.prepare("SELECT rowid, * FROM chunks WHERE rowid = ?").get(rowid) as Row | undefined;
 
+    const allowed = (r: Row) =>
+      canSeeChunk({ visibility: r.visibility, knownBy: r.known_by ? (JSON.parse(r.known_by) as string[]) : null }, viewer);
+    const excluded = (r: Row) => options.exclude?.({ id: r.id, kind: r.kind, createdAt: r.created_at }) ?? false;
+    const visible = (r: Row | undefined): r is Row => r !== undefined && allowed(r) && !excluded(r);
+
+    // 볼 수 없는 청크가 후보 자리를 차지하지 않게, 볼 수 있는 후보가 candidates개 모이거나 색인이 끝날 때까지 넓혀 가며 가져온다.
+    // (memory 색인에는 모든 인물의 기억이 섞여 있어, 상위 몇 개만 가져와 거르면 현재 캐릭터의 기억이 밀려난다)
+    const total = this.count();
+    const gather = (fetch: (k: number) => (Row | undefined)[]): (Row | undefined)[] => {
+      let k = opts.candidates;
+      for (;;) {
+        const rows = fetch(k);
+        if (rows.filter(visible).length >= opts.candidates || rows.length < k || k >= Math.min(total, MAX_FETCH)) return rows;
+        k = Math.min(k * 4, total, MAX_FETCH);
+      }
+    };
+
     const [vector] = await this.embedder.embed([query]);
-    const vectorRows = (
-      db
-        .prepare("SELECT rowid, distance FROM chunks_vec WHERE embedding MATCH ? AND k = ? ORDER BY distance")
-        .all(vector!, opts.candidates) as { rowid: number; distance: number }[]
-    ).map((r) => byRowid(Number(r.rowid)));
+    const vectorRows = gather((k) =>
+      (
+        db.prepare("SELECT rowid, distance FROM chunks_vec WHERE embedding MATCH ? AND k = ? ORDER BY distance").all(vector!, k) as {
+          rowid: number;
+          distance: number;
+        }[]
+      ).map((r) => byRowid(Number(r.rowid))),
+    );
 
     const match = keywordQuery(query);
     const keywordRows = match
-      ? (db.prepare("SELECT rowid FROM chunks_fts WHERE chunks_fts MATCH ? ORDER BY rank LIMIT ?").all(match, opts.candidates) as { rowid: number }[]).map(
-          (r) => byRowid(r.rowid),
+      ? gather((k) =>
+          (db.prepare("SELECT rowid FROM chunks_fts WHERE chunks_fts MATCH ? ORDER BY rank LIMIT ?").all(match, k) as { rowid: number }[]).map((r) =>
+            byRowid(r.rowid),
+          ),
         )
       : [];
 
     const all = new Map<number, Row>();
     for (const r of [...vectorRows, ...keywordRows]) if (r) all.set(r.rowid, r);
-    const allowed = (r: Row) =>
-      canSeeChunk({ visibility: r.visibility, knownBy: r.known_by ? (JSON.parse(r.known_by) as string[]) : null }, viewer);
-    const excluded = (r: Row) => options.exclude?.({ id: r.id, kind: r.kind, createdAt: r.created_at }) ?? false;
-    const visible = (r: Row | undefined): r is Row => r !== undefined && allowed(r) && !excluded(r);
-    const vectorRanked = vectorRows.filter(visible);
-    const keywordRanked = keywordRows.filter(visible);
+    const vectorRanked = vectorRows.filter(visible).slice(0, opts.candidates);
+    const keywordRanked = keywordRows.filter(visible).slice(0, opts.candidates);
     const filtered = [...all.values()].filter((r) => !allowed(r)).length;
 
     const scores = new Map<number, { row: Row; score: number; vectorRank: number | null; keywordRank: number | null }>();

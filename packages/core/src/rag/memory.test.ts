@@ -51,6 +51,15 @@ describe("MemoryStore", () => {
     expect(JSON.stringify(mine.trace)).not.toContain("d_2");
   });
 
+  it("남의 기억이 많아도 볼 수 있는 기억이 후보에서 밀려나지 않는다", async () => {
+    const store = MemoryStore.open(":memory:", new HashEmbedder(128));
+    // 검색어와 똑같은 남의 기억이 후보 수(20)보다 훨씬 많고, 내 기억은 덜 닮았다
+    const others = Array.from({ length: 60 }, (_, i) => memo(`deed:o_${i}`, `창고에서 통조림을 몰래 챙겼다 ${i}`, [`npc_${i}`]));
+    await store.sync([...others, memo("deed:mine", "창고 근처에서 담배를 피웠다", ["player"])]);
+    const result = await store.search("창고에서 통조림을 몰래 챙겼다", viewer("player"));
+    expect(result.hits.map((h) => h.id)).toEqual(["deed:mine"]);
+  });
+
   it("소문이 퍼져 아는 사람이 늘면 다시 임베딩하지 않고 메타데이터만 바꾼다", async () => {
     const embedder = new CountingEmbedder(128);
     const store = MemoryStore.open(":memory:", embedder);
@@ -100,6 +109,9 @@ describe("세계와 memory", () => {
     const result = await world.searchMemory("통조림 창고", "recall", { topK: 10 });
     const kinds = result.hits.map((h) => h.kind);
     expect(kinds).toContain("deed");
+    // 행적 문장에는 누가 했는지가 들어간다 (이름으로 물어도 찾게)
+    const player = world.state().characters[world.state().playerId]!;
+    expect(result.hits.find((h) => h.kind === "deed")?.text).toContain(`${player.name}: 보급 창고에서 통조림을 몰래 챙겼다`);
     expect(kinds).toContain("scene_summary");
     expect(world.retrievals(5)[0]).toMatchObject({ collection: "memory", purpose: "recall" });
     // memory 색인은 세이브 옆 파생 파일이고, 세계 목록에는 나오지 않는다

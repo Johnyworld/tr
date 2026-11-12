@@ -44,8 +44,12 @@ export function memoryItemsOf(state: GameState, summaries: readonly TurnSummary[
       .filter(([, known]) => known[deed.id])
       .map(([npcId]) => npcId);
     const tags = deed.tags.map((t) => DEED_TAG_LABELS[t]).join("·");
+    // 누가 한 일인지 문장에 넣는다. 없으면 "이나영이 한 일"처럼 이름으로 물을 때 찾을 수 없다
+    // (이름 없는 엑스트라는 호칭이 이름 자리에 있다)
+    const actor = state.characters[deed.actorId]?.name;
+    const body = actor ? `${actor}: ${deed.summary}` : deed.summary;
     items.push(
-      memo(`deed:${deed.id}`, "deed", "행적", `[${formatTime(deed.at)} · 행적] ${deed.summary} (${tags})`, [deed.actorId, ...knowers].sort(), deed.at),
+      memo(`deed:${deed.id}`, "deed", "행적", `[${formatTime(deed.at)} · 행적] ${body} (${tags})`, [deed.actorId, ...knowers].sort(), deed.at),
     );
   }
 

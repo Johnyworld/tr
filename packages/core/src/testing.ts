@@ -248,6 +248,7 @@ export const TEST_SCENARIO: Scenario = {
   tone: "## 세계\n테스트용 세계.",
   rules: "## 규칙\n플레이어 행동마다 take_action을 호출한다.",
   mcpGuide: "## MCP\n장면이 끝나면 record_turn_summary.",
+  introText: null,
 };
 
 export const TEST_CONTENT: Content = {

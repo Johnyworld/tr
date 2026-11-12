@@ -59,6 +59,13 @@ creation:
     - { id: female, label: 여성 }
   # 트레잇 고르기: 긍정 비용 합 ≤ 부정 보상 합. 종류별 최대
   traits: { max_positive: 3, max_negative: 3, max_personality: 2 }
+  # 대화로 만들 때(MCP) GM이 단계마다 장면처럼 묻도록 주는 힌트
+  narration:
+    name: "막사의 명부를 든 분대장이, 혹은 거울 조각에 비친 얼굴이 이름을 묻는다"
+    gender: "명부의 다음 칸. 담담하게 묻는다"
+    abilities: "이 세상을 몇 해 버텨 온 몸과 머리. 무엇이 남달랐는지 떠올리게 한다"
+    ability: "그 능력이 살아남는 데 어떻게 드러났는지 짧은 장면 하나로 비추고 묻는다 (예: 근력이면 모래주머니를 나르던 날)"
+    traits: "타고난 기질과 버릇. 무리 사람들이 당신을 뭐라고 수군거리는지로 풀어 간다"
 # 이전 세이브의 옛 능력 id
 renamed:
   abilities: { persuasion: charm }
@@ -204,6 +211,8 @@ speech_rules: speech/post_apoc.yaml
 gm_tone: prompts/post_apoc_tone.md
 gm_rules: prompts/gm_rules.md
 mcp_guide: prompts/mcp_play.md
+# 새 게임을 시작할 때 들려주는 세계와 지금 상황 (시작 캐릭터가 아는 것만)
+intro: prompts/intro.md
 
 # 부상 회복 (*임시*). 치료사에게 받거나, 새 부상 없이 며칠 지나면 조금씩 낫는다
 recovery:

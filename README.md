@@ -42,7 +42,8 @@ pnpm dev               # http://localhost:5173
 
 MCP 서버는 Claude 앱이 직접 실행한다. 아래처럼 등록한 뒤 Claude Code에서는 **`/play`**(저장된 게임 번호 목록 → 고르기, 0번이 새 게임, `/play 2`·`/play 0`도 된다), 끝낼 때는 **`/quit`**. Claude 데스크톱에서는 `play` 프롬프트를 고르거나 "TRPG 시작해 줘"라고 하면 된다.
 진행은 행동마다 자동 저장된다.
-게임을 열면 GM이 **상태 화면** 주소(`http://127.0.0.1:8790`)를 알려 준다. 앱의 브라우저 패널이나 브라우저에 띄워 두면 웹 앱 오른쪽과 같은 캐릭터 시트가 바로바로 갱신된다. 이야기는 채팅에서 진행한다. Claude Code에서는 저장소의 훅(`.claude/settings.json`)이 답변이 끝난 뒤에 시트를 갱신해, 채팅에 결과가 나온 다음 화면이 바뀐다. 새 게임의 캐릭터는 이 화면에서 만들 수도 있다 (만들고 "시작"을 누르면 세션이 바로 이어 간다). `TRPG_STATUS=off`로 끈다.
+새 게임은 GM이 세계와 지금 상황을 먼저 들려준 뒤, 캐릭터를 채팅에서 한 단계씩(이름 → 성별 → 능력 → 트레잇 → 확인) 만든다. 사망 뒤 새 캐릭터도 같다.
+게임을 열면 GM이 **상태 화면** 주소(`http://127.0.0.1:8790`)를 알려 준다. 앱의 브라우저 패널이나 브라우저에 띄워 두면 웹 앱 오른쪽과 같은 캐릭터 시트가 바로바로 갱신된다. 이야기는 채팅에서 진행한다. Claude Code에서는 저장소의 훅(`.claude/settings.json`)이 답변이 끝난 뒤에 시트를 갱신해, 채팅에 결과가 나온 다음 화면이 바뀐다. `TRPG_STATUS=off`로 끈다.
 API 키는 필요 없다.
 
 ### Claude Code
@@ -85,7 +86,7 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 
 ### MCP 서버가 여는 것
 
-- tool: `start_session`, `load_world`, `list_worlds`, `end_session`, `delete_world`(목록을 보고 있을 때만), `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, `learn_skill`, `spawn_extra`, `learn_name`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`)
+- tool: `start_session`, `load_world`, `list_worlds`, `end_session`, `delete_world`(목록을 보고 있을 때만), `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, `create_character`, `learn_skill`, `spawn_extra`, `learn_name`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`)
 - prompt: `play` (GM 지침 + 세션 시작 안내)
 - 로그는 stderr로만 쓴다. stdout은 MCP 프로토콜 전용이다
 - 환경 변수: `SCENARIO`(기본 `post_apoc`), `SAVES_DIR`(기본 `saves`)

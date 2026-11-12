@@ -90,6 +90,17 @@ export {
   MAX_NAME_LENGTH,
   type CreationRules,
 } from "./game/creation.ts";
+export {
+  answerCreation,
+  backCreation,
+  currentStep,
+  describeCreationStep,
+  draftChoice,
+  newCreationDraft,
+  stepOptions,
+  type CreationDraft,
+  type CreationStepId,
+} from "./game/creationFlow.ts";
 export { formatPlayedAt, formatSlotLine, type SaveSlot } from "./world/slots.ts";
 export {
   buildPlayerView,

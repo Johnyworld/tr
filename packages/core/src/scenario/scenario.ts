@@ -28,6 +28,7 @@ export function loadScenario(dir: string): Scenario {
     tone: read(file.data.gm_tone).trim(),
     rules: read(file.data.gm_rules).trim(),
     mcpGuide: read(file.data.mcp_guide).trim(),
+    introText: file.data.intro ? read(file.data.intro).trim() : null,
   };
 }
 

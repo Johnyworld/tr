@@ -76,6 +76,16 @@ export const scenarioFileSchema = z
         traits: z
           .strictObject({ max_positive: z.number().int().min(0), max_negative: z.number().int().min(0), max_personality: z.number().int().min(0) })
           .default({ max_positive: 3, max_negative: 3, max_personality: 2 }),
+        /** 대화로 만들 때(MCP) 단계별로 GM에게 주는 서술 힌트 */
+        narration: z
+          .strictObject({
+            name: z.string().optional(),
+            gender: z.string().optional(),
+            abilities: z.string().optional(),
+            ability: z.string().optional(),
+            traits: z.string().optional(),
+          })
+          .optional(),
       })
       .optional(),
     /**
@@ -167,6 +177,8 @@ export const scenarioFileSchema = z
     gm_tone: z.string().min(1),
     gm_rules: z.string().min(1),
     mcp_guide: z.string().min(1),
+    /** 새 게임을 시작할 때 들려주는 세계와 지금 상황 (시작 캐릭터가 아는 것만) */
+    intro: z.string().min(1).optional(),
     /**
      * 세력 단위 전쟁 시뮬레이션의 수치 (기획서 9장). 규칙(틱 순서, 교전 판정)은 core에 있고 숫자와 문구만 둔다.
      * 없으면 세력 시뮬레이션을 돌리지 않는다.
@@ -507,6 +519,8 @@ export type Scenario = ScenarioFile & {
   rules: string;
   /** MCP 모드 진행 규칙 원문 */
   mcpGuide: string;
+  /** 세계 소개 원문 (intro 파일의 내용) */
+  introText: string | null;
 };
 
 export type ConditionTrack = Scenario["condition_tracks"][number];

@@ -171,21 +171,42 @@ describe("MCP 세이브 삭제", () => {
   });
 });
 
-describe("MCP 캐릭터 생성", () => {
-  it("새 게임은 먼저 생성 규칙을 주고, character와 함께 부르면 그대로 만든다. 규칙 위반은 오류", async () => {
-    const { call, app } = await connect(REAL_CONTENT);
-    const rules = await call("start_session", { new_world: true });
+describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
+  it("새 게임은 세계 소개와 이름부터, create_character로 하나씩 답해 마지막 확인에서 세계가 열린다", async () => {
+    const { call, app, manager } = await connect(REAL_CONTENT);
+    const first = await call("start_session", { new_world: true });
     expect(app.world).toBeNull();
-    expect(rules.text).toContain("캐릭터 생성");
-    expect(rules.text).toContain("여성(female)");
+    expect(app.creating).toBe(true);
+    expect(first.text).toContain("세계와 지금 상황");
+    expect(first.text).toContain("이름");
+    expect((await call("create_character", { answer: "윤하" })).text).toContain("성별");
+    expect((await call("create_character", { answer: "female" })).text).toContain("하나씩 정하기");
+    const strength = await call("create_character", { answer: "manual" });
+    expect(strength.text).toContain("근력");
+    expect(strength.text).toContain("남은 포인트 4");
+    const bad = await call("create_character", { answer: "5" });
+    expect(bad.isError).toBe(true);
+    for (const v of ["0", "0", "0", "0", "0", "+1", "2"]) await call("create_character", { answer: v });
+    const confirm = await call("create_character", { answer: "none" });
+    expect(confirm.text).toContain("확인");
+    expect(confirm.text).toContain("매력 +1");
+    expect(manager.listSlots()).toHaveLength(0); // 확인 전에는 세이브가 없다
+    const ok = await call("create_character", { answer: "start" });
+    expect(ok.isError).toBe(false);
+    expect(ok.text).toContain("# GM 지침");
+    expect(app.creating).toBe(false);
+    const p = app.world!.state().characters[app.world!.state().playerId]!;
+    expect(p).toMatchObject({ name: "윤하", gender: "female", stats: { intellect: 2, charm: 1, strength: 0 }, traits: [] });
+  });
+
+  it("만드는 중이 아니면 create_character는 오류. character를 주면 바로 만든다 (자동 진행용), 규칙 위반은 오류", async () => {
+    const { call, app } = await connect(REAL_CONTENT);
+    expect((await call("create_character", { answer: "윤하" })).isError).toBe(true);
     const bad = await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: { strength: 2, agility: 2 }, portrait: null } });
     expect(bad.isError).toBe(true);
-    expect(app.world).toBeNull();
     const ok = await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: { intellect: 2, charm: 1 }, portrait: null } });
     expect(ok.isError).toBe(false);
-    const p = app.world!.state().characters[app.world!.state().playerId]!;
-    expect(p).toMatchObject({ name: "윤하", gender: "female", stats: { intellect: 2, charm: 1, strength: 0 } });
-    expect(ok.text).toContain("여성");
+    expect(app.world).not.toBeNull();
   });
 });
 
@@ -240,76 +261,6 @@ describe("상태 화면", () => {
     expect(status.open).toBe(true);
     expect(status.player.name).toBe("신병");
     expect(Object.keys(status)).toEqual(["open", "scenarioName", "worldId", "player"]); // 시트만 (서술은 채팅에)
-  });
-});
-
-describe("브라우저에서 캐릭터 생성", () => {
-  async function setup(waitMs = 5000, statusUrl: string | null = "http://127.0.0.1:8790") {
-    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-bcreate-")), content: REAL_CONTENT, rngFactory: () => createSeededRng(3) });
-    const app = createMcpServer(manager, { statusUrl: () => statusUrl, creationWaitMs: waitMs });
-    opened.push(app);
-    const [c, s] = InMemoryTransport.createLinkedPair();
-    await app.server.connect(s);
-    const client = new Client({ name: "t", version: "0" });
-    await client.connect(c);
-    const call = async (args: Record<string, unknown>) =>
-      ((await client.callTool({ name: "start_session", arguments: args })) as { content: { text: string }[] }).content[0]!.text;
-    return { app, call };
-  }
-  const choice = { name: "한서진", gender: "female", abilities: { senses: 2, agility: 1 }, portrait: "p3", traits: [] };
-
-  it("시작을 누를 때까지 기다렸다가 그 세계로 이어 간다", async () => {
-    const { app, call } = await setup();
-    const waiting = call({ create_in_browser: true });
-    await new Promise((r) => setTimeout(r, 50));
-    expect(app.browserCreation.pending).toBe(true);
-    const { statusPayload } = await import("./statusServer.ts");
-    expect(statusPayload({ world: app.world, scenarioName: "x", creation: app.browserCreation })).toMatchObject({ creating: true });
-    expect(app.browserCreation.submit(choice)).toEqual({ ok: true });
-    const out = await waiting;
-    expect(out).toContain("브라우저에서 캐릭터를 만들었다");
-    expect(out).toContain("# GM 지침");
-    expect(app.world!.state().characters.player).toMatchObject({ name: "한서진", portrait: "p3" });
-    expect(app.browserCreation.pending).toBe(false);
-  });
-
-  it("규칙에 맞지 않으면 만들지 않고 계속 기다린다. 시간이 넘으면 '다 했어'로 이어 간다", async () => {
-    const { app, call } = await setup(100);
-    const waiting = call({ create_in_browser: true });
-    await new Promise((r) => setTimeout(r, 20));
-    expect(app.browserCreation.submit({ ...choice, abilities: { senses: 2, agility: 2 } }).ok).toBe(false);
-    expect(await waiting).toContain("다 했어");
-    expect(app.browserCreation.pending).toBe(true);
-    expect(app.browserCreation.submit(choice).ok).toBe(true); // 시간이 넘은 뒤 만들었다
-    expect(await call({ create_in_browser: true })).toContain("# GM 지침");
-  });
-
-  it("생성을 열지 않았으면 브라우저에서 만들 수 없고, 상태 화면이 없으면 채팅으로 만든다", async () => {
-    const { app } = await setup();
-    expect(app.browserCreation.submit(choice).ok).toBe(false);
-    const none = await setup(5000, null);
-    expect(await none.call({ create_in_browser: true })).toContain("채팅으로 만든다");
-  });
-});
-
-describe("브라우저 생성 직후 시트 미루기", () => {
-  it("만든 직후엔 '만들었다' 안내, GM이 open_sheet를 부르거나 다른 tool을 부르면 시트", async () => {
-    const { statusPayload } = await import("./statusServer.ts");
-    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-hold-")), content: REAL_CONTENT, rngFactory: () => createSeededRng(3) });
-    const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8790" });
-    opened.push(app);
-    const [c, s] = InMemoryTransport.createLinkedPair();
-    await app.server.connect(s);
-    const client = new Client({ name: "t", version: "0" });
-    await client.connect(c);
-    const source = { get world() { return app.world; }, scenarioName: "x", creation: app.browserCreation, get sheetHeld() { return app.sheetHeld; } };
-    const waiting = client.callTool({ name: "start_session", arguments: { create_in_browser: true } }) as Promise<{ content: { text: string }[] }>;
-    await new Promise((r) => setTimeout(r, 30));
-    app.browserCreation.submit({ name: "서진", gender: "female", abilities: { senses: 2, agility: 1 }, portrait: "p2", traits: [] });
-    expect((await waiting).content[0]!.text).toContain("open_sheet");
-    expect(statusPayload(source)).toMatchObject({ open: false, created: true, name: "서진" });
-    await client.callTool({ name: "open_sheet", arguments: {} });
-    expect(statusPayload(source)).toMatchObject({ open: true });
   });
 });
 
@@ -386,7 +337,7 @@ describe("턴 문 (Claude Code 훅)", () => {
 });
 
 describe("사망 뒤 새 캐릭터 만들기", () => {
-  it("브라우저에서 만들면 그 설정으로 이어 가고, 채팅이면 character로 만든다. 아무것도 없으면 규칙부터", async () => {
+  it("new를 고르면 세계 소개 없이 한 단계씩 만들고, 확인하면 같은 세계에서 이어 간다", async () => {
     const { statusPayload } = await import("./statusServer.ts");
     const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-heir-")), content: REAL_CONTENT, rngFactory: () => () => 0 });
     const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8790" });
@@ -396,24 +347,31 @@ describe("사망 뒤 새 캐릭터 만들기", () => {
     const client = new Client({ name: "t", version: "0" });
     await client.connect(c);
     const call = async (name: string, args: Record<string, unknown> = {}) => {
-      const r = (await client.callTool({ name, arguments: args })) as { content: { text: string }[] };
-      return { text: r.content.map((x) => x.text).join("\n") };
+      const r = (await client.callTool({ name, arguments: args })) as { content: { text: string }[]; isError?: boolean };
+      return { text: r.content.map((x) => x.text).join("\n"), isError: r.isError === true };
     };
     await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: {}, portrait: null } });
+    expect((await call("choose_next_character", { character_id: "new" })).isError).toBe(true); // 살아 있다
     const lethal = { move: "fight", stat: "strength", difficulty: "very_hard", harm_on_failure: "heavy", harm_cause: "총상" };
     for (let i = 0; i < 4 && !app.world!.isPlayerDead(); i++) await call("take_action", action({ intent: "돌격", check: lethal }));
     expect(app.world!.isPlayerDead()).toBe(true);
+    const worldId = app.world!.id;
 
-    expect((await call("choose_next_character", { character_id: "new" })).text).toContain("캐릭터 생성");
-    const waiting = client.callTool({ name: "choose_next_character", arguments: { character_id: "new", create_in_browser: true } }) as Promise<{ content: { text: string }[] }>;
-    await new Promise((r) => setTimeout(r, 30));
-    const source = { get world() { return app.world; }, scenarioName: "x", creation: app.browserCreation, get sheetHeld() { return app.sheetHeld; } };
+    const first = await call("choose_next_character", { character_id: "new" });
+    expect(first.text).toContain("다른 사람의 삶");
+    expect(first.text).not.toContain("세계와 지금 상황");
+    const source = { get world() { return app.world; }, scenarioName: "x", get creating() { return app.creating; } };
     expect(statusPayload(source)).toMatchObject({ creating: true });
-    expect(app.browserCreation.submit({ name: "서진", gender: "female", abilities: { intellect: 2, charm: 1 }, portrait: "p2", traits: ["attractive", "big_eater"] })).toEqual({ ok: true });
-    expect((await waiting).content[0]!.text).toContain("새 캐릭터를 만들었다");
+    for (const a of ["서진", "여성", "random", "manual", ["허약 체질"], ["아름다운 외모"], "없음"]) {
+      const r = await call("create_character", { answer: a });
+      expect(r.isError, r.text).toBe(false);
+    }
+    const done = await call("create_character", { answer: "start" });
+    expect(done.text).toContain("캐릭터를 만들었다");
+    expect(app.world!.id).toBe(worldId);
     const p = app.world!.state().characters[app.world!.state().playerId]!;
-    expect(p).toMatchObject({ name: "서진", portrait: "p2", traits: ["attractive", "big_eater"], stats: { intellect: 2, charm: 1 }, dead: false });
-    expect(statusPayload(source)).toMatchObject({ created: true, name: "서진" });
+    expect(p).toMatchObject({ name: "서진", gender: "female", traits: ["frail", "beautiful"], dead: false });
+    expect(statusPayload(source)).toMatchObject({ open: true });
   });
 });
 

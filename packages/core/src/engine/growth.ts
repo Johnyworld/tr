@@ -1,4 +1,5 @@
 import type { CheckOutcome } from "../rules/check.ts";
+import { xpMultiplier } from "./traits.ts";
 import { dayOf } from "../rules/time.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
@@ -43,7 +44,9 @@ export function gainCheckXp(ctx: ToolContext, characterId: string, outcome: Chec
   if (!g) return null;
   const state = ctx.store.getState();
   const today = state.xpToday.day === dayOf(state.time) ? state.xpToday.amount : 0;
-  const amount = Math.min(g.xp[outcome], g.daily_check_cap - today);
+  const c = state.characters[characterId];
+  const base = c ? Math.round(g.xp[outcome] * xpMultiplier(ctx.content, c)) : g.xp[outcome];
+  const amount = Math.min(base, g.daily_check_cap - today);
   return grant(ctx, characterId, amount, "check");
 }
 
@@ -51,7 +54,8 @@ export function gainCheckXp(ctx: ToolContext, characterId: string, outcome: Chec
 export function gainMeritXp(ctx: ToolContext, characterId: string, merit: number): string | null {
   const g = ctx.content.scenario.growth;
   if (!g || merit <= 0) return null;
-  return grant(ctx, characterId, merit * g.xp.merit, "merit");
+  const c = ctx.store.getState().characters[characterId];
+  return grant(ctx, characterId, Math.round(merit * g.xp.merit * (c ? xpMultiplier(ctx.content, c) : 1)), "merit");
 }
 
 /** learn_skill: 쌓인 레벨업으로 스킬 하나를 +1 (스킬 상한까지). 게임 시간을 쓰지 않는다 */

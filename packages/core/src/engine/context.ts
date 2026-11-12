@@ -1,4 +1,5 @@
 import { weatherNow } from "../sim/weather.ts";
+import { attractionOf, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
 import {
   conditionPenalty,
@@ -64,6 +65,7 @@ export function describePlayerState(state: GameState, content: Content): string 
     [
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
       `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
+      `트레잇 (서술에 반영한다): ${traitLabels(content, player, { acting: true }).join(", ") || "없음"}`,
       `능력: ${stats}`,
       `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
       ...(player.skillPoints > 0 ? [`레벨업 대기: 올릴 스킬 ${player.skillPoints}개. 적당한 때 플레이어에게 무엇을 올릴지 묻고 learn_skill로 올린다`] : []),
@@ -96,6 +98,14 @@ export function buildPlayerPrompt(state: GameState, content: Content, input: str
     ? `<참고 자료>\n캐릭터가 알 수 있는 세계 배경과 지난 기억이다. 필요할 때만 쓰고, 여기 없는 사실을 지어내지 않는다. 기억은 캐릭터가 그때 보고 들은 것이라 틀렸을 수 있다.\n\n${references}\n</참고 자료>\n\n`
     : "";
   return `${recapBlock}<상태>\n${describePlayerState(state, content)}\n</상태>\n\n${refBlock}<플레이어 입력>\n${input}\n</플레이어 입력>`;
+}
+
+/** 끌림·질투 (기획서 4.6 "외모와 끌림"): GM이 태도로 연기한다 */
+function attractionNotes(content: Content, npc: Character, player: Character): string[] {
+  if (!attractionOf(content, npc)) return [];
+  if (oppositeSex(npc, player)) return ["끌림: 이 인물은 이성인 당신에게 끌린다 (호감이 빨리 오르고, 당신의 설득·거짓말에 약하다). 말이 많아지거나 허세를 부린다"];
+  if (sameSex(npc, player) && looksOf(content, player) > 0) return ["질투: 이 인물은 같은 성별인 당신의 외모를 질투한다. 비꼬거나 경쟁하려 든다"];
+  return [];
 }
 
 function describePresentNpcs(state: GameState, content: Content, player: Character): string {
@@ -151,7 +161,8 @@ function describeNpcCard(
     `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다]`,
     `당신에 대한 태도: ${attitude}`,
     `원하는 것: ${npc.want} / 두려워하는 것: ${npc.fear}`,
-    `성격: ${npc.temperament.join(", ") || "-"} / 가치관: ${values || "-"}`,
+    `트레잇: ${traitLabels(content, character, { acting: true }).join(", ") || "-"} / 가치관: ${values || "-"}`,
+    ...attractionNotes(content, character, player),
     `행동 규칙:\n${npc.rules.map((r) => `  - ${r}`).join("\n") || "  - 없음"}`,
     `이 인물이 아는 것 (물으면 말해 줄 수 있다):\n${knows.join("\n") || "  - 특별히 없음"}`,
     ...(knownDeeds.length > 0

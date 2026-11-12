@@ -15,7 +15,7 @@ export type ToolDisplayEvent =
       statLabel: string;
       difficultyLabel: string;
       dice: [number, number];
-      modifiers: { stat: number; skill: number; difficulty: number; condition: number };
+      modifiers: { stat: number; skill: number; difficulty: number; condition: number; trait?: number };
       total: number;
       outcome: CheckOutcome;
       outcomeLabel: string;

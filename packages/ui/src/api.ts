@@ -79,6 +79,11 @@ export async function fetchCreation(): Promise<CreationRulesView | null> {
   return (await res.json()) as CreationRulesView | null;
 }
 
+export async function fetchRandomTraits(): Promise<string[]> {
+  const res = await fetch("/api/creation/random-traits");
+  return (await res.json()) as string[];
+}
+
 export async function fetchRandomAbilities(): Promise<Record<string, number>> {
   const res = await fetch("/api/creation/random");
   return (await res.json()) as Record<string, number>;

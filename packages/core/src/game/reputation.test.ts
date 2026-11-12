@@ -6,6 +6,7 @@ import {
   hiddenWitnessChance,
   NEUTRAL_RELATION,
   spreadOneDay,
+  TALKATIVE_FACTOR,
   type Deed,
 } from "./reputation.ts";
 
@@ -81,7 +82,7 @@ describe("소문 전파", () => {
       deeds: [deed],
       knowledge: { a: { d_1: "seen" } },
       npcIds: ["a", "b", "c"],
-      isTalkative: () => false,
+      spreadFactor: () => 1,
       rng: always,
     });
     expect(learned).toEqual([
@@ -95,7 +96,7 @@ describe("소문 전파", () => {
       deeds: [deed],
       knowledge: { a: { d_1: "rumor" } },
       npcIds: ["a", "b"],
-      isTalkative: () => true,
+      spreadFactor: () => TALKATIVE_FACTOR,
       rng: () => 0,
     });
     expect(learned).toEqual([]);
@@ -110,7 +111,7 @@ describe("소문 전파", () => {
           deeds: [deed],
           knowledge: { a: { d_1: "seen" } },
           npcIds: ["a", "b"],
-          isTalkative: () => talkative,
+          spreadFactor: () => (talkative ? TALKATIVE_FACTOR : 1),
           rng,
         }).length;
       }

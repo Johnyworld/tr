@@ -4,6 +4,7 @@ import {
   commanderOf,
   daysServed,
 } from "../game/missions.ts";
+import { traitsOf } from "../engine/traits.ts";
 import { xpForLevel } from "../engine/growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
@@ -39,6 +40,8 @@ export type PlayerView = {
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
+  /** 트레잇 (자기 것은 모두 보인다) */
+  traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; description: string }[];
   /** 할 줄 아는 스킬 (아마추어 이상) */
   skills: { id: string; label: string; category: string; value: number }[];
   /** 레벨·경험치 (성장 규칙이 없으면 null). next: 다음 레벨까지 필요한 누적 경험치 */
@@ -125,6 +128,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     conditionPenalty: conditionPenalty(scenario, player),
     dead: player.dead,
     stats: scenario.stats.map((s) => ({ id: s.id, label: s.label, value: player.stats[s.id] ?? 0 })),
+    traits: traitsOf(content, player).map((t) => ({ id: t.id, label: t.label, kind: t.kind, description: t.description })),
     skills: scenario.moves
       .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: player.skills[m.id] ?? m.default }))
       .filter((m) => m.value >= 0),

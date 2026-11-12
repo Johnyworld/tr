@@ -83,6 +83,9 @@ export {
   creationRules,
   describeCreationRules,
   randomAbilityBuy,
+  randomTraits,
+  checkTraits,
+  traitBalance,
   MAX_NAME_LENGTH,
   type CreationRules,
 } from "./game/creation.ts";
@@ -129,3 +132,5 @@ export {
 export { readLoreDocs } from "./rag/lore.ts";
 export { LoreLibrary, formatLoreHits, formatReferences, type LoreSearch } from "./rag/library.ts";
 export { MemoryStore, memoryItemsOf, type MemoryKind } from "./rag/memory.ts";
+
+export { traitLabels, traitsOf, type TraitDef } from "./engine/traits.ts";

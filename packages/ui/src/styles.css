@@ -1058,3 +1058,56 @@ body {
 .status-sheet .sheet {
   overflow: visible;
 }
+
+/* ── 트레잇 ───────────────────────── */
+.trait-group {
+  margin: 8px 0;
+}
+
+.chip.trait:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.chip.trait.positive.on {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.chip.trait.negative.on {
+  border-color: var(--miss);
+  color: var(--miss);
+}
+
+.trait-cost {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.trait-picked {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+
+.trait-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trait-chip {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.trait-chip.positive {
+  border-color: var(--success);
+}
+
+.trait-chip.negative {
+  border-color: var(--miss);
+}

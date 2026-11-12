@@ -66,7 +66,8 @@ export function createContentSchemas(s: Scenario) {
     want: z.string().min(1),
     fear: z.string().min(1),
     values: z.record(contentIdSchema, valueScoreSchema),
-    temperament: z.array(contentIdSchema),
+    /** 트레잇 id (시나리오 traits). 성격·체질·외모. 예전의 temperament를 대신한다 */
+    traits: z.array(idEnum(s.traits.map((t) => t.id))).default([]),
     voice: z.strictObject({
       style: z.string().min(1),
       samples: z.array(z.string().min(1)).min(1).max(4),

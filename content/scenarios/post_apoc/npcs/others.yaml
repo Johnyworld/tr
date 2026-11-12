@@ -12,7 +12,7 @@
   want: 버들마을 사람들을 살려서 이 전쟁을 끝내는 것
   fear: 청솔형제단과 함께 가라앉는 것
   values: { discipline: 1, loyalty: 0, mercy: 1, honesty: -1, self_interest: 2 }
-  temperament: [cautious, calculating]
+  traits: [cautious, calculating]
   voice:
     style: 정중하지만 거리를 두는 존댓말. 질문에 질문으로 답한다
     samples:
@@ -46,7 +46,7 @@
   want: 동생과 같은 곳에서 사는 것
   fear: 버들마을이 무너지는 날 동생을 못 보는 것
   values: { discipline: 1, loyalty: 3, mercy: 1, honesty: 2, self_interest: 0 }
-  temperament: [blunt, protective]
+  traits: [blunt, protective, iron_gut]
   voice:
     style: 무뚝뚝한 반말. 동생 이야기를 할 때만 말이 길어진다
     samples:
@@ -82,7 +82,7 @@
   want: 살아서 이 전쟁에서 빠져나가는 것
   fear: 지도부의 본보기가 되는 것
   values: { discipline: -1, loyalty: 0, mercy: 1, honesty: 0, self_interest: 2 }
-  temperament: [nervous, cautious]
+  traits: [timid, cautious, frail, shadow]
   voice:
     style: 낮게 빠른 말투. 상대를 떠보는 반말. 겁을 먹으면 존댓말로 바뀐다
     samples:
@@ -118,7 +118,7 @@
   want: 동쪽 공세를 성공시켜 지도부에 오르는 것
   fear: 실패한 간부가 받는 본보기
   values: { discipline: 3, loyalty: 0, mercy: -3, honesty: -1, self_interest: 2 }
-  temperament: [ruthless, patient]
+  traits: [ruthless, patient, beautiful, flirt]
   voice:
     style: 느리고 부드러운 반말. 협박할 때 더 상냥해진다
     samples:
@@ -149,7 +149,7 @@
   want: 약이 떨어지기 전에 누구 편에도 서지 않고 겨울을 넘기는 것
   fear: 약을 둘러싸고 무리들이 쳐들어오는 것
   values: { discipline: 2, loyalty: 1, mercy: 1, honesty: 2, self_interest: 1 }
-  temperament: [precise, guarded]
+  traits: [meticulous, guarded]
   voice:
     style: 건조한 존댓말. 감정 없이 조건부터 말한다
     samples:
@@ -185,7 +185,7 @@
   want: 병원 지하 약제실을 혼자 다 털어 하얀매에서 한자리 얻는 것
   fear: 병원 지하의 어둠
   values: { discipline: 0, loyalty: 1, mercy: 0, honesty: 0, self_interest: 2 }
-  temperament: [gruff, greedy]
+  traits: [blunt, greedy, iron_gut, ugly]
   voice:
     style: 짧은 반말. 거래 이야기에만 말이 많아진다
     samples:
@@ -215,7 +215,7 @@
   want: 전쟁이 끝났을 때 이긴 쪽의 단골이 되는 것
   fear: 양쪽에서 동시에 버림받는 것
   values: { discipline: 0, loyalty: -1, mercy: 0, honesty: -2, self_interest: 3 }
-  temperament: [genial, calculating]
+  traits: [genial, calculating, flirt, silver_tongue]
   voice:
     style: 능글맞은 존댓말. 손님을 "형님", "누님"이라 부른다
     samples:
@@ -250,7 +250,7 @@
   want: 언젠가 자기 장사를 하는 것
   fear: 혼자 강변을 건너는 밤
   values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 1, self_interest: 1 }
-  temperament: [talkative, curious]
+  traits: [talkative, curious, shadow]
   voice:
     style: 빠르고 밝은 반말 섞인 존댓말
     samples:

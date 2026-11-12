@@ -1,4 +1,5 @@
 import { weatherNow } from "../sim/weather.ts";
+import { alertnessFactor, noticedFactor, rumorFactor, traitSkillMod } from "./traits.ts";
 import { withCharm } from "./charm.ts";
 import { josa, sentence } from "../text.ts";
 import { z } from "zod";
@@ -45,7 +46,7 @@ function noticeMove(ctx: ToolContext) {
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
 function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource) {
   const npc = ctx.content.npcs[npcId];
-  const delta = withCharm(ctx, deed.actorId, computeRelationDelta(npc?.values ?? {}, deed.tags, deed.severity, source));
+  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(npc?.values ?? {}, deed.tags, deed.severity, source));
   ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
 }
 
@@ -79,7 +80,12 @@ export function recordDeed(
         time: state.time,
         noisy: input.noisy,
         // 그 인물의 주의력: 감각 능력 + 경계 스킬 (상한까지)
-        senseStat: Math.min(scenario.ranges.cap, (character.stats[notice.stats[0]!] ?? 0) + (character.skills[notice.id] ?? notice.default)),
+        senseStat: Math.min(
+          scenario.ranges.cap,
+          (character.stats[notice.stats[0]!] ?? 0) + (character.skills[notice.id] ?? notice.default) + traitSkillMod(ctx.content, character, notice.id),
+        ),
+        // 트레잇: 목격하는 쪽의 주의력, 하는 쪽이 눈에 띄는지
+        traitFactor: alertnessFactor(ctx.content, character) * noticedFactor(ctx.content, state.characters[state.playerId]!),
         stealth,
         visibility: weatherNow(scenario, state)?.visibility ?? 1,
       });
@@ -220,7 +226,10 @@ export function spreadRumors(ctx: ToolContext): void {
       deeds: Object.values(state.deeds),
       knowledge: state.deedKnowledge,
       npcIds,
-      isTalkative: (id) => ctx.content.npcs[id]?.temperament.includes("talkative") ?? false,
+      spreadFactor: (id) => {
+        const c = ctx.store.getState().characters[id];
+        return c ? rumorFactor(ctx.content, c) : 1;
+      },
       rng: ctx.rng,
     });
     for (const l of learned) learn(ctx, state.deeds[l.deedId]!, l.npcId, l.source);

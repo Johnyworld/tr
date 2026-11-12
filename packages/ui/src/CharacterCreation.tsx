@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchCreation, fetchRandomAbilities, newGame } from "./api.ts";
+import { fetchCreation, fetchRandomAbilities, fetchRandomTraits, newGame } from "./api.ts";
 import { Portrait, PORTRAIT_IDS } from "./Portrait.tsx";
 import { signed } from "./ToolCard.tsx";
 import type { CreationRulesView, GameView } from "./types.ts";
@@ -12,6 +12,7 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
   const [abilities, setAbilities] = useState<Record<string, number>>({});
   // 모든 값을 플레이어가 직접 고른다 (기본값으로 채워 시작하지 않는다)
   const [portrait, setPortrait] = useState<string | null>(null);
+  const [traits, setTraits] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -56,11 +57,28 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
     return next;
   };
 
+  // 트레잇 포인트: 긍정 비용 합 ≤ 부정 보상 합 (검증은 서버의 core가 다시 한다)
+  const traitDef = (id: string) => rules.traits.find((t) => t.id === id);
+  const chosen = traits.map(traitDef).filter((t) => t !== undefined);
+  const traitSpent = chosen.filter((t) => t.kind === "positive").reduce((n, t) => n + t.cost, 0);
+  const traitEarned = chosen.filter((t) => t.kind === "negative").reduce((n, t) => n + t.cost, 0);
+  const countOf = (kind: string) => chosen.filter((t) => t.kind === kind).length;
+  const limitOf = { positive: rules.traitLimits.max_positive, negative: rules.traitLimits.max_negative, personality: rules.traitLimits.max_personality };
+  const canAdd = (t: CreationRulesView["traits"][number]) =>
+    !traits.includes(t.id) &&
+    !t.opposites.some((o) => traits.includes(o)) &&
+    !chosen.some((c) => c.opposites.includes(t.id)) &&
+    countOf(t.kind) < limitOf[t.kind] &&
+    (t.kind !== "positive" || traitSpent + t.cost <= traitEarned);
+  const toggleTrait = (t: CreationRulesView["traits"][number]) =>
+    setTraits(traits.includes(t.id) ? traits.filter((x) => x !== t.id) : canAdd(t) ? [...traits, t.id] : traits);
+
   const missing = [
     name.trim() ? null : "이름",
     gender ? null : "성별",
     portrait ? null : "초상화",
     left === 0 ? null : `능력 포인트 ${left}`,
+    traitSpent <= traitEarned ? null : `트레잇 포인트 ${traitSpent - traitEarned} 모자람 (긍정을 빼거나 부정을 더 고른다)`,
   ].filter((x): x is string => x !== null);
 
   async function start() {
@@ -68,7 +86,7 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
     setStarting(true);
     setError(null);
     try {
-      onStart(await newGame({ name: name.trim(), gender, abilities, portrait }));
+      onStart(await newGame({ name: name.trim(), gender, abilities, portrait, traits }));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setStarting(false);
@@ -149,6 +167,60 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
           초기화
         </button>
       </div>
+      <h2>
+        트레잇{" "}
+        <span className={traitSpent > traitEarned ? "points-left" : "muted"}>
+          포인트 {traitEarned - traitSpent} (부정 +{traitEarned} / 긍정 −{traitSpent})
+        </span>
+      </h2>
+      <p className="muted small">
+        긍정 트레잇은 부정 트레잇으로 얻은 포인트만큼 고른다. 긍정 {limitOf.positive}개·부정 {limitOf.negative}개·성격 {limitOf.personality}개까지, 반대끼리는 함께 고를 수 없다. 고르지 않아도 된다.
+      </p>
+      {(["positive", "negative", "personality"] as const).map((kind) => (
+        <div key={kind} className="trait-group">
+          <div className="field-label">
+            {{ positive: "긍정 (포인트를 쓴다)", negative: "부정 (포인트를 얻는다)", personality: "성격" }[kind]} {countOf(kind)}/{limitOf[kind]}
+          </div>
+          <div className="choice-row">
+            {rules.traits
+              .filter((t) => t.kind === kind)
+              .map((t) => {
+                const on = traits.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`chip trait ${kind} ${on ? "on" : ""}`}
+                    disabled={!on && !canAdd(t)}
+                    onClick={() => toggleTrait(t)}
+                    title={t.description}
+                  >
+                    {t.label}
+                    {kind !== "personality" && <span className="trait-cost">{kind === "positive" ? `−${t.cost}` : `+${t.cost}`}</span>}
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      ))}
+      {chosen.length > 0 && (
+        <ul className="trait-picked muted small">
+          {chosen.map((t) => (
+            <li key={t.id}>
+              <strong>{t.label}</strong> {t.description}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="choice-row">
+        <button type="button" className="chip" onClick={() => void fetchRandomTraits().then(setTraits)}>
+          트레잇 무작위
+        </button>
+        <button type="button" className="chip" onClick={() => setTraits([])}>
+          트레잇 비우기
+        </button>
+      </div>
+
       <p className="muted small">시작 훈련: {rules.startSkills.map((s) => `${s.label} ${signed(s.value)}`).join(", ")}</p>
 
       {error && <div className="notice error">{error}</div>}

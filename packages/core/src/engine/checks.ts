@@ -1,4 +1,5 @@
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
+import { attractionCheckBonus, traitSkillMod } from "./traits.ts";
 import { conditionPenalty, moveOf, statLabel } from "../scenario/scenario.ts";
 import { gainCheckXp } from "./growth.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
@@ -41,16 +42,19 @@ export function rollPlayerCheck(
   }
 
   // 능력 + 스킬은 상한까지만 (기획서 4.2). 몸 상태 보정은 그 뒤에 따로 뺀다
+  // 트레잇의 스킬 보정도 상한 안에서 더한다. 끌림(상대가 이성에게 끌린다)은 상황 보정이라 따로 (기획서 4.6)
   const ability = actor.stats[input.stat] ?? 0;
-  const skill = actor.skills[input.move] ?? move.default;
+  const skill = (actor.skills[input.move] ?? move.default) + traitSkillMod(content, actor, input.move);
   const capped = Math.min(scenario.ranges.cap, ability + skill);
+  const target = options.target ? state.characters[options.target] : undefined;
   const modifiers = {
     stat: ability,
     skill: capped - ability,
     difficulty: DIFFICULTY_MODIFIER[input.difficulty],
     condition: conditionPenalty(scenario, actor),
+    trait: attractionCheckBonus(content, actor, target, input.move),
   };
-  const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition);
+  const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition + modifiers.trait);
   const checkId = `chk_${state.nextCheckNo}`;
 
   store.append({

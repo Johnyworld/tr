@@ -10,7 +10,7 @@ reputation: 거점 의무실 담당. 원래 하얀매 쪽에 있다가 청솔형
 want: 의무실에서 더는 사람을 잃지 않는 것
 fear: 하얀매와의 관계가 드러나 거점에서 쫓겨나는 것
 values: { discipline: 0, loyalty: 0, mercy: 3, honesty: -1, self_interest: 0 }
-temperament: [warm, guarded]
+traits: [warm, guarded, attractive]
 voice:
   style: 차분한 존댓말. 다친 사람에게는 반말로 단호하게 지시한다
   samples:

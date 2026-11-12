@@ -24,7 +24,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * 필드 추가는 기본값(.default)을 주면 이전 세이브와 호환되므로 올리지 않는다.
  * - 2: 시나리오 팩 분리. 능력치 ID 변경, injury → conditions, scenarioId
  */
-export const SAVE_SCHEMA_VERSION = 4;
+export const SAVE_SCHEMA_VERSION = 5;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 (1은 시나리오 팩 분리 전이라 읽지 않는다) */
 export const MIN_READABLE_SAVE_VERSION = 2;
 
@@ -405,7 +405,14 @@ export function createGameSchemas(s: Scenario) {
       dice: z.tuple([z.number().int().min(1).max(6), z.number().int().min(1).max(6)]),
       /** condition: 상태 트랙(부상 등)에서 오는 보정 */
       /** stat: 능력, skill: 스킬 (능력 + 스킬은 상한까지), condition: 몸 상태 */
-      modifiers: z.strictObject({ stat: z.number().int(), skill: z.number().int().default(0), difficulty: z.number().int(), condition: z.number().int() }),
+      modifiers: z.strictObject({
+        stat: z.number().int(),
+        skill: z.number().int().default(0),
+        difficulty: z.number().int(),
+        condition: z.number().int(),
+        /** 트레잇의 상황 보정 (끌림 등) */
+        trait: z.number().int().default(0),
+      }),
       total: z.number().int(),
       outcome: checkOutcomeSchema,
       /** 상대 인물 id */
@@ -919,13 +926,21 @@ export function rollAbilities(s: Scenario, rng?: Rng): Record<string, number> {
 }
 
 /** 플레이어가 캐릭터 생성에서 고른 것 (검증은 creation.ts의 checkCharacterChoice) */
-export type CharacterChoice = { name: string; gender: string | null; abilities: Record<string, number> | null; portrait: string | null };
+export type CharacterChoice = {
+  name: string;
+  gender: string | null;
+  abilities: Record<string, number> | null;
+  portrait: string | null;
+  /** 트레잇 id. null이면 무작위 (MCP의 "알아서"), 없으면 빈 목록 */
+  traits?: string[] | null;
+};
 
 export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player", rng?: Rng, choice?: CharacterChoice): Character {
   return createCharacterSchema(s).parse({
     id,
     name: choice?.name.trim() || role.default_name,
     gender: choice?.gender ?? null,
+    traits: choice?.traits ?? [],
     portrait: choice?.portrait ?? null,
     factionId: role.faction,
     rank: role.rank,
@@ -948,6 +963,7 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
     stats: npc.stats,
     skills: npc.skills,
     gender: npc.gender ?? null,
+    traits: npc.traits,
     conditions: initialConditions(s),
     inventory: toInventory(npc.start_inventory),
   });

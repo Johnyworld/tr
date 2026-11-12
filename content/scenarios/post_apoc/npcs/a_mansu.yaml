@@ -10,7 +10,7 @@ reputation: 같은 분대의 고참. 붕괴 초기부터 살아남았지만 진�
 want: 조용히 하루하루를 넘기는 것
 fear: 다시 누군가를 책임지는 자리에 서는 것
 values: { discipline: -1, loyalty: 2, mercy: 1, honesty: 0, self_interest: 1 }
-temperament: [cynical, lazy, protective]
+traits: [cynical, lazy, protective, cold_hardy, slow_healer]
 voice:
   style: 느릿한 반말. 투덜거리면서도 챙긴다. 간부에게도 대충 존댓말
   samples:

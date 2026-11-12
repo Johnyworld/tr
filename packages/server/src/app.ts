@@ -43,6 +43,7 @@ export function createApp(session: WebSession) {
   // 캐릭터 생성 규칙 (이름·성별·능력 포인트). 규칙 검증은 core가 한다
   app.get("/api/creation", (c) => c.json(session.creationRules()));
   app.get("/api/creation/random", (c) => c.json(session.randomAbilities()));
+  app.get("/api/creation/random-traits", (c) => c.json(session.randomTraits()));
 
   app.post("/api/worlds", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as unknown;

@@ -1,4 +1,4 @@
-import { creationRules, randomAbilityBuy, createSeededRng, type CharacterChoice, type GameWorld, type PlayerView, type TranscriptView, type WorldManager } from "@trpg/core";
+import { creationRules, randomAbilityBuy, randomTraits, createSeededRng, type CharacterChoice, type GameWorld, type PlayerView, type TranscriptView, type WorldManager } from "@trpg/core";
 import { runGmTurn, type EpitaphWriter, type LanguageModel, type Summarizer, type TurnEvent } from "@trpg/gm";
 
 export class TurnInProgressError extends Error {}
@@ -113,6 +113,11 @@ export class WebSession {
   /** 캐릭터 생성 규칙 (첫 시작 역할 기준) */
   creationRules() {
     return creationRules(this.manager.content, Object.keys(this.manager.content.roles)[0] ?? "");
+  }
+
+  /** 생성 화면의 트레잇 "무작위" 버튼 */
+  randomTraits() {
+    return randomTraits(this.manager.content.scenario, createSeededRng(Math.floor(Math.random() * 2 ** 31)));
   }
 
   /** 생성 화면의 "무작위" 버튼 */

@@ -1,4 +1,5 @@
 import type { GameState } from "../game/state.ts";
+import { bodyTraits } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { HarmSeverity } from "../rules/harm.ts";
 import { harmTrack, shownLevel, trackOf } from "../scenario/scenario.ts";
@@ -125,7 +126,8 @@ export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
     const index = levelIndex(ctx, state, player.id, track.id);
     if (index <= 0 || index > maxIndex) break;
     const since = state.recovery.lastChangeAt[player.id] ?? state.runStartedAt;
-    if (state.time - since < recovery.natural_days * MINUTES_PER_DAY) break;
+    const days = Math.max(1, recovery.natural_days + bodyTraits(ctx.content, player).recoveryDays);
+    if (state.time - since < days * MINUTES_PER_DAY) break;
     const c = changeCondition(ctx, player.id, track.id, -1, "rest", "쉬면서 나음");
     if (c?.display) displays.push(c.display);
   }
@@ -138,7 +140,9 @@ export function maybeInfect(ctx: ToolContext, severity: HarmSeverity | "none"): 
   if (!infection || severity === "none") return null;
   const state = ctx.store.getState();
   if (levelIndex(ctx, state, state.playerId, infection.track) > 0) return null;
-  if (ctx.rng() >= infection.chance[severity]) return null;
+  const me = state.characters[state.playerId];
+  const factor = me ? bodyTraits(ctx.content, me).infection : 1;
+  if (ctx.rng() >= Math.min(1, infection.chance[severity] * factor)) return null;
   return changeCondition(ctx, state.playerId, infection.track, 1, "infection", "감염체에게 입은 상처");
 }
 
@@ -173,6 +177,9 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
       const cap = track.levels.findIndex((l) => l.id === level.hunger_max);
       delta = Math.max(0, Math.min(delta, cap - levelIndex(ctx, state, state.playerId, track.id)));
     }
+    // 트레잇: 정량이 아니면 대식가는 더, 소식가는 덜 배고파진다
+    const hungerTrait = bodyTraits(content, player()!).hunger;
+    if (hungerTrait !== 0 && level !== war.ration.levels[0]) delta = Math.max(0, delta + hungerTrait);
     if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
     if (levelIndex(ctx, ctx.store.getState(), state.playerId, track.id) === track.levels.length - 1 && body.hunger.starving_harm > 0) {
       if (push(changeCondition(ctx, state.playerId, harm, body.hunger.starving_harm, "daily", "굶주림"))) return displays;
@@ -215,6 +222,7 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
       if (suffering.cold) chance += disease.chance.cold;
       if (suffering.thirst) chance += disease.chance.thirst;
       chance *= Math.max(0.1, 1 - disease.resist.per_point * vitality);
+      chance *= bodyTraits(content, me).disease;
       if (ctx.rng() < chance) push(changeCondition(ctx, me.id, track.id, 1, "disease", "병에 걸렸다"));
     } else if (track.levels[index]!.hidden) {
       push(changeCondition(ctx, me.id, track.id, 1, "disease", "병이 드러났다"));
@@ -274,7 +282,8 @@ export function dailyCold(ctx: ToolContext, state: GameState): { steps: number; 
   const exposure = (season ? (cold.season[season.id] ?? 0) : 0) + (weather ? (cold.weather[weather.id] ?? 0) : 0);
   const me = state.characters[state.playerId]!;
   const gear = Object.entries(cold.gear).reduce((n, [item, amount]) => n + ((me.inventory[item] ?? 0) > 0 ? amount : 0), 0);
-  const steps = Math.max(0, exposure - gear);
+  // 트레잇: 추운 날에만 더하거나 덜한다 (추위를 탐 +1, 추위에 강함 -1)
+  const steps = Math.max(0, exposure - gear + (exposure > 0 ? bodyTraits(ctx.content, me).cold : 0));
   if (steps === 0) return { steps: -1, cause: exposure > 0 ? "방한 장비" : "견딜 만한 날씨" };
   return { steps, cause: [season && cold.season[season.id] ? season.label : null, weather && cold.weather[weather.id] ? weather.label : null].filter(Boolean).join(", ") + "의 추위" };
 }

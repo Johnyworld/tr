@@ -38,6 +38,19 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         </dl>
       </section>
 
+      {player.traits.length > 0 && (
+        <section className="traits">
+          <h3>트레잇</h3>
+          <div className="trait-chips">
+            {player.traits.map((t) => (
+              <span key={t.id} className={`trait-chip ${t.kind}`} title={t.description}>
+                {t.label}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="skills">
         <h3>스킬</h3>
         <dl className="stats">

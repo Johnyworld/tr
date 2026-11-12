@@ -154,7 +154,7 @@ export function createMcpServer(
           const rules = creationRules(content, Object.keys(content.roles)[0] ?? "");
           if (rules) {
             return text(
-              `${describeCreationRules(rules)}\n\n아직 세계를 만들지 않았다. 위 내용을 플레이어에게 묻고(한 번에 물어도 된다), 정해지면 start_session에 new_world: true와 character({name, gender, abilities, portrait: null})를 넣어 다시 부른다.`,
+              `${describeCreationRules(rules)}\n\n아직 세계를 만들지 않았다. 위 내용을 플레이어에게 묻고(한 번에 물어도 된다), 정해지면 start_session에 new_world: true와 character({name, gender, abilities, traits, portrait: null})를 넣어 다시 부른다.`,
             );
           }
         }

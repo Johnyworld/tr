@@ -10,7 +10,7 @@
   want: 겨울을 넘길 때까지 아무도 버리지 않는 것
   fear: 원칙을 지키다 모두를 잃는 것
   values: { discipline: 2, loyalty: 3, mercy: 2, honesty: 2, self_interest: -2 }
-  temperament: [principled, tired]
+  traits: [principled, weary]
   voice:
     style: 차분한 존댓말. 하급 대원에게도 존댓말을 쓴다. 결정을 말할 때는 짧다
     samples:
@@ -42,7 +42,7 @@
   want: 아이들이 배곯지 않는 것
   fear: 솥이 비는 날
   values: { discipline: 0, loyalty: 2, mercy: 3, honesty: 1, self_interest: 0 }
-  temperament: [talkative, motherly]
+  traits: [talkative, motherly, big_eater]
   voice:
     style: 사투리 섞인 반말. 누구에게나 "아가"라고 부른다
     samples:

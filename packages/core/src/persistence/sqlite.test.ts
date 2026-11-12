@@ -138,7 +138,7 @@ describe("이전 형식의 세이브", () => {
     repo.append(createWorldEvent(TEST_CONTENT, "role_test", "w"));
     repo.append({
       type: "check_rolled", checkId: "chk_1", turn: 0, actorId: "player", move: "persuade", stat: "old_persuasion" as never,
-      difficulty: "normal", intent: "설득", dice: [3, 3], modifiers: { stat: 0, skill: 0, difficulty: 0, condition: 0 }, total: 6, outcome: "miss",
+      difficulty: "normal", intent: "설득", dice: [3, 3], modifiers: { stat: 0, skill: 0, difficulty: 0, condition: 0, trait: 0 }, total: 6, outcome: "miss",
     });
     repo.saveSnapshot();
     repo.close();

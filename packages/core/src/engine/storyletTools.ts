@@ -204,7 +204,7 @@ function applyEffect(
   if ("relation" in effect) {
     const from = whoOf(ctx, effect.relation.who, cast);
     if (!from || !state.characters[from]) return {};
-    const delta = withCharm(ctx, playerId, { trust: 0, affection: 0, respect: 0, [effect.relation.axis]: effect.relation.delta });
+    const delta = withCharm(ctx, from, playerId, { trust: 0, affection: 0, respect: 0, [effect.relation.axis]: effect.relation.delta });
     store.append({ type: "relation_changed", from, to: playerId, delta, reason });
     const name = state.characters[from]!.name;
     return { line: `${name}의 ${josa(RELATION_AXIS_LABELS[effect.relation.axis], "이/가")} ${effect.relation.delta > 0 ? "올랐다" : "떨어졌다"}. 그 인물의 태도에 반영하라.` };

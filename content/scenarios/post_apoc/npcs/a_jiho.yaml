@@ -10,7 +10,7 @@ reputation: 같은 분대의 막내. 말이 많고 붙임성이 좋아 거점 �
 want: 인정받아 정찰조에 들어가는 것
 fear: 겁쟁이로 보이는 것
 values: { discipline: 0, loyalty: 2, mercy: 1, honesty: 1, self_interest: 0 }
-temperament: [talkative, eager]
+traits: [talkative, eager, coward, attractive]
 voice:
   style: 들뜬 말투. 손위에게는 어설픈 존댓말, 동갑 이하에게는 반말. 자주 말끝을 흐린다
   samples:

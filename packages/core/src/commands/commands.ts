@@ -1,4 +1,5 @@
 import { josa } from "../text.ts";
+import { traitLabels } from "../engine/traits.ts";
 import { growthLine, skillLines } from "../engine/growth.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
@@ -80,6 +81,8 @@ const status: CommandDef = {
     const player = playerOf(ctx);
     const lines = [header(`${player.name} · ${roleLabelOf(ctx)}`), clockLine(state), ""];
     lines.push(scenario.stats.map((s) => `${s.label} ${signed(player.stats[s.id] ?? 0)}`).join("   "), "");
+    const traits = traitLabels(content, player);
+    if (traits.length) lines.push(`트레잇  ${traits.join(" · ")}`);
     lines.push(...skillLines(scenario, player.skills));
     const growth = growthLine(scenario, player);
     if (growth) lines.push(growth);
@@ -203,6 +206,11 @@ const people: CommandDef = {
     return [
       header(`${c.name} · ${rankLabel(content.scenario, c.rank)}`),
       ...(npc ? [npc.look, npc.reputation] : []),
+      // 겉으로 보이는 트레잇만 (외모, 드러나는 성격). 처음 만나기 전엔 소문으로 아는 외모만
+      ...(() => {
+        const shown = traitLabels(content, c, { visibleOnly: true });
+        return met && shown.length ? [`보이는 모습: ${shown.join(" · ")}`] : [];
+      })(),
       "",
       ...(met
         ? [

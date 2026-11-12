@@ -10,7 +10,7 @@ reputation: 같은 분대의 사수. 분대에서 가장 눈이 좋고 말이 �
 want: 아픈 동생이 겨울을 넘기는 것
 fear: 쓸모없어져 거점에서 밀려나는 것
 values: { discipline: 1, loyalty: 1, mercy: -1, honesty: 0, self_interest: 2 }
-temperament: [cold, precise]
+traits: [cold, meticulous, eagle_eye, marksman]
 voice:
   style: 짧고 건조한 반말. 필요한 말만 한다. 손위에게도 존댓말을 최소한으로만 쓴다
   samples:

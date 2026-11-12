@@ -54,6 +54,8 @@ export function createCharacterSchema(s: Scenario) {
     age: z.number().int().positive().nullable().default(null),
     /** 성별 id (시나리오 creation.genders). 정하지 않았으면 null */
     gender: z.string().nullable().default(null),
+    /** 트레잇 id (기획서 4.6). 이전 세이브는 빈 목록 (NPC는 콘텐츠의 것을 쓴다) */
+    traits: z.array(z.string()).default([]),
     /** 초상화 id (화면에서 그린다). 없으면 null */
     portrait: z.string().regex(PORTRAIT_ID).nullable().default(null),
     /** 능력 (기획서 4.2): 타고난 것. 계급과 관계없고 바뀌지 않는다 */

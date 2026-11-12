@@ -12,6 +12,7 @@ export type PlayerView = {
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
+  traits: { id: string; label: string; kind: TraitKind; description: string }[];
   skills: { id: string; label: string; category: string; value: number }[];
   growth: { level: number; xp: number; next: number; skillPoints: number } | null;
   inventory: { id: string; name: string; quantity: number }[];
@@ -79,6 +80,16 @@ export type CreationRulesView = {
   genders: { id: string; label: string }[];
   abilities: { id: string; label: string; description: string }[];
   startSkills: { label: string; value: number }[];
+  traits: { id: string; label: string; kind: TraitKind; cost: number; description: string; opposites: string[] }[];
+  traitLimits: { max_positive: number; max_negative: number; max_personality: number };
 };
 
-export type CharacterChoiceView = { name: string; gender: string | null; abilities: Record<string, number> | null; portrait: string | null };
+export type TraitKind = "positive" | "negative" | "personality";
+
+export type CharacterChoiceView = {
+  name: string;
+  gender: string | null;
+  abilities: Record<string, number> | null;
+  portrait: string | null;
+  traits: string[];
+};

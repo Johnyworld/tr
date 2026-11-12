@@ -10,7 +10,7 @@ reputation: 보급 담당 간부. 배급표를 쥐고 있어 다들 어려워한
 want: 거점이 굶지 않고 겨울을 넘기는 것
 fear: 배급 때문에 폭동이 나는 것
 values: { discipline: 3, loyalty: 1, mercy: 0, honesty: -1, self_interest: 0 }
-temperament: [calculating, formal]
+traits: [calculating, formal]
 voice:
   style: 또박또박한 존댓말. 하급자에게도 존댓말을 쓰지만 차갑다
   samples:

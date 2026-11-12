@@ -57,6 +57,8 @@ creation:
   genders:
     - { id: male, label: 남성 }
     - { id: female, label: 여성 }
+  # 트레잇 고르기: 긍정 비용 합 ≤ 부정 보상 합. 종류별 최대
+  traits: { max_positive: 3, max_negative: 3, max_personality: 2 }
 # 이전 세이브의 옛 능력 id
 renamed:
   abilities: { persuasion: charm }
@@ -66,6 +68,60 @@ growth:
   step: 5
   xp: { success: 1, partial: 1, miss: 2, merit: 2 }
   daily_check_cap: 6
+# 트레잇 (기획서 4.6, *임시*): 타고난 기질·체질·외모. 플레이어와 NPC가 같이 쓴다
+# kind: positive(cost만큼 쓴다) / negative(cost만큼 얻는다) / personality(0, 연기 위주)
+# visible: 처음 보는 사람에게도 보이는지. acting: GM 연기 지침
+traits:
+  # ── 긍정 ──
+  - { id: quick_learner, label: 빨리 배움, kind: positive, cost: 2, description: 경험치 1.5배, opposites: [slow_learner], effects: { xp: 1.5 } }
+  - { id: fast_healer, label: 빨리 낫는 체질, kind: positive, cost: 2, description: 저절로 낫는 데 하루 덜 걸린다, opposites: [slow_healer], effects: { recovery_days: -1 } }
+  - { id: iron_gut, label: 튼튼한 위장, kind: positive, cost: 1, description: 병에 덜 걸린다 (질병 확률 절반), opposites: [frail], effects: { disease: 0.5 } }
+  - { id: cold_hardy, label: 추위에 강함, kind: positive, cost: 1, description: 추운 날 덜 춥다, opposites: [cold_sensitive], effects: { cold: -1 } }
+  - { id: light_eater, label: 소식가, kind: positive, cost: 1, description: 배급이 모자랄 때 덜 배고프다, opposites: [big_eater], effects: { hunger: -1 } }
+  - { id: eagle_eye, label: 매의 눈, kind: positive, cost: 1, description: 경계 +1, opposites: [dull_senses], effects: { skills: { sense_danger: 1 } } }
+  - { id: marksman, label: 사격 감각, kind: positive, cost: 1, description: 사격 +1, effects: { skills: { shoot: 1 } } }
+  - { id: shadow, label: 그림자, kind: positive, cost: 1, description: 하는 일이 잘 들키지 않는다, opposites: [conspicuous], effects: { noticed: 0.7 } }
+  - { id: silver_tongue, label: 말재간, kind: positive, cost: 1, description: 거짓말 +1, opposites: [bad_liar], effects: { skills: { deceive: 1 } } }
+  - { id: steel_nerves, label: 강심장, kind: positive, cost: 2, description: 버티기 +1, acting: 위험 앞에서도 목소리가 흔들리지 않는다, opposites: [coward], effects: { skills: { endure: 1 } } }
+  - { id: beautiful, label: 아름다운 외모, kind: positive, cost: 2, visible: true, description: "첫인상이 좋다 (외모 +2). 이성에게 끌리는 사람은 더 끌리고, 같은 성별은 질투할 수 있다", opposites: [attractive, ugly], effects: { looks: 2 } }
+  - { id: attractive, label: 호감형 외모, kind: positive, cost: 1, visible: true, description: 첫인상이 좋다 (외모 +1), opposites: [beautiful, ugly], effects: { looks: 1 } }
+  # ── 부정 ──
+  - { id: slow_learner, label: 느린 학습, kind: negative, cost: 2, description: 경험치 0.75배, opposites: [quick_learner], effects: { xp: 0.75 } }
+  - { id: slow_healer, label: 더디게 낫는 체질, kind: negative, cost: 1, description: 저절로 낫는 데 하루 더 걸린다, opposites: [fast_healer], effects: { recovery_days: 1 } }
+  - { id: frail, label: 허약 체질, kind: negative, cost: 2, description: "병에 잘 걸린다 (질병 2배, 감염 1.3배)", opposites: [iron_gut], effects: { disease: 2, infection: 1.3 } }
+  - { id: cold_sensitive, label: 추위를 탐, kind: negative, cost: 1, description: 추운 날 더 춥다, opposites: [cold_hardy], effects: { cold: 1 } }
+  - { id: big_eater, label: 대식가, kind: negative, cost: 1, description: 정량이 아니면 더 배고프다, opposites: [light_eater], effects: { hunger: 1 } }
+  - { id: dull_senses, label: 둔한 감각, kind: negative, cost: 1, description: 경계 -1, opposites: [eagle_eye], effects: { skills: { sense_danger: -1 } } }
+  - { id: conspicuous, label: 눈에 띄는 사람, kind: negative, cost: 1, visible: true, description: 하는 일이 잘 들킨다, opposites: [shadow], effects: { noticed: 1.3 } }
+  - { id: bad_liar, label: 서툰 거짓말, kind: negative, cost: 1, description: 거짓말 -1, acting: 거짓말을 하면 눈을 피하고 말이 꼬인다, opposites: [silver_tongue], effects: { skills: { deceive: -1 } } }
+  - { id: coward, label: 겁쟁이, kind: negative, cost: 2, description: 버티기 -1, acting: 위험 앞에서 망설이고 먼저 몸을 뺀다, opposites: [steel_nerves], effects: { skills: { endure: -1 } } }
+  - { id: ugly, label: 험악한 인상, kind: negative, cost: 1, visible: true, description: 첫인상이 나쁘다 (외모 -1), acting: 사람들이 첫눈에 경계한다, opposites: [beautiful, attractive], effects: { looks: -1 } }
+  # ── 성격 (0) ──
+  - { id: warm, label: 다정함, kind: personality, visible: true, description: 남을 살뜰히 챙긴다, acting: 말끝이 부드럽고 먼저 안부를 묻는다 }
+  - { id: guarded, label: 경계심, kind: personality, visible: true, description: 쉽게 마음을 열지 않는다, acting: 대답을 아끼고 상대를 살핀다 }
+  - { id: principled, label: 원칙주의, kind: personality, visible: true, description: 정한 원칙을 굽히지 않는다, acting: 규칙과 약속을 앞세워 말한다 }
+  - { id: cynical, label: 냉소적, kind: personality, visible: true, description: 무엇이든 비꼬아 본다, acting: 희망적인 말에 코웃음 친다 }
+  - { id: hot_tempered, label: 다혈질, kind: personality, visible: true, description: 화가 빨리 난다, acting: 쉽게 언성을 높이고 금방 식는다 }
+  - { id: calculating, label: 계산적, kind: personality, visible: false, description: 손익부터 따진다, acting: 대가와 이득을 먼저 묻는다 }
+  - { id: cautious, label: 신중함, kind: personality, visible: true, description: 서두르지 않는다, acting: 한 번 더 확인하고 움직인다 }
+  - { id: blunt, label: 무뚝뚝, kind: personality, visible: true, description: 말이 짧고 퉁명스럽다, acting: 필요한 말만 짧게 한다 }
+  - { id: greedy, label: 탐욕, kind: personality, visible: false, description: 가진 것을 더 가지려 한다, acting: 값을 깎고 더 얻을 것을 노린다 }
+  - { id: curious, label: 호기심, kind: personality, visible: true, description: 모르는 것을 못 참는다, acting: 질문이 많다 }
+  - { id: patient, label: 인내심, kind: personality, visible: false, description: 오래 기다릴 줄 안다, acting: 서두르지 않고 상대가 지치기를 기다린다 }
+  - { id: ruthless, label: 잔혹함, kind: personality, visible: false, description: 남의 고통에 무감하다, acting: 협박을 담담하게 한다 }
+  - { id: lazy, label: 게으름, kind: personality, visible: true, description: 할 수 있으면 빠진다, acting: 일을 미루고 핑계를 댄다 }
+  - { id: protective, label: 보호 본능, kind: personality, visible: true, description: 약한 사람을 지키려 한다, acting: 다친 사람 앞에서 먼저 나선다 }
+  - { id: cold, label: 냉정함, kind: personality, visible: true, description: 감정을 드러내지 않는다, acting: 표정 없이 사실만 말한다 }
+  - { id: meticulous, label: 꼼꼼함, kind: personality, visible: true, description: 세세한 것까지 따진다, acting: 숫자와 기록을 들먹인다 }
+  - { id: formal, label: 격식, kind: personality, visible: true, description: 예의와 절차를 따진다, acting: 존대와 직함을 깍듯이 쓴다 }
+  - { id: genial, label: 넉살, kind: personality, visible: true, description: 누구에게나 웃으며 다가간다, acting: 농담으로 분위기를 푼다 }
+  - { id: timid, label: 소심함, kind: personality, visible: true, description: 눈치를 많이 본다, acting: 말을 더듬고 눈을 피한다 }
+  - { id: eager, label: 열성적, kind: personality, visible: true, description: 뭐든 해 보겠다고 나선다, acting: 먼저 손을 들고 들떠 있다 }
+  - { id: weary, label: 지침, kind: personality, visible: true, description: 오래 버텨 지쳐 있다, acting: 한숨이 잦고 말이 느리다 }
+  - { id: motherly, label: 어머니 같음, kind: personality, visible: true, description: 잔소리와 챙김이 함께 온다, acting: 밥은 먹었냐고 묻고 잔소리를 한다 }
+  - { id: talkative, label: 수다쟁이, kind: personality, visible: true, description: 들은 이야기를 잘 옮긴다 (소문 2배), acting: 묻지 않은 소식까지 늘어놓는다, effects: { rumor: 2 } }
+  - { id: flirt, label: 이성편력, kind: personality, visible: false, description: 이성에게 쉽게 끌리고 이성의 설득·거짓말에 약하다, acting: 이성 앞에서 말이 많아지고 허세를 부린다, effects: { attraction: { moves: [persuade, deceive] } } }
+
 # 매력의 수동 효과: 처음 만난 인물의 호감 + (매력 ÷ 2), 매력 +2면 호감이 오를 때 +1
 charm: { ability: charm, first_impression_per: 2, bonus_at: 2 }
 

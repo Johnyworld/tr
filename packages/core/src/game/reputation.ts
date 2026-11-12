@@ -181,6 +181,8 @@ export function hiddenWitnessChance(input: {
   stealth: "success" | "partial" | "miss" | null;
   /** 날씨의 시야 배수 (비·안개는 1보다 작다). 없으면 1 */
   visibility?: number;
+  /** 트레잇 배수 (목격자의 주의력 × 하는 사람이 눈에 띄는지). 없으면 1 */
+  traitFactor?: number;
 }): number {
   const alertness = 0.5 + 0.1 * input.senseStat;
   const stealth = input.stealth === "success" ? 0.3 : input.stealth === "partial" ? 0.6 : 1;
@@ -190,7 +192,8 @@ export function hiddenWitnessChance(input: {
     (input.noisy ? NOISE_FACTOR : 1) *
     alertness *
     stealth *
-    (input.visibility ?? 1);
+    (input.visibility ?? 1) *
+    (input.traitFactor ?? 1);
   return Math.min(0.95, Math.max(0, p));
 }
 
@@ -215,7 +218,8 @@ export function spreadOneDay(input: {
   deeds: readonly Deed[];
   knowledge: Record<string, Record<string, BeliefSource>>;
   npcIds: readonly string[];
-  isTalkative: (npcId: string) => boolean;
+  /** 이 사람이 소문을 옮기는 배수 (트레잇: 수다쟁이 ×2 등) */
+  spreadFactor: (npcId: string) => number;
   rng: Rng;
 }): SpreadCandidate[] {
   const learned: SpreadCandidate[] = [];
@@ -225,7 +229,7 @@ export function spreadOneDay(input: {
       const source = input.knowledge[teller]?.[deed.id];
       const passed = source ? nextSource(source) : null;
       if (!passed) continue;
-      const chance = SPREAD_CHANCE * (input.isTalkative(teller) ? TALKATIVE_FACTOR : 1);
+      const chance = Math.min(1, SPREAD_CHANCE * input.spreadFactor(teller));
       for (const listener of input.npcIds) {
         const key = `${deed.id}:${listener}`;
         if (listener === teller || listener === deed.actorId || input.knowledge[listener]?.[deed.id] || taken.has(key)) {

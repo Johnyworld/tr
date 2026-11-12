@@ -72,8 +72,62 @@ export const scenarioFileSchema = z
         cost: z.record(z.string().regex(/^-?\d+$/), z.number().int()),
         max_low: z.number().int().min(0),
         genders: z.array(labeled).min(1),
+        /** 트레잇 고르기 (기획서 4.6): 종류별 최대 개수. 긍정 비용 합 ≤ 부정 보상 합 */
+        traits: z
+          .strictObject({ max_positive: z.number().int().min(0), max_negative: z.number().int().min(0), max_personality: z.number().int().min(0) })
+          .default({ max_positive: 3, max_negative: 3, max_personality: 2 }),
       })
       .optional(),
+    /**
+     * 트레잇 (기획서 4.6): 타고난 기질·버릇·체질. 플레이어와 NPC가 같이 쓴다.
+     * kind: positive(cost만큼 쓴다) / negative(cost만큼 얻는다) / personality(0). core는 효과 종류만 안다
+     */
+    traits: z
+      .array(
+        z.strictObject({
+          id,
+          label: z.string().min(1),
+          kind: z.enum(["positive", "negative", "personality"]),
+          cost: z.number().int().min(0).default(0),
+          description: z.string().min(1),
+          /** GM에게 주는 연기 지침 한 줄 */
+          acting: z.string().optional(),
+          /** 처음 보는 사람에게도 보이는지 (외모, 드러나는 성격). 아니면 플레이어에게는 자기 것만 보인다 */
+          visible: z.boolean().default(false),
+          /** 함께 가질 수 없는 트레잇 */
+          opposites: z.array(id).default([]),
+          /** 캐릭터 생성에서 고를 수 있는지 */
+          selectable: z.boolean().default(true),
+          effects: z
+            .strictObject({
+              /** 스킬 보정 (능력 + 스킬 상한 안에서) */
+              skills: z.record(id, z.number().int()).optional(),
+              /** 경험치 배수 */
+              xp: z.number().positive().optional(),
+              /** 하루 허기가 나빠질 때 더하는 단계 (정량이 아닐 때. 음수면 덜 나빠진다) */
+              hunger: z.number().int().optional(),
+              /** 추운 날의 추위 노출 ± */
+              cold: z.number().int().optional(),
+              /** 질병·감염에 걸릴 확률 배수 */
+              disease: z.number().min(0).optional(),
+              infection: z.number().min(0).optional(),
+              /** 저절로 낫는 데 걸리는 날 ± */
+              recovery_days: z.number().int().optional(),
+              /** 내가 한 일이 숨은 목격자에게 들킬 확률 배수 */
+              noticed: z.number().min(0).optional(),
+              /** 내가 남의 일을 목격할 확률 배수 */
+              alertness: z.number().min(0).optional(),
+              /** 내가 소문을 옮길 확률 배수 */
+              rumor: z.number().min(0).optional(),
+              /** 외모 등급 (첫인상, 끌림·질투) */
+              looks: z.number().int().optional(),
+              /** 이성에게 끌린다. moves: 이성이 나를 상대로 하면 쉬워지는 스킬 */
+              attraction: z.strictObject({ moves: z.array(id).min(1) }).optional(),
+            })
+            .default({}),
+        }),
+      )
+      .default([]),
     /** 매력의 수동 효과 (기획서 4.2): 처음 만난 NPC의 호감 + (능력 ÷ first_impression_per, 내림), 능력이 bonus_at 이상이면 호감이 오를 때 +1 */
     charm: z.strictObject({ ability: id, first_impression_per: z.number().int().positive(), bonus_at: z.number().int() }).optional(),
     condition_tracks: z
@@ -352,6 +406,15 @@ export const scenarioFileSchema = z
         if (v < s.ranges.ability.min || v > s.ranges.ability.max) problem(`creation.cost: 능력 범위 밖의 값 ${key}`);
       }
       if (s.creation.cost["0"] !== 0) problem("creation.cost: 0의 값은 0이어야 한다");
+    }
+    {
+      const traitIds = new Set(s.traits.map((t) => t.id));
+      for (const t of s.traits) {
+        for (const o of t.opposites) if (!traitIds.has(o)) problem(`traits.${t.id}.opposites: 알 수 없는 트레잇 ${o}`);
+        for (const m of Object.keys(t.effects.skills ?? {})) if (!moves.has(m)) problem(`traits.${t.id}.effects.skills: 알 수 없는 스킬 ${m}`);
+        for (const m of t.effects.attraction?.moves ?? []) if (!moves.has(m)) problem(`traits.${t.id}.effects.attraction: 알 수 없는 스킬 ${m}`);
+        if (t.kind === "personality" && t.cost !== 0) problem(`traits.${t.id}: 성격 트레잇의 비용은 0이다`);
+      }
     }
     if (s.charm && !s.stats.some((x) => x.id === s.charm!.ability)) problem(`charm.ability: 알 수 없는 능력 ${s.charm.ability}`);
     for (const [role, move] of Object.entries(s.move_roles)) {

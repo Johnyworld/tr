@@ -20,6 +20,7 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
             <span className="mods">
               {display.statLabel} {signed(m.stat)} · {display.moveLabel} {signed(m.skill ?? 0)} · 난이도 {signed(m.difficulty)}
               {m.condition !== 0 && <> · 상태 {signed(m.condition)}</>}
+              {(m.trait ?? 0) !== 0 && <> · 트레잇 {signed(m.trait ?? 0)}</>}
             </span>
             <span className="total">= {display.total}</span>
           </div>

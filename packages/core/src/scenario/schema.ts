@@ -52,6 +52,46 @@ export const scenarioFileSchema = z
     gm_tone: z.string().min(1),
     gm_rules: z.string().min(1),
     mcp_guide: z.string().min(1),
+    /**
+     * 세력 단위 전쟁 시뮬레이션의 수치 (기획서 9장). 규칙(틱 순서, 교전 판정)은 core에 있고 숫자와 문구만 둔다.
+     * 없으면 세력 시뮬레이션을 돌리지 않는다.
+     */
+    war: z
+      .strictObject({
+        /** 1인당 하루 소모량 (자원 id → 양) */
+        upkeep: z.record(id, z.number().min(0)),
+        /** 모자라면 사기가 떨어지고 사람이 죽는 자원 */
+        vital: z.array(id).min(1),
+        ammo: id,
+        medicine: id,
+        ammo_per_clash: z.number().int().min(0),
+        medicine_per_casualty: z.number().int().min(0),
+        /** 공격 성향 1당 하루에 공격에 나설 확률 */
+        attack_chance_per_aggression: z.number().min(0).max(1),
+        /** 배급 수준: 무리의 이 자원이 며칠 치 남았는지로 정한다. min_days 내림차순 */
+        ration: z.strictObject({
+          resource: id,
+          levels: z.array(z.strictObject({ min_days: z.number().min(0), label: z.string().min(1) })).min(1),
+        }),
+        /** 사기 -3 ~ +3을 부르는 말 (7개) */
+        morale_labels: z.array(z.string().min(1)).length(7),
+        /** 남은 양 판단 (며칠 치) → 말. min_days 내림차순 */
+        stock_labels: z.array(z.strictObject({ min_days: z.number().min(0), label: z.string().min(1) })).min(1),
+        /**
+         * 전황 소식 틀. {attacker} {defender} {zone} {attacker_loss} {defender_loss}, 조사는 {attacker:이/가}처럼.
+         * 성공/실패별 (occupy는 빈 구역 차지)
+         */
+        news: z.strictObject({
+          raid_success: z.string().min(1),
+          raid_failure: z.string().min(1),
+          skirmish_success: z.string().min(1),
+          skirmish_failure: z.string().min(1),
+          assault_success: z.string().min(1),
+          assault_failure: z.string().min(1),
+          occupy: z.string().min(1),
+        }),
+      })
+      .optional(),
     threats: z.strictObject({
       disturbance_chance_per_hour: z.record(z.enum(TIME_SEGMENTS), z.number().min(0).max(1)),
       disturbance_details: z.array(z.string().min(1)).min(1),
@@ -84,6 +124,14 @@ export const scenarioFileSchema = z
     const harm = s.condition_tracks.find((t) => t.id === s.harm_track);
     if (!harm) problem(`harm_track: 알 수 없는 상태 트랙 ${s.harm_track}`);
     else if (!harm.levels.at(-1)?.fatal) problem(`harm_track ${s.harm_track}의 마지막 단계는 fatal이어야 한다 (사망은 부상 트랙으로만)`);
+    if (s.war) {
+      const resources = new Set(s.resources.map((r) => r.id));
+      const used = [...Object.keys(s.war.upkeep), ...s.war.vital, s.war.ammo, s.war.medicine, s.war.ration.resource];
+      for (const r of used) if (!resources.has(r)) problem(`war: 알 수 없는 자원 ${r}`);
+      for (const list of [s.war.ration.levels, s.war.stock_labels]) {
+        if (list.some((l, i) => i > 0 && l.min_days > list[i - 1]!.min_days)) problem("war: min_days는 내림차순이어야 한다");
+      }
+    }
     const ranks = new Set(s.rank_ladder.map((r) => r.id));
     for (const rank of [s.promotion.from, s.promotion.to]) {
       if (!ranks.has(rank)) problem(`promotion: 알 수 없는 등급 ${rank}`);

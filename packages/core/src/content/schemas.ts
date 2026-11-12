@@ -117,7 +117,60 @@ export function createContentSchemas(s: Scenario) {
     requirements: z.array(missionRequirement).min(1),
   });
 
-  return { item: itemContentSchema, role, npc, beliefPreset, mission };
+  const resourceAmounts = z.partialRecord(idEnum(s.resources.map((r) => r.id)), z.number().min(0));
+
+  /**
+   * 세력 (기획서 9.1). 숫자는 시작값이고, 이후 값은 세이브의 세력 상태에 있다.
+   * public만 플레이어가 아는 정보다. 나머지(자원, 클락)는 정보 필터를 거쳐 대략만 드러난다.
+   */
+  const faction = z.strictObject({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    /** 누구나 아는 평판 */
+    public: z.string().min(1),
+    population: z.number().int().positive(),
+    combatants: z.number().int().min(0),
+    resources: resourceAmounts,
+    /** -3 ~ +3 */
+    morale: z.number().int().min(-3).max(3),
+    /** 내부 결속 -3 ~ +3. 낮으면 이탈이 생긴다 */
+    cohesion: z.number().int().min(-3).max(3),
+    /** 공격 성향 0 ~ 3. 0이면 먼저 공격하지 않는다 */
+    aggression: z.number().int().min(0).max(3),
+    /** 다른 세력에 대한 태도 -3 ~ +3 (없으면 0). -2 이하면 적대 */
+    disposition: z.record(contentIdSchema, z.number().int().min(-3).max(3)).default({}),
+    /** 세력 클락: 하루에 한 칸씩 차고, 다 차면 목표 구역을 총공격한다. 그 세력 사람만 안다 */
+    plans: z
+      .array(
+        z.strictObject({
+          id: contentIdSchema,
+          label: z.string().min(1),
+          target: contentIdSchema,
+          days: z.number().int().positive(),
+        }),
+      )
+      .default([]),
+    minor: z.boolean().default(false),
+  });
+
+  /**
+   * 전선의 구역 (9단계 전쟁 지도). 장소 시스템이 생기면 장소의 상위 단위가 된다.
+   * 인접은 한쪽에만 적어도 양쪽으로 본다.
+   */
+  const location = z.strictObject({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    description: z.string().min(1),
+    /** base: 거점 (습격은 받지만 빼앗기지 않는다, MVP) */
+    kind: z.enum(["base", "zone"]),
+    /** 시작 소유 세력. 없으면 누구의 땅도 아니다 */
+    owner: contentIdSchema.nullable().default(null),
+    adjacent: z.array(contentIdSchema).default([]),
+    /** 소유 세력이 하루에 얻는 자원 */
+    yields: resourceAmounts.default({}),
+  });
+
+  return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location };
 }
 
 type ContentSchemas = ReturnType<typeof createContentSchemas>;
@@ -126,6 +179,8 @@ export type NpcContent = z.infer<ContentSchemas["npc"]>;
 export type BeliefPreset = z.infer<ContentSchemas["beliefPreset"]>;
 export type MissionContent = z.infer<ContentSchemas["mission"]>;
 export type MissionRequirement = MissionContent["requirements"][number];
+export type FactionContent = z.infer<ContentSchemas["faction"]>;
+export type LocationContent = z.infer<ContentSchemas["location"]>;
 
 /** 게임이 쓰는 콘텐츠 전체. 단계별로 종류가 늘어난다 */
 export type Content = {
@@ -135,4 +190,6 @@ export type Content = {
   npcs: Record<string, NpcContent>;
   beliefs: Record<string, BeliefPreset>;
   missions: Record<string, MissionContent>;
+  factions: Record<string, FactionContent>;
+  locations: Record<string, LocationContent>;
 };

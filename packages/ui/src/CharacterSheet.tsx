@@ -59,6 +59,16 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         )}
       </section>
 
+      {player.faction && (
+        <section className="faction">
+          <h3>무리</h3>
+          <div>
+            {player.faction.name} · 분위기 {player.faction.moraleLabel}
+          </div>
+          <div className="muted small">배급: {player.faction.rationLabel}</div>
+        </section>
+      )}
+
       <section className="present">
         <h3>함께 있는 인물</h3>
         {player.present.length === 0 ? (

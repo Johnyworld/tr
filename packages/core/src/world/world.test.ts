@@ -66,6 +66,19 @@ describe("WorldManager", () => {
     reopened.close();
   });
 
+  it("세계를 다시 열어도 세력을 다시 만들거나 전쟁 틱을 돌리지 않는다 (이전 세이브 채우기는 warTools 테스트)", () => {
+    const m = manager();
+    const world = m.create("web");
+    const id = world.id;
+    expect(Object.keys(world.state().factions).length).toBeGreaterThan(0);
+    world.close();
+    const reopened = m.open(id, "mcp");
+    // 같은 날 다시 열면 전쟁 틱이 돌지 않는다
+    expect(reopened.ctx().store.events().filter((e) => e.type === "war_day_simulated")).toHaveLength(0);
+    expect(reopened.ctx().store.events().filter((e) => e.type === "factions_initialized")).toHaveLength(1);
+    reopened.close();
+  });
+
   it("열려 있는 세계는 다시 열 수 없고, 닫으면 열 수 있다", () => {
     const m = manager();
     const world = m.create("web");

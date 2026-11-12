@@ -120,7 +120,11 @@ export class WorldManager {
       const repo = SqliteRepository.open(path, this.content.scenario);
       // memory 색인은 세이브 옆의 파생 파일이다 (세이브로부터 다시 만들 수 있다)
       const memory = this.memoryEmbedder ? MemoryStore.open(path.replace(/\.db$/, ".memory.db"), this.memoryEmbedder) : null;
-      return new GameWorld({ content: this.content, repo, mode, rng: this.#rngFactory(), path, release, lore: this.lore, memory });
+      const world = new GameWorld({ content: this.content, repo, mode, rng: this.#rngFactory(), path, release, lore: this.lore, memory });
+      // 이미 있는 세계: 시간이 흐른 뒤의 처리를 한 번 맞춘다. 시간이 그대로라 보통은 아무 일도 없고,
+      // 이전 단계의 세이브라면 새로 생긴 상태(세력 등)를 채운다
+      if (world.state().worldId) runAfterTimeAdvance(world.ctx());
+      return world;
     } catch (err) {
       release();
       throw err;

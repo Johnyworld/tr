@@ -1,0 +1,71 @@
+# 전선의 구역 초안 (9단계 전쟁 지도). 지명은 미정이라 특징으로 부른다 (기획서 18장)
+# base: 거점 (습격은 받지만 빼앗기지 않는다, MVP). yields: 소유 세력이 하루에 얻는 자원 (*임시*)
+# 거점 산출은 텃밭·우물·채집·교역을 뭉뚱그린 값. 무리마다 소모보다 조금 모자라게 둬서 바깥 구역을 두고 다투게 한다
+# 인접은 한쪽에만 적어도 양쪽으로 본다
+- id: a_base
+  name: A 거점
+  description: 옛 공업고등학교. 운동장 담을 모래주머니와 철판으로 보강했다.
+  kind: base
+  owner: faction_a
+  adjacent: [a_east_post, old_town, riverside, b_base]
+  yields: { food: 55, water: 60, fuel: 10, ammo: 3 }
+
+- id: a_east_post
+  name: 동쪽 초소
+  description: A 거점 동쪽의 초소와 망루. 고가도로 쪽을 내려다본다.
+  kind: zone
+  owner: faction_a
+  adjacent: [c_warehouse]
+
+- id: c_warehouse
+  name: 고가도로 너머 물류창고
+  description: 북쪽 고가도로 너머의 옛 물류창고 단지. C가 차지하고 있다.
+  kind: zone
+  owner: faction_c
+  adjacent: [c_base, riverside]
+  yields: { food: 30, fuel: 5 }
+
+- id: c_base
+  name: C 거점
+  description: 도시 동쪽의 옛 공단. 높은 담과 감시탑이 있다.
+  kind: base
+  owner: faction_c
+  adjacent: [old_town]
+  yields: { food: 140, water: 150, fuel: 15 }
+
+- id: riverside
+  name: 강변 공장 지대
+  description: 물과 연료를 얻을 수 있어 무리들이 자주 부딪치는 곳. 밤에는 물결이 잦다.
+  kind: zone
+  owner: null
+  adjacent: [e_market]
+  yields: { water: 45, fuel: 10 }
+
+- id: old_town
+  name: 구시가
+  description: 첫 해에 거의 다 털린 옛 시장과 상가. 아직도 남은 것을 찾아 들어가는 사람이 있다.
+  kind: zone
+  owner: null
+  adjacent: [b_base, d_clinic]
+  yields: { food: 15, ammo: 3, medicine: 1 }
+
+- id: b_base
+  name: B 거점
+  description: A 거점 서쪽의 옛 아파트 단지.
+  kind: base
+  owner: faction_b
+  yields: { food: 34, water: 36, fuel: 6, ammo: 1 }
+
+- id: d_clinic
+  name: D의 진료소
+  description: 옛 보건소 건물. 약을 구하려는 사람들이 찾아온다.
+  kind: base
+  owner: faction_d
+  yields: { food: 30, water: 30, fuel: 5, medicine: 4 }
+
+- id: e_market
+  name: E의 장터
+  description: 강 하류의 옛 휴게소. 정해진 날에 상인들이 모인다.
+  kind: base
+  owner: faction_e
+  yields: { food: 50, water: 50, fuel: 10, ammo: 5 }

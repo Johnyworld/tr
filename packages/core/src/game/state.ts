@@ -30,6 +30,43 @@ export const SCENE_HOLDER = "scene";
 
 const checkOutcomeSchema = z.enum(CHECK_OUTCOMES);
 
+/** 세력의 지금 상태 (기획서 9.1). 진짜 값이므로 UI·프롬프트에는 정보 필터를 거쳐 대략만 보낸다 */
+export const factionStateSchema = z.strictObject({
+  population: z.number().int().min(0),
+  combatants: z.number().int().min(0),
+  resources: z.record(z.string(), z.number().int().min(0)),
+  morale: z.number().int().min(-3).max(3),
+  cohesion: z.number().int().min(-3).max(3),
+});
+export type FactionState = z.infer<typeof factionStateSchema>;
+
+/** 세력 클락: 다 차면 목표 구역을 총공격한다 */
+export const clockStateSchema = z.strictObject({
+  factionId: z.string(),
+  label: z.string(),
+  target: z.string(),
+  filled: z.number().int().min(0),
+  max: z.number().int().positive(),
+});
+export type ClockState = z.infer<typeof clockStateSchema>;
+
+/** 하루 전쟁 틱에서 일어난 교전 */
+export const clashSchema = z.strictObject({
+  kind: z.enum(["raid", "skirmish", "assault", "occupy"]),
+  attacker: z.string(),
+  /** 빈 구역 차지(occupy)는 null */
+  defender: z.string().nullable(),
+  zone: z.string(),
+  success: z.boolean(),
+  attackerLosses: z.number().int().min(0),
+  defenderLosses: z.number().int().min(0),
+  /** 세력 클락이 다 차서 벌어진 총공격이면 그 클락 id */
+  plan: z.string().optional(),
+  /** 습격으로 빼앗은 자원 */
+  loot: z.record(z.string(), z.number().int().min(0)).optional(),
+});
+export type Clash = z.infer<typeof clashSchema>;
+
 /**
  * 세계 상태와 이벤트 스키마. 능력치·행동·등급·상태 트랙 ID는 시나리오에서 오므로
  * 시나리오를 받아 만든다 (기획서 12.3). 세이브를 불러올 때도 이 스키마로 검증한다.
@@ -98,6 +135,13 @@ export function createGameSchemas(s: Scenario) {
     /** 소문이 마지막으로 퍼진 날 */
     lastSpreadDay: z.number().int().nullable(),
     nextDeedNo: z.number().int().positive(),
+    /** 세력 상태 (9단계). 이전 세이브는 세계를 열 때 콘텐츠의 시작값으로 채운다 */
+    factions: z.record(z.string(), factionStateSchema).default({}),
+    /** 구역 소유 */
+    zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })).default({}),
+    clocks: z.record(z.string(), clockStateSchema).default({}),
+    /** 전쟁 틱이 마지막으로 돈 날 */
+    lastWarDay: z.number().int().nullable().default(null),
   });
 
   /** 상태 변경은 반드시 이벤트로 기록한다 (append-only). 상태는 이벤트를 차례로 적용한 결과다 */
@@ -138,6 +182,22 @@ export function createGameSchemas(s: Scenario) {
     }),
     z.strictObject({ type: z.literal("witnesses_searched"), deedId: z.string() }),
     z.strictObject({ type: z.literal("rumors_spread"), day: z.number().int() }),
+    z.strictObject({
+      type: z.literal("factions_initialized"),
+      day: z.number().int(),
+      factions: z.record(z.string(), factionStateSchema),
+      zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })),
+      clocks: z.record(z.string(), clockStateSchema),
+    }),
+    /** 하루 전쟁 틱의 결과 (코드가 계산). 세력·구역·클락의 새 값과 일어난 교전 */
+    z.strictObject({
+      type: z.literal("war_day_simulated"),
+      day: z.number().int(),
+      factions: z.record(z.string(), factionStateSchema),
+      zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })),
+      clocks: z.record(z.string(), z.strictObject({ filled: z.number().int().min(0) })),
+      clashes: z.array(clashSchema),
+    }),
     z.strictObject({ type: z.literal("secret_revealed"), npcId: z.string() }),
     z.strictObject({ type: z.literal("turn_started"), turn: z.number().int().positive(), input: z.string() }),
     z.strictObject({
@@ -225,6 +285,10 @@ export const EMPTY_STATE: GameState = {
   revealedSecrets: [],
   lastSpreadDay: null,
   nextDeedNo: 1,
+  factions: {},
+  zones: {},
+  clocks: {},
+  lastWarDay: null,
 };
 
 export function applyEvent(state: GameState, event: GameEvent): GameState {
@@ -371,6 +435,20 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       break;
     case "rumors_spread":
       next.lastSpreadDay = event.day;
+      break;
+    case "factions_initialized":
+      if (Object.keys(state.factions).length) throw new Error("세력이 이미 정해졌습니다.");
+      next.factions = structuredClone(event.factions);
+      next.zones = structuredClone(event.zones);
+      next.clocks = structuredClone(event.clocks);
+      next.lastWarDay = event.day;
+      break;
+    case "war_day_simulated":
+      if (state.lastWarDay !== null && event.day <= state.lastWarDay) throw new Error(`이미 지난 날: ${event.day}일차`);
+      next.factions = structuredClone(event.factions);
+      next.zones = structuredClone(event.zones);
+      for (const [id, clock] of Object.entries(event.clocks)) mustGet(next.clocks, id, "세력 클락").filled = clock.filled;
+      next.lastWarDay = event.day;
       break;
     case "secret_revealed":
       mustGet(next.characters, event.npcId, "캐릭터");

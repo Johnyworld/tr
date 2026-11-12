@@ -12,6 +12,7 @@ import { conditionPenalty, describeConditions, initialConditions, rankLabel } fr
 import { describeRequirement } from "../engine/missionTools.ts";
 import type { TranscriptEntry } from "../engine/log.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
+import { factionOutlook } from "../engine/warTools.ts";
 
 /**
  * 웹 앱 화면용 조회 결과. 정보 필터를 거친다 (원칙 4, 9: 필터는 어댑터가 아니라 core에서).
@@ -41,6 +42,8 @@ export type PlayerView = {
     promotionMissing: string[] | null;
   };
   mission: { title: string; briefing: string; deadlineLabel: string; requirements: string[] } | null;
+  /** 소속 무리 사정 (거점에서 느끼는 것, 대략). 세력 시뮬레이션이 없으면 null */
+  faction: { name: string; moraleLabel: string; rationLabel: string } | null;
   /** 아는 인물의 당신에 대한 관계 */
   relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
   /** 내 행적 (최근 것부터). 보이는 목격자만 담는다 */
@@ -65,7 +68,9 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     Object.entries(initial).some(([track, level]) => c.conditions[track] !== level);
   const items = (inv: Record<string, number>) =>
     Object.entries(inv).map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity }));
+  const outlook = factionOutlook(state, content);
   return {
+    faction: outlook.own ? { name: outlook.own.name, moraleLabel: outlook.own.moraleLabel, rationLabel: outlook.own.rationLabel } : null,
     name: player.name,
     roleLabel:
       content.roles[state.roleId]?.rank === player.rank

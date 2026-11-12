@@ -25,5 +25,7 @@ export const beliefSchema = z.strictObject({
   accuracy: beliefAccuracySchema,
   /** 알게 된 게임 시각. 세계가 시작되기 전부터 알던 것은 시작 시각 */
   learnedAt: z.number().int(),
+  /** 분류 (예: war = 전황 소식). 명령어가 골라 보여 줄 때 쓴다 */
+  topic: z.string().optional(),
 });
 export type Belief = z.infer<typeof beliefSchema>;

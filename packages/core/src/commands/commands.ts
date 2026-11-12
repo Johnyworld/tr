@@ -8,6 +8,7 @@ import { dayOf, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../ru
 import { conditionPenalty, rankLabel } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
+import { factionOutlook, WAR_TOPIC } from "../engine/warTools.ts";
 
 /**
  * MUD식 정보 명령어 (기획서 11.7).
@@ -183,7 +184,17 @@ const factions: CommandDef = {
   name: "세력",
   aliases: ["factions"],
   description: "아는 세력 정보와 관계",
-  run: () => [header("세력"), NOT_YET("세력 정보", "세력 시뮬레이션 단계(9)")].join("\n"),
+  run(ctx) {
+    const o = factionOutlook(ctx.state, ctx.content);
+    if (!o.own && o.others.length === 0) return [header("세력"), "아는 세력 정보가 없습니다."].join("\n");
+    const lines = [header("세력")];
+    if (o.own) lines.push(`소속  ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`, "");
+    for (const f of o.others) lines.push(`${f.name}  [${f.stance}] ${f.size}`, `  ${f.public}`);
+    const news = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.topic === WAR_TOPIC).slice(-5).reverse();
+    lines.push("", "최근 전황 (들은 것)");
+    lines.push(...(news.length ? news.map((b) => `  [${formatTime(b.learnedAt)} · ${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`) : ["  들은 소식이 없습니다."]));
+    return lines.join("\n");
+  },
 };
 
 const mission: CommandDef = {
@@ -214,7 +225,17 @@ const ration: CommandDef = {
   name: "배급",
   aliases: ["ration"],
   description: "받은 배급, 무리 자원에 대해 아는 것",
-  run: () => [header("배급"), NOT_YET("배급과 자원", "자원 단계(9)")].join("\n"),
+  run(ctx) {
+    const o = factionOutlook(ctx.state, ctx.content);
+    if (!o.own) return [header("배급"), "배급을 받는 무리가 없습니다."].join("\n");
+    return [
+      header("배급"),
+      `오늘 배급  ${o.own.rationLabel}`,
+      "",
+      `${o.own.name} 창고 사정 (거점에서 들리는 말)`,
+      ...o.own.stock.map((s) => `  ${s.label.padEnd(4, "　")} ${s.level}`),
+    ].join("\n");
+  },
 };
 
 const rumors: CommandDef = {

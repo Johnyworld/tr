@@ -3,7 +3,7 @@
 id: post_apoc
 name: 포스트아포칼립스
 
-# 자원 (9단계에서 사용)
+# 자원 (세력 전쟁·배급에서 쓴다)
 resources:
   - { id: food, label: 식량 }
   - { id: water, label: 물 }
@@ -65,6 +65,44 @@ speech_rules: speech/post_apoc.yaml
 gm_tone: prompts/post_apoc_tone.md
 gm_rules: prompts/gm_rules.md
 mcp_guide: prompts/mcp_play.md
+
+# 세력 단위 전쟁 (9단계, 기획서 9장). 규칙은 core, 여기는 수치와 문구 (*임시*)
+war:
+  # 1인당 하루 소모량
+  upkeep: { food: 1, water: 1, fuel: 0.2 }
+  # 모자라면 사기가 떨어지고 사람이 죽는 자원
+  vital: [food, water]
+  ammo: ammo
+  medicine: medicine
+  ammo_per_clash: 15
+  medicine_per_casualty: 2
+  # 공격 성향 1당 하루에 공격에 나설 확률
+  attack_chance_per_aggression: 0.12
+  # 배급: 무리의 식량이 며칠 치 남았는지로
+  ration:
+    resource: food
+    levels:
+      - { min_days: 10, label: 정량 }
+      - { min_days: 4, label: 줄어든 배급 }
+      - { min_days: 1, label: 반쪽 배급 }
+      - { min_days: 0, label: 배급 끊김 }
+  # 사기 -3 ~ +3
+  morale_labels: [무너지기 직전, 흉흉함, 가라앉음, 그럭저럭, 괜찮음, 들떠 있음, 기세등등]
+  # 창고 사정 (며칠 치 남았는지)
+  stock_labels:
+    - { min_days: 20, label: 넉넉하다는 말 }
+    - { min_days: 7, label: 빠듯하다는 말 }
+    - { min_days: 1, label: 바닥이 보인다는 말 }
+    - { min_days: 0, label: 다 떨어졌다는 말 }
+  # 전황 소식. {attacker} {defender} {zone}, 사상자는 {attacker_loss} {defender_loss} (대략적인 말)
+  news:
+    raid_success: "{attacker:이/가} {zone}에서 {defender}의 물자를 털어 갔다고 한다. {defender} 쪽 사상자 {defender_loss}, {attacker} 쪽 {attacker_loss}"
+    raid_failure: "{attacker:이/가} {zone}의 {defender} 물자를 노렸다가 쫓겨났다고 한다. {attacker} 쪽 사상자 {attacker_loss}"
+    skirmish_success: "{zone} 근처에서 {attacker:과/와} {defender:이/가} 부딪쳤고, {defender} 쪽이 밀렸다고 한다. {defender} 쪽 사상자 {defender_loss}, {attacker} 쪽 {attacker_loss}"
+    skirmish_failure: "{zone} 근처에서 {attacker:과/와} {defender:이/가} 부딪쳤고, {attacker} 쪽이 물러났다고 한다. {attacker} 쪽 사상자 {attacker_loss}, {defender} 쪽 {defender_loss}"
+    assault_success: "{attacker:이/가} {zone:을/를} 공격해 {defender}에게서 빼앗았다고 한다. {defender} 쪽 사상자 {defender_loss}, {attacker} 쪽 {attacker_loss}"
+    assault_failure: "{attacker:이/가} {zone:을/를} 공격했지만 {defender:이/가} 막아 냈다고 한다. {attacker} 쪽 사상자 {attacker_loss}, {defender} 쪽 {defender_loss}"
+    occupy: "{attacker:이/가} 비어 있던 {zone}에 사람을 보내 자리를 잡았다고 한다"
 
 # 환경 위협: 빨리감기 중 끼어드는 이상 징후 (임시값). 조우 테이블이 생기면 바꾼다
 threats:

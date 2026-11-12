@@ -14,7 +14,7 @@ export class ContentError extends Error {
   }
 }
 
-type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions";
+type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions" | "factions" | "locations";
 
 /**
  * 시나리오 팩 폴더(content/scenarios/<id>/)를 읽어 검증한다.
@@ -37,9 +37,11 @@ export function loadContent(contentDir: string): Content {
     npcs: schemas.npc,
     beliefs: schemas.beliefPreset,
     missions: schemas.mission,
+    factions: schemas.faction,
+    locations: schemas.location,
   };
   const problems: string[] = [];
-  const content: Content = { scenario, items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {} };
+  const content: Content = { scenario, items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {}, factions: {}, locations: {} };
 
   for (const [kind, schema] of Object.entries(KINDS) as [Kind, z.ZodType][]) {
     const dir = join(contentDir, kind);
@@ -100,7 +102,30 @@ function checkReferences(content: Content): string[] {
       problems.push(`roles.${role.id}: 알 수 없는 시작 지식 ${role.beliefs_preset}`);
     }
   }
+  const factionIds = new Set(Object.keys(content.factions));
+  const hasFactions = factionIds.size > 0;
+  const factionRef = (where: string, id: string) => {
+    if (hasFactions && !factionIds.has(id)) problems.push(`${where}: 알 수 없는 세력 ${id}`);
+  };
+  for (const role of Object.values(content.roles)) factionRef(`roles.${role.id}`, role.faction);
+  for (const faction of Object.values(content.factions)) {
+    for (const other of Object.keys(faction.disposition)) factionRef(`factions.${faction.id}.disposition`, other);
+    for (const plan of faction.plans) {
+      if (!content.locations[plan.target]) problems.push(`factions.${faction.id}.plans.${plan.id}: 알 수 없는 구역 ${plan.target}`);
+    }
+  }
+  for (const loc of Object.values(content.locations)) {
+    if (loc.owner) factionRef(`locations.${loc.id}.owner`, loc.owner);
+    for (const other of loc.adjacent) {
+      if (!content.locations[other]) problems.push(`locations.${loc.id}: 알 수 없는 인접 구역 ${other}`);
+      if (other === loc.id) problems.push(`locations.${loc.id}: 자기 자신과 인접할 수 없다`);
+    }
+    if (loc.kind === "base" && !loc.owner) problems.push(`locations.${loc.id}: 거점에는 소유 세력이 있어야 한다`);
+  }
+  const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));
+  if (new Set(plans).size !== plans.length) problems.push("factions: 세력 클락(plans) id가 겹친다");
   for (const npc of Object.values(content.npcs)) {
+    factionRef(`npcs.${npc.id}`, npc.faction);
     for (const itemId of npc.start_inventory) {
       if (!content.items[itemId]) problems.push(`npcs.${npc.id}: 알 수 없는 아이템 ${itemId}`);
     }

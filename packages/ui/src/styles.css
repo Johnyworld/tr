@@ -420,6 +420,40 @@ body {
   padding: 0 4px;
 }
 
+.card.mission {
+  border-left-color: var(--accent);
+}
+
+.card.mission.abandoned,
+.card.mission.expired {
+  border-left-color: var(--error);
+}
+
+.card.promotion {
+  border-left-color: var(--success);
+  color: var(--success);
+}
+
+.mission-title {
+  font-weight: 600;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.requirements {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.requirements li.met {
+  color: var(--success);
+}
+
 .card.presence,
 .card.belief {
   padding: 6px 14px;
@@ -448,7 +482,9 @@ body {
   .sheet-sub {
     display: none;
   }
-  .sheet section.beliefs {
+  .sheet section.beliefs,
+  .sheet section.service,
+  .sheet section.mission .requirements {
     display: none;
   }
   .sheet section.scene,

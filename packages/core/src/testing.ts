@@ -25,6 +25,8 @@ export const TEST_CONTENT: Content = {
       storylet_tags: [],
       beliefs_preset: "test_preset",
       known_npcs: ["npc_leader"],
+      commander: "npc_leader",
+      missions: ["m_guard", "m_scout"],
     },
   },
   npcs: {
@@ -70,6 +72,27 @@ export const TEST_CONTENT: Content = {
       stats: { strength: 0, agility: 0, cool: 0, sense: 0, persuasion: 2 },
       start_inventory: [],
       playable: false,
+    },
+  },
+  missions: {
+    m_guard: {
+      id: "m_guard",
+      title: "초소 보초",
+      briefing: "초소에서 보초를 선다",
+      giver_rank: "squad_leader",
+      deadline_hours: 12,
+      requirements: [{ activity: "guard_duty", minutes: 240 }],
+    },
+    m_scout: {
+      id: "m_scout",
+      title: "고가도로 정찰",
+      briefing: "고가도로를 살핀다",
+      giver_rank: "squad_leader",
+      deadline_hours: 12,
+      requirements: [
+        { check: "sense_danger", min_outcome: "partial" },
+        { check: "stealth", min_outcome: "partial" },
+      ],
     },
   },
   beliefs: {

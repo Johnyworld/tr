@@ -27,6 +27,36 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         </dl>
       </section>
 
+      <section className="mission">
+        <h3>임무</h3>
+        {player.mission ? (
+          <div>
+            <div className="mission-title">{player.mission.title}</div>
+            <div className="muted small">기한 {player.mission.deadlineLabel}</div>
+            <ul className="requirements">
+              {player.mission.requirements.map((r) => (
+                <li key={r} className={r.includes("미충족") ? "" : "met"}>
+                  {r}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="muted">없음</div>
+        )}
+      </section>
+
+      <section className="service">
+        <h3>복무</h3>
+        <div>
+          공적 {player.service.merit} · 복무 {player.service.daysServed}일
+          {player.service.disobedience > 0 && <span className="injury-light"> · 불복종 {player.service.disobedience}</span>}
+        </div>
+        {player.service.promotionMissing && player.service.promotionMissing.length > 0 && (
+          <div className="muted small">진급까지: {player.service.promotionMissing.join(", ")}</div>
+        )}
+      </section>
+
       <section className="present">
         <h3>함께 있는 인물</h3>
         {player.present.length === 0 ? (

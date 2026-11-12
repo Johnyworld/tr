@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   beliefPresetSchema,
   itemContentSchema,
+  missionContentSchema,
   npcContentSchema,
   roleContentSchema,
   type Content,
@@ -23,6 +24,7 @@ const KINDS = {
   roles: roleContentSchema,
   npcs: npcContentSchema,
   beliefs: beliefPresetSchema,
+  missions: missionContentSchema,
 } as const;
 
 /**
@@ -32,7 +34,7 @@ const KINDS = {
  */
 export function loadContent(contentDir: string): Content {
   const problems: string[] = [];
-  const content: Content = { items: {}, roles: {}, npcs: {}, beliefs: {} };
+  const content: Content = { items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {} };
 
   for (const [kind, schema] of Object.entries(KINDS) as [keyof typeof KINDS, z.ZodType][]) {
     const dir = join(contentDir, kind);
@@ -75,6 +77,12 @@ function checkReferences(content: Content): string[] {
     }
     for (const npcId of role.known_npcs) {
       if (!content.npcs[npcId]) problems.push(`roles.${role.id}: 알 수 없는 NPC ${npcId}`);
+    }
+    if (role.commander && !content.npcs[role.commander]) {
+      problems.push(`roles.${role.id}: 알 수 없는 상관 ${role.commander}`);
+    }
+    for (const missionId of role.missions) {
+      if (!content.missions[missionId]) problems.push(`roles.${role.id}: 알 수 없는 임무 ${missionId}`);
     }
     if (role.beliefs_preset && !content.beliefs[role.beliefs_preset]) {
       problems.push(`roles.${role.id}: 알 수 없는 시작 지식 ${role.beliefs_preset}`);

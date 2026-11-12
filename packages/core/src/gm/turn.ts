@@ -6,6 +6,7 @@ import type { LanguageModel, ModelMessage, ModelStopReason, UserBlock } from "./
 import { GM_SYSTEM_PROMPT } from "./prompt.ts";
 import { MIN_TURN_MINUTES } from "../rules/time.ts";
 import { executeTool, GM_TOOL_SPECS, type ToolDisplayEvent } from "./tools.ts";
+import { runStartOfTurn } from "./missionTools.ts";
 
 /** 플레이어 한 번의 입력 최대 길이 (문자 수) */
 export const MAX_INPUT_LENGTH = 2000;
@@ -96,9 +97,15 @@ export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEven
   const input = normalizePlayerInput(options.input);
   if (isPlayerDead(store)) throw new InvalidPlayerInputError("캐릭터가 사망했습니다.");
 
-  const state = store.append({ type: "turn_started", turn: store.getState().turn + 1, input });
-  const prompt = buildPlayerPrompt(state, content, input);
+  store.append({ type: "turn_started", turn: store.getState().turn + 1, input });
+  // 코드가 하는 턴 시작 처리 (임무 기한 만료, 오늘의 임무 후보)
+  const startDisplays = runStartOfTurn({ store, rng, content });
+  const prompt = buildPlayerPrompt(store.getState(), content, input);
   const entries: TranscriptEntry[] = [{ kind: "player", text: input, prompt }];
+  for (const display of startDisplays) {
+    entries.push({ kind: "tool", display });
+    yield { type: "tool", display };
+  }
 
   const messages: ModelMessage[] = [
     ...buildHistoryMessages(transcript),
@@ -134,8 +141,10 @@ export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEven
         const outcome = executeTool(block.name, block.input, { store, rng, content });
         if (outcome.ok) {
           if (block.name === "spend_time") timeSpent = true;
-          entries.push({ kind: "tool", display: outcome.display });
-          yield { type: "tool", display: outcome.display };
+          for (const display of [outcome.display, ...(outcome.extra ?? [])]) {
+            entries.push({ kind: "tool", display });
+            yield { type: "tool", display };
+          }
           results.push({ type: "tool_result", toolCallId: block.id, content: outcome.resultText });
         } else {
           results.push({ type: "tool_result", toolCallId: block.id, content: outcome.error, isError: true });

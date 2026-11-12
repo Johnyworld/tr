@@ -20,6 +20,10 @@ export const characterSchema = z.strictObject({
   age: z.number().int().positive().nullable().default(null),
   stats: statsSchema,
   injury: injuryLevelSchema,
+  /** 임무로 쌓은 공적 (7단계에서 추가) */
+  merit: z.number().int().default(0),
+  /** 명령 불복종 횟수 (임무 포기·기한 초과) */
+  disobedience: z.number().int().nonnegative().default(0),
   inventory: inventorySchema,
 });
 export type Character = z.infer<typeof characterSchema>;

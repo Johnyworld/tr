@@ -65,6 +65,7 @@ describe("runTurn", () => {
     expect(store.events().map((e) => e.type)).toEqual([
       "world_created",
       "turn_started",
+      "missions_offered", // 턴 시작 처리: 오늘의 임무 후보
       "check_rolled",
       "time_advanced", // GM이 시간을 쓰지 않아 잠깐의 행동으로 처리
     ]);
@@ -100,7 +101,12 @@ describe("runTurn", () => {
     ]);
     const { store, events } = await run(model);
     expect(events.some((e) => e.type === "tool")).toBe(false);
-    expect(store.events().map((e) => e.type)).toEqual(["world_created", "turn_started", "time_advanced"]);
+    expect(store.events().map((e) => e.type)).toEqual([
+      "world_created",
+      "turn_started",
+      "missions_offered",
+      "time_advanced",
+    ]);
     expect(requests[1]!.messages.at(-1)).toMatchObject({
       content: [{ type: "tool_result", isError: true }],
     });

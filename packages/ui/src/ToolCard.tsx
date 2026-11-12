@@ -52,6 +52,32 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
           {display.interruptDetail && <div className="card-intent">중간에 멈춤: {display.interruptDetail}</div>}
         </div>
       );
+    case "mission": {
+      const kind = { assigned: "임무 배정", reported: "임무 보고", abandoned: "임무 포기", expired: "임무 실패" }[display.event];
+      return (
+        <div className={`card mission ${display.event}`}>
+          <div className="card-head">
+            <span className="card-kind">{kind}</span>
+            <span>{display.title}</span>
+            <span className="badge">
+              {display.detail}
+              {display.merit !== undefined && ` · 공적 ${signed(display.merit)}`}
+            </span>
+          </div>
+        </div>
+      );
+    }
+    case "promotion":
+      return (
+        <div className="card promotion">
+          <div className="card-head">
+            <span className="card-kind">진급</span>
+            <span>
+              {display.name}: {display.fromLabel} → <strong>{display.toLabel}</strong>
+            </span>
+          </div>
+        </div>
+      );
     case "presence":
       return (
         <div className="card presence">

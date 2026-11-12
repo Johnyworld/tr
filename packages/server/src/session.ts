@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto";
 import {
   createSeededRng,
   createWorldEvent,
+  activeMissionOf,
   BELIEF_SOURCE_LABELS,
+  checkPromotion,
+  daysServed,
+  describeRequirement,
   formatTime,
   INJURY_LABELS,
   RANK_LABELS,
@@ -32,6 +36,14 @@ export type PlayerView = {
   inventory: { id: string; name: string; quantity: number }[];
   sceneItems: { id: string; name: string; quantity: number }[];
   present: { id: string; name: string; rankLabel: string; look: string; injuryLabel: string }[];
+  service: {
+    merit: number;
+    disobedience: number;
+    daysServed: number;
+    /** 진급까지 남은 조건. 진급 대상이 아니면 null */
+    promotionMissing: string[] | null;
+  };
+  mission: { title: string; briefing: string; deadlineLabel: string; requirements: string[] } | null;
   /** 최근 것부터 */
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
 };
@@ -104,7 +116,10 @@ export class GameSession {
       Object.entries(inv).map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity }));
     return {
       name: player.name,
-      roleLabel: content.roles[state.roleId]?.label ?? player.rank,
+      roleLabel:
+        content.roles[state.roleId]?.rank === player.rank
+          ? (content.roles[state.roleId]?.label ?? RANK_LABELS[player.rank])
+          : RANK_LABELS[player.rank],
       timeLabel: formatTime(state.time),
       injury: player.injury,
       injuryLabel: INJURY_LABELS[player.injury],
@@ -123,6 +138,23 @@ export class GameSession {
           injuryLabel: INJURY_LABELS[npc.injury],
         };
       }),
+      service: {
+        merit: player.merit,
+        disobedience: player.disobedience,
+        daysServed: daysServed(state.time, state.runStartedAt),
+        promotionMissing:
+          player.rank === "grunt" ? checkPromotion(player, state.time, state.runStartedAt).missing : null,
+      },
+      mission: (() => {
+        const m = activeMissionOf(state.missions, player.id);
+        if (!m) return null;
+        return {
+          title: m.title,
+          briefing: m.briefing,
+          deadlineLabel: formatTime(m.deadline),
+          requirements: m.requirements.map((r, i) => describeRequirement(r, m.progress[i] ?? 0)),
+        };
+      })(),
       // 진짜 정확도(accuracy)는 UI에도 보내지 않는다
       beliefs: (state.beliefs[state.playerId] ?? [])
         .map((b) => ({

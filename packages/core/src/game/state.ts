@@ -7,6 +7,8 @@ import { activitySchema, START_TIME } from "../rules/time.ts";
 import { interruptSchema } from "../sim/fastForward.ts";
 import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
 import { beliefSchema, type Belief } from "./belief.ts";
+import { rankSchema } from "../rules/ranks.ts";
+import { activeMissionOf, isRequirementMet, missionInstanceSchema, outcomeAtLeast } from "./missions.ts";
 import { characterSchema, inventorySchema, type Character, type Inventory } from "./character.ts";
 
 /**
@@ -54,6 +56,13 @@ export const gameStateSchema = z.strictObject({
   /** 캐릭터별로 알고 있는 인물 id */
   known: z.record(z.string(), z.array(z.string())).default({}),
   nextBeliefNo: z.number().int().positive().default(1),
+  /** 임무 (7단계에서 추가) */
+  missions: z.record(z.string(), missionInstanceSchema).default({}),
+  /** 오늘 상관이 내놓은 임무 후보 */
+  offers: z.strictObject({ day: z.number().int(), templateIds: z.array(z.string()) }).nullable().default(null),
+  nextMissionNo: z.number().int().positive().default(1),
+  /** 지금 캐릭터의 런이 시작된 시각 (복무 기간 계산) */
+  runStartedAt: z.number().int().default(START_TIME),
 });
 export type GameState = z.infer<typeof gameStateSchema>;
 
@@ -71,6 +80,10 @@ export const EMPTY_STATE: GameState = {
   beliefs: {},
   known: {},
   nextBeliefNo: 1,
+  missions: {},
+  offers: null,
+  nextMissionNo: 1,
+  runStartedAt: START_TIME,
 };
 
 /**
@@ -91,6 +104,18 @@ export const gameEventSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("npc_entered"), npcId: z.string() }),
   z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
   z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
+  z.strictObject({ type: z.literal("missions_offered"), day: z.number().int(), templateIds: z.array(z.string()) }),
+  z.strictObject({ type: z.literal("mission_assigned"), mission: missionInstanceSchema }),
+  z.strictObject({
+    type: z.literal("mission_reported"),
+    missionId: z.string(),
+    outcome: z.enum(["success", "partial", "failed"]),
+    late: z.boolean(),
+    merit: z.number().int(),
+  }),
+  z.strictObject({ type: z.literal("mission_abandoned"), missionId: z.string(), merit: z.number().int(), reason: z.string() }),
+  z.strictObject({ type: z.literal("mission_expired"), missionId: z.string(), merit: z.number().int() }),
+  z.strictObject({ type: z.literal("promoted"), characterId: z.string(), from: rankSchema, to: rankSchema }),
   z.strictObject({ type: z.literal("turn_started"), turn: z.number().int().positive(), input: z.string() }),
   z.strictObject({
     type: z.literal("check_rolled"),
@@ -182,7 +207,13 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     case "turn_started":
       next.turn = event.turn;
       break;
-    case "check_rolled":
+    case "check_rolled": {
+      const mission = activeMissionOf(next.missions, event.actorId);
+      mission?.requirements.forEach((r, i) => {
+        if ("check" in r && r.check === event.move && outcomeAtLeast(event.outcome, r.min_outcome)) {
+          mission.progress[i] = 1;
+        }
+      });
       next.checks[event.checkId] = {
         checkId: event.checkId,
         turn: event.turn,
@@ -192,6 +223,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       };
       next.nextCheckNo += 1;
       break;
+    }
     case "harm_applied": {
       mustGet(next.characters, event.targetId, "캐릭터").injury = event.to;
       mustGet(next.checks, event.checkId, "판정").harmApplied = true;
@@ -201,7 +233,48 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (event.from !== state.time) throw new Error(`시간이 어긋납니다: 현재 ${state.time}, 이벤트 ${event.from}`);
       if (event.to <= event.from) throw new Error("시간은 앞으로만 흐릅니다.");
       next.time = event.to;
+      {
+        const mission = activeMissionOf(next.missions, state.playerId);
+        mission?.requirements.forEach((r, i) => {
+          if ("activity" in r && r.activity === event.activity && !isRequirementMet(r, mission.progress[i] ?? 0)) {
+            mission.progress[i] = (mission.progress[i] ?? 0) + (event.to - event.from);
+          }
+        });
+      }
       break;
+    case "missions_offered":
+      next.offers = { day: event.day, templateIds: [...event.templateIds] };
+      break;
+    case "mission_assigned": {
+      const m = event.mission;
+      mustGet(next.characters, m.assigneeId, "캐릭터");
+      if (next.missions[m.id]) throw new Error(`임무 id 중복: ${m.id}`);
+      if (activeMissionOf(next.missions, m.assigneeId)) throw new Error("이미 수행 중인 임무가 있습니다.");
+      next.missions[m.id] = structuredClone(m);
+      next.nextMissionNo += 1;
+      break;
+    }
+    case "mission_reported":
+    case "mission_abandoned":
+    case "mission_expired": {
+      const mission = mustGet(next.missions, event.missionId, "임무");
+      if (mission.status !== "active") throw new Error(`이미 끝난 임무: ${mission.id}`);
+      const assignee = mustGet(next.characters, mission.assigneeId, "캐릭터");
+      assignee.merit += event.merit;
+      if (event.type === "mission_reported") {
+        mission.status = event.outcome === "success" ? "completed" : event.outcome;
+      } else {
+        mission.status = event.type === "mission_abandoned" ? "abandoned" : "expired";
+        assignee.disobedience += 1;
+      }
+      break;
+    }
+    case "promoted": {
+      const character = mustGet(next.characters, event.characterId, "캐릭터");
+      if (character.rank !== event.from) throw new Error(`등급이 어긋납니다: ${character.rank} ≠ ${event.from}`);
+      character.rank = event.to;
+      break;
+    }
     case "item_transferred": {
       const from = holderInventory(next, event.from);
       const to = holderInventory(next, event.to);

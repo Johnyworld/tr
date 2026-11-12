@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { Rng } from "../rng.ts";
 import {
   CHECK_OUTCOME_LABELS,
   DIFFICULTY_LABELS,
@@ -34,65 +33,11 @@ import {
 import { fastForward } from "../sim/fastForward.ts";
 import { BELIEF_SOURCE_LABELS, beliefSourceSchema } from "../game/belief.ts";
 import { findHolderInventory, SCENE_HOLDER, type GameEvent, type GameState } from "../game/state.ts";
-import type { GameStore } from "../game/store.ts";
-import type { Content } from "../content/schemas.ts";
 import type { ToolSpec } from "./model.ts";
+import { defineTool, signed, type ToolContext, type ToolOutcome } from "./toolkit.ts";
+import { MISSION_TOOLS } from "./missionTools.ts";
 
-/** UI에 보여 줄 tool 실행 결과 */
-export type ToolDisplayEvent =
-  | {
-      type: "check";
-      checkId: string;
-      actorName: string;
-      intent: string;
-      moveLabel: string;
-      statLabel: string;
-      difficultyLabel: string;
-      dice: [number, number];
-      modifiers: { stat: number; difficulty: number; injury: number };
-      total: number;
-      outcome: CheckOutcome;
-      outcomeLabel: string;
-    }
-  | {
-      type: "harm";
-      targetName: string;
-      severityLabel: string;
-      from: InjuryLevel;
-      to: InjuryLevel;
-      fromLabel: string;
-      toLabel: string;
-      cause: string;
-    }
-  | { type: "item"; fromName: string; toName: string; itemName: string; quantity: number }
-  | { type: "presence"; npcName: string; action: "enter" | "leave" }
-  | { type: "belief"; fact: string; sourceLabel: string }
-  | {
-      type: "time";
-      activityLabel: string;
-      durationLabel: string;
-      fromLabel: string;
-      toLabel: string;
-      /** 빨리감기가 중간에 멈춘 이유 */
-      interruptDetail?: string;
-    };
-
-export type ToolOutcome =
-  | { ok: true; resultText: string; display: ToolDisplayEvent }
-  | { ok: false; error: string };
-
-export type ToolContext = { store: GameStore; rng: Rng; content: Content };
-
-type ToolDef<S extends z.ZodType> = {
-  name: string;
-  description: string;
-  schema: S;
-  run: (input: z.infer<S>, ctx: ToolContext) => ToolOutcome;
-};
-
-function defineTool<S extends z.ZodType>(def: ToolDef<S>) {
-  return def;
-}
+export type { ToolContext, ToolDisplayEvent, ToolOutcome } from "./toolkit.ts";
 
 const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
   success: "의도한 대로 이루어진다. 깔끔하게 성공한 장면을 서술하라.",
@@ -430,7 +375,7 @@ const addBelief = defineTool({
   },
 });
 
-const TOOLS = [requestCheck, applyHarm, transferItem, spendTime, npcPresence, addBelief] as const;
+const TOOLS = [requestCheck, applyHarm, transferItem, spendTime, npcPresence, addBelief, ...MISSION_TOOLS] as const;
 
 /** LLM에 넘길 tool 명세 (JSON Schema) */
 export const GM_TOOL_SPECS: ToolSpec[] = TOOLS.map((tool) => ({
@@ -477,8 +422,5 @@ function holderName(state: GameState, holder: string): string {
   return state.characters[holder]?.name ?? holder;
 }
 
-function signed(n: number): string {
-  return n >= 0 ? `+${n}` : `${n}`;
-}
 
 export type { GameEvent };

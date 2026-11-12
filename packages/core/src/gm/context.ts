@@ -7,6 +7,7 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { Character, Inventory } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
 import type { Content, NpcContent } from "../content/schemas.ts";
+import { describeMissionsForGm } from "./missionTools.ts";
 
 /**
  * 정보 필터 (기획서 6.2).
@@ -46,6 +47,7 @@ export function describePlayerState(state: GameState, content: Content): string 
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n"),
+    describeMissionsForGm(state, { content }),
     describePresentNpcs(state, content, player),
     describeKnownPeople(state, content),
     describeBeliefs(state),

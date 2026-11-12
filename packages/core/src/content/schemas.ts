@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { statsSchema } from "../rules/stats.ts";
 import { rankSchema } from "../rules/ranks.ts";
-import { TIME_SEGMENTS } from "../rules/time.ts";
+import { ACTIVITIES, TIME_SEGMENTS } from "../rules/time.ts";
+import { MOVES } from "../rules/moves.ts";
 import { beliefAccuracySchema, beliefSourceSchema } from "../game/belief.ts";
 
 /**
@@ -32,6 +33,10 @@ export const roleContentSchema = z.strictObject({
   beliefs_preset: contentIdSchema.optional(),
   /** 시작할 때 알고 있는 인물 */
   known_npcs: z.array(contentIdSchema).default([]),
+  /** 직속 상관 NPC. 임무를 주고 보고를 받는다 */
+  commander: contentIdSchema.optional(),
+  /** 이 역할에 내려오는 임무 템플릿 */
+  missions: z.array(contentIdSchema).default([]),
   storylet_tags: z.array(contentIdSchema).default([]),
 });
 export type RoleContent = z.infer<typeof roleContentSchema>;
@@ -85,10 +90,29 @@ export const beliefPresetSchema = z.strictObject({
 });
 export type BeliefPreset = z.infer<typeof beliefPresetSchema>;
 
+/** 임무 요구 조건. 임무를 받은 뒤의 이벤트로 코드가 집계한다 */
+export const missionRequirementSchema = z.union([
+  z.strictObject({ activity: z.enum(ACTIVITIES), minutes: z.number().int().positive() }),
+  z.strictObject({ check: z.enum(MOVES), min_outcome: z.enum(["success", "partial"]) }),
+]);
+export type MissionRequirement = z.infer<typeof missionRequirementSchema>;
+
+/** 임무 템플릿 (기획서 15.1: 배정 → 수행 → 보고) */
+export const missionContentSchema = z.strictObject({
+  id: contentIdSchema,
+  title: z.string().min(1),
+  briefing: z.string().min(1),
+  giver_rank: rankSchema,
+  deadline_hours: z.number().int().positive().max(72),
+  requirements: z.array(missionRequirementSchema).min(1),
+});
+export type MissionContent = z.infer<typeof missionContentSchema>;
+
 /** 게임이 쓰는 콘텐츠 전체. 단계별로 종류가 늘어난다 */
 export type Content = {
   items: Record<string, ItemContent>;
   roles: Record<string, RoleContent>;
   npcs: Record<string, NpcContent>;
   beliefs: Record<string, BeliefPreset>;
+  missions: Record<string, MissionContent>;
 };

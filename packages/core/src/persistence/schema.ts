@@ -33,3 +33,14 @@ export const transcript = sqliteTable("transcript", {
   entry: text("entry", { mode: "json" }).notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+/** 턴·장면 요약 (기획서 11.5). 모드를 바꿔도 이야기가 이어지게 한다 */
+export const summaries = sqliteTable("summaries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  kind: text("kind").notNull(),
+  text: text("text").notNull(),
+  turn: integer("turn").notNull(),
+  time: integer("time").notNull(),
+  mode: text("mode").notNull(),
+  createdAt: text("created_at").notNull(),
+});

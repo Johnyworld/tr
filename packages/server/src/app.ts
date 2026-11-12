@@ -2,38 +2,31 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import { InvalidPlayerInputError, MAX_INPUT_LENGTH, normalizePlayerInput } from "@trpg/core";
-import { TurnInProgressError, type GameSession } from "./session.ts";
+import { TurnInProgressError, type WebSession } from "./session.ts";
 
 const turnRequestSchema = z.object({
   input: z.string().max(MAX_INPUT_LENGTH * 2),
 });
 
 /**
- * HTTP 레이어. core를 감싸기만 하고 게임 로직은 두지 않는다.
- * 게임 상태와 대화 기록은 서버가 들고 있다. 클라이언트는 입력(의도)만 보낸다.
+ * HTTP 어댑터. core와 gm을 감싸기만 하고 게임 로직은 두지 않는다 (원칙 9).
+ * 게임 상태와 대화 기록은 세이브에 있다. 클라이언트는 입력(의도)만 보낸다.
  */
-export function createApp(session: GameSession) {
+export function createApp(session: WebSession) {
   const app = new Hono();
 
   app.get("/api/health", (c) => c.json({ ok: true }));
 
-  app.get("/api/game", (c) =>
-    c.json({
-      ...session.intro(),
-      player: session.playerView(),
-      transcript: session.transcriptView(),
-      busy: session.busy,
-    }),
-  );
+  app.get("/api/game", (c) => c.json(session.view()));
 
   app.post("/api/game/reset", (c) => {
     try {
-      session.reset();
+      session.newWorld();
     } catch (err) {
       if (err instanceof TurnInProgressError) return c.json({ error: "턴이 진행 중입니다." }, 409);
       throw err;
     }
-    return c.json({ ...session.intro(), player: session.playerView(), transcript: session.transcriptView(), busy: false });
+    return c.json(session.view());
   });
 
   app.post("/api/game/turn", async (c) => {
@@ -49,7 +42,7 @@ export function createApp(session: GameSession) {
       throw err;
     }
     if (session.busy) return c.json({ error: "이전 턴이 아직 진행 중입니다." }, 409);
-    if (session.isPlayerDead()) return c.json({ error: "캐릭터가 사망했습니다. 새 게임을 시작하세요." }, 409);
+    if (session.world.isPlayerDead()) return c.json({ error: "캐릭터가 사망했습니다. 새 게임을 시작하세요." }, 409);
 
     return streamSSE(c, async (stream) => {
       const abort = new AbortController();
@@ -58,7 +51,7 @@ export function createApp(session: GameSession) {
         for await (const event of session.playTurn(input, abort.signal)) {
           await stream.writeSSE({ event: event.type, data: JSON.stringify(event) });
           if (event.type === "tool") {
-            await stream.writeSSE({ event: "player", data: JSON.stringify(session.playerView()) });
+            await stream.writeSSE({ event: "player", data: JSON.stringify(session.world.playerView()) });
           }
         }
       } catch (err) {

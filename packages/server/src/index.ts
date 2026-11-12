@@ -1,26 +1,26 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
+import { ContentError, loadContent, WorldLockedError, WorldManager } from "@trpg/core";
 import {
-  archiveSave,
-  ContentError,
   createClaudeModel,
+  createClaudeSummarizer,
   DEFAULT_GM_MODEL,
-  loadContent,
-  SaveFormatError,
-  SqliteRepository,
+  DEFAULT_SUMMARY_MODEL,
   type LanguageModel,
-} from "@trpg/core";
+} from "@trpg/gm";
 import { createApp } from "./app.ts";
-import { GameSession } from "./session.ts";
+import { WebSession } from "./session.ts";
 
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const port = Number(process.env.SERVER_PORT ?? 8787);
 const modelId = process.env.GM_MODEL ?? DEFAULT_GM_MODEL;
+const summaryModelId = process.env.SUMMARY_MODEL ?? DEFAULT_SUMMARY_MODEL;
 const scenarioId = process.env.SCENARIO ?? "post_apoc";
 const contentDir = resolve(ROOT, process.env.CONTENT_DIR ?? `content/scenarios/${scenarioId}`);
-const savePath = resolve(ROOT, process.env.SAVE_PATH ?? "saves/world.db");
-const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+const savesDir = resolve(ROOT, process.env.SAVES_DIR ?? "saves");
+// 웹 앱 모드는 API 키만 쓴다 (원칙 10: 구독 로그인을 연결하지 않는다)
+const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
 const MISSING_KEY_MESSAGE =
   "Claude API 키가 설정되지 않았습니다. 루트의 .env.example을 .env로 복사해 ANTHROPIC_API_KEY를 넣고 서버를 다시 시작하세요.";
@@ -32,46 +32,33 @@ const missingKeyModel: LanguageModel = async function* () {
 
 if (!hasApiKey) console.warn(`[server] ${MISSING_KEY_MESSAGE}`);
 
-let content;
+let session: WebSession;
 try {
-  content = loadContent(contentDir);
+  const content = loadContent(contentDir);
+  const manager = new WorldManager({ savesDir, content });
+  session = new WebSession(
+    manager,
+    hasApiKey ? createClaudeModel({ model: modelId }) : missingKeyModel,
+    hasApiKey ? createClaudeSummarizer({ model: summaryModelId }) : undefined,
+  );
 } catch (err) {
-  if (err instanceof ContentError) {
+  if (err instanceof ContentError || err instanceof WorldLockedError) {
     console.error(`[server] ${err.message}`);
     process.exit(1);
   }
   throw err;
 }
 
-const session = new GameSession({
-  model: hasApiKey ? createClaudeModel({ model: modelId }) : missingKeyModel,
-  content,
-  roleId: "role_a_grunt",
-  openRepository: () => {
-    try {
-      return SqliteRepository.open(savePath, content.scenario);
-    } catch (err) {
-      // 형식 버전이나 시나리오가 다른 세이브는 지우지 않고 보관한 뒤 새 세계를 연다
-      if (!(err instanceof SaveFormatError)) throw err;
-      const archived = archiveSave(savePath);
-      console.warn(`[server] ${err.message} 이전 세이브를 보관하고 새로 시작합니다: ${archived}`);
-      return SqliteRepository.open(savePath, content.scenario);
-    }
-  },
-  archiveRepository: () => {
-    const archived = archiveSave(savePath);
-    if (archived) console.log(`[server] 이전 세계를 보관했습니다: ${archived}`);
-  },
-});
 const app = createApp(session);
-
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, (info) => {
-  console.log(`[server] http://127.0.0.1:${info.port} (GM 모델: ${modelId}, 세이브: ${savePath})`);
+  console.log(
+    `[server] http://127.0.0.1:${info.port} (GM 모델: ${modelId}, 요약 모델: ${summaryModelId}, 세계: ${session.world.id})`,
+  );
 });
 
 function shutdown() {
   server.close();
-  session.close();
+  session.close(); // 세이브와 잠금을 정리한다
   process.exit(0);
 }
 process.on("SIGINT", shutdown);

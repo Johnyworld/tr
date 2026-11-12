@@ -5,7 +5,7 @@ import { checkPromotion, evaluateMission } from "../game/missions.ts";
 const PROMO = TEST_CONTENT.scenario.promotion;
 import { createTestStore, TEST_CONTENT } from "../testing.ts";
 import { describeMissionsForGm } from "./missionTools.ts";
-import { runStartOfTurn } from "./turnStart.ts";
+import { runAfterTimeAdvance as runStartOfTurn } from "./turnStart.ts";
 import { executeTool } from "./tools.ts";
 
 const first: Rng = () => 0; // 후보는 목록 순서대로, 판정은 1+1
@@ -53,9 +53,9 @@ describe("임무 배정", () => {
 describe("임무 수행과 보고", () => {
   it("임무를 받은 뒤의 활동만 진행도로 집계되고, 보고 결과는 코드가 정한다", () => {
     const env = withLeader(setup(sixes));
-    executeTool("spend_time", { activity: "guard_duty", until: null }, env.ctx); // 배정 전: 집계 안 됨
+    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, activity: { kind: "guard_duty", until: null } }, env.ctx); // 배정 전: 집계 안 됨
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
-    executeTool("spend_time", { activity: "guard_duty", until: null }, env.ctx);
+    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, activity: { kind: "guard_duty", until: null } }, env.ctx);
     expect(env.store.getState().missions.m_1?.progress).toEqual([240]);
 
     const out = executeTool("report_mission", {}, env.ctx);
@@ -68,8 +68,15 @@ describe("임무 수행과 보고", () => {
     const env = withLeader(setup(sixes));
     executeTool("assign_mission", { template_id: "m_scout" }, env.ctx);
     executeTool(
-      "request_check",
-      { move: "sense_danger", stat: "sense", difficulty: "normal", intent: "살핀다" },
+      "take_action",
+      {
+        intent: "살핀다",
+        check: { move: "sense_danger", stat: "sense", difficulty: "normal", harm_on_failure: "none", harm_cause: "" },
+        activity: null,
+        deed: null,
+        target: null,
+        narration_summary: null,
+      },
       env.ctx,
     );
     const mission = env.store.getState().missions.m_1!;
@@ -95,12 +102,16 @@ describe("명령 불복종", () => {
     expect(player).toMatchObject({ merit: -2, disobedience: 1 });
   });
 
-  it("기한이 지나면 턴 시작에 기한 초과로 끝난다", () => {
+  it("기한이 지나면 시간이 흐른 직후 기한 초과로 끝난다", () => {
     const env = withLeader(setup(() => 0.999));
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
-    executeTool("spend_time", { activity: "sleep", until: "night" }, env.ctx); // 05:30 → 20:00 (기한 17:30)
-    const displays = runStartOfTurn(env.ctx);
-    expect(displays).toMatchObject([{ type: "mission", event: "expired" }]);
+    // 05:30 → 20:00 (기한 17:30)
+    const out = executeTool(
+      "take_action",
+      { intent: "잔다", check: null, deed: null, target: null, narration_summary: null, activity: { kind: "sleep", until: "night" } },
+      env.ctx,
+    );
+    expect(out.ok && out.extra).toContainEqual(expect.objectContaining({ type: "mission", event: "expired" }));
     expect(env.store.getState().characters.player).toMatchObject({ merit: -2, disobedience: 1 });
   });
 });
@@ -126,7 +137,7 @@ describe("진급", () => {
     env.store.append({ type: "time_advanced", activity: "wait", from: 330, to: 330 + 4 * 24 * 60 });
     env.store.append({ type: "missions_offered", day: 5, templateIds: ["m_guard"] });
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
-    executeTool("spend_time", { activity: "guard_duty", until: null }, env.ctx);
+    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, activity: { kind: "guard_duty", until: null } }, env.ctx);
     const out = executeTool("report_mission", {}, env.ctx);
     expect(out.ok && out.extra).toMatchObject([{ type: "promotion", toLabel: "분대장" }]);
     expect(env.store.getState().characters.player?.rank).toBe(PROMO.to);

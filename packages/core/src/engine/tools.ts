@@ -26,123 +26,14 @@ import {
 import { createInterruptChecks, fastForward } from "../sim/fastForward.ts";
 import { BELIEF_SOURCE_LABELS, beliefSourceSchema } from "../game/belief.ts";
 import { findHolderInventory, SCENE_HOLDER, type GameEvent, type GameState } from "../game/state.ts";
-import type { ToolSpec } from "./model.ts";
-import { defineTool, signed, STRICT_UNSUPPORTED_KEYS, type ToolContext, type ToolOutcome } from "./toolkit.ts";
+import { defineTool, signed, STRICT_UNSUPPORTED_KEYS, type ToolContext, type ToolOutcome, type ToolSpec } from "./toolkit.ts";
 
 export { STRICT_UNSUPPORTED_KEYS } from "./toolkit.ts";
 import { MISSION_TOOLS } from "./missionTools.ts";
 import { REPUTATION_TOOLS } from "./reputationTools.ts";
-import { rollPlayerCheck } from "./checks.ts";
+import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
 
-export type { ToolContext, ToolDisplayEvent, ToolOutcome } from "./toolkit.ts";
-
-const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
-  success: "의도한 대로 이루어진다. 깔끔하게 성공한 장면을 서술하라.",
-  partial:
-    "이루어지지만 대가가 따른다. 피해, 시간·자원 손실, 상황의 복잡화, 어려운 선택 중 하나를 붙여 서술하라. 대가가 몸을 다치는 것이라면 apply_harm을 호출하라.",
-  miss: "실패한다. 상황이 악화된다. 몸을 다친다면 apply_harm을 호출하고, 아니면 새로운 위협이나 손실을 서술하라.",
-};
-
-/** 판정 tool. 행동·능력치 목록이 시나리오에서 오므로 시나리오를 받아 만든다 */
-const createRequestCheck = (s: Scenario) =>
-  defineTool({
-  name: "request_check",
-  description:
-    "플레이어 캐릭터가 결과가 불확실하고 실패하면 대가가 있는 행동을 시도할 때 2d6 판정을 요청한다. " +
-    "사소하거나 확실한 행동에는 쓰지 않는다. 판정 결과는 시스템이 정하며, 그 결과에 맞춰 서술해야 한다. " +
-    `행동별 능력치: ${s.moves.map((m) => `${m.id}=${m.stats.join("|")}`).join(", ")}.`,
-  schema: z.strictObject({
-    move: idEnum(moveIds(s)).describe(
-      `기본 행동. ${s.moves.map((m) => `${m.id} ${m.label}${m.description ? `(${m.description})` : ""}`).join(", ")}`,
-    ),
-    stat: idEnum(statIds(s)).describe(
-      `사용할 능력치. 행동에 허용된 것만 고를 수 있다. ${s.stats.map((x) => `${x.id} ${x.label}`).join(", ")}`,
-    ),
-    difficulty: difficultySchema.describe("상황의 난이도. 대부분은 normal"),
-    intent: z.string().min(1).max(200).describe("캐릭터가 이루려는 것 한 문장 (예: 잠긴 사물함을 비틀어 연다)"),
-  }),
-  run(input, ctx) {
-    const result = rollPlayerCheck(input, ctx);
-    if (!result.ok) return result;
-    return {
-      ok: true,
-      resultText:
-        `판정 ${result.checkId}: ${CHECK_OUTCOME_LABELS[result.outcome]} (${result.outcome}). ` +
-        `주사위 ${result.dice[0]}+${result.dice[1]}, 보정 ${signed(result.modifier)}, 합계 ${result.total}.\n` +
-        OUTCOME_GUIDE[result.outcome],
-      display: result.display,
-    };
-  },
-});
-
-/** 대가 있는 성공은 최대 1단계, 실패는 강도에 따라 1~2단계 악화 (임시값) */
-export function harmSteps(outcome: CheckOutcome, severity: "light" | "heavy"): number {
-  if (outcome === "partial") return 1;
-  return severity === "heavy" ? 2 : 1;
-}
-
-const applyHarm = defineTool({
-  name: "apply_harm",
-  description:
-    "이번 턴의 판정이 실패(miss)했거나 대가 있는 성공(partial)의 대가로 캐릭터가 몸을 다쳤을 때 부상을 적용한다. " +
-    "반드시 그 원인이 된 판정의 check_id를 넘긴다. 판정 하나에 한 번만 쓸 수 있다. 부상이 얼마나 악화될지는 시스템이 정한다.",
-  schema: z.strictObject({
-    target: z.string().describe("다친 캐릭터 id. 판정을 한 캐릭터여야 한다"),
-    check_id: z.string().describe("원인이 된 이번 턴 판정의 id (예: chk_3)"),
-    severity: harmSeveritySchema.describe("light: 베이거나 맞음, heavy: 총상·깊은 자상·추락 등"),
-    cause: z.string().min(1).max(200).describe("부상 원인 한 문장"),
-  }),
-  run(input, { store, content }) {
-    const state = store.getState();
-    const track = harmTrack(content.scenario);
-    const target = state.characters[input.target];
-    if (!target) return { ok: false, error: `알 수 없는 캐릭터: ${input.target}` };
-    const check = state.checks[input.check_id];
-    if (!check) return { ok: false, error: `알 수 없는 판정: ${input.check_id}` };
-    if (check.turn !== state.turn) return { ok: false, error: "이번 턴의 판정만 피해의 근거가 될 수 있습니다." };
-    if (check.actorId !== target.id) return { ok: false, error: "판정을 한 캐릭터에게만 피해를 줄 수 있습니다." };
-    if (check.outcome === "success") return { ok: false, error: "성공한 판정으로는 피해를 줄 수 없습니다." };
-    if (check.harmApplied) return { ok: false, error: "이 판정의 피해는 이미 적용되었습니다." };
-    if (target.dead) return { ok: false, error: "이미 사망한 캐릭터입니다." };
-
-    const steps = harmSteps(check.outcome, input.severity);
-    const from = target.conditions[track.id] ?? track.levels[0]!.id;
-    const { to, fatal } = worsen(track, from, steps);
-    store.append({
-      type: "harm_applied",
-      targetId: target.id,
-      checkId: check.checkId,
-      track: track.id,
-      severity: input.severity,
-      steps,
-      from,
-      to,
-      fatal,
-      cause: input.cause,
-    });
-
-    const after = store.getState().characters[target.id]!;
-    const deathNote = fatal
-      ? " 캐릭터가 사망했다. 죽음의 순간을 담담하게 서술하고 장면을 끝내라. 더 이상 행동을 제시하지 마라."
-      : ` 앞으로 판정에 ${signed(conditionPenalty(content.scenario, after))} 보정을 받는다. 다친 감각을 서술에 반영하라.`;
-    const fromLabel = levelOf(track, from).label;
-    const toLabel = levelOf(track, to).label;
-    return {
-      ok: true,
-      resultText: `${target.name}의 ${track.label}: ${fromLabel} → ${toLabel}.${deathNote}`,
-      display: {
-        type: "harm",
-        targetName: target.name,
-        trackLabel: track.label,
-        severityLabel: HARM_LABELS[input.severity],
-        fatal,
-        fromLabel,
-        toLabel,
-        cause: input.cause,
-      },
-    };
-  },
-});
+export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
 
 const transferItem = defineTool({
   name: "transfer_item",
@@ -188,83 +79,6 @@ const transferItem = defineTool({
         toName: holderName(state, input.to),
         itemName: item.name,
         quantity: input.quantity,
-      },
-    };
-  },
-});
-
-const spendTime = defineTool({
-  name: "spend_time",
-  description:
-    "캐릭터의 활동으로 게임 시간을 흘려보낸다. 한 턴의 주된 활동마다 한 번 호출한다 (호출하지 않으면 잠깐의 행동으로 본다). " +
-    "걸리는 시간은 시스템이 정한다. guard_duty, sleep, wait는 빨리감기로 진행되며 도중에 무슨 일이 생기면 멈춘다. " +
-    "until은 sleep과 wait에서만 쓸 수 있다 (그 시간대가 시작될 때까지). 다른 활동은 until에 null을 넣는다.",
-  schema: z.strictObject({
-    activity: activitySchema.describe(
-      "brief 잠깐의 행동(둘러보기·몇 마디), talk 대화, eat 식사, treat 응급처치, search 수색, work 작업·정비, rest 휴식, guard_duty 보초, sleep 잠, wait 기다림",
-    ),
-    until: timeSegmentSchema
-      .nullable()
-      .describe("sleep·wait 전용. dawn 새벽, morning 아침, day 낮, evening 저녁, night 밤이 시작될 때까지"),
-  }),
-  run(input, { store, rng, content }) {
-    const state = store.getState();
-    if (state.characters[state.playerId]?.dead) {
-      return { ok: false, error: "사망한 캐릭터의 시간은 흐르지 않습니다." };
-    }
-    const cost = ACTIVITY_COSTS[input.activity];
-    const from = state.time;
-    let to: number;
-    let interrupt: ReturnType<typeof fastForward>["interrupt"] = null;
-
-    if (cost.kind === "long") {
-      if (input.until && !cost.allowUntil) {
-        return { ok: false, error: `${input.activity}에는 until을 쓸 수 없습니다. null을 넣으세요.` };
-      }
-      const target = input.until ? nextSegmentStart(from, input.until) : from + cost.minutes;
-      const result = fastForward({
-        state,
-        start: from,
-        until: Math.min(target, from + MAX_FAST_FORWARD_MINUTES),
-        rng,
-        checks: createInterruptChecks(content.scenario),
-      });
-      to = result.end;
-      interrupt = result.interrupt;
-    } else {
-      if (input.until) return { ok: false, error: `${input.activity}에는 until을 쓸 수 없습니다. null을 넣으세요.` };
-      to = from + rollActivityMinutes(cost, rng);
-    }
-
-    store.append({
-      type: "time_advanced",
-      activity: input.activity,
-      from,
-      to,
-      ...(interrupt ? { interrupt } : {}),
-    });
-
-    const label = ACTIVITY_LABELS[input.activity];
-    const lines = [`${label}: ${formatDuration(to - from)} 경과. 현재 ${formatTime(to)}.`];
-    if (segmentOf(from) !== segmentOf(to)) {
-      lines.push(`시간대가 ${SEGMENT_LABELS[segmentOf(from)]}에서 ${SEGMENT_LABELS[segmentOf(to)]}(으)로 바뀌었다. 빛과 소리의 변화를 서술에 반영하라.`);
-    }
-    if (interrupt) {
-      lines.push(
-        `${label}이(가) 중간에 끊겼다: ${interrupt.detail}. 정체는 아직 모른다. ` +
-          "캐릭터가 이를 알아차리는 장면으로 서술하고, 정체를 확정하지 말고 플레이어의 반응을 기다려라.",
-      );
-    }
-    return {
-      ok: true,
-      resultText: lines.join("\n"),
-      display: {
-        type: "time",
-        activityLabel: label,
-        durationLabel: formatDuration(to - from),
-        fromLabel: formatTime(from),
-        toLabel: formatTime(to),
-        ...(interrupt ? { interruptDetail: interrupt.detail } : {}),
       },
     };
   },
@@ -341,6 +155,24 @@ const addBelief = defineTool({
   },
 });
 
+/** 턴 진행 tool (두 모드 공통). 실제 처리는 action.ts의 takeAction */
+const createTakeActionTool = (s: Scenario) => ({
+  name: "take_action",
+  description:
+    "플레이어 행동마다 한 번 호출하는 턴 진행의 입구. 판정(필요할 때만), 판정 전에 선언한 몸의 위험, 평판이 걸린 행적, 시간이 드는 활동을 " +
+    "한 번에 넘기면 시스템이 판정 → 피해 → 행적·목격자 → 시간 경과(끼어들기 포함) 순서로 처리하고 결과를 돌려준다. " +
+    "결과를 보기 전에 서술로 결과를 확정하지 않는다.",
+  schema: createTakeActionSchema(s),
+  run: (input: TakeActionInput, ctx: ToolContext): ToolOutcome => {
+    const result = takeAction(input, ctx);
+    if (!result.ok) return result;
+    const [first, ...rest] = result.displays;
+    return first
+      ? { ok: true, resultText: result.resultText, display: first, extra: rest }
+      : { ok: true, resultText: result.resultText, display: { type: "time", activityLabel: "잠깐의 행동", durationLabel: "", fromLabel: "", toLabel: "" }, silent: true };
+  },
+});
+
 type AnyTool = { name: string; description: string; schema: z.ZodType; run: (input: never, ctx: ToolContext) => ToolOutcome };
 
 const toolCache = new WeakMap<Scenario, readonly AnyTool[]>();
@@ -350,10 +182,8 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
   let tools = toolCache.get(s);
   if (!tools) {
     tools = [
-      createRequestCheck(s),
-      applyHarm,
+      createTakeActionTool(s),
       transferItem,
-      spendTime,
       npcPresence,
       addBelief,
       ...MISSION_TOOLS,

@@ -1,4 +1,4 @@
-import type { TurnEvent } from "@trpg/core";
+import type { TurnEvent } from "@trpg/gm";
 import type { GameView, PlayerView } from "./types.ts";
 
 export type StreamEvent = TurnEvent | { type: "player"; player: PlayerView };

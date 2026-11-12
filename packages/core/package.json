@@ -13,7 +13,6 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "1.8.0",
     "better-sqlite3": "13.1.1",
     "drizzle-orm": "0.45.4",
     "yaml": "2.9.1",

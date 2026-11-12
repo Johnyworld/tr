@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, renameSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
-import { asc, desc, gt } from "drizzle-orm";
+import { asc, desc, eq, gt } from "drizzle-orm";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import {
@@ -13,7 +13,7 @@ import {
   type GameEvent,
   type GameState,
 } from "../game/state.ts";
-import type { TranscriptEntry } from "../gm/turn.ts";
+import type { TranscriptEntry, TurnSummary } from "../engine/log.ts";
 import type { GameRepository } from "./repository.ts";
 import * as schema from "./schema.ts";
 import type { Scenario } from "../scenario/schema.ts";
@@ -115,6 +115,28 @@ export class SqliteRepository implements GameRepository {
     this.#transcript.push(...structuredClone(entries));
   }
 
+  appendSummary(summary: TurnSummary): void {
+    this.#db
+      .insert(schema.summaries)
+      .values({ ...summary, createdAt: new Date().toISOString() })
+      .run();
+  }
+
+  summaries(options: { kind?: TurnSummary["kind"]; limit?: number } = {}): TurnSummary[] {
+    const query = this.#db.select().from(schema.summaries);
+    const rows = (options.kind ? query.where(eq(schema.summaries.kind, options.kind)) : query)
+      .orderBy(desc(schema.summaries.id))
+      .limit(options.limit ?? 1_000_000)
+      .all();
+    return rows.reverse().map((r) => ({
+      kind: r.kind as TurnSummary["kind"],
+      text: r.text,
+      turn: r.turn,
+      time: r.time,
+      mode: r.mode as TurnSummary["mode"],
+    }));
+  }
+
   saveSnapshot(): void {
     if (this.#lastSeq === 0) return;
     this.#db
@@ -176,9 +198,8 @@ export class SqliteRepository implements GameRepository {
  * 세이브 파일을 archive/ 폴더로 옮긴다 (새 게임을 시작할 때).
  * 기록을 지우지 않고 보관한다. 파일은 닫힌 상태여야 한다. 옮긴 경로를 돌려준다.
  */
-export function archiveSave(path: string, now = new Date()): string | null {
+export function archiveSave(path: string, now = new Date(), archiveDir = join(dirname(path), "archive")): string | null {
   if (!existsSync(path)) return null;
-  const archiveDir = join(dirname(path), "archive");
   mkdirSync(archiveDir, { recursive: true });
   const stamp = now.toISOString().replaceAll(":", "-").replace(/\..+$/, "");
   const target = join(archiveDir, `${basename(path, ".db")}-${stamp}.db`);

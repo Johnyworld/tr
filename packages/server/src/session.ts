@@ -1,216 +1,65 @@
-import { randomUUID } from "node:crypto";
-import {
-  createSeededRng,
-  createWorldEvent,
-  activeMissionOf,
-  BELIEF_SOURCE_LABELS,
-  checkPromotion,
-  daysServed,
-  DEED_TAG_LABELS,
-  NEUTRAL_RELATION,
-  describeRequirement,
-  conditionPenalty,
-  describeConditions,
-  formatTime,
-  initialConditions,
-  isPlayerDead,
-  rankLabel,
-  runTurn,
-  type Content,
-  type GameRepository,
-  type LanguageModel,
-  type Rng,
-  type TranscriptEntry,
-  type TurnEvent,
-} from "@trpg/core";
-
-/** UI에 보여 줄 플레이어 시트 */
-export type PlayerView = {
-  name: string;
-  roleLabel: string;
-  timeLabel: string;
-  /** 상태 트랙별 현재 단계 (예: 부상 경상). worsened: 첫 단계에서 나빠졌는지 */
-  conditions: { id: string; label: string; levelLabel: string; worsened: boolean }[];
-  conditionPenalty: number;
-  dead: boolean;
-  stats: { id: string; label: string; value: number }[];
-  inventory: { id: string; name: string; quantity: number }[];
-  sceneItems: { id: string; name: string; quantity: number }[];
-  /** conditionLabel: 상태가 처음과 달라졌을 때만 요약 (예: "부상: 경상") */
-  present: { id: string; name: string; rankLabel: string; look: string; conditionLabel: string | null }[];
-  service: {
-    merit: number;
-    disobedience: number;
-    daysServed: number;
-    /** 진급까지 남은 조건. 진급 대상이 아니면 null */
-    promotionMissing: string[] | null;
-  };
-  mission: { title: string; briefing: string; deadlineLabel: string; requirements: string[] } | null;
-  /** 아는 인물의 당신에 대한 관계 */
-  relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
-  /** 내 행적 (최근 것부터). 보이는 목격자만 담는다 */
-  deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
-  /** 최근 것부터 */
-  beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
-};
-
-/** UI에 보낼 대화 기록. 모델에 보낸 프롬프트 원문은 빼고 보낸다 */
-export type TranscriptView =
-  | { kind: "player"; text: string }
-  | { kind: "gm"; text: string }
-  | { kind: "tool"; display: Extract<TranscriptEntry, { kind: "tool" }>["display"] };
+import type { GameWorld, PlayerView, TranscriptView, WorldManager } from "@trpg/core";
+import { runGmTurn, type LanguageModel, type Summarizer, type TurnEvent } from "@trpg/gm";
 
 export class TurnInProgressError extends Error {}
 
-export type GameSessionOptions = {
-  model: LanguageModel;
-  content: Content;
-  /** 새 세계를 만들 때 쓸 시작 역할 (MVP: role_a_grunt 고정) */
-  roleId: string;
-  /** 세이브를 연다 (없으면 빈 세이브) */
-  openRepository: () => GameRepository;
-  /** 닫힌 세이브를 보관함으로 옮긴다 (새 게임) */
-  archiveRepository?: () => void;
-  rngFactory?: () => Rng;
+export type GameView = {
+  worldId: string;
+  scenarioName: string;
+  opening: string;
+  player: PlayerView;
+  transcript: TranscriptView[];
+  busy: boolean;
 };
 
 /**
- * 1인용 로컬 게임이므로 서버에 세계 하나만 둔다.
- * 상태·대화 기록은 저장소(SQLite)에 있고, 서버를 다시 켜면 이어서 한다 (아이언맨: 자동 저장만).
+ * 웹 앱 모드의 세션: 열린 세계 하나와 진행 중인 턴을 관리한다.
+ * 게임 규칙·정보 필터는 core(GameWorld), GM 호출은 gm(runGmTurn)에 있고, 여기는 HTTP 쪽 흐름만 다룬다.
  */
-export class GameSession {
-  #repo: GameRepository;
-  #rng: Rng;
+export class WebSession {
+  #world: GameWorld;
   #busy = false;
 
-  constructor(private readonly options: GameSessionOptions) {
-    if (!options.content.roles[options.roleId]) throw new Error(`알 수 없는 시작 역할: ${options.roleId}`);
-    this.#repo = this.#open();
-    this.#rng = this.#newRng();
+  constructor(
+    private readonly manager: WorldManager,
+    private readonly model: LanguageModel,
+    private readonly summarizer?: Summarizer,
+    world?: GameWorld,
+  ) {
+    this.#world = world ?? manager.openLatest("web");
   }
 
-  /** 화면 머리에 보여 줄 시나리오 이름과 시작 장면 */
-  intro(): { scenarioName: string; opening: string } {
-    const role = this.options.content.roles[this.#repo.getState().roleId];
-    return { scenarioName: this.options.content.scenario.name, opening: role?.opening_scene ?? "" };
+  get world(): GameWorld {
+    return this.#world;
   }
 
   get busy() {
     return this.#busy;
   }
 
-  /** 지금 세계를 보관하고 새 세계를 시작한다 */
-  reset() {
-    if (this.#busy) throw new TurnInProgressError();
-    this.#repo.close();
-    this.options.archiveRepository?.();
-    this.#repo = this.#open();
-    this.#rng = this.#newRng();
-  }
-
-  close() {
-    this.#repo.close();
-  }
-
-  isPlayerDead() {
-    return isPlayerDead(this.#repo);
-  }
-
-  transcriptView(): TranscriptView[] {
-    return this.#repo.transcript().map((e) => (e.kind === "player" ? { kind: "player", text: e.text } : e));
-  }
-
-  playerView(): PlayerView {
-    const { content } = this.options;
-    const scenario = content.scenario;
-    const state = this.#repo.getState();
-    const player = state.characters[state.playerId]!;
-    const initial = initialConditions(scenario);
-    const changed = (c: { conditions: Record<string, string> }) =>
-      Object.entries(initial).some(([track, level]) => c.conditions[track] !== level);
-    const items = (inv: Record<string, number>) =>
-      Object.entries(inv).map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity }));
+  view(): GameView {
     return {
-      name: player.name,
-      roleLabel:
-        content.roles[state.roleId]?.rank === player.rank
-          ? (content.roles[state.roleId]?.label ?? rankLabel(scenario, player.rank))
-          : rankLabel(scenario, player.rank),
-      timeLabel: formatTime(state.time),
-      conditions: scenario.condition_tracks.map((track) => ({
-        id: track.id,
-        label: track.label,
-        levelLabel: track.levels.find((l) => l.id === player.conditions[track.id])?.label ?? "?",
-        worsened: player.conditions[track.id] !== initial[track.id],
-      })),
-      conditionPenalty: conditionPenalty(scenario, player),
-      dead: player.dead,
-      stats: scenario.stats.map((s) => ({ id: s.id, label: s.label, value: player.stats[s.id] ?? 0 })),
-      inventory: items(player.inventory),
-      sceneItems: items(state.scene.items),
-      present: state.scene.present.map((id) => {
-        const npc = state.characters[id]!;
-        return {
-          id,
-          name: npc.name,
-          rankLabel: rankLabel(scenario, npc.rank),
-          look: content.npcs[id]?.look ?? "",
-          conditionLabel: npc.dead ? "사망" : changed(npc) ? describeConditions(scenario, npc) : null,
-        };
-      }),
-      service: {
-        merit: player.merit,
-        disobedience: player.disobedience,
-        daysServed: daysServed(state.time, state.runStartedAt),
-        promotionMissing: (() => {
-          if (player.rank !== scenario.promotion.from) return null;
-          const commanderId = content.roles[state.roleId]?.commander;
-          // 화면에는 플레이어가 느끼는 신뢰를 보여 준다 (실제 진급 판정은 진짜 관계로 한다)
-          const trust = commanderId ? (state.perceived[commanderId]?.trust ?? 0) : null;
-          return checkPromotion(player, scenario.promotion, state.time, state.runStartedAt, trust).missing;
-        })(),
-      },
-      mission: (() => {
-        const m = activeMissionOf(state.missions, player.id);
-        if (!m) return null;
-        return {
-          title: m.title,
-          briefing: m.briefing,
-          deadlineLabel: formatTime(m.deadline),
-          requirements: m.requirements.map((r, i) => describeRequirement(scenario, r, m.progress[i] ?? 0)),
-        };
-      })(),
-      // 진짜 관계가 아니라 플레이어가 마지막으로 느낀 태도 (숨은 목격자가 드러나지 않게)
-      relations: (state.known[player.id] ?? []).map((id) => {
-        const r = state.perceived[id] ?? NEUTRAL_RELATION;
-        return { id, name: state.characters[id]?.name ?? id, ...r };
-      }),
-      // 숨은 목격자는 UI에도 보내지 않는다
-      deeds: Object.values(state.deeds)
-        .filter((d) => d.actorId === player.id)
-        .map((d) => ({
-          id: d.id,
-          summary: d.summary,
-          tagLabels: d.tags.map((t) => DEED_TAG_LABELS[t]),
-          visibleWitnesses: d.witnesses.filter((w) => !w.hidden).map((w) => state.characters[w.npcId]?.name ?? w.npcId),
-        }))
-        .reverse(),
-      // 진짜 정확도(accuracy)는 UI에도 보내지 않는다
-      beliefs: (state.beliefs[state.playerId] ?? [])
-        .map((b) => ({
-          id: b.id,
-          fact: b.fact,
-          sourceLabel: BELIEF_SOURCE_LABELS[b.source],
-          learnedLabel: formatTime(b.learnedAt),
-        }))
-        .reverse(),
+      ...this.#world.intro(),
+      player: this.#world.playerView(),
+      transcript: this.#world.transcriptView(),
+      busy: this.#busy,
     };
   }
 
+  /** 지금 세계를 닫고 새 세계를 연다 (지금 세계는 saves/worlds/에 그대로 남는다) */
+  newWorld() {
+    if (this.#busy) throw new TurnInProgressError();
+    this.#world.close();
+    this.#world = this.manager.create("web");
+  }
+
+  close() {
+    this.#world.close();
+  }
+
   /**
-   * 턴을 실행한다. 이벤트를 흘려보내고, 끝나면 대화 기록과 스냅샷을 저장한다.
-   * 소비자가 중간에 멈추면(연결 끊김) 모델 호출을 중단하고 그때까지의 기록을 남긴다.
-   * 상태 이벤트는 이미 저장됐으므로 기록이 빠지면 안 된다.
+   * 턴을 실행한다. 소비자가 중간에 멈추면(연결 끊김) 모델 호출을 중단하고 남은 처리를 마친다.
+   * 상태 이벤트와 대화 기록은 생기는 대로 저장되므로 빠지지 않는다.
    */
   async *playTurn(input: string, signal?: AbortSignal): AsyncGenerator<TurnEvent> {
     if (this.#busy) throw new TurnInProgressError();
@@ -219,16 +68,14 @@ export class GameSession {
     const onAbort = () => abort.abort();
     signal?.addEventListener("abort", onAbort);
 
-    const turn = runTurn({
-      model: this.options.model,
-      store: this.#repo,
-      content: this.options.content,
-      transcript: this.#repo.transcript(),
+    const turn = runGmTurn({
+      model: this.model,
+      world: this.#world,
       input,
-      rng: this.#rng,
       signal: abort.signal,
+      ...(this.summarizer ? { summarizer: this.summarizer } : {}),
     });
-    let step: IteratorResult<TurnEvent, TranscriptEntry[]> | undefined;
+    let step: IteratorResult<TurnEvent, void> | undefined;
     try {
       step = await turn.next();
       while (!step.done) {
@@ -240,25 +87,8 @@ export class GameSession {
         abort.abort();
         while (!step.done) step = await turn.next();
       }
-      if (step?.done) {
-        this.#repo.appendTranscript(step.value);
-        this.#repo.saveSnapshot();
-      }
       signal?.removeEventListener("abort", onAbort);
       this.#busy = false;
     }
-  }
-
-  #open(): GameRepository {
-    const repo = this.options.openRepository();
-    if (!repo.hasWorld()) {
-      repo.append(createWorldEvent(this.options.content, this.options.roleId, randomUUID()));
-      repo.saveSnapshot();
-    }
-    return repo;
-  }
-
-  #newRng(): Rng {
-    return this.options.rngFactory?.() ?? createSeededRng(Math.floor(Math.random() * 2 ** 32));
   }
 }

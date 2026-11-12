@@ -183,6 +183,10 @@ export function App() {
 
 function Entry({ entry }: { entry: TranscriptView }) {
   if (entry.kind === "tool") return <ToolCard display={entry.display} />;
+  if (entry.kind === "note") {
+    // MCP 모드에서 GM이 남긴 서술 요약 (서술 원문은 Claude 앱에만 있다)
+    return <p className="note">{entry.text}</p>;
+  }
   return (
     <div className={`turn ${entry.kind}`}>
       {entry.text.split(/\n{2,}/).map((para, i) => (

@@ -66,8 +66,9 @@ export function describePlayerState(state: GameState, content: Content): string 
 }
 
 /** 이번 턴의 user 메시지. 상태와 입력을 구분해 넣는다 */
-export function buildPlayerPrompt(state: GameState, content: Content, input: string): string {
-  return `<상태>\n${describePlayerState(state, content)}\n</상태>\n\n<플레이어 입력>\n${input}\n</플레이어 입력>`;
+export function buildPlayerPrompt(state: GameState, content: Content, input: string, recap = ""): string {
+  const recapBlock = recap ? `<지난 이야기>\n${recap}\n</지난 이야기>\n\n` : "";
+  return `${recapBlock}<상태>\n${describePlayerState(state, content)}\n</상태>\n\n<플레이어 입력>\n${input}\n</플레이어 입력>`;
 }
 
 function describePresentNpcs(state: GameState, content: Content, player: Character): string {

@@ -106,6 +106,14 @@ body {
   margin: 0 0 20px;
 }
 
+.note {
+  margin: 0 0 20px;
+  padding-left: 12px;
+  border-left: 2px dashed var(--border);
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .death {
   color: var(--error);
   letter-spacing: 0.05em;

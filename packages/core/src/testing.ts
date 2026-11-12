@@ -5,6 +5,11 @@ import type { Content } from "./content/schemas.ts";
 import type { Scenario } from "./scenario/schema.ts";
 import { createWorldEvent } from "./game/state.ts";
 import { InMemoryGameStore } from "./game/store.ts";
+import { InMemoryRepository } from "./persistence/repository.ts";
+import { GameWorld } from "./world/world.ts";
+import { runAfterTimeAdvance } from "./engine/turnStart.ts";
+import { createSeededRng, type Rng } from "./rng.ts";
+import type { PlayMode } from "./engine/log.ts";
 
 /**
  * 테스트용 시나리오. post_apoc과 일부러 다른 ID(sense, search 등)를 써서
@@ -54,6 +59,8 @@ export const TEST_SCENARIO: Scenario = {
   promotion: { from: "grunt", to: "squad_leader" },
   speech_rules: "speech.yaml",
   gm_tone: "tone.md",
+  gm_rules: "rules.md",
+  mcp_guide: "mcp.md",
   threats: {
     disturbance_chance_per_hour: { dawn: 0.05, morning: 0.03, day: 0.03, evening: 0.05, night: 0.08 },
     disturbance_details: ["멀리서 들리는 소리"],
@@ -67,6 +74,8 @@ export const TEST_SCENARIO: Scenario = {
     unknown_age: "polite",
   },
   tone: "## 세계\n테스트용 세계.",
+  rules: "## 규칙\n플레이어 행동마다 take_action을 호출한다.",
+  mcpGuide: "## MCP\n장면이 끝나면 record_turn_summary.",
 };
 
 export const TEST_CONTENT: Content = {
@@ -175,4 +184,12 @@ export const TEST_CONTENT: Content = {
 /** 세계가 만들어진 메모리 저장소 */
 export function createTestStore() {
   return new InMemoryGameStore([createWorldEvent(TEST_CONTENT, "role_test", "world_test")]);
+}
+
+/** 메모리 저장소로 연 테스트 세계 (세계 생성 직후 처리까지 끝난 상태) */
+export function createTestWorld(mode: PlayMode = "web", rng: Rng = createSeededRng(1), repo = new InMemoryRepository()) {
+  const world = new GameWorld({ content: TEST_CONTENT, repo, mode, rng });
+  repo.append(createWorldEvent(TEST_CONTENT, "role_test", "world_test"));
+  runAfterTimeAdvance(world.ctx());
+  return world;
 }

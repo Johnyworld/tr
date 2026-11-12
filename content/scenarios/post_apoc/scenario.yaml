@@ -61,7 +61,10 @@ rank_ladder:
 promotion: { from: grunt, to: squad_leader }
 
 speech_rules: speech/post_apoc.yaml
+# GM 지침 (두 플레이 모드가 같은 파일을 읽는다, 기획서 11.6)
 gm_tone: prompts/post_apoc_tone.md
+gm_rules: prompts/gm_rules.md
+mcp_guide: prompts/mcp_play.md
 
 # 환경 위협: 빨리감기 중 끼어드는 이상 징후 (임시값). 조우 테이블이 생기면 바꾼다
 threats:

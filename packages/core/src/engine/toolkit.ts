@@ -60,8 +60,23 @@ export type ToolDisplayEvent =
       interruptDetail?: string;
     };
 
+/** tool 명세 (JSON Schema). 웹 앱 모드의 LLM tool과 MCP tool이 같이 쓴다 */
+export type ToolSpec = {
+  name: string;
+  description: string;
+  inputSchema: { type: "object"; properties?: unknown; required?: string[]; [key: string]: unknown };
+};
+
 export type ToolOutcome =
-  | { ok: true; resultText: string; display: ToolDisplayEvent; /** 함께 보여 줄 결과 (예: 진급) */ extra?: ToolDisplayEvent[] }
+  | {
+      ok: true;
+      resultText: string;
+      display: ToolDisplayEvent;
+      /** 함께 보여 줄 결과 (예: 진급) */
+      extra?: ToolDisplayEvent[];
+      /** true면 display를 화면에 보여 주지 않는다 (보여 줄 결과가 없는 턴) */
+      silent?: boolean;
+    }
   | { ok: false; error: string };
 
 export type ToolContext = { store: GameStore; rng: Rng; content: Content };

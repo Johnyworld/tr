@@ -22,9 +22,11 @@ export type PlayerView = {
 export type TranscriptView =
   | { kind: "player"; text: string }
   | { kind: "gm"; text: string }
+  | { kind: "note"; text: string }
   | { kind: "tool"; display: ToolDisplayEvent };
 
 export type GameView = {
+  worldId: string;
   scenarioName: string;
   /** 시작 장면 */
   opening: string;

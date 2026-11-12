@@ -5,7 +5,7 @@ import { loadContent } from "../content/loader.ts";
 import { applyEvent, createWorldEvent, EMPTY_STATE, type GameState } from "../game/state.ts";
 import { TEST_CONTENT } from "../testing.ts";
 import { describePlayerState } from "./context.ts";
-import { buildSystemPrompt } from "./prompt.ts";
+import { buildGmGuide } from "./prompt.ts";
 import { gmToolSpecs } from "./tools.ts";
 
 const REAL_CONTENT = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
@@ -20,7 +20,7 @@ function everyoneHere(content = REAL_CONTENT, roleId = "role_a_grunt"): GameStat
 describe("정보 필터", () => {
   it("NPC의 비밀과 모르는 것(세계의 진실)은 GM 프롬프트에 들어가지 않는다", () => {
     const prompt = [
-      buildSystemPrompt(REAL_CONTENT.scenario, REAL_CONTENT.roles.role_a_grunt),
+      buildGmGuide(REAL_CONTENT, "role_a_grunt", "mcp"),
       JSON.stringify(gmToolSpecs(REAL_CONTENT.scenario)),
       describePlayerState(everyoneHere(), REAL_CONTENT),
     ].join(

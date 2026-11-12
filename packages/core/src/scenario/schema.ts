@@ -50,6 +50,8 @@ export const scenarioFileSchema = z
     promotion: z.strictObject({ from: id, to: id }),
     speech_rules: z.string().min(1),
     gm_tone: z.string().min(1),
+    gm_rules: z.string().min(1),
+    mcp_guide: z.string().min(1),
     threats: z.strictObject({
       disturbance_chance_per_hour: z.record(z.enum(TIME_SEGMENTS), z.number().min(0).max(1)),
       disturbance_details: z.array(z.string().min(1)).min(1),
@@ -104,6 +106,10 @@ export type Scenario = ScenarioFile & {
   speech: SpeechRules;
   /** GM 톤 프롬프트 원문 */
   tone: string;
+  /** GM 공통 규칙 원문 */
+  rules: string;
+  /** MCP 모드 진행 규칙 원문 */
+  mcpGuide: string;
 };
 
 export type ConditionTrack = Scenario["condition_tracks"][number];

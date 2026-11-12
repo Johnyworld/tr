@@ -40,37 +40,44 @@ export {
 export { InMemoryGameStore, type GameStore } from "./game/store.ts";
 export * from "./game/missions.ts";
 export * from "./game/reputation.ts";
-export { describeRequirement, describeMission } from "./gm/missionTools.ts";
+export { describeRequirement, describeMission } from "./engine/missionTools.ts";
 
 export * from "./content/schemas.ts";
 export { loadContent, ContentError } from "./content/loader.ts";
 
 export { InMemoryRepository, type GameRepository } from "./persistence/repository.ts";
 export { SqliteRepository, SaveFormatError, archiveSave } from "./persistence/sqlite.ts";
+export { acquireLock, readLock, isProcessAlive, WorldLockedError, type LockInfo } from "./persistence/lock.ts";
 
-export { GM_RULES, buildSystemPrompt } from "./gm/prompt.ts";
-export { describePlayerState, buildPlayerPrompt } from "./gm/context.ts";
-export { executeTool, gmToolSpecs, gmTools, harmSteps, type ToolDisplayEvent, type ToolOutcome } from "./gm/tools.ts";
+export { buildGmGuide } from "./engine/prompt.ts";
+export { describePlayerState, buildPlayerPrompt } from "./engine/context.ts";
 export {
-  runTurn,
-  buildHistoryMessages,
-  normalizePlayerInput,
-  isPlayerDead,
-  InvalidPlayerInputError,
-  MAX_INPUT_LENGTH,
-  MAX_HISTORY_TURNS,
-  MAX_TOOL_ROUNDS,
-  type TranscriptEntry,
-  type TurnEvent,
-  type TurnStopReason,
-  type RunTurnOptions,
-} from "./gm/turn.ts";
-export type {
-  LanguageModel,
-  ModelMessage,
-  ModelRequest,
-  ModelResponse,
-  ModelStopReason,
-  ToolSpec,
-} from "./gm/model.ts";
-export { createClaudeModel, DEFAULT_GM_MODEL, ModelError, type ClaudeModelOptions } from "./gm/claude.ts";
+  executeTool,
+  gmToolSpecs,
+  gmTools,
+  STRICT_UNSUPPORTED_KEYS,
+  type ToolContext,
+  type ToolDisplayEvent,
+  type ToolOutcome,
+  type ToolSpec,
+} from "./engine/tools.ts";
+export {
+  takeAction,
+  advanceTime,
+  harmSteps,
+  createTakeActionSchema,
+  type TakeActionInput,
+  type TakeActionResult,
+} from "./engine/action.ts";
+export { runAfterTimeAdvance } from "./engine/turnStart.ts";
+export { normalizePlayerInput, InvalidPlayerInputError, MAX_INPUT_LENGTH } from "./engine/input.ts";
+export type { TranscriptEntry, TurnSummary, SummaryKind, PlayMode } from "./engine/log.ts";
+
+export { GameWorld, RECAP_TURNS } from "./world/world.ts";
+export { WorldManager, type WorldInfo } from "./world/manager.ts";
+export {
+  buildPlayerView,
+  buildTranscriptView,
+  type PlayerView,
+  type TranscriptView,
+} from "./views/player.ts";

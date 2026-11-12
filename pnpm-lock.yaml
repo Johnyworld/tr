@@ -20,9 +20,6 @@ importers:
 
   packages/core:
     dependencies:
-      '@anthropic-ai/sdk':
-        specifier: 1.8.0
-        version: 1.8.0(zod@4.6.7)
       better-sqlite3:
         specifier: 13.1.1
         version: 13.1.1
@@ -46,6 +43,18 @@ importers:
         specifier: 4.23.15
         version: 4.23.15
 
+  packages/gm:
+    dependencies:
+      '@anthropic-ai/sdk':
+        specifier: 1.8.0
+        version: 1.8.0(zod@4.6.7)
+      '@trpg/core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
   packages/server:
     dependencies:
       '@hono/node-server':
@@ -54,6 +63,9 @@ importers:
       '@trpg/core':
         specifier: workspace:*
         version: link:../core
+      '@trpg/gm':
+        specifier: workspace:*
+        version: link:../gm
       hono:
         specifier: 4.13.18
         version: 4.13.18
@@ -70,6 +82,9 @@ importers:
       '@trpg/core':
         specifier: workspace:*
         version: link:../core
+      '@trpg/gm':
+        specifier: workspace:*
+        version: link:../gm
       react:
         specifier: 19.3.1
         version: 19.3.1

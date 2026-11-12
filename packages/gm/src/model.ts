@@ -1,13 +1,11 @@
+import type { ToolSpec } from "@trpg/core";
+
 /**
- * 공급자와 무관한 LLM 인터페이스.
- * core 로직은 이 형태만 알고, Claude 어댑터(claude.ts)가 API 형식으로 바꾼다.
+ * 공급자와 무관한 LLM 인터페이스 (웹 앱 모드 전용).
+ * GM 루프는 이 형태만 알고, Claude 어댑터(claude.ts)가 API 형식으로 바꾼다.
  */
 
-export type ToolSpec = {
-  name: string;
-  description: string;
-  inputSchema: { type: "object"; properties?: unknown; required?: string[]; [key: string]: unknown };
-};
+export type { ToolSpec };
 
 export type AssistantBlock =
   | { type: "text"; text: string }

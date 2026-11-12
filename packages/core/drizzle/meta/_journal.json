@@ -15,6 +15,20 @@
       "when": 1794457671700,
       "tag": "0001_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794462315093,
+      "tag": "0002_summaries",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794462315405,
+      "tag": "0003_summaries_append_only",
+      "breakpoints": true
     }
   ]
 }

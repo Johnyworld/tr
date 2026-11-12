@@ -12,7 +12,7 @@
 - 장르: 포스트아포칼립스 생존 + 무리 간 전쟁
 - 판정: 2d6 (성공 / 대가 있는 성공 / 실패)
 - 영감: Project Zomboid(어려움, 죽음이 끝), Apocalypse World(2d6 판정, 장르), Crusader Kings(이벤트, 계승), Fallen London(스토리렛)
-- 형태: 로컬에서 띄우는 웹앱 (혼자 플레이)
+- 형태: 로컬에서 실행. **웹 앱 모드**(개발·테스트)와 **MCP 모드**(Claude 앱에서 실제 장기 플레이) 두 가지 (11.5)
 
 **프로젝트 목표**
 
@@ -175,10 +175,10 @@ storylet_tags: [grunt, squad_life]
 
 - 부상 트랙: 무사 → 경상 → 중상 → 치명상 → 사망
 - 부상 패널티 (*임시*): 경상 -1 / 중상 -2 / 치명상 -3
-- 피해는 반드시 **이번 턴의 판정 하나**에 묶인다. 판정 하나당 한 번만 적용하고, 판정한 캐릭터에게만 적용한다
+- 피해는 반드시 **판정 하나**에 묶이고, 위험은 **판정 전에** 선언한다 (`take_action`의 `check.harm_on_failure`)
   - 대가 있는 성공: 1단계 악화
-  - 실패: AI가 고른 강도에 따라 가벼운 피해 1단계, 심각한 피해 2단계 (*임시*)
-  - 성공한 판정으로는 피해를 줄 수 없다
+  - 실패: 선언한 위험에 따라 가벼운 피해 1단계, 심각한 피해 2단계 (*임시*)
+  - 성공했거나 위험을 선언하지 않았으면 다치지 않는다
 - 부상은 며칠간 행동 패널티로 남는다. 한 번의 실수가 연쇄로 이어지게
 - 감염은 별도 트랙
 - 대규모 전투는 개인 판정과 별도 규칙(병력·사기 중심)으로 처리
@@ -190,7 +190,7 @@ storylet_tags: [grunt, squad_life]
 ### 5.1 평시: 행동 비용만큼 흐른다
 
 - 행동 종류별 기본 소요 시간을 코드 테이블로 정의 (대화 10분, 수색 1~2시간, 보초 4시간 등)
-- AI는 행동을 분류만 하고(`spend_time(activity, until)`), 시간은 코드가 더한다
+- AI는 행동을 분류만 하고(`take_action`의 `activity`), 시간은 코드가 더한다
 - 시간이 흐르면 NPC 일과, 시설 운영, 월드 클락이 함께 진행된다
 - 게임 시간은 1일차 00:00부터 흐른 분(정수). 시작은 1일차 05:30
 - 시간대: 새벽 04시 / 아침 06시 / 낮 10시 / 저녁 17시 / 밤 20시부터
@@ -377,7 +377,7 @@ deed:
 - 태그 13종: 성실, 명령 불복종, 자비, 잔혹, 도둑질, 거짓말, 정직, 용기, 비겁, 동료를 위함, 배신, 제 몫 챙기기, 적에게 호의
 - 태그마다 가치관 축(`dim`), 방향, 가치관과 무관한 기본 몫(`base`), 영향을 받는 관계 축이 있다. `sign × (가치관 + base) × 심각도`를 축별로 더하고, 정보 신뢰도(직접 봄 1, 전해 들음 0.6, 소문 0.3)를 곱해 3으로 나눠 반올림한다. 행동 하나로 한 축은 최대 ±3
 - 같은 행동도 가치관에 따라 반대로 받아들인다 (자비: 강태호 호감 하락, 박만수 호감 상승)
-- GM은 `record_deed(summary, tags, severity, privacy, noisy)`로 분류만 한다. 행동 하나는 한 번만 기록한다
+- GM은 `take_action`의 `deed`로 분류만 한다. 행동 하나는 한 번만 기록한다
 - 임무 완수는 상관이 직접 본 "성실", 임무 포기·기한 초과는 "명령 불복종"으로 자동 기록된다
 
 ### 8.2 목격자 판정
@@ -536,29 +536,44 @@ repeatable: false
   → 상태 저장, 이벤트 로그 기록, 턴 요약
 ```
 
-### 11.2 AI에게 여는 tool (*초안*)
+### 11.2 AI에게 여는 tool
+
+두 플레이 모드가 같은 tool 묶음을 쓴다 (11.5). 턴은 `take_action` 하나로 진행하고, 나머지는 빼먹어도 세계가 깨지지 않는 장면 정리용이다.
+
+**구현됨**
 
 | tool | 용도 |
 |---|---|
-| `request_check(move, stat, difficulty, intent)` | 판정 요청 (난이도는 enum). 행동별 허용 능력치를 코드가 검증 |
-| `apply_harm(target, check_id, severity, cause)` | 판정 결과에 따른 부상 적용 (4.4). 악화 단계는 코드가 계산 |
-| `move_to(location)` | 이동 (시간은 코드가 계산) |
-| `spend_time(activity, until)` | 활동 분류 → 시간 경과. 보초·잠·기다림은 끼어들기가 있는 빨리감기 (5장) |
-| `start_combat(enemies)` | 전투 시작 (적 구성은 템플릿에서) |
-| `transfer_item(from, to, item, qty)` | 아이템 이동 (존재 검증). 보관 위치는 캐릭터 또는 `scene`(현재 장면 바닥). 새 아이템은 만들 수 없음 |
-| `record_deed(summary, tags, severity, privacy, noisy)` | 행동 기록 → 목격자·소문 처리 (8장) |
-| `look_for_witnesses(deed_id)` | 누가 봤는지 살피기 (위험 감지 판정) |
-| `reveal_secret(npc_id)` | 신뢰 조건을 채운 인물이 비밀을 털어놓음 |
-| `adjust_relation(a, b, axis, reason)` | 관계 변화 요청 (변화량 상한은 코드). *미구현: 지금은 행적으로만 관계가 바뀐다* |
-| `add_belief(fact, source)` | 플레이어 캐릭터가 새 정보를 알게 됨 (진위는 unknown으로 기록) |
+| `take_action(intent, check, activity, deed, target, narration_summary)` | **턴 진행의 유일한 입구.** 아래 순서로 코드가 처리한다 |
 | `npc_presence(npc_id, enter\|leave)` | 이름 있는 인물의 장면 등장·퇴장 |
+| `transfer_item(from, to, item_id, quantity)` | 아이템 이동 (존재 검증). 보관 위치는 플레이어, 장면에 있는 NPC, `scene`. 새 아이템은 만들 수 없음 |
+| `add_belief(fact, source)` | 플레이어 캐릭터가 새 정보를 알게 됨 (진위는 unknown으로 기록) |
+| `assign_mission(template_id)` / `report_mission()` / `abandon_mission(reason)` | 임무 배정·보고·포기 (8.6) |
+| `look_for_witnesses(deed_id)` | 누가 봤는지 살피기 (낌새 판정을 코드가 굴림) |
+| `reveal_secret(npc_id)` | 신뢰 조건을 채운 인물이 비밀을 털어놓음 |
+
+`take_action` 입력과 처리 순서:
+
+- `intent`: 하려는 것
+- `check`: `{ move, stat, difficulty, harm_on_failure, harm_cause }` 또는 null. **몸의 위험(`harm_on_failure`: none·light·heavy)은 판정 전에 선언한다.** 결과가 실패·대가 있는 성공이면 코드가 피해를 적용한다 (AI가 결과를 보고 수위를 고르지 않는다)
+- `deed`: `{ summary, tags, severity, privacy, noisy, condition }` 또는 null. `condition`이 `on_success`면 판정이 실패했을 때 기록하지 않는다
+- `activity`: `{ kind, until }` 또는 null(잠깐의 행동 5분)
+- `target`: 상대 인물 id (장면에 있어야 함) 또는 null
+- `narration_summary`: MCP 모드 전용, 직전 서술 요약 (웹 앱 모드는 GM 루프가 자동 저장)
+- 처리 순서: 턴 시작 → 판정 → 선언한 위험의 피해(사망이면 여기서 끝) → 행적·목격자 → 시간 경과(빨리감기·끼어들기) → 시간이 흐른 뒤 세계 처리(임무 기한, 오늘의 임무, 소문)
+- 웹 앱 모드에서 GM이 한 입력에 `take_action`을 한 번도 부르지 않으면 GM 루프가 잠깐의 행동으로 자동 처리한다 (MCP 모드와 같은 결과)
+
+**아직 없음 (해당 단계에서 추가)**
+
+| tool | 용도 |
+|---|---|
+| `move_to(location)` | 이동 (시간은 코드가 계산) |
+| `start_combat(enemies)` | 전투 시작 (적 구성은 템플릿에서) |
+| `adjust_relation(a, b, axis, reason)` | 관계 변화 요청. 지금은 행적으로만 관계가 바뀐다 |
 | `apply_condition(target, tag, duration)` | 서사적 상태 |
 | `set_flag(key, value)` | 시나리오 플래그 |
 | `create_npc(template, overrides)` | 템플릿 기반 즉석 NPC (스키마 검증) |
 | `resolve_storylet_choice(id, choice)` | 스토리렛 선택 결과 적용 |
-| `assign_mission(template_id)` | 상관이 오늘의 임무를 배정 (8.6) |
-| `report_mission()` | 임무 보고. 결과·공적·진급은 코드가 판정 |
-| `abandon_mission(reason)` | 임무 거부·포기 (불복종) |
 
 ### 11.3 프롬프트·비용 원칙
 
@@ -619,6 +634,126 @@ MVP에 포함한다. 프로젝트 목표 중 하나다 (0장).
 - recall@k, 정보 필터 위반(보면 안 되는 청크가 나온 경우) 0건을 테스트로 확인한다
 - 청킹 전략, top-k, 하이브리드 가중치를 바꿔 가며 비교할 수 있게 한다
 
+### 11.5 플레이 모드
+
+| | 웹 앱 모드 | MCP 모드 |
+|---|---|---|
+| GM | 우리 서버(`gm` 패키지)가 Claude API를 호출 | Claude 데스크톱 / Claude Code 세션이 GM 역할 |
+| 엔진 연결 | `server`(HTTP·SSE) → `core` + `gm` | 로컬 MCP 서버(`mcp`, stdio) → `core` |
+| 비용 | Anthropic API 키로 토큰 과금 (Console 결제) | claude.ai 구독 사용량에서 차감 |
+| 사용량 한도 | Console에서 정한 월 한도 | 구독 플랜의 사용량 한도 |
+| UI | 풍부한 화면 (서술 스트리밍, 카드, 시트, 패널) | 채팅 + `!` 정보 명령어 (텍스트 출력) |
+| 프롬프트 제어 | 시스템 프롬프트·캐싱·모델·effort를 코드가 정한다 | GM 지침을 MCP prompt로 제공. 모델·세션 설정은 Claude 앱이 정한다 |
+| 용도 | 개발·테스트 | 실제 장기 플레이 |
+
+- **웹 앱 모드는 반드시 API 키만 쓴다.** 직접 만든 앱에 claude.ai 구독 로그인을 연결하는 것은 Anthropic 정책상 금지다
+- 게임 규칙, 상태 변경, 정보 필터, RAG 필터링, 명령어 처리는 전부 `core`에 둔다. 어댑터(`server`, `mcp`)에는 로직을 두지 않는다
+- `core`는 LLM을 전혀 모른다. LLM 오케스트레이션(의도 분류, 컨텍스트 조립, GM 호출, 요약)은 `gm` 패키지(웹 앱 모드 전용)에 둔다
+
+**세이브 공유와 잠금**
+
+- 두 모드는 같은 SQLite 세이브를 공유한다. 한쪽에서 저장하고 다른 쪽에서 이어서 플레이할 수 있어야 한다
+- 막는 것은 "동시에 같은 세계를 여는 것"뿐이다. 세계를 열 때 잠금 파일(PID, 모드, 시각)을 만들고 닫을 때 해제한다. 죽은 프로세스가 남긴 잠금은 PID를 확인한 뒤 해제할 수 있다
+- 모드를 바꿔도 이야기 흐름이 끊기지 않게, 최근 턴의 서술 요약을 반드시 세이브(`memory.recentTurns`, `summaries`)에 남긴다
+  - 웹 앱 모드: `gm` 패키지가 매 턴 GM 서술을 턴 요약으로 저장하고, 턴 요약 5개마다 작은 모델(Claude Haiku 5.5, `SUMMARY_MODEL`)로 장면 요약을 만든다
+  - MCP 모드: `take_action`이 `narrationSummary`(선택)를 받고, 장면이 끝나면 `record_turn_summary`를 호출하도록 GM 지침에 명시
+- `start_session` / `load_world`는 현재 장면, 최근 장면 요약, 최근 N턴 요약을 함께 돌려줘 새 세션의 GM이 바로 이어 갈 수 있게 한다
+
+### 11.6 MCP 모드
+
+**원칙**
+
+- Claude는 MCP tool 결과로 받은 정보만 본다. 정보 필터(현재 캐릭터의 Belief State)는 서버가 강제한다. World State, 숨은 목격자, 남의 비밀은 tool 결과에 절대 넣지 않는다
+- "AI는 숫자를 만들지 않는다"를 서버가 강제한다. 시간 경과와 상태 변경은 반드시 tool을 거쳐야만 일어난다
+- Claude가 tool 호출을 빼먹어도 세계가 망가지지 않게, tool을 잘게 쪼개지 않고 **턴 단위로 묶는다**
+
+**tool**
+
+| tool | 용도 |
+|---|---|
+| `start_session(worldId)` / `load_world` / `list_worlds` | 세계 열기·목록. 현재 장면과 최근 요약을 함께 반환 |
+| `get_scene()` | 현재 장면, 등장 인물(프로필 + 관계), 플레이어 상태, 활성 스토리렛, 선택지 후보. 필터 적용 |
+| `take_action(intent, move?, target?, details, narrationSummary?)` | **턴 진행의 유일한 입구.** 행동 분류 검증 → 판정(2d6) → 상태 변경 → 시간 경과 → 목격자·소문 처리 → 끼어들기 확인 → 결과와 다음 장면 반환. 사망 시 사망 정보 포함 |
+| `choose_storylet_option(storyletId, choiceId)` | 스토리렛 선택 |
+| `fast_forward(until)` | 이동·대기 빨리감기. 끼어들기가 생기면 멈추고 반환 |
+| `recall(query)` | RAG 검색 (lore + memory). 필터링은 서버에서 |
+| `record_turn_summary(text)` | 턴·장면 요약을 memory에 저장·임베딩 (웹 앱 모드는 `gm`이 같은 core 함수를 호출) |
+| `run_command(input)` | 정보 명령어 (11.7) |
+| `get_chronicle()` / `choose_next_character(characterId \| "new")` | 사망 후 계승 |
+
+**GM 지침**
+
+- 웹 앱 모드의 시스템 프롬프트(GM 원칙, 시나리오 톤, 화법 규칙)를 MCP prompt로도 노출한다. 예: `play` 프롬프트를 고르면 GM 지침 + `start_session` 안내
+- 지침 원문은 `content/scenarios/<id>/prompts/`에 두고 두 모드가 같은 파일을 읽는다
+- 지침에 명시할 것
+  - 플레이어 행동마다 `take_action`을 호출한다
+  - 숫자를 지어내지 않는다
+  - tool 결과에 없는 정보를 말하지 않는다
+  - 장면이 끝나면 `record_turn_summary`를 호출한다
+  - 입력이 `!`로 시작하면 서술하지 말고 `run_command` 결과를 코드 블록으로 그대로 출력한다 (요약·수정 금지)
+  - 플레이 시작 시 `!도움말` 안내를 한 줄 보여 준다
+
+**실행**
+
+- pnpm 스크립트로 MCP 서버를 실행한다 (예: `pnpm mcp`)
+- README에 Claude 데스크톱(`claude_desktop_config.json`)과 Claude Code(`.mcp.json`) 등록 방법을 쓴다
+- MCP 서버 로그는 stderr로만 쓴다. stdout은 MCP 프로토콜 전용이다
+
+### 11.7 정보 명령어 (MUD식)
+
+**구조**
+
+- 접두어 `!` (Claude 앱의 `/` 슬래시 커맨드와 충돌하지 않게)
+- 파서와 포맷터는 `core`에 둔다 (`packages/core/commands`). 웹 앱 모드에서도 입력창·커맨드 팔레트로 같은 명령어를 쓴다
+- MCP에는 `run_command` 하나로 노출한다 (`get_character_sheet` / `get_map` / `get_relations` 같은 개별 tool은 만들지 않는다)
+- 명령어 정의는 데이터로: 이름, 별칭(예: 상태/스탯), 인자, 설명, 핸들러. 시나리오별로 추가·이름 변경이 가능하게 한다
+
+**규칙**
+
+- 정보 명령어는 읽기 전용이다. 게임 시간을 소모하지 않고 상태를 바꾸지 않는다 (테스트로 보장)
+- 모든 출력은 정보 필터를 거친다
+- 출력은 서버가 완성된 텍스트로 만든다 (고정폭 기준 레이아웃)
+- 행동(이동, 수색, 전투 등)은 명령어로 만들지 않는다. 자연어 → `take_action`
+- 알 수 없는 명령어는 가장 가까운 명령어를 제안하고 `!도움말`을 안내한다
+
+**MVP 명령어**
+
+| 명령어 | 내용 |
+|---|---|
+| `!상태` | 능력치, 부상, 감염, 피로, 소속과 등급, 평판 |
+| `!소지품` | 인벤토리, 무게 |
+| `!지도` | 현재 위치, 아는 장소와 연결, 이동 시간 |
+| `!시간` | 날짜, 시각, 계절, 날씨 |
+| `!인물 [이름]` | 아는 인물 목록 / 특정 인물에 대해 아는 것과 관계 |
+| `!세력` | 아는 세력 정보와 관계 |
+| `!임무` | 현재 임무와 목표 |
+| `!배급` | 받은 배급, 무리 자원에 대해 아는 것 |
+| `!소문` | 최근 들은 소문 |
+| `!일지 [검색어]` | RAG recall (memory, 현재 캐릭터 기준 필터). 검색어가 없으면 최근 일지 N개 |
+| `!연대기` | 죽은 캐릭터들의 기록 |
+| `!도움말` | 명령어 목록 |
+
+**게이지**
+
+- 채움 `█`(U+2588), 빈칸 `░`(U+2591), 대괄호 없음
+- 기본 8칸. 값은 비율로 환산해 반올림한다 (0이 아니면 최소 1칸)
+- `core/commands`의 공통 포매터 함수 하나로 처리하고, 칸 수는 인자로 받는다
+- 게이지 뒤 두 칸 띄우고 상태 텍스트
+
+```
+━━━ 한도윤 · A 하급 전투원 ━━━
+D+47 · 늦가을 · 18:40 · 흐림
+
+근력 +1   민첩 +2   냉정 0   감각 +1   교섭 -1
+
+부상  ███░░░░░  경상 (왼팔, 2일 남음)
+감염  ░░░░░░░░  없음
+피로  █████░░░  지침
+
+소속  A · 3분대 (분대장 강태호)
+평판  분대 내 신뢰 보통 · 지휘부 인지도 낮음
+```
+
 ---
 
 ## 12. 데이터와 저장
@@ -633,7 +768,7 @@ MVP에 포함한다. 프로젝트 목표 중 하나다 (0장).
 
 ### 12.2 세이브
 
-- **SQLite** (로컬 파일). 세계 하나 = DB 파일 하나 (`saves/world.db`)
+- **SQLite** (로컬 파일). 세계 하나 = DB 파일 하나 (`saves/worlds/<worldId>.db`). 두 플레이 모드가 같은 파일을 쓰고, 잠금 파일로 동시 접근만 막는다 (11.5)
 - 구조: **세계 세이브 1개 + 캐릭터 런 기록 여러 개**
 - **이벤트 로그가 원본**, 상태는 스냅샷. 판정, 굴린 값, 상태 변경을 append-only로 기록
   - 첫 이벤트는 `world_created`(시작 캐릭터 포함). 상태는 이벤트를 차례로 적용한 결과다
@@ -641,7 +776,7 @@ MVP에 포함한다. 프로젝트 목표 중 하나다 (0장).
   - 매 턴이 끝나면 스냅샷을 남기고, 불러올 때는 마지막 스냅샷 + 이후 이벤트로 복원한다
   - `events`, `transcript` 테이블은 트리거로 UPDATE·DELETE를 막는다
 - 세이브 형식 버전(`SAVE_SCHEMA_VERSION`)이 다르면 열지 않는다. 형식을 바꾸면 버전을 올리고 이전 세이브를 옮기는 방법을 만든다
-- "새 게임"은 지금 세계를 지우지 않고 `saves/archive/`로 옮긴 뒤 새 세계를 연다
+- "새 게임"은 새 세계를 하나 더 만든다. 이전 세계는 `saves/worlds/`에 그대로 남는다. 형식·시나리오가 맞지 않는 세이브만 `saves/archive/`로 옮긴다
 - 필드 추가처럼 호환되는 변경은 기본값을 주고 버전을 올리지 않는다 (예: 5단계의 `time`은 이전 세이브에서 시작 시각으로 본다)
 - 아래 타입은 최종 목표 형태다. 현재 구현은 단계별로 필드를 늘려 간다
 
@@ -707,7 +842,7 @@ gm_tone: prompts/post_apoc_tone.md
 **구현 (`post_apoc`)**
 
 - `scenario.yaml`의 목록은 `{ id, label }` 객체로 쓴다 (화면·프롬프트에 한국어 이름이 필요해서)
-- 위 예시에 더해 둔 항목: `move_roles`(낌새 알아차리기·은밀 행동에 쓰는 행동), `harm_track`(`apply_harm`이 쓰는 트랙, 마지막 단계는 반드시 사망), `promotion`(진급 경로), `threats`(빨리감기 이상 징후 확률·문구)
+- 위 예시에 더해 둔 항목: `move_roles`(낌새 알아차리기·은밀 행동에 쓰는 행동), `harm_track`(판정 피해가 쓰는 트랙, 마지막 단계는 반드시 사망), `promotion`(진급 경로), `threats`(빨리감기 이상 징후 확률·문구)
 - 시작 장면은 역할(`roles/*.yaml`의 `opening_scene`)에 둔다. GM 프롬프트 = 공통 규칙(core) + 시나리오 톤(`prompts/`) + 시작 장면
 - ID는 예시를 따랐다 (`nerve`, `senses`, `scavenge`, `outsider`). 예시에 없지만 쓰는 곳이 있는 `staff`(지원 인력)와 `leader`(지도부)는 남겼다. `aid`(돕기)와 `infection`(감염)은 규칙을 구현할 때 목록에 넣는다
 - 캐릭터의 부상은 `conditions`(트랙별 단계)와 `dead`로 바뀌었다. 세이브 형식 2. 형식이나 시나리오가 다른 세이브는 서버가 `saves/archive/`로 보관하고 새 세계를 연다
@@ -721,10 +856,11 @@ gm_tone: prompts/post_apoc_tone.md
 |---|---|
 | 언어 | TypeScript |
 | UI | Vite + React (SPA) |
-| 서버 | Hono 또는 Fastify (로컬 실행, SSE 스트리밍) |
+| 서버 | Hono 또는 Fastify (로컬 실행, SSE 스트리밍) — 웹 앱 모드 |
+| MCP | `@modelcontextprotocol/sdk`, stdio transport — MCP 모드 |
 | DB | SQLite + Drizzle (나중에 Postgres 전환 가능하게 저장소 레이어 분리) |
 | 검증 | zod |
-| LLM | Claude API (**claude.ai 구독과 별도 결제**, Console에서 키 발급·월 한도 설정) |
+| LLM | 웹 앱 모드: Claude API (**claude.ai 구독과 별도 결제**, Console에서 키 발급·월 한도 설정). MCP 모드: Claude 앱 세션 (구독 사용량) |
 | 임베딩 | bge-m3 로컬 실행 (Ollama 또는 transformers.js). `Embedder` 인터페이스로 교체 가능 |
 | 벡터 검색 | SQLite + sqlite-vec |
 | 키워드 검색 | SQLite FTS5. 벡터 결과와 RRF로 병합 |
@@ -735,9 +871,11 @@ trpg/
 ├── CLAUDE.md
 ├── docs/design.md          # 이 문서
 ├── packages/
-│   ├── core/               # 게임 로직, 판정, 시뮬레이션, LLM 호출 (UI 무관, 순수 TS)
-│   ├── server/             # core를 HTTP·SSE로 노출하는 얇은 레이어
-│   └── ui/                 # React 화면
+│   ├── core/               # 엔진: 판정, 시뮬레이션, 상태, 저장, RAG, 정보 필터, 명령어 (LLM 호출 없음)
+│   ├── gm/                 # LLM 오케스트레이션: 의도 분류, 컨텍스트 조립, GM 호출, 요약 (웹 앱 모드 전용)
+│   ├── server/             # 웹 앱용 HTTP·SSE 어댑터 (core + gm)
+│   ├── mcp/                # MCP 서버 어댑터 (core만 사용, stdio)
+│   └── ui/                 # 웹 앱 화면
 └── content/
     └── scenarios/
         └── post_apoc/          # 시나리오 팩 (12.3)
@@ -749,7 +887,8 @@ trpg/
             └── eval/           # RAG 검색 평가 세트
 ```
 
-- `core`는 UI와 서버를 모른다. 나중에 Electron이든 호스팅 웹이든 껍데기만 바꿔 끼운다
+- `core`는 UI, 서버, LLM을 모른다. 나중에 Electron이든 호스팅 웹이든 껍데기만 바꿔 끼운다
+- 어댑터(`server`, `mcp`)에는 게임 로직을 두지 않는다
 - API 키는 `.env`에만 두고 Git에 올리지 않는다
 
 ---
@@ -763,6 +902,8 @@ trpg/
 - 관계 패널 (아는 인물과 관계)
 - 판정 결과 표시 (주사위 값, 보정치, 결과 등급)
 - 사망 화면 → 연대기 → 다음 캐릭터 선택
+- 웹 앱에서도 `!` 정보 명령어를 입력창·커맨드 팔레트로 쓸 수 있다 (11.7)
+- **MCP 모드에는 별도 화면이 없다.** Claude 앱의 채팅이 화면이고, 상태·지도·관계 같은 정보는 `!` 명령어의 텍스트 출력으로 본다
 
 ---
 
@@ -837,6 +978,8 @@ trpg/
 | 3 | tool calling: 판정(2d6), 부상, 아이템 이동 | 완료 |
 | 4 | zod 스키마 + YAML 콘텐츠 로더, SQLite 세이브·불러오기, 이벤트 로그 | 완료 |
 | 4-1 | **RAG 기반**: Embedder, sqlite-vec, FTS5, lore 적재와 검색 | |
+| 4-2 | **core에서 LLM 호출 분리 (`gm` 패키지)**, 턴 단위 행동 파이프라인(`take_action`)을 core에 | 완료 |
+| 4-3 | **MCP 어댑터 + 정보 명령어**: `mcp` 패키지, `!` 명령어 파서·포맷터, 세이브 잠금, 턴 요약 저장 | |
 | 5 | 시간 모델 (행동 비용, 빨리감기) | 완료 |
 | 6 | NPC 프로필 주입, Belief State, 정보 필터 | 완료 |
 | 6-1 | **memory 컬렉션과 정보 필터 연동, 검색 평가 세트** | |
@@ -849,6 +992,8 @@ trpg/
 
 - 4-1, 6-1은 설계 변경(RAG를 MVP에 포함)으로 추가됐다. 기존 단계 번호는 커밋 기록과 맞추기 위해 그대로 둔다
 - 시나리오 팩 분리(12.3)는 4-1의 lore 경로(`content/scenarios/<id>/lore/`)와 9단계의 자원 종류에 걸리므로 그보다 먼저 했다 (완료)
+- 4-2, 4-3은 설계 변경(플레이 모드 이중 지원)으로 추가됐다. MCP 어댑터는 `take_action`이 동작하는 시점, 즉 판정·상태·저장이 갖춰진 뒤(4단계) 바로 다음에 둔다
+- 명령어 중 아직 시스템이 없는 항목(지도, 세력, 배급, 피로, 날씨, 연대기 등)은 "아직 없음"으로 출력하고, 해당 단계에서 채운다
 
 각 단계에서 core 로직은 AI 없이 단위 테스트하고, 가능하면 랜덤 자동 플레이로 막힘과 밸런스를 점검한다.
 
@@ -864,3 +1009,4 @@ trpg/
 - 행동별 소요 시간 테이블 (현재 *임시* 값으로 구현: 5.1)
 - 사용할 Claude 모델 구성 (서술용 / 분류·요약용)
 - 임베딩 실행 방식: Ollama 또는 transformers.js
+- 피로·계절·날씨: `!상태`, `!시간` 출력 예시에 있지만 아직 규칙이 없다

@@ -22,7 +22,13 @@ export function loadScenario(dir: string): Scenario {
   if (!file.success) throw new ScenarioError(`scenario.yaml: ${z.prettifyError(file.error)}`);
   const speech = speechRulesSchema.safeParse(parse(read(file.data.speech_rules)));
   if (!speech.success) throw new ScenarioError(`${file.data.speech_rules}: ${z.prettifyError(speech.error)}`);
-  return { ...file.data, speech: speech.data, tone: read(file.data.gm_tone).trim() };
+  return {
+    ...file.data,
+    speech: speech.data,
+    tone: read(file.data.gm_tone).trim(),
+    rules: read(file.data.gm_rules).trim(),
+    mcpGuide: read(file.data.mcp_guide).trim(),
+  };
 }
 
 // ── 조회 도우미 ───────────────────────────────────────

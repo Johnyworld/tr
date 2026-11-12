@@ -99,52 +99,13 @@ export function recordDeed(
   return { deed, visible };
 }
 
-const recordDeedTool = defineTool({
-  name: "record_deed",
-  description:
-    "플레이어 캐릭터가 남들이 알면 평판이 달라질 행동을 했을 때 기록한다 (도둑질, 거짓말, 자비, 잔혹, 명령 위반, 용기, 비겁, 동료를 위함·배신 등). " +
-    "목격자와 소문, 사람들의 반응은 시스템이 정한다. 사소한 행동이나 아무 의미 없는 행동은 기록하지 않는다. " +
-    "결과가 불확실한 행동이면 판정을 먼저 하고, 실제로 일어난 일만 기록한다. " +
-    "행동 하나는 한 번만 기록한다. <상태>의 '이미 기록된 당신의 행적'에 있는 행동은 결과가 이어지더라도 다시 기록하지 않는다. " +
-    "summary에는 플레이어가 한 행동만 쓰고, 들켰는지 같은 결과는 쓰지 않는다 (목격은 시스템이 정한다).",
-  schema: z.strictObject({
-    summary: z.string().min(1).max(120).describe("무슨 일을 했는지 한 문장 (예: 창고 뒷문으로 들어가 통조림 두 개를 훔쳤다)"),
-    tags: z.array(deedTagSchema).min(1).max(3).describe(
-      "행동의 성격: diligence 성실, disobedience 명령 불복종, mercy 자비, cruelty 잔혹, theft 도둑질, deceit 거짓말, honesty 정직, bravery 용기, cowardice 비겁, loyalty 동료를 위함, betrayal 배신, selfishness 제 몫 챙기기, enemy_sympathy 적에게 호의",
-    ),
-    severity: z.number().int().min(1).max(3).describe("심각도: 1 사소함, 2 눈에 띔, 3 중대함"),
-    privacy: privacySchema.describe("장소의 노출도: public 사람이 많은 곳, semi_private 한적한 곳, private 아무도 없을 만한 곳"),
-    noisy: z.boolean().describe("총성·비명·큰 소리가 났는지"),
-  }),
-  run(input, ctx) {
-    const state = ctx.store.getState();
-    if (state.characters[state.playerId]?.dead) return { ok: false, error: "사망한 캐릭터입니다." };
-    const { deed, visible } = recordDeed(ctx, input);
-    return {
-      ok: true,
-      resultText:
-        `행적 ${deed.id} 기록: ${deed.summary}. ` +
-        (visible.length > 0
-          ? `장면에 있던 ${visible.join(", ")}이(가) 보았다. 그들의 반응을 서술에 반영하라.`
-          : "장면에 아무도 없었다.") +
-        " 숨은 목격자가 있었는지는 아무도 모른다. 플레이어가 주변을 살피면 look_for_witnesses를 쓴다.",
-      display: {
-        type: "deed",
-        summary: deed.summary,
-        tagLabels: deed.tags.map((t) => DEED_TAG_LABELS[t]),
-        visibleWitnesses: visible,
-      },
-    };
-  },
-});
-
 const lookForWitnesses = defineTool({
   name: "look_for_witnesses",
   description:
     "플레이어 캐릭터가 방금 한 일을 누가 보지 않았는지 주변을 살핀다 (낌새를 알아차리는 판정을 시스템이 굴린다). " +
     "행적 하나에 한 번만 살필 수 있다. 성공하면 누가 봤는지, 대가 있는 성공이면 누군가 본 것 같다는 느낌만, 실패하면 아무것도 모른다.",
   schema: z.strictObject({
-    deed_id: z.string().describe("살펴볼 행적 id (record_deed 결과에 나온 것)"),
+    deed_id: z.string().describe("살펴볼 행적 id (take_action 결과에 나온 행적 id)"),
   }),
   run(input, ctx) {
     const state = ctx.store.getState();
@@ -227,7 +188,7 @@ const revealSecret = defineTool({
   },
 });
 
-export const REPUTATION_TOOLS = [recordDeedTool, lookForWitnesses, revealSecret] as const;
+export const REPUTATION_TOOLS = [lookForWitnesses, revealSecret] as const;
 
 /**
  * 하루 단위 소문 전파 (기획서 8.4). 턴 시작에 날이 바뀌었으면 지난 날 수만큼(최대 3일) 1단계씩 퍼진다.

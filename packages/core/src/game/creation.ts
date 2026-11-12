@@ -85,6 +85,8 @@ export function randomAbilityBuy(s: Scenario, rng: Rng): Record<string, number> 
 
 export type CreationRules = {
   defaultName: string;
+  /** 시작 역할 이름 (예: 청솔형제단 하급 전투원) */
+  roleLabel: string;
   points: number;
   cost: { value: number; cost: number }[];
   maxLow: number;
@@ -100,6 +102,7 @@ export function creationRules(content: Content, roleId: string): CreationRules |
   if (!s.creation || !role) return null;
   return {
     defaultName: role.default_name,
+    roleLabel: role.label,
     points: s.creation.points,
     cost: Object.entries(s.creation.cost).map(([v, cost]) => ({ value: Number(v), cost })).sort((a, b) => a.value - b.value),
     maxLow: s.creation.max_low,

@@ -15,7 +15,7 @@
     day_gte: 2
     flags_none: [scouts_captured]
   setup: 망루에서 고가도로 너머를 보는데, 물류창고 쪽에서 희미한 불빛이 깜빡인다. 짧게, 길게, 다시 짧게. 바람에 흔들리는 불이 아니다.
-  ai_direction: 불빛은 실종된 A 정찰조가 몰래 보내는 손전등 신호다. 확정하지 말고, 규칙적이라는 느낌만 준다. 곁에 아무도 없다.
+  ai_direction: 불빛은 실종된 청솔형제단 정찰조가 몰래 보내는 손전등 신호다. 확정하지 말고, 규칙적이라는 느낌만 준다. 곁에 아무도 없다.
   choices:
     - id: watch
       label: 숨죽이고 불빛을 끝까지 지켜본다
@@ -85,8 +85,8 @@
     flags_none: [deserted]
   cast:
     friend: { ids: [a_jiho], known: true, trust_gte: 0 }
-  setup: 보초 교대 틈에 {friend:이/가} 소매를 잡아끈다. "곧 C가 크게 온대. 오늘 밤 같이 나가자. B 쪽으로 가면 받아 준대."
-  ai_direction: 오지호는 겁에 질려 있다. 누나가 B 거점에 있다는 걸 흘린다. 혼자서는 못 떠난다.
+  setup: 보초 교대 틈에 {friend:이/가} 소매를 잡아끈다. "곧 붉은연합이 크게 온대. 오늘 밤 같이 나가자. 버들마을 쪽으로 가면 받아 준대."
+  ai_direction: 오지호는 겁에 질려 있다. 누나가 버들마을 거점에 있다는 걸 흘린다. 혼자서는 못 떠난다.
   choices:
     - id: join
       label: 같이 떠나기로 한다
@@ -136,11 +136,11 @@
         - merit: 1
         - relation: { who: lookout, axis: respect, delta: 1 }
         - faction_morale: { faction: own, delta: 1 }
-        - belief: { fact: 민서연이 고가도로 너머에 C의 사람이 늘었다고 했다, source: report }
+        - belief: { fact: 민서연이 고가도로 너머에 붉은연합의 사람이 늘었다고 했다, source: report }
     - id: keep
       label: 확실해질 때까지 둘만 안다
       effects:
-        - belief: { fact: 민서연이 고가도로 너머에 C의 사람이 늘었다고 했다, source: report }
+        - belief: { fact: 민서연이 고가도로 너머에 붉은연합의 사람이 늘었다고 했다, source: report }
 
 # ── 템플릿: 세계 상태로 채워 반복되는 이야기 ───────────────────
 
@@ -233,7 +233,7 @@
     zones: [a_east_post]
     segments: [night]
   setup: 초소 아래 어둠 속에서 쇠붙이를 끄는 소리가 났다가 멎는다. 감염체 걸음은 아니다.
-  ai_direction: C의 정찰병이 초소 경계를 재고 있다. 확정하지 않는다.
+  ai_direction: 붉은연합의 정찰병이 초소 경계를 재고 있다. 확정하지 않는다.
   choices:
     - id: investigate
       label: 내려가서 살핀다
@@ -242,7 +242,7 @@
         success:
           - clock: { id: c_east_offensive, delta: -1 }
           - merit: 1
-          - belief: { fact: 초소 아래에서 C 정찰병이 남긴 발자국과 표식을 찾아 지웠다, source: seen }
+          - belief: { fact: 초소 아래에서 붉은연합 정찰병이 남긴 발자국과 표식을 찾아 지웠다, source: seen }
         partial:
           - belief: { fact: 초소 아래에 누군가 다녀간 흔적이 있었다, source: seen }
         miss:

@@ -72,6 +72,7 @@ export type SlotsView = { scenarioName: string; slots: SaveSlotView[]; current: 
 /** 캐릭터 생성 규칙 (core CreationRules) */
 export type CreationRulesView = {
   defaultName: string;
+  roleLabel: string;
   points: number;
   cost: { value: number; cost: number }[];
   maxLow: number;

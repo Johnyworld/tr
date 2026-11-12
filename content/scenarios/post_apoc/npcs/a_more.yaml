@@ -1,4 +1,4 @@
-# 세력 A 추가 인물 (12단계 초안)
+# 청솔형제단 추가 인물 (12단계 초안)
 - id: a_seonghee
   name: 최선희
   faction: faction_a
@@ -6,7 +6,7 @@
   age: 52
   gender: female
   look: 희끗한 단발에 낡은 교사용 카디건. 늘 공책을 들고 다닌다.
-  reputation: A 거점의 대표. 옛 공업고 교사였다. "버리지 않는다"는 원칙을 처음 말한 사람.
+  reputation: 청솔형제단 거점의 대표. 옛 공업고 교사였다. "버리지 않는다"는 원칙을 처음 말한 사람.
   want: 겨울을 넘길 때까지 아무도 버리지 않는 것
   fear: 원칙을 지키다 모두를 잃는 것
   values: { discipline: 2, loyalty: 3, mercy: 2, honesty: 2, self_interest: -2 }
@@ -22,9 +22,9 @@
     - 배급을 줄이자는 말에는 끝까지 반대한다
   knows:
     - 연합의 탄약이 한 달 치도 안 남았다는 것
-    - B 대표 장현우가 요즘 회의에 늦게 나온다는 것
+    - 버들마을 대표 장현우가 요즘 회의에 늦게 나온다는 것
   doesnt_know:
-    - E의 탁봉수가 C에 초소 정보를 팔았다
+    - 나루상단의 탁봉수가 붉은연합에 초소 정보를 팔았다
   stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 2, charm: 2, intellect: 2 }
   skills: { persuade: 2, history: 2, tactics: 1, mechanics: 1 }
   start_inventory: [ledger]

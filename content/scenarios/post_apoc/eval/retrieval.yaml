@@ -42,7 +42,7 @@ memory:
   - id: c_memory
     kind: scene_summary
     known_by: [c_soldier]
-    text: "[2일차 03:00 · 장면 요약] 고가도로 너머 물류창고에서 붙잡은 A 정찰조를 지켰다."
+    text: "[2일차 03:00 · 장면 요약] 고가도로 너머 물류창고에서 붙잡은 청솔형제단 정찰조를 지켰다."
   # ── 방해 기억: 같은 장소·인물이 나오지만 질의와는 다른 일 (실제 플레이처럼 기억이 쌓인 상태) ──
   - id: d_warehouse_guard
     kind: turn_summary
@@ -63,7 +63,7 @@ memory:
   - id: d_overpass_scout
     kind: turn_summary
     known_by: [player]
-    text: "[2일차 15:00 · 지난 일] 고가도로 위에 올라가 망원경으로 C의 영역 쪽을 살폈다. 연기 두 줄이 보였다."
+    text: "[2일차 15:00 · 지난 일] 고가도로 위에 올라가 망원경으로 붉은연합의 영역 쪽을 살폈다. 연기 두 줄이 보였다."
   - id: d_overpass_order
     kind: belief
     known_by: [player]
@@ -128,11 +128,11 @@ cases:
   - id: lore_medicine_faction
     query: 약을 구할 수 있는 무리
     viewer: a_recruit
-    expect: ["lore/factions > 세력 D"]
+    expect: ["lore/factions > 하얀매"]
   - id: lore_traders
     query: 상인들은 언제 오나
     viewer: a_recruit
-    expect: ["lore/factions > 세력 E"]
+    expect: ["lore/factions > 나루상단"]
 
   # ── lore: 세력 문서 ──
   - id: lore_a_rules
@@ -144,12 +144,12 @@ cases:
     viewer: a_recruit
     expect: ["lore/faction_a > 거점의 구역"]
   - id: lore_c_inside_hidden
-    query: 세력 C 병사들은 지도부를 두려워한다
+    query: 붉은연합 병사들은 지도부를 두려워한다
     viewer: a_recruit
-    expect: ["lore/factions > 세력 C"]
+    expect: ["lore/factions > 붉은연합"]
     forbid: ["lore/faction_c_inside"]
   - id: lore_c_offensive_hidden
-    query: C가 동쪽 초소를 공격할 계획
+    query: 붉은연합이 동쪽 초소를 공격할 계획
     viewer: a_recruit
     expect: []
     forbid: ["lore/faction_c_inside"]

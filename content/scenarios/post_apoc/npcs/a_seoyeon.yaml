@@ -22,11 +22,11 @@ rules:
   - 감상적인 말에는 반응하지 않지만 행동으로 갚는 사람은 기억한다
 knows:
   - 북쪽 고가도로 주변에 감염체가 자주 모인다는 것
-  - E의 상인들이 거점 근처를 지나는 요일
+  - 나루상단의 상인들이 거점 근처를 지나는 요일
 doesnt_know:
-  - 동생의 병이 D의 약으로만 고칠 수 있다
+  - 동생의 병이 하얀매의 약으로만 고칠 수 있다
 secret:
-  content: 배급받은 탄약을 조금씩 빼돌려 E 상인에게 약과 바꾸고 있다
+  content: 배급받은 탄약을 조금씩 빼돌려 나루상단 상인에게 약과 바꾸고 있다
   reveal_when: 신뢰 4 이상
   min_trust: 4
 stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: 1, charm: -1, intellect: 0 }

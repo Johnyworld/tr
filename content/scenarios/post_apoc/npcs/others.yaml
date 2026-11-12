@@ -1,6 +1,6 @@
 # 다른 세력 인물 (12단계 초안). 처음에는 모르는 사람이다 (그 구역에 가면 겉모습으로 보인다)
 
-# ── B ──
+# ── 버들마을 ──
 - id: b_hyunwoo
   name: 장현우
   faction: faction_b
@@ -8,26 +8,26 @@
   age: 47
   gender: male
   look: 각진 턱에 늘 면도를 한 얼굴. 낡았지만 다림질한 셔츠.
-  reputation: B 거점의 대표. A와 연합을 맺은 사람이지만, 요즘 표정이 어둡다.
-  want: B 사람들을 살려서 이 전쟁을 끝내는 것
-  fear: A와 함께 가라앉는 것
+  reputation: 버들마을 거점의 대표. 청솔형제단과 연합을 맺은 사람이지만, 요즘 표정이 어둡다.
+  want: 버들마을 사람들을 살려서 이 전쟁을 끝내는 것
+  fear: 청솔형제단과 함께 가라앉는 것
   values: { discipline: 1, loyalty: 0, mercy: 1, honesty: -1, self_interest: 2 }
   temperament: [cautious, calculating]
   voice:
     style: 정중하지만 거리를 두는 존댓말. 질문에 질문으로 답한다
     samples:
-      - "A 쪽 분이 여기까지 무슨 일로?"
+      - "청솔형제단 쪽 분이 여기까지 무슨 일로?"
       - "우리도 사정이 있습니다. 그쪽 대표께 그렇게 전해 주시죠."
   routine: { morning: 회의, day: 거점 순찰, night: 사무실 }
   rules:
-    - A 사람 앞에서는 연합 이야기를 피하지 않지만 확답을 하지 않는다
+    - 청솔형제단 사람 앞에서는 연합 이야기를 피하지 않지만 확답을 하지 않는다
   knows:
-    - B의 탄약이 거의 바닥났다는 것
+    - 버들마을의 탄약이 거의 바닥났다는 것
   doesnt_know:
-    - C 지도부는 B를 받아들일 생각이 없다
+    - 붉은연합 지도부는 버들마을을 받아들일 생각이 없다
   secret:
-    content: 지난주 C의 사자를 몰래 만났다. 연합을 깨면 B를 건드리지 않겠다는 제안을 받고 아직 답하지 않았다
-    reveal_when: B의 앞날을 진심으로 걱정해 주는 사람에게, 둘만 있을 때
+    content: 지난주 붉은연합의 사자를 몰래 만났다. 연합을 깨면 버들마을을 건드리지 않겠다는 제안을 받고 아직 답하지 않았다
+    reveal_when: 버들마을의 앞날을 진심으로 걱정해 주는 사람에게, 둘만 있을 때
     min_trust: 4
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: 2, intellect: 1 }
   skills: { persuade: 2, tactics: 1, shoot: 0 }
@@ -42,9 +42,9 @@
   age: 24
   gender: female
   look: 오지호와 똑같은 주근깨. 머리를 짧게 자르고 오른손에 붕대를 감았다.
-  reputation: B의 경비병. A에 있는 남동생 이야기를 자주 한다.
+  reputation: 버들마을의 경비병. 청솔형제단에 있는 남동생 이야기를 자주 한다.
   want: 동생과 같은 곳에서 사는 것
-  fear: B가 무너지는 날 동생을 못 보는 것
+  fear: 버들마을이 무너지는 날 동생을 못 보는 것
   values: { discipline: 1, loyalty: 3, mercy: 1, honesty: 2, self_interest: 0 }
   temperament: [blunt, protective]
   voice:
@@ -56,12 +56,12 @@
   rules:
     - 동생 소식을 가져온 사람에게는 경계를 푼다
   knows:
-    - B 간부 몇이 밤마다 따로 모인다는 것
-    - 동생 오지호가 A에 있다는 것
+    - 버들마을 간부 몇이 밤마다 따로 모인다는 것
+    - 동생 오지호가 청솔형제단에 있다는 것
   doesnt_know:
-    - 대표 장현우가 C의 사자를 만났다
+    - 대표 장현우가 붉은연합의 사자를 만났다
   secret:
-    content: B 안에서 C로 넘어가자는 사람들의 이름을 몇 안다. 동생 때문에 아무에게도 말하지 않았다
+    content: 버들마을 안에서 붉은연합으로 넘어가자는 사람들의 이름을 몇 안다. 동생 때문에 아무에게도 말하지 않았다
     reveal_when: 지호의 안전을 약속받았을 때
     min_trust: 3
   stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: 1, charm: -1, intellect: 0 }
@@ -70,7 +70,7 @@
   playable: true
   zone: b_base
 
-# ── C ──
+# ── 붉은연합 ──
 - id: c_seokjin
   name: 고석진
   faction: faction_c
@@ -78,7 +78,7 @@
   age: 27
   gender: male
   look: 왼팔에 붉은 완장. 광대뼈가 드러날 만큼 말랐고 눈 밑이 검다.
-  reputation: C의 정찰병. 물류창고 경비조에 있다.
+  reputation: 붉은연합의 정찰병. 물류창고 경비조에 있다.
   want: 살아서 이 전쟁에서 빠져나가는 것
   fear: 지도부의 본보기가 되는 것
   values: { discipline: -1, loyalty: 0, mercy: 1, honesty: 0, self_interest: 2 }
@@ -96,9 +96,9 @@
     - 물류창고 경비 교대는 새벽 다섯 시다
     - 수용소 안쪽 문은 마경수만 열쇠가 있다
   doesnt_know:
-    - E의 탁봉수가 A 초소 정보를 C에 팔았다
+    - 나루상단의 탁봉수가 청솔형제단 초소 정보를 붉은연합에 팔았다
   secret:
-    content: 물류창고 수용소에 A의 정찰조 셋이 갇혀 있다. 그중 하나는 오씨 성을 쓴다
+    content: 물류창고 수용소에 청솔형제단의 정찰조 셋이 갇혀 있다. 그중 하나는 오씨 성을 쓴다
     reveal_when: 목숨을 살려 주겠다는 약속을 믿을 수 있을 때
     min_trust: 2
   stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: -1, charm: 0, intellect: 0 }
@@ -114,7 +114,7 @@
   age: 45
   gender: male
   look: 깔끔하게 빗어 넘긴 머리, 장교 외투. 손이 늘 장갑 속에 있다.
-  reputation: C의 간부. 고가도로 너머를 맡고 있다. 포로를 다루는 방식이 잔혹하다는 소문의 주인공.
+  reputation: 붉은연합의 간부. 고가도로 너머를 맡고 있다. 포로를 다루는 방식이 잔혹하다는 소문의 주인공.
   want: 동쪽 공세를 성공시켜 지도부에 오르는 것
   fear: 실패한 간부가 받는 본보기
   values: { discipline: 3, loyalty: 0, mercy: -3, honesty: -1, self_interest: 2 }
@@ -137,7 +137,7 @@
   playable: false
   zone: c_warehouse
 
-# ── D ──
+# ── 하얀매 ──
 - id: d_eunyoung
   name: 서은영
   faction: faction_d
@@ -145,7 +145,7 @@
   age: 39
   gender: female
   look: 소매를 걷은 흰 가운, 안경 한쪽 다리를 철사로 감았다.
-  reputation: D의 의사이자 대표. 약을 거래 조건으로 쓴다는 평 때문에 차갑다는 말을 듣는다.
+  reputation: 하얀매의 의사이자 대표. 약을 거래 조건으로 쓴다는 평 때문에 차갑다는 말을 듣는다.
   want: 약이 떨어지기 전에 누구 편에도 서지 않고 겨울을 넘기는 것
   fear: 약을 둘러싸고 무리들이 쳐들어오는 것
   values: { discipline: 2, loyalty: 1, mercy: 1, honesty: 2, self_interest: 1 }
@@ -162,9 +162,9 @@
     - 옛 시립병원 지하 약제실에 아직 약이 남아 있다
     - 윤채원이라는 이름
   doesnt_know:
-    - 윤채원이 A에서 약이 모자라 고생하고 있다
+    - 윤채원이 청솔형제단에서 약이 모자라 고생하고 있다
   secret:
-    content: 윤채원은 원래 D의 간호사였다. 병원에서 감염된 아이를 살리려고 약을 가지고 나갔고, D는 그를 쫓아냈다
+    content: 윤채원은 원래 하얀매의 간호사였다. 병원에서 감염된 아이를 살리려고 약을 가지고 나갔고, 하얀매는 그를 쫓아냈다
     reveal_when: 윤채원의 안부를 진심으로 묻는 사람에게
     min_trust: 3
   stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 2, charm: 1, intellect: 2 }
@@ -181,8 +181,8 @@
   age: 31
   gender: male
   look: 덩치가 크고 목에 방독면을 걸었다. 등에 빈 배낭을 지고 다닌다.
-  reputation: D의 수색꾼. 옛 시립병원을 드나드는 몇 안 되는 사람.
-  want: 병원 지하 약제실을 혼자 다 털어 D에서 한자리 얻는 것
+  reputation: 하얀매의 수색꾼. 옛 시립병원을 드나드는 몇 안 되는 사람.
+  want: 병원 지하 약제실을 혼자 다 털어 하얀매에서 한자리 얻는 것
   fear: 병원 지하의 어둠
   values: { discipline: 0, loyalty: 1, mercy: 0, honesty: 0, self_interest: 2 }
   temperament: [gruff, greedy]
@@ -203,7 +203,7 @@
   playable: true
   zone: hospital_ruins
 
-# ── E ──
+# ── 나루상단 ──
 - id: e_bongsu
   name: 탁봉수
   faction: faction_e
@@ -211,7 +211,7 @@
   age: 58
   gender: male
   look: 금니가 두 개, 기름때 묻은 가죽 조끼. 손가락에 반지가 여럿이다.
-  reputation: E 상인단의 우두머리. 누구에게나 웃으며 판다. 이기는 쪽에 붙을 사람이라는 평.
+  reputation: 나루상단의 우두머리. 누구에게나 웃으며 판다. 이기는 쪽에 붙을 사람이라는 평.
   want: 전쟁이 끝났을 때 이긴 쪽의 단골이 되는 것
   fear: 양쪽에서 동시에 버림받는 것
   values: { discipline: 0, loyalty: -1, mercy: 0, honesty: -2, self_interest: 3 }
@@ -226,11 +226,11 @@
     - 정보도 물건처럼 판다
     - 빚진 사람은 끝까지 기억한다
   knows:
-    - C가 탄약을 넉넉히 사들이고 있다
-    - B 대표가 C의 사자를 만났다는 소문
+    - 붉은연합이 탄약을 넉넉히 사들이고 있다
+    - 버들마을 대표가 붉은연합의 사자를 만났다는 소문
   doesnt_know: []
   secret:
-    content: C에 A 동쪽 초소의 경비 교대 시간을 팔았다. 값으로 탄약 두 상자를 받았다
+    content: 붉은연합에 청솔형제단 동쪽 초소의 경비 교대 시간을 팔았다. 값으로 탄약 두 상자를 받았다
     reveal_when: 더 큰 이익이나 목숨이 걸렸을 때
     min_trust: 4
   stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: 1, charm: 2, intellect: 1 }
@@ -246,7 +246,7 @@
   age: 17
   gender: female
   look: 빨간 털모자에 큰 배낭. 운동화 끈이 짝짝이다.
-  reputation: E의 심부름꾼. 거점 사이로 편지와 소식을 나른다.
+  reputation: 나루상단의 심부름꾼. 거점 사이로 편지와 소식을 나른다.
   want: 언젠가 자기 장사를 하는 것
   fear: 혼자 강변을 건너는 밤
   values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 1, self_interest: 1 }
@@ -255,12 +255,12 @@
     style: 빠르고 밝은 반말 섞인 존댓말
     samples:
       - "편지요? 한 통에 담배 한 개비! 싸죠?"
-      - "C 쪽 장터는 요새 분위기 진짜 이상해요."
+      - "붉은연합 쪽 장터는 요새 분위기 진짜 이상해요."
   routine: { morning: 정수장, day: 거점 사이 심부름, night: 장터 }
   rules:
     - 맡은 편지는 뜯어보지 않는다 (가끔은 본다)
   knows:
-    - B 거점에 오미나라는 경비병이 동생에게 편지를 보내고 싶어 한다는 것
+    - 버들마을 거점에 오미나라는 경비병이 동생에게 편지를 보내고 싶어 한다는 것
     - 정수장 펌프는 하루에 두 번만 돌린다
   doesnt_know: []
   stats: { strength: -1, agility: 2, vitality: 1, senses: 1, nerve: 0, charm: 1, intellect: 0 }

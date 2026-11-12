@@ -3,7 +3,7 @@
 # 거점 산출은 텃밭·우물·채집·교역을 뭉뚱그린 값. 무리마다 소모보다 조금 모자라게 둬서 바깥 구역을 두고 다투게 한다
 # 인접은 한쪽에만 적어도 양쪽으로 본다
 - id: a_base
-  name: A 거점
+  name: 청솔형제단 거점
   description: 옛 공업고등학교. 운동장 담을 모래주머니와 철판으로 보강했다.
   kind: base
   owner: faction_a
@@ -12,21 +12,21 @@
 
 - id: a_east_post
   name: 동쪽 초소
-  description: A 거점 동쪽의 초소와 망루. 고가도로 쪽을 내려다본다.
+  description: 청솔형제단 거점 동쪽의 초소와 망루. 고가도로 쪽을 내려다본다.
   kind: zone
   owner: faction_a
   adjacent: [c_warehouse]
 
 - id: c_warehouse
   name: 고가도로 너머 물류창고
-  description: 북쪽 고가도로 너머의 옛 물류창고 단지. C가 차지하고 있다.
+  description: 북쪽 고가도로 너머의 옛 물류창고 단지. 붉은연합이 차지하고 있다.
   kind: zone
   owner: faction_c
   adjacent: [c_base, riverside]
   yields: { food: 30, fuel: 5 }
 
 - id: c_base
-  name: C 거점
+  name: 붉은연합 거점
   description: 도시 동쪽의 옛 공단. 높은 담과 감시탑이 있다.
   kind: base
   owner: faction_c
@@ -50,21 +50,21 @@
   yields: { food: 15, ammo: 3, medicine: 1 }
 
 - id: b_base
-  name: B 거점
-  description: A 거점 서쪽의 옛 아파트 단지.
+  name: 버들마을 거점
+  description: 청솔형제단 거점 서쪽의 옛 아파트 단지.
   kind: base
   owner: faction_b
   yields: { food: 36, water: 42, fuel: 6, ammo: 1 }
 
 - id: d_clinic
-  name: D의 진료소
+  name: 하얀매의 진료소
   description: 옛 보건소 건물. 약을 구하려는 사람들이 찾아온다.
   kind: base
   owner: faction_d
   yields: { food: 30, water: 33, fuel: 5, medicine: 4 }
 
 - id: e_market
-  name: E의 장터
+  name: 나루상단의 장터
   description: 강 하류의 옛 휴게소. 정해진 날에 상인들이 모인다.
   kind: base
   owner: faction_e
@@ -81,7 +81,7 @@
 
 - id: water_plant
   name: 정수장
-  description: 강 하류의 옛 정수장. 펌프 하나가 아직 손으로 돌아간다. E의 상인들이 물을 길어 간다.
+  description: 강 하류의 옛 정수장. 펌프 하나가 아직 손으로 돌아간다. 나루상단의 상인들이 물을 길어 간다.
   kind: zone
   owner: faction_e
   adjacent: [riverside, e_market]
@@ -89,7 +89,7 @@
 
 - id: south_fields
   name: 남쪽 텃밭
-  description: A와 B 거점 사이의 운동장과 공터를 갈아엎은 밭. 무너진 남쪽 담장 너머라 늘 불안하다.
+  description: 청솔형제단과 버들마을 거점 사이의 운동장과 공터를 갈아엎은 밭. 무너진 남쪽 담장 너머라 늘 불안하다.
   kind: zone
   owner: faction_a
   adjacent: [a_base, b_base]

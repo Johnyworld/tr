@@ -33,11 +33,11 @@
   name: 항생제
   description: 유효기간이 지난 항생제 한 줄. 그래도 거점에서는 금보다 귀하다.
 - id: c_armband
-  name: C 완장
-  description: 붉은 천에 검은 줄을 그은 완장. C 병사들이 왼팔에 찬다.
+  name: 붉은연합 완장
+  description: 붉은 천에 검은 줄을 그은 완장. 붉은연합 병사들이 왼팔에 찬다.
 - id: trade_token
-  name: E 통행패
-  description: 구멍 뚫린 동전에 끈을 꿴 것. E의 장터에서 신원 보증으로 쓴다.
+  name: 나루상단 통행패
+  description: 구멍 뚫린 동전에 끈을 꿴 것. 나루상단의 장터에서 신원 보증으로 쓴다.
 - id: canned_food
   name: 통조림
   description: 라벨이 떨어져 나간 통조림. 흔들면 무언가 출렁인다.

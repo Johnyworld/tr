@@ -81,7 +81,7 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
         ← 돌아가기
       </button>
       <h1>새 캐릭터</h1>
-      <p className="muted">세력 A의 하급 전투원으로 시작한다. 직업·출신은 아직 고를 수 없다.</p>
+      <p className="muted">시작 역할: {rules.roleLabel}. 직업·출신은 아직 고를 수 없다.</p>
 
       <section className="creation-top">
         <Portrait id={portrait} size={112} />

@@ -1,14 +1,14 @@
-# A 하급 전투원이 시작할 때 알고 있는 것 (초안)
+# 청솔형제단 하급 전투원이 시작할 때 알고 있는 것 (초안)
 # accuracy는 GM에게 보이지 않는다. 캐릭터는 자기 믿음이 틀렸는지 모른다
 id: a_grunt
 beliefs:
-  - fact: 우리 세력 A는 B와 연합해 C와 전쟁 중이다. 연합은 수에서 C에 크게 밀린다.
+  - fact: 우리 청솔형제단은 버들마을과 연합해 붉은연합과 전쟁 중이다. 연합은 수에서 붉은연합에 크게 밀린다.
     source: report
     accuracy: approximate
-  - fact: D는 의약품을, E는 교역품을 가진 중립 무리다. 이기는 쪽에 붙을 거라는 말이 많다.
+  - fact: 하얀매는 의약품을, 나루상단은 교역품을 가진 중립 무리다. 이기는 쪽에 붙을 거라는 말이 많다.
     source: report
     accuracy: approximate
-  - fact: C는 포로를 거칠게 다룬다고 한다.
+  - fact: 붉은연합은 포로를 거칠게 다룬다고 한다.
     source: rumor
     accuracy: approximate
   - fact: 배급은 보급 담당 간부 한도윤이 관리하고, 하루 한 번 식당에서 받는다.

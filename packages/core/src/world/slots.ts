@@ -80,7 +80,7 @@ export function formatPlayedAt(iso: string): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-/** MCP용 한 줄: "1. 신병 (23세) · 세력 A 하급 전투원 · 레벨 1 — 3일차 아침, A 거점 · 부상 경상 · 2대째 · 마지막 플레이 11월 12일 21:40" */
+/** MCP용 한 줄: "1. 신병 (23세) · 청솔형제단 하급 전투원 · 레벨 1 — 3일차 아침, 청솔형제단 거점 · 부상 경상 · 2대째 · 마지막 플레이 11월 12일 21:40" */
 export function formatSlotLine(slot: SaveSlot, index: number): string {
   const h = slot.hero;
   if (!h) return `${index}. (읽을 수 없는 세이브) · 마지막 플레이 ${formatPlayedAt(slot.updatedAt)}`;

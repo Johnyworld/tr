@@ -86,3 +86,21 @@ describe("캐릭터 생성", () => {
     expect(text).toContain("4포인트");
   });
 });
+
+describe("세이브 삭제", () => {
+  it("닫힌 세이브는 파일째 지운다. 열려 있으면 지우지 않는다", async () => {
+    const { existsSync, readdirSync } = await import("node:fs");
+    const { WorldLockedError } = await import("../persistence/lock.ts");
+    const savesDir = mkdtempSync(join(tmpdir(), "trpg-delete-"));
+    const m = new WorldManager({ savesDir, content: content(), rngFactory: () => createSeededRng(3) });
+    const w = m.create("web", undefined, { ...base, abilities: {} });
+    const id = w.id;
+    expect(() => m.deleteWorld(id)).toThrow(WorldLockedError);
+    w.close();
+    m.deleteWorld(id);
+    expect(existsSync(m.pathOf(id))).toBe(false);
+    expect(readdirSync(join(savesDir, "worlds"))).toEqual([]);
+    expect(m.listSlots()).toEqual([]);
+    expect(() => m.deleteWorld(id)).toThrow("없는 세이브");
+  });
+});

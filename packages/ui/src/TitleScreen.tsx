@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchSlots, openSlot } from "./api.ts";
+import { deleteSlot, fetchSlots, openSlot } from "./api.ts";
 import { Portrait } from "./Portrait.tsx";
 import type { GameView, SaveSlotView, SlotsView } from "./types.ts";
 
@@ -31,6 +31,18 @@ export function TitleScreen({ onStart, onCreate }: { onStart: (game: GameView) =
     }
   }
 
+  async function remove(slot: SaveSlotView) {
+    const who = slot.hero ? [slot.hero.name, slot.timeLabel, slot.hero.zoneName].filter(Boolean).join(" · ") : "읽을 수 없는 세이브";
+    if (!window.confirm(`이 저장 데이터를 삭제할까요?\n\n${who}\n\n삭제하면 되돌릴 수 없습니다.`)) return;
+    setError(null);
+    try {
+      await deleteSlot(slot.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+    void load();
+  }
+
   return (
     <div className="title-screen">
       <h1>{data?.scenarioName ?? "TRPG"}</h1>
@@ -47,7 +59,7 @@ export function TitleScreen({ onStart, onCreate }: { onStart: (game: GameView) =
       <ul className="slots">
         {data?.slots.map((slot) => (
           <li key={slot.id}>
-            <SlotCard slot={slot} busy={opening !== null} onOpen={() => void start(slot.id)} />
+            <SlotCard slot={slot} busy={opening !== null} onOpen={() => void start(slot.id)} onDelete={() => void remove(slot)} />
           </li>
         ))}
       </ul>
@@ -55,10 +67,11 @@ export function TitleScreen({ onStart, onCreate }: { onStart: (game: GameView) =
   );
 }
 
-function SlotCard({ slot, busy, onOpen }: { slot: SaveSlotView; busy: boolean; onOpen: () => void }) {
+function SlotCard({ slot, busy, onOpen, onDelete }: { slot: SaveSlotView; busy: boolean; onOpen: () => void; onDelete: () => void }) {
   const h = slot.hero;
   const locked = slot.lockedBy !== null;
   return (
+    <div className="slot-row">
     <button type="button" className={`slot ${h?.dead ? "dead" : ""}`} onClick={onOpen} disabled={busy || locked}>
       <Portrait id={h?.portrait ?? null} size={64} />
       <div className="slot-body">
@@ -85,6 +98,19 @@ function SlotCard({ slot, busy, onOpen }: { slot: SaveSlotView; busy: boolean; o
       </div>
       </div>
     </button>
+      <button
+        type="button"
+        className="slot-delete"
+        onClick={onDelete}
+        disabled={busy || locked}
+        title={locked ? "플레이 중인 게임은 지울 수 없다" : "저장 데이터 삭제"}
+        aria-label={`${h?.name ?? "세이브"} 저장 데이터 삭제`}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+        </svg>
+      </button>
+    </div>
   );
 }
 

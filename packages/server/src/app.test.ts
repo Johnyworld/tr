@@ -137,6 +137,14 @@ describe("시작 화면", () => {
     expect(opened.worldId).toBe(created.worldId);
     expect(opened.transcript.length).toBeGreaterThan(0);
     expect((await post(app, "/api/worlds/nope/open")).status).toBe(404);
+
+    // 열려 있는 게임은 지울 수 없고, 메인 화면으로 나간 뒤에는 지운다
+    const del = (id: string) => app.request(`/api/worlds/${id}`, { method: "DELETE" });
+    expect((await del(created.worldId)).status).toBe(409);
+    await post(app, "/api/game/close");
+    expect((await del(created.worldId)).status).toBe(200);
+    expect(((await (await app.request("/api/worlds")).json()) as { slots: unknown[] }).slots).toEqual([]);
+    expect((await del(created.worldId)).status).toBe(404);
     session.close();
   });
 });

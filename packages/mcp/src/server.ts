@@ -69,11 +69,15 @@ export function createMcpServer(manager: WorldManager) {
     );
   };
 
+  /** 플레이어가 지금 보고 있는 게임 목록 (번호 → 세이브 id). 세계를 열면 닫힌다. 삭제는 목록이 열려 있을 때만 */
+  let menu: string[] | null = null;
+
   const openWorld = (open: () => GameWorld): TextResult => {
     try {
       const next = open();
       world?.close();
       world = next;
+      menu = null;
       return sessionStart(next);
     } catch (err) {
       if (err instanceof WorldLockedError) return text(err.message, true);
@@ -89,6 +93,7 @@ export function createMcpServer(manager: WorldManager) {
   /** 세이브 슬롯 메뉴: 0번 새 게임, 1번부터 저장된 게임. GM은 이 목록을 그대로 보여 주고 플레이어가 번호를 고르게 한다 */
   const slotMenu = (): string => {
     const slots = manager.listSlots();
+    if (!world) menu = slots.map((s) => s.id);
     // 이 세션이 연 세계는 "사용 중"이 아니라 "지금 하는 게임"
     const lines = slots.map((slot, i) =>
       slot.id === world?.id ? `${formatSlotLine({ ...slot, lockedBy: null }, i + 1)} · (지금 하는 게임)` : formatSlotLine(slot, i + 1),
@@ -98,6 +103,7 @@ export function createMcpServer(manager: WorldManager) {
       "",
       "0. 새 게임",
       ...(lines.length ? lines : ["(저장된 게임이 없다)"]),
+      ...(lines.length && !world ? ["", "(플레이어가 저장 데이터를 지우고 싶다고 하면 delete_world로 지울 수 있다. 되돌릴 수 없으니 먼저 확인받는다)"] : []),
     ].join("\n");
   };
 
@@ -105,10 +111,10 @@ export function createMcpServer(manager: WorldManager) {
   const pickWorld = (args: { world_id?: string | null; slot?: number | null }): string | { error: string } => {
     if (args.world_id) return args.world_id;
     if (args.slot) {
-      const slots = manager.listSlots();
-      const slot = slots[args.slot - 1];
-      if (!slot) return { error: `${args.slot}번 슬롯은 없다. list_worlds로 목록을 다시 보여 준다.` };
-      return slot.id;
+      // 플레이어가 본 목록의 번호를 쓴다 (그 사이 목록이 바뀌어도 고른 게임이 열리게)
+      const id = menu?.[args.slot - 1] ?? manager.listSlots()[args.slot - 1]?.id;
+      if (!id) return { error: `${args.slot}번 슬롯은 없다. list_worlds로 목록을 다시 보여 준다.` };
+      return id;
     }
     return { error: "slot 또는 world_id가 필요하다." };
   };
@@ -178,6 +184,36 @@ export function createMcpServer(manager: WorldManager) {
       world.close();
       world = null;
       return text(`세계 ${id}를 닫았다 (${name}의 이야기는 저장돼 있다). 플레이어에게 짧게 마무리 인사를 하고, 다시 하려면 /play 로 이어 할 수 있다고 알려 준다.\n\n${slotMenu()}`);
+    },
+  );
+
+  server.registerTool(
+    "delete_world",
+    {
+      description:
+        "저장 데이터를 지운다 (되돌릴 수 없다). 게임 목록을 보고 있을 때만 쓸 수 있다 (게임 중에는 안 된다). " +
+        "플레이어가 \"2번 지워 줘\"처럼 말하면 먼저 confirmed 없이 불러 무엇이 지워지는지 받고, 플레이어에게 확인받은 뒤 confirmed: true로 다시 부른다. 대신 확인하지 않는다.",
+      inputSchema: z.strictObject({
+        slot: z.number().int().min(1).describe("게임 목록의 번호 (1부터)"),
+        confirmed: z.boolean().optional().describe("플레이어가 삭제를 확인했으면 true"),
+      }),
+    },
+    (args) => {
+      if (world) return text("게임 중에는 저장 데이터를 지울 수 없다. end_session으로 게임을 닫고 목록에서 지운다.", true);
+      if (!menu) return text("저장 목록을 보고 있을 때만 지울 수 있다. 먼저 list_worlds로 목록을 보여 준다.", true);
+      const id = menu[args.slot - 1];
+      const slot = id ? manager.listSlots().find((s) => s.id === id) : undefined;
+      if (!id || !slot) return text(`${args.slot}번 저장 데이터는 없다. list_worlds로 목록을 다시 보여 준다.`, true);
+      const line = formatSlotLine(slot, args.slot);
+      if (!args.confirmed) {
+        return text(`지울 저장 데이터:\n${line}\n\n아직 지우지 않았다. 되돌릴 수 없다는 것을 알리고 플레이어에게 확인받은 뒤 confirmed: true로 다시 부른다.`);
+      }
+      try {
+        manager.deleteWorld(id);
+      } catch (err) {
+        return text(err instanceof Error ? err.message : String(err), true);
+      }
+      return text(`삭제했다: ${line}\n\n${slotMenu()}`);
     },
   );
 

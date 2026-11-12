@@ -990,3 +990,32 @@ body {
 .stepper .value.down {
   color: var(--miss);
 }
+
+.slot-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.slot-delete {
+  flex: none;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.slot-delete:hover:not(:disabled) {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.slot-delete:disabled {
+  opacity: 0.35;
+  cursor: default;
+}

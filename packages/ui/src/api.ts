@@ -84,6 +84,15 @@ export async function fetchRandomAbilities(): Promise<Record<string, number>> {
   return (await res.json()) as Record<string, number>;
 }
 export const openSlot = (id: string) => postJson<GameView>(`/api/worlds/${encodeURIComponent(id)}/open`);
+/** 세이브 삭제 (되돌릴 수 없다) */
+export async function deleteSlot(id: string): Promise<void> {
+  const res = await fetch(`/api/worlds/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `서버 오류 (${res.status})`);
+  }
+}
+
 /** 게임을 닫고 시작 화면으로 (세이브는 남는다) */
 export const closeGame = () => postJson<{ ok: true }>("/api/game/close");
 

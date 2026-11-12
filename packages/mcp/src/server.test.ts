@@ -141,6 +141,36 @@ describe("세이브 슬롯과 종료", () => {
   });
 });
 
+describe("MCP 세이브 삭제", () => {
+  it("목록을 보고 있을 때만, 확인을 받은 뒤에만 지운다", async () => {
+    const { call, app, manager } = await connect();
+    await call("start_session", { new_world: true });
+    const id = app.world!.id;
+    expect((await call("delete_world", { slot: 1, confirmed: true })).isError).toBe(true); // 게임 중
+    await call("end_session");
+    await call("start_session", { new_world: true });
+    await call("end_session"); // 목록이 열려 있다 (2개)
+    const ask = await call("delete_world", { slot: 2 });
+    expect(ask.text).toContain("아직 지우지 않았다");
+    expect(manager.listSlots()).toHaveLength(2);
+    const done = await call("delete_world", { slot: 2, confirmed: true });
+    expect(done.isError).toBe(false);
+    expect(manager.listSlots()).toHaveLength(1);
+    expect(done.text).toContain("0. 새 게임");
+    expect((await call("delete_world", { slot: 5, confirmed: true })).isError).toBe(true);
+    void id;
+  });
+
+  it("목록을 본 적이 없으면 지우지 않는다", async () => {
+    const { call, manager } = await connect();
+    manager.create("mcp").close();
+    const res = await call("delete_world", { slot: 1, confirmed: true });
+    expect(res.isError).toBe(true);
+    expect(res.text).toContain("list_worlds");
+    expect(manager.listSlots()).toHaveLength(1);
+  });
+});
+
 describe("MCP 캐릭터 생성", () => {
   it("새 게임은 먼저 생성 규칙을 주고, character와 함께 부르면 그대로 만든다. 규칙 위반은 오류", async () => {
     const { call, app } = await connect(REAL_CONTENT);

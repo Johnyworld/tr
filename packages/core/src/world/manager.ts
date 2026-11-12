@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, renameSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import Database from "better-sqlite3";
 import { createSeededRng, type Rng } from "../rng.ts";
@@ -15,7 +15,7 @@ export class CharacterChoiceError extends Error {
 }
 import type { PlayMode } from "../engine/log.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
-import { acquireLock, isProcessAlive, readLock, type LockInfo } from "../persistence/lock.ts";
+import { acquireLock, isProcessAlive, readLock, WorldLockedError, type LockInfo } from "../persistence/lock.ts";
 import { archiveSave, SaveFormatError, SqliteRepository } from "../persistence/sqlite.ts";
 import { formatTime } from "../rules/time.ts";
 import { GameWorld } from "./world.ts";
@@ -109,9 +109,23 @@ export class WorldManager {
       world.saveSnapshot();
       return world;
     } catch (err) {
+      // 캐릭터까지 다 만들어지지 않은 세이브는 남기지 않는다
       world.close();
+      removeSaveFiles(this.pathOf(worldId));
       throw err;
     }
+  }
+
+  /**
+   * 세이브를 지운다 (되돌릴 수 없다. 묻는 것은 화면·GM이 한다).
+   * 어디서든 열려 있으면 지우지 않는다 (WorldLockedError). 세이브 옆의 memory 색인과 잠금 파일도 지운다
+   */
+  deleteWorld(worldId: string): void {
+    const path = this.pathOf(worldId);
+    if (!existsSync(path)) throw new Error(`없는 세이브: ${worldId}`);
+    const holder = readLock(path);
+    if (holder && isProcessAlive(holder.pid)) throw new WorldLockedError(holder);
+    removeSaveFiles(path);
   }
 
   /** 세계를 연다. 다른 곳에서 열려 있으면 WorldLockedError */
@@ -164,6 +178,14 @@ export class WorldManager {
     for (const suffix of ["", "-wal", "-shm"]) {
       if (existsSync(legacy + suffix)) renameSync(legacy + suffix, target + suffix);
     }
+  }
+}
+
+/** 세이브 파일과 딸린 파일(WAL, 잠금, memory 색인)을 지운다 */
+function removeSaveFiles(path: string) {
+  const memory = path.replace(/\.db$/, ".memory.db");
+  for (const p of [path, memory]) {
+    for (const suffix of ["", "-wal", "-shm", ".lock"]) rmSync(p + suffix, { force: true });
   }
 }
 

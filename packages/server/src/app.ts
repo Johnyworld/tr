@@ -59,6 +59,15 @@ export function createApp(session: WebSession) {
     return c.json(session.view());
   });
 
+  // 세이브 삭제 (시작 화면의 휴지통. 확인은 화면이 받는다)
+  app.delete("/api/worlds/:id", (c) => {
+    const id = c.req.param("id");
+    if (!session.slots().some((s) => s.id === id)) return c.json({ error: "없는 세이브입니다." }, 404);
+    if (session.hasWorld && session.world.id === id) return c.json({ error: "지금 열려 있는 게임은 지울 수 없습니다. 메인 화면으로 나간 뒤 지우세요." }, 409);
+    session.deleteWorld(id);
+    return c.json({ ok: true });
+  });
+
   // 게임을 닫고 시작 화면으로 (세이브는 그대로 남고 잠금이 풀린다)
   app.post("/api/game/close", (c) => {
     session.closeWorld();

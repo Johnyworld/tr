@@ -67,6 +67,12 @@ export class WebSession {
     this.#world = next;
   }
 
+  /** 세이브를 지운다. 지금 이 세션이 연 세계나 다른 곳에서 열린 세계는 지우지 않는다 */
+  deleteWorld(worldId: string) {
+    if (this.#world?.id === worldId) throw new TurnInProgressError();
+    this.manager.deleteWorld(worldId);
+  }
+
   /** 지금 세계를 닫고 시작 화면으로 (세이브는 그대로 남는다) */
   closeWorld() {
     if (this.#busy) throw new TurnInProgressError();

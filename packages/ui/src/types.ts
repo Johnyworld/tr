@@ -12,6 +12,8 @@ export type PlayerView = {
   stats: { id: string; label: string; value: number }[];
   inventory: { id: string; name: string; quantity: number }[];
   sceneItems: { id: string; name: string; quantity: number }[];
+  present: { id: string; name: string; rankLabel: string; look: string; injuryLabel: string }[];
+  beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
 };
 
 export type TranscriptView =

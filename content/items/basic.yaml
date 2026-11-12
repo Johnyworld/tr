@@ -5,3 +5,21 @@
 - id: water_bottle
   name: 물병
   description: 찌그러진 알루미늄 물병.
+- id: radio
+  name: 무전기
+  description: 배터리 덮개를 테이프로 감아 둔 휴대용 무전기.
+- id: old_rifle
+  name: 낡은 소총
+  description: 개머리판에 금이 간 소총. 탄약은 따로 배급된다.
+- id: binoculars
+  name: 쌍안경
+  description: 한쪽 렌즈에 실금이 간 쌍안경.
+- id: medkit
+  name: 구급상자
+  description: 붕대와 소독약이 조금 남은 구급상자.
+- id: cigarettes
+  name: 담배
+  description: 눅눅해진 담배 몇 개비. 거점 안에서는 돈처럼 쓰인다.
+- id: ledger
+  name: 배급 장부
+  description: 손때 묻은 두꺼운 장부. 배급 내역이 빽빽하게 적혀 있다.

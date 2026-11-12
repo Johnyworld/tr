@@ -52,6 +52,25 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
           {display.interruptDetail && <div className="card-intent">중간에 멈춤: {display.interruptDetail}</div>}
         </div>
       );
+    case "presence":
+      return (
+        <div className="card presence">
+          <div className="card-head">
+            <span className="card-kind">{display.action === "enter" ? "등장" : "퇴장"}</span>
+            <span>{display.npcName}</span>
+          </div>
+        </div>
+      );
+    case "belief":
+      return (
+        <div className="card belief">
+          <div className="card-head">
+            <span className="card-kind">기억</span>
+            <span>{display.fact}</span>
+            <span className="badge">{display.sourceLabel}</span>
+          </div>
+        </div>
+      );
     case "item":
       return (
         <div className="card item">

@@ -1,0 +1,32 @@
+# 초안
+id: a_seoyeon
+name: 민서연
+faction: faction_a
+rank: grunt
+age: 27
+look: 짧게 친 머리와 무표정한 얼굴. 쌍안경을 목에 걸고 다닌다.
+reputation: 같은 분대의 사수. 분대에서 가장 눈이 좋고 말이 없다.
+want: 아픈 동생이 겨울을 넘기는 것
+fear: 쓸모없어져 거점에서 밀려나는 것
+values: { discipline: 1, loyalty: 1, mercy: -1, honesty: 0, self_interest: 2 }
+temperament: [cold, precise]
+voice:
+  style: 짧고 건조한 반말. 필요한 말만 한다. 손위에게도 존댓말을 최소한으로만 쓴다
+  samples:
+    - "셋. 북쪽 건물 옥상."
+    - "그건 네 일이고."
+routine: { day: 망루 감시, night: 막사 }
+rules:
+  - 거래는 계산이 맞으면 응한다
+  - 감상적인 말에는 반응하지 않지만 행동으로 갚는 사람은 기억한다
+knows:
+  - 북쪽 고가도로 주변에 감염체가 자주 모인다는 것
+  - E의 상인들이 거점 근처를 지나는 요일
+doesnt_know:
+  - 동생의 병이 D의 약으로만 고칠 수 있다
+secret:
+  content: 배급받은 탄약을 조금씩 빼돌려 E 상인에게 약과 바꾸고 있다
+  reveal_when: 신뢰 4 이상
+stats: { strength: 0, agility: 2, cool: 1, sense: 2, persuasion: -1 }
+start_inventory: [old_rifle, binoculars]
+playable: true

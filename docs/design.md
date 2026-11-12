@@ -246,12 +246,16 @@ function fastForward(state, until: StopCondition) {
 
 ```ts
 type Belief = {
+  id: string;
   fact: string;                         // "적군 약 30명이 북쪽 고가도로에 있다"
   source: "seen" | "report" | "rumor";
   learnedAt: GameTime;
-  accuracy: "exact" | "approximate" | "false";
+  accuracy: "exact" | "approximate" | "false" | "unknown";  // unknown: GM이 장면에서 기록해 시스템이 진위를 모름
 };
 ```
+
+- 시작 지식은 역할의 `beliefs_preset`(content/beliefs/)에서, NPC의 시작 지식은 프로필의 `knows`에서 온다
+- 장면에서 새로 알게 된 것은 GM이 `add_belief(fact, source)`로 기록한다 (지금은 플레이어만)
 
 ### 6.2 원칙
 
@@ -261,6 +265,14 @@ type Belief = {
   - 하급 전투원: "어제 동쪽에서 총성이 계속 들렸다"
   - 간부: "동쪽 초소가 C의 습격으로 함락됐다는 보고가 들어왔다"
 - 캐릭터 교체 시 새 캐릭터의 Belief State로 완전히 전환된다
+
+**정보 필터 (구현)**: GM 프롬프트의 상태 블록은 아래만 담는다. 비밀이 새지 않는지는 실제 콘텐츠 전체로 테스트한다
+
+| 들어가는 것 | 들어가지 않는 것 |
+|---|---|
+| 플레이어의 Belief (출처 표시, 최근 30개) | Belief의 진짜 정확도 (UI에도 보내지 않는다) |
+| 장면에 있는 NPC의 연기용 프로필 (외모, 말투, 화법, 욕망·두려움·성격·가치관·행동 규칙, 그 NPC가 아는 것) | NPC의 비밀(`secret`), 모르는 것(`doesnt_know` = 세계의 진실) |
+| 장면에 없지만 아는 인물의 공개 정보 (외모, 평판) | 모르는 인물 |
 
 ---
 
@@ -275,12 +287,15 @@ type Belief = {
 - 일과, 반응 규칙("~하면 ~한다")
 - 비밀과 공개 조건
 - 아는 것 / 모르는 것
+- (구현에서 추가) 나이, 평판(`reputation`: 그 인물을 아는 사람이 알고 있는 모습), 능력치와 시작 소지품 (플레이어와 같은 캐릭터 스키마로 만들기 위해)
 
 ### 7.2 동적 상태 (세이브)
 
 - 플레이어(및 다른 NPC)와의 관계: **다축** (신뢰, 호감, 존중)
 - Belief State, 함께 겪은 사건
 - 생사, 위치, 부상, 소속, 등급
+- (구현) 장면에 함께 있는 인물 목록. GM이 `npc_presence(npc_id, enter|leave)`로 알리고, 장면에 있는 인물과만 물건을 주고받는다. 만난 인물은 "아는 인물"이 된다
+- 관계 수치는 평판 시스템(8장)과 함께 추가한다. 그 전까지 비밀은 공개되지 않는다
 
 ### 7.3 예시
 
@@ -317,6 +332,8 @@ playable: true
 - 장면에 등장하는 NPC는 검색하지 않고 프로필을 통째로 주입한다
 - NPC 하나당 200~400 토큰 정도로 짧게 유지한다
 - 등급·나이·관계에 따른 **한국어 화법 규칙**(반말/존댓말)을 프롬프트에 주입하고, 관계가 변하면 말투도 바뀌게 한다
+  - (구현) 기본 화법: 지휘 계통상 높은 쪽이 반말, 같은 높이면 나이가 많거나 같은 쪽이 반말. NPC의 `voice.style`이 우선한다. 관계에 따른 변화는 8장과 함께
+- 초안 NPC 6명 (`content/npcs/`): 분대장 강태호, 분대원 오지호·민서연·박만수, 의무 담당 윤채원, 보급 간부 한도윤
 
 ---
 
@@ -492,7 +509,8 @@ repeatable: false
 | `transfer_item(from, to, item, qty)` | 아이템 이동 (존재 검증). 보관 위치는 캐릭터 또는 `scene`(현재 장면 바닥). 새 아이템은 만들 수 없음 |
 | `record_deed(summary, tags, severity)` | 행동 기록 → 목격자·소문 처리 |
 | `adjust_relation(a, b, axis, reason)` | 관계 변화 요청 (변화량 상한은 코드) |
-| `add_belief(character, fact, source)` | 캐릭터가 새 정보를 알게 됨 |
+| `add_belief(fact, source)` | 플레이어 캐릭터가 새 정보를 알게 됨 (진위는 unknown으로 기록) |
+| `npc_presence(npc_id, enter\|leave)` | 이름 있는 인물의 장면 등장·퇴장 |
 | `apply_condition(target, tag, duration)` | 서사적 상태 |
 | `set_flag(key, value)` | 시나리오 플래그 |
 | `create_npc(template, overrides)` | 템플릿 기반 즉석 NPC (스키마 검증) |
@@ -693,7 +711,7 @@ trpg/
 
 - 도시 이름, 지명, 장소 목록
 - 세력 A, B, D, E의 성격 확정 (현재 초안)
-- 세력 리더와 주요 NPC 명단
+- 세력 리더와 주요 NPC 명단 (A 거점 초안 NPC 6명만 있음: 7.4)
 - 능력치, 기본 행동, 부상 트랙 수치 확정 (현재 *임시* 값으로 구현: 4.1, 4.2, 4.4)
 - 진급 조건 수치
 - 행동별 소요 시간 테이블 (현재 *임시* 값으로 구현: 5.1)

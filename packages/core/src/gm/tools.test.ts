@@ -13,7 +13,7 @@ function diceRng(...faces: number[]): Rng {
 
 function setup(rng: Rng = createSeededRng(1), mutate?: (s: GameState) => void) {
   const store = new InMemoryGameStore([
-    createWorldEvent(TEST_CONTENT.roles.role_test!, "world_test"),
+    createWorldEvent(TEST_CONTENT, "role_test", "world_test"),
     { type: "turn_started", turn: 1, input: "" },
   ]);
   mutate?.(store.getState());
@@ -202,5 +202,47 @@ describe("spend_time", () => {
     const { store, ctx } = setup(() => 0.999);
     executeTool("spend_time", spend("wait", "dawn"), ctx); // 05:30 → 다음 날 04:00
     expect(store.getState().time - 330).toBeLessThanOrEqual(24 * 60);
+  });
+});
+
+describe("npc_presence", () => {
+  it("인물을 등장시키고 내보낸다. 만난 인물은 알게 된다", () => {
+    const { store, ctx } = setup();
+    expect(executeTool("npc_presence", { npc_id: "npc_stranger", action: "enter" }, ctx).ok).toBe(true);
+    expect(store.getState().scene.present).toEqual(["npc_stranger"]);
+    expect(store.getState().known.player).toContain("npc_stranger");
+    expect(executeTool("npc_presence", { npc_id: "npc_stranger", action: "leave" }, ctx).ok).toBe(true);
+    expect(store.getState().scene.present).toEqual([]);
+  });
+
+  it("없는 인물, 플레이어, 중복 등장, 없는 인물 퇴장은 거부한다", () => {
+    const { ctx } = setup();
+    expect(executeTool("npc_presence", { npc_id: "made_up", action: "enter" }, ctx).ok).toBe(false);
+    expect(executeTool("npc_presence", { npc_id: "player", action: "enter" }, ctx).ok).toBe(false);
+    expect(executeTool("npc_presence", { npc_id: "npc_leader", action: "leave" }, ctx).ok).toBe(false);
+    executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
+    expect(executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx).ok).toBe(false);
+  });
+});
+
+describe("transfer_item과 장면", () => {
+  it("장면에 있는 NPC와만 물건을 주고받는다", () => {
+    const { store, ctx } = setup();
+    const give = { from: "player", to: "npc_leader", item_id: "water_bottle", quantity: 1 };
+    expect(executeTool("transfer_item", give, ctx).ok).toBe(false);
+    executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
+    expect(executeTool("transfer_item", give, ctx).ok).toBe(true);
+    expect(store.getState().characters.npc_leader?.inventory.water_bottle).toBe(1);
+  });
+});
+
+describe("add_belief", () => {
+  it("플레이어의 기억에 진위 미확인으로 기록하고, 같은 내용은 거부한다", () => {
+    const { store, ctx } = setup();
+    const input = { fact: "강분대가 동쪽 초소 교대 시간을 알려 줬다", source: "report" };
+    expect(executeTool("add_belief", input, ctx).ok).toBe(true);
+    const last = store.getState().beliefs.player?.at(-1);
+    expect(last).toMatchObject({ fact: input.fact, source: "report", accuracy: "unknown", learnedAt: 330 });
+    expect(executeTool("add_belief", input, ctx).ok).toBe(false);
   });
 });

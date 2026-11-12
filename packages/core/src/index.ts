@@ -16,9 +16,12 @@ export {
 } from "./sim/fastForward.ts";
 
 export { characterSchema, inventorySchema, type Character, type Inventory } from "./game/character.ts";
+export * from "./game/belief.ts";
+export * from "./rules/ranks.ts";
 export {
   applyEvent,
   createCharacterFromRole,
+  createCharacterFromNpc,
   createWorldEvent,
   EMPTY_STATE,
   gameEventSchema,

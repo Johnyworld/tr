@@ -5,7 +5,8 @@ import { moveSchema } from "../rules/moves.ts";
 import { statSchema } from "../rules/stats.ts";
 import { activitySchema, START_TIME } from "../rules/time.ts";
 import { interruptSchema } from "../sim/fastForward.ts";
-import type { RoleContent } from "../content/schemas.ts";
+import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
+import { beliefSchema, type Belief } from "./belief.ts";
 import { characterSchema, inventorySchema, type Character, type Inventory } from "./character.ts";
 
 /**
@@ -41,9 +42,18 @@ export const gameStateSchema = z.strictObject({
   time: z.number().int().nonnegative().default(START_TIME),
   playerId: z.string(),
   characters: z.record(z.string(), characterSchema),
-  scene: z.strictObject({ items: inventorySchema }),
+  scene: z.strictObject({
+    items: inventorySchema,
+    /** 플레이어와 같은 장면에 있는 NPC id (6단계에서 추가) */
+    present: z.array(z.string()).default([]),
+  }),
   checks: z.record(z.string(), checkRecordSchema),
   nextCheckNo: z.number().int().positive(),
+  /** 캐릭터별 Belief State (6단계에서 추가) */
+  beliefs: z.record(z.string(), z.array(beliefSchema)).default({}),
+  /** 캐릭터별로 알고 있는 인물 id */
+  known: z.record(z.string(), z.array(z.string())).default({}),
+  nextBeliefNo: z.number().int().positive().default(1),
 });
 export type GameState = z.infer<typeof gameStateSchema>;
 
@@ -55,9 +65,12 @@ export const EMPTY_STATE: GameState = {
   time: START_TIME,
   playerId: "",
   characters: {},
-  scene: { items: {} },
+  scene: { items: {}, present: [] },
   checks: {},
   nextCheckNo: 1,
+  beliefs: {},
+  known: {},
+  nextBeliefNo: 1,
 };
 
 /**
@@ -70,7 +83,14 @@ export const gameEventSchema = z.discriminatedUnion("type", [
     worldId: z.string().min(1),
     roleId: z.string().min(1),
     player: characterSchema,
+    /** 6단계에서 추가. 이전 세이브에는 NPC가 없다 */
+    npcs: z.array(characterSchema).default([]),
+    beliefs: z.record(z.string(), z.array(beliefSchema)).default({}),
+    known: z.record(z.string(), z.array(z.string())).default({}),
   }),
+  z.strictObject({ type: z.literal("npc_entered"), npcId: z.string() }),
+  z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
+  z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
   z.strictObject({ type: z.literal("turn_started"), turn: z.number().int().positive(), input: z.string() }),
   z.strictObject({
     type: z.literal("check_rolled"),
@@ -120,15 +140,45 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
   }
   const next = structuredClone(state);
   switch (event.type) {
-    case "world_created":
+    case "world_created": {
       if (state.worldId) throw new Error("세계가 이미 만들어졌습니다.");
+      const characters: Record<string, Character> = { [event.player.id]: structuredClone(event.player) };
+      for (const npc of event.npcs) {
+        if (characters[npc.id]) throw new Error(`캐릭터 id 중복: ${npc.id}`);
+        characters[npc.id] = structuredClone(npc);
+      }
+      const beliefCount = Object.values(event.beliefs).reduce((n, list) => n + list.length, 0);
       return {
         ...EMPTY_STATE,
         worldId: event.worldId,
         roleId: event.roleId,
         playerId: event.player.id,
-        characters: { [event.player.id]: structuredClone(event.player) },
+        characters,
+        beliefs: structuredClone(event.beliefs),
+        known: structuredClone(event.known),
+        nextBeliefNo: beliefCount + 1,
       };
+    }
+    case "npc_entered": {
+      const npc = mustGet(next.characters, event.npcId, "캐릭터");
+      if (npc.id === state.playerId) throw new Error("플레이어는 NPC로 등장할 수 없습니다.");
+      if (npc.injury === "dead") throw new Error(`사망한 인물: ${npc.id}`);
+      if (next.scene.present.includes(npc.id)) throw new Error(`이미 장면에 있음: ${npc.id}`);
+      next.scene.present.push(npc.id);
+      // 만난 인물은 알게 된다
+      const known = (next.known[state.playerId] ??= []);
+      if (!known.includes(npc.id)) known.push(npc.id);
+      break;
+    }
+    case "npc_left":
+      if (!next.scene.present.includes(event.npcId)) throw new Error(`장면에 없음: ${event.npcId}`);
+      next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      break;
+    case "belief_added":
+      mustGet(next.characters, event.characterId, "캐릭터");
+      (next.beliefs[event.characterId] ??= []).push(structuredClone(event.belief));
+      next.nextBeliefNo += 1;
+      break;
     case "turn_started":
       next.turn = event.turn;
       break;
@@ -184,22 +234,69 @@ function mustGet<T>(record: Record<string, T>, key: string, label: string): T {
   return value;
 }
 
+function toInventory(itemIds: readonly string[]): Inventory {
+  const inventory: Inventory = {};
+  for (const itemId of itemIds) inventory[itemId] = (inventory[itemId] ?? 0) + 1;
+  return inventory;
+}
+
 /** 역할 콘텐츠로 시작 캐릭터를 만든다 (기획서 3.4: 역할 = 초기값 묶음) */
 export function createCharacterFromRole(role: RoleContent, id = "player"): Character {
-  const inventory: Inventory = {};
-  for (const itemId of role.start_inventory) inventory[itemId] = (inventory[itemId] ?? 0) + 1;
   return characterSchema.parse({
     id,
     name: role.default_name,
     factionId: role.faction,
     rank: role.rank,
+    age: role.age,
     stats: role.start_stats,
     injury: "none",
-    inventory,
+    inventory: toInventory(role.start_inventory),
   });
 }
 
-/** 새 세계를 여는 첫 이벤트 */
-export function createWorldEvent(role: RoleContent, worldId: string): GameEvent {
-  return { type: "world_created", worldId, roleId: role.id, player: createCharacterFromRole(role) };
+/** NPC 프로필로 캐릭터를 만든다. 플레이어와 같은 스키마다 (CLAUDE.md 원칙 6) */
+export function createCharacterFromNpc(npc: NpcContent): Character {
+  return characterSchema.parse({
+    id: npc.id,
+    name: npc.name,
+    factionId: npc.faction,
+    rank: npc.rank,
+    age: npc.age,
+    stats: npc.stats,
+    injury: "none",
+    inventory: toInventory(npc.start_inventory),
+  });
+}
+
+/** 새 세계를 여는 첫 이벤트. 시작 캐릭터, 모든 NPC, 시작 지식을 담는다 */
+export function createWorldEvent(content: Content, roleId: string, worldId: string): GameEvent {
+  const role = content.roles[roleId];
+  if (!role) throw new Error(`알 수 없는 역할: ${roleId}`);
+  const player = createCharacterFromRole(role);
+  const npcs = Object.values(content.npcs).map(createCharacterFromNpc);
+
+  let no = 0;
+  const belief = (fact: string, source: Belief["source"], accuracy: Belief["accuracy"]): Belief => ({
+    id: `b_${++no}`,
+    fact,
+    source,
+    accuracy,
+    learnedAt: START_TIME,
+  });
+  const beliefs: Record<string, Belief[]> = {};
+  const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
+  beliefs[player.id] = (preset?.beliefs ?? []).map((b) => belief(b.fact, b.source, b.accuracy));
+  for (const npc of Object.values(content.npcs)) {
+    beliefs[npc.id] = npc.knows.map((fact) => belief(fact, "seen", "exact"));
+  }
+
+  return {
+    type: "world_created",
+    worldId,
+    roleId,
+    player,
+    npcs,
+    beliefs,
+    known: { [player.id]: [...role.known_npcs] },
+  };
 }

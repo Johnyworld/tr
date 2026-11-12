@@ -4,6 +4,7 @@ label: 세력 A 하급 전투원
 faction: faction_a
 rank: grunt
 default_name: 신병
+age: 23
 # 시작 능력치 (임시값, 기획서 4.2)
 start_stats:
   strength: 1
@@ -16,4 +17,6 @@ start_inventory: [kitchen_knife, water_bottle]
 start_location: a_base
 access: [ration, mission_board]
 beliefs_preset: a_grunt
+# 시작할 때 알고 있는 인물 (같은 분대와 거점의 주요 인물)
+known_npcs: [a_taeho, a_jiho, a_seoyeon, a_mansu, a_chaewon, a_doyun]
 storylet_tags: [grunt, squad_life]

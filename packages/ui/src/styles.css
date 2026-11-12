@@ -375,9 +375,55 @@ body {
   font-weight: 600;
 }
 
-.items {
+.items,
+.people {
   margin: 0;
   padding-left: 18px;
+}
+
+.beliefs summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.beliefs summary::-webkit-details-marker {
+  display: none;
+}
+
+.beliefs summary h3 {
+  display: inline;
+}
+
+.beliefs summary h3::after {
+  content: " ▸";
+}
+
+.beliefs details[open] summary h3::after {
+  content: " ▾";
+}
+
+.beliefs ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.belief-source {
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.card.presence,
+.card.belief {
+  padding: 6px 14px;
+  border-left-color: var(--player);
 }
 
 @media (max-width: 760px) {
@@ -402,12 +448,17 @@ body {
   .sheet-sub {
     display: none;
   }
-  .sheet section.scene {
+  .sheet section.beliefs {
+    display: none;
+  }
+  .sheet section.scene,
+  .sheet section.present {
     display: flex;
     gap: 6px;
     align-items: baseline;
   }
-  .sheet section.scene h3 {
+  .sheet section.scene h3,
+  .sheet section.present h3 {
     display: inline;
     margin: 0;
   }

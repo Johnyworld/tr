@@ -2,8 +2,10 @@ import { randomUUID } from "node:crypto";
 import {
   createSeededRng,
   createWorldEvent,
+  BELIEF_SOURCE_LABELS,
   formatTime,
   INJURY_LABELS,
+  RANK_LABELS,
   INJURY_PENALTY,
   isPlayerDead,
   runTurn,
@@ -29,6 +31,9 @@ export type PlayerView = {
   stats: { id: string; label: string; value: number }[];
   inventory: { id: string; name: string; quantity: number }[];
   sceneItems: { id: string; name: string; quantity: number }[];
+  present: { id: string; name: string; rankLabel: string; look: string; injuryLabel: string }[];
+  /** 최근 것부터 */
+  beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
 };
 
 /** UI에 보낼 대화 기록. 모델에 보낸 프롬프트 원문은 빼고 보낸다 */
@@ -108,6 +113,25 @@ export class GameSession {
       stats: STATS.map((id) => ({ id, label: STAT_LABELS[id], value: player.stats[id] })),
       inventory: items(player.inventory),
       sceneItems: items(state.scene.items),
+      present: state.scene.present.map((id) => {
+        const npc = state.characters[id]!;
+        return {
+          id,
+          name: npc.name,
+          rankLabel: RANK_LABELS[npc.rank],
+          look: content.npcs[id]?.look ?? "",
+          injuryLabel: INJURY_LABELS[npc.injury],
+        };
+      }),
+      // 진짜 정확도(accuracy)는 UI에도 보내지 않는다
+      beliefs: (state.beliefs[state.playerId] ?? [])
+        .map((b) => ({
+          id: b.id,
+          fact: b.fact,
+          sourceLabel: BELIEF_SOURCE_LABELS[b.source],
+          learnedLabel: formatTime(b.learnedAt),
+        }))
+        .reverse(),
     };
   }
 
@@ -156,7 +180,7 @@ export class GameSession {
   #open(): GameRepository {
     const repo = this.options.openRepository();
     if (!repo.hasWorld()) {
-      repo.append(createWorldEvent(this.options.content.roles[this.options.roleId]!, randomUUID()));
+      repo.append(createWorldEvent(this.options.content, this.options.roleId, randomUUID()));
       repo.saveSnapshot();
     }
     return repo;

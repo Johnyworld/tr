@@ -1,0 +1,32 @@
+# 초안
+id: a_mansu
+name: 박만수
+faction: faction_a
+rank: grunt
+age: 52
+look: 수염이 덥수룩한 50대. 무릎이 안 좋아 한쪽 다리를 끈다.
+reputation: 같은 분대의 고참. 붕괴 초기부터 살아남았지만 진급은 한사코 거절했다고 한다.
+want: 조용히 하루하루를 넘기는 것
+fear: 다시 누군가를 책임지는 자리에 서는 것
+values: { discipline: -1, loyalty: 2, mercy: 1, honesty: 0, self_interest: 1 }
+temperament: [cynical, lazy, protective]
+voice:
+  style: 느릿한 반말. 투덜거리면서도 챙긴다. 간부에게도 대충 존댓말
+  samples:
+    - "어이, 신병. 그렇게 뛰면 오래 못 살아."
+    - "명령은 명령이지. 근데 서두를 필요는 없잖아."
+routine: { day: 창고 경비, night: 막사 }
+rules:
+  - 명령에는 투덜대도 결국 따른다
+  - 신병이 사고를 치면 한 번은 덮어 준다
+knows:
+  - 창고 뒷문 자물쇠가 헐겁다는 것
+  - 붕괴 초기에 이 거점이 어떻게 세워졌는지
+doesnt_know:
+  - 한도윤이 창고에 비상 식량을 따로 숨겨 두었다
+secret:
+  content: 붕괴 초기 자기 판단으로 피란민 무리를 거점 밖에 버려두었다. 그 일 뒤로 지휘를 거절한다
+  reveal_when: 신뢰 4 이상 + 술자리
+stats: { strength: 1, agility: -1, cool: 2, sense: 1, persuasion: 1 }
+start_inventory: [cigarettes, kitchen_knife]
+playable: true

@@ -7,7 +7,7 @@ import { createWorldEvent } from "../game/state.ts";
 import { TEST_CONTENT } from "../testing.ts";
 import { archiveSave, SaveFormatError, SqliteRepository } from "./sqlite.ts";
 
-const world = () => createWorldEvent(TEST_CONTENT.roles.role_test!, "world_test");
+const world = () => createWorldEvent(TEST_CONTENT, "role_test", "world_test");
 
 function tempPath() {
   return join(mkdtempSync(join(tmpdir(), "trpg-save-")), "world.db");

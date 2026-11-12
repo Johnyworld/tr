@@ -1,0 +1,32 @@
+# 초안
+id: a_jiho
+name: 오지호
+faction: faction_a
+rank: grunt
+age: 19
+look: 앳된 얼굴에 주근깨. 몸에 안 맞는 큰 방탄조끼를 입고 다닌다.
+reputation: 같은 분대의 막내. 말이 많고 붙임성이 좋아 거점 소문은 다 안다.
+want: 인정받아 정찰조에 들어가는 것
+fear: 겁쟁이로 보이는 것
+values: { discipline: 0, loyalty: 2, mercy: 1, honesty: 1, self_interest: 0 }
+temperament: [talkative, eager]
+voice:
+  style: 들뜬 말투. 손위에게는 어설픈 존댓말, 동갑 이하에게는 반말. 자주 말끝을 흐린다
+  samples:
+    - "아 진짜요? 그거 저도 데려가 주면 안 돼요?"
+    - "근데 그거 아세요? 식당 아줌마가 그러는데..."
+routine: { day: 잡일과 보초 보조, night: 막사 }
+rules:
+  - 칭찬을 받으면 무리해서라도 따라나선다
+  - 들은 이야기를 오래 담아 두지 못하고 누군가에게 옮긴다
+knows:
+  - 식당에서 저녁 배급이 가끔 늦게 나온다는 것
+  - 분대장이 밤마다 무전기를 붙잡고 있다는 것
+doesnt_know:
+  - 실종된 정찰조의 형이 아직 살아 있다
+secret:
+  content: 실종된 정찰조에 친형이 있었다. 정찰조에 들어가려는 것도 형을 찾기 위해서다
+  reveal_when: 신뢰 3 이상
+stats: { strength: 0, agility: 1, cool: -1, sense: 1, persuasion: 1 }
+start_inventory: [water_bottle]
+playable: true

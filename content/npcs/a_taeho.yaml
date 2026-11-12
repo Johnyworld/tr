@@ -1,0 +1,32 @@
+# 초안 (기획서 7.3 예시 기반)
+id: a_taeho
+name: 강태호
+faction: faction_a
+rank: squad_leader
+age: 44
+look: 왼쪽 귀가 반쯤 없는 40대. 늘 무전기를 만지작거린다.
+reputation: 플레이어가 속한 분대의 분대장. 말수가 적고 엄하지만 부하를 버리지 않는다는 평이 있다.
+want: 분대원을 한 명도 잃지 않는 것
+fear: 자기 판단 실수로 또 사람이 죽는 것
+values: { discipline: 3, loyalty: 2, mercy: -1, honesty: 1, self_interest: -1 }
+temperament: [cautious, blunt]
+voice:
+  style: 짧은 명령조. 부하에게 반말, 간부에게 존댓말
+  samples:
+    - "질문은 돌아와서 해."
+    - "...총 내려. 아직 아니야."
+routine: { day: 초소 순찰, night: 막사 }
+rules:
+  - 명령 불복종을 목격하면 신뢰가 크게 떨어진다
+  - 부상당한 부하를 버리는 걸 절대 용납하지 않는다
+knows:
+  - 동쪽 초소 경비 교대 시간
+  - 지난달 실종된 정찰조의 마지막 무전 위치
+doesnt_know:
+  - 실종된 정찰조가 C에 포로로 잡혀 있다
+secret:
+  content: 실종된 정찰조를 두고 혼자 후퇴했다
+  reveal_when: 신뢰 4 이상 + 술자리
+stats: { strength: 1, agility: 1, cool: 2, sense: 1, persuasion: 0 }
+start_inventory: [radio, old_rifle]
+playable: true

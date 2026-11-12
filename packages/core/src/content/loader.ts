@@ -2,7 +2,13 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
-import { itemContentSchema, roleContentSchema, type Content } from "./schemas.ts";
+import {
+  beliefPresetSchema,
+  itemContentSchema,
+  npcContentSchema,
+  roleContentSchema,
+  type Content,
+} from "./schemas.ts";
 
 export class ContentError extends Error {
   override name = "ContentError";
@@ -15,6 +21,8 @@ export class ContentError extends Error {
 const KINDS = {
   items: itemContentSchema,
   roles: roleContentSchema,
+  npcs: npcContentSchema,
+  beliefs: beliefPresetSchema,
 } as const;
 
 /**
@@ -24,7 +32,7 @@ const KINDS = {
  */
 export function loadContent(contentDir: string): Content {
   const problems: string[] = [];
-  const content: Content = { items: {}, roles: {} };
+  const content: Content = { items: {}, roles: {}, npcs: {}, beliefs: {} };
 
   for (const [kind, schema] of Object.entries(KINDS) as [keyof typeof KINDS, z.ZodType][]) {
     const dir = join(contentDir, kind);
@@ -65,6 +73,18 @@ function checkReferences(content: Content): string[] {
     for (const itemId of role.start_inventory) {
       if (!content.items[itemId]) problems.push(`roles.${role.id}: 알 수 없는 아이템 ${itemId}`);
     }
+    for (const npcId of role.known_npcs) {
+      if (!content.npcs[npcId]) problems.push(`roles.${role.id}: 알 수 없는 NPC ${npcId}`);
+    }
+    if (role.beliefs_preset && !content.beliefs[role.beliefs_preset]) {
+      problems.push(`roles.${role.id}: 알 수 없는 시작 지식 ${role.beliefs_preset}`);
+    }
+  }
+  for (const npc of Object.values(content.npcs)) {
+    for (const itemId of npc.start_inventory) {
+      if (!content.items[itemId]) problems.push(`npcs.${npc.id}: 알 수 없는 아이템 ${itemId}`);
+    }
+    if (npc.id === "player") problems.push(`npcs.${npc.id}: player는 예약된 id다`);
   }
   return problems;
 }

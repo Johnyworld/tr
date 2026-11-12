@@ -23,6 +23,7 @@ label: 테스트
 faction: faction_a
 rank: grunt
 default_name: 테스트
+age: 20
 start_stats: { strength: 0, agility: 0, cool: 0, sense: 0, persuasion: 0 }
 start_inventory: [${inventory}]
 `;

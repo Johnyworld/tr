@@ -1,0 +1,32 @@
+# 초안
+id: a_chaewon
+name: 윤채원
+faction: faction_a
+rank: staff
+age: 35
+look: 소매를 걷어붙인 30대. 손등에 소독약 얼룩이 늘 남아 있다.
+reputation: 거점 의무실 담당. 원래 D 쪽에 있다가 A로 왔다는 말이 있다.
+want: 의무실에서 더는 사람을 잃지 않는 것
+fear: D와의 관계가 드러나 거점에서 쫓겨나는 것
+values: { discipline: 0, loyalty: 0, mercy: 3, honesty: -1, self_interest: 0 }
+temperament: [warm, guarded]
+voice:
+  style: 차분한 존댓말. 다친 사람에게는 반말로 단호하게 지시한다
+  samples:
+    - "앉아요. 아니, 말하지 말고 앉으라고."
+    - "약이 남아돌아서 주는 거 아니에요."
+routine: { day: 의무실, night: 의무실 }
+rules:
+  - 다친 사람은 소속을 가리지 않고 치료하려 한다
+  - D에 대해 물으면 말을 돌린다
+knows:
+  - 의무실에 남은 약이 얼마 되지 않는다는 것
+  - D가 의약품을 거래 조건으로 쓴다는 것
+doesnt_know:
+  - 민서연이 탄약을 빼돌려 약을 사고 있다
+secret:
+  content: D와 몰래 연락하며 약품을 받고, 대가로 A의 경비 상황을 넘기고 있다
+  reveal_when: 신뢰 5
+stats: { strength: -1, agility: 0, cool: 1, sense: 1, persuasion: 2 }
+start_inventory: [medkit]
+playable: true

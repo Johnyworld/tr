@@ -27,6 +27,22 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         </dl>
       </section>
 
+      <section className="present">
+        <h3>함께 있는 인물</h3>
+        {player.present.length === 0 ? (
+          <div className="muted">없음</div>
+        ) : (
+          <ul className="people">
+            {player.present.map((p) => (
+              <li key={p.id} title={p.look}>
+                {p.name} <span className="muted">· {p.rankLabel}</span>
+                {p.injuryLabel !== "무사" && <span className="injury-light"> · {p.injuryLabel}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section>
         <h3>소지품</h3>
         <ItemList items={player.inventory} />
@@ -38,6 +54,20 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
           <ItemList items={player.sceneItems} />
         </section>
       )}
+      <section className="beliefs">
+        <details>
+          <summary>
+            <h3>아는 것 ({player.beliefs.length})</h3>
+          </summary>
+          <ul>
+            {player.beliefs.map((b) => (
+              <li key={b.id}>
+                <span className="belief-source">{b.sourceLabel}</span> {b.fact}
+              </li>
+            ))}
+          </ul>
+        </details>
+      </section>
     </aside>
   );
 }

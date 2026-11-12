@@ -1,0 +1,32 @@
+# 초안
+id: a_doyun
+name: 한도윤
+faction: faction_a
+rank: officer
+age: 38
+look: 단정하게 빗어 넘긴 머리에 안경. 장부를 옆구리에 끼고 다닌다.
+reputation: 보급 담당 간부. 배급표를 쥐고 있어 다들 어려워한다. 원칙대로만 한다는 평.
+want: 거점이 굶지 않고 겨울을 넘기는 것
+fear: 배급 때문에 폭동이 나는 것
+values: { discipline: 3, loyalty: 1, mercy: 0, honesty: -1, self_interest: 0 }
+temperament: [calculating, formal]
+voice:
+  style: 또박또박한 존댓말. 하급자에게도 존댓말을 쓰지만 차갑다
+  samples:
+    - "배급표에 없는 건 드릴 수 없습니다."
+    - "규정은 모두를 위해 있는 겁니다."
+routine: { day: 보급 창고와 식당, night: 간부 숙소 }
+rules:
+  - 규정을 어기는 요청은 거절하지만 기록해 둔다
+  - 자원을 아끼는 제안에는 귀를 기울인다
+knows:
+  - 거점의 남은 식량과 연료가 몇 주분인지
+  - 다음 배급 조정 계획
+doesnt_know:
+  - 박만수가 창고 뒷문 자물쇠가 헐겁다는 걸 안다
+secret:
+  content: 배급 장부를 조작해 지도부 몰래 겨울용 비상 식량을 창고에 따로 숨겨 두었다
+  reveal_when: 신뢰 5
+stats: { strength: -1, agility: 0, cool: 1, sense: 1, persuasion: 2 }
+start_inventory: [ledger]
+playable: true

@@ -384,3 +384,35 @@ describe("턴 문 (Claude Code 훅)", () => {
     expect(time()).not.toBe(before);
   });
 });
+
+describe("사망 뒤 새 캐릭터 만들기", () => {
+  it("브라우저에서 만들면 그 설정으로 이어 가고, 채팅이면 character로 만든다. 아무것도 없으면 규칙부터", async () => {
+    const { statusPayload } = await import("./statusServer.ts");
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-heir-")), content: REAL_CONTENT, rngFactory: () => () => 0 });
+    const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8790" });
+    opened.push(app);
+    const [c, s] = InMemoryTransport.createLinkedPair();
+    await app.server.connect(s);
+    const client = new Client({ name: "t", version: "0" });
+    await client.connect(c);
+    const call = async (name: string, args: Record<string, unknown> = {}) => {
+      const r = (await client.callTool({ name, arguments: args })) as { content: { text: string }[] };
+      return { text: r.content.map((x) => x.text).join("\n") };
+    };
+    await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: {}, portrait: null } });
+    const lethal = { move: "fight", stat: "strength", difficulty: "very_hard", harm_on_failure: "heavy", harm_cause: "총상" };
+    for (let i = 0; i < 4 && !app.world!.isPlayerDead(); i++) await call("take_action", action({ intent: "돌격", check: lethal }));
+    expect(app.world!.isPlayerDead()).toBe(true);
+
+    expect((await call("choose_next_character", { character_id: "new" })).text).toContain("캐릭터 생성");
+    const waiting = client.callTool({ name: "choose_next_character", arguments: { character_id: "new", create_in_browser: true } }) as Promise<{ content: { text: string }[] }>;
+    await new Promise((r) => setTimeout(r, 30));
+    const source = { get world() { return app.world; }, scenarioName: "x", creation: app.browserCreation, get sheetHeld() { return app.sheetHeld; } };
+    expect(statusPayload(source)).toMatchObject({ creating: true });
+    expect(app.browserCreation.submit({ name: "서진", gender: "female", abilities: { intellect: 2, charm: 1 }, portrait: "p2", traits: ["attractive", "big_eater"] })).toEqual({ ok: true });
+    expect((await waiting).content[0]!.text).toContain("새 캐릭터를 만들었다");
+    const p = app.world!.state().characters[app.world!.state().playerId]!;
+    expect(p).toMatchObject({ name: "서진", portrait: "p2", traits: ["attractive", "big_eater"], stats: { intellect: 2, charm: 1 }, dead: false });
+    expect(statusPayload(source)).toMatchObject({ created: true, name: "서진" });
+  });
+});

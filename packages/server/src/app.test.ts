@@ -10,6 +10,19 @@ import { WebSession } from "./session.ts";
 
 const sixes: Rng = () => 0.99;
 
+/** 캐릭터 생성 규칙이 있는 테스트 콘텐츠 */
+const CREATION_CONTENT = (() => {
+  const c = structuredClone(TEST_CONTENT);
+  c.scenario.creation = {
+    points: 4,
+    cost: { "-1": -1, "0": 0, "1": 1, "2": 3 },
+    max_low: 2,
+    genders: [{ id: "male", label: "남성" }, { id: "female", label: "여성" }],
+    traits: { max_positive: 3, max_negative: 3, max_personality: 2 },
+  };
+  return c;
+})();
+
 /** 첫 호출에서 판정을 요청하고, 두 번째 호출에서 서술을 끝내는 가짜 모델 */
 const fakeModel: LanguageModel = async function* (request) {
   const last = request.messages.at(-1)!;
@@ -233,5 +246,24 @@ describe("사망과 다음 캐릭터 API", () => {
     const next = (await res.json()) as { succession: unknown; player: { name: string; dead: boolean } };
     expect(next.succession).toBeNull();
     expect(next.player).toMatchObject({ name: "둘째", dead: false });
+  });
+});
+
+describe("사망 뒤 새 캐릭터 (생성 화면)", () => {
+  it("character를 보내면 그 설정으로 이어 간다. 규칙에 맞지 않으면 409", async () => {
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-server-")), content: CREATION_CONTENT, rngFactory: () => () => 0 });
+    const session = new WebSession(manager, fakeModel, undefined, manager.create("web"));
+    const lethal = { move: "fight", stat: "strength", difficulty: "hard", harm_on_failure: "heavy", harm_cause: "총상" };
+    const base = { activity: null, deed: null, target: null, narration_summary: null, for_mission: false };
+    for (let i = 0; i < 3 && !session.world.isPlayerDead(); i++) session.world.executeTool("take_action", { ...base, intent: "돌격", check: lethal });
+    const app = createApp(session);
+    const post = (body: unknown) => app.request("/api/game/succession", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const character = { name: "서진", gender: "female", abilities: { strength: 2, agility: 1 }, portrait: "p2", traits: [] };
+    expect((await post({ characterId: "new", character: { ...character, abilities: { strength: 2, agility: 2 } } })).status).toBe(409);
+    const res = await post({ characterId: "new", character });
+    expect(res.status).toBe(200);
+    const p = session.world.state().characters[session.world.state().playerId]!;
+    expect(p).toMatchObject({ name: "서진", gender: "female", portrait: "p2", stats: { strength: 2, agility: 1 }, dead: false });
+    session.close();
   });
 });

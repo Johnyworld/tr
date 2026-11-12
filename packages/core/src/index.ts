@@ -84,6 +84,7 @@ export {
   describeCreationRules,
   randomAbilityBuy,
   randomTraits,
+  fillCharacterChoice,
   checkTraits,
   traitBalance,
   MAX_NAME_LENGTH,

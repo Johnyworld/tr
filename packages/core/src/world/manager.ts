@@ -5,7 +5,7 @@ import Database from "better-sqlite3";
 import { createSeededRng, type Rng } from "../rng.ts";
 import type { Content } from "../content/schemas.ts";
 import { createWorldEvent, type CharacterChoice } from "../game/state.ts";
-import { checkCharacterChoice, randomAbilityBuy, randomTraits } from "../game/creation.ts";
+import { checkCharacterChoice, fillCharacterChoice } from "../game/creation.ts";
 
 /** 캐릭터 생성에서 고른 것이 규칙에 맞지 않는다 */
 export class CharacterChoiceError extends Error {
@@ -103,13 +103,7 @@ export class WorldManager {
     try {
       const ctx = world.ctx();
       // 능력을 고르지 않았으면(null) 포인트를 무작위로 배분한다
-      const filled = choice
-        ? {
-            ...choice,
-            abilities: choice.abilities ?? randomAbilityBuy(this.content.scenario, ctx.rng),
-            traits: choice.traits === null ? randomTraits(this.content.scenario, ctx.rng) : (choice.traits ?? []),
-          }
-        : choice;
+      const filled = choice ? fillCharacterChoice(this.content.scenario, choice, ctx.rng) : choice;
       ctx.store.append(createWorldEvent(this.content, role, worldId, ctx.rng, filled));
       runAfterTimeAdvance(ctx); // 첫날의 임무 후보, 소문 기준일
       world.saveSnapshot();

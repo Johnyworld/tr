@@ -95,11 +95,11 @@ export function createApp(session: WebSession) {
   // 사망 뒤 다음 캐릭터 (새 캐릭터 또는 이전 캐릭터가 알던 인물). 처리는 core가 한다
   app.post("/api/game/succession", async (c) => {
     const parsed = z
-      .object({ characterId: z.string().min(1).max(60), name: z.string().max(20).nullable().optional() })
+      .object({ characterId: z.string().min(1).max(60), name: z.string().max(20).nullable().optional(), character: characterChoiceSchema().optional() })
       .safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "요청 형식이 올바르지 않습니다." }, 400);
     try {
-      const result = session.chooseNextCharacter(parsed.data.characterId, parsed.data.name ?? null);
+      const result = session.chooseNextCharacter(parsed.data.characterId, parsed.data.name ?? null, parsed.data.character);
       if (!result.ok) return c.json({ error: result.error }, 409);
     } catch (err) {
       if (err instanceof TurnInProgressError) return c.json({ error: "턴이 진행 중입니다." }, 409);

@@ -57,7 +57,8 @@ function Game({ initial, onExit }: { initial: GameView; onExit: () => void }) {
   const [notice, setNotice] = useState<Notice>(null);
   /** 사망했을 때: 연대기와 다음 캐릭터 후보 */
   const [succession, setSuccession] = useState<GameView["succession"]>(null);
-  const [heirName, setHeirName] = useState("");
+  /** 사망 뒤 새 캐릭터를 생성 화면에서 만드는 중 */
+  const [creatingHeir, setCreatingHeir] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -87,9 +88,13 @@ function Game({ initial, onExit }: { initial: GameView; onExit: () => void }) {
   }
 
   async function pickHeir(id: string) {
+    // 새 캐릭터는 새 게임과 같은 생성 화면에서 만든다
+    if (id === "new") {
+      setCreatingHeir(true);
+      return;
+    }
     try {
-      applyGame(await chooseNextCharacter(id, id === "new" && heirName.trim() ? heirName.trim() : null));
-      setHeirName("");
+      applyGame(await chooseNextCharacter(id, null));
       setNotice(null);
     } catch (err) {
       setNotice({ kind: "error", text: err instanceof Error ? err.message : String(err) });
@@ -182,6 +187,22 @@ function Game({ initial, onExit }: { initial: GameView; onExit: () => void }) {
     }
   }
 
+  if (creatingHeir) {
+    return (
+      <CharacterCreation
+        title="새 캐릭터로 이어 가기"
+        note="같은 세계에서 새로 시작한다. 이전 캐릭터의 기억은 모른다."
+        submit={(choice) => chooseNextCharacter("new", null, choice)}
+        onStart={(g) => {
+          setCreatingHeir(false);
+          applyGame(g);
+          setNotice(null);
+        }}
+        onBack={() => setCreatingHeir(false)}
+      />
+    );
+  }
+
   const entries = live ? [...transcript, ...live] : transcript;
   const dead = player?.dead ?? false;
 
@@ -247,9 +268,6 @@ function Game({ initial, onExit }: { initial: GameView; onExit: () => void }) {
                           {o.label}
                         </button>
                         <span className="muted small"> {o.detail}</span>
-                        {o.id === "new" && (
-                          <input value={heirName} onChange={(e) => setHeirName(e.target.value)} placeholder="이름 (비우면 기본)" maxLength={20} />
-                        )}
                       </li>
                     ))}
                   </ul>

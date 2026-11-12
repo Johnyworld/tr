@@ -115,14 +115,25 @@ export function createMcpServer(
    * 브라우저(상태 화면)에서 하는 캐릭터 생성 (기획서 11.6).
    * start_session(create_in_browser)이 열고 기다린다. 상태 화면의 "시작"이 submit을 부르면 세계를 만들고 기다리던 tool이 돌아간다
    */
-  let creation: { waiters: Set<(r: TextResult) => void>; done: TextResult | null } | null = null;
+  /** mode: new_world(새 게임) / heir(사망 뒤 새 캐릭터) */
+  let creation: { mode: "new_world" | "heir"; waiters: Set<(r: TextResult) => void>; done: TextResult | null } | null = null;
   const browserCreation = {
     get pending() {
       return creation !== null && creation.done === null;
     },
     submit(choice: CharacterChoiceInput): { ok: true } | { ok: false; error: string } {
-      if (!creation || creation.done) return { ok: false, error: "Claude 세션에서 새 게임을 고른 뒤에 만들 수 있습니다." };
-      const result = openWorld(() => manager.create("mcp", undefined, { ...choice, portrait: choice.portrait ?? null }));
+      if (!creation || creation.done) return { ok: false, error: "Claude 세션에서 새 게임(또는 새 캐릭터)을 고른 뒤에 만들 수 있습니다." };
+      const picked = { ...choice, portrait: choice.portrait ?? null };
+      let result: TextResult;
+      if (creation.mode === "heir") {
+        // 사망 뒤 같은 세계의 새 캐릭터
+        if (!world) return { ok: false, error: "열린 세계가 없습니다." };
+        const r = world.chooseNextCharacter("new", null, picked);
+        if (!r.ok) return { ok: false, error: r.error };
+        result = text(r.text);
+      } else {
+        result = openWorld(() => manager.create("mcp", undefined, picked));
+      }
       if (result.isError) return { ok: false, error: result.content[0]?.text ?? "만들지 못했습니다." };
       creation.done = result;
       sheetHeldUntil = Date.now() + SHEET_HOLD_MS;
@@ -229,11 +240,14 @@ export function createMcpServer(
   );
 
   /** 브라우저에서 시작을 누를 때까지 기다린다 (진행 알림으로 연결을 유지한다). 시간이 넘으면 "다 했어"로 이어 가라고 돌려준다 */
-  async function waitForBrowserCreation(extra: {
+  async function waitForBrowserCreation(
+    extra: {
     signal: AbortSignal;
     _meta?: { progressToken?: string | number };
     sendNotification: (n: { method: "notifications/progress"; params: { progressToken: string | number; progress: number; message?: string } }) => Promise<void>;
-  }): Promise<TextResult> {
+    },
+    mode: "new_world" | "heir" = "new_world",
+  ): Promise<TextResult> {
     const url = options.statusUrl?.();
     if (!url) {
       const rules = creationRules(content, Object.keys(content.roles)[0] ?? "");
@@ -245,7 +259,8 @@ export function createMcpServer(
       creation = null;
       return done;
     }
-    creation ??= { waiters: new Set(), done: null };
+    if (creation && creation.mode !== mode) creation = null;
+    creation ??= { mode, waiters: new Set(), done: null };
     const current = creation;
     const token = extra._meta?.progressToken;
     let tick = 0;
@@ -268,7 +283,8 @@ export function createMcpServer(
       });
       if (result) {
         creation = null;
-        return { ...result, content: [{ type: "text", text: `플레이어가 브라우저에서 캐릭터를 만들었다. 바로 첫 장면을 서술하고, 다 쓴 뒤 open_sheet를 불러 상태 화면에 캐릭터 시트를 연다 (그 뒤엔 더 쓰지 않는다).\n\n${result.content[0]?.text ?? ""}` }] };
+        const who = mode === "heir" ? "새 캐릭터를 만들었다 (같은 세계, 이전 캐릭터의 기억은 모른다)" : "캐릭터를 만들었다";
+        return { ...result, content: [{ type: "text", text: `플레이어가 브라우저에서 ${who}. 바로 첫 장면을 서술하고, 다 쓴 뒤 open_sheet를 불러 상태 화면에 캐릭터 시트를 연다 (그 뒤엔 더 쓰지 않는다).\n\n${result.content[0]?.text ?? ""}` }] };
       }
       return text(
         `아직 브라우저에서 만드는 중이다 (${url}). 플레이어에게 "다 만들고 시작을 누른 뒤 여기에 '다 했어'라고 입력해 주세요"라고 안내하고, 그러면 start_session(create_in_browser: true)를 다시 부른다. 채팅으로 만들고 싶다고 하면 start_session(new_world: true).`,
@@ -456,19 +472,36 @@ export function createMcpServer(
     "choose_next_character",
     {
       description:
-        "사망 후 같은 세계에서 다음 캐릭터로 이어 간다. get_chronicle의 후보 중 하나: \"new\"(새 캐릭터) 또는 인물 id. " +
-        "플레이어가 고른 것만 넘긴다. 새 캐릭터는 이전 캐릭터의 기억을 모른다.",
+        "사망 후 같은 세계에서 다음 캐릭터로 이어 간다. get_chronicle의 후보 중 하나: \"new\"(새 캐릭터) 또는 인물 id. 플레이어가 고른 것만 넘긴다. 새 캐릭터는 이전 캐릭터의 기억을 모른다. " +
+        "new는 새 게임처럼 캐릭터를 만든다: create_in_browser: true면 상태 화면에 생성 화면을 띄우고 시작을 누를 때까지 기다리고, 채팅으로 만들면 character({name, gender, abilities, traits, portrait: null})를 넣는다.",
       inputSchema: z.strictObject({
         character_id: z.string(),
-        name: z.string().max(20).nullable().optional().describe("새 캐릭터의 이름 (new일 때만, 없으면 기본 이름)"),
+        name: z.string().max(20).nullable().optional().describe("(이전 방식) 새 캐릭터의 이름만 정할 때"),
+        character: characterChoiceSchema().nullable().optional().describe("new일 때 채팅으로 만든 캐릭터"),
+        create_in_browser: z.boolean().optional().describe("new일 때 상태 화면(브라우저)에서 만든다. 만들 때까지 기다린다"),
       }),
     },
-    (args) =>
-      withWorld((w) => {
-        releaseFrozen();
-        const result = w.chooseNextCharacter(args.character_id, args.name ?? null);
+    async (args, extra) => {
+      releaseFrozen();
+      if (!world) return text(NO_WORLD, true);
+      if (args.character_id === "new" && args.create_in_browser) {
+        if (!world.isPlayerDead()) return text("캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다.", true);
+        return waitForBrowserCreation(extra, "heir");
+      }
+      if (args.character_id === "new" && !args.character && !args.name) {
+        const rules = creationRules(content, Object.keys(content.roles)[0] ?? "");
+        if (rules) {
+          return text(
+            `${describeCreationRules(rules)}\n\n아직 새 캐릭터를 만들지 않았다. 브라우저(상태 화면)에서 만들지 채팅으로 만들지 묻는다. 브라우저면 choose_next_character(new, create_in_browser: true), 채팅이면 위 내용을 묻고 character와 함께 다시 부른다.`,
+          );
+        }
+      }
+      return withWorld((w) => {
+        const picked = args.character ? { ...args.character, portrait: args.character.portrait ?? null } : undefined;
+        const result = w.chooseNextCharacter(args.character_id, args.name ?? null, picked);
         return result.ok ? text(result.text) : text(result.error, true);
-      }),
+      });
+    },
   );
 
   // ── GM 지침 ───────────────────────────────────────

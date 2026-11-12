@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { checkCharacterChoice, fillCharacterChoice } from "../game/creation.ts";
+import type { CharacterChoice } from "../game/state.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Belief } from "../game/belief.ts";
 import { createCharacterFromRole, type GameState, type RunRecord } from "../game/state.ts";
@@ -80,8 +82,16 @@ export function successionOptions(state: GameState, content: Content): Successio
   return options;
 }
 
-/** 다음 캐릭터로 이어 간다. 이름은 새 캐릭터에만 쓴다 */
-export function switchCharacter(ctx: ToolContext, choice: string, name: string | null): { ok: true; text: string } | { ok: false; error: string } {
+/**
+ * 다음 캐릭터로 이어 간다. 새 캐릭터(new)는 캐릭터 생성에서 고른 것(character: 이름·성별·능력·트레잇·초상화)으로 만들 수 있다.
+ * character가 없으면 예전처럼 역할의 기본으로 (name만 바꿀 수 있다)
+ */
+export function switchCharacter(
+  ctx: ToolContext,
+  choice: string,
+  name: string | null,
+  character?: CharacterChoice,
+): { ok: true; text: string } | { ok: false; error: string } {
   const { store, content } = ctx;
   const state = store.getState();
   const options = successionOptions(state, content);
@@ -95,9 +105,13 @@ export function switchCharacter(ctx: ToolContext, choice: string, name: string |
 
   if (choice === "new") {
     const id = `pc_${state.chronicle.length + 1}`;
-    const character = createCharacterFromRole(content.scenario, role, id, ctx.rng);
-    if (name?.trim()) character.name = name.trim().slice(0, 20);
-    store.append({ type: "character_switched", characterId: id, character, known: [...role.known_npcs] });
+    if (character) {
+      const problems = checkCharacterChoice(content.scenario, character);
+      if (problems.length) return { ok: false, error: `캐릭터 설정이 규칙에 맞지 않는다: ${problems.join(" ")}` };
+    }
+    const made = createCharacterFromRole(content.scenario, role, id, ctx.rng, character ? fillCharacterChoice(content.scenario, character, ctx.rng) : undefined);
+    if (!character && name?.trim()) made.name = name.trim().slice(0, 20);
+    store.append({ type: "character_switched", characterId: id, character: made, known: [...role.known_npcs] });
     // 역할의 시작 지식은 이전 캐릭터의 기억이 아니라 그 자리에 오는 사람이면 아는 것이다
     const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
     for (const b of preset?.beliefs ?? []) {

@@ -97,9 +97,9 @@ export class WebSession {
   }
 
   /** 사망 뒤 다음 캐릭터로 이어 간다 */
-  chooseNextCharacter(choice: string, name: string | null) {
+  chooseNextCharacter(choice: string, name: string | null, character?: CharacterChoice) {
     if (this.#busy) throw new TurnInProgressError();
-    return this.world.chooseNextCharacter(choice, name);
+    return this.world.chooseNextCharacter(choice, name, character ? { ...character, portrait: character.portrait ?? null } : undefined);
   }
 
   /** 지금 세계를 닫고 새 세계를 연다 (지금 세계는 saves/worlds/에 그대로 남는다). 캐릭터 생성에서 고른 것을 받는다 */

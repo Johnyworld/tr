@@ -2,10 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import { fetchCreation, fetchRandomAbilities, fetchRandomTraits, newGame } from "./api.ts";
 import { Portrait, PORTRAIT_IDS } from "./Portrait.tsx";
 import { signed } from "./ToolCard.tsx";
-import type { CreationRulesView, GameView } from "./types.ts";
+import type { CharacterChoiceView, CreationRulesView, GameView } from "./types.ts";
 
 /** 캐릭터 생성: 이름, 성별, 능력(포인트 구매), 초상화. 규칙 검증은 서버(core)가 한다 */
-export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameView) => void; onBack?: () => void }) {
+export function CharacterCreation({
+  onStart,
+  onBack,
+  submit = newGame,
+  title = "새 캐릭터",
+  note,
+}: {
+  onStart: (game: GameView) => void;
+  onBack?: () => void;
+  /** 만들기 요청 (기본: 새 게임. 사망 뒤 새 캐릭터는 계승 요청) */
+  submit?: (choice: CharacterChoiceView) => Promise<GameView>;
+  title?: string;
+  note?: string;
+}) {
   const [rules, setRules] = useState<CreationRulesView | null>(null);
   const [name, setName] = useState("");
   const [gender, setGender] = useState<string | null>(null);
@@ -86,7 +99,7 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
     setStarting(true);
     setError(null);
     try {
-      onStart(await newGame({ name: name.trim(), gender, abilities, portrait, traits }));
+      onStart(await submit({ name: name.trim(), gender, abilities, portrait, traits }));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setStarting(false);
@@ -100,7 +113,8 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
           ← 돌아가기
         </button>
       )}
-      <h1>새 캐릭터</h1>
+      <h1>{title}</h1>
+      {note && <p className="muted">{note}</p>}
       <p className="muted">시작 역할: {rules.roleLabel}. 직업·출신은 아직 고를 수 없다.</p>
 
       <section className="creation-top">

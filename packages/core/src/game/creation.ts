@@ -199,3 +199,12 @@ export function describeCreationRules(rules: CreationRules): string {
     "트레잇 목록은 한꺼번에 다 읽어 주지 말고, 플레이어가 원하면 종류별로 보여 준다.",
   ].join("\n");
 }
+
+/** 고르지 않은 것(null)을 규칙에 맞게 무작위로 채운다: 능력은 포인트 배분, 트레잇은 무작위 */
+export function fillCharacterChoice(s: Scenario, choice: CharacterChoice, rng: Rng): CharacterChoice {
+  return {
+    ...choice,
+    abilities: choice.abilities ?? randomAbilityBuy(s, rng),
+    traits: choice.traits === null ? randomTraits(s, rng) : (choice.traits ?? []),
+  };
+}

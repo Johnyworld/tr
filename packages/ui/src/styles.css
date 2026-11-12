@@ -739,7 +739,9 @@ body {
 }
 
 .title-screen .new-game:disabled {
-  opacity: 0.5;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
   cursor: default;
 }
 

@@ -59,24 +59,28 @@ export function checkCharacterChoice(s: Scenario, choice: CharacterChoice): stri
   return problems;
 }
 
-/** 포인트를 다 쓰는 무작위 배분 (생성 화면의 "무작위" 버튼, 고르지 않은 MCP 새 게임) */
+/** 포인트를 남김없이 쓰는 무작위 배분 (생성 화면의 "무작위" 버튼, 고르지 않은 MCP 새 게임) */
 export function randomAbilityBuy(s: Scenario, rng: Rng): Record<string, number> {
   const c = s.creation;
-  const abilities: Record<string, number> = Object.fromEntries(s.stats.map((x) => [x.id, 0]));
-  if (!c) return abilities;
+  const zero = (): Record<string, number> => Object.fromEntries(s.stats.map((x) => [x.id, 0]));
+  if (!c) return zero();
   const values = Object.keys(c.cost).map(Number).sort((a, b) => a - b);
-  for (let guard = 0; guard < 200; guard++) {
-    const stat = s.stats[Math.floor(rng() * s.stats.length)]!;
-    const up = rng() < 0.8;
-    const now = abilities[stat.id]!;
-    const next = values[values.indexOf(now) + (up ? 1 : -1)];
-    if (next === undefined) continue;
-    const trial = { ...abilities, [stat.id]: next };
-    const { spent, low } = abilitySpend(s, trial);
-    if (spent <= c.points && low <= c.max_low) Object.assign(abilities, trial);
-    if (abilitySpend(s, abilities).spent === c.points && rng() < 0.3) break;
+  let best = zero();
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const abilities = zero();
+    for (let guard = 0; guard < 100; guard++) {
+      const stat = s.stats[Math.floor(rng() * s.stats.length)]!;
+      const now = abilities[stat.id]!;
+      const next = values[values.indexOf(now) + (rng() < 0.8 ? 1 : -1)];
+      if (next === undefined) continue;
+      const trial = { ...abilities, [stat.id]: next };
+      const { spent, low } = abilitySpend(s, trial);
+      if (spent <= c.points && low <= c.max_low) Object.assign(abilities, trial);
+      if (abilitySpend(s, abilities).spent === c.points) return abilities;
+    }
+    if (abilitySpend(s, abilities).spent > abilitySpend(s, best).spent) best = abilities;
   }
-  return abilities;
+  return best;
 }
 
 export type CreationRules = {

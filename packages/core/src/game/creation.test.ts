@@ -38,11 +38,12 @@ describe("캐릭터 생성", () => {
     expect(checkCharacterChoice(s, { ...base, abilities: { strength: 2, agility: 1 } })).toEqual([]);
   });
 
-  it("무작위 배분은 언제나 규칙에 맞는다", () => {
+  it("무작위 배분은 언제나 규칙에 맞고 포인트를 남김없이 쓴다", () => {
     const s = content().scenario;
-    for (let seed = 1; seed < 50; seed++) {
+    for (let seed = 1; seed < 200; seed++) {
       const abilities = randomAbilityBuy(s, createSeededRng(seed));
       expect(checkCharacterChoice(s, { ...base, abilities })).toEqual([]);
+      expect(abilitySpend(s, abilities).spent).toBe(4);
     }
   });
 

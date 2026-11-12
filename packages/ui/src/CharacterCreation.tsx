@@ -10,7 +10,8 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
   const [name, setName] = useState("");
   const [gender, setGender] = useState<string | null>(null);
   const [abilities, setAbilities] = useState<Record<string, number>>({});
-  const [portrait, setPortrait] = useState<string>(PORTRAIT_IDS[0]!);
+  // 모든 값을 플레이어가 직접 고른다 (기본값으로 채워 시작하지 않는다)
+  const [portrait, setPortrait] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -20,9 +21,8 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
     fetchCreation()
       .then((r) => {
         setRules(r);
-        if (r) setGender(r.genders[0]?.id ?? null);
         // 생성 규칙이 없는 시나리오는 역할이 정한 캐릭터로 바로 시작한다
-        else if (!autoStarted.current) {
+        if (!r && !autoStarted.current) {
           autoStarted.current = true;
           void newGame(null).then(onStart, (err: unknown) => setError(String(err)));
         }
@@ -56,11 +56,19 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
     return next;
   };
 
+  const missing = [
+    name.trim() ? null : "이름",
+    gender ? null : "성별",
+    portrait ? null : "초상화",
+    left === 0 ? null : `능력 포인트 ${left}`,
+  ].filter((x): x is string => x !== null);
+
   async function start() {
+    if (missing.length) return;
     setStarting(true);
     setError(null);
     try {
-      onStart(await newGame({ name: name.trim() || rules!.defaultName, gender, abilities, portrait }));
+      onStart(await newGame({ name: name.trim(), gender, abilities, portrait }));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setStarting(false);
@@ -80,7 +88,7 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
         <div className="creation-fields">
           <label>
             <span>이름</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={rules.defaultName} maxLength={20} />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="이름을 입력하세요" maxLength={20} autoFocus />
           </label>
           <div>
             <span className="field-label">성별</span>
@@ -144,8 +152,9 @@ export function CharacterCreation({ onStart, onBack }: { onStart: (game: GameVie
       <p className="muted small">시작 훈련: {rules.startSkills.map((s) => `${s.label} ${signed(s.value)}`).join(", ")}</p>
 
       {error && <div className="notice error">{error}</div>}
-      <button type="button" className="new-game" onClick={() => void start()} disabled={starting}>
-        {starting ? "세계를 만드는 중…" : left > 0 ? `시작 (포인트 ${left} 남음)` : "시작"}
+      {missing.length > 0 && <p className="muted small">아직 정하지 않은 것: {missing.join(", ")}</p>}
+      <button type="button" className="new-game" onClick={() => void start()} disabled={starting || missing.length > 0}>
+        {starting ? "세계를 만드는 중…" : "시작"}
       </button>
     </div>
   );

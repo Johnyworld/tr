@@ -2,6 +2,7 @@ import { runMissionStartOfTurn } from "./missionTools.ts";
 import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
+import { runStorylets } from "./storyletTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -18,5 +19,8 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const war = runWarDays(ctx);
   // 예정 시각이 된 교전: 그 자리에 있으면 전투 장면이 열린다
   const battles = runPendingClashes(ctx);
-  return [...war, ...battles, ...runMissionStartOfTurn(ctx)];
+  const missions = runMissionStartOfTurn(ctx);
+  // 조건이 맞는 이야기 (간격이 지났고 전투 중이 아닐 때)
+  const storylets = runStorylets(ctx);
+  return [...war, ...battles, ...missions, ...storylets];
 }

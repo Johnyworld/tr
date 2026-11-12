@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ACTIVITIES, TIME_SEGMENTS } from "../rules/time.ts";
 import { beliefAccuracySchema, beliefSourceSchema } from "../game/belief.ts";
+import { deedTagSchema, privacySchema, RELATION_AXES } from "../game/reputation.ts";
 import { createStatsSchema } from "../game/character.ts";
 import { idEnum, type Scenario } from "../scenario/schema.ts";
 import { moveIds, rankIds } from "../scenario/scenario.ts";
@@ -170,7 +171,106 @@ export function createContentSchemas(s: Scenario) {
     yields: resourceAmounts.default({}),
   });
 
-  return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location };
+  /** 스토리렛 효과. 코드가 검증하고 적용한다 (AI가 고르는 것은 선택지뿐이다) */
+  const storyletEffect = z.union([
+    z.strictObject({ set_flag: contentIdSchema }),
+    z.strictObject({ clear_flag: contentIdSchema }),
+    /** 배역(또는 commander)이 플레이어를 보는 관계 */
+    z.strictObject({ relation: z.strictObject({ who: z.string().min(1), axis: z.enum(RELATION_AXES), delta: z.number().int().min(-3).max(3) }) }),
+    z.strictObject({ belief: z.strictObject({ fact: z.string().min(1).max(300), source: beliefSourceSchema.default("seen") }) }),
+    z.strictObject({ merit: z.number().int().min(-3).max(3) }),
+    /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
+    z.strictObject({ give_item: z.strictObject({ item: contentIdSchema, from: z.string().optional(), quantity: z.number().int().positive().default(1) }) }),
+    /** 세력 클락을 당기거나 늦춘다 (플레이어 행동이 전황에 닿는 길) */
+    z.strictObject({ clock: z.strictObject({ id: contentIdSchema, delta: z.number().int().min(-5).max(5) }) }),
+    /** own = 플레이어 소속 */
+    z.strictObject({ faction_morale: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-1).max(1) }) }),
+    z.strictObject({
+      deed: z.strictObject({
+        summary: z.string().min(1).max(120),
+        tags: z.array(deedTagSchema).min(1).max(3),
+        severity: z.number().int().min(1).max(3),
+        privacy: privacySchema,
+      }),
+    }),
+  ]);
+
+  /** 배역 조건: 조건에 맞는 살아 있는 NPC 중 하나를 고른다 (템플릿의 "누가") */
+  const castRole = z.strictObject({
+    /** 이 중에서만 */
+    ids: z.array(contentIdSchema).optional(),
+    /** 플레이어의 직속 상관 */
+    commander: z.boolean().default(false),
+    /** own = 플레이어 소속, 또는 세력 id */
+    faction: z.string().optional(),
+    ranks: z.array(idEnum(rankIds(s))).optional(),
+    /** 플레이어가 아는 인물만 */
+    known: z.boolean().default(false),
+    /** 이 인물의 플레이어에 대한 신뢰 하한 */
+    trust_gte: z.number().int().optional(),
+    /** 발동할 때 장면에 들어온다 */
+    enter: z.boolean().default(true),
+  });
+
+  const storyletChoice = z
+    .strictObject({
+      id: contentIdSchema,
+      label: z.string().min(1),
+      /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */
+      check: idEnum(moveIds(s)).optional(),
+      effects: z.array(storyletEffect).default([]),
+      outcomes: z
+        .strictObject({ success: z.array(storyletEffect), partial: z.array(storyletEffect), miss: z.array(storyletEffect) })
+        .optional(),
+    })
+    .refine((c) => (c.check ? !!c.outcomes : !c.outcomes), "check가 있으면 outcomes를, 없으면 effects를 쓴다");
+
+  /**
+   * 스토리렛 (기획서 10.3). 조건(when)이 맞고 배역(cast)을 채울 수 있으면 발동한다.
+   * repeatable이면 템플릿: 배역과 {zone} {scarce} 같은 자리를 세계 상태에서 채워 반복된다.
+   */
+  const storylet = z.strictObject({
+    id: contentIdSchema,
+    title: z.string().min(1),
+    /** 역할의 storylet_tags와 겹쳐야 한다 (비어 있으면 모든 역할) */
+    tags: z.array(contentIdSchema).default([]),
+    repeatable: z.boolean().default(false),
+    cooldown_days: z.number().min(0).default(0),
+    weight: z.number().positive().default(1),
+    when: z
+      .strictObject({
+        ranks: z.array(idEnum(rankIds(s))).optional(),
+        segments: z.array(z.enum(TIME_SEGMENTS)).optional(),
+        day_gte: z.number().int().optional(),
+        /** 플레이어가 있는 구역 */
+        zones: z.array(contentIdSchema).optional(),
+        /** 우리 무리 구역에 있는지 */
+        own_territory: z.boolean().optional(),
+        flags_all: z.array(contentIdSchema).optional(),
+        flags_none: z.array(contentIdSchema).optional(),
+        /** 세력 클락 (플레이어는 모르는 값. 조건으로만 쓴다) */
+        clock_gte: z.record(contentIdSchema, z.number().int()).optional(),
+        clock_lte: z.record(contentIdSchema, z.number().int()).optional(),
+        own_morale_lte: z.number().int().optional(),
+        /** 우리 무리 식량이 며칠 치 이하 */
+        own_food_days_lte: z.number().optional(),
+        /** 부상 트랙이 이 단계 이상 */
+        harm_at_least: z.string().optional(),
+        has_items: z.array(contentIdSchema).optional(),
+        mission_active: z.boolean().optional(),
+        /** 최근 N시간 안에 전황 소식을 들었는지 */
+        war_news_within_hours: z.number().positive().optional(),
+      })
+      .default({}),
+    cast: z.record(contentIdSchema, castRole).default({}),
+    /** 상황 (GM이 서술의 출발점으로 쓴다). {배역} {zone} {scarce}, 조사는 {friend:이/가} */
+    setup: z.string().min(1),
+    /** GM 전용 연출 지시 */
+    ai_direction: z.string().optional(),
+    choices: z.array(storyletChoice).min(1),
+  });
+
+  return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location, storylet };
 }
 
 type ContentSchemas = ReturnType<typeof createContentSchemas>;
@@ -181,6 +281,9 @@ export type MissionContent = z.infer<ContentSchemas["mission"]>;
 export type MissionRequirement = MissionContent["requirements"][number];
 export type FactionContent = z.infer<ContentSchemas["faction"]>;
 export type LocationContent = z.infer<ContentSchemas["location"]>;
+export type StoryletContent = z.infer<ContentSchemas["storylet"]>;
+export type StoryletChoice = StoryletContent["choices"][number];
+export type StoryletEffect = StoryletChoice["effects"][number];
 
 /** 게임이 쓰는 콘텐츠 전체. 단계별로 종류가 늘어난다 */
 export type Content = {
@@ -192,4 +295,5 @@ export type Content = {
   missions: Record<string, MissionContent>;
   factions: Record<string, FactionContent>;
   locations: Record<string, LocationContent>;
+  storylets: Record<string, StoryletContent>;
 };

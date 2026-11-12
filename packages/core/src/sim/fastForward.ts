@@ -5,7 +5,7 @@ import type { Scenario } from "../scenario/schema.ts";
 import type { GameState } from "../game/state.ts";
 
 /** 빨리감기를 멈추게 한 사건 */
-export const INTERRUPT_KINDS = ["disturbance", "battle"] as const;
+export const INTERRUPT_KINDS = ["disturbance", "battle", "storylet"] as const;
 export type InterruptKind = (typeof INTERRUPT_KINDS)[number];
 
 export const interruptSchema = z.strictObject({
@@ -51,9 +51,9 @@ export const battleCheck: InterruptCheck = ({ state, from, to }) => {
   return due ? { kind: "battle", detail: "교전", at: due.at } : null;
 };
 
-/** 시나리오의 기본 끼어들기 검사 목록. 교전을 먼저 본다 */
-export function createInterruptChecks(s: Scenario): readonly InterruptCheck[] {
-  return [battleCheck, createDisturbanceCheck(s)];
+/** 기본 끼어들기 검사 목록. 교전 → 그 밖의 검사(스토리렛 등) → 이상 징후 순 */
+export function createInterruptChecks(s: Scenario, more: readonly InterruptCheck[] = []): readonly InterruptCheck[] {
+  return [battleCheck, ...more, createDisturbanceCheck(s)];
 }
 
 export type FastForwardResult = {

@@ -107,3 +107,30 @@ describe("전투 설정 참조", () => {
     expect(() => loadContent(dir)).toThrow(/알 수 없는 아이템 explosive/);
   });
 });
+
+describe("스토리렛 참조", () => {
+  it("배역·아이템·문장의 자리를 검사한다", () => {
+    const dir = tempContent({
+      "items/a.yaml": "- { id: a, name: 가 }",
+      "storylets/s.yaml": `
+id: s1
+title: 테스트
+cast: { friend: { known: true } }
+setup: "{friend:이/가} {nobody}를 부른다"
+choices:
+  - id: c1
+    label: 받는다
+    effects: [ { give_item: { item: ghost } }, { relation: { who: stranger, axis: trust, delta: 1 } } ]
+`,
+    });
+    try {
+      loadContent(dir);
+      expect.unreachable();
+    } catch (err) {
+      const problems = (err as ContentError).problems.join("\n");
+      expect(problems).toContain("알 수 없는 자리 {nobody}");
+      expect(problems).toContain("알 수 없는 아이템 ghost");
+      expect(problems).toContain("알 수 없는 배역 stranger");
+    }
+  });
+});

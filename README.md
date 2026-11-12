@@ -82,7 +82,7 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 
 ### MCP 서버가 여는 것
 
-- tool: `start_session`, `load_world`, `list_worlds`, `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀)
+- tool: `start_session`, `load_world`, `list_worlds`, `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`)
 - prompt: `play` (GM 지침 + 세션 시작 안내)
 - 로그는 stderr로만 쓴다. stdout은 MCP 프로토콜 전용이다
 - 환경 변수: `SCENARIO`(기본 `post_apoc`), `SAVES_DIR`(기본 `saves`)

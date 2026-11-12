@@ -110,6 +110,17 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
           </div>
         </div>
       );
+    case "storylet":
+      if (display.event === "started") return null; // 시작은 GM 서술로 드러난다
+      return (
+        <div className="card storylet">
+          <div className="card-head">
+            <span className="card-kind">이야기</span>
+            <span>{display.title}</span>
+            <span className="badge">{display.event === "resolved" ? display.detail : "지나감"}</span>
+          </div>
+        </div>
+      );
     case "battle":
       return (
         <div className={`card battle ${display.event}`}>

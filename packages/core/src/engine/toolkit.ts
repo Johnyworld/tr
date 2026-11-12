@@ -44,6 +44,7 @@ export type ToolDisplayEvent =
     }
   | { type: "promotion"; name: string; fromLabel: string; toLabel: string }
   | { type: "battle"; event: "started" | "round" | "ended"; title: string; detail: string }
+  | { type: "storylet"; event: "started" | "resolved" | "expired"; title: string; detail: string }
   | {
       type: "deed";
       summary: string;

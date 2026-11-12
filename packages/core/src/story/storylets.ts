@@ -1,0 +1,146 @@
+import type { Content, StoryletContent } from "../content/schemas.ts";
+import type { GameState } from "../game/state.ts";
+import { activeMissionOf } from "../game/missions.ts";
+import { NEUTRAL_RELATION } from "../game/reputation.ts";
+import { dayOf, MINUTES_PER_DAY, segmentOf, type GameTime } from "../rules/time.ts";
+import type { Rng } from "../rng.ts";
+import { harmTrack } from "../scenario/scenario.ts";
+import { daysOfStock } from "../sim/war.ts";
+import { fill } from "../text.ts";
+
+/**
+ * 스토리렛 엔진 (기획서 10.3). 조건과 배역은 코드가 판정한다.
+ * - 고정 스토리렛: 특정 인물·사건에 묶인 이야기 (repeatable: false)
+ * - 템플릿 스토리렛: 배역과 자리({zone}, {scarce})를 세계 상태에서 채워 반복된다 (repeatable: true)
+ * AI는 상황을 연출하고, 플레이어가 고른 선택지만 알린다. 효과는 콘텐츠가 정한 것만 코드가 적용한다.
+ */
+
+type CastRole = StoryletContent["cast"][string];
+
+/** 이 배역에 맞는 살아 있는 NPC들 (id 순) */
+export function castCandidates(state: GameState, content: Content, role: CastRole): string[] {
+  const player = state.characters[state.playerId];
+  if (!player) return [];
+  const commander = content.roles[state.roleId]?.commander;
+  const known = new Set(state.known[state.playerId] ?? []);
+  return Object.values(state.characters)
+    .filter((c) => c.id !== state.playerId && !c.dead && content.npcs[c.id])
+    .filter((c) => !role.ids || role.ids.includes(c.id))
+    .filter((c) => !role.commander || c.id === commander)
+    .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction))
+    .filter((c) => !role.ranks || role.ranks.includes(c.rank))
+    .filter((c) => !role.known || known.has(c.id))
+    .filter((c) => role.trust_gte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).trust >= role.trust_gte)
+    .map((c) => c.id)
+    .sort();
+}
+
+/** 배역을 고른다. 한 사람이 두 배역을 맡지 않는다. 채울 수 없으면 null */
+export function pickCast(state: GameState, content: Content, storylet: StoryletContent, rng: Rng | null): Record<string, string> | null {
+  const cast: Record<string, string> = {};
+  const used = new Set<string>();
+  for (const [key, role] of Object.entries(storylet.cast)) {
+    const options = castCandidates(state, content, role).filter((id) => !used.has(id));
+    if (options.length === 0) return null;
+    const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;
+    cast[key] = id;
+    used.add(id);
+  }
+  return cast;
+}
+
+/** 조건(when)이 지금(at) 맞는지 */
+export function conditionsMet(state: GameState, content: Content, storylet: StoryletContent, at: GameTime): boolean {
+  const w = storylet.when;
+  const player = state.characters[state.playerId];
+  if (!player || player.dead) return false;
+  const flags = new Set(state.flags[state.playerId] ?? []);
+  const own = state.factions[player.factionId];
+  if (w.ranks && !w.ranks.includes(player.rank)) return false;
+  if (w.segments && !w.segments.includes(segmentOf(at))) return false;
+  if (w.day_gte !== undefined && dayOf(at) < w.day_gte) return false;
+  if (w.zones && (!state.playerZone || !w.zones.includes(state.playerZone))) return false;
+  if (w.own_territory !== undefined) {
+    const mine = !!state.playerZone && state.zones[state.playerZone]?.owner === player.factionId;
+    if (mine !== w.own_territory) return false;
+  }
+  if (w.flags_all && !w.flags_all.every((f) => flags.has(f))) return false;
+  if (w.flags_none && w.flags_none.some((f) => flags.has(f))) return false;
+  for (const [id, n] of Object.entries(w.clock_gte ?? {})) if ((state.clocks[id]?.filled ?? -Infinity) < n) return false;
+  for (const [id, n] of Object.entries(w.clock_lte ?? {})) if ((state.clocks[id]?.filled ?? Infinity) > n) return false;
+  if (w.own_morale_lte !== undefined && (!own || own.morale > w.own_morale_lte)) return false;
+  if (w.own_food_days_lte !== undefined) {
+    const resource = content.scenario.war?.ration.resource;
+    if (!own || !resource || daysOfStock(content, own, resource) > w.own_food_days_lte) return false;
+  }
+  if (w.harm_at_least) {
+    const track = harmTrack(content.scenario);
+    const index = (id: string | undefined) => track.levels.findIndex((l) => l.id === id);
+    if (index(player.conditions[track.id]) < index(w.harm_at_least)) return false;
+  }
+  if (w.has_items && !w.has_items.every((i) => (player.inventory[i] ?? 0) > 0)) return false;
+  if (w.mission_active !== undefined && !!activeMissionOf(state.missions, state.playerId) !== w.mission_active) return false;
+  if (w.war_news_within_hours !== undefined) {
+    const since = at - w.war_news_within_hours * 60;
+    if (!(state.beliefs[state.playerId] ?? []).some((b) => b.topic === "war" && b.learnedAt >= since)) return false;
+  }
+  return true;
+}
+
+/** 지금 발동할 수 있는 스토리렛 (역할 태그, 반복·쿨다운, 조건, 배역) */
+export function eligibleStorylets(state: GameState, content: Content, at: GameTime = state.time): StoryletContent[] {
+  const roleTags = new Set(content.roles[state.roleId]?.storylet_tags ?? []);
+  return Object.values(content.storylets)
+    .filter((s) => s.tags.length === 0 || s.tags.some((t) => roleTags.has(t)))
+    .filter((s) => {
+      const log = state.storyletLog[s.id];
+      if (!log) return true;
+      if (!s.repeatable) return false;
+      return at - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY;
+    })
+    .filter((s) => conditionsMet(state, content, s, at))
+    .filter((s) => pickCast(state, content, s, null) !== null)
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** 다음 스토리렛을 열 수 있는 때인지 (진행 중인 것·전투가 없고, 간격이 지났다) */
+export function storyletWindowOpen(state: GameState, content: Content, at: GameTime): boolean {
+  if (state.activeStorylet || state.battle) return false;
+  if (state.lastStoryletAt === null) return true;
+  return at - state.lastStoryletAt >= content.scenario.storylet_pacing.min_gap_hours * 60;
+}
+
+/** 무게로 하나 고른다 */
+export function pickStorylet(candidates: readonly StoryletContent[], rng: Rng): StoryletContent | null {
+  const total = candidates.reduce((n, s) => n + s.weight, 0);
+  if (total <= 0) return null;
+  let r = rng() * total;
+  for (const s of candidates) {
+    r -= s.weight;
+    if (r < 0) return s;
+  }
+  return candidates.at(-1) ?? null;
+}
+
+/** 문장 자리 채우기: 배역 이름, {zone} 지금 구역, {scarce} 우리 무리에서 가장 모자란 자원 */
+export function storyletVars(state: GameState, content: Content, cast: Record<string, string>): Record<string, string> {
+  const vars: Record<string, string> = {};
+  for (const [key, id] of Object.entries(cast)) vars[key] = state.characters[id]?.name ?? id;
+  vars.zone = (state.playerZone && content.locations[state.playerZone]?.name) || "거점";
+  const player = state.characters[state.playerId];
+  const own = player ? state.factions[player.factionId] : undefined;
+  const war = content.scenario.war;
+  if (own && war) {
+    const scarce = content.scenario.resources
+      .filter((r) => (war.upkeep[r.id] ?? 0) > 0)
+      .map((r) => ({ label: r.label, days: daysOfStock(content, own, r.id) }))
+      .sort((a, b) => a.days - b.days)[0];
+    if (scarce) vars.scarce = scarce.label;
+  }
+  vars.scarce ??= content.scenario.resources[0]?.label ?? "물자";
+  return vars;
+}
+
+export function fillStorylet(text: string, vars: Record<string, string>): string {
+  return fill(text, vars);
+}

@@ -28,6 +28,7 @@ import { runAfterTimeAdvance } from "./turnStart.ts";
 import { activeMissionOf } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
+import { createStoryletCheck } from "./storyletTools.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -273,6 +274,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   for (const display of runAfterTimeAdvance(ctx)) {
     displays.push(display);
     if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);
+    if (display.type === "storylet" && display.event === "started") {
+      lines.push(`새 이야기가 시작됐다: "${display.title}". 상태의 '진행 중인 이야기'를 보고 장면으로 연출하라.`);
+    }
     if (display.type === "battle" && display.event === "started") {
       lines.push(`전투가 시작됐다: ${display.detail} 상태의 '전투 중' 정보를 보고 첫 장면을 서술한 뒤 플레이어의 행동을 기다려라.`);
     }
@@ -347,7 +351,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     for (;;) {
       const midnight = dayOf(cursor) * MINUTES_PER_DAY;
       const segmentEnd = Math.min(target, midnight);
-      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario) });
+      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario, [createStoryletCheck(content)]) });
       store.append({
         type: "time_advanced",
         activity,
@@ -379,7 +383,9 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   if (segmentOf(from) !== segmentOf(to)) {
     lines.push(`시간대가 ${SEGMENT_LABELS[segmentOf(from)]}에서 ${josa(SEGMENT_LABELS[segmentOf(to)], "으로/로")} 바뀌었다. 빛과 소리의 변화를 서술에 반영하라.`);
   }
-  if (interrupt?.kind === "battle") {
+  if (interrupt?.kind === "storylet") {
+    lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 일이 생겼다.`);
+  } else if (interrupt?.kind === "battle") {
     lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 벌어지고 있다.`);
   } else if (interrupt) {
     lines.push(

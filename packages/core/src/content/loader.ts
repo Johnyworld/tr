@@ -14,7 +14,7 @@ export class ContentError extends Error {
   }
 }
 
-type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions" | "factions" | "locations";
+type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions" | "factions" | "locations" | "storylets";
 
 /**
  * 시나리오 팩 폴더(content/scenarios/<id>/)를 읽어 검증한다.
@@ -39,9 +39,10 @@ export function loadContent(contentDir: string): Content {
     missions: schemas.mission,
     factions: schemas.faction,
     locations: schemas.location,
+    storylets: schemas.storylet,
   };
   const problems: string[] = [];
-  const content: Content = { scenario, items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {}, factions: {}, locations: {} };
+  const content: Content = { scenario, items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {}, factions: {}, locations: {}, storylets: {} };
 
   for (const [kind, schema] of Object.entries(KINDS) as [Kind, z.ZodType][]) {
     const dir = join(contentDir, kind);
@@ -136,6 +137,7 @@ function checkReferences(content: Content): string[] {
       problems.push(`roles.${role.id}: 알 수 없는 시작 구역 ${role.start_location}`);
     }
   }
+  problems.push(...checkStorylets(content));
   const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));
   if (new Set(plans).size !== plans.length) problems.push("factions: 세력 클락(plans) id가 겹친다");
   for (const npc of Object.values(content.npcs)) {
@@ -144,6 +146,60 @@ function checkReferences(content: Content): string[] {
       if (!content.items[itemId]) problems.push(`npcs.${npc.id}: 알 수 없는 아이템 ${itemId}`);
     }
     if (npc.id === "player") problems.push(`npcs.${npc.id}: player는 예약된 id다`);
+  }
+  return problems;
+}
+
+/** 스토리렛이 가리키는 인물·아이템·구역·클락·배역이 있는지 */
+function checkStorylets(content: Content): string[] {
+  const problems: string[] = [];
+  const clocks = new Set(Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id)));
+  const harmLevels = new Set(content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)?.levels.map((l) => l.id) ?? []);
+  for (const s of Object.values(content.storylets)) {
+    const where = `storylets.${s.id}`;
+    const castKeys = new Set(Object.keys(s.cast));
+    for (const [key, role] of Object.entries(s.cast)) {
+      for (const id of role.ids ?? []) if (!content.npcs[id]) problems.push(`${where}.cast.${key}: 알 수 없는 NPC ${id}`);
+      if (role.faction && role.faction !== "own" && Object.keys(content.factions).length && !content.factions[role.faction]) {
+        problems.push(`${where}.cast.${key}: 알 수 없는 세력 ${role.faction}`);
+      }
+    }
+    for (const id of s.when.zones ?? []) if (!content.locations[id]) problems.push(`${where}.when: 알 수 없는 구역 ${id}`);
+    for (const id of s.when.has_items ?? []) if (!content.items[id]) problems.push(`${where}.when: 알 수 없는 아이템 ${id}`);
+    for (const id of [...Object.keys(s.when.clock_gte ?? {}), ...Object.keys(s.when.clock_lte ?? {})]) {
+      if (!clocks.has(id)) problems.push(`${where}.when: 알 수 없는 세력 클락 ${id}`);
+    }
+    if (s.when.harm_at_least && !harmLevels.has(s.when.harm_at_least)) problems.push(`${where}.when: 알 수 없는 부상 단계 ${s.when.harm_at_least}`);
+    const ids = s.choices.map((c) => c.id);
+    if (new Set(ids).size !== ids.length) problems.push(`${where}: 선택지 id가 겹친다`);
+    // 문장의 자리는 배역 이름이나 zone·scarce만 쓸 수 있다
+    const texts = [s.setup, s.ai_direction ?? "", ...s.choices.map((c) => c.label)];
+    for (const c of s.choices) {
+      for (const e of [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])]) {
+        if ("belief" in e) texts.push(e.belief.fact);
+        if ("deed" in e) texts.push(e.deed.summary);
+      }
+    }
+    for (const text of texts) {
+      for (const [, key] of text.matchAll(/\{([a-z_]+)(?::[^}]+)?\}/g)) {
+        if (key !== "zone" && key !== "scarce" && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
+      }
+    }
+    for (const c of s.choices) {
+      const effects = [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])];
+      for (const e of effects) {
+        const at = `${where}.choices.${c.id}`;
+        if ("relation" in e && e.relation.who !== "commander" && !castKeys.has(e.relation.who)) problems.push(`${at}: 알 수 없는 배역 ${e.relation.who}`);
+        if ("give_item" in e) {
+          if (!content.items[e.give_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.give_item.item}`);
+          if (e.give_item.from && e.give_item.from !== "commander" && !castKeys.has(e.give_item.from)) problems.push(`${at}: 알 수 없는 배역 ${e.give_item.from}`);
+        }
+        if ("clock" in e && !clocks.has(e.clock.id)) problems.push(`${at}: 알 수 없는 세력 클락 ${e.clock.id}`);
+        if ("faction_morale" in e && e.faction_morale.faction !== "own" && !content.factions[e.faction_morale.faction]) {
+          problems.push(`${at}: 알 수 없는 세력 ${e.faction_morale.faction}`);
+        }
+      }
+    }
   }
   return problems;
 }

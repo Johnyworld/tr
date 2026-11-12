@@ -1,0 +1,251 @@
+# 하급 전투원 스토리렛 초안 (10단계, 기획서 10.3). 12단계에서 늘리고 다듬는다
+# - when: 조건 (모두 맞아야 한다). cast: 배역 (조건에 맞는 NPC 중 하나를 고른다)
+# - setup·ai_direction·label·fact의 {배역} {zone} {scarce}는 세계 상태로 채운다. 조사는 {friend:이/가}
+# - 효과는 코드가 적용한다: set_flag, relation, belief, merit, give_item, clock, faction_morale, deed
+# - 판정이 붙은 선택지(check)는 같은 턴 take_action의 그 판정 결과로 갈린다
+
+# ── 고정: 특정 인물·사건에 묶인 이야기 ───────────────────────
+
+- id: overpass_signal
+  title: 물류창고의 불빛
+  tags: [grunt]
+  when:
+    zones: [a_east_post]
+    segments: [night, dawn]
+    day_gte: 2
+    flags_none: [scouts_captured]
+  setup: 망루에서 고가도로 너머를 보는데, 물류창고 쪽에서 희미한 불빛이 깜빡인다. 짧게, 길게, 다시 짧게. 바람에 흔들리는 불이 아니다.
+  ai_direction: 불빛은 실종된 A 정찰조가 몰래 보내는 손전등 신호다. 확정하지 말고, 규칙적이라는 느낌만 준다. 곁에 아무도 없다.
+  choices:
+    - id: watch
+      label: 숨죽이고 불빛을 끝까지 지켜본다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: scouts_captured
+          - belief: { fact: 물류창고의 불빛은 우리 정찰조가 쓰던 손전등 신호였다. 그들은 살아서 그 안에 갇혀 있다, source: seen }
+        partial:
+          - belief: { fact: 물류창고 쪽 불빛이 누군가 보내는 신호 같았다. 끝까지 읽지는 못했다, source: seen }
+        miss: []
+    - id: report
+      label: 바로 분대장에게 알린다
+      effects:
+        - relation: { who: commander, axis: respect, delta: 1 }
+        - merit: 1
+        - belief: { fact: 물류창고 쪽 불빛을 분대장에게 알렸다. 분대장은 아무 말 없이 오래 그쪽을 보았다, source: seen }
+    - id: ignore
+      label: 못 본 척한다
+      effects: []
+
+- id: mansu_explosive
+  title: 박만수의 꾸러미
+  tags: [squad_life]
+  when:
+    own_territory: true
+    segments: [evening, night]
+  cast:
+    mansu: { ids: [a_mansu], known: true, trust_gte: 1 }
+  setup: "{mansu:이/가} 담배를 비벼 끄더니 품에서 기름종이에 싼 묵직한 덩어리를 꺼내 보인다. \"언젠가 쓸 데가 있을 거다.\""
+  ai_direction: 박만수는 붕괴 초기에 이걸 직접 만들었다. 간부들은 모른다. 믿는 사람에게만 보여 준다.
+  choices:
+    - id: ask
+      label: 자기에게 맡겨 달라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - give_item: { item: explosive, from: mansu }
+          - relation: { who: mansu, axis: affection, delta: 1 }
+        partial:
+          - give_item: { item: explosive, from: mansu }
+          - belief: { fact: "박만수가 폭약을 건네며 말했다: 아무 데서나 터뜨리면 너도 같이 간다", source: seen }
+        miss:
+          - relation: { who: mansu, axis: trust, delta: -1 }
+    - id: leave_it
+      label: 그냥 넣어 두라고 한다
+      effects:
+        - relation: { who: mansu, axis: respect, delta: 1 }
+    - id: tell_officer
+      label: 간부에게 알린다
+      effects:
+        - relation: { who: mansu, axis: trust, delta: -3 }
+        - merit: 1
+        - deed: { summary: 박만수가 숨겨 둔 폭약을 간부에게 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+
+- id: desertion_offer
+  title: 오지호의 속삭임
+  tags: [squad_life]
+  when:
+    own_territory: true
+    segments: [night, dawn]
+    day_gte: 3
+    clock_gte: { c_east_offensive: 6 }
+    flags_none: [deserted]
+  cast:
+    friend: { ids: [a_jiho], known: true, trust_gte: 0 }
+  setup: 보초 교대 틈에 {friend:이/가} 소매를 잡아끈다. "곧 C가 크게 온대. 오늘 밤 같이 나가자. B 쪽으로 가면 받아 준대."
+  ai_direction: 오지호는 겁에 질려 있다. 누나가 B 거점에 있다는 걸 흘린다. 혼자서는 못 떠난다.
+  choices:
+    - id: join
+      label: 같이 떠나기로 한다
+      effects:
+        - set_flag: deserted
+        - relation: { who: friend, axis: trust, delta: 2 }
+        - deed: { summary: 오지호와 함께 거점을 빠져나가기로 했다, tags: [disobedience, betrayal], severity: 3, privacy: private }
+    - id: talk_down
+      label: 남으라고 설득한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: friend, axis: trust, delta: 2 }
+          - faction_morale: { faction: own, delta: 1 }
+        partial:
+          - relation: { who: friend, axis: trust, delta: 1 }
+          - belief: { fact: 오지호는 남기로 했지만 아직 마음이 흔들린다, source: seen }
+        miss:
+          - relation: { who: friend, axis: trust, delta: -1 }
+          - belief: { fact: 오지호가 탈영을 생각하고 있다, source: seen }
+    - id: stay_silent
+      label: 모른 척 넘어간다
+      effects:
+        - belief: { fact: 오지호가 탈영을 생각하고 있다, source: seen }
+    - id: report
+      label: 분대장에게 알린다
+      effects:
+        - relation: { who: friend, axis: trust, delta: -3 }
+        - relation: { who: commander, axis: trust, delta: 2 }
+        - merit: 1
+        - deed: { summary: 오지호의 탈영 계획을 분대장에게 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+
+- id: east_buildup
+  title: 고가도로 너머의 움직임
+  tags: [grunt]
+  when:
+    zones: [a_east_post, a_base]
+    clock_gte: { c_east_offensive: 7 }
+  cast:
+    lookout: { ids: [a_seoyeon], known: true }
+  setup: "{lookout:이/가} 쌍안경을 내리고 짧게 말한다. \"고가도로 너머에 사람이 늘었어. 어제보다 많아.\""
+  ai_direction: 민서연은 확신이 없으면 말하지 않는 사람이다. 숫자는 말하지 않는다.
+  choices:
+    - id: report
+      label: 함께 분대장에게 알린다
+      effects:
+        - merit: 1
+        - relation: { who: lookout, axis: respect, delta: 1 }
+        - faction_morale: { faction: own, delta: 1 }
+        - belief: { fact: 민서연이 고가도로 너머에 C의 사람이 늘었다고 했다, source: report }
+    - id: keep
+      label: 확실해질 때까지 둘만 안다
+      effects:
+        - belief: { fact: 민서연이 고가도로 너머에 C의 사람이 늘었다고 했다, source: report }
+
+# ── 템플릿: 세계 상태로 채워 반복되는 이야기 ───────────────────
+
+- id: ration_quarrel
+  title: 배급 줄의 언성
+  tags: [squad_life]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    own_territory: true
+    segments: [morning, day, evening]
+    own_food_days_lte: 12
+  cast:
+    grunt: { faction: own, ranks: [grunt], known: true }
+  setup: 배급 줄에서 {grunt:이/가} {scarce} 몫이 또 줄었다며 언성을 높인다. 줄 선 사람들의 눈이 쏠린다.
+  ai_direction: 진짜로 굶주린 것보다 불안이 더 크다. 누군가 편을 들어 주기를 바란다.
+  choices:
+    - id: calm
+      label: 진정시킨다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: grunt, axis: affection, delta: 1 }
+          - faction_morale: { faction: own, delta: 1 }
+        partial: []
+        miss:
+          - relation: { who: grunt, axis: trust, delta: -1 }
+    - id: share
+      label: 자기 몫을 나눠 준다
+      effects:
+        - relation: { who: grunt, axis: affection, delta: 2 }
+        - deed: { summary: "배급 줄에서 자기 몫을 {grunt}에게 나눠 줬다", tags: [mercy], severity: 1, privacy: public }
+    - id: rules
+      label: 규칙은 규칙이라고 못 박는다
+      effects:
+        - relation: { who: grunt, axis: affection, delta: -1 }
+        - deed: { summary: 배급 줄 소란에서 규칙 편을 들었다, tags: [diligence], severity: 1, privacy: public }
+
+- id: wounded_arrive
+  title: 실려 오는 부상자
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    own_territory: true
+    war_news_within_hours: 12
+  cast:
+    medic: { ids: [a_chaewon] }
+  setup: 의무실 쪽이 시끄럽다. 들것이 연달아 들어오고, {medic:이/가} 피 묻은 손으로 사람을 부른다. "손 하나만 빌려줘요!"
+  ai_direction: 윤채원은 약이 모자라 누구를 먼저 살릴지 정해야 한다. 그 결정을 혼자 내리기 싫어한다.
+  choices:
+    - id: help
+      label: 들것을 잡고 돕는다
+      effects:
+        - relation: { who: medic, axis: trust, delta: 1 }
+        - deed: { summary: 전투 뒤 의무실에서 부상자를 날랐다, tags: [loyalty], severity: 1, privacy: public }
+    - id: pass
+      label: 지나친다
+      effects: []
+
+- id: scavenge_tip
+  title: 흘려듣는 소문
+  tags: [squad_life]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    own_territory: true
+    segments: [day, evening]
+  cast:
+    talker: { faction: own, ranks: [grunt], known: true }
+  setup: "{talker:이/가} 담배 한 대를 빌리며 목소리를 낮춘다. 요즘 {scarce:이/가} 모자란 건 다들 아는데, 구시가 쪽에 아직 안 털린 데가 있다는 얘기를 들었다고 한다."
+  ai_direction: 소문의 출처는 불분명하다. 사실일 수도, 함정일 수도 있다.
+  choices:
+    - id: listen
+      label: 자세히 묻는다
+      effects:
+        - belief: { fact: 구시가 옛 약국 건물 지하가 아직 안 털렸다는 소문이 있다, source: rumor }
+    - id: brush_off
+      label: 흘려듣는다
+      effects: []
+
+- id: post_noise
+  title: 초소 아래의 소리
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zones: [a_east_post]
+    segments: [night]
+  setup: 초소 아래 어둠 속에서 쇠붙이를 끄는 소리가 났다가 멎는다. 감염체 걸음은 아니다.
+  ai_direction: C의 정찰병이 초소 경계를 재고 있다. 확정하지 않는다.
+  choices:
+    - id: investigate
+      label: 내려가서 살핀다
+      check: sense_danger
+      outcomes:
+        success:
+          - clock: { id: c_east_offensive, delta: -1 }
+          - merit: 1
+          - belief: { fact: 초소 아래에서 C 정찰병이 남긴 발자국과 표식을 찾아 지웠다, source: seen }
+        partial:
+          - belief: { fact: 초소 아래에 누군가 다녀간 흔적이 있었다, source: seen }
+        miss: []
+    - id: alert
+      label: 동료를 깨운다
+      effects:
+        - faction_morale: { faction: own, delta: -1 }
+        - belief: { fact: 밤중에 초소 아래에서 수상한 소리가 났다, source: seen }
+    - id: ignore
+      label: 그냥 둔다
+      effects: []

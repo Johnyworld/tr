@@ -186,6 +186,16 @@ export function createGameSchemas(s: Scenario) {
     pendingClashes: z.array(pendingClashSchema).default([]),
     battle: battleStateSchema.nullable().default(null),
     nextBattleNo: z.number().int().positive().default(1),
+    /** 캐릭터별 시나리오 플래그 (스토리렛이 세운다. 비밀 lore의 secret:<flag>도 이것을 본다) */
+    flags: z.record(z.string(), z.array(z.string())).default({}),
+    /** 스토리렛 발동 기록 */
+    storyletLog: z.record(z.string(), z.strictObject({ fired: z.number().int().min(0), lastFiredAt: z.number().int() })).default({}),
+    /** 진행 중인 스토리렛 */
+    activeStorylet: z
+      .strictObject({ id: z.string(), cast: z.record(z.string(), z.string()), firedAt: z.number().int(), expiresAt: z.number().int() })
+      .nullable()
+      .default(null),
+    lastStoryletAt: z.number().int().nullable().default(null),
   });
 
   /** 상태 변경은 반드시 이벤트로 기록한다 (append-only). 상태는 이벤트를 차례로 적용한 결과다 */
@@ -245,6 +255,27 @@ export function createGameSchemas(s: Scenario) {
       scheduled: z.array(pendingClashSchema).default([]),
     }),
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
+    z.strictObject({
+      type: z.literal("storylet_fired"),
+      storyletId: z.string(),
+      cast: z.record(z.string(), z.string()),
+      expiresAt: z.number().int(),
+    }),
+    z.strictObject({
+      type: z.literal("storylet_resolved"),
+      storyletId: z.string(),
+      choiceId: z.string(),
+      outcome: checkOutcomeSchema.nullable(),
+    }),
+    z.strictObject({ type: z.literal("storylet_expired"), storyletId: z.string() }),
+    z.strictObject({ type: z.literal("flag_set"), characterId: z.string(), flag: z.string() }),
+    z.strictObject({ type: z.literal("flag_cleared"), characterId: z.string(), flag: z.string() }),
+    /** 스토리렛 효과 등으로 관계가 바뀌었다 (from이 to를 보는 관계) */
+    z.strictObject({ type: z.literal("relation_changed"), from: z.string(), to: z.string(), delta: relationDeltaSchema, reason: z.string() }),
+    z.strictObject({ type: z.literal("merit_awarded"), characterId: z.string(), delta: z.number().int(), reason: z.string() }),
+    z.strictObject({ type: z.literal("item_granted"), to: z.string(), itemId: z.string(), quantity: z.number().int().positive() }),
+    z.strictObject({ type: z.literal("clock_adjusted"), clockId: z.string(), delta: z.number().int() }),
+    z.strictObject({ type: z.literal("faction_morale_changed"), factionId: z.string(), delta: z.number().int() }),
     z.strictObject({ type: z.literal("preparation_set"), zone: z.string(), preparation: z.string() }),
     z.strictObject({ type: z.literal("item_consumed"), holder: z.string(), itemId: z.string(), quantity: z.number().int().positive() }),
     /** 예정된 교전을 화면 밖에서 계산했다 (플레이어가 자리에 없었다) */
@@ -376,6 +407,10 @@ export const EMPTY_STATE: GameState = {
   pendingClashes: [],
   battle: null,
   nextBattleNo: 1,
+  flags: {},
+  storyletLog: {},
+  activeStorylet: null,
+  lastStoryletAt: null,
 };
 
 export function applyEvent(state: GameState, event: GameEvent): GameState {
@@ -543,6 +578,53 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
       next.playerZone = event.to;
       break;
+    case "storylet_fired": {
+      if (state.activeStorylet) throw new Error("이미 진행 중인 스토리렛이 있습니다.");
+      next.activeStorylet = { id: event.storyletId, cast: { ...event.cast }, firedAt: state.time, expiresAt: event.expiresAt };
+      const log = (next.storyletLog[event.storyletId] ??= { fired: 0, lastFiredAt: state.time });
+      log.fired += 1;
+      log.lastFiredAt = state.time;
+      next.lastStoryletAt = state.time;
+      break;
+    }
+    case "storylet_resolved":
+    case "storylet_expired":
+      if (state.activeStorylet?.id !== event.storyletId) throw new Error(`진행 중인 스토리렛이 아닙니다: ${event.storyletId}`);
+      next.activeStorylet = null;
+      break;
+    case "flag_set": {
+      const flags = (next.flags[event.characterId] ??= []);
+      if (!flags.includes(event.flag)) flags.push(event.flag);
+      break;
+    }
+    case "flag_cleared":
+      next.flags[event.characterId] = (next.flags[event.characterId] ?? []).filter((f) => f !== event.flag);
+      break;
+    case "relation_changed": {
+      mustGet(next.characters, event.from, "캐릭터");
+      const toward = (next.relations[event.from] ??= {});
+      toward[event.to] = applyRelationDelta(toward[event.to] ?? NEUTRAL_RELATION, event.delta);
+      if (event.to === state.playerId && next.scene.present.includes(event.from)) perceive(next, event.from);
+      break;
+    }
+    case "merit_awarded":
+      mustGet(next.characters, event.characterId, "캐릭터").merit += event.delta;
+      break;
+    case "item_granted": {
+      const inv = holderInventory(next, event.to);
+      inv[event.itemId] = (inv[event.itemId] ?? 0) + event.quantity;
+      break;
+    }
+    case "clock_adjusted": {
+      const clock = mustGet(next.clocks, event.clockId, "세력 클락");
+      clock.filled = Math.max(0, Math.min(clock.max - 1, clock.filled + event.delta));
+      break;
+    }
+    case "faction_morale_changed": {
+      const f = mustGet(next.factions, event.factionId, "세력");
+      f.morale = Math.max(-3, Math.min(3, f.morale + event.delta));
+      break;
+    }
     case "preparation_set":
       (next.preparations[event.zone] ??= []).push(event.preparation);
       break;

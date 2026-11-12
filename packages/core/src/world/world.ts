@@ -169,7 +169,8 @@ export class GameWorld {
   viewer(): Viewer {
     const state = this.state();
     const player = state.characters[state.playerId];
-    return { characterId: state.playerId, factionId: player?.factionId ?? "", flags: new Set<string>() };
+    // 시나리오 플래그(스토리렛이 세운다)가 secret:<flag> lore를 연다
+    return { characterId: state.playerId, factionId: player?.factionId ?? "", flags: new Set(state.flags[state.playerId] ?? []) };
   }
 
   /**

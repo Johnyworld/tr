@@ -1,0 +1,225 @@
+import { z } from "zod";
+import type { Content, StoryletContent, StoryletEffect } from "../content/schemas.ts";
+import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
+import type { GameState } from "../game/state.ts";
+import { DEED_TAG_LABELS, RELATION_AXIS_LABELS } from "../game/reputation.ts";
+import { CHECK_OUTCOME_LABELS, type CheckOutcome } from "../rules/check.ts";
+import { moveLabel } from "../scenario/scenario.ts";
+import type { InterruptCheck } from "../sim/fastForward.ts";
+import {
+  eligibleStorylets,
+  fillStorylet,
+  pickCast,
+  pickStorylet,
+  storyletVars,
+  storyletWindowOpen,
+} from "../story/storylets.ts";
+import { josa, sentence } from "../text.ts";
+import { recordDeed } from "./reputationTools.ts";
+import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
+
+/**
+ * 스토리렛 연결 (기획서 10.3).
+ * - 시간이 흐른 뒤: 진행 중인 것이 오래되면 지나가고, 간격이 지났으면 조건이 맞는 것 하나를 연다
+ * - GM은 상태의 "진행 중인 이야기"를 연출하고, 플레이어의 선택이 분명해지면 resolve_storylet으로 알린다
+ * - 효과는 콘텐츠가 정한 것만 코드가 적용한다 (원칙 2)
+ */
+
+export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
+  const { store, content, rng } = ctx;
+  const displays: ToolDisplayEvent[] = [];
+  let state = store.getState();
+  if (state.activeStorylet && state.time >= state.activeStorylet.expiresAt) {
+    const s = content.storylets[state.activeStorylet.id];
+    store.append({ type: "storylet_expired", storyletId: state.activeStorylet.id });
+    if (s) displays.push({ type: "storylet", event: "expired", title: s.title, detail: "지나갔다" });
+    state = store.getState();
+  }
+  const player = state.characters[state.playerId];
+  if (!player || player.dead || !storyletWindowOpen(state, content, state.time)) return displays;
+  const storylet = pickStorylet(eligibleStorylets(state, content), rng);
+  if (!storylet) return displays;
+  const cast = pickCast(state, content, storylet, rng)!;
+  store.append({
+    type: "storylet_fired",
+    storyletId: storylet.id,
+    cast,
+    expiresAt: state.time + Math.round(content.scenario.storylet_pacing.expire_hours * 60),
+  });
+  // 배역은 장면에 들어온다
+  for (const [key, id] of Object.entries(cast)) {
+    if (!storylet.cast[key]?.enter) continue;
+    const now = store.getState();
+    if (now.scene.present.includes(id) || now.characters[id]?.dead) continue;
+    store.append({ type: "npc_entered", npcId: id });
+    displays.push({ type: "presence", npcName: now.characters[id]?.name ?? id, action: "enter" });
+  }
+  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: setupText(store.getState(), content) });
+  return displays;
+}
+
+/** 빨리감기 중 스토리렛이 열릴 수 있게 되면 멈춘다 */
+export function createStoryletCheck(content: Content): InterruptCheck {
+  return ({ state, to }) => {
+    if (Object.keys(content.storylets).length === 0) return null;
+    if (!storyletWindowOpen(state, content, to)) return null;
+    return eligibleStorylets(state, content, to).length > 0 ? { kind: "storylet", detail: "일이 생겼다", at: to } : null;
+  };
+}
+
+function activeOf(state: GameState, content: Content): { storylet: StoryletContent; cast: Record<string, string> } | null {
+  const active = state.activeStorylet;
+  const storylet = active ? content.storylets[active.id] : undefined;
+  return active && storylet ? { storylet, cast: active.cast } : null;
+}
+
+function setupText(state: GameState, content: Content): string {
+  const a = activeOf(state, content);
+  if (!a) return "";
+  return fillStorylet(a.storylet.setup, storyletVars(state, content, a.cast));
+}
+
+/** GM 컨텍스트: 진행 중인 이야기. 조건(클락 등)은 넣지 않는다 */
+export function describeStoryletForGm(state: GameState, content: Content): string {
+  const a = activeOf(state, content);
+  if (!a) return "";
+  const vars = storyletVars(state, content, a.cast);
+  const lines = [
+    `진행 중인 이야기: ${a.storylet.title}`,
+    `  상황: ${fillStorylet(a.storylet.setup, vars)}`,
+    ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${fillStorylet(a.storylet.ai_direction, vars)}`] : []),
+    `  등장: ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
+    `  선택지 (resolve_storylet): ${a.storylet.choices
+      .map((c) => `${c.id} ${fillStorylet(c.label, vars)}${c.check ? ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]` : ""}`)
+      .join(" / ")}`,
+    "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 외면하면 그대로 둔다 (시간이 지나면 지나간다).",
+  ];
+  return lines.join("\n");
+}
+
+export const resolveStorylet = defineTool({
+  name: "resolve_storylet",
+  description:
+    "진행 중인 이야기(상태의 '진행 중인 이야기')에서 플레이어가 고른 선택지를 알린다. 효과는 시스템이 적용한다. " +
+    "판정이 붙은 선택지는 같은 턴에 take_action으로 그 판정을 먼저 한 뒤 호출한다. 플레이어의 행동이 어느 선택지에도 맞지 않으면 호출하지 않는다.",
+  schema: z.strictObject({ choice_id: z.string().describe("선택지 id") }),
+  run(input, ctx) {
+    const state = ctx.store.getState();
+    const a = activeOf(state, ctx.content);
+    if (!a) return { ok: false, error: "진행 중인 이야기가 없다." };
+    const choice = a.storylet.choices.find((c) => c.id === input.choice_id);
+    if (!choice) return { ok: false, error: `없는 선택지: ${input.choice_id} (가능: ${a.storylet.choices.map((c) => c.id).join(", ")})` };
+    let outcome: CheckOutcome | null = null;
+    let effects = choice.effects;
+    if (choice.check) {
+      // 이번 턴 그 행동의 판정 결과로 갈린다
+      const check = Object.values(state.checks)
+        .filter((c) => c.turn === state.turn && c.actorId === state.playerId && c.move === choice.check)
+        .at(-1);
+      if (!check) {
+        return { ok: false, error: `이 선택지는 이번 턴 take_action에서 ${moveLabel(ctx.content.scenario, choice.check)}(${choice.check}) 판정을 먼저 해야 한다.` };
+      }
+      outcome = check.outcome;
+      effects = choice.outcomes![check.outcome];
+    }
+    const vars = storyletVars(state, ctx.content, a.cast);
+    ctx.store.append({ type: "storylet_resolved", storyletId: a.storylet.id, choiceId: choice.id, outcome });
+    const lines: string[] = [`이야기 "${a.storylet.title}": ${fillStorylet(choice.label, vars)}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`];
+    const extra: ToolDisplayEvent[] = [];
+    for (const effect of effects) {
+      const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title);
+      if (r.line) lines.push(r.line);
+      if (r.display) extra.push(r.display);
+    }
+    lines.push("이 결과에 맞게 이야기를 마무리하는 장면을 서술하라.");
+    return {
+      ok: true,
+      resultText: lines.join("\n"),
+      display: { type: "storylet", event: "resolved", title: a.storylet.title, detail: fillStorylet(choice.label, vars) },
+      extra,
+    };
+  },
+});
+
+function whoOf(ctx: ToolContext, who: string, cast: Record<string, string>): string | null {
+  if (cast[who]) return cast[who]!;
+  if (who === "commander") return ctx.content.roles[ctx.store.getState().roleId]?.commander ?? null;
+  return null;
+}
+
+/** 효과 하나를 적용한다. GM에게 돌려줄 한 줄 */
+function applyEffect(
+  ctx: ToolContext,
+  effect: StoryletEffect,
+  cast: Record<string, string>,
+  vars: Record<string, string>,
+  reason: string,
+): { line?: string; display?: ToolDisplayEvent } {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const playerId = state.playerId;
+  if ("set_flag" in effect) {
+    store.append({ type: "flag_set", characterId: playerId, flag: effect.set_flag });
+    return {};
+  }
+  if ("clear_flag" in effect) {
+    store.append({ type: "flag_cleared", characterId: playerId, flag: effect.clear_flag });
+    return {};
+  }
+  if ("relation" in effect) {
+    const from = whoOf(ctx, effect.relation.who, cast);
+    if (!from || !state.characters[from]) return {};
+    const delta = { trust: 0, affection: 0, respect: 0, [effect.relation.axis]: effect.relation.delta };
+    store.append({ type: "relation_changed", from, to: playerId, delta, reason });
+    const name = state.characters[from]!.name;
+    return { line: `${name}의 ${RELATION_AXIS_LABELS[effect.relation.axis]}이(가) ${effect.relation.delta > 0 ? "올랐다" : "떨어졌다"}. 그 인물의 태도에 반영하라.` };
+  }
+  if ("belief" in effect) {
+    const fact = sentence(fillStorylet(effect.belief.fact, vars));
+    store.append({
+      type: "belief_added",
+      characterId: playerId,
+      belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.belief.source, accuracy: "approximate", learnedAt: state.time },
+    });
+    return { line: `알게 된 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.belief.source] } };
+  }
+  if ("merit" in effect) {
+    store.append({ type: "merit_awarded", characterId: playerId, delta: effect.merit, reason });
+    return { line: `공적 ${effect.merit > 0 ? "+" : ""}${effect.merit}.` };
+  }
+  if ("give_item" in effect) {
+    const { item, quantity } = effect.give_item;
+    const name = content.items[item]?.name ?? item;
+    if (effect.give_item.from) {
+      const holder = whoOf(ctx, effect.give_item.from, cast);
+      const have = holder ? (state.characters[holder]?.inventory[item] ?? 0) : 0;
+      if (!holder || have < quantity) return { line: `${name}은(는) 건네받을 수 없었다 (가진 것이 없다).` };
+      store.append({ type: "item_transferred", from: holder, to: playerId, itemId: item, quantity });
+      const fromName = state.characters[holder]!.name;
+      return { line: `${josa(fromName, "이/가")} ${name} ×${quantity}을(를) 건넸다.`, display: { type: "item", fromName, toName: state.characters[playerId]!.name, itemName: name, quantity } };
+    }
+    store.append({ type: "item_granted", to: playerId, itemId: item, quantity });
+    return { line: `${name} ×${quantity}을(를) 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
+  }
+  if ("clock" in effect) {
+    if (!state.clocks[effect.clock.id]) return {};
+    store.append({ type: "clock_adjusted", clockId: effect.clock.id, delta: effect.clock.delta });
+    return {}; // 세력 클락은 아무도 모른다. 결과만 세계에 남는다
+  }
+  if ("faction_morale" in effect) {
+    const id = effect.faction_morale.faction === "own" ? state.characters[playerId]!.factionId : effect.faction_morale.faction;
+    if (!state.factions[id]) return {};
+    store.append({ type: "faction_morale_changed", factionId: id, delta: effect.faction_morale.delta });
+    return {};
+  }
+  if ("deed" in effect) {
+    const { deed, visible } = recordDeed(ctx, { ...effect.deed, summary: fillStorylet(effect.deed.summary, vars), noisy: false });
+    return {
+      line: `행적 기록: ${sentence(deed.summary)}${visible.length ? ` 본 사람: ${visible.join(", ")}.` : ""}`,
+      display: { type: "deed", summary: deed.summary, tagLabels: deed.tags.map((t) => DEED_TAG_LABELS[t]), visibleWitnesses: visible },
+    };
+  }
+  return {};
+}
+
+export const STORYLET_TOOLS = [resolveStorylet] as const;

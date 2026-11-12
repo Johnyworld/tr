@@ -213,6 +213,7 @@ export const TEST_SCENARIO: Scenario = {
       },
     ],
   },
+  storylet_pacing: { min_gap_hours: 6, expire_hours: 3 },
   threats: {
     disturbance_chance_per_hour: { dawn: 0.05, morning: 0.03, day: 0.03, evening: 0.05, night: 0.08 },
     disturbance_details: ["멀리서 들리는 소리"],
@@ -375,6 +376,8 @@ export const TEST_CONTENT: Content = {
     wild: { id: "wild", name: "빈 땅", description: "빈 땅", kind: "zone", owner: null, adjacent: [], yields: {} },
     e_home: { id: "e_home", name: "장터", description: "장터", kind: "base", owner: "faction_e", adjacent: [], yields: { food: 10 } },
   },
+  /** 기본은 비워 둔다 (스토리렛 테스트가 따로 채운다) */
+  storylets: {},
   beliefs: {
     test_preset: {
       id: "test_preset",

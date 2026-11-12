@@ -1,33 +1,36 @@
-import { createServer, type Server } from "node:http";
+import { createServer, type Server, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { GameWorld } from "@trpg/core";
 
 /**
  * MCP 모드의 상태 화면 서버 (127.0.0.1만). Claude 앱의 브라우저 패널에 띄워 두는 읽기 전용 캐릭터 시트.
- * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트와 최근 결과 (정보 필터를 거친 core 뷰만)
+ * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트와 이야기 기록 (정보 필터를 거친 core 뷰만)
+ * - GET /api/status/stream: 같은 내용을 SSE로. 바뀔 때마다 밀어 준다. 연결된 수가 "보고 있는 사람" 수다 (서술 위치를 정한다)
  * - 나머지: 웹 앱과 같은 React 컴포넌트로 된 status.html (packages/ui). Vite 미들웨어로 바로 띄운다
  * stdout은 MCP 프로토콜 전용이라 로그는 모두 stderr로 보낸다 (원칙 12). 게임 상태는 바꾸지 않는다
  */
 
 const UI_DIR = fileURLToPath(new URL("../../ui/", import.meta.url));
-const RECENT = 8;
+/** 상태 화면에 보내는 이야기 기록 수 (최근 것) */
+const LOG_LIMIT = 200;
+/** 바뀌었는지 살피는 간격 */
+const WATCH_MS = 250;
 
 export type StatusSource = { readonly world: GameWorld | null; readonly scenarioName: string };
 
 export function statusPayload(source: StatusSource): unknown {
   const w = source.world;
   if (!w) return { open: false, scenarioName: source.scenarioName };
-  const recent = w
-    .transcriptView()
-    .filter((e) => e.kind === "tool" || e.kind === "note")
-    .slice(-RECENT)
-    .reverse();
-  return { open: true, scenarioName: source.scenarioName, worldId: w.id, player: w.playerView(), recent };
+  const log = w.transcriptView().slice(-LOG_LIMIT);
+  return { open: true, scenarioName: source.scenarioName, worldId: w.id, opening: w.intro().opening, player: w.playerView(), log };
 }
 
 /** 상태 서버를 띄운다. 포트가 쓰이고 있으면 다음 포트로 (MCP 세션이 여럿일 수 있다). 주소를 돌려준다 */
-export async function startStatusServer(source: StatusSource, firstPort: number): Promise<{ url: string; close: () => Promise<void> }> {
+export async function startStatusServer(
+  source: StatusSource,
+  firstPort: number,
+): Promise<{ url: string; viewers: () => number; close: () => Promise<void> }> {
   const { createServer: createVite, createLogger } = await import("vite");
   const base = createLogger("warn");
   const toStderr = (msg: string) => console.error(`[status] ${msg}`);
@@ -38,14 +41,43 @@ export async function startStatusServer(source: StatusSource, firstPort: number)
     clearScreen: false,
     logLevel: "warn",
     customLogger: { ...base, info: toStderr, warn: toStderr, warnOnce: toStderr, error: toStderr, clearScreen: () => {} },
-    server: { middlewareMode: true, hmr: false },
+    // 읽기 전용 화면이라 HMR·웹소켓은 쓰지 않는다 (여러 MCP 세션이 떠도 포트가 겹치지 않게)
+    server: { middlewareMode: true, hmr: false, ws: false },
   });
+
+  // SSE: 바뀔 때만 밀어 준다
+  const clients = new Set<ServerResponse>();
+  let last = "";
+  const snapshot = () => {
+    try {
+      return JSON.stringify(statusPayload(source));
+    } catch (err) {
+      return JSON.stringify({ open: false, scenarioName: source.scenarioName, error: String(err) });
+    }
+  };
+  const send = (res: ServerResponse, body: string) => res.write(`data: ${body}\n\n`);
+  const watcher = setInterval(() => {
+    if (clients.size === 0) return;
+    const body = snapshot();
+    if (body === last) return;
+    last = body;
+    for (const res of clients) send(res, body);
+  }, WATCH_MS);
+  watcher.unref();
 
   const server: Server = createServer((req, res) => {
     const url = req.url ?? "/";
     if (url === "/" || url === "/index.html") {
       res.writeHead(302, { location: "/status.html" });
       res.end();
+      return;
+    }
+    if (url.startsWith("/api/status/stream")) {
+      res.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", connection: "keep-alive" });
+      clients.add(res);
+      last = snapshot();
+      send(res, last);
+      req.on("close", () => clients.delete(res));
       return;
     }
     if (url.startsWith("/api/status")) {
@@ -74,7 +106,10 @@ export async function startStatusServer(source: StatusSource, firstPort: number)
     if (ok) {
       return {
         url: `http://127.0.0.1:${port}`,
+        viewers: () => clients.size,
         close: async () => {
+          clearInterval(watcher);
+          for (const res of clients) res.end();
           server.close();
           await vite.close();
         },

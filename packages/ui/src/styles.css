@@ -1022,29 +1022,90 @@ body {
 
 /* ── MCP 상태 화면 (status.html) ───────────────────────── */
 .status-page {
-  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 0 16px 32px;
-}
-
-.status-page .sheet {
-  padding: 16px 0;
-  overflow: visible;
+  padding: 0 16px;
 }
 
 .status-live {
   margin-left: auto;
   font-size: 12px;
+  color: var(--success);
+}
+
+.status-live.off {
+  color: var(--muted);
 }
 
 .status-empty {
   padding: 24px 0;
 }
 
-.status-recent h3 {
-  font-size: 12px;
-  font-weight: 600;
+.status-tabs {
+  display: none;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.status-tabs button {
+  background: none;
+  border: none;
   color: var(--muted);
-  letter-spacing: 0.08em;
-  margin: 8px 0;
+  font: inherit;
+  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.status-tabs button.on {
+  color: var(--text);
+  background: var(--panel);
+}
+
+/* 넓으면 웹 앱처럼 이야기 + 시트 나란히 */
+.status-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 24px;
+}
+
+.status-log {
+  min-height: 0;
+}
+
+.status-sheet {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.status-sheet .sheet {
+  overflow: visible;
+}
+
+/* 좁으면 (브라우저 패널) 탭으로 하나씩 */
+@media (max-width: 760px) {
+  .status-page .header {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .status-page .header h1 {
+    font-size: 17px;
+  }
+  .status-tabs {
+    display: flex;
+  }
+  .status-body {
+    grid-template-columns: 1fr;
+  }
+  .status-body.tab-story .status-sheet,
+  .status-body.tab-sheet .status-log {
+    display: none;
+  }
 }

@@ -3,8 +3,8 @@ import { chooseNextCharacter, closeGame, fetchCommands, fetchGame, fetchSlots, p
 import { TitleScreen } from "./TitleScreen.tsx";
 import { CharacterCreation } from "./CharacterCreation.tsx";
 import { CharacterSheet } from "./CharacterSheet.tsx";
+import { Entry } from "./Entry.tsx";
 import { DevPanel } from "./DevPanel.tsx";
-import { ToolCard } from "./ToolCard.tsx";
 import type { GameView, PlayerView, TranscriptView } from "./types.ts";
 
 /** 정보 명령어 입력인지 (core COMMAND_PREFIXES와 같다. UI는 core 런타임을 번들하지 않는다) */
@@ -290,21 +290,6 @@ function Game({ initial, onExit }: { initial: GameView; onExit: () => void }) {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function Entry({ entry }: { entry: TranscriptView }) {
-  if (entry.kind === "tool") return <ToolCard display={entry.display} />;
-  if (entry.kind === "note") {
-    // MCP 모드에서 GM이 남긴 서술 요약 (서술 원문은 Claude 앱에만 있다)
-    return <p className="note">{entry.text}</p>;
-  }
-  return (
-    <div className={`turn ${entry.kind}`}>
-      {entry.text.split(/\n{2,}/).map((para, i) => (
-        <p key={i}>{para}</p>
-      ))}
     </div>
   );
 }

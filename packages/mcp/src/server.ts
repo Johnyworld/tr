@@ -41,7 +41,19 @@ export const PLAY_START =
 
 const HELP_HINT = "플레이어에게 한 줄 안내: \"?도움말 로 정보 명령어를 볼 수 있습니다.\" (이 모드에서는 \"!\" 대신 \"?\"를 쓴다. Claude 앱은 줄 맨 앞의 !를 셸 명령으로 바꾼다)";
 
-export function createMcpServer(manager: WorldManager, options: { statusUrl?: () => string | null } = {}) {
+export function createMcpServer(
+  manager: WorldManager,
+  options: {
+    statusUrl?: () => string | null;
+    /** 지금 상태 화면을 보고 있는 수. 1 이상이면 서술을 상태 화면으로 보낸다 (narrate) */
+    viewers?: () => number;
+  } = {},
+) {
+  /** 상태 화면이 열려 있으면 서술 위치를 알려 주는 한 줄 */
+  const narrationHint = () =>
+    (options.viewers?.() ?? 0) > 0
+      ? "\n\n[서술 위치] 상태 화면이 열려 있다: 서술 전문은 narrate로 보내고, 채팅에는 서술을 쓰지 않는다 (아무것도 쓰지 않거나 \"▸\" 한 글자)."
+      : "";
   const content = manager.content;
   const scenario = content.scenario;
   const server = new McpServer({ name: "trpg", version: "0.0.0" });
@@ -65,7 +77,13 @@ export function createMcpServer(manager: WorldManager, options: { statusUrl?: ()
         recap ? `\n${recap}` : `\n새로 시작하는 세계다. 시작 장면: ${intro.opening}`,
         `\n## 현재 장면\n${w.sceneForGm()}`,
         `\n${HELP_HINT}`,
-        ...(options.statusUrl?.() ? [`\n상태 화면: ${options.statusUrl()} — 플레이어에게 한 번 알려 준다: "캐릭터 시트를 옆에 띄워 두려면 이 주소를 앱의 브라우저 패널(또는 브라우저)에서 여세요."`] : []),
+        ...(options.statusUrl?.()
+          ? [
+              `\n상태 화면: ${options.statusUrl()} — 플레이어에게 한 번 알려 준다: "이 주소를 앱의 브라우저 패널(또는 브라우저)에 띄워 두면 캐릭터 시트와 이야기가 웹 앱처럼 나옵니다."`,
+              "상태 화면이 열려 있는 동안은 서술 전문을 narrate로 보내고 채팅에는 쓰지 않는다. tool 결과의 [서술 위치] 안내를 따른다.",
+            ]
+          : []),
+        narrationHint(),
       ].join("\n"),
     );
   };
@@ -235,8 +253,14 @@ export function createMcpServer(manager: WorldManager, options: { statusUrl?: ()
   const takeAction = gmTools(scenario).find((t) => t.name === "take_action")!;
   server.registerTool(
     "take_action",
-    { description: takeAction.description, inputSchema: createTakeActionSchema(scenario) },
-    (args) => withWorld((w) => fromOutcome(w.executeTool("take_action", args), sceneAfter(w))),
+    {
+      description: takeAction.description,
+      // player_input: 플레이어가 쓴 말 그대로 (상태 화면·기록용. 판정에는 intent를 쓴다)
+      inputSchema: createTakeActionSchema(scenario).extend({
+        player_input: z.string().max(2000).nullable().optional().describe("이번 턴 플레이어가 채팅에 쓴 말 그대로 (그 턴의 첫 tool 호출에만)"),
+      }),
+    },
+    (args) => withWorld((w) => fromOutcome(w.executeTool("take_action", args), sceneAfter(w) + narrationHint())),
   );
 
   server.registerTool(
@@ -245,7 +269,28 @@ export function createMcpServer(manager: WorldManager, options: { statusUrl?: ()
       description: "지정한 시간대가 될 때까지 기다린다 (빨리감기). 도중에 무슨 일이 생기면 멈추고 돌려준다.",
       inputSchema: z.strictObject({ until: timeSegmentSchema }),
     },
-    (args) => withWorld((w) => fromOutcome(w.fastForward(args.until), sceneAfter(w))),
+    (args) => withWorld((w) => fromOutcome(w.fastForward(args.until), sceneAfter(w) + narrationHint())),
+  );
+
+  server.registerTool(
+    "narrate",
+    {
+      description:
+        "GM의 서술 전문을 상태 화면(브라우저)에 올린다. 상태 화면이 열려 있을 때(결과의 [서술 위치] 안내) 서술은 채팅 대신 이것으로 보낸다. " +
+        "판정·상태는 바꾸지 않는다 (결과는 tool이 이미 정했다). 이번 턴에 tool을 부르지 않았으면 player_input에 플레이어의 말을 넣는다.",
+      inputSchema: z.strictObject({
+        text: z.string().min(1).max(10000).describe("서술 전문 (문단은 빈 줄로 나눈다)"),
+        player_input: z.string().max(2000).nullable().optional().describe("이번 턴 플레이어의 말 (take_action에 이미 넣었으면 null)"),
+        summary: z.string().max(500).nullable().optional().describe("이 서술의 한두 문장 요약 (지난 이야기·장기 기억에 쓴다)"),
+      }),
+    },
+    (args) =>
+      withWorld((w) => {
+        w.narrate({ text: args.text, playerInput: args.player_input ?? null, summary: args.summary ?? null });
+        return (options.viewers?.() ?? 0) > 0
+          ? text("상태 화면에 올렸다. 채팅에는 서술을 다시 쓰지 않는다.")
+          : text("기록했다. 그런데 상태 화면이 열려 있지 않다: 같은 서술을 채팅에 그대로 쓴다. 다음 턴부터는 상태 화면이 열릴 때까지 채팅에 서술한다.");
+      }),
   );
 
   // 장면 정리 tool (인물 등장, 물건, 기억, 임무, 목격자, 비밀): core 정의를 그대로 연다

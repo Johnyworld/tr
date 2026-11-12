@@ -18,6 +18,7 @@ let app: ReturnType<typeof createMcpServer>;
 let scenarioName = "";
 /** 상태 화면 주소 (TRPG_STATUS=off면 띄우지 않는다). 못 띄워도 게임은 그대로 한다 */
 let statusUrl: string | null = null;
+let statusViewers: () => number = () => 0;
 let closeStatus: (() => Promise<void>) | null = null;
 try {
   const content = loadContent(contentDir);
@@ -30,7 +31,7 @@ try {
         embedder,
       })
     : null;
-  app = createMcpServer(new WorldManager({ savesDir, content, lore, memoryEmbedder: embedder }), { statusUrl: () => statusUrl });
+  app = createMcpServer(new WorldManager({ savesDir, content, lore, memoryEmbedder: embedder }), { statusUrl: () => statusUrl, viewers: () => statusViewers() });
   scenarioName = content.scenario.name;
 } catch (err) {
   console.error(`[mcp] ${err instanceof ContentError ? err.message : String(err)}`);
@@ -47,6 +48,7 @@ if (process.env.TRPG_STATUS !== "off") {
   startStatusServer(source, Number(process.env.TRPG_STATUS_PORT ?? 8790))
     .then((s) => {
       statusUrl = s.url;
+      statusViewers = s.viewers;
       closeStatus = s.close;
       console.error(`[mcp] 상태 화면: ${s.url}`);
     })

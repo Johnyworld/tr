@@ -6,7 +6,16 @@ import type { PlayerView, TranscriptView } from "./types.ts";
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
 type StatusView =
   | { open: false; scenarioName: string }
-  | { open: true; scenarioName: string; worldId: string; opening: string; player: PlayerView; log: TranscriptView[] };
+  | {
+      open: true;
+      scenarioName: string;
+      worldId: string;
+      opening?: string;
+      player: PlayerView;
+      log?: TranscriptView[];
+      /** 이전 버전 MCP 서버 (최근 결과만, 최신 먼저) */
+      recent?: TranscriptView[];
+    };
 
 type Tab = "story" | "sheet";
 
@@ -23,14 +32,42 @@ export function StatusApp() {
   const stick = useRef(true);
 
   useEffect(() => {
-    const es = new EventSource("/api/status/stream");
+    let stop = false;
+    let es: EventSource | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let received = false;
+    // SSE를 못 쓰면 (이전 버전의 MCP 서버 등) 1.5초 폴링으로 읽는다
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/status", { cache: "no-store" });
+        setStatus((await res.json()) as StatusView);
+        setConnected(true);
+      } catch {
+        setConnected(false);
+      }
+      if (!stop) timer = setTimeout(() => void poll(), 1500);
+    };
+    es = new EventSource("/api/status/stream");
     es.onopen = () => setConnected(true);
-    es.onerror = () => setConnected(false); // EventSource가 알아서 다시 붙는다
     es.onmessage = (e) => {
+      received = true;
       setConnected(true);
       setStatus(JSON.parse(e.data as string) as StatusView);
     };
-    return () => es.close();
+    es.onerror = () => {
+      setConnected(false);
+      if (!received) {
+        // 한 번도 받지 못했으면 SSE가 없는 서버다
+        es?.close();
+        es = null;
+        void poll();
+      }
+    };
+    return () => {
+      stop = true;
+      es?.close();
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   // 맨 아래를 보고 있었으면 새 기록이 올 때 따라 내려간다
@@ -70,7 +107,7 @@ export function StatusApp() {
           <div className={`status-body tab-${tab}`}>
             <div className="log status-log" ref={logRef} onScroll={onScroll} aria-live="polite">
               {status.opening && <p className="opening">{status.opening}</p>}
-              {status.log.map((entry, i) => (
+              {(status.log ?? [...(status.recent ?? [])].reverse()).map((entry, i) => (
                 <Entry key={i} entry={entry} />
               ))}
               {status.player.dead && <p className="death">당신의 이야기는 여기서 끝났다.</p>}

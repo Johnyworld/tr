@@ -312,3 +312,17 @@ describe("브라우저 생성 직후 시트 미루기", () => {
     expect(statusPayload(source)).toMatchObject({ open: true });
   });
 });
+
+describe("세션마다 다른 상태 화면 주소", () => {
+  it("게임 목록에 이 세션의 상태 화면 주소가 나온다", async () => {
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-url-")), content: TEST_CONTENT, rngFactory: () => createSeededRng(3) });
+    const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8792" });
+    opened.push(app);
+    const [c, s] = InMemoryTransport.createLinkedPair();
+    await app.server.connect(s);
+    const client = new Client({ name: "t", version: "0" });
+    await client.connect(c);
+    const out = (await client.callTool({ name: "list_worlds", arguments: {} })) as { content: { text: string }[] };
+    expect(out.content[0]!.text).toContain("이 세션의 상태 화면: http://127.0.0.1:8792");
+  });
+});

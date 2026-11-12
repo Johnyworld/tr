@@ -150,6 +150,8 @@ export function createMcpServer(
       "",
       "0. 새 게임",
       ...(lines.length ? lines : ["(저장된 게임이 없다)"]),
+      // 세션마다 MCP 서버가 따로 떠서 상태 화면 주소가 다르다 (8790, 8791, …). 이 세션의 주소를 알려 준다
+      ...(options.statusUrl?.() ? ["", `(이 세션의 상태 화면: ${options.statusUrl()} — 브라우저 생성·시트는 꼭 이 주소로 안내한다. 다른 세션은 주소가 다르다)`] : []),
       ...(lines.length && !world ? ["", "(플레이어가 저장 데이터를 지우고 싶다고 하면 delete_world로 지울 수 있다. 되돌릴 수 없으니 먼저 확인받는다)"] : []),
     ].join("\n");
   };

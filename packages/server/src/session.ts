@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   createSeededRng,
   createWorldEvent,
+  formatTime,
   INJURY_LABELS,
   INJURY_PENALTY,
   isPlayerDead,
@@ -20,6 +21,7 @@ import {
 export type PlayerView = {
   name: string;
   roleLabel: string;
+  timeLabel: string;
   injury: string;
   injuryLabel: string;
   injuryPenalty: number;
@@ -98,6 +100,7 @@ export class GameSession {
     return {
       name: player.name,
       roleLabel: content.roles[state.roleId]?.label ?? player.rank,
+      timeLabel: formatTime(state.time),
       injury: player.injury,
       injuryLabel: INJURY_LABELS[player.injury],
       injuryPenalty: INJURY_PENALTY[player.injury],

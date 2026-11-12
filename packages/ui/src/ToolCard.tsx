@@ -39,6 +39,19 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
           <div className="card-intent">{display.cause}</div>
         </div>
       );
+    case "time":
+      return (
+        <div className={`card time ${display.interruptDetail ? "interrupted" : ""}`}>
+          <div className="card-head">
+            <span className="card-kind">시간</span>
+            <span>
+              {display.activityLabel} · {display.durationLabel}
+            </span>
+            <span className="time-to">{display.toLabel}</span>
+          </div>
+          {display.interruptDetail && <div className="card-intent">중간에 멈춤: {display.interruptDetail}</div>}
+        </div>
+      );
     case "item":
       return (
         <div className="card item">

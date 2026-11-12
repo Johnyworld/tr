@@ -4,6 +4,16 @@ export * from "./rules/stats.ts";
 export * from "./rules/moves.ts";
 export * from "./rules/injury.ts";
 export * from "./rules/check.ts";
+export * from "./rules/time.ts";
+export {
+  fastForward,
+  disturbanceCheck,
+  DEFAULT_INTERRUPT_CHECKS,
+  DISTURBANCE_CHANCE_PER_HOUR,
+  type Interrupt,
+  type InterruptCheck,
+  type FastForwardResult,
+} from "./sim/fastForward.ts";
 
 export { characterSchema, inventorySchema, type Character, type Inventory } from "./game/character.ts";
 export {

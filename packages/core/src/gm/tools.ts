@@ -18,6 +18,20 @@ import {
 } from "../rules/injury.ts";
 import { MOVE_LABELS, MOVE_STATS, moveSchema } from "../rules/moves.ts";
 import { STAT_LABELS, statSchema } from "../rules/stats.ts";
+import {
+  ACTIVITY_COSTS,
+  ACTIVITY_LABELS,
+  activitySchema,
+  formatDuration,
+  formatTime,
+  MAX_FAST_FORWARD_MINUTES,
+  nextSegmentStart,
+  rollActivityMinutes,
+  SEGMENT_LABELS,
+  segmentOf,
+  timeSegmentSchema,
+} from "../rules/time.ts";
+import { fastForward } from "../sim/fastForward.ts";
 import { findHolderInventory, SCENE_HOLDER, type GameEvent, type GameState } from "../game/state.ts";
 import type { GameStore } from "../game/store.ts";
 import type { Content } from "../content/schemas.ts";
@@ -49,7 +63,16 @@ export type ToolDisplayEvent =
       toLabel: string;
       cause: string;
     }
-  | { type: "item"; fromName: string; toName: string; itemName: string; quantity: number };
+  | { type: "item"; fromName: string; toName: string; itemName: string; quantity: number }
+  | {
+      type: "time";
+      activityLabel: string;
+      durationLabel: string;
+      fromLabel: string;
+      toLabel: string;
+      /** 빨리감기가 중간에 멈춘 이유 */
+      interruptDetail?: string;
+    };
 
 export type ToolOutcome =
   | { ok: true; resultText: string; display: ToolDisplayEvent }
@@ -258,7 +281,78 @@ const transferItem = defineTool({
   },
 });
 
-const TOOLS = [requestCheck, applyHarm, transferItem] as const;
+const spendTime = defineTool({
+  name: "spend_time",
+  description:
+    "캐릭터의 활동으로 게임 시간을 흘려보낸다. 한 턴의 주된 활동마다 한 번 호출한다 (호출하지 않으면 잠깐의 행동으로 본다). " +
+    "걸리는 시간은 시스템이 정한다. guard_duty, sleep, wait는 빨리감기로 진행되며 도중에 무슨 일이 생기면 멈춘다. " +
+    "until은 sleep과 wait에서만 쓸 수 있다 (그 시간대가 시작될 때까지). 다른 활동은 until에 null을 넣는다.",
+  schema: z.strictObject({
+    activity: activitySchema.describe(
+      "brief 잠깐의 행동(둘러보기·몇 마디), talk 대화, eat 식사, treat 응급처치, search 수색, work 작업·정비, rest 휴식, guard_duty 보초, sleep 잠, wait 기다림",
+    ),
+    until: timeSegmentSchema
+      .nullable()
+      .describe("sleep·wait 전용. dawn 새벽, morning 아침, day 낮, evening 저녁, night 밤이 시작될 때까지"),
+  }),
+  run(input, { store, rng }) {
+    const state = store.getState();
+    if (state.characters[state.playerId]?.injury === "dead") {
+      return { ok: false, error: "사망한 캐릭터의 시간은 흐르지 않습니다." };
+    }
+    const cost = ACTIVITY_COSTS[input.activity];
+    const from = state.time;
+    let to: number;
+    let interrupt: ReturnType<typeof fastForward>["interrupt"] = null;
+
+    if (cost.kind === "long") {
+      if (input.until && !cost.allowUntil) {
+        return { ok: false, error: `${input.activity}에는 until을 쓸 수 없습니다. null을 넣으세요.` };
+      }
+      const target = input.until ? nextSegmentStart(from, input.until) : from + cost.minutes;
+      const result = fastForward({ state, start: from, until: Math.min(target, from + MAX_FAST_FORWARD_MINUTES), rng });
+      to = result.end;
+      interrupt = result.interrupt;
+    } else {
+      if (input.until) return { ok: false, error: `${input.activity}에는 until을 쓸 수 없습니다. null을 넣으세요.` };
+      to = from + rollActivityMinutes(cost, rng);
+    }
+
+    store.append({
+      type: "time_advanced",
+      activity: input.activity,
+      from,
+      to,
+      ...(interrupt ? { interrupt } : {}),
+    });
+
+    const label = ACTIVITY_LABELS[input.activity];
+    const lines = [`${label}: ${formatDuration(to - from)} 경과. 현재 ${formatTime(to)}.`];
+    if (segmentOf(from) !== segmentOf(to)) {
+      lines.push(`시간대가 ${SEGMENT_LABELS[segmentOf(from)]}에서 ${SEGMENT_LABELS[segmentOf(to)]}(으)로 바뀌었다. 빛과 소리의 변화를 서술에 반영하라.`);
+    }
+    if (interrupt) {
+      lines.push(
+        `${label}이(가) 중간에 끊겼다: ${interrupt.detail}. 정체는 아직 모른다. ` +
+          "캐릭터가 이를 알아차리는 장면으로 서술하고, 정체를 확정하지 말고 플레이어의 반응을 기다려라.",
+      );
+    }
+    return {
+      ok: true,
+      resultText: lines.join("\n"),
+      display: {
+        type: "time",
+        activityLabel: label,
+        durationLabel: formatDuration(to - from),
+        fromLabel: formatTime(from),
+        toLabel: formatTime(to),
+        ...(interrupt ? { interruptDetail: interrupt.detail } : {}),
+      },
+    };
+  },
+});
+
+const TOOLS = [requestCheck, applyHarm, transferItem, spendTime] as const;
 
 /** LLM에 넘길 tool 명세 (JSON Schema) */
 export const GM_TOOL_SPECS: ToolSpec[] = TOOLS.map((tool) => ({

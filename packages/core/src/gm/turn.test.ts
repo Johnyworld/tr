@@ -62,7 +62,12 @@ describe("runTurn", () => {
 
     expect(events.map((e) => e.type)).toEqual(["text", "tool", "text", "done"]);
     expect(events[1]).toMatchObject({ type: "tool", display: { type: "check", total: 11, outcome: "success" } });
-    expect(store.events().map((e) => e.type)).toEqual(["world_created", "turn_started", "check_rolled"]);
+    expect(store.events().map((e) => e.type)).toEqual([
+      "world_created",
+      "turn_started",
+      "check_rolled",
+      "time_advanced", // GM이 시간을 쓰지 않아 잠깐의 행동으로 처리
+    ]);
     expect(entries.map((e) => e.kind)).toEqual(["player", "gm", "tool", "gm"]);
 
     // 두 번째 호출: 원본 응답(thinking 포함)을 그대로 돌려보내고 tool 결과를 붙인다
@@ -95,7 +100,7 @@ describe("runTurn", () => {
     ]);
     const { store, events } = await run(model);
     expect(events.some((e) => e.type === "tool")).toBe(false);
-    expect(store.events().map((e) => e.type)).toEqual(["world_created", "turn_started"]);
+    expect(store.events().map((e) => e.type)).toEqual(["world_created", "turn_started", "time_advanced"]);
     expect(requests[1]!.messages.at(-1)).toMatchObject({
       content: [{ type: "tool_result", isError: true }],
     });
@@ -105,7 +110,7 @@ describe("runTurn", () => {
     const { model, requests } = scriptedModel([{ response: { stopReason: "max_tokens", content: [checkCall] } }]);
     const { store, events } = await run(model);
     expect(requests).toHaveLength(1);
-    expect(store.events().map((e) => e.type)).toEqual(["world_created", "turn_started"]);
+    expect(store.events().some((e) => e.type === "check_rolled")).toBe(false);
     expect(events.at(-1)).toEqual({ type: "done", stopReason: "max_tokens" });
   });
 
@@ -138,6 +143,39 @@ describe("runTurn", () => {
     store.getState().characters.player!.injury = "dead";
     const gen = runTurn({ model, store, content: TEST_CONTENT, transcript: [], input: "일어난다", rng: fixedDice });
     await expect(gen.next()).rejects.toThrow("사망");
+  });
+});
+
+describe("runTurn 시간", () => {
+  it("GM이 시간을 쓰지 않으면 최소 시간이 흐른다", async () => {
+    const { model } = scriptedModel([{ response: { stopReason: "end", content: [] } }]);
+    const { store } = await run(model, "숨을 고른다");
+    expect(store.getState().time).toBe(330 + 5);
+  });
+
+  it("spend_time을 쓰면 최소 시간을 더하지 않는다", async () => {
+    const call = {
+      type: "tool_call" as const,
+      id: "t1",
+      name: "spend_time",
+      input: { activity: "eat", until: null },
+    };
+    const { model } = scriptedModel([
+      { response: { stopReason: "tool_use", content: [call] } },
+      { response: { stopReason: "end", content: [] } },
+    ]);
+    const { store, events } = await run(model, "밥을 먹는다");
+    expect(store.getState().time).toBe(330 + 30);
+    expect(events.find((e) => e.type === "tool")).toMatchObject({
+      display: { type: "time", activityLabel: "식사", durationLabel: "30분" },
+    });
+  });
+
+  it("프롬프트에 현재 시각이 들어간다", async () => {
+    const { model, requests } = scriptedModel([{ response: { stopReason: "end", content: [] } }]);
+    await run(model);
+    const first = requests[0]!.messages[0]!.content[0]!;
+    expect(first.type === "text" && first.text).toContain("시각: 1일차 05:30 (새벽)");
   });
 });
 

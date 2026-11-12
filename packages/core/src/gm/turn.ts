@@ -4,6 +4,7 @@ import type { Content } from "../content/schemas.ts";
 import { buildPlayerPrompt } from "./context.ts";
 import type { LanguageModel, ModelMessage, ModelStopReason, UserBlock } from "./model.ts";
 import { GM_SYSTEM_PROMPT } from "./prompt.ts";
+import { MIN_TURN_MINUTES } from "../rules/time.ts";
 import { executeTool, GM_TOOL_SPECS, type ToolDisplayEvent } from "./tools.ts";
 
 /** 플레이어 한 번의 입력 최대 길이 (문자 수) */
@@ -105,6 +106,7 @@ export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEven
   ];
 
   let stopReason: ModelStopReason = "other";
+  let timeSpent = false;
   /** 지금 받고 있는 서술 조각. 중단·오류 시에도 기록에 남긴다 */
   let segment = "";
   try {
@@ -131,6 +133,7 @@ export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEven
         if (block.type !== "tool_call") continue;
         const outcome = executeTool(block.name, block.input, { store, rng, content });
         if (outcome.ok) {
+          if (block.name === "spend_time") timeSpent = true;
           entries.push({ kind: "tool", display: outcome.display });
           yield { type: "tool", display: outcome.display };
           results.push({ type: "tool_result", toolCallId: block.id, content: outcome.resultText });
@@ -144,6 +147,11 @@ export async function* runTurn(options: RunTurnOptions): AsyncGenerator<TurnEven
     if (stopReason === "tool_use") {
       yield { type: "error", message: "GM이 tool을 너무 많이 호출해 이번 턴을 멈췄습니다." };
       return entries;
+    }
+    // GM이 시간을 쓰지 않았으면 잠깐의 행동으로 본다 (기획서 5.1: 평시엔 행동 비용만큼 흐른다)
+    if (!timeSpent && !isPlayerDead(store)) {
+      const now = store.getState().time;
+      store.append({ type: "time_advanced", activity: "brief", from: now, to: now + MIN_TURN_MINUTES });
     }
     yield { type: "done", stopReason: stopReason === "end" ? "end" : stopReason };
   } catch (err) {

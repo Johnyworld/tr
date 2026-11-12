@@ -1,6 +1,7 @@
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
 import { INJURY_LABELS, INJURY_PENALTY } from "../rules/injury.ts";
 import { STAT_LABELS, STATS } from "../rules/stats.ts";
+import { formatTime } from "../rules/time.ts";
 import type { Inventory } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
 import type { Content } from "../content/schemas.ts";
@@ -20,6 +21,7 @@ export function describePlayerState(state: GameState, content: Content): string 
     .join(", ");
 
   return [
+    `시각: ${formatTime(state.time)}`,
     `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.label ?? player.rank}`,
     `능력치: ${stats}`,
     `부상: ${INJURY_LABELS[player.injury]} (판정 보정 ${signed(penalty)})`,

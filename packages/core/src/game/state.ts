@@ -3,12 +3,15 @@ import { CHECK_OUTCOMES, difficultySchema } from "../rules/check.ts";
 import { harmSeveritySchema, injuryLevelSchema } from "../rules/injury.ts";
 import { moveSchema } from "../rules/moves.ts";
 import { statSchema } from "../rules/stats.ts";
+import { activitySchema, START_TIME } from "../rules/time.ts";
+import { interruptSchema } from "../sim/fastForward.ts";
 import type { RoleContent } from "../content/schemas.ts";
 import { characterSchema, inventorySchema, type Character, type Inventory } from "./character.ts";
 
 /**
- * 세이브 형식 버전. GameState나 GameEvent의 형태를 바꾸면 올리고,
+ * 세이브 형식 버전. GameState나 GameEvent를 호환되지 않게 바꾸면 올리고,
  * 이전 세이브를 옮기는 방법을 함께 만든다.
+ * 필드 추가는 기본값(.default)을 주면 이전 세이브와 호환되므로 올리지 않는다.
  */
 export const SAVE_SCHEMA_VERSION = 1;
 
@@ -34,6 +37,8 @@ export const gameStateSchema = z.strictObject({
   worldId: z.string(),
   roleId: z.string(),
   turn: z.number().int().nonnegative(),
+  /** 게임 시간 (1일차 00:00부터 흐른 분). 5단계에서 추가, 이전 세이브는 시작 시각으로 본다 */
+  time: z.number().int().nonnegative().default(START_TIME),
   playerId: z.string(),
   characters: z.record(z.string(), characterSchema),
   scene: z.strictObject({ items: inventorySchema }),
@@ -47,6 +52,7 @@ export const EMPTY_STATE: GameState = {
   worldId: "",
   roleId: "",
   turn: 0,
+  time: START_TIME,
   playerId: "",
   characters: {},
   scene: { items: {} },
@@ -91,6 +97,14 @@ export const gameEventSchema = z.discriminatedUnion("type", [
     cause: z.string(),
   }),
   z.strictObject({
+    type: z.literal("time_advanced"),
+    activity: activitySchema,
+    from: z.number().int().nonnegative(),
+    to: z.number().int().nonnegative(),
+    /** 빨리감기가 중간에 멈췄다면 그 이유 */
+    interrupt: interruptSchema.optional(),
+  }),
+  z.strictObject({
     type: z.literal("item_transferred"),
     from: z.string(),
     to: z.string(),
@@ -133,6 +147,11 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       mustGet(next.checks, event.checkId, "판정").harmApplied = true;
       break;
     }
+    case "time_advanced":
+      if (event.from !== state.time) throw new Error(`시간이 어긋납니다: 현재 ${state.time}, 이벤트 ${event.from}`);
+      if (event.to <= event.from) throw new Error("시간은 앞으로만 흐릅니다.");
+      next.time = event.to;
+      break;
     case "item_transferred": {
       const from = holderInventory(next, event.from);
       const to = holderInventory(next, event.to);

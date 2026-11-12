@@ -161,3 +161,46 @@ describe("transfer_item", () => {
     expect(newEvents(store)).toHaveLength(0);
   });
 });
+
+describe("spend_time", () => {
+  const spend = (activity: string, until: string | null = null) => ({ activity, until });
+
+  it("짧은 활동은 정해진 시간만큼 흐른다", () => {
+    const { store, ctx } = setup();
+    expect(executeTool("spend_time", spend("talk"), ctx).ok).toBe(true);
+    expect(store.getState().time).toBe(330 + 10);
+    expect(newEvents(store).at(-1)).toMatchObject({ type: "time_advanced", from: 330, to: 340 });
+  });
+
+  it("잠은 지정한 시간대까지 빨리감기한다 (끼어들기가 없으면)", () => {
+    const noInterrupt = () => 0.999; // 확률 검사를 항상 통과하지 못함
+    const { store, ctx } = setup(noInterrupt);
+    executeTool("spend_time", spend("sleep", "night"), ctx); // 05:30 → 20:00
+    expect(store.getState().time).toBe(20 * 60);
+  });
+
+  it("빨리감기가 끼어들기로 멈추면 그 시각까지만 흐르고 이유를 남긴다", () => {
+    const alwaysInterrupt = () => 0; // 첫 틱에서 바로 끼어든다
+    const { store, ctx } = setup(alwaysInterrupt);
+    const out = executeTool("spend_time", spend("guard_duty"), ctx);
+    expect(out.ok && out.display).toMatchObject({ type: "time", interruptDetail: expect.any(String) });
+    const event = newEvents(store).at(-1);
+    expect(event).toMatchObject({ type: "time_advanced", interrupt: { kind: "disturbance" } });
+    expect(store.getState().time).toBeLessThan(330 + 240);
+    expect(store.getState().time).toBeGreaterThan(330);
+  });
+
+  it("until은 sleep·wait에서만 쓸 수 있다", () => {
+    const { store, ctx } = setup();
+    expect(executeTool("spend_time", spend("search", "night"), ctx).ok).toBe(false);
+    expect(executeTool("spend_time", spend("guard_duty", "night"), ctx).ok).toBe(false);
+    expect(executeTool("spend_time", spend("wait", "morning"), ctx).ok).toBe(true);
+    expect(store.getState().time).toBeLessThanOrEqual(6 * 60);
+  });
+
+  it("빨리감기는 하루를 넘지 않는다", () => {
+    const { store, ctx } = setup(() => 0.999);
+    executeTool("spend_time", spend("wait", "dawn"), ctx); // 05:30 → 다음 날 04:00
+    expect(store.getState().time - 330).toBeLessThanOrEqual(24 * 60);
+  });
+});

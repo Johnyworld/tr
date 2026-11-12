@@ -4,6 +4,7 @@ import type { ToolDisplayEvent } from "@trpg/core";
 export type PlayerView = {
   name: string;
   roleLabel: string;
+  timeLabel: string;
   injury: string;
   injuryLabel: string;
   injuryPenalty: number;

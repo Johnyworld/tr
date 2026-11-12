@@ -107,3 +107,21 @@ describe("SqliteRepository", () => {
     expect(SqliteRepository.open(path).hasWorld()).toBe(false);
   });
 });
+
+describe("이전 세이브 호환", () => {
+  it("time 필드가 없던 스냅샷(5단계 이전)도 시작 시각으로 불러온다", () => {
+    const path = tempPath();
+    const repo = SqliteRepository.open(path);
+    repo.append(world());
+    const { time: _time, ...legacy } = repo.getState();
+    repo.close();
+
+    const raw = new Database(path);
+    raw.prepare("INSERT INTO snapshots (seq, state, created_at) VALUES (1, ?, 'x')").run(JSON.stringify(legacy));
+    raw.close();
+
+    const reopened = SqliteRepository.open(path);
+    expect(reopened.getState().time).toBe(330);
+    reopened.close();
+  });
+});

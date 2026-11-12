@@ -123,6 +123,7 @@ export function App() {
       <header className="header">
         <h1>TRPG</h1>
         <span className="subtitle">{player?.roleLabel}</span>
+        {player && <span className="clock">{player.timeLabel}</span>}
         <button type="button" className="link" onClick={newGame} disabled={busy}>
           새 게임
         </button>

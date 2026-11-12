@@ -5,15 +5,14 @@ import type { GameWorld } from "@trpg/core";
 
 /**
  * MCP 모드의 상태 화면 서버 (127.0.0.1만). Claude 앱의 브라우저 패널에 띄워 두는 읽기 전용 캐릭터 시트.
- * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트와 이야기 기록 (정보 필터를 거친 core 뷰만)
- * - GET /api/status/stream: 같은 내용을 SSE로. 바뀔 때마다 밀어 준다. 연결된 수가 "보고 있는 사람" 수다 (서술 위치를 정한다)
+ * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트 (정보 필터를 거친 core 뷰만)
+ * - GET /api/status/stream: 같은 내용을 SSE로. 바뀔 때마다 밀어 준다
+ * 서술은 채팅(Claude 세션)에 있다. 이 화면은 시트만 보여 준다
  * - 나머지: 웹 앱과 같은 React 컴포넌트로 된 status.html (packages/ui). Vite 미들웨어로 바로 띄운다
  * stdout은 MCP 프로토콜 전용이라 로그는 모두 stderr로 보낸다 (원칙 12). 게임 상태는 바꾸지 않는다
  */
 
 const UI_DIR = fileURLToPath(new URL("../../ui/", import.meta.url));
-/** 상태 화면에 보내는 이야기 기록 수 (최근 것) */
-const LOG_LIMIT = 200;
 /** 바뀌었는지 살피는 간격 */
 const WATCH_MS = 250;
 
@@ -22,15 +21,14 @@ export type StatusSource = { readonly world: GameWorld | null; readonly scenario
 export function statusPayload(source: StatusSource): unknown {
   const w = source.world;
   if (!w) return { open: false, scenarioName: source.scenarioName };
-  const log = w.transcriptView().slice(-LOG_LIMIT);
-  return { open: true, scenarioName: source.scenarioName, worldId: w.id, opening: w.intro().opening, player: w.playerView(), log };
+  return { open: true, scenarioName: source.scenarioName, worldId: w.id, player: w.playerView() };
 }
 
 /** 상태 서버를 띄운다. 포트가 쓰이고 있으면 다음 포트로 (MCP 세션이 여럿일 수 있다). 주소를 돌려준다 */
 export async function startStatusServer(
   source: StatusSource,
   firstPort: number,
-): Promise<{ url: string; viewers: () => number; close: () => Promise<void> }> {
+): Promise<{ url: string; close: () => Promise<void> }> {
   const { createServer: createVite, createLogger } = await import("vite");
   const base = createLogger("warn");
   const toStderr = (msg: string) => console.error(`[status] ${msg}`);
@@ -106,7 +104,6 @@ export async function startStatusServer(
     if (ok) {
       return {
         url: `http://127.0.0.1:${port}`,
-        viewers: () => clients.size,
         close: async () => {
           clearInterval(watcher);
           for (const res of clients) res.end();

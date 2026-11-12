@@ -105,18 +105,13 @@ export class GameWorld {
    */
   executeTool(name: string, input: unknown): ToolOutcome {
     if (name === "take_action" && input && typeof input === "object") {
-      // MCP 모드: player_input은 플레이어가 쓴 말 그대로 (기록용, 판정에는 쓰지 않는다)
-      const { player_input, ...rest } = input as { player_input?: unknown };
-      input = rest;
-      const { intent, narration_summary } = rest as { intent?: unknown; narration_summary?: unknown };
+      const { intent, narration_summary } = input as { intent?: unknown; narration_summary?: unknown };
       // 웹 앱 모드는 GM 루프가 서술을 직접 저장하므로 narration_summary는 MCP 모드에서만 쓴다
       if (this.mode === "mcp" && typeof narration_summary === "string" && narration_summary.trim()) {
         this.appendTranscript([{ kind: "note", text: narration_summary.trim() }]);
         this.recordSummary("turn", narration_summary.trim());
       }
-      if (this.mode === "mcp" && typeof player_input === "string" && player_input.trim()) {
-        this.appendTranscript([{ kind: "player", text: player_input.trim() }]);
-      } else if (this.mode === "mcp" && typeof intent === "string" && intent.trim()) {
+      if (this.mode === "mcp" && typeof intent === "string" && intent.trim()) {
         this.appendTranscript([{ kind: "player", text: intent.trim() }]);
       }
     }
@@ -129,20 +124,6 @@ export class GameWorld {
     if (outcome.ok && name === "take_action") this.#repo.saveSnapshot();
     if (outcome.ok) this.#syncMemory();
     return outcome;
-  }
-
-  /**
-   * MCP 모드: GM이 쓴 서술 전문을 기록한다 (상태 화면에 웹 앱처럼 보인다. 웹 앱으로 이어 가면 GM 대화로 이어진다).
-   * playerInput은 이번 턴에 아직 기록하지 않은 플레이어의 말 (판정 없이 대화만 한 턴), summary는 턴 요약 (장기 기억·요약에 쓴다).
-   * 게임 상태는 바꾸지 않는다 (서술은 결과를 확정하지 않는다)
-   */
-  narrate(input: { text: string; playerInput?: string | null; summary?: string | null }): void {
-    const entries: TranscriptEntry[] = [];
-    if (input.playerInput?.trim()) entries.push({ kind: "player", text: input.playerInput.trim() });
-    if (input.text.trim()) entries.push({ kind: "gm", text: input.text.trim() });
-    if (entries.length) this.appendTranscript(entries);
-    if (input.summary?.trim()) this.recordSummary("turn", input.summary.trim());
-    this.#syncMemory();
   }
 
   transcript(): readonly TranscriptEntry[] {

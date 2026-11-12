@@ -222,7 +222,7 @@ describe("MCP 정보 필터", () => {
 });
 
 describe("상태 화면", () => {
-  it("열린 게임이 없으면 open: false, 열면 시트와 이야기 기록. 세션 시작 안내에 주소가 나온다", async () => {
+  it("열린 게임이 없으면 open: false, 열면 시트. 세션 시작 안내에 주소가 나온다", async () => {
     const { statusPayload } = await import("./statusServer.ts");
     const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-status-")), content: TEST_CONTENT, rngFactory: () => createSeededRng(7) });
     const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8790" });
@@ -236,48 +236,9 @@ describe("상태 화면", () => {
     const start = (await client.callTool({ name: "start_session", arguments: { new_world: true } })) as { content: { text: string }[] };
     expect(start.content[0]!.text).toContain("상태 화면: http://127.0.0.1:8790");
     await client.callTool({ name: "take_action", arguments: action({ check: { move: "fight", stat: "strength", difficulty: "normal", harm_on_failure: "none", harm_cause: "" } }) });
-    const status = statusPayload(source) as { open: boolean; player: { name: string }; log: { kind: string }[] };
+    const status = statusPayload(source) as { open: boolean; player: { name: string; timeLabel: string } };
     expect(status.open).toBe(true);
     expect(status.player.name).toBe("신병");
-    expect(status.log.map((e) => e.kind)).toEqual(["player", "tool"]);
-  });
-});
-
-describe("서술을 상태 화면으로 (narrate)", () => {
-  async function setup(viewers: number) {
-    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-narrate-")), content: TEST_CONTENT, rngFactory: () => createSeededRng(7) });
-    let v = viewers;
-    const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8790", viewers: () => v });
-    opened.push(app);
-    const [c, s] = InMemoryTransport.createLinkedPair();
-    await app.server.connect(s);
-    const client = new Client({ name: "t", version: "0" });
-    await client.connect(c);
-    const call = async (name: string, args: Record<string, unknown> = {}) =>
-      ((await client.callTool({ name, arguments: args })) as { content: { text: string }[] }).content.map((x) => x.text).join("\n");
-    await call("start_session", { new_world: true });
-    return { app, call, setViewers: (n: number) => (v = n) };
-  }
-
-  it("화면을 보고 있으면 결과에 [서술 위치]가 붙고, 플레이어의 말·판정·서술이 웹 앱처럼 기록된다", async () => {
-    const { app, call } = await setup(1);
-    const out = await call("take_action", action({ player_input: "철문을 밀어 본다", narration_summary: null }));
-    expect(out).toContain("[서술 위치]");
-    expect(await call("narrate", { text: "철문이 삐걱이며 열린다.\n\n안쪽은 어둡다.", summary: "철문을 열었다" })).toContain("상태 화면에 올렸다");
-    const log = app.world!.transcriptView();
-    expect(log.map((e) => e.kind)).toEqual(["player", "gm"]); // 판정 없는 행동은 카드가 없다
-    expect(log[0]).toMatchObject({ kind: "player", text: "철문을 밀어 본다" });
-    expect(app.world!.summaries().at(-1)?.text).toBe("철문을 열었다");
-    await call("narrate", { text: "누군가 대답한다.", player_input: "누구 있어요?" });
-    expect(app.world!.transcriptView().slice(-2)).toEqual([
-      { kind: "player", text: "누구 있어요?" },
-      { kind: "gm", text: "누군가 대답한다." },
-    ]);
-  });
-
-  it("화면이 닫혀 있으면 안내가 없고, narrate는 채팅에도 쓰라고 한다", async () => {
-    const { call } = await setup(0);
-    expect(await call("take_action", action())).not.toContain("[서술 위치]");
-    expect(await call("narrate", { text: "조용하다." })).toContain("채팅에 그대로 쓴다");
+    expect(Object.keys(status)).toEqual(["open", "scenarioName", "worldId", "player"]); // 시트만 (서술은 채팅에)
   });
 });

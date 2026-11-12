@@ -95,7 +95,7 @@ export function formatSlotLine(slot: SaveSlot, index: number): string {
     `복무 ${h.daysServed}일째`,
     h.generation > 1 ? `${h.generation}대째` : null,
     slot.cheated ? "🛠 치트 사용" : null,
-    slot.lockedBy ? `지금 ${slot.lockedBy === "web" ? "웹 앱" : "다른 세션"}에서 사용 중` : null,
+    slot.lockedBy ? "지금 다른 세션에서 사용 중" : null,
     `마지막 플레이 ${formatPlayedAt(slot.updatedAt)}`,
   ].filter(Boolean);
   return `${index}. ${who} — ${where} · ${tags.join(" · ")}`;

@@ -176,30 +176,6 @@ export function creationRules(content: Content, roleId: string): CreationRules |
   };
 }
 
-/** MCP용 안내: GM이 플레이어에게 물을 것 */
-export function describeCreationRules(rules: CreationRules): string {
-  const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
-  return [
-    "캐릭터 생성 (플레이어에게 물어서 정한다. 대신 정하지 않는다):",
-    `- 이름 (1~${MAX_NAME_LENGTH}자, 비우면 "${rules.defaultName}")`,
-    `- 성별: ${rules.genders.map((g) => `${g.label}(${g.id})`).join(", ")}`,
-    `- 능력: 모두 0에서 시작해 ${rules.points}포인트를 나눠 쓴다. 값별 비용 ${rules.cost.map((c) => `${signed(c.value)}=${c.cost}`).join(", ")} (낮추면 돌려받는다). 0보다 낮출 수 있는 능력은 ${rules.maxLow}개까지`,
-    ...rules.abilities.map((a) => `  - ${a.label}(${a.id}): ${a.description}`),
-    `- 시작 훈련 (역할이 정한다): ${rules.startSkills.map((x) => `${x.label} ${signed(x.value)}`).join(", ")}`,
-    `- 트레잇 (traits, 고르지 않아도 된다): 긍정은 부정으로 얻은 포인트만큼만 고른다. 긍정 ${rules.traitLimits.max_positive}개·부정 ${rules.traitLimits.max_negative}개·성격 ${rules.traitLimits.max_personality}개까지. 반대끼리는 함께 고를 수 없다`,
-    ...(["positive", "negative", "personality"] as const).map(
-      (kind) =>
-        `  - ${{ positive: "긍정 (비용)", negative: "부정 (보상)", personality: "성격 (0)" }[kind]}: ` +
-        rules.traits
-          .filter((t) => t.kind === kind)
-          .map((t) => `${t.label}(${t.id}${kind === "personality" ? "" : ` ${t.cost}`}: ${t.description})`)
-          .join(", "),
-    ),
-    '플레이어가 "알아서"·"무작위"라고 하면 abilities(또는 traits)를 null로 보낸다. 코드가 규칙에 맞게 무작위로 정한다.',
-    "트레잇 목록은 한꺼번에 다 읽어 주지 말고, 플레이어가 원하면 종류별로 보여 준다.",
-  ].join("\n");
-}
-
 /** 고르지 않은 것(null)을 규칙에 맞게 무작위로 채운다: 능력은 포인트 배분, 트레잇은 무작위 */
 export function fillCharacterChoice(s: Scenario, choice: CharacterChoice, rng: Rng): CharacterChoice {
   return {

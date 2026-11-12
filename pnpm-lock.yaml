@@ -49,18 +49,6 @@ importers:
         specifier: 4.23.15
         version: 4.23.15
 
-  packages/gm:
-    dependencies:
-      '@anthropic-ai/sdk':
-        specifier: 1.8.0
-        version: 1.8.0(zod@4.6.7)
-      '@trpg/core':
-        specifier: workspace:*
-        version: link:../core
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
-
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
@@ -76,43 +64,12 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
     devDependencies:
-      '@trpg/gm':
-        specifier: workspace:*
-        version: link:../gm
-      tsx:
-        specifier: 4.23.15
-        version: 4.23.15
-
-  packages/server:
-    dependencies:
-      '@hono/node-server':
-        specifier: 2.1.7
-        version: 2.1.7(hono@4.13.18)
-      '@trpg/core':
-        specifier: workspace:*
-        version: link:../core
-      '@trpg/gm':
-        specifier: workspace:*
-        version: link:../gm
-      hono:
-        specifier: 4.13.18
-        version: 4.13.18
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
-    devDependencies:
       tsx:
         specifier: 4.23.15
         version: 4.23.15
 
   packages/ui:
     dependencies:
-      '@trpg/core':
-        specifier: workspace:*
-        version: link:../core
-      '@trpg/gm':
-        specifier: workspace:*
-        version: link:../gm
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -134,19 +91,6 @@ importers:
         version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1)
 
 packages:
-
-  '@anthropic-ai/sdk@1.8.0':
-    resolution: {integrity: sha512-yDOArk2+Qpd/djEKmZjrv7JZ+pn5iBHARJ9PAdvfhGf4H5wNqTgY/2K0/yDKdQdm8G8hrNQchMlBAHpPK7yBfg==}
-    hasBin: true
-    peerDependencies:
-      zod: ^3.25.0 || ^4.0.0
-    peerDependenciesMeta:
-      zod:
-        optional: true
-
-  '@babel/runtime@7.29.14':
-    resolution: {integrity: sha512-Y5tqevQaUAZhhj82BpYMNC1ssvLQTVAfwKdm8iy8qwmhvC2/CpcAu8OC+QEtjM7pMk7knx83u1Qj8gzkicyelw==}
-    engines: {node: '>=6.9.0'}
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
@@ -958,9 +902,6 @@ packages:
   '@rolldown/pluginutils@1.1.0':
     resolution: {integrity: sha512-K+NU2HDCEem4sClgHH4ZZXwdJeNFkJo+hRk479DIwdIviAPN2hFJH1KHHwg8CxHQXvi0M5XY4deTXINfIiSG6w==}
 
-  '@stablelib/base64@1.0.1':
-    resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
-
   '@tybys/wasm-util@0.10.4':
     resolution: {integrity: sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==}
 
@@ -1422,9 +1363,6 @@ packages:
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
-  fast-sha256@1.3.0:
-    resolution: {integrity: sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ==}
-
   fast-uri@3.1.9:
     resolution: {integrity: sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ==}
 
@@ -1528,10 +1466,6 @@ packages:
 
   jose@6.2.17:
     resolution: {integrity: sha512-wOuK9V1yujQFH5S0ZWmLcDZN7+IKh9bUCC2ZPCf2HDlol3WWHy+PPyNjEI75FXRLMp3vDKQcupP59xhVU95hcg==}
-
-  json-schema-to-ts@3.1.1:
-    resolution: {integrity: sha512-+DWg8jCJG2TEnpy7kOm/7/AxaYoaRbjVB4LFZLySZlWn8exGs3A4OLJR966cVvU26N7X9TWxl+Jsw7dzAqKT6g==}
-    engines: {node: '>=16'}
 
   json-schema-traverse@1.0.0:
     resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
@@ -1867,9 +1801,6 @@ packages:
   sqlite-vec@0.1.9:
     resolution: {integrity: sha512-L7XJWRIBNvR9O5+vh1FQ+IGkh/3D2AzVksW5gdtk28m78Hy8skFD0pqReKH1Yp0/BUKRGcffgKvyO/EON5JXpA==}
 
-  standardwebhooks@1.1.1:
-    resolution: {integrity: sha512-bCbX9ZEyFkWPsRz7Bl3NuQUJohmwGSev/yhr7vhaGPlc4AfIrspIRa6cPTBuI1ItmrTDJ4d/S2hCsfe4+vQGnQ==}
-
   statuses@2.0.2:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
     engines: {node: '>= 0.8'}
@@ -1892,9 +1823,6 @@ packages:
   toidentifier@1.0.1:
     resolution: {integrity: sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==}
     engines: {node: '>=0.6'}
-
-  ts-algebra@2.0.0:
-    resolution: {integrity: sha512-FPAhNPFMrkwz76P7cdjdmiShwMynZYN6SgOujD1urY4oNm80Ou9oMdmbR45LotcKOXoy7wSmHkRFE6Mxbrhefw==}
 
   tslib@2.9.1:
     resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
@@ -2039,16 +1967,6 @@ packages:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
 snapshots:
-
-  '@anthropic-ai/sdk@1.8.0(zod@4.6.7)':
-    dependencies:
-      '@opentelemetry/api': 1.10.0
-      json-schema-to-ts: 3.1.1
-      standardwebhooks: 1.1.1
-    optionalDependencies:
-      zod: 4.6.7
-
-  '@babel/runtime@7.29.14': {}
 
   '@drizzle-team/brocli@0.10.2': {}
 
@@ -2467,7 +2385,8 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@opentelemetry/api@1.10.0': {}
+  '@opentelemetry/api@1.10.0':
+    optional: true
 
   '@oxc-project/types@0.156.0': {}
 
@@ -2544,8 +2463,6 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.1.0': {}
-
-  '@stablelib/base64@1.0.1': {}
 
   '@tybys/wasm-util@0.10.4':
     dependencies:
@@ -2927,8 +2844,6 @@ snapshots:
 
   fast-deep-equal@3.1.3: {}
 
-  fast-sha256@1.3.0: {}
-
   fast-uri@3.1.9: {}
 
   fdir@6.5.0(picomatch@4.0.7):
@@ -3030,11 +2945,6 @@ snapshots:
   isexe@2.0.0: {}
 
   jose@6.2.17: {}
-
-  json-schema-to-ts@3.1.1:
-    dependencies:
-      '@babel/runtime': 7.29.14
-      ts-algebra: 2.0.0
 
   json-schema-traverse@1.0.0: {}
 
@@ -3388,11 +3298,6 @@ snapshots:
       sqlite-vec-linux-x64: 0.1.9
       sqlite-vec-windows-x64: 0.1.9
 
-  standardwebhooks@1.1.1:
-    dependencies:
-      '@stablelib/base64': 1.0.1
-      fast-sha256: 1.3.0
-
   statuses@2.0.2: {}
 
   std-env@4.3.0: {}
@@ -3407,8 +3312,6 @@ snapshots:
       picomatch: 4.0.7
 
   toidentifier@1.0.1: {}
-
-  ts-algebra@2.0.0: {}
 
   tslib@2.9.1:
     optional: true

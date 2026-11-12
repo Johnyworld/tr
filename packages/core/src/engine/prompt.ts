@@ -4,7 +4,7 @@ import type { PlayMode } from "./log.ts";
 /**
  * GM 지침 = 시나리오 톤 + 시작 장면 + GM 공통 규칙 (+ MCP 모드 진행 규칙).
  * 원문은 시나리오 팩의 prompts/에 있고 두 플레이 모드가 같은 파일을 읽는다 (기획서 11.6).
- * 한 세계 안에서는 바뀌지 않으므로 웹 앱 모드에서는 프롬프트 캐싱 대상이다.
+ * 한 세계 안에서는 바뀌지 않는다.
  */
 export function buildGmGuide(content: Content, roleId: string, mode: PlayMode): string {
   const scenario = content.scenario;

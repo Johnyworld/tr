@@ -93,18 +93,6 @@ export function describePlayerState(state: GameState, content: Content): string 
 }
 
 /** 이번 턴의 user 메시지. 상태와 입력을 구분해 넣는다 */
-/**
- * 이번 턴의 user 메시지. 고정 부분(시스템 프롬프트)은 앞에서 캐싱되고, 이 메시지에는 바뀌는 것만 둔다:
- * 지난 이야기(모드 전환 직후) → 상태 → 참고 자료(RAG) → 플레이어 입력
- */
-export function buildPlayerPrompt(state: GameState, content: Content, input: string, recap = "", references = ""): string {
-  const recapBlock = recap ? `<지난 이야기>\n${recap}\n</지난 이야기>\n\n` : "";
-  const refBlock = references
-    ? `<참고 자료>\n캐릭터가 알 수 있는 세계 배경과 지난 기억이다. 필요할 때만 쓰고, 여기 없는 사실을 지어내지 않는다. 기억은 캐릭터가 그때 보고 들은 것이라 틀렸을 수 있다.\n\n${references}\n</참고 자료>\n\n`
-    : "";
-  return `${recapBlock}<상태>\n${describePlayerState(state, content)}\n</상태>\n\n${refBlock}<플레이어 입력>\n${input}\n</플레이어 입력>`;
-}
-
 /** 끌림·질투 (기획서 4.6 "외모와 끌림"): GM이 태도로 연기한다 */
 function attractionNotes(content: Content, npc: Character, player: Character): string[] {
   if (!attractionOf(content, npc)) return [];

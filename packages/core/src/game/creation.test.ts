@@ -7,7 +7,7 @@ import { createSeededRng } from "../rng.ts";
 import { TEST_CONTENT } from "../testing.ts";
 import { CharacterChoiceError, WorldManager } from "../world/manager.ts";
 import { describePlayerState } from "../engine/context.ts";
-import { abilitySpend, checkCharacterChoice, creationRules, describeCreationRules, randomAbilityBuy } from "./creation.ts";
+import { abilitySpend, checkCharacterChoice, creationRules, randomAbilityBuy } from "./creation.ts";
 
 function content(): Content {
   const c = structuredClone(TEST_CONTENT);
@@ -79,13 +79,6 @@ describe("캐릭터 생성", () => {
     w.close();
   });
 
-  it("MCP 안내에 성별·비용·능력·시작 훈련이 나온다", () => {
-    const rules = creationRules(content(), "role_test")!;
-    const text = describeCreationRules(rules);
-    expect(text).toContain("여성(female)");
-    expect(text).toContain("+2=3");
-    expect(text).toContain("4포인트");
-  });
 });
 
 describe("세이브 삭제", () => {

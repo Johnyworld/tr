@@ -51,7 +51,7 @@ export { SqliteRepository, SaveFormatError, archiveSave } from "./persistence/sq
 export { acquireLock, readLock, isProcessAlive, WorldLockedError, type LockInfo } from "./persistence/lock.ts";
 
 export { buildGmGuide } from "./engine/prompt.ts";
-export { describePlayerState, buildPlayerPrompt } from "./engine/context.ts";
+export { describePlayerState } from "./engine/context.ts";
 export {
   executeTool,
   gmToolSpecs,
@@ -71,7 +71,6 @@ export {
   type TakeActionResult,
 } from "./engine/action.ts";
 export { runAfterTimeAdvance } from "./engine/turnStart.ts";
-export { normalizePlayerInput, InvalidPlayerInputError, MAX_INPUT_LENGTH } from "./engine/input.ts";
 export type { TranscriptEntry, TurnSummary, SummaryKind, PlayMode, RetrievalRecord } from "./engine/log.ts";
 
 export { GameWorld, RECAP_TURNS } from "./world/world.ts";
@@ -81,7 +80,6 @@ export {
   characterChoiceSchema,
   checkCharacterChoice,
   creationRules,
-  describeCreationRules,
   randomAbilityBuy,
   randomTraits,
   fillCharacterChoice,
@@ -102,12 +100,7 @@ export {
   type CreationStepId,
 } from "./game/creationFlow.ts";
 export { formatPlayedAt, formatSlotLine, type SaveSlot } from "./world/slots.ts";
-export {
-  buildPlayerView,
-  buildTranscriptView,
-  type PlayerView,
-  type TranscriptView,
-} from "./views/player.ts";
+export { buildPlayerView, type PlayerView } from "./views/player.ts";
 
 export {
   COMMANDS,

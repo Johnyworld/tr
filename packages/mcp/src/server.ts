@@ -260,7 +260,7 @@ export function createMcpServer(
     "end_session",
     {
       description:
-        "플레이를 마치고 세계를 닫는다 (메인 화면으로). 진행은 행동마다 자동 저장돼 있다. 잠금이 풀려 웹 앱이나 다른 세션에서 열 수 있다. 플레이어가 그만하자고 할 때 부른다.",
+        "플레이를 마치고 세계를 닫는다 (메인 화면으로). 진행은 행동마다 자동 저장돼 있다. 잠금이 풀려 다른 세션에서 열 수 있다. 플레이어가 그만하자고 할 때 부른다.",
     },
     () => {
       if (!world) return text("열린 세계가 없다.");
@@ -373,7 +373,7 @@ export function createMcpServer(
   server.registerTool(
     "record_turn_summary",
     {
-      description: "장면이 끝나면 장면 요약을 남긴다. 다른 세션이나 웹 앱에서 이어 플레이할 때 쓴다.",
+      description: "장면이 끝나면 장면 요약을 남긴다. 다른 세션에서 이어 플레이할 때 쓴다.",
       inputSchema: z.strictObject({
         text: z.string().min(1).max(2000),
         kind: z.enum(["scene", "turn"]).optional(),

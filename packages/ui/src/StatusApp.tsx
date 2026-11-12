@@ -9,7 +9,7 @@ type StatusView =
 
 /**
  * MCP 모드의 상태 화면: Claude 앱 옆(브라우저 패널)에 띄워 두는 읽기 전용 캐릭터 시트.
- * 웹 앱과 같은 CharacterSheet를 쓴다. 이야기(서술)는 Claude 세션의 채팅에 있다.
+ * 이야기(서술)는 Claude 세션의 채팅에 있다.
  * SSE로 바뀔 때마다 받고, SSE가 없는 서버면 1.5초 폴링으로 읽는다
  */
 export function StatusApp() {

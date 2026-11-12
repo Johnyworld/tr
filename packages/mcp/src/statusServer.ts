@@ -8,7 +8,7 @@ import type { GameWorld } from "@trpg/core";
  * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트 (정보 필터를 거친 core 뷰만)
  * - GET /api/status/stream: 같은 내용을 SSE로. 바뀔 때마다 밀어 준다
  * 서술은 채팅(Claude 세션)에 있다. 이 화면은 시트만 보여 준다
- * - 나머지: 웹 앱과 같은 React 컴포넌트로 된 status.html (packages/ui). Vite 미들웨어로 바로 띄운다
+ * - 나머지: React로 된 status.html (packages/ui). Vite 미들웨어로 바로 띄운다
  * stdout은 MCP 프로토콜 전용이라 로그는 모두 stderr로 보낸다 (원칙 12). 게임 상태는 바꾸지 않는다
  */
 

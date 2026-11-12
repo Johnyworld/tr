@@ -73,12 +73,6 @@ export type PlayerView = {
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
 };
 
-/** UI에 보낼 대화 기록. 모델에 보낸 프롬프트 원문은 빼고 보낸다 */
-export type TranscriptView =
-  | { kind: "player"; text: string }
-  | { kind: "gm"; text: string }
-  | { kind: "note"; text: string }
-  | { kind: "tool"; display: ToolDisplayEvent };
 
 
 export function buildPlayerView(state: GameState, content: Content): PlayerView {
@@ -197,8 +191,4 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       }))
       .reverse(),
   };
-}
-/** 화면에 보낼 대화 기록. 모델에 보낸 프롬프트 원문은 빼고, 보여 주지 않을 결과는 거른다 */
-export function buildTranscriptView(transcript: readonly TranscriptEntry[]): TranscriptView[] {
-  return transcript.map((e) => (e.kind === "player" ? { kind: "player", text: e.text } : e));
 }

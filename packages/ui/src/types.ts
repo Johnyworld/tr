@@ -1,6 +1,4 @@
-import type { ToolDisplayEvent } from "@trpg/core";
-
-/** 서버 API 응답 형태 (packages/server/src/session.ts 와 맞춘다) */
+/** 상태 화면의 캐릭터 시트 (core의 playerView, packages/mcp/src/statusServer.ts 가 보낸다) */
 export type PlayerView = {
   name: string;
   genderLabel: string | null;
@@ -28,69 +26,4 @@ export type PlayerView = {
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
 };
 
-export type TranscriptView =
-  | { kind: "player"; text: string }
-  | { kind: "gm"; text: string }
-  | { kind: "note"; text: string }
-  | { kind: "tool"; display: ToolDisplayEvent };
-
-export type GameView = {
-  worldId: string;
-  scenarioName: string;
-  /** 시작 장면 */
-  opening: string;
-  player: PlayerView;
-  transcript: TranscriptView[];
-  busy: boolean;
-  succession: { chronicle: string; options: { id: string; label: string; detail: string }[] } | null;
-};
-
-/** 세이브 슬롯 (packages/core/src/world/slots.ts 의 SaveSlot + current) */
-export type SaveSlotView = {
-  id: string;
-  hero: {
-    name: string;
-    age: number | null;
-    genderLabel: string | null;
-    portrait: string | null;
-    rankLabel: string;
-    factionName: string;
-    level: number;
-    conditions: string[];
-    zoneName: string | null;
-    daysServed: number;
-    generation: number;
-    dead: boolean;
-  } | null;
-  timeLabel: string | null;
-  updatedAt: string;
-  lockedBy: "web" | "mcp" | null;
-  current: boolean;
-  cheated: boolean;
-};
-
-export type SlotsView = { scenarioName: string; slots: SaveSlotView[]; current: string | null };
-
-/** 캐릭터 생성 규칙 (core CreationRules) */
-export type CreationRulesView = {
-  defaultName: string;
-  roleLabel: string;
-  points: number;
-  cost: { value: number; cost: number }[];
-  maxLow: number;
-  genders: { id: string; label: string }[];
-  abilities: { id: string; label: string; description: string }[];
-  startSkills: { label: string; value: number }[];
-  traits: { id: string; label: string; kind: TraitKind; cost: number; description: string; opposites: string[] }[];
-  traitLimits: { max_positive: number; max_negative: number; max_personality: number };
-};
-
 export type TraitKind = "positive" | "negative" | "personality";
-
-export type CharacterChoiceView = {
-  name: string;
-  gender: string | null;
-  abilities: Record<string, number> | null;
-  portrait: string | null;
-  traits: string[];
-};

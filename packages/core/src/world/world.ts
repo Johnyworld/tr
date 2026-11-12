@@ -11,7 +11,7 @@ import type { PlayMode, TranscriptEntry, TurnSummary } from "../engine/log.ts";
 import { buildGmGuide } from "../engine/prompt.ts";
 import { executeTool, gmToolSpecs } from "../engine/tools.ts";
 import type { ToolContext, ToolOutcome, ToolSpec } from "../engine/toolkit.ts";
-import { buildPlayerView, buildTranscriptView, type PlayerView, type TranscriptView } from "../views/player.ts";
+import { buildPlayerView, type PlayerView } from "../views/player.ts";
 import { commandPrefixFor, runCommand, stripCommandPrefix } from "../commands/commands.ts";
 import type { LoreLibrary, LoreSearch } from "../rag/library.ts";
 import { memoryItemsOf, type MemoryStore } from "../rag/memory.ts";
@@ -256,16 +256,6 @@ ${this.sceneForGm()}` };
     return result;
   }
 
-  /**
-   * GM 컨텍스트용 검색어: 플레이어 입력 + 현재 장면 요약(최근 턴 요약) + 함께 있는 인물 이름 (기획서 11.4)
-   */
-  contextQuery(input: string): string {
-    const state = this.state();
-    const lastTurn = this.summaries({ kind: "turn", limit: 1 })[0]?.text ?? "";
-    const present = state.scene.present.map((id) => state.characters[id]?.name ?? id).join(" ");
-    return [input, lastTurn.slice(0, 300), present].filter(Boolean).join("\n");
-  }
-
   retrievals(limit?: number): RetrievalRecord[] {
     return this.#repo.retrievals(limit);
   }
@@ -299,10 +289,6 @@ ${this.sceneForGm()}` };
 
   playerView(): PlayerView {
     return buildPlayerView(this.state(), this.content);
-  }
-
-  transcriptView(): TranscriptView[] {
-    return buildTranscriptView(this.transcript());
   }
 
   /** 화면 머리: 시나리오 이름과 시작 장면 */

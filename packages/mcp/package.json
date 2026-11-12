@@ -14,7 +14,6 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@trpg/gm": "workspace:*",
     "tsx": "4.23.15"
   }
 }

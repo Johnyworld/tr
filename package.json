@@ -7,7 +7,6 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @trpg/server --filter @trpg/ui dev",
     "build": "pnpm -r build",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck",

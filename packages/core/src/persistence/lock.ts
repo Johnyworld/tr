@@ -11,7 +11,7 @@ export class WorldLockedError extends Error {
   override name = "WorldLockedError";
   constructor(readonly holder: LockInfo) {
     super(
-      `이 세계는 다른 곳에서 열려 있습니다 (${holder.mode === "web" ? "웹 앱" : "MCP"} 모드, PID ${holder.pid}, ${holder.startedAt}). ` +
+      `이 세계는 다른 곳에서 열려 있습니다 (PID ${holder.pid}, ${holder.startedAt}). ` +
         "그쪽을 닫은 뒤 다시 시도하세요.",
     );
   }

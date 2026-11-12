@@ -1,5 +1,4 @@
 import { Portrait } from "./Portrait.tsx";
-import { signed } from "./ToolCard.tsx";
 import type { PlayerView } from "./types.ts";
 
 export function CharacterSheet({ player }: { player: PlayerView }) {
@@ -237,4 +236,8 @@ function ItemList({ items }: { items: PlayerView["inventory"] }) {
       ))}
     </ul>
   );
+}
+
+function signed(n: number): string {
+  return n >= 0 ? `+${n}` : `${n}`;
 }

@@ -29,6 +29,20 @@
       "when": 1794462315405,
       "tag": "0003_summaries_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794467108584,
+      "tag": "0004_retrievals",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794467108913,
+      "tag": "0005_retrievals_append_only",
+      "breakpoints": true
     }
   ]
 }

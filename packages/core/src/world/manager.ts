@@ -11,6 +11,7 @@ import { acquireLock, readLock, type LockInfo } from "../persistence/lock.ts";
 import { archiveSave, SaveFormatError, SqliteRepository } from "../persistence/sqlite.ts";
 import { formatTime } from "../rules/time.ts";
 import { GameWorld } from "./world.ts";
+import type { LoreLibrary } from "../rag/library.ts";
 
 export type WorldInfo = {
   id: string;
@@ -34,8 +35,10 @@ export class WorldManager {
   readonly worldsDir: string;
   readonly content: Content;
   #rngFactory: () => Rng;
+  readonly lore: LoreLibrary | null;
 
-  constructor(options: { savesDir: string; content: Content; rngFactory?: () => Rng }) {
+  constructor(options: { savesDir: string; content: Content; rngFactory?: () => Rng; lore?: LoreLibrary | null }) {
+    this.lore = options.lore ?? null;
     this.savesDir = options.savesDir;
     this.worldsDir = join(options.savesDir, "worlds");
     this.content = options.content;
@@ -104,7 +107,7 @@ export class WorldManager {
     const release = acquireLock(path, mode);
     try {
       const repo = SqliteRepository.open(path, this.content.scenario);
-      return new GameWorld({ content: this.content, repo, mode, rng: this.#rngFactory(), path, release });
+      return new GameWorld({ content: this.content, repo, mode, rng: this.#rngFactory(), path, release, lore: this.lore });
     } catch (err) {
       release();
       throw err;

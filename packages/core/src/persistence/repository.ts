@@ -1,7 +1,7 @@
 import type { GameStore } from "../game/store.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import type { GameEvent } from "../game/state.ts";
-import type { TranscriptEntry, TurnSummary } from "../engine/log.ts";
+import type { RetrievalRecord, TranscriptEntry, TurnSummary } from "../engine/log.ts";
 
 /**
  * 세이브 저장소. 게임 상태(이벤트)와 대화 기록을 함께 다룬다.
@@ -16,6 +16,9 @@ export interface GameRepository extends GameStore {
   appendSummary(summary: TurnSummary): void;
   /** 최근 요약 (오래된 것부터). kind를 주면 그 종류만 */
   summaries(options?: { kind?: TurnSummary["kind"]; limit?: number }): TurnSummary[];
+  /** RAG 검색 기록 (게임 상태는 바꾸지 않는다) */
+  appendRetrieval(record: RetrievalRecord): void;
+  retrievals(limit?: number): RetrievalRecord[];
   /** 현재 상태를 스냅샷으로 남긴다. 불러오기를 빠르게 할 뿐 원본은 이벤트다 */
   saveSnapshot(): void;
   close(): void;
@@ -25,6 +28,7 @@ export interface GameRepository extends GameStore {
 export class InMemoryRepository extends InMemoryGameStore implements GameRepository {
   #transcript: TranscriptEntry[] = [];
   #summaries: TurnSummary[] = [];
+  #retrievals: RetrievalRecord[] = [];
 
   constructor(initialEvents: GameEvent[] = []) {
     super(initialEvents);
@@ -49,6 +53,14 @@ export class InMemoryRepository extends InMemoryGameStore implements GameReposit
   summaries(options: { kind?: TurnSummary["kind"]; limit?: number } = {}) {
     const list = this.#summaries.filter((s) => !options.kind || s.kind === options.kind);
     return list.slice(-(options.limit ?? list.length));
+  }
+
+  appendRetrieval(record: RetrievalRecord) {
+    this.#retrievals.push(structuredClone(record));
+  }
+
+  retrievals(limit = 20) {
+    return this.#retrievals.slice(-limit);
   }
 
   saveSnapshot() {}

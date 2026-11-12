@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { fetchCommands, fetchGame, playTurn, resetGame, runCommand, type CommandInfo } from "./api.ts";
 import { CharacterSheet } from "./CharacterSheet.tsx";
+import { DevPanel } from "./DevPanel.tsx";
 import { ToolCard } from "./ToolCard.tsx";
 import type { PlayerView, TranscriptView } from "./types.ts";
 
@@ -217,7 +218,12 @@ export function App() {
           )}
         </main>
 
-        {player && <CharacterSheet player={player} />}
+        {player && (
+          <div className="side">
+            <CharacterSheet player={player} />
+            <DevPanel refreshKey={transcript} />
+          </div>
+        )}
       </div>
     </div>
   );

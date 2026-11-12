@@ -44,3 +44,15 @@ export const summaries = sqliteTable("summaries", {
   mode: text("mode").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+/** RAG 검색 기록 (디버깅, 기획서 11.4). 어떤 청크가 왜 들어갔는지. 게임 상태는 바꾸지 않는다 */
+export const retrievals = sqliteTable("retrievals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  turn: integer("turn").notNull(),
+  time: integer("time").notNull(),
+  mode: text("mode").notNull(),
+  collection: text("collection").notNull(),
+  purpose: text("purpose").notNull(),
+  trace: text("trace", { mode: "json" }).notNull(),
+  createdAt: text("created_at").notNull(),
+});

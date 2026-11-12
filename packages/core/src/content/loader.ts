@@ -4,6 +4,8 @@ import { parse } from "yaml";
 import { z } from "zod";
 import { createContentSchemas, type Content } from "./schemas.ts";
 import { loadScenario, ScenarioError } from "../scenario/scenario.ts";
+import { readLoreDocs } from "../rag/lore.ts";
+import { LoreFormatError } from "../rag/chunk.ts";
 
 export class ContentError extends Error {
   override name = "ContentError";
@@ -67,6 +69,13 @@ export function loadContent(contentDir: string): Content {
   }
 
   problems.push(...checkReferences(content));
+  // lore 문서 앞머리 검사 (RAG 적재 전에 잡는다)
+  try {
+    readLoreDocs(join(contentDir, "lore"));
+  } catch (err) {
+    if (err instanceof LoreFormatError) problems.push(err.message);
+    else throw err;
+  }
   if (problems.length > 0) throw new ContentError(problems);
   return content;
 }

@@ -13,7 +13,7 @@ import {
   type GameEvent,
   type GameState,
 } from "../game/state.ts";
-import type { TranscriptEntry, TurnSummary } from "../engine/log.ts";
+import type { RetrievalRecord, TranscriptEntry, TurnSummary } from "../engine/log.ts";
 import type { GameRepository } from "./repository.ts";
 import * as schema from "./schema.ts";
 import type { Scenario } from "../scenario/schema.ts";
@@ -135,6 +135,28 @@ export class SqliteRepository implements GameRepository {
       time: r.time,
       mode: r.mode as TurnSummary["mode"],
     }));
+  }
+
+  appendRetrieval(record: RetrievalRecord): void {
+    this.#db.insert(schema.retrievals).values({ ...record, createdAt: new Date().toISOString() }).run();
+  }
+
+  retrievals(limit = 20): RetrievalRecord[] {
+    return this.#db
+      .select()
+      .from(schema.retrievals)
+      .orderBy(desc(schema.retrievals.id))
+      .limit(limit)
+      .all()
+      .reverse()
+      .map((r) => ({
+        turn: r.turn,
+        time: r.time,
+        mode: r.mode as RetrievalRecord["mode"],
+        collection: r.collection as RetrievalRecord["collection"],
+        purpose: r.purpose as RetrievalRecord["purpose"],
+        trace: r.trace,
+      }));
   }
 
   saveSnapshot(): void {

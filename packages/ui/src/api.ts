@@ -28,6 +28,25 @@ export async function runCommand(input: string): Promise<string> {
   return body.output ?? "";
 }
 
+export type RetrievalView = {
+  turn: number;
+  purpose: string;
+  trace: {
+    query: string;
+    keywordQuery: string | null;
+    candidates: number;
+    filtered: number;
+    dropped: string[];
+    hits: { id: string; score: number; vectorRank: number | null; keywordRank: number | null }[];
+  };
+};
+
+/** 개발용: 최근 RAG 검색 기록 */
+export async function fetchRetrievals(): Promise<RetrievalView[]> {
+  const res = await fetch("/api/dev/retrievals");
+  return res.ok ? ((await res.json()) as RetrievalView[]) : [];
+}
+
 export async function resetGame(): Promise<GameView> {
   const res = await fetch("/api/game/reset", { method: "POST" });
   const body = (await res.json()) as GameView & { error?: string };

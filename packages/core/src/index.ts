@@ -71,7 +71,7 @@ export {
 } from "./engine/action.ts";
 export { runAfterTimeAdvance } from "./engine/turnStart.ts";
 export { normalizePlayerInput, InvalidPlayerInputError, MAX_INPUT_LENGTH } from "./engine/input.ts";
-export type { TranscriptEntry, TurnSummary, SummaryKind, PlayMode } from "./engine/log.ts";
+export type { TranscriptEntry, TurnSummary, SummaryKind, PlayMode, RetrievalRecord } from "./engine/log.ts";
 
 export { GameWorld, RECAP_TURNS } from "./world/world.ts";
 export { WorldManager, type WorldInfo } from "./world/manager.ts";
@@ -92,3 +92,22 @@ export {
   type CommandDef,
 } from "./commands/commands.ts";
 export { gauge, gaugeLine, GAUGE_EMPTY, GAUGE_FULL } from "./commands/format.ts";
+
+export type { Embedder } from "./rag/embedder.ts";
+export { HashEmbedder } from "./rag/embedder.ts";
+export { BgeM3Embedder } from "./rag/transformersEmbedder.ts";
+export { chunkLore, parseLoreFile, LoreFormatError, MAX_CHUNK_CHARS, type LoreChunk } from "./rag/chunk.ts";
+export {
+  RagIndex,
+  canSee,
+  keywordQuery,
+  DEFAULT_SEARCH,
+  type Viewer,
+  type SearchHit,
+  type SearchOptions,
+  type SearchTrace,
+  type SourceDoc,
+  type SyncReport,
+} from "./rag/index.ts";
+export { readLoreDocs } from "./rag/lore.ts";
+export { LoreLibrary, formatLoreHits, type LoreSearch } from "./rag/library.ts";

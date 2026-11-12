@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
-import { ContentError, loadContent, WorldLockedError, WorldManager } from "@trpg/core";
+import { BgeM3Embedder, ContentError, loadContent, LoreLibrary, WorldLockedError, WorldManager } from "@trpg/core";
 import {
   createClaudeModel,
   createClaudeSummarizer,
@@ -35,7 +35,16 @@ if (!hasApiKey) console.warn(`[server] ${MISSING_KEY_MESSAGE}`);
 let session: WebSession;
 try {
   const content = loadContent(contentDir);
-  const manager = new WorldManager({ savesDir, content });
+  // RAG lore 색인: 모델 로딩·임베딩은 백그라운드로 (RAG=off면 끈다)
+  const lore =
+    process.env.RAG === "off"
+      ? null
+      : LoreLibrary.open({
+          indexPath: resolve(ROOT, `.cache/rag/${content.scenario.id}-lore.db`),
+          loreDir: resolve(contentDir, "lore"),
+          embedder: new BgeM3Embedder({ cacheDir: resolve(ROOT, ".cache/models") }),
+        });
+  const manager = new WorldManager({ savesDir, content, lore });
   session = new WebSession(
     manager,
     hasApiKey ? createClaudeModel({ model: modelId }) : missingKeyModel,

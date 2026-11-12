@@ -11,6 +11,9 @@ import { executeTool, gmToolSpecs } from "../engine/tools.ts";
 import type { ToolContext, ToolOutcome, ToolSpec } from "../engine/toolkit.ts";
 import { buildPlayerView, buildTranscriptView, type PlayerView, type TranscriptView } from "../views/player.ts";
 import { runCommand } from "../commands/commands.ts";
+import type { LoreLibrary, LoreSearch } from "../rag/library.ts";
+import type { Viewer } from "../rag/index.ts";
+import type { RetrievalRecord } from "../engine/log.ts";
 import type { TimeSegment } from "../rules/time.ts";
 
 /** 새 세션의 GM이 이어 갈 때 돌려줄 최근 요약 수 */
@@ -27,6 +30,7 @@ export class GameWorld {
   #repo: GameRepository;
   #rng: Rng;
   #release: () => void;
+  #lore: LoreLibrary | null;
   #closed = false;
 
   constructor(options: {
@@ -36,7 +40,10 @@ export class GameWorld {
     rng: Rng;
     path?: string;
     release?: () => void;
+    /** 시나리오 lore 컬렉션 (없으면 lore 검색 없이 진행) */
+    lore?: LoreLibrary | null;
   }) {
+    this.#lore = options.lore ?? null;
     this.content = options.content;
     this.mode = options.mode;
     this.path = options.path ?? null;
@@ -132,6 +139,41 @@ export class GameWorld {
   /** GM에게 보여 줄 현재 장면 (정보 필터 적용) */
   sceneForGm(): string {
     return describePlayerState(this.state(), this.content);
+  }
+
+  /** 검색하는 캐릭터 (정보 필터 기준). 플래그는 시나리오 플래그 시스템이 생기면 채운다 */
+  viewer(): Viewer {
+    const state = this.state();
+    const player = state.characters[state.playerId];
+    return { factionId: player?.factionId ?? "", flags: new Set<string>() };
+  }
+
+  /**
+   * lore 검색 (기획서 11.4). 현재 캐릭터가 볼 수 있는 청크만 돌려주고, 무엇이 왜 들어갔는지 기록한다.
+   * 기록은 게임 상태를 바꾸지 않는다.
+   */
+  async searchLore(query: string, purpose: RetrievalRecord["purpose"]): Promise<LoreSearch> {
+    if (!this.#lore) return { hits: [], trace: null, error: "lore 색인이 없다" };
+    const result = await this.#lore.search(query, this.viewer());
+    if (result.trace && !this.#closed) {
+      const state = this.state();
+      this.#repo.appendRetrieval({ turn: state.turn, time: state.time, mode: this.mode, collection: "lore", purpose, trace: result.trace });
+    }
+    return result;
+  }
+
+  /**
+   * GM 컨텍스트용 검색어: 플레이어 입력 + 현재 장면 요약(최근 턴 요약) + 함께 있는 인물 이름 (기획서 11.4)
+   */
+  contextQuery(input: string): string {
+    const state = this.state();
+    const lastTurn = this.summaries({ kind: "turn", limit: 1 })[0]?.text ?? "";
+    const present = state.scene.present.map((id) => state.characters[id]?.name ?? id).join(" ");
+    return [input, lastTurn.slice(0, 300), present].filter(Boolean).join("\n");
+  }
+
+  retrievals(limit?: number): RetrievalRecord[] {
+    return this.#repo.retrievals(limit);
   }
 
   /** 정보 명령어 (읽기 전용, 시간을 쓰지 않는다) */

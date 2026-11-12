@@ -22,6 +22,9 @@ saves/
 *.sqlite
 *.sqlite3
 
+# 임베딩 모델 캐시
+.cache/
+
 # 로그
 *.log
 npm-debug.log*

@@ -72,6 +72,7 @@ pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마
 
 - UI는 Vite 프록시로 `/api`를 서버에 넘긴다. 서버 포트는 `SERVER_PORT`로 바꾼다 (`PORT`는 쓰지 않는다)
 - GM 모델은 `GM_MODEL`(기본 `claude-opus-5-5`), 장면 요약 모델은 `SUMMARY_MODEL`(기본 `claude-haiku-5-5`)로 바꾼다
+- RAG: 첫 실행 때 bge-m3 모델(약 570MB)을 `.cache/models/`에 받고, lore 색인을 `.cache/rag/`에 만든다 (둘 다 git 제외). `RAG=off`로 끈다
 - 시나리오는 `SCENARIO`로 고른다 (기본 `post_apoc`, `content/scenarios/<id>/`)
 - 세이브는 `saves/worlds/<worldId>.db` (`SAVES_DIR`로 폴더 변경). 열려 있는 세계는 `<worldId>.db.lock`으로 잠긴다. 형식·시나리오가 맞지 않는 세이브는 `saves/archive/`로 옮겨진다
 - 게임 상태나 이벤트 형태를 바꾸면 `SAVE_SCHEMA_VERSION`을 올린다 (`packages/core/src/game/state.ts`)

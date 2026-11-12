@@ -5,3 +5,8 @@ packages:
 onlyBuiltDependencies:
   - better-sqlite3
   - esbuild
+
+# 빌드 스크립트가 필요 없는 패키지 (onnxruntime-node는 macOS 바이너리를 포함한다. postinstall은 CUDA용)
+ignoredBuiltDependencies:
+  - onnxruntime-node
+  - protobufjs

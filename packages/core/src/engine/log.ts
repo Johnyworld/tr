@@ -17,6 +17,17 @@ export type TranscriptEntry =
 export type SummaryKind = "turn" | "scene";
 export type PlayMode = "web" | "mcp";
 
+/** RAG 검색 기록 (디버깅). 무엇을 왜 넣었는지 */
+export type RetrievalRecord = {
+  turn: number;
+  time: number;
+  mode: PlayMode;
+  collection: "lore" | "memory";
+  /** gm_context: 웹 앱 GM 컨텍스트 조립, recall: GM이 직접 찾음 */
+  purpose: "gm_context" | "recall";
+  trace: unknown;
+};
+
 export type TurnSummary = {
   kind: SummaryKind;
   text: string;

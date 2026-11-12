@@ -631,3 +631,42 @@ body {
   font-size: 13px;
   cursor: pointer;
 }
+
+.side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.side .sheet {
+  overflow: visible;
+}
+
+.dev {
+  padding: 0 0 24px;
+  font-size: 13px;
+}
+
+.dev summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.dev summary h3 {
+  display: inline;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dev-hits {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  word-break: break-all;
+}
+
+@media (max-width: 760px) {
+  .dev {
+    display: none;
+  }
+}

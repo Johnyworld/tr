@@ -137,3 +137,24 @@ describe("대화 기록과 모드 전환", () => {
     expect(needsRecap([...transcript, { kind: "player", text: "x", prompt: "p" }, { kind: "gm", text: "y" }])).toBe(false);
   });
 });
+
+describe("RAG 참고 자료", () => {
+  it("lore 검색 결과를 <참고 자료>로 상태 뒤, 입력 앞에 넣는다", async () => {
+    const { GameWorld, InMemoryRepository, HashEmbedder, RagIndex, LoreLibrary, chunkLore, createSeededRng } = await import("@trpg/core");
+    const { TEST_CONTENT } = await import("@trpg/core/testing");
+    const index = RagIndex.open(":memory:", new HashEmbedder());
+    await index.sync([{ sourceId: "lore/x", hash: "h", chunks: chunkLore("lore/x", "---\ntitle: 고가도로\n---\n## 아래\n고가도로 아래에는 감염체가 모인다.") }]);
+    const repo = new InMemoryRepository();
+    const world = new GameWorld({ content: TEST_CONTENT, repo, mode: "web", rng: createSeededRng(1), lore: LoreLibrary.fromIndex(index) });
+    const { createWorldEvent } = await import("@trpg/core");
+    repo.append(createWorldEvent(TEST_CONTENT, "role_test", "w"));
+    const { model, requests } = scriptedModel([{ response: { stopReason: "end", content: [] } }]);
+    await run(world, model, "고가도로 아래를 살핀다");
+    const first = requests[0]!.messages[0]!.content[0]!;
+    const text = first.type === "text" ? first.text : "";
+    expect(text.indexOf("</상태>")).toBeLessThan(text.indexOf("<참고 자료>"));
+    expect(text.indexOf("<참고 자료>")).toBeLessThan(text.indexOf("<플레이어 입력>"));
+    expect(text).toContain("고가도로 아래에는 감염체가 모인다.");
+    expect(world.retrievals()).toHaveLength(1);
+  });
+});

@@ -30,6 +30,9 @@ export function createApp(session: WebSession) {
     return c.json({ output: session.world.runCommand(parsed.data.input) });
   });
 
+  // 개발용: 최근 RAG 검색 기록 (무엇이 왜 들어갔는지)
+  app.get("/api/dev/retrievals", (c) => c.json(session.world.retrievals(10)));
+
   app.post("/api/game/reset", (c) => {
     try {
       session.newWorld();

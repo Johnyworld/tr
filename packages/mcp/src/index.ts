@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { ContentError, loadContent, WorldManager } from "@trpg/core";
+import { BgeM3Embedder, ContentError, loadContent, LoreLibrary, WorldManager } from "@trpg/core";
 import { createMcpServer } from "./server.ts";
 
 /**
@@ -15,7 +15,17 @@ const savesDir = resolve(ROOT, process.env.SAVES_DIR ?? "saves");
 
 let app: ReturnType<typeof createMcpServer>;
 try {
-  app = createMcpServer(new WorldManager({ savesDir, content: loadContent(contentDir) }));
+  const content = loadContent(contentDir);
+  // RAG lore 색인: 연결을 늦추지 않게 백그라운드로 준비한다 (로그는 stderr)
+  const lore =
+    process.env.RAG === "off"
+      ? null
+      : LoreLibrary.open({
+          indexPath: resolve(ROOT, `.cache/rag/${content.scenario.id}-lore.db`),
+          loreDir: resolve(contentDir, "lore"),
+          embedder: new BgeM3Embedder({ cacheDir: resolve(ROOT, ".cache/models") }),
+        });
+  app = createMcpServer(new WorldManager({ savesDir, content, lore }));
 } catch (err) {
   console.error(`[mcp] ${err instanceof ContentError ? err.message : String(err)}`);
   process.exit(1);

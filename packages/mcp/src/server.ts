@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   buildGmGuide,
+  formatLoreHits,
   createTakeActionSchema,
   gmTools,
   timeSegmentSchema,
@@ -162,7 +163,16 @@ export function createMcpServer(manager: WorldManager) {
       description: "지난 일과 세계 배경을 찾는다. 현재 캐릭터가 아는 것만 돌려준다. 결과에 없는 사실을 만들어 내지 않는다.",
       inputSchema: z.strictObject({ query: z.string().min(1).max(200) }),
     },
-    (args) => withWorld((w) => text(w.runCommand(`!일지 ${args.query}`))),
+    async (args) => {
+      if (!world) return text(NO_WORLD, true);
+      const w = world;
+      const lore = await w.searchLore(args.query, "recall");
+      const sections = [
+        `## 세계 자료\n${lore.hits.length ? formatLoreHits(lore.hits) : lore.error ? `(검색할 수 없다: ${lore.error})` : "(찾은 자료가 없다)"}`,
+        `## 일지\n${w.runCommand(`!일지 ${args.query}`)}`,
+      ];
+      return text(sections.join("\n\n"));
+    },
   );
 
   server.registerTool(

@@ -23,6 +23,8 @@ pnpm install
 
 Node 22 이상, pnpm 10이 필요하다.
 
+세계 배경 검색(RAG)에 쓰는 임베딩 모델 bge-m3(약 570MB)는 처음 실행할 때 `.cache/models/`에 내려받는다. 받지 않으려면 `.env`에 `RAG=off`.
+
 ## 웹 앱 모드
 
 ```bash

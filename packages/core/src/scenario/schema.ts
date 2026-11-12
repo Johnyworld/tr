@@ -128,6 +128,16 @@ export const scenarioFileSchema = z
         }),
       )
       .default([]),
+    /** 상대를 쓰러뜨리기 (기획서 7.5): 부상이 이 단계 이상이면 무력화 (더 맞서지 못하고 소지품을 뒤질 수 있다) */
+    combat: z.strictObject({ incapacitated_at: id }).optional(),
+    /** 이름 재료 (기획서 7.5): 성과 성별별 이름. 엑스트라가 이름을 얻을 때, 이름 없이 만든 캐릭터에 쓴다 */
+    names: z
+      .strictObject({
+        surnames: z.array(z.string().min(1)).min(1),
+        /** 성별 id → 이름 목록. 성별이 없으면 모두 섞는다 */
+        given: z.record(id, z.array(z.string().min(1)).min(1)),
+      })
+      .optional(),
     /** 매력의 수동 효과 (기획서 4.2): 처음 만난 NPC의 호감 + (능력 ÷ first_impression_per, 내림), 능력이 bonus_at 이상이면 호감이 오를 때 +1 */
     charm: z.strictObject({ ability: id, first_impression_per: z.number().int().positive(), bonus_at: z.number().int() }).optional(),
     condition_tracks: z

@@ -41,6 +41,8 @@ export const TEST_SCENARIO: Scenario = {
   move_roles: { notice: "sense_danger", stealth: "stealth" },
   ranges: { ability: { min: -1, max: 3 }, skill: { min: -1, max: 2 }, cap: 4 },
   renamed: { abilities: {} },
+  names: { surnames: ["김", "이"], given: { male: ["민준", "도윤"], female: ["서연", "지아"] } },
+  combat: { incapacitated_at: "serious" },
   traits: [
     { id: "quick", label: "빨리 배움", kind: "positive", cost: 2, description: "경험치 ×1.5", visible: false, opposites: ["slow"], selectable: true, effects: { xp: 1.5 } },
     { id: "slow", label: "느린 학습", kind: "negative", cost: 2, description: "경험치 ×0.75", visible: false, opposites: ["quick"], selectable: true, effects: { xp: 0.75 } },
@@ -250,6 +252,23 @@ export const TEST_SCENARIO: Scenario = {
 
 export const TEST_CONTENT: Content = {
   scenario: TEST_SCENARIO,
+  extras: {
+    test_sentry: {
+      id: "test_sentry",
+      label: "C 보초 — 폭탄",
+      faction: "faction_c",
+      rank: "grunt",
+      gender: "male",
+      age: [20, 30],
+      looks: ["붉은 완장을 찬 마른 보초"],
+      stats: { strength: [1, 1] },
+      skills: { fight: 1 },
+      traits: ["coward"],
+      trait_count: 1,
+      inventory: [{ item: "bomb", chance: 1, quantity: 1 }, { item: "rope", chance: 0, quantity: 1 }],
+      values: { discipline: 1 },
+    },
+  },
   items: {
     kitchen_knife: { id: "kitchen_knife", name: "부엌칼" },
     water_bottle: { id: "water_bottle", name: "물병" },

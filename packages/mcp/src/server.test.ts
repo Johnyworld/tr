@@ -326,3 +326,22 @@ describe("세션마다 다른 상태 화면 주소", () => {
     expect(out.content[0]!.text).toContain("이 세션의 상태 화면: http://127.0.0.1:8792");
   });
 });
+
+describe("엑스트라 (실제 콘텐츠)", () => {
+  it("엽총 보초를 만들어 덮치고, 쓰러뜨리면 엽총을 줍는다. 이름을 물으면 이름이 생긴다", async () => {
+    const { call, app } = await connect(REAL_CONTENT, 0, () => 0.99);
+    await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: { strength: 2, agility: 1 }, portrait: null } });
+    const spawned = await call("spawn_extra", { template: "c_sentry_shotgun", label: "엽총 든 보초" });
+    expect(spawned.text).toContain("엽총(shotgun)");
+    const hit = await call(
+      "take_action",
+      action({ intent: "보초를 덮친다", target: "ex_1", check: { move: "fight", stat: "strength", difficulty: "normal", harm_on_failure: "light", harm_cause: "몸싸움", target_harm: "heavy" } }),
+    );
+    expect(hit.text).toContain("무력화");
+    expect((await call("transfer_item", { from: "ex_1", to: "player", item_id: "shotgun", quantity: 1 })).isError).toBe(false);
+    expect(app.world!.state().characters.player!.inventory.shotgun).toBe(1);
+    const named = await call("learn_name", { target: "ex_1" });
+    expect(named.isError).toBe(false);
+    expect(app.world!.state().characters.ex_1!.name).not.toBe("엽총 든 보초");
+  });
+});

@@ -1,4 +1,5 @@
 import { josa, sentence } from "../text.ts";
+import { changeCondition, isIncapacitated } from "./body.ts";
 import { z } from "zod";
 import { CHECK_OUTCOME_LABELS, difficultySchema, type CheckOutcome } from "../rules/check.ts";
 import { HARM_LABELS, type HarmSeverity } from "../rules/harm.ts";
@@ -63,6 +64,13 @@ export function createTakeActionSchema(s: Scenario) {
           .enum(["none", "light", "heavy"])
           .describe("판정 전에 선언하는 몸의 위험. 실패·대가 있는 성공이면 시스템이 적용한다. none은 몸을 다칠 위험이 없는 행동"),
         harm_cause: z.string().max(120).describe("다친다면 그 원인 한 문장 (위험이 none이면 빈 문자열)"),
+        target_harm: z
+          .enum(["none", "light", "heavy"])
+          .default("none")
+          .describe(
+            "target(장면의 인물)을 다치게 하려는 공격이면 판정 전에 선언하는 상대의 피해. 성공이면 선언한 만큼, 대가 있는 성공이면 1단계, 실패면 없음. " +
+              "상대가 중상 이상이면 무력화되어 소지품을 뒤질 수 있다. 공격이 아니면 none",
+          ),
         infected_source: z
           .boolean()
           .default(false)
@@ -228,6 +236,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       OUTCOME_GUIDE[roll.outcome],
     );
     if (roll.growthNote) lines.push(roll.growthNote);
+    // 상대를 다치게 한다 (기획서 7.5). 사망은 부상 트랙으로만 (원칙 3)
+    if (input.check.target_harm !== "none" && input.target) {
+      const hit = hitTarget(ctx, input.target, input.check.target_harm, roll.outcome, input.intent);
+      lines.push(...hit.lines);
+      displays.push(...hit.displays);
+    }
     if (roll.outcome !== "success" && input.check.harm_on_failure !== "none") {
       const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent);
       lines.push(harm.text);
@@ -343,6 +357,33 @@ function bodyLines(displays: readonly ToolDisplayEvent[]): string[] {
         ? [`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.cause}). 몸의 변화를 서술에 반영하라.${d.fatal ? " 캐릭터가 사망했다. 죽음을 담담하게 서술하고 write_epitaph로 묘비명을 남긴다." : ""}`]
         : [],
   );
+}
+
+/** 상대에게 피해: 성공 = 선언한 만큼(light 1, heavy 2), 대가 있는 성공 = 1, 실패 = 0. 무력화되면 지닌 것을 알린다 */
+function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heavy", outcome: CheckOutcome, cause: string) {
+  const state = ctx.store.getState();
+  const target = state.characters[targetId];
+  const lines: string[] = [];
+  const displays: ToolDisplayEvent[] = [];
+  if (!target || targetId === state.playerId || !state.scene.present.includes(targetId)) {
+    return { lines: [`상대 피해 없음: ${targetId}는 장면에 있는 인물이 아니다.`], displays };
+  }
+  if (target.dead) return { lines: [`${josa(target.name, "은/는")} 이미 죽었다.`], displays };
+  const steps = outcome === "success" ? (severity === "heavy" ? 2 : 1) : outcome === "partial" ? 1 : 0;
+  if (steps === 0) return { lines: [`${josa(target.name, "은/는")} 다치지 않았다.`], displays };
+  const change = changeCondition(ctx, targetId, ctx.content.scenario.harm_track, steps, "attack", cause);
+  if (change?.line) lines.push(change.line.replace(" 캐릭터가 사망했다. 죽음을 담담하게 서술하고 write_epitaph로 묘비명을 남긴다.", ""));
+  if (change?.display) displays.push(change.display);
+  const after = ctx.store.getState().characters[targetId]!;
+  if (after.dead) lines.push(`${josa(after.name, "이/가")} 죽었다. 죽음을 서술에 반영하라.`);
+  if (isIncapacitated(ctx.content, after)) {
+    const items = Object.entries(after.inventory).map(([i, q]) => `${ctx.content.items[i]?.name ?? i}(${i}) ×${q}`);
+    lines.push(
+      `${josa(after.name, "은/는")} ${after.dead ? "쓰러져 움직이지 않는다" : "무력화됐다 (더 맞서지 못한다)"}. ` +
+        `뒤지면 나오는 것: ${items.join(", ") || "없음"}. 가져가려면 transfer_item (판정 없이).`,
+    );
+  }
+  return { lines, displays };
 }
 
 function lastCheckId(ctx: ToolContext): string {

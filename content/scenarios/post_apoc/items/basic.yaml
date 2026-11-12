@@ -50,3 +50,12 @@
 - id: fever_reducer
   name: 해열제
   description: 유통기한이 지난 해열제 몇 알. 앓는 몸을 조금 낫게 한다 (질병 1단계).
+- id: shotgun
+  name: 엽총
+  description: 개머리판에 테이프를 감은 낡은 엽총. 탄이 몇 발 남지 않았다.
+- id: crowbar
+  name: 쇠지렛대
+  description: 끝이 구부러진 쇠지렛대. 문을 따거나 휘두르기 좋다.
+- id: dry_ration
+  name: 마른 비상식량
+  description: 비닐에 싸인 딱딱한 건빵 몇 조각. 먹으면 허기가 조금 가신다.

@@ -4,7 +4,7 @@ import { beliefAccuracySchema, beliefSourceSchema } from "../game/belief.ts";
 import { deedTagSchema, privacySchema, RELATION_AXES } from "../game/reputation.ts";
 import { createStatsSchema } from "../game/character.ts";
 import { idEnum, type Scenario } from "../scenario/schema.ts";
-import { moveIds, rankIds } from "../scenario/scenario.ts";
+import { moveIds, rankIds, statIds } from "../scenario/scenario.ts";
 
 /**
  * 콘텐츠 YAML 스키마. 키는 YAML과 같은 snake_case를 쓴다.
@@ -296,7 +296,35 @@ export function createContentSchemas(s: Scenario) {
     choices: z.array(storyletChoice).min(1),
   });
 
-  return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location, storylet };
+  /**
+   * 엑스트라 틀 (기획서 7.5): 이름 없는 인물이 주인공과 엮이면 GM이 이 틀을 골라 캐릭터로 만든다.
+   * 능력·소지품·트레잇은 코드가 틀에서 굴린다 (GM은 물건을 지어내지 않는다)
+   */
+  const extra = z.strictObject({
+    id: contentIdSchema,
+    /** GM이 고를 때 보는 이름 (예: 붉은연합 보초 — 엽총) */
+    label: z.string().min(1),
+    /** 소속. 없으면 떠돌이 */
+    faction: contentIdSchema.nullable().default(null),
+    rank: idEnum(rankIds(s)),
+    /** 성별 id. 없으면 무작위 */
+    gender: (s.creation ? idEnum(s.creation.genders.map((g) => g.id)) : z.string()).nullable().default(null),
+    age: z.tuple([z.number().int().positive(), z.number().int().positive()]).default([18, 50]),
+    /** 겉모습 문구 후보 (하나를 고른다) */
+    looks: z.array(z.string().min(1)).min(1),
+    /** 능력별 [최소, 최대]. 없는 능력은 0 */
+    stats: z.partialRecord(idEnum(statIds(s)), z.tuple([z.number().int(), z.number().int()])).default({}),
+    skills: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(s.ranges.skill.min).max(s.ranges.skill.max)).default({}),
+    /** 트레잇 후보에서 trait_count개 */
+    traits: z.array(idEnum(s.traits.map((t) => t.id))).default([]),
+    trait_count: z.number().int().min(0).default(1),
+    /** 소지품 표: 아이템별 확률 */
+    inventory: z.array(z.strictObject({ item: contentIdSchema, chance: z.number().min(0).max(1).default(1), quantity: z.number().int().positive().default(1) })).default([]),
+    /** 행적을 보고 반응하는 가치관 */
+    values: z.record(contentIdSchema, valueScoreSchema).default({}),
+  });
+
+  return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location, storylet, extra };
 }
 
 type ContentSchemas = ReturnType<typeof createContentSchemas>;
@@ -308,6 +336,7 @@ export type MissionRequirement = MissionContent["requirements"][number];
 export type FactionContent = z.infer<ContentSchemas["faction"]>;
 export type LocationContent = z.infer<ContentSchemas["location"]>;
 export type StoryletContent = z.infer<ContentSchemas["storylet"]>;
+export type ExtraContent = z.infer<ContentSchemas["extra"]>;
 export type StoryletChoice = StoryletContent["choices"][number];
 export type StoryletEffect = StoryletChoice["effects"][number];
 
@@ -322,4 +351,6 @@ export type Content = {
   factions: Record<string, FactionContent>;
   locations: Record<string, LocationContent>;
   storylets: Record<string, StoryletContent>;
+  /** 엑스트라 틀 (기획서 7.5) */
+  extras: Record<string, ExtraContent>;
 };

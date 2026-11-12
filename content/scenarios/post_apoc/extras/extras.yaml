@@ -1,0 +1,106 @@
+# 엑스트라 틀 (기획서 7.5, *임시*): 이름 없는 인물이 주인공과 엮이면 GM이 하나를 골라 캐릭터로 만든다
+# 소지품·능력·트레잇은 코드가 여기서 굴린다. GM은 물건을 지어내지 않는다
+- id: c_sentry_shotgun
+  label: 붉은연합 보초 — 엽총
+  faction: faction_c
+  rank: grunt
+  age: [19, 40]
+  looks:
+    - 왼팔에 붉은 완장을 찬 마른 보초. 엽총을 어깨에 걸쳤다
+    - 눈 밑이 검은 보초. 엽총 개머리판을 땅에 짚고 졸음을 참고 있다
+  stats: { strength: [0, 1], agility: [0, 1], vitality: [0, 1], senses: [-1, 1], nerve: [-1, 1] }
+  skills: { shoot: 1, fight: 0 }
+  traits: [coward, dull_senses, cynical, timid, lazy, blunt]
+  trait_count: 2
+  inventory:
+    - { item: shotgun }
+    - { item: c_armband }
+    - { item: cigarettes, chance: 0.5 }
+    - { item: dry_ration, chance: 0.4 }
+  values: { discipline: 1, self_interest: 1 }
+
+- id: c_sentry_rifle
+  label: 붉은연합 보초 — 소총
+  faction: faction_c
+  rank: grunt
+  age: [19, 40]
+  looks:
+    - 붉은 완장을 찬 보초. 낡은 소총을 가슴에 비껴 들었다
+    - 철모를 눌러쓴 보초. 소총 멜빵을 자꾸 고쳐 맨다
+  stats: { strength: [0, 1], agility: [0, 1], senses: [0, 1], nerve: [-1, 1] }
+  skills: { shoot: 1, sense_danger: 1 }
+  traits: [eagle_eye, coward, cynical, blunt, cautious]
+  trait_count: 2
+  inventory:
+    - { item: old_rifle }
+    - { item: c_armband }
+    - { item: cigarettes, chance: 0.4 }
+  values: { discipline: 1 }
+
+- id: c_raider
+  label: 붉은연합 약탈조원 — 쇠지렛대
+  faction: faction_c
+  rank: grunt
+  age: [18, 35]
+  looks:
+    - 얼굴에 검댕을 칠한 약탈조원. 쇠지렛대를 들었다
+  stats: { strength: [1, 2], agility: [0, 1], nerve: [0, 1] }
+  skills: { fight: 1, intimidate: 1 }
+  traits: [hot_tempered, ruthless, greedy, ugly]
+  trait_count: 2
+  inventory:
+    - { item: crowbar }
+    - { item: c_armband }
+    - { item: canned_food, chance: 0.3 }
+  values: { self_interest: 2, mercy: -1 }
+
+- id: refugee
+  label: 떠돌이 피난민
+  rank: loner
+  age: [15, 65]
+  looks:
+    - 해진 담요를 망토처럼 두른 피난민. 눈이 퀭하다
+    - 아이 신발을 목에 건 피난민. 말이 없다
+  stats: { vitality: [-1, 0], senses: [0, 1] }
+  skills: { survival: 1, stealth: 1 }
+  traits: [timid, guarded, warm, frail, light_eater]
+  trait_count: 2
+  inventory:
+    - { item: water_bottle, chance: 0.6 }
+    - { item: blanket, chance: 0.4 }
+    - { item: dry_ration, chance: 0.3 }
+  values: { mercy: 1 }
+
+- id: e_porter
+  label: 나루상단 짐꾼
+  faction: faction_e
+  rank: outsider
+  age: [17, 50]
+  looks:
+    - 큰 배낭을 진 짐꾼. 무릎에 천을 감았다
+    - 구멍 난 동전 통행패를 목에 건 짐꾼
+  stats: { strength: [1, 2], vitality: [0, 1] }
+  skills: { persuade: 1, survival: 1 }
+  traits: [genial, talkative, calculating, big_eater, attractive]
+  trait_count: 2
+  inventory:
+    - { item: trade_token }
+    - { item: canned_food, chance: 0.5 }
+    - { item: cigarettes, chance: 0.5 }
+  values: { self_interest: 1, honesty: 1 }
+
+- id: b_guard
+  label: 버들마을 경비병
+  faction: faction_b
+  rank: grunt
+  age: [18, 45]
+  looks:
+    - 아파트 단지 정문을 지키는 경비병. 낡은 방한복을 입었다
+  stats: { strength: [0, 1], senses: [0, 1], nerve: [0, 1] }
+  skills: { shoot: 0, sense_danger: 1 }
+  traits: [guarded, weary, protective, cautious]
+  trait_count: 2
+  inventory:
+    - { item: old_rifle, chance: 0.5 }
+    - { item: coat, chance: 0.5 }
+  values: { loyalty: 1, discipline: 1 }

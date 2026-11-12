@@ -1,4 +1,6 @@
 import type { GameState } from "../game/state.ts";
+import type { Content } from "../content/schemas.ts";
+import type { Character } from "../game/character.ts";
 import { bodyTraits } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { HarmSeverity } from "../rules/harm.ts";
@@ -65,6 +67,15 @@ function levelIndex(ctx: ToolContext, state: GameState, characterId: string, tra
 function shownIndex(ctx: ToolContext, state: GameState, characterId: string, trackId: string) {
   const track = trackOf(ctx.content.scenario, trackId);
   return track.levels.indexOf(shownLevel(track, state.characters[characterId]?.conditions[trackId] ?? track.levels[0]!.id));
+}
+
+/** 무력화됐는지 (부상이 scenario.combat.incapacitated_at 이상이거나 사망). 규칙이 없으면 사망만 */
+export function isIncapacitated(content: Content, c: Character): boolean {
+  if (c.dead) return true;
+  const at = content.scenario.combat?.incapacitated_at;
+  if (!at) return false;
+  const track = harmTrack(content.scenario);
+  return track.levels.findIndex((l) => l.id === c.conditions[track.id]) >= track.levels.findIndex((l) => l.id === at);
 }
 
 /** 소모품을 쓴다 (구급상자, 항생제, 통조림 등). 나아질 데가 없으면 쓰지 않는다 */

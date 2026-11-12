@@ -1,4 +1,5 @@
 import { weatherNow } from "../sim/weather.ts";
+import { valuesOf } from "./extras.ts";
 import { alertnessFactor, noticedFactor, rumorFactor, traitSkillMod } from "./traits.ts";
 import { withCharm } from "./charm.ts";
 import { josa, sentence } from "../text.ts";
@@ -45,8 +46,8 @@ function noticeMove(ctx: ToolContext) {
 
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
 function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource) {
-  const npc = ctx.content.npcs[npcId];
-  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(npc?.values ?? {}, deed.tags, deed.severity, source));
+  const values = valuesOf(ctx.content, ctx.store.getState(), npcId);
+  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, deed.tags, deed.severity, source));
   ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
 }
 

@@ -14,7 +14,7 @@ export class ContentError extends Error {
   }
 }
 
-type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions" | "factions" | "locations" | "storylets";
+type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions" | "factions" | "locations" | "storylets" | "extras";
 
 /**
  * 시나리오 팩 폴더(content/scenarios/<id>/)를 읽어 검증한다.
@@ -40,9 +40,10 @@ export function loadContent(contentDir: string): Content {
     factions: schemas.faction,
     locations: schemas.location,
     storylets: schemas.storylet,
+    extras: schemas.extra,
   };
   const problems: string[] = [];
-  const content: Content = { scenario, items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {}, factions: {}, locations: {}, storylets: {} };
+  const content: Content = { scenario, items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {}, factions: {}, locations: {}, storylets: {}, extras: {} };
 
   for (const [kind, schema] of Object.entries(KINDS) as [Kind, z.ZodType][]) {
     const dir = join(contentDir, kind);
@@ -146,6 +147,11 @@ function checkReferences(content: Content): string[] {
     if (m.advances && !plans.includes(m.advances.clock)) problems.push(`missions.${m.id}.advances: 알 수 없는 세력 클락 ${m.advances.clock}`);
   }
   if (new Set(plans).size !== plans.length) problems.push("factions: 세력 클락(plans) id가 겹친다");
+  for (const ex of Object.values(content.extras)) {
+    if (ex.faction) factionRef(`extras.${ex.id}`, ex.faction);
+    for (const i of ex.inventory) if (!content.items[i.item]) problems.push(`extras.${ex.id}: 알 수 없는 아이템 ${i.item}`);
+    if (ex.age[0] > ex.age[1]) problems.push(`extras.${ex.id}: 나이 범위가 거꾸로다`);
+  }
   for (const npc of Object.values(content.npcs)) {
     factionRef(`npcs.${npc.id}`, npc.faction);
     if (npc.zone && Object.keys(content.locations).length && !content.locations[npc.zone]) problems.push(`npcs.${npc.id}: 알 수 없는 구역 ${npc.zone}`);

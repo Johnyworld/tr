@@ -1,4 +1,6 @@
 import { josa } from "../text.ts";
+import { isIncapacitated } from "./body.ts";
+import { EXTRA_TOOLS } from "./extras.ts";
 import { firstImpression } from "./charm.ts";
 import { z } from "zod";
 import {
@@ -69,7 +71,10 @@ const transferItem = defineTool({
         (c) => c.turn === state.turn && c.actorId === state.playerId && c.target === input.from && c.outcome !== "miss",
       );
       const trust = state.relations[input.from]?.[state.playerId]?.trust ?? 0;
-      if (!earned && trust < GIFT_TRUST) {
+      // 무력화된(중상 이상·사망) 인물은 판정 없이 뒤진다 (기획서 7.5)
+      const holderChar = state.characters[input.from];
+      const helpless = holderChar ? isIncapacitated(content, holderChar) : false;
+      if (!earned && trust < GIFT_TRUST && !helpless) {
         return {
           ok: false,
           error:
@@ -111,7 +116,7 @@ const npcPresence = defineTool({
   description:
     "이름 있는 인물(NPC)이 플레이어와 같은 장면에 들어오거나(enter) 떠날 때(leave) 알린다. " +
     "장면에 있는 인물만 대화하고 물건을 주고받을 수 있으며, 들어온 인물의 성격·말투·아는 것이 다음 상태에 나타난다. " +
-    "이름 없는 엑스트라(지나가는 보초 등)에는 쓰지 않는다. 목록에 없는 이름 있는 인물을 지어내지 않는다.",
+    "엑스트라(ex_N)도 다시 등장시키거나 내보낼 수 있다. 처음 엮이는 이름 없는 인물은 spawn_extra로 만든다. 목록에 없는 이름 있는 인물을 지어내지 않는다.",
   schema: z.strictObject({
     npc_id: z.string().describe("인물 id (상태의 '알고 있는 인물'이나 '함께 있는 인물'에 표시된 것)"),
     action: z.enum(["enter", "leave"]),
@@ -121,26 +126,30 @@ const npcPresence = defineTool({
     const state = store.getState();
     const npc = content.npcs[input.npc_id];
     const character = state.characters[input.npc_id];
-    if (!npc || !character || input.npc_id === state.playerId) {
-      return { ok: false, error: `알 수 없는 인물: ${input.npc_id}. 이름 없는 인물은 서술로만 다룬다.` };
+    // 엑스트라(이름 없이 만든 인물)도 나가고 들어올 수 있다. 사라진 엑스트라는 안 된다
+    const extra = character?.extra && !character.extra.gone ? character.extra : null;
+    if ((!npc && !extra) || !character || input.npc_id === state.playerId) {
+      return { ok: false, error: `알 수 없는 인물: ${input.npc_id}. 이름 없는 인물이 엮이면 spawn_extra로 만든다.` };
     }
-    const present = state.scene.present.includes(npc.id);
+    const name = character.name;
+    const present = state.scene.present.includes(character.id);
     if (input.action === "enter") {
-      if (present) return { ok: false, error: `${josa(npc.name, "은/는")} 이미 장면에 있습니다.` };
-      if (character.dead) return { ok: false, error: `${josa(npc.name, "은/는")} 사망했습니다.` };
-      store.append({ type: "npc_entered", npcId: npc.id });
-      firstImpression(ctx, npc.id);
+      if (present) return { ok: false, error: `${josa(name, "은/는")} 이미 장면에 있습니다.` };
+      if (character.dead) return { ok: false, error: `${josa(name, "은/는")} 사망했습니다.` };
+      store.append({ type: "npc_entered", npcId: character.id });
+      firstImpression(ctx, character.id);
     } else {
-      if (!present) return { ok: false, error: `${josa(npc.name, "은/는")} 장면에 없습니다.` };
-      store.append({ type: "npc_left", npcId: npc.id });
+      if (!present) return { ok: false, error: `${josa(name, "은/는")} 장면에 없습니다.` };
+      store.append({ type: "npc_left", npcId: character.id });
     }
+    const look = npc ? `${npc.look} 말투: ${npc.voice.style}` : extra!.look;
     return {
       ok: true,
       resultText:
         input.action === "enter"
-          ? `${josa(npc.name, "이/가")} 장면에 들어왔다. 이 인물의 프로필은 다음 턴 상태에 나타난다. 지금은 외모와 말투만 반영해 서술하라: ${npc.look} 말투: ${npc.voice.style}`
-          : `${josa(npc.name, "이/가")} 장면을 떠났다.`,
-      display: { type: "presence", npcName: npc.name, action: input.action },
+          ? `${josa(name, "이/가")} 장면에 들어왔다. 이 인물의 프로필은 다음 턴 상태에 나타난다. 지금은 외모와 말투만 반영해 서술하라: ${look}`
+          : `${josa(name, "이/가")} 장면을 떠났다.`,
+      display: { type: "presence", npcName: name, action: input.action },
     };
   },
 });
@@ -218,6 +227,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...REPUTATION_TOOLS,
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,
+      ...EXTRA_TOOLS,
     ] as readonly AnyTool[];
     toolCache.set(s, tools);
   }

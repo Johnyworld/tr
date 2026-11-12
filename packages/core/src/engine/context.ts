@@ -1,4 +1,6 @@
 import { weatherNow } from "../sim/weather.ts";
+import { describeExtraTemplates } from "./extras.ts";
+import { isIncapacitated } from "./body.ts";
 import { attractionOf, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
 import {
@@ -82,6 +84,8 @@ export function describePlayerState(state: GameState, content: Content): string 
     describePresentNpcs(state, content, player),
     describeKnownPeople(state, content),
     describeZonePeople(state, content),
+    describeZoneExtras(state, content),
+    describeExtraTemplates(content),
     describeBeliefs(state),
   ];
   return sections.filter(Boolean).join("\n\n");
@@ -113,9 +117,30 @@ function describePresentNpcs(state: GameState, content: Content, player: Charact
   const cards = state.scene.present.map((id) => {
     const npc = content.npcs[id];
     const character = state.characters[id];
-    return npc && character ? describeNpcCard(state, content, npc, character, player) : `- ${id}`;
+    if (npc && character) return describeNpcCard(state, content, npc, character, player);
+    if (character?.extra) return describeExtraCard(state, content, character, player);
+    return `- ${id}`;
   });
   return `함께 있는 인물:\n${cards.join("\n\n")}`;
+}
+
+/** 엑스트라의 연기용 카드: 호칭, 겉모습, 상태, 지닌 것, 트레잇, 이름을 아는지 */
+function describeExtraCard(state: GameState, content: Content, c: Character, player: Character): string {
+  const ex = c.extra!;
+  const relation = state.relations[c.id]?.[player.id] ?? NEUTRAL_RELATION;
+  const attitude = RELATION_AXES.map((axis) => `${RELATION_AXIS_LABELS[axis]} ${relationLabel(relation[axis])}`).join(", ");
+  const template = content.extras[ex.template];
+  return [
+    `### ${ex.named ? `${c.name} (${ex.label})` : `${ex.label} (이름 모름)`} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankLabel(content.scenario, c.rank)}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
+    `겉모습: ${ex.look}`,
+    `상태: ${describeConditions(content.scenario, c)} / 지닌 것: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
+    `[GM 전용: 연기에만 쓴다] 이름 없는 인물 (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
+    `트레잇: ${traitLabels(content, c, { acting: true }).join(", ") || "-"}`,
+    ...attractionNotes(content, c, player),
+    ex.named ? "" : "주인공이 이름을 묻거나 사이가 가까워지면(호감·신뢰 2 이상) learn_name으로 이름을 얻는다. 이름을 지어내지 않는다.",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** 장면에 있는 NPC의 연기용 카드. secret, doesnt_know는 절대 넣지 않는다 */
@@ -212,6 +237,18 @@ export function describeZonePeople(state: GameState, content: Content): string {
   if (strangers.length === 0) return "";
   const lines = strangers.map((npc) => `- (${npc.id}) 이름 모름: ${npc.look}`);
   return `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나기 전에는 이름을 모른다):\n${lines.join("\n")}`;
+}
+
+/** 이 구역에 머무는 엑스트라 (장면에 없지만 다시 마주칠 수 있다. npc_presence로 다시 등장시킨다) */
+function describeZoneExtras(state: GameState, content: Content): string {
+  const zone = state.playerZone;
+  if (!zone) return "";
+  const list = Object.values(state.characters).filter(
+    (c) => c.extra && !c.extra.gone && c.extra.zone === zone && !state.scene.present.includes(c.id),
+  );
+  if (list.length === 0) return "";
+  const lines = list.map((c) => `- (${c.id}) ${c.extra!.named ? `${c.name} (${c.extra!.label})` : c.extra!.label}${c.dead ? " · 죽음" : ""}: ${c.extra!.look}`);
+  return `이 구역에서 전에 엮인 이름 없는 인물 (다시 등장시키려면 npc_presence):\n${lines.join("\n")}`;
 }
 
 /** 플레이어의 Belief. 출처는 넣고 진짜 정확도는 넣지 않는다 */

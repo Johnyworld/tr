@@ -54,6 +54,22 @@ export function createCharacterSchema(s: Scenario) {
     age: z.number().int().positive().nullable().default(null),
     /** 성별 id (시나리오 creation.genders). 정하지 않았으면 null */
     gender: z.string().nullable().default(null),
+    /**
+     * 엑스트라면 그 정보 (기획서 7.5): 틀, 호칭, 겉모습, 머무는 구역, 마지막으로 엮인 때, 이름을 얻었는지, 사라졌는지.
+     * 이름 있는 콘텐츠 NPC와 플레이어는 null
+     */
+    extra: z
+      .strictObject({
+        template: z.string(),
+        label: z.string(),
+        look: z.string(),
+        zone: z.string().nullable(),
+        lastSeenAt: z.number().int(),
+        named: z.boolean().default(false),
+        gone: z.boolean().default(false),
+      })
+      .nullable()
+      .default(null),
     /** 트레잇 id (기획서 4.6). 이전 세이브는 빈 목록 (NPC는 콘텐츠의 것을 쓴다) */
     traits: z.array(z.string()).default([]),
     /** 초상화 id (화면에서 그린다). 없으면 null */

@@ -24,7 +24,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * 필드 추가는 기본값(.default)을 주면 이전 세이브와 호환되므로 올리지 않는다.
  * - 2: 시나리오 팩 분리. 능력치 ID 변경, injury → conditions, scenarioId
  */
-export const SAVE_SCHEMA_VERSION = 5;
+export const SAVE_SCHEMA_VERSION = 6;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 (1은 시나리오 팩 분리 전이라 읽지 않는다) */
 export const MIN_READABLE_SAVE_VERSION = 2;
 
@@ -165,6 +165,8 @@ export function createGameSchemas(s: Scenario) {
     }),
     checks: z.record(z.string(), checkRecord),
     nextCheckNo: z.number().int().positive(),
+    /** 다음 엑스트라 번호 (ex_N) */
+    nextExtraNo: z.number().int().positive().default(1),
     /** 오늘 판정으로 얻은 경험치 (하루 상한, 기획서 4.2) */
     xpToday: z.strictObject({ day: z.number().int(), amount: z.number().int() }).default({ day: 0, amount: 0 }),
     /** 캐릭터별 Belief State */
@@ -351,6 +353,12 @@ export function createGameSchemas(s: Scenario) {
       source: z.enum(["check", "merit"]),
       level: z.number().int().nonnegative(),
     }),
+    /** 이름 없는 인물이 주인공과 엮여 캐릭터가 됐다 (기획서 7.5). 장면에 들어온다 */
+    z.strictObject({ type: z.literal("extra_spawned"), character }),
+    /** 엑스트라가 이름을 얻었다 (주인공이 이름을 알게 됐다). 이제 사라지지 않는다 */
+    z.strictObject({ type: z.literal("extra_named"), characterId: z.string(), name: z.string().min(1) }),
+    /** 이름을 얻지 못한 엑스트라가 오래 엮이지 않아 사라졌다 */
+    z.strictObject({ type: z.literal("extra_gone"), characterId: z.string() }),
     /** 레벨업으로 스킬 하나를 올렸다 */
     z.strictObject({ type: z.literal("skill_learned"), characterId: z.string(), skill: z.string(), from: z.number().int(), to: z.number().int() }),
     z.strictObject({ type: z.literal("item_granted"), to: z.string(), itemId: z.string(), quantity: z.number().int().positive() }),
@@ -472,6 +480,7 @@ export const EMPTY_STATE: GameState = {
   scene: { items: {}, present: [] },
   checks: {},
   nextCheckNo: 1,
+  nextExtraNo: 1,
   xpToday: { day: 0, amount: 0 },
   beliefs: {},
   known: {},
@@ -545,17 +554,23 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (npc.id === state.playerId) throw new Error("플레이어는 NPC로 등장할 수 없습니다.");
       if (npc.dead) throw new Error(`사망한 인물: ${npc.id}`);
       if (next.scene.present.includes(npc.id)) throw new Error(`이미 장면에 있음: ${npc.id}`);
+      if (npc.extra?.gone) throw new Error(`사라진 인물: ${npc.id}`);
       next.scene.present.push(npc.id);
       perceive(next, npc.id);
-      // 만난 인물은 알게 된다
+      if (npc.extra) npc.extra.lastSeenAt = state.time;
+      // 만난 인물은 알게 된다 (이름 없는 엑스트라는 이름을 얻을 때)
       const known = (next.known[state.playerId] ??= []);
-      if (!known.includes(npc.id)) known.push(npc.id);
+      if (!known.includes(npc.id) && (!npc.extra || npc.extra.named)) known.push(npc.id);
       break;
     }
     case "npc_left":
       if (!next.scene.present.includes(event.npcId)) throw new Error(`장면에 없음: ${event.npcId}`);
       perceive(next, event.npcId);
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      {
+        const c = next.characters[event.npcId];
+        if (c?.extra) c.extra.lastSeenAt = state.time;
+      }
       break;
     case "belief_added":
       mustGet(next.characters, event.characterId, "캐릭터");
@@ -684,7 +699,11 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
       // 장면의 인물은 따라오지 않는다 (같이 가려면 도착한 뒤 다시 등장시킨다). 처음 자리를 정할 때(from 없음)는 그대로
       if (event.from !== null) {
-        for (const id of next.scene.present) perceive(next, id);
+        for (const id of next.scene.present) {
+          perceive(next, id);
+          const c = next.characters[id];
+          if (c?.extra) c.extra.lastSeenAt = state.time;
+        }
         next.scene.present = [];
       }
       next.playerZone = event.to;
@@ -780,6 +799,32 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         const day = dayOf(state.time);
         next.xpToday = { day, amount: (state.xpToday.day === day ? state.xpToday.amount : 0) + event.amount };
       }
+      break;
+    }
+    case "extra_spawned": {
+      const c = event.character;
+      if (next.characters[c.id]) throw new Error(`캐릭터 id 중복: ${c.id}`);
+      if (!c.extra) throw new Error("엑스트라 정보가 없습니다.");
+      next.characters[c.id] = structuredClone(c);
+      next.nextExtraNo += 1;
+      next.scene.present.push(c.id);
+      perceive(next, c.id);
+      break;
+    }
+    case "extra_named": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      if (!c.extra) throw new Error(`엑스트라가 아닙니다: ${c.id}`);
+      c.name = event.name;
+      c.extra.named = true;
+      const known = (next.known[state.playerId] ??= []);
+      if (!known.includes(c.id)) known.push(c.id);
+      break;
+    }
+    case "extra_gone": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      if (!c.extra) throw new Error(`엑스트라가 아닙니다: ${c.id}`);
+      c.extra.gone = true;
+      next.scene.present = next.scene.present.filter((id) => id !== c.id);
       break;
     }
     case "skill_learned": {

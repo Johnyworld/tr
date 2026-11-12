@@ -122,6 +122,17 @@ traits:
   - { id: talkative, label: 수다쟁이, kind: personality, visible: true, description: 들은 이야기를 잘 옮긴다 (소문 2배), acting: 묻지 않은 소식까지 늘어놓는다, effects: { rumor: 2 } }
   - { id: flirt, label: 이성편력, kind: personality, visible: false, description: 이성에게 쉽게 끌리고 이성의 설득·거짓말에 약하다, acting: 이성 앞에서 말이 많아지고 허세를 부린다, effects: { attraction: { moves: [persuade, deceive] } } }
 
+# 상대를 쓰러뜨리기 (기획서 7.5, *임시*): 부상이 중상 이상이면 무력화 (더 맞서지 못하고 뒤질 수 있다)
+combat:
+  incapacitated_at: serious
+
+# 이름 재료 (기획서 7.5): 엑스트라가 이름을 얻을 때 성 + 이름을 고른다
+names:
+  surnames: [김, 이, 박, 최, 정, 강, 조, 윤, 장, 임, 한, 오, 서, 신, 권, 황, 안, 송, 유, 홍, 전, 고, 문, 손, 양, 배, 백, 허, 남, 노]
+  given:
+    male: [민수, 영호, 정훈, 상철, 성민, 지훈, 동욱, 재석, 태준, 현수, 병철, 승우, 기태, 준영, 광수, 대성, 우진, 형준, 진호, 석구, 명수, 철민, 경환, 도현]
+    female: [미영, 지은, 수진, 은정, 혜린, 소영, 다은, 정희, 유진, 경숙, 나래, 하늘, 보람, 민지, 선영, 가윤, 예진, 순자, 영미, 지혜, 은비, 소희, 현정, 미숙]
+
 # 매력의 수동 효과: 처음 만난 인물의 호감 + (매력 ÷ 2), 매력 +2면 호감이 오를 때 +1
 charm: { ability: charm, first_impression_per: 2, bonus_at: 2 }
 
@@ -207,6 +218,7 @@ consumables:
   medkit: { harm: 1 }
   antibiotics: { harm: 1, infection: 2 }
   canned_food: { hunger: 2 }
+  dry_ration: { hunger: 1 }
   blanket: { cold: 2 }
   fever_reducer: { disease: 1 }
 

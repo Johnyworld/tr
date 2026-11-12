@@ -1,4 +1,5 @@
 import { basename } from "node:path";
+import { runCheat } from "../debug/cheats.ts";
 import type { CharacterChoice } from "../game/state.ts";
 import type { Rng } from "../rng.ts";
 import type { Content } from "../content/schemas.ts";
@@ -125,6 +126,16 @@ export class GameWorld {
     if (outcome.ok && name === "take_action") this.#repo.saveSnapshot();
     if (outcome.ok) this.#syncMemory();
     return outcome;
+  }
+
+  /** 치트 (개발 모드). 켜는 것은 어댑터가 정한다. 바뀐 상태는 저장하고 기억 색인도 맞춘다 */
+  runCheat(input: string): { ok: true; text: string } | { ok: false; error: string } {
+    const result = runCheat(input, this.ctx());
+    if (result.ok) {
+      this.#repo.saveSnapshot();
+      this.#syncMemory();
+    }
+    return result;
   }
 
   transcript(): readonly TranscriptEntry[] {

@@ -90,6 +90,10 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 - 로그는 stderr로만 쓴다. stdout은 MCP 프로토콜 전용이다
 - 환경 변수: `SCENARIO`(기본 `post_apoc`), `SAVES_DIR`(기본 `saves`)
 
+## 치트 (개발 모드)
+
+테스트용. `.env`에 `TRPG_DEBUG=1`을 넣고 웹 서버를 재시작하거나 Claude 세션을 새로 열면, `~`로 시작하는 명령으로 상태를 바꿀 수 있다 (`~help`로 목록). 예: `~kill me`, `~stat strength 2`, `~give shotgun`, `~summon extra c_sentry_shotgun`, `~time +2d`. 치트를 쓴 세이브에는 "🛠 치트" 표시가 남는다.
+
 ## 정보 명령어
 
 두 모드 모두 같은 명령어를 쓴다. 읽기 전용이고 시간이 흐르지 않는다. 행동은 명령어가 아니라 자연어로 한다.

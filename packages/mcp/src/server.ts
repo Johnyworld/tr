@@ -52,7 +52,7 @@ export type CharacterChoiceInput = z.infer<ReturnType<typeof characterChoiceSche
 
 export function createMcpServer(
   manager: WorldManager,
-  options: { statusUrl?: () => string | null; creationWaitMs?: number } = {},
+  options: { statusUrl?: () => string | null; creationWaitMs?: number; /** 치트(개발 모드)를 연다 */ debug?: boolean } = {},
 ) {
   const content = manager.content;
   const scenario = content.scenario;
@@ -503,6 +503,24 @@ export function createMcpServer(
       });
     },
   );
+
+  // ── 치트 (개발 모드, .env의 TRPG_DEBUG=1) ─────────────
+  if (options.debug) {
+    server.registerTool(
+      "cheat",
+      {
+        description:
+          "개발 모드 치트. 플레이어 입력이 ~로 시작하면(예: ~kill me, ~give shotgun) 서술하지 말고 그 입력을 그대로 넘긴 뒤 결과를 코드 블록으로 보여 준다. " +
+          "GM이 스스로 쓰지 않는다. ~help로 목록.",
+        inputSchema: z.strictObject({ input: z.string().min(1).max(300) }),
+      },
+      (args) =>
+        withWorld((w) => {
+          const r = w.runCheat(args.input.startsWith("~") ? args.input : `~${args.input}`);
+          return r.ok ? text(`${r.text}\n\n(치트 결과다. 서술하지 말고 그대로 보여 준다. 이야기는 플레이어의 다음 행동부터 이어진다)`) : text(r.error, true);
+        }),
+    );
+  }
 
   // ── GM 지침 ───────────────────────────────────────
 

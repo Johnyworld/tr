@@ -29,6 +29,8 @@ export type SaveSlot = {
   } | null;
   timeLabel: string | null;
   updatedAt: string;
+  /** 치트를 쓴 적이 있는 세이브 */
+  cheated: boolean;
   /** 다른 곳에서 열려 있으면 어디서 (web/mcp) */
   lockedBy: "web" | "mcp" | null;
 };
@@ -39,6 +41,7 @@ type RawState = {
   runStartedAt?: number;
   playerZone?: string | null;
   chronicle?: unknown[];
+  cheated?: boolean;
   characters?: Record<string, { name?: string; age?: number; gender?: string | null; portrait?: string | null; rank?: string; factionId?: string; level?: number; dead?: boolean; conditions?: Record<string, string> }>;
 };
 
@@ -70,6 +73,7 @@ export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): Sav
     hero,
     timeLabel: typeof state.time === "number" ? formatTime(state.time) : null,
     updatedAt: info.updatedAt,
+    cheated: state.cheated === true,
     lockedBy: info.lockedBy?.mode ?? null,
   };
 }
@@ -90,6 +94,7 @@ export function formatSlotLine(slot: SaveSlot, index: number): string {
     h.dead ? "사망 (다음 주인공을 고를 차례)" : h.conditions.length ? h.conditions.join(", ") : "몸 성함",
     `복무 ${h.daysServed}일째`,
     h.generation > 1 ? `${h.generation}대째` : null,
+    slot.cheated ? "🛠 치트 사용" : null,
     slot.lockedBy ? `지금 ${slot.lockedBy === "web" ? "웹 앱" : "다른 세션"}에서 사용 중` : null,
     `마지막 플레이 ${formatPlayedAt(slot.updatedAt)}`,
   ].filter(Boolean);

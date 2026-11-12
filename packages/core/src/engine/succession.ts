@@ -100,7 +100,6 @@ export function switchCharacter(
     return { ok: false, error: `고를 수 없는 캐릭터: ${choice} (가능: ${options.map((o) => o.id).join(", ")})` };
   }
   const previous = state.characters[state.playerId]!;
-  const record = state.chronicle.at(-1);
   const role = content.roles[state.roleId]!;
 
   if (choice === "new") {
@@ -131,19 +130,24 @@ export function switchCharacter(
     store.append({ type: "character_switched", characterId: choice, known: comrades });
   }
 
-  // 이전 캐릭터의 죽음과 큰 행적은 소문으로 남는다 (기억은 넘어가지 않는다)
+  // 이전 캐릭터들의 죽음과 큰 행적은 소문으로 남는다 (기억은 넘어가지 않는다).
+  // 바로 앞 캐릭터만이 아니라 최근 하루 안에 죽은 플레이어 캐릭터 모두. 그 사이에 여러 명이 죽었을 수 있다
   const now = store.getState();
   const heir = now.characters[now.playerId]!;
-  const sameFaction = heir.factionId === previous.factionId;
   const add = (fact: string, source: Belief["source"]) => {
     const s = store.getState();
+    const text = sentence(fact);
+    if ((s.beliefs[s.playerId] ?? []).some((b) => b.fact === text)) return;
     store.append({
       type: "belief_added",
       characterId: s.playerId,
-      belief: { id: `b_${s.nextBeliefNo}`, fact: sentence(fact), source, accuracy: "approximate", learnedAt: s.time },
+      belief: { id: `b_${s.nextBeliefNo}`, fact: text, source, accuracy: "approximate", learnedAt: s.time },
     });
   };
-  if (record) add(`${josa(previous.name, "이/가")} 죽었다고 한다 (${record.cause})`, sameFaction ? "report" : "rumor");
+  const recentDeaths = now.chronicle.filter((r, i) => i === now.chronicle.length - 1 || now.time - r.diedAt <= MINUTES_PER_DAY);
+  for (const r of recentDeaths) {
+    add(`${josa(r.name, "이/가")} 죽었다고 한다 (${r.cause})`, heir.factionId === r.factionId ? "report" : "rumor");
+  }
   // 같은 무리라면 지난 하루 우리 무리가 낀 교전은 보고로 들었다 (이전 캐릭터가 죽은 그 전투 포함)
   for (const { clash, at } of now.recentClashes) {
     if (now.time - at > MINUTES_PER_DAY) continue;
@@ -155,14 +159,21 @@ export function switchCharacter(
       belief: { id: `b_${s.nextBeliefNo}`, fact: describeClash(content, clash), source: "report", accuracy: "approximate", learnedAt: s.time, topic: WAR_TOPIC },
     });
   }
-  const knownDeeds = Object.values(now.deeds).filter((d) => d.actorId === previous.id && now.deedKnowledge[heir.id]?.[d.id]);
-  if (knownDeeds.length > 0) {
-    for (const d of knownDeeds.slice(0, 3)) add(`${previous.name}: ${d.summary}`, now.deedKnowledge[heir.id]![d.id]!);
-  } else {
-    const legend = Object.values(now.deeds)
-      .filter((d) => d.actorId === previous.id && d.severity >= 2)
-      .sort((a, b) => b.severity - a.severity)[0];
-    if (legend) add(`${previous.name}에 대해 이런 말이 돈다: ${legend.summary}`, "rumor");
+  // 이전 캐릭터들의 행적: 이어받는 인물이 직접 보거나 들은 것은 언제 일이든 기억한다.
+  // 아무것도 모르는 최근 사망자는 가장 큰 행적 하나가 소문으로 돈다
+  const recentIds = new Set(recentDeaths.map((r) => r.characterId));
+  for (const r of now.chronicle) {
+    const knownDeeds = Object.values(now.deeds)
+      .filter((d) => d.actorId === r.characterId && now.deedKnowledge[heir.id]?.[d.id])
+      .sort((a, b) => a.at - b.at);
+    if (knownDeeds.length > 0) {
+      for (const d of knownDeeds.slice(0, 3)) add(`${r.name}: ${d.summary}`, now.deedKnowledge[heir.id]![d.id]!);
+    } else if (recentIds.has(r.characterId)) {
+      const legend = Object.values(now.deeds)
+        .filter((d) => d.actorId === r.characterId && d.severity >= 2)
+        .sort((a, b) => b.severity - a.severity)[0];
+      if (legend) add(`${r.name}에 대해 이런 말이 돈다: ${legend.summary}`, "rumor");
+    }
   }
 
   const opening =

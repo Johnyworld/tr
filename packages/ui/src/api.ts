@@ -16,6 +16,14 @@ export async function fetchCommands(): Promise<CommandInfo[]> {
   return res.ok ? ((await res.json()) as CommandInfo[]) : [];
 }
 
+/** 치트 (개발 모드): 결과 문장과 바뀐 게임 */
+export async function runCheat(input: string): Promise<{ output: string; game: GameView }> {
+  const res = await fetch("/api/cheat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ input }) });
+  const body = (await res.json()) as { output?: string; game?: GameView; error?: string };
+  if (!res.ok || !body.game) throw new Error(body.error ?? `서버 오류 (${res.status})`);
+  return { output: body.output ?? "", game: body.game };
+}
+
 /** 정보 명령어 실행 (읽기 전용) */
 export async function runCommand(input: string): Promise<string> {
   const res = await fetch("/api/command", {

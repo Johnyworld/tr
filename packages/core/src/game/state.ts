@@ -165,6 +165,8 @@ export function createGameSchemas(s: Scenario) {
     }),
     checks: z.record(z.string(), checkRecord),
     nextCheckNo: z.number().int().positive(),
+    /** 치트를 쓴 적이 있는지 (슬롯에 표시) */
+    cheated: z.boolean().default(false),
     /** 다음 엑스트라 번호 (ex_N) */
     nextExtraNo: z.number().int().positive().default(1),
     /** 오늘 판정으로 얻은 경험치 (하루 상한, 기획서 4.2) */
@@ -350,9 +352,21 @@ export function createGameSchemas(s: Scenario) {
       type: z.literal("xp_gained"),
       characterId: z.string(),
       amount: z.number().int().positive(),
-      source: z.enum(["check", "merit"]),
+      source: z.enum(["check", "merit", "cheat"]),
       level: z.number().int().nonnegative(),
     }),
+    /** 치트 (개발 모드, 기획서 17.2): 플레이어가 친 명령. 한 번이라도 쓰면 이 세이브는 치트를 쓴 것으로 남는다 */
+    z.strictObject({ type: z.literal("cheat_used"), command: z.string() }),
+    /** 치트: 캐릭터의 능력·스킬·트레잇을 바꾼다 (준 것만) */
+    z.strictObject({
+      type: z.literal("character_patched"),
+      characterId: z.string(),
+      stats: z.record(z.string(), z.number().int()).optional(),
+      skills: z.record(z.string(), z.number().int()).optional(),
+      traits: z.array(z.string()).optional(),
+    }),
+    /** 치트: 세력의 자원을 바꾼다 (준 것만) */
+    z.strictObject({ type: z.literal("faction_patched"), factionId: z.string(), resources: z.record(z.string(), z.number()) }),
     /** 이름 없는 인물이 주인공과 엮여 캐릭터가 됐다 (기획서 7.5). 장면에 들어온다 */
     z.strictObject({ type: z.literal("extra_spawned"), character }),
     /** 엑스트라가 이름을 얻었다 (주인공이 이름을 알게 됐다). 이제 사라지지 않는다 */
@@ -481,6 +495,7 @@ export const EMPTY_STATE: GameState = {
   checks: {},
   nextCheckNo: 1,
   nextExtraNo: 1,
+  cheated: false,
   xpToday: { day: 0, amount: 0 },
   beliefs: {},
   known: {},
@@ -799,6 +814,21 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         const day = dayOf(state.time);
         next.xpToday = { day, amount: (state.xpToday.day === day ? state.xpToday.amount : 0) + event.amount };
       }
+      break;
+    }
+    case "cheat_used":
+      next.cheated = true;
+      break;
+    case "character_patched": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      if (event.stats) Object.assign(c.stats, event.stats);
+      if (event.skills) Object.assign(c.skills, event.skills);
+      if (event.traits) c.traits = [...event.traits];
+      break;
+    }
+    case "faction_patched": {
+      const f = mustGet(next.factions, event.factionId, "세력");
+      Object.assign(f.resources, event.resources);
       break;
     }
     case "extra_spawned": {

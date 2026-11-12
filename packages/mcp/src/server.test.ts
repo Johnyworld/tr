@@ -416,3 +416,21 @@ describe("사망 뒤 새 캐릭터 만들기", () => {
     expect(statusPayload(source)).toMatchObject({ created: true, name: "서진" });
   });
 });
+
+describe("치트 도구 (개발 모드)", () => {
+  it("debug일 때만 cheat 도구가 있고, ~ 입력을 실행한다", async () => {
+    const plain = await connect();
+    expect((await plain.client.listTools()).tools.map((t) => t.name)).not.toContain("cheat");
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-dbg-")), content: TEST_CONTENT, rngFactory: () => createSeededRng(3) });
+    const app = createMcpServer(manager, { debug: true });
+    opened.push(app);
+    const [c, s] = InMemoryTransport.createLinkedPair();
+    await app.server.connect(s);
+    const client = new Client({ name: "t", version: "0" });
+    await client.connect(c);
+    await client.callTool({ name: "start_session", arguments: { new_world: true } });
+    const out = (await client.callTool({ name: "cheat", arguments: { input: "~give bomb 1" } })) as { content: { text: string }[] };
+    expect(out.content[0]!.text).toContain("폭탄");
+    expect(app.world!.state().characters.player!.inventory.bomb).toBe(1);
+  });
+});

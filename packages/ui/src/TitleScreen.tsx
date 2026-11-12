@@ -81,6 +81,7 @@ function SlotCard({ slot, busy, onOpen, onDelete }: { slot: SaveSlotView; busy: 
         {h && <span className="slot-level">Lv {h.level}</span>}
         {h && h.generation > 1 && <span className="badge">{h.generation}대째</span>}
         {h?.dead && <span className="badge dead">사망</span>}
+        {slot.cheated && <span className="badge" title="치트를 쓴 세이브">🛠 치트</span>}
       </div>
       {h && (
         <div className="slot-line">

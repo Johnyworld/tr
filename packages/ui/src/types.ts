@@ -66,6 +66,7 @@ export type SaveSlotView = {
   updatedAt: string;
   lockedBy: "web" | "mcp" | null;
   current: boolean;
+  cheated: boolean;
 };
 
 export type SlotsView = { scenarioName: string; slots: SaveSlotView[]; current: string | null };

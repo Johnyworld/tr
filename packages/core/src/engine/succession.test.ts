@@ -123,6 +123,19 @@ describe("다음 캐릭터", () => {
     expect(status).not.toContain("상관 강분대");
   });
 
+  it("두 대 앞 캐릭터의 죽음과, 이어받는 인물이 직접 본 그 행적도 넘어간다", () => {
+    const world = deadWorld();
+    world.chooseNextCharacter("new", "두번째");
+    for (let i = 0; i < 3 && !world.isPlayerDead(); i++) world.executeTool("take_action", act({ intent: "돌격", check: deadly }));
+    expect(world.isPlayerDead()).toBe(true);
+    expect(world.chooseNextCharacter("npc_leader").ok).toBe(true);
+    const beliefs = (world.state().beliefs.npc_leader ?? []).map((b) => `${b.source}:${b.fact}`);
+    expect(beliefs).toContain("report:신병이 죽었다고 한다 (총상).");
+    expect(beliefs).toContain("report:두번째가 죽었다고 한다 (총상).");
+    expect(beliefs).toContain("seen:신병: 총격 속에서 분대장을 감쌌다.");
+    expect(new Set(beliefs).size).toBe(beliefs.length);
+  });
+
   it("두 번째 죽음도 연대기에 이어 쌓인다", () => {
     const world = deadWorld();
     world.chooseNextCharacter("new");

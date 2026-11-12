@@ -82,6 +82,15 @@ export function createApp(session: WebSession) {
     c.json(COMMANDS.map((cmd) => ({ name: cmd.name, args: cmd.args ?? "", description: cmd.description }))),
   );
 
+  // 치트 (개발 모드, .env의 TRPG_DEBUG=1). 플레이어가 ~로 시작하게 친 것만 (GM은 쓰지 않는다)
+  app.post("/api/cheat", async (c) => {
+    if (process.env.TRPG_DEBUG !== "1") return c.json({ error: "개발 모드가 꺼져 있습니다. .env에 TRPG_DEBUG=1을 넣고 서버를 다시 시작하세요." }, 403);
+    const parsed = z.object({ input: z.string().min(1).max(300) }).safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "요청 형식이 올바르지 않습니다." }, 400);
+    const r = session.world.runCheat(parsed.data.input);
+    return r.ok ? c.json({ output: r.text, game: session.view() }) : c.json({ error: r.error }, 400);
+  });
+
   app.post("/api/command", async (c) => {
     const parsed = z.object({ input: z.string().min(1).max(200) }).safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "요청 형식이 올바르지 않습니다." }, 400);

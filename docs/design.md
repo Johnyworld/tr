@@ -1510,6 +1510,15 @@ trpg/
 
 ---
 
+### 17.2 치트 (개발 모드)
+
+테스트를 위해 상태를 강제로 바꾸는 명령. 평소 플레이에는 없다
+
+- 켜기: 저장소 `.env`에 `TRPG_DEBUG=1` (git에 올라가지 않는다). 웹 서버와 MCP 서버가 시작할 때 읽는다 (MCP는 Claude 세션을 새로 열면)
+- 입력: `~`로 시작 (예: `~kill me`). 웹은 입력창에, Claude 세션은 GM이 `cheat` 도구에 그대로 넘기고 서술하지 않는다. 치트는 플레이어가 친 것만 실행한다 (GM은 스스로 쓰지 않는다, 원칙 2·3의 예외는 개발 모드뿐)
+- 명령: kill, harm, set(몸 상태), heal, stat, skill, trait add/remove, xp, give, summon(인물·엑스트라), goto, time(+2d, +5h, 시간대 — 그 사이 세계도 돌아간다), weather, storylet, battle, relation, faction(자원·사기), help
+- 기록: 바뀐 것은 모두 보통 이벤트로 남고, `cheat_used`가 세이브에 치트 표시를 남긴다 (슬롯에 "🛠 치트"). 규칙은 core `debug/cheats.ts`
+
 ## 18. 미정 사항
 
 - 도시 이름, 지명, 장소 목록 (전쟁 구역 초안 9곳만 있음: 9.4)

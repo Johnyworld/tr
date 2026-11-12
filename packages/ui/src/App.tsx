@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { chooseNextCharacter, closeGame, fetchCommands, fetchGame, fetchSlots, playTurn, runCommand, type CommandInfo } from "./api.ts";
+import { chooseNextCharacter, closeGame, runCheat, fetchCommands, fetchGame, fetchSlots, playTurn, runCommand, type CommandInfo } from "./api.ts";
 import { TitleScreen } from "./TitleScreen.tsx";
 import { CharacterCreation } from "./CharacterCreation.tsx";
 import { CharacterSheet } from "./CharacterSheet.tsx";
@@ -105,6 +105,19 @@ function Game({ initial, onExit }: { initial: GameView; onExit: () => void }) {
     e?.preventDefault();
     const text = input.trim();
     if (!text || busy) return;
+
+    // "~"로 시작하면 치트 (개발 모드): GM에게 보내지 않는다
+    if (text.startsWith("~")) {
+      try {
+        const r = await runCheat(text);
+        applyGame(r.game);
+        setCommandOutput({ input: text, output: r.output });
+        setInput("");
+      } catch (err) {
+        setNotice({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+      }
+      return;
+    }
 
     // "!"(또는 "?")로 시작하면 정보 명령어: GM에게 보내지 않고 시간도 흐르지 않는다
     if (isCommandInput(text)) {

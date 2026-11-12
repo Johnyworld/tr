@@ -10,6 +10,12 @@ import { startStatusServer } from "./statusServer.ts";
  * stdout은 MCP 프로토콜 전용이다. 로그는 반드시 stderr(console.error)로 쓴다 (원칙 12).
  */
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
+// 저장소의 .env (git에 올라가지 않는 로컬 설정). 치트(개발 모드)는 TRPG_DEBUG=1로 켠다
+try {
+  process.loadEnvFile(resolve(ROOT, ".env"));
+} catch {
+  // .env가 없으면 그대로
+}
 const scenarioId = process.env.SCENARIO ?? "post_apoc";
 const contentDir = resolve(ROOT, process.env.CONTENT_DIR ?? `content/scenarios/${scenarioId}`);
 const savesDir = resolve(ROOT, process.env.SAVES_DIR ?? "saves");
@@ -31,7 +37,7 @@ try {
         embedder,
       })
     : null;
-  app = createMcpServer(new WorldManager({ savesDir, content, lore, memoryEmbedder: embedder }), { statusUrl: () => statusUrl });
+  app = createMcpServer(new WorldManager({ savesDir, content, lore, memoryEmbedder: embedder }), { statusUrl: () => statusUrl, debug: process.env.TRPG_DEBUG === "1" });
   scenarioName = content.scenario.name;
   contentRef = content;
 } catch (err) {

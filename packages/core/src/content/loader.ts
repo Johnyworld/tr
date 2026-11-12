@@ -123,6 +123,9 @@ function checkReferences(content: Content): string[] {
     }
     if (loc.kind === "base" && !loc.owner) problems.push(`locations.${loc.id}: 거점에는 소유 세력이 있어야 한다`);
   }
+  for (const item of Object.keys(content.scenario.recovery?.items ?? {})) {
+    if (!content.items[item]) problems.push(`scenario.recovery.items: 알 수 없는 아이템 ${item}`);
+  }
   const battle = content.scenario.battle;
   if (battle) {
     for (const p of battle.preparations) {
@@ -142,6 +145,7 @@ function checkReferences(content: Content): string[] {
   if (new Set(plans).size !== plans.length) problems.push("factions: 세력 클락(plans) id가 겹친다");
   for (const npc of Object.values(content.npcs)) {
     factionRef(`npcs.${npc.id}`, npc.faction);
+    if (npc.zone && Object.keys(content.locations).length && !content.locations[npc.zone]) problems.push(`npcs.${npc.id}: 알 수 없는 구역 ${npc.zone}`);
     for (const itemId of npc.start_inventory) {
       if (!content.items[itemId]) problems.push(`npcs.${npc.id}: 알 수 없는 아이템 ${itemId}`);
     }
@@ -194,6 +198,7 @@ function checkStorylets(content: Content): string[] {
           if (!content.items[e.give_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.give_item.item}`);
           if (e.give_item.from && e.give_item.from !== "commander" && !castKeys.has(e.give_item.from)) problems.push(`${at}: 알 수 없는 배역 ${e.give_item.from}`);
         }
+        if ("take_item" in e && !content.items[e.take_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.take_item.item}`);
         if ("clock" in e && !clocks.has(e.clock.id)) problems.push(`${at}: 알 수 없는 세력 클락 ${e.clock.id}`);
         if ("faction_morale" in e && e.faction_morale.faction !== "own" && !content.factions[e.faction_morale.faction]) {
           problems.push(`${at}: 알 수 없는 세력 ${e.faction_morale.faction}`);

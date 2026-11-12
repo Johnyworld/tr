@@ -69,3 +69,28 @@
   kind: base
   owner: faction_e
   yields: { food: 50, water: 50, fuel: 10, ammo: 5 }
+
+# ── 12단계 추가: 분쟁 지대 ──
+- id: hospital_ruins
+  name: 옛 시립병원
+  description: 첫 해에 가장 먼저 무너진 병원. 지하 약제실은 아직 다 털리지 않았다는 말이 있다. 감염체가 많다.
+  kind: zone
+  owner: null
+  adjacent: [old_town, d_clinic]
+  yields: { medicine: 2 }
+
+- id: water_plant
+  name: 정수장
+  description: 강 하류의 옛 정수장. 펌프 하나가 아직 손으로 돌아간다. E의 상인들이 물을 길어 간다.
+  kind: zone
+  owner: faction_e
+  adjacent: [riverside, e_market]
+  yields: { water: 30 }
+
+- id: south_fields
+  name: 남쪽 텃밭
+  description: A와 B 거점 사이의 운동장과 공터를 갈아엎은 밭. 무너진 남쪽 담장 너머라 늘 불안하다.
+  kind: zone
+  owner: faction_a
+  adjacent: [a_base, b_base]
+  yields: { food: 12 }

@@ -31,3 +31,4 @@ secret:
 stats: { strength: 1, agility: 1, nerve: 2, senses: 1, persuasion: 0 }
 start_inventory: [radio, old_rifle]
 playable: true
+zone: a_base

@@ -281,6 +281,7 @@ export const TEST_CONTENT: Content = {
       stats: { strength: 1, agility: 1, cool: 2, sense: 1, persuasion: 0 },
       start_inventory: ["radio"],
       playable: true,
+      healer: false,
     },
     npc_stranger: {
       id: "npc_stranger",
@@ -302,6 +303,7 @@ export const TEST_CONTENT: Content = {
       stats: { strength: 0, agility: 0, cool: 0, sense: 0, persuasion: 2 },
       start_inventory: [],
       playable: false,
+      healer: false,
     },
   },
   missions: {

@@ -31,3 +31,4 @@ secret:
 stats: { strength: 1, agility: -1, nerve: 2, senses: 1, persuasion: 1 }
 start_inventory: [cigarettes, kitchen_knife, explosive]
 playable: true
+zone: a_base

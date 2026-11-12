@@ -149,7 +149,7 @@
   when:
     own_territory: true
     segments: [morning, day, evening]
-    own_food_days_lte: 12
+    own_food_days_lte: 14
   cast:
     grunt: { faction: own, ranks: [grunt], known: true }
   setup: 배급 줄에서 {grunt:이/가} {scarce} 몫이 또 줄었다며 언성을 높인다. 줄 선 사람들의 눈이 쏠린다.
@@ -183,7 +183,7 @@
   cooldown_days: 2
   when:
     own_territory: true
-    war_news_within_hours: 12
+    war_news_within_hours: 24
   cast:
     medic: { ids: [a_chaewon] }
   setup: 의무실 쪽이 시끄럽다. 들것이 연달아 들어오고, {medic:이/가} 피 묻은 손으로 사람을 부른다. "손 하나만 빌려줘요!"

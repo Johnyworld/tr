@@ -31,3 +31,5 @@ secret:
 stats: { strength: -1, agility: 0, nerve: 1, senses: 1, persuasion: 2 }
 start_inventory: [medkit]
 playable: true
+zone: a_base
+healer: true

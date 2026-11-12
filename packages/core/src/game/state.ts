@@ -213,6 +213,10 @@ export function createGameSchemas(s: Scenario) {
       .nullable()
       .default(null),
     lastStoryletAt: z.number().int().nullable().default(null),
+    /** 회복 기준 시각: 마지막으로 다치거나 나은 때, 마지막으로 치료사에게 치료받은 날 */
+    recovery: z
+      .strictObject({ lastChangeAt: z.record(z.string(), z.number().int()), lastHealerDay: z.record(z.string(), z.number().int()) })
+      .default({ lastChangeAt: {}, lastHealerDay: {} }),
     /** 죽은 캐릭터들의 기록 (오래된 것부터) */
     chronicle: z.array(runRecordSchema).default([]),
   });
@@ -275,6 +279,16 @@ export function createGameSchemas(s: Scenario) {
     }),
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
+    /** 부상이 나았다 (치료 또는 저절로). by: rest | healer | 아이템 id */
+    z.strictObject({
+      type: z.literal("harm_healed"),
+      targetId: z.string(),
+      track: z.string(),
+      from: z.string(),
+      to: z.string(),
+      by: z.string(),
+      day: z.number().int(),
+    }),
     z.strictObject({ type: z.literal("epitaph_written"), index: z.number().int().min(0), text: z.string().min(1).max(300) }),
     /** 다음 캐릭터로 이어 간다. 새로 만든 캐릭터면 character가 있다 */
     z.strictObject({
@@ -439,6 +453,7 @@ export const EMPTY_STATE: GameState = {
   storyletLog: {},
   activeStorylet: null,
   lastStoryletAt: null,
+  recovery: { lastChangeAt: {}, lastHealerDay: {} },
   chronicle: [],
 };
 
@@ -517,6 +532,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       const target = mustGet(next.characters, event.targetId, "캐릭터");
       target.conditions[event.track] = event.to;
       if (event.fatal) target.dead = true;
+      next.recovery.lastChangeAt[event.targetId] = state.time;
       mustGet(next.checks, event.checkId, "판정").harmApplied = true;
       break;
     }
@@ -607,6 +623,14 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
       next.playerZone = event.to;
       break;
+    case "harm_healed": {
+      const target = mustGet(next.characters, event.targetId, "캐릭터");
+      if (target.dead) throw new Error("사망한 캐릭터는 낫지 않습니다.");
+      target.conditions[event.track] = event.to;
+      next.recovery.lastChangeAt[event.targetId] = state.time;
+      if (event.by === "healer") next.recovery.lastHealerDay[event.targetId] = event.day;
+      break;
+    }
     case "character_died":
       if (event.record.characterId !== state.playerId) throw new Error("현재 캐릭터의 기록이 아닙니다.");
       if (!state.characters[state.playerId]?.dead) throw new Error("캐릭터가 아직 살아 있습니다.");

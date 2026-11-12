@@ -110,6 +110,18 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
           </div>
         </div>
       );
+    case "heal":
+      return (
+        <div className="card heal">
+          <div className="card-head">
+            <span className="card-kind">회복</span>
+            <span>
+              {display.trackLabel}: {display.fromLabel} → <strong>{display.toLabel}</strong>
+            </span>
+            <span className="badge">{display.byLabel}</span>
+          </div>
+        </div>
+      );
     case "epitaph":
       return (
         <div className="card epitaph">

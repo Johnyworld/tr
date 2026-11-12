@@ -36,3 +36,31 @@
       min_outcome: partial
     - check: stealth
       min_outcome: partial
+- id: fields_watch
+  title: 남쪽 텃밭 지키기
+  briefing: 남쪽 텃밭에서 밭일하는 사람들을 지킨다. 담장이 무너진 쪽이라 감염체와 좀도둑을 조심한다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: guard_duty
+      minutes: 180
+- id: market_errand
+  title: E 장터 심부름
+  briefing: E의 장터에 가서 담배를 소금과 바꿔 오는 흥정을 한다. 강변을 지날 때 조심한다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: persuade
+      min_outcome: partial
+- id: hospital_supply_run
+  title: 옛 시립병원 약 찾기
+  briefing: 의무실 약이 바닥났다. 옛 시립병원에 들어가 쓸 만한 약을 찾아 온다. 감염체가 많으니 소리를 내지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - check: stealth
+      min_outcome: partial
+    - check: scavenge
+      min_outcome: partial

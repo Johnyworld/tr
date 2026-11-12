@@ -38,7 +38,10 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
   }
   const player = state.characters[state.playerId];
   if (!player || player.dead || !storyletWindowOpen(state, content, state.time)) return displays;
-  const storylet = pickStorylet(eligibleStorylets(state, content), rng);
+  // 고정 이야기(한 번뿐인 것)가 열릴 수 있으면 먼저 연다. 반복되는 템플릿에 밀려 묻히지 않게
+  const eligible = eligibleStorylets(state, content);
+  const fixed = eligible.filter((s) => !s.repeatable);
+  const storylet = pickStorylet(fixed.length ? fixed : eligible, rng);
   if (!storylet) return displays;
   const cast = pickCast(state, content, storylet, rng)!;
   store.append({
@@ -123,6 +126,14 @@ export const resolveStorylet = defineTool({
       outcome = check.outcome;
       effects = choice.outcomes![check.outcome];
     }
+    // 내놓을 물건이 없으면 고를 수 없다 (거래 선택지)
+    const player = state.characters[state.playerId]!;
+    for (const e of effects) {
+      if ("take_item" in e && (player.inventory[e.take_item.item] ?? 0) < e.take_item.quantity) {
+        const name = ctx.content.items[e.take_item.item]?.name ?? e.take_item.item;
+        return { ok: false, error: `${name} ×${e.take_item.quantity}이(가) 없어 이 선택지를 고를 수 없다. 다른 선택지를 고르거나 그대로 둔다.` };
+      }
+    }
     const vars = storyletVars(state, ctx.content, a.cast);
     ctx.store.append({ type: "storylet_resolved", storyletId: a.storylet.id, choiceId: choice.id, outcome });
     const lines: string[] = [`이야기 "${a.storylet.title}": ${fillStorylet(choice.label, vars)}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`];
@@ -201,6 +212,11 @@ function applyEffect(
     }
     store.append({ type: "item_granted", to: playerId, itemId: item, quantity });
     return { line: `${name} ×${quantity}을(를) 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
+  }
+  if ("take_item" in effect) {
+    const { item, quantity } = effect.take_item;
+    store.append({ type: "item_consumed", holder: playerId, itemId: item, quantity });
+    return { line: `${content.items[item]?.name ?? item} ×${quantity}을(를) 내주었다.` };
   }
   if ("clock" in effect) {
     if (!state.clocks[effect.clock.id]) return {};

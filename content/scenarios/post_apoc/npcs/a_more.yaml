@@ -1,0 +1,60 @@
+# 세력 A 추가 인물 (12단계 초안)
+- id: a_seonghee
+  name: 최선희
+  faction: faction_a
+  rank: leader
+  age: 52
+  look: 희끗한 단발에 낡은 교사용 카디건. 늘 공책을 들고 다닌다.
+  reputation: A 거점의 대표. 옛 공업고 교사였다. "버리지 않는다"는 원칙을 처음 말한 사람.
+  want: 겨울을 넘길 때까지 아무도 버리지 않는 것
+  fear: 원칙을 지키다 모두를 잃는 것
+  values: { discipline: 2, loyalty: 3, mercy: 2, honesty: 2, self_interest: -2 }
+  temperament: [principled, tired]
+  voice:
+    style: 차분한 존댓말. 하급 대원에게도 존댓말을 쓴다. 결정을 말할 때는 짧다
+    samples:
+      - "다들 피곤한 거 압니다. 그래도 오늘은 여기까지 합시다."
+      - "버리면 편하겠지요. 그 다음엔 누굴 버릴 겁니까."
+  routine: { morning: 지도부 회의, day: 거점 순회, night: 교무실 }
+  rules:
+    - 하급 대원과 직접 길게 이야기하지 않는다. 분대장을 거친다
+    - 배급을 줄이자는 말에는 끝까지 반대한다
+  knows:
+    - 연합의 탄약이 한 달 치도 안 남았다는 것
+    - B 대표 장현우가 요즘 회의에 늦게 나온다는 것
+  doesnt_know:
+    - E의 탁봉수가 C에 초소 정보를 팔았다
+  stats: { strength: -1, agility: 0, nerve: 2, senses: 1, persuasion: 3 }
+  start_inventory: [ledger]
+  playable: false
+  zone: a_base
+
+- id: a_bokja
+  name: 정복자
+  faction: faction_a
+  rank: staff
+  age: 61
+  look: 앞치마에 국자를 꽂고 다니는 키 작은 할머니. 목소리가 크다.
+  reputation: 식당 천막의 취사 담당. 거점의 소문은 다 이 사람 솥을 거쳐 간다.
+  want: 아이들이 배곯지 않는 것
+  fear: 솥이 비는 날
+  values: { discipline: 0, loyalty: 2, mercy: 3, honesty: 1, self_interest: 0 }
+  temperament: [talkative, motherly]
+  voice:
+    style: 사투리 섞인 반말. 누구에게나 "아가"라고 부른다
+    samples:
+      - "아가, 국물 한 국자 더 줄 테니 아무한테도 말하지 마."
+      - "그 얘기 들었나? 저 위에서 또 배급 줄인단다."
+  routine: { dawn: 불 피우기, morning: 배식, evening: 배식, night: 식당 천막 }
+  rules:
+    - 배고픈 사람을 그냥 보내지 못한다
+    - 들은 소문은 꼭 한 사람에게는 옮긴다
+  knows:
+    - 배급량이 이번 주에 한 번 줄었다는 것
+    - 창고 뒷문 열쇠를 박만수가 하나 더 갖고 있다는 소문
+  doesnt_know:
+    - 박만수가 창고에 폭약을 숨겨 두었다
+  stats: { strength: 0, agility: -1, nerve: 1, senses: 2, persuasion: 2 }
+  start_inventory: [kitchen_knife]
+  playable: true
+  zone: a_base

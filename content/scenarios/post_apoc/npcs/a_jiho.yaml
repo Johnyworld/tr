@@ -31,3 +31,4 @@ secret:
 stats: { strength: 0, agility: 1, nerve: -1, senses: 1, persuasion: 1 }
 start_inventory: [water_bottle]
 playable: true
+zone: a_base

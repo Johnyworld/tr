@@ -1,0 +1,502 @@
+# 하급 전투원 스토리렛 추가 (12단계 초안). 형식은 a_grunt.yaml 머리말 참고
+
+# ── 고정 ───────────────────────────────────────────
+
+- id: sister_letter
+  title: 누나의 편지
+  tags: [squad_life]
+  when:
+    own_territory: true
+    segments: [day, evening]
+    day_gte: 2
+  cast:
+    courier: { ids: [e_yuri] }
+    friend: { ids: [a_jiho], known: true, enter: false }
+  setup: "빨간 털모자를 쓴 E의 심부름꾼이 정문에서 편지 한 통을 흔든다. B의 경비병이 동생 {friend}에게 보내는 편지인데, {friend:을/를} 못 찾았다며 대신 전해 달라고 한다."
+  ai_direction: 편지는 누나 오미나가 보낸 것이다. 겉봉에 "지호에게"라고만 적혀 있다. 하유리는 담배 한 개비를 바란다.
+  choices:
+    - id: deliver
+      label: 봉한 그대로 오지호에게 전한다
+      effects:
+        - relation: { who: friend, axis: trust, delta: 2 }
+        - relation: { who: friend, axis: affection, delta: 1 }
+        - belief: { fact: 오지호의 누나 오미나가 B 거점에서 경비병으로 있다, source: report }
+    - id: read
+      label: 몰래 뜯어 읽어 본다
+      effects:
+        - belief: { fact: "편지에는 B 안에서 C로 넘어가자는 말이 돈다고, 무슨 일이 생기면 A에 남아 있으라고 적혀 있었다", source: seen }
+        - deed: { summary: "동료에게 온 편지를 몰래 뜯어 읽었다", tags: [deceit], severity: 1, privacy: private }
+    - id: refuse
+      label: 바쁘다며 돌려보낸다
+      effects: []
+
+- id: deserter_surrender
+  title: 붉은 완장의 투항자
+  tags: [grunt]
+  when:
+    zones: [a_east_post, riverside, old_town]
+    segments: [night, dawn]
+    day_gte: 3
+  cast:
+    deserter: { ids: [c_seokjin] }
+  setup: 어둠 속에서 두 손을 든 남자가 비틀거리며 나온다. 왼팔에 붉은 완장. "쏘지 마. 나 혼자야."
+  ai_direction: 고석진은 C에서 도망쳤다. 굶었고 겁에 질려 있다. 목숨을 보장받으면 물류창고 이야기를 할 마음이 있다.
+  choices:
+    - id: capture
+      label: 포로로 잡아 분대장에게 데려간다
+      effects:
+        - merit: 2
+        - relation: { who: commander, axis: respect, delta: 1 }
+        - deed: { summary: C에서 넘어온 병사를 포로로 잡아 넘겼다, tags: [diligence], severity: 2, privacy: semi_private }
+    - id: interrogate
+      label: 살려 주는 대신 아는 것을 말하라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: scouts_captured
+          - relation: { who: deserter, axis: trust, delta: 2 }
+          - belief: { fact: "고석진에게 들었다: 물류창고 수용소에 A 정찰조 셋이 살아 있다. 그중 하나는 오씨 성이다", source: report }
+        partial:
+          - belief: { fact: 고석진은 물류창고에 누군가 갇혀 있다는 말만 흘렸다, source: report }
+        miss:
+          - relation: { who: deserter, axis: trust, delta: -1 }
+    - id: let_go
+      label: 못 본 걸로 하고 보내 준다
+      effects:
+        - relation: { who: deserter, axis: trust, delta: 3 }
+        - deed: { summary: C의 탈영병을 몰래 보내 주었다, tags: [mercy, enemy_sympathy], severity: 2, privacy: private }
+    - id: kill
+      label: 그 자리에서 처리한다
+      effects:
+        - deed: { summary: 손을 든 C의 탈영병을 죽였다, tags: [cruelty], severity: 3, privacy: semi_private }
+
+- id: b_gate_sister
+  title: B 정문의 경비병
+  tags: [grunt]
+  when:
+    zones: [b_base]
+  cast:
+    guard: { ids: [b_mina] }
+  setup: B 거점 정문에서 주근깨 난 경비병이 총구를 내리며 낮게 묻는다. "A 사람이지? 혹시 오지호라고 알아?"
+  ai_direction: 오미나는 동생 소식이 듣고 싶다. B 안의 흉흉한 분위기를 털어놓고 싶지만 동생이 다칠까 봐 말을 아낀다.
+  choices:
+    - id: tell
+      label: 지호의 안부를 전한다
+      effects:
+        - relation: { who: guard, axis: trust, delta: 2 }
+        - belief: { fact: "오미나: B 간부 몇이 밤마다 따로 모인다. 분위기가 좋지 않다", source: report }
+    - id: press
+      label: B 안의 사정을 캐묻는다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: B 안에 C로 넘어가자는 사람들이 있다. 오미나는 그 이름을 안다, source: report }
+        partial:
+          - belief: { fact: "오미나가 말끝을 흐렸다: B는 오래 못 버틸지도 모른다", source: report }
+        miss:
+          - relation: { who: guard, axis: trust, delta: -1 }
+    - id: pass_by
+      label: 모른다고 하고 지나간다
+      effects: []
+
+- id: bongsu_deal
+  title: 금니 상인의 흥정
+  tags: [grunt]
+  when:
+    zones: [e_market]
+  cast:
+    trader: { ids: [e_bongsu] }
+  setup: 금니를 드러낸 상인이 손짓한다. "형님, 담배 있으시죠? 두 갑이면 항생제 한 줄. 요새 이 값 없습니다."
+  ai_direction: 탁봉수는 정보도 판다. 누가 무엇을 사 가는지 다 기억한다. C 이야기가 나오면 웃으며 말을 돌린다.
+  choices:
+    - id: trade
+      label: 담배를 내주고 항생제를 받는다
+      effects:
+        - take_item: { item: cigarettes, quantity: 1 }
+        - give_item: { item: antibiotics }
+    - id: pump_news
+      label: 요즘 누가 뭘 사 가는지 떠본다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: 탁봉수의 말로는 C가 탄약을 넉넉히 사들이고 있다. B 대표가 C의 사자를 만났다는 소문도 있다, source: rumor }
+        partial:
+          - belief: { fact: 탁봉수의 말로는 요즘 C가 탄약을 많이 사 간다, source: rumor }
+        miss: []
+    - id: walk
+      label: 흥정을 거절하고 지나간다
+      effects: []
+
+- id: hospital_descent
+  title: 병원 지하로
+  tags: [grunt]
+  when:
+    zones: [hospital_ruins]
+    segments: [morning, day]
+  cast:
+    scav: { ids: [d_minho] }
+  setup: 방독면을 목에 건 덩치 큰 남자가 병원 입구를 막아선다. "여긴 내 구역이야. 같이 내려가겠다면 몫은 칠 대 삼."
+  ai_direction: 남민호는 혼자 지하로 내려가기가 무섭다. 엘리베이터 통로로 내려가야 한다는 걸 안다. 아래에는 감염체가 있다.
+  choices:
+    - id: team_up
+      label: 함께 엘리베이터 통로로 내려간다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: antibiotics }
+          - relation: { who: scav, axis: trust, delta: 1 }
+        partial:
+          - give_item: { item: medkit }
+        miss:
+          - relation: { who: scav, axis: trust, delta: -1 }
+    - id: alone
+      label: 따돌리고 혼자 들어간다
+      check: stealth
+      outcomes:
+        success:
+          - give_item: { item: antibiotics, quantity: 2 }
+          - deed: { summary: D의 수색꾼을 따돌리고 병원 약을 혼자 챙겼다, tags: [selfishness], severity: 1, privacy: private }
+        partial:
+          - give_item: { item: medkit }
+        miss: []
+    - id: back_off
+      label: 물러난다
+      effects: []
+
+- id: rescue_council
+  title: 분대장의 물음
+  tags: [squad_life]
+  when:
+    flags_all: [scouts_captured]
+    flags_none: [rescue_discussed]
+    own_territory: true
+    segments: [evening, night]
+  cast:
+    boss: { commander: true, trust_gte: 1 }
+  setup: "{boss:이/가} 아무도 없는 교실로 부른다. \"물류창고 이야기, 어디서 들었나. 확실한가.\""
+  ai_direction: 강태호는 실종된 정찰조를 두고 후퇴한 일을 지금도 짊어지고 있다. 구출을 원하지만 대표의 허락 없이는 움직일 수 없다.
+  choices:
+    - id: volunteer
+      label: 구출조가 꾸려지면 자원하겠다고 한다
+      effects:
+        - set_flag: rescue_discussed
+        - set_flag: rescue_volunteer
+        - relation: { who: boss, axis: respect, delta: 2 }
+        - merit: 1
+    - id: urge
+      label: 대표에게 올려 달라고만 한다
+      effects:
+        - set_flag: rescue_discussed
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: 강태호가 대표에게 정찰조 구출을 건의하겠다고 했다, source: seen }
+    - id: doubt
+      label: 확실하지 않다고 물러선다
+      effects:
+        - set_flag: rescue_discussed
+
+# ── 템플릿 ───────────────────────────────────────────
+
+- id: night_post_talk
+  title: 망루의 밤
+  tags: [squad_life]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    zones: [a_east_post]
+    segments: [night]
+  cast:
+    mate: { faction: own, ranks: [grunt], known: true }
+  setup: "{mate:과/와} 망루에 둘만 남았다. {mate:이/가} 담배를 나눠 피우며 붕괴 전 이야기를 꺼낸다."
+  ai_direction: 이 사람은 오늘 밤 누군가에게 털어놓고 싶은 게 있다.
+  choices:
+    - id: listen
+      label: 들어 준다
+      effects:
+        - relation: { who: mate, axis: affection, delta: 1 }
+    - id: share
+      label: 자기 이야기도 꺼낸다
+      effects:
+        - relation: { who: mate, axis: trust, delta: 1 }
+        - relation: { who: mate, axis: affection, delta: 1 }
+    - id: doze
+      label: 맡겨 두고 잠깐 존다
+      effects:
+        - relation: { who: mate, axis: respect, delta: -1 }
+        - deed: { summary: 망루 보초 중에 졸았다, tags: [disobedience], severity: 1, privacy: semi_private }
+
+- id: infected_at_wall
+  title: 담장 틈의 감염체
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 3
+  weight: 0.6
+  when:
+    zones: [a_base, south_fields]
+    segments: [night, dawn]
+  setup: 무너진 담장 틈으로 감염체 하나가 비집고 들어온다. 총을 쏘면 근처의 무리가 다 몰려온다.
+  ai_direction: 한 마리뿐이다. 지금은. 칼이나 몽둥이로 조용히 처리해야 한다.
+  choices:
+    - id: quiet_kill
+      label: 소리 없이 처리한다
+      check: fight
+      outcomes:
+        success:
+          - merit: 1
+          - deed: { summary: 담장을 넘어온 감염체를 소리 없이 처리했다, tags: [bravery], severity: 1, privacy: semi_private }
+        partial:
+          - belief: { fact: 감염체는 처리했지만 담장 틈이 더 벌어졌다, source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: 감염체를 놓쳐 거점 안에 소란이 났다, source: seen }
+    - id: shoot
+      label: 쏜다
+      effects:
+        - faction_morale: { faction: own, delta: -1 }
+        - deed: { summary: 거점 안에서 총을 쏴 감염체 무리를 불러들일 뻔했다, tags: [disobedience], severity: 2, privacy: public }
+    - id: alert
+      label: 소리쳐 사람들을 깨운다
+      effects:
+        - belief: { fact: 담장 틈으로 감염체가 들어와 사람들이 몰려나왔다, source: seen }
+
+- id: refugee_at_gate
+  title: 정문의 피란민
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 3
+  weight: 0.6
+  when:
+    zones: [a_base]
+    segments: [morning, day]
+  setup: 정문 앞에 아이 둘을 데린 여자가 서 있다. 며칠은 굶은 얼굴이다. 들여보내 달라고 한다.
+  ai_direction: 여자는 C 영역에서 도망쳤다고 한다. 정말인지는 모른다. 경비 규칙상 하급 대원이 혼자 들일 수는 없다.
+  choices:
+    - id: let_in
+      label: 규칙을 어기고 들여보낸다
+      effects:
+        - deed: { summary: 허락 없이 피란민 가족을 거점에 들였다, tags: [mercy, disobedience], severity: 2, privacy: public }
+    - id: report_up
+      label: 분대장에게 알리고 기다리게 한다
+      effects:
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - deed: { summary: 피란민 가족을 규칙대로 분대장에게 보고했다, tags: [diligence], severity: 1, privacy: public }
+    - id: turn_away
+      label: 돌려보낸다
+      effects:
+        - deed: { summary: 굶은 피란민 가족을 돌려보냈다, tags: [selfishness], severity: 1, privacy: public }
+
+- id: card_game
+  title: 막사의 화투판
+  tags: [squad_life]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    own_territory: true
+    segments: [evening, night]
+  cast:
+    host: { faction: own, ranks: [grunt], known: true }
+  setup: "막사 구석에서 {host:이/가} 담배를 걸고 화투판을 벌였다. 한 판 끼라고 손짓한다."
+  choices:
+    - id: play
+      label: 한 판 끼어 본다
+      check: persuade
+      outcomes:
+        success:
+          - give_item: { item: cigarettes, quantity: 2 }
+          - relation: { who: host, axis: affection, delta: 1 }
+        partial: []
+        miss:
+          - relation: { who: host, axis: respect, delta: -1 }
+    - id: watch
+      label: 구경만 한다
+      effects:
+        - relation: { who: host, axis: affection, delta: 1 }
+    - id: decline
+      label: 피곤하다며 눕는다
+      effects: []
+
+- id: ledger_inspection
+  title: 장부 든 간부
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    zones: [a_base]
+    segments: [morning]
+  cast:
+    officer: { ids: [a_doyun] }
+  setup: "{officer:이/가} 장부를 끼고 막사를 돈다. 소지품을 꺼내 보이라고 한다."
+  ai_direction: 한도윤은 창고에서 물건이 빈다는 걸 알고 있다. 누구를 의심하는지는 말하지 않는다.
+  choices:
+    - id: cooperate
+      label: 순순히 다 꺼내 보인다
+      effects:
+        - relation: { who: officer, axis: trust, delta: 1 }
+    - id: hide
+      label: 몇 가지를 슬쩍 숨긴다
+      check: stealth
+      outcomes:
+        success: []
+        partial:
+          - belief: { fact: 한도윤이 뭔가 눈치챈 것 같다, source: seen }
+        miss:
+          - relation: { who: officer, axis: trust, delta: -2 }
+          - deed: { summary: 소지품 검사 때 물건을 숨기다 들켰다, tags: [deceit], severity: 2, privacy: public }
+
+- id: kitchen_gossip
+  title: 식당 천막의 소문
+  tags: [squad_life]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    zones: [a_base]
+    segments: [morning, evening]
+  cast:
+    cook: { ids: [a_bokja] }
+  setup: "식당 천막에서 국자를 든 할머니가 목소리를 낮추는 척하며 소문을 늘어놓는다."
+  ai_direction: 정복자는 들은 소문을 꼭 한 사람에게 옮긴다. 이번엔 당신이다.
+  choices:
+    - id: listen
+      label: 귀를 기울인다
+      effects:
+        - belief: { fact: "식당에서 들은 말: {scarce:이/가} 바닥이라 다음 주에 배급이 또 준다고 한다", source: rumor }
+    - id: help
+      label: 설거지를 거든다
+      effects:
+        - relation: { who: cook, axis: affection, delta: 2 }
+    - id: ignore
+      label: 밥만 받고 나온다
+      effects: []
+
+- id: wound_fever
+  title: 덧난 상처
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    own_territory: true
+    harm_at_least: light
+  cast:
+    medic: { ids: [a_chaewon] }
+  setup: "상처가 화끈거린다. {medic:이/가} 붕대를 풀어 보더니 표정이 굳는다."
+  ai_direction: 윤채원은 항생제가 있으면 좋겠다고 생각한다. 의무실에는 없다. D 이야기는 하고 싶지 않다.
+  choices:
+    - id: ask
+      label: 솔직하게 말해 달라고 한다
+      effects:
+        - belief: { fact: "윤채원: 상처가 덧나면 항생제가 필요하다. 의무실에는 없다", source: report }
+    - id: shrug
+      label: 괜찮다고 넘긴다
+      effects: []
+
+- id: squad_quarrel
+  title: 보초 순번 다툼
+  tags: [squad_life]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    own_territory: true
+    day_gte: 2
+  cast:
+    a: { faction: own, ranks: [grunt], known: true }
+    b: { faction: own, ranks: [grunt], known: true }
+  setup: "{a:과/와} {b:이/가} 보초 순번을 두고 언성을 높인다. 둘 다 당신을 쳐다본다."
+  choices:
+    - id: side_a
+      label: "{a}의 편을 든다"
+      effects:
+        - relation: { who: a, axis: trust, delta: 1 }
+        - relation: { who: b, axis: affection, delta: -1 }
+    - id: side_b
+      label: "{b}의 편을 든다"
+      effects:
+        - relation: { who: b, axis: trust, delta: 1 }
+        - relation: { who: a, axis: affection, delta: -1 }
+    - id: mediate
+      label: 둘 다 말린다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: a, axis: respect, delta: 1 }
+          - relation: { who: b, axis: respect, delta: 1 }
+        partial: []
+        miss:
+          - relation: { who: a, axis: affection, delta: -1 }
+          - relation: { who: b, axis: affection, delta: -1 }
+
+- id: runner_news
+  title: 심부름꾼의 소식
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    zones: [e_market, water_plant]
+  cast:
+    runner: { ids: [e_yuri] }
+  setup: "빨간 털모자를 쓴 심부름꾼이 배낭을 내리며 요새 강변 소식을 늘어놓는다. 담배 한 개비면 더 말해 주겠단다."
+  choices:
+    - id: buy
+      label: 담배를 주고 소식을 산다
+      effects:
+        - take_item: { item: cigarettes }
+        - belief: { fact: 하유리의 말로는 C가 강변 쪽에 사람을 늘렸다고 한다, source: rumor }
+        - relation: { who: runner, axis: affection, delta: 1 }
+    - id: chat
+      label: 그냥 말동무를 해 준다
+      effects:
+        - relation: { who: runner, axis: affection, delta: 1 }
+
+- id: scrap_find
+  title: 반쯤 묻힌 배낭
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 3
+  weight: 0.6
+  when:
+    zones: [old_town, hospital_ruins, riverside]
+    segments: [morning, day, evening]
+  setup: 무너진 상가 틈에 반쯤 묻힌 배낭이 보인다. 끈 하나가 바람에 흔들린다.
+  ai_direction: 주인은 오래전에 죽었다. 콘크리트가 아직 불안하게 걸려 있다.
+  choices:
+    - id: dig
+      label: 잔해를 치우고 꺼낸다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: medkit }
+        partial:
+          - give_item: { item: cigarettes }
+        miss: []
+    - id: leave
+      label: 그냥 지나간다
+      effects: []
+
+- id: c_patrol_seen
+  title: 고가도로 위의 순찰조
+  tags: [grunt]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    zones: [a_east_post]
+    segments: [morning, day]
+  setup: 고가도로 위로 붉은 완장을 찬 순찰조가 지나간다. 이쪽은 아직 보지 못했다.
+  ai_direction: 서너 명이다. 무언가를 재고 있는 것처럼 초소 쪽을 자주 본다.
+  choices:
+    - id: watch
+      label: 숨어서 끝까지 지켜본다
+      check: sense_danger
+      outcomes:
+        success:
+          - clock: { id: c_east_offensive, delta: -1 }
+          - merit: 1
+          - belief: { fact: C 순찰조가 초소 경비 교대 시간을 재고 있었다. 누군가 정보를 흘렸을지 모른다, source: seen }
+        partial:
+          - belief: { fact: C 순찰조가 초소 쪽을 자주 살폈다, source: seen }
+        miss: []
+    - id: report
+      label: 바로 보고한다
+      effects:
+        - belief: { fact: 고가도로 위로 C 순찰조가 지나갔다, source: seen }
+        - relation: { who: commander, axis: trust, delta: 1 }
+    - id: ignore
+      label: 못 본 척한다
+      effects: []

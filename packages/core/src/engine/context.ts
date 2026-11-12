@@ -66,6 +66,7 @@ export function describePlayerState(state: GameState, content: Content): string 
     describeOwnDeeds(state),
     describePresentNpcs(state, content, player),
     describeKnownPeople(state, content),
+    describeZonePeople(state, content),
     describeBeliefs(state),
   ];
   return sections.filter(Boolean).join("\n\n");
@@ -170,6 +171,23 @@ function describeKnownPeople(state: GameState, content: Content): string {
     return `- ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)}${status}: ${npc.look} ${npc.reputation}`;
   });
   return `알고 있는 인물 (지금 장면에는 없다):\n${lines.join("\n")}`;
+}
+
+/**
+ * 지금 구역에 있을 만한 인물 (등장시킬 수 있는 사람). 모르는 인물은 이름 없이 겉모습만 준다.
+ * 등장하면(npc_presence) 알게 된다. 비밀·평판 같은 프로필은 장면에 들어온 뒤에만 넣는다
+ */
+export function describeZonePeople(state: GameState, content: Content): string {
+  const zone = state.playerZone;
+  if (!zone) return "";
+  const known = new Set(state.known[state.playerId] ?? []);
+  const people = Object.values(content.npcs).filter(
+    (npc) => npc.zone === zone && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead,
+  );
+  const strangers = people.filter((npc) => !known.has(npc.id));
+  if (strangers.length === 0) return "";
+  const lines = strangers.map((npc) => `- (${npc.id}) 이름 모름: ${npc.look}`);
+  return `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나기 전에는 이름을 모른다):\n${lines.join("\n")}`;
 }
 
 /** 플레이어의 Belief. 출처는 넣고 진짜 정확도는 넣지 않는다 */

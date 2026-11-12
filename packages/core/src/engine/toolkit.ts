@@ -46,6 +46,7 @@ export type ToolDisplayEvent =
   | { type: "battle"; event: "started" | "round" | "ended"; title: string; detail: string }
   | { type: "storylet"; event: "started" | "resolved" | "expired"; title: string; detail: string }
   | { type: "epitaph"; name: string; text: string }
+  | { type: "heal"; targetName: string; trackLabel: string; fromLabel: string; toLabel: string; byLabel: string }
   | {
       type: "deed";
       summary: string;

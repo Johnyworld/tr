@@ -88,6 +88,10 @@ export function createContentSchemas(s: Scenario) {
     start_inventory: z.array(contentIdSchema).default([]),
     /** 사망 후 이 인물로 이어서 플레이할 수 있는지 */
     playable: z.boolean().default(false),
+    /** 치료사: 장면에 있으면 치료(take_action.treatment)를 해 줄 수 있다 */
+    healer: z.boolean().default(false),
+    /** 주로 머무는 전선 구역. 플레이어가 그 구역에 있으면 GM이 등장시킬 수 있다 */
+    zone: contentIdSchema.optional(),
   });
 
   /** 역할별 시작 지식 */
@@ -181,6 +185,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ merit: z.number().int().min(-3).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
     z.strictObject({ give_item: z.strictObject({ item: contentIdSchema, from: z.string().optional(), quantity: z.number().int().positive().default(1) }) }),
+    /** 플레이어가 내놓는다 (거래). 가진 것이 없으면 이 선택지를 고를 수 없다 */
+    z.strictObject({ take_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
     /** 세력 클락을 당기거나 늦춘다 (플레이어 행동이 전황에 닿는 길) */
     z.strictObject({ clock: z.strictObject({ id: contentIdSchema, delta: z.number().int().min(-5).max(5) }) }),
     /** own = 플레이어 소속 */

@@ -19,6 +19,7 @@ function tempContent(files: Record<string, string>) {
   // 전투 설정은 실제 아이템(폭약 등)을 참조하므로 뺀다 (아이템은 각 테스트가 정한다)
   const scenario = parse(readFileSync(join(REAL_CONTENT, "scenario.yaml"), "utf8")) as Record<string, unknown>;
   delete scenario.battle;
+  delete scenario.recovery;
   writeFileSync(join(dir, "scenario.yaml"), stringify(scenario));
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(join(dir, path, ".."), { recursive: true });

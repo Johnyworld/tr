@@ -31,3 +31,4 @@ secret:
 stats: { strength: 0, agility: 2, nerve: 1, senses: 2, persuasion: -1 }
 start_inventory: [old_rifle, binoculars]
 playable: true
+zone: a_east_post

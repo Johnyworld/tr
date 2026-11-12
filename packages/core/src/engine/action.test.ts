@@ -27,6 +27,7 @@ const act = (overrides: Partial<TakeActionInput> = {}): TakeActionInput => ({
   narration_summary: null, for_mission: false,
   move_to: null,
   prepare: null,
+  treatment: null,
   battle: null,
   ...overrides,
 });

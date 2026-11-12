@@ -3,6 +3,7 @@ import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import { runStorylets } from "./storyletTools.ts";
+import { runNaturalRecovery } from "./recovery.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -22,5 +23,7 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const missions = runMissionStartOfTurn(ctx);
   // 조건이 맞는 이야기 (간격이 지났고 전투 중이 아닐 때)
   const storylets = runStorylets(ctx);
-  return [...war, ...battles, ...missions, ...storylets];
+  // 새 부상 없이 며칠이 지나면 조금씩 낫는다
+  const healed = runNaturalRecovery(ctx);
+  return [...war, ...battles, ...missions, ...storylets, ...healed];
 }

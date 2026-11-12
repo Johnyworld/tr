@@ -66,6 +66,14 @@ gm_tone: prompts/post_apoc_tone.md
 gm_rules: prompts/gm_rules.md
 mcp_guide: prompts/mcp_play.md
 
+# 부상 회복 (*임시*). 치료사·아이템으로 치료하거나, 새 부상 없이 며칠 지나면 조금씩 낫는다
+recovery:
+  natural_days: 2
+  # 중상까지는 저절로 낫는다. 치명상은 치료가 필요하다
+  natural_max_level: serious
+  items: { medkit: 1, antibiotics: 2 }
+  healer_steps: 1
+
 # 세력 단위 전쟁 (9단계, 기획서 9장). 규칙은 core, 여기는 수치와 문구 (*임시*)
 war:
   # 1인당 하루 소모량

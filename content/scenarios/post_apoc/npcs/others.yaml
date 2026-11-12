@@ -1,0 +1,254 @@
+# 다른 세력 인물 (12단계 초안). 처음에는 모르는 사람이다 (그 구역에 가면 겉모습으로 보인다)
+
+# ── B ──
+- id: b_hyunwoo
+  name: 장현우
+  faction: faction_b
+  rank: leader
+  age: 47
+  look: 각진 턱에 늘 면도를 한 얼굴. 낡았지만 다림질한 셔츠.
+  reputation: B 거점의 대표. A와 연합을 맺은 사람이지만, 요즘 표정이 어둡다.
+  want: B 사람들을 살려서 이 전쟁을 끝내는 것
+  fear: A와 함께 가라앉는 것
+  values: { discipline: 1, loyalty: 0, mercy: 1, honesty: -1, self_interest: 2 }
+  temperament: [cautious, calculating]
+  voice:
+    style: 정중하지만 거리를 두는 존댓말. 질문에 질문으로 답한다
+    samples:
+      - "A 쪽 분이 여기까지 무슨 일로?"
+      - "우리도 사정이 있습니다. 그쪽 대표께 그렇게 전해 주시죠."
+  routine: { morning: 회의, day: 거점 순찰, night: 사무실 }
+  rules:
+    - A 사람 앞에서는 연합 이야기를 피하지 않지만 확답을 하지 않는다
+  knows:
+    - B의 탄약이 거의 바닥났다는 것
+  doesnt_know:
+    - C 지도부는 B를 받아들일 생각이 없다
+  secret:
+    content: 지난주 C의 사자를 몰래 만났다. 연합을 깨면 B를 건드리지 않겠다는 제안을 받고 아직 답하지 않았다
+    reveal_when: B의 앞날을 진심으로 걱정해 주는 사람에게, 둘만 있을 때
+    min_trust: 4
+  stats: { strength: 0, agility: 0, nerve: 1, senses: 1, persuasion: 2 }
+  start_inventory: [radio]
+  playable: false
+  zone: b_base
+
+- id: b_mina
+  name: 오미나
+  faction: faction_b
+  rank: grunt
+  age: 24
+  look: 오지호와 똑같은 주근깨. 머리를 짧게 자르고 오른손에 붕대를 감았다.
+  reputation: B의 경비병. A에 있는 남동생 이야기를 자주 한다.
+  want: 동생과 같은 곳에서 사는 것
+  fear: B가 무너지는 날 동생을 못 보는 것
+  values: { discipline: 1, loyalty: 3, mercy: 1, honesty: 2, self_interest: 0 }
+  temperament: [blunt, protective]
+  voice:
+    style: 무뚝뚝한 반말. 동생 이야기를 할 때만 말이 길어진다
+    samples:
+      - "지호는 밥은 먹고 다니냐."
+      - "여기 분위기? 묻지 마. 안 좋아."
+  routine: { day: 정문 경비, night: 막사 }
+  rules:
+    - 동생 소식을 가져온 사람에게는 경계를 푼다
+  knows:
+    - B 간부 몇이 밤마다 따로 모인다는 것
+    - 동생 오지호가 A에 있다는 것
+  doesnt_know:
+    - 대표 장현우가 C의 사자를 만났다
+  secret:
+    content: B 안에서 C로 넘어가자는 사람들의 이름을 몇 안다. 동생 때문에 아무에게도 말하지 않았다
+    reveal_when: 지호의 안전을 약속받았을 때
+    min_trust: 3
+  stats: { strength: 1, agility: 1, nerve: 1, senses: 1, persuasion: -1 }
+  start_inventory: [old_rifle]
+  playable: true
+  zone: b_base
+
+# ── C ──
+- id: c_seokjin
+  name: 고석진
+  faction: faction_c
+  rank: grunt
+  age: 27
+  look: 왼팔에 붉은 완장. 광대뼈가 드러날 만큼 말랐고 눈 밑이 검다.
+  reputation: C의 정찰병. 물류창고 경비조에 있다.
+  want: 살아서 이 전쟁에서 빠져나가는 것
+  fear: 지도부의 본보기가 되는 것
+  values: { discipline: -1, loyalty: 0, mercy: 1, honesty: 0, self_interest: 2 }
+  temperament: [nervous, cautious]
+  voice:
+    style: 낮게 빠른 말투. 상대를 떠보는 반말. 겁을 먹으면 존댓말로 바뀐다
+    samples:
+      - "쏘지 마. 나 혼자야."
+      - "거기 있는 사람들? 난 모르는 일이야. 진짜로."
+  routine: { night: 물류창고 경비, day: 정찰 }
+  rules:
+    - 지도부 이야기를 하면 주위를 살핀다
+    - 살 길이 보이면 정보를 판다
+  knows:
+    - 물류창고 경비 교대는 새벽 다섯 시다
+    - 수용소 안쪽 문은 마경수만 열쇠가 있다
+  doesnt_know:
+    - E의 탁봉수가 A 초소 정보를 C에 팔았다
+  secret:
+    content: 물류창고 수용소에 A의 정찰조 셋이 갇혀 있다. 그중 하나는 오씨 성을 쓴다
+    reveal_when: 목숨을 살려 주겠다는 약속을 믿을 수 있을 때
+    min_trust: 2
+  stats: { strength: 0, agility: 2, nerve: -1, senses: 2, persuasion: 0 }
+  start_inventory: [c_armband, kitchen_knife]
+  playable: true
+  zone: c_warehouse
+
+- id: c_gyeongsu
+  name: 마경수
+  faction: faction_c
+  rank: officer
+  age: 45
+  look: 깔끔하게 빗어 넘긴 머리, 장교 외투. 손이 늘 장갑 속에 있다.
+  reputation: C의 간부. 고가도로 너머를 맡고 있다. 포로를 다루는 방식이 잔혹하다는 소문의 주인공.
+  want: 동쪽 공세를 성공시켜 지도부에 오르는 것
+  fear: 실패한 간부가 받는 본보기
+  values: { discipline: 3, loyalty: 0, mercy: -3, honesty: -1, self_interest: 2 }
+  temperament: [ruthless, patient]
+  voice:
+    style: 느리고 부드러운 반말. 협박할 때 더 상냥해진다
+    samples:
+      - "급할 것 없어. 너희가 먼저 지칠 거니까."
+      - "교환? 좋지. 뭘 내놓을 수 있는데."
+  routine: { day: 물류창고 지휘소, night: 지휘소 }
+  rules:
+    - 포로는 거래 조건이자 본보기다
+  knows:
+    - 동쪽 공세에 쓸 병력이 고가도로 너머에 모이고 있다
+  doesnt_know:
+    - 부하 고석진이 탈영을 생각하고 있다
+  stats: { strength: 1, agility: 0, nerve: 3, senses: 1, persuasion: 2 }
+  start_inventory: [radio, old_rifle]
+  playable: false
+  zone: c_warehouse
+
+# ── D ──
+- id: d_eunyoung
+  name: 서은영
+  faction: faction_d
+  rank: leader
+  age: 39
+  look: 소매를 걷은 흰 가운, 안경 한쪽 다리를 철사로 감았다.
+  reputation: D의 의사이자 대표. 약을 거래 조건으로 쓴다는 평 때문에 차갑다는 말을 듣는다.
+  want: 약이 떨어지기 전에 누구 편에도 서지 않고 겨울을 넘기는 것
+  fear: 약을 둘러싸고 무리들이 쳐들어오는 것
+  values: { discipline: 2, loyalty: 1, mercy: 1, honesty: 2, self_interest: 1 }
+  temperament: [precise, guarded]
+  voice:
+    style: 건조한 존댓말. 감정 없이 조건부터 말한다
+    samples:
+      - "무엇을 내놓으실 수 있습니까. 그것부터 듣지요."
+      - "치료는 해 드립니다. 약은 다른 이야기예요."
+  routine: { morning: 진료, day: 약제실, night: 진료소 }
+  rules:
+    - 약은 공짜로 주지 않는다. 대신 사람은 가리지 않고 치료한다
+  knows:
+    - 옛 시립병원 지하 약제실에 아직 약이 남아 있다
+    - 윤채원이라는 이름
+  doesnt_know:
+    - 윤채원이 A에서 약이 모자라 고생하고 있다
+  secret:
+    content: 윤채원은 원래 D의 간호사였다. 병원에서 감염된 아이를 살리려고 약을 가지고 나갔고, D는 그를 쫓아냈다
+    reveal_when: 윤채원의 안부를 진심으로 묻는 사람에게
+    min_trust: 3
+  stats: { strength: -1, agility: 0, nerve: 2, senses: 2, persuasion: 1 }
+  start_inventory: [medkit, antibiotics]
+  playable: false
+  healer: true
+  zone: d_clinic
+
+- id: d_minho
+  name: 남민호
+  faction: faction_d
+  rank: grunt
+  age: 31
+  look: 덩치가 크고 목에 방독면을 걸었다. 등에 빈 배낭을 지고 다닌다.
+  reputation: D의 수색꾼. 옛 시립병원을 드나드는 몇 안 되는 사람.
+  want: 병원 지하 약제실을 혼자 다 털어 D에서 한자리 얻는 것
+  fear: 병원 지하의 어둠
+  values: { discipline: 0, loyalty: 1, mercy: 0, honesty: 0, self_interest: 2 }
+  temperament: [gruff, greedy]
+  voice:
+    style: 짧은 반말. 거래 이야기에만 말이 많아진다
+    samples:
+      - "여기 뭐 하러 왔어. 여긴 내 구역이야."
+      - "같이 들어가자고? 몫은 칠 대 삼."
+  routine: { day: 병원 수색, night: 병원 입구 }
+  rules:
+    - 병원 안으로 혼자 들어가지 않는다
+  knows:
+    - 병원 지하 약제실로 가는 계단은 무너졌고, 엘리베이터 통로로 내려가야 한다
+  doesnt_know: []
+  stats: { strength: 2, agility: 0, nerve: 0, senses: 1, persuasion: 0 }
+  start_inventory: [kitchen_knife, water_bottle]
+  playable: true
+  zone: hospital_ruins
+
+# ── E ──
+- id: e_bongsu
+  name: 탁봉수
+  faction: faction_e
+  rank: leader
+  age: 58
+  look: 금니가 두 개, 기름때 묻은 가죽 조끼. 손가락에 반지가 여럿이다.
+  reputation: E 상인단의 우두머리. 누구에게나 웃으며 판다. 이기는 쪽에 붙을 사람이라는 평.
+  want: 전쟁이 끝났을 때 이긴 쪽의 단골이 되는 것
+  fear: 양쪽에서 동시에 버림받는 것
+  values: { discipline: 0, loyalty: -1, mercy: 0, honesty: -2, self_interest: 3 }
+  temperament: [genial, calculating]
+  voice:
+    style: 능글맞은 존댓말. 손님을 "형님", "누님"이라 부른다
+    samples:
+      - "형님, 요즘 같은 때 이 값이면 거저입니다, 거저."
+      - "누구 편이냐고요? 저는 손님 편이죠."
+  routine: { morning: 장터, day: 장터, night: 정수장 창고 }
+  rules:
+    - 정보도 물건처럼 판다
+    - 빚진 사람은 끝까지 기억한다
+  knows:
+    - C가 탄약을 넉넉히 사들이고 있다
+    - B 대표가 C의 사자를 만났다는 소문
+  doesnt_know: []
+  secret:
+    content: C에 A 동쪽 초소의 경비 교대 시간을 팔았다. 값으로 탄약 두 상자를 받았다
+    reveal_when: 더 큰 이익이나 목숨이 걸렸을 때
+    min_trust: 4
+  stats: { strength: -1, agility: 0, nerve: 1, senses: 2, persuasion: 3 }
+  start_inventory: [trade_token, cigarettes]
+  playable: false
+  zone: e_market
+
+- id: e_yuri
+  name: 하유리
+  faction: faction_e
+  rank: grunt
+  age: 17
+  look: 빨간 털모자에 큰 배낭. 운동화 끈이 짝짝이다.
+  reputation: E의 심부름꾼. 거점 사이로 편지와 소식을 나른다.
+  want: 언젠가 자기 장사를 하는 것
+  fear: 혼자 강변을 건너는 밤
+  values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 1, self_interest: 1 }
+  temperament: [talkative, curious]
+  voice:
+    style: 빠르고 밝은 반말 섞인 존댓말
+    samples:
+      - "편지요? 한 통에 담배 한 개비! 싸죠?"
+      - "C 쪽 장터는 요새 분위기 진짜 이상해요."
+  routine: { morning: 정수장, day: 거점 사이 심부름, night: 장터 }
+  rules:
+    - 맡은 편지는 뜯어보지 않는다 (가끔은 본다)
+  knows:
+    - B 거점에 오미나라는 경비병이 동생에게 편지를 보내고 싶어 한다는 것
+    - 정수장 펌프는 하루에 두 번만 돌린다
+  doesnt_know: []
+  stats: { strength: -1, agility: 2, nerve: 0, senses: 1, persuasion: 1 }
+  start_inventory: [water_bottle, cigarettes]
+  playable: true
+  zone: water_plant

@@ -158,6 +158,22 @@ export const scenarioFileSchema = z
           .min(1),
       })
       .optional(),
+    /**
+     * 부상 회복 (플레이 테스트 1회차 문제 4). 치료(아이템·치료사)와 저절로 낫기.
+     * 없으면 회복하지 않는다
+     */
+    recovery: z
+      .strictObject({
+        /** 새 부상 없이 이만큼(일) 지나면 한 단계 낫는다 */
+        natural_days: z.number().positive(),
+        /** 이 단계까지만 저절로 낫는다 (더 나쁘면 치료가 필요하다) */
+        natural_max_level: id,
+        /** 치료에 쓰는 아이템 → 낫는 단계 수 (하나 쓴다) */
+        items: z.record(id, z.number().int().positive()),
+        /** 치료사(장면에 있는 healer NPC)에게 받으면 낫는 단계 수. 하루에 한 번 */
+        healer_steps: z.number().int().min(0),
+      })
+      .optional(),
     /** 스토리렛 발동 간격 (기획서 10.3). 마지막 스토리렛 뒤 이만큼 지나야 다음 것이 열리고, 열린 것은 이만큼 지나면 지나간다 */
     storylet_pacing: z
       .strictObject({ min_gap_hours: z.number().min(0), expire_hours: z.number().positive() })
@@ -211,6 +227,11 @@ export const scenarioFileSchema = z
       }
       const ids = s.battle.effects.map((e) => e.id);
       if (new Set(ids).size !== ids.length) problem("battle.effects에 중복된 id가 있다");
+    }
+    if (s.recovery) {
+      const harm = s.condition_tracks.find((t) => t.id === s.harm_track);
+      const level = s.recovery.natural_max_level;
+      if (harm && !harm.levels.some((l) => l.id === level)) problem(`recovery.natural_max_level: 알 수 없는 단계 ${level}`);
     }
     const ranks = new Set(s.rank_ladder.map((r) => r.id));
     for (const rank of [s.promotion.from, s.promotion.to]) {

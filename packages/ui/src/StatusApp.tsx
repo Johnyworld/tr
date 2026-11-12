@@ -70,9 +70,15 @@ export function StatusApp() {
     };
   }, []);
 
-  // 맨 아래를 보고 있었으면 새 기록이 올 때 따라 내려간다
+  // 맨 아래를 보고 있었으면 새 기록이 올 때 따라 내려간다.
+  // 플레이어가 새로 말했으면(새 player 기록) 위로 올려 읽던 중이라도 맨 아래로 간다
+  const seen = useRef(0);
   useEffect(() => {
     const el = logRef.current;
+    const log = status?.open ? (status.log ?? []) : [];
+    if (log.length < seen.current) seen.current = 0; // 다른 게임
+    if (log.slice(seen.current).some((e) => e.kind === "player")) stick.current = true;
+    seen.current = log.length;
     if (el && stick.current) el.scrollTo({ top: el.scrollHeight });
   }, [status, tab]);
 

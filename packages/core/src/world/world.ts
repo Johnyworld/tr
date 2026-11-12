@@ -10,6 +10,8 @@ import { buildGmGuide } from "../engine/prompt.ts";
 import { executeTool, gmToolSpecs } from "../engine/tools.ts";
 import type { ToolContext, ToolOutcome, ToolSpec } from "../engine/toolkit.ts";
 import { buildPlayerView, buildTranscriptView, type PlayerView, type TranscriptView } from "../views/player.ts";
+import { runCommand } from "../commands/commands.ts";
+import type { TimeSegment } from "../rules/time.ts";
 
 /** 새 세션의 GM이 이어 갈 때 돌려줄 최근 요약 수 */
 export const RECAP_TURNS = 5;
@@ -130,6 +132,23 @@ export class GameWorld {
   /** GM에게 보여 줄 현재 장면 (정보 필터 적용) */
   sceneForGm(): string {
     return describePlayerState(this.state(), this.content);
+  }
+
+  /** 정보 명령어 (읽기 전용, 시간을 쓰지 않는다) */
+  runCommand(input: string): string {
+    return runCommand(input, { state: this.state(), content: this.content, summaries: this.summaries() });
+  }
+
+  /** 빨리감기: 지정한 시간대가 될 때까지 기다린다 (끼어들기가 생기면 멈춤). take_action과 같은 경로다 */
+  fastForward(until: TimeSegment): ReturnType<GameWorld["executeTool"]> {
+    return this.executeTool("take_action", {
+      intent: "기다린다",
+      check: null,
+      activity: { kind: "wait", until },
+      deed: null,
+      target: null,
+      narration_summary: null,
+    });
   }
 
   playerView(): PlayerView {

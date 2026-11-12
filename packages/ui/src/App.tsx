@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { fetchGame, playTurn, resetGame } from "./api.ts";
+import { fetchCommands, fetchGame, playTurn, resetGame, runCommand, type CommandInfo } from "./api.ts";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { ToolCard } from "./ToolCard.tsx";
 import type { PlayerView, TranscriptView } from "./types.ts";
@@ -13,6 +13,9 @@ export function App() {
   /** 진행 중인 턴의 기록. null이면 진행 중이 아님 */
   const [live, setLive] = useState<TranscriptView[] | null>(null);
   const [input, setInput] = useState("");
+  /** 정보 명령어 결과 (읽기 전용이라 세이브에 남기지 않고 화면에만 보여 준다) */
+  const [commandOutput, setCommandOutput] = useState<{ input: string; output: string } | null>(null);
+  const [commands, setCommands] = useState<CommandInfo[]>([]);
   const [notice, setNotice] = useState<Notice>(null);
   const abortRef = useRef<AbortController | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
@@ -33,6 +36,10 @@ export function App() {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [transcript, live]);
 
+  useEffect(() => {
+    fetchCommands().then(setCommands).catch(() => undefined);
+  }, []);
+
   async function syncGame() {
     const game = await fetchGame();
     setPlayer(game.player);
@@ -44,6 +51,17 @@ export function App() {
     e?.preventDefault();
     const text = input.trim();
     if (!text || busy) return;
+
+    // "!"로 시작하면 정보 명령어: GM에게 보내지 않고 시간도 흐르지 않는다
+    if (text.startsWith("!")) {
+      try {
+        setCommandOutput({ input: text, output: await runCommand(text) });
+        setInput("");
+      } catch (err) {
+        setNotice({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+      }
+      return;
+    }
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -145,6 +163,30 @@ export function App() {
 
           {notice && <div className={`notice ${notice.kind}`}>{notice.text}</div>}
 
+          {commandOutput && (
+            <div className="command-output">
+              <div className="command-head">
+                <span>{commandOutput.input}</span>
+                <button type="button" className="link" onClick={() => setCommandOutput(null)}>
+                  닫기
+                </button>
+              </div>
+              <pre>{commandOutput.output}</pre>
+            </div>
+          )}
+
+          {input.startsWith("!") && !busy && (
+            <div className="command-palette">
+              {commands
+                .filter((c) => `!${c.name}`.startsWith(input.trim().split(/\s/)[0] ?? "!"))
+                .map((c) => (
+                  <button key={c.name} type="button" onClick={() => setInput(`!${c.name}${c.args ? " " : ""}`)} title={c.description}>
+                    !{c.name}
+                  </button>
+                ))}
+            </div>
+          )}
+
           {dead ? (
             <div className="composer">
               <button type="button" onClick={newGame} className="wide">
@@ -157,7 +199,7 @@ export function App() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="행동이나 대사를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
+                placeholder="행동이나 대사를 입력하세요. !도움말 로 정보 명령어 (Enter 전송, Shift+Enter 줄바꿈)"
                 rows={2}
                 disabled={busy}
                 autoFocus

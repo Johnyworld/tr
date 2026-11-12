@@ -9,6 +9,25 @@ export async function fetchGame(): Promise<GameView> {
   return (await res.json()) as GameView;
 }
 
+export type CommandInfo = { name: string; args: string; description: string };
+
+export async function fetchCommands(): Promise<CommandInfo[]> {
+  const res = await fetch("/api/commands");
+  return res.ok ? ((await res.json()) as CommandInfo[]) : [];
+}
+
+/** 정보 명령어 실행 (읽기 전용) */
+export async function runCommand(input: string): Promise<string> {
+  const res = await fetch("/api/command", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ input }),
+  });
+  const body = (await res.json()) as { output?: string; error?: string };
+  if (!res.ok) throw new Error(body.error ?? `서버 오류 (${res.status})`);
+  return body.output ?? "";
+}
+
 export async function resetGame(): Promise<GameView> {
   const res = await fetch("/api/game/reset", { method: "POST" });
   const body = (await res.json()) as GameView & { error?: string };

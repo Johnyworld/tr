@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import { InvalidPlayerInputError, MAX_INPUT_LENGTH, normalizePlayerInput } from "@trpg/core";
+import { COMMANDS, InvalidPlayerInputError, MAX_INPUT_LENGTH, normalizePlayerInput } from "@trpg/core";
 import { TurnInProgressError, type WebSession } from "./session.ts";
 
 const turnRequestSchema = z.object({
@@ -18,6 +18,17 @@ export function createApp(session: WebSession) {
   app.get("/api/health", (c) => c.json({ ok: true }));
 
   app.get("/api/game", (c) => c.json(session.view()));
+
+  // 정보 명령어 (읽기 전용, 시간이 흐르지 않는다). 처리는 core가 한다
+  app.get("/api/commands", (c) =>
+    c.json(COMMANDS.map((cmd) => ({ name: cmd.name, args: cmd.args ?? "", description: cmd.description }))),
+  );
+
+  app.post("/api/command", async (c) => {
+    const parsed = z.object({ input: z.string().min(1).max(200) }).safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "요청 형식이 올바르지 않습니다." }, 400);
+    return c.json({ output: session.world.runCommand(parsed.data.input) });
+  });
 
   app.post("/api/game/reset", (c) => {
     try {

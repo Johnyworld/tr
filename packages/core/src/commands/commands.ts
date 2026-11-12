@@ -1,0 +1,302 @@
+import type { Content } from "../content/schemas.ts";
+import type { GameState } from "../game/state.ts";
+import type { TurnSummary } from "../engine/log.ts";
+import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
+import { activeMissionOf, daysServed, MISSION_STATUS_LABELS } from "../game/missions.ts";
+import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
+import { dayOf, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
+import { conditionPenalty, rankLabel } from "../scenario/scenario.ts";
+import { describeRequirement } from "../engine/missionTools.ts";
+import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
+
+/**
+ * MUD식 정보 명령어 (기획서 11.7).
+ * - 읽기 전용: 게임 시간을 쓰지 않고 상태를 바꾸지 않는다 (원칙 11, 테스트로 보장)
+ * - 모든 출력은 정보 필터를 거친다: 플레이어가 아는 것, 플레이어가 느끼는 관계만
+ * - 행동(이동, 수색, 전투)은 명령어로 만들지 않는다. 자연어 → take_action
+ */
+
+/** 명령어가 읽는 것. 모두 읽기 전용이다 */
+export type CommandContext = {
+  readonly state: GameState;
+  readonly content: Content;
+  /** 현재 캐릭터의 요약 기록 (오래된 것부터) */
+  readonly summaries: readonly TurnSummary[];
+};
+
+export type CommandDef = {
+  id: string;
+  /** 대표 이름 (! 뒤에 쓰는 말) */
+  name: string;
+  aliases: readonly string[];
+  args?: string;
+  description: string;
+  run: (ctx: CommandContext, args: string) => string;
+};
+
+const NOT_YET = (what: string, step: string) => `${what}: 아직 없습니다 (${step}에서 추가됩니다).`;
+
+function playerOf(ctx: CommandContext) {
+  const player = ctx.state.characters[ctx.state.playerId];
+  if (!player) throw new Error("플레이어 캐릭터가 없습니다.");
+  return player;
+}
+
+function roleLabelOf(ctx: CommandContext) {
+  const player = playerOf(ctx);
+  const role = ctx.content.roles[ctx.state.roleId];
+  return role?.rank === player.rank ? role.label : rankLabel(ctx.content.scenario, player.rank);
+}
+
+function clockLine(state: GameState) {
+  const m = minuteOfDay(state.time);
+  const hhmm = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  return `D+${daysServed(state.time, state.runStartedAt)} · ${dayOf(state.time)}일차 · ${hhmm} · ${SEGMENT_LABELS[segmentOf(state.time)]}`;
+}
+
+/** 관계 축 하나를 게이지로 (-5 ~ +5를 0 ~ 10으로) */
+function relationGauge(value: number) {
+  return gauge(value - RELATION_MIN, RELATION_MAX - RELATION_MIN);
+}
+
+const status: CommandDef = {
+  id: "status",
+  name: "상태",
+  aliases: ["스탯", "status"],
+  description: "능력치, 몸 상태, 소속과 등급, 평판",
+  run(ctx) {
+    const { state, content } = ctx;
+    const scenario = content.scenario;
+    const player = playerOf(ctx);
+    const lines = [header(`${player.name} · ${roleLabelOf(ctx)}`), clockLine(state), ""];
+    lines.push(scenario.stats.map((s) => `${s.label} ${signed(player.stats[s.id] ?? 0)}`).join("   "), "");
+    for (const track of scenario.condition_tracks) {
+      const index = Math.max(0, track.levels.findIndex((l) => l.id === player.conditions[track.id]));
+      lines.push(gaugeLine(track.label, index, track.levels.length - 1, track.levels[index]!.label));
+    }
+    const penalty = conditionPenalty(scenario, player);
+    if (penalty !== 0) lines.push(`판정 보정 ${signed(penalty)}`);
+    lines.push("");
+    const commanderId = content.roles[state.roleId]?.commander;
+    const commander = commanderId ? state.characters[commanderId] : undefined;
+    lines.push(`소속  ${roleLabelOf(ctx)}${commander ? ` (상관 ${commander.name})` : ""}`);
+    const trust = commander ? (state.perceived[commander.id]?.trust ?? 0) : null;
+    lines.push(
+      `평판  공적 ${player.merit} · 불복종 ${player.disobedience}회` +
+        (trust !== null && commander ? ` · ${commander.name}의 신뢰 ${relationLabel(trust)}` : ""),
+    );
+    if (player.dead) lines.push("", "사망했습니다.");
+    return lines.join("\n");
+  },
+};
+
+const inventory: CommandDef = {
+  id: "inventory",
+  name: "소지품",
+  aliases: ["인벤", "가방", "inventory"],
+  description: "가진 물건과 주변에 놓인 물건",
+  run(ctx) {
+    const player = playerOf(ctx);
+    const list = (inv: Record<string, number>) =>
+      Object.entries(inv).map(([id, qty]) => `  ${ctx.content.items[id]?.name ?? id}${qty > 1 ? ` ×${qty}` : ""}`);
+    const own = list(player.inventory);
+    const scene = list(ctx.state.scene.items);
+    return [
+      header("소지품"),
+      ...(own.length ? own : ["  없음"]),
+      ...(scene.length ? ["", "주변에 놓인 물건", ...scene] : []),
+      "",
+      NOT_YET("무게", "자원 단계(9)"),
+    ].join("\n");
+  },
+};
+
+const map: CommandDef = {
+  id: "map",
+  name: "지도",
+  aliases: ["map"],
+  description: "현재 위치, 아는 장소와 연결, 이동 시간",
+  run: () => [header("지도"), NOT_YET("장소와 이동", "장소 시스템")].join("\n"),
+};
+
+const time: CommandDef = {
+  id: "time",
+  name: "시간",
+  aliases: ["시각", "time"],
+  description: "날짜, 시각, 계절, 날씨",
+  run: (ctx) => [header("시간"), clockLine(ctx.state), formatTime(ctx.state.time), "", NOT_YET("계절·날씨", "세계 시뮬레이션")].join("\n"),
+};
+
+const people: CommandDef = {
+  id: "people",
+  name: "인물",
+  aliases: ["사람", "people"],
+  args: "[이름]",
+  description: "아는 인물 목록 / 특정 인물에 대해 아는 것과 관계",
+  run(ctx, args) {
+    const { state, content } = ctx;
+    const known = (state.known[state.playerId] ?? []).filter((id) => state.characters[id]);
+    if (!args) {
+      if (known.length === 0) return [header("인물"), "아는 인물이 없습니다."].join("\n");
+      return [
+        header("인물"),
+        ...known.map((id) => {
+          const c = state.characters[id]!;
+          const r = state.perceived[id] ?? NEUTRAL_RELATION;
+          const here = state.scene.present.includes(id) ? " · 함께 있음" : "";
+          return `${c.name}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : ""}${here}  (신뢰 ${relationLabel(r.trust)})`;
+        }),
+        "",
+        "자세히: !인물 이름",
+      ].join("\n");
+    }
+    const query = args.trim();
+    const id = known.find((k) => state.characters[k]!.name === query || k === query) ??
+      known.find((k) => state.characters[k]!.name.includes(query));
+    if (!id) return `아는 인물 중에 "${query}"이(가) 없습니다. 목록: !인물`;
+    const c = state.characters[id]!;
+    const npc = content.npcs[id];
+    const r = state.perceived[id] ?? NEUTRAL_RELATION;
+    const facts = (state.beliefs[state.playerId] ?? []).filter((b) => b.fact.includes(c.name)).slice(-5);
+    return [
+      header(`${c.name} · ${rankLabel(content.scenario, c.rank)}`),
+      ...(npc ? [npc.look, npc.reputation] : []),
+      "",
+      "나에 대한 태도 (마지막으로 만났을 때)",
+      ...RELATION_AXES.map((axis) => gaugeLine(RELATION_AXIS_LABELS[axis], r[axis] - RELATION_MIN, RELATION_MAX - RELATION_MIN, `${relationLabel(r[axis])} ${signed(r[axis])}`)),
+      ...(facts.length ? ["", "이 인물에 대해 아는 것", ...facts.map((b) => `  [${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`)] : []),
+    ].join("\n");
+  },
+};
+
+const factions: CommandDef = {
+  id: "factions",
+  name: "세력",
+  aliases: ["factions"],
+  description: "아는 세력 정보와 관계",
+  run: () => [header("세력"), NOT_YET("세력 정보", "세력 시뮬레이션 단계(9)")].join("\n"),
+};
+
+const mission: CommandDef = {
+  id: "mission",
+  name: "임무",
+  aliases: ["mission"],
+  description: "현재 임무와 목표",
+  run(ctx) {
+    const { state, content } = ctx;
+    const active = activeMissionOf(state.missions, state.playerId);
+    const ended = Object.values(state.missions)
+      .filter((m) => m.assigneeId === state.playerId && m.status !== "active")
+      .slice(-3);
+    const lines = [header("임무")];
+    if (active) {
+      lines.push(active.title, active.briefing, `기한 ${formatTime(active.deadline)}`, "");
+      active.requirements.forEach((r, i) => lines.push(`  - ${describeRequirement(content.scenario, r, active.progress[i] ?? 0)}`));
+    } else {
+      lines.push("수행 중인 임무가 없습니다. 상관에게 물어보세요.");
+    }
+    if (ended.length) lines.push("", "최근 임무", ...ended.map((m) => `  ${m.title} — ${MISSION_STATUS_LABELS[m.status]}`));
+    return lines.join("\n");
+  },
+};
+
+const ration: CommandDef = {
+  id: "ration",
+  name: "배급",
+  aliases: ["ration"],
+  description: "받은 배급, 무리 자원에 대해 아는 것",
+  run: () => [header("배급"), NOT_YET("배급과 자원", "자원 단계(9)")].join("\n"),
+};
+
+const rumors: CommandDef = {
+  id: "rumors",
+  name: "소문",
+  aliases: ["rumors"],
+  description: "최근 들은 소문",
+  run(ctx) {
+    const heard = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.source === "rumor").slice(-10).reverse();
+    return [header("소문"), ...(heard.length ? heard.map((b) => `  ${b.fact}`) : ["  들은 소문이 없습니다."])].join("\n");
+  },
+};
+
+/** 검색어 없이 보여 줄 최근 일지 수 */
+export const JOURNAL_RECENT = 8;
+
+const journal: CommandDef = {
+  id: "journal",
+  name: "일지",
+  aliases: ["기록", "journal"],
+  args: "[검색어]",
+  description: "지난 일 기록 (검색어로 찾기)",
+  run(ctx, args) {
+    // RAG(6-1) 전까지는 현재 캐릭터의 요약 기록에서 단순 검색한다
+    const query = args.trim();
+    const entries = ctx.summaries.filter((s) => !query || s.text.includes(query));
+    const shown = (query ? entries : entries.slice(-JOURNAL_RECENT)).slice(-JOURNAL_RECENT).reverse();
+    return [
+      header(query ? `일지: ${query}` : "일지"),
+      ...(shown.length
+        ? shown.map((s) => `  ${formatTime(s.time)}${s.kind === "scene" ? " [장면]" : ""}  ${s.text.replace(/\s+/g, " ")}`)
+        : ["  기록이 없습니다."]),
+      ...(query ? ["", "(의미 검색은 RAG 단계에서 연결됩니다)"] : []),
+    ].join("\n");
+  },
+};
+
+const chronicle: CommandDef = {
+  id: "chronicle",
+  name: "연대기",
+  aliases: ["chronicle"],
+  description: "죽은 캐릭터들의 기록",
+  run: () => [header("연대기"), NOT_YET("연대기", "사망·계승 단계(11)")].join("\n"),
+};
+
+const help: CommandDef = {
+  id: "help",
+  name: "도움말",
+  aliases: ["help", "?"],
+  description: "명령어 목록",
+  run: () =>
+    [
+      header("명령어"),
+      ...COMMANDS.map((c) => `!${c.name}${c.args ? ` ${c.args}` : ""}`.padEnd(14) + c.description),
+      "",
+      "행동은 명령어가 아니라 자연어로 입력하세요. 명령어는 시간을 쓰지 않습니다.",
+    ].join("\n"),
+};
+
+/** 명령어 정의 (데이터). 이름과 별칭은 시나리오별로 바꿀 수 있게 둔다 */
+export const COMMANDS: readonly CommandDef[] = [
+  status,
+  inventory,
+  map,
+  time,
+  people,
+  factions,
+  mission,
+  ration,
+  rumors,
+  journal,
+  chronicle,
+  help,
+];
+
+export const COMMAND_PREFIX = "!";
+
+export function isCommand(input: string): boolean {
+  return input.trim().startsWith(COMMAND_PREFIX);
+}
+
+/** "!인물 강태호" → 명령어 실행 결과 텍스트. 알 수 없는 명령어면 가까운 것을 제안한다 */
+export function runCommand(input: string, ctx: CommandContext, commands: readonly CommandDef[] = COMMANDS): string {
+  const body = input.trim().replace(/^!/, "").trim();
+  const [word = "", ...rest] = body.split(/\s+/);
+  const args = rest.join(" ");
+  const command = commands.find((c) => c.name === word || c.aliases.includes(word));
+  if (command) return command.run(ctx, args);
+
+  const names = commands.flatMap((c) => [c.name, ...c.aliases].map((n) => ({ n, c })));
+  const best = names.map((x) => ({ ...x, d: editDistance(word, x.n) })).sort((a, b) => a.d - b.d)[0];
+  const suggestion = best && best.d <= Math.max(1, Math.floor(word.length / 2)) ? ` 혹시 !${best.c.name} 인가요?` : "";
+  return `알 수 없는 명령어: !${word || ""}.${suggestion} 전체 목록은 !도움말`;
+}

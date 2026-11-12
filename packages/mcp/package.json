@@ -1,0 +1,19 @@
+{
+  "name": "@trpg/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@trpg/core": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@trpg/gm": "workspace:*",
+    "tsx": "4.23.15"
+  }
+}

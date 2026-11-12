@@ -127,3 +127,21 @@ describe("WebSession", () => {
     session.close();
   });
 });
+
+describe("정보 명령어 API", () => {
+  it("명령어 결과를 텍스트로 돌려주고 상태를 바꾸지 않는다", async () => {
+    const { session } = newSession();
+    const app = createApp(session);
+    const before = JSON.stringify(session.world.state());
+    const res = await app.request("/api/command", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ input: "!상태" }),
+    });
+    expect(((await res.json()) as { output: string }).output).toContain("━━━ 신병");
+    expect(JSON.stringify(session.world.state())).toBe(before);
+    const list = (await (await app.request("/api/commands")).json()) as { name: string }[];
+    expect(list.map((c) => c.name)).toContain("도움말");
+    session.close();
+  });
+});

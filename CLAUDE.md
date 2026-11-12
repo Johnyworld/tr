@@ -66,6 +66,7 @@ pnpm dev            # 서버(127.0.0.1:8787) + UI(localhost:5173) 동시 실행
 pnpm test           # 단위 테스트 (vitest, LLM 호출 없음)
 pnpm typecheck      # 전체 타입 체크
 pnpm content:check  # 시나리오 팩(post_apoc) 검증
+pnpm mcp            # MCP 서버 실행 (stdio). Claude 앱 등록 방법은 README
 pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마이그레이션 생성
 ```
 

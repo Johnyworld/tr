@@ -11,7 +11,8 @@
     "build": "pnpm -r build",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck",
-    "content:check": "pnpm --filter @trpg/core content:check"
+    "content:check": "pnpm --filter @trpg/core content:check",
+    "mcp": "pnpm --silent --filter @trpg/mcp start"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

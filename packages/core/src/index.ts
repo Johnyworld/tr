@@ -81,3 +81,14 @@ export {
   type PlayerView,
   type TranscriptView,
 } from "./views/player.ts";
+
+export {
+  COMMANDS,
+  COMMAND_PREFIX,
+  JOURNAL_RECENT,
+  isCommand,
+  runCommand,
+  type CommandContext,
+  type CommandDef,
+} from "./commands/commands.ts";
+export { gauge, gaugeLine, GAUGE_EMPTY, GAUGE_FULL } from "./commands/format.ts";

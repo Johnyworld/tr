@@ -1,4 +1,5 @@
 import { josa, sentence } from "../text.ts";
+import { playerCalls } from "../game/acquaintance.ts";
 import { changeCondition, isIncapacitated } from "./body.ts";
 import { z } from "zod";
 import { CHECK_OUTCOME_LABELS, difficultySchema, type CheckOutcome } from "../rules/check.ts";
@@ -368,18 +369,20 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
   if (!target || targetId === state.playerId || !state.scene.present.includes(targetId)) {
     return { lines: [`상대 피해 없음: ${targetId}는 장면에 있는 인물이 아니다.`], displays };
   }
-  if (target.dead) return { lines: [`${josa(target.name, "은/는")} 이미 죽었다.`], displays };
+  // 이름을 모르는 상대는 호칭으로 부른다 (기획서 6.3)
+  const called = playerCalls(state, ctx.content, targetId);
+  if (target.dead) return { lines: [`${josa(called, "은/는")} 이미 죽었다.`], displays };
   const steps = outcome === "success" ? (severity === "heavy" ? 2 : 1) : outcome === "partial" ? 1 : 0;
-  if (steps === 0) return { lines: [`${josa(target.name, "은/는")} 다치지 않았다.`], displays };
+  if (steps === 0) return { lines: [`${josa(called, "은/는")} 다치지 않았다.`], displays };
   const change = changeCondition(ctx, targetId, ctx.content.scenario.harm_track, steps, "attack", cause);
   if (change?.line) lines.push(change.line);
   if (change?.display) displays.push(change.display);
   const after = ctx.store.getState().characters[targetId]!;
-  if (after.dead) lines.push(`${josa(after.name, "이/가")} 죽었다. 죽음을 서술에 반영하라.`);
+  if (after.dead) lines.push(`${josa(called, "이/가")} 죽었다. 죽음을 서술에 반영하라.`);
   if (isIncapacitated(ctx.content, after)) {
     const items = Object.entries(after.inventory).map(([i, q]) => `${ctx.content.items[i]?.name ?? i}(${i}) ×${q}`);
     lines.push(
-      `${josa(after.name, "은/는")} ${after.dead ? "쓰러져 움직이지 않는다" : "무력화됐다 (더 맞서지 못한다)"}. ` +
+      `${josa(called, "은/는")} ${after.dead ? "쓰러져 움직이지 않는다" : "무력화됐다 (더 맞서지 못한다)"}. ` +
         `뒤지면 나오는 것: ${items.join(", ") || "없음"}. 가져가려면 transfer_item (판정 없이).`,
     );
   }

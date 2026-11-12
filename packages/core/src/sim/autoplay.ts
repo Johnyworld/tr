@@ -150,6 +150,26 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       continue;
     }
 
+    // 사람과 엮인다 (기획서 6.3): 엑스트라를 만들거나 구역 인물을 들이고, 가끔 서로 이름을 알게 된다
+    if (rng() < 0.08) {
+      const templates = Object.keys(content.extras);
+      const local = Object.values(content.npcs).filter((n) => n.zone === s.playerZone && n.id !== s.playerId && !s.characters[n.id]?.dead && !s.scene.present.includes(n.id));
+      if (templates.length && (rng() < 0.5 || local.length === 0)) {
+        const spawned = tool("spawn_extra", { template: pick(rng, templates), label: "지나가던 사람" });
+        if (!spawned.ok) stats.errors.push(`엑스트라: ${spawned.error}`);
+      } else if (local.length) {
+        tool("npc_presence", { npc_id: pick(rng, local).id, action: "enter" });
+      }
+      const here = world.state().scene.present.filter((id) => !world.state().characters[id]?.dead);
+      if (here.length && rng() < 0.5) {
+        const target = pick(rng, here);
+        const who = pick(rng, ["player", "target"] as const);
+        const out = tool("learn_name", { target, who });
+        if (!out.ok && !out.error.includes("이미")) stats.errors.push(`이름: ${out.error}`);
+      }
+      continue;
+    }
+
     const roll = rng();
     let out;
     if (roll < 0.2 && s.playerZone) {

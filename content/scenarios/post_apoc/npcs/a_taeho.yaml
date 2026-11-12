@@ -1,6 +1,7 @@
 # 초안 (기획서 7.3 예시 기반)
 id: a_taeho
 name: 강태호
+alias: 귀가 반쯤 없는 분대장
 faction: faction_a
 rank: squad_leader
 age: 44

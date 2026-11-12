@@ -1,6 +1,7 @@
 # 청솔형제단 추가 인물 (12단계 초안)
 - id: a_seonghee
   name: 최선희
+  alias: 카디건 입은 희끗한 단발 여자
   faction: faction_a
   rank: leader
   age: 52
@@ -33,6 +34,7 @@
 
 - id: a_bokja
   name: 정복자
+  alias: 국자 꽂은 취사 할머니
   faction: faction_a
   rank: staff
   age: 61

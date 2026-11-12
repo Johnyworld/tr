@@ -68,7 +68,7 @@ export class GameWorld {
   /** 세이브의 기억(요약·행적·믿음)을 memory 색인에 맞춘다. 저장 시점에 바로, 백그라운드로 (기획서 11.4) */
   #syncMemory(): void {
     if (!this.#memory || this.#closed) return;
-    void this.#memory.sync(memoryItemsOf(this.state(), this.summaries({ all: true })));
+    void this.#memory.sync(memoryItemsOf(this.state(), this.content, this.summaries({ all: true })));
   }
 
   /** 세계 id = 세이브 파일 이름 (WorldManager.open에 그대로 쓸 수 있다). 파일이 없으면 상태의 worldId */

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { nameAs } from "../game/acquaintance.ts";
 import { checkCharacterChoice, fillCharacterChoice } from "../game/creation.ts";
 import type { CharacterChoice } from "../game/state.ts";
 import type { Content } from "../content/schemas.ts";
@@ -167,7 +168,9 @@ export function switchCharacter(
       .filter((d) => d.actorId === r.characterId && now.deedKnowledge[heir.id]?.[d.id])
       .sort((a, b) => a.at - b.at);
     if (knownDeeds.length > 0) {
-      for (const d of knownDeeds.slice(0, 3)) add(`${r.name}: ${d.summary}`, now.deedKnowledge[heir.id]![d.id]!);
+      // 이어받는 인물이 그 사람의 이름을 몰랐으면 호칭으로 기억한다 (기획서 6.3)
+      const who = nameAs(now, content, heir.id, r.characterId);
+      for (const d of knownDeeds.slice(0, 3)) add(`${who}: ${d.summary}`, now.deedKnowledge[heir.id]![d.id]!);
     } else if (recentIds.has(r.characterId)) {
       const legend = Object.values(now.deeds)
         .filter((d) => d.actorId === r.characterId && d.severity >= 2)

@@ -1,5 +1,6 @@
 import { weatherNow } from "../sim/weather.ts";
 import { describeExtraTemplates } from "./extras.ts";
+import { aliasOf, hasMet, headingAs, knowsName } from "../game/acquaintance.ts";
 import { isIncapacitated } from "./body.ts";
 import { attractionOf, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
@@ -131,13 +132,13 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
   const attitude = RELATION_AXES.map((axis) => `${RELATION_AXIS_LABELS[axis]} ${relationLabel(relation[axis])}`).join(", ");
   const template = content.extras[ex.template];
   return [
-    `### ${ex.named ? `${c.name} (${ex.label})` : `${ex.label} (이름 모름)`} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankLabel(content.scenario, c.rank)}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
+    `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankLabel(content.scenario, c.rank)}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
     `겉모습: ${ex.look}`,
     `상태: ${describeConditions(content.scenario, c)} / 지닌 것: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
     `[GM 전용: 연기에만 쓴다] 이름 없는 인물 (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
     `트레잇: ${traitLabels(content, c, { acting: true }).join(", ") || "-"}`,
     ...attractionNotes(content, c, player),
-    ex.named ? "" : "주인공이 이름을 묻거나 사이가 가까워지면(호감·신뢰 2 이상) learn_name으로 이름을 얻는다. 이름을 지어내지 않는다.",
+    ...nameNotes(state, player.id, c.id),
   ]
     .filter(Boolean)
     .join("\n");
@@ -178,7 +179,7 @@ function describeNpcCard(
   })();
 
   return [
-    `### ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
+    `### ${headingAs(state, content, player.id, npc.id)} (${npc.id}) · ${rankLabel(content.scenario, character.rank)}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
     `외모: ${npc.look}`,
     `상태: ${describeConditions(content.scenario, character)} / 소지품: ${describeInventory(content, character.inventory)}`,
     `화법: 이 인물의 말투 — ${npc.voice.style} (말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer})`,
@@ -188,6 +189,7 @@ function describeNpcCard(
     `원하는 것: ${npc.want} / 두려워하는 것: ${npc.fear}`,
     `트레잇: ${traitLabels(content, character, { acting: true }).join(", ") || "-"} / 가치관: ${values || "-"}`,
     ...attractionNotes(content, character, player),
+    ...nameNotes(state, player.id, npc.id),
     `행동 규칙:\n${npc.rules.map((r) => `  - ${r}`).join("\n") || "  - 없음"}`,
     `이 인물이 아는 것 (물으면 말해 줄 수 있다):\n${knows.join("\n") || "  - 특별히 없음"}`,
     ...(knownDeeds.length > 0
@@ -206,49 +208,87 @@ function describeOwnDeeds(state: GameState): string {
   return `이미 기록된 당신의 행적 (take_action의 deed로 다시 넣지 않는다):\n${deeds.map((d) => `- ${d.id}: ${d.summary}`).join("\n")}`;
 }
 
-/** 장면에 없지만 플레이어가 아는 인물. 공개 정보만 */
-function describeKnownPeople(state: GameState, content: Content): string {
-  const known = (state.known[state.playerId] ?? []).filter((id) => !state.scene.present.includes(id));
-  if (known.length === 0) return "";
-  const lines = known.map((id) => {
-    const npc = content.npcs[id];
-    const character = state.characters[id];
-    if (!npc || !character) return `- ${id}`;
-    const initial = initialConditions(content.scenario);
-    const changed = Object.entries(initial).some(([track, level]) => character.conditions[track] !== level);
-    const status = character.dead ? " · 사망" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
-    return `- ${npc.name} (${npc.id}) · ${rankLabel(content.scenario, character.rank)}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)}${status}: ${npc.look} ${npc.reputation}`;
-  });
-  return `알고 있는 인물 (지금 장면에는 없다):\n${lines.join("\n")}`;
+/**
+ * 이름을 아는지에 따른 연기 메모 (기획서 6.3). 이름을 모르면 GM이 그 이름을 쓰지 않게,
+ * 상대가 당신 이름을 모르면 이름으로 부르지 않게 한다
+ */
+function nameNotes(state: GameState, viewer: string, id: string): string[] {
+  const notes: string[] = [];
+  if (!knowsName(state, viewer, id)) {
+    notes.push("당신은 이 인물의 이름을 모른다 (호칭으로 부른다). 상대가 이름을 밝히거나 누가 그 이름을 부르면 learn_name(who: player). 이름을 지어내지 않는다");
+  }
+  notes.push(
+    knowsName(state, id, viewer)
+      ? "이 인물은 당신의 이름을 안다"
+      : "이 인물은 당신의 이름을 모른다 (이름으로 부르지 않는다). 당신이 이름을 밝히거나 불리면 learn_name(who: target)",
+  );
+  return notes;
+}
+
+/** 엑스트라의 최근 목록에 넣는 수 (오래 안 본 인물은 데이터에 남아도 상태에는 넣지 않는다, *임시*) */
+const RECENT_EXTRAS_IN_PROMPT = 5;
+
+function statusNote(content: Content, character: Character): string {
+  const initial = initialConditions(content.scenario);
+  const changed = Object.entries(initial).some(([track, level]) => character.conditions[track] !== level);
+  return character.dead ? " · 사망" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
 }
 
 /**
- * 지금 구역에 있을 만한 인물 (등장시킬 수 있는 사람). 모르는 인물은 이름 없이 겉모습만 준다.
- * 등장하면(npc_presence) 알게 된다. 비밀·평판 같은 프로필은 장면에 들어온 뒤에만 넣는다
+ * 장면에 없지만 플레이어가 아는 인물. 공개 정보만.
+ * 이름을 아는 인물은 이름·평판까지, 얼굴만 아는 콘텐츠 인물은 호칭과 겉모습만 (평판은 그 인물을 아는 사람이 아는 모습이다).
+ * 이름 모르는 엑스트라는 구역 목록(describeZoneExtras)에 나온다
+ */
+function describeKnownPeople(state: GameState, content: Content): string {
+  const viewer = state.playerId;
+  const absent = (id: string) => !state.scene.present.includes(id) && id !== viewer && state.characters[id];
+  const named = (state.known[viewer] ?? []).filter(absent);
+  const faces = (state.met[viewer] ?? []).filter((id) => absent(id) && !knowsName(state, viewer, id) && content.npcs[id]);
+  const blocks: string[] = [];
+  if (named.length > 0) {
+    const lines = named.map((id) => {
+      const character = state.characters[id]!;
+      const npc = content.npcs[id];
+      const gender = genderOf(content.scenario, character.gender ?? npc?.gender ?? null);
+      const about = npc ? `${npc.look} ${npc.reputation}` : (character.extra?.look ?? "");
+      return `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankLabel(content.scenario, character.rank)}${gender}${statusNote(content, character)}: ${about}`;
+    });
+    blocks.push(`알고 있는 인물 (지금 장면에는 없다):\n${lines.join("\n")}`);
+  }
+  if (faces.length > 0) {
+    const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!)}: ${content.npcs[id]!.look}`);
+    blocks.push(`얼굴만 아는 인물 (이름은 모른다. 지금 장면에는 없다):\n${lines.join("\n")}`);
+  }
+  return blocks.join("\n\n");
+}
+
+/**
+ * 지금 구역에 있을 만한 인물 (등장시킬 수 있는 사람). 만난 적 없는 인물은 이름 없이 겉모습만 준다.
+ * 만나도 이름은 모른다 (learn_name). 비밀·평판 같은 프로필은 장면에 들어온 뒤에만 넣는다
  */
 export function describeZonePeople(state: GameState, content: Content): string {
   const zone = state.playerZone;
   if (!zone) return "";
-  const known = new Set(state.known[state.playerId] ?? []);
   const people = Object.values(content.npcs).filter(
     (npc) => npc.zone === zone && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead,
   );
-  const strangers = people.filter((npc) => !known.has(npc.id));
+  const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id));
   if (strangers.length === 0) return "";
   const lines = strangers.map((npc) => `- (${npc.id}) 이름 모름: ${npc.look}`);
-  return `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나기 전에는 이름을 모른다):\n${lines.join("\n")}`;
+  return `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나도 이름은 모른다):\n${lines.join("\n")}`;
 }
 
-/** 이 구역에 머무는 엑스트라 (장면에 없지만 다시 마주칠 수 있다. npc_presence로 다시 등장시킨다) */
+/** 이 구역에서 전에 엮인, 이름을 모르는 엑스트라 (다시 마주칠 수 있다. npc_presence로 다시 등장시킨다). 최근 몇 명만 */
 function describeZoneExtras(state: GameState, content: Content): string {
   const zone = state.playerZone;
   if (!zone) return "";
-  const list = Object.values(state.characters).filter(
-    (c) => c.extra && !c.extra.gone && c.extra.zone === zone && !state.scene.present.includes(c.id),
-  );
+  const list = Object.values(state.characters)
+    .filter((c) => c.extra && c.extra.zone === zone && !state.scene.present.includes(c.id) && !knowsName(state, state.playerId, c.id))
+    .sort((a, b) => b.extra!.lastSeenAt - a.extra!.lastSeenAt)
+    .slice(0, RECENT_EXTRAS_IN_PROMPT);
   if (list.length === 0) return "";
-  const lines = list.map((c) => `- (${c.id}) ${c.extra!.named ? `${c.name} (${c.extra!.label})` : c.extra!.label}${c.dead ? " · 죽음" : ""}: ${c.extra!.look}`);
-  return `이 구역에서 전에 엮인 이름 없는 인물 (다시 등장시키려면 npc_presence):\n${lines.join("\n")}`;
+  const lines = list.map((c) => `- (${c.id}) ${aliasOf(state, content, c.id)}${c.dead ? " · 죽음" : ""}: ${c.extra!.look}`);
+  return `이 구역에서 전에 엮인 이름 모르는 인물 (최근 ${RECENT_EXTRAS_IN_PROMPT}명까지. 다시 등장시키려면 npc_presence):\n${lines.join("\n")}`;
 }
 
 /** 플레이어의 Belief. 출처는 넣고 진짜 정확도는 넣지 않는다 */

@@ -1,3 +1,4 @@
+import { headingAs, playerCalls } from "../game/acquaintance.ts";
 import {
   activeMissionOf,
   checkPromotion,
@@ -141,7 +142,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       const npc = state.characters[id]!;
       return {
         id,
-        name: npc.name,
+        name: headingAs(state, content, player.id, id),
         rankLabel: rankLabel(scenario, npc.rank),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
         conditionLabel: npc.dead ? "사망" : changed(npc) ? describeConditions(scenario, npc) : null,
@@ -170,10 +171,12 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       };
     })(),
     // 진짜 관계가 아니라 플레이어가 마지막으로 느낀 태도 (숨은 목격자가 드러나지 않게)
-    relations: (state.known[player.id] ?? []).map((id) => {
-      const r = state.perceived[id] ?? NEUTRAL_RELATION;
-      return { id, name: state.characters[id]?.name ?? id, ...r };
-    }),
+    relations: [...new Set([...(state.known[player.id] ?? []), ...(state.met[player.id] ?? [])])]
+      .filter((id) => state.characters[id] && id !== player.id)
+      .map((id) => {
+        const r = state.perceived[id] ?? NEUTRAL_RELATION;
+        return { id, name: playerCalls(state, content, id), ...r };
+      }),
     // 숨은 목격자는 UI에도 보내지 않는다
     deeds: Object.values(state.deeds)
       .filter((d) => d.actorId === player.id)
@@ -181,7 +184,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         id: d.id,
         summary: d.summary,
         tagLabels: d.tags.map((t) => DEED_TAG_LABELS[t]),
-        visibleWitnesses: d.witnesses.filter((w) => !w.hidden).map((w) => state.characters[w.npcId]?.name ?? w.npcId),
+        visibleWitnesses: d.witnesses.filter((w) => !w.hidden).map((w) => playerCalls(state, content, w.npcId)),
       }))
       .reverse(),
     // 진짜 정확도(accuracy)는 UI에도 보내지 않는다

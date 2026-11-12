@@ -1,4 +1,5 @@
 import type { Content, StoryletContent } from "../content/schemas.ts";
+import { playerCalls } from "../game/acquaintance.ts";
 import type { GameState } from "../game/state.ts";
 import { activeMissionOf, commanderOf } from "../game/missions.ts";
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
@@ -131,7 +132,8 @@ export function pickStorylet(candidates: readonly StoryletContent[], rng: Rng): 
 /** 문장 자리 채우기: 배역 이름, {zone} 지금 구역, {scarce} 우리 무리에서 가장 모자란 자원 */
 export function storyletVars(state: GameState, content: Content, cast: Record<string, string>): Record<string, string> {
   const vars: Record<string, string> = {};
-  for (const [key, id] of Object.entries(cast)) vars[key] = state.characters[id]?.name ?? id;
+  // 배역은 주인공이 부르는 말로 (이름을 모르면 호칭, 기획서 6.3)
+  for (const [key, id] of Object.entries(cast)) vars[key] = playerCalls(state, content, id);
   vars.zone = (state.playerZone && content.locations[state.playerZone]?.name) || "거점";
   const player = state.characters[state.playerId];
   const own = player ? state.factions[player.factionId] : undefined;

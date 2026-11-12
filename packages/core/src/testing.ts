@@ -300,6 +300,7 @@ export const TEST_CONTENT: Content = {
     npc_leader: {
       id: "npc_leader",
       name: "강분대",
+      alias: "귀가 반쯤 없는 분대장",
       faction: "faction_a",
       rank: "squad_leader",
       age: 44,
@@ -324,6 +325,7 @@ export const TEST_CONTENT: Content = {
     npc_stranger: {
       id: "npc_stranger",
       name: "낯선이",
+      alias: "망토 두른 상인",
       faction: "faction_e",
       rank: "grunt",
       age: 30,

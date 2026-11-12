@@ -1,4 +1,5 @@
 import { weatherNow } from "../sim/weather.ts";
+import { playerCalls } from "../game/acquaintance.ts";
 import { valuesOf } from "./extras.ts";
 import { alertnessFactor, noticedFactor, rumorFactor, traitSkillMod } from "./traits.ts";
 import { withCharm } from "./charm.ts";
@@ -107,7 +108,7 @@ export function recordDeed(
   ctx.store.append({ type: "deed_recorded", deed });
   for (const w of witnesses) learn(ctx, deed, w.npcId, official?.source ?? "seen");
 
-  const visible = witnesses.filter((w) => !w.hidden).map((w) => state.characters[w.npcId]?.name ?? w.npcId);
+  const visible = witnesses.filter((w) => !w.hidden).map((w) => playerCalls(state, ctx.content, w.npcId));
   return { deed, visible };
 }
 
@@ -139,7 +140,7 @@ const lookForWitnesses = defineTool({
     ctx.store.append({ type: "witnesses_searched", deedId: deed.id });
     const growthNote = check.growthNote;
 
-    const hidden = deed.witnesses.filter((w) => w.hidden).map((w) => state.characters[w.npcId]?.name ?? w.npcId);
+    const hidden = deed.witnesses.filter((w) => w.hidden).map((w) => playerCalls(state, ctx.content, w.npcId));
     let finding: string;
     if (check.outcome === "success") {
       finding = hidden.length > 0 ? `${josa(hidden.join(", "), "이/가")} 보고 있었다.` : "아무도 보지 않았다.";
@@ -184,13 +185,14 @@ const revealSecret = defineTool({
     const state = ctx.store.getState();
     const npc = ctx.content.npcs[input.npc_id];
     if (!npc || !state.scene.present.includes(input.npc_id)) return { ok: false, error: "장면에 없는 인물입니다." };
-    if (!npc.secret) return { ok: false, error: `${josa(npc.name, "은/는")} 털어놓을 비밀이 없다.` };
+    const called = playerCalls(state, ctx.content, npc.id);
+    if (!npc.secret) return { ok: false, error: `${josa(called, "은/는")} 털어놓을 비밀이 없다.` };
     if (state.revealedSecrets.includes(npc.id)) return { ok: false, error: "이미 털어놓은 비밀이다." };
     const trust = state.relations[npc.id]?.[state.playerId]?.trust ?? 0;
-    if (trust < npc.secret.min_trust) return { ok: false, error: `${josa(npc.name, "은/는")} 아직 그만큼 당신을 믿지 않는다.` };
+    if (trust < npc.secret.min_trust) return { ok: false, error: `${josa(called, "은/는")} 아직 그만큼 당신을 믿지 않는다.` };
 
     ctx.store.append({ type: "secret_revealed", npcId: npc.id });
-    const fact = `${npc.name}의 고백: ${npc.secret.content}`;
+    const fact = `${called}의 고백: ${npc.secret.content}`;
     ctx.store.append({
       type: "belief_added",
       characterId: state.playerId,
@@ -198,7 +200,7 @@ const revealSecret = defineTool({
     });
     return {
       ok: true,
-      resultText: `${josa(npc.name, "이/가")} 털어놓는다: ${npc.secret.content}\n이 인물의 말투와 성격대로, 망설임과 감정을 담아 서술하라.`,
+      resultText: `${josa(called, "이/가")} 털어놓는다: ${npc.secret.content}\n이 인물의 말투와 성격대로, 망설임과 감정을 담아 서술하라.`,
       display: { type: "belief", fact, sourceLabel: "고백" },
     };
   },

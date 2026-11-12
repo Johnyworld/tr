@@ -1,7 +1,8 @@
 import { josa } from "../text.ts";
+import { playerCalls } from "../game/acquaintance.ts";
+import type { Content } from "../content/schemas.ts";
 import { isIncapacitated } from "./body.ts";
-import { EXTRA_TOOLS } from "./extras.ts";
-import { firstImpression } from "./charm.ts";
+import { enterScene, EXTRA_TOOLS } from "./extras.ts";
 import { z } from "zod";
 import {
   CHECK_OUTCOME_LABELS,
@@ -59,7 +60,7 @@ const transferItem = defineTool({
     if (input.from === input.to) return { ok: false, error: "보내는 쪽과 받는 쪽이 같습니다." };
     for (const holder of [input.from, input.to]) {
       const reachable = holder === SCENE_HOLDER || holder === state.playerId || state.scene.present.includes(holder);
-      if (!reachable) return { ok: false, error: `${josa(holderName(state, holder), "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
+      if (!reachable) return { ok: false, error: `${josa(holderName(state, content, holder), "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
     }
     const fromInv = findHolderInventory(state, input.from);
     if (!fromInv) return { ok: false, error: `알 수 없는 보관 위치: ${input.from}` };
@@ -78,7 +79,7 @@ const transferItem = defineTool({
         return {
           ok: false,
           error:
-            `${holderName(state, input.from)}의 물건을 가져올 근거가 없습니다. ` +
+            `${holderName(state, content, input.from)}의 물건을 가져올 근거가 없습니다. ` +
             "이번 턴 take_action에서 그 인물을 target으로 한 판정(설득, 은밀 행동 등)이 성공하거나, 그 인물이 당신을 충분히 믿어야 합니다.",
         };
       }
@@ -87,7 +88,7 @@ const transferItem = defineTool({
     if (!item) return { ok: false, error: `알 수 없는 아이템: ${input.item_id}` };
     const have = fromInv[input.item_id] ?? 0;
     if (have < input.quantity) {
-      return { ok: false, error: `${holderName(state, input.from)}에게 ${josa(item.name, "이/가")} ${have}개뿐입니다.` };
+      return { ok: false, error: `${holderName(state, content, input.from)}에게 ${josa(item.name, "이/가")} ${have}개뿐입니다.` };
     }
 
     store.append({
@@ -99,11 +100,11 @@ const transferItem = defineTool({
     });
     return {
       ok: true,
-      resultText: `${item.name} ${input.quantity}개: ${holderName(state, input.from)} → ${holderName(state, input.to)}.`,
+      resultText: `${item.name} ${input.quantity}개: ${holderName(state, content, input.from)} → ${holderName(state, content, input.to)}.`,
       display: {
         type: "item",
-        fromName: holderName(state, input.from),
-        toName: holderName(state, input.to),
+        fromName: holderName(state, content, input.from),
+        toName: holderName(state, content, input.to),
         itemName: item.name,
         quantity: input.quantity,
       },
@@ -127,17 +128,17 @@ const npcPresence = defineTool({
     const npc = content.npcs[input.npc_id];
     const character = state.characters[input.npc_id];
     // 엑스트라(이름 없이 만든 인물)도 나가고 들어올 수 있다. 사라진 엑스트라는 안 된다
-    const extra = character?.extra && !character.extra.gone ? character.extra : null;
+    const extra = character?.extra ?? null;
     if ((!npc && !extra) || !character || input.npc_id === state.playerId) {
       return { ok: false, error: `알 수 없는 인물: ${input.npc_id}. 이름 없는 인물이 엮이면 spawn_extra로 만든다.` };
     }
-    const name = character.name;
+    // 이름을 모르는 인물은 호칭으로 (기획서 6.3)
+    const name = playerCalls(state, content, character.id);
     const present = state.scene.present.includes(character.id);
     if (input.action === "enter") {
       if (present) return { ok: false, error: `${josa(name, "은/는")} 이미 장면에 있습니다.` };
       if (character.dead) return { ok: false, error: `${josa(name, "은/는")} 사망했습니다.` };
-      store.append({ type: "npc_entered", npcId: character.id });
-      firstImpression(ctx, character.id);
+      enterScene(ctx, character.id);
     } else {
       if (!present) return { ok: false, error: `${josa(name, "은/는")} 장면에 없습니다.` };
       store.append({ type: "npc_left", npcId: character.id });
@@ -284,9 +285,9 @@ function stripKeys(value: unknown, keys: string[]): unknown {
   return value;
 }
 
-function holderName(state: GameState, holder: string): string {
+function holderName(state: GameState, content: Content, holder: string): string {
   if (holder === SCENE_HOLDER) return "장면";
-  return state.characters[holder]?.name ?? holder;
+  return playerCalls(state, content, holder);
 }
 
 

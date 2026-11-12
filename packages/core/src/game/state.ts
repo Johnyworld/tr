@@ -23,10 +23,12 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * 이전 세이브를 옮기는 방법을 함께 만든다.
  * 필드 추가는 기본값(.default)을 주면 이전 세이브와 호환되므로 올리지 않는다.
  * - 2: 시나리오 팩 분리. 능력치 ID 변경, injury → conditions, scenarioId
+ * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
+ *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 6;
-/** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 (1은 시나리오 팩 분리 전이라 읽지 않는다) */
-export const MIN_READABLE_SAVE_VERSION = 2;
+export const SAVE_SCHEMA_VERSION = 7;
+/** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
+export const MIN_READABLE_SAVE_VERSION = 7;
 
 /** 장면의 물건 보관 위치. 캐릭터 id 또는 "scene"(현재 장면 바닥) */
 export const SCENE_HOLDER = "scene";
@@ -173,8 +175,10 @@ export function createGameSchemas(s: Scenario) {
     xpToday: z.strictObject({ day: z.number().int(), amount: z.number().int() }).default({ day: 0, amount: 0 }),
     /** 캐릭터별 Belief State */
     beliefs: z.record(z.string(), z.array(beliefSchema)),
-    /** 캐릭터별로 알고 있는 인물 id */
+    /** 캐릭터별로 이름까지 아는 인물 id (기획서 6.3). 방향이 있다: known[A]에 B가 있으면 A가 B의 이름을 안다 */
     known: z.record(z.string(), z.array(z.string())),
+    /** 캐릭터별로 만난(얼굴을 아는) 인물 id. 이름은 모를 수 있다 (이름을 알면 known에도 있다) */
+    met: z.record(z.string(), z.array(z.string())).default({}),
     nextBeliefNo: z.number().int().positive(),
     missions: z.record(z.string(), missionInstanceSchema),
     /** 오늘 상관이 내놓은 임무 후보 */
@@ -369,10 +373,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("faction_patched"), factionId: z.string(), resources: z.record(z.string(), z.number()) }),
     /** 이름 없는 인물이 주인공과 엮여 캐릭터가 됐다 (기획서 7.5). 장면에 들어온다 */
     z.strictObject({ type: z.literal("extra_spawned"), character }),
-    /** 엑스트라가 이름을 얻었다 (주인공이 이름을 알게 됐다). 이제 사라지지 않는다 */
-    z.strictObject({ type: z.literal("extra_named"), characterId: z.string(), name: z.string().min(1) }),
-    /** 이름을 얻지 못한 엑스트라가 오래 엮이지 않아 사라졌다 */
-    z.strictObject({ type: z.literal("extra_gone"), characterId: z.string() }),
+    /** characterId가 targetId의 이름을 알게 됐다 (기획서 6.3) */
+    z.strictObject({ type: z.literal("name_learned"), characterId: z.string(), targetId: z.string() }),
     /** 레벨업으로 스킬 하나를 올렸다 */
     z.strictObject({ type: z.literal("skill_learned"), characterId: z.string(), skill: z.string(), from: z.number().int(), to: z.number().int() }),
     z.strictObject({ type: z.literal("item_granted"), to: z.string(), itemId: z.string(), quantity: z.number().int().positive() }),
@@ -499,6 +501,7 @@ export const EMPTY_STATE: GameState = {
   xpToday: { day: 0, amount: 0 },
   beliefs: {},
   known: {},
+  met: {},
   nextBeliefNo: 1,
   missions: {},
   offers: null,
@@ -552,7 +555,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         characters[npc.id] = structuredClone(npc);
       }
       const beliefCount = Object.values(event.beliefs).reduce((n, list) => n + list.length, 0);
-      return {
+      const created: GameState = {
         ...EMPTY_STATE,
         scenarioId: event.scenarioId,
         worldId: event.worldId,
@@ -561,21 +564,24 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         characters,
         beliefs: structuredClone(event.beliefs),
         known: structuredClone(event.known),
+        met: structuredClone(event.known),
         nextBeliefNo: beliefCount + 1,
       };
+      // 처음부터 아는 사람들(같은 무리 동료)은 주인공도 이름까지 안다
+      for (const id of event.known[event.player.id] ?? []) acquaint(created, id, event.player.id, true);
+      return created;
     }
     case "npc_entered": {
       const npc = mustGet(next.characters, event.npcId, "캐릭터");
       if (npc.id === state.playerId) throw new Error("플레이어는 NPC로 등장할 수 없습니다.");
       if (npc.dead) throw new Error(`사망한 인물: ${npc.id}`);
       if (next.scene.present.includes(npc.id)) throw new Error(`이미 장면에 있음: ${npc.id}`);
-      if (npc.extra?.gone) throw new Error(`사라진 인물: ${npc.id}`);
       next.scene.present.push(npc.id);
       perceive(next, npc.id);
       if (npc.extra) npc.extra.lastSeenAt = state.time;
-      // 만난 인물은 알게 된다 (이름 없는 엑스트라는 이름을 얻을 때)
-      const known = (next.known[state.playerId] ??= []);
-      if (!known.includes(npc.id) && (!npc.extra || npc.extra.named)) known.push(npc.id);
+      // 만나면 서로 얼굴을 안다. 이름은 밝히거나 불려야 안다 (name_learned)
+      acquaint(next, state.playerId, npc.id, false);
+      acquaint(next, npc.id, state.playerId, false);
       break;
     }
     case "npc_left":
@@ -761,7 +767,11 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (successor.dead) throw new Error(`사망한 인물: ${successor.id}`);
       next.playerId = successor.id;
       next.runStartedAt = state.time;
-      next.known[successor.id] = [...event.known];
+      // 이어받는 인물이 원래 알던 사람은 그대로 알고, 같은 무리 동료와는 서로 이름을 안다
+      for (const id of event.known) {
+        acquaint(next, successor.id, id, true);
+        acquaint(next, id, successor.id, true);
+      }
       // 장면과 플레이어 기준 상태를 새로 시작한다 (새 캐릭터는 다른 곳에서 하루를 시작한다)
       next.scene.present = [];
       next.perceived = {};
@@ -839,22 +849,16 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.nextExtraNo += 1;
       next.scene.present.push(c.id);
       perceive(next, c.id);
+      acquaint(next, state.playerId, c.id, false);
+      acquaint(next, c.id, state.playerId, false);
       break;
     }
-    case "extra_named": {
-      const c = mustGet(next.characters, event.characterId, "캐릭터");
-      if (!c.extra) throw new Error(`엑스트라가 아닙니다: ${c.id}`);
-      c.name = event.name;
-      c.extra.named = true;
-      const known = (next.known[state.playerId] ??= []);
-      if (!known.includes(c.id)) known.push(c.id);
-      break;
-    }
-    case "extra_gone": {
-      const c = mustGet(next.characters, event.characterId, "캐릭터");
-      if (!c.extra) throw new Error(`엑스트라가 아닙니다: ${c.id}`);
-      c.extra.gone = true;
-      next.scene.present = next.scene.present.filter((id) => id !== c.id);
+    case "name_learned": {
+      mustGet(next.characters, event.characterId, "캐릭터");
+      mustGet(next.characters, event.targetId, "캐릭터");
+      if (event.characterId === event.targetId) throw new Error("자기 이름은 이미 안다.");
+      if (next.known[event.characterId]?.includes(event.targetId)) throw new Error(`이미 이름을 안다: ${event.characterId} → ${event.targetId}`);
+      acquaint(next, event.characterId, event.targetId, true);
       break;
     }
     case "skill_learned": {
@@ -956,6 +960,16 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
 }
 
 /** 플레이어가 지금 이 NPC의 태도를 느낀다 (같은 장면에 있을 때) */
+/** a가 b를 만났다(얼굴을 안다). withName이면 이름까지 안다 (기획서 6.3) */
+function acquaint(state: GameState, a: string, b: string, withName: boolean) {
+  if (a === b) return;
+  const met = (state.met[a] ??= []);
+  if (!met.includes(b)) met.push(b);
+  if (!withName) return;
+  const known = (state.known[a] ??= []);
+  if (!known.includes(b)) known.push(b);
+}
+
 function perceive(state: GameState, npcId: string) {
   state.perceived[npcId] = { ...(state.relations[npcId]?.[state.playerId] ?? NEUTRAL_RELATION) };
 }

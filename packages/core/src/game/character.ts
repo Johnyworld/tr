@@ -55,7 +55,8 @@ export function createCharacterSchema(s: Scenario) {
     /** 성별 id (시나리오 creation.genders). 정하지 않았으면 null */
     gender: z.string().nullable().default(null),
     /**
-     * 엑스트라면 그 정보 (기획서 7.5): 틀, 호칭, 겉모습, 머무는 구역, 마지막으로 엮인 때, 이름을 얻었는지, 사라졌는지.
+     * 엑스트라면 그 정보 (기획서 7.5): 틀, 호칭(이름을 모르는 사람이 부르는 말), 겉모습, 머무는 구역, 마지막으로 엮인 때.
+     * 이름은 처음부터 name에 있고, 누가 그 이름을 아는지는 GameState.known (기획서 6.3).
      * 이름 있는 콘텐츠 NPC와 플레이어는 null
      */
     extra: z
@@ -64,9 +65,8 @@ export function createCharacterSchema(s: Scenario) {
         label: z.string(),
         look: z.string(),
         zone: z.string().nullable(),
+        /** 마지막으로 엮인 시각. GM 상태의 "이 구역에서 엮인 인물" 목록은 최근 것부터 몇 명만 보여 준다 */
         lastSeenAt: z.number().int(),
-        named: z.boolean().default(false),
-        gone: z.boolean().default(false),
       })
       .nullable()
       .default(null),

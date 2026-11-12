@@ -131,7 +131,7 @@ describe("이전 형식의 세이브", () => {
     db.close();
   };
 
-  it("읽을 수 있는 이전 버전은 이벤트를 다시 읽어 현재 버전으로 올린다. 이름이 바뀐 능력도 옮긴다", () => {
+  it("이름이 바뀐 능력은 이벤트를 다시 읽을 때 옮긴다", () => {
     const path = tempPath();
     const scenario = { ...TEST_SCENARIO, renamed: { abilities: { old_persuasion: "persuasion" } } };
     const repo = SqliteRepository.open(path, scenario);
@@ -140,9 +140,7 @@ describe("이전 형식의 세이브", () => {
       type: "check_rolled", checkId: "chk_1", turn: 0, actorId: "player", move: "persuade", stat: "old_persuasion" as never,
       difficulty: "normal", intent: "설득", dice: [3, 3], modifiers: { stat: 0, skill: 0, difficulty: 0, condition: 0, trait: 0 }, total: 6, outcome: "miss",
     });
-    repo.saveSnapshot();
     repo.close();
-    setVersion(path, "2");
 
     const reopened = SqliteRepository.open(path, scenario);
     expect(reopened.getState().checks.chk_1?.outcome).toBe("miss");
@@ -152,12 +150,14 @@ describe("이전 형식의 세이브", () => {
     db.close();
   });
 
-  it("너무 오래된 버전(1)은 열지 않는다", () => {
-    const path = tempPath();
-    const repo = SqliteRepository.open(path, TEST_SCENARIO);
-    repo.append(createWorldEvent(TEST_CONTENT, "role_test", "w"));
-    repo.close();
-    setVersion(path, "1");
-    expect(() => SqliteRepository.open(path, TEST_SCENARIO)).toThrow(SaveFormatError);
+  it("읽을 수 있는 버전보다 오래된 세이브는 열지 않는다 (1, 그리고 이름·만남이 나뉘기 전인 6)", () => {
+    for (const version of ["1", "6"]) {
+      const path = tempPath();
+      const repo = SqliteRepository.open(path, TEST_SCENARIO);
+      repo.append(createWorldEvent(TEST_CONTENT, "role_test", "w"));
+      repo.close();
+      setVersion(path, version);
+      expect(() => SqliteRepository.open(path, TEST_SCENARIO)).toThrow(SaveFormatError);
+    }
   });
 });

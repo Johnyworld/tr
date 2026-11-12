@@ -57,6 +57,8 @@ export function createContentSchemas(s: Scenario) {
   const npc = z.strictObject({
     id: contentIdSchema,
     name: z.string().min(1),
+    /** 이름을 모르는 사람이 부르는 말 (기획서 6.3). 짧은 호칭: "귀가 반쯤 없는 분대장" */
+    alias: z.string().min(1).max(30),
     faction: contentIdSchema,
     rank: idEnum(rankIds(s)),
     age: z.number().int().positive(),

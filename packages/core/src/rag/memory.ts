@@ -1,4 +1,6 @@
 import type { GameState } from "../game/state.ts";
+import type { Content } from "../content/schemas.ts";
+import { aliasOf, knowsName } from "../game/acquaintance.ts";
 import type { TurnSummary } from "../engine/log.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS } from "../game/reputation.ts";
@@ -16,7 +18,7 @@ import type { LoreSearch } from "./library.ts";
 export type MemoryKind = "turn_summary" | "scene_summary" | "deed" | "belief";
 
 /** 세이브에서 기억 청크를 모은다. id는 세이브가 append-only라 안정적이다 */
-export function memoryItemsOf(state: GameState, summaries: readonly TurnSummary[]): IndexChunk[] {
+export function memoryItemsOf(state: GameState, content: Content, summaries: readonly TurnSummary[]): IndexChunk[] {
   const items: IndexChunk[] = [];
   const memo = (id: string, kind: MemoryKind, title: string, text: string, knownBy: string[], createdAt: number): IndexChunk => ({
     id,
@@ -40,17 +42,21 @@ export function memoryItemsOf(state: GameState, summaries: readonly TurnSummary[
 
   for (const deed of Object.values(state.deeds)) {
     // 행적은 한 사람과, 그 일을 보거나 전해 들은 사람이 안다 (소문이 퍼지면 늘어난다)
-    const knowers = Object.entries(state.deedKnowledge)
-      .filter(([, known]) => known[deed.id])
-      .map(([npcId]) => npcId);
+    const knowers = [
+      deed.actorId,
+      ...Object.entries(state.deedKnowledge)
+        .filter(([, known]) => known[deed.id])
+        .map(([npcId]) => npcId),
+    ];
     const tags = deed.tags.map((t) => DEED_TAG_LABELS[t]).join("·");
-    // 누가 한 일인지 문장에 넣는다. 없으면 "이나영이 한 일"처럼 이름으로 물을 때 찾을 수 없다
-    // (이름 없는 엑스트라는 호칭이 이름 자리에 있다)
-    const actor = state.characters[deed.actorId]?.name;
-    const body = actor ? `${actor}: ${deed.summary}` : deed.summary;
-    items.push(
-      memo(`deed:${deed.id}`, "deed", "행적", `[${formatTime(deed.at)} · 행적] ${body} (${tags})`, [deed.actorId, ...knowers].sort(), deed.at),
-    );
+    // 누가 했는지를 문장에 넣는다 (이름으로 물어도 찾게). 다만 행동한 사람의 이름을 모르는 목격자에게는 호칭으로:
+    // 아는 방식별로 청크를 나눠 각각 knownBy를 붙인다 (기획서 6.3, 11.4)
+    const named = knowers.filter((k) => knowsName(state, k, deed.actorId)).sort();
+    const unnamed = knowers.filter((k) => !knowsName(state, k, deed.actorId)).sort();
+    const line = (who: string) => `[${formatTime(deed.at)} · 행적] ${who}: ${deed.summary} (${tags})`;
+    const actor = state.characters[deed.actorId];
+    if (named.length > 0) items.push(memo(`deed:${deed.id}:named`, "deed", "행적", line(actor?.name ?? deed.actorId), named, deed.at));
+    if (unnamed.length > 0) items.push(memo(`deed:${deed.id}:unnamed`, "deed", "행적", line(aliasOf(state, content, deed.actorId)), unnamed, deed.at));
   }
 
   for (const [characterId, beliefs] of Object.entries(state.beliefs)) {

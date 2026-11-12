@@ -4,9 +4,8 @@ import { dayOf, MINUTES_PER_DAY, nextSegmentStart, timeSegmentSchema } from "../
 import { harmTrack, trackOf } from "../scenario/scenario.ts";
 import { startBattle } from "../sim/battle.ts";
 import { changeCondition } from "../engine/body.ts";
-import { firstImpression } from "../engine/charm.ts";
 import { endActiveStorylet } from "../engine/storyletTools.ts";
-import { EXTRA_TOOLS } from "../engine/extras.ts";
+import { enterScene, EXTRA_TOOLS } from "../engine/extras.ts";
 import { levelForXp } from "../engine/growth.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
 import type { ToolContext, ToolOutcome } from "../engine/toolkit.ts";
@@ -52,7 +51,7 @@ function findCharacter(ctx: ToolContext, query: string | undefined): Character |
   const state = ctx.store.getState();
   if (!query || query === "me" || query === "나") return state.characters[state.playerId];
   if (state.characters[query]) return state.characters[query];
-  const all = Object.values(state.characters).filter((c) => !c.extra?.gone);
+  const all = Object.values(state.characters);
   return all.find((c) => c.name === query) ?? all.find((c) => c.name.startsWith(query) || c.extra?.label === query);
 }
 
@@ -153,8 +152,7 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         if (!c || c.id === state.playerId) return { ok: false, error: `없는 인물: ${args.join(" ")}` };
         if (c.dead) return { ok: false, error: `${c.name}은(는) 죽었다.` };
         if (state.scene.present.includes(c.id)) return { ok: true, text: `${c.name}은(는) 이미 장면에 있다.` };
-        store.append({ type: "npc_entered", npcId: c.id });
-        firstImpression(ctx, c.id);
+        enterScene(ctx, c.id);
         return { ok: true, text: `${c.name}이(가) 장면에 들어왔다.` };
       }
       case "goto": {
@@ -190,7 +188,7 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         store.append({ type: "storylet_fired", storyletId: storylet.id, cast, expiresAt: now.time + Math.round(s.storylet_pacing.expire_hours * 60) });
         for (const [key, id] of Object.entries(cast)) {
           if (!storylet.cast[key]?.enter || store.getState().scene.present.includes(id)) continue;
-          store.append({ type: "npc_entered", npcId: id });
+          enterScene(ctx, id);
         }
         return { ok: true, text: `이야기 시작: ${storylet.title}` };
       }

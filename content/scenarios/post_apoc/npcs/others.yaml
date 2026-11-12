@@ -3,6 +3,7 @@
 # ── 버들마을 ──
 - id: b_hyunwoo
   name: 장현우
+  alias: 다림질한 셔츠의 각진 턱 사내
   faction: faction_b
   rank: leader
   age: 47
@@ -37,6 +38,7 @@
 
 - id: b_mina
   name: 오미나
+  alias: 손에 붕대 감은 주근깨 경비병
   faction: faction_b
   rank: grunt
   age: 24
@@ -73,6 +75,7 @@
 # ── 붉은연합 ──
 - id: c_seokjin
   name: 고석진
+  alias: 붉은 완장의 마른 정찰병
   faction: faction_c
   rank: grunt
   age: 27
@@ -109,6 +112,7 @@
 
 - id: c_gyeongsu
   name: 마경수
+  alias: 장갑 낀 장교 외투 사내
   faction: faction_c
   rank: officer
   age: 45
@@ -140,6 +144,7 @@
 # ── 하얀매 ──
 - id: d_eunyoung
   name: 서은영
+  alias: 흰 가운의 안경 쓴 여자
   faction: faction_d
   rank: leader
   age: 39
@@ -176,6 +181,7 @@
 
 - id: d_minho
   name: 남민호
+  alias: 방독면 건 덩치 큰 사내
   faction: faction_d
   rank: grunt
   age: 31
@@ -206,6 +212,7 @@
 # ── 나루상단 ──
 - id: e_bongsu
   name: 탁봉수
+  alias: 금니 박힌 가죽 조끼 상인
   faction: faction_e
   rank: leader
   age: 58
@@ -241,6 +248,7 @@
 
 - id: e_yuri
   name: 하유리
+  alias: 빨간 털모자 쓴 심부름꾼
   faction: faction_e
   rank: grunt
   age: 17

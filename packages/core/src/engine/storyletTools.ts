@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { firstImpression, withCharm } from "./charm.ts";
+import { playerCalls } from "../game/acquaintance.ts";
+import { withCharm } from "./charm.ts";
+import { enterScene } from "./extras.ts";
 import { gainMeritXp } from "./growth.ts";
 import type { Content, StoryletContent, StoryletEffect } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
@@ -42,7 +44,7 @@ export function endActiveStorylet(ctx: ToolContext, reason: string): ToolDisplay
   for (const [key, id] of Object.entries(active.cast)) {
     if (!s?.cast[key]?.enter || !store.getState().scene.present.includes(id)) continue;
     store.append({ type: "npc_left", npcId: id });
-    displays.push({ type: "presence", npcName: store.getState().characters[id]?.name ?? id, action: "leave" });
+    displays.push({ type: "presence", npcName: playerCalls(store.getState(), content, id), action: "leave" });
   }
   if (s) displays.push({ type: "storylet", event: "expired", title: s.title, detail: reason });
   return displays;
@@ -75,9 +77,8 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
     if (!storylet.cast[key]?.enter) continue;
     const now = store.getState();
     if (now.scene.present.includes(id) || now.characters[id]?.dead) continue;
-    store.append({ type: "npc_entered", npcId: id });
-    firstImpression(ctx, id);
-    displays.push({ type: "presence", npcName: now.characters[id]?.name ?? id, action: "enter" });
+    enterScene(ctx, id);
+    displays.push({ type: "presence", npcName: playerCalls(store.getState(), content, id), action: "enter" });
   }
   displays.push({ type: "storylet", event: "started", title: storylet.title, detail: setupText(store.getState(), content) });
   return displays;
@@ -206,7 +207,7 @@ function applyEffect(
     if (!from || !state.characters[from]) return {};
     const delta = withCharm(ctx, from, playerId, { trust: 0, affection: 0, respect: 0, [effect.relation.axis]: effect.relation.delta });
     store.append({ type: "relation_changed", from, to: playerId, delta, reason });
-    const name = state.characters[from]!.name;
+    const name = playerCalls(state, content, from);
     return { line: `${name}의 ${josa(RELATION_AXIS_LABELS[effect.relation.axis], "이/가")} ${effect.relation.delta > 0 ? "올랐다" : "떨어졌다"}. 그 인물의 태도에 반영하라.` };
   }
   if ("belief" in effect) {
@@ -231,7 +232,7 @@ function applyEffect(
       const have = holder ? (state.characters[holder]?.inventory[item] ?? 0) : 0;
       if (!holder || have < quantity) return { line: `${name}은(는) 건네받을 수 없었다 (가진 것이 없다).` };
       store.append({ type: "item_transferred", from: holder, to: playerId, itemId: item, quantity });
-      const fromName = state.characters[holder]!.name;
+      const fromName = playerCalls(state, content, holder);
       return { line: `${josa(fromName, "이/가")} ${josa(`${name} ×${quantity}`, "을/를")} 건넸다.`, display: { type: "item", fromName, toName: state.characters[playerId]!.name, itemName: name, quantity } };
     }
     store.append({ type: "item_granted", to: playerId, itemId: item, quantity });

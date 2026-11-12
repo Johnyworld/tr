@@ -1,5 +1,4 @@
 import { runMissionStartOfTurn } from "./missionTools.ts";
-import { fadeExtras } from "./extras.ts";
 import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
@@ -29,7 +28,6 @@ function runDailyWeather(ctx: ToolContext) {
 
 export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   runDailyWeather(ctx);
-  fadeExtras(ctx);
   spreadRumors(ctx);
   // 세력 단위 전쟁 (하루 단위). 자기 무리가 낀 교전 소식은 화면에 보인다
   const war = runWarDays(ctx);

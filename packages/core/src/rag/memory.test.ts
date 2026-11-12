@@ -153,7 +153,7 @@ describe("memoryItemsOf", () => {
   it("다른 캐릭터의 요약과 믿음은 그 캐릭터만 안다 (캐릭터가 바뀌면 이전 기억은 안 보인다)", async () => {
     const { m } = { m: new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-memory-")), content: TEST_CONTENT }) };
     const world = m.create("mcp");
-    const items = memoryItemsOf(world.state(), [
+    const items = memoryItemsOf(world.state(), TEST_CONTENT, [
       { turn: 1, time: 0, kind: "scene", text: "옛 캐릭터의 기억", mode: "mcp", characterId: "old_hero" },
       { turn: 2, time: 0, kind: "scene", text: "지금 캐릭터의 기억", mode: "mcp", characterId: world.state().playerId },
     ]);
@@ -167,6 +167,30 @@ describe("memoryItemsOf", () => {
     expect(hits.some((h) => h.text.includes("지금 캐릭터의 기억"))).toBe(true);
     expect(hits.some((h) => h.text.includes("옛 캐릭터의 기억"))).toBe(false);
     for (const h of hits) expect(items.find((i) => i.id === h.id)?.knownBy).toContain(world.state().playerId);
+    world.close();
+  });
+
+  it("행적은 행동한 사람의 이름을 아는 사람과 모르는 사람의 청크로 나뉜다 (이름이 새지 않게)", () => {
+    const { m } = { m: new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-memory-")), content: TEST_CONTENT }) };
+    const world = m.create("mcp");
+    world.executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" });
+    world.executeTool("npc_presence", { npc_id: "npc_stranger", action: "enter" });
+    world.executeTool("take_action", {
+      ...NO_ACTION,
+      intent: "물을 나눈다",
+      deed: { summary: "목마른 사람에게 물을 나눠 줬다", tags: ["mercy"], severity: 2, privacy: "public", noisy: false, condition: "always" },
+    });
+    const state = world.state();
+    const player = state.characters[state.playerId]!;
+    const deeds = memoryItemsOf(state, TEST_CONTENT, []).filter((i) => i.kind === "deed");
+    const named = deeds.find((d) => d.id.endsWith(":named"))!;
+    const unnamed = deeds.find((d) => d.id.endsWith(":unnamed"))!;
+    // 같은 무리 분대장은 이름을 알고, 처음 만난 상인은 모른다
+    expect(named.knownBy).toEqual(expect.arrayContaining(["npc_leader", state.playerId]));
+    expect(named.text).toContain(`${player.name}: 목마른 사람에게 물을 나눠 줬다`);
+    expect(unnamed.knownBy).toEqual(["npc_stranger"]);
+    expect(unnamed.text).not.toContain(player.name);
+    expect(unnamed.text).toContain("우리 무리 하급 전투원: 목마른 사람에게 물을 나눠 줬다");
     world.close();
   });
 });

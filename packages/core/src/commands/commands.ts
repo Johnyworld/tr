@@ -1,4 +1,5 @@
 import { josa } from "../text.ts";
+import { aliasOf, headingAs, knowsName, playerCalls } from "../game/acquaintance.ts";
 import { traitLabels } from "../engine/traits.ts";
 import { growthLine, skillLines } from "../engine/growth.ts";
 import type { Content } from "../content/schemas.ts";
@@ -179,7 +180,11 @@ const people: CommandDef = {
   description: "아는 인물 목록 / 특정 인물에 대해 아는 것과 관계",
   run(ctx, args) {
     const { state, content } = ctx;
-    const known = (state.known[state.playerId] ?? []).filter((id) => state.characters[id]);
+    // 만난 사람 모두 (이름을 모르면 호칭으로, 기획서 6.3)
+    const known = [...new Set([...(state.known[state.playerId] ?? []), ...(state.met[state.playerId] ?? [])])].filter(
+      (id) => state.characters[id] && id !== state.playerId,
+    );
+    const call = (id: string) => playerCalls(state, content, id);
     if (!args) {
       if (known.length === 0) return [header("인물"), "아는 인물이 없습니다."].join("\n");
       return [
@@ -188,24 +193,27 @@ const people: CommandDef = {
           const c = state.characters[id]!;
           const r = state.perceived[id] ?? NEUTRAL_RELATION;
           const here = state.scene.present.includes(id) ? " · 함께 있음" : "";
-          return `${c.name}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : ""}${here}  (신뢰 ${relationLabel(r.trust)})`;
+          return `${headingAs(state, content, state.playerId, id)}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : ""}${here}  (신뢰 ${relationLabel(r.trust)})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,
       ].join("\n");
     }
     const query = args.trim();
-    const id = known.find((k) => state.characters[k]!.name === query || k === query) ??
-      known.find((k) => state.characters[k]!.name.includes(query));
+    // 이름을 아는 인물은 이름으로, 모르는 인물은 호칭으로 찾는다 (모르는 이름으로는 찾을 수 없다)
+    const id = known.find((k) => call(k) === query || k === query) ?? known.find((k) => call(k).includes(query));
     if (!id) return `아는 인물 중에 ${josa(`"${query}"`, "이/가")} 없습니다. 목록: ${ctx.prefix ?? "!"}인물`;
     const c = state.characters[id]!;
     const npc = content.npcs[id];
     const met = state.perceived[id] !== undefined;
     const r = state.perceived[id] ?? NEUTRAL_RELATION;
-    const facts = (state.beliefs[state.playerId] ?? []).filter((b) => b.fact.includes(c.name)).slice(-5);
+    const named = knowsName(state, state.playerId, id);
+    const alias = aliasOf(state, content, id);
+    const facts = (state.beliefs[state.playerId] ?? []).filter((b) => (named && b.fact.includes(c.name)) || b.fact.includes(alias)).slice(-5);
     return [
-      header(`${c.name} · ${rankLabel(content.scenario, c.rank)}`),
-      ...(npc ? [npc.look, npc.reputation] : []),
+      header(`${headingAs(state, content, state.playerId, id)} · ${rankLabel(content.scenario, c.rank)}`),
+      // 평판은 그 인물을 아는(이름을 아는) 사람이 아는 모습이다
+      ...(npc ? [npc.look, ...(named ? [npc.reputation] : [])] : c.extra ? [c.extra.look] : []),
       // 겉으로 보이는 트레잇만 (외모, 드러나는 성격). 처음 만나기 전엔 소문으로 아는 외모만
       ...(() => {
         const shown = traitLabels(content, c, { visibleOnly: true });

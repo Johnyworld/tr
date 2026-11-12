@@ -1,4 +1,5 @@
 import type { GameState } from "../game/state.ts";
+import { playerCalls } from "../game/acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
 import { bodyTraits } from "./traits.ts";
@@ -49,11 +50,12 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
   const shownTo = shownLevel(track, to.id);
   if (shownFrom.id === shownTo.id) return { line: "", display: null, died: false }; // 캐릭터는 아직 모른다
   const better = nextIndex < index;
+  const called = playerCalls(state, ctx.content, characterId);
   return {
-    line: `${character.name}의 ${track.label}: ${shownFrom.label} → ${shownTo.label} (${cause}).${to.fatal && characterId === state.playerId ? DEATH_GUIDE : ""}`,
+    line: `${called}의 ${track.label}: ${shownFrom.label} → ${shownTo.label} (${cause}).${to.fatal && characterId === state.playerId ? DEATH_GUIDE : ""}`,
     display: better
-      ? { type: "heal", targetName: character.name, trackLabel: track.label, fromLabel: shownFrom.label, toLabel: shownTo.label, byLabel: cause }
-      : { type: "harm", targetName: character.name, trackLabel: track.label, severityLabel: cause, fatal: to.fatal === true, fromLabel: shownFrom.label, toLabel: shownTo.label, cause },
+      ? { type: "heal", targetName: called, trackLabel: track.label, fromLabel: shownFrom.label, toLabel: shownTo.label, byLabel: cause }
+      : { type: "harm", targetName: called, trackLabel: track.label, severityLabel: cause, fatal: to.fatal === true, fromLabel: shownFrom.label, toLabel: shownTo.label, cause },
     died: to.fatal === true,
   };
 }
@@ -112,7 +114,7 @@ export function applyTreatment(ctx: ToolContext, item: string | null): { ok: tru
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
   if (!needed) return { ok: false, error: "다친 데가 없어 치료할 것이 없다." };
   if (state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return { ok: false, error: "오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다." };
-  const name = ctx.content.npcs[healer]!.name;
+  const name = playerCalls(state, ctx.content, healer);
   const lines = [`${name}에게 치료를 받았다.`];
   const displays: ToolDisplayEvent[] = [];
   for (const [t, steps] of Object.entries(recovery.healer)) {

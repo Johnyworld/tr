@@ -67,6 +67,42 @@ export const clashSchema = z.strictObject({
 });
 export type Clash = z.infer<typeof clashSchema>;
 
+/** 플레이어가 낄 교전: 그날 새벽으로 예정해 두고, 그때 그 자리에 있으면 전투 장면으로 연다 (기획서 9.5) */
+export const pendingClashSchema = z.strictObject({
+  id: z.string(),
+  kind: z.enum(["raid", "skirmish", "assault"]),
+  attacker: z.string(),
+  defender: z.string(),
+  zone: z.string(),
+  at: z.number().int(),
+  plan: z.string().optional(),
+});
+export type PendingClash = z.infer<typeof pendingClashSchema>;
+
+/** 진행 중인 전투 장면. 전세는 플레이어 편 기준 (+면 우리가 이기고 있다) */
+export const battleStateSchema = z.strictObject({
+  id: z.string(),
+  kind: z.enum(["raid", "skirmish", "assault"]),
+  attacker: z.string(),
+  defender: z.string(),
+  zone: z.string(),
+  plan: z.string().optional(),
+  /** 플레이어가 공격 쪽인지 방어 쪽인지 */
+  side: z.enum(["attack", "defense"]),
+  ours: z.strictObject({ faction: z.string(), committed: z.number().int().min(0), losses: z.number().int().min(0) }),
+  theirs: z.strictObject({ faction: z.string(), committed: z.number().int().min(0), losses: z.number().int().min(0) }),
+  momentum: z.number().int(),
+  alarm: z.number().int().min(0),
+  position: z.string(),
+  round: z.number().int().min(0),
+  /** 아직 남은 적 목표물 */
+  objectives: z.array(z.string()),
+  /** 플레이어 행동이 바꾼 전세의 합 (공적 계산) */
+  contribution: z.number().int(),
+  startedAt: z.number().int(),
+});
+export type BattleState = z.infer<typeof battleStateSchema>;
+
 /**
  * 세계 상태와 이벤트 스키마. 능력치·행동·등급·상태 트랙 ID는 시나리오에서 오므로
  * 시나리오를 받아 만든다 (기획서 12.3). 세이브를 불러올 때도 이 스키마로 검증한다.
@@ -142,6 +178,14 @@ export function createGameSchemas(s: Scenario) {
     clocks: z.record(z.string(), clockStateSchema).default({}),
     /** 전쟁 틱이 마지막으로 돈 날 */
     lastWarDay: z.number().int().nullable().default(null),
+    /** 플레이어가 있는 전선 구역 (9-1). 이전 세이브는 세계를 열 때 정한다 */
+    playerZone: z.string().nullable().default(null),
+    /** 구역별 설치된 준비물 (함정 등) */
+    preparations: z.record(z.string(), z.array(z.string())).default({}),
+    /** 예정된 교전 (플레이어가 낄 수 있는 것) */
+    pendingClashes: z.array(pendingClashSchema).default([]),
+    battle: battleStateSchema.nullable().default(null),
+    nextBattleNo: z.number().int().positive().default(1),
   });
 
   /** 상태 변경은 반드시 이벤트로 기록한다 (append-only). 상태는 이벤트를 차례로 적용한 결과다 */
@@ -197,6 +241,44 @@ export function createGameSchemas(s: Scenario) {
       zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })),
       clocks: z.record(z.string(), z.strictObject({ filled: z.number().int().min(0) })),
       clashes: z.array(clashSchema),
+      /** 플레이어가 낄 수 있어 미뤄 둔 교전 */
+      scheduled: z.array(pendingClashSchema).default([]),
+    }),
+    z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
+    z.strictObject({ type: z.literal("preparation_set"), zone: z.string(), preparation: z.string() }),
+    z.strictObject({ type: z.literal("item_consumed"), holder: z.string(), itemId: z.string(), quantity: z.number().int().positive() }),
+    /** 예정된 교전을 화면 밖에서 계산했다 (플레이어가 자리에 없었다) */
+    z.strictObject({
+      type: z.literal("clash_resolved"),
+      pendingId: z.string(),
+      clash: clashSchema,
+      factions: z.record(z.string(), factionStateSchema),
+      zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })),
+    }),
+    z.strictObject({ type: z.literal("battle_started"), pendingId: z.string(), battle: battleStateSchema }),
+    z.strictObject({
+      type: z.literal("battle_round"),
+      effect: z.string().nullable(),
+      checkId: z.string().nullable(),
+      momentum: z.number().int(),
+      alarm: z.number().int().min(0),
+      position: z.string(),
+      objectives: z.array(z.string()),
+      ourLosses: z.number().int().min(0),
+      theirLosses: z.number().int().min(0),
+      contribution: z.number().int(),
+      /** 쓴 준비물 (구역에서 빠진다) */
+      preparationUsed: z.string().optional(),
+    }),
+    z.strictObject({
+      type: z.literal("battle_ended"),
+      /** 우리 편이 이겼는지 (방어는 버텼는지, 공격은 목적을 이뤘는지) */
+      won: z.boolean(),
+      withdrew: z.boolean(),
+      clash: clashSchema,
+      factions: z.record(z.string(), factionStateSchema),
+      zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })),
+      merit: z.number().int().min(0),
     }),
     z.strictObject({ type: z.literal("secret_revealed"), npcId: z.string() }),
     z.strictObject({ type: z.literal("turn_started"), turn: z.number().int().positive(), input: z.string() }),
@@ -289,6 +371,11 @@ export const EMPTY_STATE: GameState = {
   zones: {},
   clocks: {},
   lastWarDay: null,
+  playerZone: null,
+  preparations: {},
+  pendingClashes: [],
+  battle: null,
+  nextBattleNo: 1,
 };
 
 export function applyEvent(state: GameState, event: GameEvent): GameState {
@@ -449,7 +536,61 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.zones = structuredClone(event.zones);
       for (const [id, clock] of Object.entries(event.clocks)) mustGet(next.clocks, id, "세력 클락").filled = clock.filled;
       next.lastWarDay = event.day;
+      next.pendingClashes.push(...structuredClone(event.scheduled));
+      next.nextBattleNo += event.scheduled.length;
       break;
+    case "zone_moved":
+      if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
+      next.playerZone = event.to;
+      break;
+    case "preparation_set":
+      (next.preparations[event.zone] ??= []).push(event.preparation);
+      break;
+    case "item_consumed": {
+      const inv = holderInventory(next, event.holder);
+      const left = (inv[event.itemId] ?? 0) - event.quantity;
+      if (left < 0) throw new Error(`수량 부족: ${event.holder}의 ${event.itemId}`);
+      if (left === 0) delete inv[event.itemId];
+      else inv[event.itemId] = left;
+      break;
+    }
+    case "clash_resolved":
+      next.pendingClashes = next.pendingClashes.filter((p) => p.id !== event.pendingId);
+      next.factions = structuredClone(event.factions);
+      next.zones = structuredClone(event.zones);
+      break;
+    case "battle_started":
+      if (state.battle) throw new Error("이미 전투 중입니다.");
+      next.pendingClashes = next.pendingClashes.filter((p) => p.id !== event.pendingId);
+      next.battle = structuredClone(event.battle);
+      break;
+    case "battle_round": {
+      const b = next.battle;
+      if (!b) throw new Error("진행 중인 전투가 없습니다.");
+      b.round += 1;
+      b.momentum = event.momentum;
+      b.alarm = event.alarm;
+      b.position = event.position;
+      b.objectives = [...event.objectives];
+      b.ours.losses = event.ourLosses;
+      b.theirs.losses = event.theirLosses;
+      b.contribution = event.contribution;
+      if (event.preparationUsed) {
+        const list = next.preparations[b.zone] ?? [];
+        const i = list.indexOf(event.preparationUsed);
+        if (i < 0) throw new Error(`설치된 준비물이 없습니다: ${event.preparationUsed}`);
+        list.splice(i, 1);
+      }
+      break;
+    }
+    case "battle_ended": {
+      if (!state.battle) throw new Error("진행 중인 전투가 없습니다.");
+      next.battle = null;
+      next.factions = structuredClone(event.factions);
+      next.zones = structuredClone(event.zones);
+      mustGet(next.characters, state.playerId, "캐릭터").merit += event.merit;
+      break;
+    }
     case "secret_revealed":
       mustGet(next.characters, event.npcId, "캐릭터");
       if (next.revealedSecrets.includes(event.npcId)) throw new Error(`이미 공개된 비밀: ${event.npcId}`);

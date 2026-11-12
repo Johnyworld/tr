@@ -122,6 +122,20 @@ function checkReferences(content: Content): string[] {
     }
     if (loc.kind === "base" && !loc.owner) problems.push(`locations.${loc.id}: 거점에는 소유 세력이 있어야 한다`);
   }
+  const battle = content.scenario.battle;
+  if (battle) {
+    for (const p of battle.preparations) {
+      if (p.requires_item && !content.items[p.requires_item]) problems.push(`scenario.battle.preparations.${p.id}: 알 수 없는 아이템 ${p.requires_item}`);
+    }
+    for (const e of battle.effects) {
+      if (e.requires_item && !content.items[e.requires_item]) problems.push(`scenario.battle.effects.${e.id}: 알 수 없는 아이템 ${e.requires_item}`);
+    }
+  }
+  for (const role of Object.values(content.roles)) {
+    if (role.start_location && Object.keys(content.locations).length && !content.locations[role.start_location]) {
+      problems.push(`roles.${role.id}: 알 수 없는 시작 구역 ${role.start_location}`);
+    }
+  }
   const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));
   if (new Set(plans).size !== plans.length) problems.push("factions: 세력 클락(plans) id가 겹친다");
   for (const npc of Object.values(content.npcs)) {

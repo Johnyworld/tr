@@ -670,3 +670,13 @@ body {
     display: none;
   }
 }
+
+.card.battle {
+  border-left-color: var(--error);
+}
+.card.battle.round {
+  border-left-color: var(--partial);
+}
+.sheet-battle .gauge-row {
+  font-variant-numeric: tabular-nums;
+}

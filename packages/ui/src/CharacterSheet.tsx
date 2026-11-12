@@ -59,6 +59,22 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         )}
       </section>
 
+      {player.battle && (
+        <section className="sheet-battle">
+          <h3>
+            {player.battle.title} <span className="muted small">({player.battle.sideLabel} · {player.battle.round}라운드)</span>
+          </h3>
+          <div className="gauge-row" title={`전세 ${player.battle.momentum}`}>
+            전세 {"◀".repeat(Math.max(0, -player.battle.momentum))}
+            {"·".repeat(player.battle.momentumMax - Math.abs(player.battle.momentum))}
+            {"▶".repeat(Math.max(0, player.battle.momentum))} {player.battle.momentumLabel}
+          </div>
+          <div className="muted small">
+            경보 {player.battle.alarmLabel} · 위치 {player.battle.positionLabel}
+          </div>
+        </section>
+      )}
+
       {player.faction && (
         <section className="faction">
           <h3>무리</h3>
@@ -66,6 +82,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
             {player.faction.name} · 분위기 {player.faction.moraleLabel}
           </div>
           <div className="muted small">배급: {player.faction.rationLabel}</div>
+          {player.zone && <div className="muted small">있는 곳: {player.zone.name} ({player.zone.owner})</div>}
         </section>
       )}
 

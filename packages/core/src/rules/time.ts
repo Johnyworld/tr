@@ -90,6 +90,8 @@ export const ACTIVITIES = [
   "guard_duty",
   "sleep",
   "wait",
+  "travel",
+  "combat",
 ] as const;
 export type Activity = (typeof ACTIVITIES)[number];
 export const activitySchema = z.enum(ACTIVITIES);
@@ -99,7 +101,7 @@ export type ActivityCost =
   | { kind: "range"; min: number; max: number }
   | { kind: "long"; minutes: number; allowUntil: boolean };
 
-export const ACTIVITY_COSTS: Record<Activity, ActivityCost> = {
+export const ACTIVITY_COSTS = {
   brief: { kind: "fixed", minutes: 5 },
   talk: { kind: "fixed", minutes: 10 },
   eat: { kind: "fixed", minutes: 30 },
@@ -110,7 +112,11 @@ export const ACTIVITY_COSTS: Record<Activity, ActivityCost> = {
   guard_duty: { kind: "long", minutes: 240, allowUntil: false },
   sleep: { kind: "long", minutes: 360, allowUntil: true },
   wait: { kind: "long", minutes: 60, allowUntil: true },
-};
+  /** 인접 구역으로 이동 (move_to) */
+  travel: { kind: "range", min: 30, max: 60 },
+  /** 전투 한 라운드 (시나리오의 round_minutes와 맞춘다) */
+  combat: { kind: "fixed", minutes: 10 },
+} as const satisfies Record<Activity, ActivityCost>;
 
 export const ACTIVITY_LABELS: Record<Activity, string> = {
   brief: "잠깐의 행동",
@@ -123,6 +129,8 @@ export const ACTIVITY_LABELS: Record<Activity, string> = {
   guard_duty: "보초",
   sleep: "잠",
   wait: "기다림",
+  travel: "이동",
+  combat: "전투",
 };
 
 /** 한 번의 빨리감기 최대 길이 */

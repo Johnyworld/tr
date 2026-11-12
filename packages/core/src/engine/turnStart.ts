@@ -1,6 +1,7 @@
 import { runMissionStartOfTurn } from "./missionTools.ts";
 import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
+import { runPendingClashes } from "./battleTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -15,5 +16,7 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   spreadRumors(ctx);
   // 세력 단위 전쟁 (하루 단위). 자기 무리가 낀 교전 소식은 화면에 보인다
   const war = runWarDays(ctx);
-  return [...war, ...runMissionStartOfTurn(ctx)];
+  // 예정 시각이 된 교전: 그 자리에 있으면 전투 장면이 열린다
+  const battles = runPendingClashes(ctx);
+  return [...war, ...battles, ...runMissionStartOfTurn(ctx)];
 }

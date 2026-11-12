@@ -8,6 +8,15 @@ import { TIME_SEGMENTS } from "../rules/time.ts";
 
 const id = z.string().regex(/^[a-z][a-z0-9_]*$/, "id는 소문자·숫자·_ 만 쓴다");
 const labeled = z.strictObject({ id, label: z.string().min(1), description: z.string().optional() });
+/** 전투 효과 한 결과의 크기 */
+const battleOutcome = z.strictObject({
+  momentum: z.number().int().min(-5).max(5).default(0),
+  alarm: z.number().int().min(-3).max(3).default(0),
+  /** 위치를 앞으로(적 후방 쪽으로) 몇 칸 */
+  advance: z.number().int().min(0).max(3).default(0),
+  enemy_losses: z.number().int().min(0).max(10).default(0),
+  destroy_objective: z.boolean().default(false),
+});
 
 export const scenarioFileSchema = z
   .strictObject({
@@ -92,6 +101,63 @@ export const scenarioFileSchema = z
         }),
       })
       .optional(),
+    /**
+     * 전투 장면 (기획서 9.5). 틀(전세·경보·위치·목표물·준비물)은 core에 있고, 효과의 종류·조건·크기와 이름은 여기 둔다.
+     * 없으면 교전을 장면으로 열지 않는다.
+     */
+    battle: z
+      .strictObject({
+        round_minutes: z.number().int().positive(),
+        max_rounds: z.number().int().positive(),
+        /** 이 전세에 이르면 끝난다 (±) */
+        momentum_to_win: z.number().int().min(2).max(10),
+        max_alarm: z.number().int().min(1).max(5),
+        /** 위치: 앞에서부터 전선 → … → 적 후방 */
+        positions: z.array(labeled).min(2),
+        /** 적 쪽 목표물 (파괴할 수 있는 것) */
+        objectives: z.array(labeled).min(1),
+        /** 전투 전에 구역에 설치하는 준비물 (함정 등) */
+        preparations: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              description: z.string().min(1),
+              requires_item: id.optional(),
+            }),
+          )
+          .default([]),
+        effects: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              description: z.string().min(1),
+              /** 쓸 수 있는 위치 */
+              positions: z.array(id).min(1),
+              /** 경보가 이보다 높으면 쓸 수 없다 */
+              max_alarm: z.number().int().min(0).optional(),
+              requires_item: id.optional(),
+              consumes_item: z.boolean().default(false),
+              requires_preparation: id.optional(),
+              /** 목표물을 하나 골라야 하는지 */
+              targets_objective: z.boolean().default(false),
+              /** GM이 선언해야 하는 최소 몸의 위험 (none이면 대가가 경보·전세로만 온다) */
+              min_harm: z.enum(["none", "light", "heavy"]).default("light"),
+              /** 물러나기: 성공하면 전투에서 빠진다 */
+              withdraw: z.boolean().default(false),
+              /** 경보 0일 때 성공·대가 있는 성공의 전세에 더한다 (기습) */
+              surprise_bonus: z.number().int().min(0).default(0),
+              outcomes: z.strictObject({
+                success: battleOutcome,
+                partial: battleOutcome,
+                miss: battleOutcome,
+              }),
+            }),
+          )
+          .min(1),
+      })
+      .optional(),
     threats: z.strictObject({
       disturbance_chance_per_hour: z.record(z.enum(TIME_SEGMENTS), z.number().min(0).max(1)),
       disturbance_details: z.array(z.string().min(1)).min(1),
@@ -131,6 +197,16 @@ export const scenarioFileSchema = z
       for (const list of [s.war.ration.levels, s.war.stock_labels]) {
         if (list.some((l, i) => i > 0 && l.min_days > list[i - 1]!.min_days)) problem("war: min_days는 내림차순이어야 한다");
       }
+    }
+    if (s.battle) {
+      const positions = new Set(s.battle.positions.map((p) => p.id));
+      const preps = new Set(s.battle.preparations.map((p) => p.id));
+      for (const e of s.battle.effects) {
+        for (const p of e.positions) if (!positions.has(p)) problem(`battle.effects.${e.id}: 알 수 없는 위치 ${p}`);
+        if (e.requires_preparation && !preps.has(e.requires_preparation)) problem(`battle.effects.${e.id}: 알 수 없는 준비물 ${e.requires_preparation}`);
+      }
+      const ids = s.battle.effects.map((e) => e.id);
+      if (new Set(ids).size !== ids.length) problem("battle.effects에 중복된 id가 있다");
     }
     const ranks = new Set(s.rank_ladder.map((r) => r.id));
     for (const rank of [s.promotion.from, s.promotion.to]) {

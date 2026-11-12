@@ -13,6 +13,7 @@ import type { GameState } from "../game/state.ts";
 import type { Content, NpcContent } from "../content/schemas.ts";
 import { describeMissionsForGm } from "./missionTools.ts";
 import { describeFactionsForGm } from "./warTools.ts";
+import { describeBattleForGm } from "./battleTools.ts";
 import { BELIEF_SOURCE_LABELS as SOURCE_LABELS } from "../game/belief.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } from "../game/reputation.ts";
 
@@ -57,6 +58,7 @@ export function describePlayerState(state: GameState, content: Content): string 
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n"),
+    describeBattleForGm(state, content),
     describeMissionsForGm(state, { content }),
     describeFactionsForGm(state, content),
     describeOwnDeeds(state),

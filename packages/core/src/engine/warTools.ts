@@ -2,7 +2,8 @@ import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
-import { daysOfStock, HOSTILE, disposition, initialWarWorld, simulateWarDay } from "../sim/war.ts";
+import { daysOfStock, HOSTILE, disposition, initialWarWorld, neighbors, simulateWarDay } from "../sim/war.ts";
+import { playerInvolvement, scheduleTime } from "./battleTools.ts";
 import { fill, sentence } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
@@ -22,6 +23,7 @@ export const RUMOR_CHANCE = 0.4;
 export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
   const { content, store } = ctx;
   if (!content.scenario.war || Object.keys(content.factions).length === 0) return [];
+  ensurePlayerZone(ctx);
   const today = dayOf(store.getState().time);
   if (Object.keys(store.getState().factions).length === 0) {
     // 새 세계, 또는 9단계 이전 세이브: 콘텐츠의 시작값으로 채우고 오늘부터 센다
@@ -32,7 +34,13 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
   const displays: ToolDisplayEvent[] = [];
   for (let day = Math.max(last + 1, today - MAX_CATCH_UP_DAYS + 1); day <= today; day++) {
     const state = store.getState();
-    const result = simulateWarDay({ factions: state.factions, zones: state.zones, clocks: state.clocks }, content, ctx.rng);
+    // 오늘 새벽 교전 중 플레이어가 그 자리에 있는 것은 계산하지 않고 예정해 둔다 (전투 장면, 기획서 9.5)
+    const at = scheduleTime(day, ctx.rng);
+    const canDefer = day === today && at > state.time;
+    const result = simulateWarDay({ factions: state.factions, zones: state.zones, clocks: state.clocks }, content, ctx.rng, {
+      defer: (spec) => canDefer && playerInvolvement(state, content, spec) !== null,
+    });
+    const scheduled = result.deferred.map((spec, i) => ({ ...spec, id: `battle_${state.nextBattleNo + i}`, at }));
     store.append({
       type: "war_day_simulated",
       day,
@@ -40,10 +48,25 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       zones: result.zones,
       clocks: Object.fromEntries(Object.entries(result.clocks).map(([id, c]) => [id, { filled: c.filled }])),
       clashes: result.clashes,
+      scheduled,
     });
     displays.push(...deliverNews(ctx, result.clashes));
   }
   return displays;
+}
+
+/** 플레이어가 있는 구역을 정한다: 역할의 시작 장소, 없으면 소속 세력의 거점 (9-1 이전 세이브 포함) */
+function ensurePlayerZone(ctx: ToolContext) {
+  const state = ctx.store.getState();
+  if (state.playerZone || Object.keys(ctx.content.locations).length === 0) return;
+  const player = state.characters[state.playerId];
+  if (!player) return;
+  const start = ctx.content.roles[state.roleId]?.start_location;
+  const zone =
+    (start && ctx.content.locations[start] ? start : null) ??
+    Object.values(ctx.content.locations).find((l) => l.kind === "base" && l.owner === player.factionId)?.id ??
+    null;
+  if (zone) ctx.store.append({ type: "zone_moved", from: null, to: zone });
 }
 
 /** 교전 소식을 플레이어의 믿음으로 남긴다 */
@@ -151,11 +174,41 @@ export function factionOutlook(state: GameState, content: Content): FactionOutlo
   return { own, others };
 }
 
+/**
+ * 플레이어가 있는 구역과 맞닿은 구역 (전선은 눈에 보이므로 주인을 안다).
+ * 설치한 준비물은 그 구역에 있는 것만 (플레이어가 직접 설치한 것)
+ */
+export function zoneOutlook(state: GameState, content: Content) {
+  const zoneId = state.playerZone;
+  const loc = zoneId ? content.locations[zoneId] : undefined;
+  if (!zoneId || !loc) return null;
+  const owner = (id: string) => {
+    const o = state.zones[id]?.owner ?? null;
+    return o ? (content.factions[o]?.name ?? o) : "빈 땅";
+  };
+  const prepLabel = (id: string) => content.scenario.battle?.preparations.find((p) => p.id === id)?.label ?? id;
+  return {
+    id: zoneId,
+    name: loc.name,
+    description: loc.description,
+    owner: owner(zoneId),
+    adjacent: neighbors(content, zoneId).map((id) => ({ id, name: content.locations[id]?.name ?? id, owner: owner(id) })),
+    preparations: (state.preparations[zoneId] ?? []).map(prepLabel),
+  };
+}
+
 /** GM 컨텍스트용 한 덩어리 */
 export function describeFactionsForGm(state: GameState, content: Content): string {
   const o = factionOutlook(state, content);
   if (!o.own) return "";
+  const z = zoneOutlook(state, content);
   return [
+    ...(z
+      ? [
+          `현재 구역: ${z.name} (${z.id}, ${z.owner}) · 인접 구역(move_to): ${z.adjacent.map((a) => `${a.id} ${a.name}(${a.owner})`).join(", ")}` +
+            (z.preparations.length ? ` · 설치해 둔 준비물: ${z.preparations.join(", ")}` : ""),
+        ]
+      : []),
     `무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`,
     `세력 관계: ${o.others.map((f) => `${f.name} ${f.stance}`).join(", ")}`,
     "전황은 캐릭터가 들은 보고·소문(믿음)으로만 안다. 교전 결과·사상자·점령을 지어내지 않는다.",

@@ -110,6 +110,16 @@ export function ToolCard({ display }: { display: ToolDisplayEvent }) {
           </div>
         </div>
       );
+    case "battle":
+      return (
+        <div className={`card battle ${display.event}`}>
+          <div className="card-head">
+            <span className="card-kind">{display.event === "started" ? "교전" : display.event === "ended" ? "전투 끝" : "전투"}</span>
+            <span>{display.title}</span>
+          </div>
+          <div className="card-intent">{display.detail}</div>
+        </div>
+      );
     case "item":
       return (
         <div className="card item">

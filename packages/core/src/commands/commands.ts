@@ -8,7 +8,7 @@ import { dayOf, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../ru
 import { conditionPenalty, rankLabel } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
-import { factionOutlook, WAR_TOPIC } from "../engine/warTools.ts";
+import { factionOutlook, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
 
 /**
  * MUD식 정보 명령어 (기획서 11.7).
@@ -118,8 +118,20 @@ const map: CommandDef = {
   id: "map",
   name: "지도",
   aliases: ["map"],
-  description: "현재 위치, 아는 장소와 연결, 이동 시간",
-  run: () => [header("지도"), NOT_YET("장소와 이동", "장소 시스템")].join("\n"),
+  description: "현재 구역, 맞닿은 구역과 그 주인",
+  run(ctx) {
+    const z = zoneOutlook(ctx.state, ctx.content);
+    if (!z) return [header("지도"), NOT_YET("장소와 이동", "장소 시스템")].join("\n");
+    return [
+      header("지도"),
+      `현재  ${z.name} · ${z.owner}`,
+      `  ${z.description}`,
+      ...(z.preparations.length ? [`  설치해 둔 것: ${z.preparations.join(", ")}`] : []),
+      "",
+      "맞닿은 구역 (이동 30분~1시간)",
+      ...z.adjacent.map((a) => `  ${a.name} · ${a.owner}`),
+    ].join("\n");
+  },
 };
 
 const time: CommandDef = {

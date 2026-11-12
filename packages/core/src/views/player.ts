@@ -12,7 +12,8 @@ import { conditionPenalty, describeConditions, initialConditions, rankLabel } fr
 import { describeRequirement } from "../engine/missionTools.ts";
 import type { TranscriptEntry } from "../engine/log.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
-import { factionOutlook } from "../engine/warTools.ts";
+import { factionOutlook, zoneOutlook } from "../engine/warTools.ts";
+import { alarmLabel, battleTitle, momentumLabel } from "../engine/battleTools.ts";
 
 /**
  * 웹 앱 화면용 조회 결과. 정보 필터를 거친다 (원칙 4, 9: 필터는 어댑터가 아니라 core에서).
@@ -44,6 +45,10 @@ export type PlayerView = {
   mission: { title: string; briefing: string; deadlineLabel: string; requirements: string[] } | null;
   /** 소속 무리 사정 (거점에서 느끼는 것, 대략). 세력 시뮬레이션이 없으면 null */
   faction: { name: string; moraleLabel: string; rationLabel: string } | null;
+  /** 지금 있는 구역 */
+  zone: { name: string; owner: string } | null;
+  /** 진행 중인 전투 (대략적인 말로만) */
+  battle: { title: string; sideLabel: string; round: string; momentum: number; momentumMax: number; momentumLabel: string; alarmLabel: string; positionLabel: string } | null;
   /** 아는 인물의 당신에 대한 관계 */
   relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
   /** 내 행적 (최근 것부터). 보이는 목격자만 담는다 */
@@ -69,7 +74,24 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
   const items = (inv: Record<string, number>) =>
     Object.entries(inv).map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity }));
   const outlook = factionOutlook(state, content);
+  const zone = zoneOutlook(state, content);
+  const b = state.battle;
+  const bc = content.scenario.battle;
   return {
+    zone: zone ? { name: zone.name, owner: zone.owner } : null,
+    battle:
+      b && bc
+        ? {
+            title: battleTitle(content, b),
+            sideLabel: b.side === "defense" ? "방어" : "공격",
+            round: `${b.round + 1}/${bc.max_rounds}`,
+            momentum: b.momentum,
+            momentumMax: bc.momentum_to_win,
+            momentumLabel: momentumLabel(b.momentum, bc.momentum_to_win),
+            alarmLabel: alarmLabel(b.alarm, bc.max_alarm),
+            positionLabel: bc.positions.find((p) => p.id === b.position)?.label ?? b.position,
+          }
+        : null,
     faction: outlook.own ? { name: outlook.own.name, moraleLabel: outlook.own.moraleLabel, rationLabel: outlook.own.rationLabel } : null,
     name: player.name,
     roleLabel:

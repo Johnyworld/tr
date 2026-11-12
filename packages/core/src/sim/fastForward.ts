@@ -5,7 +5,7 @@ import type { Scenario } from "../scenario/schema.ts";
 import type { GameState } from "../game/state.ts";
 
 /** 빨리감기를 멈추게 한 사건 */
-export const INTERRUPT_KINDS = ["disturbance"] as const;
+export const INTERRUPT_KINDS = ["disturbance", "battle"] as const;
 export type InterruptKind = (typeof INTERRUPT_KINDS)[number];
 
 export const interruptSchema = z.strictObject({
@@ -45,9 +45,15 @@ export function createDisturbanceCheck(s: Scenario): InterruptCheck {
   };
 }
 
-/** 시나리오의 기본 끼어들기 검사 목록 */
+/** 예정된 교전 시각이 되면 멈춘다 (플레이어가 그 자리에 있으면 전투 장면이 열린다) */
+export const battleCheck: InterruptCheck = ({ state, from, to }) => {
+  const due = state.pendingClashes.filter((p) => p.at > from && p.at <= to).sort((a, b) => a.at - b.at)[0];
+  return due ? { kind: "battle", detail: "교전", at: due.at } : null;
+};
+
+/** 시나리오의 기본 끼어들기 검사 목록. 교전을 먼저 본다 */
 export function createInterruptChecks(s: Scenario): readonly InterruptCheck[] {
-  return [createDisturbanceCheck(s)];
+  return [battleCheck, createDisturbanceCheck(s)];
 }
 
 export type FastForwardResult = {

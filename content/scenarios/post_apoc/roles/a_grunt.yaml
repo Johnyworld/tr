@@ -14,7 +14,7 @@ start_stats:
   nerve: 0
   senses: 1
   persuasion: -1
-start_inventory: [kitchen_knife, water_bottle]
+start_inventory: [kitchen_knife, water_bottle, wire_roll]
 # 아래 필드는 해당 시스템이 생기면 쓰인다 (장소·배급·Belief·스토리렛)
 start_location: a_base
 access: [ration, mission_board]

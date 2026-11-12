@@ -104,6 +104,100 @@ war:
     assault_failure: "{attacker:이/가} {zone:을/를} 공격했지만 {defender:이/가} 막아 냈다고 한다. {attacker} 쪽 사상자 {attacker_loss}, {defender} 쪽 {defender_loss}"
     occupy: "{attacker:이/가} 비어 있던 {zone}에 사람을 보내 자리를 잡았다고 한다"
 
+# 전투 장면 (9-1, 기획서 9.5). 플레이어가 있는 교전을 라운드 단위로 푼다 (수치는 *임시*)
+# 효과의 결과: momentum 전세(우리 편 기준), alarm 경보, advance 위치 전진, enemy_losses 적 사상자, destroy_objective 목표물 파괴
+# min_harm: GM이 선언해야 하는 최소 몸의 위험. none이면 대가는 경보·전세로만 온다 (숨어들기는 들키는 것이 대가)
+battle:
+  round_minutes: 10
+  max_rounds: 8
+  momentum_to_win: 5
+  max_alarm: 3
+  positions:
+    - { id: line, label: 전선 }
+    - { id: flank, label: 측면 }
+    - { id: rear, label: 적 후방 }
+  objectives:
+    - { id: leader, label: 지휘하는 자 }
+    - { id: ammo_pile, label: 탄약 더미 }
+    - { id: gun_nest, label: 기관총 자리 }
+  preparations:
+    - id: wire_trap
+      label: 철사 덫
+      description: 길목에 철사와 깡통을 엮어 걸려 넘어지게 하고 소리로 알린다
+      requires_item: wire_roll
+  effects:
+    - id: hold
+      label: 버티며 싸우기
+      description: 전선에서 엄폐하며 맞서 싸운다
+      min_harm: light
+      positions: [line]
+      outcomes:
+        success: { momentum: 1, enemy_losses: 1 }
+        partial: { momentum: 1 }
+        miss: { momentum: -1 }
+    - id: sneak
+      label: 숨어들기
+      description: 적 눈을 피해 측면으로, 다시 적의 뒤로 파고든다
+      min_harm: none
+      positions: [line, flank]
+      max_alarm: 1
+      outcomes:
+        success: { advance: 1 }
+        partial: { advance: 1, alarm: 1 }
+        miss: { alarm: 2 }
+    - id: silence
+      label: 소리 없이 해치우기
+      description: 경보가 울리기 전에 보초나 연락병을 먼저 쓰러뜨린다
+      min_harm: light
+      positions: [flank, rear]
+      max_alarm: 2
+      outcomes:
+        success: { alarm: -1, enemy_losses: 1 }
+        partial: { enemy_losses: 1 }
+        miss: { alarm: 2 }
+    - id: ambush
+      label: 기습
+      description: 측면이나 뒤에서 덮친다. 적이 아직 모르면 더 크게 흔든다
+      min_harm: light
+      positions: [flank, rear]
+      surprise_bonus: 1
+      outcomes:
+        success: { momentum: 2, enemy_losses: 2, alarm: 3 }
+        partial: { momentum: 1, enemy_losses: 1, alarm: 2 }
+        miss: { momentum: -1, alarm: 3 }
+    - id: demolish
+      label: 폭약
+      description: 적 뒤쪽의 목표물(지휘하는 자, 탄약 더미, 기관총 자리)에 폭약을 터뜨린다
+      min_harm: heavy
+      positions: [rear]
+      requires_item: explosive
+      consumes_item: true
+      targets_objective: true
+      outcomes:
+        success: { momentum: 2, enemy_losses: 2, destroy_objective: true, alarm: 3 }
+        partial: { momentum: 1, destroy_objective: true, alarm: 3 }
+        miss: { alarm: 3 }
+    - id: spring_trap
+      label: 덫 발동
+      description: 미리 깔아 둔 덫으로 몰려오는 적을 끊는다
+      min_harm: none
+      positions: [line]
+      requires_preparation: wire_trap
+      outcomes:
+        success: { momentum: 2, enemy_losses: 2 }
+        partial: { momentum: 1, enemy_losses: 1 }
+        miss: {}
+    - id: withdraw
+      label: 물러나기
+      description: 싸움에서 빠져 몸을 뺀다. 남은 싸움은 동료들이 치른다
+      min_harm: light
+      positions: [line, flank, rear]
+      withdraw: true
+      outcomes:
+        success: {}
+        partial: { momentum: -1 }
+        miss: { momentum: -1 }
+
 # 환경 위협: 빨리감기 중 끼어드는 이상 징후 (임시값). 조우 테이블이 생기면 바꾼다
 threats:
   disturbance_chance_per_hour: { dawn: 0.05, morning: 0.03, day: 0.03, evening: 0.05, night: 0.08 }

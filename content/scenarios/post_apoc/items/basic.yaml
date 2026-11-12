@@ -23,3 +23,9 @@
 - id: ledger
   name: 배급 장부
   description: 손때 묻은 두꺼운 장부. 배급 내역이 빽빽하게 적혀 있다.
+- id: explosive
+  name: 사제 폭약
+  description: 비료와 연료로 만든 폭약 한 덩이. 도화선이 짧다.
+- id: wire_roll
+  name: 철사 뭉치
+  description: 녹슨 철사와 빈 깡통 몇 개. 덫을 엮을 수 있다.

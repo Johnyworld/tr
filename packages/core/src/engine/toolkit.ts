@@ -43,6 +43,7 @@ export type ToolDisplayEvent =
       merit?: number;
     }
   | { type: "promotion"; name: string; fromLabel: string; toLabel: string }
+  | { type: "battle"; event: "started" | "round" | "ended"; title: string; detail: string }
   | {
       type: "deed";
       summary: string;
@@ -109,4 +110,5 @@ export const STRICT_UNSUPPORTED_KEYS = [
   "minItems",
   "maxItems",
   "pattern",
+  "default",
 ];

@@ -93,7 +93,10 @@ describe("정보 필터", () => {
     advanceDays(env, 2);
     const state = env.store.getState();
     const ctx = { state, content: TEST_CONTENT, summaries: [] };
-    const text = [runCommand("!세력", ctx), runCommand("!배급", ctx), describePlayerState(state, TEST_CONTENT)].join("\n");
+    // 시각("05:30", "3일차")은 숫자 비교에서 뺀다
+    const text = [runCommand("!세력", ctx), runCommand("!배급", ctx), describePlayerState(state, TEST_CONTENT)]
+      .join("\n")
+      .replace(/\d+일차|\d{2}:\d{2}/g, "");
     expect(text).not.toContain("비밀 공세 준비");
     expect(text).not.toContain("c_plan");
     const c = state.factions.faction_c!;

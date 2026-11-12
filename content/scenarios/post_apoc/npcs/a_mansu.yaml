@@ -29,5 +29,5 @@ secret:
   reveal_when: 신뢰 4 이상 + 술자리
   min_trust: 4
 stats: { strength: 1, agility: -1, nerve: 2, senses: 1, persuasion: 1 }
-start_inventory: [cigarettes, kitchen_knife]
+start_inventory: [cigarettes, kitchen_knife, explosive]
 playable: true

@@ -24,7 +24,19 @@ export type WarWorld = {
   clocks: Record<string, ClockState>;
 };
 
-export type WarDayResult = WarWorld & { clashes: Clash[] };
+/** 교전 하나의 명세 (아직 결과가 정해지지 않은 것) */
+export type ClashSpec = { kind: "raid" | "skirmish" | "assault"; attacker: string; defender: string; zone: string; plan?: string };
+
+export type WarDayResult = WarWorld & {
+  clashes: Clash[];
+  /** defer로 미뤄 둔 교전 (전투 장면으로 열 수 있는 것) */
+  deferred: ClashSpec[];
+};
+
+export type WarDayOptions = {
+  /** true면 이 교전을 계산하지 않고 미룬다 (플레이어가 그 자리에 있을 때) */
+  defer?: (spec: ClashSpec) => boolean;
+};
 
 /** 이 세력이 저 세력을 적으로 보는지 (태도 -2 이하) */
 export const HOSTILE = -2;
@@ -98,11 +110,16 @@ function pickWeighted<T>(rng: Rng, items: readonly { item: T; weight: number }[]
 }
 
 /** 하루를 시뮬레이션한다. 입력은 바꾸지 않고 새 값을 돌려준다 */
-export function simulateWarDay(world: WarWorld, content: Content, rng: Rng): WarDayResult {
+export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, options: WarDayOptions = {}): WarDayResult {
   const war = content.scenario.war;
   const next: WarWorld = structuredClone(world);
   const clashes: Clash[] = [];
-  if (!war) return { ...next, clashes };
+  const deferred: ClashSpec[] = [];
+  if (!war) return { ...next, clashes, deferred };
+  const fightOrDefer = (spec: ClashSpec) => {
+    if (options.defer?.(spec)) deferred.push(spec);
+    else clashes.push(fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan));
+  };
 
   const alive = Object.keys(next.factions)
     .filter((id) => next.factions[id]!.population > 0)
@@ -149,7 +166,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng): War
     if (!target || owner === clock.factionId) continue;
     if (owner === null) clashes.push(occupy(next, clock.factionId, clock.target, clockId));
     else if (disposition(content, clock.factionId, owner) <= HOSTILE && target.kind !== "base") {
-      clashes.push(fight(next, content, rng, "assault", clock.factionId, owner, clock.target, clockId));
+      fightOrDefer({ kind: "assault", attacker: clock.factionId, defender: owner, zone: clock.target, plan: clockId });
     }
   }
 
@@ -162,11 +179,8 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng): War
     const options = attackOptions(next, content, profile);
     const choice = pickWeighted(rng, options.map((o) => ({ item: o, weight: KIND_WEIGHT[o.kind] })));
     if (!choice) continue;
-    clashes.push(
-      choice.kind === "occupy"
-        ? occupy(next, attacker, choice.zone)
-        : fight(next, content, rng, choice.kind, attacker, choice.defender!, choice.zone),
-    );
+    if (choice.kind === "occupy") clashes.push(occupy(next, attacker, choice.zone));
+    else fightOrDefer({ kind: choice.kind, attacker, defender: choice.defender!, zone: choice.zone });
   }
 
   // 5. 결속과 회복
@@ -185,7 +199,55 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng): War
     if (f.morale >= 0 && daysOfStock(content, f, war.ration.resource) >= 14 && rng() < REFUGEE_CHANCE) f.population += 1;
   }
 
-  return { ...next, clashes };
+  return { ...next, clashes, deferred };
+}
+
+/** 미뤄 둔 교전을 화면 밖에서 계산한다 (플레이어가 자리를 떴을 때) */
+export function resolveClash(world: WarWorld, content: Content, rng: Rng, spec: ClashSpec): { world: WarWorld; clash: Clash } {
+  const next = structuredClone(world);
+  const zoneOwner = next.zones[spec.zone]?.owner;
+  // 그사이 구역 주인이 바뀌었으면 싸움이 일어나지 않은 것으로 본다
+  if (zoneOwner !== spec.defender || !next.factions[spec.attacker] || !next.factions[spec.defender]) {
+    return { world: next, clash: { ...spec, success: false, attackerLosses: 0, defenderLosses: 0 } };
+  }
+  return { world: next, clash: fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan) };
+}
+
+/**
+ * 전투 장면이 끝난 뒤 세력 상태에 결과를 적용한다 (사상자, 약탈, 점령, 사기, 탄약·의약품 소모).
+ * 승패와 사상자는 전투 장면이 정한 값을 그대로 쓴다.
+ */
+export function applyBattleOutcome(
+  world: WarWorld,
+  content: Content,
+  spec: ClashSpec,
+  outcome: { success: boolean; attackerLosses: number; defenderLosses: number },
+): { world: WarWorld; clash: Clash } {
+  const war = content.scenario.war!;
+  const next = structuredClone(world);
+  const a = next.factions[spec.attacker]!;
+  const d = next.factions[spec.defender]!;
+  const attackerLosses = Math.min(a.combatants, outcome.attackerLosses);
+  const defenderLosses = Math.min(d.combatants, outcome.defenderLosses);
+  lose(a, attackerLosses);
+  lose(d, defenderLosses);
+  for (const f of [a, d]) f.resources[war.ammo] = Math.max(0, (f.resources[war.ammo] ?? 0) - war.ammo_per_clash);
+  a.resources[war.medicine] = Math.max(0, (a.resources[war.medicine] ?? 0) - attackerLosses * war.medicine_per_casualty);
+  d.resources[war.medicine] = Math.max(0, (d.resources[war.medicine] ?? 0) - defenderLosses * war.medicine_per_casualty);
+  const committed = Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind])));
+  const clash: Clash = { ...spec, success: outcome.success, attackerLosses, defenderLosses };
+  applySpoils(next, spec.kind, a, d, spec.attacker, spec.defender, spec.zone, outcome.success, committed, clash);
+  return { world: next, clash };
+}
+
+/** 병력 규모: 내보내는 공격 병력과 지키는 병력 */
+export function clashForces(world: WarWorld, spec: ClashSpec): { attackers: number; defenders: number } {
+  const a = world.factions[spec.attacker]!;
+  const d = world.factions[spec.defender]!;
+  return {
+    attackers: Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind]))),
+    defenders: Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT)),
+  };
 }
 
 type AttackOption = { kind: Clash["kind"]; defender: string | null; zone: string };
@@ -250,6 +312,23 @@ function fight(
   d.resources[war.medicine] = Math.max(0, (d.resources[war.medicine] ?? 0) - defenderLosses * war.medicine_per_casualty);
 
   const clash: Clash = { kind, attacker: attackerId, defender: defenderId, zone, success, attackerLosses, defenderLosses, ...(plan ? { plan } : {}) };
+  applySpoils(world, kind, a, d, attackerId, defenderId, zone, success, committed, clash);
+  return clash;
+}
+
+/** 승패에 따른 약탈·점령·사기 */
+function applySpoils(
+  world: WarWorld,
+  kind: Clash["kind"],
+  a: FactionState,
+  d: FactionState,
+  attackerId: string,
+  _defenderId: string,
+  zone: string,
+  success: boolean,
+  committed: number,
+  clash: Clash,
+) {
   if (kind === "raid" && success) {
     const loot: Record<string, number> = {};
     for (const [r, have] of Object.entries(d.resources).sort(([x], [y]) => x.localeCompare(y))) {
@@ -270,7 +349,6 @@ function fight(
       a.morale = clamp(a.morale - 1, -3, 3);
     }
   }
-  return clash;
 }
 
 /** 사람을 잃는다 (전투원부터) */

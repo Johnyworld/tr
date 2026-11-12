@@ -3,17 +3,23 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { parse, stringify } from "yaml";
+import { readFileSync } from "node:fs";
 import { ContentError, loadContent } from "./loader.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const REAL_CONTENT = resolve(here, "../../../../content/scenarios/post_apoc");
 
-/** 실제 시나리오 설정(scenario.yaml, 화법, 톤)만 복사한 임시 시나리오 폴더 */
+/** 실제 시나리오 설정(scenario.yaml, 화법, 톤)만 복사한 임시 시나리오 폴더 (전투 설정 제외) */
 function tempContent(files: Record<string, string>) {
   const dir = mkdtempSync(join(tmpdir(), "trpg-content-"));
-  for (const file of ["scenario.yaml", "speech", "prompts"]) {
+  for (const file of ["speech", "prompts"]) {
     cpSync(join(REAL_CONTENT, file), join(dir, file), { recursive: true });
   }
+  // 전투 설정은 실제 아이템(폭약 등)을 참조하므로 뺀다 (아이템은 각 테스트가 정한다)
+  const scenario = parse(readFileSync(join(REAL_CONTENT, "scenario.yaml"), "utf8")) as Record<string, unknown>;
+  delete scenario.battle;
+  writeFileSync(join(dir, "scenario.yaml"), stringify(scenario));
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(join(dir, path, ".."), { recursive: true });
     writeFileSync(join(dir, path), body);
@@ -90,5 +96,14 @@ describe("loadContent", () => {
       "roles/x.yaml": role("").replace("strength: 0", "strength: 5"),
     });
     expect(() => loadContent(dir)).toThrow(ContentError);
+  });
+});
+
+describe("전투 설정 참조", () => {
+  it("전투 효과·준비물이 쓰는 아이템이 콘텐츠에 없으면 거부한다", () => {
+    const dir = tempContent({ "items/a.yaml": "- { id: a, name: 가 }" });
+    const scenario = parse(readFileSync(join(REAL_CONTENT, "scenario.yaml"), "utf8")) as Record<string, unknown>;
+    writeFileSync(join(dir, "scenario.yaml"), stringify(scenario));
+    expect(() => loadContent(dir)).toThrow(/알 수 없는 아이템 explosive/);
   });
 });

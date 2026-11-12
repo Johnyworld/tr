@@ -26,6 +26,9 @@ import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { activeMissionOf } from "../game/missions.ts";
+import { neighbors } from "../sim/war.ts";
+import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
+import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -61,7 +64,7 @@ export function createTakeActionSchema(s: Scenario) {
       .describe("결과가 불확실하고 실패하면 대가가 있는 행동일 때만. 사소하거나 확실한 행동은 null"),
     activity: z
       .strictObject({
-        kind: activitySchema.describe(
+        kind: activitySchema.exclude(["travel", "combat"]).describe(
           "brief 잠깐의 행동, talk 대화, eat 식사, treat 응급처치, search 수색, work 작업·정비, rest 휴식, guard_duty 보초, sleep 잠, wait 기다림",
         ),
         until: timeSegmentSchema.nullable().describe("sleep·wait 전용: 이 시간대가 시작될 때까지. 다른 활동은 null"),
@@ -84,6 +87,26 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .describe("남들이 알면 평판이 달라질 행동일 때만. 이미 기록된 행적은 다시 넣지 않는다"),
     target: z.string().nullable().describe("행동의 상대 인물 id (장면에 있어야 한다). 없으면 null"),
+    move_to: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("이번 턴에 인접한 다른 구역으로 옮겨 가면 그 구역 id (상태의 인접 구역 목록). 이동에 30~60분이 든다. 전투 중에는 쓸 수 없다. 아니면 null"),
+    prepare: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe(
+        `전투에 대비해 지금 구역(우리 땅)에 준비물을 설치하면 그 id. ${(s.battle?.preparations ?? []).map((p) => `${p.id} ${p.label}(${p.description})`).join(", ") || "없음"}. 판정(check)이 필요하고, 성공·대가 있는 성공이면 설치된다. 아니면 null`,
+      ),
+    battle: z
+      .strictObject({
+        effect: z.string().describe("상태의 '지금 쓸 수 있는 전투 효과' 중 하나의 id"),
+        objective: z.string().nullable().describe("목표물을 노리는 효과면 남은 목표물 id, 아니면 null"),
+      })
+      .nullable()
+      .default(null)
+      .describe("전투 중일 때만: 이번 라운드에 하려는 전투 효과. 판정과 몸의 위험을 반드시 함께 선언한다. 전투가 아니면 null"),
     for_mission: z
       .boolean()
       .describe("수행 중인 임무를 위한 행동이면 true. true일 때만 판정과 활동이 임무 진행으로 집계된다 (임무 장소·목적과 맞는 행동만)"),
@@ -95,6 +118,8 @@ export function createTakeActionSchema(s: Scenario) {
   });
 }
 export type TakeActionInput = z.infer<ReturnType<typeof createTakeActionSchema>>;
+/** 도구 입력 형태 (기본값이 있는 필드는 생략할 수 있다) */
+export type TakeActionArgs = z.input<ReturnType<typeof createTakeActionSchema>>;
 
 export type TakeActionResult =
   | { ok: true; resultText: string; displays: ToolDisplayEvent[]; outcome: CheckOutcome | null; dead: boolean }
@@ -122,6 +147,38 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (input.activity.until && !(cost.kind === "long" && cost.allowUntil)) {
       return { ok: false, error: `${input.activity.kind}에는 until을 쓸 수 없습니다. null을 넣으세요.` };
     }
+  }
+
+  // 전투·이동·준비 검사 (기획서 9.5)
+  const inBattle = start.battle !== null;
+  if (inBattle) {
+    if (input.activity && input.activity.kind !== "brief") return { ok: false, error: "전투 중에는 잠·보초·기다림 같은 활동을 할 수 없다. activity는 null로 둔다 (한 라운드가 흐른다)." };
+    if (input.move_to) return { ok: false, error: "전투 중에는 구역을 옮길 수 없다. 빠지려면 물러나는 전투 효과를 쓴다." };
+    if (input.prepare) return { ok: false, error: "전투 중에는 준비물을 설치할 수 없다." };
+    if (input.battle && !input.check) return { ok: false, error: "전투 효과에는 판정(check)을 함께 선언한다." };
+    const effect = input.battle ? scenario.battle?.effects.find((e) => e.id === input.battle!.effect) : undefined;
+    const HARM_RANK = { none: 0, light: 1, heavy: 2 } as const;
+    if (effect && input.check && HARM_RANK[input.check.harm_on_failure] < HARM_RANK[effect.min_harm]) {
+      return { ok: false, error: `${effect.label}에는 몸의 위험을 ${effect.min_harm} 이상으로 선언한다 (harm_on_failure).` };
+    }
+  }
+  const battleAction = validateBattleAction(ctx, input.battle);
+  if (typeof battleAction === "string") return { ok: false, error: battleAction };
+  if (input.move_to) {
+    const here = start.playerZone;
+    if (!content.locations[input.move_to]) return { ok: false, error: `알 수 없는 구역: ${input.move_to}` };
+    if (!here || !neighbors(content, here).includes(input.move_to)) {
+      return { ok: false, error: `${input.move_to}은(는) 지금 구역과 맞닿아 있지 않다. 인접 구역: ${here ? neighbors(content, here).join(", ") : "없음"}` };
+    }
+    if (input.activity) return { ok: false, error: "이동하는 턴에는 activity를 null로 둔다 (이동 시간은 시스템이 정한다)." };
+  }
+  const prep = input.prepare ? scenario.battle?.preparations.find((p) => p.id === input.prepare) : null;
+  if (input.prepare) {
+    if (!prep) return { ok: false, error: `알 수 없는 준비물: ${input.prepare}` };
+    const zone = start.playerZone;
+    if (!zone || start.zones[zone]?.owner !== player.factionId) return { ok: false, error: "준비물은 우리 무리의 구역에만 설치할 수 있다." };
+    if (prep.requires_item && (player.inventory[prep.requires_item] ?? 0) < 1) return { ok: false, error: `${prep.label}에는 ${prep.requires_item}이(가) 필요하다.` };
+    if (!input.check) return { ok: false, error: `${prep.label} 설치에는 판정(check)이 필요하다.` };
   }
 
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
@@ -154,9 +211,32 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       lines.push(harm.text);
       displays.push(harm.display);
       if (harm.fatal) {
+        // 전투 중에 쓰러졌으면 남은 전투는 코드가 굴린다
+        if (store.getState().battle) displays.push(...endBattle(ctx, false).displays);
         return { ok: true, resultText: lines.join("\n"), displays, outcome, dead: true };
       }
     }
+  }
+
+  // 1-1. 준비물 설치 (아이템은 판정 결과와 관계없이 쓴다)
+  if (prep) {
+    if (prep.requires_item) store.append({ type: "item_consumed", holder: start.playerId, itemId: prep.requires_item, quantity: 1 });
+    if (outcome !== "miss") {
+      store.append({ type: "preparation_set", zone: start.playerZone!, preparation: prep.id });
+      lines.push(`${prep.label}을(를) 이 구역에 설치했다. 이 구역에서 전투가 벌어지면 쓸 수 있다.`);
+    } else {
+      lines.push(`${prep.label} 설치에 실패했다. 재료는 못 쓰게 됐다.`);
+    }
+  }
+
+  // 1-2. 전투 한 라운드 (판정이 없어도 라운드는 흐른다)
+  if (inBattle) {
+    const round = playBattleRound(
+      ctx,
+      battleAction && input.check ? { ...battleAction, outcome: outcome!, checkId: lastCheckId(ctx) } : null,
+    );
+    lines.push(...round.lines);
+    displays.push(...round.displays);
   }
 
   // 2. 행적과 목격자
@@ -179,17 +259,31 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const time = advanceTime(ctx, input.activity?.kind ?? "brief", input.activity?.until ?? null, forMission);
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? "brief");
+  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission);
   lines.push(time.text);
-  if (input.activity) displays.push(time.display);
+  if (input.activity || input.move_to) displays.push(time.display);
+  displays.push(...time.extra);
+  if (input.move_to && !time.interrupted) {
+    store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to });
+    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.`);
+  }
 
-  // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문)
+  // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문, 전쟁, 예정된 교전)
   for (const display of runAfterTimeAdvance(ctx)) {
     displays.push(display);
     if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);
+    if (display.type === "battle" && display.event === "started") {
+      lines.push(`전투가 시작됐다: ${display.detail} 상태의 '전투 중' 정보를 보고 첫 장면을 서술한 뒤 플레이어의 행동을 기다려라.`);
+    }
   }
 
   return { ok: true, resultText: lines.join("\n"), displays, outcome, dead: false };
+}
+
+function lastCheckId(ctx: ToolContext): string {
+  const checks = Object.values(ctx.store.getState().checks);
+  return checks[checks.length - 1]!.checkId;
 }
 
 /** 판정 결과에 따른 피해 (원칙 3: 사망은 부상 트랙과 판정 결과로만) */
@@ -245,35 +339,49 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   let to: number;
   let interrupt: ReturnType<typeof fastForward>["interrupt"] = null;
 
+  const extra: ToolDisplayEvent[] = [];
   if (cost.kind === "long") {
-    const target = until && cost.allowUntil ? nextSegmentStart(from, until) : from + cost.minutes;
-    const result = fastForward({
-      state,
-      start: from,
-      until: Math.min(target, from + MAX_FAST_FORWARD_MINUTES),
-      rng,
-      checks: createInterruptChecks(content.scenario),
-    });
-    to = result.end;
-    interrupt = result.interrupt;
+    const target = Math.min(until && cost.allowUntil ? nextSegmentStart(from, until) : from + cost.minutes, from + MAX_FAST_FORWARD_MINUTES);
+    // 자정을 넘기면 자정에서 하루 처리(전쟁 틱)를 돌린 뒤 이어 간다. 그래야 새벽 교전에서 멈출 수 있다
+    let cursor = from;
+    for (;;) {
+      const midnight = dayOf(cursor) * MINUTES_PER_DAY;
+      const segmentEnd = Math.min(target, midnight);
+      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario) });
+      store.append({
+        type: "time_advanced",
+        activity,
+        from: cursor,
+        to: result.end,
+        ...(result.interrupt ? { interrupt: result.interrupt } : {}),
+        ...(forMission ? { forMission } : {}),
+      });
+      cursor = result.end;
+      interrupt = result.interrupt;
+      if (interrupt || cursor >= target) break;
+      extra.push(...runAfterTimeAdvance(ctx));
+      if (store.getState().battle) break;
+    }
+    to = cursor;
   } else {
-    to = from + Math.max(MIN_TURN_MINUTES, rollActivityMinutes(cost, rng));
+    to = from + (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, rollActivityMinutes(cost, rng)));
+    store.append({
+      type: "time_advanced",
+      activity,
+      from,
+      to,
+      ...(forMission ? { forMission } : {}),
+    });
   }
-  store.append({
-    type: "time_advanced",
-    activity,
-    from,
-    to,
-    ...(interrupt ? { interrupt } : {}),
-    ...(forMission ? { forMission } : {}),
-  });
 
   const label = ACTIVITY_LABELS[activity];
   const lines = [`${label}: ${formatDuration(to - from)} 경과. 현재 ${formatTime(to)}.`];
   if (segmentOf(from) !== segmentOf(to)) {
     lines.push(`시간대가 ${SEGMENT_LABELS[segmentOf(from)]}에서 ${josa(SEGMENT_LABELS[segmentOf(to)], "으로/로")} 바뀌었다. 빛과 소리의 변화를 서술에 반영하라.`);
   }
-  if (interrupt) {
+  if (interrupt?.kind === "battle") {
+    lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 벌어지고 있다.`);
+  } else if (interrupt) {
     lines.push(
       `${josa(label, "이/가")} 중간에 끊겼다: ${interrupt.detail}. 정체는 아직 모른다. ` +
         "캐릭터가 이를 알아차리는 장면으로 서술하고, 정체를 확정하지 말고 플레이어의 반응을 기다려라.",
@@ -281,6 +389,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   }
   return {
     text: lines.join("\n"),
+    extra,
     interrupted: interrupt !== null,
     display: {
       type: "time" as const,

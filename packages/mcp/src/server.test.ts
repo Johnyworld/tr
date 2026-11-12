@@ -123,7 +123,7 @@ describe("세이브 슬롯과 종료", () => {
     const menu = await call("start_session");
     expect(app.world).toBeNull();
     expect(menu.text).toMatch(/^1\. 신병 \(23세\) · .*하급 전투원 · 레벨 0 — 1일차/m);
-    expect(menu.text).toContain("2. 새 게임");
+    expect(menu.text).toMatch(/^0\. 새 게임\n1\. /m); // 새 게임이 맨 위
 
     const opened = await call("start_session", { slot: 1 });
     expect(opened.isError).toBe(false);
@@ -133,7 +133,11 @@ describe("세이브 슬롯과 종료", () => {
     await call("start_session", { new_world: true });
     expect(app.world!.id).not.toBe(first);
     const list = await call("list_worlds");
-    expect(list.text).toContain("3. 새 게임");
+    expect(list.text).toContain("0. 새 게임");
+    expect(list.text).toMatch(/^2\. /m);
+    await call("end_session");
+    expect((await call("start_session", { slot: 0 })).text).not.toContain("1. "); // 0번: 새 게임 (이 콘텐츠는 생성 규칙이 없어 바로 연다)
+    expect(app.world).not.toBeNull();
   });
 });
 

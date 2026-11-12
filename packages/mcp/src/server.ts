@@ -35,7 +35,7 @@ const text = (body: string, isError = false): TextResult => ({
 const NO_WORLD = "열린 세계가 없습니다. 먼저 start_session(또는 load_world)을 호출하세요.";
 /** 세션을 시작할 때 GM이 할 일 (MCP prompt `play`, Claude Code 스킬 /play 가 같은 흐름) */
 export const PLAY_START =
-  "지금 list_worlds를 호출해 저장된 게임 목록(번호 목록과 새 게임)을 플레이어에게 그대로 보여 주고, 어느 것을 할지 묻는다. " +
+  "지금 list_worlds를 호출해 저장된 게임 목록(0번 새 게임, 1번부터 저장된 게임)을 플레이어에게 그대로 보여 주고, 어느 것을 할지 묻는다. " +
   "플레이어가 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 start_session(new_world: true)로 캐릭터 생성 규칙을 받아 플레이어에게 이름·성별·능력을 묻고, character와 함께 다시 불러 연다. 고르기 전에는 세계를 열지 않는다. " +
   "플레이어가 그만하자고 하면 end_session으로 닫는다.";
 
@@ -86,7 +86,7 @@ export function createMcpServer(manager: WorldManager) {
 
   // ── 세계 ─────────────────────────────────────────
 
-  /** 세이브 슬롯 메뉴: 번호 목록 + 새 게임. GM은 이 목록을 그대로 보여 주고 플레이어가 번호를 고르게 한다 */
+  /** 세이브 슬롯 메뉴: 0번 새 게임, 1번부터 저장된 게임. GM은 이 목록을 그대로 보여 주고 플레이어가 번호를 고르게 한다 */
   const slotMenu = (): string => {
     const slots = manager.listSlots();
     // 이 세션이 연 세계는 "사용 중"이 아니라 "지금 하는 게임"
@@ -94,10 +94,10 @@ export function createMcpServer(manager: WorldManager) {
       slot.id === world?.id ? `${formatSlotLine({ ...slot, lockedBy: null }, i + 1)} · (지금 하는 게임)` : formatSlotLine(slot, i + 1),
     );
     return [
-      "저장된 게임 (아래 목록을 고치지 말고 그대로 보여 준다. 플레이어가 번호나 \"새 게임\"을 고르면 start_session에 slot 또는 new_world로 넘긴다):",
+      "게임 목록 (고치지 말고 그대로 보여 준다. 플레이어가 0이나 \"새 게임\"을 고르면 start_session(new_world: true), 1번부터는 start_session(slot)):",
       "",
+      "0. 새 게임",
       ...(lines.length ? lines : ["(저장된 게임이 없다)"]),
-      `${slots.length + 1}. 새 게임`,
     ].join("\n");
   };
 
@@ -115,7 +115,7 @@ export function createMcpServer(manager: WorldManager) {
 
   server.registerTool(
     "list_worlds",
-    { description: "세이브 슬롯 목록: 번호, 주인공(이름·계급·레벨·몸 상태), 게임 안 시각과 장소, 마지막 플레이. 마지막 번호는 새 게임이다." },
+    { description: "게임 목록: 0번은 새 게임, 1번부터 저장된 게임(주인공 이름·계급·레벨·몸 상태, 게임 안 시각과 장소, 마지막 플레이)." },
     () => text(slotMenu()),
   );
 
@@ -123,19 +123,19 @@ export function createMcpServer(manager: WorldManager) {
     "start_session",
     {
       description:
-        "플레이 세션을 시작한다. slot(list_worlds의 번호)이나 world_id를 주면 그 세계를 연다. " +
-        "새 게임은 new_world: true. character 없이 부르면 세계를 만들지 않고 캐릭터 생성 규칙을 돌려준다: 플레이어에게 이름·성별·능력을 물은 뒤 character와 함께 다시 부른다. " +
-        "아무것도 주지 않으면 세계를 열지 않고 슬롯 목록(마지막 번호는 새 게임)을 돌려준다. " +
+        "플레이 세션을 시작한다. slot(list_worlds의 번호, 1부터)이나 world_id를 주면 그 세계를 연다. " +
+        "새 게임은 new_world: true (slot 0도 새 게임). character 없이 부르면 세계를 만들지 않고 캐릭터 생성 규칙을 돌려준다: 플레이어에게 이름·성별·능력을 물은 뒤 character와 함께 다시 부른다. " +
+        "아무것도 주지 않으면 세계를 열지 않고 게임 목록(0번 새 게임)을 돌려준다. " +
         "세계를 열면 GM 지침, 지난 이야기 요약, 현재 장면을 돌려준다.",
       inputSchema: z.strictObject({
-        slot: z.number().int().min(1).nullable().optional().describe("list_worlds의 번호"),
+        slot: z.number().int().min(0).nullable().optional().describe("list_worlds의 번호 (0은 새 게임)"),
         world_id: z.string().nullable().optional(),
         new_world: z.boolean().optional(),
         character: characterChoiceSchema().nullable().optional().describe("새 게임의 캐릭터 (플레이어가 정한 것)"),
       }),
     },
     (args) => {
-      if (args.new_world) {
+      if (args.new_world || args.slot === 0) {
         if (!args.character) {
           const rules = creationRules(content, Object.keys(content.roles)[0] ?? "");
           if (rules) {
@@ -147,7 +147,7 @@ export function createMcpServer(manager: WorldManager) {
         const choice = args.character ? { ...args.character, portrait: args.character.portrait ?? null } : undefined;
         return openWorld(() => manager.create("mcp", undefined, choice));
       }
-      if (!args.slot && !args.world_id) return text(slotMenu());
+      if (args.slot == null && !args.world_id) return text(slotMenu());
       const id = pickWorld(args);
       return typeof id === "string" ? openWorld(() => manager.open(id, "mcp")) : text(id.error, true);
     },

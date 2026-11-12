@@ -40,7 +40,7 @@ pnpm dev               # http://localhost:5173
 
 ## MCP 모드
 
-MCP 서버는 Claude 앱이 직접 실행한다. 아래처럼 등록한 뒤 Claude Code에서는 **`/play`**(저장된 게임 번호 목록 → 고르기, `/play 2`·`/play 새 게임`도 된다), 끝낼 때는 **`/quit`**. Claude 데스크톱에서는 `play` 프롬프트를 고르거나 "TRPG 시작해 줘"라고 하면 된다.
+MCP 서버는 Claude 앱이 직접 실행한다. 아래처럼 등록한 뒤 Claude Code에서는 **`/play`**(저장된 게임 번호 목록 → 고르기, 0번이 새 게임, `/play 2`·`/play 0`도 된다), 끝낼 때는 **`/quit`**. Claude 데스크톱에서는 `play` 프롬프트를 고르거나 "TRPG 시작해 줘"라고 하면 된다.
 진행은 행동마다 자동 저장된다.
 API 키는 필요 없다.
 

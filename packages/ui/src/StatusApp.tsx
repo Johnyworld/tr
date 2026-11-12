@@ -20,7 +20,7 @@ export function StatusApp() {
   const [submitted, setSubmitted] = useState(false);
   useEffect(() => {
     if (status?.open) setSubmitted(false);
-    window.scrollTo({ top: 0 }); // 생성 화면에서 시트로 바뀌면 맨 위부터
+    // 화면마다 key가 달라 새로 그려지므로 스크롤은 맨 위에서 시작한다 (같은 div를 다시 쓰면 생성 화면의 스크롤이 남는다)
   }, [status?.open]);
 
   useEffect(() => {
@@ -74,12 +74,12 @@ export function StatusApp() {
         <p className="muted status-empty">불러오는 중…</p>
       ) : !status.open && status.creating && !submitted ? (
         // Claude 세션이 브라우저 생성을 기다리고 있다: 웹 앱과 같은 생성 화면
-        <div className="status-creation">
+        <div key="creation" className="status-creation">
           <CharacterCreation onStart={() => setSubmitted(true)} />
         </div>
       ) : !status.open && (submitted || status.created) ? (
         // 만들고 나서 GM이 첫 장면을 쓰는 동안: 세션으로 돌아가라는 안내. 첫 장면이 끝나면 시트가 열린다
-        <div className="status-created">
+        <div key="created" className="status-created">
           <h2>캐릭터를 만들었습니다</h2>
           <p>{status.created && status.name ? `${status.name}의 이야기가` : "이야기가"} Claude 세션에서 시작됩니다. 세션으로 돌아가 첫 장면을 확인하세요.</p>
           <p className="muted small">첫 장면이 나오면 이곳에 캐릭터 시트가 열립니다.</p>
@@ -87,7 +87,7 @@ export function StatusApp() {
       ) : !status.open ? (
         <p className="muted status-empty">열린 게임이 없다. Claude 세션에서 /play 로 게임을 열면 여기에 캐릭터 시트가 나온다.</p>
       ) : (
-        <div className="status-sheet">
+        <div key="sheet" className="status-sheet">
           <CharacterSheet player={status.player} />
         </div>
       )}

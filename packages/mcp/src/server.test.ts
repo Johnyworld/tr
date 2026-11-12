@@ -108,6 +108,33 @@ describe("MCP tool", () => {
   });
 });
 
+describe("세이브 슬롯과 종료", () => {
+  it("저장된 게임이 있으면 start_session은 세계를 열지 않고 번호 목록을 준다. 번호로 열고, end_session으로 닫는다", async () => {
+    const { call, app } = await connect();
+    await call("start_session"); // 저장된 게임이 없으면 새로 만든다
+    const first = app.world!.id;
+    await call("take_action", action());
+    const closed = await call("end_session");
+    expect(closed.text).toContain("닫았다");
+    expect(app.world).toBeNull();
+
+    const menu = await call("start_session");
+    expect(app.world).toBeNull();
+    expect(menu.text).toMatch(/^1\. 신병 \(23세\) · .*하급 전투원 · 레벨 0 — 1일차/m);
+    expect(menu.text).toContain("2. 새 게임");
+
+    const opened = await call("start_session", { slot: 1 });
+    expect(opened.isError).toBe(false);
+    expect(app.world!.id).toBe(first);
+    expect((await call("load_world", { slot: 9 })).isError).toBe(true);
+
+    await call("start_session", { new_world: true });
+    expect(app.world!.id).not.toBe(first);
+    const list = await call("list_worlds");
+    expect(list.text).toContain("3. 새 게임");
+  });
+});
+
 describe("MCP 정보 필터", () => {
   it("모든 tool 결과에 비밀·세계의 진실·믿음의 정확도가 섞이지 않는다 (위반 0건)", async () => {
     const { call } = await connect(REAL_CONTENT, 0, () => 0); // 모든 확률 통과: 숨은 목격자가 생긴다

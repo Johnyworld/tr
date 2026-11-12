@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import { COMMANDS, InvalidPlayerInputError, MAX_INPUT_LENGTH, normalizePlayerInput } from "@trpg/core";
-import { TurnInProgressError, type WebSession } from "./session.ts";
+import { COMMANDS, InvalidPlayerInputError, MAX_INPUT_LENGTH, normalizePlayerInput, WorldLockedError } from "@trpg/core";
+import { NoWorldError, TurnInProgressError, type WebSession } from "./session.ts";
 
 const turnRequestSchema = z.object({
   input: z.string().max(MAX_INPUT_LENGTH * 2),
@@ -16,6 +16,38 @@ export function createApp(session: WebSession) {
   const app = new Hono();
 
   app.get("/api/health", (c) => c.json({ ok: true }));
+
+  // 시작 화면에서 세계를 고르기 전에는 게임 API를 쓸 수 없다
+  app.onError((err, c) => {
+    if (err instanceof NoWorldError) return c.json({ error: err.message, noWorld: true }, 409);
+    if (err instanceof TurnInProgressError) return c.json({ error: "턴이 진행 중입니다." }, 409);
+    if (err instanceof WorldLockedError) return c.json({ error: err.message }, 409);
+    console.error(err);
+    return c.json({ error: String(err) }, 500);
+  });
+
+  // ── 시작 화면: 세이브 슬롯 ─────────────────────────
+  app.get("/api/worlds", (c) =>
+    c.json({ scenarioName: session.scenarioName, slots: session.slots(), current: session.hasWorld ? session.world.id : null }),
+  );
+
+  app.post("/api/worlds", (c) => {
+    session.newWorld();
+    return c.json(session.view());
+  });
+
+  app.post("/api/worlds/:id/open", (c) => {
+    const id = c.req.param("id");
+    if (!session.slots().some((s) => s.id === id)) return c.json({ error: "없는 세이브입니다." }, 404);
+    session.openWorld(id);
+    return c.json(session.view());
+  });
+
+  // 게임을 닫고 시작 화면으로 (세이브는 그대로 남고 잠금이 풀린다)
+  app.post("/api/game/close", (c) => {
+    session.closeWorld();
+    return c.json({ ok: true });
+  });
 
   app.get("/api/game", (c) => c.json(session.view()));
 
@@ -33,15 +65,6 @@ export function createApp(session: WebSession) {
   // 개발용: 최근 RAG 검색 기록 (무엇이 왜 들어갔는지)
   app.get("/api/dev/retrievals", (c) => c.json(session.world.retrievals(10)));
 
-  app.post("/api/game/reset", (c) => {
-    try {
-      session.newWorld();
-    } catch (err) {
-      if (err instanceof TurnInProgressError) return c.json({ error: "턴이 진행 중입니다." }, 409);
-      throw err;
-    }
-    return c.json(session.view());
-  });
 
   // 사망 뒤 다음 캐릭터 (새 캐릭터 또는 이전 캐릭터가 알던 인물). 처리는 core가 한다
   app.post("/api/game/succession", async (c) => {
@@ -72,6 +95,7 @@ export function createApp(session: WebSession) {
       throw err;
     }
     if (session.busy) return c.json({ error: "이전 턴이 아직 진행 중입니다." }, 409);
+    if (!session.hasWorld) throw new NoWorldError();
     if (session.world.isPlayerDead()) return c.json({ error: "캐릭터가 사망했습니다. 다음 캐릭터를 고르세요." }, 409);
 
     return streamSSE(c, async (stream) => {

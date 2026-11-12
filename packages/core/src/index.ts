@@ -75,6 +75,7 @@ export type { TranscriptEntry, TurnSummary, SummaryKind, PlayMode, RetrievalReco
 
 export { GameWorld, RECAP_TURNS } from "./world/world.ts";
 export { WorldManager, type WorldInfo } from "./world/manager.ts";
+export { formatPlayedAt, formatSlotLine, type SaveSlot } from "./world/slots.ts";
 export {
   buildPlayerView,
   buildTranscriptView,

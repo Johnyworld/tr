@@ -35,11 +35,13 @@ pnpm dev               # http://localhost:5173
 
 - 웹 앱 모드는 API 키만 쓴다. claude.ai 구독 로그인은 연결하지 않는다 (Anthropic 정책)
 - 입력창에 `!`로 시작하는 명령어를 쓰면 GM에게 보내지 않고 정보만 본다 (시간이 흐르지 않는다)
-- `pnpm dev`가 켜져 있는 동안에는 그 세계가 잠겨 있어 MCP 모드에서 열 수 없다
+- 처음 화면은 시작 화면이다: 저장된 게임(주인공 정보가 보이는 슬롯)을 누르거나 새 게임을 시작한다. 게임 중 "메인 화면"으로 나갈 수 있다 (진행은 행동마다 자동 저장)
+- 웹 앱에서 열어 둔 세계는 잠겨 있어 MCP 모드에서 열 수 없다. "메인 화면"으로 나가면 풀린다
 
 ## MCP 모드
 
-MCP 서버는 Claude 앱이 직접 실행한다. 아래처럼 등록한 뒤 Claude에서 **`play` 프롬프트**를 고르거나 "TRPG 시작해 줘"라고 하면 된다.
+MCP 서버는 Claude 앱이 직접 실행한다. 아래처럼 등록한 뒤 Claude Code에서는 **`/play`**(저장된 게임 번호 목록 → 고르기, `/play 2`·`/play 새 게임`도 된다), 끝낼 때는 **`/quit`**. Claude 데스크톱에서는 `play` 프롬프트를 고르거나 "TRPG 시작해 줘"라고 하면 된다.
+진행은 행동마다 자동 저장된다.
 API 키는 필요 없다.
 
 ### Claude Code
@@ -82,7 +84,7 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 
 ### MCP 서버가 여는 것
 
-- tool: `start_session`, `load_world`, `list_worlds`, `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`)
+- tool: `start_session`, `load_world`, `list_worlds`, `end_session`, `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, `learn_skill`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`)
 - prompt: `play` (GM 지침 + 세션 시작 안내)
 - 로그는 stderr로만 쓴다. stdout은 MCP 프로토콜 전용이다
 - 환경 변수: `SCENARIO`(기본 `post_apoc`), `SAVES_DIR`(기본 `saves`)

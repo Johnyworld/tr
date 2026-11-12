@@ -7,10 +7,11 @@ import type { Content } from "../content/schemas.ts";
 import { createWorldEvent } from "../game/state.ts";
 import type { PlayMode } from "../engine/log.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
-import { acquireLock, readLock, type LockInfo } from "../persistence/lock.ts";
+import { acquireLock, isProcessAlive, readLock, type LockInfo } from "../persistence/lock.ts";
 import { archiveSave, SaveFormatError, SqliteRepository } from "../persistence/sqlite.ts";
 import { formatTime } from "../rules/time.ts";
 import { GameWorld } from "./world.ts";
+import { toSaveSlot, type SaveSlot } from "./slots.ts";
 import type { LoreLibrary } from "../rag/library.ts";
 import { MemoryStore } from "../rag/memory.ts";
 import type { Embedder } from "../rag/embedder.ts";
@@ -26,6 +27,8 @@ export type WorldInfo = {
   updatedAt: string;
   /** 다른 곳에서 열려 있으면 그 정보 */
   lockedBy: LockInfo | null;
+  /** 마지막 스냅숏의 상태 (슬롯 요약용, 검증하지 않은 값) */
+  raw: unknown;
 };
 
 /**
@@ -69,6 +72,14 @@ export class WorldManager {
       .filter((name) => name.endsWith(".db") && !name.endsWith(".memory.db"))
       .map((name) => readWorldInfo(join(this.worldsDir, name)))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+
+  /** 이 시나리오의 세이브 슬롯 (최근에 플레이한 것부터). 시작 화면과 MCP의 번호 목록이 같이 쓴다 */
+  listSlots(): SaveSlot[] {
+    return this.listWorlds()
+      .filter((w) => w.scenarioId === this.content.scenario.id)
+      // 죽은 프로세스가 남긴 잠금은 사용 중이 아니다
+      .map((w) => toSaveSlot({ ...w, lockedBy: w.lockedBy && isProcessAlive(w.lockedBy.pid) ? w.lockedBy : null }, w.raw, this.content));
   }
 
   /** 새 세계를 만들고 연다 */
@@ -157,14 +168,18 @@ function readWorldInfo(path: string): WorldInfo {
     timeLabel: null,
     turn: null,
     dead: false,
+    // 마지막 플레이 시각은 아래에서 마지막 이벤트 시각으로 바꾼다 (파일 시각은 열고 닫기만 해도 바뀐다)
     updatedAt: statSync(path).mtime.toISOString(),
     lockedBy: readLock(path),
+    raw: null,
   };
   let db: Database.Database | undefined;
   try {
     db = new Database(path, { readonly: true, fileMustExist: true });
     const meta = db.prepare("SELECT value FROM meta WHERE key = 'scenario_id'").get() as { value: string } | undefined;
     info.scenarioId = meta?.value ?? null;
+    const last = db.prepare("SELECT MAX(created_at) AS at FROM events").get() as { at: string | null } | undefined;
+    if (last?.at) info.updatedAt = last.at;
     const snap = db.prepare("SELECT state FROM snapshots ORDER BY seq DESC LIMIT 1").get() as { state: string } | undefined;
     if (snap) {
       const state = JSON.parse(snap.state) as {
@@ -173,6 +188,7 @@ function readWorldInfo(path: string): WorldInfo {
         turn?: number;
         characters?: Record<string, { name?: string; dead?: boolean }>;
       };
+      info.raw = state;
       const player = state.playerId ? state.characters?.[state.playerId] : undefined;
       info.playerName = player?.name ?? null;
       info.dead = player?.dead === true;

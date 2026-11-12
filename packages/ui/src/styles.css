@@ -700,3 +700,110 @@ body {
 .succession input {
   margin-left: 8px;
 }
+
+/* ── 시작 화면 ───────────────────────── */
+.title-screen {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 56px 16px 40px;
+}
+
+.title-screen h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.title-screen h2 {
+  margin: 36px 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.title-screen .new-game {
+  margin-top: 28px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #1a1307;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.title-screen .new-game:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.slot {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.slot:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.slot:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.slot.dead strong {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.slot-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.slot-level {
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.slot .badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+}
+
+.slot .badge.dead {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.slot-foot {
+  margin-top: 4px;
+}

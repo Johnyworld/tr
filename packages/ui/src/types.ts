@@ -40,3 +40,26 @@ export type GameView = {
   busy: boolean;
   succession: { chronicle: string; options: { id: string; label: string; detail: string }[] } | null;
 };
+
+/** 세이브 슬롯 (packages/core/src/world/slots.ts 의 SaveSlot + current) */
+export type SaveSlotView = {
+  id: string;
+  hero: {
+    name: string;
+    age: number | null;
+    rankLabel: string;
+    factionName: string;
+    level: number;
+    conditions: string[];
+    zoneName: string | null;
+    daysServed: number;
+    generation: number;
+    dead: boolean;
+  } | null;
+  timeLabel: string | null;
+  updatedAt: string;
+  lockedBy: "web" | "mcp" | null;
+  current: boolean;
+};
+
+export type SlotsView = { scenarioName: string; slots: SaveSlotView[]; current: string | null };

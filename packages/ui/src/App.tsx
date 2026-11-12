@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { chooseNextCharacter, fetchCommands, fetchGame, playTurn, resetGame, runCommand, type CommandInfo } from "./api.ts";
+import { chooseNextCharacter, closeGame, fetchCommands, fetchGame, fetchSlots, playTurn, runCommand, type CommandInfo } from "./api.ts";
+import { TitleScreen } from "./TitleScreen.tsx";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { DevPanel } from "./DevPanel.tsx";
 import { ToolCard } from "./ToolCard.tsx";
@@ -7,7 +8,27 @@ import type { GameView, PlayerView, TranscriptView } from "./types.ts";
 
 type Notice = { kind: "error" | "info"; text: string } | null;
 
+/** 시작 화면(세이브 슬롯)과 게임 화면 */
 export function App() {
+  const [game, setGame] = useState<GameView | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  // 새로고침: 이미 열린 세계가 있으면 그대로 이어서 보여 준다
+  useEffect(() => {
+    fetchSlots()
+      .then(async (s) => {
+        if (s.current) setGame(await fetchGame());
+      })
+      .catch(() => undefined)
+      .finally(() => setChecked(true));
+  }, []);
+
+  if (!checked) return null;
+  if (!game) return <TitleScreen onStart={setGame} />;
+  return <Game key={game.worldId} initial={game} onExit={() => setGame(null)} />;
+}
+
+function Game({ initial, onExit }: { initial: GameView; onExit: () => void }) {
   const [player, setPlayer] = useState<PlayerView | null>(null);
   const [intro, setIntro] = useState<{ scenarioName: string; opening: string } | null>(null);
   const [transcript, setTranscript] = useState<TranscriptView[]>([]);
@@ -27,10 +48,8 @@ export function App() {
   const busy = live !== null;
 
   useEffect(() => {
-    fetchGame()
-      .then(applyGame)
-      .catch((err: unknown) => setNotice({ kind: "error", text: `서버에 연결하지 못했습니다: ${String(err)}` }));
-  }, []);
+    applyGame(initial);
+  }, [initial]);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
@@ -130,11 +149,11 @@ export function App() {
     }
   }
 
-  async function newGame() {
-    if (!window.confirm("새 세계를 시작할까요? 지금 세계는 저장된 채로 남습니다.")) return;
+  /** 게임을 닫고 시작 화면으로. 진행은 행동마다 자동 저장돼 있다 */
+  async function exitToTitle() {
     try {
-      applyGame(await resetGame());
-      setNotice(null);
+      await closeGame();
+      onExit();
     } catch (err) {
       setNotice({ kind: "error", text: err instanceof Error ? err.message : String(err) });
     }
@@ -156,8 +175,8 @@ export function App() {
         <h1>{intro?.scenarioName ?? "TRPG"}</h1>
         <span className="subtitle">{player?.roleLabel}</span>
         {player && <span className="clock">{player.timeLabel}</span>}
-        <button type="button" className="link" onClick={newGame} disabled={busy}>
-          새 게임
+        <button type="button" className="link" onClick={exitToTitle} disabled={busy} title="진행은 자동 저장돼 있다">
+          메인 화면
         </button>
       </header>
 
@@ -220,8 +239,8 @@ export function App() {
                   </ul>
                 </>
               )}
-              <button type="button" onClick={newGame} className="link">
-                이 세계를 두고 새 세계 시작
+              <button type="button" onClick={exitToTitle} className="link">
+                메인 화면으로 (이 세계는 저장된 채로 남는다)
               </button>
             </div>
           ) : (

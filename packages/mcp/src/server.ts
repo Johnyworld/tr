@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   buildGmGuide,
   formatReferences,
+  formatSlotLine,
   createTakeActionSchema,
   gmTools,
   timeSegmentSchema,
@@ -27,6 +28,12 @@ const text = (body: string, isError = false): TextResult => ({
 });
 
 const NO_WORLD = "열린 세계가 없습니다. 먼저 start_session(또는 load_world)을 호출하세요.";
+/** 세션을 시작할 때 GM이 할 일 (MCP prompt `play`, Claude Code 스킬 /play 가 같은 흐름) */
+export const PLAY_START =
+  "지금 list_worlds를 호출해 저장된 게임 목록(번호 목록과 새 게임)을 플레이어에게 그대로 보여 주고, 어느 것을 할지 묻는다. " +
+  "플레이어가 번호를 고르면 start_session(slot), 새 게임이면 start_session(new_world: true)로 연다. 고르기 전에는 세계를 열지 않는다. " +
+  "플레이어가 그만하자고 하면 end_session으로 닫는다.";
+
 const HELP_HINT = "플레이어에게 한 줄 안내: \"!도움말 로 정보 명령어를 볼 수 있습니다.\"";
 
 export function createMcpServer(manager: WorldManager) {
@@ -73,48 +80,89 @@ export function createMcpServer(manager: WorldManager) {
 
   // ── 세계 ─────────────────────────────────────────
 
+  /** 세이브 슬롯 메뉴: 번호 목록 + 새 게임. GM은 이 목록을 그대로 보여 주고 플레이어가 번호를 고르게 한다 */
+  const slotMenu = (): string => {
+    const slots = manager.listSlots();
+    // 이 세션이 연 세계는 "사용 중"이 아니라 "지금 하는 게임"
+    const lines = slots.map((slot, i) =>
+      slot.id === world?.id ? `${formatSlotLine({ ...slot, lockedBy: null }, i + 1)} · (지금 하는 게임)` : formatSlotLine(slot, i + 1),
+    );
+    return [
+      "저장된 게임 (아래 목록을 고치지 말고 그대로 보여 준다. 플레이어가 번호나 \"새 게임\"을 고르면 start_session에 slot 또는 new_world로 넘긴다):",
+      "",
+      ...(lines.length ? lines : ["(저장된 게임이 없다)"]),
+      `${slots.length + 1}. 새 게임`,
+    ].join("\n");
+  };
+
+  /** 슬롯 번호(1부터) 또는 world_id로 세계를 고른다 */
+  const pickWorld = (args: { world_id?: string | null; slot?: number | null }): string | { error: string } => {
+    if (args.world_id) return args.world_id;
+    if (args.slot) {
+      const slots = manager.listSlots();
+      const slot = slots[args.slot - 1];
+      if (!slot) return { error: `${args.slot}번 슬롯은 없다. list_worlds로 목록을 다시 보여 준다.` };
+      return slot.id;
+    }
+    return { error: "slot 또는 world_id가 필요하다." };
+  };
+
   server.registerTool(
     "list_worlds",
-    { description: "저장된 세계 목록 (최근에 플레이한 것부터)." },
-    () => {
-      const worlds = manager.listWorlds().filter((w) => w.scenarioId === scenario.id);
-      if (worlds.length === 0) return text("저장된 세계가 없다. start_session으로 새 세계를 만든다.");
-      return text(
-        worlds
-          .map(
-            (w) =>
-              `- ${w.id}: ${w.playerName ?? "?"} · ${w.timeLabel ?? "?"} · 턴 ${w.turn ?? 0}${w.dead ? " · 사망" : ""}` +
-              (w.lockedBy ? ` · 사용 중(${w.lockedBy.mode === "web" ? "웹 앱" : "MCP"})` : ""),
-          )
-          .join("\n"),
-      );
-    },
+    { description: "세이브 슬롯 목록: 번호, 주인공(이름·계급·레벨·몸 상태), 게임 안 시각과 장소, 마지막 플레이. 마지막 번호는 새 게임이다." },
+    () => text(slotMenu()),
   );
 
   server.registerTool(
     "start_session",
     {
       description:
-        "플레이 세션을 시작한다. world_id를 주면 그 세계를, 없으면 가장 최근 세계를 연다 (없으면 새로 만든다). " +
-        "new_world가 true면 새 세계를 만든다. 현재 장면과 지난 이야기 요약을 돌려준다.",
+        "플레이 세션을 시작한다. slot(list_worlds의 번호)이나 world_id를 주면 그 세계를, new_world가 true면 새 세계를 연다. " +
+        "아무것도 주지 않으면: 저장된 게임이 없으면 새로 만들고, 있으면 세계를 열지 않고 슬롯 목록을 돌려준다 (플레이어에게 고르게 한다). " +
+        "세계를 열면 GM 지침, 지난 이야기 요약, 현재 장면을 돌려준다.",
       inputSchema: z.strictObject({
+        slot: z.number().int().min(1).nullable().optional().describe("list_worlds의 번호"),
         world_id: z.string().nullable().optional(),
         new_world: z.boolean().optional(),
       }),
     },
-    (args) =>
-      openWorld(() =>
-        args.new_world ? manager.create("mcp") : args.world_id ? manager.open(args.world_id, "mcp") : manager.openLatest("mcp"),
-      ),
+    (args) => {
+      if (args.new_world) return openWorld(() => manager.create("mcp"));
+      if (!args.slot && !args.world_id) {
+        if (manager.listSlots().length === 0) return openWorld(() => manager.create("mcp"));
+        return text(slotMenu());
+      }
+      const id = pickWorld(args);
+      return typeof id === "string" ? openWorld(() => manager.open(id, "mcp")) : text(id.error, true);
+    },
   );
 
   server.registerTool(
     "load_world",
     {
-      description: "저장된 세계를 연다 (list_worlds의 id). 현재 장면과 지난 이야기 요약을 돌려준다.",
-      inputSchema: z.strictObject({ world_id: z.string() }),
+      description: "저장된 세계를 연다 (list_worlds의 번호 slot 또는 world_id). 현재 장면과 지난 이야기 요약을 돌려준다.",
+      inputSchema: z.strictObject({ slot: z.number().int().min(1).nullable().optional(), world_id: z.string().nullable().optional() }),
     },
-    (args) => openWorld(() => manager.open(args.world_id, "mcp")),
+    (args) => {
+      const id = pickWorld(args);
+      return typeof id === "string" ? openWorld(() => manager.open(id, "mcp")) : text(id.error, true);
+    },
+  );
+
+  server.registerTool(
+    "end_session",
+    {
+      description:
+        "플레이를 마치고 세계를 닫는다 (메인 화면으로). 진행은 행동마다 자동 저장돼 있다. 잠금이 풀려 웹 앱이나 다른 세션에서 열 수 있다. 플레이어가 그만하자고 할 때 부른다.",
+    },
+    () => {
+      if (!world) return text("열린 세계가 없다.");
+      const name = world.playerView().name;
+      const id = world.id;
+      world.close();
+      world = null;
+      return text(`세계 ${id}를 닫았다 (${name}의 이야기는 저장돼 있다). 플레이어에게 짧게 마무리 인사를 하고, 다시 하려면 /play 로 이어 할 수 있다고 알려 준다.\n\n${slotMenu()}`);
+    },
   );
 
   // ── 장면과 턴 ─────────────────────────────────────
@@ -242,7 +290,7 @@ export function createMcpServer(manager: WorldManager) {
           role: "user",
           content: {
             type: "text",
-            text: `${buildGmGuide(content, Object.keys(content.roles)[0] ?? "", "mcp")}\n\n지금 start_session을 호출해 세계를 열고 진행을 시작하라.`,
+            text: `${buildGmGuide(content, Object.keys(content.roles)[0] ?? "", "mcp")}\n\n${PLAY_START}`,
           },
         },
       ],

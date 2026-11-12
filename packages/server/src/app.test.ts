@@ -44,7 +44,7 @@ function newSession(model: LanguageModel = fakeModel) {
     content: TEST_CONTENT,
     rngFactory: () => sixes,
   });
-  return { manager, session: new WebSession(manager, model) };
+  return { manager, session: new WebSession(manager, model, undefined, manager.create("web")) };
 }
 
 function postTurn(app: ReturnType<typeof createApp>, input: string) {
@@ -92,13 +92,51 @@ describe("게임 API", () => {
     const app = createApp(session);
     await (await postTurn(app, "문을 부순다")).text();
     const before = session.world.id;
-    const game = (await (await app.request("/api/game/reset", { method: "POST" })).json()) as {
+    const game = (await (await app.request("/api/worlds", { method: "POST" })).json()) as {
       transcript: unknown[];
       worldId: string;
     };
     expect(game.transcript).toEqual([]);
     expect(game.worldId).not.toBe(before);
     expect(manager.listWorlds().map((w) => w.id)).toContain(before);
+    session.close();
+  });
+});
+
+describe("시작 화면", () => {
+  const post = (app: ReturnType<typeof createApp>, path: string) => app.request(path, { method: "POST" });
+
+  it("서버를 켜면 세계를 열지 않는다. 게임 API는 409, 슬롯 목록은 빈 채로", async () => {
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-server-")), content: TEST_CONTENT, rngFactory: () => sixes });
+    const session = new WebSession(manager, fakeModel);
+    const app = createApp(session);
+    const game = await app.request("/api/game");
+    expect(game.status).toBe(409);
+    expect(((await game.json()) as { noWorld: boolean }).noWorld).toBe(true);
+    expect((await postTurn(app, "문을 연다")).status).toBe(409);
+    expect(await (await app.request("/api/worlds")).json()).toMatchObject({ slots: [], current: null });
+  });
+
+  it("새 게임 → 메인으로 → 슬롯에 주인공 정보가 보이고, 고르면 이어서 연다", async () => {
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-server-")), content: TEST_CONTENT, rngFactory: () => sixes });
+    const session = new WebSession(manager, fakeModel);
+    const app = createApp(session);
+    const created = (await (await post(app, "/api/worlds")).json()) as { worldId: string };
+    await (await postTurn(app, "문을 부순다")).text();
+    expect(((await (await app.request("/api/worlds")).json()) as { slots: { current: boolean }[] }).slots[0]!.current).toBe(true);
+
+    expect((await post(app, "/api/game/close")).status).toBe(200);
+    expect(session.hasWorld).toBe(false);
+    const { slots } = (await (await app.request("/api/worlds")).json()) as {
+      slots: { id: string; current: boolean; lockedBy: string | null; hero: { name: string; rankLabel: string; level: number; generation: number } }[];
+    };
+    expect(slots).toHaveLength(1);
+    expect(slots[0]).toMatchObject({ id: created.worldId, current: false, lockedBy: null, hero: { name: "신병", level: 0, generation: 1 } });
+
+    const opened = (await (await post(app, `/api/worlds/${created.worldId}/open`)).json()) as { worldId: string; transcript: unknown[] };
+    expect(opened.worldId).toBe(created.worldId);
+    expect(opened.transcript.length).toBeGreaterThan(0);
+    expect((await post(app, "/api/worlds/nope/open")).status).toBe(404);
     session.close();
   });
 });
@@ -154,7 +192,7 @@ describe("사망과 다음 캐릭터 API", () => {
       content: TEST_CONTENT,
       rngFactory: () => () => 0,
     });
-    const session = new WebSession(manager, fakeModel);
+    const session = new WebSession(manager, fakeModel, undefined, manager.create("web"));
     const lethal = { move: "fight", stat: "strength", difficulty: "hard", harm_on_failure: "heavy", harm_cause: "총상" };
     const base = { activity: null, deed: null, target: null, narration_summary: null, for_mission: false };
     for (let i = 0; i < 3 && !session.world.isPlayerDead(); i++) {

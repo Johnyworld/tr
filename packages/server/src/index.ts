@@ -64,7 +64,7 @@ try {
 const app = createApp(session);
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, (info) => {
   console.log(
-    `[server] http://127.0.0.1:${info.port} (GM 모델: ${modelId}, 요약 모델: ${summaryModelId}, 세계: ${session.world.id})`,
+    `[server] http://127.0.0.1:${info.port} (GM 모델: ${modelId}, 요약 모델: ${summaryModelId}. 세계는 시작 화면에서 고른다)`,
   );
 });
 

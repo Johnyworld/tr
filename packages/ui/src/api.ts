@@ -1,5 +1,5 @@
 import type { TurnEvent } from "@trpg/gm";
-import type { GameView, PlayerView } from "./types.ts";
+import type { GameView, PlayerView, SlotsView } from "./types.ts";
 
 export type StreamEvent = TurnEvent | { type: "player"; player: PlayerView };
 
@@ -47,12 +47,24 @@ export async function fetchRetrievals(): Promise<RetrievalView[]> {
   return res.ok ? ((await res.json()) as RetrievalView[]) : [];
 }
 
-export async function resetGame(): Promise<GameView> {
-  const res = await fetch("/api/game/reset", { method: "POST" });
-  const body = (await res.json()) as GameView & { error?: string };
+async function postJson<T>(path: string): Promise<T> {
+  const res = await fetch(path, { method: "POST" });
+  const body = (await res.json()) as T & { error?: string };
   if (!res.ok) throw new Error(body.error ?? `서버 오류 (${res.status})`);
   return body;
 }
+
+/** 시작 화면: 세이브 슬롯과 지금 열린 세계 */
+export async function fetchSlots(): Promise<SlotsView> {
+  const res = await fetch("/api/worlds");
+  if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+  return (await res.json()) as SlotsView;
+}
+
+export const newGame = () => postJson<GameView>("/api/worlds");
+export const openSlot = (id: string) => postJson<GameView>(`/api/worlds/${encodeURIComponent(id)}/open`);
+/** 게임을 닫고 시작 화면으로 (세이브는 남는다) */
+export const closeGame = () => postJson<{ ok: true }>("/api/game/close");
 
 /**
  * POST /api/game/turn 을 호출하고 SSE 이벤트를 하나씩 돌려준다.

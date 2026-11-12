@@ -2,6 +2,12 @@ import type { GameWorld, PlayerView, TranscriptView, WorldManager } from "@trpg/
 import { runGmTurn, type EpitaphWriter, type LanguageModel, type Summarizer, type TurnEvent } from "@trpg/gm";
 
 export class TurnInProgressError extends Error {}
+/** 시작 화면: 아직 연 세계가 없다 */
+export class NoWorldError extends Error {
+  constructor() {
+    super("열린 세계가 없습니다. 시작 화면에서 세이브를 고르거나 새 게임을 시작하세요.");
+  }
+}
 
 export type GameView = {
   worldId: string;
@@ -19,7 +25,7 @@ export type GameView = {
  * 게임 규칙·정보 필터는 core(GameWorld), GM 호출은 gm(runGmTurn)에 있고, 여기는 HTTP 쪽 흐름만 다룬다.
  */
 export class WebSession {
-  #world: GameWorld;
+  #world: GameWorld | null;
   #busy = false;
 
   constructor(
@@ -29,11 +35,43 @@ export class WebSession {
     world?: GameWorld,
     private readonly epitaphWriter?: EpitaphWriter,
   ) {
-    this.#world = world ?? manager.openLatest("web");
+    // 서버를 켜도 세계를 바로 열지 않는다 (시작 화면에서 고른다. 그동안 MCP 모드가 어느 세계든 열 수 있다)
+    this.#world = world ?? null;
   }
 
   get world(): GameWorld {
+    if (!this.#world) throw new NoWorldError();
     return this.#world;
+  }
+
+  get scenarioName() {
+    return this.manager.content.scenario.name;
+  }
+
+  get hasWorld() {
+    return this.#world !== null;
+  }
+
+  /** 세이브 슬롯 (지금 이 세션이 연 세계는 current) */
+  slots() {
+    const current = this.#world?.id ?? null;
+    return this.manager.listSlots().map((slot) => ({ ...slot, current: slot.id === current, lockedBy: slot.id === current ? null : slot.lockedBy }));
+  }
+
+  /** 세이브를 연다 (지금 세계는 닫는다). 다른 곳에서 열려 있으면 WorldLockedError */
+  openWorld(worldId: string) {
+    if (this.#busy) throw new TurnInProgressError();
+    if (this.#world?.id === worldId) return;
+    const next = this.manager.open(worldId, "web");
+    this.#world?.close();
+    this.#world = next;
+  }
+
+  /** 지금 세계를 닫고 시작 화면으로 (세이브는 그대로 남는다) */
+  closeWorld() {
+    if (this.#busy) throw new TurnInProgressError();
+    this.#world?.close();
+    this.#world = null;
   }
 
   get busy() {
@@ -42,12 +80,12 @@ export class WebSession {
 
   view(): GameView {
     return {
-      ...this.#world.intro(),
-      player: this.#world.playerView(),
-      transcript: this.#world.transcriptView(),
+      ...this.world.intro(),
+      player: this.world.playerView(),
+      transcript: this.world.transcriptView(),
       busy: this.#busy,
-      succession: this.#world.isPlayerDead()
-        ? { chronicle: this.#world.chronicleText(), options: this.#world.successionOptions() }
+      succession: this.world.isPlayerDead()
+        ? { chronicle: this.world.chronicleText(), options: this.world.successionOptions() }
         : null,
     };
   }
@@ -55,18 +93,20 @@ export class WebSession {
   /** 사망 뒤 다음 캐릭터로 이어 간다 */
   chooseNextCharacter(choice: string, name: string | null) {
     if (this.#busy) throw new TurnInProgressError();
-    return this.#world.chooseNextCharacter(choice, name);
+    return this.world.chooseNextCharacter(choice, name);
   }
 
   /** 지금 세계를 닫고 새 세계를 연다 (지금 세계는 saves/worlds/에 그대로 남는다) */
   newWorld() {
     if (this.#busy) throw new TurnInProgressError();
-    this.#world.close();
+    this.#world?.close();
+    this.#world = null;
     this.#world = this.manager.create("web");
   }
 
   close() {
-    this.#world.close();
+    this.#world?.close();
+    this.#world = null;
   }
 
   /**
@@ -75,6 +115,7 @@ export class WebSession {
    */
   async *playTurn(input: string, signal?: AbortSignal): AsyncGenerator<TurnEvent> {
     if (this.#busy) throw new TurnInProgressError();
+    const world = this.world;
     this.#busy = true;
     const abort = new AbortController();
     const onAbort = () => abort.abort();
@@ -82,7 +123,7 @@ export class WebSession {
 
     const turn = runGmTurn({
       model: this.model,
-      world: this.#world,
+      world,
       input,
       signal: abort.signal,
       ...(this.summarizer ? { summarizer: this.summarizer } : {}),

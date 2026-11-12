@@ -12,7 +12,7 @@ Claude 앱 세션(Claude Code·Claude 데스크톱)이 GM이고, 엔진은 로�
 4. **AI 프롬프트에는 현재 캐릭터의 Belief State만 넣는다.** World State(진짜 상태), 숨은 목격자, 다른 캐릭터의 비밀이 프롬프트로 새지 않게 한다. **RAG 검색 결과도 포함한다**: 현재 캐릭터가 알 수 없는 청크(visibility, knownBy)는 검색 결과에 절대 들어가지 않는다.
 5. **플레이어 입력은 의도일 뿐이다.** 서술된 결과를 사실로 받아들이지 않는다.
 6. **플레이어와 NPC는 같은 캐릭터 스키마를 쓴다.** 사망 후 기존 NPC로 이어서 플레이할 수 있어야 한다.
-7. **core에 장르 요소를 하드코딩하지 않는다.** 자원, 능력, 스킬, 성장 수치, 상태 트랙, 등급 사다리, 화법 규칙, GM 톤, 위협·조우 테이블은 시나리오 팩(`content/scenarios/<id>/scenario.yaml`)에서 읽는다. 이름과 목록을 데이터로 빼는 데까지만 하고, 규칙 자체의 플러그인화는 두 번째 장르를 만들 때 한다.
+7. **core에 장르 요소를 하드코딩하지 않는다.** (월드가 여럿일 수 있다, `docs/design.md` 12.4) 자원, 능력, 스킬, 성장 수치, 상태 트랙, 등급 사다리, 화법 규칙, GM 톤, 위협·조우 테이블은 시나리오 팩(`content/scenarios/<id>/scenario.yaml`)에서 읽는다. 이름과 목록을 데이터로 빼는 데까지만 하고, 규칙 자체의 플러그인화는 두 번째 장르를 만들 때 한다.
 8. **core는 LLM을 모른다.** 프로젝트 코드는 LLM을 부르지 않는다. GM은 MCP tool로만 엔진을 움직인다.
 9. **게임 규칙은 어댑터가 아니라 core에 둔다.** 상태 변경, 정보 필터, RAG 필터링, 명령어 처리를 `mcp`에 넣지 않는다.
 10. **웹 앱을 되살린다면 API 키만 쓴다.** claude.ai 구독 로그인을 우리 앱에 연결하지 않는다 (Anthropic 정책상 금지).
@@ -63,7 +63,7 @@ pnpm install        # 설치
 cp .env.example .env  # 선택. 로컬 설정 (RAG, 치트 등)
 pnpm test           # 단위 테스트 (vitest, LLM 호출 없음)
 pnpm typecheck      # 전체 타입 체크
-pnpm content:check  # 시나리오 팩(post_apoc) 검증 (검색 평가 세트 포함)
+pnpm content:check  # 모든 월드 팩 검증 (검색 평가 세트 포함)
 pnpm rag:eval       # RAG 검색 평가 (bge-m3). --compare로 설정 비교, --hash로 모델 없이
 pnpm mcp            # MCP 서버 실행 (stdio). Claude 앱 등록 방법은 README
 pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마이그레이션 생성
@@ -72,6 +72,7 @@ pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마
 - 플레이: 이 폴더에서 Claude Code 세션을 열고 `/play` (MCP 서버는 `.mcp.json`으로 등록돼 있다). 코드를 바꾸면 세션을 새로 열어야 MCP 서버가 새 코드로 뜬다
 - 상태 화면은 `http://127.0.0.1:8790`부터 (세션마다 다음 포트). `TRPG_STATUS=off`로 끈다. 치트는 `.env`의 `TRPG_DEBUG=1`
 - RAG: 첫 실행 때 bge-m3 모델(약 570MB)을 `.cache/models/`에 받고, lore 색인을 `.cache/rag/`에 만든다 (둘 다 git 제외). 세계별 memory 색인은 `saves/worlds/<worldId>.memory.db` (세이브에서 다시 만들 수 있는 파생 파일). `RAG=off`로 끈다
-- 시나리오는 `SCENARIO`로 고른다 (기본 `post_apoc`, `content/scenarios/<id>/`)
+- **말 정하기**: 플레이어의 "월드" = 코드의 시나리오 팩(`content/scenarios/<id>/`, `Scenario`), 플레이어의 "시나리오" = 코드의 역할(`roles/*.yaml`), 플레이어의 "게임" = 코드의 세계(`GameWorld`, 세이브 하나). 화면·GM에 보이는 말은 월드·시나리오로 쓴다
+- 월드 팩은 `content/scenarios/` 아래를 모두 읽는다. `SCENARIO=<id>`로 하나만. 새 월드 추가 체크리스트는 `docs/design.md` 12.4
 - 세이브는 `saves/worlds/<worldId>.db` (`SAVES_DIR`로 폴더 변경). 열려 있는 세계는 `<worldId>.db.lock`으로 잠긴다. 형식·시나리오가 맞지 않는 세이브는 `saves/archive/`로 옮겨진다
 - 게임 상태나 이벤트 형태를 바꾸면 `SAVE_SCHEMA_VERSION`을 올린다 (`packages/core/src/game/state.ts`)

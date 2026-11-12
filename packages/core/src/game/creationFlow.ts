@@ -287,10 +287,10 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   if (draft.answers.length === 0 && step === "name") {
     if (draft.mode === "new_world") {
       lines.push(
-        "## 먼저: 세계와 지금 상황",
-        "아래 소개를 바탕으로, 이 세계가 어떻게 무너졌고 지금 주인공이 어디에 어떤 처지로 있는지 GM의 목소리로 들려준다 (서너 문단, 목록 말고 이야기로). 소개에 없는 사실은 만들지 않는다. 그다음 이름을 묻는다.",
+        "## 먼저: 지금 상황",
+        "월드 이야기는 이미 들려줬다. 아래를 바탕으로 주인공이 지금 어디에 어떤 처지로 있는지 GM의 목소리로 들려준다 (두세 문단, 목록 말고 이야기로). 소개에 없는 사실은 만들지 않는다. 그다음 이름을 묻는다.",
         "",
-        s.introText ?? "(이 시나리오에는 세계 소개가 없다. 시작 장면만 들려준다)",
+        content.roles[roleId]?.scenario?.intro ?? content.roles[roleId]?.opening_scene ?? "",
         "",
         `시작 역할: ${rules?.roleLabel ?? ""}. 시작 훈련: ${rules?.startSkills.map((x) => `${x.label} ${signed(x.value)}`).join(", ") ?? ""}`,
         "",

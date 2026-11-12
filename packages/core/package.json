@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "content:check": "tsx src/content/check.ts ../../content/scenarios/post_apoc",
+    "content:check": "tsx src/content/check.ts",
     "db:generate": "drizzle-kit generate",
     "rag:eval": "tsx src/rag/evalCli.ts"
   },

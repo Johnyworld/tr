@@ -122,7 +122,7 @@ describe("세이브 슬롯과 종료", () => {
 
     const menu = await call("start_session");
     expect(app.world).toBeNull();
-    expect(menu.text).toMatch(/^1\. 신병 \(23세\) · .*하급 전투원 · 레벨 0 — 1일차/m);
+    expect(menu.text).toMatch(/^1\. 신병 \(23세\) · .*하급 전투원 · 레벨 0 — .+ · 1일차/m);
     expect(menu.text).toMatch(/^0\. 새 게임\n1\. /m); // 새 게임이 맨 위
 
     const opened = await call("start_session", { slot: 1 });
@@ -172,13 +172,23 @@ describe("MCP 세이브 삭제", () => {
 });
 
 describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
-  it("새 게임은 세계 소개와 이름부터, create_character로 하나씩 답해 마지막 확인에서 세계가 열린다", async () => {
+  it("새 게임은 월드 → 시나리오 → 캐릭터를 create_character로 하나씩 답해 마지막 확인에서 세계가 열린다", async () => {
     const { call, app, manager } = await connect(REAL_CONTENT);
     const first = await call("start_session", { new_world: true });
     expect(app.world).toBeNull();
     expect(app.creating).toBe(true);
-    expect(first.text).toContain("세계와 지금 상황");
-    expect(first.text).toContain("이름");
+    expect(first.text).toContain("월드 고르기");
+    expect(first.text).toContain("무너진 도시, 가람");
+    const scenario = await call("create_character", { answer: "post_apoc" });
+    expect(scenario.text).toContain("시나리오 고르기");
+    expect(scenario.text).toContain("열병"); // 월드 이야기
+    expect(scenario.text).toContain("청솔형제단의 하급 전투원");
+    expect((await call("create_character", { back: true })).text).toContain("월드 고르기");
+    await call("create_character", { answer: "무너진 도시, 가람" });
+    const name = await call("create_character", { answer: "청솔형제단의 하급 전투원" });
+    expect(name.text).toContain("지금 상황");
+    expect(name.text).toContain("간이침대");
+    expect(name.text).toContain("이름");
     expect((await call("create_character", { answer: "윤하" })).text).toContain("성별");
     expect((await call("create_character", { answer: "female" })).text).toContain("하나씩 정하기");
     const strength = await call("create_character", { answer: "manual" });
@@ -359,7 +369,8 @@ describe("사망 뒤 새 캐릭터 만들기", () => {
 
     const first = await call("choose_next_character", { character_id: "new" });
     expect(first.text).toContain("다른 사람의 삶");
-    expect(first.text).not.toContain("세계와 지금 상황");
+    expect(first.text).not.toContain("월드 고르기");
+    expect(first.text).not.toContain("지금 상황");
     const source = { get world() { return app.world; }, scenarioName: "x", get creating() { return app.creating; } };
     expect(statusPayload(source)).toMatchObject({ creating: true });
     for (const a of ["서진", "여성", "random", "manual", ["허약 체질"], ["아름다운 외모"], "없음"]) {
@@ -390,5 +401,29 @@ describe("치트 도구 (개발 모드)", () => {
     const out = (await client.callTool({ name: "cheat", arguments: { input: "~give bomb 1" } })) as { content: { text: string }[] };
     expect(out.content[0]!.text).toContain("폭탄");
     expect(app.world!.state().characters.player!.inventory.bomb).toBe(1);
+  });
+});
+
+describe("월드가 여럿일 때 (MCP)", () => {
+  it("세계를 열면 tool 입력 스키마가 그 월드의 것으로 바뀌고, 상태 화면 머리도 그 월드 이름", async () => {
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-multi-")), content: [REAL_CONTENT, TEST_CONTENT], rngFactory: () => createSeededRng(3) });
+    const w = manager.create("mcp", undefined, undefined, TEST_CONTENT.scenario.id);
+    const id = w.id;
+    w.close();
+    const app = createMcpServer(manager);
+    opened.push(app);
+    const [c, s] = InMemoryTransport.createLinkedPair();
+    await app.server.connect(s);
+    const client = new Client({ name: "t", version: "0" });
+    await client.connect(c);
+    const schemaText = async () => JSON.stringify((await client.listTools()).tools.find((t) => t.name === "take_action")!.inputSchema);
+    expect(await schemaText()).toContain("nerve"); // 기본 월드(실제 팩)
+    expect(app.title).toBe("TRPG");
+    await client.callTool({ name: "load_world", arguments: { world_id: id } });
+    expect(await schemaText()).toContain("cool"); // 테스트 팩의 능력
+    expect(await schemaText()).not.toContain("nerve");
+    expect(app.title).toBe(TEST_CONTENT.scenario.name);
+    const r = (await client.callTool({ name: "take_action", arguments: action({ check: { move: "endure", stat: "cool", difficulty: "normal", harm_on_failure: "none", harm_cause: "" } }) })) as { isError?: boolean; content: { text: string }[] };
+    expect(r.isError, r.content[0]!.text).not.toBe(true);
   });
 });

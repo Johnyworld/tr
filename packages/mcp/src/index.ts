@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { BgeM3Embedder, ContentError, loadContent, LoreLibrary, WorldManager } from "@trpg/core";
+import { BgeM3Embedder, ContentError, loadContent, loadContentPacks, LoreLibrary, WorldManager, type Content } from "@trpg/core";
 import { createMcpServer } from "./server.ts";
 import { startStatusServer } from "./statusServer.ts";
 
@@ -16,28 +16,36 @@ try {
 } catch {
   // .env가 없으면 그대로
 }
-const scenarioId = process.env.SCENARIO ?? "post_apoc";
-const contentDir = resolve(ROOT, process.env.CONTENT_DIR ?? `content/scenarios/${scenarioId}`);
+// 월드 팩: content/scenarios/ 아래 전부. SCENARIO로 하나만, CONTENT_DIR로 다른 폴더 하나만 고를 수 있다
+const packsDir = resolve(ROOT, "content/scenarios");
 const savesDir = resolve(ROOT, process.env.SAVES_DIR ?? "saves");
 
 let app: ReturnType<typeof createMcpServer>;
-let scenarioName = "";
 /** 상태 화면 주소 (TRPG_STATUS=off면 띄우지 않는다). 못 띄워도 게임은 그대로 한다 */
 let statusUrl: string | null = null;
 let closeStatus: (() => Promise<void>) | null = null;
 try {
-  const content = loadContent(contentDir);
+  const packs: { content: Content; dir: string }[] = process.env.CONTENT_DIR
+    ? [{ content: loadContent(resolve(ROOT, process.env.CONTENT_DIR)), dir: resolve(ROOT, process.env.CONTENT_DIR) }]
+    : loadContentPacks(packsDir, process.env.SCENARIO).map((content) => ({ content, dir: resolve(packsDir, content.scenario.id) }));
   // RAG: 임베딩 모델은 lore와 memory가 함께 쓴다. 모델 로딩·임베딩은 백그라운드로 (RAG=off면 끈다)
   const embedder = process.env.RAG === "off" ? null : new BgeM3Embedder({ cacheDir: resolve(ROOT, ".cache/models") });
-  const lore = embedder
-    ? LoreLibrary.open({
-        indexPath: resolve(ROOT, `.cache/rag/${content.scenario.id}-lore.db`),
-        loreDir: resolve(contentDir, "lore"),
-        embedder,
-      })
-    : null;
-  app = createMcpServer(new WorldManager({ savesDir, content, lore, memoryEmbedder: embedder }), { statusUrl: () => statusUrl, debug: process.env.TRPG_DEBUG === "1" });
-  scenarioName = content.scenario.name;
+  // lore 색인은 월드마다 따로, 처음 쓸 때 연다
+  const lores = new Map<string, LoreLibrary>();
+  const lore = (packId: string): LoreLibrary | null => {
+    const pack = packs.find((p) => p.content.scenario.id === packId);
+    if (!embedder || !pack) return null;
+    let library = lores.get(packId);
+    if (!library) {
+      library = LoreLibrary.open({ indexPath: resolve(ROOT, `.cache/rag/${packId}-lore.db`), loreDir: resolve(pack.dir, "lore"), embedder });
+      lores.set(packId, library);
+    }
+    return library;
+  };
+  app = createMcpServer(
+    new WorldManager({ savesDir, content: packs.map((p) => p.content), lore, memoryEmbedder: embedder }),
+    { statusUrl: () => statusUrl, debug: process.env.TRPG_DEBUG === "1" },
+  );
 } catch (err) {
   console.error(`[mcp] ${err instanceof ContentError ? err.message : String(err)}`);
   process.exit(1);
@@ -46,14 +54,16 @@ try {
 const transport = new StdioServerTransport();
 transport.onclose = () => shutdown();
 await app.server.connect(transport);
-console.error(`[mcp] 준비됨 (시나리오 ${scenarioId}, 세이브 ${savesDir})`);
+console.error(`[mcp] 준비됨 (세이브 ${savesDir})`);
 
 if (process.env.TRPG_STATUS !== "off") {
   const source = {
     get world() {
       return app.world;
     },
-    scenarioName,
+    get scenarioName() {
+      return app.title;
+    },
     get creating() {
       return app.creating;
     },

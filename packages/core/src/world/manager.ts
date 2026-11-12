@@ -40,30 +40,37 @@ export type WorldInfo = {
 };
 
 /**
- * 세계 목록과 열기·만들기 (기획서 11.5).
- * 세계 하나 = saves/worlds/<worldId>.db 하나. 두 모드가 같은 폴더를 쓰고, 잠금으로 동시 접근만 막는다.
+ * 세계(세이브) 목록과 열기·만들기 (기획서 11.5).
+ * 세계 하나 = saves/worlds/<worldId>.db 하나. 세션들이 같은 폴더를 쓰고, 잠금으로 동시 접근만 막는다.
+ * 월드 팩(content)은 여럿일 수 있다. 세이브는 만든 팩의 id(meta scenario_id)를 기억하고, 열 때 그 팩으로 연다
  */
 export class WorldManager {
   readonly savesDir: string;
   readonly worldsDir: string;
-  readonly content: Content;
+  /** 월드 팩 (id → 콘텐츠). 순서는 고르기 목록 순서 */
+  readonly packs: ReadonlyMap<string, Content>;
   #rngFactory: () => Rng;
-  readonly lore: LoreLibrary | null;
+  #lore: (packId: string) => LoreLibrary | null;
   readonly memoryEmbedder: Embedder | null;
 
   constructor(options: {
     savesDir: string;
-    content: Content;
+    /** 월드 팩 하나 또는 여럿 */
+    content: Content | readonly Content[];
     rngFactory?: () => Rng;
-    lore?: LoreLibrary | null;
+    /** lore 컬렉션 (팩 하나면 그대로, 여럿이면 팩 id로 고른다) */
+    lore?: LoreLibrary | null | ((packId: string) => LoreLibrary | null);
     /** memory 컬렉션에 쓸 임베더. 없으면 장기 기억 검색 없이 진행 */
     memoryEmbedder?: Embedder | null;
   }) {
-    this.lore = options.lore ?? null;
+    const lore = options.lore ?? null;
+    this.#lore = typeof lore === "function" ? lore : () => lore;
     this.memoryEmbedder = options.memoryEmbedder ?? null;
     this.savesDir = options.savesDir;
     this.worldsDir = join(options.savesDir, "worlds");
-    this.content = options.content;
+    const list = Array.isArray(options.content) ? options.content : [options.content as Content];
+    if (list.length === 0) throw new Error("월드 팩이 없다");
+    this.packs = new Map(list.map((c) => [c.scenario.id, c]));
     this.#rngFactory = options.rngFactory ?? (() => createSeededRng(randomBytes(4).readUInt32LE(0)));
     mkdirSync(this.worldsDir, { recursive: true });
     this.#migrateLegacySave();
@@ -82,29 +89,42 @@ export class WorldManager {
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
-  /** 이 시나리오의 세이브 슬롯 (최근에 플레이한 것부터). 시작 화면과 MCP의 번호 목록이 같이 쓴다 */
-  listSlots(): SaveSlot[] {
-    return this.listWorlds()
-      .filter((w) => w.scenarioId === this.content.scenario.id)
-      // 죽은 프로세스가 남긴 잠금은 사용 중이 아니다
-      .map((w) => toSaveSlot({ ...w, lockedBy: w.lockedBy && isProcessAlive(w.lockedBy.pid) ? w.lockedBy : null }, w.raw, this.content));
+  /** 기본 월드 팩 (목록의 첫 번째). 팩이 하나뿐인 곳(테스트 등)에서 쓴다 */
+  get content(): Content {
+    return this.packs.values().next().value!;
   }
 
-  /** 새 세계를 만들고 연다 */
-  create(mode: PlayMode, roleId?: string, choice?: CharacterChoice): GameWorld {
-    const role = roleId ?? Object.keys(this.content.roles)[0];
-    if (!role || !this.content.roles[role]) throw new Error(`알 수 없는 시작 역할: ${role}`);
+  /** 월드 팩. 없으면 오류 */
+  pack(packId: string): Content {
+    const content = this.packs.get(packId);
+    if (!content) throw new Error(`없는 월드: ${packId}`);
+    return content;
+  }
+
+  /** 아는 월드의 세이브 슬롯 (최근에 플레이한 것부터). MCP의 번호 목록이 쓴다 */
+  listSlots(): SaveSlot[] {
+    return this.listWorlds()
+      .filter((w) => w.scenarioId !== null && this.packs.has(w.scenarioId))
+      // 죽은 프로세스가 남긴 잠금은 사용 중이 아니다
+      .map((w) => toSaveSlot({ ...w, lockedBy: w.lockedBy && isProcessAlive(w.lockedBy.pid) ? w.lockedBy : null }, w.raw, this.packs.get(w.scenarioId!)!));
+  }
+
+  /** 새 세계를 만들고 연다. packId를 주지 않으면 기본 월드 */
+  create(mode: PlayMode, roleId?: string, choice?: CharacterChoice, packId?: string): GameWorld {
+    const content = packId ? this.pack(packId) : this.content;
+    const role = roleId ?? Object.keys(content.roles)[0];
+    if (!role || !content.roles[role]) throw new Error(`알 수 없는 시작 역할: ${role}`);
     if (choice) {
-      const problems = checkCharacterChoice(this.content.scenario, choice);
+      const problems = checkCharacterChoice(content.scenario, choice);
       if (problems.length) throw new CharacterChoiceError(problems);
     }
     const worldId = newWorldId();
-    const world = this.#open(this.pathOf(worldId), mode);
+    const world = this.#open(this.pathOf(worldId), mode, content);
     try {
       const ctx = world.ctx();
       // 능력을 고르지 않았으면(null) 포인트를 무작위로 배분한다
-      const filled = choice ? fillCharacterChoice(this.content.scenario, choice, ctx.rng) : choice;
-      ctx.store.append(createWorldEvent(this.content, role, worldId, ctx.rng, filled));
+      const filled = choice ? fillCharacterChoice(content.scenario, choice, ctx.rng) : choice;
+      ctx.store.append(createWorldEvent(content, role, worldId, ctx.rng, filled));
       runAfterTimeAdvance(ctx); // 첫날의 임무 후보, 소문 기준일
       world.saveSnapshot();
       return world;
@@ -128,22 +148,26 @@ export class WorldManager {
     removeSaveFiles(path);
   }
 
-  /** 세계를 연다. 다른 곳에서 열려 있으면 WorldLockedError */
+  /** 세계를 연다 (세이브를 만든 월드 팩으로). 다른 곳에서 열려 있으면 WorldLockedError */
   open(worldId: string, mode: PlayMode): GameWorld {
     const path = this.pathOf(worldId);
     if (!existsSync(path)) throw new Error(`없는 세계: ${worldId}`);
-    return this.#open(path, mode);
+    const packId = readWorldInfo(path).scenarioId;
+    const content = packId ? this.packs.get(packId) : undefined;
+    if (!content) throw new Error(`이 세이브의 월드(${packId ?? "알 수 없음"})가 설치돼 있지 않다.`);
+    return this.#open(path, mode, content);
   }
 
   /**
-   * 이 시나리오의 가장 최근 세계를 연다. 없으면 새로 만든다.
-   * 형식이나 시나리오가 맞지 않는 세이브는 지우지 않고 saves/archive/로 옮긴다.
+   * 아는 월드의 가장 최근 세계를 연다. 없으면 기본 월드로 새로 만든다.
+   * 형식이나 월드가 맞지 않는 세이브는 지우지 않고 saves/archive/로 옮긴다.
    */
   openLatest(mode: PlayMode): GameWorld {
     for (const info of this.listWorlds()) {
-      if (info.scenarioId !== this.content.scenario.id) continue;
+      const content = info.scenarioId ? this.packs.get(info.scenarioId) : undefined;
+      if (!content) continue;
       try {
-        return this.#open(info.path, mode);
+        return this.#open(info.path, mode, content);
       } catch (err) {
         if (!(err instanceof SaveFormatError)) throw err;
         const archived = archiveSave(info.path, new Date(), join(this.savesDir, "archive"));
@@ -153,13 +177,13 @@ export class WorldManager {
     return this.create(mode);
   }
 
-  #open(path: string, mode: PlayMode): GameWorld {
+  #open(path: string, mode: PlayMode, content: Content): GameWorld {
     const release = acquireLock(path, mode);
     try {
-      const repo = SqliteRepository.open(path, this.content.scenario);
+      const repo = SqliteRepository.open(path, content.scenario);
       // memory 색인은 세이브 옆의 파생 파일이다 (세이브로부터 다시 만들 수 있다)
       const memory = this.memoryEmbedder ? MemoryStore.open(path.replace(/\.db$/, ".memory.db"), this.memoryEmbedder) : null;
-      const world = new GameWorld({ content: this.content, repo, mode, rng: this.#rngFactory(), path, release, lore: this.lore, memory });
+      const world = new GameWorld({ content, repo, mode, rng: this.#rngFactory(), path, release, lore: this.#lore(content.scenario.id), memory });
       // 이미 있는 세계: 시간이 흐른 뒤의 처리를 한 번 맞춘다. 시간이 그대로라 보통은 아무 일도 없고,
       // 이전 단계의 세이브라면 새로 생긴 상태(세력 등)를 채운다
       if (world.state().worldId) runAfterTimeAdvance(world.ctx());

@@ -35,6 +35,17 @@ export function createContentSchemas(s: Scenario) {
     age: z.number().int().positive(),
     /** 시작 장면. 화면에 먼저 보여 주고 GM 프롬프트에도 넣는다 */
     opening_scene: z.string().min(1),
+    /** 새 게임의 시나리오 고르기에 보이는 것 (월드를 고른 뒤). 없으면 label만 */
+    scenario: z
+      .strictObject({
+        /** 시나리오 이름 (예: 청솔형제단의 하급 전투원) */
+        title: z.string().min(1),
+        /** 고를 때 보여 주는 두세 문장 */
+        pitch: z.string().min(1),
+        /** 캐릭터를 만들기 전에 들려주는 지금 상황 (시작 캐릭터가 아는 것만) */
+        intro: z.string().min(1).optional(),
+      })
+      .optional(),
     /** 정해진 능력 (특별한 역할·테스트용). 없으면 시나리오의 ability_array를 무작위로 섞는다 — 능력은 계급과 무관하다 */
     start_stats: createStatsSchema(s).optional(),
     /** 이 역할이 받은 훈련 (스킬 id → 수준). 나머지는 스킬의 기본값 */

@@ -10,6 +10,8 @@ import type { WorldInfo } from "./manager.ts";
  */
 export type SaveSlot = {
   id: string;
+  /** 월드 이름 (월드 팩의 world.title) */
+  worldTitle: string;
   /** 주인공. 읽을 수 없는 세이브면 null */
   hero: {
     name: string;
@@ -70,6 +72,7 @@ export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): Sav
     : null;
   return {
     id: info.id,
+    worldTitle: content.scenario.world?.title ?? s.name,
     hero,
     timeLabel: typeof state.time === "number" ? formatTime(state.time) : null,
     updatedAt: info.updatedAt,
@@ -87,7 +90,7 @@ export function formatPlayedAt(iso: string): string {
 /** MCP용 한 줄: "1. 신병 (23세) · 청솔형제단 하급 전투원 · 레벨 1 — 3일차 아침, 청솔형제단 거점 · 부상 경상 · 2대째 · 마지막 플레이 11월 12일 21:40" */
 export function formatSlotLine(slot: SaveSlot, index: number): string {
   const h = slot.hero;
-  if (!h) return `${index}. (읽을 수 없는 세이브) · 마지막 플레이 ${formatPlayedAt(slot.updatedAt)}`;
+  if (!h) return `${index}. (읽을 수 없는 세이브) · ${slot.worldTitle} · 마지막 플레이 ${formatPlayedAt(slot.updatedAt)}`;
   const who = `${h.name}${h.age || h.genderLabel ? ` (${[h.genderLabel, h.age ? `${h.age}세` : null].filter(Boolean).join(", ")})` : ""} · ${[h.factionName, h.rankLabel].filter(Boolean).join(" ")} · 레벨 ${h.level}`;
   const where = [slot.timeLabel, h.zoneName].filter(Boolean).join(", ");
   const tags = [
@@ -98,5 +101,5 @@ export function formatSlotLine(slot: SaveSlot, index: number): string {
     slot.lockedBy ? "지금 다른 세션에서 사용 중" : null,
     `마지막 플레이 ${formatPlayedAt(slot.updatedAt)}`,
   ].filter(Boolean);
-  return `${index}. ${who} — ${where} · ${tags.join(" · ")}`;
+  return `${index}. ${who} — ${slot.worldTitle} · ${where} · ${tags.join(" · ")}`;
 }

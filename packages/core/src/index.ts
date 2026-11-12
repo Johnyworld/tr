@@ -44,6 +44,16 @@ export * from "./game/reputation.ts";
 export { describeRequirement, describeMission } from "./engine/missionTools.ts";
 
 export * from "./content/schemas.ts";
+export { loadContentPacks, worldInfo, scenarioInfos } from "./content/packs.ts";
+export {
+  answerNewGame,
+  backNewGame,
+  describeNewGameStep,
+  heirDraft,
+  newGameDraft,
+  newGameStep,
+  type NewGameDraft,
+} from "./game/newGame.ts";
 export { loadContent, ContentError } from "./content/loader.ts";
 
 export { InMemoryRepository, type GameRepository } from "./persistence/repository.ts";

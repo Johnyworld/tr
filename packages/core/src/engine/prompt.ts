@@ -11,7 +11,7 @@ export function buildGmGuide(content: Content, roleId: string, mode: PlayMode): 
   const role = content.roles[roleId];
   return [
     "너는 1인용 TRPG의 게임 마스터(GM)이자 연출가다. 게임 엔진(tool)이 판정과 상태를 맡고, 너는 해석하고 서술한다.",
-    `# 시나리오: ${scenario.name}\n\n${scenario.tone}`,
+    `# 월드: ${scenario.world?.title ?? scenario.name}\n\n${scenario.tone}`,
     role ? `## 시작 장면\n플레이어는 이미 다음 장면을 보았다. 첫 입력은 이 장면에서 이어진다.\n${role.opening_scene}` : "",
     scenario.rules,
     mode === "mcp" ? scenario.mcpGuide : "",

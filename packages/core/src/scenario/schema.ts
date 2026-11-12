@@ -177,8 +177,19 @@ export const scenarioFileSchema = z
     gm_tone: z.string().min(1),
     gm_rules: z.string().min(1),
     mcp_guide: z.string().min(1),
-    /** 새 게임을 시작할 때 들려주는 세계와 지금 상황 (시작 캐릭터가 아는 것만) */
+    /** 새 게임을 시작할 때 들려주는 세계 이야기 (시작 캐릭터가 아는 것만). 지금 상황은 시나리오(역할)의 intro */
     intro: z.string().min(1).optional(),
+    /** 새 게임의 월드 고르기에 보이는 것 (기획서 12.3). 없으면 name만 */
+    world: z
+      .strictObject({
+        /** 월드 이름 (예: 무너진 도시, 가람) */
+        title: z.string().min(1),
+        /** 한 줄 소개 */
+        tagline: z.string().min(1),
+        /** 고를 때 보여 주는 두세 문장 */
+        description: z.string().min(1),
+      })
+      .optional(),
     /**
      * 세력 단위 전쟁 시뮬레이션의 수치 (기획서 9장). 규칙(틱 순서, 교전 판정)은 core에 있고 숫자와 문구만 둔다.
      * 없으면 세력 시뮬레이션을 돌리지 않는다.

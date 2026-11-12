@@ -1,18 +1,22 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, type RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   buildGmGuide,
   isCommand,
   CharacterChoiceError,
   characterChoiceSchema,
-  answerCreation,
-  backCreation,
+  answerNewGame,
+  backNewGame,
   createSeededRng,
   creationRules,
-  describeCreationStep,
-  newCreationDraft,
-  type CreationDraft,
+  describeNewGameStep,
+  heirDraft,
+  newGameDraft,
+  worldInfo,
+  type Content,
+  type NewGameDraft,
   type Rng,
+  type Scenario,
   formatReferences,
   formatSlotLine,
   createTakeActionSchema,
@@ -42,7 +46,7 @@ const NO_WORLD = "열린 세계가 없습니다. 먼저 start_session(또는 loa
 /** 세션을 시작할 때 GM이 할 일 (MCP prompt `play`, Claude Code 스킬 /play 가 같은 흐름) */
 export const PLAY_START =
   "지금 list_worlds를 호출해 저장된 게임 목록(0번 새 게임, 1번부터 저장된 게임)을 플레이어에게 그대로 보여 주고, 어느 것을 할지 묻는다. " +
-  "플레이어가 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 start_session(new_world: true): 세계 소개를 들려준 뒤 create_character로 캐릭터를 한 단계씩 만든다 (마지막 확인에서 세계가 열린다). 고르기 전에는 세계를 열지 않는다. " +
+  "플레이어가 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 start_session(new_world: true): 월드 → 시나리오 → 캐릭터를 create_character로 한 단계씩 고른다 (마지막 확인에서 세계가 열린다). 고르기 전에는 세계를 열지 않는다. " +
   "플레이어가 그만하자고 하면 end_session으로 닫는다.";
 
 const HELP_HINT = "플레이어에게 한 줄 안내: \"?도움말 로 정보 명령어를 볼 수 있습니다.\" (이 모드에서는 \"!\" 대신 \"?\"를 쓴다. Claude 앱은 줄 맨 앞의 !를 셸 명령으로 바꾼다)";
@@ -56,13 +60,16 @@ export function createMcpServer(
   manager: WorldManager,
   options: { statusUrl?: () => string | null; /** 치트(개발 모드)를 연다 */ debug?: boolean; /** 캐릭터 생성의 무작위 (테스트에서 고정) */ rng?: Rng } = {},
 ) {
-  const content = manager.content;
-  const scenario = content.scenario;
+  const packs = manager.packs;
+  /** 세계를 열기 전(목록·새 게임)에 쓰는 기본 월드 */
+  const defaultContent = manager.content;
   const server = new McpServer({ name: "trpg", version: "0.0.0" });
   let world: GameWorld | null = null;
 
   const rng = options.rng ?? createSeededRng(Math.floor(Math.random() * 2 ** 31));
-  const roleId = Object.keys(content.roles)[0] ?? "";
+  const firstRole = (c: Content) => Object.keys(c.roles)[0] ?? "";
+  /** 지금 열린 세계의 월드 이름 (상태 화면 머리) */
+  const titleOf = (c: Content) => worldInfo(c).title;
   /**
    * 주인공이 죽은 순간: GM이 무슨 일이 있었는지 채팅에 서술할 때까지 상태 화면은 죽기 직전 모습을 보여 준다.
    * GM이 서술 뒤에 부르는 write_epitaph·get_chronicle·choose_next_character, 또는 시간이 지나면 풀린다
@@ -71,7 +78,7 @@ export function createMcpServer(
   const releaseFrozen = () => {
     frozen = null;
   };
-  const sheetPayload = (w: GameWorld) => ({ open: true, scenarioName: scenario.name, worldId: w.id, player: w.playerView() });
+  const sheetPayload = (w: GameWorld) => ({ open: true, scenarioName: titleOf(w.content), worldId: w.id, player: w.playerView() });
   const withWorld = (fn: (w: GameWorld) => TextResult): TextResult => {
     if (!world) return text(NO_WORLD, true);
     const wasDead = world.isPlayerDead();
@@ -110,8 +117,9 @@ export function createMcpServer(
    * 대화로 하는 캐릭터 생성 (기획서 11.6): 한 단계씩 묻는다. 초안은 메모리에만 있고, 마지막 확인에서 세계(또는 새 캐릭터)를 만든다.
    * new_world: 새 게임 / heir: 사망 뒤 같은 세계의 새 캐릭터
    */
-  let draft: CreationDraft | null = null;
-  const creationStep = (d: CreationDraft) => text(describeCreationStep(content, d, roleId));
+  let draft: NewGameDraft | null = null;
+  const creationStep = (d: NewGameDraft) => text(describeNewGameStep(packs, d));
+  const anyCreationRules = () => [...packs.values()].some((c) => creationRules(c, firstRole(c)) !== null);
 
   /** 플레이어가 지금 보고 있는 게임 목록 (번호 → 세이브 id). 세계를 열면 닫힌다. 삭제는 목록이 열려 있을 때만 */
   let menu: string[] | null = null;
@@ -123,6 +131,7 @@ export function createMcpServer(
       world = next;
       menu = null;
       draft = null;
+      syncTools(next.content.scenario);
       return sessionStart(next);
     } catch (err) {
       if (err instanceof WorldLockedError) return text(err.message, true);
@@ -177,21 +186,21 @@ export function createMcpServer(
     {
       description:
         "플레이 세션을 시작한다. slot(list_worlds의 번호, 1부터)이나 world_id를 주면 그 세계를 연다. " +
-        "새 게임은 new_world: true (slot 0도 새 게임). 세계를 바로 만들지 않고 캐릭터 만들기를 시작한다: 세계 소개와 첫 단계를 돌려주고, 그 뒤로는 create_character로 한 단계씩 진행한다. " +
+        "새 게임은 new_world: true (slot 0도 새 게임). 세계를 바로 만들지 않고 새 게임 고르기를 시작한다: 월드 → 시나리오 → 캐릭터를 create_character로 한 단계씩 고른다. " +
         "아무것도 주지 않으면 세계를 열지 않고 게임 목록(0번 새 게임)을 돌려준다. " +
         "세계를 열면 GM 지침, 지난 이야기 요약, 현재 장면을 돌려준다.",
       inputSchema: z.strictObject({
         slot: z.number().int().min(0).nullable().optional().describe("list_worlds의 번호 (0은 새 게임)"),
         world_id: z.string().nullable().optional(),
         new_world: z.boolean().optional(),
-        character: characterChoiceSchema().nullable().optional().describe("이미 다 정해진 캐릭터로 바로 만든다 (자동 진행·테스트용). 플레이어와 함께라면 쓰지 않고 create_character로 한 단계씩"),
+        character: characterChoiceSchema().nullable().optional().describe("이미 다 정해진 캐릭터로 기본 월드·시나리오에서 바로 만든다 (자동 진행·테스트용). 플레이어와 함께라면 쓰지 않고 create_character로 한 단계씩"),
       }),
     },
     (args) => {
       draft = null;
       if (args.new_world || args.slot === 0) {
-        if (!args.character && creationRules(content, roleId)) {
-          draft = newCreationDraft("new_world");
+        if (!args.character && anyCreationRules()) {
+          draft = newGameDraft();
           return creationStep(draft);
         }
         const choice = args.character ? { ...args.character, portrait: args.character.portrait ?? null } : undefined;
@@ -207,7 +216,7 @@ export function createMcpServer(
     "create_character",
     {
       description:
-        "캐릭터 만들기를 한 단계 진행한다 (start_session(new_world) 또는 choose_next_character(new)로 시작한 뒤). " +
+        "새 게임(월드 → 시나리오 → 캐릭터)이나 새 캐릭터 만들기를 한 단계 진행한다 (start_session(new_world) 또는 choose_next_character(new)로 시작한 뒤). " +
         "플레이어가 이번 단계에 답한 것을 answer로 넘긴다 (보기가 있으면 그 값, 트레잇은 이름이나 id 목록, 없으면 \"없음\"). " +
         "back: true면 한 단계 뒤로, 아무것도 없으면 지금 단계를 다시 돌려준다. 마지막 확인에서 \"start\"를 넘기면 세계(또는 새 캐릭터)가 만들어진다. 대신 답하지 않는다.",
       inputSchema: z.strictObject({
@@ -218,12 +227,12 @@ export function createMcpServer(
     (args) => {
       if (!draft) return text("만들고 있는 캐릭터가 없다. 새 게임은 start_session(new_world: true), 사망 뒤 새 캐릭터는 choose_next_character(new)로 시작한다.", true);
       if (args.back) {
-        draft = backCreation(draft);
+        draft = backNewGame(draft);
         return creationStep(draft);
       }
       if (args.answer == null) return creationStep(draft);
-      const r = answerCreation(scenario, draft, args.answer, rng);
-      if (!r.ok) return text(`${r.error} 플레이어에게 알리고 이 단계를 다시 묻는다.\n\n${describeCreationStep(content, draft, roleId)}`, true);
+      const r = answerNewGame(packs, draft, args.answer, rng);
+      if (!r.ok) return text(`${r.error} 플레이어에게 알리고 이 단계를 다시 묻는다.\n\n${describeNewGameStep(packs, draft)}`, true);
       if (!r.done) {
         draft = r.draft;
         return creationStep(draft);
@@ -238,9 +247,9 @@ export function createMcpServer(
         if (!result.isError) draft = null;
         return result;
       }
-      const result = openWorld(() => manager.create("mcp", undefined, choice));
+      const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId));
       if (result.isError) return result;
-      return { ...result, content: [{ type: "text", text: `캐릭터를 만들었다. 세계 소개는 이미 했으니 되풀이하지 말고, 지금 만든 사람으로 바로 첫 장면을 서술한다.\n\n${result.content[0]?.text ?? ""}` }] };
+      return { ...result, content: [{ type: "text", text: `캐릭터를 만들었다. 월드 이야기와 지금 상황은 이미 했으니 되풀이하지 말고, 지금 만든 사람으로 바로 첫 장면을 서술한다.\n\n${result.content[0]?.text ?? ""}` }] };
     },
   );
 
@@ -308,7 +317,7 @@ export function createMcpServer(
   server.registerTool(
     "get_gm_guide",
     { description: "GM 지침(진행 규칙, 시나리오 톤, 형식)을 다시 읽는다. start_session 결과에도 들어 있다." },
-    () => text(world ? world.guide() : buildGmGuide(content, Object.keys(content.roles)[0] ?? "", "mcp")),
+    () => text(world ? world.guide() : buildGmGuide(defaultContent, firstRole(defaultContent), "mcp")),
   );
 
   server.registerTool(
@@ -317,11 +326,38 @@ export function createMcpServer(
     () => withWorld((w) => text(w.sceneForGm())),
   );
 
-  const takeAction = gmTools(scenario).find((t) => t.name === "take_action")!;
-  server.registerTool(
+  /**
+   * 월드마다 달라지는 tool 입력(행동·능력 id 등). 세계를 열 때 그 월드의 스키마로 바꾸고 목록이 바뀌었다고 알린다.
+   * 검증은 어차피 core가 그 세계의 월드로 한 번 더 한다
+   */
+  const registered = new Map<string, RegisteredTool>();
+  let toolsFor: Scenario = defaultContent.scenario;
+  const schemaOf = (s: Scenario, name: string) =>
+    name === "take_action" ? createTakeActionSchema(s) : gmTools(s).find((t) => t.name === name)?.schema;
+  function syncTools(s: Scenario) {
+    if (s === toolsFor) return;
+    toolsFor = s;
+    for (const tool of gmTools(s)) {
+      const r = registered.get(tool.name);
+      if (!r) continue;
+      r.inputSchema = schemaOf(s, tool.name);
+      r.description = tool.description;
+    }
+    try {
+      server.sendToolListChanged();
+    } catch {
+      // 연결 전이면 알릴 곳이 없다
+    }
+  }
+
+  const takeAction = gmTools(defaultContent.scenario).find((t) => t.name === "take_action")!;
+  registered.set(
     "take_action",
-    { description: takeAction.description, inputSchema: createTakeActionSchema(scenario) },
-    (args) => withWorld((w) => fromOutcome(w.executeTool("take_action", args), sceneAfter(w))),
+    server.registerTool(
+      "take_action",
+      { description: takeAction.description, inputSchema: createTakeActionSchema(defaultContent.scenario) },
+      (args) => withWorld((w) => fromOutcome(w.executeTool("take_action", args), sceneAfter(w))),
+    ),
   );
 
   server.registerTool(
@@ -336,14 +372,17 @@ export function createMcpServer(
 
 
   // 장면 정리 tool (인물 등장, 물건, 기억, 임무, 목격자, 비밀): core 정의를 그대로 연다
-  for (const tool of gmTools(scenario)) {
+  for (const tool of gmTools(defaultContent.scenario)) {
     if (tool.name === "take_action") continue;
-    server.registerTool(tool.name, { description: tool.description, inputSchema: tool.schema }, (args: unknown) => {
-      const result = withWorld((w) => fromOutcome(w.executeTool(tool.name, args)));
-      // 묘비명은 죽음을 서술한 뒤에 남긴다: 이제 상태 화면에 사망을 보여 준다
-      if (tool.name === "write_epitaph") releaseFrozen();
-      return result;
-    });
+    registered.set(
+      tool.name,
+      server.registerTool(tool.name, { description: tool.description, inputSchema: tool.schema }, (args: unknown) => {
+        const result = withWorld((w) => fromOutcome(w.executeTool(tool.name, args)));
+        // 묘비명은 죽음을 서술한 뒤에 남긴다: 이제 상태 화면에 사망을 보여 준다
+        if (tool.name === "write_epitaph") releaseFrozen();
+        return result;
+      }),
+    );
   }
 
   // ── 기억과 정보 ───────────────────────────────────
@@ -423,9 +462,10 @@ export function createMcpServer(
     (args) => {
       releaseFrozen();
       if (!world) return text(NO_WORLD, true);
-      if (args.character_id === "new" && !args.character && !args.name && creationRules(content, roleId)) {
+      const roleId = world.state().roleId;
+      if (args.character_id === "new" && !args.character && !args.name && creationRules(world.content, roleId)) {
         if (!world.isPlayerDead()) return text("캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다.", true);
-        draft = newCreationDraft("heir");
+        draft = heirDraft(world.content.scenario.id, roleId);
         return creationStep(draft);
       }
       return withWorld((w) => {
@@ -458,14 +498,14 @@ export function createMcpServer(
 
   server.registerPrompt(
     "play",
-    { description: `${scenario.name} TRPG를 GM으로 진행한다 (GM 지침 + 세션 시작 안내).` },
+    { description: "TRPG를 GM으로 진행한다 (GM 지침 + 세션 시작 안내)." },
     () => ({
       messages: [
         {
           role: "user",
           content: {
             type: "text",
-            text: `${buildGmGuide(content, Object.keys(content.roles)[0] ?? "", "mcp")}\n\n${PLAY_START}`,
+            text: `${buildGmGuide(defaultContent, firstRole(defaultContent), "mcp")}\n\n${PLAY_START}`,
           },
         },
       ],
@@ -477,6 +517,10 @@ export function createMcpServer(
     /** 대화로 캐릭터를 만드는 중 (상태 화면 안내용) */
     get creating() {
       return draft !== null;
+    },
+    /** 상태 화면 머리의 이름: 열린 세계의 월드, 없으면 "TRPG" */
+    get title() {
+      return world ? titleOf(world.content) : "TRPG";
     },
     /** 주인공이 죽은 직후 GM이 서술하는 동안 상태 화면에 보여 줄 죽기 직전 모습 (없으면 null) */
     get frozenStatus() {

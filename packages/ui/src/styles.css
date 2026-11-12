@@ -1,0 +1,160 @@
+:root {
+  --bg: #121110;
+  --panel: #1b1a18;
+  --border: #2e2b27;
+  --text: #ddd6c8;
+  --muted: #8a8276;
+  --accent: #c08a3e;
+  --player: #9fb3a1;
+  --error: #d26a5c;
+  color-scheme: dark;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 20px 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 0;
+  line-height: 1.8;
+  font-size: 16px;
+}
+
+.empty {
+  color: var(--muted);
+}
+
+.turn {
+  margin-bottom: 20px;
+}
+
+.turn p {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+}
+
+.turn.player p {
+  color: var(--player);
+  padding-left: 12px;
+  border-left: 2px solid var(--player);
+}
+
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.notice {
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.notice.error {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 0 20px;
+  border-top: 1px solid var(--border);
+}
+
+.composer textarea {
+  flex: 1;
+  resize: none;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.composer textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.composer button {
+  min-width: 72px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #1a1307;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.composer button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.composer button.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}

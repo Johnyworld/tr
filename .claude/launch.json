@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "server",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@trpg/server", "dev"],
+      "port": 8787
+    },
+    {
+      "name": "ui",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@trpg/ui", "dev"],
+      "port": 5173
+    }
+  ]
+}

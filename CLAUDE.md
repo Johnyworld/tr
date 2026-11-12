@@ -46,4 +46,14 @@ docs/design.md    기획서
 
 ## 명령어
 
-(프로젝트 세팅 후 채운다: 설치, 개발 서버, 테스트, 콘텐츠 검증)
+```bash
+pnpm install        # 설치
+cp .env.example .env  # 처음 한 번. ANTHROPIC_API_KEY를 채운다
+pnpm dev            # 서버(127.0.0.1:8787) + UI(localhost:5173) 동시 실행
+pnpm test           # 단위 테스트 (vitest, LLM 호출 없음)
+pnpm typecheck      # 전체 타입 체크
+```
+
+- UI는 Vite 프록시로 `/api`를 서버에 넘긴다. 서버 포트는 `SERVER_PORT`로 바꾼다 (`PORT`는 쓰지 않는다)
+- GM 모델은 `GM_MODEL`로 바꾼다 (기본 `claude-opus-5-5`)
+- 콘텐츠 검증 명령은 4단계(YAML 로더)에서 추가한다

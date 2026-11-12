@@ -74,7 +74,7 @@ export function initialWarWorld(content: Content): WarWorld {
   for (const loc of Object.values(content.locations)) zones[loc.id] = { owner: loc.owner };
   const clocks: Record<string, ClockState> = {};
   for (const f of Object.values(content.factions)) {
-    for (const plan of f.plans) clocks[plan.id] = { factionId: f.id, label: plan.label, target: plan.target, filled: 0, max: plan.days };
+    for (const plan of f.plans) clocks[plan.id] = { factionId: f.id, label: plan.label, target: plan.target ?? "", filled: 0, max: plan.days };
   }
   return { factions, zones, clocks };
 }
@@ -174,12 +174,14 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     }
   }
   for (const { clockId, clock } of planned) {
-    const owner = next.zones[clock.target]?.owner ?? null;
-    const target = content.locations[clock.target];
+    const zoneId = clock.target || frontierTarget(next, content, clock.factionId);
+    if (!zoneId) continue; // 칠 곳이 없으면 다음을 기다린다
+    const owner = next.zones[zoneId]?.owner ?? null;
+    const target = content.locations[zoneId];
     if (!target || owner === clock.factionId) continue;
-    if (owner === null) clashes.push(occupy(next, clock.factionId, clock.target, clockId));
+    if (owner === null) clashes.push(occupy(next, clock.factionId, zoneId, clockId));
     else if (disposition(content, clock.factionId, owner) <= HOSTILE && target.kind !== "base") {
-      fightOrDefer({ kind: "assault", attacker: clock.factionId, defender: owner, zone: clock.target, plan: clockId });
+      fightOrDefer({ kind: "assault", attacker: clock.factionId, defender: owner, zone: zoneId, plan: clockId });
     }
   }
 
@@ -261,6 +263,24 @@ export function clashForces(world: WarWorld, spec: ClashSpec): { attackers: numb
     attackers: Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind]))),
     defenders: Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT)),
   };
+}
+
+/**
+ * 맞닿은 적대 세력의 구역 중 반격할 곳: 원래 우리 땅이던 곳 먼저, 그다음 산출이 많은 곳.
+ * 빈 땅은 그냥 차지한다. 거점은 고르지 않는다
+ */
+export function frontierTarget(world: WarWorld, content: Content, factionId: string): string | null {
+  const mine = Object.keys(world.zones).filter((z) => world.zones[z]!.owner === factionId);
+  const candidates = [...new Set(mine.flatMap((z) => neighbors(content, z)))]
+    .filter((z) => content.locations[z]?.kind !== "base")
+    .filter((z) => {
+      const owner = world.zones[z]?.owner ?? null;
+      return owner === null || (owner !== factionId && disposition(content, factionId, owner) <= HOSTILE);
+    });
+  const value = (z: string) => Object.values(content.locations[z]?.yields ?? {}).reduce<number>((n, x) => n + (x ?? 0), 0);
+  const lost = (z: string) => Number(content.locations[z]?.owner === factionId);
+  candidates.sort((a, b) => lost(b) - lost(a) || value(b) - value(a) || a.localeCompare(b));
+  return candidates[0] ?? null;
 }
 
 type AttackOption = { kind: Clash["kind"]; defender: string | null; zone: string };

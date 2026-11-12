@@ -11,6 +11,9 @@
   cohesion: 2
   aggression: 1
   disposition: { faction_b: 2, faction_c: -3 }
+  plans:
+    # 반격: 다 차면 맞닿은 C의 구역 중 잃은 땅·값진 곳을 친다. 전선 임무와 정찰 이야기가 앞당긴다
+    - { id: a_counteroffensive, label: 반격 준비, target_rule: frontier, days: 14 }
 
 - id: faction_b
   name: 세력 B
@@ -35,7 +38,7 @@
   disposition: { faction_a: -3, faction_b: -3, faction_d: -1 }
   plans:
     # lore/faction_c_inside.md "동쪽 공세". C 사람만 안다
-    - { id: c_east_offensive, label: 동쪽 공세 준비, target: a_east_post, days: 10 }
+    - { id: c_east_offensive, label: 동쪽 공세 준비, target_rule: fixed, target: a_east_post, days: 10 }
 
 - id: faction_d
   name: 세력 D

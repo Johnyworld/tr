@@ -55,6 +55,7 @@
       outcomes:
         success:
           - set_flag: scouts_captured
+          - clock: { id: a_counteroffensive, delta: 2 }
           - relation: { who: deserter, axis: trust, delta: 2 }
           - belief: { fact: "고석진에게 들었다: 물류창고 수용소에 A 정찰조 셋이 살아 있다. 그중 하나는 오씨 성이다", source: report }
         partial:
@@ -489,6 +490,7 @@
       outcomes:
         success:
           - clock: { id: c_east_offensive, delta: -1 }
+          - clock: { id: a_counteroffensive, delta: 1 }
           - merit: 1
           - belief: { fact: C 순찰조가 초소 경비 교대 시간을 재고 있었다. 누군가 정보를 흘렸을지 모른다, source: seen }
         partial:

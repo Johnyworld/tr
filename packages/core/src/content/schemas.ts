@@ -120,6 +120,8 @@ export function createContentSchemas(s: Scenario) {
     giver_rank: idEnum(rankIds(s)),
     deadline_hours: z.number().int().positive().max(72),
     requirements: z.array(missionRequirement).min(1),
+    /** 완수하면 이 세력 클락을 당긴다 (일부 완수는 절반). 전선 임무가 우리 무리의 계획을 앞당긴다 */
+    advances: z.strictObject({ clock: contentIdSchema, delta: z.number().int().min(-5).max(5) }).optional(),
   });
 
   const resourceAmounts = z.partialRecord(idEnum(s.resources.map((r) => r.id)), z.number().min(0));
@@ -147,12 +149,16 @@ export function createContentSchemas(s: Scenario) {
     /** 세력 클락: 하루에 한 칸씩 차고, 다 차면 목표 구역을 총공격한다. 그 세력 사람만 안다 */
     plans: z
       .array(
-        z.strictObject({
-          id: contentIdSchema,
-          label: z.string().min(1),
-          target: contentIdSchema,
-          days: z.number().int().positive(),
-        }),
+        z
+          .strictObject({
+            id: contentIdSchema,
+            label: z.string().min(1),
+            /** fixed: target 구역을 친다 / frontier: 다 찼을 때 맞닿은 적의 구역 중 가장 값진 곳 (잃은 땅 먼저) */
+            target_rule: z.enum(["fixed", "frontier"]).default("fixed"),
+            target: contentIdSchema.optional(),
+            days: z.number().int().positive(),
+          })
+          .refine((p) => p.target_rule === "frontier" || !!p.target, "fixed 계획에는 target이 있어야 한다"),
       )
       .default([]),
     minor: z.boolean().default(false),

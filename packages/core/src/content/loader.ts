@@ -112,7 +112,7 @@ function checkReferences(content: Content): string[] {
   for (const faction of Object.values(content.factions)) {
     for (const other of Object.keys(faction.disposition)) factionRef(`factions.${faction.id}.disposition`, other);
     for (const plan of faction.plans) {
-      if (!content.locations[plan.target]) problems.push(`factions.${faction.id}.plans.${plan.id}: 알 수 없는 구역 ${plan.target}`);
+      if (plan.target && !content.locations[plan.target]) problems.push(`factions.${faction.id}.plans.${plan.id}: 알 수 없는 구역 ${plan.target}`);
     }
   }
   for (const loc of Object.values(content.locations)) {
@@ -142,6 +142,9 @@ function checkReferences(content: Content): string[] {
   }
   problems.push(...checkStorylets(content));
   const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));
+  for (const m of Object.values(content.missions)) {
+    if (m.advances && !plans.includes(m.advances.clock)) problems.push(`missions.${m.id}.advances: 알 수 없는 세력 클락 ${m.advances.clock}`);
+  }
   if (new Set(plans).size !== plans.length) problems.push("factions: 세력 클락(plans) id가 겹친다");
   for (const npc of Object.values(content.npcs)) {
     factionRef(`npcs.${npc.id}`, npc.faction);

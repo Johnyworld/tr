@@ -25,6 +25,8 @@ describe("조사", () => {
     expect(josa("세력 A", "을/를")).toBe("세력 A를");
     expect(josa("세력 L", "은/는")).toBe("세력 L은");
     expect(josa("3", "이/가")).toBe("3이");
+    expect(josa("강변 공장 지대", "이라는/라는")).toBe("강변 공장 지대라는");
+    expect(josa("빈 땅", "이라는/라는")).toBe("빈 땅이라는");
   });
 
   it("틀 문장을 채운다", () => {

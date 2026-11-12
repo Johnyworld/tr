@@ -355,7 +355,7 @@ export const TEST_CONTENT: Content = {
       cohesion: 0,
       aggression: 2,
       disposition: { faction_a: -3 },
-      plans: [{ id: "c_plan", label: "비밀 공세 준비", target: "a_post", days: 3 }],
+      plans: [{ id: "c_plan", label: "비밀 공세 준비", target_rule: "fixed", target: "a_post", days: 3 }],
       minor: false,
     },
     faction_e: {

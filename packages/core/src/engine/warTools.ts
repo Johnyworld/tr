@@ -2,11 +2,11 @@ import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
-import { daysOfStock, HOSTILE, disposition, initialWarWorld, neighbors, simulateWarDay } from "../sim/war.ts";
+import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, simulateWarDay } from "../sim/war.ts";
 import { playerInvolvement, scheduleTime } from "./battleTools.ts";
 import { runDailyBody } from "./body.ts";
 import { seasonAt, seasonLabel, seasonOfDay } from "../sim/season.ts";
-import { fill, sentence } from "../text.ts";
+import { fill, josa, sentence } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -129,6 +129,8 @@ export type FactionOutlook = {
     rationLabel: string;
     /** 자원별 대략적인 사정 (들리는 말) */
     stock: { label: string; level: string }[];
+    /** 우리 무리의 계획 (세력 클락): 대략적인 진척과 목표로 들리는 곳 */
+    plans: { label: string; stage: string; imminent: boolean; targetName: string | null }[];
   } | null;
   /** 아는 세력: 공개 평판과 우리 무리와의 관계 */
   others: { id: string; name: string; public: string; stance: string; size: string }[];
@@ -167,6 +169,18 @@ export function factionOutlook(state: GameState, content: Content): FactionOutlo
           stock: content.scenario.resources
             .filter((r) => (war.upkeep[r.id] ?? 0) > 0)
             .map((r) => ({ label: r.label, level: label(war.stock_labels, daysOfStock(content, ownState, r.id)) })),
+          plans: Object.values(state.clocks)
+            .filter((c) => c.factionId === ownContent.id)
+            .map((c) => {
+              const ratio = c.filled / c.max;
+              const target = c.target || frontierTarget(state, content, c.factionId);
+              return {
+                label: c.label,
+                stage: ratio < 0.34 ? "말만 돈다" : ratio < 0.75 ? "준비가 한창이라는 말" : "임박했다는 말",
+                imminent: ratio >= 0.75,
+                targetName: target ? (content.locations[target]?.name ?? target) : null,
+              };
+            }),
         }
       : null;
   const others = Object.values(content.factions)
@@ -223,6 +237,11 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
       : []),
     `무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`,
     `세력 관계: ${o.others.map((f) => `${f.name} ${f.stance}`).join(", ")}`,
+    ...o.own.plans.map(
+      (p) =>
+        `우리 무리의 계획: ${p.label} — ${p.stage}${p.targetName ? ` (목표는 ${josa(p.targetName, "이라는/라는")} 말)` : ""}` +
+        (p.imminent ? ". 그 구역과 맞닿은 우리 구역에 있으면 새벽에 함께 나설 수 있다" : ""),
+    ),
     ...(content.scenario.seasons ? [`계절: ${seasonLabel(seasonAt(content.scenario, state.time))}`] : []),
     "전황은 캐릭터가 들은 보고·소문(믿음)으로만 안다. 교전 결과·사상자·점령을 지어내지 않는다.",
   ].join("\n");

@@ -64,3 +64,25 @@
       min_outcome: partial
     - check: scavenge
       min_outcome: partial
+- id: front_recon
+  title: 전선 정찰
+  briefing: C가 차지한 맞닿은 구역에 숨어 들어가 경계와 병력 배치를 살피고 돌아온다. 반격 준비에 쓰인다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: stealth
+      min_outcome: partial
+  advances: { clock: a_counteroffensive, delta: 2 }
+- id: supply_raid
+  title: C 보급 털기
+  briefing: C가 차지한 구역에 몰래 들어가 쌓아 둔 보급품을 털거나 망가뜨린다. 들키면 끝이다.
+  giver_rank: squad_leader
+  deadline_hours: 16
+  requirements:
+    - check: stealth
+      min_outcome: partial
+    - check: scavenge
+      min_outcome: partial
+  advances: { clock: a_counteroffensive, delta: 3 }

@@ -115,6 +115,12 @@ const reportMission = defineTool({
         { npcId: giver.id, source: "seen" },
       );
     }
+    // 전선 임무는 우리 무리의 계획(세력 클락)을 앞당긴다. 일부 완수는 절반
+    const advances = ctx.content.missions[mission.templateId]?.advances;
+    if (advances && ctx.store.getState().clocks[advances.clock] && result.outcome !== "failed") {
+      const delta = result.outcome === "success" ? advances.delta : Math.trunc(advances.delta / 2);
+      if (delta !== 0) ctx.store.append({ type: "clock_adjusted", clockId: advances.clock, delta });
+    }
     const label = MISSION_STATUS_LABELS[result.outcome === "success" ? "completed" : result.outcome];
     const lines = [
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.`,

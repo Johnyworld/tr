@@ -215,7 +215,11 @@ const factions: CommandDef = {
     const o = factionOutlook(ctx.state, ctx.content);
     if (!o.own && o.others.length === 0) return [header("세력"), "아는 세력 정보가 없습니다."].join("\n");
     const lines = [header("세력")];
-    if (o.own) lines.push(`소속  ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`, "");
+    if (o.own) {
+      lines.push(`소속  ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`);
+      for (const p of o.own.plans) lines.push(`  ${p.label}: ${p.stage}${p.targetName ? ` (목표는 ${josa(p.targetName, "이라는/라는")} 말)` : ""}`);
+      lines.push("");
+    }
     for (const f of o.others) lines.push(`${f.name}  [${f.stance}] ${f.size}`, `  ${f.public}`);
     const news = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.topic === WAR_TOPIC).slice(-5).reverse();
     lines.push("", "최근 전황 (들은 것)");

@@ -270,7 +270,8 @@ function applyEffect(
   }
   if ("overhear" in effect) {
     const me = state.characters[playerId]!;
-    const want = effect.overhear.faction;
+    const want = ["captor", "zone_owner"].includes(effect.overhear.faction) ? factionRef(state, effect.overhear.faction) : effect.overhear.faction;
+    if (!want) return {};
     const progress = (f: string) => Math.max(0, ...Object.values(state.clocks).filter((c) => c.factionId === f).map((c) => c.filled / c.max));
     const pool = Object.keys(state.factions)
       .filter((f) => f !== me.factionId && content.factions[f]?.startable !== false)
@@ -478,6 +479,8 @@ function applyEffect(
   }
   if ("send_to" in effect) {
     const to = effect.send_to;
+    // 갇힌 곳에서 다른 곳으로 옮겨지면 빠져나온 것이다 (빼앗긴 것은 두고 온다, 12-55)
+    if (state.characters[playerId]?.captive && content.locations[to] && state.playerZone !== to) releasePlayer(ctx, false);
     if (!content.locations[to] || state.playerZone === to) return {};
     store.append({ type: "zone_moved", from: state.playerZone, to });
     return { line: `${content.locations[to]!.name}(으)로 옮겨졌다. 함께 있던 인물은 따라오지 않는다.` };

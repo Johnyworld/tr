@@ -166,6 +166,10 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.level_gte !== undefined && player.level < w.level_gte) return false;
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
   if (w.captors && (!player.captive || !w.captors.includes(player.captive.by))) return false;
+  if (w.own_people_captive !== undefined) {
+    const any = !!player.factionId && Object.values(state.characters).some((c) => c.id !== player.id && !c.dead && c.factionId === player.factionId && c.captive && c.captive.by !== player.factionId);
+    if (any !== w.own_people_captive) return false;
+  }
   if (w.occupations && !w.occupations.includes(player.occupation?.id ?? "none")) return false;
   if (w.road_touches && (!state.lastRoute || !w.road_touches.some((z) => z === state.lastRoute!.from || z === state.lastRoute!.to))) return false;
   if (w.road_danger_gte !== undefined && routeDanger(content, state) < w.road_danger_gte) return false;
@@ -184,7 +188,9 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   for (const [f, n] of Object.entries(w.debt_gte ?? {})) if (debtOf(f) < n) return false;
   for (const [f, n] of Object.entries(w.debt_lte ?? {})) if (debtOf(f) > n) return false;
   for (const d of w.dispositions ?? []) {
-    const id = (x: string) => (x === "own" ? player.factionId : x);
+    const id = (x: string) =>
+      x === "own" ? player.factionId : x === "captor" ? (player.captive?.by ?? "") : x === "zone_owner" ? ((state.playerZone && state.zones[state.playerZone]?.owner) || "") : x;
+    if (!id(d.from) || !id(d.to)) return false;
     const v = disposition(content, id(d.from), id(d.to), state);
     if ((d.gte !== undefined && v < d.gte) || (d.lte !== undefined && v > d.lte)) return false;
   }

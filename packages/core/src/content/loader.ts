@@ -397,7 +397,7 @@ export function checkStorylets(content: Content): string[] {
         if ("train" in e && !content.scenario.moves.some((m) => m.id === e.train.skill)) problems.push(`${at}: 알 수 없는 스킬 ${e.train.skill}`);
         if ("cultivate" in e && !content.scenario.resources.some((r) => r.id === e.cultivate.resource)) problems.push(`${at}: 알 수 없는 자원 ${e.cultivate.resource}`);
         if ("clock" in e && !clocks.has(e.clock.id)) problems.push(`${at}: 알 수 없는 세력 클락 ${e.clock.id}`);
-        if ("overhear" in e && !["other", "enemy"].includes(e.overhear.faction) && !content.factions[e.overhear.faction]) problems.push(`${at}: 알 수 없는 세력 ${e.overhear.faction}`);
+        if ("overhear" in e && !["other", "enemy", "captor", "zone_owner"].includes(e.overhear.faction) && !content.factions[e.overhear.faction]) problems.push(`${at}: 알 수 없는 세력 ${e.overhear.faction}`);
         if ("faction_morale" in e && !isFactionAlias(e.faction_morale.faction) && !content.factions[e.faction_morale.faction]) {
           problems.push(`${at}: 알 수 없는 세력 ${e.faction_morale.faction}`);
         }

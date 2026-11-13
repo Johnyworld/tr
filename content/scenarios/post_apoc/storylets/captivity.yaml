@@ -1,0 +1,1133 @@
+# 포로 (기획서 7.6, 12-55)
+# 1. 주인공이 갇혀 있을 때 (tags: [captivity]): 갇힌 동안에는 이 태그 이야기만 열린다. when.captors로 붙잡은 무리마다 맛을 다르게, 배역 faction: captor
+#    - 붉은연합: 규율반 심문 cp_c_discipline_room, 노역 cp_c_labor(반복), 광장의 본보기 cp_c_square, 회유 cp_c_recruit
+#    - 청솔형제단: "버리지 않는다" cp_a_never_leave → cp_a_offer (회유하거나 경계까지 데려다준다)
+#    - 버들마을: 회의의 망설임 cp_b_council
+#    - 하얀매: 격리실 cp_d_quarantine → (cp_d_complied) cp_d_discharge
+#    - 나루상단: 빚 장부 cp_e_ledger, 짐수레 cp_e_cart
+#    - 어디서든: 같은 방 사람 cp_cellmate, 간수 cp_guard_friend (keep: cp_guard) → (cp_guard_close) cp_guard_door,
+#      드나드는 짐꾼 cp_word_out(반복) → (cp_word_sent) cp_rescue_word, 몸값·맞교환 cp_ransom, 갇힌 밤 cp_long_night(반복)
+# 2. 우리 무리가 가둔 포로 (tags: [world], 우리 거점): cp_prisoner_whisper, cp_prisoner_kin, cp_prisoner_bullied, cp_prisoner_breakout, cp_prisoner_accident
+#    실제로 다루는 것(심문·회유·석방·몸값·노역)은 GM tool handle_prisoner. 이야기는 그 주변의 사람과 선택
+# 3. 붙잡혀 간 우리 사람 (tags: [world], 다른 무리의 거점): cp_ours_found (keep: cp_ours) → (cp_ours_promise) cp_ours_breakout → (cp_ours_freed) cp_ours_home
+# 이야기는 사람을 죽이지 않는다. 처형은 없다. 탈출 실패로 다치는 것은 엔진의 탈출(이동 + 무거운 위험)이 맡고, 이야기는 마음과 허기, 감시로 갚는다
+
+# ── 1. 갇혀 있을 때: 붉은연합 ─────────────────────────
+
+- id: cp_c_discipline_room
+  title: 규율반의 장부
+  tags: [captivity]
+  when:
+    captors: [faction_c]
+  cast:
+    officer: { faction: captor, ranks: [squad_leader, officer] }
+  setup: '창 없는 방, 쇠 책상, 펼친 장부. {officer:이/가} 펜 끝으로 빈칸을 두드린다. "이름. 소속. 분대. 그리고 너희 쪽이 다음에 어디로 오는지. 말로 하지 말고 숫자로."'
+  ai_direction: 규율반은 소리를 지르지 않는다. 받아 적을 뿐이다. 털어놓은 것은 장부째 위원회로 올라간다. 거짓말이 들키면 배급부터 끊긴다. 주인공이 실제로 아는 것은 그 믿음 목록 안에서만 말한다. 지어낸 숫자를 말하면 그것이 거짓말 선택지다.
+  choices:
+    - id: talk_a
+      label: 아는 것을 털어놓는다
+      when: { factions: [faction_a] }
+      effects:
+        - set_flag: cp_talked
+        - clock: { id: c_east_offensive, delta: 1 }
+        - relation: { who: officer, axis: trust, delta: 1 }
+        - body: { track: hunger, delta: -1 }
+        - deed: { summary: 붉은연합 규율반에 붙잡혀 우리 무리의 사정을 털어놓았다, tags: [betrayal], severity: 2, privacy: semi_private }
+    - id: talk
+      label: 아는 것을 털어놓는다
+      when: { factions: [faction_b, faction_d, faction_e, none] }
+      effects:
+        - set_flag: cp_talked
+        - relation: { who: officer, axis: trust, delta: 1 }
+        - body: { track: hunger, delta: -1 }
+        - deed: { summary: 붉은연합 규율반에 붙잡혀 아는 것을 털어놓았다, tags: [betrayal], severity: 2, privacy: semi_private }
+    - id: lie
+      label: 그럴듯한 거짓을 섞어 말한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: cp_c_fooled
+          - relation: { who: officer, axis: trust, delta: 1 }
+          - belief: { fact: 규율반은 내가 꾸며 낸 길과 숫자를 그대로 받아 적었다, source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: 규율반이 내 말을 반쯤만 믿는다. 같은 질문을 다른 날 다시 할 것이다, source: seen }
+        miss:
+          - set_flag: cp_c_liar
+          - relation: { who: officer, axis: trust, delta: -2 }
+          - body: { track: hunger, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+    - id: silent
+      label: 입을 다문다
+      check: endure
+      outcomes:
+        success:
+          - relation: { who: officer, axis: respect, delta: 2 }
+          - deed: { summary: 붉은연합 규율반 앞에서 끝까지 입을 다물었다, tags: [loyalty, bravery], severity: 1, privacy: semi_private }
+        partial:
+          - relation: { who: officer, axis: respect, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - body: { track: nerves, delta: 2 }
+          - body: { track: hunger, delta: 1 }
+
+- id: cp_c_labor
+  title: 할당량
+  tags: [captivity]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    captors: [faction_c]
+    segments: [morning, day]
+  cast:
+    foreman: { extra: c_sentry_rifle, label: 노역장 감독 }
+  setup: 포로들이 줄지어 고철을 나른다. 조마다 할당량이 있고, 못 채운 조는 저녁을 거른다. {foreman:이/가} 손가락으로 머릿수를 센다. 옆 사람의 손이 떨린다.
+  ai_direction: 붉은연합에서는 포로도 숫자다. 감독은 잔인하지 않다. 그냥 센다. 경비들은 일하는 포로 앞에서 말을 가리지 않는다.
+  choices:
+    - id: work
+      label: 이를 악물고 할당량을 채운다
+      check: endure
+      outcomes:
+        success:
+          - body: { track: hunger, delta: -1 }
+          - relation: { who: foreman, axis: respect, delta: 1 }
+        partial:
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - body: { track: hunger, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+    - id: pocket
+      label: 고철 사이에서 쓸 만한 것을 슬쩍 챙긴다
+      check: stealth
+      outcomes:
+        success:
+          - give_item: { item: wire_roll }
+          - set_flag: cp_has_wire
+        partial:
+          - give_item: { item: wire_roll }
+          - relation: { who: foreman, axis: trust, delta: -1 }
+        miss:
+          - set_flag: cp_watched
+          - relation: { who: foreman, axis: trust, delta: -2 }
+          - body: { track: hunger, delta: 1 }
+    - id: listen
+      label: 일하는 척하며 경비들의 말을 엿듣는다
+      check: sense_danger
+      outcomes:
+        success:
+          - overhear: { faction: faction_c, source: seen }
+        partial:
+          - overhear: { faction: faction_c, source: rumor }
+          - body: { track: hunger, delta: 1 }
+        miss:
+          - relation: { who: foreman, axis: trust, delta: -1 }
+          - body: { track: hunger, delta: 1 }
+    - id: carry_other
+      label: 쓰러진 옆 사람 몫까지 나른다
+      effects:
+        - body: { track: hunger, delta: 1 }
+        - deed: { summary: 노역장에서 쓰러진 포로의 몫까지 날랐다, tags: [mercy], severity: 1, privacy: semi_private }
+
+- id: cp_c_square
+  title: 광장의 본보기
+  tags: [captivity]
+  when:
+    captors: [faction_c]
+    segments: [morning]
+  cast:
+    officer: { faction: captor, ranks: [squad_leader, officer] }
+    bound: { extra: refugee, label: 기둥에 묶인 포로 }
+  setup: '아침 점호. 포로들을 광장에 세웠다. 기둥에 {bound:이/가} 묶여 있다. 어젯밤 담을 넘다 잡혔다고 한다. {officer:이/가} 말한다. "오늘 하루 저기 서 있는다. 물도 없다. 다들 잘 봐 둬."'
+  ai_direction: 처형이 아니다. 하루 종일 묶어 세워 두고 굶긴다. 붉은연합은 이것으로 숫자를 지킨다. 잔혹함은 담담하게, 늘어놓지 않는다. 다들 보는 동안 경비의 시선도 광장에 쏠린다.
+  choices:
+    - id: watch
+      label: 똑바로 보며 경비의 움직임을 센다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: cp_mapped
+          - belief: { fact: 본보기를 세운 날에는 경비가 광장에 몰리고 뒤쪽 담이 빈다, source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - body: { track: nerves, delta: 2 }
+    - id: look_away
+      label: 눈을 내리깐다
+      effects:
+        - body: { track: nerves, delta: 1 }
+    - id: water
+      label: 해 진 뒤 몰래 물을 적신 천을 건넨다
+      check: stealth
+      outcomes:
+        success:
+          - relation: { who: bound, axis: trust, delta: 3 }
+          - deed: { summary: 붉은연합 광장에 묶인 포로에게 몰래 물을 건넸다, tags: [mercy, bravery], severity: 1, privacy: private }
+        partial:
+          - relation: { who: bound, axis: trust, delta: 2 }
+          - set_flag: cp_watched
+        miss:
+          - set_flag: cp_watched
+          - body: { track: hunger, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+
+- id: cp_c_recruit
+  title: 붉은 완장
+  tags: [captivity]
+  when:
+    captors: [faction_c]
+    segments: [day, evening]
+  cast:
+    officer: { faction: captor, ranks: [officer, squad_leader] }
+  setup: '{officer:이/가} 붉은 완장 하나를 책상에 올려놓는다. "센 쪽에 서. 오늘 밤부터 막사에서 자고, 빼앗은 것도 돌려주지. 할당량은 네 몫이 된다. 아니면 계속 고철이나 나르든가."'
+  ai_direction: 진심인 제안이다. 붉은연합은 쓸 만한 사람을 숫자로 산다. 들어가면 규율반은 한동안 이 사람을 지켜본다. 예전 무리에서는 배신자가 된다.
+  choices:
+    - id: join
+      label: 완장을 찬다
+      effects:
+        - join_faction: { faction: faction_c, rank: grunt }
+        - deed: { summary: 붙잡혀 있다가 붉은연합의 완장을 찼다, tags: [betrayal], severity: 2, privacy: public }
+    - id: stall
+      label: 생각해 보겠다며 시간을 번다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: cp_c_courted
+          - relation: { who: officer, axis: trust, delta: 1 }
+          - body: { track: hunger, delta: -1 }
+        partial:
+          - set_flag: cp_c_courted
+        miss:
+          - relation: { who: officer, axis: trust, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+    - id: refuse
+      label: 완장을 밀어 돌려준다
+      effects:
+        - relation: { who: officer, axis: respect, delta: 1 }
+        - body: { track: hunger, delta: 1 }
+
+# ── 1. 갇혀 있을 때: 청솔형제단 ─────────────────────────
+
+- id: cp_a_never_leave
+  title: 죽 한 그릇
+  tags: [captivity]
+  when:
+    captors: [faction_a]
+  cast:
+    leader: { faction: captor, ranks: [squad_leader, officer] }
+  setup: '창고 문이 열리고 {leader:이/가} 직접 죽 그릇과 붕대를 들고 들어온다. 총은 문밖에 세워 두었다. "우리는 다친 사람을 두고 오지 않아. 적이라도. 대신 묻는 말엔 답해 줘."'
+  ai_direction: 청솔형제단은 포로를 때리지 않는다. 그게 원칙이고 자존심이다. 하지만 묻는 것은 묻는다. 주인공이 붉은연합 사람이면 동쪽 공세를 알고 싶어 한다. 주인공이 실제로 아는 것만 말할 수 있다.
+  choices:
+    - id: tell_c
+      label: 아는 것을 털어놓는다
+      when: { factions: [faction_c] }
+      effects:
+        - set_flag: cp_a_talked
+        - clock: { id: c_east_offensive, delta: -1 }
+        - relation: { who: leader, axis: trust, delta: 2 }
+        - body: { track: hunger, delta: -1 }
+        - deed: { summary: 청솔형제단에 붙잡혀 붉은연합의 사정을 털어놓았다, tags: [betrayal], severity: 2, privacy: semi_private }
+    - id: tell
+      label: 아는 것을 털어놓는다
+      when: { factions: [faction_b, faction_d, faction_e, none] }
+      effects:
+        - set_flag: cp_a_talked
+        - relation: { who: leader, axis: trust, delta: 2 }
+        - body: { track: hunger, delta: -1 }
+        - deed: { summary: 청솔형제단에 붙잡혀 아는 것을 털어놓았다, tags: [betrayal], severity: 1, privacy: semi_private }
+    - id: eat_only
+      label: 죽만 먹고 아무 말도 하지 않는다
+      effects:
+        - set_flag: cp_a_respect
+        - relation: { who: leader, axis: respect, delta: 1 }
+        - body: { track: hunger, delta: -1 }
+    - id: ask_why
+      label: 왜 적을 먹이느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: cp_a_respect
+          - relation: { who: leader, axis: trust, delta: 1 }
+          - body: { track: hunger, delta: -1 }
+          - body: { track: nerves, delta: -1 }
+          - belief: { fact: "청솔형제단은 원칙을 명령보다 위에 둔다. 적이라도 다친 사람을 굶기지 않는다", source: seen }
+        partial:
+          - body: { track: hunger, delta: -1 }
+        miss:
+          - relation: { who: leader, axis: affection, delta: -1 }
+          - body: { track: hunger, delta: -1 }
+
+- id: cp_a_offer
+  title: 식당 줄
+  tags: [captivity]
+  when:
+    captors: [faction_a]
+    flags_any: [cp_a_talked, cp_a_respect]
+  cast:
+    leader: { faction: captor, ranks: [squad_leader, officer] }
+  setup: '{leader:이/가} 창고 바닥에 마주 앉는다. "회의에서 네 얘기가 나왔어. 여기서 식당 줄에 설 생각이 있으면 받아 주자는 사람도 있고, 경계까지 데려다주자는 사람도 있어. 너는 뭘 원해?"'
+  ai_direction: 청솔형제단의 회의는 진짜로 이 사람의 뜻을 묻는다. 들어오면 같은 몫을 먹는다. 경계까지 데려다주면 그것으로 끝이다. 다만 다시 총을 들고 오면 그때는 모른다고 한다.
+  choices:
+    - id: join
+      label: 여기서 줄을 서겠다
+      effects:
+        - join_faction: { faction: faction_a, rank: grunt }
+        - relation: { who: leader, axis: trust, delta: 1 }
+        - deed: { summary: 붙잡혀 있던 청솔형제단에 들어갔다, tags: [betrayal], severity: 2, privacy: public }
+    - id: go_home
+      label: 돌아가게 해 달라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - release_player: { returned: true }
+          - send_to: old_town
+          - relation: { who: leader, axis: respect, delta: 1 }
+          - belief: { fact: 청솔형제단이 나를 구시가 경계까지 데려다주고 총도 돌려주었다. 다음에 총을 들고 오면 그때는 모른다고 했다, source: seen }
+        partial:
+          - release_player: { returned: false }
+          - send_to: old_town
+          - belief: { fact: 청솔형제단이 나를 경계까지 데려다주었다. 총은 돌려주지 않았다, source: seen }
+        miss:
+          - relation: { who: leader, axis: trust, delta: -1 }
+          - belief: { fact: 회의는 아직 나를 내보낼 때가 아니라고 정했다, source: report }
+    - id: stay_silent
+      label: 아직 모르겠다고 한다
+      effects:
+        - relation: { who: leader, axis: respect, delta: 1 }
+
+# ── 1. 갇혀 있을 때: 버들마을 ─────────────────────────
+
+- id: cp_b_council
+  title: 문밖의 회의
+  tags: [captivity]
+  when:
+    captors: [faction_b]
+  cast:
+    guard: { extra: b_guard, label: 경비 당번 }
+  setup: 문 너머에서 회의 소리가 새어 든다. 내보내자는 목소리, 몸값을 받자는 목소리, 본때를 보여야 한다는 목소리. 아무것도 정해지지 않는다. 문 앞 의자에서 {guard:이/가} 꾸벅꾸벅 존다. 열쇠가 허리춤에 매달려 있다.
+  ai_direction: 버들마을은 포로를 어떻게 할지 모른다. 군대가 아니라 이웃들이다. 경비는 돌아가며 서는 당번이고, 이 사람은 밤새 밭일을 하고 왔다. 회의에 말을 건네면 누군가는 듣는다.
+  choices:
+    - id: plead
+      label: 문틈으로 회의에 말을 건넨다
+      check: persuade
+      outcomes:
+        success:
+          - release_player: { returned: true }
+          - relation: { who: guard, axis: trust, delta: 1 }
+          - belief: { fact: 버들마을 회의가 나를 그냥 내보내기로 했다. 다시는 마을 쪽으로 총을 겨누지 말라고 했다, source: seen }
+        partial:
+          - set_flag: cp_b_ransom_talk
+          - belief: { fact: 버들마을 회의는 나를 몸값과 바꾸자는 쪽으로 기울었다, source: report }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: 회의에서 누군가 내 말을 비웃었다. 결정은 또 미뤄졌다, source: seen }
+    - id: slip
+      label: 조는 당번 옆으로 빠져나간다
+      check: stealth
+      outcomes:
+        success:
+          - release_player: { returned: false }
+          - send_to: old_town
+          - belief: { fact: 버들마을 쪽문으로 빠져나왔다. 빼앗긴 것은 두고 왔다, source: seen }
+        partial:
+          - release_player: { returned: false }
+          - send_to: old_town
+          - relation: { who: guard, axis: trust, delta: -2 }
+          - belief: { fact: 빠져나올 때 당번이 눈을 떴다. 소리치지 않고 그냥 보기만 했다, source: seen }
+        miss:
+          - set_flag: cp_watched
+          - relation: { who: guard, axis: trust, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+    - id: talk_guard
+      label: 깨어난 당번에게 말을 붙인다
+      effects:
+        - relation: { who: guard, axis: trust, delta: 2 }
+        - body: { track: hunger, delta: -1 }
+        - belief: { fact: "당번은 밭에서 막 돌아왔다고 했다. 마을 사람들도 나를 어떻게 할지 모른다", source: seen }
+
+# ── 1. 갇혀 있을 때: 하얀매 ─────────────────────────
+
+- id: cp_d_quarantine
+  title: 격리실
+  tags: [captivity]
+  when:
+    captors: [faction_d]
+  cast:
+    doc: { faction: captor }
+  setup: '흰 타일 방, 철제 침대 하나, 바깥에서만 잠기는 문. {doc:이/가} 마스크 너머로 체온을 잰다. "규칙이야. 사흘. 물린 데 없으면 그다음에 얘기하자. 먹고 자는 값은 장부에 올라가."'
+  ai_direction: 하얀매에게 이 방은 감옥이 아니라 격리실이다. 그래서 더 빈틈이 없다. 규칙에는 예외가 없고, 값은 반드시 받는다. 격리실 일을 거들면 이 사람들은 그것을 본다.
+  choices:
+    - id: comply
+      label: 규칙대로 사흘을 버틴다
+      effects:
+        - set_flag: cp_d_complied
+        - relation: { who: doc, axis: respect, delta: 1 }
+        - body: { track: nerves, delta: -1 }
+    - id: help
+      label: 옆 격리실 환자 돌보는 일을 거든다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: cp_d_complied
+          - set_flag: cp_d_helped
+          - relation: { who: doc, axis: trust, delta: 2 }
+        partial:
+          - set_flag: cp_d_complied
+          - relation: { who: doc, axis: trust, delta: 1 }
+        miss:
+          - set_flag: cp_d_complied
+          - body: { track: disease, delta: 1, chance: 0.3 }
+    - id: pay_now
+      label: 지닌 것으로 값을 치르고 지금 나가게 해 달라고 한다
+      effects:
+        - take_item: { item: cigarettes }
+        - release_player: { returned: true }
+        - belief: { fact: 하얀매는 담배로 격리 값을 받고 나를 내보냈다. 장부에는 다 치렀다고 적었다, source: seen }
+
+- id: cp_d_discharge
+  title: 퇴실 장부
+  tags: [captivity]
+  when:
+    captors: [faction_d]
+    flags_all: [cp_d_complied]
+  cast:
+    clerk: { faction: captor }
+  setup: '사흘째 아침. {clerk:이/가} 장부를 들고 와 문을 연다. "격리 끝. 깨끗해. 이제 먹고 잔 값 얘기."'
+  ai_direction: 값은 코드가 장부(빚)로 정한다. 하얀매는 사정을 듣지만 깎아 주지는 않는다. 격리실 일을 거든 사람에게는 다른 길을 하나 내민다.
+  choices:
+    - id: sign
+      label: 장부에 이름을 쓰고 나간다
+      effects:
+        - clear_flag: cp_d_complied
+        - debt: { faction: captor, delta: 10 }
+        - release_player: { returned: true }
+    - id: pay
+      label: 통조림으로 값을 치른다
+      effects:
+        - clear_flag: cp_d_complied
+        - take_item: { item: canned_food }
+        - release_player: { returned: true }
+    - id: stay_work
+      label: 여기 남아 일을 배우겠다고 한다
+      when: { flags_all: [cp_d_helped] }
+      effects:
+        - clear_flag: cp_d_complied
+        - join_faction: { faction: faction_d, rank: staff, title: 격리실 수습 }
+        - relation: { who: clerk, axis: trust, delta: 1 }
+
+# ── 1. 갇혀 있을 때: 나루상단 ─────────────────────────
+
+- id: cp_e_ledger
+  title: 장부의 한 줄
+  tags: [captivity]
+  when:
+    captors: [faction_e]
+  cast:
+    boss: { faction: captor, ranks: [squad_leader, officer, leader] }
+  setup: '정수장 뒤 창고. {boss:이/가} 장부를 펼쳐 손가락으로 한 줄을 짚는다. "네가 우리 짐을 건드렸든, 건드릴 쪽 사람이든 상관없어. 장부엔 네 값이 적혀. 낼 사람이 없으면 몸으로 갚고."'
+  ai_direction: 나루상단에게 포로는 셈이다. 화내지 않고 미워하지도 않는다. 값만 맞으면 된다. 대신 빚은 끝까지 따라온다. 다른 무리 사정도 값이 된다.
+  choices:
+    - id: debt
+      label: 빚을 지고 나간다
+      effects:
+        - debt: { faction: captor, delta: 15 }
+        - release_player: { returned: true }
+    - id: work
+      label: 짐을 져서 갚는다
+      check: endure
+      outcomes:
+        success:
+          - delay: 480
+          - release_player: { returned: true }
+          - relation: { who: boss, axis: respect, delta: 1 }
+        partial:
+          - delay: 480
+          - debt: { faction: captor, delta: 5 }
+          - release_player: { returned: true }
+        miss:
+          - delay: 480
+          - body: { track: hunger, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+    - id: sell
+      label: 우리 무리 사정을 값으로 판다
+      when: { in_faction: true }
+      effects:
+        - release_player: { returned: true }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - deed: { summary: 나루상단에 붙잡혀 우리 무리의 사정을 몸값으로 팔았다, tags: [betrayal, selfishness], severity: 2, privacy: private }
+
+- id: cp_e_cart
+  title: 짐수레 밑
+  tags: [captivity]
+  when:
+    captors: [faction_e]
+    segments: [dawn, morning]
+  cast:
+    porter: { extra: e_porter, label: 젊은 짐꾼 }
+  setup: '{porter:이/가} 물통을 갈러 들어와 목소리를 낮춘다. "강변 공장까지 짐수레가 나가. 밑에 사람 하나 들어갈 자리가 있어. 공짜는 아니고."'
+  ai_direction: 이 짐꾼은 상단 몰래 제 장부를 따로 쓴다. 정말로 빼내 줄 생각이다. 값은 나중에 받으러 온다. 들키면 짐꾼도 쫓겨난다.
+  choices:
+    - id: ride
+      label: 짐수레 밑에 숨는다
+      check: stealth
+      outcomes:
+        success:
+          - release_player: { returned: false }
+          - send_to: riverside
+          - set_flag: cp_e_owe_porter
+          - belief: { fact: 젊은 짐꾼이 나를 짐수레 밑에 숨겨 강변 공장까지 빼냈다. 값은 나중에 받으러 오겠다고 했다, source: seen }
+        partial:
+          - release_player: { returned: false }
+          - send_to: riverside
+          - set_flag: cp_e_owe_porter
+          - npc_hurt: { who: porter, steps: 1 }
+          - belief: { fact: 검문에서 짐꾼이 대신 몽둥이를 맞았다. 나는 강변 공장에 내렸다, source: seen }
+        miss:
+          - set_flag: cp_watched
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: 짐수레가 검문에서 멈췄다. 짐꾼이 둘러대고 나를 도로 창고에 밀어 넣었다, source: seen }
+    - id: pay
+      label: 지닌 것을 먼저 쥐여 주고 탄다
+      effects:
+        - take_item: { item: cigarettes }
+        - release_player: { returned: false }
+        - send_to: riverside
+        - relation: { who: porter, axis: trust, delta: 1 }
+    - id: refuse
+      label: 상단의 장부 밖 거래는 믿지 않는다
+      effects:
+        - relation: { who: porter, axis: trust, delta: -1 }
+
+# ── 1. 갇혀 있을 때: 어디서든 ─────────────────────────
+
+- id: cp_cellmate
+  title: 같은 방 사람
+  tags: [captivity]
+  when:
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    segments: [evening, night]
+  cast:
+    mate: { extra: refugee, label: 같은 방 사람, keep: cp_mate }
+    other: { captive: true, optional: true }
+  setup: '어둠 속에서 누가 손을 내민다. 마른 빵 반쪽. {mate:이/가} 속삭인다. "얼마나 됐어? 나는 날짜 세다가 그만뒀어."'
+  ai_direction: 이 사람은 정말로 날짜를 잃었다. 다만 간수와 눈짓을 주고받는 버릇이 있다. 살려고 들은 말을 위로 올리는 사람일 수 있다 (판정으로만 알아챈다). 옆 창살에 붙잡혀 온 이름 있는 사람이 있으면 GM 상태에 보인다.
+  choices:
+    - id: talk
+      label: 빵을 받고 이야기를 나눈다
+      effects:
+        - body: { track: hunger, delta: -1 }
+        - relation: { who: mate, axis: trust, delta: 2 }
+        - set_flag: cp_mate_close
+    - id: wary
+      label: 빵은 받되 말을 아끼며 살핀다
+      check: sense_danger
+      outcomes:
+        success:
+          - body: { track: hunger, delta: -1 }
+          - set_flag: cp_mate_snitch
+          - belief: { fact: 같은 방 사람은 간수와 눈짓을 주고받는다. 이 사람 앞에서 한 말은 위로 올라갈 것이다, source: seen }
+        partial:
+          - body: { track: hunger, delta: -1 }
+          - belief: { fact: 같은 방 사람이 무언가 숨기는 눈치다, source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+    - id: neighbor
+      label: 옆 창살의 {other}에게 말을 건다
+      when: { cast: [other] }
+      effects:
+        - relation: { who: other, axis: trust, delta: 2 }
+        - body: { track: nerves, delta: -1 }
+        - belief: { fact: "{other}도 여기 갇혀 있다. 서로 살아 있다는 것을 알렸다", source: seen }
+
+- id: cp_guard_friend
+  title: 밤 당번
+  tags: [captivity]
+  when:
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    segments: [night]
+  cast:
+    guard: { faction: captor, ranks: [grunt, staff], keep: cp_guard }
+  setup: 밤 당번 {guard:이/가} 창살 앞 의자에서 졸음을 쫓는다. 손에 쥔 꽁초는 다 탔다. 몇 번 이쪽을 보다가 눈을 돌린다.
+  ai_direction: 이 사람도 이 자리가 싫다. 집에 가고 싶고, 배가 고프고, 위에 대한 불만이 있다. 말이 통하면 조금씩 풀린다. 그렇다고 바로 문을 열어 주지는 않는다.
+  choices:
+    - id: chat
+      label: 고향 얘기로 말을 붙인다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: guard, axis: trust, delta: 2 }
+          - set_flag: cp_guard_close
+        partial:
+          - relation: { who: guard, axis: trust, delta: 1 }
+        miss:
+          - relation: { who: guard, axis: trust, delta: -1 }
+    - id: smoke
+      label: 숨겨 둔 담배를 창살 사이로 건넨다
+      effects:
+        - take_item: { item: cigarettes }
+        - relation: { who: guard, axis: trust, delta: 2 }
+        - set_flag: cp_guard_close
+    - id: leave_be
+      label: 그냥 둔다
+      effects: []
+
+- id: cp_guard_door
+  title: 걸지 않은 자물쇠
+  tags: [captivity]
+  when:
+    captors: [faction_a, faction_b, faction_c, faction_d]
+    segments: [night, dawn]
+    flags_all: [cp_guard_close]
+  cast:
+    guard: { recall: cp_guard }
+  setup: '{guard:이/가} 교대하며 자물쇠를 걸지 않고 간다. 지나가며 혼잣말처럼 말한다. "오늘은 뒷문에 하나뿐이야."'
+  ai_direction: 이 사람은 그 이상은 하지 않는다. 들키면 자기가 벌을 받는다는 것을 안다. 붙잡은 무리의 문화대로 벌이 다르다 (붉은연합이면 광장, 청솔형제단이면 회의). 구시가 쪽으로 빠지는 길이다.
+  choices:
+    - id: go
+      label: 문을 밀고 나간다
+      check: stealth
+      outcomes:
+        success:
+          - clear_flag: cp_guard_close
+          - release_player: { returned: false }
+          - send_to: old_town
+          - belief: { fact: "{guard}이(가) 걸지 않은 문으로 빠져나와 구시가에 닿았다. 빼앗긴 것은 두고 왔다", source: seen }
+        partial:
+          - clear_flag: cp_guard_close
+          - release_player: { returned: false }
+          - send_to: old_town
+          - npc_hurt: { who: guard, steps: 1 }
+          - belief: { fact: "뒤에서 호루라기가 울렸다. 빠져나오긴 했다. {guard}이(가) 그 값을 치렀을 것이다", source: seen }
+        miss:
+          - clear_flag: cp_guard_close
+          - set_flag: cp_watched
+          - body: { track: nerves, delta: 2 }
+          - belief: { fact: 뒷문에서 경비와 마주쳤다. 도로 끌려 들어왔다. 이제 문마다 사람이 선다, source: seen }
+    - id: together
+      label: 같이 가자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - clear_flag: cp_guard_close
+          - release_player: { returned: false }
+          - send_to: old_town
+          - npc_depart: { who: guard, to_faction: own }
+          - deed: { summary: 붙잡힌 곳의 간수를 꾀어 함께 빠져나왔다, tags: [bravery], severity: 2, privacy: semi_private }
+        partial:
+          - clear_flag: cp_guard_close
+          - release_player: { returned: false }
+          - send_to: old_town
+          - relation: { who: guard, axis: trust, delta: -1 }
+        miss:
+          - clear_flag: cp_guard_close
+          - relation: { who: guard, axis: trust, delta: -2 }
+          - body: { track: nerves, delta: 1 }
+    - id: stay
+      label: 그 사람이 다칠까 봐 나가지 않는다
+      effects:
+        - clear_flag: cp_guard_close
+        - relation: { who: guard, axis: trust, delta: 2 }
+        - relation: { who: guard, axis: affection, delta: 1 }
+
+- id: cp_word_out
+  title: 드나드는 짐꾼
+  tags: [captivity]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    segments: [morning, day]
+  cast:
+    carrier: { extra: e_porter, label: 드나드는 짐꾼 }
+  setup: '{carrier:이/가} 물통을 갈러 들어온다. 어느 무리 땅이든 드나드는 나루상단 사람이다. 눈이 마주치자 말없이 손가락으로 값을 셈하는 시늉을 한다.'
+  ai_direction: 나루상단은 누구에게나 판다. 소식도. 값은 나중에 장부로 받는다. 이 사람은 갇힌 사람 편이 아니고, 어느 편도 아니다.
+  choices:
+    - id: word
+      label: 우리 무리에 내가 여기 있다고 전해 달라고 한다
+      when: { in_faction: true, flags_none: [cp_word_sent] }
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: cp_word_sent
+          - debt: { faction: faction_e, delta: 3 }
+        partial:
+          - set_flag: cp_word_sent
+          - debt: { faction: faction_e, delta: 6 }
+        miss:
+          - belief: { fact: 짐꾼은 고개를 저었다. 이 일은 값이 안 맞는다고 했다, source: seen }
+    - id: news
+      label: 바깥 소식을 묻는다
+      effects:
+        - overhear: { faction: other, source: rumor }
+        - debt: { faction: faction_e, delta: 2 }
+    - id: nothing
+      label: 고개를 돌린다
+      effects: []
+
+- id: cp_rescue_word
+  title: 벽 너머의 신호
+  tags: [captivity]
+  urgent: true
+  when:
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    segments: [night]
+    flags_all: [cp_word_sent]
+  cast:
+    rescuer: { faction: own, ranks: [grunt, squad_leader] }
+  setup: 자정이 넘어 벽 바깥에서 돌을 두 번 두드리는 소리. 낮은 휘파람. 익숙한 목소리가 이름을 부른다. {rescuer}다. 소식이 닿았다.
+  ai_direction: 구하러 온 사람은 많지 않다. 경비가 돌아오기 전 몇 분뿐이다. 실패하면 구하러 온 사람이 붙잡힐 수 있다. 판정과 결과로만 정한다.
+  choices:
+    - id: go
+      label: 신호에 맞춰 빠져나간다
+      check: stealth
+      outcomes:
+        success:
+          - clear_flag: cp_word_sent
+          - release_player: { returned: false, home: true }
+          - relation: { who: rescuer, axis: trust, delta: 2 }
+          - faction_morale: { faction: own, delta: 1 }
+          - belief: { fact: "{rescuer}이(가) 벽 너머로 와서 나를 빼내 거점까지 데려왔다", source: seen }
+        partial:
+          - clear_flag: cp_word_sent
+          - release_player: { returned: false, home: true }
+          - npc_hurt: { who: rescuer, steps: 1 }
+          - belief: { fact: "빠져나오다 총소리가 났다. {rescuer}이(가) 다쳤지만 둘 다 돌아왔다", source: seen }
+        miss:
+          - clear_flag: cp_word_sent
+          - npc_capture: { who: rescuer, by: captor }
+          - body: { track: nerves, delta: 2 }
+          - belief: { fact: "담을 넘기 전에 경비에게 들켰다. {rescuer}이(가) 나 대신 붙잡혔다", source: seen }
+    - id: wave_off
+      label: 경비가 너무 많다고 돌려보낸다
+      effects:
+        - clear_flag: cp_word_sent
+        - relation: { who: rescuer, axis: respect, delta: 1 }
+        - body: { track: nerves, delta: 1 }
+
+- id: cp_ransom
+  title: 탁자 건너의 셈
+  tags: [captivity]
+  when:
+    dispositions: [{ from: captor, to: own, gte: -2 }]
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    segments: [day]
+    day_gte: 3
+  cast:
+    envoy: { faction: own, ranks: [squad_leader, officer, staff] }
+    keeper: { faction: captor, ranks: [squad_leader, officer, leader] }
+  setup: 창고 문이 열리고 끌려 나간 방에 {envoy:이/가} 앉아 있다. 우리 무리에서 왔다. 탁자 건너에 {keeper}. 둘은 당신을 보지 않고 셈을 한다. 몸값인지, 맞바꿀 사람인지.
+  ai_direction: 우리 무리가 값을 치르러 왔다. 그 값은 무리 창고에서 나간다 (코드가 정한다). 주인공이 거절하면 무리는 값을 아끼지만 주인공은 갇힌 채 남는다. 흥정이 틀어지면 셈은 다음으로 미뤄진다.
+  choices:
+    - id: accept
+      label: 그 값에 돌아간다
+      effects:
+        - release_player: { returned: true, home: true }
+        - faction_resource: { faction: own, resource: ammo, delta: -8 }
+        - faction_resource: { faction: captor, resource: ammo, delta: 8 }
+        - relation: { who: envoy, axis: trust, delta: 1 }
+    - id: haggle
+      label: 값을 깎으라고 끼어든다
+      check: persuade
+      outcomes:
+        success:
+          - release_player: { returned: true, home: true }
+          - faction_resource: { faction: own, resource: ammo, delta: -4 }
+          - faction_resource: { faction: captor, resource: ammo, delta: 4 }
+          - relation: { who: envoy, axis: respect, delta: 1 }
+        partial:
+          - release_player: { returned: true, home: true }
+          - faction_resource: { faction: own, resource: ammo, delta: -8 }
+          - faction_resource: { faction: captor, resource: ammo, delta: 8 }
+        miss:
+          - relation: { who: keeper, axis: trust, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: 흥정이 틀어졌다. 우리 무리 사람은 빈손으로 돌아갔다, source: seen }
+    - id: refuse
+      label: 무리에 짐이 될 수 없다며 거절한다
+      effects:
+        - relation: { who: envoy, axis: respect, delta: 2 }
+        - body: { track: nerves, delta: 1 }
+        - deed: { summary: 갇혀 있으면서도 무리가 몸값을 치르는 것을 거절했다, tags: [loyalty], severity: 1, privacy: semi_private }
+
+- id: cp_long_night
+  title: 갇힌 곳의 밤
+  tags: [captivity]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    segments: [night]
+  setup: 바닥에서 냉기가 올라온다. 멀리서 개가 짖고, 어딘가에서 누가 밤새 기침을 한다. 벽에 그어 둔 줄이 몇 개였는지 헷갈린다.
+  ai_direction: 시간이 흐른다는 것만으로도 사람이 닳는다. 짧게. 이 밤에 무엇을 붙드느냐가 선택이다.
+  choices:
+    - id: count
+      label: 벽에 오늘의 줄을 긋고 버틴다
+      check: endure
+      outcomes:
+        success:
+          - body: { track: nerves, delta: -1 }
+        partial: []
+        miss:
+          - body: { track: nerves, delta: 1 }
+    - id: plan
+      label: 교대 시각과 문 위치를 머릿속에 그린다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: cp_mapped
+          - belief: { fact: 갇힌 곳의 교대 시각과 문 위치를 외웠다. 새벽 교대 직전이 가장 느슨하다, source: seen }
+        partial:
+          - belief: { fact: 교대는 하루 두 번인 것 같다. 확실하지는 않다, source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+    - id: sleep
+      label: 아무 생각 없이 잔다
+      effects:
+        - body: { track: cold, delta: 1, chance: 0.5 }
+
+# ── 2. 우리 무리가 가둔 포로 (우리 거점) ─────────────────────────
+
+- id: cp_prisoner_whisper
+  title: 창살 너머의 목소리
+  tags: [world]
+  when:
+    zone_owner: [own]
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
+    segments: [night]
+  cast:
+    prisoner: { captive: true }
+  setup: '밤 보초를 서는데 창고 쪽 창살에서 낮은 목소리가 난다. {prisoner}다. "물 좀. 아니, 그보다 말 좀 해. 하루 종일 벽만 봤어."'
+  ai_direction: 사람 대 사람의 장면이다. 붙잡혀 온 사람은 집 걱정, 남은 사람 걱정을 한다. 이 사람이 아는 비밀은 여기서 나오지 않는다 (심문은 handle_prisoner). 다만 여기서 쌓은 신뢰는 다음 심문과 회유를 쉽게 만든다. 포로와 오래 말하는 것을 동료가 보면 말이 돈다.
+  choices:
+    - id: talk
+      label: 창살 앞에 앉아 이야기를 들어 준다
+      effects:
+        - relation: { who: prisoner, axis: trust, delta: 2 }
+        - deed: { summary: 밤에 우리 포로와 오래 이야기를 나눴다, tags: [enemy_sympathy], severity: 1, privacy: semi_private }
+    - id: food
+      label: 통조림 하나를 창살 사이로 밀어 넣는다
+      effects:
+        - take_item: { item: canned_food }
+        - relation: { who: prisoner, axis: trust, delta: 2 }
+        - relation: { who: prisoner, axis: affection, delta: 1 }
+        - deed: { summary: 우리 포로에게 몰래 먹을 것을 주었다, tags: [mercy], severity: 1, privacy: private }
+    - id: report
+      label: 포로가 말을 걸었다고 상관에게 알린다
+      effects:
+        - merit: 1
+        - relation: { who: prisoner, axis: trust, delta: -1 }
+        - relation: { who: commander, axis: trust, delta: 1 }
+    - id: ignore
+      label: 대꾸하지 않는다
+      effects: []
+
+- id: cp_prisoner_kin
+  title: 하얀 천을 묶은 막대
+  tags: [world]
+  when:
+    zone_owner: [own]
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
+    segments: [day, evening]
+  cast:
+    prisoner: { captive: true, enter: false }
+    kin: { tie: { of: prisoner, kinds: [sibling, parent, child, spouse] } }
+  setup: '정문에 {kin:이/가} 맨손으로 서 있다. 막대 끝에 하얀 천을 묶었다. "{prisoner:이/가} 여기 있다고 들었어요. 얼굴만 보게 해 주세요. 살아 있는 것만."'
+  ai_direction: 이 사람은 붙잡힌 사람의 가족이다. 무기는 없다. 무리 사이가 나쁘면 정문 사람들은 이 사람도 붙잡자고 할 수 있다. 몸값 이야기를 꺼내면 이 사람은 무엇이든 마련하겠다고 한다 (실제 몸값은 handle_prisoner ransom이 정한다).
+  choices:
+    - id: let_see
+      label: 잠깐 창살 앞까지 데려가 준다
+      effects:
+        - reveal_tie: { who: kin, other: prisoner }
+        - relation: { who: kin, axis: trust, delta: 2 }
+        - relation: { who: prisoner, axis: trust, delta: 1 }
+        - deed: { summary: 포로의 가족을 몰래 창살 앞까지 데려가 만나게 했다, tags: [mercy, enemy_sympathy], severity: 1, privacy: semi_private }
+    - id: ransom_talk
+      label: 몸값을 마련해 오라고 한다
+      effects:
+        - reveal_tie: { who: kin, other: prisoner }
+        - belief: { fact: "{kin}은(는) {prisoner}의 몸값을 마련해 오겠다고 했다. 그 무리에 몸값 얘기를 넣을 수 있다", source: seen }
+    - id: turn_away
+      label: 돌아가라고 한다
+      effects:
+        - relation: { who: kin, axis: trust, delta: -1 }
+    - id: seize
+      label: 이 사람도 붙잡아 넘긴다
+      effects:
+        - npc_capture: { who: kin, by: own }
+        - merit: 1
+        - deed: { summary: 하얀 천을 들고 찾아온 포로의 가족까지 붙잡았다, tags: [cruelty, deceit], severity: 2, privacy: public }
+
+- id: cp_prisoner_bullied
+  title: 창살 사이의 막대
+  tags: [world]
+  when:
+    zone_owner: [own]
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
+    segments: [evening, night]
+  cast:
+    prisoner: { captive: true }
+    bully: { faction: own, ranks: [grunt] }
+  setup: '{bully:이/가} 창살 사이로 막대를 찔러 넣고 웃는다. {prisoner:은/는} 구석에 웅크려 팔로 머리를 감쌌다. {bully:이/가} 당신을 돌아본다. "저쪽 놈들이 우리 사람 다리를 그렇게 만들었어. 이 정도는 괜찮잖아."'
+  ai_direction: 동료는 진짜로 누구를 잃었다. 분풀이다. 말리면 이 동료는 당신을 저쪽 편으로 볼 수 있다. 무리의 규칙(청솔형제단은 원칙, 붉은연합은 할당량과 규율반, 버들마을은 회의)에 따라 위에서 보는 눈이 다르다.
+  choices:
+    - id: stop
+      label: 막대를 붙잡아 꺾는다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: bully, axis: respect, delta: 1 }
+          - relation: { who: prisoner, axis: trust, delta: 2 }
+          - deed: { summary: 포로를 괴롭히는 동료를 막아섰다, tags: [mercy], severity: 1, privacy: semi_private }
+        partial:
+          - relation: { who: bully, axis: trust, delta: -1 }
+          - relation: { who: prisoner, axis: trust, delta: 1 }
+        miss:
+          - relation: { who: bully, axis: trust, delta: -2 }
+          - npc_hurt: { who: prisoner, steps: 1 }
+    - id: talk_down
+      label: 어깨를 잡고 데리고 나가 술 얘기를 꺼낸다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: bully, axis: trust, delta: 1 }
+          - relation: { who: prisoner, axis: trust, delta: 1 }
+        partial:
+          - relation: { who: bully, axis: affection, delta: -1 }
+        miss:
+          - npc_hurt: { who: prisoner, steps: 1 }
+    - id: join
+      label: 같이 웃는다
+      effects:
+        - npc_hurt: { who: prisoner, steps: 1 }
+        - relation: { who: bully, axis: affection, delta: 2 }
+        - relation: { who: prisoner, axis: trust, delta: -3 }
+        - deed: { summary: 창살 안의 포로를 동료와 함께 괴롭혔다, tags: [cruelty], severity: 2, privacy: semi_private }
+    - id: walk
+      label: 못 본 척 지나간다
+      effects:
+        - relation: { who: prisoner, axis: trust, delta: -1 }
+
+- id: cp_prisoner_breakout
+  title: 반쯤 뽑힌 창살
+  tags: [world]
+  urgent: true
+  when:
+    zone_owner: [own]
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
+    segments: [night, dawn]
+  cast:
+    prisoner: { captive: true }
+  setup: 새벽, 창고 쪽에서 쇠 긁는 소리가 난다. {prisoner:이/가} 창살 하나를 반쯤 뽑아냈다. 손바닥이 피투성이다. 눈이 마주친다. 둘 다 숨을 멈춘다.
+  ai_direction: 이 사람은 오늘 밤이 아니면 기회가 없다고 믿는다. 싸울 힘은 거의 없다. 놓아주면 아무도 모를 수 있지만, 아침에 빈 창살을 보면 누가 보초였는지 따진다.
+  choices:
+    - id: alarm
+      label: 소리쳐 사람을 부른다
+      effects:
+        - zone_noise: 1
+        - merit: 1
+        - relation: { who: prisoner, axis: trust, delta: -2 }
+        - deed: { summary: 탈출하려던 포로를 붙잡도록 사람을 불렀다, tags: [diligence], severity: 1, privacy: semi_private }
+    - id: stop
+      label: 혼자 덮쳐 도로 밀어 넣는다
+      check: fight
+      outcomes:
+        success:
+          - merit: 1
+          - relation: { who: prisoner, axis: respect, delta: 1 }
+        partial:
+          - npc_hurt: { who: prisoner, steps: 1 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - npc_release: { who: prisoner }
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - belief: { fact: 포로가 내 손을 뿌리치고 담을 넘었다. 아침에 빈 창살을 두고 말이 나올 것이다, source: seen }
+    - id: look_away
+      label: 등을 돌린다
+      effects:
+        - npc_release: { who: prisoner }
+        - relation: { who: prisoner, axis: trust, delta: 3 }
+        - deed: { summary: 탈출하는 포로를 보고도 등을 돌렸다, tags: [mercy, betrayal], severity: 2, privacy: private }
+
+- id: cp_prisoner_accident
+  title: 무너진 더미
+  tags: [world]
+  when:
+    zone_owner: [own]
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
+    segments: [morning, day]
+  cast:
+    prisoner: { captive: true }
+    overseer: { faction: own, ranks: [grunt, squad_leader, staff] }
+  setup: '노역에 끌려 나온 포로들이 판자를 쌓던 자리에서 더미가 무너졌다. {prisoner}의 다리가 깔렸다. {overseer:이/가} 팔짱을 낀다. "포로잖아. 일 끝나고 빼."'
+  ai_direction: 판자는 혼자 들기엔 무겁다. 오래 깔려 있으면 다리를 못 쓴다 (부상은 코드가 정한다). 감독은 나쁜 사람이라기보다 할 일이 밀렸다. 약을 쓰면 무리 창고에서 나간다.
+  choices:
+    - id: lift
+      label: 판자를 혼자 들어 올린다
+      check: endure
+      outcomes:
+        success:
+          - relation: { who: prisoner, axis: trust, delta: 2 }
+          - deed: { summary: 노역 중 깔린 포로를 꺼내 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+        partial:
+          - npc_hurt: { who: prisoner, steps: 1 }
+          - relation: { who: prisoner, axis: trust, delta: 1 }
+        miss:
+          - npc_hurt: { who: prisoner, steps: 2 }
+          - body: { track: nerves, delta: 1 }
+    - id: medic
+      label: 의약품을 써서라도 치료하게 한다
+      effects:
+        - faction_resource: { faction: own, resource: medicine, delta: -1 }
+        - relation: { who: overseer, axis: trust, delta: -1 }
+        - relation: { who: prisoner, axis: trust, delta: 2 }
+        - deed: { summary: 다친 포로에게 무리의 약을 쓰게 했다, tags: [mercy], severity: 1, privacy: semi_private }
+    - id: leave
+      label: 감독 말대로 일부터 끝낸다
+      effects:
+        - npc_hurt: { who: prisoner, steps: 2 }
+        - relation: { who: overseer, axis: trust, delta: 1 }
+
+# ── 3. 붙잡혀 간 우리 사람 (다른 무리의 거점) ─────────────────────────
+
+- id: cp_ours_found
+  title: 창살 안의 암구호
+  tags: [world]
+  when:
+    zone_owner: [other]
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
+  cast:
+    ours: { captive: true, faction: own, keep: cp_ours }
+  setup: 창고 뒤편 창살 안에서 누가 우리 무리의 암구호를 속삭인다. {ours}다. 싸움에서 끌려간 뒤로 소식이 끊겼던. 얼굴이 반쪽이 됐다.
+  ai_direction: 여기는 남의 거점 한가운데다. 경비가 가깝다. 지금 꺼내려 들면 판정 하나에 둘 다 걸린다. 실패하면 주인공도 붙잡힐 수 있다 (코드가 정한다). 물러나 다시 오면 준비할 시간이 생긴다.
+  choices:
+    - id: now
+      label: 지금 자물쇠를 비튼다
+      check: stealth
+      outcomes:
+        success:
+          - npc_release: { who: ours }
+          - set_flag: cp_ours_freed
+          - relation: { who: ours, axis: trust, delta: 3 }
+          - faction_morale: { faction: own, delta: 1 }
+          - deed: { summary: 남의 거점에 갇힌 우리 사람을 혼자 구해 냈다, tags: [bravery, loyalty], severity: 2, privacy: semi_private }
+        partial:
+          - npc_release: { who: ours }
+          - set_flag: cp_ours_freed
+          - zone_noise: 2
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{ours}을(를) 꺼냈지만 빠져나오다 경비에게 얼굴을 보였을지 모른다", source: seen }
+        miss:
+          - zone_noise: 2
+          - capture_player: { by: zone_owner }
+    - id: promise
+      label: 다시 오겠다고 속삭이고 물러난다
+      effects:
+        - set_flag: cp_ours_promise
+        - relation: { who: ours, axis: trust, delta: 1 }
+        - belief: { fact: "{ours}이(가) {zone} 창고 뒤 창살 안에 살아 있다. 다시 오겠다고 했다", source: seen }
+    - id: leave
+      label: 못 본 척 지나간다
+      effects:
+        - relation: { who: ours, axis: trust, delta: -3 }
+        - belief: { fact: "{ours}이(가) {zone}에 갇혀 있는 것을 보고도 지나쳤다", source: seen }
+
+- id: cp_ours_breakout
+  title: 교대 직전
+  tags: [world]
+  urgent: true
+  when:
+    zone_owner: [other]
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
+    segments: [night, dawn]
+    flags_all: [cp_ours_promise]
+    flags_none: [cp_ours_freed]
+  cast:
+    ours: { captive: true, faction: own, keep: cp_ours }
+    guard: { faction: zone_owner, ranks: [grunt, staff], optional: true }
+  setup: 약속대로 다시 왔다. 교대 직전이라 창고 앞이 비어 있다. 창살 안에서 {ours:이/가} 몸을 일으킨다. 이번엔 준비할 시간이 있었다.
+  ai_direction: 주인공이 가진 것(철사, 쇠지렛대, 열쇠 꾸러미)이 있으면 자물쇠 쪽이 쉽다. 소란을 피우면 경비는 그쪽으로 가지만 거점 전체가 깬다. 이 무리의 보초 하나는 담배 몇 갑이면 눈을 감는 사람이다 (있을 때만).
+  choices:
+    - id: lock
+      label: 자물쇠를 연다
+      check: mechanics
+      outcomes:
+        success:
+          - npc_release: { who: ours }
+          - set_flag: cp_ours_freed
+          - clear_flag: cp_ours_promise
+          - relation: { who: ours, axis: trust, delta: 3 }
+          - faction_morale: { faction: own, delta: 1 }
+          - deed: { summary: 약속대로 돌아가 갇힌 우리 사람을 구해 냈다, tags: [bravery, loyalty], severity: 2, privacy: semi_private }
+        partial:
+          - npc_release: { who: ours }
+          - set_flag: cp_ours_freed
+          - clear_flag: cp_ours_promise
+          - npc_hurt: { who: ours, steps: 1 }
+          - belief: { fact: "자물쇠가 늦게 열렸다. {ours}은(는) 담을 넘다 다쳤지만 함께 빠져나왔다", source: seen }
+        miss:
+          - clear_flag: cp_ours_promise
+          - zone_noise: 2
+          - capture_player: { by: zone_owner }
+    - id: noise
+      label: 반대편에 불을 놓아 경비를 끌어낸다
+      check: improvise
+      outcomes:
+        success:
+          - zone_noise: 3
+          - npc_release: { who: ours }
+          - set_flag: cp_ours_freed
+          - clear_flag: cp_ours_promise
+          - relation: { who: ours, axis: trust, delta: 2 }
+        partial:
+          - zone_noise: 3
+          - npc_release: { who: ours }
+          - set_flag: cp_ours_freed
+          - clear_flag: cp_ours_promise
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - zone_noise: 3
+          - body: { track: nerves, delta: 2 }
+          - belief: { fact: 불은 금방 꺼졌다. 경비가 창고 앞으로 돌아와 두 배로 섰다, source: seen }
+    - id: bribe
+      label: "{guard}에게 담배를 쥐여 주고 눈을 감게 한다"
+      when: { cast: [guard] }
+      effects:
+        - take_item: { item: cigarettes }
+        - npc_release: { who: ours }
+        - set_flag: cp_ours_freed
+        - clear_flag: cp_ours_promise
+        - relation: { who: guard, axis: trust, delta: 1 }
+    - id: give_up
+      label: 오늘은 안 된다며 물러난다
+      effects:
+        - relation: { who: ours, axis: trust, delta: -1 }
+
+- id: cp_ours_home
+  title: 돌아온 사람의 그릇
+  tags: [world]
+  when:
+    zone_owner: [own]
+    flags_all: [cp_ours_freed]
+    segments: [morning, evening]
+  cast:
+    ours: { recall: cp_ours }
+  setup: '식사 줄에서 {ours:이/가} 당신 앞에 그릇을 내려놓는다. 아직 손목에 줄 자국이 남았다. "내 몫 반. 받아. 안 받으면 계속 따라다닐 거야."'
+  ai_direction: 이 사람은 갇혀 있는 동안 본 것이 있다 (그 무리의 교대, 창고, 사람들). 묻는 만큼 말한다. 고마움을 어떻게 받느냐가 둘 사이를 정한다.
+  choices:
+    - id: take
+      label: 그릇을 받는다
+      effects:
+        - clear_flag: cp_ours_freed
+        - body: { track: hunger, delta: -1 }
+        - relation: { who: ours, axis: affection, delta: 2 }
+    - id: ask
+      label: 그쪽에서 본 것을 묻는다
+      effects:
+        - clear_flag: cp_ours_freed
+        - overhear: { faction: enemy, source: report }
+        - relation: { who: ours, axis: trust, delta: 1 }
+    - id: push_back
+      label: 그릇을 도로 밀어 준다
+      effects:
+        - clear_flag: cp_ours_freed
+        - relation: { who: ours, axis: respect, delta: 2 }

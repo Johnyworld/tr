@@ -576,6 +576,8 @@ export function createContentSchemas(s: Scenario) {
         factions: z.array(z.string().min(1)).optional(),
         /** 주인공을 가둔 무리가 이 중 하나일 때만 (갇힌 동안의 이야기, 12-55) */
         captors: z.array(z.string().min(1)).optional(),
+        /** 우리 무리 사람이 다른 무리에 붙잡혀 있는지 (어디인지는 몰라도, 12-55) */
+        own_people_captive: z.boolean().optional(),
         /** 플레이어의 직분 (none = 직분 없음, 기획서 12.6) */
         occupations: z.array(z.string().min(1)).optional(),
         /** 길 위의 이야기 (12-53, 태그 road): 지금 오가는 길의 한쪽 끝이 이 중 하나일 때만 */

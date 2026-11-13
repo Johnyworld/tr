@@ -2,6 +2,8 @@
 # 분대를 이끄는 임무라 지휘(tactics) 판정이 자주 붙는다. 형식은 a_grunt_basic.yaml 머리말 참고
 - id: a_sl_storage_guard
   title: 보급 창고 경비 편성
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 분대를 나눠 보급 창고를 하루 동안 지킨다. 교대표를 짜고, 창고 뒷문까지 빈틈없이 돌린다. 배급이 줄어든 뒤로 창고 근처를 서성이는 사람이 늘었다.
   giver_rank: officer
   deadline_hours: 14
@@ -10,6 +12,8 @@
       minutes: 300
 - id: a_sl_water_escort
   title: 강변 물 운반 호위
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 물통을 실은 손수레 두 대를 강변 공장 지대까지 호위해 물을 길어 온다. 서기철이 죽은 길이다. 해가 지기 전에 돌아오고, 소리를 내지 않는다.
   giver_rank: officer
   deadline_hours: 12
@@ -20,6 +24,8 @@
       min_outcome: partial
 - id: a_sl_old_town_sweep
   title: 구시가 상가 수색 지휘
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 분대를 이끌고 구시가 상가를 한 블록씩 훑는다. 연료든 통조림이든 겨울에 쓸 것을 찾아 온다. 흩어지지 말고, 둘씩 짝을 지운다.
   giver_rank: officer
   deadline_hours: 12
@@ -30,6 +36,8 @@
       min_outcome: partial
 - id: a_sl_fields_night
   title: 남쪽 텃밭 야간 경계
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 밤새 남쪽 텃밭을 지킨다. 마지막 배추를 노리는 좀도둑과 담장 틈으로 들어오는 감염체를 막는다. 불은 피우지 않는다.
   giver_rank: officer
   deadline_hours: 14
@@ -40,6 +48,8 @@
       min_outcome: partial
 - id: a_sl_b_convoy
   title: 버들마을 물자 전달
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 연합 약속대로 버들마을 거점에 연료 몇 통을 전하고 받았다는 표시를 받아 온다. 저쪽이 더 달라고 하면 정중히 거절한다. 장부에 적힌 것만 준다.
   giver_rank: officer
   deadline_hours: 12
@@ -60,6 +70,8 @@
       min_outcome: partial
 - id: a_sl_find_straggler
   title: 돌아오지 않은 짐꾼 찾기
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 어제 구시가로 나간 취사 천막의 짐꾼 하나가 돌아오지 않았다. 흔적을 따라가 데려오거나, 무슨 일이 있었는지 알아 온다.
   giver_rank: officer
   deadline_hours: 16
@@ -70,6 +82,8 @@
       min_outcome: partial
 - id: a_sl_east_reinforce
   title: 동쪽 초소 증원
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 동쪽 초소에 사람이 모자란다. 분대를 이끌고 가서 하룻밤 초소를 맡고, 고가도로 너머 움직임을 기록해 넘긴다. 반격 준비에 쓰인다.
   giver_rank: officer
   deadline_hours: 16

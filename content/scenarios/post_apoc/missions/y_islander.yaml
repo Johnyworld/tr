@@ -1,6 +1,8 @@
 # 여울섬 해안 경비조 임무 (초안). 경비조장 진강호가 내려 준다
 - id: y_shore_watch
   title: 부두 망루 당번
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   buddy: true
   briefing: 부두 망루에서 밤바다를 본다. 불빛이 보이면 알리고, 몰래 배를 대는 자가 있으면 손을 들게 한다.
   giver_rank: squad_leader
@@ -31,6 +33,8 @@
 
 - id: y_quarantine
   title: 검역 막사 지키기
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 새로 온 사람들이 심사를 기다리는 검역 막사를 지킨다. 말을 섞지 않는다. 심사관의 명단에 손대지 않는다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -42,6 +46,8 @@
 
 - id: y_supply_boat
   title: 나루상단 거래선 호위
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   buddy: true
   briefing: 강 하구에서 나루상단의 배를 맞아 탄약 상자를 넘기고 통조림을 받는다. 상단 사람과 사적인 말을 하지 않는다.
   giver_rank: squad_leader

@@ -131,6 +131,7 @@ function checkReferences(content: Content): string[] {
       for (const m of [...Object.keys(r.materials), ...r.tools, r.yields.item]) itemRef(`scenario.crafting.${r.id}`, m);
     }
     for (const npc of Object.values(content.npcs)) for (const m of Object.keys(npc.merchant?.restock ?? {})) itemRef(`npcs.${npc.id}.merchant`, m);
+    for (const f of Object.values(content.factions)) for (const m of Object.keys(f.armory?.items ?? {})) itemRef(`factions.${f.id}.armory`, m);
   }
   for (const k of content.scenario.custom_start?.kin ?? []) {
     if (!content.extras[k]) problems.push(`scenario.custom_start.kin: 알 수 없는 엑스트라 틀 ${k}`);

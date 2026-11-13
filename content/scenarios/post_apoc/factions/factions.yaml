@@ -4,6 +4,8 @@
 - id: faction_a
   name: 청솔형제단
   public: 옛 공업고등학교에 자리 잡은 무리. "버리지 않는다"는 원칙을 지키려 한다.
+  # 무기고 (기획서 4.8): 작전에 낡은 소총과 소총탄 두 묶음을 빌려준다
+  armory: { items: { old_rifle: 1, rifle_rounds: 2 }, ammo_cost: 4 }
   population: 70
   combatants: 25
   resources: { food: 900, water: 500, ammo: 300, medicine: 40, fuel: 150 }
@@ -29,6 +31,8 @@
 - id: faction_b
   name: 버들마을
   public: 청솔형제단과 손잡은 작은 무리. 청솔형제단에 기대고 있지만 붉은연합의 회유가 들어온다는 소문이 끊이지 않는다.
+  # 무기고: 마을 사냥총 몇 자루뿐이다
+  armory: { items: { shotgun: 1, shells: 2 }, ammo_cost: 3 }
   population: 40
   combatants: 14
   resources: { food: 450, water: 350, ammo: 120, medicine: 15, fuel: 60 }
@@ -63,6 +67,8 @@
 - id: faction_c
   name: 붉은연합
   public: 가장 큰 무리. 이익 앞에서 잔혹하다는 평이 있고, 포로를 거칠게 다룬다는 소문이 돈다.
+  # 무기고: 작전에 개조 산탄총과 산탄. 쓴 산탄은 할당량에서 깐다
+  armory: { items: { sawn_shotgun: 1, shells: 2 }, ammo_cost: 4 }
   population: 200
   combatants: 80
   resources: { food: 3000, water: 1600, ammo: 1200, medicine: 80, fuel: 500 }
@@ -151,6 +157,8 @@
   name: 여울섬
   public: 강 하구 바다 건너의 섬. 담 안에 먹을 것과 탄약이 넘친다는 소문의 "파라다이스". 감염체도 바다를 못 건넌다. 바깥 사람은 들이지 않는다.
   startable: false
+  # 무기고: 탄약이 넘친다
+  armory: { items: { old_rifle: 1, rifle_rounds: 4 }, ammo_cost: 2 }
   population: 140
   combatants: 50
   resources: { food: 3200, water: 2400, ammo: 2600, medicine: 220, fuel: 900 }

@@ -207,6 +207,8 @@ export function createContentSchemas(s: Scenario) {
     giver_rank: idEnum(rankIds(s)),
     deadline_hours: z.number().int().positive().max(72),
     requirements: z.array(missionRequirement).min(1),
+    /** 무장이 필요한 작전: 받으면 무리의 무기고가 무기·탄약을 빌려주고, 끝나면 반납한다 (기획서 4.8) */
+    armed: z.boolean().optional(),
     /** 2인 1조: 받으면 같은 무리 동료 하나가 짝으로 붙고, 임무가 끝나면 돌아간다 (기획서 7.9) */
     buddy: z.boolean().optional(),
     /** 완수하면 임무를 준 무리에 진 빚이 이만큼 준다 (일부 완수는 절반, 기획서 9.10) */
@@ -233,6 +235,11 @@ export function createContentSchemas(s: Scenario) {
     morale: z.number().int().min(-3).max(3),
     /** 내부 결속 -3 ~ +3. 낮으면 이탈이 생긴다 */
     cohesion: z.number().int().min(-3).max(3),
+    /**
+     * 무기고 (기획서 4.8): 무장이 필요한 작전(armed)에 빌려주는 것. 이미 가진 만큼은 빼고 모자란 것만.
+     * ammo_cost: 한 번 빌려줄 때마다 무리 창고에서 줄어드는 탄약 (모자라면 탄약 없이 무기만)
+     */
+    armory: z.strictObject({ items: z.record(contentIdSchema, z.number().int().min(1)), ammo_cost: z.number().int().min(0).default(0) }).optional(),
     /** false면 이 무리로 시작할 수 없다 (처음 시나리오·자유 시나리오에 없다. 해금된 시나리오로만, 기획서 9.12) */
     startable: z.boolean().optional(),
     /** 공격 성향 0 ~ 3. 0이면 먼저 공격하지 않는다 */

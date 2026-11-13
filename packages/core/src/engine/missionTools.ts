@@ -1,3 +1,4 @@
+import { issueArmory, returnArmory } from "./armory.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { assignBuddy, releaseBuddies } from "./companionTools.ts";
 import { disciplineOf, hasAccess } from "../game/culture.ts";
@@ -86,7 +87,9 @@ const assignMission = defineTool({
     ctx.store.append({ type: "mission_assigned", mission });
     // 2인 1조: 같은 무리 동료 하나가 짝으로 붙는다 (기획서 7.9)
     const buddy = template.buddy ? assignBuddy(ctx, mission.id, commander.id) : null;
-    const buddyLine = buddy ? `\n짝: ${playerCalls(ctx.store.getState(), ctx.content, buddy)}(${buddy})가 이 임무 동안 함께 다닌다 (2인 1조). 임무가 끝나면 자기 자리로 돌아간다.` : "";
+    // 작전이면 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+    const armoryLine = issueArmory(ctx, mission);
+    const buddyLine = (armoryLine ? `\n${armoryLine}` : "") + (buddy ? `\n짝: ${playerCalls(ctx.store.getState(), ctx.content, buddy)}(${buddy})가 이 임무 동안 함께 다닌다 (2인 1조). 임무가 끝나면 자기 자리로 돌아간다.` : "");
     return {
       ok: true,
       resultText:
@@ -142,6 +145,7 @@ const reportMission = defineTool({
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
       ...releaseBuddies(ctx, mission.id),
+      ...[returnArmory(ctx, mission.id)].filter((l): l is string => !!l),
     ];
     const growthNote = gainMeritXp(ctx, mission.assigneeId, result.merit);
     if (growthNote) lines.push(growthNote);
@@ -198,7 +202,8 @@ const abandonMission = defineTool({
         (d.countsDisobedience ? "불복종으로 기록되고 " : "불복종으로 치지는 않고 ") +
         `공적 ${signed(d.abandonMerit)}. ` +
         (d.deedSeverity > 0 ? "이 일은 상관과 동료의 시선에 영향을 줄 수 있다." : "이 무리에서는 크게 문제 삼지 않는다.") +
-        releaseBuddies(ctx, mission.id).map((l) => ` ${l}`).join(""),
+        releaseBuddies(ctx, mission.id).map((l) => ` ${l}`).join("") +
+        ((r) => (r ? ` ${r}` : ""))(returnArmory(ctx, mission.id)),
       display: { type: "mission", event: "abandoned", title: mission.title, detail: `포기 (${label})`, merit: d.abandonMerit },
     };
   },
@@ -226,6 +231,8 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
         );
       }
       displays.push({ type: "mission", event: "expired", title: mission.title, detail: `기한 초과${d.countsDisobedience ? " (불복종)" : ""}`, merit: d.expireMerit });
+      // 기한이 지나도 빌린 장비는 거둬들인다
+      returnArmory(ctx, mission.id);
     }
   }
   if (commanderOf(state, ctx) && hasAccess(ctx.content, state, "mission_board")) {
@@ -244,6 +251,8 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   const lines = [player.factionId ? `복무: ${rankLabel(ctx.content.scenario, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회` : `무소속 (${rankLabel(ctx.content.scenario, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
+    const loan = state.loans?.[active.id];
+    if (loan) lines.push(`무기고에서 빌린 것 (임무가 끝나면 반납): ${Object.entries(loan).map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")}`);
   } else if (state.offers?.day === dayOf(state.time) && state.offers.templateIds.length > 0) {
     const offers = state.offers.templateIds
       .map((id) => ctx.content.missions[id])

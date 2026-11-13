@@ -2,6 +2,8 @@
 # 할당량은 서술의 몫이다. 코드는 요구 조건(활동·판정)만 집계한다
 - id: c_quota_old_town
   title: 구시가 할당량 털이
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 구시가의 옛 상가를 뒤져 오늘 할당량을 채운다. 통조림이든 약이든 연료든 가리지 않는다. 저녁 검수 전에 창고 앞으로 돌아온다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -11,6 +13,8 @@
 
 - id: c_tower_watch
   title: 공단 감시탑 보초
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   # 2인 1조 (기획서 7.9)
   buddy: true
   briefing: 공단 담장의 감시탑에서 보초를 선다. 바깥만 보는 게 아니다. 밤에 담을 넘으려는 자가 있으면 바로 알린다.
@@ -22,6 +26,8 @@
 
 - id: c_willow_shakedown
   title: 버들마을 길목 통행세
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 버들마을 거점으로 가는 구시가 길목을 막고, 물 긷거나 채집 나온 버들마을 사람들에게서 통행세를 걷는다. 겁만 주고 돌려보낸다. 청솔형제단 순찰을 조심한다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -33,6 +39,8 @@
 
 - id: c_riverside_fuel
   title: 강변 공장 연료 털이
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 강변 공장 지대의 버려진 탱크와 창고에서 연료를 퍼 온다. 다른 무리와 마주치면 물러서지 말고 쫓아낸다.
   giver_rank: squad_leader
   deadline_hours: 14
@@ -44,6 +52,8 @@
 
 - id: c_field_raid
   title: 남쪽 텃밭 습격
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   # 2인 1조 (기획서 7.9)
   buddy: true
   briefing: 청솔형제단과 버들마을 사이의 남쪽 텃밭에 밤에 숨어들어 거둘 만한 것을 거둬 온다. 무너진 담장 쪽으로 들어간다. 들키면 바로 빠진다.
@@ -57,6 +67,8 @@
 
 - id: c_overpass_haul
   title: 고가도로 너머 탄약 운반
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 거점 창고의 탄약 상자와 철판을 고가도로 너머 물류창고까지 나른다. 공세 준비다. 무거워도 소리 내지 말 것.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -69,6 +81,8 @@
 
 - id: c_east_probe
   title: 동쪽 초소 경계 재기
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   # 2인 1조 (기획서 7.9)
   buddy: true
   briefing: 고가도로 너머에서 청솔형제단 동쪽 초소의 보초 교대와 망루 위치를 잰다. 들키면 공세가 들킨다.
@@ -83,6 +97,8 @@
 
 - id: c_prison_guard
   title: 물류창고 수용소 경비
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 경비조에 사람이 빠졌다. 물류창고 수용소 바깥문을 지킨다. 안에 있는 자들과 말을 섞지 않는다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -92,6 +108,8 @@
 
 - id: c_deserter_hunt
   title: 탈영병 뒤쫓기
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   # 2인 1조 (기획서 7.9)
   buddy: true
   briefing: 지난밤 담을 넘은 자가 있다. 발자국을 따라가 데려온다. 살아서 데려오라는 것이 규율반의 명령이다.

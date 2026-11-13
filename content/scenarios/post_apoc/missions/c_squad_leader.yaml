@@ -1,6 +1,8 @@
 # 붉은연합 약탈조장 임무 (초안). 간부 마경수가 내려 준다. 조장이 조원과 함께 하는 일
 - id: c_sl_overpass_hold
   title: 고가도로 길목 지키기
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 사조를 데리고 고가도로 아래 길목을 하룻밤 지킨다. 청솔 쪽 정찰이 넘어오면 잡든지 쫓든지 한다. 자리를 비우면 조 전체가 책임진다.
   giver_rank: officer
   deadline_hours: 14
@@ -24,6 +26,8 @@
 
 - id: c_sl_prisoner_transfer
   title: 포로 이송
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 수용소의 포로 둘을 거점 지하로 옮긴다. 도망치게 두면 조장이 대신 갇힌다. 포로와 말을 섞지 않는다.
   giver_rank: officer
   deadline_hours: 10
@@ -35,6 +39,8 @@
 
 - id: c_sl_squad_quota
   title: 사조 할당량
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 조 전체의 오늘 할당량을 채운다. 조장이 직접 털든, 조원을 보내든 저녁 검수에 맞춘다.
   giver_rank: officer
   deadline_hours: 12
@@ -44,6 +50,8 @@
 
 - id: c_sl_runaway_hunt
   title: 달아난 징집병
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 어젯밤 다른 조의 징집병 하나가 담을 넘었다. 구시가 쪽 흔적을 쫓아 데려온다. 산 채로.
   giver_rank: officer
   deadline_hours: 14
@@ -55,6 +63,8 @@
 
 - id: c_sl_ammo_haul
   title: 탄약 상자 운반
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
   briefing: 거점 창고의 탄약 상자를 물류창고 전진 창고로 옮긴다. 상자 수는 장부와 맞아야 한다.
   giver_rank: officer
   deadline_hours: 10

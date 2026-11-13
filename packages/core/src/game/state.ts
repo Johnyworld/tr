@@ -27,7 +27,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 18;
+export const SAVE_SCHEMA_VERSION = 19;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -207,6 +207,8 @@ export function createGameSchemas(s: Scenario) {
     companions: z.array(z.string()).default([]),
     /** 동적으로 생긴 인물 사이의 관계 (세계를 만들 때, 인물이 자랄 때, 기획서 7.10). 정해진 관계는 콘텐츠에 있다 */
     dynamicTies: z.array(tieRecordSchema).default([]),
+    /** 작전에 빌린 장비 (임무 id → 아이템 → 수량, 기획서 4.8). 임무가 끝나면 반납한다 */
+    loans: z.record(z.string(), z.record(z.string(), z.number().int().min(1))).default({}),
     /** 구역마다 오늘의 소음 (기획서 4.8) */
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 상인이 마지막으로 물건을 채운 날 */
@@ -343,6 +345,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("item_broken"), characterId: z.string(), itemId: z.string(), into: z.string().nullable() }),
     /** 소리가 났다 (총소리 등): 그 구역의 오늘 소음 */
     z.strictObject({ type: z.literal("noise_made"), zone: z.string(), level: z.number().int().min(1), day: z.number().int() }),
+    /** 무기고가 작전 장비를 빌려줬다 (무리 창고의 탄약 resource가 cost만큼 준다) */
+    z.strictObject({ type: z.literal("armory_issued"), missionId: z.string(), factionId: z.string(), items: z.record(z.string(), z.number().int().min(1)), resource: z.string(), cost: z.number().int().min(0) }),
+    /** 빌린 장비를 반납했다 (returned: 돌려준 것. 모자란 것은 잃어버린 것) */
+    z.strictObject({ type: z.literal("armory_returned"), missionId: z.string(), returned: z.record(z.string(), z.number().int().min(1)) }),
     /** 상인이 물건을 다시 채웠다 */
     z.strictObject({ type: z.literal("merchant_restocked"), npcId: z.string(), day: z.number().int(), items: z.record(z.string(), z.number().int().min(1)) }),
     /** 해금을 얻었다 (inherited: 다른 판에서 얻은 것을 옮겨 왔다) */
@@ -633,6 +639,7 @@ export const EMPTY_STATE: GameState = {
   revealedTies: [],
   unlocked: [],
   zoneNoise: {},
+  loans: {},
   restockedDay: {},
   squadOrders: {},
   squadReports: {},
@@ -803,6 +810,24 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     case "noise_made": {
       const prev = next.zoneNoise[event.zone];
       next.zoneNoise[event.zone] = { day: event.day, level: (prev && prev.day === event.day ? prev.level : 0) + event.level };
+      return next;
+    }
+    case "armory_issued": {
+      const me = mustGet(next.characters, next.playerId, "캐릭터");
+      for (const [item, qty] of Object.entries(event.items)) me.inventory[item] = (me.inventory[item] ?? 0) + qty;
+      next.loans[event.missionId] = { ...event.items };
+      const f = next.factions[event.factionId];
+      if (f && event.cost > 0) f.resources[event.resource] = Math.max(0, (f.resources[event.resource] ?? 0) - event.cost);
+      return next;
+    }
+    case "armory_returned": {
+      const me = mustGet(next.characters, next.playerId, "캐릭터");
+      for (const [item, qty] of Object.entries(event.returned)) {
+        const left = (me.inventory[item] ?? 0) - qty;
+        if (left > 0) me.inventory[item] = left;
+        else delete me.inventory[item];
+      }
+      delete next.loans[event.missionId];
       return next;
     }
     case "merchant_restocked": {

@@ -113,7 +113,7 @@ export const squadOrder = defineTool({
         continue;
       }
       if (task.kind === "follow") {
-        store.append({ type: "companion_joined", characterId: id });
+        store.append({ type: "companion_joined", characterId: id, kind: "squad" });
         lines.push(`${josa(name, "이/가")} 곁에 붙는다 (동행. 구역을 옮겨도 따라온다).`);
         displays.push({ type: "presence", npcName: name, action: "enter" });
         continue;

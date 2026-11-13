@@ -1,3 +1,5 @@
+import { activeCompanions, bondOf } from "../game/companions.ts";
+import { isAwayCompanion } from "../engine/companionTools.ts";
 import { factionPolicy } from "../sim/war.ts";
 import { disposition } from "../sim/war.ts";
 import type { Content, StoryletContent } from "../content/schemas.ts";
@@ -27,8 +29,19 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
   if (!player) return [];
   const commander = commanderOf(state, content);
   const known = new Set(state.known[state.playerId] ?? []);
+  if (role.companion) {
+    const want = role.companion;
+    return activeCompanions(state)
+      .filter((id) => {
+        const bond = bondOf(state, content, id);
+        const template = state.characters[id]?.extra?.template;
+        return (!want.kinds || (bond && want.kinds.includes(bond.kind))) && (!want.templates || (template && want.templates.includes(template)));
+      })
+      .filter((id) => !role.ids || role.ids.includes(id))
+      .sort();
+  }
   return Object.values(state.characters)
-    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && content.npcs[c.id] && !state.squadOrders?.[c.id])
+    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && content.npcs[c.id] && !state.squadOrders?.[c.id] && !isAwayCompanion(state, c.id))
     // 포로는 captive: true인 배역만, 그리고 그 구역에서만 (갇힌 곳에서 마주친다)
     .filter((c) => (role.captive ? !!c.captive && c.captive.zone === state.playerZone : !c.captive))
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))

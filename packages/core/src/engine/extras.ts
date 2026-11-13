@@ -144,21 +144,7 @@ const learnName = defineTool({
   },
 });
 
-const companionLeave = defineTool({
-  name: "companion_leave",
-  description:
-    "함께 다니던 인물·동물(상태의 '동행')과 헤어진다. 플레이어가 떼어 놓거나 보내기로 했을 때만 부른다. 함께 다니게 하는 것은 이야기의 결과로만 생긴다.",
-  schema: z.strictObject({ target: z.string().describe("동행의 id") }),
-  run(input, ctx) {
-    const state = ctx.store.getState();
-    if (!state.companions.includes(input.target)) return { ok: false, error: "함께 다니는 인물이 아니다." };
-    ctx.store.append({ type: "companion_left", characterId: input.target });
-    const name = aliasOf(state, ctx.content, input.target);
-    return { ok: true, resultText: `${josa(name, "은/는")} 더는 함께 다니지 않는다. 헤어지는 장면을 서술한다.`, display: { type: "presence", npcName: name, action: "leave" } };
-  },
-});
-
-export const EXTRA_TOOLS = [spawnExtra, learnName, companionLeave] as const;
+export const EXTRA_TOOLS = [spawnExtra, learnName] as const;
 
 /**
  * 인물이 장면에 들어온다 (npc_entered). 처음 보는 사람이면 첫인상과 "이름 모름" 기억을 남긴다.

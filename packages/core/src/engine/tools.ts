@@ -36,6 +36,7 @@ import { defineTool, signed, STRICT_UNSUPPORTED_KEYS, type ToolContext, type Too
 export { STRICT_UNSUPPORTED_KEYS } from "./toolkit.ts";
 import { MISSION_TOOLS } from "./missionTools.ts";
 import { COMMAND_TOOLS } from "./command.ts";
+import { COMPANION_TOOLS, isAwayCompanion } from "./companionTools.ts";
 import { REPUTATION_TOOLS } from "./reputationTools.ts";
 import { STORYLET_TOOLS } from "./storyletTools.ts";
 import { SUCCESSION_TOOLS } from "./succession.ts";
@@ -140,6 +141,9 @@ const npcPresence = defineTool({
       if (present) return { ok: false, error: `${josa(name, "은/는")} 이미 장면에 있습니다.` };
       if (character.dead) return { ok: false, error: `${josa(name, "은/는")} 사망했습니다.` };
       if (character.away) return { ok: false, error: `${josa(name, "은/는")} 도시를 떠났습니다.` };
+      if (isAwayCompanion(state, character.id)) {
+        return { ok: false, error: `${josa(name, "은/는")} 동행에서 잠시 떨어져 있다 (상태의 '떨어져 있는 동행'). 기다리는 곳에 가거나 돌아올 때까지 장면에 들이지 않는다.` };
+      }
       if (state.squadOrders?.[character.id]) {
         return { ok: false, error: `${josa(name, "은/는")} 분대 명령으로 나가 있다 (${formatTime(state.squadOrders[character.id]!.until)}쯤 끝난다).` };
       }
@@ -234,6 +238,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       createLearnSkillTool(s),
       ...MISSION_TOOLS,
       ...COMMAND_TOOLS,
+      ...COMPANION_TOOLS,
       ...REPUTATION_TOOLS,
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,

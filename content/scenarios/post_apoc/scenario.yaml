@@ -228,6 +228,8 @@ custom_start:
   skill_points: 2
   skill_max: 1
   age: { min: 16, max: 65 }
+  # 무소속으로 시작할 때 고를 수 있는 연고 (extras/kin.yaml, 기획서 7.9)
+  kin: [kin_young, kin_elder, kin_sibling, kin_partner, stray_dog]
   kits:
     - { id: fighter, label: 싸울 채비, description: 몸으로 부딪치는 사람, items: [crowbar, water_bottle, dry_ration] }
     - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, kitchen_knife, water_bottle, dry_ration] }

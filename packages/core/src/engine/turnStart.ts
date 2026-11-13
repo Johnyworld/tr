@@ -1,5 +1,6 @@
 import { runMissionStartOfTurn } from "./missionTools.ts";
 import { runSquadOrders } from "./command.ts";
+import { runCompanions } from "./companionTools.ts";
 import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
@@ -37,9 +38,11 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const missions = runMissionStartOfTurn(ctx);
   // 분대원에게 맡긴 일이 끝났으면 결과를 굴리고 보고를 받는다
   const squad = runSquadOrders(ctx);
+  // 동행: 떨어져 있던 사람의 합류, 임무 짝의 귀대, 관계가 바닥이면 떠남, 목적을 이루면 갈림길
+  const companions = runCompanions(ctx);
   // 조건이 맞는 이야기 (간격이 지났고 전투 중이 아닐 때)
   const storylets = runStorylets(ctx);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
   const healed = runNaturalRecovery(ctx);
-  return [...war, ...battles, ...missions, ...squad, ...storylets, ...healed];
+  return [...war, ...battles, ...missions, ...squad, ...companions, ...storylets, ...healed];
 }

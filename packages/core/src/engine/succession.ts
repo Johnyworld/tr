@@ -1,3 +1,4 @@
+import { addStartCompanions } from "./companionTools.ts";
 import { z } from "zod";
 import { nameAs } from "../game/acquaintance.ts";
 import { checkCharacterChoice, fillCharacterChoice } from "../game/creation.ts";
@@ -112,6 +113,8 @@ export function switchCharacter(
     const made = createCharacterFromRole(content.scenario, role, id, ctx.rng, character ? fillCharacterChoice(content.scenario, character, ctx.rng) : undefined);
     if (!character && name?.trim()) made.name = name.trim().slice(0, 20);
     store.append({ type: "character_switched", characterId: id, character: made, known: [...role.known_npcs] });
+    // 그 자리에 오는 사람의 동행 (역할의 시작 동행)
+    addStartCompanions(ctx, role);
     // 역할의 시작 지식은 이전 캐릭터의 기억이 아니라 그 자리에 오는 사람이면 아는 것이다
     const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
     for (const b of preset?.beliefs ?? []) {

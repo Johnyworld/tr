@@ -26,7 +26,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 14;
+export const SAVE_SCHEMA_VERSION = 15;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -59,6 +59,28 @@ export const factionStateSchema = z.strictObject({
   policy: z.record(z.string(), z.string()).optional(),
 });
 export type FactionState = z.infer<typeof factionStateSchema>;
+
+/** 함께 다니는 이유 (기획서 7.9) */
+export const BOND_KINDS = ["animal", "buddy", "squad", "purpose", "kin"] as const;
+export type BondKind = (typeof BOND_KINDS)[number];
+/** 목적 동행이 끝나는 조건 (하나라도 차면 갈림길) */
+export const bondUntilSchema = z.strictObject({
+  flag: z.string().optional(),
+  zone: z.string().optional(),
+  at: z.number().int().optional(),
+});
+export const bondSchema = z.strictObject({
+  kind: z.enum(BOND_KINDS),
+  since: z.number().int(),
+  /** 임무 짝: 이 임무가 끝나면 돌아간다 */
+  missionId: z.string().optional(),
+  until: bondUntilSchema.optional(),
+  /** 목적을 이뤄 갈림길에 섰다 (lean: 남고 싶어 하는지, decideBy: 정하지 않으면 이 시각에 기울기대로) */
+  crossroads: z.strictObject({ lean: z.enum(["stay", "leave"]), decideBy: z.number().int() }).optional(),
+  /** 잠시 떨어져 있다: zone에서 기다리거나(until null), 볼일을 보고 until에 돌아온다(zone null) */
+  apart: z.strictObject({ zone: z.string().nullable(), until: z.number().int().nullable(), since: z.number().int() }).optional(),
+});
+export type Bond = z.infer<typeof bondSchema>;
 
 /** 세력 클락: 다 차면 목표 구역을 총공격한다 */
 export const clockStateSchema = z.strictObject({
@@ -174,6 +196,8 @@ export function createGameSchemas(s: Scenario) {
     customRole: customRoleSchema.nullable().default(null),
     /** 주인공과 함께 다니는 인물·동물 (기획서 7.8). 구역을 옮겨도 따라오고 장면에 남는다 */
     companions: z.array(z.string()).default([]),
+    /** 함께 다니는 이유 (NPC id → 이유, 기획서 7.9). 지금 곁에 있는 사람(companions)과 잠시 떨어져 있는 사람 모두 */
+    bonds: z.record(z.string(), bondSchema).default({}),
     /** 분대원에게 맡긴 일 (NPC id → 명령, 기획서 9.11). follow는 동행으로 다루고 여기 넣지 않는다 */
     squadOrders: z
       .record(z.string(), z.strictObject({ task: z.string(), zone: z.string(), startedAt: z.number().int(), until: z.number().int() }))
@@ -288,8 +312,18 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     z.strictObject({ type: z.literal("npc_captured"), npcId: z.string(), by: z.string(), zone: z.string() }),
     z.strictObject({ type: z.literal("npc_released"), npcId: z.string() }),
-    z.strictObject({ type: z.literal("companion_joined"), characterId: z.string() }),
-    z.strictObject({ type: z.literal("companion_left"), characterId: z.string() }),
+    /** 함께 다니기 시작했다. kind가 없으면 이전 세이브 (코드가 틀로 정한다) */
+    z.strictObject({ type: z.literal("companion_joined"), characterId: z.string(), kind: z.enum(BOND_KINDS).optional(), missionId: z.string().optional(), until: bondUntilSchema.optional() }),
+    /** 헤어졌다 (함께 다니는 이유가 끝났다) */
+    z.strictObject({ type: z.literal("companion_left"), characterId: z.string(), reason: z.string().optional() }),
+    /** 잠시 떨어진다: zone에서 기다리거나, until에 돌아온다 */
+    z.strictObject({ type: z.literal("companion_parted"), characterId: z.string(), zone: z.string().nullable(), until: z.number().int().nullable() }),
+    /** 떨어져 있던 동행이 다시 곁에 왔다 */
+    z.strictObject({ type: z.literal("companion_rejoined"), characterId: z.string() }),
+    /** 목적을 이뤄 갈림길에 섰다 */
+    z.strictObject({ type: z.literal("companion_crossroads"), characterId: z.string(), lean: z.enum(["stay", "leave"]), decideBy: z.number().int() }),
+    /** 함께 다니는 이유가 바뀌었다 (목적 → 연고, 목적 연장) */
+    z.strictObject({ type: z.literal("companion_bond_changed"), characterId: z.string(), kind: z.enum(BOND_KINDS), until: bondUntilSchema.optional() }),
     z.strictObject({ type: z.literal("debt_changed"), characterId: z.string(), factionId: z.string(), delta: z.number().int() }),
     /** 분대원에게 일을 맡겼다 (기획서 9.11). 시각은 코드가 정한다 */
     z.strictObject({ type: z.literal("squad_order_given"), npcId: z.string(), task: z.string(), zone: z.string(), until: z.number().int() }),
@@ -553,6 +587,7 @@ export const EMPTY_STATE: GameState = {
   zoneSearches: {},
   keptExtras: {},
   companions: [],
+  bonds: {},
   squadOrders: {},
   squadReports: {},
   council: {},
@@ -641,6 +676,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     }
     case "npc_departed": {
       next.companions = next.companions.filter((id) => id !== event.npcId);
+      delete next.bonds[event.npcId];
       const npc = mustGet(next.characters, event.npcId, "캐릭터");
       if (event.toFaction !== null) npc.factionId = event.toFaction;
       else npc.away = true;
@@ -681,6 +717,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     }
     case "npc_captured": {
       next.companions = next.companions.filter((id) => id !== event.npcId);
+      delete next.bonds[event.npcId];
       const npc = mustGet(next.characters, event.npcId, "캐릭터");
       npc.captive = { by: event.by, zone: event.zone };
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
@@ -689,15 +726,53 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     case "companion_joined": {
       if (!next.companions.includes(event.characterId)) next.companions.push(event.characterId);
       if (!next.scene.present.includes(event.characterId)) next.scene.present.push(event.characterId);
+      if (event.kind) {
+        next.bonds[event.characterId] = {
+          kind: event.kind,
+          since: state.time,
+          ...(event.missionId ? { missionId: event.missionId } : {}),
+          ...(event.until ? { until: event.until } : {}),
+        };
+      }
       return next;
     }
     case "companion_left": {
       next.companions = next.companions.filter((id) => id !== event.characterId);
+      delete next.bonds[event.characterId];
+      return next;
+    }
+    case "companion_parted": {
+      next.companions = next.companions.filter((id) => id !== event.characterId);
+      next.scene.present = next.scene.present.filter((id) => id !== event.characterId);
+      const bond = next.bonds[event.characterId];
+      if (bond) bond.apart = { zone: event.zone, until: event.until, since: state.time };
+      return next;
+    }
+    case "companion_rejoined": {
+      if (!next.companions.includes(event.characterId)) next.companions.push(event.characterId);
+      if (!next.scene.present.includes(event.characterId)) next.scene.present.push(event.characterId);
+      const bond = next.bonds[event.characterId];
+      if (bond) delete bond.apart;
+      return next;
+    }
+    case "companion_crossroads": {
+      const bond = next.bonds[event.characterId];
+      if (bond) bond.crossroads = { lean: event.lean, decideBy: event.decideBy };
+      return next;
+    }
+    case "companion_bond_changed": {
+      const bond = next.bonds[event.characterId];
+      if (!bond) return next;
+      bond.kind = event.kind;
+      delete bond.crossroads;
+      if (event.until) bond.until = event.until;
+      else delete bond.until;
       return next;
     }
     case "squad_order_given": {
       next.squadOrders[event.npcId] = { task: event.task, zone: event.zone, startedAt: state.time, until: event.until };
       next.companions = next.companions.filter((id) => id !== event.npcId);
+      delete next.bonds[event.npcId];
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
       return next;
     }
@@ -950,6 +1025,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.perceived = {};
       // 동행은 죽은 사람을 따라다녔다. 다음 캐릭터는 새로 사귄다 (기획서 7.8)
       next.companions = [];
+      next.bonds = {};
       next.squadOrders = {};
       next.squadReports = {};
       next.council = {};

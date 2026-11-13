@@ -4,7 +4,7 @@ import { dayOf, MINUTES_PER_DAY, nextSegmentStart, timeSegmentSchema } from "../
 import { harmTrack, trackOf } from "../scenario/scenario.ts";
 import { startBattle } from "../sim/battle.ts";
 import { changeCondition } from "../engine/body.ts";
-import { endActiveStorylet } from "../engine/storyletTools.ts";
+import { endActiveStorylet, fireStorylet } from "../engine/storyletTools.ts";
 import { enterScene, EXTRA_TOOLS } from "../engine/extras.ts";
 import { levelForXp } from "../engine/growth.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
@@ -184,12 +184,7 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         if (state.activeStorylet) endActiveStorylet(ctx, "치트로 다른 이야기를 열었다");
         const cast = pickCast(store.getState(), content, storylet, ctx.rng);
         if (!cast) return { ok: false, error: "배역을 채울 인물이 없다 (조건에 맞는 인물이 살아 있어야 한다)." };
-        const now = store.getState();
-        store.append({ type: "storylet_fired", storyletId: storylet.id, cast, expiresAt: now.time + Math.round(s.storylet_pacing.expire_hours * 60) });
-        for (const [key, id] of Object.entries(cast)) {
-          if (!storylet.cast[key]?.enter || store.getState().scene.present.includes(id)) continue;
-          enterScene(ctx, id);
-        }
+        fireStorylet(ctx, storylet, cast);
         return { ok: true, text: `이야기 시작: ${storylet.title}` };
       }
       case "battle": {

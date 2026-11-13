@@ -70,6 +70,8 @@
       minutes: 90
 - id: b_joint_recon
   title: 연합 정찰 지원
+  # 2인 1조 (기획서 7.9)
+  buddy: true
   briefing: 청솔형제단의 요청이다. 붉은연합이 차지한 맞닿은 구역에 숨어 들어가 경계를 살피고 돌아온다. 본 것은 청솔형제단의 반격 준비에 넘어간다.
   giver_rank: squad_leader
   deadline_hours: 12

@@ -32,7 +32,7 @@ export type ToolDisplayEvent =
       cause: string;
     }
   | { type: "item"; fromName: string; toName: string; itemName: string; quantity: number }
-  | { type: "presence"; npcName: string; action: "enter" | "leave" }
+  | { type: "presence"; npcName: string; action: "enter" | "leave"; /** GM에게 문장으로 실을 소식 (동행 합류·떠남 등) */ note?: string }
   | { type: "belief"; fact: string; sourceLabel: string }
   | {
       type: "mission";

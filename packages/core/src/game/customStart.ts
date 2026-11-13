@@ -28,6 +28,11 @@ export function customStartSchema() {
     age: z.number().int().describe("나이 (플레이어가 쓴 대로, 범위 안에서)"),
     opening: z.string().trim().min(1).max(MAX_OPENING_LENGTH).describe("첫 장면 한두 문장 (2인칭, 시작 장소에서)"),
     background: z.array(z.string().trim().min(1).max(MAX_BACKGROUND_LENGTH)).max(MAX_BACKGROUND).describe("플레이어가 쓴 지난 삶을 캐릭터의 기억 몇 문장으로"),
+    kin: z
+      .strictObject({ template: z.string().describe("연고 틀 id (고를 수 있는 것 중에서)"), label: z.string().trim().min(1).max(20).describe("부르는 말 (예: 동생, 아버지)") })
+      .nullable()
+      .optional()
+      .describe("무소속이면 함께 다니는 가족·연고 하나 (플레이어가 썼을 때만). 없으면 null"),
   });
 }
 export type CustomStartInput = z.infer<ReturnType<typeof customStartSchema>>;
@@ -68,6 +73,10 @@ export function checkCustomStart(content: Content, input: CustomStartInput): str
   }
   if (spent > c.skill_points) problems.push(`시작 훈련 포인트를 넘었다 (${spent}/${c.skill_points}).`);
   if (input.age < c.age.min || input.age > c.age.max) problems.push(`나이는 ${c.age.min}~${c.age.max}세다.`);
+  if (input.kin) {
+    if (input.faction !== null) problems.push("연고는 무소속으로 시작할 때만 고른다 (무리에 속하면 무리가 곧 곁이다).");
+    else if (!c.kin.includes(input.kin.template)) problems.push(`연고는 ${c.kin.map((k) => `${content.extras[k]?.label ?? k}(${k})`).join(", ") || "없음"} 중 하나다.`);
+  }
   return problems;
 }
 
@@ -112,6 +121,7 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
     ...(same?.rank === input.rank && same.squad?.length ? { squad: [...same.squad] } : {}),
     missions: same?.missions ?? [],
     storylet_tags: same?.storylet_tags ?? [],
+    ...(input.kin ? { start_companions: [{ template: input.kin.template, label: input.kin.label }] } : {}),
   } as RoleContent;
 }
 
@@ -152,6 +162,7 @@ export function describeCustomRole(content: Content, role: RoleContent): string 
     `시작 훈련: ${Object.entries(role.start_skills).map(([m, v]) => `${s.moves.find((x) => x.id === m)?.label ?? m} +${v}`).join(", ") || "없음"}`,
     `상관: ${commander ? `${commander.name} (${s.rank_ladder.find((r) => r.id === commander.rank)?.label ?? commander.rank})` : "없음"} · 아는 사람 ${role.known_npcs.length}명${role.missions.length ? " · 임무를 받을 수 있다" : " · 정해진 임무 없음"}`,
     ...(role.squad?.length ? [`분대원: ${role.squad.map((id) => content.npcs[id]?.name ?? id).join(", ")}`] : []),
+    ...(role.start_companions?.length ? [`함께 다니는 사람: ${role.start_companions.map((k) => `${k.label} (${content.extras[k.template]?.label ?? k.template})`).join(", ")}`] : []),
     `첫 장면: ${role.opening_scene}`,
   ].join("\n");
 }
@@ -170,6 +181,9 @@ export function describeCustomStartOptions(content: Content): string {
     `소지품 꾸러미: ${c.kits.map((k) => `${k.label}(${k.id}): ${k.items.map((i) => content.items[i]?.name ?? i).join(", ")}${k.description ? ` — ${k.description}` : ""}`).join(" / ")}`,
     `시작 훈련: ${c.skill_points}포인트, 스킬 하나에 최대 +${c.skill_max}. 스킬: ${s.moves.map((m) => `${m.label}(${m.id})`).join(", ")}`,
     `나이: ${c.age.min}~${c.age.max}세`,
+    ...(c.kin.length
+      ? [`연고 (무소속만, 플레이어가 함께 다니는 가족·짝·동물을 썼을 때만 kin으로): ${c.kin.map((k) => `${content.extras[k]?.label ?? k}(${k})`).join(", ")}. label은 부르는 말 (예: 동생, 아버지)`]
+      : []),
     `직함은 ${MAX_TITLE_LENGTH}자 안, 첫 장면은 ${MAX_OPENING_LENGTH}자 안, 지난 삶(background)은 ${MAX_BACKGROUND}문장까지. 이름은 다음 단계에서 묻는다 (${MAX_NAME_LENGTH}자 안)`,
   ].join("\n");
 }

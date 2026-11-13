@@ -1,3 +1,5 @@
+import { roleOf } from "../game/state.ts";
+import { addStartCompanions } from "../engine/companionTools.ts";
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
@@ -135,6 +137,8 @@ export class WorldManager {
       const filled = choice ? fillCharacterChoice(content.scenario, choice, ctx.rng) : choice;
       ctx.store.append(createWorldEvent(content, role!, worldId, ctx.rng, filled, custom?.role, custom?.background));
       // 첫날의 임무 후보, 소문 기준일, 시작 구역. 자유 시나리오의 역할은 이벤트를 넣은 뒤에야 콘텐츠에 보이므로 새로 받는다
+      // 처음부터 함께 다니는 사람·동물 (떠돌이의 가족 등, 기획서 7.9)
+      addStartCompanions(world.ctx(), roleOf(world.content, world.state()));
       runAfterTimeAdvance(world.ctx());
       world.saveSnapshot();
       return world;

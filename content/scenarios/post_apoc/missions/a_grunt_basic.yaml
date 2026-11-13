@@ -4,6 +4,8 @@
 #   - check: 판정 행동과 최소 결과(partial = 대가 있는 성공 이상)
 - id: guard_east_post
   title: 동쪽 초소 보초
+  # 2인 1조 (기획서 7.9)
+  buddy: true
   briefing: 동쪽 초소에서 보초를 서며 담장 너머를 감시한다. 이상이 있으면 바로 보고한다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -28,6 +30,8 @@
       min_outcome: partial
 - id: scout_north_overpass
   title: 북쪽 고가도로 정찰
+  # 2인 1조 (기획서 7.9)
+  buddy: true
   briefing: 북쪽 고가도로 주변의 감염체와 붉은연합의 움직임을 살피고 들키지 않게 돌아온다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -66,6 +70,8 @@
       min_outcome: partial
 - id: front_recon
   title: 전선 정찰
+  # 2인 1조 (기획서 7.9)
+  buddy: true
   briefing: 붉은연합이 차지한 맞닿은 구역에 숨어 들어가 경계와 병력 배치를 살피고 돌아온다. 반격 준비에 쓰인다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -77,6 +83,8 @@
   advances: { clock: a_counteroffensive, delta: 2 }
 - id: supply_raid
   title: 붉은연합 보급 털기
+  # 2인 1조 (기획서 7.9)
+  buddy: true
   briefing: 붉은연합이 차지한 구역에 몰래 들어가 쌓아 둔 보급품을 털거나 망가뜨린다. 들키면 끝이다.
   giver_rank: squad_leader
   deadline_hours: 16

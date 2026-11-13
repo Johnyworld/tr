@@ -116,6 +116,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       if (choice.check) {
         const move = moves.find((m) => m.id === choice.check)!;
         tool("take_action", { ...base, intent: choice.label, check: check(move, "none") });
+        // 판정하는 사이 시간이 흘러 이야기가 지나갔거나 다른 이야기로 바뀌었으면 고르지 않는다
+        if (world.state().activeStorylet?.id !== storylet.id) continue;
       }
       const out = tool("resolve_storylet", { choice_id: choice.id });
       if (!out.ok && !out.error.includes("없어 이 선택지를") && !out.error.includes("진행 중인 이야기가 없다")) {
@@ -153,6 +155,22 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       if (!item && healer && !s.scene.present.includes(healer.id)) tool("npc_presence", { npc_id: healer.id, action: "enter" });
       const out = tool("take_action", item ? { ...base, intent: "치료", use_item: item } : { ...base, intent: "치료", treatment: { item: null } });
       if (!out.ok) stats.errors.push(`치료: ${out.error}`);
+      continue;
+    }
+
+    // 동행 (기획서 7.9): 갈림길이면 정하고, 가끔 잠시 떼어 놓는다
+    const crossing = s.companions.find((id) => s.bonds[id]?.crossroads);
+    if (crossing && rng() < 0.5) {
+      const ask = rng() < 0.5;
+      const out = tool("companion_crossroads", { target: crossing, choice: ask ? "ask_stay" : "let_go", move: ask ? "persuade" : null, stat: ask ? "charm" : null });
+      if (!out.ok) stats.errors.push(`갈림길: ${out.error}`);
+      continue;
+    }
+    if (s.companions.length && rng() < 0.03) {
+      const target = pick(rng, s.companions);
+      const how = pick(rng, ["wait", "errand", "errand", "end"] as const);
+      const out = tool("companion_part", { target, how, hours: how === "errand" ? 3 + Math.floor(rng() * 10) : null });
+      if (!out.ok && !out.error.includes("곁에 있는 동행이 아니다")) stats.errors.push(`동행: ${out.error}`);
       continue;
     }
 

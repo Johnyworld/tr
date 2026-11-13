@@ -11,6 +11,8 @@
 
 - id: c_tower_watch
   title: 공단 감시탑 보초
+  # 2인 1조 (기획서 7.9)
+  buddy: true
   briefing: 공단 담장의 감시탑에서 보초를 선다. 바깥만 보는 게 아니다. 밤에 담을 넘으려는 자가 있으면 바로 알린다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -42,6 +44,8 @@
 
 - id: c_field_raid
   title: 남쪽 텃밭 습격
+  # 2인 1조 (기획서 7.9)
+  buddy: true
   briefing: 청솔형제단과 버들마을 사이의 남쪽 텃밭에 밤에 숨어들어 거둘 만한 것을 거둬 온다. 무너진 담장 쪽으로 들어간다. 들키면 바로 빠진다.
   giver_rank: squad_leader
   deadline_hours: 16
@@ -65,6 +69,8 @@
 
 - id: c_east_probe
   title: 동쪽 초소 경계 재기
+  # 2인 1조 (기획서 7.9)
+  buddy: true
   briefing: 고가도로 너머에서 청솔형제단 동쪽 초소의 보초 교대와 망루 위치를 잰다. 들키면 공세가 들킨다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -86,6 +92,8 @@
 
 - id: c_deserter_hunt
   title: 탈영병 뒤쫓기
+  # 2인 1조 (기획서 7.9)
+  buddy: true
   briefing: 지난밤 담을 넘은 자가 있다. 발자국을 따라가 데려온다. 살아서 데려오라는 것이 규율반의 명령이다.
   giver_rank: squad_leader
   deadline_hours: 10

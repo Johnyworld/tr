@@ -1,3 +1,4 @@
+import { formatTime } from "../rules/time.ts";
 import { changeCondition } from "./body.ts";
 import { disposition } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
@@ -71,7 +72,20 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
   const fixed = eligible.filter((s) => !s.repeatable);
   const storylet = pickStorylet(fixed.length ? fixed : eligible, rng);
   if (!storylet) return displays;
-  const cast = pickCast(state, content, storylet, rng)!;
+  displays.push(...fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!));
+  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: setupText(store.getState(), content) });
+  return displays;
+}
+
+/**
+ * 이야기를 연다: 이름 없는 배역은 틀로 만들고, 발동을 기록하고, 배역을 장면에 들인다 (치트도 이것을 쓴다).
+ * 시작 표시(storylet started)는 부르는 쪽이 붙인다
+ */
+export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked: Record<string, string>): ToolDisplayEvent[] {
+  const { store, content, rng } = ctx;
+  const state = store.getState();
+  const displays: ToolDisplayEvent[] = [];
+  const cast = { ...picked };
   // 이름 없는 인물 배역: 틀로 캐릭터를 만든다 (능력·소지품은 틀에서 굴린다)
   for (const [key, id] of Object.entries(cast)) {
     if (!id.startsWith(EXTRA_CAST_PREFIX)) continue;
@@ -100,7 +114,6 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
     enterScene(ctx, id);
     displays.push({ type: "presence", npcName: playerCalls(store.getState(), content, id), action: "enter" });
   }
-  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: setupText(store.getState(), content) });
   return displays;
 }
 
@@ -344,9 +357,33 @@ function applyEffect(
     const id = whoOf(ctx, effect.companion_join.who, cast);
     const c = id ? state.characters[id] : undefined;
     if (!id || !c || id === playerId || c.dead || c.away || c.captive || state.companions.includes(id)) return {};
-    store.append({ type: "companion_joined", characterId: id });
+    const template = c.extra?.template ? content.extras[c.extra.template] : undefined;
+    const kind = effect.companion_join.kind ?? (template?.animal ? "animal" : "purpose");
+    const u = effect.companion_join.until;
+    const until =
+      kind === "purpose"
+        ? { ...(u?.flag ? { flag: u.flag } : {}), ...(u?.zone ? { zone: u.zone } : {}), ...(u?.hours || !(u?.flag || u?.zone) ? { at: state.time + (u?.hours ?? 48) * 60 } : {}) }
+        : undefined;
+    store.append({ type: "companion_joined", characterId: id, kind, ...(until ? { until } : {}) });
     const name = playerCalls(store.getState(), content, id);
     return { line: `${josa(name, "이/가")} 이제 함께 다닌다 (구역을 옮겨도 따라온다).`, display: { type: "presence", npcName: name, action: "enter" } };
+  }
+  if ("companion_part" in effect) {
+    const id = whoOf(ctx, effect.companion_part.who, cast);
+    if (!id || !state.companions.includes(id)) return {};
+    if (!state.bonds?.[id]) {
+      const t = state.characters[id]?.extra?.template;
+      store.append({ type: "companion_bond_changed", characterId: id, kind: t && content.extras[t]?.animal ? "animal" : "kin" });
+    }
+    const name = playerCalls(state, content, id);
+    if (!effect.companion_part.hours) {
+      if (!state.playerZone) return {};
+      store.append({ type: "companion_parted", characterId: id, zone: state.playerZone, until: null });
+      return { line: `${josa(name, "은/는")} ${content.locations[state.playerZone]?.name ?? state.playerZone}에 남아 기다린다. 이 구역에 다시 오면 합류한다.` };
+    }
+    const until = state.time + effect.companion_part.hours * 60;
+    store.append({ type: "companion_parted", characterId: id, zone: null, until });
+    return { line: `${josa(name, "은/는")} 잠시 떨어져 간다. ${formatTime(until)}쯤 돌아온다.` };
   }
   if ("companion_leave" in effect) {
     const id = whoOf(ctx, effect.companion_leave.who, cast);

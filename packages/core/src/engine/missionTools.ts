@@ -1,3 +1,5 @@
+import { playerCalls } from "../game/acquaintance.ts";
+import { assignBuddy, releaseBuddies } from "./companionTools.ts";
 import { disciplineOf, hasAccess } from "../game/culture.ts";
 import { josa } from "../text.ts";
 import { gainMeritXp } from "./growth.ts";
@@ -82,10 +84,13 @@ const assignMission = defineTool({
       status: "active",
     };
     ctx.store.append({ type: "mission_assigned", mission });
+    // 2인 1조: 같은 무리 동료 하나가 짝으로 붙는다 (기획서 7.9)
+    const buddy = template.buddy ? assignBuddy(ctx, mission.id, commander.id) : null;
+    const buddyLine = buddy ? `\n짝: ${playerCalls(ctx.store.getState(), ctx.content, buddy)}(${buddy})가 이 임무 동안 함께 다닌다 (2인 1조). 임무가 끝나면 자기 자리로 돌아간다.` : "";
     return {
       ok: true,
       resultText:
-        `임무 배정: ${describeMission(ctx.content.scenario, mission)}\n` +
+        `임무 배정: ${describeMission(ctx.content.scenario, mission)}${buddyLine}\n` +
         "상관이 임무를 지시하는 장면을 서술하라. 해야 할 일과 기한(대략적인 표현으로)을 상관의 말투로 전한다.",
       display: { type: "mission", event: "assigned", title: mission.title, detail: `기한 ${formatTime(mission.deadline)}` },
     };
@@ -136,6 +141,7 @@ const reportMission = defineTool({
     const lines = [
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
+      ...releaseBuddies(ctx, mission.id),
     ];
     const growthNote = gainMeritXp(ctx, mission.assigneeId, result.merit);
     if (growthNote) lines.push(growthNote);
@@ -191,7 +197,8 @@ const abandonMission = defineTool({
         `임무 포기: ${mission.title}. 이 무리(규율: ${d.label})에서 ${d.orderWord}을(를) 버린 것이다. ` +
         (d.countsDisobedience ? "불복종으로 기록되고 " : "불복종으로 치지는 않고 ") +
         `공적 ${signed(d.abandonMerit)}. ` +
-        (d.deedSeverity > 0 ? "이 일은 상관과 동료의 시선에 영향을 줄 수 있다." : "이 무리에서는 크게 문제 삼지 않는다."),
+        (d.deedSeverity > 0 ? "이 일은 상관과 동료의 시선에 영향을 줄 수 있다." : "이 무리에서는 크게 문제 삼지 않는다.") +
+        releaseBuddies(ctx, mission.id).map((l) => ` ${l}`).join(""),
       display: { type: "mission", event: "abandoned", title: mission.title, detail: `포기 (${label})`, merit: d.abandonMerit },
     };
   },

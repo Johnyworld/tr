@@ -36,7 +36,7 @@ describe("동행 (기획서 7.8)", () => {
 
   it("헤어지면 더 따라오지 않고, 죽은 동행도 따라오지 않는다", () => {
     const { w, dog } = withDog();
-    expect(w.executeTool("companion_leave", { target: dog }).ok).toBe(true);
+    expect(w.executeTool("companion_part", { target: dog, how: "end", hours: null }).ok).toBe(true);
     w.executeTool("take_action", act("동쪽 초소로 간다", { move_to: "a_east_post" }));
     expect(w.state().scene.present).not.toContain(dog);
     const again = withDog();

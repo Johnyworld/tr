@@ -58,6 +58,10 @@ export function createContentSchemas(s: Scenario) {
     known_npcs: z.array(contentIdSchema).default([]),
     /** 직속 상관 NPC. 임무를 주고 보고를 받는다 */
     commander: contentIdSchema.optional(),
+    /** 처음부터 함께 다니는 사람·동물 (엑스트라 틀, 기획서 7.9). 떠돌이의 가족 등. kind가 없으면 동물은 animal, 사람은 kin */
+    start_companions: z
+      .array(z.strictObject({ template: contentIdSchema, label: z.string().min(1).max(20), kind: z.enum(["animal", "kin", "purpose"]).optional() }))
+      .optional(),
     /** 주인공 밑의 분대원 (NPC id, 기획서 9.11). 분대 명령(squad_order)을 받는다 */
     squad: z.array(contentIdSchema).optional(),
     /** 시작할 때 진 빚 (세력 id → 양, 기획서 9.10) */
@@ -147,6 +151,8 @@ export function createContentSchemas(s: Scenario) {
     giver_rank: idEnum(rankIds(s)),
     deadline_hours: z.number().int().positive().max(72),
     requirements: z.array(missionRequirement).min(1),
+    /** 2인 1조: 받으면 같은 무리 동료 하나가 짝으로 붙고, 임무가 끝나면 돌아간다 (기획서 7.9) */
+    buddy: z.boolean().optional(),
     /** 완수하면 임무를 준 무리에 진 빚이 이만큼 준다 (일부 완수는 절반, 기획서 9.10) */
     repays_debt: z.number().int().min(1).optional(),
     /** 완수하면 이 세력 클락을 당긴다 (일부 완수는 절반). 전선 임무가 우리 무리의 계획을 앞당긴다 */
@@ -279,8 +285,20 @@ export function createContentSchemas(s: Scenario) {
      */
     z.strictObject({ npc_body: z.strictObject({ who: z.string().min(1), track: contentIdSchema, delta: z.number().int().min(-3).max(3), chance: z.number().min(0).max(1).default(1) }) }),
     /** 배역이 주인공과 함께 다닌다 (동행, 기획서 7.8) / 동행을 그만둔다 */
-    z.strictObject({ companion_join: z.strictObject({ who: z.string().min(1) }) }),
+    /**
+     * 함께 다니기 시작한다 (기획서 7.9). kind가 없으면 동물은 animal, 사람은 purpose.
+     * until: 목적 동행이 끝나는 조건 (플래그, 도착 구역, 몇 시간 뒤). 하나라도 차면 갈림길. 사람인데 until이 없으면 48시간
+     */
+    z.strictObject({
+      companion_join: z.strictObject({
+        who: z.string().min(1),
+        kind: z.enum(["animal", "purpose", "kin"]).optional(),
+        until: z.strictObject({ flag: contentIdSchema.optional(), zone: contentIdSchema.optional(), hours: z.number().int().min(1).max(240).optional() }).optional(),
+      }),
+    }),
     z.strictObject({ companion_leave: z.strictObject({ who: z.string().min(1) }) }),
+    /** 동행이 잠시 떨어진다: hours가 있으면 볼일을 보고 그 뒤 돌아오고, 없으면 지금 구역에 남아 기다린다 */
+    z.strictObject({ companion_part: z.strictObject({ who: z.string().min(1), hours: z.number().int().min(1).max(72).optional() }) }),
     /** 주인공의 빚 ± (own = 플레이어 소속). 양수는 빌림, 음수는 갚음. 0 아래로 가지 않는다 (기획서 9.10) */
     z.strictObject({ debt: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-50).max(50) }) }),
     /** 배역 NPC를 붙잡는다 (포로). by: own(플레이어 소속) 또는 세력 id, zone이 없으면 그 세력의 거점 */
@@ -303,6 +321,8 @@ export function createContentSchemas(s: Scenario) {
   const castRole = z.strictObject({
     /** 이 중에서만 */
     ids: z.array(contentIdSchema).optional(),
+    /** 지금 곁에 있는 동행 중에서 (이름 없는 인물·동물 포함, 기획서 7.9). kinds: 함께 다니는 이유, templates: 엑스트라 틀 */
+    companion: z.strictObject({ kinds: z.array(z.enum(["animal", "buddy", "squad", "purpose", "kin"])).optional(), templates: z.array(contentIdSchema).optional() }).optional(),
     /** 플레이어의 직속 상관 */
     commander: z.boolean().default(false),
     /** own = 플레이어 소속, 또는 세력 id */

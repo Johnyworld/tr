@@ -346,6 +346,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   lines.push(...bodyLines(after));
   for (const display of after) {
     displays.push(display);
+    if (display.type === "presence" && display.note) lines.push(display.note);
     if (display.type === "mission" && display.title.startsWith(SQUAD_REPORT_PREFIX)) {
       lines.push(`${display.title}: ${display.detail}. 보고 내용은 상태의 '분대' 섹션에 있다. 분대원이 돌아와(또는 전령으로) 보고하는 장면을 짧게 서술한다. 보고에 없는 것을 지어내지 않는다.`);
     } else if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);

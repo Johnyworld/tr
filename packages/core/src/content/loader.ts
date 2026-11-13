@@ -87,6 +87,9 @@ export function loadContent(contentDir: string): Content {
 /** 콘텐츠끼리의 참조를 검사한다. 참조 대상 종류가 생기면 여기에 검사를 더한다 */
 function checkReferences(content: Content): string[] {
   const problems: string[] = [];
+  for (const k of content.scenario.custom_start?.kin ?? []) {
+    if (!content.extras[k]) problems.push(`scenario.custom_start.kin: 알 수 없는 엑스트라 틀 ${k}`);
+  }
   for (const role of Object.values(content.roles)) {
     for (const itemId of role.start_inventory) {
       if (!content.items[itemId]) problems.push(`roles.${role.id}: 알 수 없는 아이템 ${itemId}`);
@@ -96,6 +99,9 @@ function checkReferences(content: Content): string[] {
     }
     if (role.commander && !content.npcs[role.commander]) {
       problems.push(`roles.${role.id}: 알 수 없는 상관 ${role.commander}`);
+    }
+    for (const sc of role.start_companions ?? []) {
+      if (!content.extras[sc.template]) problems.push(`roles.${role.id}: 알 수 없는 동행 틀 ${sc.template}`);
     }
     for (const npcId of role.squad ?? []) {
       const npc = content.npcs[npcId];
@@ -173,6 +179,7 @@ function checkReferences(content: Content): string[] {
         else if (!content.scenario.condition_tracks.some((t) => t.id === e.body.track)) problems.push(`storylets.${st.id}: 알 수 없는 상태 트랙 ${e.body.track}`);
       }
       if ("join_faction" in e && !content.factions[e.join_faction.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.join_faction.faction}`);
+      if ("companion_join" in e && e.companion_join.until?.zone && !content.locations[e.companion_join.until.zone]) problems.push(`storylets.${st.id}: 알 수 없는 구역 ${e.companion_join.until.zone}`);
       if ("faction_policy" in e) {
         const t = content.scenario.command?.policies.find((p) => p.id === e.faction_policy.topic);
         if (!t) problems.push(`storylets.${st.id}: 알 수 없는 방침 주제 ${e.faction_policy.topic}`);

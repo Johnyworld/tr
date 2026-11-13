@@ -69,3 +69,28 @@ describe("무소속 자유 시나리오 자동 플레이 (실제 콘텐츠)", ()
     expect(joined).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe("연고와 함께 다니는 떠돌이 자동 플레이 (기획서 7.9)", () => {
+  it("오류 없이 돌고, 떨어졌다가 다시 합류한다", async () => {
+    const { buildCustomRole } = await import("../game/customStart.ts");
+    const content = loadContent(REAL);
+    let parted = 0;
+    let rejoined = 0;
+    for (const [seed, kin] of [[1, "kin_young"], [2, "kin_elder"], [3, "kin_sibling"], [4, "kin_partner"]] as const) {
+      const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(seed) });
+      const role = buildCustomRole(content, {
+        faction: null, rank: "loner", title: "떠돌이", location: "old_town", kit: "wanderer", skills: { scavenge: 1 }, age: 30, opening: "폐허에서 눈을 뜬다.", background: [], kin: { template: kin, label: "가족" },
+      });
+      const world = m.create("mcp", undefined, { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] }, undefined, { role, background: [] });
+      const stats = autoplay(world, content, createSeededRng(seed * 7), 250);
+      for (const e of world.ctx().store.events()) {
+        if (e.type === "companion_parted") parted++;
+        if (e.type === "companion_rejoined") rejoined++;
+      }
+      world.close();
+      expect(stats.errors).toEqual([]);
+    }
+    expect(parted).toBeGreaterThan(0);
+    expect(rejoined).toBeGreaterThan(0);
+  });
+});

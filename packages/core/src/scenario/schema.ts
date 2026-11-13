@@ -194,6 +194,8 @@ export const scenarioFileSchema = z
         skill_points: z.number().int().min(0),
         skill_max: z.number().int().min(0),
         age: z.strictObject({ min: z.number().int().positive(), max: z.number().int().positive() }),
+        /** 무소속으로 시작할 때 고를 수 있는 연고 (엑스트라 틀 id, 기획서 7.9) */
+        kin: z.array(id).default([]),
         /** 시작 소지품 꾸러미 */
         kits: z.array(z.strictObject({ id, label: z.string().min(1), description: z.string().default(""), items: z.array(id) })).min(1),
       })

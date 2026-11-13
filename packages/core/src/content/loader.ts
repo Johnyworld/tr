@@ -87,6 +87,12 @@ export function loadContent(contentDir: string): Content {
 /** 콘텐츠끼리의 참조를 검사한다. 참조 대상 종류가 생기면 여기에 검사를 더한다 */
 function checkReferences(content: Content): string[] {
   const problems: string[] = [];
+  for (const p of content.scenario.command?.policies ?? []) {
+    for (const o of p.options) {
+      if (o.trade && !content.factions[o.trade.partner]) problems.push(`scenario.command.policies.${p.id}.${o.id}: 알 수 없는 교역 상대 ${o.trade.partner}`);
+      for (const who of o.opposed_by) if (!content.npcs[who]) problems.push(`scenario.command.policies.${p.id}.${o.id}: 알 수 없는 반대자 ${who}`);
+    }
+  }
   for (const k of content.scenario.custom_start?.kin ?? []) {
     if (!content.extras[k]) problems.push(`scenario.custom_start.kin: 알 수 없는 엑스트라 틀 ${k}`);
   }

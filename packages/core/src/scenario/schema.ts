@@ -293,6 +293,18 @@ export const scenarioFileSchema = z
                     ration_shift: z.number().int().min(-2).max(2).default(0),
                     /** 하루마다 사기 변화 */
                     morale: z.strictObject({ delta: z.number().int().min(-1).max(1), chance: z.number().min(0).max(1) }).optional(),
+                    /**
+                     * 교역: 하루마다 상대 무리와 자원을 바꾼다. 서로의 태도가 min_disposition 이상이고 양쪽 창고에 있을 때만.
+                     * 상대가 자기 자신이면 하지 않는다
+                     */
+                    trade: z
+                      .strictObject({
+                        partner: id,
+                        give: z.record(id, z.number().int().min(1)),
+                        get: z.record(id, z.number().int().min(1)),
+                        min_disposition: z.number().int().min(-3).max(3).default(0),
+                      })
+                      .optional(),
                     /** 이 안에 반대하는 사람 (NPC id). 대가 있는 성공이면 그들의 신뢰가 떨어진다 */
                     opposed_by: z.array(id).default([]),
                   }),
@@ -643,7 +655,11 @@ export const scenarioFileSchema = z
       for (const r of s.command.council_ranks) if (!ranks.has(r)) problem(`command.council_ranks: 알 수 없는 등급 ${r}`);
       for (const p of s.command.policies) {
         if (!p.options.some((o) => o.id === p.default)) problem(`command.policies.${p.id}: default ${p.default}가 선택지에 없다`);
-        for (const o of p.options) for (const r of Object.keys(o.upkeep)) if (!resources.has(r)) problem(`command.policies.${p.id}.${o.id}: 알 수 없는 자원 ${r}`);
+        for (const o of p.options) {
+          for (const r of [...Object.keys(o.upkeep), ...Object.keys(o.trade?.give ?? {}), ...Object.keys(o.trade?.get ?? {})]) {
+            if (!resources.has(r)) problem(`command.policies.${p.id}.${o.id}: 알 수 없는 자원 ${r}`);
+          }
+        }
       }
       if (s.command.policies.length && !s.command.council_moves.length) problem(`command: 방침이 있으면 council_moves(회의에서 쓰는 스킬)를 적는다`);
     }

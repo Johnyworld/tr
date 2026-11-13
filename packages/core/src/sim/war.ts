@@ -236,6 +236,27 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     }
   }
 
+  // 2-1. 교역 방침 (기획서 9.11): 서로 등을 돌리지 않았고 양쪽 창고에 있으면 바꾼다
+  for (const id of alive) {
+    for (const { option } of factionPolicy(content, next.factions[id])) {
+      const t = option.trade;
+      if (!t || t.partner === id || !alive.includes(t.partner)) continue;
+      const me = next.factions[id]!;
+      const them = next.factions[t.partner]!;
+      if (disposition(content, id, t.partner, next) < t.min_disposition || disposition(content, t.partner, id, next) < t.min_disposition) continue;
+      const enough = (f: FactionState, need: Record<string, number>) => Object.entries(need).every(([r, n]) => (f.resources[r] ?? 0) >= n);
+      if (!enough(me, t.give) || !enough(them, t.get)) continue;
+      for (const [r, n] of Object.entries(t.give)) {
+        me.resources[r] = (me.resources[r] ?? 0) - n;
+        them.resources[r] = (them.resources[r] ?? 0) + n;
+      }
+      for (const [r, n] of Object.entries(t.get)) {
+        them.resources[r] = (them.resources[r] ?? 0) - n;
+        me.resources[r] = (me.resources[r] ?? 0) + n;
+      }
+    }
+  }
+
   // 3. 세력 클락
   const planned: { clockId: string; clock: ClockState }[] = [];
   const shifts: WarDayResult["shifts"] = [];

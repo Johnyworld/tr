@@ -34,7 +34,7 @@ describe("시나리오마다 자동 플레이 (실제 콘텐츠)", () => {
       const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(11) });
       const world = m.create("mcp", role.id);
       expect(world.state().playerZone).toBe(role.start_location ?? world.state().playerZone);
-      const stats = autoplay(world, content, createSeededRng(110), 250);
+      const stats = autoplay(world, content, createSeededRng(110), 320);
       world.close();
       expect(stats.errors).toEqual([]);
       // 분대를 맡으면 분대 명령을, 회의에 앉으면 안을 올린다 (기획서 9.11)

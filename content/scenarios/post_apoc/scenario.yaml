@@ -217,6 +217,28 @@ command:
           defense: 0.75
           opposed_by: [a_doyun]
 
+    - id: trade
+      label: 교역
+      default: none
+      options:
+        - id: none
+          label: 하지 않기
+          summary: 창고의 것은 창고에 둔다
+        - id: food_for_ammo
+          label: 식량을 주고 탄약
+          summary: 날마다 나루상단에 식량을 넘기고 탄약을 받는다. 서로 등을 돌리면 끊긴다
+          trade: { partner: faction_e, give: { food: 10 }, get: { ammo: 5 } }
+          opposed_by: [a_doyun]
+        - id: water_for_medicine
+          label: 물을 주고 의약품
+          summary: 날마다 하얀매 진료소에 물을 넘기고 의약품을 조금 받는다
+          trade: { partner: faction_d, give: { water: 8 }, get: { medicine: 2 } }
+        - id: fuel_for_food
+          label: 연료를 주고 식량
+          summary: 날마다 나루상단에 연료를 넘기고 식량을 받는다. 겨울에는 추위가 걱정이다
+          trade: { partner: faction_e, give: { fuel: 4 }, get: { food: 8 } }
+          opposed_by: [a_jeonghun]
+
 # 자유 시나리오 (기획서 12.5): 플레이어가 쓴 시작을 이 범위 안의 부품으로 옮긴다
 custom_start:
   # 세력에 속할 때 고를 수 있는 계급. 지도부(leader)는 무리마다 한 자리뿐이라 뺀다. 참모·간부급은 officer

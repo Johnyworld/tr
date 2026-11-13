@@ -1,0 +1,32 @@
+# 붉은연합의 신임 약탈조장 (시작 역할, 초안). 다른 무리의 분대 (기획서 9.11)
+# 약탈 삼조에서 버틴 주인공이 사조를 맡았다. 군율의 무리라 명령은 위에서 내려오고, 조원은 조장을 본다
+id: role_c_squad_leader
+label: 붉은연합 약탈 사조장
+faction: faction_c
+rank: squad_leader
+default_name: 조장
+opening_scene: 새벽, 고가도로 너머 물류창고 마당. 드럼통 불가에 조원 넷이 서 있다. 거구는 팔짱을 끼고, 앳된 조원은 완장을 만지작거리고, 늙은 조원은 털모자를 벗어 인사한다. 마른 정찰병만 당신 쪽을 보지 않는다. 창고 위 지휘소 창문에 장갑 낀 손이 보인다.
+scenario:
+  title: 붉은연합의 약탈조장
+  pitch: >-
+    가장 크고 거친 무리에서 처음으로 사람을 맡는다. 위에서는 할당량과 공세가 내려오고, 아래에서는 조원 넷이 당신을 본다.
+    군율의 무리에서 조장은 조원을 지키는 사람인가, 조원을 앞줄에 세우는 사람인가.
+  intro: >-
+    가을이 깊어 간다. 당신은 붉은연합 약탈 삼조에서 일 년을 버티다 지난주 사조장이 됐다. 전 사조장은 지난달 공세 연습 중에 "사고"로 죽었다.
+    사조는 간부 마경수 밑에서 고가도로 너머 물류창고를 지키고, 동쪽 공세 준비를 거든다. 물류창고 안쪽에는 붙잡힌 사람들을 가둔 수용소가 있다.
+    조원은 넷. 싸움 잘하는 거구 권무열, 지난달 징집된 진아름, 가장 오래 버틴 늙은 표창식, 그리고 늘 눈 밑이 검은 정찰병 고석진.
+    붉은연합의 규율은 군율이다. 명령을 어기면 광장에서 본보기가 되고, 할당량을 못 채운 조는 조 전체가 굶는다.
+    이야기는 조장이 되고 처음 조원을 모으는 새벽, 물류창고 마당에서 시작한다.
+age: 31
+start_skills: { intimidate: 1, tactics: 1 }
+start_inventory: [c_armband, old_rifle, radio]
+start_location: c_warehouse
+access: [ration, mission_board]
+beliefs_preset: c_squad_leader_start
+known_npcs: [c_muyeol, c_areum, c_changsik, c_seokjin, c_gyeongsu, c_cheolgu, c_dongpal, c_sora, c_sangok, c_hyeran, c_pilsu]
+commander: c_gyeongsu
+# 사조 넷 (squad_order로 일을 맡긴다)
+squad: [c_muyeol, c_areum, c_changsik, c_seokjin]
+missions: [c_sl_overpass_hold, c_sl_east_drill, c_sl_prisoner_transfer, c_sl_squad_quota, c_sl_runaway_hunt, c_sl_ammo_haul]
+# c_squad_leader: 사조에 묶인 이야기, command: 분대장이면 누구나, red_life: 붉은연합의 일상, world: 도시의 일
+storylet_tags: [c_squad_leader, command, red_life, world]

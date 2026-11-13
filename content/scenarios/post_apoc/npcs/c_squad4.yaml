@@ -1,0 +1,108 @@
+# 붉은연합 약탈 사조 (신임 약탈조장 시나리오의 조원, 초안)
+# 사조는 간부 마경수 밑에서 고가도로 너머 물류창고를 지키고 동쪽 공세 준비를 거든다. 전 조장은 지난달 공세 연습 중에 "사고"로 죽었다
+
+- id: c_muyeol
+  name: 권무열
+  alias: 목에 문신 있는 거구
+  faction: faction_c
+  rank: grunt
+  age: 36
+  gender: male
+  look: 목덜미에서 귀밑까지 문신이 올라온 거구. 손가락 마디가 다 굵고, 웃으면 앞니 하나가 금이다.
+  reputation: 붕괴 전 교도소에서 나왔다는 말이 도는 사내. 싸움에서는 사조에서 가장 믿을 만하다. 수용소의 포로 하나를 유난히 챙긴다.
+  want: 수용소에 갇힌 동생을 살려서 빼내는 것
+  fear: 동생 이야기가 마경수 귀에 들어가는 것
+  values: { discipline: 0, loyalty: 2, mercy: 1, honesty: 0, self_interest: 1 }
+  traits: [protective, hot_tempered, blunt]
+  voice:
+    style: 짧고 굵은 반말. 윗사람에게도 존댓말이 반쯤 섞인다
+    samples:
+      - "조장, 나한테 시킬 거면 앞에서 시켜. 뒤에서 말고."
+      - "밥 얘기 말고 딴 얘기 해."
+  routine: { dawn: 물류창고 담 보초, day: 물류창고 마당, evening: 수용소 담 근처, night: 막사 }
+  rules:
+    - 수용소 근처를 지날 때마다 안쪽 창문을 한 번 본다
+    - 조원이 맞는 것을 보면 끼어든다
+  knows:
+    - 수용소 안 포로들의 배식이 하루 한 번이라는 것
+    - 전 조장의 "사고"가 사고가 아니었다는 소문
+  doesnt_know:
+    - 동생이 이미 다른 수용소로 옮겨졌을 수 있다는 것
+  secret:
+    content: 수용소에 갇힌 청솔형제단 쪽 포로 중 하나가 친동생이다. 붕괴 때 서로 다른 무리로 흩어졌다
+    reveal_when: 조장이 조원을 위해 마경수에게 맞선 뒤, 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 2, agility: 0, vitality: 2, senses: 0, nerve: 1, charm: -1, intellect: -1 }
+  skills: { fight: 2, intimidate: 2, endure: 1 }
+  start_inventory: [crowbar, c_armband]
+  playable: true
+  zone: c_warehouse
+
+- id: c_areum
+  name: 진아름
+  alias: 완장이 헐렁한 앳된 조원
+  faction: faction_c
+  rank: grunt
+  age: 19
+  gender: female
+  look: 팔에 비해 헐렁한 붉은 완장을 안전핀으로 줄여 찼다. 손톱을 물어뜯어 끝이 늘 빨갛다.
+  reputation: 지난달 구시가에서 끌려와 징집된 신입. 총을 쏴 본 적이 없다. 눈치가 빠르고 길을 잘 외운다.
+  want: 앞줄에 서지 않고 겨울을 넘기는 것
+  fear: 공세 맨 앞줄
+  values: { discipline: -1, loyalty: 0, mercy: 2, honesty: 1, self_interest: 1 }
+  traits: [timid, curious, quick_learner]
+  voice:
+    style: 작고 빠른 존댓말. 놀라면 말끝이 올라간다
+    samples:
+      - "조장님, 저 그 길 알아요. 거기 말고 이쪽이 더 빨라요."
+      - "앞줄은… 앞줄은 누가 서요?"
+  routine: { dawn: 막사, day: 물류창고 마당 잔일, evening: 식당 천막, night: 막사 }
+  rules:
+    - 마경수가 지나가면 숨을 멈춘다
+    - 길 이야기가 나오면 갑자기 말이 많아진다
+  knows:
+    - 구시가 뒷골목의 샛길 여러 개
+    - 징집된 사람 중 몇이 탈영을 이야기한다는 것
+  doesnt_know:
+    - 표창식이 규율반에 말을 옮긴다는 것
+  stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: -1, charm: 0, intellect: 1 }
+  skills: { stealth: 1, scavenge: 1, sense_danger: 1 }
+  start_inventory: [c_armband, water_bottle]
+  playable: true
+  zone: c_warehouse
+
+- id: c_changsik
+  name: 표창식
+  alias: 회색 털모자를 쓴 늙은 조원
+  faction: faction_c
+  rank: grunt
+  age: 53
+  gender: male
+  look: 회색 털모자를 눌러쓴 늙은 사내. 말할 때마다 장부 넘기듯 손가락으로 허벅지를 두드린다.
+  reputation: 붕괴 전 공단 경비원. 사조에서 가장 오래 버틴 사람. 무엇이든 시키면 군말 없이 한다.
+  want: 늙은 몸으로 담 안에 남는 것. 쓸모없어지면 쫓겨난다는 걸 안다
+  fear: 담 밖으로 내쫓기는 것
+  values: { discipline: 2, loyalty: 1, mercy: 0, honesty: -1, self_interest: 2 }
+  traits: [patient, calculating, guarded]
+  voice:
+    style: 느리고 공손한 존댓말. 누구에게나 "예, 예" 하고 시작한다
+    samples:
+      - "예, 예. 조장님 말씀이 맞습니다."
+      - "그런 얘기는 담이 듣습니다."
+  routine: { dawn: 감시탑, day: 물류창고 마당, evening: 규율반 천막 근처, night: 막사 }
+  rules:
+    - 조원들의 불평을 끝까지 듣고 아무 말도 하지 않는다
+    - 저녁마다 잠깐 자리를 비운다
+  knows:
+    - 사조 조원들의 불평과 누가 무슨 말을 했는지
+  doesnt_know:
+    - 마경수가 그를 곧 쓸모없다고 여기고 있다는 것
+  secret:
+    content: 규율반에 사조의 말을 옮긴다. 담 안에 남는 값이다. 전 조장의 "사고"도 그의 보고에서 시작됐다
+    reveal_when: 저녁에 규율반 천막 근처에서 마주쳤을 때, 또는 목숨이 걸렸을 때
+    min_trust: 2
+  stats: { strength: 0, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 1 }
+  skills: { sense_danger: 2, deceive: 1, endure: 1 }
+  start_inventory: [c_armband, cigarettes]
+  playable: true
+  zone: c_warehouse

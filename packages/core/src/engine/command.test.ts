@@ -126,7 +126,7 @@ describe("지도부 회의 (기획서 9.11)", () => {
   it("간부는 상관이 있을 때 안을 올린다. 받아들여지면 무리 방침이 바뀌고 배급 단계가 달라진다 (주사위가 늘 6)", () => {
     const w = open("role_a_officer", () => () => 0.999);
     const propose = { topic: "ration", option: "cut", approach: "persuade", stat: "charm", intent: "겨울까지 버티려면 줄여야 한다" };
-    expect(w.sceneForGm()).toContain("무리 방침: 배급 보통 · 태세 보통");
+    expect(w.sceneForGm()).toContain("무리 방침: 배급 보통 · 태세 보통 · 교역 하지 않기");
     expect(w.executeTool("council_propose", propose).ok).toBe(false); // 상관이 장면에 없다
     w.executeTool("npc_presence", { npc_id: "a_seonghee", action: "enter" });
     const before = rationLevel(w.content, w.state().factions.faction_a!);
@@ -178,6 +178,21 @@ describe("지도부 회의 (기획서 9.11)", () => {
       return n;
     };
     expect(attacks({ stance: "attack" })).toBeGreaterThan(attacks());
+
+    // 교역: 날마다 상대 창고와 바꾼다. 서로 등을 돌리면 끊긴다
+    const trade = (policy?: Record<string, string>, hostile = false) => {
+      const world = structuredClone(base);
+      world.factions.faction_a!.policy = policy;
+      if (hostile) world.factions.faction_e!.disposition = { ...world.factions.faction_e!.disposition, faction_a: -3 };
+      const after = simulateWarDay(world, content, createSeededRng(1)).factions;
+      return { food: after.faction_a!.resources.food!, ammo: after.faction_a!.resources.ammo!, traderFood: after.faction_e!.resources.food! };
+    };
+    const none = trade();
+    const deal = trade({ trade: "food_for_ammo" });
+    expect(deal.food).toBe(none.food - 10);
+    expect(deal.ammo).toBe(none.ammo + 5);
+    expect(deal.traderFood).toBe(none.traderFood + 10);
+    expect(trade({ trade: "food_for_ammo" }, true)).toEqual(trade(undefined, true));
     expect(attacks({ stance: "defend" })).toBeLessThan(attacks());
   });
 });

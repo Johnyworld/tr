@@ -197,12 +197,16 @@ export function storyletWindow(state: GameState, content: Content, at: GameTime)
 }
 
 /** 무게로 하나 고른다 */
+/** 시나리오에 묶인 이야기는 도시 공통 이야기(world)보다 이만큼 자주 고른다 (공통 이야기가 늘어도 시나리오 이야기가 묻히지 않게) */
+export const ROLE_STORY_BOOST = 3;
+
 export function pickStorylet(candidates: readonly StoryletContent[], rng: Rng): StoryletContent | null {
-  const total = candidates.reduce((n, s) => n + s.weight, 0);
+  const weightOf = (s: StoryletContent) => s.weight * (s.tags.includes(WORLD_TAG) ? 1 : ROLE_STORY_BOOST);
+  const total = candidates.reduce((n, s) => n + weightOf(s), 0);
   if (total <= 0) return null;
   let r = rng() * total;
   for (const s of candidates) {
-    r -= s.weight;
+    r -= weightOf(s);
     if (r < 0) return s;
   }
   return candidates.at(-1) ?? null;

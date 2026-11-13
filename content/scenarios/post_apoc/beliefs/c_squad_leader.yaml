@@ -1,0 +1,21 @@
+# 붉은연합 신임 약탈조장이 시작할 때 알고 있는 것 (초안). 일부는 틀렸다
+id: c_squad_leader_start
+beliefs:
+  - fact: 사조는 간부 마경수 밑에서 고가도로 너머 물류창고를 지키고 동쪽 공세 준비를 거든다.
+    source: seen
+    accuracy: exact
+  - fact: 전 사조장은 지난달 공세 연습 중에 사고로 죽었다고 한다. 조원들은 그 이야기를 꺼리지 않으려 애쓴다.
+    source: report
+    accuracy: approximate
+  - fact: 조장은 조원의 할당량과 탈영을 함께 책임진다. 조원이 탈영하면 조장도 본보기가 될 수 있다.
+    source: report
+    accuracy: exact
+  - fact: 동쪽 공세는 눈이 오기 전에 시작된다고 한다. 앞줄은 조마다 한 사람씩 낸다는 말이 돈다.
+    source: rumor
+    accuracy: approximate
+  - fact: 규율반은 조마다 귀를 하나씩 심어 둔다고들 한다. 사조에도 있을지 모른다.
+    source: rumor
+    accuracy: exact
+  - fact: 청솔형제단은 붙잡은 사람을 그 자리에서 죽인다고 한다.
+    source: rumor
+    accuracy: "false"

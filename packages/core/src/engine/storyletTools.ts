@@ -366,6 +366,14 @@ function applyEffect(
     store.append({ type: "item_granted", to: playerId, itemId: item, quantity });
     return { line: `${josa(`${name} ×${quantity}`, "을/를")} 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
   }
+  if ("lose_item" in effect) {
+    const { item } = effect.lose_item;
+    const have = state.characters[playerId]!.inventory[item] ?? 0;
+    const quantity = Math.min(have, effect.lose_item.quantity);
+    if (quantity <= 0) return {};
+    store.append({ type: "item_consumed", holder: playerId, itemId: item, quantity });
+    return { line: `${josa(`${content.items[item]?.name ?? item} ×${quantity}`, "을/를")} 잃었다.` };
+  }
   if ("take_item" in effect) {
     const { item, quantity } = effect.take_item;
     store.append({ type: "item_consumed", holder: playerId, itemId: item, quantity });
@@ -544,7 +552,9 @@ function applyEffect(
     const id = whoOf(ctx, effect.npc_depart.who, cast);
     const npc = id ? state.characters[id] : undefined;
     if (!id || !npc || npc.dead || npc.away) return {};
-    const to = effect.npc_depart.to_faction ?? null;
+    // own: 주인공의 무리로 데려온다 (무소속이면 아무 일도 없다)
+    const to = effect.npc_depart.to_faction === "own" ? state.characters[playerId]!.factionId || null : (effect.npc_depart.to_faction ?? null);
+    if (effect.npc_depart.to_faction === "own" && !to) return {};
     store.append({ type: "npc_departed", npcId: id, toFaction: to });
     const name = playerCalls(state, content, id);
     return {

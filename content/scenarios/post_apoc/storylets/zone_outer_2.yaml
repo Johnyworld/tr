@@ -1,0 +1,929 @@
+# 바깥 구역 셋의 사람과 이야기 (12-53): 언덕 위 성당, 가람대학교 캠퍼스, 고속도로 휴게소. 태그 world, when.zones로 묶는다
+# 인물: npcs/zone_outer.yaml (zo2_father 피정호, zo2_librarian 류경환, zo2_greenhouse 어윤복, zo2_seojin 명서진, zo2_gyudeok 채규덕)
+# 갈래 (플래그 머리 zo2_):
+#   성당: zo2_ca_door (문 앞의 약속) → zo2_ca_funeral (뒤뜰의 장례)
+#         → 밀고자: zo2_ca_confessor (종교인, 고해소) 또는 zo2_ca_backwall (뒷담의 속삭임) → zo2_ca_recruiters (모집책이 온 날)
+#         → 납골당: zo2_ca_crypt (나루상단이 쓰고 싶어 한다) → zo2_ca_crypt_after (그 뒤)
+#   캠퍼스: zo2_cp_library (도서관 계단) → zo2_cp_burn (책이냐 씨앗이냐) → zo2_cp_seeds (씨앗 봉투)
+#         → zo2_cp_lab (실험실 지하) → zo2_cp_cage (출입증) / zo2_cp_recruit (하얀매가 온 날)
+#   휴게소: zo2_rs_board (칠판) / zo2_rs_stranger (걸어 들어온 사람) → zo2_rs_leaving (다시 나가는 사람)
+#         / zo2_rs_unload (짐 부리기) / zo2_rs_milestone (이정표의 분필)
+# 도시 밖은 아무도 모른다: 바깥 소식은 늘 엇갈리는 소문(source: rumor)으로만 준다. 지어낸 사실로 박지 않는다
+
+# ══ 언덕 위 성당 ══════════════════════════════
+
+- id: zo2_ca_door
+  title: 문 앞의 약속
+  tags: [world]
+  when:
+    zones: [cathedral]
+    segments: [morning, day, evening]
+    flags_none: [zo2_ca_met]
+  cast:
+    father: { ids: [zo2_father] }
+  setup: 언덕을 다 오르면 붉은 벽돌 성당의 문이 반쯤 열려 있다. 문턱 안쪽에 나무 고해소 하나를 끌어다 놓았고, 그 안에 엽총 한 자루와 쇠파이프 둘이 세워져 있다. {father:이/가} 문틀에 기대 서서 당신 허리께를 본다. "들어오시려면 그건 여기 두고 가세요. 나갈 때 그대로 돌려드립니다."
+  ai_direction: 피정호 신부는 누구에게나 같은 말을 한다. 무기를 맡기면 종탑 아래 피난민 거처까지 들여보내 주고, 칼 한 자루까지 다 내놓으라고 하지는 않는다 (총과 큰 무기만). 거절하면 마당과 뒤뜰까지만 허락한다. 고해소 안의 무기는 지금까지 하나도 없어진 적이 없다. 안에는 노인과 아이, 다친 사람이 많다. 신부가 왜 이 약속을 고집하는지는 드러내지 않는다.
+  choices:
+    - id: hand_over
+      label: 무기를 고해소에 세워 두고 들어간다
+      effects:
+        - set_flag: zo2_ca_met
+        - set_flag: zo2_ca_trusted
+        - relation: { who: father, axis: trust, delta: 1 }
+        - relation: { who: father, axis: respect, delta: 1 }
+        - belief: { fact: "언덕 위 성당의 피정호 신부는 총을 문 안쪽 고해소에 맡기게 한다. 종탑 아래에 어느 무리에도 들지 못한 피난민들이 산다. 노인과 아이가 많다", source: seen }
+    - id: yard_only
+      label: 무기는 못 내놓는다고, 마당에만 있겠다고 한다
+      effects:
+        - set_flag: zo2_ca_met
+        - belief: { fact: "언덕 위 성당 신부는 무기를 내놓지 않으면 마당과 뒤뜰까지만 들인다. 화내지 않고, 그 대신 문을 넘지 못하게 문턱에 서 있었다", source: seen }
+    - id: hide_blade
+      label: 총은 맡기고, 품 안의 칼은 모른 척 지닌 채 들어간다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: zo2_ca_met
+          - set_flag: zo2_ca_trusted
+          - belief: { fact: "성당 신부는 총만 받고 더 묻지 않았다. 종탑 아래 피난민 거처까지 들어갔다", source: seen }
+        partial:
+          - set_flag: zo2_ca_met
+          - set_flag: zo2_ca_trusted
+          - relation: { who: father, axis: trust, delta: -1 }
+          - belief: { fact: "성당 신부가 내 품께를 오래 봤다. 아무 말 없이 길을 비켜 주었지만 저녁 내내 내 곁에서 멀리 가지 않았다", source: seen }
+        miss:
+          - set_flag: zo2_ca_met
+          - relation: { who: father, axis: trust, delta: -2 }
+          - deed: { summary: 언덕 위 성당에 칼을 숨겨 들어가려다 신부에게 들켰다, tags: [deceit], severity: 1, privacy: semi_private }
+          - belief: { fact: "성당 신부가 내 품에서 칼을 꺼내 고해소에 같이 세웠다. '이것도요.' 피난민 몇이 그걸 봤다", source: seen }
+
+- id: zo2_ca_funeral
+  title: 뒤뜰의 장례
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    zones: [cathedral]
+    segments: [dawn, morning]
+    flags_all: [zo2_ca_met]
+  cast:
+    father: { ids: [zo2_father] }
+    mourner: { extra: refugee, label: 담요를 두른 피난민, keep: zo2_ca_mourner }
+  setup: 성당 뒤뜰, 나무 십자가가 줄지어 꽂힌 자리 끝에 새 구덩이가 반쯤 파여 있다. 천에 싼 몸 하나가 들것 위에 놓였다. {father:이/가} 삽자루에 기대 숨을 고르고, {mourner:은/는} 들것 곁에 쪼그려 앉아 움직이지 않는다. 땅이 얼어 삽이 잘 안 들어간다.
+  ai_direction: 밤사이 종탑 아래에서 죽은 피난민이다. 감염이 아니라 추위와 허기, 오래 앓던 병이다 (물린 자국 없음). 누구인지는 지어내지 않는다. {mourner}에게 가까운 사람이었다. 신부는 늙어서 구덩이를 끝까지 못 판다. 신부의 기도는 정해진 문구가 없고, 이름과 그 사람이 한 일을 부른다. 무리 사람이 와서 손을 보태면 피난민들이 그 무리를 조금 다르게 본다.
+  choices:
+    - id: dig
+      label: 삽을 받아 구덩이를 끝까지 판다
+      check: endure
+      outcomes:
+        success:
+          - relation: { who: father, axis: trust, delta: 1 }
+          - relation: { who: mourner, axis: affection, delta: 1 }
+          - deed: { summary: 언덕 위 성당 뒤뜰에서 피난민의 무덤을 팠다, tags: [mercy], severity: 1, privacy: semi_private }
+          - belief: { fact: "언 땅을 끝까지 파서 성당 뒤뜰에 피난민 하나를 묻었다. 신부가 그 사람의 이름을 세 번 불렀다", source: seen }
+        partial:
+          - relation: { who: father, axis: trust, delta: 1 }
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "성당 뒤뜰의 언 땅을 파느라 손이 곱았다. 구덩이는 얕았지만 흙은 다 덮었다", source: seen }
+        miss:
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "언 땅에 삽이 튕겨 나갔다. 결국 피난민들이 돌을 모아 무덤을 덮었다", source: seen }
+    - id: shroud
+      label: 내 담요를 내어 천 위에 한 겹 더 싸 준다
+      effects:
+        - take_item: { item: blanket }
+        - relation: { who: mourner, axis: trust, delta: 2 }
+        - relation: { who: father, axis: affection, delta: 1 }
+        - deed: { summary: 성당 뒤뜰에 묻히는 피난민에게 담요를 내주었다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "성당 뒤뜰에 묻힌 피난민을 내 담요로 한 번 더 쌌다. 곁의 피난민이 고개를 숙였다. 산 사람이 덮어야 할 것을 왜 묻느냐고 중얼거린 사람도 있었다", source: seen }
+    - id: ask_cause
+      label: 무엇 때문에 죽었는지, 종탑 아래 사정이 어떤지 묻는다
+      effects:
+        - relation: { who: father, axis: trust, delta: 1 }
+        - belief: { fact: "신부 말로는 종탑 아래 피난민은 추위와 허기로 하나씩 죽는다. 무리들이 일할 만한 사람만 데려가서 남은 사람은 노인과 아이, 다친 사람뿐이다", source: report }
+
+- id: zo2_ca_confessor
+  title: 고해소의 빈 의자
+  tags: [world]
+  when:
+    zones: [cathedral]
+    segments: [evening, night]
+    occupations: [preacher]
+    day_gte: 3
+    flags_all: [zo2_ca_met]
+    flags_none: [zo2_ca_informer_known]
+  cast:
+    father: { ids: [zo2_father], enter: false }
+    penitent: { extra: refugee, label: 고해소 너머의 목소리, keep: zo2_ca_informer }
+  setup: 신부가 기침이 심해 일찍 누웠다. 대신 고해소에 앉아 달라는 부탁을 받았다. 촛불 하나, 나무 칸막이 너머에서 누가 무릎을 꿇는 소리. {penitent}의 목소리가 떨린다. "신부님 아니시죠. 그래도… 들어 주실 거죠."
+  ai_direction: 이 피난민({penitent})은 붉은연합 모집책에게 종탑 아래에서 젊고 쓸 만한 사람의 이름을 넘기고, 그 값으로 통조림을 받아 왔다. 그 통조림을 자기 아이에게 먹였다. 다음 모집 때 끌려갈 사람 하나가 고해하는 사람의 오랜 이웃이다. 고해에서 들은 것을 옮기면 신부와의 약속을 깨는 것이고, 옮기지 않으면 누군가 끌려간다. 주인공이 종교인이라는 것은 피난민들도 안다.
+  choices:
+    - id: absolve
+      label: 끝까지 듣고, 이제 그만두라고만 말한 뒤 비밀을 지킨다
+      effects:
+        - set_flag: zo2_ca_informer_known
+        - set_flag: zo2_ca_informer_kept
+        - relation: { who: penitent, axis: trust, delta: 2 }
+        - standing: 1
+        - belief: { fact: "성당 고해소에서 피난민 하나가 붉은연합 모집책에게 이웃들의 이름을 넘겨 왔다고 털어놓았다. 고해로 들은 것이다. 옮기지 않기로 했다", source: seen }
+    - id: penance
+      label: 다음 모집책이 올 때 이름 대신 거짓 이름을 대라고 보속을 준다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: zo2_ca_informer_known
+          - set_flag: zo2_ca_informer_turned
+          - relation: { who: penitent, axis: trust, delta: 2 }
+          - standing: 2
+          - belief: { fact: "고해한 피난민이 다음엔 모집책에게 이미 떠난 사람들의 이름만 대겠다고 약속했다. 칸막이 너머에서 오래 울었다", source: report }
+        partial:
+          - set_flag: zo2_ca_informer_known
+          - set_flag: zo2_ca_informer_kept
+          - standing: 1
+          - belief: { fact: "고해한 피난민은 해 보겠다고만 했다. 아이 몫의 통조림 이야기를 하며 말끝을 흐렸다", source: report }
+        miss:
+          - set_flag: zo2_ca_informer_known
+          - set_flag: zo2_ca_informer_kept
+          - relation: { who: penitent, axis: trust, delta: -1 }
+          - standing: -1
+          - belief: { fact: "보속 이야기를 꺼내자 고해하던 피난민이 칸막이 너머에서 일어나 나가 버렸다", source: seen }
+    - id: tell_father
+      label: 고해가 끝난 뒤 신부를 깨워 들은 것을 전한다
+      effects:
+        - set_flag: zo2_ca_informer_known
+        - set_flag: zo2_ca_informer_told
+        - relation: { who: father, axis: trust, delta: -1 }
+        - relation: { who: father, axis: respect, delta: 1 }
+        - standing: -1
+        - deed: { summary: 성당 고해소에서 들은 말을 신부에게 옮겼다, tags: [betrayal], severity: 1, privacy: private }
+        - belief: { fact: "고해에서 들은 밀고 이야기를 피정호 신부에게 전했다. 신부는 한참 말이 없다가, 다음엔 그런 걸 나한테도 옮기지 말라고 했다. 그래도 종탑 아래 사람들을 다시 세어 보러 나갔다", source: seen }
+
+- id: zo2_ca_backwall
+  title: 뒷담의 속삭임
+  tags: [world]
+  when:
+    zones: [cathedral]
+    segments: [evening, night]
+    occupations: [none, soldier, cook, carpenter, trader, medic, mechanic, scavenger]
+    day_gte: 3
+    flags_all: [zo2_ca_met]
+    flags_none: [zo2_ca_informer_known]
+  cast:
+    penitent: { extra: refugee, label: 담 그늘의 피난민, keep: zo2_ca_informer }
+  setup: 성당 뒤뜰 담 그늘, 무덤 줄 끝에서 낮은 목소리가 오간다. {penitent:이/가} 담 너머 누군가에게 종이쪽지를 건네고, 대신 통조림 두 개를 받아 품에 넣는다. 담 너머 사람의 소매에 붉은 천이 언뜻 보인다.
+  ai_direction: 이 피난민({penitent})은 붉은연합 모집책에게 종탑 아래에서 젊고 쓸 만한 사람의 이름을 넘기고 통조림을 받는다. 그 통조림은 자기 아이 몫이다. 담 너머 모집책은 곧 떠난다. 들키면 피난민은 아이를 핑계로 빈다. 신부는 아직 모른다.
+  choices:
+    - id: confront
+      label: 모집책이 가고 나서 피난민을 붙잡고 쪽지에 뭘 적었는지 묻는다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: zo2_ca_informer_known
+          - set_flag: zo2_ca_informer_turned
+          - relation: { who: penitent, axis: respect, delta: 1 }
+          - belief: { fact: "성당 피난민 하나가 붉은연합 모집책에게 이웃들의 이름을 넘겨 왔다. 다그치자 다음부터는 이미 떠난 사람 이름만 대겠다고 했다", source: seen }
+        partial:
+          - set_flag: zo2_ca_informer_known
+          - set_flag: zo2_ca_informer_kept
+          - relation: { who: penitent, axis: trust, delta: -1 }
+          - belief: { fact: "성당 피난민 하나가 붉은연합 모집책에게 이름을 넘겼다고 시인했다. 아이 몫이라며 통조림을 끌어안고 놓지 않았다", source: seen }
+        miss:
+          - set_flag: zo2_ca_informer_known
+          - set_flag: zo2_ca_informer_kept
+          - relation: { who: penitent, axis: trust, delta: -2 }
+          - belief: { fact: "담 그늘의 피난민이 쪽지 같은 건 없었다며 달아났다. 담 너머에 붉은 천을 단 사람이 있었던 것은 분명하다", source: seen }
+    - id: tell_father
+      label: 피정호 신부에게 본 것을 그대로 알린다
+      effects:
+        - set_flag: zo2_ca_informer_known
+        - set_flag: zo2_ca_informer_told
+        - belief: { fact: "성당 뒷담에서 피난민 하나가 붉은 천 단 사람에게 쪽지를 주고 통조림을 받는 것을 봤다. 신부에게 알렸다. 신부는 그 사람을 탓하지 말라고 하면서도 종탑 아래 사람들을 다시 세어 보았다", source: seen }
+    - id: look_away
+      label: 못 본 걸로 한다. 아이 몫이라면 할 말이 없다
+      effects:
+        - set_flag: zo2_ca_informer_known
+        - set_flag: zo2_ca_informer_kept
+        - belief: { fact: "성당 피난민 하나가 붉은연합 모집책에게 쪽지를 넘기고 통조림을 받는 것을 보고도 모른 척했다", source: seen }
+
+- id: zo2_ca_recruiters
+  title: 모집책이 온 날
+  tags: [world]
+  when:
+    zones: [cathedral]
+    segments: [morning, day]
+    factions: [none, faction_a, faction_b, faction_d, faction_e, faction_y]
+    flags_all: [zo2_ca_informer_known]
+    flags_none: [zo2_ca_recruit_done]
+  cast:
+    father: { ids: [zo2_father] }
+    recruiter: { extra: c_raider, label: 붉은 완장의 모집책 }
+    informer: { recall: zo2_ca_informer, enter: false, optional: true }
+  setup: 언덕길로 붉은 완장 넷이 올라온다. 맨 앞의 {recruiter:이/가} 성당 마당에 통조림 상자 하나를 내려놓고 종이를 편다. "이름 부르는 사람은 나와. 먹여 주고 재워 준다. 일만 하면 돼." 문턱에 {father:이/가} 팔을 벌리고 선다. 종탑 아래 피난민들이 웅성거린다.
+  ai_direction: 붉은연합은 종탑 아래에서 일할 수 있는 젊은 사람을 데려가려 한다. 성당은 피난처라 무리가 차지하지 않지만, 모집책은 "본인이 원해서 가는 것"이라고 우긴다. 실제로 가고 싶어 하는 사람도 한둘 있다 (배고프니까). 종이의 이름은 피난민 하나가 넘긴 것이다. 그 밀고자가 거짓 이름을 넘겼다면(zo2_ca_informer_turned) 종이의 이름 대부분이 이미 떠난 사람이라 모집책이 허탕을 친다. 총은 쏘지 않는다. 모집책은 성당 마당에서 싸움을 벌일 생각은 없지만 빈손으로 내려가고 싶어 하지도 않는다.
+  choices:
+    - id: stand_door
+      label: 신부 곁에 서서, 데려가려면 나부터 넘으라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: zo2_ca_recruit_done
+          - set_flag: zo2_ca_recruit_repelled
+          - relation: { who: father, axis: trust, delta: 2 }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - deed: { summary: 언덕 위 성당 문 앞에서 붉은연합 모집책을 돌려보냈다, tags: [bravery], severity: 2, privacy: public }
+          - belief: { fact: "붉은연합 모집책이 통조림 상자를 도로 들고 언덕을 내려갔다. 신부가 내 팔을 한 번 잡았다 놓았다", source: seen }
+        partial:
+          - set_flag: zo2_ca_recruit_done
+          - relation: { who: father, axis: trust, delta: 1 }
+          - deed: { summary: 언덕 위 성당 문 앞에서 붉은연합 모집책을 막아섰다, tags: [bravery], severity: 1, privacy: public }
+          - belief: { fact: "모집책은 물러났지만 스스로 따라나선 피난민 둘을 데려갔다. 그 둘은 뒤돌아보지 않았다", source: seen }
+        miss:
+          - set_flag: zo2_ca_recruit_done
+          - belief: { fact: "모집책의 일행이 나를 밀쳐 내고 이름 부른 사람 셋을 데려갔다. 신부가 문턱에서 끝까지 비키지 않아 성당 안으로는 아무도 들어가지 못했다", source: seen }
+    - id: choose_freely
+      label: 가고 싶은 사람만 가게 하라고, 이름 부르기는 그만두라고 중재한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: zo2_ca_recruit_done
+          - relation: { who: father, axis: respect, delta: 1 }
+          - belief: { fact: "모집책이 종이를 접었다. 스스로 가겠다는 젊은이 둘만 데려갔다. 남은 사람들에게 통조림 몇 개가 떨어졌다", source: seen }
+        partial:
+          - set_flag: zo2_ca_recruit_done
+          - belief: { fact: "모집책은 이름 부르기를 그만두지 않았다. 다만 우는 사람은 두고 갔다", source: seen }
+        miss:
+          - set_flag: zo2_ca_recruit_done
+          - relation: { who: father, axis: trust, delta: -1 }
+          - belief: { fact: "중재는 먹히지 않았다. 모집책이 종이의 이름을 끝까지 다 불렀고 셋이 끌려갔다", source: seen }
+    - id: name_ghosts
+      label: 종이를 받아 들고, 이미 떠난 사람 이름뿐이라고 큰 소리로 짚는다
+      when: { flags_all: [zo2_ca_informer_turned] }
+      effects:
+        - set_flag: zo2_ca_recruit_done
+        - set_flag: zo2_ca_recruit_repelled
+        - relation: { who: father, axis: trust, delta: 1 }
+        - belief: { fact: "모집책의 종이에 적힌 이름은 대부분 지난달에 떠났거나 묻힌 사람이었다. 모집책이 욕을 하고 종이를 구겨 버리고 내려갔다", source: seen }
+    - id: point_informer
+      label: 피난민들 앞에서 이름을 넘긴 사람을 짚는다
+      when: { cast: [informer] }
+      effects:
+        - set_flag: zo2_ca_recruit_done
+        - relation: { who: informer, axis: trust, delta: -3 }
+        - relation: { who: father, axis: trust, delta: -1 }
+        - deed: { summary: 성당 피난민들 앞에서 밀고자를 짚었다, tags: [cruelty], severity: 1, privacy: public }
+        - belief: { fact: "피난민들 앞에서 이름을 넘긴 사람을 짚었다. 모집책은 그 틈에 셋을 데려갔고, 남은 사람들은 밀고자의 아이까지 피해 앉았다", source: seen }
+
+- id: zo2_ca_crypt
+  title: 서늘하고 마른 곳
+  tags: [world]
+  when:
+    zones: [cathedral]
+    segments: [day, evening]
+    day_gte: 5
+    flags_all: [zo2_ca_met]
+    flags_none: [zo2_ca_crypt_decided]
+  cast:
+    father: { ids: [zo2_father] }
+    clerk: { faction: faction_e, ranks: [staff, squad_leader, officer] }
+  setup: 성당 마당에 손수레 둘이 서 있다. {clerk:이/가} 장부를 펴 들고 신부에게 말하는 중이다. "지하 납골당을 창고로 빌려주시면 달마다 종탑 아래에 먹을 걸 대겠습니다. 계약서로 쓰지요." {father:이/가} 당신을 돌아본다. "형제 생각은 어떻습니까."
+  ai_direction: 나루상단은 성당 지하 납골당이 서늘하고 말라서 약과 곡식을 쌓아 두기 좋다는 것을 안다. 피난처라 다른 무리가 털러 오지 않는다는 것도 계산했다. 대신 창고에는 지킬 사람이 붙는데, 그 사람들이 총을 내려놓을지가 문제다. 신부는 피난민의 끼니가 걸려 있어 거절하기 어렵다. 주인공이 나루상단 사람이면 {clerk}는 동료로 대하고 은근히 거들어 주기를 바란다.
+  choices:
+    - id: accept
+      label: 받으시라고 한다. 종탑 아래 사람들이 굶고 있다
+      effects:
+        - set_flag: zo2_ca_crypt_decided
+        - set_flag: zo2_ca_crypt_store
+        - relation: { who: clerk, axis: trust, delta: 1 }
+        - faction_relation: { from: faction_e, to: own, delta: 1, mutual: false }
+        - belief: { fact: "나루상단이 언덕 위 성당 지하 납골당을 창고로 빌렸다. 달마다 종탑 아래 피난민에게 먹을 것을 대기로 했다", source: seen }
+    - id: refuse
+      label: 창고가 생기면 지킬 총도 따라온다고, 거절하시라고 한다
+      effects:
+        - set_flag: zo2_ca_crypt_decided
+        - set_flag: zo2_ca_crypt_refused
+        - relation: { who: father, axis: trust, delta: 1 }
+        - relation: { who: clerk, axis: trust, delta: -1 }
+        - belief: { fact: "성당 신부가 나루상단의 납골당 창고 제안을 거절했다. 장부꾼이 '종탑 아래가 이번 겨울을 날지 보자'며 손수레를 돌렸다", source: seen }
+    - id: terms
+      label: 빌려주되 지키는 사람도 총은 고해소에 두는 조건을 붙이자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: zo2_ca_crypt_decided
+          - set_flag: zo2_ca_crypt_store
+          - set_flag: zo2_ca_crypt_unarmed
+          - relation: { who: father, axis: trust, delta: 2 }
+          - relation: { who: clerk, axis: respect, delta: 1 }
+          - belief: { fact: "나루상단이 성당 납골당을 빌리되 지키는 사람도 총을 고해소에 두기로 계약서에 적었다. 신부가 처음으로 웃었다", source: seen }
+        partial:
+          - set_flag: zo2_ca_crypt_decided
+          - set_flag: zo2_ca_crypt_store
+          - belief: { fact: "나루상단이 성당 납골당을 빌렸다. 총 이야기는 '지켜 보겠다'는 말로만 남았다", source: seen }
+        miss:
+          - set_flag: zo2_ca_crypt_decided
+          - set_flag: zo2_ca_crypt_refused
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "조건을 붙이자 나루상단 장부꾼이 장부를 덮었다. 그런 계약은 남는 게 없다고 했다", source: seen }
+
+- id: zo2_ca_crypt_after
+  title: 납골당 계단의 그림자
+  tags: [world]
+  when:
+    zones: [cathedral]
+    segments: [evening, night]
+    day_gte: 9
+    flags_any: [zo2_ca_crypt_store, zo2_ca_crypt_refused]
+    flags_none: [zo2_ca_crypt_after_done]
+  cast:
+    father: { ids: [zo2_father] }
+  setup: 저녁 기도가 끝난 성당. {father:이/가} 촛불을 끄다 말고 당신을 부른다. 목소리가 평소보다 더 느리다. "형제. 잠깐 같이 내려가 보시겠습니까. 아니면… 같이 종탑 아래를 좀 둘러봐 주시든지."
+  ai_direction: 납골당을 빌려주었다면(zo2_ca_crypt_store) 나루상단의 창고지기가 지하 계단에 소총을 세워 두고 잔다. 조건을 붙였다면(zo2_ca_crypt_unarmed) 총은 고해소에 있지만 창고지기가 밤마다 그걸 슬쩍 꺼내 온다. 피난민들은 끼니가 늘어 덜 죽는다. 신부는 그것과 문 앞의 약속 사이에서 지쳤다. 거절했다면(zo2_ca_crypt_refused) 종탑 아래 먹을 것이 바닥났고, 신부는 자기 고집 때문에 사람들이 굶는다고 여긴다. 신부의 비밀(첫 주에 문을 잠근 밤)은 신뢰가 충분할 때만 이 장면에서 털어놓을 수 있다.
+  choices:
+    - id: take_gun_out
+      label: 창고지기를 깨워 총을 고해소로 옮기게 한다
+      when: { flags_all: [zo2_ca_crypt_store] }
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: zo2_ca_crypt_after_done
+          - relation: { who: father, axis: trust, delta: 2 }
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - belief: { fact: "성당 납골당의 나루상단 창고지기가 투덜대며 소총을 고해소에 세웠다. 신부가 문을 걸고 오래 서 있었다", source: seen }
+        partial:
+          - set_flag: zo2_ca_crypt_after_done
+          - relation: { who: father, axis: trust, delta: 1 }
+          - belief: { fact: "창고지기는 총을 고해소로 옮겼지만, 이 일은 상단 장부에 적어 두겠다고 했다", source: seen }
+        miss:
+          - set_flag: zo2_ca_crypt_after_done
+          - relation: { who: father, axis: affection, delta: 1 }
+          - belief: { fact: "창고지기는 계약서에 그런 말은 없다며 총을 끌어안고 돌아누웠다. 신부가 그만두라고 내 소매를 끌었다", source: seen }
+    - id: accept_compromise
+      label: 사람이 덜 죽는 게 먼저라고, 신부의 손을 잡아 준다
+      when: { flags_all: [zo2_ca_crypt_store] }
+      effects:
+        - set_flag: zo2_ca_crypt_after_done
+        - relation: { who: father, axis: affection, delta: 1 }
+        - belief: { fact: "성당 신부는 지하 계단의 총을 보고도 문을 닫았다. 이번 달에는 종탑 아래에서 아무도 묻히지 않았다고 했다", source: seen }
+    - id: bring_food
+      label: 종탑 아래에 먹을 것을 나눠 놓고 온다
+      when: { flags_all: [zo2_ca_crypt_refused] }
+      effects:
+        - set_flag: zo2_ca_crypt_after_done
+        - take_item: { item: canned_food }
+        - relation: { who: father, axis: trust, delta: 2 }
+        - deed: { summary: 언덕 위 성당 종탑 아래 피난민들에게 먹을 것을 나눠 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "종탑 아래 피난민들에게 통조림을 놓고 왔다. 신부가 고집의 값을 남이 치게 했다며 고개를 숙였다", source: seen }
+    - id: just_listen
+      label: 아무 말 없이 촛불 곁에 앉아 신부의 말을 듣는다
+      effects:
+        - set_flag: zo2_ca_crypt_after_done
+        - relation: { who: father, axis: trust, delta: 1 }
+        - belief: { fact: "성당 신부는 문 앞의 약속을 지키는 게 사람을 살리는 일인지 모르겠다고 했다. 그러다 그 약속이 생긴 밤이 있다고만 말하고 입을 닫았다", source: report }
+
+# ══ 가람대학교 캠퍼스 ══════════════════════════
+
+- id: zo2_cp_library
+  title: 도서관 계단의 시험
+  tags: [world]
+  when:
+    zones: [campus]
+    segments: [morning, day, evening]
+    flags_none: [zo2_cp_met]
+  cast:
+    prof: { ids: [zo2_librarian] }
+  setup: 중앙도서관 정문은 열람실 책상으로 막혀 있고, 옆 계단 위 창 하나만 열려 있다. 창틀에 {prof:이/가} 금 간 안경을 고쳐 쓰고 앉아 있다. "책 가지러 오셨으면 돌아가세요. 묻고 싶은 게 있으면 올라오시고요. 그런데 먼저 하나만. 마지막으로 읽은 책이 뭡니까?"
+  ai_direction: 류경환은 책을 내주지 않지만 묻는 것에는 답해 준다 (도시의 옛 지도, 지역 신문, 다리와 도로). 첫 질문은 사람을 재는 시험이다. 아무 책이나 솔직하게 대면 된다. 거짓으로 꾸미면 금방 알아챈다. 도서관 안에는 학자 몇이 산다. 농대 온실의 어윤복, 약대 실험실의 명서진도 있다.
+  choices:
+    - id: honest
+      label: 기억나는 대로 솔직하게 대답한다
+      effects:
+        - set_flag: zo2_cp_met
+        - relation: { who: prof, axis: trust, delta: 1 }
+        - belief: { fact: "가람대학교 중앙도서관에 류경환 교수가 산다. 책은 한 권도 내주지 않지만 묻는 것에는 답해 준다. 농대 온실과 약대 실험실에도 사람이 있다", source: seen }
+    - id: lore_talk
+      label: 붕괴 전 이 도시 이야기로 말을 건다
+      check: history
+      outcomes:
+        success:
+          - set_flag: zo2_cp_met
+          - relation: { who: prof, axis: respect, delta: 2 }
+          - belief: { fact: "류경환 교수가 창문으로 서고의 옛 도시 지도를 보여 주었다. 고가도로 아래 하수 본관이 강변까지 이어진다고 했다. 지금도 그런지는 모른다", source: report }
+        partial:
+          - set_flag: zo2_cp_met
+          - relation: { who: prof, axis: respect, delta: 1 }
+          - belief: { fact: "가람대학교 도서관의 류경환 교수와 붕괴 전 도시 이야기를 나눴다. 반은 맞고 반은 틀렸다며 웃었다", source: seen }
+        miss:
+          - set_flag: zo2_cp_met
+          - belief: { fact: "도서관의 류경환 교수는 내가 아는 척한 걸 하나씩 고쳐 주고는 창문을 반쯤 닫았다", source: seen }
+    - id: trade_smoke
+      label: 담배 한 갑을 창틀에 올려 두고 서고 구경을 청한다
+      effects:
+        - take_item: { item: cigarettes }
+        - set_flag: zo2_cp_met
+        - relation: { who: prof, axis: trust, delta: -1 }
+        - belief: { fact: "도서관 교수는 담배를 받지 않고 창틀에서 밀어 떨어뜨렸다. 들여보내 주긴 했지만 서고 문 앞에서 내내 따라다녔다", source: seen }
+
+- id: zo2_cp_burn
+  title: 책이냐 씨앗이냐
+  tags: [world]
+  when:
+    zones: [campus]
+    segments: [evening, night]
+    day_gte: 3
+    flags_all: [zo2_cp_met]
+    flags_none: [zo2_cp_burn_done]
+  cast:
+    prof: { ids: [zo2_librarian] }
+    keeper: { ids: [zo2_greenhouse] }
+  setup: 도서관 뒷문 앞, {keeper:이/가} 빈 손수레를 세워 놓고 서 있다. 고무장화에 서리가 붙었다. "옛날 잡지 묶음 한 칸만. 온실 난로가 오늘 밤 꺼지면 모종이 다 얼어." 문을 막아선 {prof:이/가} 고개를 젓는다. "한 칸이 두 칸 되고, 두 칸이 서고가 됩니다." 둘 다 당신을 본다.
+  ai_direction: 겨울 문턱이다. 캠퍼스의 나무는 거의 다 베었다. 어윤복은 오늘 밤 땔감이 없으면 온실 모종을 잃는다. 류경환은 한 번 태우기 시작하면 멈출 수 없다고 믿는다 (실은 첫 겨울에 몰래 전화번호부를 태운 적이 있어 더 모질다. 드러내지 않는다). 어느 쪽 편을 들든 다른 쪽은 서운해한다. 다른 땔감을 구해 오면 둘 다 살린다.
+  choices:
+    - id: burn
+      label: 어윤복 편을 든다. 봄에 다시 나는 건 감자다
+      effects:
+        - set_flag: zo2_cp_burn_done
+        - set_flag: zo2_cp_books_burned
+        - set_flag: zo2_cp_greenhouse_warm
+        - relation: { who: keeper, axis: trust, delta: 2 }
+        - relation: { who: prof, axis: trust, delta: -2 }
+        - npc_relation: { from: prof, to: keeper, axis: affection, delta: -2 }
+        - belief: { fact: "가람대학교 도서관의 옛 잡지 한 칸이 온실 난로로 들어갔다. 류경환 교수는 손수레가 나가는 동안 등을 돌리고 서 있었다", source: seen }
+    - id: guard_books
+      label: 류경환 편을 든다. 한 번 태우면 끝이 없다
+      effects:
+        - set_flag: zo2_cp_burn_done
+        - set_flag: zo2_cp_seedlings_lost
+        - relation: { who: prof, axis: trust, delta: 2 }
+        - relation: { who: keeper, axis: trust, delta: -2 }
+        - npc_relation: { from: keeper, to: prof, axis: affection, delta: -2 }
+        - belief: { fact: "도서관 뒷문은 열리지 않았다. 그날 밤 농대 온실 모종 절반이 얼었다. 어윤복은 다음 날 아무와도 말하지 않았다", source: seen }
+    - id: bring_fuel
+      label: 연료병을 내놓는다. 오늘 밤은 이걸로 버티라고
+      effects:
+        - take_item: { item: fuel_bottle }
+        - set_flag: zo2_cp_burn_done
+        - set_flag: zo2_cp_greenhouse_warm
+        - relation: { who: keeper, axis: trust, delta: 2 }
+        - relation: { who: prof, axis: trust, delta: 1 }
+        - npc_relation: { from: prof, to: keeper, axis: trust, delta: 1, mutual: true }
+        - deed: { summary: 가람대학교 농대 온실 난로에 연료를 내주었다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "내 연료병으로 농대 온실 난로가 밤을 넘겼다. 도서관 책은 그대로다. 다음 밤이 문제라고 어윤복이 말했다", source: seen }
+    - id: rig_stove
+      label: 온실 난로를 고쳐 땔감이 덜 들게 만들어 보겠다고 한다
+      check: improvise
+      outcomes:
+        success:
+          - set_flag: zo2_cp_burn_done
+          - set_flag: zo2_cp_greenhouse_warm
+          - relation: { who: keeper, axis: respect, delta: 2 }
+          - relation: { who: prof, axis: respect, delta: 1 }
+          - belief: { fact: "온실 난로 연통에 깡통을 덧대 열이 덜 새게 만들었다. 부러진 실습장 울타리 말뚝만으로 밤을 넘겼다", source: seen }
+        partial:
+          - set_flag: zo2_cp_burn_done
+          - set_flag: zo2_cp_greenhouse_warm
+          - set_flag: zo2_cp_books_burned
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "온실 난로를 손봤지만 새벽에 결국 잡지 몇 묶음이 들어갔다. 류경환 교수는 그 수를 세어 두었다고 했다", source: seen }
+        miss:
+          - set_flag: zo2_cp_burn_done
+          - set_flag: zo2_cp_seedlings_lost
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "온실 난로 연통을 만지다 오히려 불이 꺼졌다. 모종 절반이 얼었다", source: seen }
+
+- id: zo2_cp_seeds
+  title: 어디에 심을 건데
+  tags: [world]
+  when:
+    zones: [campus]
+    segments: [morning, day]
+    day_gte: 4
+    flags_all: [zo2_cp_met]
+    flags_none: [zo2_cp_seeds_done, zo2_cp_seedlings_lost]
+  cast:
+    keeper: { ids: [zo2_greenhouse] }
+  setup: 농대 온실 안은 바깥보다 한 겹 따뜻하고 흙냄새가 짙다. {keeper:이/가} 목에 꿴 봉투 몇 개를 만지작거리며 당신을 본다. "씨는 줄 수 있어. 근데 먼저 말해 봐. 어디에 심을 건데. 담 안이야, 밖이야? 누가 물을 줘?"
+  ai_direction: 어윤복은 씨앗을 값이 아니라 심을 곳으로 판단한다. 무리의 밭이 있는 사람에게는 쉽게 내주고, 팔아 치울 사람에게는 주지 않는다. 지난밤 온실을 지켜 준 사람(zo2_cp_greenhouse_warm)에게는 훨씬 너그럽다. 실습장 흙 속에 따로 묻은 씨앗 항아리는 아직 말하지 않는다.
+  choices:
+    - id: faction_field
+      label: 우리 무리의 밭 이야기를 한다. 담 안이고, 지키는 사람이 있다
+      when: { in_faction: true }
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: zo2_cp_seeds_done
+          - give_item: { item: seed_packet, quantity: 2 }
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "농대 온실의 어윤복이 씨앗 봉투 둘을 주었다. 봄에 심고 가을에 한 봉투는 돌려 달라고 했다", source: seen }
+        partial:
+          - set_flag: zo2_cp_seeds_done
+          - give_item: { item: seed_packet }
+          - belief: { fact: "어윤복이 씨앗 봉투 하나를 주며 다 먹지 말고 반은 다시 심으라고 했다", source: seen }
+        miss:
+          - set_flag: zo2_cp_seeds_done
+          - belief: { fact: "어윤복은 우리 무리 밭 이야기를 듣고 그 밭은 지난여름에 밟혀 버렸다며 씨앗을 도로 넣었다", source: report }
+    - id: own_plot
+      label: 혼자 일굴 작은 텃밭 자리를 봐 두었다고 한다
+      when: { in_faction: false }
+      effects:
+        - set_flag: zo2_cp_seeds_done
+        - give_item: { item: seed_packet }
+        - relation: { who: keeper, axis: affection, delta: 1 }
+        - belief: { fact: "어윤복이 씨앗 봉투 하나를 주었다. 혼자 하는 밭은 사람보다 짐승이 먼저 먹는다며 울타리부터 치라고 했다", source: seen }
+    - id: earned
+      label: 지난밤 온실 난로 이야기를 꺼낸다
+      when: { flags_all: [zo2_cp_greenhouse_warm] }
+      effects:
+        - set_flag: zo2_cp_seeds_done
+        - give_item: { item: seed_packet, quantity: 2 }
+        - relation: { who: keeper, axis: trust, delta: 1 }
+        - belief: { fact: "어윤복이 묻지도 않고 씨앗 봉투 둘을 쥐여 주었다. 겨울이 걱정이라며 실습장 쪽을 오래 바라봤다", source: seen }
+    - id: help_work
+      label: 씨는 됐고, 오늘 하루 온실 일을 거든다
+      effects:
+        - set_flag: zo2_cp_seeds_done
+        - relation: { who: keeper, axis: trust, delta: 2 }
+        - body: { track: hunger, delta: 1 }
+        - belief: { fact: "하루 종일 농대 온실 흙을 날랐다. 어윤복이 다음에 오면 그때 씨를 주겠다고 했다", source: seen }
+
+- id: zo2_cp_lab
+  title: 약대 실험실 지하
+  tags: [world]
+  when:
+    zones: [campus]
+    segments: [day, evening]
+    day_gte: 5
+    flags_all: [zo2_cp_met]
+    flags_none: [zo2_cp_lab_done]
+  cast:
+    seojin: { ids: [zo2_seojin] }
+  setup: 약대 건물 지하로 내려가는 계단에 사슬이 감겨 있다. {seojin:이/가} 고무장갑 낀 손으로 사슬을 풀며 말한다. "손 하나가 더 필요해요. 오늘은 피를 뽑아야 하거든요. 저쪽이 안 움직이게 장대로 눌러만 주세요. 소리는 내지 말고." 계단 아래에서 쇠창살이 덜컹 운다.
+  ai_direction: 지하 우리 안에 감염체 하나가 갇혀 있다. 명서진은 감염이 어떻게 옮는지, 왜 어떤 사람은 열이 오르지 않는지 알아내려 한다. 우리 안의 감염체가 누구인지는 드러내지 않는다 (목에 무언가 걸려 있다는 것만 보인다). 그가 말하는 것은 관찰이고, 늘 "아직은"을 붙인다. 확실한 정답을 주지 않는다. 장대를 놓치면 긁힐 수 있다 (감염 여부는 코드가 굴린다).
+  choices:
+    - id: hold
+      label: 장대를 받아 창살 사이로 감염체를 누른다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: zo2_cp_lab_done
+          - set_flag: zo2_cp_lab_helped
+          - relation: { who: seojin, axis: trust, delta: 2 }
+          - belief: { fact: "명서진이 말하기를, 아직은 세 번밖에 못 봤지만 감염체는 굶으면 더 굼떠진다. 그리고 소리보다 진동에 먼저 고개를 돌리는 것 같다고 했다", source: report }
+        partial:
+          - set_flag: zo2_cp_lab_done
+          - set_flag: zo2_cp_lab_helped
+          - relation: { who: seojin, axis: trust, delta: 1 }
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "장대가 미끄러져 감염체 손톱이 소매를 스쳤다. 살갗까지는 안 닿았다. 명서진이 소매를 잘라 태웠다", source: seen }
+        miss:
+          - set_flag: zo2_cp_lab_done
+          - set_flag: zo2_cp_lab_helped
+          - body: { track: infection, delta: 1, chance: 0.25 }
+          - belief: { fact: "장대를 놓쳤다. 감염체 손톱이 손등을 긁고 지나갔다. 명서진이 바로 씻고 소독했지만, 열이 오를지는 모른다고 했다", source: seen }
+    - id: watch_notes
+      label: 손은 못 보태겠다. 대신 무엇을 알아냈는지 묻는다
+      effects:
+        - set_flag: zo2_cp_lab_done
+        - belief: { fact: "약대 실험실의 명서진은 물리거나 긁힌 사람이 모두 열이 오르지는 않았다고 했다. 왜인지는 아직 모른다고 했다", source: report }
+    - id: refuse_down
+      label: 감염체를 산 채로 가둬 둔 곳에는 내려가지 않는다
+      effects:
+        - set_flag: zo2_cp_lab_done
+        - relation: { who: seojin, axis: respect, delta: -1 }
+        - belief: { fact: "가람대학교 약대 지하에 명서진이 감염체를 산 채로 가둬 두고 있다", source: seen }
+
+- id: zo2_cp_cage
+  title: 목에 걸린 출입증
+  tags: [world]
+  when:
+    zones: [campus]
+    segments: [night, dawn]
+    day_gte: 7
+    flags_all: [zo2_cp_lab_helped]
+    flags_none: [zo2_cp_cage_done]
+  cast:
+    seojin: { ids: [zo2_seojin] }
+    prof: { ids: [zo2_librarian], enter: false, optional: true }
+  setup: 한밤, 약대 지하 계단 밑에 촛불이 켜져 있다. {seojin:이/가} 우리 앞 의자에 앉아 공책을 무릎에 놓은 채 아무것도 적지 않고 있다. 창살 너머 감염체의 목에서 플라스틱 출입증이 흔들린다. 사진 속 얼굴은 안경을 쓴 반백의 남자다.
+  ai_direction: 우리 안의 감염체는 명서진의 지도교수였다. 물린 뒤 열이 오르기 전에 스스로 우리에 들어가 자물쇠를 채워 달라고 했다. 명서진은 그 뒤로 그를 관찰해 왔다. 신뢰가 충분하면(그의 비밀 공개 조건) 이 장면에서 털어놓는다. 끝낼지 계속 둘지는 명서진이 정하게 두되, 주인공의 말이 무게를 가진다. 류경환은 지하의 것이 무엇인지 모른다.
+  choices:
+    - id: sit_with
+      label: 출입증 이야기는 묻지 않고 곁에 앉아 있는다
+      effects:
+        - set_flag: zo2_cp_cage_done
+        - relation: { who: seojin, axis: trust, delta: 2 }
+        - belief: { fact: "약대 지하 우리의 감염체 목에 대학 출입증이 걸려 있다. 명서진은 밤새 아무것도 적지 않았다", source: seen }
+    - id: end_it
+      label: 이제 보내 드리자고 한다. 공책은 충분히 찼다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: zo2_cp_cage_done
+          - set_flag: zo2_cp_professor_rest
+          - relation: { who: seojin, axis: trust, delta: 2 }
+          - deed: { summary: 약대 지하의 감염체를 명서진과 함께 끝내 주었다, tags: [mercy], severity: 1, privacy: private }
+          - belief: { fact: "명서진의 지도교수였던 감염체를 우리 안에서 끝냈다. 명서진이 출입증을 공책 사이에 끼웠다. 성당 신부에게 묻어 달라고 하겠다고 했다", source: seen }
+        partial:
+          - set_flag: zo2_cp_cage_done
+          - relation: { who: seojin, axis: trust, delta: 1 }
+          - belief: { fact: "명서진은 아직은 안 된다고 했다. 다만 다음 겨울 전에는 끝내겠다고, 그때 나를 부르겠다고 했다", source: report }
+        miss:
+          - set_flag: zo2_cp_cage_done
+          - relation: { who: seojin, axis: trust, delta: -2 }
+          - belief: { fact: "보내 드리자는 말에 명서진이 촛불을 불어 끄고 계단을 가리켰다", source: seen }
+    - id: tell_prof
+      label: 도서관의 류경환에게 지하에 무엇이 있는지 알리겠다고 한다
+      when: { cast: [prof] }
+      effects:
+        - set_flag: zo2_cp_cage_done
+        - relation: { who: seojin, axis: trust, delta: -1 }
+        - npc_relation: { from: prof, to: seojin, axis: trust, delta: -1 }
+        - belief: { fact: "류경환 교수에게 약대 지하의 감염체 이야기를 했다. 교수는 출입증 이름을 듣고 한동안 안경을 벗고 있었다. 같은 학과는 아니었지만 아는 사람이었다", source: seen }
+
+- id: zo2_cp_recruit
+  title: 하얀매가 온 날
+  tags: [world]
+  when:
+    zones: [campus]
+    segments: [morning, day]
+    day_gte: 6
+    flags_all: [zo2_cp_met]
+    flags_none: [zo2_cp_recruit_done]
+  cast:
+    seojin: { ids: [zo2_seojin] }
+    envoy: { faction: faction_d, ranks: [staff, squad_leader, officer] }
+  setup: 약대 건물 앞에 흰 천을 팔에 감은 사람들이 서 있다. {envoy:이/가} 공손하게 고개를 숙인다. "명서진 씨, 진료소에 자리를 마련했습니다. 노트도 함께 가져오시면 됩니다. 여기서 혼자 하시기엔 위험하잖아요." {seojin:이/가} 실험실 문고리를 쥔 채 당신 쪽을 흘끗 본다.
+  ai_direction: 하얀매는 명서진의 연구 노트를 원한다. 진료소에서는 지하의 감염체를 두지 않을 것이고 (태운다), 그것을 명서진에게 말하지 않는다. 명서진은 진료소의 약과 장비가 탐나지만 지하를 버리고 싶지 않다. 강제로 끌고 가지는 않는다. 주인공이 하얀매 사람이면 {envoy}는 거들어 주기를 기대한다. 하얀매가 데려가면 명서진은 캠퍼스를 떠난다.
+  choices:
+    - id: urge_go
+      label: 진료소에 가면 약도 장비도 있다고 가 보라고 권한다
+      effects:
+        - set_flag: zo2_cp_recruit_done
+        - set_flag: zo2_cp_seojin_left
+        - relation: { who: envoy, axis: trust, delta: 1 }
+        - npc_depart: { who: seojin, to_faction: faction_d }
+        - belief: { fact: "명서진이 연구 노트를 들고 하얀매 진료소로 갔다. 약대 지하 계단의 사슬은 하얀매 사람이 새로 감았다", source: seen }
+    - id: ask_cage
+      label: 지하의 것은 어떻게 할 거냐고 하얀매에게 대놓고 묻는다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: zo2_cp_recruit_done
+          - relation: { who: seojin, axis: trust, delta: 2 }
+          - relation: { who: envoy, axis: trust, delta: -1 }
+          - belief: { fact: "하얀매 사람은 지하의 감염체를 진료소로 옮길 수는 없다고, 태워야 한다고 끝내 털어놓았다. 명서진은 문고리를 놓지 않았다. 하얀매는 빈손으로 돌아갔다", source: seen }
+        partial:
+          - set_flag: zo2_cp_recruit_done
+          - relation: { who: seojin, axis: trust, delta: 1 }
+          - belief: { fact: "하얀매 사람은 지하 일은 진료소가 알아서 하겠다고만 했다. 명서진이 생각해 보겠다며 그들을 돌려보냈다", source: seen }
+        miss:
+          - set_flag: zo2_cp_recruit_done
+          - set_flag: zo2_cp_seojin_left
+          - npc_depart: { who: seojin, to_faction: faction_d }
+          - belief: { fact: "하얀매 사람이 웃으며 걱정 말라고 했다. 명서진은 노트를 챙겨 따라갔다. 약대 지하에서 쇠창살 우는 소리가 오래 났다", source: seen }
+    - id: stand_between
+      label: 학자는 아무 무리에도 안 든다는 게 캠퍼스의 약속이라며 막아선다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: zo2_cp_recruit_done
+          - relation: { who: seojin, axis: respect, delta: 1 }
+          - faction_relation: { from: faction_d, to: own, delta: -1, mutual: false }
+          - belief: { fact: "하얀매 사람들이 물러났다. 다음엔 위원회가 직접 오겠다고 했다", source: seen }
+        partial:
+          - set_flag: zo2_cp_recruit_done
+          - relation: { who: envoy, axis: trust, delta: -1 }
+          - belief: { fact: "하얀매 사람들은 물러났지만 내 얼굴을 오래 봤다. 명서진은 고맙다는 말 대신 내 일이니까 내가 정한다고 했다", source: seen }
+        miss:
+          - set_flag: zo2_cp_recruit_done
+          - relation: { who: seojin, axis: respect, delta: -1 }
+          - belief: { fact: "막아서려다 망신만 샀다. 명서진이 내 일은 내가 정한다며 하얀매 사람에게 다음 달에 다시 오라고 했다", source: seen }
+
+# ══ 고속도로 휴게소 ════════════════════════════
+
+- id: zo2_rs_board
+  title: 칠판의 이름들
+  tags: [world]
+  when:
+    zones: [rest_stop]
+    segments: [morning, day, evening]
+    flags_none: [zo2_rs_met]
+  cast:
+    board: { ids: [zo2_gyudeok] }
+    sought: { background: sought, enter: false, optional: true }
+  setup: 주유소 지붕 기둥에 휴게소 식당의 메뉴 칠판이 묶여 있다. 메뉴 대신 분필 글씨가 빽빽하다. 왼쪽은 "나감", 오른쪽은 "들어옴". 그 밑에 "바깥 소식"이라는 칸이 있다. 목도리를 코까지 감은 {board:이/가} 분필을 내민다. "적어 줄까? 이름이랑 어디로 가는지."
+  ai_direction: 채규덕의 칠판에는 고속도로로 나간 사람과 들어온 사람의 이름, 들은 바깥 소식이 누구에게 들었는지와 함께 적혀 있다. "나감" 칸의 이름 가운데 돌아와서 지운 사람은 아직 없다. 바깥 소식은 서로 엇갈린다 (남쪽 도시가 탔다, 아니다 군대가 있다, 북쪽 고개에 감염체가 없다, 아니다 더 많다). 어느 것도 확인된 것이 없다. 칠판 맨 위에 긁어 새긴 이름 둘이 있다 (채규덕의 가족. 묻기 전에는 말하지 않는다).
+  choices:
+    - id: read_news
+      label: 담배 한 개비를 건네고 바깥 소식 칸을 읽어 달라고 한다
+      effects:
+        - take_item: { item: cigarettes }
+        - set_flag: zo2_rs_met
+        - relation: { who: board, axis: affection, delta: 1 }
+        - belief: { fact: "휴게소 칠판에 적힌 바깥 소식: 남쪽 큰 도시는 다 탔다는 말과, 거기 군대가 남아 사람을 받는다는 말이 같이 적혀 있다. 둘 다 들은 말이다", source: rumor }
+        - belief: { fact: "휴게소 칠판에 적힌 바깥 소식: 북쪽 고개 너머엔 감염체가 거의 없다는 말과, 고개 터널에 물결이 산다는 말이 나란히 적혀 있다", source: rumor }
+    - id: write_name
+      label: 분필을 받아 "들어옴" 칸에 내 이름을 적는다
+      effects:
+        - set_flag: zo2_rs_met
+        - relation: { who: board, axis: trust, delta: 1 }
+        - belief: { fact: "고속도로 휴게소 칠판에 내 이름을 적었다. 채규덕은 '나감' 칸에 적힌 이름 가운데 돌아와서 지운 사람은 아직 없다고 했다", source: report }
+    - id: search_name
+      label: 찾는 사람의 이름이 '나감' 칸에 있는지 훑는다
+      when: { cast: [sought] }
+      effects:
+        - set_flag: zo2_rs_met
+        - relation: { who: board, axis: trust, delta: 1 }
+        - belief: { fact: "휴게소 칠판의 '나감' 칸에 {sought}의 이름은 없었다. 채규덕은 여기로 나간 사람은 빠짐없이 적는다고 했다. 적어도 이 길로 도시를 떠나지는 않았다", source: report }
+
+- id: zo2_rs_stranger
+  title: 걸어 들어온 사람
+  tags: [world]
+  when:
+    zones: [rest_stop]
+    segments: [evening, night, dawn]
+    day_gte: 2
+    flags_none: [zo2_rs_stranger_met]
+  cast:
+    traveler: { extra: highway_traveler, keep: zo2_rs_traveler }
+    board: { ids: [zo2_gyudeok], enter: false, optional: true }
+  setup: 해 질 녘, 고속도로 위쪽에서 사람 하나가 중앙분리대를 짚으며 내려온다. 휴게소 주차장 끝에서 무릎이 꺾여 주저앉는다. {traveler}. 입술이 하얗게 텄다. 물병을 보더니 손부터 내민다.
+  ai_direction: 도시 밖에서 걸어 들어온 사람이다. 바깥 이야기를 물으면 들은 것과 본 것을 섞어 말하고, 캐물으면 말이 서로 어긋난다 (실은 대부분 숨어서 걸어 본 것이 적다). 도시 밖이 어떤지 확인된 것은 없다. GM은 바깥에 대한 사실을 지어내지 않는다. 이 사람은 며칠 쉬다 다시 길을 떠날 생각이다. 나루상단 사람은 길손에게서 소문값을 받으려 한다.
+  choices:
+    - id: give_water
+      label: 물병을 건네고 바람 안 드는 식당 안으로 부축한다
+      effects:
+        - take_item: { item: water_bottle }
+        - set_flag: zo2_rs_stranger_met
+        - set_flag: zo2_rs_stranger_helped
+        - relation: { who: traveler, axis: trust, delta: 2 }
+        - deed: { summary: 고속도로로 걸어 들어온 길손에게 물을 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "고속도로로 걸어 들어온 사람이 남쪽에서 왔다고 했다. 길 위의 마을은 다 비었다고 했다가, 한 군데는 담이 높아 들어가지 못했다고 말을 바꿨다", source: rumor }
+    - id: question
+      label: 물은 이야기를 듣고 주겠다고, 어디서 무엇을 봤는지부터 묻는다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: zo2_rs_stranger_met
+          - belief: { fact: "길손을 캐물어 보니 바깥에서 직접 본 것은 거의 없었다. 낮에는 숨고 밤에만 걸었다고 했다. 바깥 소문은 다 남에게 들은 것이다", source: report }
+        partial:
+          - set_flag: zo2_rs_stranger_met
+          - relation: { who: traveler, axis: trust, delta: -1 }
+          - belief: { fact: "길손은 바다 쪽에 감염체가 못 건너는 섬이 있다는 말을 길에서 들었다고 했다. 어디서 누구에게 들었는지는 대지 못했다", source: rumor }
+        miss:
+          - set_flag: zo2_rs_stranger_met
+          - relation: { who: traveler, axis: trust, delta: -2 }
+          - belief: { fact: "길손은 묻는 말에 입을 닫았다. 물병만 노려보다 휴게소 식당 안쪽으로 기어 들어갔다", source: seen }
+    - id: hand_to_board
+      label: 칠판의 사내를 불러 길손을 맡긴다
+      when: { cast: [board] }
+      effects:
+        - set_flag: zo2_rs_stranger_met
+        - set_flag: zo2_rs_stranger_helped
+        - relation: { who: board, axis: trust, delta: 1 }
+        - belief: { fact: "채규덕이 길손을 식당 안으로 들이고 '들어옴' 칸에 이름을 적었다. 길손이 한 말 셋을 바깥 소식 칸에 옮겨 적었다. 셋이 서로 맞지 않았다", source: seen }
+
+- id: zo2_rs_leaving
+  title: 다시 나가는 사람
+  tags: [world]
+  when:
+    zones: [rest_stop]
+    segments: [dawn, morning]
+    day_gte: 5
+    flags_all: [zo2_rs_stranger_helped]
+    flags_none: [zo2_rs_leaving_done]
+  cast:
+    traveler: { recall: zo2_rs_traveler }
+    board: { ids: [zo2_gyudeok], enter: false, optional: true }
+  setup: 새벽 안개 속, {traveler:이/가} 끈으로 동여맨 신발 끈을 다시 조이고 있다. 배낭이 며칠 전보다 불룩하다. "다시 나가요. 여기도 사람 사는 데는 아니네요. 바깥이랑 똑같아요." 고속도로 위쪽은 안개에 묻혀 보이지 않는다.
+  ai_direction: 길손은 도시도 바깥보다 나을 게 없다고 보고 다시 고속도로로 나가려 한다. 어디로 가는지는 분명히 말하지 않는다 (섬 소문을 좇는지, 잃은 일행을 찾으러 가는지). 말리면 하루 이틀 더 머물 수도 있다. 이 사람이 나가면 도시를 떠난다 (돌아올지는 아무도 모른다). 따라 나가는 것은 이 장면에서 할 수 없다.
+  choices:
+    - id: see_off
+      label: 먹을 것을 조금 나눠 주고 휴게소 끝까지 배웅한다
+      effects:
+        - take_item: { item: dry_ration }
+        - set_flag: zo2_rs_leaving_done
+        - deed: { summary: 고속도로로 다시 떠나는 길손에게 먹을 것을 나눠 주었다, tags: [mercy], severity: 1, privacy: private }
+        - npc_depart: { who: traveler }
+        - belief: { fact: "고속도로로 들어왔던 길손이 다시 나갔다. 안개 속으로 들어가기 전에 한 번 손을 들었다", source: seen }
+    - id: persuade_stay
+      label: 겨울만 나고 가라고, 장터에 일자리가 있다고 붙잡는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: zo2_rs_leaving_done
+          - set_flag: zo2_rs_traveler_stayed
+          - relation: { who: traveler, axis: trust, delta: 2 }
+          - belief: { fact: "길손이 배낭을 내려놓았다. 겨울만 나 보겠다고, 나루상단 장터에 짐꾼 자리가 있는지 물었다", source: seen }
+        partial:
+          - set_flag: zo2_rs_leaving_done
+          - relation: { who: traveler, axis: affection, delta: 1 }
+          - npc_depart: { who: traveler }
+          - belief: { fact: "길손은 고맙다며 웃고 그래도 나갔다. 봄에 다시 지나가면 칠판에 이름을 지우러 오겠다고 했다", source: seen }
+        miss:
+          - set_flag: zo2_rs_leaving_done
+          - npc_depart: { who: traveler }
+          - belief: { fact: "길손은 대꾸하지 않고 고속도로 위로 올라갔다. 안개가 금방 그 등을 지웠다", source: seen }
+    - id: write_out
+      label: 칠판의 사내를 깨워 '나감' 칸에 이름을 적게 한다
+      when: { cast: [board] }
+      effects:
+        - set_flag: zo2_rs_leaving_done
+        - relation: { who: board, axis: trust, delta: 1 }
+        - npc_depart: { who: traveler }
+        - belief: { fact: "채규덕이 '나감' 칸에 길손의 이름을 적고 날짜를 달았다. 칠판 맨 위의 긁어 새긴 이름 둘을 엄지로 한 번 쓸었다", source: seen }
+
+- id: zo2_rs_unload
+  title: 주유소 지붕 밑의 짐
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    zones: [rest_stop]
+    segments: [morning, day]
+  cast:
+    porter: { extra: e_porter, label: 땀에 젖은 나루상단 짐꾼 }
+  setup: 주유소 지붕 밑에 손수레 셋과 짐 묶음이 부려져 있다. 짐꾼 하나가 발목을 삐었는지 주저앉아 있고, {porter:이/가} 혼자 상자를 옮기다 숨을 몰아쉰다. "거기, 손 비었으면 좀 거들어. 해 지기 전에 장터까지 넣어야 돼. 품삯은 줄게."
+  ai_direction: 나루상단의 짐 부리기다. 상자 안은 바깥 길로 들고 나갈 물건과 들여온 물건이 섞여 있다 (무엇인지는 지어내지 않는다. 짐꾼도 다 알지 못한다). 품을 팔면 통행패를 준다. 짐꾼들은 일하면서 상단 안의 말을 흘린다. 상자 하나쯤 빼돌릴 틈도 있다. 주인공이 나루상단 사람이면 품삯 대신 장부에 공을 적어 준다.
+  choices:
+    - id: work
+      label: 상자를 함께 나른다
+      check: endure
+      outcomes:
+        success:
+          - give_item: { item: trade_token }
+          - relation: { who: porter, axis: trust, delta: 1 }
+          - overhear: { faction: faction_e, source: report }
+          - deed: { summary: 고속도로 휴게소에서 나루상단 짐을 함께 날랐다, tags: [diligence], severity: 1, privacy: semi_private }
+        partial:
+          - give_item: { item: trade_token }
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: "휴게소에서 나루상단 짐을 날랐다. 해 지기 직전에야 끝났다. 짐꾼이 통행패 하나를 던져 주었다", source: seen }
+        miss:
+          - body: { track: hunger, delta: 1 }
+          - relation: { who: porter, axis: trust, delta: -1 }
+          - belief: { fact: "상자를 놓쳐 모서리가 깨졌다. 짐꾼이 품삯은 없던 걸로 하자고 했다", source: seen }
+    - id: listen
+      label: 일은 거들지 않고 담배를 나눠 피우며 짐꾼의 말을 듣는다
+      effects:
+        - take_item: { item: cigarettes }
+        - relation: { who: porter, axis: affection, delta: 1 }
+        - overhear: { faction: other, source: rumor }
+    - id: pilfer
+      label: 짐꾼이 등을 돌린 틈에 묶음 하나를 빼돌린다
+      check: stealth
+      outcomes:
+        success:
+          - give_item: { item: canned_food, quantity: 2 }
+          - deed: { summary: 휴게소에서 나루상단 짐을 빼돌렸다, tags: [theft], severity: 1, privacy: private }
+        partial:
+          - give_item: { item: canned_food }
+          - relation: { who: porter, axis: trust, delta: -2 }
+          - deed: { summary: 휴게소에서 나루상단 짐을 빼돌리다 의심을 샀다, tags: [theft], severity: 1, privacy: semi_private }
+        miss:
+          - relation: { who: porter, axis: trust, delta: -3 }
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - deed: { summary: 휴게소에서 나루상단 짐을 훔치다 들켰다, tags: [theft], severity: 2, privacy: public }
+          - belief: { fact: "짐꾼에게 손목을 잡혔다. 나루상단 장부에 내 얼굴이 적힐 거라고 했다", source: seen }
+
+- id: zo2_rs_milestone
+  title: 이정표의 분필
+  tags: [world]
+  when:
+    zones: [rest_stop]
+    segments: [dawn, morning]
+    day_gte: 4
+    flags_all: [zo2_rs_met]
+    flags_none: [zo2_rs_milestone_done]
+  cast:
+    board: { ids: [zo2_gyudeok] }
+  setup: "{board:이/가} 새벽에 쌍안경을 목에 걸고 당신을 깨운다. \"같이 갈래? 저 위 도시 경계 이정표까지. 나가는 놈들이 거기다 분필로 뭘 적고 가거든. 혼자 가기엔 요새 길이 좀 그래.\" 고속도로 위로 안개가 낮게 깔렸다."
+  ai_direction: 휴게소에서 고속도로를 따라 조금 올라가면 도시 경계를 알리는 녹색 이정표가 있다. 나간 사람들이 기둥에 분필로 짧은 말을 남긴다 (이름, "남쪽으로", "다리 끊김", "돌아가라"). 어느 말이 맞는지는 알 수 없고, 서로 어긋난다. 길에는 감염체가 드문드문 있다. 채규덕은 기둥에서 가족의 글씨를 찾는다 (찾지 못한다. 묻기 전에는 말하지 않는다).
+  choices:
+    - id: go
+      label: 함께 이정표까지 걸어 올라간다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: zo2_rs_milestone_done
+          - relation: { who: board, axis: trust, delta: 2 }
+          - belief: { fact: "도시 경계 이정표 기둥에 분필 글씨가 겹겹이 있었다. '남쪽 다리 끊김'과 '남쪽 다리 건넘'이 한 뼘 사이에 나란히 적혀 있었다", source: seen }
+          - belief: { fact: "이정표 기둥 맨 아래에 '돌아가라 바깥도 같다'는 글씨가 있었다. 누가 언제 적었는지는 모른다", source: seen }
+        partial:
+          - set_flag: zo2_rs_milestone_done
+          - relation: { who: board, axis: trust, delta: 1 }
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "이정표 근처에 감염체 둘이 있어 멀리서 쌍안경으로만 봤다. 기둥에 분필 글씨가 빽빽했지만 읽지 못했다", source: seen }
+        miss:
+          - set_flag: zo2_rs_milestone_done
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "안개 속에서 감염체를 만나 중간에 돌아왔다. 채규덕이 다리를 끌며 앞장섰다. 다친 데는 없다", source: seen }
+    - id: ask_names
+      label: 가는 길에, 칠판 맨 위의 긁어 새긴 이름 두 줄이 누군지 묻는다
+      effects:
+        - set_flag: zo2_rs_milestone_done
+        - relation: { who: board, axis: affection, delta: 1 }
+        - belief: { fact: "채규덕은 칠판 맨 위의 긁힌 이름 둘에 대해 묻자 한참 걷기만 했다. 그 둘은 안 지운다고만 말했다", source: report }
+    - id: decline
+      label: 길은 혼자 가시라고, 칠판이나 지키겠다고 한다
+      effects:
+        - set_flag: zo2_rs_milestone_done
+        - belief: { fact: "채규덕이 혼자 고속도로를 올라갔다가 정오쯤 돌아왔다. 칠판의 바깥 소식 칸에 새 줄이 둘 늘었다. 하나는 다른 하나와 정반대였다", source: seen }

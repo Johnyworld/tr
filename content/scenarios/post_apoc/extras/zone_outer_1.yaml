@@ -1,0 +1,116 @@
+# 바깥 구역의 이름 없는 사람들 (12-53, storylets/zone_outer_1.yaml). 그 구역에서만 마주친다
+
+- id: subway_dweller
+  label: 환승역 승강장에 사는 사람
+  rank: loner
+  age: [25, 60]
+  looks:
+    - 헤드랜턴 끈 자국이 이마에 하얗게 남은 남자. 햇빛 아래로 나오면 눈을 가늘게 뜬다
+    - 역무원 조끼를 몇 겹 껴입은 여자. 목에 호루라기를 걸었다
+  stats: { senses: [1, 1], vitality: [-1, 0], nerve: [0, 1] }
+  skills: { survival: 1, stealth: 2, sense_danger: 1 }
+  traits: [cautious, guarded, weary, patient, blunt]
+  trait_count: 2
+  inventory:
+    - { item: flashlight, chance: 0.7 }
+    - { item: blanket }
+    - { item: water_bottle, chance: 0.5 }
+  values: { loyalty: 2, mercy: 1 }
+  profile:
+    wants: [승강장 사람들이 겨울을 넘기는 것, 터널 소리를 먼저 듣는 것, 위로 올라가지 않아도 되는 것]
+    fears: [첫 겨울 같은 물결, 무리가 사람을 끌어가는 것, 불빛이 꺼지는 것]
+    voices:
+      - { style: 낮고 짧은 반말. 소리를 내지 않는 버릇, samples: ["목소리 낮춰. 터널이 듣는다.", "여긴 불 하나로 버텨."] }
+      - { style: 조심스러운 존댓말. 말 사이가 길다, samples: ["위는… 요즘 어때요.", "내려온 사람은 다 사정이 있죠."] }
+    rules: [불빛을 손으로 가리고 말한다, 첫 겨울 이야기는 하지 않는다]
+    reputations: [환승역 승강장에 사는 사람, 터널 길을 아는 사람]
+    secrets:
+      - { content: 첫 겨울에 승강장 철문을 안에서 잠근 사람 중 하나다. 밖에 남은 사람들이 문을 두드렸다, reveal_when: 첫 겨울 이야기가 나올 때, min_trust: 3 }
+      - { content: 터널 깊은 곳에 아직 가족을 묻지 못하고 두고 왔다, reveal_when: 터널을 함께 걸은 뒤, min_trust: 2 }
+  ties: { chance: 0.2, kinds: [sibling, parent, child, friend] }
+  appears: { zones: [subway_hub] }
+
+- id: plant_tinkerer
+  label: 발전소의 정비공
+  rank: loner
+  age: [45, 68]
+  looks:
+    - 작업복 가슴에 '발전 2팀' 자수가 남은 마른 남자. 손톱 밑이 늘 까맣다
+    - 안전모에 이름 대신 숫자를 써 붙인 여자. 주머니마다 나사가 들었다
+  stats: { senses: [0, 1], strength: [-1, 0], charm: [0, 1] }
+  skills: { mechanics: 2, maintenance: 2, improvise: 1 }
+  traits: [curious, talkative, principled, patient, blunt]
+  trait_count: 2
+  inventory:
+    - { item: toolkit, chance: 0.5 }
+    - { item: wire_roll, chance: 0.3 }
+    - { item: duct_tape }
+  values: { discipline: 1, self_interest: -1 }
+  profile:
+    wants: [발전기 한 대를 다시 돌리는 것, 굴뚝에 깃발 말고 연기가 오르는 것, 기술을 물려줄 사람]
+    fears: [발전소가 무리 싸움판이 되는 것, 쓸모없는 늙은이가 되는 것, 노역장]
+    voices:
+      - { style: 신이 나면 말이 빨라지는 반말, samples: ["2호기 터빈은 멀쩡해. 멀쩡하다니까.", "구리선만 있으면 돼. 구리선만."] }
+      - { style: 공손하고 고집스러운 존댓말, samples: ["이건 그냥 쇳덩이가 아니에요.", "불 하나 켜는 게 뭐가 어렵겠어요."] }
+    rules: [기계 이야기가 나오면 손으로 그림을 그린다, 깃발 이야기가 나오면 입을 다문다]
+    reputations: [발전소에 혼자 남은 정비공, 미친 늙은이라고 불리는 사람]
+    secrets:
+      - { content: 붉은연합 노역장에서 도망쳐 나왔다. 발목에 쇠고랑 자국이 있다, reveal_when: 붉은연합 이야기가 나올 때, min_trust: 2 }
+  ties: { chance: 0.25, kinds: [child, sibling, friend] }
+  appears: { zones: [power_plant] }
+
+- id: prison_inmate
+  label: 감방에 남은 사람
+  rank: loner
+  age: [30, 58]
+  looks:
+    - 수염이 가슴까지 자란 남자. 옛 수형복 위에 교도관 점퍼를 걸쳤다
+    - 머리를 빡빡 민 여자. 손목에 묶였던 자국이 오래돼 하얗다
+  stats: { vitality: [-1, 0], nerve: [0, 1], senses: [0, 1] }
+  skills: { endure: 2, sense_danger: 1, deceive: 1 }
+  traits: [calculating, patient, guarded, cold, cynical]
+  trait_count: 2
+  inventory:
+    - { item: blanket, chance: 0.6 }
+  values: { self_interest: 1, loyalty: -1 }
+  profile:
+    wants: [담 밖에서 하룻밤 자는 것, 그 무리 사람들을 잊는 것, 무기고 열쇠를 쥔 사람이 되는 것]
+    fears: [붉은 완장, 감방 문이 밖에서 잠기는 소리, 다시 그 겨울]
+    voices:
+      - { style: 오래 말을 안 해서 쉰 목소리. 짧은 반말, samples: ["물. 물 먼저.", "그 문은 열지 마. 거긴 아직 있어."] }
+      - { style: 지나치게 공손한 존댓말. 눈은 안 웃는다, samples: ["은혜는 갚습니다. 꼭 갚아요.", "저는 그냥 여기 갇혀 있던 사람이에요."] }
+    rules: [문을 등지고 앉지 않는다, 무기고 이야기는 조금씩만 흘린다]
+    reputations: [교도소 감방에 혼자 살아남았다는 사람, 첫 해 무리의 마지막 사람]
+    secrets:
+      - { content: 첫 해 교도소를 차지했던 무리의 사람이었다. 물결이 담을 넘던 밤 동료들을 두고 감방 안에서 문을 잠갔다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
+      - { content: 무기고 안쪽 방 열쇠가 어디 있는지 안다, reveal_when: 담 밖으로 데려다 준 뒤, min_trust: 2 }
+  ties: { chance: 0.2, kinds: [sibling, friend, rival] }
+  appears: { zones: [prison] }
+
+- id: mall_kid
+  label: 마트에 숨어 사는 아이
+  rank: loner
+  age: [9, 14]
+  looks:
+    - 어른 패딩을 무릎까지 걸친 아이. 신발 끈 대신 철사를 묶었다
+    - 얼굴에 숯을 칠한 아이. 손에 늘 돌멩이를 쥐고 있다
+  stats: { agility: [1, 2], strength: [-2, -1], senses: [1, 1] }
+  skills: { stealth: 2, scavenge: 1, improvise: 1 }
+  traits: [timid, eager, guarded, curious, calculating]
+  trait_count: 2
+  inventory:
+    - { item: tin_alarm, chance: 0.4 }
+    - { item: dry_ration, chance: 0.3 }
+  values: { loyalty: 2 }
+  profile:
+    wants: [동생들이 배곯지 않는 것, 어른이 우리 굴을 모르는 것, 엄마가 돌아오는 것]
+    fears: [수색조, 어른들이 데려가는 것, 덫에 감염체가 아니라 사람이 걸리는 것]
+    voices:
+      - { style: 날 선 반말. 어른 흉내를 낸다, samples: ["더 오면 소리 지른다. 진짜야.", "거긴 우리 거야."] }
+      - { style: 기어드는 목소리. 말끝을 흐린다, samples: ["통조림… 하나만요.", "동생이 기침해요."] }
+    rules: [이름을 묻으면 가짜 이름을 댄다, 동생들 수를 말하지 않는다]
+    reputations: [마트 폐허에 숨어 사는 아이, 덫을 놓는 아이]
+    secrets:
+      - { content: 엄마는 수색조에 끌려갔다. 어느 무리 완장이었는지 기억한다, reveal_when: 그 무리 완장을 보았을 때, min_trust: 2 }
+  ties: { chance: 0.15, kinds: [parent, sibling] }
+  appears: { zones: [mall_ruins] }

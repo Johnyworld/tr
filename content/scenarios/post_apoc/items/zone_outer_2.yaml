@@ -1,0 +1,7 @@
+# 바깥 구역 이야기의 물건 (storylets/zone_outer_2.yaml)
+- id: seed_packet
+  name: 씨앗 봉투
+  description: 약봉투를 접어 만든 종이 봉투. 연필로 작물 이름과 거둔 해가 적혀 있다. 흔들면 마른 소리가 난다. 심을 땅이 있는 사람에게는 통조림보다 귀하다.
+  kind: misc
+  weight: 0.05
+  value: 6

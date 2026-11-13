@@ -1,0 +1,207 @@
+# 바깥 구역의 이름 있는 인물 (12-53): 언덕 위 성당, 가람대학교 캠퍼스, 고속도로 휴게소. 모두 무소속(faction: null)
+# 이야기는 storylets/zone_outer_2.yaml (zo2_)
+
+# ── 언덕 위 성당 ──
+- id: zo2_father
+  name: 피정호
+  alias: 소매 해진 검은 옷의 늙은 신부
+  faction: null
+  rank: loner
+  occupation: preacher
+  age: 71
+  gender: male
+  look: 허리가 굽었고 목이 가늘다. 검은 수단의 소매 끝이 실밥으로 너덜거린다. 오른손 검지와 중지가 성당 문 빗장에 찧여 굽은 채로 붙었다.
+  reputation: 언덕 위 성당의 늙은 신부. 무리를 가리지 않고 장례를 치러 준다. 문 앞에서 누구에게나 총을 두고 들어오라고 하고, 지금까지 그 말이 대체로 지켜졌다.
+  want: 자기가 죽은 뒤에도 성당 문 앞의 약속(총을 들고 들어오지 않는다)이 지켜지는 것
+  fear: 종탑 아래 피난민들이 자기 때문에 어느 무리에도 못 가고 굶는 것
+  values: { discipline: 1, loyalty: 1, mercy: 3, honesty: 2, self_interest: -2 }
+  traits: [patient, principled, weary, frail]
+  voice:
+    style: 느리고 낮은 존댓말. 누구에게나 "형제", "자매"라고 부른다. 화가 나면 오히려 말이 더 느려진다
+    samples:
+      - "총은 저 고해소에 두고 오세요. 나갈 때 그대로 돌려드립니다. 지금까지 하나도 안 없어졌어요."
+      - "묻는 건 제가 하겠습니다. 형제는 흙만 덮어 주세요."
+      - "여기 있는 사람들은 어디에도 못 간 사람들입니다. 그걸 잊고 데려가겠다고 하지 마세요."
+  routine: { dawn: 제대 앞, morning: 종탑 아래 피난민 거처, day: 성당 뒤뜰 묘지, evening: 저녁 기도, night: 고해소 옆 의자 }
+  rules:
+    - 총을 든 사람은 문 안에 들이지 않는다. 무리의 높은 사람이라도
+    - 죽은 사람은 무리를 묻지 않고 묻어 준다
+    - 고해에서 들은 말은 누구에게도 옮기지 않는다
+  knows:
+    - 종탑 아래에 어느 무리에도 들지 못한 피난민들이 산다. 노인과 아이, 다친 사람이 많다
+    - 무리들이 때때로 사람을 데려가려고 언덕에 올라온다. 일할 수 있는 젊은 사람만 고른다
+    - 성당 지하 납골당은 서늘하고 마르다. 물건을 쌓아 두기 좋다는 말을 여러 무리에게서 들었다
+    - 캠퍼스 도서관의 류경환 교수와는 붕괴 전부터 알던 사이다
+  doesnt_know:
+    - 피난민 가운데 한 사람이 붉은연합 모집책에게 쓸 만한 사람의 이름을 넘기고 있다는 것
+  secret:
+    content: 붕괴 첫 주, 성당 문을 걸어 잠그고 밖에서 두드리는 사람들을 들이지 않은 밤이 있다. 안에 이미 아이들이 있었고, 밖의 사람 중 누가 물렸는지 알 수 없었다. 굽은 손가락은 그날 빗장을 붙들다가 찧은 것이다. 총을 두고 들어오라는 말은 그 밤 뒤에 생겼다
+    reveal_when: 고해소에서, 혹은 문을 지키느라 누군가를 돌려보낸 뒤 둘만 남았을 때
+    min_trust: 4
+  stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 2, charm: 2, intellect: 1 }
+  skills: { persuade: 2, first_aid: 1, history: 2, endure: 1 }
+  start_inventory: [blanket, bandage, cloth]
+  playable: true
+  zone: cathedral
+  ties:
+    - { to: zo2_librarian, kind: friend }
+
+# ── 가람대학교 캠퍼스 ──
+- id: zo2_librarian
+  name: 류경환
+  alias: 도서관 계단의 백발 교수
+  faction: null
+  rank: loner
+  age: 64
+  gender: male
+  look: 백발을 뒤로 묶었다. 안경 한쪽 알에 금이 가서 테이프로 붙였다. 장갑 손가락 끝을 잘라 내고 책장을 넘긴다.
+  reputation: 가람대학교 중앙도서관에 틀어박힌 국문과 교수. 책을 한 권도 내주지 않는다. 대신 묻는 것에는 아는 만큼 다 답해 준다.
+  want: 도서관의 책이 다음 세대가 읽을 때까지 남는 것
+  fear: 겨울이 와서 사람들이 책을 땔감으로 보는 것. 자기도 그렇게 보게 되는 것
+  values: { discipline: 1, loyalty: 1, mercy: 0, honesty: 2, self_interest: -1 }
+  traits: [meticulous, principled, formal, cold_sensitive]
+  voice:
+    style: 또박또박한 존댓말. 강의하던 버릇이 남아 말끝에 꼭 질문을 붙인다
+    samples:
+      - "이게 종이로 보입니까? 이건 오백 년 치 사람들이 한 말입니다."
+      - "읽어 줄 수는 있어요. 빌려줄 수는 없고요. 차이를 아시겠지요?"
+  routine: { dawn: 서고, morning: 열람실 창가, day: 열람실, evening: 서고 앞 계단, night: 서고 }
+  rules:
+    - 책은 도서관 밖으로 한 권도 나가지 않는다
+    - 묻는 사람에게는 무리를 가리지 않고 답해 준다
+  knows:
+    - 도서관 서고에 붕괴 전 지역 신문과 도시 지도가 남아 있다
+    - 농대 온실을 맡은 어윤복과 겨울 땔감 문제로 다툰다
+    - 언덕 위 성당의 피정호 신부와 오래 알던 사이다
+    - 생물학과 명서진이 약대 실험실 지하에 혼자 드나든다
+  doesnt_know:
+    - 명서진이 실험실 지하에 무엇을 가둬 두었는지
+  secret:
+    content: 첫 겨울에 이미 한 번, 아무도 모르게 서고 맨 끝 칸의 옛 전화번호부 열두 권을 태웠다. 그 불로 손가락을 녹였다. 그래서 어윤복에게 더 모질게 군다
+    reveal_when: 땔감 이야기가 다시 나온 밤, 서고 앞 계단에서 둘만 있을 때
+    min_trust: 3
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 0, nerve: 1, charm: 0, intellect: 2 }
+  skills: { history: 2, persuade: 1, endure: 1 }
+  start_inventory: [ledger, blanket]
+  playable: true
+  zone: campus
+  ties:
+    - { to: zo2_greenhouse, kind: rival }
+
+- id: zo2_greenhouse
+  name: 어윤복
+  alias: 흙 묻은 고무장화의 온실지기
+  faction: null
+  rank: loner
+  age: 57
+  gender: female
+  look: 체구가 작고 어깨가 단단하다. 늘 무릎까지 오는 고무장화를 신는다. 손톱 밑이 까맣고 목에 씨앗 봉투를 꿴 끈을 건다.
+  reputation: 농대 온실을 지키는 사람. 원래 농대 실습장 기사였다. 씨앗을 달라는 사람에게 값 대신 "어디에 심을 거냐"고 묻는다.
+  want: 온실의 씨앗이 겨울을 넘겨 다시 땅에 들어가는 것
+  fear: 온실이 얼어 씨앗까지 다 죽는 것
+  values: { discipline: 0, loyalty: 1, mercy: 1, honesty: 2, self_interest: 0 }
+  traits: [blunt, patient, cold_hardy]
+  voice:
+    style: 툭툭 던지는 반말 섞인 말투. 사람보다 작물 이야기를 할 때 말이 길어진다
+    samples:
+      - "종이는 봄에 다시 안 나. 감자는 나. 뭐가 더 중해?"
+      - "씨는 줄게. 어디 심을 건지 말해 봐. 담 안이야, 밖이야?"
+  routine: { dawn: 온실 난로, morning: 온실, day: 온실 뒤 실습장, evening: 온실 난로, night: 온실 옆 창고 }
+  rules:
+    - 씨앗은 심을 데가 있는 사람에게만 준다
+    - 온실 난로의 불은 밤새 꺼뜨리지 않는다
+  knows:
+    - 온실 난로를 밤새 때려면 땔감이 모자란다. 캠퍼스의 나무는 거의 다 베었다
+    - 도서관의 류경환 교수가 책을 한 권도 내주지 않는다
+    - 여러 무리가 씨앗을 얻으러, 혹은 자기를 데려가려고 온실에 다녀갔다
+  doesnt_know:
+    - 류경환이 첫 겨울에 몰래 책을 태운 적이 있다는 것
+  secret:
+    content: 온실 뒤 실습장 흙 속에 씨앗 항아리 하나를 따로 묻어 두었다. 온실이 털리거나 얼면 거기서 다시 시작하려고. 어디인지는 아무에게도 말하지 않았다
+    reveal_when: 온실을 함께 지켜 준 뒤, 겨울을 걱정하는 이야기가 나왔을 때
+    min_trust: 4
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 1 }
+  skills: { survival: 2, carpentry: 1, improvise: 2, endure: 1 }
+  start_inventory: [kitchen_knife, cloth]
+  playable: true
+  zone: campus
+
+- id: zo2_seojin
+  name: 명서진
+  alias: 고무 앞치마를 두른 마른 연구자
+  faction: null
+  rank: loner
+  age: 34
+  gender: female
+  look: 키가 크고 말랐다. 두꺼운 고무 앞치마와 팔꿈치까지 오는 고무장갑을 벗지 않는다. 눈 밑이 검고 손목에 물린 자국은 없다고 소매를 걷어 먼저 보여 준다.
+  reputation: 생물학과 박사과정이었다는 사람. 약대 실험실 지하에 혼자 드나들며 감염체를 연구한다고 한다. 하얀매가 몇 번이나 데려가려 했다는 소문이 있다.
+  want: 감염이 어떻게 옮는지, 왜 어떤 사람은 열이 오르지 않는지 알아내는 것
+  fear: 자기가 알아낸 것이 아무에게도 닿지 못하고 실험실 지하에서 끝나는 것
+  values: { discipline: 0, loyalty: 0, mercy: -1, honesty: 1, self_interest: 1 }
+  traits: [curious, cold, meticulous]
+  voice:
+    style: 빠르고 건조한 존댓말. 확실하지 않은 것은 꼭 "아직은"을 붙인다
+    samples:
+      - "그건 소문이고요. 제가 본 건 이겁니다. 아직은 세 번밖에 못 봤어요."
+      - "장갑 끼세요. 아뇨, 그건 말고 이거요."
+  routine: { dawn: 약대 실험실 지하, morning: 약대 실험실, day: 약대 실험실, evening: 도서관 열람실, night: 약대 실험실 지하 }
+  rules:
+    - 실험실 지하 문 열쇠는 아무에게도 맡기지 않는다
+    - 들은 말과 본 것을 섞어 말하지 않는다
+  knows:
+    - 감염체가 소리 나는 쪽으로 몰린다는 것은 여러 번 봤다
+    - 물리거나 깊이 긁힌 사람이 모두 열이 오르지는 않았다. 왜인지는 아직 모른다
+    - 하얀매 진료소가 자기 연구 노트를 탐낸다
+  doesnt_know:
+    - 하얀매가 자기를 데려가면 노트만 남기고 지하의 것은 태울 생각이라는 것
+  secret:
+    content: 실험실 지하 우리 안에 가둬 둔 감염체는 지도교수였던 사람이다. 물린 교수가 열이 오르기 전에 스스로 우리에 들어가 자물쇠를 채워 달라고 했다. 목에 아직 교수의 출입증이 걸려 있다
+    reveal_when: 실험실 지하를 함께 내려간 뒤, 그 감염체 이야기를 물었을 때
+    min_trust: 3
+  stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 2, charm: -1, intellect: 2 }
+  skills: { infected_lore: 2, first_aid: 2, sense_danger: 1, stealth: 1 }
+  start_inventory: [fever_reducer, cloth, flashlight]
+  playable: true
+  zone: campus
+  ties:
+    - { to: zo2_librarian, kind: friend }
+
+# ── 고속도로 휴게소 ──
+- id: zo2_gyudeok
+  name: 채규덕
+  alias: 칠판 앞의 목도리 두른 사내
+  faction: null
+  rank: loner
+  occupation: scavenger
+  age: 52
+  gender: male
+  look: 볕에 그을린 넓은 얼굴. 털실 목도리를 코까지 올려 감았다. 손가락이 분필 가루로 하얗다. 휴게소 식당의 메뉴 칠판을 떼어 주유소 기둥에 세워 두었다.
+  reputation: 휴게소에 혼자 사는 사내. 고속도로로 나가는 사람과 들어오는 사람의 이름, 바깥 소식을 칠판에 적는다. 나루상단은 짐을 부리러 올 때마다 그 칠판부터 읽는다.
+  want: 고속도로로 나간 사람 가운데 누구 하나라도 돌아와서 바깥이 어떤지 제 입으로 말해 주는 것
+  fear: 칠판에 적힌 이름이 다 지워질 때까지 아무도 안 돌아오는 것
+  values: { discipline: 0, loyalty: 1, mercy: 1, honesty: 2, self_interest: 1 }
+  traits: [talkative, genial, curious]
+  voice:
+    style: 말이 많고 넉살 좋은 반말. 소문을 옮길 때는 꼭 누구한테 들었는지부터 말한다
+    samples:
+      - "적어 줄까? 이름이랑 어디로 가는지. 안 돌아오면 지워 주고, 돌아오면 술 한 잔 받고."
+      - "그건 내가 본 게 아니야. 사흘 전에 들어온 여자가 한 말이야. 그 여자도 남한테 들었대."
+  routine: { dawn: 휴게소 지붕, morning: 칠판 앞, day: 주유소 지붕 밑, evening: 휴게소 식당 안, night: 휴게소 지붕 }
+  rules:
+    - 칠판에는 들은 그대로 적는다. 누구한테 들었는지도
+    - 나가는 사람을 말리지 않는다. 다만 이름은 꼭 받는다
+  knows:
+    - 고속도로로 걸어 들어오는 떠돌이가 가끔 있다. 하는 말이 저마다 다르다
+    - 나루상단이 주유소 지붕 밑에 짐을 부리고 바깥 길로 사람을 보내기도 한다
+    - 칠판에 적힌 나간 사람 가운데 돌아와서 이름을 지운 사람은 아직 없다
+  doesnt_know:
+    - 도시 밖이 정말 어떤지 (아무도 모른다)
+  secret:
+    content: 붕괴 첫해 겨울에 아내와 아들이 고속도로로 남쪽 친척 집을 찾아 나갔다. 자기는 다리를 다쳐 남았다. 칠판 맨 위, 지워지지 않게 긁어 새긴 이름 둘이 그들이다
+    reveal_when: 칠판 맨 위의 긁힌 이름 두 줄에 대해 물었을 때
+    min_trust: 3
+  stats: { strength: 0, agility: 0, vitality: 1, senses: 2, nerve: 0, charm: 2, intellect: 0 }
+  skills: { persuade: 2, scavenge: 1, survival: 1, sense_danger: 1 }
+  start_inventory: [cigarettes, water_bottle, binoculars]
+  playable: true
+  zone: rest_stop

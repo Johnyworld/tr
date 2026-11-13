@@ -166,6 +166,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.occupations && !w.occupations.includes(player.occupation?.id ?? "none")) return false;
   if (w.road_touches && (!state.lastRoute || !w.road_touches.some((z) => z === state.lastRoute!.from || z === state.lastRoute!.to))) return false;
   if (w.road_danger_gte !== undefined && routeDanger(content, state) < w.road_danger_gte) return false;
+  if (w.road_danger_lte !== undefined && (!state.lastRoute || routeDanger(content, state) > w.road_danger_lte)) return false;
   if (w.at_loss_place && !state.background.some((e) => e.part.kind === "loss" && e.part.where && e.part.where === state.playerZone)) return false;
   if (w.occupation_step_gte !== undefined) {
     const occ = occupationOf(content, player);
@@ -253,6 +254,7 @@ export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: 
   // 있으면 쓰는 배역이 비었으면 그 배역을 쓰는 선택지는 빠진다
   if (choice.when?.cast && !choice.when.cast.every((k) => !!cast[k])) return false;
   if (choice.when?.cast_empty && choice.when.cast_empty.some((k) => !!cast[k])) return false;
+  if (choice.when?.factions && !choice.when.factions.includes(state.characters[state.playerId]?.factionId || "none")) return false;
   if (choice.when?.in_faction !== undefined && !!state.characters[state.playerId]?.factionId !== choice.when.in_faction) return false;
   const player = state.characters[state.playerId];
   if (!player) return false;

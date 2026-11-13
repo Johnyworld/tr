@@ -1,0 +1,14 @@
+# 바깥 구역 이야기의 물건 (12-53, storylets/zone_outer_1.yaml)
+- id: tunnel_map
+  name: 손으로 그린 터널 지도
+  description: 지하철 노선도 뒷면에 연필로 그린 지도. 무너진 구간에 가위표, 물이 차는 구간에 물결 표시가 있다. 환승역에서 마트 밑 하역장까지 가는 선이 굵게 덧그어져 있다.
+  kind: misc
+  weight: 0.1
+  value: 6
+
+- id: cell_key_ring
+  name: 교도소 열쇠 꾸러미
+  description: 번호표가 달린 쇠 열쇠 열댓 개. 녹이 슬었지만 이가 살아 있다. 몇 개는 번호표가 뜯겨 나갔다.
+  kind: misc
+  weight: 0.4
+  value: 4

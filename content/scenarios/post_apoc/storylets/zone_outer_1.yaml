@@ -1,0 +1,1178 @@
+# 바깥 구역의 이야기 1 (12-53): 지하철 환승역, 화력발전소 터, 북쪽 교도소, 대형 마트 폐허
+# - 구역마다 5~6개. when.zones로 그 구역에 묶는다. 태그 world라 어느 시나리오에서나 열린다
+# - 연쇄: 환승역 승강장 사람들 → 터널 지름길 → 마트 밑 하역장 (구역을 잇는다)
+#         마트의 덫 → 숨어 사는 아이들 → 아이들의 굴(터널 입구를 알려 준다)
+#         발전소 정비공 → 2호기에 불 하나
+#         교도소 담 → 무기고 / 감방의 사람 → 붉은연합 순찰 (데리고 나온 사람)
+# - 이름 없는 인물은 extras/zone_outer_1.yaml, 물건은 items/zone_outer_1.yaml
+
+# ── 지하철 환승역 ─────────────────────────────────────────
+
+- id: zo1_sub_platform
+  title: 승강장의 불빛
+  tags: [world]
+  when:
+    zones: [subway_hub]
+    flags_none: [zo1_sub_met]
+  cast:
+    keeper: { extra: subway_dweller, label: 승강장 사람, keep: zo1_sub_keeper }
+  setup: 멈춘 에스컬레이터를 반쯤 내려가자 아래에서 불빛 하나가 꺼진다. 어둠 속에서 쇠붙이를 두드리는 소리가 두 번. 잠시 뒤 손으로 가린 손전등 불빛이 다시 켜지고 {keeper:이/가} 계단참 아래에서 올려다본다. "거기서 멈춰. 위에서 뭘 데리고 왔는지부터 보자."
+  ai_direction: 환승역 2호선 승강장에 열 명 남짓이 산다. 첫 겨울 물결 뒤에 남은 사람들과 나중에 흘러든 사람들이다. 불은 하나만 켜고, 쇠를 두 번 두드리는 것이 사람이라는 신호다. 무리 완장을 찬 사람은 무척 경계한다 (끌려갈까 봐). 이들은 터널 길을 안다. 마트 밑 하역장까지 이어지는 길도 있다. 먼저 묻지 않으면 말하지 않는다.
+  choices:
+    - id: trade
+      label: 통조림을 내밀고 하룻밤 승강장 구석을 빌린다
+      effects:
+        - take_item: { item: canned_food }
+        - set_flag: zo1_sub_met
+        - set_flag: zo1_sub_welcome
+        - relation: { who: keeper, axis: trust, delta: 1 }
+        - body: { track: cold, delta: -1 }
+        - belief: { fact: "환승역 2호선 승강장에 사람들이 숨어 산다. 불은 하나만 켜고, 쇠를 두 번 두드리면 사람이라는 뜻이다", source: seen }
+    - id: ask_tunnel
+      label: 터널로 다른 곳에 갈 수 있는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: zo1_sub_met
+          - set_flag: zo1_sub_tunnel_told
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "승강장 사람 말로는 환승역 터널 하나가 남쪽 대형 마트 밑 하역장까지 이어진다. 중간에 물이 차는 구간이 있다", source: report }
+        partial:
+          - set_flag: zo1_sub_met
+          - set_flag: zo1_sub_tunnel_told
+          - relation: { who: keeper, axis: trust, delta: -1 }
+          - belief: { fact: "승강장 사람이 마지못해 남쪽 터널이 마트 밑까지 간다고 알려 줬다. 다시는 묻지 말라고 했다", source: report }
+        miss:
+          - set_flag: zo1_sub_met
+          - relation: { who: keeper, axis: trust, delta: -1 }
+          - belief: { fact: "승강장 사람은 터널 이야기에 입을 닫았다. 위에서 온 사람이 길을 알면 사람이 끌려 내려온다고 했다", source: seen }
+    - id: leave
+      label: 손을 들어 보이고 도로 계단을 오른다
+      effects:
+        - set_flag: zo1_sub_met
+        - belief: { fact: "환승역 승강장 아래에 누군가 산다. 불빛을 손으로 가리는 사람들이다", source: seen }
+
+- id: zo1_sub_shutter
+  title: 셔터 너머의 소리
+  tags: [world]
+  when:
+    zones: [subway_hub]
+    segments: [morning, day, evening]
+  cast:
+    stuck: { extra: refugee, label: 셔터 너머의 사람, keep: zo1_sub_stuck }
+  setup: 무너진 환승 통로 끝, 반쯤 내려온 방화 셔터 아래로 손가락 넷이 나와 있다. 셔터를 두드리는 소리가 약하게 이어진다. 틈 사이로 쉰 목소리가 새어 나온다. "거기 누구 있어요? 천장이 내려앉아서… 사흘째예요." 셔터 위 천장에서 흙이 조금씩 흘러내린다.
+  ai_direction: "{stuck}은(는) 진짜 갇힌 사람이다. 물 뜨러 내려왔다가 여진에 무너진 통로에 갇혔다. 셔터를 억지로 올리면 쇳소리가 터널 깊이 울린다 (감염체가 깬다). 승강장 사람들과 사이가 좋으면 그들이 쓰는 지렛목과 밧줄을 빌릴 수 있다. 꺼낸 사람은 빈손이지만 은혜를 잊지 않는다."
+  choices:
+    - id: pry
+      label: 쇠지렛대를 셔터 밑에 넣고 들어 올린다
+      when: { has_items_any: [crowbar] }
+      check: endure
+      outcomes:
+        success:
+          - set_flag: zo1_sub_rescued
+          - relation: { who: stuck, axis: trust, delta: 2 }
+          - relation: { who: stuck, axis: affection, delta: 2 }
+          - zone_noise: 1
+          - deed: { summary: 환승역 무너진 통로에 갇힌 사람을 셔터를 들어 꺼냈다, tags: [mercy], severity: 1, privacy: private }
+          - companion_join: { who: stuck, kind: purpose, until: { hours: 24 } }
+        partial:
+          - set_flag: zo1_sub_rescued
+          - relation: { who: stuck, axis: trust, delta: 2 }
+          - zone_noise: 2
+          - npc_hurt: { who: stuck, steps: 1 }
+          - belief: { fact: "셔터를 들다 쇳소리가 터널을 울렸다. 갇힌 사람은 다리를 긁히며 기어 나왔다. 터널 안쪽에서 무언가 움직이기 시작했다", source: seen }
+        miss:
+          - zone_noise: 3
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "셔터가 반쯤 올라가다 미끄러졌다. 쇳소리에 터널 안쪽이 깨었다. 셔터 너머 목소리는 내일 다시 오라고 했다", source: seen }
+    - id: ask_platform
+      label: 승강장 사람들을 불러 밧줄과 지렛목을 빌린다
+      when: { flags_all: [zo1_sub_welcome] }
+      effects:
+        - set_flag: zo1_sub_rescued
+        - relation: { who: stuck, axis: trust, delta: 2 }
+        - deed: { summary: 승강장 사람들과 함께 무너진 통로에 갇힌 사람을 꺼냈다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "승강장 사람들이 밧줄과 지렛목을 들고 와 소리 없이 셔터를 올렸다. 갇혔던 사람은 그들에게 머물 자리를 얻었다", source: seen }
+    - id: water
+      label: 셔터 틈으로 물병을 밀어 넣고, 다시 오겠다고 한다
+      effects:
+        - take_item: { item: water_bottle }
+        - relation: { who: stuck, axis: affection, delta: 1 }
+        - belief: { fact: "환승역 무너진 통로 셔터 너머에 사람이 갇혀 있다. 물병을 넣어 주었다", source: seen }
+    - id: leave
+      label: 천장의 흙을 보고 물러난다
+      effects:
+        - belief: { fact: "환승역 무너진 통로에서 누군가 셔터를 두드렸다. 돌아보지 않고 나왔다", source: seen }
+
+- id: zo1_sub_tunnel
+  title: 남쪽 터널
+  tags: [world]
+  when:
+    zones: [subway_hub]
+    segments: [morning, day, evening]
+    flags_any: [zo1_sub_tunnel_told, zo1_ml_den_shown]
+    flags_none: [zo1_tunnel_walked]
+  cast:
+    keeper: { recall: zo1_sub_keeper, enter: false, optional: true }
+  setup: 남쪽 승강장 끝, 선로로 내려가는 쇠사다리. 터널 안은 손전등 불빛이 열 걸음도 못 간다. 침목 사이에 고인 물이 검다. 멀리서 물 떨어지는 소리, 그 사이로 다른 소리가 섞이는지 아닌지 알 수 없다.
+  ai_direction: 마트 밑 하역장까지 터널로 한 시간 남짓이다. 중간의 물 찬 구간 옆 정비 차량 칸에 감염체 몇이 웅크려 있다. 불빛을 정비 차량 쪽으로 비추면 깬다. 승강장 사람이 길을 알려 준 상태면 물 찬 구간을 피하는 정비 통로를 안다. 지나가면 마트 폐허 밑 하역장에 닿는다 (위에서 털린 마트의, 아직 아무도 내려오지 않은 아래층).
+  choices:
+    - id: guided
+      label: 승강장 사람에게 들은 대로 정비 통로를 따라간다
+      when: { cast: [keeper] }
+      check: survival
+      outcomes:
+        success:
+          - set_flag: zo1_tunnel_walked
+          - set_flag: zo1_tunnel_mall
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - send_to: mall_ruins
+          - belief: { fact: "환승역 남쪽 터널의 정비 통로를 따라 대형 마트 밑 하역장에 닿았다. 위층과 달리 아무도 내려온 흔적이 없다", source: seen }
+        partial:
+          - set_flag: zo1_tunnel_walked
+          - set_flag: zo1_tunnel_mall
+          - body: { track: cold, delta: 1 }
+          - send_to: mall_ruins
+          - belief: { fact: "정비 통로가 중간에 막혀 허리까지 물에 잠겨 건넜다. 그래도 마트 밑 하역장에 닿았다", source: seen }
+        miss:
+          - set_flag: zo1_tunnel_walked
+          - zone_noise: 2
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "정비 통로에서 길을 잃고 정비 차량 칸 옆으로 나왔다. 불빛에 무언가 일어섰다. 환승역까지 뛰어 돌아왔다", source: seen }
+    - id: dark
+      label: 손전등을 끄고 벽을 짚으며 선로를 따라간다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: zo1_tunnel_walked
+          - set_flag: zo1_tunnel_mall
+          - send_to: mall_ruins
+          - belief: { fact: "불을 끄고 선로를 따라 걸었다. 정비 차량 칸 옆에서 숨소리를 들었지만 지나쳤다. 끝은 대형 마트 밑 하역장이었다", source: seen }
+        partial:
+          - set_flag: zo1_tunnel_walked
+          - set_flag: zo1_tunnel_mall
+          - body: { track: nerves, delta: 1 }
+          - zone_noise: 1
+          - send_to: mall_ruins
+          - belief: { fact: "어둠 속에서 침목에 걸려 넘어졌다. 뒤에서 무언가 따라오다 멈췄다. 마트 밑 하역장으로 기어 올라왔다", source: seen }
+        miss:
+          - zone_noise: 3
+          - body: { track: nerves, delta: 2 }
+          - belief: { fact: "남쪽 터널 정비 차량 칸에 감염체가 웅크려 있다. 어둠 속에서 그 사이로 걸어 들어갈 뻔했다", source: seen }
+    - id: not_today
+      label: 사다리 위에서 오래 듣다가 돌아선다
+      effects: []
+
+- id: zo1_sub_names
+  title: 역무실 벽의 이름들
+  tags: [world]
+  when:
+    zones: [subway_hub]
+    day_gte: 3
+  cast: {}
+  setup: 역무실 유리벽 안쪽에 매직으로 쓴 이름이 빼곡하다. 날짜가 붙은 것, 줄이 그어진 것, 옆에 '위에 있음'이라고 쓴 것. 벽 끝으로 갈수록 글씨가 급해지고, 마지막 몇 줄은 날짜가 없다. 바닥에 담요 더미가 아직 사람 모양으로 굳어 있다.
+  ai_direction: 첫 겨울 환승역에 몰렸던 피난민의 명단이다. 물결은 안에서 시작됐다 (물린 사람을 승강장 안에 들였다). 철문을 안에서 잠근 사람들이 살아남았다. 이 사실은 벽에 쓰여 있지 않다. 승강장 사람들은 이 벽 이야기를 싫어한다. 담요 더미 밑에는 지난 사람들이 남긴 물건이 더러 있다.
+  choices:
+    - id: read
+      label: 명단을 끝까지 읽는다
+      check: history
+      outcomes:
+        success:
+          - set_flag: zo1_sub_names_read
+          - belief: { fact: "환승역 역무실 명단은 첫 겨울 어느 날부터 날짜가 사라진다. 마지막 줄 옆에 '철문 잠금 — 열지 말 것'이라고 적혀 있다. 물결은 밖이 아니라 승강장 안에서 시작된 것 같다", source: seen }
+        partial:
+          - set_flag: zo1_sub_names_read
+          - belief: { fact: "환승역 역무실 벽에 첫 겨울 피난민 명단이 남아 있다. 줄이 그어진 이름이 대부분이다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "역무실 명단을 읽다가 담요 더미 쪽에서 무언가 바스락거렸다. 쥐였다. 손이 한참 떨렸다", source: seen }
+    - id: dig
+      label: 담요 더미 밑을 뒤진다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: medkit }
+          - deed: { summary: 환승역 역무실의 죽은 사람들 담요 밑에서 구급상자를 꺼냈다, tags: [selfishness], severity: 1, privacy: private }
+        partial:
+          - give_item: { item: cigarettes }
+        miss:
+          - body: { track: disease, delta: 1, chance: 0.5 }
+          - belief: { fact: "담요 더미 밑은 축축하고 냄새가 났다. 나온 것은 없었다", source: seen }
+    - id: add_name
+      label: 벽 빈자리에 아는 이름 하나를 적는다
+      effects:
+        - body: { track: nerves, delta: -1 }
+        - belief: { fact: "환승역 역무실 벽에 이름 하나를 적고 나왔다", source: seen }
+
+- id: zo1_sub_carriage
+  title: 잠긴 열차 칸
+  tags: [world]
+  when:
+    zones: [subway_hub]
+    segments: [evening, night]
+    flags_all: [zo1_sub_welcome]
+  cast:
+    keeper: { recall: zo1_sub_keeper }
+  setup: 승강장 끝에 멈춰 선 열차, 맨 뒤 칸의 문이 쇠사슬로 묶여 있다. 그 앞에 {keeper:이/가} 앉아 깡통에 죽을 덜고 있다. 창문 안쪽에 신문지가 발려 있다. 안에서 무언가 유리를 천천히 긁는다. {keeper:은/는} 당신을 보더니 깡통을 내려놓지 않는다. "못 본 걸로 해."
+  ai_direction: "열차 칸 안에는 {keeper}의 가족이 있다. 열흘 전에 물렸고 이제 사람이 아니다. {keeper}은(는) 매일 죽을 들고 와 앉아 있는다. 승강장 사람들은 알면서 모른 척한다. 첫 겨울에도 이렇게 물린 사람을 안에 두었다가 물결이 났다. 주인공이 끝내자고 하면 {keeper}은(는) 화를 내다 무너진다. 이야기는 사람을 죽이지 않는다: 열차 칸 안의 것은 이미 감염체다. 끝을 내는 장면은 GM이 담담하게 연출하되, 결과는 선택지 효과대로다."
+  choices:
+    - id: persuade_end
+      label: 첫 겨울 이야기를 꺼내며, 이제 끝내야 한다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: zo1_sub_carriage_ended
+          - relation: { who: keeper, axis: trust, delta: 2 }
+          - relation: { who: keeper, axis: respect, delta: 1 }
+          - belief: { fact: "승강장 사람은 밤새 열차 칸 앞에 앉아 있다가 새벽에 직접 문을 열었다. 승강장 사람들이 함께 묻었다", source: seen }
+        partial:
+          - set_flag: zo1_sub_carriage_ended
+          - relation: { who: keeper, axis: affection, delta: -2 }
+          - relation: { who: keeper, axis: respect, delta: 1 }
+          - belief: { fact: "승강장 사람은 끝내 문을 열지 못했다. 다른 사람들이 대신 했다. 그 뒤로 이쪽을 보지 않는다", source: seen }
+        miss:
+          - relation: { who: keeper, axis: trust, delta: -2 }
+          - relation: { who: keeper, axis: affection, delta: -2 }
+          - belief: { fact: "승강장 사람이 깡통을 집어 던졌다. 위에서 온 사람이 뭘 아느냐고 했다. 열차 칸의 쇠사슬은 그대로다", source: seen }
+    - id: sit
+      label: 아무 말 없이 옆에 앉아 죽이 식는 것을 같이 본다
+      effects:
+        - relation: { who: keeper, axis: affection, delta: 2 }
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "환승역 열차 맨 뒤 칸에 승강장 사람의 가족이 갇혀 있다. 이제 사람이 아니다. 그는 매일 죽을 들고 와 앉아 있는다", source: seen }
+    - id: chain
+      label: 쇠사슬을 한 번 더 감아 묶어 주고 온다
+      check: improvise
+      outcomes:
+        success:
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "열차 칸 문에 쇠사슬을 한 겹 더 감았다. 승강장 사람이 고맙다고도 하지 말라고도 하지 않았다", source: seen }
+        partial:
+          - zone_noise: 1
+          - belief: { fact: "쇠사슬을 감다가 문이 덜컹거렸다. 안의 것이 유리에 몸을 부딪쳤다", source: seen }
+        miss:
+          - zone_noise: 2
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "쇠사슬이 손에서 미끄러져 철컥 울렸다. 터널 쪽에서 대답하듯 무언가 울었다", source: seen }
+
+# ── 화력발전소 터 ─────────────────────────────────────────
+
+- id: zo1_pp_tinkerer
+  title: 2호기의 정비공
+  tags: [world]
+  when:
+    zones: [power_plant]
+    segments: [morning, day]
+    flags_none: [zo1_pp_met]
+  cast:
+    tink: { extra: plant_tinkerer, label: 발전소 정비공, keep: zo1_pp_tink }
+  setup: 터빈 건물 안, 녹슨 기계 덩어리 사이에서 쇠 두드리는 소리가 난다. {tink:이/가} 작업등 대신 촛불을 켜 놓고 거대한 발전기 덮개를 닦고 있다. 당신을 보고도 손을 멈추지 않는다. "깃발 꽂으러 왔으면 굴뚝은 저쪽이야. 이건 건드리지 마. 2호기는 아직 살아 있어."
+  ai_direction: "{tink}은(는) 붕괴 전 이 발전소 정비팀이었다. 2호기를 하나만 다시 돌리면 불 몇 개는 켤 수 있다고 믿는다. 반쯤은 맞다 (작은 비상 발전기 쪽이다). 구리선과 공구가 모자라다. 붉은연합 노역장에서 도망쳐 왔다는 것은 숨긴다. 무리 사람이라도 기계를 존중하면 말이 통한다."
+  choices:
+    - id: give_wire
+      label: 철사 묶음을 건네며 무엇을 하려는지 묻는다
+      effects:
+        - take_item: { item: wire_roll }
+        - set_flag: zo1_pp_met
+        - set_flag: zo1_pp_wire_given
+        - relation: { who: tink, axis: trust, delta: 2 }
+        - belief: { fact: "발전소 정비공은 2호기 옆 비상 발전기를 돌리면 불 몇 개는 켤 수 있다고 한다. 철사를 건넸더니 며칠 뒤 저녁에 다시 오라고 했다", source: report }
+    - id: help
+      label: 덮개 나사를 같이 푼다
+      check: mechanics
+      outcomes:
+        success:
+          - set_flag: zo1_pp_met
+          - set_flag: zo1_pp_wire_given
+          - relation: { who: tink, axis: respect, delta: 2 }
+          - belief: { fact: "정비공과 발전기 덮개를 열었다. 안쪽 배선은 멀쩡했다. 구리선만 이으면 된다며 며칠 뒤 저녁에 오라고 했다", source: seen }
+        partial:
+          - set_flag: zo1_pp_met
+          - relation: { who: tink, axis: respect, delta: 1 }
+          - belief: { fact: "나사 하나를 뭉갰다. 정비공은 혀를 찼지만 쫓아내지는 않았다. 구리선이 있으면 가져오라고 했다", source: seen }
+        miss:
+          - set_flag: zo1_pp_met
+          - relation: { who: tink, axis: affection, delta: -1 }
+          - belief: { fact: "발전소 정비공은 손대지 말라며 공구를 빼앗았다", source: seen }
+    - id: mock
+      label: 불 켜서 뭐 하냐고, 깃발 꽂는 놈들이 먼저 올 거라고 한다
+      effects:
+        - set_flag: zo1_pp_met
+        - relation: { who: tink, axis: affection, delta: -1 }
+        - belief: { fact: "발전소에 혼자 남은 정비공이 꺼진 발전기를 닦고 있다. 아무도 그 말을 믿지 않는다", source: seen }
+
+- id: zo1_pp_light
+  title: 불 하나
+  tags: [world]
+  when:
+    zones: [power_plant]
+    segments: [evening, night]
+    flags_all: [zo1_pp_wire_given]
+    day_gte: 4
+  cast:
+    tink: { recall: zo1_pp_tink }
+  setup: 터빈 건물 구석, 작은 비상 발전기에 철사가 거미줄처럼 이어져 있다. {tink:이/가} 기름 묻은 손으로 시동 줄을 쥐고 당신을 돌아본다. 천장에 매달린 전구 하나. "당겨 볼래? 첫 번째는 같이 본 사람이 당기는 거야."
+  ai_direction: 시동이 걸리면 전구가 몇 분 켜진다. 발전기 소리는 크고, 불빛은 깨진 창으로 강 건너에서도 보인다. 다음 날이면 발전소에 불이 들어왔다는 소문이 무리마다 돈다. 그것이 정비공에게 좋은 일인지는 알 수 없다 (무리들이 정비공을 데려가려 할 것이다). 끝까지 돌리지 않고 확인만 하자고 할 수도 있다.
+  choices:
+    - id: pull
+      label: 시동 줄을 당긴다
+      check: maintenance
+      outcomes:
+        success:
+          - set_flag: zo1_pp_lit
+          - zone_noise: 3
+          - relation: { who: tink, axis: affection, delta: 2 }
+          - relation: { who: tink, axis: trust, delta: 1 }
+          - body: { track: nerves, delta: -1 }
+          - belief: { fact: "화력발전소 터빈 건물에서 비상 발전기를 돌려 전구 하나를 켰다. 정비공은 아무 말 없이 불빛을 올려다봤다. 강 건너에서도 보였을 것이다", source: seen }
+        partial:
+          - set_flag: zo1_pp_lit
+          - zone_noise: 3
+          - relation: { who: tink, axis: affection, delta: 1 }
+          - belief: { fact: "발전기가 연기를 뿜다 몇 초 만에 꺼졌다. 그래도 전구가 한 번 깜빡였다. 정비공이 웃었다", source: seen }
+        miss:
+          - zone_noise: 2
+          - npc_hurt: { who: tink, steps: 1 }
+          - belief: { fact: "시동 줄이 튀어 정비공의 손등을 갈랐다. 발전기는 기침만 하고 섰다", source: seen }
+    - id: quiet
+      label: 소리가 너무 크다고, 낮에 바람 불 때 하자고 말린다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: tink, axis: trust, delta: 2 }
+          - belief: { fact: "정비공을 말렸다. 발전기는 바람 부는 날 낮에 잠깐만 돌려 보기로 했다. 무리들에게 들키지 않게", source: report }
+        partial:
+          - relation: { who: tink, axis: affection, delta: -1 }
+          - belief: { fact: "정비공은 투덜대며 시동 줄을 놓았다. 오늘은 안 돌리기로 했다", source: seen }
+        miss:
+          - set_flag: zo1_pp_lit
+          - zone_noise: 3
+          - relation: { who: tink, axis: affection, delta: -1 }
+          - belief: { fact: "말리는데도 정비공이 시동 줄을 당겼다. 발전기 소리가 저탄장까지 울렸다", source: seen }
+    - id: tell_own
+      label: 우리 무리라면 이 사람을 지켜 줄 거라고, 거점으로 데려가자고 한다
+      when: { in_faction: true }
+      check: persuade
+      outcomes:
+        success:
+          - merit: 1
+          - relation: { who: tink, axis: trust, delta: 1 }
+          - companion_join: { who: tink, kind: purpose, until: { hours: 48 } }
+          - belief: { fact: "발전소 정비공이 우리 거점까지 따라가 보겠다고 했다. 2호기 이야기를 지도부에 직접 하겠다고", source: report }
+        partial:
+          - relation: { who: tink, axis: trust, delta: -1 }
+          - belief: { fact: "정비공은 무리 이야기에 눈빛이 식었다. 2호기를 두고는 아무 데도 안 간다고 했다", source: seen }
+        miss:
+          - relation: { who: tink, axis: trust, delta: -2 }
+          - belief: { fact: "무리 이야기를 꺼내자 정비공이 발목을 감싸 쥐었다. 거기 무엇이 있는지 보여 주지 않았다", source: seen }
+
+- id: zo1_pp_coal_line
+  title: 저탄장의 노역
+  tags: [world]
+  when:
+    zones: [power_plant]
+    segments: [morning, day]
+    factions: [none, faction_a, faction_b, faction_d, faction_e]
+  cast:
+    guard: { extra: c_sentry_rifle, label: 노역 감독 }
+    worker: { extra: refugee, label: 석탄을 지는 사람, keep: zo1_pp_worker }
+  setup: 저탄장 검은 언덕에 줄이 서 있다. 사람 열댓이 포대에 석탄을 퍼 담아 등에 지고 강변 쪽 트럭까지 나른다. 붉은 완장을 찬 {guard:이/가} 소총을 걸친 채 줄 끝에서 숫자를 센다. 줄 맨 뒤의 {worker:은/는} 무릎이 꺾일 때마다 일어나기를 조금씩 늦게 한다. 그가 석탄 더미 너머의 당신을 본 것 같다.
+  ai_direction: 붉은연합이 끌어온 노역조다. 하루 할당량을 채우면 저녁밥을 받고, 못 채우면 조 전체가 굶는다. 감독은 숫자만 신경 쓴다. 맨 뒤의 사람은 오늘 밤 도망칠 생각이다. 주인공이 손을 보태면 감독은 신경 쓰지 않는다 (숫자가 늘면 좋다). 노역꾼을 빼내면 감독은 숫자가 하나 줄어든 것을 저녁에야 안다.
+  choices:
+    - id: help_carry
+      label: 맨 뒤 사람의 포대를 받아 트럭까지 진다
+      check: endure
+      outcomes:
+        success:
+          - relation: { who: worker, axis: trust, delta: 2 }
+          - deed: { summary: 발전소 저탄장에서 노역꾼의 석탄 포대를 대신 졌다, tags: [mercy], severity: 1, privacy: semi_private }
+          - belief: { fact: "붉은연합 노역조는 저탄장 석탄을 강변 트럭으로 나른다. 할당량을 못 채우면 조 전체가 굶는다", source: seen }
+        partial:
+          - relation: { who: worker, axis: trust, delta: 1 }
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: "석탄 포대를 지고 저탄장을 몇 번 오갔다. 허기가 뼈까지 왔다", source: seen }
+        miss:
+          - relation: { who: guard, axis: respect, delta: -1 }
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: "포대를 지다 미끄러져 석탄을 쏟았다. 감독이 쏟은 만큼 노역꾼 몫에서 뺐다", source: seen }
+    - id: free_worker
+      label: 감독이 숫자를 세는 사이 맨 뒤 사람에게 석탄 더미 뒤로 오라고 손짓한다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: zo1_pp_worker_freed
+          - relation: { who: worker, axis: trust, delta: 3 }
+          - deed: { summary: 붉은연합 노역조에서 사람 하나를 빼냈다, tags: [mercy, bravery], severity: 2, privacy: private }
+          - companion_join: { who: worker, kind: purpose, until: { hours: 24 } }
+        partial:
+          - set_flag: zo1_pp_worker_freed
+          - relation: { who: worker, axis: trust, delta: 2 }
+          - relation: { who: guard, axis: trust, delta: -2 }
+          - deed: { summary: 붉은연합 노역조에서 사람 하나를 빼내다 감독 눈에 띄었다, tags: [mercy, bravery], severity: 2, privacy: semi_private }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - companion_join: { who: worker, kind: purpose, until: { hours: 24 } }
+        miss:
+          - npc_hurt: { who: worker, steps: 1 }
+          - relation: { who: guard, axis: trust, delta: -2 }
+          - belief: { fact: "손짓을 감독이 먼저 봤다. 개머리판이 노역꾼의 등에 떨어졌다. 감독은 다음엔 쏜다고 했다", source: seen }
+    - id: watch
+      label: 석탄 더미 뒤에서 몇 명인지, 트럭이 어디로 가는지만 본다
+      check: sense_danger
+      outcomes:
+        success:
+          - overhear: { faction: faction_c, source: seen }
+          - belief: { fact: "발전소 석탄은 붉은연합 트럭에 실려 강변 쪽으로 간다. 붉은연합이 무언가를 크게 준비하는 것 같다", source: seen }
+        partial:
+          - belief: { fact: "붉은연합이 발전소 저탄장에서 노역조로 석탄을 실어 나른다", source: seen }
+        miss:
+          - relation: { who: guard, axis: trust, delta: -1 }
+          - belief: { fact: "감독이 석탄 더미 쪽으로 총구를 돌렸다. 손을 들고 물러났다", source: seen }
+
+- id: zo1_pp_yard_clash
+  title: 저탄장의 두 조
+  tags: [world]
+  when:
+    zones: [power_plant]
+    segments: [dawn, morning, evening]
+    factions: [none, faction_b, faction_d, faction_e]
+  cast:
+    pine: { faction: faction_a, ranks: [grunt, squad_leader], enter: true }
+    red: { extra: c_raider, label: 붉은연합 약탈조원 }
+  setup: 저탄장 크레인 밑, 연료 드럼통 무더기를 사이에 두고 두 무리가 서로를 겨누고 있다. 한쪽은 초록 완장, 맨 앞에 {pine}. 다른 쪽은 붉은 완장, 쇠지렛대를 쥔 {red}. 아무도 먼저 쏘지 않는다. 당신은 컨베이어 벨트 위에 엎드려 있고, 둘 다 아직 당신을 보지 못했다.
+  ai_direction: 청솔형제단 수색조와 붉은연합 약탈조가 같은 연료 드럼을 노리고 왔다. 둘 다 총소리가 감염체를 부른다는 것을 알아서 쏘기를 망설인다. 누군가 소리를 내면 양쪽이 동시에 흩어진다. 한쪽에 경고를 해 주면 그쪽은 고마워하고 다른 쪽은 기억한다.
+  choices:
+    - id: stone
+      label: 크레인 쪽으로 쇳조각을 던져 양쪽을 흩어지게 하고 드럼을 노린다
+      check: stealth
+      outcomes:
+        success:
+          - zone_noise: 2
+          - give_item: { item: fuel_bottle, quantity: 2 }
+          - belief: { fact: "저탄장에서 두 무리가 쇳소리에 흩어진 사이 연료 드럼에서 기름을 빼 왔다", source: seen }
+        partial:
+          - zone_noise: 2
+          - give_item: { item: fuel_bottle }
+          - relation: { who: red, axis: affection, delta: -1 }
+          - belief: { fact: "기름 한 병을 들고 뛰다 붉은 완장 하나와 눈이 마주쳤다", source: seen }
+        miss:
+          - zone_noise: 3
+          - relation: { who: pine, axis: trust, delta: -1 }
+          - relation: { who: red, axis: affection, delta: -2 }
+          - belief: { fact: "쇳조각 소리에 양쪽 총구가 컨베이어 벨트로 돌아왔다. 기름은커녕 몸만 빼 나왔다", source: seen }
+    - id: warn_pine
+      label: 초록 완장 쪽으로 붉은 완장이 몇인지 손짓으로 알려 준다
+      effects:
+        - relation: { who: pine, axis: trust, delta: 2 }
+        - relation: { who: red, axis: affection, delta: -2 }
+        - faction_relation: { from: faction_a, to: own, delta: 1, mutual: false }
+        - belief: { fact: "저탄장에서 청솔형제단 수색조에게 붉은연합 약탈조의 머릿수를 알려 줬다. 청솔형제단이 먼저 물러나 드럼을 포기했다", source: seen }
+    - id: wait
+      label: 엎드린 채 누가 이기는지 끝까지 본다
+      check: endure
+      outcomes:
+        success:
+          - overhear: { faction: other, source: seen }
+          - belief: { fact: "저탄장에서 청솔형제단과 붉은연합이 말로 기름을 나눴다. 오가는 말에서 한쪽이 큰일을 준비하는 낌새를 들었다", source: seen }
+        partial:
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "저탄장에서 두 무리가 해 질 때까지 대치하다 물러났다. 컨베이어 벨트 위에서 몸이 얼었다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "총성이 한 번 울렸다. 누가 쐈는지는 못 봤다. 양쪽이 흩어지고 저탄장에 감염체가 몰려들었다", source: seen }
+
+- id: zo1_pp_flag_pine
+  title: 굴뚝의 붉은 천
+  tags: [world]
+  when:
+    zones: [power_plant]
+    factions: [faction_a]
+    segments: [dawn, morning]
+    flags_none: [zo1_pp_flag_done]
+  cast:
+    mate: { faction: own, ranks: [grunt], optional: true }
+  setup: 발전소 굴뚝 꼭대기에 붉은 천 조각이 바람에 찢겨 나부낀다. 붉은연합이 지난번 세운 깃발의 남은 자락이다. 굴뚝 바깥 쇠사다리는 중간중간 가로대가 빠져 있다. 도시 어디서든 저 굴뚝이 보인다.
+  ai_direction: 굴뚝 깃발은 실제로 땅을 바꾸지 않는다. 하지만 도시 사람들은 굴뚝을 보고 누가 발전소를 쥐었다고 생각한다. 청솔형제단은 원래 깃발 다툼을 즐기지 않는다 ("버리지 않는다"가 원칙이지 땅 따먹기가 아니다). 붉은 천을 끌어내리면 붉은연합은 모욕으로 받는다. 사다리는 정말 위험하다.
+  choices:
+    - id: climb
+      label: 사다리를 올라 붉은 천을 끌어내리고 초록 천을 묶는다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: zo1_pp_flag_done
+          - faction_morale: { faction: own, delta: 1 }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - merit: 1
+          - deed: { summary: 발전소 굴뚝의 붉은연합 깃발을 끌어내리고 청솔형제단 천을 묶었다, tags: [bravery], severity: 1, privacy: public }
+        partial:
+          - set_flag: zo1_pp_flag_done
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "굴뚝 중간에서 가로대가 빠져 매달렸다. 붉은 천은 끌어내렸지만 초록 천은 묶지 못했다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 2 }
+          - belief: { fact: "굴뚝 사다리를 반도 못 올라 내려왔다. 손바닥이 다 까졌다", source: seen }
+    - id: leave_it
+      label: 깃발은 두고 저탄장 기름만 챙겨 간다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: zo1_pp_flag_done
+          - give_item: { item: fuel_bottle }
+          - belief: { fact: "굴뚝 깃발은 그대로 두었다. 깃발보다 기름이라고 생각했다", source: seen }
+        partial:
+          - set_flag: zo1_pp_flag_done
+        miss:
+          - set_flag: zo1_pp_flag_done
+          - zone_noise: 1
+    - id: mate_climb
+      label: 같이 온 막내가 올라가겠다는 것을 말리지 않는다
+      when: { cast: [mate] }
+      effects:
+        - set_flag: zo1_pp_flag_done
+        - faction_morale: { faction: own, delta: 1 }
+        - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+        - npc_hurt: { who: mate, steps: 1 }
+        - relation: { who: mate, axis: respect, delta: 1 }
+        - belief: { fact: "{mate}이(가) 굴뚝에 초록 천을 묶고 내려오다 사다리에서 떨어졌다. 다리를 절며 웃었다", source: seen }
+
+- id: zo1_pp_flag_red
+  title: 굴뚝의 초록 천
+  tags: [world]
+  when:
+    zones: [power_plant]
+    factions: [faction_c]
+    segments: [dawn, morning, day]
+    flags_none: [zo1_pp_flag_done]
+  cast:
+    boss: { faction: own, ranks: [squad_leader, officer], enter: false }
+  setup: 발전소 굴뚝 꼭대기에 초록 천 한 자락이 묶여 있다. 청솔형제단 놈들 짓이다. 위원회는 굴뚝에 붉은 깃발이 서 있어야 강변 무리들이 누가 주인인지 안다고 했다. 깃발을 바꿔 다는 조에게는 할당량을 하루 면해 준다는 말이 돈다.
+  ai_direction: 붉은연합에서 굴뚝 깃발은 위원회의 체면이다. 실제로 땅이 바뀌지는 않는다. 간부({boss})는 깃발을 바꾸면 위원회에 보고해 공을 올려 준다. 굴뚝 사다리는 정말 위험하다. 깃발을 바꾸면 청솔형제단은 기억한다.
+  choices:
+    - id: climb
+      label: 사다리를 올라 초록 천을 끊고 붉은 깃발을 단다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: zo1_pp_flag_done
+          - merit: 2
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+          - deed: { summary: 발전소 굴뚝에 붉은연합 깃발을 다시 달았다, tags: [bravery, loyalty], severity: 1, privacy: public }
+        partial:
+          - set_flag: zo1_pp_flag_done
+          - merit: 1
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "초록 천은 끊었지만 붉은 깃발을 반쯤만 묶었다. 바람에 비뚤게 걸렸다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 2 }
+          - belief: { fact: "굴뚝 사다리를 반도 못 올라 내려왔다. 위원회에 보고할 것이 없다", source: seen }
+    - id: report_only
+      label: 사다리가 썩었다고 간부에게 보고만 한다
+      effects:
+        - set_flag: zo1_pp_flag_done
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - belief: { fact: "굴뚝 사다리가 썩어 올라갈 수 없다고 보고했다. {boss}은(는) 대답 없이 장부에 무언가를 적었다", source: report }
+
+# ── 북쪽 교도소 ─────────────────────────────────────────
+
+- id: zo1_pr_wall
+  title: 가장 높은 담
+  tags: [world]
+  when:
+    zones: [prison]
+    flags_none: [zo1_pr_inside]
+  cast: {}
+  setup: 교도소 담은 생각보다 높다. 철조망 위에 옷가지와 마른 무언가가 걸려 있다. 정문은 안쪽에서 버스 두 대로 막혔고, 버스 옆구리에 페인트로 쓴 글씨가 반쯤 지워져 있다. '우리 땅 — 들어오면 쏜다.' 그 밑에 다른 손으로 덧쓴 글씨. '아무도 없음.'
+  ai_direction: 첫 해에 어느 무리가 교도소를 차지하고 담을 요새로 썼다. 겨울에 물결이 담을 넘었고 안에서 무너졌다. 정문 쪽은 막혔고, 세탁장 배수구와 무너진 감시탑 쪽으로 들어갈 수 있다. 안마당에는 감염체 몇이 남아 서성인다.
+  choices:
+    - id: drain
+      label: 세탁장 배수구로 기어 들어간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: zo1_pr_inside
+          - belief: { fact: "교도소 세탁장 배수구로 안에 들어가는 길을 찾았다. 안마당을 지나지 않고 감방동까지 갈 수 있다", source: seen }
+        partial:
+          - set_flag: zo1_pr_inside
+          - body: { track: disease, delta: 1, chance: 0.5 }
+          - belief: { fact: "교도소 배수구는 오물로 막혀 있었다. 기어서 겨우 통과했다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "배수구 안쪽 철창이 막혀 있었다. 뒤에서 무언가 기어 오는 소리에 되돌아 나왔다", source: seen }
+    - id: tower
+      label: 무너진 감시탑 잔해를 타고 담을 넘는다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: zo1_pr_inside
+          - belief: { fact: "무너진 감시탑 잔해를 타고 교도소 담을 넘었다. 담 위에서 안마당이 내려다보였다. 감염체 몇이 원을 그리며 걷는다", source: seen }
+        partial:
+          - set_flag: zo1_pr_inside
+          - zone_noise: 1
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "담을 넘다 철조망에 옷이 걸려 찢어졌다. 안마당의 감염체들이 고개를 들었다", source: seen }
+        miss:
+          - zone_noise: 2
+          - belief: { fact: "감시탑 잔해가 무너져 내렸다. 안마당 쪽에서 담을 긁는 소리가 났다", source: seen }
+    - id: read_bus
+      label: 버스에 쓰인 글씨와 담 위의 것들을 오래 본다
+      check: history
+      outcomes:
+        success:
+          - set_flag: zo1_pr_band_known
+          - belief: { fact: "교도소 정문 버스에 '철문회'라는 이름이 긁혀 있다. 첫 해 교도소를 차지했던 무리다. 담 위에 걸린 것은 그들이 걸어 둔 본보기들이다", source: seen }
+        partial:
+          - belief: { fact: "첫 해에 어느 무리가 교도소를 요새로 썼다. 지금은 아무도 없다고 누군가 덧써 놓았다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+
+- id: zo1_pr_armory
+  title: 무기고의 철문
+  tags: [world]
+  when:
+    zones: [prison]
+    flags_all: [zo1_pr_inside]
+    flags_none: [zo1_pr_armory_opened]
+  cast: {}
+  setup: 관리동 지하. 손전등 불빛 끝에 '무기고' 표지판과 철문이 있다. 문 앞에 탄피가 흩어져 있고, 철문 경첩 쪽에 누군가 쇠막대로 비틀다 만 자국이 깊다. 자물쇠는 멀쩡하다. 문 너머는 조용하다.
+  ai_direction: 첫 해 무리가 무기고 대부분을 이미 썼다. 바깥 칸에는 탄이 조금 남아 있고, 안쪽 방은 따로 잠겨 있다 (그 열쇠는 감방에 남은 사람이 어디 있는지 안다). 철문을 억지로 열면 쇳소리가 지하를 울린다. 열쇠 꾸러미가 있으면 조용히 열린다.
+  choices:
+    - id: key
+      label: 열쇠 꾸러미의 번호를 하나씩 맞춰 본다
+      when: { has_items_any: [cell_key_ring] }
+      effects:
+        - set_flag: zo1_pr_armory_opened
+        - give_item: { item: rifle_rounds, quantity: 2 }
+        - give_item: { item: shells }
+        - give_item: { item: kevlar_vest }
+        - belief: { fact: "열쇠로 교도소 무기고 안쪽 방까지 열었다. 총은 다 털렸지만 탄 상자 몇 개와 방탄조끼가 남아 있었다", source: seen }
+    - id: pry
+      label: 경첩 쪽 비튼 자국에 쇠지렛대를 넣는다
+      when: { has_items_any: [crowbar, toolkit] }
+      check: mechanics
+      outcomes:
+        success:
+          - set_flag: zo1_pr_armory_opened
+          - set_flag: zo1_pr_armory_seen
+          - zone_noise: 2
+          - give_item: { item: rifle_rounds, quantity: 2 }
+          - belief: { fact: "교도소 무기고 바깥 칸을 열었다. 소총탄 몇 상자가 남아 있었다. 안쪽 방 철문은 따로 잠겨 있다", source: seen }
+        partial:
+          - set_flag: zo1_pr_armory_seen
+          - zone_noise: 3
+          - give_item: { item: rifle_rounds }
+          - belief: { fact: "무기고 철문을 반쯤 비틀어 손만 넣어 탄 상자 하나를 꺼냈다. 쇳소리가 지하를 울렸다", source: seen }
+        miss:
+          - set_flag: zo1_pr_armory_seen
+          - zone_noise: 3
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "쇠지렛대가 미끄러져 철문을 때렸다. 지하 복도 끝에서 발소리가 다가왔다. 빈손으로 나왔다", source: seen }
+    - id: note
+      label: 문과 자물쇠만 살펴보고 위치를 기억해 둔다
+      effects:
+        - set_flag: zo1_pr_armory_seen
+        - belief: { fact: "북쪽 교도소 관리동 지하에 무기고가 있다. 자물쇠는 멀쩡하고, 누군가 비틀어 열려다 실패했다", source: seen }
+
+- id: zo1_pr_cell
+  title: 감방의 목소리
+  tags: [world]
+  when:
+    zones: [prison]
+    flags_all: [zo1_pr_inside]
+    flags_none: [zo1_pr_cell_done]
+  cast:
+    inmate: { extra: prison_inmate, label: 감방의 사람, keep: zo1_pr_inmate }
+  setup: 감방동 2층 복도. 문이 다 열려 있는데 끝 방 하나만 닫혀 있다. 배식구 앞에 깡통 몇 개와 빗물 받는 대야. 배식구가 안쪽에서 열리고 {inmate}의 눈이 보인다. "쉿. 안마당 것들이 들어. 물 있으면 줘. 그리고… 열쇠는 관리실 금고 위에 있었어. 아직 있으면."
+  ai_direction: "{inmate}은(는) 첫 해 교도소를 차지했던 무리(철문회)의 사람이다. 물결이 담을 넘던 밤 이 감방 안으로 들어와 문을 잠갔다. 열쇠는 밖에서만 연다. 그 뒤로 빗물과 배식구로 밀려 들어온 것으로 버텼다 (떠돌이들이 가끔 먹을 것을 던져 주었다). 이 사실은 털어놓기 전에는 모른다. 무기고 안쪽 방 열쇠가 어디 있는지 안다. 꺼내 주면 은혜를 갚겠다고 하지만 계산이 먼저다."
+  choices:
+    - id: keys
+      label: 관리실 금고 위의 열쇠 꾸러미를 찾아 문을 연다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: zo1_pr_cell_done
+          - set_flag: zo1_pr_freed
+          - give_item: { item: cell_key_ring }
+          - relation: { who: inmate, axis: trust, delta: 2 }
+          - deed: { summary: 북쪽 교도소 감방에 남아 있던 사람을 꺼내 주었다, tags: [mercy], severity: 1, privacy: private }
+          - companion_join: { who: inmate, kind: purpose, until: { zone: power_plant, hours: 48 } }
+        partial:
+          - set_flag: zo1_pr_cell_done
+          - set_flag: zo1_pr_freed
+          - give_item: { item: cell_key_ring }
+          - zone_noise: 2
+          - relation: { who: inmate, axis: trust, delta: 1 }
+          - companion_join: { who: inmate, kind: purpose, until: { zone: power_plant, hours: 48 } }
+        miss:
+          - zone_noise: 2
+          - belief: { fact: "관리실을 뒤지다 금고가 넘어졌다. 열쇠는 찾지 못했다. 감방의 사람은 배식구를 닫았다", source: seen }
+    - id: water
+      label: 배식구로 물을 넣어 주고, 왜 혼자 갇혀 있는지 묻는다
+      when: { has_items: [water_bottle] }
+      check: persuade
+      outcomes:
+        success:
+          - take_item: { item: water_bottle }
+          - relation: { who: inmate, axis: trust, delta: 2 }
+          - belief: { fact: "감방의 사람은 첫 해 교도소를 차지했던 철문회 사람이었다. 물결이 담을 넘던 밤 혼자 이 방에 들어와 문을 잠갔다고 했다", source: report }
+        partial:
+          - take_item: { item: water_bottle }
+          - relation: { who: inmate, axis: trust, delta: 1 }
+          - belief: { fact: "감방의 사람은 물을 다 마시고 나서야 숨을 돌렸다. 왜 갇혔는지는 끝내 말하지 않았다", source: seen }
+        miss:
+          - take_item: { item: water_bottle }
+          - belief: { fact: "물을 받자 배식구가 닫혔다. 안에서 아무 대답이 없었다", source: seen }
+    - id: leave
+      label: 열쇠 이야기는 미끼일 수 있다며 돌아선다
+      effects:
+        - set_flag: zo1_pr_cell_done
+        - belief: { fact: "북쪽 교도소 감방동 끝 방에 아직 누가 갇혀 있다. 배식구로 물을 달라고 했다", source: seen }
+
+- id: zo1_pr_patrol
+  title: 담 밑의 붉은 완장
+  urgent: true
+  tags: [world]
+  when:
+    zones: [prison, power_plant]
+    factions: [none, faction_a, faction_b, faction_d, faction_e]
+    flags_any: [zo1_pr_freed, zo1_pr_armory_seen]
+    flags_none: [zo1_pr_patrol_done]
+  cast:
+    sentry: { extra: c_sentry_rifle, label: 붉은연합 순찰 }
+    inmate: { recall: zo1_pr_inmate, optional: true }
+  setup: 교도소 담 모퉁이를 돌자 붉은 완장 셋이 길을 막는다. 앞장선 {sentry:이/가} 소총 끝으로 당신 배낭을 가리킨다. "교도소에서 나왔지. 위원회가 저기 것은 다 위원회 거라고 했어. 뭘 들고 나왔는지 보자."
+  ai_direction: 붉은연합 거점이 교도소 바로 남쪽이라 순찰이 담 둘레를 돈다. 위원회는 무기고를 노린다. 데리고 나온 감방의 사람이 곁에 있으면, 순찰은 그를 알아본다 (첫 해 철문회와 붉은연합은 싸웠다). 그를 넘기면 순찰은 그냥 보내 준다. 맞서면 셋이다. 위험은 판정으로만 정한다.
+  choices:
+    - id: talk
+      label: 빈손이라고, 담 밖만 돌았다고 한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: zo1_pr_patrol_done
+          - belief: { fact: "붉은연합 순찰을 말로 넘겼다. 위원회가 교도소 무기고를 노린다는 말을 들었다", source: report }
+        partial:
+          - set_flag: zo1_pr_patrol_done
+          - take_item: { item: rifle_rounds }
+          - belief: { fact: "순찰이 배낭을 뒤져 소총탄을 가져갔다. 다음에 또 보이면 위원회로 끌고 간다고 했다", source: seen }
+        miss:
+          - set_flag: zo1_pr_patrol_done
+          - relation: { who: sentry, axis: trust, delta: -2 }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - belief: { fact: "거짓말이 들켰다. 순찰은 이쪽 얼굴을 위원회에 보고하겠다고 했다", source: seen }
+    - id: hand_over
+      label: 곁의 감방 사람을 가리키며, 철문회 사람이라고 말한다
+      when: { cast: [inmate] }
+      effects:
+        - set_flag: zo1_pr_patrol_done
+        - npc_capture: { who: inmate, by: faction_c }
+        - relation: { who: sentry, axis: trust, delta: 1 }
+        - deed: { summary: 감방에서 꺼내 준 사람을 붉은연합 순찰에 넘겼다, tags: [betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: "순찰이 감방 사람의 팔을 비틀어 끌고 갔다. 그는 끝까지 이쪽을 보지 않았다", source: seen }
+    - id: cover
+      label: 감방 사람을 등 뒤로 숨기고 순찰을 노려본다
+      when: { cast: [inmate] }
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: zo1_pr_patrol_done
+          - relation: { who: inmate, axis: trust, delta: 2 }
+          - relation: { who: inmate, axis: affection, delta: 1 }
+          - deed: { summary: 붉은연합 순찰 앞에서 감방에서 꺼낸 사람을 감쌌다, tags: [bravery, loyalty], severity: 1, privacy: semi_private }
+        partial:
+          - set_flag: zo1_pr_patrol_done
+          - relation: { who: inmate, axis: trust, delta: 2 }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - npc_hurt: { who: inmate, steps: 1 }
+        miss:
+          - set_flag: zo1_pr_patrol_done
+          - npc_capture: { who: inmate, by: faction_c }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "순찰 셋이 이쪽을 밀쳐 내고 감방 사람을 끌고 갔다. 붉은연합 거점 쪽이었다", source: seen }
+
+- id: zo1_pr_inner_room
+  title: 안쪽 방의 열쇠
+  tags: [world]
+  when:
+    flags_all: [zo1_pr_freed]
+    segments: [evening, night]
+  cast:
+    inmate: { recall: zo1_pr_inmate }
+  setup: 불가에서 {inmate:이/가} 처음으로 등을 벽에 대지 않고 앉는다. 한참 불을 보다 말한다. "무기고 안쪽 방 말이야. 그 열쇠 꾸러미에 번호표 없는 놈이 있지. 그거야. 철문회 대장이 목에 걸고 다녔어. 그날 밤… 내가 그 사람한테서 받았지."
+  ai_direction: "그는 물결이 담을 넘던 밤 대장에게서 열쇠를 받아 무기고를 열러 가다가, 대신 감방으로 들어가 문을 잠갔다. 대장과 남은 사람들은 무기 없이 안마당에서 버텼다. 그 무게를 지고 산다. 털어놓으면 주인공을 믿기 시작한다. 안쪽 방 열쇠를 알게 되면 무기고 이야기의 열쇠 선택지가 열린다 (열쇠 꾸러미가 있으면)."
+  choices:
+    - id: listen
+      label: 그날 밤 이야기를 끝까지 듣는다
+      effects:
+        - relation: { who: inmate, axis: trust, delta: 2 }
+        - relation: { who: inmate, axis: affection, delta: 1 }
+        - belief: { fact: "감방의 사람은 철문회 대장에게 무기고 열쇠를 받고도 무기고 대신 감방으로 들어가 문을 잠갔다. 안쪽 방 열쇠는 번호표 없는 것이다", source: report }
+    - id: judge
+      label: 그래서 다 죽었냐고 묻는다
+      effects:
+        - relation: { who: inmate, axis: affection, delta: -2 }
+        - relation: { who: inmate, axis: respect, delta: 1 }
+        - belief: { fact: "감방의 사람은 대답하지 않았다. 다만 무기고 안쪽 방 열쇠는 번호표 없는 것이라고 했다", source: report }
+    - id: part
+      label: 이제 각자 가자고 한다
+      effects:
+        - companion_leave: { who: inmate }
+        - relation: { who: inmate, axis: trust, delta: 1 }
+        - belief: { fact: "감방의 사람과 갈라졌다. 그는 은혜는 갚는다며 무기고 안쪽 방 열쇠가 번호표 없는 것이라고 일러 주었다", source: report }
+
+- id: zo1_pr_red_report
+  title: 위원회가 교도소를 원한다
+  tags: [world]
+  when:
+    factions: [faction_c]
+    flags_any: [zo1_pr_armory_seen, zo1_pr_armory_opened]
+    flags_none: [zo1_pr_reported]
+  cast:
+    boss: { faction: own, ranks: [squad_leader, officer] }
+  setup: "{boss:이/가} 점호가 끝난 뒤 당신을 따로 부른다. \"교도소 담을 넘었다며. 누가 봤어. 위원회는 저 무기고를 몇 달째 노리고 있다. 안에서 뭘 봤는지 말해.\""
+  ai_direction: 붉은연합에서 숨기는 것은 규율반의 일이 된다. 무기고 위치와 상태를 보고하면 위원회는 조를 보낸다 (탄약이 무리 창고에 들어간다). 숨기면 당장은 넘어가지만, 누가 봤다는 말이 사실이면 나중에 문제가 된다.
+  choices:
+    - id: report
+      label: 관리동 지하 무기고의 위치와 자물쇠 상태를 보고한다
+      effects:
+        - set_flag: zo1_pr_reported
+        - merit: 2
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - faction_resource: { faction: own, resource: ammo, delta: 6 }
+        - deed: { summary: 교도소 무기고의 위치를 위원회에 보고했다, tags: [loyalty], severity: 1, privacy: semi_private }
+        - belief: { fact: "교도소 무기고를 보고했다. 위원회가 조를 보내 남은 탄을 거점 창고로 옮겼다", source: report }
+    - id: hide
+      label: 담 밖만 돌았다고, 안에는 감염체뿐이었다고 한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: zo1_pr_reported
+          - deed: { summary: 교도소에서 본 것을 위원회에 숨겼다, tags: [deceit], severity: 1, privacy: private }
+        partial:
+          - set_flag: zo1_pr_reported
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - deed: { summary: 교도소에서 본 것을 위원회에 숨겼다, tags: [deceit], severity: 1, privacy: private }
+        miss:
+          - set_flag: zo1_pr_reported
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - merit: -1
+          - deed: { summary: 교도소 무기고를 숨기려다 상관에게 들켰다, tags: [deceit, disobedience], severity: 2, privacy: semi_private }
+
+# ── 대형 마트 폐허 ─────────────────────────────────────────
+
+- id: zo1_ml_shelves
+  title: 무너진 창고의 선반
+  tags: [world]
+  when:
+    zones: [mall_ruins]
+    segments: [morning, day]
+  cast: {}
+  setup: 매장은 뼈만 남았다. 계산대 위로 쇼핑 카트가 탑처럼 쌓여 있다. 그 너머 창고 쪽, 지붕이 내려앉은 콘크리트 판 사이로 쓰러지지 않은 선반이 보인다. 판 하나가 선반에 기대 겨우 서 있다. 그 아래로 기어 들어가면 손이 닿는다.
+  ai_direction: 창고 쪽 선반에는 통조림과 비상식량이 정말 남아 있다. 콘크리트 판은 건드리면 무너질 수 있다 (무너져도 사람을 죽이지는 않지만 큰 소리가 나고 몸이 상한다). 다른 무리 수색조도 이 선반을 노리지만 들어갈 엄두를 못 냈다.
+  choices:
+    - id: crawl
+      label: 판 아래로 기어 들어가 선반을 턴다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: zo1_ml_shelf_seen
+          - give_item: { item: canned_food, quantity: 2 }
+          - give_item: { item: dry_ration }
+          - belief: { fact: "대형 마트 창고 쪽 무너진 판 아래 선반에서 통조림과 비상식량을 꺼냈다. 안쪽에 아직 더 있다", source: seen }
+        partial:
+          - set_flag: zo1_ml_shelf_seen
+          - give_item: { item: canned_food }
+          - zone_noise: 2
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "선반에 손이 닿는 순간 판이 한 뼘 내려앉았다. 통조림 하나만 쥐고 기어 나왔다", source: seen }
+        miss:
+          - set_flag: zo1_ml_shelf_seen
+          - zone_noise: 3
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "콘크리트 판이 무너져 선반 쪽 길이 막혔다. 먼지 속에서 기어 나왔다. 소리가 마트 전체를 울렸다", source: seen }
+    - id: prop
+      label: 쇠파이프와 카트로 판을 먼저 받쳐 놓는다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: zo1_ml_shelf_seen
+          - give_item: { item: canned_food, quantity: 2 }
+          - give_item: { item: water_bottle }
+          - belief: { fact: "판을 받쳐 놓고 창고 선반을 천천히 털었다. 받침대는 그대로 두고 나왔다", source: seen }
+        partial:
+          - set_flag: zo1_ml_shelf_seen
+          - give_item: { item: dry_ration }
+          - belief: { fact: "받침대를 세우느라 해가 기울었다. 비상식량 하나만 챙겼다", source: seen }
+        miss:
+          - set_flag: zo1_ml_shelf_seen
+          - zone_noise: 2
+    - id: mark
+      label: 위치만 기억해 두고 나온다
+      effects:
+        - set_flag: zo1_ml_shelf_seen
+        - belief: { fact: "대형 마트 창고 쪽 무너진 판 아래에 손 안 탄 선반이 있다", source: seen }
+
+- id: zo1_ml_trap
+  title: 계산대 사이의 줄
+  tags: [world]
+  when:
+    zones: [mall_ruins]
+    flags_none: [zo1_ml_trap_found]
+  cast: {}
+  setup: 계산대 사이 통로를 지나는데 발목 높이에 무언가 반짝인다. 낚싯줄이다. 줄을 따라가면 천장에 매단 장바구니 안에 깡통과 유리병이 가득하다. 줄 반대쪽 끝은 진열대 밑 구멍으로 들어간다. 구멍 앞 먼지에 작은 신발 자국이 있다.
+  ai_direction: 마트에 숨어 사는 아이들이 놓은 경보 덫이다. 줄을 건드리면 장바구니가 쏟아져 요란한 소리가 나고 아이들은 굴로 숨는다 (감염체도 몰린다). 덫을 놓은 솜씨는 제법이다. 이 덫이 아이들 것이라는 건 신발 자국으로 짐작할 수 있다.
+  choices:
+    - id: step_over
+      label: 줄을 넘어 지나가고 아무것도 건드리지 않는다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: zo1_ml_trap_found
+          - belief: { fact: "대형 마트 계산대 사이에 깡통 경보 덫이 있다. 진열대 밑 구멍 앞에 아이 신발 자국이 있다", source: seen }
+        partial:
+          - set_flag: zo1_ml_trap_found
+          - zone_noise: 1
+          - belief: { fact: "줄을 넘다 뒤꿈치가 걸렸다. 깡통 하나가 굴러떨어졌다. 진열대 밑에서 숨죽이는 소리가 났다", source: seen }
+        miss:
+          - set_flag: zo1_ml_trap_found
+          - zone_noise: 3
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "줄에 걸려 장바구니가 쏟아졌다. 깡통 소리가 마트를 울렸다. 어딘가에서 작은 발소리가 흩어졌다", source: seen }
+    - id: take
+      label: 줄과 깡통을 조심스럽게 걷어 챙긴다
+      check: improvise
+      outcomes:
+        success:
+          - set_flag: zo1_ml_trap_found
+          - set_flag: zo1_ml_trap_taken
+          - give_item: { item: tin_alarm }
+          - deed: { summary: 마트 아이들이 놓은 경보 덫을 걷어 갔다, tags: [theft], severity: 1, privacy: private }
+        partial:
+          - set_flag: zo1_ml_trap_found
+          - set_flag: zo1_ml_trap_taken
+          - give_item: { item: wire_roll }
+          - zone_noise: 1
+        miss:
+          - set_flag: zo1_ml_trap_found
+          - zone_noise: 3
+    - id: leave_food
+      label: 덫 옆에 비상식량 하나를 두고 간다
+      effects:
+        - take_item: { item: dry_ration }
+        - set_flag: zo1_ml_trap_found
+        - set_flag: zo1_ml_kids_fed
+        - deed: { summary: 마트 덫 옆에 아이들 몫으로 비상식량을 두고 왔다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "마트 진열대 밑 구멍 앞에 비상식량을 두었다. 돌아보니 사라지고 없었다", source: seen }
+
+- id: zo1_ml_crews
+  title: 계산대의 대치
+  tags: [world]
+  when:
+    zones: [mall_ruins]
+    segments: [morning, day, evening]
+    factions: [none, faction_a, faction_d, faction_e]
+  cast:
+    willow: { extra: b_guard, label: 버들마을 수색조 }
+    red: { extra: c_raider, label: 붉은연합 약탈조원 }
+  setup: 무너진 식품 코너 입구에서 두 수색조가 마주쳤다. 버들마을 경비 완장의 {willow:은/는} 쌀 포대 하나를 끌어안고 있고, 붉은 완장의 {red:은/는} 쇠지렛대로 그 포대를 가리킨다. "내려놔. 여긴 우리 조가 먼저 봤어." 둘 다 당신을 본다. 셋 중 누가 한 걸음이라도 움직이면 일이 난다.
+  ai_direction: 버들마을 수색조는 마을 아이들 먹일 것을 찾으러 왔다. 붉은연합 약탈조는 할당량을 못 채우면 조 전체가 굶는다. 둘 다 사정이 있다. 주인공이 끼어들면 누가 이기는지가 바뀐다. 나눠 갖자는 말은 붉은연합 쪽이 받아들이기 어렵다 (할당량).
+  choices:
+    - id: split
+      label: 반씩 나누면 다들 오늘 굶지 않는다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: willow, axis: trust, delta: 1 }
+          - relation: { who: red, axis: respect, delta: 1 }
+          - deed: { summary: 마트에서 두 무리 수색조의 다툼을 말로 갈랐다, tags: [mercy], severity: 1, privacy: semi_private }
+          - belief: { fact: "마트 식품 코너에서 버들마을과 붉은연합 수색조가 쌀을 반씩 나눴다. 붉은 완장은 끝까지 투덜거렸다", source: seen }
+        partial:
+          - relation: { who: red, axis: affection, delta: -1 }
+          - belief: { fact: "붉은 완장이 포대를 빼앗아 갔다. 버들마을 수색조는 고맙다는 말 대신 한숨을 쉬었다", source: seen }
+        miss:
+          - zone_noise: 2
+          - npc_hurt: { who: willow, steps: 1 }
+          - belief: { fact: "말이 끝나기 전에 쇠지렛대가 먼저 나갔다. 버들마을 수색조가 쓰러지고 쌀 포대가 터졌다", source: seen }
+    - id: side_willow
+      label: 버들마을 쪽에 서서 붉은 완장을 노려본다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: willow, axis: trust, delta: 2 }
+          - relation: { who: red, axis: affection, delta: -2 }
+          - faction_relation: { from: faction_b, to: own, delta: 1, mutual: false }
+          - belief: { fact: "붉은 완장이 침을 뱉고 물러났다. 버들마을 수색조가 마을 쪽문은 언제든 두드려도 된다고 했다", source: seen }
+        partial:
+          - relation: { who: willow, axis: trust, delta: 1 }
+          - relation: { who: red, axis: affection, delta: -2 }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+        miss:
+          - zone_noise: 2
+          - npc_hurt: { who: willow, steps: 1 }
+          - relation: { who: red, axis: affection, delta: -2 }
+          - belief: { fact: "붉은 완장은 겁먹지 않았다. 쇠지렛대가 버들마을 수색조의 어깨를 쳤다. 포대는 붉은연합이 가져갔다", source: seen }
+    - id: slip
+      label: 둘이 서로를 보는 사이 뒤쪽 진열대를 턴다
+      check: stealth
+      outcomes:
+        success:
+          - give_item: { item: canned_food }
+          - give_item: { item: dry_ration }
+          - belief: { fact: "두 수색조가 서로를 노려보는 사이 뒤쪽 진열대에서 먹을 것을 챙겨 빠져나왔다", source: seen }
+        partial:
+          - give_item: { item: canned_food }
+          - relation: { who: willow, axis: trust, delta: -1 }
+        miss:
+          - relation: { who: willow, axis: trust, delta: -1 }
+          - relation: { who: red, axis: affection, delta: -1 }
+          - belief: { fact: "진열대를 뒤지다 둘 다에게 들켰다. 그날만큼은 두 무리가 한편이 되어 이쪽을 내쫓았다", source: seen }
+
+- id: zo1_ml_kid
+  title: 진열대 밑의 눈
+  tags: [world]
+  when:
+    zones: [mall_ruins]
+    flags_any: [zo1_ml_trap_found, zo1_ml_shelf_seen]
+    flags_none: [zo1_ml_kid_met]
+  cast:
+    kid: { extra: mall_kid, label: 진열대 밑의 아이, keep: zo1_ml_kid }
+  setup: 쓰러진 진열대 밑 어둠에서 눈 한 쌍이 당신을 본다. 손에 쥔 돌멩이가 떨린다. {kid:이/가} 진열대 밑에서 몸을 반쯤 내민다. "그거… 우리 거야. 그 선반." 목소리는 크게 내려 애쓰지만 끝이 갈라진다. 뒤쪽 어둠에서 기침 소리가 작게 난다.
+  ai_direction: 아이들 셋이 마트에 숨어 산다. 엄마는 첫 해에 어느 무리 수색조에 끌려갔다. 굴은 마트 지하 하역장으로 내려가는 정비 통로에 있다 (환승역 터널과 이어진다). 막내가 기침을 한다. 어른을 믿지 않지만 먹을 것에는 약하다. 붙잡으려 하면 덫과 구멍으로 사라진다.
+  choices:
+    - id: share
+      label: 통조림을 진열대 밑으로 굴려 준다
+      effects:
+        - take_item: { item: canned_food }
+        - set_flag: zo1_ml_kid_met
+        - set_flag: zo1_ml_kids_fed
+        - relation: { who: kid, axis: trust, delta: 2 }
+        - deed: { summary: 마트에 숨어 사는 아이에게 통조림을 나눠 주었다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "대형 마트에 아이들이 숨어 산다. 하나가 기침을 한다. 통조림을 굴려 주었더니 돌멩이를 내려놓았다", source: seen }
+    - id: talk
+      label: 무릎을 꿇고 눈높이를 맞춰 기침하는 애가 누구냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: zo1_ml_kid_met
+          - set_flag: zo1_ml_kids_fed
+          - relation: { who: kid, axis: trust, delta: 2 }
+          - belief: { fact: "마트의 아이는 동생이 기침을 한다고 했다. 엄마는 수색조에 끌려갔다고. 어느 완장이었는지는 말하지 않았다", source: report }
+        partial:
+          - set_flag: zo1_ml_kid_met
+          - relation: { who: kid, axis: trust, delta: 1 }
+          - belief: { fact: "마트의 아이는 대답 대신 진열대 밑으로 물러났다. 그래도 돌멩이는 던지지 않았다", source: seen }
+        miss:
+          - set_flag: zo1_ml_kid_met
+          - belief: { fact: "아이가 돌멩이를 던지고 구멍 속으로 사라졌다. 그 뒤로 기침 소리도 멎었다", source: seen }
+    - id: shoo
+      label: 선반은 먼저 찾은 사람 거라고, 비키라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: zo1_ml_kid_met
+          - relation: { who: kid, axis: affection, delta: -2 }
+          - give_item: { item: dry_ration }
+          - deed: { summary: 마트에 숨어 사는 아이를 겁줘 쫓고 그 몫을 챙겼다, tags: [cruelty, selfishness], severity: 1, privacy: private }
+        partial:
+          - set_flag: zo1_ml_kid_met
+          - relation: { who: kid, axis: affection, delta: -2 }
+        miss:
+          - set_flag: zo1_ml_kid_met
+          - zone_noise: 2
+          - relation: { who: kid, axis: affection, delta: -2 }
+          - belief: { fact: "아이가 비명을 질렀다. 일부러였다. 마트 곳곳의 깡통 덫이 한꺼번에 울렸다", source: seen }
+
+- id: zo1_ml_den
+  title: 아이들의 굴
+  tags: [world]
+  when:
+    zones: [mall_ruins]
+    flags_all: [zo1_ml_kids_fed]
+    flags_none: [zo1_ml_den_shown]
+  cast:
+    kid: { recall: zo1_ml_kid }
+  setup: "{kid:이/가} 진열대 밑에서 나와 손짓한다. 따라 내려간 정비 통로 끝, 하역장 옆 전기실에 매트리스 두 장과 깡통 난로. 작은 아이 둘이 담요를 뒤집어쓰고 있다. 하나가 기침을 한다. 전기실 안쪽 철문에 지하철 노선도가 붙어 있고, 그 위에 연필 선이 그어져 있다. \"엄마가 그린 거야. 이 길로 오면 다시 올 수 있다고.\""
+  ai_direction: "전기실 철문 너머는 환승역 남쪽 터널로 이어진다. 노선도 위의 연필 선이 그 길이다. 엄마는 이 길로 수색을 나갔다가 붙잡혔다. 막내의 기침은 감기다 (아직은). 아이들은 성당이 안전하다는 말을 들은 적이 있지만 가는 길을 모른다. 데려가 달라고 먼저 부탁하지는 않는다."
+  choices:
+    - id: medicine
+      label: 막내에게 약을 주고 기침이 멎는지 지켜본다
+      when: { has_items: [fever_reducer] }
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: zo1_ml_den_shown
+          - take_item: { item: fever_reducer }
+          - relation: { who: kid, axis: trust, delta: 3 }
+          - give_item: { item: tunnel_map }
+          - deed: { summary: 마트에 숨어 사는 아이의 동생에게 약을 먹였다, tags: [mercy], severity: 1, privacy: private }
+          - belief: { fact: "마트 아이들의 굴은 하역장 옆 전기실이다. 막내에게 해열제를 먹였다. 큰아이가 엄마가 그린 터널 지도를 내주었다. 환승역까지 이어진다", source: seen }
+        partial:
+          - set_flag: zo1_ml_den_shown
+          - take_item: { item: fever_reducer }
+          - relation: { who: kid, axis: trust, delta: 2 }
+          - belief: { fact: "막내에게 약을 먹였지만 밤새 기침이 이어졌다. 큰아이가 전기실 철문 너머가 환승역 터널이라고 일러 주었다", source: seen }
+        miss:
+          - relation: { who: kid, axis: trust, delta: -1 }
+          - belief: { fact: "약을 먹이려 하자 막내가 울며 토했다. 큰아이가 이제 가 달라고 했다", source: seen }
+    - id: map
+      label: 노선도 위의 선을 손가락으로 따라가 보며, 이 길을 알려 달라고 한다
+      effects:
+        - set_flag: zo1_ml_den_shown
+        - relation: { who: kid, axis: trust, delta: 1 }
+        - belief: { fact: "마트 하역장 옆 전기실 철문 너머가 환승역 남쪽 터널로 이어진다. 아이들의 엄마가 노선도 위에 그 길을 그려 두었다", source: seen }
+    - id: cathedral
+      label: 언덕 위 성당까지 데려다 주겠다고 한다
+      effects:
+        - set_flag: zo1_ml_den_shown
+        - set_flag: zo1_ml_kids_moving
+        - relation: { who: kid, axis: trust, delta: 2 }
+        - relation: { who: kid, axis: affection, delta: 2 }
+        - companion_join: { who: kid, kind: purpose, until: { zone: cathedral, hours: 72 } }
+        - deed: { summary: 마트에 숨어 살던 아이들을 성당까지 데려가기로 했다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "마트의 아이들을 언덕 위 성당까지 데려가기로 했다. 환승역을 지나 구시가를 거쳐야 한다. 작은 아이 둘은 큰아이 손을 놓지 않는다", source: seen }
+
+- id: zo1_ml_cold_store
+  title: 하역장의 냉동 창고
+  tags: [world]
+  when:
+    zones: [mall_ruins]
+    flags_any: [zo1_tunnel_mall, zo1_ml_den_shown]
+    flags_none: [zo1_ml_cold_store_done]
+  cast:
+    kid: { recall: zo1_ml_kid, enter: false, optional: true }
+  setup: 마트 지하 하역장. 위층에서 내려오는 계단은 콘크리트 더미로 막혔고, 그래서 아무도 여기까지 오지 않았다. 지게차 뒤에 냉동 창고 문이 있다. 고무 패킹이 아직 붙어 있다. 문 손잡이에 쇠사슬 대신 철사가 감겨 있다. 누군가 먼저 왔다가 닫아 둔 것이다.
+  ai_direction: 냉동 창고 안에는 통조림 상자와 생수가 아직 있다. 철사는 아이들 엄마가 감아 둔 것이다 (아이들 몫으로 남겨 둔 것). 아이들을 아는 주인공이면 그 사실을 짐작할 수 있다. 무리 사람이면 무리 창고에 큰 몫을 보탤 수 있는 자리다. 문을 열면 안에 갇혀 있던 오래된 냄새가 터진다.
+  choices:
+    - id: take_all
+      label: 철사를 풀고 들 수 있는 만큼 챙긴다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: zo1_ml_cold_store_done
+          - give_item: { item: canned_food, quantity: 3 }
+          - give_item: { item: water_bottle, quantity: 2 }
+          - belief: { fact: "마트 지하 하역장 냉동 창고에서 통조림과 생수를 챙겼다. 아직 남은 것이 있다", source: seen }
+        partial:
+          - set_flag: zo1_ml_cold_store_done
+          - give_item: { item: canned_food, quantity: 2 }
+          - body: { track: disease, delta: 1, chance: 0.4 }
+        miss:
+          - set_flag: zo1_ml_cold_store_done
+          - give_item: { item: canned_food }
+          - zone_noise: 2
+          - belief: { fact: "냉동 창고 선반이 무너졌다. 통조림 하나만 들고 나왔다. 계단 쪽 콘크리트 더미 너머에서 무언가 긁는 소리가 났다", source: seen }
+    - id: report_own
+      label: 무리에 알려 수레로 실어 나르게 한다
+      when: { in_faction: true }
+      effects:
+        - set_flag: zo1_ml_cold_store_done
+        - merit: 1
+        - faction_resource: { faction: own, resource: food, delta: 8 }
+        - belief: { fact: "마트 지하 냉동 창고를 무리에 알렸다. 무리가 사람을 보내 통조림 상자를 실어 갔다", source: report }
+    - id: leave_kids
+      label: 아이들 몫이라고 생각하고 철사를 다시 감아 둔다
+      when: { cast: [kid] }
+      effects:
+        - set_flag: zo1_ml_cold_store_done
+        - relation: { who: kid, axis: trust, delta: 2 }
+        - deed: { summary: 마트 지하 냉동 창고를 아이들 몫으로 남겨 두었다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "마트 지하 냉동 창고는 아이들의 엄마가 철사로 감아 둔 것이었다. 손대지 않고 다시 감았다", source: seen }

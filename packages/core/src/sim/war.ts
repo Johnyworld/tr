@@ -333,7 +333,9 @@ export function resolveClash(world: WarWorld, content: Content, rng: Rng, spec: 
   const zoneOwner = next.zones[spec.zone]?.owner;
   // 그사이 구역 주인이 바뀌었으면 싸움이 일어나지 않은 것으로 본다
   if (zoneOwner !== spec.defender || !next.factions[spec.attacker] || !next.factions[spec.defender]) {
-    return { world: next, clash: { ...spec, success: false, attackerLosses: 0, defenderLosses: 0 } };
+    // 미뤄 둔 교전(id·at)을 받아도 교전 기록의 모양만 남긴다 (clash_resolved 스키마)
+    const { kind, attacker, defender, zone, plan } = spec;
+    return { world: next, clash: { kind, attacker, defender, zone, ...(plan ? { plan } : {}), success: false, attackerLosses: 0, defenderLosses: 0 } };
   }
   return { world: next, clash: fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan) };
 }

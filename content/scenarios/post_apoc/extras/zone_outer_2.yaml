@@ -1,0 +1,31 @@
+# 바깥 구역의 이름 없는 인물 틀 (storylets/zone_outer_2.yaml)
+
+- id: highway_traveler
+  label: 고속도로로 걸어 들어온 사람
+  rank: loner
+  age: [20, 60]
+  looks:
+    - 신발 밑창을 끈으로 동여맨 사람. 입술이 하얗게 텄고 배낭 어깨끈이 하나 끊어졌다
+    - 먼지를 뒤집어쓴 우비 차림. 손등에 볕에 덴 물집이 잡혔고, 도시 쪽을 처음 보는 사람처럼 두리번거린다
+  stats: { vitality: [0, 1], senses: [0, 1], nerve: [0, 1] }
+  skills: { survival: 2, stealth: 1, sense_danger: 1 }
+  traits: [weary, guarded, cautious, talkative, cynical]
+  trait_count: 2
+  inventory:
+    - { item: water_bottle, chance: 0.5 }
+    - { item: kitchen_knife, chance: 0.5 }
+    - { item: blanket, chance: 0.3 }
+  values: { self_interest: 1 }
+  profile:
+    wants: [바깥에서 헤어진 사람을 다시 찾는 것, 담 안에서 한 번 푹 자는 것, 다시 길을 떠날 채비, 소문으로 듣던 섬에 닿는 것]
+    fears: [길에서 혼자 쓰러지는 것, 왔던 길을 다시 걷는 것, 도시가 바깥보다 나을 게 없는 것]
+    voices:
+      - { style: 지쳐서 말이 끊기는 존댓말. 묻기 전에는 바깥 이야기를 꺼내지 않는다, samples: ["물… 물부터요. 얘기는 그다음에.", "거기요? 거기도 똑같아요. 아니, 똑같은지는 모르겠어요."] }
+      - { style: 들은 것과 본 것을 섞어 떠드는 반말, samples: ["남쪽은 다 탔다더라. 난 못 봤어. 봤다는 놈을 봤지.", "섬 얘기 알아? 바다 건너. 거기 가는 길이야."] }
+    rules: [자기가 걸어온 길 이름을 끝까지 말하지 않는다, 먹을 것을 받으면 바깥 소문 하나로 갚는다]
+    reputations: [고속도로로 들어온 떠돌이, 바깥에서 왔다는 사람, 휴게소에 며칠 묵다 가는 나그네]
+    secrets:
+      - { content: 함께 걸어온 일행을 길에서 잃었다. 어떻게 잃었는지는 말하지 않는다, reveal_when: 같은 불 앞에서 밤을 넘긴 뒤, min_trust: 3 }
+      - { content: 바깥에서 무슨 일이 있었는지 실은 본 것이 거의 없다. 대부분 숨어서 걸었다, reveal_when: 바깥 이야기를 거듭 캐물었을 때, min_trust: 2 }
+  ties: { chance: 0.15, kinds: [sibling, parent, child, spouse, friend] }
+  appears: { zones: [rest_stop] }

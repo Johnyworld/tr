@@ -1,0 +1,76 @@
+# 길 위에서 마주치는 엑스트라 틀 (12-53, storylets/road.yaml)
+# 길 위의 이야기가 부를 때만 나온다 (appears.zones가 비어 있어 GM 목록에는 뜨지 않는다)
+
+- id: road_dog
+  label: 목줄 끊긴 개
+  animal: true
+  rank: loner
+  age: [1, 7]
+  looks:
+    - 끊어진 가죽 목줄을 단 검은 잡종견. 사람 발소리에 먼저 꼬리를 친다. 누가 길렀던 개다
+    - 다리가 길고 털이 엉킨 회색 개. 짖지 않고, 몇 걸음 뒤에서 멈췄다 따라오기를 되풀이한다
+  stats: { senses: [2, 2], agility: [1, 1], strength: [-1, 0] }
+  skills: { sense_danger: 2, survival: 1 }
+  traits: []
+  trait_count: 0
+  companion_bonus: { sense_danger: 1 }
+  appears: { zones: [] }
+
+- id: road_wanderer
+  label: 길동무 떠돌이
+  rank: loner
+  age: [22, 50]
+  looks:
+    - 운동화 끈을 철사로 묶은 마른 남자. 등짐에 냄비를 매달아 걸을 때마다 달그락거린다
+    - 낡은 등산 배낭을 멘 여자. 지팡이 끝에 쇠못을 박았다. 길을 걸으며 계속 하늘을 본다
+    - 오토바이 헬멧을 손에 들고 다니는 남자. 쓰지는 않는다. 오토바이는 오래전에 없어졌다고 한다
+  stats: { vitality: [0, 1], senses: [0, 1], agility: [0, 1], charm: [0, 1] }
+  skills: { survival: 2, sense_danger: 1, stealth: 1 }
+  traits: [talkative, cautious, genial, weary, calculating, curious]
+  trait_count: 2
+  inventory:
+    - { item: water_bottle }
+    - { item: pipe_spear, chance: 0.5 }
+    - { item: dry_ration, chance: 0.4 }
+    - { item: blanket, chance: 0.4 }
+  values: { loyalty: 1, self_interest: 1 }
+  profile:
+    wants: [겨울 전에 들어갈 담 안, 바깥으로 나가는 길, 소식이 끊긴 사람의 행방, 혼자 걷지 않는 것]
+    fears: [혼자 잠드는 밤, 감염체 무리, 다시 무리에 묶이는 것]
+    voices:
+      - { style: 넉살 좋은 반말. 길 이야기를 끝없이 한다, samples: ["저 다리 말이야, 지난달까지는 건널 만했어.", "둘이 걸으면 하나가 뒤를 보잖아."] }
+      - { style: 말을 아끼는 존댓말. 묻는 말에만 답한다, samples: ["저 앞에서 왼쪽입니다.", "여기서는 소리 내지 마세요."] }
+    rules: [길에서 먹을 것을 받으면 길 정보로 갚는다, 어느 무리에 속했었는지는 말하지 않는다]
+    reputations: [이 길 저 길을 오가는 떠돌이, 길을 잘 아는 사람]
+    secrets:
+      - { content: 어느 무리의 장부에 빚이 올라 있어 그 무리 땅을 피해 다닌다, reveal_when: 그 무리 땅 가까이 갈 때, min_trust: 2 }
+      - { content: 길에서 만난 사람의 짐을 들고 달아난 적이 있다, reveal_when: 밤에 불가에서, min_trust: 3 }
+  ties: { chance: 0.2, kinds: [sibling, friend] }
+  appears: { zones: [] }
+
+- id: road_runner
+  label: 쫓기는 사람
+  rank: loner
+  age: [16, 45]
+  looks:
+    - 맨발에 양말만 신은 젊은 여자. 손목에 끈에 쓸린 자국이 있다
+    - 셔츠가 찢어진 남자. 한쪽 소매로 입을 막고 숨을 죽인다. 눈이 자꾸 뒤를 본다
+  stats: { agility: [1, 1], vitality: [-1, 0], nerve: [-1, 0] }
+  skills: { stealth: 1, survival: 1 }
+  traits: [timid, guarded, eager, coward, cautious]
+  trait_count: 2
+  inventory:
+    - { item: kitchen_knife, chance: 0.3 }
+  values: { self_interest: 1, mercy: 1 }
+  profile:
+    wants: [쫓아오는 사람들에게서 멀어지는 것, 두고 온 사람을 다시 데려오는 것, 하룻밤 숨을 곳]
+    fears: [붙잡혀 끌려가는 것, 다시 그 담 안으로 돌아가는 것, 혼자 남는 것]
+    voices:
+      - { style: 숨이 차서 끊기는 존댓말, samples: ["제발, 잠깐만… 저쪽에서 와요.", "아무것도 안 훔쳤어요. 진짜예요."] }
+      - { style: 날이 선 반말. 겁을 감추려 한다, samples: ["물어보지 마. 그냥 비켜.", "저것들 나 보면 너도 같이 끌려가."] }
+    rules: [어디서 도망쳤는지는 믿기 전까지 말하지 않는다]
+    reputations: [어디선가 도망쳐 온 사람, 쫓기는 사람]
+    secrets:
+      - { content: 붙잡혀 일하던 곳에서 감독의 물건을 들고 나왔다, reveal_when: 숨겨 준 뒤 둘만 남았을 때, min_trust: 2 }
+  ties: { chance: 0.2, kinds: [sibling, child, spouse] }
+  appears: { zones: [] }

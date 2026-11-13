@@ -232,7 +232,7 @@ function checkReferences(content: Content): string[] {
     for (const e of all) {
       if ("faction_resource" in e && !resources.has(e.faction_resource.resource)) problems.push(`storylets.${st.id}: 알 수 없는 자원 ${e.faction_resource.resource}`);
       if ("faction_resource" in e && e.faction_resource.faction !== "own" && !content.factions[e.faction_resource.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.faction_resource.faction}`);
-      if ("npc_depart" in e && e.npc_depart.to_faction && !content.factions[e.npc_depart.to_faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.npc_depart.to_faction}`);
+      if ("npc_depart" in e && e.npc_depart.to_faction && e.npc_depart.to_faction !== "own" && !content.factions[e.npc_depart.to_faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.npc_depart.to_faction}`);
       if ("faction_relation" in e) {
         for (const f of [e.faction_relation.from, e.faction_relation.to]) if (f !== "own" && !content.factions[f]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${f}`);
       }
@@ -392,6 +392,7 @@ export function checkStorylets(content: Content): string[] {
           if (e.give_item.from && e.give_item.from !== "commander" && !castKeys.has(e.give_item.from)) problems.push(`${at}: 알 수 없는 배역 ${e.give_item.from}`);
         }
         if ("take_item" in e && !content.items[e.take_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.take_item.item}`);
+        if ("lose_item" in e && !content.items[e.lose_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.lose_item.item}`);
         if ("clock" in e && !clocks.has(e.clock.id)) problems.push(`${at}: 알 수 없는 세력 클락 ${e.clock.id}`);
         if ("overhear" in e && !["other", "enemy"].includes(e.overhear.faction) && !content.factions[e.overhear.faction]) problems.push(`${at}: 알 수 없는 세력 ${e.overhear.faction}`);
         if ("faction_morale" in e && e.faction_morale.faction !== "own" && !content.factions[e.faction_morale.faction]) {

@@ -36,3 +36,13 @@ describe("길 위의 일", () => {
     expect(w.state().activeStorylet).toBeNull();
   });
 });
+
+describe("미뤄 둔 교전 (12-53에서 찾은 버그)", () => {
+  it("그사이 구역 주인이 바뀌어 싸움이 없어져도 교전 기록에 id·at이 섞이지 않는다", async () => {
+    const { initialWarWorld, resolveClash } = await import("../sim/war.ts");
+    const world = initialWarWorld(base);
+    const spec = { id: "pc_1", at: 0, kind: "raid" as const, attacker: "faction_c", defender: "faction_b", zone: "a_base" };
+    const { clash } = resolveClash(world, base, () => 0.5, spec as never);
+    expect(Object.keys(clash).sort()).toEqual(["attacker", "attackerLosses", "defender", "defenderLosses", "kind", "success", "zone"]);
+  });
+});

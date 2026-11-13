@@ -371,6 +371,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ standing: z.number().int().min(-2).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
     z.strictObject({ give_item: z.strictObject({ item: contentIdSchema, from: z.string().optional(), quantity: z.number().int().positive().default(1) }) }),
+    /** 주인공이 잃는다 (놓치고, 떨어뜨리고, 빼앗긴다). 가진 만큼만 잃고, 없으면 아무 일도 없다 (선택지를 막지 않는다) */
+    z.strictObject({ lose_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
     /** 플레이어가 내놓는다 (거래). 가진 것이 없으면 이 선택지를 고를 수 없다 */
     z.strictObject({ take_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
     /** 세력 클락을 당기거나 늦춘다 (플레이어 행동이 전황에 닿는 길) */
@@ -420,8 +422,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ npc_capture: z.strictObject({ who: z.string().min(1), by: z.string().min(1), zone: contentIdSchema.optional() }) }),
     /** 붙잡힌 배역 NPC를 풀어 준다 (구출·석방). 원래 무리로 돌아간다 */
     z.strictObject({ npc_release: z.strictObject({ who: z.string().min(1) }) }),
-    /** 배역 NPC가 떠난다: to_faction이면 그 세력으로 넘어가고(도시에 남는다), 없으면 도시를 떠난다 (탈영·피난) */
-    z.strictObject({ npc_depart: z.strictObject({ who: z.string().min(1), to_faction: contentIdSchema.optional() }) }),
+    /** 배역 NPC가 떠난다: to_faction이면 그 세력으로 넘어가고(도시에 남는다, own이면 주인공의 무리로 데려온다), 없으면 도시를 떠난다 (탈영·피난) */
+    z.strictObject({ npc_depart: z.strictObject({ who: z.string().min(1), to_faction: z.string().min(1).optional() }) }),
     z.strictObject({
       deed: z.strictObject({
         summary: z.string().min(1).max(120),
@@ -512,6 +514,8 @@ export function createContentSchemas(s: Scenario) {
           cast_empty: z.array(contentIdSchema).optional(),
           /** 주인공이 무리에 속해 있을 때만 (true) / 무소속일 때만 (false) */
           in_faction: z.boolean().optional(),
+          /** 주인공의 무리가 이 중 하나일 때만 (none = 무소속) */
+          factions: z.array(z.string().min(1)).optional(),
         })
         .optional(),
       /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */
@@ -564,6 +568,8 @@ export function createContentSchemas(s: Scenario) {
         road_touches: z.array(contentIdSchema).optional(),
         /** 길 위의 이야기: 오가는 길의 위험(두 구역 중 높은 쪽)이 이 이상일 때만 */
         road_danger_gte: z.number().int().min(0).max(3).optional(),
+        /** 길 위의 이야기: 오가는 길의 위험이 이 이하일 때만 (작은 일) */
+        road_danger_lte: z.number().int().min(0).max(3).optional(),
         /** 주인공이 배경의 그 일이 있었던 구역(잃은 곳)에 있을 때만 (기획서 12.6) */
         at_loss_place: z.boolean().optional(),
         /** 직분 사다리의 칸이 이 이상 (0 = 첫 칸) */

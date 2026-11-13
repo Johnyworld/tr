@@ -435,7 +435,7 @@ describe("자유 시나리오 (MCP)", () => {
     const { call, app } = await connect(REAL_CONTENT);
     await call("start_session", { new_world: true });
     await call("create_character", { answer: "post_apoc" });
-    expect((await call("create_character", { answer: "직접 쓰기" })).text).toContain("직접 쓰는 시나리오");
+    expect((await call("create_character", { answer: "직접 만들기" })).text).toContain("직접 쓰는 시나리오");
     expect((await call("create_character", { answer: "나는 청솔형제단의 분대장이다." })).text).toContain("옮기기");
     const input = {
       faction: "faction_a", rank: "squad_leader", title: "청솔형제단 분대장", location: "a_base", kit: "fighter",

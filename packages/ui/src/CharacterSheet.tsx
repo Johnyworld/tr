@@ -11,7 +11,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
           <div className="sheet-sub">
             {[player.genderLabel, player.age ? `${player.age}세` : null].filter(Boolean).join(" · ")}
           </div>
-          <div className="sheet-sub">{player.roleLabel}</div>
+          <div className="sheet-sub">{player.roleLabel}{player.occupationLabel ? ` · ${player.occupationLabel}` : ""}</div>
         </div>
       </div>
 

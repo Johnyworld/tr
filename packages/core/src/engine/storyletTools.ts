@@ -10,7 +10,7 @@ import { z } from "zod";
 import { playerCalls } from "../game/acquaintance.ts";
 import { withCharm } from "./charm.ts";
 import { enterScene } from "./extras.ts";
-import { gainMeritXp } from "./growth.ts";
+import { changeStanding, gainMeritXp } from "./growth.ts";
 import type { Content, StoryletContent, StoryletEffect } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { GameState } from "../game/state.ts";
@@ -311,6 +311,10 @@ function applyEffect(
     });
     return { line: `알게 된 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.belief.source] } };
   }
+  if ("standing" in effect) {
+    const note = changeStanding(ctx, playerId, effect.standing, reason);
+    return note ? { line: note } : {};
+  }
   if ("merit" in effect) {
     store.append({ type: "merit_awarded", characterId: playerId, delta: effect.merit, reason });
     const growthNote = gainMeritXp(ctx, playerId, effect.merit);
@@ -410,7 +414,7 @@ function applyEffect(
     const { faction, rank, title } = effect.join_faction;
     if (!content.factions[faction] || player.factionId === faction) return {};
     const from = player.factionId ? (content.roles[state.roleId]?.label ?? content.factions[player.factionId]?.name ?? "") : "무소속";
-    const role = joinRole(content, faction, rank, { age: player.age, title });
+    const role = joinRole(content, faction, rank, { age: player.age, title, occupation: player.occupation?.id ?? null });
     // 그 무리에서 처음 듣는 사정: 같은 계급 시나리오의 시작 지식 (다른 계급의 지식은 주지 않는다)
     const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
     let no = state.nextBeliefNo;

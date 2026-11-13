@@ -1,3 +1,4 @@
+import { describeHistoryPart, type HistoryPart } from "./background.ts";
 import type { Content } from "../content/schemas.ts";
 import { scenarioInfos, worldInfo } from "../content/packs.ts";
 import type { Rng } from "../rng.ts";
@@ -78,7 +79,7 @@ export type NewGameReply =
       roleId: string;
       choice: CharacterChoice;
       /** 자유 시나리오면 만든 역할과 캐릭터의 지난 삶 기억 */
-      custom: { role: RoleContent; background: string[] } | null;
+      custom: { role: RoleContent; background: string[]; history: HistoryPart[] } | null;
     }
   | { ok: false; error: string };
 
@@ -122,7 +123,10 @@ export function answerNewGame(packs: ReadonlyMap<string, Content>, draft: NewGam
   if (!r.ok) return r;
   const next = { ...draft, character: r.draft };
   if (!r.done) return { ok: true, draft: next, done: false };
-  const custom = draft.mode === "new_world" && draft.customRole ? { role: draft.customRole, background: draft.custom?.input?.background ?? [] } : null;
+  const custom =
+    draft.mode === "new_world" && draft.customRole
+      ? { role: draft.customRole, background: draft.custom?.input?.background ?? [], history: draft.custom?.input?.history ?? [] }
+      : null;
   return { ok: true, draft: next, done: true, packId: draft.packId!, roleId: draft.roleId!, choice: r.choice, custom };
 }
 
@@ -136,12 +140,16 @@ export function setCustomStart(packs: ReadonlyMap<string, Content>, draft: NewGa
 
 /** 시나리오 보기: 콘텐츠의 시나리오들 + 자유 시나리오(월드가 열었으면) */
 function scenarioOptions(content: Content, unlocked: readonly string[] = []): { id: string; title: string; pitch: string }[] {
-  const list = scenarioInfos(content, unlocked);
+  const list = scenarioInfos(content, unlocked).map((r) => ({ ...r, title: r.title }));
+  // 직접 만들기가 먼저, 정해진 시나리오는 추천 시작으로 (기획서 12.6)
   if (content.scenario.custom_start) {
-    list.push({
+    const occ = content.scenario.occupations.map((o) => o.label);
+    list.unshift({
       id: CUSTOM_ROLE_ID,
-      title: "직접 쓰기",
-      pitch: "누구로, 어디서 시작할지 직접 쓴다. 세력·계급·시작 장소·소지품은 이 월드에 있는 것 중에서 정해진다 (한 자리뿐인 지도부는 안 된다).",
+      title: "직접 만들기",
+      pitch:
+        `어느 무리에서 무슨 일을 하는 사람인지(${occ.length ? `직분: ${occ.join(", ")} 등` : "자리"}), 어떤 지난 일을 안고 있는지 직접 쓴다. ` +
+        "잃은 가족, 원수, 진 빚, 도망쳐 나온 무리 같은 지난 일은 이 세계의 역사로 남는다. 한 자리뿐인 지도부는 될 수 없다.",
     });
   }
   return list;
@@ -190,7 +198,7 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
       "",
       content.scenario.introText ?? `${world.tagline}\n${world.description}`,
       "",
-      "물을 것: 어떤 사람으로, 어디서 시작할지 (시나리오). 이름과 소개를 보여 주고 고르게 한다 (하나여도 소개하고 고르게 한다).",
+      "물을 것: 어떤 사람으로 시작할지. '직접 만들기'를 먼저 소개하고, 나머지는 '추천 시작'으로 묶어 이름과 소개를 보여 준다.",
       "",
       ...scenarios.map((r) => `### ${r.title}\n${r.pitch}`),
       "",
@@ -202,7 +210,9 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
   if (step === "custom_story") {
     return [
       `## 새 게임: ${worldInfo(content).title} — 직접 쓰는 시나리오`,
-      "물을 것: 누구로, 어디서 시작하는지 플레이어가 직접 쓴다 (서너 문장). 무엇을 쓰면 좋은지 짧게 알려 준다: 어느 무리 사람인지(또는 무리 없이 떠도는지), 어떤 자리인지, 어디서 무엇을 하다가 이야기가 시작되는지, 무엇을 지니고 있는지, 몇 살쯤인지, 지난 삶에서 기억할 일.",
+      "물을 것: 누구로 시작하는지 플레이어가 직접 쓴다 (서너 문장). 무엇을 쓰면 좋은지 짧게 알려 준다: 어느 무리 사람인지(또는 무리 없이 떠도는지), 무리에서 무슨 일을 하는지(직분), 어떤 자리인지(계급), 몇 살쯤인지, 그리고 지난 일 (잃은 사람, 원수, 살아 있는 가족, 찾는 사람, 진 빚, 도망쳐 나온 무리 등).",
+      `고를 수 있는 직분: ${content.scenario.occupations.map((o) => `${o.label} — ${o.summary}`).join(" / ") || "없음"}`,
+      "지난 일 중 일부는 이 세계의 역사로 남는다 (원수가 이 도시의 실제 인물이면 그 사람이 정말 그 일을 한 것이 된다). 나머지는 이 사람의 기억으로 남는다.",
       "이 월드에 있는 세력·장소 안에서 정해진다는 것과, 한 자리뿐인 지도부(무리의 우두머리)는 될 수 없다는 것을 함께 알린다. 대신 쓰지 않는다.",
       "",
       `플레이어의 글을 그대로 create_character(answer)로 넘긴다 (${MAX_STORY_LENGTH}자 안). 되돌리려면 create_character(back: true).`,
@@ -227,6 +237,7 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
       "## 새 게임: 직접 쓴 시나리오 확인",
       "옮긴 결과 (코드가 정한 상관·아는 사람·임무 포함):",
       describeCustomRole(content, role),
+      ...(draft.custom!.input!.history?.length ? [`세계에 남는 지난 일: ${draft.custom!.input!.history.map((p) => describeHistoryPart(content, p)).join(" / ")}`] : []),
       ...(draft.custom!.input!.background.length ? [`지난 삶 (캐릭터의 기억): ${draft.custom!.input!.background.join(" / ")}`] : []),
       "",
       "물을 것: 이대로 갈지. 글과 다르게 옮긴 것이 있으면 이유와 함께 알린다.",

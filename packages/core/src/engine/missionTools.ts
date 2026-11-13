@@ -1,3 +1,5 @@
+import { occupationOf } from "../game/occupation.ts";
+import { changeStanding } from "./growth.ts";
 import { issueArmory, returnArmory } from "./armory.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { assignBuddy, releaseBuddies } from "./companionTools.ts";
@@ -140,12 +142,16 @@ const reportMission = defineTool({
       const delta = result.outcome === "success" ? advances.delta : Math.trunc(advances.delta / 2);
       if (delta !== 0) ctx.store.append({ type: "clock_adjusted", clockId: advances.clock, delta });
     }
+    // 직분의 일감을 해내면 직분의 평판이 오른다 (기획서 12.6)
+    const occ = occupationOf(ctx.content, ctx.store.getState().characters[mission.assigneeId]);
+    const occNote = occ?.missions.includes(mission.templateId) && result.outcome === "success" ? changeStanding(ctx, mission.assigneeId, 1, `일감: ${mission.title}`) : null;
     const label = MISSION_STATUS_LABELS[result.outcome === "success" ? "completed" : result.outcome];
     const lines = [
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
       ...releaseBuddies(ctx, mission.id),
       ...[returnArmory(ctx, mission.id)].filter((l): l is string => !!l),
+      ...(occNote ? [occNote] : []),
     ];
     const growthNote = gainMeritXp(ctx, mission.assigneeId, result.merit);
     if (growthNote) lines.push(growthNote);
@@ -236,7 +242,8 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     }
   }
   if (commanderOf(state, ctx) && hasAccess(ctx.content, state, "mission_board")) {
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng);
+    const occ = occupationOf(ctx.content, state.characters[state.playerId]);
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, occ?.missions ?? []);
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;

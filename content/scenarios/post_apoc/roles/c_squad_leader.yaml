@@ -4,6 +4,7 @@ id: role_c_squad_leader
 label: 붉은연합 약탈 사조장
 faction: faction_c
 rank: squad_leader
+occupation: soldier
 default_name: 조장
 opening_scene: 새벽, 고가도로 너머 물류창고 마당. 드럼통 불가에 조원 넷이 서 있다. 거구는 팔짱을 끼고, 앳된 조원은 완장을 만지작거리고, 늙은 조원은 털모자를 벗어 인사한다. 마른 정찰병만 당신 쪽을 보지 않는다. 창고 위 지휘소 창문에 장갑 낀 손이 보인다.
 scenario:

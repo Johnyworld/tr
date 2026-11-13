@@ -1,3 +1,4 @@
+import { occupationTitle } from "../game/occupation.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem } from "../engine/gear.ts";
 import { activeCompanions, apartCompanions, BOND_LABELS, bondOf, describeUntil } from "../game/companions.ts";
 import { squadMembers } from "../engine/command.ts";
@@ -57,6 +58,8 @@ export type PlayerView = {
   sceneItems: { id: string; name: string; quantity: number }[];
   /** conditionLabel: 상태가 처음과 달라졌을 때만 요약 (예: "부상: 경상") */
   present: { id: string; name: string; rankLabel: string; look: string; conditionLabel: string | null }[];
+  /** 직분과 그 사다리의 칸 (기획서 12.6) */
+  occupationLabel: string | null;
   service: {
     merit: number;
     disobedience: number;
@@ -176,6 +179,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       content.roles[state.roleId]?.rank === player.rank
         ? (content.roles[state.roleId]?.label ?? rankLabel(scenario, player.rank))
         : rankLabel(scenario, player.rank),
+    occupationLabel: occupationTitle(content, player),
     timeLabel: [formatTime(state.time), seasonLabel(seasonAt(content.scenario, state.time)), weatherNow(content.scenario, state)?.label ?? ""]
       .filter(Boolean)
       .join(" · "),

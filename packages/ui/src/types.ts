@@ -5,6 +5,7 @@ export type PlayerView = {
   portrait: string | null;
   age: number | null;
   roleLabel: string;
+  occupationLabel: string | null;
   timeLabel: string;
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean }[];
   conditionPenalty: number;

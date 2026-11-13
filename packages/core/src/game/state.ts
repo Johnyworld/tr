@@ -1,3 +1,4 @@
+import { historyPartSchema } from "./background.ts";
 import { TIE_KINDS } from "./ties.ts";
 import { z } from "zod";
 import type { Rng } from "../rng.ts";
@@ -27,7 +28,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 21;
+export const SAVE_SCHEMA_VERSION = 22;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -229,6 +230,8 @@ export function createGameSchemas(s: Scenario) {
     council: z.record(z.string(), z.strictObject({ day: z.number().int(), blockedUntil: z.number().int() })).default({}),
     /** 이야기가 이름표로 기억해 둔 인물 (cast keep → recall). 이름 없는 인물도, 이름 있는 NPC도 */
     keptExtras: z.record(z.string(), z.string()).default({}),
+    /** 주인공의 지난 일 중 세계의 사실이 된 것 (배경 부품, 기획서 12.6). 코드가 만든 인물은 characterId */
+    background: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })).default([]),
     /** 이야기가 바꾼 주인공의 상관 (지도부가 바뀐 뒤). null이면 역할의 상관 */
     commanderOverride: z.string().nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
@@ -335,6 +338,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     /** NPC의 계급이 바뀐다 (지도부 교체, 강등) */
     z.strictObject({ type: z.literal("npc_rank_changed"), npcId: z.string(), rank: z.string() }),
+    /** 배경 부품이 세계의 사실이 되었다 (기획서 12.6) */
+    z.strictObject({ type: z.literal("background_set"), entries: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })) }),
+    /** 직분의 평판 ± (기획서 12.6) */
+    z.strictObject({ type: z.literal("occupation_standing_changed"), characterId: z.string(), delta: z.number().int(), reason: z.string() }),
     /** 주인공의 상관이 바뀐다 (null이면 역할의 상관으로 돌아간다) */
     z.strictObject({ type: z.literal("commander_changed"), characterId: z.string().nullable() }),
     z.strictObject({ type: z.literal("npc_captured"), npcId: z.string(), by: z.string(), zone: z.string() }),
@@ -640,6 +647,7 @@ export const EMPTY_STATE: GameState = {
   zoneSearches: {},
   keptExtras: {},
   commanderOverride: null,
+  background: [],
   companions: [],
   bonds: {},
   dynamicTies: [],
@@ -931,6 +939,14 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       const npc = mustGet(next.characters, event.npcId, "캐릭터");
       npc.captive = null;
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      return next;
+    }
+    case "background_set":
+      next.background = structuredClone(event.entries);
+      return next;
+    case "occupation_standing_changed": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      if (c.occupation) c.occupation = { ...c.occupation, standing: Math.max(0, c.occupation.standing + event.delta) };
       return next;
     }
     case "npc_rank_changed":
@@ -1428,6 +1444,7 @@ export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "pl
     portrait: choice?.portrait ?? null,
     factionId: role.faction,
     rank: role.rank,
+    occupation: role.occupation ? { id: role.occupation, standing: 0 } : null,
     age: role.age,
     stats: choice?.abilities ?? role.start_stats ?? rollAbilities(s, rng),
     skills: role.start_skills,
@@ -1444,6 +1461,7 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
     name: npc.name,
     factionId: npc.faction ?? "",
     rank: npc.rank,
+    occupation: npc.occupation ? { id: npc.occupation, standing: 0 } : null,
     age: npc.age,
     stats: npc.stats,
     skills: npc.skills,

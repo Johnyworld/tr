@@ -3,6 +3,7 @@ id: role_b_guard
 label: 버들마을 경비병
 faction: faction_b
 rank: grunt
+occupation: soldier
 default_name: 경비병
 age: 21
 # 시작 장면. 화면에 먼저 보여 주고 GM 프롬프트에도 넣는다

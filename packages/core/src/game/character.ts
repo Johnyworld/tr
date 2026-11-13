@@ -126,6 +126,8 @@ export function createCharacterSchema(s: Scenario) {
     dead: z.boolean().default(false),
     /** 임무로 쌓은 공적 */
     merit: z.number().int().default(0),
+    /** 직분과 그 일의 평판 (기획서 12.6). 직분이 없으면 null */
+    occupation: z.strictObject({ id: z.string(), standing: z.number().int().default(0) }).nullable().default(null),
     /** 명령 불복종 횟수 (임무 포기·기한 초과) */
     disobedience: z.number().int().nonnegative().default(0),
     inventory: inventorySchema,

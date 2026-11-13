@@ -3,6 +3,7 @@ id: role_c_raider
 label: 붉은연합 신입 약탈조원
 faction: faction_c
 rank: grunt
+occupation: soldier
 default_name: 신입
 opening_scene: 해 뜨기 전, 붉은연합 거점의 옛 공단 창고 막사. 쇠파이프로 철문을 두드리는 소리에 눈을 뜬다. 바깥에서 약탈조장이 조원 이름을 하나씩 부르고, 대답이 늦은 사람의 이름 뒤에는 욕이 붙는다. 왼팔의 붉은 완장이 아직 뻣뻣하다.
 scenario:

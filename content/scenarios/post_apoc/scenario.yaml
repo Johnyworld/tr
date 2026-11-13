@@ -286,6 +286,8 @@ custom_start:
   skill_points: 2
   skill_max: 1
   age: { min: 16, max: 65 }
+  # 배경 부품의 빚 크기 (기획서 12.6)
+  debt_sizes: { small: 5, large: 15 }
   # 무소속으로 시작할 때 고를 수 있는 연고 (extras/kin.yaml, 기획서 7.9)
   kin: [kin_young, kin_elder, kin_sibling, kin_partner, stray_dog]
   kits:
@@ -435,6 +437,69 @@ rank_ladder:
   - { id: leader, label: 지도부, level: 4 }
 # 진급 경로 (MVP: 하급 전투원 → 분대장)
 promotion: { from: grunt, to: squad_leader }
+
+# 직분 (기획서 12.6): 무리 안에서 맡은 일. 계급과 따로 고른다 (요리사도 하급일 수도, 간부일 수도 있다)
+# 직분마다 직분 훈련·도구가 시작에 더해지고, 직분의 일감(missions)과 이야기(태그 occ_<id>)가 붙는다
+# ladder: 직분 안의 사다리. 직분의 일감을 해내거나 이야기의 standing 효과로 평판이 쌓이면 오른다
+occupations:
+  - id: soldier
+    label: 전투원
+    summary: 총을 들고 담을 지키고 바깥에 나간다. 무리의 시나리오 임무와 이야기를 그대로 받는다
+    borrows_role: true
+    ladder: [{ label: 전투원, standing: 0 }, { label: 고참, standing: 5 }, { label: 선임, standing: 12 }]
+  - id: cook
+    label: 요리사
+    summary: 무리의 솥을 맡는다. 모자란 재료로 배급을 늘리고, 식당에서 오가는 말을 가장 먼저 듣는다
+    ranks: [grunt, staff, officer]
+    skills: { survival: 1 }
+    kit: [kitchen_knife, canned_food]
+    ladder: [{ label: 숙수, standing: 0 }, { label: 부엌 반장, standing: 4 }, { label: 주방장, standing: 10 }]
+  - id: carpenter
+    label: 목수
+    summary: 담과 문, 지붕과 침상을 고친다. 무너진 데를 메우는 사람이라 어디든 불려 다닌다
+    ranks: [grunt, staff, squad_leader]
+    skills: { carpentry: 1 }
+    kit: [carpentry_kit, planks]
+    ladder: [{ label: 목수 일꾼, standing: 0 }, { label: 목수, standing: 4 }, { label: 도편수, standing: 10 }]
+  - id: trader
+    label: 상인
+    summary: 무리의 물건을 바깥과 바꾼다. 값과 소문을 다루고, 무리 밖에도 아는 얼굴이 많다
+    ranks: [grunt, staff, officer]
+    free: true
+    skills: { persuade: 1 }
+    kit: [trade_token, cigarettes]
+    ladder: [{ label: 행상, standing: 0 }, { label: 상인, standing: 4 }, { label: 큰손, standing: 10 }]
+  - id: preacher
+    label: 종교인
+    summary: 무너진 세상에서 기도와 장례를 맡는다. 사람들의 고해를 듣고, 무리의 사기를 붙든다
+    ranks: [grunt, staff, officer]
+    free: true
+    skills: { endure: 1 }
+    kit: [blanket]
+    ladder: [{ label: 기도하는 사람, standing: 0 }, { label: 설교자, standing: 4 }, { label: 목자, standing: 10 }]
+  - id: medic
+    label: 의무병
+    summary: 다친 사람을 꿰매고 열을 내린다. 약이 모자란 날마다 누구를 먼저 볼지 정해야 한다
+    ranks: [grunt, staff, squad_leader, officer]
+    free: true
+    skills: { first_aid: 1 }
+    kit: [bandage]
+    ladder: [{ label: 수습 의무병, standing: 0 }, { label: 의무병, standing: 4 }, { label: 의무장, standing: 10 }]
+  - id: mechanic
+    label: 정비공
+    summary: 총과 펌프, 발전기와 무전기를 살린다. 쇳소리와 기름 냄새 속에서 산다
+    ranks: [grunt, staff, squad_leader]
+    skills: { mechanics: 1 }
+    kit: [toolkit, scrap_metal]
+    ladder: [{ label: 견습 정비공, standing: 0 }, { label: 정비공, standing: 4 }, { label: 정비 반장, standing: 10 }]
+  - id: scavenger
+    label: 수색꾼
+    summary: 무너진 건물에 들어가 쓸 것을 건져 온다. 길을 알고, 길에서 죽는 사람을 많이 봤다
+    ranks: [grunt, staff, squad_leader]
+    free: true
+    skills: { scavenge: 1 }
+    kit: [flashlight, crowbar]
+    ladder: [{ label: 수색꾼, standing: 0 }, { label: 길잡이, standing: 4 }, { label: 수색대장, standing: 10 }]
 
 speech_rules: speech/post_apoc.yaml
 # GM 지침 (두 플레이 모드가 같은 파일을 읽는다, 기획서 11.6)

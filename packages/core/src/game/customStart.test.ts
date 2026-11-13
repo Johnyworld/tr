@@ -85,7 +85,7 @@ function run(steps: (string | CustomStartInput)[]) {
 
 describe("자유 시나리오: 새 게임 흐름", () => {
   it("직접 쓰기 → 글 → 옮기기(코드 검증) → 확인 → 캐릭터 만들기", () => {
-    expect(describeNewGameStep(packs, run(["post_apoc"]).draft)).toContain("직접 쓰기");
+    expect(describeNewGameStep(packs, run(["post_apoc"]).draft)).toContain("직접 만들기");
     const story = run(["post_apoc", "custom"]).draft;
     expect(newGameStep(story)).toBe("custom_story");
     const setup = run(["post_apoc", "custom", "나는 청솔형제단의 참모다. 마흔 하나."]).draft;

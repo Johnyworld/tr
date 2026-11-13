@@ -78,6 +78,7 @@ export const TEST_SCENARIO: Scenario = {
     { id: "officer", label: "간부", level: 3 },
   ],
   promotion: { from: "grunt", to: "squad_leader" },
+  occupations: [],
   speech_rules: "speech.yaml",
   gm_tone: "tone.md",
   gm_rules: "rules.md",

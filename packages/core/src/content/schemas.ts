@@ -69,6 +69,8 @@ export function createContentSchemas(s: Scenario) {
     label: z.string().min(1),
     faction: contentIdSchema,
     rank: idEnum(rankIds(s)),
+    /** 직분 (기획서 12.6). 직분의 일감·이야기가 더해진다 */
+    occupation: contentIdSchema.optional(),
     default_name: z.string().min(1),
     age: z.number().int().positive(),
     /** 시작 장면. 화면에 먼저 보여 주고 GM 프롬프트에도 넣는다 */
@@ -123,6 +125,8 @@ export function createContentSchemas(s: Scenario) {
     /** 세계가 시작될 때 이미 붙잡혀 있다 (포로, 기획서 7.6) */
     start_captive: z.strictObject({ by: contentIdSchema, zone: contentIdSchema }).optional(),
     rank: idEnum(rankIds(s)),
+    /** 직분 (기획서 12.6). 플레이어와 같은 스키마 (원칙 6) */
+    occupation: contentIdSchema.optional(),
     age: z.number().int().positive(),
     look: z.string().min(1),
     /** 거점 사람들이 아는 모습. 이 인물을 아는 캐릭터에게 보인다 */
@@ -350,6 +354,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ set_commander: z.strictObject({ who: z.string().min(1) }) }),
     z.strictObject({ belief: z.strictObject({ fact: z.string().min(1).max(300), source: beliefSourceSchema.default("seen") }) }),
     z.strictObject({ merit: z.number().int().min(-3).max(3) }),
+    /** 직분의 평판 ± (기획서 12.6). 쌓이면 직분 사다리를 오른다. 직분이 없으면 아무 일도 없다 */
+    z.strictObject({ standing: z.number().int().min(-2).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
     z.strictObject({ give_item: z.strictObject({ item: contentIdSchema, from: z.string().optional(), quantity: z.number().int().positive().default(1) }) }),
     /** 플레이어가 내놓는다 (거래). 가진 것이 없으면 이 선택지를 고를 수 없다 */
@@ -444,6 +450,13 @@ export function createContentSchemas(s: Scenario) {
     label: z.string().min(1).max(30).optional(),
     /** 이 배역을 맡은 인물을 이름표로 기억한다 (다음 이야기에서 recall로 다시 부른다). 이름 없는 인물도, 이름 있는 NPC도 */
     keep: contentIdSchema.optional(),
+    /**
+     * 주인공의 배경에서 (기획서 12.6): enemy 원수인 인물(또는 가해자), enemy_member 원수 무리의 사람,
+     * kin 살아서 기다리는 가족, sought 찾고 있는 사람
+     */
+    background: z.enum(["enemy", "enemy_member", "kin", "sought"]).optional(),
+    /** 이름 없는 인물이면 지금 주인공이 있는 구역에 있는 사람만 (찾던 사람을 마주치는 장면) */
+    here: z.boolean().default(false),
     /** 앞서 keep으로 기억해 둔 인물. 살아 있고 떠나지 않았고 붙잡히지 않았을 때만 채운다 */
     recall: contentIdSchema.optional(),
     /**
@@ -526,6 +539,10 @@ export function createContentSchemas(s: Scenario) {
         zone_owner: z.array(z.enum(["none", "own", "other"])).optional(),
         /** 플레이어의 소속 세력 (none = 무소속) */
         factions: z.array(z.string().min(1)).optional(),
+        /** 플레이어의 직분 (none = 직분 없음, 기획서 12.6) */
+        occupations: z.array(z.string().min(1)).optional(),
+        /** 직분 사다리의 칸이 이 이상 (0 = 첫 칸) */
+        occupation_step_gte: z.number().int().min(0).optional(),
         ...itemFlagConditions,
         /** 주인공의 빚 (세력 id 또는 own → 하한/상한) */
         debt_gte: z.record(z.string(), z.number().int()).optional(),

@@ -3,6 +3,7 @@ id: role_a_grunt
 label: 청솔형제단 하급 전투원
 faction: faction_a
 rank: grunt
+occupation: soldier
 default_name: 신병
 # 시작 장면. 화면에 먼저 보여 주고 GM 프롬프트에도 넣는다
 opening_scene: 새벽, 청솔형제단의 거점. 당신은 막사의 낡은 간이침대에서 눈을 뜬다. 바깥에서 보초 교대를 알리는 낮은 목소리가 들린다.

@@ -132,10 +132,12 @@ export function pickDailyOffers(
   now: GameTime,
   lastOfferDay: number | null,
   rng: Rng,
+  /** 직분의 일감 (기획서 12.6) */
+  extra: readonly string[] = [],
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
-  const pool = [...(content.roles[roleId]?.missions ?? [])].filter((id) => content.missions[id]);
+  const pool = [...new Set([...(content.roles[roleId]?.missions ?? []), ...extra])].filter((id) => content.missions[id]);
   if (pool.length === 0) return null;
   const picked: string[] = [];
   const count = Math.min(OFFERS_PER_DAY, pool.length);

@@ -4,6 +4,7 @@ id: role_a_squad_leader
 label: 청솔형제단 신임 분대장
 faction: faction_a
 rank: squad_leader
+occupation: soldier
 default_name: 신임
 opening_scene: 아침, 청솔형제단 거점의 보급 창고 앞. 모래주머니 위에 네 사람이 앉아 있다가 당신을 보고 느릿느릿 일어선다. 한 사람은 끝까지 앉아 있다. 창고 문에는 아직 전 분대장의 이름이 분필로 적혀 있다.
 scenario:

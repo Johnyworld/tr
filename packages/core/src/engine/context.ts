@@ -1,3 +1,5 @@
+import { describeHistoryPart } from "../game/background.ts";
+import { occupationOf, occupationTitle } from "../game/occupation.ts";
 import { dayOf } from "../rules/time.ts";
 import { describeGear } from "./gear.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
@@ -102,6 +104,12 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ].join("\n")],
     ["sheet", [
       `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
+      ...(occupationOf(content, player)
+        ? [`직분: ${occupationTitle(content, player)} (${occupationOf(content, player)!.summary}). 이 일로 평판을 쌓으면 직분 안에서 오른다 (이야기·일감의 결과로만)`]
+        : []),
+      ...(state.background.length && state.playerId === "player"
+        ? [`지난 일 (세계의 사실, 주인공이 아는 대로): ${state.background.map((e) => describeHistoryPart(content, e.part)).join(" / ")}`]
+        : []),
       `트레잇 (서술에 반영한다): ${traitLabels(content, player, { acting: true }).join(", ") || "없음"}`,
       `능력: ${stats}`,
       `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,

@@ -14,6 +14,7 @@ import { harmTrack } from "../scenario/scenario.ts";
 import { daysOfStock } from "../sim/war.ts";
 import { fill } from "../text.ts";
 import { seasonAt } from "../sim/season.ts";
+import { occupationOf, occupationStep, occupationTag } from "../game/occupation.ts";
 
 /**
  * 스토리렛 엔진 (기획서 10.3). 조건과 배역은 코드가 판정한다.
@@ -69,6 +70,24 @@ function bodyMatches(content: Content, level: string | undefined, cond: { track:
   return true;
 }
 
+/** 배경 배역의 후보 (기획서 12.6) */
+function backgroundCast(state: GameState, content: Content, kind: "enemy" | "enemy_member" | "kin" | "sought"): string[] {
+  const out: string[] = [];
+  for (const { part, characterId } of state.background) {
+    if (kind === "enemy") {
+      if (part.kind === "enemy" && content.npcs[part.target]) out.push(part.target);
+      if (part.kind === "loss" && part.by && content.npcs[part.by]) out.push(part.by);
+    }
+    if (kind === "enemy_member") {
+      const f = part.kind === "enemy" ? part.target : part.kind === "loss" ? part.by : null;
+      if (f && content.factions[f]) out.push(...Object.values(state.characters).filter((c) => c.factionId === f && c.id !== state.playerId).map((c) => c.id));
+    }
+    if (kind === "kin" && part.kind === "kin_alive" && characterId) out.push(characterId);
+    if (kind === "sought" && part.kind === "seeking" && characterId) out.push(characterId);
+  }
+  return [...new Set(out)].sort();
+}
+
 /** 엑스트라로 채울 배역의 자리표시 (발동하면 만든 인물 id로 바뀐다) */
 export const EXTRA_CAST_PREFIX = "@extra:";
 
@@ -78,6 +97,20 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
   const used = new Set<string>();
   for (const [key, role] of Object.entries(storylet.cast)) {
     // 이름 없는 인물 배역은 발동할 때 만든다 (storyletTools). 그때까지는 자리표시
+    if (role.background) {
+      const options = backgroundCast(state, content, role.background).filter((id) => {
+        const c = state.characters[id];
+        return c && !c.dead && !c.away && !c.captive && !used.has(id) && (!role.here || !c.extra || c.extra.zone === state.playerZone);
+      });
+      if (options.length === 0) {
+        if (role.optional) continue;
+        return null;
+      }
+      const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;
+      cast[key] = id;
+      used.add(id);
+      continue;
+    }
     if (role.recall) {
       const id = state.keptExtras[role.recall];
       const c = id ? state.characters[id] : undefined;
@@ -123,6 +156,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.merit_gte !== undefined && player.merit < w.merit_gte) return false;
   if (w.level_gte !== undefined && player.level < w.level_gte) return false;
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
+  if (w.occupations && !w.occupations.includes(player.occupation?.id ?? "none")) return false;
+  if (w.occupation_step_gte !== undefined) {
+    const occ = occupationOf(content, player);
+    if (!occ || occupationStep(occ, player.occupation!.standing) < w.occupation_step_gte) return false;
+  }
   if (w.zone_owner) {
     const owner = state.playerZone ? (state.zones[state.playerZone]?.owner ?? null) : null;
     const kind = owner === null ? "none" : owner === player.factionId ? "own" : "other";
@@ -213,6 +251,9 @@ export const WORLD_TAG = "world";
 /** 지금 발동할 수 있는 스토리렛 (역할 태그, 반복·쿨다운, 조건, 배역) */
 export function eligibleStorylets(state: GameState, content: Content, at: GameTime = state.time): StoryletContent[] {
   const roleTags = new Set(content.roles[state.roleId]?.storylet_tags ?? []);
+  // 직분의 이야기 (기획서 12.6)
+  const occ = occupationOf(content, state.characters[state.playerId]);
+  if (occ) roleTags.add(occupationTag(occ));
   return Object.values(content.storylets)
     // 태그가 없거나 world면 어느 시나리오에서나, 아니면 역할의 태그와 겹칠 때만
     .filter((s) => s.tags.length === 0 || s.tags.some((t) => t === WORLD_TAG || roleTags.has(t)))

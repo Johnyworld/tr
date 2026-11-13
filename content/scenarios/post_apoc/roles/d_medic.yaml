@@ -3,6 +3,7 @@ id: role_d_medic
 label: 하얀매 수습 의무병
 faction: faction_d
 rank: staff
+occupation: medic
 default_name: 수습
 opening_scene: 아침, 하얀매의 진료소. 소독약 냄새가 밴 수습 숙소에서 눈을 뜨자 복도 끝에서 수간호사의 목소리가 들린다. "문진 줄 벌써 정문까지 섰다. 손 씻고 나와." 창밖으로 담 너머에 늘어선 사람들의 입김이 보인다.
 scenario:

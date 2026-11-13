@@ -87,6 +87,20 @@ export function loadContent(contentDir: string): Content {
 /** 콘텐츠끼리의 참조를 검사한다. 참조 대상 종류가 생기면 여기에 검사를 더한다 */
 function checkReferences(content: Content): string[] {
   const problems: string[] = [];
+  // 직분 (기획서 12.6)
+  const occIds = new Set(content.scenario.occupations.map((o) => o.id));
+  const rankIds = new Set(content.scenario.rank_ladder.map((r) => r.id));
+  for (const o of content.scenario.occupations) {
+    const at = `scenario.occupations.${o.id}`;
+    for (const m of Object.keys(o.skills)) if (!content.scenario.moves.some((x) => x.id === m)) problems.push(`${at}: 알 수 없는 스킬 ${m}`);
+    for (const i of o.kit) if (!content.items[i]) problems.push(`${at}: 알 수 없는 아이템 ${i}`);
+    for (const m of o.missions) if (!content.missions[m]) problems.push(`${at}: 알 수 없는 임무 ${m}`);
+    for (const r of o.ranks) if (!rankIds.has(r)) problems.push(`${at}: 알 수 없는 계급 ${r}`);
+    if (o.ladder[0]!.standing !== 0) problems.push(`${at}: 사다리의 첫 칸은 standing 0이다`);
+  }
+  for (const r of Object.values(content.roles)) if (r.occupation && !occIds.has(r.occupation)) problems.push(`roles.${r.id}: 알 수 없는 직분 ${r.occupation}`);
+  for (const n of Object.values(content.npcs)) if (n.occupation && !occIds.has(n.occupation)) problems.push(`npcs.${n.id}: 알 수 없는 직분 ${n.occupation}`);
+  for (const st of Object.values(content.storylets)) for (const o of st.when.occupations ?? []) if (o !== "none" && !occIds.has(o)) problems.push(`storylets.${st.id}.when.occupations: 알 수 없는 직분 ${o}`);
   for (const p of content.scenario.command?.policies ?? []) {
     for (const o of p.options) {
       for (const partner of [o.trade?.partner, o.trade?.fallback_partner]) if (partner && !content.factions[partner]) problems.push(`scenario.command.policies.${p.id}.${o.id}: 알 수 없는 교역 상대 ${partner}`);

@@ -173,6 +173,35 @@ export const scenarioFileSchema = z
     harm_track: id,
     rank_ladder: z.array(z.strictObject({ id, label: z.string().min(1), level: z.number().int() })).min(1),
     promotion: z.strictObject({ from: id, to: id }),
+    /**
+     * 직분 (기획서 12.6): 무리 안에서 맡은 일. 계급(배급·상관·회의 자리)과 따로 고른다.
+     * 직분마다 시작 훈련·소지품·일감·이야기(storylet_tag)가 붙고, 직분 안의 사다리(ladder)를 일의 평판(standing)으로 오른다
+     */
+    occupations: z
+      .array(
+        z.strictObject({
+          id,
+          label: z.string().min(1),
+          summary: z.string().min(1),
+          /** 이 직분으로 고를 수 있는 계급 (비면 모두) */
+          ranks: z.array(id).default([]),
+          /** 이 직분이 무소속으로도 가능한지 (떠돌이 상인, 떠돌이 설교자) */
+          free: z.boolean().default(false),
+          /** 무리의 같은 계급 시나리오의 임무·이야기를 그대로 받는지 (전투원). 아니면 직분의 일감·이야기와 공통 이야기만 */
+          borrows_role: z.boolean().default(false),
+          /** 시작 훈련에 더해지는 직분 훈련 (스킬 id → 수준) */
+          skills: z.record(id, z.number().int().min(1).max(2)).default({}),
+          /** 시작 소지품에 더해지는 직분 도구 */
+          kit: z.array(id).default([]),
+          /** 직분의 일감 (임무 템플릿 id). 무리를 가리지 않는다 */
+          missions: z.array(id).default([]),
+          /** 직분 이야기의 태그 (없으면 occ_<id>) */
+          storylet_tag: id.optional(),
+          /** 직분 안의 사다리: 평판이 standing 이상이면 그 이름 (첫 칸은 0) */
+          ladder: z.array(z.strictObject({ label: z.string().min(1), standing: z.number().int().min(0) })).min(1),
+        }),
+      )
+      .default([]),
     speech_rules: z.string().min(1),
     gm_tone: z.string().min(1),
     gm_rules: z.string().min(1),
@@ -196,6 +225,8 @@ export const scenarioFileSchema = z
         age: z.strictObject({ min: z.number().int().positive(), max: z.number().int().positive() }),
         /** 무소속으로 시작할 때 고를 수 있는 연고 (엑스트라 틀 id, 기획서 7.9) */
         kin: z.array(id).default([]),
+        /** 배경 부품의 빚 크기 (기획서 12.6) */
+        debt_sizes: z.strictObject({ small: z.number().int().min(1), large: z.number().int().min(1) }).default({ small: 5, large: 15 }),
         /** 시작 소지품 꾸러미 */
         kits: z.array(z.strictObject({ id, label: z.string().min(1), description: z.string().default(""), items: z.array(id) })).min(1),
       })

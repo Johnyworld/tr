@@ -298,15 +298,38 @@ function describeKnownPeople(state: GameState, content: Content): string {
     const commander = commanderOf(state, content);
     const cast = new Set(Object.values(state.activeStorylet?.cast ?? {}));
     const near = (id: string) => id === commander || cast.has(id) || (content.npcs[id] ? npcZoneAt(content.npcs[id]!, state.time) === state.playerZone : false) || state.characters[id]?.extra?.zone === state.playerZone;
-    const lines = named.map((id) => {
+    // 겉모습·평판까지 싣는 사람은 몇 명만 (12-61, 토큰): 상관·이야기 배역·배경의 사람·연인은 늘, 이 구역의 나머지는 관계가 깊은 순으로 KNOWN_DETAILED까지
+    const always = new Set<string>([...(commander ? [commander] : []), ...cast, ...state.background.flatMap((e) => [e.characterId, e.part.kind === "enemy" ? e.part.target : e.part.kind === "loss" ? e.part.by : null].filter((x): x is string => !!x))]);
+    for (const r of Object.values(state.romances ?? {})) if (r.stage === "lovers" && (r.a === viewer || r.b === viewer)) always.add(r.a === viewer ? r.b : r.a);
+    const depth = (id: string) => {
+      const r = state.relations[id]?.[viewer];
+      return r ? Math.abs(r.trust) + Math.abs(r.affection) + Math.abs(r.respect) : 0;
+    };
+    const detailed = new Set([...always].filter((id) => named.includes(id)));
+    for (const id of named.filter((id) => near(id) && !detailed.has(id)).sort((x, y) => depth(y) - depth(x) || x.localeCompare(y))) {
+      if (detailed.size >= KNOWN_DETAILED) break;
+      detailed.add(id);
+    }
+    const head = (id: string) => {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
       const gender = genderOf(content.scenario, character.gender ?? npc?.gender ?? null);
-      const head = `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankLabel(content.scenario, character.rank)}${gender}${statusNote(content, character, state)}`;
-      if (near(id)) return `${head}: ${npc ? `${npc.look} ${npc.reputation}` : (character.extra?.look ?? "")}`;
-      return `${head}${npc ? `: ${shortNote(npc.reputation)}` : ""}`;
-    });
-    blocks.push(`알고 있는 인물 (지금 장면에는 없다. 자세한 것은 장면에 들어오면 붙는다):\n${lines.join("\n")}`);
+      return `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankLabel(content.scenario, character.rank)}${gender}${statusNote(content, character, state)}`;
+    };
+    const lines: string[] = [];
+    const rest: string[] = [];
+    for (const id of named) {
+      const character = state.characters[id]!;
+      const npc = content.npcs[id];
+      if (detailed.has(id)) lines.push(`${head(id)}: ${npc ? `${npc.look} ${npc.reputation}` : (character.extra?.look ?? "")}`);
+      // 관계가 생겼거나 상태가 있는 사람은 한 줄, 아무 일 없는 사람은 이름만 모은다
+      else if (depth(id) > 0 || character.captive || !npc) lines.push(`${head(id)}${npc ? `: ${shortNote(npc.reputation)}` : ""}`);
+      else rest.push(`${headingAs(state, content, viewer, id)}(${id})`);
+    }
+    blocks.push(
+      `알고 있는 인물 (지금 장면에는 없다. 자세한 것은 장면에 들어오면 붙는다):\n${lines.join("\n")}` +
+        (rest.length ? `\n- 그 밖에 아는 사람 (아직 별일 없는 사이): ${rest.join(", ")}` : ""),
+    );
   }
   if (faces.length > 0) {
     const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!, state)}: ${content.npcs[id]!.look}`);
@@ -320,6 +343,8 @@ function describeKnownPeople(state: GameState, content: Content): string {
  * 만나도 이름은 모른다 (learn_name). 비밀·평판 같은 프로필은 장면에 들어온 뒤에만 넣는다
  */
 /** 이 구역의 낯선 사람을 장면에 싣는 수 (토큰, 12-42) */
+/** 알고 있는 인물 중 겉모습·평판까지 싣는 사람 수 (상관·배역·배경·연인 말고, 12-61) */
+export const KNOWN_DETAILED = 6;
 export const ZONE_PEOPLE_IN_PROMPT = 5;
 
 /** 날마다 순서가 바뀌는 수 (같은 날이면 같다) */

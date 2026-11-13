@@ -39,7 +39,11 @@ describe("장면 정보 아끼기 (기획서 11.6 토큰)", () => {
     const w = m.create("mcp", "role_a_officer");
     const scene = w.sceneForGm();
     expect(scene).toContain("최선희"); // 상관은 자세히
-    expect(scene).toMatch(/표승민 \(b_seungmin\) · 간부 · 남성: [^\n]{0,45}\n/); // 다른 무리 사람은 한 줄
+    // 아직 별일 없는 다른 무리 사람은 이름만 모은다 (12-61)
+    expect(scene).toMatch(/그 밖에 아는 사람 \(아직 별일 없는 사이\): [^\n]*표승민\(b_seungmin\)/);
+    // 관계가 생기면 한 줄로 올라온다
+    w.ctx().store.append({ type: "relation_changed", from: "b_seungmin", to: "player", delta: { trust: 1, affection: 0, respect: 0 }, reason: "test" });
+    expect(w.sceneForGm()).toMatch(/표승민 \(b_seungmin\) · 간부 · 남성: [^\n]{0,45}\n/);
     for (let i = 0; i < 20; i++) w.ctx().store.append({ type: "belief_added", characterId: "player", belief: { id: `b_x${i}`, fact: `시험 믿음 ${i}`, source: "rumor", accuracy: "approximate", learnedAt: 0 } });
     const beliefs = w.sceneForGm().split("당신이 알고 있다고 믿는 것")[1]!;
     expect(beliefs).toContain("시험 믿음 19");

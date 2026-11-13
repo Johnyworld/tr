@@ -2,6 +2,7 @@ import { npcZoneAt } from "../game/whereabouts.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
 import { neighbors } from "./war.ts";
+import { choiceAvailable } from "../story/storylets.ts";
 import { sitsOnCouncil, squadMembers } from "../engine/command.ts";
 import { battleConfig, effectBlocker } from "./battle.ts";
 import type { GameWorld } from "../world/world.ts";
@@ -116,9 +117,11 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     }
 
     // 진행 중인 이야기: 무작위 선택지 (판정이 붙었으면 먼저 판정)
-    if (s.activeStorylet && rng() < 0.7) {
+    // GM처럼 지금 고를 수 있는 선택지 중에서
+    const openChoices = s.activeStorylet ? content.storylets[s.activeStorylet.id]!.choices.filter((c) => choiceAvailable(s, c)) : [];
+    if (s.activeStorylet && openChoices.length && rng() < 0.7) {
       const storylet = content.storylets[s.activeStorylet.id]!;
-      const choice = pick(rng, storylet.choices);
+      const choice = pick(rng, openChoices);
       if (choice.check) {
         const move = moves.find((m) => m.id === choice.check)!;
         tool("take_action", { ...base, intent: choice.label, check: check(move, "none") });
@@ -126,7 +129,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
         if (world.state().activeStorylet?.id !== storylet.id) continue;
       }
       const out = tool("resolve_storylet", { choice_id: choice.id });
-      if (!out.ok && !out.error.includes("없어 이 선택지를") && !out.error.includes("진행 중인 이야기가 없다")) {
+      if (!out.ok && !out.error.includes("진행 중인 이야기가 없다")) {
         stats.errors.push(`이야기 ${storylet.id}.${choice.id}: ${out.error}`);
       }
       continue;

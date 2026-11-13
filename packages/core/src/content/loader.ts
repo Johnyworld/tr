@@ -246,7 +246,6 @@ function checkReferences(content: Content): string[] {
     for (const f of st.when.factions ?? []) if (f !== "none" && !content.factions[f]) problems.push(`storylets.${st.id}.when.factions: 알 수 없는 세력 ${f}`);
     for (const [key, role] of Object.entries(st.cast)) {
       if (role.extra && !content.extras[role.extra]) problems.push(`storylets.${st.id}.cast.${key}: 알 수 없는 엑스트라 틀 ${role.extra}`);
-      if (role.keep && !role.extra) problems.push(`storylets.${st.id}.cast.${key}: keep은 extra와 함께 쓴다`);
     }
   }
   for (const f of Object.values(content.factions)) {
@@ -323,7 +322,9 @@ function checkStorylets(content: Content): string[] {
       }
     }
     for (const id of s.when.zones ?? []) if (!content.locations[id]) problems.push(`${where}.when: 알 수 없는 구역 ${id}`);
-    for (const id of s.when.has_items ?? []) if (!content.items[id]) problems.push(`${where}.when: 알 수 없는 아이템 ${id}`);
+    for (const [w, at] of [[s.when, `${where}.when`] as const, ...s.choices.flatMap((c) => (c.when ? [[c.when, `${where}.choices.${c.id}.when`] as const] : []))]) {
+      for (const id of [...(w.has_items ?? []), ...(w.has_items_any ?? []), ...(w.equipped ?? [])]) if (!content.items[id]) problems.push(`${at}: 알 수 없는 아이템 ${id}`);
+    }
     for (const id of [...Object.keys(s.when.clock_gte ?? {}), ...Object.keys(s.when.clock_lte ?? {})]) {
       if (!clocks.has(id)) problems.push(`${where}.when: 알 수 없는 세력 클락 ${id}`);
     }
@@ -348,6 +349,13 @@ function checkStorylets(content: Content): string[] {
       for (const e of effects) {
         const at = `${where}.choices.${c.id}`;
         if ("relation" in e && e.relation.who !== "commander" && !castKeys.has(e.relation.who)) problems.push(`${at}: 알 수 없는 배역 ${e.relation.who}`);
+        const whos =
+          "npc_relation" in e ? [e.npc_relation.from, e.npc_relation.to]
+          : "npc_hurt" in e ? [e.npc_hurt.who]
+          : "npc_rank" in e ? [e.npc_rank.who]
+          : "set_commander" in e && e.set_commander.who !== "reset" ? [e.set_commander.who]
+          : [];
+        for (const who of whos) if (who !== "commander" && !castKeys.has(who)) problems.push(`${at}: 알 수 없는 배역 ${who}`);
         if ("give_item" in e) {
           if (!content.items[e.give_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.give_item.item}`);
           if (e.give_item.from && e.give_item.from !== "commander" && !castKeys.has(e.give_item.from)) problems.push(`${at}: 알 수 없는 배역 ${e.give_item.from}`);

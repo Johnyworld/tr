@@ -1,5 +1,6 @@
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
-import { formatTime } from "../rules/time.ts";
+import { dayOf, formatTime } from "../rules/time.ts";
+import { harmTrack } from "../scenario/scenario.ts";
 import { changeCondition } from "./body.ts";
 import { disposition } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
@@ -18,6 +19,7 @@ import { CHECK_OUTCOME_LABELS, type CheckOutcome } from "../rules/check.ts";
 import { moveLabel } from "../scenario/scenario.ts";
 import type { InterruptCheck } from "../sim/fastForward.ts";
 import {
+  choiceAvailable,
   eligibleStorylets,
   fillStorylet,
   pickCast,
@@ -96,9 +98,12 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     const usedNames = new Set(Object.values(now.characters).map((c) => c.name));
     const label = storylet.cast[key]?.label ?? template.label;
     store.append({ type: "extra_spawned", character: createExtraCharacter(content, template, { id: extraId, label, zone: now.playerZone, time: now.time, usedNames }, rng) });
-    const keep = storylet.cast[key]?.keep;
-    if (keep) store.append({ type: "extra_kept", key: keep, characterId: extraId });
     cast[key] = extraId;
+  }
+  // 이름표로 기억해 둔다 (다음 이야기에서 recall로 다시 부른다)
+  for (const [key, id] of Object.entries(cast)) {
+    const keep = storylet.cast[key]?.keep;
+    if (keep) store.append({ type: "extra_kept", key: keep, characterId: id });
   }
   store.append({
     type: "storylet_fired",
@@ -153,6 +158,7 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
     ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${fillStorylet(a.storylet.ai_direction, vars)}`] : []),
     `  등장: ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
     `  선택지 (resolve_storylet): ${a.storylet.choices
+      .filter((c) => choiceAvailable(state, c))
       .map((c) => `${c.id} ${fillStorylet(c.label, vars)}${c.check ? ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]` : ""}`)
       .join(" / ")}`,
     "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 외면하면 그대로 둔다 (시간이 지나면 지나간다).",
@@ -171,7 +177,8 @@ export const resolveStorylet = defineTool({
     const a = activeOf(state, ctx.content);
     if (!a) return { ok: false, error: "진행 중인 이야기가 없다." };
     const choice = a.storylet.choices.find((c) => c.id === input.choice_id);
-    if (!choice) return { ok: false, error: `없는 선택지: ${input.choice_id} (가능: ${a.storylet.choices.map((c) => c.id).join(", ")})` };
+    const open = a.storylet.choices.filter((c) => choiceAvailable(state, c));
+    if (!choice || !open.includes(choice)) return { ok: false, error: `고를 수 없는 선택지: ${input.choice_id} (가능: ${open.map((c) => c.id).join(", ")})` };
     let outcome: CheckOutcome | null = null;
     let effects = choice.effects;
     if (choice.check) {
@@ -244,6 +251,56 @@ function applyEffect(
     store.append({ type: "relation_changed", from, to: playerId, delta, reason });
     const name = playerCalls(state, content, from);
     return { line: `${name}의 ${josa(RELATION_AXIS_LABELS[effect.relation.axis], "이/가")} ${effect.relation.delta > 0 ? "올랐다" : "떨어졌다"}. 그 인물의 태도에 반영하라.` };
+  }
+  if ("npc_relation" in effect) {
+    const { axis, delta, mutual } = effect.npc_relation;
+    const a = whoOf(ctx, effect.npc_relation.from, cast);
+    const b = whoOf(ctx, effect.npc_relation.to, cast);
+    if (!a || !b || a === b || a === playerId || b === playerId || !state.characters[a] || !state.characters[b]) return {};
+    const d = { trust: 0, affection: 0, respect: 0, [axis]: delta };
+    store.append({ type: "relation_changed", from: a, to: b, delta: d, reason });
+    if (mutual) store.append({ type: "relation_changed", from: b, to: a, delta: d, reason });
+    return {}; // 둘 사이의 마음은 그들의 말과 태도로만 드러난다
+  }
+  if ("zone_noise" in effect) {
+    if (!state.playerZone) return {};
+    store.append({ type: "noise_made", zone: state.playerZone, level: effect.zone_noise, day: dayOf(state.time) });
+    return { line: "소리가 났다. 이 구역에 무언가 몰려들 수 있다." };
+  }
+  if ("npc_hurt" in effect) {
+    const id = whoOf(ctx, effect.npc_hurt.who, cast);
+    const npc = id ? state.characters[id] : undefined;
+    if (!id || !npc || npc.dead || id === playerId) return {};
+    // 죽음 바로 앞에서 멈춘다 (원칙 3)
+    const track = harmTrack(content.scenario);
+    const index = Math.max(0, track.levels.findIndex((l) => l.id === npc.conditions[track.id]));
+    const fatal = track.levels.findIndex((l) => l.fatal);
+    const limit = (fatal >= 0 ? fatal : track.levels.length) - 1;
+    const steps = Math.min(effect.npc_hurt.steps, Math.max(0, limit - index));
+    if (steps <= 0) return {};
+    const change = changeCondition(ctx, id, track.id, steps, "이야기", reason);
+    return change?.line && store.getState().scene.present.includes(id) ? { line: change.line, display: change.display ?? undefined } : {};
+  }
+  if ("npc_rank" in effect) {
+    const id = whoOf(ctx, effect.npc_rank.who, cast);
+    const npc = id ? state.characters[id] : undefined;
+    if (!id || !npc || npc.dead || id === playerId || npc.rank === effect.npc_rank.rank) return {};
+    store.append({ type: "npc_rank_changed", npcId: id, rank: effect.npc_rank.rank });
+    const label = content.scenario.rank_ladder.find((r) => r.id === effect.npc_rank.rank)?.label ?? effect.npc_rank.rank;
+    return { line: `${josa(playerCalls(state, content, id), "은/는")} 이제 ${label}다.` };
+  }
+  if ("set_commander" in effect) {
+    if (effect.set_commander.who === "reset") {
+      if (!state.commanderOverride) return {};
+      store.append({ type: "commander_changed", characterId: null });
+      const back = commanderOf(store.getState(), content);
+      return { line: back ? `상관이 다시 ${playerCalls(state, content, back)}(이)다.` : "" };
+    }
+    const id = whoOf(ctx, effect.set_commander.who, cast);
+    const npc = id ? state.characters[id] : undefined;
+    if (!id || !npc || npc.dead || id === playerId || id === commanderOf(state, content)) return {};
+    store.append({ type: "commander_changed", characterId: id });
+    return { line: `이제 주인공의 상관은 ${playerCalls(state, content, id)}다. 임무와 회의는 이 사람에게서 받는다.` };
   }
   if ("belief" in effect) {
     const fact = sentence(fillStorylet(effect.belief.fact, vars));

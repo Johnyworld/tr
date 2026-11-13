@@ -73,7 +73,7 @@
     flags_all: [wg2_gun_night]
     flags_none: [wg2_skim_done, wg2_skim_cut]
   cast:
-    mate: { faction: own, ranks: [grunt, staff], known: true }
+    mate: { faction: own, ranks: [grunt, staff], known: true, keep: wg2_skimmer }
     boss: { commander: true, enter: false }
   setup: "창고 뒤 그늘에서 {mate:이/가} 자루 아가리를 벌려 보인다. 고무줄로 묶은 탄알 묶음이 소리 없이 구른다. \"총 한 자루 없어진 뒤로 다들 무기고만 쳐다보지. 탄약 상자는 아무도 안 세.\" 그가 한 묶음을 당신 쪽으로 민다. \"장터 재생탄 장수가 묻지도 않고 산다. 너도 장부에 이름 있잖아. 어차피 의심받을 거, 받는 값은 챙겨야지.\""
   ai_direction: 이 사람이 창고 당번 열쇠로 무기고를 열었고, 사라진 소총도 이미 팔았다. 소총 이야기는 먼저 꺼내지 않는다. 주인공을 끌어들이면 함께 젖은 사람이 되어 입을 다물 거라 계산한다. 빼돌린 탄약은 무리 창고의 몫이고, 줄어든 것은 배급과 작전 지급량으로만 드러난다. 상관에게 알리면 이 사람은 끝장나고, 주인공에게 쏠렸던 의심은 풀린다.
@@ -133,8 +133,9 @@
     flags_none: [wg2_audit_done]
   cast:
     boss: { commander: true }
+    mate: { recall: wg2_skimmer, enter: false }
   setup: "창고 문이 활짝 열리고 탄약 상자가 마당에 줄지어 나와 있다. {boss:이/가} 뚜껑을 하나씩 열며 묶음을 센다. 다 세고 나서, 장부를 덮고 당신 앞에 선다. \"주머니 뒤집어 봐. 다들 하는 거다.\""
-  ai_direction: 상관은 탄약이 빈다는 것을 알았고, 누가 가져갔는지는 모른다. 주인공 주머니에 받은 몫이 남아 있는지는 지금 가진 것으로만 정해진다. 거짓말은 판정으로 갈린다. 빼돌린 동료는 마당 저쪽에서 이쪽을 보지 않는다.
+  ai_direction: 상관은 탄약이 빈다는 것을 알았고, 누가 가져갔는지는 모른다. 주인공 주머니에 받은 몫이 남아 있는지는 지금 가진 것으로만 정해진다. 거짓말은 판정으로 갈린다. 빼돌린 동료 {mate}는 마당 저쪽에서 이쪽을 보지 않는다.
   choices:
     - id: bluff
       label: 태연하게 주머니를 뒤집으며 둘러댄다
@@ -164,8 +165,20 @@
         - relation: { who: boss, axis: respect, delta: 1 }
         - deed: { summary: 빼돌린 탄약의 몫을 받았다가 재고 조사 때 스스로 내놓았다, tags: [honesty], severity: 1, privacy: semi_private }
         - belief: { fact: "받은 탄약을 상관 앞에 내놓았다. 누가 준 거냐는 물음에는 아직 답하지 않았다", source: seen }
+    - id: name_mate
+      label: "{mate}의 이름을 댄다"
+      effects:
+        - set_flag: wg2_audit_done
+        - merit: 1
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: mate, axis: trust, delta: -3 }
+        - relation: { who: mate, axis: affection, delta: -2 }
+        - npc_relation: { from: boss, to: mate, axis: trust, delta: -3 }
+        - deed: { summary: 탄약 재고 조사에서 함께 빼돌린 동료의 이름을 댔다, tags: [betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: "재고 조사에서 {mate}의 이름을 댔다. 상관이 마당 저쪽으로 걸어갔다. {mate}는 끝까지 나를 보지 않았다", source: seen }
     - id: point_finger
       label: 창고 당번 열쇠 이야기를 꺼내 눈길을 돌린다
+      when: { flags_any: [wg2_lock_read] }
       effects:
         - set_flag: wg2_audit_done
         - relation: { who: boss, axis: trust, delta: -1 }
@@ -417,7 +430,8 @@
   when:
     zone_owner: [none, other]
     day_gte: 2
-    has_items: [old_rifle, rifle_rounds]
+    equipped: [old_rifle]
+    has_items: [rifle_rounds]
   setup: "{zone}의 무너진 담 너머에서 무언가 비틀거리며 나온다. 총을 들어 방아쇠를 당긴다. 딸깍. 다시 당겨도 딸깍. 재생탄 하나가 약실에 비스듬히 걸려 노리쇠가 반쯤 열린 채 멈췄다. 그것이 소리를 듣고 이쪽으로 고개를 돌린다."
   ai_direction: 총이 걸린 것은 섞여 있던 질 나쁜 재생탄 때문이다. 다가오는 것이 몇인지는 정하지 않았다. 걸린 탄을 빼는 데는 손이 익어야 하고, 실패하면 이번 장면 동안 총은 몽둥이일 뿐이다 (쏘기는 GM이 허락하지 않는다). 맞서는 위험은 판정으로만 정한다.
   choices:

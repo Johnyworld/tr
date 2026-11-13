@@ -338,6 +338,16 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ clear_flag: contentIdSchema }),
     /** 배역(또는 commander)이 플레이어를 보는 관계 */
     z.strictObject({ relation: z.strictObject({ who: z.string().min(1), axis: z.enum(RELATION_AXES), delta: z.number().int().min(-3).max(3) }) }),
+    /** 두 배역 사이의 관계 (from이 to를 보는 마음). 주인공 말고 NPC끼리 (기획서 7.10) */
+    z.strictObject({ npc_relation: z.strictObject({ from: z.string().min(1), to: z.string().min(1), axis: z.enum(RELATION_AXES), delta: z.number().int().min(-3).max(3), mutual: z.boolean().default(false) }) }),
+    /** 지금 구역에 소리가 난다 (총소리·쇳소리, 기획서 4.8). 감염체가 몰려드는 조건이 된다 */
+    z.strictObject({ zone_noise: z.number().int().min(1).max(3) }),
+    /** 배역 NPC가 다친다 (부상 트랙 steps 단계). 죽음 바로 앞에서 멈춘다 (원칙 3: 이야기는 사람을 죽이지 않는다) */
+    z.strictObject({ npc_hurt: z.strictObject({ who: z.string().min(1), steps: z.number().int().min(1).max(2) }) }),
+    /** 배역 NPC의 계급을 바꾼다 (지도부 교체·강등) */
+    z.strictObject({ npc_rank: z.strictObject({ who: z.string().min(1), rank: idEnum(rankIds(s)) }) }),
+    /** 주인공의 상관이 이 배역으로 바뀐다 (지도부가 바뀐 뒤). who: reset이면 역할의 상관으로 돌아간다 */
+    z.strictObject({ set_commander: z.strictObject({ who: z.string().min(1) }) }),
     z.strictObject({ belief: z.strictObject({ fact: z.string().min(1).max(300), source: beliefSourceSchema.default("seen") }) }),
     z.strictObject({ merit: z.number().int().min(-3).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
@@ -432,16 +442,35 @@ export function createContentSchemas(s: Scenario) {
      */
     extra: contentIdSchema.optional(),
     label: z.string().min(1).max(30).optional(),
-    /** extra로 만든 인물을 이 이름표로 기억한다 (다음 이야기에서 recall로 다시 부른다) */
+    /** 이 배역을 맡은 인물을 이름표로 기억한다 (다음 이야기에서 recall로 다시 부른다). 이름 없는 인물도, 이름 있는 NPC도 */
     keep: contentIdSchema.optional(),
-    /** 앞서 keep으로 기억해 둔 이름 없는 인물. 살아 있고 떠나지 않았을 때만 채운다 */
+    /** 앞서 keep으로 기억해 둔 인물. 살아 있고 떠나지 않았고 붙잡히지 않았을 때만 채운다 */
     recall: contentIdSchema.optional(),
   });
+
+  /** 플래그·물건 조건 (이야기의 when과 선택지의 when이 함께 쓴다) */
+  const itemFlagConditions = {
+    flags_all: z.array(contentIdSchema).optional(),
+    /** 이 중 하나라도 서 있으면 */
+    flags_any: z.array(contentIdSchema).optional(),
+    flags_none: z.array(contentIdSchema).optional(),
+    /** 이것을 모두 지녔으면 */
+    has_items: z.array(contentIdSchema).optional(),
+    /** 이 중 하나라도 지녔으면 */
+    has_items_any: z.array(contentIdSchema).optional(),
+    /** 이 중 하나를 지금 들거나 입고 있으면 (기획서 4.8) */
+    equipped: z.array(contentIdSchema).optional(),
+  };
 
   const storyletChoice = z
     .strictObject({
       id: contentIdSchema,
       label: z.string().min(1),
+      /**
+       * 이 선택지를 고를 수 있는 조건. 맞지 않으면 GM에게 보이지 않는다 (주인공이 모르는 길을 내밀지 않는다).
+       * 내놓는 물건(take_item)은 따로 적지 않아도 지녔는지 본다
+       */
+      when: z.strictObject(itemFlagConditions).optional(),
       /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */
       check: idEnum(moveIds(s)).optional(),
       effects: z.array(storyletEffect).default([]),
@@ -486,17 +515,14 @@ export function createContentSchemas(s: Scenario) {
         zone_owner: z.array(z.enum(["none", "own", "other"])).optional(),
         /** 플레이어의 소속 세력 (none = 무소속) */
         factions: z.array(z.string().min(1)).optional(),
-        flags_all: z.array(contentIdSchema).optional(),
+        ...itemFlagConditions,
         /** 주인공의 빚 (세력 id 또는 own → 하한/상한) */
         debt_gte: z.record(z.string(), z.number().int()).optional(),
         debt_lte: z.record(z.string(), z.number().int()).optional(),
-        /** 이 중 하나라도 서 있으면 */
-        flags_any: z.array(contentIdSchema).optional(),
         /** 세력 사이 지금 태도 (from이 to를 보는 값, own = 플레이어 소속). 이탈·편들기 뒤의 이야기 */
         dispositions: z
           .array(z.strictObject({ from: z.string().min(1), to: z.string().min(1), gte: z.number().int().optional(), lte: z.number().int().optional() }))
           .optional(),
-        flags_none: z.array(contentIdSchema).optional(),
         /** 세력 클락 (플레이어는 모르는 값. 조건으로만 쓴다) */
         clock_gte: z.record(contentIdSchema, z.number().int()).optional(),
         clock_lte: z.record(contentIdSchema, z.number().int()).optional(),
@@ -509,7 +535,6 @@ export function createContentSchemas(s: Scenario) {
         own_food_days_lte: z.number().optional(),
         /** 부상 트랙이 이 단계 이상 */
         harm_at_least: z.string().optional(),
-        has_items: z.array(contentIdSchema).optional(),
         mission_active: z.boolean().optional(),
         /** 최근 N시간 안에 전황 소식을 들었는지 */
         war_news_within_hours: z.number().positive().optional(),

@@ -363,3 +363,99 @@ describe("이름 없는 인물을 이어서 부르기 (keep → recall)", () => 
     expect(eligibleStorylets(s, env.content, s.time + 24 * 60).map((x) => x.id)).not.toContain("again");
   });
 });
+
+describe("선택지 조건 (기획서 10.4, 12-44)", () => {
+  const gate = {
+    id: "gate",
+    title: "문",
+    cast: { boss: { commander: true } },
+    setup: "{boss:이/가} 문 앞에 있다.",
+    choices: [
+      { id: "plain", label: "그냥 지나간다", effects: [] },
+      { id: "secret", label: "아는 길로 빠진다", when: { flags_all: ["knows_path"] }, effects: [] },
+      { id: "knife", label: "칼을 보인다", when: { equipped: ["kitchen_knife"] }, effects: [] },
+      { id: "any", label: "물이나 무전기를 내민다", when: { has_items_any: ["water_bottle", "radio"] }, effects: [] },
+      // 판정 결과 안에서 내놓는 물건도 굴리기 전에 본다
+      { id: "bribe", label: "무전기를 건다", check: "persuade", outcomes: { success: [{ take_item: { item: "radio" } }], partial: [], miss: [] } },
+    ],
+  };
+
+  it("조건이 맞지 않는 선택지는 GM에게 보이지 않고 고를 수도 없다", () => {
+    const env = setup([gate]);
+    const shown = () => describePlayerState(env.store.getState(), env.content);
+    expect(shown()).toContain("plain 그냥 지나간다");
+    expect(shown()).toContain("any 물이나");
+    for (const hidden of ["secret", "knife", "bribe"]) expect(shown()).not.toContain(`${hidden} `);
+    const no = executeTool("resolve_storylet", { choice_id: "secret" }, env.ctx);
+    expect(no.ok).toBe(false);
+    // 플래그가 서고, 칼을 들면 열린다
+    const s = env.store.getState();
+    env.store.append({ type: "flag_set", characterId: s.playerId, flag: "knows_path" });
+    env.store.getState().characters[s.playerId]!.equipped = { weapon: "kitchen_knife" } as never;
+    expect(shown()).toContain("secret 아는 길로");
+    expect(shown()).toContain("knife 칼을 보인다");
+    expect(executeTool("resolve_storylet", { choice_id: "secret" }, env.ctx).ok).toBe(true);
+  });
+
+  it("이야기 조건에도 has_items_any, equipped를 쓴다", () => {
+    const env = setup([]);
+    const s = env.store.getState();
+    const base = storyletSchema.parse({ id: "x", title: "x", setup: "x", choices: [{ id: "a", label: "a", effects: [] }] });
+    const c = { ...env.content, storylets: { x: { ...base, when: { ...base.when, has_items_any: ["radio", "water_bottle"] } } } };
+    expect(eligibleStorylets(s, c).map((x) => x.id)).toEqual(["x"]);
+    const c2 = { ...env.content, storylets: { x: { ...base, when: { ...base.when, equipped: ["kitchen_knife"] } } } };
+    expect(eligibleStorylets(s, c2)).toEqual([]);
+  });
+});
+
+describe("효과: NPC끼리, 소음, NPC 부상, 지도부 (12-44)", () => {
+  const coup = {
+    id: "coup",
+    title: "바뀐 자리",
+    cast: { boss: { commander: true, keep: "old_boss" }, other: { ids: ["npc_stranger"], enter: false } },
+    setup: "{boss:이/가} 자리를 내놓는다.",
+    choices: [
+      {
+        id: "go",
+        label: "새 사람을 따른다",
+        effects: [
+          { npc_relation: { from: "boss", to: "other", axis: "trust", delta: -2, mutual: true } },
+          { zone_noise: 2 },
+          { npc_hurt: { who: "boss", steps: 2 } },
+          { npc_rank: { who: "other", rank: "squad_leader" } },
+          { set_commander: { who: "other" } },
+        ],
+      },
+    ],
+  };
+  const again = {
+    id: "again",
+    title: "옛 상관",
+    when: { day_gte: 1 },
+    cast: { boss: { recall: "old_boss" } },
+    setup: "{boss:이/가} 다시 나타난다.",
+    choices: [{ id: "back", label: "되돌린다", effects: [{ set_commander: { who: "reset" } }] }],
+  };
+
+  it("NPC끼리 관계가 바뀌고, 소리가 나고, 다쳐도 죽지 않고, 상관이 바뀐다. 이름 있는 NPC도 keep → recall로 다시 부른다", () => {
+    const env = setup([coup, again]);
+    expect(env.store.getState().activeStorylet?.id).toBe("coup");
+    // 이미 많이 다쳤어도 죽음 앞에서 멈춘다
+    const before = env.store.getState();
+    expect(before.keptExtras.old_boss).toBe("npc_leader");
+    expect(executeTool("resolve_storylet", { choice_id: "go" }, env.ctx).ok).toBe(true);
+    const s = env.store.getState();
+    expect(s.relations.npc_leader?.npc_stranger?.trust).toBe(-2);
+    expect(s.relations.npc_stranger?.npc_leader?.trust).toBe(-2);
+    expect(s.zoneNoise[s.playerZone!]?.level).toBe(2);
+    expect(s.characters.npc_leader!.dead).toBe(false);
+    expect(s.characters.npc_stranger!.rank).toBe("squad_leader");
+    expect(s.commanderOverride).toBe("npc_stranger");
+    // 한 번 더 다쳐도 죽지 않는다
+    const env2 = setup([{ ...coup, choices: [{ id: "go", label: "x", effects: Array(5).fill({ npc_hurt: { who: "boss", steps: 2 } }) }] }]);
+    executeTool("resolve_storylet", { choice_id: "go" }, env2.ctx);
+    expect(env2.store.getState().characters.npc_leader!.dead).toBe(false);
+    // 옛 상관을 다시 불러 되돌린다
+    expect(eligibleStorylets(s, env.content, s.time + 24 * 60).map((x) => x.id)).toContain("again");
+  });
+});

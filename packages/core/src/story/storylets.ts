@@ -3,7 +3,7 @@ import { activeCompanions, bondOf } from "../game/companions.ts";
 import { isAwayCompanion } from "../engine/companionTools.ts";
 import { factionPolicy } from "../sim/war.ts";
 import { disposition } from "../sim/war.ts";
-import type { Content, StoryletContent } from "../content/schemas.ts";
+import type { Content, StoryletChoice, StoryletContent } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { GameState } from "../game/state.ts";
 import { activeMissionOf, commanderOf } from "../game/missions.ts";
@@ -81,7 +81,7 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
     if (role.recall) {
       const id = state.keptExtras[role.recall];
       const c = id ? state.characters[id] : undefined;
-      if (!id || !c || c.dead || c.away || used.has(id)) return null;
+      if (!id || !c || c.dead || c.away || c.captive || used.has(id)) return null;
       cast[key] = id;
       used.add(id);
       continue;
@@ -107,7 +107,6 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   // 외딴곳에서는 그곳을 직접 적은 공통 이야기만 (기획서 9.12)
   const here = state.playerZone ? content.locations[state.playerZone] : undefined;
   if (here?.isolated && storylet.tags.includes(WORLD_TAG) && !w.zones?.includes(here.id)) return false;
-  const flags = new Set(state.flags[state.playerId] ?? []);
   const own = state.factions[player.factionId];
   if (w.ranks && !w.ranks.includes(player.rank)) return false;
   if (w.segments && !w.segments.includes(segmentOf(at))) return false;
@@ -123,7 +122,6 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const kind = owner === null ? "none" : owner === player.factionId ? "own" : "other";
     if (!w.zone_owner.includes(kind)) return false;
   }
-  if (w.flags_any && !w.flags_any.some((f) => flags.has(f))) return false;
   const debtOf = (f: string) => player.debts[f === "own" ? player.factionId : f] ?? 0;
   for (const [f, n] of Object.entries(w.debt_gte ?? {})) if (debtOf(f) < n) return false;
   for (const [f, n] of Object.entries(w.debt_lte ?? {})) if (debtOf(f) > n) return false;
@@ -137,8 +135,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const mine = !!state.playerZone && state.zones[state.playerZone]?.owner === player.factionId;
     if (mine !== w.own_territory) return false;
   }
-  if (w.flags_all && !w.flags_all.every((f) => flags.has(f))) return false;
-  if (w.flags_none && w.flags_none.some((f) => flags.has(f))) return false;
+  if (!itemFlagsMet(state, w)) return false;
   for (const [id, n] of Object.entries(w.clock_gte ?? {})) if ((state.clocks[id]?.filled ?? -Infinity) < n) return false;
   for (const [id, n] of Object.entries(w.clock_lte ?? {})) if ((state.clocks[id]?.filled ?? Infinity) > n) return false;
   if (w.own_morale_lte !== undefined && (!own || own.morale > w.own_morale_lte)) return false;
@@ -160,13 +157,46 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const index = (id: string | undefined) => track.levels.findIndex((l) => l.id === id);
     if (index(player.conditions[track.id]) < index(w.harm_at_least)) return false;
   }
-  if (w.has_items && !w.has_items.every((i) => (player.inventory[i] ?? 0) > 0)) return false;
   if (w.mission_active !== undefined && !!activeMissionOf(state.missions, state.playerId) !== w.mission_active) return false;
   if (w.war_news_within_hours !== undefined) {
     const since = at - w.war_news_within_hours * 60;
     if (!(state.beliefs[state.playerId] ?? []).some((b) => b.topic === "war" && b.learnedAt >= since)) return false;
   }
   return true;
+}
+
+type ItemFlagConditions = NonNullable<StoryletChoice["when"]>;
+
+/** 플래그·물건 조건 (이야기와 선택지가 함께 쓴다) */
+export function itemFlagsMet(state: GameState, w: ItemFlagConditions): boolean {
+  const player = state.characters[state.playerId];
+  if (!player) return false;
+  const flags = new Set(state.flags[state.playerId] ?? []);
+  const has = (i: string) => (player.inventory[i] ?? 0) > 0;
+  if (w.flags_all && !w.flags_all.every((f) => flags.has(f))) return false;
+  if (w.flags_any && !w.flags_any.some((f) => flags.has(f))) return false;
+  if (w.flags_none && w.flags_none.some((f) => flags.has(f))) return false;
+  if (w.has_items && !w.has_items.every(has)) return false;
+  if (w.has_items_any && !w.has_items_any.some(has)) return false;
+  if (w.equipped) {
+    const worn = Object.values(player.equipped ?? {}).filter((id): id is string => !!id && has(id));
+    if (!w.equipped.some((i) => worn.includes(i))) return false;
+  }
+  return true;
+}
+
+/**
+ * 선택지를 지금 고를 수 있는지: 선택지의 조건, 그리고 내놓을 물건(take_item)을 지녔는지.
+ * 판정이 붙은 선택지는 어느 결과에서든 내놓을 물건을 모두 지녀야 한다 (굴린 뒤에 막히지 않게)
+ */
+export function choiceAvailable(state: GameState, choice: StoryletChoice): boolean {
+  if (choice.when && !itemFlagsMet(state, choice.when)) return false;
+  const player = state.characters[state.playerId];
+  if (!player) return false;
+  const effects = choice.outcomes ? [...choice.outcomes.success, ...choice.outcomes.partial, ...choice.outcomes.miss] : choice.effects;
+  const need: Record<string, number> = {};
+  for (const e of effects) if ("take_item" in e) need[e.take_item.item] = Math.max(need[e.take_item.item] ?? 0, e.take_item.quantity);
+  return Object.entries(need).every(([item, n]) => (player.inventory[item] ?? 0) >= n);
 }
 
 /** 어느 시나리오(역할)에서나 발동하는 스토리렛 태그 */

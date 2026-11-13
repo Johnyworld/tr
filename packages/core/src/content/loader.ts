@@ -89,7 +89,7 @@ function checkReferences(content: Content): string[] {
   const problems: string[] = [];
   for (const p of content.scenario.command?.policies ?? []) {
     for (const o of p.options) {
-      if (o.trade && !content.factions[o.trade.partner]) problems.push(`scenario.command.policies.${p.id}.${o.id}: 알 수 없는 교역 상대 ${o.trade.partner}`);
+      for (const partner of [o.trade?.partner, o.trade?.fallback_partner]) if (partner && !content.factions[partner]) problems.push(`scenario.command.policies.${p.id}.${o.id}: 알 수 없는 교역 상대 ${partner}`);
       for (const who of o.opposed_by) if (!content.npcs[who]) problems.push(`scenario.command.policies.${p.id}.${o.id}: 알 수 없는 반대자 ${who}`);
     }
   }

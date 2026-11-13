@@ -1,0 +1,559 @@
+# 하얀매 간부 스토리렛 (초안). 형식은 a_grunt.yaml 머리말 참고
+# 이어지는 이야기 (플래그):
+#   첫 회의: do_first_council (진료소 몫 do_backed_clinic / 거래 몫 do_backed_trade) → do_trade_line (교역 방침)
+#   줄 순서: do_queue_board (값으로 줄을 사게 둘지)
+#   빈 숫자: do_ledger_gap → do_back_door (도상필) → (do_sangpil_caught) do_verdict. 진통제 쪽(천우경)은 GM이 인물 비밀로 다룬다
+#   무리들: do_pine_letter (윤채원), do_red_monopoly (마경수) → (기울기 클락) do_lean_scale
+# tags: d_officer = 이 시나리오에 묶인 이야기, council = 간부라면 누구나 겪을 회의·배분 이야기
+# 세력 클락: d_lean(하얀매가 가장 큰 무리에 약을 먼저 대기로 기운다. 당기면 중립이 무너지고, 늦추면 버틴다)
+# 처음 며칠 진료소에서 열리는 것: do_first_council, do_queue_board, do_ledger_gap
+
+# ── 고정: 첫 회의 ───────────────────────────────
+
+- id: do_first_council
+  title: 겨울 약장의 몫
+  tags: [d_officer]
+  when:
+    factions: [faction_d]
+    zones: [d_clinic]
+    segments: [morning, day]
+    flags_none: [do_council_done]
+  cast:
+    trader: { ids: [d_sangpil] }
+    head: { ids: [d_jeongsuk] }
+  setup: '대표의 방. {trader:이/가} 장부의 한 줄을 볼펜으로 두드린다. "항생제는 지금 팔아야 값이 섭니다. 겨울 한복판이면 다들 사려고 줄을 서겠지만, 그땐 우리 약장도 비어 있을 거예요." 문가의 {head:이/가} 팔짱을 낀 채 말한다. "진료소 몫부터 떼. 문 앞에 쓰러진 사람한테 장부를 보여 줄 거야?" 서은영이 당신 쪽으로 장부를 민다.'
+  ai_direction: 첫 회의다. 도상필은 약을 팔아 탄과 식량을 쌓아야 하얀매가 겨울을 넘긴다고 말한다. 그 말에는 근거가 있지만, 그가 약을 빼돌리는 사람이라는 것은 GM만 안다. 드러내지 않는다. 권정숙은 값과 상관없이 치료할 몫을 먼저 떼자고 한다. 서은영은 간부의 안을 들은 뒤 그대로 정한다. 양은 코드가 정했다. 숫자를 새로 지어내지 않는다.
+  choices:
+    - id: clinic_first
+      label: 진료소 몫을 먼저 떼어 두자고 한다
+      effects:
+        - set_flag: do_council_done
+        - set_flag: do_backed_clinic
+        - clock: { id: d_lean, delta: -1 }
+        - relation: { who: head, axis: trust, delta: 2 }
+        - relation: { who: trader, axis: respect, delta: -1 }
+        - belief: { fact: "회의는 진료소 몫을 먼저 떼어 두기로 했다. 도상필은 웃으며 받아들였지만 장부를 덮는 손이 거칠었다", source: seen }
+    - id: sell_now
+      label: 값이 설 때 더 팔자는 도상필 편에 선다
+      effects:
+        - set_flag: do_council_done
+        - set_flag: do_backed_trade
+        - faction_resource: { faction: own, resource: medicine, delta: -15 }
+        - faction_resource: { faction: own, resource: food, delta: 25 }
+        - faction_resource: { faction: own, resource: ammo, delta: 6 }
+        - clock: { id: d_lean, delta: 1 }
+        - relation: { who: trader, axis: trust, delta: 2 }
+        - relation: { who: head, axis: respect, delta: -1 }
+        - belief: { fact: "약을 더 내다 팔기로 했다. 창고에 식량 자루와 탄 상자가 들어왔고, 권정숙은 그날 회의록에 서명하지 않았다", source: seen }
+    - id: split_shares
+      label: 무리마다 몫을 나눈 배분표를 짜서 내민다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: do_council_done
+          - set_flag: do_backed_clinic
+          - faction_resource: { faction: own, resource: medicine, delta: -6 }
+          - faction_resource: { faction: own, resource: food, delta: 10 }
+          - relation: { who: commander, axis: trust, delta: 1 }
+          - relation: { who: head, axis: respect, delta: 1 }
+          - relation: { who: trader, axis: respect, delta: 1 }
+          - belief: { fact: "배분표가 통과됐다. 진료소 몫을 떼고, 남는 것만 무리마다 나눠 팔기로 했다. 두 사람 모두 마지못해 고개를 끄덕였다", source: seen }
+        partial:
+          - set_flag: do_council_done
+          - belief: { fact: "배분표는 통과됐지만 도상필도 권정숙도 자기 몫이 깎였다고 여긴다", source: seen }
+        miss:
+          - set_flag: do_council_done
+          - relation: { who: commander, axis: respect, delta: -1 }
+          - belief: { fact: "배분표의 셈이 틀렸다. 도상필이 그 자리에서 숫자를 바로잡았고, 대표는 결정을 내일로 미뤘다", source: seen }
+
+- id: do_trade_line
+  title: 장터와 맺는 줄
+  tags: [d_officer]
+  when:
+    factions: [faction_d]
+    zones: [d_clinic]
+    segments: [morning, day]
+    day_gte: 3
+    flags_all: [do_council_done]
+    flags_none: [do_trade_set]
+    own_policy: { trade: [none] }
+  cast:
+    trader: { ids: [d_sangpil] }
+  setup: '{trader:이/가} 대표의 방 탁자에 나루상단 동전패 하나를 올려놓는다. "탁봉수 쪽에서 날마다 거래하자고 합니다. 우리가 식량을 조금씩 넘기면 탄을 받는 거죠. 경비 여섯이 빈 총을 들고 서 있는 것보단 낫지 않습니까." 서은영이 당신을 본다. 살림을 맡은 사람의 셈을 듣겠다는 뜻이다.'
+  ai_direction: 하얀매는 탄이 적고 경비가 여섯뿐이다. 나루상단과 날마다 거래하면 창고의 식량이 줄고 탄이 쌓인다. 도상필은 이 줄을 자기 손에 두고 싶어 한다. 장날마다 오가는 사람이 늘면 그만큼 약제실 뒷문을 드나들기 쉬워진다는 것은 GM만 안다. 거래량은 코드가 정한다.
+  choices:
+    - id: open_trade
+      label: 식량을 주고 탄약을 받는 거래를 열자고 한다
+      effects:
+        - set_flag: do_trade_set
+        - faction_policy: { faction: own, topic: trade, option: food_for_ammo }
+        - faction_relation: { from: faction_e, to: own, delta: 1 }
+        - relation: { who: trader, axis: trust, delta: 1 }
+        - belief: { fact: "나루상단과 날마다 식량을 주고 탄을 받기로 했다. 거래 줄은 도상필이 맡는다", source: seen }
+    - id: keep_closed
+      label: 창고의 것은 창고에 두자고 한다
+      effects:
+        - set_flag: do_trade_set
+        - relation: { who: trader, axis: respect, delta: -1 }
+        - relation: { who: commander, axis: respect, delta: 1 }
+        - belief: { fact: "나루상단과의 날거래는 열지 않기로 했다. 도상필은 동전패를 주머니에 넣으며 아쉽다고만 했다", source: seen }
+    - id: own_hands
+      label: 거래는 열되 장부는 내가 직접 맡겠다고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: do_trade_set
+          - set_flag: do_holds_trade_book
+          - faction_policy: { faction: own, topic: trade, option: food_for_ammo }
+          - relation: { who: commander, axis: trust, delta: 1 }
+          - relation: { who: trader, axis: trust, delta: -1 }
+          - belief: { fact: "나루상단과의 날거래를 열었고, 오가는 장부는 내가 맡았다. 도상필은 웃었지만 눈은 웃지 않았다", source: seen }
+        partial:
+          - set_flag: do_trade_set
+          - faction_policy: { faction: own, topic: trade, option: food_for_ammo }
+          - belief: { fact: "거래는 열렸지만 장부는 여전히 도상필 손에 있다. 대표는 둘이 같이 보라고만 했다", source: seen }
+        miss:
+          - set_flag: do_trade_set
+          - relation: { who: trader, axis: trust, delta: -2 }
+          - belief: { fact: "장부를 맡겠다는 말에 도상필이 그럼 저를 못 믿으신다는 거냐고 되물었다. 대표는 거래 이야기를 아예 접었다", source: seen }
+
+# ── 고정: 줄 순서 ───────────────────────────────
+
+- id: do_queue_board
+  title: 판자의 맨 윗줄
+  tags: [d_officer]
+  when:
+    factions: [faction_d]
+    zones: [d_clinic]
+    segments: [morning, day, evening]
+    day_gte: 1
+    flags_none: [do_queue_done]
+  cast:
+    desk: { ids: [pd_dahyeon] }
+    red: { extra: c_sentry_rifle, label: 팔에 붉은 완장을 감은 보초 }
+  setup: '정문 접수대. 판자의 맨 윗줄에 분필로 "허벅지 관통"이라고 적혀 있다. 그 아래 "열, 기침" 두 줄은 버들마을 아이들이다. {red:이/가} 접수대에 기름종이에 싼 꾸러미를 올려놓는다. "우리 조장 다리요. 먼저 봐 주면 이건 진료소 거고." {desk:이/가} 분필을 든 채 당신을 본다. "간부님, 이거 받아요, 말아요?"'
+  ai_direction: 꾸러미 안에는 탄이 들었다. 붉은연합 조장의 다리는 지금 손대지 않으면 썩지만, 버들마을 아이들의 열도 오늘 밤을 장담할 수 없다. 어느 쪽이 맞는지는 판정으로만 안다. 꾸러미를 받으면 줄을 값으로 살 수 있다는 소문이 무리들 사이에 돈다. 위다현은 판자에 소속을 쓰지 않지만 누가 어느 무리인지 다 안다.
+  choices:
+    - id: by_survival
+      label: 꾸러미는 돌려주고, 살 가능성으로 순서를 다시 본다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: do_queue_done
+          - set_flag: do_queue_rule
+          - clock: { id: d_lean, delta: -1 }
+          - relation: { who: desk, axis: respect, delta: 1 }
+          - deed: { summary: 진료소 줄 앞자리를 사려는 탄을 돌려주고 살 가능성으로 순서를 정했다, tags: [diligence], severity: 1, privacy: public }
+          - belief: { fact: "조장의 다리는 지금 손대야 했고, 아이들의 열은 하룻밤을 버틸 만했다. 꾸러미는 돌려줬다. 순서는 규칙대로였다", source: seen }
+        partial:
+          - set_flag: do_queue_done
+          - set_flag: do_queue_rule
+          - relation: { who: red, axis: affection, delta: -1 }
+          - belief: { fact: "꾸러미는 돌려주고 순서를 다시 봤지만, 어느 쪽이 옳았는지 끝내 확신하지 못했다", source: seen }
+        miss:
+          - set_flag: do_queue_done
+          - relation: { who: desk, axis: trust, delta: -1 }
+          - belief: { fact: "순서를 가리느라 시간을 끌었다. 붉은 완장은 꾸러미를 다시 품에 넣고 오래 접수대를 노려봤다", source: seen }
+    - id: take_packet
+      label: 꾸러미를 받고 붉은연합 조장을 먼저 들인다
+      effects:
+        - set_flag: do_queue_done
+        - faction_resource: { faction: own, resource: ammo, delta: 5 }
+        - faction_relation: { from: faction_c, to: own, delta: 1, mutual: false }
+        - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+        - clock: { id: d_lean, delta: 1 }
+        - relation: { who: desk, axis: respect, delta: -1 }
+        - deed: { summary: 진료소 줄 앞자리를 붉은연합의 탄을 받고 내주었다, tags: [selfishness], severity: 2, privacy: semi_private }
+    - id: children_first
+      label: 꾸러미는 받지 않고 버들마을 아이들부터 들인다
+      effects:
+        - set_flag: do_queue_done
+        - faction_relation: { from: faction_b, to: own, delta: 1, mutual: false }
+        - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+        - relation: { who: desk, axis: affection, delta: 1 }
+        - relation: { who: red, axis: trust, delta: -2 }
+        - deed: { summary: 붉은연합 조장보다 버들마을 아이들을 먼저 진료소에 들였다, tags: [mercy], severity: 1, privacy: public }
+
+# ── 고정: 빈 숫자 ───────────────────────────────
+
+- id: do_ledger_gap
+  title: 선반과 장부 사이
+  tags: [d_officer]
+  when:
+    factions: [faction_d]
+    zones: [d_clinic]
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [do_gap_seen]
+  cast:
+    shelf: { ids: [pd_sugyeong] }
+  setup: '약제실. {shelf:이/가} 장부를 들고 선반 앞에 서 있다가 당신을 보고 문을 닫는다. "간부님, 이거 할머니한테는 말하지 마세요. 할머니 장부는 틀린 적 없어요. 틀린 건 선반이에요." 연필 끝이 두 줄을 오간다. 항생제 칸과 진통제 칸이다.'
+  ai_direction: 연수경은 두 가지를 안다. 항생제는 장날 무렵 비고, 진통제는 수술실 문이 잠기는 날 빈다. 앞의 것은 도상필, 뒤의 것은 천우경이지만 연수경은 누구인지 확실히 모르고, 천우경 쪽만 짐작한다. 자기도 예전 윤채원 일로 약제실 문을 열어 준 적이 있어서 의심받는 것을 두려워한다. 몰아붙이면 입을 닫는다.
+  choices:
+    - id: ask_gently
+      label: 문을 닫은 채 둘이서 장부를 같이 본다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: do_gap_seen
+          - relation: { who: shelf, axis: trust, delta: 2 }
+          - belief: { fact: "약제실 장부에서 두 줄이 빈다. 항생제는 장날 전날 무렵 줄고, 진통제는 수술실 문이 잠긴 날마다 준다. 연수경은 진통제 쪽 이야기를 하다가 말을 삼켰다", source: report }
+        partial:
+          - set_flag: do_gap_seen
+          - relation: { who: shelf, axis: trust, delta: 1 }
+          - belief: { fact: "연수경 말로는 항생제가 장날 무렵에 빈다. 다른 줄은 아직 셈이 끝나지 않았다고 했다", source: report }
+        miss:
+          - set_flag: do_gap_seen
+          - relation: { who: shelf, axis: trust, delta: -1 }
+          - belief: { fact: "연수경은 자기가 잘못 센 것 같다며 장부를 품에 안았다. 손이 떨렸다", source: seen }
+    - id: count_myself
+      label: 간부로서 선반을 처음부터 직접 센다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: do_gap_seen
+          - relation: { who: shelf, axis: respect, delta: 1 }
+          - belief: { fact: "선반을 다 세었다. 항생제와 진통제가 각각 따로 빈다. 비는 날이 서로 다르다. 한 사람 짓이 아닐지도 모른다", source: seen }
+        partial:
+          - set_flag: do_gap_seen
+          - belief: { fact: "선반을 세어 보니 항생제가 장부보다 모자란다. 진통제 칸은 세다 말았다", source: seen }
+        miss:
+          - set_flag: do_gap_seen
+          - belief: { fact: "세다가 숫자가 엉켰다. 연수경이 조용히 다시 세 주었지만 어디가 비는지는 말하지 않았다", source: seen }
+    - id: let_it_be
+      label: 겨울이라 그런 거라며 넘긴다
+      effects:
+        - relation: { who: shelf, axis: affection, delta: 1 }
+        - clock: { id: d_lean, delta: 1 }
+
+- id: do_back_door
+  title: 장날 전날 밤
+  urgent: true
+  tags: [d_officer]
+  when:
+    factions: [faction_d]
+    zones: [d_clinic]
+    segments: [night]
+    day_gte: 3
+    flags_all: [do_gap_seen]
+    flags_none: [do_back_door_done]
+  cast:
+    trader: { ids: [d_sangpil] }
+  setup: 밤, 약제실 쪽에서 쇠 열쇠 꾸러미가 짤랑거린다. 뒷문이 반쯤 열려 있고, 담 너머에서 낮은 휘파람이 한 번 울린다. 조끼 차림의 그림자가 상자 하나를 옆구리에 끼고 나온다.
+  ai_direction: '{trader}는 장날 전날 밤마다 항생제와 진통제를 빼내 나루상단 사람에게 넘기고, 받은 탄과 통조림을 강변 공장 지대의 무너진 보일러실에 쌓는다. 하얀매가 무너질 날을 대비한 혼자의 밑천이다. 들키면 도망치지 않고 웃으며 흥정한다. 입막음 몫을 내밀거나, 회의에서 간부의 안을 밀어 주겠다고 한다. 윤채원과 몰래 연락한다는 것은 이 장면에서 꺼내지 않는다.'
+  choices:
+    - id: confront
+      label: 뒷문 앞에서 이름을 부른다
+      effects:
+        - set_flag: do_back_door_done
+        - set_flag: do_sangpil_caught
+        - relation: { who: trader, axis: trust, delta: -1 }
+        - relation: { who: trader, axis: respect, delta: 1 }
+        - belief: { fact: "도상필은 놀라지 않았다. 상자를 내려놓고, 하얀매가 망하는 날 누가 우리를 먹여 살리겠냐고 물었다. 대표께 말할 거면 자기 셈부터 들어 보라고 했다", source: report }
+    - id: follow
+      label: 소리 없이 담 너머까지 따라간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: do_back_door_done
+          - set_flag: do_sangpil_caught
+          - set_flag: do_knows_boiler
+          - belief: { fact: "도상필이 뒷담에서 나루상단 짐꾼에게 상자를 넘기고 탄 꾸러미를 받았다. 그 꾸러미를 들고 강변 공장 쪽으로 사라졌다", source: seen }
+        partial:
+          - set_flag: do_back_door_done
+          - set_flag: do_sangpil_caught
+          - belief: { fact: "도상필이 뒷담에서 누군가에게 상자를 넘기는 것까지 봤다. 받은 사람의 얼굴은 보지 못했다", source: seen }
+        miss:
+          - set_flag: do_back_door_done
+          - relation: { who: trader, axis: trust, delta: -2 }
+          - belief: { fact: "따라가다 돌부리에 걸렸다. 도상필이 돌아보더니 웃으며 밤공기 쐬러 나오셨냐고 물었다. 상자는 어디에도 없었다", source: seen }
+    - id: take_cut
+      label: 못 본 척하는 값을 묻는다
+      effects:
+        - set_flag: do_back_door_done
+        - set_flag: do_sangpil_pact
+        - give_item: { item: antibiotics }
+        - clock: { id: d_lean, delta: 1 }
+        - relation: { who: trader, axis: trust, delta: 2 }
+        - deed: { summary: 약제실 약을 빼돌리는 간부를 눈감아 주고 몫을 받았다, tags: [theft, betrayal], severity: 2, privacy: private }
+        - belief: { fact: "도상필이 항생제 한 갑을 내 주머니에 넣어 주었다. 이제 이 일은 둘만 안다", source: seen }
+
+- id: do_verdict
+  title: 열쇠를 거두는 날
+  tags: [d_officer]
+  when:
+    factions: [faction_d]
+    zones: [d_clinic]
+    segments: [morning, day, evening]
+    flags_all: [do_sangpil_caught]
+    flags_none: [do_verdict_done]
+  cast:
+    boss: { ids: [d_eunyoung] }
+    trader: { ids: [d_sangpil] }
+  setup: '대표의 방. {boss:이/가} 약제실 장부와 거래 장부를 나란히 펼쳐 둔다. {trader:은/는} 창가에 기대어 손톱을 본다. "간부님이 본 것을 들읍시다. 들은 것 말고, 본 것만." 대표의 목소리는 평소처럼 건조하다.'
+  ai_direction: 서은영은 이미 대강 짐작한다. 도상필을 내치면 다른 무리와의 거래 줄이 흔들리고 하얀매는 협상할 사람을 잃는다. 감싸면 진료소의 규칙에 예외가 생긴다. 도상필은 부인하지 않고 하얀매를 위한 일이었다고 말한다. 강변 보일러실에 쌓인 물건 이야기가 나오면 표정이 굳는다.
+  choices:
+    - id: testify
+      label: 본 것을 차근차근 증언한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: do_verdict_done
+          - set_flag: do_sangpil_disgraced
+          - clock: { id: d_lean, delta: -2 }
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: boss, axis: trust, delta: 2 }
+          - relation: { who: trader, axis: trust, delta: -3 }
+          - merit: 1
+          - deed: { summary: 약제실 약을 빼돌린 간부의 일을 대표 앞에서 증언했다, tags: [honesty, diligence], severity: 2, privacy: public }
+          - belief: { fact: "대표가 도상필에게서 약제실 열쇠를 거두었다. 거래는 당분간 내가 함께 보라는 말이 떨어졌다", source: seen }
+        partial:
+          - set_flag: do_verdict_done
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - relation: { who: trader, axis: trust, delta: -2 }
+          - belief: { fact: "대표는 약제실 열쇠는 수간호사에게 넘기되, 거래는 계속 도상필에게 맡겼다", source: seen }
+        miss:
+          - set_flag: do_verdict_done
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "대표는 증거가 모자라다며 이 일을 덮었다. 도상필은 나가며 내 어깨를 가볍게 두드렸다", source: seen }
+    - id: boiler_room
+      label: 강변 보일러실에 쌓인 것을 하얀매 창고로 돌리자고 한다
+      effects:
+        - set_flag: do_verdict_done
+        - set_flag: do_sangpil_disgraced
+        - faction_resource: { faction: own, resource: ammo, delta: 12 }
+        - faction_resource: { faction: own, resource: food, delta: 15 }
+        - clock: { id: d_lean, delta: -1 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: trader, axis: trust, delta: -3 }
+        - deed: { summary: 빼돌린 약값으로 쌓아 둔 물건을 하얀매 창고로 돌려놓게 했다, tags: [diligence], severity: 2, privacy: semi_private }
+        - belief: { fact: "강변 공장 지대 보일러실에서 탄과 통조림이 실려 왔다. 도상필은 열쇠를 내놓고 자기 방으로 갔다", source: seen }
+    - id: spare_him
+      label: 거래 줄은 그가 쥐고 있으니 내치지는 말자고 한다
+      effects:
+        - set_flag: do_verdict_done
+        - clock: { id: d_lean, delta: 1 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - relation: { who: trader, axis: trust, delta: 2 }
+        - deed: { summary: 약을 빼돌린 간부를 거래 때문에 감싸 달라고 대표에게 말했다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "도상필은 하얀매에 남았다. 약제실 열쇠는 수간호사에게 넘어갔고, 거래 장부는 여전히 그의 손에 있다", source: seen }
+
+# ── 고정: 무리들 ───────────────────────────────
+
+- id: do_pine_letter
+  title: 외상으로 달라는 편지
+  tags: [d_officer]
+  when:
+    factions: [faction_d]
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [do_pine_letter_done]
+  cast:
+    chaewon: { ids: [a_chaewon], enter: false }
+    runner: { extra: refugee, label: 청솔 띠를 맨 소년 }
+  setup: '{runner:이/가} 숨을 몰아쉬며 당신을 따라잡아 접은 갱지를 내민다. 진료소에서 여기까지 물어물어 왔다고 한다. 소독약 얼룩이 번진 글씨다. "항생제 두 줄. 값은 봄에 텃밭으로 치르겠습니다. 지금 내놓을 것이 없습니다. 하얀매 규칙은 압니다. 그래도 씁니다." 끝에 윤채원이라는 이름이 있다. 소년은 답을 들을 때까지 서 있겠다고 한다.'
+  ai_direction: 윤채원은 하얀매에서 약을 들고 나가 쫓겨난 사람이다. 지금은 청솔형제단 의무실에서 약이 모자라 사람을 잃고 있다. 대표 서은영은 그 이름을 들으면 표정을 감춘다. 외상은 하얀매의 규칙에 없다. 들어주면 청솔형제단은 하얀매를 좋게 보지만 진료소 안에서 말이 나온다. 그녀가 도상필과 몰래 연락한다는 것은 이 장면에서 드러내지 않는다.
+  choices:
+    - id: on_credit
+      label: 대표 몰래 외상으로 두 줄을 보낸다
+      effects:
+        - set_flag: do_pine_letter_done
+        - set_flag: do_pine_credit
+        - faction_resource: { faction: own, resource: medicine, delta: -6 }
+        - faction_relation: { from: faction_a, to: own, delta: 1, mutual: false }
+        - relation: { who: chaewon, axis: trust, delta: 2 }
+        - deed: { summary: 하얀매 규칙을 어기고 청솔형제단 의무실에 약을 외상으로 보냈다, tags: [mercy, disobedience], severity: 2, privacy: private }
+    - id: to_council
+      label: 회의에 올려 외상을 받을지 대표에게 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: do_pine_letter_done
+          - set_flag: do_pine_credit
+          - faction_resource: { faction: own, resource: medicine, delta: -6 }
+          - faction_relation: { from: faction_a, to: own, delta: 1 }
+          - clock: { id: d_lean, delta: -1 }
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - belief: { fact: "대표는 한참 말이 없다가, 봄 텃밭을 담보로 적고 두 줄을 보내라고 했다. 윤채원이라는 이름은 끝내 입에 올리지 않았다", source: seen }
+        partial:
+          - set_flag: do_pine_letter_done
+          - faction_resource: { faction: own, resource: medicine, delta: -3 }
+          - belief: { fact: "대표는 한 줄만 보내라고 했다. 나머지 한 줄은 값을 가져오면 주겠다고", source: seen }
+        miss:
+          - set_flag: do_pine_letter_done
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - belief: { fact: "대표는 편지를 다 읽지도 않고 접었다. 그 이름을 다시 회의에 올리지 말라고 했다", source: seen }
+    - id: refuse
+      label: 값이 없으면 약도 없다고 소년을 돌려보낸다
+      effects:
+        - set_flag: do_pine_letter_done
+        - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+        - relation: { who: runner, axis: affection, delta: -1 }
+        - belief: { fact: "소년은 답을 듣고도 한참 그 자리에 서 있다가 갔다. 갱지는 내 주머니에 남았다", source: seen }
+
+- id: do_red_monopoly
+  title: 통째로 사겠다는 값
+  tags: [d_officer]
+  when:
+    factions: [faction_d]
+    segments: [morning, day, evening]
+    day_gte: 3
+    flags_none: [do_red_answered]
+  cast:
+    envoy: { ids: [c_gyeongsu] }
+    boss: { ids: [d_eunyoung], enter: false }
+  setup: '장교 외투 차림의 {envoy:이/가} 장갑 낀 손을 들어 당신을 불러 세운다. 뒤에 선 붉은 완장 둘은 총을 등으로 돌려 멨다. "하얀매 살림 맡으신 분이지요. 대표께 올릴 말이 있는데, 셈하는 분이 먼저 들으시는 게 낫겠다 싶어서." 접은 종이를 내민다. "겨울 동안 하얀매의 약은 우리만 삽니다. 값은 두 배. 대신 다른 무리 사람은 줄 끝으로. 어려운 일도 아니지요."'
+  ai_direction: 붉은연합은 동쪽 공세를 앞두고 하얀매의 약을 독점하려 한다. 마경수는 협박할수록 상냥해진다. 받아들이면 하얀매 창고는 넉넉해지지만 중립은 끝나고, 다른 무리들은 하얀매를 붉은연합의 약장으로 본다. 거절하면 경비 여섯뿐인 진료소가 겨울 내내 그 대답의 값을 치를 수 있다. 간부가 어느 쪽으로 대답하든 마경수는 그것을 하얀매의 대답으로 여기고, 간부는 그 말을 대표 {boss}에게 그대로 올리게 된다. 숫자는 말하지 않는다.
+  choices:
+    - id: accept
+      label: 값이 맞으니 대표께 받아들이자고 올리겠다고 한다
+      effects:
+        - set_flag: do_red_answered
+        - set_flag: do_red_deal
+        - clock: { id: d_lean, delta: 4 }
+        - faction_resource: { faction: own, resource: medicine, delta: -20 }
+        - faction_resource: { faction: own, resource: food, delta: 30 }
+        - faction_resource: { faction: own, resource: ammo, delta: 15 }
+        - faction_relation: { from: faction_c, to: own, delta: 2 }
+        - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+        - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+        - deed: { summary: 붉은연합에 하얀매의 약을 몰아 파는 안을 회의에서 밀었다, tags: [selfishness, betrayal], severity: 2, privacy: public }
+    - id: refuse
+      label: 하얀매는 누구에게만 팔지 않는다고 못 박는다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: do_red_answered
+          - clock: { id: d_lean, delta: -2 }
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: envoy, axis: respect, delta: 1 }
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - deed: { summary: 붉은연합 간부 앞에서 하얀매는 누구 편도 들지 않는다고 말했다, tags: [bravery], severity: 2, privacy: public }
+        partial:
+          - set_flag: do_red_answered
+          - clock: { id: d_lean, delta: -1 }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - belief: { fact: "마경수는 웃으며 종이를 접었다. 겨울이 길 거라는 말을 한 번 더 하고 나갔다", source: seen }
+        miss:
+          - set_flag: do_red_answered
+          - clock: { id: d_lean, delta: 1 }
+          - faction_relation: { from: faction_c, to: own, delta: -2, mutual: false }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "목소리가 떨렸다. 마경수는 대답 대신 진료소 쪽 하늘을 한 번 보고 돌아섰다. 그날 밤 담 밖에서 오래 발소리가 났다", source: seen }
+    - id: partial_sale
+      label: 몫을 정해 일부만 먼저 팔자고 흥정한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: do_red_answered
+          - faction_resource: { faction: own, resource: medicine, delta: -8 }
+          - faction_resource: { faction: own, resource: food, delta: 15 }
+          - faction_relation: { from: faction_c, to: own, delta: 1, mutual: false }
+          - relation: { who: envoy, axis: respect, delta: 1 }
+          - belief: { fact: "붉은연합에 정해진 몫만 팔기로 했다. 다른 무리의 줄은 그대로다. 마경수는 이번엔 그걸로 됐다고 했다", source: seen }
+        partial:
+          - set_flag: do_red_answered
+          - faction_resource: { faction: own, resource: medicine, delta: -12 }
+          - faction_resource: { faction: own, resource: food, delta: 15 }
+          - clock: { id: d_lean, delta: 1 }
+          - belief: { fact: "몫은 정했지만 생각보다 많이 내줬다. 마경수는 다음에는 더 많이 사겠다고 했다", source: seen }
+        miss:
+          - set_flag: do_red_answered
+          - clock: { id: d_lean, delta: 2 }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - belief: { fact: "흥정은 마경수 쪽으로 흘렀다. 마경수는 다음엔 대표와만 이야기하겠다며 종이를 접었다", source: seen }
+
+- id: do_lean_scale
+  title: 기울어 가는 저울
+  tags: [d_officer]
+  when:
+    factions: [faction_d]
+    zones: [d_clinic]
+    segments: [evening]
+    flags_none: [do_lean_spoken]
+    clock_gte: { d_lean: 14 }
+  cast:
+    head: { ids: [d_jeongsuk] }
+  setup: '저녁 장부 정리 시간. {head:이/가} 앞치마 주머니에서 접은 종이를 꺼내 당신 앞에 편다. 정문 판자를 옮겨 적은 것이다. "요 며칠 판자를 봐. 맨 윗줄이 누구야. 소속은 안 쓰지만, 나는 다 알아." 같은 무리 사람이 맨 윗줄에 거듭 올라 있다.'
+  ai_direction: 하얀매가 가장 센 무리 쪽으로 조금씩 기울고 있다. 누가 그렇게 정한 것이 아니라, 값을 잘 치르는 쪽, 겁이 나는 쪽을 먼저 들이는 일이 쌓였다. 권정숙은 이대로면 진료소가 한 무리의 의무실이 된다고 본다. 회의에서 이 말을 꺼내면 도상필과 부딪친다. 권정숙은 간부가 회의에 올려 주기를 바란다.
+  choices:
+    - id: raise_it
+      label: 회의에 올려 중립 규칙을 다시 세우자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: do_lean_spoken
+          - clock: { id: d_lean, delta: -4 }
+          - relation: { who: head, axis: trust, delta: 2 }
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - deed: { summary: 회의에서 진료소가 한쪽으로 기운다는 것을 꺼내 규칙을 다시 세웠다, tags: [honesty, diligence], severity: 2, privacy: semi_private }
+          - belief: { fact: "대표가 정문 판자를 다시 보라고 했다. 값을 치르는 순서와 치료 순서를 섞지 말라는 말이 진료소에 내려갔다", source: seen }
+        partial:
+          - set_flag: do_lean_spoken
+          - clock: { id: d_lean, delta: -2 }
+          - relation: { who: head, axis: trust, delta: 1 }
+          - belief: { fact: "대표는 판자 이야기를 들었지만 말을 아꼈다. 수간호사 몫의 순서만은 지켜 주기로 했다", source: seen }
+        miss:
+          - set_flag: do_lean_spoken
+          - relation: { who: head, axis: trust, delta: -1 }
+          - belief: { fact: "회의에서 도상필이 판자는 줄일 뿐이라고 웃어넘겼다. 대표는 다음으로 넘어갔다", source: seen }
+    - id: it_is_survival
+      label: 센 쪽에 붙는 것도 살아남는 길이라고 답한다
+      effects:
+        - set_flag: do_lean_spoken
+        - clock: { id: d_lean, delta: 2 }
+        - relation: { who: head, axis: respect, delta: -2 }
+        - belief: { fact: "수간호사는 종이를 다시 접어 주머니에 넣었다. 그 뒤로 판자 이야기를 내게 하지 않는다", source: seen }
+    - id: fix_quietly
+      label: 회의 없이 판자 순서를 내가 직접 보겠다고 한다
+      effects:
+        - set_flag: do_lean_spoken
+        - clock: { id: d_lean, delta: -1 }
+        - relation: { who: head, axis: trust, delta: 1 }
+        - belief: { fact: "아침마다 정문 판자를 직접 보기로 했다. 회의를 거치지 않은 일이라, 어디까지 막을 수 있을지는 모른다", source: seen }
+
+# ── 템플릿: 간부의 일 ───────────────────────────
+
+- id: do_sick_share
+  title: 앓는 사람 몫
+  tags: [council]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    own_territory: true
+    segments: [morning, day]
+    day_gte: 4
+    own_policy: { ration: [cut] }
+  cast:
+    boss: { commander: true }
+    asker: { faction: own, known: true, ranks: [squad_leader, staff] }
+  setup: '배급을 줄인 지 며칠째다. 회의가 끝날 무렵 {asker:이/가} 문 앞에서 기다리고 있다. "앓아누운 사람들이 줄인 몫을 못 버팁니다. 열이 있는 사람한테 반 국자는 반 국자가 아니에요." {boss:이/가} 장부를 덮지 않은 채 당신에게 고개를 돌린다. {scarce:이/가} 가장 모자란 때다.'
+  ai_direction: 배급을 줄인 방침은 코드가 정한 것이다. 앓는 사람 몫을 따로 떼면 성한 사람 몫이 더 줄고, 떼지 않으면 앓는 사람이 더디게 낫는다. 상관은 간부의 안을 듣고 정한다. 양은 코드가 정했다. 며칠 치인지 지어내지 않는다.
+  choices:
+    - id: sick_first
+      label: 앓는 사람 몫을 떼고 성한 사람 몫을 더 줄이자고 한다
+      effects:
+        - faction_resource: { faction: own, resource: food, delta: -6 }
+        - relation: { who: asker, axis: trust, delta: 1 }
+        - deed: { summary: 줄인 배급에서 앓는 사람 몫을 따로 떼자고 했다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "앓는 사람 몫을 따로 떼기로 했다. 식당에서 성한 사람들이 국자를 오래 들여다본다", source: seen }
+    - id: restore
+      label: 아예 배급을 보통으로 되돌리자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - faction_policy: { faction: own, topic: ration, option: normal }
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: asker, axis: respect, delta: 1 }
+          - belief: { fact: "배급을 보통으로 되돌렸다. 창고는 그만큼 빨리 빈다", source: seen }
+        partial:
+          - faction_resource: { faction: own, resource: food, delta: -4 }
+          - belief: { fact: "배급은 그대로 두되, 열이 있는 사람만 한 국자를 더 받기로 했다", source: seen }
+        miss:
+          - relation: { who: boss, axis: respect, delta: -1 }
+          - belief: { fact: "되돌리자는 안은 기각됐다. 상관은 창고를 보고 다시 말하라고 했다", source: seen }
+    - id: hold
+      label: 모두 같이 버텨야 한다고 그대로 둔다
+      effects:
+        - relation: { who: asker, axis: affection, delta: -1 }
+        - relation: { who: boss, axis: respect, delta: 1 }

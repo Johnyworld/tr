@@ -305,6 +305,7 @@
   title: 초록 띠를 뗀 사람들
   tags: [a_officer, council]
   when:
+    factions: [faction_a]
     own_territory: true
     segments: [morning, day, evening]
     flags_none: [a_of_b_left_seen]
@@ -591,6 +592,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    factions: [faction_a]
     own_territory: true
     segments: [morning, day]
   cast:
@@ -632,6 +634,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    factions: [faction_a]
     own_territory: true
     segments: [day, evening]
     day_gte: 2

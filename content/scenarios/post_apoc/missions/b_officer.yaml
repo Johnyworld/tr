@@ -1,0 +1,78 @@
+# 버들마을 간부 임무 (초안). 대표 장현우가 아침 회의 뒤 직접 맡긴다
+# 오늘의 임무 후보는 역할(roles/b_officer.yaml)의 missions 목록에서 코드가 고르고, 상관(commander: b_hyunwoo)이 장면에 있어야 내린다.
+# giver_rank는 맡기는 사람의 계급(지도부)을 적어 둔 것이다. 형식은 a_grunt_basic.yaml 머리말 참고
+- id: bo_well_count
+  title: 우물 순번 다시 짜기
+  briefing: 탁순례 어르신과 같이 우물 두 곳의 순번표를 다시 짜 주세요. 집집이 긷는 양이 맞는지, 아랫단 우물을 얼마나 쉬게 할 수 있는지. 셈은 회의에만 올리고 마당에서는 떠들지 마십시오.
+  giver_rank: leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: survival
+      min_outcome: partial
+
+- id: bo_pine_talks
+  title: 청솔 회의 대신 다녀오기
+  briefing: 오늘 청솔형제단 회의에는 간부님이 가 주세요. 약조는 약조대로 지킨다고 전하시고, 경비 인원 이야기가 나오면 단지 사정을 말씀하십시오. 제 안부를 묻거든 몸이 안 좋다고만 하시고요.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: success
+  advances: { clock: b_waver, delta: -2 }
+
+- id: bo_market_seeds
+  title: 장터에서 씨앗과 소금
+  briefing: 함영자 반장과 나루상단 장터에 가서 봄에 심을 씨앗과 소금 값을 알아 오세요. 무와 감자는 내줘도 되지만 탄은 안 됩니다. 마을에 진 빚 이야기가 나오면 제 이름을 대십시오.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+
+- id: bo_fields_guard
+  title: 텃밭 수확 경비 배치
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
+  briefing: 남쪽 텃밭 김장 수확 날입니다. 경비 당번을 어디에 몇 명 세울지 간부님이 정하고 끝날 때까지 지켜봐 주세요. 무너진 담장 쪽이 늘 문제입니다.
+  giver_rank: leader
+  deadline_hours: 12
+  requirements:
+    - activity: travel
+      minutes: 20
+    - activity: guard_duty
+      minutes: 120
+    - check: tactics
+      min_outcome: partial
+
+- id: bo_pump_parts
+  title: 정수장 펌프 부품 구하기
+  # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
+  armed: true
+  briefing: 남상구 씨 말로는 정수장에 쓸 만한 펌프 부품이 남아 있답니다. 가서 찾아 오세요. 나루상단 사람들이 지키고 있을 테니 시비는 걸지 말고, 해 지기 전에 돌아오십시오.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - activity: search
+      minutes: 90
+    - check: scavenge
+      min_outcome: partial
+
+- id: bo_gate_check
+  title: 쪽문 열쇠 점검
+  briefing: 배동철 조장과 정문·쪽문 자물쇠와 교대표를 같이 봐 주세요. 밤에 쪽문 근처에 발자국이 난다는 말이 있습니다. 누가 드나드는지 알아내라는 건 아닙니다. 문이 제대로 잠기는지만 보시면 됩니다.
+  giver_rank: leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 60
+    - check: sense_danger
+      min_outcome: partial
+  advances: { clock: b_waver, delta: -1 }

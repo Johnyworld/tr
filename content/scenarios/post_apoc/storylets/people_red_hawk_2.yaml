@@ -1,0 +1,548 @@
+# 붉은연합·하얀매 새 인물 이야기 둘째 묶음 (npcs/more_red.yaml, npcs/more_hawk.yaml)
+# 첫 묶음(people_red_hawk.yaml: 광장 몽둥이, 행주 꾸러미, 접수대 줄)과 겹치지 않는 갈래
+# 갈래:
+# - 광장의 이름: pr2_bench_red (구만석이 석중기 이름을 댄다) → (pr2_manseok_told) pr2_tent_name (석중기의 조카)
+# - 엇갈린 탈영: pr2_drain_stash (배수로에서 방소라와 석유나가 마주친다) → (pr2_drain_covered / pr2_drain_crossed) pr2_drain_night
+# - 해열제: pr2_fever_errand (편종호가 해열제를 맡긴다) → (pr2_fever_given) pr2_classroom_door (버들마을 지하 교실 문 앞)
+# - 흰 천: pr2_white_flag (벌조장 성태규의 투항 계획). pr2_flag_sworn / pr2_flag_dropped는 공세 날 이야기가 쓸 수 있다
+# - 잠긴 문: pr2_locked_door (진통제가 비는 날과 수술실이 잠기는 날)
+
+- id: pr2_bench_red
+  title: 벤치의 목발
+  tags: [world]
+  when:
+    zones: [d_clinic]
+    segments: [evening]
+    day_gte: 3
+    flags_none: [pr2_bench_done]
+  cast:
+    gate: { ids: [pd_manseok] }
+    stick: { ids: [pc_junggi], enter: false }
+  setup: >-
+    진료소 마당 벤치. {gate:이/가} 쇠파이프 목발을 무릎에 걸쳐 두고 앉아 있다.
+    격리실 철문 열쇠가 목에서 흔들린다. 당신이 지나가자 고개도 안 돌리고 묻는다.
+    "거점 쪽 소식 아나. 광장, 아직도 아침마다 서?"
+  ai_direction: >-
+    {gate}는 지난봄 붉은연합 광장에서 규율반원 {stick}에게 맞고 담 밖에 버려졌다.
+    탈영한 적이 없다. 그날 밤 보초였을 뿐이고, 왜 자기 이름이 본보기 명단에 올랐는지 모른다.
+    주인공이 붉은 완장을 찼으면 처음엔 말없이 목발을 고쳐 쥔다. 등을 보여 달라면 보여 준다.
+    갚을 날을 기다리지만 한쪽 다리로는 거점 담까지 못 간다는 것도 안다.
+  choices:
+    - id: listen
+      label: 옆에 앉아 이야기를 들어 준다
+      effects:
+        - set_flag: pr2_bench_done
+        - set_flag: pr2_manseok_told
+        - reveal_tie: { who: gate, other: stick }
+        - relation: { who: gate, axis: trust, delta: 2 }
+        - belief: { fact: "구만석은 지난봄 붉은연합 광장에서 규율반원 석중기에게 맞고 담 밖에 버려졌다. 그날 밤 보초였을 뿐 탈영한 적이 없다고 한다. 왜 자기 이름이 명단에 올랐는지 모른다", source: report }
+    - id: ask_message
+      label: 석중기에게 전할 말이 있느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pr2_bench_done
+          - set_flag: pr2_manseok_told
+          - reveal_tie: { who: gate, other: stick }
+          - relation: { who: gate, axis: trust, delta: 2 }
+          - relation: { who: gate, axis: affection, delta: 1 }
+          - belief: { fact: "구만석은 석중기에게 딱 한 마디만 물어 달라고 했다. 왜 나였냐고. 맞은 건 지났으니 이유만 알면 된다고", source: report }
+        partial:
+          - set_flag: pr2_bench_done
+          - set_flag: pr2_manseok_told
+          - reveal_tie: { who: gate, other: stick }
+          - relation: { who: gate, axis: trust, delta: 1 }
+          - belief: { fact: "구만석은 석중기의 이름을 대고는, 전할 말은 직접 하겠다며 목발로 땅을 짚었다", source: report }
+        miss:
+          - set_flag: pr2_bench_done
+          - relation: { who: gate, axis: trust, delta: -1 }
+          - belief: { fact: "구만석은 남의 일에 왜 끼느냐며 등을 돌렸다. 등에 줄 자국이 겹겹이 나 있었다", source: seen }
+    - id: leave
+      label: 붉은연합 이야기는 하지 않는다며 자리를 뜬다
+      effects:
+        - set_flag: pr2_bench_done
+        - relation: { who: gate, axis: affection, delta: -1 }
+
+- id: pr2_tent_name
+  title: 셋 셀 동안
+  tags: [red_life]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [night]
+    flags_all: [pr2_manseok_told]
+    flags_none: [pr2_tent_done]
+  cast:
+    stick: { ids: [pc_junggi] }
+    gate: { ids: [pd_manseok], enter: false }
+    clerk: { ids: [c_sangok], enter: false }
+  setup: >-
+    규율반 천막, 등잔 하나. {stick:이/가} 장갑을 낀 채 명단을 접고 있다.
+    박달나무 몽둥이는 탁자 위에 가로로 놓였다. 당신을 보고 손을 멈추지 않는다.
+    "이 시간에 뭐야. 용건만. 셋 셀 동안."
+  ai_direction: >-
+    주인공이 {gate}의 이름을 꺼내면 {stick}은 세던 숫자를 멈춘다.
+    진실: 지난봄 탈영하려던 사람은 {stick}의 조카였다. 조카 대신 그날 보초였던 {gate}의 이름을 명단에 적고 직접 쳤다.
+    조카는 그 뒤 공세 연습에서 죽었다. 이 일이 서기 {clerk}의 명부로 가면 {stick}이 광장 한가운데 서고, 딸 유나도 같이 의심받는다.
+    {stick}은 사과하지 않는다. 다만 "살았어?"를 한 번은 묻는다. 털어놓을지, 위협할지는 판정이 정한다.
+  choices:
+    - id: alive
+      label: 구만석이 하얀매 진료소에 살아 있다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pr2_tent_done
+          - set_flag: pr2_junggi_confessed
+          - relation: { who: stick, axis: trust, delta: 1 }
+          - belief: { fact: "석중기는 지난봄 탈영하려던 조카 대신 그날 보초였던 구만석의 이름을 본보기 명단에 적었다. 조카는 그 뒤 공세 연습에서 죽었다", source: report }
+        partial:
+          - set_flag: pr2_tent_done
+          - set_flag: pr2_junggi_confessed
+          - relation: { who: stick, axis: trust, delta: -1 }
+          - belief: { fact: "석중기는 '살았어?'라고만 묻고 오래 말이 없었다. 그날 명단에 원래 다른 이름이 있었고, 그 애는 공세 연습에서 죽었다는 것까지만 흘렸다", source: report }
+        miss:
+          - set_flag: pr2_tent_done
+          - relation: { who: stick, axis: trust, delta: -2 }
+          - belief: { fact: "석중기는 구만석의 이름을 듣자 몽둥이에 손을 얹고, 그 이름을 다시 입에 올리지 말라고 했다", source: seen }
+    - id: leverage
+      label: 서기 우상옥이 이 이름을 궁금해할 거라고 흘린다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: pr2_tent_done
+          - set_flag: pr2_junggi_leashed
+          - relation: { who: stick, axis: trust, delta: -3 }
+          - relation: { who: stick, axis: respect, delta: 1 }
+          - deed: { summary: 규율반원의 숨은 약점을 쥐고 흔들었다, tags: [selfishness], severity: 2, privacy: private }
+          - belief: { fact: "석중기는 구만석의 이름 앞에서 처음으로 눈을 피했다. 그 일이 우상옥의 명부로 가는 것을 두려워한다", source: seen }
+        partial:
+          - set_flag: pr2_tent_done
+          - set_flag: pr2_junggi_leashed
+          - merit: -1
+          - relation: { who: stick, axis: trust, delta: -3 }
+          - deed: { summary: 규율반원의 숨은 약점을 쥐고 흔들었다, tags: [selfishness], severity: 2, privacy: private }
+          - belief: { fact: "석중기는 입을 다물었다. 다음 날 아침 점호에서 당신 이름을 한 번 더 불렀다", source: seen }
+        miss:
+          - set_flag: pr2_tent_done
+          - set_flag: pr2_junggi_hostile
+          - merit: -1
+          - relation: { who: stick, axis: trust, delta: -3 }
+          - relation: { who: stick, axis: affection, delta: -2 }
+          - belief: { fact: "석중기가 당신 이름을 크게 두 번 불렀다. 본보기 전에 하는 버릇이다", source: seen }
+    - id: silent
+      label: 아무 말도 하지 않고 천막을 나온다
+      effects:
+        - set_flag: pr2_tent_done
+
+- id: pr2_drain_stash
+  title: 배수로의 두 사람
+  tags: [red_life]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [evening]
+    day_gte: 4
+    flags_none: [pr2_drain_seen]
+  cast:
+    sora: { ids: [c_sora] }
+    yuna: { ids: [pc_yuna] }
+    scout: { ids: [c_seokjin], enter: false }
+  setup: >-
+    감시탑 아래 배수로. 콘크리트 틈에 무릎을 꿇은 {sora:이/가} 비닐 꾸러미를 밀어 넣다가 당신을 보고 굳는다.
+    그때 배수로 반대편 끝에서 열쇠 꾸러미가 짤랑인다. {yuna}다.
+    누군가를 기다리던 얼굴이 당신과 {sora}를 번갈아 본다.
+  ai_direction: >-
+    둘 다 {scout}를 기다린다. {yuna}는 {scout}와 둘이 담을 넘을 줄 알고 수용소 교대 시간을 그에게 알려 주었다.
+    {sora}는 {scout}와 버들마을로 간다고 믿는다. 어머니가 거기 있다. 꾸러미는 그동안 남긴 배급이다.
+    {scout}는 겁이 많아서 살 길을 두 갈래로 깔아 두었고, 어느 쪽에도 다른 쪽 이야기를 하지 않았다.
+    주인공이 입을 열기 전까지 둘은 서로가 왜 여기 있는지 모른다. 규율반에 알려지면 {yuna}는 아버지 손에 넘어간다.
+  choices:
+    - id: cover
+      label: 못 본 걸로 하고 둘 다 돌아가라고 한다
+      effects:
+        - set_flag: pr2_drain_seen
+        - set_flag: pr2_drain_covered
+        - relation: { who: sora, axis: trust, delta: 1 }
+        - relation: { who: yuna, axis: trust, delta: 1 }
+        - belief: { fact: "감시탑 아래 배수로에 방소라가 배급을 숨겨 두었다. 석유나도 그 시간에 누군가를 기다리고 있었다", source: seen }
+    - id: ask
+      label: 누구를 기다리느냐고 둘에게 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pr2_drain_seen
+          - set_flag: pr2_drain_crossed
+          - reveal_tie: { who: yuna, other: scout }
+          - relation: { who: sora, axis: trust, delta: 1 }
+          - relation: { who: yuna, axis: trust, delta: 1 }
+          - belief: { fact: "석유나와 방소라는 둘 다 고석진과 겨울 전에 담을 넘기로 했다. 고석진은 서로에게 상대 이야기를 하지 않았다", source: report }
+        partial:
+          - set_flag: pr2_drain_seen
+          - set_flag: pr2_drain_crossed
+          - reveal_tie: { who: yuna, other: scout }
+          - relation: { who: yuna, axis: affection, delta: -2 }
+          - belief: { fact: "방소라가 고석진의 이름을 대는 순간 석유나의 얼굴이 굳었다. 둘 다 고석진과 담을 넘기로 했던 것이다. 석유나는 열쇠를 쥐고 먼저 갔다", source: seen }
+        miss:
+          - set_flag: pr2_drain_seen
+          - set_flag: pr2_drain_covered
+          - relation: { who: yuna, axis: trust, delta: -1 }
+          - belief: { fact: "둘 다 입을 다물었다. 방소라는 꾸러미를 더 깊이 밀어 넣었고, 석유나는 열쇠를 짤랑이며 사라졌다", source: seen }
+    - id: report
+      label: 규율반 천막에 알린다
+      effects:
+        - set_flag: pr2_drain_seen
+        - set_flag: pr2_drain_reported
+        - merit: 1
+        - relation: { who: sora, axis: trust, delta: -3 }
+        - relation: { who: yuna, axis: trust, delta: -3 }
+        - npc_capture: { who: sora, by: faction_c, zone: c_warehouse }
+        - npc_capture: { who: scout, by: faction_c, zone: c_warehouse }
+        - deed: { summary: 감시탑 아래 배수로의 탈영 준비를 규율반에 알렸다, tags: [betrayal, diligence], severity: 2, privacy: semi_private }
+        - belief: { fact: "규율반이 배수로를 뒤졌다. 방소라와 고석진이 수용소로 끌려갔다. 석유나의 이름은 명단에 없었다", source: seen }
+
+- id: pr2_drain_night
+  title: 들어 올린 창살
+  tags: [red_life]
+  urgent: true
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [night]
+    flags_any: [pr2_drain_covered, pr2_drain_crossed]
+    flags_none: [pr2_drain_night_done, pr2_drain_reported]
+  cast:
+    scout: { ids: [c_seokjin] }
+    sora: { ids: [c_sora] }
+    yuna: { ids: [pc_yuna], enter: false }
+  setup: >-
+    자정 무렵 배수로. {scout:이/가} 쇠창살 하나를 들어 올려 놓고 손짓한다.
+    {sora:은/는} 배급 꾸러미를 끌어안고 있다. {scout:이/가} 당신을 보고 낮게 말한다.
+    "…같이 가든가, 입 다물든가. 교대 금방이야."
+  ai_direction: >-
+    교대 시간을 알려 준 것은 {yuna}다. 오늘 밤 감시탑 교대가 {yuna} 몫이라, 둘이 나가면 문책은 {yuna}가 받는다.
+    {scout}는 {yuna}를 데려갈 생각이 처음부터 없었다. 지난 저녁 배수로에서 {sora}와 {yuna}가 서로를 알게 되었다면 {sora}가 먼저 {yuna} 이야기를 꺼낸다.
+    주인공이 따라 나가면 탈영이다. 붙잡힌 사람은 광장에 선다. 누가 붙잡히는지는 판정이 정한다.
+  choices:
+    - id: watch
+      label: 망을 봐 주고 둘을 보낸다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: pr2_drain_night_done
+          - npc_depart: { who: scout, to_faction: faction_b }
+          - npc_depart: { who: sora, to_faction: faction_b }
+          - relation: { who: sora, axis: trust, delta: 2 }
+          - deed: { summary: 탈영하는 동료들의 망을 봐 주었다, tags: [mercy, disobedience], severity: 2, privacy: private }
+          - belief: { fact: "고석진과 방소라가 배수로로 빠져나갔다. 버들마을로 간다고 했다", source: seen }
+        partial:
+          - set_flag: pr2_drain_night_done
+          - set_flag: pr2_yuna_blamed
+          - npc_depart: { who: scout, to_faction: faction_b }
+          - npc_depart: { who: sora, to_faction: faction_b }
+          - deed: { summary: 탈영하는 동료들의 망을 봐 주었다, tags: [mercy, disobedience], severity: 2, privacy: private }
+          - belief: { fact: "둘은 빠져나갔다. 교대가 일찍 왔고, 석유나가 감시탑에서 내려와 빈 배수로를 오래 내려다보았다. 문책은 석유나 몫이 되었다", source: seen }
+        miss:
+          - set_flag: pr2_drain_night_done
+          - set_flag: pr2_drain_caught
+          - merit: -1
+          - npc_depart: { who: sora, to_faction: faction_b }
+          - npc_capture: { who: scout, by: faction_c, zone: c_warehouse }
+          - deed: { summary: 탈영하는 동료들의 망을 보다가 들켰다, tags: [disobedience], severity: 2, privacy: public }
+          - belief: { fact: "감시탑 불빛이 배수로를 쓸었다. 방소라는 창살 밖으로 빠져나갔고, 고석진은 다리가 걸려 붙잡혔다", source: seen }
+    - id: go_with
+      label: 같이 창살 밑으로 기어 나간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: pr2_drain_night_done
+          - set_flag: pr2_deserted_red
+          - npc_depart: { who: scout, to_faction: faction_b }
+          - npc_depart: { who: sora, to_faction: faction_b }
+          - join_faction: { faction: faction_b }
+          - send_to: b_base
+          - relation: { who: sora, axis: trust, delta: 2 }
+          - deed: { summary: 붉은연합 거점의 배수로로 탈영했다, tags: [betrayal, disobedience], severity: 3, privacy: public }
+        partial:
+          - set_flag: pr2_drain_night_done
+          - set_flag: pr2_deserted_red
+          - set_flag: pr2_yuna_blamed
+          - npc_depart: { who: scout, to_faction: faction_b }
+          - npc_depart: { who: sora, to_faction: faction_b }
+          - join_faction: { faction: faction_b }
+          - send_to: b_base
+          - body: { track: cold, delta: 1 }
+          - deed: { summary: 붉은연합 거점의 배수로로 탈영했다, tags: [betrayal, disobedience], severity: 3, privacy: public }
+          - belief: { fact: "배수로 물에 허리까지 젖은 채 밤새 걸었다. 뒤에서 감시탑 호루라기가 울렸다. 그날 교대는 석유나였다", source: seen }
+        miss:
+          - set_flag: pr2_drain_night_done
+          - set_flag: pr2_drain_caught
+          - merit: -2
+          - npc_depart: { who: sora, to_faction: faction_b }
+          - npc_capture: { who: scout, by: faction_c, zone: c_warehouse }
+          - deed: { summary: 배수로로 탈영하려다 붙잡혔다, tags: [betrayal, disobedience], severity: 3, privacy: public }
+          - belief: { fact: "창살 밑에서 어깨가 걸렸다. 방소라만 빠져나갔고, 당신과 고석진은 감시탑 불빛 아래 엎드려 있었다", source: seen }
+    - id: for_yuna
+      label: 석유나도 데려가야 한다고 고석진을 붙든다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pr2_drain_night_done
+          - set_flag: pr2_yuna_gone
+          - npc_depart: { who: scout, to_faction: faction_b }
+          - npc_depart: { who: sora, to_faction: faction_b }
+          - npc_depart: { who: yuna, to_faction: faction_b }
+          - relation: { who: yuna, axis: trust, delta: 3 }
+          - deed: { summary: 탈영하는 동료들이 남겨 둘 뻔한 사람까지 데려가게 했다, tags: [mercy, disobedience], severity: 2, privacy: private }
+          - belief: { fact: "석유나가 감시탑에서 내려와 셋이 함께 배수로로 나갔다. 규율반원 석중기의 딸이 담 밖으로 사라졌다", source: seen }
+        partial:
+          - set_flag: pr2_drain_night_done
+          - set_flag: pr2_yuna_blamed
+          - npc_depart: { who: scout, to_faction: faction_b }
+          - npc_depart: { who: sora, to_faction: faction_b }
+          - relation: { who: yuna, axis: trust, delta: 1 }
+          - belief: { fact: "석유나는 감시탑에서 내려오지 않았다. 아버지 이름 말고 자기 이름으로 남겠다고 했다. 둘만 나갔다", source: report }
+        miss:
+          - set_flag: pr2_drain_night_done
+          - set_flag: pr2_yuna_blamed
+          - npc_depart: { who: scout, to_faction: faction_b }
+          - relation: { who: sora, axis: trust, delta: -2 }
+          - belief: { fact: "고석진은 실랑이 끝에 혼자 창살 밑으로 빠져나갔다. 방소라는 꾸러미를 안은 채 배수로에 남겨졌다", source: seen }
+    - id: stop
+      label: 창살을 내려놓게 하고 규율반을 부른다
+      effects:
+        - set_flag: pr2_drain_night_done
+        - merit: 2
+        - npc_capture: { who: scout, by: faction_c, zone: c_warehouse }
+        - npc_capture: { who: sora, by: faction_c, zone: c_warehouse }
+        - relation: { who: sora, axis: trust, delta: -3 }
+        - relation: { who: yuna, axis: trust, delta: -2 }
+        - deed: { summary: 배수로로 탈영하려던 동료들을 규율반에 넘겼다, tags: [betrayal, diligence], severity: 3, privacy: semi_private }
+
+- id: pr2_fever_errand
+  title: 페인트 묻은 약통
+  tags: [red_life]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [evening]
+    day_gte: 4
+    flags_none: [pr2_fever_given, pr2_fever_refused]
+  cast:
+    herald: { ids: [pc_jongho] }
+    teacher: { ids: [b_eunji], enter: false }
+  setup: >-
+    위원회 천막 뒤. 낮에 광장에서 포고를 읽던 {herald:이/가} 연설 때와 다른 낮은 목소리로 당신을 부른다.
+    안경을 벗어 닦고, 붉은 페인트가 밴 손가락으로 주머니에서 해열제 한 통을 꺼낸다.
+    "버들마을 쪽으로 나가는 일 있으면요. 관리사무소 지하, 계단 맨 아래 문 앞에 두고만 와요. 누가 줬는지는 말 안 해도 돼요."
+  ai_direction: >-
+    {herald}는 붕괴 전 가람초등학교 교사였고, 버들마을 지하 교실의 {teacher}와 같은 학교에서 일했다.
+    약은 위원회 몫이 아니라 {herald} 자기 몫이다. 위원회 몰래 다른 무리에 약을 보내는 일이라 규율반에 알려지면 끝이다.
+    {herald}는 버들마을이 총 한 발 안 쏘고 넘어오리라 믿는다. 위원장의 속셈은 모른다. 그 속셈은 GM도 여기서 드러내지 않는다.
+  choices:
+    - id: take
+      label: 약통을 받아 든다
+      effects:
+        - set_flag: pr2_fever_given
+        - give_item: { item: fever_reducer, from: herald }
+        - relation: { who: herald, axis: trust, delta: 2 }
+        - belief: { fact: "선전꾼 편종호가 버들마을 관리사무소 지하 교실 문 앞에 해열제를 두고 오라고 부탁했다. 위원회 몫이 아니라 자기 것이라 했다", source: seen }
+    - id: ask_why
+      label: 왜 버들마을 아이들이냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pr2_fever_given
+          - give_item: { item: fever_reducer, from: herald }
+          - reveal_tie: { who: herald, other: teacher }
+          - relation: { who: herald, axis: trust, delta: 2 }
+          - belief: { fact: "편종호는 붕괴 전 가람초등학교 교사였다. 버들마을 지하 교실의 진은지와 같은 학교에서 일했다. 지난번 사자로 갔을 때도 해열제를 문 앞에 두고 왔다", source: report }
+        partial:
+          - set_flag: pr2_fever_given
+          - give_item: { item: fever_reducer, from: herald }
+          - relation: { who: herald, axis: trust, delta: 1 }
+          - belief: { fact: "편종호는 '애들 열은 할당량을 안 기다려요'라고만 했다", source: report }
+        miss:
+          - set_flag: pr2_fever_refused
+          - relation: { who: herald, axis: trust, delta: -1 }
+          - belief: { fact: "편종호는 약통을 도로 주머니에 넣고, 포고를 읽을 때의 목소리로 돌아갔다", source: seen }
+    - id: refuse
+      label: 위원회 몰래 약을 내보낼 수는 없다고 한다
+      effects:
+        - set_flag: pr2_fever_refused
+        - relation: { who: herald, axis: affection, delta: -1 }
+    - id: report
+      label: 규율반에 알린다
+      effects:
+        - set_flag: pr2_fever_refused
+        - set_flag: pr2_jongho_reported
+        - merit: 1
+        - relation: { who: herald, axis: trust, delta: -3 }
+        - deed: { summary: 다른 무리에 약을 보내려던 선전꾼을 규율반에 알렸다, tags: [betrayal, diligence], severity: 2, privacy: semi_private }
+
+- id: pr2_classroom_door
+  title: 계단 맨 아래 문
+  tags: [world]
+  when:
+    zones: [b_base]
+    segments: [morning, day, evening]
+    flags_all: [pr2_fever_given]
+    flags_none: [pr2_fever_delivered]
+    has_items: [fever_reducer]
+  cast:
+    teacher: { ids: [b_eunji] }
+    herald: { ids: [pc_jongho], enter: false }
+  setup: >-
+    관리사무소 지하 계단. 문 너머에서 아이들이 구구단을 외운다.
+    계단 맨 아래에 서자 문이 먼저 열린다. 소맷부리에 분필 가루가 묻은 {teacher:이/가} 당신 손의 약통을 본다.
+    라벨 귀퉁이에 붉은 페인트 지문이 묻어 있다.
+  ai_direction: >-
+    {teacher}는 지난번에도 문 앞에서 해열제를 받았고, 누가 두고 갔는지 알면서 받았다. 붉은 페인트 지문을 보면 확신한다.
+    교실 안에는 열이 오른 아이가 있다. 버들마을 경비가 붉은 완장이 약을 들고 왔다는 걸 알면 시끄러워진다.
+    {teacher}는 고맙다는 말보다 먼저 "그 사람 아직 살아 있어요?"를 묻는다.
+  choices:
+    - id: hand_over
+      label: 약통만 건네고 돌아선다
+      effects:
+        - set_flag: pr2_fever_delivered
+        - take_item: { item: fever_reducer }
+        - faction_resource: { faction: faction_b, resource: medicine, delta: 1 }
+        - relation: { who: teacher, axis: trust, delta: 1 }
+    - id: name_him
+      label: 누가 보냈는지 말해 준다
+      effects:
+        - set_flag: pr2_fever_delivered
+        - take_item: { item: fever_reducer }
+        - faction_resource: { faction: faction_b, resource: medicine, delta: 1 }
+        - reveal_tie: { who: teacher, other: herald }
+        - relation: { who: teacher, axis: trust, delta: 2 }
+        - belief: { fact: "진은지는 편종호의 이름을 듣고 '종호 선생님'이라고 불렀다. 둘은 붕괴 전 같은 학교 교사였다. 문 앞의 해열제는 이번이 처음이 아니었다", source: report }
+    - id: keep
+      label: 약통을 도로 품에 넣는다
+      effects:
+        - set_flag: pr2_fever_delivered
+        - set_flag: pr2_fever_kept
+        - relation: { who: teacher, axis: trust, delta: -1 }
+        - deed: { summary: 아이들 몫으로 맡은 해열제를 전하지 않고 챙겼다, tags: [theft, selfishness], severity: 2, privacy: private }
+
+- id: pr2_white_flag
+  title: 엎드릴 자리
+  tags: [red_life]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [evening]
+    day_gte: 5
+    flags_none: [pr2_flag_done]
+  cast:
+    sarge: { ids: [pc_taegyu], trust_gte: 2 }
+  setup: >-
+    거점 담 그늘. {sarge:이/가} 동쪽 지도를 무릎에 펴 놓고 있다. 초소 표시가 아니라 그 앞의 도랑과 담 밑마다 손톱자국이 패어 있다.
+    당신을 보고도 지도를 접지 않는다. "공세 날 너 어디 서는지 알아?"
+  ai_direction: >-
+    {sarge}는 공세 날 벌조를 이끌고 청솔형제단 동쪽 초소에 손을 들고 넘어갈 생각이다. 벌조원 몇에게만 귀띔했고, 지금 주인공을 떠본다.
+    반년 전 조를 잃은 것이 위에서 내려온 엉터리 시간 때문이었다는 걸 안다. 이번 초소 교대 시간도 위원회가 어디선가 사 왔다.
+    넘어가려면 흰 천과 먼저 손을 들 사람이 필요하다. 규율반에 알려지면 {sarge}와 귀띔받은 벌조원들이 광장에 선다.
+  choices:
+    - id: listen
+      label: 끝까지 들어 준다
+      effects:
+        - set_flag: pr2_flag_done
+        - set_flag: pr2_flag_heard
+        - relation: { who: sarge, axis: trust, delta: 2 }
+        - belief: { fact: "벌조장 성태규는 동쪽 공세 날 벌조를 이끌고 청솔형제단 동쪽 초소에 손을 들고 넘어갈 생각이다", source: report }
+    - id: swear
+      label: 그날 같이 손을 들겠다고 한다
+      effects:
+        - set_flag: pr2_flag_done
+        - set_flag: pr2_flag_heard
+        - set_flag: pr2_flag_sworn
+        - relation: { who: sarge, axis: trust, delta: 3 }
+        - deed: { summary: 공세 날 적 초소에 함께 넘어가기로 약조했다, tags: [betrayal, enemy_sympathy], severity: 2, privacy: private }
+        - belief: { fact: "성태규와 약조했다. 공세 날 벌조가 동쪽 초소 앞 도랑에 엎드리면 흰 천을 먼저 드는 것은 당신이다", source: seen }
+    - id: talk_down
+      label: 넘어간 놈을 저쪽이 어떻게 대할지 아느냐고 말린다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pr2_flag_done
+          - set_flag: pr2_flag_dropped
+          - relation: { who: sarge, axis: trust, delta: 1 }
+          - relation: { who: sarge, axis: respect, delta: 1 }
+          - belief: { fact: "성태규가 지도를 접었다. 넘어가는 대신 공세 날 벌조원들을 맨 뒤 도랑에 먼저 엎드리게 하겠다고 했다", source: report }
+        partial:
+          - set_flag: pr2_flag_done
+          - set_flag: pr2_flag_heard
+          - relation: { who: sarge, axis: respect, delta: 1 }
+          - belief: { fact: "성태규는 대답하지 않고 지도를 반만 접었다. 넘어갈 생각은 버리지 않았다", source: seen }
+        miss:
+          - set_flag: pr2_flag_done
+          - relation: { who: sarge, axis: trust, delta: -1 }
+          - belief: { fact: "성태규는 지도를 접고 일어섰다. 아무 이야기도 하지 않았다는 듯 벌조 막사로 갔다", source: seen }
+    - id: report
+      label: 규율반에 알린다
+      effects:
+        - set_flag: pr2_flag_done
+        - set_flag: pr2_flag_reported
+        - merit: 2
+        - npc_capture: { who: sarge, by: faction_c, zone: c_warehouse }
+        - deed: { summary: 투항을 꾀하던 벌조장을 규율반에 넘겼다, tags: [betrayal, diligence], severity: 3, privacy: semi_private }
+
+- id: pr2_locked_door
+  title: 잠기는 날
+  tags: [clinic_life]
+  when:
+    factions: [faction_d]
+    zones: [d_clinic]
+    segments: [evening]
+    day_gte: 4
+    flags_none: [pr2_door_done]
+  cast:
+    pharm: { ids: [pd_sugyeong] }
+    surgeon: { ids: [pd_ugyeong], enter: false }
+    keeper: { ids: [d_gisun], enter: false }
+  setup: >-
+    저녁, 약제실. 장부를 맞추던 {pharm:이/가} 돋보기를 내려놓고 당신 소매를 끈다.
+    복도 끝 수술실 문이 잠겨 있다. 문틈으로 불빛만 샌다.
+    "…진통제 비는 날이요. 저 문 잠기는 날이랑 같아요. {keeper} 할머니한테는 아직 말 안 했어요."
+  ai_direction: >-
+    {surgeon}은 수술 뒤 손 떨림을 멎게 하려고 약제실 진통제를 몰래 맞는다. 장부의 빈 숫자가 다 자기 탓인 줄 안다. 다른 구멍이 또 있다는 것은 아무도 모르고, 여기서 드러내지 않는다.
+    진료소에서 톱을 쥘 수 있는 사람은 {surgeon}뿐이다. {pharm}은 약제실 열쇠를 바라는데, 장부 일로 자기 이름이 의심받을까 두렵다. 예전에 약제실 문을 열어 준 일이 있어서다. 그 이야기는 꺼내지 않는다.
+    문 앞에서 기다리면 {surgeon}이 나온다. 소매 끝을 손끝까지 내려 쥐고 있다.
+  choices:
+    - id: wait
+      label: 잠긴 문 앞에서 천우경을 기다린다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pr2_door_done
+          - set_flag: pr2_ugyeong_admitted
+          - relation: { who: surgeon, axis: trust, delta: 2 }
+          - relation: { who: pharm, axis: trust, delta: 1 }
+          - belief: { fact: "천우경은 수술 뒤 손 떨림을 멈추려고 약제실 진통제를 몰래 맞는다. 문기순의 장부가 맞지 않는 까닭 중 하나가 자기라고 했다", source: report }
+        partial:
+          - set_flag: pr2_door_done
+          - set_flag: pr2_ugyeong_admitted
+          - relation: { who: surgeon, axis: trust, delta: -1 }
+          - belief: { fact: "천우경은 문을 열고 '수술 있는 날만이에요'라고 했다. 그 이상은 말하지 않았다. 소매 끝이 떨리고 있었다", source: report }
+        miss:
+          - set_flag: pr2_door_done
+          - relation: { who: surgeon, axis: trust, delta: -2 }
+          - belief: { fact: "천우경은 문틈으로 오늘은 늦었다고만 했다. 문이 다시 잠기는 소리가 났다", source: seen }
+    - id: tell_keeper
+      label: 문기순 할머니에게 그대로 알리자고 한다
+      effects:
+        - set_flag: pr2_door_done
+        - set_flag: pr2_ugyeong_exposed
+        - relation: { who: surgeon, axis: trust, delta: -3 }
+        - relation: { who: pharm, axis: respect, delta: 1 }
+        - deed: { summary: 수술 의사가 진통제를 빼 쓴다는 것을 약사에게 알렸다, tags: [honesty], severity: 1, privacy: semi_private }
+        - belief: { fact: "문기순이 장부를 덮고 아무 말 없이 수술실 쪽을 보았다. 그날 밤부터 진통제 상자는 할머니 방에서 잔다", source: seen }
+    - id: fudge
+      label: 장부는 맞춰 두고 모른 척하자고 한다
+      effects:
+        - set_flag: pr2_door_done
+        - set_flag: pr2_ledger_fudged
+        - relation: { who: pharm, axis: trust, delta: 1 }
+        - relation: { who: pharm, axis: respect, delta: -1 }
+        - deed: { summary: 약제실 장부의 빈 숫자를 덮어 두게 했다, tags: [deceit], severity: 1, privacy: private }
+        - belief: { fact: "연수경은 장부에 숫자를 맞춰 적으며 '또 문 열어 주는 사람이 되는 거네요'라고 중얼거렸다", source: seen }

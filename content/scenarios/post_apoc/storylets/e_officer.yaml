@@ -1,0 +1,553 @@
+# 나루상단 장부 간부 스토리렛. 형식은 a_grunt.yaml 머리말 참고
+# 이어지는 이야기 (플래그):
+#   누구 편에 싣나: eo_first_cargo(eo_leaned_red / eo_leaned_pine / eo_held_neutral) · eo_red_contract(eo_red_exclusive / eo_refused_red) · eo_pine_credit(eo_backed_pine)
+#     → (상단이 붉은연합 쪽으로 기울면, 태도 조건) eo_second_ledger_ask
+#   섬 거래선의 진실: eo_debt_papers(eo_debt_paper_seen / eo_sold_papers) · eo_isle_lines(eo_isle_lines_seen)
+#     → eo_manifest(eo_signed_manifest / eo_struck_people / eo_manifest_delayed)
+#     → eo_taesik_pen(eo_debts_rewritten / eo_sundeok_stopped)
+#     → eo_isle_shortfall(eo_no_people / eo_isle_cut)
+#   교역 방침: eo_water_trade (faction_policy trade)
+# tags: e_officer = 이 시나리오에 묶인 이야기, council = 회의에 앉는 간부 (factions로 나루상단에 묶었다)
+# 세력 클락: e_side(나루상단이 이기는 쪽에 붙기. 당기면 빨리 붙고, 늦추면 버틴다), c_east_offensive(붉은연합 동쪽 공세)
+# 섬의 진실(인육)은 여기서 드러내지 않는다. 주인공이 아는 것은 "섬에 간 사람에게서 편지가 오지 않는다"까지
+
+# ── 고정: 누구 편에 싣나 ───────────────────────────
+
+- id: eo_first_cargo
+  title: 짐마차 세 대
+  weight: 2
+  tags: [e_officer, council]
+  when:
+    zones: [e_market, water_plant]
+    factions: [faction_e]
+    segments: [morning, day, evening]
+    flags_none: [eo_cargo_decided]
+  cast:
+    boss: { commander: true }
+    carter: { ids: [e_okhee] }
+  setup: '나무 궤짝 위에 장부가 펼쳐져 있다. {boss:이/가} 의자를 뒤로 젖히며 금니를 보인다. "짐마차는 셋, 실을 물건은 한 번 실을 만큼. 붉은 쪽은 탄으로 값을 치고, 청솔은 고철에 외상이죠. 간부님, 어디부터 실을까요?" 문가에서 {carter:이/가} 저울추를 만지작거리며 대답을 기다린다.'
+  ai_direction: 탁봉수는 이미 붉은연합 쪽으로 기울어 있고, 그 결정을 간부의 입으로 듣고 싶어 한다. 책임을 나누려는 것이다. 주옥희는 물류창고 길이 강변 길보다 위험하다는 것을 알고, 짐꾼을 잃을까 걱정한다. 어느 쪽에 싣든 장터의 소문이 된다. 양은 코드가 정했다. 숫자를 새로 지어내지 않는다.
+  choices:
+    - id: red_first
+      label: 값을 잘 치는 붉은연합 몫부터 싣자고 한다
+      effects:
+        - set_flag: eo_cargo_decided
+        - set_flag: eo_leaned_red
+        - clock: { id: e_side, delta: 2 }
+        - faction_resource: { faction: own, resource: ammo, delta: 10 }
+        - faction_relation: { from: faction_c, to: own, delta: 1, mutual: false }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: carter, axis: trust, delta: -1 }
+        - belief: { fact: "짐마차 둘이 붉은연합 물류창고로 떠났다. 주옥희는 짐꾼 수를 두 번 세고 나서야 출발 신호를 냈다", source: seen }
+    - id: pine_first
+      label: 밀린 외상이 있어도 청솔형제단 몫부터 싣자고 한다
+      effects:
+        - set_flag: eo_cargo_decided
+        - set_flag: eo_leaned_pine
+        - clock: { id: e_side, delta: -1 }
+        - faction_relation: { from: faction_a, to: own, delta: 1, mutual: false }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - relation: { who: carter, axis: trust, delta: 1 }
+        - belief: { fact: "짐마차가 청솔형제단 거점으로 떠났다. 탁봉수는 외상 장부를 한참 들여다보다가 아무 말 없이 덮었다", source: seen }
+    - id: split
+      label: 짐마차마다 행선지를 나눠 양쪽에 반씩 싣는 안을 짠다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: eo_cargo_decided
+          - set_flag: eo_held_neutral
+          - clock: { id: e_side, delta: -1 }
+          - faction_resource: { faction: own, resource: ammo, delta: 5 }
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - relation: { who: carter, axis: respect, delta: 1 }
+          - belief: { fact: "짐마차가 양쪽으로 나뉘어 떠났다. 탁봉수는 손님 편이라는 말이 이럴 때 쓰는 거라며 웃었다", source: seen }
+        partial:
+          - set_flag: eo_cargo_decided
+          - set_flag: eo_held_neutral
+          - belief: { fact: "반씩 싣는 안이 통과됐지만 탁봉수는 붉은 쪽 상자 수를 몰래 하나 늘렸다", source: seen }
+        miss:
+          - set_flag: eo_cargo_decided
+          - set_flag: eo_leaned_red
+          - clock: { id: e_side, delta: 1 }
+          - relation: { who: boss, axis: respect, delta: -1 }
+          - belief: { fact: "셈이 엉켰다. 탁봉수가 반반이면 둘 다 잃는다며 붉은연합 몫부터 싣게 했다", source: seen }
+
+- id: eo_red_contract
+  title: 장갑 낀 손의 계약서
+  weight: 2
+  tags: [e_officer]
+  when:
+    zones: [e_market, water_plant]
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [eo_red_contract_done]
+  cast:
+    buyer: { ids: [c_gyeongsu] }
+    boss: { commander: true }
+  setup: '{buyer:이/가} 장갑을 벗지 않은 채 계약서를 당신 앞에 펼친다. 붉은연합 물류창고의 도장이 찍혀 있다. "겨울 동안 상단의 탄과 통조림은 우리가 다 삽니다. 값은 탄으로 넉넉히. 조건은 하나, 청솔과 버들에는 팔지 않는다." {boss:이/가} 웃으며 당신 쪽으로 펜을 민다. "장부는 간부님 일이죠."'
+  ai_direction: 마경수는 독점 계약으로 청솔형제단의 숨통을 죄려 한다. 탁봉수는 받고 싶지만 결정의 책임은 간부에게 넘긴다. 계약을 받으면 상단은 사실상 편을 든 것이 된다. 붉은연합 지도부는 전쟁이 끝나면 상단도 손볼 생각이 있다. 마경수도 그것까지는 모른다. 계약서에 적힌 양은 마경수의 말일 뿐이고, 실제로 오가는 것은 코드가 정한다.
+  choices:
+    - id: sign
+      label: 계약서에 서명한다
+      effects:
+        - set_flag: eo_red_contract_done
+        - set_flag: eo_red_exclusive
+        - clock: { id: e_side, delta: 3 }
+        - faction_resource: { faction: own, resource: ammo, delta: 15 }
+        - faction_relation: { from: faction_c, to: own, delta: 1 }
+        - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+        - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - deed: { summary: 붉은연합과 청솔·버들에 팔지 않는다는 겨울 독점 계약을 맺었다, tags: [selfishness], severity: 2, privacy: public }
+    - id: counter
+      label: 독점 조항을 빼고 물량만 약속하자고 흥정한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: eo_red_contract_done
+          - clock: { id: e_side, delta: 1 }
+          - faction_resource: { faction: own, resource: ammo, delta: 10 }
+          - relation: { who: buyer, axis: respect, delta: 1 }
+          - belief: { fact: "마경수는 독점 조항에 줄을 긋고 서명했다. 상단은 청솔에도 계속 판다. 그가 '겨울은 길다'고 했다", source: seen }
+        partial:
+          - set_flag: eo_red_contract_done
+          - clock: { id: e_side, delta: 1 }
+          - faction_resource: { faction: own, resource: ammo, delta: 5 }
+          - relation: { who: buyer, axis: trust, delta: -1 }
+          - belief: { fact: "독점 조항은 뺐지만 값이 깎였다. 마경수는 장부에 적힌 청솔 이름을 손가락으로 오래 짚었다", source: seen }
+        miss:
+          - set_flag: eo_red_contract_done
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "마경수는 계약서를 접어 외투 안에 넣었다. 강 건너에도 장사꾼은 있다고 했다", source: seen }
+    - id: refuse
+      label: 상단은 누구에게나 판다며 계약서를 돌려준다
+      effects:
+        - set_flag: eo_red_contract_done
+        - set_flag: eo_refused_red
+        - clock: { id: e_side, delta: -2 }
+        - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - relation: { who: buyer, axis: respect, delta: 1 }
+        - belief: { fact: "계약서를 돌려주었다. 탁봉수는 마경수를 문밖까지 배웅하고 돌아와 한동안 내 쪽을 보지 않았다", source: seen }
+
+- id: eo_pine_credit
+  title: 앉지 않는 손님
+  tags: [e_officer]
+  when:
+    zones: [e_market, water_plant, riverside, a_base]
+    segments: [day, evening]
+    day_gte: 4
+    flags_none: [eo_pine_credit_done]
+  cast:
+    buyer: { ids: [a_doyun] }
+  setup: '{buyer:이/가} 장부를 옆구리에 끼고 당신 앞을 막아선다. 청솔형제단 보급 간부다. 앉아서 얘기하자는 말에도 서 있다. "물값이 두 번 밀렸습니다. 압니다. 겨울만 넘기게 외상으로 물을 대 주십시오. 봄에 고철로, 안 되면 사람 손으로 갚겠습니다."'
+  ai_direction: 한도윤은 자존심을 접고 왔다. 청솔형제단 창고는 정말 모자라다. 외상을 주면 상단은 청솔 쪽에 짐을 거는 셈이 되고, 청솔이 지면 받을 길이 없다. 사람 손으로 갚겠다는 말에서 섬 거래선을 떠올리는 것은 주인공의 몫이다. GM이 먼저 이어 붙이지 않는다. 양은 코드가 정했다.
+  choices:
+    - id: credit
+      label: 외상으로 물을 대 준다
+      effects:
+        - set_flag: eo_pine_credit_done
+        - set_flag: eo_backed_pine
+        - faction_resource: { faction: own, resource: water, delta: -20 }
+        - faction_resource: { faction: faction_a, resource: water, delta: 20 }
+        - faction_relation: { from: faction_a, to: own, delta: 2, mutual: false }
+        - clock: { id: e_side, delta: -2 }
+        - relation: { who: buyer, axis: trust, delta: 2 }
+        - deed: { summary: 밀린 물값을 따지지 않고 청솔형제단에 겨울 외상을 열어 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+    - id: collateral
+      label: 외상은 주되 연료를 담보로 잡자고 흥정한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: eo_pine_credit_done
+          - faction_resource: { faction: own, resource: water, delta: -15 }
+          - faction_resource: { faction: faction_a, resource: water, delta: 15 }
+          - faction_resource: { faction: faction_a, resource: fuel, delta: -10 }
+          - faction_resource: { faction: own, resource: fuel, delta: 10 }
+          - clock: { id: e_side, delta: -1 }
+          - relation: { who: buyer, axis: respect, delta: 1 }
+          - belief: { fact: "한도윤은 연료를 담보로 내놓았다. 장부에 적으면서 이번 겨울 난로를 몇 번 덜 피우게 될지 셈하는 얼굴이었다", source: seen }
+        partial:
+          - set_flag: eo_pine_credit_done
+          - faction_resource: { faction: own, resource: water, delta: -10 }
+          - faction_resource: { faction: faction_a, resource: water, delta: 10 }
+          - relation: { who: buyer, axis: affection, delta: -1 }
+          - belief: { fact: "외상은 조금만 열렸다. 한도윤은 고맙다는 말을 끝내 하지 않았다", source: seen }
+        miss:
+          - set_flag: eo_pine_credit_done
+          - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+          - relation: { who: buyer, axis: trust, delta: -1 }
+          - belief: { fact: "흥정이 길어지자 한도윤이 장부를 덮었다. 물은 다른 길로 구하겠다고 했다", source: seen }
+    - id: refuse
+      label: 밀린 것부터 갚으라고 장부대로 말한다
+      effects:
+        - set_flag: eo_pine_credit_done
+        - clock: { id: e_side, delta: 1 }
+        - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+        - relation: { who: buyer, axis: trust, delta: -1 }
+        - relation: { who: buyer, axis: respect, delta: 1 }
+        - belief: { fact: "한도윤은 고개를 끄덕이고 나갔다. 사람 손으로 갚겠다던 말이 귀에 남는다", source: seen }
+
+- id: eo_water_trade
+  title: 물은 누구 편도 아니다
+  weight: 2
+  tags: [e_officer, council]
+  when:
+    zones: [e_market, water_plant]
+    factions: [faction_e]
+    segments: [morning, day]
+    day_gte: 2
+    flags_none: [eo_water_trade_done]
+  cast:
+    pump: { ids: [e_deoksu] }
+    boss: { commander: true }
+  setup: '{pump:이/가} 기름에 절은 목장갑을 벗어 궤짝 위에 내려놓는다. "하얀매에서 기별이 왔어. 날마다 물을 대 주면 약을 조금씩 내준대. 물은 누구 편도 아니니, 약하고 바꾸는 게 맞지." {boss:이/가} 끼어든다. "영감님, 물은 값을 제일 세게 쳐주는 데 팔아야지요. 붉은 쪽이 탄을 더 쳐준다니까요." 두 사람이 당신을 본다.'
+  ai_direction: 염덕수는 물을 무기로 쓰지 않으려 한다. 펌프가 닳아 간다는 것은 아직 말하지 않는다. 탁봉수는 물을 편들기의 지렛대로 쓰고 싶어 한다. 교역 방침이 정해지면 오가는 양은 코드가 날마다 셈한다. 숫자를 지어내지 않는다.
+  choices:
+    - id: clinic
+      label: 하얀매와 날마다 물을 약으로 바꾸는 방침을 열자고 한다
+      effects:
+        - set_flag: eo_water_trade_done
+        - faction_policy: { faction: own, topic: trade, option: water_for_medicine }
+        - clock: { id: e_side, delta: -1 }
+        - relation: { who: pump, axis: trust, delta: 2 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - belief: { fact: "상단이 하얀매 진료소와 물을 약으로 바꾸는 교역을 열었다. 염덕수가 처음으로 장부에 직접 서명했다", source: seen }
+    - id: best_price
+      label: 물은 값을 센 데로 돌리자고 사장 편을 든다
+      effects:
+        - set_flag: eo_water_trade_done
+        - clock: { id: e_side, delta: 1 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: pump, axis: respect, delta: -1 }
+        - belief: { fact: "물값 판에 붉은연합 칸이 따로 생겼다. 염덕수는 장갑을 다시 끼고 아무 말 없이 정수장으로 돌아갔다", source: seen }
+    - id: ask_why
+      label: 영감님이 왜 지금 이 말을 꺼내는지 따로 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: eo_water_trade_done
+          - set_flag: eo_pump_hint
+          - relation: { who: pump, axis: trust, delta: 1 }
+          - belief: { fact: "염덕수가 정수장 문밖에서 낮게 말했다. 펌프 소리가 요즘 좋지 않다고, 물을 무기로 쓰는 버릇이 들면 펌프가 서는 날 도시가 뒤집힌다고", source: report }
+        partial:
+          - set_flag: eo_water_trade_done
+          - belief: { fact: "염덕수는 그냥 늙은이 고집이라고 했다. 다만 펌프 이야기를 할 때 장갑을 쥔 손에 힘이 들어갔다", source: seen }
+        miss:
+          - set_flag: eo_water_trade_done
+          - relation: { who: pump, axis: trust, delta: -1 }
+          - belief: { fact: "염덕수는 대답 대신 장갑을 챙겨 나갔다. 물 이야기는 더 하지 않았다", source: seen }
+
+# ── 고정: 섬 거래선의 진실 ───────────────────────────
+
+- id: eo_debt_papers
+  title: 끈으로 묶은 빚 문서
+  weight: 2
+  tags: [e_officer]
+  when:
+    zones: [e_market, water_plant]
+    segments: [morning, day, evening]
+    flags_none: [eo_papers_done]
+  cast:
+    pawn: { ids: [pe_sundeok] }
+    debtor: { ids: [pe_junki], enter: false }
+  setup: '{pawn:이/가} 털실 조끼 주머니에서 끈으로 묶은 종이 뭉치를 꺼내 당신 앞에 내민다. 빚 문서들이다. "간부님 도장만 있으면 돼. 갚을 길 없는 빚은 내가 싸게 사서 내가 받을게. 장부도 깨끗해지고, 상단은 손해 볼 것 없지." 맨 위 종이에 짐꾼 {debtor}의 이름이 보인다.'
+  ai_direction: 감순덕은 빚 문서를 사들인 뒤 갚지 못한 사람을 섬 거래선의 일손으로 넘긴다. 그 말은 하지 않는다. 문서 아래쪽에 작은 글씨로, 기한을 넘기면 채무자가 섬 일손으로 일해 갚는다는 조건이 적혀 있다. 꼼꼼히 읽어야 보인다. 모준기는 어머니를 데려가 살 방 값 때문에 몸을 담보로 빚을 졌다. 도장을 찍으면 상단 장부에서 그 빚들이 빠지고 감순덕이 값을 치른다. 양은 코드가 정했다.
+  choices:
+    - id: sign
+      label: 도장을 찍고 값을 받는다
+      effects:
+        - set_flag: eo_papers_done
+        - set_flag: eo_sold_papers
+        - faction_resource: { faction: own, resource: ammo, delta: 6 }
+        - relation: { who: pawn, axis: trust, delta: 2 }
+        - belief: { fact: "감순덕에게 갚을 길 없는 빚 문서 한 뭉치를 넘겼다. 짐꾼 모준기의 문서도 그 안에 있었다. 감순덕은 탄으로 값을 쳤다", source: seen }
+    - id: read
+      label: 도장을 찍기 전에 한 장씩 끝까지 읽는다
+      check: history
+      outcomes:
+        success:
+          - set_flag: eo_papers_done
+          - set_flag: eo_debt_paper_seen
+          - set_flag: eo_junki_held
+          - relation: { who: pawn, axis: trust, delta: -1 }
+          - belief: { fact: "빚 문서 아래 작은 글씨: 기한을 넘기면 채무자는 섬 일손으로 일하여 갚는다. 모준기의 문서에도, 다른 몇 장에도 같은 줄이 있다. 모준기의 문서는 빼서 내 장부에 끼워 두었다", source: seen }
+        partial:
+          - set_flag: eo_papers_done
+          - set_flag: eo_debt_paper_seen
+          - relation: { who: pawn, axis: trust, delta: -1 }
+          - belief: { fact: "몇 장에 섬 일손으로 갚는다는 줄이 있었다. 감순덕이 눈치채고 웃으며 뭉치를 도로 가져갔다", source: seen }
+        miss:
+          - set_flag: eo_papers_done
+          - set_flag: eo_sold_papers
+          - faction_resource: { faction: own, resource: ammo, delta: 6 }
+          - belief: { fact: "글씨가 작았고 감순덕이 다정하게 재촉했다. 결국 도장을 찍었다", source: seen }
+    - id: refuse
+      label: 상단 빚은 상단이 받는다며 문서를 돌려준다
+      effects:
+        - set_flag: eo_papers_done
+        - relation: { who: pawn, axis: affection, delta: -1 }
+        - belief: { fact: "감순덕은 서운하다면서도 끝까지 웃었다. 문소라에게 따로 가 보겠다고 했다", source: seen }
+
+- id: eo_isle_lines
+  title: 이름 없는 줄
+  weight: 2
+  tags: [e_officer]
+  when:
+    zones: [e_market, water_plant]
+    segments: [day, evening]
+    day_gte: 2
+    flags_none: [eo_isle_lines_seen]
+  cast:
+    clerk: { ids: [e_sora] }
+  setup: '해 질 녘, {clerk:이/가} 장부 두 권을 맞춰 보다가 한 줄을 연필로 짚는다. "섬 거래선이요. 나간 것: 통조림, 일손 셋. 들어온 것: 탄약. 간부 칸에는 사장님 도장이 찍혀 있고요. 일손은 장부에 이름이 없어요." 철사로 감은 안경 너머로 당신을 본다. "사람인데요."'
+  ai_direction: 문소라는 사람을 물건 줄에 적는 일이 마음에 걸린다. 자기 몰래 쓰는 두 번째 장부는 아직 말하지 않는다. 지난 거래선의 간부 칸은 탁봉수가 도장을 찍었다 (주인공이 한 것이 아니다). 섬에서 그 사람들이 어떻게 되는지는 문소라도 모른다. 아는 것은 편지가 한 장도 오지 않았다는 것뿐이다.
+  choices:
+    - id: ask
+      label: 일손이 누구였는지 조용히 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: eo_isle_lines_seen
+          - set_flag: eo_sora_trusts
+          - relation: { who: clerk, axis: trust, delta: 2 }
+          - belief: { fact: "문소라 말로는 일손은 감순덕 전당포에서 넘어온 빚쟁이들이다. 섬에 간 뒤로 편지 한 장 온 적이 없다. 장부에 이름을 적지 말라고 한 건 탁봉수다", source: report }
+        partial:
+          - set_flag: eo_isle_lines_seen
+          - relation: { who: clerk, axis: trust, delta: 1 }
+          - belief: { fact: "문소라는 일손이 전당포에서 넘어온 사람들이라고만 했다. 더 묻자 연필을 내려놓았다", source: report }
+        miss:
+          - set_flag: eo_isle_lines_seen
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "문소라는 장부를 덮고, 그냥 셈이 안 맞는 줄이라고 했다", source: seen }
+    - id: order_names
+      label: 다음부터 일손도 이름을 적으라고 이른다
+      effects:
+        - set_flag: eo_isle_lines_seen
+        - set_flag: eo_names_in_ledger
+        - relation: { who: clerk, axis: respect, delta: 1 }
+        - relation: { who: clerk, axis: trust, delta: 1 }
+        - belief: { fact: "섬 거래선 장부에 일손의 이름을 적게 했다. 문소라는 줄을 긋지 않고 새 칸을 만들었다", source: seen }
+    - id: let_go
+      label: 장부는 장부일 뿐이라며 넘긴다
+      effects:
+        - set_flag: eo_isle_lines_seen
+        - relation: { who: clerk, axis: trust, delta: -1 }
+        - belief: { fact: "섬 거래선 장부에는 사람이 일손이라는 물건 줄로 적힌다", source: seen }
+
+- id: eo_manifest
+  title: 엄지로 가린 맨 아랫줄
+  tags: [e_officer]
+  when:
+    zones: [e_market, water_plant, riverside]
+    segments: [evening, night]
+    day_gte: 4
+    flags_any: [eo_isle_lines_seen, eo_debt_paper_seen, eo_sold_papers]
+    flags_none: [eo_manifest_done]
+  cast:
+    boatman: { ids: [pe_sangcheol] }
+    pawn: { ids: [pe_sundeok], enter: false }
+    daughter: { ids: [py_narae], enter: false }
+  setup: '{boatman:이/가} 소금기에 바랜 비옷 안에서 접힌 종이를 꺼낸다. 거래선 적하 목록이다. 통조림 상자, 물통, 그리고 맨 아래 한 줄. 일손 셋, 전당포. "물때가 내일 새벽이야. 간부 서명이 있어야 배를 띄우지." 그는 맨 아랫줄을 엄지로 가린 채 종이를 내민다.'
+  ai_direction: 변상철은 첫 거래 때 딸 나래를 섬에 넘겼고, 그 뒤로 거래선의 사람들을 딸 몫의 답례라고 여긴다. 일손 셋은 감순덕이 넘긴 빚쟁이들이다. 서명을 미루면 탁봉수가 알게 된다. 섬에서 그들이 어떻게 되는지 변상철은 모른다. 섬의 진실은 드러내지 않는다.
+  choices:
+    - id: sign
+      label: 서명한다
+      effects:
+        - set_flag: eo_manifest_done
+        - set_flag: eo_signed_manifest
+        - faction_resource: { faction: own, resource: ammo, delta: 10 }
+        - relation: { who: boatman, axis: trust, delta: 1 }
+        - deed: { summary: 빚쟁이 셋이 실린 섬 거래선 목록에 서명했다, tags: [selfishness], severity: 1, privacy: private }
+        - belief: { fact: "새벽 물때에 거래선이 떠났다. 맨 아랫줄의 세 사람도 탔다. 돌아올 때는 탄약 상자를 싣고 올 것이다", source: seen }
+    - id: strike
+      label: 맨 아랫줄을 긋고 서명한다
+      effects:
+        - set_flag: eo_manifest_done
+        - set_flag: eo_struck_people
+        - faction_relation: { from: faction_y, to: own, delta: -1, mutual: false }
+        - relation: { who: boatman, axis: trust, delta: -1 }
+        - relation: { who: pawn, axis: trust, delta: -2 }
+        - deed: { summary: 섬 거래선 목록에서 사람 셋을 지웠다, tags: [mercy, disobedience], severity: 2, privacy: semi_private }
+        - belief: { fact: "일손 줄을 지웠다. 배는 통조림만 싣고 떠났다. 감순덕과 탁봉수도 곧 알게 될 것이다", source: seen }
+    - id: ask_thumb
+      label: 엄지 밑의 줄 이야기를 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: eo_manifest_done
+          - set_flag: eo_manifest_delayed
+          - reveal_tie: { who: boatman, other: daughter }
+          - relation: { who: boatman, axis: trust, delta: 1 }
+          - belief: { fact: "변상철은 첫 거래 때 딸을 섬에 넘겼다고 털어놓았다. 거래선의 일손은 딸 몫의 답례라고 했다. 서명은 내일로 미뤘다", source: report }
+        partial:
+          - set_flag: eo_manifest_done
+          - set_flag: eo_manifest_delayed
+          - belief: { fact: "변상철은 섬에 딸이 산다고만 했다. 서명은 내일로 미뤘고, 그는 물때를 놓친다며 혀를 찼다", source: report }
+        miss:
+          - set_flag: eo_manifest_done
+          - set_flag: eo_manifest_delayed
+          - relation: { who: boatman, axis: trust, delta: -1 }
+          - belief: { fact: "변상철은 목록을 도로 접어 넣었다. 사장님 도장을 받겠다고 했다", source: seen }
+
+- id: eo_taesik_pen
+  title: 펜으로 하는 일
+  tags: [e_officer]
+  when:
+    zones: [e_market, water_plant]
+    segments: [evening, night]
+    day_gte: 5
+    flags_any: [eo_signed_manifest, eo_struck_people, eo_manifest_delayed]
+    flags_none: [eo_taesik_done]
+  cast:
+    guard: { ids: [pe_taesik] }
+    pawn: { ids: [pe_sundeok], enter: false }
+  setup: '{guard:이/가} 사람 없는 담벼락 쪽으로 당신을 데려가 등을 기댄다. 엽총 개머리판에 새긴 것이 금이 아니라 이름이다. "간부님은 펜으로 하잖아. 나는 총으로밖에 못 해. 다음 배에 실릴 사람들 빚, 장부에서 일감 빚으로 바꿔 줄 수 있어? 짐 지는 걸로 갚게. 어머니한테는 내가 말할게."'
+  ai_direction: 감태식은 어머니 감순덕이 갚지 못한 빚쟁이를 섬에 넘긴다는 것을 이제 안다. 지난 배에서 손이 묶인 사람이 어릴 적 동네 형이었다. 간부의 장부로 빚을 일감 빚으로 바꾸면 감순덕은 사람을 넘길 근거를 잃는다. 대신 상단은 섬에서 받던 탄약 일부를 잃고, 감순덕은 간부를 적으로 본다. 섬에서 사람들이 어떻게 되는지는 감태식도 모른다.
+  choices:
+    - id: rewrite
+      label: 장부를 고쳐 그 빚들을 일감 빚으로 돌린다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: eo_taesik_done
+          - set_flag: eo_debts_rewritten
+          - faction_resource: { faction: own, resource: ammo, delta: -10 }
+          - relation: { who: guard, axis: trust, delta: 3 }
+          - relation: { who: pawn, axis: trust, delta: -2 }
+          - deed: { summary: 빚쟁이들의 빚을 장부에서 일감 빚으로 바꿔 거래선에서 빼냈다, tags: [mercy, deceit], severity: 2, privacy: private }
+          - belief: { fact: "장부를 고쳤다. 다음 배에 실릴 사람들은 이제 짐을 지어 빚을 갚는다. 감순덕의 문서는 휴지가 됐다", source: seen }
+        partial:
+          - set_flag: eo_taesik_done
+          - set_flag: eo_debts_rewritten
+          - faction_resource: { faction: own, resource: ammo, delta: -10 }
+          - relation: { who: guard, axis: trust, delta: 2 }
+          - relation: { who: pawn, axis: trust, delta: -3 }
+          - belief: { fact: "장부는 고쳤지만 감순덕이 먼저 봤다. 그녀는 고친 줄을 손가락으로 쓸어 보고 웃었다", source: seen }
+        miss:
+          - set_flag: eo_taesik_done
+          - relation: { who: guard, axis: trust, delta: 1 }
+          - belief: { fact: "장부를 고치기 전에 탁봉수가 다락에 올라왔다. 이번 배는 그대로 뜬다. 감태식은 엽총을 메고 나루로 갔다", source: seen }
+    - id: confront_mother
+      label: 감순덕을 따로 불러 직접 따진다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: eo_taesik_done
+          - set_flag: eo_sundeok_stopped
+          - relation: { who: pawn, axis: trust, delta: -2 }
+          - relation: { who: guard, axis: trust, delta: 2 }
+          - faction_relation: { from: faction_y, to: own, delta: -1, mutual: false }
+          - deed: { summary: 전당포 노파에게 빚쟁이를 섬에 넘기는 일을 그만두게 했다, tags: [mercy], severity: 2, privacy: semi_private }
+          - belief: { fact: "감순덕은 오래 웃다가 돋보기를 내려놓았다. 섬 일손은 더 넘기지 않겠다고 했다. 아들 쪽은 한 번도 보지 않았다", source: seen }
+        partial:
+          - set_flag: eo_taesik_done
+          - relation: { who: pawn, axis: trust, delta: -2 }
+          - belief: { fact: "감순덕은 이번 배만 빼겠다고 했다. 다음 배는 모른다고 했다", source: seen }
+        miss:
+          - set_flag: eo_taesik_done
+          - relation: { who: pawn, axis: trust, delta: -1 }
+          - relation: { who: guard, axis: affection, delta: -1 }
+          - belief: { fact: "감순덕은 제 발로 가는 사람들이라며 다정하게 웃었다. 감태식은 그 자리에 없던 사람처럼 굳어 있었다", source: seen }
+    - id: refuse
+      label: 상단 장사에는 손대지 않겠다고 한다
+      effects:
+        - set_flag: eo_taesik_done
+        - relation: { who: guard, axis: trust, delta: -2 }
+        - belief: { fact: "감태식은 알았다고만 했다. 나가면서 엽총 개머리판을 엄지로 한 번 쓸었다", source: seen }
+
+- id: eo_isle_shortfall
+  title: 반쯤 빈 탄약 상자
+  tags: [e_officer]
+  when:
+    zones: [e_market, water_plant]
+    segments: [morning, day]
+    flags_any: [eo_struck_people, eo_debts_rewritten, eo_sundeok_stopped]
+    flags_none: [eo_shortfall_done]
+  cast:
+    boss: { commander: true }
+  setup: '{boss:이/가} 탄약 상자 하나를 당신 앞에 내려놓는다. 반쯤 비었다. 상자 안에 접힌 쪽지가 있다. 하얀 장갑 자국이 묻은 종이에 한 줄. 일손이 모자라면 탄도 모자랍니다. 탁봉수가 금니를 감추고 목소리를 낮춘다. "간부님, 이게 무슨 뜻인지 아시죠."'
+  ai_direction: 섬은 사람을 값으로 받는다. 탁봉수는 섬에서 사람들이 어떻게 되는지 모르고, 알고 싶어 하지도 않는다. 그가 두려운 것은 상단의 탄약 줄이 끊기는 것이다. 간부가 버티면 상단은 붉은연합에 되팔 탄이 줄고, 편들기가 늦어진다. 섬의 진실은 여기서도 드러내지 않는다.
+  choices:
+    - id: hold
+      label: 사람은 안 싣는다. 통조림을 더 싣자고 버틴다
+      effects:
+        - set_flag: eo_shortfall_done
+        - set_flag: eo_no_people
+        - faction_resource: { faction: own, resource: food, delta: -30 }
+        - clock: { id: e_side, delta: -2 }
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - deed: { summary: 섬 거래선에 다시는 사람을 싣지 않겠다고 우두머리에게 버텼다, tags: [mercy, disobedience], severity: 2, privacy: semi_private }
+    - id: cut_ties
+      label: 사람을 값으로 받는 곳과는 거래를 끊자고 설득한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: eo_shortfall_done
+          - set_flag: eo_no_people
+          - set_flag: eo_isle_cut
+          - faction_relation: { from: faction_y, to: own, delta: -2 }
+          - clock: { id: e_side, delta: -3 }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "탁봉수가 섬 거래선을 접기로 했다. 상단 창고의 탄은 이제 늘지 않는다. 장터에서 이유를 묻는 사람이 많다", source: seen }
+        partial:
+          - set_flag: eo_shortfall_done
+          - set_flag: eo_no_people
+          - clock: { id: e_side, delta: -1 }
+          - belief: { fact: "사람은 싣지 않되 거래선은 계속 띄우기로 했다. 탁봉수는 섬이 받을 다른 값을 찾겠다고 했다", source: seen }
+        miss:
+          - set_flag: eo_shortfall_done
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - belief: { fact: "탁봉수는 다음 배부터 거래선 목록에 자기가 직접 도장을 찍겠다고 했다. 장부에서 내 칸이 하나 줄었다", source: seen }
+    - id: yield
+      label: 상단이 살아야 한다며 다음 배부터 다시 싣자고 한다
+      effects:
+        - set_flag: eo_shortfall_done
+        - faction_resource: { faction: own, resource: ammo, delta: 15 }
+        - clock: { id: e_side, delta: 1 }
+        - relation: { who: boss, axis: trust, delta: 2 }
+        - deed: { summary: 섬 거래선에 다시 빚쟁이를 싣는 데 동의했다, tags: [cruelty, selfishness], severity: 2, privacy: private }
+
+# ── 상단이 기울면 ───────────────────────────
+
+- id: eo_second_ledger_ask
+  title: 품에 안은 얇은 장부
+  tags: [e_officer]
+  when:
+    zones: [e_market, water_plant]
+    segments: [morning, day, evening]
+    flags_none: [eo_second_ledger_done]
+    dispositions: [{ from: own, to: faction_c, gte: 2 }]
+  cast:
+    clerk: { ids: [e_sora] }
+    boss: { commander: true, enter: false }
+  setup: '장터에 새 물값 판이 걸렸다. 청솔과 버들 칸의 값이 붉은연합 칸보다 높다. 상단이 붉은 쪽으로 기울었다는 말이 돈다. {clerk:이/가} 장부를 목도리에 싸서 품에 안고 다가와 목소리를 낮춘다. "간부님. 제가 따로 적어 둔 게 있어요. 이게 붉은 쪽 손에 들어가면 저는 끝이에요."'
+  ai_direction: 문소라는 탁봉수 몰래 두 번째 장부를 써 왔다. 상단이 어느 무리에 무엇을 팔았는지, 정보까지 적혀 있다. 그중에 탁봉수가 청솔형제단 동쪽 초소의 경비 교대 시간을 붉은연합에 팔고 탄약 두 상자를 받은 줄이 있다. 상단이 붉은 쪽에 붙으면 이 장부는 문소라의 목숨값이 된다. 지켜 줄 사람을 찾는 것이다. 간부가 이것을 어떻게 쓰느냐에 따라 상단 안의 자리가 바뀐다.
+  choices:
+    - id: keep_it
+      label: 장부를 맡아 숨겨 준다
+      effects:
+        - set_flag: eo_second_ledger_done
+        - set_flag: eo_holds_second_ledger
+        - relation: { who: clerk, axis: trust, delta: 3 }
+        - deed: { summary: 장부꾼의 두 번째 장부를 몰래 맡아 숨겼다, tags: [loyalty, deceit], severity: 1, privacy: private }
+        - belief: { fact: "문소라의 두 번째 장부를 맡았다. 상단이 누구에게 무엇을 팔았는지, 탁봉수가 청솔 동쪽 초소 교대 시간을 붉은연합에 팔고 탄 두 상자를 받은 줄까지 있다", source: seen }
+    - id: to_pine
+      label: 장부의 그 줄을 청솔형제단에 흘린다
+      effects:
+        - set_flag: eo_second_ledger_done
+        - faction_relation: { from: faction_a, to: own, delta: 1, mutual: false }
+        - clock: { id: c_east_offensive, delta: -1 }
+        - clock: { id: e_side, delta: -1 }
+        - relation: { who: clerk, axis: trust, delta: -2 }
+        - deed: { summary: 상단의 두 번째 장부에 적힌 거래를 청솔형제단에 흘렸다, tags: [betrayal, enemy_sympathy], severity: 2, privacy: private }
+        - belief: { fact: "청솔형제단이 동쪽 초소 교대 시간을 바꿨다는 소식이 들린다. 문소라는 그 소식을 듣고 나를 오래 쳐다봤다", source: seen }
+    - id: to_boss
+      label: 탁봉수에게 가져간다
+      effects:
+        - set_flag: eo_second_ledger_done
+        - relation: { who: boss, axis: trust, delta: 2 }
+        - relation: { who: clerk, axis: trust, delta: -3 }
+        - deed: { summary: 장부꾼이 몰래 쓴 두 번째 장부를 우두머리에게 고했다, tags: [betrayal, loyalty], severity: 2, privacy: semi_private }
+        - belief: { fact: "탁봉수는 얇은 장부를 난로에 넣었다. 문소라는 다음 날부터 장부석에 앉지 않았다", source: seen }

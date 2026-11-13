@@ -1,0 +1,529 @@
+# 버들마을 간부 스토리렛 (초안). 형식은 a_grunt.yaml 머리말 참고
+# 이어지는 이야기 (플래그):
+#   회의와 대표: bo_first_council → bo_hyunwoo_night (대표의 물음) → bo_red_envoy_again (두 번째 사자)
+#   맹석규: bo_seokgyu_numbers (마음을 열면 bo_seokgyu_open) → bo_red_envoy_again
+#   우물: bo_well_numbers (셈을 알면 bo_well_known) → bo_hyunwoo_night에서 대표에게 들이밀 수 있다 (ai_direction)
+#   방침: bo_ration_ladle(배급) · bo_trade_scales(교역) · bo_gate_stance(태세)
+#   이탈 뒤 (버들마을이 청솔을 보는 태도 0 이하): bo_after_break
+# tags: b_officer = 이 시나리오에 묶인 이야기, council = 간부라면 누구나 겪을 회의 이야기
+# 세력 클락: b_waver(버들마을 이탈, 낮출수록 연합이 버틴다). 클락 값과 태도 수치는 ai_direction에도 숫자로 적지 않는다
+
+# ── 고정: 관리사무소 회의 ───────────────────────────
+
+- id: bo_first_council
+  title: 경비 인원을 보낼까
+  tags: [b_officer]
+  when:
+    zones: [b_base]
+    segments: [morning, day]
+    flags_none: [bo_council_done]
+  cast:
+    leader: { ids: [b_hyunwoo] }
+    liaison: { ids: [b_seungmin] }
+    steward: { ids: [pb_seokgyu] }
+  setup: '관리사무소 회의. {liaison:이/가} 수첩을 펼친다. "청솔형제단이 이번 주에도 경비 인원을 보내 달랍니다. 동쪽 초소가 얇답니다." {steward:은/는} 장부에서 눈을 떼지 않는다. "숫자로 보면, 우리 정문도 얇습니다." {leader:은/는} 대답 대신 당신을 본다.'
+  ai_direction: 첫 회의다. 표승민은 약조를 지켜야 청솔이 탄을 계속 댄다고 믿는다. 맹석규는 단지를 비우는 것이 싫고, 속으로는 청솔과 멀어지는 쪽이 낫다고 본다. 장현우는 간부의 말을 듣고 그대로 정하되 자기 생각은 드러내지 않는다. 몇 명을 보내는지 숫자를 지어내지 않는다.
+  choices:
+    - id: send
+      label: 약조대로 경비 인원을 보내자고 한다
+      effects:
+        - set_flag: bo_council_done
+        - set_flag: bo_sent_guards
+        - faction_relation: { from: faction_b, to: faction_a, delta: 1 }
+        - clock: { id: b_waver, delta: -2 }
+        - relation: { who: liaison, axis: trust, delta: 2 }
+        - relation: { who: steward, axis: respect, delta: -1 }
+        - belief: { fact: "회의는 약조대로 경비 인원을 청솔형제단에 보내기로 했다. 맹석규는 장부에 무언가를 길게 적었다", source: seen }
+    - id: hold_back
+      label: 단지 문도 지킬 사람이 모자란다며 이번엔 미루자고 한다
+      effects:
+        - set_flag: bo_council_done
+        - clock: { id: b_waver, delta: 1 }
+        - relation: { who: steward, axis: trust, delta: 1 }
+        - relation: { who: liaison, axis: trust, delta: -1 }
+        - belief: { fact: "이번 주에는 경비 인원을 보내지 않기로 했다. 표승민은 그 말을 청솔형제단에 어떻게 전할지 묻지 않고 나갔다", source: seen }
+    - id: bargain
+      label: 사람 대신 텃밭 몫을 조금 더 내는 안을 짜서 내민다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bo_council_done
+          - faction_resource: { faction: own, resource: food, delta: -10 }
+          - faction_resource: { faction: faction_a, resource: food, delta: 10 }
+          - clock: { id: b_waver, delta: -1 }
+          - relation: { who: leader, axis: respect, delta: 1 }
+          - relation: { who: liaison, axis: respect, delta: 1 }
+          - belief: { fact: "사람 대신 텃밭 몫을 더 보내는 안이 통과됐다. 표승민이 청솔형제단에 그렇게 전하기로 했다", source: seen }
+        partial:
+          - set_flag: bo_council_done
+          - faction_resource: { faction: own, resource: food, delta: -10 }
+          - faction_resource: { faction: faction_a, resource: food, delta: 10 }
+          - relation: { who: steward, axis: trust, delta: -1 }
+          - belief: { fact: "안은 통과됐지만 맹석규가 겨울 장부에 구멍이 났다며 한숨을 쉬었다", source: seen }
+        miss:
+          - set_flag: bo_council_done
+          - clock: { id: b_waver, delta: 1 }
+          - relation: { who: leader, axis: trust, delta: -1 }
+          - belief: { fact: "셈이 엉성했다. 맹석규가 그 자리에서 장부로 반박했고, 대표는 결정을 다음 회의로 미뤘다", source: seen }
+
+- id: bo_ration_ladle
+  title: 관리사무소의 국자
+  tags: [b_officer]
+  when:
+    zones: [b_base]
+    segments: [morning, day, evening]
+    own_policy: { ration: [normal] }
+    flags_none: [bo_ration_done]
+  cast:
+    steward: { ids: [pb_seokgyu] }
+    dongdae: { ids: [b_myeongsuk] }
+  setup: '배급 줄이 관리사무소 앞마당까지 늘어섰다. {steward:이/가} 장부를 겨드랑이에 낀 채 당신 곁으로 온다. "숫자로 보면, 지금 국자로는 겨울을 다 못 넘깁니다." 줄 앞쪽에서 {dongdae:이/가} 돌아본다. "또 깎자는 얘기죠? 우리 동 애들은 벌써 반 그릇이에요."'
+  ai_direction: 창고가 비어 간다는 것은 장부의 사실이지만 정확한 날수는 말하지 않는다. 맹석규는 배급을 줄여 시간을 벌자고 하고, 양명숙은 단지 사람들 앞에서 그 말을 막는다. 둘 다 회의에서 간부의 말을 기다린다. 줄이면 창고는 오래가지만 마당의 얼굴이 굳는다.
+  choices:
+    - id: cut
+      label: 회의에서 배급을 줄이자고 한다
+      effects:
+        - set_flag: bo_ration_done
+        - faction_policy: { faction: own, topic: ration, option: cut }
+        - relation: { who: steward, axis: trust, delta: 1 }
+        - relation: { who: dongdae, axis: trust, delta: -2 }
+        - deed: { summary: 회의에서 단지 배급을 줄이자고 했다, tags: [diligence], severity: 1, privacy: public }
+        - belief: { fact: "배급을 줄이기로 했다. 양명숙이 회의실 문을 쾅 닫고 나갔다", source: seen }
+    - id: keep
+      label: 아직은 그대로 두자고 한다
+      effects:
+        - set_flag: bo_ration_done
+        - relation: { who: dongdae, axis: trust, delta: 1 }
+        - relation: { who: steward, axis: respect, delta: -1 }
+        - belief: { fact: "배급은 그대로 두기로 했다. 맹석규는 다음 회의에 장부를 다시 들고 오겠다고 했다", source: seen }
+    - id: kids_first
+      label: 어른 몫만 줄이고 아이들 몫은 지키자고 설득한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bo_ration_done
+          - faction_policy: { faction: own, topic: ration, option: cut }
+          - relation: { who: dongdae, axis: respect, delta: 1 }
+          - relation: { who: steward, axis: respect, delta: 1 }
+          - deed: { summary: 배급을 줄이되 아이들 몫은 지키자고 회의를 설득했다, tags: [mercy], severity: 1, privacy: public }
+          - belief: { fact: "배급은 줄었지만 아이들 몫은 그대로다. 양명숙이 마당에서 그 말을 집집이 전했다", source: seen }
+        partial:
+          - set_flag: bo_ration_done
+          - faction_policy: { faction: own, topic: ration, option: cut }
+          - relation: { who: dongdae, axis: trust, delta: -1 }
+          - belief: { fact: "아이들 몫을 지키자는 말은 회의록에만 남았다. 배급은 모두 똑같이 줄었다", source: seen }
+        miss:
+          - set_flag: bo_ration_done
+          - relation: { who: steward, axis: trust, delta: -1 }
+          - belief: { fact: "누구 몫을 지킬지 다투다 회의가 끝났다. 배급은 아무것도 정해지지 않은 채 그대로다", source: seen }
+
+# ── 고정: 우물 ───────────────────────────────
+
+- id: bo_well_numbers
+  title: 한 뼘의 셈
+  tags: [b_officer]
+  when:
+    zones: [b_base]
+    segments: [dawn, morning]
+    day_gte: 2
+    flags_none: [bo_well_seen]
+  cast:
+    keeper: { ids: [b_sunrye] }
+  setup: '아랫단 우물가. {keeper:이/가} 두레박 줄을 손목에 감았다 풀며 당신을 부른다. "간부, 이리 와 봐. 줄 좀 같이 잡아." 젖은 줄에 숯으로 그은 금이 여럿이다. 금과 금 사이가 한 뼘씩이다.'
+  ai_direction: "{keeper}는 아랫단 우물이 지금처럼 퍼 쓰면 한겨울 전에 마른다고 셈해 두었다. 대표에게만 말했고 대표가 입을 막았다. 간부에게는 털어놓고 싶지만 대표의 말을 어기는 것이 마음에 걸린다. 다그치면 줄만 보여 주고 입을 닫는다. 우물이 마른다는 것이 마을에 퍼지면 붉은연합 쪽으로 기우는 말이 커진다."
+  choices:
+    - id: ask
+      label: 줄을 같이 잡아 주며 언제까지 버티겠냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bo_well_seen
+          - set_flag: bo_well_known
+          - relation: { who: keeper, axis: trust, delta: 2 }
+          - belief: { fact: "탁순례: 지금처럼 퍼 쓰면 아랫단 우물은 한겨울 전에 마른다. 대표에게는 진작 말했고, 대표는 아무에게도 말하지 말라고 했다", source: report }
+        partial:
+          - set_flag: bo_well_seen
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "탁순례는 물이 날마다 한 뼘씩 준다는 것만 말했다. 대표 이야기가 나오자 입을 닫았다", source: report }
+        miss:
+          - set_flag: bo_well_seen
+          - belief: { fact: "탁순례는 줄만 감아 들고 물 길을 시간이라며 돌아섰다", source: seen }
+    - id: cut_water
+      label: 오늘부터 집집이 긷는 양을 줄이라고 한다
+      effects:
+        - set_flag: bo_well_seen
+        - faction_resource: { faction: own, resource: water, delta: 15 }
+        - faction_morale: { faction: own, delta: -1 }
+        - relation: { who: keeper, axis: respect, delta: 1 }
+        - deed: { summary: 우물물을 긷는 양을 줄이라고 했다, tags: [diligence], severity: 1, privacy: public }
+        - belief: { fact: "물 긷는 양을 줄였다. 우물가에서 물통을 든 사람들이 말없이 줄을 섰다", source: seen }
+    - id: leave
+      label: 우물 일은 어르신이 알아서 하시라며 돌아선다
+      effects:
+        - set_flag: bo_well_seen
+        - relation: { who: keeper, axis: affection, delta: -1 }
+
+# ── 고정: 맹석규 ───────────────────────────────
+
+- id: bo_seokgyu_numbers
+  title: 숫자로 보면
+  tags: [b_officer]
+  when:
+    zones: [b_base]
+    segments: [evening, night]
+    day_gte: 2
+    flags_none: [bo_seokgyu_done]
+  cast:
+    steward: { ids: [pb_seokgyu] }
+    liaison: { ids: [b_seungmin], enter: false }
+  setup: '불 꺼진 관리사무소. {steward:이/가} 촛불 하나를 켜 두고 장부를 펼쳐 놓았다. 당신이 들어오자 금 간 안경을 고쳐 쓴다. "간부님, 숫자로 보면 말입니다. 청솔이 주는 탄으로는 물이 안 나옵니다. 간부님은 어떻게 셈하십니까."'
+  ai_direction: "{steward}는 붉은연합 위원장 국혜란과 붕괴 전 공단에서 함께 일했고, 첫 편지를 장터에서 받아 대표에게 건넨 사람이다. 지금은 간부가 같은 셈을 하는지 떠보는 중이다. 맞장구치면 조금 더 털어놓고, 정색하면 숫자 이야기였다며 물러선다. 국혜란과의 관계는 신뢰가 깊어지기 전에는 말하지 않는다. 붉은연합 지도부가 버들마을을 받아들일 생각이 없다는 것은 그도 모른다."
+  choices:
+    - id: draw_out
+      label: 맞장구치는 척하며 끝까지 듣는다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: bo_seokgyu_done
+          - set_flag: bo_seokgyu_open
+          - relation: { who: steward, axis: trust, delta: 2 }
+          - belief: { fact: "맹석규: 붉은연합 쪽에서 편지가 왔고 대표가 읽었다. 연합을 깨면 단지를 건드리지 않겠다는 말이었다", source: report }
+        partial:
+          - set_flag: bo_seokgyu_done
+          - set_flag: bo_seokgyu_open
+          - belief: { fact: "맹석규는 붉은연합과 말이 닿는 길이 있다는 데까지만 말했다", source: report }
+        miss:
+          - set_flag: bo_seokgyu_done
+          - relation: { who: steward, axis: trust, delta: -1 }
+          - belief: { fact: "맹석규는 내 얼굴을 한참 보더니 그냥 장부 이야기였다며 촛불을 껐다", source: seen }
+    - id: nod
+      label: 정말로 고개를 끄덕인다
+      effects:
+        - set_flag: bo_seokgyu_done
+        - set_flag: bo_seokgyu_open
+        - clock: { id: b_waver, delta: 2 }
+        - relation: { who: steward, axis: trust, delta: 2 }
+        - deed: { summary: 청솔형제단과의 약조로는 답이 없다는 살림 간부의 말에 고개를 끄덕였다, tags: [enemy_sympathy], severity: 1, privacy: private }
+        - belief: { fact: "맹석규와 같은 셈을 했다. 그는 대표도 같은 생각이라고, 다만 말을 못 할 뿐이라고 했다", source: report }
+    - id: rebuke
+      label: 연합을 깨자는 말이면 회의에서 하라고 잘라 말한다
+      effects:
+        - set_flag: bo_seokgyu_done
+        - relation: { who: steward, axis: respect, delta: 1 }
+        - relation: { who: steward, axis: trust, delta: -1 }
+    - id: tell_liaison
+      label: 그 길로 표승민에게 옮긴다
+      effects:
+        - set_flag: bo_seokgyu_done
+        - set_flag: bo_told_liaison
+        - clock: { id: b_waver, delta: -1 }
+        - relation: { who: steward, axis: trust, delta: -2 }
+        - relation: { who: liaison, axis: trust, delta: 1 }
+        - deed: { summary: 살림 간부가 떠본 말을 연락 간부에게 그대로 옮겼다, tags: [loyalty, betrayal], severity: 1, privacy: semi_private }
+        - belief: { fact: "표승민은 맹석규의 이름을 수첩에 적었다. 대표 앞에서는 아직 꺼내지 않겠다고 했다", source: report }
+
+# ── 고정: 대표 ───────────────────────────────
+
+- id: bo_hyunwoo_night
+  title: 대표실의 등잔
+  tags: [b_officer]
+  when:
+    zones: [b_base]
+    segments: [evening, night]
+    day_gte: 3
+    flags_all: [bo_council_done]
+    flags_none: [bo_leader_done]
+    dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
+  cast:
+    leader: { ids: [b_hyunwoo] }
+  setup: '{leader:이/가} 대표실로 당신을 부른다. 문을 닫고 등잔 심지를 낮춘다. 다림질한 셔츠 소매가 오늘은 걷혀 있다. "간부님. 솔직히 묻겠습니다. 청솔이 이 겨울을 넘깁니까. 우리가 그 배에 같이 타 있어도 됩니까."'
+  ai_direction: "{leader}는 지난주 붉은연합의 사자를 몰래 만났고, 연합을 깨면 버들마을을 건드리지 않겠다는 제안에 아직 답하지 않았다. 그 사실은 신뢰가 깊어지기 전에는 털어놓지 않는다. 간부의 대답을 무겁게 듣고 질문으로 되묻는다. 간부가 우물 셈을 알고 있다면(bo_well_known) 그 이야기를 꺼낼 때 대표의 얼굴이 굳는다. 붉은연합 지도부가 실은 버들마을을 받아들일 생각이 없다는 것은 대표도 모른다."
+  choices:
+    - id: hold_alliance
+      label: 청솔과 함께 가야 단지가 산다고 설득한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bo_leader_done
+          - clock: { id: b_waver, delta: -3 }
+          - faction_relation: { from: faction_b, to: faction_a, delta: 1, mutual: false }
+          - relation: { who: leader, axis: respect, delta: 1 }
+          - deed: { summary: 흔들리는 대표 앞에서 청솔형제단과의 연합을 지키자고 설득했다, tags: [loyalty], severity: 2, privacy: private }
+          - belief: { fact: "대표는 한참 말이 없다가 내일 청솔 회의에 제때 나가겠다고 했다", source: seen }
+        partial:
+          - set_flag: bo_leader_done
+          - clock: { id: b_waver, delta: -1 }
+          - belief: { fact: "대표는 끝까지 들었지만 아무 약속도 하지 않았다. 등잔을 끄며 고맙다고만 했다", source: seen }
+        miss:
+          - set_flag: bo_leader_done
+          - clock: { id: b_waver, delta: 1 }
+          - relation: { who: leader, axis: trust, delta: -1 }
+          - belief: { fact: "청솔 이야기를 할수록 대표의 얼굴이 닫혔다. 간부님도 숫자는 모르시는군요, 하고 말을 끊었다", source: seen }
+    - id: lean_red
+      label: 단지가 사는 쪽이 맞는 쪽이라고 말한다
+      effects:
+        - set_flag: bo_leader_done
+        - set_flag: bo_backed_red
+        - clock: { id: b_waver, delta: 3 }
+        - relation: { who: leader, axis: trust, delta: 2 }
+        - deed: { summary: 대표에게 청솔형제단과의 연합보다 단지가 사는 길을 고르라고 했다, tags: [enemy_sympathy], severity: 2, privacy: private }
+        - belief: { fact: "대표가 처음으로 내 눈을 똑바로 봤다. 이 말은 회의록에 남기지 말자고 했다", source: seen }
+    - id: both_doors
+      label: 확답은 미루고 두 문을 다 열어 두자고 한다
+      effects:
+        - set_flag: bo_leader_done
+        - set_flag: bo_both_doors
+        - clock: { id: b_waver, delta: 1 }
+        - relation: { who: leader, axis: respect, delta: 1 }
+        - belief: { fact: "대표는 내 말을 받아 적듯 되풀이했다. 두 문을 다 열어 둔다. 어느 쪽에도 확답하지 않는다", source: seen }
+
+- id: bo_red_envoy_again
+  title: 두 번째 흰 천
+  urgent: true
+  tags: [b_officer]
+  when:
+    zones: [b_base]
+    segments: [night, dawn]
+    day_gte: 4
+    flags_any: [bo_leader_done, bo_seokgyu_open]
+    flags_none: [bo_envoy_done]
+    dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
+  cast:
+    gatekeeper: { ids: [b_dongcheol] }
+    envoy: { extra: c_sentry_rifle, label: 흰 천을 든 붉은 완장 }
+    liaison: { ids: [b_seungmin], enter: false }
+  setup: '자정이 지나 {gatekeeper:이/가} 숙소 문을 두드린다. 열쇠 꾸러미를 손에 꽉 쥐었다. "간부님, 북쪽 쪽문 밖에 흰 천이 왔습니다. 대표님께 데려가 달랍니다." 쪽문 철망 너머로 {envoy:이/가} 막대에 묶은 흰 천을 든 채 서 있다. 등에 멘 총이 달빛에 걸린다.'
+  ai_direction: "{gatekeeper}는 지난번 대표의 명으로 사자를 이 쪽문으로 들인 사람이 자기다. 이번에는 짐을 혼자 지기 싫어 간부에게 먼저 왔다. 그 일은 신뢰가 깊어지기 전에는 털어놓지 않는다. 사자는 연합을 깨면 건드리지 않겠다는 말을 되풀이하러 왔다. 돌려보내면 사자는 물러나지만 붉은연합은 그 밤을 기억한다. 밤이라 총소리가 나면 감염체가 모인다."
+  choices:
+    - id: let_in
+      label: 대표실까지 데려가라고 한다
+      effects:
+        - set_flag: bo_envoy_done
+        - set_flag: bo_envoy_let_in
+        - clock: { id: b_waver, delta: 2 }
+        - faction_relation: { from: faction_b, to: faction_c, delta: 1, mutual: false }
+        - relation: { who: gatekeeper, axis: trust, delta: 1 }
+        - deed: { summary: 한밤에 붉은연합 사자를 쪽문으로 들여 대표실로 보냈다, tags: [enemy_sympathy], severity: 2, privacy: private }
+        - belief: { fact: "사자가 대표실에 한 시간 넘게 있다가 나갔다. 배동철은 쪽문을 잠그며 아무 말도 하지 않았다", source: seen }
+    - id: turn_back
+      label: 쪽문을 사이에 두고 돌아가라고 말한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: bo_envoy_done
+          - clock: { id: b_waver, delta: -2 }
+          - faction_relation: { from: faction_c, to: faction_b, delta: -1, mutual: false }
+          - relation: { who: gatekeeper, axis: respect, delta: 1 }
+          - deed: { summary: 쪽문에 온 붉은연합 사자를 대표에게 보이지 않고 돌려보냈다, tags: [loyalty, bravery], severity: 2, privacy: semi_private }
+          - belief: { fact: "사자는 흰 천을 내리고 돌아갔다. 대표는 다음 날 아침 아무것도 묻지 않았다", source: seen }
+        partial:
+          - set_flag: bo_envoy_done
+          - clock: { id: b_waver, delta: -1 }
+          - relation: { who: gatekeeper, axis: trust, delta: -1 }
+          - belief: { fact: "사자는 돌아갔지만 철망 너머로 대표님께 꼭 전하라는 말을 남겼다. 배동철이 그 말을 들었다", source: seen }
+        miss:
+          - set_flag: bo_envoy_done
+          - clock: { id: b_waver, delta: 1 }
+          - belief: { fact: "사자는 웃으며 물러났다. 새벽에 대표실 창에 불이 켜져 있었다. 다른 길로 누군가 다녀간 것 같다", source: seen }
+    - id: wake_liaison
+      label: 표승민을 깨워 함께 맞는다
+      effects:
+        - set_flag: bo_envoy_done
+        - set_flag: bo_told_liaison
+        - clock: { id: b_waver, delta: -1 }
+        - relation: { who: gatekeeper, axis: trust, delta: -1 }
+        - relation: { who: liaison, axis: trust, delta: 1 }
+        - belief: { fact: "표승민이 쪽문에 와서 사자의 얼굴을 수첩에 적었다. 사자는 말없이 돌아갔다. 배동철은 그 뒤로 내 눈을 피한다", source: seen }
+
+# ── 고정: 방침 ───────────────────────────────
+
+- id: bo_trade_scales
+  title: 저울 위의 겨울
+  tags: [b_officer]
+  when:
+    zones: [b_base, south_fields]
+    segments: [morning, day]
+    day_gte: 2
+    flags_none: [bo_trade_done]
+  cast:
+    farmer: { ids: [pb_yeongja] }
+  setup: '{farmer:이/가} 앉은뱅이저울을 내려놓고 허리를 편다. "간부님, 무랑 감자가 남는 날엔 장터에 내다 팔게 해 줘요. 날마다 조금씩. 탄이든 뭐든 바꿔 오면 되잖아요. 창고에서 썩히느니요." 저울추가 아직 흔들린다.'
+  ai_direction: "{farmer}는 장터에 갈 길이 열리면 첫 봄에 마을 이름으로 진 빚도 함께 갚으려 한다. 청솔형제단 몫을 저울로 조금씩 덜어 온 것은 신뢰가 깊어지기 전에는 말하지 않는다. 교역은 전쟁 틱이 날마다 처리하고, 나루상단과 사이가 틀어지면 저절로 끊긴다. 양은 코드가 정했다."
+  choices:
+    - id: food_for_ammo
+      label: 식량을 내주고 탄을 받는 길을 회의에 올린다
+      effects:
+        - set_flag: bo_trade_done
+        - faction_policy: { faction: own, topic: trade, option: food_for_ammo }
+        - relation: { who: farmer, axis: trust, delta: 1 }
+        - belief: { fact: "날마다 장터에 식량을 내고 탄을 받기로 했다. 청솔형제단에만 기대던 탄 길이 하나 더 생겼다", source: seen }
+    - id: fuel_for_food
+      label: 연료를 내주고 식량을 받자고 한다
+      effects:
+        - set_flag: bo_trade_done
+        - faction_policy: { faction: own, topic: trade, option: fuel_for_food }
+        - relation: { who: farmer, axis: affection, delta: 1 }
+        - belief: { fact: "날마다 장터에 연료를 내고 식량을 받기로 했다. 겨울밤 난로가 그만큼 일찍 꺼질 것이다", source: seen }
+    - id: keep_stores
+      label: 창고 것은 창고에 두자고 한다
+      effects:
+        - set_flag: bo_trade_done
+        - faction_policy: { faction: own, topic: trade, option: none }
+        - relation: { who: farmer, axis: affection, delta: -1 }
+    - id: ask_ledger
+      label: 장터 셈에 다른 것이 섞여 있지 않냐고 넌지시 묻는다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: bo_trade_done
+          - set_flag: bo_scale_known
+          - relation: { who: farmer, axis: trust, delta: 1 }
+          - belief: { fact: "함영자: 마을이 첫 봄에 씨앗과 소금을 사느라 장터에 진 빚이 아직 남았다. 맹석규 간부가 그 셈을 안다", source: report }
+        partial:
+          - set_flag: bo_trade_done
+          - belief: { fact: "함영자는 장터에 갚을 것이 좀 있다고만 하고 저울을 다시 들었다", source: report }
+        miss:
+          - set_flag: bo_trade_done
+          - relation: { who: farmer, axis: trust, delta: -1 }
+          - belief: { fact: "함영자가 웃으며 간부님이 장사를 아시냐고 받아쳤다. 일꾼들이 고개를 숙였다", source: seen }
+
+- id: bo_gate_stance
+  title: 쪽문을 닫을까
+  tags: [b_officer]
+  when:
+    zones: [b_base]
+    segments: [evening, night]
+    day_gte: 3
+    flags_none: [bo_stance_done]
+  cast:
+    gatekeeper: { ids: [b_dongcheol] }
+  setup: '경비실 난로 앞. {gatekeeper:이/가} 열쇠 꾸러미를 탁자에 내려놓는다. "간부님, 회의에 하나 올려 주쇼. 우리 애들 총 들고 남의 담장 지키러 나가는 거, 이제 그만했으면 해. 문 닫고 단지만 지키자고." 창밖으로 청솔형제단 쪽 하늘이 붉다.'
+  ai_direction: "{gatekeeper}는 단지 식구를 한 명도 잃지 않는 것이 전부다. 어느 편에 붙든 마지막에 단지가 불타는 것을 두려워한다. 문을 닫으면 단지는 단단해지지만 청솔형제단은 버들마을이 발을 뺀다고 읽는다. 함께 밀어붙이면 연합은 두터워지지만 단지의 문이 얇아진다. 전황은 전쟁 틱이 정한다."
+  choices:
+    - id: defend
+      label: 문을 닫고 단지를 지키자는 안을 올린다
+      effects:
+        - set_flag: bo_stance_done
+        - faction_policy: { faction: own, topic: stance, option: defend }
+        - clock: { id: b_waver, delta: 1 }
+        - relation: { who: gatekeeper, axis: trust, delta: 2 }
+        - belief: { fact: "회의는 문을 닫고 단지를 지키기로 했다. 표승민은 청솔형제단에 이 일을 어떻게 전할지 한참 수첩만 봤다", source: seen }
+    - id: push_with_pine
+      label: 청솔이 칠 때 우리 경비도 함께 나가자고 맞선다
+      check: tactics
+      outcomes:
+        success:
+          - set_flag: bo_stance_done
+          - faction_policy: { faction: own, topic: stance, option: attack }
+          - faction_relation: { from: faction_a, to: faction_b, delta: 1, mutual: false }
+          - clock: { id: b_waver, delta: -1 }
+          - relation: { who: gatekeeper, axis: respect, delta: 1 }
+          - belief: { fact: "회의는 청솔형제단과 함께 밀어붙이기로 했다. 배동철은 반대했지만 경비 교대표를 새로 짰다", source: seen }
+        partial:
+          - set_flag: bo_stance_done
+          - faction_policy: { faction: own, topic: stance, option: attack }
+          - relation: { who: gatekeeper, axis: trust, delta: -1 }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "밀어붙이기로는 했지만 경비 당번들 사이에서 남의 전쟁이라는 말이 커졌다", source: seen }
+        miss:
+          - set_flag: bo_stance_done
+          - faction_policy: { faction: own, topic: stance, option: defend }
+          - relation: { who: gatekeeper, axis: respect, delta: -1 }
+          - belief: { fact: "맞섰지만 회의는 배동철 편을 들었다. 문을 닫고 단지를 지키기로 했다", source: seen }
+    - id: as_is
+      label: 지금처럼 두자며 말을 아낀다
+      effects:
+        - set_flag: bo_stance_done
+        - relation: { who: gatekeeper, axis: respect, delta: -1 }
+
+# ── 이탈 뒤 ───────────────────────────────
+
+- id: bo_after_break
+  title: 돌려 달라는 탄
+  tags: [b_officer]
+  when:
+    zones: [b_base]
+    segments: [morning, day, evening]
+    flags_none: [bo_break_done]
+    dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
+  cast:
+    pine: { ids: [a_doyun, a_taeho, a_jeonghun] }
+    gatekeeper: { ids: [b_dongcheol], enter: false }
+  setup: '버들마을이 연합에서 발을 뺐다는 말이 돈 지 하루. 정문 철망 밖에 청솔형제단 사람들이 빈 탄통을 들고 서 있다. {pine:이/가} 철망 너머로 당신을 부른다. "약조가 끝났으면 빌려 간 탄은 돌려주셔야지요. 우리도 다음 싸움에 쓸 게 없습니다."'
+  ai_direction: 청솔형제단은 배신당했다고 여기지만 아직 총을 겨누지는 않는다. 탄을 돌려주면 단지의 문이 얇아지고 붉은연합 앞에서 빈손이 된다. 돌려주지 않으면 청솔과의 사이는 돌이킬 수 없이 틀어진다. 배동철은 철망 뒤에서 간부의 말을 기다린다. 양은 코드가 정했다.
+  choices:
+    - id: return_ammo
+      label: 빌려 쓴 탄을 돌려주자고 한다
+      effects:
+        - set_flag: bo_break_done
+        - faction_resource: { faction: own, resource: ammo, delta: -20 }
+        - faction_resource: { faction: faction_a, resource: ammo, delta: 20 }
+        - faction_relation: { from: faction_a, to: faction_b, delta: 1, mutual: false }
+        - relation: { who: pine, axis: respect, delta: 1 }
+        - deed: { summary: 연합이 깨진 뒤 청솔형제단에서 빌려 쓴 탄을 돌려주었다, tags: [honesty], severity: 1, privacy: public }
+        - belief: { fact: "탄통이 철망 밖으로 넘어갔다. 경비 당번들이 이제 무엇으로 문을 지키냐고 수군거린다", source: seen }
+    - id: half
+      label: 반만 돌려주고 나머지는 겨울을 넘긴 뒤 갚겠다고 흥정한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bo_break_done
+          - faction_resource: { faction: own, resource: ammo, delta: -10 }
+          - faction_resource: { faction: faction_a, resource: ammo, delta: 10 }
+          - relation: { who: pine, axis: trust, delta: 1 }
+          - belief: { fact: "청솔형제단은 반만 받아 갔다. 나머지는 봄에 갚기로 했고, 그 말이 저쪽 회의록에 남는다", source: seen }
+        partial:
+          - set_flag: bo_break_done
+          - faction_resource: { faction: own, resource: ammo, delta: -10 }
+          - faction_resource: { faction: faction_a, resource: ammo, delta: 10 }
+          - faction_relation: { from: faction_a, to: faction_b, delta: -1, mutual: false }
+          - belief: { fact: "반을 받아 가면서도 청솔형제단 사람들은 철망에 침을 뱉었다", source: seen }
+        miss:
+          - set_flag: bo_break_done
+          - faction_relation: { from: faction_a, to: faction_b, delta: -1, mutual: false }
+          - belief: { fact: "흥정은 먹히지 않았다. 청솔형제단 사람들은 빈 탄통을 들고 돌아갔다. 다음엔 빈손으로 오지 않겠다고 했다", source: seen }
+    - id: refuse
+      label: 문을 지킬 탄은 내줄 수 없다고 한다
+      effects:
+        - set_flag: bo_break_done
+        - faction_relation: { from: faction_a, to: faction_b, delta: -1, mutual: false }
+        - relation: { who: gatekeeper, axis: trust, delta: 1 }
+        - relation: { who: pine, axis: trust, delta: -2 }
+        - deed: { summary: 연합이 깨진 뒤 청솔형제단이 빌려준 탄을 돌려주지 않았다, tags: [selfishness], severity: 1, privacy: public }
+
+# ── 템플릿: 간부의 일 ───────────────────────────
+
+- id: bo_council_petition
+  title: 회의실 문 앞의 청
+  tags: [council]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    own_territory: true
+    segments: [morning, day, evening]
+    day_gte: 2
+  cast:
+    boss: { commander: true, enter: false }
+    asker: { faction: own, ranks: [grunt, staff] }
+  setup: '회의가 끝난 문 앞에서 {asker:이/가} 모자를 쥐고 기다린다. "간부님, 식구가 사흘째 열이 나서요. 한 번만, 하루치만 더 받을 수 있을까요. 회의에서 한마디만 해 주시면." 복도 끝에서 다른 사람들이 이쪽을 보고 있다.'
+  ai_direction: 사정은 사실이다. 하지만 한 사람을 들어주면 복도 끝의 다른 사람들도 온다. 상관은 간부가 들어준 일을 회의에서 알게 된다. 양은 코드가 정했다.
+  choices:
+    - id: grant
+      label: 회의에 올려 하루치를 더 주자고 한다
+      effects:
+        - faction_resource: { faction: own, resource: food, delta: -3 }
+        - relation: { who: asker, axis: trust, delta: 2 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - deed: { summary: 아픈 식구가 있다는 사람에게 배급을 하루치 더 주게 했다, tags: [mercy], severity: 1, privacy: public }
+    - id: own_share
+      label: 회의에는 올리지 않고 내 몫을 덜어 준다
+      effects:
+        - body: { track: hunger, delta: 1 }
+        - relation: { who: asker, axis: affection, delta: 2 }
+        - deed: { summary: 아픈 식구가 있다는 사람에게 자기 배급을 덜어 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+    - id: refuse
+      label: 한 사람만 더 줄 수는 없다고 말한다
+      effects:
+        - relation: { who: asker, axis: trust, delta: -1 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - deed: { summary: 배급을 더 달라는 청을 원칙대로 거절했다, tags: [diligence], severity: 1, privacy: semi_private }

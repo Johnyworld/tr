@@ -194,5 +194,13 @@ describe("지도부 회의 (기획서 9.11)", () => {
     expect(deal.traderFood).toBe(none.traderFood + 10);
     expect(trade({ trade: "food_for_ammo" }, true)).toEqual(trade(undefined, true));
     expect(attacks({ stance: "defend" })).toBeLessThan(attacks());
+
+    // 상대가 자기 자신이면 대신 상대(fallback_partner)와 바꾼다: 나루상단의 식량↔탄약은 붉은연합과
+    const selfTrade = (policy?: Record<string, string>) => {
+      const world = structuredClone(base);
+      world.factions.faction_e!.policy = policy;
+      return simulateWarDay(world, content, createSeededRng(1)).factions.faction_c!.resources.food!;
+    };
+    expect(selfTrade({ trade: "food_for_ammo" })).toBe(selfTrade() + 10);
   });
 });

@@ -1,0 +1,34 @@
+# 버들마을의 간부 (시작 역할, 초안)
+# 대표 장현우 직속. 관리사무소 회의에 앉아 배급·태세·교역을 안으로 올린다. 경비 배치와 단지 바깥 일을 맡는다
+# 붕괴 전 이 단지 관리사무소 직원이었다. 총보다 설비와 사람을 안다
+id: role_b_officer
+label: 버들마을 간부
+faction: faction_b
+rank: officer
+default_name: 간부
+opening_scene: 아침, 버들마을 관리사무소. 창문에 비닐을 덧대 놓아 안이 어둑하다. 접이식 탁자에 장현우 대표가 앉아 있고, 맹석규가 배급 장부를 펼친다. 표승민은 군용 수첩을 꺼내 들고 서 있다. 대표가 다림질한 소맷부리를 걷으며 당신 쪽으로 고개를 돌린다. "간부님 생각부터 들읍시다."
+scenario:
+  title: 버들마을의 간부
+  pitch: >-
+    마흔 명이 사는 옛 아파트 단지의 살림과 문을 함께 맡는다. 관리사무소 회의에서 배급을 줄일지, 문을 닫고 지킬지, 무엇을 장터에 내다 팔지 안을 올린다.
+    청솔형제단과의 약조는 탄을 주고 사람과 수확을 가져가고, 붉은연합은 쪽문 너머로 다른 길을 내민다. 우물은 마르고, 대표는 확답을 피한다. 어느 깃발 아래서 겨울을 날지 당신의 말이 무게를 갖는다.
+  intro: >-
+    가을이 깊어 간다. 당신은 버들마을의 간부다. 붕괴 전 이 단지 관리사무소에서 일했고, 지금은 대표 장현우 곁에서 경비 배치와 단지 바깥 일을 맡는다.
+    마을은 청솔형제단과 손잡고 붉은연합과 맞서 있다. 탄은 청솔형제단에게서 받고, 그 대신 남쪽 텃밭 수확 일부와 경비 인원을 내준다. 약조를 맡은 표승민은 연합을 지키자고 하고, 살림 간부 맹석규는 회의마다 숫자를 늘어놓는다.
+    요즘 대표는 청솔형제단 회의에 늦게 나가고, 밤이면 쪽문 근처에 낯선 발자국이 찍힌다는 말이 돈다. 아랫단 우물에서는 두레박이 바닥을 긁는다.
+    이야기는 어느 아침, 관리사무소의 회의 탁자에서 시작한다.
+age: 45
+# 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
+# 시작 훈련: 교섭과 정비 (관리사무소 시절의 설비 일). 총은 오래 잡지 않았다
+start_skills: { persuade: 1, maintenance: 1 }
+start_inventory: [ledger, radio, flashlight, coat]
+start_location: b_base
+access: [ration, mission_board]
+beliefs_preset: b_officer_start
+# 회의 탁자의 얼굴들과 단지의 주요 인물, 연합 상대의 대표
+known_npcs: [b_hyunwoo, b_seungmin, pb_seokgyu, b_myeongsuk, b_haram, b_dongcheol, b_sunrye, pb_sanggu, pb_yeongja, b_eunji, b_mina, a_seonghee]
+# 직속 상관은 대표. 아침 회의 뒤 직접 일을 맡긴다
+commander: b_hyunwoo
+missions: [bo_well_count, bo_pine_talks, bo_market_seeds, bo_fields_guard, bo_pump_parts, bo_gate_check]
+# b_officer: 이 시나리오에 묶인 이야기, council: 간부라면 누구나 겪을 회의 이야기, world: 어느 시나리오에서나 열리는 도시의 일
+storylet_tags: [b_officer, council, world]

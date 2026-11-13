@@ -240,10 +240,12 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
   for (const id of alive) {
     for (const { option } of factionPolicy(content, next.factions[id])) {
       const t = option.trade;
-      if (!t || t.partner === id || !alive.includes(t.partner)) continue;
+      if (!t) continue;
+      const partner = t.partner === id ? t.fallback_partner : t.partner;
+      if (!partner || partner === id || !alive.includes(partner)) continue;
       const me = next.factions[id]!;
-      const them = next.factions[t.partner]!;
-      if (disposition(content, id, t.partner, next) < t.min_disposition || disposition(content, t.partner, id, next) < t.min_disposition) continue;
+      const them = next.factions[partner]!;
+      if (disposition(content, id, partner, next) < t.min_disposition || disposition(content, partner, id, next) < t.min_disposition) continue;
       const enough = (f: FactionState, need: Record<string, number>) => Object.entries(need).every(([r, n]) => (f.resources[r] ?? 0) >= n);
       if (!enough(me, t.give) || !enough(them, t.get)) continue;
       for (const [r, n] of Object.entries(t.give)) {

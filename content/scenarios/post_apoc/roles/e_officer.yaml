@@ -1,0 +1,34 @@
+# 나루상단의 장부 간부 (시작 역할). 상단의 장부와 짐마차 배차, 빚과 계약, 섬 거래선의 서명을 쥔 사람
+# 사장 탁봉수 직속. 지도부 회의(council_propose)에 앉아 배급·태세·교역을 올린다. 누구 편에 짐을 싣느냐가 상단의 편들기(e_side)를 당기고 늦춘다
+id: role_e_officer
+label: 나루상단 장부 간부
+faction: faction_e
+rank: officer
+default_name: 간부
+opening_scene: 아침, 나루상단 장터. 옛 휴게소 매점의 계산대가 상단의 사무실이다. 유리 진열장 안에는 통조림 대신 장부가 꽂혀 있다. 밖에서는 짐마차 세 대가 짐을 기다리고, 주옥희가 저울추를 허리에 찬 채 문가에 서 있다. 탁봉수가 의자를 뒤로 젖히며 금니를 보인다. "간부님, 오늘 장부부터 펴 봅시다."
+scenario:
+  title: 나루상단의 장부 간부
+  pitch: >-
+    총 대신 장부와 도장을 쥔다. 누구 편에 짐마차를 보낼지, 누구의 빚을 받고 누구의 빚을 팔지, 바다로 나가는 거래선 목록에 서명할지를 정한다.
+    어느 편에도 서지 않는다는 상단도 결국 어딘가에 짐을 싣는다. 장부 맨 아랫줄에 사람이 적혀 있다는 것을 알게 되면, 서명이 가벼워지지 않는다.
+  intro: >-
+    가을이 깊어 간다. 당신은 나루상단의 장부 간부다. 상단은 강 하류의 옛 휴게소를 장터로 쓰고, 정수장의 손펌프를 쥐고 모든 무리에 물을 판다.
+    명령 대신 계약과 장부로 묶인 무리라, 짐마차를 어디로 보낼지와 누구에게 외상을 줄지는 사장 탁봉수와 당신의 셈으로 정해진다.
+    붉은연합은 탄으로 값을 넉넉히 치고, 청솔형제단은 물값을 두 번 미뤘다. 상단 사람들은 겨울이 오기 전에 이기는 쪽이 보일 거라고 말한다.
+    가끔 강 하구에서 바다로 나가는 거래선이 뜨고, 돌아올 때는 탄약 상자를 싣고 온다. 그 배의 짐 목록에도 간부 칸이 있다.
+    이야기는 어느 아침, 장터 매점의 계산대에서 시작한다.
+age: 41
+# 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
+# 시작 훈련: 흥정과 셈 속이기. 총은 몸을 지킬 만큼만
+start_skills: { persuade: 1, deceive: 1 }
+start_inventory: [ledger, trade_token, pistol, rifle_rounds, coat, cigarettes]
+start_location: e_market
+access: [ration, mission_board]
+beliefs_preset: e_officer_start
+# 상단 지도부와 장부·짐마차·거래선 둘레, 그리고 거래 상대의 간부들
+known_npcs: [e_bongsu, e_sora, e_okhee, e_deoksu, pe_taesik, pe_sundeok, pe_sangcheol, e_cheolgu, e_yuri, a_doyun, c_gyeongsu, d_sangpil]
+# 직속 상관은 사장. 아침 장부를 편 뒤 직접 일을 맡긴다
+commander: e_bongsu
+missions: [eo_caravan_dispatch, eo_red_settlement, eo_pine_arrears, eo_clinic_contract, eo_debt_audit, eo_tide_inspection]
+# e_officer: 장부 간부에 묶인 이야기, council: 간부라면 누구나 겪을 회의 이야기, world: 어느 시나리오에서나 열리는 도시의 일
+storylet_tags: [e_officer, council, world]

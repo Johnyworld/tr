@@ -1,0 +1,34 @@
+# 버들마을 간부가 시작할 때 알고 있는 것 (초안)
+# 간부라 경비병보다 많이 안다. 그래도 숫자는 말로만. 대표의 밀담, 우물의 정확한 셈은 모른다. accuracy는 GM에게 보이지 않는다
+id: b_officer_start
+beliefs:
+  - fact: 버들마을은 청솔형제단과 연합해 붉은연합과 맞서 있다. 붉은연합은 사람도 총도 우리와는 비교가 안 되게 많다.
+    source: report
+    accuracy: approximate
+  - fact: 관리사무소 회의에는 대표 장현우, 연락 간부 표승민, 살림 간부 맹석규, 103동 동대표 양명숙, 그리고 내가 앉는다. 회의록은 제하람이 적는다.
+    source: seen
+    accuracy: exact
+  - fact: 청솔형제단과의 약조는 이렇다. 저쪽이 탄을 대 주고, 우리는 남쪽 텃밭 수확 일부와 경비 인원을 낸다. 수확이 줄수록 몫을 넘기는 날마다 단지 안의 불만이 커진다.
+    source: seen
+    accuracy: exact
+  - fact: 마을 창고의 탄은 경비병 한 사람에게 몇 발씩 돌리면 끝이다. 식량은 겨울을 겨우 넘길 만큼이라고 맹석규가 장부로 말한다.
+    source: report
+    accuracy: approximate
+  - fact: 아랫단 우물에서 두레박이 바닥을 긁는다. 우물지기 탁순례는 대표와 따로 이야기한 뒤로 우물 이야기를 하지 않는다.
+    source: seen
+    accuracy: exact
+  - fact: 대표 장현우가 요즘 청솔형제단 회의에 늦게 나가고 확답을 피한다. 붉은연합이 버들마을을 따로 회유한다는 말이 돈다.
+    source: rumor
+    accuracy: approximate
+  - fact: 밤에 북쪽 쪽문 근처에서 낯선 발자국이 나온다. 두 문의 열쇠는 경비조장 배동철과 대표만 가지고 있다.
+    source: report
+    accuracy: exact
+  - fact: 청솔형제단은 겨울이 깊어지면 버들마을을 버리고 자기들 거점 문을 닫을 거라는 말이 단지 안에 돈다.
+    source: rumor
+    accuracy: "false"
+  - fact: 표승민은 연합을 깨자는 말에 누구보다 먼저 맞선다. 맹석규는 맞서지도 맞장구치지도 않고 숫자만 말한다.
+    source: seen
+    accuracy: exact
+  - fact: 간부는 명령을 내리지 않는다. 회의에 안을 올리고, 대표가 정하면 경비조장과 동대표들에게 전한다. 큰일은 대표가 회의에 부쳐 정한다.
+    source: seen
+    accuracy: exact

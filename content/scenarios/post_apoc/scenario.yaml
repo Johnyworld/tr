@@ -221,7 +221,8 @@ command:
           upkeep: { food: 0.8 }
           ration_shift: 1
           morale: { delta: -1, chance: 0.15 }
-          opposed_by: [a_jeonghun]
+          # 반대자는 무리마다 (같은 무리의 회의에 앉은 사람만 센다)
+          opposed_by: [a_jeonghun, b_myeongsuk, e_deoksu]
         - id: normal
           label: 보통
           summary: 창고 사정대로 나눈다
@@ -231,7 +232,7 @@ command:
           upkeep: { food: 1.25 }
           ration_shift: -1
           morale: { delta: 1, chance: 0.15 }
-          opposed_by: [a_doyun]
+          opposed_by: [a_doyun, pb_seokgyu, d_sangpil]
     - id: stance
       label: 태세
       default: normal
@@ -241,7 +242,7 @@ command:
           summary: 먼저 치러 나가는 일이 줄고, 습격을 받으면 더 많은 사람이 지킨다
           aggression: 0.5
           defense: 1.5
-          opposed_by: [a_jeonghun]
+          opposed_by: [a_jeonghun, pb_seokgyu]
         - id: normal
           label: 보통
           summary: 하던 대로
@@ -250,7 +251,7 @@ command:
           summary: 먼저 치러 나가는 일이 늘고, 그만큼 집을 지키는 사람이 준다
           aggression: 1.6
           defense: 0.75
-          opposed_by: [a_doyun]
+          opposed_by: [a_doyun, b_myeongsuk, d_sangpil, e_deoksu]
 
     - id: trade
       label: 교역
@@ -261,8 +262,8 @@ command:
           summary: 창고의 것은 창고에 둔다
         - id: food_for_ammo
           label: 식량을 주고 탄약
-          summary: 날마다 나루상단에 식량을 넘기고 탄약을 받는다. 서로 등을 돌리면 끊긴다
-          trade: { partner: faction_e, give: { food: 10 }, get: { ammo: 5 } }
+          summary: 날마다 나루상단(나루상단 자신이면 붉은연합)에 식량을 넘기고 탄약을 받는다. 서로 등을 돌리면 끊긴다
+          trade: { partner: faction_e, fallback_partner: faction_c, give: { food: 10 }, get: { ammo: 5 } }
           opposed_by: [a_doyun]
         - id: water_for_medicine
           label: 물을 주고 의약품
@@ -270,8 +271,8 @@ command:
           trade: { partner: faction_d, give: { water: 8 }, get: { medicine: 2 } }
         - id: fuel_for_food
           label: 연료를 주고 식량
-          summary: 날마다 나루상단에 연료를 넘기고 식량을 받는다. 겨울에는 추위가 걱정이다
-          trade: { partner: faction_e, give: { fuel: 4 }, get: { food: 8 } }
+          summary: 날마다 나루상단(나루상단 자신이면 버들마을)에 연료를 넘기고 식량을 받는다. 겨울에는 추위가 걱정이다
+          trade: { partner: faction_e, fallback_partner: faction_b, give: { fuel: 4 }, get: { food: 8 } }
           opposed_by: [a_jeonghun]
 
 # 자유 시나리오 (기획서 12.5): 플레이어가 쓴 시작을 이 범위 안의 부품으로 옮긴다

@@ -1,0 +1,361 @@
+# 여울섬 새 식구 스토리렛 둘째 묶음 (기획서 9.12, y_islander.yaml과 pt_empty_bowl·pt_seasick_draught 뒤를 잇는다)
+# 겉(넉넉함, 아이들, 저녁상)과 속(쓸모 재기, 저장고, 내보내는 배)을 오간다
+# 모르는 사람: 모은별(분필 편지), 진강호(배를 띄우지만 어디 닿는지 모른다)
+# 알고 침묵하는 사람: 단호성(저장고지기), 추복만 / 즐기는 사람: 사동규, 백천수
+# 줄기: 분필 편지(→ y_looking) / 쓸모 재기 / 사동규의 저녁상(의회의 금) / 썰물의 바위길(y2_rockpath_known)
+#      → 내보내는 배(y2_gangho_knows) → 잔치 전날 밤 (솥을 엎거나, 바위길로 사람들을 데리고 나가거나, 앉거나)
+# 진실은 lore(secret:y_feast_seen)와 인물의 비밀로만. 잔혹함은 담담하게, 늘어놓지 않는다
+
+- id: y2_chalk_letter
+  title: 분필 편지
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [day]
+    day_gte: 2
+    flags_none: [y2_chalk_done]
+  cast:
+    teacher: { ids: [py_eunbyeol] }
+    brother: { ids: [pe_junki], enter: false }
+  setup: "식당 옆 볕 드는 마루에서 아이들이 석판에 뭍의 지명을 따라 쓴다. 분필 가루 묻은 {teacher:이/가} 수업을 끝내고 접은 편지를 당신 손에 쥐여 준다. \"경비조는 부두에 가죠? 다음 거래선 오면 이거 좀 맡겨 주세요. 뭍에 오빠가 있어요. 엄마 만났는지… 이번엔 답장이 오겠죠.\" 아이 하나가 묻는다. \"선생님, 뭍에는 진짜 괴물이 있어요?\" 그는 웃는다. \"그러니까 우리는 여기 있는 거야.\""
+  ai_direction: 모은별은 섬을 믿는다. 지난겨울 다리를 다친 어머니가 "뭍으로 내보내졌다"고 믿고, 뭍의 오빠 모준기가 어머니를 찾아 주길 바란다. 편지는 늘 의회가 먼저 읽고, 답장은 오지 않게 되어 있다 (그는 모른다). 어머니를 내보내던 밤 부두에서 배를 보지 못했지만 심사관 말을 믿기로 했다. 그 밤 이야기는 캐물어야 나온다. 아이들 앞에서는 슬픈 이야기를 하지 않는다.
+  choices:
+    - id: carry
+      label: 편지를 맡아 부두로 가져간다
+      effects:
+        - set_flag: y2_chalk_done
+        - set_flag: y2_letter_carried
+        - reveal_tie: { who: teacher, other: brother }
+        - relation: { who: teacher, axis: affection, delta: 2 }
+        - belief: { fact: "선생 모은별의 오빠 모준기는 뭍의 나루상단 짐꾼이다. 부두에서 편지를 받은 경비가 겉봉을 손가락으로 한 번 쓸어 보고 심사관 막사 쪽으로 가져갔다", source: seen }
+    - id: ask_night
+      label: 어머니가 떠나던 밤 배웅은 했느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: y2_chalk_done
+          - set_flag: y_looking
+          - relation: { who: teacher, axis: trust, delta: 2 }
+          - belief: { fact: "모은별이 처음 털어놓았다. 어머니를 내보내던 밤 부두에서 손을 흔들려고 기다렸는데 배가 보이지 않았다. 심사관이 '섬 뒤쪽에서 떠났다'고 해서 믿기로 했다", source: report }
+        partial:
+          - set_flag: y2_chalk_done
+          - relation: { who: teacher, axis: trust, delta: 1 }
+          - belief: { fact: "모은별은 '배는 밤에 떠나서 잘 못 봐요'라고 하고 아이들 석판을 걷었다. 분필을 쥔 손에 힘이 들어가 있었다", source: seen }
+        miss:
+          - set_flag: y2_chalk_done
+          - relation: { who: teacher, axis: affection, delta: -1 }
+          - belief: { fact: "모은별은 웃으며 '그런 걸 왜 물어요'라고 했다. 아이들이 다 듣고 있었다", source: seen }
+    - id: add_line
+      label: 편지 끝에 몰래 한 줄을 보태 둔다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: y2_chalk_done
+          - set_flag: y2_letter_warning
+          - deed: { summary: 섬 의회가 먼저 읽는 편지에 몰래 경고를 적어 넣었다, tags: [disobedience], severity: 1, privacy: private }
+          - belief: { fact: "모은별의 편지 끝, 접힌 안쪽에 작게 적어 두었다: 섬에서 내보낸 사람은 뭍에 가지 않는다. 의회가 읽고도 못 보고 지나가기를 바란다", source: seen }
+        partial:
+          - set_flag: y2_chalk_done
+          - belief: { fact: "한 줄을 적다가 아이가 다가와서 지웠다. 편지는 그대로 부두로 갔다", source: seen }
+        miss:
+          - set_flag: y2_chalk_done
+          - set_flag: y_suspected
+          - deed: { summary: 섬 사람의 편지에 손을 댔다가 심사관 쪽에 알려졌다, tags: [disobedience], severity: 1, privacy: semi_private }
+          - belief: { fact: "부두에서 편지를 받은 경비가 겉봉을 열고 한참 봤다. 다음 날 심사관이 내 이름을 불렀다", source: seen }
+
+- id: y2_teeth
+  title: 쓸모 재기
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [morning]
+    day_gte: 4
+    flags_none: [y2_teeth_done]
+  cast:
+    judge: { ids: [y_cheonsu] }
+    old: { ids: [y_bokman] }
+  setup: "겨울 잔치를 앞둔 아침, 식당 앞에 줄이 선다. 하얀 장갑의 {judge:이/가} 탁자 앞에 앉아 한 사람씩 입을 벌리게 하고, 손을 쥐었다 펴게 하고, 장부에 적는다. 웃는 얼굴로 \"좋네요, 좋아요\" 한다. 당신 앞 {old:은/는} 그물 손질로 굽은 손가락을 펴지 못한다. 심사관의 펜이 잠깐 멈춘다."
+  ai_direction: 백천수는 겨울 잔치 전 섬사람의 쓸모를 다시 잰다. 쓸모 없다고 적힌 사람은 "뭍으로 내보내진다" (사실은 그가 직접 저장고로 데려간다). 그는 이 일을 즐기지도 귀찮아하지도 않는다. 줄 선 사람들 대부분은 이것을 건강 검진쯤으로 안다. 추복만은 다음 잔치 명단에 자기 이름이 오를까 두렵지만 티 내지 않는다. 주인공의 쓸모도 같은 줄에서 잰다.
+  choices:
+    - id: speak_for
+      label: 추복만이 물때와 그물을 누구보다 잘 안다고 거든다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: y2_teeth_done
+          - set_flag: y2_spoke_for_bokman
+          - relation: { who: old, axis: trust, delta: 2 }
+          - belief: { fact: "심사관이 추복만 이름 옆에 적던 것을 지우고 '젊은 사람들한테 물때를 가르치세요'라고 했다. 추복만은 줄을 벗어나 한참 바다만 봤다", source: seen }
+        partial:
+          - set_flag: y2_teeth_done
+          - set_flag: y2_spoke_for_bokman
+          - relation: { who: old, axis: trust, delta: 1 }
+          - relation: { who: judge, axis: trust, delta: -1 }
+          - belief: { fact: "심사관은 추복만 이름 옆에 아무것도 적지 않았다. 대신 내 이름 옆에 무언가를 적었다", source: seen }
+        miss:
+          - set_flag: y2_teeth_done
+          - set_flag: y_suspected
+          - relation: { who: judge, axis: trust, delta: -1 }
+          - belief: { fact: "심사관이 웃으며 '남의 쓸모를 걱정하는 사람은 자기 쓸모가 불안한 사람이죠'라고 했다. 추복만은 나를 보지 않았다", source: seen }
+    - id: prove_self
+      label: 내 차례에 경비조 일을 하나 더 맡겠다고 나선다
+      effects:
+        - set_flag: y2_teeth_done
+        - merit: 1
+        - relation: { who: judge, axis: trust, delta: 1 }
+        - deed: { summary: 섬의 쓸모 재기에서 일을 더 맡겠다고 나섰다, tags: [diligence], severity: 1, privacy: public }
+        - belief: { fact: "심사관이 내 이름 옆에 동그라미를 쳤다. 뒤에 선 추복만의 이름 옆에는 아직 아무것도 없다", source: seen }
+    - id: watch
+      label: 아무 말 없이 줄을 따라 걷는다
+      effects:
+        - set_flag: y2_teeth_done
+        - belief: { fact: "겨울 잔치 전 심사관 백천수가 섬사람의 손과 이를 보고 장부에 적는다. 추복만의 차례에 펜이 멈췄다", source: seen }
+
+- id: y2_donggyu_table
+  title: 기름진 저녁상
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [evening]
+    day_gte: 3
+    flags_none: [y2_table_done]
+  cast:
+    host: { ids: [py_donggyu] }
+    judge: { ids: [y_cheonsu], enter: false }
+  setup: "양식장 어르신 {host:이/가} 새로 온 사람을 저녁에 부른다. 상에 생선과 쌀밥, 뭍에서는 본 적 없는 술. 그는 턱의 기름을 닦으며 웃는다. \"섬은 좋은 데야. 일한 만큼 먹고, 일 잘하면 더 먹지.\" 술잔을 돌리다 목소리를 낮춘다. \"심사관 장부가 늘 맞는 건 아니야. 잔치 명단은 의회 누구라도 한 줄 보탤 수 있거든. 자네 같은 사람은 내 옆에 있어야 해.\""
+  ai_direction: 사동규는 겨울 잔치의 고기가 무엇인지 알고, 잔치가 철마다 열리기를 바란다. 의장 자리를 노리며, 심사관 백천수가 쓸모 없다고 적지 않은 사람 중에서도 마음에 드는 사람을 몰래 저장고 명단에 올린 적이 있다. 의장은 모르고 백천수는 안다. 그는 새 식구를 자기 사람으로 만들려 하며, 겁먹은 사람보다 계산하는 사람을 좋아한다. 상 위의 음식은 정말 생선과 쌀이다. 잔치 고기 이야기는 웃으며 넘긴다.
+  choices:
+    - id: sound_out
+      label: 맞장구를 치며 명단 이야기를 더 끌어낸다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: y2_table_done
+          - set_flag: y2_donggyu_list_known
+          - reveal_tie: { who: host, other: judge }
+          - relation: { who: host, axis: trust, delta: 1 }
+          - belief: { fact: "사동규가 취해서 흘렸다. 심사관이 쓸모 없다고 적지 않은 사람도 그가 몰래 잔치 명단에 올린 적이 있다. 의장 자리를 노리고, 심사관과는 서로 이를 간다", source: report }
+        partial:
+          - set_flag: y2_table_done
+          - belief: { fact: "사동규는 '잔치에 누가 앉고 누가 안 앉는지는 의회 몇이 정해'라고만 하고 술을 따랐다", source: report }
+        miss:
+          - set_flag: y2_table_done
+          - relation: { who: host, axis: trust, delta: -2 }
+          - belief: { fact: "사동규가 웃음을 거두고 '자네는 묻는 게 많군'이라고 했다. 상이 일찍 치워졌다", source: seen }
+    - id: be_his
+      label: 어르신 사람이 되겠다고 잔을 받는다
+      effects:
+        - set_flag: y2_table_done
+        - set_flag: y2_donggyu_man
+        - merit: 1
+        - relation: { who: host, axis: trust, delta: 2 }
+        - deed: { summary: 잔치 명단을 주무르는 의회 어르신의 사람이 되겠다고 했다, tags: [selfishness], severity: 1, privacy: private }
+        - belief: { fact: "사동규의 사람이 됐다. 그가 언젠가 '다음 명단에 누구를 올릴까' 물어 올 것이다", source: seen }
+    - id: report_judge
+      label: 그 말을 심사관 백천수에게 옮긴다
+      effects:
+        - set_flag: y2_table_done
+        - set_flag: y2_donggyu_reported
+        - relation: { who: judge, axis: trust, delta: 2 }
+        - npc_capture: { who: host, by: faction_y, zone: yeoul_isle }
+        - faction_morale: { faction: faction_y, delta: -1 }
+        - deed: { summary: 의회 어르신의 속말을 심사관에게 옮겼다, tags: [betrayal], severity: 2, privacy: private }
+        - belief: { fact: "백천수는 장갑을 벗지 않고 '알고 있습니다'라고만 했다. 사흘 뒤 식당에서 사동규의 자리가 비었다. 아무도 묻지 않았다", source: seen }
+    - id: leave_plate
+      label: 배가 부르다며 일찍 일어선다
+      effects:
+        - set_flag: y2_table_done
+        - relation: { who: host, axis: affection, delta: -1 }
+
+- id: y2_low_tide
+  title: 썰물의 바위길
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [night, dawn]
+    day_gte: 4
+    flags_any: [y_looking, y_ledger_seen, y_rocks_seen, y_feast_seen, pt_draught_known]
+    flags_none: [y2_tide_done]
+  cast:
+    keeper: { ids: [py_hoseong] }
+    old_friend: { ids: [c_seokjin], enter: false }
+  setup: "썰물 무렵 해안 순찰, 저장고 아래 바위에 고무 앞치마를 두른 {keeper:이/가} 혼자 앉아 담배를 만다. 앞치마를 벗어 무릎에 접어 놓았다. 당신을 보고도 일어서지 않는다. \"여기 뭐 볼 거 없어. 돌아가.\" 그러다 담배를 하나 더 만다. \"…뭍에서 왔지. 붉은 놈들, 아직 물류창고에 있나.\""
+  ai_direction: 단호성은 의회 저장고지기다. 내보낸다는 배가 섬을 돌아 저장고 뒤에 닿는다는 것을 알고, 그 뒷일을 자기 손으로 한다. 붉은연합 약탈조에서 도망쳐 헤엄쳐 섬에 닿았고, 처음 일을 시킨 밤 도망치려 했지만 갈 곳이 없었다. 잔치 고기는 입에 대지 않는다. 저장고 일을 그만두는 순간 자기가 그 안으로 들어간다고 믿는다. 저장고 뒤쪽 바위길은 썰물 때만 드러나고, 그 끝 바위틈에 내보내는 배가 묶인다. 그는 저장고 안을 말로 설명하지 않는다. 붉은연합의 옛 동료 고석진 이야기가 나오면 말이 조금 길어진다.
+  choices:
+    - id: share_smoke
+      label: 옆에 앉아 붉은연합 이야기를 들려준다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: y2_tide_done
+          - set_flag: y2_rockpath_known
+          - reveal_tie: { who: keeper, other: old_friend }
+          - relation: { who: keeper, axis: trust, delta: 2 }
+          - belief: { fact: "단호성이 저장고 뒤 바위길을 턱으로 가리켰다. 썰물 때만 드러나는 길이고, 그 끝 바위틈에 내보내는 배가 묶인다. '배는 거기 있어. 노도 있고.' 붉은연합의 고석진이 살아 있는지 물었다", source: report }
+        partial:
+          - set_flag: y2_tide_done
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "단호성은 '물이 빠지면 길이 생겨. 들어오면 또 없어지고'라고만 하고 담배를 바다에 튕겼다", source: report }
+        miss:
+          - set_flag: y2_tide_done
+          - relation: { who: keeper, axis: trust, delta: -1 }
+          - belief: { fact: "단호성은 앞치마를 다시 두르고 저장고 쪽으로 올라갔다. 그날 밤 저장고 뒷문은 잠겨 있었다", source: seen }
+    - id: ask_key
+      label: 그 열쇠를 언제까지 쥐고 있을 거냐고 묻는다
+      effects:
+        - set_flag: y2_tide_done
+        - set_flag: y2_hoseong_wants_out
+        - relation: { who: keeper, axis: affection, delta: 1 }
+        - belief: { fact: "단호성은 대답 대신 열쇠 꾸러미를 손바닥에 올려 무게를 쟀다. '이거 받을 사람 생기면 나는 바다로 나간다. 그전엔 못 나가'", source: seen }
+    - id: report_him
+      label: 저장고지기가 뭍 이야기를 캐물었다고 의회에 알린다
+      effects:
+        - set_flag: y2_tide_done
+        - merit: 1
+        - relation: { who: keeper, axis: trust, delta: -3 }
+        - deed: { summary: 바위에 앉아 뭍 이야기를 묻던 저장고지기를 의회에 일러바쳤다, tags: [betrayal], severity: 1, privacy: semi_private }
+        - belief: { fact: "심사관은 고맙다고 했다. 단호성은 다음 날도 고무 앞치마를 두르고 저장고 앞에 섰다. 나를 보는 눈만 달라졌다", source: seen }
+
+- id: y2_send_off
+  title: 내보내는 배
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [night]
+    day_gte: 5
+    flags_any: [y_rocks_seen, y_feast_seen, pt_draught_known, y2_rockpath_known]
+    flags_none: [y2_sendoff_done]
+  cast:
+    captain: { ids: [y_gangho] }
+    sleeper: { extra: y_villager, label: 잠든 늙은 그물꾼 }
+  setup: "자정, 부두 끝. 작은 배에 담요를 덮은 사람 셋이 누워 있다. 다들 깊이 잠들었다. 그중 하나는 낮에 식당에서 국을 나르던 {sleeper}다. {captain:이/가} 밧줄을 풀며 당신에게 노를 건넨다. \"오늘 당번 너다. 섬 뒤로 돌려서 바위 앞 부표에 묶어 두고 와. 뭍 배가 받아 간대. 나도 거기까진 안 가 봤다.\""
+  ai_direction: 진강호는 내보내는 배를 직접 띄우지만 어디에 닿는지 모른다 (알려 하지 않았다). 배에 누운 사람들은 약방 빈철호의 "뱃멀미 약"을 먹고 잠들었다. 부표는 저장고 뒤 바위틈 앞에 있다. 진강호에게 진실을 말하면 그는 먼저 화를 내고, 그다음 오래 침묵한다. 그는 의회를 거역하는 것이 두렵다. 배를 띄우지 않으면 의회는 이유를 묻는다. 잠든 사람들은 이 장면에서 깨어나지 않는다. 저장고 안은 서술하지 않는다.
+  choices:
+    - id: row
+      label: 시킨 대로 노를 저어 부표에 묶고 온다
+      effects:
+        - set_flag: y2_sendoff_done
+        - set_flag: y_rocks_seen
+        - merit: 1
+        - relation: { who: captain, axis: trust, delta: 1 }
+        - deed: { summary: 잠든 사람들을 실은 내보내는 배를 저장고 뒤 부표에 묶고 왔다, tags: [cruelty, loyalty], severity: 2, privacy: private }
+        - belief: { fact: "부표는 섬 뒤 저장고 아래 바위틈 앞에 있었다. 뭍 배는 없었다. 바위 위에서 고무 앞치마를 두른 사람이 등불을 들고 기다렸다", source: seen }
+    - id: tell_captain
+      label: 이 배가 뭍으로 가지 않는다고 진강호에게 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: y2_sendoff_done
+          - set_flag: y2_gangho_knows
+          - relation: { who: captain, axis: trust, delta: 2 }
+          - belief: { fact: "진강호가 작살총을 내려놓고 '내가 띄운 배가 몇 척이냐'고 물었다. 그는 오늘 밤 물때가 나쁘다고 의회에 말하겠다고 했다. 배는 하룻밤 부두에 남았다", source: seen }
+        partial:
+          - set_flag: y2_sendoff_done
+          - set_flag: y2_gangho_knows
+          - belief: { fact: "진강호는 '의회 일은 묻지 않는 거다'라고 하고 혼자 노를 잡았다. 돌아온 그는 밤새 부두 끝에 서 있었다", source: seen }
+        miss:
+          - set_flag: y2_sendoff_done
+          - set_flag: y_suspected
+          - relation: { who: captain, axis: trust, delta: -2 }
+          - belief: { fact: "진강호가 내 멱살을 잡았다 놓았다. '그 말 다시 하면 내가 의회에 데려간다.' 그는 혼자 배를 띄웠다", source: seen }
+    - id: lift_one
+      label: 배를 끌고 가는 길에 그물꾼 하나를 몰래 내려 그물 창고에 숨긴다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: y2_sendoff_done
+          - set_flag: y2_hidden_one
+          - set_flag: y_rocks_seen
+          - deed: { summary: 내보내는 배에서 잠든 사람 하나를 몰래 내려 숨겼다, tags: [mercy, disobedience], severity: 2, privacy: private }
+          - belief: { fact: "잠든 그물꾼을 둘러업고 그물 창고 다락에 눕혔다. 나머지 둘은 부표까지 끌고 갔다. 셋이어야 할 자리가 둘이라는 것을 바위 위의 등불이 알아챌지 모른다", source: seen }
+        partial:
+          - set_flag: y2_sendoff_done
+          - set_flag: y2_hidden_one
+          - set_flag: y_suspected
+          - deed: { summary: 내보내는 배에서 잠든 사람 하나를 몰래 내려 숨겼다, tags: [mercy, disobedience], severity: 2, privacy: semi_private }
+          - belief: { fact: "그물꾼을 숨기긴 했다. 부표에서 돌아오는 길, 바위 위의 등불이 오래 이쪽을 비췄다", source: seen }
+        miss:
+          - set_flag: y2_sendoff_done
+          - set_flag: y_suspected
+          - relation: { who: captain, axis: trust, delta: -1 }
+          - deed: { summary: 내보내는 배의 사람을 빼돌리려다 들켰다, tags: [disobedience], severity: 2, privacy: semi_private }
+          - belief: { fact: "그물꾼을 내리려는데 진강호가 등불을 비췄다. '되돌려 놔.' 그는 그 밤 일을 보고하지 않겠다고 하지 않았다", source: seen }
+
+- id: y2_feast_eve
+  title: 잔치 전날 밤
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [evening, night]
+    day_gte: 8
+    flags_all: [y_feast_seen]
+    flags_any: [y2_rockpath_known, y2_gangho_knows, y2_spoke_for_bokman, y2_hidden_one]
+    flags_none: [y_feasted, y2_eve_done]
+  cast:
+    old: { ids: [y_bokman] }
+    friend: { ids: [y_dabin] }
+    chair: { ids: [y_suja], enter: false }
+  setup: "겨울 잔치 전날, 식당에 솥이 걸렸다. 사람들이 웃으며 내일 이야기를 한다. 아이들은 상 위에 조개껍데기를 늘어놓는다. 그물 창고 뒤에서 {old:과/와} {friend:이/가} 당신을 기다린다. 추복만이 물때표를 접어 보인다. \"오늘 밤 자정에 물이 제일 많이 빠진다. 바위길이 끝까지 드러나.\" 설다빈이 덧붙인다. \"아니면… 다들 알아야 하는 거 아니에요? 내일 저 국을 먹기 전에.\""
+  ai_direction: 이제 주인공은 섬의 진실을 안다. 추복만은 바위길 끝에 묶인 내보내는 배로 나가자고 한다 (섬을 떠나는 표, 강변까지 동행). 설다빈은 단짝 지원의 일을 알게 되었고, 마을 사람들에게 알리고 싶어 한다. 마을 사람들 대부분은 모른다. 알게 되어도 몇은 숟가락을 내려놓고 몇은 계속 먹는다. 의장 한수자는 소동을 웃으며 덮을 줄 안다. 의회를 무너뜨리는 일은 한 밤에 끝나지 않는다. 위험은 판정 전에 선언하고, 결과는 판정으로만. 잔혹한 묘사는 하지 않는다.
+  choices:
+    - id: overturn
+      label: 식당 솥을 엎고 내보낸 사람들이 어디로 갔는지 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: y2_eve_done
+          - set_flag: y2_village_told
+          - set_flag: y_suspected
+          - faction_morale: { faction: faction_y, delta: -1 }
+          - relation: { who: friend, axis: trust, delta: 3 }
+          - relation: { who: chair, axis: trust, delta: -3 }
+          - deed: { summary: 잔치 전날 식당 솥을 엎고 의회 저장고의 일을 섬사람들 앞에서 말했다, tags: [bravery, disobedience], severity: 3, privacy: public }
+          - belief: { fact: "몇은 숟가락을 내려놓았고 몇은 바닥에 쏟아진 것을 보지 않으려 했다. 선생 모은별이 아이들을 데리고 나갔다. 의장은 웃지 않았다. 내일 잔치는 미뤄졌다", source: seen }
+        partial:
+          - set_flag: y2_eve_done
+          - set_flag: y_marked
+          - relation: { who: friend, axis: trust, delta: 2 }
+          - relation: { who: chair, axis: trust, delta: -3 }
+          - deed: { summary: 잔치 전날 식당 솥을 엎고 의회를 고발했다, tags: [bravery, disobedience], severity: 3, privacy: public }
+          - belief: { fact: "의장이 '새 식구가 열이 있구나' 하자 사람들이 고개를 끄덕였다. 몇 사람만 그날 밤 국을 먹지 않았다. 심사관이 내 이름 옆에 줄을 그었다", source: seen }
+        miss:
+          - set_flag: y2_eve_done
+          - set_flag: y_marked
+          - set_flag: y_suspected
+          - relation: { who: chair, axis: trust, delta: -3 }
+          - deed: { summary: 잔치 전날 식당에서 소동을 일으켰다, tags: [disobedience], severity: 2, privacy: public }
+          - belief: { fact: "솥에 손을 대기도 전에 경비들이 팔을 잡았다. 사람들은 나를 아픈 사람 보듯 했다. 설다빈은 고개를 숙였다", source: seen }
+    - id: rock_path
+      label: 자정 썰물에 바위길로 두 사람과 함께 나간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: y2_eve_done
+          - set_flag: y_leave_pass
+          - relation: { who: old, axis: trust, delta: 2 }
+          - relation: { who: friend, axis: trust, delta: 2 }
+          - companion_join: { who: old, kind: purpose, until: { zone: riverside } }
+          - companion_join: { who: friend, kind: purpose, until: { zone: riverside } }
+          - deed: { summary: 겨울 잔치 전날 밤 섬사람 둘을 데리고 바위길로 빠져나갔다, tags: [mercy, disobedience], severity: 2, privacy: semi_private }
+          - belief: { fact: "바위길 끝에 내보내는 배가 묶여 있었다. 노가 있었다. 추복만이 물때를 읽었다. 저장고 굴뚝 불빛이 등 뒤에서 작아졌다", source: seen }
+        partial:
+          - set_flag: y2_eve_done
+          - set_flag: y_leave_pass
+          - set_flag: y_suspected
+          - relation: { who: old, axis: trust, delta: 2 }
+          - companion_join: { who: old, kind: purpose, until: { zone: riverside } }
+          - npc_capture: { who: friend, by: faction_y, zone: yeoul_isle }
+          - belief: { fact: "바위길 중간에서 등불이 비쳤다. 설다빈이 일부러 소리를 내며 반대편으로 뛰었다. 배에는 추복만과 둘만 탔다", source: seen }
+        miss:
+          - set_flag: y2_eve_done
+          - set_flag: y_marked
+          - set_flag: y_suspected
+          - relation: { who: friend, axis: affection, delta: -1 }
+          - belief: { fact: "물이 생각보다 빨리 들었다. 바위길이 무릎까지 잠겨 돌아설 수밖에 없었다. 저장고 뒷문에서 누가 우리를 봤다", source: seen }
+    - id: sit_quiet
+      label: 둘을 돌려보내고 내일 잔치를 기다린다
+      effects:
+        - set_flag: y2_eve_done
+        - relation: { who: old, axis: trust, delta: -2 }
+        - relation: { who: friend, axis: affection, delta: -2 }
+        - belief: { fact: "추복만은 물때표를 접어 넣고 '그래, 살아야지'라고 했다. 설다빈은 아무 말 없이 갔다. 그 밤 자정에 물이 제일 많이 빠졌다", source: seen }

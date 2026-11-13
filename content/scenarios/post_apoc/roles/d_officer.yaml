@@ -1,0 +1,33 @@
+# 하얀매의 간부 (시작 역할, 초안)
+# 대표 서은영 직속. 진료소의 살림(약장·물·식량)을 맡고, 약을 누구에게 먼저 돌릴지, 어느 무리와 무엇을 바꿀지 안을 올린다
+id: role_d_officer
+label: 하얀매 간부
+faction: faction_d
+rank: officer
+default_name: 간부
+opening_scene: 아침, 하얀매 진료소 이층의 대표 방. 창틀에 소독약 병이 줄지어 말라 가고, 아래 마당에서 문진 줄이 웅성거린다. 도상필이 약제실 장부를 펼쳐 놓고 안경을 닦는다. 권정숙은 앞치마도 벗지 않고 문가에 섰다. 서은영이 철사 감은 안경을 밀어 올리며 당신을 본다. "살림 맡은 분 말부터 듣지요. 이번 주 약은 누구 몫입니까."
+scenario:
+  title: 하얀매의 간부
+  pitch: >-
+    총 대신 약장 열쇠와 장부를 쥔다. 대표 서은영 곁에서 진료소의 살림을 맡아, 모자란 항생제를 어느 무리 사람에게 먼저 돌릴지, 누구와 무엇을 바꿀지 안을 올린다.
+    약을 원하는 무리는 많고, 중립은 값을 매길 수 있는 것처럼 보인다. 당신이 정한 순서대로 누군가는 살고, 누군가는 줄 끝에서 기다린다.
+  intro: >-
+    가을이 깊어 간다. 당신은 하얀매의 간부다. 하얀매는 옛 보건소 건물을 진료소로 삼은 서른 명 남짓의 작은 무리로, 약과 의술을 거래 조건으로 써서 전쟁 중인 무리들 사이에서 중립을 지켜 왔다.
+    당신은 진료소의 살림을 맡는다. 약장과 창고의 장부를 보고, 매일 아침 대표 서은영의 방에서 열리는 회의에 앉는다. 다른 무리와의 약값 흥정은 간부 도상필이, 치료 순서는 수간호사 권정숙이 쥐고 있어서, 둘 사이에서 말이 갈리는 날이 많다.
+    청솔형제단과 붉은연합이 싸우는 동안 진료소 문 앞의 줄은 길어졌고, 약장의 항생제는 빨리 줄어든다. 붉은연합이 약을 통째로 사들이려 한다는 말이 돌고, 정문을 지키는 경비는 여섯뿐이다.
+    이야기는 어느 아침, 대표의 방에서 시작한다.
+age: 41
+# 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
+# 시작 훈련: 교섭과 응급처치. 의사는 아니지만 붕대는 감을 줄 안다
+start_skills: { persuade: 1, first_aid: 1 }
+start_inventory: [ledger, medkit, fever_reducer, coat, radio]
+start_location: d_clinic
+access: [ration, mission_board, treatment_room]
+beliefs_preset: d_officer_start
+# 회의에 앉는 사람들, 진료소의 손, 그리고 약을 사러 오는 무리의 얼굴들
+known_npcs: [d_eunyoung, d_sangpil, d_jeongsuk, d_gisun, pd_ugyeong, pd_sugyeong, pd_dahyeon, d_dojin, d_minho, c_gyeongsu, e_bongsu, b_seungmin]
+# 직속 상관은 대표. 아침 회의 뒤 직접 일을 맡긴다
+commander: d_eunyoung
+missions: [do_stock_audit, do_willow_price, do_pine_ward, do_market_supplies, do_triage_rules, do_hospital_plan]
+# d_officer: 이 시나리오에 묶인 이야기, council: 간부라면 누구나 겪을 회의·배분 이야기, world: 어느 시나리오에서나 열리는 도시의 일
+storylet_tags: [d_officer, council, world]

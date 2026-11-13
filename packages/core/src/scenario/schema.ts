@@ -295,11 +295,12 @@ export const scenarioFileSchema = z
                     morale: z.strictObject({ delta: z.number().int().min(-1).max(1), chance: z.number().min(0).max(1) }).optional(),
                     /**
                      * 교역: 하루마다 상대 무리와 자원을 바꾼다. 서로의 태도가 min_disposition 이상이고 양쪽 창고에 있을 때만.
-                     * 상대가 자기 자신이면 하지 않는다
+                     * 상대가 자기 자신이면 fallback_partner와 바꾸고, 그것도 없으면 하지 않는다
                      */
                     trade: z
                       .strictObject({
                         partner: id,
+                        fallback_partner: id.optional(),
                         give: z.record(id, z.number().int().min(1)),
                         get: z.record(id, z.number().int().min(1)),
                         min_disposition: z.number().int().min(-3).max(3).default(0),

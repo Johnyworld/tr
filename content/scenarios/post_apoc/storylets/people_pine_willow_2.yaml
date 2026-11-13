@@ -1,0 +1,565 @@
+# 청솔형제단·버들마을 추가 인물의 이야기 2 (npcs/more_pine.yaml, npcs/more_willow.yaml)
+# people_pine_willow.yaml(pp_*)의 뒤를 잇는다. 세력 클락: b_waver(버들마을 이탈, 낮출수록 연합이 버틴다)
+# 연쇄:
+# - 엄태석의 진실: pp2_drain_search → (pp2_drain_found | pp2_drain_told) → pp2_jinman_smoke → pp2_jinman_confessed → pp2_taeju_asks
+# - 창고 남매: pp_back_door_done → pp2_market_siblings
+# - 발전기 연료: pp2_generator_room (독립)
+# - 쪽문 부부: pp2_north_gate → (pp2_gate_covered | pp2_sua_told) → pp2_desertion_talk
+# - 우물꾼의 아들: pp2_hospital_meeting (pp_pump_part_wanted가 서 있으면 부품 이야기가 붙는다)
+# - 옥상의 아이: pp_rooftop_done → pp2_tailing_clerk
+
+# ── 엄태석의 진실 1: 배수로 ───────────────────────────
+- id: pp2_drain_search
+  title: 배수로 쪽을 보는 사람
+  tags: [world]
+  when:
+    zones: [south_fields]
+    segments: [evening]
+    factions: [faction_a]
+    day_gte: 3
+    flags_none: [pp2_drain_done]
+  cast:
+    young: { ids: [pa_taeju] }
+    leader: { ids: [pa_jinman], enter: false }
+  setup: 해가 넘어가는 텃밭 남쪽 울타리에 {young:이/가} 서 있다. 목에 건 군번줄 두 개를 만지작거리며 배수로 쪽을 본다. 당신을 보더니 목소리를 낮춘다. "형 시신, 끝내 못 찾았거든요. 저기 배수로 안쪽까지는 아무도 안 들어가 봤어요. 같이 가 줄래요? 분대장님한테는 비밀로요."
+  ai_direction: "지난겨울 물결 때 {young}의 형 엄태석은 다리를 물려 배수로에 쓰러졌고, 분대장 {leader}는 그를 산 채로 두고 왔다. 지도부와 분대에는 이미 숨이 끊겨 있었다고 보고했다. 배수로 안쪽에는 태석이 혼자 허벅지를 묶고 한동안 기어간 흔적이 남아 있다. 이 흔적이 '죽은 채 두고 왔다'는 말과 맞지 않는다는 것은 주인공이 스스로 알아챌 몫이다. GM은 진실을 말하지 않는다. 배수로에는 감염체가 고인다."
+  choices:
+    - id: go_together
+      label: 둘이 같이 배수로로 내려간다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: pp2_drain_done
+          - set_flag: pp2_drain_found
+          - relation: { who: young, axis: trust, delta: 2 }
+          - belief: { fact: "텃밭 남쪽 배수로 안쪽에서 허리띠로 허벅지를 동여맨 자국과, 콘크리트 벽을 손톱으로 긁으며 한참 기어간 흔적을 봤다. 엄태석은 쓰러진 뒤에도 한동안 살아 있었다", source: seen }
+          - belief: { fact: "{young}은(는) 흔적을 보고도 형이 끝까지 싸웠다고만 받아들였다. 분대장이 형이 이미 죽어 있었다고 했다는 것과 맞춰 보지 않았다", source: seen }
+        partial:
+          - set_flag: pp2_drain_done
+          - set_flag: pp2_drain_found
+          - relation: { who: young, axis: trust, delta: 1 }
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "배수로 물속에서 피에 전 허리띠 조각을 건졌다. 지혈대처럼 묶였던 매듭이 그대로였다. 더 들어가기 전에 안쪽에서 무언가 움직여 물러났다", source: seen }
+        miss:
+          - set_flag: pp2_drain_done
+          - relation: { who: young, axis: respect, delta: -1 }
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "배수로 안쪽에 감염체가 고여 있었다. {young}을(를) 끌고 겨우 빠져나왔다. 아무것도 찾지 못했다", source: seen }
+    - id: tell_leader
+      label: 혼자 담 밖에 나가려 한다고 분대장에게 알린다
+      effects:
+        - set_flag: pp2_drain_done
+        - set_flag: pp2_drain_told
+        - relation: { who: young, axis: trust, delta: -2 }
+        - relation: { who: leader, axis: trust, delta: 1 }
+        - belief: { fact: "{leader}은(는) {young}이(가) 배수로에 가려 했다는 말을 듣고 한참 말이 없었다. 담배를 꺼내다 떨어뜨렸다", source: seen }
+    - id: talk_down
+      label: 오늘은 아니라고 달래서 막사로 데려간다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp2_drain_done
+          - relation: { who: young, axis: affection, delta: 2 }
+          - belief: { fact: "{young}: 형은 다리를 물렸는데도 분대장님을 먼저 보냈대요. 분대장님이 그렇게 말해 줬어요. 근데 시신을 못 찾으니까 자꾸 형이 어디 앉아 있을 것 같아서", source: report }
+        partial:
+          - set_flag: pp2_drain_done
+          - relation: { who: young, axis: affection, delta: 1 }
+        miss:
+          - set_flag: pp2_drain_done
+          - relation: { who: young, axis: trust, delta: -1 }
+          - belief: { fact: "{young}은(는) 혼자라도 가겠다며 울타리를 넘으려다 다른 분대원에게 붙들렸다", source: seen }
+
+# ── 엄태석의 진실 2: 막사 밖의 담배 ───────────────────
+- id: pp2_jinman_smoke
+  title: 잠 못 드는 분대장
+  tags: [world]
+  when:
+    zones: [a_base]
+    segments: [night]
+    factions: [faction_a]
+    flags_any: [pp2_drain_found, pp2_drain_told]
+    flags_none: [pp2_smoke_done]
+  cast:
+    leader: { ids: [pa_jinman], trust_gte: 2 }
+    young: { ids: [pa_taeju], enter: false }
+  setup: 자정이 넘은 막사 뒤. {leader:이/가} 혼자 쪼그려 앉아 담배를 피운다. 붕대 감은 왼손이 떨려 불이 자꾸 꺼진다. 당신을 보고도 일어나지 않는다. "태주랑 배수로 얘기했냐."
+  ai_direction: "{leader}는 엄태석을 산 채로 두고 왔다. 업으면 넷이 다 죽는다고 판단했고, 손을 놓지 않는 태석의 손가락을 떼다 자기 손을 다쳤다. 그 뒤 '버리지 않는다'를 누구보다 많이 말해 왔다. 원칙을 지키다 사람을 잃어 본 사람에게만, 둘만 있는 밤에 털어놓는다. 캐묻기만 하면 판정으로 갈린다. 털어놓은 뒤에도 {young}에게 직접 말할 용기는 아직 없다."
+  choices:
+    - id: ask_straight
+      label: 배수로에서 본 것을 말하고, 그날 무슨 일이 있었는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp2_smoke_done
+          - set_flag: pp2_jinman_confessed
+          - relation: { who: leader, axis: trust, delta: 1 }
+          - belief: { fact: "{leader}: 엄태석은 그때 살아 있었다. 다리를 물려 배수로에 쓰러졌고, 업으면 넷이 다 죽는다고 보고 두고 왔다. 위에는 숨이 끊겨 있었다고 보고했다. 붕대 감은 손가락은 태석이 놓지 않던 손을 떼다 다친 것이다", source: report }
+        partial:
+          - set_flag: pp2_smoke_done
+          - set_flag: pp2_jinman_hinted
+          - relation: { who: leader, axis: respect, delta: 1 }
+          - belief: { fact: "{leader}: 업고 올 수가 없었다. 그 말만 하고 담배를 비벼 껐다", source: report }
+        miss:
+          - set_flag: pp2_smoke_done
+          - relation: { who: leader, axis: trust, delta: -2 }
+          - belief: { fact: "{leader}은(는) 분대 일에 끼어들지 말라며 막사로 들어갔다. 다음 날부터 당신을 보는 눈이 달라졌다", source: seen }
+    - id: own_loss
+      label: 당신도 누군가를 두고 온 적이 있다고, 먼저 꺼낸다
+      effects:
+        - set_flag: pp2_smoke_done
+        - set_flag: pp2_jinman_confessed
+        - relation: { who: leader, axis: trust, delta: 2 }
+        - relation: { who: leader, axis: affection, delta: 1 }
+        - belief: { fact: "{leader}: 엄태석은 그때 살아 있었다. 다리를 물려 배수로에 쓰러졌고, 업으면 넷이 다 죽는다고 보고 두고 왔다. 위에는 숨이 끊겨 있었다고 보고했다. 붕대 감은 손가락은 태석이 놓지 않던 손을 떼다 다친 것이다", source: report }
+        - belief: { fact: "{leader}: 그래서 {young}을(를) 뒤에만 세운다. 그 집에서 둘째까지 내 손으로 놓고 싶지 않다", source: report }
+    - id: light_it
+      label: 아무것도 묻지 않고 불만 붙여 준다
+      effects:
+        - set_flag: pp2_smoke_done
+        - set_flag: pp2_jinman_hinted
+        - relation: { who: leader, axis: affection, delta: 2 }
+        - belief: { fact: "{leader}이(가) 담배를 다 태우고 혼잣말처럼 말했다. 태석아, 손 놔. 그러고는 아무 일 없다는 듯 막사로 들어갔다", source: seen }
+
+# ── 엄태석의 진실 3: 동생이 묻는 날 ──────────────────
+- id: pp2_taeju_asks
+  title: 형의 마지막
+  tags: [world]
+  when:
+    zones: [a_base, south_fields]
+    segments: [evening, night]
+    factions: [faction_a]
+    flags_any: [pp2_jinman_confessed, pp2_jinman_hinted]
+    flags_none: [pp2_taeju_done]
+  cast:
+    young: { ids: [pa_taeju] }
+    leader: { ids: [pa_jinman], enter: false }
+  setup: "{young:이/가} 당신 앞을 막아선다. 눈가가 벌겋다. \"요즘 분대장님이랑 밤에 자주 얘기하시더라고요. 형 얘기죠? 저한테만 말 안 해 주는 거 있죠. 형, 마지막에 어땠어요.\""
+  ai_direction: "{young}은(는) 분대장 {leader}를 친형처럼 따른다. 주인공이 아는 만큼만 말할 수 있다 (주인공이 진실을 다 들었는지는 GM이 Belief State로 확인한다. 듣지 못했다면 아는 것만 말하게 한다). 진실을 들으면 {young}은(는) 분대장에게 달려가거나, 거점을 나가 버린다. 거짓말로 덮으면 {leader}는 그 빚을 기억한다. 분대가 흔들리면 1분대 전체의 사기가 꺾인다."
+  choices:
+    - id: truth
+      label: 들은 그대로 말해 준다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp2_taeju_done
+          - set_flag: pp2_taeju_knows
+          - relation: { who: young, axis: trust, delta: 2 }
+          - relation: { who: leader, axis: trust, delta: -1 }
+          - deed: { summary: 분대장이 숨겨 온 동료의 마지막을 그 동생에게 말해 주었다, tags: [honesty], severity: 2, privacy: semi_private }
+          - belief: { fact: "{young}은(는) 끝까지 듣고 군번줄 하나를 풀어 쥐었다. 분대장을 찾아가 마주 섰고, 둘이 밤새 막사 밖에 앉아 있었다. 다음 날 {young}은(는) 처음으로 앞자리를 서지 않겠다고 했다", source: seen }
+        partial:
+          - set_flag: pp2_taeju_done
+          - set_flag: pp2_taeju_knows
+          - relation: { who: young, axis: trust, delta: 1 }
+          - relation: { who: leader, axis: trust, delta: -2 }
+          - faction_morale: { faction: faction_a, delta: -1 }
+          - deed: { summary: 분대장이 숨겨 온 동료의 마지막을 그 동생에게 말해 주었다, tags: [honesty], severity: 2, privacy: public }
+          - belief: { fact: "{young}이(가) 식당 천막에서 분대장의 멱살을 잡았다. 버리지 않는다면서요. 1분대가 둘로 갈려 서로 눈을 피한다", source: seen }
+        miss:
+          - set_flag: pp2_taeju_done
+          - set_flag: pp2_taeju_knows
+          - set_flag: pp2_taeju_gone
+          - relation: { who: leader, axis: trust, delta: -2 }
+          - faction_morale: { faction: faction_a, delta: -1 }
+          - npc_depart: { who: young }
+          - deed: { summary: 분대장이 숨겨 온 동료의 마지막을 그 동생에게 말해 주었다, tags: [honesty], severity: 2, privacy: semi_private }
+          - belief: { fact: "{young}은(는) 아무 말 없이 듣고 돌아섰다. 그날 밤 형의 군번줄을 분대장 침상에 올려놓고 거점을 나갔다. 돌아오지 않았다", source: seen }
+    - id: lie
+      label: 형은 그 자리에서 숨졌다고, 분대장이 끝까지 업으려 했다고 말한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: pp2_taeju_done
+          - set_flag: pp2_lie_kept
+          - relation: { who: leader, axis: trust, delta: 2 }
+          - relation: { who: young, axis: affection, delta: 1 }
+          - deed: { summary: 동료의 동생에게 그 형의 마지막을 거짓으로 덮어 주었다, tags: [deceit, loyalty], severity: 1, privacy: private }
+          - belief: { fact: "{young}은(는) 고개를 끄덕이고 웃었다. 그날 이후 해 질 녘 울타리에 서지 않는다. 분대장은 당신을 보면 먼저 눈을 돌린다", source: seen }
+        partial:
+          - set_flag: pp2_taeju_done
+          - set_flag: pp2_lie_kept
+          - relation: { who: leader, axis: trust, delta: 1 }
+          - relation: { who: young, axis: trust, delta: -1 }
+          - deed: { summary: 동료의 동생에게 그 형의 마지막을 거짓으로 덮어 주었다, tags: [deceit, loyalty], severity: 1, privacy: private }
+          - belief: { fact: "{young}은(는) 알겠다고 했지만 믿는 얼굴이 아니었다. 해 질 녘이면 여전히 배수로 쪽을 본다", source: seen }
+        miss:
+          - set_flag: pp2_taeju_done
+          - set_flag: pp2_taeju_knows
+          - relation: { who: young, axis: trust, delta: -3 }
+          - relation: { who: leader, axis: trust, delta: -1 }
+          - deed: { summary: 동료의 동생을 속이려다 들켰다, tags: [deceit], severity: 2, privacy: semi_private }
+          - belief: { fact: "{young}: 배수로에 허리띠 매듭이 있었어요. 숨진 사람이 그걸 어떻게 묶어요. 다들 똑같이 거짓말하네요", source: report }
+    - id: send_to_leader
+      label: 그건 내가 할 말이 아니라고, 분대장에게 직접 물으라고 한다
+      effects:
+        - set_flag: pp2_taeju_done
+        - set_flag: pp2_leader_must_tell
+        - relation: { who: young, axis: respect, delta: 1 }
+        - relation: { who: leader, axis: respect, delta: 1 }
+        - belief: { fact: "{young}이(가) 분대장 막사로 갔다. 한참 뒤 둘 다 나오지 않았고, 다음 날 아침 분대장 왼손의 붕대가 풀려 있었다", source: seen }
+
+# ── 창고 남매: 장터의 담배 한 대 ──────────────────────
+- id: pp2_market_siblings
+  title: 장터 구석의 남매
+  tags: [world]
+  when:
+    zones: [e_market]
+    segments: [morning, day]
+    factions: [faction_a]
+    flags_all: [pp_back_door_done]
+    flags_none: [pp2_market_done]
+  cast:
+    keeper: { ids: [pa_yeonhui] }
+    brother: { ids: [c_dongpal] }
+  setup: 장터 끝 천막 그늘에서 {keeper:이/가} 붉은 완장을 찬 앞니 빠진 사내와 쪼그려 앉아 있다. 보따리 하나가 사내 쪽으로 밀려간다. 사내는 사탕 껍질을 까며 연신 웃고, 그녀는 오늘따라 웃지 않는다.
+  ai_direction: "{brother}는 {keeper}의 친동생이고 붉은연합 규율반의 밀고자다. 누나에게 통조림을 받는 대가로 붉은연합 소식을 흘려 주는데, 그 소식 일부는 규율반이 일부러 흘린 것이다. 오늘 그는 청솔형제단 동쪽 초소의 교대 시간을 지나가는 말처럼 자꾸 묻는다. {keeper}는 동생을 의심해 본 적이 없다. GM은 밀고자라는 사실을 말하지 않는다. 묻는 것이 이상하다는 것만 보여 준다."
+  choices:
+    - id: listen
+      label: 천막 뒤에 붙어 엿듣는다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: pp2_market_done
+          - set_flag: pp2_dongpal_fishing
+          - reveal_tie: { who: keeper, other: brother }
+          - belief: { fact: "{brother}이(가) 누나 {keeper}에게 붉은연합이 곧 동쪽으로 친다고 귀띔하면서, 청솔 동쪽 초소가 몇 시에 교대하는지 세 번이나 되물었다. 누나는 모른다고 했다", source: seen }
+        partial:
+          - set_flag: pp2_market_done
+          - reveal_tie: { who: keeper, other: brother }
+          - belief: { fact: "{keeper}이(가) 붉은연합 사내를 동생이라고 불렀다. 보따리 안은 창고 통조림이었다", source: seen }
+        miss:
+          - set_flag: pp2_market_done
+          - relation: { who: keeper, axis: trust, delta: -1 }
+          - relation: { who: brother, axis: trust, delta: -1 }
+          - belief: { fact: "엿듣다 {brother}과(와) 눈이 마주쳤다. 사내가 웃으며 손을 흔들었고, {keeper}은(는) 하얗게 질렸다", source: seen }
+    - id: sit_down
+      label: 다가가 담배를 하나 얻어 피우며 끼어 앉는다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: pp2_market_done
+          - set_flag: pp2_dongpal_fishing
+          - reveal_tie: { who: keeper, other: brother }
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "{brother}은(는) 농담 끝에 청솔 동쪽 초소 사람 수와 교대를 슬쩍슬쩍 물었다. 소식을 주러 온 사람이 아니라 소식을 받으러 온 사람 같았다", source: seen }
+        partial:
+          - set_flag: pp2_market_done
+          - reveal_tie: { who: keeper, other: brother }
+          - relation: { who: brother, axis: affection, delta: 1 }
+          - belief: { fact: "{brother}: 붉은연합이 열흘 안에 동쪽 초소를 친대. 나도 들은 거야. 누나 다치지 말라고 하는 말이야", source: report }
+        miss:
+          - set_flag: pp2_market_done
+          - reveal_tie: { who: keeper, other: brother }
+          - relation: { who: brother, axis: trust, delta: 1 }
+          - belief: { fact: "{brother}과(와) 한참 떠들었다. 무슨 이야기를 했는지 돌아보니 당신이 맡은 경비 자리 이야기를 꽤 한 것 같다", source: seen }
+    - id: report
+      label: 거점으로 돌아가 상관에게 본 것을 알린다
+      effects:
+        - set_flag: pp2_market_done
+        - set_flag: pp2_yeonhui_reported
+        - merit: 1
+        - relation: { who: keeper, axis: trust, delta: -3 }
+        - faction_resource: { faction: faction_a, resource: food, delta: 5 }
+        - deed: { summary: 붉은연합 사람에게 창고 물건을 건네던 창고지기를 상관에게 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+
+# ── 발전기실의 기름 냄새 ──────────────────────────────
+- id: pp2_generator_room
+  title: 장부보다 적은 기름
+  tags: [world]
+  when:
+    zones: [a_base]
+    segments: [night]
+    factions: [faction_a]
+    day_gte: 4
+    flags_none: [pp2_generator_done]
+  cast:
+    chief: { ids: [pa_okran] }
+    daughter: { ids: [d_eunyoung], enter: false }
+  setup: 발전기실 문틈으로 불빛이 샌다. 안에서 {chief:이/가} 연료 드럼에서 기름을 빈 물병에 옮겨 담고 있다. 공구 허리띠가 드럼에 부딪쳐 쇳소리가 난다. 손을 멈추지 않고 말한다. "들어올 거면 문 닫아. 바람 들어와."
+  ai_direction: "{chief}는 발전기 연료를 조금씩 빼돌려 장터에서 해열제와 항생제로 바꾸고, 밤에 의무실 약장에 장부 없이 넣는다. 하얀매 대표 {daughter}가 붕괴 때 헤어진 친딸인데, 딸은 어머니에게도 약을 공짜로 주지 않는다. 이 사실이 붉은연합 쪽에 새어 약값 흥정의 패가 되는 것을 가장 두려워한다. 원칙과 규칙 사이에서 원칙을 고른 적 있는 사람에게만, 여기서 둘만 있을 때 털어놓는다. 거점 연료가 넉넉하지 않다는 것도 사실이다."
+  choices:
+    - id: ask
+      label: 문을 닫고, 그 기름이 어디로 가는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp2_generator_done
+          - set_flag: pp2_okran_told
+          - reveal_tie: { who: chief, other: daughter }
+          - relation: { who: chief, axis: trust, delta: 2 }
+          - belief: { fact: "{chief}은(는) 발전기 연료를 빼돌려 장터에서 해열제와 항생제로 바꾸고, 의무실 약장에 장부 없이 넣는다. 하얀매 대표 {daughter}이(가) 붕괴 때 헤어진 친딸이고, 딸은 어머니에게도 약을 공짜로 주지 않는다", source: report }
+        partial:
+          - set_flag: pp2_generator_done
+          - set_flag: pp2_okran_told
+          - relation: { who: chief, axis: respect, delta: 1 }
+          - belief: { fact: "{chief}: 이 기름은 의무실로 간다. 약장에 숫자가 혼자 늘어나는 거 봤지. 더는 묻지 마", source: report }
+        miss:
+          - set_flag: pp2_generator_done
+          - relation: { who: chief, axis: trust, delta: -1 }
+          - belief: { fact: "{chief}은(는) 드럼 바닥 찌꺼기를 거르는 중이라며 당신을 내보냈다. 물병은 공구 허리띠 뒤로 사라졌다", source: seen }
+    - id: carry
+      label: 말없이 물병 하나를 받아 들고 같이 나른다
+      effects:
+        - set_flag: pp2_generator_done
+        - set_flag: pp2_okran_helped
+        - relation: { who: chief, axis: trust, delta: 2 }
+        - relation: { who: chief, axis: affection, delta: 1 }
+        - faction_resource: { faction: faction_a, resource: fuel, delta: -5 }
+        - faction_resource: { faction: faction_a, resource: medicine, delta: 3 }
+        - deed: { summary: 간부가 발전기 연료를 빼돌려 약으로 바꾸는 일을 거들었다, tags: [theft, mercy], severity: 1, privacy: private }
+        - belief: { fact: "{chief}과(와) 기름 물병을 장터 쪽 담장 틈에 숨겼다. 며칠 뒤 의무실 약장에 장부에 없는 항생제가 들어왔다", source: seen }
+    - id: report
+      label: 연료 장부가 틀리다고 지도부에 알린다
+      effects:
+        - set_flag: pp2_generator_done
+        - set_flag: pp2_okran_reported
+        - merit: 1
+        - relation: { who: chief, axis: trust, delta: -3 }
+        - faction_resource: { faction: faction_a, resource: fuel, delta: 5 }
+        - deed: { summary: 발전기 연료를 빼돌리던 간부를 지도부에 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: "{chief}은(는) 지도부 회의에서 변명하지 않았다. 연료 장부는 다른 간부에게 넘어갔고, 그 주부터 의무실 약장이 비기 시작했다", source: seen }
+
+# ── 쪽문 부부 1: 북쪽 쪽문의 밤 ───────────────────────
+- id: pp2_north_gate
+  title: 쪽문 그늘의 두 사람
+  tags: [world]
+  when:
+    zones: [b_base]
+    segments: [night]
+    day_gte: 3
+    flags_none: [pp2_gate_done]
+  cast:
+    groom: { ids: [pa_gibeom] }
+    bride: { ids: [pb_sua] }
+  setup: 버들마을 북쪽 쪽문 옆 담 그늘. 장갑 한 짝만 낀 청솔형제단 분대원과, 품 큰 군복 점퍼의 버들마을 경비 당번이 이마를 맞대고 있다. 발소리에 둘이 동시에 떨어진다. {bride:은/는} 점퍼 앞섶을 여미며 배를 감싼다.
+  ai_direction: "{groom}과 {bride}는 봄에 버들마을 지하 교실에서 몰래 혼례를 올린 부부다. {bride}는 아이를 가졌지만 남편에게 아직 말하지 못했다. 배가 고파 염재혁에게서 붉은연합 통조림을 받았고, 그 값으로 쪽문 당번 시간을 한 번 알려 주었다. 이 이야기는 함께 망을 봐 주며 아이 이야기를 눈치챈 사람에게만 나온다. {groom}은 버들마을이 연합을 깨면 막사를 빠져나올 생각이다."
+  choices:
+    - id: keep_watch
+      label: 담 모퉁이에 서서 망을 봐 준다
+      effects:
+        - set_flag: pp2_gate_done
+        - set_flag: pp2_gate_covered
+        - reveal_tie: { who: groom, other: bride }
+        - relation: { who: groom, axis: trust, delta: 2 }
+        - relation: { who: bride, axis: trust, delta: 1 }
+        - belief: { fact: "{groom}과(와) {bride}은(는) 부부다. 봄에 버들마을 지하 교실에서 몰래 혼례를 올렸다. 청솔형제단 분대에는 알리지 않았다", source: report }
+    - id: notice
+      label: 망을 봐 주다가, 배를 감싸는 손을 보고 조용히 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp2_gate_done
+          - set_flag: pp2_sua_told
+          - reveal_tie: { who: groom, other: bride }
+          - relation: { who: bride, axis: trust, delta: 2 }
+          - belief: { fact: "{bride}은(는) {groom}의 아내이고 아이를 가졌다. 남편은 아직 모른다. 배가 고파 염재혁에게서 붉은연합 통조림을 받았고, 그 값으로 쪽문 당번 시간을 한 번 알려 주었다", source: report }
+        partial:
+          - set_flag: pp2_gate_done
+          - set_flag: pp2_gate_covered
+          - reveal_tie: { who: groom, other: bride }
+          - relation: { who: bride, axis: trust, delta: 1 }
+          - belief: { fact: "{bride}은(는) 아이를 가진 것 같다. 묻자 대답 대신 남편 쪽을 보고 고개를 저었다. 아직 말하지 말라는 뜻이었다", source: seen }
+        miss:
+          - set_flag: pp2_gate_done
+          - relation: { who: bride, axis: trust, delta: -2 }
+          - belief: { fact: "{bride}이(가) 당번이니 돌아가라고 낮게 잘랐다. 청솔형제단 분대원은 반대편 어둠으로 사라졌다", source: seen }
+    - id: report
+      label: 쪽문에서 몰래 드나드는 사람이 있다고 경비조에 알린다
+      effects:
+        - set_flag: pp2_gate_done
+        - set_flag: pp2_gate_reported
+        - relation: { who: groom, axis: trust, delta: -3 }
+        - relation: { who: bride, axis: trust, delta: -3 }
+        - faction_relation: { from: faction_b, to: faction_a, delta: -1 }
+        - clock: { id: b_waver, delta: 1 }
+        - deed: { summary: 버들마을 쪽문에서 몰래 만나던 두 사람을 경비조에 알렸다, tags: [diligence, betrayal], severity: 1, privacy: public }
+        - belief: { fact: "청솔형제단 분대원이 밤에 버들마을 쪽문을 드나든다는 말이 단지에 퍼졌다. 버들마을 사람들이 청솔 완장을 보는 눈이 차가워졌다", source: seen }
+
+# ── 쪽문 부부 2: 연합이 깨지면 ────────────────────────
+- id: pp2_desertion_talk
+  title: 어느 쪽에도 총을 겨누지 않는 법
+  tags: [world]
+  when:
+    zones: [a_base, south_fields, b_base]
+    segments: [evening, night]
+    flags_any: [pp2_gate_covered, pp2_sua_told]
+    flags_none: [pp2_desertion_done]
+    day_gte: 6
+  cast:
+    groom: { ids: [pa_gibeom], trust_gte: 2 }
+    bride: { ids: [pb_sua], enter: false }
+  setup: "{groom:이/가} 장갑 속에서 철사 반지를 꺼내 손가락에 끼웠다 뺐다 한다. \"버들마을에 붉은 사람들 드나드는 거 다 알아요. 연합 깨지면 위에서 저보고 거기다 총 겨누라고 하겠죠. 그 전에 나갈 거예요. 같이 갈 길을 좀 봐 주실래요.\""
+  ai_direction: "{groom}은 아내 {bride}와 함께 도시를 떠날 생각이다. {bride}의 임신을 주인공이 알고 있다면 말해 줄 수 있다 (GM이 Belief State로 확인한다). 아이 이야기를 들으면 {groom}은 떠날 마음이 굳는다. 붉은연합은 연합이 깨지면 버들마을 사람들을 노역조로 나눌 생각이지만, 이 장면의 누구도 그것을 모른다. 남으라고 설득하려면 버들마을이 연합에 남을 이유를 함께 만들어야 한다."
+  choices:
+    - id: help_leave
+      label: 강 아래 길을 함께 봐 주고, 둘이 떠나게 돕는다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: pp2_desertion_done
+          - set_flag: pp2_couple_left
+          - relation: { who: groom, axis: trust, delta: 3 }
+          - npc_depart: { who: groom }
+          - npc_depart: { who: bride }
+          - deed: { summary: 분대원이 버들마을의 아내와 함께 도시를 떠나도록 길을 열어 주었다, tags: [mercy, disobedience], severity: 2, privacy: private }
+          - belief: { fact: "{groom}과(와) {bride}이(가) 새벽 안개 속에 강 아래로 떠났다. 장갑 한 짝이 쪽문 기둥에 걸려 있었다", source: seen }
+        partial:
+          - set_flag: pp2_desertion_done
+          - set_flag: pp2_couple_left
+          - relation: { who: groom, axis: trust, delta: 2 }
+          - npc_depart: { who: groom }
+          - npc_depart: { who: bride }
+          - merit: -1
+          - deed: { summary: 분대원이 버들마을의 아내와 함께 도시를 떠나도록 길을 열어 주었다, tags: [mercy, disobedience], severity: 2, privacy: semi_private }
+          - belief: { fact: "{groom}과(와) {bride}은(는) 떠났지만, 길을 터 준 사람이 당신이라는 말이 1분대에 돌았다", source: seen }
+        miss:
+          - set_flag: pp2_desertion_done
+          - relation: { who: groom, axis: trust, delta: 1 }
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "강 아래 길은 감염체가 막고 있었다. 밤새 물가에 엎드려 있다 돌아왔다. {groom}은(는) 다음 길을 찾겠다고 했다", source: seen }
+    - id: stay
+      label: 떠나는 대신 버들마을이 연합에 남게 같이 버텨 보자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp2_desertion_done
+          - set_flag: pp2_gibeom_stays
+          - relation: { who: groom, axis: respect, delta: 2 }
+          - clock: { id: b_waver, delta: -2 }
+          - belief: { fact: "{groom}은(는) 남기로 했다. 그날부터 버들마을 심부름을 도맡아 다니며 붉은 통조림을 받은 경비 당번들을 하나씩 찾아가 이야기한다", source: seen }
+        partial:
+          - set_flag: pp2_desertion_done
+          - set_flag: pp2_gibeom_stays
+          - relation: { who: groom, axis: trust, delta: -1 }
+          - belief: { fact: "{groom}: 알았어요. 연합 깨지는 날까지만이에요. 그날은 아무도 저 못 잡아요", source: report }
+        miss:
+          - set_flag: pp2_desertion_done
+          - relation: { who: groom, axis: trust, delta: -2 }
+          - belief: { fact: "{groom}은(는) 다시는 그 이야기를 꺼내지 않았다. 밤마다 막사를 빠져나가는 일은 그대로다", source: seen }
+    - id: report
+      label: 탈영할 생각이라고 분대장에게 알린다
+      effects:
+        - set_flag: pp2_desertion_done
+        - set_flag: pp2_gibeom_reported
+        - merit: 1
+        - relation: { who: groom, axis: trust, delta: -3 }
+        - deed: { summary: 아내에게 가려던 동료의 탈영 계획을 분대장에게 알렸다, tags: [loyalty, betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: "{groom}은(는) 막사 밤 외출이 막혔다. 버들마을 심부름에서도 빠졌다. 쪽문 쪽을 보지 않으려 애쓴다", source: seen }
+
+# ── 우물꾼의 아들: 시립병원 앞 ────────────────────────
+- id: pp2_hospital_meeting
+  title: 죽은 아들
+  tags: [world]
+  when:
+    zones: [hospital_ruins]
+    segments: [morning, day]
+    day_gte: 3
+    flags_none: [pp2_hospital_done]
+  cast:
+    digger: { ids: [pb_sanggu] }
+    son: { ids: [d_minho] }
+  setup: 옛 시립병원 앞 무너진 버스 정류장. 진흙 묻은 바지의 늙은이가 방독면을 목에 건 덩치 큰 사내에게 보리떡 보따리를 건넨다. 사내는 받아 들고 고개를 숙인 채 아무 말도 하지 않는다. 늙은이가 당신 쪽을 보고 얼굴이 굳는다.
+  ai_direction: "{son}은 {digger}의 아들이다. 첫 겨울, 열병 난 누이를 살리겠다며 버들마을 약 상자를 들고 하얀매로 달아났고 누이는 끝내 죽었다. 버들마을은 그를 죽은 약 도둑으로 기억한다. {digger}는 '부품을 찾으러' 나간다며 열흘에 한 번 여기서 아들을 만난다. 잃은 식구 이야기를 털어놓은 사람에게만, 단지 밖에서 둘만 있을 때 말한다. {son}은 병원을 드나드는 수색꾼이라 정수장 쪽 사정도 안다. 버들마을에 알려지면 {digger}는 우물가에 설 자리를 잃는다."
+  choices:
+    - id: own_dead
+      label: 당신이 잃은 식구 이야기를 먼저 꺼내고 곁에 앉는다
+      effects:
+        - set_flag: pp2_hospital_done
+        - set_flag: pp2_sanggu_son_known
+        - reveal_tie: { who: digger, other: son }
+        - relation: { who: digger, axis: trust, delta: 2 }
+        - relation: { who: son, axis: trust, delta: 1 }
+        - belief: { fact: "{son}은(는) {digger}의 아들이다. 첫 겨울 열병 난 누이를 살리려고 버들마을 약 상자를 들고 하얀매로 갔다. 누이는 죽었고, 마을은 그를 죽은 약 도둑으로 안다", source: report }
+    - id: ask_part
+      label: 우물 부품을 찾는다더니 여기서 뭐 하냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp2_hospital_done
+          - set_flag: pp2_sanggu_son_known
+          - set_flag: pp2_pump_lead
+          - reveal_tie: { who: digger, other: son }
+          - relation: { who: son, axis: respect, delta: 1 }
+          - belief: { fact: "{son}: 정수장 펌프 기사는 펌프실 지하에 부품을 쟁여 둔다. 그냥은 안 내준다. 약이든 탄이든 들고 가야 한다", source: report }
+        partial:
+          - set_flag: pp2_hospital_done
+          - relation: { who: digger, axis: trust, delta: -1 }
+          - belief: { fact: "{digger}은(는) 이 사내가 부품을 구해 주는 수색꾼일 뿐이라고 했다. 사내는 그 말에 웃지도 않았다", source: seen }
+        miss:
+          - set_flag: pp2_hospital_done
+          - relation: { who: digger, axis: trust, delta: -2 }
+          - relation: { who: son, axis: affection, delta: -1 }
+          - belief: { fact: "{son}이(가) 남의 일에 끼지 말라며 칼자루에 손을 얹었다. 늙은이가 사내의 팔을 붙들었다", source: seen }
+    - id: tell_village
+      label: 버들마을에 돌아가 본 것을 말한다
+      effects:
+        - set_flag: pp2_hospital_done
+        - set_flag: pp2_sanggu_exposed
+        - reveal_tie: { who: digger, other: son }
+        - relation: { who: digger, axis: trust, delta: -3 }
+        - faction_relation: { from: faction_b, to: faction_d, delta: -1 }
+        - deed: { summary: 늙은 우물꾼이 몰래 만나던 아들의 일을 버들마을에 알렸다, tags: [betrayal], severity: 2, privacy: public }
+        - belief: { fact: "약 도둑이 하얀매에 살아 있다는 말이 버들마을에 돌았다. {digger}은(는) 우물가에서 말을 잃었다. 하얀매 사람을 보는 마을 눈이 험해졌다", source: seen }
+
+# ── 옥상의 아이 2: 간부의 뒤를 밟는 아이 ──────────────
+- id: pp2_tailing_clerk
+  title: 간부를 따라다니는 아이
+  tags: [world]
+  when:
+    zones: [b_base]
+    segments: [evening]
+    flags_all: [pp_rooftop_done]
+    flags_none: [pp2_tailing_done]
+  cast:
+    boy: { ids: [pb_yunjae], trust_gte: 1 }
+    clerk: { ids: [pb_seokgyu] }
+    chair: { ids: [c_hyeran], enter: false }
+  setup: 관리사무소 창 밑에 까까머리가 쪼그리고 있다. 당신을 보자 손가락을 입에 댄다. 창 안에서 안경 쓴 간부가 장부 사이에 접힌 종이를 펴 들고 한참 읽는다. 아이가 속삭인다. "저거 또 왔어요. 장터 갔다 오는 날마다 저래."
+  ai_direction: "{clerk}는 붉은연합 위원장 {chair}와 붕괴 전 공단에서 함께 일한 옛 동료다. 첫 편지를 대표에게 건넨 것도, 사자를 대표실까지 데려간 것도 그다. {chair}라면 약속을 지킨다고 믿지만, {chair}의 제안은 미끼이고 연합이 깨지면 버들마을도 겨울 안에 칠 생각이다. 아무도 그것을 모른다. {boy}는 사자가 들던 밤부터 {clerk}를 몰래 따라다닌다. 들키면 {boy}는 단지에서 쫓겨날까 봐 겁에 질린다. {clerk}는 정면으로 물으면 숫자로 답하고, 우물이 마른다는 셈 앞에서 고개를 끄덕이는 사람에게만 털어놓는다."
+  choices:
+    - id: peek
+      label: 아이를 뒤로 물리고 창틈으로 편지를 읽는다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: pp2_tailing_done
+          - set_flag: pp2_letter_read
+          - reveal_tie: { who: clerk, other: chair }
+          - relation: { who: boy, axis: trust, delta: 1 }
+          - belief: { fact: "{clerk}이(가) 읽던 편지는 {chair}이(가) 보낸 것이었다. 석규 형, 공단 때처럼 하자. 겨울 전에 손을 잡으면 우물 팔 사람도 보내겠다. 둘은 붕괴 전 공단에서 함께 일했다", source: seen }
+        partial:
+          - set_flag: pp2_tailing_done
+          - set_flag: pp2_letter_read
+          - belief: { fact: "{clerk}이(가) 읽던 편지 귀퉁이에 붉은 안전모 그림이 찍혀 있었다. 다 읽고는 난로에 넣지 않고 장부 사이에 다시 끼웠다", source: seen }
+        miss:
+          - set_flag: pp2_tailing_done
+          - set_flag: pp2_yunjae_caught
+          - relation: { who: clerk, axis: trust, delta: -2 }
+          - relation: { who: boy, axis: trust, delta: -1 }
+          - belief: { fact: "창틀이 삐걱였다. {clerk}이(가) 창을 열고 아이와 당신을 내려다봤다. 다음 날 {boy}은(는) 경비 당번에서 이름이 빠졌다", source: seen }
+    - id: face_clerk
+      label: 아이를 보내고 혼자 들어가 우물 셈 이야기를 꺼낸다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp2_tailing_done
+          - set_flag: pp2_seokgyu_told
+          - reveal_tie: { who: clerk, other: chair }
+          - relation: { who: clerk, axis: trust, delta: 2 }
+          - clock: { id: b_waver, delta: 1 }
+          - belief: { fact: "{clerk}: 위원장 {chair}과(와) 공단에서 십 년을 같이 일했습니다. 첫 겨울에 공단 사람 하나도 안 굶긴 사람입니다. 첫 편지도, 그 밤 사자를 대표실로 데려간 것도 접니다. 숫자로 보면 답은 그쪽입니다", source: report }
+        partial:
+          - set_flag: pp2_tailing_done
+          - relation: { who: clerk, axis: respect, delta: 1 }
+          - belief: { fact: "{clerk}: 숫자로 보면 아랫단 우물은 한겨울 못 넘깁니다. 청솔이 주는 탄으로는 물이 안 나와요. 저는 관리사무소 편입니다", source: report }
+        miss:
+          - set_flag: pp2_tailing_done
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "{clerk}은(는) 정중하게 차를 권하고, 아무 말도 하지 않았다. 다음 날 관리사무소 창에 판자가 덧대어졌다", source: seen }
+    - id: stop_boy
+      label: 아이에게 이제 그만 따라다니라고 단단히 이른다
+      effects:
+        - set_flag: pp2_tailing_done
+        - relation: { who: boy, axis: affection, delta: 1 }
+        - relation: { who: boy, axis: respect, delta: 1 }
+        - belief: { fact: "{boy}: 알았어요. 근데 그 아저씨 장터 갈 때마다 빨간 실 감은 재혁이 형이 따라가요. 그건 알아 둬요", source: report }

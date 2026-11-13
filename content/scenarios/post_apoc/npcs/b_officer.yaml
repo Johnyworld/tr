@@ -1,0 +1,78 @@
+# 버들마을 간부 시나리오의 회의 탁자 인물 (roles/b_officer.yaml)
+# 대표 장현우·연락 간부 표승민은 others.yaml·b_more.yaml, 살림 간부 맹석규는 more_willow.yaml에 있다
+
+- id: b_myeongsuk
+  name: 양명숙
+  alias: 털모자를 눌러쓴 목소리 큰 동대표
+  faction: faction_b
+  rank: officer
+  age: 58
+  gender: female
+  look: 귀까지 덮는 털모자, 손등이 튼 손. 앞치마 주머니에 103동 식구 명단을 접어 넣고 다닌다.
+  reputation: 103동 동대표. 회의에서 단지 식구 몫을 가장 먼저, 가장 크게 따지는 사람이다. 지난봄 장터 가는 길에 딸을 잃었다.
+  want: 103동 식구가 한 그릇씩은 먹고 겨울을 넘기는 것
+  fear: 회의가 숫자만 보고 아이들 몫부터 깎는 것
+  values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 0, self_interest: 1 }
+  traits: [blunt, protective]
+  voice:
+    style: 크고 빠른 반말 섞인 존댓말. 사람을 "누구네"로 부르고, 숫자 대신 식구 이름을 댄다
+    samples:
+      - "숫자 말고 이름으로 말해 봐요. 누구네 애 몫을 깎자는 거예요?"
+      - "청솔이 탄 준다고요? 탄 먹고 사는 사람 있어요?"
+      - "...우리 수진이도 그 길로 갔어. 장터 가는 길."
+  routine: { dawn: 103동 계단, morning: 관리사무소 회의, day: 관리사무소 배급 줄, evening: 103동 집집 돌기, night: 103동 }
+  rules:
+    - 배급 줄에서 새치기하는 사람은 누구든 맨 뒤로 보낸다
+    - 딸 이야기를 먼저 꺼낸 사람에게는 말을 끊지 않는다
+  knows:
+    - 103동 식구 수와 집집의 사정, 누구네가 몸이 안 좋은지
+    - 청솔형제단에 넘기는 텃밭 몫 때문에 동마다 불만이 쌓였다는 것
+  doesnt_know:
+    - 쪽지는 사자가 동대표를 흔들려고 꾸민 것일 수 있다. 딸이 살아 있는지는 아무도 모른다
+  secret:
+    content: 지난번 붉은연합 사자가 다녀간 다음 날, 딸 수진이가 붉은연합 쪽에 살아 있다는 쪽지를 받았다. 연합이 깨지면 딸을 돌려받을 수 있다고 믿고, 회의에서 청솔 몫 이야기가 나올 때마다 일부러 언성을 높인다
+    reveal_when: 잃은 식구 이야기를 털어놓으며 함께 울어 준 사람에게, 103동 계단에서 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 0, agility: -1, vitality: 1, senses: 1, nerve: 2, charm: 1, intellect: 0 }
+  skills: { persuade: 1, intimidate: 1, survival: 1 }
+  start_inventory: [blanket, canned_food]
+  playable: true
+  zone: b_base
+
+- id: b_haram
+  name: 제하람
+  alias: 연필을 귀에 꽂은 앳된 서기
+  faction: faction_b
+  rank: staff
+  age: 16
+  gender: female
+  look: 단발머리에 연필을 귀에 꽂았다. 소매가 긴 어른 점퍼를 접어 입고, 회의록 공책을 끈으로 묶어 들고 다닌다.
+  reputation: 관리사무소 회의의 서기이자 전령. 진은지 선생의 지하 교실에서 글씨가 가장 반듯하다는 아이다. 열여섯이라 경비 당번 명단에 이름이 오르내린다.
+  want: 총 대신 공책을 들고 회의 곁에 남는 것
+  fear: 보초 명단에 자기 이름이 오르는 것
+  values: { discipline: 1, loyalty: 1, mercy: 1, honesty: 1, self_interest: 0 }
+  traits: [meticulous, timid]
+  voice:
+    style: 작고 또박또박한 존댓말. 받아 적던 말을 그대로 되읊는 버릇이 있다
+    samples:
+      - "간부님, 아까 대표님이 '나중에'라고 하신 거, 그대로 적어요?"
+      - "회의록에는 누가 뭐라고 했는지만 써요. 왜 그랬는지는 안 써요."
+      - "열여섯이면... 명단에 올라가요?"
+  routine: { morning: 관리사무소 회의, day: 관리사무소 지하 교실, evening: 전령 심부름, night: 101동 }
+  rules:
+    - 회의록은 대표와 간부 말고는 보여 주지 않는다
+    - 들은 말을 고쳐 적지 않는다
+  knows:
+    - 지난 회의들에서 누가 무엇을 말했는지
+    - 대표가 확답을 피할 때 쓰는 말버릇
+  doesnt_know:
+    - 표승민이 넘긴 회의록이 청솔형제단 지도부까지 올라간다는 것
+  secret:
+    content: 표승민의 부탁으로 회의록 사본을 한 장씩 베껴 그에게 건넨다. 연합을 지키는 데 쓴다고 들었고, 대표에게는 말하지 않았다
+    reveal_when: 회의록을 고쳐 적으라고 하지 않고, 보초 명단에서 이름을 빼 주겠다고 약속한 사람에게
+    min_trust: 3
+  stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 0, charm: 1, intellect: 2 }
+  skills: { stealth: 1, history: 1, sense_danger: 1 }
+  start_inventory: [ledger]
+  playable: true
+  zone: b_base

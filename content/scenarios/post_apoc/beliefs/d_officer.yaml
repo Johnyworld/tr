@@ -1,0 +1,34 @@
+# 하얀매 간부가 시작할 때 알고 있는 것 (초안)
+# 간부라 수습보다 많이 안다. 그래도 숫자는 말로만. accuracy는 GM에게 보이지 않는다. 캐릭터는 자기 믿음이 틀렸는지 모른다
+id: d_officer_start
+beliefs:
+  - fact: 하얀매는 어느 무리 편도 들지 않는다. 다친 사람은 소속을 가리지 않고 받지만, 약은 값을 받고 내준다. 그 값이 우리를 지켜 준다.
+    source: seen
+    accuracy: exact
+  - fact: 회의는 매일 아침 대표 서은영의 방에서 열린다. 대표, 거래를 맡은 도상필, 치료 순서를 쥔 수간호사 권정숙, 외과 의사 천우경, 그리고 살림을 맡은 내가 앉는다.
+    source: seen
+    accuracy: exact
+  - fact: 약장의 항생제는 이대로 쓰면 겨울을 다 넘기지 못한다. 진통제는 그보다 빨리 준다. 물과 식량은 아직 넉넉한 편이다. 문기순 할머니 장부로 셈한 것이다.
+    source: report
+    accuracy: approximate
+  - fact: 도상필은 약을 더 팔아 탄약과 식량을 쌓자고 하고, 권정숙은 진료소 몫을 먼저 떼어 두자고 한다. 회의에서 둘은 늘 그 일로 부딪친다.
+    source: seen
+    accuracy: exact
+  - fact: 약장 장부가 요즘 맞지 않는다. 장날 무렵 항생제가 비고, 진통제도 어디론가 샌다. 할머니는 자기 눈이 어두워진 탓이라고 한다.
+    source: report
+    accuracy: approximate
+  - fact: 붉은연합이 겨울 동안 하얀매의 약을 혼자 사겠다는 말을 흘린다. 받아들이면 값은 두 배라고 한다. 거절하면 어떻게 될지는 아무도 말하지 않는다.
+    source: rumor
+    accuracy: exact
+  - fact: 청솔형제단 의무실은 약이 모자라 쩔쩔맨다. 그들이 내놓을 것은 많지 않다. 버들마을은 텃밭 수확으로 값을 치른다.
+    source: report
+    accuracy: approximate
+  - fact: 나루상단은 장터에서 누구에게나 판다. 우리에게 탄약을 넘길 수 있는 것도 그들뿐이다. 진료소 경비는 여섯이 전부다.
+    source: report
+    accuracy: exact
+  - fact: 청솔형제단의 윤채원은 예전 하얀매 간호사였다. 약을 들고 나가 쫓겨났다는 것까지만 안다. 그 이야기를 대표는 꺼내지 않는다.
+    source: rumor
+    accuracy: approximate
+  - fact: 간부는 혼자 정하지 않는다. 대표에게 안을 올리고, 대표가 정하면 수간호사와 약제실에 전한다. 그 순서대로 누군가는 먼저 치료받고, 누군가는 줄 끝에 선다.
+    source: seen
+    accuracy: exact

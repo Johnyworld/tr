@@ -1,0 +1,575 @@
+# 물건이 중심인 도시의 일 (기획서 4.8 물건·무기고·급조·손질)
+# 무기고 연쇄: 무기고에서 총이 사라진 밤(wg2_gun_vanished) → 창고 탄약을 빼돌리는 동료(wg2_ammo_skim) → 몫을 받았다면 재고 조사(wg2_skim_audit)
+# 상인: 전당포 감순덕의 주문(wg2_pawn_order), 재생탄 장수 강은숙과 터진 총(wg2_reload_burst)
+# 지도 연쇄: 나창주의 지구대 지도(wg2_station_map) → 구시가 지구대의 총기 보관함(wg2_station_locker)
+# 손에 든 것: 걸려 버린 재생탄(wg2_jammed_round), 죽은 사람의 조끼(wg2_dead_mans_vest), 철사 덫의 밤(wg2_wire_night)
+# 숫자(탄약 양, 몇 마리가 오는지)는 효과와 판정으로만 정한다
+
+# ── 무기고 연쇄 ─────────────────────────────────────────
+
+- id: wg2_gun_vanished
+  title: 무기고의 빈 자리
+  tags: [world]
+  when:
+    factions: [faction_a, faction_b, faction_c]
+    zone_owner: [own]
+    segments: [dawn, morning]
+    day_gte: 4
+    flags_none: [wg2_gun_night]
+  cast:
+    boss: { commander: true }
+  setup: "새벽 점호 전, 무기고 문 자물쇠가 걸쇠째 덜렁거린다. 총걸이 한 칸이 비었다. {boss:이/가} 출입 장부를 손가락으로 짚는다. \"어젯밤 이 앞을 지나간 이름이 넷이다. 그중 하나가 너다.\" 다른 셋은 벌써 불려 가 있다."
+  ai_direction: 총은 창고 당번 하나가 열쇠로 열고 꺼냈다. 같은 사람이 창고 탄약도 조금씩 빼돌려 떠돌이 장수들에게 판다. 상관은 범인을 모르고, 장부에 이름이 있는 사람을 하나씩 떠본다. 주인공은 정말로 그 앞을 지났다. 의심은 판정과 말로만 풀린다. 자물쇠는 부서진 것이 아니라 열쇠로 열린 뒤 부서진 척 비틀렸다 (손질을 아는 눈이면 알아본다).
+  choices:
+    - id: protest
+      label: 그 시간에 무엇을 했는지 또박또박 댄다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: wg2_gun_night
+          - relation: { who: boss, axis: trust, delta: 1 }
+          - belief: { fact: "무기고에서 소총 한 자루가 사라졌다. 상관은 내 말을 믿고 다른 이름으로 넘어갔다", source: seen }
+        partial:
+          - set_flag: wg2_gun_night
+          - set_flag: wg2_under_suspicion
+          - belief: { fact: "무기고에서 소총 한 자루가 사라졌다. 상관은 고개를 끄덕였지만 장부의 내 이름에 연필로 점을 찍었다", source: seen }
+        miss:
+          - set_flag: wg2_gun_night
+          - set_flag: wg2_under_suspicion
+          - merit: -1
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "무기고 소총이 사라진 일로 내가 의심받는다. 말이 꼬였고, 상관은 끝까지 듣지 않았다", source: seen }
+    - id: read_lock
+      label: 비틀린 자물쇠와 총걸이를 들여다본다
+      check: maintenance
+      outcomes:
+        success:
+          - set_flag: wg2_gun_night
+          - set_flag: wg2_lock_read
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "무기고 자물쇠는 부서진 게 아니다. 열쇠로 연 뒤 부서진 척 비틀었다. 열쇠는 상관과 창고 당번만 가진다", source: seen }
+        partial:
+          - set_flag: wg2_gun_night
+          - belief: { fact: "무기고 자물쇠의 긁힌 자국이 이상하다. 쇠지렛대로 딴 자국치고는 너무 얌전하다", source: seen }
+        miss:
+          - set_flag: wg2_gun_night
+          - set_flag: wg2_under_suspicion
+          - belief: { fact: "무기고 자물쇠를 만지작거리다가 상관 눈에 띄었다. 범인이 자기 흔적을 보러 왔다는 얼굴이었다", source: seen }
+    - id: say_nothing
+      label: 아무 말 없이 줄에 선다
+      effects:
+        - set_flag: wg2_gun_night
+        - set_flag: wg2_under_suspicion
+        - belief: { fact: "무기고에서 소총 한 자루가 사라졌다. 장부에 이름이 있는 사람들은 당분간 눈총을 받는다", source: seen }
+
+- id: wg2_ammo_skim
+  title: 자루 속의 탄알
+  tags: [world]
+  when:
+    factions: [faction_a, faction_b, faction_c]
+    zone_owner: [own]
+    segments: [evening, night]
+    day_gte: 5
+    flags_all: [wg2_gun_night]
+    flags_none: [wg2_skim_done, wg2_skim_cut]
+  cast:
+    mate: { faction: own, ranks: [grunt, staff], known: true }
+    boss: { commander: true, enter: false }
+  setup: "창고 뒤 그늘에서 {mate:이/가} 자루 아가리를 벌려 보인다. 고무줄로 묶은 탄알 묶음이 소리 없이 구른다. \"총 한 자루 없어진 뒤로 다들 무기고만 쳐다보지. 탄약 상자는 아무도 안 세.\" 그가 한 묶음을 당신 쪽으로 민다. \"장터 재생탄 장수가 묻지도 않고 산다. 너도 장부에 이름 있잖아. 어차피 의심받을 거, 받는 값은 챙겨야지.\""
+  ai_direction: 이 사람이 창고 당번 열쇠로 무기고를 열었고, 사라진 소총도 이미 팔았다. 소총 이야기는 먼저 꺼내지 않는다. 주인공을 끌어들이면 함께 젖은 사람이 되어 입을 다물 거라 계산한다. 빼돌린 탄약은 무리 창고의 몫이고, 줄어든 것은 배급과 작전 지급량으로만 드러난다. 상관에게 알리면 이 사람은 끝장나고, 주인공에게 쏠렸던 의심은 풀린다.
+  choices:
+    - id: report
+      label: 자루째 들고 상관에게 간다
+      effects:
+        - set_flag: wg2_skim_done
+        - clear_flag: wg2_under_suspicion
+        - faction_resource: { faction: own, resource: ammo, delta: 10 }
+        - merit: 1
+        - relation: { who: boss, axis: trust, delta: 2 }
+        - relation: { who: mate, axis: trust, delta: -3 }
+        - deed: { summary: 창고 탄약을 빼돌려 팔던 동료를 상관에게 넘겼다, tags: [loyalty], severity: 2, privacy: semi_private }
+        - belief: { fact: "창고 탄약을 빼돌리던 동료를 넘겼다. 자루를 본 상관은 사라진 소총 이야기부터 물었다", source: seen }
+    - id: take_cut
+      label: 내민 묶음을 받아 주머니에 넣는다
+      effects:
+        - set_flag: wg2_skim_cut
+        - give_item: { item: rifle_rounds, quantity: 2 }
+        - faction_resource: { faction: own, resource: ammo, delta: -10 }
+        - relation: { who: mate, axis: trust, delta: 2 }
+        - deed: { summary: 무리 창고에서 빼돌린 탄약의 몫을 받았다, tags: [theft, selfishness], severity: 2, privacy: private }
+        - belief: { fact: "동료가 창고 탄약을 빼돌려 장터에 판다. 나도 한 몫 받았다", source: seen }
+    - id: make_return
+      label: 오늘 밤 안에 상자에 도로 채워 넣으라고 을러댄다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: wg2_skim_done
+          - faction_resource: { faction: own, resource: ammo, delta: 6 }
+          - relation: { who: mate, axis: respect, delta: 1 }
+          - relation: { who: mate, axis: trust, delta: -1 }
+          - belief: { fact: "탄약을 빼돌리던 동료가 자루를 도로 상자에 쏟았다. 소총 이야기를 꺼내자 얼굴이 하얘졌다", source: seen }
+        partial:
+          - set_flag: wg2_skim_done
+          - relation: { who: mate, axis: trust, delta: -1 }
+          - belief: { fact: "탄약을 빼돌리던 동료는 그만두겠다고 했다. 자루에 있던 것은 이미 반쯤 팔고 없다", source: seen }
+        miss:
+          - set_flag: wg2_skim_done
+          - relation: { who: mate, axis: trust, delta: -2 }
+          - belief: { fact: "탄약을 빼돌리는 동료를 말리려다 비웃음만 샀다. '장부에 이름 있는 건 너야.' 그는 계속할 것이다", source: seen }
+    - id: look_away
+      label: 못 본 걸로 하고 돌아선다
+      effects:
+        - set_flag: wg2_skim_done
+        - belief: { fact: "창고 탄약을 빼돌리는 동료가 있다. 아무에게도 말하지 않았다", source: seen }
+
+- id: wg2_skim_audit
+  title: 탄약 상자를 세는 날
+  tags: [world]
+  when:
+    factions: [faction_a, faction_b, faction_c]
+    zone_owner: [own]
+    segments: [morning, day]
+    flags_all: [wg2_skim_cut]
+    flags_none: [wg2_audit_done]
+  cast:
+    boss: { commander: true }
+  setup: "창고 문이 활짝 열리고 탄약 상자가 마당에 줄지어 나와 있다. {boss:이/가} 뚜껑을 하나씩 열며 묶음을 센다. 다 세고 나서, 장부를 덮고 당신 앞에 선다. \"주머니 뒤집어 봐. 다들 하는 거다.\""
+  ai_direction: 상관은 탄약이 빈다는 것을 알았고, 누가 가져갔는지는 모른다. 주인공 주머니에 받은 몫이 남아 있는지는 지금 가진 것으로만 정해진다. 거짓말은 판정으로 갈린다. 빼돌린 동료는 마당 저쪽에서 이쪽을 보지 않는다.
+  choices:
+    - id: bluff
+      label: 태연하게 주머니를 뒤집으며 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: wg2_audit_done
+          - belief: { fact: "탄약 재고 조사를 넘겼다. 상관은 다음 사람에게 갔다. 빈 묶음 수는 장부에 그대로 남았다", source: seen }
+        partial:
+          - set_flag: wg2_audit_done
+          - merit: -1
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "탄약 재고 조사에서 상관이 한참 내 얼굴을 봤다. 증거는 없지만 믿지도 않는다", source: seen }
+        miss:
+          - set_flag: wg2_audit_done
+          - merit: -2
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - deed: { summary: 무리 창고 탄약을 빼돌린 것이 재고 조사에서 드러났다, tags: [theft, deceit], severity: 2, privacy: public }
+          - belief: { fact: "탄약 재고 조사에서 거짓말이 들통났다. 마당의 모두가 봤다", source: seen }
+    - id: hand_back
+      label: 받은 묶음을 꺼내 상자에 도로 넣고 털어놓는다
+      effects:
+        - set_flag: wg2_audit_done
+        - take_item: { item: rifle_rounds, quantity: 2 }
+        - faction_resource: { faction: own, resource: ammo, delta: 4 }
+        - merit: -1
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - deed: { summary: 빼돌린 탄약의 몫을 받았다가 재고 조사 때 스스로 내놓았다, tags: [honesty], severity: 1, privacy: semi_private }
+        - belief: { fact: "받은 탄약을 상관 앞에 내놓았다. 누가 준 거냐는 물음에는 아직 답하지 않았다", source: seen }
+    - id: point_finger
+      label: 창고 당번 열쇠 이야기를 꺼내 눈길을 돌린다
+      effects:
+        - set_flag: wg2_audit_done
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - belief: { fact: "재고 조사에서 창고 당번 열쇠 이야기를 꺼냈다. 상관의 눈이 마당 저쪽으로 갔다. 그쪽도 나를 팔 수 있다", source: seen }
+
+# ── 상인 ───────────────────────────────────────────────
+
+- id: wg2_pawn_order
+  title: 돋보기 너머의 주문
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    zones: [e_market, water_plant]
+    segments: [morning, day, evening]
+    day_gte: 2
+  cast:
+    pawn: { ids: [pe_sundeok] }
+  setup: "전당포 진열장 너머에서 {pawn:이/가} 돋보기를 눈에 댄 채 손짓한다. \"이리 와 봐. 몸통 막는 조끼 하나 찾는 손님이 있어. 경찰 거면 더 좋고.\" 진열장 위에 은박 포장 그대로인 알약 한 줄이 놓인다. \"그 값이면 이거 쳐 줄게. 쇠붙이라도 있으면 그것도 받고.\""
+  ai_direction: 감순덕이 찾는 조끼는 섬으로 가는 거래선의 경비들이 입을 것이다. 그녀는 손님이 누구인지 쉽게 말하지 않는다. 알약은 진짜 항생제다 (물건은 거짓말을 안 한다는 사람이다). 조끼가 없으면 고철이라도 받는다. 값은 정해져 있고 흥정은 판정으로만.
+  choices:
+    - id: sell_vest
+      label: 방탄 조끼를 벗어 진열장에 올린다
+      effects:
+        - take_item: { item: kevlar_vest }
+        - give_item: { item: antibiotics }
+        - give_item: { item: canned_food, quantity: 2 }
+        - set_flag: wg2_sundeok_client
+        - relation: { who: pawn, axis: trust, delta: 1 }
+        - belief: { fact: "전당포 감순덕에게 방탄 조끼를 넘기고 항생제를 받았다. 조끼를 찾는 손님은 따로 있다", source: seen }
+    - id: sell_scrap
+      label: 고철 몇 덩이를 내놓는다
+      effects:
+        - take_item: { item: scrap_metal, quantity: 2 }
+        - give_item: { item: duct_tape }
+        - give_item: { item: cloth }
+        - belief: { fact: "전당포 감순덕은 고철도 받는다. 무게를 손으로 가늠하고 값을 박하게 친다", source: seen }
+    - id: who_buys
+      label: 조끼 찾는 손님이 누구냐고 슬쩍 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: wg2_sundeok_client
+          - relation: { who: pawn, axis: trust, delta: 1 }
+          - belief: { fact: "전당포 감순덕이 찾는 방탄 조끼는 섬으로 가는 거래선 경비들이 입을 것이다. '배에 사람이 실리면 지키는 사람도 있어야지.'", source: report }
+        partial:
+          - belief: { fact: "전당포 감순덕은 조끼 손님이 '물 건너 일 하는 사람'이라고만 했다", source: report }
+        miss:
+          - relation: { who: pawn, axis: trust, delta: -1 }
+          - belief: { fact: "전당포 감순덕은 손님 이야기를 묻자 웃으며 알약을 도로 서랍에 넣었다", source: seen }
+    - id: pass
+      label: 팔 게 없다며 지나간다
+      effects:
+        - belief: { fact: "전당포 감순덕이 방탄 조끼를 찾는다. 항생제를 쳐 준다고 했다", source: seen }
+
+- id: wg2_reload_burst
+  title: 터진 약실
+  tags: [world]
+  when:
+    zones: [riverside, old_town, e_market, water_plant, b_base, south_fields]
+    segments: [morning, day]
+    day_gte: 5
+    flags_none: [wg2_burst_done]
+  cast:
+    seller: { ids: [lone_eunsuk] }
+    victim: { extra: e_porter, label: 손이 그을린 짐꾼 }
+  setup: "길목에 사람들이 모여 있다. 가운데서 {victim:이/가} 걸레로 감은 손을 쳐들고 소리친다. 다른 손에는 약실이 꽃처럼 벌어진 엽총. \"이 여자 재생탄이야! 열 발에 한 발 불발이라며, 이건 터졌잖아!\" 천 위의 탄알 앞에서 {seller:은/는} 팔짱을 낀 채 말이 없다. 누가 천을 걷어차려 한다."
+  ai_direction: 터진 탄은 강은숙의 것이 아니다. 붉은연합 보초들이 몰래 모아 판 탄피를 누군가 화약을 과하게 채워 강은숙의 것인 양 싸게 팔았다. 탄피 밑동의 줄 자국이 다르다 (강은숙은 자기 탄피에 줄칼로 짧은 금을 긋는다). 짐꾼의 손은 그을리고 찢어졌지만 손가락은 붙어 있다. 강은숙은 변명하지 않는 사람이라 아무도 편들지 않으면 장사를 접고 이 길목을 떠난다.
+  choices:
+    - id: read_casing
+      label: 바닥에 떨어진 터진 탄피를 주워 밑동을 본다
+      check: maintenance
+      outcomes:
+        success:
+          - set_flag: wg2_burst_done
+          - set_flag: wg2_burst_cleared
+          - relation: { who: seller, axis: trust, delta: 2 }
+          - relation: { who: seller, axis: respect, delta: 1 }
+          - give_item: { item: rifle_rounds, quantity: 2 }
+          - belief: { fact: "터진 탄은 강은숙 것이 아니었다. 밑동에 그녀의 줄칼 금이 없다. 붉은연합 보초들이 모은 탄피에 누가 화약을 넘치게 채워 그녀 이름으로 팔았다", source: seen }
+        partial:
+          - set_flag: wg2_burst_done
+          - relation: { who: seller, axis: trust, delta: 1 }
+          - belief: { fact: "터진 탄피 밑동이 강은숙이 파는 탄과 어딘가 다르다. 사람들을 설득할 만큼 분명하지는 않았다", source: seen }
+        miss:
+          - set_flag: wg2_burst_done
+          - belief: { fact: "터진 탄피를 들여다봤지만 아무것도 알 수 없었다. 강은숙은 천을 걷어 길목을 떠났다", source: seen }
+    - id: side_crowd
+      label: 사람들 편에 서서 값을 물어내라고 한다
+      effects:
+        - set_flag: wg2_burst_done
+        - relation: { who: seller, axis: trust, delta: -2 }
+        - relation: { who: victim, axis: trust, delta: 1 }
+        - belief: { fact: "재생탄 장수 강은숙의 탄이 터졌다는 소동에서 짐꾼 편을 들었다. 그녀는 아무 말 없이 천을 걷었다", source: seen }
+    - id: treat_hand
+      label: 짐꾼의 걸레를 풀고 손부터 본다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: wg2_burst_done
+          - relation: { who: victim, axis: trust, delta: 2 }
+          - relation: { who: seller, axis: respect, delta: 1 }
+          - belief: { fact: "터진 엽총에 다친 짐꾼의 손을 씻고 묶었다. 손가락은 다 붙어 있다. 소동이 가라앉았다", source: seen }
+        partial:
+          - set_flag: wg2_burst_done
+          - relation: { who: victim, axis: trust, delta: 1 }
+          - belief: { fact: "짐꾼의 손을 묶었다. 화약 가루가 살에 박혀 다 빼내지 못했다", source: seen }
+        miss:
+          - set_flag: wg2_burst_done
+          - relation: { who: victim, axis: trust, delta: -1 }
+          - belief: { fact: "짐꾼의 손을 보다가 더 아프게만 했다. 그는 손을 빼고 사람들 쪽으로 물러났다", source: seen }
+    - id: walk_on
+      label: 남의 탄약 싸움이라며 지나간다
+      effects:
+        - set_flag: wg2_burst_done
+        - belief: { fact: "재생탄 장수 강은숙의 탄이 터졌다는 소문이 장터에 돈다", source: rumor }
+
+# ── 지도 연쇄 ─────────────────────────────────────────
+
+- id: wg2_station_map
+  title: 지도통 속의 지구대
+  tags: [world]
+  when:
+    zones: [riverside, old_town, e_market, water_plant, b_base, south_fields, hospital_ruins]
+    segments: [morning, day, evening]
+    day_gte: 3
+    flags_none: [wg2_map_done]
+  cast:
+    mapper: { ids: [lone_changju] }
+  setup: "{mapper:이/가} 지도통에서 종이 한 장을 꺼내 무릎 위에 편다. 연필로 그린 구시가 골목, 그 끝에 네모 하나와 '지구대'라는 글씨. 네모 안에 작게 '보관함, 안 열림'. \"붕괴 때 순경들이 잠가 두고 간 철제 보관함입니다. 길은 틀림없어요. 열 수 있느냐는 손님 몫이고요.\""
+  ai_direction: 지도는 정확하다. 다만 나창주는 같은 지도를 사흘 전 붉은연합 약탈조 하나에게도 팔았다. 묻지 않으면 말하지 않고, 값을 받고 물으면 말한다 (틀린 소식은 팔지 않는 사람이다). 보관함에 무엇이 남았는지는 그도 모른다.
+  choices:
+    - id: buy
+      label: 담배를 내밀고 지도를 산다
+      effects:
+        - take_item: { item: cigarettes }
+        - set_flag: wg2_map_done
+        - set_flag: wg2_station_map
+        - relation: { who: mapper, axis: trust, delta: 1 }
+        - belief: { fact: "구시가 끝의 옛 지구대에 순경들이 잠가 두고 간 철제 총기 보관함이 있다. 나창주의 지도에 길이 있다", source: report }
+    - id: who_else
+      label: 이 지도를 누구에게 또 팔았는지부터 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: wg2_map_done
+          - set_flag: wg2_station_map
+          - set_flag: wg2_map_rival
+          - relation: { who: mapper, axis: respect, delta: 1 }
+          - belief: { fact: "나창주는 지구대 지도를 사흘 전 붉은 완장 약탈조에게도 팔았다고 털어놓고, 미안하다며 지도를 그냥 줬다", source: report }
+        partial:
+          - set_flag: wg2_map_done
+          - set_flag: wg2_station_map
+          - belief: { fact: "구시가 옛 지구대에 철제 총기 보관함이 있다. 나창주는 이 지도가 '처음 나간 건 아니'라고만 했다", source: report }
+        miss:
+          - set_flag: wg2_map_done
+          - relation: { who: mapper, axis: trust, delta: -1 }
+          - belief: { fact: "나창주는 손님 이야기를 캐묻자 지도를 말아 통에 넣었다. 소식은 공짜로 안 판다고", source: seen }
+    - id: memorize
+      label: 지도를 보는 척하며 길을 외워 둔다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: wg2_map_done
+          - set_flag: wg2_station_map
+          - belief: { fact: "나창주의 지도에서 구시가 옛 지구대로 가는 길을 외웠다. 거기 철제 총기 보관함이 있다", source: seen }
+        partial:
+          - set_flag: wg2_map_done
+          - relation: { who: mapper, axis: trust, delta: -1 }
+          - belief: { fact: "구시가 끝 어딘가에 옛 지구대가 있다. 길을 다 외우기 전에 나창주가 지도를 거뒀다", source: seen }
+        miss:
+          - set_flag: wg2_map_done
+          - relation: { who: mapper, axis: trust, delta: -2 }
+          - deed: { summary: 지도장수의 지도를 몰래 베끼려다 들켰다, tags: [deceit], severity: 1, privacy: semi_private }
+          - belief: { fact: "나창주가 지도를 베끼려는 것을 알아챘다. 이제 내게는 아무것도 팔지 않을 것이다", source: seen }
+    - id: decline
+      label: 열지도 못할 상자에 값을 치르지 않는다
+      effects:
+        - set_flag: wg2_map_done
+        - belief: { fact: "지도장수 나창주가 구시가 옛 지구대의 잠긴 보관함 지도를 판다", source: seen }
+
+- id: wg2_station_locker
+  title: 지구대의 철제 보관함
+  tags: [world]
+  when:
+    zones: [old_town]
+    segments: [morning, day, evening]
+    flags_all: [wg2_station_map]
+    flags_none: [wg2_locker_done]
+  setup: "지도대로 골목 끝에 유리문이 깨진 지구대가 있다. 안쪽 방, 벽에 볼트로 박힌 회색 철제 보관함. 문틈에 쇠지렛대 자국이 새로 나 있다. 누가 먼저 와서 열다 말았다. 바닥에 담배꽁초가 아직 눅눅하지 않다."
+  ai_direction: 지도를 먼저 산 붉은연합 약탈조가 어제 열다 실패하고 연장을 가지러 갔다. 오늘 안에 돌아올 수 있다. 보관함 안에는 권총 한 자루와 탄 몇 묶음, 순경 조끼 하나가 있다. 경첩은 녹슬어 손질하듯 다루면 풀리고, 억지로 비틀면 시끄럽다. 결과는 판정으로만 정한다.
+  choices:
+    - id: work_hinges
+      label: 녹슨 경첩을 풀어 문을 통째 떼어 낸다
+      check: maintenance
+      outcomes:
+        success:
+          - set_flag: wg2_locker_done
+          - give_item: { item: pistol }
+          - give_item: { item: rifle_rounds, quantity: 2 }
+          - give_item: { item: kevlar_vest }
+          - belief: { fact: "구시가 지구대 보관함을 열었다. 경찰 권총과 탄, 조끼가 있었다. 먼저 온 약탈조는 빈손으로 돌아오게 된다", source: seen }
+        partial:
+          - set_flag: wg2_locker_done
+          - give_item: { item: pistol }
+          - give_item: { item: rifle_rounds }
+          - belief: { fact: "지구대 보관함 문을 반쯤 비틀어 손을 넣었다. 권총과 탄 한 묶음까지만 꺼냈을 때 골목에서 발소리가 났다", source: seen }
+        miss:
+          - set_flag: wg2_locker_done
+          - belief: { fact: "지구대 보관함 경첩이 부러지며 문이 더 단단히 걸렸다. 쇳소리가 골목 끝까지 울렸다", source: seen }
+    - id: pry_hard
+      label: 쇠붙이를 지렛대 삼아 문틈을 억지로 벌린다
+      check: improvise
+      outcomes:
+        success:
+          - set_flag: wg2_locker_done
+          - give_item: { item: pistol }
+          - give_item: { item: kevlar_vest }
+          - belief: { fact: "지구대 보관함을 억지로 비틀어 열었다. 권총과 순경 조끼를 꺼냈다. 탄 묶음은 문틈에 끼어 부서졌다", source: seen }
+        partial:
+          - set_flag: wg2_locker_done
+          - give_item: { item: kevlar_vest }
+          - belief: { fact: "지구대 보관함 아래쪽만 벌어졌다. 조끼 하나를 끄집어냈다. 위 칸의 권총은 손이 닿지 않는다", source: seen }
+        miss:
+          - set_flag: wg2_locker_done
+          - give_item: { item: scrap_metal }
+          - belief: { fact: "급조한 지렛대가 부러져 쇳조각만 남았다. 요란한 소리에 지구대를 서둘러 떠났다", source: seen }
+    - id: wait_watch
+      label: 건너편 건물에 숨어 먼저 온 자들이 돌아오는지 본다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: wg2_locker_done
+          - belief: { fact: "붉은 완장 약탈조 둘이 연장을 들고 돌아와 지구대 보관함을 열고 권총을 가져갔다. 그들이 구시가 어느 골목으로 빠지는지 봤다", source: seen }
+        partial:
+          - belief: { fact: "지구대 근처에서 기다렸지만 아무도 오지 않았다. 보관함은 아직 잠겨 있다", source: seen }
+        miss:
+          - set_flag: wg2_locker_done
+          - belief: { fact: "숨어 있던 자리가 들켰다. 돌아온 약탈조가 이쪽을 보고 소리쳤다", source: seen }
+
+# ── 손에 든 것 ─────────────────────────────────────────
+
+- id: wg2_jammed_round
+  title: 딸깍
+  tags: [world]
+  urgent: true
+  repeatable: true
+  cooldown_days: 4
+  when:
+    zone_owner: [none, other]
+    day_gte: 2
+    has_items: [old_rifle, rifle_rounds]
+  setup: "{zone}의 무너진 담 너머에서 무언가 비틀거리며 나온다. 총을 들어 방아쇠를 당긴다. 딸깍. 다시 당겨도 딸깍. 재생탄 하나가 약실에 비스듬히 걸려 노리쇠가 반쯤 열린 채 멈췄다. 그것이 소리를 듣고 이쪽으로 고개를 돌린다."
+  ai_direction: 총이 걸린 것은 섞여 있던 질 나쁜 재생탄 때문이다. 다가오는 것이 몇인지는 정하지 않았다. 걸린 탄을 빼는 데는 손이 익어야 하고, 실패하면 이번 장면 동안 총은 몽둥이일 뿐이다 (쏘기는 GM이 허락하지 않는다). 맞서는 위험은 판정으로만 정한다.
+  choices:
+    - id: clear
+      label: 손바닥으로 노리쇠를 쳐서 걸린 탄을 빼낸다
+      check: maintenance
+      outcomes:
+        success:
+          - give_item: { item: casings }
+          - belief: { fact: "{zone}에서 약실에 걸린 재생탄을 빼내고 다시 쐈다. 빠진 탄피 밑동이 얇게 갈라져 있었다", source: seen }
+        partial:
+          - belief: { fact: "{zone}에서 걸린 탄은 빼냈지만 그사이 그것이 코앞까지 왔다", source: seen }
+        miss:
+          - belief: { fact: "{zone}에서 걸린 탄이 빠지지 않는다. 이번 싸움에서 총은 몽둥이다", source: seen }
+    - id: club
+      label: 총을 거꾸로 쥐고 개머리판으로 맞선다
+      check: fight
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 걸린 총의 개머리판으로 그것을 쓰러뜨렸다. 소리는 나지 않았다", source: seen }
+        partial:
+          - belief: { fact: "{zone}에서 개머리판으로 밀어냈지만 그것은 아직 일어나려 한다", source: seen }
+        miss:
+          - belief: { fact: "{zone}에서 개머리판이 빗나갔다. 그것이 팔을 붙잡았다", source: seen }
+    - id: back_off
+      label: 총을 등에 메고 뒷걸음질로 물러난다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 총이 걸린 채로 그것을 따돌리고 빠져나왔다", source: seen }
+        partial:
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "{zone}에서 물웅덩이를 기어 그것을 따돌렸다. 온몸이 젖었다", source: seen }
+        miss:
+          - belief: { fact: "{zone}에서 물러나다 발이 걸렸다. 그것이 바로 뒤에 있다", source: seen }
+
+- id: wg2_dead_mans_vest
+  title: 돌아오지 못한 사람의 조끼
+  tags: [world]
+  when:
+    factions: [faction_a, faction_b, faction_c]
+    zone_owner: [own]
+    segments: [evening, night]
+    day_gte: 5
+    flags_none: [wg2_vest_done]
+  cast:
+    first: { faction: own, ranks: [grunt], known: true }
+    second: { faction: own, ranks: [grunt, staff] }
+  setup: "어제 나갔다 돌아오지 못한 사람의 짐이 상자 하나로 돌아왔다. 수통, 반쯤 남은 담배, 그리고 피를 닦아 낸 방탄 조끼. {first:이/가} 조끼 어깨끈을 쥐고 있다. \"내가 업고 왔어. 끝까지.\" {second:이/가} 반대쪽 끈을 놓지 않는다. \"너는 담장 안에서 보초만 서잖아. 밖에 나가는 건 나야.\" 둘이 동시에 당신을 본다."
+  ai_direction: 둘 다 거짓말은 아니다. 첫째는 죽은 사람과 가까웠고 조끼를 그 사람 몫으로 지키고 싶다. 둘째는 다음 작전에 나간다는 것이 사실이고, 조끼 없이 나가는 것이 무섭다. 죽은 사람이 조끼를 누구에게 주라고 했는지는 아무도 모른다. 어떻게 나누든 한쪽은 서운하다.
+  choices:
+    - id: to_first
+      label: 업고 온 사람이 갖는 게 맞다고 한다
+      effects:
+        - set_flag: wg2_vest_done
+        - relation: { who: first, axis: trust, delta: 2 }
+        - relation: { who: second, axis: trust, delta: -1 }
+        - belief: { fact: "죽은 동료의 방탄 조끼를 그를 업고 온 사람에게 줬다", source: seen }
+    - id: to_second
+      label: 밖에 나가는 사람이 입어야 한다고 한다
+      effects:
+        - set_flag: wg2_vest_done
+        - relation: { who: second, axis: trust, delta: 2 }
+        - relation: { who: first, axis: trust, delta: -1 }
+        - belief: { fact: "죽은 동료의 방탄 조끼를 다음 작전에 나가는 사람에게 줬다", source: seen }
+    - id: take_it
+      label: 둘 다 손 떼라며 조끼를 집어 든다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: wg2_vest_done
+          - give_item: { item: kevlar_vest }
+          - relation: { who: first, axis: trust, delta: -1 }
+          - relation: { who: second, axis: trust, delta: -1 }
+          - deed: { summary: 죽은 동료의 조끼를 두고 다투는 둘을 물리고 자기가 가졌다, tags: [selfishness], severity: 1, privacy: semi_private }
+        partial:
+          - set_flag: wg2_vest_done
+          - give_item: { item: kevlar_vest }
+          - relation: { who: first, axis: trust, delta: -2 }
+          - relation: { who: second, axis: trust, delta: -2 }
+          - deed: { summary: 죽은 동료의 조끼를 동료들 손에서 빼앗았다, tags: [selfishness], severity: 2, privacy: public }
+        miss:
+          - set_flag: wg2_vest_done
+          - relation: { who: first, axis: respect, delta: -1 }
+          - relation: { who: second, axis: respect, delta: -1 }
+          - belief: { fact: "조끼를 가지려다 둘이 함께 막아섰다. 죽은 사람 물건에 손댄다는 말이 돌 것이다", source: seen }
+    - id: to_armory
+      label: 무기고에 돌려 작전 나가는 사람이 돌려 입게 하자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: wg2_vest_done
+          - merit: 1
+          - relation: { who: first, axis: respect, delta: 1 }
+          - relation: { who: second, axis: respect, delta: 1 }
+          - deed: { summary: 죽은 동료의 조끼를 두고 다투는 둘을 말려 무기고에 돌렸다, tags: [diligence], severity: 1, privacy: semi_private }
+        partial:
+          - set_flag: wg2_vest_done
+          - relation: { who: first, axis: trust, delta: -1 }
+          - belief: { fact: "조끼는 무기고로 갔다. 업고 온 사람은 끈을 놓으며 한마디도 하지 않았다", source: seen }
+        miss:
+          - set_flag: wg2_vest_done
+          - relation: { who: first, axis: trust, delta: -1 }
+          - relation: { who: second, axis: trust, delta: -1 }
+          - belief: { fact: "무기고에 돌리자는 말에 둘 다 등을 돌렸다. 조끼는 그날 밤 둘 중 누구의 침상 밑으로 사라졌다", source: seen }
+
+- id: wg2_wire_night
+  title: 담장 틈의 철사
+  tags: [world]
+  urgent: true
+  repeatable: true
+  cooldown_days: 5
+  when:
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    zone_owner: [own]
+    segments: [night]
+    day_gte: 3
+    has_items: [wire_roll]
+  cast:
+    watch: { faction: own, ranks: [grunt, staff] }
+  setup: "담장 밖 어둠에서 발 끄는 소리가 겹친다. 하나둘이 아니다. 무너진 담장 틈 하나를 막을 판자가 모자라다. {watch:이/가} 랜턴을 가리며 속삭인다. \"저 틈으로 들어오면 끝이야.\" 당신 짐에는 철사 뭉치가 있다."
+  ai_direction: 감염체 물결이 담장을 훑고 지나간다. 몇이 오는지는 정하지 않았다. 담장 틈에 철사를 엮어 걸면 앞선 것들이 엉켜 뒤엣것들을 막는다. 덫은 급조 판정으로, 판자를 덧대는 것은 목공 판정으로 정한다. 철사는 한 번 걸면 다시 쓰지 못한다. 총을 쏘면 더 모인다.
+  choices:
+    - id: wire_trap
+      label: 담장 틈에 철사를 엮어 발목 높이로 건다
+      check: improvise
+      outcomes:
+        success:
+          - take_item: { item: wire_roll }
+          - merit: 1
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: watch, axis: respect, delta: 1 }
+          - belief: { fact: "담장 틈에 건 철사 덫에 앞선 것들이 엉켜 쓰러지며 틈을 막았다. 물결은 담장을 따라 지나갔다", source: seen }
+        partial:
+          - take_item: { item: wire_roll }
+          - belief: { fact: "철사 덫이 몇을 묶었지만 끊어졌다. 틈으로 하나가 기어 들어왔다", source: seen }
+        miss:
+          - take_item: { item: wire_roll }
+          - belief: { fact: "어둠 속에서 철사가 엉켰다. 덫을 다 걸기 전에 물결이 담장 틈에 닿았다", source: seen }
+    - id: board_up
+      label: 근처 판자를 뜯어 와 틈에 덧댄다
+      check: carpentry
+      outcomes:
+        success:
+          - relation: { who: watch, axis: respect, delta: 1 }
+          - belief: { fact: "판자를 덧대 담장 틈을 막았다. 물결은 판자를 긁다가 지나갔다", source: seen }
+        partial:
+          - belief: { fact: "판자를 덧댔지만 못이 모자랐다. 아래쪽이 밀릴 때마다 벌어진다", source: seen }
+        miss:
+          - belief: { fact: "판자가 쪼개졌다. 담장 틈은 그대로다", source: seen }
+    - id: raise_alarm
+      label: 덫은 그만두고 막사로 뛰어가 사람들을 깨운다
+      effects:
+        - relation: { who: watch, axis: trust, delta: -1 }
+        - belief: { fact: "물결이 담장에 닿은 밤, 사람들을 깨우러 뛰었다. 담장 틈에는 보초 혼자 남았다", source: seen }

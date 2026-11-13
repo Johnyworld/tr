@@ -1,0 +1,70 @@
+# 나루상단 장부 간부 임무. 사장 탁봉수가 아침 장부를 편 뒤 직접 맡긴다
+# 오늘의 임무 후보는 역할(roles/e_officer.yaml)의 missions 목록에서 코드가 고르고, 상관(commander: e_bongsu)이 장면에 있어야 내린다.
+# giver_rank는 맡기는 사람의 계급(지도부). 나루상단은 무기고가 없어 armed 작전을 두지 않는다 (각자 갖춘다)
+- id: eo_caravan_dispatch
+  title: 짐마차 배차
+  briefing: 짐마차 셋에 누구의 짐을 싣고 어느 길로 보낼지 짜서 주옥희에게 넘기세요. 강변 길이 두 번 털렸으니 출발 시간은 장부에 적지 말고 입으로만 전하시고요.
+  giver_rank: leader
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 90
+    - check: tactics
+      min_outcome: partial
+
+- id: eo_red_settlement
+  title: 물류창고 탄약 정산
+  briefing: 붉은연합 물류창고에 가서 지난번 통조림 값을 탄으로 받아 오세요. 저쪽 장부랑 우리 장부가 상자 하나라도 다르면 그 자리에서 맞추고요. 웃으면서요, 간부님.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+  advances: { clock: e_side, delta: 1 }
+
+- id: eo_pine_arrears
+  title: 청솔형제단 밀린 물값
+  briefing: 청솔형제단 거점에 가서 두 번 밀린 물값을 정리하세요. 다 받으라는 건 아닙니다. 무엇으로, 언제까지 갚을지 저쪽 보급 간부 도장을 받아 오시면 됩니다.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+  advances: { clock: e_side, delta: -1 }
+
+- id: eo_clinic_contract
+  title: 하얀매 물값 계약
+  briefing: 하얀매 진료소의 도상필과 겨울 물값을 정하세요. 저쪽은 약으로 치겠다고 할 겁니다. 약은 우리가 쓰기도 하고 되팔기도 하니, 한 줄이라도 더 받아 오세요.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: success
+
+- id: eo_debt_audit
+  title: 빚 장부 맞추기
+  briefing: 문소라 장부의 빚과 전당포가 사들인 빚 문서를 한 장씩 맞춰 보세요. 받을 수 있는 빚과 털어낼 빚을 갈라서 저한테 올리시고요. 감 할머니한테는 정례 점검이라고만 하세요.
+  giver_rank: leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: history
+      min_outcome: partial
+
+- id: eo_tide_inspection
+  title: 거래선 짐 검수
+  briefing: 다음 물때에 맞춰 강 하구 나루에 가서 거래선에 싣는 짐을 목록대로 세어 보세요. 통조림 상자 수만 맞으면 됩니다. 나머지는 변상철이 알아서 합니다.
+  giver_rank: leader
+  deadline_hours: 14
+  requirements:
+    - activity: work
+      minutes: 60
+    - check: sense_danger
+      min_outcome: partial

@@ -104,6 +104,9 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   const w = storylet.when;
   const player = state.characters[state.playerId];
   if (!player || player.dead) return false;
+  // 외딴곳에서는 그곳을 직접 적은 공통 이야기만 (기획서 9.12)
+  const here = state.playerZone ? content.locations[state.playerZone] : undefined;
+  if (here?.isolated && storylet.tags.includes(WORLD_TAG) && !w.zones?.includes(here.id)) return false;
   const flags = new Set(state.flags[state.playerId] ?? []);
   const own = state.factions[player.factionId];
   if (w.ranks && !w.ranks.includes(player.rank)) return false;

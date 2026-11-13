@@ -94,20 +94,3 @@ describe("연고와 함께 다니는 떠돌이 자동 플레이 (기획서 7.9)"
     expect(rejoined).toBeGreaterThan(0);
   });
 });
-
-/** 두 번째 월드 (기획서 12.4): 같은 엔진이 다른 월드 팩으로 막힘없이 돈다 */
-describe("두 번째 월드 여울섬 군도 자동 플레이", () => {
-  const ISLANDS = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/islands");
-  const content = loadContent(ISLANDS);
-  for (const role of Object.values(content.roles)) {
-    it(`${role.id}: 오류 없이 돌고, 그 시나리오의 이야기가 열린다`, () => {
-      const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(11) });
-      const world = m.create("mcp", role.id);
-      const stats = autoplay(world, content, createSeededRng(110), 320);
-      world.close();
-      expect(stats.errors).toEqual([]);
-      const own = Object.keys(stats.storyletsFired).filter((id) => content.storylets[id]?.tags.includes(role.storylet_tags[0]!));
-      expect(own.length).toBeGreaterThanOrEqual(2);
-    });
-  }
-});

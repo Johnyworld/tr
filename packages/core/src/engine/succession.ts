@@ -64,12 +64,20 @@ export type SuccessionOption = { id: string; label: string; detail: string };
  * - new: 시작 역할로 새로 만든 캐릭터
  * - 이전 캐릭터가 알던, 살아 있고 플레이할 수 있는 NPC
  */
+/** 해금된 다른 시나리오로 새 캐릭터를 만들 때의 후보 id 머리 (new:<역할 id>) */
+export const NEW_AS_PREFIX = "new:";
+
 export function successionOptions(state: GameState, content: Content): SuccessionOption[] {
   const dead = state.characters[state.playerId];
   if (!dead?.dead) return [];
   const role = content.roles[state.roleId];
   const options: SuccessionOption[] = [];
   if (role) options.push({ id: "new", label: `새 캐릭터 (${role.label})`, detail: "이 세계에 막 들어온 사람. 아무도 모른다." });
+  // 해금된 다른 시나리오로 새로 시작할 수도 있다 (기획서 9.12)
+  for (const r of Object.values(content.roles)) {
+    if (!r.unlock || !state.unlocked.includes(r.unlock) || r.id === state.roleId) continue;
+    options.push({ id: `${NEW_AS_PREFIX}${r.id}`, label: `새 캐릭터 (${r.label})`, detail: r.scenario?.pitch ?? "해금된 시나리오" });
+  }
   const known = new Set(state.known[state.playerId] ?? []);
   for (const npc of Object.values(content.npcs)) {
     const c = state.characters[npc.id];
@@ -107,9 +115,10 @@ export function switchCharacter(
     return { ok: false, error: `고를 수 없는 캐릭터: ${choice} (가능: ${options.map((o) => o.id).join(", ")})` };
   }
   const previous = state.characters[state.playerId]!;
-  const role = content.roles[state.roleId]!;
+  const switchedRole = choice.startsWith(NEW_AS_PREFIX) ? choice.slice(NEW_AS_PREFIX.length) : null;
+  const role = content.roles[switchedRole ?? state.roleId]!;
 
-  if (choice === "new") {
+  if (choice === "new" || switchedRole) {
     const id = `pc_${state.chronicle.length + 1}`;
     if (character) {
       const problems = checkCharacterChoice(content.scenario, character);
@@ -117,7 +126,7 @@ export function switchCharacter(
     }
     const made = createCharacterFromRole(content.scenario, role, id, ctx.rng, character ? fillCharacterChoice(content.scenario, character, ctx.rng) : undefined);
     if (!character && name?.trim()) made.name = name.trim().slice(0, 20);
-    store.append({ type: "character_switched", characterId: id, character: made, known: [...role.known_npcs] });
+    store.append({ type: "character_switched", characterId: id, character: made, known: [...role.known_npcs], ...(switchedRole ? { roleId: switchedRole } : {}) });
     // 그 자리에 오는 사람의 동행 (역할의 시작 동행)
     addStartCompanions(ctx, role);
     // 역할의 시작 지식은 이전 캐릭터의 기억이 아니라 그 자리에 오는 사람이면 아는 것이다
@@ -188,7 +197,7 @@ export function switchCharacter(
   }
 
   const opening =
-    choice === "new"
+    choice === "new" || switchedRole
       ? role.opening_scene
       : `${heir.name}의 하루가 시작된다. ${josa(previous.name, "이/가")} 죽은 뒤의 거점이다.`;
   return {

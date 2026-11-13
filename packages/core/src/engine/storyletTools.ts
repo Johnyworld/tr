@@ -324,6 +324,12 @@ function applyEffect(
     store.append({ type: "faction_resource_changed", factionId: id, resource, delta });
     return {}; // 창고 사정은 배급과 소문으로만 드러난다
   }
+  if ("send_to" in effect) {
+    const to = effect.send_to;
+    if (!content.locations[to] || state.playerZone === to) return {};
+    store.append({ type: "zone_moved", from: state.playerZone, to });
+    return { line: `${content.locations[to]!.name}(으)로 옮겨졌다. 함께 있던 인물은 따라오지 않는다.` };
+  }
   if ("reveal_tie" in effect) {
     const a = whoOf(ctx, effect.reveal_tie.who, cast);
     const b = whoOf(ctx, effect.reveal_tie.other, cast);

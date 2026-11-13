@@ -65,6 +65,16 @@ export class GameWorld {
   #lore: LoreLibrary | null;
   #memory: MemoryStore | null;
   #closed = false;
+  #onUnlock: ((ids: string[]) => void) | null = null;
+  #reportedUnlocks = new Set<string>();
+
+  /** 이 세계에서 새로 얻은 해금을 바깥(모든 판의 기록)에 알린다 */
+  #syncUnlocks(): void {
+    const fresh = (this.state().unlocked ?? []).filter((id) => !this.#reportedUnlocks.has(id));
+    if (!fresh.length) return;
+    for (const id of fresh) this.#reportedUnlocks.add(id);
+    this.#onUnlock?.(fresh);
+  }
 
   constructor(options: {
     content: Content;
@@ -77,6 +87,8 @@ export class GameWorld {
     lore?: LoreLibrary | null;
     /** 이 세계의 memory 컬렉션 (없으면 장기 기억 검색 없이 진행) */
     memory?: MemoryStore | null;
+    /** 이 세계에서 새 해금을 얻으면 (모든 판에 남기려고, 기획서 9.12) */
+    onUnlock?: (ids: string[]) => void;
   }) {
     this.#lore = options.lore ?? null;
     this.#memory = options.memory ?? null;
@@ -86,6 +98,8 @@ export class GameWorld {
     this.#repo = options.repo;
     this.#rng = options.rng;
     this.#release = options.release ?? (() => {});
+    this.#onUnlock = options.onUnlock ?? null;
+    this.#reportedUnlocks = new Set(this.#repo.getState().unlocked ?? []);
     // 세이브와 memory 색인을 맞춘다 (모델이 바뀌었거나 지난번에 못 맞춘 기억까지)
     if (this.state().worldId) this.#syncMemory();
   }
@@ -162,6 +176,7 @@ export class GameWorld {
       this.appendTranscript(outcome.extra.map((display) => ({ kind: "tool", display })));
     }
     if (outcome.ok && name === "take_action") this.#repo.saveSnapshot();
+    if (outcome.ok) this.#syncUnlocks();
     if (outcome.ok) this.#syncMemory();
     return outcome;
   }
@@ -170,6 +185,7 @@ export class GameWorld {
   runCheat(input: string): { ok: true; text: string } | { ok: false; error: string } {
     const result = runCheat(input, this.ctx());
     if (result.ok) {
+      this.#syncUnlocks();
       this.#repo.saveSnapshot();
       this.#syncMemory();
     }

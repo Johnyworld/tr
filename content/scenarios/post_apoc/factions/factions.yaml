@@ -144,3 +144,28 @@
         - { to: strongest, value: 2 }
       news: "{faction}이 {to} 쪽에 붙었다는 말이 돈다. 이제 물값이 무리마다 다르다고 한다"
 
+
+# 여울섬 (기획서 9.12): 바다 건너 닫힌 낙원. 시작할 수 없고(startable: false), 누구와도 맞닿아 있지 않아 교전에 끼지 않는다
+# 해금된 시나리오(role_y_islander)로만 이 무리 사람으로 산다. 겉은 낙원, 의회 상층은 인육을 즐긴다 (lore secret:y_feast_seen)
+- id: faction_y
+  name: 여울섬
+  public: 강 하구 바다 건너의 섬. 담 안에 먹을 것과 탄약이 넘친다는 소문의 "파라다이스". 감염체도 바다를 못 건넌다. 바깥 사람은 들이지 않는다.
+  startable: false
+  population: 140
+  combatants: 50
+  resources: { food: 3200, water: 2400, ammo: 2600, medicine: 220, fuel: 900 }
+  morale: 2
+  cohesion: 2
+  aggression: 0
+  disposition: { faction_a: -1, faction_b: -1, faction_c: -1, faction_d: -1, faction_e: 0 }
+  culture:
+    discipline: strict
+    summary: 섬 의회가 모든 것을 정하는 닫힌 공동체. 겉으로는 다정하고 넉넉하다. 쓸모를 증명한 사람만 남고, 쓸모가 다한 사람은 "뭍으로 내보낸다"고 한다. 의회의 결정은 묻지 않는다.
+    rules:
+      - 섬에 들어온 사람은 의회의 허락 없이 나가지 않는다
+      - 쓸모를 증명한다. 일하지 않는 입은 오래 머물지 못한다
+      - 의회의 결정은 묻지 않는다
+      - 바깥 사람과 말을 섞지 않는다
+      - 겨울 잔치에는 부른 사람만 간다
+    address: 이름에 씨를 붙인다. 의회 사람은 어르신
+    punishment: 배급을 끊는다. 무거우면 "뭍으로 내보낸다" (돌아온 사람은 없다)

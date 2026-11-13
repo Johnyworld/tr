@@ -202,7 +202,7 @@ export function createMcpServer(
       draft = null;
       if (args.new_world || args.slot === 0) {
         if (!args.character && anyCreationRules()) {
-          draft = newGameDraft();
+          draft = newGameDraft(manager.unlocks());
           return creationStep(draft);
         }
         const choice = args.character ? { ...args.character, portrait: args.character.portrait ?? null } : undefined;
@@ -250,7 +250,8 @@ export function createMcpServer(
       const choice = r.choice;
       if (mode === "heir") {
         const result = withWorld((w) => {
-          const next = w.chooseNextCharacter("new", null, choice);
+          const heirRole = draft?.roleId && draft.roleId !== w.state().roleId ? `new:${draft.roleId}` : "new";
+          const next = w.chooseNextCharacter(heirRole, null, choice);
           return next.ok ? text(`캐릭터를 만들었다. 세계 소개는 하지 않고 바로 새 캐릭터의 첫 장면을 서술한다.\n\n${next.text}`) : text(next.error, true);
         });
         if (!result.isError) draft = null;
@@ -460,7 +461,7 @@ export function createMcpServer(
     "choose_next_character",
     {
       description:
-        "사망 후 같은 세계에서 다음 캐릭터로 이어 간다. get_chronicle의 후보 중 하나: \"new\"(새 캐릭터) 또는 인물 id. 플레이어가 고른 것만 넘긴다. 새 캐릭터는 이전 캐릭터의 기억을 모른다. " +
+        "사망 후 같은 세계에서 다음 캐릭터로 이어 간다. get_chronicle의 후보 중 하나: \"new\"(새 캐릭터), \"new:<역할 id>\"(해금된 다른 시나리오의 새 캐릭터) 또는 인물 id. 플레이어가 고른 것만 넘긴다. 새 캐릭터는 이전 캐릭터의 기억을 모른다. " +
         "new는 새 게임처럼 캐릭터를 한 단계씩 만든다: 첫 단계를 돌려주고, 그 뒤로는 create_character로 진행한다.",
       inputSchema: z.strictObject({
         character_id: z.string(),
@@ -471,10 +472,13 @@ export function createMcpServer(
     (args) => {
       releaseFrozen();
       if (!world) return text(NO_WORLD, true);
-      const roleId = world.state().roleId;
-      if (args.character_id === "new" && !args.character && !args.name && creationRules(world.content, roleId)) {
+      // new:<역할>이면 해금된 다른 시나리오로 (기획서 9.12)
+      const newAs = args.character_id.startsWith("new:") ? args.character_id.slice(4) : null;
+      const roleId = newAs ?? world.state().roleId;
+      if ((args.character_id === "new" || newAs) && !args.character && !args.name && creationRules(world.content, roleId)) {
         if (!world.isPlayerDead()) return text("캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다.", true);
-        draft = heirDraft(world.content.scenario.id, roleId, world.state().customRole);
+        if (newAs && !world.successionOptions().some((o) => o.id === args.character_id)) return text(`고를 수 없는 캐릭터: ${args.character_id}`, true);
+        draft = heirDraft(world.content.scenario.id, roleId, newAs ? null : world.state().customRole);
         return creationStep(draft);
       }
       return withWorld((w) => {

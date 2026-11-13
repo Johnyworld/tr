@@ -1,0 +1,234 @@
+# 여울섬 사람들 (기획서 9.12, 초안). 겉은 다정한 낙원, 의회 상층은 인육을 즐긴다
+
+- id: y_suja
+  name: 한수자
+  alias: 등대 열쇠를 목에 건 의장
+  faction: faction_y
+  rank: leader
+  age: 61
+  gender: female
+  look: 짧게 친 흰머리, 바람에 튼 붉은 뺨. 목에 옛 등대 출입문 열쇠를 노끈으로 걸었다. 늘 웃는다.
+  reputation: 첫 겨울에 섬사람들을 굶주림에서 살려 낸 의장. 섬사람들은 그를 어머니처럼 따른다.
+  want: 섬이 영원히 닫힌 채 넉넉한 것
+  fear: 바깥이 섬의 잔치를 아는 것
+  values: { discipline: 2, loyalty: 2, mercy: -2, honesty: -2, self_interest: 2 }
+  traits: [patient, calculating, genial]
+  voice:
+    style: 느리고 다정한 반말. 젊은 사람을 "애기야"라고 부른다
+    samples:
+      - "여기선 아무도 굶지 않아. 그게 섬의 약속이야."
+      - "쓸모 있는 사람은 늘 반가워. 쓸모가 다하면… 그때 가서 생각하자."
+  routine: { dawn: 등대, day: 의회 회관, evening: 의회 회관, night: 의회 저장고 뒤 별채 }
+  rules:
+    - 누구에게나 먼저 먹을 것을 권한다
+    - 겨울 잔치 이야기는 웃으며 넘긴다
+  knows:
+    - 섬의 창고가 몇 해를 버틸 만큼 넉넉하다는 것
+  doesnt_know:
+    - 윤미옥이 장부의 숫자를 따로 적어 두고 있다는 것
+  secret:
+    content: 첫 겨울, 굶어 죽어 가던 섬에서 처음 인육을 먹자고 한 사람이 자신이다. 지금은 먹을 것이 넘쳐도 겨울 잔치를 그만두지 않는다. 그 맛이 의회를 묶어 둔다고 믿는다
+    reveal_when: 겨울 잔치에 함께 앉은 뒤, 둘만 있을 때
+    min_trust: 4
+  stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 2, charm: 2, intellect: 1 }
+  skills: { persuade: 2, deceive: 2, tactics: 1 }
+  start_inventory: [radio, ledger]
+  playable: false
+  zone: yeoul_isle
+  ties:
+    - { to: y_cheonsu, kind: spouse, secret: { reveal_when: 의회 사람들만 있을 때, min_trust: 3 } }
+
+- id: y_cheonsu
+  name: 백천수
+  alias: 하얀 장갑을 낀 심사관
+  faction: faction_y
+  rank: officer
+  age: 57
+  gender: male
+  look: 다림질한 셔츠에 하얀 면장갑. 손톱이 깨끗하다. 새로 온 사람의 이를 들여다보는 버릇이 있다.
+  reputation: 섬 의회의 심사관. 바깥에서 온 사람을 받을지 말지 정한다. 쓸모를 보는 눈이 정확하다고들 한다.
+  want: 겨울 잔치가 끊기지 않는 것
+  fear: 의장 자리가 바뀌는 것
+  values: { discipline: 3, loyalty: 1, mercy: -3, honesty: -1, self_interest: 2 }
+  traits: [meticulous, ruthless, formal]
+  voice:
+    style: 정중하고 차가운 존댓말. 사람을 숫자로 말한다
+    samples:
+      - "입을 벌려 보세요. 이가 좋으시군요."
+      - "쓸모는 저희가 판단합니다."
+  routine: { dawn: 부두 검역 막사, day: 부두 검역 막사, evening: 의회 회관, night: 의회 저장고 }
+  rules:
+    - 새로 온 사람을 쓸모로 나눠 장부에 적는다
+    - 저장고 열쇠를 아무에게도 맡기지 않는다
+  knows:
+    - 내보낸다던 사람들이 어디로 갔는지
+  doesnt_know:
+    - 추복만이 잔치 고기를 먹지 않는다는 것
+  secret:
+    content: 쓸모 없다고 적은 사람들을 직접 저장고로 데려간다. 내보내는 배는 섬을 한 바퀴 돌아 저장고 뒤에 닿는다
+    reveal_when: 겨울 잔치에 함께 앉은 뒤
+    min_trust: 4
+  stats: { strength: 0, agility: 0, vitality: 1, senses: 2, nerve: 2, charm: 0, intellect: 2 }
+  skills: { sense_danger: 2, intimidate: 1, first_aid: 1, deceive: 1 }
+  start_inventory: [ledger, kitchen_knife]
+  playable: false
+  zone: yeoul_isle
+
+- id: y_miok
+  name: 윤미옥
+  alias: 물때표를 든 창고지기
+  faction: faction_y
+  rank: officer
+  age: 47
+  gender: female
+  look: 고무장화에 앞치마, 앞치마 주머니에 물때표와 몽당연필. 웃지 않는다.
+  reputation: 섬의 창고와 물때를 맡은 의회 사람. 숫자를 틀리는 법이 없다.
+  want: 딸 해솔을 데리고 섬을 빠져나가는 것
+  fear: 딸이 겨울 잔치에 불려 가는 것
+  values: { discipline: 1, loyalty: 0, mercy: 1, honesty: 2, self_interest: 1 }
+  traits: [meticulous, cautious, guarded]
+  voice:
+    style: 빠르고 정확한 존댓말. 숫자로 대답한다
+    samples:
+      - "물때표 보세요. 그 시간에 나가면 못 돌아옵니다."
+      - "장부에 없는 건 없는 겁니다. 그렇게 알고 계세요."
+  routine: { dawn: 창고, day: 창고, evening: 의회 회관, night: 관사 }
+  rules:
+    - 창고 열쇠는 아무에게도 맡기지 않는다
+    - 딸을 저녁 이후 혼자 두지 않는다
+  knows:
+    - 내보낸 사람 명단과 실제로 떠난 배의 기록이 맞지 않는다는 것
+  secret:
+    content: 내보낸다던 사람들이 섬을 떠나지 않았다는 것을 장부로 안다. 의회 저장고에서 무엇을 하는지 짐작한다. 딸을 데리고 도망칠 밤배를 몰래 준비한다
+    reveal_when: 둘만 있고 딸 이야기가 나왔을 때
+    min_trust: 3
+  stats: { strength: 0, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 2 }
+  skills: { scavenge: 1, survival: 1, history: 1, deceive: 1 }
+  start_inventory: [ledger, water_bottle]
+  playable: true
+  zone: yeoul_isle
+  ties:
+    - { to: y_haesol, kind: parent }
+
+- id: y_haesol
+  name: 윤해솔
+  alias: 그물 바늘을 든 소녀
+  faction: faction_y
+  rank: staff
+  age: 15
+  gender: female
+  look: 볕에 그을린 얼굴, 땋은 머리. 손가락에 그물 바늘 자국이 가득하다.
+  reputation: 창고지기 윤미옥의 딸. 섬에서 그물을 가장 빨리 깁는다. 의장이 유난히 예뻐한다.
+  want: 겨울 잔치에 한 번 가 보는 것
+  fear: 엄마가 화내는 것
+  values: { discipline: 0, loyalty: 1, mercy: 1, honesty: 2, self_interest: 0 }
+  traits: [curious, eager, talkative]
+  voice:
+    style: 밝은 반말. 묻기를 좋아한다
+    samples:
+      - "의장님이 겨울 잔치에 나도 부른대!"
+      - "뭍은 어때? 거기도 고기 국 먹어?"
+  routine: { dawn: 그물 창고, day: 양식장, evening: 관사, night: 관사 }
+  rules:
+    - 처음 보는 사람에게 뭍 이야기를 조른다
+  stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 0, charm: 1, intellect: 0 }
+  skills: { survival: 1, scavenge: 1 }
+  start_inventory: []
+  playable: false
+  zone: yeoul_isle
+
+- id: y_gangho
+  name: 진강호
+  alias: 작살총을 멘 해안 경비조장
+  faction: faction_y
+  rank: squad_leader
+  age: 44
+  gender: male
+  look: 어깨가 넓고 손이 거칠다. 등에 개조한 작살총을 메고, 늘 바다 쪽을 본다.
+  reputation: 섬의 해안 경비조장. 몰래 배를 대려던 사람을 여럿 돌려보냈다 (혹은 돌려보내지 않았다).
+  want: 섬에 아무도 몰래 들어오지 못하게 하는 것
+  fear: 의회의 눈 밖에 나는 것
+  values: { discipline: 3, loyalty: 2, mercy: -1, honesty: 0, self_interest: 1 }
+  traits: [hot_tempered, protective, blunt]
+  voice:
+    style: 짧고 거친 반말
+    samples:
+      - "배 대지 마. 거기서 손 들어."
+      - "의회가 정한 일이야. 묻지 마."
+  routine: { dawn: 부두 망루, day: 해안 순찰, evening: 경비 막사, night: 부두 망루 }
+  rules:
+    - 밤에 바다에서 불빛이 보이면 먼저 쏜다
+    - 의회 저장고 근처에는 가지 않는다 (가지 않으려 한다)
+  knows:
+    - 밤에 떠나는 "내보내는 배"를 자기가 직접 띄운다는 것
+  doesnt_know:
+    - 그 배가 어디에 닿는지
+  stats: { strength: 2, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: -1, intellect: 0 }
+  skills: { shoot: 2, fight: 1, intimidate: 1, sense_danger: 1 }
+  start_inventory: [old_rifle]
+  playable: true
+  zone: yeoul_isle
+
+- id: y_dabin
+  name: 설다빈
+  alias: 노를 잘 젓는 젊은 경비
+  faction: faction_y
+  rank: grunt
+  age: 22
+  gender: female
+  look: 볕에 그을린 얼굴, 머리를 수건으로 질끈 묶었다. 손바닥에 노 굳은살이 박였다.
+  reputation: 해안 경비조원. 섬에서 노를 가장 잘 젓는다. 단짝이 지난달 "뭍으로 내보내졌다".
+  want: 내보내진 단짝 지원이 뭍에서 잘 사는지 아는 것
+  fear: 자기도 쓸모가 다하는 날
+  values: { discipline: 0, loyalty: 2, mercy: 1, honesty: 1, self_interest: 0 }
+  traits: [eager, curious, talkative]
+  voice:
+    style: 밝은 반말. 흥분하면 말이 빨라진다
+    samples:
+      - "지원이 탄 배, 너 봤어? 그날 밤 나 당번이었는데 배가 안 보였어."
+      - "물때만 맞으면 뭍까지 반나절이야!"
+  routine: { dawn: 부두, day: 해안 순찰, evening: 식당, night: 경비 막사 }
+  rules:
+    - 내보내진 사람 이야기가 나오면 끝까지 듣는다
+  knows:
+    - 지원이 떠났다는 밤에 부두에서 배가 떠나는 것을 아무도 못 봤다는 것
+  stats: { strength: 0, agility: 2, vitality: 1, senses: 1, nerve: 0, charm: 1, intellect: 0 }
+  skills: { survival: 1, stealth: 1, scavenge: 1 }
+  start_inventory: [water_bottle]
+  playable: true
+  zone: yeoul_isle
+
+- id: y_bokman
+  name: 추복만
+  alias: 그물을 손질하는 늙은 어부
+  faction: faction_y
+  rank: grunt
+  age: 58
+  gender: male
+  look: 허리가 조금 굽은 노인. 손가락이 그물 바늘을 놓지 않는다. 잔치 국을 받으면 몰래 바다에 쏟는다.
+  reputation: 붕괴 전부터 섬의 어부. 물때와 바람은 그에게 물어보면 된다. 다친 사람도 곧잘 꿰맨다.
+  want: 쓸모가 다하기 전에 섬의 진실을 누군가에게 넘기는 것
+  fear: 다음 겨울 잔치의 명단에 자기 이름이 오르는 것
+  values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 1, self_interest: 0 }
+  traits: [patient, weary, guarded]
+  voice:
+    style: 사투리 섞인 느린 반말. 중요한 말은 바다를 보며 한다
+    samples:
+      - "국은 먹지 마라. 그냥… 먹지 마라."
+      - "바람이 돌았다. 오늘 밤 배 띄우지 마라."
+  routine: { dawn: 부두, day: 그물 창고, evening: 식당 구석, night: 관사 }
+  rules:
+    - 잔치 고기는 먹지 않는다
+    - 젊은 사람에게 물때를 가르쳐 준다
+  knows:
+    - 섬 뒤쪽 바위틈에 사람 뼈가 떠밀려 온 적이 있다는 것
+  secret:
+    content: 잔치 고기 국에서 사람 손가락 마디를 건진 적이 있다. 그 뒤로 국을 먹지 않는다. 의회 저장고 뒤쪽 바위길을 안다
+    reveal_when: 밤에 부두에서 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 0, agility: -1, vitality: 1, senses: 2, nerve: 1, charm: 1, intellect: 0 }
+  skills: { survival: 2, first_aid: 1, sense_danger: 1 }
+  start_inventory: [kitchen_knife, medkit]
+  playable: true
+  healer: true
+  zone: yeoul_isle

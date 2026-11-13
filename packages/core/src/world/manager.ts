@@ -1,3 +1,4 @@
+import { addUnlocks, readUnlocks, type UnlockRecord } from "../persistence/unlocks.ts";
 import { generateDynamicTies } from "../engine/people.ts";
 import { roleOf } from "../game/state.ts";
 import { addStartCompanions } from "../engine/companionTools.ts";
@@ -138,6 +139,8 @@ export class WorldManager {
       const filled = choice ? fillCharacterChoice(content.scenario, choice, ctx.rng) : choice;
       ctx.store.append(createWorldEvent(content, role!, worldId, ctx.rng, filled, custom?.role, custom?.background));
       // 첫날의 임무 후보, 소문 기준일, 시작 구역. 자유 시나리오의 역할은 이벤트를 넣은 뒤에야 콘텐츠에 보이므로 새로 받는다
+      // 다른 판에서 얻은 해금을 이 세계에도 (기획서 9.12)
+      this.#inheritUnlocks(world);
       // 처음부터 함께 다니는 사람·동물 (떠돌이의 가족 등, 기획서 7.9)
       addStartCompanions(world.ctx(), roleOf(world.content, world.state()));
       // 판마다 다른 인물 사이의 관계 (기획서 7.10)
@@ -194,13 +197,38 @@ export class WorldManager {
     return this.create(mode);
   }
 
+  /** 모든 판에 남는 해금 (월드별, 기획서 9.12) */
+  unlocks(): UnlockRecord {
+    return readUnlocks(this.savesDir);
+  }
+
+  /** 다른 판에서 얻은 해금을 이 세계의 상태로 옮긴다 (계승·시나리오 고르기가 상태만 보면 되게) */
+  #inheritUnlocks(world: GameWorld): void {
+    const have = new Set(world.state().unlocked ?? []);
+    for (const id of readUnlocks(this.savesDir)[world.content.scenario.id] ?? []) {
+      if (!have.has(id)) world.ctx().store.append({ type: "unlock_earned", id, inherited: true });
+    }
+  }
+
   #open(path: string, mode: PlayMode, content: Content): GameWorld {
     const release = acquireLock(path, mode);
     try {
       const repo = SqliteRepository.open(path, content.scenario);
       // memory 색인은 세이브 옆의 파생 파일이다 (세이브로부터 다시 만들 수 있다)
       const memory = this.memoryEmbedder ? MemoryStore.open(path.replace(/\.db$/, ".memory.db"), this.memoryEmbedder) : null;
-      const world = new GameWorld({ content, repo, mode, rng: this.#rngFactory(), path, release, lore: this.#lore(content.scenario.id), memory });
+      const pack = content.scenario.id;
+      const world = new GameWorld({
+        content,
+        repo,
+        mode,
+        rng: this.#rngFactory(),
+        path,
+        release,
+        lore: this.#lore(pack),
+        memory,
+        onUnlock: (ids) => addUnlocks(this.savesDir, pack, ids),
+      });
+      if (world.state().worldId) this.#inheritUnlocks(world);
       // 이미 있는 세계: 시간이 흐른 뒤의 처리를 한 번 맞춘다. 시간이 그대로라 보통은 아무 일도 없고,
       // 이전 단계의 세이브라면 새로 생긴 상태(세력 등)를 채운다
       if (world.state().worldId) runAfterTimeAdvance(world.ctx());

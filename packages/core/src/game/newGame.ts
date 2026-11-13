@@ -35,12 +35,14 @@ export type NewGameDraft = {
   /** 확인된 자유 시나리오의 역할 (사망 뒤 새 캐릭터면 세이브에 든 것) */
   customRole?: RoleContent | null;
   character: CreationDraft;
+  /** 월드별로 열린 해금 (모든 판에 남는 것, 기획서 9.12). 해금이 필요한 시나리오를 보여 줄지 정한다 */
+  unlocked?: Record<string, string[]>;
 };
 
 export type NewGameStep = "world" | "scenario" | "custom_story" | "custom_setup" | "custom_confirm" | "character";
 
-export function newGameDraft(): NewGameDraft {
-  return { mode: "new_world", packId: null, roleId: null, character: newCreationDraft("new_world") };
+export function newGameDraft(unlocked: Record<string, string[]> = {}): NewGameDraft {
+  return { mode: "new_world", packId: null, roleId: null, character: newCreationDraft("new_world"), unlocked };
 }
 
 /** 사망 뒤 같은 세계의 새 캐릭터: 월드·시나리오는 정해져 있다 (자유 시나리오였으면 그 역할 그대로) */
@@ -93,7 +95,7 @@ export function answerNewGame(packs: ReadonlyMap<string, Content>, draft: NewGam
   }
   const content = packs.get(draft.packId!)!;
   if (step === "scenario") {
-    const options = scenarioOptions(content);
+    const options = scenarioOptions(content, draft.unlocked?.[content.scenario.id] ?? []);
     const hit = options.find((r) => norm(r.id) === norm(text) || norm(r.title) === norm(text));
     if (!hit) return { ok: false, error: `시나리오는 ${options.map((r) => r.title).join(", ")} 중 하나다.` };
     return { ok: true, draft: { ...draft, roleId: hit.id, ...(hit.id === CUSTOM_ROLE_ID ? { custom: { story: null, input: null, confirmed: false } } : {}) }, done: false };
@@ -133,8 +135,8 @@ export function setCustomStart(packs: ReadonlyMap<string, Content>, draft: NewGa
 }
 
 /** 시나리오 보기: 콘텐츠의 시나리오들 + 자유 시나리오(월드가 열었으면) */
-function scenarioOptions(content: Content): { id: string; title: string; pitch: string }[] {
-  const list = scenarioInfos(content);
+function scenarioOptions(content: Content, unlocked: readonly string[] = []): { id: string; title: string; pitch: string }[] {
+  const list = scenarioInfos(content, unlocked);
   if (content.scenario.custom_start) {
     list.push({
       id: CUSTOM_ROLE_ID,
@@ -181,7 +183,7 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
   const content = packs.get(draft.packId!)!;
   if (step === "scenario") {
     const world = worldInfo(content);
-    const scenarios = scenarioOptions(content);
+    const scenarios = scenarioOptions(content, draft.unlocked?.[content.scenario.id] ?? []);
     return [
       `## 새 게임: ${world.title} — 시나리오 고르기`,
       "먼저: 아래 월드 이야기를 바탕으로, 이 세계가 어떻게 무너졌고 지금 어떤 곳인지 GM의 목소리로 들려준다 (서너 문단, 목록 말고 이야기로). 소개에 없는 사실은 만들지 않는다. 그다음 시나리오를 고르게 한다.",

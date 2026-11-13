@@ -75,5 +75,5 @@ pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마
 - RAG: 첫 실행 때 bge-m3 모델(약 570MB)을 `.cache/models/`에 받고, lore 색인을 `.cache/rag/`에 만든다 (둘 다 git 제외). 세계별 memory 색인은 `saves/worlds/<worldId>.memory.db` (세이브에서 다시 만들 수 있는 파생 파일). `RAG=off`로 끈다
 - **말 정하기**: 플레이어의 "월드" = 코드의 시나리오 팩(`content/scenarios/<id>/`, `Scenario`), 플레이어의 "시나리오" = 코드의 역할(`roles/*.yaml`), 플레이어의 "게임" = 코드의 세계(`GameWorld`, 세이브 하나). 화면·GM에 보이는 말은 월드·시나리오로 쓴다
 - 월드 팩은 `content/scenarios/` 아래를 모두 읽는다. `SCENARIO=<id>`로 하나만. 새 월드 추가 체크리스트는 `docs/design.md` 12.4
-- 세이브는 `saves/worlds/<worldId>.db` (`SAVES_DIR`로 폴더 변경). 열려 있는 세계는 `<worldId>.db.lock`으로 잠긴다. 형식·시나리오가 맞지 않는 세이브는 `saves/archive/`로 옮겨진다
+- 세이브는 `saves/worlds/<worldId>.db` (`SAVES_DIR`로 폴더 변경). 모든 판에 남는 해금(여울섬 시나리오 등)은 `saves/unlocks.json`. 열려 있는 세계는 `<worldId>.db.lock`으로 잠긴다. 형식·시나리오가 맞지 않는 세이브는 `saves/archive/`로 옮겨진다
 - 게임 상태나 이벤트 형태를 바꾸면 `SAVE_SCHEMA_VERSION`을 올린다 (`packages/core/src/game/state.ts`)

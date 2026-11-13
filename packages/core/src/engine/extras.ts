@@ -191,6 +191,8 @@ export function describeExtraTemplates(state: GameState, content: Content): stri
   const segment = segmentOf(state.time);
   const list = Object.values(content.extras).filter((t) => {
     const a = t.appears;
+    // 외딴곳에는 그곳을 직접 적은 틀만
+    if (zone && content.locations[zone]?.isolated) return !!a?.zones?.includes(zone);
     if (!a) return true;
     if (a.zones && (!zone || !a.zones.includes(zone))) return false;
     if (a.zone_owner && !a.zone_owner.includes(ownerKind)) return false;

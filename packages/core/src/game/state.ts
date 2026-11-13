@@ -27,7 +27,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 16;
+export const SAVE_SCHEMA_VERSION = 17;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -207,6 +207,8 @@ export function createGameSchemas(s: Scenario) {
     companions: z.array(z.string()).default([]),
     /** 동적으로 생긴 인물 사이의 관계 (세계를 만들 때, 인물이 자랄 때, 기획서 7.10). 정해진 관계는 콘텐츠에 있다 */
     dynamicTies: z.array(tieRecordSchema).default([]),
+    /** 이 세계에서 열린 해금 (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 9.12) */
+    unlocked: z.array(z.string()).default([]),
     /** 주인공이 털어놓음을 들은 숨은 관계 (tieKey) */
     revealedTies: z.array(z.string()).default([]),
     /** 함께 다니는 이유 (NPC id → 이유, 기획서 7.9). 지금 곁에 있는 사람(companions)과 잠시 떨어져 있는 사람 모두 */
@@ -329,6 +331,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("ties_generated"), ties: z.array(tieRecordSchema) }),
     /** 이름 없는 인물이 자랐다 (프로필은 틀의 재료에서 코드가 골랐다) */
     z.strictObject({ type: z.literal("extra_promoted"), characterId: z.string(), profile: z.custom<NonNullable<Character["profile"]>>((v) => typeof v === "object" && v !== null), ties: z.array(tieRecordSchema).default([]) }),
+    /** 해금을 얻었다 (inherited: 다른 판에서 얻은 것을 옮겨 왔다) */
+    z.strictObject({ type: z.literal("unlock_earned"), id: z.string(), inherited: z.boolean().default(false) }),
     /** 숨은 관계를 털어놓았다 */
     z.strictObject({ type: z.literal("tie_revealed"), key: z.string() }),
     /** 함께 다니기 시작했다. kind가 없으면 이전 세이브 (코드가 틀로 정한다) */
@@ -443,6 +447,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({
       type: z.literal("character_switched"),
       characterId: z.string(),
+      /** 다른 시작 역할로 이어 갈 때 (해금된 시나리오, 기획서 9.12) */
+      roleId: z.string().optional(),
       character: character.optional(),
       known: z.array(z.string()),
     }),
@@ -609,6 +615,7 @@ export const EMPTY_STATE: GameState = {
   bonds: {},
   dynamicTies: [],
   revealedTies: [],
+  unlocked: [],
   squadOrders: {},
   squadReports: {},
   council: {},
@@ -753,6 +760,9 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.dynamicTies = [...next.dynamicTies, ...structuredClone(event.ties)];
       return next;
     }
+    case "unlock_earned":
+      if (!next.unlocked.includes(event.id)) next.unlocked = [...next.unlocked, event.id];
+      return next;
     case "tie_revealed":
       if (!next.revealedTies.includes(event.key)) next.revealedTies = [...next.revealedTies, event.key];
       return next;
@@ -1048,6 +1058,10 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (successor.dead) throw new Error(`사망한 인물: ${successor.id}`);
       next.playerId = successor.id;
       next.runStartedAt = state.time;
+      if (event.roleId) {
+        next.roleId = event.roleId;
+        next.customRole = null;
+      }
       // 이어받는 인물이 원래 알던 사람은 그대로 알고, 같은 무리 동료와는 서로 이름을 안다
       for (const id of event.known) {
         acquaint(next, successor.id, id, true);

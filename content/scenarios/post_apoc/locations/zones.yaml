@@ -66,6 +66,11 @@
   kind: zone
   owner: null
   adjacent: [e_market]
+  # 섬에서 몰래 나오는 길 (기획서 9.12): 섬의 허락(y_leave_pass)이 없으면 경비를 피해 밤배를 훔쳐 탄다
+  crossing:
+    from: [yeoul_isle]
+    pass_flags: [y_leave_pass]
+    attempt: { moves: [stealth, survival], label: "섬 경비를 피해 밤배를 훔쳐 타는 판정" }
   yields: { water: 45, fuel: 10 }
   loot:
     chance: 0.55
@@ -176,3 +181,24 @@
       - { item: wire_roll, weight: 1, qty: [1, 1] }
       - { item: kitchen_knife, weight: 0.5, qty: [1, 1] }
 
+
+# 여울섬 (기획서 9.12): 강 하구 바다 건너. 어느 구역과도 맞닿아 있지 않고 강변·정수장에서 배로만 건넌다
+- id: yeoul_isle
+  name: 여울섬
+  description: 강 하구에서 배로 반나절 건너는 섬. 돌담과 망루, 텃밭과 양식장, 탄약 공방이 있다. 부두에는 늘 무장한 경비가 선다.
+  kind: base
+  owner: faction_y
+  crossing:
+    from: [riverside, water_plant]
+    pass_flags: [y_passage, y_leave_pass]
+    attempt: { moves: [survival, stealth], label: "배를 구해 밤바다를 건너 섬 경비를 피하는 판정" }
+  unlocks: yeoul
+  # 외딴곳: 도시 공통 이야기·떠돌이는 오지 않는다
+  isolated: true
+  yields: { food: 150, water: 150, fuel: 22, ammo: 12, medicine: 2 }
+  loot:
+    chance: 0.25
+    items:
+      - { item: canned_food, weight: 2, qty: [1, 2] }
+      - { item: medkit, weight: 1, qty: [1, 1] }
+      - { item: blanket, weight: 1, qty: [1, 1] }

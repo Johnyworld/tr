@@ -180,3 +180,30 @@
       - { content: 붉은연합 사자에게서 담배를 받은 적이 있다. 아무 말도 안 했다고 믿는다, reveal_when: 둘만 있을 때, min_trust: 3 }
   ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
   appears: { zones: [b_base, south_fields, old_town] }
+
+# 여울섬 주민 (기획서 9.12). 외딴곳이라 섬에서는 이 틀만 나온다
+- id: y_villager
+  label: 여울섬 주민
+  faction: faction_y
+  rank: grunt
+  age: [16, 60]
+  looks:
+    - 볕에 그을린 얼굴에 살이 오른 주민. 바깥 사람을 보면 웃으며 먼저 인사한다
+    - 고무장화에 그물 바늘을 든 주민. 의회 회관 쪽을 지날 때면 목소리를 낮춘다
+  stats: { vitality: [0, 1], senses: [0, 1] }
+  skills: { survival: 1 }
+  traits: [genial, guarded, eager, timid]
+  trait_count: 1
+  inventory:
+    - { item: canned_food, chance: 0.4 }
+  values: { loyalty: 2, discipline: 1 }
+  profile:
+    wants: [쓸모를 증명해 섬에 오래 남는 것, 겨울 잔치에 한 번 불려 가는 것, 가족이 내보내지지 않는 것]
+    fears: [쓸모가 다하는 날, 의회의 눈 밖에 나는 것, 바깥 사람이 섬을 망치는 것]
+    voices:
+      - { style: 다정하고 조심스러운 존댓말. 의회 이야기는 웃으며 넘긴다, samples: ["여기선 아무도 굶지 않아요.", "의회 일은 의회가 알아서 하세요."] }
+    rules: [바깥 사람에게 먼저 먹을 것을 권한다, 내보내진 사람 이야기가 나오면 말을 돌린다]
+    reputations: [섬에서 태어나 자란 주민, 첫 겨울 뒤에 받아들여진 주민]
+    secrets:
+      - { content: 지난겨울 내보내진 이웃의 신발을 의회 저장고 뒤에서 봤다. 아무에게도 말하지 않았다, reveal_when: 둘만 있고 내보내진 사람 이야기가 나올 때, min_trust: 3 }
+  appears: { zones: [yeoul_isle] }

@@ -58,6 +58,7 @@ export function checkCustomStart(content: Content, input: CustomStartInput): str
     if (!c.free_locations.includes(input.location)) problems.push(`무소속으로 시작할 수 있는 곳: ${c.free_locations.map((l) => `${content.locations[l]?.name ?? l}(${l})`).join(", ")}`);
   } else {
     if (!content.factions[input.faction]) problems.push(`알 수 없는 세력: ${input.faction}`);
+    else if (content.factions[input.faction]!.startable === false) problems.push(`${content.factions[input.faction]!.name}으로는 시작할 수 없다.`);
     else {
       if (!c.ranks.includes(input.rank)) problems.push(`세력에 속해 고를 수 있는 계급: ${c.ranks.map((r) => `${rankLabel(r)}(${r})`).join(", ")} (지도부는 한 자리뿐이라 고를 수 없다)`);
       const places = factionLocations(content, input.faction);
@@ -172,7 +173,7 @@ export function describeCustomStartOptions(content: Content): string {
   const s = content.scenario;
   const c = s.custom_start!;
   const rankLabel = (id: string) => s.rank_ladder.find((r) => r.id === id)?.label ?? id;
-  const factions = Object.values(content.factions);
+  const factions = Object.values(content.factions).filter((f) => f.startable !== false);
   return [
     `세력과 시작 장소:`,
     ...factions.map((f) => `- ${f.name}(${f.id}): ${factionLocations(content, f.id).map((l) => `${content.locations[l]?.name ?? l}(${l})`).join(", ") || "(시작할 구역 없음)"}`),

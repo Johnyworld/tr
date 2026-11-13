@@ -1,0 +1,29 @@
+# 여울섬의 새 식구 (해금 시나리오, 기획서 9.12). 처음에는 고를 수 없고, 어느 판에서든 한 번 섬에 들어가면 열린다
+id: role_y_islander
+label: 여울섬의 새 식구
+faction: faction_y
+rank: grunt
+unlock: yeoul
+default_name: 새 식구
+opening_scene: 아침, 여울섬 부두. 따뜻한 국 냄새가 식당에서 흘러온다. 해안 경비조장이 작살총을 멘 채 당신 어깨를 두드린다. "오늘부터 경비조다. 섬에선 아무도 굶지 않아." 멀리 의회 저장고 굴뚝에서 연기가 오른다.
+scenario:
+  title: 여울섬의 새 식구
+  pitch: >-
+    모두가 꿈꾸는 바다 건너 낙원, 여울섬에 받아들여졌다. 먹을 것과 탄약이 넘치고 감염체는 없다.
+    다만 쓸모가 다한 사람은 뭍으로 내보낸다고 하고, 내보내진 사람은 아무도 돌아오지 않았다.
+  intro: >-
+    늦가을. 당신은 한 달 전 심사관 백천수의 입도 심사를 통과해 여울섬에 받아들여졌다. 지금은 진강호의 해안 경비조에서 일한다.
+    섬은 소문대로다. 식당에는 날마다 국이 나오고, 창고에는 통조림과 탄약이 쌓여 있다. 의장 한수자는 "여기선 아무도 굶지 않는다"고 말한다.
+    섬의 규칙은 하나다. 쓸모를 증명할 것. 쓸모가 다한 사람은 의회가 밤배로 뭍에 내보낸다고 한다.
+    겨울이 다가오고, 의회는 곧 겨울 잔치를 연다고 한다.
+    이야기는 어느 아침, 여울섬 부두에서 시작한다.
+age: 27
+start_skills: { sense_danger: 1, shoot: 1 }
+start_inventory: [old_rifle, water_bottle, canned_food]
+start_location: yeoul_isle
+access: [ration, mission_board]
+beliefs_preset: y_islander_start
+known_npcs: [y_suja, y_cheonsu, y_miok, y_haesol, y_gangho, y_dabin, y_bokman]
+commander: y_gangho
+missions: [y_shore_watch, y_net_haul, y_ammo_shop, y_quarantine, y_supply_boat]
+storylet_tags: [y_islander]

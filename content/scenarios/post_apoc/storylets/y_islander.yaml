@@ -1,0 +1,332 @@
+# 여울섬 새 식구 스토리렛 (해금 시나리오, 기획서 9.12)
+# 겉은 낙원이다. 줄기: 고기 국 → 내보내진 단짝 → 맞지 않는 장부 / 바위틈의 뼈 → 의회 저장고(y_feast_seen) → 겨울 잔치 초대 / 밤배 / 해솔의 초대
+# y_suspected: 의회가 의심하기 시작했다 (밤의 부름)
+# 진실은 lore(secret:y_feast_seen)와 인물의 비밀로만. 장면은 담담하게, 잔혹함을 늘어놓지 않는다
+
+- id: y_soup
+  title: 고기 국
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [evening]
+    flags_none: [y_soup_done]
+  cast:
+    old: { ids: [y_bokman] }
+  setup: "식당에 고기 국이 나온다. 뭍에서는 몇 해 동안 본 적 없는 기름이 떠 있다. 다들 말없이 숟가락을 든다. 구석의 {old:은/는} 그릇을 받아 들고 일어나 바깥으로 나간다."
+  ai_direction: 국의 고기가 무엇인지 지금은 아무도 말하지 않는다. 추복만은 국을 바다에 쏟는다. 물으면 "먹지 마라"고만 한다. 고기 맛은 서술하지 않는다.
+  choices:
+    - id: eat
+      label: 맛있게 먹는다
+      effects:
+        - set_flag: y_soup_done
+        - set_flag: y_ate
+        - body: { track: hunger, delta: -1 }
+    - id: follow
+      label: 노인을 따라 나간다
+      effects:
+        - set_flag: y_soup_done
+        - relation: { who: old, axis: trust, delta: 1 }
+        - belief: { fact: "추복만이 고기 국을 바다에 쏟았다. 왜냐고 묻자 '먹지 마라. 그냥 먹지 마라'고만 했다", source: seen }
+    - id: skip
+      label: 입맛이 없다며 내려놓는다
+      effects:
+        - set_flag: y_soup_done
+
+- id: y_dabin_friend
+  title: 보이지 않은 배
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [night, dawn]
+    day_gte: 2
+    flags_none: [y_friend_done]
+  cast:
+    friend: { ids: [y_dabin] }
+  setup: "망루 당번을 바꾸며 {friend:이/가} 속삭인다. \"지원이가 내보내진 밤, 내가 부두 당번이었어. 근데 배가 안 떠났어. 진짜로. 한 척도.\""
+  ai_direction: 설다빈의 단짝 지원은 쓸모가 다했다며 "뭍으로 내보내졌다". 그날 밤 부두에서 배가 떠나지 않은 것은 사실이다 (배는 섬 뒤쪽에서 떠났다가 저장고 뒤에 닿았다). 설다빈은 아직 그 뜻을 모른다.
+  choices:
+    - id: help
+      label: 같이 알아보자고 한다
+      effects:
+        - set_flag: y_friend_done
+        - set_flag: y_looking
+        - relation: { who: friend, axis: trust, delta: 2 }
+        - belief: { fact: "설다빈의 단짝 지원이 내보내진 밤, 부두에서 배가 떠나지 않았다고 한다", source: report }
+    - id: hush
+      label: 의회 일은 묻지 않는 거라고 말린다
+      effects:
+        - set_flag: y_friend_done
+        - relation: { who: friend, axis: affection, delta: -1 }
+
+- id: y_miok_ledger
+  title: 맞지 않는 장부
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [day, evening]
+    day_gte: 3
+    flags_any: [y_looking, y_ate]
+    flags_none: [y_ledger_done]
+  cast:
+    keeper: { ids: [y_miok] }
+  setup: "창고 정리를 거들던 중, {keeper:이/가} 장부 한 장을 일부러 펼친 채 자리를 비운다. \"내보낸 사람\" 칸의 이름들 옆에 배의 출항 기록이 있어야 할 자리가 비어 있다."
+  ai_direction: 윤미옥은 혼자 알기가 무서워 당신이 보게 했다. 들켰을 때를 대비해 직접 말하지는 않는다. 읽어 내면 숫자가 맞지 않는다는 것까지 안다 (어디로 갔는지는 모른다).
+  choices:
+    - id: read
+      label: 숫자를 맞춰 본다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: y_ledger_done
+          - set_flag: y_ledger_seen
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "창고 장부에 '내보낸 사람'이 스물셋인데, 그 밤들에 떠난 배는 한 척도 없다", source: seen }
+        partial:
+          - set_flag: y_ledger_done
+          - set_flag: y_ledger_seen
+          - belief: { fact: "창고 장부의 '내보낸 사람' 칸 옆에 배 기록이 비어 있었다. 다 읽기 전에 발소리가 났다", source: seen }
+        miss:
+          - relation: { who: keeper, axis: trust, delta: -1 }
+    - id: close
+      label: 장부를 덮어 둔다
+      effects:
+        - set_flag: y_ledger_done
+
+- id: y_bones
+  title: 바위틈
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [night]
+    day_gte: 3
+    flags_none: [y_bones_done]
+  cast:
+    old: { ids: [y_bokman], trust_gte: 2 }
+  setup: "{old:이/가} 등불도 없이 섬 뒤쪽 바위길로 앞장선다. 의회 저장고 굴뚝이 바위 너머로 보인다. 노인이 바위틈 하나를 가리키고 고개를 돌린다."
+  ai_direction: 바위틈에는 물살에 떠밀려 온 뼈가 있다. 사람의 것이다. 추복만은 아무것도 설명하지 않는다. 장면은 담담하게, 자세히 묘사하지 않는다.
+  choices:
+    - id: look
+      label: 들여다본다
+      effects:
+        - set_flag: y_bones_done
+        - set_flag: y_rocks_seen
+        - relation: { who: old, axis: trust, delta: 1 }
+        - belief: { fact: "섬 뒤쪽 바위틈, 의회 저장고 아래에 사람 뼈가 떠밀려 와 있었다", source: seen }
+    - id: back
+      label: 돌아가자고 한다
+      effects:
+        - set_flag: y_bones_done
+
+- id: y_storehouse
+  title: 의회 저장고
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [night]
+    flags_any: [y_ledger_seen, y_rocks_seen]
+    flags_none: [y_feast_seen, y_storehouse_tried]
+  setup: "자정 무렵, 의회 저장고 뒷문의 자물쇠가 걸려 있지 않다. 안에서 칼 가는 소리가 멎었다 다시 난다. 굴뚝 연기에서 고기 굽는 냄새가 난다."
+  ai_direction: 저장고 안에는 의회 상층이 인육을 먹는다는 진실이 있다 (lore 여울섬의 진실). 들키면 의회가 당신을 의심한다. 위험은 판정으로만. 본 것은 담담하게, 잔혹한 묘사를 늘어놓지 않는다.
+  choices:
+    - id: sneak
+      label: 숨을 죽이고 들어간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: y_storehouse_tried
+          - set_flag: y_feast_seen
+          - belief: { fact: "의회 저장고에서 보았다. 내보낸다던 사람들은 섬을 떠나지 않았다. 의회가 그들을 먹는다", source: seen }
+        partial:
+          - set_flag: y_storehouse_tried
+          - set_flag: y_feast_seen
+          - set_flag: y_suspected
+          - belief: { fact: "의회 저장고에서 보았다. 의회가 사람을 먹는다. 나오다 그림자를 들킨 것 같다", source: seen }
+        miss:
+          - set_flag: y_storehouse_tried
+          - set_flag: y_suspected
+          - deed: { summary: 밤에 의회 저장고에 숨어들려 했다, tags: [disobedience], severity: 2, privacy: semi_private }
+    - id: leave
+      label: 돌아선다. 모르는 게 낫다
+      effects:
+        - set_flag: y_storehouse_tried
+
+- id: y_feast_invite
+  title: 겨울 잔치
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [evening]
+    day_gte: 6
+    flags_none: [y_invite_done]
+  cast:
+    chair: { ids: [y_suja] }
+  setup: "{chair:이/가} 당신 손을 잡는다. 손이 따뜻하다. \"애기야, 이번 겨울 잔치에 너도 와. 쓸모 있는 사람만 앉는 자리야. 거기 앉으면 이제 진짜 섬사람이지.\""
+  ai_direction: 겨울 잔치의 고기는 사람이다. 진실을 이미 알았다면 이 초대가 무엇인지 안다. 모른다면 잔치에서 알게 된다. 받아들이면 의회 곁에 서고, 거절하면 의회의 눈 밖에 난다. 장면은 담담하게.
+  choices:
+    - id: accept
+      label: 잔치에 앉는다
+      effects:
+        - set_flag: y_invite_done
+        - set_flag: y_feasted
+        - set_flag: y_feast_seen
+        - merit: 3
+        - relation: { who: chair, axis: trust, delta: 2 }
+        - deed: { summary: 여울섬 의회의 겨울 잔치에 앉았다, tags: [cruelty], severity: 3, privacy: private }
+        - belief: { fact: "겨울 잔치의 고기가 무엇인지 알면서 의회 곁에 앉았다", source: seen }
+    - id: decline
+      label: 몸이 아프다며 사양한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: y_invite_done
+        partial:
+          - set_flag: y_invite_done
+          - relation: { who: chair, axis: trust, delta: -1 }
+        miss:
+          - set_flag: y_invite_done
+          - set_flag: y_suspected
+          - relation: { who: chair, axis: trust, delta: -2 }
+    - id: refuse
+      label: 그 자리에는 앉지 않겠다고 말한다
+      effects:
+        - set_flag: y_invite_done
+        - set_flag: y_suspected
+        - relation: { who: chair, axis: trust, delta: -3 }
+
+- id: y_night_boat
+  title: 밤배
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [night]
+    flags_all: [y_feast_seen]
+    flags_none: [y_boat_done]
+  cast:
+    keeper: { ids: [y_miok], trust_gte: 1 }
+    girl: { ids: [y_haesol] }
+  setup: "{keeper:이/가} 그물 창고 뒤에서 당신을 기다린다. 옆에 {girl:이/가} 영문도 모른 채 하품을 한다. \"작은 배를 하나 숨겨 뒀어요. 다음 썰물에 해솔이를 데리고 나갑니다. 노 저을 사람이 하나 더 있으면… 둘 다 살 수 있어요.\""
+  ai_direction: 윤미옥은 딸을 겨울 잔치에서 지키려 한다. 함께 가면 섬을 나가는 표(y_leave_pass)가 생기고 두 사람이 강변까지 동행한다. 의회에 알리면 윤미옥은 저장고로 간다. 섬을 나가도 의회는 잊지 않는다.
+  choices:
+    - id: go
+      label: 노를 잡겠다고 한다
+      effects:
+        - set_flag: y_boat_done
+        - set_flag: y_leave_pass
+        - relation: { who: keeper, axis: trust, delta: 3 }
+        - companion_join: { who: keeper, kind: purpose, until: { zone: riverside } }
+        - companion_join: { who: girl, kind: purpose, until: { zone: riverside } }
+        - belief: { fact: "윤미옥 모녀와 밤배로 섬을 나가기로 했다. 다음 썰물에 강변으로 간다", source: seen }
+    - id: report
+      label: 의회에 알린다
+      effects:
+        - set_flag: y_boat_done
+        - merit: 2
+        - relation: { who: keeper, axis: trust, delta: -3 }
+        - deed: { summary: 섬을 빠져나가려던 창고지기를 의회에 알렸다, tags: [betrayal, cruelty], severity: 3, privacy: semi_private }
+        - npc_capture: { who: keeper, by: faction_y, zone: yeoul_isle }
+    - id: alone
+      label: 둘이 가라고, 나는 남겠다고 한다
+      effects:
+        - set_flag: y_boat_done
+        - relation: { who: keeper, axis: affection, delta: 1 }
+        - npc_depart: { who: girl }
+        - npc_depart: { who: keeper }
+        - belief: { fact: "윤미옥 모녀가 밤배로 섬을 떠났다. 무사히 닿았는지는 모른다", source: seen }
+
+- id: y_night_summons
+  title: 의회가 부른다
+  tags: [y_islander]
+  urgent: true
+  when:
+    zones: [yeoul_isle]
+    segments: [night]
+    flags_all: [y_suspected]
+    flags_none: [y_summons_done, y_feasted]
+  cast:
+    guard: { ids: [y_gangho] }
+  setup: "자정, 막사 문이 열린다. {guard:이/가} 등불을 들고 서 있다. 뒤에 경비 둘. \"의회가 부른다. 지금.\" 그의 눈이 당신을 피한다."
+  ai_direction: 의회는 의심 가는 사람을 저장고로 부른다. 따라가면 심사관 앞에 선다 (거기서의 일은 판정으로). 진강호는 이 일이 싫지만 거역하지 못한다. 도망치려면 판정이 필요하고, 위험은 판정 전에 선언한다.
+  choices:
+    - id: go
+      label: 따라간다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: y_summons_done
+          - belief: { fact: "심사관 앞에서 끝까지 아무것도 모른다고 버텼다. 오늘 밤은 막사로 돌아왔다", source: seen }
+        partial:
+          - set_flag: y_summons_done
+          - body: { track: hunger, delta: 2 }
+          - belief: { fact: "심사관이 사흘 배급을 끊었다. 다음은 없다고 했다", source: seen }
+        miss:
+          - set_flag: y_summons_done
+          - set_flag: y_marked
+          - relation: { who: guard, axis: affection, delta: -1 }
+          - belief: { fact: "심사관이 장부의 당신 이름 옆에 줄을 그었다. 다음 겨울 잔치의 명단이다", source: seen }
+    - id: plead
+      label: 진강호에게 낮게 사정한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: y_summons_done
+          - relation: { who: guard, axis: trust, delta: 2 }
+          - set_flag: y_leave_pass
+          - belief: { fact: "진강호가 등불을 끄고 말했다. '부두 서쪽 끝 배. 내가 못 본 걸로 한다.'", source: report }
+        partial:
+          - set_flag: y_summons_done
+        miss:
+          - set_flag: y_summons_done
+          - set_flag: y_marked
+    - id: run
+      label: 문을 박차고 부두로 뛴다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: y_summons_done
+          - set_flag: y_leave_pass
+          - belief: { fact: "경비를 따돌리고 부두 서쪽 끝 배에 숨었다. 썰물만 기다리면 된다", source: seen }
+        partial:
+          - set_flag: y_summons_done
+          - set_flag: y_marked
+        miss:
+          - set_flag: y_summons_done
+          - set_flag: y_marked
+          - deed: { summary: 의회의 부름을 피해 달아나다 붙잡혔다, tags: [disobedience], severity: 2, privacy: public }
+
+- id: y_haesol_invited
+  title: 잔치의 손님
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [day, evening]
+    day_gte: 7
+    flags_all: [y_feast_seen]
+    flags_none: [y_haesol_done, y_boat_done]
+  cast:
+    girl: { ids: [y_haesol] }
+  setup: "{girl:이/가} 신이 나서 뛰어온다. \"의장님이 나 겨울 잔치에 부른대! 엄마는 아직 몰라. 비밀이야!\""
+  ai_direction: 의회는 윤미옥이 장부를 알고 있다는 것을 눈치챘다. 해솔을 부른 것은 경고이거나 그 이상이다. 해솔은 아무것도 모른다. 무엇을 하든 해솔 앞에서 진실을 늘어놓지는 않는다.
+  choices:
+    - id: tell_mother
+      label: 윤미옥에게 알린다
+      effects:
+        - set_flag: y_haesol_done
+        - relation: { who: girl, axis: affection, delta: -1 }
+        - belief: { fact: "해솔이 겨울 잔치에 불렸다는 것을 윤미옥에게 알렸다. 윤미옥의 얼굴이 하얘졌다", source: seen }
+    - id: hide
+      label: 잔치 날 아프다고 하라고 가르친다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: y_haesol_done
+          - relation: { who: girl, axis: trust, delta: 2 }
+        partial:
+          - set_flag: y_haesol_done
+        miss:
+          - set_flag: y_haesol_done
+          - set_flag: y_suspected
+    - id: nothing
+      label: 잘됐다고 웃어 준다
+      effects:
+        - set_flag: y_haesol_done
+        - deed: { summary: 겨울 잔치에 불린 아이를 모른 척했다, tags: [cruelty], severity: 2, privacy: private }

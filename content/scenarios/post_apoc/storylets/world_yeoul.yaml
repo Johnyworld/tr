@@ -1,0 +1,184 @@
+# 여울섬으로 가는 길 (기획서 9.12). 도시 어디서나 (world). 건너는 표(플래그 y_passage)를 얻으면 강변·정수장에서 위험 없이 건넌다
+# 표가 없어도 배를 구해 직접 건널 수 있다 (take_action move_to yeoul_isle + 판정 + heavy 위험, 구역의 crossing)
+# 섬에 닿으면 입도 심사 (wy_landing): 받아들여지거나, 검역 막사 조건부로 받아들여지거나, 쫓겨난다
+
+- id: wy_paradise_talk
+  title: 바다 건너 낙원
+  tags: [world]
+  when:
+    segments: [evening, night]
+    day_gte: 2
+    zone_owner: [none, own]
+    flags_none: [wy_heard]
+  cast:
+    teller: { extra: refugee, label: 불가의 피난민 }
+  setup: "모닥불 가에서 {teller:이/가} 손을 녹이며 말한다. \"여울섬 얘기 들었어? 강 하구에서 배로 반나절. 거긴 밤에도 불을 켜고 잔대. 통조림이 천장까지 쌓였고, 감염체는 바다를 못 건너.\" 둘러앉은 사람들이 아무 말 없이 불을 본다."
+  ai_direction: 여울섬은 진짜 있다. 소문의 반은 맞다 (먹을 것과 탄약이 넘친다). 이 피난민은 섬에 가 본 적이 없다. 강변·정수장에서 배를 구할 수 있다는 말까지만 안다.
+  choices:
+    - id: listen
+      label: 더 묻는다
+      effects:
+        - set_flag: wy_heard
+        - belief: { fact: "여울섬은 강 하구에서 배로 반나절 거리라고 한다. 강변이나 정수장에서 배를 구할 수 있다는 말이 있다", source: rumor }
+    - id: scoff
+      label: 그런 데가 있으면 다들 갔겠지, 하고 웃는다
+      effects:
+        - set_flag: wy_heard
+
+- id: wy_smuggler
+  title: 밀항선 뱃삯
+  tags: [world]
+  when:
+    zones: [riverside, water_plant]
+    segments: [evening, night]
+    day_gte: 3
+    flags_none: [y_passage, y_landed]
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e, none]
+  cast:
+    boatman: { extra: drifter_leader, label: 밀항선 뱃사공, keep: y_boatman }
+  setup: "갈대 사이에 낡은 고무보트가 숨겨져 있다. {boatman:이/가} 담배를 비벼 끄며 말한다. \"섬까지 태워 주지. 통조림 둘. 섬 경비가 쏘면 그건 네 운이고.\""
+  ai_direction: 뱃사공은 진짜 섬까지 간다. 섬 앞에서 경비에게 들키지 않게 내려 주는 것까지가 일이다. 섬에 닿은 뒤의 일은 모른다. 값을 깎으려 들면 판정이다.
+  choices:
+    - id: pay
+      label: 통조림 둘을 건넨다
+      effects:
+        - take_item: { item: canned_food, quantity: 2 }
+        - set_flag: y_passage
+        - belief: { fact: "밀항선 뱃사공에게 뱃삯을 치렀다. 강변이나 정수장에서 언제든 섬으로 태워 준다", source: seen }
+    - id: haggle
+      label: 하나로 깎자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - take_item: { item: canned_food, quantity: 1 }
+          - set_flag: y_passage
+          - belief: { fact: "밀항선 뱃사공이 통조림 하나에 섬까지 태워 주기로 했다", source: seen }
+        partial:
+          - relation: { who: boatman, axis: affection, delta: -1 }
+        miss:
+          - relation: { who: boatman, axis: trust, delta: -2 }
+    - id: refuse
+      label: 돌아선다
+      effects: []
+
+- id: wy_ammo_escort
+  title: 섬 거래선
+  tags: [world]
+  when:
+    zones: [e_market, water_plant]
+    segments: [morning, day]
+    day_gte: 5
+    flags_none: [y_passage, y_landed]
+    factions: [faction_e, none]
+  cast:
+    boss: { ids: [e_bongsu] }
+  setup: "{boss:이/가} 금니를 드러내며 목소리를 낮춘다. \"다음 물때에 배 한 척이 바다로 나가. 짐은 묻지 마. 호위가 하나 모자라. 거기 가서 입 다물고 서 있기만 하면 돼.\""
+  ai_direction: 나루상단은 여울섬과 몰래 거래한다 (통조림을 넘기고 탄약을 받는다). 호위로 따라가면 섬 부두까지 간다. 탁봉수는 섬에서 본 것을 밖에서 말하지 않는 조건을 단다.
+  choices:
+    - id: accept
+      label: 따라가겠다고 한다
+      effects:
+        - set_flag: y_passage
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "나루상단의 섬 거래선 호위를 맡았다. 강변이나 정수장에서 거래선을 타고 섬에 갈 수 있다", source: seen }
+    - id: ask
+      label: 어디로 가는 배냐고 묻는다
+      effects:
+        - belief: { fact: "탁봉수는 바다로 나가는 배라고만 했다. 붉은연합의 탄약이 거기서 온다는 소문이 있다", source: report }
+    - id: refuse
+      label: 거절한다
+      effects: []
+
+- id: wy_drifting_islander
+  title: 떠내려온 사람
+  tags: [world]
+  when:
+    zones: [riverside, water_plant]
+    segments: [morning, day]
+    day_gte: 4
+    flags_none: [wy_drift_done]
+  cast:
+    swimmer: { extra: refugee, label: 떠내려온 사람 }
+  setup: "강물에 반쯤 잠긴 나무 상자에 사람 하나가 매달려 있다. 입술이 파랗다. 옷깃에 수놓인 작은 등대 무늬가 보인다."
+  ai_direction: 여울섬 사람이다. 밤배에 태워져 "내보내지다가" 바다에 뛰어들었다. 살려 주면 섬 경비에게 말해 줄 테니 섬에 가 보라고 한다 (자기는 절대 돌아가지 않는다). 섬의 진실은 말하지 않는다. 너무 무서워서 말을 잇지 못한다.
+  choices:
+    - id: rescue
+      label: 물에 들어가 끌어낸다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: wy_drift_done
+          - set_flag: y_passage
+          - relation: { who: swimmer, axis: trust, delta: 3 }
+          - belief: { fact: "떠내려온 사람은 여울섬에서 왔다. 섬 부두에서 자기 이름을 대면 들여보내 줄 거라며, 자기는 절대 돌아가지 않겠다고 떨었다", source: report }
+        partial:
+          - set_flag: wy_drift_done
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "강에서 건진 사람은 여울섬에서 왔다고만 하고 정신을 잃었다", source: seen }
+        miss:
+          - set_flag: wy_drift_done
+          - body: { track: cold, delta: 2 }
+          - belief: { fact: "강에 떠내려온 사람을 놓쳤다. 옷깃에 등대 무늬가 있었다", source: seen }
+    - id: leave
+      label: 물이 너무 차다. 보고만 있는다
+      effects:
+        - set_flag: wy_drift_done
+
+- id: wy_landing
+  title: 입도 심사
+  tags: [world]
+  urgent: true
+  when:
+    zones: [yeoul_isle]
+    flags_none: [y_landed]
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e, none]
+  cast:
+    guard: { ids: [y_gangho] }
+    judge: { ids: [y_cheonsu] }
+  setup: "부두에 발을 딛자마자 {guard:이/가} 작살총을 겨눈다. \"손 들어.\" 잠시 뒤 하얀 장갑을 낀 {judge:이/가} 다가와 당신의 턱을 들고 이를 들여다본다. \"쓸모를 말해 보세요. 섬은 입을 하나 더 먹일 이유가 필요합니다.\""
+  ai_direction: 섬은 쓸모 있는 사람만 들인다. 심사관은 사람을 숫자로 본다 (이·근육·기술). 받아들여지면 해안 경비조로 간다. 거짓말은 오래 가지 않는다. 쫓겨나면 강변에 내려진다. 의회의 진실은 이 자리에서 절대 드러나지 않는다.
+  choices:
+    - id: prove
+      label: 할 줄 아는 일을 말하고 보여 준다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: y_landed
+          - set_flag: y_member
+          - deed: { summary: 무리를 떠나 여울섬에 받아들여졌다, tags: [betrayal], severity: 1, privacy: semi_private }
+          - join_faction: { faction: faction_y, rank: grunt, title: 여울섬 새 식구 }
+          - belief: { fact: "여울섬 입도 심사를 통과했다. 해안 경비조에서 일한다. 식당에 날마다 국이 나온다", source: seen }
+        partial:
+          - set_flag: y_landed
+          - set_flag: y_member
+          - set_flag: y_suspected
+          - join_faction: { faction: faction_y, rank: grunt, title: 여울섬 검역 막사 식구 }
+          - belief: { fact: "여울섬에 받아들여졌지만 심사관이 당신 이름 옆에 무언가를 적었다", source: seen }
+        miss:
+          - set_flag: y_landed
+          - send_to: riverside
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "여울섬 입도 심사에서 떨어졌다. 경비들이 배에 태워 강변에 내려놓았다", source: seen }
+    - id: water_only
+      label: 물만 얻고 돌아가겠다고 한다
+      effects:
+        - set_flag: y_landed
+        - give_item: { item: water_bottle }
+        - send_to: water_plant
+        - belief: { fact: "여울섬 부두에서 물 한 병을 받고 정수장으로 돌려보내졌다. 섬 안은 보지 못했다", source: seen }
+    - id: lie
+      label: 섬 거래선 사람이라고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: y_landed
+          - belief: { fact: "섬 거래선 사람이라고 둘러대 부두에 머물렀다. 섬은 아직 당신을 들이지 않았다", source: seen }
+        partial:
+          - set_flag: y_landed
+          - send_to: water_plant
+        miss:
+          - set_flag: y_landed
+          - relation: { who: guard, axis: trust, delta: -2 }
+          - body: { track: cold, delta: 2 }
+          - send_to: riverside
+          - belief: { fact: "거짓말이 들켜 여울섬 경비들에게 바다에 던져졌다. 겨우 강변까지 헤엄쳐 왔다", source: seen }

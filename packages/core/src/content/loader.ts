@@ -197,6 +197,7 @@ function checkReferences(content: Content): string[] {
         if (e.body.track === content.scenario.harm_track) problems.push(`storylets.${st.id}: body로 부상 트랙을 바꿀 수 없다 (원칙 3)`);
         else if (!content.scenario.condition_tracks.some((t) => t.id === e.body.track)) problems.push(`storylets.${st.id}: 알 수 없는 상태 트랙 ${e.body.track}`);
       }
+      if ("send_to" in e && !content.locations[e.send_to]) problems.push(`storylets.${st.id}: 알 수 없는 구역 ${e.send_to}`);
       if ("join_faction" in e && !content.factions[e.join_faction.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.join_faction.faction}`);
       if ("companion_join" in e && e.companion_join.until?.zone && !content.locations[e.companion_join.until.zone]) problems.push(`storylets.${st.id}: 알 수 없는 구역 ${e.companion_join.until.zone}`);
       if ("faction_policy" in e) {

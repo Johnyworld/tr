@@ -196,13 +196,31 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
   const battleAction = validateBattleAction(ctx, input.battle);
   if (typeof battleAction === "string") return { ok: false, error: battleAction };
+  // 건너가기 (기획서 9.12): 맞닿지 않은 곳이라도 crossing.from에서는 배로 건넌다. 표(pass_flags)가 없으면 위험한 시도
+  let crossingAttempt = false;
   if (input.move_to) {
     const here = start.playerZone;
-    if (!content.locations[input.move_to]) return { ok: false, error: `알 수 없는 구역: ${input.move_to}` };
-    if (!here || !neighbors(content, here).includes(input.move_to)) {
+    const dest = content.locations[input.move_to];
+    if (!dest) return { ok: false, error: `알 수 없는 구역: ${input.move_to}` };
+    const crossing = dest.crossing && here && dest.crossing.from.includes(here) ? dest.crossing : null;
+    if (!here || (!neighbors(content, here).includes(input.move_to) && !crossing)) {
       return { ok: false, error: `${input.move_to}은(는) 지금 구역과 맞닿아 있지 않다. 인접 구역: ${here ? neighbors(content, here).join(", ") : "없음"}` };
     }
     if (input.activity) return { ok: false, error: "이동하는 턴에는 activity를 null로 둔다 (이동 시간은 시스템이 정한다)." };
+    if (crossing && !neighbors(content, here).includes(input.move_to)) {
+      const flags = new Set(start.flags[start.playerId] ?? []);
+      if (!crossing.pass_flags.some((f) => flags.has(f))) {
+        if (!input.check || !crossing.attempt.moves.includes(input.check.move) || input.check.harm_on_failure !== "heavy") {
+          return {
+            ok: false,
+            error:
+              `${dest.name}(으)로 건너갈 표가 없다. 직접 건너려면 ${crossing.attempt.label}: check.move는 ${crossing.attempt.moves.join("/")} 중 하나, ` +
+              "harm_on_failure는 heavy로 위험을 먼저 선언한다 (실패하면 다치고 되돌아온다). 아니면 이야기로 건너는 길을 얻는다.",
+          };
+        }
+        crossingAttempt = true;
+      }
+    }
   }
   const prep = input.prepare ? scenario.battle?.preparations.find((p) => p.id === input.prepare) : null;
   if (input.prepare) {
@@ -334,11 +352,21 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.activity || input.move_to) displays.push(time.display);
   displays.push(...time.extra);
   lines.push(...bodyLines(time.extra));
-  if (input.move_to && !time.interrupted) {
+  // 건너기 시도가 실패하면 물살에 밀려 되돌아온다 (시간과 위험은 이미 치렀다)
+  const sweptBack = crossingAttempt && outcome === "miss";
+  if (sweptBack) lines.push(`${content.locations[input.move_to!]?.name ?? input.move_to}에 닿지 못하고 되돌아왔다. 되돌아온 장면을 서술한다.`);
+  if (input.move_to && !time.interrupted && !sweptBack) {
     // 자리를 뜨면 그 자리의 이야기는 끝난다 (장면의 인물도 따라오지 않는다)
     displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
     store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to });
     lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다. 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
+    // 처음 들어온 곳이면 해금 (모든 판에 남는다)
+    const unlock = content.locations[input.move_to]?.unlocks;
+    if (unlock && !store.getState().unlocked.includes(unlock)) {
+      store.append({ type: "unlock_earned", id: unlock, inherited: false });
+      const roles = Object.values(content.roles).filter((r) => r.unlock === unlock).map((r) => r.scenario?.title ?? r.label);
+      if (roles.length) lines.push(`(게임 밖 알림: 새 시나리오가 열렸다 — ${roles.join(", ")}. 이제 어느 판에서든 새 게임과 다음 캐릭터로 고를 수 있다. 장면 서술과 섞지 말고 짧게 알린다)`);
+    }
   }
 
   // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문, 전쟁, 예정된 교전)

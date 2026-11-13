@@ -67,6 +67,8 @@ export function createContentSchemas(s: Scenario) {
     squad: z.array(contentIdSchema).optional(),
     /** 시작할 때 진 빚 (세력 id → 양, 기획서 9.10) */
     start_debt: z.record(contentIdSchema, z.number().int().min(1)).optional(),
+    /** 이 해금이 있어야 고를 수 있다 (구역의 unlocks로 얻는다, 모든 판에 남는다, 기획서 9.12) */
+    unlock: contentIdSchema.optional(),
     /** 이 역할에 내려오는 임무 템플릿 */
     missions: z.array(contentIdSchema).default([]),
     storylet_tags: z.array(contentIdSchema).default([]),
@@ -191,6 +193,8 @@ export function createContentSchemas(s: Scenario) {
     morale: z.number().int().min(-3).max(3),
     /** 내부 결속 -3 ~ +3. 낮으면 이탈이 생긴다 */
     cohesion: z.number().int().min(-3).max(3),
+    /** false면 이 무리로 시작할 수 없다 (처음 시나리오·자유 시나리오에 없다. 해금된 시나리오로만, 기획서 9.12) */
+    startable: z.boolean().optional(),
     /** 공격 성향 0 ~ 3. 0이면 먼저 공격하지 않는다 */
     aggression: z.number().int().min(0).max(3),
     /** 다른 세력에 대한 태도 -3 ~ +3 (없으면 0). -2 이하면 적대 */
@@ -253,6 +257,21 @@ export function createContentSchemas(s: Scenario) {
     /** 시작 소유 세력. 없으면 누구의 땅도 아니다 */
     owner: contentIdSchema.nullable().default(null),
     adjacent: z.array(contentIdSchema).default([]),
+    /**
+     * 맞닿지 않은 곳에서 건너오는 길 (배, 기획서 9.12). from에서만 건넌다.
+     * pass_flags 중 하나가 있으면 그냥 건너고, 없으면 attempt.moves 판정과 무거운 위험(heavy)을 걸고 시도한다 (실패하면 되돌아온다)
+     */
+    crossing: z
+      .strictObject({
+        from: z.array(contentIdSchema).min(1),
+        pass_flags: z.array(contentIdSchema).default([]),
+        attempt: z.strictObject({ moves: z.array(z.string()).min(1), label: z.string().min(1) }),
+      })
+      .optional(),
+    /** 외딴곳: 도시 공통 이야기(world)와 엑스트라 틀은 이 구역을 zones로 직접 적은 것만 나온다 (닫힌 섬 등, 기획서 9.12) */
+    isolated: z.boolean().optional(),
+    /** 처음 들어오면 이 해금을 얻는다 (모든 판에 남는다. 역할의 unlock과 짝) */
+    unlocks: contentIdSchema.optional(),
     /** 소유 세력이 하루에 얻는 자원 */
     yields: resourceAmounts.default({}),
     /** 수색하면 나올 수 있는 것 (기획서 4.7). chance: 한 번 굴릴 때 무언가 나올 확률, items: 무게로 고른다 */
@@ -278,6 +297,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ take_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
     /** 세력 클락을 당기거나 늦춘다 (플레이어 행동이 전황에 닿는 길) */
     z.strictObject({ clock: z.strictObject({ id: contentIdSchema, delta: z.number().int().min(-5).max(5) }) }),
+    /** 주인공을 다른 구역으로 보낸다 (쫓겨남, 끌려감, 배에 실려 감. 기획서 9.12) */
+    z.strictObject({ send_to: contentIdSchema }),
     /** 두 배역 사이의 숨은 관계를 주인공이 알게 된다 (기획서 7.10) */
     z.strictObject({ reveal_tie: z.strictObject({ who: z.string().min(1), other: z.string().min(1) }) }),
     /** 무리 방침을 바꾼다 (기획서 9.11, 지도부가 스스로 배급을 줄이는 날 등). own = 플레이어 소속 */

@@ -1,0 +1,53 @@
+# 여울섬 해안 경비조 임무 (초안). 경비조장 진강호가 내려 준다
+- id: y_shore_watch
+  title: 부두 망루 당번
+  buddy: true
+  briefing: 부두 망루에서 밤바다를 본다. 불빛이 보이면 알리고, 몰래 배를 대는 자가 있으면 손을 들게 한다.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - activity: guard_duty
+      minutes: 300
+
+- id: y_net_haul
+  title: 양식장 그물 걷기
+  briefing: 새벽 물때에 양식장 그물을 걷는다. 섬에서 쓸모를 보이는 가장 쉬운 길이다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 180
+    - check: endure
+      min_outcome: partial
+
+- id: y_ammo_shop
+  title: 탄약 공방 일손
+  briefing: 탄약 공방에서 탄피를 닦고 화약을 잰다. 셈이 틀리면 의회에 보고가 올라간다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 240
+
+- id: y_quarantine
+  title: 검역 막사 지키기
+  briefing: 새로 온 사람들이 심사를 기다리는 검역 막사를 지킨다. 말을 섞지 않는다. 심사관의 명단에 손대지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: guard_duty
+      minutes: 240
+    - check: intimidate
+      min_outcome: partial
+
+- id: y_supply_boat
+  title: 나루상단 거래선 호위
+  buddy: true
+  briefing: 강 하구에서 나루상단의 배를 맞아 탄약 상자를 넘기고 통조림을 받는다. 상단 사람과 사적인 말을 하지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: persuade
+      min_outcome: partial

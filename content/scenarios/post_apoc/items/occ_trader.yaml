@@ -1,0 +1,7 @@
+# 상인 직분의 물건 (기획서 12.6). 위조 동전패 연쇄(storylets/occ_trader.yaml)
+- id: forged_token
+  name: 위조 통행패
+  description: 나루상단 통행패를 흉내 낸 동전. 구멍이 한쪽으로 쏠려 있고, 끈이 새것이다. 아는 눈에는 바로 보인다.
+  kind: misc
+  weight: 0.05
+  value: 0

@@ -1,0 +1,587 @@
+# 목수 직분 이야기 (기획서 12.6). 무리를 가리지 않는다. tags: occ_carpenter
+# 갈래:
+# - 담: occ_carp_wave_eve (물결 전날 밤 방벽 보수)
+# - 지붕: occ_carp_roof_order (누구 집 지붕부터)
+# - 관: occ_carp_coffin (관 짜기)
+# - 판자: occ_carp_plank_thief → occ_carp_thief_why (판자를 빼돌리는 동료, 어디로 가는지)
+# - 붉은연합: occ_carp_cage_order → occ_carp_cage_inspect (수용소 우리, 약한 이음매)
+# - 버들마을: occ_carp_willow_gate (집집의 문, 회의)
+# - 둘째 칸(목수): occ_carp_watchtower (망루 세우기, 일꾼을 부린다)
+# - 셋째 칸(도편수): occ_carp_master_plan (거점 전체 설계) / occ_carp_wall_blame (내가 세운 담이 무너졌다)
+
+- id: occ_carp_wave_eve
+  title: 물결 전날 밤
+  tags: [occ_carpenter]
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 2
+    flags_none: [occ_carp_wave_done]
+  cast:
+    boss: { commander: true }
+  setup: "저녁 배식 뒤, {boss:이/가} 담 아래로 당신을 부른다. 바깥 길에서 감염체 떼가 이쪽으로 흘러온다는 말이 돈다. 손전등이 비춘 담 아래쪽, 판자 이음매가 손가락 하나 들어갈 만큼 벌어져 있다. \"밤새 막을 수 있겠나. 망치 소리는 바깥에도 들린다.\""
+  ai_direction: 물결이 정말 오는지, 언제 오는지는 아무도 모른다. 상관은 소리를 걱정하면서도 담을 더 걱정한다. 밤새 일하면 몸이 상하고, 망치 소리는 구역의 소음이 되어 무언가를 부를 수 있다. 수치를 말하지 않는다.
+  choices:
+    - id: all_night
+      label: 헝겊으로 망치를 감싸고 밤새 이음매를 메운다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: occ_carp_wave_done
+          - set_flag: occ_carp_wall_mine
+          - standing: 2
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "밤새 담 아래 이음매를 메웠다. 새벽 보초들이 담을 두드려 보고 고개를 끄덕였다", source: seen }
+        partial:
+          - set_flag: occ_carp_wave_done
+          - set_flag: occ_carp_wall_mine
+          - standing: 1
+          - zone_noise: 1
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "담은 막았지만 헝겊이 풀려 쇳소리가 몇 번 밤공기를 탔다. 손이 얼었다", source: seen }
+        miss:
+          - set_flag: occ_carp_wave_done
+          - standing: -1
+          - zone_noise: 2
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "기둥을 박다 판자가 통째로 넘어갔다. 그 소리가 담 밖으로 크게 울렸다. 이음매는 반만 막혔다", source: seen }
+    - id: own_planks
+      label: 내 판자까지 덧대서 두 겹으로 막는다
+      effects:
+        - take_item: { item: planks }
+        - set_flag: occ_carp_wave_done
+        - set_flag: occ_carp_wall_mine
+        - standing: 1
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "아껴 둔 판자까지 담에 댔다. 이음매가 두 겹이 됐다", source: seen }
+    - id: dawn
+      label: 소리 날 일은 해 뜨고 하자고 한다
+      effects:
+        - set_flag: occ_carp_wave_done
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - belief: { fact: "담 이음매는 아침으로 미뤘다. 밤새 보초가 그 자리를 손전등으로 몇 번이고 비췄다", source: seen }
+
+- id: occ_carp_roof_order
+  title: 누구 지붕부터
+  tags: [occ_carpenter]
+  when:
+    own_territory: true
+    segments: [morning, day]
+    day_gte: 3
+    flags_none: [occ_carp_roof_done]
+  cast:
+    boss: { commander: true }
+    old: { faction: own, ranks: [grunt], known: true }
+  setup: "밤새 비가 샜다. 아침에 두 사람이 당신을 찾아온다. {boss:은/는} 창고 지붕이 먼저라고 한다. 쌀자루가 젖으면 끝이라고. {old:은/는} 젖은 담요를 안고 서 있다. 숙소 구석 아이들 자리 위로 물이 떨어졌다고. 판자는 한 곳 몫이다."
+  ai_direction: 둘 다 맞는 말이다. 상관은 무리의 창고를, 늙은 동료는 오늘 밤 아이들의 잠자리를 본다. 어느 쪽을 먼저 하든 다른 쪽은 기억한다. 둘 다 반만 막으려 들면 둘 다 샐 수 있다.
+  choices:
+    - id: storehouse
+      label: 창고 지붕부터 막는다
+      effects:
+        - set_flag: occ_carp_roof_done
+        - standing: 1
+        - faction_resource: { faction: own, resource: food, delta: 10 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: old, axis: affection, delta: -2 }
+        - belief: { fact: "창고 지붕을 먼저 막았다. 그날 밤 숙소 구석에서는 아이들이 양동이를 사이에 두고 잤다", source: seen }
+    - id: children
+      label: 숙소 아이들 자리부터 막는다
+      effects:
+        - set_flag: occ_carp_roof_done
+        - relation: { who: old, axis: affection, delta: 2 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - faction_resource: { faction: own, resource: food, delta: -10 }
+        - deed: { summary: 창고보다 숙소 아이들 자리 지붕을 먼저 막았다, tags: [mercy, disobedience], severity: 1, privacy: semi_private }
+        - belief: { fact: "아이들 자리는 말랐다. 창고 쌀자루 몇 개는 젖어서 밑바닥부터 퍼렇게 떴다", source: seen }
+    - id: both
+      label: 판자를 쪼개 두 군데를 다 막아 본다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: occ_carp_roof_done
+          - standing: 2
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - relation: { who: old, axis: affection, delta: 1 }
+          - belief: { fact: "판자를 반으로 켜고 남은 깡통까지 펴서 두 지붕을 다 막았다. 둘 다 그럭저럭 버틴다", source: seen }
+        partial:
+          - set_flag: occ_carp_roof_done
+          - relation: { who: old, axis: affection, delta: 1 }
+          - faction_resource: { faction: own, resource: food, delta: -5 }
+          - belief: { fact: "두 군데를 다 막았지만 창고 쪽은 얇다. 다음 비에 또 샐 것이다", source: seen }
+        miss:
+          - set_flag: occ_carp_roof_done
+          - standing: -1
+          - faction_resource: { faction: own, resource: food, delta: -10 }
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - relation: { who: old, axis: affection, delta: -1 }
+          - belief: { fact: "판자를 너무 얇게 켰다. 그날 밤 두 지붕이 다 샜다", source: seen }
+
+- id: occ_carp_coffin
+  title: 관 하나
+  tags: [occ_carpenter]
+  cooldown_days: 6
+  when:
+    own_territory: true
+    segments: [evening]
+    day_gte: 4
+    flags_none: [occ_carp_coffin_done]
+  cast:
+    mourner: { faction: own, known: true }
+  setup: "작업장 문간에 {mourner:이/가} 서 있다. 모자를 손에 쥐고 있다. 어젯밤 열병으로 간 사람이 있다. 오래 같이 지낸 사람이다. \"거적에 말아 묻긴 싫어서요. 관 하나만… 판자는 아는데요.\""
+  ai_direction: 판자는 담에도, 지붕에도, 겨울 땔감에도 들어간다. 관 하나 몫이면 다른 데 하나가 빈다. 상대는 무리할 줄 알면서 부탁하는 중이다. 슬픔을 늘어놓지 않는다. 손이 하는 일로 보여 준다.
+  choices:
+    - id: make
+      label: 내 판자로 제대로 짜 준다
+      effects:
+        - take_item: { item: planks }
+        - set_flag: occ_carp_coffin_done
+        - standing: 1
+        - faction_morale: { faction: own, delta: 1 }
+        - relation: { who: mourner, axis: affection, delta: 2 }
+        - relation: { who: mourner, axis: trust, delta: 1 }
+        - deed: { summary: 아껴 둔 판자로 죽은 동료의 관을 짜 주었다, tags: [mercy], severity: 1, privacy: public }
+        - belief: { fact: "관을 짜서 묻었다. 장례에 사람이 생각보다 많이 왔다", source: seen }
+    - id: scraps
+      label: 작업장 자투리를 모아 짜 본다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: occ_carp_coffin_done
+          - standing: 1
+          - relation: { who: mourner, axis: affection, delta: 2 }
+          - belief: { fact: "자투리 판자로 관을 맞췄다. 이음매마다 색이 달랐지만 들어 올려도 삐걱이지 않았다", source: seen }
+        partial:
+          - set_flag: occ_carp_coffin_done
+          - relation: { who: mourner, axis: affection, delta: 1 }
+          - belief: { fact: "관은 짰지만 뚜껑이 맞지 않아 줄로 묶어 내렸다", source: seen }
+        miss:
+          - set_flag: occ_carp_coffin_done
+          - standing: -1
+          - relation: { who: mourner, axis: trust, delta: -1 }
+          - belief: { fact: "구덩이로 내리던 관 바닥이 갈라졌다. 다들 못 본 척했다", source: seen }
+    - id: refuse
+      label: 판자는 산 사람 몫이라고 말한다
+      effects:
+        - set_flag: occ_carp_coffin_done
+        - relation: { who: mourner, axis: affection, delta: -2 }
+        - relation: { who: mourner, axis: respect, delta: 1 }
+        - belief: { fact: "관을 거절했다. 그 사람은 거적을 빌려 갔다. 담에는 판자가 하나 더 붙었다", source: seen }
+
+- id: occ_carp_plank_thief
+  title: 장부에 없는 판자
+  tags: [occ_carpenter]
+  when:
+    own_territory: true
+    segments: [dawn, night]
+    day_gte: 3
+    flags_none: [occ_carp_thief_seen]
+  cast:
+    mate: { faction: own, ranks: [grunt, staff], known: true, keep: occ_carp_thief }
+  setup: "새벽, 작업장 뒤 쌓아 둔 판자 더미가 어제보다 낮다. 담 그늘에서 {mate:이/가} 판자 두 장을 끈으로 묶어 등에 지는 중이다. 당신을 보고 손을 멈춘다. 끈을 풀지는 않는다."
+  ai_direction: 이 동료는 판자를 담 밖 어딘가로 가져간다. 어디로, 왜인지는 아직 말하지 않는다. 판자는 무리 전체의 것이다. 남의 몫에 손대는 것은 어느 무리에서든 무거운 잘못이다.
+  choices:
+    - id: report
+      label: 판자를 내려놓게 하고 위에 알린다
+      effects:
+        - set_flag: occ_carp_thief_seen
+        - set_flag: occ_carp_thief_reported
+        - standing: 1
+        - merit: 1
+        - relation: { who: mate, axis: trust, delta: -3 }
+        - deed: { summary: 판자를 빼돌리던 동료를 위에 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: "판자를 빼돌린 동료가 불려 갔다. 판자 더미 옆에 자물쇠가 생겼다", source: seen }
+    - id: talk
+      label: 끈을 붙잡고 어디로 가져가는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_carp_thief_seen
+          - set_flag: occ_carp_thief_talk
+          - relation: { who: mate, axis: trust, delta: 1 }
+          - belief: { fact: "판자를 지던 동료가 오늘 밤 말해 주겠다고 했다. 판자는 더미에 도로 내려놓았다", source: seen }
+        partial:
+          - set_flag: occ_carp_thief_seen
+          - set_flag: occ_carp_thief_talk
+          - relation: { who: mate, axis: trust, delta: -1 }
+          - belief: { fact: "동료는 판자를 지고 나갔다. 나중에 말하겠다는 말만 남겼다", source: seen }
+        miss:
+          - set_flag: occ_carp_thief_seen
+          - relation: { who: mate, axis: trust, delta: -2 }
+          - belief: { fact: "동료는 대답 없이 끈을 다시 묶고 담 밖으로 나갔다. 판자 두 장이 장부에서 빈다", source: seen }
+    - id: cut
+      label: 담배 한 갑이면 못 본 걸로 한다
+      effects:
+        - set_flag: occ_carp_thief_seen
+        - set_flag: occ_carp_thief_talk
+        - set_flag: occ_carp_thief_shared
+        - give_item: { item: cigarettes }
+        - relation: { who: mate, axis: trust, delta: 1 }
+        - relation: { who: mate, axis: respect, delta: -1 }
+        - deed: { summary: 무리의 판자를 빼돌리는 동료에게 담배를 받고 눈감았다, tags: [theft, selfishness], severity: 2, privacy: private }
+
+- id: occ_carp_thief_why
+  title: 판자가 가는 곳
+  tags: [occ_carpenter]
+  when:
+    segments: [evening, night]
+    flags_all: [occ_carp_thief_talk]
+    flags_none: [occ_carp_thief_done]
+  cast:
+    mate: { recall: occ_carp_thief }
+  setup: "{mate:이/가} 담배를 말면서 말한다. 담 밖, 무너진 주차장 아래에 떠돌이 몇 식구가 산다. 그중에 옛날 같은 동네 살던 집 아이들이 있다. 겨울이 오는데 지붕이 없다. \"판자 몇 장이야. 나 혼자는 못 박아. 너는 박을 줄 알잖아.\""
+  ai_direction: 거짓말은 아니다. 다만 무리가 알면 남의 몫에 손댄 일이 된다. 함께 가면 목수의 손이 한 겨울을 바꾼다. 거절하면 동료는 혼자 계속하고, 언젠가 들킨다. 위에 알리면 동료는 끝이다.
+  choices:
+    - id: help
+      label: 밤에 함께 나가 지붕을 박아 준다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: occ_carp_thief_done
+          - set_flag: occ_carp_outside_roof
+          - standing: 1
+          - relation: { who: mate, axis: trust, delta: 2 }
+          - relation: { who: mate, axis: affection, delta: 2 }
+          - deed: { summary: 무리의 판자로 담 밖 떠돌이 식구들의 지붕을 몰래 박아 주었다, tags: [mercy, theft], severity: 2, privacy: private }
+          - belief: { fact: "주차장 아래에 지붕이 생겼다. 아이 하나가 못을 쥐여 주며 따라다녔다. 돌아올 때까지 아무도 몰랐다", source: seen }
+        partial:
+          - set_flag: occ_carp_thief_done
+          - set_flag: occ_carp_outside_roof
+          - zone_noise: 1
+          - relation: { who: mate, axis: trust, delta: 2 }
+          - deed: { summary: 무리의 판자로 담 밖 떠돌이 식구들의 지붕을 박아 주었다, tags: [mercy, theft], severity: 2, privacy: semi_private }
+          - belief: { fact: "지붕은 박았지만 돌아오는 길에 보초에게 얼굴을 보였다. 보초는 아무것도 묻지 않았다. 아직은", source: seen }
+        miss:
+          - set_flag: occ_carp_thief_done
+          - zone_noise: 2
+          - npc_hurt: { who: mate, steps: 1 }
+          - relation: { who: mate, axis: trust, delta: 1 }
+          - belief: { fact: "망치 소리에 무언가가 몰려와 판자를 버리고 뛰었다. 동료가 철근에 다리를 찢겼다", source: seen }
+    - id: stop
+      label: 이번이 마지막이라고 못 박는다
+      effects:
+        - set_flag: occ_carp_thief_done
+        - relation: { who: mate, axis: affection, delta: -1 }
+        - belief: { fact: "동료는 고개를 끄덕였다. 판자 더미는 더 줄지 않았다. 주차장 아래 식구들이 어떻게 됐는지는 모른다", source: seen }
+    - id: turn_in
+      label: 그래도 위에 알린다
+      effects:
+        - set_flag: occ_carp_thief_done
+        - merit: 1
+        - relation: { who: mate, axis: trust, delta: -3 }
+        - deed: { summary: 떠돌이를 돕던 동료의 판자 일을 위에 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: "동료가 불려 갔다. 주차장 아래 반쯤 박다 만 지붕은 그대로 남았다", source: seen }
+
+- id: occ_carp_cage_order
+  title: 우리를 짜라
+  tags: [occ_carpenter]
+  when:
+    factions: [faction_c]
+    own_territory: true
+    segments: [morning, day]
+    day_gte: 2
+    flags_none: [occ_carp_cage_done]
+  cast:
+    boss: { commander: true }
+  setup: "{boss:이/가} 종이 한 장을 작업대에 내려놓는다. 연필로 그린 네모 칸이 줄지어 있다. 수용소에 들일 칸이다. \"사람 하나 누울 만큼. 문은 바깥에서만 잠기게. 위원회가 이번 주 안에 달라고 했다.\""
+  ai_direction: 붉은연합은 할당량과 위원회로 굴러간다. 거절은 규율반에 올라간다. 칸에 들어갈 사람이 누구인지는 다들 안다. 이음매 하나를 약하게 짜는 것은 목수만 아는 일이지만, 들키면 본보기가 된다.
+  choices:
+    - id: build
+      label: 말한 대로 튼튼하게 짠다
+      effects:
+        - set_flag: occ_carp_cage_done
+        - standing: 1
+        - merit: 1
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - deed: { summary: 수용소에 사람을 가둘 우리를 짜서 넘겼다, tags: [cruelty, diligence], severity: 1, privacy: semi_private }
+        - belief: { fact: "우리가 수용소로 실려 갔다. 사흘 뒤 칸이 다 찼다는 말을 들었다", source: seen }
+    - id: weak_joint
+      label: 문 쪽 이음매 하나를 몰래 약하게 짠다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: occ_carp_cage_done
+          - set_flag: occ_carp_weak_cage
+          - standing: 1
+          - deed: { summary: 수용소 우리 문의 이음매를 몰래 약하게 짰다, tags: [mercy, enemy_sympathy, deceit], severity: 2, privacy: private }
+          - belief: { fact: "문 쪽 장부촉 하나를 반만 박았다. 겉으로는 아무도 모른다. 안에서 힘껏 차면 빠진다", source: seen }
+        partial:
+          - set_flag: occ_carp_cage_done
+          - set_flag: occ_carp_weak_cage
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - deed: { summary: 수용소 우리 문의 이음매를 몰래 약하게 짰다, tags: [mercy, enemy_sympathy, deceit], severity: 2, privacy: private }
+          - belief: { fact: "이음매는 약하게 짰지만 상관이 문을 흔들어 보며 고개를 갸웃했다", source: seen }
+        miss:
+          - set_flag: occ_carp_cage_done
+          - standing: -1
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - belief: { fact: "상관이 그 자리에서 문을 걷어차 보았다. 다시 짜라는 말과 함께 내 이름이 종이에 적혔다", source: seen }
+    - id: refuse
+      label: 사람 가둘 칸은 못 짠다고 말한다
+      effects:
+        - set_flag: occ_carp_cage_done
+        - standing: -1
+        - merit: -2
+        - relation: { who: boss, axis: trust, delta: -2 }
+        - deed: { summary: 위원회가 시킨 수용소 우리 짜기를 거절했다, tags: [disobedience, mercy], severity: 2, privacy: semi_private }
+        - belief: { fact: "거절하자 상관은 아무 말 없이 종이를 거둬 갔다. 다음 날 다른 사람이 우리를 짰다. 그날 저녁 배급이 반으로 줄었다", source: seen }
+
+- id: occ_carp_cage_inspect
+  title: 규율반의 손
+  tags: [occ_carpenter]
+  when:
+    factions: [faction_c]
+    segments: [morning, day, evening]
+    flags_all: [occ_carp_weak_cage]
+    flags_none: [occ_carp_inspect_done]
+  cast:
+    inspector: { faction: own, ranks: [staff, officer] }
+  setup: "{inspector:이/가} 작업장에 들어와 연장을 하나씩 들어 본다. \"수용소 칸 하나 문짝이 빠졌어. 안에 있던 놈이 밤새 발로 찼다더군. 누가 짰나 보러 왔지.\" 그가 당신의 끌을 들고 날을 손가락으로 쓸어 본다."
+  ai_direction: 규율반은 아직 확신이 없다. 목수의 실수인지 일부러인지 가리려 한다. 빠져나간 사람이 어떻게 됐는지는 말하지 않는다. 숨기면 판정이 걸리고, 털어놓으면 본보기가 된다.
+  choices:
+    - id: lie
+      label: 수용소에서 준 판자가 썩어 있었다고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: occ_carp_inspect_done
+          - relation: { who: inspector, axis: trust, delta: 1 }
+          - belief: { fact: "규율반은 판자를 댄 창고지기 쪽을 보러 갔다. 작업장 문을 나서며 끌을 내려놓았다", source: seen }
+        partial:
+          - set_flag: occ_carp_inspect_done
+          - standing: -1
+          - relation: { who: inspector, axis: trust, delta: -1 }
+          - belief: { fact: "규율반은 돌아갔지만 내 이름을 따로 적었다. 앞으로 내가 짠 것은 한 번 더 걷어차 볼 것이다", source: seen }
+        miss:
+          - set_flag: occ_carp_inspect_done
+          - standing: -2
+          - merit: -2
+          - relation: { who: inspector, axis: trust, delta: -3 }
+          - deed: { summary: 수용소 우리를 일부러 약하게 짠 것이 규율반에 드러났다, tags: [disobedience, enemy_sympathy], severity: 3, privacy: public }
+          - belief: { fact: "규율반이 다른 칸의 이음매를 뜯어 보고 알았다. 광장에 내 이름이 불렸다", source: seen }
+    - id: blame_wood
+      label: 솜씨가 모자랐다고 고개를 숙인다
+      effects:
+        - set_flag: occ_carp_inspect_done
+        - standing: -2
+        - relation: { who: inspector, axis: respect, delta: -1 }
+        - belief: { fact: "서툰 목수라는 말을 들었다. 칸 문짝을 전부 다시 짜라는 명령이 내려왔다. 이번에는 규율반이 옆에서 지켜본다", source: seen }
+
+- id: occ_carp_willow_gate
+  title: 집집의 문
+  tags: [occ_carpenter]
+  cooldown_days: 5
+  when:
+    factions: [faction_b]
+    own_territory: true
+    segments: [morning, day]
+    day_gte: 2
+    flags_none: [occ_carp_gate_done]
+  cast:
+    a: { faction: own, known: true }
+    b: { faction: own, known: true }
+  setup: "단지 계단참에서 {a:과/와} {b:이/가} 동시에 당신을 붙든다. {a:은/는} 밤마다 덜컹대는 현관문 경첩을, {b:은/는} 아이들이 올라가지 못하게 옥상 문을 막아 달라고 한다. 둘 다 오늘이라고 한다. 둘이 서로를 흘끗 본다."
+  ai_direction: 버들마을은 이웃끼리 꾸려 가는 마을이다. 누구 일을 먼저 하는지가 곧 누구 편을 드는지로 들린다. 회의에 부치면 공평하지만 하루가 간다. 아이들은 옥상에 올라가지 않는다는 규칙이 있다.
+  choices:
+    - id: roof_door
+      label: 옥상 문부터 막는다
+      effects:
+        - set_flag: occ_carp_gate_done
+        - standing: 1
+        - relation: { who: b, axis: affection, delta: 2 }
+        - relation: { who: a, axis: affection, delta: -1 }
+        - npc_relation: { from: a, to: b, axis: affection, delta: -1 }
+        - belief: { fact: "옥상 문을 막았다. 그날 저녁 아이 하나가 막힌 문 앞에서 한참 서 있다 내려갔다", source: seen }
+    - id: front_door
+      label: 덜컹대는 현관문부터 고친다
+      effects:
+        - set_flag: occ_carp_gate_done
+        - standing: 1
+        - relation: { who: a, axis: affection, delta: 2 }
+        - relation: { who: b, axis: affection, delta: -1 }
+        - npc_relation: { from: b, to: a, axis: affection, delta: -1 }
+        - belief: { fact: "현관문 경첩을 갈았다. 밤에 덜컹대는 소리가 그쳤다. 옥상 문은 아직이다", source: seen }
+    - id: council
+      label: 저녁 회의에서 순서를 정하자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_carp_gate_done
+          - standing: 1
+          - faction_morale: { faction: own, delta: 1 }
+          - npc_relation: { from: a, to: b, axis: trust, delta: 1, mutual: true }
+          - belief: { fact: "회의에서 목수 일 순서를 칠판에 적기로 했다. 다들 자기 차례를 안다", source: seen }
+        partial:
+          - set_flag: occ_carp_gate_done
+          - belief: { fact: "회의에서 순서는 정했지만 말이 길었다. 하루가 그냥 갔다", source: seen }
+        miss:
+          - set_flag: occ_carp_gate_done
+          - npc_relation: { from: a, to: b, axis: affection, delta: -1, mutual: true }
+          - belief: { fact: "회의에서 문 이야기가 묵은 다툼으로 번졌다. 두 집이 서로 말을 하지 않는다", source: seen }
+
+- id: occ_carp_watchtower
+  title: 새 망루 자리
+  tags: [occ_carpenter]
+  when:
+    occupation_step_gte: 1
+    own_territory: true
+    segments: [morning, day]
+    flags_none: [occ_carp_tower_done]
+  cast:
+    boss: { commander: true }
+    crew: { faction: own, ranks: [grunt], known: true }
+  setup: "{boss:이/가} 담 모퉁이를 가리킨다. 망루를 하나 더 세우라는 것이다. 이번에는 당신이 일꾼을 부린다. {crew:이/가} 연장을 메고 기다린다. 쓸 만한 기둥감은 셋뿐이고, 그중 하나는 속이 비었을지도 모른다."
+  ai_direction: 이제 목수는 남의 손을 부린다. 높이 세우면 멀리 보이지만 위험하고, 낮게 세우면 안전하지만 보초가 덜 본다. 속 빈 기둥을 쓰면 사람이 다친다. 망치 소리는 구역에 퍼진다.
+  choices:
+    - id: high
+      label: 셋을 다 써서 높게 세운다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: occ_carp_tower_done
+          - standing: 2
+          - zone_noise: 1
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - relation: { who: crew, axis: respect, delta: 1 }
+          - belief: { fact: "새 망루가 섰다. 꼭대기에서 고가도로 너머까지 보인다. 보초들이 서로 올라가겠다고 한다", source: seen }
+        partial:
+          - set_flag: occ_carp_tower_done
+          - standing: 1
+          - zone_noise: 1
+          - belief: { fact: "망루는 섰지만 바람이 불면 흔들린다. 보초들이 꼭대기 칸에서 오래 서 있지 않는다", source: seen }
+        miss:
+          - set_flag: occ_carp_tower_done
+          - standing: -2
+          - zone_noise: 2
+          - npc_hurt: { who: crew, steps: 1 }
+          - relation: { who: crew, axis: trust, delta: -2 }
+          - belief: { fact: "속 빈 기둥이 꺾였다. 위에서 못을 박던 일꾼이 떨어졌다", source: seen }
+    - id: low
+      label: 성한 기둥 둘로 낮게 세운다
+      effects:
+        - set_flag: occ_carp_tower_done
+        - standing: 1
+        - relation: { who: crew, axis: trust, delta: 1 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - belief: { fact: "낮은 망루를 세웠다. 담 너머 첫 골목까지만 보인다. 아무도 다치지 않았다", source: seen }
+    - id: wait_wood
+      label: 기둥감을 더 구해 올 때까지 미룬다
+      effects:
+        - set_flag: occ_carp_tower_done
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - belief: { fact: "망루는 미뤘다. 상관은 기둥감을 구해 오라고 했다. 폐가 마루를 뜯어야 한다", source: seen }
+
+- id: occ_carp_master_plan
+  title: 도편수의 종이
+  tags: [occ_carpenter]
+  when:
+    occupation_step_gte: 2
+    own_territory: true
+    segments: [morning, day, evening]
+    flags_none: [occ_carp_plan_done]
+  cast:
+    boss: { commander: true }
+  setup: "{boss:이/가} 거점의 낡은 도면을 펼친다. 연필 자국 위에 또 연필 자국이다. \"겨울 전에 큰일은 하나밖에 못 해. 담을 두껍게 하든, 숙소에 바람을 막든, 빗물 받을 통을 짜든. 도편수가 정해.\" 이제 당신의 줄 하나가 무리 전체의 겨울이 된다."
+  ai_direction: 판자와 사람 손은 한 가지 큰일 몫뿐이다. 담은 습격을 막고, 숙소는 추위와 땔감을 아끼고, 빗물 통은 물을 모은다. 무엇을 고르든 고르지 않은 쪽에서 사람이 상한다. 결정의 무게를 서술한다. 수치를 말하지 않는다.
+  choices:
+    - id: wall
+      label: 담을 두껍게 한다
+      effects:
+        - set_flag: occ_carp_plan_done
+        - set_flag: occ_carp_wall_mine
+        - standing: 1
+        - faction_policy: { faction: own, topic: stance, option: defend }
+        - faction_resource: { faction: own, resource: fuel, delta: -10 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "겨울 전 큰일은 담으로 정했다. 판자가 담으로 다 가서 숙소 틈바람은 그대로다. 무리는 문을 걸어 잠그는 쪽으로 기울었다", source: seen }
+    - id: barracks
+      label: 숙소 벽에 바람을 막는다
+      effects:
+        - set_flag: occ_carp_plan_done
+        - standing: 1
+        - faction_resource: { faction: own, resource: fuel, delta: 15 }
+        - faction_morale: { faction: own, delta: 1 }
+        - belief: { fact: "숙소 벽에 판자를 두 겹 댔다. 밤에 덜 떤다. 담의 약한 데는 그대로 남았다", source: seen }
+    - id: cistern
+      label: 지붕마다 빗물 받을 통과 홈을 짠다
+      effects:
+        - set_flag: occ_carp_plan_done
+        - standing: 1
+        - faction_resource: { faction: own, resource: water, delta: 20 }
+        - belief: { fact: "지붕 홈통을 이어 빗물 통에 모았다. 비 오는 날이면 통 차는 소리가 난다", source: seen }
+    - id: all_three
+      label: 셋을 다 조금씩 하는 설계를 짠다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: occ_carp_plan_done
+          - standing: 3
+          - faction_resource: { faction: own, resource: fuel, delta: 8 }
+          - faction_resource: { faction: own, resource: water, delta: 10 }
+          - faction_morale: { faction: own, delta: 1 }
+          - deed: { summary: 도편수로서 거점의 겨울 설계를 짜서 해냈다, tags: [diligence], severity: 2, privacy: public }
+          - belief: { fact: "담 모퉁이 셋을 보강하고, 숙소 북벽을 막고, 빗물 홈을 이었다. 판자 한 장도 남지 않았다", source: seen }
+        partial:
+          - set_flag: occ_carp_plan_done
+          - faction_resource: { faction: own, resource: water, delta: 5 }
+          - belief: { fact: "세 군데를 다 손댔지만 어느 것도 끝나지 않았다. 겨울이 먼저 왔다", source: seen }
+        miss:
+          - set_flag: occ_carp_plan_done
+          - standing: -2
+          - faction_morale: { faction: own, delta: -1 }
+          - faction_resource: { faction: own, resource: fuel, delta: -10 }
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - belief: { fact: "판자를 셋으로 나누다 셋 다 모자랐다. 도편수가 욕심을 냈다는 말이 돈다", source: seen }
+
+- id: occ_carp_wall_blame
+  title: 내가 세운 담
+  tags: [occ_carpenter]
+  when:
+    occupation_step_gte: 2
+    own_territory: true
+    segments: [morning, day]
+    flags_all: [occ_carp_wall_mine]
+    flags_none: [occ_carp_blame_done]
+    war_news_within_hours: 48
+  cast:
+    boss: { commander: true }
+    widow: { faction: own, known: true }
+  setup: "지난 싸움 때 담 한 칸이 무너졌다. 그 아래 보초 하나가 깔려 실려 갔다. {boss:이/가} 무너진 자리에 서서 당신을 기다린다. 뒤에 그 보초의 식구인 {widow:이/가} 팔짱을 끼고 서 있다. 그 칸은 당신이 그은 줄대로 세운 것이다."
+  ai_direction: 담이 무너진 것이 목수 탓인지, 판자가 모자랐던 탓인지, 적이 그만큼 셌던 탓인지는 확실하지 않다. 사람들은 이름 하나를 원한다. 도편수가 책임을 지면 사람들은 조용해지지만 무게가 남는다. 판자 탓을 하면 창고를 맡은 사람에게 화살이 간다.
+  choices:
+    - id: own_it
+      label: 내 설계가 모자랐다고 말한다
+      effects:
+        - set_flag: occ_carp_blame_done
+        - standing: -1
+        - faction_morale: { faction: own, delta: 1 }
+        - relation: { who: widow, axis: respect, delta: 2 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - deed: { summary: 무너진 담을 자기 설계 탓이라고 사람들 앞에서 말했다, tags: [honesty, bravery], severity: 2, privacy: public }
+        - belief: { fact: "내 탓이라고 말했다. 그 칸은 내 손으로 다시 세운다. 사람들은 고개를 끄덕였지만 작업장에 오는 발길이 줄었다", source: seen }
+    - id: blame_supply
+      label: 판자를 반만 받았다고 말한다
+      effects:
+        - set_flag: occ_carp_blame_done
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - relation: { who: widow, axis: affection, delta: -1 }
+        - belief: { fact: "판자가 모자랐다고 했다. 사실이다. 창고를 맡은 사람에게 눈이 몰렸다", source: seen }
+    - id: rebuild
+      label: 말없이 그 칸을 오늘 다시 세운다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: occ_carp_blame_done
+          - standing: 2
+          - relation: { who: widow, axis: respect, delta: 1 }
+          - belief: { fact: "해 지기 전에 무너진 칸을 다시 세웠다. 이번에는 기둥을 하나 더 박았다", source: seen }
+        partial:
+          - set_flag: occ_carp_blame_done
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: "밥때를 넘겨 가며 칸을 세웠다. 사람들은 지켜보기만 했다", source: seen }
+        miss:
+          - set_flag: occ_carp_blame_done
+          - standing: -2
+          - zone_noise: 1
+          - belief: { fact: "서둘러 세운 기둥이 기울었다. 도편수가 손을 떤다는 말이 돈다", source: seen }

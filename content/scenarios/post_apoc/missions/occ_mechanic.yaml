@@ -1,0 +1,46 @@
+# 정비공 직분의 일감 (기획서 12.6). 무리를 가리지 않는다. 완수하면 엔진이 직분 평판 +1
+# requirements 형식은 a_grunt_basic.yaml 머리말 참고
+
+- id: occ_mechanic_rifle_service
+  title: 무기고 총 손질
+  briefing: 무기고의 총을 하나씩 꺼내 분해하고 닦고 기름을 먹인다. 걸리는 총은 따로 빼서 표시한다. 탄은 세어서 그대로 돌려놓는다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: maintenance
+      min_outcome: partial
+
+- id: occ_mechanic_generator
+  title: 발전기 점검
+  briefing: 발전기가 기침을 한다. 필터와 점화 플러그를 보고, 새는 데를 막는다. 기름 한 방울도 바닥에 흘리지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: mechanics
+      min_outcome: partial
+
+- id: occ_mechanic_radio
+  title: 무전기 살리기
+  briefing: 초소 무전기가 지직거리기만 한다. 납땜이 떨어진 데를 찾아 붙이고, 해 지기 전에 거점과 한 번 말이 오가게 한다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 90
+    - check: mechanics
+      min_outcome: success
+
+- id: occ_mechanic_parts_run
+  title: 강변 공장 부품 뜯기
+  briefing: 강변 공장 지대의 멈춘 기계에서 베어링, 전선, 쓸 만한 볼트를 뜯어 온다. 쇠 끊는 소리가 멀리 간다. 해 지기 전에 돌아온다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: scavenge
+      min_outcome: partial

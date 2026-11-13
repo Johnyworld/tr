@@ -376,7 +376,7 @@ export function createContentSchemas(s: Scenario) {
      * 주인공의 몸 상태를 바꾼다 (먹을 것을 나눠 받았다, 젖은 옷으로 밤을 샜다 등). 부상 트랙은 안 된다 (원칙 3), 마지막 단계(죽음)까지는 가지 않는다.
      * delta 양수 = 나빠짐, 음수 = 나아짐
      */
-    z.strictObject({ body: z.strictObject({ track: contentIdSchema, delta: z.number().int().min(-2).max(2) }) }),
+    z.strictObject({ body: z.strictObject({ track: contentIdSchema, delta: z.number().int().min(-2).max(2), chance: z.number().min(0).max(1).default(1) }) }),
     /** 세력 자원을 늘리거나 줄인다 (할당량, 약 재고, 물). own = 플레이어 소속. 양은 콘텐츠가 정한다 */
     z.strictObject({ faction_resource: z.strictObject({ faction: z.string().min(1), resource: contentIdSchema, delta: z.number().int().min(-50).max(50) }) }),
     /** 주인공이 그 무리에 들어간다: 무소속이면 가입, 다른 무리에 있으면 옮긴다 (rank가 없으면 가장 낮은 계급). 이미 그 무리면 아무 일도 없다 */
@@ -454,8 +454,8 @@ export function createContentSchemas(s: Scenario) {
      * 주인공의 배경에서 (기획서 12.6): enemy 원수인 인물(또는 가해자), enemy_member 원수 무리의 사람,
      * kin 살아서 기다리는 가족, sought 찾고 있는 사람
      */
-    background: z.enum(["enemy", "enemy_member", "kin", "sought"]).optional(),
-    /** 이름 없는 인물이면 지금 주인공이 있는 구역에 있는 사람만 (찾던 사람을 마주치는 장면) */
+    background: z.enum(["enemy", "enemy_member", "kin", "sought", "creditor", "deserted"]).optional(),
+    /** 지금 주인공이 있는 구역에 있는 사람만 (찾던 사람을 마주치는 장면). 함께 다니는 사람은 늘 여기 있다 */
     here: z.boolean().default(false),
     /** 앞서 keep으로 기억해 둔 인물. 살아 있고 떠나지 않았고 붙잡히지 않았을 때만 채운다 */
     recall: contentIdSchema.optional(),
@@ -493,6 +493,10 @@ export function createContentSchemas(s: Scenario) {
           ...itemFlagConditions,
           /** 있으면 쓰는 배역(optional)이 채워졌을 때만 */
           cast: z.array(contentIdSchema).optional(),
+          /** 있으면 쓰는 배역이 비었을 때만 (그 사람이 없을 때의 길) */
+          cast_empty: z.array(contentIdSchema).optional(),
+          /** 주인공이 무리에 속해 있을 때만 (true) / 무소속일 때만 (false) */
+          in_faction: z.boolean().optional(),
         })
         .optional(),
       /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */
@@ -541,6 +545,8 @@ export function createContentSchemas(s: Scenario) {
         factions: z.array(z.string().min(1)).optional(),
         /** 플레이어의 직분 (none = 직분 없음, 기획서 12.6) */
         occupations: z.array(z.string().min(1)).optional(),
+        /** 주인공이 배경의 그 일이 있었던 구역(잃은 곳)에 있을 때만 (기획서 12.6) */
+        at_loss_place: z.boolean().optional(),
         /** 직분 사다리의 칸이 이 이상 (0 = 첫 칸) */
         occupation_step_gte: z.number().int().min(0).optional(),
         ...itemFlagConditions,

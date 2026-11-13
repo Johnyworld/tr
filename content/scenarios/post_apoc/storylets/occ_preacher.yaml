@@ -1,0 +1,674 @@
+# 종교인 직분 이야기 (기획서 12.6). 태그 occ_preacher. 무리를 가리지 않고, 무소속(free)으로도 열린다
+# 갈래 (플래그 머리 occ_pr_):
+#   장례: occ_pr_burial (반복)
+#   고해: occ_pr_confession → occ_pr_confession_asked (상관이 묻는다)
+#   마지막: occ_pr_last_rite (격리된 사람) → occ_pr_last_words (가족에게 전할 말)
+#   떠돌이 예언자: occ_pr_prophet → occ_pr_prophet_feast (강 건너 잔치의 소문)
+#   신 없는 무리: occ_pr_godless (붉은연합)
+#   설교자 (칸 1): occ_pr_morale_sermon (사기가 꺾인 날)
+#   목자 (칸 2): occ_pr_bless_the_raid (출정 축복)
+#   무소속: occ_pr_road_sermon → occ_pr_settle_invite / occ_pr_wayside_grave
+# 섬의 진실은 드러내지 않는다: 잔치 소문은 소문으로만 (기획서 9.12)
+
+# ── 장례 ─────────────────────────────────────
+
+- id: occ_pr_burial
+  title: 이름을 불러 주는 사람
+  tags: [occ_preacher]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    own_territory: true
+    segments: [morning, day]
+    war_news_within_hours: 48
+  cast:
+    kin: { faction: own, keep: occ_pr_mourner }
+  setup: "담 안쪽 공터에 새 흙더미가 생겼다. 삽을 내려놓은 사람들이 당신을 본다. 할 말을 해 달라는 눈이다. {kin:이/가} 흙더미 앞에 선 채 움직이지 않는다."
+  ai_direction: 전황 소식이 들어온 뒤의 장례다. 묻힌 사람이 누구인지는 GM 상태와 전황 소식에 있는 만큼만 말한다 (지어내지 않는다). {kin}에게는 가까운 사람이었다. 기도의 말은 정해진 경전이 없다. 무너지기 전 세상의 기도문 조각, 이름, 그 사람이 한 일. 말이 맞으면 사람들이 붙든다.
+  choices:
+    - id: speak
+      label: 그 사람이 한 일을 하나씩 불러 주며 기도한다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: kin, axis: trust, delta: 2 }
+          - standing: 1
+          - belief: { fact: "장례에서 이름을 불러 주었다. 흙을 덮던 사람들이 하나씩 따라 불렀다", source: seen }
+        partial:
+          - relation: { who: kin, axis: trust, delta: 1 }
+          - belief: { fact: "장례의 말이 길어졌다. 사람들은 끝까지 서 있었지만 몇은 고개를 돌렸다", source: seen }
+        miss:
+          - relation: { who: kin, axis: affection, delta: -1 }
+          - standing: -1
+          - belief: { fact: "장례에서 죽은 사람의 이름을 더듬었다. {kin}이(가) 대신 이름을 말했다", source: seen }
+    - id: silence
+      label: 말 대신 맨 먼저 흙을 한 삽 덮고, 다 덮일 때까지 곁에 선다
+      effects:
+        - relation: { who: kin, axis: affection, delta: 1 }
+        - standing: 1
+    - id: let_kin
+      label: "{kin}에게 하고 싶은 말을 먼저 하라고 자리를 내준다"
+      effects:
+        - relation: { who: kin, axis: trust, delta: 2 }
+        - relation: { who: kin, axis: affection, delta: 1 }
+
+# ── 고해 ─────────────────────────────────────
+
+- id: occ_pr_confession
+  title: 밤에 찾아온 사람
+  tags: [occ_preacher]
+  repeatable: true
+  cooldown_days: 9
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 3
+  cast:
+    penitent: { faction: own, keep: occ_pr_penitent }
+    # 이 사람과 이어진 누군가 (관계가 있을 때만. 털어놓으면 드러난다)
+    other: { tie: { of: penitent, kinds: [sibling, parent, child, spouse, friend, rival] }, enter: false, optional: true }
+  setup: "잠자리에 들려는데 {penitent:이/가} 문간에 서 있다. 한참을 망설이다 앉는다. \"아무한테도 말 안 한다고 해 줘. 신이 있는지는 몰라. 그래도 누구한테는 말해야 잠이 올 것 같아서.\""
+  ai_direction: "{penitent}은(는) 숨긴 것을 털어놓으러 왔다. 털어놓는 것은 이 인물의 카드에 있는 비밀(조건이 맞으면 reveal_secret)이나, 이어진 사람이 있으면 그 사람과의 사이에서 한 일이나 하지 못한 일이다. 카드에 없는 죄를 지어내지 않는다. 들어 주면 털어놓는다. 종교인이 고해를 어디까지 지키는지는 주인공이 정한다."
+  choices:
+    - id: hear
+      label: 끝까지 듣고, 여기서 나간 말은 없다고 한다
+      effects:
+        - set_flag: occ_pr_confession_heard
+        - relation: { who: penitent, axis: trust, delta: 2 }
+        - standing: 1
+        - belief: { fact: "{penitent}이(가) 밤중에 찾아와 숨긴 일을 털어놓았다. 아무에게도 말하지 않기로 했다", source: report }
+    - id: hear_name
+      label: "{other}의 이름이 나오자, 그 사람과 무슨 사이냐고 조용히 묻는다"
+      when: { cast: [other] }
+      effects:
+        - set_flag: occ_pr_confession_heard
+        - reveal_tie: { who: penitent, other: other }
+        - relation: { who: penitent, axis: trust, delta: 2 }
+        - standing: 1
+        - belief: { fact: "{penitent}이(가) 밤중에 찾아와 {other}과(와)의 일을 털어놓았다. 아무에게도 말하지 않기로 했다", source: report }
+    - id: absolve
+      label: 듣고 나서, 그만 내려놓으라고, 당신 탓만은 아니라고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_pr_confession_heard
+          - relation: { who: penitent, axis: trust, delta: 2 }
+          - relation: { who: penitent, axis: affection, delta: 1 }
+          - faction_morale: { faction: own, delta: 1 }
+          - standing: 1
+        partial:
+          - set_flag: occ_pr_confession_heard
+          - relation: { who: penitent, axis: trust, delta: 1 }
+        miss:
+          - relation: { who: penitent, axis: trust, delta: -1 }
+          - belief: { fact: "{penitent}은(는) 위로를 듣고도 얼굴이 굳은 채 나갔다", source: seen }
+    - id: send_to_other
+      label: "{other}에게 직접 하라고 돌려보낸다"
+      when: { cast: [other] }
+      effects:
+        - reveal_tie: { who: penitent, other: other }
+        - relation: { who: penitent, axis: respect, delta: 1 }
+        - relation: { who: penitent, axis: affection, delta: -1 }
+        - npc_relation: { from: penitent, to: other, axis: trust, delta: 1 }
+
+- id: occ_pr_confession_asked
+  title: 무엇을 들었나
+  tags: [occ_preacher]
+  when:
+    own_territory: true
+    segments: [morning, day]
+    flags_all: [occ_pr_confession_heard]
+    flags_none: [occ_pr_confession_kept, occ_pr_confession_told]
+  cast:
+    boss: { commander: true }
+    penitent: { recall: occ_pr_penitent, enter: false }
+  setup: "{boss:이/가} 당신을 불러 문을 닫는다. \"며칠 전 밤에 {penitent:이/가} 너한테 갔었지. 요즘 그 사람 눈빛이 이상해. 무슨 말을 했는지 알아야겠다. 무리 일이야.\""
+  ai_direction: 상관은 {penitent}이(가) 무엇을 숨기는지 모른다. 의심만 있다. 무리의 규율이 엄할수록 상관은 더 세게 누른다. 고해를 지키면 상관과 멀어지고, 털어놓으면 사람들이 더는 밤에 찾아오지 않는다. 고해를 털어놓았다는 말은 곧 돈다.
+  choices:
+    - id: keep
+      label: 들은 건 신에게 한 말이라며 입을 닫는다
+      effects:
+        - set_flag: occ_pr_confession_kept
+        - relation: { who: boss, axis: trust, delta: -2 }
+        - relation: { who: penitent, axis: trust, delta: 2 }
+        - standing: 2
+        - deed: { summary: 상관의 추궁에도 고해로 들은 말을 지켰다, tags: [loyalty, disobedience], severity: 1, privacy: semi_private }
+    - id: half
+      label: 무리를 해칠 일은 아니라고만 말해 안심시킨다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_pr_confession_kept
+          - relation: { who: boss, axis: trust, delta: 1 }
+          - standing: 1
+        partial:
+          - set_flag: occ_pr_confession_kept
+          - relation: { who: boss, axis: trust, delta: -1 }
+        miss:
+          - set_flag: occ_pr_confession_kept
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - merit: -1
+    - id: tell
+      label: 들은 대로 다 말한다
+      effects:
+        - set_flag: occ_pr_confession_told
+        - relation: { who: boss, axis: trust, delta: 2 }
+        - relation: { who: penitent, axis: trust, delta: -3 }
+        - merit: 1
+        - standing: -2
+        - deed: { summary: 고해로 들은 말을 상관에게 그대로 옮겼다, tags: [betrayal], severity: 2, privacy: semi_private }
+
+# ── 마지막 ─────────────────────────────────────
+
+- id: occ_pr_last_rite
+  title: 문 너머의 기도
+  tags: [occ_preacher]
+  urgent: true
+  when:
+    zone_owner: [own]
+    segments: [evening, night, dawn]
+    day_gte: 4
+    flags_none: [occ_pr_last_rite_done]
+  cast:
+    dying: { extra: refugee, label: 물린 사람, keep: occ_pr_dying }
+    guard: { faction: own, ranks: [grunt, staff, squad_leader], enter: false }
+  setup: "창고 뒤 잠긴 방 앞. {guard:이/가} 문 앞에 의자를 놓고 앉아 있다가 일어난다. \"기도하는 사람 불러 달래서.\" 문 너머에서 {dying:이/가} 가쁜 숨 사이로 말한다. \"거기 있어요? 문은… 열지 마요. 그냥 말 좀 들어 줘요.\""
+  ai_direction: 이 사람은 바깥에서 물렸고 열이 오른다 (선택지마다 코드가 감염을 몸 상태에 올린다. 살고 죽는 것은 몸 상태 트랙과 시간이 정한다. 서술로 숨을 거두게 하지 않는다). 본인은 끝이라고 믿고, 남쪽 어딘가에 있는 딸에게 전할 말을 남기고 싶어 한다. 문을 열어 손을 잡아 달라고 한 번 부탁한다. 지키는 사람은 문이 열리는 것을 원하지 않는다.
+  choices:
+    - id: pray_through
+      label: 문에 등을 대고 앉아 밤새 말을 받아 준다
+      check: endure
+      outcomes:
+        success:
+          - npc_body: { who: dying, track: infection, delta: 2 }
+          - set_flag: occ_pr_last_rite_done
+          - set_flag: occ_pr_last_words
+          - relation: { who: guard, axis: respect, delta: 2 }
+          - standing: 2
+          - belief: { fact: "문 너머의 물린 사람이 마지막 밤에 남쪽 어딘가에 있다는 딸 이야기를 했다. 전해 달라는 말을 받아 두었다", source: report }
+        partial:
+          - npc_body: { who: dying, track: infection, delta: 2 }
+          - set_flag: occ_pr_last_rite_done
+          - set_flag: occ_pr_last_words
+          - body: { track: cold, delta: 1 }
+          - standing: 1
+          - belief: { fact: "문 너머의 물린 사람이 딸에게 전할 말을 남겼다. 새벽녘에는 숨소리가 가늘어졌다", source: report }
+        miss:
+          - npc_body: { who: dying, track: infection, delta: 2 }
+          - set_flag: occ_pr_last_rite_done
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "문 너머의 말을 끝까지 받지 못했다. 졸다 깨어 불러 보았지만 대답이 없었다", source: seen }
+    - id: open_door
+      label: 문을 열고 들어가 손을 잡아 준다
+      check: infected_lore
+      outcomes:
+        success:
+          - npc_body: { who: dying, track: infection, delta: 2 }
+          - set_flag: occ_pr_last_rite_done
+          - set_flag: occ_pr_last_words
+          - relation: { who: guard, axis: trust, delta: -1 }
+          - relation: { who: dying, axis: affection, delta: 3 }
+          - standing: 2
+          - deed: { summary: 물린 사람의 방 문을 열고 들어가 손을 잡았다, tags: [mercy, bravery], severity: 2, privacy: semi_private }
+          - belief: { fact: "물린 사람의 방에 들어가 천을 감은 손으로 손을 잡았다. 입과 상처 쪽은 피했다. 딸에게 전할 말을 받아 두었다", source: seen }
+        partial:
+          - npc_body: { who: dying, track: infection, delta: 2 }
+          - set_flag: occ_pr_last_rite_done
+          - set_flag: occ_pr_last_words
+          - relation: { who: guard, axis: trust, delta: -2 }
+          - relation: { who: dying, axis: affection, delta: 3 }
+          - standing: 1
+          - deed: { summary: 물린 사람의 방 문을 열고 들어가 손을 잡았다, tags: [mercy, bravery], severity: 2, privacy: semi_private }
+          - belief: { fact: "물린 사람의 손을 잡았을 때 그가 갑자기 손톱을 세웠다. 소매가 찢어졌지만 살은 긁히지 않은 것 같다", source: seen }
+        miss:
+          - npc_body: { who: dying, track: infection, delta: 2 }
+          - body: { track: infection, delta: 1 }
+          - set_flag: occ_pr_last_rite_done
+          - relation: { who: guard, axis: trust, delta: -2 }
+          - deed: { summary: 물린 사람의 방 문을 열고 들어갔다, tags: [mercy, bravery], severity: 2, privacy: semi_private }
+          - belief: { fact: "물린 사람의 방에 들어갔다가 그가 허우적대는 통에 손등이 긁혔다. 피는 거의 나지 않았다", source: seen }
+    - id: short_prayer
+      label: 짧은 기도만 하고 지키는 사람에게 맡긴다
+      effects:
+        - npc_body: { who: dying, track: infection, delta: 2 }
+        - set_flag: occ_pr_last_rite_done
+        - relation: { who: guard, axis: trust, delta: 1 }
+
+- id: occ_pr_last_words
+  title: 남쪽의 딸
+  tags: [occ_preacher]
+  when:
+    segments: [morning, day, evening]
+    zone_owner: [none, other]
+    flags_all: [occ_pr_last_words]
+    flags_none: [occ_pr_last_words_done]
+  cast:
+    woman: { extra: refugee, label: 이마에 흉터가 있는 여자 }
+  setup: 길가에서 물을 긷던 여자가 당신이 기도하는 사람이라는 말을 듣고 다가온다. "기도하는 분이죠? 혹시… 아버지를 찾고 있어요. 바깥에 나갔다 안 돌아왔어요. 손등에 별 문신이 있는 사람." 문 너머에서 들었던 이야기가 떠오른다.
+  ai_direction: 이 여자가 그 물린 사람의 딸인지는 확실하지 않다. 닮은 점이 몇 있다. 주인공이 받아 둔 말을 전하면 여자는 울지 않고 고개만 끄덕인다. 아니라고 하면 계속 찾아다닌다. 거짓 희망은 여자를 더 멀리 보낸다.
+  choices:
+    - id: tell_truth
+      label: 받아 둔 말을 그대로 전한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_pr_last_words_done
+          - standing: 2
+          - give_item: { item: dry_ration }
+          - belief: { fact: "길가의 여자에게 문 너머에서 받은 말을 전했다. 여자는 말린 빵 하나를 내밀고 남쪽으로 돌아갔다", source: seen }
+        partial:
+          - set_flag: occ_pr_last_words_done
+          - standing: 1
+        miss:
+          - set_flag: occ_pr_last_words_done
+          - belief: { fact: "여자는 말을 끝까지 듣지 않고 그 사람이 아니라고 했다. 정말 아닌지는 알 수 없다", source: seen }
+    - id: false_hope
+      label: 그런 사람 못 봤다고, 어딘가 살아 있을 거라고 한다
+      effects:
+        - set_flag: occ_pr_last_words_done
+        - standing: -1
+        - deed: { summary: 아버지를 찾는 여자에게 본 것을 숨기고 살아 있을 거라고 했다, tags: [deceit, mercy], severity: 1, privacy: private }
+
+# ── 떠돌이 예언자 ─────────────────────────────────────
+
+- id: occ_pr_prophet
+  title: 흰 천의 예언자
+  tags: [occ_preacher]
+  when:
+    zone_owner: [none, own]
+    segments: [day, evening]
+    day_gte: 5
+    flags_none: [occ_pr_prophet_met]
+  cast:
+    prophet: { extra: drifter_elder, label: 흰 천을 두른 예언자, keep: occ_pr_prophet }
+  setup: 깨진 분수대 위에 흰 천을 두른 노인이 서 있다. 둘러선 사람이 열 남짓. "물린 자들은 벌이다! 숨긴 것을 내놓는 자만 겨울을 넘긴다!" 노인 발치에 통조림과 탄약 몇 개가 쌓여 있다. 노인이 둘러선 사람들 너머의 당신을 알아보고 눈을 가늘게 뜬다.
+  ai_direction: 노인은 믿는 척하는 사기꾼에 가깝지만, 반쯤은 자기 말을 믿는다. 겁먹은 사람들에게 바칠 것을 걷는다. 종교인이 맞서면 둘러선 사람들 앞의 말싸움이 된다. 노인을 몰아내도 사람들의 겁은 남는다. 이 노인은 나중에 다시 나온다.
+  choices:
+    - id: refute
+      label: 사람들 앞에서 노인의 말을 하나씩 반박한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_pr_prophet_met
+          - set_flag: occ_pr_prophet_shamed
+          - relation: { who: prophet, axis: affection, delta: -3 }
+          - standing: 2
+          - belief: { fact: "분수대의 예언자와 사람들 앞에서 말로 겨뤘다. 사람들이 바친 것을 도로 가져갔다", source: seen }
+        partial:
+          - set_flag: occ_pr_prophet_met
+          - relation: { who: prophet, axis: affection, delta: -2 }
+          - standing: 1
+          - belief: { fact: "분수대의 예언자 앞에서 몇 사람이 발길을 돌렸다. 나머지는 남았다", source: seen }
+        miss:
+          - set_flag: occ_pr_prophet_met
+          - relation: { who: prophet, axis: respect, delta: -1 }
+          - standing: -1
+          - belief: { fact: "분수대의 예언자가 당신을 가리켜 '숨긴 자'라고 외쳤다. 사람들이 웃었다", source: seen }
+    - id: talk_alone
+      label: 사람들이 흩어진 뒤 노인에게 다가가 말을 건다
+      effects:
+        - set_flag: occ_pr_prophet_met
+        - set_flag: occ_pr_prophet_talked
+        - relation: { who: prophet, axis: trust, delta: 1 }
+        - belief: { fact: "분수대의 예언자는 둘만 남자 목소리를 낮췄다. 자기도 무서워서 떠든다고 했다", source: report }
+    - id: leave
+      label: 어디나 저런 사람은 있다며 지나간다
+      effects:
+        - set_flag: occ_pr_prophet_met
+        - belief: { fact: "분수대에서 흰 천을 두른 예언자가 바칠 것을 걷고 있었다", source: seen }
+
+- id: occ_pr_prophet_feast
+  title: 강 건너의 잔치
+  tags: [occ_preacher]
+  when:
+    segments: [day, evening]
+    day_gte: 8
+    flags_any: [occ_pr_prophet_talked, occ_pr_prophet_shamed]
+    flags_none: [occ_pr_prophet_done]
+  cast:
+    prophet: { recall: occ_pr_prophet }
+  setup: "그 예언자다. 흰 천이 더 더러워졌다. 이번에는 다른 말을 한다. \"강 건너에 섬이 있다. 겨울에 잔치를 연다. 고기 국을 끓이고, 와서 일하는 자는 누구든 앉힌다. 거기가 약속된 땅이다!\" 몇 사람이 강 쪽을 바라본다."
+  ai_direction: 노인은 섬을 본 적이 없다. 강변에서 배꾼에게 들은 이야기를 부풀렸을 뿐이다. 섬이 정말 어떤 곳인지 이 장면은 드러내지 않는다 (주인공도 노인도 모른다). 따라가려는 사람이 있다. 종교인의 말이 그들을 붙들 수도, 떠밀 수도 있다.
+  choices:
+    - id: warn
+      label: 아무도 본 적 없는 땅에 사람을 보내지 말라고 막는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_pr_prophet_done
+          - relation: { who: prophet, axis: affection, delta: -2 }
+          - standing: 1
+          - belief: { fact: "강 건너 섬의 잔치 이야기는 예언자도 남에게 들은 말이었다. 따라가려던 사람들이 발을 돌렸다", source: seen }
+        partial:
+          - set_flag: occ_pr_prophet_done
+          - belief: { fact: "강 건너 섬에서 겨울 잔치를 연다는 소문이 돈다. 몇 사람은 그래도 강변으로 갔다", source: rumor }
+        miss:
+          - set_flag: occ_pr_prophet_done
+          - standing: -1
+          - belief: { fact: "예언자를 따라 몇 사람이 강변 쪽으로 떠났다. 섬에서 잔치를 연다는 말만 남았다", source: rumor }
+    - id: ask_source
+      label: 그 말을 누구에게 들었는지 캐묻는다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: occ_pr_prophet_done
+          - belief: { fact: "예언자는 강변 공장 지대에서 배꾼에게 들었다고 털어놓았다. 섬에 간 사람이 돌아왔다는 말은 듣지 못했다고 했다", source: report }
+        partial:
+          - belief: { fact: "예언자는 강가에서 들었다고만 했다. 섬에서 잔치를 연다는 말은 여러 사람 입에 오르내린다", source: rumor }
+        miss:
+          - relation: { who: prophet, axis: trust, delta: -2 }
+    - id: let_be
+      label: 믿고 싶은 사람은 믿게 둔다
+      effects:
+        - set_flag: occ_pr_prophet_done
+        - belief: { fact: "강 건너 섬에서 겨울 잔치를 연다는 소문이 돈다. 와서 일하면 누구든 앉힌다고 한다", source: rumor }
+
+# ── 신 없는 무리 (붉은연합) ─────────────────────────────────────
+
+- id: occ_pr_godless
+  title: 위원회 위에는
+  tags: [occ_preacher]
+  when:
+    factions: [faction_c]
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 3
+    flags_none: [occ_pr_godless_done]
+  cast:
+    watcher: { faction: own, ranks: [squad_leader, officer] }
+    believer: { faction: own, ranks: [grunt], enter: false }
+  setup: "막사 뒤에서 몇 사람이 당신 주위에 모여 고개를 숙이고 있었다. 발소리. {watcher:이/가} 손전등을 비춘다. \"뭐 하는 모임이지? 위원회가 허락한 모임 명단에 이런 건 없는데.\" 무리 속에 {believer}도 있다."
+  ai_direction: 붉은연합에는 위원회 위에 아무것도 없다. 기도가 금지된 것은 아니지만, 허락 없이 모이는 것은 규율반이 싫어한다. 종교인이 여기 있는 것은 사기를 붙들어서다. {watcher}은(는) 처벌보다 이름을 적어 가는 쪽이다. 모였던 사람들은 당신이 무엇을 말하는지 본다.
+  choices:
+    - id: committee_words
+      label: 위원회를 위한 기도였다고, 내일 할당을 채우게 해 달라고 빌었다고 한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: occ_pr_godless_done
+          - relation: { who: watcher, axis: trust, delta: 1 }
+          - standing: 1
+          - belief: { fact: "막사 뒤 기도 모임은 위원회를 위한 기도로 장부에 올랐다. 모임은 계속된다", source: seen }
+        partial:
+          - set_flag: occ_pr_godless_done
+          - relation: { who: watcher, axis: trust, delta: -1 }
+          - belief: { fact: "{watcher}이(가) 막사 뒤 모임의 이름을 적어 갔다. 다음부터는 미리 알리라고 했다", source: seen }
+        miss:
+          - set_flag: occ_pr_godless_done
+          - relation: { who: watcher, axis: trust, delta: -2 }
+          - merit: -1
+          - standing: -1
+          - faction_morale: { faction: own, delta: -1 }
+          - deed: { summary: 허락 없이 막사 뒤에서 기도 모임을 열다 걸렸다, tags: [disobedience], severity: 1, privacy: public }
+    - id: plain
+      label: 기도하고 있었다고 그대로 말하고, 막을 거면 나만 데려가라고 한다
+      effects:
+        - set_flag: occ_pr_godless_done
+        - relation: { who: watcher, axis: respect, delta: 1 }
+        - relation: { who: watcher, axis: trust, delta: -1 }
+        - relation: { who: believer, axis: trust, delta: 2 }
+        - standing: 2
+        - deed: { summary: 규율반 앞에서 기도 모임을 감싸고 나섰다, tags: [bravery, disobedience], severity: 1, privacy: public }
+    - id: disperse
+      label: 사람들에게 흩어지라고 하고 다시는 모이지 않겠다고 한다
+      effects:
+        - set_flag: occ_pr_godless_done
+        - relation: { who: watcher, axis: trust, delta: 2 }
+        - relation: { who: believer, axis: trust, delta: -2 }
+        - faction_morale: { faction: own, delta: -1 }
+        - standing: -2
+
+# ── 설교자 (칸 1): 꺾인 날의 설교 ─────────────────────────────────────
+
+- id: occ_pr_morale_sermon
+  title: 꺾인 날의 말
+  tags: [occ_preacher]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    own_territory: true
+    segments: [evening]
+    occupation_step_gte: 1
+    own_morale_lte: 0
+  cast:
+    boss: { commander: true, enter: false }
+    skeptic: { faction: own, known: true, optional: true }
+  setup: 저녁 배급 뒤 식당. 숟가락 소리만 난다. 누가 먼저 일어나 나가도 아무도 붙잡지 않는다. 사람들이 하나둘 당신을 본다. 설교자라면 오늘 무슨 말이라도 해야 하는 날이다.
+  ai_direction: 무리의 사기가 꺾였다. 굶주림이든 패배든 이유는 GM 상태에 있는 만큼만. 설교자의 말이 붙들 수도 있고, 헛된 약속으로 들릴 수도 있다. 사람들은 거짓 희망을 금방 알아챈다. 회의적인 사람이 있으면 대놓고 묻는다. "신이 있으면 왜 이래?"
+  choices:
+    - id: honest
+      label: 내일이 나을 거란 말은 하지 않고, 오늘 서로 지킨 것을 하나씩 짚는다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - standing: 2
+          - belief: { fact: "식당의 설교가 끝나자 사람들이 서로의 그릇을 치워 주었다", source: seen }
+        partial:
+          - faction_morale: { faction: own, delta: 1 }
+          - standing: 1
+        miss:
+          - standing: -1
+          - belief: { fact: "식당의 설교는 숟가락 소리에 묻혔다", source: seen }
+    - id: promise
+      label: 곧 좋은 날이 온다고, 신이 우리를 버리지 않았다고 크게 말한다
+      check: deceive
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - standing: 1
+          - deed: { summary: 꺾인 사람들에게 있지도 않은 좋은 날을 약속했다, tags: [deceit], severity: 1, privacy: public }
+        partial:
+          - deed: { summary: 꺾인 사람들에게 있지도 않은 좋은 날을 약속했다, tags: [deceit], severity: 1, privacy: public }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - standing: -2
+          - relation: { who: boss, axis: respect, delta: -1 }
+    - id: answer_skeptic
+      label: "{skeptic}의 물음에 모르겠다고, 그래도 여기 있겠다고 답한다"
+      when: { cast: [skeptic] }
+      effects:
+        - relation: { who: skeptic, axis: respect, delta: 2 }
+        - faction_morale: { faction: own, delta: 1 }
+        - standing: 1
+    - id: say_nothing
+      label: 아무 말 없이 맨 끝까지 남아 불을 끈다
+      effects:
+        - relation: { who: boss, axis: respect, delta: 1 }
+
+# ── 목자 (칸 2): 출정 축복 ─────────────────────────────────────
+
+- id: occ_pr_bless_the_raid
+  title: 칼에 기도를
+  tags: [occ_preacher]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    own_territory: true
+    segments: [dawn, morning]
+    occupation_step_gte: 2
+  cast:
+    chief: { faction: own, ranks: [officer, leader] }
+    young: { faction: own, ranks: [grunt] }
+  setup: "출정 전 새벽, 마당에 총을 멘 사람들이 줄을 섰다. {chief:이/가} 당신에게 다가온다. \"목자님이 한마디 해 주면 애들이 덜 떤다. 저쪽 놈들 땅이 우리 땅이 될 거라고, 하늘도 우리 편이라고.\" 줄 앞쪽에서 {young:이/가} 총끈을 쥐었다 놓았다 한다."
+  ai_direction: 목자의 말은 무리 전체에 무게가 있다. 축복하면 사람들은 덜 떨고 더 멀리 간다. 그만큼 돌아오지 못하는 사람도 생긴다. 거절하면 지도부와 멀어지지만 사람들은 목자가 쉽게 팔리지 않는다는 것을 안다. 출정 자체는 지도부가 정한 것이고 목자가 막을 수 없다.
+  choices:
+    - id: bless
+      label: 하늘이 우리 편이라고 크게 축복한다
+      effects:
+        - faction_morale: { faction: own, delta: 1 }
+        - relation: { who: chief, axis: trust, delta: 2 }
+        - standing: 1
+        - deed: { summary: 출정하는 사람들에게 하늘이 우리 편이라고 축복했다, tags: [loyalty], severity: 1, privacy: public }
+    - id: bless_return
+      label: 이기라는 말 대신, 살아 돌아오라고만 기도한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: young, axis: trust, delta: 2 }
+          - relation: { who: chief, axis: respect, delta: 1 }
+          - standing: 2
+          - belief: { fact: "출정 전 마당에서 살아 돌아오라는 기도를 했다. {young}이(가) 총끈을 놓고 고개를 끄덕였다", source: seen }
+        partial:
+          - relation: { who: young, axis: trust, delta: 1 }
+          - relation: { who: chief, axis: trust, delta: -1 }
+        miss:
+          - relation: { who: chief, axis: trust, delta: -2 }
+          - faction_morale: { faction: own, delta: -1 }
+    - id: refuse
+      label: 남의 땅을 빼앗는 일에 하늘을 끌어오지 않겠다고 한다
+      effects:
+        - relation: { who: chief, axis: trust, delta: -3 }
+        - relation: { who: young, axis: respect, delta: 1 }
+        - merit: -1
+        - standing: 1
+        - deed: { summary: 지도부의 출정 축복 요청을 사람들 앞에서 거절했다, tags: [disobedience], severity: 2, privacy: public }
+
+# ── 무소속: 길 위의 설교자 ─────────────────────────────────────
+
+- id: occ_pr_road_sermon
+  title: 불가의 말
+  tags: [occ_preacher]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    factions: [none]
+    zone_owner: [none]
+    segments: [evening, night]
+  cast:
+    elder: { extra: drifter_leader, label: 불가의 떠돌이, keep: occ_pr_road_band }
+  setup: 무너진 주유소 그늘에 깡통 불이 피어 있다. 떠돌이 몇이 둘러앉았다. {elder:이/가} 당신을 위아래로 보더니 손짓한다. "기도하는 사람이구먼. 앉아. 먹을 건 없어도 불은 있어. 대신 한마디 해 줘. 애들이 무서워서 못 자."
+  ai_direction: 떠돌이 무리는 불을 나누는 대신 말을 원한다. 아이들은 밤마다 감염체 울음소리에 깬다. 말을 잘하면 무리가 마음을 연다. 이 무리는 겨울을 넘길 곳을 찾고 있고, 어느 무리가 사람을 받아 주는지 묻는다.
+  choices:
+    - id: story
+      label: 무너지기 전 세상의 이야기 하나를 기도처럼 들려준다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_pr_road_known
+          - relation: { who: elder, axis: trust, delta: 2 }
+          - standing: 1
+          - give_item: { item: dry_ration }
+          - belief: { fact: "길가 떠돌이들 사이에 불가에서 이야기를 해 주는 기도하는 사람이 있다는 말이 돈다", source: rumor }
+        partial:
+          - set_flag: occ_pr_road_known
+          - relation: { who: elder, axis: trust, delta: 1 }
+        miss:
+          - relation: { who: elder, axis: trust, delta: -1 }
+    - id: share
+      label: 말은 짧게 하고, 지닌 통조림을 아이들 몫으로 내놓는다
+      effects:
+        - take_item: { item: canned_food }
+        - set_flag: occ_pr_road_known
+        - relation: { who: elder, axis: trust, delta: 2 }
+        - relation: { who: elder, axis: affection, delta: 2 }
+        - standing: 1
+        - deed: { summary: 불가의 떠돌이 아이들에게 통조림을 내주었다, tags: [mercy], severity: 1, privacy: private }
+    - id: watch
+      label: 기도 대신 밤새 불가에서 망을 봐 주겠다고 한다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: occ_pr_road_known
+          - relation: { who: elder, axis: respect, delta: 2 }
+        partial:
+          - relation: { who: elder, axis: respect, delta: 1 }
+          - body: { track: cold, delta: 1 }
+        miss:
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "밤새 망을 보다 졸았다. 새벽에 깨 보니 불가의 떠돌이들이 짐을 싸고 있었다", source: seen }
+
+- id: occ_pr_wayside_grave
+  title: 길가의 몸
+  tags: [occ_preacher]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    factions: [none]
+    zone_owner: [none, other]
+    segments: [morning, day]
+    day_gte: 2
+  setup: 길가 배수로에 사람 하나가 엎어져 있다. 신발은 누가 벗겨 갔다. 까마귀가 먼저 왔다. 목에 끈으로 매단 사진 한 장이 흙에 반쯤 묻혀 있다. 지나는 사람들은 고개를 돌린다.
+  ai_direction: 죽은 지 이틀쯤 된 떠돌이다. 감염되어 죽었는지는 알 수 없다 (감염 지식이 있으면 살펴서 알 수 있다). 묻어 주려면 시간이 들고, 땅을 파는 소리가 난다. 근처에 감염체가 있을 수 있다. 사진 속 얼굴은 나중에 누군가 알아볼 수도 있다.
+  choices:
+    - id: bury
+      label: 흙을 파고 묻은 뒤 짧게 기도한다
+      check: endure
+      outcomes:
+        success:
+          - zone_noise: 1
+          - standing: 1
+          - deed: { summary: 길가에 버려진 떠돌이를 묻어 주었다, tags: [mercy], severity: 1, privacy: private }
+          - belief: { fact: "길가의 떠돌이를 묻어 주었다. 목에 걸려 있던 사진은 아이를 안은 여자였다", source: seen }
+        partial:
+          - zone_noise: 2
+          - standing: 1
+          - belief: { fact: "떠돌이를 묻는 동안 땅 파는 소리가 멀리까지 갔다. 골목 끝에서 무언가 움직였다", source: seen }
+        miss:
+          - zone_noise: 2
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "길가 떠돌이를 묻다 말았다. 땅이 얼어 삽이 들어가지 않았다", source: seen }
+    - id: check_body
+      label: 묻기 전에 몸을 살펴 무엇에 죽었는지 본다
+      check: infected_lore
+      outcomes:
+        success:
+          - standing: 1
+          - belief: { fact: "길가의 떠돌이는 물린 자국이 없었다. 굶어 죽은 몸이었다. 사진을 거두어 두었다", source: seen }
+        partial:
+          - belief: { fact: "길가의 떠돌이 팔에 긁힌 자국이 있었다. 감염인지 아닌지 알 수 없었다", source: seen }
+        miss:
+          - body: { track: disease, delta: 1 }
+    - id: pass
+      label: 사진만 거두어 주머니에 넣고 지나간다
+      effects:
+        - belief: { fact: "길가에 죽은 떠돌이의 사진을 거두어 왔다. 아이를 안은 여자의 사진이다", source: seen }
+
+- id: occ_pr_settle_invite
+  title: 우리한테 와서 기도해 주시오
+  tags: [occ_preacher]
+  when:
+    factions: [none]
+    segments: [day, evening]
+    day_gte: 6
+    flags_all: [occ_pr_road_known]
+    flags_none: [occ_pr_invite_done]
+  cast:
+    envoy: { faction: faction_b, ranks: [grunt, staff, squad_leader] }
+  setup: "{envoy:이/가} 당신을 찾아왔다. 버들마을 사람이다. 모자를 벗어 손에 쥔다. \"길에서 기도해 준다는 분이 당신이죠. 우리 단지에 장례 치를 사람이 없어요. 회의에서 모셔 오자고 했어요. 방 하나, 하루 두 끼. 대신 장례와 아이들 이름 지어 주는 일.\""
+  ai_direction: 버들마을은 이웃 공동체다. 정말 장례를 치를 사람이 없어 곤란하다. 받아들이면 마을 사람이 되고 마을의 규칙(정문은 해가 지면 닫는다, 큰일은 회의)을 따른다. 거절해도 원망하지 않는다. 길 위의 떠돌이들은 설교자가 떠나면 서운해할 것이다.
+  choices:
+    - id: accept
+      label: 받아들인다
+      effects:
+        - set_flag: occ_pr_invite_done
+        - join_faction: { faction: faction_b, rank: staff, title: 마을의 기도하는 사람 }
+        - relation: { who: envoy, axis: trust, delta: 2 }
+        - standing: 2
+    - id: road
+      label: 길 위의 사람들에게 남겠다고 정중히 거절한다
+      effects:
+        - set_flag: occ_pr_invite_done
+        - relation: { who: envoy, axis: respect, delta: 1 }
+        - standing: 1
+        - belief: { fact: "버들마을이 기도하는 사람을 모셔 가려 했다. 마을 문은 언제든 열려 있다고 했다", source: report }
+    - id: bargain
+      label: 받아들이는 대신, 길가의 떠돌이 아이 둘도 받아 달라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_pr_invite_done
+          - join_faction: { faction: faction_b, rank: staff, title: 마을의 기도하는 사람 }
+          - faction_resource: { faction: faction_b, resource: food, delta: -3 }
+          - relation: { who: envoy, axis: respect, delta: 2 }
+          - standing: 3
+          - deed: { summary: 마을에 들어가며 길가의 떠돌이 아이들도 받아 달라고 했다, tags: [mercy], severity: 1, privacy: public }
+        partial:
+          - set_flag: occ_pr_invite_done
+          - join_faction: { faction: faction_b, rank: staff, title: 마을의 기도하는 사람 }
+          - relation: { who: envoy, axis: trust, delta: 1 }
+          - belief: { fact: "버들마을 회의는 아이 하나만 받기로 했다", source: report }
+        miss:
+          - relation: { who: envoy, axis: trust, delta: -1 }
+          - belief: { fact: "버들마을 사람은 회의에 다시 물어보겠다며 돌아갔다", source: seen }

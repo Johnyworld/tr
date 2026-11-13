@@ -1,0 +1,505 @@
+# 정비공 직분 이야기 (기획서 12.6). 무리를 가리지 않는다. tags: occ_mechanic
+# 갈래:
+# - 총: occ_mech_jammed_rifle (출발 전 걸린 총, 시험 사격의 소리)
+# - 물: occ_mech_pump_bearing (정수장 펌프 베어링을 깎아 맞춘다. e_porter.yaml의 양수장 갈래와 같은 베어링, 둘 중 하나만)
+# - 무전: occ_mech_radio_night → occ_mech_radio_caught (밤에 엿듣는 다른 무리의 무전)
+# - 연료: occ_mech_generator_fuel (발전기냐 난로냐)
+# - 빼가기: occ_mech_poach_offer (나루상단이 기술자를 데려가려 한다) / occ_mech_poach_offer_e (나루상단 사람에게는 붉은연합이)
+# - 붉은연합: occ_mech_c_quota (할당량 정비, 덜 고친 총을 내보낼지)
+# - 둘째 칸(정비공): occ_mech_apprentice (견습생의 손)
+# - 셋째 칸(정비 반장): occ_mech_armory_chief (무기고 장부의 빈칸)
+
+- id: occ_mech_jammed_rifle
+  title: 걸린 총
+  tags: [occ_mechanic]
+  cooldown_days: 4
+  when:
+    own_territory: true
+    segments: [dawn, morning]
+    day_gte: 2
+    flags_none: [occ_mech_rifle_done]
+  cast:
+    gunner: { faction: own, ranks: [grunt, staff, squad_leader], known: true }
+  setup: "출발 직전, {gunner:이/가} 작업대에 총을 내려놓는다. 노리쇠가 반쯤 열린 채 꿈쩍하지 않는다. \"어제 비 맞고 그냥 뒀어. 한 시간 뒤에 나가야 돼.\" 손이 떨린다. 바깥에 맨손으로 나가게 생겼다."
+  ai_direction: 녹과 마른 기름이 노리쇠를 물었다. 제대로 하면 한 시간 넘게 걸린다. 대충 풀면 나가서 또 걸릴 수 있다. 고친 총은 쏴 봐야 확실한데, 쏘면 소리가 난다. 수치는 말하지 않는다.
+  choices:
+    - id: proper
+      label: 다 뜯어서 제대로 손질한다
+      check: maintenance
+      outcomes:
+        success:
+          - set_flag: occ_mech_rifle_done
+          - standing: 1
+          - relation: { who: gunner, axis: trust, delta: 2 }
+          - belief: { fact: "노리쇠를 뜯어 녹을 벗기고 기름을 새로 먹였다. 출발 시간에 딱 맞췄다", source: seen }
+        partial:
+          - set_flag: occ_mech_rifle_done
+          - relation: { who: gunner, axis: trust, delta: 1 }
+          - relation: { who: gunner, axis: affection, delta: -1 }
+          - belief: { fact: "총은 살렸지만 출발이 늦었다. 그 사람은 혼자 뛰어서 무리를 따라갔다", source: seen }
+        miss:
+          - set_flag: occ_mech_rifle_done
+          - standing: -1
+          - relation: { who: gunner, axis: trust, delta: -2 }
+          - belief: { fact: "용수철을 잃어버렸다. 그 사람은 쇠파이프를 들고 나갔다", source: seen }
+    - id: quick
+      label: 두드려서 풀고 기름만 친다
+      effects:
+        - set_flag: occ_mech_rifle_done
+        - relation: { who: gunner, axis: trust, delta: 1 }
+        - belief: { fact: "노리쇠는 풀렸다. 몇 발 쏘면 또 물릴지도 모른다고 말해 줬다", source: seen }
+    - id: test_fire
+      label: 담 밖으로 한 발 쏴 보고 내준다
+      effects:
+        - set_flag: occ_mech_rifle_done
+        - standing: 1
+        - zone_noise: 2
+        - relation: { who: gunner, axis: trust, delta: 2 }
+        - belief: { fact: "시험 사격 한 발. 총은 멀쩡했다. 총소리가 담 너머로 오래 굴러갔다", source: seen }
+    - id: lend
+      label: 내 총을 빌려주고 이건 남겨 둔다
+      when: { has_items: [old_rifle] }
+      effects:
+        - take_item: { item: old_rifle }
+        - set_flag: occ_mech_rifle_done
+        - relation: { who: gunner, axis: affection, delta: 2 }
+        - relation: { who: gunner, axis: trust, delta: 2 }
+        - deed: { summary: 바깥에 나가는 동료에게 자기 총을 내주었다, tags: [loyalty], severity: 1, privacy: semi_private }
+        - belief: { fact: "내 총을 내줬다. 걸린 총은 작업대에 남았다. 다 고치면 내 것으로 써야 한다", source: seen }
+
+- id: occ_mech_pump_bearing
+  title: 깎아 맞춘 베어링
+  tags: [occ_mechanic]
+  when:
+    zones: [water_plant]
+    segments: [dawn, evening]
+    flags_none: [e_bearing_found, occ_mech_pump_done]
+  cast:
+    keeper: { ids: [e_deoksu] }
+  setup: "펌프가 돌기 시작하자 쇳소리 사이로 한 박자 늦은 끼익 소리가 섞인다. {keeper:이/가} 당신 손에 든 공구 상자를 본다. \"정비하는 사람이구먼. 들리지. 베어링이야.\" 그가 기름 묻은 장갑으로 펌프 축을 짚는다. \"맞는 게 없어. 강변 양수장에 있을지도 모르는데, 물에 잠겼어.\""
+  ai_direction: 주 베어링이 닳아 간다. 이 펌프가 서면 나루상단만이 아니라 물을 사 가는 버들마을과 다른 무리 모두가 목이 마르다. 염덕수는 우두머리가 알면 물값부터 올릴까 봐 숨긴다. 고철을 깎아 맞추는 것은 정비공의 솜씨에 달렸다. 잘 맞추면 겨울을 넘기고, 잘못 맞추면 축이 탄다.
+  choices:
+    - id: machine
+      label: 고철을 깎아 맞는 베어링을 만들어 본다
+      when: { has_items: [scrap_metal] }
+      check: mechanics
+      outcomes:
+        success:
+          - take_item: { item: scrap_metal }
+          - set_flag: occ_mech_pump_done
+          - set_flag: e_bearing_found
+          - standing: 2
+          - faction_resource: { faction: faction_e, resource: water, delta: 20 }
+          - relation: { who: keeper, axis: trust, delta: 2 }
+          - relation: { who: keeper, axis: respect, delta: 2 }
+          - deed: { summary: 정수장 펌프의 닳은 베어링을 고철로 깎아 갈아 끼웠다, tags: [diligence], severity: 2, privacy: semi_private }
+          - belief: { fact: "펌프 축에 깎아 맞춘 베어링이 들어갔다. 쇳소리가 잦아들었다. 염덕수는 이번 겨울은 넘긴다고 했다", source: seen }
+        partial:
+          - take_item: { item: scrap_metal }
+          - set_flag: occ_mech_pump_done
+          - standing: 1
+          - faction_resource: { faction: faction_e, resource: water, delta: 8 }
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "깎은 베어링이 조금 헐겁다. 염덕수는 몇 주는 번다고 했다. 진짜 부품은 여전히 양수장에 있다", source: seen }
+        miss:
+          - set_flag: occ_mech_pump_done
+          - standing: -2
+          - faction_resource: { faction: faction_e, resource: water, delta: -10 }
+          - relation: { who: keeper, axis: trust, delta: -2 }
+          - belief: { fact: "베어링을 끼우다 축을 긁었다. 펌프가 하루 동안 섰다. 물을 사러 온 줄이 정수장 문밖까지 늘어섰다", source: seen }
+    - id: tell_mine
+      label: 우리 무리에 펌프가 닳아 간다고 알리겠다고 한다
+      effects:
+        - set_flag: occ_mech_pump_done
+        - merit: 1
+        - relation: { who: keeper, axis: trust, delta: -2 }
+        - belief: { fact: "정수장 펌프의 베어링이 닳아 간다. 맞는 부품이 없다. 펌프가 서면 물을 사는 무리 모두가 마른다", source: seen }
+    - id: later
+      label: 맞는 고철을 구해 오겠다고만 한다
+      effects:
+        - relation: { who: keeper, axis: trust, delta: 1 }
+        - belief: { fact: "염덕수: 펌프 베어링이 닳았다. 강변 공장 지대의 옛 양수장 지하에 맞는 게 있을지 모른다. 고철로 깎아 맞출 수도 있다", source: report }
+
+- id: occ_mech_radio_night
+  title: 지직거리는 밤
+  tags: [occ_mechanic]
+  when:
+    own_territory: true
+    segments: [night]
+    day_gte: 2
+    flags_none: [occ_mech_radio_heard]
+  setup: "고치던 무전기의 납땜이 붙자 지직거림 사이로 사람 목소리가 걸린다. 우리 주파수가 아니다. 누군가 숫자를 부르고, 다른 누군가 길 이름을 받아 적는다. 다이얼을 조금만 돌리면 더 또렷해질 것 같다."
+  ai_direction: 다른 무리의 무전이다. 어느 무리인지, 무엇을 말하는지는 판정에 따라 조금씩 드러난다. 지어낸 숫자나 날짜를 사실로 말하지 않는다. 위에 알리면 정비공의 일이 정보가 되고, 혼자 들으면 비밀이 된다.
+  choices:
+    - id: tune
+      label: 다이얼을 조금씩 돌려 끝까지 듣는다
+      check: mechanics
+      outcomes:
+        success:
+          - set_flag: occ_mech_radio_heard
+          - set_flag: occ_mech_radio_secret
+          - standing: 1
+          - belief: { fact: "밤에 무전기로 다른 무리의 목소리를 들었다. 길 이름과 사람 수를 부르는 말투였다. 같은 시각이면 또 잡힐 것이다", source: seen }
+        partial:
+          - set_flag: occ_mech_radio_heard
+          - set_flag: occ_mech_radio_secret
+          - belief: { fact: "무전으로 낯선 목소리를 들었지만 반은 지직거림에 묻혔다", source: seen }
+        miss:
+          - set_flag: occ_mech_radio_heard
+          - belief: { fact: "다이얼을 너무 돌렸다. 목소리는 사라지고 다시 잡히지 않았다", source: seen }
+    - id: report
+      label: 바로 상관에게 알린다
+      effects:
+        - set_flag: occ_mech_radio_heard
+        - standing: 1
+        - merit: 1
+        - deed: { summary: 무전기로 잡은 다른 무리의 무전을 위에 알렸다, tags: [diligence, loyalty], severity: 1, privacy: semi_private }
+        - belief: { fact: "잡은 무전을 위에 알렸다. 그 뒤로 밤마다 무전기 앞에 사람 하나가 앉는다", source: seen }
+    - id: off
+      label: 스위치를 끈다
+      effects:
+        - set_flag: occ_mech_radio_heard
+
+- id: occ_mech_radio_caught
+  title: 밤마다 켜지는 불
+  tags: [occ_mechanic]
+  when:
+    own_territory: true
+    segments: [morning, evening]
+    flags_all: [occ_mech_radio_secret]
+    flags_none: [occ_mech_radio_done]
+  cast:
+    watcher: { faction: own, known: true }
+  setup: "{watcher:이/가} 작업장 문턱에 걸터앉는다. \"밤마다 작업장에 불이 켜져 있더라. 지직거리는 소리도 나고.\" 그는 무전기를 보지 않고 당신만 본다."
+  ai_direction: 이 사람은 의심하는 중이지 확신하지 않는다. 다른 무리의 무전을 혼자 듣는 것은 첩자 짓으로 보일 수 있다. 털어놓으면 일이 커지고, 둘러대면 판정이 걸린다. 함께 듣자고 하면 비밀을 나누게 된다.
+  choices:
+    - id: lie
+      label: 무전기가 자꾸 꺼져서 밤에 고친다고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: occ_mech_radio_done
+          - belief: { fact: "둘러댔다. 그는 고개를 끄덕이고 갔다. 밤에는 불을 가리고 듣는다", source: seen }
+        partial:
+          - set_flag: occ_mech_radio_done
+          - relation: { who: watcher, axis: trust, delta: -1 }
+          - belief: { fact: "그는 갔지만 나간 뒤 작업장 창을 한 번 돌아봤다", source: seen }
+        miss:
+          - set_flag: occ_mech_radio_done
+          - standing: -1
+          - merit: -1
+          - relation: { who: watcher, axis: trust, delta: -2 }
+          - deed: { summary: 다른 무리의 무전을 몰래 엿들은 것을 숨기려다 들켰다, tags: [deceit], severity: 2, privacy: semi_private }
+    - id: share
+      label: 오늘 밤 같이 들어 보자고 한다
+      effects:
+        - set_flag: occ_mech_radio_done
+        - relation: { who: watcher, axis: trust, delta: 2 }
+        - relation: { who: watcher, axis: affection, delta: 1 }
+        - belief: { fact: "이제 무전을 둘이 듣는다. 들은 것을 누구에게 언제 말할지도 둘이 정해야 한다", source: seen }
+    - id: confess
+      label: 들은 것을 털어놓고 위에 함께 가자고 한다
+      effects:
+        - set_flag: occ_mech_radio_done
+        - merit: 1
+        - relation: { who: watcher, axis: respect, delta: 1 }
+        - deed: { summary: 혼자 엿듣던 다른 무리의 무전을 털어놓고 위에 알렸다, tags: [honesty], severity: 1, privacy: semi_private }
+
+- id: occ_mech_generator_fuel
+  title: 발전기냐 난로냐
+  tags: [occ_mechanic]
+  when:
+    own_territory: true
+    segments: [evening]
+    day_gte: 4
+    flags_none: [occ_mech_gen_done]
+  cast:
+    boss: { commander: true }
+    cold: { faction: own, ranks: [grunt], known: true }
+  setup: "기름통 둘이 작업장 바닥에 놓여 있다. {boss:은/는} 밤 보초 탐조등을 돌릴 발전기에 넣으라고 한다. {cold:은/는} 숙소 난로에 넣자고 한다. 지난밤 아이 하나가 기침을 멈추지 않았다고. 둘 다 정비공을 본다. 기름을 붓는 손은 당신 손이다."
+  ai_direction: 기름은 한쪽 몫뿐이다. 탐조등이 꺼지면 밤 보초가 눈을 잃는다. 난로가 꺼지면 숙소가 언다. 발전기를 손봐서 기름을 덜 먹게 하면 둘 다 조금씩 될 수도 있다. 그러려면 솜씨가 필요하다.
+  choices:
+    - id: generator
+      label: 발전기에 붓는다
+      effects:
+        - set_flag: occ_mech_gen_done
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: cold, axis: affection, delta: -2 }
+        - belief: { fact: "탐조등이 밤새 담 밖을 훑었다. 숙소 난로는 저녁에 한 번 피우고 꺼졌다", source: seen }
+    - id: stove
+      label: 숙소 난로로 돌린다
+      effects:
+        - set_flag: occ_mech_gen_done
+        - faction_morale: { faction: own, delta: 1 }
+        - relation: { who: cold, axis: affection, delta: 2 }
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - deed: { summary: 발전기 몫의 기름을 숙소 난로로 돌렸다, tags: [mercy, disobedience], severity: 1, privacy: semi_private }
+        - belief: { fact: "숙소가 밤새 따뜻했다. 탐조등은 꺼졌고 보초는 손전등 하나로 밤을 났다", source: seen }
+    - id: tune
+      label: 발전기를 손봐서 기름을 덜 먹게 한다
+      check: mechanics
+      outcomes:
+        success:
+          - set_flag: occ_mech_gen_done
+          - standing: 2
+          - faction_resource: { faction: own, resource: fuel, delta: 10 }
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - relation: { who: cold, axis: affection, delta: 1 }
+          - belief: { fact: "기화기를 조이고 새는 관을 막았다. 발전기가 덜 먹는다. 남은 기름으로 난로도 피웠다", source: seen }
+        partial:
+          - set_flag: occ_mech_gen_done
+          - standing: 1
+          - belief: { fact: "발전기는 조금 덜 먹게 됐다. 난로는 새벽에만 피울 수 있었다", source: seen }
+        miss:
+          - set_flag: occ_mech_gen_done
+          - standing: -1
+          - faction_resource: { faction: own, resource: fuel, delta: -8 }
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "관을 뜯다 기름을 바닥에 쏟았다. 탐조등도 난로도 반밖에 못 돌렸다", source: seen }
+
+- id: occ_mech_poach_offer
+  title: 일감이 더 많은 곳
+  tags: [occ_mechanic]
+  when:
+    factions: [faction_a, faction_b, faction_c, faction_d]
+    segments: [day, evening]
+    day_gte: 6
+    flags_none: [occ_mech_poach_done]
+  cast:
+    broker: { extra: e_porter, label: 나루상단 거간꾼 }
+  setup: "{broker:이/가} 당신 공구 상자를 손가락으로 톡톡 두드린다. \"소문 들었어. 펌프든 총이든 다 만진다며. 장터에 오면 밥은 하루 세 끼, 일한 만큼 장부에 적어 줄게. 여기서 받는 것보다 낫지 않아?\""
+  ai_direction: 나루상단은 기술자를 계약으로 데려간다. 말은 사실이다. 다만 장부에 묶이면 빚과 약속이 끝까지 따라온다. 지금 무리를 떠나는 것은 그 무리 사람들에게 배신으로 보인다. 제안을 위에 알리면 지금 무리에서 몸값이 오른다.
+  choices:
+    - id: accept
+      label: 장터로 가겠다고 한다
+      effects:
+        - set_flag: occ_mech_poach_done
+        - join_faction: { faction: faction_e, title: 장터 정비공 }
+        - deed: { summary: 나루상단의 제안을 받고 무리를 떠나 장터로 갔다, tags: [betrayal, selfishness], severity: 2, privacy: public }
+        - belief: { fact: "나루상단의 정비공이 되었다. 장부에 내 이름이 새로 적혔다", source: seen }
+    - id: refuse
+      label: 내 무리 연장은 내 무리 것이라고 말한다
+      effects:
+        - set_flag: occ_mech_poach_done
+        - relation: { who: broker, axis: respect, delta: 1 }
+        - deed: { summary: 다른 무리의 좋은 조건을 거절하고 남았다, tags: [loyalty], severity: 1, privacy: semi_private }
+    - id: leverage
+      label: 제안을 위에 알리고 작업장 몫을 더 받아 낸다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_mech_poach_done
+          - standing: 1
+          - give_item: { item: scrap_metal, quantity: 2 }
+          - belief: { fact: "나루상단이 날 데려가려 했다고 하자 위에서 작업장에 고철과 연장 몫을 더 내주기로 했다", source: seen }
+        partial:
+          - set_flag: occ_mech_poach_done
+          - belief: { fact: "위에서는 알았다고만 했다. 몸값이 오른 대신 눈길도 늘었다", source: seen }
+        miss:
+          - set_flag: occ_mech_poach_done
+          - merit: -1
+          - belief: { fact: "다른 무리 이야기를 꺼냈다가 떠날 생각이 있느냐는 말을 들었다. 작업장에 사람이 자주 들른다", source: seen }
+
+- id: occ_mech_poach_offer_e
+  title: 붉은 완장의 셈
+  tags: [occ_mechanic]
+  when:
+    factions: [faction_e]
+    segments: [day, evening]
+    day_gte: 6
+    flags_none: [occ_mech_poach_done]
+  cast:
+    broker: { extra: c_raider, label: 붉은연합 연락책 }
+  setup: "장터 구석에서 {broker:이/가} 좌판 너머로 몸을 숙인다. 소매 안쪽에 붉은 천이 보인다. \"정비소 하나가 통째로 비었어. 기계 아는 사람이 없다. 오면 막사 하나 내주고, 장부 같은 거 안 적어. 빚도 없어.\""
+  ai_direction: 붉은연합은 기술자를 원한다. 빚이 없는 대신 할당량과 점호와 규율반이 있다. 장터에서 다른 무리와 이야기하는 것은 흔하지만, 이 제안을 숨기면 상단 장부에 오른 약속을 어기는 셈이 될 수 있다. 위에 알리면 값을 올릴 수 있다.
+  choices:
+    - id: accept
+      label: 붉은연합으로 가겠다고 한다
+      effects:
+        - set_flag: occ_mech_poach_done
+        - join_faction: { faction: faction_c, title: 정비소 정비공 }
+        - deed: { summary: 붉은연합의 제안을 받고 상단을 떠났다, tags: [betrayal, selfishness], severity: 2, privacy: public }
+        - belief: { fact: "붉은연합의 정비공이 되었다. 장부는 없다. 대신 아침저녁 점호가 있다", source: seen }
+    - id: refuse
+      label: 장부에 빚 없는 사람은 없다고 웃어넘긴다
+      effects:
+        - set_flag: occ_mech_poach_done
+        - deed: { summary: 붉은연합의 제안을 거절하고 상단에 남았다, tags: [loyalty], severity: 1, privacy: semi_private }
+    - id: price_up
+      label: 사장님께 제안을 전하고 몫을 올려 달라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_mech_poach_done
+          - standing: 1
+          - debt: { faction: own, delta: -3 }
+          - belief: { fact: "붉은연합이 날 데려가려 했다고 하자 장부의 빚 몇 줄이 지워졌다", source: seen }
+        partial:
+          - set_flag: occ_mech_poach_done
+          - belief: { fact: "사장님은 적어 두겠다고만 했다. 장부에 무엇을 적었는지는 모른다", source: seen }
+        miss:
+          - set_flag: occ_mech_poach_done
+          - relation: { who: broker, axis: trust, delta: -2 }
+          - belief: { fact: "제안 이야기가 장터에 돌았다. 붉은 완장의 연락책이 나를 보는 눈이 달라졌다", source: seen }
+
+- id: occ_mech_c_quota
+  title: 오늘의 총 열 자루
+  tags: [occ_mechanic]
+  when:
+    factions: [faction_c]
+    own_territory: true
+    segments: [morning, day]
+    day_gte: 3
+    flags_none: [occ_mech_quota_done]
+  cast:
+    boss: { commander: true }
+    gunner: { faction: own, ranks: [grunt], known: true, optional: true }
+  setup: "정비소 칠판에 분필로 숫자가 적혀 있다. 오늘 내보낼 총의 수다. 작업대 위 총 몇 자루는 노리쇠가 닳아 쏘다가 터질 수도 있다. {boss:이/가} 칠판을 턱으로 가리킨다. \"할당량. 못 채우면 정비소 전체 배급이 깎인다.\""
+  ai_direction: 붉은연합은 숫자로 굴러간다. 덜 고친 총을 내보내면 할당량은 채우지만, 그 총을 받은 누군가가 바깥에서 다친다. 숫자를 못 채우면 정비소 사람들이 굶는다. 위에 맞서면 규율반에 이름이 오른다.
+  choices:
+    - id: ship
+      label: 닳은 총까지 다 내보낸다
+      effects:
+        - set_flag: occ_mech_quota_done
+        - merit: 1
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - deed: { summary: 쏘다가 터질 수 있는 총을 할당량을 채우려고 내보냈다, tags: [selfishness], severity: 2, privacy: private }
+        - belief: { fact: "할당량을 채웠다. 닳은 노리쇠 총은 표시도 없이 다른 총들 사이에 섞여 나갔다", source: seen }
+    - id: mark
+      label: 닳은 총에만 몰래 분필 표시를 해 둔다
+      check: maintenance
+      outcomes:
+        success:
+          - set_flag: occ_mech_quota_done
+          - standing: 1
+          - deed: { summary: 위험한 총에 몰래 표시를 해 받는 사람이 알게 했다, tags: [mercy, deceit], severity: 1, privacy: private }
+          - belief: { fact: "닳은 총 개머리 안쪽에 분필 줄을 그었다. 아는 사람은 그 총을 뒤로 돌릴 것이다", source: seen }
+        partial:
+          - set_flag: occ_mech_quota_done
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "표시는 했지만 상관이 분필 가루 묻은 내 손을 봤다", source: seen }
+        miss:
+          - set_flag: occ_mech_quota_done
+          - standing: -1
+          - merit: -1
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - belief: { fact: "상관이 표시를 찾아 지웠다. 정비소 배급이 깎였다", source: seen }
+    - id: hold_back
+      label: 닳은 총은 빼고 칠판 숫자를 못 채운다
+      effects:
+        - set_flag: occ_mech_quota_done
+        - standing: 1
+        - merit: -1
+        - relation: { who: boss, axis: trust, delta: -2 }
+        - deed: { summary: 위험한 총을 내보내지 않으려 할당량을 못 채웠다, tags: [disobedience, mercy], severity: 2, privacy: semi_private }
+        - belief: { fact: "칠판 숫자가 모자랐다. 그날 정비소 저녁이 반으로 줄었다. 닳은 총은 작업대 밑에 있다", source: seen }
+    - id: warn_gunner
+      label: 닳은 총을 받을 사람에게 귀띔한다
+      when: { cast: [gunner] }
+      effects:
+        - set_flag: occ_mech_quota_done
+        - merit: 1
+        - relation: { who: gunner, axis: trust, delta: 2 }
+        - deed: { summary: 할당량은 채우되 위험한 총을 받을 동료에게 몰래 알렸다, tags: [mercy, disobedience], severity: 1, privacy: private }
+        - belief: { fact: "닳은 총을 받을 동료에게 개머리 안쪽이 긁힌 총은 쏘지 말라고 일렀다", source: seen }
+
+- id: occ_mech_apprentice
+  title: 견습생의 손
+  tags: [occ_mechanic]
+  when:
+    occupation_step_gte: 1
+    own_territory: true
+    segments: [morning, day]
+    flags_none: [occ_mech_apprentice_done]
+  cast:
+    kid: { faction: own, ranks: [grunt], known: true }
+  setup: "이제 작업장에 당신 밑으로 손이 하나 붙었다. {kid:이/가} 돌아가는 발전기 벨트 옆에서 기름을 치다가 소매가 벨트에 물린다. 팔이 안쪽으로 끌려 들어간다. 스위치는 작업장 반대편에 있다."
+  ai_direction: 순간의 일이다. 스위치로 뛰면 늦을 수 있고, 벨트를 손으로 잡으면 정비공이 다칠 수 있다. 위험은 판정 전에 선언한다. 견습생을 가르친 사람의 책임이 함께 걸린다.
+  choices:
+    - id: cut
+      label: 벨트를 끊는다
+      check: mechanics
+      outcomes:
+        success:
+          - set_flag: occ_mech_apprentice_done
+          - standing: 1
+          - relation: { who: kid, axis: trust, delta: 2 }
+          - relation: { who: kid, axis: affection, delta: 1 }
+          - belief: { fact: "끌로 벨트를 끊었다. 견습생 팔에는 멍만 남았다. 벨트는 새로 구해야 한다", source: seen }
+        partial:
+          - set_flag: occ_mech_apprentice_done
+          - npc_hurt: { who: kid, steps: 1 }
+          - relation: { who: kid, axis: trust, delta: 1 }
+          - belief: { fact: "벨트를 끊었지만 견습생 팔이 찢겼다. 뼈는 괜찮다", source: seen }
+        miss:
+          - set_flag: occ_mech_apprentice_done
+          - standing: -1
+          - npc_hurt: { who: kid, steps: 2 }
+          - belief: { fact: "벨트가 끊기기 전에 팔이 감겼다. 견습생은 실려 갔다", source: seen }
+    - id: switch
+      label: 작업장 반대편 스위치로 뛴다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: occ_mech_apprentice_done
+          - relation: { who: kid, axis: trust, delta: 1 }
+          - belief: { fact: "스위치가 내려갔다. 견습생은 바닥에 주저앉아 소매를 붙잡고 떨었다", source: seen }
+        partial:
+          - set_flag: occ_mech_apprentice_done
+          - npc_hurt: { who: kid, steps: 1 }
+          - belief: { fact: "스위치를 내렸을 때 견습생 손등이 벗겨져 있었다", source: seen }
+        miss:
+          - set_flag: occ_mech_apprentice_done
+          - standing: -2
+          - npc_hurt: { who: kid, steps: 2 }
+          - relation: { who: kid, axis: trust, delta: -1 }
+          - belief: { fact: "기름 바닥에 미끄러졌다. 스위치는 다른 사람이 내렸다", source: seen }
+
+- id: occ_mech_armory_chief
+  title: 무기고 장부의 빈칸
+  tags: [occ_mechanic]
+  when:
+    occupation_step_gte: 2
+    own_territory: true
+    segments: [morning, evening]
+    flags_none: [occ_mech_armory_done]
+  cast:
+    boss: { commander: true, enter: false }
+    hand: { faction: own, ranks: [grunt, staff], known: true }
+  setup: "정비 반장이 된 뒤로 무기고 열쇠가 당신 허리에 걸려 있다. 아침에 탄 상자를 세어 보니 장부보다 모자란다. 한 상자 반. 무기고에 드나드는 사람은 셋뿐이다. 그중 {hand:은/는} 오늘따라 일찍 와서 총을 닦고 있다."
+  ai_direction: 탄을 빼돌린 것은 일찍 온 이 사람이다. 바깥 어딘가의 식구에게 탄을 바꿔 먹을 것을 보낸다. 아직 아무도 모른다. 반장이 장부를 고치면 덮이지만, 다음에 모자라면 반장의 이름이 걸린다. 위에 알리면 그 사람은 끝이다. 수치를 말하지 않는다.
+  choices:
+    - id: report
+      label: 위에 모자란 탄을 그대로 알린다
+      effects:
+        - set_flag: occ_mech_armory_done
+        - standing: 1
+        - merit: 1
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - faction_resource: { faction: own, resource: ammo, delta: -10 }
+        - belief: { fact: "모자란 탄을 위에 알렸다. 무기고에 드나드는 셋이 모두 불려 갔다", source: seen }
+    - id: confront
+      label: 일찍 온 사람과 단둘이 이야기한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: occ_mech_armory_done
+          - set_flag: occ_mech_armory_hand_known
+          - standing: 1
+          - relation: { who: hand, axis: respect, delta: 2 }
+          - belief: { fact: "탄은 그 사람이 빼돌렸다. 담 밖 식구에게 탄을 보내 먹을 것과 바꿨다고 했다. 남은 반 상자는 내일 돌려놓기로 했다", source: seen }
+        partial:
+          - set_flag: occ_mech_armory_done
+          - relation: { who: hand, axis: trust, delta: -1 }
+          - belief: { fact: "그 사람은 부인했지만 눈을 피했다. 탄은 돌아오지 않았다", source: seen }
+        miss:
+          - set_flag: occ_mech_armory_done
+          - relation: { who: hand, axis: trust, delta: -2 }
+          - belief: { fact: "따져 묻자 그 사람은 반장이 세다 틀린 거라고 사람들 앞에서 말했다", source: seen }
+    - id: fix_ledger
+      label: 장부를 고쳐 숫자를 맞춘다
+      effects:
+        - set_flag: occ_mech_armory_done
+        - set_flag: occ_mech_ledger_fixed
+        - deed: { summary: 무기고 장부의 모자란 탄을 고쳐 적어 덮었다, tags: [deceit], severity: 2, privacy: private }
+        - belief: { fact: "장부를 고쳤다. 다음에 또 모자라면 반장인 내 이름이 걸린다", source: seen }

@@ -1,0 +1,46 @@
+# 목수 직분의 일감 (기획서 12.6). 무리를 가리지 않는다. 완수하면 엔진이 직분 평판 +1
+# requirements 형식은 a_grunt_basic.yaml 머리말 참고
+
+- id: occ_carpenter_wall_patch
+  title: 무너진 담 메우기
+  briefing: 밤사이 담 한쪽이 주저앉았다. 해 지기 전에 기둥을 다시 세우고 판자와 철판을 대서 사람이 넘지 못하게 막는다. 망치 소리는 짧게.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 180
+    - check: carpentry
+      min_outcome: partial
+
+- id: occ_carpenter_roof
+  title: 새는 지붕 막기
+  briefing: 숙소 지붕에서 물이 샌다. 썩은 서까래를 갈고 덮개를 다시 덮는다. 아래에서 자는 사람들이 오늘 밤엔 마른 데서 자야 한다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: carpentry
+      min_outcome: partial
+
+- id: occ_carpenter_watchtower
+  title: 망루 기둥 갈기
+  briefing: 망루 기둥 하나가 밑동부터 썩었다. 보초가 서 있는 채로 기둥을 하나씩 갈아 끼운다. 망루가 기울면 보초가 떨어진다.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - activity: work
+      minutes: 180
+    - check: endure
+      min_outcome: partial
+
+- id: occ_carpenter_timber_run
+  title: 폐가에서 목재 뜯어 오기
+  briefing: 판자가 바닥났다. 구시가 폐가의 마루와 문짝을 뜯어 온다. 뜯는 소리가 나면 무언가 온다. 들고 올 수 있는 만큼만.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: scavenge
+      min_outcome: partial
+    - check: stealth
+      min_outcome: partial

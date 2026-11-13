@@ -1,0 +1,45 @@
+# 의무병 직분의 일감 (기획서 12.6). 무리를 가리지 않는다: 어느 무리의 의무병이든 받는다
+# requirements 형식은 a_grunt_basic.yaml 머리말 참고
+
+- id: occ_medic_rounds
+  title: 병상 돌기
+  briefing: 누워 있는 사람들을 한 바퀴 돈다. 붕대를 갈고, 열을 짚고, 물을 먹인다. 밤사이 나빠진 사람이 있으면 바로 알린다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: treat
+      minutes: 120
+
+- id: occ_medic_boil
+  title: 붕대 삶기
+  briefing: 쓰고 나온 붕대와 천을 솥에 삶아 널고, 칼과 바늘을 불에 달궈 닦는다. 깨끗한 천이 없으면 다음 사람이 죽는다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: improvise
+      min_outcome: partial
+
+- id: occ_medic_pharmacy
+  title: 약 찾으러 나가기
+  briefing: 무너진 약국, 버려진 구급차, 빈집의 약상자를 뒤져 쓸 만한 것을 건져 온다. 유통기한은 보지 말고 포장이 뜯겼는지만 본다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: scavenge
+      min_outcome: partial
+
+- id: occ_medic_field
+  title: 작전 따라가기
+  briefing: 바깥으로 나가는 조를 따라가 뒤에서 걷는다. 누가 쓰러지면 그 자리에서 피를 막고 데려온다. 총은 맨 나중에 든다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  buddy: true
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: first_aid
+      min_outcome: partial

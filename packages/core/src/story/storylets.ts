@@ -71,16 +71,21 @@ function bodyMatches(content: Content, level: string | undefined, cond: { track:
 }
 
 /** 배경 배역의 후보 (기획서 12.6) */
-function backgroundCast(state: GameState, content: Content, kind: "enemy" | "enemy_member" | "kin" | "sought"): string[] {
+function backgroundCast(state: GameState, content: Content, kind: "enemy" | "enemy_member" | "kin" | "sought" | "creditor" | "deserted"): string[] {
   const out: string[] = [];
+  const membersOf = (f: string) => Object.values(state.characters).filter((c) => c.factionId === f && c.id !== state.playerId).map((c) => c.id);
   for (const { part, characterId } of state.background) {
+    if (kind === "creditor" && part.kind === "debt") out.push(...membersOf(part.faction));
+    if (kind === "deserted" && part.kind === "deserter") out.push(...membersOf(part.faction));
     if (kind === "enemy") {
       if (part.kind === "enemy" && content.npcs[part.target]) out.push(part.target);
       if (part.kind === "loss" && part.by && content.npcs[part.by]) out.push(part.by);
     }
     if (kind === "enemy_member") {
-      const f = part.kind === "enemy" ? part.target : part.kind === "loss" ? part.by : null;
-      if (f && content.factions[f]) out.push(...Object.values(state.characters).filter((c) => c.factionId === f && c.id !== state.playerId).map((c) => c.id));
+      // 원수가 인물이면 그 사람의 무리 (원수 본인은 빼고)
+      const who = part.kind === "enemy" ? part.target : part.kind === "loss" ? part.by : null;
+      const f = who && content.factions[who] ? who : who ? content.npcs[who]?.faction : null;
+      if (f && content.factions[f]) out.push(...membersOf(f).filter((id) => id !== who));
     }
     if (kind === "kin" && part.kind === "kin_alive" && characterId) out.push(characterId);
     if (kind === "sought" && part.kind === "seeking" && characterId) out.push(characterId);
@@ -100,7 +105,8 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
     if (role.background) {
       const options = backgroundCast(state, content, role.background).filter((id) => {
         const c = state.characters[id];
-        return c && !c.dead && !c.away && !c.captive && !used.has(id) && (!role.here || !c.extra || c.extra.zone === state.playerZone);
+        const here = state.companions.includes(id) || state.scene.present.includes(id) || (c?.extra ? c.extra.zone === state.playerZone : true);
+        return c && !c.dead && !c.away && !c.captive && !used.has(id) && (!role.here || here);
       });
       if (options.length === 0) {
         if (role.optional) continue;
@@ -157,6 +163,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.level_gte !== undefined && player.level < w.level_gte) return false;
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
   if (w.occupations && !w.occupations.includes(player.occupation?.id ?? "none")) return false;
+  if (w.at_loss_place && !state.background.some((e) => e.part.kind === "loss" && e.part.where && e.part.where === state.playerZone)) return false;
   if (w.occupation_step_gte !== undefined) {
     const occ = occupationOf(content, player);
     if (!occ || occupationStep(occ, player.occupation!.standing) < w.occupation_step_gte) return false;
@@ -237,6 +244,8 @@ export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: 
   if (choice.when && !itemFlagsMet(state, choice.when)) return false;
   // 있으면 쓰는 배역이 비었으면 그 배역을 쓰는 선택지는 빠진다
   if (choice.when?.cast && !choice.when.cast.every((k) => !!cast[k])) return false;
+  if (choice.when?.cast_empty && choice.when.cast_empty.some((k) => !!cast[k])) return false;
+  if (choice.when?.in_faction !== undefined && !!state.characters[state.playerId]?.factionId !== choice.when.in_faction) return false;
   const player = state.characters[state.playerId];
   if (!player) return false;
   const effects = choice.outcomes ? [...choice.outcomes.success, ...choice.outcomes.partial, ...choice.outcomes.miss] : choice.effects;

@@ -1,0 +1,788 @@
+# 배경 부품으로 열리는 이야기 (기획서 12.6). 플레이어가 쓴 지난 일(custom_start.history)이 세운 bg_* 플래그와
+# 배역 background(enemy, enemy_member, kin, sought)로 연다. 태그 world라 어느 시작에서나
+# 이야기는 사람을 죽이지 않는다 (원칙 3): 맞서기는 판정과 npc_hurt·npc_capture·npc_depart로, 진짜 싸움은 GM이 전투로 넘긴다
+
+# ── 원수 (인물) ─────────────────────────────────────────
+# 연쇄: bg_enemy_glimpse(멀리서) → bg_enemy_close(가까이) → bg_enemy_reckoning(맞설 기회). 옆길: bg_enemy_kin(원수의 가족)
+
+- id: bg_enemy_glimpse
+  title: 저 사람이다
+  tags: [world]
+  when:
+    flags_any: [bg_enemy_person, bg_culprit_known]
+    flags_none: [bg_enemy_seen]
+    day_gte: 2
+    segments: [morning, day, evening]
+  cast:
+    enemy: { background: enemy, enter: false }
+  setup: "길 건너편, 짐을 나르는 사람들 사이에 {enemy:이/가} 있다. 걸음걸이를 먼저 알아봤고, 얼굴은 그다음이었다. 저쪽은 이쪽을 보지 않았다. 아직은."
+  ai_direction: 멀리서 보는 장면이다. 원수는 주인공을 알아채지 못했다 (배경에서 저쪽도 주인공을 안다면 다음에 마주칠 때는 다르다). 거리가 멀고 사람이 많아 지금 무엇을 하기는 어렵다. 쫓아가면 어디로 드나드는지 정도만 안다. 이 장면에서 싸움을 걸면 이야기 대신 GM이 전투로 넘기되, 길 한복판이고 주위에 사람이 있다.
+  choices:
+    - id: follow
+      label: 거리를 두고 따라간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: bg_enemy_seen
+          - set_flag: bg_enemy_tracked
+          - belief: { fact: "{enemy}의 뒤를 밟았다. 어느 길로 드나드는지, 누구와 다니는지 봤다", source: seen }
+        partial:
+          - set_flag: bg_enemy_seen
+          - belief: { fact: "{enemy}의 뒤를 밟다 모퉁이에서 놓쳤다. 이 근처에 드나드는 것은 틀림없다", source: seen }
+        miss:
+          - set_flag: bg_enemy_seen
+          - relation: { who: enemy, axis: trust, delta: -1 }
+          - belief: { fact: "{enemy}의 뒤를 밟다 눈이 마주쳤다. 저쪽이 걸음을 빨리해 사라졌다", source: seen }
+    - id: watch
+      label: 그 자리에 서서 얼굴을 눈에 새긴다
+      effects:
+        - set_flag: bg_enemy_seen
+        - belief: { fact: "{enemy}이(가) 살아서 이 도시를 걸어 다닌다. 멀리서 봤다", source: seen }
+    - id: turn_away
+      label: 고개를 돌리고 반대쪽으로 걷는다
+      effects:
+        - set_flag: bg_enemy_seen
+        - set_flag: bg_enemy_avoided
+
+- id: bg_enemy_close
+  title: 같은 불 앞에서
+  tags: [world]
+  when:
+    flags_all: [bg_enemy_seen]
+    flags_none: [bg_enemy_close, bg_enemy_let_go]
+    day_gte: 4
+    segments: [evening, night]
+  cast:
+    enemy: { background: enemy }
+  setup: "추위를 피해 들어간 폐건물 안, 드럼통 불 맞은편에 {enemy:이/가} 앉아 있다. 손을 쬐며 옆 사람과 낮게 이야기한다. 불빛이 흔들려 이쪽 얼굴은 그늘에 있다."
+  ai_direction: 원수가 손 닿을 거리에 있다. 옆 사람과 하는 이야기는 이 인물의 프로필(바라는 것, 두려운 것)에서 가져온다. 그날 일을 저쪽도 잊지 않았고, 저쪽 나름의 이유나 짐이 있다 (변명이 될지는 주인공이 정한다). 지어낸 사실을 덧붙이지 않는다. 여기서 칼을 뽑으면 GM이 전투로 넘긴다. 불가에 다른 사람들이 있어 무슨 일이든 목격자가 생긴다.
+  choices:
+    - id: listen
+      label: 그늘에 앉아 이야기를 엿듣는다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: bg_enemy_close
+          - set_flag: bg_enemy_reason
+          - belief: { fact: "{enemy}이(가) 불가에서 하는 말을 엿들었다. 그날 일을 저쪽도 지고 다닌다. 저쪽에도 지켜야 할 것이 있다", source: seen }
+        partial:
+          - set_flag: bg_enemy_close
+          - belief: { fact: "{enemy}이(가) 불가에서 하는 말을 반쯤 들었다. 그날 일 이야기가 나오자 말을 끊었다", source: seen }
+        miss:
+          - set_flag: bg_enemy_close
+          - relation: { who: enemy, axis: trust, delta: -1 }
+          - belief: { fact: "{enemy}이(가) 불가에서 내 얼굴을 오래 봤다. 알아봤는지는 모르겠다", source: seen }
+    - id: speak
+      label: 불 너머로 그날 일을 꺼낸다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: bg_enemy_close
+          - set_flag: bg_enemy_reason
+          - relation: { who: enemy, axis: respect, delta: 1 }
+          - belief: { fact: "{enemy}에게 그날 일을 물었다. 저쪽은 부정하지 않았다. 그때 왜 그랬는지 짧게 말했다", source: seen }
+        partial:
+          - set_flag: bg_enemy_close
+          - relation: { who: enemy, axis: trust, delta: -1 }
+          - belief: { fact: "{enemy}에게 그날 일을 꺼내자 저쪽이 자리를 떴다. 불가의 사람들이 우리 둘을 봤다", source: seen }
+        miss:
+          - set_flag: bg_enemy_close
+          - set_flag: bg_hunted
+          - relation: { who: enemy, axis: trust, delta: -2 }
+          - deed: { summary: 불가에서 사람에게 지난 원한을 따지다 소란을 냈다, tags: [bravery], severity: 1, privacy: semi_private }
+    - id: leave_fire
+      label: 불을 등지고 조용히 나간다
+      effects:
+        - set_flag: bg_enemy_close
+    - id: let_go
+      label: 불을 쬐며 생각한다. 이걸로 됐다
+      effects:
+        - set_flag: bg_enemy_let_go
+        - belief: { fact: "{enemy}을(를) 손 닿을 거리에서 보고도 아무것도 하지 않기로 했다", source: seen }
+        - deed: { summary: 원수를 눈앞에 두고 복수를 내려놓았다, tags: [mercy], severity: 2, privacy: private }
+
+- id: bg_enemy_reckoning
+  title: 둘만 남은 골목
+  tags: [world]
+  urgent: true
+  when:
+    flags_all: [bg_enemy_close]
+    flags_none: [bg_enemy_settled, bg_enemy_let_go]
+    day_gte: 5
+    segments: [evening, night, dawn]
+  cast:
+    enemy: { background: enemy }
+  setup: "무너진 상가 뒷골목. 앞서 걷던 {enemy:이/가} 발을 멈추고 돌아선다. 다른 사람은 없다. 저쪽의 손이 허리께로 간다."
+  ai_direction: 맞설 기회다. 원수는 혼자이고 도망칠 수도 싸울 수도 있다. 주인공이 정말 목숨을 노리면 이 선택지 대신 GM이 전투로 넘긴다 (죽음은 전투 판정으로만). 제압해 넘기는 것은 주인공에게 무리가 있어야 의미가 있다 (무소속이면 붙잡을 곳이 없어 묶어 두고 떠나는 것으로 끝난다). 사람들 앞에 그날 일을 드러내면 원수는 이 도시에 있기 어려워진다. 저쪽의 사정을 알았다면(bg_enemy_reason) 그 말이 지금 떠오른다.
+  choices:
+    - id: strike
+      label: 먼저 덤벼든다
+      check: fight
+      outcomes:
+        success:
+          - npc_hurt: { who: enemy, steps: 2 }
+          - set_flag: bg_enemy_settled
+          - relation: { who: enemy, axis: respect, delta: 2 }
+          - deed: { summary: 지난 원한을 갚으려 골목에서 사람을 쓰러뜨렸다, tags: [cruelty, bravery], severity: 2, privacy: private }
+        partial:
+          - npc_hurt: { who: enemy, steps: 1 }
+          - set_flag: bg_enemy_settled
+          - set_flag: bg_hunted
+          - relation: { who: enemy, axis: trust, delta: -3 }
+          - belief: { fact: "{enemy}에게 덤볐다. 상처는 냈지만 저쪽은 피를 흘리며 달아났다. 이제 저쪽도 나를 노린다", source: seen }
+        miss:
+          - set_flag: bg_hunted
+          - relation: { who: enemy, axis: trust, delta: -3 }
+          - belief: { fact: "{enemy}에게 덤볐다가 밀려났다. 저쪽은 내 얼굴을 똑똑히 봤다", source: seen }
+    - id: bind
+      label: 무기를 겨누고 손을 묶어 무리에 넘긴다
+      check: intimidate
+      outcomes:
+        success:
+          - npc_capture: { who: enemy, by: own }
+          - set_flag: bg_enemy_settled
+          - merit: 1
+          - belief: { fact: "{enemy}을(를) 제압해 손을 묶었다. 그날 일의 값은 이제 다른 사람들이 정한다", source: seen }
+        partial:
+          - npc_hurt: { who: enemy, steps: 1 }
+          - set_flag: bg_hunted
+          - belief: { fact: "{enemy}을(를) 묶으려다 몸싸움이 났다. 저쪽은 다친 채 빠져나갔다", source: seen }
+        miss:
+          - set_flag: bg_hunted
+          - relation: { who: enemy, axis: trust, delta: -2 }
+          - belief: { fact: "{enemy}이(가) 겨눈 총구를 보고도 웃었다. 그리고 어둠 속으로 사라졌다", source: seen }
+    - id: expose
+      label: 사람들 앞에 그날 일을 털어놓게 만든다
+      check: persuade
+      outcomes:
+        success:
+          - npc_depart: { who: enemy }
+          - set_flag: bg_enemy_settled
+          - belief: { fact: "{enemy}이(가) 사람들 앞에서 그날 일을 인정했다. 며칠 뒤 이 도시를 떠났다는 말을 들었다", source: seen }
+          - deed: { summary: 원수가 저지른 일을 사람들 앞에 드러냈다, tags: [honesty], severity: 2, privacy: public }
+        partial:
+          - set_flag: bg_enemy_settled
+          - relation: { who: enemy, axis: trust, delta: -2 }
+          - belief: { fact: "{enemy}의 일을 사람들 앞에 꺼냈지만 믿는 사람 반, 안 믿는 사람 반이었다", source: rumor }
+        miss:
+          - relation: { who: enemy, axis: trust, delta: -2 }
+          - deed: { summary: 증거도 없이 사람을 몰아세우다 망신을 당했다, tags: [deceit], severity: 1, privacy: public }
+    - id: lower_hand
+      label: 손을 내리고 길을 비켜 준다
+      effects:
+        - set_flag: bg_enemy_let_go
+        - set_flag: bg_enemy_settled
+        - relation: { who: enemy, axis: respect, delta: 1 }
+        - deed: { summary: 원수를 앞에 두고 길을 비켜 주었다, tags: [mercy], severity: 2, privacy: private }
+
+- id: bg_enemy_kin
+  title: 그 사람의 식구
+  tags: [world]
+  when:
+    flags_all: [bg_enemy_seen]
+    day_gte: 5
+    segments: [morning, day]
+  cast:
+    enemy: { background: enemy, enter: false }
+    kin: { tie: { of: enemy, kinds: [child, spouse, sibling, parent] } }
+  setup: "물을 받으려 줄을 선 {kin:이/가} 앞 사람에게 누군가의 안부를 묻는다. 그 입에서 {enemy}의 이름이 나온다. 걱정하는 목소리다."
+  ai_direction: 이 사람은 원수의 가족이다 (주인공은 이름을 들었을 뿐 관계는 아직 모른다). 원수가 한 일을 이 사람은 모르거나, 알면서도 식구라서 기다린다. 이 사람에게 손을 대는 것은 복수가 아니라 다른 일이다. 협박하면 원수를 불러낼 수 있지만 행적으로 남는다.
+  choices:
+    - id: ask
+      label: 그 이름을 어떻게 아느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - reveal_tie: { who: kin, other: enemy }
+          - set_flag: bg_enemy_reason
+          - relation: { who: kin, axis: trust, delta: 1 }
+          - belief: { fact: "{kin}은(는) {enemy}의 식구다. {enemy}이(가) 집에서는 어떤 사람인지 들었다", source: report }
+        partial:
+          - reveal_tie: { who: kin, other: enemy }
+        miss:
+          - relation: { who: kin, axis: trust, delta: -1 }
+    - id: threaten
+      label: 그 사람에게 전하라고 한다. 내가 찾고 있다고
+      check: intimidate
+      outcomes:
+        success:
+          - reveal_tie: { who: kin, other: enemy }
+          - set_flag: bg_hunted
+          - deed: { summary: 원수의 식구를 겁줘 말을 전하게 했다, tags: [cruelty], severity: 2, privacy: semi_private }
+        partial:
+          - reveal_tie: { who: kin, other: enemy }
+          - relation: { who: kin, axis: trust, delta: -2 }
+          - deed: { summary: 원수의 식구를 겁줬다, tags: [cruelty], severity: 1, privacy: semi_private }
+        miss:
+          - relation: { who: kin, axis: trust, delta: -3 }
+          - deed: { summary: 물 받는 줄에서 낯선 사람을 위협하다 사람들에게 밀려났다, tags: [cruelty], severity: 1, privacy: public }
+    - id: say_nothing
+      label: 아무 말 않고 물만 받아 간다
+      effects:
+        - belief: { fact: "{enemy}을(를) 걱정하는 사람이 있다. 물 받는 줄에서 들었다", source: seen }
+
+# ── 쫓김 (원수도 나를 안다) ─────────────────────────────
+
+- id: bg_hunted_known
+  title: 알아보는 눈
+  tags: [world]
+  when:
+    flags_all: [bg_hunted]
+    flags_none: [bg_enemy_person]
+    day_gte: 3
+    segments: [morning, day, evening]
+  cast:
+    seer: { background: enemy_member }
+  setup: "{seer:이/가} 걸음을 멈추고 당신을 다시 본다. 한 번 보고, 두 번 본다. 그쪽 무리의 표식이 눈에 들어온다. \"…너, 어디서 봤는데.\""
+  ai_direction: 이 사람은 주인공을 쫓는 무리에 속한다. 주인공 얼굴을 확실히 아는 것은 아니고 어디서 들은 인상착의와 맞춰 보는 중이다. 무리에 알리면 그 무리 땅에서 주인공이 더 위험해진다. 물건을 쥐여 주면 못 본 척할 만큼은 셈이 밝다. 싸움이 나면 GM이 전투로 넘긴다.
+  choices:
+    - id: slip
+      label: 사람들 틈으로 섞여 빠진다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "{seer}이(가) 나를 알아볼 뻔했다. 사람들 틈으로 빠져나왔다", source: seen }
+        partial:
+          - relation: { who: seer, axis: trust, delta: -1 }
+          - set_flag: bg_hunted_seen
+          - belief: { fact: "{seer}이(가) 나를 끝까지 눈으로 좇았다. 그쪽 무리에 내 이야기가 들어갈 것이다", source: seen }
+        miss:
+          - set_flag: bg_hunted_seen
+          - relation: { who: seer, axis: trust, delta: -2 }
+          - zone_noise: 1
+          - belief: { fact: "{seer}이(가) 소리쳐 사람을 불렀다. 겨우 빠져나왔다", source: seen }
+    - id: pay_off
+      label: 담배를 쥐여 주고 사람 잘못 봤다고 한다
+      effects:
+        - take_item: { item: cigarettes }
+        - relation: { who: seer, axis: trust, delta: 1 }
+        - belief: { fact: "{seer}은(는) 담배를 받고 사람을 잘못 봤다고 했다. 얼마나 갈지는 모른다", source: seen }
+    - id: bluff
+      label: 다른 이름을 대며 태연히 웃는다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "{seer}에게 다른 이름을 댔다. 고개를 갸웃하더니 지나갔다", source: seen }
+        partial:
+          - set_flag: bg_hunted_seen
+          - belief: { fact: "{seer}이(가) 다른 이름을 듣고도 미심쩍은 얼굴로 떠났다", source: seen }
+        miss:
+          - set_flag: bg_hunted_seen
+          - relation: { who: seer, axis: trust, delta: -2 }
+          - deed: { summary: 쫓는 무리 사람 앞에서 이름을 속이다 들켰다, tags: [deceit], severity: 1, privacy: semi_private }
+
+- id: bg_hunted_asked
+  title: 너를 묻고 다니는 사람
+  tags: [world]
+  when:
+    flags_all: [bg_hunted]
+    flags_any: [bg_enemy_person, bg_hunted_seen]
+    day_gte: 5
+    segments: [day, evening]
+  cast:
+    teller: { extra: drifter_elder, label: 불가의 늙은 떠돌이 }
+    enemy: { background: enemy, enter: false, optional: true }
+  setup: "{teller:이/가} 손을 녹이며 지나가듯 말한다. \"어제 누가 사람을 찾더군. 네 생김새랑 비슷한 사람을. 이름도 대던데.\""
+  ai_direction: 주인공을 쫓는 쪽이 사람을 풀어 묻고 다닌다 (원수가 인물이면 그 사람, 아니면 그 무리). 노인은 누가 물었는지 생김새만 기억한다. 먹을 것을 나누면 다음에 또 오면 알려 주겠다고 한다. 노인이 본 것 말고는 지어내지 않는다.
+  choices:
+    - id: share_food
+      label: 건빵을 나누고 다음에 또 오면 알려 달라고 한다
+      effects:
+        - take_item: { item: dry_ration }
+        - relation: { who: teller, axis: trust, delta: 2 }
+        - set_flag: bg_hunted_warned
+        - belief: { fact: "나를 묻고 다니는 사람이 있다. 불가의 노인이 또 오면 알려 주기로 했다", source: report }
+    - id: ask_who
+      label: 누가 물었는지 묻는다
+      when: { cast: [enemy] }
+      effects:
+        - belief: { fact: "나를 묻고 다닌 사람의 생김새가 {enemy}과(와) 맞는다", source: report }
+    - id: shrug
+      label: 사람 잘못 본 거라고 웃어넘긴다
+      effects:
+        - belief: { fact: "누군가 나를 묻고 다닌다는 말을 들었다", source: rumor }
+
+# ── 원수 무리의 사람 ─────────────────────────────────────
+
+- id: bg_member_wounded
+  title: 그 무리의 부상자
+  tags: [world]
+  when:
+    flags_any: [bg_enemy, bg_loss]
+    day_gte: 4
+    zone_owner: [none]
+    segments: [day, evening]
+  cast:
+    hurt: { background: enemy_member }
+  setup: "무너진 담 그늘에 {hurt:이/가} 주저앉아 다리를 붙잡고 있다. 그 무리의 표식이 보인다. 당신을 보고 손을 든다. 총이 아니라 빈손이다. \"물… 물 좀.\""
+  ai_direction: 원수인 무리(또는 주인공의 사람들을 앗아 간 무리)의 사람이다. 그날 그 자리에 이 사람이 있었는지는 모른다 (확인할 길이 없다). 다쳐서 혼자 못 움직인다. 도우면 그 무리 안에 주인공에게 빚진 사람이 하나 생긴다. 가진 것을 빼앗으면 행적으로 남는다. 이야기는 이 사람을 죽이지 않는다. 손을 대려 하면 GM이 판정과 전투로 넘긴다.
+  choices:
+    - id: help
+      label: 물을 먹이고 다리를 묶어 준다
+      effects:
+        - relation: { who: hurt, axis: trust, delta: 2 }
+        - relation: { who: hurt, axis: affection, delta: 1 }
+        - deed: { summary: 원수 무리의 부상자에게 물을 먹이고 상처를 묶어 주었다, tags: [mercy, enemy_sympathy], severity: 2, privacy: semi_private }
+        - belief: { fact: "{hurt}을(를) 도왔다. 그 무리에도 목이 마른 사람은 있다", source: seen }
+    - id: ask_about_that_day
+      label: 물병을 들고 그날 일을 아느냐고 묻는다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: hurt, axis: respect, delta: 1 }
+          - belief: { fact: "{hurt}은(는) 그날 일을 소문으로만 안다고 했다. 누가 시켰는지는 위에서나 안다고", source: report }
+        partial:
+          - relation: { who: hurt, axis: trust, delta: -1 }
+          - belief: { fact: "{hurt}은(는) 그날 일을 묻자 입을 다물었다", source: seen }
+        miss:
+          - relation: { who: hurt, axis: trust, delta: -2 }
+          - deed: { summary: 다친 사람 앞에서 물병을 흔들며 캐물었다, tags: [cruelty], severity: 1, privacy: private }
+    - id: strip
+      label: 가진 것을 챙기고 그대로 둔다
+      effects:
+        - give_item: { item: bandage, from: hurt }
+        - give_item: { item: rifle_rounds, from: hurt }
+        - relation: { who: hurt, axis: trust, delta: -3 }
+        - deed: { summary: 다친 사람의 물건을 털고 길에 버려두었다, tags: [cruelty, theft], severity: 2, privacy: private }
+    - id: walk_past
+      label: 못 들은 척 지나간다
+      effects: []
+
+# ── 살아 있는 가족 ───────────────────────────────────────
+# 기다리던 가족은 주인공이 그 구역에 가면 엔진이 합류시킨다. 그 뒤의 이야기 (연고 동행 kin)
+
+- id: bg_kin_burden
+  title: 발이 느린 식구
+  tags: [world]
+  when:
+    flags_all: [bg_kin_alive]
+    day_gte: 4
+    segments: [morning, day]
+  cast:
+    kin: { companion: { kinds: [kin] } }
+  setup: "{kin:이/가} 또 뒤처진다. 숨을 고르는 척 벽에 기대지만 무릎이 떨린다. 앞길은 아직 멀다. \"먼저 가. 금방 따라갈게.\""
+  ai_direction: 오래 떨어져 있다 다시 만난 식구다. 몸이 버티지 못하는 날이다 (꾀병이 아니다). 함께 가면 하루가 늦어지고 길에서 위험이 커진다. 안전한 곳에 두고 가면 서운해하지만 이해한다. 먹을 것을 덜어 주면 기운을 차린다.
+  choices:
+    - id: carry_on_together
+      label: 걸음을 맞춘다. 늦어도 같이 간다
+      effects:
+        - relation: { who: kin, axis: affection, delta: 2 }
+        - body: { track: cold, delta: 1 }
+        - belief: { fact: "{kin}의 걸음에 맞춰 걸었다. 하루가 늦어졌다", source: seen }
+    - id: share_ration
+      label: 내 몫의 건빵을 쥐여 준다
+      effects:
+        - take_item: { item: dry_ration }
+        - npc_body: { who: kin, track: hunger, delta: -1 }
+        - relation: { who: kin, axis: affection, delta: 1 }
+    - id: leave_safe
+      label: 여기서 기다리라고 하고 혼자 간다
+      effects:
+        - companion_part: { who: kin }
+        - relation: { who: kin, axis: affection, delta: -1 }
+        - belief: { fact: "{kin}을(를) 이 구역에 두고 혼자 길을 나섰다. 돌아와야 한다", source: seen }
+
+- id: bg_kin_other_roof
+  title: 여기 남고 싶어
+  tags: [world]
+  when:
+    flags_all: [bg_kin_alive]
+    flags_none: [bg_kin_stays]
+    zones: [b_base]
+    day_gte: 6
+    segments: [evening]
+  cast:
+    kin: { companion: { kinds: [kin] } }
+  setup: "{kin:이/가} 저녁 밥솥 앞에 줄 선 사람들을 오래 본다. 그러다 당신 소매를 잡는다. \"여기 사람들이 같이 지내도 된대. 나 여기 있으면 안 될까. 매일 어디서 잘지 걱정 안 해도 되잖아.\""
+  ai_direction: 식구는 버들마을 사람들과 이미 말을 나눴다. 진심이다. 주인공과 떨어지는 것이 무섭지만, 떠돌거나 남의 무리 거처에 얹혀 지내는 것이 더 무섭다. 붙잡으면 따라오지만 마음이 남는다. 보내 주면 이 도시 안 그 무리에 들어간다 (살아 있고, 찾아올 수 있다).
+  choices:
+    - id: let_stay_b
+      label: 그래, 여기 있어
+      effects:
+        - companion_leave: { who: kin }
+        - npc_depart: { who: kin, to_faction: faction_b }
+        - set_flag: bg_kin_stays
+        - relation: { who: kin, axis: trust, delta: 2 }
+        - belief: { fact: "{kin}이(가) 버들마을에 남았다. 살아 있고, 찾아갈 수 있다", source: seen }
+    - id: keep_together
+      label: 같이 다니자고 붙잡는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bg_kin_stays
+          - relation: { who: kin, axis: affection, delta: 1 }
+        partial:
+          - set_flag: bg_kin_stays
+          - relation: { who: kin, axis: affection, delta: -1 }
+          - belief: { fact: "{kin}은(는) 따라오기로 했지만 몇 번이나 뒤를 돌아봤다", source: seen }
+        miss:
+          - companion_part: { who: kin }
+          - relation: { who: kin, axis: trust, delta: -2 }
+          - belief: { fact: "{kin}은(는) 대답 대신 짐을 내려놓았다. 여기서 기다리겠다고 한다", source: seen }
+    - id: join_too
+      label: 그럼 나도 버들마을에 남겠다
+      effects:
+        - join_faction: { faction: faction_b }
+        - set_flag: bg_kin_stays
+        - relation: { who: kin, axis: affection, delta: 3 }
+
+# ── 찾는 사람 ───────────────────────────────────────────
+# 찾는 사람은 코드가 아무 구역에나 두었다 (아무도 모른다). 단서는 살아 있다는 것까지만. 찾았다는 here: true로 그 구역에서만
+
+- id: bg_seek_rumor
+  title: 닮은 사람을 봤다는 말
+  tags: [world]
+  when:
+    flags_all: [bg_seeking]
+    flags_none: [bg_seek_found, bg_seek_heard]
+    day_gte: 3
+    segments: [day, evening]
+  cast:
+    sought: { background: sought, enter: false }
+  setup: "장작을 패던 사람들이 쉬며 떠드는 소리가 들린다. 낯선 사람 이야기, 누가 어디로 갔다는 이야기. 그러다 한 사람이 말하는 생김새가 귀에 걸린다. {sought}과(와) 너무 닮았다."
+  ai_direction: 찾는 사람은 살아 있다. 이 사람들은 어디서 봤는지 정확히 기억하지 못한다 (엔진이 둔 구역을 GM도 모른다. 장소를 지어내지 않는다). 캐물으면 그 사람의 근황 한 조각(무엇을 하고 지내는 것 같았는지)만 얻는다.
+  choices:
+    - id: press
+      label: 다가가 더 자세히 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bg_seek_heard
+          - belief: { fact: "{sought}을(를) 닮은 사람을 이 도시에서 봤다는 말을 들었다. 살아 있다. 혼자가 아닌 것 같았다고 한다", source: report }
+        partial:
+          - set_flag: bg_seek_heard
+          - belief: { fact: "{sought}을(를) 닮은 사람을 봤다는 말을 들었다. 언제 어디였는지는 흐릿하다", source: rumor }
+        miss:
+          - set_flag: bg_seek_heard
+          - belief: { fact: "생김새가 {sought}과(와) 닮은 사람 이야기를 들었지만, 그 사람들은 더 말해 주지 않았다", source: rumor }
+    - id: just_listen
+      label: 멈춰 서서 끝까지 듣기만 한다
+      effects:
+        - set_flag: bg_seek_heard
+        - belief: { fact: "{sought}을(를) 닮은 사람이 이 도시 어딘가에 있다는 말을 엿들었다", source: rumor }
+
+- id: bg_seek_witness
+  title: 그 얼굴을 아는 떠돌이
+  tags: [world]
+  when:
+    flags_all: [bg_seeking, bg_seek_heard]
+    flags_none: [bg_seek_found, bg_seek_witnessed]
+    day_gte: 6
+    segments: [morning, day, evening]
+  cast:
+    sought: { background: sought, enter: false }
+    witness: { extra: refugee, label: 길에서 만난 피난민 }
+  setup: "당신이 생김새를 늘어놓자 {witness:이/가} 눈을 가늘게 뜬다. \"그 사람… 나랑 같은 데서 잔 적 있어. 밤에 누구 이름을 부르면서 깼어.\""
+  ai_direction: 피난민은 정말 찾는 사람을 만났다. 어느 구역이었는지는 GM도 모른다 (엔진이 둔 곳). 피난민이 기억하는 것은 그 사람의 모습과 말 몇 마디뿐이다. 그 사람이 주인공의 이름을 불렀는지는 확실하지 않다. 대가를 바라지는 않지만 먹을 것을 주면 더 떠올리려 애쓴다.
+  choices:
+    - id: give_food
+      label: 통조림을 건네고 생각나는 걸 다 말해 달라고 한다
+      effects:
+        - take_item: { item: canned_food }
+        - set_flag: bg_seek_witnessed
+        - relation: { who: witness, axis: trust, delta: 2 }
+        - belief: { fact: "피난민 {witness}이(가) {sought}과(와) 같은 곳에서 잔 적이 있다. 몸은 성했고, 누군가를 기다리는 사람처럼 굴었다고 한다", source: report }
+    - id: ask_plain
+      label: 그 사람이 어땠는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bg_seek_witnessed
+          - belief: { fact: "피난민 {witness}이(가) {sought}을(를) 만났다. 많이 말랐지만 살아 있었다고 한다", source: report }
+        partial:
+          - set_flag: bg_seek_witnessed
+          - belief: { fact: "피난민 {witness}은(는) {sought}을(를) 본 것 같다고만 했다", source: rumor }
+        miss:
+          - set_flag: bg_seek_witnessed
+          - relation: { who: witness, axis: trust, delta: -1 }
+
+- id: bg_seek_found
+  title: 그 사람
+  tags: [world]
+  urgent: true
+  when:
+    flags_all: [bg_seeking]
+    flags_none: [bg_seek_found]
+    day_gte: 3
+  cast:
+    sought: { background: sought, here: true }
+  setup: "사람들 틈에서 누군가 고개를 든다. {sought}이다. 살아 있다. 얼굴이 그때와 다르다. 마르고, 눈빛이 낯설다. 그쪽도 당신을 알아보고 들고 있던 것을 떨어뜨린다."
+  ai_direction: 찾던 사람을 찾았다. 헤어진 뒤 이 사람은 혼자 살아남는 법을 익혔고, 이 구역에 자기 자리와 사람들이 생겼을 수 있다. 반가움과 함께 원망도 있다 (왜 이제 왔냐). 함께 가자고 하면 판정으로 정한다. 이 사람이 지금의 삶을 두고 따라올지. 따라오지 않아도 살아 있고, 이 구역에 남는다. 지어낸 사연을 사실처럼 덧붙이지 말고, 이 사람의 프로필에서 가져온다.
+  choices:
+    - id: come_with_me
+      label: 이제 같이 가자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bg_seek_found
+          - companion_join: { who: sought, kind: kin }
+          - relation: { who: sought, axis: affection, delta: 2 }
+          - belief: { fact: "{sought}을(를) 찾았다. 이제 함께 다닌다", source: seen }
+        partial:
+          - set_flag: bg_seek_found
+          - relation: { who: sought, axis: affection, delta: 1 }
+          - belief: { fact: "{sought}을(를) 찾았다. 아직은 이곳을 떠날 수 없다고 했다. 다시 오라고 했다", source: seen }
+        miss:
+          - set_flag: bg_seek_found
+          - relation: { who: sought, axis: trust, delta: -1 }
+          - belief: { fact: "{sought}을(를) 찾았다. 그 사람은 이제 여기 사람이다. 따라오지 않겠다고 했다", source: seen }
+    - id: hold_and_listen
+      label: 아무 말 없이 붙잡고, 그동안 어떻게 지냈는지 듣는다
+      effects:
+        - set_flag: bg_seek_found
+        - relation: { who: sought, axis: trust, delta: 2 }
+        - relation: { who: sought, axis: affection, delta: 1 }
+        - belief: { fact: "{sought}을(를) 찾았다. 헤어진 뒤의 이야기를 들었다", source: seen }
+    - id: see_and_go
+      label: 살아 있는 것만 보고 돌아선다
+      effects:
+        - set_flag: bg_seek_found
+        - relation: { who: sought, axis: affection, delta: -2 }
+        - belief: { fact: "{sought}은(는) 살아 있다. 이 구역에서 봤다. 말을 걸지 않았다", source: seen }
+
+# ── 빚, 도망친 무리 ─────────────────────────────────────
+
+- id: bg_debt_old_ledger
+  title: 묵은 장부
+  tags: [world]
+  when:
+    flags_all: [bg_debt_faction_e]
+    flags_none: [bg_debt_found_me]
+    debt_gte: { faction_e: 1 }
+    day_gte: 3
+    segments: [morning, day, evening]
+  cast:
+    porter: { extra: e_porter, label: 나루상단 짐꾼, keep: bg_debt_porter }
+  setup: "{porter:이/가} 짐을 내려놓고 당신 앞에 선다. 품에서 손때 묻은 장부 쪽지를 꺼내 이름 줄을 손가락으로 짚는다. \"오래 안 보이더니. 이 줄, 아직 안 지워졌어.\""
+  ai_direction: 이 도시에 오기 전에 진 빚이 나루상단 장부에 남아 있다. 짐꾼은 받으러 온 것이 아니라 찾았다고 알리러 왔다. 상단은 빚진 사람이 어디 있는지 아는 것으로 충분하다고 여긴다. 갚을 방법을 물으면 짐마차 일을 말해 준다. 도망치면 상단 장부에 그것도 적힌다.
+  choices:
+    - id: pay_some
+      label: 통조림으로 일부를 갚는다
+      effects:
+        - take_item: { item: canned_food }
+        - debt: { faction: faction_e, delta: -3 }
+        - set_flag: bg_debt_found_me
+        - relation: { who: porter, axis: trust, delta: 1 }
+    - id: promise
+      label: 일로 갚겠다고 한다
+      effects:
+        - set_flag: bg_debt_found_me
+        - set_flag: wd_promised_work
+        - relation: { who: porter, axis: trust, delta: 1 }
+        - belief: { fact: "나루상단 짐꾼이 내 묵은 빚을 찾아냈다. 짐마차 일로 갚겠다고 했다", source: seen }
+    - id: deny
+      label: 그 사람은 내가 아니라고 한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: bg_debt_found_me
+          - belief: { fact: "나루상단 짐꾼에게 사람을 잘못 봤다고 했다. 쪽지를 다시 접어 넣었다", source: seen }
+        partial:
+          - set_flag: bg_debt_found_me
+          - debt: { faction: faction_e, delta: 2 }
+          - belief: { fact: "나루상단 짐꾼이 고개를 저으며 장부 쪽지에 무언가를 덧적었다", source: seen }
+        miss:
+          - set_flag: bg_debt_found_me
+          - debt: { faction: faction_e, delta: 3 }
+          - relation: { who: porter, axis: trust, delta: -2 }
+          - deed: { summary: 묵은 빚을 잡아떼다 나루상단 짐꾼에게 들켰다, tags: [deceit], severity: 1, privacy: semi_private }
+
+- id: bg_deserter_notice
+  title: 기둥에 붙은 종이
+  tags: [world]
+  when:
+    flags_any: [bg_deserter]
+    flags_none: [bg_deserter_noticed]
+    day_gte: 3
+    segments: [morning, day]
+  setup: "장터로 가는 길목, 기둥에 새 종이가 붙어 있다. 당신이 도망쳐 나온 무리의 표식 아래, 도망자를 데려오면 값을 쳐준다는 글. 생김새를 적은 줄이 몇 개 있다. 그중 하나가 당신 이야기 같다."
+  ai_direction: 주인공이 도망쳐 나온 무리(지난 일에 적힌 무리)가 붙인 종이다. 이름은 없고 생김새가 대충 적혀 있다. 주인공이라고 단정할 수는 없지만 사람들이 읽고 지나간다. 뜯어내면 누가 봤을 수 있다.
+  choices:
+    - id: tear
+      label: 주위를 보고 종이를 뜯어 낸다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: bg_deserter_noticed
+          - belief: { fact: "도망쳐 나온 무리가 도망자를 찾는 종이를 붙였다. 하나는 뜯어 냈다", source: seen }
+        partial:
+          - set_flag: bg_deserter_noticed
+          - belief: { fact: "도망자를 찾는 종이를 뜯다 지나가던 사람과 눈이 마주쳤다", source: seen }
+        miss:
+          - set_flag: bg_deserter_noticed
+          - deed: { summary: 도망자 수배 종이를 뜯다 사람들 눈에 띄었다, tags: [disobedience], severity: 1, privacy: public }
+    - id: change_look
+      label: 머리를 자르고 옷을 바꿔 입는다
+      effects:
+        - set_flag: bg_deserter_noticed
+        - belief: { fact: "도망자를 찾는 종이를 보고 머리를 자르고 겉옷을 바꿨다", source: seen }
+    - id: read_and_go
+      label: 끝까지 읽고 지나간다
+      effects:
+        - set_flag: bg_deserter_noticed
+        - belief: { fact: "도망쳐 나온 무리가 아직 도망자를 찾고 있다", source: seen }
+
+- id: bg_deserter_red_face
+  title: 같은 막사에서 자던 얼굴
+  tags: [world]
+  when:
+    flags_all: [bg_deserter_faction_c]
+    flags_none: [bg_deserter_met]
+    day_gte: 4
+    zone_owner: [none, other]
+    segments: [day, evening, night]
+  cast:
+    old: { extra: c_raider, label: 붉은연합 약탈대원, keep: bg_deserter_old }
+  setup: "붉은 완장을 찬 {old:이/가} 당신 앞에서 걸음을 멈춘다. 같은 막사에서 자던 얼굴이다. 그쪽 입꼬리가 천천히 올라간다. \"살아 있었네. 규율반에선 네가 죽은 줄 알아.\""
+  ai_direction: 붉은연합은 도망자를 규율반에 넘긴다. 이 사람은 주인공을 넘기면 공을 세운다. 하지만 이 사람도 할당량과 규율반에 지쳐 있다. 셈이 맞으면 못 본 척하고, 위협이 통하면 물러선다. 싸움이 나면 GM이 전투로 넘긴다. 한번 본 얼굴이라 다음에도 마주칠 수 있다.
+  choices:
+    - id: bribe
+      label: 탄약을 쥐여 주며 못 본 걸로 하자고 한다
+      effects:
+        - take_item: { item: rifle_rounds }
+        - set_flag: bg_deserter_met
+        - relation: { who: old, axis: trust, delta: 1 }
+        - belief: { fact: "붉은연합의 옛 막사 동료가 나를 알아봤다. 탄약을 받고 못 본 걸로 했다", source: seen }
+    - id: plead
+      label: 너도 지겹지 않으냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bg_deserter_met
+          - relation: { who: old, axis: affection, delta: 2 }
+          - belief: { fact: "붉은연합의 옛 막사 동료가 나를 놓아 주었다. 자기도 언젠가 나올 거라고 했다", source: report }
+        partial:
+          - set_flag: bg_deserter_met
+          - belief: { fact: "붉은연합의 옛 막사 동료가 이번 한 번만이라고 했다", source: seen }
+        miss:
+          - set_flag: bg_deserter_met
+          - set_flag: bg_hunted
+          - relation: { who: old, axis: trust, delta: -2 }
+          - belief: { fact: "붉은연합의 옛 막사 동료가 웃으며 떠났다. 규율반에 내 이야기가 들어갈 것이다", source: seen }
+    - id: threaten
+      label: 입을 열면 너도 끝이라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: bg_deserter_met
+          - relation: { who: old, axis: respect, delta: 1 }
+        partial:
+          - set_flag: bg_deserter_met
+          - relation: { who: old, axis: trust, delta: -1 }
+        miss:
+          - set_flag: bg_deserter_met
+          - set_flag: bg_hunted
+          - relation: { who: old, axis: trust, delta: -3 }
+          - zone_noise: 1
+
+# ── 잃은 사람들 ─────────────────────────────────────────
+
+- id: bg_loss_day
+  title: 그날 무렵
+  tags: [world]
+  when:
+    flags_all: [bg_loss]
+    flags_none: [bg_loss_day_kept]
+    day_gte: 7
+    segments: [night]
+  cast:
+    friend: { known: true, faction: own, trust_gte: 1, optional: true }
+  setup: "잠이 오지 않는다. 손가락으로 날을 꼽아 보니 그 일이 있던 무렵이다. 그날도 이렇게 바람이 셌다."
+  ai_direction: 잃은 사람들을 떠올리는 밤이다. 무엇을 잃었는지는 주인공의 기억(지난 일)에 있다. 감상적으로 늘어놓지 말고 몸의 감각 몇 개로. 곁에 아는 사람이 있으면 말을 꺼낼 수 있다 (그 사람도 잃은 사람이 있을 수 있다, 프로필에서).
+  choices:
+    - id: tell_friend
+      label: 깨어 있는 동료에게 그날 이야기를 한다
+      when: { cast: [friend] }
+      effects:
+        - set_flag: bg_loss_day_kept
+        - relation: { who: friend, axis: affection, delta: 2 }
+        - relation: { who: friend, axis: trust, delta: 1 }
+        - belief: { fact: "{friend}에게 잃은 사람들 이야기를 했다. 끝까지 들어 주었다", source: seen }
+    - id: names_aloud
+      label: 밖으로 나가 이름을 하나씩 소리 내어 부른다
+      effects:
+        - set_flag: bg_loss_day_kept
+        - body: { track: cold, delta: 1 }
+        - belief: { fact: "그날 무렵 밤, 잃은 사람들의 이름을 하나씩 불렀다", source: seen }
+    - id: work_through
+      label: 장비를 손질하며 밤을 넘긴다
+      effects:
+        - set_flag: bg_loss_day_kept
+
+- id: bg_loss_ruin
+  title: 비슷한 자리
+  tags: [world]
+  when:
+    flags_all: [bg_loss]
+    flags_none: [bg_loss_ruin_seen]
+    day_gte: 4
+    zone_owner: [none]
+    segments: [morning, day]
+  setup: "그을린 벽만 남은 집터. 문틀에 아이 키를 잰 금이 남아 있다. 마당에 신발 한 짝. 그날 그곳과 너무 닮아서 발이 멈춘다."
+  ai_direction: 주인공이 사람을 잃은 그 장소는 아니다 (닮았을 뿐이다). 이곳이 어떻게 무너졌는지는 모른다. 뒤지면 쓸 만한 것이 있을 수 있다. 주인공이 이 자리에서 무엇을 하는지가 그 사람의 성격을 보여 준다.
+  choices:
+    - id: search
+      label: 남은 것을 뒤진다. 산 사람이 써야 한다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: bg_loss_ruin_seen
+          - give_item: { item: canned_food }
+          - give_item: { item: cloth }
+        partial:
+          - set_flag: bg_loss_ruin_seen
+          - give_item: { item: cloth }
+        miss:
+          - set_flag: bg_loss_ruin_seen
+          - belief: { fact: "불탄 집터를 뒤졌지만 남은 것이 없었다", source: seen }
+    - id: bury
+      label: 신발 한 짝을 마당에 묻어 준다
+      effects:
+        - set_flag: bg_loss_ruin_seen
+        - deed: { summary: 남의 집터에 남은 신발을 묻어 주었다, tags: [mercy], severity: 1, privacy: private }
+    - id: walk_on
+      label: 보지 않고 지나간다
+      effects:
+        - set_flag: bg_loss_ruin_seen
+
+- id: bg_loss_same
+  title: 같은 날을 겪은 사람
+  tags: [world]
+  when:
+    flags_all: [bg_loss]
+    flags_none: [bg_loss_same_met]
+    day_gte: 5
+    segments: [evening, night]
+  cast:
+    other: { extra: refugee, label: 불가의 피난민 }
+  setup: "불가에서 {other:이/가} 자기 이야기를 한다. 한밤에 들이닥친 사람들, 불, 흩어진 식구. 듣다 보니 당신이 아는 날과 겹친다."
+  ai_direction: 이 피난민도 주인공과 같은 무렵에 사람을 잃었다 (같은 일인지, 닮은 일인지는 주인공의 지난 일과 맞춰 GM이 무게를 둔다. 확실한 사실처럼 단정하지 않는다). 가해자가 누구인지 아는 것을 말하면 주인공의 기억과 맞을 수도 다를 수도 있다. 이 사람은 복수를 바라지 않는다. 먹을 것과 오늘 밤 잘 곳이 필요하다.
+  choices:
+    - id: share_story
+      label: 나도 그런 날을 겪었다고 말한다
+      effects:
+        - set_flag: bg_loss_same_met
+        - relation: { who: other, axis: affection, delta: 2 }
+        - relation: { who: other, axis: trust, delta: 1 }
+        - belief: { fact: "피난민 {other}도 그 무렵 식구를 잃었다. 이야기를 나눴다", source: report }
+    - id: give_food
+      label: 말없이 통조림 하나를 건넨다
+      effects:
+        - set_flag: bg_loss_same_met
+        - take_item: { item: canned_food }
+        - relation: { who: other, axis: affection, delta: 2 }
+        - deed: { summary: 불가의 피난민에게 먹을 것을 나눴다, tags: [mercy], severity: 1, privacy: semi_private }
+    - id: ask_who
+      label: 누가 그랬는지 아느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: bg_loss_same_met
+          - set_flag: bg_loss_witness
+          - belief: { fact: "피난민 {other}이(가) 그날 쳐들어온 자들의 표식을 기억했다. 내 기억과 맞춰 볼 만하다", source: report }
+        partial:
+          - set_flag: bg_loss_same_met
+          - belief: { fact: "피난민 {other}은(는) 어두워서 누구였는지 모른다고 했다", source: report }
+        miss:
+          - set_flag: bg_loss_same_met
+          - relation: { who: other, axis: trust, delta: -1 }

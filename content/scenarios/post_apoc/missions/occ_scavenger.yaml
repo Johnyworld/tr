@@ -1,0 +1,48 @@
+# 수색꾼 직분의 일감 (기획서 12.6). 무리를 가리지 않는다: 어느 무리의 수색꾼이든 받는다
+# 완수하면 엔진이 직분 평판 +1을 준다
+
+- id: occ_scavenger_sweep
+  title: 무너진 건물 한 동 뒤지기
+  briefing: 지난번에 표시해 둔 건물 한 동을 위층부터 지하까지 뒤져 쓸 것을 건져 온다. 계단이 버티는지 먼저 보고, 해 지기 전에 나와라.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - activity: search
+      minutes: 120
+    - check: scavenge
+      min_outcome: partial
+
+- id: occ_scavenger_mark_route
+  title: 길 표시 다시 하기
+  briefing: 무너진 길, 감염체가 둥지를 튼 골목, 새로 막힌 다리. 수색로의 표시를 다시 확인하고 지워진 데는 새로 그어 둔다. 다음 사람이 그 표시를 믿고 걷는다.
+  giver_rank: squad_leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 90
+    - check: sense_danger
+      min_outcome: partial
+
+- id: occ_scavenger_medicine
+  title: 약 찾아오기
+  briefing: 창고에 약이 모자란다. 아직 안 털린 약국이나 병원 안쪽을 뒤져 붕대든 알약이든 찾아온다. 소리 내지 말고, 혼자 깊이 들어가지 마라.
+  giver_rank: squad_leader
+  deadline_hours: 18
+  requirements:
+    - activity: search
+      minutes: 90
+    - check: stealth
+      min_outcome: partial
+    - check: scavenge
+      min_outcome: partial
+
+- id: occ_scavenger_haul
+  title: 판자와 쇠붙이 건지기
+  briefing: 담을 고칠 판자와 쇠붙이가 모자란다. 무너진 가게에서 뜯을 수 있는 것을 뜯어 날라 온다. 무거우니 몇 번 오가야 할 것이다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: search
+      minutes: 60
+    - activity: work
+      minutes: 120

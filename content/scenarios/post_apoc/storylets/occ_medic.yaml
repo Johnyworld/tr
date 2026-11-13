@@ -1,0 +1,546 @@
+# 의무병 직분 이야기 (기획서 12.6). 어느 무리의 의무병이든 겪는 일. 하얀매 수습 의무병 시나리오(d_medic)와 따로다
+# 갈래:
+#   숨긴 상처: om_stitch_quiet → om_scratch_hidden: om_barracks_fever (정말 감염됐을 때만, 코드가 굴린다)
+#   포로 치료: om_enemy_cot (붉은연합 아닌 무리) / om_enemy_cot_red (붉은연합)
+#   사다리: om_cabinet_key·om_death_count (의무병부터) → om_dose_rule (의무장)
+#   떠돌이 의사: om_road_doctor → om_road_name: om_road_messenger (버들마을에 들어갈 길)
+
+# ── 어느 무리든: 누구를 먼저 ─────────────────────────────
+
+- id: om_two_stretchers
+  title: 들것 둘
+  tags: [occ_medic]
+  repeatable: true
+  cooldown_days: 4
+  urgent: true
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 2
+  cast:
+    young: { faction: own, ranks: [grunt] }
+    chief: { faction: own, ranks: [squad_leader, staff] }
+  setup: 문이 걷어차이듯 열리고 들것 둘이 한꺼번에 들어온다. 하나에는 {young:이/가}, 허벅지를 끈으로 묶은 채 숨을 짧게 쉰다. 다른 하나에는 {chief:이/가}, 어깨에서 피가 배어 나오는데도 일어나 앉으려 한다. 손은 둘, 등잔 하나. 들것을 든 사람들이 당신 얼굴을 본다.
+  ai_direction: 진짜 급한 쪽은 허벅지를 묶은 젊은 쪽이다. 끈이 느슨해지면 오래 못 간다. 어깨를 다친 쪽은 아프기만 하지 당장 죽지는 않는다. 들것을 든 사람들은 계급 높은 쪽을 먼저 볼 거라고 여긴다. 어깨를 다친 쪽은 먼저 봐 달라고 말하지 않지만, 순서를 기억한다.
+  choices:
+    - id: worse_first
+      label: 허벅지부터 본다. 계급은 보지 않는다
+      check: first_aid
+      outcomes:
+        success:
+          - standing: 2
+          - relation: { who: young, axis: trust, delta: 2 }
+          - relation: { who: chief, axis: respect, delta: 1 }
+          - belief: { fact: "들것 둘이 한꺼번에 왔을 때 허벅지를 다친 쪽부터 봤다. 피가 멎었고, 어깨를 다친 쪽은 끝까지 기다렸다", source: seen }
+        partial:
+          - standing: 1
+          - relation: { who: young, axis: trust, delta: 1 }
+          - npc_hurt: { who: chief, steps: 1 }
+          - belief: { fact: "허벅지는 막았지만 그사이 어깨를 다친 쪽의 상처가 벌어졌다", source: seen }
+        miss:
+          - npc_hurt: { who: young, steps: 1 }
+          - relation: { who: chief, axis: trust, delta: -1 }
+          - belief: { fact: "허벅지부터 봤는데 끈을 다시 묶는 사이 피를 너무 많이 흘렸다. 아직 숨은 붙어 있다", source: seen }
+    - id: rank_first
+      label: 어깨부터 본다. 다들 그걸 기대한다
+      effects:
+        - standing: -1
+        - relation: { who: chief, axis: trust, delta: 1 }
+        - relation: { who: young, axis: trust, delta: -2 }
+        - npc_hurt: { who: young, steps: 1 }
+        - deed: { summary: 들것 둘 중 계급 높은 쪽부터 치료하는 사이 젊은 쪽이 피를 더 흘렸다, tags: [selfishness], severity: 1, privacy: semi_private }
+    - id: put_them_to_work
+      label: 들것 든 사람들에게 허벅지 끈을 눌러 잡게 하고 둘을 번갈아 본다
+      check: improvise
+      outcomes:
+        success:
+          - standing: 1
+          - relation: { who: young, axis: trust, delta: 1 }
+          - relation: { who: chief, axis: trust, delta: 1 }
+          - belief: { fact: "들것을 든 사람들 손을 빌려 둘을 한꺼번에 붙들었다. 둘 다 밤을 넘겼다", source: seen }
+        partial:
+          - npc_hurt: { who: young, steps: 1 }
+          - belief: { fact: "남의 손을 빌렸지만 서툰 손이 끈을 놓쳤다. 허벅지를 다친 쪽이 한동안 의식을 잃었다", source: seen }
+        miss:
+          - standing: -1
+          - npc_hurt: { who: young, steps: 1 }
+          - npc_hurt: { who: chief, steps: 1 }
+          - belief: { fact: "둘을 한꺼번에 붙들려다 둘 다 놓칠 뻔했다. 의무실이 소란스러웠다는 말이 돈다", source: rumor }
+
+# ── 숨긴 상처 ─────────────────────────────────────────
+
+- id: om_stitch_quiet
+  title: 장부에 적지 마
+  tags: [occ_medic]
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 3
+    flags_none: [om_scratch_hidden, om_scratch_reported]
+  cast:
+    pt: { faction: own, ranks: [grunt, staff], keep: om_scratched }
+  setup: 불을 끄려는데 {pt:이/가} 문틈으로 들어와 바지 한쪽을 걷는다. 종아리에 손가락 길이만 한 상처, 가장자리가 들떠 있다. "철조망에 걸렸어. 꿰매기만 해 줘. 장부엔 적지 말고. 적으면 위에서 또 귀찮게 굴잖아."
+  ai_direction: 철조망이 아니다. 오늘 바깥에서 쓰러진 감염체를 넘다가 발목을 잡혔고, 손톱이 긁고 지나갔다. 정말 감염됐는지는 이 장면에서 코드가 굴리고 GM도 결과를 모른다. 이 사람은 격리가 두렵다기보다, 바깥 근무에서 빠지면 배급이 줄어 식구가 굶는다. 상처를 제대로 보면 철조망 자국이 아니라는 것은 알 수 있다.
+  choices:
+    - id: look_close
+      label: 꿰매기 전에 상처를 꼼꼼히 들여다보고 끝까지 씻어 낸다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: om_scratch_hidden
+          - npc_body: { who: pt, track: infection, delta: 1, chance: 0.15 }
+          - standing: 1
+          - relation: { who: pt, axis: trust, delta: 2 }
+          - belief: { fact: "종아리 상처는 철조망 자국이 아니라 손톱 자국이었다. 살이 쓰릴 만큼 씻어 내고 꿰맸다. 장부에는 적지 않았다", source: seen }
+          - deed: { summary: 감염체에게 긁힌 상처를 꿰매 주고 장부에 적지 않았다, tags: [loyalty, disobedience], severity: 1, privacy: private }
+        partial:
+          - set_flag: om_scratch_hidden
+          - npc_body: { who: pt, track: infection, delta: 1, chance: 0.35 }
+          - relation: { who: pt, axis: trust, delta: 1 }
+          - belief: { fact: "종아리 상처가 철조망 자국 같지 않았다. 씻고 꿰맸지만 장부에는 적지 않았다", source: seen }
+          - deed: { summary: 수상한 상처를 꿰매 주고 장부에 적지 않았다, tags: [loyalty, disobedience], severity: 1, privacy: private }
+        miss:
+          - set_flag: om_scratch_hidden
+          - npc_body: { who: pt, track: infection, delta: 1, chance: 0.5 }
+          - belief: { fact: "등잔불이 흐려 상처를 제대로 보지 못하고 꿰맸다. 장부에는 적지 않았다", source: seen }
+    - id: antibiotics
+      label: 자기 항생제를 먹이고 꿰맨다. 말없이
+      effects:
+        - take_item: { item: antibiotics }
+        - set_flag: om_scratch_hidden
+        # 긁힌 날 바로 쓴 항생제는 감염을 막는다 (굴린 뒤 바로 낫게 한다)
+        - npc_body: { who: pt, track: infection, delta: 1, chance: 0.4 }
+        - npc_body: { who: pt, track: infection, delta: -2 }
+        - standing: 1
+        - relation: { who: pt, axis: trust, delta: 2 }
+        - relation: { who: pt, axis: affection, delta: 1 }
+        - deed: { summary: 긁힌 상처에 자기 항생제를 쓰고 장부에 적지 않았다, tags: [mercy, disobedience], severity: 1, privacy: private }
+    - id: write_it_down
+      label: 장부에 적고 상관에게 알린다. 규칙이다
+      effects:
+        - set_flag: om_scratch_reported
+        - npc_body: { who: pt, track: infection, delta: 1, chance: 0.4 }
+        - standing: 1
+        - relation: { who: pt, axis: trust, delta: -3 }
+        - relation: { who: commander, axis: respect, delta: 1 }
+        - belief: { fact: "종아리 상처를 장부에 적고 위에 알렸다. 그 사람은 며칠 따로 지내게 되었다. 나가면서 한 번도 돌아보지 않았다", source: seen }
+        - deed: { summary: 숨겨 달라던 동료의 상처를 장부에 적고 위에 알렸다, tags: [diligence, honesty], severity: 1, privacy: semi_private }
+
+- id: om_barracks_fever
+  title: 숙소의 열
+  tags: [occ_medic]
+  urgent: true
+  when:
+    own_territory: true
+    segments: [night, dawn]
+    flags_all: [om_scratch_hidden]
+    flags_none: [om_scratch_done]
+  cast:
+    pt: { recall: om_scratched, condition: { track: infection, at_least: fever } }
+  setup: 누가 어깨를 흔든다. 같은 숙소 사람이다. "와 봐. {pt:이/가} 이상해." 담요 밑에서 {pt:이/가} 떨고 있다. 이마가 불덩이다. 종아리의 꿰맨 자리 둘레가 검붉게 부었다. 옆 침상들에서 사람들이 하나둘 고개를 든다.
+  ai_direction: 정말 감염이다 (코드가 정한 상태는 발열 이상). 플레이어에게 확정해 말하지는 않는다. 숙소에는 잠든 사람이 많다. 항생제가 듣는 단계는 거의 지났다. 이 사람은 끝까지 철조망이라고 우긴다. 장부에 적지 않은 것이 드러나면 의무병도 같이 문책된다.
+  choices:
+    - id: tell_now
+      label: 상관을 깨워 다 털어놓는다. 장부에 적지 않은 것까지
+      effects:
+        - set_flag: om_scratch_done
+        - standing: -1
+        - relation: { who: commander, axis: trust, delta: -1 }
+        - relation: { who: commander, axis: respect, delta: 1 }
+        - relation: { who: pt, axis: trust, delta: -1 }
+        - belief: { fact: "꿰매 주고 숨겨 둔 상처가 열로 번졌다. 상관에게 장부에 적지 않은 것까지 털어놓았다. 그 사람은 격리되었다", source: seen }
+        - deed: { summary: 숨겨 준 동료의 상처가 열로 번지자 상관에게 스스로 털어놓았다, tags: [honesty], severity: 2, privacy: semi_private }
+    - id: carry_out
+      label: 사람들을 물리고 혼자 창고로 옮겨 밤새 붙든다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: om_scratch_done
+          - npc_body: { who: pt, track: infection, delta: -1 }
+          - standing: 1
+          - relation: { who: pt, axis: trust, delta: 2 }
+          - belief: { fact: "창고에서 밤새 붙들었다. 새벽녘 열이 한 고비 꺾였다. 숙소 사람들은 무엇을 봤는지 서로 묻지 않는다", source: seen }
+        partial:
+          - set_flag: om_scratch_done
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "창고로 옮겼지만 열은 내리지 않았다. 숙소에서는 감염된 사람을 의무병이 숨겼다는 말이 돈다", source: report }
+        miss:
+          - set_flag: om_scratch_done
+          - npc_hurt: { who: pt, steps: 1 }
+          - faction_morale: { faction: own, delta: -1 }
+          - relation: { who: commander, axis: trust, delta: -2 }
+          - deed: { summary: 감염이 의심되는 동료를 숙소에서 몰래 빼내 숨기다 들켰다, tags: [disobedience, deceit], severity: 2, privacy: public }
+    - id: walk_out
+      label: 해 뜨기 전에 담 밖으로 데리고 나가 보낸다
+      effects:
+        - set_flag: om_scratch_done
+        - npc_depart: { who: pt }
+        - relation: { who: pt, axis: affection, delta: 2 }
+        - belief: { fact: "해 뜨기 전에 열이 오른 그 사람을 담 밖으로 데리고 나갔다. 어디로 가겠다는 말은 없었다", source: seen }
+        - deed: { summary: 열이 오른 감염 의심자를 몰래 담 밖으로 내보냈다, tags: [mercy, disobedience], severity: 2, privacy: private }
+
+# ── 적을 치료하는 일 ──────────────────────────────────
+
+- id: om_enemy_cot
+  title: 묶인 손목의 환자
+  tags: [occ_medic]
+  when:
+    factions: [faction_a, faction_b, faction_d, faction_e]
+    own_territory: true
+    segments: [morning, day, evening]
+    day_gte: 4
+    flags_none: [om_enemy_cot_done]
+  cast:
+    enemy: { extra: c_raider, label: 붙잡힌 붉은연합 약탈조원 }
+    guard: { faction: own, ranks: [grunt, staff] }
+  setup: 창고 기둥에 손목이 묶인 채 {enemy:이/가} 앉아 있다. 붉은 완장은 뜯겨 나갔고, 옆구리에 산탄 자국이 셋. {guard:이/가} 총을 무릎에 걸치고 문가에 앉아 있다. "물어볼 게 있대서 살려는 뒀는데. 약 쓸 거면 우리 몫에서 나가는 거 알지?"
+  ai_direction: 상처는 깊지 않지만 그냥 두면 곪아 며칠 안에 위험해진다. 약탈조원은 붉은연합의 할당량 때문에 나왔다고 말할 것이다. 치료해 주면 고마워하고, 붙잡히기 전 조가 어느 길로 다녔는지 흘릴 수도 있다. 지켜보는 사람은 약이 적에게 가는 것을 못마땅해한다. 무리 사람들은 이 일을 두고 말이 갈린다.
+  choices:
+    - id: treat_full
+      label: 우리 사람 치료하듯 끝까지 치료한다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: om_enemy_cot_done
+          - faction_resource: { faction: own, resource: medicine, delta: -2 }
+          - standing: 1
+          - relation: { who: enemy, axis: trust, delta: 2 }
+          - relation: { who: guard, axis: respect, delta: -1 }
+          - belief: { fact: "붙잡힌 붉은연합 약탈조원이 상처를 꿰매 받다가 중얼거렸다. 조마다 할당량이 있고, 못 채우면 그 조 전체가 굶는다고", source: report }
+          - deed: { summary: 붙잡힌 붉은연합 약탈조원을 우리 약으로 끝까지 치료했다, tags: [mercy, enemy_sympathy], severity: 1, privacy: public }
+        partial:
+          - set_flag: om_enemy_cot_done
+          - faction_resource: { faction: own, resource: medicine, delta: -2 }
+          - relation: { who: guard, axis: respect, delta: -1 }
+          - deed: { summary: 붙잡힌 붉은연합 약탈조원에게 우리 약을 썼다, tags: [mercy, enemy_sympathy], severity: 1, privacy: public }
+        miss:
+          - set_flag: om_enemy_cot_done
+          - faction_resource: { faction: own, resource: medicine, delta: -2 }
+          - npc_hurt: { who: enemy, steps: 1 }
+          - standing: -1
+          - belief: { fact: "포로에게 약을 쓰고도 상처를 덧나게 했다. 문가의 사람이 혀를 찼다", source: seen }
+    - id: keep_alive
+      label: 물어볼 동안만 버틸 만큼 해 준다. 약은 쓰지 않는다
+      check: improvise
+      outcomes:
+        success:
+          - set_flag: om_enemy_cot_done
+          - relation: { who: guard, axis: respect, delta: 1 }
+          - relation: { who: commander, axis: trust, delta: 1 }
+          - belief: { fact: "포로의 상처를 끓인 물과 천만으로 막았다. 며칠은 버틴다", source: seen }
+        partial:
+          - set_flag: om_enemy_cot_done
+          - npc_hurt: { who: enemy, steps: 1 }
+          - belief: { fact: "약 없이 막은 포로의 상처가 벌써 냄새를 풍긴다", source: seen }
+        miss:
+          - set_flag: om_enemy_cot_done
+          - npc_hurt: { who: enemy, steps: 2 }
+          - standing: -1
+          - belief: { fact: "약 없이 막으려던 포로의 상처가 곪았다. 열에 들떠 아무 말도 하지 못한다", source: seen }
+    - id: refuse
+      label: 우리 사람 몫을 적에게 쓰지 않는다
+      effects:
+        - set_flag: om_enemy_cot_done
+        - standing: -1
+        - relation: { who: guard, axis: trust, delta: 1 }
+        - relation: { who: enemy, axis: trust, delta: -2 }
+        - deed: { summary: 다친 포로를 치료하지 않고 돌아섰다, tags: [cruelty], severity: 1, privacy: semi_private }
+
+- id: om_enemy_cot_red
+  title: 규율반의 환자
+  tags: [occ_medic]
+  when:
+    factions: [faction_c]
+    own_territory: true
+    segments: [morning, day, evening]
+    day_gte: 4
+    flags_none: [om_enemy_cot_done]
+  cast:
+    enemy: { extra: b_guard, label: 붙잡힌 버들마을 경비병 }
+    boss: { faction: own, ranks: [squad_leader, officer] }
+  setup: 막사 뒤 창고에 {enemy:이/가} 누워 있다. 다리에 총알이 박힌 채 이틀째다. {boss:이/가} 장부를 들고 서서 말한다. "위원회는 이놈 입에서 버들마을 담 어디가 약한지 들어야 해. 말할 때까지만 살려 둬. 약은 일 인분도 장부에 남기지 마."
+  ai_direction: 붉은연합에서 포로는 쓸모로 잰다. 경비병은 집에 아이가 둘 있는 평범한 마을 사람이고, 담에 대해 아는 것도 거의 없다. 총알을 빼지 않으면 다리를 잃거나 죽는다. 규율반은 의무병이 적에게 무엇을 해 주는지 본다. 치료를 넘치게 하면 적에게 마음을 준 사람으로 적힌다.
+  choices:
+    - id: treat_full
+      label: 총알을 빼고 제대로 꿰맨다. 장부에는 붕대만 적는다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: om_enemy_cot_done
+          - standing: 1
+          - relation: { who: enemy, axis: trust, delta: 2 }
+          - belief: { fact: "버들마을 경비병이 총알을 뺀 뒤 울면서 말했다. 담 일은 모르고, 집에 애가 둘이라고", source: report }
+          - deed: { summary: 위원회의 포로를 시킨 것 이상으로 치료했다, tags: [mercy, enemy_sympathy, disobedience], severity: 1, privacy: semi_private }
+        partial:
+          - set_flag: om_enemy_cot_done
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - deed: { summary: 위원회의 포로를 시킨 것 이상으로 치료하다 들켰다, tags: [enemy_sympathy, disobedience], severity: 1, privacy: semi_private }
+        miss:
+          - set_flag: om_enemy_cot_done
+          - npc_hurt: { who: enemy, steps: 1 }
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - deed: { summary: 포로에게 몰래 손을 쓰다 일을 그르치고 들켰다, tags: [enemy_sympathy, disobedience], severity: 2, privacy: public }
+    - id: as_ordered
+      label: 시킨 만큼만. 말할 때까지만 버티게 한다
+      effects:
+        - set_flag: om_enemy_cot_done
+        - merit: 1
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - npc_hurt: { who: enemy, steps: 1 }
+        - belief: { fact: "포로는 총알이 박힌 채로 버티고 있다. 담에 대해 아는 것이 없는 것 같다", source: seen }
+    - id: say_nothing_to_tell
+      label: 이 사람은 아는 게 없다고, 치료할 값도 없다고 보고한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: om_enemy_cot_done
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - npc_depart: { who: enemy, to_faction: faction_b }
+          - belief: { fact: "포로는 쓸모없다는 보고가 받아들여져 강변 쪽으로 내던져졌다. 걸을 수는 있었다", source: seen }
+          - deed: { summary: 아는 것 없는 포로를 쓸모없다고 보고해 풀려나게 했다, tags: [mercy, deceit], severity: 1, privacy: private }
+        partial:
+          - set_flag: om_enemy_cot_done
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "포로가 아는 게 없다고 보고했지만 위원회는 이틀 더 물어보기로 했다", source: seen }
+        miss:
+          - set_flag: om_enemy_cot_done
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - deed: { summary: 포로를 감싸는 보고를 올렸다가 규율반에 이름이 적혔다, tags: [enemy_sympathy], severity: 2, privacy: semi_private }
+
+# ── 사다리: 의무병이 되면 ─────────────────────────────
+
+- id: om_cabinet_key
+  title: 약장 열쇠
+  tags: [occ_medic]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    occupation_step_gte: 1
+    own_territory: true
+    segments: [evening, night]
+  cast:
+    asker: { faction: own, ranks: [squad_leader, staff], known: true }
+  setup: 이제 약장 열쇠는 당신 허리에 걸려 있다. 밤늦게 {asker:이/가} 찾아와 목소리를 낮춘다. "내일 우리 조가 멀리 나가. 진통제랑 붕대, 조금만 더 챙겨 줘. 남들 몫까지는 안 바래. 돌아오면 갚을게."
+  ai_direction: 이 사람의 조가 내일 정말 위험한 데로 나가는 것은 맞다. 다만 다른 조도 다 그렇게 말한다. 한 번 내주면 다음 사람도 온다. 약장 숫자는 무리 전체의 몫이다.
+  choices:
+    - id: by_the_book
+      label: 정해진 몫만. 모자라면 상관에게 말하라고 한다
+      effects:
+        - standing: 1
+        - relation: { who: asker, axis: trust, delta: -1 }
+        - relation: { who: asker, axis: respect, delta: 1 }
+        - deed: { summary: 약장 열쇠를 쥐고 정해진 몫 밖으로는 한 알도 내주지 않았다, tags: [diligence], severity: 1, privacy: semi_private }
+    - id: from_own_kit
+      label: 약장은 열지 않고 자기 붕대를 내준다
+      effects:
+        - take_item: { item: bandage }
+        - relation: { who: asker, axis: trust, delta: 2 }
+        - relation: { who: asker, axis: affection, delta: 1 }
+    - id: open_cabinet
+      label: 약장을 연다. 장부는 나중에 맞추면 된다
+      effects:
+        - faction_resource: { faction: own, resource: medicine, delta: -2 }
+        - standing: -1
+        - relation: { who: asker, axis: trust, delta: 2 }
+        - set_flag: om_cabinet_opened
+        - deed: { summary: 약장을 열어 한 조에만 약을 더 내주고 장부를 맞추지 않았다, tags: [theft, loyalty], severity: 1, privacy: private }
+
+- id: om_death_count
+  title: 오늘의 숫자
+  tags: [occ_medic]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    occupation_step_gte: 1
+    own_territory: true
+    segments: [evening]
+    day_gte: 5
+  cast:
+    boss: { commander: true }
+  setup: "{boss:이/가} 의무실 장부를 넘기다 손가락을 멈춘다. 이번 열흘, 의무실에서 나간 사람 가운데 걸어서 나가지 못한 사람의 줄. \"이 숫자, 모두 앞에서 읽을 거야? 요즘 분위기 알잖아. 좀… 둥글게 해.\""
+  ai_direction: 숫자는 장부에 이미 있다. GM은 몇 명인지 말하지 않는다. 상관은 사기를 걱정하는 것이지 나쁜 사람이 아니다. 둥글게 하면 아무도 모르지만, 죽은 사람의 식구는 안다. 정직하게 읽으면 무리가 잠시 가라앉는다.
+  choices:
+    - id: read_true
+      label: 있는 그대로 읽는다. 이름까지
+      effects:
+        - standing: 1
+        - faction_morale: { faction: own, delta: -1 }
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "식당에서 의무실 장부의 이름들을 소리 내어 읽었다. 아무도 숟가락을 들지 않았다", source: seen }
+        - deed: { summary: 의무실에서 잃은 사람들의 이름을 모두 앞에서 그대로 읽었다, tags: [honesty], severity: 1, privacy: public }
+    - id: round_it
+      label: 둥글게 한다. 줄 몇 개는 다른 데로 옮겨 적는다
+      effects:
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - set_flag: om_book_rounded
+        - deed: { summary: 의무실 장부의 죽은 사람 줄을 다른 데로 옮겨 적었다, tags: [deceit], severity: 1, privacy: private }
+    - id: tell_families
+      label: 모두 앞에서는 안 읽고, 식구들을 하나씩 찾아가 직접 말한다
+      check: persuade
+      outcomes:
+        success:
+          - standing: 2
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "죽은 사람들의 식구를 하나씩 찾아가 마지막이 어땠는지 말했다. 몇은 고맙다고 했다", source: seen }
+        partial:
+          - standing: 1
+          - belief: { fact: "식구들을 찾아갔다. 한 사람은 문을 열어 주지 않았다", source: seen }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "식구를 찾아가 말을 꺼냈다가 멱살을 잡혔다. 왜 우리 애만 못 살렸냐고", source: seen }
+
+# ── 사다리: 의무장이 되면 ─────────────────────────────
+
+- id: om_dose_rule
+  title: 약 나누는 법
+  tags: [occ_medic]
+  when:
+    occupation_step_gte: 2
+    own_territory: true
+    segments: [morning, day]
+    flags_none: [om_dose_rule_set]
+  cast:
+    boss: { faction: own, ranks: [officer] }
+  setup: 지도부 자리에 처음으로 당신 의자가 놓였다. {boss:이/가} 의약품 장부를 당신 앞으로 민다. "이제 의무장이니까 정해. 모자랄 때 누구부터인지. 정해 두지 않으면 날마다 문 앞에서 싸움이 나. 네가 정한 게 규칙이 된다."
+  ai_direction: 이 결정은 무리 전체의 규칙이 된다. 전투원 먼저면 바깥 일이 버티지만 아이와 노인의 식구들이 등을 돌린다. 아이 먼저면 무리가 따뜻해지지만 전투원들은 다음 작전에서 몸을 사린다. 바깥에서 약을 사 오자고 하면 물이 빠져나간다. 어느 쪽도 공짜가 아니다. 숫자는 말하지 않는다.
+  choices:
+    - id: fighters_first
+      label: 담을 지키고 바깥에 나가는 사람이 먼저다
+      effects:
+        - set_flag: om_dose_rule_set
+        - set_flag: om_rule_fighters
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "의무장으로서 정했다. 약이 모자라면 전투원이 먼저다. 식당에서 아이 엄마들이 말수를 줄였다", source: seen }
+        - deed: { summary: 약이 모자라면 전투원부터라는 규칙을 정했다, tags: [diligence], severity: 2, privacy: public }
+    - id: weak_first
+      label: 아이와 노인이 먼저다. 버틸 힘이 없는 사람부터
+      effects:
+        - set_flag: om_dose_rule_set
+        - set_flag: om_rule_weak
+        - faction_morale: { faction: own, delta: 1 }
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - belief: { fact: "의무장으로서 정했다. 약이 모자라면 아이와 노인이 먼저다. 전투원 몇이 그럼 우리는 알아서 살라는 거냐고 했다", source: seen }
+        - deed: { summary: 약이 모자라면 아이와 노인부터라는 규칙을 정했다, tags: [mercy], severity: 2, privacy: public }
+    - id: buy_more
+      label: 순서 대신 물을 내주고 바깥에서 약을 사 오자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: om_dose_rule_set
+          - faction_policy: { faction: own, topic: trade, option: water_for_medicine }
+          - standing: 1
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "의무장의 말에 지도부가 교역 방침을 바꿨다. 물을 내주고 의약품을 들여온다", source: seen }
+        partial:
+          - set_flag: om_dose_rule_set
+          - belief: { fact: "약을 사 오자는 말에 지도부는 고개를 끄덕였지만 아무것도 정하지 않았다. 순서는 그날그날 의무장이 정한다", source: seen }
+        miss:
+          - standing: -1
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "물을 내주자는 말에 지도부 자리가 차가워졌다. 순서를 정하라는 말만 다시 돌아왔다", source: seen }
+
+# ── 무소속: 떠돌이 의사 ───────────────────────────────
+
+- id: om_road_doctor
+  title: 길가의 진료
+  tags: [occ_medic]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    factions: [none]
+    zone_owner: [none]
+    segments: [morning, day, evening]
+  cast:
+    pt: { extra: refugee, label: 곪은 손의 피난민 }
+  setup: 무너진 버스 정류장에 {pt:이/가} 쭈그려 앉아 손을 감싸 쥐고 있다. 손등이 퉁퉁 부어 반질거린다. 당신 짐에서 붕대 끝이 삐져나온 것을 보더니 일어선다. "의사요? 의사 맞죠? 줄 건… 이것밖에 없는데."
+  ai_direction: 못에 찔린 상처가 곪았다. 지금 째고 짜내면 산다. 내놓는 것은 낡은 담배 몇 개비다. 이 근처 떠돌이들은 서로 말을 옮긴다. 공짜로 해 주면 소문이 빨리 돈다.
+  choices:
+    - id: lance_free
+      label: 째고 짜내고 붕대를 감아 준다. 값은 안 받는다
+      check: first_aid
+      outcomes:
+        success:
+          - take_item: { item: bandage }
+          - set_flag: om_road_name
+          - standing: 1
+          - relation: { who: pt, axis: trust, delta: 2 }
+          - belief: { fact: "길가에서 곪은 손을 째 주었다. 떠돌이들 사이에 값 안 받는 의사가 있다는 말이 돈다", source: rumor }
+          - deed: { summary: 길가의 피난민 손을 값 없이 치료해 주었다, tags: [mercy], severity: 1, privacy: public }
+        partial:
+          - take_item: { item: bandage }
+          - set_flag: om_road_name
+          - relation: { who: pt, axis: trust, delta: 1 }
+          - belief: { fact: "곪은 손을 쨌지만 고름을 다 빼지 못했다. 며칠 지켜봐야 한다고 일렀다", source: seen }
+        miss:
+          - take_item: { item: bandage }
+          - standing: -1
+          - npc_hurt: { who: pt, steps: 1 }
+          - belief: { fact: "곪은 손을 째다 깊이 들어갔다. 피난민은 손을 감싸 쥐고 비틀거리며 떠났다", source: seen }
+    - id: for_price
+      label: 담배를 받고 해 준다. 공짜는 없다
+      check: first_aid
+      outcomes:
+        success:
+          - give_item: { item: cigarettes, from: pt }
+          - relation: { who: pt, axis: respect, delta: 1 }
+          - belief: { fact: "곪은 손을 째 주고 담배를 받았다", source: seen }
+        partial:
+          - give_item: { item: cigarettes, from: pt }
+          - belief: { fact: "담배를 받고 손을 쨌다. 고름이 덜 빠졌다", source: seen }
+        miss:
+          - relation: { who: pt, axis: trust, delta: -1 }
+          - belief: { fact: "값을 받으려다 손이 미끄러졌다. 피난민은 담배를 도로 가져갔다", source: seen }
+    - id: pass_by
+      label: 붕대는 내 몫이다. 지나간다
+      effects:
+        - deed: { summary: 손이 곪은 피난민을 길가에 두고 지나갔다, tags: [selfishness], severity: 1, privacy: semi_private }
+
+- id: om_road_messenger
+  title: 의사를 찾는 사람
+  tags: [occ_medic]
+  when:
+    factions: [none]
+    zone_owner: [none]
+    segments: [morning, day]
+    day_gte: 4
+    flags_all: [om_road_name]
+    flags_none: [om_road_messenger_done]
+  cast:
+    runner: { extra: b_guard, label: 버들마을 심부름꾼 }
+  setup: "{runner:이/가} 숨을 몰아쉬며 다가온다. 어깨의 엽총보다 신발 밑창이 더 닳았다. \"값 안 받는 의사가 이 근처에 있다길래. 우리 마을에 열병이 돌아요. 애들부터 넘어가요. 와 주기만 하면 대표님이 자리를 내주신대요.\""
+  ai_direction: 버들마을에 정말 열병이 돌고, 마을에는 제대로 된 의사가 없다. 대표는 의사가 눌러앉기를 바란다. 무리에 들어가면 지붕과 밥이 생기지만, 버들마을의 적(붉은연합)이 당신의 적이 된다. 한 번만 와서 봐 주는 것도 고마워한다.
+  choices:
+    - id: join
+      label: 마을로 간다. 눌러앉는다
+      effects:
+        - set_flag: om_road_messenger_done
+        - join_faction: { faction: faction_b, title: 마을 의사 }
+        - standing: 1
+        - faction_morale: { faction: faction_b, delta: 1 }
+        - relation: { who: runner, axis: trust, delta: 2 }
+        - belief: { fact: "버들마을 열병을 보러 갔다가 눌러앉았다. 이제 마을 의사다", source: seen }
+    - id: house_call
+      label: 한 번만 가서 보고 온다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: om_road_messenger_done
+          - standing: 2
+          - give_item: { item: canned_food, quantity: 2 }
+          - relation: { who: runner, axis: trust, delta: 2 }
+          - belief: { fact: "버들마을에 가서 열병 앓는 아이들을 돌보고 왔다. 마을 사람들이 통조림을 싸 주었다", source: seen }
+        partial:
+          - set_flag: om_road_messenger_done
+          - standing: 1
+          - give_item: { item: canned_food }
+          - belief: { fact: "버들마을 열병은 한 고비를 넘겼다. 아이 하나는 끝내 못 일어났다", source: seen }
+        miss:
+          - set_flag: om_road_messenger_done
+          - standing: -1
+          - belief: { fact: "버들마을에 갔지만 열을 잡지 못했다. 마을 사람들이 떠돌이 의사도 별수 없다고 했다", source: report }
+    - id: decline
+      label: 거절한다. 무리 일에는 엮이지 않는다
+      effects:
+        - set_flag: om_road_messenger_done
+        - relation: { who: runner, axis: trust, delta: -1 }

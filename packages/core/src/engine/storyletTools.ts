@@ -367,6 +367,7 @@ function applyEffect(
   if ("body" in effect) {
     const { track, delta } = effect.body;
     if (track === content.scenario.harm_track) return {};
+    if (effect.body.chance < 1 && ctx.rng() >= effect.body.chance) return {}; // 이번엔 아무 일도 없었다 (아무도 모른다)
     const t = content.scenario.condition_tracks.find((x) => x.id === track);
     const player = state.characters[playerId]!;
     if (!t) return {};

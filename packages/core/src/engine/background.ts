@@ -25,6 +25,8 @@ export function applyBackground(ctx: ToolContext, parts: readonly HistoryPart[])
     store.append({ type: "extra_spawned", character: createExtraCharacter(content, t, { id, label, zone, time: state.time, usedNames }, rng) });
     store.append({ type: "name_learned", characterId: state.playerId, targetId: id });
     store.append({ type: "name_learned", characterId: id, targetId: state.playerId });
+    // 다른 구역에 있는 사람이라 지금 장면에는 없다
+    if (zone !== state.playerZone && store.getState().scene.present.includes(id)) store.append({ type: "npc_left", npcId: id });
     return id;
   };
   for (const part of parts) {

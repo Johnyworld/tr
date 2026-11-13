@@ -87,6 +87,8 @@ describe("배경 부품", () => {
     expect(s.characters[kin]!.extra?.zone).toBe("riverside");
     const sought = s.background.find((e) => e.part.kind === "seeking")!.characterId!;
     expect(s.characters[sought]!.extra?.zone).not.toBe(s.playerZone);
+    expect(s.scene.present).not.toContain(sought);
+    expect(s.scene.present).not.toContain(kin);
     const gm = describePlayerState(s, w.content);
     expect(gm).toContain("지난 일 (세계의 사실");
     expect(gm).toContain("원수: 마경수");
@@ -115,5 +117,31 @@ describe("배경 부품", () => {
     expect(eligibleStorylets(s, c({ foe: role({ background: "enemy" }) }))).toHaveLength(1);
     expect(eligibleStorylets(s, c({ foe: role({ background: "sought", here: true }) }))).toHaveLength(0);
     expect(eligibleStorylets(s, c({ foe: role({ background: "enemy_member" }) }))).toHaveLength(1);
+    // 빚진 무리, 도망친 무리의 사람은 그 배경이 있을 때만
+    expect(eligibleStorylets(s, c({ foe: role({ background: "creditor" }) }))).toHaveLength(0);
+    const w2 = open({ ...cook, history: [{ kind: "debt", faction: "faction_e", size: "small" }, { kind: "deserter", faction: "faction_c" }, { kind: "enemy", target: "faction_c", why: "x", knows_you: false }] });
+    const c2 = (cast: Record<string, unknown>) => ({ ...w2.content, storylets: { bgtest: story(cast) as never } });
+    expect(eligibleStorylets(w2.state(), c2({ foe: role({ background: "creditor" }) }))).toHaveLength(1);
+    expect(eligibleStorylets(w2.state(), c2({ foe: role({ background: "deserted" }) }))).toHaveLength(1);
+    expect(w2.state().characters[w2.state().playerId]!.debts.faction_e).toBe(5);
   });
+});
+
+describe("직분 자동 플레이", () => {
+  for (const [occupation, faction, rank] of [
+    ["cook", "faction_c", "grunt"],
+    ["mechanic", "faction_e", "staff"],
+    ["trader", null, "loner"],
+  ] as const) {
+    it(`${occupation}: 오류 없이 돌고, 직분 이야기가 열린다`, async () => {
+      const { autoplay } = await import("../sim/autoplay.ts");
+      const location = faction ? Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")!.id : "old_town";
+      const w = open({ ...cook, faction, rank, occupation, location });
+      const stats = autoplay(w, w.content, createSeededRng(9), 300);
+      w.close();
+      expect(stats.errors).toEqual([]);
+      const tag = `occ_${occupation}`;
+      expect(Object.keys(stats.storyletsFired).some((id) => content.storylets[id]?.tags.includes(tag))).toBe(true);
+    }, 30_000);
+  }
 });

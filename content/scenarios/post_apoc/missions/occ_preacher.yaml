@@ -1,0 +1,45 @@
+# 종교인 직분의 일감 (기획서 12.6). 무리를 가리지 않는다: 어느 무리의 종교인이든 상관에게 받는다
+# (무소속 종교인은 상관이 없어 일감을 받지 않는다. 이야기로만 평판이 쌓인다)
+# 완수하면 엔진이 직분 평판 +1. requirements 형식은 a_grunt_basic.yaml 머리말 참고
+
+- id: occ_preacher_burial
+  title: 장례 치르기
+  briefing: 어제 죽은 사람을 묻는다. 구덩이를 파고, 가족이 있으면 곁에 세우고, 이름을 불러 준다. 감염된 몸이면 먼저 태운다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: persuade
+      min_outcome: partial
+
+- id: occ_preacher_sickbed
+  title: 앓는 사람 곁 지키기
+  briefing: 열이 오른 사람 곁에서 밤을 지킨다. 물을 먹이고 말을 들어 준다. 상태가 바뀌면 바로 사람을 부른다.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - activity: talk
+      minutes: 120
+    - check: endure
+      min_outcome: partial
+
+- id: occ_preacher_evening_word
+  title: 저녁 모임의 말씀
+  briefing: 저녁 배급 뒤 식당에 모인 사람들 앞에서 말을 한다. 겁을 주지 말고, 거짓 약속도 하지 말고, 내일 아침까지 버틸 만큼만.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - check: persuade
+      min_outcome: partial
+
+- id: occ_preacher_quarantine_rite
+  title: 격리된 사람의 마지막 말
+  briefing: 물리거나 긁혀 갇힌 사람이 사람을 불렀다. 문 너머로 마지막 말을 듣고 가족에게 전한다. 문은 열지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - check: infected_lore
+      min_outcome: partial
+    - activity: talk
+      minutes: 60

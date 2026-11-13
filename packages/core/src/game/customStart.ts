@@ -111,12 +111,16 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
   const level = rankLevel(content, input.rank);
   const members = faction ? Object.values(content.npcs).filter((n) => n.faction === faction) : [];
   // 같은 계급의 콘텐츠 시나리오가 있으면 그 상관, 없으면 바로 위 계급 중 id 순으로 첫 사람 (파일 순서와 무관하게)
-  const commander =
-    (same?.rank === input.rank && same.commander ? content.npcs[same.commander] : undefined) ??
-    members
-      .filter((n) => rankLevel(content, n.rank) > level)
-      .sort((a, b) => rankLevel(content, a.rank) - rankLevel(content, b.rank) || a.id.localeCompare(b.id))[0];
+  // 전투원이 아닌 직분은 거점에 머무는 윗사람(간부, 간부면 지도부)을 상관으로: 바깥을 도는 분대장은 일찍 붙잡히거나 죽는다
   const occ = occupationById(content, input.occupation);
+  const above = members
+    .filter((n) => rankLevel(content, n.rank) > level && !n.start_captive && !n.roams?.length)
+    .sort((a, b) => rankLevel(content, a.rank) - rankLevel(content, b.rank) || a.id.localeCompare(b.id));
+  const officerLevel = rankLevel(content, "officer");
+  const commander =
+    (same?.rank === input.rank && same.commander && (!occ || occ.borrows_role) ? content.npcs[same.commander] : undefined) ??
+    (occ && !occ.borrows_role ? above.find((n) => rankLevel(content, n.rank) >= Math.max(officerLevel, level + 1)) : undefined) ??
+    above[0];
   // 직분의 훈련은 시작 훈련에 더한다 (포인트와 따로, 스킬 하나의 상한은 지킨다)
   const skills: Record<string, number> = Object.fromEntries(Object.entries(input.skills).filter(([, v]) => v > 0));
   for (const [m, v] of Object.entries(occ?.skills ?? {})) skills[m] = Math.min(content.scenario.ranges.skill.max, (skills[m] ?? 0) + v);

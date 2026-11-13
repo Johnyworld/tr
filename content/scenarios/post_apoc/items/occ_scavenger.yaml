@@ -1,0 +1,7 @@
+# 수색꾼 직분의 물건 (기획서 12.6). 찾은 것을 낼지 숨길지(storylets/occ_scavenger.yaml)
+- id: sealed_med_case
+  name: 봉인된 약품 상자
+  description: 붕괴 전 병원 이름이 찍힌 쇠 상자. 고무 패킹이 아직 살아 있어 흔들어도 소리가 없다. 열면 무엇이 들었든 무리 창고에서는 큰 몫이다.
+  kind: misc
+  weight: 2.0
+  value: 20

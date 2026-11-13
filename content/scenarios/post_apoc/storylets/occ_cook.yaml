@@ -1,0 +1,663 @@
+# 요리사 직분 이야기 (기획서 12.6). 태그 occ_cook, 무리를 가리지 않는다 ("우리 무리의 식당")
+# 갈래 (플래그 머리 occ_cook_):
+#   솥: occ_cook_thin_pot (식량이 모자란 날, 반복) / occ_cook_spoiled_meat (상한 고기)
+#   한 국자: occ_cook_extra_ladle → occ_cook_ladle_seen (누가 봤다)
+#   식당의 귀: occ_cook_mess_whisper (숨은 관계를 엿듣는다)
+#   밥상: occ_cook_funeral_table (장례 밥) / occ_cook_prisoner_bowl (포로의 그릇)
+#   부엌 반장 (칸 1): occ_cook_kitchen_rat → occ_cook_rat_cornered (부엌의 쥐)
+#   주방장 (칸 2): occ_cook_ration_council (배급 회의의 자리)
+#   무리마다: occ_cook_red_quota (붉은연합의 조별 솥) / occ_cook_white_porridge (하얀매의 환자 죽) / occ_cook_pine_line (청솔형제단의 줄)
+
+# ── 솥 ─────────────────────────────────────
+
+- id: occ_cook_thin_pot
+  title: 묽어지는 솥
+  tags: [occ_cook]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    own_territory: true
+    segments: [dawn, morning]
+    own_food_days_lte: 9
+  cast:
+    boss: { commander: true, enter: false }
+  setup: 창고에서 내준 자루가 어제보다 가볍다. 솥은 같은데 줄은 그대로다. 국자로 바닥을 긁어 보면 건더기가 손에 잡히지 않는다. 밖에서 벌써 그릇 부딪는 소리가 난다.
+  ai_direction: 무리의 식량이 바닥을 보이기 시작했다. 요리사의 손에 오늘 하루 배급의 맛이 달렸다. 뼈를 다시 고거나 풀을 섞어 늘릴 수 있지만, 잘못 섞으면 탈이 난다. 양을 숫자로 말하지 않는다.
+  choices:
+    - id: stretch
+      label: 뼈를 다시 고고 말린 풀을 섞어 양을 늘린다
+      check: survival
+      outcomes:
+        success:
+          - faction_resource: { faction: own, resource: food, delta: 3 }
+          - standing: 1
+          - belief: { fact: "모자란 자루로도 솥을 다 채웠다. 사람들은 묽다고 투덜대면서도 그릇을 비웠다", source: seen }
+        partial:
+          - faction_resource: { faction: own, resource: food, delta: 2 }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "양은 늘렸지만 국이 쓰고 비렸다. 줄 끝에서 불평이 오래 갔다", source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - standing: -1
+          - belief: { fact: "섞은 풀 때문에 국이 탔다. 반쯤 버려야 했고, 사람들이 요리사를 쳐다보았다", source: seen }
+    - id: same_portion
+      label: 받은 만큼만 끓이고, 줄 끝은 모자라는 대로 둔다
+      effects:
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "받은 재료대로만 끓였다. 줄 끝의 몇은 빈 그릇으로 돌아갔다", source: seen }
+    - id: own_share
+      label: 내 몫을 솥에 털어 넣는다
+      effects:
+        - body: { track: hunger, delta: 1 }
+        - faction_resource: { faction: own, resource: food, delta: 1 }
+        - standing: 1
+        - deed: { summary: 모자란 솥에 자기 몫을 털어 넣었다, tags: [mercy], severity: 1, privacy: semi_private }
+
+- id: occ_cook_spoiled_meat
+  title: 냄새나는 고기
+  tags: [occ_cook]
+  when:
+    own_territory: true
+    segments: [morning, day]
+    day_gte: 3
+  cast:
+    boss: { commander: true }
+    porter: { faction: own, ranks: [grunt, staff], keep: occ_cook_meat_porter }
+  setup: "{porter:이/가} 바깥에서 가져온 고기 자루를 도마 위에 부린다. 끈을 풀자 단내 섞인 냄새가 확 올라온다. 겉은 검붉고, 뼈 쪽은 아직 붉다. {porter}가 어깨를 으쓱한다. \"사흘 걸려 가져온 거야. 버리라고는 하지 마.\" {boss:이/가} 문간에서 지켜본다."
+  ai_direction: 고기는 반쯤 상했다. 겉을 도려내고 오래 끓이면 대부분은 먹을 수 있지만, 잘못하면 여럿이 배앓이를 한다. 가져온 사람은 목숨 걸고 가져온 것을 버리면 서운해한다. 상관은 창고 사정을 알고 있어 버리는 것을 아까워한다.
+  choices:
+    - id: boil_long
+      label: 겉을 도려내고 한나절 푹 끓인다
+      check: survival
+      outcomes:
+        success:
+          - faction_resource: { faction: own, resource: food, delta: 4 }
+          - relation: { who: porter, axis: trust, delta: 1 }
+          - standing: 1
+          - belief: { fact: "상한 고기를 도려내고 한나절 끓여 냈다. 탈 난 사람은 없었다", source: seen }
+        partial:
+          - faction_resource: { faction: own, resource: food, delta: 3 }
+          - npc_body: { who: porter, track: disease, delta: 1, chance: 0.5 }
+          - belief: { fact: "고기는 살렸지만 그날 밤 몇 사람이 배를 움켜쥐고 뒷간을 들락거렸다", source: seen }
+        miss:
+          - faction_resource: { faction: own, resource: food, delta: 2 }
+          - npc_body: { who: porter, track: disease, delta: 1 }
+          - npc_body: { who: boss, track: disease, delta: 1, chance: 0.5 }
+          - faction_morale: { faction: own, delta: -1 }
+          - standing: -2
+          - deed: { summary: 상한 고기를 끓여 내 여럿이 앓아누웠다, tags: [selfishness], severity: 1, privacy: public }
+    - id: throw_out
+      label: 아깝지만 다 버린다
+      effects:
+        - relation: { who: porter, axis: affection, delta: -1 }
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "{porter}이(가) 사흘 걸려 가져온 고기를 버렸다. {porter}은(는) 아무 말 없이 나갔다", source: seen }
+    - id: dog_test
+      label: 한 점 삶아 내가 먼저 먹어 본다
+      effects:
+        - body: { track: disease, delta: 1 }
+        - faction_resource: { faction: own, resource: food, delta: 4 }
+        - relation: { who: porter, axis: respect, delta: 2 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - standing: 1
+        - deed: { summary: 상한 고기를 사람들에게 내기 전에 먼저 먹어 보았다, tags: [bravery], severity: 1, privacy: semi_private }
+
+# ── 한 국자 ─────────────────────────────────────
+
+- id: occ_cook_extra_ladle
+  title: 한 국자만 더
+  tags: [occ_cook]
+  when:
+    own_territory: true
+    segments: [morning, evening]
+    day_gte: 2
+    flags_none: [occ_cook_ladle_done]
+  cast:
+    kid: { faction: own, ranks: [grunt, staff], keep: occ_cook_ladle_kid }
+  setup: "배급 줄이 거의 끝날 무렵, {kid:이/가} 빈 그릇을 들고 다시 섰다. 눈 밑이 꺼져 있다. 목소리를 낮춘다. \"한 국자만. 아무한테도 안 말할게. 어제 보초 서느라 못 먹었어.\" 뒤에 선 사람은 없다."
+  ai_direction: 이 사람은 정말 어제 굶었다. 하지만 배급은 한 사람 한 몫이 규칙이고, 솥은 셈에 맞춰 끓였다. 몰래 더 주면 다른 누군가의 몫이 준다. 식당 구석에서 누가 보았을 수도 있다 (주인공은 모른다).
+  choices:
+    - id: give_quietly
+      label: 아무도 안 볼 때 한 국자 더 떠 준다
+      effects:
+        - set_flag: occ_cook_ladle_done
+        - set_flag: occ_cook_ladle_given
+        - faction_resource: { faction: own, resource: food, delta: -1 }
+        - relation: { who: kid, axis: affection, delta: 2 }
+        - relation: { who: kid, axis: trust, delta: 1 }
+        - deed: { summary: 배급 줄에서 한 사람에게 몰래 한 국자를 더 주었다, tags: [mercy, theft], severity: 1, privacy: private }
+    - id: own_bowl
+      label: 내 그릇을 반 덜어 건넨다
+      effects:
+        - set_flag: occ_cook_ladle_done
+        - body: { track: hunger, delta: 1 }
+        - relation: { who: kid, axis: affection, delta: 2 }
+        - relation: { who: kid, axis: respect, delta: 1 }
+        - standing: 1
+        - deed: { summary: 굶은 동료에게 제 몫을 덜어 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+    - id: refuse
+      label: 한 사람 한 몫이라고 돌려보낸다
+      effects:
+        - set_flag: occ_cook_ladle_done
+        - relation: { who: kid, axis: affection, delta: -1 }
+        - relation: { who: commander, axis: respect, delta: 1 }
+        - belief: { fact: "{kid}에게 한 국자를 더 주지 않았다. {kid}은(는) 빈 그릇을 들고 돌아섰다", source: seen }
+
+- id: occ_cook_ladle_seen
+  title: 누가 봤다
+  tags: [occ_cook]
+  when:
+    own_territory: true
+    segments: [day, evening]
+    flags_all: [occ_cook_ladle_given]
+    flags_none: [occ_cook_ladle_judged]
+  cast:
+    boss: { commander: true }
+    kid: { recall: occ_cook_ladle_kid, enter: false }
+  setup: "{boss:이/가} 부엌 뒷문을 닫고 들어온다. \"며칠 전에 줄 끝에서 한 국자 더 퍼 줬다는 말이 들어왔다. 누구한테 줬어?\" 솥 너머로 설거지하던 손들이 멈춘다."
+  ai_direction: 누군가 보고 상관에게 일렀다. 상관은 누구에게 줬는지까지는 모른다. 상관이 화난 것은 국 한 국자가 아니라 부엌이 셈을 어긴 것이다. 무리의 규칙(남의 몫)을 따져 무게를 정한다. 받은 사람({kid})은 이 자리에 없다.
+  choices:
+    - id: admit
+      label: 내가 줬다고, 굶은 사람이었다고 말한다 (이름은 대지 않는다)
+      effects:
+        - set_flag: occ_cook_ladle_judged
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - relation: { who: kid, axis: trust, delta: 2 }
+        - standing: -1
+        - merit: -1
+        - belief: { fact: "몰래 한 국자를 더 준 일로 상관에게 불려 갔다. 받은 사람의 이름은 대지 않았다", source: seen }
+    - id: name_kid
+      label: "{kid:이/가} 졸라서 줬다고 이름을 댄다"
+      effects:
+        - set_flag: occ_cook_ladle_judged
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: kid, axis: trust, delta: -3 }
+        - deed: { summary: 몰래 국을 더 준 일이 드러나자 받은 사람의 이름을 댔다, tags: [betrayal], severity: 1, privacy: semi_private }
+    - id: deny
+      label: 셈이 맞는다고, 잘못 본 거라고 잡아뗀다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: occ_cook_ladle_judged
+          - belief: { fact: "상관은 잘못 본 것이겠지 하고 넘어갔다. 일러바친 사람이 누구인지는 모른다", source: seen }
+        partial:
+          - set_flag: occ_cook_ladle_judged
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "상관은 더 묻지 않았지만, 앞으로 부엌 셈을 직접 보겠다고 했다", source: seen }
+        miss:
+          - set_flag: occ_cook_ladle_judged
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - standing: -2
+          - merit: -1
+          - deed: { summary: 몰래 국을 더 준 일을 상관 앞에서 잡아뗐다가 들켰다, tags: [deceit], severity: 1, privacy: semi_private }
+
+# ── 식당의 귀 ─────────────────────────────────────
+
+- id: occ_cook_mess_whisper
+  title: 솥 너머의 귓속말
+  tags: [occ_cook]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 3
+  cast:
+    talker: { faction: own, keep: occ_cook_talker }
+    # 이 사람과 이어진 누군가 (관계가 있을 때만. 엿들으면 드러난다)
+    other: { tie: { of: talker, kinds: [sibling, parent, child, spouse, friend, rival] }, enter: false, optional: true }
+  setup: 저녁 배급이 끝나고 불을 줄이는 시간. 식당 구석에 남은 {talker:이/가} 옆 사람에게 목소리를 낮춘다. 솥을 닦는 당신은 벽 같은 존재다. 국자 소리 사이로 누군가의 이름이 두어 번 들린다.
+  ai_direction: 요리사 앞에서는 다들 입이 가볍다. {talker}에게는 남들이 모르는 사정이 있다 (관계가 있으면 선택지가 그 관계를 드러낸다. 없으면 무리 안의 불평이나 걱정 정도다. GM이 사실을 지어내지 않는다). 주인공이 오래 귀를 기울이면 이야기하던 사람이 눈치챌 수 있다.
+  choices:
+    - id: listen_tie
+      label: "{other}의 이름이 나온 대목에 솥을 닦는 척 귀를 기울인다"
+      when: { cast: [other] }
+      check: stealth
+      outcomes:
+        success:
+          - reveal_tie: { who: talker, other: other }
+          - belief: { fact: "식당 구석에서 {talker}이(가) {other} 이야기를 하는 것을 엿들었다. 남들은 모르는 사이였다", source: seen }
+        partial:
+          - reveal_tie: { who: talker, other: other }
+          - relation: { who: talker, axis: trust, delta: -1 }
+          - belief: { fact: "{talker}의 {other} 이야기를 듣다가 눈이 마주쳤다. {talker}은(는) 말을 끊고 나갔다", source: seen }
+        miss:
+          - relation: { who: talker, axis: trust, delta: -2 }
+          - belief: { fact: "{talker}이(가) 솥 앞의 요리사를 흘끗 보고 말을 돌렸다", source: seen }
+    - id: listen
+      label: 솥을 천천히 닦으며 무리 이야기에 귀를 기울인다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: occ_cook_mess_ears
+          - belief: { fact: "식당 구석에서 {talker}이(가) 무리의 결정과 바깥 사정을 두고 속내를 털어놓는 것을 들었다", source: seen }
+        partial:
+          - relation: { who: talker, axis: trust, delta: -1 }
+          - belief: { fact: "{talker}이(가) 식당에서 목소리를 낮춰 무언가를 걱정했다. 끝까지 듣지는 못했다", source: seen }
+        miss:
+          - relation: { who: talker, axis: trust, delta: -2 }
+    - id: bang_pot
+      label: 일부러 솥뚜껑을 덜컹 닫아 들린다고 알린다
+      effects:
+        - relation: { who: talker, axis: trust, delta: 1 }
+        - standing: 1
+        - belief: { fact: "식당에서 오가는 말은 듣고도 흘려 주는 요리사라는 말이 돌았다", source: rumor }
+
+# ── 밥상 ─────────────────────────────────────
+
+- id: occ_cook_funeral_table
+  title: 장례 밥
+  tags: [occ_cook]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    own_territory: true
+    segments: [day, evening]
+    war_news_within_hours: 24
+  cast:
+    mourner: { faction: own, keep: occ_cook_mourner }
+    boss: { commander: true, enter: false }
+  setup: "바깥에서 돌아오지 못한 사람들의 소식이 돌았다. 식당 한쪽에 빈자리가 생겼다. {mourner:이/가} 부엌 문턱에 서서 묻는다. \"오늘 저녁… 뭐라도 따뜻한 걸 올려 줄 수 있어? 그 사람이 좋아하던 거. 아니면 그냥 국이라도.\""
+  ai_direction: 전황 소식이 들어온 날이다. 누가 죽었는지는 전황 소식과 GM 상태에 있는 만큼만 말한다 (지어내지 않는다). {mourner}에게는 가까운 누군가를 잃은 슬픔이 있다. 장례 밥상은 창고를 축내지만 남은 사람들을 붙든다.
+  choices:
+    - id: proper_table
+      label: 창고에 부탁해 고기 한 점이라도 올린 밥상을 차린다
+      effects:
+        - faction_resource: { faction: own, resource: food, delta: -3 }
+        - faction_morale: { faction: own, delta: 1 }
+        - relation: { who: mourner, axis: affection, delta: 2 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - standing: 1
+        - belief: { fact: "죽은 사람들 몫으로 밥상을 따로 차렸다. 그날 저녁 식당은 오래 불이 켜져 있었다", source: seen }
+    - id: warm_soup
+      label: 있는 재료로 국을 진하게 끓여 같은 솥에서 나눈다
+      check: survival
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: mourner, axis: affection, delta: 1 }
+          - standing: 1
+        partial:
+          - relation: { who: mourner, axis: affection, delta: 1 }
+        miss:
+          - relation: { who: mourner, axis: affection, delta: -1 }
+          - belief: { fact: "장례 날의 국은 여느 날과 다를 게 없었다. {mourner}은(는) 숟가락을 들지 않았다", source: seen }
+    - id: no_exception
+      label: 산 사람 먹을 것도 모자란다고 거절한다
+      effects:
+        - relation: { who: mourner, axis: affection, delta: -2 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "{mourner}의 장례 밥상 부탁을 거절했다", source: seen }
+
+- id: occ_cook_prisoner_bowl
+  title: 창살 너머의 그릇
+  tags: [occ_cook]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    zone_owner: [own]
+    segments: [morning, evening]
+  cast:
+    prisoner: { captive: true }
+    boss: { commander: true, enter: false }
+  setup: 남은 국을 어떻게 할지 묻자 경비가 턱으로 안쪽 창살을 가리킨다. "그 녀석 것도 떠 가. 위에서 굶기라는 말은 없었으니까." {prisoner:이/가} 창살 너머에서 당신 손의 그릇을 본다.
+  ai_direction: 다른 무리 포로다. 포로에게 줄 몫은 정해져 있지 않다. 넉넉히 주면 우리 사람 몫이 줄고, 말이 돈다. 굶기면 포로는 약해지고, 무엇을 알고 있든 입을 닫는다. 밥을 주는 사람에게 포로가 말을 거는 일은 흔하다. 무엇을 아는지는 그 인물의 카드대로만 말한다.
+  choices:
+    - id: full_bowl
+      label: 우리 사람 그릇과 똑같이 채워 준다
+      effects:
+        - faction_resource: { faction: own, resource: food, delta: -1 }
+        - npc_body: { who: prisoner, track: hunger, delta: -2 }
+        - relation: { who: prisoner, axis: trust, delta: 2 }
+        - deed: { summary: 포로에게 우리 사람과 같은 그릇을 주었다, tags: [mercy, enemy_sympathy], severity: 1, privacy: semi_private }
+    - id: scraps
+      label: 솥 바닥 누룽지만 긁어 준다
+      effects:
+        - npc_body: { who: prisoner, track: hunger, delta: -1 }
+        - relation: { who: prisoner, axis: trust, delta: 1 }
+    - id: talk_while_eating
+      label: 먹는 동안 창살 앞에 앉아 말을 건다
+      check: persuade
+      outcomes:
+        success:
+          - npc_body: { who: prisoner, track: hunger, delta: -1 }
+          - relation: { who: prisoner, axis: trust, delta: 2 }
+          - standing: 1
+          - belief: { fact: "창살 너머의 {prisoner}이(가) 그릇을 비우고 나서 자기 무리 이야기를 조금 했다", source: report }
+        partial:
+          - npc_body: { who: prisoner, track: hunger, delta: -1 }
+          - relation: { who: prisoner, axis: trust, delta: 1 }
+        miss:
+          - relation: { who: prisoner, axis: trust, delta: -1 }
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "포로 앞에 오래 앉아 있었다는 말이 상관 귀에 들어갔다", source: seen }
+    - id: skip
+      label: 위에서 말이 없으면 안 준다
+      effects:
+        - npc_body: { who: prisoner, track: hunger, delta: 1 }
+        - relation: { who: prisoner, axis: trust, delta: -2 }
+
+# ── 부엌 반장 (칸 1): 부엌의 쥐 ─────────────────────────────────────
+
+- id: occ_cook_kitchen_rat
+  title: 줄어드는 자루
+  tags: [occ_cook]
+  when:
+    own_territory: true
+    segments: [dawn, morning]
+    occupation_step_gte: 1
+    day_gte: 4
+    flags_none: [occ_cook_rat_known, occ_cook_rat_done]
+  cast:
+    helper: { faction: own, ranks: [grunt, staff], keep: occ_cook_rat }
+  setup: 부엌을 맡은 뒤로 자루 무게를 손으로 기억한다. 어제 저녁에 묶어 둔 보리 자루 매듭이 다르게 묶여 있다. 부엌 일을 거드는 {helper:이/가} 아침 불을 피우다 당신 눈길을 피한다.
+  ai_direction: 거드는 {helper}이(가) 밤마다 한 줌씩 빼낸다. 자기가 먹으려는 것이 아니라 바깥에 숨겨 둔 누군가(아픈 가족이거나 받아 주지 않은 떠돌이)에게 가져간다. 범인을 대놓고 말하지 말고 매듭과 눈길만 보여 준다. 부엌을 맡은 사람의 책임이다.
+  choices:
+    - id: watch_night
+      label: 밤에 부엌 그늘에 숨어 지켜본다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: occ_cook_rat_known
+          - belief: { fact: "밤중에 {helper}이(가) 보리 한 줌을 천에 싸서 담 밖으로 가져가는 것을 보았다. 자기가 먹지는 않았다", source: seen }
+        partial:
+          - set_flag: occ_cook_rat_known
+          - belief: { fact: "밤중에 누군가 부엌에서 보리를 싸 가는 것을 보았다. 뒷모습이 {helper}과(와) 닮았다", source: seen }
+        miss:
+          - zone_noise: 1
+          - belief: { fact: "부엌 그늘에서 밤을 새웠지만 냄비를 걷어차는 바람에 아무도 오지 않았다", source: seen }
+    - id: report_now
+      label: 자루가 빈다고 상관에게 바로 알린다
+      effects:
+        - set_flag: occ_cook_rat_done
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - relation: { who: helper, axis: trust, delta: -1 }
+        - belief: { fact: "부엌 자루가 빈다고 상관에게 알렸다. 상관은 부엌 사람들을 하나씩 불러 물었다", source: seen }
+    - id: lock_it
+      label: 자루를 쇠사슬로 묶고 말없이 넘어간다
+      effects:
+        - set_flag: occ_cook_rat_done
+        - standing: 1
+        - belief: { fact: "부엌 자루를 사슬로 묶어 두었다. 그 뒤로 자루가 줄지 않았다", source: seen }
+
+- id: occ_cook_rat_cornered
+  title: 담 밖의 한 줌
+  tags: [occ_cook]
+  when:
+    own_territory: true
+    segments: [day, evening]
+    occupation_step_gte: 1
+    flags_all: [occ_cook_rat_known]
+    flags_none: [occ_cook_rat_done]
+  cast:
+    helper: { recall: occ_cook_rat }
+    boss: { commander: true, enter: false }
+  setup: "장작을 패던 {helper}에게 다가가 보리 이야기를 꺼낸다. 도끼가 멈춘다. 한참 뒤에 {helper:이/가} 말한다. \"…담 밖 배수로에 애가 하나 있어. 여기 안 받아 준다고 해서. 한 줌이야. 한 줌.\""
+  ai_direction: 사실이다. 담 밖에 받아 주지 않은 아이 하나가 숨어 산다. {helper}은(는) 들키면 무리에서 쫓겨날까 두려워한다. 무리의 규칙(남의 몫, 바깥 사람)에 따라 상관이 알게 되면 무게가 다르다. 부엌 반장의 결정이다.
+  choices:
+    - id: kitchen_share
+      label: 앞으로는 솥 바닥 누룽지를 그 애 몫으로 돌리자고 한다
+      effects:
+        - set_flag: occ_cook_rat_done
+        - set_flag: occ_cook_outside_child
+        - faction_resource: { faction: own, resource: food, delta: -2 }
+        - relation: { who: helper, axis: trust, delta: 3 }
+        - relation: { who: helper, axis: affection, delta: 2 }
+        - deed: { summary: 담 밖에 숨은 아이에게 부엌 누룽지를 몰래 돌려주기로 했다, tags: [mercy, disobedience], severity: 1, privacy: private }
+    - id: bring_in
+      label: 상관에게 함께 가서 그 애를 들여 달라고 말해 보자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_cook_rat_done
+          - relation: { who: helper, axis: trust, delta: 2 }
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - standing: 2
+          - belief: { fact: "상관이 담 밖의 아이를 부엌 일 거드는 조건으로 들이기로 했다. {helper}은(는) 그날 장작을 두 배로 팼다", source: seen }
+        partial:
+          - set_flag: occ_cook_rat_done
+          - relation: { who: helper, axis: trust, delta: 1 }
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "상관은 아이를 들이지 않겠다고 했다. 대신 {helper}의 일은 덮어 주었다", source: seen }
+        miss:
+          - set_flag: occ_cook_rat_done
+          - relation: { who: helper, axis: trust, delta: -1 }
+          - merit: -1
+          - standing: -1
+          - belief: { fact: "상관은 부엌 반장이 도둑을 감쌌다고 화를 냈다. {helper}은(는) 한동안 부엌에서 쫓겨났다", source: seen }
+    - id: turn_in
+      label: 규칙은 규칙이라며 상관에게 넘긴다
+      effects:
+        - set_flag: occ_cook_rat_done
+        - relation: { who: helper, axis: trust, delta: -3 }
+        - relation: { who: boss, axis: trust, delta: 2 }
+        - merit: 1
+        - standing: 1
+        - deed: { summary: 굶는 아이에게 보리를 빼 주던 부엌 일꾼을 상관에게 넘겼다, tags: [loyalty, cruelty], severity: 1, privacy: semi_private }
+
+# ── 주방장 (칸 2): 배급 회의 ─────────────────────────────────────
+
+- id: occ_cook_ration_council
+  title: 배급 회의의 의자
+  tags: [occ_cook]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    own_territory: true
+    segments: [day, evening]
+    occupation_step_gte: 2
+    own_food_days_lte: 12
+  cast:
+    chair: { faction: own, ranks: [officer, leader] }
+    boss: { commander: true, enter: false }
+  setup: "배급을 정하는 자리에 당신 의자가 하나 놓였다. 창고 장부를 든 {chair:이/가} 당신을 본다. \"솥 앞에 선 사람 말을 듣고 싶어서 불렀소. 지금대로 가면 겨울을 넘기오? 줄여야 하오, 늘려야 하오?\" 다른 사람들도 숟가락 든 손처럼 당신을 쳐다본다."
+  ai_direction: 주방장의 말 한마디가 무리 전체의 그릇을 바꾼다. 줄이면 오래가지만 사기가 꺾이고, 늘리면 웃음이 돌지만 창고가 빨리 빈다. 회의에 앉은 사람 중에는 어느 쪽이든 반대할 사람이 있다. 창고 숫자는 대략으로만 말한다.
+  choices:
+    - id: cut
+      label: 한 국자씩 줄이자고, 지금 줄이면 겨울에 굶지 않는다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - faction_policy: { faction: own, topic: ration, option: cut }
+          - relation: { who: chair, axis: respect, delta: 1 }
+          - standing: 1
+          - belief: { fact: "주방장의 말로 배급이 줄었다. 식당에서 당신을 보는 눈이 차가워졌다", source: seen }
+        partial:
+          - faction_policy: { faction: own, topic: ration, option: cut }
+          - faction_morale: { faction: own, delta: -1 }
+          - relation: { who: chair, axis: respect, delta: 1 }
+        miss:
+          - relation: { who: chair, axis: respect, delta: -1 }
+          - belief: { fact: "배급을 줄이자는 말은 회의에서 받아들여지지 않았다", source: seen }
+    - id: hold
+      label: 지금대로 가자고, 솥에서 더 늘릴 길을 찾겠다고 한다
+      effects:
+        - faction_policy: { faction: own, topic: ration, option: normal }
+        - relation: { who: chair, axis: trust, delta: 1 }
+        - standing: 1
+    - id: extra
+      label: 사람들이 지쳤다고, 이번 겨울 들어가기 전 한 번은 넉넉히 먹이자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - faction_policy: { faction: own, topic: ration, option: extra }
+          - faction_morale: { faction: own, delta: 1 }
+          - standing: 1
+        partial:
+          - faction_policy: { faction: own, topic: ration, option: extra }
+          - relation: { who: chair, axis: trust, delta: -1 }
+        miss:
+          - relation: { who: chair, axis: respect, delta: -1 }
+          - standing: -1
+    - id: pad_numbers
+      label: 내 부엌 몫을 넉넉히 받으려고 남은 양을 적게 말한다
+      check: deceive
+      outcomes:
+        success:
+          - faction_resource: { faction: own, resource: food, delta: -3 }
+          - give_item: { item: canned_food, quantity: 2 }
+          - deed: { summary: 배급 회의에서 창고 사정을 속여 부엌 몫을 챙겼다, tags: [deceit, selfishness], severity: 2, privacy: private }
+        partial:
+          - give_item: { item: canned_food }
+          - relation: { who: chair, axis: trust, delta: -1 }
+          - deed: { summary: 배급 회의에서 창고 사정을 속여 부엌 몫을 챙겼다, tags: [deceit, selfishness], severity: 2, privacy: private }
+        miss:
+          - relation: { who: chair, axis: trust, delta: -3 }
+          - standing: -2
+          - merit: -2
+          - deed: { summary: 배급 회의에서 창고 숫자를 속이다 들켰다, tags: [deceit, selfishness], severity: 2, privacy: public }
+
+# ── 무리마다 다른 솥 ─────────────────────────────────────
+
+- id: occ_cook_red_quota
+  title: 조별 솥
+  tags: [occ_cook]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    factions: [faction_c]
+    own_territory: true
+    segments: [morning, evening]
+    day_gte: 2
+  cast:
+    officer: { faction: own, ranks: [squad_leader, officer] }
+    squad_man: { faction: own, ranks: [grunt] }
+  setup: "솥 옆 칠판에 조 번호와 할당량이 적혀 있다. 줄 하나 옆에 가위표가 쳐졌다. {officer:이/가} 분필을 내려놓는다. \"그 조는 어제 할당 못 채웠어. 오늘은 반 국자씩. 위원회 결정이다.\" 줄 맨 앞의 {squad_man:이/가} 그릇을 내민 채 당신을 본다."
+  ai_direction: 붉은연합에서 솥은 상이자 벌이다. 할당을 못 채운 조는 배급이 깎인다. 반 국자를 주면 규칙대로지만, 조원들은 배고픈 채 다음 할당에 나간다. 몰래 채워 주면 규율반의 귀에 들어갈 수 있다 (막사마다 귀가 있다). 위원회의 결정에는 토를 달지 않는다.
+  choices:
+    - id: half
+      label: 결정대로 반 국자씩 떠 준다
+      effects:
+        - faction_resource: { faction: own, resource: food, delta: 1 }
+        - relation: { who: officer, axis: trust, delta: 1 }
+        - relation: { who: squad_man, axis: affection, delta: -1 }
+        - standing: 1
+    - id: thick_half
+      label: 반 국자는 반 국자인데, 바닥 건더기로 떠 준다
+      check: deceive
+      outcomes:
+        success:
+          - relation: { who: squad_man, axis: affection, delta: 2 }
+          - relation: { who: squad_man, axis: trust, delta: 1 }
+          - deed: { summary: 할당을 못 채운 조에게 반 국자를 건더기로만 떠 주었다, tags: [mercy], severity: 1, privacy: private }
+        partial:
+          - relation: { who: squad_man, axis: affection, delta: 1 }
+          - relation: { who: officer, axis: trust, delta: -1 }
+        miss:
+          - relation: { who: officer, axis: trust, delta: -2 }
+          - merit: -1
+          - standing: -1
+          - deed: { summary: 위원회가 깎은 배급을 몰래 채워 주다 들켰다, tags: [disobedience], severity: 2, privacy: public }
+    - id: speak_up
+      label: 굶겨 내보내면 내일 할당은 더 못 채운다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: officer, axis: respect, delta: 1 }
+          - relation: { who: squad_man, axis: trust, delta: 2 }
+          - faction_morale: { faction: own, delta: 1 }
+          - standing: 1
+          - belief: { fact: "{officer}이(가) 이번만이라며 그 조에 온 국자를 허락했다. 칠판의 가위표는 지우지 않았다", source: seen }
+        partial:
+          - relation: { who: squad_man, axis: trust, delta: 1 }
+          - relation: { who: officer, axis: trust, delta: -1 }
+        miss:
+          - relation: { who: officer, axis: trust, delta: -2 }
+          - deed: { summary: 위원회의 배급 결정에 토를 달았다, tags: [disobedience], severity: 1, privacy: public }
+          - belief: { fact: "{officer}이(가) 솥 앞에서 위원회 결정에 토를 단 요리사의 이름을 적어 갔다", source: seen }
+
+- id: occ_cook_white_porridge
+  title: 문 너머의 죽
+  tags: [occ_cook]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    factions: [faction_d]
+    own_territory: true
+    segments: [morning, evening]
+  cast:
+    nurse: { faction: own, ranks: [squad_leader, officer, staff] }
+    patient: { extra: refugee, label: 격리실의 떠돌이, keep: occ_cook_quarantined }
+  setup: "하얀매의 부엌은 솥이 둘이다. 하나는 사람들 몫, 하나는 환자 죽. 쌀을 오래 퍼지게 끓여 소금만 친다. {nurse:이/가} 격리실 문 아래 배식구를 가리킨다. \"사흘째인 사람이에요. 그릇은 문 아래로만. 손 닿지 않게.\" 배식구 너머에서 {patient:이/가} 쉰 목소리로 고맙다고 한다."
+  ai_direction: 하얀매의 규칙으로는 물리거나 긁힌 사람은 누구든 격리실에서 사흘. {patient}은(는) 사흘째다. 감염인지 아닌지는 아직 모른다 (GM 상태와 판정으로만). 죽은 값을 받지 않는다. 배식구 너머로 손을 내미는 사람도 있다. 감염 지식이 있으면 문 너머의 숨소리로 무언가를 알아챌 수 있다.
+  choices:
+    - id: by_the_rule
+      label: 배식구로 그릇만 밀어 넣는다
+      effects:
+        - npc_body: { who: patient, track: hunger, delta: -1 }
+        - relation: { who: nurse, axis: trust, delta: 1 }
+        - standing: 1
+    - id: listen_breath
+      label: 그릇을 밀어 넣고 문 앞에 앉아 숨소리를 듣는다
+      check: infected_lore
+      outcomes:
+        success:
+          - npc_body: { who: patient, track: hunger, delta: -1 }
+          - relation: { who: patient, axis: trust, delta: 1 }
+          - relation: { who: nurse, axis: respect, delta: 1 }
+          - belief: { fact: "격리실의 {patient}은(는) 숨이 고르고 목소리가 맑았다. 열이 없는 사람의 숨이었다", source: seen }
+        partial:
+          - npc_body: { who: patient, track: hunger, delta: -1 }
+          - belief: { fact: "격리실의 {patient}은(는) 기침을 했다. 감기인지 다른 것인지 알 수 없었다", source: seen }
+        miss:
+          - npc_body: { who: patient, track: hunger, delta: -1 }
+    - id: open_hand
+      label: 내민 손을 잡아 준다
+      effects:
+        - npc_body: { who: patient, track: hunger, delta: -1 }
+        - relation: { who: patient, axis: affection, delta: 2 }
+        - relation: { who: nurse, axis: trust, delta: -2 }
+        - standing: -1
+        - deed: { summary: 격리실 배식구 너머로 내민 손을 맨손으로 잡았다, tags: [mercy, disobedience], severity: 1, privacy: semi_private }
+
+- id: occ_cook_pine_line
+  title: 같은 몫
+  tags: [occ_cook]
+  when:
+    factions: [faction_a]
+    own_territory: true
+    segments: [evening]
+    day_gte: 3
+    flags_none: [occ_cook_pine_line_done]
+  cast:
+    big: { faction: own, ranks: [officer, squad_leader] }
+    young: { faction: own, ranks: [grunt], enter: false, optional: true }
+  setup: "청솔형제단의 식당에서는 지도부도 줄을 선다. 오늘 {big:이/가} 줄 중간에 섰다가, 그릇을 내밀며 낮게 말한다. \"바깥 일 마치고 온 길이야. 오늘은 건더기 좀 넉넉히.\" 뒤에 선 사람들의 숟가락이 조용해진다."
+  ai_direction: 청솔형제단의 원칙으로는 배급은 계급과 상관없이 같은 몫, 남의 몫에 손대는 것이 가장 무거운 잘못이다. {big}은(는) 정말 오래 바깥에 있었고 지쳤다. 악의는 없다. 하지만 식당 전체가 요리사의 국자를 보고 있다. 같은 분대 막내가 줄 뒤에 있을 수 있다.
+  choices:
+    - id: same
+      label: 다른 사람과 똑같이 한 국자를 뜬다
+      effects:
+        - set_flag: occ_cook_pine_line_done
+        - faction_morale: { faction: own, delta: 1 }
+        - relation: { who: big, axis: respect, delta: 1 }
+        - relation: { who: big, axis: affection, delta: -1 }
+        - standing: 2
+        - belief: { fact: "식당에서 {big}에게도 다른 사람과 똑같은 한 국자를 떴다. 줄 뒤에서 누군가 작게 웃었다", source: seen }
+    - id: more
+      label: 건더기를 넉넉히 떠 준다
+      effects:
+        - set_flag: occ_cook_pine_line_done
+        - faction_morale: { faction: own, delta: -1 }
+        - relation: { who: big, axis: affection, delta: 1 }
+        - standing: -1
+        - deed: { summary: 식당에서 간부의 그릇에 건더기를 더 떠 주었다, tags: [selfishness], severity: 1, privacy: public }
+    - id: from_mine
+      label: 같은 한 국자를 뜨고, 내 몫에서 덜어 따로 건넨다
+      effects:
+        - set_flag: occ_cook_pine_line_done
+        - body: { track: hunger, delta: 1 }
+        - relation: { who: big, axis: respect, delta: 2 }
+        - standing: 1
+    - id: young_first
+      label: 뒤에 선 막내를 가리키며, 저 애도 오늘 바깥에 나갔다고 말한다
+      when: { cast: [young] }
+      effects:
+        - set_flag: occ_cook_pine_line_done
+        - npc_relation: { from: big, to: young, axis: respect, delta: 1 }
+        - npc_relation: { from: young, to: big, axis: trust, delta: 1 }
+        - relation: { who: big, axis: respect, delta: 1 }
+        - faction_morale: { faction: own, delta: 1 }
+        - standing: 1

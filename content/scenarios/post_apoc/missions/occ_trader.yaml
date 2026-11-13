@@ -1,0 +1,46 @@
+# 상인 직분의 일감 (기획서 12.6). 무리를 가리지 않는다: 어느 무리의 상인이든 받는다
+# 완수하면 엔진이 직분 평판 +1을 준다
+
+- id: occ_trader_market_run
+  title: 장터에 물건 지고 가기
+  briefing: 창고에서 남는 것을 골라 지고 가까운 장터에 가서 모자란 것과 바꿔 온다. 값은 네가 정한다. 대신 돌아와서 장부 앞에서 설명해야 한다.
+  giver_rank: officer
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+
+- id: occ_trader_price_ears
+  title: 남의 장터 값 알아 오기
+  briefing: 요즘 다른 무리 장터에서 탄약 한 줌, 약 한 줄이 얼마에 도는지 알아 온다. 사지 말고 듣기만 한다. 누가 무엇을 사재는지가 값보다 중요하다.
+  giver_rank: officer
+  deadline_hours: 20
+  requirements:
+    - activity: travel
+      minutes: 60
+    - activity: talk
+      minutes: 60
+    - check: sense_danger
+      min_outcome: partial
+
+- id: occ_trader_credit_book
+  title: 외상 장부 털기
+  briefing: 장부에 기한이 지난 외상이 쌓였다. 찾아가서 받을 것을 받아 오고, 못 받으면 언제 받을지 날짜라도 받아 온다. 사람들 앞에서 망신 주지는 마라. 손님은 또 와야 한다.
+  giver_rank: officer
+  deadline_hours: 12
+  requirements:
+    - activity: talk
+      minutes: 30
+    - check: persuade
+      min_outcome: partial
+
+- id: occ_trader_stock_count
+  title: 내놓을 물건 셈하기
+  briefing: 창고를 뒤져 바깥에 내놓을 수 있는 것과 절대 내놓으면 안 되는 것을 갈라 목록을 만든다. 겨울을 셈에 넣어라.
+  giver_rank: officer
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 120

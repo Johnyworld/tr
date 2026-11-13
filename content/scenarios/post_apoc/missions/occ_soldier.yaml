@@ -1,0 +1,24 @@
+# 전투원 직분의 일감 (기획서 12.6). 전투원은 무리 시나리오의 임무를 그대로 받으니, 여기는 무리를 가리지 않는 병사의 잡일 둘만
+# requirements 형식은 a_grunt_basic.yaml 머리말 참고
+
+- id: occ_soldier_cleaning
+  title: 총기 손질
+  briefing: 조의 총을 모두 모아 분해하고 닦는다. 녹 슨 데, 금 간 데, 헐거운 데를 찾아 적어 낸다. 내일 아침 검열이 있다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 90
+    - check: maintenance
+      min_outcome: partial
+
+- id: occ_soldier_drill
+  title: 신병 훈련
+  briefing: 새로 들어온 사람들을 데리고 엎드리는 법, 엄폐물 고르는 법, 장전하는 법을 몸에 익힌다. 실탄은 쓰지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: tactics
+      min_outcome: partial

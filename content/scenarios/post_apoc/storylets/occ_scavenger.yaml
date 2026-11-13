@@ -1,0 +1,628 @@
+# 수색꾼 직분 이야기 (기획서 12.6). tags: [occ_scavenger]. 무리를 가리지 않는다 (무소속 수색꾼도)
+# 찾은 물건의 양은 효과(give_item, faction_resource)와 판정으로만 정한다. 무엇이 무너지고 누가 다치는지도 마찬가지
+# 플래그 사슬
+#   - 먼저 온 다른 무리 수색꾼: occ_sc_rival_crew (반복)
+#   - 무너진 바닥: occ_sc_pinned_mate (동료를 두고 나올지)
+#   - 찾은 것을 낼지 숨길지: occ_sc_sealed_case(occ_sc_case_hidden / occ_sc_skimmed) → occ_sc_skim_witness
+#   - 길잡이: occ_sc_guide_refugees
+#   - 수색대장: occ_sc_deep_run_pick(occ_sc_took_vet / occ_sc_took_green / occ_sc_went_alone) → occ_sc_deep_run
+#   - 붉은연합 갈래: occ_sc_red_quota (할당량)
+#   - 무소속: occ_sc_dead_scav_pack(occ_sc_letter_carried) → occ_sc_letter_delivered
+
+# ── 먼저 온 다른 무리 수색꾼 ─────────────────────────────
+
+- id: occ_sc_rival_crew
+  title: 먼저 그어진 표시
+  tags: [occ_scavenger]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    zone_owner: [none]
+    segments: [morning, day]
+    day_gte: 2
+  cast:
+    rival: { extra: c_raider, label: 먼저 와 있던 수색조원, keep: occ_sc_rival }
+  setup: >-
+    {zone}의 무너진 상가 입구, 문틀에 분필로 그은 표시가 아직 하얗다. 안쪽에서 쇠지렛대가 판자를 뜯는 소리가 난다.
+    {rival:이/가} 먼지를 뒤집어쓴 채 나와 당신을 본다. "여긴 우리가 먼저야. 표시 못 봤어?"
+  ai_direction: >-
+    {rival:은/는} 다른 무리의 수색조다. 안에 동료가 둘 더 있다 (서술로만, 싸움이 커지면 spawn_extra). 셋 다 지쳤고 오늘 할당을 못 채우면 돌아가서 혼난다.
+    위층은 아직 안 뒤졌다. 나누자고 하면 위층을 내줄 수 있다. 감염체 이야기로 겁을 주면 판정으로 갈린다. 싸우면 소리가 나고, 이 구역의 감염체가 깬다.
+  choices:
+    - id: split
+      label: 너희는 아래, 우리는 위층. 나누자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - standing: 1
+          - give_item: { item: duct_tape }
+          - give_item: { item: cloth }
+          - relation: { who: rival, axis: trust, delta: 1 }
+          - belief: { fact: "{zone}에서 다른 무리 수색조와 층을 나눠 뒤졌다. 그쪽은 지하 상가 아래로 길이 하나 더 있다고 흘렸다", source: report }
+        partial:
+          - give_item: { item: cloth }
+          - belief: { fact: "{zone}에서 다른 무리 수색조에게 위층을 얻었지만 이미 반쯤 털려 있었다", source: seen }
+        miss:
+          - relation: { who: rival, axis: affection, delta: -1 }
+          - belief: { fact: "{zone}의 다른 무리 수색조는 나누자는 말에 코웃음을 쳤다. 빈손으로 돌아섰다", source: seen }
+    - id: scare
+      label: 저 안쪽에 감염체 둥지가 있다고, 나도 거기서 도망쳐 나왔다고 한다
+      check: deceive
+      outcomes:
+        success:
+          - standing: 1
+          - give_item: { item: canned_food }
+          - give_item: { item: cigarettes }
+          - deed: { summary: 다른 무리 수색조를 감염체 이야기로 속여 쫓아내고 그 자리를 털었다, tags: [deceit], severity: 1, privacy: private }
+          - belief: { fact: "{zone}의 다른 무리 수색조가 감염체 이야기에 짐을 챙겨 나갔다. 그들이 뜯다 만 판자 뒤에 쓸 것이 남아 있었다", source: seen }
+        partial:
+          - belief: { fact: "다른 무리 수색조는 반쯤 믿는 눈치로 물러섰지만, 문틀의 표시를 지우지는 않았다", source: seen }
+        miss:
+          - relation: { who: rival, axis: trust, delta: -2 }
+          - zone_noise: 1
+          - belief: { fact: "거짓말이 들통났다. 수색조가 쇠지렛대를 쥐고 다가왔고, 나는 소리를 내며 뒷걸음질 쳤다", source: seen }
+    - id: push
+      label: 쇠지렛대를 쥐고 밀고 들어간다
+      check: fight
+      outcomes:
+        success:
+          - zone_noise: 2
+          - npc_hurt: { who: rival, steps: 1 }
+          - give_item: { item: scrap_metal, quantity: 2 }
+          - give_item: { item: canned_food }
+          - deed: { summary: 먼저 와 있던 다른 무리 수색조를 힘으로 쫓아냈다, tags: [cruelty], severity: 1, privacy: semi_private }
+          - belief: { fact: "{zone}에서 다른 무리 수색조를 쫓아냈다. 싸우는 소리가 컸다. 어딘가에서 무언가 깨어 움직인다", source: seen }
+        partial:
+          - zone_noise: 2
+          - npc_hurt: { who: rival, steps: 1 }
+          - belief: { fact: "다른 무리 수색조와 엉켰다가 서로 물러났다. 소리가 너무 컸다. 둘 다 빈손이다", source: seen }
+        miss:
+          - zone_noise: 2
+          - standing: -1
+          - belief: { fact: "다른 무리 수색조에게 밀려났다. 싸우는 소리에 안쪽 어둠이 술렁였다", source: seen }
+    - id: leave
+      label: 표시를 존중하고 다른 건물로 간다
+      effects:
+        - relation: { who: rival, axis: respect, delta: 1 }
+        - belief: { fact: "{zone}에서 먼저 그어진 수색 표시를 보고 물러났다. 길에서 지키는 규칙 하나", source: seen }
+
+# ── 무너진 바닥 ─────────────────────────────────────────
+
+- id: occ_sc_pinned_mate
+  title: 꺼진 바닥
+  tags: [occ_scavenger]
+  urgent: true
+  when:
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    zones: [old_town, hospital_ruins, riverside]
+    segments: [morning, day, evening]
+    day_gte: 3
+    flags_none: [occ_sc_pinned_done]
+  cast:
+    mate: { faction: own, ranks: [grunt, staff], known: true }
+  setup: >-
+    앞서 걷던 {mate}의 발밑에서 바닥이 통째로 꺼진다. 먼지가 가라앉자 아래층에 걸린 다리가 보인다. 무너진 콘크리트 판이 정강이를 누르고 있다.
+    {mate:이/가} 이를 악물고 올려다본다. 복도 저쪽 어둠에서 무언가 끄는 발소리가 이쪽으로 온다.
+  ai_direction: >-
+    무너지는 소리를 감염체들이 들었다. 오래 머물면 몰려온다. 콘크리트 판은 혼자 들기엔 무겁다. 지렛대가 있으면 낫다.
+    이야기는 사람을 죽이지 않는다. 두고 가면 {mate:은/는} 살아서 혼자 빠져나오지만 크게 다치고, 그 일을 잊지 않는다. 무리의 원칙(다친 동료를 두고 오지 않는다 등)은 culture를 따른다.
+  choices:
+    - id: lever
+      label: 쇠지렛대를 판 밑에 끼우고 들어 올린다
+      when: { has_items: [crowbar] }
+      check: endure
+      outcomes:
+        success:
+          - set_flag: occ_sc_pinned_done
+          - standing: 1
+          - npc_hurt: { who: mate, steps: 1 }
+          - relation: { who: mate, axis: trust, delta: 2 }
+          - relation: { who: mate, axis: affection, delta: 1 }
+          - deed: { summary: 무너진 바닥에 깔린 동료를 지렛대로 빼내 업고 나왔다, tags: [loyalty, bravery], severity: 2, privacy: public }
+          - belief: { fact: "꺼진 바닥에 깔린 {mate}를 쇠지렛대로 빼냈다. 다리는 다쳤지만 둘 다 나왔다", source: seen }
+        partial:
+          - set_flag: occ_sc_pinned_done
+          - zone_noise: 2
+          - npc_hurt: { who: mate, steps: 2 }
+          - relation: { who: mate, axis: trust, delta: 2 }
+          - deed: { summary: 무너진 바닥에 깔린 동료를 빼내 왔다, tags: [loyalty], severity: 2, privacy: public }
+          - belief: { fact: "판을 들어 올리다 미끄러져 한 번 더 내려앉았다. {mate}의 다리가 크게 상했다. 소리에 쫓기며 겨우 빠져나왔다", source: seen }
+        miss:
+          - set_flag: occ_sc_pinned_done
+          - zone_noise: 3
+          - npc_hurt: { who: mate, steps: 2 }
+          - relation: { who: mate, axis: trust, delta: 1 }
+          - belief: { fact: "지렛대가 부러질 듯 휘었고 판은 꿈쩍하지 않았다. 감염체가 몰려와 {mate}가 스스로 다리를 빼냈다. 다리가 엉망이다", source: seen }
+    - id: lift
+      label: 맨손으로 판을 들어 본다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: occ_sc_pinned_done
+          - standing: 1
+          - npc_hurt: { who: mate, steps: 1 }
+          - relation: { who: mate, axis: trust, delta: 2 }
+          - deed: { summary: 무너진 바닥에 깔린 동료를 맨손으로 빼냈다, tags: [loyalty, bravery], severity: 2, privacy: public }
+          - belief: { fact: "꺼진 바닥에 깔린 {mate}를 맨손으로 빼냈다. 손바닥이 다 까졌다", source: seen }
+        partial:
+          - set_flag: occ_sc_pinned_done
+          - zone_noise: 2
+          - npc_hurt: { who: mate, steps: 2 }
+          - relation: { who: mate, axis: trust, delta: 1 }
+          - belief: { fact: "판을 반쯤 들었고 {mate}가 다리를 끌어냈다. 소리가 너무 컸다", source: seen }
+        miss:
+          - set_flag: occ_sc_pinned_done
+          - zone_noise: 3
+          - npc_hurt: { who: mate, steps: 2 }
+          - belief: { fact: "판은 들리지 않았다. 둘이 같이 비명을 질렀다. 결국 {mate}가 다리를 비틀어 빼냈다", source: seen }
+    - id: fetch_help
+      label: 소리를 다른 데로 끌고 사람을 데리러 간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: occ_sc_pinned_done
+          - npc_hurt: { who: mate, steps: 1 }
+          - relation: { who: mate, axis: respect, delta: 1 }
+          - belief: { fact: "깡통을 멀리 던져 소리를 끌고 사람을 불러왔다. {mate}는 숨을 죽이고 기다렸다. 둘 다 살아서 돌아왔다", source: seen }
+        partial:
+          - set_flag: occ_sc_pinned_done
+          - npc_hurt: { who: mate, steps: 2 }
+          - relation: { who: mate, axis: trust, delta: -1 }
+          - belief: { fact: "사람을 데리고 돌아갔을 때 {mate}는 혼자 빠져나와 있었다. 다리를 질질 끌며 나를 보지 않았다", source: seen }
+        miss:
+          - set_flag: occ_sc_pinned_done
+          - zone_noise: 2
+          - npc_hurt: { who: mate, steps: 2 }
+          - relation: { who: mate, axis: trust, delta: -2 }
+          - belief: { fact: "소리를 끌려다 도리어 길이 막혔다. 한참 뒤 돌아갔을 때 {mate}는 스스로 빠져나와 있었다. 손에 피 묻은 쇳조각을 쥐고 있었다", source: seen }
+    - id: leave
+      label: 혼자 빠져나온다
+      effects:
+        - set_flag: occ_sc_pinned_done
+        - set_flag: occ_sc_left_mate
+        - standing: -2
+        - merit: -1
+        - npc_hurt: { who: mate, steps: 2 }
+        - relation: { who: mate, axis: trust, delta: -3 }
+        - relation: { who: mate, axis: affection, delta: -3 }
+        - deed: { summary: 무너진 바닥에 깔린 동료를 두고 혼자 빠져나왔다, tags: [cowardice, selfishness], severity: 3, privacy: semi_private }
+        - belief: { fact: "꺼진 바닥에 깔린 {mate}를 두고 나왔다. 그는 다음 날 혼자 기어서 돌아왔다고 한다. 다리를 절며", source: report }
+
+# ── 찾은 것을 낼지 숨길지 ───────────────────────────────
+
+- id: occ_sc_sealed_case
+  title: 소리 없는 상자
+  tags: [occ_scavenger]
+  when:
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    zone_owner: [none]
+    segments: [day, evening]
+    day_gte: 3
+    flags_none: [occ_sc_case_found]
+  setup: >-
+    무너진 벽장 안쪽, 천장 판 사이에 쇠 상자 하나가 끼어 있다. 붕괴 전 병원 이름이 찍혀 있고 고무 패킹이 아직 말랑하다. 흔들어도 소리가 나지 않는다. 꽉 찼다는 뜻이다.
+    주변에 아무도 없다. 돌아가면 창고 앞에서 찾은 것을 내놓고 장부에 적는다.
+  ai_direction: >-
+    상자 안은 붕대와 알약이다. 무리 창고에 넣으면 큰 몫이다(양은 효과가 정했다). 혼자 가지면 아무도 모를 수도 있다. 다만 수색꾼끼리는 누가 무엇을 들고 나오는지 서로 눈여겨본다.
+    무리의 규칙(남의 몫에 손대는 것, 짐을 빼돌리는 것)이 얼마나 무거운지는 culture를 따른다.
+  choices:
+    - id: turn_in
+      label: 상자째 들고 가 창고에 낸다
+      effects:
+        - set_flag: occ_sc_case_found
+        - faction_resource: { faction: own, resource: medicine, delta: 6 }
+        - standing: 2
+        - merit: 1
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - deed: { summary: 수색에서 찾은 약품 상자를 손대지 않고 무리 창고에 냈다, tags: [diligence, honesty], severity: 1, privacy: public }
+        - belief: { fact: "봉인된 약품 상자를 창고에 냈다. 장부에 내 이름 옆으로 줄이 길게 그어졌다", source: seen }
+    - id: skim
+      label: 몇 줄만 빼서 품에 넣고 나머지를 낸다
+      effects:
+        - set_flag: occ_sc_case_found
+        - set_flag: occ_sc_skimmed
+        - give_item: { item: antibiotics }
+        - give_item: { item: bandage }
+        - faction_resource: { faction: own, resource: medicine, delta: 3 }
+        - standing: 1
+        - deed: { summary: 수색에서 찾은 약을 몇 줄 빼돌리고 나머지만 창고에 냈다, tags: [theft], severity: 1, privacy: private }
+        - belief: { fact: "약품 상자에서 항생제와 붕대를 빼서 품에 넣고 나머지를 냈다. 창고에서는 많이 찾았다고 칭찬했다", source: seen }
+    - id: hide_case
+      label: 상자째 숨겨 두었다가 나중에 혼자 가져간다
+      effects:
+        - set_flag: occ_sc_case_found
+        - set_flag: occ_sc_skimmed
+        - set_flag: occ_sc_case_hidden
+        - give_item: { item: sealed_med_case }
+        - deed: { summary: 수색에서 찾은 약품 상자를 통째로 숨겼다, tags: [theft, selfishness], severity: 2, privacy: private }
+        - belief: { fact: "봉인된 약품 상자를 무리에 내지 않고 내가 가졌다. 장터에 가면 큰 값이 될 것이다", source: seen }
+
+- id: occ_sc_skim_witness
+  title: 같이 나온 사람의 눈
+  tags: [occ_scavenger]
+  when:
+    zone_owner: [own]
+    segments: [evening, night]
+    day_gte: 4
+    flags_all: [occ_sc_skimmed]
+    flags_none: [occ_sc_witness_done]
+  cast:
+    witness: { faction: own, ranks: [grunt, staff], known: true }
+    boss: { commander: true, enter: false, optional: true }
+  setup: >-
+    잠자리에 들기 전, {witness:이/가} 당신 침상 끝에 걸터앉는다. 목소리를 낮춘다.
+    "그날 너 벽장에서 나올 때 품이 불룩하더라. 나도 수색 나가 봐서 알아. 창고에 낸 거하고 숫자가 안 맞지?"
+  ai_direction: >-
+    {witness:은/는} 정말로 봤다. 고발하려는 게 아니라 제 몫을 원한다. 거절하면 고발할지는 그동안의 관계에 따라 GM이 판단하되, 효과는 선택지가 정한다.
+    주인공이 지금 그 물건을 가지고 있는지는 지닌 것으로만 정해진다.
+  choices:
+    - id: share
+      label: 빼 둔 약을 한 줄 나눠 준다
+      when: { has_items_any: [antibiotics, sealed_med_case] }
+      effects:
+        - set_flag: occ_sc_witness_done
+        - take_item: { item: antibiotics }
+        - relation: { who: witness, axis: trust, delta: 1 }
+        - deed: { summary: 빼돌린 약을 본 동료에게 입막음으로 나눠 주었다, tags: [theft], severity: 1, privacy: private }
+        - belief: { fact: "{witness}에게 항생제 한 줄을 주었다. 이제 우리는 같은 비밀을 진다", source: seen }
+    - id: deny
+      label: 잘못 봤다고 웃어넘긴다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: occ_sc_witness_done
+          - belief: { fact: "{witness}는 내가 잘못 봤나 보다며 돌아누웠다", source: seen }
+        partial:
+          - set_flag: occ_sc_witness_done
+          - relation: { who: witness, axis: trust, delta: -1 }
+          - belief: { fact: "{witness}는 더 묻지 않았지만, 다음 수색부터 내 짐을 눈여겨볼 것이다", source: seen }
+        miss:
+          - set_flag: occ_sc_witness_done
+          - standing: -2
+          - merit: -1
+          - relation: { who: witness, axis: trust, delta: -2 }
+          - deed: { summary: 수색에서 찾은 약을 빼돌린 것이 동료의 입으로 퍼졌다, tags: [theft, deceit], severity: 2, privacy: public }
+          - belief: { fact: "{witness}가 다음 날 아침 식사 자리에서 말을 흘렸다. 수색꾼들이 내 짐을 보는 눈이 달라졌다", source: seen }
+    - id: confess
+      label: 같이 상관에게 가서 털어놓자고 한다
+      when: { cast: [boss] }
+      effects:
+        - set_flag: occ_sc_witness_done
+        - clear_flag: occ_sc_skimmed
+        - standing: -1
+        - merit: -1
+        - relation: { who: witness, axis: respect, delta: 2 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - faction_resource: { faction: own, resource: medicine, delta: 2 }
+        - deed: { summary: 수색에서 빼돌린 약을 스스로 털어놓고 창고에 돌려놓았다, tags: [honesty], severity: 1, privacy: semi_private }
+        - belief: { fact: "상관에게 빼돌린 약 이야기를 털어놓았다. 벌은 받았지만 {witness}가 내 편을 들어 주었다", source: seen }
+
+# ── 길잡이 ──────────────────────────────────────────────
+
+- id: occ_sc_guide_refugees
+  title: 길을 아는 사람
+  tags: [occ_scavenger]
+  cooldown_days: 6
+  repeatable: true
+  when:
+    zones: [old_town, hospital_ruins, riverside]
+    segments: [morning, day]
+    occupation_step_gte: 1
+  cast:
+    lead: { extra: refugee, label: 보따리를 진 피난민, keep: occ_sc_guided }
+  setup: >-
+    {lead:이/가} 무너진 버스 뒤에서 머리를 내민다. 뒤로 지친 얼굴이 셋 더. "길잡이죠? 표시 긋는 거 봤어요.
+    하얀매 진료소까지만 데려다줘요. 지난번엔 길을 잘못 들어서 하나를 잃었어요." 그는 내밀 것이 없다는 듯 빈손을 편다.
+  ai_direction: >-
+    피난민들은 느리고 소리를 낸다. 데려가면 하루가 다 간다. 진료소까지 가면 그들은 거기서 머문다. 값을 받으면 그들이 가진 마지막 통조림이다.
+    길만 알려 주면 그들끼리 가다 어떻게 될지는 모른다 (이야기는 사람을 죽이지 않는다. 결과는 나중의 소문으로만).
+  choices:
+    - id: guide
+      label: 진료소까지 데려간다
+      effects:
+        - standing: 1
+        - companion_join: { who: lead, kind: purpose, until: { zone: d_clinic, hours: 24 } }
+        - relation: { who: lead, axis: trust, delta: 2 }
+        - deed: { summary: 길 잃은 피난민들을 진료소까지 데려가기로 했다, tags: [mercy], severity: 1, privacy: public }
+        - belief: { fact: "피난민 넷을 하얀매 진료소까지 데려가기로 했다. 그들은 느리다", source: seen }
+    - id: charge
+      label: 마지막 통조림을 받고 데려간다
+      effects:
+        - standing: 1
+        - give_item: { item: canned_food, from: lead }
+        - companion_join: { who: lead, kind: purpose, until: { zone: d_clinic, hours: 24 } }
+        - relation: { who: lead, axis: affection, delta: -1 }
+        - deed: { summary: 피난민들의 마지막 먹을 것을 길값으로 받았다, tags: [selfishness], severity: 1, privacy: semi_private }
+        - belief: { fact: "피난민에게서 통조림을 길값으로 받고 진료소까지 데려가기로 했다", source: seen }
+    - id: draw_map
+      label: 땅바닥에 길을 그려 주고 보낸다
+      effects:
+        - relation: { who: lead, axis: trust, delta: 1 }
+        - belief: { fact: "피난민들에게 진료소 가는 길을 흙바닥에 그려 주었다. 그들이 닿았는지는 모른다", source: seen }
+
+# ── 수색대장: 누구를 데려갈지 ───────────────────────────
+
+- id: occ_sc_deep_run_pick
+  title: 깊은 수색의 명단
+  tags: [occ_scavenger]
+  when:
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    zone_owner: [own]
+    segments: [evening]
+    occupation_step_gte: 2
+    flags_none: [occ_sc_run_planned]
+  cast:
+    boss: { commander: true, enter: false }
+    vet: { faction: own, ranks: [grunt, staff, squad_leader], known: true, trust_gte: 0, keep: occ_sc_vet }
+    green: { faction: own, ranks: [grunt], keep: occ_sc_green }
+  setup: >-
+    시립병원 지하 약제실까지 내려가는 깊은 수색. 수색대장인 당신이 명단을 정한다. 둘을 데려가면 서로 등을 볼 수 있고, 하나면 덜 들킨다.
+    {vet:은/는} 말없이 장비를 손질하고 있다. 그 옆에서 {green:이/가} 당신을 따라다니며 조른다. "저도 데려가 주세요. 배워야 언젠가 혼자 가죠."
+  ai_direction: >-
+    {vet:은/는} 손이 빠르고 겁이 없지만, 지난 수색에서 동료를 잃은 뒤로 지하에 들어가면 숨이 가빠진다 (본인은 말하지 않는다). {green:은/는} 서툴지만 눈이 밝다.
+    누구를 데려가든 다음 이야기에서 그 사람이 함께 내려간다. 빠진 사람이 어떻게 받아들이는지는 관계로 남는다.
+  choices:
+    - id: take_vet
+      label: "{vet}를 데려간다"
+      effects:
+        - set_flag: occ_sc_run_planned
+        - set_flag: occ_sc_took_vet
+        - relation: { who: vet, axis: respect, delta: 1 }
+        - relation: { who: green, axis: affection, delta: -1 }
+        - belief: { fact: "깊은 수색에 {vet}를 데려가기로 했다. {green}은 입술을 깨물고 돌아섰다", source: seen }
+    - id: take_green
+      label: "{green}을 데려가 가르친다"
+      effects:
+        - set_flag: occ_sc_run_planned
+        - set_flag: occ_sc_took_green
+        - relation: { who: green, axis: trust, delta: 2 }
+        - relation: { who: vet, axis: respect, delta: -1 }
+        - npc_relation: { from: vet, to: green, axis: respect, delta: -1 }
+        - belief: { fact: "깊은 수색에 신참 {green}을 데려가기로 했다. {vet}는 아무 말 없이 장비를 내려놓았다", source: seen }
+    - id: go_alone
+      label: 아무도 데려가지 않는다. 혼자 내려간다
+      effects:
+        - set_flag: occ_sc_run_planned
+        - set_flag: occ_sc_went_alone
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "깊은 수색에 아무도 데려가지 않기로 했다. 잃을 사람이 하나면 충분하다", source: seen }
+    - id: put_off
+      label: 아직 때가 아니라고 미룬다
+      effects:
+        - set_flag: occ_sc_run_planned
+        - standing: -1
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - belief: { fact: "깊은 수색을 미뤘다. 창고의 약은 그만큼 더 비어 간다", source: seen }
+
+- id: occ_sc_deep_run
+  title: 약제실의 계단
+  tags: [occ_scavenger]
+  urgent: true
+  when:
+    zones: [hospital_ruins]
+    segments: [morning, day]
+    flags_all: [occ_sc_run_planned]
+    flags_any: [occ_sc_took_vet, occ_sc_took_green, occ_sc_went_alone]
+    flags_none: [occ_sc_run_done]
+  cast:
+    vet: { recall: occ_sc_vet, optional: true }
+    green: { recall: occ_sc_green, optional: true }
+  setup: >-
+    시립병원 지하로 내려가는 비상계단. 손전등 불빛이 계단참의 물웅덩이에 흔들린다. 약제실 철문은 두 층 아래다.
+    아래에서 물 떨어지는 소리 말고 다른 소리가 섞여 있다. 오래 서 있던 것들이 몸을 트는 소리.
+  ai_direction: >-
+    약제실은 반쯤 털렸지만 안쪽 선반은 남아 있다. 내려가는 길에 감염체 몇이 서 있다. 데려온 사람이 있으면 그 사람이 함께 있다 (명단 이야기에서 정한 대로).
+    고참이 왔다면 지하에서 숨이 가빠지는 것을 주인공이 알아챌 수 있다. 신참이 왔다면 서툴러서 소리를 내지만 눈이 밝다. 결과(누가 다치는지, 무엇을 가져오는지)는 선택지의 효과가 정한다.
+  choices:
+    - id: with_vet
+      label: 둘이 등을 맞대고 내려간다
+      when: { flags_all: [occ_sc_took_vet], cast: [vet] }
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: occ_sc_run_done
+          - standing: 2
+          - faction_resource: { faction: own, resource: medicine, delta: 8 }
+          - relation: { who: vet, axis: trust, delta: 2 }
+          - deed: { summary: 수색대장으로 시립병원 약제실까지 내려가 약을 건져 왔다, tags: [bravery, diligence], severity: 2, privacy: public }
+          - belief: { fact: "시립병원 약제실 안쪽 선반을 털어 왔다. 계단에서 {vet}의 숨이 가빠졌지만 끝까지 내 등을 지켰다", source: seen }
+        partial:
+          - set_flag: occ_sc_run_done
+          - standing: 1
+          - faction_resource: { faction: own, resource: medicine, delta: 4 }
+          - npc_hurt: { who: vet, steps: 1 }
+          - belief: { fact: "약제실에서 반만 건지고 쫓겨 올라왔다. {vet}가 계단에서 얼어붙었다가 물렸다. 상처는 얕다", source: seen }
+        miss:
+          - set_flag: occ_sc_run_done
+          - standing: -1
+          - zone_noise: 2
+          - npc_hurt: { who: vet, steps: 2 }
+          - npc_body: { who: vet, track: infection, delta: 1, chance: 0.4 }
+          - belief: { fact: "약제실 문 앞에서 {vet}가 숨을 못 쉬고 주저앉았다. 끌고 올라오느라 빈손이다. 그는 크게 다쳤다", source: seen }
+    - id: with_green
+      label: 신참을 뒤에 세우고 하나씩 가르치며 내려간다
+      when: { flags_all: [occ_sc_took_green], cast: [green] }
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: occ_sc_run_done
+          - standing: 2
+          - faction_resource: { faction: own, resource: medicine, delta: 6 }
+          - relation: { who: green, axis: respect, delta: 2 }
+          - deed: { summary: 신참을 데리고 시립병원 약제실까지 내려가 약을 건져 왔다, tags: [diligence], severity: 2, privacy: public }
+          - belief: { fact: "{green}이 무너진 선반 뒤의 상자를 먼저 찾았다. 눈이 밝다. 둘 다 무사히 올라왔다", source: seen }
+        partial:
+          - set_flag: occ_sc_run_done
+          - standing: 1
+          - zone_noise: 1
+          - faction_resource: { faction: own, resource: medicine, delta: 3 }
+          - npc_hurt: { who: green, steps: 1 }
+          - belief: { fact: "{green}이 깡통을 걷어차 감염체가 깼다. 조금만 건지고 올라왔다. 그는 팔을 긁혔다", source: seen }
+        miss:
+          - set_flag: occ_sc_run_done
+          - standing: -2
+          - zone_noise: 2
+          - npc_hurt: { who: green, steps: 2 }
+          - npc_body: { who: green, track: infection, delta: 1, chance: 0.5 }
+          - belief: { fact: "신참 {green}이 계단에서 넘어져 소리를 냈다. 감염체에 붙잡혀 크게 다쳤다. 빈손으로 그를 업고 올라왔다", source: seen }
+    - id: solo
+      label: 혼자 숨을 죽이고 내려간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: occ_sc_run_done
+          - standing: 2
+          - faction_resource: { faction: own, resource: medicine, delta: 5 }
+          - deed: { summary: 혼자 시립병원 약제실까지 내려가 약을 건져 왔다, tags: [bravery], severity: 2, privacy: public }
+          - belief: { fact: "혼자 약제실까지 내려가 안쪽 선반을 털었다. 아무도 나를 보지 못했다", source: seen }
+        partial:
+          - set_flag: occ_sc_run_done
+          - standing: 1
+          - faction_resource: { faction: own, resource: medicine, delta: 2 }
+          - belief: { fact: "약제실 문 앞에서 감염체가 몸을 틀었다. 손에 잡히는 것만 쥐고 올라왔다", source: seen }
+        miss:
+          - set_flag: occ_sc_run_done
+          - standing: -1
+          - zone_noise: 2
+          - belief: { fact: "계단참에서 감염체와 마주쳤다. 아무것도 못 건지고 쫓겨 올라왔다. 혼자라서 아무도 등을 봐 주지 않았다", source: seen }
+    - id: turn_back
+      label: 소리를 듣고 오늘은 돌아선다
+      effects:
+        - set_flag: occ_sc_run_done
+        - standing: -1
+        - belief: { fact: "약제실 계단에서 돌아섰다. 살아서 돌아온 것도 수색대장의 일이다. 창고는 그렇게 생각하지 않는다", source: seen }
+
+# ── 붉은연합 갈래: 할당량 ───────────────────────────────
+
+- id: occ_sc_red_quota
+  title: 모자란 할당
+  tags: [occ_scavenger]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    factions: [faction_c]
+    zone_owner: [none]
+    segments: [evening]
+    day_gte: 3
+  cast:
+    beggar: { extra: refugee, label: 자루를 안은 떠돌이 }
+  setup: >-
+    해가 넘어가는데 자루가 반도 안 찼다. 오늘 할당을 못 채우면 조 전체의 배급이 깎인다. 점호까지 얼마 안 남았다.
+    무너진 담 밑에서 {beggar:이/가} 자루를 품에 안고 웅크린다. 자루 안에서 깡통끼리 부딪는 소리가 난다.
+  ai_direction: >-
+    붉은연합은 할당량으로 굴러간다. 못 채우면 조 전체가 배급을 깎이고, 그 탓은 수색꾼에게 온다. 떠돌이의 자루에는 그가 오늘 하루 종일 주운 것이 들었다.
+    빼앗으면 그는 굶는다 (죽지는 않는다, 이야기는 사람을 죽이지 않는다). 숫자를 속이면 규율반의 장부와 맞춰 볼 때 판정으로 갈린다.
+  choices:
+    - id: rob
+      label: 자루를 빼앗아 할당을 채운다
+      check: intimidate
+      outcomes:
+        success:
+          - standing: 1
+          - faction_resource: { faction: own, resource: food, delta: 4 }
+          - deed: { summary: 할당을 채우려고 떠돌이의 자루를 빼앗았다, tags: [cruelty], severity: 2, privacy: private }
+          - belief: { fact: "떠돌이의 자루를 빼앗아 할당을 채웠다. 그는 울지도 않았다", source: seen }
+        partial:
+          - faction_resource: { faction: own, resource: food, delta: 2 }
+          - npc_hurt: { who: beggar, steps: 1 }
+          - deed: { summary: 할당을 채우려고 떠돌이를 때리고 자루 반을 빼앗았다, tags: [cruelty], severity: 2, privacy: private }
+          - belief: { fact: "떠돌이가 자루를 놓지 않아 주먹이 나갔다. 반은 쏟아져 흩어졌다", source: seen }
+        miss:
+          - standing: -1
+          - belief: { fact: "떠돌이가 자루를 안고 담 너머로 달아났다. 할당도 못 채웠다", source: seen }
+    - id: pad_count
+      label: 돌을 넣어 자루 무게를 맞추고 장부를 속인다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "자루 밑에 돌을 깔아 할당을 넘겼다. 창고에서 자루를 풀 때는 내가 없을 것이다", source: seen }
+        partial:
+          - merit: -1
+          - belief: { fact: "규율반원이 자루를 한 번 더 들어 보고 고개를 갸웃했다. 이름을 적어 갔다", source: seen }
+        miss:
+          - merit: -2
+          - standing: -1
+          - faction_morale: { faction: own, delta: -1 }
+          - deed: { summary: 수색 할당을 돌멩이로 채워 속이다 들켰다, tags: [deceit], severity: 2, privacy: public }
+          - belief: { fact: "규율반원이 자루를 쏟았다. 돌이 굴러 나왔다. 조 전체 배급이 깎였고, 다들 나를 본다", source: seen }
+    - id: short
+      label: 모자란 대로 내고 깎인 배급을 받는다
+      effects:
+        - merit: -1
+        - faction_morale: { faction: own, delta: -1 }
+        - deed: { summary: 수색 할당을 채우지 못한 채 정직하게 냈다, tags: [honesty], severity: 1, privacy: public }
+        - belief: { fact: "할당을 못 채운 자루를 그대로 냈다. 조원들이 깎인 배급을 받으며 나를 보지 않았다", source: seen }
+
+# ── 무소속 수색꾼 ────────────────────────────────────────
+
+- id: occ_sc_dead_scav_pack
+  title: 먼저 간 수색꾼의 배낭
+  tags: [occ_scavenger]
+  when:
+    factions: [none]
+    zones: [old_town, hospital_ruins, riverside]
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [occ_sc_dead_pack_done]
+  setup: >-
+    무너진 계단 아래에 배낭 하나와 사람 하나가 함께 깔려 있다. 오래됐다. 배낭 옆구리에 손전등이 묶여 있고, 가슴 주머니에 비닐로 싼 쪽지가 삐져나와 있다.
+    쪽지 겉에 서툰 글씨로 "버들마을 경비조 염 씨에게. 동생이"라고 적혀 있다.
+  ai_direction: >-
+    죽은 사람은 수색꾼이었다. 배낭에는 쓸 것이 조금 있다. 쪽지는 버들마을 경비조에 있는 형에게 보내는 짧은 편지다 (내용은 "못 돌아가면 미안"뿐). 쪽지를 전하면 그쪽 사람들 사이에 이 수색꾼 이야기가 돈다.
+  choices:
+    - id: take_all
+      label: 배낭을 통째로 챙기고 쪽지는 둔다
+      effects:
+        - set_flag: occ_sc_dead_pack_done
+        - give_item: { item: canned_food }
+        - give_item: { item: bandage }
+        - give_item: { item: duct_tape }
+        - belief: { fact: "죽은 수색꾼의 배낭을 챙겼다. 버들마을 경비조에 보내는 쪽지는 그 사람 가슴에 그대로 두었다", source: seen }
+    - id: take_and_carry
+      label: 배낭과 쪽지를 챙긴다. 쪽지는 전해 준다
+      effects:
+        - set_flag: occ_sc_dead_pack_done
+        - set_flag: occ_sc_letter_carried
+        - give_item: { item: canned_food }
+        - give_item: { item: bandage }
+        - standing: 1
+        - belief: { fact: "죽은 수색꾼의 쪽지를 챙겼다. 버들마을 경비조의 염 씨에게 전해야 한다", source: seen }
+    - id: bury
+      label: 돌을 덮어 묻어 주고 손대지 않는다
+      effects:
+        - set_flag: occ_sc_dead_pack_done
+        - deed: { summary: 폐허에서 죽은 수색꾼을 돌로 덮어 묻어 주었다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "죽은 수색꾼을 돌로 덮었다. 배낭도 같이 묻었다. 같은 일을 하는 사람에게 해 줄 수 있는 것", source: seen }
+
+- id: occ_sc_letter_delivered
+  title: 쪽지의 주인
+  tags: [occ_scavenger]
+  when:
+    zones: [b_base]
+    segments: [morning, day, evening]
+    flags_all: [occ_sc_letter_carried]
+    flags_none: [occ_sc_letter_done]
+  cast:
+    brother: { extra: b_guard, label: 쪽지 겉글씨의 주인 }
+  setup: >-
+    버들마을 정문 경비실. 이름을 대자 {brother:이/가} 총을 벽에 기대 놓고 나온다. 당신이 내민 비닐 쪽지의 겉글씨를 보고 손을 멈춘다.
+    한참을 들여다보다 묻는다. "어디서요?"
+  ai_direction: >-
+    이 경비병은 동생이 수색을 나갔다가 돌아오지 않은 것을 안다. 죽은 것은 몰랐다. 울지 않는다. 고맙다는 말 대신 경비조 사람들에게 이 수색꾼이 무엇을 가져왔는지 말한다.
+    배낭의 물건을 돌려달라고 하지는 않는다. 동생이 어디서 어떻게 죽었는지 들으면, 그 계단을 다른 수색꾼들에게 알린다.
+  choices:
+    - id: tell_truth
+      label: 어디서 어떻게 찾았는지 그대로 말한다
+      effects:
+        - set_flag: occ_sc_letter_done
+        - standing: 1
+        - relation: { who: brother, axis: trust, delta: 2 }
+        - relation: { who: brother, axis: respect, delta: 1 }
+        - deed: { summary: 폐허에서 죽은 수색꾼의 쪽지를 버들마을의 형에게 전했다, tags: [mercy, honesty], severity: 1, privacy: public }
+        - belief: { fact: "버들마을 경비병에게 동생의 쪽지를 전했다. 그는 경비조 사람들에게 내 얼굴을 보여 주며 이 사람이 데려왔다고 했다. 쪽지만 데려왔는데", source: seen }
+    - id: soften
+      label: 편하게 갔을 거라고 말을 고른다
+      effects:
+        - set_flag: occ_sc_letter_done
+        - relation: { who: brother, axis: affection, delta: 2 }
+        - belief: { fact: "버들마을 경비병에게 동생이 편히 갔다고 말했다. 그는 그 말을 믿고 싶어 했다", source: seen }

@@ -1,0 +1,605 @@
+# 상인 직분 이야기 (기획서 12.6). tags: [occ_trader]. 무리를 가리지 않는다 (무소속 행상도)
+# 값은 코드가 정한다: 실제 물건을 바꾸는 흥정은 barter 도구(값을 깎는 판정은 교섭·거짓말)로, 이야기는 그 앞뒤의 사람을 다룬다
+# 플래그 사슬
+#   - 위조 동전패: occ_tr_fake_coin(occ_tr_forger_seen, 위조 통행패) → occ_tr_forger_market(occ_tr_forger_done / occ_tr_passing_fakes)
+#   - 무리 몰래 하는 부업: occ_tr_side_offer(occ_tr_side_deal) → occ_tr_side_buyer(occ_tr_side_done)
+#   - 외상 손님: occ_tr_credit_plea(occ_tr_credit_given) → occ_tr_debtor_back(occ_tr_debtor_done) / occ_tr_paper_buyer(occ_tr_paper_sold)
+#   - 다른 무리 장터의 소문: occ_tr_other_stall (반복)
+#   - 큰손: occ_tr_trade_council (교역 방침)
+#   - 무소속 행상: occ_tr_dying_peddler, occ_tr_road_band
+
+# ── 위조 동전패 ─────────────────────────────────────────
+
+- id: occ_tr_fake_coin
+  title: 쏠린 구멍
+  tags: [occ_trader]
+  when:
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [occ_tr_forger_seen, occ_tr_coin_taken]
+  cast:
+    buyer: { extra: refugee, label: 손이 빠른 손님, keep: occ_tr_forger }
+  setup: >-
+    {buyer:이/가} 물건을 고르는 둥 마는 둥 하다가 끈에 꿴 통행패 세 닢을 당신 손바닥에 쏟는다.
+    "이걸로 통조림 둘. 상단 패니까 어디 가서든 쳐 줘." 동전은 차고 무겁다. 손님의 눈은 벌써 길 쪽을 보고 있다.
+  ai_direction: >-
+    세 닢 중 하나가 위조다. 구멍이 한쪽으로 쏠렸고 끈이 새것이다. 손님은 위조를 만드는 사람이 아니라 받아 와서 푸는 사람이고, 들키면 웃으며 "나도 받은 거야"라고 한다.
+    판정 전에 위조라고 말해 주지 않는다. 알아보는 것은 경계 판정이다. 받은 동전으로 통조림 값을 치르는 일은 이 이야기의 효과로만 정한다.
+  choices:
+    - id: inspect
+      label: 동전을 하나씩 해에 비춰 본다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: occ_tr_forger_seen
+          - give_item: { item: forged_token }
+          - standing: 1
+          - relation: { who: buyer, axis: respect, delta: 1 }
+          - belief: { fact: "통행패 한 닢이 가짜였다. 구멍이 쏠리고 끈이 새것이었다. 손님은 '나도 받은 거야'라며 진짜 두 닢 값만 받아 갔다. 가짜는 내 주머니에 있다", source: seen }
+        partial:
+          - set_flag: occ_tr_forger_seen
+          - give_item: { item: forged_token }
+          - belief: { fact: "손님이 떠난 뒤에야 통행패 한 닢이 가짜라는 걸 알았다. 통조림 하나 값을 날렸다", source: seen }
+        miss:
+          - set_flag: occ_tr_coin_taken
+          - give_item: { item: forged_token }
+          - standing: -1
+          - belief: { fact: "받은 통행패로 다른 데서 값을 치르려다 퇴짜를 맞았다. '이거 가짜잖아.' 손님 얼굴은 벌써 기억도 흐리다", source: seen }
+    - id: refuse_coins
+      label: 패는 안 받는다고, 물건으로 달라고 한다
+      effects:
+        - set_flag: occ_tr_coin_taken
+        - relation: { who: buyer, axis: affection, delta: -1 }
+        - belief: { fact: "통행패로 값을 치르려던 손님을 물렸다. 그는 군말 없이 다른 좌판으로 갔다. 너무 군말이 없었다", source: seen }
+
+- id: occ_tr_forger_market
+  title: 같은 동전, 다른 좌판
+  tags: [occ_trader]
+  cooldown_days: 1
+  when:
+    segments: [morning, day]
+    day_gte: 3
+    flags_all: [occ_tr_forger_seen]
+    flags_none: [occ_tr_forger_done]
+  cast:
+    buyer: { recall: occ_tr_forger }
+    clerk: { ids: [e_sora], known: true, optional: true, enter: false }
+  setup: >-
+    장터 끝 좌판에서 낯익은 손이 끈에 꿴 동전을 쏟고 있다. {buyer}다. 이번에는 늙은 여자의 약초 좌판이다.
+    여자는 동전을 한 닢 한 닢 세며 고개를 끄덕인다. 당신 주머니 속 가짜 한 닢이 무겁다.
+  ai_direction: >-
+    {buyer:은/는} 위조 동전을 묶음째 받아 장터에 푸는 사람이다. 묶음을 대는 사람이 따로 있지만 이 사람은 그 얼굴을 한 번밖에 못 봤다. 사람들 앞에서 가짜라고 외치면 장터 사람들이 손을 대고, 그는 맞는다 (죽지는 않는다).
+    조용히 다가가면 그는 남은 묶음을 헐값에 넘기겠다고 한다. 가짜를 받아 쓰면 언젠가 내 이름에 붙는다.
+  choices:
+    - id: shout
+      label: 좌판 앞에서 가짜라고 소리친다
+      effects:
+        - set_flag: occ_tr_forger_done
+        - standing: 1
+        - npc_hurt: { who: buyer, steps: 1 }
+        - relation: { who: buyer, axis: trust, delta: -3 }
+        - deed: { summary: 장터에서 위조 통행패를 푸는 사람을 사람들 앞에서 잡았다, tags: [honesty], severity: 1, privacy: public }
+        - belief: { fact: "위조 통행패를 푸는 사람을 장터에서 잡았다. 사람들이 그를 둘러싸고 때렸다. 동전을 대 주는 사람은 따로 있다고 울며 말했다", source: seen }
+    - id: squeeze
+      label: 조용히 데려가 손해 본 값을 받아 낸다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: occ_tr_forger_done
+          - give_item: { item: canned_food }
+          - give_item: { item: cigarettes, from: buyer }
+          - belief: { fact: "위조 동전을 푸는 사람에게서 손해 본 값을 받아 냈다. 그는 묶음을 대는 사람이 강변 공장 지대에서 동전을 녹인다고 했다", source: report }
+        partial:
+          - set_flag: occ_tr_forger_done
+          - belief: { fact: "위조 동전을 푸는 사람은 빈털터리였다. 다시는 이 장터에 오지 않겠다는 말만 받았다", source: seen }
+        miss:
+          - relation: { who: buyer, axis: affection, delta: -2 }
+          - belief: { fact: "위조 동전을 푸는 사람을 몰아세우다 놓쳤다. 그는 인파 속으로 빠져나갔다", source: seen }
+    - id: buy_bundle
+      label: 남은 묶음을 헐값에 사서 멀리 가서 푼다
+      effects:
+        - set_flag: occ_tr_forger_done
+        - set_flag: occ_tr_passing_fakes
+        - take_item: { item: cigarettes }
+        - give_item: { item: forged_token, quantity: 3 }
+        - deed: { summary: 위조 통행패 묶음을 사들여 다른 장터에 풀기로 했다, tags: [deceit, selfishness], severity: 2, privacy: private }
+        - belief: { fact: "위조 통행패 몇 닢을 담배 한 갑에 샀다. 멀리 가서 쓰면 아무도 모를 것이다. 이 장터에서만 아니면", source: seen }
+    - id: tell_clerk
+      label: 장부꾼에게 가짜 한 닢을 보여 주고 맡긴다
+      when: { cast: [clerk] }
+      effects:
+        - set_flag: occ_tr_forger_done
+        - standing: 1
+        - take_item: { item: forged_token }
+        - relation: { who: clerk, axis: trust, delta: 1 }
+        - belief: { fact: "문소라에게 위조 통행패를 넘겼다. 그녀는 장부 뒤에 동전 생김새를 그려 두고, 내일부터 패를 받는 좌판마다 일러 두겠다고 했다", source: seen }
+
+# ── 다른 무리 장터의 소문 ───────────────────────────────
+
+- id: occ_tr_other_stall
+  title: 남의 장터에서 귀 열기
+  tags: [occ_trader]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zone_owner: [other]
+    segments: [morning, day]
+  cast:
+    seller: { extra: e_porter, label: 남의 장터 좌판 주인 }
+  setup: >-
+    {zone}의 좌판 앞. {seller:이/가} 저울추를 손가락으로 굴리며 당신을 위아래로 훑는다. "처음 보는 얼굴인데 물건 보는 눈은 장사꾼이네.
+    요즘 {scarce} 값이 얼마나 뛰었는지 알아? 우리 쪽은 이틀 새 곱이야."
+  ai_direction: >-
+    좌판 주인은 값만이 아니라 소문도 판다. 값을 묻는 사람에게는 값을, 소문을 원하는 사람에게는 소문을 먼저 흘리고 그 대신 이쪽 사정을 캐려 한다.
+    들은 소문은 소문이다(정확한지는 모른다). 실제로 물건을 바꾸려면 barter 도구로 흥정한다.
+  choices:
+    - id: listen
+      label: 값 이야기를 받아 주며 누가 무엇을 사재는지 떠본다
+      check: persuade
+      outcomes:
+        success:
+          - standing: 1
+          - belief: { fact: "{zone} 좌판 주인 말로는 요즘 {scarce:을/를} 사재는 쪽이 따로 있고, 그 무리는 겨울 전에 크게 움직이려는 눈치라고 한다", source: rumor }
+        partial:
+          - belief: { fact: "{zone} 좌판 주인 말로는 {scarce} 값이 이틀 새 곱이 됐다. 누가 사 가는지는 말하지 않았다", source: rumor }
+        miss:
+          - belief: { fact: "{zone} 좌판 주인은 값만 부르고 입을 닫았다. 오히려 내 쪽 사정을 더 물었다", source: seen }
+    - id: trade_news
+      label: 우리 쪽 창고 사정을 조금 흘리고 그쪽 사정을 받는다
+      effects:
+        - deed: { summary: 남의 장터에서 소문을 얻으려고 우리 쪽 창고 사정을 흘렸다, tags: [selfishness], severity: 1, privacy: semi_private }
+        - belief: { fact: "{zone} 좌판 주인과 소문을 바꿨다. 그쪽 무리는 약이 바닥이라 사람을 하얀매 진료소에 줄 세운다고 한다. 내가 흘린 말도 어딘가로 갈 것이다", source: rumor }
+    - id: just_price
+      label: 값만 듣고 일어선다
+      effects:
+        - belief: { fact: "{zone} 장터에서는 {scarce} 값이 많이 뛰어 있다", source: seen }
+
+# ── 무리 몰래 하는 부업 ─────────────────────────────────
+
+- id: occ_tr_side_offer
+  title: 장부에 없는 자루
+  tags: [occ_trader]
+  when:
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    zone_owner: [own]
+    segments: [evening, night]
+    day_gte: 4
+    flags_none: [occ_tr_side_deal, occ_tr_side_refused]
+  cast:
+    mate: { faction: own, ranks: [grunt, staff], known: true, keep: occ_tr_side_mate }
+    boss: { commander: true, enter: false }
+  setup: >-
+    창고 뒤 그늘에서 {mate:이/가} 자루 아가리를 벌린다. 마른 콩이 반 자루.
+    "교역 나갈 때 이거 하나만 같이 실어. 장부에는 없는 거야. 바깥에 아는 사람이 값을 잘 쳐. 반은 네 몫."
+  ai_direction: >-
+    {mate:은/는} 창고 당번을 서면서 조금씩 덜어 낸 것을 모았다. 무리 창고의 몫이 줄어드는 것은 배급으로만 드러난다. 상인이 실어 나르면 들킬 일이 거의 없다고 계산한다.
+    상관에게 알리면 {mate:은/는} 무리 안에서 끝장난다. 무리의 규칙(남의 몫, 빼돌린 짐)이 얼마나 무거운지는 무리마다 다르다. culture를 따른다.
+  choices:
+    - id: take_in
+      label: 자루를 받아 짐 밑에 넣는다
+      effects:
+        - set_flag: occ_tr_side_deal
+        - give_item: { item: cigarettes, quantity: 2 }
+        - faction_resource: { faction: own, resource: food, delta: -6 }
+        - relation: { who: mate, axis: trust, delta: 2 }
+        - deed: { summary: 무리 창고에서 덜어 낸 식량을 몰래 바깥에 내다 팔았다, tags: [theft, selfishness], severity: 2, privacy: private }
+        - belief: { fact: "{mate}와 무리 창고의 콩을 몰래 내다 판다. 바깥 손님이 값을 잘 쳤다", source: seen }
+    - id: refuse
+      label: 못 들은 걸로 하겠다고 하고 돌아선다
+      effects:
+        - set_flag: occ_tr_side_refused
+        - relation: { who: mate, axis: trust, delta: -1 }
+        - belief: { fact: "{mate}가 창고에서 덜어 낸 식량을 바깥에 팔자고 했다. 거절했지만 아무에게도 말하지 않았다", source: seen }
+    - id: report
+      label: 자루를 들고 상관에게 간다
+      effects:
+        - set_flag: occ_tr_side_refused
+        - faction_resource: { faction: own, resource: food, delta: 6 }
+        - merit: 1
+        - standing: 1
+        - relation: { who: boss, axis: trust, delta: 2 }
+        - relation: { who: mate, axis: trust, delta: -3 }
+        - npc_relation: { from: boss, to: mate, axis: trust, delta: -3 }
+        - deed: { summary: 창고 식량을 빼돌리던 동료를 상관에게 알렸다, tags: [loyalty], severity: 2, privacy: semi_private }
+        - belief: { fact: "{mate}가 빼돌린 콩 자루를 상관에게 가져갔다. 상관은 자루보다 {mate}의 얼굴을 오래 봤다", source: seen }
+
+- id: occ_tr_side_buyer
+  title: 더 달라는 손님
+  tags: [occ_trader]
+  when:
+    segments: [morning, day, evening]
+    day_gte: 6
+    flags_all: [occ_tr_side_deal]
+    flags_none: [occ_tr_side_done]
+  cast:
+    client: { extra: drifter_leader, label: 콩을 사 가던 바깥 손님, keep: occ_tr_side_client }
+    mate: { recall: occ_tr_side_mate, optional: true, enter: false }
+    boss: { commander: true, enter: false, optional: true }
+  setup: >-
+    {client:이/가} 길가에 앉아 당신을 기다리고 있다. 이번에는 빈 자루를 둘 들고 왔다.
+    "지난번 콩 좋더라. 이번엔 두 자루. 안 되면 말고." 그는 당신 무리의 담 쪽으로 턱을 든다. "저 안에서 누가 이 콩을 찾는지 알면 재밌겠지."
+  ai_direction: >-
+    이 손님은 처음부터 한 번으로 끝낼 생각이 없었다. 더 실어 오지 않으면 당신 무리 사람에게 콩 이야기를 흘리겠다는 협박이다. 진짜로 흘릴지는 당신의 태도에 달렸다. 물러서면 다음에 또 온다.
+    상관에게 털어놓는 것은 무리 안의 벌을 받는 일이다. 벌의 무게는 무리의 culture를 따른다 (숫자는 효과가 정했다).
+  choices:
+    - id: pay_off
+      label: 담배로 입을 막고 이번이 마지막이라고 한다
+      effects:
+        - set_flag: occ_tr_side_done
+        - take_item: { item: cigarettes, quantity: 2 }
+        - belief: { fact: "콩을 사 가던 손님의 입을 담배 두 갑으로 막았다. 정말 마지막일지는 그 사람만 안다", source: seen }
+    - id: face_down
+      label: 소문내 보라고, 그럼 네 이름도 같이 나간다고 버틴다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: occ_tr_side_done
+          - standing: 1
+          - relation: { who: client, axis: respect, delta: 2 }
+          - belief: { fact: "콩 손님이 웃으며 물러섰다. '장사꾼이네.' 그는 다른 데서 콩을 구하겠다고 했다", source: seen }
+        partial:
+          - set_flag: occ_tr_side_done
+          - belief: { fact: "콩 손님은 물러섰지만 떠나면서 담 쪽을 한 번 더 봤다", source: seen }
+        miss:
+          - set_flag: occ_tr_side_done
+          - standing: -2
+          - merit: -1
+          - deed: { summary: 무리 창고의 식량을 몰래 바깥에 팔았다는 소문이 무리 안에 돌았다, tags: [theft], severity: 2, privacy: public }
+          - belief: { fact: "콩 손님이 정말로 말을 흘렸다. 무리 사람들이 나를 보는 눈이 달라졌다", source: seen }
+    - id: confess
+      label: 상관을 찾아가 처음부터 털어놓는다
+      when: { cast: [boss] }
+      effects:
+        - set_flag: occ_tr_side_done
+        - merit: -2
+        - standing: -1
+        - relation: { who: boss, axis: trust, delta: -2 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - deed: { summary: 무리 창고의 식량을 빼돌려 판 것을 스스로 털어놓았다, tags: [honesty], severity: 2, privacy: semi_private }
+        - belief: { fact: "상관에게 콩 자루 일을 털어놓았다. 상관은 한참 말이 없다가 같이 한 사람이 누구냐고 물었다", source: seen }
+    - id: blame_mate
+      label: 상관에게 가서 자루는 {mate}의 것이었다고만 말한다
+      when: { cast: [boss, mate] }
+      effects:
+        - set_flag: occ_tr_side_done
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: mate, axis: trust, delta: -3 }
+        - npc_relation: { from: boss, to: mate, axis: trust, delta: -3 }
+        - deed: { summary: 함께 빼돌린 동료에게 죄를 다 넘겼다, tags: [betrayal, deceit], severity: 2, privacy: semi_private }
+        - belief: { fact: "콩 자루 일을 {mate}에게 다 넘겼다. 상관은 나를 믿는 눈치다. {mate}는 아직 모른다", source: seen }
+
+# ── 외상 손님 ───────────────────────────────────────────
+
+- id: occ_tr_credit_plea
+  title: 장부에 이름 하나
+  tags: [occ_trader]
+  when:
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [occ_tr_credit_given, occ_tr_credit_refused]
+  cast:
+    debtor: { extra: refugee, label: 아이 손을 잡은 손님, keep: occ_tr_debtor }
+  setup: >-
+    {debtor:이/가} 아이 손을 꼭 쥔 채 당신 짐 앞에 선다. 내밀 것이 없다는 것을 둘 다 안다.
+    "통조림 하나만. 외상으로. 다음 장날에 꼭 갚을게. 이름 적어 둬. 도망 안 가."
+  ai_direction: >-
+    이 사람은 정말 갚을 생각이다. 다만 갚을 길은 아직 없다. 아이는 사흘째 제대로 못 먹었다. 외상을 주면 장사꾼들 사이에 "물러 터진 사람"이라는 말이 돈다.
+    외투를 잡으면 아이가 추운 밤을 보낸다. 외상 장부를 사들이는 사람(전당포)이 있다는 것은 아직 드러내지 않는다.
+  choices:
+    - id: credit
+      label: 장부에 이름을 적고 통조림을 내준다
+      effects:
+        - set_flag: occ_tr_credit_given
+        - take_item: { item: canned_food }
+        - standing: -1
+        - relation: { who: debtor, axis: trust, delta: 2 }
+        - relation: { who: debtor, axis: affection, delta: 2 }
+        - deed: { summary: 갚을 길 없는 손님에게 외상으로 먹을 것을 내주었다, tags: [mercy], severity: 1, privacy: public }
+        - belief: { fact: "아이 손을 잡은 손님에게 통조림 하나를 외상으로 주었다. 장부에 그 이름이 있다", source: seen }
+    - id: collateral
+      label: 입은 외투를 맡기면 내주겠다고 한다
+      effects:
+        - set_flag: occ_tr_credit_refused
+        - take_item: { item: canned_food }
+        - give_item: { item: coat }
+        - standing: 1
+        - relation: { who: debtor, axis: affection, delta: -2 }
+        - deed: { summary: 아이 딸린 손님의 외투를 잡고 통조림을 내주었다, tags: [selfishness], severity: 1, privacy: public }
+        - belief: { fact: "손님의 외투를 잡고 통조림을 내주었다. 아이가 엄마 품으로 파고드는 것을 봤다", source: seen }
+    - id: no
+      label: 외상은 안 한다고 고개를 젓는다
+      effects:
+        - set_flag: occ_tr_credit_refused
+        - belief: { fact: "외상을 청하는 손님을 돌려보냈다. 장사는 장사다", source: seen }
+
+- id: occ_tr_debtor_back
+  title: 다음 장날
+  tags: [occ_trader]
+  when:
+    segments: [morning, day]
+    day_gte: 5
+    flags_all: [occ_tr_credit_given]
+    flags_none: [occ_tr_debtor_done, occ_tr_paper_sold]
+  cast:
+    debtor: { recall: occ_tr_debtor }
+  setup: >-
+    {debtor:이/가} 약속한 장날에 왔다. 아이는 없다. 빈손을 펴 보이고, 그다음 허리를 숙인다.
+    "값은 못 가져왔어. 대신 아는 걸 줄게. 아니면 내 몸으로 갚을게. 짐이라도 질게."
+  ai_direction: >-
+    이 사람은 구시가 무너진 철물점 안쪽, 지하 창고 문이 판자로 막혀 있는 것을 봤다. 들어가 보지는 못했다. 아이는 하얀매 진료소에 맡겼다 (약값 대신 빨래를 한다).
+    짐꾼으로 따라오면 정말 성실하다. 갚은 셈으로 치면 이 사람은 이 은혜를 오래 기억한다.
+  choices:
+    - id: take_tip
+      label: 아는 것으로 받는다
+      effects:
+        - set_flag: occ_tr_debtor_done
+        - relation: { who: debtor, axis: trust, delta: 1 }
+        - belief: { fact: "외상 손님이 값 대신 알려 주었다: 구시가 무너진 철물점 안쪽에 판자로 막힌 지하 창고 문이 있다. 아무도 열어 보지 않았다", source: report }
+    - id: carry
+      label: 이틀만 짐을 지어 주면 갚은 것으로 친다
+      effects:
+        - set_flag: occ_tr_debtor_done
+        - relation: { who: debtor, axis: respect, delta: 1 }
+        - companion_join: { who: debtor, kind: purpose, until: { hours: 48 } }
+        - belief: { fact: "외상 손님이 이틀 동안 내 짐을 지기로 했다. 그러면 장부의 이름을 지운다", source: seen }
+    - id: forgive
+      label: 장부에서 이름을 지운다. 갚지 않아도 된다
+      effects:
+        - set_flag: occ_tr_debtor_done
+        - standing: -1
+        - relation: { who: debtor, axis: affection, delta: 3 }
+        - deed: { summary: 갚을 길 없는 외상 손님의 빚을 지워 주었다, tags: [mercy], severity: 2, privacy: public }
+        - belief: { fact: "외상 손님의 이름을 장부에서 지웠다. 그는 한참 고개를 들지 못했다. 장터에는 내가 물러 터졌다는 말이 하나 더 돈다", source: seen }
+
+- id: occ_tr_paper_buyer
+  title: 외상 장부를 사겠다는 사람
+  tags: [occ_trader]
+  when:
+    zones: [e_market, water_plant]
+    segments: [morning, day, evening]
+    occupation_step_gte: 1
+    flags_none: [occ_tr_paper_done]
+  cast:
+    pawn: { ids: [pe_sundeok] }
+    boatman: { ids: [pe_sangcheol], optional: true, enter: false }
+  setup: >-
+    {pawn:이/가} 돋보기를 내려놓고 당신의 장부를 턱으로 가리킨다. "상인 됐다며. 외상 많지? 못 받는 외상은 짐이야.
+    그 장을 나한테 넘겨. 값은 지금 쳐 줄게. 받는 건 내가 알아서 받아. 갚을 길 없는 사람도 갚을 길은 생기는 법이거든."
+  ai_direction: >-
+    감순덕은 갚지 못하는 빚쟁이를 섬 거래선의 "일손"으로 넘긴다. 이 말은 스스로 하지 않는다. 캐물으면 "섬에서 일하며 갚는다, 거긴 배곯는 사람이 없다더라"까지만 말하고 웃는다.
+    섬에서 그 사람들이 어떻게 되는지는 감순덕도 모르고, GM도 드러내지 않는다. 뱃사공 변상철이 있으면 이 이야기를 듣는 순간 자리를 뜬다 (서술로만, 이유는 말하지 않는다).
+  choices:
+    - id: sell_paper
+      label: 외상 장을 찢어 넘기고 값을 받는다
+      when: { flags_any: [occ_tr_credit_given] }
+      effects:
+        - set_flag: occ_tr_paper_done
+        - set_flag: occ_tr_paper_sold
+        - give_item: { item: cigarettes, quantity: 3 }
+        - standing: 1
+        - relation: { who: pawn, axis: trust, delta: 1 }
+        - deed: { summary: 아이 딸린 외상 손님의 빚 문서를 전당포에 팔았다, tags: [selfishness], severity: 2, privacy: semi_private }
+        - belief: { fact: "아이 딸린 외상 손님의 장을 감순덕에게 팔았다. 받는 건 그쪽이 알아서 한다고 했다. 어떻게 받는지는 묻지 않았다", source: seen }
+    - id: ask_how
+      label: 갚을 길 없는 사람에게서 어떻게 받느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_tr_paper_done
+          - set_flag: occ_tr_isle_rumor
+          - relation: { who: pawn, axis: trust, delta: 1 }
+          - belief: { fact: "감순덕 말로는 못 갚는 사람은 섬 거래선을 타고 가서 일하며 갚는다. 섬에서 돌아온 사람이 있냐고 묻자 그녀는 대답 대신 웃었다", source: report }
+        partial:
+          - set_flag: occ_tr_paper_done
+          - set_flag: occ_tr_isle_rumor
+          - belief: { fact: "감순덕은 '물 건너 일자리가 있다'고만 했다. 빚 문서가 배에 실리는 모양이다", source: rumor }
+        miss:
+          - set_flag: occ_tr_paper_done
+          - relation: { who: pawn, axis: trust, delta: -1 }
+          - belief: { fact: "감순덕은 장사꾼이 남의 장사를 캐면 쓰냐며 돋보기를 도로 집었다", source: seen }
+    - id: ask_boatman
+      label: 자리를 뜨는 뱃사공의 등을 눈으로 좇는다
+      when: { cast: [boatman] }
+      effects:
+        - set_flag: occ_tr_paper_done
+        - set_flag: occ_tr_isle_rumor
+        - belief: { fact: "빚 문서 이야기가 나오자 뱃사공 변상철이 말없이 자리를 떴다. 섬 거래선은 그가 아니면 뜨지 않는다", source: seen }
+    - id: decline
+      label: 내 외상은 내가 받는다고 한다
+      effects:
+        - set_flag: occ_tr_paper_done
+        - standing: -1
+        - belief: { fact: "감순덕이 외상 장을 사겠다는 것을 거절했다. 장터에는 받지도 못할 빚을 끌어안는 장사꾼이라는 말이 돈다", source: seen }
+
+# ── 큰손: 무리의 교역 방침 ───────────────────────────────
+
+- id: occ_tr_trade_council
+  title: 큰손의 한마디
+  tags: [occ_trader]
+  cooldown_days: 10
+  repeatable: true
+  when:
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    zone_owner: [own]
+    segments: [day, evening]
+    occupation_step_gte: 2
+  cast:
+    boss: { commander: true }
+  setup: >-
+    {boss:이/가} 창고 장부를 당신 앞에 펼쳐 놓는다. "다들 네 말이면 바깥 값이 움직인다더라. 그러니 네가 말해.
+    무엇을 내보내고 무엇을 들여올지. 정해지면 날마다 그렇게 짐이 나간다. 틀리면 겨울에 우리가 굶는다."
+  ai_direction: >-
+    이 자리의 말은 무리의 교역 방침이 된다 (코드가 날마다 자원을 옮긴다). 지금 창고가 어떤지는 GM 상태의 무리 사정(대략의 말)을 따른다. 교역 상대가 등을 돌리면 끊긴다.
+    반대하는 사람이 있으면 그 사람은 회의에서 눈을 피한다. 결정한 사람이 주인공이라는 것을 무리가 안다.
+  choices:
+    - id: food_for_ammo
+      label: 식량을 내보내고 탄약을 들인다
+      effects:
+        - faction_policy: { faction: own, topic: trade, option: food_for_ammo }
+        - standing: 1
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "내 말로 무리가 식량을 내보내고 탄약을 들이기로 했다. 배급 줄에서 누군가 내 이름을 중얼거렸다", source: seen }
+    - id: water_for_medicine
+      label: 물을 내보내고 약을 들인다
+      effects:
+        - faction_policy: { faction: own, topic: trade, option: water_for_medicine }
+        - standing: 1
+        - faction_relation: { from: own, to: faction_d, delta: 1 }
+        - belief: { fact: "내 말로 무리가 날마다 하얀매 진료소에 물을 보내고 약을 받기로 했다", source: seen }
+    - id: fuel_for_food
+      label: 연료를 내보내고 식량을 들인다
+      effects:
+        - faction_policy: { faction: own, topic: trade, option: fuel_for_food }
+        - standing: 1
+        - belief: { fact: "내 말로 무리가 연료를 내보내고 식량을 들이기로 했다. 겨울이 오면 이 결정을 다시 볼 것이다", source: seen }
+    - id: stop
+      label: 지금은 아무것도 내보내지 말자고 한다
+      effects:
+        - faction_policy: { faction: own, topic: trade, option: none }
+        - faction_morale: { faction: own, delta: 1 }
+        - belief: { fact: "내 말로 무리가 교역을 멈췄다. 창고의 것은 창고에 둔다. 바깥 장사꾼들은 내가 몸을 사린다고 한다", source: seen }
+
+# ── 나루상단 갈래: 장부의 셈 ─────────────────────────────
+
+- id: occ_tr_e_ledger_check
+  title: 장부꾼의 연필
+  tags: [occ_trader]
+  when:
+    factions: [faction_e]
+    zones: [e_market]
+    segments: [evening]
+    day_gte: 3
+    flags_none: [occ_tr_e_ledger_done]
+  cast:
+    clerk: { ids: [e_sora] }
+  setup: >-
+    {clerk:이/가} 철사로 감은 안경을 밀어 올리며 당신의 거래 장부를 넘긴다. 연필이 한 줄에서 멈춘다.
+    "이 거래, 받은 값이 시세보다 박해요. 장부에 적힌 빚은 반드시 갚고, 장부에 적힌 값은 반드시 맞아야 해요. 설명해 줄래요?"
+  ai_direction: >-
+    그 줄은 정말로 값을 박하게 받은 거래다. 실수였는지, 손님 사정을 봐준 것인지, 몰래 웃돈을 따로 받은 것인지는 주인공이 정한다 (어느 쪽이 사실인지는 지금 고르는 선택이 정한다).
+    상단은 위아래보다 셈이 먼저다. 장부꾼은 사정은 들어 주지만 숫자는 고치지 않는다.
+  choices:
+    - id: own_up
+      label: 셈을 잘못했다고 인정하고 차액을 채운다
+      effects:
+        - set_flag: occ_tr_e_ledger_done
+        - take_item: { item: cigarettes }
+        - relation: { who: clerk, axis: trust, delta: 2 }
+        - deed: { summary: 장부의 틀린 셈을 인정하고 차액을 제 몫에서 채웠다, tags: [honesty], severity: 1, privacy: semi_private }
+        - belief: { fact: "문소라에게 틀린 셈을 인정하고 담배로 차액을 채웠다. 그녀는 그 줄 옆에 작게 '정정'이라고 적었다", source: seen }
+    - id: mercy_price
+      label: 손님 사정이 딱해서 봐줬다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: occ_tr_e_ledger_done
+          - relation: { who: clerk, axis: affection, delta: 1 }
+          - belief: { fact: "문소라는 사정을 듣더니 그 줄을 '외상 일부'로 고쳐 적었다. 다음에는 미리 말하라고 했다", source: seen }
+        partial:
+          - set_flag: occ_tr_e_ledger_done
+          - standing: -1
+          - belief: { fact: "문소라는 사정은 알겠다며 장부를 그대로 두었다. 그 줄은 내 이름 옆에 남는다", source: seen }
+        miss:
+          - set_flag: occ_tr_e_ledger_done
+          - standing: -1
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "문소라는 내 말을 믿지 않았다. 장부 여백에 물음표를 그렸다", source: seen }
+    - id: cover
+      label: 시세가 그날 그랬다고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: occ_tr_e_ledger_done
+          - give_item: { item: cigarettes }
+          - deed: { summary: 장부꾼에게 거래 값을 속이고 웃돈을 챙겼다, tags: [deceit, theft], severity: 1, privacy: private }
+          - belief: { fact: "문소라는 그날 시세가 그랬다는 말에 고개를 끄덕였다. 웃돈은 내 주머니에 남았다", source: seen }
+        partial:
+          - set_flag: occ_tr_e_ledger_done
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "문소라는 그날 시세를 다른 장부와 맞춰 보겠다고 했다", source: seen }
+        miss:
+          - set_flag: occ_tr_e_ledger_done
+          - standing: -2
+          - relation: { who: clerk, axis: trust, delta: -2 }
+          - deed: { summary: 장부의 값을 속이려다 장부꾼에게 들켰다, tags: [deceit], severity: 2, privacy: semi_private }
+          - belief: { fact: "문소라가 그날 다른 거래의 값을 바로 짚었다. 상단에서 장부를 속이는 사람은 오래 못 간다", source: seen }
+
+# ── 무소속 행상 ──────────────────────────────────────────
+
+- id: occ_tr_dying_peddler
+  title: 길가의 늙은 행상
+  tags: [occ_trader]
+  when:
+    factions: [none]
+    zone_owner: [none]
+    segments: [day, evening]
+    day_gte: 2
+    flags_none: [occ_tr_peddler_met]
+  cast:
+    old: { extra: drifter_elder, label: 짐을 베고 누운 늙은 행상, keep: occ_tr_old_peddler }
+  setup: >-
+    무너진 버스 정류장 그늘에 {old:이/가} 짐 보따리를 베고 누워 있다. 이마가 번들거리고 숨이 얕다.
+    당신 등짐을 알아보고 피식 웃는다. "같은 장사꾼이네. 이 보따리, 통째로 사 갈 테야? 아니면 약 한 알 있으면 내 거래처를 다 불러 줄게."
+  ai_direction: >-
+    늙은 행상은 열병을 앓는다. 오늘 죽지는 않는다. 해열제를 받으면 며칠 안에 일어선다. 그가 아는 거래처는 진짜다 (어느 무리 누가 무엇을 사는지).
+    보따리를 헐값에 사 가면 그는 원망하지 않는다. 길에서는 다들 그렇게 한다.
+  choices:
+    - id: give_medicine
+      label: 해열제 한 알을 내준다
+      effects:
+        - set_flag: occ_tr_peddler_met
+        - set_flag: occ_tr_peddler_saved
+        - take_item: { item: fever_reducer }
+        - standing: 2
+        - npc_body: { who: old, track: disease, delta: -2 }
+        - relation: { who: old, axis: trust, delta: 2 }
+        - deed: { summary: 길가에 쓰러진 늙은 행상에게 해열제를 내주었다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "늙은 행상이 거래처를 불러 주었다: 붉은연합 물류창고 뒷문 보초는 담배에 약하고, 버들마을 쪽문에서는 실과 바늘이 통조림보다 비싸고, 하얀매 진료소는 물을 받고 붕대를 판다", source: report }
+    - id: buy_pack
+      label: 보따리를 통째로 헐값에 산다
+      effects:
+        - set_flag: occ_tr_peddler_met
+        - take_item: { item: cigarettes }
+        - give_item: { item: cloth, quantity: 2 }
+        - give_item: { item: duct_tape }
+        - give_item: { item: canned_food }
+        - standing: 1
+        - deed: { summary: 열병으로 누운 늙은 행상의 보따리를 헐값에 샀다, tags: [selfishness], severity: 1, privacy: private }
+        - belief: { fact: "늙은 행상의 보따리를 담배 한 갑에 샀다. 그는 원망하는 기색 없이 눈을 감았다", source: seen }
+    - id: sit_with
+      label: 물을 먹여 주고 그가 아는 길 이야기를 듣는다
+      effects:
+        - set_flag: occ_tr_peddler_met
+        - relation: { who: old, axis: affection, delta: 1 }
+        - belief: { fact: "늙은 행상 말로는 구시가 지하상가 쪽은 물건이 남았지만 사람이 먼저 와 있고, 강변 길은 해 질 녘에 붉은 완장이 통행세를 걷는다", source: report }
+
+- id: occ_tr_peddler_partner
+  title: 일어선 늙은 행상
+  tags: [occ_trader]
+  when:
+    factions: [none]
+    segments: [morning, day]
+    day_gte: 5
+    flags_all: [occ_tr_peddler_saved]
+    flags_none: [occ_tr_peddler_done]
+  cast:
+    old: { recall: occ_tr_old_peddler }
+  setup: >-
+    {old:이/가} 지팡이 하나에 기대 길 저쪽에서 손을 흔든다. 얼굴에 핏기가 돌아왔다.
+    "살았네, 내가. 빚은 갚아야지. 내 길을 같이 걸을래? 나는 다리가 시원찮고 너는 아직 거래처가 없어. 반씩 남기자고."
+  ai_direction: >-
+    늙은 행상은 진심이다. 며칠 같이 다니면 그가 아는 사람들에게 주인공을 "내 동업자"로 소개한다. 그는 느리다. 감염체를 만나면 뛰지 못한다.
+  choices:
+    - id: walk_together
+      label: 며칠 같이 걷는다
+      effects:
+        - set_flag: occ_tr_peddler_done
+        - standing: 1
+        - companion_join: { who: old, kind: purpose, until: { hours: 72 } }
+        - belief: { fact: "늙은 행상과 사흘 같이 다니기로 했다. 그는 가는 곳마다 나를 동업자라고 소개한다", source: seen }
+    - id: take_names
+      label: 거래처 이름만 받고 혼자 간다
+      effects:
+        - set_flag: occ_tr_peddler_done
+        - relation: { who: old, axis: affection, delta: -1 }
+        - belief: { fact: "늙은 행상에게 나루상단 장터의 전당포는 사람 빚까지 산다는 말을 들었다. 같이 걷자는 말은 거절했다", source: rumor }

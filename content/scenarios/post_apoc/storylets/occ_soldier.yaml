@@ -1,0 +1,440 @@
+# 전투원 직분 이야기 (기획서 12.6). 무리 시나리오 이야기는 그대로 받으니, 여기는 무리를 가리지 않는 병사의 일상과 사다리만
+# 갈래:
+#   맡겨진 사람: os_new_hand (고참부터, os_rookie로 기억) → os_rookie_drilled / os_rookie_soft: os_first_fire
+#   사다리: os_point_man (고참) → os_pick_who·os_last_report (선임)
+#   일상: os_inspection, os_shaking_hands. 붉은연합만: os_red_ears
+
+# ── 일상 ─────────────────────────────────────────────
+
+- id: os_inspection
+  title: 아침 검열
+  tags: [occ_soldier]
+  repeatable: true
+  weight: 2
+  cooldown_days: 5
+  when:
+    own_territory: true
+    segments: [dawn, morning]
+    day_gte: 2
+  cast:
+    boss: { commander: true }
+    mate: { faction: own, ranks: [grunt], optional: true }
+  setup: 줄이 섰다. {boss:이/가} 하나씩 총을 받아 노리쇠를 당기고 총구를 햇빛에 비춰 본다. 당신 차례가 세 사람 남았다. 어제 비를 맞고 들어와서 그대로 세워 둔 것이 생각난다.
+  ai_direction: 총열 안에 녹이 슬기 시작했다. 상관은 녹을 그냥 넘기지 않는다. 총은 무리의 것이고, 녹슨 총은 바깥에서 사람을 죽인다. 옆 사람은 자기 총을 손질해 두었고, 몰래 바꿔 들자고 하면 들어줄 수도 있다.
+  choices:
+    - id: quick_fix
+      label: 차례가 올 때까지 소매로 총열을 쑤시고 기름을 먹인다
+      check: maintenance
+      outcomes:
+        success:
+          - standing: 1
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "아침 검열을 넘겼다. 상관이 총을 돌려주며 고개를 한 번 끄덕였다", source: seen }
+        partial:
+          - belief: { fact: "아침 검열에서 상관이 총구를 오래 들여다보더니 오늘 저녁까지 다시 닦아 오라고 했다", source: seen }
+        miss:
+          - standing: -1
+          - relation: { who: boss, axis: respect, delta: -1 }
+          - deed: { summary: 녹슨 총을 들고 검열에 섰다, tags: [selfishness], severity: 1, privacy: semi_private }
+    - id: own_up
+      label: 차례가 오기 전에 먼저 말한다. 어제 못 닦았다고
+      effects:
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "검열 전에 총을 못 닦았다고 먼저 말했다. 상관은 저녁 당번을 하나 더 붙였다", source: seen }
+        - deed: { summary: 총을 손질하지 못한 것을 검열 전에 먼저 털어놓았다, tags: [honesty], severity: 1, privacy: semi_private }
+    - id: swap
+      label: 옆 사람과 몰래 총을 바꿔 든다
+      when: { cast: [mate] }
+      check: deceive
+      outcomes:
+        success:
+          - relation: { who: mate, axis: trust, delta: -1 }
+          - deed: { summary: 검열에서 남의 손질된 총을 제 것처럼 내밀었다, tags: [deceit], severity: 1, privacy: private }
+        partial:
+          - relation: { who: mate, axis: trust, delta: -2 }
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "총을 바꿔 든 것은 넘어갔지만 {mate:이/가} 녹슨 총으로 혼이 났다", source: seen }
+        miss:
+          - standing: -2
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - relation: { who: mate, axis: trust, delta: -1 }
+          - deed: { summary: 검열에서 총을 바꿔 들다 들켰다, tags: [deceit], severity: 2, privacy: public }
+
+- id: os_shaking_hands
+  title: 멈추지 않는 손
+  tags: [occ_soldier]
+  repeatable: true
+  weight: 2
+  cooldown_days: 7
+  when:
+    own_territory: true
+    segments: [night]
+    day_gte: 4
+  cast:
+    mate: { faction: own, ranks: [grunt, staff], known: true }
+  setup: 불 꺼진 숙소에서 탄창에 탄을 다시 채운다. 세 발째에서 손끝이 탄을 놓친다. 바닥을 구르는 소리. 줍는데 손이 저 혼자 떨고 있다. 맞은편 침상에서 {mate:이/가} 눈을 뜨고 그 손을 본다.
+  ai_direction: 바깥에서 본 것들이 이제 와서 손으로 나온다. 흔한 일이고, 고참들도 다 겪었다. 하지만 떨리는 손으로는 총을 맡기지 않는 상관도 있다. 동료는 비웃지 않는다. 자기도 그랬다고 말할 수 있다. 말을 꺼내지 않으면 굳이 묻지 않는다.
+  choices:
+    - id: hold_it
+      label: 주먹을 쥐었다 폈다 하며 혼자 버틴다
+      check: endure
+      outcomes:
+        success:
+          - standing: 1
+          - belief: { fact: "밤에 손이 떨렸다. 숨을 고르고 주먹을 쥐었다 펴기를 백 번쯤 하자 멎었다", source: seen }
+        partial:
+          - belief: { fact: "손 떨림은 새벽에야 멎었다. 잠은 거의 못 잤다", source: seen }
+        miss:
+          - body: { track: disease, delta: 1 }
+          - belief: { fact: "손 떨림이 멎지 않아 밤을 꼬박 새웠다. 몸이 으슬으슬하다", source: seen }
+    - id: talk
+      label: 맞은편에 대고 작게 말을 건다
+      effects:
+        - relation: { who: mate, axis: affection, delta: 2 }
+        - relation: { who: mate, axis: trust, delta: 1 }
+        - belief: { fact: "{mate:이/가} 말했다. 자기도 첫 해에는 숟가락을 못 들었다고. 손은 나중에 알아서 멎는다고", source: report }
+    - id: smoke
+      label: 담배를 꺼내 하나 건네고 같이 나간다
+      effects:
+        - take_item: { item: cigarettes }
+        - relation: { who: mate, axis: affection, delta: 1 }
+        - relation: { who: mate, axis: trust, delta: 2 }
+        - belief: { fact: "{mate:과/와} 담 밑에서 담배를 나눠 피웠다. 둘 다 아무 말도 하지 않았다", source: seen }
+
+# ── 사다리: 고참이 되면 ───────────────────────────────
+
+- id: os_new_hand
+  title: 맡겨진 사람
+  tags: [occ_soldier]
+  when:
+    occupation_step_gte: 1
+    own_territory: true
+    segments: [morning, day]
+    flags_none: [os_rookie_drilled, os_rookie_soft, os_rookie_dropped]
+  cast:
+    boss: { commander: true }
+    rookie: { faction: own, ranks: [grunt], keep: os_rookie }
+  setup: "{boss:이/가} {rookie:을/를} 데리고 와 당신 앞에 세운다. \"오늘부터 네 옆에 붙인다. 총 쥐는 게 아직 서툴러. 바깥에서 살아 돌아오게 만들어. 못 하겠으면 지금 말하고.\" {rookie:이/가} 어색하게 경례 비슷한 것을 한다."
+  ai_direction: 이 사람은 총보다 다른 일을 더 오래 해 왔다. 겁은 많지만 시키는 것은 끝까지 한다. 고참이 된 사람이 신병을 맡는 것은 당연한 일이고, 맡은 사람이 죽으면 그 무게도 맡은 사람에게 온다.
+  choices:
+    - id: drill_hard
+      label: 오늘부터 해 질 때까지 엎드리고 일어나고 장전하는 것만 시킨다
+      check: tactics
+      outcomes:
+        success:
+          - set_flag: os_rookie_drilled
+          - standing: 1
+          - relation: { who: rookie, axis: respect, delta: 2 }
+          - relation: { who: boss, axis: trust, delta: 1 }
+          - belief: { fact: "맡겨진 사람에게 해 질 때까지 엎드리고 장전하는 것만 시켰다. 마지막엔 눈 감고도 했다", source: seen }
+        partial:
+          - set_flag: os_rookie_drilled
+          - relation: { who: rookie, axis: respect, delta: 1 }
+          - relation: { who: rookie, axis: affection, delta: -1 }
+          - belief: { fact: "맡겨진 사람을 하루 종일 굴렸다. 몸은 따라오는데 아직 소리에 놀란다", source: seen }
+        miss:
+          - set_flag: os_rookie_drilled
+          - relation: { who: rookie, axis: affection, delta: -2 }
+          - belief: { fact: "맡겨진 사람을 몰아붙였더니 저녁에 혼자 울고 있었다", source: seen }
+    - id: go_easy
+      label: 첫날은 밥부터 같이 먹고, 바깥 얘기를 해 준다
+      effects:
+        - set_flag: os_rookie_soft
+        - relation: { who: rookie, axis: affection, delta: 2 }
+        - relation: { who: rookie, axis: trust, delta: 1 }
+    - id: decline
+      label: 이 사람은 바깥에 내보낼 사람이 아니라고 말한다
+      effects:
+        - set_flag: os_rookie_dropped
+        - standing: -1
+        - relation: { who: rookie, axis: trust, delta: -2 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - belief: { fact: "맡겨진 사람을 돌려보냈다. 상관은 다른 사람에게 붙였다", source: seen }
+
+- id: os_first_fire
+  title: 처음 듣는 총소리
+  tags: [occ_soldier]
+  urgent: true
+  when:
+    zone_owner: [none, other]
+    segments: [morning, day, evening]
+    flags_any: [os_rookie_drilled, os_rookie_soft]
+    flags_none: [os_first_fire_done]
+  cast:
+    rookie: { recall: os_rookie }
+  setup: 담벼락 너머에서 총소리 두 발. 다들 엎드리는데 {rookie:이/가} 선 채로 굳었다. 총을 가슴에 끌어안고 눈만 크게 뜨고 있다. 세 번째 총성이 벽돌을 깨뜨린다.
+  ai_direction: 쏘는 쪽은 멀고 겨냥도 서툴다. 하지만 서 있는 사람은 맞을 수 있다. 신병을 끌어내리려면 몸을 드러내야 한다. 앞서 굴렸다면(os_rookie_drilled) 소리를 지르면 몸이 먼저 반응한다. 밥만 같이 먹었다면 소리보다 손이 필요하다. 위험은 판정 전에 선언한다.
+  choices:
+    - id: drag_down
+      label: 몸을 날려 끌어내린다
+      check: fight
+      outcomes:
+        success:
+          - set_flag: os_first_fire_done
+          - zone_noise: 1
+          - standing: 1
+          - relation: { who: rookie, axis: trust, delta: 3 }
+          - deed: { summary: 총소리에 굳은 신병을 몸으로 끌어내렸다, tags: [bravery], severity: 1, privacy: semi_private }
+        partial:
+          - set_flag: os_first_fire_done
+          - zone_noise: 1
+          - npc_hurt: { who: rookie, steps: 1 }
+          - relation: { who: rookie, axis: trust, delta: 2 }
+          - belief: { fact: "신병을 끌어내렸지만 그 전에 한 발이 팔을 스쳤다", source: seen }
+        miss:
+          - set_flag: os_first_fire_done
+          - zone_noise: 2
+          - npc_hurt: { who: rookie, steps: 2 }
+          - belief: { fact: "몸을 날렸지만 한 박자 늦었다. 신병이 총에 맞았다. 숨은 붙어 있다", source: seen }
+    - id: shout
+      label: 엎드린 채 이름을 부르며 엎드리라고 소리친다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: os_first_fire_done
+          - standing: 1
+          - relation: { who: rookie, axis: respect, delta: 2 }
+          - belief: { fact: "이름을 부르자 신병이 무너지듯 엎드렸다. 굴린 날들이 몸에 남아 있었다", source: seen }
+        partial:
+          - set_flag: os_first_fire_done
+          - npc_hurt: { who: rookie, steps: 1 }
+          - belief: { fact: "소리를 듣고 신병이 엎드렸지만 그 전에 파편이 얼굴을 긁었다", source: seen }
+        miss:
+          - set_flag: os_first_fire_done
+          - npc_hurt: { who: rookie, steps: 2 }
+          - relation: { who: rookie, axis: trust, delta: -1 }
+          - belief: { fact: "소리를 질러도 신병은 움직이지 않았다. 총에 맞고서야 쓰러졌다. 숨은 붙어 있다", source: seen }
+    - id: fire_back
+      label: 신병은 두고 총구 쪽으로 응사해 머리를 숙이게 만든다
+      check: shoot
+      outcomes:
+        success:
+          - set_flag: os_first_fire_done
+          - zone_noise: 2
+          - belief: { fact: "응사하자 저쪽 총이 멎었다. 신병은 끝까지 서 있었다. 운이 좋았다", source: seen }
+        partial:
+          - set_flag: os_first_fire_done
+          - zone_noise: 2
+          - npc_hurt: { who: rookie, steps: 1 }
+        miss:
+          - set_flag: os_first_fire_done
+          - zone_noise: 3
+          - npc_hurt: { who: rookie, steps: 2 }
+          - relation: { who: rookie, axis: trust, delta: -2 }
+          - deed: { summary: 총소리에 굳은 신병을 두고 응사만 하다 신병이 맞았다, tags: [selfishness], severity: 1, privacy: semi_private }
+
+- id: os_point_man
+  title: 맨 앞
+  tags: [occ_soldier]
+  repeatable: true
+  weight: 2
+  cooldown_days: 5
+  when:
+    occupation_step_gte: 1
+    zone_owner: [none, other]
+    segments: [morning, day, evening]
+  cast:
+    boss: { commander: true, enter: false }
+    young: { faction: own, ranks: [grunt] }
+  setup: 무너진 골목 어귀에서 줄이 멈춘다. 앞은 꺾인 길, 그 너머는 안 보인다. 누가 먼저 고개를 내밀지 다들 눈치를 본다. 고참이 된 뒤로 이럴 때 사람들은 당신을 본다. {young:이/가} 침을 삼키며 말한다. "제가 갈까요?"
+  ai_direction: 꺾인 길 너머에 무엇이 있는지는 GM이 이 구역의 위험에 맞게 정하되, 결과는 판정으로만 낸다. 맨 앞은 가장 먼저 맞는 자리다. 고참이 젊은 사람을 앞세우면 아무도 말은 안 하지만 다 기억한다. 상관은 그 자리에 없고 나중에 듣는다.
+  choices:
+    - id: go_first
+      label: 손짓으로 다들 멈추게 하고 직접 고개를 내민다
+      check: sense_danger
+      outcomes:
+        success:
+          - standing: 1
+          - merit: 1
+          - relation: { who: young, axis: respect, delta: 1 }
+          - belief: { fact: "꺾인 길에 맨 앞으로 나가 먼저 살폈다. 줄이 무사히 지나갔다", source: seen }
+        partial:
+          - standing: 1
+          - zone_noise: 1
+          - belief: { fact: "맨 앞에서 살피다 발밑의 깡통을 찼다. 다들 한참을 숨죽였다", source: seen }
+        miss:
+          - zone_noise: 2
+          - npc_hurt: { who: young, steps: 1 }
+          - belief: { fact: "맨 앞에서 살폈지만 놓친 게 있었다. 뒤따르던 {young:이/가} 다쳤다", source: seen }
+    - id: send_young
+      label: 고개를 끄덕인다. 젊은 눈이 더 밝다
+      check: tactics
+      outcomes:
+        success:
+          - relation: { who: young, axis: trust, delta: 1 }
+          - belief: { fact: "젊은 쪽을 앞세우고 뒤에서 손짓으로 길을 잡아 주었다. 무사히 지나갔다", source: seen }
+        partial:
+          - standing: -1
+          - npc_hurt: { who: young, steps: 1 }
+          - relation: { who: young, axis: trust, delta: -1 }
+          - deed: { summary: 고참이면서 젊은 동료를 맨 앞에 세웠다가 다치게 했다, tags: [selfishness], severity: 1, privacy: semi_private }
+        miss:
+          - standing: -2
+          - npc_hurt: { who: young, steps: 2 }
+          - relation: { who: young, axis: trust, delta: -2 }
+          - deed: { summary: 고참이면서 젊은 동료를 맨 앞에 세웠다가 크게 다치게 했다, tags: [selfishness, cowardice], severity: 2, privacy: semi_private }
+    - id: other_way
+      label: 이 길은 버리고 돌아가자고 한다
+      effects:
+        - relation: { who: young, axis: affection, delta: 1 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - belief: { fact: "꺾인 길을 버리고 한참을 돌아갔다. 해가 기울어서야 닿았다", source: seen }
+
+# ── 사다리: 선임이 되면 ───────────────────────────────
+
+- id: os_pick_who
+  title: 오늘 밤 갈 사람
+  tags: [occ_soldier]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    occupation_step_gte: 2
+    own_territory: true
+    segments: [evening]
+  cast:
+    boss: { commander: true }
+    father: { faction: own, ranks: [grunt, staff] }
+    rookie: { recall: os_rookie, optional: true }
+  setup: "{boss:이/가} 지도를 접으며 말한다. \"오늘 밤에 둘을 내보내야 해. 돌아올 확률은 반반. 누구 보낼지는 선임이 정해.\" 숙소 쪽에서 {father:이/가} 아이를 무릎에 앉히고 신발 끈을 매 주는 것이 보인다."
+  ai_direction: 선임은 사람을 고른다. 어느 쪽을 골라도 고른 사람의 무게가 남는다. 아이가 있는 사람은 가장 손이 익다. 맡아 키운 신병(있으면)은 아직 서툴다. 자기가 가겠다고 하면 상관은 말리지 않지만, 선임이 빠진 숙소는 그 밤 내내 불안하다. 결과(누가 다치는지)는 GM이 지어내지 않는다. 효과로만.
+  choices:
+    - id: send_father
+      label: 손이 가장 익은 사람을 보낸다. 아이가 있어도
+      effects:
+        - standing: 1
+        - npc_hurt: { who: father, steps: 1 }
+        - relation: { who: father, axis: trust, delta: -1 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "아이가 있는 사람을 밤 작전에 보냈다. 새벽에 다쳐서 돌아왔다. 살았다", source: seen }
+    - id: send_rookie
+      label: 맡아 키운 신병을 보낸다. 언젠가는 나가야 한다
+      when: { cast: [rookie] }
+      effects:
+        - npc_hurt: { who: rookie, steps: 1 }
+        - relation: { who: rookie, axis: trust, delta: 1 }
+        - relation: { who: rookie, axis: respect, delta: 1 }
+        - belief: { fact: "맡아 키운 신병을 밤 작전에 보냈다. 돌아와서 처음으로 먼저 말을 걸어왔다. 다친 팔을 감싼 채로", source: seen }
+    - id: go_self
+      label: 내가 간다
+      check: stealth
+      outcomes:
+        success:
+          - standing: 2
+          - merit: 1
+          - relation: { who: father, axis: affection, delta: 2 }
+          - deed: { summary: 선임이면서 위험한 밤 작전에 남 대신 직접 나갔다, tags: [bravery], severity: 2, privacy: public }
+        partial:
+          - standing: 1
+          - body: { track: cold, delta: 1 }
+          - deed: { summary: 선임이면서 위험한 밤 작전에 직접 나갔다가 간신히 돌아왔다, tags: [bravery], severity: 1, privacy: public }
+        miss:
+          - body: { track: cold, delta: 2 }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "직접 밤 작전에 나갔다가 일을 못 하고 돌아왔다. 숙소 사람들은 밤새 잠을 못 잤다고 했다", source: report }
+    - id: draw_lots
+      label: 제비를 뽑게 한다. 선임도 뽑는다
+      effects:
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - faction_morale: { faction: own, delta: 1 }
+        - belief: { fact: "밤 작전에 나갈 사람을 제비로 뽑았다. 아무도 남을 탓하지 않았다. 상관은 선임이 할 일을 남에게 미뤘다고 했다", source: seen }
+
+- id: os_last_report
+  title: 돌아오지 못한 사람의 보고
+  tags: [occ_soldier]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    occupation_step_gte: 2
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 6
+  cast:
+    boss: { commander: true, enter: false }
+    friend: { faction: own, ranks: [grunt, staff], known: true }
+  setup: 선임의 책상 위에 이름표 하나와 낡은 배낭이 놓여 있다. 어제 바깥에서 돌아오지 못한 사람의 것이다. 보고서 칸이 비어 있다. 어떻게 죽었는지. 문가에서 {friend:이/가} 기다린다. 죽은 사람과 같은 날 들어온 사람이다.
+  ai_direction: 죽은 사람은 이름 없는 전투원이다 (지금 장면 밖의 사람). 사실은 총소리에 등을 돌려 달아나다 맞았다. 그 장면을 본 사람은 선임뿐이다. 보고서가 무리의 기억이 되고, 식구가 받을 몫과 얼굴이 거기서 정해진다. 친구는 진실을 모르고, 마지막이 어땠는지 묻는다.
+  choices:
+    - id: write_true
+      label: 본 대로 쓴다. 달아나다 맞았다고
+      effects:
+        - standing: 1
+        - relation: { who: friend, axis: trust, delta: -1 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "돌아오지 못한 사람의 보고서에 본 대로 적었다. 달아나다 맞았다고", source: seen }
+        - deed: { summary: 죽은 동료가 달아나다 맞았다고 보고서에 그대로 적었다, tags: [honesty], severity: 1, privacy: semi_private }
+    - id: write_kind
+      label: 자리를 지키다 맞았다고 쓴다
+      effects:
+        - faction_morale: { faction: own, delta: 1 }
+        - relation: { who: friend, axis: affection, delta: 2 }
+        - set_flag: os_report_kind
+        - deed: { summary: 달아나다 죽은 동료를 자리를 지키다 죽었다고 보고서에 적었다, tags: [deceit, mercy], severity: 1, privacy: private }
+    - id: deliver_pack
+      label: 보고서는 짧게 쓰고, 배낭은 직접 친구에게 건넨다
+      check: persuade
+      outcomes:
+        success:
+          - standing: 1
+          - relation: { who: friend, axis: trust, delta: 2 }
+          - relation: { who: friend, axis: affection, delta: 1 }
+          - belief: { fact: "돌아오지 못한 사람의 배낭을 친구에게 건넸다. 마지막은 묻지 않았다. 고맙다는 말만 들었다", source: seen }
+        partial:
+          - relation: { who: friend, axis: trust, delta: 1 }
+          - belief: { fact: "배낭을 건넸지만 친구는 마지막이 어땠는지 끝내 물었다. 대답을 미뤘다", source: seen }
+        miss:
+          - relation: { who: friend, axis: trust, delta: -2 }
+          - belief: { fact: "배낭을 건네며 말을 고르다 친구가 눈치챘다. 선임이 뭔가 숨긴다고 생각한다", source: seen }
+
+# ── 붉은연합의 고참 ───────────────────────────────────
+
+- id: os_red_ears
+  title: 규율반의 부탁
+  tags: [occ_soldier]
+  when:
+    factions: [faction_c]
+    occupation_step_gte: 1
+    own_territory: true
+    segments: [evening, night]
+    flags_none: [os_red_ears_done]
+  cast:
+    snoop: { faction: own, ranks: [staff, squad_leader, officer] }
+    grumbler: { faction: own, ranks: [grunt], known: true }
+  setup: 점호가 끝나고 {snoop:이/가} 막사 뒤로 당신을 부른다. 담배를 한 대 권하며 웃는다. "고참쯤 되면 조 안에서 무슨 말이 오가는지 다 알지? {grumbler} 말이야. 요즘 할당량 얘기를 자꾸 한다며. 무슨 말을 하는지만 알려 줘. 네 조 배급은 내가 챙기지."
+  ai_direction: 붉은연합에서는 수상한 동료를 규율반에 알리는 것이 규칙이다. 그 동료는 배급이 깎인 날 불평을 몇 마디 했을 뿐이다. 알리면 그 사람은 광장에 서게 될 수 있다. 거절하면 규율반은 고참을 다시 본다. 조원들은 누가 귀인지 알아내려 한다.
+  choices:
+    - id: inform
+      label: 들은 대로 말한다
+      effects:
+        - set_flag: os_red_ears_done
+        - merit: 1
+        - relation: { who: snoop, axis: trust, delta: 2 }
+        - relation: { who: grumbler, axis: trust, delta: -3 }
+        - npc_relation: { from: snoop, to: grumbler, axis: trust, delta: -2 }
+        - deed: { summary: 조원의 불평을 규율반에 그대로 일러바쳤다, tags: [betrayal, loyalty], severity: 2, privacy: private }
+    - id: cover
+      label: 별말 없었다고, 배고프면 다들 한마디씩 한다고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: os_red_ears_done
+          - standing: 1
+          - relation: { who: grumbler, axis: trust, delta: 1 }
+          - belief: { fact: "규율반에 조원은 별말 없었다고 둘러댔다. 그쪽은 웃으며 담배를 거둬 갔다", source: seen }
+        partial:
+          - set_flag: os_red_ears_done
+          - relation: { who: snoop, axis: trust, delta: -1 }
+          - belief: { fact: "규율반은 둘러대는 말을 듣고도 수첩에 무언가를 적었다", source: seen }
+        miss:
+          - set_flag: os_red_ears_done
+          - relation: { who: snoop, axis: trust, delta: -2 }
+          - npc_relation: { from: snoop, to: grumbler, axis: trust, delta: -1 }
+          - deed: { summary: 규율반에 조원을 감싸는 거짓말을 하다 들켰다, tags: [deceit, disobedience], severity: 2, privacy: semi_private }
+    - id: warn
+      label: 대답을 미루고, 그날 밤 그 동료에게 입조심하라고 귀띔한다
+      effects:
+        - set_flag: os_red_ears_done
+        - standing: 1
+        - relation: { who: grumbler, axis: trust, delta: 2 }
+        - relation: { who: grumbler, axis: affection, delta: 1 }
+        - relation: { who: snoop, axis: trust, delta: -1 }
+        - deed: { summary: 규율반이 노리는 조원에게 몰래 입조심하라고 일러 주었다, tags: [loyalty, disobedience], severity: 1, privacy: private }

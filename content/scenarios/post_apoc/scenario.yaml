@@ -267,8 +267,8 @@ command:
           opposed_by: [a_doyun]
         - id: water_for_medicine
           label: 물을 주고 의약품
-          summary: 날마다 하얀매 진료소에 물을 넘기고 의약품을 조금 받는다
-          trade: { partner: faction_d, give: { water: 8 }, get: { medicine: 2 } }
+          summary: 날마다 하얀매 진료소(하얀매 자신이면 나루상단)에 물을 넘기고 의약품을 조금 받는다
+          trade: { partner: faction_d, fallback_partner: faction_e, give: { water: 8 }, get: { medicine: 2 } }
         - id: fuel_for_food
           label: 연료를 주고 식량
           summary: 날마다 나루상단(나루상단 자신이면 버들마을)에 연료를 넘기고 식량을 받는다. 겨울에는 추위가 걱정이다
@@ -446,6 +446,7 @@ occupations:
     label: 전투원
     summary: 총을 들고 담을 지키고 바깥에 나간다. 무리의 시나리오 임무와 이야기를 그대로 받는다
     borrows_role: true
+    missions: [occ_soldier_cleaning, occ_soldier_drill]
     ladder: [{ label: 전투원, standing: 0 }, { label: 고참, standing: 5 }, { label: 선임, standing: 12 }]
   - id: cook
     label: 요리사
@@ -453,6 +454,7 @@ occupations:
     ranks: [grunt, staff, officer]
     skills: { survival: 1 }
     kit: [kitchen_knife, canned_food]
+    missions: [occ_cook_morning_pot, occ_cook_stretch, occ_cook_forage, occ_cook_salt_store]
     ladder: [{ label: 숙수, standing: 0 }, { label: 부엌 반장, standing: 4 }, { label: 주방장, standing: 10 }]
   - id: carpenter
     label: 목수
@@ -460,6 +462,7 @@ occupations:
     ranks: [grunt, staff, squad_leader]
     skills: { carpentry: 1 }
     kit: [carpentry_kit, planks]
+    missions: [occ_carpenter_wall_patch, occ_carpenter_roof, occ_carpenter_watchtower, occ_carpenter_timber_run]
     ladder: [{ label: 목수 일꾼, standing: 0 }, { label: 목수, standing: 4 }, { label: 도편수, standing: 10 }]
   - id: trader
     label: 상인
@@ -468,6 +471,7 @@ occupations:
     free: true
     skills: { persuade: 1 }
     kit: [trade_token, cigarettes]
+    missions: [occ_trader_market_run, occ_trader_price_ears, occ_trader_credit_book, occ_trader_stock_count]
     ladder: [{ label: 행상, standing: 0 }, { label: 상인, standing: 4 }, { label: 큰손, standing: 10 }]
   - id: preacher
     label: 종교인
@@ -476,6 +480,7 @@ occupations:
     free: true
     skills: { endure: 1 }
     kit: [blanket]
+    missions: [occ_preacher_burial, occ_preacher_sickbed, occ_preacher_evening_word, occ_preacher_quarantine_rite]
     ladder: [{ label: 기도하는 사람, standing: 0 }, { label: 설교자, standing: 4 }, { label: 목자, standing: 10 }]
   - id: medic
     label: 의무병
@@ -484,6 +489,7 @@ occupations:
     free: true
     skills: { first_aid: 1 }
     kit: [bandage]
+    missions: [occ_medic_rounds, occ_medic_boil, occ_medic_pharmacy, occ_medic_field]
     ladder: [{ label: 수습 의무병, standing: 0 }, { label: 의무병, standing: 4 }, { label: 의무장, standing: 10 }]
   - id: mechanic
     label: 정비공
@@ -491,6 +497,7 @@ occupations:
     ranks: [grunt, staff, squad_leader]
     skills: { mechanics: 1 }
     kit: [toolkit, scrap_metal]
+    missions: [occ_mechanic_rifle_service, occ_mechanic_generator, occ_mechanic_radio, occ_mechanic_parts_run]
     ladder: [{ label: 견습 정비공, standing: 0 }, { label: 정비공, standing: 4 }, { label: 정비 반장, standing: 10 }]
   - id: scavenger
     label: 수색꾼
@@ -499,6 +506,7 @@ occupations:
     free: true
     skills: { scavenge: 1 }
     kit: [flashlight, crowbar]
+    missions: [occ_scavenger_sweep, occ_scavenger_mark_route, occ_scavenger_medicine, occ_scavenger_haul]
     ladder: [{ label: 수색꾼, standing: 0 }, { label: 길잡이, standing: 4 }, { label: 수색대장, standing: 10 }]
 
 speech_rules: speech/post_apoc.yaml

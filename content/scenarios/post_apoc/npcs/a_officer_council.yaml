@@ -1,0 +1,146 @@
+# 청솔형제단 지도부 회의 둘레의 인물 (참모 시나리오, 초안)
+# 파일 이름이 a_doyun.yaml 뒤에 오게 한다: 자유 시나리오의 분대장 상관은 같은 세력 간부 중 먼저 읽힌 사람(한도윤)이다
+- id: a_jeonghun
+  name: 육정훈
+  alias: 군화 끈을 두 번 감은 짧은 머리 간부
+  faction: faction_a
+  rank: officer
+  age: 49
+  gender: male
+  look: 짧게 민 회색 머리에 볕에 탄 목. 군화 끈을 발목에 두 번 감아 맨다. 왼쪽 귀 밑에 오래된 화상 자국이 있다.
+  reputation: 전투 간부. 분대장들을 거느리고 동쪽 초소와 순찰을 맡는다. 붕괴 전 부사관이었다고 한다. 회의에서 늘 먼저 치자고 말하는 사람.
+  want: 눈이 오기 전에 붉은연합의 물류창고를 쳐서 겨울 밑천을 빼앗는 것
+  fear: 지하에서 탄을 아끼다가 한꺼번에 밀려 죽는 것
+  values: { discipline: 3, loyalty: 2, mercy: -1, honesty: 2, self_interest: -1 }
+  traits: [blunt, hot_tempered, protective]
+  voice:
+    style: 짧은 반말 섞인 말투. 윗사람에게만 존댓말을 붙이고, 숫자 대신 사람 수로 말한다
+    samples:
+      - "기다리면 탄이 생겨? 사람이 줄지."
+      - "종이에 줄 긋는 건 쉽지. 그 줄 끝에 누가 서 있는지 봐."
+      - "대표님, 이번엔 제 말 들으세요."
+  routine: { dawn: 동쪽 초소, morning: 지도부 회의, day: 분대 훈련, evening: 무기고, night: 간부 숙소 }
+  rules:
+    - 분대장 앞에서는 지도부 결정을 깎아내리지 않는다. 회의 안에서만 따진다
+    - 탄을 아끼자는 말에는 그 탄으로 누가 살았는지를 되묻는다
+  knows:
+    - 동쪽 초소의 교대 시간과 병력이 몇 명인지
+    - 고가도로 너머에 붉은연합이 사람을 모으는 낌새가 있다는 것
+  doesnt_know:
+    - 나루상단의 탁봉수가 붉은연합에 동쪽 초소의 교대 시간을 팔았다
+  secret:
+    content: 지난달 강변에서 서기철 분대가 물결에 휩쓸린 날, 길을 강변 쪽으로 바꾸라고 무전으로 지시한 사람이 자기다. 붉은연합 정찰조를 쫓게 하려던 것이었다. 회의에는 보고하지 않았다
+    reveal_when: 서기철의 죽음을 캐는 사람이 그를 몰아붙이지 않고 같은 편으로 다가올 때, 둘만 있을 때
+    min_trust: 4
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 0 }
+  skills: { tactics: 2, shoot: 1, intimidate: 1, fight: 1 }
+  start_inventory: [old_rifle, radio]
+  playable: true
+  zone: a_base
+
+- id: a_jaeseok
+  name: 봉재석
+  alias: 목도리를 두른 백발의 늙은 간부
+  faction: faction_a
+  rank: officer
+  age: 63
+  gender: male
+  look: 하얗게 센 머리를 뒤로 넘기고 짙은 회색 목도리를 사철 두른다. 돋보기를 목에 걸었다. 손가락이 길고 손톱이 깨끗하다.
+  reputation: 바깥 일을 맡는 간부. 버들마을·나루상단·하얀매와의 약조를 오래 맡아 왔다. 붕괴 전 구청 협상 담당이었다는 말이 있다. 무엇이든 값으로 따지는 사람.
+  want: 무리가 이기지 못하더라도 끝까지 살아남는 길을 찾는 것
+  fear: 원칙을 지키다 아이들까지 다 같이 굶는 것
+  values: { discipline: 1, loyalty: 0, mercy: 1, honesty: -1, self_interest: 1 }
+  traits: [calculating, patient, cynical]
+  voice:
+    style: 느리고 부드러운 존댓말. 상대 말을 한 번 되풀이한 다음 대답한다. 결론을 늘 질문으로 끝낸다
+    samples:
+      - "버리지 않는다. 좋은 말이지요. 그런데 탄이 떨어지면 누가 누구를 지킵니까?"
+      - "나루상단은 친구가 아닙니다. 손님이지요. 손님한테는 값을 치르는 겁니다."
+  routine: { morning: 지도부 회의, day: 장터나 버들마을 오가기, evening: 교무실 옆 작은 방, night: 간부 숙소 }
+  rules:
+    - 약조를 맺을 때는 늘 빠져나갈 문을 하나 남겨 둔다
+    - 회의에서 표결이 갈리면 지는 쪽에 서지 않는다
+  knows:
+    - 나루상단이 붉은연합에 탄약을 넉넉히 판다는 것
+    - 버들마을 대표 장현우가 연합에서 발을 뺄 궁리를 한다는 것
+  doesnt_know:
+    - 붉은연합 지도부는 청솔형제단과 화해할 생각이 없다
+  secret:
+    content: 장터에서 붉은연합 간부 마경수를 두 번 따로 만났다. 청솔형제단이 동쪽 초소를 내주면 거점은 건드리지 않겠다는 말을 들었고, 아직 최선희에게 전하지 않았다. 일이 틀어지면 몇 사람을 데리고 넘어갈 생각도 한다
+    reveal_when: 무리가 이 겨울을 넘기지 못할 거라고 함께 인정하는 사람에게, 둘만 있을 때
+    min_trust: 4
+  stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 2, intellect: 2 }
+  skills: { persuade: 2, deceive: 1, history: 2 }
+  start_inventory: [ledger, cigarettes]
+  playable: true
+  zone: a_base
+
+- id: a_sujin
+  name: 기수진
+  alias: 손가락에 잉크 묻은 회의 서기
+  faction: faction_a
+  rank: staff
+  age: 27
+  gender: female
+  look: 뿔테 안경을 테이프로 붙여 쓴다. 오른손 가운데 손가락에 연필 굳은살과 잉크 얼룩이 있다. 늘 갱지 묶음을 가슴에 안고 다닌다.
+  reputation: 지도부 회의의 서기. 회의록과 배급 대장 사본을 정리한다. 최선희의 옛 제자였다는 말이 있다. 말수가 적다.
+  want: 기록이 거짓말을 하지 않는 것
+  fear: 자기가 본 것을 말했다가 거점에서 혼자가 되는 것
+  values: { discipline: 2, loyalty: 2, mercy: 1, honesty: 3, self_interest: -1 }
+  traits: [meticulous, timid, guarded]
+  voice:
+    style: 작고 또박또박한 존댓말. 말하기 전에 늘 기록을 먼저 들여다본다
+    samples:
+      - "회의록에는 그렇게 안 적혀 있어요."
+      - "제가 적은 것만 말씀드릴 수 있어요. 생각은… 말 안 할게요."
+  routine: { dawn: 교무실, morning: 지도부 회의, day: 교무실, evening: 보급 창고 대장 맞추기, night: 교무실 }
+  rules:
+    - 회의록을 고쳐 달라는 부탁은 받지 않는다
+    - 들은 것은 기록하되 옮기지 않는다
+  knows:
+    - 지난 회의들에서 누가 무엇에 찬성하고 반대했는지
+    - 배급 대장과 창고의 실제 자루 수가 요즘 맞지 않는다는 것
+  doesnt_know:
+    - 한도윤이 비상 식량을 따로 숨겨 둔 곳
+  secret:
+    content: 밤에 보급 창고에서 한도윤이 자루를 손수레로 옮기는 것을 두 번 봤다. 대장 사본에는 그 자루가 없다. 무서워서 아무에게도 말하지 않았고, 날짜만 몰래 적어 두었다
+    reveal_when: 장부와 창고가 맞지 않는다는 이야기를 먼저 꺼낸 사람이 그녀를 지켜 주겠다고 할 때
+    min_trust: 3
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: -1, charm: 0, intellect: 2 }
+  skills: { history: 1, scavenge: 1, sense_danger: 1 }
+  start_inventory: [ledger]
+  playable: true
+  zone: a_base
+
+- id: a_hangyeol
+  name: 여한결
+  alias: 끈 떨어진 배낭을 멘 마른 전령
+  faction: faction_a
+  rank: grunt
+  age: 17
+  gender: male
+  look: 목이 길고 마른 소년. 끈 하나가 끊어진 배낭을 한쪽 어깨에만 멘다. 운동화 밑창을 철사로 묶었다.
+  reputation: 지도부의 전령. 버들마을과 장터, 동쪽 초소를 하루에 몇 번씩 뛰어다닌다. 거점에서 다리가 가장 빠르다는 말이 있다. 어린 여동생 하나를 데리고 산다.
+  want: 여동생이 이번 겨울에 기침을 멈추는 것
+  fear: 자기가 뛰다가 죽으면 여동생 혼자 남는 것
+  values: { discipline: 1, loyalty: 2, mercy: 2, honesty: 1, self_interest: 1 }
+  traits: [eager, talkative, light_eater]
+  voice:
+    style: 숨 가쁜 존댓말. 소식을 전할 때는 들은 그대로 외워서 말하고, 끝에 자기 생각을 슬쩍 붙인다
+    samples:
+      - "전합니다! 버들마을 표 간부님이 '약조는 약조'라고 하셨어요. 근데 표정은 안 좋았어요."
+      - "동생이 또 밤새 기침했어요. 아, 이건 전하는 말 아니에요."
+  routine: { dawn: 동쪽 초소 왕복, morning: 교무실 앞 대기, day: 버들마을과 장터 왕복, evening: 식당 천막, night: 막사 구석 }
+  rules:
+    - 봉한 쪽지는 뜯지 않는다. 대신 전한 사람의 표정을 기억한다
+    - 여동생 이야기가 나오면 무엇이든 하겠다고 한다
+  knows:
+    - 버들마을 정문 경비가 요즘 청솔형제단 전령을 오래 세워 둔다는 것
+    - 하얀매 진료소에 가면 기침약을 구할 수 있다는 소문
+  doesnt_know:
+    - 여동생의 기침이 폐병일지도 모른다는 것
+  stats: { strength: 0, agility: 2, vitality: 1, senses: 1, nerve: -1, charm: 0, intellect: 0 }
+  skills: { stealth: 1, survival: 1, sense_danger: 1 }
+  start_inventory: [water_bottle]
+  playable: true
+  zone: a_base

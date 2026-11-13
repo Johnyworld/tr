@@ -385,6 +385,7 @@
         - set_flag: e_ledger_sold
         - set_flag: e_sided_pine
         - give_item: { item: canned_food, quantity: 2 }
+        - clock: { id: e_side, delta: 1 }
         - relation: { who: buyer, axis: trust, delta: 2 }
         - clock: { id: c_east_offensive, delta: -1 }
         - clock: { id: a_counteroffensive, delta: 1 }
@@ -408,6 +409,7 @@
       label: 짐꾼은 물만 나른다고 한다
       effects:
         - relation: { who: buyer, axis: respect, delta: 1 }
+        - clock: { id: e_side, delta: -1 }
 
 - id: e_sealed_bundle
   title: 밀랍으로 봉한 꾸러미
@@ -430,6 +432,8 @@
         - set_flag: e_bundle_done
         - set_flag: e_carried_for_red
         - clock: { id: c_east_offensive, delta: 1 }
+        - clock: { id: e_side, delta: 1 }
+        - clock: { id: b_waver, delta: 1 }
         - relation: { who: trader, axis: trust, delta: 2 }
         - give_item: { item: cigarettes, quantity: 2 }
         - merit: 1
@@ -441,10 +445,13 @@
           - set_flag: e_bundle_done
           - set_flag: e_carried_for_red
           - clock: { id: c_east_offensive, delta: 1 }
+          - clock: { id: e_side, delta: 1 }
+          - clock: { id: b_waver, delta: 1 }
           - belief: { fact: "탁봉수의 꾸러미에는 청솔형제단 남쪽 담장의 보수 상태와 버들마을 물값 체납 사정을 적은 쪽지, 항생제 한 줄이 들어 있었다. 붉은연합에 넘겼다", source: seen }
         partial:
           - set_flag: e_bundle_done
           - set_flag: e_carried_for_red
+          - clock: { id: e_side, delta: 1 }
           - relation: { who: trader, axis: trust, delta: -1 }
           - belief: { fact: "꾸러미 안에 청솔형제단 담장 이야기가 적힌 쪽지가 있었다. 다시 붙인 밀랍이 조금 어긋났다", source: seen }
         miss:
@@ -458,6 +465,7 @@
         - set_flag: e_sided_pine
         - clock: { id: c_east_offensive, delta: -1 }
         - clock: { id: a_counteroffensive, delta: 1 }
+        - clock: { id: e_side, delta: 1 }
         - relation: { who: trader, axis: trust, delta: -3 }
         - deed: { summary: 우두머리가 붉은연합에 보내는 꾸러미를 청솔형제단에 넘겼다, tags: [betrayal, enemy_sympathy], severity: 3, privacy: private }
     - id: refuse
@@ -466,6 +474,7 @@
         - set_flag: e_bundle_done
         - relation: { who: trader, axis: trust, delta: -1 }
         - relation: { who: trader, axis: respect, delta: 1 }
+        - clock: { id: e_side, delta: -1 }
 
 - id: e_smuggle_offer
   title: 두 겹 바닥 물통
@@ -527,18 +536,21 @@
         success:
           - merit: 1
           - relation: { who: keeper, axis: respect, delta: 1 }
+          - clock: { id: e_side, delta: -1 }
           - deed: { summary: 정수장 안에서 총을 보인 사내를 문밖으로 돌려보냈다, tags: [bravery], severity: 1, privacy: public }
         partial:
           - belief: { fact: "총을 보인 사내는 물러났지만 문밖에서 오래 정수장 안을 노려보았다", source: seen }
         miss:
           - faction_morale: { faction: own, delta: -1 }
           - belief: { fact: "사내는 비웃으며 줄 맨 앞에서 물을 받아 갔다. 정수장 휴전이 흔들린다는 말이 돌 것이다", source: seen }
+          - clock: { id: e_side, delta: 1 }
     - id: smooth
       label: 웃으며 총만 맡기면 먼저 받게 해 주겠다고 흥정한다
       check: persuade
       outcomes:
         success:
           - relation: { who: keeper, axis: trust, delta: 1 }
+          - clock: { id: e_side, delta: -1 }
           - belief: { fact: "사내는 총을 문간 상자에 맡기고 물을 받아 갔다. 줄 선 사람들이 숨을 내쉬었다", source: seen }
         partial:
           - belief: { fact: "사내는 총을 맡기는 대신 물 한 통을 덤으로 받아 갔다", source: seen }

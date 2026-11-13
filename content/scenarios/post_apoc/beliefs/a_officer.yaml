@@ -1,0 +1,34 @@
+# 청솔형제단 참모가 시작할 때 알고 있는 것 (초안)
+# 간부라 분대원보다 많이 안다. 그래도 숫자는 말로만 (몇 주 치, 한 달이 안 되게). accuracy는 GM에게 보이지 않는다
+id: a_officer
+beliefs:
+  - fact: 청솔형제단은 버들마을과 연합해 붉은연합과 전쟁 중이다. 붉은연합은 사람도 총도 연합 둘을 합친 것보다 서너 배는 많다.
+    source: report
+    accuracy: approximate
+  - fact: 지도부 회의는 매일 아침 교무실에서 열린다. 대표 최선희, 전투 간부 육정훈, 보급 간부 한도윤, 바깥 일을 맡는 봉재석, 그리고 참모인 내가 앉고, 서기 기수진이 회의록을 적는다.
+    source: seen
+    accuracy: exact
+  - fact: 창고의 식량은 지금 배급대로면 한 달 남짓, 탄약은 큰 싸움 두세 번이면 바닥난다. 약은 그보다 훨씬 모자란다. 한도윤의 장부로 들은 셈이다.
+    source: report
+    accuracy: approximate
+  - fact: 붉은연합이 고가도로 너머 물류창고에 사람을 모으고 있다. 노리는 곳은 동쪽 초소로 보인다. 언제 올지는 아무도 모른다.
+    source: report
+    accuracy: approximate
+  - fact: 육정훈은 눈이 오기 전에 물류창고를 먼저 치자고 한다. 최선희는 아직 반격 준비만 허락했다. 준비가 얼마나 됐는지는 회의마다 말이 다르다.
+    source: seen
+    accuracy: approximate
+  - fact: 버들마을 대표 장현우가 요즘 회의에 늦게 나오고 확답을 피한다. 붉은연합이 버들마을을 따로 회유한다는 말이 돈다.
+    source: rumor
+    accuracy: approximate
+  - fact: 버들마을과의 약조는 이렇다. 우리가 탄약을 대 주고, 버들마을은 남쪽 텃밭 수확 일부와 경비 인원을 낸다. 저쪽 연락 간부는 표승민이다.
+    source: report
+    accuracy: exact
+  - fact: 나루상단은 우리에게도 붉은연합에게도 판다. 하얀매는 약을 값으로만 내준다. 둘 다 이기는 쪽을 보고 있다.
+    source: report
+    accuracy: approximate
+  - fact: 배급을 줄이자는 말이 나오면 최선희는 끝까지 반대한다. 한도윤은 숫자를 들어 줄이자고 하고, 두 사람 사이는 그 일로 늘 팽팽하다.
+    source: seen
+    accuracy: exact
+  - fact: 참모는 명령을 내리지 않는다. 대표에게 안을 올리고, 대표가 정하면 분대장들에게 전한다. 그 안대로 사람이 나가고, 돌아오지 않기도 한다.
+    source: seen
+    accuracy: exact

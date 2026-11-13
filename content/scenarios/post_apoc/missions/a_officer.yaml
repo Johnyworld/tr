@@ -1,0 +1,96 @@
+# 청솔형제단 참모 임무 (초안). 대표 최선희가 아침 회의 뒤 직접 맡긴다
+# 오늘의 임무 후보는 역할(roles/a_officer.yaml)의 missions 목록에서 코드가 고르고, 상관(commander: a_seonghee)이 장면에 있어야 내린다.
+# giver_rank는 맡기는 사람의 계급(지도부)을 적어 둔 것이다. 형식은 a_grunt_basic.yaml 머리말 참고
+- id: a_of_east_inspection
+  title: 동쪽 초소 시찰
+  briefing: 동쪽 초소에 가서 교대표와 탄 재고를 직접 보고 오세요. 고가도로 너머에 사람이 모인다는 보고가 사실인지, 초소가 며칠을 버틸지 당신 눈으로 판단해서 회의에 올리세요.
+  giver_rank: leader
+  deadline_hours: 14
+  requirements:
+    - activity: travel
+      minutes: 40
+    - check: sense_danger
+      min_outcome: partial
+  advances: { clock: c_east_offensive, delta: -1 }
+
+- id: a_of_b_talks
+  title: 버들마을 약조 다지기
+  briefing: 버들마을에 가서 표승민 간부와 약조를 다시 확인하세요. 탄은 약속한 만큼만, 대신 저쪽 경비 인원은 빠짐없이. 장현우 대표가 무엇을 망설이는지 알아 오면 더 좋습니다.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: success
+  advances: { clock: b_waver, delta: -2 }
+
+- id: a_of_market_ammo
+  title: 장터 탄약 흥정
+  briefing: 나루상단 장터에서 탄약을 사 올 길을 트세요. 연료와 통조림은 내줘도 되지만 약은 안 됩니다. 저쪽이 붉은연합에도 판다는 걸 잊지 말고, 우리 사정은 들키지 마세요.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+    - check: deceive
+      min_outcome: partial
+
+- id: a_of_clinic_deal
+  title: 하얀매 약값 협상
+  briefing: 하얀매 진료소에 가서 겨울 약값을 정해 오세요. 도상필 간부는 값을 부풀립니다. 항생제가 몇 줄이라도 들어와야 의무실이 겨울을 넘깁니다.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+
+- id: a_of_ledger_audit
+  title: 창고 대장 맞추기
+  briefing: 기수진과 함께 보급 창고의 자루를 하나하나 세어 대장과 맞춰 보세요. 한도윤 간부에게는 정례 점검이라고만 하세요. 숫자가 맞으면 그걸로 됐습니다.
+  giver_rank: leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: scavenge
+      min_outcome: partial
+
+- id: a_of_counter_plan
+  title: 반격 계획 짜기
+  briefing: 육정훈 간부와 함께 물류창고를 칠 안을 짜 오세요. 몇 분대를, 어느 길로, 몇 발을 들고. 그리고 실패했을 때 몇 명을 잃는지까지 적어 오세요. 그 숫자를 보고 정하겠습니다.
+  giver_rank: leader
+  deadline_hours: 18
+  requirements:
+    - activity: work
+      minutes: 180
+    - check: tactics
+      min_outcome: success
+  advances: { clock: a_counteroffensive, delta: 2 }
+
+- id: a_of_squad_briefing
+  title: 분대장 소집
+  briefing: 분대장들을 모아 이번 주 배치와 배급 조정을 전하세요. 왜 그렇게 정했는지 설명하고, 불만은 들어 두되 결정은 바꾸지 마세요.
+  giver_rank: leader
+  deadline_hours: 10
+  requirements:
+    - activity: talk
+      minutes: 60
+    - check: tactics
+      min_outcome: partial
+
+- id: a_of_prisoner
+  title: 붉은 완장 포로 심문
+  briefing: 어제 동쪽 초소에서 잡힌 붉은연합 보초를 만나 보세요. 물류창고에 몇 명이 있고 언제 움직이는지. 때리지 말라는 건 아닙니다만, 죽으면 아무것도 못 듣습니다.
+  giver_rank: leader
+  deadline_hours: 12
+  requirements:
+    - activity: talk
+      minutes: 60
+    - check: intimidate
+      min_outcome: partial
+  advances: { clock: a_counteroffensive, delta: 1 }

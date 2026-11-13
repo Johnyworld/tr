@@ -1,0 +1,507 @@
+# 무리 사이의 정치 (월드 스토리렛, 초안). 세력 클락 b_waver(버들마을의 이탈)·e_side(나루상단의 편들기)에 반응한다
+# - tags: [world]. 플레이어가 볼 수 있는 것은 소문·목격·전해 들은 말뿐이다. 클락 값과 태도 수치는 ai_direction에도 숫자로 적지 않는다
+# - 흐름:
+#   이탈 전 (b_waver가 반쯤 차고 버들마을이 아직 청솔 편): wp_willow_rumor, wp_willow_council(버들마을), wp_pine_goodwill(청솔), wp_red_gift_run(붉은연합)
+#   이탈 뒤 (버들마을이 청솔을 보는 태도 0 이하): wp_willow_gate(청솔), wp_mina_crossing(청솔), wp_seungmin_dawn(버들마을), wp_red_at_well(버들마을), wp_red_road(붉은연합)
+#   편들기 전 (e_side가 반쯤 참): wp_naru_scales
+#   편들기 뒤 (나루상단이 붉은연합을 보는 태도 2 이상): wp_water_price(다른 무리), wp_pump_orders(나루상단)
+
+# ── 이탈 전: 흔들리는 버들마을 ─────────────────────────
+
+- id: wp_willow_rumor
+  title: 짐꾼의 혼잣말
+  tags: [world]
+  when:
+    factions: [faction_a, faction_c, faction_d, faction_e, none]
+    day_gte: 6
+    segments: [morning, day, evening]
+    clock_gte: { b_waver: 15 }
+    dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
+  cast:
+    porter: { extra: e_porter, label: 물통을 내려놓은 짐꾼 }
+  setup: >-
+    물통을 내려놓고 숨을 고르던 {porter:이/가} 묻지도 않았는데 말을 꺼낸다.
+    "버들마을 쪽문 말이야. 요새 밤마다 열린다더라. 붉은 완장이 들어가는 걸 본 사람이 셋이야. 청솔 쪽은 아직 모르는 눈치고."
+  ai_direction: 짐꾼이 들은 것은 사실에 가깝다. 버들마을 대표는 붉은연합과 따로 말을 나누고 있고, 마을 안 사람들도 갈라져 있다. 짐꾼은 확실한 것을 모르며, 소문을 퍼뜨려 값을 받을 생각도 없다. 그냥 무거운 짐 끝의 잡담이다. 날짜나 결정은 말하지 않는다.
+  choices:
+    - id: press
+      label: 누가 봤는지, 언제였는지 캐묻는다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "나루상단 짐꾼이 말했다: 버들마을 북쪽 쪽문으로 붉은 완장 단 사람이 밤에 드나든다. 경비조장이 직접 문을 연다는 말도 있다", source: report }
+        partial:
+          - belief: { fact: "버들마을 쪽문으로 붉은연합 사람이 드나든다는 소문이 짐꾼들 사이에 돈다", source: rumor }
+        miss:
+          - belief: { fact: "짐꾼은 캐묻자 입을 닫았다. 버들마을 이야기는 상단 안에서도 조심하는 말인 모양이다", source: seen }
+    - id: shrug
+      label: 흘려듣고 제 일을 한다
+      effects:
+        - belief: { fact: "버들마을이 붉은연합과 따로 말을 나눈다는 소문을 짐꾼에게서 들었다", source: rumor }
+
+- id: wp_willow_council
+  title: 관리사무소의 언성
+  tags: [world]
+  when:
+    factions: [faction_b]
+    zones: [b_base]
+    segments: [evening, night]
+    clock_gte: { b_waver: 15 }
+    dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
+  cast:
+    leader: { ids: [b_hyunwoo] }
+    liaison: { ids: [b_seungmin] }
+  setup: >-
+    관리사무소 문틈으로 언성이 샌다. "이대로면 겨울에 청솔하고 같이 굶어요." {leader}의 목소리다.
+    "저쪽에 문을 연 무리가 어떻게 됐는지 아시잖습니까." {liaison}의 목소리가 맞선다.
+    문이 벌컥 열리고, 둘이 동시에 복도에 선 당신을 본다.
+  ai_direction: "{leader:은/는} 아직 답을 정하지 않았지만 기울어 있다. {liaison:은/는} 청솔형제단 쪽에 대표의 동태를 알리고 있다 (말하지 않는다). 붉은연합 지도부가 실제로는 버들마을을 받아들일 생각이 없다는 것은 아무도 모른다. 둘 다 당신을 자기 편 증인으로 세우고 싶어 한다. 마을 사람 한 명의 말이 대표의 저울에 조금은 얹힌다."
+  choices:
+    - id: back_alliance
+      label: 청솔과 같이 버텨야 한다고 대표에게 말한다
+      check: persuade
+      outcomes:
+        success:
+          - clock: { id: b_waver, delta: -2 }
+          - relation: { who: liaison, axis: trust, delta: 2 }
+          - relation: { who: leader, axis: respect, delta: 1 }
+          - deed: { summary: "대표 앞에서 청솔형제단과의 연합을 지키자고 말했다", tags: [loyalty], severity: 1, privacy: semi_private }
+          - belief: { fact: "대표 장현우는 내 말을 끝까지 듣고 한참 말이 없었다. 오늘 밤은 쪽문을 열지 말라고 경비조장에게 일렀다", source: seen }
+        partial:
+          - clock: { id: b_waver, delta: -1 }
+          - relation: { who: liaison, axis: trust, delta: 1 }
+          - relation: { who: leader, axis: trust, delta: -1 }
+          - belief: { fact: "대표 장현우는 내 말에 고개를 끄덕였지만, 경비병이 낄 자리가 아니라고 했다", source: seen }
+        miss:
+          - relation: { who: leader, axis: trust, delta: -2 }
+          - belief: { fact: "대표 장현우가 표승민이 시켜서 하는 말이냐고 물었다. 대답하기도 전에 문이 닫혔다", source: seen }
+    - id: back_leader
+      label: 마을 사람부터 살아야 한다며 대표 편을 든다
+      effects:
+        - clock: { id: b_waver, delta: 2 }
+        - relation: { who: leader, axis: trust, delta: 2 }
+        - relation: { who: liaison, axis: trust, delta: -2 }
+        - deed: { summary: "청솔형제단과의 연합을 접자는 대표 편을 들었다", tags: [enemy_sympathy], severity: 1, privacy: semi_private }
+    - id: walk_on
+      label: 아무것도 못 들은 척 복도를 지나간다
+      effects:
+        - belief: { fact: "대표 장현우와 연락 간부 표승민이 청솔형제단과의 연합을 두고 크게 다퉜다. 대표는 겨울을 걱정했다", source: seen }
+
+- id: wp_pine_goodwill
+  title: 버들마을로 가는 자루
+  tags: [world]
+  when:
+    factions: [faction_a]
+    own_territory: true
+    segments: [morning, day]
+    clock_gte: { b_waver: 18 }
+    dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
+  cast:
+    clerk: { ids: [a_doyun] }
+  setup: >-
+    보급 천막 앞, {clerk:이/가} 쌀자루 두 개와 장부를 번갈아 본다.
+    "버들마을이 흔들린다는 말이 위까지 올라갔어. 대표님은 이걸 보내서 우리가 버리지 않는다는 걸 보여 주자고 하시고. 창고는 이 모양이고. 넌 어떻게 생각하냐."
+  ai_direction: "{clerk:은/는} 이미 지시를 받았지만 창고 사정이 걱정되어 아래 사람 말을 듣고 싶어 한다. 자루를 보내면 버들마을 단지 사람들의 마음이 조금 돌아온다. 대신 우리 무리 배급이 그만큼 준다. 버들마을을 감시하자는 말도 위에서 나오고 있다."
+  choices:
+    - id: send
+      label: 보내야 한다고, 직접 지고 가겠다고 한다
+      effects:
+        - faction_resource: { faction: own, resource: food, delta: -30 }
+        - clock: { id: b_waver, delta: -2 }
+        - faction_relation: { from: faction_b, to: faction_a, delta: 1, mutual: false }
+        - relation: { who: clerk, axis: respect, delta: 1 }
+        - deed: { summary: "모자란 창고에서 버들마을로 보내는 쌀자루를 직접 지고 갔다", tags: [loyalty, diligence], severity: 1, privacy: public }
+        - belief: { fact: "버들마을 정문에서 쌀자루를 받던 우물지기 할머니가 처음으로 웃었다. 대표 장현우는 나오지 않았다", source: seen }
+    - id: watch
+      label: 쌀보다 버들마을 쪽문에 눈을 붙여 두는 게 낫다고 한다
+      effects:
+        - faction_relation: { from: faction_a, to: faction_b, delta: -1, mutual: false }
+        - clock: { id: b_waver, delta: 1 }
+        - relation: { who: clerk, axis: trust, delta: 1 }
+        - belief: { fact: "버들마을로 갈 쌀자루는 창고로 돌아갔다. 대신 버들마을 쪽문을 지켜볼 사람을 뽑는다는 말이 돌았다", source: seen }
+    - id: defer
+      label: 위에서 정한 대로 하라고 한다
+      effects:
+        - belief: { fact: "보급 간부 한도윤은 버들마을로 보낼 쌀자루를 두고 아직 고민 중이다", source: seen }
+
+- id: wp_red_gift_run
+  title: 쪽문까지 가는 통조림
+  tags: [world]
+  when:
+    factions: [faction_c]
+    own_territory: true
+    segments: [evening, night]
+    clock_gte: { b_waver: 12 }
+    dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
+  cast:
+    boss: { commander: true }
+  setup: >-
+    {boss:이/가} 라벨 떨어진 통조림이 든 자루를 발치에 던진다.
+    "버들마을 북쪽 쪽문. 손전등 두 번 깜빡이면 열린다. 경비들한테 하나씩 돌리고 와. 싸우러 가는 거 아니다. 웃고 와."
+  ai_direction: 이 통조림은 버들마을 경비병들을 하나씩 사는 값이다. 붉은연합 위쪽은 버들마을이 청솔형제단에서 떨어져 나오기만 바란다. 받아들일 생각까지는 없다 (아무도 말하지 않는다). 가는 길에 청솔형제단 순찰과 마주칠 수 있다. 확정하지 않는다.
+  choices:
+    - id: deliver
+      label: 시킨 대로 웃으며 돌리고 온다
+      check: persuade
+      outcomes:
+        success:
+          - clock: { id: b_waver, delta: 2 }
+          - merit: 1
+          - relation: { who: commander, axis: trust, delta: 1 }
+          - belief: { fact: "버들마을 경비병 몇이 통조림을 받았다. 반백의 경비조장은 받지 않았지만 쫓아내지도 않았다", source: seen }
+        partial:
+          - clock: { id: b_waver, delta: 1 }
+          - belief: { fact: "버들마을 경비병들은 통조림을 받으면서도 눈을 마주치지 않았다", source: seen }
+        miss:
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - belief: { fact: "쪽문은 열리지 않았다. 안에서 누군가 청솔 순찰을 부르겠다고 소리쳤고 자루를 들고 돌아왔다", source: seen }
+    - id: skim
+      label: 두어 개는 내 자루로 옮기고 나머지만 돌린다
+      effects:
+        - clock: { id: b_waver, delta: 1 }
+        - give_item: { item: canned_food, quantity: 2 }
+        - deed: { summary: "버들마을에 돌릴 통조림 몇 개를 몰래 챙겼다", tags: [theft, selfishness], severity: 1, privacy: private }
+    - id: dump
+      label: 가는 척하다 폐허에 자루를 버리고 돌아온다
+      effects:
+        - clock: { id: b_waver, delta: -1 }
+        - relation: { who: commander, axis: trust, delta: -1 }
+        - deed: { summary: "버들마을에 돌릴 통조림 자루를 폐허에 버렸다", tags: [disobedience], severity: 1, privacy: private }
+
+# ── 이탈 뒤: 청솔형제단 ────────────────────────────────
+
+- id: wp_willow_gate
+  title: 돌려주러 온 총
+  tags: [world]
+  when:
+    factions: [faction_a]
+    own_territory: true
+    segments: [morning, day]
+    dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
+  cast:
+    guard: { extra: b_guard, label: 버들마을 경비병 }
+  setup: >-
+    정문 앞에 {guard:이/가} 혼자 서 있다. 등에 낡은 소총 두 자루를 메고 있다.
+    "약조 때 빌린 겁니다. 대표님이 돌려드리라고. 탄은... 다 쓰고 없습니다." 보초들이 총구를 내리지 않는다.
+  ai_direction: 버들마을은 이미 청솔형제단과의 약조에서 발을 뺐다. {guard:은/는} 시킨 심부름을 하러 왔을 뿐이고, 부끄러워하면서도 마을 사람들 편이다. 붉은연합이 무엇을 약속했는지는 위에서 들은 몇 마디만 안다. 보초들은 분이 나 있다. 누가 먼저 험한 말을 하면 걷잡을 수 없다.
+  choices:
+    - id: receive
+      label: 총을 받고 수고했다고 돌려보낸다
+      effects:
+        - faction_relation: { from: faction_b, to: faction_a, delta: 1, mutual: false }
+        - deed: { summary: "약조를 깨고 총을 돌려주러 온 버들마을 경비병을 조용히 돌려보냈다", tags: [mercy], severity: 1, privacy: public }
+        - belief: { fact: "버들마을 경비병이 약조 때 빌린 소총을 돌려주고 갔다. 고개를 숙이고 돌아갔다", source: seen }
+    - id: ask
+      label: 붉은연합이 뭘 주기로 했는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "버들마을 경비병이 털어놓았다: 붉은연합은 버들마을을 건드리지 않고 물길을 열어 주겠다고 했다. 그 대가가 무엇인지는 대표만 안다", source: report }
+        partial:
+          - belief: { fact: "버들마을 경비병은 겨울을 넘기려면 어쩔 수 없었다는 말만 되풀이했다", source: report }
+        miss:
+          - faction_relation: { from: faction_b, to: faction_a, delta: -1, mutual: false }
+          - belief: { fact: "버들마을 경비병은 대답 대신 총을 땅에 내려놓고 등을 돌렸다. 보초 하나가 그 등에 대고 욕을 했다", source: seen }
+    - id: spit
+      label: 배신자들 총은 필요 없다며 발로 밀어낸다
+      effects:
+        - faction_relation: { from: faction_b, to: faction_a, delta: -1, mutual: true }
+        - faction_morale: { faction: own, delta: 1 }
+        - deed: { summary: "총을 돌려주러 온 버들마을 경비병을 모욕해 쫓아냈다", tags: [cruelty], severity: 1, privacy: public }
+
+- id: wp_mina_crossing
+  title: 넘어오고 싶은 사람
+  tags: [world]
+  when:
+    factions: [faction_a]
+    segments: [evening, night, dawn]
+    dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
+  cast:
+    mina: { ids: [b_mina] }
+    boss: { commander: true, enter: false }
+  setup: >-
+    철조망 너머 어둠에서 낮은 목소리가 이름을 부른다. 손에 붕대를 감은 {mina:이/가} 배낭 하나만 메고 쪼그려 앉아 있다.
+    "동생이 여기 있어요. 저는 그쪽으로 못 가요. 붉은 완장들이 단지 안을 걸어 다녀요. 저 좀 들여보내 주세요. 대신 아는 걸 다 말할게요."
+  ai_direction: "{mina:은/는} 진심이다. 버들마을 안에서 붉은연합으로 넘어가자고 했던 사람들의 이름을 알고 있다. 들이려면 상관 {boss}의 허락이 있어야 하지만, 밤에 철조망을 여는 일은 보초 손에 달렸다. 버들마을에서는 그를 탈주자로 볼 것이다."
+  choices:
+    - id: let_in
+      label: 철조망을 들어 올려 들이고, 상관에게 데려간다
+      effects:
+        - npc_depart: { who: mina, to_faction: faction_a }
+        - relation: { who: mina, axis: trust, delta: 3 }
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - faction_relation: { from: faction_b, to: faction_a, delta: -1, mutual: false }
+        - deed: { summary: "버들마을을 빠져나온 경비병 오미나를 밤에 철조망 안으로 들였다", tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "오미나가 말했다: 버들마을이 연합을 깨기 전부터 붉은연합 쪽으로 넘어가자고 한 사람이 단지 안에 몇 있었다. 경비병 염재혁도 그중 하나였다", source: report }
+    - id: send_back
+      label: 지금은 안 된다며 돌려보낸다
+      effects:
+        - relation: { who: mina, axis: affection, delta: -2 }
+        - belief: { fact: "오미나는 아무 말 없이 어둠 속으로 돌아갔다. 버들마을 쪽 하늘에 손전등이 두 번 깜빡였다", source: seen }
+    - id: raise_alarm
+      label: 첩자일지 모른다며 보초들을 부른다
+      effects:
+        - merit: 1
+        - relation: { who: mina, axis: trust, delta: -3 }
+        - deed: { summary: "넘어오려던 버들마을 사람을 첩자로 몰아 보초를 불렀다", tags: [diligence, cruelty], severity: 1, privacy: public }
+        - belief: { fact: "보초들이 달려오자 오미나는 배낭을 버리고 달아났다. 동생 이름을 한 번 불렀다", source: seen }
+
+# ── 이탈 뒤: 버들마을 ──────────────────────────────────
+
+- id: wp_seungmin_dawn
+  title: 완장을 접는 사람
+  tags: [world]
+  urgent: true
+  when:
+    factions: [faction_b]
+    zones: [b_base]
+    segments: [night, dawn]
+    dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
+  cast:
+    liaison: { ids: [b_seungmin] }
+  setup: >-
+    정문 옆 경비실, {liaison:이/가} 겹쳐 차던 청솔 완장을 풀어 접고 있다. 발치에 배낭이 있다.
+    "새벽 교대 전에 정문을 한 번만 열어 주십시오. 저는 이제 여기서 할 일이 없습니다. 대표님은 제가 무엇을 했는지 곧 아실 겁니다."
+  ai_direction: "{liaison:은/는} 대표의 동태를 청솔형제단에 알려 왔다. 연합이 깨진 지금 그것이 드러나면 마을이 그를 가만두지 않을 수 있다. 그는 청솔형제단으로 넘어가려 한다. 강요하지 않고, 거절당하면 다른 길을 찾겠다고만 한다."
+  choices:
+    - id: open_gate
+      label: 교대 전에 정문을 열어 보낸다
+      effects:
+        - npc_depart: { who: liaison, to_faction: faction_a }
+        - relation: { who: commander, axis: trust, delta: -1 }
+        - deed: { summary: "연합이 깨진 날 새벽, 연락 간부 표승민이 청솔형제단으로 넘어가도록 정문을 열어 주었다", tags: [mercy, disobedience], severity: 2, privacy: private }
+        - belief: { fact: "표승민은 정문을 나서며 대표가 무엇을 내주었는지 곧 알게 될 거라고 했다", source: seen }
+    - id: stop
+      label: 경비조장을 불러 붙잡는다
+      effects:
+        - merit: 1
+        - relation: { who: liaison, axis: trust, delta: -3 }
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - deed: { summary: "청솔형제단으로 넘어가려던 연락 간부 표승민을 붙잡았다", tags: [loyalty, betrayal], severity: 2, privacy: public }
+        - belief: { fact: "표승민의 배낭에서 대표의 드나든 시간을 적은 수첩이 나왔다. 경비조장은 수첩을 대표 사무실로 가져갔다", source: seen }
+    - id: ask_why
+      label: 무엇을 했는지부터 말하라고 한다
+      effects:
+        - relation: { who: liaison, axis: trust, delta: 1 }
+        - belief: { fact: "표승민이 털어놓았다: 대표 사무실에 드나든 사람을 청솔형제단 간부에게 알려 왔다. 마을을 위해서였다고 했다", source: report }
+
+- id: wp_red_at_well
+  title: 우물가의 붉은 완장
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    factions: [faction_b]
+    own_territory: true
+    segments: [morning, day]
+    dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
+  cast:
+    sentry: { extra: c_sentry_rifle, label: 우물가의 붉은 완장 }
+  setup: >-
+    아랫단 우물 앞에 붉은 완장 하나가 물통 넷을 늘어놓고 서 있다. 줄 선 단지 사람들이 한 걸음씩 물러나 있다.
+    {sentry:이/가} 두레박 줄을 잡으며 당신을 본다. "이제 한편이잖아. 물 좀 나눠 쓰자고."
+  ai_direction: 붉은연합 사람들은 이제 대낮에 단지를 드나든다. {sentry:은/는} 위에서 시킨 대로 물을 떠 가는 중이고, 버들마을을 동등한 편으로 여기지 않는다. 붉은연합 지도부는 버들마을을 받아들일 생각이 없다 (이 사람도 모른다. 다만 그런 태도가 말투에 묻어난다). 우물 수위는 넉넉하지 않다.
+  choices:
+    - id: let_draw
+      label: 물을 떠 가게 둔다
+      effects:
+        - faction_resource: { faction: own, resource: water, delta: -15 }
+        - faction_relation: { from: faction_c, to: faction_b, delta: 1, mutual: false }
+        - belief: { fact: "붉은연합 사람이 아랫단 우물에서 물통 넷을 채워 갔다. 단지 사람 아무도 말리지 않았다", source: seen }
+    - id: one_can
+      label: 한 통만 뜨라고 막아선다
+      check: intimidate
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - deed: { summary: "우물에서 물을 떠 가려는 붉은연합 사람을 한 통으로 막았다", tags: [bravery], severity: 1, privacy: public }
+        partial:
+          - faction_resource: { faction: own, resource: water, delta: -8 }
+          - belief: { fact: "붉은 완장은 두 통만 채우고 물러나면서 이름을 물었다", source: seen }
+        miss:
+          - faction_resource: { faction: own, resource: water, delta: -15 }
+          - faction_relation: { from: faction_c, to: faction_b, delta: -1, mutual: false }
+          - belief: { fact: "붉은 완장은 비웃으며 네 통을 다 채웠다. 가면서 한편이 뭔지 위에 물어보라고 했다", source: seen }
+    - id: ask_terms
+      label: 물을 떠 주며 그쪽 위에서는 버들마을을 어떻게 보는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - faction_resource: { faction: own, resource: water, delta: -15 }
+          - belief: { fact: "붉은연합 사람이 흘렸다: 위에서는 버들마을을 받는다는 말은 한 적이 없고, 청솔에서 떼어 놓으면 그걸로 됐다고 한다", source: report }
+        partial:
+          - faction_resource: { faction: own, resource: water, delta: -15 }
+          - belief: { fact: "붉은연합 사람은 위에서 정할 일이라고만 했다. 웃음이 좀 길었다", source: seen }
+        miss:
+          - faction_resource: { faction: own, resource: water, delta: -15 }
+
+# ── 이탈 뒤: 붉은연합 ──────────────────────────────────
+
+- id: wp_red_road
+  title: 새로 뚫린 길
+  tags: [world]
+  when:
+    factions: [faction_c]
+    segments: [morning, day]
+    dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
+  cast:
+    boss: { commander: true }
+    guard: { extra: b_guard, label: 버들마을 정문의 경비병 }
+  setup: >-
+    버들마을 정문이 처음으로 낮에 열린다. {boss:이/가} 짐수레 두 대를 앞세우고 당신을 맨 앞에 세운다.
+    "오늘부터 이 길로 남쪽 텃밭까지 간다. 청솔 놈들 등 뒤로." 정문의 {guard:이/가} 말없이 수레 바퀴만 내려다본다.
+  ai_direction: 버들마을을 지나는 길은 청솔형제단의 남쪽 텃밭으로 이어진다. 버들마을 사람들은 길을 열어 주었지만 반기지 않는다. {boss:은/는} 통행세로 뭔가를 더 받아 내고 싶어 한다. 첫날의 태도가 이 길의 분위기를 정한다.
+  choices:
+    - id: polite
+      label: 경비병에게 담배 한 개비를 건네고 지나간다
+      effects:
+        - take_item: { item: cigarettes }
+        - faction_relation: { from: faction_b, to: faction_c, delta: 1, mutual: true }
+        - relation: { who: guard, axis: trust, delta: 1 }
+        - belief: { fact: "버들마을 정문 경비병이 담배를 받고 처음으로 고개를 들었다. 단지 안 사람들은 아직 창문 뒤에서 보기만 했다", source: seen }
+    - id: toll
+      label: 조장 눈치를 보며 통행 값으로 단지 통조림을 걷는다
+      effects:
+        - give_item: { item: canned_food, quantity: 2 }
+        - faction_relation: { from: faction_b, to: faction_c, delta: -1, mutual: false }
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - deed: { summary: "새로 연 길을 지나며 버들마을 사람들에게서 통조림을 걷었다", tags: [cruelty, selfishness], severity: 1, privacy: public }
+    - id: just_pass
+      label: 아무하고도 눈을 맞추지 않고 수레를 민다
+      effects:
+        - belief: { fact: "버들마을을 지나 남쪽 텃밭 쪽으로 가는 길이 열렸다. 정문 경비병들은 아무 말도 하지 않았다", source: seen }
+
+# ── 나루상단: 편들기 전과 뒤 ───────────────────────────
+
+- id: wp_naru_scales
+  title: 행상대장들의 저울
+  tags: [world]
+  when:
+    factions: [faction_e]
+    own_territory: true
+    segments: [evening, night]
+    clock_gte: { e_side: 18 }
+    dispositions: [{ from: faction_e, to: faction_c, lte: 1 }, { from: faction_e, to: faction_a, lte: 1 }]
+  cast:
+    boss: { ids: [e_bongsu] }
+    captain: { ids: [e_okhee] }
+  setup: >-
+    장터 창고 뒤, 등잔 하나를 두고 {boss:이/가} 주판을 튕기고 있다. {captain:이/가} 팔짱을 낀 채 말한다.
+    "어느 한쪽 물만 길어 주는 순간 우리 정수장은 표적이야." {boss:이/가} 웃는다. "겨울엔 이기는 쪽이 값을 정하지." 둘이 동시에 당신을 본다. "넌 길에서 뭘 봤냐."
+  ai_direction: "{boss:은/는} 가장 큰 무리 쪽에 붙을 셈을 이미 반쯤 끝냈다. {captain:은/는} 휴전과 정수장의 중립이 상단을 살린다고 믿는다. 짐꾼이 길에서 본 것(어느 무리가 더 굶는지, 누가 더 총이 많은지)은 셈에 얹히는 작은 돌이다. 둘 다 숫자를 말하지 않는다."
+  choices:
+    - id: neutral
+      label: 정수장에 총이 들어오면 상단도 끝이라고 행상대장 편을 든다
+      check: persuade
+      outcomes:
+        success:
+          - clock: { id: e_side, delta: -2 }
+          - relation: { who: captain, axis: trust, delta: 2 }
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "탁봉수는 주판을 내려놓고 겨울까지는 지켜보자고 했다. 주옥희가 처음으로 웃었다", source: seen }
+        partial:
+          - clock: { id: e_side, delta: -1 }
+          - relation: { who: boss, axis: trust, delta: -1 }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "탁봉수가 짐꾼이 셈을 아냐며 웃었다. 주판은 계속 튕겨졌다", source: seen }
+    - id: winner
+      label: 붉은연합 짐마차가 더 많다고, 이길 쪽은 정해졌다고 한다
+      effects:
+        - clock: { id: e_side, delta: 2 }
+        - relation: { who: boss, axis: trust, delta: 2 }
+        - relation: { who: captain, axis: trust, delta: -1 }
+        - deed: { summary: "상단이 붉은연합 쪽에 붙어야 한다고 우두머리에게 말했다", tags: [selfishness], severity: 1, privacy: semi_private }
+    - id: stay_out
+      label: 짐꾼은 짐만 본다며 물러난다
+      effects:
+        - belief: { fact: "탁봉수와 주옥희가 상단이 어느 편에 설지를 두고 다툰다. 아직 정해지지 않았다", source: seen }
+
+- id: wp_water_price
+  title: 두 줄로 나뉜 물값
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    factions: [faction_a, faction_b, faction_d, none]
+    zones: [water_plant, e_market]
+    dispositions: [{ from: faction_e, to: faction_c, gte: 2 }]
+  cast:
+    porter: { extra: e_porter, label: 물값을 받는 짐꾼 }
+  setup: >-
+    정수장 앞 줄이 둘로 갈려 있다. 붉은 완장들이 선 줄은 짧고 빨리 줄어든다. {porter:이/가} 당신 물통을 보고 손가락 두 개를 편다.
+    "그쪽 무리는 이제 두 배야. 위에서 정한 거라 나도 어쩔 수 없어."
+  ai_direction: 나루상단은 붉은연합 쪽에 붙었다. 물값이 무리마다 다르고, 붉은연합 사람은 먼저 받는다. {porter:은/는} 이 일이 마음에 들지 않지만 위의 지시를 어기면 자기 자리가 위태롭다. 상단 안에는 밤에 몰래 물을 파는 사람도 있다 (짐꾼이 흘릴 수도 있다).
+  choices:
+    - id: pay
+      label: 두 배를 치른다
+      effects:
+        - take_item: { item: canned_food }
+        - give_item: { item: water_bottle }
+        - belief: { fact: "나루상단이 붉은연합 쪽에 붙은 뒤로 우리 무리 물값은 두 배다. 붉은 완장 줄이 먼저 받는다", source: seen }
+    - id: plead
+      label: 붕괴 전부터 이 줄에 섰다며 짐꾼을 붙잡고 사정한다
+      check: persuade
+      outcomes:
+        success:
+          - give_item: { item: water_bottle }
+          - relation: { who: porter, axis: trust, delta: 1 }
+          - belief: { fact: "짐꾼이 귓속말로 일러 주었다: 밤에 강변 공장 뒤 배수구로 오면 상단 몰래 물을 판다", source: report }
+        partial:
+          - belief: { fact: "짐꾼은 값을 깎아 주지 않았지만, 밤에 다른 길이 있다는 말을 흘렸다", source: report }
+        miss:
+          - belief: { fact: "짐꾼이 고개를 저었다. 뒤에 선 붉은 완장 하나가 웃었다", source: seen }
+    - id: walk
+      label: 물통을 빈 채로 돌아선다
+      effects:
+        - faction_relation: { from: own, to: faction_e, delta: -1, mutual: false }
+        - belief: { fact: "정수장에서 물값이 두 배라 빈 물통으로 돌아왔다. 줄 선 다른 무리 사람들도 수군거렸다", source: seen }
+
+- id: wp_pump_orders
+  title: 돌려보내라는 명단
+  tags: [world]
+  when:
+    factions: [faction_e]
+    zones: [water_plant]
+    segments: [dawn, morning]
+    dispositions: [{ from: faction_e, to: faction_c, gte: 2 }]
+  cast:
+    keeper: { ids: [e_deoksu] }
+    customer: { extra: refugee, label: 아이 업은 사람 }
+  setup: >-
+    {keeper:이/가} 펌프실 문에 종이 한 장을 붙인다. 붉은연합 먼저, 청솔·버들 쪽은 두 배, 모자라면 돌려보낼 것.
+    줄 끝에서 아이를 업은 {customer:이/가} 빈 물통을 내민다. 청솔형제단 거점 옆 골목에 산다고 한다.
+  ai_direction: 상단은 붉은연합 쪽에 붙었고, 오늘은 물이 모자라다. {customer:은/는} 어느 무리에도 속하지 않지만 청솔형제단 근처에 살아서 명단에서는 청솔 쪽으로 친다. {keeper:은/는} 명단을 붙이면서도 내키지 않는다. 몰래 퍼 주면 짐꾼이 책임을 진다. 정수장 휴전이 깨지면 모두가 총을 들고 온다는 것을 펌프지기는 안다.
+  choices:
+    - id: turn_away
+      label: 명단대로 돌려보낸다
+      effects:
+        - relation: { who: keeper, axis: trust, delta: 1 }
+        - deed: { summary: "정수장에서 아이 업은 사람을 명단대로 돌려보냈다", tags: [diligence, cruelty], severity: 1, privacy: public }
+    - id: slip_water
+      label: 펌프실 뒤로 불러 몰래 반 통을 채워 준다
+      check: stealth
+      outcomes:
+        success:
+          - faction_relation: { from: faction_a, to: faction_e, delta: 1, mutual: false }
+          - relation: { who: customer, axis: trust, delta: 2 }
+          - deed: { summary: "명단을 어기고 청솔 쪽 사람에게 몰래 물을 퍼 주었다", tags: [mercy, disobedience], severity: 1, privacy: private }
+        partial:
+          - relation: { who: keeper, axis: trust, delta: -1 }
+          - deed: { summary: "명단을 어기고 청솔 쪽 사람에게 물을 퍼 주다 펌프지기에게 들켰다", tags: [mercy, disobedience], severity: 1, privacy: semi_private }
+          - belief: { fact: "펌프지기 염덕수는 못 본 척해 주었지만 다음은 없다고 했다", source: seen }
+        miss:
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - deed: { summary: "명단을 어기고 물을 퍼 주다 행상대장에게 들켰다", tags: [mercy, disobedience], severity: 1, privacy: public }
+    - id: argue
+      label: 펌프지기에게 이러다 휴전이 깨진다고 따진다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: keeper, axis: respect, delta: 1 }
+          - faction_relation: { from: faction_a, to: faction_e, delta: 1, mutual: false }
+          - belief: { fact: "염덕수가 명단을 떼지는 않았지만, 아이 딸린 사람은 값을 그대로 받으라고 했다", source: seen }
+        partial:
+          - belief: { fact: "염덕수는 위에서 정한 거라며 고개를 저었다. 그래도 종이는 비뚤게 붙어 있었다", source: seen }
+        miss:
+          - relation: { who: keeper, axis: trust, delta: -1 }

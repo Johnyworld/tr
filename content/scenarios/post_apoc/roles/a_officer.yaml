@@ -1,0 +1,34 @@
+# 청솔형제단의 참모 (시작 역할, 초안)
+# 대표 최선희 직속. 지도부 회의에 앉아 배급·약조·반격을 안으로 올린다. 총보다 장부와 사람을 다룬다
+id: role_a_officer
+label: 청솔형제단 참모
+faction: faction_a
+rank: officer
+default_name: 참모
+opening_scene: 아침, 청솔형제단 거점의 옛 교무실. 난로는 꺼져 있고, 칠판에는 지우다 만 지도가 남아 있다. 긴 책상에 간부들이 하나둘 앉는다. 한도윤이 장부를 펼치고, 육정훈은 앉지 않고 창가에 선다. 최선희가 공책을 열며 당신을 본다. "참모님 안부터 들어 봅시다."
+scenario:
+  title: 청솔형제단의 참모
+  pitch: >-
+    총 대신 장부를 든다. 대표 최선희 곁에서 배급을 어느 분대에 얼마나 돌릴지, 누구를 위험한 곳에 보낼지, 흔들리는 버들마을을 어떻게 붙잡을지 안을 올린다.
+    당신이 정한 숫자대로 사람이 나가고, 돌아오지 않기도 한다. 전선에서 먼 교무실에서 내린 결정의 무게를 견뎌야 한다.
+  intro: >-
+    가을이 깊어 간다. 당신은 청솔형제단의 참모다. 대표 최선희 직속으로, 매일 아침 옛 교무실에서 열리는 지도부 회의에 앉는다.
+    무리는 버들마을과 손잡고 훨씬 큰 붉은연합과 싸우고 있다. 창고는 한 달 남짓을 버틸 만큼 남았고, 탄약은 그보다 빨리 떨어질 것이다.
+    전투 간부 육정훈은 눈이 오기 전에 먼저 치자고 하고, 보급 간부 한도윤은 배급을 더 줄이자고 한다. 최선희는 둘 다 쉽게 허락하지 않는다.
+    버들마을 대표는 요즘 회의에 늦게 나오고, 고가도로 너머에서는 붉은연합이 사람을 모은다는 보고가 올라온다.
+    이야기는 어느 아침, 지도부 회의가 열리는 교무실에서 시작한다.
+age: 38
+# 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
+# 시작 훈련: 지휘(전략)와 교섭. 대신 총은 오래 잡지 않았다
+start_skills: { tactics: 1, persuade: 1 }
+start_inventory: [ledger, radio, coat, cigarettes]
+start_location: a_base
+access: [ration, mission_board]
+beliefs_preset: a_officer
+# 지도부와 회의 둘레, 거점의 주요 인물, 연합과 거래 상대의 얼굴들
+known_npcs: [a_seonghee, a_doyun, a_jeonghun, a_jaeseok, a_sujin, a_hangyeol, a_taeho, a_chaewon, a_bokja, a_jiho, a_seoyeon, a_mansu, a_dongwook, a_byungchul, a_yejin, a_haneul, b_hyunwoo, b_seungmin, e_bongsu, d_sangpil]
+# 직속 상관은 대표. 아침 회의 뒤 직접 임무를 맡긴다
+commander: a_seonghee
+missions: [a_of_east_inspection, a_of_b_talks, a_of_market_ammo, a_of_clinic_deal, a_of_ledger_audit, a_of_counter_plan, a_of_squad_briefing, a_of_prisoner]
+# a_officer: 참모에 묶인 이야기, council: 간부라면 누구나 겪을 회의·배분 이야기, world: 어느 시나리오에서나 열리는 도시의 일
+storylet_tags: [a_officer, council, world]

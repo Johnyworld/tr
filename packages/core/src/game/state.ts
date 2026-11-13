@@ -26,7 +26,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 9;
+export const SAVE_SCHEMA_VERSION = 10;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -170,6 +170,8 @@ export function createGameSchemas(s: Scenario) {
     roleId: z.string(),
     /** 자유 시나리오로 시작했으면 그때 코드가 만든 역할 (콘텐츠에 없다, 기획서 12.5). roleId는 CUSTOM_ROLE_ID */
     customRole: customRoleSchema.nullable().default(null),
+    /** 이야기가 이름표로 기억해 둔 이름 없는 인물 (cast keep → recall) */
+    keptExtras: z.record(z.string(), z.string()).default({}),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
     zoneSearches: z.record(z.string(), z.strictObject({ day: z.number().int(), count: z.number().int() })).default({}),
     turn: z.number().int().nonnegative(),
@@ -271,6 +273,7 @@ export function createGameSchemas(s: Scenario) {
     }),
     z.strictObject({ type: z.literal("npc_entered"), npcId: z.string() }),
     z.strictObject({ type: z.literal("zone_searched"), zone: z.string(), day: z.number().int() }),
+    z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     /** NPC가 떠난다: toFaction이면 그 세력으로 넘어가고(도시에 남는다), null이면 도시를 떠난다 (기획서 10.4) */
     z.strictObject({ type: z.literal("npc_departed"), npcId: z.string(), toFaction: z.string().nullable() }),
     z.strictObject({ type: z.literal("faction_resource_changed"), factionId: z.string(), resource: z.string(), delta: z.number().int() }),
@@ -520,6 +523,7 @@ export const EMPTY_STATE: GameState = {
   roleId: "",
   customRole: null,
   zoneSearches: {},
+  keptExtras: {},
   turn: 0,
   time: START_TIME,
   playerId: "",
@@ -636,6 +640,10 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       const f = next.factions[event.factionId];
       if (!f) return next;
       f.resources[event.resource] = Math.max(0, (f.resources[event.resource] ?? 0) + event.delta);
+      return next;
+    }
+    case "extra_kept": {
+      next.keptExtras[event.key] = event.characterId;
       return next;
     }
     case "zone_searched": {

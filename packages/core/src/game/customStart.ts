@@ -85,9 +85,12 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
   const same = roles.find((r) => r.rank === input.rank) ?? roles[0];
   const level = rankLevel(content, input.rank);
   const members = faction ? Object.values(content.npcs).filter((n) => n.faction === faction) : [];
-  const commander = members
-    .filter((n) => rankLevel(content, n.rank) > level)
-    .sort((a, b) => rankLevel(content, a.rank) - rankLevel(content, b.rank))[0];
+  // 같은 계급의 콘텐츠 시나리오가 있으면 그 상관, 없으면 바로 위 계급 중 id 순으로 첫 사람 (파일 순서와 무관하게)
+  const commander =
+    (same?.rank === input.rank && same.commander ? content.npcs[same.commander] : undefined) ??
+    members
+      .filter((n) => rankLevel(content, n.rank) > level)
+      .sort((a, b) => rankLevel(content, a.rank) - rankLevel(content, b.rank) || a.id.localeCompare(b.id))[0];
   const skills = Object.fromEntries(Object.entries(input.skills).filter(([, v]) => v > 0));
   return {
     id: CUSTOM_ROLE_ID,

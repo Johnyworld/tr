@@ -1,0 +1,68 @@
+# 떠돌이 엑스트라 틀 (무소속의 긴 이야기, storylets/world_loner_arcs.yaml)
+# 이름 있는 NPC는 스키마상 세력이 있어야 해서, 무리에 속하지 않은 떠돌이는 이름 없는 틀로 둔다 (faction 없음 = 떠돌이)
+# 한 번 만든 인물(ex_N)은 GM이 다음 장면에 다시 등장시킨다
+
+- id: drifter_leader
+  label: 떠돌이 무리의 우두머리
+  rank: loner
+  age: [32, 55]
+  looks:
+    - 손등과 손가락 마디에 하얀 흉터가 겹겹이 난 여자. 말하기 전에 꼭 무리 쪽을 한 번 돌아본다
+    - 군용 우의를 망토처럼 두른 남자. 허리띠에 숟가락 일곱 개를 끈으로 묶어 달았다
+  stats: { vitality: [0, 1], senses: [0, 1], nerve: [1, 1], charm: [0, 1] }
+  skills: { survival: 2, persuade: 1, sense_danger: 1 }
+  traits: [protective, weary, cautious, principled, guarded]
+  trait_count: 2
+  inventory:
+    - { item: kitchen_knife }
+    - { item: water_bottle }
+    - { item: blanket, chance: 0.5 }
+  values: { mercy: 1, loyalty: 2 }
+
+- id: drifter_young
+  label: 떠돌이 무리의 젊은이
+  rank: loner
+  age: [16, 24]
+  looks:
+    - 눈이 빠르고 말이 많은 젊은 사내. 남의 배낭 끈을 자꾸 본다
+    - 머리를 짧게 민 젊은 여자. 웃을 때 눈은 웃지 않는다
+  stats: { agility: [1, 1], senses: [0, 1], nerve: [-1, 0] }
+  skills: { stealth: 1, deceive: 1, survival: 1 }
+  traits: [eager, calculating, coward, greedy, talkative]
+  trait_count: 2
+  inventory:
+    - { item: crowbar, chance: 0.5 }
+    - { item: cigarettes, chance: 0.4 }
+  values: { self_interest: 2, loyalty: -1 }
+
+- id: drifter_child
+  label: 떠돌이 아이
+  rank: loner
+  age: [7, 13]
+  looks:
+    - 어른 점퍼를 소매 걷어 입은 아이. 신발 한 짝이 다르다
+    - 머리를 노끈으로 묶은 마른 아이. 낯선 사람을 보면 숨부터 죽인다
+  stats: { strength: [-1, -1], vitality: [-1, 0], senses: [0, 1] }
+  skills: { stealth: 1 }
+  traits: [timid, curious, frail, light_eater]
+  trait_count: 2
+  inventory:
+    - { item: dry_ration, chance: 0.2 }
+  values: { mercy: 1 }
+
+- id: drifter_elder
+  label: 늙은 떠돌이
+  rank: loner
+  age: [58, 75]
+  looks:
+    - 간호사 카디건을 몇 겹 껴입은 노인. 목소리가 생각보다 또렷하다
+    - 지팡이 대신 우산을 짚은 노인. 주머니마다 종이 쪽지가 들어 있다
+  stats: { strength: [-1, -1], vitality: [-1, 0], senses: [0, 1], intellect: [1, 1] }
+  skills: { first_aid: 1, history: 2 }
+  traits: [patient, motherly, weary, meticulous, talkative]
+  trait_count: 2
+  inventory:
+    - { item: radio, chance: 0.3 }
+    - { item: blanket, chance: 0.6 }
+    - { item: fever_reducer, chance: 0.2 }
+  values: { mercy: 2, honesty: 1 }

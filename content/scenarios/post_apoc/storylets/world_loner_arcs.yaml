@@ -1,0 +1,682 @@
+# 무소속(떠돌이)의 긴 이야기 줄기 (기획서 12.5 "남은 일"). 태그 world + factions: [none]
+# 줄기 셋, 플래그로 잇는다 (wa_ 접두사)
+# 1. 떠돌이 무리: 구시가·강변 폐허의 작은 무리 → 신뢰 → 저녁 → 병 → 배신 → 갈림길 (버들마을로, 배수로에 정착, 흩어짐)
+# 2. 의뢰 장부: 장터 장부꾼 문소라의 "바깥 사람 일거리" → 양수장 상자 → 버들마을 독촉장 → 병원의 소년 → 봉인된 깡통(붉은연합 앞) → 결말 둘
+# 3. 시립병원 옥상의 무전: 전파사의 무전기 → 밤의 목소리 → 옥상의 무전수 → 이어 읽는 목소리
+# 떠돌이는 이름 없는 인물(extras/drifters.yaml)이다. 처음 만든 인물은 keep으로 기억하고, 다음 장면은 recall로 같은 사람을 부른다
+
+# ── 1. 떠돌이 무리 ──
+
+- id: wa_band_smoke
+  title: 지하상가의 연기
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [old_town, riverside]
+    segments: [evening, night]
+    day_gte: 3
+  cast:
+    leader: { extra: drifter_leader, label: 흉터 난 손의 우두머리, keep: band_leader }
+    youth: { extra: drifter_young, label: 붉은 끈을 감은 젊은이, keep: band_youth, enter: false }
+  setup: 무너진 지하상가 환기구에서 연기가 가늘게 샌다. 계단 아래 셔터 틈으로 냄비 긁는 소리, 아이 기침 소리. 셔터가 반쯤 올라가더니 {leader:이/가} 칼을 낮게 쥔 채 나온다. "몇이야. 뒤에 또 있어?"
+  ai_direction: 일곱 명쯤 되는 떠돌이 무리다. 어른 넷, 노인 하나, 아이 둘. 우두머리({leader})는 무리를 지키는 게 먼저라 낯선 사람을 쉽게 들이지 않는다. 먹을 것을 내놓거나 혼자라는 것을 믿게 하면 불가에 앉게 해 준다. 무리는 겨울이 오기 전에 정착할 곳을 찾고 있다. 이 우두머리는 이후 이 줄기의 장면마다 다시 등장한다. 무리에는 손목에 붉은 끈을 감은 젊은이({youth})도 있다.
+  choices:
+    - id: share_food
+      label: 통조림을 꺼내 아이들 몫으로 내민다
+      effects:
+        - take_item: { item: canned_food }
+        - set_flag: wa_band_met
+        - set_flag: wa_band_trust
+        - relation: { who: leader, axis: trust, delta: 2 }
+        - deed: { summary: 지하상가의 떠돌이 무리에게 통조림을 내주었다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "구시가 무너진 지하상가에 일곱 명쯤 되는 떠돌이 무리가 산다. 아이 둘과 노인 하나가 있다. 우두머리가 불가에 앉게 해 주었다", source: seen }
+    - id: talk
+      label: 혼자 다니는 사람이라고, 해칠 생각 없다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: wa_band_met
+          - relation: { who: leader, axis: trust, delta: 1 }
+          - belief: { fact: 구시가 지하상가의 떠돌이 무리 우두머리가 내일 낮에 물 뜨러 가는 길에 따라와 보라고 했다, source: report }
+        partial:
+          - set_flag: wa_band_met
+          - belief: { fact: "지하상가의 떠돌이 무리는 셔터 밖에서만 말을 받아 주었다. 우두머리는 손을 보탤 거면 다시 오라고 했다", source: report }
+        miss:
+          - relation: { who: leader, axis: trust, delta: -1 }
+          - belief: { fact: 지하상가의 떠돌이 무리가 셔터를 내렸다. 안에서 아이를 달래는 소리만 났다, source: seen }
+    - id: leave
+      label: 손을 들어 보이고 물러난다
+      effects:
+        - belief: { fact: 구시가 무너진 지하상가에 떠돌이 무리가 숨어 산다. 환기구로 연기가 샌다, source: seen }
+
+- id: wa_band_water
+  title: 배수로의 물탱크
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [riverside, old_town]
+    segments: [morning, day]
+    flags_all: [wa_band_met]
+    flags_none: [wa_band_trust]
+  cast:
+    leader: { recall: band_leader, enter: false }
+    youth: { recall: band_youth }
+  setup: 지하상가의 우두머리가 빈 물통 넷을 들려 {youth:과/와} 함께 내보낸다. 강변 공장 쪽 배수로 안쪽, 아무도 안 쓴다는 물탱크까지 가는 길이다. 배수로 입구에 진흙 발자국이 겹쳐 있다. 사람 것인지 아닌지 알 수 없다.
+  ai_direction: 우두머리가 손을 보태 보라고 시험 삼아 내보낸 일이다. 배수로 안쪽에는 감염체 둘이 물가에 웅크려 있다. 조용히 물을 떠 오면 무리가 받아 준다. 함께 간 젊은이는 오는 길 내내 이쪽 배낭과 장비를 눈여겨본다. 이 젊은이({youth})는 나중에 무리를 판다 (아직 드러내지 않는다).
+  choices:
+    - id: fetch
+      label: 소리 죽여 물탱크까지 들어가 물을 뜬다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: wa_band_trust
+          - give_item: { item: water_bottle }
+          - belief: { fact: 떠돌이 무리와 강변 배수로 물탱크에서 물을 떠 왔다. 무리가 물통 하나를 몫으로 주고 불가에 자리를 내주었다, source: seen }
+        partial:
+          - set_flag: wa_band_trust
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: 물을 떠 오긴 했지만 배수로에서 허리까지 젖었다. 무리는 그래도 불가에 자리를 내주었다, source: seen }
+        miss:
+          - belief: { fact: 배수로 안쪽에서 감염체가 깨어 물통을 버리고 나왔다. 지하상가의 우두머리는 말없이 셔터를 내렸다, source: seen }
+    - id: back_out
+      label: 발자국이 수상하다며 돌아가자고 한다
+      effects:
+        - belief: { fact: 강변 배수로 입구의 진흙 발자국을 보고 돌아섰다. 떠돌이 무리는 그날 물이 모자랐다, source: seen }
+
+- id: wa_band_supper
+  title: 냄비 하나의 저녁
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [old_town, riverside]
+    segments: [evening]
+    flags_all: [wa_band_trust]
+  cast:
+    leader: { recall: band_leader }
+  setup: 지하상가 안쪽 옛 신발 가게. 깡통 난로 위 냄비에 무엇이 끓는지는 묻지 않는 게 예의다. 아이 하나가 당신 소매를 잡고 앉으라고 끈다. {leader:이/가} 숟가락 하나를 건넨다. "오늘은 네 몫도 있어."
+  ai_direction: 무리의 저녁이다. 우두머리({leader})가 함께 있다. 무리는 붕괴 첫해 같은 아파트에 살던 사람들이고, 겨울 전에 정착할 곳을 찾는다는 이야기가 나온다. 아이 하나는 기침이 잦다. 젊은이 하나는 저녁 내내 밖을 들락거린다. 말을 아끼는 사람에게는 굳이 캐묻지 않는다.
+  choices:
+    - id: eat
+      label: 고맙게 받아 먹고 그들 이야기를 듣는다
+      effects:
+        - set_flag: wa_band_supper
+        - body: { track: hunger, delta: -1 }
+        - belief: { fact: "떠돌이 무리는 붕괴 첫해 같은 아파트에 살던 사람들이다. 겨울이 오기 전에 담 있는 곳에 정착하려 한다", source: report }
+    - id: add_ration
+      label: 비상식량을 냄비에 보탠다
+      effects:
+        - take_item: { item: dry_ration }
+        - set_flag: wa_band_supper
+        - body: { track: hunger, delta: -1 }
+        - deed: { summary: 떠돌이 무리의 냄비에 비상식량을 보탰다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: 떠돌이 무리의 저녁에 비상식량을 보탰다. 우두머리가 이제 무리 사람처럼 대하겠다고 했다, source: report }
+    - id: watch_door
+      label: 먹는 대신 셔터 앞에서 망을 봐 준다
+      effects:
+        - set_flag: wa_band_supper
+        - body: { track: cold, delta: 1 }
+        - belief: { fact: 떠돌이 무리가 먹는 동안 셔터 앞에서 망을 봤다. 무리의 젊은이 하나가 밤중에 혼자 강변 쪽으로 나갔다 들어왔다, source: seen }
+
+- id: wa_band_fever
+  title: 아이의 열
+  urgent: true
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [old_town, riverside]
+    segments: [night, dawn]
+    day_gte: 6
+    flags_all: [wa_band_supper]
+  cast:
+    child: { extra: drifter_child, label: 열이 오른 아이 }
+  setup: 새벽녘, 지하상가의 젊은 엄마가 당신을 흔들어 깨운다. 담요 속 {child}의 이마가 손을 데일 만큼 뜨겁다. 우두머리가 이를 악물고 말한다. "약 있으면 내놔. 없으면 진료소까지 업고 갈 사람이 필요해."
+  ai_direction: 감염이 아니라 겨울 초입의 열병이다 (물린 자국은 없다). 해열제나 항생제가 있으면 넘긴다. 하얀매 진료소는 약값을 받는다. 업고 가면 새벽 길에 감염체를 피해야 한다. 아이는 이 장면에서 죽지 않는다. 낫지 않으면 열이 오래 가고 무리의 사기가 꺾인다.
+  choices:
+    - id: give_medicine
+      label: 해열제를 꺼내 준다
+      effects:
+        - take_item: { item: fever_reducer }
+        - set_flag: wa_band_sick_done
+        - set_flag: wa_band_child_saved
+        - relation: { who: child, axis: affection, delta: 2 }
+        - deed: { summary: 열이 오른 떠돌이 아이에게 해열제를 내주었다, tags: [mercy], severity: 2, privacy: private }
+        - belief: { fact: 해열제를 먹은 떠돌이 아이의 열이 낮이 되자 내렸다. 우두머리가 처음으로 이름을 불러 고맙다고 했다, source: seen }
+    - id: carry_clinic
+      label: 아이를 업고 하얀매 진료소까지 달린다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: wa_band_sick_done
+          - set_flag: wa_band_child_saved
+          - relation: { who: child, axis: trust, delta: 2 }
+          - deed: { summary: 열이 오른 떠돌이 아이를 업고 새벽길을 달려 진료소에 데려갔다, tags: [mercy, bravery], severity: 2, privacy: semi_private }
+          - belief: { fact: 아이를 업고 하얀매 진료소에 닿았다. 수간호사가 무리의 우두머리에게 약값을 장부에 달아 두었다, source: seen }
+        partial:
+          - set_flag: wa_band_sick_done
+          - set_flag: wa_band_child_saved
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: "진료소에 닿았지만 돌아서 오느라 해가 높이 떴다. 아이는 살았지만 무리는 약값으로 남은 식량을 거의 내놓았다", source: seen }
+        miss:
+          - set_flag: wa_band_sick_done
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: 새벽길에 감염체 무리를 피해 돌아오느라 진료소에 닿지 못했다. 아이의 열은 사흘째 내리지 않는다, source: seen }
+    - id: refuse
+      label: 내 약은 내 몫이라고 고개를 젓는다
+      effects:
+        - set_flag: wa_band_sick_done
+        - deed: { summary: 열에 시달리는 떠돌이 아이 앞에서 약을 내놓지 않았다, tags: [selfishness], severity: 1, privacy: private }
+        - belief: { fact: 떠돌이 무리의 아이가 열에 시달린다. 우두머리는 더 묻지 않았지만 그 뒤로 눈을 마주치지 않는다, source: seen }
+
+- id: wa_band_sold
+  title: 팔린 은신처
+  urgent: true
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [old_town, riverside]
+    segments: [evening, night]
+    day_gte: 8
+    flags_all: [wa_band_sick_done]
+  cast:
+    youth: { recall: band_youth }
+  setup: 지하상가 뒤 골목. {youth:이/가} 붉은 천 조각을 손에 감은 채 당신과 딱 마주친다. 등 뒤 강변 쪽에서 여러 사람의 발소리가 끊겼다 이어진다. "아무것도 못 본 거야. 알지? 어차피 겨울 못 넘겨, 저 사람들."
+  ai_direction: "무리의 젊은이가 은신처를 붉은연합 약탈조에 팔았다. 값은 통조림 몇 개와 약탈조 자리 하나. 약탈조 넷이 한 시간 안에 지하상가를 친다. 지금 알리면 무리가 빠져나갈 시간이 있다. 맞서면 판정과 target_harm으로만 정한다. 젊은이는 들키면 붉은연합 쪽으로 달아난다."
+  choices:
+    - id: warn
+      label: 젊은이를 밀치고 지하상가로 달려 무리를 깨운다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: wa_band_betrayed
+          - set_flag: wa_band_escaped
+          - npc_depart: { who: youth, to_faction: faction_c }
+          - deed: { summary: 붉은연합 약탈조가 오기 전에 떠돌이 무리를 깨워 빼냈다, tags: [bravery, loyalty], severity: 2, privacy: semi_private }
+          - belief: { fact: "떠돌이 무리를 깨워 강변 배수로로 빼냈다. 무리의 젊은이가 은신처를 붉은연합에 팔고 그쪽으로 달아났다", source: seen }
+        partial:
+          - set_flag: wa_band_betrayed
+          - set_flag: wa_band_escaped
+          - npc_depart: { who: youth, to_faction: faction_c }
+          - take_item: { item: blanket }
+          - belief: { fact: "무리는 빠져나왔지만 짐 대부분과 내 담요를 지하상가에 두고 나왔다. 무리의 젊은이는 붉은연합 쪽으로 달아났다", source: seen }
+        miss:
+          - set_flag: wa_band_betrayed
+          - npc_depart: { who: youth, to_faction: faction_c }
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "늦었다. 약탈조가 지하상가 입구를 막았고 무리는 환기구로 흩어졌다. 강변 배수로에서 다시 모이기로 한 것만 기억한다", source: seen }
+    - id: confront
+      label: 젊은이의 멱살을 잡고 누구를 불렀는지 대라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: wa_band_betrayed
+          - set_flag: wa_band_escaped
+          - relation: { who: youth, axis: affection, delta: -2 }
+          - belief: { fact: "젊은이가 털어놓았다: 붉은연합 약탈조 넷이 오고 있다. 무리를 깨울 시간이 있었다. 그는 그 틈에 도망쳤다", source: report }
+        partial:
+          - set_flag: wa_band_betrayed
+          - npc_depart: { who: youth, to_faction: faction_c }
+          - belief: { fact: 젊은이가 손을 뿌리치고 강변 쪽으로 달아났다. 지하상가로 돌아갔을 때 무리는 이미 짐을 싸고 있었다, source: seen }
+        miss:
+          - set_flag: wa_band_betrayed
+          - npc_depart: { who: youth, to_faction: faction_c }
+          - relation: { who: youth, axis: affection, delta: -2 }
+          - belief: { fact: 젊은이가 붉은 천을 흔들어 약탈조를 불렀다. 골목을 빠져나오는 데만 정신이 없었다, source: seen }
+    - id: look_away
+      label: 못 본 걸로 하고 골목을 빠져나간다
+      effects:
+        - set_flag: wa_band_betrayed
+        - set_flag: wa_band_abandoned
+        - npc_depart: { who: youth, to_faction: faction_c }
+        - deed: { summary: 떠돌이 무리가 팔린 걸 알고도 모른 척했다, tags: [cowardice, betrayal], severity: 2, privacy: private }
+        - belief: { fact: 그날 밤 지하상가 쪽에서 비명과 쇳소리가 났다. 돌아보지 않았다, source: seen }
+
+- id: wa_band_crossroads
+  title: 무리가 갈 곳
+  tags: [world]
+  when:
+    factions: [none]
+    zone_owner: [none]
+    segments: [morning, day, evening]
+    flags_all: [wa_band_betrayed]
+    flags_none: [wa_band_abandoned]
+  cast:
+    leader: { recall: band_leader }
+  setup: 강변 배수로 안, 남은 사람들이 젖은 담요를 짜고 있다. {leader:이/가} 숟가락 묶음을 세다가 멈춘다. 하나가 빈다. "지하상가는 끝났어. 어디로 갈지 정해야 해. 네 말을 듣겠다. 넌 바깥을 많이 다녔으니까."
+  ai_direction: 우두머리({leader})가 함께 있다. 무리는 이제 대여섯이다. 버들마을은 아이와 노인을 받아 주지만 입 하나 느는 것도 따진다. 경비 손이 필요하니 주인공이 경비를 맡으면 무리 전체를 받아 줄 가능성이 크다. 배수로 물탱크 옆에 자리를 잡으면 겨울은 혹독하지만 무리는 그대로 남는다. 흩어지면 각자 살 길을 찾는다. 어느 쪽이든 우두머리는 결정에 따른다.
+  choices:
+    - id: willow
+      label: 버들마을 정문으로 데려가 경비를 맡을 테니 받아 달라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - join_faction: { faction: faction_b, title: 버들마을 경비병 }
+          - deed: { summary: 떠돌이 무리를 버들마을로 데려가 함께 받아들여지게 했다, tags: [loyalty, mercy], severity: 2, privacy: public }
+          - belief: { fact: "버들마을이 떠돌이 무리를 받아 주었다. 대신 나는 경비병이 되어 정문과 쪽문을 지킨다", source: seen }
+        partial:
+          - join_faction: { faction: faction_b, title: 버들마을 경비병 }
+          - belief: { fact: "버들마을은 아이들과 노인, 그리고 경비를 맡은 나만 받았다. 우두머리와 어른들은 담 밖 강변으로 돌아갔다", source: seen }
+        miss:
+          - set_flag: wa_band_settled
+          - belief: { fact: 버들마을 정문은 열리지 않았다. 무리는 강변 배수로로 돌아가 물탱크 옆에 자리를 잡았다, source: seen }
+    - id: settle
+      label: 배수로 물탱크 옆에 자리를 잡고 같이 겨울을 넘기자고 한다
+      effects:
+        - set_flag: wa_band_settled
+        - give_item: { item: blanket }
+        - deed: { summary: 떠돌이 무리와 함께 강변 배수로에 자리를 잡았다, tags: [loyalty], severity: 1, privacy: private }
+        - belief: { fact: "떠돌이 무리와 강변 배수로 물탱크 옆에 자리를 잡았다. 우두머리가 담요 하나와 숟가락 하나를 내 몫으로 내주었다", source: seen }
+    - id: scatter
+      label: 다 같이 다니면 다 같이 죽는다고, 흩어지자고 한다
+      effects:
+        - give_item: { item: dry_ration }
+        - belief: { fact: "떠돌이 무리는 흩어졌다. 우두머리가 남은 비상식량을 나눠 주며 살아 있으면 배수로 물탱크에서 보자고 했다", source: report }
+
+# ── 2. 의뢰 장부 ──
+
+- id: wa_ledger_open
+  title: 바깥 사람 일거리
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [e_market]
+    segments: [morning, day]
+    day_gte: 2
+  cast:
+    clerk: { ids: [e_sora] }
+  setup: 장터 장부석. {clerk:이/가} 두꺼운 장부 옆에 얇은 공책 하나를 따로 펼쳐 둔다. 표지에 연필로 "바깥 사람 일거리". "무리 없는 분들 일입니다. 일 하나에 값 하나, 끝나면 줄을 긋고 값을 드립니다. 이름 쓰시겠어요?"
+  ai_direction: 문소라는 무리에 속하지 않은 사람에게 상단 바깥의 잡일을 맡기고 수수료를 뗀다. 의뢰인은 장터 사람들, 정수장, 때로는 이름을 밝히지 않는 사람이다. 일은 위험할수록 값이 크다. 그는 거짓말을 하지 않지만 모든 것을 말하지도 않는다. 두 번째 장부 이야기는 하지 않는다.
+  choices:
+    - id: sign
+      label: 공책에 이름을 쓴다
+      effects:
+        - set_flag: wa_ledger_open
+        - relation: { who: clerk, axis: trust, delta: 1 }
+        - belief: { fact: "나루상단 장부꾼 문소라의 '바깥 사람 일거리' 공책에 이름을 올렸다. 일 하나에 값 하나, 끝나면 줄을 긋는다", source: seen }
+    - id: decline
+      label: 남의 장부에 이름 남기는 건 싫다고 한다
+      effects:
+        - belief: { fact: 장터 장부꾼 문소라가 무리 없는 사람에게 일거리를 준다. 이름을 써야 한다, source: seen }
+
+- id: wa_ledger_pump
+  title: 옛 양수장의 상자
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [riverside]
+    segments: [morning, day]
+    flags_all: [wa_ledger_open]
+  setup: 공책 첫 줄. "옛 양수장 기계실, 기름종이에 싼 상자 하나. 정수장 앞으로. 열지 말 것." 강변 공장 지대 끝, 녹슨 양수장 철문이 반쯤 물에 잠겨 있다. 안쪽 어둠에서 물 떨어지는 소리가 규칙적으로 울린다.
+  ai_direction: 의뢰인은 정수장 펌프지기 염덕수다. 상자에는 기름 먹인 베어링과 쇠 부품이 들었다. 왜 필요한지는 말하지 않는다. 기계실 아래층은 물에 잠겼고, 감염체 하나가 물속에 서 있다. 상자를 정수장에 넘기면 문소라가 값을 치른다.
+  choices:
+    - id: search
+      label: 기계실로 내려가 상자를 찾는다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: wa_job_pump_done
+          - give_item: { item: canned_food, quantity: 2 }
+          - deed: { summary: 장부 일거리로 옛 양수장에서 상자를 찾아 정수장에 넘겼다, tags: [diligence], severity: 1, privacy: semi_private }
+          - belief: { fact: "옛 양수장 상자를 정수장에 넘겼다. 무거운 쇠 부품이 든 것 같았다. 펌프지기 노인이 상자를 받자마자 문을 닫았다. 문소라가 줄을 긋고 통조림 두 개를 주었다", source: seen }
+        partial:
+          - set_flag: wa_job_pump_done
+          - give_item: { item: canned_food }
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "상자는 찾았지만 물에 잠긴 층을 헤엄쳐 나와야 했다. 젖은 기름종이를 본 문소라가 값을 하나 깎았다", source: seen }
+        miss:
+          - belief: { fact: 양수장 기계실 물속에서 무언가 움직였다. 상자를 두고 나왔다. 공책의 그 줄은 아직 그어지지 않았다, source: seen }
+    - id: later
+      label: 물이 빠지는 날 다시 오기로 한다
+      effects: []
+
+- id: wa_ledger_letter
+  title: 물값 독촉장
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [b_base]
+    segments: [morning, day]
+    flags_all: [wa_job_pump_done]
+  cast:
+    guard: { ids: [b_dongcheol] }
+  setup: 공책 둘째 줄. "버들마을 대표 앞, 봉투 하나. 답장 받아 올 것." 봉투에는 상단의 저울 도장이 찍혀 있다. 버들마을 정문에서 {guard:이/가} 도장을 보자마자 얼굴이 굳는다. "물값 얘기면 지금 할 때가 아닌데."
+  ai_direction: 물값 독촉장이다. 버들마을은 물값을 두 번 미뤘다. 배동철은 단지 사정을 아는 만큼 상단에 화가 나 있지만, 심부름꾼을 탓할 사람은 아니다. 잘 말하면 대표에게 전하고 답장(다음 달까지 갚겠다는 짧은 글)을 받아 준다.
+  choices:
+    - id: deliver
+      label: 심부름일 뿐이라고, 답장만 받아 가겠다고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: wa_job_letter_done
+          - give_item: { item: dry_ration }
+          - relation: { who: guard, axis: respect, delta: 1 }
+          - belief: { fact: "버들마을 대표의 답장을 받아 왔다: 물값은 다음 달 첫 주까지. 문소라가 줄을 긋고 비상식량을 주었다", source: seen }
+        partial:
+          - set_flag: wa_job_letter_done
+          - relation: { who: guard, axis: affection, delta: -1 }
+          - belief: { fact: "답장은 받았지만 배동철이 정문 앞에서 한참을 세워 두었다. 버들마을 사람들 눈에 상단 심부름꾼으로 찍혔다", source: seen }
+        miss:
+          - relation: { who: guard, axis: affection, delta: -1 }
+          - belief: { fact: 배동철이 봉투를 받지 않았다. 버들마을은 지금 물값 이야기를 들을 처지가 아니라고 했다, source: report }
+    - id: read_first
+      label: 봉투를 열어 무슨 말인지 먼저 읽어 본다
+      effects:
+        - set_flag: wa_job_letter_done
+        - deed: { summary: 맡은 독촉장 봉투를 몰래 열어 보았다, tags: [deceit], severity: 1, privacy: private }
+        - belief: { fact: "상단의 독촉장: 버들마을이 물값을 두 번 미뤘다. 이번 달 안에 갚지 않으면 물을 절반으로 줄인다고 적혀 있다", source: seen }
+
+- id: wa_ledger_missing
+  title: 짐꾼의 아들
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [hospital_ruins]
+    segments: [morning, day]
+    flags_all: [wa_job_letter_done]
+  cast:
+    boy: { extra: drifter_young, label: 다리를 저는 소년 }
+  setup: 공책 셋째 줄은 글씨가 떨린다. "짐꾼 아들, 열여섯, 사흘째 안 돌아옴. 시립병원 쪽. 살아 있으면 데려올 것." 병원 2층 복도 끝, 방화문 안쪽에서 누군가 숨을 죽인다. 문틈으로 {boy}의 운동화 끝이 보인다.
+  ai_direction: 소년은 약을 팔아 아버지 빚을 줄이려고 혼자 병원에 들어왔다가 발목을 접질려 방화문 안에 갇혔다. 복도에는 감염체 셋이 오간다. 물리지는 않았다. 소년은 나루상단 짐꾼의 아들로 장터로 돌아간다. 데려오면 아버지가 통행패를 내준다.
+  choices:
+    - id: guide_out
+      label: 감염체가 지나가길 기다렸다가 소년을 부축해 빠져나간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: wa_job_missing_done
+          - give_item: { item: trade_token }
+          - relation: { who: boy, axis: trust, delta: 2 }
+          - deed: { summary: 시립병원에 갇힌 짐꾼의 아들을 데리고 나왔다, tags: [bravery, mercy], severity: 2, privacy: semi_private }
+          - belief: { fact: "짐꾼의 아들을 장터로 데려왔다. 그의 아버지가 나루상단 통행패를 내 목에 걸어 주었다. 문소라가 줄을 그었다", source: seen }
+        partial:
+          - set_flag: wa_job_missing_done
+          - give_item: { item: trade_token }
+          - take_item: { item: water_bottle }
+          - belief: { fact: "빠져나오다 물통을 던져 감염체를 따돌렸다. 소년은 무사히 장터에 닿았고 통행패를 받았다", source: seen }
+        miss:
+          - set_flag: wa_job_missing_done
+          - belief: { fact: "감염체에 쫓겨 소년과 다른 계단으로 흩어졌다. 소년은 이틀 뒤 혼자 장터로 기어 돌아왔다고 한다. 값은 받지 못했다", source: report }
+    - id: leave_note
+      label: 문틈으로 비상식량을 밀어 넣고 밤에 다시 오겠다고 한다
+      effects:
+        - take_item: { item: dry_ration }
+        - set_flag: wa_job_missing_done
+        - belief: { fact: "방화문 안의 소년에게 비상식량을 넣어 주었다. 밤에 돌아갔을 때 문은 열려 있었다. 소년이 장터로 갔는지는 모른다", source: seen }
+
+- id: wa_ledger_sealed
+  title: 이름 없는 의뢰
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [e_market]
+    segments: [evening]
+    flags_all: [wa_job_missing_done]
+  cast:
+    clerk: { ids: [e_sora] }
+  setup: "{clerk:이/가} 공책 넷째 줄을 손가락으로 가린 채 보여 준다. 의뢰인 칸에 이름 대신 \"탁\" 한 글자. 납땜으로 봉한 담배 깡통 하나. \"강변 정류장 표지판 기둥, 오늘 밤 안에. 값은 항생제 한 갑입니다. 이 줄은 제 글씨가 아니에요.\""
+  ai_direction: "의뢰인은 상단 우두머리 탁봉수다. 깡통에는 청솔형제단 동쪽 초소의 바뀐 경비 교대 시간이 적힌 쪽지가 있다. 받는 쪽은 붉은연합이다. 문소라는 내용을 짐작하지만 말하지 않는다. 그는 '제 글씨가 아니다'라는 말로 할 수 있는 만큼 경고한 것이다. 납땜은 조심하면 표 나지 않게 열고 다시 붙일 수 있다."
+  choices:
+    - id: deliver
+      label: 묻지 않고 표지판 기둥에 깡통을 놓고 온다
+      effects:
+        - set_flag: wa_sealed_delivered
+        - give_item: { item: antibiotics }
+        - clock: { id: c_east_offensive, delta: 1 }
+        - faction_relation: { from: faction_c, to: faction_e, delta: 1, mutual: false }
+        - belief: { fact: 이름 없는 의뢰의 깡통을 강변 정류장 표지판 기둥에 놓고 왔다. 문소라가 줄을 긋고 항생제 한 갑을 주었다. 그는 오늘 일을 잊으라고 했다, source: seen }
+    - id: open_tin
+      label: 가는 길에 납땜을 녹여 깡통을 열어 본다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: wa_sealed_read
+          - belief: { fact: "깡통 속 쪽지: 청솔형제단 동쪽 초소 교대가 이번 주부터 자정과 새벽 넷이 아니라 열한 시와 새벽 셋이라고 적혀 있다. 받는 쪽은 붉은연합일 것이다. 납땜은 표 나지 않게 다시 붙였다", source: seen }
+        partial:
+          - set_flag: wa_sealed_read
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "깡통 속 쪽지에 청솔형제단 동쪽 초소의 바뀐 교대 시간이 적혀 있다. 다시 붙인 납땜이 울퉁불퉁하다. 문소라가 봤다", source: seen }
+        miss:
+          - set_flag: wa_sealed_read
+          - relation: { who: clerk, axis: trust, delta: -2 }
+          - belief: { fact: "깡통을 열다 쪽지 귀퉁이를 태웠다. 청솔형제단 동쪽 초소의 교대 시간이라는 것만은 읽었다. 이제 다시 봉할 수 없다", source: seen }
+    - id: refuse
+      label: 이름 없는 일은 받지 않는다고 공책을 덮는다
+      effects:
+        - set_flag: wa_sealed_refused
+        - relation: { who: clerk, axis: respect, delta: 1 }
+        - deed: { summary: 이름 없는 의뢰를 거절했다, tags: [honesty], severity: 1, privacy: private }
+        - belief: { fact: 문소라가 이름 없는 의뢰의 줄에 아무 말 없이 줄을 하나 그었다. 그 깡통을 누가 가져갔는지는 모른다, source: seen }
+
+- id: wa_ledger_tin
+  title: 깡통 속 쪽지
+  tags: [world]
+  when:
+    factions: [none]
+    segments: [evening, night]
+    flags_all: [wa_sealed_read]
+    flags_none: [wa_sealed_delivered, wa_sealed_resolved]
+  setup: 무너진 버스 정류장 그늘. 손에 든 깡통 속 쪽지는 손바닥 반만 하다. 숫자 넷과 "동쪽 초소". 표지판 기둥까지는 몇십 걸음이고, 동쪽 초소의 불빛은 강 건너 멀리 있다.
+  ai_direction: "쪽지가 붉은연합에 닿으면 동쪽 초소 공격이 앞당겨진다. 청솔형제단에 가져가면 초소가 교대 시간을 바꾸고 붉은연합의 계획이 늦어진다. 대신 탁봉수는 누가 깡통을 열었는지 알아내려 할 것이다. 어느 쪽이든 이 결과(클락)는 드러내지 않는다."
+  choices:
+    - id: to_pine
+      label: 쪽지를 들고 청솔형제단 동쪽 초소로 간다
+      effects:
+        - set_flag: wa_sealed_resolved
+        - clock: { id: c_east_offensive, delta: -2 }
+        - clock: { id: a_counteroffensive, delta: 1 }
+        - faction_relation: { from: faction_a, to: faction_e, delta: -1, mutual: false }
+        - give_item: { item: dry_ration }
+        - deed: { summary: 붉은연합으로 가던 초소 교대 쪽지를 청솔형제단에 넘겼다, tags: [bravery, honesty], severity: 2, privacy: semi_private }
+        - belief: { fact: "동쪽 초소 보초에게 쪽지를 넘겼다. 그들은 교대 시간을 당장 바꾸겠다고 했다. 누가 보냈는지 묻기에 나루상단의 깡통이라고만 했다", source: seen }
+    - id: deliver_late
+      label: 다시 봉해 표지판 기둥에 놓고 값을 받는다
+      effects:
+        - set_flag: wa_sealed_delivered
+        - give_item: { item: antibiotics }
+        - clock: { id: c_east_offensive, delta: 1 }
+        - deed: { summary: 동쪽 초소 교대 시간을 알면서 붉은연합 앞으로 가는 깡통을 전했다, tags: [selfishness], severity: 2, privacy: private }
+        - belief: { fact: 내용을 알고도 깡통을 표지판 기둥에 놓았다. 문소라가 항생제 한 갑을 주며 오늘 일을 잊으라고 했다, source: seen }
+    - id: burn
+      label: 쪽지를 불에 태우고 깡통은 강에 던진다
+      effects:
+        - set_flag: wa_sealed_resolved
+        - clock: { id: c_east_offensive, delta: -1 }
+        - belief: { fact: 초소 교대 쪽지를 태우고 깡통을 강에 던졌다. 강변 정류장에는 아무것도 놓이지 않았다, source: seen }
+
+- id: wa_ledger_last
+  title: 공책의 마지막 장
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [e_market]
+    segments: [morning, day]
+    flags_any: [wa_sealed_delivered, wa_sealed_refused]
+  cast:
+    clerk: { ids: [e_sora] }
+  setup: "{clerk:이/가} \"바깥 사람 일거리\" 공책을 덮고 끈으로 묶는다. \"이 공책은 이걸로 끝입니다. 줄이 다 그어졌어요. 남은 건 하나예요. 상단 장부 심부름꾼 자리가 하나 비었습니다. 셈이 정확한 사람이 필요해요.\""
+  ai_direction: "문소라는 지금까지의 일을 장부로 다 안다 (그은 줄, 깎은 값, 거절한 줄). 이름 없는 의뢰를 거절했다면 그 점을 높이 산다. 심부름꾼이 되면 나루상단 지원 인력으로 들어간다. 두 번째 장부 이야기는 이 사람이 주인공을 충분히 믿을 때만 (비밀의 신뢰 조건)."
+  choices:
+    - id: join
+      label: 장부 심부름꾼 자리를 맡는다
+      effects:
+        - join_faction: { faction: faction_e, rank: staff, title: 장부 심부름꾼 }
+        - relation: { who: clerk, axis: trust, delta: 1 }
+        - belief: { fact: 나루상단 장부 심부름꾼이 됐다. 일은 장부꾼 문소라를 통해 내려온다, source: seen }
+    - id: stay_free
+      label: 공책 한 권으로 충분했다고, 계속 떠돌겠다고 한다
+      effects:
+        - give_item: { item: cigarettes }
+        - relation: { who: clerk, axis: respect, delta: 1 }
+        - belief: { fact: "문소라가 공책 마지막 장을 찢어 주었다. 장터에서 필요하면 이 종이를 보이라고 했다. 담배 한 갑을 얹어 주었다", source: seen }
+
+- id: wa_ledger_hunted
+  title: 깡통을 연 사람
+  urgent: true
+  tags: [world]
+  when:
+    factions: [none]
+    zone_owner: [none]
+    segments: [evening, night]
+    flags_all: [wa_sealed_resolved]
+  cast:
+    clerk: { ids: [e_sora] }
+  setup: 목도리에 장부를 싼 {clerk:이/가} 장터에서 멀리 떨어진 폐허까지 혼자 왔다. 숨이 차다. "상단 호위 둘이 강변에서 깡통 연 사람을 묻고 다닙니다. 제 공책에는 그 줄을 누가 맡았는지 적혀 있어요. 아직은 제 다락에만요."
+  ai_direction: "탁봉수는 깡통이 닿지 않았다는 것을 알았고 누가 열었는지 찾는 중이다. 문소라의 공책에 주인공 이름이 있다. 그는 장부를 지우지 않는다는 원칙과 주인공을 지키는 일 사이에서 갈등한다. 설득하면 '줄을 긋고 옆에 다른 이름을 쓰는' 방식으로 덮어 준다. 위협하면 덮어 주지만 다시는 공책에 이름을 올리지 않는다. 호위와 마주치면 판정으로만 정한다."
+  choices:
+    - id: ask_cover
+      label: 그 줄만은 덮어 달라고 부탁한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: clerk, axis: trust, delta: 2 }
+          - deed: { summary: 문소라에게 깡통 일을 털어놓고 장부의 줄을 덮어 달라고 했다, tags: [honesty], severity: 1, privacy: private }
+          - belief: { fact: "문소라가 공책의 그 줄에 줄을 긋고 옆에 '강변 떠돌이, 이름 모름'이라고 썼다. 장부를 고친 건 처음이라고 했다", source: seen }
+        partial:
+          - relation: { who: clerk, axis: trust, delta: 1 }
+          - belief: { fact: "문소라는 줄을 덮어 주겠다고 했지만 장터에는 한동안 오지 말라고 했다. 호위들이 내 생김새를 묻고 다닌다", source: report }
+        miss:
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "문소라는 장부를 지우지 않는다고 했다. 다만 오늘 밤 여기서 나를 본 일은 적지 않겠다고 했다", source: report }
+    - id: threaten
+      label: 그 장부가 불타는 일이 생길 수도 있다고 말한다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: clerk, axis: affection, delta: -2 }
+          - deed: { summary: 자기를 지키러 온 장부꾼을 장부를 태우겠다고 위협했다, tags: [cruelty], severity: 2, privacy: private }
+          - belief: { fact: 문소라가 창백한 얼굴로 그 줄을 덮겠다고 했다. 다시는 공책에 내 이름을 쓰지 않겠다고 했다, source: seen }
+        partial:
+          - relation: { who: clerk, axis: affection, delta: -2 }
+          - belief: { fact: 문소라는 대답 없이 돌아갔다. 줄을 덮었는지는 모른다, source: seen }
+        miss:
+          - relation: { who: clerk, axis: affection, delta: -3 }
+          - belief: { fact: "문소라가 말했다: 장부를 태우면 다음 장부에 그 일이 적힌다. 그는 뒤도 돌아보지 않았다", source: report }
+    - id: thank
+      label: 고맙다고만 하고 한동안 장터를 피한다
+      effects:
+        - relation: { who: clerk, axis: affection, delta: 1 }
+        - belief: { fact: 나루상단 호위들이 깡통을 연 사람을 찾는다. 한동안 장터와 강변 정류장을 피하기로 했다, source: seen }
+
+# ── 3. 시립병원 옥상의 무전 ──
+
+- id: wa_radio_shop
+  title: 전파사의 목소리
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [old_town]
+    segments: [evening, night]
+    day_gte: 4
+  setup: 셔터가 휜 구시가 전파사. 먼지 앉은 진열대 뒤에서 지직거리는 소리가 난다. 배터리를 테이프로 감은 무전기 하나가 켜져 있다. 여자 목소리가 이름을 하나씩 천천히 읽는다. 그리고 "여기는 시립병원 옥상. 들리면 응답 바람."
+  ai_direction: 누군가 이 무전기를 켜 둔 채 두고 떠났다. 목소리는 옛 시립병원 옥상에서 매일 밤 같은 시각에 방송한다. 읽는 이름은 붕괴 첫해 병원에서 죽은 사람들이다. 무전기를 가져가면 다음 방송을 들을 수 있다.
+  choices:
+    - id: take_radio
+      label: 무전기를 챙긴다
+      effects:
+        - give_item: { item: radio }
+        - set_flag: wa_radio_heard
+        - belief: { fact: "구시가 전파사에서 켜진 무전기를 주웠다. 여자 목소리가 이름을 읽고 '여기는 시립병원 옥상'이라고 했다", source: seen }
+    - id: listen
+      label: 끝까지 듣고 무전기는 두고 나온다
+      effects:
+        - set_flag: wa_radio_heard
+        - belief: { fact: "구시가 전파사 무전기에서 여자 목소리가 이름을 읽었다. 시립병원 옥상에서 방송한다고 했다", source: seen }
+
+- id: wa_radio_night
+  title: 밤의 주파수
+  tags: [world]
+  when:
+    factions: [none]
+    segments: [night]
+    weather: [clear, overcast, fog, snow, cold_snap]
+    flags_all: [wa_radio_heard]
+    has_items: [radio]
+  setup: 품 안의 무전기가 지직거린다. 같은 여자 목소리. 오늘은 이름을 다 읽고도 끊지 않는다. "…계단은 막혔어요. 3층부터는 그것들이 차 있어요. 배터리가 사흘쯤 남았어요. 누구든, 듣고 있다면."
+  ai_direction: "목소리의 주인은 붕괴 첫해 시립병원 간호사였던 노인이다. 옥상 기계실에서 자동차 배터리로 무전기를 돌린다. 다리를 다쳐 계단을 내려갈 수 없다. 옥상으로 가는 길은 비상계단 바깥쪽 철제 사다리뿐이다. 응답하면 반가워하지만 와 달라고 조르지는 않는다."
+  choices:
+    - id: answer
+      label: 송신 버튼을 누르고 응답한다
+      effects:
+        - set_flag: wa_radio_route
+        - belief: { fact: "무전 속 여자와 말을 나눴다. 옛 시립병원 간호사였다고 한다. 옥상으로는 비상계단 바깥 철제 사다리로만 올라갈 수 있다", source: report }
+    - id: just_listen
+      label: 대답하지 않고 끝까지 듣는다
+      effects:
+        - set_flag: wa_radio_route
+        - belief: { fact: "무전 속 여자가 혼잣말처럼 말했다: 옥상까지는 바깥 철제 사다리뿐이다. 배터리는 사흘쯤 남았다", source: seen }
+    - id: switch_off
+      label: 소리가 새면 위험하다며 무전기를 끈다
+      effects: []
+
+- id: wa_radio_roof
+  title: 옥상의 무전수
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [hospital_ruins]
+    segments: [morning, day]
+    flags_all: [wa_radio_route]
+  cast:
+    nurse: { extra: drifter_elder, label: 옥상의 무전수, keep: radio_nurse }
+  setup: 비상계단 바깥 철제 사다리는 볼트 절반이 빠져 있다. 올라선 옥상 기계실 문에 분필로 이름이 빼곡하다. 안에서 {nurse:이/가} 자동차 배터리 옆에 다리를 뻗고 앉아 있다. "정말 왔네. 앉아요. 차는 없고 빗물은 있어요."
+  ai_direction: 노인은 붕괴 첫해 이 병원 간호사였다. 다리가 부러진 채 붙어 굳어서 사다리를 혼자 내려갈 수 없다. 죽은 사람들 이름을 매일 밤 읽는 건 누군가는 기억해야 해서다. 하얀매 진료소에 데려가면 그곳에 남는다. 데려가려면 사다리를 업고 내려가야 한다. 노인은 억지로 데려가는 것은 싫어하지만 말로 설득되면 따른다.
+  choices:
+    - id: carry_down
+      label: 노인을 업고 사다리를 내려가 진료소로 데려간다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: wa_radio_rescued
+          - npc_depart: { who: nurse, to_faction: faction_d }
+          - deed: { summary: 시립병원 옥상의 늙은 무전수를 업고 내려와 진료소에 데려갔다, tags: [mercy, bravery], severity: 2, privacy: semi_private }
+          - belief: { fact: "옥상의 무전수를 하얀매 진료소에 데려다주었다. 그는 진료소 일을 거들며 지내기로 했다. 떠나기 전 기계실 문의 이름들을 공책에 옮겨 적었다", source: seen }
+        partial:
+          - set_flag: wa_radio_rescued
+          - npc_depart: { who: nurse, to_faction: faction_d }
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: 노인을 업고 내려오느라 하루를 다 썼다. 진료소에 닿았을 때 둘 다 말할 힘도 없었다, source: seen }
+        miss:
+          - set_flag: wa_radio_stays
+          - belief: { fact: "사다리 볼트가 빠져 다시 올라와야 했다. 노인은 웃으며 여기서 계속 읽겠다고 했다", source: seen }
+    - id: leave_supplies
+      label: 통조림과 담요를 두고, 내려갈 길을 찾으면 다시 오겠다고 한다
+      effects:
+        - take_item: { item: canned_food }
+        - set_flag: wa_radio_stays
+        - relation: { who: nurse, axis: affection, delta: 2 }
+        - deed: { summary: 시립병원 옥상의 늙은 무전수에게 먹을 것을 두고 왔다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: 옥상의 무전수에게 통조림을 두고 왔다. 그는 오늘 밤 이름 끝에 내 생김새를 덧붙여 읽겠다고 했다, source: report }
+    - id: hear_names
+      label: 문에 적힌 이름들이 누군지 묻는다
+      effects:
+        - set_flag: wa_radio_stays
+        - relation: { who: nurse, axis: trust, delta: 1 }
+        - belief: { fact: "옥상의 무전수가 말했다: 첫해 병원이 무너질 때 의사들은 먼저 떠났고 간호사 몇이 끝까지 남았다. 문의 이름은 그때 병원에서 죽은 사람들이다", source: report }
+
+- id: wa_radio_echo
+  title: 이어 읽는 목소리
+  tags: [world]
+  when:
+    factions: [none]
+    segments: [night]
+    day_gte: 6
+    flags_any: [wa_radio_rescued, wa_radio_stays]
+    has_items: [radio]
+  cast:
+    nurse: { recall: radio_nurse, enter: false }
+  setup: 같은 시각, 같은 주파수. 오늘은 목소리가 둘이다. 늙은 목소리가 이름을 읽고, 앳된 목소리가 서툴게 따라 읽는다. 끝에 늙은 목소리가 덧붙인다. "그리고 산 사람. 사다리를 올라왔던 떠돌이. 아직 살아 있음."
+  ai_direction: 무전수가 누군가에게 방송을 가르치고 있다 (진료소의 수습이든, 옥상까지 올라온 다른 떠돌이든). 산 사람의 이름도 읽기 시작했다. 주인공이 응답하면 산 사람 목록에 이름이 오른다. 이 주파수는 이제 떠돌이들 사이에서 소식이 오가는 길이 된다.
+  choices:
+    - id: give_name
+      label: 응답하고 이름을 알려 준다
+      effects:
+        - deed: { summary: 무전으로 산 사람 목록에 이름을 올렸다, tags: [honesty], severity: 1, privacy: public }
+        - belief: { fact: 밤마다 시립병원 주파수에서 산 사람 이름을 읽는다. 내 이름도 그 목록에 올랐다, source: seen }
+    - id: ask_news
+      label: 이름 대신 요즘 들리는 소식을 묻는다
+      effects:
+        - belief: { fact: "무전 속 목소리가 전했다: 붉은연합 약탈조가 강변 길목에서 떠돌이를 데려다 할당량 일을 시킨다고 한다", source: rumor }
+        - belief: { fact: "무전 속 목소리가 전했다: 겨울 들어 버들마을이 담 밖 떠돌이에게 저녁 죽을 한 번씩 나눠 준다는 말이 있다", source: rumor }
+    - id: stay_silent
+      label: 듣기만 하고 무전기를 끈다
+      effects:
+        - belief: { fact: 시립병원 주파수의 목소리가 둘이 됐다. 이름 읽는 소리가 끝날 때까지 듣다가 껐다, source: seen }

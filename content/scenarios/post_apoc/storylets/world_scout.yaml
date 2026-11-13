@@ -107,6 +107,7 @@
       effects:
         - give_item: { item: canned_food }
         - deed: { summary: 우리 무리 사정을 나루상단에 팔았다, tags: [betrayal], severity: 2, privacy: private }
+        - clock: { id: e_side, delta: 1 }
         - relation: { who: boss, axis: trust, delta: 1 }
     - id: decline
       label: 통조림에 손대지 않고 일어선다
@@ -162,6 +163,7 @@
         - relation: { who: commander, axis: trust, delta: -1 }
         - deed: { summary: 무리를 떠나 버들마을의 경비조를 맡았다, tags: [betrayal], severity: 1, privacy: semi_private }
         - join_faction: { faction: faction_b, rank: squad_leader, title: 버들마을 경비조장 }
+        - clock: { id: b_waver, delta: -1 }
         - belief: { fact: 버들마을로 옮겨 새 경비조를 맡았다. 대표 장현우가 직접 열쇠를 건넸다, source: seen }
     - id: ask_why
       label: 왜 하필 지금이냐고 묻는다

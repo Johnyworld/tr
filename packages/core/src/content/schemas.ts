@@ -280,6 +280,10 @@ export function createContentSchemas(s: Scenario) {
      */
     extra: contentIdSchema.optional(),
     label: z.string().min(1).max(30).optional(),
+    /** extra로 만든 인물을 이 이름표로 기억한다 (다음 이야기에서 recall로 다시 부른다) */
+    keep: contentIdSchema.optional(),
+    /** 앞서 keep으로 기억해 둔 이름 없는 인물. 살아 있고 떠나지 않았을 때만 채운다 */
+    recall: contentIdSchema.optional(),
   });
 
   const storyletChoice = z

@@ -47,6 +47,14 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
   const used = new Set<string>();
   for (const [key, role] of Object.entries(storylet.cast)) {
     // 이름 없는 인물 배역은 발동할 때 만든다 (storyletTools). 그때까지는 자리표시
+    if (role.recall) {
+      const id = state.keptExtras[role.recall];
+      const c = id ? state.characters[id] : undefined;
+      if (!id || !c || c.dead || c.away || used.has(id)) return null;
+      cast[key] = id;
+      used.add(id);
+      continue;
+    }
     if (role.extra) {
       cast[key] = `${EXTRA_CAST_PREFIX}${role.extra}`;
       continue;

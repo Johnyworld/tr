@@ -80,6 +80,8 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
     const usedNames = new Set(Object.values(now.characters).map((c) => c.name));
     const label = storylet.cast[key]?.label ?? template.label;
     store.append({ type: "extra_spawned", character: createExtraCharacter(content, template, { id: extraId, label, zone: now.playerZone, time: now.time, usedNames }, rng) });
+    const keep = storylet.cast[key]?.keep;
+    if (keep) store.append({ type: "extra_kept", key: keep, characterId: extraId });
     cast[key] = extraId;
   }
   store.append({

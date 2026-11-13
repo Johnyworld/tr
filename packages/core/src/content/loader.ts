@@ -167,6 +167,7 @@ function checkReferences(content: Content): string[] {
     for (const f of st.when.factions ?? []) if (f !== "none" && !content.factions[f]) problems.push(`storylets.${st.id}.when.factions: 알 수 없는 세력 ${f}`);
     for (const [key, role] of Object.entries(st.cast)) {
       if (role.extra && !content.extras[role.extra]) problems.push(`storylets.${st.id}.cast.${key}: 알 수 없는 엑스트라 틀 ${role.extra}`);
+      if (role.keep && !role.extra) problems.push(`storylets.${st.id}.cast.${key}: keep은 extra와 함께 쓴다`);
     }
   }
   for (const f of Object.values(content.factions)) {
@@ -175,6 +176,12 @@ function checkReferences(content: Content): string[] {
         if (sh.to !== "strongest" && !content.factions[sh.to]) problems.push(`factions.${f.id}.plans.${p.id}: 알 수 없는 세력 ${sh.to}`);
         if (sh.from && !content.factions[sh.from]) problems.push(`factions.${f.id}.plans.${p.id}: 알 수 없는 세력 ${sh.from}`);
       }
+    }
+  }
+  {
+    const kept = new Set(Object.values(content.storylets).flatMap((st) => Object.values(st.cast).flatMap((r) => (r.keep ? [r.keep] : []))));
+    for (const st of Object.values(content.storylets)) {
+      for (const [key, r] of Object.entries(st.cast)) if (r.recall && !kept.has(r.recall)) problems.push(`storylets.${st.id}.cast.${key}: recall ${r.recall}을(를) keep하는 이야기가 없다`);
     }
   }
   const custom = content.scenario.custom_start;

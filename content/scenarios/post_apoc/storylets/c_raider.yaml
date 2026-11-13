@@ -299,6 +299,8 @@
         - set_flag: c_hunt_done
         - merit: 1
         - deed: { summary: 탈영병이 간 방향을 사실대로 말했다, tags: [honesty, loyalty], severity: 2, privacy: public }
+        - clock: { id: b_waver, delta: -1 }
+        - faction_relation: { from: faction_b, to: faction_c, delta: -1, mutual: false }
         - belief: { fact: 추격조가 구시가 쪽으로 나갔다. 막내가 버들마을에 닿기 전에 붙잡힐지도 모른다, source: seen }
     - id: nothing
       label: 아무것도 못 봤다고만 한다

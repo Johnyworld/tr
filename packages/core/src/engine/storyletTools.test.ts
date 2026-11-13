@@ -335,3 +335,31 @@ describe("효과: 무리 사이 태도, 몸 상태 (실제 콘텐츠)", () => {
     expect(s.characters.player!.dead).toBe(false);
   });
 });
+
+describe("이름 없는 인물을 이어서 부르기 (keep → recall)", () => {
+  it("앞 이야기에서 keep으로 만든 인물을 다음 이야기가 recall로 다시 부른다. 없으면 열리지 않는다", () => {
+    const first = {
+      id: "meet",
+      title: "만남",
+      cast: { guard: { extra: "test_sentry", label: "길목의 보초", keep: "the_guard" } },
+      setup: "{guard:이/가} 서 있다.",
+      choices: [{ id: "ok", label: "본다", effects: [{ set_flag: "met_guard" }] }],
+    };
+    const second = {
+      id: "again",
+      title: "다시",
+      when: { flags_all: ["met_guard"] },
+      cast: { guard: { recall: "the_guard" } },
+      setup: "{guard:이/가} 또 서 있다.",
+      choices: [{ id: "ok", label: "본다", effects: [] }],
+    };
+    const env = setup([first, second]);
+    const id = env.store.getState().activeStorylet?.cast.guard;
+    expect(env.store.getState().keptExtras.the_guard).toBe(id);
+    executeTool("resolve_storylet", { choice_id: "ok" }, env.ctx);
+    const s = env.store.getState();
+    expect(eligibleStorylets(s, env.content, s.time + 24 * 60).map((x) => x.id)).toContain("again");
+    s.characters[id!]!.away = true;
+    expect(eligibleStorylets(s, env.content, s.time + 24 * 60).map((x) => x.id)).not.toContain("again");
+  });
+});

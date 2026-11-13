@@ -295,8 +295,9 @@ export function createGameSchemas(s: Scenario) {
       late: z.boolean(),
       merit: z.number().int(),
     }),
-    z.strictObject({ type: z.literal("mission_abandoned"), missionId: z.string(), merit: z.number().int(), reason: z.string() }),
-    z.strictObject({ type: z.literal("mission_expired"), missionId: z.string(), merit: z.number().int() }),
+    /** disobedience: 무리의 규율이 이것을 불복종으로 치는지 (기획서 9.9). 이전 세이브는 true */
+    z.strictObject({ type: z.literal("mission_abandoned"), missionId: z.string(), merit: z.number().int(), reason: z.string(), disobedience: z.boolean().default(true) }),
+    z.strictObject({ type: z.literal("mission_expired"), missionId: z.string(), merit: z.number().int(), disobedience: z.boolean().default(true) }),
     z.strictObject({ type: z.literal("promoted"), characterId: z.string(), from: rank, to: rank }),
     z.strictObject({ type: z.literal("deed_recorded"), deed: deedSchema }),
     z.strictObject({
@@ -747,7 +748,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         mission.status = event.outcome === "success" ? "completed" : event.outcome;
       } else {
         mission.status = event.type === "mission_abandoned" ? "abandoned" : "expired";
-        assignee.disobedience += 1;
+        if (event.disobedience) assignee.disobedience += 1;
       }
       break;
     }

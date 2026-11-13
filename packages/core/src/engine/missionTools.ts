@@ -1,3 +1,4 @@
+import { describeCultureForGm, disciplineOf } from "../game/culture.ts";
 import { josa } from "../text.ts";
 import { gainMeritXp } from "./growth.ts";
 import { z } from "zod";
@@ -137,7 +138,7 @@ const reportMission = defineTool({
     const commanderTrust = commander ? (after.relations[commander.id]?.[player.id]?.trust ?? 0) : null;
     const scenario = ctx.content.scenario;
     const promotion = scenario.promotion;
-    if (checkPromotion(player, promotion, after.time, after.runStartedAt, commanderTrust).eligible) {
+    if (checkPromotion(player, promotion, after.time, after.runStartedAt, commanderTrust, disciplineOf(ctx.content, player.factionId).maxDisobedience).eligible) {
       ctx.store.append({ type: "promoted", characterId: player.id, from: promotion.from, to: promotion.to });
       const fromLabel = rankLabel(scenario, promotion.from);
       const toLabel = rankLabel(scenario, promotion.to);
@@ -156,7 +157,7 @@ const reportMission = defineTool({
 const abandonMission = defineTool({
   name: "abandon_mission",
   description:
-    "플레이어 캐릭터가 수행 중인 임무를 거부하거나 포기한다. 명령 불복종으로 기록되고 공적이 깎인다. " +
+    "플레이어 캐릭터가 수행 중인 임무를 거부하거나 포기한다. 무리의 규율에 따라 불복종으로 기록되고 공적이 깎인다 (자유로운 무리면 불이익이 적거나 없다). " +
     "플레이어가 분명히 임무를 거부·포기하는 행동을 할 때만 쓴다.",
   schema: z.strictObject({
     reason: z.string().min(1).max(200).describe("포기한 사정 한 문장"),
@@ -165,18 +166,24 @@ const abandonMission = defineTool({
     const state = ctx.store.getState();
     const mission = activeMissionOf(state.missions, state.playerId);
     if (!mission) return { ok: false, error: "수행 중인 임무가 없습니다." };
-    ctx.store.append({ type: "mission_abandoned", missionId: mission.id, merit: MERIT.abandoned, reason: input.reason });
-    recordDeed(
-      ctx,
-      { summary: `임무 포기: ${mission.title} (${input.reason})`, tags: ["disobedience"], severity: 2, privacy: "public", noisy: false },
-      { npcId: mission.giverId, source: state.scene.present.includes(mission.giverId) ? "seen" : "report" },
-    );
+    const d = disciplineOf(ctx.content, state.characters[state.playerId]?.factionId);
+    ctx.store.append({ type: "mission_abandoned", missionId: mission.id, merit: d.abandonMerit, reason: input.reason, disobedience: d.countsDisobedience });
+    if (d.deedSeverity > 0) {
+      recordDeed(
+        ctx,
+        { summary: `임무 포기: ${mission.title} (${input.reason})`, tags: ["disobedience"], severity: d.deedSeverity, privacy: "public", noisy: false },
+        { npcId: mission.giverId, source: state.scene.present.includes(mission.giverId) ? "seen" : "report" },
+      );
+    }
+    const label = d.countsDisobedience ? "불복종" : "포기";
     return {
       ok: true,
       resultText:
-        `임무 포기: ${mission.title}. 명령 불복종으로 기록되고 공적 ${signed(MERIT.abandoned)}. ` +
-        "이 일은 상관과 동료의 시선에 영향을 줄 수 있다.",
-      display: { type: "mission", event: "abandoned", title: mission.title, detail: "포기 (불복종)", merit: MERIT.abandoned },
+        `임무 포기: ${mission.title}. 이 무리(규율: ${d.label})에서 ${d.orderWord}을(를) 버린 것이다. ` +
+        (d.countsDisobedience ? "불복종으로 기록되고 " : "불복종으로 치지는 않고 ") +
+        `공적 ${signed(d.abandonMerit)}. ` +
+        (d.deedSeverity > 0 ? "이 일은 상관과 동료의 시선에 영향을 줄 수 있다." : "이 무리에서는 크게 문제 삼지 않는다."),
+      display: { type: "mission", event: "abandoned", title: mission.title, detail: `포기 (${label})`, merit: d.abandonMerit },
     };
   },
 });
@@ -193,13 +200,16 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
   const state = ctx.store.getState();
   for (const mission of Object.values(state.missions)) {
     if (mission.status === "active" && state.time > mission.deadline) {
-      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: MERIT.expired });
-      recordDeed(
-        ctx,
-        { summary: `임무 기한 초과: ${mission.title}`, tags: ["disobedience"], severity: 2, privacy: "public", noisy: false },
-        { npcId: mission.giverId, source: "report" },
-      );
-      displays.push({ type: "mission", event: "expired", title: mission.title, detail: "기한 초과 (불복종)", merit: MERIT.expired });
+      const d = disciplineOf(ctx.content, state.characters[mission.assigneeId]?.factionId);
+      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: d.expireMerit, disobedience: d.countsDisobedience });
+      if (d.deedSeverity > 0) {
+        recordDeed(
+          ctx,
+          { summary: `임무 기한 초과: ${mission.title}`, tags: ["disobedience"], severity: d.deedSeverity, privacy: "public", noisy: false },
+          { npcId: mission.giverId, source: "report" },
+        );
+      }
+      displays.push({ type: "mission", event: "expired", title: mission.title, detail: `기한 초과${d.countsDisobedience ? " (불복종)" : ""}`, merit: d.expireMerit });
     }
   }
   if (commanderOf(state, ctx)) {
@@ -215,7 +225,8 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   if (!player) return "";
   const active = activeMissionOf(state.missions, player.id);
   // 무소속은 복무·공적·불복종이 없다
-  const lines = [player.factionId ? `복무: ${rankLabel(ctx.content.scenario, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회` : `무소속 (${rankLabel(ctx.content.scenario, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
+  const culture = player.factionId ? describeCultureForGm(ctx.content, player.factionId) : "";
+  const lines = [player.factionId ? `복무: ${rankLabel(ctx.content.scenario, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회${culture ? `\n${culture}` : ""}` : `무소속 (${rankLabel(ctx.content.scenario, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
   } else if (state.offers?.day === dayOf(state.time) && state.offers.templateIds.length > 0) {

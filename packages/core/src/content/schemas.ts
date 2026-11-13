@@ -194,6 +194,22 @@ export function createContentSchemas(s: Scenario) {
       )
       .default([]),
     minor: z.boolean().default(false),
+    /**
+     * 무리의 문화와 규칙 (기획서 9.9). discipline은 시나리오 discipline의 id (규율의 기계적 무게).
+     * 나머지는 GM이 연기에 쓰고, 그 무리 사람은 ?세력에서 본다
+     */
+    culture: z
+      .strictObject({
+        discipline: contentIdSchema,
+        /** 한두 문장 */
+        summary: z.string().min(1),
+        rules: z.array(z.string().min(1)).default([]),
+        /** 서로를 어떻게 부르는지 */
+        address: z.string().optional(),
+        /** 규칙을 어기면 어떻게 되는지 */
+        punishment: z.string().optional(),
+      })
+      .optional(),
   });
 
   /**

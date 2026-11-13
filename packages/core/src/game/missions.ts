@@ -108,14 +108,16 @@ export function checkPromotion(
   now: GameTime,
   runStartedAt: GameTime,
   commanderTrust: number | null,
+  /** 무리의 규율이 허용하는 불복종 수 (기획서 9.9). 없으면 기본 */
+  maxDisobedience: number = PROMOTION.maxDisobedience,
 ): PromotionCheck {
   const missing: string[] = [];
   if (character.rank !== promotion.from) return { eligible: false, missing: ["진급 대상 등급이 아님"] };
   if (character.merit < PROMOTION.minMerit) missing.push(`공적 ${character.merit}/${PROMOTION.minMerit}`);
   const days = daysServed(now, runStartedAt);
   if (days < PROMOTION.minDaysServed) missing.push(`복무 ${days}/${PROMOTION.minDaysServed}일`);
-  if (character.disobedience > PROMOTION.maxDisobedience) {
-    missing.push(`불복종 ${character.disobedience}회 (최대 ${PROMOTION.maxDisobedience}회)`);
+  if (character.disobedience > maxDisobedience) {
+    missing.push(`불복종 ${character.disobedience}회 (최대 ${maxDisobedience}회)`);
   }
   if (commanderTrust !== null && commanderTrust < PROMOTION.minCommanderTrust) {
     missing.push(`상관 신뢰 ${commanderTrust}/${PROMOTION.minCommanderTrust}`);

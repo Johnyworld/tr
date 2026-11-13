@@ -1,3 +1,4 @@
+import { disciplineOf } from "../game/culture.ts";
 import { headingAs, playerCalls } from "../game/acquaintance.ts";
 import {
   activeMissionOf,
@@ -151,7 +152,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         const commanderId = commanderOf(state, content);
         // 화면에는 플레이어가 느끼는 신뢰를 보여 준다 (실제 진급 판정은 진짜 관계로 한다)
         const trust = commanderId ? (state.perceived[commanderId]?.trust ?? 0) : null;
-        return checkPromotion(player, scenario.promotion, state.time, state.runStartedAt, trust).missing;
+        return checkPromotion(player, scenario.promotion, state.time, state.runStartedAt, trust, disciplineOf(content, player.factionId).maxDisobedience).missing;
       })(),
     },
     mission: (() => {

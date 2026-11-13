@@ -249,6 +249,7 @@ export const TEST_SCENARIO: Scenario = {
   rules: "## 규칙\n플레이어 행동마다 take_action을 호출한다.",
   mcpGuide: "## MCP\n장면이 끝나면 record_turn_summary.",
   introText: null,
+  discipline: {},
 };
 
 export const TEST_CONTENT: Content = {

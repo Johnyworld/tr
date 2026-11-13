@@ -184,6 +184,9 @@ function checkReferences(content: Content): string[] {
       for (const [key, r] of Object.entries(st.cast)) if (r.recall && !kept.has(r.recall)) problems.push(`storylets.${st.id}.cast.${key}: recall ${r.recall}을(를) keep하는 이야기가 없다`);
     }
   }
+  for (const f of Object.values(content.factions)) {
+    if (f.culture && !content.scenario.discipline[f.culture.discipline]) problems.push(`factions.${f.id}.culture: 알 수 없는 규율 ${f.culture.discipline} (scenario.discipline)`);
+  }
   const custom = content.scenario.custom_start;
   if (custom) {
     const ranks = new Set(content.scenario.rank_ladder.map((r) => r.id));

@@ -1,3 +1,4 @@
+import { disciplineOf } from "../game/culture.ts";
 import { josa } from "../text.ts";
 import { aliasOf, headingAs, knowsName, playerCalls } from "../game/acquaintance.ts";
 import { traitLabels } from "../engine/traits.ts";
@@ -248,6 +249,13 @@ const factions: CommandDef = {
     const lines = [header("세력")];
     if (o.own) {
       lines.push(`소속  ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`);
+      const own = ctx.content.factions[playerOf(ctx).factionId]?.culture;
+      if (own) {
+        lines.push(`  규율 ${disciplineOf(ctx.content, playerOf(ctx).factionId).label} · ${own.summary}`);
+        for (const r of own.rules) lines.push(`  - ${r}`);
+        if (own.address) lines.push(`  호칭: ${own.address}`);
+        if (own.punishment) lines.push(`  어기면: ${own.punishment}`);
+      }
       for (const p of o.own.plans) lines.push(`  ${p.label}: ${p.stage}${p.targetName ? ` (목표는 ${josa(p.targetName, "이라는/라는")} 말)` : ""}`);
       lines.push("");
     }

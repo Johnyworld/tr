@@ -198,6 +198,27 @@ export const scenarioFileSchema = z
         kits: z.array(z.strictObject({ id, label: z.string().min(1), description: z.string().default(""), items: z.array(id) })).min(1),
       })
       .optional(),
+    /**
+     * 무리의 규율 단계 (기획서 9.9): 무리마다 culture.discipline으로 고른다. 임무를 버리거나 놓쳤을 때의 공적,
+     * 불복종으로 치는지, 진급에 허용되는 불복종 수, 불복종 행적의 무게. 없으면 모든 무리가 질서(기본값)
+     */
+    discipline: z
+      .record(
+        id,
+        z.strictObject({
+          label: z.string().min(1),
+          abandon_merit: z.number().int().max(0),
+          expire_merit: z.number().int().max(0),
+          /** 임무를 버리거나 놓치면 불복종으로 센다 */
+          counts_disobedience: z.boolean(),
+          max_disobedience: z.number().int().min(0),
+          /** 불복종 행적의 무게 (0이면 행적을 남기지 않는다) */
+          deed_severity: z.number().int().min(0).max(3),
+          /** 임무를 부르는 말 (예: 명령, 당번, 일감) */
+          order_word: z.string().min(1),
+        }),
+      )
+      .default({}),
     /** 새 게임의 월드 고르기에 보이는 것 (기획서 12.3). 없으면 name만 */
     world: z
       .strictObject({

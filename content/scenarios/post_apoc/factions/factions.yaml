@@ -11,6 +11,17 @@
   cohesion: 2
   aggression: 1
   disposition: { faction_b: 2, faction_c: -3 }
+  culture:
+    discipline: orderly
+    summary: 분대 체계로 움직이는 무리. 명령은 분대장을 거쳐 내려오지만, "버리지 않는다"는 원칙이 명령보다 위에 있다. 회의에서 큰일을 정하고, 지도부도 식당 줄에 선다.
+    rules:
+      - 거점 안에서는 총을 함부로 쏘지 않는다
+      - 배급은 하루 한 번 식당에서, 계급과 상관없이 같은 몫
+      - 남의 몫에 손대는 것이 가장 무거운 잘못이다
+      - 다친 동료를 두고 오지 않는다
+      - 임무는 분대장을 통해 받고 분대장에게 보고한다
+    address: 계급에 님을 붙인다 (분대장님, 간부님). 같은 분대끼리는 이름이나 형·누나
+    punishment: 배급 줄이기, 보초 더 서기. 무거우면 회의에 올라가고, 원칙을 어긴 사람은 내보낸다
   plans:
     # 반격: 다 차면 맞닿은 붉은연합의 구역 중 잃은 땅·값진 곳을 친다. 전선 임무와 정찰 이야기가 앞당긴다
     - { id: a_counteroffensive, label: 반격 준비, target_rule: frontier, days: 14 }
@@ -25,6 +36,16 @@
   cohesion: 0
   aggression: 0
   disposition: { faction_a: 2, faction_c: -2 }
+  culture:
+    discipline: loose
+    summary: 마을 회의로 꾸려 가는 이웃 공동체. 경비조는 군대가 아니라 돌아가며 서는 당번이고, 서로의 사정을 들어 준다. 대신 식구가 많아 말이 많다.
+    rules:
+      - 정문과 쪽문은 해가 지면 닫는다
+      - 우물물은 집집이 순서대로 긷는다
+      - 아이들은 옥상에 올라가지 않는다
+      - 큰일은 대표가 회의에 부쳐 정한다
+    address: 이름이나 아저씨·이모·언니, 대표는 대표님
+    punishment: 회의에서 말로 따진다. 당번을 늘리거나 몫을 줄이고, 정말 심하면 단지에서 내보낸다
   plans:
     # 흔들림: 다 차면 청솔형제단과의 연합에서 발을 빼고 붉은연합과 화해한다 (한 번뿐, 기획서 9.4 shift).
     # 붉은연합의 회유·뇌물이 당기고, 연합을 지키는 쪽의 이야기가 늦춘다. 버들마을 사람만 안다
@@ -49,6 +70,17 @@
   cohesion: -1
   aggression: 2
   disposition: { faction_a: -3, faction_b: -3, faction_d: -1 }
+  culture:
+    discipline: strict
+    summary: 숫자와 할당량으로 굴러가는 군대식 조직. 위원회의 결정은 되묻지 않고, 규율반이 막사마다 귀를 둔다. 크지만 서로를 믿지 않는다.
+    rules:
+      - 조마다 날마다 할당량을 채운다. 못 채우면 조 전체의 배급이 깎인다
+      - 아침저녁 점호에 빠지지 않는다
+      - 위원회의 결정에 토를 달지 않는다
+      - 탈영하다 잡히면 광장에서 본보기로 벌한다
+      - 수상한 동료는 규율반에 알린다
+    address: 조장님·위원님. 조원끼리는 성이나 조 번호로 부른다
+    punishment: 배급 삭감, 광장의 본보기, 수용소 경비나 공세 맨 앞줄로 보내기
   plans:
     # lore/faction_c_inside.md "동쪽 공세". 붉은연합 사람만 안다
     - { id: c_east_offensive, label: 동쪽 공세 준비, target_rule: fixed, target: a_east_post, days: 10 }
@@ -62,6 +94,16 @@
   morale: 0
   cohesion: 2
   aggression: 0
+  culture:
+    discipline: orderly
+    summary: 의술과 장부로 움직이는 작은 전문가 집단. 위계는 총이 아니라 의술의 순서다. 중립을 지키는 대신 규칙에는 예외가 없다.
+    rules:
+      - 물리거나 긁힌 사람은 누구든 격리실에서 사흘
+      - 다친 사람은 소속을 가리지 않고 받되, 약은 값을 받고 내준다
+      - 약제실은 열쇠를 가진 사람만 들어간다
+      - 진료소 안에서는 누구도 무기를 들지 않는다
+    address: 의사는 선생님, 수간호사는 수간호사님, 수습은 이름으로
+    punishment: 약제실 출입 금지, 격리실 당직 더 서기. 약을 빼돌리면 내보낸다
 
 - id: faction_e
   name: 나루상단
@@ -72,6 +114,16 @@
   morale: 1
   cohesion: 1
   aggression: 0
+  culture:
+    discipline: free
+    summary: 명령 대신 계약과 장부로 묶인 상인 무리. 일감을 받든 말든 각자 자유고, 위아래보다 셈이 먼저다. 다만 빚과 약속은 끝까지 따라온다.
+    rules:
+      - 장부에 적힌 빚은 반드시 갚는다
+      - 짐을 빼돌린 사람은 그날로 끝이다
+      - 정수장 안에서는 누구도 총을 꺼내지 않는다
+      - 누구에게나 판다. 값만 맞으면
+    address: 이름이나 대장, 우두머리는 사장님
+    punishment: 장부에 빚으로 올린다. 짐이나 약속에 손대면 쫓아내고, 다른 무리에도 소문을 낸다
   plans:
     # 편들기: 다 차면 그때 가장 큰 무리 쪽에 붙는다 (한 번뿐, shift). 상단 사람이 어느 편에 짐을 실어 주느냐가 당기고 늦춘다
     - id: e_side

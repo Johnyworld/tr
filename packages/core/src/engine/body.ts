@@ -259,6 +259,32 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
   return displays;
 }
 
+/**
+ * NPC의 하루 몸 (기획서 7.7): 감염된 인물은 하루에 한 단계 나빠지고, 마지막 단계면 부상을 입는다 (죽을 수 있다, 코드가 정한다).
+ * 장면에 있는 사람의 보이는 변화만 화면에 알린다
+ */
+export function runDailyNpcBody(ctx: ToolContext): ToolDisplayEvent[] {
+  const infection = ctx.content.scenario.body?.infection;
+  if (!infection) return [];
+  const harm = ctx.content.scenario.harm_track;
+  const track = trackOf(ctx.content.scenario, infection.track);
+  const displays: ToolDisplayEvent[] = [];
+  const start = ctx.store.getState();
+  for (const c of Object.values(start.characters)) {
+    if (c.id === start.playerId || c.dead || c.away) continue;
+    const index = Math.max(0, track.levels.findIndex((l) => l.id === c.conditions[track.id]));
+    if (index === 0) continue;
+    const change =
+      index < track.levels.length - 1
+        ? changeCondition(ctx, c.id, track.id, 1, "infection", "감염이 퍼진다")
+        : infection.worst_harm > 0
+          ? changeCondition(ctx, c.id, harm, infection.worst_harm, "infection", "감염")
+          : null;
+    if (change?.display && ctx.store.getState().scene.present.includes(c.id)) displays.push(change.display);
+  }
+  return displays;
+}
+
 /** 지금 몸이 괴로운가 (질병에 걸리기 쉽고 낫기 어렵다): 굶주림·추위는 판정 보정이 있는 단계부터, 목마름은 무리의 물이 하루치보다 적을 때 */
 function sufferingOf(ctx: ToolContext, state: GameState): { starving: boolean; cold: boolean; thirst: boolean } {
   const s = ctx.content.scenario;

@@ -4,7 +4,7 @@ import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
 import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, simulateWarDay } from "../sim/war.ts";
 import { playerInvolvement, scheduleTime } from "./battleTools.ts";
-import { runDailyBody } from "./body.ts";
+import { runDailyBody, runDailyNpcBody } from "./body.ts";
 import { seasonAt, seasonLabel, seasonOfDay } from "../sim/season.ts";
 import { fill, josa, sentence } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
@@ -70,6 +70,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     }
     // 하루가 지난 몸: 배급에 따른 허기, 감염 진행
     displays.push(...runDailyBody(ctx));
+    displays.push(...runDailyNpcBody(ctx));
   }
   return displays;
 }

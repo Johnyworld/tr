@@ -328,6 +328,15 @@ function applyEffect(
       display: { type: "promotion", name: player.name, fromLabel: from, toLabel: role.label },
     };
   }
+  if ("npc_body" in effect) {
+    const { track, delta, chance } = effect.npc_body;
+    const id = whoOf(ctx, effect.npc_body.who, cast);
+    if (!id || id === playerId || track === content.scenario.harm_track) return {};
+    if (chance < 1 && ctx.rng() >= chance) return {}; // 이번엔 아무 일도 없었다 (아무도 모른다)
+    const change = changeCondition(ctx, id, track, delta, "이야기", reason);
+    // 장면에 있는 사람의 보이는 변화만 GM에게 알린다 (숨은 단계는 아무도 모른다)
+    return change?.line && store.getState().scene.present.includes(id) ? { line: change.line, display: change.display ?? undefined } : {};
+  }
   if ("debt" in effect) {
     const id = effect.debt.faction === "own" ? state.characters[playerId]!.factionId : effect.debt.faction;
     if (!content.factions[id]) return {};

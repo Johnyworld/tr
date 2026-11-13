@@ -30,6 +30,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => c.id !== state.playerId && !c.dead && !c.away && content.npcs[c.id])
     // 포로는 captive: true인 배역만, 그리고 그 구역에서만 (갇힌 곳에서 마주친다)
     .filter((c) => (role.captive ? !!c.captive && c.captive.zone === state.playerZone : !c.captive))
+    .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.commander || c.id === commander)
     .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction))
@@ -38,6 +39,16 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => role.trust_gte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).trust >= role.trust_gte)
     .map((c) => c.id)
     .sort();
+}
+
+/** 몸 상태 조건: 단계 순서로 at_least 이상, at_most 이하 */
+function bodyMatches(content: Content, level: string | undefined, cond: { track: string; at_least?: string; at_most?: string }): boolean {
+  const levels = content.scenario.condition_tracks.find((t) => t.id === cond.track)?.levels ?? [];
+  const at = Math.max(0, levels.findIndex((l) => l.id === level));
+  const idx = (id: string | undefined) => (id ? levels.findIndex((l) => l.id === id) : -1);
+  if (cond.at_least && at < idx(cond.at_least)) return false;
+  if (cond.at_most && idx(cond.at_most) >= 0 && at > idx(cond.at_most)) return false;
+  return true;
 }
 
 /** 엑스트라로 채울 배역의 자리표시 (발동하면 만든 인물 id로 바뀐다) */

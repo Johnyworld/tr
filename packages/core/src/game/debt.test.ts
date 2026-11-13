@@ -37,9 +37,9 @@ describe("빚 (기획서 9.10)", () => {
     expect(w.executeTool("assign_mission", { template_id: "e_water_haul" }).ok).toBe(true);
     w.executeTool("take_action", act("물을 나른다", { activity: { kind: "work", until: null }, for_mission: true }));
     // 판정은 주사위에 맡기지 않고 기록으로 넣는다 (버티기 대가 있는 성공 이상)
-    for (let i = 0; i < 6; i++) {
-      const r = w.executeTool("take_action", act("물통을 진다", { check: { move: "endure", stat: "vitality", difficulty: "very_easy", harm_on_failure: "none", harm_cause: "" }, for_mission: true }));
-      if (r.ok && r.outcome !== "miss") break;
+    const passed = () => Object.values(w.state().checks).some((c) => c.move === "endure" && c.outcome !== "miss");
+    for (let i = 0; i < 6 && !passed(); i++) {
+      w.executeTool("take_action", act("물통을 진다", { check: { move: "endure", stat: "vitality", difficulty: "very_easy", harm_on_failure: "none", harm_cause: "" }, for_mission: true }));
     }
     if (!w.state().scene.present.includes(boss)) w.executeTool("npc_presence", { npc_id: boss, action: "enter" });
     const out = w.executeTool("report_mission", {});

@@ -205,24 +205,28 @@
   cast:
     sori: { ids: [d_sori], known: true }
   setup: 붕대 빨래를 널다가 {sori:이/가} 손목 붕대를 고쳐 감는다. 소매를 내리는 손이 빠르다. 눈이 마주치자 너무 밝게 웃는다. "왜? 왜 봐? 아, 이거 철근에 긁힌 거야."
-  ai_direction: 사흘 전 구시가에서 감염체 손톱에 긁혔다. 상처는 얕고 아직 열은 없다. 감염됐는지는 아무도 모른다(GM도 확정하지 않는다). 격리실이 무서워 숨긴다.
+  ai_direction: 사흘 전 구시가에서 감염체 손톱에 긁혔다. 상처는 얕고 아직 열은 없다. 감염됐는지는 아무도 모른다. 코드가 이 장면에서 굴리고, GM도 결과를 모른다 (나중에 열이 오르는지로 드러난다). 격리실이 무서워 숨긴다.
   choices:
     - id: examine
       label: 붕대를 풀어 상처를 보자고 한다
       check: infected_lore
       outcomes:
         success:
+          - npc_body: { who: sori, track: infection, delta: 1, chance: 0.5 }
           - relation: { who: sori, axis: trust, delta: 1 }
           - belief: { fact: "임소리의 손목 상처는 철근이 아니라 손톱 자국이다. 사흘쯤 됐고 아직 붓거나 열이 오르지는 않았다", source: seen }
         partial:
+          - npc_body: { who: sori, track: infection, delta: 1, chance: 0.5 }
           - belief: { fact: "임소리의 손목 상처는 철근에 긁힌 것 같지 않았다. 더 보기 전에 소매를 내렸다", source: seen }
         miss:
+          - npc_body: { who: sori, track: infection, delta: 1, chance: 0.5 }
           - relation: { who: sori, axis: trust, delta: -1 }
           - belief: { fact: "임소리가 손목을 뒤로 감추고 자리를 떴다", source: seen }
     - id: report
       label: 수간호사에게 데려간다
       effects:
         - set_flag: d_sori_quarantined
+        - npc_body: { who: sori, track: infection, delta: 1, chance: 0.5 }
         - relation: { who: sori, axis: trust, delta: -2 }
         - relation: { who: commander, axis: respect, delta: 2 }
         - merit: 1
@@ -231,6 +235,7 @@
       label: 아무에게도 말하지 않겠다고 약속한다
       effects:
         - set_flag: d_sori_secret
+        - npc_body: { who: sori, track: infection, delta: 1, chance: 0.5 }
         - relation: { who: sori, axis: trust, delta: 2 }
         - relation: { who: sori, axis: affection, delta: 1 }
         - deed: { summary: 감염체에게 긁혔을지 모르는 임소리를 격리실에 보내지 않고 숨겨 주었다, tags: [loyalty, disobedience], severity: 2, privacy: private }
@@ -239,6 +244,9 @@
       effects:
         - take_item: { item: antibiotics }
         - set_flag: d_sori_secret
+        # 긁힌 지 얼마 안 됐을 때 쓴 항생제는 감염을 막는다 (굴린 뒤 바로 낫게 한다)
+        - npc_body: { who: sori, track: infection, delta: 1, chance: 0.5 }
+        - npc_body: { who: sori, track: infection, delta: -2 }
         - relation: { who: sori, axis: trust, delta: 3 }
         - relation: { who: sori, axis: affection, delta: 2 }
         - deed: { summary: 긁힌 임소리에게 항생제를 몰래 주고 격리를 피하게 했다, tags: [mercy, disobedience], severity: 2, privacy: private }
@@ -254,9 +262,9 @@
     flags_all: [d_sori_secret]
     flags_none: [d_sori_resolved]
   cast:
-    sori: { ids: [d_sori] }
+    sori: { ids: [d_sori], condition: { track: infection, at_least: fever } }
   setup: 누가 숙소 문을 두드린다. {sori:이/가} 담요를 뒤집어쓰고 서 있다. 이가 딱딱 부딪친다. "나 좀 이상해. 열이 나는 것 같아. 수간호사님한텐…… 아직 말하지 마."
-  ai_direction: 열은 감기일 수도, 감염의 시작일 수도 있다. 확정하지 않는다. 진료소 안 사람들이 깨면 일이 커진다. 백도진은 물린 자국이 보이면 무조건 격리실로 보낸다.
+  ai_direction: 정말 감염이다 (코드가 정한 상태는 발열). 다만 플레이어에게는 확정해 말하지 않는다. 항생제를 쓰면 나을 수 있다. 진료소 안 사람들이 깨면 일이 커진다. 백도진은 물린 자국이 보이면 무조건 격리실로 보낸다.
   choices:
     - id: to_quarantine
       label: 직접 격리실로 데려가 문을 잠근다
@@ -292,6 +300,33 @@
         - relation: { who: sori, axis: trust, delta: -2 }
         - relation: { who: commander, axis: respect, delta: 1 }
         - belief: { fact: "수간호사가 임소리를 격리실로 데려가며 한 마디만 했다: 사흘 늦었어", source: seen }
+
+- id: d_sori_clear
+  title: 아물어 가는 손목
+  tags: [clinic_life]
+  when:
+    zones: [d_clinic]
+    segments: [morning, day]
+    day_gte: 6
+    flags_all: [d_sori_secret]
+    flags_none: [d_sori_resolved]
+  cast:
+    sori: { ids: [d_sori], condition: { track: infection, at_most: clean } }
+  setup: 아침 빨래를 널다가 {sori:이/가} 슬그머니 소매를 걷어 보인다. 붉던 자국이 거뭇하게 아물어 간다. "봐. 열 한 번 안 났어. 철근이라니까." 목소리가 떨린다.
+  ai_direction: 정말 감염되지 않았다 (코드가 정한 상태). 임소리는 그동안 매일 밤 자기 이마를 짚어 보며 잠을 설쳤다. 비밀을 지켜 준 일은 그대로 남는다.
+  choices:
+    - id: relief
+      label: 다행이라며 같이 웃는다
+      effects:
+        - set_flag: d_sori_resolved
+        - relation: { who: sori, axis: affection, delta: 2 }
+        - belief: { fact: 임소리의 손목은 끝내 열 없이 아물었다. 운이 좋았다, source: seen }
+    - id: lecture
+      label: 다음엔 바로 말하라고 단단히 이른다
+      effects:
+        - set_flag: d_sori_resolved
+        - relation: { who: sori, axis: respect, delta: 1 }
+        - belief: { fact: "임소리가 약속했다: 다음엔 긁히면 바로 수간호사에게 말하겠다고", source: report }
 
 - id: d_quarantine_door
   title: 격리실 문 너머

@@ -1,0 +1,77 @@
+# 붉은연합 위원 임무 (초안). 위원장 국혜란이 아침 위원회 뒤 직접 맡긴다
+# 오늘의 임무 후보는 역할(roles/c_officer.yaml)의 missions 목록에서 코드가 고르고, 상관(commander: c_hyeran)이 장면에 있어야 내린다.
+# giver_rank는 맡기는 사람의 계급(지도부). 형식은 a_grunt_basic.yaml 머리말 참고
+
+- id: co_quota_audit
+  title: 저녁 검수 장부 맞추기
+  briefing: 오늘 저녁 검수에 직접 서서 조마다 들어온 것과 장부를 맞춰. 모자란 조는 이름을 적고, 넘치는 조는 어디서 넘쳤는지 물어. 넘치는 것도 셈이 안 맞는 거야.
+  giver_rank: leader
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: tactics
+      min_outcome: partial
+
+- id: co_willow_word
+  title: 버들마을에 위원회 말 전하기
+  briefing: 편종호를 데리고 버들마을 북쪽 쪽문까지 가. 말은 편종호가 하고, 동지는 저쪽이 무엇을 망설이는지 봐. 약속은 위원회가 한 것 말고는 하나도 더 얹지 마.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+  advances: { clock: b_waver, delta: 1 }
+
+- id: co_market_ammo
+  title: 장터 탄값 흥정
+  briefing: 나루상단 장터에 가서 겨울 탄값을 정해 와. 우리가 이긴다는 걸 저쪽도 알아. 그걸 값에 넣게 해. 우리 창고 사정은 입에 올리지 말고.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+    - check: intimidate
+      min_outcome: partial
+  advances: { clock: e_side, delta: 1 }
+
+- id: co_clinic_order
+  title: 하얀매 약 주문
+  briefing: 하얀매 진료소에 가서 공세 뒤에 쓸 약을 미리 주문해. 값은 탄으로 넉넉히 치되, 우리 몫을 먼저 떼어 두게 해. 진료소 안에서는 총을 들지 마. 저쪽 규칙이야.
+  giver_rank: leader
+  deadline_hours: 16
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+  advances: { clock: d_lean, delta: 1 }
+
+- id: co_east_readiness
+  title: 고가도로 너머 병력 점검
+  briefing: 물류창고에 가서 공세에 쓸 조들이 정말 모였는지 동지 눈으로 세 봐. 마경수 보고서의 숫자 말고. 탄 상자도 하나씩 열어 보고.
+  giver_rank: leader
+  deadline_hours: 14
+  requirements:
+    - activity: travel
+      minutes: 40
+    - check: tactics
+      min_outcome: partial
+  advances: { clock: c_east_offensive, delta: 1 }
+
+- id: co_camp_census
+  title: 수용소 명단 대조
+  briefing: 노필수와 수용소를 돌며 갇힌 사람 명단을 처음부터 다시 적어. 누가 살아 있고 누가 말을 할 것 같은지. 안쪽 문 열쇠는 마경수에게 받아 내. 위원회 명령이라고 해.
+  giver_rank: leader
+  deadline_hours: 12
+  requirements:
+    - activity: travel
+      minutes: 40
+    - activity: talk
+      minutes: 60
+    - check: intimidate
+      min_outcome: partial

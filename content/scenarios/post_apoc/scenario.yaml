@@ -242,7 +242,7 @@ command:
           summary: 먼저 치러 나가는 일이 줄고, 습격을 받으면 더 많은 사람이 지킨다
           aggression: 0.5
           defense: 1.5
-          opposed_by: [a_jeonghun, pb_seokgyu]
+          opposed_by: [a_jeonghun, pb_seokgyu, c_gyeongsu]
         - id: normal
           label: 보통
           summary: 하던 대로

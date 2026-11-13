@@ -1,0 +1,35 @@
+# 붉은연합의 위원 (시작 역할, 초안)
+# 위원장 국혜란 직속. 위원회에 앉아 할당량 장부와 조 배치를 맡고, 배급·태세·교역을 안으로 올린다
+# 군율의 무리라 위원회의 결정은 되묻지 않는다. 대신 누가 위원회에 앉느냐를 두고 위원들끼리 다툰다
+id: role_c_officer
+label: 붉은연합 위원
+faction: faction_c
+rank: officer
+default_name: 위원
+opening_scene: 아침, 옛 공단 사무동 이층의 위원회실. 벽에 붙은 공정표 위에 조 번호와 구역 이름이 분필로 덧씌워져 있다. 규율반 서기 우상옥이 명부를 펼쳐 두고 안경을 닦고, 마경수는 장갑을 낀 채 창가에 기대 섰다. 국혜란이 빨간 안전모를 탁자 끝에 내려놓으며 당신을 본다. "할당량 맡은 동지 말부터 듣지. 오늘은 어느 조를 어디로 보내나."
+scenario:
+  title: 붉은연합의 위원
+  pitch: >-
+    가장 큰 무리의 위원회에 앉는다. 위원장 국혜란 곁에서 할당량 장부를 쥐고, 어느 조를 어느 땅으로 보낼지, 수용소의 포로를 어디에 쓸지, 배급을 얼마나 깎을지 안을 올린다.
+    위원회의 결정에는 아무도 토를 달지 않는다. 그래서 결정을 만드는 방 안에서 다툼이 가장 거칠다. 장갑 낀 손의 간부는 공세 뒤의 자리를 보고, 규율반의 명부는 위원도 가리지 않는다.
+  intro: >-
+    가을이 깊어 간다. 당신은 붉은연합의 위원이다. 붉은연합은 도시 동쪽의 옛 공단에 높은 담을 친 무리로, 사람 수로는 가람시의 어느 무리보다 크다. 지금은 청솔형제단·버들마을과 전쟁 중이다.
+    당신은 할당량 장부를 맡는다. 약탈조마다 어느 땅을 털지 정하고, 저녁 검수 숫자를 받아 위원회에 올린다. 아침마다 사무동 위원회실에서 위원장 국혜란, 고가도로 너머를 맡은 간부 마경수, 규율반 서기 우상옥과 마주 앉는다.
+    마경수는 동쪽 공세를 서두르자고 하고, 선전꾼 편종호는 버들마을이 총 한 발 없이 넘어올 수 있다고 말한다. 물류창고 안쪽 수용소에는 청솔형제단 정찰병들이 갇혀 있고, 그들을 어떻게 쓸지는 아직 정해지지 않았다.
+    규율반이 막사마다 귀를 둔다는 것은 모두가 안다. 위원회실에도 귀가 있는지는 아무도 말하지 않는다.
+    이야기는 어느 아침, 사무동 위원회실에서 시작한다.
+age: 44
+# 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
+# 시작 훈련: 지휘(전략)와 위협. 공단 시절 작업반장이었다. 말보다 숫자와 목소리로 사람을 움직였다
+start_skills: { tactics: 1, intimidate: 1 }
+start_inventory: [ledger, c_armband, pistol, rifle_rounds, coat, radio]
+start_location: c_base
+access: [ration, mission_board]
+beliefs_preset: c_officer_start
+# 위원회와 그 둘레, 할당량을 받아 가는 조장들, 거래 상대와 회유 상대의 얼굴들
+known_npcs: [c_hyeran, c_gyeongsu, c_sangok, pc_junggi, pc_jongho, pc_sundeok, c_cheolgu, pc_taegyu, c_pilsu, pc_dooman, e_bongsu, d_sangpil, d_eunyoung, b_hyunwoo]
+# 직속 상관은 위원장. 아침 위원회 뒤 직접 일을 맡긴다
+commander: c_hyeran
+missions: [co_quota_audit, co_willow_word, co_market_ammo, co_clinic_order, co_east_readiness, co_camp_census]
+# c_officer: 위원에 묶인 이야기, council: 회의에 앉는 간부 (factions로 붉은연합에 묶었다), world: 어느 시나리오에서나 열리는 도시의 일
+storylet_tags: [c_officer, council, world]

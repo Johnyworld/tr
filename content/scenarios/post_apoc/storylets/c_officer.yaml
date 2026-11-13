@@ -1,0 +1,757 @@
+# 붉은연합 위원 스토리렛 (초안). 형식은 a_grunt.yaml 머리말 참고
+# 이어지는 이야기 (플래그):
+#   첫 위원회: co_first_council (약탈 할당. co_raided_willow면 co_willow_envoy에 돌려보내기 선택지)
+#   수용소: co_prisoner_use (본보기 co_prisoner_example / 노역 co_prisoner_labor / 교환 co_prisoner_trade / 살려 두기 co_prisoner_kept)
+#   숙청: co_purge_list (셋째 이름을 keep: co_purge_name) → (co_name_struck) co_purge_return (지운 이름이 찾아온다) → co_gyeongsu_suspect
+#   권력 다툼: co_sangok_question (서기의 물음표) → co_gyeongsu_suspect
+#              co_gyeongsu_offer (공세 뒤의 자리 → co_gyeongsu_pact)
+#              (co_gyeongsu_suspect) co_overpass_night (하역장의 상자 → co_gyeongsu_proof / co_gyeongsu_pact)
+#              → (co_gyeongsu_proof) co_committee_trial (위원회의 심판 → co_gyeongsu_fallen, 마경수 강등)
+#   바깥: co_willow_envoy (버들마을 끌어들이기, b_waver) · co_trade_line (나루상단·하얀매 교역 방침)
+#   위원회 방침: co_war_line (전쟁 태세와 맨 앞줄) · co_ration_cut (배급을 어디서 깎나)
+# tags: c_officer = 이 시나리오에 묶인 이야기, council = 회의에 앉는 간부 (모두 factions로 붉은연합에 묶었다)
+# 세력 클락: b_waver(버들마을 이탈. 붉은연합 위원이 당기려는 쪽), c_east_offensive(동쪽 공세), e_side(나루상단 편들기), d_lean(하얀매 기울기)
+# 위원장의 버들마을 제안이 미끼라는 것(국혜란의 비밀)은 여기서 드러내지 않는다. 마경수의 노림(위원장 자리)도 그의 입으로만 흘린다
+# 처음 며칠 거점에서 열리는 것: co_first_council, co_prisoner_use, co_trade_line
+
+# ── 고정: 첫 위원회 ───────────────────────────────
+
+- id: co_first_council
+  title: 공정표 위의 분필
+  weight: 2
+  tags: [c_officer, council]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [morning, day]
+    flags_none: [co_council_done]
+  cast:
+    boss: { commander: true }
+    raider: { ids: [c_cheolgu] }
+    hardliner: { ids: [c_gyeongsu] }
+  setup: '위원회실 벽의 공정표. 조 번호 옆에 구역 이름이 분필로 적혀 있다. {raider:이/가} 구시가 칸을 손가락으로 문지른다. "삼조는 구시가가 바닥났습니다. 문짝까지 뜯어 왔어요." 창가의 {hardliner:이/가} 장갑 낀 손으로 지도 남쪽을 짚는다. "버들마을 텃밭. 지금이 수확철이야. 거기 한 번이면 할당량 두 배." {boss:이/가} 분필을 당신 쪽으로 굴린다.'
+  ai_direction: 첫 위원회다. 할당량 장부는 주인공 손에 있고, 어느 조를 어디로 보낼지 안을 올리면 위원장이 그대로 정한다. 마경수는 텃밭을 털어 공세 전에 창고를 채우자고 한다. 위원장은 버들마을을 회유하는 중이라 텃밭을 털면 그 일이 뒷걸음질하지만, 위원회 자리에서 그 말을 하지 않는다. 염철구는 할당량 바깥으로 물자를 빼돌리고 있어 구역이 바뀌는 것을 꺼린다. 드러내지 않는다. 양은 코드가 정했다. 숫자를 새로 지어내지 않는다.
+  choices:
+    - id: willow_fields
+      label: 마경수 말대로 약탈조를 버들마을 텃밭으로 보내자고 한다
+      effects:
+        - set_flag: co_council_done
+        - set_flag: co_raided_willow
+        - faction_resource: { faction: own, resource: food, delta: 20 }
+        - clock: { id: b_waver, delta: -2 }
+        - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+        - relation: { who: hardliner, axis: trust, delta: 1 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - belief: { fact: "약탈조 둘이 버들마을 남쪽 텃밭으로 나갔다. 저녁 검수 자루가 무거웠다. 위원장은 장부에 서명하며 아무 말도 하지 않았다", source: seen }
+    - id: east_road
+      label: 청솔 쪽 강변 길목을 털며 공세 앞길을 닦게 하자고 한다
+      effects:
+        - set_flag: co_council_done
+        - clock: { id: c_east_offensive, delta: 1 }
+        - faction_resource: { faction: own, resource: ammo, delta: -8 }
+        - relation: { who: hardliner, axis: respect, delta: 1 }
+        - relation: { who: raider, axis: trust, delta: -1 }
+        - belief: { fact: "약탈조가 강변 길목으로 나갔다. 할당량은 덜 찼지만 공세 길에 박힌 청솔 초병 자리를 셋 지웠다는 보고가 올라왔다", source: report }
+    - id: rotate
+      label: 조마다 구역을 돌려 바닥난 곳은 쉬게 하는 배치표를 짠다
+      check: tactics
+      outcomes:
+        success:
+          - set_flag: co_council_done
+          - faction_resource: { faction: own, resource: food, delta: 10 }
+          - clock: { id: b_waver, delta: 1 }
+          - relation: { who: boss, axis: trust, delta: 1 }
+          - relation: { who: raider, axis: respect, delta: 1 }
+          - belief: { fact: "배치표가 통과됐다. 텃밭은 건드리지 않고도 저녁 검수가 맞았다. 위원장이 처음으로 내 장부를 끝까지 넘겨 보았다", source: seen }
+        partial:
+          - set_flag: co_council_done
+          - relation: { who: raider, axis: trust, delta: -1 }
+          - belief: { fact: "배치표는 통과됐지만 삼조의 새 구역이 비어 있었다. 삼조는 오늘 저녁 배급이 깎인다", source: seen }
+        miss:
+          - set_flag: co_council_done
+          - relation: { who: boss, axis: respect, delta: -1 }
+          - relation: { who: hardliner, axis: respect, delta: -1 }
+          - belief: { fact: "배치표의 셈이 엉켰다. 마경수가 웃으며 고쳐 주었고, 위원장은 그의 안대로 정했다", source: seen }
+
+# ── 고정: 수용소 ───────────────────────────────
+
+- id: co_prisoner_use
+  title: 안쪽 문의 명단
+  tags: [c_officer, council]
+  when:
+    factions: [faction_c]
+    zones: [c_base, c_warehouse]
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [co_prisoners_decided]
+  cast:
+    hardliner: { ids: [c_gyeongsu] }
+    keeper: { ids: [c_pilsu], enter: false, optional: true }
+  setup: '{hardliner:이/가} 접은 종이 한 장을 탁자에 펴 놓는다. 수용소 안쪽 문 뒤의 명단이다. 이름 몇 줄, 그중 하나에 다리 부상이라고 적혀 있다. "공세 전날 광장에서 하나. 청솔 놈들도 소문은 들어야지. 위원님 할당량 장부에 이것도 한 줄 넣어 두세요. 포로도 쓸 데가 있어야 먹이니까."'
+  ai_direction: 수용소에 갇힌 청솔형제단 정찰병들은 거래 조건이자 본보기다. 마경수는 본보기를 원하는 척하지만, 실은 포로 교환을 핑계로 나루상단과 따로 거래하는 줄을 쥐고 있다. 위원이 교환을 고르면 그 줄을 자기가 맡겠다고 나선다. 간수 노필수는 다리 다친 포로에게 몰래 진통제를 나눠 준다. 드러내지 않는다. 위원장은 위원의 안을 그대로 받는다.
+  choices:
+    - id: example
+      label: 공세 전날 본보기를 세우는 데 서명한다
+      effects:
+        - set_flag: co_prisoners_decided
+        - set_flag: co_prisoner_example
+        - clock: { id: c_east_offensive, delta: 1 }
+        - faction_relation: { from: faction_a, to: own, delta: -2, mutual: false }
+        - relation: { who: hardliner, axis: trust, delta: 2 }
+        - deed: { summary: 수용소의 청솔형제단 포로를 광장 본보기로 쓰는 데 서명했다, tags: [cruelty], severity: 2, privacy: public }
+    - id: labor
+      label: 노역조에 넣어 담과 망루를 보강하게 하자고 한다
+      effects:
+        - set_flag: co_prisoners_decided
+        - set_flag: co_prisoner_labor
+        - fortify: 1
+        - relation: { who: hardliner, axis: respect, delta: -1 }
+        - belief: { fact: "포로들이 노역조에 들어갔다. 흰 천을 감은 사람들이 담 밑에서 흙자루를 나른다. 마경수는 일하는 포로는 본보기가 안 된다고 했다", source: seen }
+    - id: exchange
+      label: 나루상단을 사이에 두고 청솔과 포로를 약으로 바꾸자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: co_prisoners_decided
+          - set_flag: co_prisoner_trade
+          - faction_resource: { faction: own, resource: medicine, delta: 10 }
+          - faction_relation: { from: faction_a, to: own, delta: 1, mutual: false }
+          - clock: { id: c_east_offensive, delta: -1 }
+          - belief: { fact: "교환이 정해졌다. 장부는 내가 맡았다. 마경수는 교환 줄은 원래 자기 일이라며 장갑을 오래 매만졌다", source: seen }
+        partial:
+          - set_flag: co_prisoners_decided
+          - set_flag: co_prisoner_trade
+          - set_flag: co_gyeongsu_trade_line
+          - faction_resource: { faction: own, resource: medicine, delta: 4 }
+          - belief: { fact: "교환은 정해졌지만 줄은 마경수가 쥐었다. 나루상단과 오가는 장부는 그의 지휘소에 있다", source: seen }
+        miss:
+          - set_flag: co_prisoners_decided
+          - relation: { who: hardliner, axis: trust, delta: -1 }
+          - belief: { fact: "위원장은 교환하면 청솔이 숨을 돌린다며 안을 접었다. 포로들은 그대로 안쪽 문 뒤에 있다", source: seen }
+    - id: keep_alive
+      label: 정하기 전까지 간수에게 물과 죽을 제대로 주라고 명한다
+      when: { cast: [keeper] }
+      effects:
+        - set_flag: co_prisoners_decided
+        - set_flag: co_prisoner_kept
+        - relation: { who: keeper, axis: trust, delta: 2 }
+        - relation: { who: hardliner, axis: respect, delta: -1 }
+        - deed: { summary: 수용소의 포로를 살려 두라고 간수에게 명했다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "노필수가 명을 받고 고개만 끄덕였다. 나가는 길에 그가 기침을 하며 등을 돌렸다. 웃는 것 같았다", source: seen }
+
+# ── 고정: 숙청 명단 ───────────────────────────────
+
+- id: co_purge_list
+  title: 서명 칸 셋
+  tags: [c_officer]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [morning, day, evening]
+    day_gte: 3
+    flags_none: [co_purge_done]
+  cast:
+    clerk: { ids: [c_sangok] }
+    named: { faction: own, ranks: [grunt], enter: false, keep: co_purge_name }
+  setup: '{clerk:이/가} 명부에서 뜯은 종이 한 장을 내민다. 광장 본보기 명단이다. 이름이 셋, 오른쪽에 위원 서명 칸이 있다. 앞의 둘 옆에는 날짜와 감시탑 이름이 적혀 있다. 셋째 이름 {named} 옆에는 "할당량 빼돌림 의심" 한 줄뿐이다. 서기는 펜 뚜껑을 열어 당신 앞에 놓고 기다린다.'
+  ai_direction: 앞의 둘은 실제로 담을 넘으려다 잡혔다. 셋째는 규율반 사무실 뒤 상자에 들어온 쪽지 하나가 전부다. 쪽지를 넣은 사람은 마경수 밑의 노역조장 용두만이고, 셋째 이름의 주인은 물류창고 하역장에서 본 것이 있다. GM만 안다. 우상옥은 위원이 서명하는 손을 본다. 위원이 무엇을 지우는지가 그에게는 더 값진 정보다.
+  choices:
+    - id: sign_all
+      label: 셋 다 서명한다
+      effects:
+        - set_flag: co_purge_done
+        - npc_hurt: { who: named, steps: 1 }
+        - relation: { who: clerk, axis: trust, delta: 1 }
+        - merit: 1
+        - deed: { summary: 증거 없는 이름까지 광장 본보기 명단에 서명했다, tags: [cruelty, loyalty], severity: 2, privacy: public }
+        - belief: { fact: "저녁 광장에서 셋이 맞았다. 셋째는 끝까지 무엇을 빼돌렸는지 묻지 않았다", source: seen }
+    - id: strike_third
+      label: 증거 칸이 빈 셋째 이름에 줄을 긋는다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: co_purge_done
+          - set_flag: co_name_struck
+          - relation: { who: clerk, axis: respect, delta: 1 }
+          - deed: { summary: 증거 없는 이름을 광장 본보기 명단에서 지웠다, tags: [honesty], severity: 1, privacy: semi_private }
+          - belief: { fact: "셋째 이름에 줄을 그었다. 우상옥은 증거가 들어오면 다시 올리겠다며 명부에 무언가를 따로 적었다", source: seen }
+        partial:
+          - set_flag: co_purge_done
+          - set_flag: co_name_struck
+          - set_flag: co_officer_marked
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "이름은 지웠다. 서기는 그 이름 옆에 위원 아무개 지움이라고 내 이름을 적었다", source: seen }
+        miss:
+          - set_flag: co_purge_done
+          - npc_hurt: { who: named, steps: 1 }
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "서기는 위원회의 규율에 토를 다시는 거냐고 조용히 물었다. 줄을 긋지 못했다. 저녁 광장에서 셋이 맞았다", source: seen }
+    - id: return_unsigned
+      label: 서명 칸을 비운 채 위원장에게 올려 보낸다
+      effects:
+        - set_flag: co_purge_done
+        - npc_hurt: { who: named, steps: 1 }
+        - relation: { who: commander, axis: respect, delta: -1 }
+        - relation: { who: clerk, axis: respect, delta: -1 }
+        - belief: { fact: "명단은 위원장 손을 거쳐 그대로 돌아왔다. 서명은 위원장 것 하나였다. 위원장은 다음엔 위원이 하라고 했다", source: seen }
+
+- id: co_purge_return
+  title: 지워진 이름
+  tags: [c_officer]
+  when:
+    factions: [faction_c]
+    zones: [c_base, c_warehouse]
+    segments: [evening, night]
+    flags_all: [co_name_struck]
+    flags_none: [co_purge_return_done]
+  cast:
+    saved: { recall: co_purge_name }
+  setup: '막사 뒤 그늘에서 {saved:이/가} 모자를 벗고 다가온다. 주위를 두 번 둘러본다. "위원님. 명부에서 제 이름 지우신 거 압니다. 누가 쪽지를 넣었는지도 알 것 같습니다. 말해도 되겠습니까. 말하면 이번엔 진짜로 광장에 설지도 모르지만."'
+  ai_direction: '{saved}는 며칠 전 밤 물류창고 하역장에서 마경수의 노역조장 용두만이 나루상단 짐꾼에게 상자를 넘기는 것을 보았다. 상자에는 수용소 교환으로 들어온 약이 들어 있었다. 그 다음 날 자기 이름이 명부에 올랐다. 용두만의 쪽지라는 것은 짐작이고, 마경수의 지시라는 것은 더 큰 짐작이다. 몰아붙이면 입을 닫는다.'
+  choices:
+    - id: listen
+      label: 아무것도 약속하지 않고 들어 본다
+      effects:
+        - set_flag: co_purge_return_done
+        - set_flag: co_gyeongsu_suspect
+        - relation: { who: saved, axis: trust, delta: 1 }
+        - belief: { fact: "물류창고 하역장에서 흰 천 감은 노역조장이 나루상단 짐꾼에게 상자를 넘기는 것을 본 사람이 있다. 그 다음 날 그 사람 이름이 명부에 올랐다", source: report }
+    - id: make_ear
+      label: 앞으로 하역장에서 본 것은 나에게만 가져오라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: co_purge_return_done
+          - set_flag: co_gyeongsu_suspect
+          - set_flag: co_own_ear
+          - relation: { who: saved, axis: trust, delta: 2 }
+          - deed: { summary: 규율반 대신 자기에게 말을 가져올 귀를 막사에 두었다, tags: [deceit], severity: 1, privacy: private }
+          - belief: { fact: "하역장에는 밤마다 상자가 나간다고 한다. 나가는 날은 마경수가 지휘소 불을 일찍 끄는 날이다. 이제 그 말을 가져오는 귀가 하나 있다", source: report }
+        partial:
+          - set_flag: co_purge_return_done
+          - set_flag: co_gyeongsu_suspect
+          - belief: { fact: "하역장에서 상자가 나가는 걸 봤다는 말까지만 들었다. 귀가 되어 달라는 말에는 고개를 젓고 돌아갔다", source: report }
+        miss:
+          - set_flag: co_purge_return_done
+          - relation: { who: saved, axis: trust, delta: -1 }
+          - belief: { fact: "귀가 되어 달라는 말을 꺼내자 그는 그게 바로 명부에 오르는 길이라며 그늘 속으로 물러났다", source: seen }
+    - id: hand_over
+      label: 규율반에 넘긴다. 위원의 귀에 들어온 말은 규율반의 것이다
+      effects:
+        - set_flag: co_purge_return_done
+        - merit: 1
+        - relation: { who: saved, axis: trust, delta: -3 }
+        - deed: { summary: 명단에서 지워 준 사람이 찾아와 털어놓은 말을 규율반에 넘겼다, tags: [betrayal, loyalty], severity: 2, privacy: semi_private }
+
+# ── 고정: 위원회 안의 다툼 ───────────────────────────
+
+- id: co_sangok_question
+  title: 명부의 물음표
+  tags: [c_officer]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [evening, night]
+    day_gte: 5
+    flags_none: [co_sangok_done]
+  cast:
+    clerk: { ids: [c_sangok] }
+    hardliner: { ids: [c_gyeongsu], enter: false }
+  setup: '규율반 사무실. 등잔 아래 {clerk:이/가} 명부 한 장을 손바닥으로 덮고 있다. "위원님 이름은 깨끗합니다. 걱정 마시라고 부른 겁니다." 손바닥이 조금 밀려난다. 잉크로 그린 물음표 하나가 보인다. 이름은 아직 손 밑이다. "위원회에 앉은 이름 옆에 이걸 그리면, 증거를 들고 가는 사람이 따로 있어야 합니다. 서기는 그런 걸 들고 가면 안 되지요."'
+  ai_direction: 물음표 옆의 이름은 마경수다. 우상옥은 마경수가 포로 교환을 핑계로 나루상단과 따로 거래한 흔적을 찾았지만 증거가 모자란다. 직접 위원장에게 가면 자기 이름이 명부에 오를까 두려워, 위험을 위원에게 넘기려 한다. 그는 규율반장 자리를 원한다. 위원이 무엇을 고르든 그는 그것을 명부에 기억한다.
+  choices:
+    - id: carry_it
+      label: 증거는 내가 찾겠다고 한다
+      effects:
+        - set_flag: co_sangok_done
+        - set_flag: co_gyeongsu_suspect
+        - relation: { who: clerk, axis: trust, delta: 2 }
+        - belief: { fact: "서기의 물음표는 마경수 이름 옆에 있다. 포로 교환을 핑계로 나루상단과 따로 오간 장부가 있다고 한다. 증거는 물류창고 하역장 쪽에 있을 것이다", source: report }
+    - id: warn_him
+      label: 마경수에게 귀띔해 그를 내 빚쟁이로 만든다
+      effects:
+        - set_flag: co_sangok_done
+        - set_flag: co_warned_gyeongsu
+        - relation: { who: hardliner, axis: trust, delta: 2 }
+        - npc_relation: { from: hardliner, to: clerk, axis: trust, delta: -3 }
+        - deed: { summary: 규율반 서기가 간부를 캐고 있다는 것을 당사자에게 귀띔했다, tags: [betrayal], severity: 2, privacy: private }
+        - belief: { fact: "마경수는 귀띔을 듣고 웃었다. 위원님한테 하나 빚졌다고 했다. 그 뒤로 서기가 지휘소 근처에 가면 노역조장이 따라붙는다고 한다", source: seen }
+    - id: shut_it
+      label: 위원회에 앉은 이름을 캐는 건 서기 일이 아니라고 못 박는다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: co_sangok_done
+          - relation: { who: clerk, axis: respect, delta: 1 }
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "서기는 명부를 덮고 깍듯이 고개를 숙였다. 물음표가 지워졌는지는 모른다", source: seen }
+        partial:
+          - set_flag: co_sangok_done
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "서기는 알겠다고 했지만, 등잔을 끄기 전에 명부에 한 줄을 더 적었다", source: seen }
+        miss:
+          - set_flag: co_sangok_done
+          - set_flag: co_officer_marked
+          - relation: { who: clerk, axis: trust, delta: -2 }
+          - belief: { fact: "서기가 조용히 물었다. 위원님은 왜 그 이름을 감싸십니까. 대답하기 전에 그가 펜을 들었다", source: seen }
+
+- id: co_gyeongsu_offer
+  title: 공세 다음 날의 탁자
+  tags: [c_officer]
+  when:
+    factions: [faction_c]
+    zones: [c_base, c_warehouse]
+    segments: [evening, night]
+    day_gte: 4
+    flags_none: [co_offer_done, co_gyeongsu_fallen]
+  cast:
+    hardliner: { ids: [c_gyeongsu] }
+  setup: '사무동 계단참. {hardliner:이/가} 담배 한 대를 내민다. 장갑을 낀 채 불을 붙여 준다. "위원장은 숫자로 굴리지. 숫자는 겨울이 오면 줄어. 그때 사람들이 누굴 보겠어." 연기를 길게 뱉는다. "공세가 끝나면 위원회 탁자가 새로 짜일 거야. 할당량 장부는 그때도 위원님 손에 있으면 좋겠는데."'
+  ai_direction: 마경수는 동쪽 공세를 성공시킨 뒤 위원장 자리를 노린다. 국혜란은 그것을 모른다. 그는 할당량 장부를 쥔 위원을 끌어들이면 공세 뒤 병사들 밥줄을 쥘 수 있다고 본다. 협박할수록 상냥해지는 사람이다. 거절해도 당장은 웃지만 잊지 않는다. 위원이 이미 그에게 귀띔한 적이 있으면 그 빚을 꺼낸다.
+  choices:
+    - id: take_hand
+      label: 담배를 받고 그 탁자에 앉겠다고 한다
+      effects:
+        - set_flag: co_offer_done
+        - set_flag: co_gyeongsu_pact
+        - clock: { id: c_east_offensive, delta: 1 }
+        - relation: { who: hardliner, axis: trust, delta: 2 }
+        - deed: { summary: 공세 뒤 위원장을 밀어낼 간부와 손을 잡았다, tags: [betrayal], severity: 2, privacy: private }
+        - belief: { fact: "마경수와 손을 잡았다. 공세가 끝나는 날, 할당량 장부는 그의 탁자 위에 놓인다", source: seen }
+    - id: refuse
+      label: 위원회 탁자는 위원장이 짠다고 담배를 돌려준다
+      effects:
+        - set_flag: co_offer_done
+        - relation: { who: hardliner, axis: trust, delta: -1 }
+        - relation: { who: hardliner, axis: respect, delta: 1 }
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - belief: { fact: "마경수는 담배를 돌려받아 제 입에 물었다. 위원님은 겨울을 안 겪어 본 사람처럼 말한다고 했다", source: seen }
+    - id: string_along
+      label: 대답을 미루며 그가 누구를 더 끌어들였는지 캐낸다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: co_offer_done
+          - set_flag: co_gyeongsu_suspect
+          - relation: { who: hardliner, axis: trust, delta: 1 }
+          - belief: { fact: "마경수는 공세 날짜와 함께 위원회를 새로 짤 날을 셈하고 있다. 밑천은 물류창고 하역장에서 나간다고, 그가 스스로 흘렸다", source: seen }
+        partial:
+          - set_flag: co_offer_done
+          - belief: { fact: "마경수는 자리 이야기만 되풀이했다. 누구와 손을 잡았는지는 끝내 말하지 않았다", source: seen }
+        miss:
+          - set_flag: co_offer_done
+          - relation: { who: hardliner, axis: trust, delta: -2 }
+          - belief: { fact: "마경수가 웃음을 거두었다. 떠보는 사람한테는 담배를 안 준다며 계단을 내려갔다", source: seen }
+
+- id: co_overpass_night
+  title: 하역장의 상자
+  urgent: true
+  tags: [c_officer]
+  when:
+    factions: [faction_c]
+    zones: [c_warehouse]
+    segments: [night, dawn]
+    flags_any: [co_gyeongsu_suspect, co_gyeongsu_trade_line]
+    flags_none: [co_overpass_done]
+  cast:
+    hardliner: { ids: [c_gyeongsu], enter: false }
+    laborer: { ids: [pc_dooman] }
+    porter: { extra: e_porter, label: 등짐을 진 나루상단 짐꾼 }
+  setup: '물류창고 하역장. 지휘소 창문의 불이 일찍 꺼졌다. 흰 천을 감은 {laborer:이/가} 수레에서 상자 둘을 내려 {porter}에게 넘긴다. 상자 옆면에 소독약 표식이 찍혀 있다. 짐꾼이 탄 꾸러미 하나를 대신 내려놓는다. 둘 다 아직 당신을 보지 못했다.'
+  ai_direction: 상자에는 포로 교환으로 들어온 약이 들어 있다. 마경수는 그것을 나루상단에 넘기고 받은 탄을 자기 사람들에게 따로 나눈다. 공세 뒤 위원회를 새로 짤 때의 밑천이다. 용두만은 붉은 완장을 약속받았고, 들키면 마경수의 이름을 대는 대신 비굴하게 웃으며 흥정한다. 짐꾼은 나루상단의 속사정을 조금 안다.
+  choices:
+    - id: shadow
+      label: 소리 없이 짐꾼이 가는 길을 따라간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: co_overpass_done
+          - set_flag: co_gyeongsu_proof
+          - overhear: { faction: faction_e, source: seen }
+          - belief: { fact: "짐꾼은 강변에서 다른 상단 사람에게 상자를 넘기며 고가도로 장갑 몫이라고 했다. 받은 탄 꾸러미는 지휘소 뒤 창고로 들어갔다", source: seen }
+        partial:
+          - set_flag: co_overpass_done
+          - set_flag: co_gyeongsu_proof
+          - belief: { fact: "짐꾼이 강변 쪽으로 사라지는 것까지 봤다. 받은 탄은 노역조장이 지휘소 뒤 창고로 끌고 갔다", source: seen }
+        miss:
+          - set_flag: co_overpass_done
+          - relation: { who: laborer, axis: trust, delta: -1 }
+          - belief: { fact: "자갈을 밟았다. 노역조장이 돌아보더니 공손하게 웃으며 위원님 밤 산책이시냐고 물었다. 수레는 비어 있었다", source: seen }
+    - id: seize
+      label: 이름을 부르고 상자를 붙잡는다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: co_overpass_done
+          - set_flag: co_gyeongsu_proof
+          - faction_resource: { faction: own, resource: medicine, delta: 6 }
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - relation: { who: laborer, axis: trust, delta: -2 }
+          - belief: { fact: "용두만은 무릎을 꿇고 시키는 대로 했을 뿐이라고 했다. 누가 시켰는지는 끝내 말하지 않았지만 지휘소 쪽을 두 번 보았다. 상자는 위원회 창고로 갔다", source: seen }
+        partial:
+          - set_flag: co_overpass_done
+          - set_flag: co_gyeongsu_proof
+          - belief: { fact: "짐꾼은 상자를 버리고 달아났다. 노역조장은 남았다. 상자 하나가 증거로 남았다", source: seen }
+        miss:
+          - set_flag: co_overpass_done
+          - relation: { who: hardliner, axis: trust, delta: -2 }
+          - belief: { fact: "소리를 지르자 지휘소 불이 켜졌다. 마경수가 내려와 교환 물자를 옮기는 중이라고 했다. 위원회 명령서까지 보여 주었다", source: seen }
+    - id: name_price
+      label: 노역조장에게 못 본 척하는 값을 묻는다
+      effects:
+        - set_flag: co_overpass_done
+        - set_flag: co_gyeongsu_pact
+        - give_item: { item: rifle_rounds, quantity: 2 }
+        - relation: { who: hardliner, axis: trust, delta: 1 }
+        - deed: { summary: 간부의 뒷거래 상자를 눈감아 주고 탄을 받았다, tags: [theft, betrayal], severity: 2, privacy: private }
+        - belief: { fact: "용두만이 탄 꾸러미를 내 외투 주머니에 넣어 주었다. 이제 마경수도 내가 본 것을 안다", source: seen }
+
+- id: co_committee_trial
+  title: 장갑을 벗는 날
+  tags: [c_officer]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [morning, day]
+    flags_all: [co_gyeongsu_proof]
+    flags_none: [co_trial_done]
+  cast:
+    boss: { commander: true }
+    hardliner: { ids: [c_gyeongsu] }
+    clerk: { ids: [c_sangok], enter: false, optional: true }
+  setup: '위원회실. 공정표 앞에 상자 하나가 놓여 있다. {boss:은/는} 안전모를 탁자에 엎어 둔 채 말한다. "위원이 본 걸 듣지. 들은 거 말고, 본 것만." {hardliner:이/가} 처음으로 장갑을 벗어 탁자에 올려놓는다. 손등에 오래된 화상 자국이 있다.'
+  ai_direction: 국혜란은 마경수가 위원장 자리를 노린다는 것을 모른다. 그녀가 두려워하는 것은 공포로 묶은 무리가 한꺼번에 등을 돌리는 날이다. 공세를 앞두고 고가도로를 맡은 간부를 치면 병사들이 흔들리고, 덮으면 규율에 예외가 생긴다. 마경수는 부인하지 않는다. 포로 교환 물자를 공세 준비에 돌렸을 뿐이라고 말하고, 위원이 무엇을 받았는지도 꺼낼 수 있다. 실패한 간부가 어디로 가는지는 성태규의 어깨가 보여 준다.
+  choices:
+    - id: testify
+      label: 하역장에서 본 것을 차례대로 증언한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: co_trial_done
+          - set_flag: co_gyeongsu_fallen
+          - npc_rank: { who: hardliner, rank: squad_leader }
+          - clock: { id: c_east_offensive, delta: -2 }
+          - faction_morale: { faction: own, delta: -1 }
+          - relation: { who: boss, axis: trust, delta: 2 }
+          - relation: { who: hardliner, axis: trust, delta: -3 }
+          - merit: 2
+          - deed: { summary: 위원회에서 간부의 뒷거래를 증언해 계급장을 떼게 했다, tags: [loyalty, honesty], severity: 2, privacy: public }
+          - belief: { fact: "마경수의 계급장이 떨어졌다. 고가도로 너머는 위원장이 직접 맡는다. 그날 저녁 물류창고 막사가 유난히 조용했다", source: seen }
+        partial:
+          - set_flag: co_trial_done
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - relation: { who: hardliner, axis: trust, delta: -2 }
+          - belief: { fact: "위원장은 교환 줄만 마경수에게서 거두었다. 공세 앞에 간부를 갈 수는 없다고 했다. 마경수는 장갑을 다시 끼며 나를 보았다", source: seen }
+        miss:
+          - set_flag: co_trial_done
+          - set_flag: co_officer_marked
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - relation: { who: hardliner, axis: trust, delta: -3 }
+          - belief: { fact: "마경수가 위원회 명령서를 꺼냈다. 교환 물자를 공세에 돌린다는 서명이 있었다. 위원장은 상자를 치우라고 했고, 서기가 명부를 펼쳤다", source: seen }
+    - id: leash
+      label: 증거는 내가 쥐고, 마경수를 내 말에 묶어 둔다
+      effects:
+        - set_flag: co_trial_done
+        - set_flag: co_gyeongsu_leashed
+        - relation: { who: hardliner, axis: trust, delta: -1 }
+        - relation: { who: hardliner, axis: respect, delta: 2 }
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - deed: { summary: 간부의 뒷거래 증거를 위원회에 내놓지 않고 쥐고 흥정했다, tags: [deceit], severity: 2, privacy: private }
+        - belief: { fact: "상자는 교환 물자라고 말해 두었다. 회의가 끝난 뒤 마경수가 장갑을 끼며 다음 공세 명단은 위원님이 먼저 보시라고 했다", source: seen }
+    - id: return_stock
+      label: 자리는 두되 빼돌린 것을 위원회 창고로 돌리게 하자고 한다
+      effects:
+        - set_flag: co_trial_done
+        - faction_resource: { faction: own, resource: ammo, delta: 15 }
+        - faction_resource: { faction: own, resource: medicine, delta: 5 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: hardliner, axis: trust, delta: -1 }
+        - belief: { fact: "지휘소 뒤 창고에서 탄 상자가 실려 나왔다. 마경수는 고가도로를 그대로 맡는다. 다만 그의 장부는 이제 위원회실에서 넘긴다", source: seen }
+    - id: clerk_chief
+      label: 이 일을 캐낸 서기를 규율반장으로 올리자고 함께 말한다
+      when: { cast: [clerk] }
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: co_trial_done
+          - set_flag: co_gyeongsu_fallen
+          - npc_rank: { who: hardliner, rank: squad_leader }
+          - npc_rank: { who: clerk, rank: officer }
+          - clock: { id: c_east_offensive, delta: -2 }
+          - relation: { who: clerk, axis: trust, delta: 3 }
+          - relation: { who: hardliner, axis: trust, delta: -3 }
+          - deed: { summary: 간부를 끌어내리고 규율반 서기를 규율반장 자리에 올렸다, tags: [loyalty], severity: 2, privacy: public }
+          - belief: { fact: "마경수는 계급장을 뗐고, 우상옥이 규율반장이 되었다. 그의 명부는 이제 위원회 탁자 위에 펼쳐진다. 내 이름이 어느 줄에 있는지는 모른다", source: seen }
+        partial:
+          - set_flag: co_trial_done
+          - relation: { who: clerk, axis: trust, delta: 1 }
+          - relation: { who: hardliner, axis: trust, delta: -2 }
+          - belief: { fact: "위원장은 서기 이야기는 공세 뒤에 하자고 했다. 마경수 일도 그때까지 미뤄졌다", source: seen }
+        miss:
+          - set_flag: co_trial_done
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "위원장은 위원과 서기가 한 줄로 서서 간부를 치는 게 더 수상하다고 했다. 둘 다 내보냈다", source: seen }
+
+# ── 고정: 바깥 무리들 ───────────────────────────────
+
+- id: co_willow_envoy
+  title: 쪽문에 들고 갈 것
+  tags: [c_officer]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [evening, night]
+    day_gte: 3
+    flags_none: [co_willow_done]
+  cast:
+    envoy: { ids: [pc_jongho] }
+    boss: { commander: true, enter: false }
+  setup: '위원회 천막. {envoy:이/가} 페인트 묻은 손가락으로 꾸러미 목록을 짚는다. "위원님. 내일 밤 버들마을 북쪽 쪽문에 갑니다. 빈손으로 가면 장현우가 문을 안 엽니다. 지난번엔 통조림이었어요. 이번엔 뭘 들고 가야 저쪽이 청솔과의 약조를 내려놓을까요." 목록 맨 아래에 해열제라고 적혀 있다가 줄이 그어져 있다.'
+  ai_direction: 위원장이 버들마을에 보낸 제안은 미끼다. 연합이 깨지면 버들마을도 겨울 안에 치고 사람을 노역조로 나눌 생각이다. 편종호도 위원도 모른다. GM은 이것을 드러내지 않는다. 편종호는 버들마을이 총 한 발 없이 넘어오면 아무도 안 죽는다고 진심으로 믿는다. 위원이 서면 약속을 써 주면 위원장은 넘었다고 여기지만, 미끼에 무게를 얹어 주는 일이라 크게 꾸짖지 않는다.
+  choices:
+    - id: gifts
+      label: 통조림과 해열제를 실어 보낸다
+      effects:
+        - set_flag: co_willow_done
+        - faction_resource: { faction: own, resource: food, delta: -15 }
+        - faction_resource: { faction: own, resource: medicine, delta: -3 }
+        - clock: { id: b_waver, delta: 2 }
+        - relation: { who: envoy, axis: trust, delta: 1 }
+        - belief: { fact: "편종호가 수레를 끌고 나갔다. 줄 그어진 해열제가 다시 목록에 올라갔다. 그는 고맙다는 말 대신 목록을 오래 접었다 폈다 했다", source: seen }
+    - id: armed_escort
+      label: 꾸러미 대신 약탈조 하나를 쪽문 앞까지 붙여 보낸다
+      effects:
+        - set_flag: co_willow_done
+        - clock: { id: b_waver, delta: 1 }
+        - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+        - relation: { who: envoy, axis: trust, delta: -2 }
+        - deed: { summary: 버들마을 사자 뒤에 약탈조를 붙여 쪽문 앞에 세웠다, tags: [cruelty], severity: 1, privacy: semi_private }
+        - belief: { fact: "약탈조가 쪽문 앞에 서 있는 동안 장현우는 문을 열었다. 편종호는 돌아와서 한 마디도 하지 않았다", source: report }
+    - id: written_word
+      label: 위원회 이름으로 겨울 동안 남쪽 텃밭을 건드리지 않겠다는 글을 써 준다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: co_willow_done
+          - set_flag: co_written_promise
+          - clock: { id: b_waver, delta: 3 }
+          - relation: { who: envoy, axis: trust, delta: 2 }
+          - relation: { who: boss, axis: respect, delta: -1 }
+          - belief: { fact: "편종호가 내 글을 외워 갔다. 장현우가 그 종이를 두 번 읽고 접어 품에 넣었다고 한다. 위원장은 위원이 위원회보다 앞섰다고만 했다", source: report }
+        partial:
+          - set_flag: co_willow_done
+          - set_flag: co_written_promise
+          - clock: { id: b_waver, delta: 1 }
+          - belief: { fact: "장현우는 글을 받았지만 대답하지 않았다. 편종호 말로는 회의에 부쳐 보겠다고 했다", source: report }
+        miss:
+          - set_flag: co_willow_done
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "위원장이 글을 먼저 보았다. 위원회 이름은 위원 혼자 쓰는 게 아니라며 찢었다. 편종호는 빈손으로 갔다", source: seen }
+    - id: return_harvest
+      label: 텃밭에서 털어 온 몫 일부를 돌려보낸다
+      when: { flags_all: [co_raided_willow] }
+      effects:
+        - set_flag: co_willow_done
+        - faction_resource: { faction: own, resource: food, delta: -10 }
+        - clock: { id: b_waver, delta: 3 }
+        - relation: { who: envoy, axis: affection, delta: 2 }
+        - relation: { who: commander, axis: respect, delta: -1 }
+        - deed: { summary: 버들마을 텃밭에서 털어 온 몫을 사자 편에 돌려보냈다, tags: [enemy_sympathy], severity: 1, privacy: semi_private }
+
+- id: co_trade_line
+  title: 금니의 셈
+  tags: [c_officer, council]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [morning, day]
+    day_gte: 2
+    own_policy: { trade: [none] }
+    flags_none: [co_trade_set]
+  cast:
+    boss: { commander: true }
+    trader: { ids: [e_bongsu] }
+  setup: '위원회실 문 앞까지 {trader:이/가} 들어와 있다. 금니를 보이며 의자도 권하기 전에 앉는다. "위원님, 붉은 쪽은 사람 많고 창고 크고, 다 좋은데 약이 모자라잖소. 하얀매는 값을 따지고. 우리가 식량을 받고 탄을 대 드리든, 하얀매 줄을 대신 놔 드리든, 어느 쪽이든 매일 하는 거래로 묶어 둡시다." {boss:이/가} 장부를 당신 쪽으로 돌린다.'
+  ai_direction: 탁봉수는 이기는 쪽에 붙으려 한다. 붉은연합과 날마다 거래로 묶이면 나루상단은 사실상 편을 든 것이 된다. 그는 그 무게를 위원의 입으로 정하게 해서 나중에 핑계를 남긴다. 하얀매와 물을 주고 약을 받는 줄을 열면 하얀매가 붉은연합 쪽으로 기운다. 탁봉수는 겁을 주면 입이 가벼워져서 다른 무리의 속사정을 흘린다. 거래량은 코드가 정한다.
+  choices:
+    - id: naru_ammo
+      label: 나루상단과 식량을 주고 탄을 받는 날거래를 연다
+      effects:
+        - set_flag: co_trade_set
+        - faction_policy: { faction: own, topic: trade, option: food_for_ammo }
+        - clock: { id: e_side, delta: 1 }
+        - faction_relation: { from: faction_e, to: own, delta: 1 }
+        - relation: { who: trader, axis: trust, delta: 1 }
+        - belief: { fact: "나루상단과 날마다 식량을 주고 탄을 받기로 했다. 탁봉수는 계약서 없이 악수만 하고 갔다", source: seen }
+    - id: clinic_medicine
+      label: 하얀매에 물을 대 주고 약을 받는 줄을 연다
+      effects:
+        - set_flag: co_trade_set
+        - faction_policy: { faction: own, topic: trade, option: water_for_medicine }
+        - clock: { id: d_lean, delta: 1 }
+        - faction_relation: { from: faction_d, to: own, delta: 1, mutual: false }
+        - relation: { who: trader, axis: respect, delta: -1 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "하얀매 진료소로 물통이 날마다 나가고 약 상자가 들어온다. 탁봉수는 그 줄에 자기 몫이 없다는 걸 알고 오래 웃었다", source: seen }
+    - id: squeeze
+      label: 공세가 끝난 뒤를 생각하라며 탁봉수의 값을 누른다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: co_trade_set
+          - faction_policy: { faction: own, topic: trade, option: food_for_ammo }
+          - faction_resource: { faction: own, resource: ammo, delta: 10 }
+          - clock: { id: e_side, delta: 2 }
+          - overhear: { faction: enemy, source: report }
+          - relation: { who: trader, axis: respect, delta: 1 }
+          - belief: { fact: "탁봉수는 땀을 닦으며 값을 깎았다. 묻지도 않은 청솔 쪽 사정까지 늘어놓고 갔다", source: seen }
+        partial:
+          - set_flag: co_trade_set
+          - faction_policy: { faction: own, topic: trade, option: food_for_ammo }
+          - relation: { who: trader, axis: trust, delta: -1 }
+          - belief: { fact: "거래는 열렸지만 값은 그대로다. 탁봉수는 웃는 얼굴로 강 건너에도 손님은 있다고 했다", source: seen }
+        miss:
+          - set_flag: co_trade_set
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - relation: { who: trader, axis: trust, delta: -2 }
+          - belief: { fact: "탁봉수가 금니를 감추었다. 거래는 다음 장날에 다시 이야기하자며 나갔다. 위원장이 나를 보았다", source: seen }
+    - id: keep_stores
+      label: 창고의 것은 창고에 두자고 한다
+      effects:
+        - set_flag: co_trade_set
+        - relation: { who: trader, axis: respect, delta: -1 }
+        - belief: { fact: "날거래는 열지 않기로 했다. 탁봉수는 이기는 쪽은 원래 장사를 안 해도 된다며 모자를 썼다", source: seen }
+
+# ── 고정: 위원회 방침 ───────────────────────────────
+
+- id: co_war_line
+  title: 맨 앞줄의 이름
+  tags: [c_officer, council]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [morning, day]
+    day_gte: 4
+    own_policy: { stance: [normal, defend] }
+    flags_none: [co_war_line_done]
+  cast:
+    boss: { commander: true }
+    hardliner: { ids: [c_gyeongsu] }
+    penal: { ids: [pc_taegyu] }
+  setup: '위원회실 칠판에 동쪽 초소가 그려져 있다. {hardliner:이/가} 분필로 화살표 셋을 긋고 맨 앞 화살표 끝에 벌조라고 쓴다. "맨 앞줄은 벌조. 그러라고 있는 조니까. 날짜는 위원회가 밀어붙이자고만 하면 됩니다." 문가에 {penal:이/가} 모자를 쥐고 서 있다. 계급장을 뗀 바느질 구멍이 어깨에 보인다. 그는 아무 말도 하지 않는다.'
+  ai_direction: 위원회가 밀어붙이기로 정하면 동쪽 공세가 앞당겨진다. 성태규는 반년 전 위에서 내려온 엉터리 시간 때문에 조를 잃었다. 공세 날 벌조를 이끌고 청솔 쪽으로 손을 들고 넘어갈 생각이지만 GM만 안다. 드러내지 않는다. 마경수는 공세가 성공하면 위원회 탁자를 새로 짤 생각이다. 위원장은 위원의 안을 듣고 정한다.
+  choices:
+    - id: push
+      label: 밀어붙이자고 한다. 맨 앞줄은 벌조로
+      effects:
+        - set_flag: co_war_line_done
+        - faction_policy: { faction: own, topic: stance, option: attack }
+        - clock: { id: c_east_offensive, delta: 2 }
+        - relation: { who: hardliner, axis: trust, delta: 1 }
+        - relation: { who: penal, axis: trust, delta: -2 }
+        - npc_relation: { from: penal, to: hardliner, axis: trust, delta: -1 }
+        - deed: { summary: 공세를 앞당기며 맨 앞줄에 벌조를 세우자고 했다, tags: [cruelty], severity: 1, privacy: semi_private }
+    - id: mixed_front
+      label: 밀어붙이되 벌조만 앞에 두지 말고 정규조를 섞는 배치를 짠다
+      check: tactics
+      outcomes:
+        success:
+          - set_flag: co_war_line_done
+          - faction_policy: { faction: own, topic: stance, option: attack }
+          - clock: { id: c_east_offensive, delta: 1 }
+          - relation: { who: penal, axis: trust, delta: 2 }
+          - relation: { who: hardliner, axis: respect, delta: -1 }
+          - belief: { fact: "벌조 사이사이에 정규조가 섞였다. 성태규가 처음으로 칠판 앞에 와서 엎드릴 자리를 짚었다", source: seen }
+        partial:
+          - set_flag: co_war_line_done
+          - faction_policy: { faction: own, topic: stance, option: attack }
+          - clock: { id: c_east_offensive, delta: 1 }
+          - belief: { fact: "배치는 반만 바뀌었다. 첫 화살표는 여전히 벌조다", source: seen }
+        miss:
+          - set_flag: co_war_line_done
+          - faction_policy: { faction: own, topic: stance, option: attack }
+          - relation: { who: penal, axis: trust, delta: -1 }
+          - belief: { fact: "배치표를 두고 마경수와 엇갈리다 위원장이 그의 안을 골랐다. 성태규는 모자를 쓰고 나갔다", source: seen }
+    - id: hold
+      label: 겨울까지 지키며 버들마을부터 떼어 내자고 한다
+      effects:
+        - set_flag: co_war_line_done
+        - faction_policy: { faction: own, topic: stance, option: defend }
+        - clock: { id: c_east_offensive, delta: -2 }
+        - clock: { id: b_waver, delta: 1 }
+        - relation: { who: hardliner, axis: trust, delta: -2 }
+        - relation: { who: penal, axis: affection, delta: 1 }
+        - belief: { fact: "위원회는 담을 지키기로 했다. 마경수가 칠판의 화살표를 손바닥으로 지웠다. 분필 가루가 그의 장갑에 남았다", source: seen }
+
+- id: co_ration_cut
+  title: 솥 앞에서 정하지 않게
+  tags: [c_officer, council]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [morning, day]
+    day_gte: 6
+    own_policy: { ration: [normal] }
+    flags_none: [co_ration_done]
+  cast:
+    boss: { commander: true }
+    cook: { ids: [pc_sundeok] }
+  setup: '{boss:이/가} 장부를 덮으며 말한다. "겨울은 길어. 공세 끝나면 다친 사람 먹일 몫이 따로 들어. 지금 깎는다." 문가에서 {cook:이/가} 국자를 허리춤에서 빼 든다. "깎을 거면 어디서 깎을지까지 정해 주쇼, 위원님. 솥 앞에서 내가 정하게 두지 말고. 나는 줄 끝에 선 애들한테 국자를 한 번 더 기울이는 사람이야."'
+  ai_direction: 위원장은 이미 깎기로 마음먹었다. 위원이 정하는 것은 어디서 깎느냐다. 옥금자는 부엌 아이들을 쓰레기 수레에 숨겨 배수로로 내보내 왔고, 규율반이 부엌 장부를 들춰 보는 날을 두려워한다. 드러내지 않는다. 노역조와 수용소 몫부터 깎으면 성한 대원은 덜 굶지만 흰 천 감은 사람들이 먼저 쓰러진다. 양은 코드가 정했다. 며칠 치인지 지어내지 않는다.
+  choices:
+    - id: cut_all
+      label: 계급 가리지 않고 똑같이 깎자고 한다
+      effects:
+        - set_flag: co_ration_done
+        - faction_policy: { faction: own, topic: ration, option: cut }
+        - relation: { who: cook, axis: respect, delta: 1 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "배급이 한 국자씩 줄었다. 위원회실 점심도 같은 솥에서 나왔다. 옥금자가 그걸 막사마다 말하고 다녔다", source: seen }
+    - id: cut_camp
+      label: 노역조와 수용소 몫부터 깎자고 한다
+      effects:
+        - set_flag: co_ration_done
+        - set_flag: co_camp_cut
+        - faction_resource: { faction: own, resource: food, delta: 12 }
+        - relation: { who: cook, axis: trust, delta: -2 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - deed: { summary: 노역조와 수용소 사람들의 몫부터 깎자고 했다, tags: [cruelty], severity: 2, privacy: semi_private }
+        - belief: { fact: "흰 천 감은 사람들의 솥이 따로 걸렸다. 성한 대원들의 국자는 그대로다. 옥금자는 그 솥 앞에 서지 않겠다고 했다", source: seen }
+    - id: quota_cut
+      label: 할당량 못 채운 조만 더 세게 깎자고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: co_ration_done
+          - faction_resource: { faction: own, resource: food, delta: 8 }
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "모자란 조의 배급이 더 깎였다. 다음 날 저녁 검수 자루들이 눈에 띄게 무거웠다", source: seen }
+        partial:
+          - set_flag: co_ration_done
+          - faction_resource: { faction: own, resource: food, delta: 4 }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "모자란 조를 더 깎았다. 막사에서 위원 이름이 욕과 함께 오르내린다는 말이 들린다", source: seen }
+        miss:
+          - set_flag: co_ration_done
+          - faction_policy: { faction: own, topic: ration, option: cut }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "위원장은 그건 원래 하던 일이라며 전부 깎았다. 모자란 조는 이중으로 깎였다", source: seen }
+    - id: not_before_push
+      label: 공세 앞에 배를 곯리면 앞줄이 먼저 무너진다고 맞선다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: co_ration_done
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - relation: { who: cook, axis: affection, delta: 1 }
+          - belief: { fact: "위원장은 공세가 끝날 때까지 배급을 두기로 했다. 그 대신 공세가 실패하면 그 몫은 위원 장부에서 깐다고 했다", source: seen }
+        partial:
+          - set_flag: co_ration_done
+          - belief: { fact: "결정은 공세 날짜가 정해질 때까지 미뤄졌다. 옥금자는 솥에 넣을 쌀을 매일 아침 위원회실에 물으러 온다", source: seen }
+        miss:
+          - set_flag: co_ration_done
+          - faction_policy: { faction: own, topic: ration, option: cut }
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "위원장은 위원회의 결정에 토를 다는 건 방을 나가기 전까지만이라고 했다. 배급은 깎였다", source: seen }

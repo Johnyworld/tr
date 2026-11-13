@@ -28,7 +28,7 @@ start_location: a_base
 access: [ration, mission_board]
 beliefs_preset: a_grunt
 # 시작할 때 알고 있는 인물 (같은 분대와 거점의 주요 인물)
-known_npcs: [a_taeho, a_jiho, a_seoyeon, a_mansu, a_chaewon, a_doyun, a_seonghee, a_bokja]
+known_npcs: [a_taeho, a_jiho, a_seoyeon, a_mansu, a_chaewon, a_doyun, a_seonghee, a_bokja, a_jeongbin, a_gicheol_scout]
 # 직속 상관. 임무를 주고 보고를 받는다
 commander: a_taeho
 # 이 역할에 내려오는 임무 (content/missions/)

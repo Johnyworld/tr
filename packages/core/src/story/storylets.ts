@@ -161,12 +161,20 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
 
 /** 다음 스토리렛을 열 수 있는 때인지 (진행 중인 것·전투가 없고, 간격이 지났다) */
 export function storyletWindowOpen(state: GameState, content: Content, at: GameTime): boolean {
-  if (state.activeStorylet || state.battle) return false;
+  return storyletWindow(state, content, at) === "open";
+}
+
+/**
+ * 이야기를 열 수 있는 때: open(아무 이야기나) / urgent_only(이야기 사이 간격 안이지만 급한 일은 연다) / closed.
+ * 급한 이야기(urgent)는 그 자리·그 시각에만 맞는 일이 많아, 간격 때문에 놓치지 않게 한다
+ */
+export function storyletWindow(state: GameState, content: Content, at: GameTime): "open" | "urgent_only" | "closed" {
+  if (state.activeStorylet || state.battle) return "closed";
   const pacing = content.scenario.storylet_pacing;
   // 지금 캐릭터의 이야기가 막 시작됐으면 조금 기다린다
-  if (at - state.runStartedAt < pacing.first_after_hours * 60) return false;
-  if (state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt) return true;
-  return at - state.lastStoryletAt >= pacing.min_gap_hours * 60;
+  if (at - state.runStartedAt < pacing.first_after_hours * 60) return "closed";
+  if (state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt) return "open";
+  return at - state.lastStoryletAt >= pacing.min_gap_hours * 60 ? "open" : "urgent_only";
 }
 
 /** 무게로 하나 고른다 */

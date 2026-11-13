@@ -186,13 +186,16 @@ export function factionOutlook(state: GameState, content: Content): FactionOutlo
             .map((r) => ({ label: r.label, level: label(war.stock_labels, daysOfStock(content, ownState, r.id)) })),
           plans: Object.values(state.clocks)
             .filter((c) => c.factionId === ownContent.id)
-            .map((c) => {
+            .map((c, _i, _all) => {
               const ratio = c.filled / c.max;
-              const target = c.target || frontierTarget(state, content, c.factionId);
+              const plan = ownContent.plans.find((p) => p.label === c.label);
+              const shift = plan?.kind === "shift";
+              // 태도가 바뀌는 계획(shift)에는 칠 구역이 없다. 이미 일어났으면 그렇다고만
+              const target = shift ? null : c.target || frontierTarget(state, content, c.factionId);
               return {
                 label: c.label,
-                stage: ratio < 0.34 ? "말만 돈다" : ratio < 0.75 ? "준비가 한창이라는 말" : "임박했다는 말",
-                imminent: ratio >= 0.75,
+                stage: shift && ratio >= 1 ? "이미 정해졌다는 말" : ratio < 0.34 ? "말만 돈다" : ratio < 0.75 ? (shift ? "윗사람들 사이에 오가는 말이 잦다" : "준비가 한창이라는 말") : shift ? "곧 정해질 거라는 말" : "임박했다는 말",
+                imminent: !shift && ratio >= 0.75,
                 targetName: target ? (content.locations[target]?.name ?? target) : null,
               };
             }),

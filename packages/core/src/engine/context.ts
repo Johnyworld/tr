@@ -1,3 +1,4 @@
+import { describeAccess, describeCultureForGm } from "../game/culture.ts";
 import { describeCompanions } from "../game/companions.ts";
 import { commanderOf } from "../game/missions.ts";
 import { weatherNow } from "../sim/weather.ts";
@@ -86,21 +87,24 @@ export function describePlayerSections(state: GameState, content: Content): Scen
   const sections: [string, string][] = [
     ["status", [
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
-      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
-      `트레잇 (서술에 반영한다): ${traitLabels(content, player, { acting: true }).join(", ") || "없음"}`,
-      `능력: ${stats}`,
-      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
-      ...(player.skillPoints > 0 ? [`레벨업 대기: 올릴 스킬 ${player.skillPoints}개. 적당한 때 플레이어에게 무엇을 올릴지 묻고 learn_skill로 올린다`] : []),
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       `소지품: ${describeInventory(content, player.inventory)}`,
       ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감·물건으로만 준다`] : []),
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
       ...(describeCompanions(state, content) ? [describeCompanions(state, content)] : []),
+      ...(player.skillPoints > 0 ? [`레벨업 대기: 올릴 스킬 ${player.skillPoints}개. 적당한 때 플레이어에게 무엇을 올릴지 묻고 learn_skill로 올린다`] : []),
+    ].join("\n")],
+    ["sheet", [
+      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
+      `트레잇 (서술에 반영한다): ${traitLabels(content, player, { acting: true }).join(", ") || "없음"}`,
+      `능력: ${stats}`,
+      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n")],
     ["battle", describeBattleForGm(state, content)],
     ["storylet", describeStoryletForGm(state, content)],
     ["missions", describeMissionsForGm(state, { content })],
+    ["culture", player.factionId ? [describeAccess(content, state.roleId), describeCultureForGm(content, player.factionId)].filter(Boolean).join("\n") : ""],
     ["factions", describeFactionsForGm(state, content)],
     ["deeds", describeOwnDeeds(state)],
     ["present", describePresentNpcs(state, content, player)],
@@ -290,7 +294,8 @@ export function describeZonePeople(state: GameState, content: Content): string {
   );
   const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id));
   if (strangers.length === 0) return "";
-  const lines = strangers.map((npc) => `- (${npc.id}) 이름 모름: ${npc.look}`);
+  // 갇힌 사람은 이 구역에 와 있으니 갇혀 있다는 것까지 보인다 (돌아다니지 않는다)
+  const lines = strangers.map((npc) => `- (${npc.id}) 이름 모름${state.characters[npc.id]?.captive ? " · 이곳에 갇혀 있다 (창살 안, 돌아다니지 않는다)" : ""}: ${npc.look}`);
   return `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나도 이름은 모른다):\n${lines.join("\n")}`;
 }
 

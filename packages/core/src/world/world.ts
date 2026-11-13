@@ -33,9 +33,11 @@ export const SCENE_FULL_EVERY = 8;
 /** 다시 싣지 않은 덩어리를 GM에게 알릴 때의 이름 */
 const SCENE_SECTION_LABELS: Record<string, string> = {
   status: "캐릭터 상태",
+  sheet: "능력·스킬·트레잇",
+  culture: "무리의 문화·권한",
   battle: "전투",
   storylet: "진행 중인 이야기",
-  missions: "복무·임무·무리 문화",
+  missions: "복무·임무",
   factions: "세력",
   deeds: "최근 행적",
   present: "함께 있는 인물",

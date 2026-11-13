@@ -26,7 +26,7 @@ start_location: a_base
 access: [ration, mission_board]
 beliefs_preset: a_officer
 # 지도부와 회의 둘레, 거점의 주요 인물, 연합과 거래 상대의 얼굴들
-known_npcs: [a_seonghee, a_doyun, a_jeonghun, a_jaeseok, a_sujin, a_hangyeol, a_taeho, a_chaewon, a_bokja, a_jiho, a_seoyeon, a_mansu, a_dongwook, a_byungchul, a_yejin, a_haneul, b_hyunwoo, b_seungmin, e_bongsu, d_sangpil]
+known_npcs: [a_seonghee, a_doyun, a_jeonghun, a_jaeseok, a_sujin, a_hangyeol, a_taeho, a_chaewon, a_bokja, a_jiho, a_seoyeon, a_mansu, a_dongwook, a_byungchul, a_yejin, a_haneul, b_hyunwoo, b_seungmin, e_bongsu, d_sangpil, a_jeongbin, a_gicheol_scout]
 # 직속 상관은 대표. 아침 회의 뒤 직접 임무를 맡긴다
 commander: a_seonghee
 missions: [a_of_east_inspection, a_of_b_talks, a_of_market_ammo, a_of_clinic_deal, a_of_ledger_audit, a_of_counter_plan, a_of_squad_briefing, a_of_prisoner]

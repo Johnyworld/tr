@@ -21,7 +21,7 @@ import {
   pickCast,
   pickStorylet,
   storyletVars,
-  storyletWindowOpen,
+  storyletWindow,
 } from "../story/storylets.ts";
 import { josa, sentence } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
@@ -64,9 +64,10 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
     state = store.getState();
   }
   const player = state.characters[state.playerId];
-  if (!player || player.dead || !storyletWindowOpen(state, content, state.time)) return displays;
+  const window = storyletWindow(state, content, state.time);
+  if (!player || player.dead || window === "closed") return displays;
   // 고정 이야기(한 번뿐인 것)가 열릴 수 있으면 먼저 연다. 반복되는 템플릿에 밀려 묻히지 않게
-  const eligible = eligibleStorylets(state, content);
+  const eligible = eligibleStorylets(state, content).filter((s) => window === "open" || s.urgent);
   const fixed = eligible.filter((s) => !s.repeatable);
   const storylet = pickStorylet(fixed.length ? fixed : eligible, rng);
   if (!storylet) return displays;
@@ -107,9 +108,10 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
 export function createStoryletCheck(content: Content, options: { asleep?: boolean } = {}): InterruptCheck {
   return ({ state, to }) => {
     if (Object.keys(content.storylets).length === 0) return null;
-    if (!storyletWindowOpen(state, content, to)) return null;
-    // 자는 동안에는 급한 일만 깨운다 (나머지는 깬 뒤에 열린다)
-    const eligible = eligibleStorylets(state, content, to).filter((s) => !options.asleep || s.urgent);
+    const window = storyletWindow(state, content, to);
+    if (window === "closed") return null;
+    // 자는 동안·이야기 사이 간격 안에는 급한 일만 (나머지는 그 뒤에 열린다)
+    const eligible = eligibleStorylets(state, content, to).filter((s) => (!options.asleep && window === "open") || s.urgent);
     return eligible.length > 0 ? { kind: "storylet", detail: "일이 생겼다", at: to } : null;
   };
 }

@@ -1,0 +1,1224 @@
+# 연애·질투·삼각관계·성적 위협 (기획서 12.7, 12-58, 12-59)
+# 모두 성인 주제 태그 mature: 수위가 켜져 있고 주인공과 배역이 모두 성인일 때만 열린다 (엔진이 거른다)
+# 지킬 선: 잠자리는 암전. 몸과 행위를 그리지 않는다. 성폭력은 위협과 시도까지만, 어떤 선택·결과에서도 일어나지 않는다.
+#          판정은 어떻게 벗어나는지와 무엇을 대가로 치르는지(다침, 마음, 빼앗김, 다른 사람의 개입)를 정한다. 피해자를 탓하지 않는다
+# 연애와 위협은 한 이야기에 섞지 않는다
+#
+# 1. 연애: 눈길 rm_glance → 불가 rm_fireside, 바깥에서 지켜 준 사람 rm_guarded_outside,
+#    연인과의 새벽 rm_morning_after, 다친 연인 rm_lover_hurt, 떠나보내는 날 rm_lover_sent_away, 연인과 무리 사이 rm_lover_or_squad
+# 2. 질투·삼각관계: 두 사람 rm_two_suitors, 연인 앞의 다른 사람 rm_lover_and_suitor, 추궁 rm_jealous_confront (keep: rm_ex)
+#    → (rm_split) 헤어진 사람 rm_ex_again, 연적 rm_rival_meet
+# 3. 성적 위협 (keep: rm_menace, 모두 rm_menaced를 세운다)
+#    괴롭힘: 길에서 rm_harass_road, 우리 무리 안에서 rm_harass_camp → (rm_harass_ignored) 어두운 곳 rm_harass_escalate
+#    시도: rm_assault_dark / 거래 조건: rm_coerce_trade → (rm_coerce_owed) rm_coerce_collect
+#    갇힌 동안 (captivity): 밤의 간수 rm_cap_night, 풀어 주겠다는 말 rm_cap_offer
+#    그 뒤: 잠 못 드는 밤 rm_after_nerves (원수로 삼기 → rm_grudge), 털어놓기 rm_confide (keep: rm_confidant) → 갚기 rm_revenge
+
+# ── 1. 연애 ─────────────────────────────────────────
+
+- id: rm_glance
+  title: 눈이 마주친 순간
+  tags: [world, mature]
+  when:
+    day_gte: 2
+    segments: [morning, day, evening]
+    flags_none: [rm_glanced]
+  cast:
+    them: { romance: suitor }
+  setup: 물을 받는 줄, 앞사람 어깨 너머로 {them:이/가} 이쪽을 보고 있었다. 눈이 마주치자 고개를 돌리지만, 귀 끝이 붉다. 조금 뒤에 또 본다.
+  ai_direction: 이 사람은 주인공에게 마음이 있다. 말로 하지 않는다. 시선, 괜히 만지작거리는 물통 마개, 줄이 줄어들수록 느려지는 걸음으로만 보인다. 속마음을 서술에서 단정하지 않는다. 다가갈지는 플레이어가 정한다. 더 나아가려 하면 GM tool romance(flirt)를 쓴다.
+  choices:
+    - id: hold
+      label: 시선을 피하지 않는다
+      effects:
+        - set_flag: rm_glanced
+        - relation: { who: them, axis: affection, delta: 1 }
+    - id: speak
+      label: 줄을 핑계로 말을 건다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_glanced
+          - relation: { who: them, axis: affection, delta: 1 }
+          - relation: { who: them, axis: trust, delta: 1 }
+        partial:
+          - set_flag: rm_glanced
+          - relation: { who: them, axis: trust, delta: 1 }
+        miss:
+          - set_flag: rm_glanced
+          - body: { track: nerves, delta: 1, chance: 0.5 }
+    - id: away
+      label: 모른 척 물통만 본다
+      effects:
+        - set_flag: rm_glanced
+
+- id: rm_fireside
+  title: 불가에 남은 둘
+  tags: [world, mature]
+  when:
+    day_gte: 3
+    segments: [evening, night]
+    flags_none: [rm_fireside_done]
+  cast:
+    them: { romance: suitor }
+  setup: 다들 자러 들어가고 드럼통 불만 남았다. {them:이/가} 장작 하나를 더 넣고 자리를 뜨지 않는다. "잠이 안 와서." 불똥이 둘 사이로 튄다.
+  ai_direction: 오래 앉아 있을 핑계를 찾는 사람이다. 지난 삶 이야기(붕괴 전의 직업, 잃은 사람)가 나오면 길게 듣는다. 손이 닿을 듯한 거리에서 멈춘다. 무엇을 털어놓는지는 플레이어의 몫이다. 이 사람이 아는 것만 말하게 한다.
+  choices:
+    - id: open
+      label: 붕괴 전 이야기를 털어놓는다
+      effects:
+        - set_flag: rm_fireside_done
+        - relation: { who: them, axis: trust, delta: 1 }
+        - relation: { who: them, axis: affection, delta: 1 }
+        - body: { track: nerves, delta: -1 }
+    - id: listen
+      label: 그 사람 이야기를 듣는다
+      effects:
+        - set_flag: rm_fireside_done
+        - relation: { who: them, axis: trust, delta: 1 }
+    - id: leave
+      label: 내일 일찍 나가야 한다며 일어선다
+      effects:
+        - set_flag: rm_fireside_done
+        - relation: { who: them, axis: affection, delta: -1 }
+
+- id: rm_guarded_outside
+  title: 등 뒤를 맡긴 사람
+  tags: [world, mature]
+  when:
+    day_gte: 3
+    zone_owner: [none, other]
+    segments: [morning, day, evening]
+    flags_none: [rm_guarded_done]
+  cast:
+    them: { romance: suitor }
+  setup: 무너진 담 사이를 지나는데 {them:이/가} 굳이 따라붙었다. "혼자 가면 안 되는 길이야." 모퉁이 너머에서 젖은 발소리가 겹쳐 들린다. 하나가 아니다.
+  ai_direction: 감염체 몇이 골목을 막고 있다. 이 사람은 주인공보다 반걸음 앞에 서려고 한다. 무사히 넘기면 둘 다 한동안 말이 없다. 고마움과 그 이상을 섞지 말고, 숨 고르는 소리와 떨리는 손으로만 보인다.
+  choices:
+    - id: watch
+      label: 그 사람을 믿고 뒤를 살핀다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: rm_guarded_done
+          - relation: { who: them, axis: affection, delta: 1 }
+          - relation: { who: them, axis: trust, delta: 1 }
+        partial:
+          - set_flag: rm_guarded_done
+          - npc_hurt: { who: them, steps: 1 }
+          - relation: { who: them, axis: affection, delta: 1 }
+        miss:
+          - set_flag: rm_guarded_done
+          - wound: { steps: 1, cause: 골목에서 감염체에게 붙잡혔다 }
+          - npc_hurt: { who: them, steps: 1 }
+          - relation: { who: them, axis: trust, delta: 1 }
+    - id: front
+      label: 내가 앞에 선다
+      check: fight
+      outcomes:
+        success:
+          - set_flag: rm_guarded_done
+          - relation: { who: them, axis: respect, delta: 2 }
+          - relation: { who: them, axis: affection, delta: 1 }
+          - deed: { summary: 골목에서 함께 간 사람 앞을 막아섰다, tags: [bravery], severity: 1, privacy: private }
+        partial:
+          - set_flag: rm_guarded_done
+          - wound: { steps: 1, cause: 앞을 막다 물어뜯길 뻔했다 }
+          - relation: { who: them, axis: affection, delta: 2 }
+        miss:
+          - set_flag: rm_guarded_done
+          - wound: { steps: 2, cause: 앞을 막다 감염체에 짓눌렸다 }
+          - relation: { who: them, axis: affection, delta: 1 }
+    - id: back
+      label: 돌아가자고 한다
+      effects:
+        - set_flag: rm_guarded_done
+        - delay: 90
+        - relation: { who: them, axis: respect, delta: -1 }
+
+- id: rm_morning_after
+  title: 같은 담요
+  tags: [world, mature]
+  when:
+    has_lover: true
+    segments: [dawn]
+    flags_none: [rm_morning_done]
+  cast:
+    lover: { romance: lover }
+  setup: 그날 밤 같은 담요를 덮었다. 새벽, 창 대신 막은 판자 틈으로 회색 빛이 든다. {lover:이/가} 먼저 깨어 천장을 보고 있다. 밖에서 교대 종이 한 번 울린다.
+  ai_direction: 밤의 일은 암전으로 넘어갔다. 지금은 아침의 어색함과 다정함만 다룬다. 몸을 묘사하지 않는다. 누가 볼까, 오늘 각자 어디로 나가는지, 살아서 다시 이 자리에 올 수 있을지 같은 것이 둘 사이에 떠 있다.
+  choices:
+    - id: stay
+      label: 종이 한 번 더 울릴 때까지 그대로 누워 있는다
+      effects:
+        - set_flag: rm_morning_done
+        - relation: { who: lover, axis: affection, delta: 1 }
+        - body: { track: nerves, delta: -1 }
+    - id: talk
+      label: 오늘 나갈 길을 이야기한다
+      effects:
+        - set_flag: rm_morning_done
+        - relation: { who: lover, axis: trust, delta: 1 }
+        - belief: { fact: 연인과 아침마다 서로 어디로 나가는지 말해 두기로 했다, source: seen }
+    - id: slip
+      label: 남이 보기 전에 먼저 빠져나간다
+      effects:
+        - set_flag: rm_morning_done
+        - relation: { who: lover, axis: affection, delta: -1 }
+
+- id: rm_lover_hurt
+  title: 피 묻은 소매
+  tags: [world, mature]
+  urgent: true
+  when:
+    has_lover: true
+    day_gte: 4
+    segments: [evening, night]
+    flags_none: [rm_lover_hurt_done]
+  cast:
+    lover: { romance: lover }
+  setup: '{lover:이/가} 돌아왔다. 걸음이 이상하다. 소매를 걷자 천으로 대충 감은 팔이 붉게 젖어 있다. "별거 아니야. 철근에 긁혔어." 목소리가 너무 가볍다.'
+  ai_direction: 상처는 진짜다(효과로 다친다). 연인은 걱정을 끼치고 싶지 않아 아픈 티를 내지 않는다. 주인공이 무엇을 내놓고 무엇을 포기하는지가 이 장면이다. 의무병이 아니면 상처를 직접 고치는 것은 판정(first_aid) 몫이다.
+  choices:
+    - id: stay
+      label: 밤새 곁을 지킨다
+      effects:
+        - set_flag: rm_lover_hurt_done
+        - npc_hurt: { who: lover, steps: 1 }
+        - relation: { who: lover, axis: affection, delta: 2 }
+        - delay: 240
+        - body: { track: nerves, delta: 1, chance: 0.5 }
+    - id: bandage
+      label: 아껴 둔 붕대를 꺼낸다
+      effects:
+        - set_flag: rm_lover_hurt_done
+        - take_item: { item: bandage }
+        - npc_hurt: { who: lover, steps: 1 }
+        - npc_heal: { who: lover, steps: 1 }
+        - npc_body: { who: lover, track: infection, delta: -1 }
+        - relation: { who: lover, axis: affection, delta: 1 }
+        - relation: { who: lover, axis: trust, delta: 2 }
+    - id: dress
+      label: 천을 풀고 직접 다시 감는다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: rm_lover_hurt_done
+          - npc_hurt: { who: lover, steps: 1 }
+          - npc_heal: { who: lover, steps: 1 }
+          - relation: { who: lover, axis: trust, delta: 2 }
+        partial:
+          - set_flag: rm_lover_hurt_done
+          - npc_hurt: { who: lover, steps: 1 }
+          - relation: { who: lover, axis: affection, delta: 1 }
+        miss:
+          - set_flag: rm_lover_hurt_done
+          - npc_hurt: { who: lover, steps: 1 }
+          - npc_body: { who: lover, track: infection, delta: 1, chance: 0.3 }
+          - body: { track: nerves, delta: 1 }
+    - id: duty
+      label: 내일 일이 있다며 먼저 눕는다
+      effects:
+        - set_flag: rm_lover_hurt_done
+        - npc_hurt: { who: lover, steps: 1 }
+        - relation: { who: lover, axis: affection, delta: -2 }
+
+- id: rm_lover_sent_away
+  title: 섬으로 가는 배
+  tags: [world, mature]
+  when:
+    has_lover: true
+    day_gte: 8
+    segments: [morning, day]
+    flags_all: [rm_morning_done]
+    flags_none: [rm_sent_away_done]
+  cast:
+    lover: { romance: lover }
+  setup: '{lover:이/가} 접힌 종이를 내민다. 무리가 거래선 값으로 여울섬에 일손을 보내는데, 명단에 이름이 있다. 배는 모레 아침에 뜬다. "가면 언제 올지 몰라."'
+  ai_direction: 무리 사이의 거래이고, 연인의 무리가 정한 일이다. 연인은 가기 싫지만 거역하면 배급이 끊긴다. 붙잡으려면 누군가 값을 대신 치러야 한다. 섬 사람이면 섬 의회가 뭍의 일로 내보내는 것으로 바꿔 서술한다. 떠나면 다시 만나는 것은 섬으로 건너가는 길뿐이다.
+  choices:
+    - id: let_go
+      label: 보내 준다
+      effects:
+        - set_flag: rm_sent_away_done
+        - npc_depart: { who: lover, to_faction: faction_y }
+        - body: { track: nerves, delta: 1 }
+        - relation: { who: lover, axis: trust, delta: 1 }
+        - belief: { fact: 연인이 거래선 일손으로 여울섬에 건너갔다, source: seen }
+    - id: plead
+      label: 명단에서 빼 달라고 사정하러 간다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_sent_away_done
+          - relation: { who: lover, axis: affection, delta: 2 }
+          - relation: { who: lover, axis: trust, delta: 1 }
+        partial:
+          - set_flag: rm_sent_away_done
+          - relation: { who: lover, axis: affection, delta: 1 }
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: 연인을 명단에서 빼는 값으로 한동안 내 배급을 덜어 내기로 했다, source: seen }
+        miss:
+          - set_flag: rm_sent_away_done
+          - npc_depart: { who: lover, to_faction: faction_y }
+          - body: { track: nerves, delta: 2 }
+    - id: owe
+      label: 그 값을 내가 빚으로 지겠다고 한다
+      when: { in_faction: true }
+      effects:
+        - set_flag: rm_sent_away_done
+        - debt: { faction: own, delta: 10 }
+        - relation: { who: lover, axis: affection, delta: 2 }
+        - relation: { who: lover, axis: trust, delta: 2 }
+
+- id: rm_lover_or_squad
+  title: 사라진 약 상자
+  tags: [world, mature]
+  when:
+    has_lover: true
+    day_gte: 6
+    segments: [morning, day, evening]
+    flags_none: [rm_squad_choice_done]
+  cast:
+    lover: { romance: lover }
+    boss: { commander: true }
+  setup: 창고에서 약 상자 하나가 비었다. {boss:이/가} 한 사람씩 불러 묻는다. 어젯밤 {lover:이/가} 창고 쪽에서 돌아오는 것을 본 사람은 당신뿐이다. 연인이 눈으로 묻는다. 말할 거냐고.
+  ai_direction: 연인이 가져간 것이 맞다. 아픈 사람(가족이거나, 아직 주인공이 모르는 누군가)에게 주려고 했다. 상관은 범인을 찾을 때까지 배급을 줄이겠다고 한다. 어느 쪽을 골라도 누군가를 저버린다. 플레이어가 연인과 끝내기로 하면 GM이 romance break_up을 쓴다.
+  choices:
+    - id: cover
+      label: 아무것도 못 봤다고 한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: rm_squad_choice_done
+          - relation: { who: lover, axis: trust, delta: 2 }
+          - relation: { who: lover, axis: affection, delta: 1 }
+          - deed: { summary: 창고 약을 가져간 연인을 감싸고 상관에게 거짓말했다, tags: [deceit], severity: 1, privacy: private }
+        partial:
+          - set_flag: rm_squad_choice_done
+          - relation: { who: lover, axis: trust, delta: 2 }
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: 상관이 내 말을 믿지 않는 눈치다. 다시 물을 것이다, source: seen }
+        miss:
+          - set_flag: rm_squad_choice_done
+          - relation: { who: lover, axis: trust, delta: 1 }
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - merit: -1
+          - deed: { summary: 창고 약 도둑을 감싸다 거짓말이 들통났다, tags: [deceit, disobedience], severity: 2, privacy: semi_private }
+    - id: tell
+      label: 본 대로 말한다
+      effects:
+        - set_flag: rm_squad_choice_done
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - merit: 1
+        - relation: { who: lover, axis: trust, delta: -3 }
+        - relation: { who: lover, axis: affection, delta: -3 }
+        - deed: { summary: 창고 약을 가져간 사람이 연인이라는 것을 상관에게 말했다, tags: [honesty, loyalty], severity: 2, privacy: semi_private }
+    - id: return
+      label: 연인을 따로 불러 돌려놓게 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_squad_choice_done
+          - relation: { who: lover, axis: trust, delta: 1 }
+          - relation: { who: lover, axis: respect, delta: 1 }
+          - belief: { fact: 연인이 약 상자를 밤사이 창고에 돌려놓았다. 상관은 더 묻지 않았다, source: seen }
+        partial:
+          - set_flag: rm_squad_choice_done
+          - relation: { who: lover, axis: affection, delta: -1 }
+          - belief: { fact: 연인이 약을 반만 돌려놓았다. 나머지는 이미 누군가에게 건넸다, source: seen }
+        miss:
+          - set_flag: rm_squad_choice_done
+          - relation: { who: lover, axis: affection, delta: -2 }
+          - relation: { who: lover, axis: trust, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+
+# ── 2. 질투·삼각관계 ─────────────────────────────────
+
+- id: rm_two_suitors
+  title: 서로 하겠다는 일
+  tags: [world, mature]
+  when:
+    day_gte: 4
+    segments: [morning, day, evening]
+    flags_none: [rm_two_done]
+  cast:
+    a: { romance: suitor }
+    b: { romance: suitor }
+  setup: 무거운 물통을 옮겨야 한다. {a:이/가} 먼저 손을 뻗었고, {b:이/가} 반대쪽 손잡이를 잡았다. 둘 다 놓지 않는다. "내가 들게." "내가 든다니까." 사람들이 쳐다본다.
+  ai_direction: 두 사람 다 주인공에게 마음이 있고, 서로 그것을 안다. 말다툼은 물통 이야기지만 물통 이야기가 아니다. 주인공이 누구 편을 드는지 둘 다 기억한다. 웃어넘기면 지금은 넘어가도 앙금이 남는다.
+  choices:
+    - id: pick_a
+      label: 먼저 잡은 쪽에게 맡긴다
+      effects:
+        - set_flag: rm_two_done
+        - relation: { who: a, axis: affection, delta: 1 }
+        - relation: { who: b, axis: affection, delta: -1 }
+        - npc_relation: { from: b, to: a, axis: affection, delta: -2 }
+    - id: pick_b
+      label: 반대쪽 손잡이를 잡은 쪽에게 맡긴다
+      effects:
+        - set_flag: rm_two_done
+        - relation: { who: b, axis: affection, delta: 1 }
+        - relation: { who: a, axis: affection, delta: -1 }
+        - npc_relation: { from: a, to: b, axis: affection, delta: -2 }
+    - id: self
+      label: 둘 다 놓으라 하고 내가 든다
+      effects:
+        - set_flag: rm_two_done
+        - relation: { who: a, axis: respect, delta: 1 }
+        - relation: { who: b, axis: respect, delta: 1 }
+        - npc_relation: { from: a, to: b, axis: trust, delta: -1, mutual: true }
+    - id: joke
+      label: 농담으로 넘긴다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_two_done
+          - relation: { who: a, axis: affection, delta: 1 }
+          - relation: { who: b, axis: affection, delta: 1 }
+        partial:
+          - set_flag: rm_two_done
+          - npc_relation: { from: a, to: b, axis: affection, delta: -1, mutual: true }
+        miss:
+          - set_flag: rm_two_done
+          - relation: { who: a, axis: affection, delta: -1 }
+          - relation: { who: b, axis: affection, delta: -1 }
+          - npc_relation: { from: a, to: b, axis: trust, delta: -2, mutual: true }
+
+- id: rm_lover_and_suitor
+  title: 연인이 보는 앞에서
+  tags: [world, mature]
+  when:
+    has_lover: true
+    day_gte: 5
+    segments: [day, evening]
+    flags_none: [rm_lover_suitor_done]
+  cast:
+    lover: { romance: lover }
+    other: { romance: suitor }
+  setup: '{other:이/가} 손에 쥔 것을 내민다. 어디서 구했는지 모를 말린 살구 몇 알. "너 주려고 아껴 둔 거야." 몇 걸음 뒤에서 {lover:이/가} 보고 있다.'
+  ai_direction: 다른 사람은 주인공에게 연인이 있다는 것을 모르거나, 알아도 개의치 않는다. 연인은 다가오지 않고 그 자리에서 지켜본다. 받는 손, 거절하는 말, 돌아보는 눈 하나하나를 둘 다 읽는다.
+  choices:
+    - id: take
+      label: 고맙다며 받는다
+      effects:
+        - set_flag: rm_lover_suitor_done
+        - relation: { who: other, axis: affection, delta: 1 }
+        - relation: { who: lover, axis: trust, delta: -1 }
+        - relation: { who: lover, axis: affection, delta: -1 }
+        - npc_relation: { from: lover, to: other, axis: affection, delta: -2 }
+    - id: decline
+      label: 정중하게 거절한다
+      effects:
+        - set_flag: rm_lover_suitor_done
+        - relation: { who: other, axis: affection, delta: -1 }
+        - relation: { who: lover, axis: trust, delta: 1 }
+    - id: claim
+      label: 연인 쪽으로 걸어가 손을 잡는다
+      effects:
+        - set_flag: rm_lover_suitor_done
+        - relation: { who: lover, axis: affection, delta: 1 }
+        - relation: { who: other, axis: affection, delta: -2 }
+        - npc_relation: { from: other, to: lover, axis: affection, delta: -2 }
+
+- id: rm_jealous_confront
+  title: 누구야
+  tags: [world, mature]
+  urgent: true
+  when:
+    has_lover: true
+    segments: [evening, night]
+    flags_none: [rm_confronted]
+  cast:
+    lover: { romance: jealous, keep: rm_ex }
+  setup: '{lover:이/가} 막사 뒤에서 기다리고 있었다. 팔짱을 끼고, 벽에 기대지도 않고. "다른 사람 있지. 다 들었어. 아니, 봤어."'
+  ai_direction: 연인은 주인공에게 다른 연인이 있다는 것을 알아챘다(엔진의 질투). 무엇을 알고 있는지 다 말하지 않고 떠본다. 화보다 상처가 먼저 보인다. 거짓말이 들키면 끝이다. 끝내자고 하는 선택지는 이야기가 직접 끝낸다 (end_romance).
+  choices:
+    - id: truth
+      label: 솔직하게 말한다
+      effects:
+        - set_flag: rm_confronted
+        - relation: { who: lover, axis: trust, delta: 1 }
+        - relation: { who: lover, axis: affection, delta: -1 }
+        - deed: { summary: 다른 사람이 있다는 것을 연인에게 숨기지 않았다, tags: [honesty], severity: 1, privacy: private }
+    - id: lie
+      label: 오해라고 한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: rm_confronted
+          - relation: { who: lover, axis: affection, delta: 1 }
+        partial:
+          - set_flag: rm_confronted
+          - relation: { who: lover, axis: trust, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_confronted
+          - relation: { who: lover, axis: trust, delta: -3 }
+          - relation: { who: lover, axis: affection, delta: -2 }
+          - deed: { summary: 연인에게 다른 사람을 숨기려다 들켰다, tags: [deceit], severity: 1, privacy: private }
+    - id: end
+      label: 우리 그만하자고 한다
+      effects:
+        - set_flag: rm_confronted
+        - end_romance: { who: lover }
+        - set_flag: rm_split
+        - relation: { who: lover, axis: affection, delta: -2 }
+        - body: { track: nerves, delta: 1 }
+
+- id: rm_ex_again
+  title: 헤어진 사람
+  tags: [world, mature]
+  when:
+    flags_all: [rm_split]
+    flags_none: [rm_ex_met]
+    segments: [day, evening]
+  cast:
+    ex: { recall: rm_ex }
+  setup: 배급 줄 저쪽 끝에 {ex:이/가} 서 있다. 머리를 잘랐다. 누가 웃기는 말을 했는지 웃다가, 당신을 보고 웃음이 천천히 지워진다.
+  ai_direction: 헤어진 뒤 처음 제대로 마주친다. 미련인지 원망인지 GM은 관계 수치로 가늠하되 서술은 표정과 거리로만 한다. 다시 연인이 되려면 GM tool romance(confess)를 거친다. 이야기가 정하지 않는다.
+  choices:
+    - id: nod
+      label: 고개만 까딱하고 지나간다
+      effects:
+        - set_flag: rm_ex_met
+    - id: sit
+      label: 배급을 받고 그 옆에 앉는다
+      effects:
+        - set_flag: rm_ex_met
+        - relation: { who: ex, axis: trust, delta: 1 }
+        - relation: { who: ex, axis: affection, delta: 1 }
+    - id: sorry
+      label: 그때 일을 사과한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_ex_met
+          - relation: { who: ex, axis: trust, delta: 2 }
+          - relation: { who: ex, axis: respect, delta: 1 }
+        partial:
+          - set_flag: rm_ex_met
+          - relation: { who: ex, axis: trust, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_ex_met
+          - relation: { who: ex, axis: affection, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+
+- id: rm_rival_meet
+  title: 그 사람의 다른 연인
+  tags: [world, mature]
+  when:
+    day_gte: 3
+    segments: [morning, day, evening]
+    flags_none: [rm_rival_met]
+  cast:
+    rival: { romance: rival_lover }
+  setup: '{rival:이/가} 우물가에서 길을 막고 선다. 물통은 내려놓았다. "네가 요즘 그 사람 곁에 붙어 다닌다며. 그 사람 내 사람이야. 알고는 있어?"'
+  ai_direction: 이 사람은 주인공이 다가간(또는 사귀는) 사람의 연인이다. 주먹보다 말이 먼저지만, 밀리면 주먹도 나온다. 상대가 정말 누구를 더 좋아하는지는 이 장면이 정하지 않는다(엔진의 관계가 정한다).
+  choices:
+    - id: step_back
+      label: 몰랐다며 물러선다
+      effects:
+        - set_flag: rm_rival_met
+        - relation: { who: rival, axis: trust, delta: 1 }
+    - id: stand
+      label: 그건 그 사람이 정할 일이라고 맞선다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: rm_rival_met
+          - relation: { who: rival, axis: respect, delta: 1 }
+          - relation: { who: rival, axis: affection, delta: -2 }
+        partial:
+          - set_flag: rm_rival_met
+          - relation: { who: rival, axis: affection, delta: -2 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_rival_met
+          - wound: { steps: 1, cause: 우물가에서 연적과 주먹다짐을 했다 }
+          - relation: { who: rival, axis: affection, delta: -3 }
+    - id: talk
+      label: 셋이 얽힌 일을 차분히 이야기하자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_rival_met
+          - relation: { who: rival, axis: trust, delta: 1 }
+          - relation: { who: rival, axis: respect, delta: 1 }
+        partial:
+          - set_flag: rm_rival_met
+          - relation: { who: rival, axis: affection, delta: -1 }
+        miss:
+          - set_flag: rm_rival_met
+          - relation: { who: rival, axis: affection, delta: -2 }
+          - relation: { who: rival, axis: trust, delta: -1 }
+
+# ── 3. 성적 위협 ─────────────────────────────────────
+# 이 절의 모든 이야기의 ai_direction 끝에 같은 선을 적는다
+
+- id: rm_harass_road
+  title: 지나가며 던진 말
+  tags: [world, mature]
+  when:
+    day_gte: 2
+    zone_owner: [none, other]
+    segments: [morning, day, evening]
+    flags_none: [rm_harass_met]
+  cast:
+    pest: { menace: [harass], keep: rm_menace }
+  setup: '{pest:이/가} 일행과 함께 맞은편에서 걸어오다 걸음을 늦춘다. 위아래로 훑어보고 일행 쪽을 돌아보며 뭐라 하자 웃음이 터진다. 지나치면서 들으라는 듯 한마디 더 던진다.'
+  ai_direction: 이 자는 주인공에게 성적인 농담을 던지고 남들이 웃는 것을 즐긴다. 말의 내용은 짧게 암시만 한다(어떤 말인지 늘어놓지 않는다). 일행은 웃기는 하지만 거든 적은 없다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
+  choices:
+    - id: ignore
+      label: 못 들은 척 지나간다
+      effects:
+        - set_flag: rm_harass_met
+        - set_flag: rm_harass_ignored
+        - set_flag: rm_menaced
+        - body: { track: nerves, delta: 1, chance: 0.5 }
+    - id: retort
+      label: 일행 앞에서 맞받아친다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_harass_met
+          - set_flag: rm_harass_stopped
+          - set_flag: rm_menaced
+          - relation: { who: pest, axis: respect, delta: 1 }
+          - belief: { fact: 내가 맞받아치자 그자의 일행이 그자를 보고 웃었다, source: seen }
+        partial:
+          - set_flag: rm_harass_met
+          - set_flag: rm_menaced
+          - relation: { who: pest, axis: trust, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_harass_met
+          - set_flag: rm_harass_ignored
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 1 }
+    - id: warn
+      label: 바로 앞까지 가서 눈을 보고 경고한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: rm_harass_met
+          - set_flag: rm_harass_stopped
+          - set_flag: rm_menaced
+          - relation: { who: pest, axis: respect, delta: 2 }
+          - relation: { who: pest, axis: trust, delta: -1 }
+        partial:
+          - set_flag: rm_harass_met
+          - set_flag: rm_menaced
+          - relation: { who: pest, axis: trust, delta: -2 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_harass_met
+          - set_flag: rm_harass_ignored
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 2 }
+
+- id: rm_harass_camp
+  title: 같은 막사의 그 사람
+  tags: [world, mature]
+  when:
+    day_gte: 3
+    own_territory: true
+    segments: [day, evening]
+    flags_none: [rm_harass_met]
+  cast:
+    pest: { faction: own, menace: [harass], keep: rm_menace }
+    boss: { commander: true, optional: true }
+  setup: 배급 줄에서 {pest:이/가} 바짝 뒤에 붙어 선다. 줄이 줄어들어도 거리는 그대로다. 귓가에 낮게, 다른 사람에게는 안 들리게 한마디 한다. 그리고 아무 일 없다는 듯 하품을 한다.
+  ai_direction: 같은 무리 사람이라 피할 곳이 없다. 이 자는 남들 앞에서는 멀쩡하고, 둘만 남는 틈을 노린다. 말한다고 다 믿어 주지는 않는다. 상관이 어떻게 받아들일지는 판정이 정한다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다(상관이 웃어넘기는 것은 상관의 잘못으로 그린다).
+  choices:
+    - id: ignore
+      label: 못 들은 척 앞만 본다
+      effects:
+        - set_flag: rm_harass_met
+        - set_flag: rm_harass_ignored
+        - set_flag: rm_menaced
+        - body: { track: nerves, delta: 1 }
+    - id: loud
+      label: 다들 들리게 무슨 말을 했는지 되묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_harass_met
+          - set_flag: rm_harass_stopped
+          - set_flag: rm_menaced
+          - relation: { who: pest, axis: respect, delta: 1 }
+          - deed: { summary: 배급 줄에서 추근대는 자를 사람들 앞에 세웠다, tags: [bravery], severity: 1, privacy: public }
+        partial:
+          - set_flag: rm_harass_met
+          - set_flag: rm_menaced
+          - relation: { who: pest, axis: trust, delta: -2 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_harass_met
+          - set_flag: rm_harass_ignored
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 2 }
+    - id: report
+      label: 상관에게 알린다
+      when: { cast: [boss] }
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_harass_met
+          - set_flag: rm_harass_stopped
+          - set_flag: rm_menaced
+          - relation: { who: boss, axis: trust, delta: 1 }
+          - npc_relation: { from: boss, to: pest, axis: trust, delta: -2 }
+          - npc_relation: { from: boss, to: pest, axis: respect, delta: -2 }
+          - belief: { fact: 상관이 그자를 따로 불러 세웠다. 그 뒤로 그자는 배급 줄 반대쪽 끝에 선다, source: seen }
+        partial:
+          - set_flag: rm_harass_met
+          - set_flag: rm_menaced
+          - npc_relation: { from: boss, to: pest, axis: trust, delta: -1 }
+          - belief: { fact: 상관이 "알았다"고만 했다. 무엇을 했는지는 모른다, source: seen }
+        miss:
+          - set_flag: rm_harass_met
+          - set_flag: rm_harass_ignored
+          - set_flag: rm_menaced
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: 상관은 별일 아니라며 넘겼다. 그자는 그 말을 들었을 것이다, source: seen }
+
+- id: rm_harass_escalate
+  title: 불 꺼진 통로
+  tags: [world, mature]
+  urgent: true
+  when:
+    flags_all: [rm_harass_ignored]
+    flags_none: [rm_harass_stopped, rm_escalated]
+    segments: [evening, night]
+  cast:
+    pest: { recall: rm_menace }
+    help: { faction: own, known: true, trust_gte: 1, optional: true }
+  setup: 물을 길러 가는 통로에 불이 꺼져 있다. 뒤에서 발소리가 따라온다. 멈추면 멈춘다. 모퉁이에서 {pest:이/가} 앞을 막고 손목을 잡는다. "그동안 못 들은 척했잖아."
+  ai_direction: 말로 끝나지 않을 수 있는 자리다. 위험을 분명히 알린다. 판정은 주인공이 어떻게 빠져나가는지와 무엇을 대가로 치르는지(다친 곳, 떨어뜨린 물건, 흔들린 마음)만 정한다. 최악이어도 장면은 붙잡힌 손을 뿌리치고 빠져나온 데서 끊고, 그 뒤를 다룬다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
+  choices:
+    - id: fight
+      label: 잡힌 손목을 비틀고 친다
+      check: fight
+      outcomes:
+        success:
+          - set_flag: rm_escalated
+          - set_flag: rm_menaced
+          - npc_hurt: { who: pest, steps: 1 }
+          - relation: { who: pest, axis: respect, delta: 2 }
+          - body: { track: nerves, delta: 1 }
+        partial:
+          - set_flag: rm_escalated
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 통로에서 덮쳐 오는 자와 엉겨 붙었다 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_escalated
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 통로 벽에 밀쳐졌다가 겨우 빠져나왔다 }
+          - lose_item: { item: water_bottle }
+          - body: { track: nerves, delta: 2 }
+    - id: slip
+      label: 힘을 빼는 척하다 틈을 보고 빠진다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: rm_escalated
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 1 }
+        partial:
+          - set_flag: rm_escalated
+          - set_flag: rm_menaced
+          - lose_item: { item: water_bottle }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_escalated
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 빠져나오다 계단에서 굴렀다 }
+          - body: { track: nerves, delta: 2 }
+    - id: talk
+      label: 사람이 올 거라고, 지금 놓으면 없던 일로 하겠다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_escalated
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 1 }
+        partial:
+          - set_flag: rm_escalated
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 2 }
+        miss:
+          - set_flag: rm_escalated
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 뿌리치고 달아나다 문틀에 부딪혔다 }
+          - body: { track: nerves, delta: 2 }
+    - id: shout
+      label: 아는 사람의 이름을 크게 부른다
+      when: { cast: [help] }
+      effects:
+        - set_flag: rm_escalated
+        - set_flag: rm_menaced
+        - body: { track: nerves, delta: 1 }
+        - relation: { who: help, axis: trust, delta: 1 }
+        - npc_relation: { from: help, to: pest, axis: trust, delta: -3 }
+        - npc_relation: { from: help, to: pest, axis: affection, delta: -2 }
+        - belief: { fact: 통로에서 그자가 나를 덮치려 할 때 아는 사람이 달려와 떼어 냈다. 그 사람도 그자의 얼굴을 봤다, source: seen }
+
+- id: rm_assault_dark
+  title: 폐허 속의 손
+  tags: [world, mature]
+  urgent: true
+  when:
+    day_gte: 3
+    zone_owner: [none, other]
+    segments: [evening, night]
+    flags_none: [rm_assault_met]
+  cast:
+    att: { menace: [assault], keep: rm_menace }
+  setup: 무너진 가게 안에서 쓸 만한 것을 뒤지는데, 입구 쪽 빛이 가려진다. {att:이/가} 문틀에 기대 서 있다. 쇠지렛대를 바닥에 끌며 들어온다. "혼자 왔네."
+  ai_direction: 위험한 자다. 주인공이 혼자인 것을 노리고 들어왔다. 위험을 분명히 알린다. 판정은 어떻게 벗어나는지, 무엇을 대가로 치르는지(다친 곳, 빼앗긴 물건, 마음)만 정한다. 최악이어도 장면은 주인공이 뒷문이든 창이든 빠져나온 데서 끊고, 그 뒤를 다룬다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
+  choices:
+    - id: fight
+      label: 손에 잡히는 것으로 먼저 친다
+      check: fight
+      outcomes:
+        success:
+          - set_flag: rm_assault_met
+          - set_flag: rm_menaced
+          - npc_hurt: { who: att, steps: 1 }
+          - body: { track: nerves, delta: 1 }
+          - deed: { summary: 폐허에서 덮쳐 온 자를 쳐서 쫓아냈다, tags: [bravery], severity: 1, privacy: private }
+        partial:
+          - set_flag: rm_assault_met
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 폐허에서 덮쳐 온 자와 싸웠다 }
+          - npc_hurt: { who: att, steps: 1 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_assault_met
+          - set_flag: rm_menaced
+          - wound: { steps: 2, cause: 폐허에서 쇠지렛대에 맞고 창으로 빠져나왔다 }
+          - body: { track: nerves, delta: 2 }
+    - id: run
+      label: 뒷문을 향해 내달린다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: rm_assault_met
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 1 }
+        partial:
+          - set_flag: rm_assault_met
+          - set_flag: rm_menaced
+          - lose_item: { item: pack_frame }
+          - lose_item: { item: dry_ration }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_assault_met
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 뒷문으로 달아나다 유리 조각에 베였다 }
+          - lose_item: { item: dry_ration }
+          - body: { track: nerves, delta: 2 }
+    - id: bluff
+      label: 밖에 동료가 있다고 말하며 무기를 겨눈다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: rm_assault_met
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 1 }
+        partial:
+          - set_flag: rm_assault_met
+          - set_flag: rm_menaced
+          - lose_item: { item: canned_food }
+          - body: { track: nerves, delta: 2 }
+        miss:
+          - set_flag: rm_assault_met
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 겨눈 무기를 빼앗기고 떠밀린 채 빠져나왔다 }
+          - body: { track: nerves, delta: 2 }
+
+- id: rm_coerce_trade
+  title: 다른 값
+  tags: [world, mature]
+  when:
+    day_gte: 3
+    segments: [day, evening]
+    flags_none: [rm_coerce_met]
+  cast:
+    broker: { menace: [coerce], keep: rm_menace }
+  setup: '{broker:이/가} 손에 든 것을 흔든다. 해열제 병, 필요하던 그것. 값을 묻자 웃는다. "탄이나 통조림 말고. 오늘 밤 내 방에 와. 그럼 이건 네 거야."'
+  ai_direction: 이 자는 쥐고 있는 것으로 사람을 굴복시키는 데 익숙하다. 거절하면 화를 내지 않고 기다린다. 다음에 또 필요할 테니까. 속이려 들면 이 자도 셈이 빠르다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
+  choices:
+    - id: refuse
+      label: 거절하고 나온다
+      effects:
+        - set_flag: rm_coerce_met
+        - set_flag: rm_menaced
+        - relation: { who: broker, axis: trust, delta: -1 }
+        - body: { track: nerves, delta: 1, chance: 0.5 }
+    - id: rounds
+      label: 탄을 내밀며 이걸로 하자고 한다
+      effects:
+        - set_flag: rm_coerce_met
+        - set_flag: rm_menaced
+        - take_item: { item: rifle_rounds }
+        - give_item: { item: fever_reducer }
+        - relation: { who: broker, axis: respect, delta: 1 }
+    - id: cigs
+      label: 담배를 통째로 내놓는다
+      effects:
+        - set_flag: rm_coerce_met
+        - set_flag: rm_menaced
+        - take_item: { item: cigarettes }
+        - give_item: { item: fever_reducer }
+    - id: trick
+      label: 그러겠다고 하고 먼저 받아 낸다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: rm_coerce_met
+          - set_flag: rm_coerce_owed
+          - set_flag: rm_menaced
+          - give_item: { item: fever_reducer }
+          - deed: { summary: 몸을 값으로 요구한 자를 속여 약을 받아 냈다, tags: [deceit], severity: 1, privacy: private }
+        partial:
+          - set_flag: rm_coerce_met
+          - set_flag: rm_coerce_owed
+          - set_flag: rm_menaced
+          - give_item: { item: fever_reducer }
+          - relation: { who: broker, axis: trust, delta: -2 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_coerce_met
+          - set_flag: rm_coerce_owed
+          - set_flag: rm_menaced
+          - relation: { who: broker, axis: trust, delta: -3 }
+          - body: { track: nerves, delta: 1 }
+
+- id: rm_coerce_collect
+  title: 받으러 온 사람
+  tags: [world, mature]
+  urgent: true
+  when:
+    flags_all: [rm_coerce_owed]
+    flags_none: [rm_coerce_settled]
+    segments: [evening, night]
+  cast:
+    broker: { recall: rm_menace }
+    boss: { commander: true, optional: true }
+  setup: 저녁 무렵 {broker:이/가} 찾아왔다. 문을 반쯤 막고 서서 웃는다. 웃음에 기다린 날수가 묻어 있다. "약속은 약속이지. 받을 걸 받으러 왔어."
+  ai_direction: 속았든 아니든 이 자는 받을 게 있다고 믿는다. 사람 눈이 있는 곳에서는 물러서는 자다. 판정은 어떻게 벗어나는지와 그 대가만 정한다. 최악이어도 장면은 주인공이 그 자리를 벗어난 데서 끊는다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
+  choices:
+    - id: no
+      label: 약속한 적 없다고 똑바로 말한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: rm_coerce_settled
+          - relation: { who: broker, axis: respect, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+        partial:
+          - set_flag: rm_coerce_settled
+          - relation: { who: broker, axis: trust, delta: -2 }
+          - body: { track: nerves, delta: 2 }
+        miss:
+          - set_flag: rm_coerce_settled
+          - wound: { steps: 1, cause: 문간에서 밀치는 손을 뿌리치다 넘어졌다 }
+          - body: { track: nerves, delta: 2 }
+    - id: give_back
+      label: 받은 약을 돌려주고 끝내자고 한다
+      effects:
+        - set_flag: rm_coerce_settled
+        - lose_item: { item: fever_reducer }
+        - body: { track: nerves, delta: 1 }
+    - id: crowd
+      label: 사람 많은 쪽으로 빠져나간다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: rm_coerce_settled
+          - body: { track: nerves, delta: 1 }
+        partial:
+          - set_flag: rm_coerce_settled
+          - lose_item: { item: fever_reducer }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_coerce_settled
+          - wound: { steps: 1, cause: 붙잡힌 팔을 비틀어 빼다 다쳤다 }
+          - lose_item: { item: fever_reducer }
+          - body: { track: nerves, delta: 2 }
+    - id: boss
+      label: 상관을 부른다
+      when: { cast: [boss] }
+      effects:
+        - set_flag: rm_coerce_settled
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - npc_relation: { from: boss, to: broker, axis: trust, delta: -2 }
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: 상관이 오자 그자는 웃으며 물러났다. 상관은 다음부터 혼자 받지 말라고 했다, source: seen }
+
+# ── 갇힌 동안 ─────────────────────────────────────────
+
+- id: rm_cap_night
+  title: 밤의 간수
+  tags: [captivity, mature]
+  when:
+    captive_days_gte: 1
+    segments: [night]
+    flags_none: [rm_cap_night_done]
+  cast:
+    guard: { faction: captor, menace: [harass, coerce, assault], keep: rm_menace }
+  setup: 다른 간수들이 교대하러 나간 사이, {guard:이/가} 혼자 들어와 문을 닫는다. 등불을 바닥에 내려놓고 쭈그려 앉아 당신을 본다. 너무 오래 본다.
+  ai_direction: 갇힌 사람은 달아날 데가 없다. 이 자는 그것을 안다. 같은 방 사람들은 자는 척한다. 판정은 버티는 법과 그 대가(맞은 자리, 끊긴 배급, 흔들린 마음)만 정한다. 최악이어도 장면은 바깥에서 교대 발소리가 들려 그 자가 일어서는 데서 끊는다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
+  choices:
+    - id: endure
+      label: 벽에 등을 붙이고 눈을 피하지 않는다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: rm_cap_night_done
+          - set_flag: rm_menaced
+          - relation: { who: guard, axis: respect, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+        partial:
+          - set_flag: rm_cap_night_done
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 2 }
+        miss:
+          - set_flag: rm_cap_night_done
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 갇힌 방에서 간수에게 맞았다 }
+          - body: { track: nerves, delta: 2 }
+    - id: shout
+      label: 소리를 질러 방 안 사람들을 깨운다
+      effects:
+        - set_flag: rm_cap_night_done
+        - set_flag: rm_menaced
+        - relation: { who: guard, axis: trust, delta: -2 }
+        - body: { track: hunger, delta: 1 }
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "내가 소리를 지르자 다른 간수가 들어왔고, 그자는 아무 일 없다는 듯 나갔다. 다음 날 배급이 끊겼다", source: seen }
+    - id: stall
+      label: 말을 걸어 시간을 끈다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: rm_cap_night_done
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: 그 간수는 교대 발소리가 들리면 서둘러 나간다. 혼자 오는 밤에는 안쪽 문을 잠그지 않는다, source: seen }
+        partial:
+          - set_flag: rm_cap_night_done
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 2 }
+        miss:
+          - set_flag: rm_cap_night_done
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 거짓말을 눈치챈 간수에게 맞았다 }
+          - body: { track: nerves, delta: 2 }
+
+- id: rm_cap_offer
+  title: 풀어 주겠다는 말
+  tags: [captivity, mature]
+  when:
+    captive_days_gte: 2
+    segments: [evening, night]
+    flags_none: [rm_cap_offer_done]
+  cast:
+    warden: { faction: captor, menace: [coerce], keep: rm_menace }
+  setup: '{warden:이/가} 따로 불러냈다. 창고 구석, 탁자에 빵 반 덩이. "여기 오래 있으면 사람 망가져. 나는 문을 열 수 있는 사람이고. 무슨 말인지 알지?"'
+  ai_direction: 이 자는 문을 열 수 있다는 것을 거래 조건으로 내민다. 몸을 요구한다는 것을 말로 다 하지 않는다. 거절하면 빵을 치우고 배급이 줄어든다. 다른 값(무리의 사정)을 내놓으면 받아들인다. 그것은 무리를 파는 일이다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
+  choices:
+    - id: refuse
+      label: 거절한다
+      effects:
+        - set_flag: rm_cap_offer_done
+        - set_flag: rm_menaced
+        - relation: { who: warden, axis: respect, delta: 1 }
+        - body: { track: hunger, delta: 1 }
+        - body: { track: nerves, delta: 1 }
+    - id: sell
+      label: 대신 우리 무리의 사정을 털어놓겠다고 한다
+      when: { in_faction: true }
+      effects:
+        - set_flag: rm_cap_offer_done
+        - set_flag: rm_menaced
+        - release_player: { returned: false }
+        - body: { track: nerves, delta: 1 }
+        - deed: { summary: 갇힌 곳에서 풀려나는 값으로 우리 무리의 사정을 넘겼다, tags: [betrayal], severity: 2, privacy: private }
+    - id: trick
+      label: 생각해 보겠다며 열쇠가 어디 있는지 살핀다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: rm_cap_offer_done
+          - set_flag: rm_menaced
+          - body: { track: hunger, delta: -1 }
+          - belief: { fact: "그자는 열쇠 꾸러미를 허리 왼쪽에 차고, 창고 구석방에서는 잠깐씩 탁자에 내려놓는다", source: seen }
+        partial:
+          - set_flag: rm_cap_offer_done
+          - set_flag: rm_menaced
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: rm_cap_offer_done
+          - set_flag: rm_menaced
+          - wound: { steps: 1, cause: 떠보는 것을 알아챈 자에게 맞았다 }
+          - body: { track: nerves, delta: 1 }
+
+# ── 그 뒤 ──────────────────────────────────────────
+
+- id: rm_after_nerves
+  title: 잠이 오지 않는 밤
+  tags: [world, mature]
+  when:
+    flags_all: [rm_menaced]
+    flags_none: [rm_after_done]
+    segments: [night]
+  cast:
+    who: { recall: rm_menace, enter: false, optional: true }
+  setup: 눕긴 했는데 잠이 오지 않는다. 문 쪽에서 나는 작은 소리에도 몸이 먼저 굳는다. 그 일이 자꾸 다시 돌아온다. 손에 땀이 찬다.
+  ai_direction: 그 일의 뒤다. 주인공은 아무 잘못도 하지 않았다. 서술은 그것을 의심하게 만드는 말을 하지 않는다. 떨림, 거슬리는 소리, 무기를 쥐는 손 같은 몸의 반응으로 보인다. 원수로 삼는 선택은 오래 남는다(원수 이야기가 열린다).
+  choices:
+    - id: grudge
+      label: 그 얼굴을 잊지 않기로 한다
+      when: { cast: [who] }
+      effects:
+        - set_flag: rm_after_done
+        - set_flag: rm_grudge
+        - grudge: { who: who, why: 나를 짓밟으려 했던 자다. 그 일을 잊지 않는다 }
+    - id: steady
+      label: 숨을 세며 아침까지 버틴다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: rm_after_done
+          - body: { track: nerves, delta: -1 }
+        partial:
+          - set_flag: rm_after_done
+        miss:
+          - set_flag: rm_after_done
+          - body: { track: nerves, delta: 1 }
+    - id: blade
+      label: 칼을 손에 쥔 채 눈을 감는다
+      effects:
+        - set_flag: rm_after_done
+        - body: { track: nerves, delta: -1, chance: 0.5 }
+
+- id: rm_confide
+  title: 털어놓기
+  tags: [world, mature]
+  when:
+    flags_all: [rm_menaced]
+    flags_none: [rm_confided]
+    segments: [evening, night]
+  cast:
+    who: { recall: rm_menace, enter: false, optional: true }
+    friend: { known: true, trust_gte: 2, keep: rm_confidant }
+  setup: '{friend:이/가} 먹다 남긴 죽 그릇을 내밀며 옆에 앉는다. "요새 얼굴이 왜 그래. 말하기 싫으면 말고."'
+  ai_direction: 이 사람은 주인공을 믿는다. 들으면 화를 내고, 그 화는 주인공이 아니라 그자를 향한다. 탓하거나 왜 그랬냐고 묻지 않는다. 털어놓은 만큼 주인공의 마음이 가벼워지고, 이 사람은 그자를 다르게 본다.
+  choices:
+    - id: all
+      label: 그자의 이름까지 다 털어놓는다
+      when: { cast: [who] }
+      effects:
+        - set_flag: rm_confided
+        - set_flag: rm_ally
+        - body: { track: nerves, delta: -1 }
+        - relation: { who: friend, axis: trust, delta: 1 }
+        - relation: { who: friend, axis: affection, delta: 1 }
+        - npc_relation: { from: friend, to: who, axis: trust, delta: -3 }
+        - npc_relation: { from: friend, to: who, axis: affection, delta: -3 }
+    - id: some
+      label: 무슨 일이 있었는지만 말한다
+      effects:
+        - set_flag: rm_confided
+        - body: { track: nerves, delta: -1 }
+        - relation: { who: friend, axis: trust, delta: 1 }
+    - id: shrug
+      label: 별일 아니라며 죽을 받는다
+      effects:
+        - set_flag: rm_confided
+        - relation: { who: friend, axis: affection, delta: 1 }
+        - body: { track: nerves, delta: 1, chance: 0.3 }
+
+- id: rm_revenge
+  title: 갚을 차례
+  tags: [world, mature]
+  when:
+    flags_all: [rm_grudge]
+    flags_none: [rm_revenge_done]
+    day_gte: 3
+    segments: [evening, night]
+  cast:
+    target: { recall: rm_menace }
+    ally: { recall: rm_confidant, optional: true }
+  setup: '{target:이/가} 혼자 있다. 장작더미 뒤에서 오줌을 누고 돌아서는 참이다. 사람들 목소리는 멀다. 이번에는 이쪽이 그자를 먼저 봤다.'
+  ai_direction: 원수로 삼은 자다. 복수는 주인공의 선택이고, GM은 말리지도 부추기지도 않는다. 이야기는 사람을 죽이지 않는다(다치게 하는 데까지). 죽이려 들면 이야기 밖에서 GM tool로 판정한다. 사람들 앞에서 말하는 길은 그자의 체면을 무너뜨리지만, 그자를 감싸는 사람도 나온다.
+  choices:
+    - id: beat
+      label: 뒤에서 덮쳐 똑같이 겁을 준다
+      check: fight
+      outcomes:
+        success:
+          - set_flag: rm_revenge_done
+          - npc_hurt: { who: target, steps: 1 }
+          - relation: { who: target, axis: respect, delta: 2 }
+          - body: { track: nerves, delta: -1 }
+          - deed: { summary: 나를 위협했던 자를 어두운 데서 두들겨 팼다, tags: [cruelty], severity: 1, privacy: private }
+        partial:
+          - set_flag: rm_revenge_done
+          - npc_hurt: { who: target, steps: 1 }
+          - wound: { steps: 1, cause: 원수와 장작더미 뒤에서 엉겨 붙었다 }
+        miss:
+          - set_flag: rm_revenge_done
+          - wound: { steps: 1, cause: 원수를 덮치려다 되레 얻어맞았다 }
+          - body: { track: nerves, delta: 1 }
+    - id: together
+      label: 털어놓은 사람과 함께 그자를 막아선다
+      when: { cast: [ally] }
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: rm_revenge_done
+          - relation: { who: target, axis: respect, delta: 2 }
+          - relation: { who: ally, axis: trust, delta: 1 }
+          - body: { track: nerves, delta: -2 }
+          - belief: { fact: 둘이서 막아서자 그자는 고개를 숙였다. 다시는 내 쪽으로 오지 않겠다고 했다, source: seen }
+        partial:
+          - set_flag: rm_revenge_done
+          - npc_hurt: { who: target, steps: 1 }
+          - npc_relation: { from: target, to: ally, axis: affection, delta: -3 }
+          - body: { track: nerves, delta: -1 }
+        miss:
+          - set_flag: rm_revenge_done
+          - npc_hurt: { who: ally, steps: 1 }
+          - body: { track: nerves, delta: 1 }
+    - id: expose
+      label: 사람들 앞에서 그자가 한 일을 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: rm_revenge_done
+          - relation: { who: target, axis: affection, delta: -3 }
+          - body: { track: nerves, delta: -1 }
+          - belief: { fact: 그자가 한 짓이 사람들 입에 올랐다. 다들 그자 옆에 앉기를 꺼린다, source: seen }
+          - deed: { summary: 나를 위협했던 자가 한 일을 사람들 앞에서 말했다, tags: [bravery, honesty], severity: 1, privacy: public }
+        partial:
+          - set_flag: rm_revenge_done
+          - relation: { who: target, axis: affection, delta: -3 }
+          - belief: { fact: 사람들 앞에서 그자가 한 일을 말했다. 믿는 사람도 있고 고개를 돌리는 사람도 있다, source: seen }
+        miss:
+          - set_flag: rm_revenge_done
+          - relation: { who: target, axis: affection, delta: -3 }
+          - body: { track: nerves, delta: 2 }
+          - belief: { fact: 사람들 앞에서 말했지만 그자는 웃어넘겼고 몇몇이 따라 웃었다. 잘못은 그들에게 있다, source: seen }
+    - id: let_go
+      label: 돌아선다. 그자에게 더는 시간을 쓰지 않는다
+      effects:
+        - set_flag: rm_revenge_done
+        - body: { track: nerves, delta: -1 }

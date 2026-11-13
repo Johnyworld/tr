@@ -383,6 +383,10 @@ export function createContentSchemas(s: Scenario) {
      * 부상 트랙 steps 단계, 죽음 바로 앞에서 멈춘다 (이야기는 사람을 죽이지 않는다, 원칙 3)
      */
     z.strictObject({ wound: z.strictObject({ steps: z.number().int().min(1).max(2), cause: z.string().min(1).max(60) }) }),
+    /** 주인공과 이 배역의 연애가 끝난다 (12-60: "그만하자") */
+    z.strictObject({ end_romance: z.strictObject({ who: z.string().min(1) }) }),
+    /** 배역 NPC의 상처를 돌본다 (부상 트랙 steps 단계 낫는다, 12-60) */
+    z.strictObject({ npc_heal: z.strictObject({ who: z.string().min(1), steps: z.number().int().min(1).max(2) }) }),
     /** 이 배역을 주인공의 원수로 삼는다 (12-59: 위협한 자를 잊지 않는다). 배경 부품 enemy가 더해진다 */
     z.strictObject({ grudge: z.strictObject({ who: z.string().min(1), why: z.string().min(1).max(80) }) }),
     /** 붙잡힌 배역이 어디 갇혔는지 주인공이 알게 된다 (진짜 상태에서 코드가 채운다, 12-56) */

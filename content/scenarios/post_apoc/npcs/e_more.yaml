@@ -116,6 +116,9 @@
   start_inventory: [ledger, trade_token]
   playable: true
   zone: e_market
+  # 연인 (12-58: 삼각관계의 재료, 기획서 7.10)
+  ties:
+    - { to: pe_junki, kind: lover, secret: { reveal_when: "모준기의 빚 이야기가 나왔을 때, 장부꾼이 그 장을 덮는 것을 보면", min_trust: 2 } }
 
 - id: e_deoksu
   name: 염덕수

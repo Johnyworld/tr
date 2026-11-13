@@ -371,6 +371,19 @@ function applyEffect(
     store.append({ type: "item_granted", to: playerId, itemId: item, quantity });
     return { line: `${josa(`${name} ×${quantity}`, "을/를")} 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
   }
+  if ("end_romance" in effect) {
+    const id = whoOf(ctx, effect.end_romance.who, cast);
+    const r = id ? state.romances?.[[playerId, id].sort().join("|")] : undefined;
+    if (!id || r?.stage !== "lovers") return {};
+    store.append({ type: "romance_changed", a: playerId, b: id, stage: "ended" });
+    return { line: `${playerCalls(state, content, id)}와(과)의 사이가 끝났다.` };
+  }
+  if ("npc_heal" in effect) {
+    const id = whoOf(ctx, effect.npc_heal.who, cast);
+    if (!id || id === playerId || !state.characters[id] || state.characters[id]!.dead) return {};
+    const c = changeCondition(ctx, id, harmTrack(content.scenario).id, -effect.npc_heal.steps, "healer", "돌봄");
+    return c?.line && store.getState().scene.present.includes(id) ? { line: c.line, display: c.display ?? undefined } : {};
+  }
   if ("grudge" in effect) {
     const id = whoOf(ctx, effect.grudge.who, cast);
     if (!id || !state.characters[id] || id === playerId) return {};

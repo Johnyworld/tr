@@ -36,3 +36,6 @@ skills: { shoot: 2, stealth: 1, sense_danger: 2, survival: 1 }
 start_inventory: [old_rifle, binoculars]
 playable: true
 zone: a_east_post
+# 연인 (12-58: 삼각관계의 재료, 기획서 7.10)
+ties:
+  - { to: a_dongwook, kind: lover, secret: { reveal_when: "밤 보초 교대 무렵 망루 아래에서 둘이 있는 것을 보았을 때", min_trust: 3 } }

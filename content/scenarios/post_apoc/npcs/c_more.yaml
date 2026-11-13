@@ -194,6 +194,9 @@
   start_inventory: [c_armband, kitchen_knife, dry_ration]
   playable: true
   zone: c_base
+  # 연인 (12-58: 삼각관계의 재료, 기획서 7.10)
+  ties:
+    - { to: c_seokjin, kind: lover, secret: { reveal_when: "함께 도망칠 계획을 털어놓은 뒤, 또는 배수로 근처에서 둘이 있는 것을 보았을 때", min_trust: 2 } }
 
 - id: c_pilsu
   name: 노필수

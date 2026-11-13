@@ -44,7 +44,8 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
       .sort();
   }
   return Object.values(state.characters)
-    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && (content.npcs[c.id] || c.profile) && !state.squadOrders?.[c.id] && !isAwayCompanion(state, c.id))
+    // 이름 없는 인물은 자란 사람만, 다만 위협 배역은 이 구역의 이름 없는 인물도 (12-60)
+    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && (content.npcs[c.id] || c.profile || (role.menace && c.extra?.zone === state.playerZone)) && !state.squadOrders?.[c.id] && !isAwayCompanion(state, c.id))
     // 그 배역과 이어진 사람 (기획서 7.10: 적의 가족을 만나는 이야기)
     .filter((c) => !role.tie || tiesOf(state, content, picked[role.tie.of] ?? "").some((t) => t.other === c.id && (!role.tie!.kinds || role.tie!.kinds.includes(t.kind))))
     .filter((c) => !role.tie?.cross || c.factionId !== state.characters[picked[role.tie.of] ?? ""]?.factionId)
@@ -124,7 +125,7 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       continue;
     }
     if (role.romance) {
-      const options = romanceCast(state, content, role.romance).filter((id) => !used.has(id) && (!role.here || state.scene.present.includes(id) || state.companions.includes(id) || (state.characters[id]?.extra?.zone ?? state.playerZone) === state.playerZone));
+      const options = romanceCast(state, content, role.romance).filter((id) => !used.has(id) && (!role.condition || bodyMatches(content, state.characters[id]?.conditions[role.condition.track], role.condition)) && (!role.here || state.scene.present.includes(id) || state.companions.includes(id) || (state.characters[id]?.extra?.zone ?? state.playerZone) === state.playerZone));
       if (options.length === 0) {
         if (role.optional) continue;
         return null;

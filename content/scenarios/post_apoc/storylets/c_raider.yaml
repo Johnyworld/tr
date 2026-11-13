@@ -233,12 +233,14 @@
       outcomes:
         success:
           - set_flag: c_sora_gone
+          - npc_depart: { who: sora }
           - clear_flag: c_sora_help
           - relation: { who: sora, axis: trust, delta: 2 }
           - deed: { summary: 감시탑 교대 때 탈영하는 동료들을 몰래 내보냈다, tags: [mercy, betrayal], severity: 3, privacy: private }
           - belief: { fact: "{sora}와 고석진이 담을 넘어 구시가 쪽 어둠으로 사라졌다. 아무도 보지 못했다", source: seen }
         partial:
           - set_flag: c_sora_gone
+          - npc_depart: { who: sora }
           - clear_flag: c_sora_help
           - deed: { summary: 탈영병이 담을 넘던 밤 감시탑에서 탐조등을 엉뚱한 데로 돌렸다, tags: [disobedience, betrayal], severity: 3, privacy: semi_private }
           - belief: { fact: 둘은 담을 넘었지만 옆 감시탑 보초가 깨어 탐조등이 엉뚱한 데를 비춘 걸 보았다, source: seen }

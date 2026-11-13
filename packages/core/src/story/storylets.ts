@@ -26,7 +26,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
   const commander = commanderOf(state, content);
   const known = new Set(state.known[state.playerId] ?? []);
   return Object.values(state.characters)
-    .filter((c) => c.id !== state.playerId && !c.dead && content.npcs[c.id])
+    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && content.npcs[c.id])
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.commander || c.id === commander)
     .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction))
@@ -63,6 +63,14 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.seasons && !w.seasons.includes(seasonAt(content.scenario, at)?.id ?? "")) return false;
   if (w.weather && !w.weather.includes(state.weather?.id ?? "")) return false;
   if (w.day_gte !== undefined && dayOf(at) < w.day_gte) return false;
+  if (w.day_lte !== undefined && dayOf(at) > w.day_lte) return false;
+  if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
+  if (w.zone_owner) {
+    const owner = state.playerZone ? (state.zones[state.playerZone]?.owner ?? null) : null;
+    const kind = owner === null ? "none" : owner === player.factionId ? "own" : "other";
+    if (!w.zone_owner.includes(kind)) return false;
+  }
+  if (w.flags_any && !w.flags_any.some((f) => flags.has(f))) return false;
   if (w.zones && (!state.playerZone || !w.zones.includes(state.playerZone))) return false;
   if (w.own_territory !== undefined) {
     const mine = !!state.playerZone && state.zones[state.playerZone]?.owner === player.factionId;

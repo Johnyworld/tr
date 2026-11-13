@@ -238,7 +238,7 @@
   title: 뒤집힌 버스의 아이
   tags: [world]
   when:
-    zones: [old_town, riverside, hospital_ruins]
+    zone_owner: [none]
     segments: [day, evening]
     flags_none: [w_child_found]
   setup: 뒤집힌 버스 안에서 무언가 움직인다. 들여다보니 아이다. 일곱 살쯤. 무릎을 끌어안고 소리 없이 운다. 운동화 한 짝이 없다.
@@ -321,7 +321,7 @@
   title: 승합차의 편지
   tags: [world]
   when:
-    zones: [old_town, riverside, hospital_ruins]
+    zone_owner: [none]
     segments: [morning, day]
   setup: '길가에 선 승합차 운전석에 남자가 엎드려 죽어 있다. 오래되지 않았다. 가슴 주머니에 접힌 편지가 삐죽 나와 있고, 겉봉에 "소희에게"라고 적혀 있다.'
   ai_direction: 남자는 추위와 허기로 죽었다. 물리지 않았다. 편지는 딸에게 쓴 것이다. 강 건너 남쪽 섬에 사람들이 모여 산다는 말을 들었고 그리 가서 기다리겠다는 내용이다. 사실인지는 아무도 모른다. 바지 주머니에 담배 몇 개비가 있다.
@@ -348,7 +348,7 @@
   repeatable: true
   cooldown_days: 5
   when:
-    zones: [old_town, riverside, hospital_ruins]
+    zone_owner: [none]
     segments: [morning, day]
   setup: "{zone}의 무너진 편의점 창고. 천장 석고판 하나가 다른 것보다 새것이다. 누군가 손댄 자리다."
   ai_direction: 천장 위에 누군가 숨겨 둔 꾸러미가 있다. 숨긴 사람은 돌아오지 않았다. 석고판을 뜯으면 먼지와 소리가 난다. 근처 지하에 감염체가 있다.

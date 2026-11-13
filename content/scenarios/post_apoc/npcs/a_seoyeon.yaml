@@ -7,7 +7,7 @@ rank: grunt
 age: 27
 gender: female
 look: 짧게 친 머리와 무표정한 얼굴. 쌍안경을 목에 걸고 다닌다.
-reputation: 같은 분대의 사수. 분대에서 가장 눈이 좋고 말이 없다.
+reputation: 강태호 분대의 사수. 분대에서 가장 눈이 좋고 말이 없다.
 want: 아픈 동생이 겨울을 넘기는 것
 fear: 쓸모없어져 거점에서 밀려나는 것
 values: { discipline: 1, loyalty: 1, mercy: -1, honesty: 0, self_interest: 2 }

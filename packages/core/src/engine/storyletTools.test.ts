@@ -204,3 +204,62 @@ describe("플래그와 정보 필터", () => {
     expect([...world.viewer().flags]).toEqual(["scouts_captured"]);
   });
 });
+
+describe("조건 더하기: flags_any, day_lte, zone_owner, factions", () => {
+  const base = { id: "c1", title: "조건", setup: "상황", choices: [{ id: "ok", label: "좋다", effects: [] }] };
+
+  it("flags_any는 하나라도, day_lte는 그날까지, factions는 플레이어 소속(무소속 none)", () => {
+    const env = setup([{ ...base, when: { flags_any: ["a", "b"], day_lte: 1 } }]);
+    const s = env.store.getState();
+    expect(eligibleStorylets(s, env.content)).toEqual([]);
+    s.flags[s.playerId] = ["b"];
+    expect(eligibleStorylets(s, env.content).map((x) => x.id)).toEqual(["c1"]);
+    expect(eligibleStorylets(s, env.content, s.time + 2 * MINUTES_PER_DAY)).toEqual([]);
+    const own = s.characters[s.playerId]!.factionId;
+    const f = setup([{ ...base, when: { factions: [own] } }]);
+    expect(f.store.getState().activeStorylet?.id).toBe("c1"); // 세계를 열자마자 열린다
+    const none = setup([{ ...base, when: { factions: ["none"] } }]);
+    expect(none.store.getState().activeStorylet).toBeNull();
+  });
+
+  it("zone_owner는 지금 구역이 우리 땅인지, 남의 땅인지, 누구의 땅도 아닌지", () => {
+    const env = setup([{ ...base, when: { zone_owner: ["own"] } }]);
+    expect(env.store.getState().playerZone).not.toBeNull();
+    expect(env.store.getState().activeStorylet?.id).toBe("c1");
+    const other = setup([{ ...base, when: { zone_owner: ["none", "other"] } }]);
+    expect(other.store.getState().activeStorylet).toBeNull();
+  });
+});
+
+describe("효과 더하기: npc_depart, faction_resource", () => {
+  const leave = {
+    id: "leave",
+    title: "떠나는 사람",
+    cast: { boss: { commander: true } },
+    setup: "{boss:이/가} 짐을 싼다.",
+    choices: [
+      { id: "go", label: "보낸다", effects: [{ npc_depart: { who: "boss" } }, { faction_resource: { faction: "own", resource: "food", delta: -5 } }] },
+    ],
+  };
+
+  it("떠난 NPC는 장면·배역·상관에서 빠지고, 세력 자원은 콘텐츠가 정한 만큼 바뀐다 (0 아래로 가지 않는다)", () => {
+    const env = setup([leave]);
+    expect(env.store.getState().activeStorylet?.id).toBe("leave");
+    const own = env.store.getState().characters[env.store.getState().playerId]!.factionId;
+    const food = env.store.getState().factions[own]!.resources.food ?? 0;
+    const out = executeTool("resolve_storylet", { choice_id: "go" }, env.ctx);
+    expect(out.ok).toBe(true);
+    const s = env.store.getState();
+    expect(s.characters.npc_leader).toMatchObject({ away: true, dead: false });
+    expect(s.scene.present).not.toContain("npc_leader");
+    expect(s.factions[own]!.resources.food).toBe(Math.max(0, food - 5));
+    expect(executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, env.ctx).ok).toBe(false);
+    expect(describePlayerState(s, env.content)).not.toContain("수행 중인 임무 (보고는 상관에게");
+  });
+
+  it("to_faction이면 그 세력으로 넘어가고 도시에는 남는다", () => {
+    const env = setup([{ ...leave, choices: [{ id: "go", label: "보낸다", effects: [{ npc_depart: { who: "boss", to_faction: "faction_b" } }] }] }]);
+    executeTool("resolve_storylet", { choice_id: "go" }, env.ctx);
+    expect(env.store.getState().characters.npc_leader).toMatchObject({ away: false, factionId: "faction_b" });
+  });
+});

@@ -219,7 +219,7 @@ const RECENT_EXTRAS_IN_PROMPT = 5;
 function statusNote(content: Content, character: Character): string {
   const initial = initialConditions(content.scenario);
   const changed = Object.entries(initial).some(([track, level]) => character.conditions[track] !== level);
-  return character.dead ? " · 사망" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
+  return character.dead ? " · 사망" : character.away ? " · 떠남" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
 }
 
 /**
@@ -258,7 +258,7 @@ export function describeZonePeople(state: GameState, content: Content): string {
   const zone = state.playerZone;
   if (!zone) return "";
   const people = Object.values(content.npcs).filter(
-    (npc) => npc.zone === zone && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead,
+    (npc) => npc.zone === zone && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
   );
   const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id));
   if (strangers.length === 0) return "";

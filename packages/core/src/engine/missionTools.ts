@@ -39,7 +39,7 @@ export function describeMission(s: Scenario, mission: MissionInstance): string {
 function commanderOf(state: GameState, ctx: ToolContext) {
   const id = commanderIdOf(state, ctx.content);
   const commander = id ? state.characters[id] : undefined;
-  return commander && !commander.dead ? commander : undefined;
+  return commander && !commander.dead && !commander.away ? commander : undefined;
 }
 
 const assignMission = defineTool({

@@ -147,6 +147,17 @@ function checkReferences(content: Content): string[] {
       if (l.qty[0] > l.qty[1]) problems.push(`locations.${loc.id}.loot.${l.item}: qty의 앞이 뒤보다 크다`);
     }
   }
+  // 스토리렛 효과의 참조: 세력 자원, 넘어갈 세력
+  const resources = new Set(content.scenario.resources.map((r) => r.id));
+  for (const st of Object.values(content.storylets)) {
+    const all = st.choices.flatMap((c) => [...c.effects, ...Object.values(c.outcomes ?? {}).flat()]);
+    for (const e of all) {
+      if ("faction_resource" in e && !resources.has(e.faction_resource.resource)) problems.push(`storylets.${st.id}: 알 수 없는 자원 ${e.faction_resource.resource}`);
+      if ("faction_resource" in e && e.faction_resource.faction !== "own" && !content.factions[e.faction_resource.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.faction_resource.faction}`);
+      if ("npc_depart" in e && e.npc_depart.to_faction && !content.factions[e.npc_depart.to_faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.npc_depart.to_faction}`);
+    }
+    for (const f of st.when.factions ?? []) if (f !== "none" && !content.factions[f]) problems.push(`storylets.${st.id}.when.factions: 알 수 없는 세력 ${f}`);
+  }
   const custom = content.scenario.custom_start;
   if (custom) {
     const ranks = new Set(content.scenario.rank_ladder.map((r) => r.id));

@@ -7,7 +7,7 @@ rank: squad_leader
 age: 44
 gender: male
 look: 왼쪽 귀가 반쯤 없는 40대. 늘 무전기를 만지작거린다.
-reputation: 플레이어가 속한 분대의 분대장. 말수가 적고 엄하지만 부하를 버리지 않는다는 평이 있다.
+reputation: 청솔형제단의 분대장. 하급 전투원 분대를 이끈다. 말수가 적고 엄하지만 부하를 버리지 않는다는 평이 있다.
 want: 분대원을 한 명도 잃지 않는 것
 fear: 자기 판단 실수로 또 사람이 죽는 것
 values: { discipline: 3, loyalty: 2, mercy: -1, honesty: 1, self_interest: -1 }

@@ -26,7 +26,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 8;
+export const SAVE_SCHEMA_VERSION = 9;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -269,6 +269,9 @@ export function createGameSchemas(s: Scenario) {
     }),
     z.strictObject({ type: z.literal("npc_entered"), npcId: z.string() }),
     z.strictObject({ type: z.literal("zone_searched"), zone: z.string(), day: z.number().int() }),
+    /** NPC가 떠난다: toFaction이면 그 세력으로 넘어가고(도시에 남는다), null이면 도시를 떠난다 (기획서 10.4) */
+    z.strictObject({ type: z.literal("npc_departed"), npcId: z.string(), toFaction: z.string().nullable() }),
+    z.strictObject({ type: z.literal("faction_resource_changed"), factionId: z.string(), resource: z.string(), delta: z.number().int() }),
     z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
     z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
     z.strictObject({ type: z.literal("missions_offered"), day: z.number().int(), templateIds: z.array(z.string()) }),
@@ -590,6 +593,19 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       // 처음부터 아는 사람들(같은 무리 동료)은 주인공도 이름까지 안다
       for (const id of event.known[event.player.id] ?? []) acquaint(created, id, event.player.id, true);
       return created;
+    }
+    case "npc_departed": {
+      const npc = mustGet(next.characters, event.npcId, "캐릭터");
+      if (event.toFaction !== null) npc.factionId = event.toFaction;
+      else npc.away = true;
+      next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      return next;
+    }
+    case "faction_resource_changed": {
+      const f = next.factions[event.factionId];
+      if (!f) return next;
+      f.resources[event.resource] = Math.max(0, (f.resources[event.resource] ?? 0) + event.delta);
+      return next;
     }
     case "zone_searched": {
       const prev = next.zoneSearches[event.zone];

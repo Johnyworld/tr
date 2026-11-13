@@ -197,7 +197,7 @@ const people: CommandDef = {
           const c = state.characters[id]!;
           const r = state.perceived[id] ?? NEUTRAL_RELATION;
           const here = state.scene.present.includes(id) ? " · 함께 있음" : "";
-          return `${headingAs(state, content, state.playerId, id)}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : ""}${here}  (신뢰 ${relationLabel(r.trust)})`;
+          return `${headingAs(state, content, state.playerId, id)}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : c.away ? " · 떠남" : ""}${here}  (신뢰 ${relationLabel(r.trust)})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,

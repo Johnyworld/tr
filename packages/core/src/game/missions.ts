@@ -147,8 +147,8 @@ export function pickDailyOffers(
 /**
  * 현재 캐릭터의 직속 상관 (역할의 commander). 계승으로 그 상관 자신이 플레이어가 됐거나 상관이 죽었으면 없다
  */
-export function commanderOf(state: { playerId: string; roleId: string; characters: Record<string, { dead: boolean }> }, content: { roles: Record<string, { commander?: string | undefined }> }): string | null {
+export function commanderOf(state: { playerId: string; roleId: string; characters: Record<string, { dead: boolean; away?: boolean }> }, content: { roles: Record<string, { commander?: string | undefined }> }): string | null {
   const id = content.roles[state.roleId]?.commander;
-  if (!id || id === state.playerId || state.characters[id]?.dead) return null;
+  if (!id || id === state.playerId || state.characters[id]?.dead || state.characters[id]?.away) return null;
   return id;
 }

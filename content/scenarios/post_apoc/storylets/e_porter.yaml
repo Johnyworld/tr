@@ -301,12 +301,14 @@
         success:
           - set_flag: e_bearing_found
           - merit: 1
+          - faction_resource: { faction: own, resource: water, delta: 20 }
           - relation: { who: keeper, axis: trust, delta: 2 }
           - relation: { who: keeper, axis: respect, delta: 1 }
           - faction_morale: { faction: own, delta: 1 }
           - belief: { fact: "양수장 지하 공구함에서 기름종이에 싼 베어링을 찾아 염덕수에게 건넸다. 펌프는 이번 겨울을 넘길 것이다", source: seen }
         partial:
           - set_flag: e_bearing_found
+          - faction_resource: { faction: own, resource: water, delta: 8 }
           - relation: { who: keeper, axis: trust, delta: 1 }
           - belief: { fact: "베어링 하나를 건져 왔지만 녹이 슬었다. 염덕수는 몇 주는 벌 수 있다고 했다", source: report }
         miss:
@@ -317,6 +319,7 @@
       outcomes:
         success:
           - set_flag: e_bearing_found
+          - faction_resource: { faction: own, resource: water, delta: 20 }
           - relation: { who: keeper, axis: trust, delta: 2 }
           - faction_morale: { faction: own, delta: 1 }
           - belief: { fact: "어둠 속에서 잠든 감염체 곁을 지나 베어링을 찾아 왔다. 펌프는 이번 겨울을 넘길 것이다", source: seen }

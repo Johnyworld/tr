@@ -76,7 +76,7 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
   for (const [key, id] of Object.entries(cast)) {
     if (!storylet.cast[key]?.enter) continue;
     const now = store.getState();
-    if (now.scene.present.includes(id) || now.characters[id]?.dead) continue;
+    if (now.scene.present.includes(id) || now.characters[id]?.dead || now.characters[id]?.away) continue;
     enterScene(ctx, id);
     displays.push({ type: "presence", npcName: playerCalls(store.getState(), content, id), action: "enter" });
   }
@@ -253,6 +253,25 @@ function applyEffect(
     if (!state.factions[id]) return {};
     store.append({ type: "faction_morale_changed", factionId: id, delta: effect.faction_morale.delta });
     return {};
+  }
+  if ("faction_resource" in effect) {
+    const { resource, delta } = effect.faction_resource;
+    const id = effect.faction_resource.faction === "own" ? state.characters[playerId]!.factionId : effect.faction_resource.faction;
+    if (!state.factions[id]) return {};
+    store.append({ type: "faction_resource_changed", factionId: id, resource, delta });
+    return {}; // 창고 사정은 배급과 소문으로만 드러난다
+  }
+  if ("npc_depart" in effect) {
+    const id = whoOf(ctx, effect.npc_depart.who, cast);
+    const npc = id ? state.characters[id] : undefined;
+    if (!id || !npc || npc.dead || npc.away) return {};
+    const to = effect.npc_depart.to_faction ?? null;
+    store.append({ type: "npc_departed", npcId: id, toFaction: to });
+    const name = playerCalls(state, content, id);
+    return {
+      line: to ? `${josa(name, "은/는")} ${content.factions[to]?.name ?? to} 쪽으로 넘어갔다.` : `${josa(name, "은/는")} 도시를 떠났다. 다시 장면에 나오지 않는다.`,
+      display: { type: "presence", npcName: name, action: "leave" },
+    };
   }
   if ("deed" in effect) {
     const { deed, visible } = recordDeed(ctx, { ...effect.deed, summary: fillStorylet(effect.deed.summary, vars), noisy: false });

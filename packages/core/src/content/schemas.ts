@@ -225,6 +225,10 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ clock: z.strictObject({ id: contentIdSchema, delta: z.number().int().min(-5).max(5) }) }),
     /** own = 플레이어 소속 */
     z.strictObject({ faction_morale: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-1).max(1) }) }),
+    /** 세력 자원을 늘리거나 줄인다 (할당량, 약 재고, 물). own = 플레이어 소속. 양은 콘텐츠가 정한다 */
+    z.strictObject({ faction_resource: z.strictObject({ faction: z.string().min(1), resource: contentIdSchema, delta: z.number().int().min(-50).max(50) }) }),
+    /** 배역 NPC가 떠난다: to_faction이면 그 세력으로 넘어가고(도시에 남는다), 없으면 도시를 떠난다 (탈영·피난) */
+    z.strictObject({ npc_depart: z.strictObject({ who: z.string().min(1), to_faction: contentIdSchema.optional() }) }),
     z.strictObject({
       deed: z.strictObject({
         summary: z.string().min(1).max(120),
@@ -288,11 +292,18 @@ export function createContentSchemas(s: Scenario) {
         /** 날씨 id */
         weather: z.array(contentIdSchema).optional(),
         day_gte: z.number().int().optional(),
+        day_lte: z.number().int().optional(),
         /** 플레이어가 있는 구역 */
         zones: z.array(contentIdSchema).optional(),
         /** 우리 무리 구역에 있는지 */
         own_territory: z.boolean().optional(),
+        /** 지금 구역의 주인: none 누구의 땅도 아님, own 우리, other 다른 무리 */
+        zone_owner: z.array(z.enum(["none", "own", "other"])).optional(),
+        /** 플레이어의 소속 세력 (none = 무소속) */
+        factions: z.array(z.string().min(1)).optional(),
         flags_all: z.array(contentIdSchema).optional(),
+        /** 이 중 하나라도 서 있으면 */
+        flags_any: z.array(contentIdSchema).optional(),
         flags_none: z.array(contentIdSchema).optional(),
         /** 세력 클락 (플레이어는 모르는 값. 조건으로만 쓴다) */
         clock_gte: z.record(contentIdSchema, z.number().int()).optional(),

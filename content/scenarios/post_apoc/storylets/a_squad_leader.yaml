@@ -202,7 +202,9 @@
           - deed: { summary: 점호 전에 사라진 분대원을 찾아 무단으로 거점을 나갔다, tags: [disobedience, loyalty], severity: 1, privacy: semi_private }
         miss:
           - set_flag: a_sl_byungchul_settled
-          - belief: { fact: 노병철의 흔적을 놓쳤다. 해가 뜰 무렵 그가 혼자 절뚝이며 돌아왔다. 어디까지 갔다 왔는지는 말하지 않는다, source: seen }
+          - npc_depart: { who: byungchul, to_faction: faction_c }
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - belief: { fact: 노병철의 흔적을 놓쳤다. 그는 돌아오지 않았다. 딸이 있는 붉은연합 거점으로 간 것 같다, source: seen }
     - id: report
       label: 한도윤에게 바로 알린다
       effects:

@@ -49,6 +49,8 @@ export function createCharacterSchema(s: Scenario) {
     id: z.string().regex(/^[a-z][a-z0-9_]*$/),
     name: z.string().min(1),
     factionId: z.string(),
+    /** 도시를 떠났다 (탈영·피난 등, 스토리렛 효과 npc_depart). 죽음과 달리 연대기에 남지 않고, 장면·배역·소문에서 빠진다 */
+    away: z.boolean().default(false),
     rank: idEnum(rankIds(s)),
     /** 화법 규칙에 쓴다. 모르면 null */
     age: z.number().int().positive().nullable().default(null),

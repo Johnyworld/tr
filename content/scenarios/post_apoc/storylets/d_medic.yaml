@@ -77,9 +77,11 @@
         success:
           - set_flag: d_bribed
           - give_item: { item: antibiotics, from: sangpil }
+          - faction_resource: { faction: own, resource: medicine, delta: -4 }
           - belief: { fact: "도상필이 항생제 한 줄을 쥐여 주며 말했다: 선생님도 이제 한배를 탄 겁니다", source: seen }
         partial:
           - set_flag: d_bribed
+          - faction_resource: { faction: own, resource: medicine, delta: -4 }
           - relation: { who: sangpil, axis: trust, delta: -1 }
           - belief: { fact: "도상필은 상자를 놓지 않고, 못 본 걸로 하면 다음에 몫을 챙겨 주겠다고 했다", source: seen }
         miss:
@@ -96,6 +98,7 @@
     - id: look_away
       label: 못 본 척 숙소로 돌아간다
       effects:
+        - faction_resource: { faction: own, resource: medicine, delta: -4 }
         - belief: { fact: "밤중에 도상필이 약제실 뒷문으로 상자를 들고 나가는 것을 보았다", source: seen }
 
 - id: d_verdict
@@ -382,12 +385,14 @@
         success:
           - set_flag: d_vault_opened
           - give_item: { item: antibiotics, quantity: 2 }
+          - faction_resource: { faction: own, resource: medicine, delta: 6 }
           - faction_morale: { faction: own, delta: 1 }
           - relation: { who: scav, axis: respect, delta: 1 }
           - deed: { summary: 시립병원 지하 금고를 열어 하얀매에 약을 가져왔다, tags: [bravery, loyalty], severity: 2, privacy: semi_private }
         partial:
           - set_flag: d_vault_opened
           - give_item: { item: antibiotics }
+          - faction_resource: { faction: own, resource: medicine, delta: 3 }
           - belief: { fact: "금고 문이 열리는 소리에 감염체가 몰려와 반도 챙기지 못하고 올라왔다", source: seen }
         miss:
           - belief: { fact: "시립병원 지하에서 감염체에 쫓겨 금고를 두고 빈손으로 올라왔다. 금고는 아직 그 자리에 있다", source: seen }
@@ -398,6 +403,7 @@
         success:
           - set_flag: d_vault_opened
           - give_item: { item: antibiotics }
+          - faction_resource: { faction: own, resource: medicine, delta: 3 }
           - relation: { who: scav, axis: trust, delta: 2 }
           - belief: { fact: "남민호가 금고에서 꺼낸 것을 칠 대 삼으로 나눴다. 그의 배낭이 훨씬 무거웠다", source: seen }
         partial:

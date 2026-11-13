@@ -1,0 +1,124 @@
+# 포로 (기획서 7.6): 붙잡힌 청솔형제단 정찰조. 배역 captive: true는 갇힌 구역(물류창고)에서만 채워진다
+# - 청솔형제단 쪽: 구출 (구출조 자원 rescue_volunteer, 또는 직접 숨어들기)
+# - 붉은연합 쪽: 몰래 풀어 주기
+# - 누구든: 탈출을 돕거나 외면하기
+
+- id: wc_rescue_raid
+  title: 해 질 녘의 배수구
+  urgent: true
+  tags: [world]
+  when:
+    factions: [faction_a, faction_b]
+    zones: [c_warehouse]
+    segments: [evening]
+    flags_any: [scouts_captured, rescue_volunteer]
+  cast:
+    young: { ids: [a_jeongbin], captive: true }
+    chief: { ids: [a_gicheol_scout], captive: true, enter: false }
+  setup: 물류창고 뒤편 배수구 쇠창살 너머로 수용소 바닥이 보인다. 간수 교대 시간이다. 창살 안쪽에서 {young:이/가} 당신을 알아보고 숨을 삼킨다. 그 뒤에 다리를 판자로 묶은 사내가 벽에 기대 있다.
+  ai_direction: 해 질 녘 교대 때 수용소 경비가 한 번 느슨해진다. 배수구 창살은 녹슬어 쇠지렛대로 비틀 수 있다. 조장 남궁혁은 업고는 뛰지 못한다며 막내만 데려가라고 한다. 소리가 나면 경비가 몰려온다. 판정과 결과로만 정한다.
+  choices:
+    - id: both
+      label: 창살을 비틀고 둘 다 데리고 나온다
+      check: stealth
+      outcomes:
+        success:
+          - npc_release: { who: young }
+          - npc_release: { who: chief }
+          - set_flag: scouts_rescued
+          - faction_morale: { faction: faction_a, delta: 1 }
+          - clock: { id: c_east_offensive, delta: -1 }
+          - deed: { summary: 붉은연합 수용소에서 청솔형제단 정찰조를 구해 냈다, tags: [bravery, loyalty], severity: 3, privacy: semi_private }
+          - belief: { fact: 배수구로 오정빈과 남궁혁을 데리고 빠져나왔다. 남궁혁은 물류창고에 공세용 탄약이 쌓인다고 했다, source: seen }
+        partial:
+          - npc_release: { who: young }
+          - set_flag: scouts_rescued
+          - deed: { summary: 붉은연합 수용소에서 청솔형제단 정찰병 하나를 구해 냈다, tags: [bravery, loyalty], severity: 2, privacy: semi_private }
+          - belief: { fact: 경비가 몰려와 오정빈만 데리고 나왔다. 남궁혁은 창살 안에서 가라고 손짓했다, source: seen }
+        miss:
+          - clock: { id: c_east_offensive, delta: 1 }
+          - belief: { fact: 창살을 비틀다 소리를 냈다. 경비가 몰려와 빈손으로 물러났다. 수용소 경비가 두 배가 됐을 것이다, source: seen }
+    - id: young_only
+      label: 조장의 말대로 막내만 데리고 나온다
+      check: sense_danger
+      outcomes:
+        success:
+          - npc_release: { who: young }
+          - set_flag: scouts_rescued
+          - belief: { fact: 오정빈을 데리고 빠져나왔다. 그는 돌아오는 내내 뒤를 돌아보았다, source: seen }
+        partial:
+          - npc_release: { who: young }
+          - set_flag: scouts_rescued
+          - belief: { fact: 오정빈을 데리고 나왔지만 배수구 끝에서 경비의 손전등에 등이 잡혔다. 누군지는 못 봤을 것이다, source: seen }
+        miss:
+          - belief: { fact: 경비의 발소리에 창살 앞에서 물러났다. 다음 교대를 기다려야 한다, source: seen }
+    - id: note_only
+      label: 지금은 위치만 확인하고 물러난다
+      effects:
+        - set_flag: scouts_located
+        - belief: { fact: "청솔형제단 정찰조 둘이 붉은연합 물류창고 수용소에 살아 있다. 해 질 녘 교대 때 배수구 쪽이 느슨하다", source: seen }
+
+- id: wc_quiet_release
+  title: 열쇠 꾸러미
+  tags: [world]
+  when:
+    factions: [faction_c]
+    zones: [c_warehouse]
+    segments: [night, dawn]
+    flags_all: [c_prisoners_seen]
+  cast:
+    young: { ids: [a_jeongbin], captive: true }
+    chief: { ids: [a_gicheol_scout], captive: true, enter: false }
+  setup: 새벽 경비를 서는데 간수의 열쇠 꾸러미가 탁자 위에 놓여 있다. 간수는 뒤뜰에서 담배를 피우는 중이다. 창살 안에서 {young:이/가} 열쇠 쪽을 보다가 당신과 눈이 마주친다.
+  ai_direction: 아무도 보지 않는 몇 분이다. 문을 열어 주면 둘은 배수구로 빠져나간다. 들키면 규율반이 당신을 찾는다. 오정빈은 부탁하지 않는다. 그냥 본다.
+  choices:
+    - id: open
+      label: 열쇠를 들어 창살 문을 연다
+      check: stealth
+      outcomes:
+        success:
+          - npc_release: { who: young }
+          - npc_release: { who: chief }
+          - set_flag: scouts_rescued
+          - deed: { summary: 수용소 문을 몰래 열어 청솔형제단 포로를 풀어 주었다, tags: [mercy, betrayal], severity: 3, privacy: private }
+          - belief: { fact: 새벽에 수용소 문을 열어 정찰조 둘을 내보냈다. 아무도 보지 못했다, source: seen }
+        partial:
+          - npc_release: { who: young }
+          - set_flag: scouts_rescued
+          - set_flag: c_marked
+          - deed: { summary: 수용소 문을 열어 포로를 풀어 주다 들킬 뻔했다, tags: [mercy, betrayal], severity: 3, privacy: semi_private }
+          - belief: { fact: 막내만 빠져나갔다. 간수가 돌아오는 발소리에 문을 닫았다. 간수가 나를 오래 보았다, source: seen }
+        miss:
+          - set_flag: c_marked
+          - relation: { who: commander, axis: trust, delta: -2 }
+          - belief: { fact: 열쇠를 집다 간수에게 들켰다. 둘러댔지만 규율반에 이름이 올라갈 것이다, source: seen }
+    - id: report
+      label: 열쇠를 간수에게 갖다주며 조심하라고 한다
+      effects:
+        - merit: 1
+        - deed: { summary: 수용소 열쇠를 아무 데나 둔 간수를 다그쳤다, tags: [diligence, loyalty], severity: 1, privacy: semi_private }
+    - id: ignore
+      label: 못 본 척한다
+      effects: []
+
+- id: wc_captive_visit
+  title: 창살 앞의 물 한 모금
+  repeatable: true
+  cooldown_days: 3
+  tags: [world]
+  when:
+    zones: [c_warehouse]
+    segments: [day, evening]
+  cast:
+    prisoner: { captive: true }
+  setup: 물류창고 안쪽 창살 앞을 지난다. {prisoner:이/가} 마른 입술로 물을 청한다.
+  ai_direction: 갇힌 사람은 지쳐 있다. 물을 주는 것을 다른 사람이 보면 말이 돈다. 무엇을 알고 있는지는 그 인물의 카드대로만 말한다.
+  choices:
+    - id: give_water
+      label: 물병을 창살 사이로 건넨다
+      effects:
+        - relation: { who: prisoner, axis: trust, delta: 2 }
+        - deed: { summary: 수용소 포로에게 몰래 물을 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+    - id: pass
+      label: 지나간다
+      effects: []

@@ -71,6 +71,8 @@ export function createContentSchemas(s: Scenario) {
     /** 이름을 모르는 사람이 부르는 말 (기획서 6.3). 짧은 호칭: "귀가 반쯤 없는 분대장" */
     alias: z.string().min(1).max(30),
     faction: contentIdSchema,
+    /** 세계가 시작될 때 이미 붙잡혀 있다 (포로, 기획서 7.6) */
+    start_captive: z.strictObject({ by: contentIdSchema, zone: contentIdSchema }).optional(),
     rank: idEnum(rankIds(s)),
     age: z.number().int().positive(),
     look: z.string().min(1),
@@ -263,6 +265,10 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ faction_resource: z.strictObject({ faction: z.string().min(1), resource: contentIdSchema, delta: z.number().int().min(-50).max(50) }) }),
     /** 주인공이 그 무리에 들어간다: 무소속이면 가입, 다른 무리에 있으면 옮긴다 (rank가 없으면 가장 낮은 계급). 이미 그 무리면 아무 일도 없다 */
     z.strictObject({ join_faction: z.strictObject({ faction: contentIdSchema, rank: idEnum(rankIds(s)).optional(), title: z.string().min(1).max(24).optional() }) }),
+    /** 배역 NPC를 붙잡는다 (포로). by: own(플레이어 소속) 또는 세력 id, zone이 없으면 그 세력의 거점 */
+    z.strictObject({ npc_capture: z.strictObject({ who: z.string().min(1), by: z.string().min(1), zone: contentIdSchema.optional() }) }),
+    /** 붙잡힌 배역 NPC를 풀어 준다 (구출·석방). 원래 무리로 돌아간다 */
+    z.strictObject({ npc_release: z.strictObject({ who: z.string().min(1) }) }),
     /** 배역 NPC가 떠난다: to_faction이면 그 세력으로 넘어가고(도시에 남는다), 없으면 도시를 떠난다 (탈영·피난) */
     z.strictObject({ npc_depart: z.strictObject({ who: z.string().min(1), to_faction: contentIdSchema.optional() }) }),
     z.strictObject({
@@ -290,6 +296,8 @@ export function createContentSchemas(s: Scenario) {
     trust_gte: z.number().int().optional(),
     /** 발동할 때 장면에 들어온다 */
     enter: z.boolean().default(true),
+    /** 붙잡혀 있는 인물만 (true) / 붙잡히지 않은 인물만 (기본). 포로를 배역으로 쓸 때 true */
+    captive: z.boolean().optional(),
     /**
      * 이름 없는 인물로 채운다 (엑스트라 틀 id, 기획서 7.5): 발동할 때 코드가 그 틀로 캐릭터를 만들어 장면에 들인다.
      * label은 호칭 (없으면 틀 이름). 이 배역은 다른 조건(ids, faction 등)을 보지 않는다

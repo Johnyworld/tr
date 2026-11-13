@@ -234,9 +234,11 @@ function nameNotes(state: GameState, viewer: string, id: string): string[] {
 /** 엑스트라의 최근 목록에 넣는 수 (오래 안 본 인물은 데이터에 남아도 상태에는 넣지 않는다, *임시*) */
 const RECENT_EXTRAS_IN_PROMPT = 5;
 
-function statusNote(content: Content, character: Character): string {
+function statusNote(content: Content, character: Character, state?: GameState): string {
   const initial = initialConditions(content.scenario);
   const changed = Object.entries(initial).some(([track, level]) => character.conditions[track] !== level);
+  // 붙잡혀 있다는 것은 그 자리에 있어야 안다 (원칙 4). 아니면 행방을 모를 뿐이다
+  if (character.captive && !character.dead) return state && state.playerZone === character.captive.zone ? " · 여기 붙잡혀 있다" : " · 행방 모름";
   return character.dead ? " · 사망" : character.away ? " · 떠남" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
 }
 
@@ -260,14 +262,14 @@ function describeKnownPeople(state: GameState, content: Content): string {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
       const gender = genderOf(content.scenario, character.gender ?? npc?.gender ?? null);
-      const head = `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankLabel(content.scenario, character.rank)}${gender}${statusNote(content, character)}`;
+      const head = `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankLabel(content.scenario, character.rank)}${gender}${statusNote(content, character, state)}`;
       if (near(id)) return `${head}: ${npc ? `${npc.look} ${npc.reputation}` : (character.extra?.look ?? "")}`;
       return `${head}${npc ? `: ${shortNote(npc.reputation)}` : ""}`;
     });
     blocks.push(`알고 있는 인물 (지금 장면에는 없다. 자세한 것은 장면에 들어오면 붙는다):\n${lines.join("\n")}`);
   }
   if (faces.length > 0) {
-    const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!)}: ${content.npcs[id]!.look}`);
+    const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!, state)}: ${content.npcs[id]!.look}`);
     blocks.push(`얼굴만 아는 인물 (이름은 모른다. 지금 장면에는 없다):\n${lines.join("\n")}`);
   }
   return blocks.join("\n\n");
@@ -281,7 +283,7 @@ export function describeZonePeople(state: GameState, content: Content): string {
   const zone = state.playerZone;
   if (!zone) return "";
   const people = Object.values(content.npcs).filter(
-    (npc) => npc.zone === zone && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
+    (npc) => (state.characters[npc.id]?.captive ? state.characters[npc.id]!.captive!.zone === zone : npc.zone === zone) && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
   );
   const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id));
   if (strangers.length === 0) return "";

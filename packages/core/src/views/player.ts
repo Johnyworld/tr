@@ -140,7 +140,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         name: headingAs(state, content, player.id, id),
         rankLabel: rankLabel(scenario, npc.rank),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
-        conditionLabel: npc.dead ? "사망" : npc.away ? "떠남" : changed(npc) ? describeConditions(scenario, npc) : null,
+        conditionLabel: npc.dead ? "사망" : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : changed(npc) ? describeConditions(scenario, npc) : null,
       };
     }),
     service: {

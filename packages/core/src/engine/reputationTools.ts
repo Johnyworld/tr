@@ -75,7 +75,7 @@ export function recordDeed(
     const stealth = stealthThisTurn(state, scenario.move_roles.stealth);
     const notice = noticeMove(ctx);
     for (const character of Object.values(state.characters)) {
-      if (character.id === state.playerId || character.dead || character.away) continue;
+      if (character.id === state.playerId || character.dead || character.away || character.captive) continue;
       if (state.scene.present.includes(character.id) || !ctx.content.npcs[character.id]) continue;
       const chance = hiddenWitnessChance({
         privacy: input.privacy,
@@ -223,7 +223,7 @@ export function spreadRumors(ctx: ToolContext): void {
   for (let d = last + 1; d <= Math.min(day, last + 3); d++) {
     const state = ctx.store.getState();
     const npcIds = Object.values(state.characters)
-      .filter((c) => c.id !== state.playerId && !c.dead && !c.away && ctx.content.npcs[c.id])
+      .filter((c) => c.id !== state.playerId && !c.dead && !c.away && !c.captive && ctx.content.npcs[c.id])
       .map((c) => c.id);
     const learned = spreadOneDay({
       deeds: Object.values(state.deeds),

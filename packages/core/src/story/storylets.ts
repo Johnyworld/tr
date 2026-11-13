@@ -28,6 +28,8 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
   const known = new Set(state.known[state.playerId] ?? []);
   return Object.values(state.characters)
     .filter((c) => c.id !== state.playerId && !c.dead && !c.away && content.npcs[c.id])
+    // 포로는 captive: true인 배역만, 그리고 그 구역에서만 (갇힌 곳에서 마주친다)
+    .filter((c) => (role.captive ? !!c.captive && c.captive.zone === state.playerZone : !c.captive))
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.commander || c.id === commander)
     .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction))

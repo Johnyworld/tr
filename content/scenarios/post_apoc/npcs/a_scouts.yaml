@@ -1,0 +1,67 @@
+# 붙잡힌 청솔형제단 정찰조 (기획서 7.6 포로). lore/secret_scouts.md, 붉은연합 수용소 이야기와 맞춘다
+# 세계가 시작될 때부터 붉은연합의 물류창고 수용소에 갇혀 있다. 구출되면(npc_release) 청솔형제단으로 돌아온다
+- id: a_jeongbin
+  name: 오정빈
+  alias: 창살에 얼굴을 붙인 젊은 정찰병
+  faction: faction_a
+  rank: grunt
+  age: 24
+  gender: male
+  start_captive: { by: faction_c, zone: c_warehouse }
+  look: 광대뼈가 드러나게 마른 얼굴, 찢어진 초록 완장을 아직 팔에 매고 있다. 손목에 끈 자국이 붉다.
+  reputation: 지난달 동쪽으로 나갔다가 돌아오지 않은 청솔형제단 정찰조의 막내. 붉은연합 수용소에 갇혀 있다.
+  want: 다리를 다친 조장을 살려서 거점에 돌아가는 것
+  fear: 조장이 열로 죽고 자기만 남는 것
+  values: { discipline: 1, loyalty: 3, mercy: 1, honesty: 2, self_interest: -1 }
+  traits: [warm, eager]
+  voice:
+    style: 낮고 빠른 반말과 존댓말이 섞인다. 부탁할 때는 숨을 고르고 짧게
+    samples:
+      - "우리 살아 있다고만. 그거면 돼."
+      - "조장님 다리가 썩고 있어. 열이 사흘째야."
+  routine: { morning: 수용소, day: 수용소, night: 수용소 }
+  rules:
+    - 거짓말은 하지 않는다
+    - 조장을 두고 혼자 나가지 않는다
+  knows:
+    - 수용소 간수 교대는 해 질 녘에 한 번 느슨해진다
+    - 물류창고 뒤편 배수구가 고가도로 아래로 이어진다
+  doesnt_know:
+    - 붉은연합이 정찰조를 교환에 쓸지 본보기로 쓸지 아직 정하지 않았다
+  stats: { strength: 0, agility: 1, vitality: 0, senses: 1, nerve: 0, charm: 0, intellect: 0 }
+  skills: { sense_danger: 1, stealth: 1 }
+  start_inventory: []
+  playable: true
+  zone: a_base
+
+- id: a_gicheol_scout
+  name: 남궁혁
+  alias: 다리를 다친 정찰조장
+  faction: faction_a
+  rank: squad_leader
+  age: 38
+  gender: male
+  start_captive: { by: faction_c, zone: c_warehouse }
+  look: 왼쪽 정강이를 판자로 묶어 두었다. 열에 들뜬 눈이 번들거린다. 수염이 제멋대로 자랐다.
+  reputation: 지난달 실종된 청솔형제단 정찰조의 조장. 붉은연합 수용소에서 다리 상처가 곪고 있다.
+  want: 막내만이라도 살려 보내는 것
+  fear: 자기 때문에 구출조가 죽는 것
+  values: { discipline: 2, loyalty: 3, mercy: 1, honesty: 1, self_interest: -2 }
+  traits: [steel_nerves, guarded]
+  voice:
+    style: 열에 들뜬 짧은 말. 명령조가 남아 있다
+    samples:
+      - "나는 두고 가. 업고는 못 뛴다."
+      - "배수구. 해 질 녘. 그때뿐이야."
+  routine: { morning: 수용소, day: 수용소, night: 수용소 }
+  rules:
+    - 구출조가 오면 자기를 두고 가라고 먼저 말한다
+  knows:
+    - 붉은연합 동쪽 공세에 쓸 탄약이 물류창고에 쌓이고 있다
+  doesnt_know:
+    - 청솔형제단 거점에서 정찰조가 감염체에게 당했다는 소문이 돈다는 것
+  stats: { strength: 1, agility: 0, vitality: -1, senses: 1, nerve: 2, charm: 0, intellect: 1 }
+  skills: { tactics: 1, sense_danger: 1, shoot: 1 }
+  start_inventory: []
+  playable: true
+  zone: a_base

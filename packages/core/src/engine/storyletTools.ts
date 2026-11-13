@@ -95,6 +95,7 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
     if (!storylet.cast[key]?.enter) continue;
     const now = store.getState();
     if (now.scene.present.includes(id) || now.characters[id]?.dead || now.characters[id]?.away) continue;
+    if (now.characters[id]?.captive && now.characters[id]!.captive!.zone !== now.playerZone) continue;
     enterScene(ctx, id);
     displays.push({ type: "presence", npcName: playerCalls(store.getState(), content, id), action: "enter" });
   }
@@ -326,6 +327,26 @@ function applyEffect(
         (beliefs.length ? ` 이 무리 사정을 ${beliefs.length}가지 들었다 (상태의 믿음).` : ""),
       display: { type: "promotion", name: player.name, fromLabel: from, toLabel: role.label },
     };
+  }
+  if ("npc_capture" in effect) {
+    const id = whoOf(ctx, effect.npc_capture.who, cast);
+    const npc = id ? state.characters[id] : undefined;
+    if (!id || !npc || npc.dead || npc.away || npc.captive || id === playerId) return {};
+    const by = effect.npc_capture.by === "own" ? state.characters[playerId]!.factionId : effect.npc_capture.by;
+    if (!content.factions[by]) return {};
+    const zone = effect.npc_capture.zone ?? Object.values(content.locations).find((l) => l.owner === by && l.kind === "base")?.id;
+    if (!zone) return {};
+    store.append({ type: "npc_captured", npcId: id, by, zone });
+    const name = playerCalls(state, content, id);
+    return { line: `${josa(name, "은/는")} ${content.factions[by]!.name}에 붙잡혀 ${content.locations[zone]?.name ?? zone}에 갇혔다.`, display: { type: "presence", npcName: name, action: "leave" } };
+  }
+  if ("npc_release" in effect) {
+    const id = whoOf(ctx, effect.npc_release.who, cast);
+    const npc = id ? state.characters[id] : undefined;
+    if (!id || !npc?.captive) return {};
+    store.append({ type: "npc_released", npcId: id });
+    const name = playerCalls(state, content, id);
+    return { line: `${josa(name, "은/는")} 풀려나 ${content.factions[npc.factionId]?.name ?? "제 갈 길"} 쪽으로 돌아간다.`, display: { type: "presence", npcName: name, action: "leave" } };
   }
   if ("npc_depart" in effect) {
     const id = whoOf(ctx, effect.npc_depart.who, cast);

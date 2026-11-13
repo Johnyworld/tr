@@ -139,6 +139,9 @@ const npcPresence = defineTool({
       if (present) return { ok: false, error: `${josa(name, "은/는")} 이미 장면에 있습니다.` };
       if (character.dead) return { ok: false, error: `${josa(name, "은/는")} 사망했습니다.` };
       if (character.away) return { ok: false, error: `${josa(name, "은/는")} 도시를 떠났습니다.` };
+      if (character.captive && character.captive.zone !== state.playerZone) {
+        return { ok: false, error: `${josa(name, "은/는")} 지금 장면에 들일 수 없다 (캐릭터는 이 사람의 행방을 모른다).` };
+      }
       enterScene(ctx, character.id);
     } else {
       if (!present) return { ok: false, error: `${josa(name, "은/는")} 장면에 없습니다.` };

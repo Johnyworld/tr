@@ -57,7 +57,7 @@ describe("자유 시나리오: 코드가 정하는 엔진 값", () => {
     expect(officer.known_npcs).toContain("a_taeho");
     expect(officer.missions.length).toBeGreaterThan(0);
     expect(officer.beliefs_preset).toBeUndefined(); // 하급 전투원의 시작 지식을 참모에게 주지 않는다
-    expect(officer.start_inventory).toEqual(["ledger", "radio", "water_bottle"]);
+    expect(officer.start_inventory).toEqual(["ledger", "radio", "water_bottle", "canned_food"]);
     expect(buildCustomRole(content, { ...base, rank: "squad_leader" }).commander).toBe("a_doyun");
     const grunt = buildCustomRole(content, { ...base, rank: "grunt" });
     expect(grunt.commander).toBe("a_taeho");

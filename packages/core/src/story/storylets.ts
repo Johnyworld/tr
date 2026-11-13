@@ -91,11 +91,15 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   return true;
 }
 
+/** 어느 시나리오(역할)에서나 발동하는 스토리렛 태그 */
+export const WORLD_TAG = "world";
+
 /** 지금 발동할 수 있는 스토리렛 (역할 태그, 반복·쿨다운, 조건, 배역) */
 export function eligibleStorylets(state: GameState, content: Content, at: GameTime = state.time): StoryletContent[] {
   const roleTags = new Set(content.roles[state.roleId]?.storylet_tags ?? []);
   return Object.values(content.storylets)
-    .filter((s) => s.tags.length === 0 || s.tags.some((t) => roleTags.has(t)))
+    // 태그가 없거나 world면 어느 시나리오에서나, 아니면 역할의 태그와 겹칠 때만
+    .filter((s) => s.tags.length === 0 || s.tags.some((t) => t === WORLD_TAG || roleTags.has(t)))
     .filter((s) => {
       const log = state.storyletLog[s.id];
       if (!log) return true;

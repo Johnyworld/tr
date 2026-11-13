@@ -200,6 +200,13 @@ export function createContentSchemas(s: Scenario) {
     adjacent: z.array(contentIdSchema).default([]),
     /** 소유 세력이 하루에 얻는 자원 */
     yields: resourceAmounts.default({}),
+    /** 수색하면 나올 수 있는 것 (기획서 4.7). chance: 한 번 굴릴 때 무언가 나올 확률, items: 무게로 고른다 */
+    loot: z
+      .strictObject({
+        chance: z.number().min(0).max(1),
+        items: z.array(z.strictObject({ item: contentIdSchema, weight: z.number().positive(), qty: z.tuple([z.number().int().positive(), z.number().int().positive()]) })),
+      })
+      .optional(),
   });
 
   /** 스토리렛 효과. 코드가 검증하고 적용한다 (AI가 고르는 것은 선택지뿐이다) */

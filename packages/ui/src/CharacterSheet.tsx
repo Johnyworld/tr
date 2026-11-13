@@ -90,9 +90,9 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
       </section>
 
       <section className="service">
-        <h3>복무</h3>
+        <h3>{player.faction ? "복무" : "지낸 날"}</h3>
         <div>
-          공적 {player.service.merit} · 복무 {player.service.daysServed}일
+          {player.faction ? `공적 ${player.service.merit} · 복무 ${player.service.daysServed}일` : `${player.service.daysServed}일째 (무소속)`}
           {player.service.disobedience > 0 && <span className="condition-worse"> · 불복종 {player.service.disobedience}</span>}
         </div>
         {player.service.promotionMissing && player.service.promotionMissing.length > 0 && (

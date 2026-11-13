@@ -168,6 +168,8 @@ export function createGameSchemas(s: Scenario) {
     roleId: z.string(),
     /** 자유 시나리오로 시작했으면 그때 코드가 만든 역할 (콘텐츠에 없다, 기획서 12.5). roleId는 CUSTOM_ROLE_ID */
     customRole: customRoleSchema.nullable().default(null),
+    /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
+    zoneSearches: z.record(z.string(), z.strictObject({ day: z.number().int(), count: z.number().int() })).default({}),
     turn: z.number().int().nonnegative(),
     /** 게임 시간 (1일차 00:00부터 흐른 분) */
     time: z.number().int().nonnegative(),
@@ -266,6 +268,7 @@ export function createGameSchemas(s: Scenario) {
       known: z.record(z.string(), z.array(z.string())),
     }),
     z.strictObject({ type: z.literal("npc_entered"), npcId: z.string() }),
+    z.strictObject({ type: z.literal("zone_searched"), zone: z.string(), day: z.number().int() }),
     z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
     z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
     z.strictObject({ type: z.literal("missions_offered"), day: z.number().int(), templateIds: z.array(z.string()) }),
@@ -504,6 +507,7 @@ export const EMPTY_STATE: GameState = {
   worldId: "",
   roleId: "",
   customRole: null,
+  zoneSearches: {},
   turn: 0,
   time: START_TIME,
   playerId: "",
@@ -586,6 +590,11 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       // 처음부터 아는 사람들(같은 무리 동료)은 주인공도 이름까지 안다
       for (const id of event.known[event.player.id] ?? []) acquaint(created, id, event.player.id, true);
       return created;
+    }
+    case "zone_searched": {
+      const prev = next.zoneSearches[event.zone];
+      next.zoneSearches[event.zone] = { day: event.day, count: prev && prev.day === event.day ? prev.count + 1 : 1 };
+      return next;
     }
     case "npc_entered": {
       const npc = mustGet(next.characters, event.npcId, "캐릭터");

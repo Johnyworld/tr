@@ -63,7 +63,9 @@ function roleLabelOf(ctx: CommandContext) {
 function clockLine(state: GameState) {
   const m = minuteOfDay(state.time);
   const hhmm = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-  return `${dayOf(state.time)}일차 · ${hhmm} · ${SEGMENT_LABELS[segmentOf(state.time)]} · 복무 ${daysServed(state.time, state.runStartedAt) + 1}일째`;
+  const days = daysServed(state.time, state.runStartedAt) + 1;
+  const free = !state.characters[state.playerId]?.factionId;
+  return `${dayOf(state.time)}일차 · ${hhmm} · ${SEGMENT_LABELS[segmentOf(state.time)]} · ${free ? "" : "복무 "}${days}일째`;
 }
 
 /** 관계 축 하나를 게이지로 (-5 ~ +5를 0 ~ 10으로) */
@@ -99,12 +101,14 @@ const status: CommandDef = {
     lines.push("");
     const commanderId = commanderOf(state, content);
     const commander = commanderId ? state.characters[commanderId] : undefined;
-    lines.push(`소속  ${roleLabelOf(ctx)}${commander ? ` (상관 ${commander.name})` : ""}`);
+    lines.push(`소속  ${player.factionId ? roleLabelOf(ctx) : `무소속 · ${roleLabelOf(ctx)}`}${commander ? ` (상관 ${commander.name})` : ""}`);
     const trust = commander ? (state.perceived[commander.id]?.trust ?? 0) : null;
-    lines.push(
-      `평판  공적 ${player.merit} · 불복종 ${player.disobedience}회` +
-        (trust !== null && commander ? ` · ${commander.name}의 신뢰 ${relationLabel(trust)}` : ""),
-    );
+    if (player.factionId) {
+      lines.push(
+        `평판  공적 ${player.merit} · 불복종 ${player.disobedience}회` +
+          (trust !== null && commander ? ` · ${commander.name}의 신뢰 ${relationLabel(trust)}` : ""),
+      );
+    }
     if (player.dead) lines.push("", "사망했습니다.");
     return lines.join("\n");
   },

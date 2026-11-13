@@ -141,6 +141,12 @@ function checkReferences(content: Content): string[] {
       problems.push(`roles.${role.id}: 알 수 없는 시작 구역 ${role.start_location}`);
     }
   }
+  for (const loc of Object.values(content.locations)) {
+    for (const l of loc.loot?.items ?? []) {
+      if (!content.items[l.item]) problems.push(`locations.${loc.id}.loot: 알 수 없는 아이템 ${l.item}`);
+      if (l.qty[0] > l.qty[1]) problems.push(`locations.${loc.id}.loot.${l.item}: qty의 앞이 뒤보다 크다`);
+    }
+  }
   const custom = content.scenario.custom_start;
   if (custom) {
     const ranks = new Set(content.scenario.rank_ladder.map((r) => r.id));

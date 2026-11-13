@@ -80,7 +80,9 @@ export function checkCustomStart(content: Content, input: CustomStartInput): str
 export function buildCustomRole(content: Content, input: CustomStartInput): RoleContent {
   const kit = content.scenario.custom_start!.kits.find((k) => k.id === input.kit)!;
   const faction = input.faction;
-  const same = faction ? Object.values(content.roles).find((r) => r.faction === faction) : undefined;
+  // 같은 세력의 콘텐츠 역할 중 계급이 같은 것, 없으면 아무거나 (임무·배급·태그를 빌린다)
+  const roles = faction ? Object.values(content.roles).filter((r) => r.faction === faction) : [];
+  const same = roles.find((r) => r.rank === input.rank) ?? roles[0];
   const level = rankLevel(content, input.rank);
   const members = faction ? Object.values(content.npcs).filter((n) => n.faction === faction) : [];
   const commander = members

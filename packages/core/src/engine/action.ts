@@ -1,3 +1,4 @@
+import { scavenge } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { changeCondition, isIncapacitated } from "./body.ts";
@@ -261,6 +262,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
         return { ok: true, resultText: lines.join("\n"), displays, outcome, dead: true };
       }
     }
+  }
+
+  // 1-0. 수색: 그 구역에서 찾을 거리를 코드가 굴린다 (기획서 4.7)
+  if (input.activity?.kind === "search" && !inBattle) {
+    const found = scavenge(ctx, outcome);
+    lines.push(...found.lines);
+    displays.push(...found.displays);
   }
 
   // 1-1. 준비물 설치 (아이템은 판정 결과와 관계없이 쓴다)

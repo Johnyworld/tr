@@ -86,10 +86,10 @@ custom_start:
   age: { min: 16, max: 65 }
   kits:
     - { id: fighter, label: 싸울 채비, description: 몸으로 부딪치는 사람, items: [crowbar, water_bottle, dry_ration] }
-    - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, kitchen_knife, water_bottle] }
-    - { id: medic, label: 의무 채비, description: 다친 사람을 돌보는 사람, items: [medkit, fever_reducer, water_bottle] }
+    - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, kitchen_knife, water_bottle, dry_ration] }
+    - { id: medic, label: 의무 채비, description: 다친 사람을 돌보는 사람, items: [medkit, fever_reducer, water_bottle, dry_ration] }
     - { id: trader, label: 거래 채비, description: 말과 물건으로 사는 사람, items: [cigarettes, canned_food, water_bottle] }
-    - { id: clerk, label: 장부 채비, description: 숫자와 소식을 다루는 사람, items: [ledger, radio, water_bottle] }
+    - { id: clerk, label: 장부 채비, description: 숫자와 소식을 다루는 사람, items: [ledger, radio, water_bottle, canned_food] }
     - { id: wanderer, label: 떠돌이 채비, description: 담 밖에서 버텨 온 사람, items: [blanket, kitchen_knife, dry_ration] }
 
 # 이전 세이브의 옛 능력 id

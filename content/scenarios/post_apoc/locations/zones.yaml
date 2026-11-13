@@ -2,6 +2,7 @@
 # base: 거점 (습격은 받지만 빼앗기지 않는다, MVP). yields: 소유 세력이 하루에 얻는 자원 (*임시*)
 # 거점 산출은 텃밭·우물·채집·교역을 뭉뚱그린 값. 무리마다 소모보다 조금 모자라게 둬서 바깥 구역을 두고 다투게 한다
 # 인접은 한쪽에만 적어도 양쪽으로 본다
+# loot: 수색하면 나올 수 있는 것 (기획서 4.7). chance는 한 번 굴릴 때 무언가 나올 확률, weight로 고른다 (*임시*)
 - id: a_base
   name: 청솔형제단 거점
   description: 옛 공업고등학교. 운동장 담을 모래주머니와 철판으로 보강했다.
@@ -9,6 +10,13 @@
   owner: faction_a
   adjacent: [a_east_post, old_town, riverside, b_base]
   yields: { food: 58, water: 75, fuel: 12, ammo: 3 }
+  loot:
+    chance: 0.3
+    items:
+      - { item: canned_food, weight: 3, qty: [1, 1] }
+      - { item: wire_roll, weight: 2, qty: [1, 1] }
+      - { item: cigarettes, weight: 1, qty: [1, 2] }
+      - { item: blanket, weight: 1, qty: [1, 1] }
 
 - id: a_east_post
   name: 동쪽 초소
@@ -16,6 +24,12 @@
   kind: zone
   owner: faction_a
   adjacent: [c_warehouse]
+  loot:
+    chance: 0.3
+    items:
+      - { item: wire_roll, weight: 3, qty: [1, 1] }
+      - { item: dry_ration, weight: 2, qty: [1, 1] }
+      - { item: binoculars, weight: 1, qty: [1, 1] }
 
 - id: c_warehouse
   name: 고가도로 너머 물류창고
@@ -24,6 +38,14 @@
   owner: faction_c
   adjacent: [c_base, riverside]
   yields: { food: 30, fuel: 5 }
+  loot:
+    chance: 0.6
+    items:
+      - { item: canned_food, weight: 4, qty: [1, 2] }
+      - { item: dry_ration, weight: 3, qty: [1, 2] }
+      - { item: coat, weight: 1, qty: [1, 1] }
+      - { item: crowbar, weight: 1, qty: [1, 1] }
+      - { item: c_armband, weight: 1, qty: [1, 1] }
 
 - id: c_base
   name: 붉은연합 거점
@@ -32,6 +54,11 @@
   owner: faction_c
   adjacent: [old_town]
   yields: { food: 150, water: 185, fuel: 20 }
+  loot:
+    chance: 0.25
+    items:
+      - { item: canned_food, weight: 2, qty: [1, 1] }
+      - { item: c_armband, weight: 1, qty: [1, 1] }
 
 - id: riverside
   name: 강변 공장 지대
@@ -40,6 +67,14 @@
   owner: null
   adjacent: [e_market]
   yields: { water: 45, fuel: 10 }
+  loot:
+    chance: 0.55
+    items:
+      - { item: wire_roll, weight: 3, qty: [1, 2] }
+      - { item: canned_food, weight: 2, qty: [1, 1] }
+      - { item: water_bottle, weight: 1, qty: [1, 1] }
+      - { item: crowbar, weight: 1, qty: [1, 1] }
+      - { item: blanket, weight: 1, qty: [1, 1] }
 
 - id: old_town
   name: 구시가
@@ -48,6 +83,16 @@
   owner: null
   adjacent: [b_base, d_clinic]
   yields: { food: 15, ammo: 3, medicine: 1 }
+  loot:
+    chance: 0.5
+    items:
+      - { item: canned_food, weight: 3, qty: [1, 2] }
+      - { item: cigarettes, weight: 2, qty: [1, 3] }
+      - { item: blanket, weight: 2, qty: [1, 1] }
+      - { item: coat, weight: 1, qty: [1, 1] }
+      - { item: kitchen_knife, weight: 1, qty: [1, 1] }
+      - { item: dry_ration, weight: 1, qty: [1, 1] }
+      - { item: radio, weight: 0.5, qty: [1, 1] }
 
 - id: b_base
   name: 버들마을 거점
@@ -55,6 +100,12 @@
   kind: base
   owner: faction_b
   yields: { food: 36, water: 42, fuel: 6, ammo: 1 }
+  loot:
+    chance: 0.3
+    items:
+      - { item: canned_food, weight: 2, qty: [1, 1] }
+      - { item: dry_ration, weight: 2, qty: [1, 1] }
+      - { item: blanket, weight: 1, qty: [1, 1] }
 
 - id: d_clinic
   name: 하얀매의 진료소
@@ -62,6 +113,11 @@
   kind: base
   owner: faction_d
   yields: { food: 30, water: 33, fuel: 5, medicine: 4 }
+  loot:
+    chance: 0.25
+    items:
+      - { item: fever_reducer, weight: 2, qty: [1, 1] }
+      - { item: medkit, weight: 1, qty: [1, 1] }
 
 - id: e_market
   name: 나루상단의 장터
@@ -71,6 +127,13 @@
   yields: { food: 50, water: 50, fuel: 10, ammo: 5 }
 
 # ── 12단계 추가: 분쟁 지대 ──
+  loot:
+    chance: 0.3
+    items:
+      - { item: cigarettes, weight: 2, qty: [1, 2] }
+      - { item: canned_food, weight: 1, qty: [1, 1] }
+      - { item: trade_token, weight: 1, qty: [1, 1] }
+
 - id: hospital_ruins
   name: 옛 시립병원
   description: 첫 해에 가장 먼저 무너진 병원. 지하 약제실은 아직 다 털리지 않았다는 말이 있다. 감염체가 많다.
@@ -78,6 +141,13 @@
   owner: null
   adjacent: [old_town, d_clinic]
   yields: { medicine: 2 }
+  loot:
+    chance: 0.5
+    items:
+      - { item: fever_reducer, weight: 3, qty: [1, 2] }
+      - { item: medkit, weight: 2, qty: [1, 1] }
+      - { item: antibiotics, weight: 1, qty: [1, 1] }
+      - { item: blanket, weight: 1, qty: [1, 1] }
 
 - id: water_plant
   name: 정수장
@@ -86,6 +156,11 @@
   owner: faction_e
   adjacent: [riverside, e_market]
   yields: { water: 30 }
+  loot:
+    chance: 0.25
+    items:
+      - { item: water_bottle, weight: 2, qty: [1, 1] }
+      - { item: wire_roll, weight: 1, qty: [1, 1] }
 
 - id: south_fields
   name: 남쪽 텃밭
@@ -94,3 +169,10 @@
   owner: faction_a
   adjacent: [a_base, b_base]
   yields: { food: 12 }
+  loot:
+    chance: 0.35
+    items:
+      - { item: dry_ration, weight: 1, qty: [1, 1] }
+      - { item: wire_roll, weight: 1, qty: [1, 1] }
+      - { item: kitchen_knife, weight: 0.5, qty: [1, 1] }
+

@@ -214,7 +214,8 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   const player = state.characters[state.playerId];
   if (!player) return "";
   const active = activeMissionOf(state.missions, player.id);
-  const lines = [`복무: ${rankLabel(ctx.content.scenario, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회`];
+  // 무소속은 복무·공적·불복종이 없다
+  const lines = [player.factionId ? `복무: ${rankLabel(ctx.content.scenario, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회` : `무소속 (${rankLabel(ctx.content.scenario, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
   } else if (state.offers?.day === dayOf(state.time) && state.offers.templateIds.length > 0) {

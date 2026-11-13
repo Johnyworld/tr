@@ -168,7 +168,7 @@ describe("무소속이 무리에 들어간다 (join_faction)", () => {
     const w = m.create("mcp", undefined, { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] }, undefined, { role: buildCustomRole(content, loner), background: [] });
     const role = joinRole(content, "faction_b", undefined, { age: 30 });
     expect(role).toMatchObject({ faction: "faction_b", rank: "grunt", commander: "b_dongcheol" });
-    w.ctx().store.append({ type: "player_joined_faction", factionId: "faction_b", rank: role.rank, role });
+    w.ctx().store.append({ type: "player_joined_faction", factionId: "faction_b", rank: role.rank, role, beliefs: [] });
     const s = w.state();
     expect(s.characters.player).toMatchObject({ factionId: "faction_b", rank: "grunt" });
     expect(s.known.player).toContain("b_dongcheol");
@@ -177,6 +177,33 @@ describe("무소속이 무리에 들어간다 (join_faction)", () => {
     w.executeTool("take_action", { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false });
     expect(w.sceneForGm()).toContain("오늘 받을 수 있는 임무");
     expect(await w.runCommand("?배급")).toContain("오늘 배급");
+    w.close();
+  });
+});
+
+describe("스카우트: 뛰어난 조직원이 다른 무리로 옮긴다", () => {
+  it("공적 9 이상이면 다른 무리의 스카우트가 열리고, 받아들이면 옮겨 간다 (옛 상관 신뢰↓, 새 상관, 같은 계급의 시작 지식)", async () => {
+    const { eligibleStorylets } = await import("../story/storylets.ts");
+    const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-scout-")), content, rngFactory: () => createSeededRng(2) });
+    const w = m.create("mcp", "role_b_guard", { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] });
+    const s = w.state();
+    const evening = s.time + 6 * 24 * 60 + 6 * 60; // 엿새 뒤 한낮
+    let merit = 0;
+    const scouts = () => {
+      const st = w.state();
+      const withMerit = { ...st, characters: { ...st.characters, player: { ...st.characters.player!, merit } } };
+      return eligibleStorylets(withMerit, w.content, evening).map((x) => x.id).filter((id) => id.startsWith("ws_"));
+    };
+    expect(scouts()).toEqual([]);
+    merit = 9;
+    expect(scouts()).toContain("ws_pine_scout"); // 버들마을 사람에게 청솔형제단이 손을 내민다
+    // 청솔형제단으로 옮기는 효과를 그대로 적용한다
+    const role = joinRole(content, "faction_a", "squad_leader", { age: 30, title: "청솔형제단 분대장" });
+    w.ctx().store.append({ type: "player_joined_faction", factionId: "faction_a", rank: role.rank, role, beliefs: [] });
+    expect(w.state().characters.player).toMatchObject({ factionId: "faction_a", rank: "squad_leader" });
+    expect(w.content.roles.custom?.commander).toBe("a_doyun");
+    expect(w.content.roles.custom?.storylet_tags).toContain("a_squad_leader");
+    expect(scouts()).not.toContain("ws_pine_scout");
     w.close();
   });
 });

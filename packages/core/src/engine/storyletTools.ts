@@ -277,15 +277,22 @@ function applyEffect(
   }
   if ("join_faction" in effect) {
     const player = state.characters[playerId]!;
-    if (player.factionId) return {};
     const { faction, rank, title } = effect.join_faction;
-    if (!content.factions[faction]) return {};
+    if (!content.factions[faction] || player.factionId === faction) return {};
+    const from = player.factionId ? (content.roles[state.roleId]?.label ?? content.factions[player.factionId]?.name ?? "") : "무소속";
     const role = joinRole(content, faction, rank, { age: player.age, title });
-    store.append({ type: "player_joined_faction", factionId: faction, rank: role.rank, role });
+    // 그 무리에서 처음 듣는 사정: 같은 계급 시나리오의 시작 지식 (다른 계급의 지식은 주지 않는다)
+    const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
+    let no = state.nextBeliefNo;
+    const beliefs = (preset?.beliefs ?? []).map((b) => ({ id: `b_${no++}`, fact: b.fact, source: b.source === "seen" ? ("report" as const) : b.source, accuracy: b.accuracy, learnedAt: state.time }));
+    store.append({ type: "player_joined_faction", factionId: faction, rank: role.rank, role, beliefs });
     const commander = role.commander ? state.characters[role.commander]?.name : undefined;
     return {
-      line: `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}.` : ""} 이제 배급을 받고 임무를 받을 수 있다.`,
-      display: { type: "promotion", name: player.name, fromLabel: "무소속", toLabel: role.label },
+      line:
+        `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}.` : ""} 이제 이 무리의 배급과 임무를 받는다.` +
+        (player.factionId ? ` 전에 있던 무리(${content.factions[player.factionId]?.name ?? player.factionId})의 사람들은 이제 남이다.` : "") +
+        (beliefs.length ? ` 이 무리 사정을 ${beliefs.length}가지 들었다 (상태의 믿음).` : ""),
+      display: { type: "promotion", name: player.name, fromLabel: from, toLabel: role.label },
     };
   }
   if ("npc_depart" in effect) {

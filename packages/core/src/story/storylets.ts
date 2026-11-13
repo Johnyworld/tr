@@ -72,6 +72,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.weather && !w.weather.includes(state.weather?.id ?? "")) return false;
   if (w.day_gte !== undefined && dayOf(at) < w.day_gte) return false;
   if (w.day_lte !== undefined && dayOf(at) > w.day_lte) return false;
+  if (w.merit_gte !== undefined && player.merit < w.merit_gte) return false;
+  if (w.level_gte !== undefined && player.level < w.level_gte) return false;
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
   if (w.zone_owner) {
     const owner = state.playerZone ? (state.zones[state.playerZone]?.owner ?? null) : null;

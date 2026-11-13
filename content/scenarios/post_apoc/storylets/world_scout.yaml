@@ -1,0 +1,179 @@
+# 스카우트 (기획서 12.5): 무리에서 뛰어난 사람(공적 9 이상, 진급할 만한 사람)에게 다른 무리가 손을 내민다.
+# - 태그 world. 그 무리가 아닌 사람에게만 (factions)
+# - 받아들이면 join_faction으로 옮긴다. 옮기기 전에 옛 상관과의 관계·배신 행적이 먼저 남는다 (효과는 순서대로)
+# - 거절하고 상관에게 알리면 공적이 쌓인다
+
+- id: ws_red_scout
+  title: 마경수의 담배
+  tags: [world]
+  when:
+    factions: [faction_a, faction_b, faction_e]
+    merit_gte: 9
+    day_gte: 5
+    segments: [evening, night]
+    zone_owner: [none, other]
+  cast:
+    envoy: { ids: [c_gyeongsu] }
+  setup: "인적 없는 길목, 붉은 완장의 사내가 혼자 기다리고 있다. {envoy:은/는} 무기를 땅에 내려놓고 담배 한 개비를 내민다. \"당신 이름은 우리 쪽에서도 돈다. 그쪽에서 몇 해를 더 굴러야 분대 하나 맡겠나. 우리한테 오면 내일부터 조장이다. 배급은 두 배.\""
+  ai_direction: 마경수의 제안은 진짜다. 붉은연합은 사람 수로 이기는 무리라 쓸 만한 사람을 늘 모은다. 대신 넘어오면 옛 동료를 치는 공세 앞에 세울 생각도 있다. 거절해도 오늘은 해치지 않는다. 시간을 끌면 붉은연합 쪽 사정을 조금 흘린다.
+  choices:
+    - id: defect
+      label: 담배를 받아 들고 따라간다
+      effects:
+        - relation: { who: commander, axis: trust, delta: -3 }
+        - deed: { summary: 다른 무리의 제안을 받고 붉은연합으로 넘어갔다, tags: [betrayal, enemy_sympathy], severity: 3, privacy: semi_private }
+        - join_faction: { faction: faction_c, rank: squad_leader, title: 붉은연합 약탈조장 }
+        - belief: { fact: 마경수를 따라 붉은연합 공단으로 넘어갔다. 내일부터 약탈조 하나를 맡는다, source: seen }
+    - id: report
+      label: 거절하고 돌아가 상관에게 알린다
+      effects:
+        - relation: { who: commander, axis: trust, delta: 2 }
+        - merit: 2
+        - deed: { summary: 붉은연합의 스카우트를 거절하고 상관에게 알렸다, tags: [loyalty], severity: 2, privacy: semi_private }
+        - belief: { fact: 붉은연합 간부 마경수가 직접 찾아와 조장 자리를 내밀었다. 거절하고 상관에게 알렸다, source: seen }
+    - id: string_along
+      label: 생각해 보겠다며 시간을 끌고 그쪽 사정을 떠본다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: ws_red_strung
+          - belief: { fact: "마경수가 흘렸다: 붉은연합은 겨울 전에 동쪽에서 크게 한 번 밀어붙일 생각이다", source: report }
+        partial:
+          - belief: { fact: 마경수는 쉽게 입을 열지 않았다. 다음에 대답을 들으러 오겠다고만 했다, source: seen }
+        miss:
+          - relation: { who: envoy, axis: trust, delta: -2 }
+          - belief: { fact: 떠보는 것을 마경수가 눈치챘다. 그는 웃으며 담배를 도로 넣었다, source: seen }
+    - id: refuse
+      label: 담배를 밀어내고 돌아선다
+      effects:
+        - relation: { who: envoy, axis: respect, delta: 1 }
+
+- id: ws_pine_scout
+  title: 최선희의 공책
+  tags: [world]
+  when:
+    factions: [faction_b, faction_d, faction_e]
+    merit_gte: 9
+    day_gte: 5
+    segments: [morning, day]
+  cast:
+    leader: { ids: [a_seonghee] }
+  setup: "{leader:이/가} 낡은 카디건 차림으로 혼자 찾아와 공책을 펼친다. 거기 당신 이름이 적혀 있다. \"우리는 사람을 버리지 않는 무리예요. 그런데 사람을 아끼는 것만으로는 겨울을 못 넘겨요. 당신 같은 사람이 분대를 맡아 주면 좋겠어요.\""
+  ai_direction: 최선희는 진심이고, 조건을 숨기지 않는다. 청솔형제단은 배급이 빠듯하고 붉은연합과 전쟁 중이다. 넘어오면 분대장 자리를 준다. 지금 무리를 떠나는 일이 그쪽 사람들에게 어떻게 보일지도 솔직하게 말한다.
+  choices:
+    - id: move
+      label: 청솔형제단으로 옮기겠다고 한다
+      effects:
+        - relation: { who: commander, axis: trust, delta: -2 }
+        - deed: { summary: 다른 무리의 부름을 받아 청솔형제단으로 옮겼다, tags: [betrayal], severity: 2, privacy: semi_private }
+        - join_faction: { faction: faction_a, rank: squad_leader, title: 청솔형제단 분대장 }
+        - belief: { fact: 청솔형제단으로 옮겨 분대 하나를 맡았다. 최선희가 직접 거점 정문까지 데려갔다, source: seen }
+    - id: report
+      label: 고맙지만 지금 무리에 남겠다고 하고, 상관에게 알린다
+      effects:
+        - relation: { who: leader, axis: respect, delta: 1 }
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - merit: 1
+        - deed: { summary: 청솔형제단의 부름을 거절하고 지금 무리에 남았다, tags: [loyalty], severity: 1, privacy: semi_private }
+    - id: later
+      label: 겨울을 넘기고 다시 이야기하자고 한다
+      effects:
+        - relation: { who: leader, axis: trust, delta: 1 }
+        - belief: { fact: "최선희가 말했다: 마음이 바뀌면 청솔형제단 정문에서 내 이름을 대라고", source: report }
+
+- id: ws_trader_scout
+  title: 금니의 셈
+  tags: [world]
+  when:
+    factions: [faction_a, faction_b, faction_c, faction_d]
+    merit_gte: 9
+    day_gte: 6
+    segments: [day, evening]
+  cast:
+    boss: { ids: [e_bongsu] }
+  setup: "장터 뒷방, {boss:이/가} 금니를 드러내며 웃는다. 탁자 위에 통조림이 두 줄로 쌓여 있다. \"싸우는 놈들은 겨울에 다 같이 굶어. 장사꾼은 안 굶지. 우리 짐마차 호위를 맡아. 분대 하나 줄게. 저건 계약금이고.\""
+  ai_direction: 탁봉수는 누구에게나 웃으며 판다. 호위대장 자리는 진짜지만, 그는 당신이 지금 무리에 대해 아는 것도 함께 사고 싶어 한다. 넘어오면 나루상단 짐마차 호위 분대를 맡는다. 거절하면 계약금 이야기는 없던 일이 된다.
+  choices:
+    - id: sign
+      label: 계약금을 받고 상단으로 옮긴다
+      effects:
+        - relation: { who: commander, axis: trust, delta: -2 }
+        - deed: { summary: 나루상단의 계약금을 받고 무리를 떠났다, tags: [betrayal, selfishness], severity: 2, privacy: semi_private }
+        - give_item: { item: canned_food, quantity: 2 }
+        - join_faction: { faction: faction_e, rank: squad_leader, title: 나루상단 호위대장 }
+        - belief: { fact: 나루상단으로 옮겨 짐마차 호위 분대를 맡았다. 탁봉수는 계약금을 셈에 넣었다, source: seen }
+    - id: sell_info
+      label: 옮기지는 않고, 들은 것 몇 가지만 통조림과 바꾼다
+      effects:
+        - give_item: { item: canned_food }
+        - deed: { summary: 우리 무리 사정을 나루상단에 팔았다, tags: [betrayal], severity: 2, privacy: private }
+        - relation: { who: boss, axis: trust, delta: 1 }
+    - id: decline
+      label: 통조림에 손대지 않고 일어선다
+      effects:
+        - relation: { who: boss, axis: respect, delta: 1 }
+
+- id: ws_clinic_scout
+  title: 진료소의 편지
+  tags: [world]
+  when:
+    factions: [faction_a, faction_b, faction_c, faction_e]
+    merit_gte: 9
+    day_gte: 6
+    segments: [morning, day, evening]
+  cast:
+    courier: { ids: [e_yuri] }
+  setup: "{courier:이/가} 빨간 털모자를 벗으며 접힌 종이를 내민다. 하얀매의 매 그림이 찍혀 있다. \"하얀매 대표가 전해 달래요. 답은 저한테 주면 돼요.\" 편지에는 짧게 적혀 있다: 진료소에 사람이 필요합니다. 우리는 어느 편에도 서지 않습니다. 총 대신 사람을 살리는 일을 해 보지 않겠습니까."
+  ai_direction: 서은영은 무리들 사이를 오가며 이름이 난 사람을 찾고 있다. 하얀매로 가면 전쟁에서 빠지지만, 진료소 규칙과 약값의 무게를 함께 진다. 하얀매에서는 지원 인력이 된다. 하유리는 답만 전한다.
+  choices:
+    - id: go_clinic
+      label: 진료소로 가겠다고 답한다
+      effects:
+        - relation: { who: commander, axis: trust, delta: -1 }
+        - deed: { summary: 무리를 떠나 중립인 하얀매 진료소로 갔다, tags: [betrayal], severity: 1, privacy: semi_private }
+        - join_faction: { faction: faction_d, rank: staff, title: 하얀매 진료소 일꾼 }
+        - belief: { fact: 하얀매 진료소로 옮겼다. 이제 어느 무리와도 싸우지 않는다. 대신 누구를 먼저 살릴지 정하는 일에 끼게 됐다, source: seen }
+    - id: decline
+      label: 지금 무리를 떠날 수 없다고 답한다
+      effects:
+        - belief: { fact: 하얀매 대표 서은영이 진료소로 오라는 편지를 보냈다. 거절했다, source: seen }
+    - id: report
+      label: 편지를 상관에게 보여 준다
+      effects:
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - merit: 1
+
+- id: ws_willow_scout
+  title: 대표의 다림질한 셔츠
+  tags: [world]
+  when:
+    factions: [faction_a, faction_e]
+    merit_gte: 9
+    day_gte: 5
+    segments: [evening, night]
+  cast:
+    leader: { ids: [b_hyunwoo] }
+  setup: "{leader:이/가} 다림질한 셔츠 차림으로 당신을 따로 부른다. 목소리가 낮다. \"버들마을은 작아요. 지킬 사람이 모자라요. 경비조를 하나 더 만들 생각인데, 그걸 맡아 줄 사람이 필요해요. 청솔 쪽에는 내가 잘 말해 두겠소.\""
+  ai_direction: 장현우는 붉은연합과 청솔형제단 사이에서 버티는 중이다. 믿을 만한 바깥 사람을 곁에 두고 싶어 한다. 진심이지만, 그가 붉은연합 사자와 만난다는 소문은 이 자리에서 꺼내지 않는다. 넘어가면 버들마을 경비조 하나를 맡는다.
+  choices:
+    - id: go_willow
+      label: 버들마을 경비조를 맡겠다고 한다
+      effects:
+        - relation: { who: commander, axis: trust, delta: -1 }
+        - deed: { summary: 무리를 떠나 버들마을의 경비조를 맡았다, tags: [betrayal], severity: 1, privacy: semi_private }
+        - join_faction: { faction: faction_b, rank: squad_leader, title: 버들마을 경비조장 }
+        - belief: { fact: 버들마을로 옮겨 새 경비조를 맡았다. 대표 장현우가 직접 열쇠를 건넸다, source: seen }
+    - id: ask_why
+      label: 왜 하필 지금이냐고 묻는다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "장현우는 대답하기 전에 쪽문 쪽을 한 번 보았다. 버들마을 안에 그가 믿지 못하는 사람이 있는 것 같다", source: seen }
+        partial:
+          - belief: { fact: 장현우는 겨울이 오기 전이라서라고만 했다, source: report }
+        miss:
+          - relation: { who: leader, axis: trust, delta: -1 }
+    - id: decline
+      label: 지금 무리를 떠날 수 없다고 한다
+      effects:
+        - relation: { who: leader, axis: respect, delta: 1 }

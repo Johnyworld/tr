@@ -227,7 +227,7 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ faction_morale: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-1).max(1) }) }),
     /** 세력 자원을 늘리거나 줄인다 (할당량, 약 재고, 물). own = 플레이어 소속. 양은 콘텐츠가 정한다 */
     z.strictObject({ faction_resource: z.strictObject({ faction: z.string().min(1), resource: contentIdSchema, delta: z.number().int().min(-50).max(50) }) }),
-    /** 무소속 주인공이 무리에 들어간다 (rank가 없으면 가장 낮은 계급). 무리에 속해 있으면 아무 일도 없다 */
+    /** 주인공이 그 무리에 들어간다: 무소속이면 가입, 다른 무리에 있으면 옮긴다 (rank가 없으면 가장 낮은 계급). 이미 그 무리면 아무 일도 없다 */
     z.strictObject({ join_faction: z.strictObject({ faction: contentIdSchema, rank: idEnum(rankIds(s)).optional(), title: z.string().min(1).max(24).optional() }) }),
     /** 배역 NPC가 떠난다: to_faction이면 그 세력으로 넘어가고(도시에 남는다), 없으면 도시를 떠난다 (탈영·피난) */
     z.strictObject({ npc_depart: z.strictObject({ who: z.string().min(1), to_faction: contentIdSchema.optional() }) }),
@@ -301,6 +301,9 @@ export function createContentSchemas(s: Scenario) {
         weather: z.array(contentIdSchema).optional(),
         day_gte: z.number().int().optional(),
         day_lte: z.number().int().optional(),
+        /** 플레이어의 공적·레벨 하한 (뛰어난 사람에게만 오는 일, 예: 다른 무리의 스카우트) */
+        merit_gte: z.number().int().optional(),
+        level_gte: z.number().int().optional(),
         /** 플레이어가 있는 구역 */
         zones: z.array(contentIdSchema).optional(),
         /** 우리 무리 구역에 있는지 */

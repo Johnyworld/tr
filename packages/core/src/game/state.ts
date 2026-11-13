@@ -272,8 +272,11 @@ export function createGameSchemas(s: Scenario) {
     /** NPC가 떠난다: toFaction이면 그 세력으로 넘어가고(도시에 남는다), null이면 도시를 떠난다 (기획서 10.4) */
     z.strictObject({ type: z.literal("npc_departed"), npcId: z.string(), toFaction: z.string().nullable() }),
     z.strictObject({ type: z.literal("faction_resource_changed"), factionId: z.string(), resource: z.string(), delta: z.number().int() }),
-    /** 무소속 주인공이 무리에 들어간다. 역할은 코드가 만든다 (game/customStart.ts joinRole, 기획서 12.5) */
-    z.strictObject({ type: z.literal("player_joined_faction"), factionId: z.string(), rank: z.string(), role: customRoleSchema }),
+    /**
+     * 주인공이 무리에 들어간다 (무소속이면 가입, 무리에 있으면 옮김). 역할은 코드가 만든다 (game/customStart.ts joinRole, 기획서 12.5).
+     * beliefs: 그 무리에서 처음 듣는 사정 (같은 계급 시나리오의 시작 지식)
+     */
+    z.strictObject({ type: z.literal("player_joined_faction"), factionId: z.string(), rank: z.string(), role: customRoleSchema, beliefs: z.array(beliefSchema).default([]) }),
     z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
     z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
     z.strictObject({ type: z.literal("missions_offered"), day: z.number().int(), templateIds: z.array(z.string()) }),
@@ -605,7 +608,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     }
     case "player_joined_faction": {
       const player = mustGet(next.characters, next.playerId, "캐릭터");
-      if (player.factionId) throw new Error("이미 무리에 속해 있습니다.");
+      if (player.factionId === event.factionId) throw new Error("이미 그 무리에 속해 있습니다.");
       player.factionId = event.factionId;
       player.rank = event.rank;
       next.roleId = event.role.id;
@@ -615,6 +618,8 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         acquaint(next, next.playerId, id, true);
         acquaint(next, id, next.playerId, true);
       }
+      next.beliefs[next.playerId] = [...(next.beliefs[next.playerId] ?? []), ...structuredClone(event.beliefs)];
+      next.nextBeliefNo += event.beliefs.length;
       return next;
     }
     case "faction_resource_changed": {

@@ -35,6 +35,8 @@ export class SqliteRepository implements GameRepository {
   #db: BetterSQLite3Database<typeof schema>;
   #state: GameState;
   #lastSeq: number;
+  /** 마지막으로 스냅숏을 남긴 이벤트 번호 */
+  #snapSeq = 0;
   #transcript: TranscriptEntry[];
   #schemas: ReturnType<typeof createGameSchemas>;
   readonly scenarioId: string;
@@ -172,8 +174,11 @@ export class SqliteRepository implements GameRepository {
       }));
   }
 
-  saveSnapshot(): void {
+  saveSnapshot(options: { every?: number } = {}): void {
     if (this.#lastSeq === 0) return;
+    // 스냅숏은 불러오기를 빠르게 할 뿐이다 (이벤트가 원본). 턴마다 상태 전체를 쓰지 않는다
+    if (options.every && this.#lastSeq - this.#snapSeq < options.every) return;
+    this.#snapSeq = this.#lastSeq;
     this.#db
       .insert(schema.snapshots)
       .values({ seq: this.#lastSeq, state: this.#state, createdAt: new Date().toISOString() })

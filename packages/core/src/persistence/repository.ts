@@ -20,7 +20,8 @@ export interface GameRepository extends GameStore {
   appendRetrieval(record: RetrievalRecord): void;
   retrievals(limit?: number): RetrievalRecord[];
   /** 현재 상태를 스냅샷으로 남긴다. 불러오기를 빠르게 할 뿐 원본은 이벤트다 */
-  saveSnapshot(): void;
+  /** 지금 상태를 스냅숏으로 (불러오기를 빠르게 한다). every를 주면 마지막 스냅숏 뒤 이벤트가 그만큼 쌓였을 때만 */
+  saveSnapshot(options?: { every?: number }): void;
   close(): void;
 }
 

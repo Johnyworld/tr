@@ -25,6 +25,9 @@ import type { RetrievalRecord } from "../engine/log.ts";
 import type { TimeSegment } from "../rules/time.ts";
 
 /** 새 세션의 GM이 이어 갈 때 돌려줄 최근 요약 수 */
+
+/** 턴마다가 아니라 이벤트가 이만큼 쌓이면 스냅숏 (닫을 때는 늘) */
+const SNAPSHOT_EVERY = 150;
 export const RECAP_TURNS = 5;
 
 /** 바뀐 것만 보내다가도 이만큼 턴이 지나면 장면 전체를 다시 보낸다 (기획서 11.6 토큰) */
@@ -175,7 +178,7 @@ export class GameWorld {
     } else if (outcome.ok && outcome.extra?.length) {
       this.appendTranscript(outcome.extra.map((display) => ({ kind: "tool", display })));
     }
-    if (outcome.ok && name === "take_action") this.#repo.saveSnapshot();
+    if (outcome.ok && name === "take_action") this.#repo.saveSnapshot({ every: SNAPSHOT_EVERY });
     if (outcome.ok) this.#syncUnlocks();
     if (outcome.ok) this.#syncMemory();
     return outcome;
@@ -401,6 +404,7 @@ ${this.sceneForGm()}` };
     this.#closed = true;
     void this.#memory?.close();
     try {
+      this.#repo.saveSnapshot();
       this.#repo.close();
     } finally {
       this.#release();

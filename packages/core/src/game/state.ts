@@ -1,3 +1,8 @@
+// immer의 배포용 빌드를 바로 쓴다: 기본 진입점은 NODE_ENV가 없으면 검사가 많은 개발용 빌드를 골라 두 배 느리다
+import { produce, setAutoFreeze } from "../../node_modules/immer/dist/immer.production.mjs";
+
+// 상태를 얼리지 않는다: 리듀서 밖에서 고치지 않는 것은 규칙으로 지킨다 (테스트가 상태를 직접 만지기도 한다)
+setAutoFreeze(process.env.TRPG_FREEZE === "1");
 import { historyPartSchema } from "./background.ts";
 import { TIE_KINDS } from "./ties.ts";
 import { z } from "zod";
@@ -715,7 +720,11 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
   if (event.type !== "world_created" && !state.worldId) {
     throw new Error(`세계가 만들어지기 전에 ${event.type} 이벤트를 적용할 수 없습니다.`);
   }
-  const next = structuredClone(state);
+  // 바뀐 부분만 새로 만든다 (구조 공유, 기획서 11.6). 이전 상태는 그대로 남는다
+  return produce(state, (next: GameState) => reduce(state, next, event) as GameState | undefined);
+}
+
+function reduce(state: GameState, next: GameState, event: GameEvent): GameState | void {
   switch (event.type) {
     case "world_created": {
       if (state.worldId) throw new Error("세계가 이미 만들어졌습니다.");
@@ -726,7 +735,8 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       }
       const beliefCount = Object.values(event.beliefs).reduce((n, list) => n + list.length, 0);
       const created: GameState = {
-        ...EMPTY_STATE,
+        // 빈 상태의 안쪽 객체를 새 세계와 나누지 않는다 (구조 공유라 한쪽을 고치면 다른 세계에 샌다)
+        ...structuredClone(EMPTY_STATE),
         scenarioId: event.scenarioId,
         worldId: event.worldId,
         roleId: event.roleId,

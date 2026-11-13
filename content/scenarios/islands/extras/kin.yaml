@@ -1,0 +1,65 @@
+# 연고 틀 (기획서 7.9): 떠돌이로 시작할 때 고르는 가족·오랜 짝 (custom_start.kin)
+# 처음부터 서로 이름을 알고 함께 다닌다 (연고). 잠시 떨어져 있을 수 있다 (companion_part)
+
+- id: kin_young
+  label: 어린 가족 (동생·자식)
+  rank: loner
+  age: [8, 14]
+  looks:
+    - 어른 점퍼를 소매 걷어 입은 아이. 당신의 소매 끝을 자주 붙잡는다
+    - 머리를 짧게 자른 마른 아이. 웃을 때 앞니 하나가 비어 있다
+  stats: { strength: [-1, -1], vitality: [-1, 0], senses: [0, 1], agility: [0, 1] }
+  skills: { stealth: 1, scavenge: 1 }
+  traits: [timid, curious, frail, light_eater, eager]
+  trait_count: 2
+  inventory:
+    - { item: dry_ration, chance: 0.3 }
+  values: { mercy: 1, loyalty: 2 }
+
+- id: kin_elder
+  label: 늙은 가족 (부모·조부모)
+  rank: loner
+  age: [56, 74]
+  looks:
+    - 무릎이 성치 않아 천천히 걷는 노인. 주머니에 꼭 사탕 하나를 넣고 다닌다
+    - 붕괴 전 사진 한 장을 비닐에 싸서 목에 건 노인. 말수가 적다
+  stats: { strength: [-1, -1], vitality: [-1, 0], senses: [0, 1], intellect: [1, 1], nerve: [0, 1] }
+  skills: { first_aid: 1, history: 1, survival: 1 }
+  traits: [patient, motherly, weary, frail, principled]
+  trait_count: 2
+  inventory:
+    - { item: blanket, chance: 0.6 }
+    - { item: fever_reducer, chance: 0.3 }
+  values: { mercy: 2, honesty: 1, loyalty: 2 }
+
+- id: kin_sibling
+  label: 형제자매
+  rank: loner
+  age: [18, 40]
+  looks:
+    - 당신과 눈매가 닮은 사람. 화가 나면 턱에 힘이 들어가는 버릇까지 닮았다
+    - 손가락 마디마다 굳은살이 박인 사람. 당신보다 먼저 웃고 먼저 화낸다
+  stats: { strength: [0, 1], vitality: [0, 1], senses: [0, 1], nerve: [0, 1] }
+  skills: { fight: 1, survival: 1, scavenge: 1 }
+  traits: [hot_tempered, protective, blunt, cynical, genial]
+  trait_count: 2
+  inventory:
+    - { item: kitchen_knife, chance: 0.6 }
+    - { item: water_bottle }
+  values: { loyalty: 2, self_interest: 0 }
+
+- id: kin_partner
+  label: 오랜 짝 (배우자·연인)
+  rank: loner
+  age: [22, 50]
+  looks:
+    - 마른 얼굴에 눈이 깊은 사람. 당신의 배낭 끈을 말없이 고쳐 매 준다
+    - 낡은 군용 점퍼를 입은 사람. 밤마다 당신보다 늦게 잠든다
+  stats: { senses: [0, 1], nerve: [0, 1], charm: [0, 1], intellect: [0, 1] }
+  skills: { first_aid: 1, sense_danger: 1, persuade: 1 }
+  traits: [warm, cautious, protective, guarded, patient]
+  trait_count: 2
+  inventory:
+    - { item: water_bottle }
+    - { item: medkit, chance: 0.2 }
+  values: { mercy: 1, loyalty: 2, honesty: 1 }

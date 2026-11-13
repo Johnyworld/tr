@@ -1,0 +1,66 @@
+# 여울섬 군도의 무리 (초안, 숫자는 *임시*). public만 플레이어가 아는 정보다
+- id: f_light
+  name: 등대지기회
+  public: 등대섬에 자리 잡은 무리. 밤마다 등대를 밝혀 바다의 배를 부른다. "불은 꺼지지 않는다"가 원칙이다.
+  population: 55
+  combatants: 18
+  resources: { food: 700, water: 450, ammo: 180, medicine: 30, fuel: 160 }
+  morale: 1
+  cohesion: 2
+  aggression: 1
+  disposition: { f_fleet: -3, f_salt: 1 }
+  culture:
+    discipline: orderly
+    summary: 당번과 물때표로 돌아가는 무리. 등대 불을 지키는 일이 무엇보다 앞서고, 큰일은 저녁 회의에서 정한다.
+    rules:
+      - 등대 불은 어떤 일이 있어도 끄지 않는다
+      - 물때표를 모르는 사람은 혼자 갯벌에 나가지 않는다
+      - 건져 온 것은 모두 창고로, 나누는 것은 회의가 정한다
+      - 바다에서 부르는 배는 일단 받는다. 무기는 부두에 두고 오게 한다
+    address: 이름에 씨를 붙인다. 등대장은 등대장님
+    punishment: 등대 당번 더 서기, 배급 줄이기. 불을 꺼뜨리거나 창고에 손대면 섬에서 내보낸다
+  plans:
+    - { id: l_reclaim, label: 통조림 공장 되찾기, target_rule: frontier, days: 16 }
+
+- id: f_fleet
+  name: 검은돛 선단
+  public: 배 여러 척을 묶어 바다를 떠도는 무리. 섬에 정착하지 않고 빼앗아 산다는 말이 돈다.
+  population: 65
+  combatants: 30
+  resources: { food: 600, water: 300, ammo: 320, medicine: 20, fuel: 260 }
+  morale: 0
+  cohesion: 0
+  aggression: 2
+  disposition: { f_light: -3, f_salt: 0 }
+  culture:
+    discipline: strict
+    summary: 선장의 말이 법인 무리. 배 위에서는 명령을 되묻지 않는다. 몫은 공에 따라 나누고, 배를 버린 자는 다시 태우지 않는다.
+    rules:
+      - 배 위에서는 선장의 명령을 되묻지 않는다
+      - 몫은 공에 따라, 선장이 나눈다
+      - 배를 버리고 달아난 자는 다시 태우지 않는다
+      - 다친 사람은 다음 섬에 내려 둔다
+    address: 직책으로 부른다 (선장, 갑판장, 노꾼)
+    punishment: 몫을 깎는다. 무거우면 갯바위에 내려놓고 간다
+  plans:
+    - { id: fl_pier, label: 여객선 부두 차지하기, target_rule: fixed, target: ferry_pier, days: 12 }
+
+- id: f_salt
+  name: 소금밭 사람들
+  public: 염전 섬에서 소금과 젓갈을 만드는 사람들. 누구에게나 팔고, 누구 편도 아니다.
+  population: 35
+  combatants: 6
+  resources: { food: 650, water: 300, ammo: 60, medicine: 40, fuel: 90 }
+  morale: 1
+  cohesion: 1
+  aggression: 0
+  disposition: { f_light: 1, f_fleet: 0 }
+  culture:
+    discipline: free
+    summary: 집집이 제 염전을 가진 사람들. 위아래가 없고, 거래가 곧 규칙이다. 다만 염전 둑을 무너뜨리는 사람은 용서하지 않는다.
+    rules:
+      - 염전 둑에 손대는 사람은 용서하지 않는다
+      - 누구에게나 판다. 값만 맞으면
+      - 싸움은 염전 밖에서
+    address: 이름이나 아재·아지매
+    punishment: 거래를 끊는다. 둑을 무너뜨리면 내쫓는다

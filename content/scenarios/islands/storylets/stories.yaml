@@ -1,0 +1,354 @@
+# 여울섬 군도 이야기 (초안). 형식은 post_apoc/storylets/a_grunt.yaml 머리말 참고
+# l_watcher: 등대 망꾼, fl_rower: 선단 노꾼, world: 어느 시나리오에서나
+
+# ── 등대 망꾼 ───────────────────────────────────
+
+- id: l_fog_oars
+  title: 안개 속 노 소리
+  tags: [l_watcher]
+  when:
+    zones: [lighthouse, ferry_pier]
+    segments: [dawn, night]
+    flags_none: [l_fog_done]
+  cast:
+    boss: { commander: true }
+  setup: "안개가 망루 아래까지 차올랐다. 노 젓는 소리가 났다가 멎는다. 한 척, 아니면 두 척. {boss:이/가} 쌍안경을 내리고 당신을 본다. \"봤어? 확실하지 않아도 말해.\""
+  ai_direction: 선단의 작은 배 한 척이 부두 아래를 살피고 돌아가는 중이다. 망꾼이 무엇을 보고했는지가 부두 쪽 대비를 정한다. 판정으로 본 것만 안다.
+  choices:
+    - id: report
+      label: 들은 대로 두 척이라고 보고한다
+      effects:
+        - set_flag: l_fog_done
+        - clock: { id: fl_pier, delta: -1 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "안개 낀 새벽, 부두 아래에서 노 소리를 듣고 보고했다. 진강호가 부두 초소를 늘렸다", source: seen }
+    - id: look
+      label: 등대 불을 안개 쪽으로 돌려 보자고 한다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: l_fog_done
+          - clock: { id: fl_pier, delta: -2 }
+          - merit: 1
+          - belief: { fact: "등대 불에 비친 검은 돛을 봤다. 선단의 작은 배가 부두 아래를 살피고 있었다", source: seen }
+        partial:
+          - set_flag: l_fog_done
+          - belief: { fact: "불을 돌렸지만 안개에 흩어졌다. 무언가 물러가는 소리만 들었다", source: seen }
+        miss:
+          - relation: { who: boss, axis: respect, delta: -1 }
+    - id: quiet
+      label: 파도 소리였다고 넘긴다
+      effects:
+        - set_flag: l_fog_done
+        - clock: { id: fl_pier, delta: 1 }
+
+- id: l_drifting_boat
+  title: 불을 보고 온 배
+  tags: [l_watcher]
+  when:
+    zones: [lighthouse, ferry_pier]
+    segments: [morning, day]
+    day_gte: 2
+    flags_none: [l_drift_done]
+  cast:
+    old: { ids: [l_suja] }
+    stranger: { extra: drifter_leader, label: 표류선의 사람, keep: drift_survivor }
+  setup: "등대 불을 보고 왔다는 낡은 어선이 부두에 닿는다. 배에는 사람이 다섯, 그중 {stranger:이/가} 두 손을 들고 먼저 내린다. 품에 무언가를 감추고 있다. {old:은/는} 부두 끝에서 지켜본다."
+  ai_direction: 표류선 사람들은 정말 굶주린 피난민이다. 품에 감춘 것은 뭍에서 가져온 지도다. 등대지기회의 원칙은 일단 받는 것이지만, 다섯 입이 늘면 창고가 그만큼 준다.
+  choices:
+    - id: take_in
+      label: 원칙대로 받아들이자고 한다
+      effects:
+        - set_flag: l_drift_done
+        - faction_resource: { faction: own, resource: food, delta: -20 }
+        - relation: { who: old, axis: trust, delta: 1 }
+        - deed: { summary: 표류선 사람들을 받아들이자고 했다, tags: [mercy], severity: 1, privacy: public }
+        - belief: { fact: "표류선 사람들을 받았다. 그들이 뭍에서 가져온 지도를 내놓았다", source: seen }
+    - id: search_first
+      label: 품부터 뒤져 보자고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: l_drift_done
+          - belief: { fact: "표류선 사람의 품에서 뭍의 지도가 나왔다. 숨긴 건 무기가 아니었다", source: seen }
+        partial:
+          - set_flag: l_drift_done
+          - relation: { who: stranger, axis: trust, delta: -1 }
+        miss:
+          - relation: { who: old, axis: respect, delta: -1 }
+    - id: turn_away
+      label: 창고가 모자라니 돌려보내자고 한다
+      effects:
+        - set_flag: l_drift_done
+        - relation: { who: old, axis: trust, delta: -2 }
+        - deed: { summary: 등대를 보고 온 배를 돌려보내자고 했다, tags: [cruelty], severity: 2, privacy: public }
+
+- id: l_dabin_lights
+  title: 뭍의 불빛
+  tags: [l_watcher]
+  when:
+    zones: [lighthouse]
+    segments: [night]
+    day_gte: 3
+    flags_none: [l_dabin_done]
+  cast:
+    friend: { ids: [l_dabin] }
+  setup: "{friend:이/가} 망루로 올라와 뭍 쪽을 가리킨다. 아주 작은 불빛이 깜박인다. \"봐, 저거. 사흘째야. 누가 저기 살아 있어. 물때만 맞으면 노 저어서 갈 수 있어.\""
+  ai_direction: 뭍의 불빛은 진짜 사람이다. 하지만 거기까지는 감염체가 많은 뭍이다. 설다빈은 동생일지도 모른다고 믿는다. 혼자라도 가려 한다.
+  choices:
+    - id: promise
+      label: 조장에게 같이 말해 보자고 한다
+      effects:
+        - set_flag: l_dabin_done
+        - set_flag: l_lights_reported
+        - relation: { who: friend, axis: trust, delta: 1 }
+    - id: go_together
+      label: 둘이서 몰래 가 보자고 한다
+      effects:
+        - set_flag: l_dabin_done
+        - relation: { who: friend, axis: affection, delta: 2 }
+        - deed: { summary: 당번을 버리고 몰래 뭍으로 배를 띄우려 했다, tags: [disobedience, loyalty], severity: 2, privacy: private }
+        - companion_join: { who: friend, kind: purpose, until: { hours: 18 } }
+    - id: stop
+      label: 뭍에 가면 죽는다고 말린다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: l_dabin_done
+          - relation: { who: friend, axis: respect, delta: 1 }
+        partial:
+          - relation: { who: friend, axis: affection, delta: -1 }
+        miss:
+          - set_flag: l_dabin_done
+          - npc_depart: { who: friend }
+          - belief: { fact: "설다빈이 그날 밤 혼자 배를 띄워 뭍으로 갔다", source: seen }
+
+- id: l_council_cut
+  title: 창고지기의 숫자
+  tags: [l_watcher]
+  when:
+    zones: [lighthouse]
+    segments: [evening]
+    day_gte: 4
+    own_food_days_lte: 20
+    flags_none: [l_cut_done]
+  cast:
+    keeper: { ids: [l_miok] }
+  setup: "저녁 회의에서 {keeper:이/가} 물때표 뒷면에 적은 숫자를 읽는다. 이대로면 봄 전에 창고가 빈다. 망꾼 자리에서도 다들 숨을 죽인다."
+  ai_direction: 숫자는 코드가 정한 사실이다 (정확한 날수는 말하지 않는다). 회의는 배급을 줄이기로 기운다. 망꾼은 발언권이 작지만, 말할 수는 있다.
+  choices:
+    - id: agree
+      label: 줄이는 게 맞다고 거든다
+      effects:
+        - set_flag: l_cut_done
+        - faction_policy: { faction: own, topic: ration, option: cut }
+        - relation: { who: keeper, axis: trust, delta: 1 }
+    - id: fish
+      label: 줄이기 전에 그물을 더 놓자고 한다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: l_cut_done
+          - faction_resource: { faction: own, resource: food, delta: 40 }
+          - belief: { fact: "그물을 더 놓자는 말이 받아들여졌다. 며칠은 배급을 그대로 둔다", source: seen }
+        partial:
+          - set_flag: l_cut_done
+          - faction_policy: { faction: own, topic: ration, option: cut }
+        miss:
+          - set_flag: l_cut_done
+          - faction_policy: { faction: own, topic: ration, option: cut }
+          - relation: { who: keeper, axis: respect, delta: -1 }
+    - id: silent
+      label: 아무 말도 하지 않는다
+      effects:
+        - set_flag: l_cut_done
+        - faction_policy: { faction: own, topic: ration, option: cut }
+
+# ── 선단 노꾼 ───────────────────────────────────
+
+- id: fl_short_share
+  title: 몫을 나누는 솥
+  tags: [fl_rower]
+  when:
+    zones: [harbor_wreck]
+    segments: [evening]
+    flags_none: [fl_share_done]
+  cast:
+    cook: { ids: [fl_dosik] }
+    boss: { commander: true }
+  setup: "솥 앞에 줄을 선다. {cook:이/가} 국자로 몫을 떠 준다. 당신 그릇은 반이다. {boss:은/는} 그릇 두 개를 들고 지나간다. {cook:이/가} 눈을 피한다."
+  ai_direction: 갑판장이 노꾼 몫을 떼먹는다. 요리사는 알지만 말하지 못한다. 따지면 갑판장의 눈 밖에 나고, 군율의 배 위에서는 위험하다.
+  choices:
+    - id: swallow
+      label: 아무 말 없이 받는다
+      effects:
+        - set_flag: fl_share_done
+        - relation: { who: cook, axis: affection, delta: 1 }
+    - id: ask_cook
+      label: 나중에 요리사에게 조용히 묻는다
+      effects:
+        - set_flag: fl_share_done
+        - belief: { fact: "갑판장 한상철이 노꾼 몫을 떼어 간다. 요리사 민도식이 알고 있다", source: report }
+    - id: confront
+      label: 갑판장에게 몫이 왜 반이냐고 묻는다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: fl_share_done
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - give_item: { item: dry_ration }
+        partial:
+          - set_flag: fl_share_done
+          - relation: { who: boss, axis: trust, delta: -1 }
+        miss:
+          - set_flag: fl_share_done
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - deed: { summary: 배 위에서 갑판장에게 대들었다, tags: [disobedience], severity: 2, privacy: public }
+
+- id: fl_eunbi_light
+  title: 등대 불을 보는 노꾼
+  tags: [fl_rower]
+  when:
+    segments: [night]
+    day_gte: 2
+    flags_none: [fl_eunbi_done]
+  cast:
+    rower: { ids: [fl_eunbi] }
+  setup: "갑판 구석, {rower:이/가} 붕대 감은 손목을 문지르며 등대 불을 본다. \"저 불 보고 가면 받아 준대요. 선단 사람이라도요?\""
+  ai_direction: 곽은비는 선단을 떠나 등대섬에 가고 싶어 한다. 선단에서는 배를 버린 자를 다시 태우지 않는다. 지금은 떠보는 중이다.
+  choices:
+    - id: encourage
+      label: 받아 줄 거라고 말해 준다
+      effects:
+        - set_flag: fl_eunbi_done
+        - relation: { who: rower, axis: trust, delta: 2 }
+        - deed: { summary: 동료 노꾼에게 선단을 떠나라고 부추겼다, tags: [disobedience, mercy], severity: 1, privacy: private }
+    - id: warn
+      label: 갑판장이 들으면 끝이라고 입을 막는다
+      effects:
+        - set_flag: fl_eunbi_done
+        - relation: { who: rower, axis: affection, delta: 1 }
+    - id: report
+      label: 갑판장에게 알린다
+      effects:
+        - set_flag: fl_eunbi_done
+        - merit: 1
+        - relation: { who: rower, axis: trust, delta: -3 }
+        - deed: { summary: 떠나고 싶어 하는 노꾼을 갑판장에게 일렀다, tags: [betrayal, diligence], severity: 2, privacy: semi_private }
+
+- id: fl_pier_night
+  title: 부두 아래로
+  tags: [fl_rower]
+  when:
+    zones: [harbor_wreck, reed_marsh]
+    segments: [night, dawn]
+    day_gte: 3
+    flags_none: [fl_pier_done]
+  cast:
+    boss: { commander: true }
+  setup: "{boss:이/가} 노꾼 셋을 작은 배에 태운다. \"안개 탈 때 부두 밑까지 간다. 초소에 몇 놈인지만 세고 온다. 소리 내면 물에 던진다.\""
+  ai_direction: 부두 초소에는 망꾼이 있다. 들키면 총이 날아온다. 숫자를 세 오면 선장의 부두 공격이 앞당겨진다.
+  choices:
+    - id: count
+      label: 부두 밑으로 숨어 들어가 센다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: fl_pier_done
+          - clock: { id: fl_pier, delta: 2 }
+          - merit: 1
+          - belief: { fact: "여객선 부두 초소의 사람 수를 세어 왔다. 선장이 고개를 끄덕였다", source: seen }
+        partial:
+          - set_flag: fl_pier_done
+          - clock: { id: fl_pier, delta: 1 }
+        miss:
+          - set_flag: fl_pier_done
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "부두 밑에서 들켜 물속으로 뛰어들어 겨우 돌아왔다", source: seen }
+    - id: splash
+      label: 일부러 노를 첨벙거린다
+      effects:
+        - set_flag: fl_pier_done
+        - clock: { id: fl_pier, delta: -1 }
+        - deed: { summary: 부두 정찰에서 일부러 소리를 내 일을 그르쳤다, tags: [betrayal], severity: 2, privacy: private }
+
+# ── 군도의 일 ───────────────────────────────────
+
+- id: w_low_tide
+  title: 썰물 길의 발자국
+  tags: [world]
+  when:
+    zones: [reed_marsh, cannery]
+    segments: [morning, day]
+  setup: "물이 빠진 갯벌에 발자국이 줄지어 있다. 사람 발자국이 아니다. 끌리듯 걸은 자국이 섬 쪽으로 이어진다."
+  ai_direction: 감염체 몇이 썰물 길로 건너오는 중이다. 물이 들면 길이 끊긴다. 위험은 판정으로만 정한다.
+  choices:
+    - id: warn
+      label: 서둘러 돌아가 알린다
+      effects:
+        - merit: 1
+        - belief: { fact: "{zone}의 썰물 길로 감염체가 건너오는 발자국을 봤다", source: seen }
+    - id: follow
+      label: 발자국을 따라가 본다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "썰물 길을 건너온 감염체 셋이 갈대 사이에 웅크린 것을 봤다", source: seen }
+        partial:
+          - belief: { fact: "발자국은 갈대밭에서 끊겼다", source: seen }
+        miss:
+          - body: { track: cold, delta: 1 }
+    - id: ignore
+      label: 못 본 척 지나간다
+      effects: []
+
+- id: w_salt_gossip
+  title: 젓갈 냄새의 소식
+  tags: [world]
+  repeatable: true
+  when:
+    segments: [day, evening]
+  cast:
+    trader: { ids: [s_dongcheol] }
+  setup: "{trader:이/가} 거룻배를 대며 손을 흔든다. 젓갈 냄새가 먼저 온다. \"소식 하나 사지 않을래? 담배 한 개비면 돼.\""
+  ai_direction: 기동철의 소식은 반쯤 맞고 반쯤 부풀렸다. 값을 치르면 군도의 다른 무리 이야기를 하나 들려준다.
+  choices:
+    - id: buy
+      label: 담배 한 개비를 준다
+      effects:
+        - take_item: { item: cigarettes }
+        - belief: { fact: "기동철이 말했다: 선단이 겨울 전에 큰 배를 하나 더 들인다고 한다", source: rumor }
+    - id: haggle
+      label: 공짜로 듣겠다고 버틴다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "기동철이 말했다: 등대섬 창고가 생각보다 빨리 비어 간다는 말이 소금밭까지 돈다", source: rumor }
+        partial:
+          - relation: { who: trader, axis: affection, delta: -1 }
+        miss: []
+    - id: pass
+      label: 손만 흔들어 보낸다
+      effects: []
+
+- id: w_storm_night
+  title: 폭풍 전야
+  tags: [world]
+  urgent: true
+  when:
+    segments: [evening]
+    day_gte: 5
+    flags_none: [w_storm_seen]
+  setup: "바람이 갑자기 돈다. 하늘 한쪽이 검게 내려앉고, 묶어 둔 배들이 서로 부딪는 소리가 난다. 오늘 밤 큰 바람이 온다."
+  ai_direction: 폭풍은 진짜다. 배를 단단히 묶고 몸을 피할 곳을 찾아야 한다. 무리마다 바쁘게 움직인다.
+  choices:
+    - id: help_tie
+      label: 배 묶는 일을 돕는다
+      effects:
+        - set_flag: w_storm_seen
+        - merit: 1
+        - body: { track: cold, delta: 1 }
+    - id: shelter
+      label: 먼저 몸을 피한다
+      effects:
+        - set_flag: w_storm_seen

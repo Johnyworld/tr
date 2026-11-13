@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "content:check": "tsx src/content/check.ts",
     "db:generate": "drizzle-kit generate",
-    "rag:eval": "tsx src/rag/evalCli.ts"
+    "rag:eval": "tsx src/rag/evalCli.ts",
+    "war:sim": "tsx src/sim/warCli.ts"
   },
   "dependencies": {
     "@huggingface/transformers": "4.3.2",

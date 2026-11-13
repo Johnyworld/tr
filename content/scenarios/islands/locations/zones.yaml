@@ -1,0 +1,79 @@
+# 여울섬 군도의 구역 (초안, 산출 *임시*). 인접은 한쪽에만 적어도 양쪽으로 본다
+- id: lighthouse
+  name: 등대섬
+  description: 하얀 등대와 옛 관리동이 있는 바위섬. 관리동 둘레에 그물과 철판으로 담을 쳤다.
+  kind: base
+  owner: f_light
+  adjacent: [ferry_pier]
+  yields: { food: 44, water: 56, fuel: 7, ammo: 2 }
+  loot:
+    chance: 0.3
+    items:
+      - { item: canned_food, weight: 2, qty: [1, 1] }
+      - { item: wire_roll, weight: 2, qty: [1, 1] }
+      - { item: blanket, weight: 1, qty: [1, 1] }
+
+- id: ferry_pier
+  name: 여객선 부두
+  description: 녹슨 여객선이 반쯤 가라앉은 부두. 배를 댈 수 있는 군도에서 가장 좋은 자리라 모두가 노린다.
+  kind: zone
+  owner: f_light
+  adjacent: [cannery, salt_flats]
+  yields: { food: 8, fuel: 4 }
+  loot:
+    chance: 0.35
+    items:
+      - { item: wire_roll, weight: 2, qty: [1, 1] }
+      - { item: canned_food, weight: 1, qty: [1, 1] }
+      - { item: crowbar, weight: 1, qty: [1, 1] }
+
+- id: cannery
+  name: 옛 통조림 공장
+  description: 갯벌 끝의 무너진 통조림 공장. 아직 뜯지 않은 상자가 있다는 말이 돌지만, 그늘에 감염체가 많다.
+  kind: zone
+  owner: null
+  adjacent: [harbor_wreck, reed_marsh]
+  yields: { food: 10 }
+  loot:
+    chance: 0.5
+    items:
+      - { item: canned_food, weight: 4, qty: [1, 2] }
+      - { item: dry_ration, weight: 2, qty: [1, 1] }
+      - { item: kitchen_knife, weight: 1, qty: [1, 1] }
+
+- id: harbor_wreck
+  name: 난파항
+  description: 배 수십 척이 엉켜 가라앉은 옛 항구. 검은돛 선단은 그 위에 배를 묶어 떠 있는 거점을 만들었다.
+  kind: base
+  owner: f_fleet
+  adjacent: [reed_marsh]
+  yields: { food: 52, water: 62, fuel: 14, ammo: 4 }
+  loot:
+    chance: 0.25
+    items:
+      - { item: wire_roll, weight: 2, qty: [1, 1] }
+      - { item: cigarettes, weight: 2, qty: [1, 2] }
+
+- id: reed_marsh
+  name: 갈대 습지
+  description: 썰물이면 길이 드러나는 갈대밭. 사람도 감염체도 이 길로 섬을 건넌다.
+  kind: zone
+  owner: null
+  adjacent: [salt_flats]
+  yields: { fuel: 6 }
+  loot:
+    chance: 0.3
+    items:
+      - { item: dry_ration, weight: 1, qty: [1, 1] }
+      - { item: blanket, weight: 1, qty: [1, 1] }
+
+- id: salt_flats
+  name: 소금밭 섬
+  description: 네모난 염전이 바둑판처럼 이어진 섬. 젓갈 냄새와 소금 바람이 늘 분다.
+  kind: base
+  owner: f_salt
+  yields: { food: 40, water: 36, fuel: 5 }
+  loot:
+    chance: 0.2
+    items:
+      - { item: canned_food, weight: 1, qty: [1, 1] }

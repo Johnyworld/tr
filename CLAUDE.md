@@ -65,6 +65,7 @@ pnpm test           # 단위 테스트 (vitest, LLM 호출 없음)
 pnpm typecheck      # 전체 타입 체크
 pnpm content:check  # 모든 월드 팩 검증 (검색 평가 세트 포함)
 pnpm rag:eval       # RAG 검색 평가 (bge-m3). --compare로 설정 비교, --hash로 모델 없이
+pnpm war:sim <팩>    # 월드 팩의 세력 전쟁을 미리 돌려 보기 (산출·소모 균형, --days --seeds)
 pnpm mcp            # MCP 서버 실행 (stdio). Claude 앱 등록 방법은 README
 pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마이그레이션 생성
 ```

@@ -28,6 +28,8 @@ beliefs_preset: a_squad_leader
 # 3분대 넷, 직속 상관, 옛 분대와 거점의 주요 인물
 known_npcs: [a_dongwook, a_byungchul, a_yejin, a_haneul, a_doyun, a_taeho, a_jiho, a_seoyeon, a_mansu, a_chaewon, a_seonghee, a_bokja, a_jeongbin, a_gicheol_scout]
 commander: a_doyun
+# 3분대 넷 (기획서 9.11: squad_order로 일을 맡긴다)
+squad: [a_dongwook, a_byungchul, a_yejin, a_haneul]
 missions: [a_sl_storage_guard, a_sl_water_escort, a_sl_old_town_sweep, a_sl_fields_night, a_sl_b_convoy, a_sl_drill, a_sl_find_straggler, a_sl_east_reinforce]
 # squad_life: 거점 생활 스토리렛을 하급 전투원과 함께 쓴다. world: 어느 시나리오에서나 열리는 도시의 일
 storylet_tags: [a_squad_leader, command, squad_life, world]

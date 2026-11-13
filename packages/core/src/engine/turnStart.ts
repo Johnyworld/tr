@@ -1,4 +1,5 @@
 import { runMissionStartOfTurn } from "./missionTools.ts";
+import { runSquadOrders } from "./command.ts";
 import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
@@ -34,9 +35,11 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   // 예정 시각이 된 교전: 그 자리에 있으면 전투 장면이 열린다
   const battles = runPendingClashes(ctx);
   const missions = runMissionStartOfTurn(ctx);
+  // 분대원에게 맡긴 일이 끝났으면 결과를 굴리고 보고를 받는다
+  const squad = runSquadOrders(ctx);
   // 조건이 맞는 이야기 (간격이 지났고 전투 중이 아닐 때)
   const storylets = runStorylets(ctx);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
   const healed = runNaturalRecovery(ctx);
-  return [...war, ...battles, ...missions, ...storylets, ...healed];
+  return [...war, ...battles, ...missions, ...squad, ...storylets, ...healed];
 }

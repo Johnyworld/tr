@@ -30,7 +30,7 @@ export function startBattle(
   options: { id: string; at: number },
 ): BattleState {
   const config = battleConfig(content);
-  const { attackers, defenders } = clashForces(world, spec);
+  const { attackers, defenders } = clashForces(world, spec, content);
   const attack = { faction: spec.attacker, committed: attackers, losses: 0 };
   const defense = { faction: spec.defender, committed: defenders, losses: 0 };
   return {

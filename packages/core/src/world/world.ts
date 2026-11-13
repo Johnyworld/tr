@@ -38,6 +38,7 @@ const SCENE_SECTION_LABELS: Record<string, string> = {
   battle: "전투",
   storylet: "진행 중인 이야기",
   missions: "복무·임무",
+  squad: "분대",
   factions: "세력",
   deeds: "최근 행적",
   present: "함께 있는 인물",

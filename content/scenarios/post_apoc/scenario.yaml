@@ -88,6 +88,135 @@ discipline:
   loose: { label: 느슨함, abandon_merit: -1, expire_merit: -1, counts_disobedience: false, max_disobedience: 3, deed_severity: 1, order_word: 당번 }
   free: { label: 자유, abandon_merit: 0, expire_merit: -1, counts_disobedience: false, max_disobedience: 99, deed_severity: 0, order_word: 일감 }
 
+# 지휘 (기획서 9.11): 분대 명령의 일과 지도부 회의의 방침 (*임시* 수치)
+# 규칙(따르는지, 결과 판정, 전쟁 틱 반영)은 core에 있다. 여기는 이름과 숫자만
+command:
+  # 주인공의 전략 스킬이 1 이상이면 분대원의 일 판정에 +1
+  lead_skill: tactics
+  squad_tasks:
+    - id: guard
+      label: 창고·초소 보초
+      kind: work
+      hours: 6
+      move: sense_danger
+      stat: senses
+      rewards: { merit: 1 }
+      report:
+        success: "{member}: 보초 이상 없음. 밤새 한 번도 졸지 않았다"
+        partial: "{member}: 보초는 섰는데, 새벽에 잠깐 깜빡했다고 털어놓는다"
+        miss: "{member}: 보초 중에 창고 쪽문이 열려 있었다. 뭐가 없어졌는지는 아직 모른다"
+    - id: search
+      label: 물자 수색
+      kind: work
+      hours: 5
+      move: scavenge
+      stat: senses
+      needs_zone: true
+      dangerous: true
+      rewards: { loot: true }
+      report:
+        success: "{member}: {zone}에서 쓸 만한 걸 찾아 돌아왔다"
+        partial: "{member}: {zone}을(를) 훑었지만 건진 게 많지 않다"
+        miss: "{member}: {zone}에서 감염체에 쫓겨 빈손으로 돌아왔다"
+    - id: scout
+      label: 정찰
+      kind: work
+      hours: 6
+      move: stealth
+      stat: agility
+      needs_zone: true
+      dangerous: true
+      rewards: { merit: 1 }
+      report:
+        success: "{member}: {zone}을(를) 들키지 않고 돌아봤다. 본 것을 차례로 보고한다"
+        partial: "{member}: {zone} 가장자리까지만 갔다. 더 들어가면 들킬 것 같았다고 한다"
+        miss: "{member}: {zone}에서 들켰다. 총소리를 뒤로 하고 겨우 빠져나왔다"
+    - id: escort
+      label: 물자 호위
+      kind: work
+      hours: 8
+      move: shoot
+      stat: senses
+      needs_zone: true
+      dangerous: true
+      rewards: { resources: { food: 6, water: 6 }, merit: 1 }
+      report:
+        success: "{member}: {zone}에서 물자를 무사히 들여왔다"
+        partial: "{member}: {zone}에서 물자를 들여왔지만 절반은 버리고 왔다"
+        miss: "{member}: {zone}에서 습격을 받아 짐을 다 잃었다"
+    - id: forage
+      label: 먹을 것 구하기
+      kind: work
+      hours: 6
+      move: survival
+      stat: senses
+      needs_zone: true
+      rewards: { resources: { food: 4 } }
+      report:
+        success: "{member}: {zone}에서 먹을 것을 넉넉히 구해 왔다"
+        partial: "{member}: {zone}에서 조금 구해 왔다"
+        miss: "{member}: {zone}을(를) 종일 헤맸지만 빈손이다"
+    - id: rest
+      label: 쉬게 하기
+      kind: rest
+      hours: 8
+      report:
+        success: "{member}: 한숨 자고 나니 낫다고 한다"
+        partial: "{member}: 쉬었다"
+        miss: "{member}: 쉬었다"
+    - id: follow
+      label: 곁에 두기
+      kind: follow
+      report:
+        success: "{member}: 곁에 있다"
+        partial: "{member}: 곁에 있다"
+        miss: "{member}: 곁에 있다"
+  # 분대원이 곁에 있으면 (follow) 싸움에서 받는 보정
+  follow_bonus: { fight: 1, shoot: 1 }
+  council_ranks: [officer]
+  council_moves: [persuade, tactics]
+  policies:
+    - id: ration
+      label: 배급
+      default: normal
+      options:
+        - id: cut
+          label: 줄이기
+          summary: 창고가 오래가지만 모두 한 단계 덜 받고, 사기가 가라앉는다
+          upkeep: { food: 0.8 }
+          ration_shift: 1
+          morale: { delta: -1, chance: 0.15 }
+          opposed_by: [a_jeonghun]
+        - id: normal
+          label: 보통
+          summary: 창고 사정대로 나눈다
+        - id: extra
+          label: 늘리기
+          summary: 모두 한 단계 더 받고 사기가 오르지만, 창고가 빨리 빈다
+          upkeep: { food: 1.25 }
+          ration_shift: -1
+          morale: { delta: 1, chance: 0.15 }
+          opposed_by: [a_doyun]
+    - id: stance
+      label: 태세
+      default: normal
+      options:
+        - id: defend
+          label: 지키기
+          summary: 먼저 치러 나가는 일이 줄고, 습격을 받으면 더 많은 사람이 지킨다
+          aggression: 0.5
+          defense: 1.5
+          opposed_by: [a_jeonghun]
+        - id: normal
+          label: 보통
+          summary: 하던 대로
+        - id: attack
+          label: 밀어붙이기
+          summary: 먼저 치러 나가는 일이 늘고, 그만큼 집을 지키는 사람이 준다
+          aggression: 1.6
+          defense: 0.75
+          opposed_by: [a_doyun]
+
 # 자유 시나리오 (기획서 12.5): 플레이어가 쓴 시작을 이 범위 안의 부품으로 옮긴다
 custom_start:
   # 세력에 속할 때 고를 수 있는 계급. 지도부(leader)는 무리마다 한 자리뿐이라 뺀다. 참모·간부급은 officer

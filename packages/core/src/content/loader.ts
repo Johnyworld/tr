@@ -97,6 +97,11 @@ function checkReferences(content: Content): string[] {
     if (role.commander && !content.npcs[role.commander]) {
       problems.push(`roles.${role.id}: 알 수 없는 상관 ${role.commander}`);
     }
+    for (const npcId of role.squad ?? []) {
+      const npc = content.npcs[npcId];
+      if (!npc) problems.push(`roles.${role.id}: 알 수 없는 분대원 ${npcId}`);
+      else if (npc.faction !== role.faction) problems.push(`roles.${role.id}: 분대원 ${npcId}는 다른 무리 사람이다`);
+    }
     for (const missionId of role.missions) {
       if (!content.missions[missionId]) problems.push(`roles.${role.id}: 알 수 없는 임무 ${missionId}`);
     }
@@ -150,6 +155,11 @@ function checkReferences(content: Content): string[] {
   // 스토리렛 효과의 참조: 세력 자원, 넘어갈 세력
   const resources = new Set(content.scenario.resources.map((r) => r.id));
   for (const st of Object.values(content.storylets)) {
+    for (const [topic, options] of Object.entries(st.when.own_policy ?? {})) {
+      const t = content.scenario.command?.policies.find((p) => p.id === topic);
+      if (!t) problems.push(`storylets.${st.id}.when.own_policy: 알 수 없는 방침 주제 ${topic}`);
+      else for (const o of options) if (!t.options.some((x) => x.id === o)) problems.push(`storylets.${st.id}.when.own_policy: 알 수 없는 선택지 ${o}`);
+    }
     const all = st.choices.flatMap((c) => [...c.effects, ...Object.values(c.outcomes ?? {}).flat()]);
     for (const e of all) {
       if ("faction_resource" in e && !resources.has(e.faction_resource.resource)) problems.push(`storylets.${st.id}: 알 수 없는 자원 ${e.faction_resource.resource}`);
@@ -163,6 +173,12 @@ function checkReferences(content: Content): string[] {
         else if (!content.scenario.condition_tracks.some((t) => t.id === e.body.track)) problems.push(`storylets.${st.id}: 알 수 없는 상태 트랙 ${e.body.track}`);
       }
       if ("join_faction" in e && !content.factions[e.join_faction.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.join_faction.faction}`);
+      if ("faction_policy" in e) {
+        const t = content.scenario.command?.policies.find((p) => p.id === e.faction_policy.topic);
+        if (!t) problems.push(`storylets.${st.id}: 알 수 없는 방침 주제 ${e.faction_policy.topic}`);
+        else if (!t.options.some((o) => o.id === e.faction_policy.option)) problems.push(`storylets.${st.id}: 알 수 없는 방침 선택지 ${e.faction_policy.option}`);
+        if (e.faction_policy.faction !== "own" && !content.factions[e.faction_policy.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.faction_policy.faction}`);
+      }
       if ("npc_body" in e) {
         if (e.npc_body.track === content.scenario.harm_track) problems.push(`storylets.${st.id}: npc_body로 부상 트랙을 바꿀 수 없다`);
         else if (!content.scenario.condition_tracks.some((t) => t.id === e.npc_body.track)) problems.push(`storylets.${st.id}: 알 수 없는 상태 트랙 ${e.npc_body.track}`);

@@ -1,6 +1,7 @@
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
 import { neighbors } from "./war.ts";
+import { sitsOnCouncil, squadMembers } from "../engine/command.ts";
 import { battleConfig, effectBlocker } from "./battle.ts";
 import type { GameWorld } from "../world/world.ts";
 
@@ -18,6 +19,9 @@ export type AutoplayStats = {
   deaths: number;
   successions: number;
   missionsAssigned: number;
+  /** 분대 명령·회의 안 (기획서 9.11) */
+  squadOrders: number;
+  councilProposals: number;
   zonesVisited: Set<string>;
   levelUps: number;
   /** 상태 트랙별로 판정 보정이 붙는 단계에 있던 턴 수 */
@@ -37,6 +41,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     deaths: 0,
     successions: 0,
     missionsAssigned: 0,
+    squadOrders: 0,
+    councilProposals: 0,
     zonesVisited: new Set(),
     levelUps: 0,
     sufferingTurns: {},
@@ -147,6 +153,31 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       if (!item && healer && !s.scene.present.includes(healer.id)) tool("npc_presence", { npc_id: healer.id, action: "enter" });
       const out = tool("take_action", item ? { ...base, intent: "치료", use_item: item } : { ...base, intent: "치료", treatment: { item: null } });
       if (!out.ok) stats.errors.push(`치료: ${out.error}`);
+      continue;
+    }
+
+    // 지휘 (기획서 9.11): 분대가 있으면 가끔 일을 맡기고, 회의에 앉으면 가끔 안을 올린다
+    const command = content.scenario.command;
+    const squad = squadMembers(s, content).filter((id) => !s.squadOrders[id] && !s.companions.includes(id));
+    if (command?.squad_tasks.length && squad.length && rng() < 0.06) {
+      const task = pick(rng, command.squad_tasks);
+      const member = pick(rng, squad);
+      if (!s.scene.present.includes(member)) tool("npc_presence", { npc_id: member, action: "enter" });
+      const zone = task.needs_zone && s.playerZone ? pick(rng, [s.playerZone, ...neighbors(content, s.playerZone)]) : null;
+      const out = tool("squad_order", { members: [member], task: task.id, zone });
+      if (out.ok) stats.squadOrders++;
+      else if (!out.error.includes("장면에 없다")) stats.errors.push(`분대: ${out.error}`);
+      continue;
+    }
+    if (command?.policies.length && sitsOnCouncil(s, content) && rng() < 0.1) {
+      const chair = content.roles[s.roleId]?.commander ?? s.customRole?.commander;
+      if (chair && !s.characters[chair]?.dead && !s.scene.present.includes(chair)) tool("npc_presence", { npc_id: chair, action: "enter" });
+      const topic = pick(rng, command.policies);
+      const approach = pick(rng, command.council_moves);
+      const move = content.scenario.moves.find((m) => m.id === approach)!;
+      const out = tool("council_propose", { topic: topic.id, option: pick(rng, topic.options).id, approach, stat: pick(rng, move.stats), intent: "안을 올린다" });
+      if (out.ok) stats.councilProposals++;
+      else if (!/오늘 이미|기각|이미 그 방침|장면에 없다|사망한/.test(out.error)) stats.errors.push(`회의: ${out.error}`);
       continue;
     }
 

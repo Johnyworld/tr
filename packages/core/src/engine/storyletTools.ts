@@ -310,6 +310,16 @@ function applyEffect(
     store.append({ type: "faction_resource_changed", factionId: id, resource, delta });
     return {}; // 창고 사정은 배급과 소문으로만 드러난다
   }
+  if ("faction_policy" in effect) {
+    const { topic, option } = effect.faction_policy;
+    const id = effect.faction_policy.faction === "own" ? state.characters[playerId]!.factionId : effect.faction_policy.faction;
+    const t = content.scenario.command?.policies.find((p) => p.id === topic);
+    const o = t?.options.find((x) => x.id === option);
+    if (!state.factions[id] || !t || !o) return {};
+    store.append({ type: "faction_policy_set", factionId: id, topic, option });
+    // 자기 무리의 방침만 안다
+    return id === state.characters[playerId]!.factionId ? { line: `무리 방침이 바뀌었다: ${t.label} ${o.label}. ${o.summary}` } : {};
+  }
   if ("join_faction" in effect) {
     const player = state.characters[playerId]!;
     const { faction, rank, title } = effect.join_faction;

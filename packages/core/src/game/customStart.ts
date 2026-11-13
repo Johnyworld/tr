@@ -108,6 +108,8 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
     ...(same?.beliefs_preset && same.rank === input.rank ? { beliefs_preset: same.beliefs_preset } : {}),
     known_npcs: members.map((n) => n.id),
     ...(commander ? { commander: commander.id } : {}),
+    // 같은 계급 시나리오의 분대를 이어받는다 (기획서 9.11). 분대장이 비어 있는 분대다
+    ...(same?.rank === input.rank && same.squad?.length ? { squad: [...same.squad] } : {}),
     missions: same?.missions ?? [],
     storylet_tags: same?.storylet_tags ?? [],
   } as RoleContent;
@@ -149,6 +151,7 @@ export function describeCustomRole(content: Content, role: RoleContent): string 
     `소지품: ${role.start_inventory.map((i) => content.items[i]?.name ?? i).join(", ") || "없음"}`,
     `시작 훈련: ${Object.entries(role.start_skills).map(([m, v]) => `${s.moves.find((x) => x.id === m)?.label ?? m} +${v}`).join(", ") || "없음"}`,
     `상관: ${commander ? `${commander.name} (${s.rank_ladder.find((r) => r.id === commander.rank)?.label ?? commander.rank})` : "없음"} · 아는 사람 ${role.known_npcs.length}명${role.missions.length ? " · 임무를 받을 수 있다" : " · 정해진 임무 없음"}`,
+    ...(role.squad?.length ? [`분대원: ${role.squad.map((id) => content.npcs[id]?.name ?? id).join(", ")}`] : []),
     `첫 장면: ${role.opening_scene}`,
   ].join("\n");
 }

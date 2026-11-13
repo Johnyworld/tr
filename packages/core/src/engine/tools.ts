@@ -35,6 +35,7 @@ import { defineTool, signed, STRICT_UNSUPPORTED_KEYS, type ToolContext, type Too
 
 export { STRICT_UNSUPPORTED_KEYS } from "./toolkit.ts";
 import { MISSION_TOOLS } from "./missionTools.ts";
+import { COMMAND_TOOLS } from "./command.ts";
 import { REPUTATION_TOOLS } from "./reputationTools.ts";
 import { STORYLET_TOOLS } from "./storyletTools.ts";
 import { SUCCESSION_TOOLS } from "./succession.ts";
@@ -139,6 +140,9 @@ const npcPresence = defineTool({
       if (present) return { ok: false, error: `${josa(name, "은/는")} 이미 장면에 있습니다.` };
       if (character.dead) return { ok: false, error: `${josa(name, "은/는")} 사망했습니다.` };
       if (character.away) return { ok: false, error: `${josa(name, "은/는")} 도시를 떠났습니다.` };
+      if (state.squadOrders?.[character.id]) {
+        return { ok: false, error: `${josa(name, "은/는")} 분대 명령으로 나가 있다 (${formatTime(state.squadOrders[character.id]!.until)}쯤 끝난다).` };
+      }
       if (character.captive && character.captive.zone !== state.playerZone) {
         return { ok: false, error: `${josa(name, "은/는")} 지금 장면에 들일 수 없다 (캐릭터는 이 사람의 행방을 모른다).` };
       }
@@ -229,6 +233,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       addBelief,
       createLearnSkillTool(s),
       ...MISSION_TOOLS,
+      ...COMMAND_TOOLS,
       ...REPUTATION_TOOLS,
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,

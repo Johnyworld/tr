@@ -58,6 +58,8 @@ export function createContentSchemas(s: Scenario) {
     known_npcs: z.array(contentIdSchema).default([]),
     /** 직속 상관 NPC. 임무를 주고 보고를 받는다 */
     commander: contentIdSchema.optional(),
+    /** 주인공 밑의 분대원 (NPC id, 기획서 9.11). 분대 명령(squad_order)을 받는다 */
+    squad: z.array(contentIdSchema).optional(),
     /** 시작할 때 진 빚 (세력 id → 양, 기획서 9.10) */
     start_debt: z.record(contentIdSchema, z.number().int().min(1)).optional(),
     /** 이 역할에 내려오는 임무 템플릿 */
@@ -256,6 +258,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ take_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
     /** 세력 클락을 당기거나 늦춘다 (플레이어 행동이 전황에 닿는 길) */
     z.strictObject({ clock: z.strictObject({ id: contentIdSchema, delta: z.number().int().min(-5).max(5) }) }),
+    /** 무리 방침을 바꾼다 (기획서 9.11, 지도부가 스스로 배급을 줄이는 날 등). own = 플레이어 소속 */
+    z.strictObject({ faction_policy: z.strictObject({ faction: z.string().min(1), topic: contentIdSchema, option: contentIdSchema }) }),
     /** own = 플레이어 소속 */
     z.strictObject({ faction_morale: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-1).max(1) }) }),
     /** 세력 사이 태도를 바꾼다 (from이 to를 보는 태도, -3~+3에서 멈춘다). mutual이면 양쪽 다. own = 플레이어 소속 */
@@ -389,6 +393,8 @@ export function createContentSchemas(s: Scenario) {
         clock_gte: z.record(contentIdSchema, z.number().int()).optional(),
         clock_lte: z.record(contentIdSchema, z.number().int()).optional(),
         own_morale_lte: z.number().int().optional(),
+        /** 우리 무리의 방침이 이 중 하나 (주제 id → 선택지 id 목록, 기획서 9.11). 무리 사람은 누구나 안다 */
+        own_policy: z.record(contentIdSchema, z.array(contentIdSchema).min(1)).optional(),
         /** 우리 무리 식량이 며칠 치 이하 */
         own_food_days_lte: z.number().optional(),
         /** 부상 트랙이 이 단계 이상 */

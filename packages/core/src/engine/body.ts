@@ -7,7 +7,7 @@ import { bodyTraits } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { HarmSeverity } from "../rules/harm.ts";
 import { harmTrack, shownLevel, trackOf } from "../scenario/scenario.ts";
-import { daysOfStock } from "../sim/war.ts";
+import { daysOfStock, rationLevel } from "../sim/war.ts";
 import { seasonAt } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { josa } from "../text.ts";
@@ -184,7 +184,7 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
     const state = ctx.store.getState();
     // 배급 권한이 있어야 무리의 배급을 받는다 (역할의 access, 기획서 9.9)
     const own = hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
-    const level = own ? war.ration.levels.find((l) => daysOfStock(content, own, war.ration.resource) >= l.min_days) : undefined;
+    const level = own ? rationLevel(content, own) : undefined;
     const track = trackOf(content.scenario, body.hunger.track);
     let delta = level?.hunger ?? 1; // 배급을 받지 못하면 배가 고파진다
     if (delta > 0 && level?.hunger_max) {

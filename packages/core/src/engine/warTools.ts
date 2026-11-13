@@ -2,7 +2,7 @@ import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
-import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, simulateWarDay } from "../sim/war.ts";
+import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, rationLevel, simulateWarDay } from "../sim/war.ts";
 import { playerInvolvement, scheduleTime } from "./battleTools.ts";
 import { runDailyBody, runDailyNpcBody } from "./body.ts";
 import { seasonAt, seasonLabel, seasonOfDay } from "../sim/season.ts";
@@ -156,8 +156,7 @@ const label = (levels: readonly { min_days: number; label: string }[], days: num
 
 /** 배급 수준 (무리의 배급 자원이 며칠 치 남았는지로) */
 export function rationLabel(content: Content, faction: FactionState): string {
-  const war = content.scenario.war!;
-  return label(war.ration.levels, daysOfStock(content, faction, war.ration.resource));
+  return rationLevel(content, faction).label;
 }
 
 export function moraleLabel(content: Content, morale: number): string {

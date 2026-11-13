@@ -1,3 +1,4 @@
+import { factionPolicy } from "../sim/war.ts";
 import { disposition } from "../sim/war.ts";
 import type { Content, StoryletContent } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -27,7 +28,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
   const commander = commanderOf(state, content);
   const known = new Set(state.known[state.playerId] ?? []);
   return Object.values(state.characters)
-    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && content.npcs[c.id])
+    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && content.npcs[c.id] && !state.squadOrders?.[c.id])
     // 포로는 captive: true인 배역만, 그리고 그 구역에서만 (갇힌 곳에서 마주친다)
     .filter((c) => (role.captive ? !!c.captive && c.captive.zone === state.playerZone : !c.captive))
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
@@ -121,6 +122,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   for (const [id, n] of Object.entries(w.clock_gte ?? {})) if ((state.clocks[id]?.filled ?? -Infinity) < n) return false;
   for (const [id, n] of Object.entries(w.clock_lte ?? {})) if ((state.clocks[id]?.filled ?? Infinity) > n) return false;
   if (w.own_morale_lte !== undefined && (!own || own.morale > w.own_morale_lte)) return false;
+  if (w.own_policy) {
+    if (!own) return false;
+    const now = new Map(factionPolicy(content, own).map(({ topic, option }) => [topic.id, option.id]));
+    for (const [topic, options] of Object.entries(w.own_policy)) if (!options.includes(now.get(topic) ?? "")) return false;
+  }
   if (w.own_food_days_lte !== undefined) {
     const resource = content.scenario.war?.ration.resource;
     if (!own || !resource || daysOfStock(content, own, resource) > w.own_food_days_lte) return false;

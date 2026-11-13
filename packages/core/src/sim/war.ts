@@ -49,6 +49,8 @@ export const HOSTILE = -2;
 const COMMIT: Record<Clash["kind"], number> = { raid: 0.15, skirmish: 0.2, assault: 0.35, occupy: 0.1 };
 const PLAN_COMMIT = 0.5;
 const DEFENSE_COMMIT = 0.2;
+/** 방침이 아무리 지키자고 해도 전투원의 이 비율까지만 지킨다 */
+const DEFENSE_COMMIT_MAX = 0.4;
 const BASE_DEFENSE_BONUS = 1.5;
 /** 탄약이 모자라면 전투력이 이만큼으로 준다 */
 const NO_AMMO_FACTOR = 0.6;
@@ -121,6 +123,46 @@ function planOf(content: Content, clockId: string) {
   return undefined;
 }
 
+type PolicyTopic = NonNullable<Content["scenario"]["command"]>["policies"][number];
+type PolicyOption = PolicyTopic["options"][number];
+
+/** 이 무리의 지금 방침 (주제마다 선택지, 기획서 9.11). 정하지 않은 주제는 시나리오의 default */
+export function factionPolicy(content: Content, faction: { policy?: Record<string, string> } | undefined): { topic: PolicyTopic; option: PolicyOption }[] {
+  const out: { topic: PolicyTopic; option: PolicyOption }[] = [];
+  for (const topic of content.scenario.command?.policies ?? []) {
+    const id = faction?.policy?.[topic.id] ?? topic.default;
+    const option = topic.options.find((o) => o.id === id) ?? topic.options.find((o) => o.id === topic.default);
+    if (option) out.push({ topic, option });
+  }
+  return out;
+}
+
+/** 방침이 전쟁 틱에 주는 배수: 소모(자원별), 공격 성향, 지키는 병력. 사기 변화는 따로 */
+function policyEffects(content: Content, faction: FactionState | undefined) {
+  const upkeep: Record<string, number> = {};
+  let aggression = 1;
+  let defense = 1;
+  const morale: { delta: number; chance: number }[] = [];
+  for (const { option } of factionPolicy(content, faction)) {
+    for (const [r, m] of Object.entries(option.upkeep)) upkeep[r] = (upkeep[r] ?? 1) * m;
+    aggression *= option.aggression;
+    defense *= option.defense;
+    if (option.morale) morale.push(option.morale);
+  }
+  return { upkeep, aggression, defense, morale };
+}
+
+/** 무리 사람이 받는 배급 단계: 창고가 며칠 치 남았는지로 정하고, 방침(ration_shift)만큼 옮긴다 */
+export function rationLevel(content: Content, faction: FactionState) {
+  const war = content.scenario.war!;
+  const levels = war.ration.levels;
+  const days = daysOfStock(content, faction, war.ration.resource);
+  const base = Math.max(0, levels.findIndex((l) => days >= l.min_days));
+  const at = days >= (levels.at(-1)?.min_days ?? 0) ? base : levels.length - 1;
+  const shift = factionPolicy(content, faction).reduce((n, { option }) => n + option.ration_shift, 0);
+  return levels[Math.max(0, Math.min(levels.length - 1, at + shift))]!;
+}
+
 /** 무리의 자원이 며칠 치 남았는지 (소모가 없으면 Infinity) */
 export function daysOfStock(content: Content, faction: FactionState, resource: string): number {
   const perDay = (content.scenario.war?.upkeep[resource] ?? 0) * faction.population;
@@ -173,7 +215,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     let short = false;
     let hardship = false;
     for (const [r, rate] of Object.entries(war.upkeep)) {
-      const need = Math.ceil(rate * (options.season?.upkeep[r] ?? 1) * f.population);
+      const need = Math.ceil(rate * (options.season?.upkeep[r] ?? 1) * (policyEffects(content, f).upkeep[r] ?? 1) * f.population);
       const have = f.resources[r] ?? 0;
       if (have < need && war.vital.includes(r)) short = true;
       if (have < need && war.hardship.includes(r)) hardship = true;
@@ -230,7 +272,8 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const profile = content.factions[attacker];
     if (!profile || profile.aggression <= 0) continue;
     if (next.factions[attacker]!.combatants <= 0) continue;
-    if (rng() >= Math.min(0.9, profile.aggression * war.attack_chance_per_aggression)) continue;
+    const aggression = profile.aggression * policyEffects(content, next.factions[attacker]).aggression;
+    if (rng() >= Math.min(0.9, aggression * war.attack_chance_per_aggression)) continue;
     const options = attackOptions(next, content, profile);
     const choice = pickWeighted(rng, options.map((o) => ({ item: o, weight: KIND_WEIGHT[o.kind] })));
     if (!choice) continue;
@@ -242,6 +285,10 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
   for (const id of alive) {
     const f = next.factions[id]!;
     const start = content.factions[id];
+    // 무리 방침의 사기 변화 (배급을 줄이면 가라앉고, 늘리면 오른다)
+    for (const m of policyEffects(content, f).morale) {
+      if (m.delta !== 0 && rng() < m.chance) f.morale = clamp(f.morale + m.delta, -3, 3);
+    }
     if (f.morale <= -2 && f.cohesion <= -2 && f.combatants > 0) {
       if (rng() < DESERTION_CHANCE) lose(f, Math.max(1, Math.ceil(f.combatants * 0.03)));
     }
@@ -296,12 +343,12 @@ export function applyBattleOutcome(
 }
 
 /** 병력 규모: 내보내는 공격 병력과 지키는 병력 */
-export function clashForces(world: WarWorld, spec: ClashSpec): { attackers: number; defenders: number } {
+export function clashForces(world: WarWorld, spec: ClashSpec, content?: Content): { attackers: number; defenders: number } {
   const a = world.factions[spec.attacker]!;
   const d = world.factions[spec.defender]!;
   return {
     attackers: Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind]))),
-    defenders: Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT)),
+    defenders: Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * (content ? defenseOf(content, d) : 1))),
   };
 }
 
@@ -366,7 +413,7 @@ function fight(
   const a = world.factions[attackerId]!;
   const d = world.factions[defenderId]!;
   const committed = Math.max(1, Math.round(a.combatants * (plan ? PLAN_COMMIT : COMMIT[kind])));
-  const defenders = Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT));
+  const defenders = Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * defenseOf(content, d)));
   const power = (n: number, f: FactionState) => n * (1 + 0.1 * f.morale) * ((f.resources[war.ammo] ?? 0) >= war.ammo_per_clash ? 1 : NO_AMMO_FACTOR);
   const attack = power(committed, a);
   const defense = power(defenders, d) * (content.locations[zone]?.kind === "base" ? BASE_DEFENSE_BONUS : 1);
@@ -422,6 +469,11 @@ function applySpoils(
       a.morale = clamp(a.morale - 1, -3, 3);
     }
   }
+}
+
+/** 방침에 따른 지키는 병력 배수 (지키기면 더, 밀어붙이기면 덜) */
+function defenseOf(content: Content, f: FactionState): number {
+  return Math.min(DEFENSE_COMMIT_MAX / DEFENSE_COMMIT, policyEffects(content, f).defense);
 }
 
 /** 사람을 잃는다 (전투원부터) */

@@ -28,6 +28,7 @@ import { createInterruptChecks, fastForward } from "../sim/fastForward.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
+import { SQUAD_REPORT_PREFIX } from "./command.ts";
 import { activeMissionOf } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
@@ -345,7 +346,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   lines.push(...bodyLines(after));
   for (const display of after) {
     displays.push(display);
-    if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);
+    if (display.type === "mission" && display.title.startsWith(SQUAD_REPORT_PREFIX)) {
+      lines.push(`${display.title}: ${display.detail}. 보고 내용은 상태의 '분대' 섹션에 있다. 분대원이 돌아와(또는 전령으로) 보고하는 장면을 짧게 서술한다. 보고에 없는 것을 지어내지 않는다.`);
+    } else if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);
     if (display.type === "storylet" && display.event === "started") {
       lines.push(`새 이야기가 시작됐다: "${display.title}". 상태의 '진행 중인 이야기'를 보고 장면으로 연출하라.`);
     }

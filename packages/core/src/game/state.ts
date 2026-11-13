@@ -26,7 +26,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 13;
+export const SAVE_SCHEMA_VERSION = 14;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -55,6 +55,8 @@ export const factionStateSchema = z.strictObject({
   cohesion: z.number().int().min(-3).max(3),
   /** 다른 세력에 대한 지금 태도 (-3 ~ +3). 없으면 콘텐츠의 시작값 (이전 세이브). 이야기·클락(shift)으로 바뀐다 */
   disposition: z.record(z.string(), z.number().int().min(-3).max(3)).optional(),
+  /** 무리 방침 (주제 id → 선택지 id, 기획서 9.11). 없는 주제는 시나리오의 default */
+  policy: z.record(z.string(), z.string()).optional(),
 });
 export type FactionState = z.infer<typeof factionStateSchema>;
 
@@ -172,6 +174,14 @@ export function createGameSchemas(s: Scenario) {
     customRole: customRoleSchema.nullable().default(null),
     /** 주인공과 함께 다니는 인물·동물 (기획서 7.8). 구역을 옮겨도 따라오고 장면에 남는다 */
     companions: z.array(z.string()).default([]),
+    /** 분대원에게 맡긴 일 (NPC id → 명령, 기획서 9.11). follow는 동행으로 다루고 여기 넣지 않는다 */
+    squadOrders: z
+      .record(z.string(), z.strictObject({ task: z.string(), zone: z.string(), startedAt: z.number().int(), until: z.number().int() }))
+      .default({}),
+    /** 분대원의 마지막 보고 (NPC id → 문장). 화면 밖 일의 결과는 이것으로만 안다 */
+    squadReports: z.record(z.string(), z.strictObject({ text: z.string(), at: z.number().int() })).default({}),
+    /** 회의 기록 (주제 id → 마지막으로 안을 올린 날, 기각되면 다시 올릴 수 있는 시각) */
+    council: z.record(z.string(), z.strictObject({ day: z.number().int(), blockedUntil: z.number().int() })).default({}),
     /** 이야기가 이름표로 기억해 둔 이름 없는 인물 (cast keep → recall) */
     keptExtras: z.record(z.string(), z.string()).default({}),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
@@ -281,6 +291,16 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("companion_joined"), characterId: z.string() }),
     z.strictObject({ type: z.literal("companion_left"), characterId: z.string() }),
     z.strictObject({ type: z.literal("debt_changed"), characterId: z.string(), factionId: z.string(), delta: z.number().int() }),
+    /** 분대원에게 일을 맡겼다 (기획서 9.11). 시각은 코드가 정한다 */
+    z.strictObject({ type: z.literal("squad_order_given"), npcId: z.string(), task: z.string(), zone: z.string(), until: z.number().int() }),
+    /** 분대원이 명령을 거절했다 */
+    z.strictObject({ type: z.literal("squad_order_refused"), npcId: z.string(), task: z.string() }),
+    /** 맡긴 일이 끝났다 (결과는 코드가 굴렸다). report: 주인공이 듣는 보고 */
+    z.strictObject({ type: z.literal("squad_order_done"), npcId: z.string(), task: z.string(), outcome: checkOutcomeSchema.nullable(), report: z.string() }),
+    /** 지도부 회의에 안을 올렸다 */
+    z.strictObject({ type: z.literal("council_proposed"), topic: z.string(), option: z.string(), outcome: checkOutcomeSchema, day: z.number().int(), blockedUntil: z.number().int() }),
+    /** 무리 방침이 바뀌었다 */
+    z.strictObject({ type: z.literal("faction_policy_set"), factionId: z.string(), topic: z.string(), option: z.string() }),
     /** NPC가 떠난다: toFaction이면 그 세력으로 넘어가고(도시에 남는다), null이면 도시를 떠난다 (기획서 10.4) */
     z.strictObject({ type: z.literal("npc_departed"), npcId: z.string(), toFaction: z.string().nullable() }),
     z.strictObject({ type: z.literal("faction_resource_changed"), factionId: z.string(), resource: z.string(), delta: z.number().int() }),
@@ -533,6 +553,9 @@ export const EMPTY_STATE: GameState = {
   zoneSearches: {},
   keptExtras: {},
   companions: [],
+  squadOrders: {},
+  squadReports: {},
+  council: {},
   turn: 0,
   time: START_TIME,
   playerId: "",
@@ -631,6 +654,10 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       player.rank = event.rank;
       next.roleId = event.role.id;
       next.customRole = structuredClone(event.role);
+      // 옛 분대·회의는 옛 무리의 것이다
+      next.squadOrders = {};
+      next.squadReports = {};
+      next.council = {};
       // 무리 사람들과 서로 이름을 안다 (같은 무리 동료, 기획서 6.3)
       for (const id of event.role.known_npcs) {
         acquaint(next, next.playerId, id, true);
@@ -666,6 +693,29 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     }
     case "companion_left": {
       next.companions = next.companions.filter((id) => id !== event.characterId);
+      return next;
+    }
+    case "squad_order_given": {
+      next.squadOrders[event.npcId] = { task: event.task, zone: event.zone, startedAt: state.time, until: event.until };
+      next.companions = next.companions.filter((id) => id !== event.npcId);
+      next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      return next;
+    }
+    case "squad_order_refused":
+      return next;
+    case "squad_order_done": {
+      delete next.squadOrders[event.npcId];
+      next.squadReports[event.npcId] = { text: event.report, at: state.time };
+      return next;
+    }
+    case "council_proposed": {
+      next.council[event.topic] = { day: event.day, blockedUntil: event.blockedUntil };
+      return next;
+    }
+    case "faction_policy_set": {
+      const f = next.factions[event.factionId];
+      if (!f) return next;
+      f.policy = { ...(f.policy ?? {}), [event.topic]: event.option };
       return next;
     }
     case "debt_changed": {
@@ -900,6 +950,9 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.perceived = {};
       // 동행은 죽은 사람을 따라다녔다. 다음 캐릭터는 새로 사귄다 (기획서 7.8)
       next.companions = [];
+      next.squadOrders = {};
+      next.squadReports = {};
+      next.council = {};
       next.offers = null;
       next.playerZone = null;
       next.battle = null;

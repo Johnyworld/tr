@@ -221,6 +221,86 @@ export const scenarioFileSchema = z
       .default({}),
     /** 역할 권한(access)의 이름 (예: ration → 배급). ration·mission_board는 core가 쓰고, 나머지는 GM이 보는 특권 */
     access_labels: z.record(id, z.string().min(1)).default({}),
+    /**
+     * 지휘 (기획서 9.11): 분대 명령의 일과 지도부 회의의 방침. 규칙(따르는지, 결과 판정, 전쟁 틱 반영)은 core에 있고 이름과 숫자만 둔다.
+     * 없으면 분대 명령과 회의가 없다
+     */
+    command: z
+      .strictObject({
+        /** 분대원에게 맡기는 일 */
+        squad_tasks: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              /** follow: 동행이 된다. rest: 쉬며 회복한다. work: 나가서 일하고 결과를 굴린다 */
+              kind: z.enum(["follow", "rest", "work"]),
+              /** 걸리는 시간 (follow는 쓰지 않는다) */
+              hours: z.number().positive().default(4),
+              /** 결과 판정의 스킬과 능력 (work) */
+              move: id.optional(),
+              stat: id.optional(),
+              /** 다른 구역으로 나가는 일인지 (zone이 필요하다) */
+              needs_zone: z.boolean().default(false),
+              /** 실패하면 다칠 수 있는 일 */
+              dangerous: z.boolean().default(false),
+              /** 성공했을 때 (대가 있는 성공은 절반, 내림) */
+              rewards: z
+                .strictObject({
+                  /** 주인공 무리의 자원 */
+                  resources: z.record(id, z.number().int().min(1)).default({}),
+                  /** 주인공에게 가져다주는 물건 (구역 수색 표에서 고른다면 loot: true) */
+                  loot: z.boolean().default(false),
+                  merit: z.number().int().min(0).max(3).default(0),
+                })
+                .default({ resources: {}, loot: false, merit: 0 }),
+              /** 보고 문구. {member} {zone} */
+              report: z.strictObject({ success: z.string().min(1), partial: z.string().min(1), miss: z.string().min(1) }),
+            }),
+          )
+          .default([]),
+        /** 주인공의 이 스킬이 1 이상이면 분대원의 일 판정에 +1 (지휘) */
+        lead_skill: id.optional(),
+        /** 회의에서 안을 올릴 때 쓰는 스킬 */
+        council_moves: z.array(id).default([]),
+        /** 분대원이 곁에 있을 때(follow) 주인공 판정 보정 (스킬 id → 보정) */
+        follow_bonus: z.record(id, z.number().int().min(1).max(2)).default({}),
+        /** 지도부 회의에 앉는 계급 */
+        council_ranks: z.array(id).default([]),
+        /** 무리 방침: 주제마다 선택지. 처음은 default */
+        policies: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              default: id,
+              options: z
+                .array(
+                  z.strictObject({
+                    id,
+                    label: z.string().min(1),
+                    /** GM에게 보여 주는 한 줄 (이 방침이면 무엇이 달라지나) */
+                    summary: z.string().min(1),
+                    /** 전쟁 틱: 자원별 소모 배수 */
+                    upkeep: z.record(id, z.number().min(0).max(3)).default({}),
+                    /** 공격 성향 배수 */
+                    aggression: z.number().min(0).max(3).default(1),
+                    /** 지키는 병력 배수 */
+                    defense: z.number().min(0).max(3).default(1),
+                    /** 무리 사람이 받는 배급 단계를 이만큼 옮긴다 (+1이면 한 단계 적게, war.ration.levels) */
+                    ration_shift: z.number().int().min(-2).max(2).default(0),
+                    /** 하루마다 사기 변화 */
+                    morale: z.strictObject({ delta: z.number().int().min(-1).max(1), chance: z.number().min(0).max(1) }).optional(),
+                    /** 이 안에 반대하는 사람 (NPC id). 대가 있는 성공이면 그들의 신뢰가 떨어진다 */
+                    opposed_by: z.array(id).default([]),
+                  }),
+                )
+                .min(2),
+            }),
+          )
+          .default([]),
+      })
+      .optional(),
     /** 새 게임의 월드 고르기에 보이는 것 (기획서 12.3). 없으면 name만 */
     world: z
       .strictObject({
@@ -547,6 +627,24 @@ export const scenarioFileSchema = z
     }
     if (s.war) for (const l of s.war.ration.levels) if (s.body?.hunger && l.hunger === undefined) problem(`war.ration.levels: 허기 규칙이 있으면 hunger(하루 변화)를 적는다`);
     const ranks = new Set(s.rank_ladder.map((r) => r.id));
+    if (s.command) {
+      const moves = new Set(s.moves.map((m) => m.id));
+      const statIds = new Set(s.stats.map((x) => x.id));
+      const resources = new Set(s.resources.map((r) => r.id));
+      for (const t of s.command.squad_tasks) {
+        if (t.kind === "work" && (!t.move || !moves.has(t.move))) problem(`command.squad_tasks.${t.id}: work는 move(스킬)가 필요하다`);
+        if (t.stat && !statIds.has(t.stat)) problem(`command.squad_tasks.${t.id}: 알 수 없는 능력 ${t.stat}`);
+        for (const r of Object.keys(t.rewards.resources)) if (!resources.has(r)) problem(`command.squad_tasks.${t.id}: 알 수 없는 자원 ${r}`);
+      }
+      if (s.command.lead_skill && !moves.has(s.command.lead_skill)) problem(`command.lead_skill: 알 수 없는 스킬 ${s.command.lead_skill}`);
+      for (const m of [...s.command.council_moves, ...Object.keys(s.command.follow_bonus)]) if (!moves.has(m)) problem(`command: 알 수 없는 스킬 ${m}`);
+      for (const r of s.command.council_ranks) if (!ranks.has(r)) problem(`command.council_ranks: 알 수 없는 등급 ${r}`);
+      for (const p of s.command.policies) {
+        if (!p.options.some((o) => o.id === p.default)) problem(`command.policies.${p.id}: default ${p.default}가 선택지에 없다`);
+        for (const o of p.options) for (const r of Object.keys(o.upkeep)) if (!resources.has(r)) problem(`command.policies.${p.id}.${o.id}: 알 수 없는 자원 ${r}`);
+      }
+      if (s.command.policies.length && !s.command.council_moves.length) problem(`command: 방침이 있으면 council_moves(회의에서 쓰는 스킬)를 적는다`);
+    }
     for (const rank of [s.promotion.from, s.promotion.to]) {
       if (!ranks.has(rank)) problem(`promotion: 알 수 없는 등급 ${rank}`);
     }

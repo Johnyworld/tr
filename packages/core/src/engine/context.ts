@@ -1,3 +1,4 @@
+import { describePolicyForGm, describeSquadForGm } from "./command.ts";
 import { describeAccess, describeCultureForGm } from "../game/culture.ts";
 import { describeCompanions } from "../game/companions.ts";
 import { commanderOf } from "../game/missions.ts";
@@ -103,7 +104,8 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ].join("\n")],
     ["battle", describeBattleForGm(state, content)],
     ["storylet", describeStoryletForGm(state, content)],
-    ["missions", describeMissionsForGm(state, { content })],
+    ["missions", [describeMissionsForGm(state, { content }), describePolicyForGm(state, content)].filter(Boolean).join("\n")],
+    ["squad", describeSquadForGm(state, content)],
     ["culture", player.factionId ? [describeAccess(content, state.roleId), describeCultureForGm(content, player.factionId)].filter(Boolean).join("\n") : ""],
     ["factions", describeFactionsForGm(state, content)],
     ["deeds", describeOwnDeeds(state)],

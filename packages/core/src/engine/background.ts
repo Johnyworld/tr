@@ -39,10 +39,12 @@ export function applyBackground(ctx: ToolContext, parts: readonly HistoryPart[])
       belief: { id: `b_${state.nextBeliefNo}`, fact: sentence(describeHistoryPart(content, part)), source: "seen", accuracy: "exact", learnedAt: state.time },
     });
     const person = part.kind === "loss" ? part.by : part.kind === "enemy" ? part.target : null;
+    // 같은 사람이 부품 여럿에 나올 수 있다 (가족을 죽인 자이자 원수): 이미 아는 이름은 다시 배우지 않는다
+    const knows = (who: string, whom: string) => (store.getState().known[who] ?? []).includes(whom);
     if (person && state.characters[person] && content.npcs[person]) {
-      store.append({ type: "name_learned", characterId: me, targetId: person });
+      if (!knows(me, person)) store.append({ type: "name_learned", characterId: me, targetId: person });
       if (part.kind === "enemy" && part.knows_you) {
-        store.append({ type: "name_learned", characterId: person, targetId: me });
+        if (!knows(person, me)) store.append({ type: "name_learned", characterId: person, targetId: me });
         store.append({ type: "relation_changed", from: person, to: me, delta: { trust: -2, affection: -1, respect: 0 }, reason: "지난 일 (배경)" });
       }
     }

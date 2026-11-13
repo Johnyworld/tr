@@ -1,3 +1,4 @@
+import { josa, sentence } from "../text.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 
@@ -88,13 +89,13 @@ export function whoName(content: Content, id: string | null): string {
 export function describeHistoryPart(content: Content, p: HistoryPart): string {
   switch (p.kind) {
     case "loss":
-      return `${p.who}을(를) 잃었다. ${p.by ? `${whoName(content, p.by)}의 짓이다` : "누구 짓인지 모른다"}${p.where ? ` (${content.locations[p.where]?.name ?? p.where})` : ""}`;
+      return `${josa(p.who, "을/를")} 잃었다. ${p.by ? `${whoName(content, p.by)}의 짓이다` : "누구 짓인지 모른다"}${p.where ? ` (${content.locations[p.where]?.name ?? p.where})` : ""}`;
     case "enemy":
-      return `원수: ${whoName(content, p.target)}. ${p.why}${p.knows_you ? " 저쪽도 나를 안다" : " 저쪽은 나를 모른다"}`;
+      return `원수: ${whoName(content, p.target)}. ${sentence(p.why)}${p.knows_you ? " 저쪽도 나를 안다" : " 저쪽은 나를 모른다"}`;
     case "kin_alive":
-      return `${p.label}이(가) 살아 있다. ${content.locations[p.zone]?.name ?? p.zone}에서 기다린다`;
+      return `${josa(p.label, "이/가")} 살아 있다. ${content.locations[p.zone]?.name ?? p.zone}에서 기다린다`;
     case "seeking":
-      return `${p.label}을(를) 찾고 있다. 어디 있는지 모른다`;
+      return `${josa(p.label, "을/를")} 찾고 있다. 어디 있는지 모른다`;
     case "debt":
       return `${whoName(content, p.faction)}에 ${p.size === "large" ? "큰" : "작은"} 빚을 지고 있다`;
     case "deserter":

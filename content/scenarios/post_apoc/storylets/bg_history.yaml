@@ -9,6 +9,7 @@
   title: 저 사람이다
   tags: [world]
   when:
+    zone_owner: [none, other]
     flags_any: [bg_enemy_person, bg_culprit_known]
     flags_none: [bg_enemy_seen]
     day_gte: 2
@@ -48,6 +49,7 @@
   title: 같은 불 앞에서
   tags: [world]
   when:
+    zone_owner: [none, other]
     flags_all: [bg_enemy_seen]
     flags_none: [bg_enemy_close, bg_enemy_let_go]
     day_gte: 4
@@ -106,6 +108,7 @@
   tags: [world]
   urgent: true
   when:
+    zone_owner: [none, other]
     flags_all: [bg_enemy_close]
     flags_none: [bg_enemy_settled, bg_enemy_let_go]
     day_gte: 5

@@ -104,6 +104,11 @@ describe("배경 부품", () => {
     expect(gm).not.toContain(w.content.locations[s.characters[sought]!.extra!.zone!]!.name + "에서 기다린다");
   });
 
+  it("같은 사람이 가해자이자 원수여도 세계가 만들어진다 (플레이 테스트에서 찾은 버그)", () => {
+    const w = open({ ...cook, history: [{ kind: "loss", who: "식구들", by: "c_gyeongsu", where: "old_town" }, { kind: "enemy", target: "c_gyeongsu", why: "불을 질렀다", knows_you: true }] });
+    expect(w.state().known[w.state().playerId]).toContain("c_gyeongsu");
+  });
+
   it("배경 배역: 원수·가족·찾는 사람을 이야기가 부른다", () => {
     const w = open({ ...cook, history });
     const s = w.state();

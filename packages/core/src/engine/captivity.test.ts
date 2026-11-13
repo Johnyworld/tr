@@ -91,3 +91,31 @@ describe("포로를 잡고 다룬다", () => {
     expect(out.length + 0).toBeGreaterThanOrEqual(0);
   });
 });
+
+describe("12-56: 갇힌 날수, 다침, 행방", () => {
+  const parse = createContentSchemas(base.scenario).storylet.parse;
+  it("갇힌 지 며칠이 지나야 열리고, 판정의 대가로만 다치며 죽지는 않는다", async () => {
+    const { checkStorylets } = await import("../content/loader.ts");
+    const w = open();
+    capturePlayer(w.ctx(), "faction_c");
+    const long = parse({ id: "long", title: "l", tags: ["captivity"], when: { captive_days_gte: 3 }, setup: "x", choices: [{ id: "a", label: "a", effects: [] }] });
+    const c = { ...w.content, storylets: { long } };
+    expect(eligibleStorylets(w.state(), c)).toHaveLength(0);
+    expect(eligibleStorylets(w.state(), c, w.state().time + 3 * 1440)).toHaveLength(1);
+    const bad = parse({ id: "bad", title: "b", setup: "x", choices: [{ id: "a", label: "a", effects: [{ wound: { steps: 1, cause: "x" } }] }] });
+    expect(checkStorylets({ ...w.content, storylets: { bad } }).join()).toContain("wound는 판정의 partial·miss");
+  });
+
+  it("어딘가 붙잡힌 우리 사람을 부르고, 그 사람이 어디 갇혔는지 진짜 상태로 알려 준다", async () => {
+    const { fireStorylet } = await import("./storyletTools.ts");
+    const { executeTool } = await import("./tools.ts");
+    const w = open();
+    const s = parse({ id: "find", title: "f", when: { own_people_captive: true }, cast: { lost: { captive_anywhere: true, faction: "own", enter: false } }, setup: "{lost}", choices: [{ id: "a", label: "a", effects: [{ locate: { who: "lost" } }] }] });
+    const c = { ...w.content, storylets: { find: s } };
+    expect(eligibleStorylets(w.state(), c).map((x) => x.id)).toEqual(["find"]);
+    const ctx = { ...w.ctx(), content: c };
+    fireStorylet(ctx, s, { lost: "a_jeongbin" });
+    const out = executeTool("resolve_storylet", { choice_id: "a" }, ctx);
+    expect(out.ok && out.resultText).toContain("고가도로 너머 물류창고에 갇혀 있다");
+  });
+});

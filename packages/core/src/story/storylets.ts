@@ -48,7 +48,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.tie || tiesOf(state, content, picked[role.tie.of] ?? "").some((t) => t.other === c.id && (!role.tie!.kinds || role.tie!.kinds.includes(t.kind))))
     .filter((c) => !role.tie?.cross || c.factionId !== state.characters[picked[role.tie.of] ?? ""]?.factionId)
     // 포로는 captive: true인 배역만, 그리고 그 구역에서만 (갇힌 곳에서 마주친다)
-    .filter((c) => (role.captive ? !!c.captive && c.captive.zone === state.playerZone : !c.captive))
+    .filter((c) => (role.captive_anywhere ? !!c.captive : role.captive ? !!c.captive && c.captive.zone === state.playerZone : !c.captive))
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.commander || c.id === commander)
@@ -166,6 +166,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.level_gte !== undefined && player.level < w.level_gte) return false;
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
   if (w.captors && (!player.captive || !w.captors.includes(player.captive.by))) return false;
+  if (w.captive_days_gte !== undefined && (!player.captive || at - (player.captive.since ?? at) < w.captive_days_gte * MINUTES_PER_DAY)) return false;
   if (w.own_people_captive !== undefined) {
     const any = !!player.factionId && Object.values(state.characters).some((c) => c.id !== player.id && !c.dead && c.factionId === player.factionId && c.captive && c.captive.by !== player.factionId);
     if (any !== w.own_people_captive) return false;

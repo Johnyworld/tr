@@ -376,6 +376,10 @@ export function checkStorylets(content: Content): string[] {
       }
     }
     for (const c of s.choices) {
+      // 이야기가 주인공을 다치게 하는 것은 판정의 대가로만 (원칙 3)
+      for (const e of [...c.effects, ...(c.outcomes?.success ?? [])]) if ("wound" in e) problems.push(`${where}.choices.${c.id}: wound는 판정의 partial·miss 결과에만 쓴다`);
+    }
+    for (const c of s.choices) {
       const effects = [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])];
       for (const e of effects) {
         const at = `${where}.choices.${c.id}`;

@@ -371,6 +371,13 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ standing: z.number().int().min(-2).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
     z.strictObject({ give_item: z.strictObject({ item: contentIdSchema, from: z.string().optional(), quantity: z.number().int().positive().default(1) }) }),
+    /**
+     * 주인공이 다친다 (12-56): 판정이 붙은 선택지의 대가 있는 성공·실패에서만 (콘텐츠 검증이 막는다).
+     * 부상 트랙 steps 단계, 죽음 바로 앞에서 멈춘다 (이야기는 사람을 죽이지 않는다, 원칙 3)
+     */
+    z.strictObject({ wound: z.strictObject({ steps: z.number().int().min(1).max(2), cause: z.string().min(1).max(60) }) }),
+    /** 붙잡힌 배역이 어디 갇혔는지 주인공이 알게 된다 (진짜 상태에서 코드가 채운다, 12-56) */
+    z.strictObject({ locate: z.strictObject({ who: z.string().min(1), source: z.enum(["seen", "report", "rumor"]).default("report") }) }),
     /** 주인공이 붙잡힌다 (12-55): by 무리(own 외에 zone_owner 등 별칭), zone이 없으면 그 무리의 거점에 갇힌다 */
     z.strictObject({ capture_player: z.strictObject({ by: z.string().min(1), zone: contentIdSchema.optional() }) }),
     /** 갇힌 주인공이 풀려난다: returned면 빼앗긴 것을 돌려받는다, home이면 우리 무리의 거점으로 돌아간다 */
@@ -469,6 +476,8 @@ export function createContentSchemas(s: Scenario) {
     enter: z.boolean().default(true),
     /** 이 인물의 몸 상태 (기획서 7.7): track의 단계가 at_least 이상, at_most 이하 (단계 id). 진짜 상태로 본다 (연출은 GM 전용) */
     condition: z.strictObject({ track: contentIdSchema, at_least: contentIdSchema.optional(), at_most: contentIdSchema.optional() }).optional(),
+    /** 어디에 붙잡혀 있든 붙잡힌 사람 (그 자리에 없어도 이름만 부를 때, 12-56). enter는 false로 둔다 */
+    captive_anywhere: z.boolean().optional(),
     /** 붙잡혀 있는 인물만 (true) / 붙잡히지 않은 인물만 (기본). 포로를 배역으로 쓸 때 true */
     captive: z.boolean().optional(),
     /**
@@ -576,6 +585,8 @@ export function createContentSchemas(s: Scenario) {
         factions: z.array(z.string().min(1)).optional(),
         /** 주인공을 가둔 무리가 이 중 하나일 때만 (갇힌 동안의 이야기, 12-55) */
         captors: z.array(z.string().min(1)).optional(),
+        /** 주인공이 갇힌 지 이만큼(일) 지났다 (12-56) */
+        captive_days_gte: z.number().min(0).optional(),
         /** 우리 무리 사람이 다른 무리에 붙잡혀 있는지 (어디인지는 몰라도, 12-55) */
         own_people_captive: z.boolean().optional(),
         /** 플레이어의 직분 (none = 직분 없음, 기획서 12.6) */

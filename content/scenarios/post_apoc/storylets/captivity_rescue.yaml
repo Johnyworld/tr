@@ -1,0 +1,87 @@
+# 붙잡혀 간 동료를 찾으러 (12-56): 우리 거점에서 시작해 적 거점의 '창살 안의 얼굴'(cp_ours_found)로 이어진다
+# 오래 갇힌 날 (captive_days_gte): 갇힌 지 며칠이 지나면 열리는 이야기
+
+- id: cp_home_missing
+  title: 식당의 빈자리
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    own_territory: true
+    own_people_captive: true
+    segments: [evening]
+  cast:
+    lost: { captive_anywhere: true, faction: own, known: true, enter: false, keep: cp_hunt }
+    boss: { commander: true, optional: true }
+  setup: 식당 천막의 긴 의자에 한 자리가 비어 있다. 누가 그 자리에 숟가락 하나를 놓아 두었다. {lost}의 자리다. 옆자리 사람들이 그 숟가락을 보지 않으려고 한다.
+  ai_direction: "{lost}은(는) 다른 무리에 붙잡혀 있다. 어디인지는 아직 주인공이 모른다 (알게 되는 것은 아래 효과뿐). 무리는 구하러 가자는 사람과, 사람 하나 때문에 더 잃을 수 없다는 사람으로 갈린다. 상관이 있으면 상관도 그 자리를 본다. 구출을 정하는 것은 플레이어다. 지어낸 장소를 말하지 않는다."
+  choices:
+    - id: ask_boss
+      label: 상관에게 {lost}이(가) 어디 있는지 아느냐고 묻는다
+      when: { cast: [boss] }
+      effects:
+        - set_flag: cp_hunt_on
+        - locate: { who: lost, source: report }
+        - relation: { who: boss, axis: respect, delta: 1 }
+    - id: ask_around
+      label: 돌아온 사람들, 장터 짐꾼들에게 물어 다닌다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: cp_hunt_on
+          - locate: { who: lost, source: rumor }
+          - delay: 120
+        partial:
+          - set_flag: cp_hunt_on
+          - locate: { who: lost, source: rumor }
+          - delay: 240
+          - body: { track: hunger, delta: 1 }
+        miss:
+          - delay: 180
+          - belief: { fact: "{lost}의 행방을 물어 다녔지만 아무도 확실히 말하지 않았다", source: seen }
+    - id: spoon
+      label: 숟가락을 바로 놓아 두고, 지금은 아무 말도 하지 않는다
+      effects:
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "식당에 {lost}의 숟가락이 놓여 있다. 아무도 치우지 않는다", source: seen }
+
+- id: cp_long_wall
+  title: 벽에 그은 날짜
+  tags: [captivity]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    captive_days_gte: 4
+  setup: 벽에 손톱으로 그은 줄이 늘었다. 처음 며칠은 줄마다 날짜를 적었는데, 이제는 세지 않는다. 밥이 오는 시각과 당번이 바뀌는 시각만 몸이 기억한다.
+  ai_direction: 오래 갇히면 사람은 둘 중 하나가 된다. 틈을 찾는 사람, 틈을 찾지 않는 사람. 위험은 판정 전에 선언한다. 실패한 탈출은 다치고 감시가 심해진다 (이야기는 사람을 죽이지 않는다).
+  choices:
+    - id: loose_bar
+      label: 밤마다 흔들어 온 창살 하나를 마저 비튼다
+      check: endure
+      outcomes:
+        success:
+          - release_player: { returned: false }
+          - belief: { fact: "창살이 빠졌다. 맨손으로 담을 넘었다. 빼앗긴 것은 두고 왔다", source: seen }
+        partial:
+          - set_flag: cp_watched
+          - wound: { steps: 1, cause: 비튼 창살에 손이 찢겼다 }
+          - belief: { fact: "창살은 반쯤 빠졌지만 당번이 소리를 들었다. 창살 자리에 쇠사슬이 감겼다", source: seen }
+        miss:
+          - set_flag: cp_watched
+          - wound: { steps: 1, cause: 붙잡혀 맞았다 }
+          - body: { track: nerves, delta: 1 }
+    - id: count_guards
+      label: 당번이 바뀌는 시각을 다시 센다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: cp_mapped
+          - belief: { fact: "당번은 새벽에 한 번 비어 있다. 길지 않다", source: seen }
+        partial:
+          - set_flag: cp_mapped
+        miss:
+          - body: { track: nerves, delta: 1 }
+    - id: give_in
+      label: 오늘은 아무것도 하지 않는다
+      effects:
+        - body: { track: nerves, delta: 1 }

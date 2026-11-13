@@ -371,6 +371,24 @@ function applyEffect(
     store.append({ type: "item_granted", to: playerId, itemId: item, quantity });
     return { line: `${josa(`${name} ×${quantity}`, "을/를")} 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
   }
+  if ("wound" in effect) {
+    const me = state.characters[playerId]!;
+    const track = harmTrack(content.scenario);
+    const index = Math.max(0, track.levels.findIndex((l) => l.id === me.conditions[track.id]));
+    const fatal = track.levels.findIndex((l) => l.fatal);
+    const steps = Math.min(effect.wound.steps, Math.max(0, (fatal >= 0 ? fatal : track.levels.length) - 1 - index));
+    if (steps <= 0) return {};
+    const c = changeCondition(ctx, playerId, track.id, steps, "story", effect.wound.cause);
+    return c?.line ? { line: c.line, display: c.display ?? undefined } : {};
+  }
+  if ("locate" in effect) {
+    const id = whoOf(ctx, effect.locate.who, cast);
+    const c = id ? state.characters[id] : undefined;
+    if (!id || !c?.captive) return {};
+    const fact = sentence(`${playerCalls(state, content, id)}은(는) ${content.factions[c.captive.by]?.name ?? c.captive.by}의 ${content.locations[c.captive.zone]?.name ?? c.captive.zone}에 갇혀 있다고 한다`);
+    store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.locate.source, accuracy: "approximate", learnedAt: state.time } });
+    return { line: `알게 된 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.locate.source] } };
+  }
   if ("capture_player" in effect) {
     const by = factionRef(state, effect.capture_player.by);
     const line = by ? capturePlayer(ctx, by, effect.capture_player.zone, reason) : null;

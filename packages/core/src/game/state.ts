@@ -36,7 +36,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 26;
+export const SAVE_SCHEMA_VERSION = 27;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -980,7 +980,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "player_captured": {
       const me = mustGet(next.characters, next.playerId, "캐릭터");
-      me.captive = { by: event.by, zone: event.zone };
+      me.captive = { by: event.by, zone: event.zone, since: state.time };
       for (const [item, n] of Object.entries(event.held)) {
         const left = (me.inventory[item] ?? 0) - n;
         if (left < 0) throw new Error(`빼앗을 것이 모자란다: ${item}`);

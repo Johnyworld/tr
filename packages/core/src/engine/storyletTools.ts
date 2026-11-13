@@ -1,3 +1,5 @@
+import { createExtraCharacter } from "./extras.ts";
+import { EXTRA_CAST_PREFIX } from "../story/storylets.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -67,6 +69,17 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
   const storylet = pickStorylet(fixed.length ? fixed : eligible, rng);
   if (!storylet) return displays;
   const cast = pickCast(state, content, storylet, rng)!;
+  // 이름 없는 인물 배역: 틀로 캐릭터를 만든다 (능력·소지품은 틀에서 굴린다)
+  for (const [key, id] of Object.entries(cast)) {
+    if (!id.startsWith(EXTRA_CAST_PREFIX)) continue;
+    const template = content.extras[id.slice(EXTRA_CAST_PREFIX.length)]!;
+    const now = store.getState();
+    const extraId = `ex_${now.nextExtraNo}`;
+    const usedNames = new Set(Object.values(now.characters).map((c) => c.name));
+    const label = storylet.cast[key]?.label ?? template.label;
+    store.append({ type: "extra_spawned", character: createExtraCharacter(content, template, { id: extraId, label, zone: now.playerZone, time: now.time, usedNames }, rng) });
+    cast[key] = extraId;
+  }
   store.append({
     type: "storylet_fired",
     storyletId: storylet.id,

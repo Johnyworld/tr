@@ -18,8 +18,10 @@
     weather: [cold_snap]
     segments: [evening, night]
     own_territory: true
+  cast:
+    stranger: { extra: refugee, label: 정류장에 웅크린 사람, enter: false }
   setup: 한파가 내려앉은 밤. 정문 밖 버스 정류장 유리벽 뒤에 누군가 웅크려 있다. 보초는 모르는 사람을 들이지 말라는 지시를 받았다. 입김이 하얗게 얼어붙는다.
-  ai_direction: 떠도는 노인이다 (엑스트라 틀 refugee로 만들 수 있다). 해칠 생각도 힘도 없다. 이 밤을 밖에서 넘기면 살지 못할 수 있다. 들이려면 누군가 책임을 져야 한다.
+  ai_direction: 정류장의 사람({stranger})은 떠도는 사람이다 (이미 인물로 만들어 두었다. 들이거나 다가가면 npc_presence로 장면에 들인다). 해칠 생각도 힘도 없다. 이 밤을 밖에서 넘기면 살지 못할 수 있다. 들이려면 누군가 책임을 져야 한다.
   choices:
     - id: give_blanket
       label: 담요를 가져다 덮어 준다
@@ -183,8 +185,10 @@
     own_territory: true
     segments: [morning, day]
     day_gte: 2
+  cast:
+    mother: { extra: refugee, label: 아이를 데린 여자 }
   setup: '정문 앞에 낯선 셋이 서 있다. 여자 하나, 다리를 저는 남자 하나, 열 살쯤 된 아이 하나. 여자가 말한다. "일할게요. 뭐든. 아이만이라도 들여보내 줘요." 보초가 당신을 본다. 요즘 {scarce:이/가} 모자란 건 다들 안다.'
-  ai_direction: 진짜 피난민이다 (엑스트라 틀 refugee). 받아들일지는 위에서 정한다. 당신은 말을 거들거나, 먹을 것을 주거나, 등을 돌릴 수 있다. 남자의 다리는 감염체에게 다친 게 아니다.
+  ai_direction: 진짜 피난민이다. 말을 거는 여자는 {mother}로 이미 인물로 만들었다 (남자와 아이는 서술로만). 받아들일지는 위에서 정한다. 당신은 말을 거들거나, 먹을 것을 주거나, 등을 돌릴 수 있다. 남자의 다리는 감염체에게 다친 게 아니다.
   choices:
     - id: share_food
       label: 가진 건빵을 아이 손에 쥐여 준다

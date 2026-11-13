@@ -263,3 +263,25 @@ describe("효과 더하기: npc_depart, faction_resource", () => {
     expect(env.store.getState().characters.npc_leader).toMatchObject({ away: false, factionId: "faction_b" });
   });
 });
+
+describe("배역을 이름 없는 인물로 (엑스트라 틀)", () => {
+  it("발동할 때 틀로 인물을 만들어 장면에 들이고, 효과의 who로 쓴다", () => {
+    const env = setup([
+      {
+        id: "stranger",
+        title: "낯선 보초",
+        cast: { guard: { extra: "test_sentry", label: "길목의 보초" } },
+        setup: "{guard:이/가} 길을 막는다.",
+        choices: [{ id: "talk", label: "말을 건다", effects: [{ relation: { who: "guard", axis: "trust", delta: 1 } }] }],
+      },
+    ]);
+    const s = env.store.getState();
+    const id = s.activeStorylet?.cast.guard;
+    expect(id).toMatch(/^ex_\d+$/);
+    expect(s.characters[id!]).toMatchObject({ extra: { template: "test_sentry", label: "길목의 보초" } });
+    expect(s.scene.present).toContain(id);
+    expect(describePlayerState(s, env.content)).toContain("길목의 보초가 길을 막는다.");
+    expect(executeTool("resolve_storylet", { choice_id: "talk" }, env.ctx).ok).toBe(true);
+    expect(env.store.getState().relations[id!]?.[s.playerId]?.trust).toBe(1);
+  });
+});

@@ -157,6 +157,9 @@ function checkReferences(content: Content): string[] {
       if ("npc_depart" in e && e.npc_depart.to_faction && !content.factions[e.npc_depart.to_faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.npc_depart.to_faction}`);
     }
     for (const f of st.when.factions ?? []) if (f !== "none" && !content.factions[f]) problems.push(`storylets.${st.id}.when.factions: 알 수 없는 세력 ${f}`);
+    for (const [key, role] of Object.entries(st.cast)) {
+      if (role.extra && !content.extras[role.extra]) problems.push(`storylets.${st.id}.cast.${key}: 알 수 없는 엑스트라 틀 ${role.extra}`);
+    }
   }
   const custom = content.scenario.custom_start;
   if (custom) {

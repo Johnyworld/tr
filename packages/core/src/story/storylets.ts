@@ -37,11 +37,19 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .sort();
 }
 
+/** 엑스트라로 채울 배역의 자리표시 (발동하면 만든 인물 id로 바뀐다) */
+export const EXTRA_CAST_PREFIX = "@extra:";
+
 /** 배역을 고른다. 한 사람이 두 배역을 맡지 않는다. 채울 수 없으면 null */
 export function pickCast(state: GameState, content: Content, storylet: StoryletContent, rng: Rng | null): Record<string, string> | null {
   const cast: Record<string, string> = {};
   const used = new Set<string>();
   for (const [key, role] of Object.entries(storylet.cast)) {
+    // 이름 없는 인물 배역은 발동할 때 만든다 (storyletTools). 그때까지는 자리표시
+    if (role.extra) {
+      cast[key] = `${EXTRA_CAST_PREFIX}${role.extra}`;
+      continue;
+    }
     const options = castCandidates(state, content, role).filter((id) => !used.has(id));
     if (options.length === 0) return null;
     const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;

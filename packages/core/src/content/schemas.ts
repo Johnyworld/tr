@@ -256,6 +256,12 @@ export function createContentSchemas(s: Scenario) {
     trust_gte: z.number().int().optional(),
     /** 발동할 때 장면에 들어온다 */
     enter: z.boolean().default(true),
+    /**
+     * 이름 없는 인물로 채운다 (엑스트라 틀 id, 기획서 7.5): 발동할 때 코드가 그 틀로 캐릭터를 만들어 장면에 들인다.
+     * label은 호칭 (없으면 틀 이름). 이 배역은 다른 조건(ids, faction 등)을 보지 않는다
+     */
+    extra: contentIdSchema.optional(),
+    label: z.string().min(1).max(30).optional(),
   });
 
   const storyletChoice = z

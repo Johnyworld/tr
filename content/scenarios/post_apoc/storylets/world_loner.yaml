@@ -278,8 +278,10 @@
     factions: [none]
     zone_owner: [none]
     segments: [morning, day, evening]
+  cast:
+    rival: { extra: refugee, label: 녹슨 칼을 쥔 떠돌이 }
   setup: 반쯤 무너진 약국 안, 먼저 와 있던 떠돌이 하나가 선반 앞에서 몸을 돌린다. 마른 손에 녹슨 칼. 둘 사이에 통조림 하나가 놓여 있다.
-  ai_direction: 이름 없는 떠돌이 피난민이다. 엮이면 spawn_extra(refugee)로 만든다. 그도 굶었다. 나누자고 하면 응하고, 위협하면 칼을 쥔다. 싸움이 나면 판정과 target_harm으로만 정한다.
+  ai_direction: 이 떠돌이({rival})는 이름 없는 피난민이다 (이미 인물로 만들었다). 그도 굶었다. 나누자고 하면 응하고, 위협하면 칼을 쥔다. 싸움이 나면 판정과 target_harm으로만 정한다.
   choices:
     - id: share
       label: 반씩 나누자고 한다

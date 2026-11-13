@@ -1,0 +1,31 @@
+# 나루상단 짐꾼이 시작할 때 알고 있는 것
+# accuracy는 GM에게 보이지 않는다. 캐릭터는 자기 믿음이 틀렸는지 모른다
+id: e_porter
+beliefs:
+  - fact: 나루상단은 정수장의 손펌프를 쥐고 모든 무리에 물을 판다. 정수장 안에서는 어느 무리도 총을 꺼내지 않는다는 약속이 있다.
+    source: report
+    accuracy: exact
+  - fact: 일은 행상대장 주옥희를 통해 내려온다. 짐을 빼돌리는 짐꾼은 상단에서 쫓겨난다.
+    source: report
+    accuracy: exact
+  - fact: 당신은 상단에 빚이 있다. 장부꾼 문소라의 장부에 당신 이름 옆으로 갚을 것이 아직 길게 남아 있다.
+    source: seen
+    accuracy: exact
+  - fact: 정수장 펌프는 하루에 두 번, 새벽과 저녁에만 돌린다.
+    source: seen
+    accuracy: exact
+  - fact: 우두머리 탁봉수는 누구 편이냐고 물으면 손님 편이라고 웃는다. 붉은연합 물류창고 쪽 거래는 그가 직접 정한다.
+    source: report
+    accuracy: exact
+  - fact: 보름 사이 강변 길에서 짐마차가 두 번 털렸다. 떠돌이 도적 떼 짓이라는 말이 돈다.
+    source: rumor
+    accuracy: "false"
+  - fact: 청솔형제단과 버들마을은 붉은연합에 밀리고 있다. 상단 사람들은 겨울이 오기 전에 승부가 날 거라고 본다.
+    source: rumor
+    accuracy: approximate
+  - fact: 하얀매는 약을 물과 바꾸는 것을 좋아한다. 담배로는 잘 바꿔 주지 않는다.
+    source: report
+    accuracy: exact
+  - fact: 정수장 펌프는 붕괴 전 튼튼한 부품으로 만들어져 앞으로도 몇 해는 끄떡없다고들 한다.
+    source: rumor
+    accuracy: "false"

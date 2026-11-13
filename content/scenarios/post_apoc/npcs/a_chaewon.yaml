@@ -27,7 +27,7 @@ knows:
 doesnt_know:
   - 민서연이 탄약을 빼돌려 약을 사고 있다
 secret:
-  content: 하얀매와 몰래 연락하며 약품을 받고, 대가로 청솔형제단의 경비 상황을 넘기고 있다
+  content: 하얀매에서 쫓겨난 뒤에도 하얀매의 거래 간부 도상필과 몰래 연락한다. 그에게서 약품을 받고, 대가로 청솔형제단의 경비 상황을 넘기고 있다
   reveal_when: 신뢰 5
   min_trust: 5
 stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }

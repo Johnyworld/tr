@@ -1,0 +1,28 @@
+# 붉은연합의 신입 약탈조원 (시작 역할). 적의 편에서 시작한다: 가장 크고 거친 무리, 수는 많지만 결속은 약하다
+id: role_c_raider
+label: 붉은연합 신입 약탈조원
+faction: faction_c
+rank: grunt
+default_name: 신입
+opening_scene: 해 뜨기 전, 붉은연합 거점의 옛 공단 창고 막사. 쇠파이프로 철문을 두드리는 소리에 눈을 뜬다. 바깥에서 약탈조장이 조원 이름을 하나씩 부르고, 대답이 늦은 사람의 이름 뒤에는 욕이 붙는다. 왼팔의 붉은 완장이 아직 뻣뻣하다.
+scenario:
+  title: 붉은연합의 신입 약탈조원
+  pitch: >-
+    가람시에서 가장 큰 무리, 붉은연합의 가장 아래에서 시작한다. 날마다 할당량을 채우러 남의 땅을 털고, 규율반의 눈과 동료의 귀를 함께 견뎌야 한다.
+    시키는 대로 거칠게 살아남을지, 아무도 모르게 다른 길을 고를지는 당신에게 달렸다.
+  intro: >-
+    가을이 깊어 간다. 당신은 지난주 붉은연합의 약탈 삼조에 들어온 신입이다.
+    붉은연합은 도시 동쪽의 옛 공단에 높은 담과 감시탑을 세운 무리로, 사람 수로는 가람시의 어느 무리보다 크다. 지금은 청솔형제단·버들마을과 전쟁 중이다.
+    약탈조는 날마다 구시가와 강변, 적의 땅을 털어 할당량을 채운다. 할당량을 못 채운 조는 다음 날 배급이 깎이고, 탈영하다 잡힌 자는 광장에서 본보기로 벌을 받는다.
+    임무는 약탈조장 염철구를 통해 내려오고, 막사 어딘가에는 규율반에 말을 옮기는 귀가 있다고들 한다.
+    이야기는 어느 새벽, 공단 창고 막사에서 시작한다.
+age: 21
+start_skills: { fight: 1, intimidate: 1 }
+start_inventory: [c_armband, crowbar, water_bottle]
+start_location: c_base
+access: [ration, mission_board]
+beliefs_preset: c_raider_start
+known_npcs: [c_cheolgu, c_dongpal, c_sora, c_sangok, c_hyeran]
+commander: c_cheolgu
+missions: [c_quota_old_town, c_tower_watch, c_willow_shakedown, c_riverside_fuel, c_field_raid, c_overpass_haul, c_east_probe, c_prison_guard, c_deserter_hunt]
+storylet_tags: [c_raider, red_life]

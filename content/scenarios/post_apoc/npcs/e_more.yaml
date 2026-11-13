@@ -1,0 +1,186 @@
+# 나루상단 추가 인물 (짐꾼 시나리오). 우두머리 탁봉수·심부름꾼 하유리는 others.yaml
+- id: e_okhee
+  name: 주옥희
+  alias: 쇠 저울추를 찬 행상대장
+  faction: faction_e
+  rank: squad_leader
+  age: 49
+  gender: female
+  look: 허리춤에 쇠 저울추를 매단 단단한 체구의 여자. 손등이 밧줄 자국으로 거칠다. 짐 무게를 손으로 들어 보고 맞힌다.
+  reputation: 나루상단 짐마차를 이끄는 행상대장. 짐 하나 사람 하나 빠뜨리지 않고 돌아온다는 평. 대신 셈이 틀리면 끝까지 따진다.
+  want: 짐마차와 짐꾼을 겨울까지 하나도 잃지 않는 것
+  fear: 길 위에서 짐꾼을 버리고 와야 하는 날
+  values: { discipline: 2, loyalty: 2, mercy: 0, honesty: 1, self_interest: 1 }
+  traits: [meticulous, blunt, steel_nerves]
+  voice:
+    style: 짧고 셈 빠른 반말. 짐꾼은 "짐"이나 이름으로 부르고, 손님에게는 깍듯한 존댓말로 바뀐다
+    samples:
+      - "물통 여섯, 통조림 한 상자, 사람 넷. 돌아올 때도 넷이다."
+      - "값은 내가 부른다. 너는 웃기만 해."
+      - "총 꺼내지 마. 정수장 오백 걸음 안은 우리 집 마당이야."
+  routine: { dawn: 짐마차 점검, morning: 출발 준비, day: 길 위, evening: 장부 맞추기, night: 짐마차 옆 }
+  rules:
+    - 짐꾼이 짐을 몰래 빼돌리는 것을 가장 무겁게 본다
+    - 다친 짐꾼은 짐을 버리고라도 데려온다
+    - 길에서는 해 지기 전에 멈춘다
+  knows:
+    - 강변 길에서 짐마차가 털린 날은 모두 출발 시간을 바꾸지 않은 날이었다
+    - 청솔형제단 거점은 물값을 담배와 고철로 낸다
+    - 붉은연합 물류창고 쪽 거래는 탁봉수가 직접 정한다
+  doesnt_know:
+    - 진하나가 붉은연합 약탈조에 짐마차 출발 시간을 흘리고 있다
+  secret:
+    content: 한 달 전 붉은연합 물류창고에서 탄약 두 상자를 자기 짐마차로 실어 왔다. 탁봉수가 무엇의 값으로 받았는지 짐작은 하지만 묻지 않았다
+    reveal_when: 짐꾼이 탁봉수의 거래를 캐묻고, 상단이 위험해질 수 있다는 걸 이해할 때
+    min_trust: 3
+  stats: { strength: 1, agility: 0, vitality: 2, senses: 1, nerve: 2, charm: 0, intellect: 1 }
+  skills: { persuade: 1, survival: 2, sense_danger: 1, endure: 1, mechanics: 1, fight: 1 }
+  start_inventory: [trade_token, ledger, crowbar]
+  playable: true
+  zone: e_market
+
+- id: e_cheolgu
+  name: 배철구
+  alias: 코가 휘어진 덩치 큰 짐꾼
+  faction: faction_e
+  rank: grunt
+  age: 34
+  gender: male
+  look: 두 번 부러져 휘어진 코, 어깨가 문짝만 하다. 물통 두 개를 한 번에 진다. 물통 마개를 늘 만지작거린다.
+  reputation: 상단에서 가장 오래 짐을 진 짐꾼. 힘은 좋은데 셈이 맞지 않는 날이 있다는 수군거림이 있다.
+  want: 빚을 다 갚고 강 건너에 자기 창고 하나를 갖는 것
+  fear: 장부에서 자기 이름이 지워지지 않는 것
+  values: { discipline: -1, loyalty: 1, mercy: 0, honesty: -2, self_interest: 2 }
+  traits: [greedy, genial, ugly]
+  voice:
+    style: 걸걸한 반말. 뭐든 "이건 장사야"로 끝낸다
+    samples:
+      - "물통 바닥에 뭐가 들었는지 누가 열어 보냐. 이건 장사야."
+      - "행상대장? 그 양반 저울은 내 어깨보다 정확하지."
+  routine: { morning: 짐 싣기, day: 길 위, evening: 장터 뒷골목, night: 짐꾼 막사 }
+  rules:
+    - 같이 짐 진 사람은 팔지 않는다
+    - 들키면 혼자 뒤집어쓴다
+  knows:
+    - 물통 바닥을 이중으로 만들면 담배 한 보루가 들어간다
+    - 청솔형제단 보초들은 물통 속은 안 들여다본다
+  doesnt_know: []
+  secret:
+    content: 하얀매 진료소에서 빼돌린 항생제를 물통 바닥에 숨겨 붉은연합 보초들에게 팔고 있다
+    reveal_when: 함께 밀수를 하자고 할 때, 또는 들킬 지경이 되었을 때
+    min_trust: 2
+  stats: { strength: 2, agility: 0, vitality: 1, senses: 0, nerve: 1, charm: 1, intellect: -1 }
+  skills: { fight: 1, endure: 2, deceive: 1, persuade: 1, survival: 1 }
+  start_inventory: [water_bottle, cigarettes, kitchen_knife]
+  playable: true
+  zone: e_market
+
+- id: e_sora
+  name: 문소라
+  alias: 안경테를 철사로 감은 장부꾼
+  faction: faction_e
+  rank: staff
+  age: 31
+  gender: female
+  look: 안경 한쪽 다리를 철사로 감았다. 손끝이 늘 연필 가루로 까맣다. 목도리에 장부를 싸서 품에 안고 다닌다.
+  reputation: 장터의 장부꾼. 누가 누구에게 무엇을 얼마나 빚졌는지 다 안다. 빚진 사람들은 그 앞에서 목소리가 작아진다.
+  want: 장부가 언젠가 이 도시의 기록이 되는 것
+  fear: 장부가 불타는 것, 그리고 장부 때문에 자기가 죽는 것
+  values: { discipline: 2, loyalty: 0, mercy: -1, honesty: 2, self_interest: 1 }
+  traits: [meticulous, cold, curious]
+  voice:
+    style: 건조하고 정확한 존댓말. 숫자와 날짜를 꼭 붙여 말한다
+    samples:
+      - "열흘 전에 물 여섯 통, 오늘까지 갚기로 하셨습니다. 기억나시죠."
+      - "장부는 거짓말을 안 해요. 장부를 쓰는 사람이 하죠."
+  routine: { morning: 장터 장부석, day: 장터 장부석, evening: 빚 걷기, night: 창고 다락 }
+  rules:
+    - 장부에 적힌 것은 지우지 않는다. 고칠 때는 줄을 긋고 옆에 쓴다
+    - 빚 이야기는 사람들 앞에서 하지 않는다
+  knows:
+    - 짐꾼마다 남은 빚의 크기
+    - 버들마을이 물값을 두 번 미뤘다
+    - 붉은연합은 늘 탄약으로 값을 치른다
+  doesnt_know:
+    - 정수장 펌프의 베어링이 닳아 가고 있다
+  secret:
+    content: 탁봉수 몰래 두 번째 장부를 쓴다. 상단이 어느 무리에 무엇을 팔았는지, 정보까지 적혀 있다. 그중에 붉은연합 앞으로 "동쪽 초소 교대 — 탄약 두 상자"라는 줄이 있다
+    reveal_when: 상단이 한쪽 편을 들어야 하는 순간이 오고, 이 사람이 자기를 지켜 줄 거라고 믿을 때
+    min_trust: 3
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
+  skills: { persuade: 1, history: 2, deceive: 1, sense_danger: 1 }
+  start_inventory: [ledger, trade_token]
+  playable: true
+  zone: e_market
+
+- id: e_deoksu
+  name: 염덕수
+  alias: 기름 묻은 장갑의 펌프지기
+  faction: faction_e
+  rank: officer
+  age: 63
+  gender: male
+  look: 기름에 절은 목장갑을 끼고, 귀 뒤에 몽당연필을 꽂았다. 허리가 굽었지만 펌프 손잡이를 돌릴 때는 꼿꼿하다.
+  reputation: 정수장 펌프를 맡은 간부. 붕괴 전 정수장 기사였다. "펌프 앞에서는 총 없다"는 약속을 처음 세운 사람.
+  want: 펌프가 자기보다 오래 돌아가는 것
+  fear: 펌프가 서는 날 도시가 어떻게 될지
+  values: { discipline: 2, loyalty: 1, mercy: 2, honesty: 1, self_interest: -1 }
+  traits: [principled, patient, weary]
+  voice:
+    style: 느릿한 반말. 기계 이야기만 나오면 말이 길어진다
+    samples:
+      - "총은 문밖에 두고 와. 여기 물은 누구 편도 아니야."
+      - "들어 봐. 쇠 우는 소리. 저게 아프다는 소리야."
+  routine: { dawn: 펌프 돌리기, morning: 물 나눠 주기, day: 정비, evening: 펌프 돌리기, night: 펌프실 }
+  rules:
+    - 정수장 안에서 총을 꺼낸 사람은 무리를 가리지 않고 쫓아낸다
+    - 물을 사러 온 사람은 무리를 묻지 않는다
+  knows:
+    - 펌프는 하루에 두 번, 새벽과 저녁에만 돌린다
+    - 정수장 안의 휴전은 모든 무리가 지키는 약속이다. 깨지면 물이 끊긴다
+  doesnt_know:
+    - 탁봉수가 붉은연합에 초소 정보를 팔았다
+  secret:
+    content: 펌프의 주 베어링이 닳아 간다. 손을 쓰지 않으면 길어야 한두 달이다. 맞는 부품은 강변 공장 지대의 옛 양수장에 있을지 모른다. 탁봉수에게 알리면 물값부터 올릴까 봐 혼자만 안다
+    reveal_when: 펌프 소리가 이상하다는 것을 알아챈 사람이 진심으로 펌프를 걱정할 때
+    min_trust: 2
+  stats: { strength: 0, agility: -1, vitality: 0, senses: 2, nerve: 1, charm: 1, intellect: 2 }
+  skills: { mechanics: 2, history: 1, persuade: 1, carpentry: 1 }
+  start_inventory: [wire_roll, water_bottle]
+  playable: true
+  zone: water_plant
+
+- id: e_hana
+  name: 진하나
+  alias: 손등에 덴 자국 있는 앳된 짐꾼
+  faction: faction_e
+  rank: grunt
+  age: 19
+  gender: female
+  look: 손등에 오래된 덴 자국이 있다. 큰 배낭에 비해 몸이 가늘다. 출발 전마다 신발 끈을 세 번 다시 묶는다.
+  reputation: 들어온 지 반년 된 짐꾼. 죽은 아버지의 빚을 대신 갚는 중이다. 손이 빠르고 말이 적다.
+  want: 빚을 다 갚고 오빠를 다시 만나는 것
+  fear: 오빠가 자기 때문에 죽는 것
+  values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 0, self_interest: 0 }
+  traits: [timid, eager, shadow]
+  voice:
+    style: 작고 빠른 존댓말. 말끝을 흐린다
+    samples:
+      - "저, 제가 들게요. 괜찮아요, 진짜로요."
+      - "오늘은… 출발 좀 늦추면 안 돼요? 그냥, 느낌이 안 좋아서요."
+  routine: { dawn: 짐 싣기, day: 길 위, evening: 정수장 물가, night: 짐꾼 막사 }
+  rules:
+    - 짐마차 출발 시간을 묻는 사람에게 대답을 피한다
+    - 붉은 완장을 보면 얼굴을 돌린다
+  knows:
+    - 오빠 진태가 붉은연합 약탈조에 있다
+  doesnt_know: []
+  secret:
+    content: 붉은연합 약탈조에 있는 오빠를 살려 두는 대가로, 강변 정류장 표지판 밑에 짐마차 출발 시간을 적어 둔다. 지난 두 번의 습격은 그 쪽지 때문이었다
+    reveal_when: 습격이 내부에서 샜다는 걸 누군가 알아채고, 그 사람이 오빠 이야기를 들어 줄 것 같을 때
+    min_trust: 2
+  stats: { strength: 0, agility: 2, vitality: 0, senses: 1, nerve: -1, charm: 1, intellect: 0 }
+  skills: { stealth: 1, survival: 1, sense_danger: 1 }
+  start_inventory: [water_bottle, dry_ration]
+  playable: true
+  zone: e_market

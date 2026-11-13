@@ -1,0 +1,31 @@
+# 하얀매 수습 의무병이 시작할 때 알고 있는 것
+# accuracy는 GM에게 보이지 않는다. 캐릭터는 자기 믿음이 틀렸는지 모른다
+id: d_medic
+beliefs:
+  - fact: 하얀매는 어느 무리 편도 들지 않는다. 다친 사람은 소속을 가리지 않고 치료하지만, 약은 값을 받고 내준다.
+    source: seen
+    accuracy: exact
+  - fact: 물리거나 긁힌 사람은 누구든 격리실에서 사흘을 지낸다. 사흘 안에 열이 오르지 않으면 대개 괜찮다.
+    source: report
+    accuracy: approximate
+  - fact: 임무와 당번은 수간호사 권정숙을 통해 내려온다. 치료 순서도 그가 정한다.
+    source: seen
+    accuracy: exact
+  - fact: 다른 무리와 약값을 흥정하는 일은 간부 도상필이 맡는다. 약제실 뒷문 열쇠는 그에게만 있다.
+    source: report
+    accuracy: exact
+  - fact: 진료소를 지키는 경비는 여섯 명뿐이다. 어느 무리든 마음먹고 쳐들어오면 막기 어렵다.
+    source: report
+    accuracy: exact
+  - fact: 옛 시립병원 지하 약제실에 아직 손대지 않은 약이 남아 있다고 한다. 수색꾼 남민호가 자주 드나든다.
+    source: report
+    accuracy: approximate
+  - fact: 붉은연합이 하얀매의 약을 통째로 사들이려 한다는 소문이 있다.
+    source: rumor
+    accuracy: exact
+  - fact: 청솔형제단 의무실의 윤채원은 예전에 하얀매의 약을 빼돌려 붉은연합에 팔다가 쫓겨났다는 소문이다.
+    source: rumor
+    accuracy: "false"
+  - fact: 약제실 항생제가 요즘 빨리 줄어든다. 수간호사는 겨울 감기 때문이라고 했다.
+    source: report
+    accuracy: approximate

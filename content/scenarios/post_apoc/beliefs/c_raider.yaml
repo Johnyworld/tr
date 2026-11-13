@@ -1,0 +1,34 @@
+# 붉은연합 신입 약탈조원이 시작할 때 알고 있는 것 (초안)
+# accuracy는 GM에게 보이지 않는다. 거점에서 듣는 선전 중 일부는 틀렸다
+id: c_raider_start
+beliefs:
+  - fact: 우리 붉은연합은 가람시에서 사람이 가장 많은 무리다. 청솔형제단과 버들마을을 합쳐도 우리보다 적다.
+    source: report
+    accuracy: exact
+  - fact: 위원장의 말로는 청솔형제단과 버들마을은 이번 겨울을 넘기지 못하고 곧 무릎을 꿇는다.
+    source: report
+    accuracy: "false"
+  - fact: 청솔형제단은 붙잡은 사람을 그 자리에서 죽인다고 한다. 그러니 잡히느니 싸우다 죽는 게 낫다고들 한다.
+    source: rumor
+    accuracy: "false"
+  - fact: 버들마을은 곧 우리 쪽으로 넘어온다고 한다. 지도부가 이미 약속을 받아 냈다는 말이 돈다.
+    source: rumor
+    accuracy: "false"
+  - fact: 할당량을 못 채운 조는 다음 날 배급이 깎인다.
+    source: seen
+    accuracy: exact
+  - fact: 탈영하다 잡힌 자는 광장에서 본보기로 벌을 받는다. 지난달에도 한 사람이 모두 앞에서 매를 맞았다.
+    source: seen
+    accuracy: exact
+  - fact: 임무는 약탈조장 염철구를 통해 내려온다. 할당량 검수는 저녁마다 창고 앞에서 한다.
+    source: report
+    accuracy: exact
+  - fact: 규율반이 막사마다 말을 옮기는 귀를 심어 두었다는 소문이 있다.
+    source: rumor
+    accuracy: exact
+  - fact: 고가도로 너머 물류창고에 사람을 가둬 두는 곳이 있다고 한다. 간부 마경수가 맡는다.
+    source: rumor
+    accuracy: approximate
+  - fact: 겨울이 오기 전에 동쪽으로 큰 공세가 있다는 말이 돈다.
+    source: rumor
+    accuracy: approximate

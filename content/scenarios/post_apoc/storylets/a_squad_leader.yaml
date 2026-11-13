@@ -1,0 +1,514 @@
+# 신임 분대장(3분대) 스토리렛 (초안). 형식은 a_grunt.yaml 머리말 참고
+# 이어지는 이야기 (플래그):
+#   임동욱: a_sl_first_muster → a_sl_dongwook_hand → a_sl_dongwook_confess
+#   노병철: a_sl_byungchul_letter → a_sl_byungchul_gone
+#   문하늘: a_sl_haneul_armband → a_sl_haneul_exposed
+# tags: a_squad_leader = 3분대에 묶인 이야기, command = 분대장이면 누구나 겪을 이야기
+
+# ── 고정: 3분대 사람들 ───────────────────────────────
+
+- id: a_sl_first_muster
+  title: 앉아 있는 고참
+  tags: [a_squad_leader]
+  when:
+    zones: [a_base]
+    segments: [morning, day]
+    flags_none: [a_sl_mustered]
+  cast:
+    dongwook: { ids: [a_dongwook] }
+  setup: '보급 창고 앞. 분대원들이 일어섰는데 {dongwook}만 모래주머니에 앉은 채 꺼진 담배를 문다. "서 분대장은 첫날 뭐라고 했는지 알아? 아무 말도 안 했어. 그냥 같이 보초 섰지."'
+  ai_direction: 임동욱은 분대를 물려받을 줄 알았다. 시험하는 것이지 반란은 아니다. 나머지 셋은 새 분대장이 어떻게 나오는지 숨죽이고 본다. 권예진은 표정이 없고, 문하늘은 눈치를 본다.
+  choices:
+    - id: order_up
+      label: 일어나라고 짧게 명령한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: a_sl_mustered
+          - relation: { who: dongwook, axis: respect, delta: 1 }
+          - belief: { fact: 임동욱이 천천히 일어섰다. 분대원들이 그걸 봤다, source: seen }
+        partial:
+          - set_flag: a_sl_mustered
+          - relation: { who: dongwook, axis: affection, delta: -1 }
+          - belief: { fact: 임동욱은 일어서긴 했지만 발밑에 침을 뱉었다, source: seen }
+        miss:
+          - set_flag: a_sl_mustered
+          - relation: { who: dongwook, axis: respect, delta: -1 }
+          - belief: { fact: 임동욱은 끝까지 앉아 있었다. 분대원들이 눈을 피했다, source: seen }
+    - id: sit_down
+      label: 옆에 같이 앉아 첫 보초를 함께 서겠다고 한다
+      effects:
+        - set_flag: a_sl_mustered
+        - relation: { who: dongwook, axis: trust, delta: 1 }
+        - belief: { fact: 첫날 임동욱과 나란히 창고 앞 보초를 섰다. 그는 서기철 이야기를 한 마디도 하지 않았다, source: seen }
+    - id: make_deputy
+      label: 교대표를 그에게 맡기고 부분대장처럼 세운다
+      effects:
+        - set_flag: a_sl_mustered
+        - set_flag: a_sl_dongwook_deputy
+        - relation: { who: dongwook, axis: respect, delta: 2 }
+        - belief: { fact: 임동욱에게 교대표를 맡겼다. 분대원들은 이제 누구 말을 들어야 하는지 헷갈려 한다, source: seen }
+
+- id: a_sl_dongwook_hand
+  title: 바꿔 쥔 소총
+  tags: [a_squad_leader]
+  when:
+    own_territory: true
+    segments: [morning, day]
+    day_gte: 2
+    flags_all: [a_sl_mustered]
+    flags_none: [a_sl_saw_hand]
+  cast:
+    dongwook: { ids: [a_dongwook] }
+  setup: 운동장 구석에서 총기를 점검하는데, {dongwook:이/가} 소총을 슬쩍 왼손으로 옮겨 쥔다. 오른손 검지는 방아쇠울 밖에 어색하게 걸려 있다.
+  ai_direction: 임동욱의 오른손 검지와 중지는 지난겨울 동상으로 감각이 없다. 그는 숨기려 한다. 대놓고 묻기 전에는 농담으로 넘긴다. 확정하지 말고 어색함만 보인다.
+  choices:
+    - id: watch
+      label: 모른 척하며 손을 지켜본다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: a_sl_saw_hand
+          - belief: { fact: 임동욱은 오른손 검지로 방아쇠를 당기지 못한다. 쏠 때마다 왼손으로 바꿔 쥐고 그걸 숨긴다, source: seen }
+        partial:
+          - belief: { fact: 임동욱의 오른손이 어딘가 어색했다. 무엇인지는 잘 모르겠다, source: seen }
+        miss:
+          - relation: { who: dongwook, axis: trust, delta: -1 }
+          - belief: { fact: 손을 빤히 보다가 임동욱과 눈이 마주쳤다. 그는 뭘 보냐며 자리를 떴다, source: seen }
+    - id: ask
+      label: 손이 왜 그러냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: a_sl_saw_hand
+          - relation: { who: dongwook, axis: trust, delta: 1 }
+          - belief: { fact: "임동욱이 털어놓았다: 지난겨울 동상으로 오른손 두 손가락에 감각이 없다", source: report }
+        partial:
+          - set_flag: a_sl_saw_hand
+          - belief: { fact: 임동욱은 손이 좀 언 것뿐이라고 했다. 거짓말 같았다, source: seen }
+        miss:
+          - relation: { who: dongwook, axis: trust, delta: -1 }
+          - relation: { who: dongwook, axis: affection, delta: -1 }
+    - id: ignore
+      label: 못 본 척한다
+      effects: []
+
+- id: a_sl_dongwook_confess
+  title: 막사 뒤의 고참
+  tags: [a_squad_leader]
+  when:
+    own_territory: true
+    segments: [evening, night]
+    flags_all: [a_sl_saw_hand]
+    flags_none: [a_sl_hand_decided]
+  cast:
+    dongwook: { ids: [a_dongwook] }
+  setup: '{dongwook:이/가} 막사 뒤로 불러낸다. "내 손 얘기, 간부한테 할 거야? 하려면 해. 대신 창고에 처박지는 마. 그럴 거면 차라리 내보내."'
+  ai_direction: 임동욱에게 전투조에서 빠지는 것은 버려지는 것과 같다. 그는 왼손으로 쏘는 연습을 몰래 해 왔다. 동정하는 기색을 보이면 화를 낸다.
+  choices:
+    - id: keep_front
+      label: 전투조에 남기고 왼손 사격을 계속 연습하게 한다
+      effects:
+        - set_flag: a_sl_hand_decided
+        - relation: { who: dongwook, axis: trust, delta: 2 }
+        - relation: { who: dongwook, axis: affection, delta: 1 }
+        - belief: { fact: 임동욱을 전투조에 남겼다. 그가 쏘지 못하는 순간이 오면 그건 내 책임이다, source: seen }
+    - id: move_storage
+      label: 창고 경비로 돌린다
+      effects:
+        - set_flag: a_sl_hand_decided
+        - relation: { who: dongwook, axis: respect, delta: -1 }
+        - relation: { who: dongwook, axis: affection, delta: -2 }
+        - belief: { fact: 임동욱을 창고 경비로 돌렸다. 그는 대답 없이 돌아섰다, source: seen }
+    - id: report
+      label: 한도윤에게 보고한다
+      effects:
+        - set_flag: a_sl_hand_decided
+        - relation: { who: dongwook, axis: trust, delta: -3 }
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - merit: 1
+        - deed: { summary: 분대원 임동욱의 손 상태를 간부에게 보고했다, tags: [diligence, betrayal], severity: 1, privacy: semi_private }
+
+- id: a_sl_byungchul_letter
+  title: 정문 옆의 쪽지
+  tags: [a_squad_leader]
+  when:
+    zones: [a_base]
+    segments: [day, evening]
+    day_gte: 2
+    flags_none: [a_sl_letter_seen]
+  cast:
+    byungchul: { ids: [a_byungchul] }
+    courier: { ids: [e_yuri] }
+  setup: 정문 옆 그늘에서 {byungchul:이/가} 빨간 털모자를 쓴 심부름꾼에게 접은 쪽지와 담배 두 개비를 건넨다. 당신을 보자 손을 급히 주머니에 넣는다.
+  ai_direction: 노병철의 딸 노은비가 붉은연합 거점에 산다. 쪽지는 딸에게 가는 편지다. 노병철은 먼저 털어놓지 않는다. {courier:은/는} 편지를 뜯지 않았다고 우기지만, 어디로 가는지는 안다.
+  choices:
+    - id: ask_him
+      label: 무슨 쪽지냐고 노병철에게 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: a_sl_letter_seen
+          - set_flag: a_sl_knows_daughter
+          - relation: { who: byungchul, axis: trust, delta: 1 }
+          - belief: { fact: 노병철의 딸 노은비가 붉은연합 거점에 살아 있다. 그는 나루상단 심부름꾼 편으로 딸과 편지를 주고받는다, source: report }
+        partial:
+          - set_flag: a_sl_letter_seen
+          - belief: { fact: 노병철은 가족에게 보내는 편지라고만 했다. 어디로 가는지는 끝내 말하지 않았다, source: report }
+        miss:
+          - set_flag: a_sl_letter_seen
+          - relation: { who: byungchul, axis: trust, delta: -1 }
+          - belief: { fact: 노병철은 아무것도 아니라며 자리를 떴다, source: seen }
+    - id: ask_courier
+      label: 심부름꾼을 따로 붙잡고 묻는다
+      effects:
+        - set_flag: a_sl_letter_seen
+        - relation: { who: courier, axis: trust, delta: -1 }
+        - belief: { fact: 심부름꾼이 마지못해 말했다. 노병철의 편지는 붉은연합 거점으로 간다, source: report }
+    - id: let_go
+      label: 못 본 걸로 한다
+      effects:
+        - set_flag: a_sl_letter_seen
+        - relation: { who: byungchul, axis: trust, delta: 1 }
+
+- id: a_sl_byungchul_gone
+  title: 빈 침상
+  urgent: true
+  tags: [a_squad_leader]
+  when:
+    own_territory: true
+    segments: [night, dawn]
+    day_gte: 4
+    flags_all: [a_sl_letter_seen]
+    flags_none: [a_sl_byungchul_settled]
+  cast:
+    byungchul: { ids: [a_byungchul], enter: false }
+  setup: 점호 전, {byungchul}의 침상이 비어 있다. 무릎에 감던 청테이프 뭉치와 물병도 없다. 정문 보초는 아직 아무것도 모른다.
+  ai_direction: 노병철은 붉은연합 거점에 있는 딸을 데리러 혼자 나갔다. 무릎 때문에 아직 멀리 못 갔고, 구시가 쪽 샛길을 탄다. 점호까지 한 시간쯤 남았다. 분대원이 이탈하면 분대장도 책임을 진다.
+  choices:
+    - id: track
+      label: 혼자 조용히 뒤쫓는다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: a_sl_byungchul_settled
+          - relation: { who: byungchul, axis: trust, delta: 2 }
+          - relation: { who: byungchul, axis: affection, delta: 1 }
+          - belief: { fact: 구시가 샛길에서 노병철을 따라잡아 점호 전에 함께 돌아왔다. 그는 딸을 데리러 가던 길이었다, source: seen }
+        partial:
+          - set_flag: a_sl_byungchul_settled
+          - relation: { who: byungchul, axis: trust, delta: 1 }
+          - belief: { fact: 노병철을 데려왔지만 점호에 늦었다. 둘이 함께 정문으로 들어오는 것을 본 사람이 있다, source: seen }
+          - deed: { summary: 점호 전에 사라진 분대원을 찾아 무단으로 거점을 나갔다, tags: [disobedience, loyalty], severity: 1, privacy: semi_private }
+        miss:
+          - set_flag: a_sl_byungchul_settled
+          - belief: { fact: 노병철의 흔적을 놓쳤다. 해가 뜰 무렵 그가 혼자 절뚝이며 돌아왔다. 어디까지 갔다 왔는지는 말하지 않는다, source: seen }
+    - id: report
+      label: 한도윤에게 바로 알린다
+      effects:
+        - set_flag: a_sl_byungchul_settled
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - relation: { who: byungchul, axis: trust, delta: -3 }
+        - merit: 1
+        - deed: { summary: 분대원 노병철의 이탈을 간부에게 알렸다, tags: [diligence], severity: 1, privacy: public }
+        - belief: { fact: 한도윤이 수색조를 냈다. 노병철은 구시가 샛길에서 붙잡혀 왔다, source: seen }
+    - id: cover
+      label: 점호에서 그가 순찰을 나갔다고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: a_sl_byungchul_settled
+          - set_flag: a_sl_covered_byungchul
+          - relation: { who: byungchul, axis: trust, delta: 3 }
+          - deed: { summary: 사라진 분대원을 점호에서 감싸 주었다, tags: [deceit, loyalty], severity: 2, privacy: private }
+          - belief: { fact: 점호를 넘겼다. 노병철은 한낮이 되어 말없이 돌아왔다, source: seen }
+        partial:
+          - set_flag: a_sl_byungchul_settled
+          - set_flag: a_sl_covered_byungchul
+          - relation: { who: byungchul, axis: trust, delta: 2 }
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - deed: { summary: 사라진 분대원을 점호에서 감싸 주었다, tags: [deceit, loyalty], severity: 2, privacy: semi_private }
+        miss:
+          - set_flag: a_sl_byungchul_settled
+          - relation: { who: commander, axis: trust, delta: -2 }
+          - deed: { summary: 사라진 분대원을 감싸려고 점호에서 거짓말을 했다가 들켰다, tags: [deceit, disobedience], severity: 2, privacy: public }
+
+- id: a_sl_haneul_armband
+  title: 떨어진 상자
+  tags: [a_squad_leader]
+  when:
+    own_territory: true
+    segments: [morning, day, evening]
+    day_gte: 3
+    flags_none: [a_sl_haneul_noticed]
+  cast:
+    haneul: { ids: [a_haneul] }
+  setup: 정찰조가 주워 온 물건을 보급 창고에 부린다. 그 사이에서 붉은 천에 검은 줄을 그은 완장이 나오자, 상자를 들던 {haneul:이/가} 그대로 상자를 떨어뜨린다.
+  ai_direction: 문하늘은 거점에 오기 전 붉은연합 거점 부엌에서 석 달 일하다 도망쳐 왔다. 완장을 보고 그때가 떠올랐다. 분대원들이 보고 있고, 임동욱은 전부터 그녀를 미심쩍어했다.
+  choices:
+    - id: take_aside
+      label: 따로 불러 다독인다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: a_sl_haneul_noticed
+          - set_flag: a_sl_haneul_past
+          - relation: { who: haneul, axis: trust, delta: 2 }
+          - belief: { fact: "문하늘이 털어놓았다: 거점에 오기 전 석 달 동안 붉은연합 거점 부엌에서 일하다 도망쳐 나왔다. 배식 시간과 부엌 뒷문을 기억한다", source: report }
+        partial:
+          - set_flag: a_sl_haneul_noticed
+          - relation: { who: haneul, axis: trust, delta: 1 }
+          - belief: { fact: 문하늘은 붉은 완장을 전에 많이 봤다고만 했다, source: report }
+        miss:
+          - set_flag: a_sl_haneul_noticed
+          - relation: { who: haneul, axis: trust, delta: -1 }
+          - belief: { fact: 문하늘은 아무 일도 아니라며 입을 닫았다, source: seen }
+    - id: cut_off
+      label: 다들 일 보라고 끊고 완장을 치워 버린다
+      effects:
+        - set_flag: a_sl_haneul_noticed
+        - relation: { who: haneul, axis: affection, delta: 1 }
+    - id: question
+      label: 그 자리에서 어디서 왔는지 캐묻는다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: a_sl_haneul_noticed
+          - set_flag: a_sl_haneul_past
+          - relation: { who: haneul, axis: trust, delta: -2 }
+          - belief: { fact: 문하늘이 분대원들 앞에서 털어놓았다. 붉은연합 거점 부엌에서 석 달 일하다 도망쳐 왔다고 했다, source: report }
+        partial:
+          - set_flag: a_sl_haneul_noticed
+          - relation: { who: haneul, axis: trust, delta: -1 }
+          - belief: { fact: 문하늘은 울먹이며 붉은연합에 잡혀 있었다고만 했다, source: report }
+        miss:
+          - set_flag: a_sl_haneul_noticed
+          - relation: { who: haneul, axis: trust, delta: -2 }
+          - relation: { who: haneul, axis: affection, delta: -1 }
+          - belief: { fact: 문하늘은 대답 없이 막사로 뛰어갔다. 분대원들이 수군거린다, source: seen }
+
+- id: a_sl_haneul_exposed
+  title: 식당 천막의 목소리
+  tags: [a_squad_leader]
+  when:
+    own_territory: true
+    segments: [evening]
+    day_gte: 5
+    flags_all: [a_sl_haneul_noticed]
+  cast:
+    accuser: { ids: [a_dongwook] }
+    haneul: { ids: [a_haneul] }
+  setup: '식당 천막에서 {accuser:이/가} 일부러 크게 말한다. "우리 분대에 붉은 완장만 보면 떠는 애가 하나 있지. 어디서 왔는지 아무도 모르고." 다른 분대 사람들이 {haneul} 쪽을 본다.'
+  ai_direction: 임동욱은 진심으로 첩자를 걱정한다. 악의보다 불안이다. 문하늘은 고개를 숙이고 숟가락을 놓는다. 이대로 두면 소문이 간부에게 간다.
+  choices:
+    - id: defend
+      label: 내 분대원이고 내가 책임진다고 못 박는다
+      effects:
+        - relation: { who: haneul, axis: trust, delta: 2 }
+        - relation: { who: accuser, axis: respect, delta: -1 }
+        - deed: { summary: 식당에서 의심받는 분대원을 공개적으로 감쌌다, tags: [loyalty], severity: 1, privacy: public }
+    - id: silence
+      label: 임동욱을 밖으로 불러내 입 다물라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: accuser, axis: respect, delta: 1 }
+          - relation: { who: haneul, axis: trust, delta: 1 }
+          - belief: { fact: 임동욱은 이를 갈았지만 더는 그 얘기를 꺼내지 않기로 했다, source: seen }
+        partial:
+          - belief: { fact: 임동욱은 입을 다물었지만 소문은 이미 식당을 한 바퀴 돌았다, source: seen }
+        miss:
+          - relation: { who: accuser, axis: respect, delta: -2 }
+          - belief: { fact: 임동욱이 분대장이 첩자를 감싼다고 소리쳤다. 다른 분대 사람들이 다 들었다, source: seen }
+    - id: hand_over
+      label: 한도윤에게 조사를 맡긴다
+      effects:
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - relation: { who: haneul, axis: trust, delta: -3 }
+        - relation: { who: accuser, axis: respect, delta: 1 }
+        - deed: { summary: 의심받는 분대원을 간부의 조사에 넘겼다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+
+- id: a_sl_old_comrades
+  title: 옛 분대 자리
+  tags: [a_squad_leader]
+  when:
+    zones: [a_base]
+    segments: [evening]
+    day_gte: 2
+  cast:
+    comrade: { ids: [a_jiho, a_seoyeon, a_mansu], known: true }
+  setup: '식당 천막, 강태호 분대 자리에서 {comrade:이/가} 손을 든다. "어, 분대장님 오셨네. 이제 우리 같은 거랑은 밥 안 먹는 거야?" 웃음이 반쯤 섞여 있다. 3분대 자리는 천막 반대편이다.'
+  ai_direction: 옛 동료는 서운하면서도 시험하고 있다. 진심 반, 농담 반이다. 어느 자리에 앉는지를 3분대도 보고 있다. 강태호는 멀리서 국만 뜬다.
+  choices:
+    - id: sit_old
+      label: 옛 자리에 앉는다
+      effects:
+        - relation: { who: comrade, axis: affection, delta: 2 }
+        - belief: { fact: 옛 분대 자리에 앉았다. 천막 반대편의 3분대가 그걸 봤다, source: seen }
+    - id: wave_off
+      label: 웃으며 손만 흔들고 3분대 자리로 간다
+      effects:
+        - relation: { who: comrade, axis: affection, delta: -1 }
+        - relation: { who: comrade, axis: respect, delta: 1 }
+    - id: join_tables
+      label: 다 같이 앉자며 두 분대 자리를 붙인다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: comrade, axis: affection, delta: 1 }
+          - faction_morale: { faction: own, delta: 1 }
+          - belief: { fact: 두 분대가 한 자리에서 밥을 먹었다. 오랜만에 웃음소리가 났다, source: seen }
+        partial:
+          - belief: { fact: 자리는 붙였지만 두 분대는 끝까지 따로 이야기했다, source: seen }
+        miss:
+          - relation: { who: comrade, axis: affection, delta: -1 }
+          - belief: { fact: 아무도 자리를 옮기지 않았다. 어색한 침묵만 남았다, source: seen }
+
+# ── 템플릿: 분대를 이끄는 일 ───────────────────────────
+
+- id: a_sl_ration_split
+  title: 분대 몫 나누기
+  tags: [a_squad_leader]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zones: [a_base]
+    segments: [morning, evening]
+    own_food_days_lte: 10
+  cast:
+    counter: { ids: [a_yejin] }
+    hungry: { ids: [a_dongwook, a_byungchul, a_haneul] }
+  setup: '식당에서 받아 온 분대 몫이 또 줄었다. {scarce:이/가} 특히 모자라다. {counter:이/가} 숫자를 읽는다. "다섯 사람에 이만큼입니다. 오늘 밤 보초는 둘." {hungry:은/는} 빈 그릇을 든 채 당신을 본다.'
+  ai_direction: 분대원들은 분대장이 어떻게 나누는지 지켜본다. 공평하게 나누면 밤 보초 서는 사람이 버티기 어렵다. 권예진은 규칙대로를, 다른 이들은 저마다 사정을 바란다.
+  choices:
+    - id: equal
+      label: 똑같이 나눈다
+      effects:
+        - relation: { who: counter, axis: respect, delta: 1 }
+        - deed: { summary: 줄어든 배급을 분대원과 똑같이 나눴다, tags: [diligence], severity: 1, privacy: public }
+    - id: watch_first
+      label: 밤 보초 설 사람에게 더 준다
+      effects:
+        - relation: { who: hungry, axis: affection, delta: -1 }
+        - belief: { fact: 보초 서는 사람에게 더 줬다. 몫이 준 사람들의 표정이 굳었다, source: seen }
+    - id: give_mine
+      label: 자기 몫을 덜어 나눠 준다
+      effects:
+        - relation: { who: hungry, axis: affection, delta: 2 }
+        - relation: { who: counter, axis: respect, delta: 1 }
+        - deed: { summary: 자기 배급을 덜어 분대원에게 나눠 줬다, tags: [mercy], severity: 1, privacy: public }
+        - belief: { fact: 자기 몫을 덜어 줬다. 오늘은 배가 고플 것이다, source: seen }
+
+- id: a_sl_order_disagree
+  title: 장부 위의 명령
+  tags: [command]
+  when:
+    own_territory: true
+    segments: [morning, day]
+    day_gte: 3
+    mission_active: false
+  cast:
+    boss: { commander: true }
+  setup: '{boss:이/가} 장부를 덮으며 말한다. "오늘 밤 강변으로 물 길으러 나가 주셔야겠습니다. 손수레 둘, 분대 전부. 물이 이틀 치밖에 없습니다."'
+  ai_direction: 밤의 강변은 물결이 잦고, 낮에 가면 붉은연합 눈에 띈다. 간부는 숫자를 보고, 분대장은 사람을 봐야 한다. 간부는 이유 있는 반론에는 귀를 기울이지만 감정에는 움직이지 않는다. 이것은 임무 배정이 아니라 명령에 대한 반응을 묻는 장면이다.
+  choices:
+    - id: comply
+      label: 그대로 따른다
+      effects:
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: 밤에 강변으로 물을 길으러 나가라는 명령을 그대로 받았다, source: report }
+    - id: argue
+      label: 물결이 잦아드는 새벽으로 미루자고 따진다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: 간부가 출발을 새벽으로 미뤘다. 물결이 잦아드는 시간이다, source: report }
+        partial:
+          - belief: { fact: 간부는 시간은 그대로 두고 손수레를 하나로 줄여 주었다, source: report }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: 간부는 숫자를 다시 읊었을 뿐이다. 명령은 그대로다, source: report }
+    - id: refuse
+      label: 분대를 밤에 내보낼 수 없다고 거절한다
+      effects:
+        - relation: { who: boss, axis: trust, delta: -2 }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - deed: { summary: 분대를 밤에 강변으로 내보내라는 간부의 명령을 거절했다, tags: [disobedience], severity: 2, privacy: semi_private }
+
+- id: a_sl_morale_night
+  title: 꺼진 막사의 중얼거림
+  tags: [command]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    own_territory: true
+    segments: [night]
+    own_morale_lte: 0
+  cast:
+    grunt: { faction: own, ranks: [grunt], known: true }
+  setup: '막사 불이 꺼진 뒤에도 아무도 자지 않는다. 어둠 속에서 {grunt:이/가} 중얼거린다. "겨울 못 넘긴다는 말, 위에서도 다 안대." 아무도 대꾸하지 않는다.'
+  ai_direction: 사기가 가라앉아 있다. 분대원들은 분대장이 뭐라고 하는지 기다린다. 거짓 희망은 금방 들통난다.
+  choices:
+    - id: story
+      label: 붕괴 전 이야기를 꺼내 분위기를 돌린다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: grunt, axis: affection, delta: 1 }
+        partial:
+          - belief: { fact: 몇 사람이 웃었지만 오래가지는 않았다, source: seen }
+        miss:
+          - relation: { who: grunt, axis: respect, delta: -1 }
+          - belief: { fact: 말이 허공에 떴다. 누군가 돌아누웠다, source: seen }
+    - id: cigarette
+      label: 아껴 둔 담배를 돌린다
+      effects:
+        - take_item: { item: cigarettes, quantity: 1 }
+        - relation: { who: grunt, axis: affection, delta: 2 }
+        - belief: { fact: 어둠 속에서 담배 한 개비가 손에서 손으로 돌았다. 아무도 말은 안 했지만 숨소리가 느려졌다, source: seen }
+    - id: order_sleep
+      label: 내일도 나가야 하니 자라고 짧게 말한다
+      effects:
+        - relation: { who: grunt, axis: respect, delta: 1 }
+        - relation: { who: grunt, axis: affection, delta: -1 }
+
+- id: a_sl_pinned_leg
+  title: 끼어 버린 다리
+  tags: [command]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    own_territory: false
+    mission_active: true
+    segments: [day, evening]
+  cast:
+    stuck: { faction: own, ranks: [grunt], known: true }
+  setup: "{zone}에서 돌아오는 길, 무너진 바닥 틈에 {stuck}의 다리가 끼었다. 콘크리트 덩이가 정강이를 누르고 있다. 해가 기울고, 어딘가에서 유리 깨지는 소리가 난다."
+  ai_direction: 다리는 부러지지 않았다. 덩이를 들려면 힘과 소리가 든다. 두고 가면 다시 오기 전에 해가 진다. 분대장의 선택을 나머지 분대원도 본다. 부상은 서술로 만들지 않는다.
+  choices:
+    - id: lift
+      label: 잔해를 받쳐 들어 올린다
+      check: carpentry
+      outcomes:
+        success:
+          - relation: { who: stuck, axis: trust, delta: 2 }
+          - belief: { fact: "잔해를 받쳐 {stuck}의 다리를 빼냈다. 멍만 들었다", source: seen }
+        partial:
+          - relation: { who: stuck, axis: trust, delta: 1 }
+          - belief: { fact: 다리는 빼냈지만 소리가 컸다. 돌아오는 내내 뒤에서 무언가 따라오는 기척이 있었다, source: seen }
+        miss:
+          - relation: { who: stuck, axis: trust, delta: 1 }
+          - belief: { fact: "잔해가 다시 내려앉았다. 결국 {stuck}의 장화를 칼로 찢고 맨발로 끌어냈다", source: seen }
+    - id: send_others
+      label: 나머지를 먼저 보내고 혼자 남아 꺼낸다
+      effects:
+        - relation: { who: stuck, axis: trust, delta: 2 }
+        - relation: { who: stuck, axis: affection, delta: 1 }
+        - deed: { summary: 끼인 분대원을 꺼내려고 해 질 녘 혼자 남았다, tags: [bravery, loyalty], severity: 2, privacy: semi_private }
+    - id: leave
+      label: 사람을 데려오겠다며 일단 두고 간다
+      effects:
+        - relation: { who: stuck, axis: trust, delta: -3 }
+        - deed: { summary: 다리가 끼인 분대원을 두고 먼저 돌아갔다, tags: [cowardice], severity: 2, privacy: semi_private }

@@ -1,0 +1,31 @@
+# 버들마을 경비병이 시작할 때 알고 있는 것 (초안)
+# accuracy는 GM에게 보이지 않는다. 캐릭터는 자기 믿음이 틀렸는지 모른다
+id: b_guard
+beliefs:
+  - fact: 버들마을은 청솔형제단과 연합해 붉은연합과 전쟁 중이다. 탄약은 청솔형제단에게서 받아 쓴다.
+    source: report
+    accuracy: exact
+  - fact: 청솔형제단은 탄을 대 주는 대신 남쪽 텃밭 수확의 일부와 경비 인원을 요구한다. 약조는 연락 간부 표승민이 맡는다.
+    source: report
+    accuracy: approximate
+  - fact: 임무는 경비조장 배동철을 통해 내려온다. 정문과 북쪽 쪽문의 열쇠는 경비조장과 대표만 가지고 있다.
+    source: seen
+    accuracy: exact
+  - fact: 경비병 한 사람에게 돌아가는 탄은 몇 발뿐이다. 총은 마지막에 쓰라는 것이 경비조장의 말이다.
+    source: seen
+    accuracy: exact
+  - fact: 단지 안 우물 두 곳 중 아랫단 우물은 요즘 두레박이 바닥을 긁는 소리가 난다.
+    source: seen
+    accuracy: approximate
+  - fact: 붉은연합의 사람이 밤에 쪽문으로 들어와 대표 장현우를 만나고 갔다는 소문이 있다.
+    source: rumor
+    accuracy: exact
+  - fact: 붉은연합 쪽으로 넘어가면 하루 두 끼를 준다는 말이 경비병 사이에 돈다.
+    source: rumor
+    accuracy: "false"
+  - fact: 청솔형제단은 겨울이 깊어지면 버들마을을 버리고 자기들 거점 문을 닫을 거라는 말이 있다.
+    source: rumor
+    accuracy: "false"
+  - fact: 밤이면 구시가 쪽에서 감염체 소리가 들린다. 단지 아이들이 옥상 계단으로 몰래 올라가 논다.
+    source: seen
+    accuracy: exact

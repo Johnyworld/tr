@@ -1,0 +1,99 @@
+# 하얀매 수습 의무병 임무. 수간호사(분대장급)가 하루 단위로 내려 준다
+# requirements 형식은 a_grunt_basic.yaml 머리말 참고
+
+- id: d_clinic_shift
+  title: 치료실 당번
+  briefing: 치료실에서 수간호사를 도와 상처를 씻고 꿰매고 붕대를 감는다. 약장은 수간호사가 볼 때만 연다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: treat
+      minutes: 120
+
+- id: d_triage_line
+  title: 문진 줄 정리
+  briefing: 정문 앞 문진 줄을 돌며 누가 먼저 들어올지 가른다. 무리를 따지지 말고 상처를 본다. 줄에서 싸움이 나지 않게 한다.
+  giver_rank: squad_leader
+  deadline_hours: 8
+  requirements:
+    - check: first_aid
+      min_outcome: partial
+    - check: persuade
+      min_outcome: partial
+
+- id: d_quarantine_watch
+  title: 격리실 당직
+  briefing: 격리실 문 앞에서 밤을 지킨다. 안에 있는 사람의 열을 재고, 문은 수간호사 허락 없이 열지 않는다. 무슨 말을 들어도.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - activity: guard_duty
+      minutes: 240
+    - check: infected_lore
+      min_outcome: partial
+
+- id: d_fever_rounds
+  title: 열병 환자 돌보기
+  briefing: 병상의 열병 환자들을 돌며 열을 내리고 물을 먹인다. 해열제는 장부에 적고 쓴다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: first_aid
+      min_outcome: partial
+    - activity: treat
+      minutes: 60
+
+- id: d_stock_count
+  title: 약장 재고 세기
+  briefing: 문기순 할머니와 함께 약제실 약장과 장부를 맞춘다. 한 알이라도 틀리면 처음부터 다시 센다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: scavenge
+      min_outcome: partial
+
+- id: d_oldtown_pharmacy
+  title: 구시가 약국 뒤지기
+  briefing: 구시가의 옛 약국과 병원 의원 자리를 뒤져 붕대, 소독약, 남은 알약을 찾아 온다. 해 지기 전에 돌아온다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: scavenge
+      min_outcome: partial
+
+- id: d_hospital_pharmacy
+  title: 시립병원 지하 약제실
+  briefing: 남민호와 함께 옛 시립병원에 들어가 지하 약제실 쪽을 살핀다. 감염체가 많으니 소리를 내지 않는다. 무리하지 말고 길만 확인해도 된다.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - check: stealth
+      min_outcome: partial
+    - check: scavenge
+      min_outcome: partial
+
+- id: d_willow_house_call
+  title: 버들마을 왕진
+  briefing: 버들마을 거점에 왕진을 간다. 앓는 사람을 보고, 약값은 도상필이 정한 대로 받아 온다. 깎아 주지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: first_aid
+      min_outcome: partial
+    - check: persuade
+      min_outcome: partial
+
+- id: d_riverside_wounded
+  title: 강변 부상자 수습
+  briefing: 어젯밤 강변 공장 지대에서 교전이 있었다. 남은 부상자가 있으면 어느 쪽이든 응급처치를 하고 데려온다. 총소리가 나면 바로 물러난다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: first_aid
+      min_outcome: partial

@@ -1,0 +1,578 @@
+# 버들마을 경비병 스토리렛 (초안). 형식은 a_grunt.yaml 머리말 참고
+# 태그: b_guard(문지기의 일·붉은연합의 회유·연합의 요구), village_life(우물·밭·아이들·식구들)
+# 이어지는 이야기 (플래그):
+#   - 쪽문의 사자 → b_envoy_seen → 염재혁의 통조림 → b_took_bribe → 교대 시간을 묻는 밤
+#   - 쪽문의 사자에서 표승민에게 알림 → b_told_seungmin → 표승민의 수첩
+#   - 우물 바닥 소리 → b_well_failing → 우물지기의 셈
+#   - 오미나의 편지 → b_mina_letter → 오미나가 아는 이름들
+
+# ── 고정: 붉은연합의 회유 ───────────────────────────────
+
+- id: b_envoy_at_gate
+  title: 쪽문의 흰 천
+  tags: [b_guard]
+  when:
+    zones: [b_base]
+    segments: [night, dawn]
+    day_gte: 2
+    flags_none: [b_envoy_seen]
+  cast:
+    chief: { commander: true, enter: false }
+    liaison: { ids: [b_seungmin], enter: false }
+  setup: 북쪽 쪽문 밖에서 누군가 손전등을 두 번 깜빡이고 끈다. 철문 틈으로 보니 흰 천을 막대에 묶어 든 남자가 혼자 서 있다. 왼팔에 붉은 완장이 보인다. "대표님 뵈러 왔소. 기별은 가 있을 거요."
+  ai_direction: 붉은연합의 사자다. 대표 장현우가 실제로 오늘 밤 그를 기다리고 있고, 경비조장 {chief}도 알고 있다. 사자는 정중하지만 오래 기다리는 것을 싫어한다. 무기는 겉으로 보이지 않는다. 확정하지 말고 "기별"이라는 말에 무게를 둔다.
+  choices:
+    - id: call_chief
+      label: 문은 열지 않고 경비조장을 깨워 온다
+      effects:
+        - set_flag: b_envoy_seen
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - belief: { fact: "쪽문에 붉은연합의 사자가 왔을 때 경비조장 {chief:은/는} 놀라지 않았다. 열쇠를 꺼내 직접 문을 열고 사자를 대표 사무실 쪽으로 데려갔다", source: seen }
+    - id: question
+      label: 문을 사이에 두고 무슨 일인지 캐묻는다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: b_envoy_seen
+          - belief: { fact: "붉은연합의 사자가 털어놓았다: 대표 장현우와 만나는 것이 이번이 두 번째다. 연합을 깨면 버들마을을 건드리지 않겠다는 이야기를 하러 왔다", source: report }
+        partial:
+          - set_flag: b_envoy_seen
+          - belief: { fact: 붉은연합의 사자는 대표를 만나러 왔다는 말만 되풀이했다. 그 말투로 보아 처음 오는 길이 아니었다, source: seen }
+        miss:
+          - set_flag: b_envoy_seen
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - belief: { fact: 쪽문에서 붉은연합의 사자와 언성을 높였다. 경비조장이 달려와 말렸고 사자는 그대로 안으로 들어갔다, source: seen }
+    - id: tell_liaison
+      label: 문을 잠근 채 연락 간부 표승민에게 몰래 알린다
+      effects:
+        - set_flag: b_envoy_seen
+        - set_flag: b_told_seungmin
+        - relation: { who: liaison, axis: trust, delta: 2 }
+        - relation: { who: commander, axis: trust, delta: -1 }
+        - deed: { summary: 쪽문에 온 붉은연합 사자를 경비조장 대신 연락 간부 표승민에게 알렸다, tags: [loyalty, disobedience], severity: 1, privacy: semi_private }
+        - belief: { fact: "표승민은 붉은연합 사자 이야기를 듣고 수첩에 무언가를 적었다. 그리고 이 일은 둘만 아는 것으로 하자고 했다", source: seen }
+    - id: look_away
+      label: 못 본 척 망루로 돌아간다
+      effects:
+        - set_flag: b_envoy_seen
+        - belief: { fact: 새벽에 누군가 쪽문을 열고 붉은 완장을 찬 남자를 들여보냈다. 열쇠 소리가 났다, source: seen }
+
+- id: b_bribe_offer
+  title: 염재혁의 통조림
+  tags: [b_guard]
+  when:
+    zones: [b_base]
+    segments: [evening, night]
+    day_gte: 3
+    flags_all: [b_envoy_seen]
+    flags_none: [b_jaehyuk_exposed]
+  cast:
+    jaehyuk: { ids: [b_jaehyuk], known: true }
+  setup: 교대하러 올라온 {jaehyuk:이/가} 주위를 살피더니 외투 안에서 라벨 떨어진 통조림 하나를 꺼내 내민다. "저쪽에서 너한테도 주래. 그냥 주는 거야. 나중에 교대 시간 하나만 알려 주면 돼."
+  ai_direction: 통조림은 붉은연합 사자가 경비병들에게 돌리는 것이다. {jaehyuk:은/는} 어머니와 여동생 때문에 넘어가고 싶어 하지만, 자기가 무엇을 팔고 있는지 똑바로 보지 못한다. 거절당하면 화를 내다가 금방 사정한다.
+  choices:
+    - id: take_quiet
+      label: 받아 넣고 아무 말도 하지 않는다
+      effects:
+        - give_item: { item: canned_food, from: jaehyuk }
+        - set_flag: b_took_bribe
+        - relation: { who: jaehyuk, axis: trust, delta: 2 }
+        - deed: { summary: 붉은연합 사자가 돌린 통조림을 받고 입을 다물었다, tags: [enemy_sympathy, selfishness], severity: 1, privacy: private }
+    - id: report
+      label: 통조림을 들고 경비조장에게 간다
+      effects:
+        - set_flag: b_jaehyuk_exposed
+        - relation: { who: jaehyuk, axis: trust, delta: -3 }
+        - relation: { who: commander, axis: respect, delta: 1 }
+        - merit: 1
+        - deed: { summary: 염재혁이 붉은연합의 통조림을 돌린다고 경비조장에게 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: 경비조장 배동철은 염재혁 일을 듣고 한숨만 쉬었다. 대표에게 올리겠다는 말은 하지 않았다, source: seen }
+    - id: talk_down
+      label: 그게 무슨 값인지 알고 받느냐고 따진다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: jaehyuk, axis: trust, delta: 1 }
+          - relation: { who: jaehyuk, axis: respect, delta: 1 }
+          - belief: { fact: "염재혁이 털어놓았다: 교대 시간을 이미 한 번 알려 줬고, 다른 경비병 몇도 통조림을 받았다", source: report }
+        partial:
+          - belief: { fact: 염재혁은 통조림을 도로 넣었지만 다른 경비병들도 받았다고 비꼬듯 말했다, source: report }
+        miss:
+          - relation: { who: jaehyuk, axis: affection, delta: -1 }
+          - belief: { fact: 염재혁이 청솔 놈들 편이냐고 소리치고 내려가 버렸다, source: seen }
+
+- id: b_bribe_called
+  title: 교대 시간을 묻는 밤
+  urgent: true
+  tags: [b_guard]
+  when:
+    zones: [b_base]
+    segments: [night]
+    day_gte: 5
+    flags_all: [b_took_bribe]
+    flags_none: [b_jaehyuk_exposed]
+  cast:
+    jaehyuk: { ids: [b_jaehyuk], known: true }
+  setup: 한밤중, {jaehyuk:이/가} 망루 계단을 올라와 숨을 고른다. "통조림 받았잖아. 내일 밤 쪽문, 누가 언제 서는지만 말해 줘. 그쪽 사람들이 물어봐."
+  ai_direction: 붉은연합은 쪽문 경비를 재는 중이다. 알려 주면 무슨 일에 쓰일지 {jaehyuk}도 모른다. 거절하면 통조림을 받은 것을 경비조장에게 말하겠다고 떠보지만, 실제로는 자기도 엮일까 봐 말하지 못한다.
+  choices:
+    - id: tell
+      label: 내일 밤 쪽문 교대 시간을 알려 준다
+      effects:
+        - set_flag: b_sold_watch
+        - clock: { id: c_east_offensive, delta: 1 }
+        - relation: { who: jaehyuk, axis: trust, delta: 1 }
+        - deed: { summary: 붉은연합에 버들마을 쪽문 경비 교대 시간을 넘겼다, tags: [betrayal, enemy_sympathy], severity: 3, privacy: private }
+    - id: false_time
+      label: 엉터리 교대 시간을 그럴듯하게 꾸며 댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: b_fed_false_watch
+          - clock: { id: c_east_offensive, delta: -1 }
+          - belief: { fact: 염재혁에게 꾸며 낸 교대 시간을 넘겼다. 그는 의심하지 않았다, source: seen }
+        partial:
+          - set_flag: b_fed_false_watch
+          - relation: { who: jaehyuk, axis: trust, delta: -1 }
+          - belief: { fact: 염재혁은 꾸며 낸 교대 시간을 받아 갔지만 고개를 갸웃했다, source: seen }
+        miss:
+          - relation: { who: jaehyuk, axis: trust, delta: -2 }
+          - belief: { fact: 염재혁이 거짓말을 눈치챘다. 통조림 값은 언젠가 받겠다고 했다, source: seen }
+    - id: refuse
+      label: 다시는 묻지 말라고 못 박는다
+      effects:
+        - clear_flag: b_took_bribe
+        - relation: { who: jaehyuk, axis: trust, delta: -2 }
+        - deed: { summary: 붉은연합에 쪽문 교대 시간을 알려 달라는 부탁을 거절했다, tags: [loyalty], severity: 1, privacy: private }
+
+- id: b_seungmin_notebook
+  title: 표승민의 수첩
+  tags: [b_guard]
+  when:
+    zones: [b_base]
+    segments: [evening, night]
+    day_gte: 4
+    flags_all: [b_told_seungmin]
+  cast:
+    liaison: { ids: [b_seungmin], known: true, trust_gte: 1 }
+    leader: { ids: [b_hyunwoo], enter: false }
+  setup: "{liaison:이/가} 관리사무소 뒤에서 기다리고 있다가 수첩을 펼친다. \"경비병, 부탁이 있습니다. 대표 사무실에 밤에 드나드는 사람, 본 대로만 여기 적어 주십시오. 연합을 위한 일입니다.\""
+  ai_direction: "{liaison}의 수첩은 청솔형제단 간부에게 넘어간다. 그는 대표 {leader:이/가} 연합을 깰 경우 청솔형제단이 먼저 손을 쓰게 하려 한다. 이 의도는 말하지 않는다. 거절해도 위협하지 않지만 이름을 수첩에 적는 것은 보여 준다."
+  choices:
+    - id: agree
+      label: 보는 대로 적어 주겠다고 한다
+      effects:
+        - set_flag: b_seungmin_informant
+        - relation: { who: liaison, axis: trust, delta: 2 }
+        - deed: { summary: 대표 사무실에 드나드는 사람을 몰래 연락 간부에게 알리기로 했다, tags: [loyalty, deceit], severity: 2, privacy: private }
+    - id: refuse
+      label: 대표를 감시하는 일은 못 하겠다고 한다
+      effects:
+        - relation: { who: liaison, axis: trust, delta: -1 }
+        - relation: { who: liaison, axis: respect, delta: 1 }
+        - belief: { fact: 표승민은 거절을 듣고도 고개만 끄덕였다. 그리고 수첩에 무언가를 적었다, source: seen }
+    - id: tell_leader
+      label: 대표 장현우에게 이 일을 알린다
+      effects:
+        - set_flag: b_warned_leader
+        - relation: { who: leader, axis: trust, delta: 2 }
+        - relation: { who: liaison, axis: trust, delta: -3 }
+        - deed: { summary: 연락 간부 표승민이 대표를 감시하려 한다고 대표에게 알렸다, tags: [loyalty, betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: 대표 장현우는 표승민 이야기를 듣고 웃지도 놀라지도 않았다. 알려 줘서 고맙다고만 했다, source: seen }
+
+# ── 고정: 우물과 밭 ─────────────────────────────────────
+
+- id: b_well_scrape
+  title: 두레박이 긁는 소리
+  tags: [village_life]
+  when:
+    zones: [b_base]
+    segments: [dawn, morning]
+    day_gte: 2
+    flags_none: [b_well_failing]
+  cast:
+    keeper: { ids: [b_sunrye], known: true }
+  setup: 아랫단 우물에서 {keeper:이/가} 두레박을 끌어올리다 멈춘다. 두레박 바닥에 흙탕물이 반쯤 차 있다. "경비병, 거기 서 있지 말고 이 줄 좀 잡어 봐. 끝까지 내려 보게."
+  ai_direction: 우물 물은 실제로 줄고 있다. {keeper:은/는} 이미 알고 있지만 다른 사람이 직접 보기 전에는 입 밖에 내지 않는다. 줄에 매듭으로 깊이를 표시해 두었다.
+  choices:
+    - id: measure
+      label: 줄을 내려 물 높이를 재 본다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: b_well_failing
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: 아랫단 우물 물은 줄에 매어 둔 매듭으로 보아 날마다 한 뼘씩 줄고 있다, source: seen }
+        partial:
+          - set_flag: b_well_failing
+          - belief: { fact: 아랫단 우물 물이 전보다 낮은 것은 분명하다. 얼마나 줄었는지는 모르겠다, source: seen }
+        miss:
+          - belief: { fact: 두레박 줄이 우물 벽에 걸려 물 높이를 재지 못했다, source: seen }
+    - id: help_draw
+      label: 말없이 물 긷는 일만 거든다
+      effects:
+        - relation: { who: keeper, axis: affection, delta: 1 }
+    - id: pass
+      label: 근무 교대가 급하다며 지나간다
+      effects: []
+
+- id: b_well_reckoning
+  title: 우물지기의 셈
+  tags: [village_life]
+  when:
+    zones: [b_base]
+    segments: [evening, night]
+    flags_all: [b_well_failing]
+    flags_none: [b_well_told]
+  cast:
+    keeper: { ids: [b_sunrye], known: true, trust_gte: 1 }
+  setup: 관리사무소 지하, {keeper:이/가} 씨앗 자루 옆에 쪼그려 앉아 손가락을 꼽는다. "이대로 퍼 쓰면 아랫단 우물은 한겨울 전에 말러. 대표한테만 말했어. 대표는 아무한테도 말하지 말라더라."
+  ai_direction: "{keeper}의 셈은 맞다. 대표 장현우는 물 때문에 붉은연합 쪽 이야기를 듣고 있다(붉은연합은 물이 넉넉하다). 이 연결은 {keeper}도 모르니 직접 말하지 않는다."
+  choices:
+    - id: keep_secret
+      label: 둘만 아는 것으로 한다
+      effects:
+        - set_flag: b_well_told
+        - relation: { who: keeper, axis: trust, delta: 1 }
+        - belief: { fact: "탁순례의 셈으로는 아랫단 우물이 한겨울 전에 마른다. 대표 장현우는 이 일을 알고 입단속을 시켰다", source: report }
+    - id: tell_everyone
+      label: 단지 사람들이 알아야 한다며 경비조장에게 알린다
+      effects:
+        - set_flag: b_well_told
+        - faction_morale: { faction: own, delta: -1 }
+        - relation: { who: keeper, axis: trust, delta: -2 }
+        - relation: { who: commander, axis: respect, delta: 1 }
+        - deed: { summary: 대표가 감춘 우물 사정을 경비조장에게 알렸다, tags: [honesty, disobedience], severity: 1, privacy: semi_private }
+    - id: dig_deeper
+      label: 우물 바닥을 더 파 보자고 나선다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: b_well_told
+          - faction_morale: { faction: own, delta: 1 }
+          - merit: 1
+          - relation: { who: keeper, axis: respect, delta: 2 }
+          - belief: { fact: 아랫단 우물 바닥을 한 길 더 파고 돌을 다시 쌓았다. 물이 다시 고이기 시작했다, source: seen }
+        partial:
+          - set_flag: b_well_told
+          - relation: { who: keeper, axis: respect, delta: 1 }
+          - belief: { fact: 우물 바닥을 조금 더 팠지만 흙탕물만 올라왔다. 며칠은 벌었을지 모른다, source: seen }
+        miss:
+          - relation: { who: keeper, axis: trust, delta: -1 }
+          - belief: { fact: 우물 바닥을 파다가 돌벽 일부를 무너뜨렸다. 탁순례가 한참 말을 하지 않았다, source: seen }
+
+- id: b_alliance_levy
+  title: 수레를 끌고 온 청솔형제단
+  tags: [b_guard]
+  when:
+    zones: [b_base, south_fields]
+    segments: [morning, day]
+    day_gte: 3
+  cast:
+    clerk: { ids: [a_doyun] }
+    liaison: { ids: [b_seungmin], known: true }
+  setup: 청솔형제단의 보급 간부 {clerk:이/가} 손수레 둘을 끌고 와 장부를 편다. 약조대로 이번 달 배추와 무 몫을 가져가겠다고 한다. {liaison:이/가} 옆에서 고개를 끄덕이는 동안, 텃밭에서 일하던 단지 사람들이 호미를 든 채 모여든다.
+  ai_direction: 장부의 몫은 약조대로다. 하지만 올해 수확이 줄어서 버들마을에는 더 아프다. {clerk:은/는} 숫자를 깎아 줄 권한이 조금 있지만 먼저 말하지 않는다. 단지 사람들의 불만은 경비병인 당신을 쳐다본다.
+  choices:
+    - id: load
+      label: 약조는 약조라며 수레에 싣는 것을 돕는다
+      effects:
+        - relation: { who: liaison, axis: respect, delta: 1 }
+        - relation: { who: clerk, axis: respect, delta: 1 }
+        - faction_morale: { faction: own, delta: -1 }
+        - clock: { id: a_counteroffensive, delta: 1 }
+        - deed: { summary: 청솔형제단이 수확 몫을 실어 가는 것을 도왔다, tags: [loyalty, diligence], severity: 1, privacy: public }
+    - id: bargain
+      label: 올해 수확이 줄었으니 몫을 깎아 달라고 따진다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: b_levy_cut
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: clerk, axis: respect, delta: 1 }
+          - deed: { summary: 청솔형제단 보급 간부에게 수확 몫을 깎아 달라고 따져 받아 냈다, tags: [loyalty], severity: 1, privacy: public }
+        partial:
+          - set_flag: b_levy_cut
+          - relation: { who: liaison, axis: trust, delta: -1 }
+          - belief: { fact: 청솔형제단 보급 간부가 이번 달 몫을 조금 줄여 주는 대신 다음 달 경비 인원을 하나 더 보내라고 했다, source: report }
+        miss:
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - relation: { who: liaison, axis: trust, delta: -1 }
+          - belief: { fact: 몫을 깎아 달라고 했다가 약조를 깨자는 거냐는 소리만 들었다, source: seen }
+    - id: stand_aside
+      label: 경비 자리만 지키고 끼어들지 않는다
+      effects:
+        - belief: { fact: 청솔형제단이 텃밭 수확 몫을 실어 갔다. 단지 사람 몇이 수레 뒤에 대고 침을 뱉었다, source: seen }
+
+- id: b_conscript_list
+  title: 열여섯 살의 명단
+  tags: [village_life]
+  when:
+    zones: [b_base]
+    segments: [day, evening]
+    day_gte: 5
+  cast:
+    teacher: { ids: [b_eunji], known: true }
+    chief: { commander: true, enter: false }
+  setup: 지하 교실 앞에서 {teacher:이/가} 당신의 소매를 붙든다. "청솔형제단에서 열여섯 넘은 애들을 보초 훈련에 보내래요. 내일 조장님이 명단을 받으러 와요. 둘만, 둘만 명단에서 빼 주세요. 사흘만 창고에 숨겨 두면 돼요."
+  ai_direction: 요구는 연락 간부 표승민을 거쳐 내려왔고, 경비조장 {chief}도 마음이 편하지 않다. 숨기면 명령을 어기는 것이고, 들키면 {teacher}도 곤란해진다. 아이들은 자기들이 보초를 서고 싶다고 들떠 있다.
+  choices:
+    - id: hide
+      label: 아이 둘을 창고에 숨겨 준다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: b_hid_kids
+          - relation: { who: teacher, axis: trust, delta: 2 }
+          - relation: { who: teacher, axis: affection, delta: 1 }
+          - deed: { summary: 청솔형제단 보초 훈련 명단에서 아이 둘을 숨겨 빼냈다, tags: [mercy, disobedience], severity: 2, privacy: private }
+        partial:
+          - set_flag: b_hid_kids
+          - relation: { who: teacher, axis: trust, delta: 2 }
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - deed: { summary: 보초 훈련 명단에서 아이 둘을 숨겼다가 경비조장에게 들켰다, tags: [mercy, disobedience], severity: 2, privacy: semi_private }
+        miss:
+          - relation: { who: teacher, axis: trust, delta: 1 }
+          - relation: { who: commander, axis: trust, delta: -2 }
+          - deed: { summary: 보초 훈련에 갈 아이들을 숨기려다 들켰다, tags: [disobedience], severity: 2, privacy: public }
+    - id: plead
+      label: 경비조장에게 아이들은 빼 달라고 대신 말해 본다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: teacher, axis: trust, delta: 2 }
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - belief: { fact: 경비조장 배동철이 열여섯 살 아이들 대신 자기 조에서 경비병 하나를 더 보내기로 했다, source: seen }
+        partial:
+          - relation: { who: teacher, axis: trust, delta: 1 }
+          - belief: { fact: 경비조장은 아이 하나만 명단에서 빼 주었다. 나머지는 보초 훈련에 간다, source: seen }
+        miss:
+          - relation: { who: teacher, axis: affection, delta: -1 }
+          - belief: { fact: 경비조장은 위에서 정한 일이라며 고개를 저었다, source: seen }
+    - id: refuse
+      label: 명령은 명령이라며 돌아선다
+      effects:
+        - relation: { who: teacher, axis: affection, delta: -2 }
+        - relation: { who: commander, axis: trust, delta: 1 }
+
+# ── 고정: 오미나 ────────────────────────────────────────
+
+- id: b_mina_letter
+  title: 동생에게 가는 편지
+  tags: [village_life]
+  when:
+    zones: [b_base]
+    segments: [day, evening]
+    day_gte: 2
+    flags_none: [b_mina_letter]
+  cast:
+    mina: { ids: [b_mina], known: true }
+  setup: 정문 교대 때 {mina:이/가} 접은 종이 한 장을 내민다. "청솔 거점 갈 일 있으면 이거 지호한테 좀. 심부름꾼한테 맡겼는데 못 찾았대. 뜯어보지 마라."
+  ai_direction: 편지에는 버들마을 안에서 붉은연합으로 넘어가자는 말이 돈다는 것과, 무슨 일이 생기면 청솔형제단에 남으라는 당부가 적혀 있다. {mina:은/는} 그 내용이 문제가 될 수 있다는 것을 알면서도 썼다.
+  choices:
+    - id: carry
+      label: 꼭 전해 주겠다고 받아 둔다
+      effects:
+        - set_flag: b_mina_letter
+        - relation: { who: mina, axis: trust, delta: 2 }
+        - relation: { who: mina, axis: affection, delta: 1 }
+    - id: read
+      label: 받아 두었다가 몰래 펴 본다
+      effects:
+        - set_flag: b_mina_letter
+        - relation: { who: mina, axis: trust, delta: 1 }
+        - belief: { fact: "오미나가 동생 오지호에게 쓴 편지에는 버들마을 안에서 붉은연합으로 넘어가자는 말이 돈다고, 무슨 일이 생기면 청솔형제단에 남으라고 적혀 있었다", source: seen }
+        - deed: { summary: 동료가 동생에게 보내는 편지를 몰래 펴 보았다, tags: [deceit], severity: 1, privacy: private }
+    - id: decline
+      label: 나갈 일이 없다며 거절한다
+      effects:
+        - relation: { who: mina, axis: affection, delta: -1 }
+
+- id: b_mina_names
+  title: 오미나가 아는 이름들
+  tags: [village_life]
+  when:
+    zones: [b_base]
+    segments: [night]
+    day_gte: 4
+    flags_all: [b_mina_letter]
+  cast:
+    mina: { ids: [b_mina], known: true, trust_gte: 2 }
+  setup: 옥상 망루에서 {mina:이/가} 한참 말없이 구시가 쪽을 보다가 입을 연다. "넘어가자는 놈들, 누군지 알아. 근데 말하면 지호가 다쳐. 청솔 쪽에서 버들마을 사람 동생이라고 가만두겠냐."
+  ai_direction: "{mina:은/는} 동생의 안전을 약속받으면 이름을 말한다. 이름 가운데 염재혁이 있다. 약속이 거짓이라고 느끼면 입을 닫는다."
+  choices:
+    - id: promise
+      label: 지호는 자기가 지켜 보겠다고 약속하고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: b_knows_turncoats
+          - relation: { who: mina, axis: trust, delta: 1 }
+          - belief: { fact: "오미나가 털어놓았다: 붉은연합 쪽으로 넘어가자는 경비병들 가운데 염재혁이 있고, 그들은 사자가 돌린 통조림을 받았다", source: report }
+        partial:
+          - relation: { who: mina, axis: trust, delta: 1 }
+          - belief: { fact: 오미나는 넘어가자는 사람들이 경비병 가운데 있다는 것까지만 말했다, source: report }
+        miss:
+          - relation: { who: mina, axis: trust, delta: -1 }
+    - id: leave_it
+      label: 말하지 않아도 된다고 한다
+      effects:
+        - relation: { who: mina, axis: affection, delta: 2 }
+
+# ── 템플릿: 단지의 하루 ─────────────────────────────────
+
+- id: b_rooftop_kids
+  title: 옥상의 아이들
+  tags: [village_life]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zones: [b_base]
+    segments: [day, evening]
+  cast:
+    teacher: { ids: [b_eunji], enter: false }
+  setup: 옥상 계단 쪽에서 킥킥대는 소리가 난다. 아이 셋이 난간에 붙어 구시가 쪽에 대고 깡통을 던지며 누가 더 멀리 보내나 내기를 하고 있다.
+  ai_direction: 깡통 소리는 구시가의 감염체를 부를 수 있다. 아이들은 {teacher}의 수업을 빠져나왔다. 배가 고파서 들뜬 것이기도 하다. 혼내도 되고 어르고 달래도 된다.
+  choices:
+    - id: scold
+      label: 엄하게 혼내서 지하로 돌려보낸다
+      effects:
+        - relation: { who: teacher, axis: respect, delta: 1 }
+        - deed: { summary: 옥상에서 소란을 피운 아이들을 혼내 돌려보냈다, tags: [diligence], severity: 1, privacy: public }
+    - id: share
+      label: 비상식량을 쪼개 주며 내려가자고 달랜다
+      effects:
+        - take_item: { item: dry_ration }
+        - relation: { who: teacher, axis: affection, delta: 1 }
+        - faction_morale: { faction: own, delta: 1 }
+        - deed: { summary: 옥상에 올라온 아이들에게 자기 비상식량을 쪼개 주었다, tags: [mercy], severity: 1, privacy: public }
+    - id: watch_out
+      label: 구시가 쪽에 무엇이 움직이는지부터 살핀다
+      check: sense_danger
+      outcomes:
+        success:
+          - merit: 1
+          - belief: { fact: 깡통 소리에 구시가 골목 몇 개에서 감염체가 고개를 들었다가 흩어졌다. 아이들은 내려보냈다, source: seen }
+        partial:
+          - belief: { fact: 구시가 쪽 그늘에서 무언가 움직였다. 무엇인지는 끝내 보지 못했다, source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: 아이들을 내려보내는 사이 구시가 쪽에서 앓는 소리가 담장 가까이까지 다가왔다. 그날 밤 단지 사람들이 잠을 설쳤다, source: seen }
+
+- id: b_fields_thief
+  title: 밭고랑의 발자국
+  tags: [b_guard]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zones: [south_fields]
+    segments: [dawn, morning]
+  cast:
+    thief: { faction: own, ranks: [grunt, staff], known: true }
+  setup: 남쪽 텃밭 끝 고랑에 무를 뽑아 간 구멍이 셋 나 있다. 발자국을 따라가니 담장 그늘에서 {thief:이/가} 흙 묻은 무를 외투에 감추다 굳는다.
+  ai_direction: "{thief:은/는} 굶는 식구가 있다(누구인지는 그 인물에 맞게). 이 밭은 청솔형제단 땅이라 수확 몫이 걸려 있다. {scarce:이/가} 모자란 때라 모두 예민하다."
+  choices:
+    - id: report
+      label: 경비조장에게 데려간다
+      effects:
+        - merit: 1
+        - relation: { who: thief, axis: trust, delta: -2 }
+        - deed: { summary: "텃밭 무를 훔친 {thief:을/를} 경비조장에게 넘겼다", tags: [diligence], severity: 1, privacy: semi_private }
+    - id: let_go
+      label: 무를 도로 묻으라고 하고 보내 준다
+      effects:
+        - relation: { who: thief, axis: trust, delta: 2 }
+        - deed: { summary: "텃밭 무를 훔친 {thief:을/를} 못 본 척 보내 주었다", tags: [mercy], severity: 1, privacy: private }
+    - id: shake_down
+      label: 다시는 손대지 말라고 겁을 준다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: thief, axis: respect, delta: 1 }
+          - belief: { fact: "{thief:은/는} 다시는 밭에 손대지 않겠다고 했다. 무는 고랑에 도로 묻었다", source: seen }
+        partial:
+          - relation: { who: thief, axis: affection, delta: -1 }
+        miss:
+          - relation: { who: thief, axis: trust, delta: -2 }
+          - belief: { fact: "{thief:이/가} 이 밭은 어차피 청솔 놈들 몫이라고 대들었다", source: seen }
+
+- id: b_wall_whisper
+  title: 담장 그늘의 수군거림
+  tags: [b_guard]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 3
+  cast:
+    talker: { faction: own, ranks: [grunt, staff], known: true }
+  setup: 담장 그늘에서 담배를 나눠 피우던 {talker:이/가} 목소리를 낮춘다. "{scarce:이/가} 이렇게 모자란데 청솔 놈들은 몫만 챙겨 가잖아. 붉은연합 쪽은 다르다더라. 너도 생각해 봐."
+  ai_direction: "{talker:이/가} 진심인지, 떠보는 것인지는 그 인물의 성격과 비밀에 맞춘다. 근처에 다른 귀가 있을 수 있다."
+  choices:
+    - id: agree
+      label: 맞장구를 쳐 준다
+      effects:
+        - relation: { who: talker, axis: trust, delta: 1 }
+        - deed: { summary: 붉은연합으로 넘어가자는 말에 맞장구를 쳤다, tags: [enemy_sympathy], severity: 1, privacy: semi_private }
+    - id: argue
+      label: 붉은연합이 우리를 받아서 뭘 하겠냐고 따진다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: talker, axis: respect, delta: 1 }
+        partial:
+          - belief: { fact: "{talker:은/는} 대꾸하지 않았지만 담배를 비벼 끄고 자리를 떴다", source: seen }
+        miss:
+          - relation: { who: talker, axis: affection, delta: -1 }
+          - faction_morale: { faction: own, delta: -1 }
+    - id: report
+      label: 경비조장에게 알린다
+      effects:
+        - merit: 1
+        - relation: { who: talker, axis: trust, delta: -2 }
+        - deed: { summary: "붉은연합 이야기를 꺼낸 {talker:을/를} 경비조장에게 알렸다", tags: [diligence, betrayal], severity: 1, privacy: semi_private }
+
+- id: b_fence_drawn
+  title: 철망에 매달린 것들
+  tags: [b_guard]
+  repeatable: true
+  urgent: true
+  cooldown_days: 2
+  when:
+    zones: [b_base, south_fields]
+    segments: [night, dawn]
+    weather: [overcast, fog, snow, rain]
+  setup: 담장 철망이 한쪽으로 휘청인다. 흐린 어둠 속에서 감염체 둘이 철망에 엉겨 붙어 손톱으로 긁고 있다. 뒤쪽 어둠에서도 무언가 끄는 발소리가 난다.
+  ai_direction: 둘 뒤로 몇이 더 따라오고 있다. 총을 쏘면 구시가 쪽 물결이 깨어난다. 철망 사이로 찌르면 소리 없이 끝낼 수 있지만 손이 닿을 만큼 가까워야 한다.
+  choices:
+    - id: stab
+      label: 철망 사이로 조용히 찔러 끝낸다
+      check: fight
+      outcomes:
+        success:
+          - merit: 1
+          - belief: { fact: 철망에 붙은 감염체 둘을 소리 없이 끝냈다. 뒤따르던 것들은 방향을 잃고 흩어졌다, source: seen }
+        partial:
+          - belief: { fact: 감염체 하나는 끝냈지만 철망이 크게 흔들려 소리가 났다. 담장 밖이 한동안 수런거렸다, source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: 철망 너머를 찌르다 놓쳤다. 감염체들이 밤새 담장을 따라 긁고 다녔고 단지 사람들이 잠을 설쳤다, source: seen }
+    - id: wake
+      label: 소리 내지 않고 다른 경비병들을 깨운다
+      effects:
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - belief: { fact: 밤중에 감염체가 담장 철망까지 왔다. 경비병들이 모여 막대로 밀어냈다, source: seen }
+    - id: wait
+      label: 숨죽이고 지나가기를 기다린다
+      check: endure
+      outcomes:
+        success:
+          - belief: { fact: 숨죽이고 버티자 감염체들은 철망을 놓고 구시가 쪽으로 흘러갔다, source: seen }
+        partial:
+          - belief: { fact: 감염체들은 새벽이 되어서야 철망을 놓았다. 철망 한쪽이 휘었다, source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - belief: { fact: 기다리는 사이 철망 한쪽이 주저앉았다. 경비조장이 아침에 휜 철망을 보고 아무 말도 하지 않았다, source: seen }

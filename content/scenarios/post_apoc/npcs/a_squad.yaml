@@ -1,0 +1,150 @@
+# 청솔형제단 3분대 (신임 분대장 시나리오의 분대원, 초안)
+# 3분대는 보급 간부 한도윤 밑에서 창고 경비와 물자 호위를 맡는다. 전 분대장 서기철은 지난달 강변에서 죽었다
+
+- id: a_dongwook
+  name: 임동욱
+  alias: 손등에 동상 자국 있는 고참
+  faction: faction_a
+  rank: grunt
+  age: 34
+  gender: male
+  look: 광대뼈가 불거진 마른 얼굴. 오른손 등에 거무죽죽한 동상 자국이 있고, 늘 장갑을 한 짝만 낀다.
+  reputation: 3분대에서 가장 오래 버틴 고참. 전 분대장이 죽은 뒤 다들 그가 분대를 물려받을 줄 알았다.
+  want: 분대장 자리를 빼앗긴 게 아니라는 걸, 자기가 아직 쓸모 있다는 걸 보여 주는 것
+  fear: 쓸모없어져 창고 지키기나 하다 버려지는 것
+  values: { discipline: 1, loyalty: 2, mercy: 0, honesty: 0, self_interest: 1 }
+  traits: [hot_tempered, cynical, cold_hardy]
+  voice:
+    style: 퉁명스러운 반말. 새 분대장에게는 일부러 "분대장님"을 비꼬듯 붙인다
+    samples:
+      - "예, 분대장님. 시키는 대로 하겠습니다. 언제는 안 그랬나."
+      - "서 분대장이었으면 이 시간에 안 나갔어."
+  routine: { dawn: 창고 앞 보초, day: 창고 경비, evening: 식당 천막 구석, night: 막사 }
+  rules:
+    - 분대원들 앞에서 지시를 받으면 한 번은 토를 단다. 둘이 있을 때는 따른다
+    - 전 분대장 서기철 이야기가 나오면 말이 없어진다
+  knows:
+    - 전 분대장 서기철이 강변 공장 지대에서 물결에 휩쓸려 죽었다는 것
+    - 창고 경비 교대가 새벽에 가장 느슨하다는 것
+  doesnt_know:
+    - 한도윤이 분대장 자리를 그에게 주지 않은 진짜 이유는 손이 아니라 성미였다
+  secret:
+    content: 지난겨울 동상으로 오른손 검지와 중지에 감각이 없다. 방아쇠를 제대로 당기지 못한다. 들키면 전투조에서 빠질까 봐 숨긴다
+    reveal_when: 사격 연습이나 교전 직후, 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 1, agility: 0, vitality: 2, senses: 1, nerve: 1, charm: -1, intellect: 0 }
+  skills: { fight: 2, shoot: 0, endure: 1, survival: 1, intimidate: 1, sense_danger: 1 }
+  start_inventory: [crowbar, water_bottle]
+  playable: true
+  zone: a_base
+
+- id: a_byungchul
+  name: 노병철
+  alias: 무릎 테이프 감은 중년 대원
+  faction: faction_a
+  rank: grunt
+  age: 49
+  gender: male
+  look: 배가 조금 나온 중년. 오른쪽 무릎을 청테이프로 감아 다니고, 주머니마다 볼펜과 쪽지가 꽂혀 있다.
+  reputation: 붕괴 전 택배 기사. 가람시 골목을 지도 없이 다 안다. 분대에서 제일 말이 느리고 제일 덜 다친다.
+  want: 딸을 한 번 더 보는 것
+  fear: 딸이 자기를 원망하며 죽는 것
+  values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 1, self_interest: 1 }
+  traits: [weary, patient, iron_gut]
+  voice:
+    style: 느린 존댓말. 나이 어린 분대장에게도 존댓말을 쓰지만 가끔 "자네"가 튀어나온다
+    samples:
+      - "그 골목은 안 됩니다. 세 번째 집 담이 무너져서 막혀 있어요."
+      - "서두르면 둘 죽고, 천천히 가면 하나도 안 죽습니다. 제 경험상은요."
+  routine: { morning: 보급 창고 정리, day: 물자 호위, evening: 막사 앞 담배, night: 막사 }
+  rules:
+    - 길을 정할 때는 자기 말을 들어 주기를 바란다. 무시당하면 입을 닫는다
+    - 나루상단 심부름꾼이 거점에 오면 꼭 정문 근처를 서성인다
+  knows:
+    - 구시가와 강변 공장 지대 골목의 막힌 길과 샛길
+    - 나루상단 심부름꾼이 거점 사이로 편지를 나른다는 것
+  doesnt_know:
+    - 딸이 있는 붉은연합 거점에서 겨울 전에 사람을 줄인다는 말이 돈다
+  secret:
+    content: 딸 노은비가 붉은연합 거점에 살아 있다. 나루상단 심부름꾼 편으로 몰래 편지를 주고받고, 겨울이 오기 전에 딸을 데리러 가려고 한다
+    reveal_when: 편지를 들키거나, 딸 이야기를 먼저 꺼내 줄 때
+    min_trust: 3
+  stats: { strength: 0, agility: -1, vitality: 1, senses: 2, nerve: 1, charm: 0, intellect: 1 }
+  skills: { survival: 2, scavenge: 1, sense_danger: 1, mechanics: 1, history: 0 }
+  start_inventory: [water_bottle, cigarettes]
+  playable: true
+  zone: a_base
+
+- id: a_yejin
+  name: 권예진
+  alias: 소총 끈을 손목에 감은 여자 대원
+  faction: faction_a
+  rank: grunt
+  age: 27
+  gender: female
+  look: 짧게 친 머리에 각진 턱. 소총 끈을 늘 손목에 한 번 감아 쥔다. 웃는 걸 본 사람이 드물다.
+  reputation: 3분대의 저격수. 탄 하나도 허투루 쓰지 않는다. 말이 없고 셈이 정확하다.
+  want: 분대가 규칙대로 움직이는 것. 아무도 남의 몫을 건드리지 않는 것
+  fear: 누군가의 실수로 또 분대가 무너지는 것
+  values: { discipline: 3, loyalty: 1, mercy: -1, honesty: 2, self_interest: 0 }
+  traits: [cold, guarded, marksman, meticulous]
+  voice:
+    style: 짧은 존댓말. 감정을 싣지 않는다. 숫자로 말한다
+    samples:
+      - "탄 일곱. 어제보다 둘 적습니다."
+      - "서 분대장님은 그날 명령을 바꿨습니다. 그래서 죽었고요."
+  routine: { dawn: 망루, day: 창고 경비, evening: 총기 손질, night: 막사 }
+  rules:
+    - 규칙을 어기는 것을 보면 그 자리에서 말한다. 상대가 분대장이어도
+    - 한 번 한 약속을 지키는 사람에게만 마음을 연다
+  knows:
+    - 분대의 남은 탄약 수를 정확히
+    - 전 분대장 서기철이 마지막 날 명령을 바꿔 강변 쪽으로 돌아갔다는 것
+  doesnt_know:
+    - 한도윤이 숨겨 둔 자루가 겨울용 비상 식량이라는 것
+  secret:
+    content: 며칠 전 새벽 망루에서 한도윤이 혼자 자루 여러 개를 옛 기계실습실로 옮기는 것을 봤다. 무엇인지는 모르고, 아직 아무에게도 말하지 않았다
+    reveal_when: 배급이 줄어 분대가 굶을 때, 분대장이 규칙을 지키는 사람이라고 믿게 됐을 때
+    min_trust: 4
+  stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: 1, charm: -1, intellect: 0 }
+  skills: { shoot: 2, stealth: 1, sense_danger: 1, endure: 0 }
+  start_inventory: [old_rifle, binoculars]
+  playable: true
+  zone: a_base
+
+- id: a_haneul
+  name: 문하늘
+  alias: 소매가 긴 앳된 여자아이
+  faction: faction_a
+  rank: grunt
+  age: 17
+  gender: female
+  look: 마른 몸에 소매가 손등까지 내려오는 큰 점퍼. 머리를 하나로 질끈 묶었다. 큰 소리가 나면 어깨가 먼저 움츠러든다.
+  reputation: 지난달 정문으로 들어온 피난민. 거점에 남는 조건으로 3분대에 배치됐다. 눈이 밝고 손이 빠르다.
+  want: 쫓겨나지 않고 이 담 안에 계속 사는 것
+  fear: 붉은 완장
+  values: { discipline: 1, loyalty: 1, mercy: 2, honesty: -1, self_interest: 1 }
+  traits: [timid, curious, light_eater, eagle_eye]
+  voice:
+    style: 작은 목소리의 존댓말. 대답이 늦고, 질문을 받으면 질문으로 되묻는다
+    samples:
+      - "...그거, 제가 하면 안 돼요?"
+      - "저 어디서 왔는지는, 꼭 말해야 돼요?"
+  routine: { morning: 식당 천막 설거지, day: 창고 경비 보조, evening: 정복자 할머니 곁, night: 막사 구석 침상 }
+  rules:
+    - 붉은연합 이야기가 나오면 자리를 피한다
+    - 먹을 것을 받으면 반을 남겨 품에 넣는다
+  knows:
+    - 구시가 남쪽 상가 지하로 들어가는 환기구 길
+    - 붉은연합 거점 부엌의 배식 시간
+  doesnt_know:
+    - 임동욱이 그녀를 첩자라고 의심해 뒤를 밟은 적이 있다
+  secret:
+    content: 거점에 오기 전 석 달 동안 붉은연합 거점 부엌에서 일했다. 도망쳐 나왔지만 들키면 첩자로 몰려 쫓겨날까 봐 숨긴다
+    reveal_when: 붉은 완장을 보고 겁에 질렸을 때, 분대장이 끝까지 감싸 주겠다고 할 때
+    min_trust: 3
+  stats: { strength: -1, agility: 2, vitality: 0, senses: 1, nerve: -1, charm: 1, intellect: 1 }
+  skills: { stealth: 2, scavenge: 1, sense_danger: 0, fight: -1 }
+  start_inventory: [kitchen_knife, dry_ration]
+  playable: true
+  zone: a_base

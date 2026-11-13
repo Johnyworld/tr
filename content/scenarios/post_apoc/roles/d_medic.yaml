@@ -1,0 +1,27 @@
+# 하얀매의 수습 의무병. 약을 쥔 중립 무리 안에서, 누구에게 약을 줄지 고르는 자리
+id: role_d_medic
+label: 하얀매 수습 의무병
+faction: faction_d
+rank: staff
+default_name: 수습
+opening_scene: 아침, 하얀매의 진료소. 소독약 냄새가 밴 수습 숙소에서 눈을 뜨자 복도 끝에서 수간호사의 목소리가 들린다. "문진 줄 벌써 정문까지 섰다. 손 씻고 나와." 창밖으로 담 너머에 늘어선 사람들의 입김이 보인다.
+scenario:
+  title: 하얀매의 수습 의무병
+  pitch: >-
+    약을 가진 작은 중립 무리에서 수습으로 일한다. 날마다 진료소 문 앞에는 어느 무리 사람이든 줄을 서고, 약은 모두에게 돌아가지 않는다.
+    누구를 먼저 살릴지, 물린 사람을 어떻게 할지, 그리고 약을 노리는 무리들 사이에서 중립이 얼마나 버틸지. 총 대신 가위와 장부를 든 생존이다.
+  intro: >-
+    가을이 깊어 간다. 당신은 하얀매의 수습 의무병이다. 하얀매는 옛 보건소 건물을 진료소로 삼은 서른 명 남짓의 작은 무리로, 약과 의술을 거래 조건으로 써서 전쟁 중인 무리들 사이에서 중립을 지켜 왔다.
+    진료소는 소속을 가리지 않고 다친 사람을 받지만, 약은 값을 받고 내준다. 물리거나 긁힌 사람은 누구든 격리실에서 사흘을 보낸다.
+    당신은 수간호사 권정숙 밑에서 일을 배우고, 일감도 그를 통해 내려온다. 요즘 붉은연합 사람들이 정문을 자주 기웃거리고, 옛 시립병원 지하 약제실에 아직 약이 남았다는 말이 돈다.
+    이야기는 어느 아침, 진료소의 수습 숙소에서 시작한다.
+age: 20
+start_skills: { first_aid: 1, infected_lore: 1 }
+start_inventory: [medkit, fever_reducer, water_bottle]
+start_location: d_clinic
+access: [ration, mission_board, treatment_room]
+beliefs_preset: d_medic
+known_npcs: [d_jeongsuk, d_eunyoung, d_sangpil, d_sori, d_dojin, d_gisun, d_minho]
+commander: d_jeongsuk
+missions: [d_clinic_shift, d_triage_line, d_quarantine_watch, d_fever_rounds, d_stock_count, d_oldtown_pharmacy, d_hospital_pharmacy, d_willow_house_call, d_riverside_wounded]
+storylet_tags: [d_medic, clinic_life]

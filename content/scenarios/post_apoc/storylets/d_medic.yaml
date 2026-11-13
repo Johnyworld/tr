@@ -1,0 +1,662 @@
+# 하얀매 수습 의무병 스토리렛. 형식은 a_grunt.yaml 머리말 참고
+# 갈래:
+#   약 도둑: d_count_short → (d_theft_traced) d_back_door → d_theft_exposed: d_verdict / d_bribed: d_officer_errand
+#   긁힌 동기: d_sori_wrist → d_sori_secret: d_sori_fever / d_sori_quarantined: d_quarantine_door
+#   지하 약제실: d_pharmacy_map → d_pharmacy_vault
+
+# ── 고정: 약 도둑 ─────────────────────────────────────
+
+- id: d_count_short
+  title: 비는 숫자
+  tags: [clinic_life]
+  when:
+    zones: [d_clinic]
+    segments: [morning, day, evening]
+    day_gte: 2
+  cast:
+    gisun: { ids: [d_gisun] }
+  setup: 약제실 구석에서 {gisun:이/가} 돋보기를 코끝에 걸고 장부와 약장을 번갈아 본다. "애기야, 이리 와 봐. 아목시실린이 또 두 줄 비어. 지난 장날 전에도 그랬는데."
+  ai_direction: 도상필이 장날 전날 밤마다 약을 빼 간다. 문기순은 누구인지 모르고, 자기 기억을 의심하기 시작했다. 범인을 암시하지 말고 숫자가 빈다는 사실만 보여 준다.
+  choices:
+    - id: recount
+      label: 장부를 처음부터 함께 다시 맞춰 본다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: d_theft_traced
+          - relation: { who: gisun, axis: respect, delta: 1 }
+          - belief: { fact: "약제실 장부를 거슬러 보니 항생제는 늘 장날 전날 밤에 빈다. 약제실 뒷문 쪽 선반 것만 빈다", source: seen }
+        partial:
+          - set_flag: d_theft_traced
+          - belief: { fact: "약제실 항생제는 장날 무렵마다 빈다. 누가 손대는지는 알 수 없었다", source: seen }
+        miss:
+          - belief: { fact: "문기순 할머니와 장부를 다시 셌지만 어디서 틀렸는지 찾지 못했다", source: seen }
+    - id: tell_head
+      label: 수간호사에게 바로 알린다
+      effects:
+        - set_flag: d_theft_reported
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - merit: 1
+        - belief: { fact: "약이 빈다는 것을 수간호사에게 알렸다. 수간호사는 앞으로 저녁마다 따로 세겠다고만 했다", source: seen }
+    - id: soothe
+      label: 할머니가 잘못 센 것일 거라고 달랜다
+      effects:
+        - relation: { who: gisun, axis: affection, delta: 1 }
+        - relation: { who: gisun, axis: respect, delta: -1 }
+
+- id: d_back_door
+  title: 약제실 뒷문
+  urgent: true
+  tags: [clinic_life]
+  when:
+    zones: [d_clinic]
+    segments: [night, dawn]
+    flags_all: [d_theft_traced]
+    flags_none: [d_theft_exposed, d_bribed]
+  cast:
+    sangpil: { ids: [d_sangpil] }
+  setup: 물을 마시러 나온 밤, 약제실 뒷문 틈으로 손전등 불빛이 샌다. 문이 열리고, 허리에 열쇠 꾸러미를 찬 {sangpil:이/가} 상자 하나를 안고 나와 담 쪽 쪽문으로 걸어간다.
+  ai_direction: 도상필은 나루상단 사람에게 약을 넘기러 간다. 강변 공장 지대 쪽에 받은 물건을 숨겨 둔다. 들키면 처음엔 "거래 일"이라고 둘러대고, 몰리면 몫을 나누자고 한다. 폭력은 쓰지 않는다.
+  choices:
+    - id: follow
+      label: 소리 없이 뒤를 밟는다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: d_theft_proof
+          - belief: { fact: "도상필이 약제실 항생제 상자를 강변 쪽으로 가져가 나루상단 사람에게 넘기고 탄약 상자를 받았다. 받은 것은 무너진 보일러실에 숨겼다", source: seen }
+        partial:
+          - belief: { fact: "도상필이 밤중에 약제실 상자를 들고 강변 쪽으로 나갔다. 끝까지 따라가지는 못했다", source: seen }
+        miss:
+          - relation: { who: sangpil, axis: trust, delta: -2 }
+          - belief: { fact: "밤중에 도상필을 따라가다 들켰다. 그는 웃으며 거래 일이라고 했다", source: seen }
+    - id: confront
+      label: 앞을 막아서고 상자에 뭐가 들었냐고 묻는다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: d_bribed
+          - give_item: { item: antibiotics, from: sangpil }
+          - belief: { fact: "도상필이 항생제 한 줄을 쥐여 주며 말했다: 선생님도 이제 한배를 탄 겁니다", source: seen }
+        partial:
+          - set_flag: d_bribed
+          - relation: { who: sangpil, axis: trust, delta: -1 }
+          - belief: { fact: "도상필은 상자를 놓지 않고, 못 본 걸로 하면 다음에 몫을 챙겨 주겠다고 했다", source: seen }
+        miss:
+          - relation: { who: sangpil, axis: trust, delta: -2 }
+          - belief: { fact: "도상필이 웃으며 말했다: 수습이 간부 일을 캐묻는 건 하얀매에서 처음 보네요", source: seen }
+    - id: wake_head
+      label: 수간호사를 깨우러 간다
+      effects:
+        - set_flag: d_theft_exposed
+        - relation: { who: commander, axis: trust, delta: 2 }
+        - relation: { who: sangpil, axis: trust, delta: -3 }
+        - merit: 2
+        - deed: { summary: 도상필이 밤중에 약을 빼내는 것을 수간호사에게 알렸다, tags: [honesty, diligence], severity: 2, privacy: semi_private }
+    - id: look_away
+      label: 못 본 척 숙소로 돌아간다
+      effects:
+        - belief: { fact: "밤중에 도상필이 약제실 뒷문으로 상자를 들고 나가는 것을 보았다", source: seen }
+
+- id: d_verdict
+  title: 대표의 방
+  tags: [clinic_life]
+  when:
+    zones: [d_clinic]
+    segments: [morning, day, evening]
+    flags_all: [d_theft_exposed]
+    flags_none: [d_verdict_done]
+  cast:
+    boss: { ids: [d_eunyoung] }
+    sangpil: { ids: [d_sangpil], enter: false }
+  setup: "{boss:이/가} 약제실 장부를 펼친 책상 너머에서 안경을 고쳐 쓴다. \"앉으세요. {sangpil} 일, 처음부터 본 대로만 말해 주세요. 들은 것 말고.\""
+  ai_direction: 서은영은 이미 대강 안다. 도상필을 내치면 다른 무리와의 거래 줄이 끊기고, 감싸면 하얀매 안의 규칙이 무너진다. 수습의 증언이 얼마나 단단한지 따진다. 숫자는 말하지 않는다.
+  choices:
+    - id: testify
+      label: 본 것을 차근차근 증언한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: d_verdict_done
+          - set_flag: d_sangpil_disgraced
+          - relation: { who: boss, axis: trust, delta: 2 }
+          - faction_morale: { faction: own, delta: 1 }
+          - merit: 1
+          - belief: { fact: "대표 서은영이 도상필에게서 약제실 열쇠를 거두었다. 숨겨 둔 물건을 내놓으라는 말이 떨어졌다", source: seen }
+        partial:
+          - set_flag: d_verdict_done
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "대표는 도상필에게 장부를 맡기지 않기로 했지만, 거래 일은 계속 맡겼다", source: seen }
+        miss:
+          - set_flag: d_verdict_done
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "대표는 증거가 모자라다며 이 일을 덮었다. 도상필은 아무 일 없다는 듯 웃었다", source: seen }
+    - id: soften
+      label: 내쫓지는 말아 달라고 한다
+      effects:
+        - set_flag: d_verdict_done
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - deed: { summary: 약을 빼돌린 도상필을 감싸 달라고 대표에게 말했다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "도상필은 하얀매에 남았다. 약제실 열쇠는 수간호사에게 넘어갔다", source: seen }
+
+- id: d_officer_errand
+  title: 간부의 부탁
+  tags: [clinic_life]
+  when:
+    zones: [d_clinic]
+    segments: [evening, night]
+    flags_all: [d_bribed]
+    flags_none: [d_errand_done]
+  cast:
+    sangpil: { ids: [d_sangpil] }
+  setup: "{sangpil:이/가} 수습 숙소 문간에 기대어 기름종이 꾸러미를 내민다. \"선생님, 내일 장터 가는 길에 이것 좀. 금니 박힌 상인한테 주면 됩니다. 수고비는 넉넉히.\""
+  ai_direction: 꾸러미에는 진료소 항생제가 들었다. 이 일을 하면 수습도 공범이 된다. 거절하면 도상필은 은근히 협박한다(수습도 이미 받았으니). 숫자는 말하지 않는다.
+  choices:
+    - id: carry
+      label: 꾸러미를 받아 든다
+      effects:
+        - set_flag: d_errand_done
+        - give_item: { item: cigarettes, from: sangpil }
+        - relation: { who: sangpil, axis: trust, delta: 2 }
+        - faction_morale: { faction: own, delta: -1 }
+        - deed: { summary: 도상필이 빼돌린 진료소 약을 장터 상인에게 날라 주었다, tags: [theft, betrayal], severity: 2, privacy: private }
+    - id: refuse
+      label: 한 번이면 됐다며 거절한다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: d_errand_done
+          - relation: { who: sangpil, axis: respect, delta: 1 }
+          - belief: { fact: "도상필의 부탁을 거절했다. 그는 웃었지만 다시는 말을 걸지 않았다", source: seen }
+        partial:
+          - set_flag: d_errand_done
+          - relation: { who: sangpil, axis: trust, delta: -2 }
+          - belief: { fact: "도상필이 거절을 듣고 낮게 말했다: 선생님 손에도 그 약이 있었다는 거, 잊지 마세요", source: seen }
+        miss:
+          - relation: { who: sangpil, axis: trust, delta: -2 }
+          - belief: { fact: "도상필 앞에서 말이 막혔다. 그는 꾸러미를 침대 밑에 두고 갔다", source: seen }
+    - id: confess
+      label: 꾸러미를 들고 수간호사에게 간다
+      effects:
+        - set_flag: d_errand_done
+        - set_flag: d_theft_exposed
+        - clear_flag: d_bribed
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - relation: { who: sangpil, axis: trust, delta: -3 }
+        - deed: { summary: 도상필에게 입막음 약을 받았던 일과 그의 부탁을 수간호사에게 털어놓았다, tags: [honesty], severity: 2, privacy: semi_private }
+
+# ── 고정: 긁힌 동기 ───────────────────────────────────
+
+- id: d_sori_wrist
+  title: 소리의 붕대
+  tags: [clinic_life]
+  when:
+    zones: [d_clinic]
+    segments: [evening, night]
+    day_gte: 2
+    flags_none: [d_sori_secret, d_sori_quarantined]
+  cast:
+    sori: { ids: [d_sori], known: true }
+  setup: 붕대 빨래를 널다가 {sori:이/가} 손목 붕대를 고쳐 감는다. 소매를 내리는 손이 빠르다. 눈이 마주치자 너무 밝게 웃는다. "왜? 왜 봐? 아, 이거 철근에 긁힌 거야."
+  ai_direction: 사흘 전 구시가에서 감염체 손톱에 긁혔다. 상처는 얕고 아직 열은 없다. 감염됐는지는 아무도 모른다(GM도 확정하지 않는다). 격리실이 무서워 숨긴다.
+  choices:
+    - id: examine
+      label: 붕대를 풀어 상처를 보자고 한다
+      check: infected_lore
+      outcomes:
+        success:
+          - relation: { who: sori, axis: trust, delta: 1 }
+          - belief: { fact: "임소리의 손목 상처는 철근이 아니라 손톱 자국이다. 사흘쯤 됐고 아직 붓거나 열이 오르지는 않았다", source: seen }
+        partial:
+          - belief: { fact: "임소리의 손목 상처는 철근에 긁힌 것 같지 않았다. 더 보기 전에 소매를 내렸다", source: seen }
+        miss:
+          - relation: { who: sori, axis: trust, delta: -1 }
+          - belief: { fact: "임소리가 손목을 뒤로 감추고 자리를 떴다", source: seen }
+    - id: report
+      label: 수간호사에게 데려간다
+      effects:
+        - set_flag: d_sori_quarantined
+        - relation: { who: sori, axis: trust, delta: -2 }
+        - relation: { who: commander, axis: respect, delta: 2 }
+        - merit: 1
+        - deed: { summary: 손목을 긁힌 동기 임소리를 수간호사에게 데려가 격리실에 넣었다, tags: [diligence], severity: 1, privacy: semi_private }
+    - id: keep_secret
+      label: 아무에게도 말하지 않겠다고 약속한다
+      effects:
+        - set_flag: d_sori_secret
+        - relation: { who: sori, axis: trust, delta: 2 }
+        - relation: { who: sori, axis: affection, delta: 1 }
+        - deed: { summary: 감염체에게 긁혔을지 모르는 임소리를 격리실에 보내지 않고 숨겨 주었다, tags: [loyalty, disobedience], severity: 2, privacy: private }
+    - id: give_antibiotics
+      label: 자기 항생제를 쥐여 주고 지켜보겠다고 한다
+      effects:
+        - take_item: { item: antibiotics }
+        - set_flag: d_sori_secret
+        - relation: { who: sori, axis: trust, delta: 3 }
+        - relation: { who: sori, axis: affection, delta: 2 }
+        - deed: { summary: 긁힌 임소리에게 항생제를 몰래 주고 격리를 피하게 했다, tags: [mercy, disobedience], severity: 2, privacy: private }
+
+- id: d_sori_fever
+  title: 새벽의 열
+  urgent: true
+  tags: [clinic_life]
+  when:
+    zones: [d_clinic]
+    segments: [night, dawn]
+    day_gte: 4
+    flags_all: [d_sori_secret]
+    flags_none: [d_sori_resolved]
+  cast:
+    sori: { ids: [d_sori] }
+  setup: 누가 숙소 문을 두드린다. {sori:이/가} 담요를 뒤집어쓰고 서 있다. 이가 딱딱 부딪친다. "나 좀 이상해. 열이 나는 것 같아. 수간호사님한텐…… 아직 말하지 마."
+  ai_direction: 열은 감기일 수도, 감염의 시작일 수도 있다. 확정하지 않는다. 진료소 안 사람들이 깨면 일이 커진다. 백도진은 물린 자국이 보이면 무조건 격리실로 보낸다.
+  choices:
+    - id: to_quarantine
+      label: 직접 격리실로 데려가 문을 잠근다
+      effects:
+        - set_flag: d_sori_resolved
+        - set_flag: d_sori_quarantined
+        - relation: { who: sori, axis: trust, delta: -1 }
+        - relation: { who: commander, axis: trust, delta: -1 }
+        - belief: { fact: "임소리를 격리실에 넣었다. 수간호사는 왜 이제야 데려왔냐고 물었다", source: seen }
+        - deed: { summary: 열이 오른 임소리를 뒤늦게 격리실에 넣었다, tags: [honesty], severity: 1, privacy: semi_private }
+    - id: nurse_secretly
+      label: 해열제를 먹이고 밤새 곁에서 지킨다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: d_sori_resolved
+          - relation: { who: sori, axis: affection, delta: 2 }
+          - belief: { fact: "새벽녘 임소리의 열이 내렸다. 손목 상처는 붓지 않았다. 감기였는지도 모른다", source: seen }
+        partial:
+          - set_flag: d_sori_resolved
+          - relation: { who: sori, axis: trust, delta: 1 }
+          - belief: { fact: "임소리의 열은 조금 내렸지만 손목 주변이 붉게 부었다", source: seen }
+        miss:
+          - set_flag: d_sori_resolved
+          - set_flag: d_sori_quarantined
+          - relation: { who: commander, axis: trust, delta: -2 }
+          - deed: { summary: 열이 오른 임소리를 밤새 몰래 숨겨 두다 수간호사에게 들켰다, tags: [disobedience, deceit], severity: 2, privacy: semi_private }
+    - id: wake_head
+      label: 수간호사를 깨운다
+      effects:
+        - set_flag: d_sori_resolved
+        - set_flag: d_sori_quarantined
+        - relation: { who: sori, axis: trust, delta: -2 }
+        - relation: { who: commander, axis: respect, delta: 1 }
+        - belief: { fact: "수간호사가 임소리를 격리실로 데려가며 한 마디만 했다: 사흘 늦었어", source: seen }
+
+- id: d_quarantine_door
+  title: 격리실 문 너머
+  tags: [clinic_life]
+  when:
+    zones: [d_clinic]
+    segments: [night]
+    flags_all: [d_sori_quarantined]
+    flags_none: [d_door_done]
+  cast:
+    sori: { ids: [d_sori], enter: false }
+    head: { commander: true, enter: false }
+  setup: 격리실 당직을 서는 밤. 철문 너머에서 {sori:이/가} 손톱으로 문을 긁는다. "야, 거기 있지. 나 열 없어. 진짜야. 문 좀 열어 줘. 여기 너무 추워."
+  ai_direction: 임소리는 정말로 열이 없을 수도 있다. 문을 열지 말지는 수습이 정할 일이 아니라고 {head:은/는} 말해 두었다. 이 장면은 {head}의 비밀(붕괴 첫 달, 병동 문을 밖에서 잠근 일)과 겹친다. 신뢰가 깊으면 수간호사가 그 이야기를 꺼낼 계기가 된다.
+  choices:
+    - id: talk_through
+      label: 문 앞에 앉아 밤새 말을 걸어 준다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: d_door_done
+          - relation: { who: sori, axis: affection, delta: 2 }
+          - relation: { who: head, axis: respect, delta: 1 }
+          - belief: { fact: "격리실 문 너머의 임소리와 밤새 이야기를 나눴다. 새벽녘엔 숨소리가 고르게 잠들었다", source: seen }
+        partial:
+          - set_flag: d_door_done
+          - relation: { who: sori, axis: affection, delta: 1 }
+        miss:
+          - set_flag: d_door_done
+          - belief: { fact: "격리실 문 너머의 울음소리를 끝까지 듣지 못하고 자리를 비웠다", source: seen }
+    - id: open_door
+      label: 몰래 문을 열어 물병을 넣어 준다
+      effects:
+        - set_flag: d_door_done
+        - take_item: { item: water_bottle }
+        - relation: { who: sori, axis: trust, delta: 2 }
+        - relation: { who: head, axis: trust, delta: -2 }
+        - deed: { summary: 격리실 문을 허락 없이 열었다, tags: [mercy, disobedience], severity: 2, privacy: private }
+    - id: hold_fast
+      label: 아무 대답도 하지 않는다
+      effects:
+        - set_flag: d_door_done
+        - relation: { who: sori, axis: affection, delta: -1 }
+        - relation: { who: head, axis: respect, delta: 1 }
+
+# ── 고정: 지하 약제실 ─────────────────────────────────
+
+- id: d_pharmacy_map
+  title: 할머니의 약도
+  tags: [d_medic]
+  when:
+    zones: [d_clinic]
+    segments: [evening]
+    flags_none: [d_pharmacy_map]
+  cast:
+    gisun: { ids: [d_gisun], known: true, trust_gte: 0 }
+  setup: 진료소 부엌 아궁이 앞에서 {gisun:이/가} 종이 뒷면에 연필로 선을 긋는다. "시립병원 지하 약제실 말이다. 내가 거기 납품을 십 년 했어. 냉장실 옆에 쇠금고가 하나 있었지."
+  ai_direction: 문기순의 기억은 정확하다. 금고에는 마약성 진통제와 항생제가 있었을 것이다. 남민호는 금고를 모른다. 약도를 받으면 누구에게 알릴지가 문제가 된다.
+  choices:
+    - id: learn
+      label: 약도를 받아 꼼꼼히 묻는다
+      check: history
+      outcomes:
+        success:
+          - set_flag: d_pharmacy_map
+          - relation: { who: gisun, axis: affection, delta: 1 }
+          - belief: { fact: "문기순의 약도에 따르면 시립병원 지하 약제실 냉장실 옆에 쇠금고가 있다. 엘리베이터 통로에서 오른쪽 두 번째 문이다", source: report }
+        partial:
+          - set_flag: d_pharmacy_map
+          - belief: { fact: "시립병원 지하 약제실 냉장실 근처에 쇠금고가 있었다고 한다. 정확한 자리는 할머니도 가물가물했다", source: report }
+        miss:
+          - belief: { fact: "문기순 할머니가 시립병원 지하 이야기를 하다 말고 졸았다", source: seen }
+    - id: just_listen
+      label: 그냥 옛날이야기를 들어 드린다
+      effects:
+        - relation: { who: gisun, axis: affection, delta: 2 }
+
+- id: d_pharmacy_vault
+  title: 냉장실 옆 금고
+  tags: [d_medic]
+  when:
+    zones: [hospital_ruins]
+    segments: [morning, day]
+    flags_all: [d_pharmacy_map]
+    flags_none: [d_vault_opened]
+  cast:
+    scav: { ids: [d_minho] }
+  setup: 엘리베이터 통로를 밧줄로 내려온 지하. 물이 발목까지 찼다. {scav:이/가} 방독면 너머로 숨을 몰아쉰다. 약도대로라면 오른쪽 두 번째 문 너머가 냉장실이다. 어둠 저편에서 젖은 발이 바닥을 끄는 소리가 난다.
+  ai_direction: 금고는 녹슬어 쇠지렛대로 열 수 있지만 소리가 난다. 감염체 서넛이 복도 끝에 있다. 남민호는 금고 안의 몫을 혼자 차지하고 싶어 한다. 금고를 연 뒤 몫을 어떻게 나눌지 흥정한다.
+  choices:
+    - id: pry_quiet
+      label: 천으로 감싸 소리를 죽이며 금고를 연다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: d_vault_opened
+          - give_item: { item: antibiotics, quantity: 2 }
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: scav, axis: respect, delta: 1 }
+          - deed: { summary: 시립병원 지하 금고를 열어 하얀매에 약을 가져왔다, tags: [bravery, loyalty], severity: 2, privacy: semi_private }
+        partial:
+          - set_flag: d_vault_opened
+          - give_item: { item: antibiotics }
+          - belief: { fact: "금고 문이 열리는 소리에 감염체가 몰려와 반도 챙기지 못하고 올라왔다", source: seen }
+        miss:
+          - belief: { fact: "시립병원 지하에서 감염체에 쫓겨 금고를 두고 빈손으로 올라왔다. 금고는 아직 그 자리에 있다", source: seen }
+    - id: let_minho
+      label: 남민호에게 금고를 맡기고 망을 본다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: d_vault_opened
+          - give_item: { item: antibiotics }
+          - relation: { who: scav, axis: trust, delta: 2 }
+          - belief: { fact: "남민호가 금고에서 꺼낸 것을 칠 대 삼으로 나눴다. 그의 배낭이 훨씬 무거웠다", source: seen }
+        partial:
+          - set_flag: d_vault_opened
+          - relation: { who: scav, axis: trust, delta: 1 }
+          - belief: { fact: "남민호가 금고를 열었지만 감염체 때문에 서둘러 나와야 했다. 그는 몫을 나중에 주겠다고 했다", source: seen }
+        miss:
+          - relation: { who: scav, axis: trust, delta: -1 }
+          - belief: { fact: "망을 보다 감염체를 늦게 알아챘다. 둘 다 빈손으로 밧줄을 타고 올라왔다", source: seen }
+    - id: turn_back
+      label: 소리가 가까워지기 전에 물러난다
+      effects:
+        - relation: { who: scav, axis: respect, delta: -1 }
+
+# ── 고정: 중립과 바깥 무리 ─────────────────────────────
+
+- id: d_enemy_on_table
+  title: 치료대 위의 붉은 완장
+  tags: [d_medic]
+  when:
+    zones: [d_clinic]
+    segments: [morning, day, evening]
+    day_gte: 2
+  cast:
+    patient: { faction: faction_c, ranks: [grunt] }
+    guard: { ids: [d_dojin] }
+  setup: 치료대 위에 붉은 완장을 찬 {patient:이/가} 허벅지에 파편이 박힌 채 누워 있다. 정문에서 {guard:이/가} 들어와 낮게 말한다. "밖에 청솔형제단 사람 둘이 와 있어. 저 사람 넘기라는데. 지난주에 자기 동료 쏜 놈이래."
+  ai_direction: 하얀매의 원칙은 소속을 가리지 않고 치료하는 것이다. 청솔형제단 사람들은 무장했지만 진료소 담 안에서 총을 쏠 생각은 없다. 넘기면 붉은연합이 이 일을 기억한다. 수간호사는 지금 다른 환자를 꿰매느라 손이 없다.
+  choices:
+    - id: treat_first
+      label: 치료부터 끝내겠다고 문을 닫는다
+      check: first_aid
+      outcomes:
+        success:
+          - relation: { who: patient, axis: trust, delta: 2 }
+          - relation: { who: guard, axis: respect, delta: 1 }
+          - deed: { summary: 문 밖의 요구를 물리고 붉은연합 부상병의 파편을 빼냈다, tags: [mercy], severity: 2, privacy: public }
+        partial:
+          - relation: { who: patient, axis: trust, delta: 1 }
+          - belief: { fact: "붉은연합 부상병의 파편은 빼냈지만 피를 많이 흘렸다. 청솔형제단 사람들은 정문 밖에서 기다리고 있다", source: seen }
+        miss:
+          - relation: { who: patient, axis: trust, delta: -1 }
+          - belief: { fact: "붉은연합 부상병의 파편을 끝내 빼내지 못했다. 수간호사가 와서 이어받았다", source: seen }
+    - id: hand_over
+      label: 청솔형제단 사람들에게 넘긴다
+      effects:
+        - relation: { who: guard, axis: respect, delta: -1 }
+        - faction_morale: { faction: own, delta: -1 }
+        - deed: { summary: 치료대 위의 붉은연합 부상병을 청솔형제단에 넘겼다, tags: [betrayal], severity: 2, privacy: public }
+    - id: go_talk
+      label: 정문으로 나가 청솔형제단 사람들을 달랜다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - merit: 1
+          - belief: { fact: "청솔형제단 사람들은 진료소 담 안의 일은 하얀매에 맡기겠다며 돌아갔다", source: seen }
+        partial:
+          - belief: { fact: "청솔형제단 사람들은 돌아갔지만, 부상병이 나가는 날을 기다리겠다고 했다", source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "정문 앞에서 청솔형제단 사람들과 언성이 높아졌다. 진료소 안 환자들이 모두 들었다", source: seen }
+
+- id: d_red_offer
+  title: 정문의 장교
+  tags: [d_medic]
+  when:
+    zones: [d_clinic]
+    segments: [day, evening]
+    day_gte: 3
+    clock_gte: { c_east_offensive: 4 }
+  cast:
+    envoy: { ids: [c_gyeongsu] }
+    guard: { ids: [d_dojin], enter: false }
+  setup: 장교 외투를 입은 {envoy:이/가} 장갑 낀 손을 정문 쇠창살에 얹고 기다린다. 대표는 자리에 없다. "수습이라. 괜찮아. 말만 전해 주면 돼. 겨울 동안 약은 우리만 산다. 값은 두 배로 쳐 주지. 싫다면, 뭐, 겨울은 길고."
+  ai_direction: 붉은연합은 동쪽 공세를 앞두고 하얀매의 약을 독점하려 한다. 마경수는 협박할수록 상냥해진다. 수습의 대답은 대표에게 전해지고 붉은연합도 기억한다. 숫자는 말하지 않는다.
+  choices:
+    - id: relay
+      label: 그대로 대표에게 전하겠다고만 한다
+      effects:
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - belief: { fact: "붉은연합 간부가 겨울 동안 하얀매의 약을 혼자 사겠다며 두 배 값을 불렀다. 거절하면 겨울이 길 거라고 했다", source: seen }
+    - id: stand_firm
+      label: 하얀매는 누구에게만 팔지 않는다고 못 박는다
+      check: endure
+      outcomes:
+        success:
+          - relation: { who: envoy, axis: respect, delta: 1 }
+          - faction_morale: { faction: own, delta: 1 }
+          - deed: { summary: 붉은연합 간부 앞에서 하얀매는 누구 편도 들지 않는다고 말했다, tags: [bravery], severity: 2, privacy: public }
+        partial:
+          - relation: { who: envoy, axis: affection, delta: -1 }
+          - belief: { fact: "붉은연합 간부는 수습의 대답을 듣고 웃으며 돌아갔다. 웃음이 오래 남았다", source: seen }
+        miss:
+          - relation: { who: envoy, axis: affection, delta: -2 }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "붉은연합 간부 앞에서 목소리가 떨렸다. 정문의 경비들이 그 모습을 보았다", source: seen }
+    - id: stall
+      label: 대표가 없다며 말을 흐려 시간을 번다
+      check: deceive
+      outcomes:
+        success:
+          - clock: { id: c_east_offensive, delta: -1 }
+          - belief: { fact: "붉은연합 간부에게 대표가 며칠 자리를 비운다고 둘러댔다. 그는 다시 오겠다고 했다", source: seen }
+        partial:
+          - belief: { fact: "붉은연합 간부는 둘러대는 말을 반쯤 믿는 눈치였다", source: seen }
+        miss:
+          - relation: { who: envoy, axis: trust, delta: -2 }
+          - clock: { id: c_east_offensive, delta: 1 }
+
+- id: d_chaewon_plea
+  title: 옛 간호사의 편지
+  tags: [d_medic]
+  when:
+    zones: [d_clinic]
+    segments: [day, evening]
+    day_gte: 3
+  cast:
+    courier: { ids: [e_yuri] }
+    nurse: { ids: [a_chaewon], enter: false }
+  setup: "빨간 털모자를 쓴 심부름꾼이 정문 옆에서 손짓한다. 청솔형제단 의무실의 {nurse:이/가} 보낸 쪽지라며 내민다. \"대표님 말고, 진료소 수습한테 주랬어요.\" 쪽지에는 항생제 한 줄만 보내 달라고, 아이가 열이 난다고 적혀 있다."
+  ai_direction: 윤채원은 예전에 하얀매 간호사였고, 감염된 아이를 살리려고 약을 들고 나갔다가 쫓겨났다. 하얀매 사람들은 그 일을 함부로 입에 올리지 않는다. 대표 서은영은 그 이름에 민감하다. {courier:은/는} 담배 한 개비를 바란다.
+  choices:
+    - id: send_own
+      label: 자기 항생제를 몰래 들려 보낸다
+      effects:
+        - take_item: { item: antibiotics }
+        - relation: { who: nurse, axis: trust, delta: 2 }
+        - relation: { who: courier, axis: trust, delta: 1 }
+        - deed: { summary: 청솔형제단의 윤채원에게 자기 항생제를 몰래 보냈다, tags: [mercy, enemy_sympathy], severity: 1, privacy: private }
+    - id: to_leader
+      label: 쪽지를 대표에게 가져간다
+      effects:
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - belief: { fact: "윤채원의 쪽지를 본 대표 서은영이 오래 말이 없었다. 그러고는 값을 받고 보내라고만 했다", source: seen }
+    - id: ask_courier
+      label: 심부름꾼에게 윤채원이 어떤 사람인지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "심부름꾼 말로는 윤채원은 청솔형제단 의무실을 혼자 꾸리고, 약이 없어 밤마다 손으로 상처를 꿰맨다고 한다", source: report }
+        partial:
+          - belief: { fact: "심부름꾼은 윤채원이 착한 사람이라는 말만 되풀이했다", source: report }
+        miss: []
+    - id: refuse
+      label: 하얀매는 외상 거래를 하지 않는다고 돌려보낸다
+      effects:
+        - relation: { who: nurse, axis: affection, delta: -1 }
+
+# ── 템플릿: 반복되는 진료소의 하루 ─────────────────────
+
+- id: d_triage_choice
+  title: 약은 한 사람 몫
+  tags: [clinic_life]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    zones: [d_clinic]
+    segments: [morning, day]
+  cast:
+    head: { commander: true }
+  setup: 치료실에 두 사람이 누워 있다. 다리를 크게 다친 버들마을 청년과, 숨이 가쁜 나루상단 노인. 약장에 남은 항생제는 한 사람 몫이다. {head:이/가} 손을 씻으며 등을 돌린 채 말한다. "네가 골라. 이유도 말하고."
+  ai_direction: 수간호사는 시험하는 중이다. 정답은 없다. 청년은 살 가능성이 높고, 노인은 나루상단이 값을 두 배로 치르겠다고 했다. 고른 이유가 그럴듯하면 수간호사는 고개를 끄덕인다. 두 환자는 이름 없는 엑스트라다.
+  choices:
+    - id: likely_survivor
+      label: 살 가능성이 높은 청년에게 쓴다
+      effects:
+        - relation: { who: head, axis: respect, delta: 1 }
+        - deed: { summary: 항생제 한 몫을 살 가능성이 높은 환자에게 썼다, tags: [diligence], severity: 1, privacy: semi_private }
+    - id: paying_one
+      label: 값을 더 치르는 노인에게 쓴다
+      effects:
+        - relation: { who: head, axis: respect, delta: -1 }
+        - give_item: { item: canned_food }
+        - deed: { summary: 항생제 한 몫을 값을 더 치른 환자에게 썼다, tags: [selfishness], severity: 1, privacy: semi_private }
+    - id: split
+      label: 반씩 나눠 둘 다 버티게 해 본다
+      check: first_aid
+      outcomes:
+        success:
+          - relation: { who: head, axis: respect, delta: 1 }
+          - belief: { fact: "항생제를 반씩 나눠 두 환자 모두 고비를 넘겼다. 수간호사는 운이 좋았다고만 했다", source: seen }
+        partial:
+          - belief: { fact: "항생제를 반씩 나눴다. 한 사람은 나아졌고, 한 사람은 아직 모른다", source: seen }
+        miss:
+          - relation: { who: head, axis: trust, delta: -1 }
+          - belief: { fact: "항생제를 반씩 나눴지만 두 사람 모두 열이 내리지 않았다", source: seen }
+
+- id: d_no_payment
+  title: 값을 못 치르는 사람
+  tags: [clinic_life]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    zones: [d_clinic]
+    segments: [morning, day, evening]
+  setup: 문진 줄 끝에서 여윈 여자가 아이를 안고 울먹인다. 아이 이마가 뜨겁다. 내놓을 것은 단추 몇 개뿐이다. 하얀매는 {scarce:이/가} 모자라고, 약값은 정해져 있다.
+  ai_direction: 여자는 어느 무리에도 속하지 않은 떠돌이다. 진료소 사람들이 지켜본다. 공짜로 주면 내일 줄이 두 배가 된다는 것을 다들 안다.
+  choices:
+    - id: give_own
+      label: 자기 해열제를 내준다
+      effects:
+        - take_item: { item: fever_reducer }
+        - deed: { summary: 값을 못 치르는 떠돌이 아이에게 자기 해열제를 주었다, tags: [mercy], severity: 1, privacy: public }
+    - id: work_for_it
+      label: 진료소 빨래를 돕는 값으로 받아 달라고 사정한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - belief: { fact: "떠돌이 여자가 사흘 동안 붕대 빨래를 하는 값으로 아이 해열제를 받았다", source: seen }
+        partial:
+          - belief: { fact: "떠돌이 여자는 치료는 받았지만 약은 받지 못했다", source: seen }
+        miss:
+          - relation: { who: commander, axis: trust, delta: -1 }
+    - id: rules
+      label: 정해진 값이 없으면 약도 없다고 말한다
+      effects:
+        - deed: { summary: 값을 못 치르는 떠돌이에게 약을 내주지 않았다, tags: [diligence], severity: 1, privacy: public }
+
+- id: d_bitten_stranger
+  title: 소매 속의 이빨 자국
+  urgent: true
+  tags: [d_medic]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zones: [d_clinic]
+  cast:
+    guard: { ids: [d_dojin] }
+  setup: 정문에서 호루라기 소리가 짧게 울린다. {guard:이/가} 한 남자의 팔을 붙들고 있다. 걷어 올린 소매 아래 반달 모양 이빨 자국. 남자가 소리친다. "개한테 물린 거야! 격리실 들어가면 우리 애들은 누가 먹여!"
+  ai_direction: 사람 이빨인지 개 이빨인지 가까이 보면 가를 수 있다. 정말로 개일 수도 있다. 남자는 진짜로 굶는 아이들이 있다. 백도진은 규칙대로 하려 한다. 진실은 확정하지 말고 판정에 맡긴다.
+  choices:
+    - id: inspect
+      label: 상처를 가까이 들여다본다
+      check: infected_lore
+      outcomes:
+        success:
+          - relation: { who: guard, axis: respect, delta: 1 }
+          - belief: { fact: "정문의 남자 팔에 난 자국은 송곳니 간격이 넓은 개 이빨 자국이었다. 격리 없이 상처만 씻어 보냈다", source: seen }
+        partial:
+          - belief: { fact: "정문의 남자 팔 자국이 개인지 사람인지 끝내 가를 수 없었다. 남자는 격리실로 갔다", source: seen }
+        miss:
+          - relation: { who: guard, axis: trust, delta: -1 }
+          - belief: { fact: "정문의 남자를 개에게 물렸다며 보냈지만, 백도진은 끝까지 고개를 저었다", source: seen }
+    - id: quarantine
+      label: 규칙대로 격리실로 보낸다
+      effects:
+        - relation: { who: guard, axis: respect, delta: 1 }
+        - deed: { summary: 물린 자국이 있는 남자를 사정을 듣지 않고 격리실로 보냈다, tags: [diligence], severity: 1, privacy: public }
+    - id: let_through
+      label: 백도진을 설득해 보내 준다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: guard, axis: trust, delta: -1 }
+          - deed: { summary: 물린 자국이 있는 남자를 격리 없이 보내 주었다, tags: [mercy, disobedience], severity: 2, privacy: public }
+        partial:
+          - relation: { who: guard, axis: trust, delta: -2 }
+          - belief: { fact: "백도진은 남자를 보내 주면서 수간호사에게 보고하겠다고 했다", source: seen }
+        miss:
+          - relation: { who: guard, axis: respect, delta: -1 }

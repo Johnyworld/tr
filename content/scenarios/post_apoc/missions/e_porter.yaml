@@ -1,0 +1,82 @@
+# 나루상단 짐꾼 임무. 행상대장(분대장급)이 하루 단위로 내려 준다
+- id: e_water_haul
+  title: 정수장 물 길어 나르기
+  briefing: 정수장에서 펌프로 길어 올린 물을 통에 채워 장터까지 나른다. 통 하나라도 쏟으면 장부에 빚으로 적힌다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 120
+    - check: endure
+      min_outcome: partial
+
+- id: e_pump_watch
+  title: 정수장 휴전 지키기
+  briefing: 정수장 문에서 물을 사러 오는 사람들을 지킨다. 무리를 묻지 말고, 총을 꺼내는 사람만 막는다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: guard_duty
+      minutes: 240
+
+- id: e_caravan_pine
+  title: 청솔형제단 물 배달
+  briefing: 물통을 지고 강변을 지나 청솔형제단 거점에 넘기고, 값으로 담배와 고철을 받아 온다. 값을 깎으려 들면 버틴다.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - activity: travel
+      minutes: 60
+    - check: persuade
+      min_outcome: partial
+
+- id: e_caravan_willow
+  title: 버들마을 물값 받기
+  briefing: 버들마을에 물을 넘기고 두 번 미룬 물값까지 받아 온다. 그쪽도 사정이 어렵다. 빈손으로 오지는 마라.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: persuade
+      min_outcome: partial
+
+- id: e_debt_run
+  title: 장부의 빚 걷기
+  briefing: 문소라의 장부에 기한이 지난 이름이 있다. 찾아가서 받을 것을 받아 온다. 사람들 앞에서 빚 이야기는 하지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: talk
+      minutes: 30
+    - check: persuade
+      min_outcome: partial
+
+- id: e_clinic_barter
+  title: 하얀매 진료소 흥정
+  briefing: 물 네 통을 지고 하얀매의 진료소에 가서 약과 바꿔 온다. 하얀매는 값을 먼저 부르지 않는다. 우리가 먼저 부르면 진다.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - check: persuade
+      min_outcome: success
+
+- id: e_road_scout
+  title: 강변 길 살피기
+  briefing: 짐마차보다 먼저 강변 길을 걸으며 매복 흔적과 감염체 무리를 살핀다. 들키지 않게 돌아와 길이 깨끗한지 알린다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: stealth
+      min_outcome: partial
+
+- id: e_scrap_salvage
+  title: 강변 공장 고철 줍기
+  briefing: 강변 공장 지대에서 팔 만한 고철과 부품을 찾아 온다. 소리를 내면 감염체가 모인다. 해 지기 전에 돌아온다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - check: scavenge
+      min_outcome: partial

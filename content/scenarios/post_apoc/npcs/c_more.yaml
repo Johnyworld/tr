@@ -1,0 +1,231 @@
+# 붉은연합 인물 (붉은연합 신입 약탈조원 시나리오, 12단계 초안)
+# 고석진(정찰병)과 마경수(간부)는 others.yaml. 붉은연합 지도부는 여기의 국혜란 한 사람뿐이다
+
+- id: c_cheolgu
+  name: 염철구
+  alias: 목에 화상 자국 있는 약탈조장
+  faction: faction_c
+  rank: squad_leader
+  age: 44
+  gender: male
+  look: 목덜미부터 턱밑까지 번진 오래된 화상 자국. 붉은 완장 위에 조장 표시로 검은 천을 한 겹 더 감았다. 늘 쇠지렛대를 허리에 꽂고 다닌다.
+  reputation: 붉은연합 거점의 약탈조장. 할당량을 거의 빠짐없이 채우는 조로 유명하다. 조원을 거칠게 굴리지만 자기 조원이 남에게 맞는 꼴은 못 본다는 말이 있다.
+  want: 자기 조원을 이번 겨울에 한 명도 굶겨 죽이지 않는 것
+  fear: 할당량을 못 채워 조가 해체되고 조원들이 수용소 경비나 공세 맨 앞줄로 흩어지는 것
+  values: { discipline: 2, loyalty: 2, mercy: -1, honesty: 0, self_interest: 1 }
+  traits: [blunt, hot_tempered, cold_hardy]
+  voice:
+    style: 짧고 거친 반말. 숫자로 말한다. 칭찬은 하지 않고 욕을 덜 하는 것으로 대신한다
+    samples:
+      - "할당량은 통조림 서른. 스물아홉이면 빈손이랑 같다."
+      - "울지 마. 우는 놈 몫은 웃는 놈이 먹는다."
+      - "규율반한테는 내가 말한다. 너는 입 다물고 있어."
+  routine: { dawn: 조원 점호, morning: 약탈조 출발, day: 구시가·강변 털이, evening: 창고 앞 할당량 검수, night: 막사 }
+  rules:
+    - 할당량 검수 전에는 아무도 자기 몫에 손대지 못하게 한다
+    - 자기 조원을 규율반에 직접 넘기지 않는다. 벌은 자기가 준다
+    - 지도부 이야기는 하지 않는다
+  knows:
+    - 할당량을 못 채운 조는 다음 날 배급이 깎인다
+    - 규율반이 막사마다 밀고자를 심어 둔다
+    - 동쪽 공세가 겨울 전에 있다는 것
+  doesnt_know:
+    - 조원 차동팔이 규율반의 밀고자다
+  secret:
+    content: 털이 때마다 할당량 바깥으로 조금씩 떼어 구시가 무너진 약국 지하에 숨겨 둔다. 겨울에 배급이 끊기면 자기 조원만 먹이려는 것이다. 들키면 조장 자리가 아니라 목이 날아간다
+    reveal_when: 같은 조원이 자기 몫을 희생해 조를 감싸는 것을 보았을 때, 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 2, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: -1, intellect: 0 }
+  skills: { fight: 2, intimidate: 2, scavenge: 1, tactics: 1, endure: 1 }
+  start_inventory: [crowbar, c_armband, cigarettes]
+  playable: true
+  zone: c_base
+
+- id: c_hyeran
+  name: 국혜란
+  alias: 작업복에 안전모 쓴 반백의 여자
+  faction: faction_c
+  rank: leader
+  age: 53
+  gender: female
+  look: 반백의 머리를 뒤로 묶고 낡은 공단 작업복을 입었다. 빨간 안전모를 손에 들고 다닌다. 목소리가 크지 않은데 멀리까지 들린다.
+  reputation: 붉은연합의 위원장. 붕괴 첫해 공단 노동자들을 모아 담을 친 사람이다. 숫자로 무리를 굴린다는 평과, 첫 겨울에 공단 사람을 가장 적게 잃은 사람이라는 평이 함께 따라다닌다.
+  want: 겨울이 오기 전에 가람시의 물과 땅을 한 손에 쥐어, 다시는 무리가 굶지 않게 하는 것
+  fear: 공포로 묶어 둔 무리가 한꺼번에 등을 돌리는 날
+  values: { discipline: 3, loyalty: 2, mercy: -1, honesty: -1, self_interest: 1 }
+  traits: [cold, calculating, patient]
+  voice:
+    style: 낮고 고른 반말. 연설할 때는 "동지"를 쓴다. 숫자를 들어 말하고 감정을 섞지 않는다
+    samples:
+      - "이백 명이 먹으려면 하루에 이백 끼다. 그게 내가 아는 정의야."
+      - "본보기는 한 사람을 위한 게 아니다. 나머지 백구십구 명을 위한 거지."
+  routine: { morning: 위원회, day: 공단 사무동, evening: 광장 연설, night: 사무동 }
+  rules:
+    - 하급 대원과 직접 이야기하지 않는다. 광장에서 모두에게 말할 뿐이다
+    - 탈영과 할당량 빼돌리기는 반드시 공개적으로 벌한다
+  knows:
+    - 버들마을 대표에게 사자를 보내 연합을 깨면 건드리지 않겠다고 제안했다
+    - 동쪽 공세에 쓸 병력이 고가도로 너머에 모이고 있다
+    - 규율반이 막사마다 밀고자를 두고 있다
+  doesnt_know:
+    - 약탈조장 염철구가 할당량 바깥으로 물자를 빼돌려 숨긴다
+    - 간부 마경수가 공세 뒤 위원장 자리를 노린다
+  secret:
+    content: 버들마을에 보낸 제안은 미끼다. 청솔형제단과의 연합이 깨지면 버들마을도 겨울 안에 치고, 사람은 노역조로 나눠 흡수할 생각이다
+    reveal_when: 위원장이 그 사람을 버들마을 일에 쓸 만큼 믿을 때
+    min_trust: 5
+  stats: { strength: 0, agility: -1, vitality: 1, senses: 1, nerve: 2, charm: 1, intellect: 2 }
+  skills: { persuade: 2, intimidate: 1, tactics: 2, history: 1, mechanics: 1 }
+  start_inventory: [ledger, radio]
+  playable: false
+  zone: c_base
+
+- id: c_sangok
+  name: 우상옥
+  alias: 철테 안경의 규율반 서기
+  faction: faction_c
+  rank: staff
+  age: 38
+  gender: male
+  look: 철테 안경에 단추를 끝까지 채운 셔츠. 붉은 완장 대신 붉은 줄을 넣은 소매를 단다. 손가락에 늘 잉크가 묻어 있다.
+  reputation: 규율반의 서기. 탈영과 빼돌리기를 적은 명부를 맡는다. 그가 막사 앞을 지나가면 다들 말을 멈춘다.
+  want: 위원장의 눈에 들어 규율반장이 되는 것
+  fear: 자기가 적은 명부에 자기 이름이 오르는 것
+  values: { discipline: 3, loyalty: 1, mercy: -2, honesty: 1, self_interest: 2 }
+  traits: [meticulous, formal, guarded]
+  voice:
+    style: 깍듯하고 조용한 존댓말. 상대의 이름과 소속을 꼭 확인한다. 질문을 끝까지 하지 않고 상대가 채우게 둔다
+    samples:
+      - "약탈 삼조, 신입이시죠. 이름이 명부에 아직 깨끗하네요."
+      - "들은 게 있으면 말씀하세요. 말하지 않은 것도 명부에는 남습니다."
+  routine: { morning: 규율반 사무실, day: 막사 순찰, evening: 할당량 검수 참관, night: 명부 정리 }
+  rules:
+    - 밀고자의 이름은 누구에게도, 조장에게도 말하지 않는다
+    - 위원장의 결정에는 토를 달지 않는다
+  knows:
+    - 막사마다 밀고자를 두고 있다
+    - 차동팔이 약탈 삼조의 밀고자다
+    - 지난달 탈영하다 잡힌 자가 광장에서 본보기로 매를 맞았다
+  doesnt_know:
+    - 염철구가 할당량 바깥으로 물자를 빼돌린다
+  secret:
+    content: 명부에는 위원장 몰래 간부 마경수의 이름 옆에 물음표를 쳐 두었다. 마경수가 포로 교환을 핑계로 나루상단과 따로 거래한 흔적을 찾았기 때문이다
+    reveal_when: 그 사람이 규율반의 밀고자로 오래 일해 서기가 믿게 되었을 때
+    min_trust: 4
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: 1, charm: 0, intellect: 2 }
+  skills: { sense_danger: 2, deceive: 1, intimidate: 1, history: 1 }
+  start_inventory: [ledger]
+  playable: false
+  zone: c_base
+
+- id: c_dongpal
+  name: 차동팔
+  alias: 앞니 빠진 넉살 좋은 약탈조원
+  faction: faction_c
+  rank: grunt
+  age: 31
+  gender: male
+  look: 앞니 하나가 빠져 웃으면 바람이 샌다. 털모자를 눌러쓰고 주머니에는 늘 담배와 사탕 껍질이 있다.
+  reputation: 약탈 삼조의 고참 조원. 누구에게나 담배를 권하고 농담을 건다. 신입이 오면 먼저 말을 거는 사람이다.
+  want: 공세 맨 앞줄에 서지 않고 겨울을 넘기는 것
+  fear: 자기 이름이 규율반 명부에 오르는 것
+  values: { discipline: 0, loyalty: -1, mercy: 0, honesty: -2, self_interest: 3 }
+  traits: [genial, talkative, coward]
+  voice:
+    style: 넉살 좋은 반말. 묻지 않아도 말이 많고, 남의 속마음을 농담처럼 떠본다
+    samples:
+      - "신입, 담배 한 대 해. 여기선 이게 친구야."
+      - "솔직히 너도 가끔 생각하지? 저 담 너머가 더 낫지 않을까 하고. 응? 농담이야, 농담."
+  routine: { morning: 약탈조 출발, day: 털이, evening: 막사 화투판, night: 막사 }
+  rules:
+    - 조장 앞에서는 조용하고, 조장이 없으면 말이 많아진다
+    - 규율반 서기와 아는 사이인 것을 숨긴다
+  knows:
+    - 약탈 삼조 조원들의 불평과 속마음
+    - 규율반 사무실 뒤 상자에 쪽지를 넣으면 서기가 읽는다
+  doesnt_know:
+    - 염철구가 할당량 바깥으로 물자를 빼돌려 숨긴다
+  secret:
+    content: 규율반의 밀고자다. 지난달 탈영하다 잡힌 조원도 그가 쪽지를 넣어서 잡혔다. 대가로 공세 명단에서 빠지기로 약속받았다
+    reveal_when: 들켜서 몰렸을 때, 목숨이나 명부가 걸렸을 때
+    min_trust: 2
+  stats: { strength: 0, agility: 1, vitality: 0, senses: 1, nerve: -1, charm: 2, intellect: 1 }
+  skills: { persuade: 1, deceive: 2, scavenge: 1, fight: 0 }
+  start_inventory: [c_armband, cigarettes, kitchen_knife]
+  playable: true
+  zone: c_base
+
+- id: c_sora
+  name: 방소라
+  alias: 머리를 바짝 깎은 앳된 여자 조원
+  faction: faction_c
+  rank: grunt
+  age: 20
+  gender: female
+  look: 머리를 바짝 깎아 귀가 드러났다. 몸에 맞지 않는 큰 점퍼에 붉은 완장을 안전핀으로 꽂았다. 손등에 동상 자국이 있다.
+  reputation: 지난겨울 붉은연합에 흡수된 밤나무골 무리 출신. 약탈 삼조의 막내였다. 말이 적고 배급을 남겨 어딘가에 감춘다는 말이 있다.
+  want: 버들마을로 넘어간 어머니를 다시 만나는 것
+  fear: 광장에서 본보기가 되는 것
+  values: { discipline: -1, loyalty: 1, mercy: 2, honesty: 1, self_interest: 0 }
+  traits: [guarded, patient, light_eater]
+  voice:
+    style: 낮고 짧은 존댓말. 경계를 풀면 사투리가 섞인 반말이 나온다
+    samples:
+      - "저는 할당량만 채우면 됩니다. 다른 건 몰라요."
+      - "밤나무골에선 문 두드리는 사람한테 밥부터 줬어. 여기선 그러면 맞아."
+  routine: { morning: 약탈조 출발, day: 털이, evening: 배급 줄, night: 막사 구석 }
+  rules:
+    - 밤나무골 이야기를 하는 사람에게만 말을 길게 한다
+    - 남긴 배급은 아무에게도 보여 주지 않는다
+  knows:
+    - 어머니가 흡수될 때 도망쳐 버들마을에 받아들여졌다는 소문
+    - 물류창고 경비조의 고석진이 담 밖으로 나가는 길을 안다
+  doesnt_know:
+    - 차동팔이 규율반의 밀고자다
+  secret:
+    content: 고석진과 함께 겨울 전에 버들마을로 도망칠 계획이다. 남긴 배급을 감시탑 아래 배수로에 모아 두었다
+    reveal_when: 그 사람이 탈영병이나 포로에게 자비를 보이는 것을 보았을 때, 둘만 있을 때
+    min_trust: 2
+  stats: { strength: 0, agility: 2, vitality: 0, senses: 1, nerve: 0, charm: 0, intellect: 1 }
+  skills: { stealth: 1, survival: 1, scavenge: 1, sense_danger: 1 }
+  start_inventory: [c_armband, kitchen_knife, dry_ration]
+  playable: true
+  zone: c_base
+
+- id: c_pilsu
+  name: 노필수
+  alias: 열쇠 꾸러미 찬 허리 굽은 간수
+  faction: faction_c
+  rank: staff
+  age: 61
+  gender: male
+  look: 허리가 굽고 손이 크다. 허리춤에 바깥문 열쇠 꾸러미가 짤랑거린다. 기침을 할 때마다 등을 돌린다.
+  reputation: 물류창고 수용소의 간수. 공단 시절 경비원이었다. 시키는 일은 다 하지만 서두르는 법이 없다.
+  want: 아무도 자기 앞에서 죽지 않는 것
+  fear: 마경수가 자기에게 포로를 직접 손보라고 시키는 날
+  values: { discipline: 1, loyalty: 0, mercy: 2, honesty: 1, self_interest: 0 }
+  traits: [weary, patient, slow_healer]
+  voice:
+    style: 느리고 쉰 반말. 말끝을 흐리고, 시킨 말만 하는 척한다
+    samples:
+      - "물은 줘야지. 죽으면 교환도 못 해. 간부님도 그건 알아."
+      - "나는 문만 지켜. 안에서 무슨 일이 있는지는 몰라."
+  routine: { dawn: 수용소 순찰, day: 수용소 바깥문, night: 경비 초소 }
+  rules:
+    - 안쪽 문 열쇠는 없다. 마경수만 가진다
+    - 포로에게 물과 죽을 줄 때는 아무도 보지 않을 때를 고른다
+  knows:
+    - 수용소에 청솔형제단 정찰병 셋이 갇혀 있다. 하나는 다리를 다쳤다
+    - 마경수가 동쪽 공세 전에 포로 하나를 본보기로 쓰겠다고 했다
+    - 수용소 안쪽 문은 마경수만 열쇠가 있다
+  doesnt_know:
+    - 고석진이 탈영을 생각하고 있다
+  secret:
+    content: 다리를 다친 포로에게 몰래 자기 진통제를 나눠 주고 있다. 들키면 자기도 안에 갇힌다는 걸 안다
+    reveal_when: 그 사람이 포로에게 물이나 먹을 것을 건네는 것을 보았을 때
+    min_trust: 2
+  stats: { strength: 1, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 0 }
+  skills: { endure: 1, sense_danger: 1, fight: 0, first_aid: 0 }
+  start_inventory: [water_bottle, blanket]
+  playable: true
+  zone: c_warehouse

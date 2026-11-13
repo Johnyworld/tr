@@ -1,0 +1,562 @@
+# 붉은연합 신입 약탈조원 스토리렛 (초안). 형식은 a_grunt.yaml 머리말 참고
+# 갈래 셋:
+# - 포로: c_prisoners_seen → c_prisoner_message → c_message_delivered / c_prisoner_example (마경수의 본보기)
+# - 탈영: c_sora_confided → c_sora_help → c_sora_gone(추격 명령) / c_sora_caught(광장의 본보기)
+# - 밀고: c_informant(규율반에 귀가 됨), c_dongpal_exposed → c_dongpal_dealt
+
+# ── 고정 ───────────────────────────────────────────
+
+- id: c_first_quota
+  title: 신입의 할당량
+  tags: [c_raider]
+  when:
+    zones: [c_base]
+    segments: [dawn, morning]
+  cast:
+    boss: { commander: true }
+  setup: "점호가 끝나자 {boss:이/가} 신입 앞에 선다. 손바닥만 한 판자에 분필로 숫자가 적혀 있다. \"오늘부터 너도 할당량에 들어간다. 조 전체가 못 채우면 조 전체가 굶는다. 신입이라고 봐주는 거 없다.\""
+  ai_direction: 염철구는 신입을 겁주려는 게 아니라 규칙을 한 번에 박아 두려는 것이다. 다른 조원들은 눈을 피한다. 지난달 이 조에서 한 사람이 탈영하다 잡혔다는 걸 다들 기억한다.
+  choices:
+    - id: vow
+      label: 채우겠다고 짧게 대답한다
+      effects:
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "약탈 삼조는 조 전체가 할당량을 함께 진다. 한 사람이 모자라면 조 전체의 배급이 깎인다", source: report }
+    - id: ask_why
+      label: 못 채우면 어떻게 되는지 묻는다
+      effects:
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "{boss}의 말: 여러 번 못 채운 조는 해체되고, 조원들은 수용소 경비나 공세 맨 앞줄로 흩어진다", source: report }
+    - id: smirk
+      label: 신입한테 너무하다고 툴툴댄다
+      effects:
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - deed: { summary: 첫날 점호에서 할당량에 대고 툴툴댔다, tags: [disobedience], severity: 1, privacy: public }
+
+- id: c_prisoner_water
+  title: 간수의 물통
+  tags: [c_raider]
+  when:
+    zones: [c_warehouse]
+    flags_none: [c_prisoners_seen]
+  cast:
+    jailer: { ids: [c_pilsu] }
+  setup: "물류창고 뒤편, 허리 굽은 간수가 물통 두 개를 들고 쩔쩔맨다. 열쇠 꾸러미가 짤랑거린다. \"이거 하나만 들어 줘. 안쪽까지 갈 것도 없어. 바깥문 창살 앞에만 놓으면 돼.\""
+  ai_direction: 바깥문 창살 너머에 청솔형제단 정찰병 셋이 있다. 하나는 다리를 다쳐 누워 있다. 수척하지만 살아 있다. {jailer:은/는} 이 일을 시킨 사람이 아무도 없다는 걸 말하지 않는다. 지금 보는 사람은 없다.
+  choices:
+    - id: carry
+      label: 물통을 들어 창살 앞까지 함께 간다
+      effects:
+        - set_flag: c_prisoners_seen
+        - set_flag: scouts_captured
+        - relation: { who: jailer, axis: trust, delta: 1 }
+        - belief: { fact: "물류창고 수용소 창살 너머에 청솔형제단 정찰병 셋이 갇혀 있다. 하나는 다리를 다쳐 누워 있었다", source: seen }
+    - id: report
+      label: 간수가 포로에게 몰래 물을 준다고 규율반에 알린다
+      effects:
+        - set_flag: c_prisoners_seen
+        - merit: 1
+        - relation: { who: jailer, axis: trust, delta: -3 }
+        - deed: { summary: 수용소 간수가 포로에게 물을 준다고 규율반에 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: 물류창고 수용소에 포로가 있다. 간수 노필수가 시키지 않은 물을 나르고 있었다, source: seen }
+    - id: refuse
+      label: 내 일이 아니라며 지나간다
+      effects: []
+
+- id: c_prisoner_whisper
+  title: 창살 너머의 부탁
+  tags: [c_raider]
+  when:
+    zones: [c_warehouse]
+    segments: [evening, night, dawn]
+    flags_all: [c_prisoners_seen]
+    flags_none: [c_prisoner_message, c_prisoner_refused]
+  setup: 수용소 바깥문 앞을 지나는데 창살 너머에서 낮은 목소리가 부른다. 젊은 남자가 얼굴을 창살에 붙이고 있다. "거기, 완장. 부탁 하나만 하자. 쪽지 한 장이야. 우리 살아 있다고만."
+  ai_direction: 오씨 성을 쓰는 청솔형제단 정찰병이다. 동쪽 초소 망루 아래 돌무더기에 쪽지를 두면 동료가 찾는다고 말한다. 대가로 줄 것은 없다. 다리를 다친 동료가 열이 나고 있다. 거짓말은 하지 않는다.
+  choices:
+    - id: take_note
+      label: 쪽지를 받아 품에 넣는다
+      effects:
+        - set_flag: c_prisoner_message
+        - belief: { fact: "포로가 부탁했다: 청솔형제단 동쪽 초소 망루 아래 돌무더기에 쪽지를 두면 동료가 찾는다", source: report }
+        - deed: { summary: 수용소의 청솔형제단 포로에게서 몰래 쪽지를 받았다, tags: [enemy_sympathy], severity: 2, privacy: private }
+    - id: report_officer
+      label: 포로가 밖과 연락하려 한다고 간부에게 알린다
+      effects:
+        - set_flag: c_prisoner_refused
+        - merit: 2
+        - deed: { summary: 바깥과 연락하려던 포로를 간부에게 고했다, tags: [loyalty], severity: 2, privacy: semi_private }
+    - id: walk_away
+      label: 못 들은 척 지나간다
+      effects:
+        - set_flag: c_prisoner_refused
+
+- id: c_message_out
+  title: 망루 아래 돌무더기
+  tags: [c_raider]
+  when:
+    zones: [c_warehouse, a_east_post]
+    segments: [night, dawn]
+    flags_all: [c_prisoner_message]
+    flags_none: [c_message_delivered, c_message_burned]
+  setup: 고가도로 너머 어둠 속에 청솔형제단 동쪽 초소의 망루가 검게 서 있다. 품속의 쪽지가 손끝에 걸린다. 망루 아래 돌무더기까지는 탁 트인 공터를 지나야 한다.
+  ai_direction: 망루에는 보초가 있다. 들키면 청솔형제단 총에 맞을 수도 있고, 돌아가서 무엇을 하다 왔는지 말해야 한다. 근처에 붉은연합 정찰병이 있을지 모른다. 확정하지 않는다.
+  choices:
+    - id: deliver
+      label: 공터를 기어 건너 돌무더기에 쪽지를 끼운다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: c_message_delivered
+          - clear_flag: c_prisoner_message
+          - clock: { id: a_counteroffensive, delta: 1 }
+          - deed: { summary: 포로의 쪽지를 청솔형제단 초소 아래에 몰래 전했다, tags: [enemy_sympathy, betrayal], severity: 3, privacy: private }
+          - belief: { fact: 포로의 쪽지를 동쪽 초소 망루 아래 돌무더기에 끼워 두고 아무에게도 들키지 않고 돌아왔다, source: seen }
+        partial:
+          - set_flag: c_message_delivered
+          - clear_flag: c_prisoner_message
+          - deed: { summary: 청솔형제단 초소 근처에서 무언가를 두고 오는 모습이 누군가에게 보였다, tags: [enemy_sympathy, betrayal], severity: 3, privacy: semi_private }
+          - belief: { fact: 쪽지는 끼워 두었지만 돌아오는 길에 고가도로 쪽 그림자 하나가 움직이는 것을 보았다, source: seen }
+        miss:
+          - belief: { fact: 망루의 손전등이 공터를 훑어 쪽지를 두지 못하고 물러났다. 쪽지는 아직 품에 있다, source: seen }
+    - id: burn
+      label: 쪽지를 태워 버린다
+      effects:
+        - set_flag: c_message_burned
+        - clear_flag: c_prisoner_message
+        - belief: { fact: 포로의 쪽지를 태웠다. 거기 뭐라고 적혀 있었는지는 끝까지 읽지 않았다, source: seen }
+    - id: wait
+      label: 오늘 밤은 아니다. 품에 둔 채 돌아선다
+      effects: []
+
+- id: c_prisoner_example
+  title: 간부의 본보기
+  tags: [c_raider]
+  urgent: true
+  when:
+    zones: [c_warehouse]
+    segments: [morning, day]
+    flags_all: [c_prisoners_seen]
+    flags_none: [c_example_done]
+    clock_gte: { c_east_offensive: 5 }
+  cast:
+    officer: { ids: [c_gyeongsu] }
+  setup: "{officer:이/가} 장갑을 고쳐 끼며 경비조를 수용소 앞마당에 모은다. 포로 하나가 무릎 꿇린 채 끌려 나와 있다. {officer:이/가} 당신을 손짓해 부른다. \"신입. 공세 전에 다들 봐 둬야 할 게 있어. 네가 해.\""
+  ai_direction: 마경수는 경비조의 충성을 시험하는 것이다. 죽이라는 게 아니라 모두 앞에서 때리라는 것이다. 포로는 다리를 다친 청솔형제단 정찰병이다. 고통을 자세히 묘사하지 않는다. 마경수의 상냥한 목소리, 조원들이 고개를 돌리는 모습, 간수 노필수의 굳은 얼굴에 초점을 둔다.
+  choices:
+    - id: obey
+      label: 시키는 대로 한다
+      effects:
+        - set_flag: c_example_done
+        - merit: 1
+        - relation: { who: officer, axis: respect, delta: 2 }
+        - deed: { summary: 간부의 명령으로 모두 앞에서 다친 포로를 때렸다, tags: [cruelty, loyalty], severity: 3, privacy: public }
+    - id: fake
+      label: 세게 때리는 척하며 힘을 뺀다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: c_example_done
+          - relation: { who: officer, axis: respect, delta: 1 }
+          - belief: { fact: 포로를 때리는 시늉만 했다. 마경수는 눈치채지 못했지만 포로는 알아챈 것 같았다, source: seen }
+        partial:
+          - set_flag: c_example_done
+          - relation: { who: officer, axis: trust, delta: -1 }
+          - belief: { fact: 때리는 시늉을 했지만 마경수가 미소를 지우고 오래 쳐다보았다, source: seen }
+        miss:
+          - set_flag: c_example_done
+          - merit: -2
+          - relation: { who: officer, axis: trust, delta: -2 }
+          - deed: { summary: 포로를 때리는 시늉만 하다가 간부에게 들켰다, tags: [disobedience, enemy_sympathy], severity: 2, privacy: public }
+    - id: refuse
+      label: 못 하겠다고 말한다
+      effects:
+        - set_flag: c_example_done
+        - set_flag: c_marked
+        - merit: -3
+        - relation: { who: officer, axis: trust, delta: -3 }
+        - deed: { summary: 모두 앞에서 포로를 때리라는 간부의 명령을 거부했다, tags: [disobedience, mercy], severity: 3, privacy: public }
+
+- id: c_sora_plan
+  title: 막내의 배수로
+  tags: [red_life]
+  when:
+    own_territory: true
+    segments: [night]
+    day_gte: 3
+    flags_none: [c_sora_confided, c_sora_caught]
+  cast:
+    sora: { ids: [c_sora], known: true, trust_gte: 1 }
+  setup: "감시탑 아래 배수로 쪽에서 {sora:이/가} 무언가를 비닐에 싸 돌 틈에 밀어 넣다가 당신과 눈이 마주친다. 한참 말이 없다가, 낮게 묻는다. \"…밤나무골 얘기, 들은 적 있어요?\""
+  ai_direction: "{sora:은/는} 남긴 배급을 모아 두고 있다. 어머니가 버들마을에 있다는 이야기를 하고, 겨울 전에 넘어갈 거라고 털어놓는다. 물류창고 경비조의 고석진이 길을 안다는 것도. 함께 가자고는 하지 않는다. 다만 감시탑 교대 시간을 알려 줄 수 있느냐고 묻는다."
+  choices:
+    - id: help
+      label: 다음 감시탑 교대 때 눈감아 주겠다고 한다
+      effects:
+        - set_flag: c_sora_confided
+        - set_flag: c_sora_help
+        - relation: { who: sora, axis: trust, delta: 3 }
+        - belief: { fact: "{sora:은/는} 고석진과 함께 겨울 전에 버들마을로 넘어가려 한다. 남긴 배급을 감시탑 아래 배수로에 모아 두었다", source: report }
+        - deed: { summary: 탈영하려는 동료를 돕기로 했다, tags: [mercy, disobedience], severity: 2, privacy: private }
+    - id: silent
+      label: 아무것도 못 봤다고만 한다
+      effects:
+        - set_flag: c_sora_confided
+        - relation: { who: sora, axis: trust, delta: 1 }
+        - belief: { fact: "{sora:이/가} 감시탑 아래 배수로에 배급을 숨긴다. 어딘가로 떠날 생각인 것 같다", source: seen }
+    - id: report
+      label: 규율반에 알린다
+      effects:
+        - set_flag: c_sora_confided
+        - set_flag: c_sora_caught
+        - merit: 2
+        - relation: { who: sora, axis: trust, delta: -3 }
+        - deed: { summary: 탈영을 준비하던 막내를 규율반에 고했다, tags: [loyalty, betrayal], severity: 3, privacy: semi_private }
+
+- id: c_desertion_night
+  title: 감시탑 교대
+  tags: [red_life]
+  urgent: true
+  when:
+    zones: [c_base]
+    segments: [night, dawn]
+    flags_all: [c_sora_help]
+    flags_none: [c_sora_gone, c_sora_caught]
+  cast:
+    sora: { ids: [c_sora], enter: false }
+  setup: 감시탑 교대 시간. 탐조등이 한 바퀴 돌고 멎는 틈에 배수로 쪽에서 작은 그림자 둘이 움직인다. 당신이 손을 들어 신호하기만 하면 된다. 아니면 소리치면 된다.
+  ai_direction: "그림자 둘은 {sora}와 고석진이다. 옆 감시탑 보초가 졸고 있지만 언제 깰지 모른다. 탐조등이 다시 돌기 전에 끝내야 한다."
+  choices:
+    - id: cover
+      label: 탐조등을 반대편으로 돌려 둘을 보낸다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: c_sora_gone
+          - clear_flag: c_sora_help
+          - relation: { who: sora, axis: trust, delta: 2 }
+          - deed: { summary: 감시탑 교대 때 탈영하는 동료들을 몰래 내보냈다, tags: [mercy, betrayal], severity: 3, privacy: private }
+          - belief: { fact: "{sora}와 고석진이 담을 넘어 구시가 쪽 어둠으로 사라졌다. 아무도 보지 못했다", source: seen }
+        partial:
+          - set_flag: c_sora_gone
+          - clear_flag: c_sora_help
+          - deed: { summary: 탈영병이 담을 넘던 밤 감시탑에서 탐조등을 엉뚱한 데로 돌렸다, tags: [disobedience, betrayal], severity: 3, privacy: semi_private }
+          - belief: { fact: 둘은 담을 넘었지만 옆 감시탑 보초가 깨어 탐조등이 엉뚱한 데를 비춘 걸 보았다, source: seen }
+        miss:
+          - set_flag: c_sora_caught
+          - clear_flag: c_sora_help
+          - belief: { fact: "탐조등이 늦게 돌았다. 옆 감시탑에서 호루라기가 울렸고 {sora:이/가} 담 밑에서 붙잡혔다. 고석진은 어둠 속으로 사라졌다", source: seen }
+    - id: alarm
+      label: 마지막 순간 소리쳐 경보를 울린다
+      effects:
+        - set_flag: c_sora_caught
+        - clear_flag: c_sora_help
+        - merit: 2
+        - relation: { who: sora, axis: trust, delta: -3 }
+        - deed: { summary: 돕겠다던 동료가 담을 넘는 순간 경보를 울렸다, tags: [loyalty, betrayal], severity: 3, privacy: public }
+    - id: look_away
+      label: 아무 신호도 하지 않고 등을 돌린다
+      effects:
+        - clear_flag: c_sora_help
+        - relation: { who: sora, axis: trust, delta: -2 }
+        - belief: { fact: "신호가 없자 {sora}의 그림자는 배수로 안으로 다시 숨어들었다", source: seen }
+
+- id: c_hunt_order
+  title: 추격 명령
+  tags: [red_life]
+  when:
+    zones: [c_base]
+    segments: [dawn, morning]
+    flags_all: [c_sora_gone]
+    flags_none: [c_hunt_done]
+  cast:
+    boss: { commander: true }
+  setup: "{boss:이/가} 담 아래 발자국 앞에 쪼그려 앉아 있다. 규율반 서기가 뒤에서 명부를 펼쳐 들고 서 있다. {boss:이/가} 일어서며 당신을 본다. \"막내가 없어졌다. 너, 지난밤 그쪽 감시탑이었지. 뭐 본 거 있나.\""
+  ai_direction: 염철구는 막내를 규율반에 넘기고 싶지 않다. 하지만 서기가 지켜보고 있어 대놓고 덮을 수 없다. 플레이어가 그럴듯한 엉뚱한 방향을 대면 그 말을 받아 줄 마음이 반쯤 있다.
+  choices:
+    - id: mislead
+      label: 강변 쪽으로 가는 걸 봤다고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: c_hunt_done
+          - relation: { who: boss, axis: trust, delta: 1 }
+          - belief: { fact: 추격조는 강변 쪽으로 나갔다가 빈손으로 돌아왔다. 염철구는 아무것도 묻지 않았다, source: seen }
+        partial:
+          - set_flag: c_hunt_done
+          - belief: { fact: 추격조는 강변 쪽으로 나갔다. 규율반 서기가 내 이름을 명부에 적는 것을 보았다, source: seen }
+        miss:
+          - set_flag: c_hunt_done
+          - set_flag: c_marked
+          - merit: -2
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - deed: { summary: 탈영병의 행방을 두고 조장과 규율반 앞에서 거짓말을 하다 들켰다, tags: [deceit, betrayal], severity: 3, privacy: public }
+    - id: truth
+      label: 구시가 쪽이라고 사실대로 말한다
+      effects:
+        - set_flag: c_hunt_done
+        - merit: 1
+        - deed: { summary: 탈영병이 간 방향을 사실대로 말했다, tags: [honesty, loyalty], severity: 2, privacy: public }
+        - belief: { fact: 추격조가 구시가 쪽으로 나갔다. 막내가 버들마을에 닿기 전에 붙잡힐지도 모른다, source: seen }
+    - id: nothing
+      label: 아무것도 못 봤다고만 한다
+      effects:
+        - set_flag: c_hunt_done
+        - relation: { who: boss, axis: respect, delta: -1 }
+
+- id: c_public_example
+  title: 광장의 본보기
+  tags: [red_life]
+  when:
+    zones: [c_base]
+    segments: [evening]
+    flags_all: [c_sora_caught]
+    flags_none: [c_sora_punished]
+  cast:
+    leader: { ids: [c_hyeran] }
+    sora: { ids: [c_sora], enter: false }
+  setup: "저녁 배급 전, 모두가 광장에 모였다. 안전모를 든 {leader:이/가} 단 위에 선다. 단 아래에 {sora:이/가} 손이 묶인 채 서 있다. \"동지들. 이 사람이 먹은 밥은 여러분이 털어 온 밥입니다. 그 밥을 들고 적에게 가려 했습니다.\""
+  ai_direction: 국혜란은 목소리를 높이지 않는다. 매질은 규율반이 한다. 고통을 자세히 묘사하지 않고 소리, 군중의 침묵, 배급 줄이 미뤄지는 것에 초점을 둔다. 막내는 당신 쪽을 보지 않으려 한다. 플레이어가 나서면 모두의 눈이 쏠린다.
+  choices:
+    - id: watch
+      label: 다른 사람들처럼 끝까지 지켜본다
+      effects:
+        - set_flag: c_sora_punished
+        - belief: { fact: 막내는 광장에서 매를 맞고 배급 명단에서 지워졌다. 아무도 소리 내지 않았다, source: seen }
+    - id: speak_up
+      label: 막내는 아직 어리다고 소리친다
+      effects:
+        - set_flag: c_sora_punished
+        - set_flag: c_marked
+        - merit: -2
+        - relation: { who: sora, axis: trust, delta: 2 }
+        - deed: { summary: 광장의 본보기 처벌 중에 탈영병을 감싸고 나섰다, tags: [mercy, disobedience], severity: 3, privacy: public }
+    - id: slip_food
+      label: 밤에 몰래 막내에게 배급을 나눠 준다
+      effects:
+        - set_flag: c_sora_punished
+        - relation: { who: sora, axis: trust, delta: 2 }
+        - relation: { who: sora, axis: affection, delta: 2 }
+        - deed: { summary: 배급 명단에서 지워진 탈영병에게 몰래 제 몫을 나눠 주었다, tags: [mercy, disobedience], severity: 2, privacy: private }
+
+- id: c_informant_offer
+  title: 서기의 제안
+  tags: [red_life]
+  when:
+    zones: [c_base]
+    segments: [day, evening]
+    day_gte: 2
+    flags_none: [c_informant, c_informant_refused]
+  cast:
+    clerk: { ids: [c_sangok] }
+  setup: "{clerk:이/가} 막사 앞에서 당신을 불러 세운다. 안경을 닦으며 명부를 넘긴다. \"신입이시죠. 이름이 아직 깨끗하네요. 깨끗하게 남는 방법이 하나 있습니다. 조에서 들은 말을 가끔 저한테 옮겨 주시면 됩니다.\""
+  ai_direction: 우상옥은 대가로 공세 명단에서 빼 주거나 배급을 더 주겠다고 돌려 말한다. 거절해도 위협하지 않지만, 거절한 사람의 이름도 명부에 남는다는 걸 흘린다. 이 대화를 다른 조원이 보았는지는 알 수 없다.
+  choices:
+    - id: accept
+      label: 받아들인다
+      effects:
+        - set_flag: c_informant
+        - merit: 1
+        - relation: { who: clerk, axis: trust, delta: 2 }
+        - belief: { fact: 규율반 사무실 뒤 상자에 쪽지를 넣으면 서기 우상옥이 읽는다, source: report }
+        - deed: { summary: 규율반 서기의 밀고자가 되기로 했다, tags: [loyalty, betrayal], severity: 2, privacy: private }
+    - id: decline
+      label: 할당량만 채우겠다며 거절한다
+      effects:
+        - set_flag: c_informant_refused
+        - relation: { who: clerk, axis: trust, delta: -1 }
+        - belief: { fact: 규율반 서기가 조원 중에서 밀고자를 구한다. 이미 누군가 하고 있을지도 모른다, source: seen }
+    - id: stall
+      label: 생각해 보겠다며 말을 흐린다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: c_informant_refused
+          - belief: { fact: "{clerk:이/가} 말끝에 흘렸다: 약탈 삼조에서는 이미 듣고 있는 귀가 있다", source: report }
+        partial:
+          - set_flag: c_informant_refused
+          - belief: { fact: 규율반 서기가 조원 중에서 밀고자를 구한다. 이미 누군가 하고 있을지도 모른다, source: seen }
+        miss:
+          - set_flag: c_informant_refused
+          - relation: { who: clerk, axis: trust, delta: -2 }
+
+- id: c_dongpal_slip
+  title: 사무실 뒤 상자
+  tags: [red_life]
+  when:
+    zones: [c_base]
+    segments: [evening, night]
+    day_gte: 3
+    flags_none: [c_dongpal_exposed, c_dongpal_missed]
+  cast:
+    mate: { ids: [c_dongpal], known: true, enter: false }
+  setup: 저녁 검수가 끝난 뒤, 규율반 사무실 뒤편 그늘에서 털모자 쓴 그림자 하나가 주위를 살핀다. 앞니 빠진 웃음소리를 내던 사람과 걸음걸이가 같다.
+  ai_direction: "{mate:이/가} 규율반 상자에 쪽지를 넣으려는 참이다. 쪽지에는 막내가 배급을 감춘다는 것과 신입의 이름이 적혀 있다. 확정하지 말고, 손이 상자 쪽으로 가는 것까지만 보여 준다."
+  choices:
+    - id: watch_close
+      label: 숨을 죽이고 끝까지 지켜본다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: c_dongpal_exposed
+          - belief: { fact: "{mate:이/가} 규율반 사무실 뒤 상자에 쪽지를 넣었다. 약탈 삼조의 귀는 {mate}다", source: seen }
+        partial:
+          - set_flag: c_dongpal_exposed
+          - belief: { fact: "{mate:이/가} 규율반 사무실 뒤편에서 무언가를 하고 나왔다. 쪽지 같았다", source: seen }
+        miss:
+          - set_flag: c_dongpal_missed
+          - belief: { fact: 규율반 사무실 뒤에서 누군가 움직였지만 누구인지 놓쳤다, source: seen }
+    - id: leave
+      label: 괜히 엮이기 싫어 돌아선다
+      effects:
+        - set_flag: c_dongpal_missed
+
+- id: c_dongpal_confront
+  title: 앞니 빠진 웃음
+  tags: [red_life]
+  when:
+    own_territory: true
+    segments: [day, evening, night]
+    flags_all: [c_dongpal_exposed]
+    flags_none: [c_dongpal_dealt]
+  cast:
+    mate: { ids: [c_dongpal], known: true }
+  setup: "{mate:이/가} 막사 뒤에서 혼자 담배를 피우고 있다. 당신을 보자 바람 새는 웃음을 짓는다. \"신입, 얼굴이 왜 그래. 한 대 할래?\""
+  ai_direction: "{mate:은/는} 들켰는지 아직 모른다. 몰리면 처음엔 웃어넘기다가, 조장에게 알려지면 끝이라는 걸 깨닫는 순간 비굴해진다. 자기 쪽지 때문에 지난달 조원이 잡혔다는 것도 털어놓을 수 있다."
+  choices:
+    - id: squeeze
+      label: 다 안다고 몰아붙여 앞으로 내 말대로 쪽지를 쓰게 만든다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: c_dongpal_dealt
+          - relation: { who: mate, axis: respect, delta: 2 }
+          - relation: { who: mate, axis: affection, delta: -2 }
+          - belief: { fact: "{mate:이/가} 앞으로 규율반 쪽지에 무엇을 쓸지 내게 먼저 보이기로 했다. 지난달 탈영하다 잡힌 조원도 그의 쪽지 때문이었다", source: report }
+        partial:
+          - set_flag: c_dongpal_dealt
+          - relation: { who: mate, axis: trust, delta: -2 }
+          - belief: { fact: "{mate:이/가} 겁을 먹고 물러섰지만 눈빛이 달라졌다. 다음 쪽지에 누구 이름이 적힐지 모른다", source: seen }
+        miss:
+          - set_flag: c_dongpal_dealt
+          - set_flag: c_marked
+          - relation: { who: mate, axis: trust, delta: -3 }
+          - belief: { fact: "{mate:은/는} 끝까지 웃어넘겼다. 그날 밤 규율반 서기가 막사 앞을 두 번 지나갔다", source: seen }
+    - id: tell_boss
+      label: 조장에게 알린다
+      effects:
+        - set_flag: c_dongpal_dealt
+        - relation: { who: commander, axis: trust, delta: 2 }
+        - relation: { who: mate, axis: trust, delta: -3 }
+        - deed: { summary: 조원 차동팔이 규율반의 밀고자라고 조장에게 알렸다, tags: [loyalty, honesty], severity: 2, privacy: semi_private }
+    - id: keep
+      label: 아는 척하지 않고 담배만 받아 피운다
+      effects:
+        - set_flag: c_dongpal_dealt
+        - relation: { who: mate, axis: affection, delta: 1 }
+
+# ── 템플릿 ───────────────────────────────────────────
+
+- id: c_quota_short
+  title: 모자란 할당량
+  tags: [red_life]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zones: [c_base]
+    segments: [evening]
+  cast:
+    mate: { faction: own, ranks: [grunt], known: true }
+  setup: "검수 줄 앞에서 {mate:이/가} 자루를 들여다보며 입술을 깨문다. 오늘 몫이 모자란다. 앞에서 조장이 숫자를 부르기 시작한다. {mate:이/가} 당신의 자루를 힐끗 본다."
+  ai_direction: 모자란 것은 많지 않다. 통조림 한두 개 차이다. 조장은 숫자만 본다. 누가 누구 자루에서 옮겼는지는 서기만 신경 쓴다.
+  choices:
+    - id: give
+      label: 내 자루에서 통조림 하나를 옮겨 준다
+      effects:
+        - take_item: { item: canned_food }
+        - relation: { who: mate, axis: trust, delta: 2 }
+        - relation: { who: mate, axis: affection, delta: 1 }
+        - deed: { summary: "할당량이 모자란 {mate}에게 제 몫을 덜어 주었다", tags: [mercy], severity: 1, privacy: semi_private }
+    - id: cover
+      label: 조장에게 숫자를 잘못 세었다고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - relation: { who: mate, axis: trust, delta: 2 }
+        partial:
+          - relation: { who: mate, axis: trust, delta: 1 }
+          - relation: { who: commander, axis: trust, delta: -1 }
+        miss:
+          - relation: { who: commander, axis: trust, delta: -2 }
+          - deed: { summary: 할당량 검수에서 숫자를 속이려다 들켰다, tags: [deceit], severity: 2, privacy: public }
+    - id: let_be
+      label: 모른 척한다. 각자 몫은 각자다
+      effects:
+        - relation: { who: mate, axis: affection, delta: -1 }
+        - deed: { summary: "할당량이 모자란 {mate:을/를} 모른 척했다", tags: [selfishness], severity: 1, privacy: semi_private }
+
+- id: c_raid_family
+  title: 다락의 식구들
+  tags: [c_raider]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zones: [old_town, riverside, south_fields]
+    segments: [morning, day, evening]
+  setup: 털던 집 다락 판자 아래에서 숨소리가 난다. 판자를 들추자 여자 하나와 아이 둘이 몸을 웅크리고 있다. 여자 품에 통조림 몇 개가 안겨 있다.
+  ai_direction: 여자는 어느 무리에도 속하지 않은 떠돌이다. 통조림이 이 식구의 전부다. 같이 온 조원은 아래층에 있어 아직 모른다. 할당량은 모자라다.
+  choices:
+    - id: take_all
+      label: 통조림을 모두 빼앗는다
+      effects:
+        - give_item: { item: canned_food, quantity: 2 }
+        - deed: { summary: 숨어 있던 떠돌이 식구의 마지막 통조림을 빼앗았다, tags: [cruelty, selfishness], severity: 2, privacy: semi_private }
+    - id: take_half
+      label: 하나만 가져가고 판자를 덮는다
+      effects:
+        - give_item: { item: canned_food }
+        - deed: { summary: 떠돌이 식구에게서 통조림 하나만 가져가고 숨겨 주었다, tags: [mercy], severity: 1, privacy: private }
+    - id: cover_up
+      label: 판자를 덮고 아래층에 빈 다락이라고 소리친다
+      check: deceive
+      outcomes:
+        success:
+          - deed: { summary: 털던 집 다락의 떠돌이 식구를 조원에게서 숨겨 주었다, tags: [mercy, deceit], severity: 2, privacy: private }
+        partial:
+          - deed: { summary: 털던 집 다락의 떠돌이 식구를 숨겨 주었다, tags: [mercy, deceit], severity: 2, privacy: private }
+          - belief: { fact: 다락을 내려오는데 같이 온 조원이 다락 쪽을 한 번 더 올려다보았다, source: seen }
+        miss:
+          - give_item: { item: canned_food, quantity: 2 }
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - deed: { summary: 떠돌이 식구를 숨기려다 조원에게 들켰다, tags: [mercy, deceit], severity: 2, privacy: semi_private }
+
+- id: c_ration_order
+  title: 배급 줄의 순서
+  tags: [red_life]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zones: [c_base]
+    segments: [morning, evening]
+  cast:
+    absorbed: { faction: own, ranks: [grunt], known: true }
+  setup: "배급 줄이 공단 출신과 흡수된 사람으로 갈린다. 흡수된 쪽 줄에 선 {absorbed:이/가} 앞줄에서 {scarce} 몫이 넉넉히 나가는 것을 보며 중얼거린다. \"우리도 같은 담 안에서 같은 할당량 채우는데.\""
+  ai_direction: 배급을 나누는 사람은 공단 출신이다. 불평이 서기 귀에 들어가면 명부에 오른다는 걸 다들 안다. 주위 사람들은 못 들은 척한다.
+  choices:
+    - id: agree
+      label: 맞장구를 친다
+      effects:
+        - relation: { who: absorbed, axis: affection, delta: 1 }
+        - relation: { who: absorbed, axis: trust, delta: 1 }
+        - deed: { summary: 배급 줄에서 공단 출신 우대를 두고 불평에 맞장구쳤다, tags: [disobedience], severity: 1, privacy: public }
+    - id: hush
+      label: 입 다물라고 조용히 말린다
+      effects:
+        - relation: { who: absorbed, axis: trust, delta: 1 }
+        - belief: { fact: "흡수된 사람들은 공단 출신보다 배급을 늦게, 적게 받는다고 느낀다. 그 불만이 줄마다 쌓여 있다", source: seen }
+    - id: rebuke
+      label: 위원회 결정에 토 달지 말라고 큰 소리로 꾸짖는다
+      effects:
+        - relation: { who: absorbed, axis: affection, delta: -2 }
+        - faction_morale: { faction: own, delta: -1 }
+        - deed: { summary: 배급 줄에서 불평하는 흡수된 조원을 모두 앞에서 꾸짖었다, tags: [loyalty], severity: 1, privacy: public }

@@ -1,0 +1,81 @@
+# 버들마을 경비병 임무 (초안). 경비조장이 하루 단위로 내려 준다
+# requirements 형식은 a_grunt_basic.yaml 머리말 참고
+- id: b_gate_watch
+  title: 정문 경비
+  briefing: 단지 정문에서 경비를 선다. 드나드는 사람은 얼굴과 짐을 확인하고, 모르는 사람은 경비조장에게 먼저 알린다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: guard_duty
+      minutes: 240
+- id: b_rooftop_watch
+  title: 옥상 망루 야간 감시
+  briefing: 102동 옥상 망루에서 밤새 단지 바깥을 살핀다. 구시가 쪽 감염체와 쪽문 근처의 움직임을 놓치지 않는다. 불은 켜지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 14
+  requirements:
+    - activity: guard_duty
+      minutes: 180
+    - check: sense_danger
+      min_outcome: partial
+- id: b_well_repair
+  title: 우물 도르래 손보기
+  briefing: 아랫단 우물의 도르래와 덮개를 손본다. 우물지기 탁순례가 시키는 대로 하고, 우물 일은 바깥에 떠들지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: work
+      minutes: 120
+- id: b_fields_escort
+  title: 남쪽 텃밭 호위
+  briefing: 남쪽 텃밭에서 김장 배추를 거두는 단지 사람들을 지킨다. 무너진 담장 쪽에서 감염체와 좀도둑을 조심한다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: guard_duty
+      minutes: 180
+- id: b_old_town_search
+  title: 구시가 땔감 수색
+  briefing: 구시가 빈 상가에서 땔감이 될 문짝과 가구, 쓸 만한 물자를 찾아 온다. 해가 지기 전에 돌아온다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - check: scavenge
+      min_outcome: partial
+- id: b_alliance_errand
+  title: 청솔형제단 거점 연락
+  briefing: 청솔형제단 거점에 가서 이번 달 탄약을 제때 넘겨 달라고 전한다. 수확 몫을 두고 따지면 경비조장의 말대로 정중하게 버틴다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: persuade
+      min_outcome: partial
+- id: b_footprints
+  title: 쪽문 밖 발자국 쫓기
+  briefing: 북쪽 쪽문 밖 진흙에 낯선 발자국이 찍혔다. 어디서 왔는지 따라가 보고, 들키지 않게 돌아온다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: survival
+      min_outcome: partial
+    - check: stealth
+      min_outcome: partial
+- id: b_shelter_drill
+  title: 아이들 대피 연습
+  briefing: 진은지를 도와 아이들을 관리사무소 지하로 소리 없이 옮기는 연습을 한다. 물결이 오면 이 순서대로 움직인다.
+  giver_rank: squad_leader
+  deadline_hours: 8
+  requirements:
+    - activity: work
+      minutes: 90
+- id: b_joint_recon
+  title: 연합 정찰 지원
+  briefing: 청솔형제단의 요청이다. 붉은연합이 차지한 맞닿은 구역에 숨어 들어가 경계를 살피고 돌아온다. 본 것은 청솔형제단의 반격 준비에 넘어간다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - check: sense_danger
+      min_outcome: partial
+    - check: stealth
+      min_outcome: partial
+  advances: { clock: a_counteroffensive, delta: 2 }

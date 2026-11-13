@@ -1,0 +1,185 @@
+# 하얀매 인물 추가 (수습 의무병 시나리오). 대표 서은영과 수색꾼 남민호는 others.yaml에 있다
+
+- id: d_jeongsuk
+  name: 권정숙
+  alias: 흰머리를 바짝 묶은 수간호사
+  faction: faction_d
+  rank: squad_leader
+  age: 52
+  gender: female
+  look: 흰머리를 뒤로 바짝 묶었다. 앞치마 주머니에 가위와 볼펜, 접은 종이가 늘 꽂혀 있다. 손톱을 짧게 깎았다.
+  reputation: 진료소의 수간호사. 수습들을 맡아 가르친다. 붕괴 전 시립병원 응급실에서 일했다는 말이 있다. 누가 먼저 치료받을지는 이 사람이 정한다.
+  want: 수습들이 자기 없이도 사람을 고를 줄 알게 되는 것
+  fear: 응급실이 무너지던 날처럼, 문 앞에 줄 선 사람들을 다 돌려보내야 하는 날
+  values: { discipline: 2, loyalty: 2, mercy: 1, honesty: 2, self_interest: -1 }
+  traits: [principled, blunt, weary]
+  voice:
+    style: 짧고 낮은 반말. 칭찬은 하지 않고, 틀린 것만 정확히 짚는다. 환자 앞에서는 존댓말로 바뀐다
+    samples:
+      - "손 씻었어? 그럼 다시 씻어."
+      - "살릴 수 있는 사람부터. 우는 사람 말고."
+      - "약은 내 것도 네 것도 아니야. 장부에 적힌 거야."
+  routine: { dawn: 격리실 확인, morning: 진료소 문진, day: 치료실, evening: 장부 정리, night: 진료소 당직 }
+  rules:
+    - 물리거나 긁힌 사람은 누구든 격리실에서 사흘을 보낸다. 자기 수습도 예외가 없다
+    - 치료 순서는 소속이 아니라 살 가능성으로 정한다
+    - 수습이 약장 열쇠를 만지는 것은 자기가 볼 때뿐이다
+  knows:
+    - 감염체에게 긁힌 사람이 사흘 안에 열이 오르지 않으면 대개 괜찮다는 것
+    - 진료소 약장의 항생제 수를 매일 저녁 센다는 것
+    - 옛 시립병원 응급실과 지하 약제실 사이의 복도 구조
+  doesnt_know:
+    - 간부 도상필이 약을 빼돌려 나루상단에 넘기고 있다
+  secret:
+    content: 붕괴 첫 달 시립병원 응급실에서, 물린 환자들이 있는 병동 문을 밖에서 잠그고 나왔다. 안에는 아직 열이 오르지 않은 사람도 있었다
+    reveal_when: 격리실 일로 함께 밤을 새운 수습에게, 그 수습이 같은 결정을 내려야 할 때
+    min_trust: 4
+  stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 1 }
+  skills: { first_aid: 2, infected_lore: 2, endure: 1, intimidate: 1 }
+  start_inventory: [medkit, fever_reducer]
+  playable: true
+  healer: true
+  zone: d_clinic
+
+- id: d_sangpil
+  name: 도상필
+  alias: 가는 테 안경의 장부 든 사내
+  faction: faction_d
+  rank: officer
+  age: 44
+  gender: male
+  look: 가는 금속테 안경에 손질한 콧수염. 하얀매에서 드물게 가운 대신 조끼를 입는다. 열쇠 꾸러미가 허리에서 짤랑거린다.
+  reputation: 약제실과 거래를 맡은 간부. 다른 무리와 약값을 흥정하는 사람이다. 붕괴 전 제약회사 영업사원이었다고 한다. 손해 보는 거래는 하지 않는다는 평.
+  want: 하얀매가 무너지는 날에도 혼자 살아남을 밑천
+  fear: 약이 바닥나 하얀매가 쓸모없어지는 것
+  values: { discipline: 1, loyalty: -1, mercy: -1, honesty: -2, self_interest: 3 }
+  traits: [calculating, genial, greedy]
+  voice:
+    style: 부드럽고 사근사근한 존댓말. 숫자와 값을 섞어 말하고, 상대를 "선생님"이라 부른다
+    samples:
+      - "선생님, 항생제 한 줄이 요즘 통조림 몇 개인지 아세요?"
+      - "중립이란 게 공짜가 아니에요. 다 값이 있지."
+      - "장부요? 장부는 제가 맞춰 놓겠습니다. 신경 쓰지 마세요."
+  routine: { morning: 약제실, day: 거래 손님 응대, evening: 약제실, night: 자기 방 }
+  rules:
+    - 약은 값을 받고 내준다. 값은 자기가 정한다
+    - 대표 앞에서는 늘 하얀매의 이익을 말한다
+  knows:
+    - 붉은연합이 하얀매의 약을 통째로 사려 한다는 것
+    - 청솔형제단의 윤채원이 예전에 하얀매 간호사였다는 것
+    - 약제실 뒷문 열쇠가 자기에게만 있다는 것
+  doesnt_know:
+    - 수간호사 권정숙이 매일 저녁 항생제 수를 따로 세어 두고 있다
+  secret:
+    content: 장날 전날 밤마다 약제실 뒷문으로 항생제와 진통제를 빼내 나루상단 사람에게 넘긴다. 받은 탄약과 통조림은 강변 공장 지대의 무너진 보일러실에 쌓아 두었다
+    reveal_when: 빼돌리는 현장을 들켜 대표에게 알려질 처지가 되었을 때, 입막음 값을 흥정하려고
+    min_trust: 2
+  stats: { strength: 0, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 2, intellect: 1 }
+  skills: { persuade: 2, deceive: 2, first_aid: 0, history: 1 }
+  start_inventory: [ledger, antibiotics, cigarettes]
+  playable: false
+  zone: d_clinic
+
+- id: d_sori
+  name: 임소리
+  alias: 단발머리 수습 간호사
+  faction: faction_d
+  rank: staff
+  age: 19
+  gender: female
+  look: 귀밑에서 자른 단발. 소매가 긴 털 스웨터 위에 큰 가운을 걸쳤다. 손목에 늘 붕대를 감고 다닌다.
+  reputation: 진료소의 수습 간호사. 붕괴 때 열네 살이었고 하얀매에서 자랐다. 손이 빠르고 말이 많다. 수간호사에게 가장 많이 혼나는 사람.
+  want: 언젠가 수간호사처럼 혼자 수술을 해 보는 것
+  fear: 격리실 안쪽에서 문이 잠기는 소리
+  values: { discipline: 0, loyalty: 2, mercy: 3, honesty: 1, self_interest: 0 }
+  traits: [eager, talkative, warm]
+  voice:
+    style: 빠르고 밝은 반말. 무서우면 오히려 더 빨리 말한다
+    samples:
+      - "야, 오늘 문진 줄 봤어? 버들마을 사람이 반이야."
+      - "괜찮아, 괜찮아. 진짜 괜찮다니까."
+      - "수간호사님한테는 말하지 마. 응?"
+  routine: { morning: 문진 줄 정리, day: 치료실 보조, evening: 붕대 빨래, night: 수습 숙소 }
+  rules:
+    - 다친 사람이 오면 소속을 묻기 전에 먼저 손을 댄다
+    - 수간호사의 말에는 대들지 않지만 뒤에서 투덜댄다
+  knows:
+    - 진료소 사람들이 서로 어떤 소문을 나누는지 대부분
+    - 수색꾼 남민호가 병원 지하에서 무언가를 혼자 숨겨 두었다는 소문
+  doesnt_know:
+    - 하얀매 대표가 붉은연합과 따로 이야기를 나눴는지
+  secret:
+    content: 사흘 전 구시가에서 약을 찾다가 감염체의 손톱에 손목을 긁혔다. 격리실에 들어가기 싫어서 붕대로 가리고 아무에게도 말하지 않았다
+    reveal_when: 붕대 아래를 보여 달라고 둘만 있을 때 다정하게 물으면
+    min_trust: 2
+  stats: { strength: -1, agility: 2, vitality: 0, senses: 1, nerve: -1, charm: 1, intellect: 1 }
+  skills: { first_aid: 1, persuade: 1, scavenge: 1 }
+  start_inventory: [medkit, water_bottle]
+  playable: true
+  zone: d_clinic
+
+- id: d_dojin
+  name: 백도진
+  alias: 목에 호루라기 건 문지기
+  faction: faction_d
+  rank: grunt
+  age: 38
+  gender: male
+  look: 경찰 방한점퍼를 아직도 입는다. 목에 호루라기, 허리에 진압봉. 왼쪽 귓바퀴가 찢어져 아물었다.
+  reputation: 진료소 정문을 지키는 경비. 붕괴 전 파출소 순경이었다. 누가 진료소에 들어올지, 누가 격리실로 갈지 문 앞에서 먼저 본다.
+  want: 진료소 담 안에서 총이 한 번도 안 쏘이는 것
+  fear: 어느 무리가 약을 빼앗으러 정문으로 몰려오는 날
+  values: { discipline: 3, loyalty: 2, mercy: 0, honesty: 1, self_interest: 0 }
+  traits: [guarded, cautious, steel_nerves]
+  voice:
+    style: 사무적인 존댓말. 이름보다 소속을 먼저 묻는다
+    samples:
+      - "어디서 오셨습니까. 소매 걷어 보세요."
+      - "무기는 여기 두고 들어갑니다. 누구든요."
+  routine: { dawn: 정문, morning: 정문, day: 정문, evening: 담장 순찰, night: 정문 초소 }
+  rules:
+    - 진료소 안에 무기를 들이지 않는다. 무리를 가리지 않는다
+    - 물린 자국이 보이면 무조건 격리실로 보낸다
+  knows:
+    - 붉은연합 사람이 요즘 정문을 자주 기웃거린다는 것
+    - 진료소 경비는 여섯이 전부라는 것
+  doesnt_know:
+    - 약제실 뒷문으로 밤마다 누가 드나드는지
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: 0, intellect: -1 }
+  skills: { fight: 1, sense_danger: 2, intimidate: 1, shoot: 0 }
+  start_inventory: [crowbar, radio]
+  playable: true
+  zone: d_clinic
+
+- id: d_gisun
+  name: 문기순
+  alias: 돋보기 목에 건 늙은 약사
+  faction: faction_d
+  rank: staff
+  age: 67
+  gender: female
+  look: 굽은 등에 털조끼. 돋보기를 줄에 꿰어 목에 걸었다. 손가락 마디가 굵고, 약 이름을 중얼거리는 버릇이 있다.
+  reputation: 진료소의 약사 할머니. 시립병원 앞에서 약국을 했다. 알약을 보면 이름과 유효기간을 맞힌다. 약제실 장부를 손으로 옮겨 적는 일을 맡았다.
+  want: 자기가 죽기 전에 누군가에게 약 다루는 법을 다 넘겨주는 것
+  fear: 장부가 틀렸는데 아무도 모르는 것
+  values: { discipline: 1, loyalty: 1, mercy: 2, honesty: 3, self_interest: -1 }
+  traits: [meticulous, motherly, patient]
+  voice:
+    style: 느린 할머니 말투의 반말. 사람을 "애기"라 부르고 약 이름은 꼭 정확히 말한다
+    samples:
+      - "애기야, 밥은 먹고 다니니. 이건 아목시실린이야, 아무거나 아니고."
+      - "숫자가 하나 비네. 내가 늙어서 그런가, 누가 가져간 건가."
+  routine: { morning: 약제실 장부, day: 약 나누기, evening: 진료소 부엌, night: 숙소 }
+  rules:
+    - 장부와 약장이 맞지 않으면 맞을 때까지 다시 센다
+    - 약 이름을 모르는 사람에게 약을 내주지 않는다
+  knows:
+    - 옛 시립병원 지하 약제실의 냉장실과 금고 자리
+    - 약제실 장부의 항생제 수가 장날 무렵마다 조금씩 빈다는 것
+  doesnt_know:
+    - 누가 약을 빼 가는지
+  stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
+  skills: { first_aid: 1, history: 2, scavenge: 1 }
+  start_inventory: [ledger, fever_reducer]
+  playable: false
+  zone: d_clinic

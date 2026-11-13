@@ -1,0 +1,625 @@
+# 나루상단 짐꾼 스토리렛. 형식은 a_grunt.yaml 머리말 참고
+# 플래그 사슬
+#   - 새는 출발 시간: e_road_ambush(e_route_leak_suspected) → e_hana_confession(e_hana_covered / e_hana_exposed / e_false_route) → e_decoy_raid
+#   - 펌프의 쇳소리: e_pump_groan(e_pump_failing) → e_deoksu_bearing(e_bearing_quest / e_pump_told_boss / e_pump_secret_kept) → e_bearing_salvage
+#   - 두 번째 장부: e_second_ledger(e_second_ledger_seen) → e_pine_buyer(e_ledger_sold, e_sided_pine)
+#   - 어느 편에 팔 것인가: e_sealed_bundle(e_carried_for_red / e_sided_pine)
+
+# ── 고정 ───────────────────────────────────────────
+
+- id: e_first_haul
+  title: 행상대장의 저울
+  tags: [caravan_life]
+  when:
+    zones: [e_market]
+    segments: [dawn, morning]
+  cast:
+    boss: { commander: true }
+  setup: >-
+    {boss:이/가} 당신 배낭을 한 손으로 들어 보더니 물통 하나를 더 얹는다.
+    "오늘은 강변을 건넌다. 이 무게로 못 가겠으면 지금 말해. 길 한복판에서 말하면 늦어."
+  ai_direction: 주옥희는 새 짐꾼을 시험하는 게 아니라 셈하는 중이다. 무리하다 쓰러지는 짐꾼이 짐을 버리는 짐꾼보다 비싸다는 것을 안다. 정직한 대답을 높이 산다.
+  choices:
+    - id: carry
+      label: 말없이 지고 일어선다
+      check: endure
+      outcomes:
+        success:
+          - merit: 1
+          - relation: { who: boss, axis: respect, delta: 1 }
+        partial:
+          - belief: { fact: "더 얹은 물통을 지고 일어서긴 했지만 강변까지 어깨가 버틸지 모르겠다", source: seen }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "일어서다 무릎이 꺾였다. 주옥희가 말없이 물통 하나를 다시 내렸다", source: seen }
+    - id: honest
+      label: 하나는 무리라고 솔직하게 말한다
+      effects:
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - deed: { summary: 행상대장에게 짐이 무리라고 솔직하게 말했다, tags: [honesty], severity: 1, privacy: public }
+    - id: complain
+      label: 다른 짐꾼 몫이 더 가볍다고 따진다
+      effects:
+        - relation: { who: boss, axis: affection, delta: -1 }
+        - belief: { fact: "주옥희가 짐 무게를 다시 재 보더니 '네 셈이 틀렸다'고만 했다", source: seen }
+
+- id: e_road_ambush
+  title: 강변 길의 검댕 얼굴들
+  urgent: true
+  tags: [e_porter]
+  when:
+    zones: [riverside]
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [e_route_leak_suspected]
+  setup: >-
+    강변 공장 담장 그늘에서 얼굴에 검댕을 칠한 사내 넷이 길을 막는다. 쇠지렛대 셋에 엽총 하나.
+    "짐 내려놓고 가. 사람은 안 건드려. 상단 사람 죽이면 우리도 물 못 사 먹으니까."
+  ai_direction: 이들은 완장을 뗀 붉은연합 약탈조다. 짐마차가 이 시간에 지나간다는 것을 미리 알고 기다렸다 (진하나가 강변 정류장 표지판 밑에 남긴 쪽지). 누가 흘렸는지는 드러내지 않는다. 총은 쏘지 않으려 한다. 소리가 감염체를 부르기 때문이다. 필요하면 엑스트라 c_raider로 만든다.
+  choices:
+    - id: drop
+      label: 짐을 내려놓고 물러난다
+      effects:
+        - set_flag: e_route_leak_suspected
+        - faction_morale: { faction: own, delta: -1 }
+        - belief: { fact: "강변 길의 약탈자들은 우리 짐마차가 그 시간에 지나갈 것을 알고 기다린 듯했다", source: seen }
+    - id: bargain
+      label: 통행패를 보이며 반만 내주자고 흥정한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: e_route_leak_suspected
+          - merit: 1
+          - belief: { fact: "흥정 끝에 짐 절반만 내주었다. 우두머리가 '오늘은 좀 늦었네'라고 중얼거렸다. 출발 시간을 아는 투였다", source: seen }
+        partial:
+          - set_flag: e_route_leak_suspected
+          - belief: { fact: "짐을 거의 다 내주고 물통 둘만 지켰다. 약탈자들은 우리가 올 줄 알고 있었다", source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "흥정은 먹히지 않았다. 약탈자들은 짐을 다 가져갔다", source: seen }
+    - id: study
+      label: 흥정하는 동안 그들을 뜯어본다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: e_route_leak_suspected
+          - belief: { fact: "약탈자들의 왼팔 소매에 완장을 뜯어낸 바늘땀이 있었다. 붉은연합 약탈조다. 그들은 짐마차 출발 시간을 알고 있었다", source: seen }
+        partial:
+          - set_flag: e_route_leak_suspected
+          - belief: { fact: "약탈자들은 떠돌이 도적치고 너무 가지런했다. 누군가 우리 출발 시간을 알려 준 것 같다", source: seen }
+        miss:
+          - belief: { fact: "강변 길에서 떠돌이 도적들에게 짐을 털렸다", source: seen }
+    - id: fight
+      label: 쇠지렛대 든 놈부터 친다
+      check: fight
+      outcomes:
+        success:
+          - set_flag: e_route_leak_suspected
+          - merit: 1
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - deed: { summary: 강변 길에서 약탈자들에게 맞서 짐을 지켰다, tags: [bravery], severity: 2, privacy: public }
+        partial:
+          - set_flag: e_route_leak_suspected
+          - belief: { fact: "약탈자들은 짐 몇 개만 들고 달아났다. 달아나면서 '쪽지엔 짐꾼 셋이라더니'라고 욕했다", source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - deed: { summary: 강변 길에서 약탈자들과 싸우다 짐을 모두 잃었다, tags: [bravery], severity: 1, privacy: public }
+
+- id: e_hana_confession
+  title: 물가의 쪽지
+  tags: [e_porter]
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 3
+    flags_all: [e_route_leak_suspected]
+    flags_none: [e_hana_resolved]
+  cast:
+    hana: { ids: [e_hana], known: true, trust_gte: 0 }
+  setup: >-
+    정수장 물가에서 {hana:이/가} 혼자 쪽지를 태우고 있다. 당신을 보자 손이 떨린다.
+    "…다 말할게요. 대신 대장님한테는, 조금만 있다가요. 오빠가, 오빠가 저쪽에 있어요."
+  ai_direction: 진하나의 오빠 진태는 붉은연합 약탈조에 있다. 출발 시간을 강변 정류장 표지판 밑에 적어 두지 않으면 오빠를 본보기로 처벌하겠다는 말을 들었다. 진하나는 울지 않으려 애쓴다. 들어 주면 다 털어놓는다.
+  choices:
+    - id: cover
+      label: 덮어 주고 다시는 쪽지를 두지 말라고 한다
+      effects:
+        - set_flag: e_hana_resolved
+        - set_flag: e_hana_covered
+        - relation: { who: hana, axis: trust, delta: 2 }
+        - relation: { who: hana, axis: affection, delta: 1 }
+        - belief: { fact: "진하나가 붉은연합 약탈조에 있는 오빠를 살리려고 짐마차 출발 시간을 강변 정류장 표지판 밑에 남겼다", source: report }
+        - deed: { summary: 짐마차 출발 시간을 흘린 짐꾼을 알고도 덮어 주었다, tags: [mercy, disobedience], severity: 2, privacy: private }
+    - id: report
+      label: 행상대장에게 알린다
+      effects:
+        - set_flag: e_hana_resolved
+        - set_flag: e_hana_exposed
+        - relation: { who: hana, axis: trust, delta: -3 }
+        - relation: { who: commander, axis: trust, delta: 2 }
+        - merit: 2
+        - deed: { summary: 출발 시간을 흘린 진하나를 행상대장에게 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+    - id: turn
+      label: 표지판 밑에 거짓 시간을 적자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: e_hana_resolved
+          - set_flag: e_false_route
+          - relation: { who: hana, axis: trust, delta: 1 }
+          - belief: { fact: "진하나와 짜고 강변 정류장 표지판 밑에 거짓 출발 시간을 남기기로 했다. 그 시간에는 빈 짐마차만 보낸다", source: seen }
+        partial:
+          - set_flag: e_hana_resolved
+          - set_flag: e_false_route
+          - belief: { fact: "진하나는 거짓 시간을 적기로 했지만 오빠가 의심받을까 봐 하얗게 질려 있었다", source: seen }
+        miss:
+          - set_flag: e_hana_resolved
+          - relation: { who: hana, axis: trust, delta: -1 }
+          - belief: { fact: "진하나는 거짓 시간을 적으면 오빠가 죽는다며 고개를 저었다", source: seen }
+
+- id: e_decoy_raid
+  title: 빈 짐마차
+  tags: [e_porter]
+  when:
+    zones: [riverside]
+    day_gte: 4
+    flags_all: [e_false_route]
+    flags_none: [e_decoy_done]
+  cast:
+    hana: { ids: [e_hana], enter: false }
+  setup: >-
+    거짓으로 적어 둔 그 시간, 강변 공장 담장 그늘에서 검댕 칠한 사내들이 빈 짐마차를 둘러싼다.
+    물통 마개를 따 본 사내가 욕을 내뱉는다. 통에 든 건 강물이다.
+  ai_direction: 약탈조 가운데 가장 어린 사내가 진하나의 오빠 진태다. 손등에 동생과 같은 덴 자국이 있다. 쪽지가 거짓이었다는 것을 알면 붉은연합은 진태를 의심할 것이다.
+  choices:
+    - id: watch
+      label: 숨어서 끝까지 지켜본다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: e_decoy_done
+          - merit: 1
+          - belief: { fact: "빈 짐마차를 턴 약탈자들은 고가도로 너머 물류창고 쪽으로 돌아갔다. 가장 어린 놈의 손등에 진하나와 같은 덴 자국이 있었다", source: seen }
+        partial:
+          - set_flag: e_decoy_done
+          - belief: { fact: "약탈자들은 빈 짐마차를 뒤엎고 북쪽으로 사라졌다", source: seen }
+        miss:
+          - set_flag: e_decoy_done
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "숨어 있다가 들켜 쫓겼다. 약탈자들은 상단이 함정을 팠다는 것을 알았다", source: seen }
+    - id: spring
+      label: 행상대장에게 알려 사람들과 함께 덮친다
+      effects:
+        - set_flag: e_decoy_done
+        - merit: 2
+        - relation: { who: commander, axis: trust, delta: 2 }
+        - relation: { who: hana, axis: trust, delta: -2 }
+        - faction_morale: { faction: own, delta: 1 }
+        - deed: { summary: 거짓 출발 시간으로 약탈자들을 끌어내 상단 사람들과 덮쳤다, tags: [bravery, loyalty], severity: 2, privacy: public }
+    - id: warn
+      label: 어린 약탈자에게 몰래 신호해 먼저 빠지게 한다
+      effects:
+        - set_flag: e_decoy_done
+        - relation: { who: hana, axis: trust, delta: 2 }
+        - relation: { who: hana, axis: affection, delta: 1 }
+        - deed: { summary: 붉은연합 약탈조의 어린 사내를 몰래 빼돌려 주었다, tags: [mercy, enemy_sympathy], severity: 2, privacy: private }
+
+- id: e_pump_groan
+  title: 펌프의 쇳소리
+  tags: [caravan_life]
+  when:
+    zones: [water_plant]
+    segments: [dawn, evening]
+    day_gte: 2
+    flags_none: [e_pump_failing]
+  cast:
+    keeper: { ids: [e_deoksu], enter: false }
+  setup: >-
+    펌프가 돌기 시작하자 쇳소리 사이로 낯선 소리가 섞인다. 끼익, 하고 한 박자 늦게 우는 소리.
+    손잡이를 돌리는 사람들은 모르는 눈치다. 펌프실 창 너머로 {keeper:이/가} 그쪽을 오래 보고 있다.
+  ai_direction: 펌프 주 베어링이 닳아 간다. 염덕수는 알고 있고 숨긴다. 기계를 모르는 사람에게는 그저 낡은 소리로 들린다.
+  choices:
+    - id: listen
+      label: 펌프실 벽에 귀를 대고 소리를 짚어 본다
+      check: mechanics
+      outcomes:
+        success:
+          - set_flag: e_pump_failing
+          - belief: { fact: "펌프 축의 베어링이 닳아 쇠가 쇠를 갉는 소리였다. 이대로면 오래가지 못한다", source: seen }
+        partial:
+          - set_flag: e_pump_failing
+          - belief: { fact: "펌프 어딘가가 아프다. 어디인지는 모르겠다", source: seen }
+        miss:
+          - belief: { fact: "펌프 소리가 좀 이상했지만 원래 그런 것 같다", source: seen }
+    - id: ask
+      label: 펌프지기에게 무슨 소리냐고 묻는다
+      effects:
+        - set_flag: e_pump_failing
+        - relation: { who: keeper, axis: trust, delta: 1 }
+        - belief: { fact: "염덕수는 '원래 그래'라며 웃어넘겼다. 눈은 웃지 않았다", source: seen }
+    - id: ignore
+      label: 물통 채우는 데 집중한다
+      effects: []
+
+- id: e_deoksu_bearing
+  title: 펌프지기의 부탁
+  tags: [caravan_life]
+  when:
+    zones: [water_plant]
+    segments: [evening, night]
+    flags_all: [e_pump_failing]
+    flags_none: [e_pump_decided]
+  cast:
+    keeper: { ids: [e_deoksu], trust_gte: 0 }
+  setup: >-
+    {keeper:이/가} 펌프실 문을 닫고 기름 묻은 장갑을 벗는다. "너도 들었지. 베어링이야. 길어야 한두 달."
+    그가 강변 쪽을 턱으로 가리킨다. "옛 양수장에 맞는 게 있을지도 몰라. 근데 봉수한테 말하면 그날로 물값이 두 배가 돼."
+  ai_direction: 염덕수는 펌프가 서면 겨울에 사람이 죽는다는 것을 안다. 물값이 오르는 것도 똑같이 사람을 죽인다고 믿는다. 부탁하는 것이 서툴다.
+  choices:
+    - id: fetch
+      label: 몰래 양수장에 가서 찾아오겠다고 한다
+      effects:
+        - set_flag: e_pump_decided
+        - set_flag: e_bearing_quest
+        - set_flag: e_pump_secret_kept
+        - relation: { who: keeper, axis: trust, delta: 2 }
+        - belief: { fact: "염덕수: 펌프에 맞는 베어링이 강변 공장 지대의 옛 양수장 지하에 있을지 모른다. 지하는 물이 차 있다", source: report }
+    - id: tell_boss
+      label: 우두머리가 알아야 한다고 말한다
+      effects:
+        - set_flag: e_pump_decided
+        - set_flag: e_pump_told_boss
+        - relation: { who: keeper, axis: trust, delta: -2 }
+        - merit: 1
+        - deed: { summary: 펌프가 닳아 간다는 것을 우두머리 탁봉수에게 알렸다, tags: [diligence], severity: 1, privacy: semi_private }
+    - id: price_it
+      label: 대답을 미루고 이 이야기의 값을 셈해 본다
+      effects:
+        - set_flag: e_pump_decided
+        - relation: { who: keeper, axis: trust, delta: -1 }
+        - belief: { fact: "정수장 펌프가 한두 달 안에 설 수 있다. 이걸 아는 무리는 물을 미리 사 모으거나 정수장을 노릴 것이다", source: seen }
+
+- id: e_bearing_salvage
+  title: 물에 잠긴 양수장
+  tags: [caravan_life]
+  when:
+    zones: [riverside]
+    segments: [morning, day]
+    flags_all: [e_bearing_quest]
+    flags_none: [e_bearing_found]
+  cast:
+    keeper: { ids: [e_deoksu], enter: false }
+  setup: >-
+    강변 공장 지대 끝, 옛 양수장. 지하로 내려가는 계단이 무릎까지 검은 물에 잠겨 있다.
+    물 아래 어딘가에 모터 받침이 있다. 계단참에서 물이 찰랑이는 소리 말고 다른 소리가 난다.
+  ai_direction: 지하에는 물에 불은 감염체 둘이 잠들어 있다. 빛을 비추면 깬다. 베어링은 모터 받침 옆 공구함에 기름종이로 싸여 있다.
+  choices:
+    - id: dive
+      label: 손으로 더듬어 공구함을 찾는다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: e_bearing_found
+          - merit: 1
+          - relation: { who: keeper, axis: trust, delta: 2 }
+          - relation: { who: keeper, axis: respect, delta: 1 }
+          - faction_morale: { faction: own, delta: 1 }
+          - belief: { fact: "양수장 지하 공구함에서 기름종이에 싼 베어링을 찾아 염덕수에게 건넸다. 펌프는 이번 겨울을 넘길 것이다", source: seen }
+        partial:
+          - set_flag: e_bearing_found
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "베어링 하나를 건져 왔지만 녹이 슬었다. 염덕수는 몇 주는 벌 수 있다고 했다", source: report }
+        miss:
+          - belief: { fact: "양수장 지하에서 물에 불은 감염체가 깨어나 빈손으로 쫓겨 나왔다", source: seen }
+    - id: sneak
+      label: 불을 끄고 소리 없이 더듬어 내려간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: e_bearing_found
+          - relation: { who: keeper, axis: trust, delta: 2 }
+          - faction_morale: { faction: own, delta: 1 }
+          - belief: { fact: "어둠 속에서 잠든 감염체 곁을 지나 베어링을 찾아 왔다. 펌프는 이번 겨울을 넘길 것이다", source: seen }
+        partial:
+          - belief: { fact: "양수장 지하 공구함 자리는 찾았지만 감염체가 뒤척여 물러났다. 다시 와야 한다", source: seen }
+        miss:
+          - belief: { fact: "양수장 지하에서 감염체가 깨어나 빈손으로 쫓겨 나왔다", source: seen }
+    - id: back_off
+      label: 오늘은 물러난다
+      effects: []
+
+- id: e_second_ledger
+  title: 다락의 얇은 장부
+  tags: [e_porter]
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 3
+    flags_none: [e_second_ledger_seen]
+  cast:
+    clerk: { ids: [e_sora], known: true, trust_gte: 1 }
+  setup: >-
+    창고 다락에서 {clerk:이/가} 목도리에 싼 장부 두 권 가운데 얇은 쪽을 내민다.
+    "읽지 말고 들고만 있어 주세요. 오늘 밤만. 누가 다락을 뒤졌어요."
+  ai_direction: 얇은 장부는 문소라가 탁봉수 몰래 쓰는 두 번째 장부다. 상단이 어느 무리에 무엇을 팔았는지, 정보까지 적혀 있다. 문소라는 탁봉수가 장부를 찾는다고 의심한다. 읽었는지 묻지는 않는다.
+  choices:
+    - id: keep_sealed
+      label: 읽지 않고 맡아 준다
+      effects:
+        - relation: { who: clerk, axis: trust, delta: 2 }
+        - deed: { summary: 문소라가 맡긴 장부를 펼쳐 보지 않고 지켰다, tags: [honesty, loyalty], severity: 1, privacy: private }
+    - id: read
+      label: 몰래 펼쳐 본다
+      effects:
+        - set_flag: e_second_ledger_seen
+        - belief: { fact: "문소라의 두 번째 장부에 붉은연합 앞으로 '동쪽 초소 교대 시간 — 탄약 두 상자'라는 줄이 있었다. 탁봉수의 거래다", source: seen }
+        - belief: { fact: "두 번째 장부에는 청솔형제단과 버들마을에 판 것도 날짜별로 적혀 있었다. 상단은 양쪽에 다 판다", source: seen }
+        - deed: { summary: 문소라가 맡긴 장부를 몰래 펼쳐 읽었다, tags: [deceit], severity: 1, privacy: private }
+    - id: refuse
+      label: 휘말리기 싫다며 돌려준다
+      effects:
+        - relation: { who: clerk, axis: trust, delta: -1 }
+
+- id: e_pine_buyer
+  title: 보급 간부의 물음
+  tags: [e_porter]
+  when:
+    zones: [a_base]
+    flags_all: [e_second_ledger_seen]
+    flags_none: [e_ledger_sold]
+  cast:
+    buyer: { ids: [a_doyun] }
+  setup: >-
+    물값 셈을 맞추던 {buyer:이/가} 장부를 덮고 목소리를 낮춘다.
+    "상단 사람들 귀가 밝다지. 요즘 붉은연합이 우리 쪽 무얼 사 갔는지, 아는 거 있나. 값은 쳐 주지."
+  ai_direction: 한도윤은 동쪽 초소의 경비가 어디서 샜는지 의심하고 있다. 확실한 말에는 통조림으로 값을 치를 생각이다. 상단을 적으로 돌릴 생각은 없다.
+  choices:
+    - id: sell
+      label: 두 번째 장부에서 본 줄을 알려 준다
+      effects:
+        - set_flag: e_ledger_sold
+        - set_flag: e_sided_pine
+        - give_item: { item: canned_food, quantity: 2 }
+        - relation: { who: buyer, axis: trust, delta: 2 }
+        - clock: { id: c_east_offensive, delta: -1 }
+        - clock: { id: a_counteroffensive, delta: 1 }
+        - deed: { summary: 상단 장부의 거래 내역을 청솔형제단 간부에게 팔았다, tags: [betrayal, enemy_sympathy], severity: 2, privacy: private }
+    - id: hint
+      label: 흐리게만 흘리고 값부터 받는다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: e_ledger_sold
+          - give_item: { item: canned_food }
+          - belief: { fact: "한도윤에게 '붉은연합이 동쪽 초소 쪽에 관심이 많다'고만 흘리고 통조림 하나를 받았다", source: seen }
+        partial:
+          - set_flag: e_ledger_sold
+          - relation: { who: buyer, axis: trust, delta: -1 }
+          - belief: { fact: "한도윤은 흐린 말에 값을 치르지 않았다. 다음엔 확실한 걸 가져오라고 했다", source: seen }
+        miss:
+          - relation: { who: buyer, axis: trust, delta: -2 }
+          - belief: { fact: "한도윤이 내 말이 장사꾼 수작이라며 셈을 덮었다", source: seen }
+    - id: deny
+      label: 짐꾼은 물만 나른다고 한다
+      effects:
+        - relation: { who: buyer, axis: respect, delta: 1 }
+
+- id: e_sealed_bundle
+  title: 밀랍으로 봉한 꾸러미
+  tags: [e_porter]
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 4
+    flags_none: [e_bundle_done]
+  cast:
+    trader: { ids: [e_bongsu] }
+  setup: >-
+    {trader:이/가} 기름종이로 싸고 밀랍으로 봉한 꾸러미를 당신 배낭에 밀어 넣는다.
+    "내일 새벽, 물류창고 쪽 붉은 완장 단 간부한테. 형님, 열어 보시면 빚이 두 배가 됩니다. 농담 아니고요."
+  ai_direction: 꾸러미 안에는 청솔형제단 거점 남쪽 담장의 보수 상태와 버들마을 물값 체납 사정을 적은 쪽지, 그리고 견본 항생제 한 줄이 있다. 탁봉수는 겨울을 앞두고 붉은연합에 줄을 대는 중이다. 운반자는 내용을 모르는 게 안전하다고 믿는다.
+  choices:
+    - id: deliver
+      label: 시킨 대로 전한다
+      effects:
+        - set_flag: e_bundle_done
+        - set_flag: e_carried_for_red
+        - clock: { id: c_east_offensive, delta: 1 }
+        - relation: { who: trader, axis: trust, delta: 2 }
+        - give_item: { item: cigarettes, quantity: 2 }
+        - merit: 1
+    - id: peek
+      label: 봉인을 몰래 땄다가 다시 붙여 전한다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: e_bundle_done
+          - set_flag: e_carried_for_red
+          - clock: { id: c_east_offensive, delta: 1 }
+          - belief: { fact: "탁봉수의 꾸러미에는 청솔형제단 남쪽 담장의 보수 상태와 버들마을 물값 체납 사정을 적은 쪽지, 항생제 한 줄이 들어 있었다. 붉은연합에 넘겼다", source: seen }
+        partial:
+          - set_flag: e_bundle_done
+          - set_flag: e_carried_for_red
+          - relation: { who: trader, axis: trust, delta: -1 }
+          - belief: { fact: "꾸러미 안에 청솔형제단 담장 이야기가 적힌 쪽지가 있었다. 다시 붙인 밀랍이 조금 어긋났다", source: seen }
+        miss:
+          - set_flag: e_bundle_done
+          - relation: { who: trader, axis: trust, delta: -3 }
+          - deed: { summary: 우두머리가 맡긴 꾸러미의 봉인을 몰래 땄다가 들켰다, tags: [deceit], severity: 2, privacy: semi_private }
+    - id: divert
+      label: 물류창고 대신 청솔형제단 거점으로 가져간다
+      effects:
+        - set_flag: e_bundle_done
+        - set_flag: e_sided_pine
+        - clock: { id: c_east_offensive, delta: -1 }
+        - clock: { id: a_counteroffensive, delta: 1 }
+        - relation: { who: trader, axis: trust, delta: -3 }
+        - deed: { summary: 우두머리가 붉은연합에 보내는 꾸러미를 청솔형제단에 넘겼다, tags: [betrayal, enemy_sympathy], severity: 3, privacy: private }
+    - id: refuse
+      label: 짐꾼은 물만 나른다며 돌려준다
+      effects:
+        - set_flag: e_bundle_done
+        - relation: { who: trader, axis: trust, delta: -1 }
+        - relation: { who: trader, axis: respect, delta: 1 }
+
+- id: e_smuggle_offer
+  title: 두 겹 바닥 물통
+  tags: [caravan_life]
+  when:
+    own_territory: true
+    segments: [evening, night]
+    day_gte: 2
+    flags_none: [e_smuggler]
+  cast:
+    mate: { ids: [e_cheolgu], known: true, trust_gte: 0 }
+  setup: >-
+    {mate:이/가} 물통 하나를 거꾸로 들어 바닥을 두드린다. 텅, 하고 소리가 두 번 난다.
+    "바닥이 두 겹이야. 내일 가는 길에 이거 하나만 져 줘. 담배 반은 네 몫. 이건 장사야."
+  ai_direction: 이중 바닥에는 담배만이 아니라 하얀매 진료소에서 빼돌린 항생제가 들었다. 배철구는 그것을 말하지 않는다. 행상대장은 짐을 빼돌리는 짐꾼을 가장 무겁게 본다.
+  choices:
+    - id: join
+      label: 져 주기로 한다
+      effects:
+        - set_flag: e_smuggler
+        - give_item: { item: cigarettes, quantity: 3 }
+        - relation: { who: mate, axis: trust, delta: 2 }
+        - deed: { summary: 배철구의 두 겹 바닥 물통을 지고 밀수를 거들었다, tags: [theft], severity: 1, privacy: private }
+    - id: decline
+      label: 모른 척할 테니 혼자 하라고 한다
+      effects:
+        - relation: { who: mate, axis: respect, delta: 1 }
+        - belief: { fact: "배철구가 두 겹 바닥 물통으로 무언가를 빼돌리고 있다", source: seen }
+    - id: report
+      label: 행상대장에게 알린다
+      effects:
+        - set_flag: e_smuggler_reported
+        - relation: { who: mate, axis: trust, delta: -3 }
+        - relation: { who: commander, axis: trust, delta: 2 }
+        - merit: 1
+        - deed: { summary: 배철구의 밀수를 행상대장에게 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+
+# ── 템플릿 ───────────────────────────────────────────
+
+- id: e_pump_gun
+  title: 정수장 줄의 권총
+  tags: [caravan_life]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zones: [water_plant]
+    segments: [dawn, morning, evening]
+  cast:
+    keeper: { ids: [e_deoksu], enter: false }
+  setup: >-
+    물 길으러 온 줄에서 한 사내가 외투 자락을 젖혀 허리춤의 권총 손잡이를 일부러 보이며 앞으로 끼어든다.
+    정수장 문 안이다. 줄 선 사람들이 숨을 죽이고 당신을 본다.
+  ai_direction: 사내는 다른 무리 사람이다 (필요하면 엑스트라로 만든다). 휴전이 아직 살아 있는지 떠보는 중이다. 여기서 총이 한 번 나오면 다음엔 모두 총을 들고 온다.
+  choices:
+    - id: enforce
+      label: 막아서서 총은 문밖에 두고 오라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - merit: 1
+          - relation: { who: keeper, axis: respect, delta: 1 }
+          - deed: { summary: 정수장 안에서 총을 보인 사내를 문밖으로 돌려보냈다, tags: [bravery], severity: 1, privacy: public }
+        partial:
+          - belief: { fact: "총을 보인 사내는 물러났지만 문밖에서 오래 정수장 안을 노려보았다", source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "사내는 비웃으며 줄 맨 앞에서 물을 받아 갔다. 정수장 휴전이 흔들린다는 말이 돌 것이다", source: seen }
+    - id: smooth
+      label: 웃으며 총만 맡기면 먼저 받게 해 주겠다고 흥정한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "사내는 총을 문간 상자에 맡기고 물을 받아 갔다. 줄 선 사람들이 숨을 내쉬었다", source: seen }
+        partial:
+          - belief: { fact: "사내는 총을 맡기는 대신 물 한 통을 덤으로 받아 갔다", source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+    - id: look_away
+      label: 못 본 척한다
+      effects:
+        - relation: { who: keeper, axis: trust, delta: -1 }
+        - deed: { summary: 정수장 안에서 총을 보인 사내를 못 본 척했다, tags: [cowardice], severity: 1, privacy: public }
+
+- id: e_debt_visit
+  title: 빈 쌀통
+  tags: [e_porter]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    segments: [day, evening]
+    day_gte: 2
+  cast:
+    clerk: { ids: [e_sora], enter: false }
+  setup: >-
+    {clerk}의 장부에 기한이 지난 이름 하나. {zone} 한쪽, 비닐로 창을 막은 방에 열병 끝에 마른 남자와 아이가 있다.
+    남자가 말없이 빈 쌀통 뚜껑을 열어 보인다.
+  ai_direction: 남자는 정말 가진 게 없다. 아이 신발 안쪽에 통조림 하나를 숨겨 두었다. 빚을 걷지 못하면 장부에 짐꾼의 이름이 함께 적힌다.
+  choices:
+    - id: press
+      label: 숨겨 둔 게 있을 거라며 다그친다
+      check: intimidate
+      outcomes:
+        success:
+          - merit: 1
+          - relation: { who: clerk, axis: respect, delta: 1 }
+          - deed: { summary: 빚진 집에서 아이 신발에 숨긴 마지막 통조림까지 걷어 왔다, tags: [cruelty], severity: 1, privacy: semi_private }
+        partial:
+          - belief: { fact: "빚은 반만 걷었다. 아이가 끝까지 신발을 끌어안고 있었다", source: seen }
+        miss:
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: "빈손으로 돌아왔다. 문소라가 장부에 줄을 하나 더 그었다", source: seen }
+    - id: cover
+      label: 내 담배로 대신 갚아 준다
+      effects:
+        - take_item: { item: cigarettes, quantity: 1 }
+        - deed: { summary: 빚진 가족의 빚을 자기 담배로 대신 갚아 주었다, tags: [mercy], severity: 1, privacy: private }
+    - id: extend
+      label: 기한을 사흘 늦춰 주기로 한다
+      effects:
+        - relation: { who: clerk, axis: trust, delta: -1 }
+        - belief: { fact: "빚진 남자에게 사흘을 더 주었다. 문소라에게는 따로 설명해야 한다", source: seen }
+
+- id: e_stall_haggle
+  title: 좌판의 흥정
+  tags: [caravan_life]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    zones: [e_market]
+    segments: [morning, day]
+  setup: >-
+    좌판 앞에 어느 무리 사람인지 모를 손님이 쪼그려 앉는다. 쓸 만한 물건을 내밀며 물 열 통과 바꾸자고 한다.
+    요즘 상단에 {scarce:이/가} 모자라다는 것을 아는 눈치다.
+  ai_direction: 손님은 값을 세게 부르지만 사실 급하다. 오늘 안에 물을 지고 돌아가야 한다. 버티면 값이 내려온다.
+  choices:
+    - id: haggle
+      label: 버티며 값을 깎는다
+      check: persuade
+      outcomes:
+        success:
+          - merit: 1
+          - give_item: { item: cigarettes, quantity: 2 }
+          - relation: { who: commander, axis: respect, delta: 1 }
+        partial:
+          - belief: { fact: "좌판 흥정은 본전치기로 끝났다. 손님은 어딘가 급해 보였다", source: seen }
+        miss:
+          - relation: { who: commander, axis: respect, delta: -1 }
+          - belief: { fact: "좌판 흥정에서 밀렸다. 행상대장이 장부를 보고 혀를 찼다", source: seen }
+    - id: accept
+      label: 부르는 값에 그대로 넘긴다
+      effects:
+        - relation: { who: commander, axis: trust, delta: -1 }
+    - id: ask_news
+      label: 값 대신 그쪽 무리 사정을 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "좌판 손님 말로는 요즘 붉은연합이 물과 탄약을 넉넉히 사 모은다. 겨울 전에 크게 움직일 거라는 말이 돈다", source: rumor }
+        partial:
+          - belief: { fact: "좌판 손님 말로는 요즘 다들 물을 미리 사 둔다", source: rumor }
+        miss: []

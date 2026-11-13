@@ -1,0 +1,34 @@
+# 버들마을의 경비병 (내장 시작 역할). 연합에 기댄 작은 마을에서, 문을 지키며 어느 편에 설지 흔들린다
+id: role_b_guard
+label: 버들마을 경비병
+faction: faction_b
+rank: grunt
+default_name: 경비병
+age: 21
+# 시작 장면. 화면에 먼저 보여 주고 GM 프롬프트에도 넣는다
+opening_scene: 새벽, 버들마을 102동 옥상의 망루. 당신은 물탱크에 등을 기대고 담요를 뒤집어쓴 채 졸다가 깬다. 아래 마당에서 두레박 줄이 우물 벽을 긁는 소리가 올라온다.
+# 새 게임의 시나리오 고르기에 보이는 것, 캐릭터를 만들기 전에 들려주는 지금 상황
+scenario:
+  title: 버들마을의 경비병
+  pitch: >-
+    마흔 명이 사는 옛 아파트 단지의 문지기로 시작한다. 정문과 쪽문을 지키고, 우물과 밭을 지키고, 아이들이 옥상에 올라가지 않게 지킨다.
+    청솔형제단은 탄을 대 주는 대신 몫을 요구하고, 붉은연합은 밤마다 쪽문 너머로 다른 길을 내민다. 누구에게 문을 열지는 결국 문을 지키는 사람 손에 달려 있다.
+  intro: >-
+    가을이 깊어 간다. 당신은 버들마을의 경비병이다. 마을은 청솔형제단 거점 서쪽의 옛 아파트 단지를 담으로 둘러 살고, 식구는 아이들까지 마흔 명 남짓이다.
+    탄은 청솔형제단에게서 받아 쓰고, 그 대신 남쪽 텃밭의 수확 일부와 경비 인원을 내준다. 그 약조를 두고 단지 안에서 불평이 늘었다.
+    요즘 밤이면 붉은연합의 사람이 쪽문 근처를 다녀간다는 말이 돈다. 임무는 경비조장 배동철을 통해 내려온다.
+    이야기는 어느 새벽, 102동 옥상 망루에서 시작한다.
+# 능력은 정하지 않는다: 시나리오의 능력 배열을 섞어 준다
+# 시작 훈련 (하급 전투원의 근접전 +1, 사격 +1과 같은 무게)
+start_skills: { fight: 1, sense_danger: 1 }
+start_inventory: [kitchen_knife, water_bottle, binoculars]
+start_location: b_base
+access: [ration, mission_board]
+beliefs_preset: b_guard
+# 시작할 때 알고 있는 인물 (단지의 주요 인물과 같은 경비조)
+known_npcs: [b_dongcheol, b_mina, b_jaehyuk, b_hyunwoo, b_seungmin, b_sunrye, b_eunji]
+# 직속 상관. 임무를 주고 보고를 받는다
+commander: b_dongcheol
+# 이 역할에 내려오는 임무 (content/missions/b_guard.yaml)
+missions: [b_gate_watch, b_rooftop_watch, b_well_repair, b_fields_escort, b_old_town_search, b_alliance_errand, b_footprints, b_shelter_drill, b_joint_recon]
+storylet_tags: [b_guard, village_life]

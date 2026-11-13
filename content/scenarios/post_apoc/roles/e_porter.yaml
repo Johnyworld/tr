@@ -1,0 +1,28 @@
+# 나루상단의 짐꾼 (시작 역할). 무리 사이를 오가는 짐마차, 흥정과 빚, 정수장 휴전, 정보 장사
+id: role_e_porter
+label: 나루상단 짐꾼
+faction: faction_e
+rank: grunt
+default_name: 짐꾼
+opening_scene: 새벽, 나루상단의 장터. 옛 휴게소 주차장에 짐마차 세 대가 서 있다. 당신은 물통을 묶은 밧줄을 다시 조이고, 행상대장 주옥희가 장부를 낀 채 짐을 하나씩 들어 보며 무게를 잰다. 강 쪽에서 정수장 펌프가 새벽 물을 끌어올리는 소리가 들린다.
+scenario:
+  title: 나루상단의 짐꾼
+  pitch: >-
+    어느 편에도 서지 않는 상인 무리의 가장 낮은 짐꾼으로 시작한다. 물통과 통조림을 지고 무리 사이를 오가며, 흥정하고, 빚을 걷고, 길에서 털리지 않게 살아남는다.
+    누구에게 무엇을 팔지, 들은 것을 누구에게 넘길지는 결국 당신 손에 들린 짐이 정한다.
+  intro: >-
+    가을이 깊어 간다. 당신은 나루상단의 짐꾼이다. 상단은 강 하류의 옛 휴게소를 장터로 쓰고, 정수장의 손펌프를 쥐고 모든 무리에 물을 판다.
+    정수장 안에서는 어느 무리도 총을 꺼내지 않는다. 그 약속이 깨지면 물이 끊긴다는 것을 모두 안다.
+    당신은 상단에 진 빚을 짐을 지는 것으로 갚는 중이고, 일은 행상대장 주옥희를 통해 내려온다. 요즘 강변 길에서 짐마차가 두 번 털렸다.
+    이야기는 어느 새벽, 장터에서 짐마차가 떠날 채비를 하는 동안 시작한다.
+age: 26
+# 시작 훈련: 흥정과 짐 지고 버티기
+start_skills: { persuade: 1, endure: 1 }
+start_inventory: [trade_token, water_bottle, cigarettes]
+start_location: e_market
+access: [ration, mission_board]
+beliefs_preset: e_porter
+known_npcs: [e_okhee, e_bongsu, e_yuri, e_cheolgu, e_sora, e_deoksu, e_hana]
+commander: e_okhee
+missions: [e_water_haul, e_pump_watch, e_caravan_pine, e_caravan_willow, e_debt_run, e_clinic_barter, e_road_scout, e_scrap_salvage]
+storylet_tags: [e_porter, caravan_life]

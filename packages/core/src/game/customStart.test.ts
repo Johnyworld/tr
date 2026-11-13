@@ -149,3 +149,14 @@ describe("자유 시나리오: 세계", () => {
     w.close();
   });
 });
+
+describe("자유 시나리오: 다른 세력의 같은 계급", () => {
+  it("다른 세력으로 쓴 분대장은 청솔형제단 분대장 시나리오의 임무·태그를 빌리지 않는다", () => {
+    const red = buildCustomRole(content, { ...base, faction: "faction_c", rank: "squad_leader", location: "c_base" });
+    const pineSquad = content.roles.role_a_squad_leader;
+    expect(pineSquad).toBeDefined();
+    expect(red.storylet_tags).not.toContain("a_squad_leader");
+    expect(red.missions.some((m) => pineSquad!.missions.includes(m))).toBe(false);
+    expect(buildCustomRole(content, { ...base, rank: "squad_leader" }).storylet_tags).toContain("a_squad_leader");
+  });
+});

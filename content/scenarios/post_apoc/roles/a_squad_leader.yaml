@@ -1,0 +1,33 @@
+# 청솔형제단의 신임 분대장 (시작 역할, 초안)
+# 강태호 분대의 하급 전투원이던 주인공이 막 진급해 3분대를 맡았다. 3분대는 보급 간부 한도윤 밑에서 창고 경비와 물자 호위를 한다
+id: role_a_squad_leader
+label: 청솔형제단 신임 분대장
+faction: faction_a
+rank: squad_leader
+default_name: 신임
+opening_scene: 아침, 청솔형제단 거점의 보급 창고 앞. 모래주머니 위에 네 사람이 앉아 있다가 당신을 보고 느릿느릿 일어선다. 한 사람은 끝까지 앉아 있다. 창고 문에는 아직 전 분대장의 이름이 분필로 적혀 있다.
+scenario:
+  title: 청솔형제단의 신임 분대장
+  pitch: >-
+    막 분대장이 됐다. 이제 명령을 받는 것만이 아니라 내려야 하고, 모자란 배급을 나누고, 누구를 위험한 곳에 보낼지 정해야 한다.
+    분대원 넷의 목숨이 당신의 판단에 걸려 있다. 어제까지 같은 막사를 쓰던 동료들도 당신을 지켜본다.
+  intro: >-
+    가을이 깊어 간다. 당신은 강태호 분대에서 하급 전투원으로 버티다가 엿새 전 분대장으로 진급했다.
+    맡은 곳은 3분대다. 보급 간부 한도윤 밑에서 창고를 지키고 물자를 호위하는 분대인데, 전 분대장 서기철이 지난달 강변 공장 지대에서 돌아오지 못했다.
+    분대원은 넷. 고참 임동욱, 길을 잘 아는 노병철, 저격수 권예진, 지난달 들어온 피난민 문하늘. 다들 고참 임동욱이 분대를 물려받을 줄 알았다.
+    겨울을 앞두고 배급은 줄고 있고, 분대 몫을 어떻게 나눌지는 이제 당신이 정한다.
+    이야기는 진급 뒤 처음으로 분대를 모으는 아침, 보급 창고 앞에서 시작한다.
+age: 29
+# 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
+# 시작 훈련: 하급 전투원 때의 사격에 지휘(전략)를 더했다
+start_skills: { tactics: 1, shoot: 1 }
+start_inventory: [old_rifle, radio, water_bottle]
+start_location: a_base
+access: [ration, mission_board]
+beliefs_preset: a_squad_leader
+# 3분대 넷, 직속 상관, 옛 분대와 거점의 주요 인물
+known_npcs: [a_dongwook, a_byungchul, a_yejin, a_haneul, a_doyun, a_taeho, a_jiho, a_seoyeon, a_mansu, a_chaewon, a_seonghee, a_bokja]
+commander: a_doyun
+missions: [a_sl_storage_guard, a_sl_water_escort, a_sl_old_town_sweep, a_sl_fields_night, a_sl_b_convoy, a_sl_drill, a_sl_find_straggler, a_sl_east_reinforce]
+# squad_life: 거점 생활 스토리렛을 하급 전투원과 함께 쓴다. world: 어느 시나리오에서나 열리는 도시의 일
+storylet_tags: [a_squad_leader, command, squad_life, world]

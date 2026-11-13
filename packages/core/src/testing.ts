@@ -417,11 +417,11 @@ export const TEST_CONTENT: Content = {
     },
   },
   locations: {
-    a_home: { id: "a_home", name: "우리 거점", description: "거점", kind: "base", owner: "faction_a", adjacent: ["a_post", "wild"], yields: { food: 10 } },
-    a_post: { id: "a_post", name: "초소", description: "초소", kind: "zone", owner: "faction_a", adjacent: ["c_home"], yields: {} },
-    c_home: { id: "c_home", name: "C 거점", description: "C", kind: "base", owner: "faction_c", adjacent: ["wild"], yields: { food: 50 } },
-    wild: { id: "wild", name: "빈 땅", description: "빈 땅", kind: "zone", owner: null, adjacent: [], yields: {} },
-    e_home: { id: "e_home", name: "장터", description: "장터", kind: "base", owner: "faction_e", adjacent: [], yields: { food: 10 } },
+    a_home: { id: "a_home", name: "우리 거점", description: "거점", kind: "base", owner: "faction_a", danger: 1, adjacent: ["a_post", "wild"], yields: { food: 10 } },
+    a_post: { id: "a_post", name: "초소", description: "초소", kind: "zone", owner: "faction_a", danger: 1, adjacent: ["c_home"], yields: {} },
+    c_home: { id: "c_home", name: "C 거점", description: "C", kind: "base", owner: "faction_c", danger: 1, adjacent: ["wild"], yields: { food: 50 } },
+    wild: { id: "wild", name: "빈 땅", description: "빈 땅", kind: "zone", owner: null, danger: 1, adjacent: [], yields: {} },
+    e_home: { id: "e_home", name: "장터", description: "장터", kind: "base", owner: "faction_e", danger: 1, adjacent: [], yields: { food: 10 } },
   },
   /** 기본은 비워 둔다 (스토리렛 테스트가 따로 채운다) */
   storylets: {},

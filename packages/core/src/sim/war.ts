@@ -16,7 +16,7 @@ import type { Rng } from "../rng.ts";
  *    사기가 시작값 쪽으로 돌아오고, 남은 사람 중에서 전투원을 키우고, 가끔 피란민이 합류한다 (끝없는 세계)
  */
 
-export type ZoneState = { owner: string | null; fort?: number };
+export type ZoneState = { owner: string | null; fort?: number; boost?: Record<string, number> };
 
 export type WarWorld = {
   factions: Record<string, FactionState>;
@@ -208,8 +208,11 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const workforce = clamp(f.population / Math.max(1, startPop), 0.7, 1.2);
     for (const loc of Object.values(content.locations)) {
       if (next.zones[loc.id]?.owner !== id) continue;
-      for (const [r, amount] of Object.entries(loc.yields)) {
-        f.resources[r] = (f.resources[r] ?? 0) + Math.round((amount ?? 0) * (options.season?.yields[r] ?? 1) * workforce);
+      // 콘텐츠의 산출 + 이야기로 늘린 산출 (12-54)
+      const boost = next.zones[loc.id]?.boost ?? {};
+      for (const r of new Set([...Object.keys(loc.yields), ...Object.keys(boost)])) {
+        const amount = ((loc.yields as Record<string, number | undefined>)[r] ?? 0) + (boost[r] ?? 0);
+        f.resources[r] = (f.resources[r] ?? 0) + Math.round(amount * (options.season?.yields[r] ?? 1) * workforce);
       }
     }
     let short = false;

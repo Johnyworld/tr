@@ -231,10 +231,10 @@ function checkReferences(content: Content): string[] {
     const all = st.choices.flatMap((c) => [...c.effects, ...Object.values(c.outcomes ?? {}).flat()]);
     for (const e of all) {
       if ("faction_resource" in e && !resources.has(e.faction_resource.resource)) problems.push(`storylets.${st.id}: 알 수 없는 자원 ${e.faction_resource.resource}`);
-      if ("faction_resource" in e && e.faction_resource.faction !== "own" && !content.factions[e.faction_resource.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.faction_resource.faction}`);
-      if ("npc_depart" in e && e.npc_depart.to_faction && e.npc_depart.to_faction !== "own" && !content.factions[e.npc_depart.to_faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.npc_depart.to_faction}`);
+      if ("faction_resource" in e && !isFactionAlias(e.faction_resource.faction) && !content.factions[e.faction_resource.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.faction_resource.faction}`);
+      if ("npc_depart" in e && e.npc_depart.to_faction && !isFactionAlias(e.npc_depart.to_faction) && !content.factions[e.npc_depart.to_faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.npc_depart.to_faction}`);
       if ("faction_relation" in e) {
-        for (const f of [e.faction_relation.from, e.faction_relation.to]) if (f !== "own" && !content.factions[f]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${f}`);
+        for (const f of [e.faction_relation.from, e.faction_relation.to]) if (!isFactionAlias(f) && !content.factions[f]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${f}`);
       }
       if ("body" in e) {
         if (e.body.track === content.scenario.harm_track) problems.push(`storylets.${st.id}: body로 부상 트랙을 바꿀 수 없다 (원칙 3)`);
@@ -247,15 +247,15 @@ function checkReferences(content: Content): string[] {
         const t = content.scenario.command?.policies.find((p) => p.id === e.faction_policy.topic);
         if (!t) problems.push(`storylets.${st.id}: 알 수 없는 방침 주제 ${e.faction_policy.topic}`);
         else if (!t.options.some((o) => o.id === e.faction_policy.option)) problems.push(`storylets.${st.id}: 알 수 없는 방침 선택지 ${e.faction_policy.option}`);
-        if (e.faction_policy.faction !== "own" && !content.factions[e.faction_policy.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.faction_policy.faction}`);
+        if (!isFactionAlias(e.faction_policy.faction) && !content.factions[e.faction_policy.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.faction_policy.faction}`);
       }
       if ("npc_body" in e) {
         if (e.npc_body.track === content.scenario.harm_track) problems.push(`storylets.${st.id}: npc_body로 부상 트랙을 바꿀 수 없다`);
         else if (!content.scenario.condition_tracks.some((t) => t.id === e.npc_body.track)) problems.push(`storylets.${st.id}: 알 수 없는 상태 트랙 ${e.npc_body.track}`);
       }
-      if ("debt" in e && e.debt.faction !== "own" && !content.factions[e.debt.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.debt.faction}`);
+      if ("debt" in e && !isFactionAlias(e.debt.faction) && !content.factions[e.debt.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.debt.faction}`);
       if ("npc_capture" in e) {
-        if (e.npc_capture.by !== "own" && !content.factions[e.npc_capture.by]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.npc_capture.by}`);
+        if (!isFactionAlias(e.npc_capture.by) && !content.factions[e.npc_capture.by]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.npc_capture.by}`);
         if (e.npc_capture.zone && !content.locations[e.npc_capture.zone]) problems.push(`storylets.${st.id}: 알 수 없는 구역 ${e.npc_capture.zone}`);
       }
     }
@@ -345,7 +345,7 @@ export function checkStorylets(content: Content): string[] {
     }
     for (const [key, role] of Object.entries(s.cast)) {
       for (const id of role.ids ?? []) if (!content.npcs[id]) problems.push(`${where}.cast.${key}: 알 수 없는 NPC ${id}`);
-      if (role.faction && role.faction !== "own" && Object.keys(content.factions).length && !content.factions[role.faction]) {
+      if (role.faction && !isFactionAlias(role.faction) && Object.keys(content.factions).length && !content.factions[role.faction]) {
         problems.push(`${where}.cast.${key}: 알 수 없는 세력 ${role.faction}`);
       }
     }
@@ -393,9 +393,11 @@ export function checkStorylets(content: Content): string[] {
         }
         if ("take_item" in e && !content.items[e.take_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.take_item.item}`);
         if ("lose_item" in e && !content.items[e.lose_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.lose_item.item}`);
+        if ("train" in e && !content.scenario.moves.some((m) => m.id === e.train.skill)) problems.push(`${at}: 알 수 없는 스킬 ${e.train.skill}`);
+        if ("cultivate" in e && !content.scenario.resources.some((r) => r.id === e.cultivate.resource)) problems.push(`${at}: 알 수 없는 자원 ${e.cultivate.resource}`);
         if ("clock" in e && !clocks.has(e.clock.id)) problems.push(`${at}: 알 수 없는 세력 클락 ${e.clock.id}`);
         if ("overhear" in e && !["other", "enemy"].includes(e.overhear.faction) && !content.factions[e.overhear.faction]) problems.push(`${at}: 알 수 없는 세력 ${e.overhear.faction}`);
-        if ("faction_morale" in e && e.faction_morale.faction !== "own" && !content.factions[e.faction_morale.faction]) {
+        if ("faction_morale" in e && !isFactionAlias(e.faction_morale.faction) && !content.factions[e.faction_morale.faction]) {
           problems.push(`${at}: 알 수 없는 세력 ${e.faction_morale.faction}`);
         }
       }
@@ -416,4 +418,9 @@ function listYamlFiles(dir: string): string[] {
     .filter((name) => name.endsWith(".yaml") || name.endsWith(".yml"))
     .sort()
     .map((name) => join(dir, name));
+}
+
+/** 효과·배역의 무리 자리에 쓸 수 있는 별칭: own(주인공의 무리), zone_owner(지금 구역의 주인, 12-54) */
+function isFactionAlias(x: string): boolean {
+  return x === "own" || x === "zone_owner";
 }

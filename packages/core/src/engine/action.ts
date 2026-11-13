@@ -402,7 +402,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.move_to && !time.interrupted && !sweptBack) {
     // 자리를 뜨면 그 자리의 이야기는 끝난다 (장면의 인물도 따라오지 않는다)
     displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
+    const deposited = start.playerZone ? store.getState().deposits?.[start.playerZone] : undefined;
     store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to });
+    if (deposited) lines.push(`맡겨 둔 것을 돌려받고 떠났다: ${Object.entries(deposited).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ")}.`);
     lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다. 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
     // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
     for (const d of runRoadEvent(ctx)) {

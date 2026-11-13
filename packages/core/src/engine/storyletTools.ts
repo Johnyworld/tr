@@ -1,3 +1,4 @@
+import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { dayOf, formatTime } from "../rules/time.ts";
 import { harmTrack } from "../scenario/scenario.ts";
@@ -211,6 +212,8 @@ export const resolveStorylet = defineTool({
       if (r.line) lines.push(r.line);
       if (r.display) extra.push(r.display);
     }
+    // 시간이 더 걸렸으면 그동안의 세계를 돌린다 (배급, 소문, 전쟁, 몸)
+    if (effects.some((e) => "delay" in e)) extra.push(...runAfterTimeAdvance(ctx));
     lines.push("이 결과에 맞게 이야기를 마무리하는 장면을 서술하라.");
     return {
       ok: true,
@@ -366,6 +369,39 @@ function applyEffect(
     store.append({ type: "item_granted", to: playerId, itemId: item, quantity });
     return { line: `${josa(`${name} ×${quantity}`, "을/를")} 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
   }
+  if ("deposit_weapons" in effect) {
+    const zone = state.playerZone;
+    const me = state.characters[playerId]!;
+    if (!zone) return {};
+    const items = Object.fromEntries(Object.entries(me.inventory).filter(([id, n]) => n > 0 && content.items[id]?.kind === "weapon"));
+    if (Object.keys(items).length === 0) return {};
+    store.append({ type: "items_deposited", zone, items });
+    const names = Object.entries(items).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ");
+    return { line: `무기를 맡겼다 (${names}). ${content.locations[zone]?.name ?? zone}을(를) 떠날 때 돌려받는다.` };
+  }
+  if ("cultivate" in effect) {
+    const me = state.characters[playerId]!;
+    const zone =
+      effect.cultivate.where === "base" ? Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id : state.playerZone;
+    if (!zone || !me.factionId || state.zones[zone]?.owner !== me.factionId) return {};
+    store.append({ type: "zone_boosted", zone, resource: effect.cultivate.resource, delta: effect.cultivate.delta });
+    return { line: `${content.locations[zone]?.name ?? zone}에서 나는 것이 늘 것이다 (빼앗기면 사라진다).` };
+  }
+  if ("train" in effect) {
+    const me = state.characters[playerId]!;
+    const { skill } = effect.train;
+    const move = content.scenario.moves.find((m) => m.id === skill);
+    if (!move) return {};
+    const now = me.skills[skill] ?? move.default;
+    const max = Math.min(effect.train.max, content.scenario.ranges.skill.max);
+    if (now >= max) return {};
+    store.append({ type: "skill_trained", characterId: playerId, skill, to: now + 1 });
+    return { line: `배웠다: ${move.label} ${now >= 0 ? "+" : ""}${now} → +${now + 1}.` };
+  }
+  if ("delay" in effect) {
+    store.append({ type: "time_advanced", activity: "wait", from: state.time, to: state.time + effect.delay });
+    return { line: `시간이 더 걸렸다 (${Math.round(effect.delay / 60)}시간쯤).` };
+  }
   if ("lose_item" in effect) {
     const { item } = effect.lose_item;
     const have = state.characters[playerId]!.inventory[item] ?? 0;
@@ -385,14 +421,14 @@ function applyEffect(
     return {}; // 세력 클락은 아무도 모른다. 결과만 세계에 남는다
   }
   if ("faction_morale" in effect) {
-    const id = effect.faction_morale.faction === "own" ? state.characters[playerId]!.factionId : effect.faction_morale.faction;
+    const id = factionRef(state, effect.faction_morale.faction);
     if (!state.factions[id]) return {};
     store.append({ type: "faction_morale_changed", factionId: id, delta: effect.faction_morale.delta });
     return {};
   }
   if ("faction_relation" in effect) {
     const own = state.characters[playerId]!.factionId;
-    const id = (x: string) => (x === "own" ? own : x);
+    const id = (x: string) => factionRef(state, x);
     const { delta, mutual } = effect.faction_relation;
     const pairs = [[id(effect.faction_relation.from), id(effect.faction_relation.to)]];
     if (mutual) pairs.push([pairs[0]![1]!, pairs[0]![0]!]);
@@ -421,7 +457,7 @@ function applyEffect(
   }
   if ("faction_resource" in effect) {
     const { resource, delta } = effect.faction_resource;
-    const id = effect.faction_resource.faction === "own" ? state.characters[playerId]!.factionId : effect.faction_resource.faction;
+    const id = factionRef(state, effect.faction_resource.faction);
     if (!state.factions[id]) return {};
     store.append({ type: "faction_resource_changed", factionId: id, resource, delta });
     return {}; // 창고 사정은 배급과 소문으로만 드러난다
@@ -442,7 +478,7 @@ function applyEffect(
   }
   if ("faction_policy" in effect) {
     const { topic, option } = effect.faction_policy;
-    const id = effect.faction_policy.faction === "own" ? state.characters[playerId]!.factionId : effect.faction_policy.faction;
+    const id = factionRef(state, effect.faction_policy.faction);
     const t = content.scenario.command?.policies.find((p) => p.id === topic);
     const o = t?.options.find((x) => x.id === option);
     if (!state.factions[id] || !t || !o) return {};
@@ -518,7 +554,7 @@ function applyEffect(
     return change?.line && store.getState().scene.present.includes(id) ? { line: change.line, display: change.display ?? undefined } : {};
   }
   if ("debt" in effect) {
-    const id = effect.debt.faction === "own" ? state.characters[playerId]!.factionId : effect.debt.faction;
+    const id = factionRef(state, effect.debt.faction);
     if (!content.factions[id]) return {};
     const before = state.characters[playerId]!.debts[id] ?? 0;
     const delta = Math.max(-before, effect.debt.delta);
@@ -532,7 +568,7 @@ function applyEffect(
     const id = whoOf(ctx, effect.npc_capture.who, cast);
     const npc = id ? state.characters[id] : undefined;
     if (!id || !npc || npc.dead || npc.away || npc.captive || id === playerId) return {};
-    const by = effect.npc_capture.by === "own" ? state.characters[playerId]!.factionId : effect.npc_capture.by;
+    const by = factionRef(state, effect.npc_capture.by);
     if (!content.factions[by]) return {};
     const zone = effect.npc_capture.zone ?? Object.values(content.locations).find((l) => l.owner === by && l.kind === "base")?.id;
     if (!zone) return {};
@@ -590,4 +626,14 @@ export function runRoadEvent(ctx: ToolContext): ToolDisplayEvent[] {
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
   displays.push({ type: "storylet", event: "started", title: storylet.title, detail: setupText(store.getState(), content) });
   return displays;
+}
+
+/**
+ * 효과의 무리 자리: own = 주인공의 무리, zone_owner = 지금 구역의 주인 (다투는 땅, 12-54), 그 밖은 세력 id.
+ * 주인이 없으면 빈 문자열 (효과가 아무 일도 하지 않는다)
+ */
+function factionRef(state: GameState, x: string): string {
+  if (x === "own") return state.characters[state.playerId]?.factionId ?? "";
+  if (x === "zone_owner") return (state.playerZone && state.zones[state.playerZone]?.owner) || "";
+  return x;
 }

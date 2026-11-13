@@ -1,0 +1,43 @@
+# 씨앗을 심는다 (12-54): 캠퍼스 온실의 씨앗 봉투(seed_packet)를 우리 땅에 심으면 그 땅의 산출이 는다 (cultivate)
+- id: wp_plant_seeds
+  title: 봉투 속의 씨앗
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    own_territory: true
+    segments: [morning, day]
+    seasons: [spring, summer, autumn]
+    has_items: [seed_packet]
+  cast:
+    hand: { faction: own, ranks: [grunt, staff], known: true, optional: true }
+  setup: 주머니 속 씨앗 봉투가 바스락거린다. {zone}의 담 안쪽, 해가 드는 자리에 아직 갈지 않은 땅이 한 뼘 남아 있다.
+  ai_direction: 씨앗은 심고 물을 대야 산다. 심은 것이 바로 먹을 것이 되지는 않는다 (산출은 날마다 조금씩, 코드가 셈한다). 땅을 빼앗기면 밭도 사라진다. 혼자 심을 수도, 무리 사람에게 맡길 수도 있다. 숫자는 지어내지 않는다.
+  choices:
+    - id: plant
+      label: 손수 이랑을 내고 씨앗을 심는다
+      check: survival
+      outcomes:
+        success:
+          - take_item: { item: seed_packet }
+          - cultivate: { resource: food, delta: 3 }
+          - standing: 1
+          - belief: { fact: "{zone} 담 안쪽에 씨앗을 심었다. 물을 대 주면 철마다 무리 솥에 조금씩 더 들어갈 것이다", source: seen }
+        partial:
+          - take_item: { item: seed_packet }
+          - cultivate: { resource: food, delta: 1 }
+          - belief: { fact: "씨앗을 심었지만 반은 흙이 맞지 않았다. 싹은 듬성듬성 날 것이다", source: seen }
+        miss:
+          - take_item: { item: seed_packet }
+          - belief: { fact: "씨앗을 심었는데 며칠 뒤 새들이 이랑을 다 헤집어 놓았다", source: seen }
+    - id: give_hand
+      label: "{hand}에게 봉투를 맡기고 같이 심는다"
+      when: { cast: [hand] }
+      effects:
+        - take_item: { item: seed_packet }
+        - cultivate: { resource: food, delta: 2 }
+        - relation: { who: hand, axis: affection, delta: 1 }
+        - belief: { fact: "{hand}와 함께 씨앗을 심었다. 물 대는 당번을 {hand}가 맡기로 했다", source: seen }
+    - id: keep
+      label: 아직은 아껴 둔다
+      effects: []

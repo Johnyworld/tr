@@ -52,7 +52,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.commander || c.id === commander)
-    .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction))
+    .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction))
     .filter((c) => !role.ranks || role.ranks.includes(c.rank))
     .filter((c) => !role.occupations || role.occupations.some((o) => (o === "same" ? player.occupation?.id : o) === c.occupation?.id && !!c.occupation))
     .filter((c) => !role.known || known.has(c.id))
@@ -121,7 +121,9 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
     if (role.recall) {
       const id = state.keptExtras[role.recall];
       const c = id ? state.characters[id] : undefined;
-      if (!id || !c || c.dead || c.away || c.captive || used.has(id)) {
+      // here: 지금 이 구역에 있는 사람만 (그 자리에 남겨 둔 사람, 12-54)
+      const away = !!c?.extra && role.here && c.extra.zone !== state.playerZone && !state.companions.includes(id ?? "");
+      if (!id || !c || c.dead || c.away || c.captive || used.has(id) || away) {
         if (role.optional) continue;
         return null;
       }

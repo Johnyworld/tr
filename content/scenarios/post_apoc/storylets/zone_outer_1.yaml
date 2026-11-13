@@ -82,6 +82,7 @@
           - npc_hurt: { who: stuck, steps: 1 }
           - belief: { fact: "셔터를 들다 쇳소리가 터널을 울렸다. 갇힌 사람은 다리를 긁히며 기어 나왔다. 터널 안쪽에서 무언가 움직이기 시작했다", source: seen }
         miss:
+          - set_flag: zo1_sub_stuck_waiting
           - zone_noise: 3
           - body: { track: nerves, delta: 1 }
           - belief: { fact: "셔터가 반쯤 올라가다 미끄러졌다. 쇳소리에 터널 안쪽이 깨었다. 셔터 너머 목소리는 내일 다시 오라고 했다", source: seen }
@@ -96,6 +97,7 @@
     - id: water
       label: 셔터 틈으로 물병을 밀어 넣고, 다시 오겠다고 한다
       effects:
+        - set_flag: zo1_sub_stuck_waiting
         - take_item: { item: water_bottle }
         - relation: { who: stuck, axis: affection, delta: 1 }
         - belief: { fact: "환승역 무너진 통로 셔터 너머에 사람이 갇혀 있다. 물병을 넣어 주었다", source: seen }
@@ -103,6 +105,58 @@
       label: 천장의 흙을 보고 물러난다
       effects:
         - belief: { fact: "환승역 무너진 통로에서 누군가 셔터를 두드렸다. 돌아보지 않고 나왔다", source: seen }
+
+# 남겨 둔 사람 (12-54): 다시 오겠다고 한 셔터 너머의 사람은 그 자리에 있다 (recall + here)
+- id: zo1_sub_shutter_again
+  title: 다시 온 셔터 앞
+  tags: [world]
+  when:
+    zones: [subway_hub]
+    segments: [morning, day, evening]
+    flags_all: [zo1_sub_stuck_waiting]
+    flags_none: [zo1_sub_rescued, zo1_sub_stuck_done]
+  cast:
+    stuck: { recall: zo1_sub_stuck, here: true }
+  setup: 무너진 통로 끝 셔터 아래로 손가락이 다시 나와 있다. 두드리는 소리가 지난번보다 더 약하다. "…왔네요. 진짜 왔네." 셔터 위 천장의 흙더미가 조금 더 늘었다.
+  ai_direction: "{stuck}은(는) 그동안 셔터 틈으로 물을 받으며 버텼다. 오래 두면 버티지 못한다. 셔터를 올리는 위험은 지난번과 같다 (쇳소리가 터널을 깨운다). 위험은 판정 전에 선언한다."
+  choices:
+    - id: pry_again
+      label: 이번에는 끝까지 셔터를 들어 올린다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: zo1_sub_rescued
+          - set_flag: zo1_sub_stuck_done
+          - relation: { who: stuck, axis: trust, delta: 3 }
+          - zone_noise: 1
+          - deed: { summary: 다시 오겠다는 약속을 지켜 환승역 셔터 너머의 사람을 꺼냈다, tags: [mercy], severity: 2, privacy: private }
+          - companion_join: { who: stuck, kind: purpose, until: { hours: 24 } }
+        partial:
+          - set_flag: zo1_sub_rescued
+          - set_flag: zo1_sub_stuck_done
+          - relation: { who: stuck, axis: trust, delta: 2 }
+          - zone_noise: 2
+          - npc_hurt: { who: stuck, steps: 1 }
+          - delay: 60
+          - belief: { fact: "셔터는 올라갔지만 오래 걸렸다. 갇혔던 사람은 다리를 끌며 나왔다", source: seen }
+        miss:
+          - zone_noise: 3
+          - npc_hurt: { who: stuck, steps: 1 }
+          - belief: { fact: "셔터가 또 미끄러졌다. 그 너머 목소리가 더 작아졌다", source: seen }
+    - id: more_water
+      label: 물을 더 밀어 넣고, 사람을 데려오겠다고 한다
+      when: { has_items: [water_bottle] }
+      effects:
+        - take_item: { item: water_bottle }
+        - relation: { who: stuck, axis: affection, delta: 1 }
+        - belief: { fact: "셔터 너머 사람에게 물을 또 넣어 주었다. 혼자서는 들 수 없는 셔터다", source: seen }
+    - id: give_up
+      label: 이제는 못 온다고 말한다
+      effects:
+        - set_flag: zo1_sub_stuck_done
+        - relation: { who: stuck, axis: trust, delta: -3 }
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "셔터 너머 사람에게 다시 오지 못한다고 말했다. 두드리는 소리가 멎었다", source: seen }
 
 - id: zo1_sub_tunnel
   title: 남쪽 터널

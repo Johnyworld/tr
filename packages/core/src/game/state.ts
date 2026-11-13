@@ -36,7 +36,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 24;
+export const SAVE_SCHEMA_VERSION = 25;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -185,7 +185,12 @@ export type BattleState = z.infer<typeof battleStateSchema>;
  * 시나리오를 받아 만든다 (기획서 12.3). 세이브를 불러올 때도 이 스키마로 검증한다.
  */
 /** 구역 상태: 주인과 보강 (12-48, 목수가 메운 담·망루. 빼앗기면 사라진다) */
-const zoneStateSchema = z.strictObject({ owner: z.string().nullable(), fort: z.number().int().min(0).max(3).optional() });
+const zoneStateSchema = z.strictObject({
+  owner: z.string().nullable(),
+  fort: z.number().int().min(0).max(3).optional(),
+  /** 이야기로 늘린 산출 (씨앗, 우물. 12-54) */
+  boost: z.record(z.string(), z.number().int()).optional(),
+});
 
 export function createGameSchemas(s: Scenario) {
   const character = createCharacterSchema(s);
@@ -243,6 +248,8 @@ export function createGameSchemas(s: Scenario) {
     keptExtras: z.record(z.string(), z.string()).default({}),
     /** 주인공의 지난 일 중 세계의 사실이 된 것 (배경 부품, 기획서 12.6). 코드가 만든 인물은 characterId */
     background: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })).default([]),
+    /** 구역에 맡겨 둔 물건 (구역 id → 아이템 → 수량). 그 구역을 떠날 때 돌려받는다 (12-54) */
+    deposits: z.record(z.string(), z.record(z.string(), z.number().int().positive())).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
     lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
     /** 이야기가 바꾼 주인공의 상관 (지도부가 바뀐 뒤). null이면 역할의 상관 */
@@ -351,6 +358,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     /** NPC의 계급이 바뀐다 (지도부 교체, 강등) */
     z.strictObject({ type: z.literal("npc_rank_changed"), npcId: z.string(), rank: z.string() }),
+    /** 맡긴다 / 구역의 산출이 는다 / 이야기로 배운다 (12-54) */
+    z.strictObject({ type: z.literal("items_deposited"), zone: z.string(), items: z.record(z.string(), z.number().int().positive()) }),
+    z.strictObject({ type: z.literal("zone_boosted"), zone: z.string(), resource: z.string(), delta: z.number().int() }),
+    z.strictObject({ type: z.literal("skill_trained"), characterId: z.string(), skill: z.string(), to: z.number().int() }),
     /** 구역 보강 ± (12-48) */
     z.strictObject({ type: z.literal("zone_fortified"), zone: z.string(), delta: z.number().int() }),
     /** 배경 부품이 세계의 사실이 되었다 (기획서 12.6) */
@@ -663,6 +674,7 @@ export const EMPTY_STATE: GameState = {
   keptExtras: {},
   commanderOverride: null,
   lastRoute: null,
+  deposits: {},
   background: [],
   companions: [],
   bonds: {},
@@ -962,6 +974,27 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
       return next;
     }
+    case "items_deposited": {
+      const me = mustGet(next.characters, next.playerId, "캐릭터");
+      const box = (next.deposits[event.zone] ??= {});
+      for (const [item, n] of Object.entries(event.items)) {
+        const have = me.inventory[item] ?? 0;
+        if (have < n) throw new Error(`맡길 것이 모자란다: ${item}`);
+        if (have === n) delete me.inventory[item];
+        else me.inventory[item] = have - n;
+        box[item] = (box[item] ?? 0) + n;
+        for (const slot of ["weapon", "body", "head", "arms"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
+      }
+      return next;
+    }
+    case "zone_boosted": {
+      const z = next.zones[event.zone];
+      if (z) z.boost = { ...(z.boost ?? {}), [event.resource]: Math.max(0, (z.boost?.[event.resource] ?? 0) + event.delta) };
+      return next;
+    }
+    case "skill_trained":
+      mustGet(next.characters, event.characterId, "캐릭터").skills[event.skill] = event.to;
+      return next;
     case "zone_fortified": {
       const z = next.zones[event.zone];
       if (z) z.fort = Math.max(0, Math.min(3, (z.fort ?? 0) + event.delta));
@@ -1139,6 +1172,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "zone_moved":
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
       next.lastRoute = event.from !== null ? { from: event.from, to: event.to } : null;
+      // 떠나는 구역에 맡겨 둔 것을 돌려받는다 (12-54)
+      if (event.from !== null && next.deposits[event.from]) {
+        const me = next.characters[next.playerId];
+        if (me) for (const [item, n] of Object.entries(next.deposits[event.from]!)) me.inventory[item] = (me.inventory[item] ?? 0) + n;
+        delete next.deposits[event.from];
+      }
       // 장면의 인물은 따라오지 않는다 (같이 가려면 도착한 뒤 다시 등장시킨다). 처음 자리를 정할 때(from 없음)는 그대로
       if (event.from !== null) {
         for (const id of next.scene.present) {

@@ -371,6 +371,14 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ standing: z.number().int().min(-2).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
     z.strictObject({ give_item: z.strictObject({ item: contentIdSchema, from: z.string().optional(), quantity: z.number().int().positive().default(1) }) }),
+    /** 지니고 있던 무기를 이 구역에 맡긴다 (성당 문 앞 등, 12-54). 이 구역을 떠날 때 저절로 돌려받는다 */
+    z.strictObject({ deposit_weapons: z.literal(true) }),
+    /** 우리 땅의 산출을 늘린다 (씨앗을 심었다, 우물을 팠다, 12-54). where: here 지금 구역(우리 땅일 때만), base 우리 무리 거점. 빼앗기면 사라진다 */
+    z.strictObject({ cultivate: z.strictObject({ resource: contentIdSchema, delta: z.number().int().min(1).max(10), where: z.enum(["here", "base"]).default("here") }) }),
+    /** 주인공이 배운다: 스킬이 한 단계 오른다 (max까지, 레벨업 포인트를 쓰지 않는다, 12-54) */
+    z.strictObject({ train: z.strictObject({ skill: contentIdSchema, max: z.number().int() }) }),
+    /** 시간이 더 걸린다 (돌아가는 길, 기다림, 12-54). 그동안의 세계 처리(배급·소문·전쟁)는 코드가 돌린다 */
+    z.strictObject({ delay: z.number().int().min(30).max(480) }),
     /** 주인공이 잃는다 (놓치고, 떨어뜨리고, 빼앗긴다). 가진 만큼만 잃고, 없으면 아무 일도 없다 (선택지를 막지 않는다) */
     z.strictObject({ lose_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
     /** 플레이어가 내놓는다 (거래). 가진 것이 없으면 이 선택지를 고를 수 없다 */

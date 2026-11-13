@@ -27,6 +27,7 @@
     - id: hand_over
       label: 무기를 고해소에 세워 두고 들어간다
       effects:
+        - deposit_weapons: true
         - set_flag: zo2_ca_met
         - set_flag: zo2_ca_trusted
         - relation: { who: father, axis: trust, delta: 1 }
@@ -566,6 +567,7 @@
           - set_flag: zo2_cp_lab_done
           - set_flag: zo2_cp_lab_helped
           - relation: { who: seojin, axis: trust, delta: 2 }
+          - train: { skill: infected_lore, max: 1 }
           - belief: { fact: "명서진이 말하기를, 아직은 세 번밖에 못 봤지만 감염체는 굶으면 더 굼떠진다. 그리고 소리보다 진동에 먼저 고개를 돌리는 것 같다고 했다", source: report }
         partial:
           - set_flag: zo2_cp_lab_done

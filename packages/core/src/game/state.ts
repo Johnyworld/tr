@@ -272,6 +272,8 @@ export function createGameSchemas(s: Scenario) {
     /** NPC가 떠난다: toFaction이면 그 세력으로 넘어가고(도시에 남는다), null이면 도시를 떠난다 (기획서 10.4) */
     z.strictObject({ type: z.literal("npc_departed"), npcId: z.string(), toFaction: z.string().nullable() }),
     z.strictObject({ type: z.literal("faction_resource_changed"), factionId: z.string(), resource: z.string(), delta: z.number().int() }),
+    /** 무소속 주인공이 무리에 들어간다. 역할은 코드가 만든다 (game/customStart.ts joinRole, 기획서 12.5) */
+    z.strictObject({ type: z.literal("player_joined_faction"), factionId: z.string(), rank: z.string(), role: customRoleSchema }),
     z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
     z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
     z.strictObject({ type: z.literal("missions_offered"), day: z.number().int(), templateIds: z.array(z.string()) }),
@@ -599,6 +601,20 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       if (event.toFaction !== null) npc.factionId = event.toFaction;
       else npc.away = true;
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      return next;
+    }
+    case "player_joined_faction": {
+      const player = mustGet(next.characters, next.playerId, "캐릭터");
+      if (player.factionId) throw new Error("이미 무리에 속해 있습니다.");
+      player.factionId = event.factionId;
+      player.rank = event.rank;
+      next.roleId = event.role.id;
+      next.customRole = structuredClone(event.role);
+      // 무리 사람들과 서로 이름을 안다 (같은 무리 동료, 기획서 6.3)
+      for (const id of event.role.known_npcs) {
+        acquaint(next, next.playerId, id, true);
+        acquaint(next, id, next.playerId, true);
+      }
       return next;
     }
     case "faction_resource_changed": {

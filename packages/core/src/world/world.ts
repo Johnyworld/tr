@@ -81,8 +81,9 @@ export class GameWorld {
   get content(): Content {
     const role = this.#repo.getState().customRole;
     if (!role) return this.#content;
-    // 상태는 이벤트마다 새로 복제되므로 역할은 id로 비교한다 (만든 뒤에는 바뀌지 않는다)
-    if (this.#withRole?.role !== role.id) this.#withRole = { role: role.id, content: { ...this.#content, roles: { ...this.#content.roles, [role.id]: role } } };
+    // 상태는 이벤트마다 새로 복제되므로 역할은 내용으로 비교한다 (무소속이 무리에 들어가면 역할이 바뀐다)
+    const key = `${role.id}|${role.faction}|${role.rank}|${role.label}`;
+    if (this.#withRole?.role !== key) this.#withRole = { role: key, content: { ...this.#content, roles: { ...this.#content.roles, [role.id]: role } } };
     return this.#withRole.content;
   }
 

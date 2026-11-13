@@ -1,0 +1,328 @@
+# 무소속(떠돌이)의 이야기 (기획서 12.5). 태그 world + factions: [none]이라 무리에 속하지 않은 주인공에게만 열린다
+# - 무리마다 들어갈 길이 하나씩 있다 (join_faction). 들어가면 상관·동료·임무·배급이 생긴다
+# - 담 밖의 하루벌이와 거래 (give_item / take_item), 다른 떠돌이들
+
+- id: wl_pine_patrol
+  title: 청솔형제단 순찰조
+  tags: [world]
+  when:
+    factions: [none]
+    zone_owner: [none]
+    segments: [morning, day]
+    day_gte: 2
+  cast:
+    leader: { ids: [a_taeho] }
+  setup: 무너진 상가 골목을 돌자 총구 세 개가 동시에 이쪽을 향한다. 초록 완장. 맨 앞의 {leader:이/가} 손을 들어 총구를 내리게 하고 당신을 위아래로 훑는다. "혼자 다니나. 어디서 왔어."
+  ai_direction: 강태호의 순찰조는 구시가를 훑는 중이다. 떠돌이를 함부로 쏘지 않는 것이 청솔형제단의 원칙이다. 쓸 만해 보이면 거점에 데려가 보겠다고 한다. 받아들이면 하급 전투원으로 받아 준다. 거짓말을 하면 눈치챈다.
+  choices:
+    - id: join
+      label: 거점에 들어가겠다고 한다
+      check: persuade
+      outcomes:
+        success:
+          - join_faction: { faction: faction_a }
+          - relation: { who: leader, axis: trust, delta: 1 }
+          - belief: { fact: 청솔형제단 순찰조를 따라 거점에 들어갔다. 강태호 분대에 배치됐다, source: seen }
+        partial:
+          - join_faction: { faction: faction_a }
+          - belief: { fact: "청솔형제단 거점에 들어갔지만, 무리 사람들은 아직 떠돌이를 믿지 않는 눈치다", source: seen }
+        miss:
+          - relation: { who: leader, axis: trust, delta: -1 }
+          - belief: { fact: "강태호는 아직은 안 된다고 했다. 다음에 구시가에서 또 보면 그때 보자고", source: report }
+    - id: trade_news
+      label: 본 것을 알려 주고 먹을 것과 바꾼다
+      effects:
+        - give_item: { item: dry_ration }
+        - relation: { who: leader, axis: respect, delta: 1 }
+        - belief: { fact: 청솔형제단 순찰조에게 구시가에서 본 것을 넘기고 비상식량을 받았다, source: seen }
+    - id: walk_off
+      label: 아무 말 없이 등을 돌린다
+      effects: []
+
+- id: wl_red_toll
+  title: 붉은 완장의 통행세
+  urgent: true
+  tags: [world]
+  when:
+    factions: [none]
+    zone_owner: [none, other]
+    segments: [day, evening]
+    day_gte: 3
+  cast:
+    boss: { ids: [c_cheolgu] }
+  setup: 강변 길목에서 붉은 완장 넷이 길을 막는다. {boss:이/가} 쇠지렛대로 손바닥을 툭툭 친다. "여긴 우리 길이야. 지나가려면 내놔. 아니면 우리 조에 들어오든가. 할당량 채울 손은 늘 모자라니까."
+  ai_direction: 염철구의 약탈조다. 내놓으면 보내 주고, 들어오겠다면 데려간다. 맞서면 넷을 상대해야 한다. 도망은 강변 지리를 알면 가능하다. 위험은 판정으로만 정한다.
+  choices:
+    - id: pay
+      label: 가진 먹을 것을 내놓는다
+      effects:
+        - take_item: { item: canned_food }
+        - belief: { fact: 강변 길목에서 붉은연합 약탈조에게 통조림을 내주고 지나갔다, source: seen }
+    - id: join_red
+      label: 조에 들어가겠다고 한다
+      effects:
+        - join_faction: { faction: faction_c }
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - deed: { summary: 떠돌이 신세를 버리고 붉은연합 약탈조에 들어갔다, tags: [enemy_sympathy], severity: 1, privacy: public }
+        - belief: { fact: 붉은연합 약탈 삼조에 들어갔다. 오늘부터 할당량에 묶인다, source: seen }
+    - id: run
+      label: 무너진 공장 사이로 내달린다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: 공장 사이 배수로로 빠져 약탈조를 따돌렸다, source: seen }
+        partial:
+          - take_item: { item: dry_ration }
+          - belief: { fact: 도망치다 배낭 끈이 끊겨 비상식량을 떨어뜨렸다. 몸은 빠져나왔다, source: seen }
+        miss:
+          - relation: { who: boss, axis: affection, delta: -2 }
+          - belief: { fact: "막다른 골목에 몰렸다. 염철구가 다음엔 이 정도로 안 끝난다고 했다", source: seen }
+
+- id: wl_clinic_scav
+  title: 약제실의 다른 손
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [hospital_ruins]
+    segments: [morning, day]
+  cast:
+    scav: { ids: [d_minho] }
+  setup: 시립병원 지하 계단에서 손전등 불빛과 마주친다. 방독면을 목에 건 덩치 큰 남자, {scav}. 둘 다 같은 약제실 쪽으로 가던 길이다. 그가 먼저 손을 든다. "싸우지 말자. 여긴 소리 내면 둘 다 죽어."
+  ai_direction: 남민호는 하얀매의 수색꾼이다. 나눠 찾자고 하면 응하고, 손이 빠르고 조용한 사람이면 진료소 일을 해 보라고 권한다. 하얀매에 들어가면 지원 인력이 된다. 위협하면 물러서는 척하다 다음에 갚는다.
+  choices:
+    - id: share
+      label: 같이 찾고 반씩 나눈다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: fever_reducer }
+          - relation: { who: scav, axis: trust, delta: 2 }
+          - set_flag: wl_minho_partner
+          - belief: { fact: 남민호와 시립병원 지하를 같이 뒤져 해열제를 나눴다. 그는 하얀매 진료소가 손을 구한다고 했다, source: report }
+        partial:
+          - relation: { who: scav, axis: trust, delta: 1 }
+          - set_flag: wl_minho_partner
+          - belief: { fact: 남민호와 같이 찾았지만 나온 것이 별로 없었다. 그는 다음에 또 보자고 했다, source: seen }
+        miss:
+          - belief: { fact: 둘이 뒤지다 선반을 쓰러뜨려 감염체가 깨었다. 각자 흩어져 빠져나왔다, source: seen }
+    - id: threaten
+      label: 여긴 내 자리라고 물러나라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: scav, axis: affection, delta: -2 }
+          - belief: { fact: 남민호를 물러나게 했다. 계단을 올라가며 그가 한 번 돌아보았다, source: seen }
+        partial:
+          - relation: { who: scav, axis: affection, delta: -1 }
+          - belief: { fact: 남민호는 물러났지만 오늘 찾을 것은 없을 거라고 비웃었다, source: seen }
+        miss:
+          - relation: { who: scav, axis: affection, delta: -2 }
+          - relation: { who: scav, axis: respect, delta: -1 }
+          - belief: { fact: 남민호가 꿈쩍도 하지 않았다. 결국 이쪽이 계단을 내려가지 못했다, source: seen }
+    - id: leave_it
+      label: 그에게 약제실을 양보하고 다른 층으로 간다
+      effects:
+        - relation: { who: scav, axis: trust, delta: 1 }
+
+- id: wl_clinic_offer
+  title: 진료소의 빈자리
+  tags: [world]
+  when:
+    factions: [none]
+    zone_owner: [none]
+    segments: [day, evening]
+    flags_all: [wl_minho_partner]
+  cast:
+    scav: { ids: [d_minho], trust_gte: 1 }
+  setup: "{scav:이/가} 다시 나타나 배낭을 내려놓는다. \"진료소에 손이 하나 빈다. 수습 하나가 물렸어. 약 찾는 눈이 있으면 대표가 받아 줄 거다. 떠돌이로 겨울 넘기는 것보다는 낫지.\""
+  ai_direction: 남민호의 말은 진심이다. 하얀매는 중립이라 들어가면 어느 무리와도 싸우지 않지만, 진료소 규칙(격리, 약값)을 따라야 한다. 들어가면 지원 인력이 된다.
+  choices:
+    - id: join_clinic
+      label: 진료소로 따라간다
+      effects:
+        - join_faction: { faction: faction_d, rank: staff }
+        - relation: { who: scav, axis: affection, delta: 1 }
+        - belief: { fact: 남민호를 따라 하얀매 진료소에 들어갔다. 수간호사 권정숙 밑에서 일을 배운다, source: seen }
+    - id: decline
+      label: 아직은 혼자가 낫다고 한다
+      effects:
+        - belief: { fact: 남민호의 제안을 거절했다. 그는 마음이 바뀌면 시립병원 계단에서 기다리라고 했다, source: report }
+
+- id: wl_caravan_day
+  title: 짐마차의 하루 품
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [riverside, old_town]
+    segments: [dawn, morning]
+  cast:
+    boss: { ids: [e_okhee] }
+  setup: 강변 길에 짐마차 두 대가 서 있다. 바퀴 하나가 빠졌다. 허리에 쇠 저울추를 단 {boss:이/가} 당신을 보더니 손짓한다. "등 튼튼해 보이네. 마차 바로 세우고 장터까지 짐 지면 저녁에 통조림 두 개. 셈은 정확히 하지."
+  ai_direction: 주옥희는 셈이 정확하다. 일을 제대로 하면 약속대로 주고, 짐에서 뭔가 빼돌리면 끝까지 따진다. 일을 잘하면 상단에 들어오라고 권한다. 들어가면 짐꾼이 된다.
+  choices:
+    - id: haul
+      label: 짐을 지고 장터까지 간다
+      check: endure
+      outcomes:
+        success:
+          - give_item: { item: canned_food, quantity: 2 }
+          - relation: { who: boss, axis: respect, delta: 2 }
+          - set_flag: wl_okhee_noticed
+          - belief: { fact: 나루상단 짐을 장터까지 지고 통조림 두 개를 받았다. 주옥희가 다음에도 오라고 했다, source: seen }
+        partial:
+          - give_item: { item: canned_food }
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "중간에 쉬느라 늦었다. 주옥희는 늦은 만큼 하나를 깎았다", source: seen }
+        miss:
+          - relation: { who: boss, axis: respect, delta: -1 }
+          - belief: { fact: 짐을 지고 가다 무릎이 꺾여 내려놓았다. 주옥희는 아무것도 주지 않았다, source: seen }
+    - id: pilfer
+      label: 일하는 척하며 짐에서 통조림을 하나 빼 둔다
+      check: stealth
+      outcomes:
+        success:
+          - give_item: { item: canned_food }
+          - deed: { summary: 나루상단 짐에서 통조림을 몰래 빼냈다, tags: [theft], severity: 1, privacy: private }
+        partial:
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - belief: { fact: 짐을 빼려다 주옥희의 눈에 걸렸다. 그는 말없이 저울추를 만졌다, source: seen }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -3 }
+          - deed: { summary: 하루 품을 팔다 나루상단 짐에 손을 댔다가 들켰다, tags: [theft], severity: 2, privacy: semi_private }
+    - id: pass
+      label: 오늘은 지나간다
+      effects: []
+
+- id: wl_caravan_hire
+  title: 행상대장의 제안
+  tags: [world]
+  when:
+    factions: [none]
+    flags_all: [wl_okhee_noticed]
+    segments: [evening]
+  cast:
+    boss: { ids: [e_okhee] }
+  setup: "{boss:이/가} 장부를 덮으며 말한다. \"하루 품만 팔기엔 아까운 등이야. 상단에 들어와. 빚 없이 들어오는 건 드문 일이다. 대신 짐 하나라도 빼돌리면 그날로 끝.\""
+  ai_direction: 나루상단은 이기는 쪽에 붙는다는 평을 듣지만, 짐꾼에게는 먹을 것과 지붕이 확실하다. 들어가면 짐꾼(하급 전투원)이 된다.
+  choices:
+    - id: join_caravan
+      label: 상단에 들어간다
+      effects:
+        - join_faction: { faction: faction_e, title: 나루상단 짐꾼 }
+        - belief: { fact: 나루상단에 짐꾼으로 들어갔다. 일은 행상대장 주옥희를 통해 내려온다, source: seen }
+    - id: decline
+      label: 매이는 건 싫다고 한다
+      effects:
+        - relation: { who: boss, axis: respect, delta: -1 }
+
+- id: wl_willow_gate
+  title: 버들마을 정문의 하룻밤
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [b_base]
+    segments: [evening, night]
+  cast:
+    guard: { ids: [b_dongcheol] }
+  setup: 아파트 단지 정문 철문이 반쯤 열리고 {guard:이/가} 손전등을 비춘다. 뒤에서 아이 목소리가 들렸다가 끊긴다. "떠돌이는 밤에 안 들여. 규칙이야." 그래도 철문을 다 닫지는 않는다.
+  ai_direction: 배동철은 단지 사람들을 지키는 게 먼저다. 무기를 내려놓고 사정을 말하면 경비실 옆에서 하룻밤 재워 준다. 다음 날 쓸모를 보이면 경비 일을 시켜 볼 생각이 있다.
+  choices:
+    - id: plead
+      label: 무기를 내려놓고 하룻밤만 재워 달라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - give_item: { item: dry_ration }
+          - relation: { who: guard, axis: trust, delta: 2 }
+          - set_flag: wl_willow_trusted
+          - belief: { fact: 버들마을 경비실 옆에서 하룻밤을 잤다. 경비조장 배동철이 아침에 경비 일을 해 볼 생각이 있느냐고 물었다, source: report }
+        partial:
+          - relation: { who: guard, axis: trust, delta: 1 }
+          - belief: { fact: 정문 안 계단참에서 하룻밤을 보냈다. 동이 트자마자 나가라고 했다, source: seen }
+        miss:
+          - belief: { fact: 철문이 닫혔다. 단지 담 밖에서 밤을 새웠다, source: seen }
+    - id: leave
+      label: 고개를 끄덕이고 돌아선다
+      effects:
+        - relation: { who: guard, axis: respect, delta: 1 }
+
+- id: wl_willow_join
+  title: 경비실의 빈 의자
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [b_base]
+    segments: [morning, day]
+    flags_all: [wl_willow_trusted]
+  cast:
+    guard: { ids: [b_dongcheol] }
+  setup: "{guard:이/가} 경비실 열쇠 꾸러미를 흔든다. \"쪽문 하나가 사람이 빈다. 마흔 명 사는 데라 입 하나 느는 것도 따져야 하는데, 지키는 손은 더 모자라.\""
+  ai_direction: 배동철은 진심이다. 들어가면 버들마을 경비병이 된다. 붉은연합의 회유 이야기는 아직 하지 않는다.
+  choices:
+    - id: join_willow
+      label: 경비 일을 맡겠다고 한다
+      effects:
+        - join_faction: { faction: faction_b, title: 버들마을 경비병 }
+        - relation: { who: guard, axis: trust, delta: 1 }
+        - belief: { fact: 버들마을 경비병이 됐다. 경비조장 배동철 밑에서 정문과 쪽문을 지킨다, source: seen }
+    - id: decline
+      label: 고맙지만 떠나겠다고 한다
+      effects: []
+
+- id: wl_rival_scav
+  title: 같은 폐허의 다른 떠돌이
+  repeatable: true
+  cooldown_days: 3
+  tags: [world]
+  when:
+    factions: [none]
+    zone_owner: [none]
+    segments: [morning, day, evening]
+  setup: 반쯤 무너진 약국 안, 먼저 와 있던 떠돌이 하나가 선반 앞에서 몸을 돌린다. 마른 손에 녹슨 칼. 둘 사이에 통조림 하나가 놓여 있다.
+  ai_direction: 이름 없는 떠돌이 피난민이다. 엮이면 spawn_extra(refugee)로 만든다. 그도 굶었다. 나누자고 하면 응하고, 위협하면 칼을 쥔다. 싸움이 나면 판정과 target_harm으로만 정한다.
+  choices:
+    - id: share
+      label: 반씩 나누자고 한다
+      effects:
+        - give_item: { item: dry_ration }
+        - deed: { summary: 폐허에서 마주친 떠돌이와 먹을 것을 나눴다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "떠돌이가 말했다: 강변 공장 쪽 배수로 안에 아무도 안 쓰는 물탱크가 있다", source: report }
+    - id: take
+      label: 칼을 꺼내 들고 물러나라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - give_item: { item: canned_food }
+          - deed: { summary: 굶은 떠돌이를 위협해 먹을 것을 빼앗았다, tags: [cruelty, selfishness], severity: 2, privacy: private }
+        partial:
+          - belief: { fact: 떠돌이는 통조림을 품에 안고 도망쳤다, source: seen }
+        miss:
+          - belief: { fact: 떠돌이가 물러서지 않았다. 둘 다 칼을 쥔 채 한참을 노려보았다, source: seen }
+    - id: leave
+      label: 그에게 양보하고 나간다
+      effects:
+        - deed: { summary: 먼저 온 떠돌이에게 폐허를 양보했다, tags: [mercy], severity: 1, privacy: private }
+
+- id: wl_fire_camp
+  title: 강변의 모닥불
+  tags: [world]
+  when:
+    factions: [none]
+    zones: [riverside]
+    segments: [evening, night]
+  setup: 무너진 공장 그늘 아래, 깡통 속에 작은 불이 있다. 떠돌이 셋이 손을 쬐고 있다가 일제히 고개를 든다. 한 사람이 말없이 자리를 조금 내준다.
+  ai_direction: 이름 없는 떠돌이들이다. 엮이면 spawn_extra(refugee). 그들은 무리들의 소식을 저마다 조금씩 안다. 담배나 먹을 것을 내놓으면 아는 것을 말한다. 불빛은 감염체를 부를 수 있어 오래 피우지 않는다.
+  choices:
+    - id: share_smoke
+      label: 담배를 돌린다
+      effects:
+        - take_item: { item: cigarettes }
+        - belief: { fact: "모닥불의 떠돌이들이 말했다: 붉은연합 약탈조가 요즘 강변 길목에서 통행세를 걷는다", source: rumor }
+        - belief: { fact: "모닥불의 떠돌이들이 말했다: 버들마을 경비조장은 무기를 내려놓으면 하룻밤은 재워 준다", source: rumor }
+    - id: listen
+      label: 불만 쬐며 듣는다
+      effects:
+        - belief: { fact: "모닥불의 떠돌이들이 말했다: 시립병원 지하에는 하얀매 수색꾼이 드나든다", source: rumor }
+    - id: move_on
+      label: 불빛이 위험하다며 자리를 뜬다
+      effects: []

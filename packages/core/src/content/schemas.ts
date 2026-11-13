@@ -227,6 +227,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ faction_morale: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-1).max(1) }) }),
     /** 세력 자원을 늘리거나 줄인다 (할당량, 약 재고, 물). own = 플레이어 소속. 양은 콘텐츠가 정한다 */
     z.strictObject({ faction_resource: z.strictObject({ faction: z.string().min(1), resource: contentIdSchema, delta: z.number().int().min(-50).max(50) }) }),
+    /** 무소속 주인공이 무리에 들어간다 (rank가 없으면 가장 낮은 계급). 무리에 속해 있으면 아무 일도 없다 */
+    z.strictObject({ join_faction: z.strictObject({ faction: contentIdSchema, rank: idEnum(rankIds(s)).optional(), title: z.string().min(1).max(24).optional() }) }),
     /** 배역 NPC가 떠난다: to_faction이면 그 세력으로 넘어가고(도시에 남는다), 없으면 도시를 떠난다 (탈영·피난) */
     z.strictObject({ npc_depart: z.strictObject({ who: z.string().min(1), to_faction: contentIdSchema.optional() }) }),
     z.strictObject({

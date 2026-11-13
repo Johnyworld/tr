@@ -7,7 +7,7 @@ import { loadContent } from "../content/loader.ts";
 import type { Content } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
-import { buildCustomRole, checkCustomStart, type CustomStartInput } from "./customStart.ts";
+import { buildCustomRole, checkCustomStart, joinRole, type CustomStartInput } from "./customStart.ts";
 import { answerNewGame, describeNewGameStep, newGameDraft, newGameStep, setCustomStart, type NewGameDraft } from "./newGame.ts";
 import { CUSTOM_ROLE_ID } from "./state.ts";
 
@@ -158,5 +158,25 @@ describe("자유 시나리오: 다른 세력의 같은 계급", () => {
     expect(red.storylet_tags).not.toContain("a_squad_leader");
     expect(red.missions.some((m) => pineSquad!.missions.includes(m))).toBe(false);
     expect(buildCustomRole(content, { ...base, rank: "squad_leader" }).storylet_tags).toContain("a_squad_leader");
+  });
+});
+
+describe("무소속이 무리에 들어간다 (join_faction)", () => {
+  it("가장 낮은 계급으로 들어가 상관·동료·임무·배급이 생긴다", async () => {
+    const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-join-")), content, rngFactory: () => createSeededRng(2) });
+    const loner = { ...base, faction: null, rank: "loner", location: "old_town", title: "떠돌이", kit: "wanderer" };
+    const w = m.create("mcp", undefined, { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] }, undefined, { role: buildCustomRole(content, loner), background: [] });
+    const role = joinRole(content, "faction_b", undefined, { age: 30 });
+    expect(role).toMatchObject({ faction: "faction_b", rank: "grunt", commander: "b_dongcheol" });
+    w.ctx().store.append({ type: "player_joined_faction", factionId: "faction_b", rank: role.rank, role });
+    const s = w.state();
+    expect(s.characters.player).toMatchObject({ factionId: "faction_b", rank: "grunt" });
+    expect(s.known.player).toContain("b_dongcheol");
+    expect(w.content.roles.custom?.commander).toBe("b_dongcheol");
+    expect(await w.runCommand("?상태")).toContain("상관 배동철");
+    w.executeTool("take_action", { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false });
+    expect(w.sceneForGm()).toContain("오늘 받을 수 있는 임무");
+    expect(await w.runCommand("?배급")).toContain("오늘 배급");
+    w.close();
   });
 });

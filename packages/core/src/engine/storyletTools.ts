@@ -1,3 +1,4 @@
+import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
 import { playerCalls } from "../game/acquaintance.ts";
 import { withCharm } from "./charm.ts";
@@ -260,6 +261,19 @@ function applyEffect(
     if (!state.factions[id]) return {};
     store.append({ type: "faction_resource_changed", factionId: id, resource, delta });
     return {}; // 창고 사정은 배급과 소문으로만 드러난다
+  }
+  if ("join_faction" in effect) {
+    const player = state.characters[playerId]!;
+    if (player.factionId) return {};
+    const { faction, rank, title } = effect.join_faction;
+    if (!content.factions[faction]) return {};
+    const role = joinRole(content, faction, rank, { age: player.age, title });
+    store.append({ type: "player_joined_faction", factionId: faction, rank: role.rank, role });
+    const commander = role.commander ? state.characters[role.commander]?.name : undefined;
+    return {
+      line: `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}.` : ""} 이제 배급을 받고 임무를 받을 수 있다.`,
+      display: { type: "promotion", name: player.name, fromLabel: "무소속", toLabel: role.label },
+    };
   }
   if ("npc_depart" in effect) {
     const id = whoOf(ctx, effect.npc_depart.who, cast);

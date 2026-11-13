@@ -42,3 +42,27 @@ describe("시나리오마다 자동 플레이 (실제 콘텐츠)", () => {
     });
   }
 });
+
+describe("무소속 자유 시나리오 자동 플레이 (실제 콘텐츠)", () => {
+  it("오류 없이 돌고, 무소속의 이야기가 열리고, 어느 판에선 무리에 들어간다", async () => {
+    const { buildCustomRole } = await import("../game/customStart.ts");
+    const content = loadContent(REAL);
+    const lonerTales = Object.values(content.storylets).filter((s) => s.when.factions?.includes("none")).map((s) => s.id);
+    const fired = new Set<string>();
+    let joined = 0;
+    for (const seed of [1, 2, 3, 4]) {
+      const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(seed) });
+      const role = buildCustomRole(content, {
+        faction: null, rank: "loner", title: "떠돌이", location: "old_town", kit: "wanderer", skills: { scavenge: 1, survival: 1 }, age: 30, opening: "폐허에서 눈을 뜬다.", background: [],
+      });
+      const world = m.create("mcp", undefined, { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] }, undefined, { role, background: [] });
+      const stats = autoplay(world, content, createSeededRng(seed * 7), 250);
+      if (world.state().customRole?.faction) joined += 1;
+      world.close();
+      expect(stats.errors).toEqual([]);
+      for (const id of Object.keys(stats.storyletsFired)) if (lonerTales.includes(id)) fired.add(id);
+    }
+    expect(fired.size).toBeGreaterThanOrEqual(3);
+    expect(joined).toBeGreaterThanOrEqual(1);
+  });
+});

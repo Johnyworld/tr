@@ -110,6 +110,31 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
   } as RoleContent;
 }
 
+/**
+ * 무소속 주인공이 무리에 들어갈 때의 역할 (스토리렛 효과 join_faction). 계급은 콘텐츠가 정하고(없으면 자유 시나리오의 가장 낮은 계급),
+ * 상관·아는 사람·임무는 buildCustomRole과 같은 규칙으로 코드가 정한다. 시작 장면·소지품은 이미 지난 일이라 비워 둔다
+ */
+export function joinRole(content: Content, faction: string, rank: string | undefined, player: { age: number | null; title?: string }): RoleContent {
+  const c = content.scenario.custom_start;
+  const levelOf = (id: string) => rankLevel(content, id);
+  const lowest = [...(c?.ranks ?? [])].sort((a, b) => levelOf(a) - levelOf(b))[0] ?? content.scenario.rank_ladder[0]!.id;
+  const chosen = rank ?? lowest;
+  const base = Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")?.id ?? factionLocations(content, faction)[0] ?? "";
+  const factionName = content.factions[faction]?.name ?? faction;
+  const role = buildCustomRole(content, {
+    faction,
+    rank: chosen,
+    title: player.title ?? `${factionName} ${content.scenario.rank_ladder.find((r) => r.id === chosen)?.label ?? ""}`.trim(),
+    location: base,
+    kit: c?.kits[0]?.id ?? "",
+    skills: {},
+    age: player.age ?? 30,
+    opening: `${factionName}에 들어왔다.`,
+    background: [],
+  });
+  return { ...role, start_inventory: [] };
+}
+
 /** 확인 단계에 보여 줄 요약 (코드가 만든 것) */
 export function describeCustomRole(content: Content, role: RoleContent): string {
   const s = content.scenario;

@@ -1,3 +1,4 @@
+import { dayOf } from "../rules/time.ts";
 import { basename } from "node:path";
 import { runCheat } from "../debug/cheats.ts";
 import type { CharacterChoice } from "../game/state.ts";
@@ -6,7 +7,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { GameRepository } from "../persistence/repository.ts";
 import { formatTime } from "../rules/time.ts";
-import { describePlayerState } from "../engine/context.ts";
+import { describePlayerSections, type SceneSection } from "../engine/context.ts";
 import type { PlayMode, TranscriptEntry, TurnSummary } from "../engine/log.ts";
 import { buildGmGuide } from "../engine/prompt.ts";
 import { executeTool, gmToolSpecs } from "../engine/tools.ts";
@@ -25,6 +26,25 @@ import type { TimeSegment } from "../rules/time.ts";
 
 /** 새 세션의 GM이 이어 갈 때 돌려줄 최근 요약 수 */
 export const RECAP_TURNS = 5;
+
+/** 바뀐 것만 보내다가도 이만큼 턴이 지나면 장면 전체를 다시 보낸다 (기획서 11.6 토큰) */
+export const SCENE_FULL_EVERY = 8;
+
+/** 다시 싣지 않은 덩어리를 GM에게 알릴 때의 이름 */
+const SCENE_SECTION_LABELS: Record<string, string> = {
+  status: "캐릭터 상태",
+  battle: "전투",
+  storylet: "진행 중인 이야기",
+  missions: "복무·임무·무리 문화",
+  factions: "세력",
+  deeds: "최근 행적",
+  present: "함께 있는 인물",
+  known: "알고 있는 인물",
+  zone_people: "이 구역의 낯선 사람",
+  zone_extras: "이 구역에서 엮인 인물",
+  templates: "엑스트라 틀",
+  beliefs: "알고 있다고 믿는 것",
+};
 
 /**
  * 열린 세계 하나. 두 플레이 모드(웹 앱, MCP)가 같은 이 클래스를 쓴다.
@@ -227,8 +247,45 @@ ${this.sceneForGm()}` };
   }
 
   /** GM에게 보여 줄 현재 장면 (정보 필터 적용) */
+  /** 장면 정보 전체. 이번 세션의 GM이 받은 것으로 기억한다 (다음부터 바뀐 것만 보낼 기준) */
   sceneForGm(): string {
-    return describePlayerState(this.state(), this.content);
+    const sections = describePlayerSections(this.state(), this.content);
+    this.#rememberScene(sections);
+    return sections.map((s) => s.text).join("\n\n");
+  }
+
+  /**
+   * 행동 뒤의 장면 정보 (기획서 11.6 토큰): 지난번 GM에게 보낸 뒤 바뀐 덩어리만 보낸다.
+   * 처음, 구역·날짜·이야기·전투가 바뀌었을 때, SCENE_FULL_EVERY턴마다는 전체를 보낸다
+   */
+  sceneUpdate(): string {
+    const state = this.state();
+    const sent = this.#sent;
+    const anchor = this.#sceneAnchor();
+    if (!sent || sent.anchor !== anchor || state.turn - sent.turn >= SCENE_FULL_EVERY) return this.sceneForGm();
+    const sections = describePlayerSections(state, this.content);
+    const changed = sections.filter((s) => s.key === "status" || sent.sections.get(s.key) !== s.text);
+    const gone = [...sent.sections.keys()].filter((k) => !sections.some((s) => s.key === k));
+    for (const s of changed) sent.sections.set(s.key, s.text);
+    for (const k of gone) sent.sections.delete(k);
+    const same = sections.filter((s) => !changed.includes(s)).map((s) => SCENE_SECTION_LABELS[s.key] ?? s.key);
+    return [
+      ...changed.map((s) => s.text),
+      ...(gone.length ? [`(이제 없음: ${gone.map((k) => SCENE_SECTION_LABELS[k] ?? k).join(", ")})`] : []),
+      ...(same.length ? [`(그대로라 다시 싣지 않음: ${same.join(", ")}. 전체가 필요하면 get_scene)`] : []),
+    ].join("\n\n");
+  }
+
+  #sent: { sections: Map<string, string>; turn: number; anchor: string } | null = null;
+
+  /** 이것이 바뀌면 장면 전체를 다시 보낸다 */
+  #sceneAnchor(): string {
+    const s = this.state();
+    return [s.playerZone, dayOf(s.time), s.activeStorylet?.id ?? "", s.battle ? "battle" : "", s.playerId].join("|");
+  }
+
+  #rememberScene(sections: readonly SceneSection[]) {
+    this.#sent = { sections: new Map(sections.map((s) => [s.key, s.text])), turn: this.state().turn, anchor: this.#sceneAnchor() };
   }
 
   /** 검색하는 캐릭터 (정보 필터 기준). 플래그는 시나리오 플래그 시스템이 생기면 채운다 */

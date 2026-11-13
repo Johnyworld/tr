@@ -1,3 +1,4 @@
+import { commanderOf } from "../game/missions.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { describeExtraTemplates } from "./extras.ts";
 import { aliasOf, hasMet, headingAs, knowsName } from "../game/acquaintance.ts";
@@ -35,6 +36,14 @@ import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } 
 
 /** 프롬프트에 넣을 최근 Belief 수 */
 export const MAX_BELIEFS_IN_PROMPT = 30;
+/** 장면 정보에 늘 넣는 최근 믿음 수 (나머지는 장면 인물에 관한 것만) */
+export const RECENT_BELIEFS_IN_PROMPT = 10;
+
+/** 평판의 첫 문장 (한 줄 요약용) */
+function shortNote(text: string): string {
+  const first = text.split(/(?<=[.다])\s/)[0] ?? text;
+  return first.length > 40 ? `${first.slice(0, 40)}…` : first;
+}
 
 const VALUE_LABELS: Record<string, string> = {
   discipline: "규율",
@@ -55,6 +64,15 @@ const genderOf = (s: { creation?: { genders: { id: string; label: string }[] } }
 };
 
 export function describePlayerState(state: GameState, content: Content): string {
+  return describePlayerSections(state, content)
+    .map((s) => s.text)
+    .join("\n\n");
+}
+
+/** 장면 정보의 이름 붙은 덩어리 (바뀐 것만 다시 보낼 때 쓴다, 기획서 11.6 토큰) */
+export type SceneSection = { key: string; text: string };
+
+export function describePlayerSections(state: GameState, content: Content): SceneSection[] {
   const player = state.characters[state.playerId];
   if (!player) throw new Error("플레이어 캐릭터가 없습니다.");
 
@@ -64,8 +82,8 @@ export function describePlayerState(state: GameState, content: Content): string 
     .map(([k, v]) => `${k} ${signed(v)}`)
     .join(", ");
 
-  const sections = [
-    [
+  const sections: [string, string][] = [
+    ["status", [
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
       `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
       `트레잇 (서술에 반영한다): ${traitLabels(content, player, { acting: true }).join(", ") || "없음"}`,
@@ -76,20 +94,20 @@ export function describePlayerState(state: GameState, content: Content): string 
       `소지품: ${describeInventory(content, player.inventory)}`,
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
       `난이도 보정: ${difficulty}`,
-    ].join("\n"),
-    describeBattleForGm(state, content),
-    describeStoryletForGm(state, content),
-    describeMissionsForGm(state, { content }),
-    describeFactionsForGm(state, content),
-    describeOwnDeeds(state),
-    describePresentNpcs(state, content, player),
-    describeKnownPeople(state, content),
-    describeZonePeople(state, content),
-    describeZoneExtras(state, content),
-    describeExtraTemplates(content),
-    describeBeliefs(state),
+    ].join("\n")],
+    ["battle", describeBattleForGm(state, content)],
+    ["storylet", describeStoryletForGm(state, content)],
+    ["missions", describeMissionsForGm(state, { content })],
+    ["factions", describeFactionsForGm(state, content)],
+    ["deeds", describeOwnDeeds(state)],
+    ["present", describePresentNpcs(state, content, player)],
+    ["known", describeKnownPeople(state, content)],
+    ["zone_people", describeZonePeople(state, content)],
+    ["zone_extras", describeZoneExtras(state, content)],
+    ["templates", describeExtraTemplates(content)],
+    ["beliefs", describeBeliefs(state, content)],
   ];
-  return sections.filter(Boolean).join("\n\n");
+  return sections.filter(([, text]) => !!text).map(([key, text]) => ({ key, text }));
 }
 
 /** 이번 턴의 user 메시지. 상태와 입력을 구분해 넣는다 */
@@ -234,14 +252,19 @@ function describeKnownPeople(state: GameState, content: Content): string {
   const faces = (state.met[viewer] ?? []).filter((id) => absent(id) && !knowsName(state, viewer, id) && content.npcs[id]);
   const blocks: string[] = [];
   if (named.length > 0) {
+    // 이 구역 사람, 진행 중인 이야기의 배역, 상관은 겉모습·평판까지. 나머지는 한 줄 (토큰, 기획서 11.6). 장면에 들어오면 카드 전체가 붙는다
+    const commander = commanderOf(state, content);
+    const cast = new Set(Object.values(state.activeStorylet?.cast ?? {}));
+    const near = (id: string) => id === commander || cast.has(id) || content.npcs[id]?.zone === state.playerZone || state.characters[id]?.extra?.zone === state.playerZone;
     const lines = named.map((id) => {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
       const gender = genderOf(content.scenario, character.gender ?? npc?.gender ?? null);
-      const about = npc ? `${npc.look} ${npc.reputation}` : (character.extra?.look ?? "");
-      return `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankLabel(content.scenario, character.rank)}${gender}${statusNote(content, character)}: ${about}`;
+      const head = `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankLabel(content.scenario, character.rank)}${gender}${statusNote(content, character)}`;
+      if (near(id)) return `${head}: ${npc ? `${npc.look} ${npc.reputation}` : (character.extra?.look ?? "")}`;
+      return `${head}${npc ? `: ${shortNote(npc.reputation)}` : ""}`;
     });
-    blocks.push(`알고 있는 인물 (지금 장면에는 없다):\n${lines.join("\n")}`);
+    blocks.push(`알고 있는 인물 (지금 장면에는 없다. 자세한 것은 장면에 들어오면 붙는다):\n${lines.join("\n")}`);
   }
   if (faces.length > 0) {
     const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!)}: ${content.npcs[id]!.look}`);
@@ -280,11 +303,17 @@ function describeZoneExtras(state: GameState, content: Content): string {
 }
 
 /** 플레이어의 Belief. 출처는 넣고 진짜 정확도는 넣지 않는다 */
-function describeBeliefs(state: GameState): string {
-  const beliefs = (state.beliefs[state.playerId] ?? []).slice(-MAX_BELIEFS_IN_PROMPT);
-  if (beliefs.length === 0) return "";
-  const lines = beliefs.map((b) => `- [${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`);
-  return `당신이 알고 있다고 믿는 것 (틀렸거나 오래된 정보일 수 있다):\n${lines.join("\n")}`;
+function describeBeliefs(state: GameState, _content: Content): string {
+  const all = state.beliefs[state.playerId] ?? [];
+  if (all.length === 0) return "";
+  // 최근 것과, 지금 장면에 있는 인물에 관한 것만 (나머지는 recall로 찾는다, 기획서 11.6 토큰)
+  const names = state.scene.present.map((id) => state.characters[id]?.name).filter((n): n is string => !!n && n.length >= 2);
+  const recent = new Set(all.slice(-RECENT_BELIEFS_IN_PROMPT).map((b) => b.id));
+  const about = all.filter((b) => !recent.has(b.id) && names.some((n) => b.fact.includes(n))).slice(-MAX_BELIEFS_IN_PROMPT + RECENT_BELIEFS_IN_PROMPT);
+  const shown = all.filter((b) => recent.has(b.id) || about.includes(b));
+  const lines = shown.map((b) => `- [${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`);
+  const rest = all.length - shown.length;
+  return `당신이 알고 있다고 믿는 것 (틀렸거나 오래된 정보일 수 있다):\n${lines.join("\n")}${rest > 0 ? `\n(이 밖에 더 오래된 것 ${rest}개. 필요하면 recall로 찾는다)` : ""}`;
 }
 
 function describeInventory(content: Content, inventory: Inventory): string {

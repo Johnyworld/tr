@@ -142,7 +142,7 @@ export function createMcpServer(
     }
   };
 
-  const sceneAfter = (w: GameWorld) => (w.isPlayerDead() ? "\n\n캐릭터가 사망했다. 죽음을 서술하고 write_epitaph로 묘비명을 남긴 뒤, get_chronicle로 연대기와 다음 캐릭터 후보를 보여 주고 플레이어가 고르면 choose_next_character를 호출하라." : `\n\n## 현재 장면\n${w.sceneForGm()}`);
+  const sceneAfter = (w: GameWorld) => (w.isPlayerDead() ? "\n\n캐릭터가 사망했다. 죽음을 서술하고 write_epitaph로 묘비명을 남긴 뒤, get_chronicle로 연대기와 다음 캐릭터 후보를 보여 주고 플레이어가 고르면 choose_next_character를 호출하라." : `\n\n## 현재 장면 (지난번에서 바뀐 것)\n${w.sceneUpdate()}`);
 
   // ── 세계 ─────────────────────────────────────────
 

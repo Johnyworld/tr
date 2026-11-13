@@ -48,6 +48,7 @@
   alias: 수용소 담에 기댄 짧은 머리 경비
   faction: faction_c
   rank: grunt
+  occupation: soldier
   age: 20
   gender: female
   look: 귀 밑에서 일자로 자른 머리. 아버지와 같은 각진 턱에, 완장 위로 낡은 털실 토시를 덧꼈다. 총보다 열쇠 꾸러미를 더 자주 만진다.
@@ -89,6 +90,7 @@
   alias: 국자를 허리에 찬 취사반 아주머니
   faction: faction_c
   rank: staff
+  occupation: cook
   age: 58
   gender: female
   look: 팔뚝이 굵고 손등이 데인 자국투성이다. 앞치마 끈에 국자와 열쇠를 함께 매달았다. 웃으면 눈이 다 감긴다.
@@ -209,6 +211,7 @@
   alias: 계급장 자국만 남은 벌조장
   faction: faction_c
   rank: squad_leader
+  occupation: soldier
   age: 35
   gender: male
   look: 어깨에 떼어 낸 간부 계급장 자국이 바느질 구멍으로 남은 야전 상의. 한쪽 눈썹이 흉터로 끊겼다. 말할 때 고개를 조금 숙인다.

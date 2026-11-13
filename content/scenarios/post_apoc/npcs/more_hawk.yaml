@@ -6,6 +6,7 @@
   alias: 손이 떨리는 외과 의사
   faction: faction_d
   rank: staff
+  occupation: medic
   age: 46
   gender: female
   look: 단정하게 빗어 넘긴 머리에 눈 밑이 검다. 수술할 때만 손이 멎고, 수술이 끝나면 다시 떨린다. 가운 소매 끝을 늘 손끝까지 내려 쥐고 있다.
@@ -47,6 +48,7 @@
   alias: 약병 라벨을 소리 내어 읽는 약제사
   faction: faction_d
   rank: staff
+  occupation: medic
   age: 33
   gender: female
   look: 동그란 얼굴에 앞머리를 핀으로 넘겼다. 약병을 집으면 습관처럼 라벨을 입속으로 읽는다. 목에 끈으로 돋보기를 걸었다.
@@ -131,6 +133,7 @@
   alias: 접수대의 머리 땋은 간호사
   faction: faction_d
   rank: staff
+  occupation: medic
   age: 30
   gender: female
   look: 굵게 땋은 머리를 한쪽 어깨로 넘겼다. 접수대 판자 위에 분필로 이름을 쓰고 지우느라 손바닥이 늘 하얗다. 왼손 약지에 실로 감은 반지 자국.
@@ -172,6 +175,7 @@
   alias: 붕대를 잘 감는 말 없는 수습
   faction: faction_d
   rank: grunt
+  occupation: medic
   age: 24
   gender: female
   look: 앞머리를 눈썹 아래까지 내렸다. 손가락이 굵고 손목에 오래된 화상 자국이 있다. 붕대는 진료소에서 누구보다 빨리, 반듯하게 감는다.

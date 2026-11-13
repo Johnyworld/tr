@@ -37,6 +37,7 @@
   alias: 국자 꽂은 취사 할머니
   faction: faction_a
   rank: staff
+  occupation: cook
   age: 61
   gender: female
   look: 앞치마에 국자를 꽂고 다니는 키 작은 할머니. 목소리가 크다.

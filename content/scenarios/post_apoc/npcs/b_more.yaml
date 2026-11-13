@@ -5,6 +5,7 @@
   alias: 경비실 모자를 쓴 반백의 조장
   faction: faction_b
   rank: squad_leader
+  occupation: soldier
   age: 56
   gender: male
   look: 반백의 짧은 머리에 챙이 해진 아파트 경비실 모자. 허리춤에 열쇠 꾸러미가 짤랑거린다.
@@ -82,6 +83,7 @@
   alias: 목에 붉은 실을 감은 젊은 경비병
   faction: faction_b
   rank: grunt
+  occupation: soldier
   age: 20
   gender: male
   look: 키가 크고 말랐다. 목에 붉은 실을 몇 겹 감았다. 손가락이 늘 담뱃진에 누렇다.

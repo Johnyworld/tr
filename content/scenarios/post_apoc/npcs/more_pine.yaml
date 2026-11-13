@@ -6,6 +6,7 @@
   alias: 왼손에 붕대를 감은 각진 분대장
   faction: faction_a
   rank: squad_leader
+  occupation: soldier
   age: 46
   gender: male
   look: 턱이 각지고 눈 밑이 늘 거뭇하다. 왼손 손가락 두 개에 붕대를 감았는데, 상처가 아문 지 오래인데도 풀지 않는다.
@@ -47,6 +48,7 @@
   alias: 소매에 피 얼룩이 진 앳된 의무실 보조
   faction: faction_a
   rank: staff
+  occupation: medic
   age: 19
   gender: female
   look: 머리를 수건으로 질끈 묶었다. 소맷부리에 빨아도 안 빠지는 갈색 얼룩이 있고, 앞치마 주머니에 붕대 조각이 늘 삐져나와 있다.
@@ -86,6 +88,7 @@
   alias: 형의 군번줄을 목에 건 젊은 분대원
   faction: faction_a
   rank: grunt
+  occupation: soldier
   age: 23
   gender: male
   look: 목에 군번줄 두 개를 겹쳐 걸었다. 하나는 형 것이다. 키가 크고 어깨가 좁으며, 웃을 때 한쪽 볼에만 보조개가 팬다.
@@ -122,6 +125,7 @@
   alias: 장갑 한 짝만 낀 마른 분대원
   faction: faction_a
   rank: grunt
+  occupation: soldier
   age: 26
   gender: male
   look: 마르고 볕에 그을렸다. 오른손에만 털장갑을 낀다. 왼손 약지에 철사를 감아 만든 반지 자국이 하얗게 남아 있다.
@@ -204,6 +208,7 @@
   alias: 공구 허리띠를 찬 반백의 여자 간부
   faction: faction_a
   rank: officer
+  occupation: mechanic
   age: 57
   gender: female
   look: 반백의 머리를 짧게 잘랐다. 허리에 공구 허리띠를 차고 다녀서 걸을 때마다 쇠붙이 소리가 난다. 손톱 밑이 늘 기름으로 검다.

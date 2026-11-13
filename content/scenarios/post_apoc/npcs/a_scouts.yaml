@@ -5,6 +5,7 @@
   alias: 창살에 얼굴을 붙인 젊은 정찰병
   faction: faction_a
   rank: grunt
+  occupation: soldier
   age: 24
   gender: male
   start_captive: { by: faction_c, zone: c_warehouse }
@@ -39,6 +40,7 @@
   alias: 다리를 다친 정찰조장
   faction: faction_a
   rank: squad_leader
+  occupation: soldier
   age: 38
   gender: male
   start_captive: { by: faction_c, zone: c_warehouse }

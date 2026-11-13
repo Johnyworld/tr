@@ -7,6 +7,7 @@
   alias: 소매를 걷어붙인 의회 부엌 아가씨
   faction: faction_y
   rank: staff
+  occupation: cook
   age: 24
   gender: female
   look: 하얀 머릿수건에 팔뚝까지 걷은 소매. 손목에 데인 자국이 줄지어 있다. 국 냄새가 옷에 배어 있어 늘 비누를 쥐고 다닌다.
@@ -160,6 +161,7 @@
   alias: 약초 냄새 나는 늙은 약방 의사
   faction: faction_y
   rank: staff
+  occupation: medic
   age: 68
   gender: male
   look: 반쯤 센 수염, 뿔테 안경을 고무줄로 머리에 맸다. 조끼 주머니마다 작은 약병이 들어 딸그락거린다.

@@ -6,6 +6,7 @@
   alias: 손등에 동상 자국 있는 고참
   faction: faction_a
   rank: grunt
+  occupation: soldier
   age: 34
   gender: male
   look: 광대뼈가 불거진 마른 얼굴. 오른손 등에 거무죽죽한 동상 자국이 있고, 늘 장갑을 한 짝만 낀다.
@@ -43,6 +44,7 @@
   alias: 무릎 테이프 감은 중년 대원
   faction: faction_a
   rank: grunt
+  occupation: soldier
   age: 49
   gender: male
   look: 배가 조금 나온 중년. 오른쪽 무릎을 청테이프로 감아 다니고, 주머니마다 볼펜과 쪽지가 꽂혀 있다.
@@ -80,6 +82,7 @@
   alias: 소총 끈을 손목에 감은 여자 대원
   faction: faction_a
   rank: grunt
+  occupation: soldier
   age: 27
   gender: female
   look: 짧게 친 머리에 각진 턱. 소총 끈을 늘 손목에 한 번 감아 쥔다. 웃는 걸 본 사람이 드물다.
@@ -117,6 +120,7 @@
   alias: 소매가 긴 앳된 여자아이
   faction: faction_a
   rank: grunt
+  occupation: soldier
   age: 17
   gender: female
   look: 마른 몸에 소매가 손등까지 내려오는 큰 점퍼. 머리를 하나로 질끈 묶었다. 큰 소리가 나면 어깨가 먼저 움츠러든다.

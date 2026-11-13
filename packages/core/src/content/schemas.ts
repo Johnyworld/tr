@@ -441,6 +441,8 @@ export function createContentSchemas(s: Scenario) {
     /** own = 플레이어 소속, 또는 세력 id */
     faction: z.string().optional(),
     ranks: z.array(idEnum(rankIds(s))).optional(),
+    /** 이 직분인 사람만 (기획서 12.6: 같은 부엌의 요리사, 같은 진료소의 의무병). same이면 주인공과 같은 직분 */
+    occupations: z.array(z.string().min(1)).optional(),
     /** 플레이어가 아는 인물만 */
     known: z.boolean().default(false),
     /** 이 인물의 플레이어에 대한 신뢰 하한 */

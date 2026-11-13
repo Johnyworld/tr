@@ -4,6 +4,7 @@ name: 강태호
 alias: 귀가 반쯤 없는 분대장
 faction: faction_a
 rank: squad_leader
+occupation: soldier
 age: 44
 gender: male
 look: 왼쪽 귀가 반쯤 없는 40대. 늘 무전기를 만지작거린다.

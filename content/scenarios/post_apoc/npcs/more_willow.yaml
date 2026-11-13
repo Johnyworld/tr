@@ -6,6 +6,7 @@
   alias: 무릎까지 진흙이 마른 늙은 우물꾼
   faction: faction_b
   rank: staff
+  occupation: carpenter
   age: 59
   gender: male
   look: 바지가 무릎까지 진흙으로 굳었다. 허리에 굵은 밧줄을 감고 다니고, 손바닥이 가죽처럼 두껍다. 말할 때 자꾸 땅을 내려다본다.
@@ -47,6 +48,7 @@
   alias: 저울을 등에 진 볕에 탄 아주머니
   faction: faction_b
   rank: staff
+  occupation: trader
   age: 55
   gender: female
   look: 볕에 검게 탄 얼굴에 주름이 깊다. 등에 낡은 앉은뱅이저울을 끈으로 매고 다닌다. 웃을 때 눈이 거의 감긴다.
@@ -128,6 +130,7 @@
   alias: 큰 군복 점퍼를 걸친 경비 당번
   faction: faction_b
   rank: grunt
+  occupation: soldier
   age: 23
   gender: female
   look: 품이 큰 군복 점퍼를 지퍼까지 올려 입었다. 머리를 하나로 땋아 점퍼 안에 넣는다. 요즘 자꾸 배를 손으로 감싼다.
@@ -165,6 +168,7 @@
   alias: 옥상 먼지를 뒤집어쓴 까까머리 소년
   faction: faction_b
   rank: grunt
+  occupation: soldier
   age: 16
   gender: male
   look: 까까머리에 무릎이 다 해진 체육복 바지. 손바닥과 무릎에 옥상 방수포 가루가 늘 묻어 있다. 아버지 것이라는 손목시계를 두 번 감아 찼다.

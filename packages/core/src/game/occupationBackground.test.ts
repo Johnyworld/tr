@@ -59,6 +59,14 @@ describe("직분", () => {
     expect(note).toContain("부엌 반장");
     expect(occupationTitle(w.content, me())).toBe("요리사 · 부엌 반장");
   });
+
+  it("NPC도 직분이 있고, 배역 occupations로 같은 직분의 동료를 부른다", async () => {
+    const { castCandidates } = await import("../story/storylets.ts");
+    const w = open(cook);
+    expect(w.state().characters.a_bokja!.occupation?.id).toBe("cook");
+    const role = { commander: false, known: false, enter: true, optional: false, here: false, faction: "own", occupations: ["same"] } as never;
+    expect(castCandidates(w.state(), w.content, role)).toEqual(["a_bokja"]);
+  });
 });
 
 describe("배경 부품", () => {

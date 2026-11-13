@@ -7,6 +7,7 @@
   alias: 찌그러진 냄비를 등에 단 떠돌이
   faction: null
   rank: loner
+  occupation: scavenger
   age: 47
   gender: male
   look: 볕과 그을음에 탄 얼굴, 수염을 칼로 대충 쳤다. 배낭 뒤에 찌그러진 냄비가 매달려 걸을 때마다 달그락거린다.
@@ -48,6 +49,7 @@
   alias: 손목에 밧줄 자국 있는 여자
   faction: null
   rank: loner
+  occupation: scavenger
   age: 26
   gender: female
   look: 머리를 바짝 깎았다가 다시 자라 삐죽삐죽하다. 두 손목에 밧줄에 쓸린 흉이 띠처럼 남았다. 붉은 완장을 뜯어낸 자리만 소매 색이 바래지 않았다.
@@ -170,6 +172,7 @@
   alias: 삽을 지팡이 삼은 묘지기
   faction: null
   rank: loner
+  occupation: preacher
   age: 59
   gender: male
   look: 키가 크고 마른 노인. 흙 묻은 삽을 지팡이처럼 짚는다. 목에 녹슨 자물쇠 하나를 끈으로 걸었다.
@@ -255,6 +258,7 @@
   alias: 지도통을 멘 소식장수
   faction: null
   rank: loner
+  occupation: trader
   age: 54
   gender: male
   look: 둥근 안경에 챙 넓은 모자. 등에 기다란 지도통을 메고, 손가락마다 연필 자국이 까맣다.
@@ -297,6 +301,7 @@
   alias: 약병을 띠처럼 두른 약장수
   faction: null
   rank: loner
+  occupation: trader
   age: 58
   gender: male
   look: 배가 나온 사내. 허리에 작은 약병을 꽂은 띠를 두 줄 둘렀다. 웃을 때 눈이 사라진다. 목도리 매는 법이 이상하게 단정하다.
@@ -340,6 +345,7 @@
   alias: 탄띠를 X자로 멘 탄약 장수
   faction: null
   rank: loner
+  occupation: trader
   age: 40
   gender: female
   look: 어깨가 넓고 손가락 끝이 화약에 그을려 까맣다. 가슴에 탄띠를 X자로 멨고, 왼쪽 귓바퀴에 오래된 흉이 있다.

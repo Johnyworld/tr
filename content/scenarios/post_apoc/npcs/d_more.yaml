@@ -5,6 +5,7 @@
   alias: 흰머리를 바짝 묶은 수간호사
   faction: faction_d
   rank: squad_leader
+  occupation: medic
   age: 52
   gender: female
   look: 흰머리를 뒤로 바짝 묶었다. 앞치마 주머니에 가위와 볼펜, 접은 종이가 늘 꽂혀 있다. 손톱을 짧게 깎았다.
@@ -46,6 +47,7 @@
   alias: 가는 테 안경의 장부 든 사내
   faction: faction_d
   rank: officer
+  occupation: trader
   age: 44
   gender: male
   look: 가는 금속테 안경에 손질한 콧수염. 하얀매에서 드물게 가운 대신 조끼를 입는다. 열쇠 꾸러미가 허리에서 짤랑거린다.
@@ -85,6 +87,7 @@
   alias: 단발머리 수습 간호사
   faction: faction_d
   rank: staff
+  occupation: medic
   age: 19
   gender: female
   look: 귀밑에서 자른 단발. 소매가 긴 털 스웨터 위에 큰 가운을 걸쳤다. 손목에 늘 붕대를 감고 다닌다.
@@ -123,6 +126,7 @@
   alias: 목에 호루라기 건 문지기
   faction: faction_d
   rank: grunt
+  occupation: soldier
   age: 38
   gender: male
   look: 경찰 방한점퍼를 아직도 입는다. 목에 호루라기, 허리에 진압봉. 왼쪽 귓바퀴가 찢어져 아물었다.
@@ -156,6 +160,7 @@
   alias: 돋보기 목에 건 늙은 약사
   faction: faction_d
   rank: staff
+  occupation: medic
   age: 67
   gender: female
   look: 굽은 등에 털조끼. 돋보기를 줄에 꿰어 목에 걸었다. 손가락 마디가 굵고, 약 이름을 중얼거리는 버릇이 있다.

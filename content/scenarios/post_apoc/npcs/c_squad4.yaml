@@ -6,6 +6,7 @@
   alias: 목에 문신 있는 거구
   faction: faction_c
   rank: grunt
+  occupation: soldier
   age: 36
   gender: male
   look: 목덜미에서 귀밑까지 문신이 올라온 거구. 손가락 마디가 다 굵고, 웃으면 앞니 하나가 금이다.
@@ -46,6 +47,7 @@
   alias: 완장이 헐렁한 앳된 조원
   faction: faction_c
   rank: grunt
+  occupation: soldier
   age: 19
   gender: female
   look: 팔에 비해 헐렁한 붉은 완장을 안전핀으로 줄여 찼다. 손톱을 물어뜯어 끝이 늘 빨갛다.
@@ -79,6 +81,7 @@
   alias: 회색 털모자를 쓴 늙은 조원
   faction: faction_c
   rank: grunt
+  occupation: soldier
   age: 53
   gender: male
   look: 회색 털모자를 눌러쓴 늙은 사내. 말할 때마다 장부 넘기듯 손가락으로 허벅지를 두드린다.

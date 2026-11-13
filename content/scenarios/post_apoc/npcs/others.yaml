@@ -41,6 +41,7 @@
   alias: 손에 붕대 감은 주근깨 경비병
   faction: faction_b
   rank: grunt
+  occupation: soldier
   age: 24
   gender: female
   look: 오지호와 똑같은 주근깨. 머리를 짧게 자르고 오른손에 붕대를 감았다.
@@ -78,6 +79,7 @@
   alias: 붉은 완장의 마른 정찰병
   faction: faction_c
   rank: grunt
+  occupation: soldier
   age: 27
   gender: male
   look: 왼팔에 붉은 완장. 광대뼈가 드러날 만큼 말랐고 눈 밑이 검다.
@@ -115,6 +117,7 @@
   alias: 장갑 낀 장교 외투 사내
   faction: faction_c
   rank: officer
+  occupation: soldier
   age: 45
   gender: male
   look: 깔끔하게 빗어 넘긴 머리, 장교 외투. 손이 늘 장갑 속에 있다.
@@ -147,6 +150,7 @@
   alias: 흰 가운의 안경 쓴 여자
   faction: faction_d
   rank: leader
+  occupation: medic
   age: 39
   gender: female
   look: 소매를 걷은 흰 가운, 안경 한쪽 다리를 철사로 감았다.
@@ -184,6 +188,7 @@
   alias: 방독면 건 덩치 큰 사내
   faction: faction_d
   rank: grunt
+  occupation: scavenger
   age: 31
   gender: male
   look: 덩치가 크고 목에 방독면을 걸었다. 등에 빈 배낭을 지고 다닌다.
@@ -215,6 +220,7 @@
   alias: 금니 박힌 가죽 조끼 상인
   faction: faction_e
   rank: leader
+  occupation: trader
   age: 58
   gender: male
   look: 금니가 두 개, 기름때 묻은 가죽 조끼. 손가락에 반지가 여럿이다.

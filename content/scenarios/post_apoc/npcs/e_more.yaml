@@ -4,6 +4,7 @@
   alias: 쇠 저울추를 찬 행상대장
   faction: faction_e
   rank: squad_leader
+  occupation: trader
   age: 49
   gender: female
   look: 허리춤에 쇠 저울추를 매단 단단한 체구의 여자. 손등이 밧줄 자국으로 거칠다. 짐 무게를 손으로 들어 보고 맞힌다.
@@ -80,6 +81,7 @@
   alias: 안경테를 철사로 감은 장부꾼
   faction: faction_e
   rank: staff
+  occupation: trader
   age: 31
   gender: female
   look: 안경 한쪽 다리를 철사로 감았다. 손끝이 늘 연필 가루로 까맣다. 목도리에 장부를 싸서 품에 안고 다닌다.
@@ -118,6 +120,7 @@
   alias: 기름 묻은 장갑의 펌프지기
   faction: faction_e
   rank: officer
+  occupation: mechanic
   age: 63
   gender: male
   look: 기름에 절은 목장갑을 끼고, 귀 뒤에 몽당연필을 꽂았다. 허리가 굽었지만 펌프 손잡이를 돌릴 때는 꼿꼿하다.

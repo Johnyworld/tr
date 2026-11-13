@@ -6,6 +6,7 @@
   alias: 목에 화상 자국 있는 약탈조장
   faction: faction_c
   rank: squad_leader
+  occupation: soldier
   age: 44
   gender: male
   look: 목덜미부터 턱밑까지 번진 오래된 화상 자국. 붉은 완장 위에 조장 표시로 검은 천을 한 겹 더 감았다. 늘 쇠지렛대를 허리에 꽂고 다닌다.
@@ -123,6 +124,7 @@
   alias: 앞니 빠진 넉살 좋은 약탈조원
   faction: faction_c
   rank: grunt
+  occupation: soldier
   age: 31
   gender: male
   look: 앞니 하나가 빠져 웃으면 바람이 샌다. 털모자를 눌러쓰고 주머니에는 늘 담배와 사탕 껍질이 있다.
@@ -160,6 +162,7 @@
   alias: 머리를 바짝 깎은 앳된 여자 조원
   faction: faction_c
   rank: grunt
+  occupation: soldier
   age: 20
   gender: female
   look: 머리를 바짝 깎아 귀가 드러났다. 몸에 맞지 않는 큰 점퍼에 붉은 완장을 안전핀으로 꽂았다. 손등에 동상 자국이 있다.

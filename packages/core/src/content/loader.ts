@@ -101,6 +101,8 @@ function checkReferences(content: Content): string[] {
   for (const r of Object.values(content.roles)) if (r.occupation && !occIds.has(r.occupation)) problems.push(`roles.${r.id}: 알 수 없는 직분 ${r.occupation}`);
   for (const n of Object.values(content.npcs)) if (n.occupation && !occIds.has(n.occupation)) problems.push(`npcs.${n.id}: 알 수 없는 직분 ${n.occupation}`);
   for (const st of Object.values(content.storylets)) for (const o of st.when.occupations ?? []) if (o !== "none" && !occIds.has(o)) problems.push(`storylets.${st.id}.when.occupations: 알 수 없는 직분 ${o}`);
+  for (const st of Object.values(content.storylets))
+    for (const [k, r] of Object.entries(st.cast)) for (const o of r.occupations ?? []) if (o !== "same" && !occIds.has(o)) problems.push(`storylets.${st.id}.cast.${k}: 알 수 없는 직분 ${o}`);
   for (const p of content.scenario.command?.policies ?? []) {
     for (const o of p.options) {
       for (const partner of [o.trade?.partner, o.trade?.fallback_partner]) if (partner && !content.factions[partner]) problems.push(`scenario.command.policies.${p.id}.${o.id}: 알 수 없는 교역 상대 ${partner}`);

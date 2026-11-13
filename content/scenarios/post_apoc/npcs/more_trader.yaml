@@ -88,6 +88,7 @@
   alias: 돋보기를 목에 건 전당포 노파
   faction: faction_e
   rank: staff
+  occupation: trader
   age: 63
   gender: female
   look: 목에 돋보기를 줄로 걸었다. 털실 조끼 주머니마다 남의 반지와 시계가 들었다. 손이 작고 차갑다.
@@ -130,6 +131,7 @@
   alias: 목에 굵은 흉터가 있는 호위대장
   faction: faction_e
   rank: squad_leader
+  occupation: soldier
   age: 37
   gender: male
   look: 목을 가로지르는 굵은 흉터, 짧게 깎은 머리. 엽총 개머리판에 금을 새겨 지나간 거래선의 수를 센다.
@@ -167,6 +169,7 @@
   alias: 손등까지 기름때 묻은 펌프 견습
   faction: faction_e
   rank: grunt
+  occupation: mechanic
   age: 22
   gender: female
   look: 짧은 머리에 염덕수의 헌 작업복을 접어 입었다. 손톱 밑이 늘 까맣다. 렌치를 허리에 찼다.

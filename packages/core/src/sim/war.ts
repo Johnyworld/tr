@@ -386,7 +386,7 @@ export function clashForces(world: WarWorld, spec: ClashSpec, content?: Content)
 export function frontierTarget(world: WarWorld, content: Content, factionId: string): string | null {
   const mine = Object.keys(world.zones).filter((z) => world.zones[z]!.owner === factionId);
   const candidates = [...new Set(mine.flatMap((z) => neighbors(content, z)))]
-    .filter((z) => content.locations[z]?.kind !== "base")
+    .filter((z) => content.locations[z]?.kind !== "base" && !content.locations[z]?.sanctuary)
     .filter((z) => {
       const owner = world.zones[z]?.owner ?? null;
       return owner === null || (owner !== factionId && disposition(content, factionId, owner, world) <= HOSTILE);
@@ -408,7 +408,7 @@ function attackOptions(world: WarWorld, content: Content, attacker: FactionConte
   const options: AttackOption[] = [];
   for (const zone of [...frontier].sort()) {
     const owner = world.zones[zone]?.owner ?? null;
-    if (owner === attacker.id) continue;
+    if (owner === attacker.id || content.locations[zone]?.sanctuary) continue;
     if (owner === null) {
       options.push({ kind: "occupy", defender: null, zone });
       continue;

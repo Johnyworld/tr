@@ -24,6 +24,8 @@ import {
   fillStorylet,
   pickCast,
   pickStorylet,
+  roadStorylets,
+  routeDanger,
   storyletVars,
   storyletWindow,
 } from "../story/storylets.ts";
@@ -561,3 +563,21 @@ function applyEffect(
 }
 
 export const STORYLET_TOOLS = [resolveStorylet] as const;
+
+/**
+ * 길 위의 일 (12-53): 구역을 옮긴 뒤 길의 위험별 확률로 길 위의 이야기 하나를 연다 (이야기 사이 간격과 상관없다).
+ * 진행 중인 이야기가 있으면 열지 않는다. 연 이야기의 시작 표시를 돌려준다
+ */
+export function runRoadEvent(ctx: ToolContext): ToolDisplayEvent[] {
+  const { store, content, rng } = ctx;
+  const travel = content.scenario.travel;
+  const state = store.getState();
+  if (!travel || !state.lastRoute || state.activeStorylet || state.battle) return [];
+  const chance = travel.chance[Math.min(3, routeDanger(content, state))] ?? 0;
+  if (rng() >= chance) return [];
+  const storylet = pickStorylet(roadStorylets(state, content, travel.tag), rng);
+  if (!storylet) return [];
+  const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
+  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: setupText(store.getState(), content) });
+  return displays;
+}

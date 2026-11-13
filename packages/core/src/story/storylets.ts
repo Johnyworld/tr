@@ -164,6 +164,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.level_gte !== undefined && player.level < w.level_gte) return false;
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
   if (w.occupations && !w.occupations.includes(player.occupation?.id ?? "none")) return false;
+  if (w.road_touches && (!state.lastRoute || !w.road_touches.some((z) => z === state.lastRoute!.from || z === state.lastRoute!.to))) return false;
+  if (w.road_danger_gte !== undefined && routeDanger(content, state) < w.road_danger_gte) return false;
   if (w.at_loss_place && !state.background.some((e) => e.part.kind === "loss" && e.part.where && e.part.where === state.playerZone)) return false;
   if (w.occupation_step_gte !== undefined) {
     const occ = occupationOf(content, player);
@@ -323,6 +325,11 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   // 배역은 주인공이 부르는 말로 (이름을 모르면 호칭, 기획서 6.3)
   for (const [key, id] of Object.entries(cast)) vars[key] = playerCalls(state, content, id);
   vars.zone = (state.playerZone && content.locations[state.playerZone]?.name) || "거점";
+  // 길 위의 이야기: 떠나온 곳과 가는 곳 (12-53)
+  if (state.lastRoute) {
+    vars.from = content.locations[state.lastRoute.from]?.name ?? state.lastRoute.from;
+    vars.to = content.locations[state.lastRoute.to]?.name ?? state.lastRoute.to;
+  }
   const player = state.characters[state.playerId];
   const own = player ? state.factions[player.factionId] : undefined;
   const war = content.scenario.war;
@@ -339,4 +346,22 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
 
 export function fillStorylet(text: string, vars: Record<string, string>): string {
   return fill(text, vars);
+}
+
+/** 지금 오간 길의 위험: 두 구역 중 높은 쪽 (12-53) */
+export function routeDanger(content: Content, state: GameState): number {
+  if (!state.lastRoute) return 0;
+  return Math.max(content.locations[state.lastRoute.from]?.danger ?? 0, content.locations[state.lastRoute.to]?.danger ?? 0);
+}
+
+/** 길 위의 이야기 후보: 태그가 맞고, 아직 안 열렸거나 쿨다운이 지났고, 조건과 배역이 맞는 것 */
+export function roadStorylets(state: GameState, content: Content, tag: string): StoryletContent[] {
+  return Object.values(content.storylets)
+    .filter((s) => s.tags.includes(tag))
+    .filter((s) => {
+      const log = state.storyletLog[s.id];
+      return !log || (s.repeatable && state.time - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY);
+    })
+    .filter((s) => conditionsMet(state, content, s, state.time))
+    .filter((s) => pickCast(state, content, s, null) !== null);
 }

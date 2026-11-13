@@ -7,6 +7,7 @@
   name: 청솔형제단 거점
   description: 옛 공업고등학교. 운동장 담을 모래주머니와 철판으로 보강했다.
   kind: base
+  danger: 0
   owner: faction_a
   adjacent: [a_east_post, old_town, riverside, b_base]
   yields: { food: 58, water: 75, fuel: 12, ammo: 3 }
@@ -22,6 +23,7 @@
   name: 동쪽 초소
   description: 청솔형제단 거점 동쪽의 초소와 망루. 고가도로 쪽을 내려다본다.
   kind: zone
+  danger: 2
   owner: faction_a
   adjacent: [c_warehouse]
   loot:
@@ -37,6 +39,7 @@
   name: 고가도로 너머 물류창고
   description: 북쪽 고가도로 너머의 옛 물류창고 단지. 붉은연합이 차지하고 있다.
   kind: zone
+  danger: 2
   owner: faction_c
   adjacent: [c_base, riverside]
   yields: { food: 30, fuel: 5 }
@@ -56,6 +59,7 @@
   name: 붉은연합 거점
   description: 도시 동쪽의 옛 공단. 높은 담과 감시탑이 있다.
   kind: base
+  danger: 1
   owner: faction_c
   adjacent: [old_town]
   yields: { food: 150, water: 185, fuel: 20 }
@@ -69,6 +73,7 @@
   name: 강변 공장 지대
   description: 물과 연료를 얻을 수 있어 무리들이 자주 부딪치는 곳. 밤에는 물결이 잦다.
   kind: zone
+  danger: 2
   owner: null
   adjacent: [e_market]
   # 섬에서 몰래 나오는 길 (기획서 9.12): 섬의 허락(y_leave_pass)이 없으면 경비를 피해 밤배를 훔쳐 탄다
@@ -94,6 +99,7 @@
   name: 구시가
   description: 첫 해에 거의 다 털린 옛 시장과 상가. 아직도 남은 것을 찾아 들어가는 사람이 있다.
   kind: zone
+  danger: 1
   owner: null
   adjacent: [b_base, d_clinic]
   yields: { food: 15, ammo: 3, medicine: 1 }
@@ -116,6 +122,7 @@
   name: 버들마을 거점
   description: 청솔형제단 거점 서쪽의 옛 아파트 단지.
   kind: base
+  danger: 0
   owner: faction_b
   yields: { food: 36, water: 42, fuel: 6, ammo: 1 }
   loot:
@@ -129,6 +136,7 @@
   name: 하얀매의 진료소
   description: 옛 보건소 건물. 약을 구하려는 사람들이 찾아온다.
   kind: base
+  danger: 0
   owner: faction_d
   yields: { food: 30, water: 33, fuel: 5, medicine: 4 }
   loot:
@@ -141,6 +149,7 @@
   name: 나루상단의 장터
   description: 강 하류의 옛 휴게소. 정해진 날에 상인들이 모인다.
   kind: base
+  danger: 0
   owner: faction_e
   yields: { food: 50, water: 50, fuel: 10, ammo: 5 }
 
@@ -156,6 +165,7 @@
   name: 옛 시립병원
   description: 첫 해에 가장 먼저 무너진 병원. 지하 약제실은 아직 다 털리지 않았다는 말이 있다. 감염체가 많다.
   kind: zone
+  danger: 3
   owner: null
   adjacent: [old_town, d_clinic]
   yields: { medicine: 2 }
@@ -174,6 +184,7 @@
   name: 정수장
   description: 강 하류의 옛 정수장. 펌프 하나가 아직 손으로 돌아간다. 나루상단의 상인들이 물을 길어 간다.
   kind: zone
+  danger: 1
   owner: faction_e
   adjacent: [riverside, e_market]
   yields: { water: 30 }
@@ -188,6 +199,7 @@
   name: 남쪽 텃밭
   description: 청솔형제단과 버들마을 거점 사이의 운동장과 공터를 갈아엎은 밭. 무너진 남쪽 담장 너머라 늘 불안하다.
   kind: zone
+  danger: 1
   owner: faction_a
   adjacent: [a_base, b_base]
   yields: { food: 12 }
@@ -206,6 +218,7 @@
   name: 여울섬
   description: 강 하구에서 배로 반나절 건너는 섬. 돌담과 망루, 텃밭과 양식장, 탄약 공방이 있다. 부두에는 늘 무장한 경비가 선다.
   kind: base
+  danger: 1
   owner: faction_y
   crossing:
     from: [riverside, water_plant]

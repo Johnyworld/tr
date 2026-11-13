@@ -36,7 +36,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 23;
+export const SAVE_SCHEMA_VERSION = 24;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -243,6 +243,8 @@ export function createGameSchemas(s: Scenario) {
     keptExtras: z.record(z.string(), z.string()).default({}),
     /** 주인공의 지난 일 중 세계의 사실이 된 것 (배경 부품, 기획서 12.6). 코드가 만든 인물은 characterId */
     background: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })).default([]),
+    /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
+    lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
     /** 이야기가 바꾼 주인공의 상관 (지도부가 바뀐 뒤). null이면 역할의 상관 */
     commanderOverride: z.string().nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
@@ -660,6 +662,7 @@ export const EMPTY_STATE: GameState = {
   zoneSearches: {},
   keptExtras: {},
   commanderOverride: null,
+  lastRoute: null,
   background: [],
   companions: [],
   bonds: {},
@@ -1135,6 +1138,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "zone_moved":
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
+      next.lastRoute = event.from !== null ? { from: event.from, to: event.to } : null;
       // 장면의 인물은 따라오지 않는다 (같이 가려면 도착한 뒤 다시 등장시킨다). 처음 자리를 정할 때(from 없음)는 그대로
       if (event.from !== null) {
         for (const id of next.scene.present) {

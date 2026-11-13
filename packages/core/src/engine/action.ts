@@ -1,3 +1,4 @@
+import { runRoadEvent } from "./storyletTools.ts";
 import { shakeNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft } from "./gear.ts";
 import { scavenge } from "./scavenge.ts";
@@ -403,6 +404,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
     store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to });
     lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다. 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
+    // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
+    for (const d of runRoadEvent(ctx)) {
+      displays.push(d);
+      if (d.type === "storylet" && d.event === "started") lines.push(`오는 길에 일이 생겼다: "${d.title}". 도착하기 전, 길 위의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
+    }
     // 처음 들어온 곳이면 해금 (모든 판에 남는다)
     const unlock = content.locations[input.move_to]?.unlocks;
     if (unlock && !store.getState().unlocked.includes(unlock)) {

@@ -312,6 +312,10 @@ export function createContentSchemas(s: Scenario) {
     /** 시작 소유 세력. 없으면 누구의 땅도 아니다 */
     owner: contentIdSchema.nullable().default(null),
     adjacent: z.array(contentIdSchema).default([]),
+    /** 피난처: 어느 무리도 차지하거나 치지 않는다 (성당, 학자들의 캠퍼스, 12-53) */
+    sanctuary: z.boolean().optional(),
+    /** 위험 (0 안전 ~ 3 아주 위험, 12-53). 오가는 길에서 일이 생길 확률(scenario.travel)을 정한다 */
+    danger: z.number().int().min(0).max(3).default(1),
     /**
      * 맞닿지 않은 곳에서 건너오는 길 (배, 기획서 9.12). from에서만 건넌다.
      * pass_flags 중 하나가 있으면 그냥 건너고, 없으면 attempt.moves 판정과 무거운 위험(heavy)을 걸고 시도한다 (실패하면 되돌아온다)
@@ -556,6 +560,10 @@ export function createContentSchemas(s: Scenario) {
         factions: z.array(z.string().min(1)).optional(),
         /** 플레이어의 직분 (none = 직분 없음, 기획서 12.6) */
         occupations: z.array(z.string().min(1)).optional(),
+        /** 길 위의 이야기 (12-53, 태그 road): 지금 오가는 길의 한쪽 끝이 이 중 하나일 때만 */
+        road_touches: z.array(contentIdSchema).optional(),
+        /** 길 위의 이야기: 오가는 길의 위험(두 구역 중 높은 쪽)이 이 이상일 때만 */
+        road_danger_gte: z.number().int().min(0).max(3).optional(),
         /** 주인공이 배경의 그 일이 있었던 구역(잃은 곳)에 있을 때만 (기획서 12.6) */
         at_loss_place: z.boolean().optional(),
         /** 직분 사다리의 칸이 이 이상 (0 = 첫 칸) */

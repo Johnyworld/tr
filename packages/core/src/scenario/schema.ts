@@ -537,6 +537,11 @@ export const scenarioFileSchema = z
         first_aid: z.strictObject({ occupation: id.optional(), skill: id, min: z.number().int() }).optional(),
       })
       .optional(),
+    /**
+     * 길 위의 일 (12-53): 구역을 옮길 때마다 길의 위험(두 구역의 danger 중 높은 쪽)별 확률로 태그(tag)가 붙은 이야기 하나가 열린다.
+     * 이야기 사이 간격(storylet_pacing)과 상관없다. 진행 중인 이야기가 있으면 열리지 않는다
+     */
+    travel: z.strictObject({ tag: id, chance: z.array(z.number().min(0).max(1)).length(4) }).optional(),
     /** 쓰면 몸 상태가 나아지는 아이템: 아이템 → 상태 트랙 → 나아지는 단계 수 (take_action.use_item) */
     consumables: z.record(id, z.record(id, z.number().int().positive())).default({}),
     /** 몸 상태 (12-1): 허기와 감염. 없으면 그 규칙을 쓰지 않는다 */

@@ -281,7 +281,7 @@ custom_start:
   ranks: [grunt, staff, squad_leader, officer]
   # 무소속으로 시작할 때의 계급과 장소 (누구의 땅도 아닌 곳)
   free_rank: loner
-  free_locations: [old_town, riverside, hospital_ruins]
+  free_locations: [old_town, riverside, hospital_ruins, cathedral, campus, mall_ruins, subway_hub]
   # 시작 훈련 (하급 전투원의 근접전 +1, 사격 +1과 같은 무게)
   skill_points: 2
   skill_max: 1
@@ -536,6 +536,9 @@ recovery:
   faction_care: { occupation: medic, resource: medicine, per_medic: 2, infection_cost: 2 }
   # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
   first_aid: { occupation: medic, skill: first_aid, min: 1 }
+
+# 길 위의 일 (12-53): 구역을 옮길 때 길의 위험(두 구역의 danger 중 높은 쪽 0~3)별로 태그 road인 이야기가 열릴 확률
+travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 
 # 쓰면 몸이 나아지는 물건 (take_action.use_item): 아이템 → 트랙 → 나아지는 단계 (*임시*)
 consumables:

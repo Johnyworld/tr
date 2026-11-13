@@ -1,3 +1,4 @@
+import { dayOf } from "../rules/time.ts";
 import { describeGear } from "./gear.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { describeProfileLines, describeTieLines } from "./people.ts";
@@ -298,6 +299,16 @@ function describeKnownPeople(state: GameState, content: Content): string {
  * 지금 구역에 있을 만한 인물 (등장시킬 수 있는 사람). 만난 적 없는 인물은 이름 없이 겉모습만 준다.
  * 만나도 이름은 모른다 (learn_name). 비밀·평판 같은 프로필은 장면에 들어온 뒤에만 넣는다
  */
+/** 이 구역의 낯선 사람을 장면에 싣는 수 (토큰, 12-42) */
+export const ZONE_PEOPLE_IN_PROMPT = 5;
+
+/** 날마다 순서가 바뀌는 수 (같은 날이면 같다) */
+function rotate(id: string, day: number): number {
+  let h = day * 2654435761;
+  for (const ch of id) h = ((h ^ ch.charCodeAt(0)) * 16777619) >>> 0;
+  return h;
+}
+
 export function describeZonePeople(state: GameState, content: Content): string {
   const zone = state.playerZone;
   if (!zone) return "";
@@ -306,9 +317,15 @@ export function describeZonePeople(state: GameState, content: Content): string {
   );
   const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id));
   if (strangers.length === 0) return "";
-  // 갇힌 사람은 이 구역에 와 있으니 갇혀 있다는 것까지 보인다 (돌아다니지 않는다)
-  const lines = strangers.map((npc) => `- (${npc.id}) 이름 모름${state.characters[npc.id]?.captive ? " · 이곳에 갇혀 있다 (창살 안, 돌아다니지 않는다)" : ""}: ${npc.look}`);
-  return `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나도 이름은 모른다):\n${lines.join("\n")}`;
+  // 갇힌 사람은 이 구역에 와 있으니 갇혀 있다는 것까지 보인다 (돌아다니지 않는다). 사람이 많으면 몇 명만 (토큰, 12-42):
+  // 갇힌 사람·떠도는 사람(오늘만 여기 있다) 먼저, 나머지는 날마다 돌아가며
+  const captive = (id: string) => !!state.characters[id]?.captive;
+  const day = dayOf(state.time);
+  const ordered = [...strangers].sort((a, b) => Number(captive(b.id)) - Number(captive(a.id)) || Number(!!b.roams) - Number(!!a.roams) || rotate(a.id, day) - rotate(b.id, day));
+  const shown = ordered.slice(0, ZONE_PEOPLE_IN_PROMPT);
+  const lines = shown.map((npc) => `- (${npc.id}) ${npc.alias}${captive(npc.id) ? " · 이곳에 갇혀 있다 (창살 안, 돌아다니지 않는다)" : ""}: ${shortNote(npc.look)}`);
+  const more = strangers.length - shown.length;
+  return `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나도 이름은 모른다${more > 0 ? `. 이 밖에 ${more}명이 더 있다` : ""}):\n${lines.join("\n")}`;
 }
 
 /** 이 구역에서 전에 엮인, 이름을 모르는 엑스트라 (다시 마주칠 수 있다. npc_presence로 다시 등장시킨다). 최근 몇 명만 */

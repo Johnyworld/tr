@@ -119,7 +119,7 @@ describe("구역에서 마주칠 수 있는 사람", () => {
     const store = new InMemoryGameStore([createWorldEvent(c, "role_test", "world_test")]);
     runAfterTimeAdvance({ store, rng: ones, content: c });
     const text = describeZonePeople(store.getState(), c);
-    expect(text).toContain("(npc_stranger) 이름 모름: 망토를 두른 상인");
+    expect(text).toContain("(npc_stranger) 망토 두른 상인: 망토를 두른 상인");
     expect(text).not.toContain("낯선이");
     executeTool("npc_presence", { npc_id: "npc_stranger", action: "enter" }, { store, rng: ones, content: c });
     executeTool("npc_presence", { npc_id: "npc_stranger", action: "leave" }, { store, rng: ones, content: c });

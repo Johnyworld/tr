@@ -120,6 +120,7 @@
       check: persuade
       outcomes:
         success:
+          - clock: { id: d_lean, delta: -2 }
           - set_flag: d_verdict_done
           - set_flag: d_sangpil_disgraced
           - relation: { who: boss, axis: trust, delta: 2 }
@@ -137,6 +138,7 @@
     - id: soften
       label: 내쫓지는 말아 달라고 한다
       effects:
+        - clock: { id: d_lean, delta: 1 }
         - set_flag: d_verdict_done
         - relation: { who: boss, axis: respect, delta: -1 }
         - deed: { summary: 약을 빼돌린 도상필을 감싸 달라고 대표에게 말했다, tags: [mercy], severity: 1, privacy: private }
@@ -158,6 +160,7 @@
     - id: carry
       label: 꾸러미를 받아 든다
       effects:
+        - clock: { id: d_lean, delta: 1 }
         - set_flag: d_errand_done
         - give_item: { item: cigarettes, from: sangpil }
         - relation: { who: sangpil, axis: trust, delta: 2 }
@@ -181,6 +184,7 @@
     - id: confess
       label: 꾸러미를 들고 수간호사에게 간다
       effects:
+        - clock: { id: d_lean, delta: -1 }
         - set_flag: d_errand_done
         - set_flag: d_theft_exposed
         - clear_flag: d_bribed
@@ -484,6 +488,7 @@
     - id: relay
       label: 그대로 대표에게 전하겠다고만 한다
       effects:
+        - clock: { id: d_lean, delta: 2 }
         - relation: { who: commander, axis: trust, delta: 1 }
         - belief: { fact: "붉은연합 간부가 겨울 동안 하얀매의 약을 혼자 사겠다며 두 배 값을 불렀다. 거절하면 겨울이 길 거라고 했다", source: seen }
     - id: stand_firm
@@ -491,13 +496,16 @@
       check: endure
       outcomes:
         success:
+          - clock: { id: d_lean, delta: -2 }
           - relation: { who: envoy, axis: respect, delta: 1 }
           - faction_morale: { faction: own, delta: 1 }
           - deed: { summary: 붉은연합 간부 앞에서 하얀매는 누구 편도 들지 않는다고 말했다, tags: [bravery], severity: 2, privacy: public }
         partial:
+          - clock: { id: d_lean, delta: -1 }
           - relation: { who: envoy, axis: affection, delta: -1 }
           - belief: { fact: "붉은연합 간부는 수습의 대답을 듣고 웃으며 돌아갔다. 웃음이 오래 남았다", source: seen }
         miss:
+          - clock: { id: d_lean, delta: 1 }
           - relation: { who: envoy, axis: affection, delta: -2 }
           - faction_morale: { faction: own, delta: -1 }
           - belief: { fact: "붉은연합 간부 앞에서 목소리가 떨렸다. 정문의 경비들이 그 모습을 보았다", source: seen }

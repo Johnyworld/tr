@@ -254,8 +254,14 @@ export function createGameSchemas(s: Scenario) {
       .default({}),
     /** 오늘 이미 다가간 상대 (사람 id → 날) */
     flirtDay: z.record(z.string(), z.number().int()).default({}),
-    /** 이 세계의 수위 (12-57). mature: 성인 주제(연애·성적 위협)를 다룬다. 기본은 끔 */
-    options: z.strictObject({ mature: z.boolean().default(false) }).default({ mature: false }),
+    /**
+     * 이 세계의 설정. 게임 중 상태 화면의 설정이나 대화로 바꾼다.
+     * mature: 수위 (12-57). 성인 주제(연애·성적 위협)를 다룬다. 기본은 끔
+     * dialogue: 대화 형식 (12-63). novel 소설(대사를 서술에 녹인다) / script 대본(대사를 "이름: 대사" 줄로 뗀다)
+     */
+    options: z
+      .strictObject({ mature: z.boolean().default(false), dialogue: z.enum(["novel", "script"]).default("novel") })
+      .default({ mature: false, dialogue: "novel" }),
     /** 구역에 맡겨 둔 물건 (구역 id → 아이템 → 수량). 그 구역을 떠날 때 돌려받는다 (12-54) */
     deposits: z.record(z.string(), z.record(z.string(), z.number().int().positive())).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
@@ -371,7 +377,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("romance_jealousy"), who: z.string(), about: z.string() }),
     z.strictObject({ type: z.literal("flirted"), target: z.string(), day: z.number().int() }),
     /** 수위를 정한다 (새 게임에서, 또는 플레이어가 바꾸면, 12-57) */
-    z.strictObject({ type: z.literal("content_options_set"), mature: z.boolean() }),
+    z.strictObject({ type: z.literal("content_options_set"), mature: z.boolean().optional(), dialogue: z.enum(["novel", "script"]).optional() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
     z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()) }),
     z.strictObject({ type: z.literal("player_released"), returned: z.boolean() }),
@@ -692,7 +698,7 @@ export const EMPTY_STATE: GameState = {
   keptExtras: {},
   commanderOverride: null,
   lastRoute: null,
-  options: { mature: false },
+  options: { mature: false, dialogue: "novel" },
   romances: {},
   flirtDay: {},
   deposits: {},
@@ -1011,7 +1017,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.flirtDay[event.target] = event.day;
       return next;
     case "content_options_set":
-      next.options = { ...next.options, mature: event.mature };
+      next.options = {
+        ...next.options,
+        ...(event.mature !== undefined ? { mature: event.mature } : {}),
+        ...(event.dialogue !== undefined ? { dialogue: event.dialogue } : {}),
+      };
       return next;
     case "player_captured": {
       const me = mustGet(next.characters, next.playerId, "캐릭터");

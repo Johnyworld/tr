@@ -5,6 +5,7 @@ import type { CharacterChoice } from "../game/state.ts";
 import type { Rng } from "../rng.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
+import { gameOptionsPatchSchema, setGameOptions } from "../engine/storyletTools.ts";
 import type { GameRepository } from "../persistence/repository.ts";
 import { formatTime } from "../rules/time.ts";
 import { describePlayerSections, type SceneSection } from "../engine/context.ts";
@@ -381,6 +382,22 @@ ${this.sceneForGm()}` };
       target: null,
       narration_summary: null, for_mission: false,
     });
+  }
+
+  /** 세계 설정 (수위, 대화 형식). 상태 화면의 설정 창이 읽는다 */
+  options(): GameState["options"] {
+    return this.state().options;
+  }
+
+  /**
+   * 세계 설정을 바꾼다 (상태 화면의 설정 창, 12-63). GM은 다음 장면 정보에서 바뀐 설정을 받는다.
+   * 게임 시간을 쓰지 않는다
+   */
+  setOptions(patch: unknown): { ok: true; options: GameState["options"]; changed: string[] } | { ok: false; error: string } {
+    const parsed = gameOptionsPatchSchema.safeParse(patch);
+    if (!parsed.success) return { ok: false, error: parsed.error.issues.map((i) => i.message).join(" ") };
+    const changed = setGameOptions(this.ctx(), parsed.data);
+    return { ok: true, options: this.options(), changed };
   }
 
   playerView(): PlayerView {

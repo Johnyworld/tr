@@ -8,7 +8,7 @@ import { loadContentPacks } from "../content/packs.ts";
 import type { Content } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
-import { answerNewGame, backNewGame, describeNewGameStep, newGameDraft, newGameStep, type NewGameDraft } from "./newGame.ts";
+import { answerNewGame, backNewGame, describeNewGameStep, GAME_PREMISE, newGameDraft, newGameStep, type NewGameDraft } from "./newGame.ts";
 
 const REAL_DIR = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc");
 const real = loadContent(REAL_DIR);
@@ -47,6 +47,8 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터", () => {
     expect(world).toContain("무너진 도시, 가람");
     expect(world).toContain("얼어붙은 항구");
     expect(world).toContain("눈에 갇힌 항구 도시.");
+    // 죽음과 계승은 월드가 아니라 게임의 규칙: 월드가 몇 개든 한 번만
+    expect(world.split(GAME_PREMISE)).toHaveLength(2);
     const { draft } = run(["얼어붙은 항구"]);
     expect(newGameStep(draft)).toBe("scenario");
     const scenario = describeNewGameStep(packs, draft);

@@ -3,20 +3,20 @@ import type { Rng } from "../rng.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import {
   abilitySpend,
+  checkAbilities,
   checkCharacterChoice,
   checkTraits,
   creationRules,
   MAX_NAME_LENGTH,
   randomAbilityBuy,
   randomTraits,
-  traitBalance,
   type CreationRules,
 } from "./creation.ts";
 import type { CharacterChoice } from "./state.ts";
 
 /**
  * 대화로 하는 캐릭터 생성 (기획서 4.2, 11.6): 한 번에 하나씩, 정해진 순서로 묻는다.
- * 세계 소개 → 이름 → 성별 → 능력(직접 하나씩 / 무작위) → 트레잇(부정 → 긍정 → 성격 / 무작위 / 없이) → 확인.
+ * 세계 소개 → 이름 → 성별 → 능력(한 번에 정하기 / 무작위) → 트레잇(약점·강점 한 표 → 성격 / 무작위 / 없이) → 확인.
  * 답은 모두 코드가 검증하고 포인트를 계산한다 (GM은 숫자를 만들지 않는다, 원칙 2).
  * 초안은 세이브에 쓰지 않는다. 확인을 마쳐야 세계(또는 새 캐릭터)를 만든다.
  */
@@ -25,9 +25,9 @@ export type CreationAnswer =
   | { step: "name"; value: string }
   | { step: "gender"; value: string }
   | { step: "abilities"; value: "manual" | "random"; rolled?: Record<string, number> }
-  | { step: "ability"; stat: string; value: number }
+  | { step: "ability_set"; values: Record<string, number> }
   | { step: "traits"; value: "manual" | "random" | "none"; rolled?: string[] }
-  | { step: "traits_negative" | "traits_positive" | "traits_personality"; value: string[] };
+  | { step: "traits_pick" | "traits_personality"; value: string[] };
 
 export type CreationDraft = {
   /** new_world: 새 게임 (세계 소개부터) / heir: 사망 뒤 같은 세계의 새 캐릭터 */
@@ -39,10 +39,9 @@ export type CreationStepId =
   | "name"
   | "gender"
   | "abilities"
-  | `ability:${string}`
+  | "ability_set"
   | "traits"
-  | "traits_negative"
-  | "traits_positive"
+  | "traits_pick"
   | "traits_personality"
   | "confirm";
 
@@ -52,17 +51,19 @@ export function newCreationDraft(mode: CreationDraft["mode"]): CreationDraft {
   return { mode, answers: [] };
 }
 
+/** 트레잇 단계마다 고르는 종류: 약점·강점은 한 표에서 같이, 성격은 따로 */
 const TRAIT_KIND_STEP = {
-  traits_negative: "negative",
-  traits_positive: "positive",
-  traits_personality: "personality",
-} as const;
+  traits_pick: ["negative", "positive"],
+  traits_personality: ["personality"],
+} as const satisfies Record<string, readonly ("negative" | "positive" | "personality")[]>;
+type TraitStep = keyof typeof TRAIT_KIND_STEP;
 
 /** 지금까지의 답에서 정해진 것 */
 function collect(draft: CreationDraft) {
   let name: string | undefined;
   let gender: string | undefined;
   let abilityMethod: "manual" | "random" | undefined;
+  let abilitiesSet = false;
   const abilities: Record<string, number> = {};
   let traitMethod: "manual" | "random" | "none" | undefined;
   const traits: string[] = [];
@@ -73,7 +74,10 @@ function collect(draft: CreationDraft) {
     else if (a.step === "abilities") {
       abilityMethod = a.value;
       if (a.rolled) Object.assign(abilities, a.rolled);
-    } else if (a.step === "ability") abilities[a.stat] = a.value;
+    } else if (a.step === "ability_set") {
+      abilitiesSet = true;
+      Object.assign(abilities, a.values);
+    }
     else if (a.step === "traits") {
       traitMethod = a.value;
       if (a.rolled) traits.push(...a.rolled);
@@ -82,7 +86,7 @@ function collect(draft: CreationDraft) {
       traits.push(...a.value);
     }
   }
-  return { name, gender, abilityMethod, abilities, traitMethod, traits, traitSteps };
+  return { name, gender, abilityMethod, abilitiesSet, abilities, traitMethod, traits, traitSteps };
 }
 
 /** 다음에 물을 단계 */
@@ -91,13 +95,10 @@ export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
   if (d.name === undefined) return "name";
   if (d.gender === undefined) return "gender";
   if (d.abilityMethod === undefined) return "abilities";
-  if (d.abilityMethod === "manual") {
-    const next = s.stats.find((x) => d.abilities[x.id] === undefined);
-    if (next) return `ability:${next.id}`;
-  }
+  if (d.abilityMethod === "manual" && !d.abilitiesSet) return "ability_set";
   if (d.traitMethod === undefined) return "traits";
   if (d.traitMethod === "manual") {
-    for (const step of ["traits_negative", "traits_positive", "traits_personality"] as const) {
+    for (const step of ["traits_pick", "traits_personality"] as const) {
       if (!d.traitSteps.has(step)) return step;
     }
   }
@@ -110,18 +111,87 @@ export function draftChoice(draft: CreationDraft): CharacterChoice {
   return { name: d.name ?? "", gender: d.gender ?? null, abilities: d.abilities, portrait: null, traits: d.traits };
 }
 
-/** 능력 하나에 고를 수 있는 값: 비용이 있고, 앞서 쓴 포인트와 합쳐 넘지 않고, 낮출 수 있는 개수 안 */
-export function abilityValues(s: Scenario, draft: CreationDraft, statId: string): number[] {
-  const c = s.creation;
-  if (!c) return [];
-  const so = collect(draft).abilities;
-  return Object.keys(c.cost)
-    .map(Number)
-    .sort((a, b) => a - b)
-    .filter((v) => {
-      const { spent, low } = abilitySpend(s, { ...so, [statId]: v });
-      return spent <= c.points && low <= c.max_low;
-    });
+export type AbilityTier = { value: number; count: number; label: string };
+
+/**
+ * 직접 정하기의 능력 등급: 시나리오의 ability_array(NPC·무작위 캐릭터와 같은 무게)를 값별로 묶는다.
+ * 플레이어는 포인트를 계산하지 않고 "가장 자신 있는 것 / 잘하는 것 / 자신 없는 것"을 고른다. 0(보통)은 고르지 않은 나머지.
+ * ability_array가 없으면 null (포인트 구매 글로 받는다)
+ */
+export function abilityTiers(s: Scenario): AbilityTier[] | null {
+  const arr = s.ability_array;
+  if (!arr) return null;
+  const values = [...new Set(arr.filter((v) => v !== 0))].sort((a, b) => b - a);
+  const pos = values.filter((v) => v > 0);
+  const neg = values.filter((v) => v < 0);
+  return values.map((value) => ({
+    value,
+    count: arr.filter((v) => v === value).length,
+    label:
+      value > 0
+        ? pos.length > 1 && value === pos[0]
+          ? "가장 자신 있는 것"
+          : "잘하는 것"
+        : neg.length > 1 && value === neg.at(-1)
+          ? "가장 자신 없는 것"
+          : "자신 없는 것",
+  }));
+}
+
+/**
+ * 등급별로 고른 능력 → 능력 id → 값. 등급 순서대로 "/"(또는 줄)로 나누고, 등급 안은 쉼표로.
+ * 능력은 번호(능력 목록 순서)·이름·id 어느 것이든. 예: "2 / 4, 7 / 6", "+2: 민첩 / +1: 감각, 지능 / -1: 매력"
+ */
+export function parseAbilityTiers(
+  s: Scenario,
+  tiers: readonly AbilityTier[],
+  text: string,
+): { ok: true; values: Record<string, number> } | { ok: false; error: string } {
+  const format = `등급 순서(${tiers.map((t) => `${t.label} ${t.count}개`).join(" / ")})대로 "/"로 나눠 번호나 이름을 적는다 (예: ${exampleTiers(tiers)}).`;
+  const groups = text
+    .split(/[/\n;|]/)
+    .map((g) => g.replace(/^[^:：]*[:：]/, "").trim())
+    .filter((g) => g.length > 0);
+  if (groups.length !== tiers.length) return { ok: false, error: format };
+  const values: Record<string, number> = {};
+  for (const [i, tier] of tiers.entries()) {
+    const items = groups[i]!.split(/[,，、\s]+/).filter((x) => x.length > 0);
+    if (items.length !== tier.count) return { ok: false, error: `${tier.label}은(는) ${tier.count}개를 고른다. ${format}` };
+    for (const item of items) {
+      const n = /^\d+\.?$/.test(item) ? Number.parseInt(item, 10) : NaN;
+      const stat = Number.isNaN(n) ? s.stats.find((x) => x.label === item || x.id.toLowerCase() === item.toLowerCase()) : s.stats[n - 1];
+      if (!stat) return { ok: false, error: `"${item}"라는 능력은 없다. 능력: ${s.stats.map((x, k) => `${k + 1}. ${x.label}`).join(", ")}` };
+      if (values[stat.id] !== undefined) return { ok: false, error: `${stat.label}을(를) 두 번 골랐다.` };
+      values[stat.id] = tier.value;
+    }
+  }
+  return { ok: true, values };
+}
+
+function exampleTiers(tiers: readonly AbilityTier[]): string {
+  let n = 0;
+  return tiers.map((t) => Array.from({ length: t.count }, () => String(((n++ * 3) % 7) + 1)).join(", ")).join(" / ");
+}
+
+/**
+ * (ability_array가 없는 월드) 능력 배분 글 → 능력 id → 값. "근력 1, 민첩 +2, 감각 -1"처럼 이름(또는 id)과 값을 짝지어 쓴다.
+ * 쓰지 않은 능력은 0(기본). 모르는 능력, 겹친 능력, 읽을 수 없는 글은 오류
+ */
+export function parseAbilities(s: Scenario, text: string): { ok: true; values: Record<string, number> } | { ok: false; error: string } {
+  const values: Record<string, number> = {};
+  const pattern = /([^\d\s,，、:=+\-/]+)\s*[:=]?\s*([+-]?\d+)/g;
+  for (const m of text.matchAll(pattern)) {
+    const key = m[1]!.trim();
+    const stat = s.stats.find((x) => x.label === key || x.id.toLowerCase() === key.toLowerCase());
+    if (!stat) return { ok: false, error: `"${key}"라는 능력은 없다. 능력: ${s.stats.map((x) => x.label).join(", ")}` };
+    if (values[stat.id] !== undefined) return { ok: false, error: `${stat.label}을(를) 두 번 적었다.` };
+    values[stat.id] = Number(m[2]);
+  }
+  const rest = text.replace(pattern, "").replace(/[\s,，、/]+/g, "");
+  if (rest.length > 0 || Object.keys(values).length === 0) {
+    return { ok: false, error: `"능력 값"을 쉼표로 이어 적는다 (예: ${s.stats.slice(0, 2).map((x, i) => `${x.label} ${i === 0 ? "+1" : "0"}`).join(", ")}). 적지 않은 능력은 0.` };
+  }
+  return { ok: true, values };
 }
 
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
@@ -139,22 +209,13 @@ export function stepOptions(s: Scenario, draft: CreationDraft, step: CreationSte
   if (step === "gender") return (s.creation?.genders ?? []).map((g) => ({ value: g.id, label: g.label }));
   if (step === "abilities") {
     return [
-      { value: "manual", label: "하나씩 정하기", description: `능력 ${s.stats.length}가지를 차례로 정한다` },
-      { value: "random", label: "운에 맡기기", description: "포인트를 규칙대로 무작위로 나눈다" },
+      { value: "manual", label: "직접 정하기", description: `능력 ${s.stats.length}가지를 한 번에 정한다` },
+      { value: "random", label: "운에 맡기기", description: "규칙대로 무작위로 나눈다" },
     ];
-  }
-  if (step.startsWith("ability:")) {
-    const statId = step.slice("ability:".length);
-    const cost = s.creation?.cost ?? {};
-    return abilityValues(s, draft, statId).map((v) => ({
-      value: String(v),
-      label: signed(v),
-      description: cost[String(v)]! > 0 ? `${cost[String(v)]}포인트` : cost[String(v)]! < 0 ? `${-cost[String(v)]!}포인트 돌려받음` : "기본",
-    }));
   }
   if (step === "traits") {
     return [
-      { value: "manual", label: "직접 고르기", description: "약점 → 강점 → 성격 순서로 고른다" },
+      { value: "manual", label: "직접 고르기", description: "약점·강점을 한 표에서 고르고, 성격을 고른다" },
       { value: "random", label: "운에 맡기기", description: "규칙에 맞게 무작위로" },
       { value: "none", label: "없이", description: "트레잇 없이 시작한다" },
     ];
@@ -169,15 +230,41 @@ export function stepOptions(s: Scenario, draft: CreationDraft, step: CreationSte
   return [];
 }
 
-/** 트레잇 이름이나 id 목록 → id. 모르는 것은 오류 */
-function parseTraits(s: Scenario, kind: string, answer: string | string[]): { ok: true; ids: string[] } | { ok: false; error: string } {
-  const raw = (Array.isArray(answer) ? answer : answer.split(/[,，、\n]/)).map((x) => x.trim()).filter((x) => x.length > 0);
+/**
+ * 이 트레잇 단계에서 보여 줄 목록 (번호 순서: 약점 다음 강점). 이미 고른 것과 그 반대는 뺀다.
+ * 플레이어는 이 번호로 답할 수 있다
+ */
+export function traitChoices(s: Scenario, draft: CreationDraft, step: TraitStep) {
+  const chosen = collect(draft).traits;
+  const kinds: readonly string[] = TRAIT_KIND_STEP[step];
+  return kinds.flatMap((kind) =>
+    s.traits.filter((t) => t.selectable && t.kind === kind && !chosen.includes(t.id) && !t.opposites.some((o) => chosen.includes(o))),
+  );
+}
+
+/** 트레잇 번호·이름·id 목록 → id. 번호는 traitChoices의 순서. 모르는 것은 오류 */
+function parseTraits(
+  s: Scenario,
+  kinds: readonly string[],
+  answer: string | string[],
+  numbered: readonly { id: string }[],
+): { ok: true; ids: string[] } | { ok: false; error: string } {
+  const raw = (Array.isArray(answer) ? answer : answer.split(/[,，、\n]/))
+    .flatMap((x) => (/^[\d\s]+$/.test(x.trim()) ? x.trim().split(/\s+/) : [x]))
+    .map((x) => x.trim().replace(/\.$/, ""))
+    .filter((x) => x.length > 0);
   if (raw.length === 1 && NONE_WORDS.includes(raw[0]!.toLowerCase())) return { ok: true, ids: [] };
   const ids: string[] = [];
   for (const r of raw) {
+    if (/^\d+$/.test(r)) {
+      const n = numbered[Number(r) - 1];
+      if (!n) return { ok: false, error: `${r}번은 목록에 없다 (1~${numbered.length}).` };
+      ids.push(n.id);
+      continue;
+    }
     const t = s.traits.find((x) => x.selectable && (x.id === r || x.label === r));
     if (!t) return { ok: false, error: `"${r}"라는 트레잇은 없다.` };
-    if (t.kind !== kind) return { ok: false, error: `${t.label}은(는) 이 단계에서 고르는 트레잇이 아니다.` };
+    if (!kinds.includes(t.kind)) return { ok: false, error: `${t.label}은(는) 이 단계에서 고르는 트레잇이 아니다.` };
     ids.push(t.id);
   }
   return { ok: true, ids };
@@ -209,15 +296,15 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     const v = fromOptions();
     if (v === "random") return add({ step: "abilities", value: "random", rolled: randomAbilityBuy(s, rng) });
     if (v === "manual") return add({ step: "abilities", value: "manual" });
-    return { ok: false, error: "하나씩 정할지(manual) 운에 맡길지(random) 고른다." };
+    return { ok: false, error: "직접 정할지(manual) 운에 맡길지(random) 고른다." };
   }
-  if (step.startsWith("ability:")) {
-    const statId = step.slice("ability:".length);
-    const v = Number(text.trim().replace(/^\+/, ""));
-    if (!Number.isInteger(v) || !options.some((o) => Number(o.value) === v)) {
-      return { ok: false, error: `지금 고를 수 있는 값은 ${options.map((o) => o.label).join(", ")}이다.` };
-    }
-    return add({ step: "ability", stat: statId, value: v });
+  if (step === "ability_set") {
+    const tiers = abilityTiers(s);
+    const parsed = tiers ? parseAbilityTiers(s, tiers, text) : parseAbilities(s, text);
+    if (!parsed.ok) return parsed;
+    const problems = checkAbilities(s, parsed.values);
+    if (problems.length) return { ok: false, error: problems.join(" ") };
+    return add({ step: "ability_set", values: Object.fromEntries(s.stats.map((x) => [x.id, parsed.values[x.id] ?? 0])) });
   }
   if (step === "traits") {
     const v = fromOptions() ?? (NONE_WORDS.includes(text.trim().toLowerCase()) ? "none" : null);
@@ -225,8 +312,8 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     if (v === "manual" || v === "none") return add({ step: "traits", value: v });
     return { ok: false, error: "직접 고를지(manual), 운에 맡길지(random), 없이 갈지(none) 고른다." };
   }
-  if (step === "traits_negative" || step === "traits_positive" || step === "traits_personality") {
-    const parsed = parseTraits(s, TRAIT_KIND_STEP[step], answer);
+  if (step === "traits_pick" || step === "traits_personality") {
+    const parsed = parseTraits(s, TRAIT_KIND_STEP[step], answer, traitChoices(s, draft, step));
     if (!parsed.ok) return parsed;
     const problems = checkTraits(s, [...collect(draft).traits, ...parsed.ids]);
     if (problems.length) return { ok: false, error: problems.join(" ") };
@@ -255,7 +342,7 @@ function summary(s: Scenario, draft: CreationDraft): string[] {
   if (d.gender !== undefined) lines.push(`성별: ${s.creation?.genders.find((g) => g.id === d.gender)?.label ?? d.gender}`);
   const shown = s.stats.filter((x) => d.abilities[x.id] !== undefined);
   if (shown.length) lines.push(`능력: ${shown.map((x) => `${x.label} ${signed(d.abilities[x.id]!)}`).join(", ")}`);
-  if (d.traitMethod !== undefined) {
+  if (d.traitMethod !== undefined && (d.traitMethod !== "manual" || d.traitSteps.has("traits_pick"))) {
     lines.push(`트레잇: ${d.traits.length ? d.traits.map((id) => s.traits.find((t) => t.id === id)?.label ?? id).join(", ") : "없음"}`);
   }
   return lines;
@@ -265,9 +352,9 @@ const STEP_TITLE: Record<string, string> = {
   name: "이름",
   gender: "성별",
   abilities: "능력",
+  ability_set: "능력 정하기",
   traits: "트레잇",
-  traits_negative: "트레잇: 약점",
-  traits_positive: "트레잇: 강점",
+  traits_pick: "트레잇: 약점·강점",
   traits_personality: "트레잇: 성격",
   confirm: "확인",
 };
@@ -305,7 +392,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   }
 
   const index = stepIndex(s, draft);
-  lines.push(`## 캐릭터 만들기 ${index.at}/${index.total}: ${step.startsWith("ability:") ? `능력: ${s.stats.find((x) => `ability:${x.id}` === step)?.label}` : STEP_TITLE[step]}`);
+  lines.push(`## 캐릭터 만들기 ${index.at}/${index.total}: ${STEP_TITLE[step]}`);
   const done = summary(s, draft);
   if (done.length) lines.push(`지금까지: ${done.join(" · ")}`);
 
@@ -316,37 +403,55 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
     lines.push("물을 것: 성별.");
     if (narration.gender) lines.push(`서술 힌트: ${narration.gender}`);
   } else if (step === "abilities") {
+    const tiers = abilityTiers(s);
     lines.push(
-      `물을 것: 타고난 능력을 어떻게 정할지. 모두 0(보통)에서 시작해 ${rules?.points ?? 0}포인트를 나눠 쓴다. 값별 비용 ${rules?.cost.map((c) => `${signed(c.value)}=${c.cost}`).join(", ")} (0보다 낮추면 포인트를 돌려받고, ${rules?.maxLow ?? 0}개까지 낮출 수 있다).`,
+      tiers
+        ? `물을 것: 타고난 능력을 어떻게 정할지. 직접 정하면 ${tiers.map((t) => `${t.label}(${signed(t.value)}) ${t.count}개`).join(", ")}를 고르고 나머지는 보통(0)이다.`
+        : `물을 것: 타고난 능력을 어떻게 정할지. 모두 0(보통)에서 시작해 ${rules?.points ?? 0}포인트를 나눠 쓴다. 값별 비용 ${rules?.cost.map((c) => `${signed(c.value)}=${c.cost}`).join(", ")} (0보다 낮추면 포인트를 돌려받고, ${rules?.maxLow ?? 0}개까지 낮출 수 있다).`,
       `능력: ${s.stats.map((x) => `${x.label}(${x.description ?? ""})`).join(", ")}`,
     );
     if (narration.abilities) lines.push(`서술 힌트: ${narration.abilities}`);
-  } else if (step.startsWith("ability:")) {
-    const stat = s.stats.find((x) => `ability:${x.id}` === step)!;
-    const { spent } = abilitySpend(s, collect(draft).abilities);
-    const left = (s.creation?.points ?? 0) - (Number.isFinite(spent) ? spent : 0);
-    lines.push(`물을 것: ${stat.label} — ${stat.description ?? ""}. 남은 포인트 ${left}.`);
-    if (narration.ability) lines.push(`서술 힌트: ${narration.ability}`);
+  } else if (step === "ability_set" && abilityTiers(s)) {
+    const tiers = abilityTiers(s)!;
+    lines.push(
+      `물을 것: 능력 ${s.stats.length}가지 중 ${tiers.map((t) => `${t.label}(${signed(t.value)}) ${t.count}개`).join(", ")}를 한 번에 고르게 한다. 나머지는 보통(0). 포인트 계산은 보여 주지 않는다. 능력마다 따로 묻거나 장면을 붙이지 않는다.`,
+      "아래 능력 목록을 번호 그대로 번호 목록으로 보여 주고, 등급을 안내한 뒤 글로 답하게 한다 (보기 없이).",
+      "",
+      ...s.stats.map((x, i) => `${i + 1}. ${x.label} — ${x.description ?? ""}`),
+      "",
+      `답 형식: 등급 순서대로 "/"로 나눠 번호나 이름 (예: ${exampleTiers(tiers)}). 받은 답은 그대로 넘긴다. 운에 맡기고 싶다고 하면 create_character(back: true) 뒤 "random".`,
+    );
+  } else if (step === "ability_set") {
+    lines.push(
+      `물을 것: 능력 ${s.stats.length}가지를 한 번에. 능력마다 따로 묻거나 능력마다 장면을 붙이지 않는다. 아래 표와 규칙을 한 번에 보여 주고 글로 답하게 한다 (보기 없이).`,
+      `규칙: 모두 0(보통)에서 시작해 ${rules?.points ?? 0}포인트를 나눠 쓴다. 값별 비용 ${rules?.cost.map((c) => `${signed(c.value)}=${c.cost}`).join(", ")}. 0보다 낮추면 포인트를 돌려받고, ${rules?.maxLow ?? 0}개까지 낮출 수 있다.`,
+      `능력 표: ${s.stats.map((x) => `${x.label}(${x.description ?? ""})`).join(" / ")}`,
+      `답 형식: 올리거나 낮출 능력만 "이름 값"으로 쉼표로 이어 적는다 (예: ${s.stats[0]?.label ?? ""} +1, ${s.stats[1]?.label ?? ""} +2). 적지 않은 능력은 0. 운에 맡기고 싶다고 하면 create_character(back: true) 뒤 "random".`,
+    );
   } else if (step === "traits") {
     const lim = rules?.traitLimits;
     lines.push(
       `물을 것: 트레잇(타고난 기질과 버릇)을 어떻게 정할지. 강점은 약점으로 얻은 포인트만큼만 가질 수 있다. 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개·성격 ${lim?.max_personality}개까지.`,
     );
     if (narration.traits) lines.push(`서술 힌트: ${narration.traits}`);
-  } else if (step === "traits_negative" || step === "traits_positive" || step === "traits_personality") {
-    const kind = TRAIT_KIND_STEP[step];
-    const b = traitBalance(s, collect(draft).traits);
-    const chosen = collect(draft).traits;
-    const list = (rules?.traits ?? []).filter((t) => t.kind === kind && !chosen.includes(t.id) && !t.opposites.some((o) => chosen.includes(o)));
-    const affordable = kind === "positive" ? list.filter((t) => t.cost <= b.earned - b.spent) : list;
+  } else if (step === "traits_pick") {
+    const lim = rules?.traitLimits;
+    const list = traitChoices(s, draft, step);
     lines.push(
-      kind === "negative"
-        ? "물을 것: 약점 (0개 이상). 고른 약점의 포인트만큼 다음 단계에서 강점을 가질 수 있다."
-        : kind === "positive"
-          ? `물을 것: 강점 (0개 이상). 쓸 수 있는 포인트 ${b.earned - b.spent}.`
-          : "물을 것: 성격 (0개 이상, 포인트 없음).",
-      "목록을 짧게 보여 주고(이름과 한 줄 설명) 글로 답하게 한다. 여러 개면 쉼표로, 없으면 \"없음\".",
-      `고를 수 있는 것: ${affordable.length ? affordable.map((t) => `${t.label}${kind === "personality" ? "" : `(${t.cost})`}: ${t.description}`).join(" / ") : "(없다. \"없음\"으로 넘어간다)"}`,
+      `물을 것: 약점과 강점을 한 번에 (각각 0개 이상, 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개까지). 약점은 포인트를 얻고 강점은 포인트를 쓴다. 강점에 쓴 포인트 합이 약점으로 얻은 포인트 합을 넘으면 안 된다.`,
+      "아래 표를 번호 그대로 마크다운 표로 보여 주고 글로 답하게 한다. 번호나 이름으로, 여러 개면 쉼표로(예: 2, 5, 14), 없으면 \"없음\". 답은 받은 그대로 넘긴다 (번호를 이름으로 바꾸지 않아도 된다).",
+      "",
+      "| 번호 | 종류 | 이름 | 포인트 | 효과 |",
+      "|---|---|---|---|---|",
+      ...list.map((t, i) => `| ${i + 1} | ${t.kind === "negative" ? "약점" : "강점"} | ${t.label} | ${t.kind === "negative" ? `+${t.cost}` : `-${t.cost}`} | ${t.description} |`),
+      "",
+    );
+  } else if (step === "traits_personality") {
+    const list = traitChoices(s, draft, step);
+    lines.push(
+      `물을 것: 성격 (0개 이상, 포인트 없음, ${rules?.traitLimits.max_personality}개까지).`,
+      "목록을 아래 번호 그대로 번호 목록(1. 2. 3.)으로 짧게 보여 주고 글로 답하게 한다. 번호나 이름으로, 여러 개면 쉼표로, 없으면 \"없음\". 답은 받은 그대로 넘긴다.",
+      list.length ? `고를 수 있는 것:\n${list.map((t, i) => `${i + 1}. ${t.label}: ${t.description}`).join("\n")}` : "고를 수 있는 것: (없다. \"없음\"으로 넘어간다)",
     );
   } else {
     lines.push("물을 것: 이대로 시작할지. 정한 것을 한 사람의 모습으로 그려 보여 준 뒤 묻는다.");
@@ -373,8 +478,8 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
 /** 이번 단계가 몇 번째인지 (능력·트레잇을 하나씩 고르면 단계가 늘어난다) */
 function stepIndex(s: Scenario, draft: CreationDraft): { at: number; total: number } {
   const d = collect(draft);
-  const abilitySteps = d.abilityMethod === "manual" ? s.stats.length : 0;
-  const traitSteps = d.traitMethod === "manual" ? 3 : 0;
+  const abilitySteps = d.abilityMethod === "manual" ? 1 : 0;
+  const traitSteps = d.traitMethod === "manual" ? 2 : 0;
   const total = 5 + abilitySteps + traitSteps;
   return { at: Math.min(draft.answers.length + 1, total), total };
 }

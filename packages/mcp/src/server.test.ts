@@ -191,13 +191,13 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect(name.text).toContain("간이침대");
     expect(name.text).toContain("이름");
     expect((await call("create_character", { answer: "윤하" })).text).toContain("성별");
-    expect((await call("create_character", { answer: "female" })).text).toContain("하나씩 정하기");
-    const strength = await call("create_character", { answer: "manual" });
-    expect(strength.text).toContain("근력");
-    expect(strength.text).toContain("남은 포인트 4");
-    const bad = await call("create_character", { answer: "5" });
+    expect((await call("create_character", { answer: "female" })).text).toContain("직접 정하기");
+    const set = await call("create_character", { answer: "manual" });
+    expect(set.text).toContain("근력");
+    expect(set.text).toContain("가장 자신 있는 것");
+    const bad = await call("create_character", { answer: "지능 / 매력" });
     expect(bad.isError).toBe(true);
-    for (const v of ["0", "0", "0", "0", "0", "+1", "2"]) await call("create_character", { answer: v });
+    await call("create_character", { answer: "지능 / 매력, 감각 / 체력" });
     const confirm = await call("create_character", { answer: "none" });
     expect(confirm.text).toContain("확인");
     expect(confirm.text).toContain("매력 +1");
@@ -254,6 +254,34 @@ describe("MCP 정보 필터", () => {
 });
 
 describe("상태 화면", () => {
+  it("설정 창: 열린 게임의 설정을 읽고 바꾼다. JSON만 받고, 게임이 없거나 값이 틀리면 오류", async () => {
+    const { handleOptions } = await import("./statusServer.ts");
+    const { createServer } = await import("node:http");
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-options-")), content: TEST_CONTENT, rngFactory: () => createSeededRng(7) });
+    let world: ReturnType<WorldManager["create"]> | null = null;
+    const source = { get world() { return world; }, scenarioName: "테스트" };
+    const server = createServer((req, res) => void handleOptions(source, req, res));
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", () => done()));
+    const base = `http://127.0.0.1:${(server.address() as { port: number }).port}/api/options`;
+    const post = (body: string, type = "application/json") => fetch(base, { method: "POST", headers: { "content-type": type }, body });
+    try {
+      expect(await (await fetch(base)).json()).toEqual({ open: false });
+      expect((await post(JSON.stringify({ dialogue: "script" }))).status).toBe(409);
+      world = manager.create("mcp", Object.keys(TEST_CONTENT.roles)[0]!);
+      expect(await (await fetch(base)).json()).toEqual({ open: true, options: { mature: false, dialogue: "novel" } });
+      const ok = await post(JSON.stringify({ dialogue: "script" }));
+      expect(await ok.json()).toEqual({ open: true, options: { mature: false, dialogue: "script" } });
+      expect(world.state().options.dialogue).toBe("script");
+      expect((await post(JSON.stringify({ dialogue: "poem" }))).status).toBe(400);
+      expect((await post(JSON.stringify({}))).status).toBe(400);
+      expect((await post("dialogue=novel", "application/x-www-form-urlencoded")).status).toBe(415);
+      expect(world.state().options.dialogue).toBe("script");
+    } finally {
+      server.close();
+      world?.close();
+    }
+  });
+
   it("열린 게임이 없으면 open: false, 열면 시트. 세션 시작 안내에 주소가 나온다", async () => {
     const { statusPayload } = await import("./statusServer.ts");
     const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-status-")), content: TEST_CONTENT, rngFactory: () => createSeededRng(7) });
@@ -376,7 +404,7 @@ describe("사망 뒤 새 캐릭터 만들기", () => {
     expect(first.text).not.toContain("지금 상황");
     const source = { get world() { return app.world; }, scenarioName: "x", get creating() { return app.creating; } };
     expect(statusPayload(source)).toMatchObject({ creating: true });
-    for (const a of ["서진", "여성", "random", "manual", ["허약 체질"], ["아름다운 외모"], "없음"]) {
+    for (const a of ["서진", "여성", "random", "manual", ["허약 체질", "아름다운 외모"], "없음"]) {
       const r = await call("create_character", { answer: a });
       expect(r.isError, r.text).toBe(false);
     }

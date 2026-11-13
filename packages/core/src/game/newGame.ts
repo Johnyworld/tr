@@ -183,6 +183,10 @@ export function backNewGame(draft: NewGameDraft): NewGameDraft {
   return { ...draft, packId: null };
 }
 
+/** 어느 월드든 같은 이 게임의 규칙 (월드 팩이 아니라 core가 말한다). 월드 고르기에서 월드 소개 뒤에 한 번 들려준다 */
+export const GAME_PREMISE =
+  "판정은 냉정하고 죽음은 갑작스럽다. 하지만 한 사람이 죽어도 이야기는 끝나지 않는다. 같은 세계에서 다음 사람이 그 뒤를 잇는다.";
+
 const FOOTER =
   "한 번에 이 단계 하나만 묻는다. 대신 정하지 않는다. 플레이어의 답을 create_character(answer)로 넘긴다 (보기의 값). 되돌리려면 create_character(back: true).";
 
@@ -196,6 +200,8 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
       "물을 것: 어느 월드에서 시작할지. 월드마다 이름과 한 줄 소개, 짧은 설명을 보여 주고 고르게 한다 (월드가 하나여도 소개하고 고르게 한다).",
       "",
       ...worlds.map((w) => `### ${w.title}\n${w.tagline}\n${w.description}`),
+      "",
+      `어느 월드든 같은 이 게임의 규칙 (월드 소개에 섞지 말고, 월드 목록 뒤에 따로 한 번 전한다): ${GAME_PREMISE}`,
       "",
       `보기 (클릭으로 고르는 도구가 있으면 그것으로): ${worlds.map((w) => `${w.title} → "${w.id}"`).join(" / ")}`,
       "",
@@ -252,7 +258,7 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
       "물을 것: 이 세계에서 성인 주제를 다룰지. 짧게 설명하고 고르게 한다.",
       `- 켜기: 성인 사이의 끌림과 연애(장면은 암전으로 넘긴다), 성적인 농담·괴롭힘·위협(시도까지만, 행위는 그리지 않는다)이 이야기에 나올 수 있다. ${age}세 미만은 주인공이든 인물이든 어떤 경우에도 그 대상이 되지 않는다. 노골적인 묘사는 하지 않는다.`,
       "- 끄기: 그런 이야기는 나오지 않는다 (기본). 폭력과 죽음, 생존의 잔혹함은 어느 쪽이든 나온다.",
-      "게임 중에도 바꿀 수 있다 (플레이어가 말하면 set_content_options).",
+      "게임 중에도 바꿀 수 있다 (상태 화면의 설정, 또는 플레이어가 말하면 set_content_options).",
       '보기 (클릭으로 고르는 도구가 있으면 그것으로): 끄기 → "off" / 켜기 → "on"',
       "",
       FOOTER,

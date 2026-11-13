@@ -60,3 +60,24 @@ describe("수위", () => {
     expect(w.state().options.mature).toBe(true);
   });
 });
+
+describe("대화 형식 (12-63)", () => {
+  it("기본은 소설. 설정 창(setOptions)이나 tool로 대본으로 바꾸면 GM 장면 정보에 실린다", () => {
+    const w = open();
+    expect(w.options()).toEqual({ mature: false, dialogue: "novel" });
+    expect(describePlayerState(w.state(), w.content)).toContain("대화 형식: 소설");
+    w.sceneForGm();
+    const r = w.setOptions({ dialogue: "script" });
+    expect(r.ok && r.changed).toEqual(["대화 형식을 대본(으)로 바꿨다. 다음 서술부터 그 형식으로 쓴다."]);
+    expect(w.state().options).toEqual({ mature: false, dialogue: "script" });
+    // 다음 장면 정보(바뀐 덩어리만)에 실린다
+    expect(w.sceneUpdate()).toContain('대화 형식: 대본. 인물의 대사는 서술 문장에 섞지 않고 따로 떼어 한 줄씩 쓴다: **이름**: "대사"');
+    // 같은 값이면 이벤트를 남기지 않는다
+    const same = w.setOptions({ dialogue: "script", mature: false });
+    expect(same.ok && same.changed).toEqual([]);
+    expect(w.setOptions({}).ok).toBe(false);
+    expect(w.setOptions({ dialogue: "poem" }).ok).toBe(false);
+    expect(w.executeTool("set_content_options", { dialogue: "novel" }).ok).toBe(true);
+    expect(w.state().options.dialogue).toBe("novel");
+  });
+});

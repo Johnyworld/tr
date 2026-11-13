@@ -1145,3 +1145,104 @@ body {
   background: var(--chip-bg, rgba(127, 127, 127, 0.15));
   color: var(--muted, #888);
 }
+
+/* 설정 (12-63): 상태 화면 머리의 톱니바퀴 */
+.settings {
+  position: relative;
+  align-self: center;
+}
+
+.settings-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.settings-button:hover:not(:disabled),
+.settings-button.on {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--panel);
+}
+
+.settings-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.settings-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.settings-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
+  width: min(300px, calc(100vw - 32px));
+  padding: 14px 16px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.settings-panel h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.settings-row + .settings-row {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-label {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.settings-choices {
+  display: flex;
+  gap: 6px;
+}
+
+.settings-choices .chip {
+  font-size: 13px;
+  padding: 4px 14px;
+  background: var(--bg);
+}
+
+.settings-choices .chip:disabled {
+  cursor: default;
+}
+
+.settings-help,
+.settings-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.settings-note {
+  margin-top: 12px;
+}
+
+.settings-error {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--error);
+}

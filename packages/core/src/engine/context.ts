@@ -115,6 +115,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
         ? [`지난 일 (세계의 사실, 주인공이 아는 대로): ${state.background.map((e) => describeHistoryPart(content, e.part)).join(" / ")}`]
         : []),
       describeContentRating(state, content),
+      describeDialogueStyle(state),
       `트레잇 (서술에 반영한다): ${traitLabels(content, player, { acting: true }).join(", ") || "없음"}`,
       `능력: ${stats}`,
       `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
@@ -430,6 +431,17 @@ function describeContentRating(state: GameState, content: Content): string {
     "성인 사이의 끌림과 연애는 서술하되 잠자리는 암전으로 넘긴다. 성적인 농담·괴롭힘·위협은 이 세계의 위험으로 다룰 수 있다. " +
     "성폭력은 시도와 위협까지만, 행위를 그리지 않고 판정으로 벗어나거나 대가를 치르는 것으로 다룬다 (어떤 판정 결과로도 일어나지 않는다). 노골적인 신체·행위 묘사는 하지 않는다"
   );
+}
+
+/** 대화 형식 (12-63): 플레이어가 상태 화면의 설정이나 대화로 고른다 */
+function describeDialogueStyle(state: GameState): string {
+  if (state.options?.dialogue === "script") {
+    return (
+      '대화 형식: 대본. 인물의 대사는 서술 문장에 섞지 않고 따로 떼어 한 줄씩 쓴다: **이름**: "대사" (주인공은 **당신**, 이름을 모르는 인물은 호칭). ' +
+      "대사 앞뒤의 몸짓·표정은 대사 줄 밖의 서술 문단으로 둔다. 줄마다 빈 줄을 띄운다"
+    );
+  }
+  return "대화 형식: 소설. 인물의 대사는 따옴표로 서술 문장 안에 녹인다 (누가 말하는지는 앞뒤 서술로 드러낸다). \"이름: 대사\" 줄로 떼지 않는다";
 }
 
 const MENACE_LABELS = {

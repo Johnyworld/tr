@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CharacterSheet } from "./CharacterSheet.tsx";
+import { SettingsButton } from "./Settings.tsx";
 import type { PlayerView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
@@ -8,7 +9,7 @@ type StatusView =
   | { open: true; scenarioName: string; worldId: string; player: PlayerView };
 
 /**
- * MCP 모드의 상태 화면: Claude 앱 옆(브라우저 패널)에 띄워 두는 읽기 전용 캐릭터 시트.
+ * MCP 모드의 상태 화면: Claude 앱 옆(브라우저 패널)에 띄워 두는 캐릭터 시트. 바꿀 수 있는 것은 설정(톱니바퀴)뿐이다.
  * 이야기(서술)는 Claude 세션의 채팅에 있다.
  * SSE로 바뀔 때마다 받고, SSE가 없는 서버면 1.5초 폴링으로 읽는다
  */
@@ -62,6 +63,7 @@ export function StatusApp() {
         <span className={connected ? "status-live" : "status-live off"} title={connected ? "Claude 세션과 연결됨" : "연결 끊김 (Claude 세션이 닫혔나요?)"}>
           {connected ? "●" : "○ 연결 끊김"}
         </span>
+        <SettingsButton enabled={connected && status?.open === true} />
       </header>
       {!status ? (
         <p className="muted status-empty">불러오는 중…</p>

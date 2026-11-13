@@ -82,7 +82,6 @@ export const scenarioFileSchema = z
             name: z.string().optional(),
             gender: z.string().optional(),
             abilities: z.string().optional(),
-            ability: z.string().optional(),
             traits: z.string().optional(),
           })
           .optional(),

@@ -668,18 +668,46 @@ function applyEffect(
   return {};
 }
 
-/** 수위를 바꾼다 (12-57): 플레이어가 성인 주제를 켜거나 끄겠다고 할 때만 */
+export const DIALOGUE_STYLES = ["novel", "script"] as const;
+export type DialogueStyle = (typeof DIALOGUE_STYLES)[number];
+export const DIALOGUE_STYLE_LABELS: Record<DialogueStyle, string> = { novel: "소설", script: "대본" };
+
+export const gameOptionsPatchSchema = z
+  .strictObject({
+    mature: z.boolean().optional().describe("성인 주제(성인 사이의 연애, 성적인 농담·괴롭힘·위협)를 다룬다"),
+    dialogue: z.enum(DIALOGUE_STYLES).optional().describe("대화 형식. novel 소설(대사를 서술에 녹인다) / script 대본(대사를 '이름: \"대사\"' 줄로 뗀다)"),
+  })
+  .refine((x) => x.mature !== undefined || x.dialogue !== undefined, "바꿀 설정을 하나 이상 준다.");
+export type GameOptionsPatch = z.infer<typeof gameOptionsPatchSchema>;
+
+/** 세계 설정을 바꾼다 (수위 12-57, 대화 형식 12-63). 바뀐 것만 이벤트로 남긴다. 바뀐 설정을 한 줄씩 */
+export function setGameOptions(ctx: ToolContext, patch: GameOptionsPatch): string[] {
+  const now = ctx.store.getState().options;
+  const event = {
+    type: "content_options_set" as const,
+    ...(patch.mature !== undefined && patch.mature !== now.mature ? { mature: patch.mature } : {}),
+    ...(patch.dialogue !== undefined && patch.dialogue !== now.dialogue ? { dialogue: patch.dialogue } : {}),
+  };
+  const lines: string[] = [];
+  if (event.mature !== undefined) lines.push(event.mature ? "성인 주제를 켰다. 이제 그런 이야기가 열릴 수 있다 (성인끼리만, 장면은 암전)." : "성인 주제를 껐다. 그런 이야기는 열리지 않는다.");
+  if (event.dialogue !== undefined) lines.push(`대화 형식을 ${DIALOGUE_STYLE_LABELS[event.dialogue]}(으)로 바꿨다. 다음 서술부터 그 형식으로 쓴다.`);
+  if (lines.length) ctx.store.append(event);
+  return lines;
+}
+
+/** 설정을 바꾼다: 플레이어가 성인 주제나 대화 형식을 바꾸겠다고 할 때만 (상태 화면의 설정에서도 바꿀 수 있다) */
 export const setContentOptions = defineTool({
   name: "set_content_options",
   description:
-    "이 세계의 수위를 바꾼다 (12-57). mature: 성인 주제(성인 사이의 연애, 성적인 농담·괴롭힘·위협)를 다룬다. 플레이어가 직접 켜거나 끄겠다고 할 때만 부른다. " +
-    "켜져 있어도 미성년자는 어떤 경우에도 그 대상이 아니고, 노골적인 묘사는 하지 않는다.",
-  schema: z.strictObject({ mature: z.boolean() }),
+    "이 세계의 설정을 바꾼다. mature: 수위 (12-57). 성인 주제(성인 사이의 연애, 성적인 농담·괴롭힘·위협)를 다룬다. " +
+    "켜져 있어도 미성년자는 어떤 경우에도 그 대상이 아니고, 노골적인 묘사는 하지 않는다. " +
+    "dialogue: 대화 형식. novel(소설, 대사를 서술에 녹인다) / script(대본, 대사를 따로 줄로 뗀다). 플레이어가 직접 바꾸겠다고 할 때만 부른다.",
+  schema: gameOptionsPatchSchema,
   run(input, ctx) {
-    ctx.store.append({ type: "content_options_set", mature: input.mature });
+    const lines = setGameOptions(ctx, input);
     return {
       ok: true,
-      resultText: input.mature ? "성인 주제를 켰다. 이제 그런 이야기가 열릴 수 있다 (성인끼리만, 장면은 암전)." : "성인 주제를 껐다. 그런 이야기는 열리지 않는다.",
+      resultText: lines.length ? lines.join(" ") : "이미 그 설정이다.",
       display: { type: "time", activityLabel: "설정", durationLabel: "", fromLabel: "", toLabel: "" },
       silent: true,
     };

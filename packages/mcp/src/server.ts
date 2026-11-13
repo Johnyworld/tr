@@ -51,7 +51,7 @@ export const PLAY_START =
   "플레이어가 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 start_session(new_world: true): 월드 → 시나리오 → 캐릭터를 create_character로 한 단계씩 고른다 (마지막 확인에서 세계가 열린다). 고르기 전에는 세계를 열지 않는다. " +
   "플레이어가 그만하자고 하면 end_session으로 닫는다.";
 
-const HELP_HINT = "플레이어에게 한 줄 안내: \"?도움말 로 정보 명령어를 볼 수 있습니다.\" (이 모드에서는 \"!\" 대신 \"?\"를 쓴다. Claude 앱은 줄 맨 앞의 !를 셸 명령으로 바꾼다)";
+const HELP_HINT = "플레이어에게 한 줄 안내: \"?도움말 로 정보 명령어를 볼 수 있다.\" (이 모드에서는 \"!\" 대신 \"?\"를 쓴다. Claude 앱은 줄 맨 앞의 !를 셸 명령으로 바꾼다)";
 
 /** 주인공이 죽은 뒤 GM이 서술할 동안 상태 화면에 사망을 미루는 최대 시간 */
 const DEATH_HOLD_MS = 120 * 1000;

@@ -1,15 +1,16 @@
-import { createServer, type Server, type ServerResponse } from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { GameWorld } from "@trpg/core";
 
 /**
- * MCP 모드의 상태 화면 서버 (127.0.0.1만). Claude 앱의 브라우저 패널에 띄워 두는 읽기 전용 캐릭터 시트.
+ * MCP 모드의 상태 화면 서버 (127.0.0.1만). Claude 앱의 브라우저 패널에 띄워 두는 캐릭터 시트.
  * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트 (정보 필터를 거친 core 뷰만)
  * - GET /api/status/stream: 같은 내용을 SSE로. 바뀔 때마다 밀어 준다
+ * - GET·POST /api/options: 세계 설정(수위, 대화 형식, 12-63). 바꾸는 규칙은 core(GameWorld.setOptions)에 있다
  * 서술은 채팅(Claude 세션)에 있다. 이 화면은 시트만 보여 준다
  * - 나머지: React로 된 status.html (packages/ui). Vite 미들웨어로 바로 띄운다
- * stdout은 MCP 프로토콜 전용이라 로그는 모두 stderr로 보낸다 (원칙 12). 게임 상태는 바꾸지 않는다
+ * stdout은 MCP 프로토콜 전용이라 로그는 모두 stderr로 보낸다 (원칙 12). 게임 상태는 설정 말고는 바꾸지 않는다
  */
 
 const UI_DIR = fileURLToPath(new URL("../../ui/", import.meta.url));
@@ -74,6 +75,38 @@ export class TurnGate {
   }
 }
 
+const json = (res: ServerResponse, status: number, body: unknown) => {
+  res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+  res.end(JSON.stringify(body));
+};
+
+/**
+ * 세계 설정 읽기·바꾸기. 바꾸기는 JSON 본문만 받는다 (다른 사이트의 폼이 127.0.0.1로 몰래 보내지 못하게:
+ * application/json은 교차 출처면 사전 요청이 필요한데 이 서버는 허락하지 않는다)
+ */
+export async function handleOptions(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const w = source.world;
+  if (req.method === "GET") return json(res, 200, w && !source.creating ? { open: true, options: w.options() } : { open: false });
+  if (req.method !== "POST") return json(res, 405, { error: "GET 또는 POST" });
+  if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
+  if (!w || source.creating) return json(res, 409, { error: "열린 게임이 없다" });
+  let body = "";
+  for await (const chunk of req) {
+    body += String(chunk);
+    if (body.length > 4096) return json(res, 413, { error: "너무 크다" });
+  }
+  let patch: unknown;
+  try {
+    patch = JSON.parse(body);
+  } catch {
+    return json(res, 400, { error: "JSON이 아니다" });
+  }
+  const result = w.setOptions(patch);
+  if (!result.ok) return json(res, 400, { error: result.error });
+  for (const line of result.changed) console.error(`[status] 설정: ${line}`);
+  return json(res, 200, { open: true, options: result.options });
+}
+
 /** 상태 서버를 띄운다. 포트가 쓰이고 있으면 다음 포트로 (MCP 세션이 여럿일 수 있다). 주소를 돌려준다 */
 export async function startStatusServer(
   source: StatusSource,
@@ -128,6 +161,10 @@ export async function startStatusServer(
       const applied = parsed.pathname === "/api/turn/start" ? gate.start(source, worldId) : parsed.pathname === "/api/turn/end" ? gate.end(worldId) : false;
       res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({ applied }));
+      return;
+    }
+    if (url === "/api/options") {
+      void handleOptions(source, req, res);
       return;
     }
     if (url.startsWith("/api/status/stream")) {

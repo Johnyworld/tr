@@ -48,14 +48,23 @@ export function checkCharacterChoice(s: Scenario, choice: CharacterChoice): stri
   if (choice.portrait !== null && !PORTRAIT_ID.test(choice.portrait)) problems.push("초상화 id 형식이 올바르지 않다.");
   if (choice.traits) problems.push(...checkTraits(s, choice.traits));
   if (choice.abilities === null) return problems;
-  for (const key of Object.keys(choice.abilities)) {
+  problems.push(...checkAbilities(s, choice.abilities));
+  return problems;
+}
+
+/** 능력 배분이 규칙에 맞는지 (모르는 능력, 값, 포인트, 낮춘 개수). 문제 목록 */
+export function checkAbilities(s: Scenario, abilities: Record<string, number>): string[] {
+  const c = s.creation;
+  if (!c) return ["이 시나리오에는 캐릭터 생성 규칙이 없다."];
+  const problems: string[] = [];
+  for (const key of Object.keys(abilities)) {
     if (!s.stats.some((x) => x.id === key)) problems.push(`알 수 없는 능력: ${key}`);
   }
   for (const stat of s.stats) {
-    const v = choice.abilities[stat.id] ?? 0;
+    const v = abilities[stat.id] ?? 0;
     if (c.cost[String(v)] === undefined) problems.push(`${stat.label} ${v}: 고를 수 있는 값은 ${Object.keys(c.cost).join(", ")}`);
   }
-  const { spent, low } = abilitySpend(s, choice.abilities);
+  const { spent, low } = abilitySpend(s, abilities);
   if (Number.isFinite(spent) && spent > c.points) problems.push(`포인트를 ${spent - c.points}만큼 넘게 썼다 (${spent}/${c.points}).`);
   if (low > c.max_low) problems.push(`기본보다 낮출 수 있는 능력은 ${c.max_low}개까지다.`);
   return problems;

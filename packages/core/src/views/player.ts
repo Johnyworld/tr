@@ -1,3 +1,8 @@
+import { carriedWeight, carryCapacity, encumbrance, equippedItem } from "../engine/gear.ts";
+import { activeCompanions, apartCompanions, BOND_LABELS, bondOf, describeUntil } from "../game/companions.ts";
+import { squadMembers } from "../engine/command.ts";
+import { factionPolicy } from "../sim/war.ts";
+import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { headingAs, playerCalls } from "../game/acquaintance.ts";
 import {
@@ -66,6 +71,27 @@ export type PlayerView = {
   zone: { name: string; owner: string } | null;
   /** 진행 중인 전투 (대략적인 말로만) */
   battle: { title: string; sideLabel: string; round: string; momentum: number; momentumMax: number; momentumLabel: string; alarmLabel: string; positionLabel: string } | null;
+  /** 손에 든 무기·입은 방어구·짐 (기획서 4.8). 물건 규칙이 없으면 null */
+  gear: {
+    weapon: GearView | null;
+    armor: GearView[];
+    weight: number;
+    capacity: number;
+    /** 0 가벼움, 1 무거움(판정 불리), 2 너무 무거움(옮겨 가지 못함) */
+    burden: 0 | 1 | 2;
+  } | null;
+  /** 함께 다니는 사람·동물 (곁에 있거나 잠시 떨어져 있는) */
+  companions: { id: string; name: string; bondLabel: string; note: string | null; apart: boolean }[];
+  /** 진 빚 (무리 이름 → 양) */
+  debts: { name: string; amount: number }[];
+  /** 지금 임무로 무기고에서 빌린 것 */
+  loan: string[];
+  /** 맡은 분대 (분대장일 때) */
+  squad: { id: string; name: string; doing: string; report: string | null }[] | null;
+  /** 내 무리의 방침 */
+  policy: { label: string; option: string }[];
+  /** 알게 된 인물 사이의 관계 (예: 오지호 — 오정빈의 형제자매) */
+  ties: { key: string; text: string }[];
   /** 아는 인물의 당신에 대한 관계 */
   relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
   /** 내 행적 (최근 것부터). 보이는 목격자만 담는다 */
@@ -75,6 +101,44 @@ export type PlayerView = {
 };
 
 
+
+/** 장비 한 줄 */
+export type GearView = { id: string; name: string; slotLabel: string; detail: string; wear: string | null; ammo: string | null };
+
+const SLOT_LABELS: Record<string, string> = { weapon: "손", body: "몸", head: "머리", arms: "팔" };
+const HARM_CAP_LABELS: Record<string, string> = { light: "가벼운 피해까지", heavy: "무거운 피해까지" };
+
+function gearView(state: GameState, content: Content): PlayerView["gear"] {
+  if (!content.scenario.gear) return null;
+  const me = state.characters[state.playerId]!;
+  const move = (id: string) => content.scenario.moves.find((m) => m.id === id)?.label ?? id;
+  const one = (id: string | null, slot: string): GearView | null => {
+    const item = id ? content.items[id] : undefined;
+    if (!id || !item) return null;
+    const w = item.weapon;
+    const a = item.armor;
+    const detail = w
+      ? [w.moves.map(move).join("·"), HARM_CAP_LABELS[w.max_harm], w.noise >= 2 ? "시끄러움" : w.noise === 0 ? "조용함" : ""].filter(Boolean).join(" · ")
+      : a
+        ? [a.reduces ? `피해 ${a.reduces}단계 막음` : "", a.blocks_infection ? "물림을 막음" : "", ...Object.entries(a.penalty).map(([m, v]) => `${move(m)} ${v}`)].filter(Boolean).join(" · ")
+        : "";
+    return {
+      id,
+      name: item.name,
+      slotLabel: SLOT_LABELS[slot] ?? slot,
+      detail,
+      wear: item.durability ? `${me.wear[id] ?? 0}/${item.durability}` : null,
+      ammo: w?.ammo ? `${content.items[w.ammo]?.name ?? w.ammo} ${me.inventory[w.ammo] ?? 0}` : null,
+    };
+  };
+  return {
+    weapon: one(equippedItem(me, "weapon"), "weapon"),
+    armor: (["body", "head", "arms"] as const).map((s) => one(equippedItem(me, s), s)).filter((x): x is GearView => !!x),
+    weight: Math.round(carriedWeight(content, me) * 10) / 10,
+    capacity: Math.round(carryCapacity(content, me)),
+    burden: encumbrance(content, me),
+  };
+}
 
 export function buildPlayerView(state: GameState, content: Content): PlayerView {
   const scenario = content.scenario;
@@ -138,7 +202,8 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       return {
         id,
         name: headingAs(state, content, player.id, id),
-        rankLabel: rankLabel(scenario, npc.rank),
+        // 동물은 계급이 없다 (호칭에 이미 "동물")
+        rankLabel: npc.extra && content.extras[npc.extra.template]?.animal ? "" : rankLabel(scenario, npc.rank),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
         conditionLabel: npc.dead ? "사망" : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : changed(npc) ? describeConditions(scenario, npc) : null,
       };
@@ -164,6 +229,55 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         deadlineLabel: formatTime(m.deadline),
         requirements: m.requirements.map((r, i) => describeRequirement(scenario, r, m.progress[i] ?? 0)),
       };
+    })(),
+    gear: gearView(state, content),
+    companions: [...activeCompanions(state), ...apartCompanions(state)].map((id) => {
+      const bond = bondOf(state, content, id);
+      const apart = bond?.apart;
+      const note = apart
+        ? apart.zone
+          ? `${content.locations[apart.zone]?.name ?? apart.zone}에서 기다림`
+          : `볼일 (${formatTime(apart.until ?? state.time)}쯤 돌아옴)`
+        : bond?.crossroads
+          ? "갈림길"
+          : bond?.kind === "purpose" && bond.until
+            ? describeUntil(content, bond.until)
+            : null;
+      return { id, name: playerCalls(state, content, id), bondLabel: bond ? BOND_LABELS[bond.kind] : "", note, apart: !!apart };
+    }),
+    debts: Object.entries(player.debts ?? {}).map(([f, n]) => ({ name: content.factions[f]?.name ?? f, amount: n })),
+    loan: (() => {
+      const m = activeMissionOf(state.missions, player.id);
+      const loan = m ? state.loans?.[m.id] : undefined;
+      return loan ? Object.entries(loan).map(([id, q]) => `${content.items[id]?.name ?? id}${q > 1 ? ` ×${q}` : ""}`) : [];
+    })(),
+    squad: (() => {
+      const members = squadMembers(state, content);
+      if (!members.length) return null;
+      return members.map((id) => {
+        const o = state.squadOrders[id];
+        const doing = o
+          ? `${content.scenario.command?.squad_tasks.find((t) => t.id === o.task)?.label ?? o.task} (${content.locations[o.zone]?.name ?? o.zone}, ${formatTime(o.until)}쯤)`
+          : state.companions.includes(id)
+            ? "곁에 있음"
+            : "거점";
+        return { id, name: playerCalls(state, content, id), doing, report: o ? null : (state.squadReports[id]?.text ?? null) };
+      });
+    })(),
+    policy: player.factionId ? factionPolicy(content, state.factions[player.factionId]).map(({ topic, option }) => ({ label: topic.label, option: option.label })) : [],
+    // 알게 된 인물 사이의 관계 (드러난 관계와 털어놓은 관계만, 원칙 4)
+    ties: (() => {
+      const knownIds = new Set([...(state.known[player.id] ?? []), ...(state.met[player.id] ?? []), player.id]);
+      const out = new Map<string, string>();
+      for (const id of knownIds) {
+        if (id === player.id || !state.characters[id]) continue;
+        for (const t of tiesOf(state, content, id)) {
+          if (out.has(t.key) || !tieKnown(state, t) || !knownIds.has(t.other)) continue;
+          const other = t.other === player.id ? "당신" : playerCalls(state, content, t.other);
+          out.set(t.key, `${playerCalls(state, content, id)} — ${other}의 ${TIE_LABELS[t.kind]}`);
+        }
+      }
+      return [...out].map(([key, text]) => ({ key, text }));
     })(),
     // 진짜 관계가 아니라 플레이어가 마지막으로 느낀 태도 (숨은 목격자가 드러나지 않게)
     relations: [...new Set([...(state.known[player.id] ?? []), ...(state.met[player.id] ?? [])])]

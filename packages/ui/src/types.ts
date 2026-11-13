@@ -21,9 +21,18 @@ export type PlayerView = {
   faction: { name: string; moraleLabel: string; rationLabel: string } | null;
   zone: { name: string; owner: string } | null;
   battle: { title: string; sideLabel: string; round: string; momentum: number; momentumMax: number; momentumLabel: string; alarmLabel: string; positionLabel: string } | null;
+  gear?: { weapon: GearView | null; armor: GearView[]; weight: number; capacity: number; burden: 0 | 1 | 2 } | null;
+  companions?: { id: string; name: string; bondLabel: string; note: string | null; apart: boolean }[];
+  debts?: { name: string; amount: number }[];
+  loan?: string[];
+  squad?: { id: string; name: string; doing: string; report: string | null }[] | null;
+  policy?: { label: string; option: string }[];
+  ties?: { key: string; text: string }[];
   relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
   deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
 };
+
+export type GearView = { id: string; name: string; slotLabel: string; detail: string; wear: string | null; ammo: string | null };
 
 export type TraitKind = "positive" | "negative" | "personality";

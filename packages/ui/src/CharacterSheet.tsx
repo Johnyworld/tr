@@ -83,6 +83,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
                 </li>
               ))}
             </ul>
+            {player.loan && player.loan.length > 0 && <div className="muted small">빌린 장비 (반납): {player.loan.join(", ")}</div>}
           </div>
         ) : (
           <div className="muted">없음</div>
@@ -97,6 +98,9 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         </div>
         {player.service.promotionMissing && player.service.promotionMissing.length > 0 && (
           <div className="muted small">진급까지: {player.service.promotionMissing.join(", ")}</div>
+        )}
+        {player.debts && player.debts.length > 0 && (
+          <div className="condition-worse small">빚: {player.debts.map((d) => `${d.name} ${d.amount}`).join(", ")}</div>
         )}
       </section>
 
@@ -123,6 +127,9 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
             {player.faction.name} · 분위기 {player.faction.moraleLabel}
           </div>
           <div className="muted small">배급: {player.faction.rationLabel}</div>
+          {player.policy && player.policy.length > 0 && (
+            <div className="muted small">방침: {player.policy.map((p) => `${p.label} ${p.option}`).join(" · ")}</div>
+          )}
           {player.zone && <div className="muted small">있는 곳: {player.zone.name} ({player.zone.owner})</div>}
         </section>
       )}
@@ -135,13 +142,68 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
           <ul className="people">
             {player.present.map((p) => (
               <li key={p.id} title={p.look}>
-                {p.name} <span className="muted">· {p.rankLabel}</span>
+                {p.name} {p.rankLabel && <span className="muted">· {p.rankLabel}</span>}
                 {p.conditionLabel && <span className="condition-worse"> · {p.conditionLabel}</span>}
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      {player.companions && player.companions.length > 0 && (
+        <section className="companions">
+          <h3>동행</h3>
+          <ul className="people">
+            {player.companions.map((c) => (
+              <li key={c.id} className={c.apart ? "muted" : ""}>
+                {c.name} <span className="muted">· {c.bondLabel}</span>
+                {c.note && <span className={c.note === "갈림길" ? "condition-worse" : "muted"}> · {c.note}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {player.squad && (
+        <section className="squad">
+          <h3>분대</h3>
+          <ul className="people">
+            {player.squad.map((m) => (
+              <li key={m.id} title={m.report ?? undefined}>
+                {m.name} <span className="muted">· {m.doing}</span>
+                {m.report && <div className="muted small">보고: {m.report}</div>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {player.gear && (
+        <section className="gear">
+          <h3>
+            장비{" "}
+            <span className={player.gear.burden === 2 ? "condition-dead small" : player.gear.burden === 1 ? "condition-worse small" : "muted small"}>
+              짐 {player.gear.weight}/{player.gear.capacity}kg{player.gear.burden === 2 ? " · 너무 무거움" : player.gear.burden === 1 ? " · 무거움" : ""}
+            </span>
+          </h3>
+          <ul className="gear-list">
+            {[player.gear.weapon ?? null, ...player.gear.armor].map((g, i) =>
+              g ? (
+                <li key={g.id + i}>
+                  <span className="gear-slot">{g.slotLabel}</span> {g.name}
+                  {g.ammo && <span className="muted"> · {g.ammo}</span>}
+                  {g.wear && <span className={wearClass(g.wear)}> · 닳음 {g.wear}</span>}
+                  {g.detail && <div className="muted small">{g.detail}</div>}
+                </li>
+              ) : (
+                <li key={`bare${i}`}>
+                  <span className="gear-slot">손</span> <span className="muted">맨손</span>
+                </li>
+              ),
+            )}
+          </ul>
+        </section>
+      )}
 
       <section>
         <h3>소지품</h3>
@@ -180,6 +242,21 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
                 ))}
               </tbody>
             </table>
+          </details>
+        </section>
+      )}
+
+      {player.ties && player.ties.length > 0 && (
+        <section className="beliefs ties">
+          <details>
+            <summary>
+              <h3>인물 사이 ({player.ties.length})</h3>
+            </summary>
+            <ul>
+              {player.ties.map((t) => (
+                <li key={t.key}>{t.text}</li>
+              ))}
+            </ul>
           </details>
         </section>
       )}
@@ -236,6 +313,12 @@ function ItemList({ items }: { items: PlayerView["inventory"] }) {
       ))}
     </ul>
   );
+}
+
+/** 닳음 "3/4": 절반을 넘으면 경고색 */
+function wearClass(wear: string): string {
+  const [a, b] = wear.split("/").map(Number);
+  return b && a! / b >= 0.75 ? "condition-dead" : b && a! / b >= 0.5 ? "condition-worse" : "muted";
 }
 
 function signed(n: number): string {

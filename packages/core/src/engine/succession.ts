@@ -1,3 +1,4 @@
+import { autoEquip } from "./gear.ts";
 import { addStartCompanions } from "./companionTools.ts";
 import { z } from "zod";
 import { nameAs } from "../game/acquaintance.ts";
@@ -196,6 +197,7 @@ export function switchCharacter(
     }
   }
 
+  autoEquip(ctx, store.getState().playerId);
   const opening =
     choice === "new" || switchedRole
       ? role.opening_scene

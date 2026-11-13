@@ -1,61 +1,139 @@
-# 기본 아이템. 한 파일에 목록으로 여러 개를 둘 수 있다
+# 기본 아이템 (기획서 4.8). 한 파일에 목록으로 여러 개를 둘 수 있다
+# weight: kg (없으면 0.5), value: 흥정 값 (통조림 하나 = 3쯤), 무기·방어구·도구·내구도·수리는 선택 (*임시* 수치)
 - id: kitchen_knife
   name: 부엌칼
   description: 날이 군데군데 이가 빠진 부엌칼. 무기라기보다는 도구에 가깝다.
+  kind: weapon
+  weight: 0.3
+  value: 2
+  weapon: { moves: [fight], max_harm: light, noise: 0 }
+  durability: 6
+  breaks_into: scrap_metal
+  repair: { move: mechanics, materials: { scrap_metal: 1 } }
 - id: water_bottle
   name: 물병
   description: 찌그러진 알루미늄 물병.
+  kind: misc
+  weight: 0.6
+  value: 1
 - id: radio
   name: 무전기
   description: 배터리 덮개를 테이프로 감아 둔 휴대용 무전기.
+  kind: tool
+  weight: 0.6
+  value: 8
 - id: old_rifle
   name: 낡은 소총
-  description: 개머리판에 금이 간 소총. 탄약은 따로 배급된다.
+  description: 개머리판에 금이 간 소총. 소총탄이 있어야 쏜다. 총소리가 멀리 간다.
+  kind: weapon
+  weight: 3.5
+  value: 18
+  weapon: { moves: [shoot, fight], max_harm: heavy, noise: 2, ammo: rifle_rounds, ammo_moves: [shoot] }
+  durability: 8
+  breaks_into: scrap_metal
+  repair: { move: mechanics, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
 - id: binoculars
   name: 쌍안경
-  description: 한쪽 렌즈에 실금이 간 쌍안경.
+  description: 한쪽 렌즈에 실금이 간 쌍안경. 멀리서 살피는 데 좋다.
+  kind: tool
+  weight: 0.6
+  value: 7
+  tool: { bonus: { sense_danger: 1 } }
 - id: medkit
   name: 구급상자
-  description: 붕대와 소독약이 조금 남은 구급상자.
+  description: 붕대와 소독약이 조금 남은 구급상자. 지니고 있으면 응급처치가 수월하다 (쓰면 부상 1단계).
+  kind: consumable
+  weight: 1.0
+  value: 9
+  tool: { bonus: { first_aid: 1 } }
 - id: cigarettes
   name: 담배
   description: 눅눅해진 담배 몇 개비. 거점 안에서는 돈처럼 쓰인다.
+  kind: misc
+  weight: 0.1
+  value: 2
 - id: ledger
   name: 배급 장부
   description: 손때 묻은 두꺼운 장부. 배급 내역이 빽빽하게 적혀 있다.
+  kind: misc
+  weight: 0.8
+  value: 1
 - id: explosive
   name: 사제 폭약
   description: 비료와 연료로 만든 폭약 한 덩이. 도화선이 짧다.
+  kind: material
+  weight: 1.5
+  value: 10
 - id: wire_roll
   name: 철사 뭉치
   description: 녹슨 철사와 빈 깡통 몇 개. 덫을 엮을 수 있다.
+  kind: material
+  weight: 0.8
+  value: 2
 - id: antibiotics
   name: 항생제
   description: 유효기간이 지난 항생제 한 줄. 그래도 거점에서는 금보다 귀하다.
+  kind: consumable
+  weight: 0.1
+  value: 14
 - id: c_armband
   name: 붉은연합 완장
   description: 붉은 천에 검은 줄을 그은 완장. 붉은연합 병사들이 왼팔에 찬다.
+  kind: misc
+  weight: 0.05
+  value: 1
 - id: trade_token
   name: 나루상단 통행패
   description: 구멍 뚫린 동전에 끈을 꿴 것. 나루상단의 장터에서 신원 보증으로 쓴다.
+  kind: misc
+  weight: 0.05
+  value: 3
 - id: canned_food
   name: 통조림
   description: 라벨이 떨어져 나간 통조림. 흔들면 무언가 출렁인다.
+  kind: food
+  weight: 0.4
+  value: 3
 - id: blanket
   name: 담요
   description: 군데군데 해진 군용 담요. 덮으면 언 몸이 녹는다 (쓰면 추위 2단계).
+  kind: consumable
+  weight: 1.5
+  value: 3
 - id: coat
   name: 방한복
-  description: 솜이 뭉친 두꺼운 방한 외투. 입고 다니면 추위를 덜 탄다.
+  description: 솜이 뭉친 두꺼운 방한 외투. 지니고 다니면 추위를 덜 탄다.
+  kind: misc
+  weight: 2.0
+  value: 6
 - id: fever_reducer
   name: 해열제
   description: 유통기한이 지난 해열제 몇 알. 앓는 몸을 조금 낫게 한다 (질병 1단계).
+  kind: consumable
+  weight: 0.1
+  value: 5
 - id: shotgun
   name: 엽총
-  description: 개머리판에 테이프를 감은 낡은 엽총. 탄이 몇 발 남지 않았다.
+  description: 개머리판에 테이프를 감은 낡은 엽총. 산탄이 있어야 쏜다. 가까이서 무섭고, 시끄럽다.
+  kind: weapon
+  weight: 3.0
+  value: 16
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, bonus: 1 }
+  durability: 6
+  breaks_into: scrap_metal
+  repair: { move: mechanics, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
 - id: crowbar
   name: 쇠지렛대
-  description: 끝이 구부러진 쇠지렛대. 문을 따거나 휘두르기 좋다.
+  description: 끝이 구부러진 쇠지렛대. 문을 따거나 휘두르기 좋다. 지니고 있으면 뒤지기도 수월하다.
+  kind: weapon
+  weight: 1.5
+  value: 4
+  weapon: { moves: [fight], max_harm: light, noise: 0 }
+  tool: { bonus: { scavenge: 1 } }
+  durability: 12
 - id: dry_ration
   name: 마른 비상식량
   description: 비닐에 싸인 딱딱한 건빵 몇 조각. 먹으면 허기가 조금 가신다.
+  kind: food
+  weight: 0.3
+  value: 2

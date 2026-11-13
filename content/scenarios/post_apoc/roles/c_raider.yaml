@@ -18,7 +18,7 @@ scenario:
     이야기는 어느 새벽, 공단 창고 막사에서 시작한다.
 age: 21
 start_skills: { fight: 1, intimidate: 1 }
-start_inventory: [c_armband, crowbar, water_bottle]
+start_inventory: [c_armband, crowbar, water_bottle, padded_armor]
 start_location: c_base
 access: [ration, mission_board]
 beliefs_preset: c_raider_start

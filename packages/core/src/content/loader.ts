@@ -106,6 +106,32 @@ function checkReferences(content: Content): string[] {
       if (of && !keys.slice(0, i).includes(of)) problems.push(`storylets.${st.id}.cast.${key}.tie: ${of}는 이 배역보다 앞에 있어야 한다`);
     });
   }
+  // 물건 (기획서 4.8)
+  {
+    const moves = new Set(content.scenario.moves.map((m) => m.id));
+    const itemRef = (at: string, id: string) => { if (!content.items[id]) problems.push(`${at}: 알 수 없는 아이템 ${id}`); };
+    const moveRef = (at: string, id: string) => { if (!moves.has(id)) problems.push(`${at}: 알 수 없는 스킬 ${id}`); };
+    for (const it of Object.values(content.items)) {
+      for (const m of it.weapon?.moves ?? []) moveRef(`items.${it.id}.weapon`, m);
+      if (it.weapon?.ammo) itemRef(`items.${it.id}.weapon.ammo`, it.weapon.ammo);
+      for (const m of Object.keys(it.armor?.penalty ?? {})) moveRef(`items.${it.id}.armor.penalty`, m);
+      for (const m of Object.keys(it.tool?.bonus ?? {})) moveRef(`items.${it.id}.tool`, m);
+      if (it.breaks_into) itemRef(`items.${it.id}.breaks_into`, it.breaks_into);
+      if (it.breaks_into && !it.durability) problems.push(`items.${it.id}: breaks_into는 durability가 있을 때만`);
+      if (it.repair) {
+        moveRef(`items.${it.id}.repair`, it.repair.move);
+        for (const m of [...Object.keys(it.repair.materials), ...it.repair.tools]) itemRef(`items.${it.id}.repair`, m);
+        if (!it.durability) problems.push(`items.${it.id}: repair는 durability가 있을 때만`);
+      }
+    }
+    const g = content.scenario.gear;
+    if (g) for (const m of [...g.unarmed.moves, ...g.attack_moves, ...g.carry.encumbered_moves, ...g.haggle_moves]) moveRef("scenario.gear", m);
+    for (const r of content.scenario.crafting?.recipes ?? []) {
+      moveRef(`scenario.crafting.${r.id}`, r.move);
+      for (const m of [...Object.keys(r.materials), ...r.tools, r.yields.item]) itemRef(`scenario.crafting.${r.id}`, m);
+    }
+    for (const npc of Object.values(content.npcs)) for (const m of Object.keys(npc.merchant?.restock ?? {})) itemRef(`npcs.${npc.id}.merchant`, m);
+  }
   for (const k of content.scenario.custom_start?.kin ?? []) {
     if (!content.extras[k]) problems.push(`scenario.custom_start.kin: 알 수 없는 엑스트라 틀 ${k}`);
   }

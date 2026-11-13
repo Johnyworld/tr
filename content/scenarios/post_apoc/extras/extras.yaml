@@ -14,6 +14,7 @@
   trait_count: 2
   inventory:
     - { item: shotgun }
+    - { item: shells, quantity: 2 }
     - { item: c_armband }
     - { item: cigarettes, chance: 0.5 }
     - { item: dry_ration, chance: 0.4 }
@@ -46,6 +47,8 @@
   trait_count: 2
   inventory:
     - { item: old_rifle }
+    - { item: rifle_rounds, quantity: 2 }
+    - { item: moto_helmet, chance: 0.4 }
     - { item: c_armband }
     - { item: cigarettes, chance: 0.4 }
   values: { discipline: 1 }
@@ -76,6 +79,7 @@
   trait_count: 2
   inventory:
     - { item: crowbar }
+    - { item: padded_armor, chance: 0.4 }
     - { item: c_armband }
     - { item: canned_food, chance: 0.3 }
   values: { self_interest: 2, mercy: -1 }

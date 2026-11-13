@@ -22,7 +22,7 @@ age: 23
 # 능력은 정하지 않는다: 시나리오의 능력 배열을 섞어 준다 (능력은 계급·역할과 관계없다, 기획서 4.6)
 # 시작 훈련 (스킬)
 start_skills: { fight: 1, shoot: 1 }
-start_inventory: [kitchen_knife, water_bottle, wire_roll]
+start_inventory: [kitchen_knife, water_bottle, wire_roll, bandage]
 # 아래 필드는 해당 시스템이 생기면 쓰인다 (장소·배급·Belief·스토리렛)
 start_location: a_base
 access: [ration, mission_board]

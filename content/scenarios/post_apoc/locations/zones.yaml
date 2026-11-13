@@ -30,6 +30,8 @@
       - { item: wire_roll, weight: 3, qty: [1, 1] }
       - { item: dry_ration, weight: 2, qty: [1, 1] }
       - { item: binoculars, weight: 1, qty: [1, 1] }
+      - { item: casings, weight: 2, qty: [1, 2] }
+      - { item: scrap_metal, weight: 1, qty: [1, 1] }
 
 - id: c_warehouse
   name: 고가도로 너머 물류창고
@@ -46,6 +48,9 @@
       - { item: coat, weight: 1, qty: [1, 1] }
       - { item: crowbar, weight: 1, qty: [1, 1] }
       - { item: c_armband, weight: 1, qty: [1, 1] }
+      - { item: rifle_rounds, weight: 2, qty: [1, 2] }
+      - { item: shells, weight: 1, qty: [1, 1] }
+      - { item: gunpowder, weight: 1, qty: [1, 1] }
 
 - id: c_base
   name: 붉은연합 거점
@@ -80,6 +85,9 @@
       - { item: water_bottle, weight: 1, qty: [1, 1] }
       - { item: crowbar, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }
+      - { item: scrap_metal, weight: 3, qty: [1, 2] }
+      - { item: planks, weight: 2, qty: [1, 1] }
+      - { item: casings, weight: 1, qty: [1, 2] }
 
 - id: old_town
   name: 구시가
@@ -98,6 +106,10 @@
       - { item: kitchen_knife, weight: 1, qty: [1, 1] }
       - { item: dry_ration, weight: 1, qty: [1, 1] }
       - { item: radio, weight: 0.5, qty: [1, 1] }
+      - { item: duct_tape, weight: 2, qty: [1, 1] }
+      - { item: cloth, weight: 2, qty: [1, 2] }
+      - { item: baseball_bat, weight: 1, qty: [1, 1] }
+      - { item: moto_helmet, weight: 1, qty: [1, 1] }
 
 - id: b_base
   name: 버들마을 거점
@@ -153,6 +165,9 @@
       - { item: medkit, weight: 2, qty: [1, 1] }
       - { item: antibiotics, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }
+      - { item: bandage, weight: 2, qty: [1, 2] }
+      - { item: cloth, weight: 2, qty: [1, 2] }
+      - { item: flashlight, weight: 1, qty: [1, 1] }
 
 - id: water_plant
   name: 정수장
@@ -180,6 +195,8 @@
       - { item: dry_ration, weight: 1, qty: [1, 1] }
       - { item: wire_roll, weight: 1, qty: [1, 1] }
       - { item: kitchen_knife, weight: 0.5, qty: [1, 1] }
+      - { item: planks, weight: 2, qty: [1, 1] }
+      - { item: fishing_kit, weight: 1, qty: [1, 1] }
 
 
 # 여울섬 (기획서 9.12): 강 하구 바다 건너. 어느 구역과도 맞닿아 있지 않고 강변·정수장에서 배로만 건넌다

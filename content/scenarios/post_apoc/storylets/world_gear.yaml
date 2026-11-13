@@ -1,0 +1,42 @@
+# 물건이 부르는 일 (기획서 4.8)
+# - 총소리(구역의 오늘 소음, 조건 zone_noise_gte)를 듣고 오는 것들
+
+- id: wg_gunshot_wave
+  title: 총소리를 듣고 온 것들
+  tags: [world]
+  urgent: true
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zone_noise_gte: 2
+    zone_owner: [none, other]
+  setup: "총소리의 메아리가 채 가시기도 전에, 골목 끝 그늘에서 무언가 몸을 일으킨다. 하나, 둘, 그리고 더. 발을 끄는 소리가 이쪽으로 모인다. {zone}의 물결이 깼다."
+  ai_direction: 총소리가 감염체 물결을 불렀다. 몇이 오는지는 정해지지 않았고, 위험은 판정으로만 정한다 (맞서면 무거운 위험, 감염원). 총을 또 쏘면 더 모인다. 숨거나 빠지는 길은 있다.
+  choices:
+    - id: slip
+      label: 소리를 죽이고 뒷길로 빠진다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 총소리를 듣고 온 물결을 피해 빠져나왔다", source: seen }
+        partial:
+          - body: { track: cold, delta: 1 }
+          - belief: { fact: "물결을 피해 하수구로 빠져나왔다. 온몸이 젖었다", source: seen }
+        miss:
+          - belief: { fact: "물결을 피하지 못했다. 몸으로 부딪쳐야 한다", source: seen }
+    - id: hold
+      label: 좁은 문간에 등을 대고 버틴다
+      check: endure
+      outcomes:
+        success:
+          - merit: 1
+          - belief: { fact: "{zone}의 좁은 문간에서 물결이 지나갈 때까지 버텼다", source: seen }
+        partial:
+          - belief: { fact: "문간에서 버텼지만 물결이 아직 근처를 맴돈다", source: seen }
+        miss:
+          - belief: { fact: "문간이 무너졌다. 물결 한가운데다", source: seen }
+    - id: hide
+      label: 무너진 차 밑으로 기어들어 숨을 죽인다
+      effects:
+        - body: { track: cold, delta: 1 }
+        - belief: { fact: "{zone}에서 물결이 지나갈 때까지 차 밑에 숨어 있었다", source: seen }

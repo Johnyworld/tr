@@ -1,3 +1,4 @@
+import { runRestock } from "./gear.ts";
 import { runPromotions } from "./people.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
 import { runSquadOrders } from "./command.ts";
@@ -43,6 +44,8 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const companions = runCompanions(ctx);
   // 깊이 엮인 이름 없는 인물이 자란다 (기획서 7.10)
   const grown = runPromotions(ctx);
+  // 상인은 날마다 물건을 다시 채운다 (기획서 4.8)
+  runRestock(ctx);
   // 조건이 맞는 이야기 (간격이 지났고 전투 중이 아닐 때)
   const storylets = runStorylets(ctx);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다

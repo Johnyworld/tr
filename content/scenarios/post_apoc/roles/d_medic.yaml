@@ -17,7 +17,7 @@ scenario:
     이야기는 어느 아침, 진료소의 수습 숙소에서 시작한다.
 age: 20
 start_skills: { first_aid: 1, infected_lore: 1 }
-start_inventory: [medkit, fever_reducer, water_bottle]
+start_inventory: [medkit, fever_reducer, water_bottle, bandage, bandage, cloth, cloth, kitchen_knife]
 start_location: d_clinic
 access: [ration, mission_board, treatment_room]
 beliefs_preset: d_medic

@@ -315,6 +315,43 @@ export const scenarioFileSchema = z
           .default([]),
       })
       .optional(),
+    /** 물건 규칙 (기획서 4.8): 맨손, 무게, 흥정. 없으면 무기·무게 규칙을 쓰지 않는다 */
+    gear: z
+      .strictObject({
+        /** 무기 없이 공격할 수 있는 스킬과 피해 상한 */
+        unarmed: z.strictObject({ moves: z.array(id).min(1), max_harm: z.enum(["light", "heavy"]) }),
+        /** 전투 중에 공격으로 보는 스킬 (무기·탄약을 따진다) */
+        attack_moves: z.array(id).min(1),
+        carry: z.strictObject({
+          base: z.number().min(1),
+          per_strength: z.number().min(0),
+          /** 무게를 넘으면 이 스킬들에 보정 */
+          encumbered_moves: z.array(id).default([]),
+          penalty: z.number().int().min(-2).max(0).default(-1),
+          /** 들 수 있는 무게의 이 배를 넘으면 옮겨 가지 못한다 */
+          hard_limit: z.number().min(1).default(1.5),
+        }),
+        /** 흥정: 값의 이 비율 이상이면 판정으로 깎을 수 있다 (아래면 거절) */
+        haggle_floor: z.number().min(0).max(1).default(0.7),
+        /** 흥정에 쓰는 스킬 */
+        haggle_moves: z.array(id).default([]),
+      })
+      .optional(),
+    /** 제작 법 (기획서 4.8) */
+    crafting: z
+      .strictObject({
+        recipes: z.array(
+          z.strictObject({
+            id,
+            label: z.string().min(1),
+            move: id,
+            materials: z.record(id, z.number().int().min(1)),
+            tools: z.array(id).default([]),
+            yields: z.strictObject({ item: id, qty: z.number().int().min(1) }),
+          }),
+        ),
+      })
+      .optional(),
     /** 세계를 만들 때 코드가 이름 있는 인물들을 이만큼 무작위로 잇는다 (기획서 7.10. 판마다 다른 관계) */
     dynamic_ties: z
       .strictObject({

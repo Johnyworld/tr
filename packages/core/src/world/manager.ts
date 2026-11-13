@@ -1,3 +1,4 @@
+import { autoEquip } from "../engine/gear.ts";
 import { addUnlocks, readUnlocks, type UnlockRecord } from "../persistence/unlocks.ts";
 import { generateDynamicTies } from "../engine/people.ts";
 import { roleOf } from "../game/state.ts";
@@ -145,6 +146,8 @@ export class WorldManager {
       addStartCompanions(world.ctx(), roleOf(world.content, world.state()));
       // 판마다 다른 인물 사이의 관계 (기획서 7.10)
       generateDynamicTies(world.ctx());
+      // 가진 무기를 손에 든다 (기획서 4.8)
+      autoEquip(world.ctx(), world.state().playerId);
       runAfterTimeAdvance(world.ctx());
       world.saveSnapshot();
       return world;

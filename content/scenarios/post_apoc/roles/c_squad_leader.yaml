@@ -19,7 +19,7 @@ scenario:
     이야기는 조장이 되고 처음 조원을 모으는 새벽, 물류창고 마당에서 시작한다.
 age: 31
 start_skills: { intimidate: 1, tactics: 1 }
-start_inventory: [c_armband, old_rifle, radio]
+start_inventory: [c_armband, sawn_shotgun, shells, shells, shells, radio, padded_armor]
 start_location: c_warehouse
 access: [ration, mission_board]
 beliefs_preset: c_squad_leader_start

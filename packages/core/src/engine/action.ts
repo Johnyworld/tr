@@ -1,3 +1,4 @@
+import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft } from "./gear.ts";
 import { scavenge } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -130,6 +131,14 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("장면의 치료사에게 치료받으면 {item: null} (하루 한 번). 아이템은 use_item을 쓴다. 얼마나 낫는지는 시스템이 정한다. 아니면 null"),
+    craft: z
+      .strictObject({
+        recipe: z.string().nullable().describe(`만드는 것 (제작 법 id): ${(s.crafting?.recipes ?? []).map((r) => `${r.id} ${r.label}(${r.move})`).join(", ") || "없음"}. 아니면 null`),
+        repair: z.string().nullable().describe("고치는 물건 (가진 아이템 id). 아니면 null"),
+      })
+      .nullable()
+      .default(null)
+      .describe("물건을 만들거나 고치면 (기획서 4.8). 판정(check: 그 제작 법·물건의 스킬)이 필요하고, 재료와 결과는 시스템이 정한다. 아니면 null"),
     battle: z
       .strictObject({
         effect: z.string().describe("상태의 '지금 쓸 수 있는 전투 효과' 중 하나의 id"),
@@ -182,6 +191,19 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
 
   // 전투·이동·준비 검사 (기획서 9.5)
   const inBattle = start.battle !== null;
+  // 물건 (기획서 4.8): 공격은 손에 든 무기로, 탄약이 있어야 쏜다. 제작·수리는 재료와 판정. 너무 무거우면 옮겨 가지 못한다
+  const gearRules = content.scenario.gear;
+  const attacking = !!input.check && !!gearRules && ((!!input.target && input.check.target_harm !== "none") || (inBattle && gearRules.attack_moves.includes(input.check.move)));
+  const attack = attacking ? planAttack(content, player, input.check!.move, input.check!.target_harm) : null;
+  if (typeof attack === "string") return { ok: false, error: attack };
+  if (input.craft) {
+    if (!input.check) return { ok: false, error: "만들거나 고치려면 판정(check)이 필요하다." };
+    const why = planCraft(content, player, input.craft, input.check.move);
+    if (why) return { ok: false, error: why };
+  }
+  if (input.move_to && gearRules && encumbrance(content, player) === 2) {
+    return { ok: false, error: `짐이 너무 무겁다 (${carriedWeight(content, player).toFixed(1)}kg). 내려놓아야(transfer_item to scene) 옮겨 갈 수 있다.` };
+  }
   if (inBattle) {
     if (input.activity && input.activity.kind !== "brief") return { ok: false, error: "전투 중에는 잠·보초·기다림 같은 활동을 할 수 없다. activity는 null로 둔다 (한 라운드가 흐른다)." };
     if (input.move_to) return { ok: false, error: "전투 중에는 구역을 옮길 수 없다. 빠지려면 물러나는 전투 효과를 쓴다." };
@@ -257,6 +279,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       OUTCOME_GUIDE[roll.outcome],
     );
     if (roll.growthNote) lines.push(roll.growthNote);
+    // 무기: 탄약·소음·닳음 (기획서 4.8)
+    if (attack) lines.push(...afterAttack(ctx, attack, roll.outcome).lines);
     // 상대를 다치게 한다 (기획서 7.5). 사망은 부상 트랙으로만 (원칙 3)
     if (input.check.target_harm !== "none" && input.target) {
       const hit = hitTarget(ctx, input.target, input.check.target_harm, roll.outcome, input.intent);
@@ -268,7 +292,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       lines.push(harm.text);
       displays.push(harm.display);
       // 감염체에게 입은 상처는 감염될 수 있다 (잠복기는 캐릭터도 GM도 모른다)
-      if (!harm.fatal && input.check.infected_source) maybeInfect(ctx, input.check.harm_on_failure);
+      // 입은 방어구가 물림·긁힘을 막을 수 있다 (기획서 4.8)
+      if (!harm.fatal && input.check.infected_source) {
+        if (armorBlocksInfection(ctx)) lines.push("입은 것이 물림을 막아 냈다. 살갗까지 닿지 않았다.");
+        else maybeInfect(ctx, input.check.harm_on_failure);
+      }
       if (harm.fatal) {
         // 연대기 기록 (전투 중이면 그 자리를 원인에 붙인다), 남은 전투는 코드가 굴린다
         const battle = store.getState().battle;
@@ -282,6 +310,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       }
     }
   }
+
+  // 1-0-1. 제작·수리 (기획서 4.8)
+  if (input.craft && outcome) lines.push(...applyCraft(ctx, input.craft, outcome));
 
   // 1-0. 수색: 그 구역에서 찾을 거리를 코드가 굴린다 (기획서 4.7)
   if (input.activity?.kind === "search" && !inBattle) {
@@ -346,7 +377,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? "eat" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? "eat" : input.craft ? "work" : "brief"));
   const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission);
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);
@@ -441,8 +472,19 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   const track = harmTrack(content.scenario);
   const target = state.characters[state.playerId]!;
   const check = state.checks[checkId]!;
-  const steps = harmSteps(check.outcome, severity);
+  // 입은 방어구가 피해를 줄인다 (기획서 4.8)
+  const absorbed = armorAbsorb(ctx, harmSteps(check.outcome, severity));
+  const steps = absorbed.steps;
   const from = target.conditions[track.id] ?? track.levels[0]!.id;
+  if (steps <= 0) {
+    // 방어구가 다 막았다 (기획서 4.8)
+    const label = levelOf(track, from).label;
+    return {
+      fatal: false,
+      text: `${absorbed.lines.join(" ")} ${target.name}은(는) 다치지 않았다. 막아 낸 순간을 서술한다.`.trim(),
+      display: { type: "harm" as const, targetName: target.name, trackLabel: track.label, severityLabel: HARM_LABELS[severity], fatal: false, fromLabel: label, toLabel: label, cause },
+    };
+  }
   const { to, fatal } = worsen(track, from, steps);
   store.append({
     type: "harm_applied",
@@ -464,7 +506,7 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
     : ` 앞으로 판정에 ${signed(conditionPenalty(content.scenario, after))} 보정을 받는다. 다친 감각을 서술에 반영하라.`;
   return {
     fatal,
-    text: `${target.name}의 ${track.label}: ${fromLabel} → ${toLabel} (${cause}).${note}`,
+    text: `${absorbed.lines.length ? absorbed.lines.join(" ") + " " : ""}${target.name}의 ${track.label}: ${fromLabel} → ${toLabel} (${cause}).${note}`,
     display: {
       type: "harm" as const,
       targetName: target.name,

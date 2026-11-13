@@ -54,7 +54,7 @@ describe("능력과 스킬", () => {
     player(env).skills.stealth = 2; // 민첩 2 + 은밀 2 = 4
     player(env).stats.agility = 3; // 3 + 2 = 5 → 상한 4
     const out = executeTool("take_action", check("stealth", "agility", "very_easy"), env.ctx);
-    expect(out.ok && out.display.type === "check" && out.display.modifiers).toEqual({ stat: 3, skill: 1, difficulty: 2, condition: 0, trait: 0 });
+    expect(out.ok && out.display.type === "check" && out.display.modifiers).toEqual({ stat: 3, skill: 1, difficulty: 2, condition: 0, trait: 0, gear: 0 });
   });
 });
 

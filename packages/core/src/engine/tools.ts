@@ -1,3 +1,4 @@
+import { carriedWeight, carryCapacity, DEFAULT_WEIGHT, GEAR_TOOLS } from "./gear.ts";
 import { PEOPLE_TOOLS } from "./people.ts";
 import { josa } from "../text.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -94,6 +95,14 @@ const transferItem = defineTool({
       return { ok: false, error: `${holderName(state, content, input.from)}에게 ${josa(item.name, "이/가")} ${have}개뿐입니다.` };
     }
 
+    // 너무 무거우면 더 받지 못한다 (기획서 4.8)
+    if (input.to === state.playerId && content.scenario.gear) {
+      const me = state.characters[state.playerId]!;
+      const after = carriedWeight(content, me) + (item.weight ?? DEFAULT_WEIGHT) * input.quantity;
+      if (after > carryCapacity(content, me) * content.scenario.gear.carry.hard_limit) {
+        return { ok: false, error: `${item.name}까지 들면 너무 무겁다 (${after.toFixed(1)}kg). 먼저 무언가를 내려놓는다.` };
+      }
+    }
     store.append({
       type: "item_transferred",
       from: input.from,
@@ -241,6 +250,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...COMMAND_TOOLS,
       ...COMPANION_TOOLS,
       ...PEOPLE_TOOLS,
+      ...GEAR_TOOLS,
       ...REPUTATION_TOOLS,
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,

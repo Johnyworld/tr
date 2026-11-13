@@ -284,7 +284,9 @@
     min_trust: 3
   stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: 0, charm: 1, intellect: 2 }
   skills: { history: 2, scavenge: 1, persuade: 1, sense_danger: 1, survival: 1 }
-  start_inventory: [binoculars, ledger, cigarettes]
+  start_inventory: [binoculars, ledger, cigarettes, flashlight, flashlight, toolkit, moto_helmet]
+  # 유랑상인 (기획서 4.8): 지도·소식과 쓸 만한 연장. 날마다 이만큼까지 다시 채운다
+  merchant: { restock: { flashlight: 2, binoculars: 1, toolkit: 1, moto_helmet: 1, duct_tape: 3, cigarettes: 4 }, markup: 1.3 }
   playable: false
   roams: [old_town, riverside, e_market, b_base, hospital_ruins]
   ties:
@@ -324,7 +326,9 @@
     min_trust: 4
   stats: { strength: 0, agility: -1, vitality: 1, senses: 1, nerve: 1, charm: 2, intellect: 1 }
   skills: { first_aid: 2, deceive: 2, persuade: 1, infected_lore: 1 }
-  start_inventory: [medkit, fever_reducer, antibiotics, cigarettes]
+  start_inventory: [medkit, fever_reducer, antibiotics, cigarettes, bandage, bandage]
+  # 약장수: 약값은 비싸다
+  merchant: { restock: { medkit: 2, fever_reducer: 3, antibiotics: 1, bandage: 4 }, markup: 1.5 }
   playable: false
   healer: true
   roams: [old_town, riverside, e_market, b_base, d_clinic, water_plant]
@@ -364,7 +368,9 @@
     min_trust: 4
   stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: 0, intellect: 1 }
   skills: { shoot: 2, mechanics: 2, persuade: 1, sense_danger: 1 }
-  start_inventory: [old_rifle, trade_token, water_bottle]
+  start_inventory: [old_rifle, trade_token, water_bottle, rifle_rounds, rifle_rounds, shells, shells, casings, gunpowder]
+  # 재생탄 장수: 탄약과 탄피·화약
+  merchant: { restock: { rifle_rounds: 6, shells: 4, casings: 6, gunpowder: 2, bolts: 4 }, markup: 1.2 }
   playable: true
   roams: [riverside, old_town, e_market, water_plant, b_base, south_fields]
   ties:

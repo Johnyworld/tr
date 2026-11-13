@@ -116,7 +116,9 @@
     min_trust: 4
   stats: { strength: -1, agility: -1, vitality: 0, senses: 2, nerve: 2, charm: 1, intellect: 2 }
   skills: { persuade: 2, deceive: 2, history: 1, intimidate: 1 }
-  start_inventory: [ledger, trade_token, cigarettes]
+  start_inventory: [ledger, trade_token, cigarettes, leather_jacket, kevlar_vest, pistol, machete]
+  # 전당포: 맡겨진 것들. 값을 후하게 쳐주지 않는다
+  merchant: { restock: { leather_jacket: 1, machete: 1, carpentry_kit: 1, scrap_metal: 4, cloth: 4 }, markup: 1.4 }
   playable: false
   zone: e_market
   ties:

@@ -18,7 +18,7 @@ scenario:
 age: 26
 # 시작 훈련: 흥정과 짐 지고 버티기
 start_skills: { persuade: 1, endure: 1 }
-start_inventory: [trade_token, water_bottle, cigarettes]
+start_inventory: [trade_token, water_bottle, cigarettes, crowbar, rifle_rounds, rifle_rounds]
 start_location: e_market
 access: [ration, mission_board]
 beliefs_preset: e_porter

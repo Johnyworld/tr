@@ -21,7 +21,7 @@ age: 29
 # 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
 # 시작 훈련: 하급 전투원 때의 사격에 지휘(전략)를 더했다
 start_skills: { tactics: 1, shoot: 1 }
-start_inventory: [old_rifle, radio, water_bottle]
+start_inventory: [old_rifle, rifle_rounds, rifle_rounds, rifle_rounds, radio, water_bottle, machete]
 start_location: a_base
 access: [ration, mission_board]
 beliefs_preset: a_squad_leader

@@ -142,6 +142,10 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   for (const [id, n] of Object.entries(w.clock_gte ?? {})) if ((state.clocks[id]?.filled ?? -Infinity) < n) return false;
   for (const [id, n] of Object.entries(w.clock_lte ?? {})) if ((state.clocks[id]?.filled ?? Infinity) > n) return false;
   if (w.own_morale_lte !== undefined && (!own || own.morale > w.own_morale_lte)) return false;
+  if (w.zone_noise_gte !== undefined) {
+    const noise = state.playerZone ? state.zoneNoise?.[state.playerZone] : undefined;
+    if (!noise || noise.day !== dayOf(at) || noise.level < w.zone_noise_gte) return false;
+  }
   if (w.own_policy) {
     if (!own) return false;
     const now = new Map(factionPolicy(content, own).map(({ topic, option }) => [topic.id, option.id]));

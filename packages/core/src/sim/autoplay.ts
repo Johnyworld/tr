@@ -106,6 +106,11 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
         battle: { effect: effect.id, objective: effect.targets_objective ? (s.battle.objectives[0] ?? null) : null },
         check: check(move, effect.min_harm === "none" ? "none" : effect.min_harm),
       });
+      // 탄약이 떨어졌으면 무기를 내려놓고 맨손으로 (기획서 4.8). 오류로 치지 않는다
+      if (!out.ok && /쏠 수 없다|노릴 수 없다|공격할 수 없다/.test(out.error)) {
+        tool("equip", { item_id: null, slot: "weapon" });
+        continue;
+      }
       if (!out.ok) stats.errors.push(`전투: ${out.error}`);
       continue;
     }
@@ -175,10 +180,40 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       continue;
     }
 
+    // 물건 (기획서 4.8): 가끔 다른 장비를 들고 입고, 재료가 있으면 만들고, 상인과 흥정한다
+    const wearable = content.scenario.gear ? Object.keys(me.inventory).filter((id) => content.items[id]?.weapon || content.items[id]?.armor) : [];
+    if (wearable.length > 1 && rng() < 0.04) {
+      const out = tool("equip", { item_id: pick(rng, wearable), slot: null });
+      if (!out.ok) stats.errors.push(`장비: ${out.error}`);
+      continue;
+    }
+    const doable = (content.scenario.crafting?.recipes ?? []).filter((r) => Object.entries(r.materials).every(([i, q]) => (me.inventory[i] ?? 0) >= q) && r.tools.every((t) => (me.inventory[t] ?? 0) > 0));
+    if (doable.length && rng() < 0.1) {
+      {
+        const r = pick(rng, doable);
+        const move = moves.find((m) => m.id === r.move)!;
+        const out = tool("take_action", { ...base, intent: r.label, check: check(move, "none"), craft: { recipe: r.id, repair: null } });
+        if (!out.ok) stats.errors.push(`제작: ${out.error}`);
+        continue;
+      }
+    }
+    const merchant = s.scene.present.find((id) => content.npcs[id]?.merchant);
+    if (merchant && rng() < 0.3) {
+      const goods = Object.entries(s.characters[merchant]!.inventory).filter(([, q]) => q > 0);
+      const mine = Object.entries(me.inventory).filter(([i, q]) => q > 0 && !content.items[i]?.weapon);
+      if (goods.length && mine.length) {
+        const [want] = pick(rng, goods);
+        const [offer, have] = pick(rng, mine);
+        const out = tool("barter", { npc_id: merchant, give: { [offer]: Math.min(have, 1 + Math.floor(rng() * 3)) }, get: { [want]: 1 }, move: "persuade", stat: "charm" });
+        if (!out.ok && !/모자란다|흥정하려면/.test(out.error)) stats.errors.push(`흥정: ${out.error}`);
+      }
+      continue;
+    }
+
     // 지휘 (기획서 9.11): 분대가 있으면 가끔 일을 맡기고, 회의에 앉으면 가끔 안을 올린다
     const command = content.scenario.command;
     const squad = squadMembers(s, content).filter((id) => !s.squadOrders[id] && !s.companions.includes(id));
-    if (command?.squad_tasks.length && squad.length && rng() < 0.06) {
+    if (command?.squad_tasks.length && squad.length && rng() < 0.1) {
       const task = pick(rng, command.squad_tasks);
       const member = pick(rng, squad);
       if (!s.scene.present.includes(member)) tool("npc_presence", { npc_id: member, action: "enter" });

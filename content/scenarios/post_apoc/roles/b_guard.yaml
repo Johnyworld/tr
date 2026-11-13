@@ -21,7 +21,7 @@ scenario:
 # 능력은 정하지 않는다: 시나리오의 능력 배열을 섞어 준다
 # 시작 훈련 (하급 전투원의 근접전 +1, 사격 +1과 같은 무게)
 start_skills: { fight: 1, sense_danger: 1 }
-start_inventory: [kitchen_knife, water_bottle, binoculars]
+start_inventory: [baseball_bat, kitchen_knife, water_bottle, binoculars]
 start_location: b_base
 access: [ration, mission_board]
 beliefs_preset: b_guard

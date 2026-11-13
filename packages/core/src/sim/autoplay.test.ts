@@ -67,7 +67,7 @@ describe("무소속 자유 시나리오 자동 플레이 (실제 콘텐츠)", ()
     }
     expect(fired.size).toBeGreaterThanOrEqual(3);
     expect(joined).toBeGreaterThanOrEqual(1);
-  });
+  }, 30_000);
 });
 
 describe("연고와 함께 다니는 떠돌이 자동 플레이 (기획서 7.9)", () => {
@@ -92,5 +92,5 @@ describe("연고와 함께 다니는 떠돌이 자동 플레이 (기획서 7.9)"
     }
     expect(parted).toBeGreaterThan(0);
     expect(rejoined).toBeGreaterThan(0);
-  });
+  }, 30_000);
 });

@@ -27,7 +27,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 17;
+export const SAVE_SCHEMA_VERSION = 18;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -207,6 +207,10 @@ export function createGameSchemas(s: Scenario) {
     companions: z.array(z.string()).default([]),
     /** 동적으로 생긴 인물 사이의 관계 (세계를 만들 때, 인물이 자랄 때, 기획서 7.10). 정해진 관계는 콘텐츠에 있다 */
     dynamicTies: z.array(tieRecordSchema).default([]),
+    /** 구역마다 오늘의 소음 (기획서 4.8) */
+    zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
+    /** 상인이 마지막으로 물건을 채운 날 */
+    restockedDay: z.record(z.string(), z.number().int()).default({}),
     /** 이 세계에서 열린 해금 (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 9.12) */
     unlocked: z.array(z.string()).default([]),
     /** 주인공이 털어놓음을 들은 숨은 관계 (tieKey) */
@@ -331,6 +335,16 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("ties_generated"), ties: z.array(tieRecordSchema) }),
     /** 이름 없는 인물이 자랐다 (프로필은 틀의 재료에서 코드가 골랐다) */
     z.strictObject({ type: z.literal("extra_promoted"), characterId: z.string(), profile: z.custom<NonNullable<Character["profile"]>>((v) => typeof v === "object" && v !== null), ties: z.array(tieRecordSchema).default([]) }),
+    /** 무기를 들거나 방어구를 입었다 (null이면 벗었다) */
+    z.strictObject({ type: z.literal("item_equipped"), characterId: z.string(), slot: z.enum(["weapon", "body", "head"]), itemId: z.string().nullable() }),
+    /** 물건이 닳았다 (delta 음수면 고쳤다) */
+    z.strictObject({ type: z.literal("item_worn"), characterId: z.string(), itemId: z.string(), delta: z.number().int() }),
+    /** 물건이 망가졌다: 하나 줄고, 닳은 것은 처음으로, into가 있으면 그것이 남는다 */
+    z.strictObject({ type: z.literal("item_broken"), characterId: z.string(), itemId: z.string(), into: z.string().nullable() }),
+    /** 소리가 났다 (총소리 등): 그 구역의 오늘 소음 */
+    z.strictObject({ type: z.literal("noise_made"), zone: z.string(), level: z.number().int().min(1), day: z.number().int() }),
+    /** 상인이 물건을 다시 채웠다 */
+    z.strictObject({ type: z.literal("merchant_restocked"), npcId: z.string(), day: z.number().int(), items: z.record(z.string(), z.number().int().min(1)) }),
     /** 해금을 얻었다 (inherited: 다른 판에서 얻은 것을 옮겨 왔다) */
     z.strictObject({ type: z.literal("unlock_earned"), id: z.string(), inherited: z.boolean().default(false) }),
     /** 숨은 관계를 털어놓았다 */
@@ -555,6 +569,8 @@ export function createGameSchemas(s: Scenario) {
         condition: z.number().int(),
         /** 트레잇의 상황 보정 (끌림 등) */
         trait: z.number().int().default(0),
+        /** 물건의 불리함 (입은 방어구, 무거운 짐, 기획서 4.8) */
+        gear: z.number().int().default(0),
       }),
       total: z.number().int(),
       outcome: checkOutcomeSchema,
@@ -616,6 +632,8 @@ export const EMPTY_STATE: GameState = {
   dynamicTies: [],
   revealedTies: [],
   unlocked: [],
+  zoneNoise: {},
+  restockedDay: {},
   squadOrders: {},
   squadReports: {},
   council: {},
@@ -758,6 +776,39 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       const c = mustGet(next.characters, event.characterId, "캐릭터");
       c.profile = structuredClone(event.profile);
       next.dynamicTies = [...next.dynamicTies, ...structuredClone(event.ties)];
+      return next;
+    }
+    case "item_equipped": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      c.equipped = { ...c.equipped, [event.slot]: event.itemId };
+      return next;
+    }
+    case "item_worn": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      const now = Math.max(0, (c.wear[event.itemId] ?? 0) + event.delta);
+      if (now === 0) delete c.wear[event.itemId];
+      else c.wear[event.itemId] = now;
+      return next;
+    }
+    case "item_broken": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      const have = c.inventory[event.itemId] ?? 0;
+      if (have <= 1) delete c.inventory[event.itemId];
+      else c.inventory[event.itemId] = have - 1;
+      delete c.wear[event.itemId];
+      if (event.into) c.inventory[event.into] = (c.inventory[event.into] ?? 0) + 1;
+      for (const slot of ["weapon", "body", "head"] as const) if (c.equipped[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
+      return next;
+    }
+    case "noise_made": {
+      const prev = next.zoneNoise[event.zone];
+      next.zoneNoise[event.zone] = { day: event.day, level: (prev && prev.day === event.day ? prev.level : 0) + event.level };
+      return next;
+    }
+    case "merchant_restocked": {
+      const c = mustGet(next.characters, event.npcId, "캐릭터");
+      for (const [item, qty] of Object.entries(event.items)) c.inventory[item] = (c.inventory[item] ?? 0) + qty;
+      next.restockedDay[event.npcId] = event.day;
       return next;
     }
     case "unlock_earned":

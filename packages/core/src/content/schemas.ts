@@ -15,10 +15,45 @@ import { moveIds, rankIds, statIds } from "../scenario/scenario.ts";
 
 export const contentIdSchema = z.string().regex(/^[a-z][a-z0-9_]*$/, "id는 소문자·숫자·_ 만 쓴다");
 
+const harmCap = z.enum(["light", "heavy"]);
+/** 아이템 (기획서 4.8). 성질은 모두 선택이고, 스킬·슬롯 id는 시나리오에서 검증한다 */
 export const itemContentSchema = z.strictObject({
   id: contentIdSchema,
   name: z.string().min(1),
   description: z.string().optional(),
+  /** 무게 (kg). 없으면 0.5 */
+  weight: z.number().min(0).max(50).optional(),
+  /** 흥정 값. 없으면 1 */
+  value: z.number().int().min(0).max(500).optional(),
+  kind: z.enum(["weapon", "armor", "tool", "ammo", "material", "consumable", "food", "misc"]).optional(),
+  /** 무기: 공격에 쓰는 스킬, 입힐 수 있는 피해 상한, 소음(0~2), 쏠 때 하나씩 쓰는 탄약, 판정 보정 */
+  weapon: z
+    .strictObject({
+      moves: z.array(contentIdSchema).min(1),
+      max_harm: harmCap,
+      noise: z.number().int().min(0).max(2).default(0),
+      ammo: contentIdSchema.optional(),
+      /** 탄약을 쓰는 스킬 (없으면 moves 전부). 소총으로 개머리판을 휘두를 때는 탄약이 들지 않게 */
+      ammo_moves: z.array(contentIdSchema).optional(),
+      bonus: z.number().int().min(-1).max(1).default(0),
+    })
+    .optional(),
+  /** 방어구: 입는 자리, 받는 피해를 줄이는 단계, 입으면 불리해지는 스킬, 감염을 막을 확률 */
+  armor: z
+    .strictObject({
+      slot: z.enum(["body", "head"]),
+      reduces: z.number().int().min(0).max(2),
+      penalty: z.record(contentIdSchema, z.number().int().min(-2).max(0)).default({}),
+      blocks_infection: z.number().min(0).max(1).default(0),
+    })
+    .optional(),
+  /** 도구: 지니고 있으면 그 스킬에 보정 (가장 큰 것 하나) */
+  tool: z.strictObject({ bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)) }).optional(),
+  /** 몇 번 닳으면 망가지는지, 망가지면 남는 것 */
+  durability: z.number().int().min(1).max(20).optional(),
+  breaks_into: contentIdSchema.optional(),
+  /** 고치는 법 */
+  repair: z.strictObject({ move: contentIdSchema, materials: z.record(contentIdSchema, z.number().int().min(1)), tools: z.array(contentIdSchema).default([]) }).optional(),
 });
 export type ItemContent = z.infer<typeof itemContentSchema>;
 
@@ -136,6 +171,8 @@ export function createContentSchemas(s: Scenario) {
     start_inventory: z.array(contentIdSchema).default([]),
     /** 사망 후 이 인물로 이어서 플레이할 수 있는지 */
     playable: z.boolean().default(false),
+    /** 상인 (기획서 4.8): 날마다 이만큼까지 다시 채운다, 흥정할 때 값에 곱한다 */
+    merchant: z.strictObject({ restock: z.record(contentIdSchema, z.number().int().min(1)), markup: z.number().min(1).max(3).default(1.2) }).optional(),
     /** 떠도는 인물: 날마다 이 구역들 중 한 곳에 있다 (유랑상인 등). 있으면 zone 대신 쓴다 (기획서 7.11) */
     roams: z.array(contentIdSchema).min(1).optional(),
     /** 치료사: 장면에 있으면 치료(take_action.treatment)를 해 줄 수 있다 */
@@ -455,6 +492,8 @@ export function createContentSchemas(s: Scenario) {
         clock_gte: z.record(contentIdSchema, z.number().int()).optional(),
         clock_lte: z.record(contentIdSchema, z.number().int()).optional(),
         own_morale_lte: z.number().int().optional(),
+        /** 지금 구역의 오늘 소음이 이 이상 (총소리, 기획서 4.8) */
+        zone_noise_gte: z.number().int().min(1).max(5).optional(),
         /** 우리 무리의 방침이 이 중 하나 (주제 id → 선택지 id 목록, 기획서 9.11). 무리 사람은 누구나 안다 */
         own_policy: z.record(contentIdSchema, z.array(contentIdSchema).min(1)).optional(),
         /** 우리 무리 식량이 며칠 치 이하 */

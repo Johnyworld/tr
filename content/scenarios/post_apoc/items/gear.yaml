@@ -1,0 +1,214 @@
+# 무기·탄약·방어구·도구·재료 (기획서 4.8, *임시* 수치)
+# 탄약 하나 = 한 번 쏠 때 쓰는 몇 발 묶음. 쏘는 공격 한 번에 하나씩 준다
+
+# ── 탄약 ─────────────────────────────────────────
+- id: rifle_rounds
+  name: 소총탄 (몇 발)
+  description: 고무줄로 묶은 소총탄 몇 발. 한 번 쏘는 데 이만큼 든다. 재생탄이 섞여 있다.
+  kind: ammo
+  weight: 0.1
+  value: 3
+- id: shells
+  name: 산탄 (몇 발)
+  description: 종이 껍데기가 눅눅한 산탄 몇 발.
+  kind: ammo
+  weight: 0.15
+  value: 3
+- id: bolts
+  name: 석궁 볼트 (몇 대)
+  description: 쇠못을 박은 나무 볼트 몇 대. 주워서 다시 쓸 수도 있다.
+  kind: ammo
+  weight: 0.15
+  value: 1
+- id: harpoons
+  name: 작살 (몇 대)
+  description: 끝을 갈아 세운 쇠작살 몇 대. 여울섬 공방에서 만든다.
+  kind: ammo
+  weight: 0.6
+  value: 4
+
+# ── 무기 ─────────────────────────────────────────
+- id: machete
+  name: 마체테
+  description: 칼등이 두꺼운 정글도. 휘두르면 소리 없이 깊게 벤다.
+  kind: weapon
+  weight: 1.0
+  value: 9
+  weapon: { moves: [fight], max_harm: heavy, noise: 0 }
+  durability: 8
+  breaks_into: scrap_metal
+  repair: { move: mechanics, materials: { scrap_metal: 1 } }
+- id: baseball_bat
+  name: 야구방망이
+  description: 못을 몇 개 박아 둔 나무 방망이. 손잡이에 덕트 테이프를 감았다.
+  kind: weapon
+  weight: 1.0
+  value: 3
+  weapon: { moves: [fight], max_harm: light, noise: 0, bonus: 1 }
+  durability: 6
+  breaks_into: planks
+  repair: { move: carpentry, materials: { duct_tape: 1 } }
+- id: pipe_spear
+  name: 사제 창
+  description: 쇠파이프 끝에 부엌칼을 테이프로 감아 붙인 창. 감염체를 거리를 두고 찌른다.
+  kind: weapon
+  weight: 1.8
+  value: 5
+  weapon: { moves: [fight], max_harm: heavy, noise: 0 }
+  durability: 4
+  breaks_into: scrap_metal
+  repair: { move: carpentry, materials: { duct_tape: 1 } }
+- id: pistol
+  name: 권총
+  description: 총열에 녹이 슨 경찰 권총. 작고 가볍지만 쏘면 시끄럽다. 소총탄과 구경이 맞게 깎은 탄을 쓴다.
+  kind: weapon
+  weight: 0.9
+  value: 20
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: rifle_rounds }
+  durability: 6
+  breaks_into: scrap_metal
+  repair: { move: mechanics, materials: { scrap_metal: 1 }, tools: [toolkit] }
+- id: crossbow
+  name: 석궁
+  description: 자전거 부품으로 만든 석궁. 장전이 느리지만 소리가 거의 없다.
+  kind: weapon
+  weight: 3.0
+  value: 14
+  weapon: { moves: [shoot], max_harm: heavy, noise: 0, ammo: bolts, bonus: -1 }
+  durability: 6
+  breaks_into: planks
+  repair: { move: carpentry, materials: { planks: 1, wire_roll: 1 } }
+- id: sawn_shotgun
+  name: 개조 산탄총
+  description: 총열을 잘라 낸 붉은연합식 산탄총. 가까이서는 무섭고, 오래 버티지 못한다.
+  kind: weapon
+  weight: 2.2
+  value: 15
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, bonus: 1 }
+  durability: 4
+  breaks_into: scrap_metal
+  repair: { move: mechanics, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
+- id: harpoon_gun
+  name: 작살총
+  description: 여울섬 경비가 메는 고무줄 작살총. 무겁지만 총소리가 나지 않는다.
+  kind: weapon
+  weight: 4.0
+  value: 22
+  weapon: { moves: [shoot], max_harm: heavy, noise: 1, ammo: harpoons }
+  durability: 8
+  breaks_into: scrap_metal
+  repair: { move: mechanics, materials: { scrap_metal: 1, wire_roll: 1 } }
+
+# ── 방어구 ───────────────────────────────────────
+- id: moto_helmet
+  name: 오토바이 헬멧
+  description: 앞 가리개가 깨진 오토바이 헬멧. 머리를 지켜 주지만 옆 소리가 잘 안 들린다.
+  kind: armor
+  weight: 1.5
+  value: 8
+  armor: { slot: head, reduces: 1, penalty: { sense_danger: -1 } }
+  durability: 3
+  breaks_into: scrap_metal
+- id: leather_jacket
+  name: 두꺼운 가죽 재킷
+  description: 팔꿈치까지 잡지를 덧대 꿰맨 가죽 재킷. 이빨이 살까지 잘 들어오지 않는다.
+  kind: armor
+  weight: 2.5
+  value: 9
+  armor: { slot: body, reduces: 0, blocks_infection: 0.6 }
+  durability: 6
+  repair: { move: carpentry, materials: { cloth: 1, duct_tape: 1 } }
+- id: padded_armor
+  name: 덧댄 갑옷
+  description: 잡지와 고철 조각을 덕트 테이프로 몸통에 두른 것. 투박하고 시끄럽다.
+  kind: armor
+  weight: 3.0
+  value: 6
+  armor: { slot: body, reduces: 1, penalty: { stealth: -1 }, blocks_infection: 0.3 }
+  durability: 3
+  breaks_into: scrap_metal
+  repair: { move: carpentry, materials: { cloth: 1, duct_tape: 1 } }
+- id: kevlar_vest
+  name: 방탄 조끼
+  description: 경찰 표식이 지워진 방탄 조끼. 총알도 막지만 무겁고 몸이 굳는다.
+  kind: armor
+  weight: 4.5
+  value: 26
+  armor: { slot: body, reduces: 1, penalty: { stealth: -1 }, blocks_infection: 0.4 }
+  durability: 5
+  breaks_into: cloth
+  repair: { move: carpentry, materials: { cloth: 2, duct_tape: 1 } }
+
+# ── 도구 ─────────────────────────────────────────
+- id: toolkit
+  name: 공구 상자
+  description: 녹슨 렌치와 드라이버가 든 공구 상자. 총과 기계를 고칠 때 있어야 한다.
+  kind: tool
+  weight: 3.0
+  value: 12
+  tool: { bonus: { mechanics: 1 } }
+- id: flashlight
+  name: 손전등
+  description: 손으로 돌려 충전하는 손전등. 어두운 데를 뒤질 때 좋지만 빛은 감염체를 부른다.
+  kind: tool
+  weight: 0.4
+  value: 6
+  tool: { bonus: { scavenge: 1 } }
+- id: fishing_kit
+  name: 낚시 도구
+  description: 낚싯줄과 바늘 몇 개, 접는 낚싯대. 물가에서 먹을 것을 구할 때 좋다.
+  kind: tool
+  weight: 0.5
+  value: 4
+  tool: { bonus: { survival: 1 } }
+- id: carpentry_kit
+  name: 목수 연장
+  description: 톱과 망치, 끌 몇 자루를 천에 말아 둔 것. 나무를 다룰 때 있어야 한다.
+  kind: tool
+  weight: 2.5
+  value: 8
+  tool: { bonus: { carpentry: 1 } }
+
+# ── 재료 ─────────────────────────────────────────
+- id: scrap_metal
+  name: 고철
+  description: 쓸 만한 쇳조각과 볼트 몇 개.
+  kind: material
+  weight: 1.0
+  value: 1
+- id: duct_tape
+  name: 덕트 테이프
+  description: 반쯤 남은 은색 테이프. 세상의 절반을 붙잡고 있다.
+  kind: material
+  weight: 0.2
+  value: 3
+- id: cloth
+  name: 천 조각
+  description: 깨끗이 빤 헌 옷감 몇 장. 붕대가 되거나 갑옷 안감이 된다.
+  kind: material
+  weight: 0.2
+  value: 1
+- id: planks
+  name: 나무 판자
+  description: 못을 뽑아 둔 판자 몇 장.
+  kind: material
+  weight: 1.5
+  value: 1
+- id: gunpowder
+  name: 화약
+  description: 비닐에 싼 화약 한 줌. 습기를 먹으면 끝이다.
+  kind: material
+  weight: 0.2
+  value: 5
+- id: casings
+  name: 빈 탄피
+  description: 주워 모은 빈 탄피 한 줌. 화약만 있으면 다시 쓸 수 있다.
+  kind: material
+  weight: 0.1
+  value: 1
+- id: bandage
+  name: 붕대
+  description: 끓여 말린 천을 감아 둔 붕대. 피를 멎게 한다 (쓰면 부상 1단계, 구급상자보다 못 미덥다).
+  kind: consumable
+  weight: 0.1
+  value: 3

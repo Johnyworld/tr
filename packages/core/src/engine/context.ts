@@ -1,3 +1,4 @@
+import { describeGear } from "./gear.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { describeProfileLines, describeTieLines } from "./people.ts";
 import { describePolicyForGm, describeSquadForGm } from "./command.ts";
@@ -92,6 +93,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       `소지품: ${describeInventory(content, player.inventory)}`,
+      ...(describeGear(content, player) ? [describeGear(content, player)] : []),
       ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감·물건으로만 준다`] : []),
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
       ...(describeCompanions(state, content) ? [describeCompanions(state, content)] : []),

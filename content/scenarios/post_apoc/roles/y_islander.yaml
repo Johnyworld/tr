@@ -19,7 +19,7 @@ scenario:
     이야기는 어느 아침, 여울섬 부두에서 시작한다.
 age: 27
 start_skills: { sense_danger: 1, shoot: 1 }
-start_inventory: [old_rifle, water_bottle, canned_food]
+start_inventory: [harpoon_gun, harpoons, harpoons, harpoons, old_rifle, rifle_rounds, rifle_rounds, rifle_rounds, rifle_rounds, leather_jacket, water_bottle, canned_food, fishing_kit]
 start_location: yeoul_isle
 access: [ration, mission_board]
 beliefs_preset: y_islander_start

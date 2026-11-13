@@ -88,6 +88,30 @@ discipline:
   loose: { label: 느슨함, abandon_merit: -1, expire_merit: -1, counts_disobedience: false, max_disobedience: 3, deed_severity: 1, order_word: 당번 }
   free: { label: 자유, abandon_merit: 0, expire_merit: -1, counts_disobedience: false, max_disobedience: 99, deed_severity: 0, order_word: 일감 }
 
+# 물건 (기획서 4.8, *임시* 수치): 맨손, 무게, 흥정
+gear:
+  # 무기 없이: 근접으로 가벼운 피해까지
+  unarmed: { moves: [fight], max_harm: light }
+  # 전투 중 근접·사격 판정은 공격으로 보고 무기·탄약을 따진다
+  attack_moves: [fight, shoot]
+  # 들 수 있는 무게 = 12kg + 근력 1당 4kg. 넘으면 은밀·근접 -1, 1.5배를 넘으면 옮겨 가지 못한다
+  carry: { base: 12, per_strength: 4, encumbered_moves: [stealth, fight], penalty: -1, hard_limit: 1.5 }
+  # 값의 70% 이상이면 흥정 판정으로 깎을 수 있다
+  haggle_floor: 0.7
+  haggle_moves: [persuade, deceive]
+
+# 제작 법 (기획서 4.8): 재료 + 도구 + 판정 → 결과. 성공은 다, 대가 있는 성공은 절반, 실패는 재료 절반을 버린다
+crafting:
+  recipes:
+    - { id: reload_rounds, label: 재생 소총탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: rifle_rounds, qty: 3 } }
+    - { id: reload_shells, label: 재생 산탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: shells, qty: 3 } }
+    - { id: whittle_bolts, label: 석궁 볼트 깎기, move: carpentry, materials: { planks: 1, scrap_metal: 1 }, tools: [kitchen_knife], yields: { item: bolts, qty: 4 } }
+    - { id: pipe_spear, label: 사제 창 만들기, move: carpentry, materials: { scrap_metal: 1, kitchen_knife: 1, duct_tape: 1 }, yields: { item: pipe_spear, qty: 1 } }
+    - { id: padded_armor, label: 덧댄 갑옷 두르기, move: carpentry, materials: { cloth: 3, scrap_metal: 2, duct_tape: 2 }, yields: { item: padded_armor, qty: 1 } }
+    - { id: bandages, label: 붕대 만들기, move: first_aid, materials: { cloth: 2 }, yields: { item: bandage, qty: 2 } }
+    - { id: wire_trap, label: 철사 덫 감기, move: mechanics, materials: { scrap_metal: 2 }, yields: { item: wire_roll, qty: 1 } }
+    - { id: nail_bat, label: 못 박은 방망이, move: carpentry, materials: { planks: 1, scrap_metal: 1 }, tools: [carpentry_kit], yields: { item: baseball_bat, qty: 1 } }
+
 # 판마다 다른 인물 사이의 관계 (기획서 7.10): 세계를 만들 때 이름 있는 인물들을 이만큼 무작위로 잇는다. 무리가 다르면 숨은 관계
 dynamic_ties: { count: 5, kinds: [sibling, parent, child, spouse, friend, rival] }
 
@@ -256,12 +280,12 @@ custom_start:
   # 무소속으로 시작할 때 고를 수 있는 연고 (extras/kin.yaml, 기획서 7.9)
   kin: [kin_young, kin_elder, kin_sibling, kin_partner, stray_dog]
   kits:
-    - { id: fighter, label: 싸울 채비, description: 몸으로 부딪치는 사람, items: [crowbar, water_bottle, dry_ration] }
-    - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, kitchen_knife, water_bottle, dry_ration] }
-    - { id: medic, label: 의무 채비, description: 다친 사람을 돌보는 사람, items: [medkit, fever_reducer, water_bottle, dry_ration] }
+    - { id: fighter, label: 싸울 채비, description: 몸으로 부딪치는 사람, items: [machete, padded_armor, water_bottle, dry_ration] }
+    - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, crossbow, bolts, bolts, kitchen_knife, water_bottle, dry_ration] }
+    - { id: medic, label: 의무 채비, description: 다친 사람을 돌보는 사람, items: [medkit, fever_reducer, bandage, cloth, water_bottle, dry_ration] }
     - { id: trader, label: 거래 채비, description: 말과 물건으로 사는 사람, items: [cigarettes, canned_food, water_bottle] }
     - { id: clerk, label: 장부 채비, description: 숫자와 소식을 다루는 사람, items: [ledger, radio, water_bottle, canned_food] }
-    - { id: wanderer, label: 떠돌이 채비, description: 담 밖에서 버텨 온 사람, items: [blanket, kitchen_knife, dry_ration] }
+    - { id: wanderer, label: 떠돌이 채비, description: 담 밖에서 버텨 온 사람, items: [blanket, pipe_spear, leather_jacket, dry_ration, fishing_kit] }
 
 # 이전 세이브의 옛 능력 id
 renamed:
@@ -422,6 +446,7 @@ recovery:
 # 쓰면 몸이 나아지는 물건 (take_action.use_item): 아이템 → 트랙 → 나아지는 단계 (*임시*)
 consumables:
   medkit: { harm: 1 }
+  bandage: { harm: 1 }
   antibiotics: { harm: 1, infection: 2 }
   canned_food: { hunger: 2 }
   dry_ration: { hunger: 1 }

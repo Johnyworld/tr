@@ -117,6 +117,15 @@ const reportMission = defineTool({
         { npcId: giver.id, source: "seen" },
       );
     }
+    // 빚 갚는 일감: 임무를 준 무리에 진 빚이 준다 (기획서 9.10)
+    const repay = ctx.content.missions[mission.templateId]?.repays_debt;
+    const lender = giver.factionId;
+    const owed = ctx.store.getState().characters[mission.assigneeId]?.debts[lender] ?? 0;
+    let repaid = 0;
+    if (repay && owed > 0 && result.outcome !== "failed") {
+      repaid = Math.min(owed, result.outcome === "success" ? repay : Math.max(1, Math.trunc(repay / 2)));
+      ctx.store.append({ type: "debt_changed", characterId: mission.assigneeId, factionId: lender, delta: -repaid });
+    }
     // 전선 임무는 우리 무리의 계획(세력 클락)을 앞당긴다. 일부 완수는 절반
     const advances = ctx.content.missions[mission.templateId]?.advances;
     if (advances && ctx.store.getState().clocks[advances.clock] && result.outcome !== "failed") {
@@ -125,7 +134,7 @@ const reportMission = defineTool({
     }
     const label = MISSION_STATUS_LABELS[result.outcome === "success" ? "completed" : result.outcome];
     const lines = [
-      `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.`,
+      `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
     ];
     const growthNote = gainMeritXp(ctx, mission.assigneeId, result.merit);

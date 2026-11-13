@@ -26,3 +26,5 @@ known_npcs: [e_okhee, e_bongsu, e_yuri, e_cheolgu, e_sora, e_deoksu, e_hana]
 commander: e_okhee
 missions: [e_water_haul, e_pump_watch, e_caravan_pine, e_caravan_willow, e_debt_run, e_clinic_barter, e_road_scout, e_scrap_salvage]
 storylet_tags: [e_porter, caravan_life]
+# 상단에 진 빚 (기획서 9.10). 짐을 지는 일감(repays_debt)으로 갚는다
+start_debt: { faction_e: 12 }

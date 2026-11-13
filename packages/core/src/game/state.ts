@@ -26,7 +26,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 11;
+export const SAVE_SCHEMA_VERSION = 12;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -276,6 +276,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     z.strictObject({ type: z.literal("npc_captured"), npcId: z.string(), by: z.string(), zone: z.string() }),
     z.strictObject({ type: z.literal("npc_released"), npcId: z.string() }),
+    z.strictObject({ type: z.literal("debt_changed"), characterId: z.string(), factionId: z.string(), delta: z.number().int() }),
     /** NPC가 떠난다: toFaction이면 그 세력으로 넘어가고(도시에 남는다), null이면 도시를 떠난다 (기획서 10.4) */
     z.strictObject({ type: z.literal("npc_departed"), npcId: z.string(), toFaction: z.string().nullable() }),
     z.strictObject({ type: z.literal("faction_resource_changed"), factionId: z.string(), resource: z.string(), delta: z.number().int() }),
@@ -649,6 +650,13 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       const npc = mustGet(next.characters, event.npcId, "캐릭터");
       npc.captive = { by: event.by, zone: event.zone };
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      return next;
+    }
+    case "debt_changed": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      const now = Math.max(0, (c.debts[event.factionId] ?? 0) + event.delta);
+      if (now === 0) delete c.debts[event.factionId];
+      else c.debts[event.factionId] = now;
       return next;
     }
     case "npc_released": {
@@ -1135,6 +1143,7 @@ export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "pl
     skills: role.start_skills,
     conditions: initialConditions(s),
     inventory: toInventory(role.start_inventory),
+    debts: { ...(role.start_debt ?? {}) },
   });
 }
 

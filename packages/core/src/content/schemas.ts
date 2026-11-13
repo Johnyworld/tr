@@ -58,6 +58,8 @@ export function createContentSchemas(s: Scenario) {
     known_npcs: z.array(contentIdSchema).default([]),
     /** 직속 상관 NPC. 임무를 주고 보고를 받는다 */
     commander: contentIdSchema.optional(),
+    /** 시작할 때 진 빚 (세력 id → 양, 기획서 9.10) */
+    start_debt: z.record(contentIdSchema, z.number().int().min(1)).optional(),
     /** 이 역할에 내려오는 임무 템플릿 */
     missions: z.array(contentIdSchema).default([]),
     storylet_tags: z.array(contentIdSchema).default([]),
@@ -143,6 +145,8 @@ export function createContentSchemas(s: Scenario) {
     giver_rank: idEnum(rankIds(s)),
     deadline_hours: z.number().int().positive().max(72),
     requirements: z.array(missionRequirement).min(1),
+    /** 완수하면 임무를 준 무리에 진 빚이 이만큼 준다 (일부 완수는 절반, 기획서 9.10) */
+    repays_debt: z.number().int().min(1).optional(),
     /** 완수하면 이 세력 클락을 당긴다 (일부 완수는 절반). 전선 임무가 우리 무리의 계획을 앞당긴다 */
     advances: z.strictObject({ clock: contentIdSchema, delta: z.number().int().min(-5).max(5) }).optional(),
   });
@@ -265,6 +269,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ faction_resource: z.strictObject({ faction: z.string().min(1), resource: contentIdSchema, delta: z.number().int().min(-50).max(50) }) }),
     /** 주인공이 그 무리에 들어간다: 무소속이면 가입, 다른 무리에 있으면 옮긴다 (rank가 없으면 가장 낮은 계급). 이미 그 무리면 아무 일도 없다 */
     z.strictObject({ join_faction: z.strictObject({ faction: contentIdSchema, rank: idEnum(rankIds(s)).optional(), title: z.string().min(1).max(24).optional() }) }),
+    /** 주인공의 빚 ± (own = 플레이어 소속). 양수는 빌림, 음수는 갚음. 0 아래로 가지 않는다 (기획서 9.10) */
+    z.strictObject({ debt: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-50).max(50) }) }),
     /** 배역 NPC를 붙잡는다 (포로). by: own(플레이어 소속) 또는 세력 id, zone이 없으면 그 세력의 거점 */
     z.strictObject({ npc_capture: z.strictObject({ who: z.string().min(1), by: z.string().min(1), zone: contentIdSchema.optional() }) }),
     /** 붙잡힌 배역 NPC를 풀어 준다 (구출·석방). 원래 무리로 돌아간다 */
@@ -359,6 +365,9 @@ export function createContentSchemas(s: Scenario) {
         /** 플레이어의 소속 세력 (none = 무소속) */
         factions: z.array(z.string().min(1)).optional(),
         flags_all: z.array(contentIdSchema).optional(),
+        /** 주인공의 빚 (세력 id 또는 own → 하한/상한) */
+        debt_gte: z.record(z.string(), z.number().int()).optional(),
+        debt_lte: z.record(z.string(), z.number().int()).optional(),
         /** 이 중 하나라도 서 있으면 */
         flags_any: z.array(contentIdSchema).optional(),
         /** 세력 사이 지금 태도 (from이 to를 보는 값, own = 플레이어 소속). 이탈·편들기 뒤의 이야기 */

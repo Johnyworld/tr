@@ -3,6 +3,7 @@
   title: 정수장 물 길어 나르기
   briefing: 정수장에서 펌프로 길어 올린 물을 통에 채워 장터까지 나른다. 통 하나라도 쏟으면 장부에 빚으로 적힌다.
   giver_rank: squad_leader
+  repays_debt: 2
   deadline_hours: 10
   requirements:
     - activity: work
@@ -23,6 +24,7 @@
   title: 청솔형제단 물 배달
   briefing: 물통을 지고 강변을 지나 청솔형제단 거점에 넘기고, 값으로 담배와 고철을 받아 온다. 값을 깎으려 들면 버틴다.
   giver_rank: squad_leader
+  repays_debt: 3
   deadline_hours: 14
   requirements:
     - activity: travel
@@ -34,6 +36,7 @@
   title: 버들마을 물값 받기
   briefing: 버들마을에 물을 넘기고 두 번 미룬 물값까지 받아 온다. 그쪽도 사정이 어렵다. 빈손으로 오지는 마라.
   giver_rank: squad_leader
+  repays_debt: 3
   deadline_hours: 14
   requirements:
     - check: sense_danger
@@ -76,6 +79,7 @@
   title: 강변 공장 고철 줍기
   briefing: 강변 공장 지대에서 팔 만한 고철과 부품을 찾아 온다. 소리를 내면 감염체가 모인다. 해 지기 전에 돌아온다.
   giver_rank: squad_leader
+  repays_debt: 2
   deadline_hours: 10
   requirements:
     - check: scavenge

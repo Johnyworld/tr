@@ -328,6 +328,17 @@ function applyEffect(
       display: { type: "promotion", name: player.name, fromLabel: from, toLabel: role.label },
     };
   }
+  if ("debt" in effect) {
+    const id = effect.debt.faction === "own" ? state.characters[playerId]!.factionId : effect.debt.faction;
+    if (!content.factions[id]) return {};
+    const before = state.characters[playerId]!.debts[id] ?? 0;
+    const delta = Math.max(-before, effect.debt.delta);
+    if (delta === 0) return {};
+    store.append({ type: "debt_changed", characterId: playerId, factionId: id, delta });
+    const after = before + delta;
+    const name = content.factions[id]!.name;
+    return { line: delta > 0 ? `${name}에 빚을 졌다 (장부에 올랐다).` : after === 0 ? `${name}에 진 빚을 다 갚았다.` : `${name}에 진 빚을 조금 갚았다.` };
+  }
   if ("npc_capture" in effect) {
     const id = whoOf(ctx, effect.npc_capture.who, cast);
     const npc = id ? state.characters[id] : undefined;

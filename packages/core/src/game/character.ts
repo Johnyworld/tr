@@ -53,6 +53,8 @@ export function createCharacterSchema(s: Scenario) {
     away: z.boolean().default(false),
     /** 붙잡혀 있다 (포로, 기획서 7.6). by 세력이 zone에 가둬 두었다. 장면·배역·소문에서 빠지고, 그 구역에서만 만날 수 있다 */
     captive: z.strictObject({ by: z.string(), zone: z.string() }).nullable().default(null),
+    /** 진 빚 (세력 id → 양, 기획서 9.10). 캐릭터의 것이라 계승하면 새로 시작한다 */
+    debts: z.record(z.string(), z.number().int().min(0)).default({}),
     rank: idEnum(rankIds(s)),
     /** 화법 규칙에 쓴다. 모르면 null */
     age: z.number().int().positive().nullable().default(null),

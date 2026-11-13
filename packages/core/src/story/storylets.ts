@@ -92,6 +92,9 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (!w.zone_owner.includes(kind)) return false;
   }
   if (w.flags_any && !w.flags_any.some((f) => flags.has(f))) return false;
+  const debtOf = (f: string) => player.debts[f === "own" ? player.factionId : f] ?? 0;
+  for (const [f, n] of Object.entries(w.debt_gte ?? {})) if (debtOf(f) < n) return false;
+  for (const [f, n] of Object.entries(w.debt_lte ?? {})) if (debtOf(f) > n) return false;
   for (const d of w.dispositions ?? []) {
     const id = (x: string) => (x === "own" ? player.factionId : x);
     const v = disposition(content, id(d.from), id(d.to), state);

@@ -1,0 +1,103 @@
+# 빚 (기획서 9.10). 나루상단의 장부에 적힌 빚을 지고, 갚고, 독촉받는다. 태그 world라 어느 시나리오에서나
+# 빚의 양은 콘텐츠가 정하고(debt 효과), 갚는 일감은 missions의 repays_debt
+
+- id: wd_borrow_food
+  title: 장부에 적는 통조림
+  repeatable: true
+  cooldown_days: 4
+  tags: [world]
+  when:
+    zones: [e_market]
+    segments: [morning, day]
+    debt_lte: { faction_e: 20 }
+  cast:
+    clerk: { ids: [e_sora] }
+  setup: "장터 좌판 뒤, {clerk:이/가} 연필로 장부를 넘기다 고개를 든다. \"배고파 보이네. 통조림 두 개, 장부에 달아 줄 수 있어. 대신 갚는 날짜는 내가 정해.\""
+  ai_direction: 나루상단은 누구에게나 빌려 준다. 갚지 않으면 끝까지 따라온다. 문소라는 냉정하지만 거짓말은 하지 않는다.
+  choices:
+    - id: borrow
+      label: 장부에 달고 통조림을 받는다
+      effects:
+        - give_item: { item: canned_food, quantity: 2 }
+        - debt: { faction: faction_e, delta: 5 }
+    - id: decline
+      label: 됐다고 한다
+      effects: []
+
+- id: wd_dunning
+  title: 장부꾼의 독촉
+  tags: [world]
+  when:
+    debt_gte: { faction_e: 8 }
+    day_gte: 5
+    segments: [day, evening]
+  cast:
+    clerk: { ids: [e_sora] }
+  setup: "{clerk:이/가} 장부를 품에 안고 길을 막는다. \"당신 이름 옆 줄이 길어. 이번 주 안에 반은 갚아. 물건이든 일이든.\""
+  ai_direction: 문소라는 빚 장부의 사정을 정확히 안다. 물건으로 갚으면 장부에서 지우고, 일감을 받겠다면 짐마차 일을 소개한다. 둘러대면 표정이 굳는다. 빚진 사람이 많아 하나를 봐주면 모두를 봐줘야 한다는 것을 안다.
+  choices:
+    - id: pay_goods
+      label: 통조림으로 일부를 갚는다
+      effects:
+        - take_item: { item: canned_food }
+        - debt: { faction: faction_e, delta: -3 }
+        - relation: { who: clerk, axis: trust, delta: 1 }
+    - id: promise_work
+      label: 짐마차 일로 갚겠다고 한다
+      effects:
+        - set_flag: wd_promised_work
+        - belief: { fact: "문소라가 말했다: 짐마차 일감을 받으면 장부에서 빚을 지워 준다", source: report }
+    - id: dodge
+      label: 장부가 틀렸다고 우긴다
+      check: deceive
+      outcomes:
+        success:
+          - relation: { who: clerk, axis: trust, delta: -1 }
+          - belief: { fact: 문소라가 장부를 다시 넘겨 보다 한숨을 쉬었다. 이번엔 넘어갔다, source: seen }
+        partial:
+          - debt: { faction: faction_e, delta: 2 }
+          - belief: { fact: 문소라가 우긴 값까지 장부에 이자로 얹었다, source: seen }
+        miss:
+          - debt: { faction: faction_e, delta: 3 }
+          - relation: { who: clerk, axis: trust, delta: -2 }
+          - deed: { summary: 나루상단 장부꾼 앞에서 빚을 잡아뗐다, tags: [deceit], severity: 1, privacy: semi_private }
+
+- id: wd_collectors
+  title: 빚 받으러 온 사내들
+  urgent: true
+  tags: [world]
+  when:
+    debt_gte: { faction_e: 15 }
+    day_gte: 7
+    zone_owner: [none, other]
+    segments: [evening, night]
+  cast:
+    collector: { extra: e_porter, label: 빚 받으러 온 짐꾼 }
+  setup: 길모퉁이에서 어깨가 넓은 짐꾼 둘이 앞을 막는다. 앞에 선 {collector:이/가} 손바닥에 장부 한 장을 펴 보인다. 당신 이름이 적혀 있다. "사장님이 안부 전하래. 오늘 얼마나 가져왔어?"
+  ai_direction: 나루상단의 빚쟁이들은 사람을 다치게 하려는 게 아니라 겁을 주려는 것이다. 물건을 내놓으면 장부에서 지우고 간다. 일로 갚겠다면 데려간다. 맞서면 판정과 target_harm으로만 정한다. 나루상단과 척을 지면 정수장 물을 사기 어려워진다.
+  choices:
+    - id: pay
+      label: 가진 것으로 갚는다
+      effects:
+        - take_item: { item: canned_food }
+        - debt: { faction: faction_e, delta: -4 }
+    - id: work_off
+      label: 일로 갚겠다며 따라간다
+      effects:
+        - debt: { faction: faction_e, delta: -6 }
+        - body: { track: hunger, delta: 1 }
+        - belief: { fact: 밤새 나루상단 짐을 지어 빚 일부를 갚았다. 등이 끊어질 것 같다, source: seen }
+    - id: face_down
+      label: 장부를 찢겠다고 노려본다
+      check: intimidate
+      outcomes:
+        success:
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - belief: { fact: 빚쟁이들이 물러갔다. 장부는 그대로다, source: seen }
+        partial:
+          - debt: { faction: faction_e, delta: 2 }
+          - belief: { fact: 빚쟁이들이 비웃고 돌아갔다. 장부에 무언가를 더 적었다, source: seen }
+        miss:
+          - debt: { faction: faction_e, delta: 3 }
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - deed: { summary: 나루상단 빚쟁이들에게 대들었다가 망신을 당했다, tags: [cowardice], severity: 1, privacy: public }

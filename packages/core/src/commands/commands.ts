@@ -110,6 +110,8 @@ const status: CommandDef = {
           (trust !== null && commander ? ` · ${commander.name}의 신뢰 ${relationLabel(trust)}` : ""),
       );
     }
+    const debts = Object.entries(player.debts ?? {});
+    if (debts.length) lines.push(`빚    ${debts.map(([f, n]) => `${ctx.content.factions[f]?.name ?? f} ${n}`).join(" · ")}`);
     if (player.dead) lines.push("", "사망했습니다.");
     return lines.join("\n");
   },

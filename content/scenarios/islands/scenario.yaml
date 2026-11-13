@@ -87,6 +87,8 @@ discipline:
   loose: { label: 느슨함, abandon_merit: -1, expire_merit: -1, counts_disobedience: false, max_disobedience: 3, deed_severity: 1, order_word: 당번 }
   free: { label: 자유, abandon_merit: 0, expire_merit: -1, counts_disobedience: false, max_disobedience: 99, deed_severity: 0, order_word: 일감 }
 
+dynamic_ties: { count: 2, kinds: [sibling, parent, child, friend, rival] }
+
 # 지휘 (기획서 9.11): 분대 명령의 일과 지도부 회의의 방침 (*임시* 수치)
 # 규칙(따르는지, 결과 판정, 전쟁 틱 반영)은 core에 있다. 여기는 이름과 숫자만
 command:

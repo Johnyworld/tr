@@ -1,3 +1,4 @@
+import { runPromotions } from "./people.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
 import { runSquadOrders } from "./command.ts";
 import { runCompanions } from "./companionTools.ts";
@@ -40,9 +41,11 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const squad = runSquadOrders(ctx);
   // 동행: 떨어져 있던 사람의 합류, 임무 짝의 귀대, 관계가 바닥이면 떠남, 목적을 이루면 갈림길
   const companions = runCompanions(ctx);
+  // 깊이 엮인 이름 없는 인물이 자란다 (기획서 7.10)
+  const grown = runPromotions(ctx);
   // 조건이 맞는 이야기 (간격이 지났고 전투 중이 아닐 때)
   const storylets = runStorylets(ctx);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
   const healed = runNaturalRecovery(ctx);
-  return [...war, ...battles, ...missions, ...squad, ...companions, ...storylets, ...healed];
+  return [...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed];
 }

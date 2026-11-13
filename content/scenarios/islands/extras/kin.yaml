@@ -15,6 +15,17 @@
   inventory:
     - { item: dry_ration, chance: 0.3 }
   values: { mercy: 1, loyalty: 2 }
+  profile:
+    wants: [당신과 함께 겨울을 넘기는 것, 짐이 되지 않는 것, 붕괴 전처럼 한 지붕 아래 사는 것]
+    fears: [당신을 잃는 것, 혼자 남는 것, 열병]
+    voices:
+      - { style: 오래 함께한 사람의 편한 반말, samples: ["밥은 먹었어?", "오늘은 어디까지 가?"] }
+      - { style: 걱정이 많은 말투. 같은 말을 두 번 한다, samples: ["조심해. 진짜 조심해.", "늦지 마. 늦으면 찾으러 갈 거야."] }
+    rules: [당신이 다치면 하던 일을 멈춘다]
+    reputations: [당신과 함께 다니는 가족]
+    secrets:
+      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+  appears: { zones: [] }
 
 - id: kin_elder
   label: 늙은 가족 (부모·조부모)
@@ -31,6 +42,17 @@
     - { item: blanket, chance: 0.6 }
     - { item: fever_reducer, chance: 0.3 }
   values: { mercy: 2, honesty: 1, loyalty: 2 }
+  profile:
+    wants: [당신과 함께 겨울을 넘기는 것, 짐이 되지 않는 것, 붕괴 전처럼 한 지붕 아래 사는 것]
+    fears: [당신을 잃는 것, 혼자 남는 것, 열병]
+    voices:
+      - { style: 오래 함께한 사람의 편한 반말, samples: ["밥은 먹었어?", "오늘은 어디까지 가?"] }
+      - { style: 걱정이 많은 말투. 같은 말을 두 번 한다, samples: ["조심해. 진짜 조심해.", "늦지 마. 늦으면 찾으러 갈 거야."] }
+    rules: [당신이 다치면 하던 일을 멈춘다]
+    reputations: [당신과 함께 다니는 가족]
+    secrets:
+      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+  appears: { zones: [] }
 
 - id: kin_sibling
   label: 형제자매
@@ -47,6 +69,17 @@
     - { item: kitchen_knife, chance: 0.6 }
     - { item: water_bottle }
   values: { loyalty: 2, self_interest: 0 }
+  profile:
+    wants: [당신과 함께 겨울을 넘기는 것, 짐이 되지 않는 것, 붕괴 전처럼 한 지붕 아래 사는 것]
+    fears: [당신을 잃는 것, 혼자 남는 것, 열병]
+    voices:
+      - { style: 오래 함께한 사람의 편한 반말, samples: ["밥은 먹었어?", "오늘은 어디까지 가?"] }
+      - { style: 걱정이 많은 말투. 같은 말을 두 번 한다, samples: ["조심해. 진짜 조심해.", "늦지 마. 늦으면 찾으러 갈 거야."] }
+    rules: [당신이 다치면 하던 일을 멈춘다]
+    reputations: [당신과 함께 다니는 가족]
+    secrets:
+      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+  appears: { zones: [] }
 
 - id: kin_partner
   label: 오랜 짝 (배우자·연인)
@@ -63,3 +96,14 @@
     - { item: water_bottle }
     - { item: medkit, chance: 0.2 }
   values: { mercy: 1, loyalty: 2, honesty: 1 }
+  profile:
+    wants: [당신과 함께 겨울을 넘기는 것, 짐이 되지 않는 것, 붕괴 전처럼 한 지붕 아래 사는 것]
+    fears: [당신을 잃는 것, 혼자 남는 것, 열병]
+    voices:
+      - { style: 오래 함께한 사람의 편한 반말, samples: ["밥은 먹었어?", "오늘은 어디까지 가?"] }
+      - { style: 걱정이 많은 말투. 같은 말을 두 번 한다, samples: ["조심해. 진짜 조심해.", "늦지 마. 늦으면 찾으러 갈 거야."] }
+    rules: [당신이 다치면 하던 일을 멈춘다]
+    reputations: [당신과 함께 다니는 가족]
+    secrets:
+      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+  appears: { zones: [] }

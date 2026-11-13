@@ -1,3 +1,4 @@
+import { TIE_KINDS } from "./ties.ts";
 import { z } from "zod";
 import type { Rng } from "../rng.ts";
 import { CHECK_OUTCOMES, difficultySchema } from "../rules/check.ts";
@@ -26,7 +27,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 15;
+export const SAVE_SCHEMA_VERSION = 16;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -81,6 +82,14 @@ export const bondSchema = z.strictObject({
   apart: z.strictObject({ zone: z.string().nullable(), until: z.number().int().nullable(), since: z.number().int() }).optional(),
 });
 export type Bond = z.infer<typeof bondSchema>;
+
+/** 인물 사이의 관계 한 줄: a는 b의 kind (기획서 7.10) */
+export const tieRecordSchema = z.strictObject({
+  a: z.string(),
+  b: z.string(),
+  kind: z.enum(TIE_KINDS),
+  secret: z.strictObject({ reveal_when: z.string(), min_trust: z.number().int() }).nullable(),
+});
 
 /** 세력 클락: 다 차면 목표 구역을 총공격한다 */
 export const clockStateSchema = z.strictObject({
@@ -196,6 +205,10 @@ export function createGameSchemas(s: Scenario) {
     customRole: customRoleSchema.nullable().default(null),
     /** 주인공과 함께 다니는 인물·동물 (기획서 7.8). 구역을 옮겨도 따라오고 장면에 남는다 */
     companions: z.array(z.string()).default([]),
+    /** 동적으로 생긴 인물 사이의 관계 (세계를 만들 때, 인물이 자랄 때, 기획서 7.10). 정해진 관계는 콘텐츠에 있다 */
+    dynamicTies: z.array(tieRecordSchema).default([]),
+    /** 주인공이 털어놓음을 들은 숨은 관계 (tieKey) */
+    revealedTies: z.array(z.string()).default([]),
     /** 함께 다니는 이유 (NPC id → 이유, 기획서 7.9). 지금 곁에 있는 사람(companions)과 잠시 떨어져 있는 사람 모두 */
     bonds: z.record(z.string(), bondSchema).default({}),
     /** 분대원에게 맡긴 일 (NPC id → 명령, 기획서 9.11). follow는 동행으로 다루고 여기 넣지 않는다 */
@@ -312,6 +325,12 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     z.strictObject({ type: z.literal("npc_captured"), npcId: z.string(), by: z.string(), zone: z.string() }),
     z.strictObject({ type: z.literal("npc_released"), npcId: z.string() }),
+    /** 인물 사이의 관계가 생겼다 (세계를 만들 때 무작위로) */
+    z.strictObject({ type: z.literal("ties_generated"), ties: z.array(tieRecordSchema) }),
+    /** 이름 없는 인물이 자랐다 (프로필은 틀의 재료에서 코드가 골랐다) */
+    z.strictObject({ type: z.literal("extra_promoted"), characterId: z.string(), profile: z.custom<NonNullable<Character["profile"]>>((v) => typeof v === "object" && v !== null), ties: z.array(tieRecordSchema).default([]) }),
+    /** 숨은 관계를 털어놓았다 */
+    z.strictObject({ type: z.literal("tie_revealed"), key: z.string() }),
     /** 함께 다니기 시작했다. kind가 없으면 이전 세이브 (코드가 틀로 정한다) */
     z.strictObject({ type: z.literal("companion_joined"), characterId: z.string(), kind: z.enum(BOND_KINDS).optional(), missionId: z.string().optional(), until: bondUntilSchema.optional() }),
     /** 헤어졌다 (함께 다니는 이유가 끝났다) */
@@ -588,6 +607,8 @@ export const EMPTY_STATE: GameState = {
   keptExtras: {},
   companions: [],
   bonds: {},
+  dynamicTies: [],
+  revealedTies: [],
   squadOrders: {},
   squadReports: {},
   council: {},
@@ -723,6 +744,18 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
       return next;
     }
+    case "ties_generated":
+      next.dynamicTies = [...next.dynamicTies, ...structuredClone(event.ties)];
+      return next;
+    case "extra_promoted": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      c.profile = structuredClone(event.profile);
+      next.dynamicTies = [...next.dynamicTies, ...structuredClone(event.ties)];
+      return next;
+    }
+    case "tie_revealed":
+      if (!next.revealedTies.includes(event.key)) next.revealedTies = [...next.revealedTies, event.key];
+      return next;
     case "companion_joined": {
       if (!next.companions.includes(event.characterId)) next.companions.push(event.characterId);
       if (!next.scene.present.includes(event.characterId)) next.scene.present.push(event.characterId);

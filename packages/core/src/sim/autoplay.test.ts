@@ -103,7 +103,7 @@ describe("두 번째 월드 여울섬 군도 자동 플레이", () => {
     it(`${role.id}: 오류 없이 돌고, 그 시나리오의 이야기가 열린다`, () => {
       const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(11) });
       const world = m.create("mcp", role.id);
-      const stats = autoplay(world, content, createSeededRng(110), 250);
+      const stats = autoplay(world, content, createSeededRng(110), 320);
       world.close();
       expect(stats.errors).toEqual([]);
       const own = Object.keys(stats.storyletsFired).filter((id) => content.storylets[id]?.tags.includes(role.storylet_tags[0]!));

@@ -18,6 +18,21 @@
     - { item: water_bottle }
     - { item: blanket, chance: 0.5 }
   values: { mercy: 1, loyalty: 2 }
+  profile:
+    wants: [겨울을 날 담 안의 자리, 잃어버린 가족을 찾는 것, 혼자가 아닌 것, 뭍이든 섬이든 정착할 곳]
+    fears: [혼자 남는 밤, 무리에 끌려가는 것, 물결, 굶어 죽는 것]
+    voices:
+      - { style: 경계하는 짧은 반말. 눈은 늘 출구를 본다, samples: ["가까이 오지 마. 거기서 말해.", "공짜는 없어."] }
+      - { style: 지치고 조용한 존댓말, samples: ["먹을 거 있으면… 아니에요.", "어디서 왔는지는 묻지 말아 주세요."] }
+      - { style: 넉살 좋은 반말. 말이 많다, samples: ["이 동네 길은 내가 다 알아.", "같이 다니면 둘 다 덜 죽어."] }
+    rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
+    reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
+    secrets:
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+  ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
+  appears: { zone_owner: [none] }
 
 - id: drifter_young
   label: 떠돌이 무리의 젊은이
@@ -34,6 +49,21 @@
     - { item: crowbar, chance: 0.5 }
     - { item: cigarettes, chance: 0.4 }
   values: { self_interest: 2, loyalty: -1 }
+  profile:
+    wants: [겨울을 날 담 안의 자리, 잃어버린 가족을 찾는 것, 혼자가 아닌 것, 뭍이든 섬이든 정착할 곳]
+    fears: [혼자 남는 밤, 무리에 끌려가는 것, 물결, 굶어 죽는 것]
+    voices:
+      - { style: 경계하는 짧은 반말. 눈은 늘 출구를 본다, samples: ["가까이 오지 마. 거기서 말해.", "공짜는 없어."] }
+      - { style: 지치고 조용한 존댓말, samples: ["먹을 거 있으면… 아니에요.", "어디서 왔는지는 묻지 말아 주세요."] }
+      - { style: 넉살 좋은 반말. 말이 많다, samples: ["이 동네 길은 내가 다 알아.", "같이 다니면 둘 다 덜 죽어."] }
+    rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
+    reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
+    secrets:
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+  ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
+  appears: { zone_owner: [none] }
 
 - id: drifter_child
   label: 떠돌이 아이
@@ -49,6 +79,21 @@
   inventory:
     - { item: dry_ration, chance: 0.2 }
   values: { mercy: 1 }
+  profile:
+    wants: [겨울을 날 담 안의 자리, 잃어버린 가족을 찾는 것, 혼자가 아닌 것, 뭍이든 섬이든 정착할 곳]
+    fears: [혼자 남는 밤, 무리에 끌려가는 것, 물결, 굶어 죽는 것]
+    voices:
+      - { style: 경계하는 짧은 반말. 눈은 늘 출구를 본다, samples: ["가까이 오지 마. 거기서 말해.", "공짜는 없어."] }
+      - { style: 지치고 조용한 존댓말, samples: ["먹을 거 있으면… 아니에요.", "어디서 왔는지는 묻지 말아 주세요."] }
+      - { style: 넉살 좋은 반말. 말이 많다, samples: ["이 동네 길은 내가 다 알아.", "같이 다니면 둘 다 덜 죽어."] }
+    rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
+    reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
+    secrets:
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+  ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
+  appears: { zone_owner: [none] }
 
 - id: drifter_elder
   label: 늙은 떠돌이
@@ -68,6 +113,21 @@
   values: { mercy: 2, honesty: 1 }
 
 # 동물 (기획서 7.8 동행). 사람 이름을 짓지 않고 호칭이 이름이 된다. 함께 다니면 경계 +1
+  profile:
+    wants: [겨울을 날 담 안의 자리, 잃어버린 가족을 찾는 것, 혼자가 아닌 것, 뭍이든 섬이든 정착할 곳]
+    fears: [혼자 남는 밤, 무리에 끌려가는 것, 물결, 굶어 죽는 것]
+    voices:
+      - { style: 경계하는 짧은 반말. 눈은 늘 출구를 본다, samples: ["가까이 오지 마. 거기서 말해.", "공짜는 없어."] }
+      - { style: 지치고 조용한 존댓말, samples: ["먹을 거 있으면… 아니에요.", "어디서 왔는지는 묻지 말아 주세요."] }
+      - { style: 넉살 좋은 반말. 말이 많다, samples: ["이 동네 길은 내가 다 알아.", "같이 다니면 둘 다 덜 죽어."] }
+    rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
+    reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
+    secrets:
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+  ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
+  appears: { zone_owner: [none] }
 - id: stray_dog
   label: 누렁이
   animal: true
@@ -81,3 +141,4 @@
   traits: []
   trait_count: 0
   companion_bonus: { sense_danger: 1 }
+  appears: { zone_owner: [none] }

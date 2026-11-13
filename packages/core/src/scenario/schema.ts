@@ -315,6 +315,13 @@ export const scenarioFileSchema = z
           .default([]),
       })
       .optional(),
+    /** 세계를 만들 때 코드가 이름 있는 인물들을 이만큼 무작위로 잇는다 (기획서 7.10. 판마다 다른 관계) */
+    dynamic_ties: z
+      .strictObject({
+        count: z.number().int().min(0).max(30),
+        kinds: z.array(z.enum(["parent", "child", "sibling", "spouse", "friend", "rival"])).min(1),
+      })
+      .optional(),
     /** 새 게임의 월드 고르기에 보이는 것 (기획서 12.3). 없으면 name만 */
     world: z
       .strictObject({

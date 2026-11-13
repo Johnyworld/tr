@@ -1,3 +1,4 @@
+import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { formatTime } from "../rules/time.ts";
 import { changeCondition } from "./body.ts";
 import { disposition } from "../sim/war.ts";
@@ -322,6 +323,14 @@ function applyEffect(
     if (!state.factions[id]) return {};
     store.append({ type: "faction_resource_changed", factionId: id, resource, delta });
     return {}; // 창고 사정은 배급과 소문으로만 드러난다
+  }
+  if ("reveal_tie" in effect) {
+    const a = whoOf(ctx, effect.reveal_tie.who, cast);
+    const b = whoOf(ctx, effect.reveal_tie.other, cast);
+    const tie = a && b ? tiesOf(state, content, a).find((t) => t.other === b) : undefined;
+    if (!tie || tieKnown(state, tie)) return {};
+    store.append({ type: "tie_revealed", key: tie.key });
+    return { line: `알게 된 관계: ${playerCalls(state, content, a!)}은(는) ${playerCalls(state, content, b!)}의 ${TIE_LABELS[tie.kind]}다.` };
   }
   if ("faction_policy" in effect) {
     const { topic, option } = effect.faction_policy;

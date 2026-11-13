@@ -83,6 +83,9 @@
   start_inventory: [water_bottle]
   playable: true
   zone: harbor_wreck
+  # 선단이 턴 섬에서 함께 자란 친구 (기획서 7.10)
+  ties:
+    - { to: l_dabin, kind: friend, secret: { reveal_when: 등대 불 이야기가 나올 때 둘만 있으면, min_trust: 2 } }
 
 - id: fl_dosik
   name: 민도식

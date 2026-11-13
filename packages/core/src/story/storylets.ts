@@ -1,3 +1,4 @@
+import { tiesOf } from "../game/ties.ts";
 import { activeCompanions, bondOf } from "../game/companions.ts";
 import { isAwayCompanion } from "../engine/companionTools.ts";
 import { factionPolicy } from "../sim/war.ts";
@@ -24,7 +25,7 @@ import { seasonAt } from "../sim/season.ts";
 type CastRole = StoryletContent["cast"][string];
 
 /** 이 배역에 맞는 살아 있는 NPC들 (id 순) */
-export function castCandidates(state: GameState, content: Content, role: CastRole): string[] {
+export function castCandidates(state: GameState, content: Content, role: CastRole, picked: Record<string, string> = {}): string[] {
   const player = state.characters[state.playerId];
   if (!player) return [];
   const commander = commanderOf(state, content);
@@ -41,7 +42,10 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
       .sort();
   }
   return Object.values(state.characters)
-    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && content.npcs[c.id] && !state.squadOrders?.[c.id] && !isAwayCompanion(state, c.id))
+    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && (content.npcs[c.id] || c.profile) && !state.squadOrders?.[c.id] && !isAwayCompanion(state, c.id))
+    // 그 배역과 이어진 사람 (기획서 7.10: 적의 가족을 만나는 이야기)
+    .filter((c) => !role.tie || tiesOf(state, content, picked[role.tie.of] ?? "").some((t) => t.other === c.id && (!role.tie!.kinds || role.tie!.kinds.includes(t.kind))))
+    .filter((c) => !role.tie?.cross || c.factionId !== state.characters[picked[role.tie.of] ?? ""]?.factionId)
     // 포로는 captive: true인 배역만, 그리고 그 구역에서만 (갇힌 곳에서 마주친다)
     .filter((c) => (role.captive ? !!c.captive && c.captive.zone === state.playerZone : !c.captive))
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
@@ -86,7 +90,7 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       cast[key] = `${EXTRA_CAST_PREFIX}${role.extra}`;
       continue;
     }
-    const options = castCandidates(state, content, role).filter((id) => !used.has(id));
+    const options = castCandidates(state, content, role, cast).filter((id) => !used.has(id));
     if (options.length === 0) return null;
     const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;
     cast[key] = id;

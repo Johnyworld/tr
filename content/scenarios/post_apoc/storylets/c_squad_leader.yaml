@@ -209,7 +209,7 @@
   cast:
     big: { ids: [c_muyeol], trust_gte: 1 }
   setup: "수용소 담 옆, {big:이/가} 안쪽 창문을 올려다보고 있다. 당신이 다가오자 주먹을 쥐었다 편다. \"조장. 저 안에 배식 한 번 더 넣는 거, 조장이면 할 수 있지.\""
-  ai_direction: 권무열의 동생이 저 안에 있다 (비밀). 지금은 배식 이야기만 한다. 들어주면 마경수의 눈에 걸릴 수 있다. 사정을 캐물으면 판정으로 동생 이야기를 털어놓는다.
+  ai_direction: 권무열은 저 안의 청솔형제단 포로에게서 청솔에 있는 여동생 소식을 들으려 한다 (비밀). 배식을 넣어 주면 포로가 입을 열지도 모른다. 지금은 배식 이야기만 한다. 들어주면 마경수의 눈에 걸릴 수 있다. 사정을 캐물으면 판정으로 동생 이야기를 털어놓는다.
   choices:
     - id: help
       label: 배급 하나를 몰래 넣어 준다
@@ -225,9 +225,9 @@
         success:
           - set_flag: c_sl_muyeol_done
           - relation: { who: big, axis: trust, delta: 1 }
-          - belief: { fact: "권무열의 친동생이 수용소에 갇혀 있다. 붕괴 때 다른 무리로 흩어졌다고 한다", source: report }
+          - belief: { fact: "권무열의 여동생이 청솔형제단에 있다고 한다. 붕괴 때 흩어졌고, 수용소의 청솔 포로에게서 소식을 들으려 한다", source: report }
         partial:
-          - belief: { fact: "권무열은 수용소 안에 아는 사람이 있다고만 했다", source: report }
+          - belief: { fact: "권무열은 수용소 포로에게 물어볼 게 있다고만 했다", source: report }
         miss:
           - relation: { who: big, axis: affection, delta: -1 }
     - id: refuse

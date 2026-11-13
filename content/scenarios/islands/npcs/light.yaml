@@ -89,6 +89,8 @@
   start_inventory: [old_rifle]
   playable: false
   zone: ferry_pier
+  ties:
+    - { to: fl_sangcheol, kind: rival }
 
 - id: l_jaemin
   name: 오재민

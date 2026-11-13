@@ -93,6 +93,19 @@ function checkReferences(content: Content): string[] {
       for (const who of o.opposed_by) if (!content.npcs[who]) problems.push(`scenario.command.policies.${p.id}.${o.id}: 알 수 없는 반대자 ${who}`);
     }
   }
+  for (const npc of Object.values(content.npcs)) {
+    for (const t of npc.ties ?? []) {
+      if (!content.npcs[t.to]) problems.push(`npcs.${npc.id}.ties: 알 수 없는 인물 ${t.to}`);
+      if (t.to === npc.id) problems.push(`npcs.${npc.id}.ties: 자기 자신과는 이을 수 없다`);
+    }
+  }
+  for (const st of Object.values(content.storylets)) {
+    const keys = Object.keys(st.cast);
+    keys.forEach((key, i) => {
+      const of = st.cast[key]!.tie?.of;
+      if (of && !keys.slice(0, i).includes(of)) problems.push(`storylets.${st.id}.cast.${key}.tie: ${of}는 이 배역보다 앞에 있어야 한다`);
+    });
+  }
   for (const k of content.scenario.custom_start?.kin ?? []) {
     if (!content.extras[k]) problems.push(`scenario.custom_start.kin: 알 수 없는 엑스트라 틀 ${k}`);
   }

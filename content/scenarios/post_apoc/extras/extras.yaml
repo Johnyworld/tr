@@ -18,6 +18,19 @@
     - { item: cigarettes, chance: 0.5 }
     - { item: dry_ration, chance: 0.4 }
   values: { discipline: 1, self_interest: 1 }
+  profile:
+    wants: [할당량을 채우고 배급이 깎이지 않는 것, 규율반의 눈에 띄지 않는 것, 언젠가 감시탑이 아닌 곳에서 자는 것, 조장 자리]
+    fears: [광장의 본보기, 공세 맨 앞줄, 탈영병으로 몰리는 것, 굶는 조]
+    voices:
+      - { style: 짧고 거친 반말. 윗사람 이름이 나오면 목소리를 낮춘다, samples: ["할당량 못 채우면 너도 나도 굶어.", "규율반 귀는 어디에나 있어."] }
+      - { style: 지친 존댓말. 말끝을 흐린다, samples: ["저는 시키는 대로만 해요.", "오늘은 아무 일 없었으면 좋겠네요."] }
+    rules: [완장을 만지작거리며 말한다, 지도부 이야기가 나오면 주위를 살핀다]
+    reputations: [붉은연합에서 몇 해를 버틴 사람, 할당량을 한 번도 못 채운 적 없다는 사람, 징집되어 온 지 얼마 안 된 사람]
+    secrets:
+      - { content: 탈영할 날을 세고 있다. 담 밑에 마른 빵을 숨겨 두었다, reveal_when: 둘만 있고 규율반이 멀 때, min_trust: 3 }
+      - { content: 청솔형제단 쪽에 몰래 소식을 흘린 적이 있다. 돈이 아니라 가족 때문이었다, reveal_when: 목숨을 구해 준 뒤, min_trust: 3 }
+  ties: { chance: 0.25, kinds: [sibling, parent, child, friend] }
+  appears: { zones: [c_base, c_warehouse] }
 
 - id: c_sentry_rifle
   label: 붉은연합 보초 — 소총
@@ -36,6 +49,19 @@
     - { item: c_armband }
     - { item: cigarettes, chance: 0.4 }
   values: { discipline: 1 }
+  profile:
+    wants: [할당량을 채우고 배급이 깎이지 않는 것, 규율반의 눈에 띄지 않는 것, 언젠가 감시탑이 아닌 곳에서 자는 것, 조장 자리]
+    fears: [광장의 본보기, 공세 맨 앞줄, 탈영병으로 몰리는 것, 굶는 조]
+    voices:
+      - { style: 짧고 거친 반말. 윗사람 이름이 나오면 목소리를 낮춘다, samples: ["할당량 못 채우면 너도 나도 굶어.", "규율반 귀는 어디에나 있어."] }
+      - { style: 지친 존댓말. 말끝을 흐린다, samples: ["저는 시키는 대로만 해요.", "오늘은 아무 일 없었으면 좋겠네요."] }
+    rules: [완장을 만지작거리며 말한다, 지도부 이야기가 나오면 주위를 살핀다]
+    reputations: [붉은연합에서 몇 해를 버틴 사람, 할당량을 한 번도 못 채운 적 없다는 사람, 징집되어 온 지 얼마 안 된 사람]
+    secrets:
+      - { content: 탈영할 날을 세고 있다. 담 밑에 마른 빵을 숨겨 두었다, reveal_when: 둘만 있고 규율반이 멀 때, min_trust: 3 }
+      - { content: 청솔형제단 쪽에 몰래 소식을 흘린 적이 있다. 돈이 아니라 가족 때문이었다, reveal_when: 목숨을 구해 준 뒤, min_trust: 3 }
+  ties: { chance: 0.25, kinds: [sibling, parent, child, friend] }
+  appears: { zones: [c_base, c_warehouse] }
 
 - id: c_raider
   label: 붉은연합 약탈조원 — 쇠지렛대
@@ -53,6 +79,19 @@
     - { item: c_armband }
     - { item: canned_food, chance: 0.3 }
   values: { self_interest: 2, mercy: -1 }
+  profile:
+    wants: [할당량을 채우고 배급이 깎이지 않는 것, 규율반의 눈에 띄지 않는 것, 언젠가 감시탑이 아닌 곳에서 자는 것, 조장 자리]
+    fears: [광장의 본보기, 공세 맨 앞줄, 탈영병으로 몰리는 것, 굶는 조]
+    voices:
+      - { style: 짧고 거친 반말. 윗사람 이름이 나오면 목소리를 낮춘다, samples: ["할당량 못 채우면 너도 나도 굶어.", "규율반 귀는 어디에나 있어."] }
+      - { style: 지친 존댓말. 말끝을 흐린다, samples: ["저는 시키는 대로만 해요.", "오늘은 아무 일 없었으면 좋겠네요."] }
+    rules: [완장을 만지작거리며 말한다, 지도부 이야기가 나오면 주위를 살핀다]
+    reputations: [붉은연합에서 몇 해를 버틴 사람, 할당량을 한 번도 못 채운 적 없다는 사람, 징집되어 온 지 얼마 안 된 사람]
+    secrets:
+      - { content: 탈영할 날을 세고 있다. 담 밑에 마른 빵을 숨겨 두었다, reveal_when: 둘만 있고 규율반이 멀 때, min_trust: 3 }
+      - { content: 청솔형제단 쪽에 몰래 소식을 흘린 적이 있다. 돈이 아니라 가족 때문이었다, reveal_when: 목숨을 구해 준 뒤, min_trust: 3 }
+  ties: { chance: 0.25, kinds: [sibling, parent, child, friend] }
+  appears: { zone_owner: [none, other] }
 
 - id: refugee
   label: 떠돌이 피난민
@@ -70,6 +109,21 @@
     - { item: blanket, chance: 0.4 }
     - { item: dry_ration, chance: 0.3 }
   values: { mercy: 1 }
+  profile:
+    wants: [겨울을 날 담 안의 자리, 잃어버린 가족을 찾는 것, 혼자가 아닌 것, 뭍이든 섬이든 정착할 곳]
+    fears: [혼자 남는 밤, 무리에 끌려가는 것, 물결, 굶어 죽는 것]
+    voices:
+      - { style: 경계하는 짧은 반말. 눈은 늘 출구를 본다, samples: ["가까이 오지 마. 거기서 말해.", "공짜는 없어."] }
+      - { style: 지치고 조용한 존댓말, samples: ["먹을 거 있으면… 아니에요.", "어디서 왔는지는 묻지 말아 주세요."] }
+      - { style: 넉살 좋은 반말. 말이 많다, samples: ["이 동네 길은 내가 다 알아.", "같이 다니면 둘 다 덜 죽어."] }
+    rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
+    reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
+    secrets:
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+  ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
+  appears: { zone_owner: [none, own] }
 
 - id: e_porter
   label: 나루상단 짐꾼
@@ -88,6 +142,17 @@
     - { item: canned_food, chance: 0.5 }
     - { item: cigarettes, chance: 0.5 }
   values: { self_interest: 1, honesty: 1 }
+  profile:
+    wants: [장부의 빚을 다 갚는 것, 자기 짐마차를 갖는 것, 이기는 쪽에 서는 것]
+    fears: [빚이 대물림되는 것, 짐을 잃는 것, 길목의 약탈조]
+    voices:
+      - { style: 셈이 빠른 반말. 값 이야기를 먼저 한다, samples: ["그건 얼마 쳐 줄 건데?", "장부에 적히면 끝이야."] }
+    rules: [무엇이든 값으로 말한다, 짐 끈을 자꾸 다시 묶는다]
+    reputations: [장터를 오가는 짐꾼, 빚을 지고 상단에 들어온 사람]
+    secrets:
+      - { content: 짐에서 조금씩 빼돌려 따로 모아 둔다, reveal_when: 빚 이야기를 하다가, min_trust: 3 }
+  ties: { chance: 0.25, kinds: [sibling, friend, rival] }
+  appears: { zones: [e_market, water_plant, riverside, old_town] }
 
 - id: b_guard
   label: 버들마을 경비병
@@ -104,3 +169,14 @@
     - { item: old_rifle, chance: 0.5 }
     - { item: coat, chance: 0.5 }
   values: { loyalty: 1, discipline: 1 }
+  profile:
+    wants: [마을이 이번 겨울을 넘기는 것, 가족이 굶지 않는 것, 전쟁에서 빠지는 것]
+    fears: [붉은연합의 습격, 우물이 마르는 것, 징집 명단]
+    voices:
+      - { style: 순박한 사투리 반말, samples: ["우리 마을은 싸움 싫어해.", "물 긷는 줄은 지켜야지."] }
+    rules: [마을 사람 이름은 다 안다, 낯선 사람에게 먼저 물을 권한다]
+    reputations: [버들마을에서 나고 자란 사람, 정문 경비를 오래 선 사람]
+    secrets:
+      - { content: 붉은연합 사자에게서 담배를 받은 적이 있다. 아무 말도 안 했다고 믿는다, reveal_when: 둘만 있을 때, min_trust: 3 }
+  ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
+  appears: { zones: [b_base, south_fields, old_town] }

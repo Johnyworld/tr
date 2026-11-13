@@ -306,6 +306,7 @@
   title: 젓갈 냄새의 소식
   tags: [world]
   repeatable: true
+  cooldown_days: 3
   when:
     segments: [day, evening]
   cast:

@@ -81,6 +81,11 @@ export function successionOptions(state: GameState, content: Content): Successio
       detail: npc.reputation,
     });
   }
+  // 자란 인물도 같은 무리면 이어 갈 수 있다 (기획서 7.10)
+  for (const c of Object.values(state.characters)) {
+    if (!c.profile || c.dead || c.away || c.captive || !known.has(c.id) || c.factionId !== dead.factionId) continue;
+    options.push({ id: c.id, label: `${c.name} (${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankLabel(content.scenario, c.rank)})`, detail: c.profile.reputation });
+  }
   return options;
 }
 

@@ -76,6 +76,22 @@ export function createCharacterSchema(s: Scenario) {
       })
       .nullable()
       .default(null),
+    /**
+     * 자란 인물의 프로필 (이름 없는 인물 → 이름 있는 인물, 기획서 7.10). 틀의 재료에서 코드가 골랐다.
+     * 콘텐츠 NPC는 콘텐츠의 것을 쓰므로 없다
+     */
+    profile: z
+      .strictObject({
+        want: z.string(),
+        fear: z.string(),
+        reputation: z.string(),
+        voice: z.strictObject({ style: z.string(), samples: z.array(z.string()) }),
+        rules: z.array(z.string()),
+        secret: z.strictObject({ content: z.string(), reveal_when: z.string(), min_trust: z.number().int() }).nullable(),
+        promotedAt: z.number().int(),
+      })
+      .nullable()
+      .default(null),
     /** 트레잇 id (기획서 4.6). 이전 세이브는 빈 목록 (NPC는 콘텐츠의 것을 쓴다) */
     traits: z.array(z.string()).default([]),
     /** 초상화 id (화면에서 그린다). 없으면 null */

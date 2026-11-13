@@ -1,3 +1,4 @@
+import { describeProfileLines, describeTieLines } from "./people.ts";
 import { describePolicyForGm, describeSquadForGm } from "./command.ts";
 import { describeAccess, describeCultureForGm } from "../game/culture.ts";
 import { describeCompanions } from "../game/companions.ts";
@@ -113,7 +114,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["known", describeKnownPeople(state, content)],
     ["zone_people", describeZonePeople(state, content)],
     ["zone_extras", describeZoneExtras(state, content)],
-    ["templates", describeExtraTemplates(content)],
+    ["templates", describeExtraTemplates(state, content)],
     ["beliefs", describeBeliefs(state, content)],
   ];
   return sections.filter(([, text]) => !!text).map(([key, text]) => ({ key, text }));
@@ -153,7 +154,9 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
       : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankLabel(content.scenario, c.rank)}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
     `겉모습: ${ex.look}`,
     `상태: ${describeConditions(content.scenario, c)} / 지닌 것: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
-    `[GM 전용: 연기에만 쓴다] ${animal ? "동물" : "이름 없는 인물"} (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
+    `[GM 전용: 연기에만 쓴다] ${animal ? "동물" : c.profile ? "자란 인물" : "이름 없는 인물"} (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
+    ...describeProfileLines(state, content, c),
+    ...describeTieLines(state, content, c.id),
     `트레잇: ${traitLabels(content, c, { acting: true }).join(", ") || "-"}`,
     ...attractionNotes(content, c, player),
     ...(animal ? [] : nameNotes(state, player.id, c.id)),
@@ -214,6 +217,7 @@ function describeNpcCard(
       ? [`이 인물이 아는 당신의 행적 (당신은 이 인물이 안다는 걸 모를 수 있다. 바로 밝히지 말고 태도에 반영):\n${knownDeeds.join("\n")}`]
       : []),
     ...(secretLine ? [secretLine] : []),
+    ...describeTieLines(state, content, npc.id),
   ].join("\n");
 }
 

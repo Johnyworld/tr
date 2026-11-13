@@ -1,3 +1,4 @@
+import { profileOf } from "./people.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { valuesOf } from "./extras.ts";
@@ -183,8 +184,10 @@ const revealSecret = defineTool({
   schema: z.strictObject({ npc_id: z.string() }),
   run(input, ctx) {
     const state = ctx.store.getState();
-    const npc = ctx.content.npcs[input.npc_id];
-    if (!npc || !state.scene.present.includes(input.npc_id)) return { ok: false, error: "장면에 없는 인물입니다." };
+    // 콘텐츠 인물이든 자란 인물이든 (기획서 7.10)
+    const profile = profileOf(state, ctx.content, input.npc_id);
+    if (!profile || !state.scene.present.includes(input.npc_id)) return { ok: false, error: "장면에 없는 인물입니다." };
+    const npc = { id: input.npc_id, secret: profile.secret };
     const called = playerCalls(state, ctx.content, npc.id);
     if (!npc.secret) return { ok: false, error: `${josa(called, "은/는")} 털어놓을 비밀이 없다.` };
     if (state.revealedSecrets.includes(npc.id)) return { ok: false, error: "이미 털어놓은 비밀이다." };

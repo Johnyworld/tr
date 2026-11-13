@@ -1,3 +1,4 @@
+import { TIE_KINDS } from "../game/ties.ts";
 import { z } from "zod";
 import { ACTIVITIES, TIME_SEGMENTS } from "../rules/time.ts";
 import { beliefAccuracySchema, beliefSourceSchema } from "../game/belief.ts";
@@ -101,6 +102,19 @@ export function createContentSchemas(s: Scenario) {
     knows: z.array(z.string().min(1)).default([]),
     /** 이 인물이 모르는 것 (세계의 진실). 작성자 메모이며 GM 프롬프트에 절대 넣지 않는다 */
     doesnt_know: z.array(z.string().min(1)).default([]),
+    /**
+     * 다른 인물과의 관계 (기획서 7.10). 한쪽에만 적어도 양쪽으로 본다. 무리가 달라도 된다.
+     * secret이 있으면 숨은 관계: 이 인물의 신뢰가 min_trust 이상일 때만 GM에게 보이고 reveal_tie로 털어놓는다
+     */
+    ties: z
+      .array(
+        z.strictObject({
+          to: contentIdSchema,
+          kind: z.enum(TIE_KINDS),
+          secret: z.strictObject({ reveal_when: z.string().min(1), min_trust: z.number().int().min(1).max(5) }).optional(),
+        }),
+      )
+      .optional(),
     /** 비밀. 공개 조건이 충족되기 전에는 GM 프롬프트에 넣지 않는다 */
     secret: z
       .strictObject({
@@ -264,6 +278,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ take_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
     /** 세력 클락을 당기거나 늦춘다 (플레이어 행동이 전황에 닿는 길) */
     z.strictObject({ clock: z.strictObject({ id: contentIdSchema, delta: z.number().int().min(-5).max(5) }) }),
+    /** 두 배역 사이의 숨은 관계를 주인공이 알게 된다 (기획서 7.10) */
+    z.strictObject({ reveal_tie: z.strictObject({ who: z.string().min(1), other: z.string().min(1) }) }),
     /** 무리 방침을 바꾼다 (기획서 9.11, 지도부가 스스로 배급을 줄이는 날 등). own = 플레이어 소속 */
     z.strictObject({ faction_policy: z.strictObject({ faction: z.string().min(1), topic: contentIdSchema, option: contentIdSchema }) }),
     /** own = 플레이어 소속 */
@@ -321,6 +337,8 @@ export function createContentSchemas(s: Scenario) {
   const castRole = z.strictObject({
     /** 이 중에서만 */
     ids: z.array(contentIdSchema).optional(),
+    /** 앞의 배역(of)과 이어진 사람 (kinds: 관계 종류, 기획서 7.10). of는 이 배역보다 앞에 적는다 */
+    tie: z.strictObject({ of: contentIdSchema, kinds: z.array(z.enum(TIE_KINDS)).optional(), cross: z.boolean().default(false).describe("true면 of와 무리가 다른 사람만") }).optional(),
     /** 지금 곁에 있는 동행 중에서 (이름 없는 인물·동물 포함, 기획서 7.9). kinds: 함께 다니는 이유, templates: 엑스트라 틀 */
     companion: z.strictObject({ kinds: z.array(z.enum(["animal", "buddy", "squad", "purpose", "kin"])).optional(), templates: z.array(contentIdSchema).optional() }).optional(),
     /** 플레이어의 직속 상관 */
@@ -461,6 +479,30 @@ export function createContentSchemas(s: Scenario) {
     values: z.record(contentIdSchema, valueScoreSchema).default({}),
     /** 동물이다: 사람 이름을 짓지 않고 호칭(label)이 이름이 된다 (기획서 7.8 동행) */
     animal: z.boolean().optional(),
+    /**
+     * 자랄 때(이름 없는 인물 → 이름 있는 인물, 기획서 7.10) 코드가 하나씩 고르는 재료. 없으면 자라지 않는다
+     */
+    profile: z
+      .strictObject({
+        wants: z.array(z.string().min(1)).min(1),
+        fears: z.array(z.string().min(1)).min(1),
+        voices: z.array(z.strictObject({ style: z.string().min(1), samples: z.array(z.string().min(1)).min(1) })).min(1),
+        rules: z.array(z.string().min(1)).default([]),
+        reputations: z.array(z.string().min(1)).min(1),
+        secrets: z.array(z.strictObject({ content: z.string().min(1), reveal_when: z.string().min(1), min_trust: z.number().int().min(1).max(5) })).default([]),
+      })
+      .optional(),
+    /** 자랄 때 이 확률로 이름 있는 인물과 이어진다 (kinds 중 하나, 상대는 나이가 맞는 사람) */
+    ties: z.strictObject({ chance: z.number().min(0).max(1), kinds: z.array(z.enum(TIE_KINDS)).min(1) }).optional(),
+    /** 지금 여기서 마주칠 만한지 (GM 상태의 틀 목록을 거른다). 없으면 언제나 */
+    appears: z
+      .strictObject({
+        zones: z.array(contentIdSchema).optional(),
+        /** none: 누구의 땅도 아닌 곳, own: 주인공 무리의 땅, other: 다른 무리의 땅 */
+        zone_owner: z.array(z.enum(["none", "own", "other"])).optional(),
+        segments: z.array(z.enum(TIME_SEGMENTS)).optional(),
+      })
+      .optional(),
     /** 동행하면 주인공의 스킬에 더하는 보정 (예: 개 → 경계 +1). 능력+스킬 상한 안에서 */
     companion_bonus: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(-1).max(2)).optional(),
   });

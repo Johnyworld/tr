@@ -1,3 +1,4 @@
+import { segmentOf } from "../rules/time.ts";
 import { z } from "zod";
 import type { Content, ExtraContent } from "../content/schemas.ts";
 import { createCharacterSchema, type Character } from "../game/character.ts";
@@ -181,8 +182,21 @@ function addBeliefTo(ctx: ToolContext, characterId: string, fact: string, source
 }
 
 /** GM 상태에 넣는 틀 목록 (고를 수 있는 것) */
-export function describeExtraTemplates(content: Content): string {
-  const list = Object.values(content.extras);
+export function describeExtraTemplates(state: GameState, content: Content): string {
+  // 지금 여기서 마주칠 만한 틀만 (appears, 기획서 7.10). 연고 틀처럼 이야기로만 생기는 것은 appears.zones: []로 숨긴다
+  const zone = state.playerZone;
+  const owner = zone ? (state.zones[zone]?.owner ?? null) : null;
+  const mine = state.characters[state.playerId]?.factionId ?? "";
+  const ownerKind = owner === null ? "none" : owner === mine ? "own" : "other";
+  const segment = segmentOf(state.time);
+  const list = Object.values(content.extras).filter((t) => {
+    const a = t.appears;
+    if (!a) return true;
+    if (a.zones && (!zone || !a.zones.includes(zone))) return false;
+    if (a.zone_owner && !a.zone_owner.includes(ownerKind)) return false;
+    if (a.segments && !a.segments.includes(segment)) return false;
+    return true;
+  });
   if (list.length === 0) return "";
-  return `엑스트라 틀 (이름 없는 인물이 주인공과 엮이면 spawn_extra로 캐릭터로 만든다):\n${list.map((t) => `- ${t.id}: ${t.label}`).join("\n")}`;
+  return `엑스트라 틀 (지금 여기서 마주칠 만한 사람. 이름 없는 인물이 주인공과 엮이면 spawn_extra로 만든다. 이야기에 붙잡을 사람이면 promote_extra):\n${list.map((t) => `- ${t.id}: ${t.label}`).join("\n")}`;
 }

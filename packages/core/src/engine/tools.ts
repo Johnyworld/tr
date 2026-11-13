@@ -1,3 +1,4 @@
+import { PEOPLE_TOOLS } from "./people.ts";
 import { josa } from "../text.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
@@ -239,6 +240,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...MISSION_TOOLS,
       ...COMMAND_TOOLS,
       ...COMPANION_TOOLS,
+      ...PEOPLE_TOOLS,
       ...REPUTATION_TOOLS,
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,

@@ -26,6 +26,9 @@ knows:
   - 분대장이 밤마다 무전기를 붙잡고 있다는 것
 doesnt_know:
   - 실종된 정찰조의 형이 아직 살아 있다
+# 정찰조에 붙잡힌 형 (기획서 7.10)
+ties:
+  - { to: a_jeongbin, kind: sibling, secret: { reveal_when: 정찰조 이야기가 나올 때 둘만 있으면, min_trust: 3 } }
 secret:
   content: 실종된 정찰조에 친형이 있었다. 정찰조에 들어가려는 것도 형을 찾기 위해서다
   reveal_when: 신뢰 3 이상

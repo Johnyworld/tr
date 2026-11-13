@@ -1,3 +1,4 @@
+import { onPersonDeath } from "./people.ts";
 import { hasAccess } from "../game/culture.ts";
 import type { GameState } from "../game/state.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -47,6 +48,8 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
     harmTrack: isHarm,
   });
   if (to.fatal && characterId === state.playerId) recordDeath(ctx, cause, null);
+  // 이름 있는 인물이 죽으면 가족·친구가 듣는다 (기획서 7.10)
+  if (to.fatal && characterId !== state.playerId) onPersonDeath(ctx, characterId, by);
   const shownFrom = shownLevel(track, from.id);
   const shownTo = shownLevel(track, to.id);
   if (shownFrom.id === shownTo.id) return { line: "", display: null, died: false }; // 캐릭터는 아직 모른다

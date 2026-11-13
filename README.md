@@ -70,7 +70,7 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 
 ### MCP 서버가 여는 것
 
-- tool: `start_session`, `load_world`, `list_worlds`, `end_session`, `delete_world`(목록을 보고 있을 때만), `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, `create_character`(새 게임·직접 쓰는 시나리오 포함), `learn_skill`, `spawn_extra`, `learn_name`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`), 지휘 tool(`squad_order` 분대장, `council_propose` 간부), 동행 tool(`companion_part` 떨어지기·헤어지기, `companion_crossroads` 갈림길)
+- tool: `start_session`, `load_world`, `list_worlds`, `end_session`, `delete_world`(목록을 보고 있을 때만), `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, `create_character`(새 게임·직접 쓰는 시나리오 포함), `learn_skill`, `spawn_extra`, `learn_name`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`), 지휘 tool(`squad_order` 분대장, `council_propose` 간부), 동행 tool(`companion_part` 떨어지기·헤어지기, `companion_crossroads` 갈림길), 인물 tool(`promote_extra` 이름 없는 인물 자라기, `reveal_tie` 숨은 관계 털어놓기)
 - prompt: `play` (GM 지침 + 세션 시작 안내)
 - 로그는 stderr로만 쓴다. stdout은 MCP 프로토콜 전용이다
 - 월드 팩: `content/scenarios/` 아래 폴더마다 하나. 모두 읽는다 (`SCENARIO=<id>`로 하나만). 새 월드를 더하는 법은 기획서 12.4

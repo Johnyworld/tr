@@ -1,3 +1,4 @@
+import { generateDynamicTies } from "../engine/people.ts";
 import { roleOf } from "../game/state.ts";
 import { addStartCompanions } from "../engine/companionTools.ts";
 import { randomBytes } from "node:crypto";
@@ -139,6 +140,8 @@ export class WorldManager {
       // 첫날의 임무 후보, 소문 기준일, 시작 구역. 자유 시나리오의 역할은 이벤트를 넣은 뒤에야 콘텐츠에 보이므로 새로 받는다
       // 처음부터 함께 다니는 사람·동물 (떠돌이의 가족 등, 기획서 7.9)
       addStartCompanions(world.ctx(), roleOf(world.content, world.state()));
+      // 판마다 다른 인물 사이의 관계 (기획서 7.10)
+      generateDynamicTies(world.ctx());
       runAfterTimeAdvance(world.ctx());
       world.saveSnapshot();
       return world;

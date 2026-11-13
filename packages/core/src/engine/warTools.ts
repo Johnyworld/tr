@@ -1,3 +1,4 @@
+import { runRomance } from "./romance.ts";
 import { runCaptivity, warCaptures } from "./captivity.ts";
 import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
@@ -58,6 +59,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     // 무리 사이 싸움의 포로, 포로를 먹이고 부리기 (12-55)
     displays.push(...warCaptures(ctx, result.clashes));
     runCaptivity(ctx);
+    // 연애: 다른 연인을 알아채기, 같은 사람을 보는 두 사람 (12-58)
+    displays.push(...runRomance(ctx));
     // 무리의 태도가 바뀐 소식 (이탈, 편들기): 우리 무리 일이면 전해 듣고, 아니면 소문으로
     for (const shift of result.shifts) {
       const now = ctx.store.getState();

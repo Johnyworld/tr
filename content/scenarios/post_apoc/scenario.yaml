@@ -541,6 +541,15 @@ recovery:
 # 켜져 있어도 주인공과 배역이 모두 이 나이 이상이어야 열린다
 content_rating: { tag: mature, adult_age: 18 }
 
+# 연애 (12-58): 수위가 켜져 있고 둘 다 성인일 때만. 끌림은 인물마다 (npcs의 attracted_to, 없으면 이 비율로 인물 id에서)
+romance:
+  orientation: { other: 0.75, both: 0.15, same: 0.07, none: 0.03 }
+  interest_affection: 3
+  accept: { affection: 4, trust: 2 }
+  flirt_moves: [persuade, deceive]
+  jealousy_chance: 0.2
+  grief_nerves: 2
+
 # 포로 (12-55): 진 전투에서 물러나지 않았으면 부상 단계별 확률로 붙잡힌다 (항복하면 반드시). 갇힌 동안은 태그 captivity 이야기만 열린다
 captivity:
   tag: captivity

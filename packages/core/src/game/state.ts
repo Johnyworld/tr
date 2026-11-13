@@ -36,7 +36,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 28;
+export const SAVE_SCHEMA_VERSION = 29;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -248,6 +248,12 @@ export function createGameSchemas(s: Scenario) {
     keptExtras: z.record(z.string(), z.string()).default({}),
     /** 주인공의 지난 일 중 세계의 사실이 된 것 (배경 부품, 기획서 12.6). 코드가 만든 인물은 characterId */
     background: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })).default([]),
+    /** 연애 (12-58): 두 사람(키 a|b) 사이. lovers 연인, ended 끝남. jealous: 다른 연인을 알아챈 쪽과 그 상대 */
+    romances: z
+      .record(z.string(), z.strictObject({ a: z.string(), b: z.string(), stage: z.enum(["lovers", "ended"]), since: z.number().int(), jealousOf: z.array(z.string()).default([]) }))
+      .default({}),
+    /** 오늘 이미 다가간 상대 (사람 id → 날) */
+    flirtDay: z.record(z.string(), z.number().int()).default({}),
     /** 이 세계의 수위 (12-57). mature: 성인 주제(연애·성적 위협)를 다룬다. 기본은 끔 */
     options: z.strictObject({ mature: z.boolean().default(false) }).default({ mature: false }),
     /** 구역에 맡겨 둔 물건 (구역 id → 아이템 → 수량). 그 구역을 떠날 때 돌려받는다 (12-54) */
@@ -360,6 +366,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     /** NPC의 계급이 바뀐다 (지도부 교체, 강등) */
     z.strictObject({ type: z.literal("npc_rank_changed"), npcId: z.string(), rank: z.string() }),
+    /** 연애 (12-58): 연인이 되거나 끝난다 / 다른 연인을 알아챘다 / 오늘 다가갔다 */
+    z.strictObject({ type: z.literal("romance_changed"), a: z.string(), b: z.string(), stage: z.enum(["lovers", "ended"]) }),
+    z.strictObject({ type: z.literal("romance_jealousy"), who: z.string(), about: z.string() }),
+    z.strictObject({ type: z.literal("flirted"), target: z.string(), day: z.number().int() }),
     /** 수위를 정한다 (새 게임에서, 또는 플레이어가 바꾸면, 12-57) */
     z.strictObject({ type: z.literal("content_options_set"), mature: z.boolean() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
@@ -683,6 +693,8 @@ export const EMPTY_STATE: GameState = {
   commanderOverride: null,
   lastRoute: null,
   options: { mature: false },
+  romances: {},
+  flirtDay: {},
   deposits: {},
   background: [],
   companions: [],
@@ -983,6 +995,21 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
       return next;
     }
+    case "romance_changed": {
+      const key = [event.a, event.b].sort().join("|");
+      const prev = next.romances[key];
+      next.romances[key] = { a: event.a, b: event.b, stage: event.stage, since: state.time, jealousOf: event.stage === "lovers" ? [] : (prev?.jealousOf ?? []) };
+      return next;
+    }
+    case "romance_jealousy": {
+      for (const r of Object.values(next.romances)) {
+        if (r.stage === "lovers" && (r.a === event.who || r.b === event.who) && !r.jealousOf.includes(event.about)) r.jealousOf = [...r.jealousOf, event.about];
+      }
+      return next;
+    }
+    case "flirted":
+      next.flirtDay[event.target] = event.day;
+      return next;
     case "content_options_set":
       next.options = { ...next.options, mature: event.mature };
       return next;
@@ -1571,6 +1598,7 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
     factionId: npc.faction ?? "",
     rank: npc.rank,
     occupation: npc.occupation ? { id: npc.occupation, standing: 0 } : null,
+    attraction: npc.attracted_to ?? null,
     age: npc.age,
     stats: npc.stats,
     skills: npc.skills,

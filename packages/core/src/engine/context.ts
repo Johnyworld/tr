@@ -1,3 +1,4 @@
+import { describeRomanceForGm } from "./romance.ts";
 import { describeCaptivityForGm } from "./captivity.ts";
 import { describeHistoryPart } from "../game/background.ts";
 import { occupationOf, occupationTitle } from "../game/occupation.ts";
@@ -118,6 +119,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       `난이도 보정: ${difficulty}`,
     ].join("\n")],
     ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content)].filter(Boolean).join("\n")],
+    ["romance", describeRomanceForGm(state, content)],
     ["storylet", describeStoryletForGm(state, content)],
     ["missions", [describeMissionsForGm(state, { content }), describePolicyForGm(state, content)].filter(Boolean).join("\n")],
     ["squad", describeSquadForGm(state, content)],

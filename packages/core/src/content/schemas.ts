@@ -127,6 +127,8 @@ export function createContentSchemas(s: Scenario) {
     rank: idEnum(rankIds(s)),
     /** 직분 (기획서 12.6). 플레이어와 같은 스키마 (원칙 6) */
     occupation: contentIdSchema.optional(),
+    /** 끌리는 성별 id 목록 (12-58). 빈 목록이면 아무에게도 끌리지 않는다. 없으면 월드의 비율로 정해진다 */
+    attracted_to: z.array(z.string()).optional(),
     age: z.number().int().positive(),
     look: z.string().min(1),
     /** 거점 사람들이 아는 모습. 이 인물을 아는 캐릭터에게 보인다 */
@@ -493,6 +495,8 @@ export function createContentSchemas(s: Scenario) {
      * kin 살아서 기다리는 가족, sought 찾고 있는 사람
      */
     background: z.enum(["enemy", "enemy_member", "kin", "sought", "creditor", "deserted"]).optional(),
+    /** 연애 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람, jealous 다른 연인을 알아챈 연인, rival_lover 주인공이 다가간 사람의 다른 연인 */
+    romance: z.enum(["lover", "suitor", "jealous", "rival_lover"]).optional(),
     /** 지금 주인공이 있는 구역에 있는 사람만 (찾던 사람을 마주치는 장면). 함께 다니는 사람은 늘 여기 있다 */
     here: z.boolean().default(false),
     /** 앞서 keep으로 기억해 둔 인물. 살아 있고 떠나지 않았고 붙잡히지 않았을 때만 채운다 */
@@ -583,6 +587,8 @@ export function createContentSchemas(s: Scenario) {
         zone_owner: z.array(z.enum(["none", "own", "other"])).optional(),
         /** 플레이어의 소속 세력 (none = 무소속) */
         factions: z.array(z.string().min(1)).optional(),
+        /** 주인공에게 연인이 있다/없다 (12-58) */
+        has_lover: z.boolean().optional(),
         /** 주인공을 가둔 무리가 이 중 하나일 때만 (갇힌 동안의 이야기, 12-55) */
         captors: z.array(z.string().min(1)).optional(),
         /** 주인공이 갇힌 지 이만큼(일) 지났다 (12-56) */

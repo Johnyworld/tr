@@ -1,3 +1,4 @@
+import { ROMANCE_TOOLS } from "./romance.ts";
 import { CAPTIVITY_TOOLS } from "./captivity.ts";
 import { carriedWeight, carryCapacity, DEFAULT_WEIGHT, GEAR_TOOLS } from "./gear.ts";
 import { PEOPLE_TOOLS } from "./people.ts";
@@ -257,6 +258,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...SUCCESSION_TOOLS,
       ...EXTRA_TOOLS,
       ...CAPTIVITY_TOOLS,
+      ...ROMANCE_TOOLS,
     ] as readonly AnyTool[];
     toolCache.set(s, tools);
   }

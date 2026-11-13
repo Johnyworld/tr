@@ -1,3 +1,4 @@
+import { loversOf, romanceCast } from "../engine/romance.ts";
 import { tiesOf } from "../game/ties.ts";
 import { activeCompanions, bondOf } from "../game/companions.ts";
 import { isAwayCompanion } from "../engine/companionTools.ts";
@@ -120,6 +121,17 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       used.add(id);
       continue;
     }
+    if (role.romance) {
+      const options = romanceCast(state, content, role.romance).filter((id) => !used.has(id) && (!role.here || state.scene.present.includes(id) || state.companions.includes(id) || (state.characters[id]?.extra?.zone ?? state.playerZone) === state.playerZone));
+      if (options.length === 0) {
+        if (role.optional) continue;
+        return null;
+      }
+      const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;
+      cast[key] = id;
+      used.add(id);
+      continue;
+    }
     if (role.recall) {
       const id = state.keptExtras[role.recall];
       const c = id ? state.characters[id] : undefined;
@@ -190,6 +202,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.merit_gte !== undefined && player.merit < w.merit_gte) return false;
   if (w.level_gte !== undefined && player.level < w.level_gte) return false;
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
+  if (w.has_lover !== undefined && (loversOf(state, content, player.id).length > 0) !== w.has_lover) return false;
   if (w.captors && (!player.captive || !w.captors.includes(player.captive.by))) return false;
   if (w.captive_days_gte !== undefined && (!player.captive || at - (player.captive.since ?? at) < w.captive_days_gte * MINUTES_PER_DAY)) return false;
   if (w.own_people_captive !== undefined) {

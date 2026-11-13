@@ -1,3 +1,4 @@
+import { onLoverDeath } from "./romance.ts";
 import { shakeNerves } from "./body.ts";
 import { z } from "zod";
 import type { Content, NpcContent } from "../content/schemas.ts";
@@ -140,6 +141,8 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
   const state = store.getState();
   if (id === state.playerId) return;
   const dead = playerCalls(state, content, id);
+  // 연인을 잃으면 마음이 무너진다 (12-58)
+  onLoverDeath(ctx, id);
   // 곁에서 죽는 것을 보면 마음이 흔들린다 (12-48)
   const nerves = content.scenario.body?.nerves;
   if (nerves && (state.scene.present.includes(id) || state.companions.includes(id)) && !state.characters[id]?.extra?.template?.includes("infected")) {

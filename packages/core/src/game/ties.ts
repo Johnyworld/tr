@@ -5,15 +5,15 @@ import type { GameState } from "./state.ts";
  * 인물 사이의 관계 (기획서 7.10). 정해진 관계(NPC의 ties)와 동적인 관계(state.dynamicTies)를 합쳐 본다.
  * 한쪽에만 적어도 양쪽으로 본다 (부모 ↔ 자식)
  */
-export const TIE_KINDS = ["parent", "child", "sibling", "spouse", "friend", "rival"] as const;
+export const TIE_KINDS = ["parent", "child", "sibling", "spouse", "friend", "rival", "lover"] as const;
 export type TieKind = (typeof TIE_KINDS)[number];
 export const FAMILY_KINDS: readonly TieKind[] = ["parent", "child", "sibling", "spouse"];
 
 /** a가 b에게 kind면, b는 a에게 무엇인가 */
-export const TIE_INVERSE: Record<TieKind, TieKind> = { parent: "child", child: "parent", sibling: "sibling", spouse: "spouse", friend: "friend", rival: "rival" };
+export const TIE_INVERSE: Record<TieKind, TieKind> = { parent: "child", child: "parent", sibling: "sibling", spouse: "spouse", friend: "friend", rival: "rival", lover: "lover" };
 
 /** "X는 Y의 <말>" 할 때의 말: a가 b의 부모면 a는 b의 "부모" */
-export const TIE_LABELS: Record<TieKind, string> = { parent: "부모", child: "자식", sibling: "형제자매", spouse: "배우자", friend: "친구", rival: "앙숙" };
+export const TIE_LABELS: Record<TieKind, string> = { parent: "부모", child: "자식", sibling: "형제자매", spouse: "배우자", friend: "친구", rival: "앙숙", lover: "연인" };
 
 export type TieSecret = { reveal_when: string; min_trust: number };
 /** 저장된 관계 한 줄: a는 b의 kind */

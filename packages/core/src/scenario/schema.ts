@@ -543,6 +543,26 @@ export const scenarioFileSchema = z
      */
     content_rating: z.strictObject({ tag: id, adult_age: z.number().int().min(18) }).optional(),
     /**
+     * 연애 (12-58). 수위가 켜져 있고 둘 다 성인일 때만 동작한다.
+     * 끌림은 인물마다 (content의 attracted_to, 없으면 orientation 비율로 인물 id에서 정해진다). 주인공은 누구에게나 마음을 둘 수 있다
+     */
+    romance: z
+      .strictObject({
+        /** 끌림 비율: 다른 성별, 둘 다, 같은 성별, 아무에게도 */
+        orientation: z.strictObject({ other: z.number().min(0), both: z.number().min(0), same: z.number().min(0), none: z.number().min(0) }),
+        /** 호감이 이 이상이고 끌리면 마음이 있다 (낌새가 보인다) */
+        interest_affection: z.number().int(),
+        /** 고백을 받아들이는 문턱 */
+        accept: z.strictObject({ affection: z.number().int(), trust: z.number().int() }),
+        /** 다가가기에 쓰는 판정 */
+        flirt_moves: z.array(id).min(1),
+        /** 다른 연인이 생겼을 때 하루에 알아챌 확률 (함께 장면에 있으면 반드시) */
+        jealousy_chance: z.number().min(0).max(1),
+        /** 연인이 죽으면 마음 트랙이 오르는 단계 */
+        grief_nerves: z.number().int().min(0),
+      })
+      .optional(),
+    /**
      * 포로 (12-55). 없으면 주인공이 붙잡히지 않고 포로를 다루는 규칙도 없다
      */
     captivity: z

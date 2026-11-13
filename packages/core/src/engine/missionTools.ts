@@ -142,6 +142,11 @@ const reportMission = defineTool({
       const delta = result.outcome === "success" ? advances.delta : Math.trunc(advances.delta / 2);
       if (delta !== 0) ctx.store.append({ type: "clock_adjusted", clockId: advances.clock, delta });
     }
+    // 담을 메우는 일감은 그 무리 거점을 보강한다 (12-48)
+    const fortifies = ctx.content.missions[mission.templateId]?.fortifies;
+    const base = Object.values(ctx.content.locations).find((l) => l.owner === lender && l.kind === "base")?.id;
+    const fortSteps = fortifies ? (result.outcome === "success" ? fortifies : result.outcome === "partial" ? Math.trunc(fortifies / 2) : 0) : 0;
+    if (fortSteps > 0 && base && ctx.store.getState().zones[base]?.owner === lender) ctx.store.append({ type: "zone_fortified", zone: base, delta: fortSteps });
     // 직분의 일감을 해내면 직분의 평판이 오른다 (기획서 12.6)
     const occ = occupationOf(ctx.content, ctx.store.getState().characters[mission.assigneeId]);
     const occNote = occ?.missions.includes(mission.templateId) && result.outcome === "success" ? changeStanding(ctx, mission.assigneeId, 1, `일감: ${mission.title}`) : null;

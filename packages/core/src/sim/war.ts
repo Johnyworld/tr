@@ -16,7 +16,7 @@ import type { Rng } from "../rng.ts";
  *    사기가 시작값 쪽으로 돌아오고, 남은 사람 중에서 전투원을 키우고, 가끔 피란민이 합류한다 (끝없는 세계)
  */
 
-export type ZoneState = { owner: string | null };
+export type ZoneState = { owner: string | null; fort?: number };
 
 export type WarWorld = {
   factions: Record<string, FactionState>;
@@ -366,12 +366,16 @@ export function applyBattleOutcome(
 }
 
 /** 병력 규모: 내보내는 공격 병력과 지키는 병력 */
+/** 보강 한 단계마다 지키는 병력 배수 */
+export const FORT_BONUS = 0.2;
+
 export function clashForces(world: WarWorld, spec: ClashSpec, content?: Content): { attackers: number; defenders: number } {
   const a = world.factions[spec.attacker]!;
   const d = world.factions[spec.defender]!;
   return {
     attackers: Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind]))),
-    defenders: Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * (content ? defenseOf(content, d) : 1))),
+    // 보강된 구역(담·망루)은 지키는 쪽이 더 버틴다 (12-48)
+    defenders: Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * (content ? defenseOf(content, d) : 1) * (1 + FORT_BONUS * (world.zones[spec.zone]?.fort ?? 0)))),
   };
 }
 

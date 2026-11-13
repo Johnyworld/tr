@@ -30,6 +30,7 @@
           - set_flag: occ_carp_wave_done
           - set_flag: occ_carp_wall_mine
           - standing: 2
+          - fortify: 1
           - faction_morale: { faction: own, delta: 1 }
           - relation: { who: boss, axis: respect, delta: 1 }
           - belief: { fact: "밤새 담 아래 이음매를 메웠다. 새벽 보초들이 담을 두드려 보고 고개를 끄덕였다", source: seen }
@@ -53,6 +54,7 @@
         - set_flag: occ_carp_wave_done
         - set_flag: occ_carp_wall_mine
         - standing: 1
+        - fortify: 1
         - relation: { who: boss, axis: trust, delta: 1 }
         - belief: { fact: "아껴 둔 판자까지 담에 댔다. 이음매가 두 겹이 됐다", source: seen }
     - id: dawn
@@ -440,6 +442,7 @@
         success:
           - set_flag: occ_carp_tower_done
           - standing: 2
+          - fortify: 1
           - zone_noise: 1
           - faction_morale: { faction: own, delta: 1 }
           - relation: { who: boss, axis: respect, delta: 1 }
@@ -462,6 +465,7 @@
       effects:
         - set_flag: occ_carp_tower_done
         - standing: 1
+        - fortify: 1
         - relation: { who: crew, axis: trust, delta: 1 }
         - relation: { who: boss, axis: respect, delta: -1 }
         - belief: { fact: "낮은 망루를 세웠다. 담 너머 첫 골목까지만 보인다. 아무도 다치지 않았다", source: seen }
@@ -491,6 +495,7 @@
         - set_flag: occ_carp_plan_done
         - set_flag: occ_carp_wall_mine
         - standing: 1
+        - fortify: 2
         - faction_policy: { faction: own, topic: stance, option: defend }
         - faction_resource: { faction: own, resource: fuel, delta: -10 }
         - relation: { who: boss, axis: respect, delta: 1 }

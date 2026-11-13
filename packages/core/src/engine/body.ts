@@ -226,6 +226,7 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
       if (push(changeCondition(ctx, me.id, harm, cold.worst_harm, "cold", "저체온"))) return displays;
     }
   }
+  if (body.nerves) displays.push(...runDailyNerves(ctx));
   if (body.disease) {
     const disease = body.disease;
     const state = ctx.store.getState();
@@ -330,4 +331,34 @@ export function dailyCold(ctx: ToolContext, state: GameState): { steps: number; 
   const steps = Math.max(0, exposure - gear + (exposure > 0 ? bodyTraits(ctx.content, me).cold : 0));
   if (steps === 0) return { steps: -1, cause: exposure > 0 ? "방한 장비" : "견딜 만한 날씨" };
   return { steps, cause: [season && cold.season[season.id] ? season.label : null, weather && cold.weather[weather.id] ? weather.label : null].filter(Boolean).join(", ") + "의 추위" };
+}
+
+/**
+ * 마음이 흔들린다 (12-48): 크게 다쳤거나 곁의 사람이 죽는 것을 봤을 때. 냉정이 높으면 확률로 버틴다.
+ * 바뀐 한 줄을 돌려준다 (GM이 서술에 반영한다)
+ */
+export function shakeNerves(ctx: ToolContext, steps: number, cause: string): Change | null {
+  const nerves = ctx.content.scenario.body?.nerves;
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!nerves || !me || me.dead || steps <= 0) return null;
+  const hold = Math.min(0.8, Math.max(0, nerves.resist.per_point * (me.stats[nerves.resist.ability] ?? 0)));
+  if (ctx.rng() < hold) return null; // 버텼다
+  return changeCondition(ctx, me.id, nerves.track, steps, "nerves", cause);
+}
+
+/** 하루마다 마음이 가라앉는다: 굶주리거나 얼지 않고, 우리 땅이거나 곁에 사람이 있을 때 */
+export function runDailyNerves(ctx: ToolContext): ToolDisplayEvent[] {
+  const nerves = ctx.content.scenario.body?.nerves;
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!nerves || !me || me.dead) return [];
+  if (levelIndex(ctx, state, me.id, nerves.track) <= 0) return [];
+  const suffering = sufferingOf(ctx, state);
+  const mine = !!state.playerZone && !!me.factionId && state.zones[state.playerZone]?.owner === me.factionId;
+  if (suffering.starving || suffering.cold || !(mine || state.companions.length > 0)) return [];
+  const chance = nerves.recover.chance + nerves.recover.per_point * (me.stats[nerves.resist.ability] ?? 0);
+  if (ctx.rng() >= chance) return [];
+  const c = changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 잠을 잤다" : "곁에 사람이 있었다");
+  return c?.display ? [c.display] : [];
 }

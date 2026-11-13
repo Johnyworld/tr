@@ -33,7 +33,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 22;
+export const SAVE_SCHEMA_VERSION = 23;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -181,6 +181,9 @@ export type BattleState = z.infer<typeof battleStateSchema>;
  * 세계 상태와 이벤트 스키마. 능력치·행동·등급·상태 트랙 ID는 시나리오에서 오므로
  * 시나리오를 받아 만든다 (기획서 12.3). 세이브를 불러올 때도 이 스키마로 검증한다.
  */
+/** 구역 상태: 주인과 보강 (12-48, 목수가 메운 담·망루. 빼앗기면 사라진다) */
+const zoneStateSchema = z.strictObject({ owner: z.string().nullable(), fort: z.number().int().min(0).max(3).optional() });
+
 export function createGameSchemas(s: Scenario) {
   const character = createCharacterSchema(s);
   const move = idEnum(moveIds(s));
@@ -291,7 +294,7 @@ export function createGameSchemas(s: Scenario) {
     /** 세력 상태 (9단계). 이전 세이브는 세계를 열 때 콘텐츠의 시작값으로 채운다 */
     factions: z.record(z.string(), factionStateSchema).default({}),
     /** 구역 소유 */
-    zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })).default({}),
+    zones: z.record(z.string(), zoneStateSchema).default({}),
     clocks: z.record(z.string(), clockStateSchema).default({}),
     /** 전쟁 틱이 마지막으로 돈 날 */
     lastWarDay: z.number().int().nullable().default(null),
@@ -343,6 +346,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     /** NPC의 계급이 바뀐다 (지도부 교체, 강등) */
     z.strictObject({ type: z.literal("npc_rank_changed"), npcId: z.string(), rank: z.string() }),
+    /** 구역 보강 ± (12-48) */
+    z.strictObject({ type: z.literal("zone_fortified"), zone: z.string(), delta: z.number().int() }),
     /** 배경 부품이 세계의 사실이 되었다 (기획서 12.6) */
     z.strictObject({ type: z.literal("background_set"), entries: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })) }),
     /** 직분의 평판 ± (기획서 12.6) */
@@ -436,7 +441,7 @@ export function createGameSchemas(s: Scenario) {
       type: z.literal("factions_initialized"),
       day: z.number().int(),
       factions: z.record(z.string(), factionStateSchema),
-      zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })),
+      zones: z.record(z.string(), zoneStateSchema),
       clocks: z.record(z.string(), clockStateSchema),
     }),
     /** 하루 전쟁 틱의 결과 (코드가 계산). 세력·구역·클락의 새 값과 일어난 교전 */
@@ -444,7 +449,7 @@ export function createGameSchemas(s: Scenario) {
       type: z.literal("war_day_simulated"),
       day: z.number().int(),
       factions: z.record(z.string(), factionStateSchema),
-      zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })),
+      zones: z.record(z.string(), zoneStateSchema),
       clocks: z.record(z.string(), z.strictObject({ filled: z.number().int().min(0) })),
       clashes: z.array(clashSchema),
       /** 플레이어가 낄 수 있어 미뤄 둔 교전 */
@@ -545,7 +550,7 @@ export function createGameSchemas(s: Scenario) {
       pendingId: z.string(),
       clash: clashSchema,
       factions: z.record(z.string(), factionStateSchema),
-      zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })),
+      zones: z.record(z.string(), zoneStateSchema),
     }),
     z.strictObject({ type: z.literal("battle_started"), pendingId: z.string(), battle: battleStateSchema }),
     z.strictObject({
@@ -569,7 +574,7 @@ export function createGameSchemas(s: Scenario) {
       withdrew: z.boolean(),
       clash: clashSchema,
       factions: z.record(z.string(), factionStateSchema),
-      zones: z.record(z.string(), z.strictObject({ owner: z.string().nullable() })),
+      zones: z.record(z.string(), zoneStateSchema),
       merit: z.number().int().min(0),
     }),
     z.strictObject({ type: z.literal("secret_revealed"), npcId: z.string() }),
@@ -949,6 +954,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       const npc = mustGet(next.characters, event.npcId, "캐릭터");
       npc.captive = null;
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      return next;
+    }
+    case "zone_fortified": {
+      const z = next.zones[event.zone];
+      if (z) z.fort = Math.max(0, Math.min(3, (z.fort ?? 0) + event.delta));
       return next;
     }
     case "background_set":

@@ -3,6 +3,7 @@
 
 - id: occ_carpenter_wall_patch
   title: 무너진 담 메우기
+  fortifies: 1
   briefing: 밤사이 담 한쪽이 주저앉았다. 해 지기 전에 기둥을 다시 세우고 판자와 철판을 대서 사람이 넘지 못하게 막는다. 망치 소리는 짧게.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -25,6 +26,7 @@
 
 - id: occ_carpenter_watchtower
   title: 망루 기둥 갈기
+  fortifies: 1
   briefing: 망루 기둥 하나가 밑동부터 썩었다. 보초가 서 있는 채로 기둥을 하나씩 갈아 끼운다. 망루가 기울면 보초가 떨어진다.
   giver_rank: squad_leader
   deadline_hours: 14

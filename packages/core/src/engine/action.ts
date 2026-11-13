@@ -1,3 +1,4 @@
+import { shakeNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft } from "./gear.ts";
 import { scavenge } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
@@ -293,6 +294,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       displays.push(harm.display);
       // 감염체에게 입은 상처는 감염될 수 있다 (잠복기는 캐릭터도 GM도 모른다)
       // 입은 방어구가 물림·긁힘을 막을 수 있다 (기획서 4.8)
+      // 크게 다치면 마음도 흔들린다 (12-48)
+      const nerves = ctx.content.scenario.body?.nerves;
+      if (!harm.fatal && nerves && input.check.harm_on_failure === "heavy") {
+        const shaken = shakeNerves(ctx, nerves.heavy_harm, `크게 다쳤다 (${input.check.harm_cause || input.intent})`);
+        if (shaken?.line) lines.push(shaken.line);
+      }
       if (!harm.fatal && input.check.infected_source) {
         if (armorBlocksInfection(ctx)) lines.push("입은 것이 물림을 막아 냈다. 살갗까지 닿지 않았다.");
         else maybeInfect(ctx, input.check.harm_on_failure);

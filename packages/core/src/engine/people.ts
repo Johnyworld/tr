@@ -1,3 +1,4 @@
+import { shakeNerves } from "./body.ts";
 import { z } from "zod";
 import type { Content, NpcContent } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -139,6 +140,11 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
   const state = store.getState();
   if (id === state.playerId) return;
   const dead = playerCalls(state, content, id);
+  // 곁에서 죽는 것을 보면 마음이 흔들린다 (12-48)
+  const nerves = content.scenario.body?.nerves;
+  if (nerves && (state.scene.present.includes(id) || state.companions.includes(id)) && !state.characters[id]?.extra?.template?.includes("infected")) {
+    shakeNerves(ctx, nerves.witness_death, `${dead}이(가) 눈앞에서 죽었다`);
+  }
   for (const t of tiesOf(state, content, id)) {
     if (t.kind === "rival") continue;
     const kin = state.characters[t.other];

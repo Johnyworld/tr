@@ -129,7 +129,7 @@
     day_gte: 2
     flags_none: [occ_mech_radio_heard]
   setup: "고치던 무전기의 납땜이 붙자 지직거림 사이로 사람 목소리가 걸린다. 우리 주파수가 아니다. 누군가 숫자를 부르고, 다른 누군가 길 이름을 받아 적는다. 다이얼을 조금만 돌리면 더 또렷해질 것 같다."
-  ai_direction: 다른 무리의 무전이다. 어느 무리인지, 무엇을 말하는지는 판정에 따라 조금씩 드러난다. 지어낸 숫자나 날짜를 사실로 말하지 않는다. 위에 알리면 정비공의 일이 정보가 되고, 혼자 들으면 비밀이 된다.
+  ai_direction: 다른 무리의 무전이다. 어느 무리인지, 무엇을 준비하는지는 판정 결과의 "엿들은 것"(코드가 진짜 상태에서 고른다)만큼만 드러난다. 지어낸 숫자나 날짜를 사실로 말하지 않는다. 위에 알리면 정비공의 일이 정보가 되고, 혼자 들으면 비밀이 된다.
   choices:
     - id: tune
       label: 다이얼을 조금씩 돌려 끝까지 듣는다
@@ -140,10 +140,12 @@
           - set_flag: occ_mech_radio_secret
           - standing: 1
           - belief: { fact: "밤에 무전기로 다른 무리의 목소리를 들었다. 길 이름과 사람 수를 부르는 말투였다. 같은 시각이면 또 잡힐 것이다", source: seen }
+          - overhear: { faction: other, source: seen }
         partial:
           - set_flag: occ_mech_radio_heard
           - set_flag: occ_mech_radio_secret
           - belief: { fact: "무전으로 낯선 목소리를 들었지만 반은 지직거림에 묻혔다", source: seen }
+          - overhear: { faction: other, source: rumor }
         miss:
           - set_flag: occ_mech_radio_heard
           - belief: { fact: "다이얼을 너무 돌렸다. 목소리는 사라지고 다시 잡히지 않았다", source: seen }

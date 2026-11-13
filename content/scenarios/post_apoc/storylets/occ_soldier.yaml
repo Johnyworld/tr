@@ -70,6 +70,7 @@
     own_territory: true
     segments: [night]
     day_gte: 4
+    conditions_at_least: { nerves: shaken }
   cast:
     mate: { faction: own, ranks: [grunt, staff], known: true }
   setup: 불 꺼진 숙소에서 탄창에 탄을 다시 채운다. 세 발째에서 손끝이 탄을 놓친다. 바닥을 구르는 소리. 줍는데 손이 저 혼자 떨고 있다. 맞은편 침상에서 {mate:이/가} 눈을 뜨고 그 손을 본다.
@@ -81,17 +82,19 @@
       outcomes:
         success:
           - standing: 1
+          - body: { track: nerves, delta: -1 }
           - belief: { fact: "밤에 손이 떨렸다. 숨을 고르고 주먹을 쥐었다 펴기를 백 번쯤 하자 멎었다", source: seen }
         partial:
           - belief: { fact: "손 떨림은 새벽에야 멎었다. 잠은 거의 못 잤다", source: seen }
         miss:
-          - body: { track: disease, delta: 1 }
-          - belief: { fact: "손 떨림이 멎지 않아 밤을 꼬박 새웠다. 몸이 으슬으슬하다", source: seen }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "손 떨림이 멎지 않아 밤을 꼬박 새웠다. 눈을 감으면 그날이 보인다", source: seen }
     - id: talk
       label: 맞은편에 대고 작게 말을 건다
       effects:
         - relation: { who: mate, axis: affection, delta: 2 }
         - relation: { who: mate, axis: trust, delta: 1 }
+        - body: { track: nerves, delta: -1 }
         - belief: { fact: "{mate:이/가} 말했다. 자기도 첫 해에는 숟가락을 못 들었다고. 손은 나중에 알아서 멎는다고", source: report }
     - id: smoke
       label: 담배를 꺼내 하나 건네고 같이 나간다

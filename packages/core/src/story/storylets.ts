@@ -208,6 +208,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const index = (id: string | undefined) => track.levels.findIndex((l) => l.id === id);
     if (index(player.conditions[track.id]) < index(w.harm_at_least)) return false;
   }
+  for (const [trackId, levelId] of Object.entries(w.conditions_at_least ?? {})) {
+    const levels = content.scenario.condition_tracks.find((t) => t.id === trackId)?.levels ?? [];
+    const at = levels.findIndex((l) => l.id === player.conditions[trackId]);
+    if (at < 0 || levels[at]!.hidden || at < levels.findIndex((l) => l.id === levelId)) return false;
+  }
   if (w.mission_active !== undefined && !!activeMissionOf(state.missions, state.playerId) !== w.mission_active) return false;
   if (w.war_news_within_hours !== undefined) {
     const since = at - w.war_news_within_hours * 60;

@@ -219,6 +219,8 @@ export function createContentSchemas(s: Scenario) {
     buddy: z.boolean().optional(),
     /** 완수하면 임무를 준 무리에 진 빚이 이만큼 준다 (일부 완수는 절반, 기획서 9.10) */
     repays_debt: z.number().int().min(1).optional(),
+    /** 완수하면 임무를 준 무리의 거점을 보강한다 (담 메우기, 12-48). 일부 완수는 절반(내림) */
+    fortifies: z.number().int().min(1).max(2).optional(),
     /** 완수하면 이 세력 클락을 당긴다 (일부 완수는 절반). 전선 임무가 우리 무리의 계획을 앞당긴다 */
     advances: z.strictObject({ clock: contentIdSchema, delta: z.number().int().min(-5).max(5) }).optional(),
   });
@@ -344,6 +346,13 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ relation: z.strictObject({ who: z.string().min(1), axis: z.enum(RELATION_AXES), delta: z.number().int().min(-3).max(3) }) }),
     /** 두 배역 사이의 관계 (from이 to를 보는 마음). 주인공 말고 NPC끼리 (기획서 7.10) */
     z.strictObject({ npc_relation: z.strictObject({ from: z.string().min(1), to: z.string().min(1), axis: z.enum(RELATION_AXES), delta: z.number().int().min(-3).max(3), mutual: z.boolean().default(false) }) }),
+    /**
+     * 다른 무리의 속사정을 엿듣는다 (무전, 술자리, 장부, 12-48): 그 무리가 지금 준비하는 일(세력 클락)이 어디쯤인지 대략 안다.
+     * faction: other(우리 말고 아무 무리, 가장 진척된 일을 꾸미는 쪽), enemy(우리와 사이가 나쁜 무리 중), 또는 세력 id. 진짜 상태에서 코드가 고른다
+     */
+    z.strictObject({ overhear: z.strictObject({ faction: z.string().min(1), source: z.enum(["seen", "report", "rumor"]).default("report") }) }),
+    /** 지금 구역을 보강한다 (담·망루, 12-48). 우리 땅일 때만. 빼앗기면 사라진다. 음수면 허문다 */
+    z.strictObject({ fortify: z.number().int().min(-1).max(2) }),
     /** 지금 구역에 소리가 난다 (총소리·쇳소리, 기획서 4.8). 감염체가 몰려드는 조건이 된다 */
     z.strictObject({ zone_noise: z.number().int().min(1).max(3) }),
     /** 배역 NPC가 다친다 (부상 트랙 steps 단계). 죽음 바로 앞에서 멈춘다 (원칙 3: 이야기는 사람을 죽이지 않는다) */
@@ -569,6 +578,8 @@ export function createContentSchemas(s: Scenario) {
         own_food_days_lte: z.number().optional(),
         /** 부상 트랙이 이 단계 이상 */
         harm_at_least: z.string().optional(),
+        /** 몸 상태 트랙이 이 단계 이상 (트랙 id → 단계 id. 숨은 단계는 보지 않는다) */
+        conditions_at_least: z.record(z.string(), z.string()).optional(),
         mission_active: z.boolean().optional(),
         /** 최근 N시간 안에 전황 소식을 들었는지 */
         war_news_within_hours: z.number().positive().optional(),

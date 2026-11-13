@@ -354,6 +354,9 @@ export function checkStorylets(content: Content): string[] {
     for (const id of [...Object.keys(s.when.clock_gte ?? {}), ...Object.keys(s.when.clock_lte ?? {})]) {
       if (!clocks.has(id)) problems.push(`${where}.when: 알 수 없는 세력 클락 ${id}`);
     }
+    for (const [t, l] of Object.entries(s.when.conditions_at_least ?? {})) {
+      if (!content.scenario.condition_tracks.find((x) => x.id === t)?.levels.some((x) => x.id === l)) problems.push(`${where}.when.conditions_at_least: 알 수 없는 트랙·단계 ${t}.${l}`);
+    }
     if (s.when.harm_at_least && !harmLevels.has(s.when.harm_at_least)) problems.push(`${where}.when: 알 수 없는 부상 단계 ${s.when.harm_at_least}`);
     const ids = s.choices.map((c) => c.id);
     if (new Set(ids).size !== ids.length) problems.push(`${where}: 선택지 id가 겹친다`);
@@ -388,6 +391,7 @@ export function checkStorylets(content: Content): string[] {
         }
         if ("take_item" in e && !content.items[e.take_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.take_item.item}`);
         if ("clock" in e && !clocks.has(e.clock.id)) problems.push(`${at}: 알 수 없는 세력 클락 ${e.clock.id}`);
+        if ("overhear" in e && !["other", "enemy"].includes(e.overhear.faction) && !content.factions[e.overhear.faction]) problems.push(`${at}: 알 수 없는 세력 ${e.overhear.faction}`);
         if ("faction_morale" in e && e.faction_morale.faction !== "own" && !content.factions[e.faction_morale.faction]) {
           problems.push(`${at}: 알 수 없는 세력 ${e.faction_morale.faction}`);
         }

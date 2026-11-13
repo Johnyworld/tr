@@ -422,6 +422,14 @@ condition_tracks:
       - { id: incubating, label: 잠복, penalty: 0, hidden: true }
       - { id: sick, label: 앓음, penalty: -1 }
       - { id: critical, label: 위중, penalty: -2 }
+  # 마음 (12-48): 크게 다치거나 곁의 사람이 죽는 것을 보면 흔들린다. 무너져도 죽지는 않는다 (판정만 어렵다)
+  - id: nerves
+    label: 마음
+    levels:
+      - { id: steady, label: 멀쩡함, penalty: 0 }
+      - { id: shaken, label: 흔들림, penalty: 0 }
+      - { id: frayed, label: 너덜너덜함, penalty: -1 }
+      - { id: broken, label: 무너짐, penalty: -2 }
 # apply_harm이 쓰는 트랙
 harm_track: harm
 
@@ -562,6 +570,14 @@ body:
     recover: { chance: 0.35, per_point: 0.1 }
     worsen: 0.3
     worst_harm: 1
+  # 마음 (12-48): 크게 다치면 1, 곁의 사람이 죽는 것을 보면 1. 냉정 1당 15% 버틴다.
+  # 굶주리거나 얼지 않고 우리 땅이거나 곁에 사람이 있으면 하루마다 25% (냉정 1당 +10%) 가라앉는다
+  nerves:
+    track: nerves
+    heavy_harm: 1
+    witness_death: 1
+    resist: { ability: nerve, per_point: 0.15 }
+    recover: { chance: 0.25, per_point: 0.1 }
 
 # 날씨 (12-3, *임시*). 하루마다 계절별 무게로 고른다. visibility: 숨은 목격자 확률 배수 (작을수록 안 보인다)
 weather:

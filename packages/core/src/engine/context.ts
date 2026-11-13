@@ -124,7 +124,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["deeds", describeOwnDeeds(state)],
     ["present", describePresentNpcs(state, content, player)],
     ["known", describeKnownPeople(state, content)],
-    ["zone_people", describeZonePeople(state, content)],
+    ["zone_people", [describeFort(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
     ["zone_extras", describeZoneExtras(state, content)],
     ["templates", describeExtraTemplates(state, content)],
     ["beliefs", describeBeliefs(state, content)],
@@ -371,4 +371,13 @@ function describeInventory(content: Content, inventory: Inventory): string {
 
 function signed(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
+}
+
+/** 우리 땅의 보강 (12-48). 주인공은 자기 무리 담만 안다 */
+function describeFort(state: GameState, content: Content): string {
+  const zone = state.playerZone;
+  const me = state.characters[state.playerId];
+  const fort = zone ? (state.zones[zone]?.fort ?? 0) : 0;
+  if (!zone || !me?.factionId || state.zones[zone]?.owner !== me.factionId || fort <= 0) return "";
+  return `${content.locations[zone]?.name ?? zone}의 담: ${["", "메워 둠", "단단히 보강함", "망루와 이중 담"][fort]} (습격을 받으면 지키는 쪽이 더 버틴다)`;
 }

@@ -262,6 +262,36 @@ function applyEffect(
     if (mutual) store.append({ type: "relation_changed", from: b, to: a, delta: d, reason });
     return {}; // 둘 사이의 마음은 그들의 말과 태도로만 드러난다
   }
+  if ("overhear" in effect) {
+    const me = state.characters[playerId]!;
+    const want = effect.overhear.faction;
+    const progress = (f: string) => Math.max(0, ...Object.values(state.clocks).filter((c) => c.factionId === f).map((c) => c.filled / c.max));
+    const pool = Object.keys(state.factions)
+      .filter((f) => f !== me.factionId && content.factions[f]?.startable !== false)
+      .filter((f) => want === "other" || (want === "enemy" ? !me.factionId || disposition(content, me.factionId, f, state) < 0 : f === want));
+    const target = pool.sort((a, b) => progress(b) - progress(a) || a.localeCompare(b))[0];
+    const clock = target ? Object.values(state.clocks).filter((c) => c.factionId === target).sort((a, b) => b.filled / b.max - a.filled / a.max)[0] : undefined;
+    if (!target || !clock) return {};
+    const ratio = clock.filled / clock.max;
+    const stage = ratio >= 0.75 ? "거의 다 됐다" : ratio >= 0.4 ? "절반쯤 와 있다" : ratio > 0 ? "막 시작됐다" : "아직 말뿐이다";
+    const fact = sentence(`${content.factions[target]?.name ?? target}이(가) 준비하는 일: ${clock.label}. ${stage}`);
+    store.append({
+      type: "belief_added",
+      characterId: playerId,
+      belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.overhear.source, accuracy: "approximate", learnedAt: state.time, topic: "war" },
+    });
+    return { line: `엿들은 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.overhear.source] } };
+  }
+  if ("fortify" in effect) {
+    const zone = state.playerZone;
+    const me = state.characters[playerId]!;
+    if (!zone || !me.factionId || state.zones[zone]?.owner !== me.factionId) return {};
+    const before = state.zones[zone]?.fort ?? 0;
+    store.append({ type: "zone_fortified", zone, delta: effect.fortify });
+    const after = store.getState().zones[zone]?.fort ?? 0;
+    if (after === before) return {};
+    return { line: after > before ? `${content.locations[zone]?.name ?? zone}의 담이 단단해졌다. 습격을 받으면 더 버틴다.` : `${content.locations[zone]?.name ?? zone}의 담이 헐렸다.` };
+  }
   if ("zone_noise" in effect) {
     if (!state.playerZone) return {};
     store.append({ type: "noise_made", zone: state.playerZone, level: effect.zone_noise, day: dayOf(state.time) });

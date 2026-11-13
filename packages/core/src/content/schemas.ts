@@ -274,6 +274,9 @@ export function createContentSchemas(s: Scenario) {
      * 양수 = 나빠짐, 음수 = 나아짐
      */
     z.strictObject({ npc_body: z.strictObject({ who: z.string().min(1), track: contentIdSchema, delta: z.number().int().min(-3).max(3), chance: z.number().min(0).max(1).default(1) }) }),
+    /** 배역이 주인공과 함께 다닌다 (동행, 기획서 7.8) / 동행을 그만둔다 */
+    z.strictObject({ companion_join: z.strictObject({ who: z.string().min(1) }) }),
+    z.strictObject({ companion_leave: z.strictObject({ who: z.string().min(1) }) }),
     /** 주인공의 빚 ± (own = 플레이어 소속). 양수는 빌림, 음수는 갚음. 0 아래로 가지 않는다 (기획서 9.10) */
     z.strictObject({ debt: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-50).max(50) }) }),
     /** 배역 NPC를 붙잡는다 (포로). by: own(플레이어 소속) 또는 세력 id, zone이 없으면 그 세력의 거점 */
@@ -430,6 +433,10 @@ export function createContentSchemas(s: Scenario) {
     inventory: z.array(z.strictObject({ item: contentIdSchema, chance: z.number().min(0).max(1).default(1), quantity: z.number().int().positive().default(1) })).default([]),
     /** 행적을 보고 반응하는 가치관 */
     values: z.record(contentIdSchema, valueScoreSchema).default({}),
+    /** 동물이다: 사람 이름을 짓지 않고 호칭(label)이 이름이 된다 (기획서 7.8 동행) */
+    animal: z.boolean().optional(),
+    /** 동행하면 주인공의 스킬에 더하는 보정 (예: 개 → 경계 +1). 능력+스킬 상한 안에서 */
+    companion_bonus: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(-1).max(2)).optional(),
   });
 
   return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location, storylet, extra };

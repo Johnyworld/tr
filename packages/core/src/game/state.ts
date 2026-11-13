@@ -26,7 +26,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 12;
+export const SAVE_SCHEMA_VERSION = 13;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -170,6 +170,8 @@ export function createGameSchemas(s: Scenario) {
     roleId: z.string(),
     /** 자유 시나리오로 시작했으면 그때 코드가 만든 역할 (콘텐츠에 없다, 기획서 12.5). roleId는 CUSTOM_ROLE_ID */
     customRole: customRoleSchema.nullable().default(null),
+    /** 주인공과 함께 다니는 인물·동물 (기획서 7.8). 구역을 옮겨도 따라오고 장면에 남는다 */
+    companions: z.array(z.string()).default([]),
     /** 이야기가 이름표로 기억해 둔 이름 없는 인물 (cast keep → recall) */
     keptExtras: z.record(z.string(), z.string()).default({}),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
@@ -276,6 +278,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     z.strictObject({ type: z.literal("npc_captured"), npcId: z.string(), by: z.string(), zone: z.string() }),
     z.strictObject({ type: z.literal("npc_released"), npcId: z.string() }),
+    z.strictObject({ type: z.literal("companion_joined"), characterId: z.string() }),
+    z.strictObject({ type: z.literal("companion_left"), characterId: z.string() }),
     z.strictObject({ type: z.literal("debt_changed"), characterId: z.string(), factionId: z.string(), delta: z.number().int() }),
     /** NPC가 떠난다: toFaction이면 그 세력으로 넘어가고(도시에 남는다), null이면 도시를 떠난다 (기획서 10.4) */
     z.strictObject({ type: z.literal("npc_departed"), npcId: z.string(), toFaction: z.string().nullable() }),
@@ -528,6 +532,7 @@ export const EMPTY_STATE: GameState = {
   customRole: null,
   zoneSearches: {},
   keptExtras: {},
+  companions: [],
   turn: 0,
   time: START_TIME,
   playerId: "",
@@ -612,6 +617,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       return created;
     }
     case "npc_departed": {
+      next.companions = next.companions.filter((id) => id !== event.npcId);
       const npc = mustGet(next.characters, event.npcId, "캐릭터");
       if (event.toFaction !== null) npc.factionId = event.toFaction;
       else npc.away = true;
@@ -647,9 +653,19 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       return next;
     }
     case "npc_captured": {
+      next.companions = next.companions.filter((id) => id !== event.npcId);
       const npc = mustGet(next.characters, event.npcId, "캐릭터");
       npc.captive = { by: event.by, zone: event.zone };
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      return next;
+    }
+    case "companion_joined": {
+      if (!next.companions.includes(event.characterId)) next.companions.push(event.characterId);
+      if (!next.scene.present.includes(event.characterId)) next.scene.present.push(event.characterId);
+      return next;
+    }
+    case "companion_left": {
+      next.companions = next.companions.filter((id) => id !== event.characterId);
       return next;
     }
     case "debt_changed": {
@@ -828,7 +844,11 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
           const c = next.characters[id];
           if (c?.extra) c.extra.lastSeenAt = state.time;
         }
-        next.scene.present = [];
+        // 동행은 따라온다 (살아 있고 붙잡히지 않았을 때)
+        next.scene.present = next.companions.filter((id) => {
+          const c = next.characters[id];
+          return c && !c.dead && !c.away && !c.captive;
+        });
       }
       next.playerZone = event.to;
       break;

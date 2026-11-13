@@ -328,6 +328,20 @@ function applyEffect(
       display: { type: "promotion", name: player.name, fromLabel: from, toLabel: role.label },
     };
   }
+  if ("companion_join" in effect) {
+    const id = whoOf(ctx, effect.companion_join.who, cast);
+    const c = id ? state.characters[id] : undefined;
+    if (!id || !c || id === playerId || c.dead || c.away || c.captive || state.companions.includes(id)) return {};
+    store.append({ type: "companion_joined", characterId: id });
+    const name = playerCalls(store.getState(), content, id);
+    return { line: `${josa(name, "이/가")} 이제 함께 다닌다 (구역을 옮겨도 따라온다).`, display: { type: "presence", npcName: name, action: "enter" } };
+  }
+  if ("companion_leave" in effect) {
+    const id = whoOf(ctx, effect.companion_leave.who, cast);
+    if (!id || !state.companions.includes(id)) return {};
+    store.append({ type: "companion_left", characterId: id });
+    return { line: `${josa(playerCalls(state, content, id), "은/는")} 더는 함께 다니지 않는다.` };
+  }
   if ("npc_body" in effect) {
     const { track, delta, chance } = effect.npc_body;
     const id = whoOf(ctx, effect.npc_body.who, cast);

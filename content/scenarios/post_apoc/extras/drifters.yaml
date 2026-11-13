@@ -66,3 +66,18 @@
     - { item: blanket, chance: 0.6 }
     - { item: fever_reducer, chance: 0.2 }
   values: { mercy: 2, honesty: 1 }
+
+# 동물 (기획서 7.8 동행). 사람 이름을 짓지 않고 호칭이 이름이 된다. 함께 다니면 경계 +1
+- id: stray_dog
+  label: 누렁이
+  animal: true
+  rank: loner
+  age: [2, 6]
+  looks:
+    - 갈비뼈가 드러난 누렁이. 짖지 않도록 배운 개다. 귀 한쪽이 찢어져 있다
+    - 목에 낡은 빨간 목줄 자국이 남은 누렁이. 꼬리를 낮게 늘어뜨리고 걷는다
+  stats: { senses: [2, 2], agility: [1, 1], strength: [-1, 0] }
+  skills: { sense_danger: 2, stealth: 1 }
+  traits: []
+  trait_count: 0
+  companion_bonus: { sense_danger: 1 }

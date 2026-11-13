@@ -1,3 +1,4 @@
+import { activeCompanions } from "../game/companions.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { josa } from "../text.ts";
 import { aliasOf, headingAs, knowsName, playerCalls } from "../game/acquaintance.ts";
@@ -110,6 +111,8 @@ const status: CommandDef = {
           (trust !== null && commander ? ` · ${commander.name}의 신뢰 ${relationLabel(trust)}` : ""),
       );
     }
+    const companions = activeCompanions(state).map((id) => state.characters[id]!.extra?.label ?? state.characters[id]!.name);
+    if (companions.length) lines.push(`동행  ${companions.join(", ")}`);
     const debts = Object.entries(player.debts ?? {});
     if (debts.length) lines.push(`빚    ${debts.map(([f, n]) => `${ctx.content.factions[f]?.name ?? f} ${n}`).join(" · ")}`);
     if (player.dead) lines.push("", "사망했습니다.");

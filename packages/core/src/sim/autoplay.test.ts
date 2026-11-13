@@ -23,7 +23,7 @@ describe("랜덤 자동 플레이 (실제 콘텐츠)", () => {
     expect(Object.keys(stats.storyletsFired).length).toBeGreaterThanOrEqual(8);
     expect(stats.zonesVisited.size).toBeGreaterThanOrEqual(6);
     expect(stats.successions).toBe(stats.deaths);
-  });
+  }, 30_000); // 1500턴: 인물이 늘면 전체 실행 중에는 5초를 넘긴다
 });
 
 /** 시작 시나리오마다 (새로 더한 콘텐츠 포함) 무작위 플레이가 막히지 않는지, 그 시나리오의 이야기가 열리는지 */

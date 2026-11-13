@@ -1,0 +1,197 @@
+# 청솔형제단·버들마을 추가 인물의 이야기 (npcs/more_pine.yaml, npcs/more_willow.yaml)
+# 세력 클락: b_waver(버들마을 이탈, 낮출수록 연합이 버틴다)
+
+# ── 청솔형제단 거점: 창고 뒷문 ───────────────────────
+- id: pp_back_door
+  title: 창고 뒷문의 그림자
+  tags: [world]
+  when:
+    zones: [a_base]
+    segments: [night]
+    factions: [faction_a]
+    day_gte: 3
+    flags_none: [pp_back_door_done]
+  cast:
+    keeper: { ids: [pa_yeonhui] }
+    brother: { ids: [c_dongpal], enter: false }
+  setup: 보급 창고 뒤를 지나는데 잠겨 있어야 할 뒷문이 한 뼘 열려 있다. 안에서 열쇠 꾸러미가 부딪는 소리가 나더니, {keeper:이/가} 통조림 몇 개를 품에 안고 나오다 당신과 눈이 마주친다.
+  ai_direction: "{keeper}는 장터에서 붉은연합에 있는 동생 {brother}를 몰래 만나 통조림을 건넨다. 거점에서 가장 무거운 잘못이 남의 몫에 손대는 것이라는 걸 그도 안다. 처음엔 농담으로 넘기려 한다. 곧바로 알리지 않고 이유를 물으면 털어놓을 수 있다. 동생이 규율반 밀고자라는 것은 그도 모르고 주인공도 모른다. GM은 이를 드러내지 않는다."
+  choices:
+    - id: ask_why
+      label: 소리 내지 않고 이유를 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp_back_door_done
+          - reveal_tie: { who: keeper, other: brother }
+          - relation: { who: keeper, axis: trust, delta: 2 }
+          - belief: { fact: "{keeper}의 동생 {brother}이(가) 붉은연합 약탈조에 있다. {keeper}는 장터에서 몰래 동생에게 통조림을 건네고 붉은연합 안의 소식을 듣는다", source: seen }
+        partial:
+          - set_flag: pp_back_door_done
+          - relation: { who: keeper, axis: trust, delta: 1 }
+          - belief: { fact: "{keeper}: 굶는 식구가 있다고만 했다. 창고 물건을 밖으로 빼내고 있다", source: seen }
+        miss:
+          - set_flag: pp_back_door_done
+          - relation: { who: keeper, axis: trust, delta: -1 }
+          - belief: { fact: "{keeper}는 장부 맞추던 중이라며 웃어넘겼다. 품에 안은 통조림은 다시 창고로 들어가지 않았다", source: seen }
+    - id: report
+      label: 보급 간부에게 알린다
+      effects:
+        - set_flag: pp_back_door_done
+        - merit: 1
+        - relation: { who: keeper, axis: trust, delta: -3 }
+        - faction_resource: { faction: own, resource: food, delta: 5 }
+        - deed: { summary: 창고 물건을 빼내던 창고지기를 보급 간부에게 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+    - id: look_away
+      label: 아무것도 못 본 척 지나간다
+      effects:
+        - set_flag: pp_back_door_done
+        - relation: { who: keeper, axis: affection, delta: 1 }
+        - faction_resource: { faction: own, resource: food, delta: -5 }
+        - deed: { summary: 창고 뒷문에서 물건이 빠져나가는 것을 보고도 눈감았다, tags: [mercy, disobedience], severity: 1, privacy: private }
+
+# ── 남쪽 텃밭: 기우는 저울 ───────────────────────────
+- id: pp_tilted_scale
+  title: 기우는 저울
+  tags: [world]
+  when:
+    zones: [south_fields]
+    segments: [morning, day]
+    day_gte: 2
+    flags_none: [pp_scale_done]
+  cast:
+    farmer: { ids: [pb_yeongja] }
+  setup: 남쪽 텃밭 끝에서 수확한 감자를 다는 중이다. {farmer:은/는} 앉은뱅이저울에 자루를 올리며 너스레를 떤다. 그런데 청솔형제단 몫을 달 때마다 저울 밑에 발끝이 슬쩍 들어간다.
+  ai_direction: "{farmer}는 청솔형제단에 넘기는 몫을 조금씩 덜어 장터에 팔아 마을 빚을 갚는다. 버들마을 살림 간부 맹석규가 알면서 눈감는다. 들키면 처음엔 너스레로 넘기고, 마을 빚 사정을 들어 주는 사람에게만 털어놓는다. 청솔형제단 쪽에 알려지면 연합 안의 말이 험해진다."
+  choices:
+    - id: call_out
+      label: 저울 밑의 발을 가리키며 조용히 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp_scale_done
+          - relation: { who: farmer, axis: trust, delta: 2 }
+          - belief: { fact: "{farmer}는 청솔형제단 몫을 덜어 장터에 팔아 버들마을이 첫 봄에 진 빚을 갚는다. 관리사무소의 맹석규가 알면서 눈감아 준다", source: report }
+        partial:
+          - set_flag: pp_scale_done
+          - relation: { who: farmer, axis: respect, delta: 1 }
+          - belief: { fact: "{farmer}는 저울을 다시 달았다. 마을에 빚이 있다는 말만 하고 입을 닫았다", source: seen }
+        miss:
+          - set_flag: pp_scale_done
+          - relation: { who: farmer, axis: affection, delta: -1 }
+          - belief: { fact: "{farmer}가 크게 웃으며 저울이 낡아서 그렇다고 했다. 주변 일꾼들이 눈치를 본다", source: seen }
+    - id: tell_squad
+      label: 텃밭 경비를 서는 1분대장에게 알린다
+      effects:
+        - set_flag: pp_scale_done
+        - relation: { who: farmer, axis: trust, delta: -2 }
+        - faction_resource: { faction: faction_a, resource: food, delta: 10 }
+        - faction_relation: { from: faction_b, to: faction_a, delta: -1 }
+        - clock: { id: b_waver, delta: 1 }
+        - deed: { summary: 텃밭 몫을 덜어 내던 버들마을 사람을 청솔형제단에 알렸다, tags: [honesty], severity: 1, privacy: public }
+    - id: help_lift
+      label: 모른 척 자루를 들어 준다
+      effects:
+        - set_flag: pp_scale_done
+        - relation: { who: farmer, axis: affection, delta: 2 }
+        - faction_resource: { faction: faction_b, resource: food, delta: 10 }
+        - faction_resource: { faction: faction_a, resource: food, delta: -10 }
+
+# ── 버들마을: 아랫단 우물 ────────────────────────────
+- id: pp_well_bottom
+  title: 한 길만 더
+  tags: [world]
+  when:
+    zones: [b_base]
+    segments: [dawn, morning]
+    day_gte: 3
+    flags_none: [pp_well_done]
+  cast:
+    digger: { ids: [pb_sanggu] }
+    keeper: { ids: [b_sunrye] }
+  setup: 아랫단 우물가에서 {digger:이/가} 허리에 밧줄을 감고 있다. 한 길만 더 내려가면 물이 나온다고 한다. {keeper:은/는} 두레박 줄을 쥔 채 "흙탕물 올라오면 그날로 끝이여" 하고 막아선다. 둘 다 당신을 본다.
+  ai_direction: "{digger}는 더 파면 물이 살아난다고 믿지만, 잘못 파면 흙탕물이 올라와 우물을 아예 못 쓸 수도 있다는 걸 혼자 안다. {keeper}는 우물이 한겨울 전에 마른다는 셈을 대표에게만 말했다. 우물이 마르면 버들마을은 붉은연합의 제안으로 더 기운다. 판정이 갈리는 것은 파 내려가는 손과 버팀목이다."
+  choices:
+    - id: dig
+      label: 밧줄을 잡고 함께 내려간다
+      check: carpentry
+      outcomes:
+        success:
+          - set_flag: pp_well_done
+          - faction_resource: { faction: faction_b, resource: water, delta: 30 }
+          - clock: { id: b_waver, delta: -2 }
+          - relation: { who: digger, axis: trust, delta: 2 }
+          - relation: { who: keeper, axis: respect, delta: 1 }
+          - belief: { fact: "아랫단 우물 바닥에서 맑은 물이 다시 솟았다. 버들마을 사람들이 우물가에 몰려왔다", source: seen }
+        partial:
+          - set_flag: pp_well_done
+          - faction_resource: { faction: faction_b, resource: water, delta: 10 }
+          - relation: { who: digger, axis: trust, delta: 1 }
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: "물은 조금 올라왔지만 바닥 흙이 무르다. 더 파려면 정수장 펌프 부품이 있어야 한다고 {digger}이(가) 말했다", source: report }
+        miss:
+          - set_flag: pp_well_done
+          - faction_resource: { faction: faction_b, resource: water, delta: -20 }
+          - clock: { id: b_waver, delta: 1 }
+          - relation: { who: keeper, axis: trust, delta: -2 }
+          - belief: { fact: "버팀목이 밀리며 우물 바닥에 흙탕물이 올라왔다. 아랫단 우물은 당분간 못 쓴다", source: seen }
+    - id: side_keeper
+      label: 우물지기 편을 들어 말린다
+      effects:
+        - set_flag: pp_well_done
+        - relation: { who: keeper, axis: trust, delta: 2 }
+        - relation: { who: digger, axis: affection, delta: -1 }
+        - belief: { fact: "{keeper}: 아랫단 우물은 지금처럼 퍼 쓰면 오래 못 간다. 그 셈은 대표만 안다", source: report }
+    - id: ask_part
+      label: 무엇이 있어야 제대로 팔 수 있는지 묻는다
+      effects:
+        - set_flag: pp_well_done
+        - set_flag: pp_pump_part_wanted
+        - relation: { who: digger, axis: respect, delta: 1 }
+        - belief: { fact: "{digger}: 정수장 펌프 기사가 가진 부품이 있으면 아랫단 우물을 안전하게 더 팔 수 있다", source: report }
+
+# ── 버들마을: 102동 옥상 ─────────────────────────────
+- id: pp_rooftop_boy
+  title: 옥상의 아이
+  tags: [world]
+  when:
+    zones: [b_base]
+    segments: [evening, night]
+    day_gte: 2
+    flags_none: [pp_rooftop_done]
+  cast:
+    boy: { ids: [pb_yunjae] }
+    gatekeeper: { ids: [b_dongcheol], enter: false }
+  setup: 102동 옥상 물탱크 그늘에서 무언가 움찔한다. 까까머리 소년이 쌍안경을 등 뒤로 감추며 "저 안 올라왔어요" 하고 먼저 말한다. 아이들은 옥상에 올라오지 않는 것이 마을 규칙이다.
+  ai_direction: "{boy}는 어느 밤 이 옥상에서 경비조장 {gatekeeper}가 북쪽 쪽문을 열고, 살림 간부 맹석규가 붉은 완장을 찬 사람을 대표실로 데려가는 것을 봤다. 혼내지 않고 덮어 주는 사람에게만 말한다. 청솔형제단 왕기범이 밤마다 쪽문 근처에서 길수아를 만나는 것도 안다. 묻지 않으면 그 이야기는 꺼내지 않는다."
+  choices:
+    - id: cover
+      label: 못 본 걸로 해 주겠다고 하고 옆에 앉는다
+      effects:
+        - set_flag: pp_rooftop_done
+        - relation: { who: boy, axis: trust, delta: 2 }
+        - relation: { who: boy, axis: affection, delta: 1 }
+        - belief: { fact: "{boy}: 어느 밤 경비조장이 북쪽 쪽문을 열었고, 맹석규 간부가 붉은 완장을 찬 사람을 대표실로 데려갔다", source: report }
+    - id: take_down
+      label: 데리고 내려가 경비조장에게 넘긴다
+      effects:
+        - set_flag: pp_rooftop_done
+        - relation: { who: boy, axis: trust, delta: -2 }
+        - relation: { who: gatekeeper, axis: respect, delta: 1 }
+        - deed: { summary: 옥상에 올라간 아이를 경비조장에게 데려갔다, tags: [diligence], severity: 1, privacy: public }
+    - id: what_you_see
+      label: 여기서 뭐가 보이냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pp_rooftop_done
+          - relation: { who: boy, axis: trust, delta: 1 }
+          - belief: { fact: "{boy}: 밤마다 청솔형제단의 왕기범이 북쪽 쪽문 근처에서 경비 당번 길수아를 만난다. 둘이 반지를 나눠 꼈다", source: report }
+          - belief: { fact: "{boy}: 붉은 완장을 찬 사람이 밤에 북쪽 쪽문으로 들어온 적이 있다", source: report }
+        partial:
+          - set_flag: pp_rooftop_done
+          - belief: { fact: "{boy}: 밤에 쪽문 쪽에서 어른들이 몰래 드나든다. 누군지는 말하지 않았다", source: report }
+        miss:
+          - set_flag: pp_rooftop_done
+          - relation: { who: boy, axis: trust, delta: -1 }
+          - belief: { fact: "{boy}는 아무것도 못 봤다며 계단으로 달아났다", source: seen }

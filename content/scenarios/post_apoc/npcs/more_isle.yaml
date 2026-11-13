@@ -1,0 +1,196 @@
+# 여울섬 인물 더 (기획서 9.12). 모르는 사람, 알고 침묵하는 사람, 잔치를 즐기는 사람
+# 숨은 줄: 변나래는 나루상단 뱃사공 변상철의 딸, 모은별은 나루상단 짐꾼 모준기의 누이 (more_trader.yaml)
+# 장면은 담담하게. 잔혹함은 늘어놓지 않는다
+
+- id: py_narae
+  name: 변나래
+  alias: 소매를 걷어붙인 의회 부엌 아가씨
+  faction: faction_y
+  rank: staff
+  age: 24
+  gender: female
+  look: 하얀 머릿수건에 팔뚝까지 걷은 소매. 손목에 데인 자국이 줄지어 있다. 국 냄새가 옷에 배어 있어 늘 비누를 쥐고 다닌다.
+  reputation: 뭍에서 온 아이였는데 의회 부엌을 맡을 만큼 쓸모를 증명했다. 그가 끓인 잔치 국은 섬에서 최고라는 말을 듣는다. 웃는 얼굴인데 눈이 웃지 않는다.
+  want: 아버지가 다시는 이 섬 부두에 배를 대지 않는 것
+  fear: 아버지가 자기가 끓이는 것이 무엇인지 아는 것
+  values: { discipline: 2, loyalty: 0, mercy: 1, honesty: -2, self_interest: 1 }
+  traits: [meticulous, guarded, steel_nerves]
+  voice:
+    style: 상냥하고 깍듯한 존댓말. 부엌 이야기는 하지 않으려고 화제를 돌린다
+    samples:
+      - "더 드릴까요? 아니, 그만 드셔도 돼요. 배부르시잖아요."
+      - "뭍 이야기는 하지 마세요. 여기선 그런 말 하는 사람 오래 못 있어요."
+  routine: { dawn: 의회 부엌, morning: 의회 부엌, day: 텃밭, evening: 의회 부엌, night: 부엌 뒤 쪽방 }
+  rules:
+    - 잔치 국은 자기 손으로만 끓인다 (다른 아이들이 그 고기를 만지지 않게)
+    - 거래선이 오는 날은 부두 쪽을 보지 않는다
+  knows:
+    - 의회 저장고에서 부엌으로 오는 고기가 무엇인지
+    - 뭍에서 거래선을 타고 온 "섬 일손"들이 섬 안에서 일한 적이 없다는 것
+  doesnt_know:
+    - 아버지가 거래선마다 그 "일손"들을 실어 온다는 것
+  secret:
+    content: 처음 잔치 국을 끓이던 밤에 무엇을 다루는지 알았다. 안 하겠다고 하면 자기가 저장고로 간다는 것도 알았다. 그 뒤로 거래선이 올 때마다 섬에서 편지를 쓰지 않는다. 쓰면 아버지가 다시 올 테니까
+    reveal_when: 의회 저장고의 진실을 이미 아는 사람이, 뭍의 아버지 이야기를 꺼냈을 때
+    min_trust: 4
+  stats: { strength: 0, agility: 1, vitality: 1, senses: 1, nerve: 2, charm: 1, intellect: 1 }
+  skills: { survival: 1, first_aid: 1, deceive: 2, fight: 1 }
+  start_inventory: [kitchen_knife]
+  playable: true
+  zone: yeoul_isle
+
+- id: py_eunbyeol
+  name: 모은별
+  alias: 분필 가루 묻은 아이들 선생
+  faction: faction_y
+  rank: grunt
+  age: 27
+  gender: female
+  look: 둥근 얼굴에 분필 가루가 묻은 소매. 앞치마 주머니에 쓰다 만 편지 몇 장을 접어 넣었다. 잘 웃는다.
+  reputation: 섬 아이들에게 글과 셈을 가르친다. 의장이 "섬의 보물"이라고 부른다. 섬이 낙원이라는 말을 가장 진심으로 믿는 사람.
+  want: 뭍으로 내보내진 어머니가 오빠를 만났다는 소식을 듣는 것
+  fear: 아이들이 섬 밖 세상을 무서워하게 되는 것
+  values: { discipline: 1, loyalty: 2, mercy: 2, honesty: 2, self_interest: -1 }
+  traits: [warm, talkative, eager]
+  voice:
+    style: 밝고 다정한 존댓말. 아이들 말투가 섞인다
+    samples:
+      - "섬은 약속을 지켜요. 아무도 굶기지 않잖아요. 엄마도 뭍에서 오빠랑 잘 계실 거예요."
+      - "거래선 아저씨한테 편지 또 맡겼어요. 이번엔 답장 오겠죠?"
+  routine: { morning: 섬 학당, day: 섬 학당, evening: 관사 앞마당, night: 관사 }
+  rules:
+    - 거래선이 오는 날마다 어머니와 오빠 앞으로 편지를 맡긴다
+    - 아이들 앞에서 슬픈 이야기를 하지 않는다
+  knows:
+    - 지난겨울 어머니가 다리를 다쳐 쓸모가 다했다며 뭍으로 내보내졌다
+    - 붕괴 때 오빠 준기는 배에 자리가 없어 뭍에 남았다
+  doesnt_know:
+    - 섬에서 내보낸 사람은 아무도 섬을 떠나지 않았다는 것
+    - 거래선이 오빠의 답장 대신 빈손으로 온다는 것을 의회가 정해 두었다는 것
+  secret:
+    content: 어머니를 내보내던 날 밤, 부두에서 손을 흔들려고 기다렸는데 배가 보이지 않았다. 심사관이 "섬 뒤쪽에서 떠났다"고 해서 믿기로 했다. 그 밤 이야기를 아무에게도 하지 않았다
+    reveal_when: 내보내진 사람들 이야기가 나오고, 이 사람이 자기 편이라고 믿을 때
+    min_trust: 2
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 0, charm: 2, intellect: 1 }
+  skills: { persuade: 1, history: 1, first_aid: 1 }
+  start_inventory: [blanket]
+  playable: true
+  zone: yeoul_isle
+
+- id: py_donggyu
+  name: 사동규
+  alias: 기름진 턱의 양식장 어르신
+  faction: faction_y
+  rank: officer
+  age: 59
+  gender: male
+  look: 살이 오른 둥근 얼굴, 기름이 도는 두 턱. 손가락마다 생선 비린내 대신 향유 냄새가 난다. 웃을 때 입맛을 다신다.
+  reputation: 양식장을 맡은 의회 어르신. 섬이 배곯지 않는 건 그의 양식장 덕이라는 말이 있다. 잔치 자리를 가장 좋아하고, 가장 늦게 일어난다.
+  want: 겨울 잔치가 일 년에 한 번이 아니라 철마다 열리는 것
+  fear: 늙어서 쓸모를 묻는 사람이 자기 쪽을 보는 날
+  values: { discipline: 0, loyalty: 0, mercy: -3, honesty: -1, self_interest: 3 }
+  traits: [genial, greedy, big_eater, flirt]
+  voice:
+    style: 느끼한 반말. 사람을 음식에 빗대어 말한다
+    samples:
+      - "자네 팔뚝 좋네. 일 잘하겠어. 섬은 일 잘하는 사람을 아끼지."
+      - "잔치는 말이야, 먹는 게 아니라 나누는 거야. 의회 사람끼리만 아는 맛이 있지."
+  routine: { dawn: 양식장, day: 양식장 감독 막사, evening: 의회 회관, night: 의회 저장고 뒤 별채 }
+  rules:
+    - 새로 온 사람을 꼭 한 번 저녁에 부른다
+    - 겨울 잔치 명단에 자기 사람을 올린다
+  knows:
+    - 겨울 잔치의 고기가 무엇인지
+    - 의장 한수자와 심사관 백천수가 부부라는 것
+  doesnt_know:
+    - 부엌의 변나래가 자기 접시에만 국을 다르게 담는다는 것
+  secret:
+    content: 의장 자리를 노린다. 백천수가 "쓸모 없다"고 적지 않은 사람 중에서도 마음에 드는 사람을 몰래 저장고 명단에 올린 적이 있다. 의장은 그것을 모른다. 백천수는 안다
+    reveal_when: 잔치 자리에 함께 앉아 그가 취했을 때
+    min_trust: 3
+  stats: { strength: 0, agility: -1, vitality: 1, senses: 1, nerve: 1, charm: 1, intellect: 1 }
+  skills: { persuade: 2, deceive: 1, survival: 1, intimidate: 1 }
+  start_inventory: [ledger, cigarettes]
+  playable: false
+  zone: yeoul_isle
+  ties:
+    - { to: y_cheonsu, kind: rival, secret: { reveal_when: 의회 자리 이야기가 나왔을 때, min_trust: 3 } }
+
+- id: py_hoseong
+  name: 단호성
+  alias: 고무 앞치마를 두른 저장고지기
+  faction: faction_y
+  rank: grunt
+  age: 38
+  gender: male
+  look: 무릎까지 오는 검은 고무 앞치마, 팔뚝에 붉은 완장을 떼어 낸 자국이 하얗게 남았다. 손을 하루에도 몇 번씩 바닷물에 씻는다.
+  reputation: 의회 저장고를 지키는 사람. 말이 없고 사람들이 피한다. 저장고 굴뚝 연기가 오르는 날에는 그도 보이지 않는다.
+  want: 저장고 열쇠를 누군가에게 넘기고 바다로 나가는 것
+  fear: 저장고 일을 그만두는 순간 자기가 그 안으로 들어가는 것
+  values: { discipline: 2, loyalty: -1, mercy: 0, honesty: 0, self_interest: 1 }
+  traits: [cold, weary, cautious]
+  voice:
+    style: 짧고 낮은 반말. 대답 대신 고개만 끄덕일 때가 많다
+    samples:
+      - "여긴 오지 마. 볼 거 없어."
+      - "바다는 씻어 주거든. 사람은 안 되고."
+  routine: { dawn: 바닷가, morning: 의회 저장고, day: 의회 저장고, evening: 바닷가, night: 저장고 옆 움막 }
+  rules:
+    - 의회 사람 말고는 저장고 앞에 세워 두지 않는다
+    - 잔치 고기는 입에 대지 않는다
+  knows:
+    - 내보낸다는 배가 섬을 돌아 저장고 뒤에 닿는다는 것
+    - 저장고 뒤쪽 바위길은 썰물 때만 드러난다
+  doesnt_know:
+    - 추복만이 바위길을 안다는 것
+  secret:
+    content: 붉은연합 약탈조에서 도망쳐 헤엄쳐 섬에 닿았다. 심사관은 "칼을 쓸 줄 아는 사람"이라며 받아 주고 저장고를 맡겼다. 처음 일을 시킨 밤 도망치려 했지만 갈 곳이 없었다. 지금도 붉은연합에 남은 옛 동료 고석진이 살아 있는지 궁금해한다
+    reveal_when: 저장고의 진실을 아는 사람이 밤 바닷가에서 섬을 떠날 이야기를 꺼낼 때
+    min_trust: 3
+  stats: { strength: 2, agility: 0, vitality: 2, senses: 1, nerve: 2, charm: -1, intellect: 0 }
+  skills: { fight: 2, endure: 1, stealth: 1, intimidate: 1 }
+  start_inventory: [kitchen_knife, coat]
+  playable: true
+  zone: yeoul_isle
+  ties:
+    - { to: c_seokjin, kind: friend, secret: { reveal_when: 붉은연합 이야기가 나오고 둘만 있을 때, min_trust: 3 } }
+
+- id: py_cheolho
+  name: 빈철호
+  alias: 약초 냄새 나는 늙은 약방 의사
+  faction: faction_y
+  rank: staff
+  age: 68
+  gender: male
+  look: 반쯤 센 수염, 뿔테 안경을 고무줄로 머리에 맸다. 조끼 주머니마다 작은 약병이 들어 딸그락거린다.
+  reputation: 섬 약방의 의사. 붕괴 전 큰 병원에서 일했다고 한다. 아픈 사람에게 다정하고, 늙은이에게 특히 다정하다.
+  want: 자기 차례가 오기 전에 손녀뻘 제자 은영에게 할 말을 남기는 것
+  fear: 아무 고통 없게 해 주는 것이 자기가 할 수 있는 전부라는 사실
+  values: { discipline: 1, loyalty: 1, mercy: 2, honesty: -2, self_interest: 0 }
+  traits: [patient, warm, weary, guarded]
+  voice:
+    style: 느리고 부드러운 존댓말. 병명보다 날씨 이야기를 먼저 한다
+    samples:
+      - "오늘 밤엔 푹 주무실 겁니다. 아무것도 아프지 않게."
+      - "약은 몸을 낫게 하는 것만 하는 게 아니에요. 그걸 너무 늦게 알았습니다."
+  routine: { morning: 섬 약방, day: 섬 약방, evening: 관사 마당, night: 부두 (내보내는 배가 뜨는 밤) }
+  rules:
+    - 내보내는 배에 오르는 사람에게는 꼭 잠 오는 약을 먹인다
+    - 잔치에 불려도 가지 않는다 (나이를 핑계 댄다)
+  knows:
+    - 내보내는 배에 오른 사람들이 어디로 가는지
+    - 의회가 늙은 의사를 아직 쓸모 있다고 보는 이유는 그 약 때문이라는 것
+  doesnt_know:
+    - 하얀매의 서은영이 아직 살아서 진료소를 꾸린다는 것
+  secret:
+    content: 내보내는 배에 오르는 사람들에게 "뱃멀미 약"이라며 잠드는 약을 먹인다. 아무도 깨어서 저장고에 닿지 않게. 그것이 자비라고 스스로를 달랜다. 붕괴 전 병원에서 수련의 서은영을 가르쳤다
+    reveal_when: 의회 저장고의 진실을 아는 사람이 약방에서 그 약병을 집어 들었을 때
+    min_trust: 3
+  stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
+  skills: { first_aid: 2, history: 1, persuade: 1, deceive: 1 }
+  start_inventory: [medkit, fever_reducer, antibiotics]
+  playable: true
+  healer: true
+  zone: yeoul_isle
+  ties:
+    - { to: d_eunyoung, kind: friend, secret: { reveal_when: 뭍의 의사 이야기가 나왔을 때, min_trust: 2 } }

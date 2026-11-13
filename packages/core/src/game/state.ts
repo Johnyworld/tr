@@ -1350,7 +1350,7 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
   return createCharacterSchema(s).parse({
     id: npc.id,
     name: npc.name,
-    factionId: npc.faction,
+    factionId: npc.faction ?? "",
     rank: npc.rank,
     age: npc.age,
     stats: npc.stats,

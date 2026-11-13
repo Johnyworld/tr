@@ -1,0 +1,243 @@
+# 붉은연합 인물 추가 (가람 월드). 규율반·선전·취사반·수용소·벌조
+# 하얀매 쪽 인물과 얽힌 사연은 more_hawk.yaml에 있다 (은솔은 옥금자의 딸, 구만석은 석중기가 광장에서 친 사람)
+
+- id: pc_junggi
+  name: 석중기
+  alias: 박달나무 몽둥이를 찬 규율반원
+  faction: faction_c
+  rank: staff
+  age: 47
+  gender: male
+  look: 짧게 깎은 반백 머리에 귀 한쪽이 뭉개졌다. 허리에 손때로 검게 반질거리는 박달나무 몽둥이를 찼다. 장갑을 벗는 일이 없다.
+  reputation: 규율반에서 광장의 본보기를 직접 집행하는 사람. 몽둥이를 몇 번 드는지 한 번도 틀린 적이 없다는 말이 있다. 그가 막사에 들어오면 담뱃불부터 꺼진다.
+  want: 규율반장 자리. 서기 우상옥보다 먼저 위원장 눈에 드는 것
+  fear: 딸 유나가 광장 한가운데 서는 날
+  values: { discipline: 3, loyalty: 1, mercy: -2, honesty: 0, self_interest: 1 }
+  traits: [cold, meticulous, steel_nerves]
+  voice:
+    style: 낮고 고른 반말. 문장이 짧고, 숫자로 끝난다
+    samples:
+      - "다섯 대. 세는 건 네가 해."
+      - "울지 마. 우는 놈은 한 대 더야."
+  routine: { dawn: 막사 점호, morning: 광장, day: 규율반 천막, evening: 막사 순찰, night: 규율반 천막 }
+  rules:
+    - 본보기 전에는 맞을 사람의 이름을 크게 두 번 부른다
+    - 딸이 있는 수용소 쪽으로는 순찰을 돌지 않는다
+    - 우상옥이 명부를 펼치면 옆에서 같이 들여다본다
+  knows:
+    - 광장 본보기 명단이 위원회에 올라가기 전에 규율반에서 먼저 정해진다는 것
+    - 우상옥이 명부에 무언가를 따로 적어 둔다는 것. 무엇인지는 모른다
+    - 지난봄 광장에서 친 조원 구만석이 죽지 않고 하얀매 진료소에 있다는 소문
+  doesnt_know:
+    - 딸 유나가 정찰병 고석진과 밤마다 만난다는 것
+    - 구만석이 하얀매 격리실 문지기가 되어 자기 이름을 날마다 입에 올린다는 것
+  secret:
+    content: 지난봄 탈영하려던 사람은 조카였다. 조카 대신 그날 보초였던 구만석의 이름을 본보기 명단에 적었고, 직접 쳤다. 조카는 그 뒤 공세 연습에서 죽었다
+    reveal_when: 광장에서 몽둥이를 든 뒤 둘만 남은 밤, 주인공이 본보기를 대신 맞아 주었거나 그 이름을 입에 올렸을 때
+    min_trust: 4
+  stats: { strength: 2, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 0 }
+  skills: { fight: 2, intimidate: 2, sense_danger: 1 }
+  start_inventory: [crowbar, c_armband, cigarettes]
+  playable: false
+  zone: c_base
+  ties:
+    - { to: c_sangok, kind: rival }
+
+- id: pc_yuna
+  name: 석유나
+  alias: 수용소 담에 기댄 짧은 머리 경비
+  faction: faction_c
+  rank: grunt
+  age: 20
+  gender: female
+  look: 귀 밑에서 일자로 자른 머리. 아버지와 같은 각진 턱에, 완장 위로 낡은 털실 토시를 덧꼈다. 총보다 열쇠 꾸러미를 더 자주 만진다.
+  reputation: 규율반원 석중기의 딸. 아버지 덕에 공세 앞줄 대신 수용소 경비에 있다는 뒷말을 듣는다. 포로에게 말을 거는 일이 없어서 오히려 포로들이 무서워한다.
+  want: 아버지 이름 말고 자기 이름으로 불리는 것. 그리고 담 밖에서 고석진과 사는 것
+  fear: 아버지 손에 들린 몽둥이가 자기 쪽으로 오는 것
+  values: { discipline: -1, loyalty: 0, mercy: 1, honesty: 0, self_interest: 1 }
+  traits: [guarded, patient, eagle_eye]
+  voice:
+    style: 말수가 적은 반말 섞인 존댓말. 아버지 이야기가 나오면 대답 대신 열쇠를 짤랑인다
+    samples:
+      - "규율반 석씨 딸 아니고요. 석유나요."
+      - "포로랑 말 섞으면 그쪽도 저 안에 들어가요."
+  routine: { dawn: 수용소 담 보초, morning: 수용소 배식, day: 물류창고 마당, evening: 감시탑 아래, night: 막사 }
+  rules:
+    - 저녁마다 감시탑 아래 배수로 근처에서 잠깐 사라진다
+    - 아버지가 지나가면 등을 돌린다
+  knows:
+    - 수용소 열쇠가 어느 고리에 걸리는지, 교대 때 몇 분 비는지
+    - 노필수가 다리 다친 포로에게 무언가를 몰래 준다는 것. 모른 척한다
+  doesnt_know:
+    - 고석진이 방소라와 함께 버들마을로 도망칠 계획을 세웠다는 것. 자기와 둘이 갈 줄 안다
+    - 아버지가 지난봄 사촌 오빠 대신 다른 사람을 쳤다는 것
+  secret:
+    content: 정찰병 고석진과 몰래 만난다. 겨울 전에 함께 빠져나가기로 했고, 수용소 교대 시간을 그에게 알려 주었다
+    reveal_when: 감시탑 아래에서 저녁에 마주쳤을 때, 또는 고석진이 붙잡혔다는 말을 들었을 때
+    min_trust: 3
+  stats: { strength: 0, agility: 1, vitality: 0, senses: 2, nerve: 0, charm: 0, intellect: 1 }
+  skills: { sense_danger: 1, stealth: 1, shoot: 1 }
+  start_inventory: [c_armband, old_rifle, water_bottle]
+  playable: true
+  zone: c_warehouse
+  ties:
+    - { to: pc_junggi, kind: child }
+    - { to: c_seokjin, kind: friend, secret: { reveal_when: "감시탑 아래에서 저녁에 마주쳤을 때", min_trust: 3 } }
+
+- id: pc_sundeok
+  name: 옥금자
+  alias: 국자를 허리에 찬 취사반 아주머니
+  faction: faction_c
+  rank: staff
+  age: 58
+  gender: female
+  look: 팔뚝이 굵고 손등이 데인 자국투성이다. 앞치마 끈에 국자와 열쇠를 함께 매달았다. 웃으면 눈이 다 감긴다.
+  reputation: 거점 취사반장. 할당량 장부에 맞춰 솥에 쌀을 넣는 사람. 부엌 아이들을 거칠게 부리지만, 부엌에서 일한 아이 치고 굶어 죽은 아이가 없다는 말이 있다.
+  want: 부엌 아이들이 하나라도 더 담 밖에서 사는 것
+  fear: 규율반이 부엌 장부를 들춰 보는 날
+  values: { discipline: -1, loyalty: 1, mercy: 3, honesty: -1, self_interest: 0 }
+  traits: [motherly, talkative, iron_gut]
+  voice:
+    style: 걸걸한 반말. 누구든 "얘" 아니면 "총각·아가씨"라고 부른다
+    samples:
+      - "얘, 먹고 말해. 할당량은 배 속까지는 안 따라와."
+      - "솥 바닥 긁는 소리 나기 전에 가져가."
+  routine: { dawn: 거점 부엌, morning: 배식 줄, day: 거점 부엌, evening: 쓰레기 수레 정리, night: 부엌 뒷방 }
+  rules:
+    - 배식 줄 끝에 선 아이에게는 국자를 한 번 더 기울인다
+    - 쓰레기 수레는 꼭 자기가 직접 배수로까지 끌고 간다
+  knows:
+    - 부엌 쓰레기 수레가 감시탑 아래 배수로로 나가는 길과, 그 길에서 보초가 안 보이는 구간
+    - 부엌에서 석 달 일하다 사라진 아이 문하늘이 지금 청솔형제단에 있다는 소식
+    - 차동팔이 배식 줄에서 남의 말을 엿듣는다는 것
+  doesnt_know:
+    - 딸 은솔이 하얀매에서 수습이 되어 잘 지낸다는 것. 살았는지도 모른다
+  secret:
+    content: 반년 전 딸 은솔을 쓰레기 수레에 숨겨 배수로로 내보냈다. 지난달에는 같은 길로 부엌 아이 문하늘을 내보냈다. 규율반 명부에는 둘 다 실종으로 적혀 있다
+    reveal_when: 주인공이 부엌 아이를 감싸 주는 것을 본 뒤, 저녁 부엌 뒷방에서
+    min_trust: 3
+  stats: { strength: 1, agility: -1, vitality: 2, senses: 0, nerve: 1, charm: 1, intellect: 0 }
+  skills: { survival: 1, persuade: 1, deceive: 1, endure: 1 }
+  start_inventory: [kitchen_knife, dry_ration, c_armband]
+  playable: true
+  zone: c_base
+  # 붉은연합 부엌에서 빼낸 아이 (기획서 7.10)
+  ties:
+    - { to: a_haneul, kind: friend, secret: { reveal_when: "문하늘이 붉은연합 부엌 이야기를 꺼냈을 때, 또는 옥금자이 주인공을 믿게 된 뒤", min_trust: 3 } }
+
+- id: pc_jongho
+  name: 편종호
+  alias: 손가락에 붉은 페인트가 밴 선전꾼
+  faction: faction_c
+  rank: staff
+  age: 43
+  gender: male
+  look: 깡마른 몸에 둥근 뿔테 안경. 오른손 손가락 마디마다 붉은 페인트가 배어 지워지지 않는다. 목소리가 크고 맑다.
+  reputation: 위원회의 선전꾼. 광장에서 위원회 포고를 읽고, 담마다 구호를 쓴다. 버들마을에 오가는 붉은연합의 사자가 이 사람이라는 소문이 있다.
+  want: 버들마을이 총 한 발 안 쏘고 붉은연합으로 넘어오는 것. 그래야 아무도 안 죽는다고 믿는다
+  fear: 자기가 버들마을에서 한 약속이 거짓으로 드러나는 날
+  values: { discipline: 1, loyalty: 1, mercy: 2, honesty: -1, self_interest: 0 }
+  traits: [silver_tongue, principled, weary]
+  voice:
+    style: 연설하듯 또박또박한 존댓말. 혼자 있을 때는 말끝이 흐려진다
+    samples:
+      - "위원회는 누구도 굶기지 않습니다. 할당량이 그 약속입니다."
+      - "…담에 쓴 글씨는 비 오면 지워져요. 다시 쓰면 그만이고."
+  routine: { dawn: 막사, morning: 광장 포고, day: 거점 담벼락, evening: 위원회 천막, night: 막사 }
+  rules:
+    - 포고를 읽을 때는 종이를 보지 않는다. 다 외운다
+    - 아이들 앞에서는 구호를 읽지 않는다
+  knows:
+    - 대표 장현우를 버들마을 북쪽 쪽문으로 몰래 만나러 갔던 밤, 쪽문을 연 사람이 경비조장 배동철이라는 것
+    - 버들마을 지하 교실에 아이들이 몇이나 있는지
+    - 위원장 국혜란이 버들마을 이야기를 할 때 웃지 않는다는 것
+  doesnt_know:
+    - 위원장이 버들마을에 보낸 제안이 미끼이고, 연합이 깨지면 버들마을도 치려 한다는 것
+  secret:
+    content: 붕괴 전 가람초등학교 교사였다. 버들마을의 진은지와 같은 학교에서 일했다. 사자로 다녀온 다음 날 지하 교실 문 앞에 해열제를 두고 온 것은 위원회 몫이 아니라 자기 몫이었다
+    reveal_when: 버들마을 이야기를 하다 아이들 얘기가 나왔을 때, 위원회 천막 밖에서 둘만 있을 때
+    min_trust: 3
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 0, nerve: 1, charm: 2, intellect: 2 }
+  skills: { persuade: 2, history: 1, deceive: 1 }
+  start_inventory: [c_armband, ledger, fever_reducer]
+  playable: true
+  zone: c_base
+  # 무리를 가로지른 옛 동료 (기획서 7.10)
+  ties:
+    - { to: b_eunji, kind: friend, secret: { reveal_when: "버들마을 지하 교실 이야기가 나왔을 때, 둘 중 하나가 해열제 이야기를 꺼내면", min_trust: 3 } }
+
+- id: pc_dooman
+  name: 용두만
+  alias: 붉은 완장 대신 흰 천을 감은 노역조장
+  faction: faction_c
+  rank: grunt
+  age: 50
+  gender: male
+  look: 광대뼈가 툭 튀어나온 얼굴에 앞니가 셋 없다. 팔에 붉은 완장 대신 흰 천을 감았다. 포로였던 사람만 차는 표시다.
+  reputation: 밤나무골 무리가 흡수될 때 포로로 들어와, 지금은 수용소 노역조를 부리는 사람. 포로였던 놈이 포로를 부린다고 양쪽에서 침을 뱉는다.
+  want: 흰 천을 붉은 완장으로 바꾸는 것. 다시는 수용소 안쪽에서 자지 않는 것
+  fear: 쓸모가 다해서 다시 안쪽으로 들어가는 것
+  values: { discipline: 1, loyalty: -1, mercy: -1, honesty: -2, self_interest: 3 }
+  traits: [calculating, coward, genial]
+  voice:
+    style: 비굴할 만큼 공손한 존댓말. 눈을 맞추지 않고 웃는다
+    samples:
+      - "아이고, 조장님. 저야 시키시는 대로죠."
+      - "안쪽 사람들 얘기요? 들은 거야 많죠. 뭐가 필요하신데요."
+  routine: { dawn: 수용소 노역조 깨우기, morning: 고가도로 밑 참호 파기, day: 고가도로 밑 참호 파기, evening: 마경수 천막 앞, night: 수용소 바깥 창고 }
+  rules:
+    - 노역조 몫의 물을 먼저 한 모금 마신다
+    - 저녁마다 마경수의 천막 앞에서 오래 기다린다
+  knows:
+    - 수용소 안 청솔형제단 포로 셋의 이름과, 그중 누가 말을 할 것 같은지
+    - 밤나무골에서 같이 온 사람들의 얼굴. 방소라의 어머니가 누구인지도
+    - 고가도로 밑 참호가 동쪽 공세 때 쓰일 길이라는 것
+  doesnt_know:
+    - 마경수가 공세가 끝나면 노역조를 통째로 앞줄에 세울 생각이라는 것
+  secret:
+    content: 수용소 안에서 들은 말을 마경수에게 옮긴다. 붉은 완장을 약속받았다. 밤나무골 사람 둘이 그의 말 한마디로 광장에 섰다
+    reveal_when: 저녁에 마경수 천막 앞에서 마주쳤을 때, 또는 목숨이 걸렸을 때
+    min_trust: 2
+  stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: -1, charm: 1, intellect: 1 }
+  skills: { deceive: 2, endure: 1, carpentry: 1 }
+  start_inventory: [crowbar, cigarettes]
+  playable: true
+  zone: c_warehouse
+
+- id: pc_taegyu
+  name: 성태규
+  alias: 계급장 자국만 남은 벌조장
+  faction: faction_c
+  rank: squad_leader
+  age: 35
+  gender: male
+  look: 어깨에 떼어 낸 간부 계급장 자국이 바느질 구멍으로 남은 야전 상의. 한쪽 눈썹이 흉터로 끊겼다. 말할 때 고개를 조금 숙인다.
+  reputation: 반년 전까지 간부였다가 공세 연습에서 조를 잃고 강등된 사람. 지금은 규율반이 보낸 조원들, 이른바 벌조를 이끈다. 벌조는 공세 맨 앞줄이다.
+  want: 벌조 사람들을 하나라도 살려서 공세 다음 날을 맞는 것
+  fear: 다시 자기 명령으로 사람들이 한꺼번에 죽는 것
+  values: { discipline: 0, loyalty: 2, mercy: 2, honesty: 1, self_interest: -1 }
+  traits: [protective, cautious, blunt]
+  voice:
+    style: 낮고 무거운 반말. 벌조원은 번호 대신 꼭 이름으로 부른다
+    samples:
+      - "앞줄이라고 먼저 죽으란 법은 없어. 먼저 엎드리면 돼."
+      - "위원회 얘기는 위원회에서 해. 여기선 누가 오늘 밥 먹었는지만 얘기해."
+  routine: { dawn: 벌조 막사 점호, morning: 고가도로 밑 연습장, day: 고가도로 밑 연습장, evening: 거점 담 그늘, night: 벌조 막사 }
+  rules:
+    - 벌조원이 맞으면 자기가 대신 규율반 천막에 간다
+    - 동쪽 지도를 펼치면 초소가 아니라 엎드릴 자리부터 짚는다
+  knows:
+    - 동쪽 공세 때 벌조가 어느 길로 먼저 나가는지
+    - 반년 전 공세 연습에서 조가 몰살한 것은 위에서 내려온 엉터리 시간 때문이었다는 것
+    - 청솔형제단 동쪽 초소의 경비 교대 시간을 위원회가 어디선가 사 왔다는 것
+  doesnt_know:
+    - 그 교대 시간을 판 것이 나루상단이라는 것
+  secret:
+    content: 공세 날 벌조를 이끌고 청솔형제단 동쪽 초소에 손을 들고 넘어갈 생각이다. 벌조원 몇에게만 귀띔했다
+    reveal_when: 벌조원 하나를 함께 살려 낸 뒤, 거점 담 그늘에서 저녁에
+    min_trust: 4
+  stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 1 }
+  skills: { tactics: 2, shoot: 1, first_aid: 1, sense_danger: 1 }
+  start_inventory: [old_rifle, c_armband, binoculars]
+  playable: true
+  zone: c_base

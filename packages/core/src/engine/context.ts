@@ -1,3 +1,4 @@
+import { npcZoneAt } from "../game/whereabouts.ts";
 import { describeProfileLines, describeTieLines } from "./people.ts";
 import { describePolicyForGm, describeSquadForGm } from "./command.ts";
 import { describeAccess, describeCultureForGm } from "../game/culture.ts";
@@ -273,7 +274,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
     // 이 구역 사람, 진행 중인 이야기의 배역, 상관은 겉모습·평판까지. 나머지는 한 줄 (토큰, 기획서 11.6). 장면에 들어오면 카드 전체가 붙는다
     const commander = commanderOf(state, content);
     const cast = new Set(Object.values(state.activeStorylet?.cast ?? {}));
-    const near = (id: string) => id === commander || cast.has(id) || content.npcs[id]?.zone === state.playerZone || state.characters[id]?.extra?.zone === state.playerZone;
+    const near = (id: string) => id === commander || cast.has(id) || (content.npcs[id] ? npcZoneAt(content.npcs[id]!, state.time) === state.playerZone : false) || state.characters[id]?.extra?.zone === state.playerZone;
     const lines = named.map((id) => {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
@@ -299,7 +300,7 @@ export function describeZonePeople(state: GameState, content: Content): string {
   const zone = state.playerZone;
   if (!zone) return "";
   const people = Object.values(content.npcs).filter(
-    (npc) => (state.characters[npc.id]?.captive ? state.characters[npc.id]!.captive!.zone === zone : npc.zone === zone) && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
+    (npc) => (state.characters[npc.id]?.captive ? state.characters[npc.id]!.captive!.zone === zone : npcZoneAt(npc, state.time) === zone) && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
   );
   const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id));
   if (strangers.length === 0) return "";

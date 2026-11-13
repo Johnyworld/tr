@@ -1,0 +1,200 @@
+# 나루상단 인물 더 (섬 거래선을 둘러싼 사람들). 우두머리 탁봉수는 others.yaml, 짐꾼·장부꾼은 e_more.yaml
+# 숨은 줄: 뱃사공 변상철의 딸 변나래, 짐꾼 모준기의 누이 모은별은 여울섬에 있다 (more_isle.yaml)
+# 전당포 감순덕은 갚을 길 없는 빚쟁이를 "섬 일손"으로 거래선에 태운다. 그 아들 감태식은 그 배를 호위한다
+
+- id: pe_sangcheol
+  name: 변상철
+  alias: 소금기 밴 비옷의 뱃사공
+  faction: faction_e
+  rank: staff
+  age: 55
+  gender: male
+  look: 소금기에 하얗게 바랜 비옷, 바다 쪽으로 늘 찡그린 눈. 왼손 새끼손가락이 없다. 품에 접힌 편지 뭉치를 넣고 다닌다.
+  reputation: 상단에서 바다를 건널 줄 아는 단 하나의 뱃사공. 섬 거래선은 그가 아니면 뜨지 않는다. 물때를 묻는 사람에게는 친절하지만 배에 실은 것을 묻는 사람에게는 입을 닫는다.
+  want: 딸 나래가 섬에서 잘 산다는 것을 한 번이라도 제 눈으로 보는 것
+  fear: 거래선이 끊겨 딸과 이어진 마지막 줄이 사라지는 것
+  values: { discipline: 1, loyalty: 1, mercy: 0, honesty: -1, self_interest: 1 }
+  traits: [patient, guarded, weary, cold_hardy]
+  voice:
+    style: 낮고 띄엄띄엄한 반말. 바다 이야기만 길게 한다
+    samples:
+      - "물때가 사람을 기다려 주는 거 봤나. 짐 싣고, 입 닫고, 타."
+      - "섬? 좋은 데지. 거기선 애들이 배 곯는 소리를 안 한대."
+  routine: { dawn: 강 하구 나루, morning: 배 손질, day: 정수장 창고, evening: 강 하구 나루, night: 배 위 }
+  rules:
+    - 배에 실은 짐은 묻지도 말하지도 않는다
+    - 섬 부두에서는 배에서 내리지 않는다 (섬이 허락하지 않는다)
+    - 섬에서 받아 온 편지는 사람을 찾아 꼭 전한다 (전하지 못한 편지는 버리지 않는다)
+  knows:
+    - 섬 거래선은 통조림과 사람을 싣고 가서 탄약을 싣고 온다
+    - 섬 부두의 심사관은 하얀 장갑을 끼고, 배에 탄 사람의 이를 먼저 본다
+    - 섬에서 오는 편지는 늘 겉봉이 한 번 뜯겼다 붙여져 있다
+  doesnt_know:
+    - 자기가 섬에 실어 간 "일손"들이 어디로 갔는지
+    - 딸 나래가 의회 부엌에서 무엇을 끓이는지
+  secret:
+    content: 첫 거래 때 탄약 값을 맞추려고 스무 살도 안 된 딸을 섬에 넘겼다. 심사관 백천수가 "쓸모 있는 아이"라며 받아 주었다. 그 뒤로 거래선마다 감순덕이 넘긴 빚쟁이들을 "섬 일손"으로 태워 간다. 딸 몫의 답례라고 생각한다
+    reveal_when: 거래선에 실린 사람들 이야기를 꺼내고, 딸이 정말 잘 지내는지 알려 줄 수 있는 사람일 때
+    min_trust: 3
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 2, nerve: 1, charm: -1, intellect: 0 }
+  skills: { survival: 2, mechanics: 1, sense_danger: 1, endure: 1 }
+  start_inventory: [coat, water_bottle, binoculars]
+  playable: true
+  zone: water_plant
+  ties:
+    - { to: py_narae, kind: parent, secret: { reveal_when: 섬 이야기를 하다 딸 이름이 나왔을 때, min_trust: 2 } }
+
+- id: pe_junki
+  name: 모준기
+  alias: 낡은 사진을 품은 마른 짐꾼
+  faction: faction_e
+  rank: grunt
+  age: 31
+  gender: male
+  look: 키가 크고 마른 몸에 해진 군용 배낭. 쉴 때마다 비닐로 싼 사진 한 장을 꺼내 피난민들 얼굴과 맞춰 본다.
+  reputation: 짐꾼. 짐마차가 서는 곳마다 늙은 여자들 얼굴을 살피고 다닌다. 다들 "어머니 찾는 친구"라고 부른다.
+  want: 섬에서 뭍으로 내보내졌다는 어머니를 찾아내는 것
+  fear: 어머니가 이미 어느 길바닥에서 죽었을 것
+  values: { discipline: 0, loyalty: 2, mercy: 2, honesty: 1, self_interest: -1 }
+  traits: [protective, warm, eager]
+  voice:
+    style: 조용하고 공손한 존댓말. 사진 이야기만 나오면 말이 빨라진다
+    samples:
+      - "이 분, 혹시 보신 적 있어요? 왼쪽 눈썹에 점이 있어요."
+      - "섬에서 내보냈대요. 늙어서 일을 못 한다고. 그럼 어딘가에 계시겠죠."
+  routine: { dawn: 짐 싣기, day: 길 위, evening: 피난민 천막, night: 짐꾼 막사 }
+  rules:
+    - 짐마차가 서는 곳마다 사진을 보여 준다
+    - 섬 사람 흉을 보는 말에는 대꾸하지 않는다 (누이가 거기 산다)
+  knows:
+    - 붕괴 때 어머니와 누이 은별은 섬 배를 탔고, 자기는 자리가 모자라 남았다
+    - 지난가을 뱃사공 변상철이 누이의 편지를 전해 주었다. "엄마를 뭍으로 내보냈대. 거기서 찾아 줘"
+  doesnt_know:
+    - 섬에서 내보낸 사람 중 뭍에 닿은 사람이 아무도 없다는 것
+  secret:
+    content: 어머니를 찾으면 데려가 살 방 값을 마련하려고, 감순덕에게 자기 몸을 담보로 빚을 졌다. 기한을 넘기면 "섬 일손"으로 거래선에 오른다는 조건이다. 기한이 다가온다
+    reveal_when: 빚 이야기가 나오거나, 거래선에 사람이 실린다는 것을 함께 알았을 때
+    min_trust: 2
+  stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: 0, charm: 1, intellect: 0 }
+  skills: { endure: 1, survival: 1, persuade: 1, scavenge: 1 }
+  start_inventory: [water_bottle, dry_ration]
+  playable: true
+  zone: e_market
+  ties:
+    - { to: py_eunbyeol, kind: sibling, secret: { reveal_when: 섬 이야기를 하다 누이 이름이 나왔을 때, min_trust: 2 } }
+
+- id: pe_sundeok
+  name: 감순덕
+  alias: 돋보기를 목에 건 전당포 노파
+  faction: faction_e
+  rank: staff
+  age: 63
+  gender: female
+  look: 목에 돋보기를 줄로 걸었다. 털실 조끼 주머니마다 남의 반지와 시계가 들었다. 손이 작고 차갑다.
+  reputation: 장터 뒷골목 전당포 주인. 맡긴 물건은 절대 잃어버리지 않는다. 빚을 못 갚는 사람에게도 끝까지 웃는 얼굴이라 더 무섭다는 말이 있다.
+  want: 아들 태식이 섬 사람이 되어 다시는 굶지 않는 것
+  fear: 자기가 거래선에 태운 사람들이 무엇이 되었는지 확실히 알게 되는 것
+  values: { discipline: 1, loyalty: 1, mercy: -2, honesty: -1, self_interest: 3 }
+  traits: [calculating, genial, greedy, patient]
+  voice:
+    style: 다정한 할머니 반말. 빚 이야기를 할수록 목소리가 부드러워진다
+    samples:
+      - "아이고, 걱정 마. 못 갚으면 섬에 가서 일하면 돼. 거긴 밥이 넘친다더라."
+      - "물건은 거짓말을 안 해. 금이면 금이고 쇠면 쇠지."
+  routine: { morning: 전당포, day: 전당포, evening: 장터 뒷골목, night: 전당포 다락 }
+  rules:
+    - 맡긴 물건은 기한 하루 전까지 손대지 않는다
+    - 빚쟁이를 사람들 앞에서 망신 주지 않는다 (조용히 데려간다)
+  knows:
+    - 문소라의 장부에서 갚을 길 없는 빚은 자기가 싸게 사들인다
+    - 섬 심사관은 젊고 이가 좋은 사람에게 값을 더 쳐 준다
+  doesnt_know:
+    - 아들 태식이 거래선에서 손이 묶인 빚쟁이를 보고 의심하기 시작했다
+  secret:
+    content: 갚을 길 없는 빚쟁이를 "섬 일손"으로 거래선에 태워 보내고, 섬에서 그 값으로 탄약을 받아 붉은연합에 되판다. 섬에 간 사람이 편지 한 장 보내지 않는다는 것을 안다. 이유는 생각하지 않기로 했다
+    reveal_when: 빚에 몰린 사람이 거래선에 실려 가는 것을 누군가 알아채고 따지러 왔을 때
+    min_trust: 4
+  stats: { strength: -1, agility: -1, vitality: 0, senses: 2, nerve: 2, charm: 1, intellect: 2 }
+  skills: { persuade: 2, deceive: 2, history: 1, intimidate: 1 }
+  start_inventory: [ledger, trade_token, cigarettes]
+  playable: false
+  zone: e_market
+  ties:
+    - { to: pe_taesik, kind: parent }
+    - { to: e_sora, kind: rival }
+
+- id: pe_taesik
+  name: 감태식
+  alias: 목에 굵은 흉터가 있는 호위대장
+  faction: faction_e
+  rank: squad_leader
+  age: 37
+  gender: male
+  look: 목을 가로지르는 굵은 흉터, 짧게 깎은 머리. 엽총 개머리판에 금을 새겨 지나간 거래선의 수를 센다.
+  reputation: 상단 호위대장. 섬 거래선 호위는 늘 그가 맡는다. 말수가 적고 셈보다 사람을 먼저 센다는 평.
+  want: 섬 부두를 넘어 섬 안으로 들어가 사는 것. 어머니를 데리고
+  fear: 어머니가 하는 일이 자기가 생각하는 그 일인 것
+  values: { discipline: 2, loyalty: 2, mercy: 1, honesty: 1, self_interest: 0 }
+  traits: [protective, blunt, steel_nerves]
+  voice:
+    style: 짧고 무뚝뚝한 반말. 명령할 때만 존댓말을 섞는다
+    samples:
+      - "총은 배 바닥에. 섬 부두에서 총 보이면 저쪽이 먼저 쏴."
+      - "배에 탄 사람 얼굴은 보지 마. 그게 편해."
+  routine: { dawn: 강 하구 나루, morning: 호위조 점검, day: 장터 순찰, evening: 전당포, night: 호위 막사 }
+  rules:
+    - 거래선에서는 섬 쪽 말에 대꾸하지 않는다
+    - 호위조 누구도 혼자 두지 않는다
+  knows:
+    - 섬 부두의 경비조장은 작살총을 메고, 밤에 바다에서 불빛이 보이면 먼저 쏜다
+    - 지난 거래선에 탄 빚쟁이 하나는 손이 묶여 있었다. 어머니는 "제 발로 간 거"라고 했다
+  doesnt_know:
+    - 섬 심사관이 자기를 섬에 들일 생각이 없다는 것
+  secret:
+    content: 손이 묶여 배에 오른 빚쟁이는 어릴 적 같이 자란 동네 형이었다. 그날 밤부터 엽총 개머리판에 금 대신 이름을 새긴다. 다음 거래선에 사람이 실리면 배를 돌릴 생각을 한다
+    reveal_when: 거래선에 실린 사람들을 함께 걱정해 주는 사람에게, 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 2, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 0 }
+  skills: { shoot: 2, fight: 1, tactics: 1, sense_danger: 1, intimidate: 1 }
+  start_inventory: [shotgun, trade_token]
+  playable: true
+  zone: e_market
+
+- id: pe_jio
+  name: 선지오
+  alias: 손등까지 기름때 묻은 펌프 견습
+  faction: faction_e
+  rank: grunt
+  age: 22
+  gender: female
+  look: 짧은 머리에 염덕수의 헌 작업복을 접어 입었다. 손톱 밑이 늘 까맣다. 렌치를 허리에 찼다.
+  reputation: 펌프지기 염덕수가 거둔 고아. 정수장에서 펌프 소리만 듣고 어디가 아픈지 맞힌다. 영감님 딸이라고들 한다.
+  want: 영감님 다음으로 펌프를 맡는 것
+  fear: 영감님이 펌프 앞에서 쓰러지는 것, 그리고 자기가 한 일을 영감님이 아는 것
+  values: { discipline: 1, loyalty: 1, mercy: 1, honesty: -1, self_interest: 1 }
+  traits: [curious, quick_learner, guarded]
+  voice:
+    style: 툭툭 던지는 반말. 기계 앞에서는 말이 상냥해진다
+    samples:
+      - "쉿. 들어 봐. 저 소리 두 번째 박자가 늦어."
+      - "총 찼으면 문밖에 두고 와. 영감님 화나면 무리고 뭐고 없어."
+  routine: { dawn: 펌프 돌리기, morning: 물 나눠 주기, day: 정비, evening: 펌프 돌리기, night: 장터 }
+  rules:
+    - 정수장 안에서는 영감님 말이 법이다
+    - 펌프에 손댄 일은 하루도 빼지 않고 적어 둔다
+  knows:
+    - 펌프 소리가 요즘 이상하다
+    - 섬 거래선이 뜨는 밤에는 정수장 창고 뒷문이 열려 있다
+  doesnt_know:
+    - 영감님이 베어링이 닳아 간다는 것을 혼자 안고 있다는 것
+  secret:
+    content: 탁봉수에게서 매달 통조림을 받고 펌프 상태를 몰래 일러바친다. 처음엔 영감님 약값 때문이었다. 펌프 소리가 이상하다는 것도 벌써 말해 버렸다
+    reveal_when: 영감님이나 펌프 걱정을 같이 하다가, 우두머리가 물값을 올릴 거라는 이야기가 나왔을 때
+    min_trust: 2
+  stats: { strength: 0, agility: 1, vitality: 1, senses: 2, nerve: 0, charm: 0, intellect: 1 }
+  skills: { mechanics: 2, carpentry: 1, sense_danger: 1 }
+  start_inventory: [wire_roll, water_bottle]
+  playable: true
+  zone: water_plant
+  ties:
+    - { to: e_deoksu, kind: friend }

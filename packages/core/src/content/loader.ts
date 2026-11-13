@@ -270,7 +270,8 @@ function checkReferences(content: Content): string[] {
     if (ex.age[0] > ex.age[1]) problems.push(`extras.${ex.id}: 나이 범위가 거꾸로다`);
   }
   for (const npc of Object.values(content.npcs)) {
-    factionRef(`npcs.${npc.id}`, npc.faction);
+    if (npc.faction) factionRef(`npcs.${npc.id}`, npc.faction);
+    for (const z of npc.roams ?? []) if (Object.keys(content.locations).length && !content.locations[z]) problems.push(`npcs.${npc.id}.roams: 알 수 없는 구역 ${z}`);
     if (npc.zone && Object.keys(content.locations).length && !content.locations[npc.zone]) problems.push(`npcs.${npc.id}: 알 수 없는 구역 ${npc.zone}`);
     for (const itemId of npc.start_inventory) {
       if (!content.items[itemId]) problems.push(`npcs.${npc.id}: 알 수 없는 아이템 ${itemId}`);

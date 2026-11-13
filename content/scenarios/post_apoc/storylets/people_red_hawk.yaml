@@ -1,0 +1,182 @@
+# 붉은연합·하얀매 새 인물 이야기 (npcs/more_red.yaml, npcs/more_hawk.yaml)
+# 갈래:
+# - 광장: pr_square_stick (석중기가 본보기의 몽둥이를 주인공에게 쥐여 준다)
+# - 행주 꾸러미: pr_kitchen_bundle → (pr_bundle_carried) pr_clinic_bundle (옥금자의 꾸러미가 진료소의 은솔에게 간다)
+# - 접수대: pr_clinic_queue (벌조장 성태규가 탄약을 내밀며 줄 앞을 산다)
+
+- id: pr_square_stick
+  title: 몽둥이를 세는 사람
+  tags: [red_life]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [morning]
+    day_gte: 3
+    flags_none: [pr_square_done]
+  cast:
+    stick: { ids: [pc_junggi] }
+    victim: { faction: own, ranks: [grunt] }
+  setup: "광장 한가운데 {victim:이/가} 무릎을 꿇었다. 할당량을 못 채운 조의 본보기다. {stick:이/가} 이름을 크게 두 번 부르더니, 손때로 검게 반질거리는 박달나무 몽둥이를 당신 손에 쥐여 준다. \"다섯 대. 세는 건 내가 해.\""
+  ai_direction: 석중기는 주인공을 시험한다. 광장의 사람들, 막사 창문의 얼굴들, 위원회 천막이 다 보고 있다. 살살 치면 석중기는 알아챈다. 들킬지는 판정이 정한다. 몽둥이를 내려놓으면 그 자리에서 석중기가 대신 들고, 주인공의 이름은 규율반 천막에서 한 번 더 불린다.
+  choices:
+    - id: strike
+      label: 다섯 대를 제대로 친다
+      effects:
+        - set_flag: pr_square_done
+        - merit: 1
+        - relation: { who: stick, axis: respect, delta: 1 }
+        - relation: { who: victim, axis: affection, delta: -2 }
+        - deed: { summary: 광장의 본보기에서 직접 몽둥이를 들었다, tags: [cruelty, diligence], severity: 2, privacy: public }
+    - id: soft
+      label: 소리만 크게 나게 친다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: pr_square_done
+          - relation: { who: victim, axis: trust, delta: 2 }
+          - belief: { fact: "광장에서 소리만 크게 나게 쳤다. 석중기는 숫자만 셌다", source: seen }
+        partial:
+          - set_flag: pr_square_done
+          - relation: { who: victim, axis: trust, delta: 2 }
+          - relation: { who: stick, axis: trust, delta: -1 }
+          - belief: { fact: "석중기가 다섯을 세고 나서 당신 손목을 한참 보았다. 아무 말도 하지 않았다", source: seen }
+        miss:
+          - set_flag: pr_square_done
+          - merit: -1
+          - relation: { who: stick, axis: trust, delta: -2 }
+          - deed: { summary: 광장의 본보기에서 몽둥이를 봐주다가 규율반원에게 들켰다, tags: [mercy, disobedience], severity: 2, privacy: public }
+    - id: refuse
+      label: 몽둥이를 내려놓는다
+      effects:
+        - set_flag: pr_square_done
+        - set_flag: pr_square_refused
+        - merit: -2
+        - relation: { who: victim, axis: respect, delta: 2 }
+        - relation: { who: stick, axis: respect, delta: -1 }
+        - deed: { summary: 광장의 본보기에서 몽둥이 들기를 거부했다, tags: [disobedience, mercy], severity: 2, privacy: public }
+
+- id: pr_kitchen_bundle
+  title: 행주에 싼 것
+  tags: [red_life]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    segments: [evening]
+    day_gte: 4
+    flags_none: [pr_bundle_carried, pr_bundle_refused, pr_bundle_reported]
+  cast:
+    cook: { ids: [pc_sundeok] }
+  setup: "쓰레기 수레를 끌고 가던 {cook:이/가} 부엌 뒷방 앞에서 당신을 불러 세운다. 국자를 내려놓고, 매듭을 세 번 지은 행주 꾸러미를 앞치마 밑에서 꺼낸다. \"총각·아가씨는 담 밖에 나가지? 하얀매 진료소에… 붕대 빨리 감는 수습이 하나 있대. 그 애한테만 줘. 딴 사람 손 타면 안 돼.\""
+  ai_direction: 꾸러미 안에는 마른 누룽지와 실로 뜬 토시 한 짝뿐이다. 옥금자은 딸이 살았는지 모른다. 소문으로만 들은 수습이 딸이기를 바란다. 왜 그 수습이냐고 물으면 "솜씨가 좋다니까"라고만 하고 눈을 피한다. 규율반에 알려지면 옥금자은 부엌에서 끝이다.
+  choices:
+    - id: carry
+      label: 꾸러미를 품에 넣는다
+      effects:
+        - set_flag: pr_bundle_carried
+        - relation: { who: cook, axis: trust, delta: 2 }
+        - belief: { fact: "취사반장 옥금자이 행주 꾸러미를 맡겼다. 하얀매 진료소의 붕대 잘 감는 수습에게만 주라고 했다", source: seen }
+    - id: refuse
+      label: 그런 심부름은 못 한다고 한다
+      effects:
+        - set_flag: pr_bundle_refused
+        - relation: { who: cook, axis: affection, delta: -1 }
+    - id: report
+      label: 규율반 천막에 알린다
+      effects:
+        - set_flag: pr_bundle_reported
+        - merit: 1
+        - relation: { who: cook, axis: trust, delta: -3 }
+        - deed: { summary: 다른 무리로 꾸러미를 보내려던 취사반장을 규율반에 알렸다, tags: [betrayal, diligence], severity: 2, privacy: semi_private }
+
+- id: pr_clinic_bundle
+  title: 매듭 세 번
+  tags: [world]
+  when:
+    zones: [d_clinic]
+    segments: [morning, day, evening]
+    flags_all: [pr_bundle_carried]
+    flags_none: [pr_bundle_delivered]
+  cast:
+    sol: { ids: [pd_eunsol] }
+    mom: { ids: [pc_sundeok], enter: false }
+  setup: "치료실 문간에서 붕대를 감던 {sol:이/가} 당신 품에서 나온 행주를 보고 손을 멈춘다. 매듭이 세 번이다. 붕대 끝을 입에 문 채 한참 말이 없다가, 아주 낮게 묻는다. \"…그거, 어디서 났어요?\""
+  ai_direction: "은솔은 {mom}의 딸이다. 매듭 세 번은 부엌에서 모녀끼리 쓰던 표시다. 은솔은 붉은연합 탈영병이라 진료소 안에서 이 이야기가 새면 안 된다. 어머니가 살아 있다는 말을 들으면 무너지지만, 소리 내어 울지는 않는다."
+  choices:
+    - id: tell
+      label: 붉은연합 부엌의 취사반장이 보냈다고 말해 준다
+      effects:
+        - set_flag: pr_bundle_delivered
+        - clear_flag: pr_bundle_carried
+        - reveal_tie: { who: sol, other: mom }
+        - relation: { who: sol, axis: trust, delta: 2 }
+        - relation: { who: sol, axis: affection, delta: 1 }
+        - belief: { fact: "하얀매 수습 은솔은 붉은연합 취사반장 옥금자의 딸이다. 반년 전 쓰레기 수레에 숨어 거점을 빠져나왔다", source: report }
+    - id: ask_first
+      label: 먼저 이 수습이 누구인지 떠본다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pr_bundle_delivered
+          - clear_flag: pr_bundle_carried
+          - reveal_tie: { who: sol, other: mom }
+          - relation: { who: sol, axis: trust, delta: 1 }
+          - belief: { fact: "은솔은 행주의 매듭을 보고 어머니 이름을 먼저 댔다. 옥금자의 딸이다", source: report }
+        partial:
+          - set_flag: pr_bundle_delivered
+          - clear_flag: pr_bundle_carried
+          - belief: { fact: "은솔은 꾸러미를 받아 들고 고맙다는 말만 했다. 손이 떨렸다", source: seen }
+        miss:
+          - relation: { who: sol, axis: trust, delta: -1 }
+          - belief: { fact: "은솔은 그런 행주는 모른다며 등을 돌렸다. 붉은 완장 이야기를 꺼내자 얼굴이 하얘졌다", source: seen }
+    - id: keep
+      label: 아직 건네지 않고 둔다
+      effects: []
+
+- id: pr_clinic_queue
+  title: 줄 앞을 사는 값
+  tags: [clinic_life]
+  when:
+    factions: [faction_d]
+    zones: [d_clinic]
+    segments: [morning, day]
+    day_gte: 3
+    flags_none: [pr_queue_done]
+  cast:
+    desk: { ids: [pd_dahyeon] }
+    sarge: { ids: [pc_taegyu] }
+  setup: "정문 접수대 앞. {sarge:이/가} 배에 피를 묻힌 젊은 벌조원을 들쳐 업고 들어온다. 판자의 맨 윗줄에는 열이 펄펄 끓는 버들마을 아이가 먼저 적혀 있다. {sarge:은/는} 무기를 맡긴 손으로 탄약 꾸러미를 접수대에 올려놓는다. \"이 녀석 먼저. 값은 치른다.\" {desk:이/가} 분필을 든 채 당신을 본다."
+  ai_direction: 하얀매의 규칙은 살 가능성 순서다. 벌조원은 배를 다쳐 지금 손대면 살 수도 있고, 아이의 열은 하루를 더 버틸지 모른다. 어느 쪽이 맞는지는 판정으로만 알 수 있다. 탄약을 받으면 줄을 돈으로 살 수 있다는 소문이 붉은연합 막사에 돈다. 성태규는 억지를 부리지 않는다. 거절당하면 벌조원 곁에 쭈그려 앉아 기다린다.
+  choices:
+    - id: triage
+      label: 둘 다 살펴보고 살 가능성으로 순서를 정한다
+      check: first_aid
+      outcomes:
+        success:
+          - set_flag: pr_queue_done
+          - merit: 1
+          - clock: { id: d_lean, delta: -1 }
+          - relation: { who: sarge, axis: respect, delta: 2 }
+          - belief: { fact: "벌조원의 배는 지금 손대야 했다. 아이의 열은 하룻밤 더 버틸 수 있었다. 순서를 규칙대로 정했다", source: seen }
+        partial:
+          - set_flag: pr_queue_done
+          - relation: { who: sarge, axis: respect, delta: 1 }
+          - belief: { fact: "순서는 정했지만 어느 쪽이 옳았는지 끝내 확신하지 못했다", source: seen }
+        miss:
+          - set_flag: pr_queue_done
+          - relation: { who: sarge, axis: trust, delta: -1 }
+          - belief: { fact: "순서를 정하다 시간을 끌었다. 성태규가 벌조원의 손을 잡고 있었다", source: seen }
+    - id: take_ammo
+      label: 탄약을 받고 벌조원을 먼저 들인다
+      effects:
+        - set_flag: pr_queue_done
+        - faction_resource: { faction: own, resource: ammo, delta: 5 }
+        - clock: { id: d_lean, delta: 1 }
+        - relation: { who: desk, axis: respect, delta: -1 }
+        - relation: { who: sarge, axis: trust, delta: 1 }
+        - deed: { summary: 진료소 줄 앞자리를 탄약을 받고 내주었다, tags: [selfishness], severity: 2, privacy: semi_private }
+    - id: by_board
+      label: 판자에 적힌 순서대로 하라고 한다
+      effects:
+        - set_flag: pr_queue_done
+        - relation: { who: desk, axis: respect, delta: 1 }
+        - relation: { who: sarge, axis: affection, delta: -1 }

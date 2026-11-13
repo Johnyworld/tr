@@ -77,7 +77,8 @@ describe("인물 사이의 관계 (기획서 7.10)", () => {
     const w = manager().create("mcp", "role_a_grunt", choice);
     const role = { tie: { of: "a", cross: true }, commander: false, known: false, enter: true } as never;
     expect(castCandidates(w.state(), w.content, role, { a: "a_yejin" })).toEqual(["c_muyeol"]);
-    expect(castCandidates(w.state(), w.content, role, { a: "a_jiho" })).toEqual([]);
+    // 오지호의 가족: 같은 무리의 형(오정빈)은 빠지고, 무리 밖의 어머니(두옥분)만
+    expect(castCandidates(w.state(), w.content, role, { a: "a_jiho" })).toEqual(["lone_youngja"]);
     w.close();
   });
 });

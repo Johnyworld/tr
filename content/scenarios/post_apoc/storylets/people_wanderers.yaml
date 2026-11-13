@@ -1,0 +1,165 @@
+# 무리에 속하지 않은 이름 있는 인물들의 이야기 (기획서 7.11, npcs/wanderers.yaml)
+# 무소속 주인공에게도 무리 주인공에게도 열린다
+
+- id: pw_closed_gate
+  title: 문 밖의 겨울
+  tags: [world]
+  when:
+    zones: [old_town, riverside, hospital_ruins]
+    segments: [evening, night]
+    day_gte: 2
+  cast:
+    drifter: { ids: [lone_seokgu] }
+  setup: "무너진 건물 그늘에 모닥불이 하나 있다. 냄비를 등에 단 {drifter:이/가} 불을 쑤시다 당신을 본다. 잠깐 재더니 자리를 조금 비켜 준다. \"앉아. 하나만 묻자. 청솔 쪽에 수염 덥수룩하고 다리 저는 늙은이 하나 있지?\""
+  ai_direction: 반석구는 첫겨울 청솔형제단 거점 문 밖에 버려진 피란민이다. 그때 문 위에서 "더는 안 된다"고 외친 수염 난 사내를 찾는다 (박만수지만 그는 이름을 모른다). 주인공이 청솔 사람이면 완장부터 노려본다. 왜 찾는지는 쉽게 말하지 않는다. 찾아서 무엇을 할지는 그 자신도 모른다. 주인공이 그 사내를 안다고 말해 주면, 언젠가 그가 청솔 땅 근처에 나타날 것이다.
+  choices:
+    - id: tell
+      label: 그런 고참이 하나 있다고 알려 준다
+      effects:
+        - set_flag: pw_seokgu_told
+        - relation: { who: drifter, axis: trust, delta: 1 }
+        - belief: { fact: "떠돌이 반석구가 다리를 저는 수염 난 청솔 고참을 찾는다. 그런 사람이 있다고 알려 주었다. 그는 고맙다는 말 대신 불을 오래 들여다봤다", source: seen }
+    - id: ask_why
+      label: 왜 찾느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: drifter, axis: trust, delta: 2 }
+          - belief: { fact: "반석구가 털어놓았다: 붕괴 첫겨울 청솔 거점 문 밖에 피란민들이 남겨졌고, 그는 거기서 아내와 딸을 잃었다. 문 위에서 수염 난 사내가 더는 안 된다고 외쳤다고 한다", source: report }
+        partial:
+          - belief: { fact: "반석구는 그 청솔 고참과 첫겨울에 무슨 일이 있었다고만 했다. 말하는 동안 냄비 끈을 손에 감았다 풀었다", source: seen }
+        miss:
+          - relation: { who: drifter, axis: trust, delta: -1 }
+          - belief: { fact: 반석구는 대답 대신 불을 발로 덮고 일어섰다, source: seen }
+    - id: share_fire
+      label: 대답 대신 가진 먹을 것을 불가에 꺼내 놓는다
+      effects:
+        - take_item: { item: dry_ration }
+        - relation: { who: drifter, axis: affection, delta: 2 }
+        - deed: { summary: 모닥불가에서 처음 본 떠돌이와 먹을 것을 나눴다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "반석구가 구시가에서 감염체가 덜 다니는 골목 몇 곳을 알려 주었다", source: report }
+
+- id: pw_salt_girl
+  title: 뭍으로 떠밀려 온 사람
+  tags: [world]
+  when:
+    zones: [riverside, old_town, hospital_ruins]
+    segments: [morning, day, evening]
+    day_gte: 3
+  cast:
+    stray: { ids: [lone_jiwon] }
+    friend: { ids: [y_dabin], enter: false }
+  setup: "강 쪽에서 한참 떨어진 골목, 젖은 옷을 말리던 {stray:이/가} 당신을 보고 몸을 웅크린다. 머리카락이 소금기에 뻣뻣하다. \"저기… 혹시 바다 건너 섬에서 온 배, 요즘도 이쪽에 대요?\""
+  ai_direction: 독고지원은 여울섬에서 "쓸모가 다해 뭍으로 내보내진" 사람이다. 배는 뭍으로 가지 않고 섬을 돌아 의회 저장고 뒤 바위틈으로 갔고, 그는 손을 풀고 밤바다에 뛰어내렸다. 섬 사람이 자기를 찾으러 올까 봐 무섭다. 섬에 남은 단짝 설다빈에게 소식을 전하고 싶어 한다. 잔치 국 이야기는 하지 않으려 한다 (깊이 믿은 뒤에야). 주인공이 섬을 낙원이라 말하면 표정이 굳는다.
+  choices:
+    - id: blanket
+      label: 담요를 덮어 주고 먹을 것을 찾아 준다
+      effects:
+        - take_item: { item: blanket }
+        - relation: { who: stray, axis: affection, delta: 2 }
+        - relation: { who: stray, axis: trust, delta: 1 }
+        - deed: { summary: 강변에 떠밀려 온 여자에게 담요를 덮어 주었다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "강가에서 떠밀려 온 여자 독고지원을 만났다. 바다 건너 섬에서 왔다는 것 말고는 말하지 않는다. 물가에서는 자지 않으려 한다", source: seen }
+    - id: ask_island
+      label: 섬에서 왜 나왔느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - reveal_tie: { who: stray, other: friend }
+          - relation: { who: stray, axis: trust, delta: 1 }
+          - belief: { fact: "독고지원이 말했다: 여울섬은 쓸모가 다한 사람을 뭍으로 내보낸다고 하지만, 배는 섬을 한 바퀴 돌아 의회 저장고 뒤 바위틈으로 갔다. 그는 손을 풀고 바다에 뛰어내렸다. 섬에 단짝 설다빈이 남아 있다", source: report }
+        partial:
+          - belief: { fact: "독고지원은 섬에서 내보내졌다고만 했다. 배가 어디로 갔느냐고 묻자 '뭍으로는 안 갔어요'라고 하고 입을 다물었다", source: report }
+        miss:
+          - relation: { who: stray, axis: trust, delta: -1 }
+          - belief: { fact: 섬 이야기를 꺼내자 독고지원은 겁에 질려 골목 안쪽으로 달아났다, source: seen }
+    - id: paradise
+      label: 섬은 낙원이라던데 왜 나왔느냐며 웃는다
+      effects:
+        - relation: { who: stray, axis: trust, delta: -2 }
+        - belief: { fact: "섬이 낙원이라고 하자 떠밀려 온 여자가 웃지도 울지도 않는 얼굴로 '낙원은 맞아요. 의회한테는'이라고 했다", source: seen }
+
+- id: pw_bathhouse
+  title: 목욕탕 굴뚝의 연기
+  tags: [world]
+  when:
+    zones: [old_town]
+    segments: [evening, night]
+    day_gte: 3
+  cast:
+    mother: { ids: [lone_sunim] }
+    son: { ids: [c_sangok] }
+  setup: "구시가 목욕탕 굴뚝에서 연기가 오른다. 무너진 보일러실 쪽문에서 철테 안경을 쓴 사내가 빈 자루를 접으며 나온다. 소매에 붉은 줄이 들어갔다. 그 뒤로 {mother:이/가} 쪽문에 기대 \"추운데 단추 다 채우고 가\" 하고 낮게 말한다. 사내가 당신을 본다."
+  ai_direction: 사내는 붉은연합 규율반 서기 우상옥이고, 노파 계순임은 그의 어머니다. 그는 규칙을 어기고 보름에 한 번쯤 몰래 배급을 들고 온다. 규율반 서기가 담 밖 노파에게 배급을 빼돌린다는 것이 알려지면 자기가 적던 명부에 자기 이름이 오른다. 그는 당황해도 목소리를 높이지 않는다. 먼저 주인공의 이름과 소속을 묻는다. 노파는 아들을 감싸려 주인공에게 따뜻한 물을 권한다.
+  choices:
+    - id: look_away
+      label: 아무것도 못 본 척 노파에게 물 한 바가지를 청한다
+      effects:
+        - set_flag: pw_bathhouse_kept
+        - relation: { who: son, axis: trust, delta: 1 }
+        - relation: { who: mother, axis: affection, delta: 2 }
+        - belief: { fact: "구시가 목욕탕 보일러실에 노파 계순임이 산다. 붉은 줄 소매의 안경 쓴 사내가 그곳에서 빈 자루를 들고 나오는 것을 봤다. 노파는 그를 아들처럼 대했다", source: seen }
+    - id: confront
+      label: 사내를 막아서고 누구냐고 묻는다
+      check: intimidate
+      outcomes:
+        success:
+          - reveal_tie: { who: son, other: mother }
+          - relation: { who: son, axis: trust, delta: -1 }
+          - relation: { who: son, axis: respect, delta: 1 }
+          - belief: { fact: "붉은연합 규율반 서기 우상옥이 구시가 목욕탕의 노파 계순임의 아들이다. 그는 몰래 배급을 들고 어머니를 찾아온다. 이 일은 규율반에 알려지면 안 된다", source: seen }
+        partial:
+          - relation: { who: son, axis: trust, delta: -1 }
+          - belief: { fact: "목욕탕에서 나온 안경 쓴 붉은연합 사내는 이름 대신 내 이름과 소속을 되물었다. 노파가 그를 감쌌다", source: seen }
+        miss:
+          - relation: { who: son, axis: trust, delta: -2 }
+          - relation: { who: mother, axis: affection, delta: -1 }
+          - belief: { fact: "목욕탕의 안경 쓴 붉은연합 사내가 조용히 말했다: 오늘 본 것은 명부에 남는다고", source: seen }
+    - id: bargain
+      label: 비밀을 지켜 줄 테니 대가를 달라고 한다
+      effects:
+        - set_flag: pw_bathhouse_leverage
+        - reveal_tie: { who: son, other: mother }
+        - relation: { who: son, axis: trust, delta: -3 }
+        - relation: { who: mother, axis: affection, delta: -2 }
+        - deed: { summary: 노파와 아들의 비밀을 쥐고 대가를 요구했다, tags: [selfishness], severity: 2, privacy: private }
+        - belief: { fact: "붉은연합 규율반 서기 우상옥이 구시가 목욕탕 노파의 아들이라는 약점을 쥐었다. 그는 한 번만이라고 했다. 그 눈은 명부를 적는 눈이었다", source: seen }
+
+- id: pw_reloads
+  title: 재생탄 장수
+  tags: [world]
+  when:
+    zones: [riverside, old_town, e_market, water_plant, b_base, south_fields]
+    segments: [morning, day]
+    day_gte: 4
+  cast:
+    seller: { ids: [lone_eunsuk] }
+    brother: { ids: [a_taeho], enter: false }
+  setup: "길목에 펼친 천 위에 탄알이 크기별로 줄지어 있다. 탄띠를 X자로 멘 {seller:이/가} 탄피 한 줌을 손바닥에서 굴린다. \"재생탄. 열 발에 한 발 불발이면 돈 돌려줘.\" 그러다 당신 차림을 훑고 목소리를 낮춘다. \"…너 혹시 청솔 쪽 사람 아는 거 있어? 귀 반쪽 없는 분대장.\""
+  ai_direction: 강은숙은 청솔 분대장 강태호의 여동생이다. 정찰조가 사라진 날 강변 언덕에서 오빠가 혼자 뒤로 빠지는 것과, 붉은연합이 정찰조 둘을 산 채로 물류창고 쪽으로 끌고 가는 것을 봤다. 오빠를 지키려고 아무에게도 말하지 않았다. 오빠 안부를 묻는 것은 진심이다. 깊이 믿게 되면, 정찰조가 살아 있다는 것을 누군가 청솔에 전해 주기를 바라면서도 오빠 이름은 빼 달라고 할 것이다.
+  choices:
+    - id: news_of_brother
+      label: 그 분대장의 근황을 아는 대로 말해 준다
+      effects:
+        - relation: { who: seller, axis: trust, delta: 1 }
+        - relation: { who: seller, axis: affection, delta: 1 }
+        - belief: { fact: "재생탄 장수 강은숙이 청솔 분대장 강태호의 안부를 물었다. 근황을 듣는 동안 탄피를 한 번도 굴리지 않았다", source: seen }
+    - id: why_ask
+      label: 그 분대장과 무슨 사이냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - reveal_tie: { who: seller, other: brother }
+          - relation: { who: seller, axis: trust, delta: 1 }
+          - belief: { fact: "재생탄 장수 강은숙은 청솔 분대장 강태호의 여동생이다. 정찰조가 사라진 날 강변 근처에 있었다는 말을 흘렸다가 얼른 거둬들였다", source: report }
+        partial:
+          - belief: { fact: "재생탄 장수는 그 분대장이 옛날 단골이라고만 했다. 거짓말이 서툴지는 않은데 눈이 강변 쪽으로 갔다", source: seen }
+        miss:
+          - relation: { who: seller, axis: trust, delta: -1 }
+          - belief: { fact: 재생탄 장수는 쓸데없는 걸 묻는다며 천을 걷었다, source: seen }
+    - id: trade_casings
+      label: 담배를 내밀고 요즘 탄약이 어디로 흐르는지 묻는다
+      effects:
+        - take_item: { item: cigarettes }
+        - relation: { who: seller, axis: respect, delta: 1 }
+        - belief: { fact: "재생탄 장수가 말했다: 붉은연합이 요즘 탄약을 넉넉히 사들이고, 그 보초들은 탄피를 몰래 모아 판다. 큰 싸움을 준비하는 무리의 사는 법이다", source: report }

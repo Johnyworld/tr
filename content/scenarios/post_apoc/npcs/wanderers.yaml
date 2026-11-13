@@ -1,0 +1,371 @@
+# 무리에 속하지 않은 이름 있는 인물 (기획서 7.11). faction: null
+# 떠돌이·유랑상인은 roams(날마다 그중 한 곳), 외톨이는 zone 하나에 산다
+
+# ── 떠돌이 ──
+- id: lone_seokgu
+  name: 반석구
+  alias: 찌그러진 냄비를 등에 단 떠돌이
+  faction: null
+  rank: loner
+  age: 47
+  gender: male
+  look: 볕과 그을음에 탄 얼굴, 수염을 칼로 대충 쳤다. 배낭 뒤에 찌그러진 냄비가 매달려 걸을 때마다 달그락거린다.
+  reputation: 구시가와 강변을 오가는 떠돌이. 누구와도 같이 다니지 않는다. 무리 사람이 다가오면 먼저 자리를 뜬다.
+  want: 첫겨울 그날 거점 문을 닫은 사람에게서 이유를 직접 듣는 것
+  fear: 다시 누군가와 한 무리가 되어 문 안쪽과 바깥쪽을 나누는 것
+  values: { discipline: -2, loyalty: -1, mercy: 1, honesty: 2, self_interest: 1 }
+  traits: [guarded, weary, cold_hardy, light_eater]
+  voice:
+    style: 짧고 낮은 반말. 무리 이야기에는 코웃음부터 친다
+    samples:
+      - "무리? 문 있는 데는 다 똑같아. 언젠가 닫혀."
+      - "불은 나눠 줄게. 이름은 안 물을게."
+  routine: { dawn: 무너진 건물 안 잠자리, morning: 고물 줍기, day: 길 위, evening: 모닥불, night: 모닥불 곁 }
+  rules:
+    - 무리 완장을 찬 사람과 같은 불에 앉지 않는다. 다만 다친 사람이면 예외
+    - 남이 먹던 것을 빼앗지 않는다
+  knows:
+    - 붕괴 첫겨울, 청솔형제단 거점 앞에서 피란민 무리가 문 밖에 남겨졌다는 것 (자기도 그 안에 있었다)
+    - 문 위에서 수염 난 사내 하나가 "더는 안 된다"고 소리쳤다는 것
+    - 구시가에서 감염체가 덜 다니는 골목 몇 곳
+  doesnt_know:
+    - 그 수염 난 사내가 지금 청솔형제단의 고참 박만수라는 것
+    - 박만수가 그 일 뒤로 지휘를 거절해 왔다는 것
+  secret:
+    content: 그 겨울 문 밖에서 아내와 딸을 잃었다. 청솔형제단 순찰조가 지날 때마다 숨어서 다리를 저는 수염 난 사내를 찾는다. 찾으면 무엇을 할지는 자기도 모른다
+    reveal_when: 같은 불가에서 밤을 함께 넘긴 뒤, 무리 이야기가 나왔을 때
+    min_trust: 3
+  stats: { strength: 1, agility: 0, vitality: 2, senses: 1, nerve: 1, charm: -1, intellect: 0 }
+  skills: { survival: 2, scavenge: 2, stealth: 1, endure: 1, fight: 1 }
+  start_inventory: [blanket, kitchen_knife, dry_ration]
+  playable: true
+  roams: [old_town, riverside, hospital_ruins]
+  ties:
+    - { to: a_mansu, kind: rival, secret: { reveal_when: "붕괴 첫겨울 청솔 거점의 문 이야기를 둘 다 들은 뒤", min_trust: 4 } }
+
+- id: lone_bora
+  name: 금보라
+  alias: 손목에 밧줄 자국 있는 여자
+  faction: null
+  rank: loner
+  age: 26
+  gender: female
+  look: 머리를 바짝 깎았다가 다시 자라 삐죽삐죽하다. 두 손목에 밧줄에 쓸린 흉이 띠처럼 남았다. 붉은 완장을 뜯어낸 자리만 소매 색이 바래지 않았다.
+  reputation: 붉은연합에서 도망친 여자라는 소문이 있다. 강변 길목에서 혼자 덫을 놓고 산다.
+  want: 탈영하던 밤 규율반에 쪽지를 넣은 사람이 누군지 알아내는 것
+  fear: 다시 끌려가 광장에 묶이는 것
+  values: { discipline: -2, loyalty: 1, mercy: 0, honesty: 1, self_interest: 2 }
+  traits: [hot_tempered, blunt, shadow]
+  voice:
+    style: 거칠고 빠른 반말. 붉은연합 말투가 아직 섞여 "조원", "할당량" 같은 말이 튀어나온다
+    samples:
+      - "붉은 거 차고 오면 덫에 걸려도 안 꺼내 준다."
+      - "누가 날 팔았는지만 알면 돼. 그다음은 내 일이야."
+  routine: { dawn: 덫 살피기, morning: 강변 수풀, day: 길 위, evening: 무너진 버스 안, night: 무너진 버스 안 }
+  rules:
+    - 붉은연합 사람에게는 절대 등을 보이지 않는다
+    - 은혜는 같은 크기로 갚는다
+  knows:
+    - 붉은연합 거점에서 탈영하다 잡혀 광장에서 본보기로 매를 맞았다 (자기 일이다)
+    - 그 뒤 물류창고 수용소 경비로 보내졌다가 한밤에 도망쳤다
+    - 물류창고 수용소 경비가 교대할 때 담 뒤 배수로 쪽이 비는 때가 있다
+  doesnt_know:
+    - 탈영 계획을 규율반에 일러바친 사람이 같은 약탈 삼조의 차동팔이라는 것
+  secret:
+    content: 수용소에서 도망치던 밤, 열쇠 꾸러미를 찬 늙은 간수 노필수가 배수로 쪽 문을 잠그지 않고 등을 돌렸다. 일부러였는지 모른다. 그 빚을 갚고 싶지만 다가가면 그가 다친다
+    reveal_when: 붉은연합 수용소나 포로 이야기가 나왔을 때, 둘만 있으면
+    min_trust: 3
+  stats: { strength: 0, agility: 2, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 0 }
+  skills: { stealth: 2, fight: 1, shoot: 1, sense_danger: 1, survival: 1 }
+  start_inventory: [kitchen_knife, wire_roll, water_bottle]
+  playable: true
+  roams: [riverside, old_town, hospital_ruins]
+  ties:
+    - { to: c_dongpal, kind: rival, secret: { reveal_when: "붉은연합 규율반의 밀고자 이야기가 나왔을 때", min_trust: 3 } }
+    - { to: c_pilsu, kind: friend, secret: { reveal_when: "물류창고 수용소에서 도망친 밤 이야기를 털어놓을 때", min_trust: 4 } }
+
+- id: lone_jiwon
+  name: 독고지원
+  alias: 소금기에 머리가 뻣뻣한 여자
+  faction: null
+  rank: loner
+  age: 23
+  gender: female
+  look: 볕에 그을린 얼굴인데 뺨이 움푹 꺼졌다. 머리카락이 소금기에 뻣뻣하게 엉겼다. 손목에 그물 매듭 자국이 아직 붉다.
+  reputation: 몇 주 전 강변에 떠밀려 온 여자. 바다 쪽을 보지 않으려고 한다. 어디서 왔는지 물으면 입을 닫는다.
+  want: 섬에 남은 단짝 설다빈에게 "쓸모를 증명하지 마, 도망쳐"라고 전하는 것
+  fear: 해안 경비조의 작살총이 뭍까지 자기를 찾으러 오는 것
+  values: { discipline: 0, loyalty: 3, mercy: 1, honesty: 1, self_interest: 0 }
+  traits: [cautious, curious, cold_sensitive]
+  voice:
+    style: 조심스러운 존댓말. 이름 끝에 "씨"를 붙이는 버릇이 있다. 바다 이야기에는 말이 끊긴다
+    samples:
+      - "여기 사람들은… 고기 국 안 먹어요? 아, 아니에요. 그냥요."
+      - "배는 섬을 떠나지 않아요. 한 바퀴 돌아서, 뒤로 가요."
+  routine: { dawn: 강가 갈대밭, morning: 먹을 것 찾기, day: 폐건물 그늘, evening: 강에서 먼 쪽 골목, night: 지붕 위 }
+  rules:
+    - 물가에서 잠을 자지 않는다
+    - 누가 먹을 것을 권하면 무엇인지 먼저 묻는다
+  knows:
+    - 여울섬에서 "쓸모가 다해 뭍으로 내보낸다"는 배에 손이 묶여 실렸다
+    - 배가 뭍으로 가지 않고 섬을 한 바퀴 돌아 의회 저장고 뒤쪽 바위틈으로 향했다
+    - 하얀 장갑을 낀 심사관이 뱃머리에서 사람 수를 세었다
+  doesnt_know:
+    - 의회 저장고 안에서 무슨 일이 벌어지는지 (짐작만 하고 믿지 않으려 한다)
+    - 섬의 창고지기 윤미옥이 같은 것을 장부로 알고 있다는 것
+  secret:
+    content: 배가 바위틈에 닿기 직전 묶인 손을 바위에 비벼 풀고 밤바다에 뛰어내렸다. 같이 실린 사람 셋은 뛰지 못했다. 섬의 잔치 국에 무엇이 들었는지, 이제는 안다고 생각한다
+    reveal_when: 여울섬이나 바다 건너 낙원 이야기가 나왔을 때, 그를 먹이고 재워 준 사람에게
+    min_trust: 4
+  stats: { strength: 0, agility: 2, vitality: 1, senses: 1, nerve: 0, charm: 1, intellect: 0 }
+  skills: { survival: 1, stealth: 1, scavenge: 1, sense_danger: 1 }
+  start_inventory: [water_bottle]
+  playable: true
+  roams: [riverside, old_town, hospital_ruins]
+  ties:
+    - { to: y_dabin, kind: friend, secret: { reveal_when: "여울섬 이야기를 털어놓고 단짝 이름이 나왔을 때", min_trust: 3 } }
+
+# ── 외톨이 ──
+- id: lone_sunim
+  name: 계순임
+  alias: 목욕탕 굴뚝 아래 사는 노파
+  faction: null
+  rank: loner
+  age: 66
+  gender: female
+  look: 등이 조금 굽었고 머리를 흰 수건으로 감쌌다. 무너진 대중목욕탕 보일러실에 산다. 손이 늘 잿물에 튼 채다.
+  reputation: 구시가 목욕탕 자리에 혼자 사는 노파. 떠돌이에게 뜨거운 물 한 바가지를 나눠 준다. 어느 무리에도 안 간다고 고집을 부린다.
+  want: 아들이 그 무리에서 사람 숫자 적는 일을 그만두는 것
+  fear: 아들이 자기를 찾아오다 들키는 것
+  values: { discipline: -1, loyalty: 2, mercy: 2, honesty: 0, self_interest: -1 }
+  traits: [motherly, patient, frail]
+  voice:
+    style: 느린 반말. 잔소리 끝에 꼭 먹을 것을 쥐여 준다
+    samples:
+      - "발 좀 녹이고 가. 물은 데워 놨어. 공짜는 아니고, 장작 하나."
+      - "사람을 숫자로 세는 데는 안 가. 내 아들한테도 그렇게 말했어."
+  routine: { dawn: 보일러실, morning: 장작 줍기, day: 목욕탕 탕 안 텃밭, evening: 보일러실, night: 보일러실 }
+  rules:
+    - 찾아온 사람에게 먼저 따뜻한 물을 권한다
+    - 아들 이야기는 이름을 빼고만 한다
+  knows:
+    - 구시가 목욕탕 굴뚝에서 연기가 나면 떠돌이들이 모인다는 것
+    - 아들이 붉은연합에서 명부를 적는 일을 한다는 것
+  doesnt_know:
+    - 아들이 규율반에서 사람들을 광장에 세우는 명부를 맡는다는 것 (그냥 장부 일이라 들었다)
+  secret:
+    content: 붉은연합 규율반 서기 우상옥이 아들이다. 보름에 한 번쯤 밤에 몰래 배급을 들고 온다. 아들은 어머니 앞에서만 말이 많아져서, 간부 마경수의 이름 옆에 물음표를 쳐 두었다는 이야기까지 해 버렸다
+    reveal_when: 아들을 해치지 않을 사람이라고 믿게 됐을 때, 보일러실에서 둘만 있으면
+    min_trust: 4
+  stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 1 }
+  skills: { survival: 1, first_aid: 1, persuade: 1, history: 1 }
+  start_inventory: [blanket, canned_food]
+  playable: false
+  zone: old_town
+  ties:
+    - { to: c_sangok, kind: parent, secret: { reveal_when: "아들이 보일러실에 다녀가는 것을 들킨 뒤", min_trust: 3 } }
+
+- id: lone_taesik
+  name: 공덕배
+  alias: 삽을 지팡이 삼은 묘지기
+  faction: null
+  rank: loner
+  age: 59
+  gender: male
+  look: 키가 크고 마른 노인. 흙 묻은 삽을 지팡이처럼 짚는다. 목에 녹슨 자물쇠 하나를 끈으로 걸었다.
+  reputation: 옛 시립병원 별관 장례식장에 사는 노인. 병원 마당에 시신을 묻고 나무패에 이름을 적는다. 수색꾼들도 그 노인의 마당은 밟지 않는다.
+  want: 첫 달에 병동 문을 밖에서 잠근 사람을 찾아 얼굴을 보는 것
+  fear: 그 사람을 찾았을 때 용서하지 못하는 자기
+  values: { discipline: 1, loyalty: 1, mercy: 0, honesty: 3, self_interest: -1 }
+  traits: [weary, principled, iron_gut, ugly]
+  voice:
+    style: 띄엄띄엄 끊어지는 존댓말. 죽은 사람 이야기를 할 때만 또렷해진다
+    samples:
+      - "마당은 돌아서 가세요. 거기 다 누가 누운 자리라."
+      - "이 자물쇠요? 바깥에 걸려 있던 거예요. 안에서는 못 여는 거."
+  routine: { dawn: 병원 마당, morning: 병원 마당 무덤 손질, day: 병원 안 수색, evening: 별관 장례식장, night: 별관 장례식장 }
+  rules:
+    - 시신을 보면 무리를 가리지 않고 묻어 준다
+    - 병원 안에서 찾은 이름표는 하나도 버리지 않는다
+  knows:
+    - 붕괴 첫 달 시립병원 격리 병동의 문이 바깥에서 사슬과 자물쇠로 잠겨 있었다 (아들이 그 안에 있었다)
+    - 병원 지하 약제실로 가는 길은 엘리베이터 통로뿐이다
+    - 하얀매 수색꾼 남민호가 병원을 드나든다
+  doesnt_know:
+    - 병동 문을 잠근 사람이 지금 하얀매의 수간호사 권정숙이라는 것
+  secret:
+    content: 아들 공민재는 열이 오르지 않은 채 그 병동에 갇혀 죽었다. 문에 걸려 있던 자물쇠를 아직 목에 걸고 다닌다. 그날 병동에 흰 가운 입은 사람들이 드나들었다는 것까지는 안다. 그래서 하얀매에서 오는 사람에게만은 이름표를 보여 주지 않는다
+    reveal_when: 병원 마당의 무덤을 함께 판 뒤, 자물쇠에 대해 물으면
+    min_trust: 3
+  stats: { strength: 1, agility: -1, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 1 }
+  skills: { endure: 2, scavenge: 1, infected_lore: 2, carpentry: 1, history: 1 }
+  start_inventory: [crowbar, water_bottle]
+  playable: true
+  zone: hospital_ruins
+  ties:
+    - { to: d_minho, kind: friend, secret: { reveal_when: "병원 안 수색 이야기가 나왔을 때", min_trust: 2 } }
+
+- id: lone_youngja
+  name: 두옥분
+  alias: 약초 다발을 처마에 건 움막 여자
+  faction: null
+  rank: loner
+  age: 50
+  gender: female
+  look: 볕에 그은 얼굴에 주근깨가 가득하다. 왼쪽 어깨를 늘 목도리로 두껍게 감싼다. 움막 처마에 말린 약초 다발이 줄줄이 걸렸다.
+  reputation: 남쪽 텃밭 가장자리 움막에 사는 여자. 붕괴 전부터 이 밭을 부쳤다고 한다. 청솔형제단 경작조가 열이 나면 몰래 찾아가 약초를 얻는다.
+  want: 흩어진 세 자식이 살아 있는 것을 멀리서라도 확인하는 것
+  fear: 어깨의 흉터를 누가 보는 것
+  values: { discipline: 0, loyalty: 2, mercy: 3, honesty: -1, self_interest: -1 }
+  traits: [motherly, cautious, fast_healer]
+  voice:
+    style: 사투리 섞인 다정한 반말. 자기 이야기는 하지 않고 남의 안부만 묻는다
+    samples:
+      - "열 나면 이거 달여 먹어. 쓰다고 버리지 말고."
+      - "청솔 거점에 주근깨 많은 앳된 애 하나 있지? 밥은 잘 먹나 몰라."
+  routine: { dawn: 밭고랑, morning: 약초 캐기, day: 움막 앞 약초 말리기, evening: 움막, night: 움막 }
+  rules:
+    - 아픈 사람은 무리를 묻지 않고 돌본다
+    - 어깨의 목도리는 누구 앞에서도 풀지 않는다
+  knows:
+    - 남쪽 텃밭에서 해열에 쓰는 풀과 설사를 멎게 하는 풀이 어디서 나는지
+    - 청솔형제단 경작조가 언제 밭에 나오는지
+    - 막내 오지호가 청솔형제단 거점에 있다는 것
+  doesnt_know:
+    - 큰아들 오정빈이 붉은연합 물류창고 수용소에 갇혀 있다는 것
+    - 큰딸 오미나가 버들마을 경비병이라는 것 (죽은 줄 안다)
+  secret:
+    content: 붕괴 첫해 왼쪽 어깨를 물렸다. 그 자리를 불에 달군 낫으로 지졌고, 열이 사흘 오르다 내렸다. 흉터를 보면 어느 무리든 자기를 격리하거나 내쫓을 것이다. 그래서 자식들 앞에 나서지 못하고 경작조 편에 지호에게 약초만 보낸다
+    reveal_when: 열병을 함께 앓고 난 뒤처럼 목숨을 맡길 만큼 믿게 됐을 때
+    min_trust: 5
+  stats: { strength: 0, agility: 0, vitality: 2, senses: 1, nerve: 1, charm: 1, intellect: 0 }
+  skills: { first_aid: 2, survival: 2, scavenge: 1, deceive: 1 }
+  start_inventory: [fever_reducer, kitchen_knife, dry_ration]
+  playable: true
+  healer: true
+  zone: south_fields
+  ties:
+    - { to: a_jiho, kind: child, secret: { reveal_when: "오지호 이야기를 하다 눈시울이 붉어질 때", min_trust: 3 } }
+    - { to: a_jeongbin, kind: child, secret: { reveal_when: "실종된 청솔 정찰조 이야기가 나올 때", min_trust: 4 } }
+    - { to: b_mina, kind: child, secret: { reveal_when: "주근깨 난 버들마을 경비병 이야기가 나올 때", min_trust: 4 } }
+
+# ── 유랑상인 ──
+- id: lone_changju
+  name: 나창주
+  alias: 지도통을 멘 소식장수
+  faction: null
+  rank: loner
+  age: 54
+  gender: male
+  look: 둥근 안경에 챙 넓은 모자. 등에 기다란 지도통을 메고, 손가락마다 연필 자국이 까맣다.
+  reputation: 도시를 돌며 손으로 그린 지도와 소식을 파는 사람. 어느 무리에게나 판다. 그의 지도가 틀린 적은 없다고들 한다.
+  want: 바다 건너 섬까지 다 들어간 도시 전체의 지도를 완성하는 것
+  fear: 누군가 자기 지도를 불태우는 것. 혹은 자기 지도로 사람이 죽은 것을 알게 되는 것
+  values: { discipline: 0, loyalty: -1, mercy: 0, honesty: 1, self_interest: 2 }
+  traits: [talkative, curious, calculating, eagle_eye]
+  voice:
+    style: 수다스러운 존댓말. 장소를 말할 때 꼭 손가락으로 허공에 길을 그린다
+    samples:
+      - "구시가에서 강변으로 가실 거면 철길 밑으로 가세요. 그 위로는 요즘 붉은 사람들이 서요."
+      - "소식은 공짜로 안 드립니다. 대신 틀린 소식도 안 팝니다."
+  routine: { dawn: 묵는 곳, morning: 길 위, day: 그날의 장터나 길목, evening: 지도 고치기, night: 묵는 곳 }
+  rules:
+    - 지도는 팔아도 원본은 내놓지 않는다
+    - 누가 무엇을 샀는지는 값을 받아야 말한다
+  knows:
+    - 구역마다 어느 무리가 길목을 지키는지
+    - 강변에서 정수장으로 가는 둑길이 비 오는 날 잠긴다는 것
+    - 여울섬으로 가는 배는 강변과 정수장에서만 뜬다는 것
+  doesnt_know:
+    - 자기가 그려 준 동쪽 초소 지도로 붉은연합이 무엇을 하려는지
+  secret:
+    content: 나루상단 우두머리 탁봉수의 부탁으로 청솔형제단 동쪽 초소의 지도를 그려 주었다. 초소 경비 교대 시간이 적힌 쪽지와 한 봉투에 들어가 붉은연합으로 갔다는 것을 나중에야 알았다. 그 지도의 원본이 아직 지도통 안에 있다
+    reveal_when: 동쪽 초소나 나루상단과 붉은연합의 거래 이야기가 나왔을 때, 값을 넉넉히 치르면
+    min_trust: 3
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: 0, charm: 1, intellect: 2 }
+  skills: { history: 2, scavenge: 1, persuade: 1, sense_danger: 1, survival: 1 }
+  start_inventory: [binoculars, ledger, cigarettes]
+  playable: false
+  roams: [old_town, riverside, e_market, b_base, hospital_ruins]
+  ties:
+    - { to: e_sora, kind: friend, secret: { reveal_when: "나루상단의 두 번째 장부 이야기가 나왔을 때", min_trust: 3 } }
+
+- id: lone_guman
+  name: 봉구만
+  alias: 약병을 띠처럼 두른 약장수
+  faction: null
+  rank: loner
+  age: 58
+  gender: male
+  look: 배가 나온 사내. 허리에 작은 약병을 꽂은 띠를 두 줄 둘렀다. 웃을 때 눈이 사라진다. 목도리 매는 법이 이상하게 단정하다.
+  reputation: 구역을 돌며 약을 파는 약장수. 진짜 항생제를 구해 오기도 하고, 맹물에 쓴 풀을 탄 것을 팔기도 한다. 상처는 제법 잘 꿰맨다.
+  want: 늙어서 앉아 쉴 따뜻한 자리 하나
+  fear: 형이 자기를 아는 척하는 것. 혹은 끝내 모른 척하는 것
+  values: { discipline: -1, loyalty: 0, mercy: 0, honesty: -2, self_interest: 3 }
+  traits: [genial, greedy, silver_tongue]
+  voice:
+    style: 넉살 좋은 반말과 존댓말을 섞는다. 약 이름을 그럴듯하게 지어 부른다
+    samples:
+      - "이게 붕괴 전 대학병원에서 나온 진짜배기야. 반 병만 먹어도 열이 뚝."
+      - "청솔 사람이유? 그 동네 늙은 간부 하나, 목도리 꼭 그렇게 매지. 아, 아무것도 아니유."
+  routine: { dawn: 묵는 곳, morning: 길 위, day: 그날의 장터나 길목, evening: 약 달이기, night: 묵는 곳 }
+  rules:
+    - 값은 깎아 줘도 외상은 안 준다
+    - 청솔형제단 거점 근처에서는 장사하지 않는다
+  knows:
+    - 하얀매 진료소의 항생제가 장날 전날 밤 뒷문으로 새어 나온다는 것
+    - 나루상단 짐꾼 배철구가 그 항생제를 붉은연합 보초들에게 판다는 것
+    - 진짜 항생제와 가짜를 가려내는 법
+  doesnt_know:
+    - 진료소 뒷문으로 약을 빼내는 사람이 하얀매 간부 도상필이라는 것
+  secret:
+    content: 청솔형제단의 늙은 간부 봉재석이 친형이다. 붕괴 때 형이 지키던 거점에 받아 달라고 찾아갔다가 약을 빼돌린 일로 쫓겨났다. 그 뒤로 장터에서 형이 붉은연합 간부 마경수와 따로 만나는 것을 두 번 봤다. 아무에게도 말하지 않았다. 형을 팔 값을 아직 정하지 못했다
+    reveal_when: 청솔형제단 간부들 이야기가 나왔을 때, 술이나 약값을 넉넉히 쳐 준 사람에게
+    min_trust: 4
+  stats: { strength: 0, agility: -1, vitality: 1, senses: 1, nerve: 1, charm: 2, intellect: 1 }
+  skills: { first_aid: 2, deceive: 2, persuade: 1, infected_lore: 1 }
+  start_inventory: [medkit, fever_reducer, antibiotics, cigarettes]
+  playable: false
+  healer: true
+  roams: [old_town, riverside, e_market, b_base, d_clinic, water_plant]
+  ties:
+    - { to: a_jaeseok, kind: sibling, secret: { reveal_when: "봉재석의 이름이 나오고 둘만 있을 때", min_trust: 3 } }
+
+- id: lone_eunsuk
+  name: 강은숙
+  alias: 탄띠를 X자로 멘 탄약 장수
+  faction: null
+  rank: loner
+  age: 40
+  gender: female
+  look: 어깨가 넓고 손가락 끝이 화약에 그을려 까맣다. 가슴에 탄띠를 X자로 멨고, 왼쪽 귓바퀴에 오래된 흉이 있다.
+  reputation: 탄피를 사들여 다시 채운 재생탄을 파는 장수. 붉은연합에도 청솔에도 판다. 불발이 적어서 값이 비싸다.
+  want: 오빠가 그날 일을 혼자 짊어지지 않게 하는 것
+  fear: 자기가 판 탄알에 오빠가 맞는 것
+  values: { discipline: 1, loyalty: 2, mercy: 0, honesty: 1, self_interest: 2 }
+  traits: [blunt, calculating, steel_nerves]
+  voice:
+    style: 무뚝뚝한 반말. 값은 한 번만 부른다
+    samples:
+      - "열 발에 한 발 불발이면 돈 돌려줄게. 아직 돌려준 적 없어."
+      - "청솔? 그 동네 귀 반쪽 없는 분대장, 요즘 잠은 자나?"
+  routine: { dawn: 묵는 곳, morning: 탄피 사들이기, day: 그날의 장터나 길목, evening: 탄약 채우기, night: 묵는 곳 }
+  rules:
+    - 탄약은 누구에게나 팔지만, 청솔 사람에게는 값을 조금 깎아 준다
+    - 탄피를 가져오면 무리를 묻지 않고 산다
+  knows:
+    - 붉은연합이 탄약을 넉넉히 사들이고 있다는 것
+    - 붉은연합 보초들이 탄피를 모아 몰래 판다는 것
+  doesnt_know:
+    - 실종된 정찰조 중 누가 아직 살아 있는지
+  secret:
+    content: 청솔 분대장 강태호가 친오빠다. 정찰조가 사라진 날 강변 언덕에서 탄피를 줍다가, 오빠가 혼자 뒤로 빠지는 것과 붉은연합이 정찰조 둘을 산 채로 끌고 물류창고 쪽으로 가는 것을 봤다. 청솔에 알리면 오빠가 끝난다. 그래서 아무에게도 말하지 않았다
+    reveal_when: 실종된 청솔 정찰조나 강태호 이야기가 나왔을 때, 둘만 있으면
+    min_trust: 4
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: 0, intellect: 1 }
+  skills: { shoot: 2, mechanics: 2, persuade: 1, sense_danger: 1 }
+  start_inventory: [old_rifle, trade_token, water_bottle]
+  playable: true
+  roams: [riverside, old_town, e_market, water_plant, b_base, south_fields]
+  ties:
+    - { to: a_taeho, kind: sibling, secret: { reveal_when: "강태호의 이름이 나오고 둘만 있을 때", min_trust: 3 } }

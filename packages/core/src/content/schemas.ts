@@ -81,7 +81,8 @@ export function createContentSchemas(s: Scenario) {
     name: z.string().min(1),
     /** 이름을 모르는 사람이 부르는 말 (기획서 6.3). 짧은 호칭: "귀가 반쯤 없는 분대장" */
     alias: z.string().min(1).max(30),
-    faction: contentIdSchema,
+    /** 소속 무리. 없으면(null) 무리에 속하지 않은 떠돌이·외톨이·유랑상인 (기획서 7.11) */
+    faction: contentIdSchema.nullable().optional(),
     /** 세계가 시작될 때 이미 붙잡혀 있다 (포로, 기획서 7.6) */
     start_captive: z.strictObject({ by: contentIdSchema, zone: contentIdSchema }).optional(),
     rank: idEnum(rankIds(s)),
@@ -135,6 +136,8 @@ export function createContentSchemas(s: Scenario) {
     start_inventory: z.array(contentIdSchema).default([]),
     /** 사망 후 이 인물로 이어서 플레이할 수 있는지 */
     playable: z.boolean().default(false),
+    /** 떠도는 인물: 날마다 이 구역들 중 한 곳에 있다 (유랑상인 등). 있으면 zone 대신 쓴다 (기획서 7.11) */
+    roams: z.array(contentIdSchema).min(1).optional(),
     /** 치료사: 장면에 있으면 치료(take_action.treatment)를 해 줄 수 있다 */
     healer: z.boolean().default(false),
     /** 주로 머무는 전선 구역. 플레이어가 그 구역에 있으면 GM이 등장시킬 수 있다 */

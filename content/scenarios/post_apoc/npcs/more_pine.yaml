@@ -1,0 +1,240 @@
+# 청솔형제단 추가 인물 (1분대·창고·의무실·거점 살림)
+# 1분대는 남쪽 담장과 남쪽 텃밭을 지킨다. 지난겨울 텃밭 밖 물결 때 분대원 엄태석을 잃었다
+
+- id: pa_jinman
+  name: 허진만
+  alias: 왼손에 붕대를 감은 각진 분대장
+  faction: faction_a
+  rank: squad_leader
+  age: 46
+  gender: male
+  look: 턱이 각지고 눈 밑이 늘 거뭇하다. 왼손 손가락 두 개에 붕대를 감았는데, 상처가 아문 지 오래인데도 풀지 않는다.
+  reputation: 1분대장. 남쪽 담장과 텃밭을 맡는다. "버리지 않는다"를 가장 자주 입에 올리는 분대장이다. 지난겨울 물결 속에서 분대원 하나를 잃고도 나머지를 다 데리고 돌아왔다는 이야기가 거점에 돈다.
+  want: 1분대를 한 사람도 빠짐없이 다음 봄까지 데려가는 것
+  fear: 엄태주가 형이 어떻게 죽었는지 묻는 날
+  values: { discipline: 2, loyalty: 3, mercy: 1, honesty: -1, self_interest: 0 }
+  traits: [protective, weary, principled]
+  voice:
+    style: 낮고 짧은 반말. 분대원 이름을 꼭 부른다. 원칙 이야기를 할 때만 말이 길어진다
+    samples:
+      - "태주야, 둘씩 붙어. 혼자 담 밖에 나가는 놈은 내가 먼저 패."
+      - "우리는 안 버려. 그거 말고 우리한테 뭐가 남았냐."
+  routine: { dawn: 남쪽 담장 순찰, morning: 남쪽 텃밭 경비, day: 남쪽 텃밭 경비, evening: 식당 천막, night: 막사 }
+  rules:
+    - 분대원을 혼자 담 밖으로 보내지 않는다
+    - 엄태주에게는 위험한 자리를 주지 않는다. 이유는 말하지 않는다
+    - 밤에 잠을 자지 못하고 막사 밖에서 담배를 피운다
+  knows:
+    - 남쪽 담장에서 어디가 다시 무너질지
+    - 지난겨울 물결이 남쪽 텃밭 너머 배수로를 따라 왔다는 것
+    - 버들마을 함영자가 텃밭 수확을 달 때 저울을 자기 쪽으로 기울인다는 낌새
+  doesnt_know:
+    - 딸 허세린가 하얀매로 가서 의술을 배우고 싶어 한다는 것
+  secret:
+    content: 지난겨울 물결 때 엄태석은 죽지 않았다. 다리를 물려 배수로에 쓰러졌고, 그를 업으면 넷이 다 죽는다고 판단해 두고 왔다. 지도부와 분대에는 이미 숨이 끊겨 있었다고 보고했다. 붕대 감은 손가락은 그때 태석이 놓지 않던 손을 떼다 다친 것이다
+    reveal_when: 원칙을 지키다 사람을 잃어 본 사람에게, 밤에 막사 밖에서 둘만 있을 때. 또는 엄태주가 형의 마지막을 정면으로 물을 때
+    min_trust: 4
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 0 }
+  skills: { shoot: 1, tactics: 2, sense_danger: 1, carpentry: 1, endure: 1 }
+  start_inventory: [old_rifle, radio, cigarettes]
+  playable: true
+  zone: a_base
+  ties:
+    - { to: pa_narae, kind: parent }
+
+- id: pa_narae
+  name: 허세린
+  alias: 소매에 피 얼룩이 진 앳된 의무실 보조
+  faction: faction_a
+  rank: staff
+  age: 19
+  gender: female
+  look: 머리를 수건으로 질끈 묶었다. 소맷부리에 빨아도 안 빠지는 갈색 얼룩이 있고, 앞치마 주머니에 붕대 조각이 늘 삐져나와 있다.
+  reputation: 1분대장 허진만의 딸. 의무실에서 윤채원을 돕는다. 손이 야무지고 피를 봐도 얼굴이 변하지 않는다. 아버지 앞에서만 말이 줄어든다.
+  want: 하얀매에 가서 제대로 된 의술을 배우는 것. 붕대만 감는 사람으로 늙고 싶지 않다
+  fear: 약이 없어서 눈앞의 사람을 그냥 보내야 하는 날
+  values: { discipline: 1, loyalty: 1, mercy: 3, honesty: 1, self_interest: 0 }
+  traits: [curious, quick_learner, blunt]
+  voice:
+    style: 빠르고 똑 부러지는 존댓말. 다친 사람에게는 반말로 바뀐다. 아버지를 "분대장님"이라 부른다
+    samples:
+      - "팔 이리 줘. 아프다고 소리 질러도 돼, 여기선 아무도 안 웃어."
+      - "약장 숫자가 하루 사이에 늘었어요. 약이 혼자 생기는 건 아니잖아요."
+  routine: { dawn: 의무실, morning: 의무실, day: 의무실, evening: 식당 천막, night: 막사 }
+  rules:
+    - 다친 사람이 오면 소속을 묻기 전에 상처부터 본다
+    - 아버지가 밤에 잠꼬대로 부르는 이름을 아무에게도 말하지 않는다
+  knows:
+    - 아버지가 잠결에 "태석아, 손 놔"라고 중얼거린다는 것
+    - 하얀매 진료소에 자기 또래의 수습 간호사가 있다는 것
+    - 윤채원이 원래 하얀매 쪽 사람이었다는 소문
+  doesnt_know:
+    - 아버지가 엄태석을 살아 있는 채로 두고 왔다는 것
+  secret:
+    content: 밤에 신옥란 간부가 의무실 약장에 해열제와 항생제를 몰래 넣는 것을 두 번 봤다. 장부에 없는 약이다. 덕분에 살린 사람이 있어서 아무에게도 말하지 않았다
+    reveal_when: 약이 없어 누군가 죽어 가는 자리에 함께 있었던 사람에게
+    min_trust: 3
+  stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 2 }
+  skills: { first_aid: 2, infected_lore: 1, scavenge: 1 }
+  start_inventory: [medkit, water_bottle]
+  playable: true
+  healer: true
+  zone: a_base
+
+- id: pa_taeju
+  name: 엄태주
+  alias: 형의 군번줄을 목에 건 젊은 분대원
+  faction: faction_a
+  rank: grunt
+  age: 23
+  gender: male
+  look: 목에 군번줄 두 개를 겹쳐 걸었다. 하나는 형 것이다. 키가 크고 어깨가 좁으며, 웃을 때 한쪽 볼에만 보조개가 팬다.
+  reputation: 1분대의 막내 고참. 지난겨울 형 엄태석을 잃었다. 허진만 분대장을 친형처럼 따르고, 분대장이 시키면 가장 먼저 뛴다.
+  want: 허진만 같은 분대장이 되는 것. 형이 지키던 자리를 자기가 지키는 것
+  fear: 형처럼 혼자 남겨지는 것
+  values: { discipline: 2, loyalty: 3, mercy: 1, honesty: 2, self_interest: -1 }
+  traits: [eager, warm, hot_tempered]
+  voice:
+    style: 힘이 들어간 존댓말. 분대장 이야기를 할 때는 숨이 가빠진다. 형 이야기는 웃으면서 한다
+    samples:
+      - "분대장님이 그러셨어요. 우리는 안 버린다고. 형도 끝까지 업고 오려고 하셨대요."
+      - "저 앞자리 주세요. 왜 맨날 저만 뒤예요?"
+  routine: { dawn: 남쪽 담장 순찰, day: 남쪽 텃밭 경비, evening: 남쪽 텃밭 울타리, night: 막사 }
+  rules:
+    - 해 질 녘이면 텃밭 남쪽 울타리에 서서 배수로 쪽을 한참 본다
+    - 분대장을 깎아내리는 말을 들으면 참지 못한다
+  knows:
+    - 형의 시신은 끝내 찾지 못했다는 것
+    - 분대장이 자기만 자꾸 뒤에 세운다는 것
+    - 왕기범이 밤마다 막사를 빠져나간다는 것 (모른 척해 준다)
+  doesnt_know:
+    - 분대장이 형을 살아 있는 채로 두고 왔다는 것
+  stats: { strength: 1, agility: 1, vitality: 1, senses: 0, nerve: 0, charm: 1, intellect: -1 }
+  skills: { shoot: 1, fight: 1, endure: 1, survival: 1 }
+  start_inventory: [old_rifle, water_bottle]
+  playable: true
+  zone: a_base
+  ties:
+    - { to: pa_gibeom, kind: friend }
+
+- id: pa_gibeom
+  name: 왕기범
+  alias: 장갑 한 짝만 낀 마른 분대원
+  faction: faction_a
+  rank: grunt
+  age: 26
+  gender: male
+  look: 마르고 볕에 그을렸다. 오른손에만 털장갑을 낀다. 왼손 약지에 철사를 감아 만든 반지 자국이 하얗게 남아 있다.
+  reputation: 1분대원. 말수가 적고 밭일을 잘한다. 버들마을에 심부름 갈 일이 생기면 꼭 자기가 가겠다고 나선다.
+  want: 버들마을이 어느 쪽으로 기울든 아내와 함께 사는 것
+  fear: 버들마을에 총을 겨누라는 명령
+  values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 0, self_interest: 1 }
+  traits: [patient, guarded, cold_hardy]
+  voice:
+    style: 느린 반말 섞인 존댓말. 버들마을 이야기가 나오면 대답이 한 박자 늦다
+    samples:
+      - "제가 갈게요. 버들마을 길은 제가 잘 알아요."
+      - "…저쪽도 사람 사는 데예요. 다들 그걸 자꾸 까먹어요."
+  routine: { dawn: 막사, morning: 남쪽 텃밭, day: 남쪽 텃밭, evening: 식당 천막, night: 버들마을 쪽문 근처 }
+  rules:
+    - 반지는 낮에는 빼서 장갑 안에 넣어 둔다
+    - 버들마을을 욕하는 사람과는 같은 상에 앉지 않는다
+  knows:
+    - 버들마을 북쪽 쪽문이 밤에 언제 잠깐 열리는지
+    - 버들마을 안에 붉은연합으로 넘어가자는 말이 돈다는 것
+  doesnt_know:
+    - 아내 길수아가 아이를 가졌다는 것
+    - 아내가 염재혁에게서 붉은연합 통조림을 받았다는 것
+  secret:
+    content: 봄에 버들마을 지하 교실에서 길수아와 몰래 혼례를 올렸다. 분대에는 알리지 않았다. 버들마을이 연합을 깨면 막사를 빠져나가 아내 곁으로 갈 생각이다
+    reveal_when: 버들마을을 함께 지켜 본 사람에게, 또는 버들마을을 치자는 이야기가 나왔을 때
+    min_trust: 3
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 0 }
+  skills: { survival: 2, stealth: 1, shoot: 1, carpentry: 1 }
+  start_inventory: [old_rifle, blanket]
+  playable: true
+  zone: a_base
+  ties:
+    - { to: pb_sua, kind: spouse, secret: { reveal_when: 버들마을을 함께 지켜 본 사람에게 밤에 쪽문 근처에서 들켰을 때, min_trust: 3 } }
+
+- id: pa_yeonhui
+  name: 차연희
+  alias: 열쇠 꾸러미를 목에 건 창고지기
+  faction: faction_a
+  rank: staff
+  age: 37
+  gender: female
+  look: 짧게 친 머리에 보급 창고 열쇠 꾸러미를 끈에 꿰어 목에 걸었다. 앞니 사이가 조금 벌어져 웃으면 휘파람 같은 소리가 난다.
+  reputation: 보급 창고지기. 한도윤 간부 밑에서 통조림 하나까지 세어 들이고 내준다. 넉살이 좋아 식당 줄에서 늘 누군가와 웃고 있다.
+  want: 붉은연합에 있는 남동생을 이번 겨울에 굶겨 죽이지 않는 것
+  fear: 창고 장부가 맞지 않는다는 것이 한도윤의 눈에 띄는 날
+  values: { discipline: 1, loyalty: 1, mercy: 1, honesty: -2, self_interest: 1 }
+  traits: [genial, calculating, talkative]
+  voice:
+    style: 웃음이 섞인 빠른 반말. 숫자를 말할 때만 또박또박하다. 곤란하면 농담으로 넘긴다
+    samples:
+      - "통조림 마흔하나. 아까도 마흔하나였고 내일도 마흔하나야. 그치?"
+      - "창고 뒷문? 그거 원래 안 잠겨. 바람이 열어."
+  routine: { dawn: 보급 창고, morning: 보급 창고, day: 보급 창고, evening: 식당 천막, night: 보급 창고 뒷문 }
+  rules:
+    - 창고 열쇠는 잘 때도 목에서 풀지 않는다
+    - 장터에 가는 심부름은 꼭 자기가 맡으려 한다
+  knows:
+    - 보급 창고의 실제 재고와 장부가 조금 어긋나 있다는 것 (어긋나게 만든 사람이 자기다)
+    - 창고 뒷문 자물쇠를 어떻게 하면 소리 없이 여는지
+    - 동생에게서 들은 붉은연합 동쪽 공세 이야기 몇 마디
+  doesnt_know:
+    - 동생 차동팔이 붉은연합 규율반의 밀고자라는 것
+    - 동생이 전해 주는 공세 이야기 중 일부는 규율반이 일부러 흘린 것이라는 것
+  secret:
+    content: 붉은연합 약탈조에 친동생 차동팔이 있다. 열흘에 한 번쯤 장터에서 몰래 만나, 창고에서 빼낸 통조림을 건네고 대신 붉은연합 안의 소식을 듣는다. 거점에서 가장 무거운 잘못인 "남의 몫에 손대기"를 하고 있다는 것을 안다
+    reveal_when: 창고 뒷문에서 들켰을 때, 들킨 상대가 바로 알리지 않고 이유를 물을 때
+    min_trust: 3
+  stats: { strength: 0, agility: 1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 1 }
+  skills: { deceive: 2, persuade: 1, scavenge: 1, stealth: 1 }
+  start_inventory: [ledger, canned_food, trade_token]
+  playable: true
+  zone: a_base
+  # 적대 무리에 갈라진 남매 (기획서 7.10)
+  ties:
+    - { to: c_dongpal, kind: sibling, secret: { reveal_when: "창고 뒷문에서 들켰을 때, 들킨 상대가 바로 알리지 않고 이유를 물을 때", min_trust: 3 } }
+
+- id: pa_okran
+  name: 신옥란
+  alias: 공구 허리띠를 찬 반백의 여자 간부
+  faction: faction_a
+  rank: officer
+  age: 57
+  gender: female
+  look: 반백의 머리를 짧게 잘랐다. 허리에 공구 허리띠를 차고 다녀서 걸을 때마다 쇠붙이 소리가 난다. 손톱 밑이 늘 기름으로 검다.
+  reputation: 거점 살림을 맡은 간부. 발전기 연료, 담장 보수, 정문으로 들어오는 피난민 받는 일을 본다. 붕괴 전 공업고 실습실 기사였다. 피난민을 받자는 쪽에 늘 먼저 손을 든다.
+  want: “버리지 않는다”는 원칙이 이번 겨울에도 말뿐이 되지 않는 것
+  fear: 하얀매 대표가 자기 딸이라는 것이 봉재석의 귀에 들어가, 약값 흥정의 패로 쓰이는 것
+  values: { discipline: 1, loyalty: 2, mercy: 2, honesty: -1, self_interest: -1 }
+  traits: [meticulous, principled, cold_hardy]
+  voice:
+    style: 건조한 반말. 기계 이야기를 할 때만 말이 부드러워진다. 회의에서는 숫자 대신 사람 이름을 댄다
+    samples:
+      - "발전기는 거짓말을 안 해. 기름을 안 주면 안 돌아. 사람도 그래."
+      - "정문 밖에 선 사람한테 숫자 얘기 하지 마. 이름부터 물어."
+  routine: { dawn: 발전기실, morning: 지도부 회의, day: 남쪽 담장 보수, evening: 정문, night: 발전기실 }
+  rules:
+    - 정문에 선 피난민은 직접 나가서 얼굴을 본다
+    - 연료 장부는 남에게 맡기지 않고 자기 손으로 적는다
+  knows:
+    - 발전기 연료가 장부보다 조금 적다는 것 (빼낸 사람이 자기다)
+    - 남쪽 담장 철판 중 어디가 녹슬어 곧 떨어질지
+    - 윤채원이 하얀매에서 쫓겨난 사연의 한 자락
+  doesnt_know:
+    - 허세린가 약장에 약을 넣는 자기를 본 적이 있다는 것
+  secret:
+    content: 하얀매 대표 서은영이 붕괴 때 헤어진 친딸이다. 딸은 "약은 공짜로 주지 않는다"는 규칙을 어머니에게도 지킨다. 그래서 발전기 연료를 조금씩 빼돌려 장터에서 해열제와 항생제로 바꾸고, 밤에 의무실 약장에 장부 없이 넣는다
+    reveal_when: 원칙과 규칙 사이에서 원칙을 고른 적 있는 사람에게, 발전기실에서 둘만 있을 때
+    min_trust: 4
+  stats: { strength: 0, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 2 }
+  skills: { mechanics: 2, carpentry: 2, persuade: 1, history: 1 }
+  start_inventory: [wire_roll, ledger, crowbar]
+  playable: false
+  zone: a_base
+  ties:
+    - { to: d_eunyoung, kind: parent, secret: { reveal_when: "원칙과 규칙 사이에서 원칙을 고른 적 있는 사람에게, 발전기실에서 둘만 있을 때", min_trust: 4 } }

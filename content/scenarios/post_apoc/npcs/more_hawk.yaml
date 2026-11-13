@@ -1,0 +1,209 @@
+# 하얀매 인물 추가 (가람 월드). 의사·약제사·접수·격리실 문지기·수습
+# 붉은연합 쪽 인물과 얽힌 사연은 more_red.yaml에 있다
+
+- id: pd_ugyeong
+  name: 천우경
+  alias: 손이 떨리는 외과 의사
+  faction: faction_d
+  rank: staff
+  age: 46
+  gender: female
+  look: 단정하게 빗어 넘긴 머리에 눈 밑이 검다. 수술할 때만 손이 멎고, 수술이 끝나면 다시 떨린다. 가운 소매 끝을 늘 손끝까지 내려 쥐고 있다.
+  reputation: 하얀매에서 대표 다음가는 의사. 붕괴 전 시립병원 외과에 있었고, 진료소에서 톱을 쥘 줄 아는 사람은 이 사람뿐이다. 수술은 정확한데 요즘 수술실 문을 자주 잠근다는 말이 돈다.
+  want: 하루라도 더 수술대 앞에 서는 것
+  fear: 손이 수술 중에 떨리는 것. 그리고 장부의 빈 숫자가 자기 이름으로 채워지는 것
+  values: { discipline: 1, loyalty: 1, mercy: 1, honesty: -2, self_interest: 1 }
+  traits: [cold, meticulous, frail]
+  voice:
+    style: 조용하고 정확한 존댓말. 환자 이름 대신 다친 곳으로 부른다
+    samples:
+      - "왼쪽 다리, 이리 눕히세요. 말은 그다음에."
+      - "살릴 수 있어요. 대신 무릎 아래는 포기하세요."
+  routine: { dawn: 수술실, morning: 치료실, day: 수술실, evening: 수술실 문을 잠그고 혼자, night: 진료소 뒷방 }
+  rules:
+    - 수술 전에는 누구도 수술실에 들이지 않는다. 수습도
+    - 진통제를 손수 세고, 문기순 할머니가 세기 전에 장부를 먼저 본다
+  knows:
+    - 시립병원 수술실에 아직 쓸 만한 수술 도구가 남아 있다는 것
+    - 권정숙이 응급실이 무너지던 날 무슨 결정을 했는지. 같은 복도에 있었다
+    - 접수의 위다현이 붉은연합 쪽 환자를 가끔 줄 앞으로 올린다는 것
+  doesnt_know:
+    - 도상필도 약을 빼내고 있다는 것. 장부의 빈 숫자가 다 자기 탓인 줄 안다
+  secret:
+    content: 수술 뒤 떨림을 멎게 하려고 약제실의 진통제를 몰래 맞는다. 문기순의 장부가 맞지 않는 까닭 중 하나가 자기라는 걸 안다
+    reveal_when: 저녁에 잠긴 수술실 문 앞에서 기다렸을 때, 또는 수술 중 손이 떨리는 것을 본 사람이 둘만 있을 때 물었을 때
+    min_trust: 3
+  stats: { strength: -1, agility: 1, vitality: -1, senses: 2, nerve: 1, charm: 0, intellect: 2 }
+  skills: { first_aid: 2, infected_lore: 1, endure: 1 }
+  start_inventory: [medkit, kitchen_knife]
+  playable: true
+  healer: true
+  zone: d_clinic
+  ties:
+    - { to: d_jeongsuk, kind: friend }
+
+- id: pd_sugyeong
+  name: 연수경
+  alias: 약병 라벨을 소리 내어 읽는 약제사
+  faction: faction_d
+  rank: staff
+  age: 33
+  gender: female
+  look: 동그란 얼굴에 앞머리를 핀으로 넘겼다. 약병을 집으면 습관처럼 라벨을 입속으로 읽는다. 목에 끈으로 돋보기를 걸었다.
+  reputation: 약사 문기순의 제자. 약제실 선반 순서를 다 외운다. 할머니가 눈이 어두워진 뒤로 약 고르는 일은 사실상 이 사람이 한다.
+  want: 할머니에게서 약 다루는 법을 다 넘겨받고, 언젠가 약제실 열쇠를 자기 손에 받는 것
+  fear: 윤채원이 진료소를 떠나던 밤 일이 드러나는 것
+  values: { discipline: 1, loyalty: 1, mercy: 2, honesty: -1, self_interest: 0 }
+  traits: [curious, cautious, quick_learner]
+  voice:
+    style: 빠르고 정확한 존댓말. 약 이름은 꼭 성분명으로 말한다
+    samples:
+      - "아목시실린이요. 아모… 뭐라고 하지 마시고요."
+      - "할머니 장부는 틀린 적 없어요. 틀린 건 선반이에요."
+  routine: { dawn: 약제실 선반 정리, morning: 약제실, day: 치료실 약 내주기, evening: 문기순과 장부 맞추기, night: 수습 숙소 }
+  rules:
+    - 약을 내줄 때마다 이름을 소리 내어 두 번 읽는다
+    - 윤채원 이야기가 나오면 자리를 뜬다
+  knows:
+    - 약제실 선반마다 무엇이 얼마쯤 있는지
+    - 진통제가 비는 날과 수술실 문이 잠기는 날이 겹친다는 것. 아직 아무에게도 말하지 않았다
+    - 윤채원이 감염된 아이를 살리려고 무엇을 들고 나갔는지
+  doesnt_know:
+    - 윤채원이 지금도 도상필과 몰래 연락한다는 것
+  secret:
+    content: 윤채원이 약을 들고 진료소를 떠나던 밤, 약제실 문을 열어 준 사람이 자기다. 윤채원 혼자 다 뒤집어쓰고 쫓겨났고, 자기 이름은 끝까지 대지 않았다
+    reveal_when: 윤채원 이야기가 나왔을 때 둘만 있다면, 또는 약제실 열쇠를 두고 누군가 의심받을 때
+    min_trust: 3
+  stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 0, charm: 1, intellect: 2 }
+  skills: { first_aid: 1, scavenge: 1, infected_lore: 1, history: 1 }
+  start_inventory: [antibiotics, fever_reducer]
+  playable: true
+  healer: true
+  zone: d_clinic
+  # 쫓겨난 간호사와 그를 보낸 사람 (기획서 7.10)
+  ties:
+    - { to: a_chaewon, kind: friend, secret: { reveal_when: "윤채원 이야기가 나왔을 때 둘만 있다면", min_trust: 3 } }
+    - { to: d_gisun, kind: friend }
+
+- id: pd_manseok
+  name: 구만석
+  alias: 목발 짚은 격리실 문지기
+  faction: faction_d
+  rank: grunt
+  age: 52
+  gender: male
+  look: 오른쪽 무릎 아래가 없다. 쇠파이프로 만든 목발을 짚고, 등에 광장에서 맞은 줄 자국이 겹겹이 남았다. 철문 열쇠를 목에 걸었다.
+  reputation: 지난봄 진료소 정문 앞에 버려져 있던 사람. 천우경이 다리를 잘라 살렸다. 약값을 갚을 길이 없어 격리실 문지기를 한다. 붉은연합에 있었다는 걸 숨기지 않는다.
+  want: 약값을 다 갚고, 자기를 친 사람의 얼굴을 한 번 더 보는 것
+  fear: 다시 붉은 완장 사이로 끌려가는 것
+  values: { discipline: 1, loyalty: 2, mercy: 0, honesty: 2, self_interest: 0 }
+  traits: [blunt, patient, cynical]
+  voice:
+    style: 거칠고 느린 반말. 붉은연합 말투가 남아 사람을 성으로 부른다
+    samples:
+      - "사흘. 사흘 지나면 열어 준다. 하루 일찍은 안 돼."
+      - "광장 한가운데 서 봤어? 안 서 봤으면 말하지 마."
+  routine: { dawn: 격리실 철문, morning: 격리실 철문, day: 격리실 철문, evening: 진료소 마당 벤치, night: 격리실 옆 창고 }
+  rules:
+    - 격리실 철문은 사흘이 차기 전에는 누가 와도 열지 않는다
+    - 붉은 완장을 찬 사람이 오면 말없이 목발을 고쳐 쥔다
+  knows:
+    - 붉은연합 거점의 막사 배치와 점호 순서
+    - 지난봄 광장에서 자기를 친 규율반원 석중기의 얼굴과 이름
+    - 격리실 안에서 열이 오른 사람이 밤에 어떤 소리를 내는지
+  doesnt_know:
+    - 그날 탈영하려던 사람이 석중기의 조카였다는 것. 자기가 왜 명단에 올랐는지 모른다
+  secret:
+    content: 탈영한 적이 없다. 그날 밤 보초였을 뿐인데 이름이 본보기 명단에 올라 광장에서 맞고 담 밖에 버려졌다. 석중기에게 갚을 날을 기다린다
+    reveal_when: 붉은연합 이야기가 나온 저녁, 진료소 마당 벤치에서
+    min_trust: 2
+  stats: { strength: 1, agility: -1, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 0 }
+  skills: { endure: 2, intimidate: 1, sense_danger: 1 }
+  start_inventory: [crowbar, blanket]
+  playable: true
+  zone: d_clinic
+  # 광장에서 친 사람과 맞은 사람 (기획서 7.10)
+  ties:
+    - { to: pc_junggi, kind: rival, secret: { reveal_when: "붉은연합 이야기가 나온 저녁, 진료소 마당 벤치에서", min_trust: 2 } }
+
+- id: pd_dahyeon
+  name: 위다현
+  alias: 접수대의 머리 땋은 간호사
+  faction: faction_d
+  rank: staff
+  age: 30
+  gender: female
+  look: 굵게 땋은 머리를 한쪽 어깨로 넘겼다. 접수대 판자 위에 분필로 이름을 쓰고 지우느라 손바닥이 늘 하얗다. 왼손 약지에 실로 감은 반지 자국.
+  reputation: 진료소 정문 접수를 보는 간호사. 아픈 사람들이 맨 먼저 마주치는 얼굴이다. 줄을 세우는 솜씨가 좋고, 우는 사람을 잘 달랜다.
+  want: 남편과 진료소 담 안에서 같이 사는 것
+  fear: 남편이 하는 일이 들통나는 날. 그리고 그날 자기가 어느 편에 서야 하는지
+  values: { discipline: 0, loyalty: 1, mercy: 2, honesty: -1, self_interest: 1 }
+  traits: [warm, talkative, attractive]
+  voice:
+    style: 상냥한 존댓말. 줄 선 사람에게는 "조금만요, 조금만" 하고 달랜다
+    samples:
+      - "조금만요, 조금만. 앞에 피 나는 분 먼저예요."
+      - "소매 걷어 보세요. 긁힌 데 없죠? 있으면 지금 말하는 게 나아요."
+  routine: { dawn: 진료소 마당, morning: 접수대, day: 접수대, evening: 진료소 뒷담, night: 수습 숙소 }
+  rules:
+    - 접수 판자에 이름을 쓸 때 소속은 쓰지 않는다. 다친 곳만 쓴다
+    - 장날 전날 저녁에는 뒷담 쪽으로 자주 나간다
+  knows:
+    - 줄 선 사람 중 누가 어느 무리 사람인지. 판자에는 안 쓰지만 다 기억한다
+    - 남편이 파는 항생제가 진료소 약병과 같은 병이라는 것
+  doesnt_know:
+    - 그 약을 약제실에서 빼내는 사람이 간부 도상필이라는 것
+  secret:
+    content: 나루상단 짐꾼 배철구가 남편이다. 진료소에는 혼자 몸이라고 하고 들어왔다. 남편이 진료소 약을 붉은연합 보초에게 판다는 걸 알면서, 장날 전날 뒷담에서 남편을 만난다
+    reveal_when: 장날 전날 저녁 진료소 뒷담에서 마주쳤을 때, 또는 약 도둑 이야기가 진료소에 돌기 시작했을 때
+    min_trust: 3
+  stats: { strength: 0, agility: 0, vitality: 0, senses: 1, nerve: 0, charm: 2, intellect: 1 }
+  skills: { first_aid: 1, persuade: 2, deceive: 1 }
+  start_inventory: [fever_reducer, water_bottle]
+  playable: true
+  healer: true
+  zone: d_clinic
+  # 상단 짐꾼과 숨긴 혼인 (기획서 7.10)
+  ties:
+    - { to: e_cheolgu, kind: spouse, secret: { reveal_when: "장날 전날 저녁 진료소 뒷담에서 마주쳤을 때", min_trust: 3 } }
+
+- id: pd_eunsol
+  name: 은솔
+  alias: 붕대를 잘 감는 말 없는 수습
+  faction: faction_d
+  rank: grunt
+  age: 24
+  gender: female
+  look: 앞머리를 눈썹 아래까지 내렸다. 손가락이 굵고 손목에 오래된 화상 자국이 있다. 붕대는 진료소에서 누구보다 빨리, 반듯하게 감는다.
+  reputation: 반년 전 구시가에서 혼자 왔다는 수습. 성은 말하지 않고 이름만 댄다. 칼질이 능숙해서 수간호사가 처음부터 치료실에 넣었다.
+  want: 하얀매에서 이름만으로 살아가는 것. 그리고 언젠가 어머니에게 살아 있다고 알리는 것
+  fear: 붉은 완장을 찬 환자가 자기 얼굴을 알아보는 것
+  values: { discipline: 1, loyalty: 1, mercy: 2, honesty: -1, self_interest: 0 }
+  traits: [guarded, quick_learner, shadow]
+  voice:
+    style: 낮고 짧은 존댓말. 부엌 말버릇이 남아 상처를 "썬다", "데친다"고 한다
+    samples:
+      - "꽉 물어요. 금방 끝나요."
+      - "구시가요. 그 전은… 그냥 구시가요."
+  routine: { dawn: 진료소 부엌, morning: 치료실, day: 치료실, evening: 격리실 배식, night: 수습 숙소 }
+  rules:
+    - 붉은 완장을 찬 환자가 오면 다른 수습에게 자리를 넘긴다
+    - 격리실 배식 때 구만석에게 붉은연합 소식을 슬쩍 묻는다
+  knows:
+    - 붉은연합 거점 부엌의 솥과 쓰레기 수레가 나가는 길
+    - 구만석이 붉은연합에서 왔다는 것. 그가 어머니를 알지도 모른다고 생각한다
+  doesnt_know:
+    - 어머니가 자기와 같은 길로 부엌 아이 문하늘을 내보냈다는 것
+  secret:
+    content: 붉은연합 취사반장 옥금자의 딸이다. 반년 전 어머니가 쓰레기 수레에 숨겨 거점 밖으로 내보냈다. 붉은연합 명부에는 실종으로 적혀 있고, 붙잡히면 탈영병이다
+    reveal_when: 붉은연합 거점 부엌 이야기가 나왔을 때, 또는 어머니 소식을 가져온 사람에게
+    min_trust: 3
+  stats: { strength: 0, agility: 1, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 1 }
+  skills: { first_aid: 1, stealth: 1, survival: 1 }
+  start_inventory: [kitchen_knife, medkit]
+  playable: true
+  healer: true
+  zone: d_clinic
+  # 무리를 가로지른 모녀
+  ties:
+    - { to: pc_sundeok, kind: child, secret: { reveal_when: "붉은연합 거점 부엌 이야기가 나왔을 때, 또는 어머니 소식을 가져온 사람에게", min_trust: 3 } }

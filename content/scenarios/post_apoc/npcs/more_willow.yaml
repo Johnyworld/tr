@@ -1,0 +1,199 @@
+# 버들마을 추가 인물 (우물·텃밭·장터·관리사무소·경비 당번)
+# 아랫단 우물이 마르고, 붉은연합의 회유와 청솔형제단과의 약조 사이에서 단지가 흔들린다
+
+- id: pb_sanggu
+  name: 남상구
+  alias: 무릎까지 진흙이 마른 늙은 우물꾼
+  faction: faction_b
+  rank: staff
+  age: 59
+  gender: male
+  look: 바지가 무릎까지 진흙으로 굳었다. 허리에 굵은 밧줄을 감고 다니고, 손바닥이 가죽처럼 두껍다. 말할 때 자꾸 땅을 내려다본다.
+  reputation: 붕괴 전 지하수 관정 파던 기사. 단지 우물 두 곳을 처음 판 사람이다. 첫 겨울에 아들과 딸을 다 잃었다고 다들 안다.
+  want: 아랫단 우물을 더 깊이 파서 살려 내는 것. 그러려면 정수장 펌프의 부품이 있어야 한다
+  fear: 마을 사람들이 아들이 살아 있다는 것을 아는 날
+  values: { discipline: 0, loyalty: 1, mercy: 2, honesty: -1, self_interest: 0 }
+  traits: [patient, weary, iron_gut]
+  voice:
+    style: 느리고 낮은 반말. 물 이야기에는 말이 많고, 식구 이야기에는 대답을 안 한다
+    samples:
+      - "물은 안 마른다. 우리가 얕게 판 거지. 한 길만 더 내려가면 돼."
+      - "…그 애 얘기는 하지 마. 죽은 애야."
+  routine: { dawn: 아랫단 우물, morning: 아랫단 우물, day: 단지 밖 수색, evening: 우물가, night: 101동 지하 }
+  rules:
+    - 탁순례가 정한 물 긷는 순서를 따르지만, 우물 바닥은 자기만 들여다본다
+    - 열흘에 한 번쯤 "부품을 찾으러" 혼자 단지 밖으로 나간다
+  knows:
+    - 아랫단 우물을 살리려면 정수장 펌프 기사의 부품과 도움이 있어야 한다는 것
+    - 옛 시립병원 근처 길과 그 일대에 감염체가 모이는 때
+    - 우물을 더 파다 잘못하면 흙탕물이 올라와 아예 못 쓰게 될 수도 있다는 것 (아무에게도 말하지 않았다)
+  doesnt_know:
+    - 탁순례가 아랫단 우물이 한겨울 전에 마른다고 셈해 대표에게만 말했다는 것
+  secret:
+    content: 아들 남민호는 살아 있다. 첫 겨울, 열병 난 누이를 살리겠다며 마을 약 상자를 들고 하얀매로 달아났고 누이는 끝내 죽었다. 마을은 아들을 약 도둑으로 기억하고 죽은 줄 안다. "부품을 찾으러" 나가는 날 시립병원 앞에서 아들을 만난다
+    reveal_when: 잃은 식구 이야기를 털어놓은 사람에게, 단지 밖에서 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 1, agility: -1, vitality: 2, senses: 1, nerve: 0, charm: -1, intellect: 1 }
+  skills: { carpentry: 2, mechanics: 1, survival: 1, endure: 1 }
+  start_inventory: [wire_roll, crowbar, water_bottle]
+  playable: true
+  zone: b_base
+  # 하얀매에 있는 아들 (숨은 관계, 기획서 7.10)
+  ties:
+    - { to: d_minho, kind: parent, secret: { reveal_when: "잃은 식구 이야기를 털어놓은 사람에게, 단지 밖에서 둘만 있을 때", min_trust: 3 } }
+
+- id: pb_yeongja
+  name: 함영자
+  alias: 저울을 등에 진 볕에 탄 아주머니
+  faction: faction_b
+  rank: staff
+  age: 55
+  gender: female
+  look: 볕에 검게 탄 얼굴에 주름이 깊다. 등에 낡은 앉은뱅이저울을 끈으로 매고 다닌다. 웃을 때 눈이 거의 감긴다.
+  reputation: 남쪽 텃밭의 일꾼 반장이자 마을 장보기를 도맡는 사람. 텃밭 수확을 달아 청솔형제단 몫을 나누고, 남는 것을 나루상단 장터에 내다 판다. 흥정이 세다는 말과 인심이 좋다는 말을 함께 듣는다.
+  want: 마을 사람들 빚을 장터 장부에서 다 지우는 것
+  fear: 텃밭 몫을 속인 것이 청솔형제단에 들키는 것
+  values: { discipline: -1, loyalty: 2, mercy: 1, honesty: -2, self_interest: 1 }
+  traits: [genial, talkative, greedy]
+  voice:
+    style: 시원시원한 반말. 사람을 "이쁜이", "총각"으로 부른다. 값 이야기를 할 때만 눈이 가늘어진다
+    samples:
+      - "총각, 이거 들어 봐. 무겁지? 근데 저울은 가볍다잖아. 저울이 틀렸나 봐, 호호."
+      - "청솔 사람들도 먹어야지. 근데 우리 애들은 뭐 이슬 먹고 크나?"
+  routine: { dawn: 남쪽 텃밭, morning: 남쪽 텃밭, day: 남쪽 텃밭, evening: 관리사무소, night: 103동 }
+  rules:
+    - 수확은 꼭 자기 저울로만 단다
+    - 장날에는 무슨 일이 있어도 장터에 간다
+  knows:
+    - 나루상단 장부꾼 문소라 앞에 마을 이름으로 진 빚이 얼마나 되는지
+    - 허진만 분대장이 저울을 볼 때 눈빛이 달라졌다는 것
+    - 맹석규 간부가 텃밭 몫 장부를 대충 넘겨 준다는 것
+  doesnt_know:
+    - 맹석규가 붉은연합 위원장과 옛 동료라는 것
+  secret:
+    content: 청솔형제단에 넘기는 텃밭 몫을 저울로 조금씩 덜어 왔다. 덜어 낸 것을 장터에 팔아 첫 봄에 씨앗과 소금을 사느라 마을 이름으로 진 빚을 갚는다. 맹석규가 알면서 눈감아 준다
+    reveal_when: 저울 앞에서 덜어 내는 것을 들킨 뒤, 상대가 마을 빚 사정을 들어 줄 때
+    min_trust: 2
+  stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 2, intellect: 1 }
+  skills: { persuade: 2, deceive: 1, survival: 1, scavenge: 1 }
+  start_inventory: [trade_token, ledger, dry_ration]
+  playable: true
+  zone: south_fields
+
+- id: pb_seokgyu
+  name: 맹석규
+  alias: 낡은 공단 점퍼를 입은 안경 쓴 간부
+  faction: faction_b
+  rank: officer
+  age: 52
+  gender: male
+  look: 색 바랜 공단 작업 점퍼 위에 뜨개 조끼를 껴입었다. 안경알 하나에 금이 갔다. 배급 장부를 겨드랑이에 끼고 다닌다.
+  reputation: 관리사무소의 살림 간부. 배급을 나누고 우물 순번과 텃밭 몫 장부를 본다. 붕괴 전 강 건너 공단의 자재과에서 일했다. 회의에서 "숫자로 보면"이라는 말을 가장 많이 한다.
+  want: 단지가 이번 겨울을 넘기는 것. 어느 깃발 아래서든
+  fear: 우물이 마르는 날 청솔형제단이 물을 대 줄 수 없다는 것이 드러나는 것
+  values: { discipline: 1, loyalty: 1, mercy: 0, honesty: -1, self_interest: 1 }
+  traits: [calculating, cautious, formal]
+  voice:
+    style: 정중하고 느린 존댓말. 숫자를 늘어놓고 마지막에 한숨을 붙인다
+    samples:
+      - "숫자로 보면 말입니다. 청솔이 주는 탄으로는 물이 안 나옵니다."
+      - "제가 누구 편이냐고요? 저는 관리사무소 편입니다."
+  routine: { dawn: 관리사무소, morning: 관리사무소 배급, day: 관리사무소, evening: 대표실, night: 102동 }
+  rules:
+    - 배급은 장부대로만 나눈다. 대신 장부를 쓰는 사람이 자기다
+    - 붉은연합 이야기가 나오면 맞서지도 맞장구치지도 않고 숫자만 말한다
+  knows:
+    - 아랫단 우물이 줄고 있다는 것과 그 속도
+    - 함영자가 청솔형제단 몫을 덜어 낸다는 것
+    - 그 밤 붉은연합 사자를 대표실까지 데려간 사람이 자기라는 것
+    - 붉은연합 위원장 국혜란이 첫 겨울에 공단 사람들을 어떻게 살렸는지
+  doesnt_know:
+    - 국혜란의 제안이 미끼이며, 연합이 깨지면 버들마을도 겨울 안에 칠 생각이라는 것
+    - 102동 옥상에서 소윤재가 사자를 들이던 밤을 봤다는 것
+  secret:
+    content: 붉은연합 위원장 국혜란과 붕괴 전 공단에서 함께 일한 옛 동료다. 첫 편지를 장터에서 받아 대표에게 건넨 것도, 사자가 쪽문으로 들어오던 밤 대표실까지 데려간 것도 자기다. 혜란이라면 약속을 지킨다고 믿는다
+    reveal_when: 우물이 마른다는 셈을 함께 들여다보고 청솔형제단의 약조로는 답이 없다는 데 고개를 끄덕인 사람에게
+    min_trust: 4
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
+  skills: { persuade: 2, history: 1, mechanics: 1, deceive: 1 }
+  start_inventory: [ledger, radio]
+  playable: false
+  zone: b_base
+  # 붉은연합 위원장의 옛 동료 (숨은 관계)
+  ties:
+    - { to: c_hyeran, kind: friend, secret: { reveal_when: "우물이 마른다는 셈을 함께 들여다보고 청솔형제단의 약조로는 답이 없다는 데 고개를 끄덕인 사람에게", min_trust: 4 } }
+
+- id: pb_sua
+  name: 길수아
+  alias: 큰 군복 점퍼를 걸친 경비 당번
+  faction: faction_b
+  rank: grunt
+  age: 23
+  gender: female
+  look: 품이 큰 군복 점퍼를 지퍼까지 올려 입었다. 머리를 하나로 땋아 점퍼 안에 넣는다. 요즘 자꾸 배를 손으로 감싼다.
+  reputation: 버들마을 경비 당번. 망루에서 눈이 밝기로 손에 꼽힌다. 요즘 당번 때 자주 토해서 "물이 나빠서"라는 말을 듣는다.
+  want: 뱃속의 아이가 굶지 않는 곳에서 태어나는 것
+  fear: 남편이 버들마을과 청솔형제단 사이에서 총을 들어야 하는 날
+  values: { discipline: 0, loyalty: 1, mercy: 1, honesty: 0, self_interest: 2 }
+  traits: [guarded, eagle_eye, cautious]
+  voice:
+    style: 짧고 낮은 반말. 남편 이야기가 나오면 말을 돌린다. 화가 나면 오히려 조용해진다
+    samples:
+      - "망루에선 말 시키지 마. 하나 놓치면 다 죽어."
+      - "청솔이든 붉은이든, 배부른 쪽이 이기는 거야. 다들 알잖아."
+  routine: { dawn: 102동 옥상 망루, morning: 102동 옥상 망루, day: 103동, evening: 북쪽 쪽문, night: 북쪽 쪽문 근처 }
+  rules:
+    - 쪽문 당번은 남이 바꿔 달라고 하면 늘 들어준다. 밤 쪽문 당번은 자기가 서려 한다
+    - 염재혁이 건네는 것은 아무도 없을 때만 받는다
+  knows:
+    - 염재혁이 경비 당번 몇에게 붉은연합 통조림과 담배를 돌린다는 것
+    - 102동 옥상에서 남쪽 텃밭과 구시가가 어디까지 보이는지
+  doesnt_know:
+    - 붉은연합이 연합이 깨진 뒤 버들마을 사람들을 노역조로 나눌 생각이라는 것
+  secret:
+    content: 청솔형제단의 왕기범과 몰래 혼례를 올렸고 아이를 가졌다. 남편에게는 아직 말하지 못했다. 배가 고파 염재혁에게서 붉은연합 통조림을 받았고, 그 값으로 쪽문 당번 시간을 한 번 알려 주었다
+    reveal_when: 밤 쪽문 당번 때 함께 서 준 사람이 아이 이야기를 눈치챘을 때
+    min_trust: 3
+  stats: { strength: 0, agility: 1, vitality: 0, senses: 2, nerve: 0, charm: 0, intellect: 0 }
+  skills: { shoot: 1, sense_danger: 2, stealth: 1 }
+  start_inventory: [old_rifle, blanket]
+  playable: true
+  zone: b_base
+
+- id: pb_yunjae
+  name: 소윤재
+  alias: 옥상 먼지를 뒤집어쓴 까까머리 소년
+  faction: faction_b
+  rank: grunt
+  age: 16
+  gender: male
+  look: 까까머리에 무릎이 다 해진 체육복 바지. 손바닥과 무릎에 옥상 방수포 가루가 늘 묻어 있다. 아버지 것이라는 손목시계를 두 번 감아 찼다.
+  reputation: 이번 가을 처음 경비 당번에 이름을 올린 막내. 아이들 가운데 옥상에 몰래 올라가는 버릇을 끝내 못 고친 녀석. 아버지는 봄에 장터에 갔다가 돌아오지 않았다.
+  want: 어른으로 대접받는 것. 아버지가 어디로 갔는지 아는 것
+  fear: 옥상에서 본 것을 말했다가 단지에서 쫓겨나는 것
+  values: { discipline: -2, loyalty: 2, mercy: 1, honesty: 1, self_interest: 0 }
+  traits: [curious, eager, shadow]
+  voice:
+    style: 빠르고 들뜬 존댓말. 비밀 이야기를 할 때는 손으로 입을 가리고 반말이 튀어나온다
+    samples:
+      - "저 당번 잘 서요! 진짜예요. 저 102동 옥상에서 구시가 끝까지 보여요. 아, 옥상 안 올라갔어요."
+      - "형, 형만 알아. 그날 밤에 쪽문으로 빨간 거 찬 사람이 들어왔어."
+  routine: { dawn: 103동, morning: 관리사무소 지하 교실, day: 정문 보조 당번, evening: 102동 옥상, night: 102동 옥상 }
+  rules:
+    - 옥상에 올라간 것을 들키면 무조건 아니라고 한다
+    - 붉은연합 완장을 보면 얼굴이 하얘진다
+  knows:
+    - 어느 밤 경비조장 배동철이 북쪽 쪽문을 열고, 맹석규 간부가 붉은 완장을 찬 사람을 대표실로 데려갔다는 것
+    - 청솔형제단의 왕기범 형이 밤마다 쪽문 근처에서 길수아 누나를 만난다는 것
+    - 아버지가 마지막으로 장터에 들고 간 것이 텃밭 감자 두 자루였다는 것
+  doesnt_know:
+    - 그날 밤 들어온 사람이 붉은연합 위원장의 사자였다는 것
+  secret:
+    content: 사자가 들어오던 밤을 옥상에서 다 봤다. 옥상에 올라간 게 들킬까 봐, 그리고 배동철 아저씨가 다칠까 봐 아무에게도 말하지 않았다. 대신 그날부터 맹석규 간부를 몰래 따라다닌다
+    reveal_when: 옥상에서 들켰는데 혼내지 않고 덮어 준 사람에게
+    min_trust: 2
+  stats: { strength: -1, agility: 2, vitality: 0, senses: 2, nerve: -1, charm: 1, intellect: 0 }
+  skills: { stealth: 2, sense_danger: 1, scavenge: 1 }
+  start_inventory: [water_bottle, binoculars]
+  playable: true
+  zone: b_base

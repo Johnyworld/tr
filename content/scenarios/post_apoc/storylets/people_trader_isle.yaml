@@ -1,0 +1,222 @@
+# 나루상단·여울섬 사람들 이야기 (more_trader.yaml, more_isle.yaml)
+# 뭍 쪽: 답장 없는 편지(변상철 → 모준기, 섬의 모은별) → 사람을 싣는 거래선(감태식, 감순덕의 빚쟁이)
+# 섬 쪽: 부엌 아가씨의 빈 그릇(변나래) / 뱃멀미 약(빈철호, 저장고의 진실을 안 뒤)
+# 진실은 lore(secret:y_feast_seen)와 인물의 비밀로만. 잔혹함은 늘어놓지 않는다
+
+- id: pt_island_letter
+  title: 겉봉이 한 번 뜯긴 편지
+  tags: [world]
+  when:
+    zones: [e_market, water_plant]
+    segments: [dawn, morning, evening]
+    day_gte: 3
+    flags_none: [pt_letter_done]
+  cast:
+    boatman: { ids: [pe_sangcheol] }
+    brother: { ids: [pe_junki], enter: false }
+    sister: { ids: [py_eunbyeol], enter: false }
+  setup: "{boatman:이/가} 비옷 품에서 접힌 편지 한 장을 꺼낸다. 겉봉이 한 번 뜯겼다 다시 붙어 있다. \"물때 때문에 바로 나가 봐야 해. 이거 짐꾼 {brother}한테 좀 전해 줘. 바다 건너 누이가 보낸 거야.\""
+  ai_direction: 편지는 여울섬의 모은별이 오빠 모준기에게 쓴 것이다. 지난겨울 어머니가 다리를 다쳐 뭍으로 내보내졌으니 거기서 찾아 달라는 내용, 섬은 아무도 굶기지 않는다는 자랑, 답장을 기다린다는 말. 겉봉은 섬 의회가 먼저 읽었다. 변상철은 편지 속 일을 묻지 않는다. 섬에서 내보낸 사람이 뭍에 닿은 적이 없다는 것은 아무도 말하지 않는다.
+  choices:
+    - id: deliver
+      label: 모준기를 찾아 전해 준다
+      effects:
+        - set_flag: pt_letter_done
+        - set_flag: pt_letter_delivered
+        - reveal_tie: { who: brother, other: sister }
+        - relation: { who: brother, axis: trust, delta: 2 }
+        - relation: { who: boatman, axis: trust, delta: 1 }
+        - belief: { fact: "짐꾼 모준기의 누이 모은별이 여울섬에 산다. 섬에서 늙고 다친 어머니를 '뭍으로 내보냈다'며 찾아 달라는 편지를 보냈다", source: report }
+    - id: read
+      label: 전하기 전에 몰래 읽어 본다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: pt_letter_done
+          - set_flag: pt_letter_delivered
+          - reveal_tie: { who: brother, other: sister }
+          - relation: { who: brother, axis: trust, delta: 1 }
+          - belief: { fact: "섬에서 온 편지는 누가 먼저 뜯어 읽고 다시 붙였다. 편지 끝에 '섬 뒤쪽에서 떠난 배라 손을 못 흔들었어'라는 줄이 지워진 자국이 있다", source: seen }
+        partial:
+          - set_flag: pt_letter_done
+          - set_flag: pt_letter_delivered
+          - reveal_tie: { who: brother, other: sister }
+          - relation: { who: brother, axis: trust, delta: -1 }
+          - belief: { fact: "섬에서 온 편지에 '엄마를 뭍으로 내보냈대, 찾아 줘'라고 적혀 있었다. 모준기가 다시 붙인 겉봉을 보고 얼굴을 굳혔다", source: seen }
+        miss:
+          - set_flag: pt_letter_done
+          - relation: { who: boatman, axis: trust, delta: -2 }
+          - deed: { summary: 남의 편지를 몰래 뜯다가 뱃사공에게 들켰다, tags: [deceit], severity: 1, privacy: semi_private }
+    - id: decline
+      label: 남의 편지 심부름은 안 한다고 돌려준다
+      effects:
+        - set_flag: pt_letter_done
+        - belief: { fact: "뱃사공 변상철은 바다 건너 섬에서 온 편지를 뭍 사람들에게 전해 준다", source: seen }
+
+- id: pt_cargo_of_debt
+  title: 손이 묶인 짐
+  tags: [world]
+  when:
+    zones: [e_market, water_plant]
+    segments: [evening, night]
+    day_gte: 6
+    factions: [faction_e, none]
+    flags_none: [pt_cargo_done]
+  cast:
+    guard: { ids: [pe_taesik] }
+    mother: { ids: [pe_sundeok], enter: false }
+    debtor: { ids: [pe_junki], enter: false }
+  setup: "강 하구 나루 옆, {guard:이/가} 엽총 개머리판을 손톱으로 긁고 있다. 새긴 것이 금이 아니라 이름이다. \"다음 거래선에 일손이 셋 탄대. 전당포에서 넘긴 빚쟁이들. 그중 하나가 {debtor}야.\" 그가 당신을 본다. \"지난번엔 손이 묶여 있었어. 제 발로 가는 사람 손을 왜 묶어.\""
+  ai_direction: 감태식은 어머니 감순덕이 갚을 길 없는 빚쟁이를 거래선에 실어 섬에 넘긴다는 것을 이제 의심하는 정도가 아니다. 섬에서 그들이 어떻게 되는지는 감태식도 모른다 (여울섬의 진실은 그도 모른다). 모준기는 어머니를 찾을 방 값 때문에 몸을 담보로 빚을 졌다. 배를 돌리면 섬과의 탄약 거래가 틀어지고 상단 안에서 감태식 모자가 갈라선다. 감태식은 혼자서는 못 하고 함께할 사람을 찾는다.
+  choices:
+    - id: turn_boat
+      label: 거래선에서 사람들을 빼내자고 한다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: pt_cargo_done
+          - set_flag: pt_debtors_freed
+          - relation: { who: guard, axis: trust, delta: 2 }
+          - relation: { who: debtor, axis: trust, delta: 2 }
+          - relation: { who: mother, axis: trust, delta: -2 }
+          - faction_relation: { from: faction_y, to: faction_e, delta: -1 }
+          - deed: { summary: 섬 거래선에 실릴 빚쟁이들을 밤에 풀어 주었다, tags: [mercy, disobedience], severity: 2, privacy: semi_private }
+          - belief: { fact: "거래선에 실릴 뻔한 빚쟁이 셋을 감태식과 함께 풀어 주었다. 섬은 그 '일손'들이 오지 않은 것을 알 것이다", source: seen }
+        partial:
+          - set_flag: pt_cargo_done
+          - set_flag: pt_debtors_freed
+          - relation: { who: guard, axis: trust, delta: 1 }
+          - relation: { who: debtor, axis: trust, delta: 2 }
+          - relation: { who: mother, axis: trust, delta: -3 }
+          - deed: { summary: 섬 거래선의 빚쟁이를 풀어 주다 전당포 노파에게 얼굴을 들켰다, tags: [mercy, disobedience], severity: 2, privacy: public }
+          - belief: { fact: "모준기는 빼냈지만 나머지 둘은 이미 배에 있었다. 감순덕이 나루에서 이쪽을 보고 웃었다", source: seen }
+        miss:
+          - set_flag: pt_cargo_done
+          - relation: { who: guard, axis: trust, delta: 1 }
+          - relation: { who: mother, axis: trust, delta: -2 }
+          - belief: { fact: "거래선은 빚쟁이 셋을 태우고 물때에 맞춰 떠났다. 모준기가 배 위에서 사진을 꺼내 들고 있었다", source: seen }
+    - id: buy_debt
+      label: 모준기의 빚 일부를 대신 떠안겠다고 한다
+      effects:
+        - set_flag: pt_cargo_done
+        - take_item: { item: trade_token }
+        - relation: { who: debtor, axis: trust, delta: 2 }
+        - relation: { who: guard, axis: respect, delta: 1 }
+        - deed: { summary: 거래선에 실릴 짐꾼의 빚을 대신 떠안았다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "모준기는 이번 거래선에서 빠졌다. 다른 빚쟁이 둘은 그대로 실려 갔다", source: seen }
+    - id: stay_out
+      label: 상단 집안일이라며 빠진다
+      effects:
+        - set_flag: pt_cargo_done
+        - relation: { who: guard, axis: affection, delta: -1 }
+        - belief: { fact: "나루상단의 섬 거래선은 전당포 감순덕이 넘긴 빚쟁이들을 '섬 일손'으로 싣고 간다. 지난번엔 손이 묶인 사람도 있었다", source: report }
+
+- id: pt_empty_bowl
+  title: 부엌 아가씨의 빈 그릇
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [evening]
+    day_gte: 2
+    flags_all: [y_soup_done]
+    flags_none: [pt_bowl_done]
+  cast:
+    cook: { ids: [py_narae] }
+    father: { ids: [pe_sangcheol], enter: false }
+  setup: "의회 회관 뒤 배식대. {cook:이/가} 남들 그릇에는 고기 국을 넉넉히 떠 주고, 당신 그릇에는 국물 없이 삶은 감자 둘만 얹는다. 눈이 마주치자 웃는다. \"오늘은 이게 더 맛있어요. 정말로.\""
+  ai_direction: 변나래는 의회 부엌에서 잔치 국을 끓인다. 그것이 무엇인지 안다. 새로 온 사람이 국을 먹지 않게 하려는 작은 손짓이다. 이유를 물으면 웃으며 화제를 돌린다. 뭍의 거래선이나 뱃사공 이야기가 나오면 손이 잠깐 멈춘다. 그는 아버지가 다시 섬에 오지 않기를 바란다. 고기 맛과 부엌 안은 서술하지 않는다.
+  choices:
+    - id: ask_why
+      label: 왜 나만 감자냐고 조용히 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pt_bowl_done
+          - set_flag: pt_narae_warned
+          - relation: { who: cook, axis: trust, delta: 2 }
+          - belief: { fact: "의회 부엌의 변나래가 낮게 말했다. '국은 의회 저장고에서 와요. 더는 묻지 마세요. 묻는 사람은 쓸모를 다시 재요'", source: report }
+        partial:
+          - set_flag: pt_bowl_done
+          - relation: { who: cook, axis: trust, delta: 1 }
+          - belief: { fact: "변나래는 국 이야기를 하지 않았다. 다만 '감자는 텃밭에서 와요. 그건 확실해요'라고 했다", source: report }
+        miss:
+          - set_flag: pt_bowl_done
+          - relation: { who: cook, axis: trust, delta: -1 }
+          - belief: { fact: "변나래는 웃으며 다음 사람 그릇을 받았다. 대답은 없었다", source: seen }
+    - id: mention_boatman
+      label: 뭍의 뱃사공 변상철 이야기를 꺼낸다
+      effects:
+        - set_flag: pt_bowl_done
+        - reveal_tie: { who: cook, other: father }
+        - relation: { who: cook, axis: trust, delta: 1 }
+        - belief: { fact: "변나래는 섬 거래선 뱃사공 변상철의 딸이다. 아버지 이름을 듣자 국자를 내려놓고 '그 사람한테 다시 오지 말라고 전해 주세요'라고 했다", source: report }
+    - id: just_eat
+      label: 고맙다고 하고 감자를 먹는다
+      effects:
+        - set_flag: pt_bowl_done
+        - relation: { who: cook, axis: affection, delta: 1 }
+
+- id: pt_seasick_draught
+  title: 뱃멀미 약
+  tags: [y_islander]
+  when:
+    zones: [yeoul_isle]
+    segments: [evening, night]
+    day_gte: 3
+    flags_any: [y_feast_seen, y_rocks_seen, pt_narae_warned]
+    flags_none: [pt_draught_done]
+  cast:
+    doctor: { ids: [py_cheolho] }
+    pupil: { ids: [d_eunyoung], enter: false }
+  setup: "섬 약방. {doctor:이/가} 작은 유리병 셋에 갈색 물약을 똑같이 나눠 붓고 이름표를 붙인다. \"오늘 밤 내보내는 배가 뜹니다. 뱃멀미가 심할 테니까요.\" 노인은 병을 세 번 세고, 손을 바지에 닦는다."
+  ai_direction: 빈철호는 내보내는 배에 오르는 사람들에게 깊이 잠드는 약을 먹인다. 아무도 깨어서 저장고에 닿지 않게. 그것을 자비라고 믿으려 한다. 진실을 아는 듯한 사람이 병을 들여다보면 손을 멈추고 오래 침묵한다. 붕괴 전 병원에서 수련의 서은영을 가르쳤다. 뭍에 의사가 살아 있다는 말을 들으면 눈빛이 흔들린다. 오늘 밤 배에 오를 셋의 이름은 쓸모가 다했다는 늙은이와 다친 사람들이다. 잔혹한 묘사는 하지 않는다.
+  choices:
+    - id: hold_bottle
+      label: 병을 집어 들고 무슨 약이냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: pt_draught_done
+          - set_flag: pt_draught_known
+          - relation: { who: doctor, axis: trust, delta: 2 }
+          - belief: { fact: "약방 의사 빈철호가 털어놓았다. 내보내는 배에 오르는 사람들에게 뱃멀미 약이라며 깊이 잠드는 약을 먹인다. '깨어서 거기 닿지 않게'", source: report }
+        partial:
+          - set_flag: pt_draught_done
+          - set_flag: pt_draught_known
+          - relation: { who: doctor, axis: trust, delta: 1 }
+          - set_flag: y_suspected
+          - belief: { fact: "빈철호는 병을 빼앗아 들고 '잠 오는 약입니다. 아프지 않게'라고만 했다. 문밖에서 누가 듣고 있었다", source: seen }
+        miss:
+          - set_flag: pt_draught_done
+          - relation: { who: doctor, axis: trust, delta: -1 }
+          - belief: { fact: "빈철호는 웃으며 병을 선반에 올렸다. '젊은 사람은 뱃멀미를 모르지요'", source: seen }
+    - id: speak_of_pupil
+      label: 뭍의 하얀매 진료소와 의사 서은영 이야기를 한다
+      effects:
+        - set_flag: pt_draught_done
+        - reveal_tie: { who: doctor, other: pupil }
+        - relation: { who: doctor, axis: affection, delta: 2 }
+        - belief: { fact: "섬의 늙은 의사 빈철호는 붕괴 전 병원에서 하얀매의 서은영을 가르쳤다. 서은영이 살아 있다는 말에 오래 말이 없었다", source: report }
+    - id: swap_bottle
+      label: 그가 돌아선 틈에 한 병을 맹물로 바꿔 둔다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: pt_draught_done
+          - set_flag: pt_draught_swapped
+          - deed: { summary: 내보내는 배의 약병 하나를 몰래 맹물로 바꿨다, tags: [mercy, disobedience], severity: 2, privacy: private }
+          - belief: { fact: "오늘 밤 내보내는 배에 오를 한 사람은 깨어 있을 것이다", source: seen }
+        partial:
+          - set_flag: pt_draught_done
+          - set_flag: pt_draught_swapped
+          - relation: { who: doctor, axis: trust, delta: -1 }
+          - belief: { fact: "약병 하나를 바꿨다. 빈철호가 돌아보고 아무 말도 하지 않았다. 알았는지 모르겠다", source: seen }
+        miss:
+          - set_flag: pt_draught_done
+          - set_flag: y_suspected
+          - relation: { who: doctor, axis: trust, delta: -2 }
+          - deed: { summary: 섬 약방의 약병에 손을 댔다가 들켰다, tags: [disobedience], severity: 2, privacy: semi_private }
+    - id: leave
+      label: 아무것도 묻지 않고 약방을 나선다
+      effects:
+        - set_flag: pt_draught_done

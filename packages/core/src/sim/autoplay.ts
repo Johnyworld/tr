@@ -1,3 +1,4 @@
+import { npcZoneAt } from "../game/whereabouts.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
 import { neighbors } from "./war.ts";
@@ -151,7 +152,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     if (s.characters[s.playerId]!.conditions[harmTrack.id] !== harmTrack.levels[0]!.id && rng() < 0.3) {
       const player = s.characters[s.playerId]!;
       const item = Object.entries(content.scenario.consumables).find(([i, e]) => e[harmTrack.id] && (player.inventory[i] ?? 0) > 0)?.[0] ?? null;
-      const healer = Object.values(content.npcs).find((n) => n.healer && n.zone === s.playerZone && !s.characters[n.id]?.dead);
+      const healer = Object.values(content.npcs).find((n) => n.healer && npcZoneAt(n, s.time) === s.playerZone && !s.characters[n.id]?.dead);
       if (!item && healer && !s.scene.present.includes(healer.id)) tool("npc_presence", { npc_id: healer.id, action: "enter" });
       const out = tool("take_action", item ? { ...base, intent: "치료", use_item: item } : { ...base, intent: "치료", treatment: { item: null } });
       if (!out.ok) stats.errors.push(`치료: ${out.error}`);
@@ -202,7 +203,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     // 사람과 엮인다 (기획서 6.3): 엑스트라를 만들거나 구역 인물을 들이고, 가끔 서로 이름을 알게 된다
     if (rng() < 0.08) {
       const templates = Object.keys(content.extras);
-      const local = Object.values(content.npcs).filter((n) => n.zone === s.playerZone && n.id !== s.playerId && !s.characters[n.id]?.dead && !s.scene.present.includes(n.id));
+      const local = Object.values(content.npcs).filter((n) => npcZoneAt(n, s.time) === s.playerZone && n.id !== s.playerId && !s.characters[n.id]?.dead && !s.scene.present.includes(n.id));
       if (templates.length && (rng() < 0.5 || local.length === 0)) {
         const spawned = tool("spawn_extra", { template: pick(rng, templates), label: "지나가던 사람" });
         if (!spawned.ok) stats.errors.push(`엑스트라: ${spawned.error}`);

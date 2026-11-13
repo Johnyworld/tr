@@ -898,6 +898,8 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       // 장면과 플레이어 기준 상태를 새로 시작한다 (새 캐릭터는 다른 곳에서 하루를 시작한다)
       next.scene.present = [];
       next.perceived = {};
+      // 동행은 죽은 사람을 따라다녔다. 다음 캐릭터는 새로 사귄다 (기획서 7.8)
+      next.companions = [];
       next.offers = null;
       next.playerZone = null;
       next.battle = null;

@@ -31,7 +31,7 @@ secret:
   reveal_when: 신뢰 4 이상 + 술자리
   min_trust: 4
 stats: { strength: 1, agility: -1, vitality: 1, senses: 1, nerve: 2, charm: 1, intellect: 0 }
-skills: { fight: 1, shoot: 1, endure: 2, survival: 2, carpentry: 1, history: 1, infected_lore: 1 }
+skills: { fight: 1, shoot: 1, endure: 2, survival: 2, carpentry: 1, history: 1, infected_lore: 1, improvise: 2 }
 start_inventory: [cigarettes, kitchen_knife, explosive]
 playable: true
 zone: a_base

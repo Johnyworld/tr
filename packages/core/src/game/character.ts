@@ -93,7 +93,9 @@ export function createCharacterSchema(s: Scenario) {
       .nullable()
       .default(null),
     /** 손에 든 무기와 입은 방어구 (아이템 id, 기획서 4.8). 가진 것만 유효하다 */
-    equipped: z.strictObject({ weapon: z.string().nullable(), body: z.string().nullable(), head: z.string().nullable() }).default({ weapon: null, body: null, head: null }),
+    equipped: z
+      .strictObject({ weapon: z.string().nullable(), body: z.string().nullable(), head: z.string().nullable(), arms: z.string().nullable().default(null) })
+      .default({ weapon: null, body: null, head: null, arms: null }),
     /** 아이템별 닳은 정도 (durability만큼 닳으면 망가진다) */
     wear: z.record(z.string(), z.number().int().min(0)).default({}),
     /** 트레잇 id (기획서 4.6). 이전 세이브는 빈 목록 (NPC는 콘텐츠의 것을 쓴다) */

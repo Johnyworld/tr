@@ -331,6 +331,8 @@ export const scenarioFileSchema = z
           /** 들 수 있는 무게의 이 배를 넘으면 옮겨 가지 못한다 */
           hard_limit: z.number().min(1).default(1.5),
         }),
+        /** 손질: 이 스킬이 0·1·2일 때 물건이 닳는 것을 피할 확률 (기획서 4.8) */
+        maintenance: z.strictObject({ move: id, save_chance: z.array(z.number().min(0).max(1)).length(3) }).optional(),
         /** 흥정: 값의 이 비율 이상이면 판정으로 깎을 수 있다 (아래면 거절) */
         haggle_floor: z.number().min(0).max(1).default(0.7),
         /** 흥정에 쓰는 스킬 */

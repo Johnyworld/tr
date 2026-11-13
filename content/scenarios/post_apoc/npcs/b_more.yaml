@@ -34,7 +34,7 @@
     reveal_when: 단지 식구를 지키려는 마음을 함께 확인한 사람에게, 경비실에서 둘만 있을 때
     min_trust: 4
   stats: { strength: 1, agility: 0, vitality: 1, senses: 2, nerve: 1, charm: 0, intellect: -1 }
-  skills: { sense_danger: 2, shoot: 1, fight: 1, intimidate: 1, carpentry: 1 }
+  skills: { sense_danger: 2, shoot: 1, fight: 1, intimidate: 1, carpentry: 1, maintenance: 1 }
   start_inventory: [radio, old_rifle]
   playable: true
   zone: b_base

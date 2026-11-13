@@ -41,12 +41,14 @@ export const itemContentSchema = z.strictObject({
   /** 방어구: 입는 자리, 받는 피해를 줄이는 단계, 입으면 불리해지는 스킬, 감염을 막을 확률 */
   armor: z
     .strictObject({
-      slot: z.enum(["body", "head"]),
+      slot: z.enum(["body", "head", "arms"]),
       reduces: z.number().int().min(0).max(2),
       penalty: z.record(contentIdSchema, z.number().int().min(-2).max(0)).default({}),
       blocks_infection: z.number().min(0).max(1).default(0),
     })
     .optional(),
+  /** 지니고 있으면 들 수 있는 무게가 이만큼 는다 (배낭 틀 등, 가장 큰 것 하나) */
+  carry_bonus: z.number().min(0).max(20).optional(),
   /** 도구: 지니고 있으면 그 스킬에 보정 (가장 큰 것 하나) */
   tool: z.strictObject({ bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)) }).optional(),
   /** 몇 번 닳으면 망가지는지, 망가지면 남는 것 */

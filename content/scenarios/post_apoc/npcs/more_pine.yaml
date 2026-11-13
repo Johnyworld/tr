@@ -35,7 +35,7 @@
     reveal_when: 원칙을 지키다 사람을 잃어 본 사람에게, 밤에 막사 밖에서 둘만 있을 때. 또는 엄태주가 형의 마지막을 정면으로 물을 때
     min_trust: 4
   stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 0 }
-  skills: { shoot: 1, tactics: 2, sense_danger: 1, carpentry: 1, endure: 1 }
+  skills: { shoot: 1, tactics: 2, sense_danger: 1, carpentry: 1, endure: 1, maintenance: 1 }
   start_inventory: [old_rifle, radio, cigarettes]
   playable: true
   zone: a_base

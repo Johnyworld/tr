@@ -130,7 +130,9 @@ describe("수리와 제작", () => {
     const w = open("role_a_grunt", () => () => 0.999);
     w.ctx().store.append({ type: "item_worn", characterId: "player", itemId: "kitchen_knife", delta: 3 });
     give(w, "scrap_metal");
-    const r = w.executeTool("take_action", act("칼을 간다", { check: chk("mechanics", "intellect"), craft: { recipe: null, repair: "kitchen_knife" } }));
+    // 칼·총은 손질로 고친다
+    expect(w.executeTool("take_action", act("칼을 간다", { check: chk("mechanics", "intellect"), craft: { recipe: null, repair: "kitchen_knife" } })).ok).toBe(false);
+    const r = w.executeTool("take_action", act("칼을 간다", { check: chk("maintenance", "intellect"), craft: { recipe: null, repair: "kitchen_knife" } }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(me(w).wear.kitchen_knife ?? 0).toBe(0);
   });
@@ -169,5 +171,38 @@ describe("값과 흥정", () => {
     w.runCheat("~time +1d");
     expect(w.state().characters.e_bongsu!.inventory.canned_food).toBeGreaterThan(left);
     expect(w.state().characters.e_bongsu!.inventory.canned_food).toBe(8);
+  });
+});
+
+describe("급조와 손질", () => {
+  it("급조로 사제 무기·방어구를 만든다: 손목 보호대는 팔에 차서 물림을 막는다 (주사위가 늘 6)", () => {
+    const w = open("role_a_grunt", () => () => 0.999);
+    give(w, "cloth");
+    give(w, "scrap_metal");
+    give(w, "duct_tape");
+    expect(w.executeTool("take_action", act("보호대를 감는다", { check: chk("carpentry", "intellect"), craft: { recipe: "arm_guards", repair: null } })).ok).toBe(false);
+    const r = w.executeTool("take_action", act("보호대를 감는다", { check: chk("improvise", "intellect"), craft: { recipe: "arm_guards", repair: null } }));
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.executeTool("equip", { item_id: "arm_guards", slot: null }).ok).toBe(true);
+    expect(equippedItem(me(w), "arms")).toBe("arm_guards");
+  });
+
+  it("배낭 틀을 지니면 더 들 수 있다", () => {
+    const w = open();
+    const before = carryCapacity(w.content, me(w));
+    give(w, "pack_frame");
+    expect(carryCapacity(w.content, me(w))).toBe(before + 6);
+  });
+
+  it("손질을 잘하면 무기가 덜 닳는다 (주사위가 늘 1: 공격은 실패하지만 손질 2는 닳음을 피한다)", () => {
+    const w = open("role_a_grunt", () => () => 0);
+    const foe = spawnFoe(w);
+    const swing = () => w.executeTool("take_action", act("찌른다", { target: foe, check: chk("fight", "strength", { target_harm: "light" }) }));
+    swing();
+    expect(me(w).wear.kitchen_knife).toBe(1);
+    w.runCheat("~skill maintenance 2");
+    swing();
+    swing();
+    expect(me(w).wear.kitchen_knife).toBe(1);
   });
 });

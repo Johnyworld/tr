@@ -45,7 +45,9 @@ moves:
   - { id: infected_lore, label: 감염체, category: 지식, stats: [intellect], default: -1, description: "감염체의 습성·약점·감염 징후" }
   - { id: history, label: 역사, category: 지식, stats: [intellect], default: -1, description: "붕괴 전후의 일, 지역과 무리들의 내력" }
   - { id: mechanics, label: 차량정비, category: 지식, stats: [intellect, agility], default: -1, description: "차량·발전기·기계 고치기" }
-  - { id: carpentry, label: 목공, category: 지식, stats: [strength, intellect], default: -1, description: "바리케이드, 덫, 수리" }
+  - { id: carpentry, label: 목공, category: 지식, stats: [strength, intellect], default: -1, description: "바리케이드, 담장, 판자 다루기" }
+  - { id: improvise, label: 급조, category: 생존, stats: [intellect, agility], default: -1, description: "아무거나 엮어 무기·방어구·덫을 만들고 고치기" }
+  - { id: maintenance, label: 손질, category: 전투, stats: [intellect, senses], default: -1, description: "총·칼을 손보고 닳지 않게 다루기" }
   - { id: tactics, label: 전략, category: 지식, stats: [intellect, nerve], default: -1, description: "전투·전쟁 수행, 지휘" }
 
 # 능력·스킬 범위. 능력 + 스킬은 최대 +4 (2d6에서 +5부터는 실패가 사라진다)
@@ -99,6 +101,8 @@ gear:
   # 값의 70% 이상이면 흥정 판정으로 깎을 수 있다
   haggle_floor: 0.7
   haggle_moves: [persuade, deceive]
+  # 손질 0·1·2일 때 물건이 닳는 것을 피할 확률
+  maintenance: { move: maintenance, save_chance: [0.15, 0.35, 0.55] }
 
 # 제작 법 (기획서 4.8): 재료 + 도구 + 판정 → 결과. 성공은 다, 대가 있는 성공은 절반, 실패는 재료 절반을 버린다
 crafting:
@@ -106,11 +110,15 @@ crafting:
     - { id: reload_rounds, label: 재생 소총탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: rifle_rounds, qty: 3 } }
     - { id: reload_shells, label: 재생 산탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: shells, qty: 3 } }
     - { id: whittle_bolts, label: 석궁 볼트 깎기, move: carpentry, materials: { planks: 1, scrap_metal: 1 }, tools: [kitchen_knife], yields: { item: bolts, qty: 4 } }
-    - { id: pipe_spear, label: 사제 창 만들기, move: carpentry, materials: { scrap_metal: 1, kitchen_knife: 1, duct_tape: 1 }, yields: { item: pipe_spear, qty: 1 } }
-    - { id: padded_armor, label: 덧댄 갑옷 두르기, move: carpentry, materials: { cloth: 3, scrap_metal: 2, duct_tape: 2 }, yields: { item: padded_armor, qty: 1 } }
+    - { id: pipe_spear, label: 사제 창 만들기, move: improvise, materials: { scrap_metal: 1, kitchen_knife: 1, duct_tape: 1 }, yields: { item: pipe_spear, qty: 1 } }
+    - { id: padded_armor, label: 덧댄 갑옷 두르기, move: improvise, materials: { cloth: 3, scrap_metal: 2, duct_tape: 2 }, yields: { item: padded_armor, qty: 1 } }
     - { id: bandages, label: 붕대 만들기, move: first_aid, materials: { cloth: 2 }, yields: { item: bandage, qty: 2 } }
-    - { id: wire_trap, label: 철사 덫 감기, move: mechanics, materials: { scrap_metal: 2 }, yields: { item: wire_roll, qty: 1 } }
-    - { id: nail_bat, label: 못 박은 방망이, move: carpentry, materials: { planks: 1, scrap_metal: 1 }, tools: [carpentry_kit], yields: { item: baseball_bat, qty: 1 } }
+    - { id: wire_trap, label: 철사 덫 감기, move: improvise, materials: { scrap_metal: 2 }, yields: { item: wire_roll, qty: 1 } }
+    - { id: nail_bat, label: 못 박은 방망이, move: improvise, materials: { planks: 1, scrap_metal: 1 }, yields: { item: baseball_bat, qty: 1 } }
+    - { id: molotov, label: 화염병, move: improvise, materials: { fuel_bottle: 1, cloth: 1 }, yields: { item: molotov, qty: 1 } }
+    - { id: arm_guards, label: 손목 보호대, move: improvise, materials: { cloth: 1, scrap_metal: 1, duct_tape: 1 }, yields: { item: arm_guards, qty: 1 } }
+    - { id: tin_alarm, label: 깡통 경보줄, move: improvise, materials: { wire_roll: 1, scrap_metal: 1 }, yields: { item: tin_alarm, qty: 1 } }
+    - { id: pack_frame, label: 배낭 틀, move: improvise, materials: { planks: 1, cloth: 1, duct_tape: 1 }, yields: { item: pack_frame, qty: 1 } }
 
 # 판마다 다른 인물 사이의 관계 (기획서 7.10): 세계를 만들 때 이름 있는 인물들을 이만큼 무작위로 잇는다. 무리가 다르면 숨은 관계
 dynamic_ties: { count: 5, kinds: [sibling, parent, child, spouse, friend, rival] }

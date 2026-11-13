@@ -164,7 +164,7 @@
   doesnt_know:
     - 그 배가 어디에 닿는지
   stats: { strength: 2, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: -1, intellect: 0 }
-  skills: { shoot: 2, fight: 1, intimidate: 1, sense_danger: 1 }
+  skills: { shoot: 2, fight: 1, intimidate: 1, sense_danger: 1, maintenance: 2 }
   start_inventory: [old_rifle]
   playable: true
   zone: yeoul_isle

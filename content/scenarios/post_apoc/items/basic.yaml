@@ -9,7 +9,7 @@
   weapon: { moves: [fight], max_harm: light, noise: 0 }
   durability: 6
   breaks_into: scrap_metal
-  repair: { move: mechanics, materials: { scrap_metal: 1 } }
+  repair: { move: maintenance, materials: { scrap_metal: 1 } }
 - id: water_bottle
   name: 물병
   description: 찌그러진 알루미늄 물병.
@@ -31,7 +31,7 @@
   weapon: { moves: [shoot, fight], max_harm: heavy, noise: 2, ammo: rifle_rounds, ammo_moves: [shoot] }
   durability: 8
   breaks_into: scrap_metal
-  repair: { move: mechanics, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
+  repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
 - id: binoculars
   name: 쌍안경
   description: 한쪽 렌즈에 실금이 간 쌍안경. 멀리서 살피는 데 좋다.
@@ -121,7 +121,7 @@
   weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, bonus: 1 }
   durability: 6
   breaks_into: scrap_metal
-  repair: { move: mechanics, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
+  repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
 - id: crowbar
   name: 쇠지렛대
   description: 끝이 구부러진 쇠지렛대. 문을 따거나 휘두르기 좋다. 지니고 있으면 뒤지기도 수월하다.

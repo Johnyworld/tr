@@ -88,6 +88,7 @@
       - { item: scrap_metal, weight: 3, qty: [1, 2] }
       - { item: planks, weight: 2, qty: [1, 1] }
       - { item: casings, weight: 1, qty: [1, 2] }
+      - { item: fuel_bottle, weight: 1, qty: [1, 1] }
 
 - id: old_town
   name: 구시가
@@ -181,6 +182,7 @@
     items:
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: wire_roll, weight: 1, qty: [1, 1] }
+      - { item: fuel_bottle, weight: 1, qty: [1, 1] }
 
 - id: south_fields
   name: 남쪽 텃밭

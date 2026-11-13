@@ -36,7 +36,7 @@
     reveal_when: 같은 불가에서 밤을 함께 넘긴 뒤, 무리 이야기가 나왔을 때
     min_trust: 3
   stats: { strength: 1, agility: 0, vitality: 2, senses: 1, nerve: 1, charm: -1, intellect: 0 }
-  skills: { survival: 2, scavenge: 2, stealth: 1, endure: 1, fight: 1 }
+  skills: { survival: 2, scavenge: 2, stealth: 1, endure: 1, fight: 1, improvise: 2 }
   start_inventory: [blanket, kitchen_knife, dry_ration]
   playable: true
   roams: [old_town, riverside, hospital_ruins]
@@ -76,7 +76,7 @@
     reveal_when: 붉은연합 수용소나 포로 이야기가 나왔을 때, 둘만 있으면
     min_trust: 3
   stats: { strength: 0, agility: 2, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 0 }
-  skills: { stealth: 2, fight: 1, shoot: 1, sense_danger: 1, survival: 1 }
+  skills: { stealth: 2, fight: 1, shoot: 1, sense_danger: 1, survival: 1, improvise: 1 }
   start_inventory: [kitchen_knife, wire_roll, water_bottle]
   playable: true
   roams: [riverside, old_town, hospital_ruins]
@@ -367,7 +367,7 @@
     reveal_when: 실종된 청솔 정찰조나 강태호 이야기가 나왔을 때, 둘만 있으면
     min_trust: 4
   stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: 0, intellect: 1 }
-  skills: { shoot: 2, mechanics: 2, persuade: 1, sense_danger: 1 }
+  skills: { shoot: 2, mechanics: 2, persuade: 1, sense_danger: 1, maintenance: 2 }
   start_inventory: [old_rifle, trade_token, water_bottle, rifle_rounds, rifle_rounds, shells, shells, casings, gunpowder]
   # 재생탄 장수: 탄약과 탄피·화약
   merchant: { restock: { rifle_rounds: 6, shells: 4, casings: 6, gunpowder: 2, bolts: 4 }, markup: 1.2 }

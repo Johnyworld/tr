@@ -36,7 +36,7 @@
     reveal_when: 같은 조원이 자기 몫을 희생해 조를 감싸는 것을 보았을 때, 둘만 있을 때
     min_trust: 3
   stats: { strength: 2, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: -1, intellect: 0 }
-  skills: { fight: 2, intimidate: 2, scavenge: 1, tactics: 1, endure: 1 }
+  skills: { fight: 2, intimidate: 2, scavenge: 1, tactics: 1, endure: 1, improvise: 1 }
   start_inventory: [crowbar, c_armband, cigarettes]
   playable: true
   zone: c_base

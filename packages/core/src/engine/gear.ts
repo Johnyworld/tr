@@ -18,7 +18,8 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome }
 export const DEFAULT_WEIGHT = 0.5;
 export const DEFAULT_VALUE = 1;
 type Item = Content["items"][string];
-type Slot = "weapon" | "body" | "head";
+type Slot = "weapon" | "body" | "head" | "arms";
+const ARMOR_SLOTS = ["body", "head", "arms"] as const;
 
 export const itemOf = (content: Content, id: string | null | undefined): Item | undefined => (id ? content.items[id] : undefined);
 const nameOf = (content: Content, id: string) => content.items[id]?.name ?? id;
@@ -39,7 +40,9 @@ export function carryCapacity(content: Content, c: Character): number {
   const carry = content.scenario.gear?.carry;
   if (!carry) return Infinity;
   const strength = content.scenario.stats.find((s) => s.id === "strength") ? (c.stats.strength ?? 0) : 0;
-  return carry.base + strength * carry.per_strength;
+  // 배낭 틀처럼 지니면 더 드는 것 (가장 큰 것 하나)
+  const pack = Object.entries(c.inventory).reduce((n, [id, q]) => Math.max(n, q > 0 ? (content.items[id]?.carry_bonus ?? 0) : 0), 0);
+  return carry.base + strength * carry.per_strength + pack;
 }
 
 /** 짐이 무거운 정도: 0 가벼움, 1 무거움(판정 보정), 2 너무 무거움(옮겨 가지 못한다) */
@@ -66,7 +69,7 @@ export function gearModifiers(content: Content, c: Character, move: string): { s
     if (b > skill) skill = b;
   }
   let penalty = 0;
-  for (const slot of ["body", "head"] as const) penalty += itemOf(content, equippedItem(c, slot))?.armor?.penalty[move] ?? 0;
+  for (const slot of ARMOR_SLOTS) penalty += itemOf(content, equippedItem(c, slot))?.armor?.penalty[move] ?? 0;
   const carry = content.scenario.gear?.carry;
   if (carry && encumbrance(content, c) > 0 && carry.encumbered_moves.includes(move)) penalty += carry.penalty;
   return { skill, penalty };
@@ -122,6 +125,13 @@ export function wearItem(ctx: ToolContext, holder: string, itemId: string, delta
   const { store, content } = ctx;
   const item = content.items[itemId];
   if (!item?.durability) return null;
+  // 손질: 물건을 잘 다루는 사람은 덜 닳게 쓴다 (기획서 4.8)
+  const m = content.scenario.gear?.maintenance;
+  const who = store.getState().characters[holder];
+  if (m && who && delta > 0) {
+    const level = Math.min(2, who.skills[m.move] ?? content.scenario.moves.find((x) => x.id === m.move)?.default ?? 0);
+    if (level >= 0 && ctx.rng() < m.save_chance[level]!) return null;
+  }
   store.append({ type: "item_worn", characterId: holder, itemId, delta });
   const wear = store.getState().characters[holder]!.wear[itemId] ?? 0;
   if (wear < item.durability) return null;
@@ -136,7 +146,7 @@ export function armorAbsorb(ctx: ToolContext, steps: number): { steps: number; l
   const me = store.getState().characters[store.getState().playerId]!;
   const lines: string[] = [];
   let left = steps;
-  for (const slot of ["body", "head"] as const) {
+  for (const slot of ARMOR_SLOTS) {
     const id = equippedItem(me, slot);
     const armor = itemOf(content, id)?.armor;
     if (!id || !armor?.reduces || left <= 0) continue;
@@ -153,7 +163,7 @@ export function armorAbsorb(ctx: ToolContext, steps: number): { steps: number; l
 export function armorBlocksInfection(ctx: ToolContext): boolean {
   const me = ctx.store.getState().characters[ctx.store.getState().playerId]!;
   let p = 0;
-  for (const slot of ["body", "head"] as const) p = Math.max(p, itemOf(ctx.content, equippedItem(me, slot))?.armor?.blocks_infection ?? 0);
+  for (const slot of ARMOR_SLOTS) p = Math.max(p, itemOf(ctx.content, equippedItem(me, slot))?.armor?.blocks_infection ?? 0);
   return p > 0 && ctx.rng() < p;
 }
 
@@ -163,7 +173,7 @@ const equipTool = defineTool({
     "주인공이 무기를 손에 들거나 방어구를 입는다(벗는다). 가진 것만. 공격 판정은 손에 든 무기로 한다 (없으면 맨손). 방어구는 받는 피해를 줄이지만 무겁고 불리한 판정이 있을 수 있다. 시간은 거의 들지 않는다.",
   schema: z.strictObject({
     item_id: z.string().nullable().describe("들거나 입을 아이템 id. 벗으려면 null"),
-    slot: z.enum(["weapon", "body", "head"]).nullable().describe("벗을 때만 자리. 들거나 입을 때는 null (아이템이 정한다)"),
+    slot: z.enum(["weapon", "body", "head", "arms"]).nullable().describe("벗을 때만 자리. 들거나 입을 때는 null (아이템이 정한다)"),
   }),
   run(input, ctx): ToolOutcome {
     const { store, content } = ctx;
@@ -348,7 +358,7 @@ export function describeGear(content: Content, c: Character): string {
     return `${item.name}(${id})${item.durability ? ` 닳음 ${wear}/${item.durability}` : ""}${ammo}`;
   };
   parts.push(`손에 든 것: ${weapon ? show(weapon) : "맨손"}`);
-  const worn = (["body", "head"] as const).map((s) => equippedItem(c, s)).filter((x): x is string => !!x);
+  const worn = ARMOR_SLOTS.map((s) => equippedItem(c, s)).filter((x): x is string => !!x);
   if (worn.length) parts.push(`입은 것: ${worn.map(show).join(", ")}`);
   const w = carriedWeight(content, c);
   const cap = carryCapacity(content, c);

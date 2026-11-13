@@ -27,7 +27,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 19;
+export const SAVE_SCHEMA_VERSION = 20;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -338,7 +338,7 @@ export function createGameSchemas(s: Scenario) {
     /** 이름 없는 인물이 자랐다 (프로필은 틀의 재료에서 코드가 골랐다) */
     z.strictObject({ type: z.literal("extra_promoted"), characterId: z.string(), profile: z.custom<NonNullable<Character["profile"]>>((v) => typeof v === "object" && v !== null), ties: z.array(tieRecordSchema).default([]) }),
     /** 무기를 들거나 방어구를 입었다 (null이면 벗었다) */
-    z.strictObject({ type: z.literal("item_equipped"), characterId: z.string(), slot: z.enum(["weapon", "body", "head"]), itemId: z.string().nullable() }),
+    z.strictObject({ type: z.literal("item_equipped"), characterId: z.string(), slot: z.enum(["weapon", "body", "head", "arms"]), itemId: z.string().nullable() }),
     /** 물건이 닳았다 (delta 음수면 고쳤다) */
     z.strictObject({ type: z.literal("item_worn"), characterId: z.string(), itemId: z.string(), delta: z.number().int() }),
     /** 물건이 망가졌다: 하나 줄고, 닳은 것은 처음으로, into가 있으면 그것이 남는다 */
@@ -804,7 +804,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       else c.inventory[event.itemId] = have - 1;
       delete c.wear[event.itemId];
       if (event.into) c.inventory[event.into] = (c.inventory[event.into] ?? 0) + 1;
-      for (const slot of ["weapon", "body", "head"] as const) if (c.equipped[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
+      for (const slot of ["weapon", "body", "head", "arms"] as const) if (c.equipped[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
       return next;
     }
     case "noise_made": {

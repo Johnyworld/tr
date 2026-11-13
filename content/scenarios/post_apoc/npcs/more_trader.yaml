@@ -157,7 +157,7 @@
     reveal_when: 거래선에 실린 사람들을 함께 걱정해 주는 사람에게, 둘만 있을 때
     min_trust: 3
   stats: { strength: 2, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 0 }
-  skills: { shoot: 2, fight: 1, tactics: 1, sense_danger: 1, intimidate: 1 }
+  skills: { shoot: 2, fight: 1, tactics: 1, sense_danger: 1, intimidate: 1, maintenance: 1 }
   start_inventory: [shotgun, trade_token]
   playable: true
   zone: e_market

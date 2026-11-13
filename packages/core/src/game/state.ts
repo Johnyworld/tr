@@ -1,5 +1,8 @@
 // immer의 배포용 빌드를 바로 쓴다: 기본 진입점은 NODE_ENV가 없으면 검사가 많은 개발용 빌드를 골라 두 배 느리다
-import { produce, setAutoFreeze } from "../../node_modules/immer/dist/immer.production.mjs";
+import type * as Immer from "immer";
+// @ts-ignore 배포용 빌드는 타입 선언이 따로 없다 (API는 "immer"와 같다)
+import * as immerProduction from "../../node_modules/immer/dist/immer.production.mjs";
+const { produce, setAutoFreeze } = immerProduction as typeof Immer;
 
 // 상태를 얼리지 않는다: 리듀서 밖에서 고치지 않는 것은 규칙으로 지킨다 (테스트가 상태를 직접 만지기도 한다)
 setAutoFreeze(process.env.TRPG_FREEZE === "1");

@@ -157,14 +157,31 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
         continue;
       }
     }
-    if (s.characters[s.playerId]!.conditions[harmTrack.id] !== harmTrack.levels[0]!.id && rng() < 0.3) {
+    // 몸을 돌본다 (플레이어처럼): 다쳤으면 자주 치료하고, 크게 다쳤으면 쉬고, 얼면 거점으로 돌아간다
+    const idx = (trackId: string) => {
+      const t = content.scenario.condition_tracks.find((x) => x.id === trackId);
+      return t ? t.levels.findIndex((l) => l.id === me.conditions[trackId]) : 0;
+    };
+    const hurt = idx(harmTrack.id);
+    if (hurt > 0 && rng() < (hurt >= 2 ? 0.8 : 0.4)) {
       const player = s.characters[s.playerId]!;
       const item = Object.entries(content.scenario.consumables).find(([i, e]) => e[harmTrack.id] && (player.inventory[i] ?? 0) > 0)?.[0] ?? null;
       const healer = Object.values(content.npcs).find((n) => n.healer && npcZoneAt(n, s.time) === s.playerZone && !s.characters[n.id]?.dead);
       if (!item && healer && !s.scene.present.includes(healer.id)) tool("npc_presence", { npc_id: healer.id, action: "enter" });
       const out = tool("take_action", item ? { ...base, intent: "치료", use_item: item } : { ...base, intent: "치료", treatment: { item: null } });
       if (!out.ok) stats.errors.push(`치료: ${out.error}`);
+      // 치료할 길이 없으면 쉰다
+      if (!item && !healer && hurt >= 2) tool("take_action", { ...base, intent: "쉰다", activity: { kind: "rest", until: null } });
       continue;
+    }
+    const cold = content.scenario.body?.cold?.track;
+    const home = Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id;
+    if (cold && idx(cold) >= 2 && home && s.playerZone && s.playerZone !== home && rng() < 0.8) {
+      const step = nextStep(content, s.playerZone, home);
+      if (step) {
+        tool("take_action", { ...base, intent: "추워서 거점으로 돌아간다", move_to: step });
+        continue;
+      }
     }
 
     // 동행 (기획서 7.9): 갈림길이면 정하고, 가끔 잠시 떼어 놓는다
@@ -263,7 +280,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     if (roll < 0.2 && s.playerZone) {
       out = tool("take_action", { ...base, intent: "이동", move_to: pick(rng, neighbors(content, s.playerZone)) });
     } else if (roll < 0.45) {
-      out = tool("take_action", { ...base, intent: "판정", check: check(pick(rng, moves), pick(rng, ["none", "none", "light"])) });
+      // 다친 몸으로는 위험한 일을 하지 않는다
+      out = tool("take_action", { ...base, intent: "판정", check: check(pick(rng, moves), hurt > 0 ? "none" : pick(rng, ["none", "none", "light"])) });
     } else if (roll < 0.75) {
       out = tool("take_action", { ...base, intent: "활동", activity: { kind: pick(rng, ["talk", "rest", "work", "search", "eat"]), until: null } });
     } else {
@@ -278,4 +296,23 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
   }
   stats.days = Math.round((world.state().time - startTime) / 1440);
   return stats;
+}
+
+/** from에서 to로 가는 다음 구역 (넓이 우선) */
+function nextStep(content: Content, from: string, to: string): string | null {
+  const prev = new Map<string, string>([[from, from]]);
+  const queue = [from];
+  while (queue.length) {
+    const z = queue.shift()!;
+    if (z === to) break;
+    for (const n of neighbors(content, z)) {
+      if (prev.has(n)) continue;
+      prev.set(n, z);
+      queue.push(n);
+    }
+  }
+  if (!prev.has(to)) return null;
+  let step = to;
+  while (prev.get(step) !== from) step = prev.get(step)!;
+  return step;
 }

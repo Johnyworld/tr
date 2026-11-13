@@ -54,3 +54,23 @@ describe("무리의 문화와 규율", () => {
     w.close();
   });
 });
+
+describe("역할의 권한 (access)", () => {
+  it("임무 게시판이 없으면 그날의 임무가 없고, 배급이 없으면 배가 고파진다. 다른 권한은 GM이 본다", () => {
+    const c = structuredClone(content);
+    c.roles.role_a_grunt!.access = ["treatment_room"];
+    const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-access-")), content: c, rngFactory: () => createSeededRng(3) });
+    const w = m.create("mcp", "role_a_grunt");
+    expect(w.state().offers?.templateIds ?? []).toEqual([]);
+    expect(w.sceneForGm()).toContain("권한: 치료실 출입");
+    const hunger = () => w.state().characters.player!.conditions.hunger;
+    const start = hunger();
+    // 잠이 끊길 수 있으니 이틀이 지날 때까지 잔다
+    const day0 = Math.floor(w.state().time / 1440);
+    for (let i = 0; i < 10 && Math.floor(w.state().time / 1440) < day0 + 2; i++) {
+      w.executeTool("take_action", { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false });
+    }
+    expect(hunger()).not.toBe(start);
+    w.close();
+  });
+});

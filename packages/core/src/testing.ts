@@ -250,6 +250,7 @@ export const TEST_SCENARIO: Scenario = {
   mcpGuide: "## MCP\n장면이 끝나면 record_turn_summary.",
   introText: null,
   discipline: {},
+  access_labels: {},
 };
 
 export const TEST_CONTENT: Content = {

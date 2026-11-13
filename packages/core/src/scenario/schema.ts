@@ -219,6 +219,8 @@ export const scenarioFileSchema = z
         }),
       )
       .default({}),
+    /** 역할 권한(access)의 이름 (예: ration → 배급). ration·mission_board는 core가 쓰고, 나머지는 GM이 보는 특권 */
+    access_labels: z.record(id, z.string().min(1)).default({}),
     /** 새 게임의 월드 고르기에 보이는 것 (기획서 12.3). 없으면 name만 */
     world: z
       .strictObject({

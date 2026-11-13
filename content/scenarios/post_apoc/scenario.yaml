@@ -73,6 +73,12 @@ creation:
     abilities: "이 세상을 몇 해 버텨 온 몸과 머리. 무엇이 남달랐는지 떠올리게 한다"
     ability: "그 능력이 살아남는 데 어떻게 드러났는지 짧은 장면 하나로 비추고 묻는다 (예: 근력이면 모래주머니를 나르던 날)"
     traits: "타고난 기질과 버릇. 무리 사람들이 당신을 뭐라고 수군거리는지로 풀어 간다"
+# 역할 권한(roles의 access)의 이름. ration(배급)·mission_board(임무)는 core가 쓰고, 나머지는 GM이 보는 특권
+access_labels:
+  ration: 배급
+  mission_board: 임무 게시판
+  treatment_room: 치료실 출입 (치료 도구와 약제실 앞까지)
+
 # 무리의 규율 단계 (기획서 9.9). 무리마다 factions의 culture.discipline으로 고른다 (*임시* 수치)
 # abandon/expire_merit: 임무를 버리거나 놓쳤을 때의 공적, counts_disobedience: 불복종으로 치는지,
 # max_disobedience: 진급에 허용되는 불복종 수, deed_severity: 불복종 행적의 무게(0이면 남기지 않는다)

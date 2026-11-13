@@ -1,4 +1,4 @@
-import { describeCultureForGm, disciplineOf } from "../game/culture.ts";
+import { describeAccess, describeCultureForGm, disciplineOf, hasAccess } from "../game/culture.ts";
 import { josa } from "../text.ts";
 import { gainMeritXp } from "./growth.ts";
 import { z } from "zod";
@@ -212,7 +212,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
       displays.push({ type: "mission", event: "expired", title: mission.title, detail: `기한 초과${d.countsDisobedience ? " (불복종)" : ""}`, merit: d.expireMerit });
     }
   }
-  if (commanderOf(state, ctx)) {
+  if (commanderOf(state, ctx) && hasAccess(ctx.content, state, "mission_board")) {
     const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng);
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
@@ -225,7 +225,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   if (!player) return "";
   const active = activeMissionOf(state.missions, player.id);
   // 무소속은 복무·공적·불복종이 없다
-  const culture = player.factionId ? describeCultureForGm(ctx.content, player.factionId) : "";
+  const culture = player.factionId ? [describeAccess(ctx.content, state.roleId), describeCultureForGm(ctx.content, player.factionId)].filter(Boolean).join("\n") : "";
   const lines = [player.factionId ? `복무: ${rankLabel(ctx.content.scenario, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회${culture ? `\n${culture}` : ""}` : `무소속 (${rankLabel(ctx.content.scenario, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);

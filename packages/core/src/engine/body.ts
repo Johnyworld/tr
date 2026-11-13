@@ -1,3 +1,4 @@
+import { hasAccess } from "../game/culture.ts";
 import type { GameState } from "../game/state.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
@@ -181,7 +182,8 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
 
   if (body.hunger && war) {
     const state = ctx.store.getState();
-    const own = state.factions[player()!.factionId];
+    // 배급 권한이 있어야 무리의 배급을 받는다 (역할의 access, 기획서 9.9)
+    const own = hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
     const level = own ? war.ration.levels.find((l) => daysOfStock(content, own, war.ration.resource) >= l.min_days) : undefined;
     const track = trackOf(content.scenario, body.hunger.track);
     let delta = level?.hunger ?? 1; // 배급을 받지 못하면 배가 고파진다

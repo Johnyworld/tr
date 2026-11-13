@@ -278,7 +278,8 @@ ${this.sceneForGm()}` };
 
   /**
    * 행동 뒤의 장면 정보 (기획서 11.6 토큰): 지난번 GM에게 보낸 뒤 바뀐 덩어리만 보낸다.
-   * 처음, 구역·날짜·전투·주인공이 바뀌었을 때, SCENE_FULL_EVERY턴마다는 전체를 보낸다
+   * 처음, 날짜·전투·주인공이 바뀌었을 때, SCENE_FULL_EVERY턴마다는 전체를 보낸다.
+   * 구역을 옮겨도 바뀐 덩어리만 보낸다 (12-62): 구역·이 구역의 사람·엑스트라 틀이 바뀐 덩어리로 실린다
    */
   sceneUpdate(): string {
     const state = this.state();
@@ -304,7 +305,7 @@ ${this.sceneForGm()}` };
   #sceneAnchor(): string {
     const s = this.state();
     // 이야기가 열리고 끝나는 것은 기준이 아니다: 이야기 덩어리와 등장인물 카드가 바뀐 덩어리로 실린다 (토큰, 12-42)
-    return [s.playerZone, dayOf(s.time), s.battle ? "battle" : "", s.playerId].join("|");
+    return [dayOf(s.time), s.battle ? "battle" : "", s.playerId].join("|");
   }
 
   #rememberScene(sections: readonly SceneSection[]) {

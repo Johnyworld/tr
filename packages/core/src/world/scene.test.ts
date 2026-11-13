@@ -12,7 +12,7 @@ const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url))
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
 
 describe("장면 정보 아끼기 (기획서 11.6 토큰)", () => {
-  it("행동 뒤에는 바뀐 덩어리만, 구역·날짜가 바뀌거나 여러 턴이 지나면 전체를 다시", () => {
+  it("행동 뒤에는 바뀐 덩어리만, 날짜가 바뀌거나 여러 턴이 지나면 전체를 다시 (구역을 옮겨도 바뀐 덩어리만, 12-62)", () => {
     const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-scene-")), content, rngFactory: () => createSeededRng(1) });
     const w = m.create("mcp", "role_a_officer");
     const full = w.sceneForGm();
@@ -22,10 +22,13 @@ describe("장면 정보 아끼기 (기획서 11.6 토큰)", () => {
     expect(update).toContain("시각:");
     expect(update).toContain("그대로라 다시 싣지 않음");
     expect(update).toContain("get_scene");
-    // 구역을 옮기면 전체
+    // 구역을 옮겨도 바뀐 덩어리만 (12-62): 새 구역은 실리고 믿음 같은 그대로인 덩어리는 이름만
     w.executeTool("take_action", act("동쪽 초소로 간다", { move_to: "a_east_post" }));
-    expect(w.sceneUpdate()).not.toContain("그대로라 다시 싣지 않음");
-    for (let i = 0; i < SCENE_FULL_EVERY - 1; i++) {
+    const moved = w.sceneUpdate();
+    expect(moved).toContain("현재 구역: 동쪽 초소");
+    expect(moved).toContain("그대로라 다시 싣지 않음");
+    // 처음 전체를 보낸 뒤 SCENE_FULL_EVERY턴째에 전체를 다시
+    for (let i = 2; i < SCENE_FULL_EVERY - 1; i++) {
       w.executeTool("take_action", act("주위를 본다"));
       expect(w.sceneUpdate()).toContain("그대로라 다시 싣지 않음");
     }

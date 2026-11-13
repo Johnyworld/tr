@@ -52,7 +52,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.commander || c.id === commander)
-    .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction))
+    .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction === "captor" ? (player.captive?.by ?? "-") : role.faction))
     .filter((c) => !role.ranks || role.ranks.includes(c.rank))
     .filter((c) => !role.occupations || role.occupations.some((o) => (o === "same" ? player.occupation?.id : o) === c.occupation?.id && !!c.occupation))
     .filter((c) => !role.known || known.has(c.id))
@@ -165,6 +165,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.merit_gte !== undefined && player.merit < w.merit_gte) return false;
   if (w.level_gte !== undefined && player.level < w.level_gte) return false;
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
+  if (w.captors && (!player.captive || !w.captors.includes(player.captive.by))) return false;
   if (w.occupations && !w.occupations.includes(player.occupation?.id ?? "none")) return false;
   if (w.road_touches && (!state.lastRoute || !w.road_touches.some((z) => z === state.lastRoute!.from || z === state.lastRoute!.to))) return false;
   if (w.road_danger_gte !== undefined && routeDanger(content, state) < w.road_danger_gte) return false;
@@ -272,12 +273,16 @@ export const WORLD_TAG = "world";
 /** 지금 발동할 수 있는 스토리렛 (역할 태그, 반복·쿨다운, 조건, 배역) */
 export function eligibleStorylets(state: GameState, content: Content, at: GameTime = state.time): StoryletContent[] {
   const roleTags = new Set(content.roles[state.roleId]?.storylet_tags ?? []);
+  // 갇혀 있으면 갇힌 동안의 이야기만, 아니면 그 이야기는 열리지 않는다 (12-55)
+  const captivityTag = content.scenario.captivity?.tag;
+  const captive = !!state.characters[state.playerId]?.captive;
   // 직분의 이야기 (기획서 12.6)
   const occ = occupationOf(content, state.characters[state.playerId]);
   if (occ) roleTags.add(occupationTag(occ));
   return Object.values(content.storylets)
     // 태그가 없거나 world면 어느 시나리오에서나, 아니면 역할의 태그와 겹칠 때만
-    .filter((s) => s.tags.length === 0 || s.tags.some((t) => t === WORLD_TAG || roleTags.has(t)))
+    .filter((s) => (captivityTag && s.tags.includes(captivityTag) ? captive : !captive))
+    .filter((s) => (captivityTag && s.tags.includes(captivityTag)) || s.tags.length === 0 || s.tags.some((t) => t === WORLD_TAG || roleTags.has(t)))
     .filter((s) => {
       const log = state.storyletLog[s.id];
       if (!log) return true;

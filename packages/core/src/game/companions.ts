@@ -19,6 +19,7 @@ export const BOND_LABELS: Record<BondKind, string> = {
   squad: "분대원",
   purpose: "같은 목적",
   kin: "연고",
+  prisoner: "끌고 가는 포로",
 };
 
 /** 함께 다니는 이유. 이전 세이브(이유가 없는 동행)는 틀로 정한다: 동물이면 animal, 아니면 kin */

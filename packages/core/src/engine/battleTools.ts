@@ -1,3 +1,4 @@
+import { maybeCaptureAfterDefeat } from "./captivity.ts";
 import type { Content } from "../content/schemas.ts";
 import { gainMeritXp } from "./growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
@@ -42,7 +43,8 @@ export function playerInvolvement(state: GameState, content: Content, spec: Clas
   if (!content.scenario.battle) return null;
   const player = state.characters[state.playerId];
   const zone = state.playerZone;
-  if (!player || player.dead || !zone || state.battle) return null;
+  // 갇혀 있으면 싸움에 끼지 않는다 (12-55)
+  if (!player || player.dead || player.captive || !zone || state.battle) return null;
   if (spec.defender === player.factionId && zone === spec.zone) return "defense";
   if (spec.attacker === player.factionId && state.zones[zone]?.owner === player.factionId && neighbors(content, spec.zone).includes(zone)) {
     return "attack";
@@ -172,6 +174,11 @@ export function endBattle(ctx: ToolContext, withdrew: boolean): BattleTurn {
   ];
   const growthNote = gainMeritXp(ctx, player.id, merit);
   if (growthNote) lines.push(growthNote);
+  // 지고도 물러나지 않았으면 쓰러진 채 끌려갈 수 있다 (12-55, 코드가 굴린다)
+  if (!won && !withdrew && !player.dead) {
+    const caught = maybeCaptureAfterDefeat(ctx, battle.theirs.faction);
+    if (caught) lines.push(caught);
+  }
   const displays: ToolDisplayEvent[] = [
     { type: "battle", event: "ended", title: battleTitle(ctx.content, battle), detail: lines[0]! },
     ...reportClash(ctx, clash),

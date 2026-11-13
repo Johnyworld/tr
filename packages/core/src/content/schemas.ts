@@ -371,6 +371,10 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ standing: z.number().int().min(-2).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
     z.strictObject({ give_item: z.strictObject({ item: contentIdSchema, from: z.string().optional(), quantity: z.number().int().positive().default(1) }) }),
+    /** 주인공이 붙잡힌다 (12-55): by 무리(own 외에 zone_owner 등 별칭), zone이 없으면 그 무리의 거점에 갇힌다 */
+    z.strictObject({ capture_player: z.strictObject({ by: z.string().min(1), zone: contentIdSchema.optional() }) }),
+    /** 갇힌 주인공이 풀려난다: returned면 빼앗긴 것을 돌려받는다, home이면 우리 무리의 거점으로 돌아간다 */
+    z.strictObject({ release_player: z.strictObject({ returned: z.boolean().default(true), home: z.boolean().default(false) }) }),
     /** 지니고 있던 무기를 이 구역에 맡긴다 (성당 문 앞 등, 12-54). 이 구역을 떠날 때 저절로 돌려받는다 */
     z.strictObject({ deposit_weapons: z.literal(true) }),
     /** 우리 땅의 산출을 늘린다 (씨앗을 심었다, 우물을 팠다, 12-54). where: here 지금 구역(우리 땅일 때만), base 우리 무리 거점. 빼앗기면 사라진다 */
@@ -449,7 +453,7 @@ export function createContentSchemas(s: Scenario) {
     /** 앞의 배역(of)과 이어진 사람 (kinds: 관계 종류, 기획서 7.10). of는 이 배역보다 앞에 적는다 */
     tie: z.strictObject({ of: contentIdSchema, kinds: z.array(z.enum(TIE_KINDS)).optional(), cross: z.boolean().default(false).describe("true면 of와 무리가 다른 사람만") }).optional(),
     /** 지금 곁에 있는 동행 중에서 (이름 없는 인물·동물 포함, 기획서 7.9). kinds: 함께 다니는 이유, templates: 엑스트라 틀 */
-    companion: z.strictObject({ kinds: z.array(z.enum(["animal", "buddy", "squad", "purpose", "kin"])).optional(), templates: z.array(contentIdSchema).optional() }).optional(),
+    companion: z.strictObject({ kinds: z.array(z.enum(["animal", "buddy", "squad", "purpose", "kin", "prisoner"])).optional(), templates: z.array(contentIdSchema).optional() }).optional(),
     /** 플레이어의 직속 상관 */
     commander: z.boolean().default(false),
     /** own = 플레이어 소속, 또는 세력 id */
@@ -570,6 +574,8 @@ export function createContentSchemas(s: Scenario) {
         zone_owner: z.array(z.enum(["none", "own", "other"])).optional(),
         /** 플레이어의 소속 세력 (none = 무소속) */
         factions: z.array(z.string().min(1)).optional(),
+        /** 주인공을 가둔 무리가 이 중 하나일 때만 (갇힌 동안의 이야기, 12-55) */
+        captors: z.array(z.string().min(1)).optional(),
         /** 플레이어의 직분 (none = 직분 없음, 기획서 12.6) */
         occupations: z.array(z.string().min(1)).optional(),
         /** 길 위의 이야기 (12-53, 태그 road): 지금 오가는 길의 한쪽 끝이 이 중 하나일 때만 */

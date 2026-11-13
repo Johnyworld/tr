@@ -537,6 +537,21 @@ recovery:
   # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
   first_aid: { occupation: medic, skill: first_aid, min: 1 }
 
+# 포로 (12-55): 진 전투에서 물러나지 않았으면 부상 단계별 확률로 붙잡힌다 (항복하면 반드시). 갇힌 동안은 태그 captivity 이야기만 열린다
+captivity:
+  tag: captivity
+  on_defeat: { light: 0.15, serious: 0.5, critical: 0.8 }
+  confiscate: [weapon, ammo]
+  escape_moves: [stealth, endure]
+  # 갇힌 동안 허기는 굶주림까지만 (붙잡은 쪽이 겨우 먹인다)
+  hunger_floor: starving
+  upkeep: { resource: food, amount: 1 }
+  labor: { resource: food, amount: 2 }
+  ransom: { resource: ammo, amount: 8 }
+  interrogate_moves: [intimidate, persuade]
+  recruit_move: persuade
+  war_capture_chance: 0.12
+
 # 길 위의 일 (12-53): 구역을 옮길 때 길의 위험(두 구역의 danger 중 높은 쪽 0~3)별로 태그 road인 이야기가 열릴 확률
 travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 

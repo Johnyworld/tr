@@ -1,3 +1,4 @@
+import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { runRoadEvent } from "./storyletTools.ts";
 import { shakeNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft } from "./gear.ts";
@@ -227,6 +228,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (typeof battleAction === "string") return { ok: false, error: battleAction };
   // 건너가기 (기획서 9.12): 맞닿지 않은 곳이라도 crossing.from에서는 배로 건넌다. 표(pass_flags)가 없으면 위험한 시도
   let crossingAttempt = false;
+  // 갇혀 있으면 옮겨 가는 것은 탈출 시도다 (12-55)
+  let escapeAttempt = false;
+  if (input.move_to && start.characters[start.playerId]?.captive) {
+    const blocked = escapeRule(start, content, input.check);
+    if (blocked) return { ok: false, error: blocked };
+    escapeAttempt = true;
+  }
   if (input.move_to) {
     const here = start.playerZone;
     const dest = content.locations[input.move_to];
@@ -398,13 +406,21 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   lines.push(...bodyLines(time.extra));
   // 건너기 시도가 실패하면 물살에 밀려 되돌아온다 (시간과 위험은 이미 치렀다)
   const sweptBack = crossingAttempt && outcome === "miss";
+  const escapeFailed = escapeAttempt && outcome === "miss";
+  if (escapeFailed) lines.push("빠져나가지 못했다. 다시 붙잡혀 갇힌 곳으로 끌려왔다. 감시가 더 심해졌다.");
   if (sweptBack) lines.push(`${content.locations[input.move_to!]?.name ?? input.move_to}에 닿지 못하고 되돌아왔다. 되돌아온 장면을 서술한다.`);
-  if (input.move_to && !time.interrupted && !sweptBack) {
+  if (input.move_to && !time.interrupted && !sweptBack && !escapeFailed) {
+    if (escapeAttempt) {
+      const freed = releasePlayer(ctx, false);
+      if (freed) lines.push(freed);
+    }
     // 자리를 뜨면 그 자리의 이야기는 끝난다 (장면의 인물도 따라오지 않는다)
     displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
     const deposited = start.playerZone ? store.getState().deposits?.[start.playerZone] : undefined;
     store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to });
     if (deposited) lines.push(`맡겨 둔 것을 돌려받고 떠났다: ${Object.entries(deposited).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ")}.`);
+    // 끌고 온 포로: 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다 (12-55)
+    lines.push(...deliverPrisoners(ctx));
     lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다. 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
     // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
     for (const d of runRoadEvent(ctx)) {

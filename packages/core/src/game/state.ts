@@ -36,7 +36,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 25;
+export const SAVE_SCHEMA_VERSION = 26;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -71,7 +71,7 @@ export const factionStateSchema = z.strictObject({
 export type FactionState = z.infer<typeof factionStateSchema>;
 
 /** 함께 다니는 이유 (기획서 7.9) */
-export const BOND_KINDS = ["animal", "buddy", "squad", "purpose", "kin"] as const;
+export const BOND_KINDS = ["animal", "buddy", "squad", "purpose", "kin", "prisoner"] as const;
 export type BondKind = (typeof BOND_KINDS)[number];
 /** 목적 동행이 끝나는 조건 (하나라도 차면 갈림길) */
 export const bondUntilSchema = z.strictObject({
@@ -358,6 +358,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     /** NPC의 계급이 바뀐다 (지도부 교체, 강등) */
     z.strictObject({ type: z.literal("npc_rank_changed"), npcId: z.string(), rank: z.string() }),
+    /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
+    z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()) }),
+    z.strictObject({ type: z.literal("player_released"), returned: z.boolean() }),
+    z.strictObject({ type: z.literal("prisoner_labor"), npcId: z.string(), labor: z.boolean() }),
     /** 맡긴다 / 구역의 산출이 는다 / 이야기로 배운다 (12-54) */
     z.strictObject({ type: z.literal("items_deposited"), zone: z.string(), items: z.record(z.string(), z.number().int().positive()) }),
     z.strictObject({ type: z.literal("zone_boosted"), zone: z.string(), resource: z.string(), delta: z.number().int() }),
@@ -972,6 +976,37 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       const npc = mustGet(next.characters, event.npcId, "캐릭터");
       npc.captive = null;
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      return next;
+    }
+    case "player_captured": {
+      const me = mustGet(next.characters, next.playerId, "캐릭터");
+      me.captive = { by: event.by, zone: event.zone };
+      for (const [item, n] of Object.entries(event.held)) {
+        const left = (me.inventory[item] ?? 0) - n;
+        if (left < 0) throw new Error(`빼앗을 것이 모자란다: ${item}`);
+        if (left === 0) delete me.inventory[item];
+        else me.inventory[item] = left;
+        for (const slot of ["weapon", "body", "head", "arms"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
+      }
+      next.deposits[`held:${event.by}`] = { ...(next.deposits[`held:${event.by}`] ?? {}), ...event.held };
+      // 갇힌 곳으로 끌려간다. 동행은 따라오지 못한다 (그 자리에서 기다린다)
+      next.playerZone = event.zone;
+      next.scene.present = [];
+      return next;
+    }
+    case "player_released": {
+      const me = mustGet(next.characters, next.playerId, "캐릭터");
+      const key = me.captive ? `held:${me.captive.by}` : null;
+      if (event.returned && key && next.deposits[key]) {
+        for (const [item, n] of Object.entries(next.deposits[key]!)) me.inventory[item] = (me.inventory[item] ?? 0) + n;
+      }
+      if (key) delete next.deposits[key];
+      me.captive = null;
+      return next;
+    }
+    case "prisoner_labor": {
+      const c = mustGet(next.characters, event.npcId, "캐릭터");
+      if (c.captive) c.captive = { ...c.captive, labor: event.labor };
       return next;
     }
     case "items_deposited": {

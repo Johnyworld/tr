@@ -1,3 +1,4 @@
+import { capturePlayer, releasePlayer } from "./captivity.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { dayOf, formatTime } from "../rules/time.ts";
@@ -369,6 +370,19 @@ function applyEffect(
     store.append({ type: "item_granted", to: playerId, itemId: item, quantity });
     return { line: `${josa(`${name} ×${quantity}`, "을/를")} 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
   }
+  if ("capture_player" in effect) {
+    const by = factionRef(state, effect.capture_player.by);
+    const line = by ? capturePlayer(ctx, by, effect.capture_player.zone, reason) : null;
+    return line ? { line } : {};
+  }
+  if ("release_player" in effect) {
+    const me = state.characters[playerId]!;
+    if (!me.captive) return {};
+    const line = releasePlayer(ctx, effect.release_player.returned);
+    const home = effect.release_player.home ? Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id : undefined;
+    if (home && home !== store.getState().playerZone) store.append({ type: "zone_moved", from: store.getState().playerZone, to: home });
+    return { line: `${line ?? "풀려났다."}${home ? ` ${content.locations[home]?.name ?? home}(으)로 돌아왔다.` : ""}` };
+  }
   if ("deposit_weapons" in effect) {
     const zone = state.playerZone;
     const me = state.characters[playerId]!;
@@ -491,6 +505,8 @@ function applyEffect(
     const { faction, rank, title } = effect.join_faction;
     if (!content.factions[faction] || player.factionId === faction) return {};
     const from = player.factionId ? (content.roles[state.roleId]?.label ?? content.factions[player.factionId]?.name ?? "") : "무소속";
+    // 붙잡은 무리에 들면 더는 포로가 아니다 (빼앗긴 것도 돌려받는다, 12-55)
+    if (player.captive) releasePlayer(ctx, player.captive.by === faction);
     const role = joinRole(content, faction, rank, { age: player.age, title, occupation: player.occupation?.id ?? null });
     // 그 무리에서 처음 듣는 사정: 같은 계급 시나리오의 시작 지식 (다른 계급의 지식은 주지 않는다)
     const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
@@ -635,5 +651,6 @@ export function runRoadEvent(ctx: ToolContext): ToolDisplayEvent[] {
 function factionRef(state: GameState, x: string): string {
   if (x === "own") return state.characters[state.playerId]?.factionId ?? "";
   if (x === "zone_owner") return (state.playerZone && state.zones[state.playerZone]?.owner) || "";
+  if (x === "captor") return state.characters[state.playerId]?.captive?.by ?? "";
   return x;
 }

@@ -1,3 +1,4 @@
+import { describeCaptivityForGm } from "./captivity.ts";
 import { describeHistoryPart } from "../game/background.ts";
 import { occupationOf, occupationTitle } from "../game/occupation.ts";
 import { dayOf } from "../rules/time.ts";
@@ -115,7 +116,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n")],
-    ["battle", describeBattleForGm(state, content)],
+    ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content)].filter(Boolean).join("\n")],
     ["storylet", describeStoryletForGm(state, content)],
     ["missions", [describeMissionsForGm(state, { content }), describePolicyForGm(state, content)].filter(Boolean).join("\n")],
     ["squad", describeSquadForGm(state, content)],

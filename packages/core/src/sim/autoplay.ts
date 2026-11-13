@@ -157,6 +157,16 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
         continue;
       }
     }
+    // 갇혀 있으면 (12-55): 가끔 탈출을 시도하고, 아니면 버틴다
+    if (me.captive && s.playerZone) {
+      const c = content.scenario.captivity;
+      if (c && rng() < 0.25) {
+        const move = moves.find((m) => m.id === c.escape_moves[0])!;
+        const out = tool("take_action", { ...base, intent: "탈출", move_to: pick(rng, neighbors(content, s.playerZone)), check: check(move, "heavy") });
+        if (!out.ok) stats.errors.push(`탈출: ${out.error}`);
+      } else tool("take_action", { ...base, intent: "버틴다", activity: { kind: "wait", until: null } });
+      continue;
+    }
     // 몸을 돌본다 (플레이어처럼): 다쳤으면 자주 치료하고, 크게 다쳤으면 쉬고, 얼면 거점으로 돌아간다
     const idx = (trackId: string) => {
       const t = content.scenario.condition_tracks.find((x) => x.id === trackId);

@@ -52,7 +52,7 @@ export function createCharacterSchema(s: Scenario) {
     /** 도시를 떠났다 (탈영·피난 등, 스토리렛 효과 npc_depart). 죽음과 달리 연대기에 남지 않고, 장면·배역·소문에서 빠진다 */
     away: z.boolean().default(false),
     /** 붙잡혀 있다 (포로, 기획서 7.6). by 세력이 zone에 가둬 두었다. 장면·배역·소문에서 빠지고, 그 구역에서만 만날 수 있다 */
-    captive: z.strictObject({ by: z.string(), zone: z.string() }).nullable().default(null),
+    captive: z.strictObject({ by: z.string(), zone: z.string(), labor: z.boolean().optional() }).nullable().default(null),
     /** 진 빚 (세력 id → 양, 기획서 9.10). 캐릭터의 것이라 계승하면 새로 시작한다 */
     debts: z.record(z.string(), z.number().int().min(0)).default({}),
     rank: idEnum(rankIds(s)),

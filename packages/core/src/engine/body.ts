@@ -191,7 +191,9 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
   if (body.hunger && war) {
     const state = ctx.store.getState();
     // 배급 권한이 있어야 무리의 배급을 받는다 (역할의 access, 기획서 9.9)
-    const own = hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
+    // 갇혀 있으면 우리 무리의 배급을 못 받는다 (붙잡은 쪽이 겨우 먹인다, 12-55)
+    const captive = !!player()!.captive;
+    const own = !captive && hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
     const level = own ? rationLevel(content, own) : undefined;
     const track = trackOf(content.scenario, body.hunger.track);
     let delta = level?.hunger ?? 1; // 배급을 받지 못하면 배가 고파진다
@@ -203,7 +205,9 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
     // 트레잇: 정량이 아니면 대식가는 더, 소식가는 덜 배고파진다
     const hungerTrait = bodyTraits(content, player()!).hunger;
     if (hungerTrait !== 0 && level !== war.ration.levels[0]) delta = Math.max(0, delta + hungerTrait);
-    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
+    const floor = captive && content.scenario.captivity?.hunger_floor ? track.levels.findIndex((l) => l.id === content.scenario.captivity!.hunger_floor) : -1;
+    if (floor >= 0 && delta > 0) delta = Math.max(0, Math.min(delta, floor - levelIndex(ctx, state, state.playerId, track.id)));
+    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
     if (levelIndex(ctx, ctx.store.getState(), state.playerId, track.id) === track.levels.length - 1 && body.hunger.starving_harm > 0) {
       if (push(changeCondition(ctx, state.playerId, harm, body.hunger.starving_harm, "daily", "굶주림"))) return displays;
     }

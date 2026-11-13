@@ -538,6 +538,34 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
+     * 포로 (12-55). 없으면 주인공이 붙잡히지 않고 포로를 다루는 규칙도 없다
+     */
+    captivity: z
+      .strictObject({
+        /** 주인공이 갇혀 있는 동안 열리는 이야기의 태그 (이때는 이것만 열린다) */
+        tag: id,
+        /** 진 전투에서 물러나지 않았을 때 붙잡힐 확률 (부상 단계 id → 확률). 없는 단계면 붙잡히지 않는다 */
+        on_defeat: z.record(id, z.number().min(0).max(1)),
+        /** 갇혔을 때 빼앗기는 물건 종류 (돌려받으면 돌아온다) */
+        confiscate: z.array(z.string()).default(["weapon", "ammo"]),
+        /** 탈출: 갇힌 구역에서 옮겨 가려면 이 판정 중 하나를 무거운 위험으로 */
+        escape_moves: z.array(id).min(1),
+        /** 갇힌 동안 허기가 이 단계보다 더 나빠지지 않는다 (붙잡은 쪽이 겨우 먹인다) */
+        hunger_floor: id.optional(),
+        /** 포로 하나를 하루 먹이는 데 드는 붙잡은 무리의 자원 */
+        upkeep: z.strictObject({ resource: id, amount: z.number().min(0) }),
+        /** 노역에 부리면 하루에 붙잡은 무리가 얻는 자원 */
+        labor: z.strictObject({ resource: id, amount: z.number().int().min(0) }),
+        /** 몸값: 풀어 주는 대신 상대 무리가 내는 자원 */
+        ransom: z.strictObject({ resource: id, amount: z.number().int().min(1) }),
+        /** 심문·회유에 쓰는 판정 */
+        interrogate_moves: z.array(id).min(1),
+        recruit_move: id,
+        /** 무리 사이 싸움에서 이긴 쪽이 이름 있는 사람 하나를 붙잡아 갈 확률 */
+        war_capture_chance: z.number().min(0).max(1).default(0),
+      })
+      .optional(),
+    /**
      * 길 위의 일 (12-53): 구역을 옮길 때마다 길의 위험(두 구역의 danger 중 높은 쪽)별 확률로 태그(tag)가 붙은 이야기 하나가 열린다.
      * 이야기 사이 간격(storylet_pacing)과 상관없다. 진행 중인 이야기가 있으면 열리지 않는다
      */

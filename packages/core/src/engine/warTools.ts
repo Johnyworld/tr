@@ -1,3 +1,4 @@
+import { runCaptivity, warCaptures } from "./captivity.ts";
 import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { Clash, FactionState, GameState } from "../game/state.ts";
@@ -54,6 +55,9 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       scheduled,
     });
     displays.push(...deliverNews(ctx, result.clashes));
+    // 무리 사이 싸움의 포로, 포로를 먹이고 부리기 (12-55)
+    displays.push(...warCaptures(ctx, result.clashes));
+    runCaptivity(ctx);
     // 무리의 태도가 바뀐 소식 (이탈, 편들기): 우리 무리 일이면 전해 듣고, 아니면 소문으로
     for (const shift of result.shifts) {
       const now = ctx.store.getState();

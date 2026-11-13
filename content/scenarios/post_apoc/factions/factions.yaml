@@ -25,6 +25,19 @@
   cohesion: 0
   aggression: 0
   disposition: { faction_a: 2, faction_c: -2 }
+  plans:
+    # 흔들림: 다 차면 청솔형제단과의 연합에서 발을 빼고 붉은연합과 화해한다 (한 번뿐, 기획서 9.4 shift).
+    # 붉은연합의 회유·뇌물이 당기고, 연합을 지키는 쪽의 이야기가 늦춘다. 버들마을 사람만 안다
+    - id: b_waver
+      label: 연합에서 발 빼기
+      kind: shift
+      days: 30
+      shift:
+        - { to: faction_a, value: 0 }
+        - { to: faction_c, value: 0 }
+        - { from: faction_c, to: faction_b, value: 0 }
+        - { from: faction_a, to: faction_b, value: -1 }
+      news: "{faction}이 청솔형제단과의 약조에서 발을 뺐다. 붉은연합과 따로 말이 오갔다고 한다"
 
 - id: faction_c
   name: 붉은연합
@@ -59,3 +72,13 @@
   morale: 1
   cohesion: 1
   aggression: 0
+  plans:
+    # 편들기: 다 차면 그때 가장 큰 무리 쪽에 붙는다 (한 번뿐, shift). 상단 사람이 어느 편에 짐을 실어 주느냐가 당기고 늦춘다
+    - id: e_side
+      label: 이기는 쪽에 붙기
+      kind: shift
+      days: 35
+      shift:
+        - { to: strongest, value: 2 }
+      news: "{faction}이 {to} 쪽에 붙었다는 말이 돈다. 이제 물값이 무리마다 다르다고 한다"
+

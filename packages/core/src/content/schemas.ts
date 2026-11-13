@@ -174,12 +174,23 @@ export function createContentSchemas(s: Scenario) {
           .strictObject({
             id: contentIdSchema,
             label: z.string().min(1),
+            /**
+             * attack: 다 차면 구역을 친다 (기본) / shift: 다 차면 세력 사이 태도가 바뀐다 (이탈, 편들기). shift는 한 번 일어나고 끝난다
+             */
+            kind: z.enum(["attack", "shift"]).optional(),
             /** fixed: target 구역을 친다 / frontier: 다 찼을 때 맞닿은 적의 구역 중 가장 값진 곳 (잃은 땅 먼저) */
             target_rule: z.enum(["fixed", "frontier"]).default("fixed"),
             target: contentIdSchema.optional(),
             days: z.number().int().positive(),
+            /** shift: 다 찼을 때의 새 태도. from이 없으면 이 세력. to가 strongest면 그때 가장 큰(전투원이 많은) 다른 세력 */
+            shift: z
+              .array(z.strictObject({ from: contentIdSchema.optional(), to: z.string().min(1), value: z.number().int().min(-3).max(3) }))
+              .optional(),
+            /** shift가 일어났을 때 퍼지는 소식 ({faction} = 이 세력, {to} = 대상) */
+            news: z.string().optional(),
           })
-          .refine((p) => p.target_rule === "frontier" || !!p.target, "fixed 계획에는 target이 있어야 한다"),
+          .refine((p) => p.kind === "shift" || p.target_rule === "frontier" || !!p.target, "fixed 공격 계획에는 target이 있어야 한다")
+          .refine((p) => p.kind !== "shift" || (p.shift?.length ?? 0) > 0, "shift 계획에는 shift가 있어야 한다"),
       )
       .default([]),
     minor: z.boolean().default(false),
@@ -225,6 +236,13 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ clock: z.strictObject({ id: contentIdSchema, delta: z.number().int().min(-5).max(5) }) }),
     /** own = 플레이어 소속 */
     z.strictObject({ faction_morale: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-1).max(1) }) }),
+    /** 세력 사이 태도를 바꾼다 (from이 to를 보는 태도, -3~+3에서 멈춘다). mutual이면 양쪽 다. own = 플레이어 소속 */
+    z.strictObject({ faction_relation: z.strictObject({ from: z.string().min(1), to: z.string().min(1), delta: z.number().int().min(-2).max(2), mutual: z.boolean().default(true) }) }),
+    /**
+     * 주인공의 몸 상태를 바꾼다 (먹을 것을 나눠 받았다, 젖은 옷으로 밤을 샜다 등). 부상 트랙은 안 된다 (원칙 3), 마지막 단계(죽음)까지는 가지 않는다.
+     * delta 양수 = 나빠짐, 음수 = 나아짐
+     */
+    z.strictObject({ body: z.strictObject({ track: contentIdSchema, delta: z.number().int().min(-2).max(2) }) }),
     /** 세력 자원을 늘리거나 줄인다 (할당량, 약 재고, 물). own = 플레이어 소속. 양은 콘텐츠가 정한다 */
     z.strictObject({ faction_resource: z.strictObject({ faction: z.string().min(1), resource: contentIdSchema, delta: z.number().int().min(-50).max(50) }) }),
     /** 주인공이 그 무리에 들어간다: 무소속이면 가입, 다른 무리에 있으면 옮긴다 (rank가 없으면 가장 낮은 계급). 이미 그 무리면 아무 일도 없다 */
@@ -315,6 +333,10 @@ export function createContentSchemas(s: Scenario) {
         flags_all: z.array(contentIdSchema).optional(),
         /** 이 중 하나라도 서 있으면 */
         flags_any: z.array(contentIdSchema).optional(),
+        /** 세력 사이 지금 태도 (from이 to를 보는 값, own = 플레이어 소속). 이탈·편들기 뒤의 이야기 */
+        dispositions: z
+          .array(z.strictObject({ from: z.string().min(1), to: z.string().min(1), gte: z.number().int().optional(), lte: z.number().int().optional() }))
+          .optional(),
         flags_none: z.array(contentIdSchema).optional(),
         /** 세력 클락 (플레이어는 모르는 값. 조건으로만 쓴다) */
         clock_gte: z.record(contentIdSchema, z.number().int()).optional(),

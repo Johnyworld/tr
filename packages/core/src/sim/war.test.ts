@@ -133,3 +133,26 @@ describe("교전", () => {
     expect(assault?.zone).toBe("a_post");
   });
 });
+
+describe("태도가 바뀌는 클락 (shift)", () => {
+  it("다 차면 정한 태도로 바뀌고 소식이 생긴다. 한 번만 일어난다", () => {
+    const content = peaceful();
+    content.factions.faction_e!.plans = [
+      { id: "e_side", label: "편들기", kind: "shift", target_rule: "fixed", days: 2, shift: [{ to: "strongest", value: 2 }], news: "{faction}이 {to} 쪽에 붙었다" },
+    ];
+    let world = initialWarWorld(content);
+    expect(world.factions.faction_e!.disposition).toEqual(content.factions.faction_e!.disposition);
+    const rng = createSeededRng(1);
+    const day1 = simulateWarDay(world, content, rng);
+    expect(day1.shifts).toEqual([]);
+    world = { factions: day1.factions, zones: day1.zones, clocks: day1.clocks };
+    const day2 = simulateWarDay(world, content, rng);
+    expect(day2.shifts).toHaveLength(1);
+    const to = day2.shifts[0]!.to;
+    expect(to).not.toBe("faction_e");
+    expect(day2.factions.faction_e!.disposition?.[to]).toBe(2);
+    expect(day2.shifts[0]!.news).toContain("쪽에 붙었다");
+    world = { factions: day2.factions, zones: day2.zones, clocks: day2.clocks };
+    expect(simulateWarDay(world, content, rng).shifts).toEqual([]);
+  });
+});

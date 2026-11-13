@@ -1,3 +1,5 @@
+import { changeCondition } from "./body.ts";
+import { disposition } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX } from "../story/storylets.ts";
 import { joinRole } from "../game/customStart.ts";
@@ -267,6 +269,34 @@ function applyEffect(
     if (!state.factions[id]) return {};
     store.append({ type: "faction_morale_changed", factionId: id, delta: effect.faction_morale.delta });
     return {};
+  }
+  if ("faction_relation" in effect) {
+    const own = state.characters[playerId]!.factionId;
+    const id = (x: string) => (x === "own" ? own : x);
+    const { delta, mutual } = effect.faction_relation;
+    const pairs = [[id(effect.faction_relation.from), id(effect.faction_relation.to)]];
+    if (mutual) pairs.push([pairs[0]![1]!, pairs[0]![0]!]);
+    for (const [from, to] of pairs) {
+      if (!from || !to || from === to || !state.factions[from] || !content.factions[to]) continue;
+      const now = disposition(content, from, to, store.getState());
+      const value = Math.max(-3, Math.min(3, now + delta));
+      if (value !== now) store.append({ type: "faction_disposition_changed", from, to, value });
+    }
+    return {}; // 무리 사이 분위기는 소문과 전황으로만 드러난다
+  }
+  if ("body" in effect) {
+    const { track, delta } = effect.body;
+    if (track === content.scenario.harm_track) return {};
+    const t = content.scenario.condition_tracks.find((x) => x.id === track);
+    const player = state.characters[playerId]!;
+    if (!t) return {};
+    // 마지막 단계(죽음)까지는 가지 않는다
+    const index = t.levels.findIndex((l) => l.id === player.conditions[track]);
+    const last = t.levels.findIndex((l) => l.fatal);
+    const limit = (last >= 0 ? last : t.levels.length) - 1;
+    const steps = delta > 0 ? Math.min(delta, Math.max(0, limit - index)) : delta;
+    const change = changeCondition(ctx, playerId, track, steps, "이야기", reason);
+    return change && change.line ? { line: change.line, display: change.display ?? undefined } : {};
   }
   if ("faction_resource" in effect) {
     const { resource, delta } = effect.faction_resource;

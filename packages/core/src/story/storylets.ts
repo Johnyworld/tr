@@ -1,3 +1,4 @@
+import { disposition } from "../sim/war.ts";
 import type { Content, StoryletContent } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { GameState } from "../game/state.ts";
@@ -81,6 +82,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (!w.zone_owner.includes(kind)) return false;
   }
   if (w.flags_any && !w.flags_any.some((f) => flags.has(f))) return false;
+  for (const d of w.dispositions ?? []) {
+    const id = (x: string) => (x === "own" ? player.factionId : x);
+    const v = disposition(content, id(d.from), id(d.to), state);
+    if ((d.gte !== undefined && v < d.gte) || (d.lte !== undefined && v > d.lte)) return false;
+  }
   if (w.zones && (!state.playerZone || !w.zones.includes(state.playerZone))) return false;
   if (w.own_territory !== undefined) {
     const mine = !!state.playerZone && state.zones[state.playerZone]?.owner === player.factionId;

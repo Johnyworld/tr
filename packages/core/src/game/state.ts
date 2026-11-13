@@ -53,6 +53,8 @@ export const factionStateSchema = z.strictObject({
   resources: z.record(z.string(), z.number().int().min(0)),
   morale: z.number().int().min(-3).max(3),
   cohesion: z.number().int().min(-3).max(3),
+  /** 다른 세력에 대한 지금 태도 (-3 ~ +3). 없으면 콘텐츠의 시작값 (이전 세이브). 이야기·클락(shift)으로 바뀐다 */
+  disposition: z.record(z.string(), z.number().int().min(-3).max(3)).optional(),
 });
 export type FactionState = z.infer<typeof factionStateSchema>;
 
@@ -272,6 +274,8 @@ export function createGameSchemas(s: Scenario) {
     /** NPC가 떠난다: toFaction이면 그 세력으로 넘어가고(도시에 남는다), null이면 도시를 떠난다 (기획서 10.4) */
     z.strictObject({ type: z.literal("npc_departed"), npcId: z.string(), toFaction: z.string().nullable() }),
     z.strictObject({ type: z.literal("faction_resource_changed"), factionId: z.string(), resource: z.string(), delta: z.number().int() }),
+    /** 세력 사이 태도가 바뀐다 (값은 코드가 계산한 새 값) */
+    z.strictObject({ type: z.literal("faction_disposition_changed"), from: z.string(), to: z.string(), value: z.number().int().min(-3).max(3) }),
     /**
      * 주인공이 무리에 들어간다 (무소속이면 가입, 무리에 있으면 옮김). 역할은 코드가 만든다 (game/customStart.ts joinRole, 기획서 12.5).
      * beliefs: 그 무리에서 처음 듣는 사정 (같은 계급 시나리오의 시작 지식)
@@ -622,6 +626,12 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       next.nextBeliefNo += event.beliefs.length;
       return next;
     }
+    case "faction_disposition_changed": {
+      const f = next.factions[event.from];
+      if (!f) return next;
+      f.disposition = { ...(f.disposition ?? {}), [event.to]: event.value };
+      return next;
+    }
     case "faction_resource_changed": {
       const f = next.factions[event.factionId];
       if (!f) return next;
@@ -938,6 +948,8 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     }
     case "clock_adjusted": {
       const clock = mustGet(next.clocks, event.clockId, "세력 클락");
+      // 다 차서 이미 일어난 일(태도가 바뀐 shift 클락)은 되돌리지 않는다
+      if (clock.filled >= clock.max) break;
       clock.filled = Math.max(0, Math.min(clock.max - 1, clock.filled + event.delta));
       break;
     }

@@ -285,3 +285,53 @@ describe("배역을 이름 없는 인물로 (엑스트라 틀)", () => {
     expect(env.store.getState().relations[id!]?.[s.playerId]?.trust).toBe(1);
   });
 });
+
+describe("효과: 무리 사이 태도, 몸 상태 (실제 콘텐츠)", () => {
+  it("faction_relation은 양쪽 태도를 바꾸고(-3~+3), body는 부상 트랙을 못 건드리고 죽음 전 단계에서 멈춘다", async () => {
+    const { resolve } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const { loadContent } = await import("../content/loader.ts");
+    const { disposition } = await import("../sim/war.ts");
+    const real = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+    const c = structuredClone(real);
+    const schema = createContentSchemas(c.scenario).storylet;
+    c.storylets = {
+      t: schema.parse({
+        id: "t",
+        title: "시험",
+        setup: "상황",
+        choices: [
+          {
+            id: "go",
+            label: "한다",
+            effects: [
+              { faction_relation: { from: "own", to: "faction_b", delta: -2 } },
+              { body: { track: "hunger", delta: 2 } },
+              { body: { track: "hunger", delta: 2 } },
+              { body: { track: "hunger", delta: 2 } },
+              { body: { track: "harm", delta: 2 } },
+            ],
+          },
+        ],
+      }),
+    };
+    const store = new InMemoryGameStore([createWorldEvent(c, "role_a_grunt", "w")]);
+    const ctx = { store, rng: createSeededRng(1), content: c };
+    runAfterTimeAdvance(ctx);
+    for (let i = 0; i < 6 && store.getState().activeStorylet?.id !== "t"; i++) {
+      executeTool("take_action", act({ activity: { kind: "rest", until: null } }), ctx);
+    }
+    expect(store.getState().activeStorylet?.id).toBe("t");
+    const before = disposition(c, "faction_a", "faction_b", store.getState());
+    expect(executeTool("resolve_storylet", { choice_id: "go" }, ctx).ok).toBe(true);
+    const s = store.getState();
+    expect(disposition(c, "faction_a", "faction_b", s)).toBe(Math.max(-3, before - 2));
+    expect(disposition(c, "faction_b", "faction_a", s)).toBe(Math.max(-3, (c.factions.faction_b!.disposition.faction_a ?? 0) - 2));
+    const hunger = c.scenario.condition_tracks.find((t) => t.id === "hunger")!;
+    const fatal = hunger.levels.findIndex((l) => l.fatal);
+    const at = hunger.levels.findIndex((l) => l.id === s.characters.player!.conditions.hunger);
+    expect(at).toBe((fatal >= 0 ? fatal : hunger.levels.length) - 1);
+    expect(s.characters.player!.conditions.harm).toBe(c.scenario.condition_tracks.find((t) => t.id === "harm")!.levels[0]!.id);
+    expect(s.characters.player!.dead).toBe(false);
+  });
+});

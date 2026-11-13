@@ -29,6 +29,8 @@ export type ClashSpec = { kind: "raid" | "skirmish" | "assault"; attacker: strin
 
 export type WarDayResult = WarWorld & {
   clashes: Clash[];
+  /** 오늘 태도가 바뀐 세력 (shift 클락이 찼다) */
+  shifts: { clockId: string; factionId: string; to: string; news: string }[];
   /** defer로 미뤄 둔 교전 (전투 장면으로 열 수 있는 것) */
   deferred: ClashSpec[];
 };
@@ -68,6 +70,7 @@ export function initialWarWorld(content: Content): WarWorld {
       resources: Object.fromEntries(content.scenario.resources.map((r) => [r.id, Math.round(f.resources[r.id] ?? 0)])),
       morale: f.morale,
       cohesion: f.cohesion,
+      disposition: { ...f.disposition },
     };
   }
   const zones: Record<string, ZoneState> = {};
@@ -86,8 +89,36 @@ export function neighbors(content: Content, zoneId: string): string[] {
   return [...out].sort();
 }
 
-export function disposition(content: Content, from: string, to: string): number {
-  return content.factions[from]?.disposition[to] ?? 0;
+/** from 세력이 to 세력을 보는 지금 태도. 세계 상태에 있으면 그것, 없으면 콘텐츠의 시작값 */
+export function disposition(content: Content, from: string, to: string, world?: { factions: Record<string, FactionState> } | null): number {
+  return world?.factions[from]?.disposition?.[to] ?? content.factions[from]?.disposition[to] ?? 0;
+}
+
+/** shift 클락이 찼다: 정해 둔 태도로 바꾼다. to가 strongest면 그때 전투원이 가장 많은 다른 세력 */
+function applyShift(world: WarWorld, content: Content, factionId: string, clockId: string, plan: { shift?: { from?: string; to: string; value: number }[]; news?: string }) {
+  const strongest = Object.entries(world.factions)
+    .filter(([id, f]) => id !== factionId && f.combatants > 0)
+    .sort(([a, x], [b, y]) => y.combatants - x.combatants || a.localeCompare(b))[0]?.[0];
+  let target = "";
+  for (const s of plan.shift ?? []) {
+    const to = s.to === "strongest" ? strongest : s.to;
+    const from = s.from ?? factionId;
+    if (!to || !world.factions[from]) continue;
+    target ||= to;
+    world.factions[from]!.disposition = { ...(world.factions[from]!.disposition ?? {}), [to]: s.value };
+  }
+  const name = (id: string) => content.factions[id]?.name ?? id;
+  const news = (plan.news ?? "{faction}의 태도가 달라졌다는 말이 돈다").replaceAll("{faction}", name(factionId)).replaceAll("{to}", target ? name(target) : "");
+  return { clockId, factionId, to: target, news };
+}
+
+/** 세력 클락 정의 (콘텐츠) */
+function planOf(content: Content, clockId: string) {
+  for (const f of Object.values(content.factions)) {
+    const p = f.plans.find((x) => x.id === clockId);
+    if (p) return p;
+  }
+  return undefined;
 }
 
 /** 무리의 자원이 며칠 치 남았는지 (소모가 없으면 Infinity) */
@@ -117,7 +148,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
   const next: WarWorld = structuredClone(world);
   const clashes: Clash[] = [];
   const deferred: ClashSpec[] = [];
-  if (!war) return { ...next, clashes, deferred };
+  if (!war) return { ...next, clashes, deferred, shifts: [] };
   const fightOrDefer = (spec: ClashSpec) => {
     if (options.defer?.(spec)) deferred.push(spec);
     else clashes.push(fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan));
@@ -165,8 +196,17 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
 
   // 3. 세력 클락
   const planned: { clockId: string; clock: ClockState }[] = [];
+  const shifts: WarDayResult["shifts"] = [];
   for (const [clockId, clock] of Object.entries(next.clocks).sort(([a], [b]) => a.localeCompare(b))) {
     if (!alive.includes(clock.factionId)) continue;
+    const plan = planOf(content, clockId);
+    if (plan?.kind === "shift") {
+      // 태도가 바뀌는 계획은 한 번 일어나고 끝난다 (찬 채로 둔다)
+      if (clock.filled >= clock.max) continue;
+      clock.filled += 1;
+      if (clock.filled >= clock.max) shifts.push(applyShift(next, content, clock.factionId, clockId, plan));
+      continue;
+    }
     clock.filled += 1;
     if (clock.filled >= clock.max) {
       clock.filled = 0; // 끝난 클락은 다시 시작한다 (기획서 10.4)
@@ -180,7 +220,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const target = content.locations[zoneId];
     if (!target || owner === clock.factionId) continue;
     if (owner === null) clashes.push(occupy(next, clock.factionId, zoneId, clockId));
-    else if (disposition(content, clock.factionId, owner) <= HOSTILE && target.kind !== "base") {
+    else if (disposition(content, clock.factionId, owner, next) <= HOSTILE && target.kind !== "base") {
       fightOrDefer({ kind: "assault", attacker: clock.factionId, defender: owner, zone: zoneId, plan: clockId });
     }
   }
@@ -214,7 +254,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     if (f.morale >= 0 && daysOfStock(content, f, war.ration.resource) >= 14 && rng() < REFUGEE_CHANCE) f.population += 1;
   }
 
-  return { ...next, clashes, deferred };
+  return { ...next, clashes, deferred, shifts };
 }
 
 /** 미뤄 둔 교전을 화면 밖에서 계산한다 (플레이어가 자리를 떴을 때) */
@@ -275,7 +315,7 @@ export function frontierTarget(world: WarWorld, content: Content, factionId: str
     .filter((z) => content.locations[z]?.kind !== "base")
     .filter((z) => {
       const owner = world.zones[z]?.owner ?? null;
-      return owner === null || (owner !== factionId && disposition(content, factionId, owner) <= HOSTILE);
+      return owner === null || (owner !== factionId && disposition(content, factionId, owner, world) <= HOSTILE);
     });
   const value = (z: string) => Object.values(content.locations[z]?.yields ?? {}).reduce<number>((n, x) => n + (x ?? 0), 0);
   const lost = (z: string) => Number(content.locations[z]?.owner === factionId);
@@ -299,7 +339,7 @@ function attackOptions(world: WarWorld, content: Content, attacker: FactionConte
       options.push({ kind: "occupy", defender: null, zone });
       continue;
     }
-    if (disposition(content, attacker.id, owner) > HOSTILE) continue;
+    if (disposition(content, attacker.id, owner, world) > HOSTILE) continue;
     if ((world.factions[owner]?.population ?? 0) <= 0) continue;
     options.push({ kind: "raid", defender: owner, zone }, { kind: "skirmish", defender: owner, zone });
     if (content.locations[zone]?.kind !== "base") options.push({ kind: "assault", defender: owner, zone });

@@ -155,10 +155,26 @@ function checkReferences(content: Content): string[] {
       if ("faction_resource" in e && !resources.has(e.faction_resource.resource)) problems.push(`storylets.${st.id}: 알 수 없는 자원 ${e.faction_resource.resource}`);
       if ("faction_resource" in e && e.faction_resource.faction !== "own" && !content.factions[e.faction_resource.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.faction_resource.faction}`);
       if ("npc_depart" in e && e.npc_depart.to_faction && !content.factions[e.npc_depart.to_faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.npc_depart.to_faction}`);
+      if ("faction_relation" in e) {
+        for (const f of [e.faction_relation.from, e.faction_relation.to]) if (f !== "own" && !content.factions[f]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${f}`);
+      }
+      if ("body" in e) {
+        if (e.body.track === content.scenario.harm_track) problems.push(`storylets.${st.id}: body로 부상 트랙을 바꿀 수 없다 (원칙 3)`);
+        else if (!content.scenario.condition_tracks.some((t) => t.id === e.body.track)) problems.push(`storylets.${st.id}: 알 수 없는 상태 트랙 ${e.body.track}`);
+      }
+      if ("join_faction" in e && !content.factions[e.join_faction.faction]) problems.push(`storylets.${st.id}: 알 수 없는 세력 ${e.join_faction.faction}`);
     }
     for (const f of st.when.factions ?? []) if (f !== "none" && !content.factions[f]) problems.push(`storylets.${st.id}.when.factions: 알 수 없는 세력 ${f}`);
     for (const [key, role] of Object.entries(st.cast)) {
       if (role.extra && !content.extras[role.extra]) problems.push(`storylets.${st.id}.cast.${key}: 알 수 없는 엑스트라 틀 ${role.extra}`);
+    }
+  }
+  for (const f of Object.values(content.factions)) {
+    for (const p of f.plans) {
+      for (const sh of p.shift ?? []) {
+        if (sh.to !== "strongest" && !content.factions[sh.to]) problems.push(`factions.${f.id}.plans.${p.id}: 알 수 없는 세력 ${sh.to}`);
+        if (sh.from && !content.factions[sh.from]) problems.push(`factions.${f.id}.plans.${p.id}: 알 수 없는 세력 ${sh.from}`);
+      }
     }
   }
   const custom = content.scenario.custom_start;

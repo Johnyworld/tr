@@ -54,6 +54,20 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       scheduled,
     });
     displays.push(...deliverNews(ctx, result.clashes));
+    // 무리의 태도가 바뀐 소식 (이탈, 편들기): 우리 무리 일이면 전해 듣고, 아니면 소문으로
+    for (const shift of result.shifts) {
+      const now = ctx.store.getState();
+      const player = now.characters[now.playerId];
+      if (!player || player.dead) break;
+      const ours = shift.factionId === player.factionId || shift.to === player.factionId;
+      const source: Belief["source"] = ours ? "report" : "rumor";
+      ctx.store.append({
+        type: "belief_added",
+        characterId: now.playerId,
+        belief: { id: `b_${now.nextBeliefNo}`, fact: sentence(shift.news), source, accuracy: "approximate", learnedAt: now.time, topic: WAR_TOPIC },
+      });
+      displays.push({ type: "belief", fact: sentence(shift.news), sourceLabel: BELIEF_SOURCE_LABELS[source] });
+    }
     // 하루가 지난 몸: 배급에 따른 허기, 감염 진행
     displays.push(...runDailyBody(ctx));
   }
@@ -186,7 +200,7 @@ export function factionOutlook(state: GameState, content: Content): FactionOutlo
   const others = Object.values(content.factions)
     .filter((f) => f.id !== player.factionId)
     .map((f) => {
-      const d = disposition(content, player.factionId, f.id);
+      const d = disposition(content, player.factionId, f.id, state);
       const stance = d <= HOSTILE ? "적대" : d >= 2 ? "연합" : "중립";
       return { id: f.id, name: f.name, public: f.public, stance, size: `약 ${Math.round(f.population / 10) * 10}명` };
     });
@@ -217,7 +231,7 @@ export function zoneOutlook(state: GameState, content: Content) {
     hostile: (() => {
       const owner = state.zones[zoneId]?.owner;
       const mine = state.characters[state.playerId]?.factionId;
-      return !!owner && !!mine && owner !== mine && disposition(content, mine, owner) <= HOSTILE;
+      return !!owner && !!mine && owner !== mine && disposition(content, mine, owner, state) <= HOSTILE;
     })(),
   };
 }

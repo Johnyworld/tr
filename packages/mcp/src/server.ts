@@ -257,7 +257,7 @@ export function createMcpServer(
         if (!result.isError) draft = null;
         return result;
       }
-      const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId, r.custom ?? undefined));
+      const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId, r.custom ?? undefined, r.options));
       if (result.isError) return result;
       return { ...result, content: [{ type: "text", text: `캐릭터를 만들었다. 월드 이야기와 지금 상황은 이미 했으니 되풀이하지 말고, 지금 만든 사람으로 바로 첫 장면을 서술한다.\n\n${result.content[0]?.text ?? ""}` }] };
     },

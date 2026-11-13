@@ -100,7 +100,9 @@ export const EXTRA_CAST_PREFIX = "@extra:";
 /** 배역을 고른다. 한 사람이 두 배역을 맡지 않는다. 채울 수 없으면 null */
 export function pickCast(state: GameState, content: Content, storylet: StoryletContent, rng: Rng | null): Record<string, string> | null {
   const cast: Record<string, string> = {};
-  const used = new Set<string>();
+  // 성인 주제 이야기는 배역도 모두 성인이어야 한다 (12-57)
+  const adultOk = (id: string) => !isMature(content, storylet) || isAdult(content, state.characters[id]);
+  const used = new Set<string>(Object.keys(state.characters).filter((id) => !adultOk(id)));
   for (const [key, role] of Object.entries(storylet.cast)) {
     // 이름 없는 인물 배역은 발동할 때 만든다 (storyletTools). 그때까지는 자리표시
     if (role.background) {
@@ -132,6 +134,12 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       continue;
     }
     if (role.extra) {
+      // 틀의 가장 어린 나이가 성인이 아니면 성인 주제 이야기에 쓰지 않는다
+      const t = content.extras[role.extra];
+      if (isMature(content, storylet) && (!t || t.age[0] < adultAge(content))) {
+        if (role.optional) continue;
+        return null;
+      }
       cast[key] = `${EXTRA_CAST_PREFIX}${role.extra}`;
       continue;
     }
@@ -147,11 +155,28 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
   return cast;
 }
 
+/** 성인 주제 이야기인지 (12-57) */
+export function isMature(content: Content, storylet: StoryletContent): boolean {
+  const tag = content.scenario.content_rating?.tag;
+  return !!tag && storylet.tags.includes(tag);
+}
+
+export function adultAge(content: Content): number {
+  return content.scenario.content_rating?.adult_age ?? 18;
+}
+
+/** 성인인지: 나이를 모르면 성인이 아닌 것으로 본다 */
+export function isAdult(content: Content, c: { age: number | null } | undefined): boolean {
+  return !!c && c.age !== null && c.age !== undefined && c.age >= adultAge(content);
+}
+
 /** 조건(when)이 지금(at) 맞는지 */
 export function conditionsMet(state: GameState, content: Content, storylet: StoryletContent, at: GameTime): boolean {
   const w = storylet.when;
   const player = state.characters[state.playerId];
   if (!player || player.dead) return false;
+  // 성인 주제: 세계의 수위가 켜져 있고 주인공이 성인일 때만 (12-57)
+  if (isMature(content, storylet) && (!state.options?.mature || !isAdult(content, player))) return false;
   // 외딴곳에서는 그곳을 직접 적은 공통 이야기만 (기획서 9.12)
   const here = state.playerZone ? content.locations[state.playerZone] : undefined;
   if (here?.isolated && storylet.tags.includes(WORLD_TAG) && !w.zones?.includes(here.id)) return false;

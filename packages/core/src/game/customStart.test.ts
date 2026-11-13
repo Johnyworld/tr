@@ -96,10 +96,10 @@ describe("자유 시나리오: 새 게임 흐름", () => {
     expect(describeNewGameStep(packs, confirm)).toContain("상관: 최선희");
     const remap = run(["post_apoc", "custom", "참모", base, "remap"]).draft;
     expect(newGameStep(remap)).toBe("custom_setup");
-    const name = run(["post_apoc", "custom", "참모", base, "confirm"]).draft;
+    const name = run(["post_apoc", "custom", "참모", base, "confirm", "off"]).draft;
     expect(newGameStep(name)).toBe("character");
     expect(describeNewGameStep(packs, name)).toContain("지도 위에서 고개를 든다");
-    const done = run(["post_apoc", "custom", "참모", base, "confirm", "한서진", "female", "random", "none", "start"]);
+    const done = run(["post_apoc", "custom", "참모", base, "confirm", "off", "한서진", "female", "random", "none", "start"]);
     expect(done.done).toBe(true);
     if (done.done) expect(done.custom).toMatchObject({ role: { id: "custom", rank: "officer" }, background: base.background });
   });

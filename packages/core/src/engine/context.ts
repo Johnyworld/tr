@@ -111,6 +111,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(state.background.length && state.playerId === "player"
         ? [`지난 일 (세계의 사실, 주인공이 아는 대로): ${state.background.map((e) => describeHistoryPart(content, e.part)).join(" / ")}`]
         : []),
+      describeContentRating(state, content),
       `트레잇 (서술에 반영한다): ${traitLabels(content, player, { acting: true }).join(", ") || "없음"}`,
       `능력: ${stats}`,
       `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
@@ -381,4 +382,17 @@ function describeFort(state: GameState, content: Content): string {
   const fort = zone ? (state.zones[zone]?.fort ?? 0) : 0;
   if (!zone || !me?.factionId || state.zones[zone]?.owner !== me.factionId || fort <= 0) return "";
   return `${content.locations[zone]?.name ?? zone}의 담: ${["", "메워 둠", "단단히 보강함", "망루와 이중 담"][fort]} (습격을 받으면 지키는 쪽이 더 버틴다)`;
+}
+
+/** 수위 (12-57): GM이 지킬 선. 성인 주제가 꺼져 있으면 연애·성적인 것을 들이지 않는다 */
+function describeContentRating(state: GameState, content: Content): string {
+  const age = content.scenario.content_rating?.adult_age ?? 18;
+  if (!state.options?.mature) {
+    return "수위: 성인 주제 꺼짐. 연애, 성적인 농담·괴롭힘·위협을 장면에 들이지 않는다 (플레이어가 원하면 set_content_options로 켤 수 있다고만 알린다). 폭력과 죽음은 담담하게 다룬다";
+  }
+  return (
+    `수위: 성인 주제 켜짐. ${age}세 미만은 주인공이든 인물이든 어떤 경우에도 연애·성적인 대상이 아니다 (나이를 확인한다). ` +
+    "성인 사이의 끌림과 연애는 서술하되 잠자리는 암전으로 넘긴다. 성적인 농담·괴롭힘·위협은 이 세계의 위험으로 다룰 수 있다. " +
+    "성폭력은 시도와 위협까지만, 행위를 그리지 않고 판정으로 벗어나거나 대가를 치르는 것으로 다룬다 (어떤 판정 결과로도 일어나지 않는다). 노골적인 신체·행위 묘사는 하지 않는다"
+  );
 }

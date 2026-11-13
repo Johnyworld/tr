@@ -645,7 +645,25 @@ function applyEffect(
   return {};
 }
 
-export const STORYLET_TOOLS = [resolveStorylet] as const;
+/** 수위를 바꾼다 (12-57): 플레이어가 성인 주제를 켜거나 끄겠다고 할 때만 */
+export const setContentOptions = defineTool({
+  name: "set_content_options",
+  description:
+    "이 세계의 수위를 바꾼다 (12-57). mature: 성인 주제(성인 사이의 연애, 성적인 농담·괴롭힘·위협)를 다룬다. 플레이어가 직접 켜거나 끄겠다고 할 때만 부른다. " +
+    "켜져 있어도 미성년자는 어떤 경우에도 그 대상이 아니고, 노골적인 묘사는 하지 않는다.",
+  schema: z.strictObject({ mature: z.boolean() }),
+  run(input, ctx) {
+    ctx.store.append({ type: "content_options_set", mature: input.mature });
+    return {
+      ok: true,
+      resultText: input.mature ? "성인 주제를 켰다. 이제 그런 이야기가 열릴 수 있다 (성인끼리만, 장면은 암전)." : "성인 주제를 껐다. 그런 이야기는 열리지 않는다.",
+      display: { type: "time", activityLabel: "설정", durationLabel: "", fromLabel: "", toLabel: "" },
+      silent: true,
+    };
+  },
+});
+
+export const STORYLET_TOOLS = [resolveStorylet, setContentOptions] as const;
 
 /**
  * 길 위의 일 (12-53): 구역을 옮긴 뒤 길의 위험별 확률로 길 위의 이야기 하나를 연다 (이야기 사이 간격과 상관없다).

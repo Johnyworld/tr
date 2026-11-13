@@ -185,7 +185,8 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect(scenario.text).toContain("청솔형제단의 하급 전투원");
     expect((await call("create_character", { back: true })).text).toContain("월드 고르기");
     await call("create_character", { answer: "무너진 도시, 가람" });
-    const name = await call("create_character", { answer: "청솔형제단의 하급 전투원" });
+    expect((await call("create_character", { answer: "청솔형제단의 하급 전투원" })).text).toContain("수위");
+    const name = await call("create_character", { answer: "off" });
     expect(name.text).toContain("지금 상황");
     expect(name.text).toContain("간이침대");
     expect(name.text).toContain("이름");
@@ -444,7 +445,8 @@ describe("자유 시나리오 (MCP)", () => {
     const bad = await call("create_character", { custom_start: { ...input, rank: "leader" } });
     expect(bad.isError).toBe(true);
     expect((await call("create_character", { custom_start: input })).text).toContain("상관: 한도윤");
-    expect((await call("create_character", { answer: "confirm" })).text).toContain("분대원들을 깨운다");
+    expect((await call("create_character", { answer: "confirm" })).text).toContain("수위");
+    expect((await call("create_character", { answer: "off" })).text).toContain("분대원들을 깨운다");
     for (const a of ["강민", "male", "random", "none"]) await call("create_character", { answer: a });
     const done = await call("create_character", { answer: "start" });
     expect(done.isError).toBe(false);

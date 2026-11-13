@@ -36,7 +36,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 27;
+export const SAVE_SCHEMA_VERSION = 28;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -248,6 +248,8 @@ export function createGameSchemas(s: Scenario) {
     keptExtras: z.record(z.string(), z.string()).default({}),
     /** 주인공의 지난 일 중 세계의 사실이 된 것 (배경 부품, 기획서 12.6). 코드가 만든 인물은 characterId */
     background: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })).default([]),
+    /** 이 세계의 수위 (12-57). mature: 성인 주제(연애·성적 위협)를 다룬다. 기본은 끔 */
+    options: z.strictObject({ mature: z.boolean().default(false) }).default({ mature: false }),
     /** 구역에 맡겨 둔 물건 (구역 id → 아이템 → 수량). 그 구역을 떠날 때 돌려받는다 (12-54) */
     deposits: z.record(z.string(), z.record(z.string(), z.number().int().positive())).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
@@ -358,6 +360,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     /** NPC의 계급이 바뀐다 (지도부 교체, 강등) */
     z.strictObject({ type: z.literal("npc_rank_changed"), npcId: z.string(), rank: z.string() }),
+    /** 수위를 정한다 (새 게임에서, 또는 플레이어가 바꾸면, 12-57) */
+    z.strictObject({ type: z.literal("content_options_set"), mature: z.boolean() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
     z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()) }),
     z.strictObject({ type: z.literal("player_released"), returned: z.boolean() }),
@@ -678,6 +682,7 @@ export const EMPTY_STATE: GameState = {
   keptExtras: {},
   commanderOverride: null,
   lastRoute: null,
+  options: { mature: false },
   deposits: {},
   background: [],
   companions: [],
@@ -978,6 +983,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
       return next;
     }
+    case "content_options_set":
+      next.options = { ...next.options, mature: event.mature };
+      return next;
     case "player_captured": {
       const me = mustGet(next.characters, next.playerId, "캐릭터");
       me.captive = { by: event.by, zone: event.zone, since: state.time };

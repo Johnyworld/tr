@@ -537,6 +537,10 @@ recovery:
   # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
   first_aid: { occupation: medic, skill: first_aid, min: 1 }
 
+# 수위 (12-57): 성인 주제(연애·성적 위협) 이야기의 태그와 나이 하한. 세계의 수위가 꺼져 있으면 이 태그 이야기는 열리지 않고,
+# 켜져 있어도 주인공과 배역이 모두 이 나이 이상이어야 열린다
+content_rating: { tag: mature, adult_age: 18 }
+
 # 포로 (12-55): 진 전투에서 물러나지 않았으면 부상 단계별 확률로 붙잡힌다 (항복하면 반드시). 갇힌 동안은 태그 captivity 이야기만 열린다
 captivity:
   tag: captivity

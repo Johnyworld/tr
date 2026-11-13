@@ -126,6 +126,7 @@ export class WorldManager {
     choice?: CharacterChoice,
     packId?: string,
     custom?: { role: RoleContent; background: string[]; history?: HistoryPart[] },
+    options?: { mature: boolean },
   ): GameWorld {
     const content = packId ? this.pack(packId) : this.content;
     const role = custom ? custom.role.id : (roleId ?? Object.keys(content.roles)[0]);
@@ -144,6 +145,8 @@ export class WorldManager {
       // 첫날의 임무 후보, 소문 기준일, 시작 구역. 자유 시나리오의 역할은 이벤트를 넣은 뒤에야 콘텐츠에 보이므로 새로 받는다
       // 다른 판에서 얻은 해금을 이 세계에도 (기획서 9.12)
       this.#inheritUnlocks(world);
+      // 수위 (12-57). 기본은 끔
+      if (options?.mature) ctx.store.append({ type: "content_options_set", mature: true });
       // 배경 부품: 플레이어가 쓴 지난 일 중 세계의 사실이 되는 것 (기획서 12.6)
       applyBackground(world.ctx(), custom?.history ?? []);
       // 처음부터 함께 다니는 사람·동물 (떠돌이의 가족 등, 기획서 7.9)

@@ -53,7 +53,7 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터", () => {
     expect(scenario).toContain("항구가 얼어붙은 지 세 해째.");
     expect(scenario).toContain("항구의 정찰병");
     expect(scenario).not.toContain("청솔형제단의 하급 전투원");
-    const name = describeNewGameStep(packs, run(["second_world", "항구의 정찰병"]).draft);
+    const name = describeNewGameStep(packs, run(["second_world", "항구의 정찰병", "off"]).draft);
     expect(name).toContain("부두 창고에서 눈을 뜬다.");
     expect(name).toContain("이름");
   });
@@ -62,13 +62,14 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터", () => {
     expect(answerNewGame(packs, newGameDraft(), "화성", createSeededRng(1)).ok).toBe(false);
     const { draft } = run(["second_world"]);
     expect(answerNewGame(packs, draft, "청솔형제단의 하급 전투원", createSeededRng(1)).ok).toBe(false); // 다른 월드의 시나리오
-    const named = run(["second_world", "harbor_scout", "서진"]).draft;
-    expect(newGameStep(backNewGame(backNewGame(named)))).toBe("scenario");
-    expect(newGameStep(backNewGame(backNewGame(backNewGame(named))))).toBe("world");
+    const named = run(["second_world", "harbor_scout", "off", "서진"]).draft;
+    expect(newGameStep(backNewGame(backNewGame(named)))).toBe("content");
+    expect(newGameStep(backNewGame(backNewGame(backNewGame(named))))).toBe("scenario");
+    expect(newGameStep(backNewGame(backNewGame(backNewGame(backNewGame(named)))))).toBe("world");
   });
 
   it("끝까지 고르면 월드·시나리오·캐릭터를 돌려준다", () => {
-    const r = run(["second_world", "harbor_scout", "서진", "female", "random", "none", "start"]);
+    const r = run(["second_world", "harbor_scout", "off", "서진", "female", "random", "none", "start"]);
     expect(r.done).toBe(true);
     if (r.done) expect(r).toMatchObject({ packId: "second_world", roleId: "harbor_scout", choice: { name: "서진", gender: "female" } });
   });

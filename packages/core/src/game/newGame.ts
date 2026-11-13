@@ -36,11 +36,15 @@ export type NewGameDraft = {
   /** 확인된 자유 시나리오의 역할 (사망 뒤 새 캐릭터면 세이브에 든 것) */
   customRole?: RoleContent | null;
   character: CreationDraft;
+  /** 이 세계의 수위 (12-57). 새 세계면 캐릭터 만들기 전에 묻는다 (월드가 content_rating을 열었을 때) */
+  options?: { mature: boolean } | null;
+  /** 고른 월드가 수위 설정을 여는지 */
+  contentRating?: boolean;
   /** 월드별로 열린 해금 (모든 판에 남는 것, 기획서 9.12). 해금이 필요한 시나리오를 보여 줄지 정한다 */
   unlocked?: Record<string, string[]>;
 };
 
-export type NewGameStep = "world" | "scenario" | "custom_story" | "custom_setup" | "custom_confirm" | "character";
+export type NewGameStep = "world" | "scenario" | "custom_story" | "custom_setup" | "custom_confirm" | "content" | "character";
 
 export function newGameDraft(unlocked: Record<string, string[]> = {}): NewGameDraft {
   return { mode: "new_world", packId: null, roleId: null, character: newCreationDraft("new_world"), unlocked };
@@ -59,6 +63,7 @@ export function newGameStep(draft: NewGameDraft): NewGameStep {
     if (!draft.custom.input) return "custom_setup";
     if (!draft.custom.confirmed) return "custom_confirm";
   }
+  if (draft.mode === "new_world" && draft.options === undefined && draft.contentRating) return "content";
   return "character";
 }
 
@@ -78,6 +83,8 @@ export type NewGameReply =
       packId: string;
       roleId: string;
       choice: CharacterChoice;
+      /** 이 세계의 수위 (12-57) */
+      options: { mature: boolean };
       /** 자유 시나리오면 만든 역할과 캐릭터의 지난 삶 기억 */
       custom: { role: RoleContent; background: string[]; history: HistoryPart[] } | null;
     }
@@ -92,7 +99,7 @@ export function answerNewGame(packs: ReadonlyMap<string, Content>, draft: NewGam
   if (step === "world") {
     const hit = [...packs.values()].map(worldInfo).find((w) => norm(w.id) === norm(text) || norm(w.title) === norm(text));
     if (!hit) return { ok: false, error: `월드는 ${[...packs.values()].map((c) => worldInfo(c).title).join(", ")} 중 하나다.` };
-    return { ok: true, draft: { ...draft, packId: hit.id }, done: false };
+    return { ok: true, draft: { ...draft, packId: hit.id, contentRating: !!packs.get(hit.id)?.scenario.content_rating }, done: false };
   }
   const content = packs.get(draft.packId!)!;
   if (step === "scenario") {
@@ -108,6 +115,12 @@ export function answerNewGame(packs: ReadonlyMap<string, Content>, draft: NewGam
   }
   if (step === "custom_setup") {
     return { ok: false, error: "이 단계는 플레이어의 글을 옮겨 create_character(custom_start: {...})로 넘긴다." };
+  }
+  if (step === "content") {
+    const v = norm(text);
+    if (["on", "켜기", "켠다", "예", "네"].includes(v)) return { ok: true, draft: { ...draft, options: { mature: true } }, done: false };
+    if (["off", "끄기", "끈다", "아니오", "아니요"].includes(v)) return { ok: true, draft: { ...draft, options: { mature: false } }, done: false };
+    return { ok: false, error: "켜기(on) 또는 끄기(off) 중에서 고른다." };
   }
   if (step === "custom_confirm") {
     const v = norm(text);
@@ -127,7 +140,7 @@ export function answerNewGame(packs: ReadonlyMap<string, Content>, draft: NewGam
     draft.mode === "new_world" && draft.customRole
       ? { role: draft.customRole, background: draft.custom?.input?.background ?? [], history: draft.custom?.input?.history ?? [] }
       : null;
-  return { ok: true, draft: next, done: true, packId: draft.packId!, roleId: draft.roleId!, choice: r.choice, custom };
+  return { ok: true, draft: next, done: true, packId: draft.packId!, roleId: draft.roleId!, choice: r.choice, custom, options: draft.options ?? { mature: false } };
 }
 
 /** 자유 시나리오: GM이 플레이어의 글을 옮긴 고르기. 코드가 검증한다 */
@@ -159,6 +172,7 @@ function scenarioOptions(content: Content, unlocked: readonly string[] = []): { 
 export function backNewGame(draft: NewGameDraft): NewGameDraft {
   if (draft.character.answers.length > 0) return { ...draft, character: backCreation(draft.character) };
   if (draft.mode === "heir") return draft;
+  if (draft.options !== undefined && draft.contentRating) return { ...draft, options: undefined };
   const c = draft.custom;
   if (draft.roleId === CUSTOM_ROLE_ID && c) {
     if (c.confirmed) return { ...draft, custom: { ...c, confirmed: false }, customRole: null };
@@ -229,6 +243,19 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
       describeCustomStartOptions(content),
       "",
       "opening은 시작 장소에서 이야기가 시작되는 순간을 2인칭으로 한두 문장, background는 플레이어가 쓴 지난 삶을 캐릭터의 기억 몇 문장으로 (세계의 사실이 아니라 이 사람의 기억이다).",
+    ].join("\n");
+  }
+  if (step === "content") {
+    const age = content.scenario.content_rating?.adult_age ?? 18;
+    return [
+      "## 새 게임: 수위",
+      "물을 것: 이 세계에서 성인 주제를 다룰지. 짧게 설명하고 고르게 한다.",
+      `- 켜기: 성인 사이의 끌림과 연애(장면은 암전으로 넘긴다), 성적인 농담·괴롭힘·위협(시도까지만, 행위는 그리지 않는다)이 이야기에 나올 수 있다. ${age}세 미만은 주인공이든 인물이든 어떤 경우에도 그 대상이 되지 않는다. 노골적인 묘사는 하지 않는다.`,
+      "- 끄기: 그런 이야기는 나오지 않는다 (기본). 폭력과 죽음, 생존의 잔혹함은 어느 쪽이든 나온다.",
+      "게임 중에도 바꿀 수 있다 (플레이어가 말하면 set_content_options).",
+      '보기 (클릭으로 고르는 도구가 있으면 그것으로): 끄기 → "off" / 켜기 → "on"',
+      "",
+      FOOTER,
     ].join("\n");
   }
   if (step === "custom_confirm") {

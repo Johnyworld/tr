@@ -538,6 +538,11 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
+     * 수위 (12-57): 성인 주제(연애·성적 위협)를 다루는 이야기의 태그와 나이 하한.
+     * 세계의 options.mature가 꺼져 있으면 그 태그 이야기는 열리지 않고, 켜져 있어도 주인공과 배역이 모두 adult_age 이상이어야 열린다
+     */
+    content_rating: z.strictObject({ tag: id, adult_age: z.number().int().min(18) }).optional(),
+    /**
      * 포로 (12-55). 없으면 주인공이 붙잡히지 않고 포로를 다루는 규칙도 없다
      */
     captivity: z

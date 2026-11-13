@@ -144,14 +144,17 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
   const relation = state.relations[c.id]?.[player.id] ?? NEUTRAL_RELATION;
   const attitude = RELATION_AXES.map((axis) => `${RELATION_AXIS_LABELS[axis]} ${relationLabel(relation[axis])}`).join(", ");
   const template = content.extras[ex.template];
+  const animal = template?.animal === true;
   return [
-    `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankLabel(content.scenario, c.rank)}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
+    animal
+      ? `### ${headingAs(state, content, player.id, c.id)} (${c.id})`
+      : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankLabel(content.scenario, c.rank)}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
     `겉모습: ${ex.look}`,
     `상태: ${describeConditions(content.scenario, c)} / 지닌 것: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
-    `[GM 전용: 연기에만 쓴다] 이름 없는 인물 (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
+    `[GM 전용: 연기에만 쓴다] ${animal ? "동물" : "이름 없는 인물"} (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
     `트레잇: ${traitLabels(content, c, { acting: true }).join(", ") || "-"}`,
     ...attractionNotes(content, c, player),
-    ...nameNotes(state, player.id, c.id),
+    ...(animal ? [] : nameNotes(state, player.id, c.id)),
   ]
     .filter(Boolean)
     .join("\n");

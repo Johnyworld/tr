@@ -41,6 +41,8 @@ export function nameAs(state: GameState, content: Content, viewer: string, targe
 export function headingAs(state: GameState, content: Content, viewer: string, target: string): string {
   const c = state.characters[target];
   if (!c) return target;
+  // 동물은 이름을 나누지 않는다 (호칭이 이름)
+  if (c.extra && content.extras[c.extra.template]?.animal) return `${c.extra.label} · 동물`;
   if (!knowsName(state, viewer, target)) return `${aliasOf(state, content, target)} (이름 모름)`;
   return c.extra ? `${c.name} (${c.extra.label})` : c.name;
 }

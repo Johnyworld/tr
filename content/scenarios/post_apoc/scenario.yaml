@@ -532,6 +532,10 @@ recovery:
   natural_max_level: serious
   # 치료사에게 받으면 (하루 한 번) 트랙별로 낫는 단계
   healer: { harm: 1, infection: 1, disease: 1 }
+  # 무리의 돌봄 (12-52): 의무병 한 사람이 하루 두 명까지, 무리의 의약품으로. 부상 한 단계 1, 드러난 감염 떼기 2
+  faction_care: { occupation: medic, resource: medicine, per_medic: 2, infection_cost: 2 }
+  # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
+  first_aid: { occupation: medic, skill: first_aid, min: 1 }
 
 # 쓰면 몸이 나아지는 물건 (take_action.use_item): 아이템 → 트랙 → 나아지는 단계 (*임시*)
 consumables:

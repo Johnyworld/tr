@@ -127,7 +127,12 @@ export function createTakeActionSchema(s: Scenario) {
       .describe("몸 상태가 나아지는 물건을 쓰면 그 아이템 id (먹을 것, 구급상자, 약 등. 가진 것만). 효과는 시스템이 정한다. 아니면 null"),
     treatment: z
       .strictObject({
-        item: z.string().nullable().describe("치료에 쓸 아이템 id (구급상자 등). 장면에 있는 치료사에게 받으면 null"),
+        item: z.string().nullable().describe("치료에 쓸 아이템 id (구급상자 등). 장면에 있는 치료사에게 받거나, 다른 사람을 아이템 없이 돌보면 null"),
+        target: z
+          .string()
+          .nullable()
+          .default(null)
+          .describe("다른 사람을 치료하면 그 사람 id (장면에 있어야 한다. 아이템 없이는 의무병이나 응급처치를 익힌 사람만). 주인공 자신이면 null"),
       })
       .nullable()
       .default(null)
@@ -341,7 +346,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
 
   // 1-1-1. 치료 (낫는 정도는 시스템이 정한다)
   for (const [request, run] of [
-    [input.treatment, () => applyTreatment(ctx, input.treatment!.item)],
+    [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target)],
     [input.use_item, () => useItem(ctx, input.use_item!)],
   ] as const) {
     if (!request) continue;

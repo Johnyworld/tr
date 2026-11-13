@@ -526,6 +526,15 @@ export const scenarioFileSchema = z
         natural_max_level: id,
         /** 치료사(장면에 있는 healer NPC)에게 받으면 트랙별로 낫는 단계 수. 하루에 한 번 */
         healer: z.record(id, z.number().int().min(0)),
+        /**
+         * 무리의 돌봄 (12-52): 무리에 이 직분(occupation)의 인물이 있으면, 하루마다 무리 자원(resource)을 써서 다친 사람을 돌본다.
+         * 한 사람이 per_medic명까지. 부상 한 단계에 자원 1, 드러난 감염을 떼는 데 infection_cost
+         */
+        faction_care: z
+          .strictObject({ occupation: id, resource: id, per_medic: z.number().int().min(1), infection_cost: z.number().int().min(1) })
+          .optional(),
+        /** 주인공이 아이템 없이 다른 사람을 돌볼 수 있는 조건 (이 직분이거나 이 스킬이 min 이상), 하루에 한 사람 한 번, 부상 한 단계 */
+        first_aid: z.strictObject({ occupation: id.optional(), skill: id, min: z.number().int() }).optional(),
       })
       .optional(),
     /** 쓰면 몸 상태가 나아지는 아이템: 아이템 → 상태 트랙 → 나아지는 단계 수 (take_action.use_item) */

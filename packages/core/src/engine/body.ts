@@ -85,7 +85,7 @@ export function isIncapacitated(content: Content, c: Character): boolean {
 }
 
 /** 소모품을 쓴다 (구급상자, 항생제, 통조림 등). 나아질 데가 없으면 쓰지 않는다 */
-export function useItem(ctx: ToolContext, item: string): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+export function useItem(ctx: ToolContext, item: string, targetId?: string | null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const { store, content } = ctx;
   const state = store.getState();
   const player = state.characters[state.playerId]!;
@@ -93,13 +93,17 @@ export function useItem(ctx: ToolContext, item: string): { ok: true; lines: stri
   const effects = content.scenario.consumables[item];
   if (!effects) return { ok: false, error: `${josa(name, "은/는")} 써서 몸이 나아지는 물건이 아니다 (가능: ${Object.keys(content.scenario.consumables).join(", ")}).` };
   if ((player.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(name, "이/가")} 없다.` };
-  const needed = Object.keys(effects).some((t) => shownIndex(ctx, state, player.id, t) > 0);
+  // 다른 사람에게 쓴다 (12-52): 장면에 있는 살아 있는 사람만
+  const target = targetId && targetId !== player.id ? targetId : player.id;
+  if (target !== player.id && (!state.scene.present.includes(target) || state.characters[target]?.dead)) return { ok: false, error: "그 사람이 장면에 없다." };
+  // 겉으로 드러난 것만 본다 (숨은 잠복기는 주인공도 모른다)
+  const needed = Object.keys(effects).some((t) => shownIndex(ctx, state, target, t) > 0);
   if (!needed) return { ok: false, error: `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.` };
   store.append({ type: "item_consumed", holder: player.id, itemId: item, quantity: 1 });
-  const lines = [`${josa(name, "을/를")} 썼다.`];
+  const lines = [target === player.id ? `${josa(name, "을/를")} 썼다.` : `${playerCalls(state, content, target)}에게 ${josa(name, "을/를")} 썼다.`];
   const displays: ToolDisplayEvent[] = [];
   for (const [t, steps] of Object.entries(effects)) {
-    const c = changeCondition(ctx, player.id, t, -steps, item, name);
+    const c = changeCondition(ctx, target, t, -steps, item, name);
     if (c?.line) lines.push(c.line);
     if (c?.display) displays.push(c.display);
   }
@@ -107,8 +111,9 @@ export function useItem(ctx: ToolContext, item: string): { ok: true; lines: stri
 }
 
 /** 치료사에게 치료받는다 (하루 한 번). 아이템이면 useItem */
-export function applyTreatment(ctx: ToolContext, item: string | null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
-  if (item) return useItem(ctx, item);
+export function applyTreatment(ctx: ToolContext, item: string | null, targetId: string | null = null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+  if (item) return useItem(ctx, item, targetId);
+  if (targetId && targetId !== ctx.store.getState().playerId) return firstAid(ctx, targetId);
   const recovery = ctx.content.scenario.recovery;
   if (!recovery) return { ok: false, error: "이 시나리오에는 치료 규칙이 없다." };
   const state = ctx.store.getState();
@@ -361,4 +366,84 @@ export function runDailyNerves(ctx: ToolContext): ToolDisplayEvent[] {
   if (ctx.rng() >= chance) return [];
   const c = changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 잠을 잤다" : "곁에 사람이 있었다");
   return c?.display ? [c.display] : [];
+}
+
+/**
+ * 주인공이 아이템 없이 다른 사람을 돌본다 (12-52): 의무병이거나 응급처치를 익힌 사람만. 한 사람에게 하루 한 번, 부상 한 단계
+ */
+function firstAid(ctx: ToolContext, targetId: string): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+  const { store, content } = ctx;
+  const rule = content.scenario.recovery?.first_aid;
+  const state = store.getState();
+  const me = state.characters[state.playerId]!;
+  const target = state.characters[targetId];
+  if (!rule) return { ok: false, error: "이 월드에서는 아이템 없이 남을 치료할 수 없다." };
+  if (!target || target.dead || !state.scene.present.includes(targetId)) return { ok: false, error: "그 사람이 장면에 없다." };
+  const skilled = (rule.occupation && me.occupation?.id === rule.occupation) || (me.skills[rule.skill] ?? -9) >= rule.min;
+  if (!skilled) return { ok: false, error: "아이템 없이 남을 꿰매고 돌볼 줄 모른다. 치료 아이템을 쓰거나 치료사를 데려온다." };
+  const harm = harmTrack(content.scenario);
+  if (shownIndex(ctx, state, targetId, harm.id) <= 0) return { ok: false, error: "그 사람은 다친 데가 없다." };
+  if (state.recovery.lastHealerDay[targetId] === dayOf(state.time)) return { ok: false, error: "그 사람은 오늘 이미 치료를 받았다." };
+  const c = changeCondition(ctx, targetId, harm.id, -1, "healer", `${me.name}의 치료`);
+  return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 상처를 돌봤다.`, ...(c?.line ? [c.line] : [])], displays: c?.display ? [c.display] : [] };
+}
+
+/**
+ * NPC가 낫는다 (12-52): 하루마다.
+ * - 저절로: 주인공과 같은 규칙 (새 부상 없이 natural_days가 지나면 한 단계, natural_max_level까지). 붙잡힌 사람은 낫지 않는다
+ * - 무리의 돌봄: 무리에 의무병(faction_care.occupation)이 있으면 무리의 의약품을 써서 가장 많이 다친 사람부터 돌본다. 드러난 감염도 뗀다
+ * 장면에 있는 사람의 보이는 변화만 화면에 알린다
+ */
+export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
+  const { store, content } = ctx;
+  const recovery = content.scenario.recovery;
+  if (!recovery) return [];
+  const displays: ToolDisplayEvent[] = [];
+  const show = (c: Change | null, id: string) => {
+    if (c?.display && store.getState().scene.present.includes(id)) displays.push(c.display);
+  };
+  const harm = harmTrack(content.scenario);
+  const maxIndex = harm.levels.findIndex((l) => l.id === recovery.natural_max_level);
+  const npcs = () => Object.values(store.getState().characters).filter((c) => c.id !== store.getState().playerId && !c.dead && !c.away);
+  for (const c of npcs()) {
+    if (c.captive) continue;
+    const state = store.getState();
+    const index = harm.levels.findIndex((l) => l.id === c.conditions[harm.id]);
+    if (index <= 0 || index > maxIndex) continue;
+    const since = state.recovery.lastChangeAt[c.id] ?? 0;
+    if (state.time - since < recovery.natural_days * MINUTES_PER_DAY) continue;
+    show(changeCondition(ctx, c.id, harm.id, -1, "rest", "쉬면서 나음"), c.id);
+  }
+  const care = recovery.faction_care;
+  const infection = content.scenario.body?.infection;
+  if (!care) return displays;
+  for (const factionId of Object.keys(store.getState().factions)) {
+    const members = npcs().filter((c) => c.factionId === factionId && !c.captive);
+    const medics = members.filter((c) => c.occupation?.id === care.occupation && !isIncapacitated(content, c)).length;
+    let slots = medics * care.per_medic;
+    if (slots === 0) continue;
+    const severity = (c: (typeof members)[number]) => harm.levels.findIndex((l) => l.id === c.conditions[harm.id]);
+    for (const c of [...members].sort((a, b) => severity(b) - severity(a) || a.id.localeCompare(b.id))) {
+      if (slots <= 0) break;
+      const stock = () => store.getState().factions[factionId]?.resources[care.resource] ?? 0;
+      let treated = false;
+      if (severity(c) > 0 && stock() >= 1) {
+        store.append({ type: "faction_resource_changed", factionId, resource: care.resource, delta: -1 });
+        show(changeCondition(ctx, c.id, harm.id, -1, "healer", "무리 의무실의 치료"), c.id);
+        treated = true;
+      }
+      // 드러난 감염 (잠복은 의무병도 모른다)
+      if (infection) {
+        const t = trackOf(content.scenario, infection.track);
+        const at = t.levels.findIndex((l) => l.id === store.getState().characters[c.id]!.conditions[t.id]);
+        if (at > 0 && !t.levels[at]!.hidden && stock() >= care.infection_cost) {
+          store.append({ type: "faction_resource_changed", factionId, resource: care.resource, delta: -care.infection_cost });
+          show(changeCondition(ctx, c.id, t.id, -at, "healer", "무리 의무실의 약"), c.id);
+          treated = true;
+        }
+      }
+      if (treated) slots--;
+    }
+  }
+  return displays;
 }

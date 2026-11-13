@@ -4,7 +4,7 @@ import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
 import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, rationLevel, simulateWarDay } from "../sim/war.ts";
 import { playerInvolvement, scheduleTime } from "./battleTools.ts";
-import { runDailyBody, runDailyNpcBody } from "./body.ts";
+import { runDailyBody, runDailyNpcBody, runNpcRecovery } from "./body.ts";
 import { seasonAt, seasonLabel, seasonOfDay } from "../sim/season.ts";
 import { fill, josa, sentence } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
@@ -70,6 +70,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     }
     // 하루가 지난 몸: 배급에 따른 허기, 감염 진행
     displays.push(...runDailyBody(ctx));
+    // NPC도 낫는다: 저절로, 그리고 무리 의무실의 돌봄 (12-52). 병이 진행되기 전에 돌보므로, 오늘 드러난 열은 하루를 넘긴 뒤에야 의무실이 손쓴다
+    displays.push(...runNpcRecovery(ctx));
     displays.push(...runDailyNpcBody(ctx));
   }
   return displays;

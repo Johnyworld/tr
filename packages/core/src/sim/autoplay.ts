@@ -287,7 +287,15 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     } else {
       out = tool("take_action", { ...base, intent: "기다림", activity: { kind: pick(rng, ["sleep", "wait", "guard_duty"]), until: null } });
     }
-    if (!out.ok) stats.errors.push(`행동: ${out.error}`);
+    if (!out.ok && out.error.includes("짐이 너무 무겁다")) {
+      // 플레이어처럼: 들고 있지 않은 것 중 가장 무거운 것을 내려놓는다
+      const p = world.state().characters[world.state().playerId]!;
+      const worn = new Set(Object.values(p.equipped ?? {}).filter(Boolean));
+      const heavy = Object.entries(p.inventory)
+        .filter(([id, n]) => n > 0 && !worn.has(id))
+        .sort((a, b) => (content.items[b[0]]?.weight ?? 0) * b[1] - (content.items[a[0]]?.weight ?? 0) * a[1])[0];
+      if (heavy) tool("transfer_item", { from: p.id, to: "scene", item_id: heavy[0], quantity: heavy[1] });
+    } else if (!out.ok) stats.errors.push(`행동: ${out.error}`);
   }
   for (const e of world.ctx().store.events()) {
     if (e.type === "storylet_fired") stats.storyletsFired[e.storyletId] = (stats.storyletsFired[e.storyletId] ?? 0) + 1;

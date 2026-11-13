@@ -81,7 +81,10 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
     if (role.recall) {
       const id = state.keptExtras[role.recall];
       const c = id ? state.characters[id] : undefined;
-      if (!id || !c || c.dead || c.away || c.captive || used.has(id)) return null;
+      if (!id || !c || c.dead || c.away || c.captive || used.has(id)) {
+        if (role.optional) continue;
+        return null;
+      }
       cast[key] = id;
       used.add(id);
       continue;
@@ -91,7 +94,10 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       continue;
     }
     const options = castCandidates(state, content, role, cast).filter((id) => !used.has(id));
-    if (options.length === 0) return null;
+    if (options.length === 0) {
+      if (role.optional) continue; // 있으면 쓰는 배역: 비워 둔다
+      return null;
+    }
     const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;
     cast[key] = id;
     used.add(id);
@@ -189,8 +195,10 @@ export function itemFlagsMet(state: GameState, w: ItemFlagConditions): boolean {
  * 선택지를 지금 고를 수 있는지: 선택지의 조건, 그리고 내놓을 물건(take_item)을 지녔는지.
  * 판정이 붙은 선택지는 어느 결과에서든 내놓을 물건을 모두 지녀야 한다 (굴린 뒤에 막히지 않게)
  */
-export function choiceAvailable(state: GameState, choice: StoryletChoice): boolean {
+export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: Record<string, string> = {}): boolean {
   if (choice.when && !itemFlagsMet(state, choice.when)) return false;
+  // 있으면 쓰는 배역이 비었으면 그 배역을 쓰는 선택지는 빠진다
+  if (choice.when?.cast && !choice.when.cast.every((k) => !!cast[k])) return false;
   const player = state.characters[state.playerId];
   if (!player) return false;
   const effects = choice.outcomes ? [...choice.outcomes.success, ...choice.outcomes.partial, ...choice.outcomes.miss] : choice.effects;

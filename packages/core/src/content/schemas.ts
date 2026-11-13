@@ -446,6 +446,11 @@ export function createContentSchemas(s: Scenario) {
     keep: contentIdSchema.optional(),
     /** 앞서 keep으로 기억해 둔 인물. 살아 있고 떠나지 않았고 붙잡히지 않았을 때만 채운다 */
     recall: contentIdSchema.optional(),
+    /**
+     * 있으면 쓰는 배역: 채울 수 없어도 이야기는 열린다. 상황(setup)·연출에는 쓰지 못하고,
+     * 이 배역을 쓰는 선택지는 when.cast에 적는다 (없으면 그 선택지가 빠진다)
+     */
+    optional: z.boolean().default(false),
   });
 
   /** 플래그·물건 조건 (이야기의 when과 선택지의 when이 함께 쓴다) */
@@ -470,7 +475,13 @@ export function createContentSchemas(s: Scenario) {
        * 이 선택지를 고를 수 있는 조건. 맞지 않으면 GM에게 보이지 않는다 (주인공이 모르는 길을 내밀지 않는다).
        * 내놓는 물건(take_item)은 따로 적지 않아도 지녔는지 본다
        */
-      when: z.strictObject(itemFlagConditions).optional(),
+      when: z
+        .strictObject({
+          ...itemFlagConditions,
+          /** 있으면 쓰는 배역(optional)이 채워졌을 때만 */
+          cast: z.array(contentIdSchema).optional(),
+        })
+        .optional(),
       /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */
       check: idEnum(moveIds(s)).optional(),
       effects: z.array(storyletEffect).default([]),

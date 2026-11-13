@@ -134,10 +134,11 @@
     young: { ids: [pa_taeju] }
     leader: { ids: [pa_jinman], enter: false }
   setup: "{young:이/가} 당신 앞을 막아선다. 눈가가 벌겋다. \"요즘 분대장님이랑 밤에 자주 얘기하시더라고요. 형 얘기죠? 저한테만 말 안 해 주는 거 있죠. 형, 마지막에 어땠어요.\""
-  ai_direction: "{young}은(는) 분대장 {leader}를 친형처럼 따른다. 주인공이 아는 만큼만 말할 수 있다 (주인공이 진실을 다 들었는지는 GM이 Belief State로 확인한다. 듣지 못했다면 아는 것만 말하게 한다). 진실을 들으면 {young}은(는) 분대장에게 달려가거나, 거점을 나가 버린다. 거짓말로 덮으면 {leader}는 그 빚을 기억한다. 분대가 흔들리면 1분대 전체의 사기가 꺾인다."
+  ai_direction: "{young}은(는) 분대장 {leader}를 친형처럼 따른다. 주인공이 아는 만큼만 말할 수 있다 (다 들은 주인공만 '들은 그대로'를 고를 수 있다). 진실을 들으면 {young}은(는) 분대장에게 달려가거나, 거점을 나가 버린다. 거짓말로 덮으면 {leader}는 그 빚을 기억한다. 분대가 흔들리면 1분대 전체의 사기가 꺾인다."
   choices:
     - id: truth
       label: 들은 그대로 말해 준다
+      when: { flags_all: [pp2_jinman_confessed] }
       check: persuade
       outcomes:
         success:
@@ -145,6 +146,8 @@
           - set_flag: pp2_taeju_knows
           - relation: { who: young, axis: trust, delta: 2 }
           - relation: { who: leader, axis: trust, delta: -1 }
+          - npc_relation: { from: young, to: leader, axis: trust, delta: -1 }
+          - npc_relation: { from: young, to: leader, axis: respect, delta: 1 }
           - deed: { summary: 분대장이 숨겨 온 동료의 마지막을 그 동생에게 말해 주었다, tags: [honesty], severity: 2, privacy: semi_private }
           - belief: { fact: "{young}은(는) 끝까지 듣고 군번줄 하나를 풀어 쥐었다. 분대장을 찾아가 마주 섰고, 둘이 밤새 막사 밖에 앉아 있었다. 다음 날 {young}은(는) 처음으로 앞자리를 서지 않겠다고 했다", source: seen }
         partial:
@@ -152,6 +155,7 @@
           - set_flag: pp2_taeju_knows
           - relation: { who: young, axis: trust, delta: 1 }
           - relation: { who: leader, axis: trust, delta: -2 }
+          - npc_relation: { from: young, to: leader, axis: trust, delta: -3 }
           - faction_morale: { faction: faction_a, delta: -1 }
           - deed: { summary: 분대장이 숨겨 온 동료의 마지막을 그 동생에게 말해 주었다, tags: [honesty], severity: 2, privacy: public }
           - belief: { fact: "{young}이(가) 식당 천막에서 분대장의 멱살을 잡았다. 버리지 않는다면서요. 1분대가 둘로 갈려 서로 눈을 피한다", source: seen }

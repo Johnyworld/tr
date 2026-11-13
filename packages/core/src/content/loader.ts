@@ -308,13 +308,25 @@ function checkReferences(content: Content): string[] {
 }
 
 /** 스토리렛이 가리키는 인물·아이템·구역·클락·배역이 있는지 */
-function checkStorylets(content: Content): string[] {
+export function checkStorylets(content: Content): string[] {
   const problems: string[] = [];
   const clocks = new Set(Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id)));
   const harmLevels = new Set(content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)?.levels.map((l) => l.id) ?? []);
   for (const s of Object.values(content.storylets)) {
     const where = `storylets.${s.id}`;
     const castKeys = new Set(Object.keys(s.cast));
+    // 있으면 쓰는 배역: 상황·연출에는 못 쓰고, 쓰는 선택지는 when.cast에 적는다
+    const optional = Object.entries(s.cast).filter(([, r]) => r.optional).map(([k]) => k);
+    if (optional.length) {
+      const refs = (text: string) => [...text.matchAll(/\{([a-z_]+)(?::[^}]+)?\}/g)].map((m) => m[1]!);
+      for (const k of optional) if (refs(`${s.setup} ${s.ai_direction ?? ""}`).includes(k)) problems.push(`${where}: 있으면 쓰는 배역 {${k}}은(는) 상황·연출에 쓸 수 없다`);
+      for (const c of s.choices) {
+        const effects = [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])];
+        const used = new Set([...refs(c.label), ...refs(JSON.stringify(effects).replace(/\\"/g, ""))]);
+        for (const e of effects) for (const v of Object.values(e as Record<string, unknown>)) if (v && typeof v === "object") for (const f of ["who", "from", "to", "other"]) { const x = (v as Record<string, unknown>)[f]; if (typeof x === "string") used.add(x); }
+        for (const k of optional) if (used.has(k) && !c.when?.cast?.includes(k)) problems.push(`${where}.choices.${c.id}: 있으면 쓰는 배역 ${k}을(를) 쓰면 when.cast에 적는다`);
+      }
+    }
     for (const [key, role] of Object.entries(s.cast)) {
       for (const id of role.ids ?? []) if (!content.npcs[id]) problems.push(`${where}.cast.${key}: 알 수 없는 NPC ${id}`);
       if (role.faction && role.faction !== "own" && Object.keys(content.factions).length && !content.factions[role.faction]) {

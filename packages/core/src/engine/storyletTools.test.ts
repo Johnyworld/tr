@@ -5,6 +5,7 @@ import { InMemoryGameStore } from "../game/store.ts";
 import { createSeededRng, type Rng } from "../rng.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
+import { checkStorylets } from "../content/loader.ts";
 import { createTestWorld, TEST_CONTENT, TEST_SCENARIO } from "../testing.ts";
 import { describePlayerState } from "./context.ts";
 import { executeTool } from "./tools.ts";
@@ -457,5 +458,38 @@ describe("효과: NPC끼리, 소음, NPC 부상, 지도부 (12-44)", () => {
     expect(env2.store.getState().characters.npc_leader!.dead).toBe(false);
     // 옛 상관을 다시 불러 되돌린다
     expect(eligibleStorylets(s, env.content, s.time + 24 * 60).map((x) => x.id)).toContain("again");
+  });
+});
+
+describe("있으면 쓰는 배역 (optional, 12-45)", () => {
+  const maybe = {
+    id: "maybe",
+    title: "빈자리",
+    cast: { boss: { commander: true }, ghost: { recall: "nobody_kept", optional: true } },
+    setup: "{boss:이/가} 기다린다.",
+    choices: [
+      { id: "wait", label: "같이 기다린다", effects: [] },
+      { id: "call", label: "{ghost:을/를} 부른다", when: { cast: ["ghost"] }, effects: [{ relation: { who: "ghost", axis: "trust", delta: 1 } }] },
+    ],
+  };
+  const keeper = { id: "keeper", title: "k", when: { day_gte: 99 }, cast: { x: { extra: "test_sentry", keep: "nobody_kept" } }, setup: "x", choices: [{ id: "a", label: "a", effects: [] }] };
+
+  it("채울 수 없어도 이야기는 열리고, 그 배역을 쓰는 선택지만 빠진다", () => {
+    const env = setup([maybe, keeper]);
+    const s = env.store.getState();
+    expect(s.activeStorylet?.id).toBe("maybe");
+    expect(s.activeStorylet?.cast.ghost).toBeUndefined();
+    const ctx = describePlayerState(s, env.content);
+    expect(ctx).toContain("wait 같이 기다린다");
+    expect(ctx).not.toContain("call ");
+    expect(executeTool("resolve_storylet", { choice_id: "call" }, env.ctx).ok).toBe(false);
+  });
+
+  it("상황에 쓰거나 when.cast 없이 쓰면 콘텐츠 검증이 잡는다", () => {
+    const bad = storyletSchema.parse({ ...maybe, setup: "{ghost:이/가} 온다.", choices: [{ id: "call", label: "{ghost}", effects: [] }] });
+    const c = { ...TEST_CONTENT, storylets: { maybe: bad } };
+    const problems = checkStorylets(c as Content);
+    expect(problems.join("\n")).toContain("상황·연출에 쓸 수 없다");
+    expect(problems.join("\n")).toContain("when.cast에 적는다");
   });
 });

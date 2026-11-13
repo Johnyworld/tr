@@ -227,7 +227,7 @@
     flags_none: [y2_sendoff_done]
   cast:
     captain: { ids: [y_gangho] }
-    sleeper: { extra: y_villager, label: 잠든 늙은 그물꾼 }
+    sleeper: { extra: y_villager, label: 잠든 늙은 그물꾼, keep: y2_netter }
   setup: "자정, 부두 끝. 작은 배에 담요를 덮은 사람 셋이 누워 있다. 다들 깊이 잠들었다. 그중 하나는 낮에 식당에서 국을 나르던 {sleeper}다. {captain:이/가} 밧줄을 풀며 당신에게 노를 건넨다. \"오늘 당번 너다. 섬 뒤로 돌려서 바위 앞 부표에 묶어 두고 와. 뭍 배가 받아 간대. 나도 거기까진 안 가 봤다.\""
   ai_direction: 진강호는 내보내는 배를 직접 띄우지만 어디에 닿는지 모른다 (알려 하지 않았다). 배에 누운 사람들은 약방 빈철호의 "뱃멀미 약"을 먹고 잠들었다. 부표는 저장고 뒤 바위틈 앞에 있다. 진강호에게 진실을 말하면 그는 먼저 화를 내고, 그다음 오래 침묵한다. 그는 의회를 거역하는 것이 두렵다. 배를 띄우지 않으면 의회는 이유를 묻는다. 잠든 사람들은 이 장면에서 깨어나지 않는다. 저장고 안은 서술하지 않는다.
   choices:
@@ -295,6 +295,8 @@
     old: { ids: [y_bokman] }
     friend: { ids: [y_dabin] }
     chair: { ids: [y_suja], enter: false }
+    # 그물 창고에 숨긴 그물꾼 (내보내는 배에서 내렸을 때만)
+    netter: { recall: y2_netter, optional: true, enter: false }
   setup: "겨울 잔치 전날, 식당에 솥이 걸렸다. 사람들이 웃으며 내일 이야기를 한다. 아이들은 상 위에 조개껍데기를 늘어놓는다. 그물 창고 뒤에서 {old:과/와} {friend:이/가} 당신을 기다린다. 추복만이 물때표를 접어 보인다. \"오늘 밤 자정에 물이 제일 많이 빠진다. 바위길이 끝까지 드러나.\" 설다빈이 덧붙인다. \"아니면… 다들 알아야 하는 거 아니에요? 내일 저 국을 먹기 전에.\""
   ai_direction: 이제 주인공은 섬의 진실을 안다. 추복만은 바위길 끝에 묶인 내보내는 배로 나가자고 한다 (섬을 떠나는 표, 강변까지 동행). 설다빈은 단짝 지원의 일을 알게 되었고, 마을 사람들에게 알리고 싶어 한다. 마을 사람들 대부분은 모른다. 알게 되어도 몇은 숟가락을 내려놓고 몇은 계속 먹는다. 의장 한수자는 소동을 웃으며 덮을 줄 안다. 의회를 무너뜨리는 일은 한 밤에 끝나지 않는다. 위험은 판정 전에 선언하고, 결과는 판정으로만. 잔혹한 묘사는 하지 않는다.
   choices:
@@ -352,6 +354,38 @@
           - set_flag: y_suspected
           - relation: { who: friend, axis: affection, delta: -1 }
           - belief: { fact: "물이 생각보다 빨리 들었다. 바위길이 무릎까지 잠겨 돌아설 수밖에 없었다. 저장고 뒷문에서 누가 우리를 봤다", source: seen }
+    - id: rock_path_three
+      label: 그물 창고 다락의 {netter}까지 깨워 셋을 데리고 바위길로 나간다
+      when: { flags_all: [y2_hidden_one], cast: [netter] }
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: y2_eve_done
+          - set_flag: y_leave_pass
+          - set_flag: y2_netter_out
+          - relation: { who: old, axis: trust, delta: 2 }
+          - relation: { who: friend, axis: trust, delta: 2 }
+          - relation: { who: netter, axis: trust, delta: 3 }
+          - companion_join: { who: old, kind: purpose, until: { zone: riverside } }
+          - companion_join: { who: friend, kind: purpose, until: { zone: riverside } }
+          - companion_join: { who: netter, kind: purpose, until: { zone: riverside } }
+          - deed: { summary: 겨울 잔치 전날 밤 숨겨 둔 그물꾼까지 셋을 데리고 바위길로 빠져나갔다, tags: [mercy, disobedience], severity: 3, privacy: semi_private }
+          - belief: { fact: "{netter}는 아직 약 기운에 비틀거렸다. 추복만이 한쪽 어깨를, 내가 다른 쪽을 받쳤다. 바위길 끝의 배에 넷이 탔다", source: seen }
+        partial:
+          - set_flag: y2_eve_done
+          - set_flag: y_leave_pass
+          - set_flag: y_suspected
+          - relation: { who: netter, axis: trust, delta: 2 }
+          - companion_join: { who: old, kind: purpose, until: { zone: riverside } }
+          - companion_join: { who: netter, kind: purpose, until: { zone: riverside } }
+          - npc_capture: { who: friend, by: faction_y, zone: yeoul_isle }
+          - belief: { fact: "비틀거리는 {netter} 때문에 걸음이 늦었다. 등불이 비치자 설다빈이 반대편으로 뛰었다. 배에는 셋만 탔다", source: seen }
+        miss:
+          - set_flag: y2_eve_done
+          - set_flag: y_marked
+          - set_flag: y_suspected
+          - npc_capture: { who: netter, by: faction_y, zone: yeoul_isle }
+          - belief: { fact: "다락에서 {netter}를 내리다 사다리가 무너졌다. 경비가 먼저 왔다. 우리는 흩어졌고, 그물꾼은 다시 저장고 쪽으로 끌려갔다", source: seen }
     - id: sit_quiet
       label: 둘을 돌려보내고 내일 잔치를 기다린다
       effects:

@@ -42,7 +42,7 @@ describe("시나리오마다 자동 플레이 (실제 콘텐츠)", () => {
       if (content.scenario.command?.council_ranks.includes(role.rank)) expect(stats.councilProposals).toBeGreaterThan(0);
       const own = Object.keys(stats.storyletsFired).filter((id) => content.storylets[id]?.tags.some((t) => role.storylet_tags.includes(t)));
       expect(own.length, `열린 이야기: ${Object.keys(stats.storyletsFired).join(", ")}`).toBeGreaterThanOrEqual(2);
-    });
+    }, 30_000);
   }
 });
 

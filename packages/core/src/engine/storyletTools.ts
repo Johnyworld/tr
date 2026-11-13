@@ -158,7 +158,7 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
     ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${fillStorylet(a.storylet.ai_direction, vars)}`] : []),
     `  등장: ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
     `  선택지 (resolve_storylet): ${a.storylet.choices
-      .filter((c) => choiceAvailable(state, c))
+      .filter((c) => choiceAvailable(state, c, a.cast))
       .map((c) => `${c.id} ${fillStorylet(c.label, vars)}${c.check ? ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]` : ""}`)
       .join(" / ")}`,
     "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 외면하면 그대로 둔다 (시간이 지나면 지나간다).",
@@ -177,7 +177,7 @@ export const resolveStorylet = defineTool({
     const a = activeOf(state, ctx.content);
     if (!a) return { ok: false, error: "진행 중인 이야기가 없다." };
     const choice = a.storylet.choices.find((c) => c.id === input.choice_id);
-    const open = a.storylet.choices.filter((c) => choiceAvailable(state, c));
+    const open = a.storylet.choices.filter((c) => choiceAvailable(state, c, a.cast));
     if (!choice || !open.includes(choice)) return { ok: false, error: `고를 수 없는 선택지: ${input.choice_id} (가능: ${open.map((c) => c.id).join(", ")})` };
     let outcome: CheckOutcome | null = null;
     let effects = choice.effects;

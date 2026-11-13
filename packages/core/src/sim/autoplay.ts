@@ -118,7 +118,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
 
     // 진행 중인 이야기: 무작위 선택지 (판정이 붙었으면 먼저 판정)
     // GM처럼 지금 고를 수 있는 선택지 중에서
-    const openChoices = s.activeStorylet ? content.storylets[s.activeStorylet.id]!.choices.filter((c) => choiceAvailable(s, c)) : [];
+    const openChoices = s.activeStorylet ? content.storylets[s.activeStorylet.id]!.choices.filter((c) => choiceAvailable(s, c, s.activeStorylet!.cast)) : [];
     if (s.activeStorylet && openChoices.length && rng() < 0.7) {
       const storylet = content.storylets[s.activeStorylet.id]!;
       const choice = pick(rng, openChoices);

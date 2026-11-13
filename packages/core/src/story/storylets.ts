@@ -1,4 +1,4 @@
-import { loversOf, romanceCast } from "../engine/romance.ts";
+import { attracted, loversOf, romanceCast } from "../engine/romance.ts";
 import { tiesOf } from "../game/ties.ts";
 import { activeCompanions, bondOf } from "../game/companions.ts";
 import { isAwayCompanion } from "../engine/companionTools.ts";
@@ -55,6 +55,8 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.commander || c.id === commander)
     .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction === "captor" ? (player.captive?.by ?? "-") : role.faction))
     .filter((c) => !role.ranks || role.ranks.includes(c.rank))
+    // 성적 위협을 가진 사람: 수위가 켜져 있고, 그 사람이 주인공에게 끌릴 때만 (12-59)
+    .filter((c) => !role.menace || (!!c.menace && role.menace.includes(c.menace) && !!state.options?.mature && attracted(state, content, c.id, state.playerId)))
     .filter((c) => !role.occupations || role.occupations.some((o) => (o === "same" ? player.occupation?.id : o) === c.occupation?.id && !!c.occupation))
     .filter((c) => !role.known || known.has(c.id))
     .filter((c) => role.trust_gte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).trust >= role.trust_gte)

@@ -5,6 +5,7 @@
   faction: faction_c
   rank: grunt
   age: [19, 40]
+  menace: { kind: harass, chance: 0.2 }
   looks:
     - 왼팔에 붉은 완장을 찬 마른 보초. 엽총을 어깨에 걸쳤다
     - 눈 밑이 검은 보초. 엽총 개머리판을 땅에 짚고 졸음을 참고 있다
@@ -38,6 +39,7 @@
   faction: faction_c
   rank: grunt
   age: [19, 40]
+  menace: { kind: harass, chance: 0.2 }
   looks:
     - 붉은 완장을 찬 보초. 낡은 소총을 가슴에 비껴 들었다
     - 철모를 눌러쓴 보초. 소총 멜빵을 자꾸 고쳐 맨다
@@ -71,6 +73,7 @@
   faction: faction_c
   rank: grunt
   age: [18, 35]
+  menace: { kind: assault, chance: 0.15 }
   looks:
     - 얼굴에 검댕을 칠한 약탈조원. 쇠지렛대를 들었다
   stats: { strength: [1, 2], agility: [0, 1], nerve: [0, 1] }

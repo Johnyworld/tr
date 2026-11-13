@@ -1,3 +1,5 @@
+import { attracted, romanceAllowed } from "./romance.ts";
+import { playerCalls } from "../game/acquaintance.ts";
 import { describeRomanceForGm } from "./romance.ts";
 import { describeCaptivityForGm } from "./captivity.ts";
 import { describeHistoryPart } from "../game/background.ts";
@@ -154,7 +156,13 @@ function describePresentNpcs(state: GameState, content: Content, player: Charact
     if (character?.extra) return describeExtraCard(state, content, character, player);
     return `- ${id}`;
   });
-  return `함께 있는 인물:\n${cards.join("\n\n")}`;
+  // 성적 위협 (12-59): 수위가 켜져 있고, 둘 다 성인이고, 그 인물이 주인공에게 끌릴 때만 GM에게 알린다
+  const menace = state.options?.mature
+    ? state.scene.present
+        .filter((id) => state.characters[id]?.menace && romanceAllowed(state, content, id, player.id) && attracted(state, content, id, player.id))
+        .map((id) => `[GM 전용, 성인 주제] ${playerCalls(state, content, id)}: ${MENACE_LABELS[state.characters[id]!.menace!]}. 판정과 이야기로만 다룬다 (위협·시도까지, 행위는 그리지 않는다)`)
+    : [];
+  return [`함께 있는 인물:\n${cards.join("\n\n")}`, ...menace].join("\n");
 }
 
 /** 엑스트라의 연기용 카드: 호칭, 겉모습, 상태, 지닌 것, 트레잇, 이름을 아는지 */
@@ -398,3 +406,9 @@ function describeContentRating(state: GameState, content: Content): string {
     "성폭력은 시도와 위협까지만, 행위를 그리지 않고 판정으로 벗어나거나 대가를 치르는 것으로 다룬다 (어떤 판정 결과로도 일어나지 않는다). 노골적인 신체·행위 묘사는 하지 않는다"
   );
 }
+
+const MENACE_LABELS = {
+  harass: "성적인 농담과 괴롭힘을 일삼는 자",
+  coerce: "몸을 거래 조건으로 요구하는 자",
+  assault: "힘으로 덮치려 드는 자 (위협·시도)",
+} as const;

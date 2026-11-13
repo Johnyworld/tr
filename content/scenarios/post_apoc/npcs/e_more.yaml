@@ -45,6 +45,8 @@
   alias: 코가 휘어진 덩치 큰 짐꾼
   faction: faction_e
   rank: grunt
+  # 성적 위협 (12-59, 수위가 켜져 있을 때만 쓰인다)
+  menace: harass
   age: 34
   gender: male
   look: 두 번 부러져 휘어진 코, 어깨가 문짝만 하다. 물통 두 개를 한 번에 진다. 물통 마개를 늘 만지작거린다.

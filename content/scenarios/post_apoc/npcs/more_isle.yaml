@@ -83,6 +83,8 @@
   alias: 기름진 턱의 양식장 어르신
   faction: faction_y
   rank: officer
+  # 성적 위협 (12-59, 수위가 켜져 있을 때만 쓰인다)
+  menace: coerce
   age: 59
   gender: male
   look: 살이 오른 둥근 얼굴, 기름이 도는 두 턱. 손가락마다 생선 비린내 대신 향유 냄새가 난다. 웃을 때 입맛을 다신다.

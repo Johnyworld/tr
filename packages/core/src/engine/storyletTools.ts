@@ -371,6 +371,16 @@ function applyEffect(
     store.append({ type: "item_granted", to: playerId, itemId: item, quantity });
     return { line: `${josa(`${name} ×${quantity}`, "을/를")} 얻었다.`, display: { type: "item", fromName: "", toName: state.characters[playerId]!.name, itemName: name, quantity } };
   }
+  if ("grudge" in effect) {
+    const id = whoOf(ctx, effect.grudge.who, cast);
+    if (!id || !state.characters[id] || id === playerId) return {};
+    const part = { kind: "enemy" as const, target: id, why: effect.grudge.why, knows_you: true };
+    // 이름 있는 인물이 아니면 (엑스트라) 원수 목록에는 남기되 배경 플래그로
+    const entries = [...state.background, { part: part as never, ...(content.npcs[id] ? {} : { characterId: id }) }];
+    store.append({ type: "background_set", entries });
+    for (const flag of ["bg_enemy", "bg_enemy_person"]) store.append({ type: "flag_set", characterId: playerId, flag });
+    return { line: `${josa(playerCalls(state, content, id), "을/를")} 잊지 않는다. 이제 원수다.` };
+  }
   if ("wound" in effect) {
     const me = state.characters[playerId]!;
     const track = harmTrack(content.scenario);

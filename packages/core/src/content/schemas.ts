@@ -129,6 +129,11 @@ export function createContentSchemas(s: Scenario) {
     occupation: contentIdSchema.optional(),
     /** 끌리는 성별 id 목록 (12-58). 빈 목록이면 아무에게도 끌리지 않는다. 없으면 월드의 비율로 정해진다 */
     attracted_to: z.array(z.string()).optional(),
+    /**
+     * 성적 위협 (12-59, 수위가 켜져 있을 때만): harass 성적인 농담·괴롭힘, coerce 몸을 거래 조건으로 요구, assault 위협과 시도.
+     * 이 인물이 끌리는 사람에게만 (성별로 정하지 않는다). GM이 즉석에서 정하지 않고 데이터로 둔다
+     */
+    menace: z.enum(["harass", "coerce", "assault"]).optional(),
     age: z.number().int().positive(),
     look: z.string().min(1),
     /** 거점 사람들이 아는 모습. 이 인물을 아는 캐릭터에게 보인다 */
@@ -378,6 +383,8 @@ export function createContentSchemas(s: Scenario) {
      * 부상 트랙 steps 단계, 죽음 바로 앞에서 멈춘다 (이야기는 사람을 죽이지 않는다, 원칙 3)
      */
     z.strictObject({ wound: z.strictObject({ steps: z.number().int().min(1).max(2), cause: z.string().min(1).max(60) }) }),
+    /** 이 배역을 주인공의 원수로 삼는다 (12-59: 위협한 자를 잊지 않는다). 배경 부품 enemy가 더해진다 */
+    z.strictObject({ grudge: z.strictObject({ who: z.string().min(1), why: z.string().min(1).max(80) }) }),
     /** 붙잡힌 배역이 어디 갇혔는지 주인공이 알게 된다 (진짜 상태에서 코드가 채운다, 12-56) */
     z.strictObject({ locate: z.strictObject({ who: z.string().min(1), source: z.enum(["seen", "report", "rumor"]).default("report") }) }),
     /** 주인공이 붙잡힌다 (12-55): by 무리(own 외에 zone_owner 등 별칭), zone이 없으면 그 무리의 거점에 갇힌다 */
@@ -495,6 +502,8 @@ export function createContentSchemas(s: Scenario) {
      * kin 살아서 기다리는 가족, sought 찾고 있는 사람
      */
     background: z.enum(["enemy", "enemy_member", "kin", "sought", "creditor", "deserted"]).optional(),
+    /** 성적 위협을 가진 사람만 (12-59, 이 중 하나). 그 사람이 주인공에게 끌릴 때만 */
+    menace: z.array(z.enum(["harass", "coerce", "assault"])).optional(),
     /** 연애 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람, jealous 다른 연인을 알아챈 연인, rival_lover 주인공이 다가간 사람의 다른 연인 */
     romance: z.enum(["lover", "suitor", "jealous", "rival_lover"]).optional(),
     /** 지금 주인공이 있는 구역에 있는 사람만 (찾던 사람을 마주치는 장면). 함께 다니는 사람은 늘 여기 있다 */
@@ -656,6 +665,8 @@ export function createContentSchemas(s: Scenario) {
     /** 성별 id. 없으면 무작위 */
     gender: (s.creation ? idEnum(s.creation.genders.map((g) => g.id)) : z.string()).nullable().default(null),
     age: z.tuple([z.number().int().positive(), z.number().int().positive()]).default([18, 50]),
+    /** 성적 위협 (12-59): 이 틀로 만든 사람이 chance 확률로 그런 자다 */
+    menace: z.strictObject({ kind: z.enum(["harass", "coerce", "assault"]), chance: z.number().min(0).max(1) }).optional(),
     /** 겉모습 문구 후보 (하나를 고른다) */
     looks: z.array(z.string().min(1)).min(1),
     /** 능력별 [최소, 최대]. 없는 능력은 0 */

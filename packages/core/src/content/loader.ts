@@ -333,7 +333,7 @@ export function checkStorylets(content: Content): string[] {
     const castKeys = new Set(Object.keys(s.cast));
     // 연애 배역을 쓰는 이야기는 성인 주제 태그가 있어야 한다 (12-58)
     const matureTag = content.scenario.content_rating?.tag;
-    if (Object.values(s.cast).some((r) => r.romance) && (!matureTag || !s.tags.includes(matureTag))) problems.push(`${where}: 연애 배역(romance)을 쓰면 tags에 ${matureTag ?? "성인 주제 태그"}가 있어야 한다`);
+    if (Object.values(s.cast).some((r) => r.romance || r.menace) && (!matureTag || !s.tags.includes(matureTag))) problems.push(`${where}: 연애·위협 배역(romance, menace)을 쓰면 tags에 ${matureTag ?? "성인 주제 태그"}가 있어야 한다`);
     // 있으면 쓰는 배역: 상황·연출에는 못 쓰고, 쓰는 선택지는 when.cast에 적는다
     const optional = Object.entries(s.cast).filter(([, r]) => r.optional).map(([k]) => k);
     if (optional.length) {

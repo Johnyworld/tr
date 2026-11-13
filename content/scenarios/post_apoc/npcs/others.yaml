@@ -117,6 +117,8 @@
   alias: 장갑 낀 장교 외투 사내
   faction: faction_c
   rank: officer
+  # 성적 위협 (12-59, 수위가 켜져 있을 때만 쓰인다)
+  menace: coerce
   occupation: soldier
   age: 45
   gender: male

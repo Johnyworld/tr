@@ -94,3 +94,38 @@ describe("연애", () => {
     expect(w.state().characters.player!.conditions.nerves).toBe("frayed");
   });
 });
+
+describe("성적 위협 (12-59)", () => {
+  it("데이터에 있는 자만, 수위가 켜져 있고 그 자가 주인공에게 끌릴 때만 배역이 되고 GM에게 알린다", async () => {
+    const { castCandidates } = await import("../story/storylets.ts");
+    const role = { commander: false, known: false, enter: true, optional: false, here: false, menace: ["harass", "coerce", "assault"] } as never;
+    const on = open(true);
+    const me = on.state().characters.player!;
+    const menaces = Object.values(on.state().characters).filter((c) => c.menace).map((c) => c.id);
+    expect(menaces.length).toBeGreaterThan(0);
+    const picked = castCandidates(on.state(), content, role);
+    for (const id of picked) expect(attractionOf(on.state(), content, on.state().characters[id]!)).toContain(me.gender);
+    const off = open(false);
+    expect(castCandidates(off.state(), content, role)).toEqual([]);
+    if (picked[0]) {
+      enter(on, picked[0]);
+      expect(describePlayerState(on.state(), content)).toContain("[GM 전용, 성인 주제]");
+      enter(off, picked[0]);
+      expect(describePlayerState(off.state(), content)).not.toContain("[GM 전용, 성인 주제]");
+    }
+  });
+
+  it("위협한 자를 원수로 삼으면 배경의 원수가 된다", async () => {
+    const { createContentSchemas } = await import("../content/schemas.ts");
+    const { fireStorylet } = await import("./storyletTools.ts");
+    const w = open(true);
+    const s = createContentSchemas(content.scenario).storylet.parse({ id: "g", title: "g", tags: ["world"], cast: { foe: { ids: ["c_gyeongsu"], enter: false } }, setup: "x", choices: [{ id: "a", label: "a", effects: [{ grudge: { who: "foe", why: "나를 위협했다" } }] }] });
+    const ctx = { ...w.ctx(), content: { ...w.content, storylets: { g: s } } };
+    fireStorylet(ctx, s, { foe: "c_gyeongsu" });
+    w.executeTool("resolve_storylet", { choice_id: "a" });
+    const { executeTool } = await import("./tools.ts");
+    executeTool("resolve_storylet", { choice_id: "a" }, ctx);
+    expect(w.state().background.some((e) => e.part.kind === "enemy" && e.part.target === "c_gyeongsu")).toBe(true);
+    expect(w.state().flags.player).toContain("bg_enemy_person");
+  });
+});

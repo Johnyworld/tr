@@ -6,6 +6,8 @@
   alias: 박달나무 몽둥이를 찬 규율반원
   faction: faction_c
   rank: staff
+  # 성적 위협 (12-59, 수위가 켜져 있을 때만 쓰인다)
+  menace: harass
   age: 47
   gender: male
   look: 짧게 깎은 반백 머리에 귀 한쪽이 뭉개졌다. 허리에 손때로 검게 반질거리는 박달나무 몽둥이를 찼다. 장갑을 벗는 일이 없다.

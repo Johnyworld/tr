@@ -57,6 +57,8 @@ export function createExtraCharacter(
     conditions: initialConditions(s),
     inventory,
     extra: { template: template.id, label: input.label, look: pick(rng, template.looks), zone: input.zone, lastSeenAt: input.time },
+    // 성적 위협은 틀이 정한 확률로 (12-59). 틀에 없으면 굴리지 않는다
+    menace: template.menace && rng() < template.menace.chance ? template.menace.kind : null,
   });
 }
 

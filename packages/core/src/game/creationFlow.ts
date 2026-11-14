@@ -8,7 +8,7 @@ import {
   checkCharacterChoice,
   checkTraits,
   creationRules,
-  MAX_NAME_LENGTH,
+  checkName,
   randomAbilityBuy,
   randomTraits,
   type CreationRules,
@@ -301,7 +301,8 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
 
   if (step === "name") {
     const name = text.trim();
-    if (!name || name.length > MAX_NAME_LENGTH) return { ok: false, error: `이름은 1~${MAX_NAME_LENGTH}자다.` };
+    const problem = checkName(name);
+    if (problem) return { ok: false, error: problem };
     return add({ step: "name", value: name });
   }
   if (step === "portrait") {
@@ -428,7 +429,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   if (done.length) lines.push(`지금까지: ${done.join(" · ")}`);
 
   if (step === "name") {
-    lines.push(`물을 것: 주인공의 이름 (1~${MAX_NAME_LENGTH}자, 자유롭게 입력). 보기 없이 글로 묻는다.`);
+    lines.push("물을 것: 주인공의 이름 (한글 8자, 영문 16자까지, 자유롭게 입력). 보기 없이 글로 묻는다.");
     if (narration.name) lines.push(`서술 힌트: ${narration.name}`);
   } else if (step === "portrait") {
     lines.push('물을 것: 얼굴(초상화). 그림은 상태 화면에서만 고를 수 있다. 채팅으로 이어 하면 묻지 말고 "none"을 넘긴다 (실루엣).');

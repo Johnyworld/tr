@@ -358,24 +358,31 @@ function PortraitStep({ busy, answer }: Pick<StepProps, "busy" | "answer">) {
   );
 }
 
+/** 이름 폭: 한글·한자·전각 2, 나머지 1 (core nameWidth와 같은 셈, 표시용. 검증은 core) */
+const WIDE = /[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]/u;
+const nameWidth = (name: string) => [...name].reduce((w, ch) => w + (WIDE.test(ch) ? 2 : 1), 0);
+
 function NameStep({ view, busy, answer }: StepProps) {
   const [name, setName] = useState("");
   const max = view.character!.nameMax;
+  const width = nameWidth(name.trim());
+  const over = width > max;
   return (
     <form
       className="newgame-form"
       onSubmit={(e) => {
         e.preventDefault();
-        if (name.trim()) answer(name.trim());
+        if (name.trim() && !over) answer(name.trim());
       }}
     >
       <h2 className="newgame-title">이름을 정해 주세요</h2>
       <div className="newgame-inline">
-        <input className="newgame-input" value={name} maxLength={max} autoFocus onChange={(e) => setName(e.target.value)} placeholder={`1~${max}자`} />
-        <button type="submit" className="primary" disabled={busy || !name.trim()}>
+        <input className="newgame-input" value={name} maxLength={max} autoFocus onChange={(e) => setName(e.target.value)} placeholder={`한글 ${max / 2}자, 영문 ${max}자까지`} />
+        <button type="submit" className="primary" disabled={busy || !name.trim() || over}>
           다음
         </button>
       </div>
+      {over && <p className="newgame-warn">이름이 너무 깁니다. 한글 {max / 2}자, 영문 {max}자까지입니다.</p>}
     </form>
   );
 }

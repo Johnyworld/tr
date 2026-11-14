@@ -99,6 +99,9 @@ export {
   checkTraits,
   traitBalance,
   MAX_NAME_LENGTH,
+  MAX_NAME_WIDTH,
+  checkName,
+  nameWidth,
   type CreationRules,
 } from "./game/creation.ts";
 export {

@@ -219,6 +219,6 @@ export function describeCustomStartOptions(content: Content): string {
       ? [`연고 (무소속만, 플레이어가 함께 다니는 가족·짝·동물을 썼을 때만 kin으로): ${c.kin.map((k) => `${content.extras[k]?.label ?? k}(${k})`).join(", ")}. label은 부르는 말 (예: 동생, 아버지)`]
       : []),
     describeHistoryOptions(content),
-    `직함은 ${MAX_TITLE_LENGTH}자 안, 첫 장면은 ${MAX_OPENING_LENGTH}자 안, 지난 삶(background)은 ${MAX_BACKGROUND}문장까지. 이름은 다음 단계에서 묻는다 (${MAX_NAME_LENGTH}자 안)`,
+    `직함은 ${MAX_TITLE_LENGTH}자 안, 첫 장면은 ${MAX_OPENING_LENGTH}자 안, 지난 삶(background)은 ${MAX_BACKGROUND}문장까지. 이름은 다음 단계에서 묻는다 (한글 ${MAX_NAME_LENGTH}자, 영문 ${MAX_NAME_LENGTH * 2}자 안)`,
   ].join("\n");
 }

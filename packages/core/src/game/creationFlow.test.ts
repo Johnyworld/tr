@@ -67,6 +67,16 @@ describe("대화로 하는 캐릭터 생성", () => {
     });
   });
 
+  it("이름은 폭으로 센다: 한글 8자, 영문 16자까지 (12-72)", () => {
+    const d = newCreationDraft("new_world");
+    const rng = createSeededRng(1);
+    expect(answerCreation(s, d, "가나다라마바사아", rng).ok).toBe(true);
+    expect(answerCreation(s, d, "가나다라마바사아자", rng).ok).toBe(false);
+    expect(answerCreation(s, d, "Abcdefghijklmnop", rng).ok).toBe(true);
+    expect(answerCreation(s, d, "Abcdefghijklmnopq", rng).ok).toBe(false);
+    expect(answerCreation(s, d, "Kim 서진", rng).ok).toBe(true);
+  });
+
   it("얼굴은 상태 화면에서 만들 때만 이름 다음에 묻는다", () => {
     expect(currentStep(s, run(["서진"]).draft)).toBe("gender");
     const screen = run(["서진"], { ...newCreationDraft("new_world"), withPortrait: true }).draft;

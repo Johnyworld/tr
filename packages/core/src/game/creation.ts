@@ -10,11 +10,32 @@ import type { CharacterChoice } from "./state.ts";
  * 규칙 수치는 시나리오 `creation`. 직업·출신 선택은 아직 없다 (역할이 정한다).
  */
 
-export const MAX_NAME_LENGTH = 20;
+/**
+ * 이름 길이 (12-72): 글자 수가 아니라 화면 폭으로 센다. 한글·한자·전각은 2, 나머지(영문·숫자)는 1.
+ * 폭 16까지 = 한글 8자, 영문 16자 (시트에서 이름 오른쪽에 레벨 바가 들어갈 자리)
+ */
+export const MAX_NAME_WIDTH = 16;
+/** (이전 이름) 한글 기준 최대 글자 수 */
+export const MAX_NAME_LENGTH = MAX_NAME_WIDTH / 2;
+const WIDE = /[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]/u;
+
+/** 이름의 화면 폭 */
+export function nameWidth(name: string): number {
+  let w = 0;
+  for (const ch of name) w += WIDE.test(ch) ? 2 : 1;
+  return w;
+}
+
+/** 이름 규칙 위반이면 이유, 맞으면 null */
+export function checkName(name: string): string | null {
+  const n = name.trim();
+  if (!n || nameWidth(n) > MAX_NAME_WIDTH) return `이름은 한글 ${MAX_NAME_WIDTH / 2}자, 영문 ${MAX_NAME_WIDTH}자까지다.`;
+  return null;
+}
 
 export function characterChoiceSchema() {
   return z.strictObject({
-    name: z.string().trim().min(1).max(MAX_NAME_LENGTH).describe("캐릭터 이름"),
+    name: z.string().trim().min(1).max(MAX_NAME_WIDTH).refine((n) => checkName(n) === null, `이름은 한글 ${MAX_NAME_WIDTH / 2}자, 영문 ${MAX_NAME_WIDTH}자까지`).describe("캐릭터 이름 (한글 8자, 영문 16자까지)"),
     gender: z.string().nullable().describe("성별 id"),
     abilities: z.record(z.string(), z.number().int()).nullable().describe("능력 id → 값 (포인트 구매). null이면 무작위로 배분"),
     portrait: z.string().regex(PORTRAIT_ID).nullable().describe("초상화 id (웹 화면에서 고른다. MCP에서는 null)"),
@@ -42,7 +63,8 @@ export function checkCharacterChoice(s: Scenario, choice: CharacterChoice): stri
   const c = s.creation;
   if (!c) return ["이 시나리오에는 캐릭터 생성 규칙이 없다."];
   const name = choice.name.trim();
-  if (!name || name.length > MAX_NAME_LENGTH) problems.push(`이름은 1~${MAX_NAME_LENGTH}자다.`);
+  const nameProblem = checkName(name);
+  if (nameProblem) problems.push(nameProblem);
   if (choice.gender !== null && !c.genders.some((g) => g.id === choice.gender)) {
     problems.push(`성별은 ${c.genders.map((g) => `${g.id}(${g.label})`).join(", ")} 중 하나다.`);
   }

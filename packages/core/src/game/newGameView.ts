@@ -1,6 +1,6 @@
 import type { Content } from "../content/schemas.ts";
 import { worldInfo } from "../content/packs.ts";
-import { abilitySpend, creationRules, MAX_NAME_LENGTH } from "./creation.ts";
+import { abilitySpend, creationRules, MAX_NAME_WIDTH } from "./creation.ts";
 import {
   abilityTiers,
   collectDraft,
@@ -45,6 +45,7 @@ export type CharacterStepView = {
   /** 지금까지 정한 것 */
   chosen: { portrait: string | null; name: string | null; gender: string | null; age: number | null; abilities: { label: string; value: number }[]; traits: string[] | null };
   options: StepOption[];
+  /** 이름 폭 상한 (한글 2, 영문 1로 센다) */
   nameMax: number;
   /** 나이 고르기 (월드가 범위를 열었을 때). default: 시나리오의 나이 */
   age: { min: number; max: number; default: number } | null;
@@ -125,7 +126,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
             : null,
       },
       options: stepOptions(s, draft.character, cstep),
-      nameMax: MAX_NAME_LENGTH,
+      nameMax: MAX_NAME_WIDTH,
       age: s.creation?.age ? { ...s.creation.age, default: role?.age ?? s.creation.age.min } : null,
       stats: s.stats.map((x) => ({ id: x.id, label: x.label, description: x.description ?? "" })),
       tiers: abilityTiers(s),

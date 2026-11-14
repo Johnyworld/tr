@@ -2,7 +2,7 @@ import { autoEquip } from "./gear.ts";
 import { addStartCompanions } from "./companionTools.ts";
 import { z } from "zod";
 import { nameAs } from "../game/acquaintance.ts";
-import { checkCharacterChoice, fillCharacterChoice } from "../game/creation.ts";
+import { checkCharacterChoice, checkName, fillCharacterChoice } from "../game/creation.ts";
 import type { CharacterChoice } from "../game/state.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Belief } from "../game/belief.ts";
@@ -126,7 +126,11 @@ export function switchCharacter(
       if (problems.length) return { ok: false, error: `캐릭터 설정이 규칙에 맞지 않는다: ${problems.join(" ")}` };
     }
     const made = createCharacterFromRole(content.scenario, role, id, ctx.rng, character ? fillCharacterChoice(content.scenario, character, ctx.rng) : undefined);
-    if (!character && name?.trim()) made.name = name.trim().slice(0, 20);
+    if (!character && name?.trim()) {
+      const problem = checkName(name);
+      if (problem) return { ok: false, error: problem };
+      made.name = name.trim();
+    }
     store.append({ type: "character_switched", characterId: id, character: made, known: [...role.known_npcs], ...(switchedRole ? { roleId: switchedRole } : {}) });
     // 그 자리에 오는 사람의 동행 (역할의 시작 동행)
     addStartCompanions(ctx, role);

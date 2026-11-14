@@ -5,7 +5,7 @@ import type { PlayerView } from "./types.ts";
 const TABS = [
   { id: "ability", label: "능력" },
   { id: "items", label: "아이템" },
-  { id: "people", label: "사람" },
+  { id: "people", label: "인물" },
   { id: "journal", label: "일지" },
   // 메모장과 펜·연필이 있을 때만 (12-75)
   { id: "memo", label: "메모" },

@@ -1705,6 +1705,11 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+/* 탭 맨 아래 칸에는 구분선을 긋지 않는다 (위 규칙보다 뒤에 두어야 이긴다) */
+.sheet-panel > section:not(.block):last-child {
+  border-bottom: none;
+}
+
 .journal-list {
   list-style: none;
   margin: 0;

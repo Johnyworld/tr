@@ -240,20 +240,6 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
             </section>
           )}
 
-          {player.faction && (
-            <section className="faction">
-              <h3>무리</h3>
-              <div>
-                {player.faction.name} · 분위기 {player.faction.moraleLabel}
-              </div>
-              <div className="muted small">배급: {player.faction.rationLabel}</div>
-              {player.policy && player.policy.length > 0 && (
-                <div className="muted small">방침: {player.policy.map((p) => `${p.label} ${p.option}`).join(" · ")}</div>
-              )}
-              {player.zone && <div className="muted small">있는 곳: {player.zone.name} ({player.zone.owner})</div>}
-            </section>
-          )}
-
             </>
           ),
           journal: (
@@ -367,9 +353,24 @@ function SubLine({ player }: { player: PlayerView }) {
   ) : (
     <div>{s.daysServed}일째 (무소속)</div>
   );
-  // 소속: 무리 소개 (캐릭터 만들 때 월드 이야기에서 본 말과 같다)
+  // 소속: 무리 소개 (캐릭터 만들 때 월드 이야기에서 본 말과 같다)와 무리 사정 (분위기·배급·방침), 있는 곳
   // 직분이 없으면 복무 정보도 소속 툴팁에 함께
-  const about = player.faction?.about ? <div>{player.faction.about}</div> : null;
+  const f = player.faction;
+  const about = f ? (
+    <>
+      {f.about && <div>{f.about}</div>}
+      {f.about && <div className="info-tip-sep" />}
+      <div>
+        분위기 {f.moraleLabel} · 배급 {f.rationLabel}
+      </div>
+      {player.policy && player.policy.length > 0 && <div className="muted">방침: {player.policy.map((p) => `${p.label} ${p.option}`).join(" · ")}</div>}
+      {player.zone && (
+        <div className="muted">
+          있는 곳: {player.zone.name} ({player.zone.owner})
+        </div>
+      )}
+    </>
+  ) : null;
   const factionTip = player.occupationLabel ? about : (
     <>
       {about}

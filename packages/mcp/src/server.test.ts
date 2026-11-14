@@ -191,7 +191,9 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect(name.text).toContain("간이침대");
     expect(name.text).toContain("이름");
     expect((await call("create_character", { answer: "윤하" })).text).toContain("성별");
-    expect((await call("create_character", { answer: "female" })).text).toContain("직접 정하기");
+    expect((await call("create_character", { answer: "female" })).text).toContain("나이");
+    expect((await call("create_character", { answer: "70" })).isError).toBe(true);
+    expect((await call("create_character", { answer: "27세" })).text).toContain("직접 정하기");
     const set = await call("create_character", { answer: "manual" });
     expect(set.text).toContain("근력");
     expect(set.text).toContain("가장 자신 있는 것");
@@ -207,7 +209,7 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect(ok.text).toContain("# GM 지침");
     expect(app.creating).toBe(false);
     const p = app.world!.state().characters[app.world!.state().playerId]!;
-    expect(p).toMatchObject({ name: "윤하", gender: "female", stats: { intellect: 2, charm: 1, strength: 0 }, traits: [] });
+    expect(p).toMatchObject({ name: "윤하", gender: "female", age: 27, stats: { intellect: 2, charm: 1, strength: 0 }, traits: [] });
   });
 
   it("만드는 중이 아니면 create_character는 오류. character를 주면 바로 만든다 (자동 진행용), 규칙 위반은 오류", async () => {
@@ -404,7 +406,7 @@ describe("사망 뒤 새 캐릭터 만들기", () => {
     expect(first.text).not.toContain("지금 상황");
     const source = { get world() { return app.world; }, scenarioName: "x", get creating() { return app.creating; } };
     expect(statusPayload(source)).toMatchObject({ creating: true });
-    for (const a of ["서진", "여성", "random", "manual", ["허약 체질", "아름다운 외모"], "없음"]) {
+    for (const a of ["서진", "여성", "기본", "random", "manual", ["허약 체질", "아름다운 외모"], "없음"]) {
       const r = await call("create_character", { answer: a });
       expect(r.isError, r.text).toBe(false);
     }
@@ -505,7 +507,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     await settle();
     expect(app.creation?.view).toMatchObject({ step: "world" });
     expect(app.submitCreation({ answer: "없는 월드" })).toMatchObject({ ok: false });
-    for (const answer of ["post_apoc", "role_a_grunt", "off", "윤하", "female", "manual"]) {
+    for (const answer of ["post_apoc", "role_a_grunt", "off", "윤하", "female", "31", "manual"]) {
       expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     }
     const view = app.creation!.view;
@@ -522,7 +524,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(done.isError).toBe(false);
     expect(done.text).toContain("상태 화면에서 골랐다");
     expect(done.text).toContain("# GM 지침");
-    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", stats: { intellect: 2, charm: 1, senses: 1, strength: -1 } });
+    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", age: 31, stats: { intellect: 2, charm: 1, senses: 1, strength: -1 } });
     expect(app.creation).toBeNull();
   });
 
@@ -530,7 +532,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     const { app, call } = await connectWithScreen(30);
     const first = await call("start_session", { new_world: true, in_browser: true });
     expect(first.text).toContain("다 했어");
-    for (const answer of ["post_apoc", "role_a_grunt", "off", "서진", "male", "random", "none", "start"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    for (const answer of ["post_apoc", "role_a_grunt", "off", "서진", "male", "기본", "random", "none", "start"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     expect(app.world).not.toBeNull();
     const later = await call("create_character", { wait: true });
     expect(later.text).toContain("상태 화면에서 골랐다");

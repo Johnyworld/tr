@@ -19,6 +19,7 @@ export function characterChoiceSchema() {
     abilities: z.record(z.string(), z.number().int()).nullable().describe("능력 id → 값 (포인트 구매). null이면 무작위로 배분"),
     portrait: z.string().regex(PORTRAIT_ID).nullable().describe("초상화 id (웹 화면에서 고른다. MCP에서는 null)"),
     traits: z.array(z.string()).max(10).nullable().optional().describe("트레잇 id 목록. null이면 무작위, 생략하면 없음"),
+    age: z.number().int().positive().nullable().optional().describe("나이. 생략하면 시나리오의 나이"),
   });
 }
 
@@ -46,10 +47,19 @@ export function checkCharacterChoice(s: Scenario, choice: CharacterChoice): stri
     problems.push(`성별은 ${c.genders.map((g) => `${g.id}(${g.label})`).join(", ")} 중 하나다.`);
   }
   if (choice.portrait !== null && !PORTRAIT_ID.test(choice.portrait)) problems.push("초상화 id 형식이 올바르지 않다.");
+  if (choice.age != null) problems.push(...checkAge(s, choice.age));
   if (choice.traits) problems.push(...checkTraits(s, choice.traits));
   if (choice.abilities === null) return problems;
   problems.push(...checkAbilities(s, choice.abilities));
   return problems;
+}
+
+/** 고를 수 있는 나이인지 (월드의 creation.age) */
+export function checkAge(s: Scenario, age: number): string[] {
+  const range = s.creation?.age;
+  if (!range) return ["이 월드에서는 나이를 고르지 않는다."];
+  if (!Number.isInteger(age) || age < range.min || age > range.max) return [`나이는 ${range.min}~${range.max}세다.`];
+  return [];
 }
 
 /** 능력 배분이 규칙에 맞는지 (모르는 능력, 값, 포인트, 낮춘 개수). 문제 목록 */

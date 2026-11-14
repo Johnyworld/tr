@@ -65,6 +65,8 @@ creation:
   genders:
     - { id: male, label: 남성 }
     - { id: female, label: 여성 }
+  # 나이: 고를 수 있는 범위 (고르지 않으면 시나리오의 나이)
+  age: { min: 16, max: 65 }
   # 트레잇 고르기: 긍정 비용 합 ≤ 부정 보상 합. 종류별 최대
   traits: { max_positive: 3, max_negative: 3, max_personality: 2 }
   # 대화로 만들 때(MCP) GM이 단계마다 장면처럼 묻도록 주는 힌트

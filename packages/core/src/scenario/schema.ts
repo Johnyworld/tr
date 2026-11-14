@@ -73,6 +73,8 @@ export const scenarioFileSchema = z
         cost: z.record(z.string().regex(/^-?\d+$/), z.number().int()),
         max_low: z.number().int().min(0),
         genders: z.array(labeled).min(1),
+        /** 나이를 고를 수 있는 범위 (12-69). 없으면 나이는 시나리오(역할)가 정한다 */
+        age: z.strictObject({ min: z.number().int().positive(), max: z.number().int().positive() }).optional(),
         /** 트레잇 고르기 (기획서 4.6): 종류별 최대 개수. 긍정 비용 합 ≤ 부정 보상 합 */
         traits: z
           .strictObject({ max_positive: z.number().int().min(0), max_negative: z.number().int().min(0), max_personality: z.number().int().min(0) })
@@ -82,6 +84,7 @@ export const scenarioFileSchema = z
           .strictObject({
             name: z.string().optional(),
             gender: z.string().optional(),
+            age: z.string().optional(),
             abilities: z.string().optional(),
             traits: z.string().optional(),
           })

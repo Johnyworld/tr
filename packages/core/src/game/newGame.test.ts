@@ -71,7 +71,7 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터", () => {
   });
 
   it("끝까지 고르면 월드·시나리오·캐릭터를 돌려준다", () => {
-    const r = run(["second_world", "harbor_scout", "off", "서진", "female", "random", "none", "start"]);
+    const r = run(["second_world", "harbor_scout", "off", "서진", "female", "30", "random", "none", "start"]);
     expect(r.done).toBe(true);
     if (r.done) expect(r).toMatchObject({ packId: "second_world", roleId: "harbor_scout", choice: { name: "서진", gender: "female" } });
   });

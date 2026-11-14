@@ -43,9 +43,11 @@ export type CharacterStepView = {
   situation: string | null;
   startSkills: { label: string; value: number }[];
   /** 지금까지 정한 것 */
-  chosen: { name: string | null; gender: string | null; abilities: { label: string; value: number }[]; traits: string[] | null };
+  chosen: { name: string | null; gender: string | null; age: number | null; abilities: { label: string; value: number }[]; traits: string[] | null };
   options: StepOption[];
   nameMax: number;
+  /** 나이 고르기 (월드가 범위를 열었을 때). default: 시나리오의 나이 */
+  age: { min: number; max: number; default: number } | null;
   stats: { id: string; label: string; description: string }[];
   /** 직접 정하기의 등급 (없으면 포인트 나누기: points) */
   tiers: AbilityTier[] | null;
@@ -114,6 +116,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
       chosen: {
         name: d.name ?? null,
         gender: d.gender !== undefined ? (s.creation?.genders.find((g) => g.id === d.gender)?.label ?? d.gender) : null,
+        age: s.creation?.age ? (d.age ?? null) : null,
         abilities: s.stats.filter((x) => d.abilities[x.id] !== undefined).map((x) => ({ label: x.label, value: d.abilities[x.id]! })),
         traits:
           d.traitMethod !== undefined && (d.traitMethod !== "manual" || d.traitSteps.has("traits_pick"))
@@ -122,6 +125,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
       },
       options: stepOptions(s, draft.character, cstep),
       nameMax: MAX_NAME_LENGTH,
+      age: s.creation?.age ? { ...s.creation.age, default: role?.age ?? s.creation.age.min } : null,
       stats: s.stats.map((x) => ({ id: x.id, label: x.label, description: x.description ?? "" })),
       tiers: abilityTiers(s),
       points: rules ? { total: rules.points, cost: rules.cost, maxLow: rules.maxLow } : null,

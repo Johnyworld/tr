@@ -4,6 +4,7 @@ import type { Scenario } from "../scenario/schema.ts";
 import {
   abilitySpend,
   checkAbilities,
+  checkAge,
   checkCharacterChoice,
   checkTraits,
   creationRules,
@@ -16,7 +17,7 @@ import type { CharacterChoice } from "./state.ts";
 
 /**
  * 대화로 하는 캐릭터 생성 (기획서 4.2, 11.6): 한 번에 하나씩, 정해진 순서로 묻는다.
- * 세계 소개 → 이름 → 성별 → 능력(한 번에 정하기 / 무작위) → 트레잇(약점·강점 한 표 → 성격 / 무작위 / 없이) → 확인.
+ * 세계 소개 → 이름 → 성별 → 나이(월드가 범위를 열었으면) → 능력(한 번에 정하기 / 무작위) → 트레잇(약점·강점 한 표 → 성격 / 무작위 / 없이) → 확인.
  * 답은 모두 코드가 검증하고 포인트를 계산한다 (GM은 숫자를 만들지 않는다, 원칙 2).
  * 초안은 세이브에 쓰지 않는다. 확인을 마쳐야 세계(또는 새 캐릭터)를 만든다.
  */
@@ -24,6 +25,7 @@ import type { CharacterChoice } from "./state.ts";
 export type CreationAnswer =
   | { step: "name"; value: string }
   | { step: "gender"; value: string }
+  | { step: "age"; value: number }
   | { step: "abilities"; value: "manual" | "random"; rolled?: Record<string, number> }
   | { step: "ability_set"; values: Record<string, number> }
   | { step: "traits"; value: "manual" | "random" | "none"; rolled?: string[] }
@@ -33,11 +35,14 @@ export type CreationDraft = {
   /** new_world: 새 게임 (세계 소개부터) / heir: 사망 뒤 같은 세계의 새 캐릭터 */
   mode: "new_world" | "heir";
   answers: CreationAnswer[];
+  /** 이미 정해진 나이 (직접 쓰는 시나리오에서 플레이어가 쓴 나이). 있으면 나이를 묻지 않는다 */
+  presetAge?: number;
 };
 
 export type CreationStepId =
   | "name"
   | "gender"
+  | "age"
   | "abilities"
   | "ability_set"
   | "traits"
@@ -62,6 +67,7 @@ type TraitStep = keyof typeof TRAIT_KIND_STEP;
 export function collectDraft(draft: CreationDraft) {
   let name: string | undefined;
   let gender: string | undefined;
+  let age: number | undefined = draft.presetAge;
   let abilityMethod: "manual" | "random" | undefined;
   let abilitiesSet = false;
   const abilities: Record<string, number> = {};
@@ -71,6 +77,7 @@ export function collectDraft(draft: CreationDraft) {
   for (const a of draft.answers) {
     if (a.step === "name") name = a.value;
     else if (a.step === "gender") gender = a.value;
+    else if (a.step === "age") age = a.value;
     else if (a.step === "abilities") {
       abilityMethod = a.value;
       if (a.rolled) Object.assign(abilities, a.rolled);
@@ -86,7 +93,7 @@ export function collectDraft(draft: CreationDraft) {
       traits.push(...a.value);
     }
   }
-  return { name, gender, abilityMethod, abilitiesSet, abilities, traitMethod, traits, traitSteps };
+  return { name, gender, age, abilityMethod, abilitiesSet, abilities, traitMethod, traits, traitSteps };
 }
 
 /** 다음에 물을 단계 */
@@ -94,6 +101,7 @@ export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
   const d = collectDraft(draft);
   if (d.name === undefined) return "name";
   if (d.gender === undefined) return "gender";
+  if (s.creation?.age && d.age === undefined) return "age";
   if (d.abilityMethod === undefined) return "abilities";
   if (d.abilityMethod === "manual" && !d.abilitiesSet) return "ability_set";
   if (d.traitMethod === undefined) return "traits";
@@ -108,7 +116,7 @@ export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
 /** 고른 것 (확인 단계 요약, 세계 만들기) */
 export function draftChoice(draft: CreationDraft): CharacterChoice {
   const d = collectDraft(draft);
-  return { name: d.name ?? "", gender: d.gender ?? null, abilities: d.abilities, portrait: null, traits: d.traits };
+  return { name: d.name ?? "", gender: d.gender ?? null, abilities: d.abilities, portrait: null, traits: d.traits, age: d.age ?? null };
 }
 
 export type AbilityTier = { value: number; count: number; label: string };
@@ -288,6 +296,12 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     if (!name || name.length > MAX_NAME_LENGTH) return { ok: false, error: `이름은 1~${MAX_NAME_LENGTH}자다.` };
     return add({ step: "name", value: name });
   }
+  if (step === "age") {
+    const n = Number.parseInt(text.trim().replace(/세$/, ""), 10);
+    const problems = Number.isNaN(n) || !/^\d+\s*세?$/.test(text.trim()) ? [`나이는 숫자로 적는다 (${s.creation!.age!.min}~${s.creation!.age!.max}).`] : checkAge(s, n);
+    if (problems.length) return { ok: false, error: problems.join(" ") };
+    return add({ step: "age", value: n });
+  }
   if (step === "gender") {
     const v = fromOptions();
     return v ? add({ step: "gender", value: v }) : { ok: false, error: `성별은 ${options.map((o) => o.label).join(", ")} 중 하나다.` };
@@ -340,6 +354,7 @@ function summary(s: Scenario, draft: CreationDraft): string[] {
   const lines: string[] = [];
   if (d.name !== undefined) lines.push(`이름: ${d.name}`);
   if (d.gender !== undefined) lines.push(`성별: ${s.creation?.genders.find((g) => g.id === d.gender)?.label ?? d.gender}`);
+  if (d.age !== undefined && s.creation?.age) lines.push(`나이: ${d.age}세`);
   const shown = s.stats.filter((x) => d.abilities[x.id] !== undefined);
   if (shown.length) lines.push(`능력: ${shown.map((x) => `${x.label} ${signed(d.abilities[x.id]!)}`).join(", ")}`);
   if (d.traitMethod !== undefined && (d.traitMethod !== "manual" || d.traitSteps.has("traits_pick"))) {
@@ -351,6 +366,7 @@ function summary(s: Scenario, draft: CreationDraft): string[] {
 const STEP_TITLE: Record<string, string> = {
   name: "이름",
   gender: "성별",
+  age: "나이",
   abilities: "능력",
   ability_set: "능력 정하기",
   traits: "트레잇",
@@ -402,6 +418,13 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   } else if (step === "gender") {
     lines.push("물을 것: 성별.");
     if (narration.gender) lines.push(`서술 힌트: ${narration.gender}`);
+  } else if (step === "age") {
+    const range = s.creation!.age!;
+    const base = content.roles[roleId]?.age;
+    lines.push(
+      `물을 것: 나이 (${range.min}~${range.max}세, 숫자로). 보기 없이 글로 묻는다.${base ? ` 이 시나리오의 기본은 ${base}세다. 플레이어가 상관없다고 하면 "기본"을 넘긴다.` : ""}`,
+    );
+    if (narration.age) lines.push(`서술 힌트: ${narration.age}`);
   } else if (step === "abilities") {
     const tiers = abilityTiers(s);
     lines.push(
@@ -480,7 +503,8 @@ export function stepIndex(s: Scenario, draft: CreationDraft): { at: number; tota
   const d = collectDraft(draft);
   const abilitySteps = d.abilityMethod === "manual" ? 1 : 0;
   const traitSteps = d.traitMethod === "manual" ? 2 : 0;
-  const total = 5 + abilitySteps + traitSteps;
+  const ageStep = s.creation?.age && draft.presetAge === undefined ? 1 : 0;
+  const total = 5 + ageStep + abilitySteps + traitSteps;
   return { at: Math.min(draft.answers.length + 1, total), total };
 }
 

@@ -253,6 +253,7 @@ function CharacterStep({ view, busy, answer }: StepProps) {
       )}
       <Chosen view={view} />
       {step === "name" && <NameStep view={view} busy={busy} answer={answer} />}
+      {step === "age" && <AgeStep view={view} busy={busy} answer={answer} />}
       {(step === "gender" || step === "abilities" || step === "traits") && (
         <>
           <h2 className="newgame-title">{step === "gender" ? "성별을 골라 주세요" : step === "abilities" ? "타고난 능력은 어떻게 정할까요?" : "타고난 기질과 버릇(트레잇)은 어떻게 할까요?"}</h2>
@@ -304,7 +305,7 @@ function Chosen({ view }: { view: NewGameView }) {
   return (
     <div className="newgame-chosen">
       {ch.name && <div className="chosen-name">{ch.name}</div>}
-      {ch.gender && <div className="muted small">{ch.gender}</div>}
+      {(ch.gender || ch.age) && <div className="muted small">{[ch.gender, ch.age ? `${ch.age}세` : null].filter(Boolean).join(" · ")}</div>}
       {ch.abilities.length > 0 && (
         <div className="chosen-stats">
           {ch.abilities.map((a) => (
@@ -334,6 +335,43 @@ function NameStep({ view, busy, answer }: StepProps) {
       <div className="newgame-inline">
         <input className="newgame-input" value={name} maxLength={max} autoFocus onChange={(e) => setName(e.target.value)} placeholder={`1~${max}자`} />
         <button type="submit" className="primary" disabled={busy || !name.trim()}>
+          다음
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** 나이: 숫자로 적거나 시나리오의 나이 그대로 */
+function AgeStep({ view, busy, answer }: StepProps) {
+  const range = view.character!.age!;
+  const [age, setAge] = useState(String(range.default));
+  const n = Number(age);
+  const ok = Number.isInteger(n) && n >= range.min && n <= range.max;
+  return (
+    <form
+      className="newgame-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (ok) answer(String(n));
+      }}
+    >
+      <h2 className="newgame-title">나이를 정해 주세요</h2>
+      <p className="newgame-note">
+        {range.min}~{range.max}세. 이 시나리오의 기본은 {range.default}세입니다.
+      </p>
+      <div className="newgame-inline">
+        <input
+          className="newgame-input"
+          type="number"
+          inputMode="numeric"
+          min={range.min}
+          max={range.max}
+          value={age}
+          autoFocus
+          onChange={(e) => setAge(e.target.value)}
+        />
+        <button type="submit" className="primary" disabled={busy || !ok}>
           다음
         </button>
       </div>

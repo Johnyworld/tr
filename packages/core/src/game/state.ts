@@ -1579,6 +1579,8 @@ export type CharacterChoice = {
   portrait: string | null;
   /** 트레잇 id. null이면 무작위 (MCP의 "알아서"), 없으면 빈 목록 */
   traits?: string[] | null;
+  /** 나이 (12-69). 없으면 시나리오(역할)의 나이 */
+  age?: number | null;
 };
 
 export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player", rng?: Rng, choice?: CharacterChoice): Character {
@@ -1591,7 +1593,7 @@ export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "pl
     factionId: role.faction,
     rank: role.rank,
     occupation: role.occupation ? { id: role.occupation, standing: 0 } : null,
-    age: role.age,
+    age: choice?.age ?? role.age,
     stats: choice?.abilities ?? role.start_stats ?? rollAbilities(s, rng),
     skills: role.start_skills,
     conditions: initialConditions(s),

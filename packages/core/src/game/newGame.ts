@@ -126,13 +126,17 @@ export function answerNewGame(packs: ReadonlyMap<string, Content>, draft: NewGam
     const v = norm(text);
     if (["confirm", "이대로", "좋아"].includes(v)) {
       const role = buildCustomRole(content, draft.custom!.input!);
-      return { ok: true, draft: { ...draft, custom: { ...draft.custom!, confirmed: true }, customRole: role }, done: false };
+      // 글에서 정한 나이는 다시 묻지 않는다
+      return { ok: true, draft: { ...draft, custom: { ...draft.custom!, confirmed: true }, customRole: role, character: { ...draft.character, presetAge: role.age } }, done: false };
     }
     if (["remap", "다시 옮기기"].includes(v)) return { ok: true, draft: { ...draft, custom: { ...draft.custom!, input: null } }, done: false };
     if (["rewrite", "다시 쓰기"].includes(v)) return { ok: true, draft: { ...draft, custom: { story: null, input: null, confirmed: false } }, done: false };
     return { ok: false, error: "이대로(confirm), 다시 옮기기(remap), 다시 쓰기(rewrite) 중에서 고른다." };
   }
-  const r: CreationReply = answerCreation(content.scenario, draft.character, answer, rng);
+  // 나이를 "기본"으로 답하면 시나리오(역할)의 나이
+  const role = draftContent(packs, draft).roles[draft.roleId!];
+  const ageDefault = currentStep(content.scenario, draft.character) === "age" && role && ["기본", "default", "상관없음", "아무거나"].includes(norm(text));
+  const r: CreationReply = answerCreation(content.scenario, draft.character, ageDefault ? String(role.age) : answer, rng);
   if (!r.ok) return r;
   const next = { ...draft, character: r.draft };
   if (!r.done) return { ok: true, draft: next, done: false };
@@ -175,7 +179,7 @@ export function backNewGame(draft: NewGameDraft): NewGameDraft {
   if (draft.options !== undefined && draft.contentRating) return { ...draft, options: undefined };
   const c = draft.custom;
   if (draft.roleId === CUSTOM_ROLE_ID && c) {
-    if (c.confirmed) return { ...draft, custom: { ...c, confirmed: false }, customRole: null };
+    if (c.confirmed) return { ...draft, custom: { ...c, confirmed: false }, customRole: null, character: { ...draft.character, presetAge: undefined } };
     if (c.input) return { ...draft, custom: { ...c, input: null } };
     if (c.story) return { ...draft, custom: { ...c, story: null } };
   }

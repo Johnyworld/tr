@@ -37,37 +37,51 @@ describe("대화로 하는 캐릭터 생성", () => {
     const first = describeCreationStep(content, newCreationDraft("new_world"), roleId);
     expect(first).toContain("지금 상황");
     expect(first).toContain("분대장 강태호");
-    expect(first).toContain("1/5: 이름");
+    expect(first).toContain("1/6: 이름");
     expect(first).not.toContain("<!--");
     const heir = describeCreationStep(content, newCreationDraft("heir"), roleId);
     expect(heir).not.toContain("지금 상황");
     expect(heir).toContain("이름");
   });
 
-  it("이름 → 성별 → 능력 한 번에 → 트레잇(약점·강점 → 성격) → 확인 순서로, 고른 그대로 만든다", () => {
-    const { draft } = run(["한서진", "여성", "manual"]);
+  it("이름 → 성별 → 나이 → 능력 한 번에 → 트레잇(약점·강점 → 성격) → 확인 순서로, 고른 그대로 만든다", () => {
+    const { draft } = run(["한서진", "여성", "30", "manual"]);
     expect(currentStep(s, draft)).toBe("ability_set");
     const step = describeCreationStep(content, draft, roleId);
     expect(step).toContain("가장 자신 있는 것(+2) 1개, 잘하는 것(+1) 2개, 자신 없는 것(-1) 1개");
     expect(step).toContain("1. 근력 — 힘, 완력");
     expect(step).toContain("7. 지능");
     expect(step).not.toContain("포인트를 나눠");
-    const abilities = run(["한서진", "여성", "manual", "2 / 4, 7 / 6"]);
+    const abilities = run(["한서진", "여성", "30", "manual", "2 / 4, 7 / 6"]);
     expect(currentStep(s, abilities.draft)).toBe("traits");
-    const traits = run(["한서진", "female", "manual", "민첩\n감각 지능\n매력", "manual", ["허약 체질", "beautiful"], "없음"]);
+    const traits = run(["한서진", "female", "30", "manual", "민첩\n감각 지능\n매력", "manual", ["허약 체질", "beautiful"], "없음"]);
     expect(currentStep(s, traits.draft)).toBe("confirm");
-    const done = run(["한서진", "female", "manual", "+2: agility / +1: 감각, 7 / -1: 매력", "manual", "허약 체질, beautiful", "없음", "start"]);
+    const done = run(["한서진", "female", "30", "manual", "+2: agility / +1: 감각, 7 / -1: 매력", "manual", "허약 체질, beautiful", "없음", "start"]);
     expect(done.choice).toEqual({
       name: "한서진",
       gender: "female",
       abilities: { strength: 0, agility: 2, vitality: 0, senses: 1, nerve: 0, charm: -1, intellect: 1 },
       portrait: null,
       traits: ["frail", "beautiful"],
+      age: 30,
     });
   });
 
+  it("나이는 월드의 범위 안의 숫자만 (12-69)", () => {
+    const { draft } = run(["서진", "male"]);
+    expect(currentStep(s, draft)).toBe("age");
+    expect(describeCreationStep(content, draft, roleId)).toContain("16~65세");
+    for (const bad of ["15", "66", "스무 살", "30.5"]) expect(answerCreation(s, draft, bad, createSeededRng(1)).ok, bad).toBe(false);
+    const ok = answerCreation(s, draft, "42세", createSeededRng(1));
+    expect(ok.ok && draftChoice(ok.draft).age).toBe(42);
+    // 이미 정한 나이(직접 쓰는 시나리오)가 있으면 묻지 않는다
+    const preset = run(["서진", "male"], { ...newCreationDraft("new_world"), presetAge: 50 }).draft;
+    expect(currentStep(s, preset)).toBe("abilities");
+    expect(draftChoice(preset).age).toBe(50);
+  });
+
   it("능력 등급은 개수가 맞아야 하고, 없는 능력·겹친 능력은 오류 (초안은 그대로)", () => {
-    const { draft } = run(["서진", "male", "manual"]);
+    const { draft } = run(["서진", "male", "30", "manual"]);
     expect(stepOptions(s, draft, currentStep(s, draft))).toEqual([]);
     const bad = (a: string) => {
       const r = answerCreation(s, draft, a, createSeededRng(1));
@@ -83,7 +97,7 @@ describe("대화로 하는 캐릭터 생성", () => {
   it("ability_array가 없는 월드는 포인트 배분 글로 받는다", () => {
     const s0 = { ...s, ability_array: undefined };
     let draft = newCreationDraft("new_world");
-    for (const a of ["서진", "male", "manual"]) {
+    for (const a of ["서진", "male", "30", "manual"]) {
       const r = answerCreation(s0, draft, a, createSeededRng(1));
       if (r.ok) draft = r.draft;
     }
@@ -102,7 +116,7 @@ describe("대화로 하는 캐릭터 생성", () => {
   });
 
   it("강점은 약점으로 얻은 포인트만큼만, 반대 트레잇은 함께 못 고른다", () => {
-    const { draft } = run(["서진", "male", "random", "manual"]);
+    const { draft } = run(["서진", "male", "30", "random", "manual"]);
     expect(answerCreation(s, draft, "느린 학습, quick_learner", createSeededRng(1)).ok).toBe(false); // 반대
     const r = answerCreation(s, draft, "marksman", createSeededRng(1));
     expect(r.ok).toBe(false);
@@ -111,7 +125,7 @@ describe("대화로 하는 캐릭터 생성", () => {
   });
 
   it("약점·강점은 한 표(약점 먼저)로 보여 주고, 표의 번호로 고를 수 있다", () => {
-    const { draft } = run(["서진", "male", "random", "manual"]);
+    const { draft } = run(["서진", "male", "30", "random", "manual"]);
     expect(currentStep(s, draft)).toBe("traits_pick");
     const step = describeCreationStep(content, draft, roleId);
     expect(step).toContain("| 번호 | 종류 | 이름 | 포인트 | 효과 |");
@@ -134,15 +148,15 @@ describe("대화로 하는 캐릭터 생성", () => {
   });
 
   it("운에 맡기면 규칙에 맞는 값을 바로 굴려 확인 단계에서 보여 준다", () => {
-    const { draft } = run(["서진", "male", "random", "random"]);
+    const { draft } = run(["서진", "male", "30", "random", "random"]);
     expect(currentStep(s, draft)).toBe("confirm");
-    const done = run(["서진", "male", "random", "random", "이대로 시작"]);
+    const done = run(["서진", "male", "30", "random", "random", "이대로 시작"]);
     expect(checkCharacterChoice(s, done.choice!)).toEqual([]);
     expect(describeCreationStep(content, draft, roleId)).toContain("능력: 근력");
   });
 
   it("뒤로 가기와 처음부터 다시", () => {
-    const { draft } = run(["서진", "male", "random", "none"]);
+    const { draft } = run(["서진", "male", "30", "random", "none"]);
     expect(currentStep(s, backCreation(draft))).toBe("traits");
     const back = answerCreation(s, draft, "back", createSeededRng(1));
     expect(back.ok && currentStep(s, back.draft)).toBe("traits");

@@ -1,4 +1,3 @@
-import { activeCompanions } from "../game/companions.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { josa } from "../text.ts";
 import { aliasOf, headingAs, knowsName, playerCalls } from "../game/acquaintance.ts";
@@ -18,6 +17,8 @@ import { factionOutlook, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
 import { formatChronicle, successionOptions } from "../engine/succession.ts";
 import { seasonAt, seasonLabel } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
+import { buildPlayerView, type PlayerView } from "../views/player.ts";
+import { DIALOGUE_STYLE_LABELS } from "../engine/storyletTools.ts";
 
 /**
  * MUD식 정보 명령어 (기획서 11.7).
@@ -79,12 +80,16 @@ const status: CommandDef = {
   id: "status",
   name: "상태",
   aliases: ["스탯", "status"],
-  description: "능력, 스킬, 경험치, 몸 상태, 소속과 등급, 평판",
+  description: "능력, 스킬, 경험치, 몸 상태, 소속·평판·진급, 동행, 분대, 전투",
   run(ctx) {
     const { state, content } = ctx;
     const scenario = content.scenario;
     const player = playerOf(ctx);
-    const lines = [header(`${player.name} · ${roleLabelOf(ctx)}`), clockLine(state), ""];
+    const view = buildPlayerView(state, content);
+    const lines = [header(`${player.name} · ${roleLabelOf(ctx)}`), clockLine(state)];
+    const who = [view.genderLabel, view.age ? `${view.age}세` : null, view.occupationLabel ? `직분 ${view.occupationLabel}` : null].filter(Boolean);
+    if (who.length) lines.push(who.join(" · "));
+    lines.push("");
     lines.push(scenario.stats.map((s) => `${s.label} ${signed(player.stats[s.id] ?? 0)}`).join("   "), "");
     const traits = traitLabels(content, player);
     if (traits.length) lines.push(`트레잇  ${traits.join(" · ")}`);
@@ -92,12 +97,13 @@ const status: CommandDef = {
     const growth = growthLine(scenario, player);
     if (growth) lines.push(growth);
     lines.push("");
-    for (const track of scenario.condition_tracks) {
-      // 숨은 단계(잠복기)는 캐릭터가 모르므로 보이는 단계로
+    // 있는 증상만 보인다 (처음 단계는 빼고, 숨은 단계(잠복기)는 캐릭터가 모르므로 처음 단계로 보인다). 하나도 없으면 "건강함"
+    const symptoms = scenario.condition_tracks.flatMap((track) => {
       const shown = shownLevel(track, player.conditions[track.id]);
       const index = track.levels.indexOf(shown);
-      lines.push(gaugeLine(track.label, index, track.levels.length - 1, shown.label));
-    }
+      return index > 0 ? [gaugeLine(track.label, index, track.levels.length - 1, shown.label)] : [];
+    });
+    lines.push(...(symptoms.length ? symptoms : ["몸 상태  건강함"]));
     const penalty = conditionPenalty(scenario, player);
     if (penalty !== 0) lines.push(`판정 보정 ${signed(penalty)}`);
     lines.push("");
@@ -110,9 +116,20 @@ const status: CommandDef = {
         `평판  공적 ${player.merit} · 불복종 ${player.disobedience}회` +
           (trust !== null && commander ? ` · ${commander.name}의 신뢰 ${relationLabel(trust)}` : ""),
       );
+      if (view.service.promotionMissing?.length) lines.push(`진급까지  ${view.service.promotionMissing.join(", ")}`);
     }
-    const companions = activeCompanions(state).map((id) => state.characters[id]!.extra?.label ?? state.characters[id]!.name);
-    if (companions.length) lines.push(`동행  ${companions.join(", ")}`);
+    if (view.companions.length) {
+      lines.push(`동행  ${view.companions.map((c) => `${c.name} (${c.bondLabel}${c.note ? ` · ${c.note}` : ""}${c.apart && !c.note ? " · 떨어져 있음" : ""})`).join(", ")}`);
+    }
+    if (view.squad) {
+      lines.push("", "분대");
+      lines.push(...(view.squad.length ? view.squad.flatMap((m) => [`  ${m.name} · ${m.doing}`, ...(m.report ? [`    보고: ${m.report}`] : [])]) : ["  없음"]));
+    }
+    if (view.battle) {
+      const b = view.battle;
+      const bar = `${"◀".repeat(Math.max(0, -b.momentum))}${"·".repeat(b.momentumMax - Math.abs(b.momentum))}${"▶".repeat(Math.max(0, b.momentum))}`;
+      lines.push("", `전투  ${b.title} (${b.sideLabel} · ${b.round}라운드)`, `  전세 ${bar} ${b.momentumLabel}`, `  경보 ${b.alarmLabel} · 위치 ${b.positionLabel}`);
+    }
     const debts = Object.entries(player.debts ?? {});
     if (debts.length) lines.push(`빚    ${debts.map(([f, n]) => `${ctx.content.factions[f]?.name ?? f} ${n}`).join(" · ")}`);
     if (player.dead) lines.push("", "사망했습니다.");
@@ -135,8 +152,10 @@ const inventory: CommandDef = {
       header("소지품"),
       ...(own.length ? own : ["  없음"]),
       ...(scene.length ? ["", "주변에 놓인 물건", ...scene] : []),
-      "",
-      NOT_YET("무게", "자원 단계(9)"),
+      ...(() => {
+        const gear = buildPlayerView(ctx.state, ctx.content).gear;
+        return gear ? ["", burdenLine(gear), `장비는 ${ctx.prefix ?? "!"}장비`] : [];
+      })(),
     ].join("\n");
   },
 };
@@ -197,13 +216,16 @@ const people: CommandDef = {
     const call = (id: string) => playerCalls(state, content, id);
     if (!args) {
       if (known.length === 0) return [header("인물"), "아는 인물이 없습니다."].join("\n");
+      const present = new Map(buildPlayerView(state, content).present.map((p) => [p.id, p]));
       return [
         header("인물"),
         ...known.map((id) => {
           const c = state.characters[id]!;
           const r = state.perceived[id] ?? NEUTRAL_RELATION;
-          const here = state.scene.present.includes(id) ? " · 함께 있음" : "";
-          return `${headingAs(state, content, state.playerId, id)}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : c.away ? " · 떠남" : c.captive ? (state.playerZone === c.captive.zone ? " · 여기 붙잡혀 있다" : " · 행방 모름") : ""}${here}  (신뢰 ${relationLabel(r.trust)})`;
+          const shown = present.get(id);
+          const here = state.scene.present.includes(id) ? ` · 함께 있음${shown?.conditionLabel ? ` (${shown.conditionLabel})` : ""}` : "";
+          const attitude = state.perceived[id] ? `신뢰 ${relationLabel(r.trust)} · 호감 ${relationLabel(r.affection)} · 존중 ${relationLabel(r.respect)}` : "아직 만나 보지 않음";
+          return `${headingAs(state, content, state.playerId, id)}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : c.away ? " · 떠남" : c.captive ? (state.playerZone === c.captive.zone ? " · 여기 붙잡혀 있다" : " · 행방 모름") : ""}${here}  (${attitude})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,
@@ -261,6 +283,8 @@ const factions: CommandDef = {
         if (own.address) lines.push(`  호칭: ${own.address}`);
         if (own.punishment) lines.push(`  어기면: ${own.punishment}`);
       }
+      const policy = buildPlayerView(ctx.state, ctx.content).policy;
+      if (policy.length) lines.push(`  방침 ${policy.map((p) => `${p.label} ${p.option}`).join(" · ")}`);
       for (const p of o.own.plans) lines.push(`  ${p.label}: ${p.stage}${p.targetName ? ` (목표는 ${josa(p.targetName, "이라는/라는")} 말)` : ""}`);
       lines.push("");
     }
@@ -287,6 +311,8 @@ const mission: CommandDef = {
     if (active) {
       lines.push(active.title, active.briefing, `기한 ${formatTime(active.deadline)}`, "");
       active.requirements.forEach((r, i) => lines.push(`  - ${describeRequirement(content.scenario, r, active.progress[i] ?? 0)}`));
+      const loan = buildPlayerView(state, content).loan;
+      if (loan.length) lines.push("", `빌린 장비 (반납): ${loan.join(", ")}`);
     } else {
       lines.push("수행 중인 임무가 없습니다. 상관에게 물어보세요.");
     }
@@ -373,6 +399,101 @@ const chronicle: CommandDef = {
   },
 };
 
+function burdenLine(gear: NonNullable<PlayerView["gear"]>): string {
+  return `소지품 무게  ${gear.weight}/${gear.capacity}kg${gear.burden === 2 ? " · 너무 무거움 (옮겨 가지 못한다)" : gear.burden === 1 ? " · 무거움 (판정이 불리하다)" : ""}`;
+}
+
+const gear: CommandDef = {
+  id: "gear",
+  name: "장비",
+  aliases: ["무기", "gear"],
+  description: "손에 든 무기, 입은 방어구, 탄약·내구도, 소지품 무게",
+  run(ctx) {
+    const view = buildPlayerView(ctx.state, ctx.content);
+    const g = view.gear;
+    if (!g) return [header("장비"), "이 월드에는 장비 규칙이 없습니다."].join("\n");
+    const line = (x: NonNullable<typeof g.weapon>) =>
+      [`${x.slotLabel.padEnd(2, "　")}  ${x.name}${x.ammo ? ` · ${x.ammo}` : ""}${x.durability ? ` · 내구도 ${x.durability.left}/${x.durability.max}` : ""}`, ...(x.detail ? [`      ${x.detail}`] : [])];
+    return [
+      header("장비"),
+      ...(g.weapon ? line(g.weapon) : ["손    맨손"]),
+      ...g.armor.flatMap(line),
+      "",
+      burdenLine(g),
+      ...(view.loan.length ? [`빌린 장비 (반납): ${view.loan.join(", ")}`] : []),
+    ].join("\n");
+  },
+};
+
+/** 검색어 없이 보여 줄 행적·아는 것 수 */
+const LIST_RECENT = 15;
+
+const deeds: CommandDef = {
+  id: "deeds",
+  name: "행적",
+  aliases: ["deeds"],
+  description: "내가 한 일 중 평판에 남는 것 (본 사람은 내가 아는 사람만)",
+  run(ctx) {
+    const list = buildPlayerView(ctx.state, ctx.content).deeds;
+    const shown = list.slice(0, LIST_RECENT);
+    return [
+      header(`행적 (${list.length})`),
+      ...(shown.length
+        ? shown.map((d) => `  [${d.tagLabels.join("·")}] ${d.summary}${d.visibleWitnesses.length ? ` — 본 사람: ${d.visibleWitnesses.join(", ")}` : ""}`)
+        : ["  남은 행적이 없습니다."]),
+      ...(list.length > shown.length ? ["", `최근 ${shown.length}개만 보여 줍니다.`] : []),
+    ].join("\n");
+  },
+};
+
+const beliefs: CommandDef = {
+  id: "beliefs",
+  name: "아는것",
+  aliases: ["아는", "믿음", "beliefs"],
+  args: "[검색어]",
+  description: "알고 있다고 믿는 것 전체 (보고 들은 것, 소문). 검색어로 찾기",
+  run(ctx, args) {
+    // "?아는 것"처럼 띄어 쓰면 "것"이 검색어로 들어온다
+    const query = args.trim().replace(/^것(\s+|$)/, "");
+    const all = buildPlayerView(ctx.state, ctx.content).beliefs;
+    const list = query ? all.filter((b) => b.fact.includes(query)) : all;
+    const shown = list.slice(0, LIST_RECENT);
+    return [
+      header(query ? `아는 것: ${query}` : `아는 것 (${all.length})`),
+      ...(shown.length ? shown.map((b) => `  [${b.learnedLabel} · ${b.sourceLabel}] ${b.fact}`) : ["  없습니다."]),
+      ...(list.length > shown.length ? ["", `최근 ${shown.length}개만 보여 줍니다 (전체 ${list.length}개). 검색어로 찾을 수 있습니다: ${ctx.prefix ?? "!"}아는것 검색어`] : []),
+    ].join("\n");
+  },
+};
+
+const ties: CommandDef = {
+  id: "ties",
+  name: "사이",
+  aliases: ["인물사이", "ties"],
+  description: "알게 된 인물들 사이의 관계",
+  run(ctx) {
+    const list = buildPlayerView(ctx.state, ctx.content).ties;
+    return [header("인물 사이"), ...(list.length ? list.map((t) => `  ${t.text}`) : ["  아는 것이 없습니다."])].join("\n");
+  },
+};
+
+const settings: CommandDef = {
+  id: "settings",
+  name: "설정",
+  aliases: ["options", "settings"],
+  description: "이 게임의 설정 (성인 콘텐츠, 대화 형식)",
+  run(ctx) {
+    const o = ctx.state.options;
+    return [
+      header("설정"),
+      `성인 콘텐츠  ${o.mature ? "켬" : "끔"}`,
+      `대화 형식    ${DIALOGUE_STYLE_LABELS[o.dialogue]}${o.dialogue === "script" ? " (대사를 \"이름: 대사\" 줄로 뗀다)" : " (대사를 서술 속에 녹인다)"}`,
+      "",
+      "바꾸려면 채팅으로 말하거나(예: \"대화 형식을 대본으로\") 상태 화면의 톱니바퀴를 누릅니다.",
+    ].join("\n");
+  },
+};
+
 const help: CommandDef = {
   id: "help",
   name: "도움말",
@@ -398,8 +519,13 @@ export const COMMANDS: readonly CommandDef[] = [
   mission,
   ration,
   rumors,
+  gear,
+  deeds,
+  beliefs,
+  ties,
   journal,
   chronicle,
+  settings,
   help,
 ];
 

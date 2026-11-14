@@ -29,6 +29,8 @@ import type { TimeSegment } from "../rules/time.ts";
 
 /** 턴마다가 아니라 이벤트가 이만큼 쌓이면 스냅숏 (닫을 때는 늘) */
 const SNAPSHOT_EVERY = 150;
+/** 상태 화면 일지 탭에 싣는 요약 수 */
+const SHEET_JOURNAL = 30;
 export const RECAP_TURNS = 5;
 
 /** 바뀐 것만 보내다가도 이만큼 턴이 지나면 장면 전체를 다시 보낸다 (기획서 11.6 토큰) */
@@ -400,8 +402,12 @@ ${this.sceneForGm()}` };
     return { ok: true, options: this.options(), changed };
   }
 
+  /** 상태 화면의 시트. 일지 탭에는 ?일지와 같은 현재 캐릭터의 요약 기록을 최근 것부터 */
   playerView(): PlayerView {
-    return buildPlayerView(this.state(), this.content);
+    const journal = this.summaries({ limit: SHEET_JOURNAL })
+      .map((s, i) => ({ key: `${i}:${s.turn}:${s.kind}`, timeLabel: formatTime(s.time), scene: s.kind === "scene", text: s.text.replace(/\s+/g, " ") }))
+      .reverse();
+    return { ...buildPlayerView(this.state(), this.content), journal };
   }
 
   /** 화면 머리: 시나리오 이름과 시작 장면 */

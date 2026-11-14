@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TIME_SEGMENTS } from "../rules/time.ts";
+import { iconNameSchema } from "../content/icons.ts";
 
 /**
  * 시나리오 팩 설정 (기획서 12.3). 장르 요소의 이름과 목록을 데이터로 둔다.
@@ -154,6 +155,8 @@ export const scenarioFileSchema = z
         z.strictObject({
           id,
           label: z.string().min(1),
+          /** 상태 화면 아이콘 (12-64) */
+          icon: iconNameSchema.optional(),
           levels: z
             .array(
               z.strictObject({
@@ -664,7 +667,16 @@ export const scenarioFileSchema = z
     weather: z
       .strictObject({
         kinds: z
-          .array(z.strictObject({ id, label: z.string().min(1), description: z.string().min(1), visibility: z.number().min(0).max(2) }))
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              description: z.string().min(1),
+              visibility: z.number().min(0).max(2),
+              /** 상태 화면 아이콘 (12-66) */
+              icon: iconNameSchema.optional(),
+            }),
+          )
           .min(1),
         /** 계절 id → 날씨 id → 무게. 계절이 없거나 빠졌으면 default */
         by_season: z.record(id, z.record(id, z.number().min(0))).default({}),

@@ -1025,13 +1025,14 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-width: 560px;
+  max-width: 480px;
   margin: 0 auto;
   padding: 0 16px;
 }
 
 .status-page .header {
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px 10px;
 }
 
@@ -1053,6 +1054,12 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* 스크롤은 되지만 막대는 감춘다 (좁은 패널에서 시트 끝을 덮지 않게) */
+  scrollbar-width: none;
+}
+
+.status-sheet::-webkit-scrollbar {
+  display: none;
 }
 
 .status-sheet .sheet {
@@ -1184,11 +1191,11 @@ body {
 }
 
 .settings-panel {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
+  /* 자리(top·left·width)는 Settings.tsx가 버튼 위치로 재서 화면 안에 둔다 */
+  position: fixed;
   z-index: 10;
-  width: min(300px, calc(100vw - 32px));
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
   padding: 14px 16px 12px;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -1245,4 +1252,562 @@ body {
   margin: 10px 0 0;
   font-size: 12px;
   color: var(--error);
+}
+
+/* ── 캐릭터 시트 (12-64): 고정 HUD + 블록 ───────────────────────── */
+.status-sheet .sheet {
+  padding-top: 0;
+}
+
+.hud {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 12px 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet .hud .sheet-hero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.hero-who {
+  flex: 1;
+  min-width: 0;
+}
+
+.world-title {
+  min-width: 0;
+}
+
+.world-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 시간대 색 (12-66): 새벽 보라, 아침 옅은 금빛, 낮 강조색, 저녁 주황, 밤 푸른 회색 */
+.clock-time.seg-dawn { color: #a99bc4; }
+.clock-time.seg-morning { color: #dcc38a; }
+.clock-time.seg-day { color: var(--accent); }
+.clock-time.seg-evening { color: #d4824a; }
+.clock-time.seg-night { color: #7f93b5; }
+
+.clock-sep::before,
+.clock-weather::before {
+  content: "·";
+  margin: 0 5px;
+  color: var(--muted);
+}
+
+.clock-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.clock-weather.warn { color: var(--partial); }
+.clock-weather.bad { color: var(--error); }
+
+.bar {
+  display: block;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bar > * {
+  display: block;
+  height: 100%;
+  background: var(--muted);
+  border-radius: 2px;
+}
+
+.xp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11px;
+}
+
+.xp-level {
+  font-weight: 600;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0 6px;
+}
+
+.xp-bar {
+  flex: 1;
+  height: 7px;
+}
+
+.xp-bar > * {
+  background: var(--accent);
+}
+
+.xp-num {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-points {
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 0 6px;
+}
+
+.hud-conditions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.hud-condition {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--muted);
+  text-align: center;
+}
+
+.hud-condition.warn {
+  color: var(--partial);
+  background: rgba(209, 165, 75, 0.12);
+}
+
+.hud-condition.bad {
+  color: var(--error);
+  background: rgba(210, 106, 92, 0.14);
+}
+
+.hud-penalty {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--error);
+  text-align: right;
+}
+
+.sheet .hud .sheet-battle {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--error);
+  border-radius: 8px;
+}
+
+.mission-card {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid #4a443c;
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.mission-card.empty {
+  border-style: dashed;
+  background: none;
+}
+
+.mission-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.mission-tag {
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+.mission-due {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.mission-due.urgent {
+  color: var(--error);
+}
+
+.mission-card .mission-title {
+  margin: 2px 0 4px;
+}
+
+.mission-reqs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.mission-reqs li {
+  display: flex;
+  gap: 6px;
+}
+
+.mission-reqs .check {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-top: 3px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 10px;
+  line-height: 11px;
+  text-align: center;
+}
+
+.mission-reqs li.met {
+  color: var(--success);
+}
+
+.mission-reqs li.met .check {
+  border-color: var(--success);
+}
+
+.sheet section.block {
+  margin-top: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.block-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ability-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 24px;
+  margin-bottom: 10px;
+}
+
+.ability {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ability .cells {
+  display: flex;
+  gap: 3px;
+}
+
+.ability .cells i {
+  width: 16px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.ability .cells i.on {
+  background: #b9b2a5;
+}
+
+.ability.top,
+.ability.top .cells i.on {
+  color: #fff;
+}
+
+.ability.top .cells i.on {
+  background: #fff;
+}
+
+.ability.low {
+  color: var(--error);
+}
+
+.ability.low .cells i.on {
+  background: var(--error);
+}
+
+.icon {
+  flex: none;
+  vertical-align: -3px;
+}
+
+.icon-muted {
+  color: var(--muted);
+}
+
+.icon-weapon {
+  color: var(--accent);
+}
+
+.icon-heal {
+  color: var(--error);
+}
+
+.gear-boxes {
+  display: grid;
+  gap: 6px;
+}
+
+.gear-box {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #0d0c0b;
+}
+
+.gear-box.empty {
+  grid-template-columns: 30px minmax(0, 1fr);
+  background: none;
+  border-style: dashed;
+}
+
+.gear-box .gear-slot {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.gear-ammo {
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.gear-durability {
+  width: 96px;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.gear-durability .bar {
+  margin-bottom: 2px;
+}
+
+.gear-durability.good .bar > * {
+  background: var(--success);
+}
+
+.gear-durability.warn .bar > * {
+  background: var(--partial);
+}
+
+.gear-durability.bad,
+.gear-durability.bad span {
+  color: var(--error);
+}
+
+.gear-durability.bad .bar > * {
+  background: var(--error);
+}
+
+.weight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.weight .bar {
+  width: 56px;
+}
+
+.weight .bar > * {
+  background: var(--success);
+}
+
+.weight.warn {
+  color: var(--partial);
+}
+
+.weight.warn .bar > * {
+  background: var(--partial);
+}
+
+.weight.bad {
+  color: var(--error);
+}
+
+.weight.bad .bar > * {
+  background: var(--error);
+}
+
+.item-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.item-grid li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #0d0c0b;
+  font-size: 13px;
+}
+
+.item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet.dead {
+  filter: grayscale(1);
+}
+
+/* 시트 탭 (12-65) */
+.sheet-tabs {
+  position: sticky;
+  z-index: 2;
+  display: flex;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet-tab {
+  position: relative;
+  flex: 1;
+  padding: 9px 4px 8px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sheet-tab:hover {
+  color: var(--text);
+}
+
+.sheet-tab.on {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.sheet-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.tab-dot {
+  position: absolute;
+  top: 7px;
+  margin-left: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.hud {
+  border-bottom: none;
+}
+
+.sheet-panel > section:last-child,
+.sheet-panel > section.block:last-child {
+  border-bottom: none;
+}
+
+.sheet-panel > section:not(.block) {
+  margin-top: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.journal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.journal-list li {
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+}
+
+.journal-list li.scene {
+  border-left-color: var(--accent);
+}
+
+.journal-time {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* 함께 있는 인물 (HUD, 12-65) */
+.hud-present {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.hud-present-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-right: 2px;
+}
+
+.person-chip {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  cursor: default;
+}
+
+.person-rank {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.person-chip.hurt {
+  border-color: var(--partial);
+}
+
+.person-cond {
+  color: var(--partial);
+  font-size: 11px;
 }

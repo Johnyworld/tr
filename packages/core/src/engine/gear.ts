@@ -355,7 +355,7 @@ export function describeGear(content: Content, c: Character): string {
     const item = content.items[id]!;
     const wear = c.wear[id] ?? 0;
     const ammo = item.weapon?.ammo ? `, ${nameOf(content, item.weapon.ammo)} ${c.inventory[item.weapon.ammo] ?? 0}` : "";
-    return `${item.name}(${id})${item.durability ? ` 닳음 ${wear}/${item.durability}` : ""}${ammo}`;
+    return `${item.name}(${id})${item.durability ? ` 내구도 ${Math.max(0, item.durability - wear)}/${item.durability}` : ""}${ammo}`;
   };
   parts.push(`손에 든 것: ${weapon ? show(weapon) : "맨손"}`);
   const worn = ARMOR_SLOTS.map((s) => equippedItem(c, s)).filter((x): x is string => !!x);

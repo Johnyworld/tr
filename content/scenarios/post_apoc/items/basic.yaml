@@ -12,12 +12,14 @@
   repair: { move: maintenance, materials: { scrap_metal: 1 } }
 - id: water_bottle
   name: 물병
+  icon: water
   description: 찌그러진 알루미늄 물병.
   kind: misc
   weight: 0.6
   value: 1
 - id: radio
   name: 무전기
+  icon: tool
   description: 배터리 덮개를 테이프로 감아 둔 휴대용 무전기.
   kind: tool
   weight: 0.6
@@ -34,6 +36,7 @@
   repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
 - id: binoculars
   name: 쌍안경
+  icon: tool
   description: 한쪽 렌즈에 실금이 간 쌍안경. 멀리서 살피는 데 좋다.
   kind: tool
   weight: 0.6
@@ -54,12 +57,14 @@
   value: 2
 - id: ledger
   name: 배급 장부
+  icon: paper
   description: 손때 묻은 두꺼운 장부. 배급 내역이 빽빽하게 적혀 있다.
   kind: misc
   weight: 0.8
   value: 1
 - id: explosive
   name: 사제 폭약
+  icon: bomb
   description: 비료와 연료로 만든 폭약 한 덩이. 도화선이 짧다.
   kind: material
   weight: 1.5
@@ -78,12 +83,14 @@
   value: 14
 - id: c_armband
   name: 붉은연합 완장
+  icon: paper
   description: 붉은 천에 검은 줄을 그은 완장. 붉은연합 병사들이 왼팔에 찬다.
   kind: misc
   weight: 0.05
   value: 1
 - id: trade_token
   name: 나루상단 통행패
+  icon: paper
   description: 구멍 뚫린 동전에 끈을 꿴 것. 나루상단의 장터에서 신원 보증으로 쓴다.
   kind: misc
   weight: 0.05
@@ -96,12 +103,14 @@
   value: 3
 - id: blanket
   name: 담요
+  icon: cloth
   description: 군데군데 해진 군용 담요. 덮으면 언 몸이 녹는다 (쓰면 추위 2단계).
   kind: consumable
   weight: 1.5
   value: 3
 - id: coat
   name: 방한복
+  icon: cloth
   description: 솜이 뭉친 두꺼운 방한 외투. 지니고 다니면 추위를 덜 탄다.
   kind: misc
   weight: 2.0
@@ -124,6 +133,7 @@
   repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
 - id: crowbar
   name: 쇠지렛대
+  icon: club
   description: 끝이 구부러진 쇠지렛대. 문을 따거나 휘두르기 좋다. 지니고 있으면 뒤지기도 수월하다.
   kind: weapon
   weight: 1.5

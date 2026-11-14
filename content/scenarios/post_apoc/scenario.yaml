@@ -382,6 +382,7 @@ move_roles:
 condition_tracks:
   - id: harm
     label: 부상
+    icon: heart
     levels:
       - { id: none, label: 무사, penalty: 0 }
       - { id: light, label: 경상, penalty: -1 }
@@ -391,6 +392,7 @@ condition_tracks:
   # 허기 (12-1): 하루마다 배급 수준만큼 바뀐다. 기진에 이르면 굶주림으로 부상
   - id: hunger
     label: 허기
+    icon: hunger
     levels:
       - { id: fed, label: 든든함, penalty: 0 }
       - { id: hungry, label: 허기짐, penalty: 0 }
@@ -399,14 +401,16 @@ condition_tracks:
   # 감염 (12-1): 감염체에게 다치면 확률로 잠복기. 잠복기는 캐릭터가 모른다(hidden). 하루마다 나빠지고, 악화에 이르면 하루마다 부상
   - id: infection
     label: 감염
+    icon: virus
     levels:
-      - { id: clean, label: 없음, penalty: 0 }
+      - { id: clean, label: 깨끗함, penalty: 0 }
       - { id: incubating, label: 잠복, penalty: 0, hidden: true }
       - { id: fever, label: 발열, penalty: -1 }
       - { id: grave, label: 악화, penalty: -2 }
   # 추위 (12-4): 계절·날씨만큼 추워진다. 연료가 있는 우리 거점에서는 녹는다. 저체온이면 하루마다 부상
   - id: cold
     label: 추위
+    icon: cold
     levels:
       - { id: warm, label: 따뜻함, penalty: 0 }
       - { id: chilly, label: 쌀쌀함, penalty: 0 }
@@ -415,19 +419,21 @@ condition_tracks:
   # 질병 (12-4): 몸이 약해지면 걸린다. 잠복기는 캐릭터가 모른다. 위중하면 하루마다 부상
   - id: disease
     label: 질병
+    icon: fever
     levels:
-      - { id: healthy, label: 없음, penalty: 0 }
+      - { id: healthy, label: 건강함, penalty: 0 }
       - { id: incubating, label: 잠복, penalty: 0, hidden: true }
       - { id: sick, label: 앓음, penalty: -1 }
       - { id: critical, label: 위중, penalty: -2 }
   # 마음 (12-48): 크게 다치거나 곁의 사람이 죽는 것을 보면 흔들린다. 무너져도 죽지는 않는다 (판정만 어렵다)
   - id: nerves
     label: 마음
+    icon: mind
     levels:
       - { id: steady, label: 멀쩡함, penalty: 0 }
-      - { id: shaken, label: 흔들림, penalty: 0 }
-      - { id: frayed, label: 너덜너덜함, penalty: -1 }
-      - { id: broken, label: 무너짐, penalty: -2 }
+      - { id: shaken, label: 괴로움, penalty: 0 }
+      - { id: frayed, label: 미칠 것 같음, penalty: -1 }
+      - { id: broken, label: 멘탈붕괴, penalty: -2 }
 # apply_harm이 쓰는 트랙
 harm_track: harm
 
@@ -615,12 +621,12 @@ body:
 # 날씨 (12-3, *임시*). 하루마다 계절별 무게로 고른다. visibility: 숨은 목격자 확률 배수 (작을수록 안 보인다)
 weather:
   kinds:
-    - { id: clear, label: 맑음, description: 멀리까지 보인다, visibility: 1 }
-    - { id: overcast, label: 흐림, description: 하늘이 낮게 깔려 빛이 흐리다, visibility: 0.9 }
-    - { id: rain, label: 비, description: 빗소리가 발소리를 덮고 길이 미끄럽다, visibility: 0.6 }
-    - { id: fog, label: 안개, description: 몇 걸음 앞도 잘 보이지 않는다. 숨어 움직이기 좋다, visibility: 0.4 }
-    - { id: snow, label: 눈, description: 소리는 묻히지만 발자국이 남는다, visibility: 1.1 }
-    - { id: cold_snap, label: 한파, description: 바깥에 오래 있으면 손발이 얼어붙는다, visibility: 0.9 }
+    - { id: clear, label: 맑음, description: 멀리까지 보인다, visibility: 1, icon: sun }
+    - { id: overcast, label: 흐림, description: 하늘이 낮게 깔려 빛이 흐리다, visibility: 0.9, icon: cloud }
+    - { id: rain, label: 비, description: 빗소리가 발소리를 덮고 길이 미끄럽다, visibility: 0.6, icon: rain }
+    - { id: fog, label: 안개, description: 몇 걸음 앞도 잘 보이지 않는다. 숨어 움직이기 좋다, visibility: 0.4, icon: fog }
+    - { id: snow, label: 눈, description: 소리는 묻히지만 발자국이 남는다, visibility: 1.1, icon: snow }
+    - { id: cold_snap, label: 한파, description: 바깥에 오래 있으면 손발이 얼어붙는다, visibility: 0.9, icon: cold }
   by_season:
     winter: { clear: 3, overcast: 3, snow: 3, fog: 1, cold_snap: 2 }
     spring: { clear: 4, overcast: 3, rain: 3, fog: 2 }

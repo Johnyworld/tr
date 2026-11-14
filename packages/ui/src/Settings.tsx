@@ -41,6 +41,29 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  /** 창의 자리: 버튼 아래, 화면 안 (머리가 줄바꿈되어 버튼이 왼쪽에 와도 밖으로 나가지 않게) */
+  const [place, setPlace] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const GUTTER = 16;
+    const measure = () => {
+      const b = buttonRef.current?.getBoundingClientRect();
+      if (!b) return;
+      const vw = document.documentElement.clientWidth;
+      const width = Math.min(300, vw - GUTTER * 2);
+      const left = Math.min(Math.max(b.right - width, GUTTER), vw - GUTTER - width);
+      setPlace({ top: b.bottom + 6, left, width });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -81,6 +104,7 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
   return (
     <div className="settings" ref={boxRef}>
       <button
+        ref={buttonRef}
         type="button"
         className={open ? "settings-button on" : "settings-button"}
         aria-label="설정"
@@ -95,7 +119,7 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
         </svg>
       </button>
       {open && (
-        <div className="settings-panel" role="dialog" aria-label="설정">
+        <div className="settings-panel" role="dialog" aria-label="설정" style={place ?? { visibility: "hidden" }}>
           <h2>설정</h2>
           {!options && !error && <p className="muted">불러오는 중…</p>}
           {options &&

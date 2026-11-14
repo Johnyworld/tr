@@ -1,4 +1,5 @@
 import { TIE_KINDS } from "../game/ties.ts";
+import { iconNameSchema } from "./icons.ts";
 import { z } from "zod";
 import { ACTIVITIES, TIME_SEGMENTS } from "../rules/time.ts";
 import { beliefAccuracySchema, beliefSourceSchema } from "../game/belief.ts";
@@ -26,6 +27,8 @@ export const itemContentSchema = z.strictObject({
   /** 흥정 값. 없으면 1 */
   value: z.number().int().min(0).max(500).optional(),
   kind: z.enum(["weapon", "armor", "tool", "ammo", "material", "consumable", "food", "misc"]).optional(),
+  /** 상태 화면 아이콘 (12-64). 없으면 무기·방어구·종류로 고른다 (content/icons.ts) */
+  icon: iconNameSchema.optional(),
   /** 무기: 공격에 쓰는 스킬, 입힐 수 있는 피해 상한, 소음(0~2), 쏠 때 하나씩 쓰는 탄약, 판정 보정 */
   weapon: z
     .strictObject({

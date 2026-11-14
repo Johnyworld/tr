@@ -18,8 +18,9 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
 import type { Content } from "../content/schemas.ts";
-import { formatTime } from "../rules/time.ts";
-import { conditionPenalty, describeConditions, initialConditions, rankLabel, shownLevel } from "../scenario/scenario.ts";
+import { formatTime, MINUTES_PER_DAY, segmentOf, type TimeSegment } from "../rules/time.ts";
+import { itemIcon, type IconName } from "../content/icons.ts";
+import { conditionPenalty, initialConditions, rankLabel, shownLevel } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import type { TranscriptEntry } from "../engine/log.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
@@ -43,19 +44,27 @@ export type PlayerView = {
   age: number | null;
   roleLabel: string;
   timeLabel: string;
+  /**
+   * 시계 (12-66): 화면이 시간대 색과 날씨 아이콘을 그린다. 날씨 chill: 그 날씨가 하루에 더하는 추위 단계 (0이면 견딜 만하다)
+   */
+  clock: { time: string; segment: TimeSegment; season: string | null; weather: { label: string; icon: IconName | null; chill: number } | null };
   /** 상태 트랙별 현재 단계 (예: 부상 경상). worsened: 첫 단계에서 나빠졌는지 */
-  conditions: { id: string; label: string; levelLabel: string; worsened: boolean }[];
+  /** icon: 트랙의 아이콘 (없으면 null). step: 보이는 단계(0이 처음), penalty: 이 단계의 판정 보정 */
+  conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon: IconName | null; step: number; penalty: number }[];
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
+  /** 능력 값의 범위 (칸으로 그릴 때) */
+  statRange: { min: number; max: number };
   /** 트레잇 (자기 것은 모두 보인다) */
   traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; description: string }[];
   /** 할 줄 아는 스킬 (아마추어 이상) */
   skills: { id: string; label: string; category: string; value: number }[];
   /** 레벨·경험치 (성장 규칙이 없으면 null). next: 다음 레벨까지 필요한 누적 경험치 */
-  growth: { level: number; xp: number; next: number; skillPoints: number } | null;
-  inventory: { id: string; name: string; quantity: number }[];
-  sceneItems: { id: string; name: string; quantity: number }[];
+  growth: { level: number; xp: number; next: number; skillPoints: number; prev: number } | null;
+  /** 지닌 물건 (장비로 걸친 것은 뺀다. 장비는 gear) */
+  inventory: ItemView[];
+  sceneItems: ItemView[];
   /** conditionLabel: 상태가 처음과 달라졌을 때만 요약 (예: "부상: 경상") */
   present: { id: string; name: string; rankLabel: string; look: string; conditionLabel: string | null }[];
   /** 직분과 그 사다리의 칸 (기획서 12.6) */
@@ -67,7 +76,8 @@ export type PlayerView = {
     /** 진급까지 남은 조건. 진급 대상이 아니면 null */
     promotionMissing: string[] | null;
   };
-  mission: { title: string; briefing: string; deadlineLabel: string; requirements: string[] } | null;
+  /** deadlineLeftLabel: 기한까지 남은 때 ("하루 반", "5시간", "기한 지남"). urgent: 반나절 안 */
+  mission: { title: string; briefing: string; deadlineLabel: string; deadlineLeftLabel: string; urgent: boolean; requirements: string[] } | null;
   /** 소속 무리 사정 (거점에서 느끼는 것, 대략). 세력 시뮬레이션이 없으면 null */
   faction: { name: string; moraleLabel: string; rationLabel: string } | null;
   /** 지금 있는 구역 */
@@ -101,12 +111,28 @@ export type PlayerView = {
   deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   /** 최근 것부터 */
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
+  /** 지난 일 요약 (최근 것부터, 현재 캐릭터의 것만). scene: 장면을 매듭지은 요약. GameWorld.playerView가 채운다 (?일지와 같은 기록) */
+  journal: { key: string; timeLabel: string; scene: boolean; text: string }[];
 };
 
 
 
-/** 장비 한 줄 */
-export type GearView = { id: string; name: string; slotLabel: string; detail: string; wear: string | null; ammo: string | null };
+/** 장비 한 줄. durability: 남은 내구도 (내구도가 없는 물건은 null) */
+export type GearView = { id: string; name: string; slotLabel: string; detail: string; durability: { left: number; max: number } | null; ammo: string | null; icon: IconName };
+
+/** 물건 한 칸 */
+export type ItemView = { id: string; name: string; quantity: number; icon: IconName };
+
+/** 기한까지 남은 때를 말로 (분 단위) */
+export function timeLeftLabel(minutes: number): string {
+  if (minutes <= 0) return "기한 지남";
+  if (minutes < 60) return "1시간 안";
+  if (minutes < MINUTES_PER_DAY) return `${Math.ceil(minutes / 60)}시간`;
+  const halves = Math.round((minutes / MINUTES_PER_DAY) * 2);
+  const days = Math.floor(halves / 2);
+  const words = ["", "하루", "이틀", "사흘", "나흘", "닷새", "엿새", "이레"];
+  return `${words[days] ?? `${days}일`}${halves % 2 ? " 반" : ""}`;
+}
 
 const SLOT_LABELS: Record<string, string> = { weapon: "손", body: "몸", head: "머리", arms: "팔" };
 const HARM_CAP_LABELS: Record<string, string> = { light: "가벼운 피해까지", heavy: "무거운 피해까지" };
@@ -130,8 +156,9 @@ function gearView(state: GameState, content: Content): PlayerView["gear"] {
       name: item.name,
       slotLabel: SLOT_LABELS[slot] ?? slot,
       detail,
-      wear: item.durability ? `${me.wear[id] ?? 0}/${item.durability}` : null,
+      durability: item.durability ? { left: Math.max(0, item.durability - (me.wear[id] ?? 0)), max: item.durability } : null,
       ammo: w?.ammo ? `${content.items[w.ammo]?.name ?? w.ammo} ${me.inventory[w.ammo] ?? 0}` : null,
+      icon: itemIcon(item),
     };
   };
   return {
@@ -143,14 +170,43 @@ function gearView(state: GameState, content: Content): PlayerView["gear"] {
   };
 }
 
+function clockView(state: GameState, content: Content): PlayerView["clock"] {
+  const s = content.scenario;
+  const weather = weatherNow(s, state);
+  return {
+    time: formatTime(state.time),
+    segment: segmentOf(state.time),
+    season: seasonLabel(seasonAt(s, state.time)) || null,
+    weather: weather ? { label: weather.label, icon: weather.icon ?? null, chill: s.body?.cold?.weather[weather.id] ?? 0 } : null,
+  };
+}
+
 export function buildPlayerView(state: GameState, content: Content): PlayerView {
   const scenario = content.scenario;
   const player = state.characters[state.playerId]!;
   const initial = initialConditions(scenario);
   const changed = (c: { conditions: Record<string, string> }) =>
     Object.entries(initial).some(([track, level]) => c.conditions[track] !== level);
-  const items = (inv: Record<string, number>) =>
-    Object.entries(inv).map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity }));
+  /** 처음과 달라진 상태만, 보이는 단계 이름으로 (예: "경상 · 허기짐"). 잠복처럼 아직 안 보이면 빼고, 다 안 보이면 null */
+  const changedConditions = (c: { conditions: Record<string, string> }) => {
+    const labels = scenario.condition_tracks
+      .map((track) => shownLevel(track, c.conditions[track.id]))
+      .filter((level, i) => level.id !== initial[scenario.condition_tracks[i]!.id])
+      .map((level) => level.label);
+    return labels.length ? labels.join(" · ") : null;
+  };
+  const items = (inv: Record<string, number>): ItemView[] =>
+    Object.entries(inv)
+      .filter(([, quantity]) => quantity > 0)
+      .map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity, icon: itemIcon(content.items[id]) }));
+  // 장비로 걸친 것은 소지품에서 하나씩 뺀다 (장비 블록에 따로 보인다)
+  const carried = { ...player.inventory };
+  if (content.scenario.gear) {
+    for (const slot of ["weapon", "body", "head", "arms"] as const) {
+      const id = equippedItem(player, slot);
+      if (id) carried[id] = (carried[id] ?? 0) - 1;
+    }
+  }
   const outlook = factionOutlook(state, content);
   const zone = zoneOutlook(state, content);
   const b = state.battle;
@@ -180,26 +236,34 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         ? (content.roles[state.roleId]?.label ?? rankLabel(scenario, player.rank))
         : rankLabel(scenario, player.rank),
     occupationLabel: occupationTitle(content, player),
+    clock: clockView(state, content),
     timeLabel: [formatTime(state.time), seasonLabel(seasonAt(content.scenario, state.time)), weatherNow(content.scenario, state)?.label ?? ""]
       .filter(Boolean)
       .join(" · "),
-    conditions: scenario.condition_tracks.map((track) => ({
-      id: track.id,
-      label: track.label,
-      levelLabel: shownLevel(track, player.conditions[track.id]).label,
-      worsened: shownLevel(track, player.conditions[track.id]).id !== initial[track.id],
-    })),
+    conditions: scenario.condition_tracks.map((track) => {
+      const shown = shownLevel(track, player.conditions[track.id]);
+      return {
+        id: track.id,
+        label: track.label,
+        levelLabel: shown.label,
+        worsened: shown.id !== initial[track.id],
+        icon: track.icon ?? null,
+        step: track.levels.indexOf(shown),
+        penalty: shown.penalty,
+      };
+    }),
     conditionPenalty: conditionPenalty(scenario, player),
     dead: player.dead,
     stats: scenario.stats.map((s) => ({ id: s.id, label: s.label, value: player.stats[s.id] ?? 0 })),
+    statRange: { min: scenario.ranges.ability.min, max: scenario.ranges.ability.max },
     traits: traitsOf(content, player).map((t) => ({ id: t.id, label: t.label, kind: t.kind, description: t.description })),
     skills: scenario.moves
       .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: player.skills[m.id] ?? m.default }))
       .filter((m) => m.value >= 0),
     growth: scenario.growth
-      ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, player.level + 1), skillPoints: player.skillPoints }
+      ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level) }
       : null,
-    inventory: items(player.inventory),
+    inventory: items(carried),
     sceneItems: items(state.scene.items),
     present: state.scene.present.map((id) => {
       const npc = state.characters[id]!;
@@ -209,7 +273,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         // 동물은 계급이 없다 (호칭에 이미 "동물")
         rankLabel: npc.extra && content.extras[npc.extra.template]?.animal ? "" : rankLabel(scenario, npc.rank),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
-        conditionLabel: npc.dead ? "사망" : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : changed(npc) ? describeConditions(scenario, npc) : null,
+        conditionLabel: npc.dead ? "사망" : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : changed(npc) ? changedConditions(npc) : null,
       };
     }),
     service: {
@@ -231,6 +295,8 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         title: m.title,
         briefing: m.briefing,
         deadlineLabel: formatTime(m.deadline),
+        deadlineLeftLabel: timeLeftLabel(m.deadline - state.time),
+        urgent: m.deadline - state.time < MINUTES_PER_DAY / 2,
         requirements: m.requirements.map((r, i) => describeRequirement(scenario, r, m.progress[i] ?? 0)),
       };
     })(),
@@ -309,5 +375,6 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         learnedLabel: formatTime(b.learnedAt),
       }))
       .reverse(),
+    journal: [],
   };
 }

@@ -38,11 +38,12 @@ describe("정보 명령어", () => {
     expect(JSON.stringify({ state: w.state(), transcript: w.transcript(), summaries: w.summaries() })).toBe(before);
   });
 
-  it("!상태: 머리줄, 능력치, 상태 트랙 게이지", async () => {
+  it("!상태: 머리줄, 능력치, 증상이 없으면 건강함", async () => {
     const out = await world().runCommand("!상태");
     expect(out).toContain("━━━ 신병 · 테스트 전투원 ━━━");
     expect(out).toContain("근력 +1   민첩 +2   냉정 0   감각 +1   교섭 -1");
-    expect(out).toMatch(/부상  ░{8}  무사/);
+    expect(out).toContain("몸 상태  건강함");
+    expect(out).not.toContain("무사");
   });
 
   it("별칭으로도 실행되고, 모르는 명령어는 가까운 것을 제안한다", async () => {
@@ -57,8 +58,9 @@ describe("정보 명령어", () => {
     const w = world();
     const hidden = Object.values(w.state().deeds)[0]!.witnesses.filter((x) => x.hidden);
     const all = (await Promise.all(COMMANDS.map((c) => w.runCommand(`!${c.name}`)))).join("\n") + await w.runCommand("!인물 강분대");
-    // 행적·목격자 정보를 보여 주는 명령어는 없다
+    // 숨은 목격자는 어떤 명령어에도 나오지 않는다 (?행적은 내가 아는 "본 사람"만)
     expect(all).not.toContain("목격");
+    for (const x of hidden) expect(all).not.toContain(w.state().characters[x.npcId]?.name ?? x.npcId);
     if (hidden.length > 0) expect(w.state().relations.npc_leader?.player).toBeDefined();
     // 만나기 전이므로 태도를 모른다 (진짜 관계가 바뀌었어도 드러나지 않는다)
     expect(await w.runCommand("!인물 강분대")).toContain("아직 직접 만나 본 적이 없다");
@@ -70,6 +72,29 @@ describe("정보 명령어", () => {
     const npc = TEST_CONTENT.npcs.npc_leader!;
     expect(all).not.toContain(npc.secret!.content);
     for (const truth of npc.doesnt_know) expect(all).not.toContain(truth);
+  });
+
+  it("상태 화면에 있는 것은 명령어로도 본다: 설정, 장비, 행적, 아는 것, 인물 사이", async () => {
+    const w = world();
+    const settings = await w.runCommand("?설정");
+    expect(settings).toContain("성인 콘텐츠  끔");
+    expect(settings).toContain("대화 형식    소설");
+    w.setOptions({ dialogue: "script", mature: true });
+    expect(await w.runCommand("?설정")).toContain("대화 형식    대본");
+    expect(await w.runCommand("?options")).toContain("성인 콘텐츠  켬");
+    expect(await w.runCommand("?행적")).toContain("통조림을 훔쳤다");
+    const view = w.playerView();
+    if (view.beliefs.length) expect(await w.runCommand("?아는것")).toContain(view.beliefs[0]!.fact);
+    expect(await w.runCommand("?아는것 없을법한검색어")).toContain("없습니다");
+    for (const t of view.ties) expect(await w.runCommand("?사이")).toContain(t.text);
+    const gear = await w.runCommand("?장비");
+    if (view.gear) {
+      expect(gear).toContain(`소지품 무게  ${view.gear.weight}/${view.gear.capacity}kg`);
+      expect(await w.runCommand("?소지품")).toContain("?장비");
+    }
+    // 도움말에 모두 나온다
+    const help = await w.runCommand("?도움말");
+    for (const name of ["설정", "장비", "행적", "아는것", "사이"]) expect(help).toContain(`?${name}`);
   });
 
   it("!일지: 현재 캐릭터의 요약 기록, 검색어로 거른다", async () => {

@@ -7,18 +7,20 @@ export type PlayerView = {
   roleLabel: string;
   occupationLabel: string | null;
   timeLabel: string;
-  conditions: { id: string; label: string; levelLabel: string; worsened: boolean }[];
+  clock?: { time: string; segment: string; season: string | null; weather: { label: string; icon: string | null; chill: number } | null };
+  conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon?: string | null; step?: number; penalty?: number }[];
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
+  statRange?: { min: number; max: number };
   traits: { id: string; label: string; kind: TraitKind; description: string }[];
   skills: { id: string; label: string; category: string; value: number }[];
-  growth: { level: number; xp: number; next: number; skillPoints: number } | null;
-  inventory: { id: string; name: string; quantity: number }[];
-  sceneItems: { id: string; name: string; quantity: number }[];
+  growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number } | null;
+  inventory: ItemView[];
+  sceneItems: ItemView[];
   present: { id: string; name: string; rankLabel: string; look: string; conditionLabel: string | null }[];
   service: { merit: number; disobedience: number; daysServed: number; promotionMissing: string[] | null };
-  mission: { title: string; briefing: string; deadlineLabel: string; requirements: string[] } | null;
+  mission: { title: string; briefing: string; deadlineLabel: string; deadlineLeftLabel?: string; urgent?: boolean; requirements: string[] } | null;
   faction: { name: string; moraleLabel: string; rationLabel: string } | null;
   zone: { name: string; owner: string } | null;
   battle: { title: string; sideLabel: string; round: string; momentum: number; momentumMax: number; momentumLabel: string; alarmLabel: string; positionLabel: string } | null;
@@ -32,8 +34,11 @@ export type PlayerView = {
   relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
   deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
+  journal?: { key: string; timeLabel: string; scene: boolean; text: string }[];
 };
 
-export type GearView = { id: string; name: string; slotLabel: string; detail: string; wear: string | null; ammo: string | null };
+export type GearView = { id: string; name: string; slotLabel: string; detail: string; durability?: { left: number; max: number } | null; ammo: string | null; icon?: string };
+
+export type ItemView = { id: string; name: string; quantity: number; icon?: string };
 
 export type TraitKind = "positive" | "negative" | "personality";

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { SettingsButton } from "./Settings.tsx";
+import { Icon } from "./Icon.tsx";
 import type { PlayerView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
@@ -58,8 +59,10 @@ export function StatusApp() {
   return (
     <div className="status-page">
       <header className="header">
-        <h1>{status?.scenarioName ?? "TRPG"}</h1>
-        {status?.open && <span className="clock">{status.player.timeLabel}</span>}
+        <div className="world-title">
+          <h1>{status?.scenarioName ?? "TRPG"}</h1>
+          {status?.open && <WorldTime player={status.player} />}
+        </div>
         <span className={connected ? "status-live" : "status-live off"} title={connected ? "Claude 세션과 연결됨" : "연결 끊김 (Claude 세션이 닫혔나요?)"}>
           {connected ? "●" : "○ 연결 끊김"}
         </span>
@@ -79,6 +82,25 @@ export function StatusApp() {
         <div key="sheet" className="status-sheet">
           <CharacterSheet player={status.player} />
         </div>
+      )}
+    </div>
+  );
+}
+
+/** 월드 이름 아래 시계 (12-66): 시간대마다 색이 바뀌고, 날씨는 아이콘. 추위를 부르는 날씨는 노랑, 많이 부르면 빨강 */
+function WorldTime({ player }: { player: PlayerView }) {
+  const c = player.clock;
+  if (!c) return <div className="world-time">{player.timeLabel}</div>;
+  const w = c.weather;
+  return (
+    <div className="world-time">
+      <span className={`clock-time seg-${c.segment}`}>{c.time}</span>
+      {c.season && <span className="clock-sep">{c.season}</span>}
+      {w && (
+        <span className={w.chill >= 2 ? "clock-weather bad" : w.chill === 1 ? "clock-weather warn" : "clock-weather"} title={w.chill ? "추위가 스며드는 날씨" : undefined}>
+          {w.icon && <Icon name={w.icon} size={13} />}
+          {w.label}
+        </span>
       )}
     </div>
   );

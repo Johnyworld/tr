@@ -40,6 +40,7 @@
   repair: { move: maintenance, materials: { scrap_metal: 1 } }
 - id: baseball_bat
   name: 야구방망이
+  icon: club
   description: 못을 몇 개 박아 둔 나무 방망이. 손잡이에 덕트 테이프를 감았다.
   kind: weapon
   weight: 1.0
@@ -70,6 +71,7 @@
   repair: { move: maintenance, materials: { scrap_metal: 1 }, tools: [toolkit] }
 - id: crossbow
   name: 석궁
+  icon: bow
   description: 자전거 부품으로 만든 석궁. 장전이 느리지만 소리가 거의 없다.
   kind: weapon
   weight: 3.0
@@ -90,6 +92,7 @@
   repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
 - id: harpoon_gun
   name: 작살총
+  icon: bow
   description: 여울섬 경비가 메는 고무줄 작살총. 무겁지만 총소리가 나지 않는다.
   kind: weapon
   weight: 4.0
@@ -149,6 +152,7 @@
   tool: { bonus: { mechanics: 1 } }
 - id: flashlight
   name: 손전등
+  icon: light
   description: 손으로 돌려 충전하는 손전등. 어두운 데를 뒤질 때 좋지만 빛은 감염체를 부른다.
   kind: tool
   weight: 0.4
@@ -184,6 +188,7 @@
   value: 3
 - id: cloth
   name: 천 조각
+  icon: cloth
   description: 깨끗이 빤 헌 옷감 몇 장. 붕대가 되거나 갑옷 안감이 된다.
   kind: material
   weight: 0.2
@@ -196,12 +201,14 @@
   value: 1
 - id: gunpowder
   name: 화약
+  icon: bomb
   description: 비닐에 싼 화약 한 줌. 습기를 먹으면 끝이다.
   kind: material
   weight: 0.2
   value: 5
 - id: casings
   name: 빈 탄피
+  icon: ammo
   description: 주워 모은 빈 탄피 한 줌. 화약만 있으면 다시 쓸 수 있다.
   kind: material
   weight: 0.1
@@ -216,12 +223,14 @@
 # ── 급조 물건 (기획서 4.8, 급조 스킬로 만든다) ──
 - id: fuel_bottle
   name: 기름 한 병
+  icon: fire
   description: 차에서 빼낸 휘발유를 담은 유리병. 마개를 단단히 막아 두었다.
   kind: material
   weight: 0.6
   value: 4
 - id: molotov
   name: 화염병
+  icon: fire
   description: 기름병 입구에 천을 쑤셔 넣은 것. 던지면 한 번에 끝난다. 불빛과 소리가 감염체를 부른다.
   kind: weapon
   weight: 0.6
@@ -245,6 +254,7 @@
   tool: { bonus: { sense_danger: 1 } }
 - id: pack_frame
   name: 배낭 틀
+  icon: bag
   description: 판자와 천으로 짠 등짐 틀. 무게를 등에 고루 실어 더 많이 지고 다닌다.
   kind: tool
   weight: 1.5

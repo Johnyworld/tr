@@ -1,3 +1,23 @@
+/* 부산단디명조 (부산광역시, 공공누리 제1유형: 출처표시). 눈누 CDN */
+@font-face {
+  font-family: "BusanDandiMyeongjo";
+  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/2610132210@l-2/l/부산단디명조L.woff2") format("woff2");
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: "BusanDandiMyeongjo";
+  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/2610132210@l-2/l/부산단디명조M.woff2") format("woff2");
+  font-weight: 400 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "BusanDandiMyeongjo";
+  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/2610132210@l-2/l/부산단디명조B.woff2") format("woff2");
+  font-weight: 600 700;
+  font-display: swap;
+}
+
 :root {
   --bg: #121110;
   --panel: #1b1a18;
@@ -11,7 +31,7 @@
   --partial: #d1a54b;
   --miss: #c46a5a;
   color-scheme: dark;
-  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  font-family: "BusanDandiMyeongjo", "Noto Serif KR", "AppleMyungjo", serif;
 }
 
 * {

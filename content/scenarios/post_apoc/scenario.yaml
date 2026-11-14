@@ -106,6 +106,7 @@ gear:
 crafting:
   recipes:
     - { id: reload_rounds, label: 재생 소총탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: rifle_rounds, qty: 3 } }
+    - { id: reload_pistol_rounds, label: 재생 권총탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: pistol_rounds, qty: 3 } }
     - { id: reload_shells, label: 재생 산탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: shells, qty: 3 } }
     - { id: whittle_bolts, label: 석궁 볼트 깎기, move: carpentry, materials: { planks: 1, scrap_metal: 1 }, tools: [kitchen_knife], yields: { item: bolts, qty: 4 } }
     - { id: pipe_spear, label: 사제 창 만들기, move: improvise, materials: { scrap_metal: 1, kitchen_knife: 1, duct_tape: 1 }, yields: { item: pipe_spear, qty: 1 } }

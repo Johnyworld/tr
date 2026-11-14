@@ -8,6 +8,12 @@
   kind: ammo
   weight: 0.1
   value: 3
+- id: pistol_rounds
+  name: 권총탄 (몇 발)
+  description: 짧고 뭉툭한 권총탄 몇 발. 지구대나 옛 경비실에서 나온다. 소총탄보다 귀하다.
+  kind: ammo
+  weight: 0.05
+  value: 4
 - id: shells
   name: 산탄 (몇 발)
   description: 종이 껍데기가 눅눅한 산탄 몇 발.
@@ -61,11 +67,11 @@
   repair: { move: improvise, materials: { duct_tape: 1 } }
 - id: pistol
   name: 권총
-  description: 총열에 녹이 슨 경찰 권총. 작고 가볍지만 쏘면 시끄럽다. 소총탄과 구경이 맞게 깎은 탄을 쓴다.
+  description: 총열에 녹이 슨 경찰 권총. 작고 가볍지만 쏘면 시끄럽다. 권총탄을 쓴다.
   kind: weapon
   weight: 0.9
   value: 20
-  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: rifle_rounds }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: pistol_rounds }
   durability: 6
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1 }, tools: [toolkit] }

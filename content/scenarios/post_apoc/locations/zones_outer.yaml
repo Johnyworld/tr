@@ -48,6 +48,7 @@
     chance: 0.45
     items:
       - { item: rifle_rounds, weight: 2, qty: [1, 2] }
+      - { item: pistol_rounds, weight: 1, qty: [1, 1] }
       - { item: shells, weight: 1, qty: [1, 1] }
       - { item: kevlar_vest, weight: 0.5, qty: [1, 1] }
       - { item: moto_helmet, weight: 1, qty: [1, 1] }

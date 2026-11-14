@@ -52,6 +52,7 @@
       - { item: crowbar, weight: 1, qty: [1, 1] }
       - { item: c_armband, weight: 1, qty: [1, 1] }
       - { item: rifle_rounds, weight: 2, qty: [1, 2] }
+      - { item: pistol_rounds, weight: 1, qty: [1, 1] }
       - { item: shells, weight: 1, qty: [1, 1] }
       - { item: gunpowder, weight: 1, qty: [1, 1] }
 

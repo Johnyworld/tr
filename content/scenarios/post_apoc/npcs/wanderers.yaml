@@ -376,7 +376,7 @@
   skills: { shoot: 2, mechanics: 2, persuade: 1, sense_danger: 1, maintenance: 2 }
   start_inventory: [old_rifle, trade_token, water_bottle, rifle_rounds, rifle_rounds, shells, shells, casings, gunpowder]
   # 재생탄 장수: 탄약과 탄피·화약
-  merchant: { restock: { rifle_rounds: 6, shells: 4, casings: 6, gunpowder: 2, bolts: 4 }, markup: 1.2 }
+  merchant: { restock: { rifle_rounds: 6, pistol_rounds: 2, shells: 4, casings: 6, gunpowder: 2, bolts: 4 }, markup: 1.2 }
   playable: true
   roams: [riverside, old_town, e_market, water_plant, b_base, south_fields]
   ties:

@@ -378,13 +378,13 @@
         success:
           - set_flag: wg2_locker_done
           - give_item: { item: pistol }
-          - give_item: { item: rifle_rounds, quantity: 2 }
+          - give_item: { item: pistol_rounds, quantity: 2 }
           - give_item: { item: kevlar_vest }
           - belief: { fact: "구시가 지구대 보관함을 열었다. 경찰 권총과 탄, 조끼가 있었다. 먼저 온 약탈조는 빈손으로 돌아오게 된다", source: seen }
         partial:
           - set_flag: wg2_locker_done
           - give_item: { item: pistol }
-          - give_item: { item: rifle_rounds }
+          - give_item: { item: pistol_rounds }
           - belief: { fact: "지구대 보관함 문을 반쯤 비틀어 손을 넣었다. 권총과 탄 한 묶음까지만 꺼냈을 때 골목에서 발소리가 났다", source: seen }
         miss:
           - set_flag: wg2_locker_done

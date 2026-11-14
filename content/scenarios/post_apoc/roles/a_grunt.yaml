@@ -32,6 +32,8 @@ beliefs_preset: a_grunt
 known_npcs: [a_taeho, a_jiho, a_seoyeon, a_mansu, a_chaewon, a_doyun, a_seonghee, a_bokja, a_jeongbin, a_gicheol_scout]
 # 직속 상관. 임무를 주고 보고를 받는다
 commander: a_taeho
+# 같은 분대 (분대장은 commander). 시트의 "분대" 칸에 보인다
+squad_mates: [a_jiho, a_seoyeon, a_mansu]
 # 이 역할에 내려오는 임무 (content/missions/)
 missions: [guard_east_post, wall_repair, search_nearby_ruins, scout_north_overpass, fields_watch, market_errand, hospital_supply_run, front_recon, supply_raid]
 storylet_tags: [grunt, squad_life]

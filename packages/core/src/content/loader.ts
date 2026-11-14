@@ -171,7 +171,7 @@ function checkReferences(content: Content): string[] {
     for (const sc of role.start_companions ?? []) {
       if (!content.extras[sc.template]) problems.push(`roles.${role.id}: 알 수 없는 동행 틀 ${sc.template}`);
     }
-    for (const npcId of role.squad ?? []) {
+    for (const npcId of [...(role.squad ?? []), ...(role.squad_mates ?? [])]) {
       const npc = content.npcs[npcId];
       if (!npc) problems.push(`roles.${role.id}: 알 수 없는 분대원 ${npcId}`);
       else if (npc.faction !== role.faction) problems.push(`roles.${role.id}: 분대원 ${npcId}는 다른 무리 사람이다`);

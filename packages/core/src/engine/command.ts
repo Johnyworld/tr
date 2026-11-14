@@ -33,6 +33,23 @@ const SLOW_AT = -1;
 const COUNCIL_BLOCK_MINUTES = 3 * MINUTES_PER_DAY;
 
 /** 주인공의 분대원: 역할의 squad 중 살아 있고, 떠나지 않았고, 붙잡히지 않았고, 같은 무리인 사람 */
+/**
+ * 주인공이 분대원일 때 같은 분대 (분대장 commander + 역할의 squad_mates). 명령은 내리지 못하고 보기만 한다.
+ * 그 자리(계급)·무리에 있을 때만. 죽거나 떠나거나 붙잡힌 사람은 빠진다
+ */
+export function squadOf(state: GameState, content: Content): { leader: string | null; mates: string[] } | null {
+  const role = roleOf(content, state);
+  const player = state.characters[state.playerId];
+  if (!role?.squad_mates?.length || !player?.factionId || player.rank !== role.rank || player.factionId !== role.faction) return null;
+  const here = (id: string) => {
+    const c = state.characters[id];
+    return !!c && id !== state.playerId && !c.dead && !c.away && !c.captive && c.factionId === player.factionId;
+  };
+  const leader = role.commander && here(role.commander) ? role.commander : null;
+  const mates = role.squad_mates.filter(here);
+  return leader || mates.length ? { leader, mates } : null;
+}
+
 export function squadMembers(state: GameState, content: Content): string[] {
   const role = roleOf(content, state);
   const player = state.characters[state.playerId];

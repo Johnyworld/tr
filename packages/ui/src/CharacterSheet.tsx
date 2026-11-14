@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { HudPanel } from "./HudPanel.tsx";
 import { MemoPanel } from "./MemoPanel.tsx";
 import { Icon } from "./Icon.tsx";
 import { Portrait } from "./Portrait.tsx";
 import { SheetTabs } from "./SheetTabs.tsx";
-import type { GearView, ItemView, PlayerView, SymptomView } from "./types.ts";
+import type { GearView, ItemView, PersonProfile, PlayerView, SymptomView } from "./types.ts";
 
 /** 장비 칸 (core views/player.ts의 SLOT_LABELS 순서) */
 const SLOTS = ["손", "몸", "머리", "팔"];
@@ -58,20 +59,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
               ) : (
                 <ul className="present-list">
                   {player.present.map((p) => (
-                    <li key={p.id} className={p.dead ? "present-row dead" : "present-row"} title={p.look}>
-                      <span className="present-name">{p.name}</span>
-                      {p.rankLabel && <span className="present-rank">{p.rankLabel}</span>}
-                      <span className="present-states">
-                        {p.dead ? (
-                          <span className="state-dead">사망</span>
-                        ) : (
-                          <>
-                            {p.note && <span className="present-note">{p.note}</span>}
-                            <SymptomList list={p.states ?? []} />
-                          </>
-                        )}
-                      </span>
-                    </li>
+                    <PersonRow key={p.id} name={p.name} profile={player.profiles?.[p.id]} tag={p.rankLabel} bond={p.bond ?? null} note={p.note ?? null} states={p.states ?? []} dead={!!p.dead} />
                   ))}
                 </ul>
               )}
@@ -177,12 +165,18 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
           {player.companions && player.companions.length > 0 && (
             <section className="companions">
               <h3>동행</h3>
-              <ul className="people">
+              <ul className="present-list">
                 {player.companions.map((c) => (
-                  <li key={c.id} className={c.apart ? "muted" : ""}>
-                    {c.name} <span className="muted">· {c.bondLabel}</span>
-                    {c.note && <span className={c.note === "갈림길" ? "condition-worse" : "muted"}> · {c.note}</span>}
-                  </li>
+                  <PersonRow
+                    key={c.id}
+                    name={c.name}
+                    profile={player.profiles?.[c.id]}
+                    tag={c.bondLabel}
+                    note={c.note}
+                    noteWarn={c.note === "갈림길"}
+                    states={c.states ?? []}
+                    apart={c.apart}
+                  />
                 ))}
               </ul>
             </section>
@@ -191,12 +185,9 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
           {player.squad && (
             <section className="squad">
               <h3>분대</h3>
-              <ul className="people">
+              <ul className="present-list">
                 {player.squad.map((m) => (
-                  <li key={m.id} title={m.report ?? undefined}>
-                    {m.name} <span className="muted">· {m.doing}</span>
-                    {m.report && <div className="muted small">보고: {m.report}</div>}
-                  </li>
+                  <PersonRow key={m.id} name={m.name} profile={player.profiles?.[m.id]} tag={m.doing} states={m.states ?? []} sub={m.report ? `보고: ${m.report}` : null} />
                 ))}
               </ul>
             </section>
@@ -220,7 +211,9 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
                   <tbody>
                     {player.relations.map((r) => (
                       <tr key={r.id} className={r.dead ? "relation-dead" : undefined} title={r.dead ? "죽었습니다" : undefined}>
-                        <td>{r.name}</td>
+                        <td>
+                          <PersonName name={r.name} profile={player.profiles?.[r.id]} />
+                        </td>
                         <RelationCell value={r.trust} />
                         <RelationCell value={r.affection} />
                         <RelationCell value={r.respect} />
@@ -408,6 +401,147 @@ function InfoTip({ label, tip }: { label: string; tip: ReactNode }) {
         {tip}
       </span>
     </span>
+  );
+}
+
+/**
+ * 인물 이름: 올리면(키보드로 초점을 주면) ?인물과 같은 정보를 상자로 띄운다.
+ * 접는 칸(overflow: hidden)에 잘리거나 죽은 사람 줄의 흐림을 물려받지 않게 body에 띄운다
+ */
+function PersonName({ name, profile }: { name: string; profile?: PersonProfile }) {
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  if (!profile) return <>{name}</>;
+  return (
+    <span
+      className="person-tip"
+      tabIndex={0}
+      onMouseEnter={(e) => setAnchor(e.currentTarget.getBoundingClientRect())}
+      onMouseLeave={() => setAnchor(null)}
+      onFocus={(e) => setAnchor(e.currentTarget.getBoundingClientRect())}
+      onBlur={() => setAnchor(null)}
+    >
+      {name}
+      {anchor && createPortal(<PersonTipBox anchor={anchor} profile={profile} />, document.body)}
+    </span>
+  );
+}
+
+/** 툴팁 상자: 띄운 뒤 실제 크기를 재서 이름 아래(모자라면 위), 화면 안에 들어오게 놓는다 */
+function PersonTipBox({ anchor, profile }: { anchor: DOMRect; profile: PersonProfile }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    const gap = 6;
+    const margin = 8;
+    const below = anchor.bottom + gap;
+    const above = anchor.top - gap - height;
+    const top = below + height <= window.innerHeight - margin ? below : above >= margin ? above : Math.max(margin, window.innerHeight - margin - height);
+    const left = Math.max(margin, Math.min(anchor.left, window.innerWidth - margin - width));
+    setPos({ left, top });
+  }, [anchor]);
+  return (
+    <span ref={ref} className="person-tip-box" role="tooltip" style={pos ? { left: pos.left, top: pos.top } : { left: 0, top: 0, visibility: "hidden" }}>
+      <PersonCard profile={profile} />
+    </span>
+  );
+}
+
+/** 툴팁에 보이는 "아는 것" 수 */
+const TIP_FACTS = 3;
+
+function PersonCard({ profile: p }: { profile: PersonProfile }) {
+  return (
+    <>
+      <span className="person-tip-head">
+        <strong>{p.heading}</strong>
+        {p.rankLabel && <span className="muted"> · {p.rankLabel}</span>}
+      </span>
+      {p.look && <span className="person-tip-line">{p.look}</span>}
+      {p.reputation && <span className="person-tip-line muted">{p.reputation}</span>}
+      {p.traits.length > 0 && <span className="person-tip-line">보이는 모습: {p.traits.join(" · ")}</span>}
+      <span className="info-tip-sep" />
+      {p.attitude ? (
+        <>
+          <span className="person-tip-sub">나에 대한 태도 (마지막으로 만났을 때)</span>
+          <span className="person-tip-attitude">
+            {p.attitude.map((x) => (
+              <span key={x.axis}>
+                {x.label} <span className={x.value > 0 ? "rel-pos" : x.value < 0 ? "rel-neg" : "muted"}>{x.word}</span>
+              </span>
+            ))}
+          </span>
+        </>
+      ) : (
+        <span className="person-tip-line muted">아직 직접 만나 본 적이 없습니다.</span>
+      )}
+      {p.facts.length > 0 && (
+        <>
+          <span className="info-tip-sep" />
+          <span className="person-tip-sub">이 인물에 대해 아는 것</span>
+          {/* 툴팁은 스크롤할 수 없으니 최근 것 몇 개만, 한 줄 한 줄도 짧게 (전부는 ?인물) */}
+          {p.facts.slice(-TIP_FACTS).map((f, i) => (
+            <span key={i} className="person-tip-line person-tip-fact">
+              <span className="muted">[{f.source}]</span> {f.fact}
+            </span>
+          ))}
+          {p.facts.length > TIP_FACTS && <span className="person-tip-more">전부 보기: ?인물 {p.heading}</span>}
+        </>
+      )}
+    </>
+  );
+}
+
+/**
+ * 사람 한 줄 (같이 있는 인물, 동행, 분대): 이름, 계급·까닭, 동행 표시, 오른쪽에 상태 색 증상.
+ * apart: 잠시 떨어져 있는 동행 (흐리게). dead: 줄 긋고 흐리게, "사망"은 빨강
+ */
+function PersonRow(props: {
+  name: string;
+  profile?: PersonProfile;
+  tag?: string;
+  bond?: string | null;
+  note?: string | null;
+  noteWarn?: boolean;
+  states: SymptomView[];
+  dead?: boolean;
+  apart?: boolean;
+  sub?: string | null;
+  title?: string;
+}) {
+  const { name, profile, tag, bond, note, noteWarn, states, dead, apart, sub, title } = props;
+  return (
+    <li className={["present-row", dead && "dead", apart && "apart"].filter(Boolean).join(" ")} title={title || undefined}>
+      <div className="present-main">
+        <span className="present-name">
+          <PersonName name={name} profile={profile} />
+        </span>
+        {(tag || bond) && (
+          <span className="present-rank">
+            {tag}
+            {tag && bond && " · "}
+            {bond && (
+              <span className="present-bond" title={`함께 다니는 사람 (${bond})`}>
+                동행
+              </span>
+            )}
+          </span>
+        )}
+        <span className="present-states">
+          {dead ? (
+            <span className="state-dead">사망</span>
+          ) : (
+            <>
+              {note && <span className={noteWarn ? "present-note warn" : "present-note"}>{note}</span>}
+              <SymptomList list={states} />
+            </>
+          )}
+        </span>
+      </div>
+      {sub && <div className="present-sub">{sub}</div>}
+    </li>
   );
 }
 

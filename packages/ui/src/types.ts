@@ -31,6 +31,7 @@ export type PlayerView = {
     states?: SymptomView[];
     note?: string | null;
     dead?: boolean;
+    bond?: string | null;
   }[];
   service: { rankLabel?: string; merit: number; disobedience: number; daysServed: number; promotionMissing: string[] | null };
   mission: { title: string; briefing: string; deadlineLabel: string; deadlineLeftLabel?: string; urgent?: boolean; requirements: string[] } | null;
@@ -38,13 +39,15 @@ export type PlayerView = {
   zone: { name: string; owner: string } | null;
   battle: { title: string; sideLabel: string; round: string; momentum: number; momentumMax: number; momentumLabel: string; alarmLabel: string; positionLabel: string } | null;
   gear?: { weapon: GearView | null; armor: GearView[]; weight: number; capacity: number; burden: 0 | 1 | 2 } | null;
-  companions?: { id: string; name: string; bondLabel: string; note: string | null; apart: boolean }[];
+  companions?: { id: string; name: string; bondLabel: string; note: string | null; apart: boolean; states?: SymptomView[] }[];
   debts?: { name: string; amount: number }[];
   loan?: string[];
-  squad?: { id: string; name: string; doing: string; report: string | null }[] | null;
+  squad?: { id: string; name: string; doing: string; report: string | null; states?: SymptomView[] }[] | null;
   policy?: { label: string; option: string }[];
   ties?: { key: string; text: string }[];
   relations: { id: string; name: string; trust: number; affection: number; respect: number; dead?: boolean }[];
+  /** 이름 툴팁: ?인물과 같은 정보 (core views/person.ts) */
+  profiles?: Record<string, PersonProfile>;
   deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
   journal?: { key: string; timeLabel: string; scene: boolean; text: string }[];
@@ -87,3 +90,14 @@ export type NewGameView = {
 };
 
 export type CreationStatus = { view: NewGameView; gmWorking: boolean };
+
+/** 한 인물에 대해 플레이어가 아는 것 (?인물 이름과 같다) */
+export type PersonProfile = {
+  heading: string;
+  rankLabel: string;
+  look: string | null;
+  reputation: string | null;
+  traits: string[];
+  attitude: { axis: string; label: string; word: string; value: number }[] | null;
+  facts: { source: string; fact: string }[];
+};

@@ -30,6 +30,8 @@ beliefs_preset: b_guard
 known_npcs: [b_dongcheol, b_mina, b_jaehyuk, b_hyunwoo, b_seungmin, b_sunrye, b_eunji]
 # 직속 상관. 임무를 주고 보고를 받는다
 commander: b_dongcheol
+# 같은 경비조 (조장은 commander)
+squad_mates: [b_mina, b_jaehyuk]
 # 이 역할에 내려오는 임무 (content/missions/b_guard.yaml)
 missions: [b_gate_watch, b_rooftop_watch, b_well_repair, b_fields_escort, b_old_town_search, b_alliance_errand, b_footprints, b_shelter_drill, b_joint_recon]
 storylet_tags: [b_guard, village_life]

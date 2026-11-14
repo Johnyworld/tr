@@ -109,6 +109,8 @@ export function createContentSchemas(s: Scenario) {
       .optional(),
     /** 주인공 밑의 분대원 (NPC id, 기획서 9.11). 분대 명령(squad_order)을 받는다 */
     squad: z.array(contentIdSchema).optional(),
+    /** 주인공이 분대원일 때 같은 분대의 다른 분대원 (NPC id). 분대장은 commander. 명령은 받지 않고 시트에 보이기만 한다 */
+    squad_mates: z.array(contentIdSchema).optional(),
     /** 시작할 때 진 빚 (세력 id → 양, 기획서 9.10) */
     start_debt: z.record(contentIdSchema, z.number().int().min(1)).optional(),
     /** 이 해금이 있어야 고를 수 있다 (구역의 unlocks로 얻는다, 모든 판에 남는다, 기획서 9.12) */

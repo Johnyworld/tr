@@ -1,7 +1,8 @@
 import { occupationTitle } from "../game/occupation.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem } from "../engine/gear.ts";
 import { activeCompanions, apartCompanions, BOND_LABELS, bondOf, describeUntil } from "../game/companions.ts";
-import { squadMembers } from "../engine/command.ts";
+import { squadMembers, squadOf } from "../engine/command.ts";
+import { personProfile, type PersonProfile } from "./person.ts";
 import { factionPolicy } from "../sim/war.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { disciplineOf } from "../game/culture.ts";
@@ -89,6 +90,8 @@ export type PlayerView = {
     states: SymptomView[];
     note: string | null;
     dead: boolean;
+    /** 동행이면 함께 다니는 까닭 (예: 동물, 분대원). 동행이 아니면 null */
+    bond: string | null;
   }[];
   /** 직분과 그 사다리의 칸 (기획서 12.6) */
   occupationLabel: string | null;
@@ -120,13 +123,14 @@ export type PlayerView = {
     burden: 0 | 1 | 2;
   } | null;
   /** 함께 다니는 사람·동물 (곁에 있거나 잠시 떨어져 있는) */
-  companions: { id: string; name: string; bondLabel: string; note: string | null; apart: boolean }[];
+  /** states: 같이 있는 인물과 같은 증상 목록 */
+  companions: { id: string; name: string; bondLabel: string; note: string | null; apart: boolean; states: SymptomView[] }[];
   /** 진 빚 (무리 이름 → 양) */
   debts: { name: string; amount: number }[];
   /** 지금 임무로 무기고에서 빌린 것 */
   loan: string[];
-  /** 맡은 분대 (분대장일 때) */
-  squad: { id: string; name: string; doing: string; report: string | null }[] | null;
+  /** 맡은 분대 (분대장일 때), 또는 속한 분대 (분대원일 때: 분대장이 맨 위, doing은 계급) */
+  squad: { id: string; name: string; doing: string; report: string | null; states: SymptomView[] }[] | null;
   /** 내 무리의 방침 */
   policy: { label: string; option: string }[];
   /** 알게 된 인물 사이의 관계 (예: 오지호 — 오정빈의 형제자매) */
@@ -134,6 +138,8 @@ export type PlayerView = {
   /** 아는 인물의 당신에 대한 관계 */
   /** 게임 안에서 직접 마주쳐 태도를 본 사람 (perceived). 이름만 알거나 지난 삶에서 알던 사람은 아직 태도를 모르니 빠진다. dead: 죽었다 (?인물과 같은 기준) */
   relations: { id: string; name: string; trust: number; affection: number; respect: number; dead: boolean }[];
+  /** 시트에 이름이 나오는 인물(같이 있는 인물, 동행, 분대, 관계)마다 ?인물과 같은 정보 (이름 툴팁) */
+  profiles: Record<string, PersonProfile>;
   /** 내 행적 (최근 것부터). 보이는 목격자만 담는다 */
   deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   /** 최근 것부터 */
@@ -266,7 +272,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
   const zone = zoneOutlook(state, content);
   const b = state.battle;
   const bc = content.scenario.battle;
-  return {
+  const view: Omit<PlayerView, "profiles"> = {
     zone: zone ? { name: zone.name, owner: zone.owner } : null,
     battle:
       b && bc
@@ -335,8 +341,14 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         states: npc.dead ? [] : symptomViews(scenario, npc),
         note: npc.dead ? null : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : null,
         dead: npc.dead,
+        bond: !npc.dead && state.companions.includes(id) ? (() => {
+          const b = bondOf(state, content, id);
+          return b ? BOND_LABELS[b.kind] : null;
+        })() : null,
       };
-    }).sort(deadLast),
+    })
+      // 동행이 먼저, 죽은 사람은 맨 아래
+      .sort((a, b) => deadLast(a, b) || Number(b.bond !== null) - Number(a.bond !== null)),
     service: {
       rankLabel: rankLabel(scenario, player.rank),
       merit: player.merit,
@@ -375,7 +387,8 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
           : bond?.kind === "purpose" && bond.until
             ? describeUntil(content, bond.until)
             : null;
-      return { id, name: playerCalls(state, content, id), bondLabel: bond ? BOND_LABELS[bond.kind] : "", note, apart: !!apart };
+      const c = state.characters[id];
+      return { id, name: playerCalls(state, content, id), bondLabel: bond ? BOND_LABELS[bond.kind] : "", note, apart: !!apart, states: c ? symptomViews(scenario, c) : [] };
     }),
     debts: Object.entries(player.debts ?? {}).map(([f, n]) => ({ name: content.factions[f]?.name ?? f, amount: n })),
     loan: (() => {
@@ -385,7 +398,14 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     })(),
     squad: (() => {
       const members = squadMembers(state, content);
-      if (!members.length) return null;
+      if (!members.length) {
+        // 분대원일 때: 분대장과 같은 분대 사람 (보기만)
+        const mine = squadOf(state, content);
+        if (!mine) return null;
+        const row = (id: string, doing: string) => ({ id, name: playerCalls(state, content, id), doing, report: null, states: symptomViews(scenario, state.characters[id]!) });
+        const where = (id: string) => (state.scene.present.includes(id) ? "곁에 있음" : "");
+        return [...(mine.leader ? [row(mine.leader, rankLabel(scenario, state.characters[mine.leader]!.rank))] : []), ...mine.mates.map((id) => row(id, where(id)))];
+      }
       return members.map((id) => {
         const o = state.squadOrders[id];
         const doing = o
@@ -393,7 +413,14 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
           : state.companions.includes(id)
             ? "곁에 있음"
             : "거점";
-        return { id, name: playerCalls(state, content, id), doing, report: o ? null : (state.squadReports[id]?.text ?? null) };
+        const c = state.characters[id];
+        return {
+          id,
+          name: playerCalls(state, content, id),
+          doing,
+          report: o ? null : (state.squadReports[id]?.text ?? null),
+          states: c ? symptomViews(scenario, c) : [],
+        };
       });
     })(),
     policy: player.factionId ? factionPolicy(content, state.factions[player.factionId]).map(({ topic, option }) => ({ label: topic.label, option: option.label })) : [],
@@ -440,4 +467,6 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       .reverse(),
     journal: [],
   };
+  const ids = new Set([...view.present, ...view.companions, ...(view.squad ?? []), ...view.relations].map((p) => p.id));
+  return { ...view, profiles: Object.fromEntries([...ids].filter((id) => state.characters[id]).map((id) => [id, personProfile(state, content, id)])) };
 }

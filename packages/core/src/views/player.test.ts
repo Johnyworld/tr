@@ -27,7 +27,9 @@ describe("상태 화면의 새 항목", () => {
     expect(v.loan.join()).toContain("낡은 소총");
     expect(v.debts).toEqual([{ name: "나루상단", amount: 5 }]);
     expect(v.policy.map((p) => p.label)).toEqual(["배급", "태세", "교역"]);
-    expect(v.squad).toBeNull();
+    // 하급 전투원은 분대원: 분대장이 맨 위, 같은 분대 사람 (명령은 못 한다)
+    expect(v.squad?.map((m) => m.id)).toEqual(["a_taeho", "a_jiho", "a_seoyeon", "a_mansu"]);
+    expect(v.squad?.[0]?.doing).toBe("분대장");
   });
 
   it("분대장은 분대가, 동행이 있으면 동행이 보인다", () => {
@@ -39,7 +41,7 @@ describe("상태 화면의 새 항목", () => {
     const dog = w.state().scene.present.at(-1)!;
     w.ctx().store.append({ type: "companion_joined", characterId: dog, kind: "animal" });
     const after = buildPlayerView(w.state(), w.content);
-    expect(after.companions).toEqual([{ id: dog, name: "누렁이", bondLabel: "동물", note: null, apart: false }]);
+    expect(after.companions).toEqual([{ id: dog, name: "누렁이", bondLabel: "동물", note: null, apart: false, states: [] }]);
     expect(after.present.find((p) => p.id === dog)?.rankLabel).toBe("");
   });
 

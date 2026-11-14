@@ -71,6 +71,19 @@ describe("상태 화면 시트", () => {
     expect(w.playerView().present.at(-1)?.id).toBe(acquaintance);
   });
 
+  it("같이 있는 인물: 동행은 까닭과 함께 맨 위, 동행·분대 목록에도 증상", () => {
+    const w = open();
+    const s0 = w.state();
+    const [a, b] = (s0.known.player ?? []).filter((id) => !s0.characters[id]!.dead);
+    for (const id of [a!, b!]) expect(w.executeTool("npc_presence", { npc_id: id, action: "enter" }).ok).toBe(true);
+    w.ctx().store.append({ type: "companion_joined", characterId: b!, kind: "purpose" });
+    const v = w.playerView();
+    expect(v.present[0]).toMatchObject({ id: b, bond: "같은 목적" });
+    expect(v.present.find((p) => p.id === a)?.bond).toBeNull();
+    expect(v.companions.find((c) => c.id === b)?.states).toEqual([]);
+    w.close();
+  });
+
   it("일지 탭: ?일지와 같은 현재 캐릭터의 요약을 최근 것부터", () => {
     const w = open();
     expect(w.playerView().journal).toEqual([]);

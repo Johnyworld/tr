@@ -25,5 +25,7 @@ access: [ration, mission_board]
 beliefs_preset: c_raider_start
 known_npcs: [c_cheolgu, c_dongpal, c_sora, c_sangok, c_hyeran]
 commander: c_cheolgu
+# 같은 약탈 삼조 (조장은 commander)
+squad_mates: [c_dongpal, c_sora]
 missions: [c_quota_old_town, c_tower_watch, c_willow_shakedown, c_riverside_fuel, c_field_raid, c_overpass_haul, c_east_probe, c_prison_guard, c_deserter_hunt]
 storylet_tags: [c_raider, red_life]

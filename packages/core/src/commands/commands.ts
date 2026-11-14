@@ -1,7 +1,7 @@
 import { disciplineOf } from "../game/culture.ts";
 import { memoAccess } from "../game/memo.ts";
 import { josa } from "../text.ts";
-import { aliasOf, headingAs, knowsName, playerCalls } from "../game/acquaintance.ts";
+import { headingAs, playerCalls } from "../game/acquaintance.ts";
 import { traitLabels } from "../engine/traits.ts";
 import { growthLine, skillLines } from "../engine/growth.ts";
 import type { Content } from "../content/schemas.ts";
@@ -9,7 +9,7 @@ import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { activeMissionOf, commanderOf, daysServed, MISSION_STATUS_LABELS } from "../game/missions.ts";
-import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
+import { NEUTRAL_RELATION, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
 import { conditionPenalty, rankLabel, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
@@ -19,6 +19,7 @@ import { formatChronicle, successionOptions } from "../engine/succession.ts";
 import { seasonAt, seasonLabel } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { buildPlayerView, type PlayerView } from "../views/player.ts";
+import { personProfile } from "../views/person.ts";
 import { DIALOGUE_STYLE_LABELS } from "../engine/storyletTools.ts";
 
 /**
@@ -126,7 +127,7 @@ const status: CommandDef = {
     }
     if (view.squad) {
       lines.push("", "분대");
-      lines.push(...(view.squad.length ? view.squad.flatMap((m) => [`  ${m.name} · ${m.doing}`, ...(m.report ? [`    보고: ${m.report}`] : [])]) : ["  없음"]));
+      lines.push(...(view.squad.length ? view.squad.flatMap((m) => [`  ${m.name}${m.doing ? ` · ${m.doing}` : ""}`, ...(m.report ? [`    보고: ${m.report}`] : [])]) : ["  없음"]));
     }
     if (view.battle) {
       const b = view.battle;
@@ -238,32 +239,19 @@ const people: CommandDef = {
     // 이름을 아는 인물은 이름으로, 모르는 인물은 호칭으로 찾는다 (모르는 이름으로는 찾을 수 없다)
     const id = known.find((k) => call(k) === query || k === query) ?? known.find((k) => call(k).includes(query));
     if (!id) return `아는 인물 중에 ${josa(`"${query}"`, "이/가")} 없습니다. 목록: ${ctx.prefix ?? "!"}인물`;
-    const c = state.characters[id]!;
-    const npc = content.npcs[id];
-    const met = state.perceived[id] !== undefined;
-    const r = state.perceived[id] ?? NEUTRAL_RELATION;
-    const named = knowsName(state, state.playerId, id);
-    const alias = aliasOf(state, content, id);
-    const facts = (state.beliefs[state.playerId] ?? []).filter((b) => (named && b.fact.includes(c.name)) || b.fact.includes(alias)).slice(-5);
+    const p = personProfile(state, content, id);
     return [
-      header(`${headingAs(state, content, state.playerId, id)} · ${rankLabel(content.scenario, c.rank)}`),
-      // 평판은 그 인물을 아는(이름을 아는) 사람이 아는 모습이다
-      ...(npc ? [npc.look, ...(named ? [npc.reputation] : [])] : c.extra ? [c.extra.look] : []),
-      // 겉으로 보이는 트레잇만 (외모, 드러나는 성격). 처음 만나기 전엔 소문으로 아는 외모만
-      ...(() => {
-        const shown = traitLabels(content, c, { visibleOnly: true });
-        return met && shown.length ? [`보이는 모습: ${shown.join(" · ")}`] : [];
-      })(),
+      header(`${p.heading} · ${p.rankLabel}`),
+      ...[p.look, p.reputation].filter((x): x is string => !!x),
+      ...(p.traits.length ? [`보이는 모습: ${p.traits.join(" · ")}`] : []),
       "",
-      ...(met
+      ...(p.attitude
         ? [
             "나에 대한 태도 (마지막으로 만났을 때)",
-            ...RELATION_AXES.map((axis) =>
-              gaugeLine(RELATION_AXIS_LABELS[axis], r[axis] - RELATION_MIN, RELATION_MAX - RELATION_MIN, `${relationLabel(r[axis])} ${signed(r[axis])}`),
-            ),
+            ...p.attitude.map((x) => gaugeLine(x.label, x.value - RELATION_MIN, RELATION_MAX - RELATION_MIN, `${x.word} ${signed(x.value)}`)),
           ]
         : ["아직 직접 만나 본 적이 없습니다. 태도는 만나 봐야 압니다."]),
-      ...(facts.length ? ["", "이 인물에 대해 아는 것", ...facts.map((b) => `  [${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`)] : []),
+      ...(p.facts.length ? ["", "이 인물에 대해 아는 것", ...p.facts.map((b) => `  [${b.source}] ${b.fact}`)] : []),
     ].join("\n");
   },
 };

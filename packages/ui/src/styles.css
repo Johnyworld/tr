@@ -2268,19 +2268,35 @@ body {
 }
 
 .present-row {
+  padding: 3px 0;
+}
+
+.present-main {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  padding: 3px 0;
+}
+
+/* 동행 표시: 계급 옆 초록 글자 */
+.present-bond {
+  color: #6fbf73;
+}
+
+.present-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* 잠시 떨어져 있는 동행 */
+.present-row.apart .present-name,
+.present-row.apart .present-rank {
+  opacity: 0.5;
 }
 
 /* 첫 줄은 위 여백 없이: 접었을 때 한 줄(peek)과 같은 자리에 온다 */
 .present-row:first-child {
   padding-top: 0;
-}
-
-.present-row + .present-row {
-  border-top: 1px solid var(--border);
 }
 
 .present-rank {
@@ -2299,6 +2315,10 @@ body {
 
 .present-note {
   color: var(--muted);
+}
+
+.present-note.warn {
+  color: var(--error);
 }
 
 .state-step-0 { color: #6fbf73; }
@@ -2771,4 +2791,71 @@ body {
   height: 1px;
   margin: 6px 0;
   background: var(--border);
+}
+
+/* 인물 이름 툴팁 (?인물과 같은 정보). 접는 칸에 잘리지 않게 화면 기준으로 띄운다 */
+.person-tip {
+  text-decoration: underline dotted;
+  text-decoration-color: rgba(255, 255, 255, 0.3);
+  text-underline-offset: 3px;
+  cursor: help;
+  outline: none;
+}
+
+.person-tip-box {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 280px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--text);
+  text-align: left;
+  white-space: normal;
+  text-decoration: none;
+  background: var(--panel);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  /* 스크롤할 수 없으니 화면보다 길어지지 않게 */
+  max-height: calc(100vh - 16px);
+  overflow: hidden;
+}
+
+/* 아는 것 한 줄은 세 줄까지 */
+.person-tip-fact {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.person-tip-more {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.person-tip-head strong {
+  font-size: 13px;
+}
+
+.person-tip-line,
+.person-tip-sub {
+  display: block;
+}
+
+.person-tip-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.person-tip-attitude {
+  display: flex;
+  gap: 10px;
 }

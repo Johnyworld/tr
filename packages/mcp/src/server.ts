@@ -584,7 +584,7 @@ export function createMcpServer(
   server.registerTool(
     "record_turn_summary",
     {
-      description: "장면이 끝나면 장면 요약을 남긴다. 다른 세션에서 이어 플레이할 때 쓴다.",
+      description: "장면이 끝나면 장면 요약을 남긴다. 다른 세션에서 이어 플레이할 때 쓰고, 상태 화면 일지에 쌓인다. 평서체(~했다)로 쓴다 (존댓말 아님).",
       inputSchema: z.strictObject({
         text: z.string().min(1).max(2000),
         kind: z.enum(["scene", "turn"]).optional(),

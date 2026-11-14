@@ -162,7 +162,7 @@ export function createTakeActionSchema(s: Scenario) {
       .string()
       .max(1000)
       .nullable()
-      .describe("MCP 모드 전용: 직전 턴에 서술한 내용의 짧은 요약 (모드 전환 대비). 웹 앱 모드에서는 null (시스템이 자동 저장)"),
+      .describe("MCP 모드 전용: 직전 턴에 서술한 내용의 짧은 요약. 일지에 쌓이므로 평서체(~했다)로 쓴다. 웹 앱 모드에서는 null (시스템이 자동 저장)"),
   });
 }
 export type TakeActionInput = z.infer<ReturnType<typeof createTakeActionSchema>>;

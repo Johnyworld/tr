@@ -122,7 +122,7 @@ export function createCharacterSchema(s: Scenario) {
         }
       }
     }),
-    /** 사망 여부. 부상 트랙이 fatal 단계에 이르면 true (원칙 3: 사망은 부상 트랙으로만) */
+    /** 사망 여부. 상태 트랙이 fatal 단계에 이르면 true (원칙 3: 사망은 상태 트랙의 끝 단계로만, 12-74) */
     dead: z.boolean().default(false),
     /** 임무로 쌓은 공적 */
     merit: z.number().int().default(0),

@@ -72,8 +72,42 @@ export function shownLevel(track: ConditionTrack, levelId: string | undefined) {
   return track.levels[index]!;
 }
 
-/** 상태 트랙들의 판정 보정 합 */
+export type Symptom = NonNullable<Scenario["symptoms"]>[number];
+
+/**
+ * 지금 보이는 증상 (12-74): 상태 트랙마다 보이는 단계(숨은 단계는 그 앞)의 증상을 모은다.
+ * 이름이 같으면 하나만, 같은 묶음(group)이면 가장 큰 것(symptoms 목록에서 뒤) 하나만. 처음 나온 순서대로
+ */
+export function visibleSymptoms(s: Scenario, character: Pick<Character, "conditions">): Symptom[] {
+  const order = new Map((s.symptoms ?? []).map((x, i) => [x.id, i]));
+  const byId = new Map((s.symptoms ?? []).map((x) => [x.id, x]));
+  const picked: Symptom[] = [];
+  for (const track of s.condition_tracks) {
+    for (const id of shownLevel(track, character.conditions[track.id]).symptoms ?? []) {
+      const sym = byId.get(id);
+      if (!sym) continue;
+      const same = picked.findIndex((x) => x.id === sym.id || (sym.group !== undefined && x.group === sym.group));
+      if (same === -1) picked.push(sym);
+      else if (order.get(sym.id)! > order.get(picked[same]!.id)!) picked[same] = sym;
+    }
+  }
+  return picked;
+}
+
+/**
+ * 몸 상태의 판정 보정. 증상이 정해진 월드는 가장 큰 증상은 그대로, 나머지 증상 보정의 합은 반(올림)만 더한다 (12-74).
+ * 예: 고열 3 → -3, 1+1 → -2, 1+1+1+1 → -3, 3+2 → -4, 2+2+2 → -4. 바닥은 없다
+ */
 export function conditionPenalty(s: Scenario, character: Pick<Character, "conditions">): number {
+  if (s.symptoms?.length) {
+    const sizes = visibleSymptoms(s, character)
+      .map((x) => -x.penalty)
+      .filter((n) => n > 0)
+      .sort((a, b) => b - a);
+    if (!sizes.length) return 0;
+    const rest = sizes.slice(1).reduce((n, x) => n + x, 0);
+    return -(sizes[0]! + Math.ceil(rest / 2));
+  }
   return s.condition_tracks.reduce((sum, track) => {
     const level = track.levels.find((l) => l.id === character.conditions[track.id]);
     return sum + (level?.penalty ?? 0);

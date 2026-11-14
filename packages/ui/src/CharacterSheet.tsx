@@ -2,7 +2,7 @@ import { HudPanel } from "./HudPanel.tsx";
 import { Icon } from "./Icon.tsx";
 import { Portrait } from "./Portrait.tsx";
 import { SheetTabs } from "./SheetTabs.tsx";
-import type { GearView, ItemView, PlayerView } from "./types.ts";
+import type { GearView, ItemView, PlayerView, SymptomView } from "./types.ts";
 
 /** 장비 칸 (core views/player.ts의 SLOT_LABELS 순서) */
 const SLOTS = ["손", "몸", "머리", "팔"];
@@ -32,23 +32,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
                 </div>
                 {/* 몸 상태: 같이 있는 인물과 같은 색 (2단계 노랑, 3단계 주황, 4단계 빨강, 죽음 빨강, 이상 없으면 초록). 처음 단계·숨은 단계는 안 보인다 */}
                 <div className="hero-conditions">
-                  {!player.conditions.some((c) => c.worsened) ? (
-                    <span className="hero-condition state-step-0" title="몸 상태에 이상이 없습니다">
-                      건강함
-                    </span>
-                  ) : (
-                    player.conditions
-                      .filter((c) => c.worsened)
-                      .map((c) => (
-                        <span
-                          key={c.id}
-                          className={`hero-condition ${c.fatal ? "state-dead" : `state-step-${Math.min(c.step ?? 1, 3)}`}`}
-                          title={`${c.label}: ${c.levelLabel}${c.penalty ? ` (판정 ${signed(c.penalty)})` : ""}`}
-                        >
-                          {c.levelLabel}
-                        </span>
-                      ))
-                  )}
+                  <SymptomList list={player.symptoms ?? []} itemClassName="hero-condition" />
                   {/* 이 상태들 때문에 판정에 붙는 보정 (합) */}
                   {player.conditionPenalty !== 0 && (
                     <span className="penalty-chip" title="몸 상태 때문에 모든 판정에 붙는 보정">
@@ -81,15 +65,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
                         ) : (
                           <>
                             {p.note && <span className="present-note">{p.note}</span>}
-                            {(p.states ?? []).length === 0 ? (
-                              <span className="state-step-0">정상</span>
-                            ) : (
-                              (p.states ?? []).map((st) => (
-                                <span key={st.label} className={st.fatal ? "state-dead" : `state-step-${Math.min(st.step, 3)}`}>
-                                  {st.label}
-                                </span>
-                              ))
-                            )}
+                            <SymptomList list={p.states ?? []} />
                           </>
                         )}
                       </span>
@@ -389,6 +365,29 @@ function XpBar({ growth }: { growth: NonNullable<PlayerView["growth"]> }) {
   );
 }
 
+
+/**
+ * 증상 목록 (주인공·같이 있는 인물 같이 쓴다, 12-74). 원인은 숨기고 증상만, 겹치는 증상은 하나.
+ * 색은 tone: 노랑 1 · 주황 2 · 빨강 3, 죽음은 빨강. 증상이 없으면 초록 "건강함"
+ */
+function SymptomList({ list, itemClassName = "" }: { list: SymptomView[]; itemClassName?: string }) {
+  if (list.length === 0) {
+    return (
+      <span className={`${itemClassName} state-step-0`.trim()} title="몸 상태에 이상이 없습니다">
+        건강함
+      </span>
+    );
+  }
+  return (
+    <>
+      {list.map((x) => (
+        <span key={x.id} className={`${itemClassName} ${x.fatal ? "state-dead" : `state-step-${x.tone}`}`.trim()} title={x.penalty ? `판정 ${signed(x.penalty)}` : undefined}>
+          {x.label}
+        </span>
+      ))}
+    </>
+  );
+}
 
 function MissionCard({ mission, loan }: { mission: PlayerView["mission"]; loan: string[] }) {
   if (!mission) {

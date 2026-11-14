@@ -10,7 +10,7 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { activeMissionOf, commanderOf, daysServed, MISSION_STATUS_LABELS } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
-import { conditionPenalty, rankLabel, shownLevel } from "../scenario/scenario.ts";
+import { conditionPenalty, rankLabel, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
 import { factionOutlook, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
@@ -98,7 +98,9 @@ const status: CommandDef = {
     if (growth) lines.push(growth);
     lines.push("");
     // 있는 증상만 보인다 (처음 단계는 빼고, 숨은 단계(잠복기)는 캐릭터가 모르므로 처음 단계로 보인다). 하나도 없으면 "건강함"
-    const symptoms = scenario.condition_tracks.flatMap((track) => {
+    // 증상이 정해진 월드는 원인(트랙) 없이 증상만 (겹치는 증상은 하나, 12-74)
+    const shownSymptoms = scenario.symptoms?.length ? visibleSymptoms(scenario, player) : null;
+    const symptoms = shownSymptoms ? (shownSymptoms.length ? [`몸 상태  ${shownSymptoms.map((x) => x.label).join(" · ")}`] : []) : scenario.condition_tracks.flatMap((track) => {
       const shown = shownLevel(track, player.conditions[track.id]);
       const index = track.levels.indexOf(shown);
       return index > 0 ? [gaugeLine(track.label, index, track.levels.length - 1, shown.label)] : [];

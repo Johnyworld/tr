@@ -23,7 +23,7 @@ describe("마음", () => {
     const me = () => w.state().characters[w.state().playerId]!;
     expect(me().conditions.nerves).toBe("steady");
     shakeNerves(w.ctx(), 2, "test");
-    expect(me().conditions.nerves).toBe("frayed");
+    expect(me().conditions.nerves).toBe("low"); // 괴로움 → 우울함 (12-74)
     // 냉정으로 버티지 못하면(0.99) 오르고, 가라앉는 굴림은 낮아야 성공
     const calm = { ...w.ctx(), rng: () => 0.01 };
     runDailyNerves(calm);

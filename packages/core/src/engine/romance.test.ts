@@ -91,7 +91,7 @@ describe("연애", () => {
     expect(b).toBeTruthy();
     const { onLoverDeath } = await import("./romance.ts");
     onLoverDeath(w.ctx(), a!);
-    expect(w.state().characters.player!.conditions.nerves).toBe("frayed");
+    expect(w.state().characters.player!.conditions.nerves).toBe("low"); // 두 단계: 우울함 (12-74)
   });
 });
 

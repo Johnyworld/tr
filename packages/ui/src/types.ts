@@ -1,4 +1,6 @@
 /** 상태 화면의 캐릭터 시트 (core의 playerView, packages/mcp/src/statusServer.ts 가 보낸다) */
+export type SymptomView = { id: string; label: string; penalty: number; tone: 1 | 2 | 3; fatal: boolean };
+
 export type PlayerView = {
   name: string;
   genderLabel: string | null;
@@ -9,6 +11,8 @@ export type PlayerView = {
   timeLabel: string;
   clock?: { time: string; hhmm?: string; minute?: number; segmentLabel?: string; date?: string | null; segment: string; season: string | null; weather: { label: string; icon: string | null; chill: number } | null };
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon?: string | null; step?: number; penalty?: number; fatal?: boolean }[];
+  /** 보이는 증상 (12-74). tone: 1 노랑 · 2 주황 · 3 빨강 */
+  symptoms?: SymptomView[];
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
@@ -24,7 +28,7 @@ export type PlayerView = {
     rankLabel: string;
     look: string;
     conditionLabel: string | null;
-    states?: { label: string; step: number; fatal: boolean }[];
+    states?: SymptomView[];
     note?: string | null;
     dead?: boolean;
   }[];

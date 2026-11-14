@@ -130,6 +130,7 @@ describe("목적 동행과 갈림길", () => {
     const w = open(loner, () => () => 0.55); // 주사위 4+4
     const partner = joinBy(w, "wc_salvage_partner", "team");
     cheat(w, "~time +25h");
+    cheat(w, "~set hunger fed"); // 허기짐도 판정 -1이라 (12-74) 배를 채워 둔다
     const r = w.executeTool("companion_crossroads", { target: partner, choice: "ask_stay", move: "persuade", stat: "charm" });
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().bonds[partner]).toMatchObject({ kind: "purpose" });

@@ -262,7 +262,7 @@
     flags_all: [d_sori_secret]
     flags_none: [d_sori_resolved]
   cast:
-    sori: { ids: [d_sori], condition: { track: infection, at_least: fever } }
+    sori: { ids: [d_sori], condition: { track: infection, at_least: chill } }
   setup: 누가 숙소 문을 두드린다. {sori:이/가} 담요를 뒤집어쓰고 서 있다. 이가 딱딱 부딪친다. "나 좀 이상해. 열이 나는 것 같아. 수간호사님한텐…… 아직 말하지 마."
   ai_direction: 정말 감염이다 (코드가 정한 상태는 발열). 다만 플레이어에게는 확정해 말하지 않는다. 항생제를 쓰면 나을 수 있다. 진료소 안 사람들이 깨면 일이 커진다. 백도진은 물린 자국이 보이면 무조건 격리실로 보낸다.
   choices:

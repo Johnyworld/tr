@@ -17,10 +17,11 @@ import { xpForLevel } from "../engine/growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
+import type { Character } from "../game/character.ts";
 import type { Content } from "../content/schemas.ts";
 import { calendarDate, formatClock, formatTime, minuteOfDay, MINUTES_PER_DAY, SEGMENT_LABELS, segmentOf, type TimeSegment } from "../rules/time.ts";
 import { itemIcon, type IconName } from "../content/icons.ts";
-import { conditionPenalty, initialConditions, rankLabel, shownLevel } from "../scenario/scenario.ts";
+import { conditionPenalty, initialConditions, rankLabel, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import type { TranscriptEntry } from "../engine/log.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
@@ -55,6 +56,10 @@ export type PlayerView = {
   /** 상태 트랙별 현재 단계 (예: 부상 경상). worsened: 첫 단계에서 나빠졌는지 */
   /** icon: 트랙의 아이콘 (없으면 null). step: 보이는 단계(0이 처음), penalty: 이 단계의 판정 보정 */
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon: IconName | null; step: number; penalty: number; fatal: boolean }[];
+  /**
+   * 보이는 증상 (12-74): 원인(트랙)은 숨기고 증상만. 겹치는 증상은 하나. tone: 1 노랑 · 2 주황 · 3 빨강 (판정 보정 크기), fatal: 죽음
+   */
+  symptoms: SymptomView[];
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
@@ -80,7 +85,7 @@ export type PlayerView = {
     rankLabel: string;
     look: string;
     conditionLabel: string | null;
-    states: { label: string; step: number; fatal: boolean }[];
+    states: SymptomView[];
     note: string | null;
     dead: boolean;
   }[];
@@ -136,6 +141,20 @@ export type PlayerView = {
 };
 
 
+
+/** 화면에 보이는 증상 하나 */
+export type SymptomView = { id: string; label: string; penalty: number; tone: 1 | 2 | 3; fatal: boolean };
+
+/** 증상 → 화면용 (색은 판정 보정 크기로, 죽음 묶음은 fatal) */
+function symptomViews(s: Content["scenario"], c: Pick<Character, "conditions">): SymptomView[] {
+  return visibleSymptoms(s, c).map((x) => ({
+    id: x.id,
+    label: x.label,
+    penalty: x.penalty,
+    tone: x.tone ?? (x.penalty <= -3 ? 3 : x.penalty <= -2 ? 2 : 1),
+    fatal: x.group === "death",
+  }));
+}
 
 /** 장비 한 줄. durability: 남은 내구도 (내구도가 없는 물건은 null) */
 export type GearView = { id: string; name: string; slotLabel: string; detail: string; durability: { left: number; max: number } | null; ammo: string | null; icon: IconName };
@@ -216,6 +235,11 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     Object.entries(initial).some(([track, level]) => c.conditions[track] !== level);
   /** 처음과 달라진 상태만, 보이는 단계 이름으로 (예: "경상 · 허기짐"). 잠복처럼 아직 안 보이면 빼고, 다 안 보이면 null */
   const changedConditions = (c: { conditions: Record<string, string> }) => {
+    // 증상이 정해진 월드는 증상만 (겹치는 증상은 하나, 12-74)
+    if (scenario.symptoms?.length) {
+      const list = visibleSymptoms(scenario, c);
+      return list.length ? list.map((x) => x.label).join(" · ") : null;
+    }
     const labels = scenario.condition_tracks
       .map((track) => shownLevel(track, c.conditions[track.id]))
       .filter((level, i) => level.id !== initial[scenario.condition_tracks[i]!.id])
@@ -280,6 +304,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         fatal: !!shown.fatal,
       };
     }),
+    symptoms: symptomViews(scenario, player),
     conditionPenalty: conditionPenalty(scenario, player),
     dead: player.dead,
     stats: scenario.stats.map((s) => ({ id: s.id, label: s.label, value: player.stats[s.id] ?? 0 })),
@@ -302,13 +327,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         rankLabel: npc.extra && content.extras[npc.extra.template]?.animal ? "" : rankLabel(scenario, npc.rank),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
         conditionLabel: npc.dead ? "사망" : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : changed(npc) ? changedConditions(npc) : null,
-        states: npc.dead
-          ? []
-          : scenario.condition_tracks.flatMap((track) => {
-              const shown = shownLevel(track, npc.conditions[track.id]);
-              const step = track.levels.indexOf(shown);
-              return step > 0 ? [{ label: shown.label, step, fatal: !!shown.fatal }] : [];
-            }),
+        states: npc.dead ? [] : symptomViews(scenario, npc),
         note: npc.dead ? null : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : null,
         dead: npc.dead,
       };

@@ -383,62 +383,99 @@ move_roles:
   notice: sense_danger
   stealth: stealth
 
-# 상태 트랙. 앞에서 뒤로 악화된다. fatal 단계에 이르면 사망 (판정 보정은 임시값)
+# 증상 (12-74): 플레이어에게 보이는 몸 상태. 상태 트랙의 단계가 증상을 가리키고, 화면·?상태에는 증상만 보인다 (원인은 숨긴다).
+# 같은 group은 크기 차이라 가장 큰 것(아래쪽) 하나만 보인다. 판정 보정: 가장 큰 증상은 그대로, 나머지 합은 반(올림)만 더한다
+# (1+1 → -2, 3+2 → -4). tone: 화면 색 (없으면 보정 크기로). 보정은 작아도 마지막 단계급인 증상은 3 (*임시* 수치)
+symptoms:
+  - { id: chill, label: 추움, group: fever, penalty: -1 }
+  - { id: shiver, label: 오한, group: fever, penalty: -2 }
+  - { id: high_fever, label: 고열, group: fever, penalty: -3 }
+  - { id: pain, label: 고통, group: pain, penalty: -1 }
+  - { id: severe_pain, label: 심한 고통, group: pain, penalty: -2 }
+  - { id: agony, label: 극심한 고통, group: pain, penalty: -3 }
+  - { id: hungry, label: 허기짐, group: hunger, penalty: -1 }
+  - { id: starving, label: 굶주림, group: hunger, penalty: -2 }
+  - { id: starvation, label: 기아, group: hunger, penalty: -3 }
+  - { id: impaired, label: 의식장애, group: consciousness, penalty: -1, tone: 3 }
+  # 의식불명: 아무것도 하지 못한다 (행동 규칙은 다음 단계)
+  - { id: unconscious, label: 의식불명, group: consciousness, tone: 3 }
+  - { id: nausea, label: 메스꺼움, penalty: -1, tone: 3 }
+  - { id: distressed, label: 괴로움, group: mind }
+  - { id: depressed, label: 우울함, group: mind, penalty: -1 }
+  - { id: frantic, label: 미칠 것 같음, group: mind, penalty: -2 }
+  - { id: breakdown, label: 멘탈붕괴, group: mind, penalty: -3 }
+  - { id: death, label: 사망, group: death }
+  # 변이: 감염으로 죽어 감염체가 된다 (다음 캐릭터가 발견하는 규칙은 다음 단계)
+  - { id: turned, label: 변이, group: death }
+
+# 상태 트랙. 앞에서 뒤로 악화된다. fatal 단계에 이르면 사망. 단계 이름·판정 보정은 증상에서 나온다 (GM에게는 트랙 이름과 함께 보인다)
 condition_tracks:
   - id: harm
     label: 부상
     icon: heart
     levels:
-      - { id: none, label: 무사, penalty: 0 }
-      - { id: light, label: 경상, penalty: -1 }
-      - { id: serious, label: 중상, penalty: -2 }
-      - { id: critical, label: 치명상, penalty: -3 }
-      - { id: dead, label: 사망, penalty: 0, fatal: true }
-  # 허기 (12-1): 하루마다 배급 수준만큼 바뀐다. 기진에 이르면 굶주림으로 부상
+      - { id: none }
+      - { id: light, symptoms: [pain] }
+      - { id: serious, symptoms: [severe_pain] }
+      - { id: critical, symptoms: [agony] }
+      - { id: impaired, symptoms: [agony, impaired] }
+      - { id: unconscious, symptoms: [unconscious] }
+      - { id: dead, symptoms: [death], fatal: true }
+  # 허기 (12-1): 하루마다 배급 수준만큼 바뀐다. 끝까지 가면 굶어 죽는다
   - id: hunger
     label: 허기
     icon: hunger
     levels:
-      - { id: fed, label: 든든함, penalty: 0 }
-      - { id: hungry, label: 허기짐, penalty: 0 }
-      - { id: starving, label: 굶주림, penalty: -1 }
-      - { id: famished, label: 기진함, penalty: -2 }
-  # 감염 (12-1): 감염체에게 다치면 확률로 잠복기. 잠복기는 캐릭터가 모른다(hidden). 하루마다 나빠지고, 악화에 이르면 하루마다 부상
+      - { id: fed }
+      - { id: hungry, symptoms: [hungry] }
+      - { id: starving, symptoms: [starving] }
+      - { id: famished, symptoms: [starvation] }
+      - { id: faint, symptoms: [starvation, impaired] }
+      - { id: unconscious, symptoms: [unconscious] }
+      - { id: starved, symptoms: [death], fatal: true }
+  # 감염 (12-1): 감염체에게 다치면 확률로 잠복기. 잠복기는 캐릭터가 모른다(hidden). 하루마다 나빠지고, 끝까지 가면 변이한다
   - id: infection
     label: 감염
     icon: virus
     levels:
-      - { id: clean, label: 깨끗함, penalty: 0 }
-      - { id: incubating, label: 잠복, penalty: 0, hidden: true }
-      - { id: fever, label: 발열, penalty: -1 }
-      - { id: grave, label: 악화, penalty: -2 }
-  # 추위 (12-4): 계절·날씨만큼 추워진다. 연료가 있는 우리 거점에서는 녹는다. 저체온이면 하루마다 부상
+      - { id: clean }
+      - { id: incubating, label: 잠복, hidden: true }
+      - { id: chill, symptoms: [chill] }
+      - { id: shiver, symptoms: [shiver] }
+      - { id: fever, symptoms: [high_fever] }
+      - { id: grave, symptoms: [high_fever, nausea] }
+      - { id: turned, symptoms: [turned], fatal: true }
+  # 추위 (12-4): 계절·날씨만큼 추워진다. 연료가 있는 우리 거점에서는 녹는다. 끝까지 가면 얼어 죽는다
   - id: cold
     label: 추위
     icon: cold
     levels:
-      - { id: warm, label: 따뜻함, penalty: 0 }
-      - { id: chilly, label: 쌀쌀함, penalty: 0 }
-      - { id: cold, label: 추위, penalty: -1 }
-      - { id: hypothermia, label: 저체온, penalty: -2 }
-  # 질병 (12-4): 몸이 약해지면 걸린다. 잠복기는 캐릭터가 모른다. 위중하면 하루마다 부상
+      - { id: warm }
+      - { id: cold, symptoms: [chill] }
+      - { id: shiver, symptoms: [shiver] }
+      - { id: hypothermia, symptoms: [shiver, impaired] }
+      - { id: unconscious, symptoms: [unconscious] }
+      - { id: frozen, symptoms: [death], fatal: true }
+  # 질병 (12-4): 몸이 약해지면 걸린다. 잠복기는 캐릭터가 모른다. 고열까지 가고, 배부르고 따뜻하면 낫는다 (죽지 않는다)
   - id: disease
     label: 질병
     icon: fever
     levels:
-      - { id: healthy, label: 건강함, penalty: 0 }
-      - { id: incubating, label: 잠복, penalty: 0, hidden: true }
-      - { id: sick, label: 앓음, penalty: -1 }
-      - { id: critical, label: 위중, penalty: -2 }
+      - { id: healthy }
+      - { id: incubating, label: 잠복, hidden: true }
+      - { id: chill, symptoms: [chill] }
+      - { id: shiver, symptoms: [shiver] }
+      - { id: sick, symptoms: [high_fever] }
   # 마음 (12-48): 크게 다치거나 곁의 사람이 죽는 것을 보면 흔들린다. 무너져도 죽지는 않는다 (판정만 어렵다)
   - id: nerves
     label: 마음
     icon: mind
     levels:
-      - { id: steady, label: 멀쩡함, penalty: 0 }
-      - { id: shaken, label: 괴로움, penalty: 0 }
-      - { id: frayed, label: 미칠 것 같음, penalty: -1 }
-      - { id: broken, label: 멘탈붕괴, penalty: -2 }
+      - { id: steady }
+      - { id: shaken, symptoms: [distressed] }
+      - { id: low, symptoms: [depressed] }
+      - { id: frayed, symptoms: [frantic] }
+      - { id: broken, symptoms: [breakdown] }
 # apply_harm이 쓰는 트랙
 harm_track: harm
 
@@ -589,13 +626,13 @@ consumables:
 
 # 몸 상태 (12-1, *임시*)
 body:
-  hunger: { track: hunger, starving_harm: 1 }
+  # 굶주림은 부상을 주지 않고 허기 트랙 끝에서 죽는다 (12-74)
+  hunger: { track: hunger }
   infection:
     track: infection
     # 감염체에게 다쳤을 때 감염될 확률 (선언한 위험 크기별)
     chance: { light: 0.3, heavy: 0.6 }
-    worst_harm: 1
-  # 추위: 하루마다 계절·날씨의 추위만큼 (방한복은 들고 있으면 1 덜어 준다)
+  # 추위: 하루마다 계절·날씨의 추위만큼 (방한복은 들고 있으면 1 덜어 준다). 끝까지 가면 얼어 죽는다 (부상 없이)
   cold:
     track: cold
     season: { winter: 1 }
@@ -603,7 +640,6 @@ body:
     gear: { coat: 1 }
     # 우리 거점에서 무리의 연료가 하루치 이상 있으면 2단계 녹는다
     shelter: { resource: fuel, min_days: 1, warm: -2 }
-    worst_harm: 1
   # 질병: 하루마다 확률. 굶주림·추위·무리의 물 부족마다 더하고, 체력 1당 25% 덜 걸린다
   disease:
     track: disease
@@ -613,7 +649,6 @@ body:
     # 배부르고 따뜻하면 하루마다 낫는 확률 (체력 1당 +10%), 아니면 깊어지는 확률
     recover: { chance: 0.35, per_point: 0.1 }
     worsen: 0.3
-    worst_harm: 1
   # 마음 (12-48): 크게 다치면 1, 곁의 사람이 죽는 것을 보면 1. 냉정 1당 15% 버틴다.
   # 굶주리거나 얼지 않고 우리 땅이거나 곁에 사람이 있으면 하루마다 25% (냉정 1당 +10%) 가라앉는다
   nerves:

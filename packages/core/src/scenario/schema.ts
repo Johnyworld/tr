@@ -153,6 +153,23 @@ export const scenarioFileSchema = z
       .optional(),
     /** 매력의 수동 효과 (기획서 4.2): 처음 만난 NPC의 호감 + (능력 ÷ first_impression_per, 내림), 능력이 bonus_at 이상이면 호감이 오를 때 +1 */
     charm: z.strictObject({ ability: id, first_impression_per: z.number().int().positive(), bonus_at: z.number().int() }).optional(),
+    /**
+     * 증상 (12-74): 플레이어에게 보이는 몸 상태. 상태 트랙의 단계가 증상을 가리킨다 (원인은 숨긴다: 감염과 질병의 열은 같은 "고열").
+     * group: 같은 묶음은 크기 차이라 가장 큰 것(목록에서 뒤에 있는 것) 하나만 보인다. 이름(id)이 같아도 하나만.
+     * penalty: 판정 보정. 보이는 증상의 보정을 더한다
+     */
+    symptoms: z
+      .array(
+        z.strictObject({
+          id,
+          label: z.string().min(1),
+          group: id.optional(),
+          penalty: z.number().int().max(0).default(0),
+          /** 화면 색 (1 노랑 · 2 주황 · 3 빨강). 없으면 판정 보정 크기로. 보정은 작아도 위험한 증상(의식장애 등)은 3 */
+          tone: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+        }),
+      )
+      .optional(),
     condition_tracks: z
       .array(
         z.strictObject({
@@ -164,8 +181,12 @@ export const scenarioFileSchema = z
             .array(
               z.strictObject({
                 id,
-                label: z.string().min(1),
-                penalty: z.number().int(),
+                /** 단계 이름. 없으면 증상 이름을 이어 붙인다 (증상이 없으면 "이상 없음") */
+                label: z.string().min(1).optional(),
+                /** 판정 보정. 없으면 증상 보정의 합 */
+                penalty: z.number().int().optional(),
+                /** 이 단계의 증상 (symptoms의 id) */
+                symptoms: z.array(id).optional(),
                 fatal: z.boolean().optional(),
                 /** 캐릭터가 아직 모르는 단계 (예: 감염 잠복기). 화면·GM에는 바로 앞 단계로 보인다 */
                 hidden: z.boolean().optional(),
@@ -608,7 +629,7 @@ export const scenarioFileSchema = z
     body: z
       .strictObject({
         /** 허기 트랙. 하루마다 배급 수준(war.ration.levels[].hunger)만큼 바뀐다. 마지막 단계에서는 하루마다 부상 */
-        hunger: z.strictObject({ track: id, starving_harm: z.number().int().min(0) }).optional(),
+        hunger: z.strictObject({ track: id, starving_harm: z.number().int().min(0).default(0) }).optional(),
         /**
          * 감염 트랙. 감염체에게 다치면(take_action.check.infected_source) 확률로 두 번째 단계(잠복)가 된다.
          * 하루마다 한 단계씩 나빠지고, 마지막 단계에서는 하루마다 부상
@@ -617,7 +638,7 @@ export const scenarioFileSchema = z
           .strictObject({
             track: id,
             chance: z.strictObject({ light: z.number().min(0).max(1), heavy: z.number().min(0).max(1) }),
-            worst_harm: z.number().int().min(0),
+            worst_harm: z.number().int().min(0).default(0),
           })
           .optional(),
         /**
@@ -632,7 +653,7 @@ export const scenarioFileSchema = z
             /** 들고 있으면 추위를 덜어 주는 장비 (쓰지 않는다): 아이템 → 덜어 주는 양 */
             gear: z.record(id, z.number().int().min(0)).default({}),
             shelter: z.strictObject({ resource: id, min_days: z.number().min(0), warm: z.number().int().max(0) }),
-            worst_harm: z.number().int().min(0),
+            worst_harm: z.number().int().min(0).default(0),
           })
           .optional(),
         /**
@@ -648,7 +669,7 @@ export const scenarioFileSchema = z
             resist: z.strictObject({ ability: id, per_point: z.number().min(0).max(1) }),
             recover: z.strictObject({ chance: z.number().min(0).max(1), per_point: z.number().min(0).max(1) }),
             worsen: z.number().min(0).max(1),
-            worst_harm: z.number().int().min(0),
+            worst_harm: z.number().int().min(0).default(0),
           })
           .optional(),
         /**
@@ -769,7 +790,7 @@ export const scenarioFileSchema = z
     }
     const harm = s.condition_tracks.find((t) => t.id === s.harm_track);
     if (!harm) problem(`harm_track: 알 수 없는 상태 트랙 ${s.harm_track}`);
-    else if (!harm.levels.at(-1)?.fatal) problem(`harm_track ${s.harm_track}의 마지막 단계는 fatal이어야 한다 (사망은 부상 트랙으로만)`);
+    else if (!harm.levels.at(-1)?.fatal) problem(`harm_track ${s.harm_track}의 마지막 단계는 fatal이어야 한다`);
     if (s.war) {
       const resources = new Set(s.resources.map((r) => r.id));
       const used = [...Object.keys(s.war.upkeep), ...s.war.vital, s.war.ammo, s.war.medicine, s.war.ration.resource];
@@ -794,6 +815,8 @@ export const scenarioFileSchema = z
       if (harm && !harm.levels.some((l) => l.id === level)) problem(`recovery.natural_max_level: 알 수 없는 단계 ${level}`);
     }
     const trackIdSet = new Set(s.condition_tracks.map((t) => t.id));
+    const symptomIds = new Set((s.symptoms ?? []).map((x) => x.id));
+    if (symptomIds.size !== (s.symptoms ?? []).length) problem("symptoms에 중복된 id가 있다");
     for (const [item, effects] of Object.entries(s.consumables)) {
       for (const t of Object.keys(effects)) if (!trackIdSet.has(t)) problem(`consumables.${item}: 알 수 없는 상태 트랙 ${t}`);
     }
@@ -801,7 +824,10 @@ export const scenarioFileSchema = z
     for (const t of [s.body?.hunger?.track, s.body?.infection?.track, s.body?.cold?.track, s.body?.disease?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
     for (const track of s.condition_tracks) {
       if (track.levels[0]?.hidden) problem(`condition_tracks.${track.id}: 첫 단계는 숨길 수 없다`);
-      if (track.id !== s.harm_track && track.levels.some((l) => l.fatal)) problem(`condition_tracks.${track.id}: 사망은 부상 트랙으로만 (fatal은 harm_track에만)`);
+      for (const l of track.levels) {
+        for (const sym of l.symptoms ?? []) if (!symptomIds.has(sym)) problem(`condition_tracks.${track.id}.${l.id}: 알 수 없는 증상 ${sym}`);
+        if (!l.label && !l.symptoms?.length && l !== track.levels[0] && !l.hidden) problem(`condition_tracks.${track.id}.${l.id}: 이름(label)이나 증상(symptoms)이 필요하다`);
+      }
     }
     if (s.seasons && !s.seasons.list.some((x) => x.id === s.seasons!.start.season)) problem(`seasons.start: 알 수 없는 계절 ${s.seasons.start.season}`);
     if (s.weather) {
@@ -840,8 +866,26 @@ export const scenarioFileSchema = z
     for (const rank of [s.promotion.from, s.promotion.to]) {
       if (!ranks.has(rank)) problem(`promotion: 알 수 없는 등급 ${rank}`);
     }
+  })
+  // 단계 이름·보정이 없으면 증상에서 채운다 (12-74)
+  .transform((s) => {
+    const byId = new Map((s.symptoms ?? []).map((x) => [x.id, x]));
+    return {
+      ...s,
+      condition_tracks: s.condition_tracks.map((t) => ({
+        ...t,
+        levels: t.levels.map((l) => {
+          const list = (l.symptoms ?? []).map((id) => byId.get(id)).filter((x): x is NonNullable<typeof x> => !!x);
+          return {
+            ...l,
+            label: l.label ?? (list.length ? list.map((x) => x.label).join(" · ") : "이상 없음"),
+            penalty: l.penalty ?? list.reduce((n, x) => n + x.penalty, 0),
+          };
+        }),
+      })),
+    };
   });
-export type ScenarioFile = z.infer<typeof scenarioFileSchema>;
+export type ScenarioFile = z.output<typeof scenarioFileSchema>;
 
 export const speechRulesSchema = z.strictObject({
   forms: z.strictObject({ casual: z.string().min(1), polite: z.string().min(1) }),

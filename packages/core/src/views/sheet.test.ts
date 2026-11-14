@@ -33,7 +33,7 @@ describe("상태 화면 시트", () => {
     expect(v.inventory.find((i) => i.id === "pistol")).toBeUndefined();
     expect(v.inventory.find((i) => i.id === "canned_food")).toMatchObject({ quantity: 3, icon: "food" });
     expect(v.statRange).toEqual({ min: -1, max: 2 });
-    expect(v.conditions.find((c) => c.id === "infection")).toMatchObject({ levelLabel: "깨끗함", icon: "virus", step: 0 });
+    expect(v.conditions.find((c) => c.id === "infection")).toMatchObject({ levelLabel: "이상 없음", icon: "virus", step: 0 });
     expect(v.growth).toMatchObject({ prev: 0 });
     w.close();
   });

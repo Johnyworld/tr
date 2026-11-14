@@ -17,7 +17,7 @@ import { DEATH_GUIDE, type ToolContext, type ToolDisplayEvent } from "./toolkit.
 
 /**
  * 몸 상태 (기획서 4.4, 4.5): 부상 회복, 소모품, 허기, 감염. 수치는 시나리오(recovery, consumables, body)에서 온다.
- * - 사망은 부상 트랙으로만 (원칙 3). 굶주림·감염은 마지막 단계에서 부상을 준다
+ * - 사망은 상태 트랙의 fatal 단계로만 (원칙 3, 코드가 정한다). 부상 외에 허기·추위·감염도 끝까지 가면 죽는다 (12-74)
  * - 숨은 단계(감염 잠복기)는 캐릭터도 GM도 모른다. 보이는 단계가 바뀔 때만 화면에 알린다
  */
 

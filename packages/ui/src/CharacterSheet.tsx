@@ -29,7 +29,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         <div className="hud-conditions">
           {/* 처음 단계는 보이지 않는다. 달라진 것만 쌓이고, 하나도 없으면 "건강함" (잠복처럼 숨은 단계는 처음 단계로 보인다) */}
           {!player.conditions.some((c) => c.worsened) && (
-            <div className="hud-condition" title="몸 상태에 이상이 없다">
+            <div className="hud-condition" title="몸 상태에 이상이 없습니다">
               <Icon name="heart" size={18} />
               <span>건강함</span>
             </div>
@@ -48,7 +48,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         <div className="hud-present" aria-label="같이 있는 인물">
           <span className="hud-present-label">같이 있는 인물</span>
           {player.present.length === 0 ? (
-            <span className="muted">아무도 없다</span>
+            <span className="muted">아무도 없습니다</span>
           ) : (
             player.present.map((p) => (
               <span key={p.id} className={p.conditionLabel ? "person-chip hurt" : "person-chip"} title={p.look}>
@@ -150,7 +150,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
               <h3>소지품</h3>
               {player.gear && <WeightBar gear={player.gear} />}
             </div>
-            <ItemGrid items={player.inventory} empty="가진 것이 없다" />
+            <ItemGrid items={player.inventory} empty="가진 것이 없습니다" />
           </section>
 
           {player.sceneItems.length > 0 && (
@@ -258,7 +258,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
           <section className="block journal">
             <h3>지난 일</h3>
             {(player.journal ?? []).length === 0 ? (
-              <div className="muted">아직 남은 기록이 없다.</div>
+              <div className="muted">아직 남은 기록이 없습니다.</div>
             ) : (
               <ol className="journal-list">
                 {(player.journal ?? []).map((j) => (
@@ -343,7 +343,7 @@ function MissionCard({ mission, loan }: { mission: PlayerView["mission"]; loan: 
     return (
       <div className="mission-card empty">
         <span className="mission-tag">임무</span>
-        <div className="muted small">맡은 임무가 없다. 상관에게 일감을 받을 수 있다.</div>
+        <div className="muted small">맡은 임무가 없습니다. 상관에게 일감을 받을 수 있습니다.</div>
       </div>
     );
   }
@@ -432,7 +432,7 @@ function WeightBar({ gear }: { gear: NonNullable<PlayerView["gear"]> }) {
   const tone = gear.burden === 2 ? "bad" : gear.burden === 1 ? "warn" : "";
   const note = gear.burden === 2 ? " · 너무 무거움" : gear.burden === 1 ? " · 무거움" : "";
   return (
-    <span className={`weight ${tone}`} title={gear.burden === 2 ? "너무 무거워 옮겨 가지 못한다" : gear.burden === 1 ? "무거워서 판정이 불리하다" : ""}>
+    <span className={`weight ${tone}`} title={gear.burden === 2 ? "너무 무거워 옮겨 가지 못합니다" : gear.burden === 1 ? "무거워서 판정이 불리합니다" : ""}>
       소지품 무게
       <span className="bar">
         <span style={{ width: `${Math.round(ratio * 100)}%` }} />

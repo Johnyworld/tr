@@ -470,7 +470,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   lines.push(
     "",
     "한 번에 이 단계 하나만 묻는다. 대신 정하지 않는다. 플레이어의 답을 create_character(answer)로 넘긴다 (보기가 있으면 그 값). " +
-      "되돌리려면 create_character(back: true). 서술은 짧게, 이야기 속 장면처럼.",
+      "되돌리려면 create_character(back: true). 묻는 말은 존댓말로 짧게 (게임 밖 안내다).",
   );
   return lines.join("\n");
 }

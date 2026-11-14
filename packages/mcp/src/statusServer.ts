@@ -116,7 +116,7 @@ export async function handleOptions(source: StatusSource, req: IncomingMessage, 
 export async function handleCreation(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== "POST") return json(res, 405, { error: "POST" });
   if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
-  if (!source.submitCreation || !source.creation) return json(res, 409, { error: "지금은 화면에서 고를 수 없다. Claude 세션에서 새 게임을 고르면 열린다." });
+  if (!source.submitCreation || !source.creation) return json(res, 409, { error: "지금은 화면에서 고를 수 없습니다. Claude 세션에서 새 게임을 고르면 열립니다." });
   let body = "";
   for await (const chunk of req) {
     body += String(chunk);

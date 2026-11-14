@@ -14,7 +14,7 @@ const ROWS: [Row<"mature">, Row<"dialogue">] = [
   {
     key: "mature",
     label: "성인 콘텐츠",
-    help: "성인 사이의 연애, 성적인 농담·괴롭힘·위협. 폭력과 죽음은 어느 쪽이든 나온다.",
+    help: "성인 사이의 연애, 성적인 농담·괴롭힘·위협. 폭력과 죽음은 어느 쪽이든 나옵니다.",
     choices: [
       { value: true, label: "켬" },
       { value: false, label: "끔" },
@@ -23,7 +23,7 @@ const ROWS: [Row<"mature">, Row<"dialogue">] = [
   {
     key: "dialogue",
     label: "대화 형식",
-    help: "소설: 대사가 서술 속에 녹아 있다. 대본: 대사를 “이름: 대사” 줄로 따로 뗀다.",
+    help: "소설: 대사가 서술 속에 녹아 있습니다. 대본: 대사를 “이름: 대사” 줄로 따로 뗍니다.",
     choices: [
       { value: "novel", label: "소설" },
       { value: "script", label: "대본" },
@@ -71,7 +71,7 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
     void fetch("/api/options", { cache: "no-store" })
       .then((r) => r.json() as Promise<{ open: boolean; options?: GameOptions }>)
       .then((b) => setOptions(b.open ? (b.options ?? null) : null))
-      .catch(() => setError("설정을 읽지 못했다."));
+      .catch(() => setError("설정을 읽지 못했습니다."));
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     const onClick = (e: MouseEvent) => boxRef.current && !boxRef.current.contains(e.target as Node) && setOpen(false);
     window.addEventListener("keydown", onKey);
@@ -92,10 +92,10 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
     try {
       const res = await fetch("/api/options", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(patch) });
       const body = (await res.json()) as { options?: GameOptions; error?: string };
-      if (!res.ok || !body.options) setError(body.error ?? "바꾸지 못했다.");
+      if (!res.ok || !body.options) setError(body.error ?? "바꾸지 못했습니다.");
       else setOptions(body.options);
     } catch {
-      setError("바꾸지 못했다 (연결 끊김).");
+      setError("바꾸지 못했습니다 (연결 끊김).");
     } finally {
       setSaving(false);
     }
@@ -109,7 +109,7 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
         className={open ? "settings-button on" : "settings-button"}
         aria-label="설정"
         aria-expanded={open}
-        title={enabled ? "설정" : "게임을 열면 설정을 바꿀 수 있다"}
+        title={enabled ? "설정" : "게임을 열면 설정을 바꿀 수 있습니다"}
         disabled={!enabled}
         onClick={() => setOpen((v) => !v)}
       >
@@ -145,7 +145,7 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
               </div>
             ))}
           {error && <p className="settings-error">{error}</p>}
-          <p className="settings-note">바꾸면 다음 서술부터 따른다.</p>
+          <p className="settings-note">바꾸면 다음 서술부터 적용됩니다.</p>
         </div>
       )}
     </div>

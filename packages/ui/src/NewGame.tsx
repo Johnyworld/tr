@@ -20,9 +20,9 @@ export function NewGame({ creation }: { creation: CreationStatus }) {
     try {
       const res = await fetch("/api/creation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       const out = (await res.json()) as { ok?: boolean; error?: string };
-      if (!res.ok || !out.ok) setError(out.error ?? "보내지 못했다.");
+      if (!res.ok || !out.ok) setError(out.error ?? "보내지 못했습니다.");
     } catch {
-      setError("Claude 세션과 연결이 끊겼다.");
+      setError("Claude 세션과 연결이 끊겼습니다.");
     } finally {
       setBusy(false);
     }
@@ -41,14 +41,14 @@ export function NewGame({ creation }: { creation: CreationStatus }) {
           <span />
         )}
         <span className="newgame-crumb">{crumb(view)}</span>
-        <button type="button" className="newgame-chat" disabled={busy} onClick={() => void send({ chat: true })} title="이 단계부터 채팅에서 GM과 이어 고른다">
+        <button type="button" className="newgame-chat" disabled={busy} onClick={() => void send({ chat: true })} title="이 단계부터 채팅에서 GM과 이어서 고릅니다">
           채팅으로
         </button>
       </div>
       {gmWorking ? (
         <div className="newgame-wait">
           <div className="newgame-spinner" aria-hidden="true" />
-          <p>GM이 쓴 이야기를 이 세계의 사람과 장소로 옮기고 있다. 잠시 뒤 이어서 고른다.</p>
+          <p>GM이 쓰신 이야기를 이 세계의 사람과 장소로 옮기고 있습니다. 잠시 뒤 이어서 고르실 수 있습니다.</p>
         </div>
       ) : (
         <Step view={view} busy={busy} answer={answer} />
@@ -79,7 +79,7 @@ function Step({ view, busy, answer }: StepProps) {
     case "world":
       return (
         <>
-          <h2 className="newgame-title">어느 월드에서 시작할까</h2>
+          <h2 className="newgame-title">어느 월드에서 시작할까요?</h2>
           <div className="choice-list">
             {view.worlds!.map((w) => (
               <button key={w.id} type="button" className="choice-card" disabled={busy} onClick={() => answer(w.id)}>
@@ -98,7 +98,7 @@ function Step({ view, busy, answer }: StepProps) {
       return (
         <>
           <Story text={view.world!.intro} title={`${view.world!.title} 이야기`} />
-          <h2 className="newgame-title">어떤 사람으로 시작할까</h2>
+          <h2 className="newgame-title">어떤 사람으로 시작할까요?</h2>
           {custom.map((r) => (
             <button key={r.id} type="button" className="choice-card featured" disabled={busy} onClick={() => answer(r.id)}>
               <strong>{r.title}</strong>
@@ -123,13 +123,13 @@ function Step({ view, busy, answer }: StepProps) {
       return (
         <div className="newgame-wait">
           <div className="newgame-spinner" aria-hidden="true" />
-          <p>GM이 이야기를 옮기고 있다.</p>
+          <p>GM이 이야기를 옮기고 있습니다.</p>
         </div>
       );
     case "custom_confirm":
       return (
         <>
-          <h2 className="newgame-title">이렇게 옮겼다</h2>
+          <h2 className="newgame-title">이렇게 옮겼습니다</h2>
           <div className="newgame-box">
             {view.custom!.result!.map((line, i) => (
               <p key={i} className="pre-line">
@@ -153,21 +153,21 @@ function Step({ view, busy, answer }: StepProps) {
     case "content":
       return (
         <>
-          <h2 className="newgame-title">성인 주제를 다룰까</h2>
+          <h2 className="newgame-title">성인 주제를 다룰까요?</h2>
           <div className="choice-list">
             <button type="button" className="choice-card" disabled={busy} onClick={() => answer("off")}>
               <strong>끄기 (기본)</strong>
-              <span className="choice-desc">연애나 성적인 이야기는 나오지 않는다. 폭력과 죽음, 생존의 잔혹함은 어느 쪽이든 나온다.</span>
+              <span className="choice-desc">연애나 성적인 이야기는 나오지 않습니다. 폭력과 죽음, 생존의 잔혹함은 어느 쪽이든 나옵니다.</span>
             </button>
             <button type="button" className="choice-card" disabled={busy} onClick={() => answer("on")}>
               <strong>켜기</strong>
               <span className="choice-desc">
-                성인 사이의 끌림과 연애(장면은 암전), 성적인 농담·괴롭힘·위협(시도까지만)이 나올 수 있다. {view.content!.adultAge}세 미만은 어떤 경우에도 그 대상이
-                되지 않는다.
+                성인 사이의 끌림과 연애(장면은 암전), 성적인 농담·괴롭힘·위협(시도까지만)이 나올 수 있습니다. {view.content!.adultAge}세 미만은 어떤 경우에도 그 대상이
+                되지 않습니다.
               </span>
             </button>
           </div>
-          <p className="newgame-note">게임 중에도 설정(톱니바퀴)에서 바꿀 수 있다.</p>
+          <p className="newgame-note">게임 중에도 설정(톱니바퀴)에서 바꿀 수 있습니다.</p>
         </>
       );
     default:
@@ -205,10 +205,10 @@ function CustomStory({ view, busy, answer }: StepProps) {
   const [story, setStory] = useState(c.story ?? "");
   return (
     <>
-      <h2 className="newgame-title">누구로 시작할까</h2>
+      <h2 className="newgame-title">누구로 시작할까요?</h2>
       <p className="newgame-note">
-        서너 문장이면 된다. 어느 무리 사람인지(또는 무리 없이 떠도는지), 무리에서 무슨 일을 하는지, 몇 살쯤인지, 그리고 지난 일 (잃은 사람, 원수, 살아 있는 가족, 진 빚,
-        도망쳐 나온 무리 등). 이 세계에 있는 무리·장소 안에서 정해지고, 한 자리뿐인 우두머리는 될 수 없다.
+        서너 문장이면 됩니다. 어느 무리 사람인지(또는 무리 없이 떠도는지), 무리에서 무슨 일을 하는지, 몇 살쯤인지, 그리고 지난 일 (잃은 사람, 원수, 살아 있는 가족, 진 빚,
+        도망쳐 나온 무리 등). 이 세계에 있는 무리·장소 안에서 정해지고, 한 자리뿐인 우두머리는 될 수 없습니다.
       </p>
       {c.occupations.length > 0 && (
         <details className="newgame-story">
@@ -255,17 +255,17 @@ function CharacterStep({ view, busy, answer }: StepProps) {
       {step === "name" && <NameStep view={view} busy={busy} answer={answer} />}
       {(step === "gender" || step === "abilities" || step === "traits") && (
         <>
-          <h2 className="newgame-title">{step === "gender" ? "성별" : step === "abilities" ? "타고난 능력은 어떻게 정할까" : "타고난 기질과 버릇(트레잇)은"}</h2>
+          <h2 className="newgame-title">{step === "gender" ? "성별을 골라 주세요" : step === "abilities" ? "타고난 능력은 어떻게 정할까요?" : "타고난 기질과 버릇(트레잇)은 어떻게 할까요?"}</h2>
           {step === "abilities" && (
             <p className="newgame-note">
               {c.tiers
-                ? `직접 정하면 ${c.tiers.map((t) => `${t.label}(${signed(t.value)}) ${t.count}개`).join(", ")}를 고르고 나머지는 보통(0)이다.`
-                : `모두 0에서 시작해 ${c.points?.total ?? 0}포인트를 나눠 쓴다.`}
+                ? `직접 정하면 ${c.tiers.map((t) => `${t.label}(${signed(t.value)}) ${t.count}개`).join(", ")}를 고르고 나머지는 보통(0)입니다.`
+                : `모두 0에서 시작해 ${c.points?.total ?? 0}포인트를 나눠 씁니다.`}
             </p>
           )}
           {step === "traits" && c.traitLimits && (
             <p className="newgame-note">
-              강점은 약점으로 얻은 포인트만큼만 가질 수 있다. 약점 {c.traitLimits.max_negative}개 · 강점 {c.traitLimits.max_positive}개 · 성격 {c.traitLimits.max_personality}개까지.
+              강점은 약점으로 얻은 포인트만큼만 가질 수 있습니다. 약점 {c.traitLimits.max_negative}개 · 강점 {c.traitLimits.max_positive}개 · 성격 {c.traitLimits.max_personality}개까지.
             </p>
           )}
           <div className={step === "gender" ? "choice-row" : "choice-list"}>
@@ -282,8 +282,8 @@ function CharacterStep({ view, busy, answer }: StepProps) {
       {(step === "traits_pick" || step === "traits_personality") && <TraitStep key={step} view={view} busy={busy} answer={answer} />}
       {step === "confirm" && (
         <>
-          <h2 className="newgame-title">이 사람으로 시작할까</h2>
-          {c.unusedPoints > 0 && <p className="newgame-warn">능력 포인트 {c.unusedPoints}을(를) 쓰지 않았다. 이대로 시작하면 사라진다.</p>}
+          <h2 className="newgame-title">이 사람으로 시작할까요?</h2>
+          {c.unusedPoints > 0 && <p className="newgame-warn">능력 포인트 {c.unusedPoints}을(를) 쓰지 않았습니다. 이대로 시작하면 사라집니다.</p>}
           <div className="newgame-actions">
             {options.map((o) => (
               <button key={o.value} type="button" className={o.value === "start" ? "primary" : ""} disabled={busy} onClick={() => answer(o.value)}>
@@ -330,7 +330,7 @@ function NameStep({ view, busy, answer }: StepProps) {
         if (name.trim()) answer(name.trim());
       }}
     >
-      <h2 className="newgame-title">이름</h2>
+      <h2 className="newgame-title">이름을 정해 주세요</h2>
       <div className="newgame-inline">
         <input className="newgame-input" value={name} maxLength={max} autoFocus onChange={(e) => setName(e.target.value)} placeholder={`1~${max}자`} />
         <button type="submit" className="primary" disabled={busy || !name.trim()}>
@@ -358,7 +358,7 @@ function TierStep({ view, busy, answer }: StepProps) {
   const submit = () => answer(tiers.map((t) => Object.keys(picked).filter((id) => picked[id] === t.value).join(", ")).join(" / "));
   return (
     <>
-      <h2 className="newgame-title">타고난 능력</h2>
+      <h2 className="newgame-title">타고난 능력을 골라 주세요</h2>
       <div className="tier-legend">
         {tiers.map((t) => (
           <span key={t.value} className={count(t.value) === t.count ? "done" : ""}>
@@ -418,9 +418,9 @@ function PointStep({ view, busy, answer }: StepProps) {
   const set = (id: string, v: number) => setValues((x) => ({ ...x, [id]: Math.max(min, Math.min(max, v)) }));
   return (
     <>
-      <h2 className="newgame-title">타고난 능력</h2>
+      <h2 className="newgame-title">타고난 능력을 골라 주세요</h2>
       <p className="newgame-note">
-        남은 포인트 {p.total - spent} · 0보다 낮추면 포인트를 돌려받는다 ({p.maxLow}개까지)
+        남은 포인트 {p.total - spent} · 0보다 낮추면 포인트를 돌려받습니다 ({p.maxLow}개까지)
       </p>
       <div className="tier-table">
         {c.stats.map((s) => (
@@ -487,11 +487,11 @@ function TraitStep({ view, busy, answer }: StepProps) {
       ];
   return (
     <>
-      <h2 className="newgame-title">{personality ? "성격" : "약점과 강점"}</h2>
+      <h2 className="newgame-title">{personality ? "성격을 골라 주세요" : "약점과 강점을 골라 주세요"}</h2>
       {!personality && (
         <p className={over ? "newgame-warn" : "newgame-note"}>
           약점으로 얻은 {gained} · 강점에 쓴 {used}
-          {over ? " — 강점이 약점보다 많다" : ""} · 약점 {countOf("negative")}/{lim?.max_negative} · 강점 {countOf("positive")}/{lim?.max_positive}
+          {over ? " — 강점이 약점보다 많습니다" : ""} · 약점 {countOf("negative")}/{lim?.max_negative} · 강점 {countOf("positive")}/{lim?.max_positive}
         </p>
       )}
       {personality && <p className="newgame-note">포인트 없음 · {countOf("personality")}/{lim?.max_personality}개까지</p>}
@@ -541,7 +541,7 @@ export function CreatedToast({ onClose }: { onClose: () => void }): ReactNode {
   }, [onClose]);
   return (
     <div className="created-toast" role="status">
-      캐릭터를 만들었다. Claude 세션에서 첫 장면이 이어진다.
+      캐릭터를 만들었습니다. Claude 세션에서 첫 장면이 이어집니다.
       <button type="button" aria-label="닫기" onClick={onClose}>
         ×
       </button>

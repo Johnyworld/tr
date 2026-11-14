@@ -54,7 +54,7 @@ export const PLAY_START =
   "상태 화면이 있으면 먼저 어디서 고를지 묻는다: 상태 화면에서 고르기(start_session(new_world: true, in_browser: true), 다 고를 때까지 기다린다) / 채팅으로(start_session(new_world: true), create_character로 한 단계씩). " +
   "플레이어가 그만하자고 하면 end_session으로 닫는다.";
 
-const HELP_HINT = "플레이어에게 한 줄 안내: \"?도움말 로 정보 명령어를 볼 수 있다.\" (이 모드에서는 \"!\" 대신 \"?\"를 쓴다. Claude 앱은 줄 맨 앞의 !를 셸 명령으로 바꾼다)";
+const HELP_HINT = "플레이어에게 한 줄 안내 (존댓말): \"?도움말로 정보 명령어를 볼 수 있습니다.\" (이 모드에서는 \"!\" 대신 \"?\"를 쓴다. Claude 앱은 줄 맨 앞의 !를 셸 명령으로 바꾼다)";
 
 /** 주인공이 죽은 뒤 GM이 서술할 동안 상태 화면에 사망을 미루는 최대 시간 */
 const DEATH_HOLD_MS = 120 * 1000;
@@ -365,14 +365,14 @@ export function createMcpServer(
 
   /** 상태 화면이 보낸 답 (POST /api/creation). 규칙은 채팅과 같다 */
   const submitFromScreen = (input: ScreenCreationInput): { ok: true } | { ok: false; error: string } => {
-    if (!draft || !screen) return { ok: false, error: "Claude 세션에서 새 게임(또는 새 캐릭터)을 고른 뒤에 만들 수 있다." };
+    if (!draft || !screen) return { ok: false, error: "Claude 세션에서 새 게임(또는 새 캐릭터)을 고른 뒤에 만들 수 있습니다." };
     if (input.chat) {
       // 기다리던 GM이 채팅으로 이어 간다
       wakeWaiters(text(`플레이어가 상태 화면 대신 채팅으로 이어 하겠다고 했다. 지금 단계부터 묻는다.\n\n${describeNewGameStep(packs, draft)}`));
       screen = null;
       return { ok: true };
     }
-    if (needsGm()) return { ok: false, error: "GM이 이야기를 옮기는 중이다." };
+    if (needsGm()) return { ok: false, error: "GM이 이야기를 옮기는 중입니다." };
     const r = advanceCreation({ answer: input.answer ?? null, back: input.back });
     if (r.kind === "error") return { ok: false, error: r.error };
     if (r.kind === "done") {

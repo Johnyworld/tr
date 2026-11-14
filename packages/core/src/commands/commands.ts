@@ -225,7 +225,7 @@ const people: CommandDef = {
           const shown = present.get(id);
           const here = state.scene.present.includes(id) ? ` · 함께 있음${shown?.conditionLabel ? ` (${shown.conditionLabel})` : ""}` : "";
           const attitude = state.perceived[id] ? `신뢰 ${relationLabel(r.trust)} · 호감 ${relationLabel(r.affection)} · 존중 ${relationLabel(r.respect)}` : "아직 만나 보지 않음";
-          return `${headingAs(state, content, state.playerId, id)}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : c.away ? " · 떠남" : c.captive ? (state.playerZone === c.captive.zone ? " · 여기 붙잡혀 있다" : " · 행방 모름") : ""}${here}  (${attitude})`;
+          return `${headingAs(state, content, state.playerId, id)}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : c.away ? " · 떠남" : c.captive ? (state.playerZone === c.captive.zone ? " · 여기 붙잡혀 있음" : " · 행방 모름") : ""}${here}  (${attitude})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,
@@ -259,7 +259,7 @@ const people: CommandDef = {
               gaugeLine(RELATION_AXIS_LABELS[axis], r[axis] - RELATION_MIN, RELATION_MAX - RELATION_MIN, `${relationLabel(r[axis])} ${signed(r[axis])}`),
             ),
           ]
-        : ["아직 직접 만나 본 적이 없다. 태도는 만나 봐야 안다."]),
+        : ["아직 직접 만나 본 적이 없습니다. 태도는 만나 봐야 압니다."]),
       ...(facts.length ? ["", "이 인물에 대해 아는 것", ...facts.map((b) => `  [${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`)] : []),
     ].join("\n");
   },
@@ -400,7 +400,7 @@ const chronicle: CommandDef = {
 };
 
 function burdenLine(gear: NonNullable<PlayerView["gear"]>): string {
-  return `소지품 무게  ${gear.weight}/${gear.capacity}kg${gear.burden === 2 ? " · 너무 무거움 (옮겨 가지 못한다)" : gear.burden === 1 ? " · 무거움 (판정이 불리하다)" : ""}`;
+  return `소지품 무게  ${gear.weight}/${gear.capacity}kg${gear.burden === 2 ? " · 너무 무거움 (옮겨 가지 못합니다)" : gear.burden === 1 ? " · 무거움 (판정이 불리합니다)" : ""}`;
 }
 
 const gear: CommandDef = {
@@ -487,7 +487,7 @@ const settings: CommandDef = {
     return [
       header("설정"),
       `성인 콘텐츠  ${o.mature ? "켬" : "끔"}`,
-      `대화 형식    ${DIALOGUE_STYLE_LABELS[o.dialogue]}${o.dialogue === "script" ? " (대사를 \"이름: 대사\" 줄로 뗀다)" : " (대사를 서술 속에 녹인다)"}`,
+      `대화 형식    ${DIALOGUE_STYLE_LABELS[o.dialogue]}${o.dialogue === "script" ? " (대사를 \"이름: 대사\" 줄로 뗍니다)" : " (대사를 서술 속에 녹입니다)"}`,
       "",
       "바꾸려면 채팅으로 말하거나(예: \"대화 형식을 대본으로\") 상태 화면의 톱니바퀴를 누릅니다.",
     ].join("\n");

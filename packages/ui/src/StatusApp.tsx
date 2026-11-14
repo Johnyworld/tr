@@ -93,7 +93,7 @@ export function StatusApp() {
           <p>Claude 세션에서 한 단계씩 정하고 있습니다. 다 만들면 이곳에 캐릭터 시트가 열립니다.</p>
         </div>
       ) : !status.open ? (
-        <p className="muted status-empty">열린 게임이 없다. Claude 세션에서 /play 로 게임을 열면 여기에 캐릭터 시트가 나온다.</p>
+        <p className="muted status-empty">열린 게임이 없습니다. Claude 세션에서 /play로 게임을 열면 여기에 캐릭터 시트가 나옵니다.</p>
       ) : (
         <div key="sheet" className="status-sheet">
           {created && <CreatedToast onClose={closeToast} />}

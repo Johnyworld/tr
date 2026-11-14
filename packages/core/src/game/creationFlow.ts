@@ -59,7 +59,7 @@ const TRAIT_KIND_STEP = {
 type TraitStep = keyof typeof TRAIT_KIND_STEP;
 
 /** 지금까지의 답에서 정해진 것 */
-function collect(draft: CreationDraft) {
+export function collectDraft(draft: CreationDraft) {
   let name: string | undefined;
   let gender: string | undefined;
   let abilityMethod: "manual" | "random" | undefined;
@@ -91,7 +91,7 @@ function collect(draft: CreationDraft) {
 
 /** 다음에 물을 단계 */
 export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
-  const d = collect(draft);
+  const d = collectDraft(draft);
   if (d.name === undefined) return "name";
   if (d.gender === undefined) return "gender";
   if (d.abilityMethod === undefined) return "abilities";
@@ -107,7 +107,7 @@ export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
 
 /** 고른 것 (확인 단계 요약, 세계 만들기) */
 export function draftChoice(draft: CreationDraft): CharacterChoice {
-  const d = collect(draft);
+  const d = collectDraft(draft);
   return { name: d.name ?? "", gender: d.gender ?? null, abilities: d.abilities, portrait: null, traits: d.traits };
 }
 
@@ -235,7 +235,7 @@ export function stepOptions(s: Scenario, draft: CreationDraft, step: CreationSte
  * 플레이어는 이 번호로 답할 수 있다
  */
 export function traitChoices(s: Scenario, draft: CreationDraft, step: TraitStep) {
-  const chosen = collect(draft).traits;
+  const chosen = collectDraft(draft).traits;
   const kinds: readonly string[] = TRAIT_KIND_STEP[step];
   return kinds.flatMap((kind) =>
     s.traits.filter((t) => t.selectable && t.kind === kind && !chosen.includes(t.id) && !t.opposites.some((o) => chosen.includes(o))),
@@ -315,7 +315,7 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
   if (step === "traits_pick" || step === "traits_personality") {
     const parsed = parseTraits(s, TRAIT_KIND_STEP[step], answer, traitChoices(s, draft, step));
     if (!parsed.ok) return parsed;
-    const problems = checkTraits(s, [...collect(draft).traits, ...parsed.ids]);
+    const problems = checkTraits(s, [...collectDraft(draft).traits, ...parsed.ids]);
     if (problems.length) return { ok: false, error: problems.join(" ") };
     return add({ step, value: parsed.ids });
   }
@@ -336,7 +336,7 @@ export function backCreation(draft: CreationDraft): CreationDraft {
 
 /** 지금까지 정한 것 (한 줄씩) */
 function summary(s: Scenario, draft: CreationDraft): string[] {
-  const d = collect(draft);
+  const d = collectDraft(draft);
   const lines: string[] = [];
   if (d.name !== undefined) lines.push(`이름: ${d.name}`);
   if (d.gender !== undefined) lines.push(`성별: ${s.creation?.genders.find((g) => g.id === d.gender)?.label ?? d.gender}`);
@@ -455,9 +455,9 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
     );
   } else {
     lines.push("물을 것: 이대로 시작할지. 정한 것을 한 사람의 모습으로 그려 보여 준 뒤 묻는다.");
-    const { spent } = abilitySpend(s, collect(draft).abilities);
+    const { spent } = abilitySpend(s, collectDraft(draft).abilities);
     const left = (s.creation?.points ?? 0) - spent;
-    if (collect(draft).abilityMethod === "manual" && Number.isFinite(spent) && left > 0) {
+    if (collectDraft(draft).abilityMethod === "manual" && Number.isFinite(spent) && left > 0) {
       lines.push(`능력 포인트 ${left}을(를) 쓰지 않았다. 이대로 시작하면 사라진다고 알려 주고, 쓰고 싶으면 "처음부터 다시"나 뒤로 가기로 고치게 한다.`);
     }
   }
@@ -476,8 +476,8 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
 }
 
 /** 이번 단계가 몇 번째인지 (능력·트레잇을 하나씩 고르면 단계가 늘어난다) */
-function stepIndex(s: Scenario, draft: CreationDraft): { at: number; total: number } {
-  const d = collect(draft);
+export function stepIndex(s: Scenario, draft: CreationDraft): { at: number; total: number } {
+  const d = collectDraft(draft);
   const abilitySteps = d.abilityMethod === "manual" ? 1 : 0;
   const traitSteps = d.traitMethod === "manual" ? 2 : 0;
   const total = 5 + abilitySteps + traitSteps;

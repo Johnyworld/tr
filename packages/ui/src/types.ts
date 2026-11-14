@@ -42,3 +42,32 @@ export type GearView = { id: string; name: string; slotLabel: string; detail: st
 export type ItemView = { id: string; name: string; quantity: number; icon?: string };
 
 export type TraitKind = "positive" | "negative" | "personality";
+
+/** 상태 화면의 새 게임 고르기 (core newGameView, 12-67) */
+export type NewGameView = {
+  mode: "new_world" | "heir";
+  step: string;
+  worlds?: { id: string; title: string; tagline: string; description: string }[];
+  premise?: string;
+  world?: { title: string; intro: string };
+  scenarios?: { id: string; title: string; pitch: string; custom: boolean }[];
+  custom?: { maxLength: number; occupations: { label: string; summary: string }[]; story: string | null; result: string[] | null };
+  content?: { adultAge: number };
+  character?: {
+    index: { at: number; total: number };
+    roleLabel: string;
+    situation: string | null;
+    startSkills: { label: string; value: number }[];
+    chosen: { name: string | null; gender: string | null; abilities: { label: string; value: number }[]; traits: string[] | null };
+    options: { value: string; label: string; description?: string }[];
+    nameMax: number;
+    stats: { id: string; label: string; description: string }[];
+    tiers: { value: number; count: number; label: string }[] | null;
+    points: { total: number; cost: { value: number; cost: number }[]; maxLow: number } | null;
+    traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[] }[];
+    traitLimits: { max_positive: number; max_negative: number; max_personality: number } | null;
+    unusedPoints: number;
+  };
+};
+
+export type CreationStatus = { view: NewGameView; gmWorking: boolean };

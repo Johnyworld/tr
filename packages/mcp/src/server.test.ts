@@ -481,3 +481,83 @@ describe("자유 시나리오 (MCP)", () => {
     expect(app.world!.state().characters.player).toMatchObject({ name: "강민", rank: "squad_leader" });
   });
 });
+
+describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
+  async function connectWithScreen(waitMs = 5000) {
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-screen-")), content: REAL_CONTENT, rngFactory: () => createSeededRng(7) });
+    const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8790", creationWaitMs: waitMs });
+    opened.push(app);
+    const [c, s] = InMemoryTransport.createLinkedPair();
+    await app.server.connect(s);
+    const client = new Client({ name: "t", version: "0" });
+    await client.connect(c);
+    const call = async (name: string, args: Record<string, unknown> = {}) => {
+      const r = (await client.callTool({ name, arguments: args })) as { content: { text: string }[]; isError?: boolean };
+      return { text: r.content.map((x) => x.text).join("\n"), isError: r.isError === true };
+    };
+    return { app, call };
+  }
+  const settle = () => new Promise((r) => setTimeout(r, 10));
+
+  it("in_browser면 tool이 기다리고, 화면이 월드 → 시나리오 → 캐릭터를 고르면 세계를 열고 돌아간다", async () => {
+    const { app, call } = await connectWithScreen();
+    const waiting = call("start_session", { new_world: true, in_browser: true });
+    await settle();
+    expect(app.creation?.view).toMatchObject({ step: "world" });
+    expect(app.submitCreation({ answer: "없는 월드" })).toMatchObject({ ok: false });
+    for (const answer of ["post_apoc", "role_a_grunt", "off", "윤하", "female", "manual"]) {
+      expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    }
+    const view = app.creation!.view;
+    expect(view.step).toBe("ability_set");
+    expect(view.character!.tiers!.map((t) => t.value)).toEqual([2, 1, -1]);
+    expect(app.submitCreation({ answer: "intellect / charm, senses / strength" })).toEqual({ ok: true });
+    expect(app.submitCreation({ answer: "manual" })).toEqual({ ok: true });
+    expect(app.creation!.view.character!.traits.length).toBeGreaterThan(0);
+    expect(app.submitCreation({ answer: [] })).toEqual({ ok: true });
+    expect(app.submitCreation({ answer: [] })).toEqual({ ok: true });
+    expect(app.creation!.view.step).toBe("confirm");
+    expect(app.submitCreation({ answer: "start" })).toEqual({ ok: true });
+    const done = await waiting;
+    expect(done.isError).toBe(false);
+    expect(done.text).toContain("상태 화면에서 골랐다");
+    expect(done.text).toContain("# GM 지침");
+    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", stats: { intellect: 2, charm: 1, senses: 1, strength: -1 } });
+    expect(app.creation).toBeNull();
+  });
+
+  it("기다리다 시간이 넘으면 안내하고, 그 뒤 화면에서 마치면 create_character(wait)가 결과를 준다", async () => {
+    const { app, call } = await connectWithScreen(30);
+    const first = await call("start_session", { new_world: true, in_browser: true });
+    expect(first.text).toContain("다 했어");
+    for (const answer of ["post_apoc", "role_a_grunt", "off", "서진", "male", "random", "none", "start"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    expect(app.world).not.toBeNull();
+    const later = await call("create_character", { wait: true });
+    expect(later.text).toContain("상태 화면에서 골랐다");
+  });
+
+  it("직접 쓰는 시나리오는 화면의 글을 GM이 옮기고, 다시 화면 차례가 된다. 채팅으로 넘길 수도 있다", async () => {
+    const { app, call } = await connectWithScreen();
+    const waiting = call("start_session", { new_world: true, in_browser: true });
+    await settle();
+    app.submitCreation({ answer: "post_apoc" });
+    app.submitCreation({ answer: "custom" });
+    expect(app.submitCreation({ answer: "나는 청솔형제단의 분대장이다." })).toEqual({ ok: true });
+    const gm = await waiting;
+    expect(gm.text).toContain("custom_start");
+    expect(app.creation).toMatchObject({ gmWorking: true });
+    expect(app.submitCreation({ answer: "confirm" })).toMatchObject({ ok: false });
+    const input = {
+      faction: "faction_a", rank: "squad_leader", title: "청솔형제단 분대장", location: "a_base", kit: "fighter",
+      skills: { fight: 1, tactics: 1 }, age: 34, opening: "새벽, 당신은 분대원들을 깨운다.", background: [],
+    };
+    const again = call("create_character", { custom_start: input });
+    await settle();
+    expect(app.creation).toMatchObject({ gmWorking: false, view: { step: "custom_confirm" } });
+    expect(app.submitCreation({ chat: true })).toEqual({ ok: true });
+    const handed = await again;
+    expect(handed.text).toContain("채팅으로 이어 하겠다");
+    expect(app.creation).toBeNull();
+    expect(app.creating).toBe(true);
+  });
+});

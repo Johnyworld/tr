@@ -31,7 +31,7 @@ Claude 앱 세션(Claude Code·Claude 데스크톱)이 GM이고, 엔진은 로�
 
 ```
 packages/core     엔진: 판정, 시뮬레이션, 상태, 저장, RAG, 정보 필터, 명령어, 캐릭터 생성 흐름 (UI·HTTP·LLM을 모르는 순수 TS)
-packages/mcp      MCP 서버 어댑터 (core만 사용, stdio). 상태 화면(ui/status.html, 캐릭터 시트 + 설정 창)을 127.0.0.1에 함께 띄운다
+packages/mcp      MCP 서버 어댑터 (core만 사용, stdio). 상태 화면(ui/status.html, 캐릭터 시트 + 설정 창 + 새 게임 고르기)을 127.0.0.1에 함께 띄운다
 packages/ui       상태 화면 (Vite + React, 캐릭터 시트). MCP 서버가 Vite 미들웨어로 띄운다
 .claude/skills/   Claude Code 스킬 /play, /quit
 content/scenarios/<id>/   시나리오 팩: scenario.yaml, YAML 콘텐츠(factions, npcs, locations, roles, items, storylets),

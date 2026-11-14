@@ -1,22 +1,34 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { SettingsButton } from "./Settings.tsx";
 import { Icon } from "./Icon.tsx";
-import type { PlayerView } from "./types.ts";
+import { CreatedToast, NewGame } from "./NewGame.tsx";
+import type { CreationStatus, PlayerView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
 type StatusView =
-  | { open: false; scenarioName: string; creating?: boolean }
+  | { open: false; scenarioName: string; creating?: boolean; creation?: CreationStatus | null }
   | { open: true; scenarioName: string; worldId: string; player: PlayerView };
 
 /**
- * MCP 모드의 상태 화면: Claude 앱 옆(브라우저 패널)에 띄워 두는 캐릭터 시트. 바꿀 수 있는 것은 설정(톱니바퀴)뿐이다.
+ * MCP 모드의 상태 화면: Claude 앱 옆(브라우저 패널)에 띄워 두는 캐릭터 시트. 바꿀 수 있는 것은 설정(톱니바퀴)과,
+ * Claude 세션이 화면 고르기를 열었을 때의 새 게임 고르기(12-67)뿐이다.
  * 이야기(서술)는 Claude 세션의 채팅에 있다.
  * SSE로 바뀔 때마다 받고, SSE가 없는 서버면 1.5초 폴링으로 읽는다
  */
 export function StatusApp() {
   const [status, setStatus] = useState<StatusView | null>(null);
   const [connected, setConnected] = useState(false);
+  // 화면에서 고르다가 세계가 열리면 "채팅으로 돌아가라"를 잠깐 띄운다
+  const [created, setCreated] = useState(false);
+  const wasCreating = useRef(false);
+  useEffect(() => {
+    if (!status) return;
+    const creatingHere = !status.open && !!status.creation;
+    if (wasCreating.current && status.open) setCreated(true);
+    wasCreating.current = creatingHere;
+  }, [status]);
+  const closeToast = useCallback(() => setCreated(false), []);
 
   useEffect(() => {
     let stop = false;
@@ -70,6 +82,10 @@ export function StatusApp() {
       </header>
       {!status ? (
         <p className="muted status-empty">불러오는 중…</p>
+      ) : !status.open && status.creation ? (
+        <div key="newgame" className="status-sheet">
+          <NewGame creation={status.creation} />
+        </div>
       ) : !status.open && status.creating ? (
         // Claude 세션에서 대화로 캐릭터를 만드는 중. 다 만들면 첫 장면과 함께 시트가 열린다
         <div key="creating" className="status-created">
@@ -80,6 +96,7 @@ export function StatusApp() {
         <p className="muted status-empty">열린 게임이 없다. Claude 세션에서 /play 로 게임을 열면 여기에 캐릭터 시트가 나온다.</p>
       ) : (
         <div key="sheet" className="status-sheet">
+          {created && <CreatedToast onClose={closeToast} />}
           <CharacterSheet player={status.player} />
         </div>
       )}

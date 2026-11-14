@@ -8,9 +8,10 @@ import type { GameWorld } from "@trpg/core";
  * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트 (정보 필터를 거친 core 뷰만)
  * - GET /api/status/stream: 같은 내용을 SSE로. 바뀔 때마다 밀어 준다
  * - GET·POST /api/options: 세계 설정(수위, 대화 형식, 12-63). 바꾸는 규칙은 core(GameWorld.setOptions)에 있다
- * 서술은 채팅(Claude 세션)에 있다. 이 화면은 시트만 보여 준다
+ * - POST /api/creation: 상태 화면에서 새 게임·새 캐릭터 고르기 (12-67). Claude 세션이 화면 만들기를 열었을 때만. 규칙은 core(answerNewGame)
+ * 서술은 채팅(Claude 세션)에 있다. 이 화면은 시트와 새 게임 고르기를 보여 준다
  * - 나머지: React로 된 status.html (packages/ui). Vite 미들웨어로 바로 띄운다
- * stdout은 MCP 프로토콜 전용이라 로그는 모두 stderr로 보낸다 (원칙 12). 게임 상태는 설정 말고는 바꾸지 않는다
+ * stdout은 MCP 프로토콜 전용이라 로그는 모두 stderr로 보낸다 (원칙 12). 게임 상태는 설정과 새 게임 고르기 말고는 바꾸지 않는다
  */
 
 const UI_DIR = fileURLToPath(new URL("../../ui/", import.meta.url));
@@ -22,13 +23,17 @@ export type StatusSource = {
   readonly scenarioName: string;
   /** Claude 세션에서 대화로 캐릭터를 만드는 중 (시트 대신 안내) */
   readonly creating?: boolean;
+  /** 상태 화면에서 만드는 중이면 그 단계 (core newGameView). 채팅으로 만들면 null */
+  readonly creation?: unknown;
+  /** 화면이 보낸 만들기 답 */
+  submitCreation?(input: { answer?: string | string[]; back?: boolean; chat?: boolean }): { ok: true } | { ok: false; error: string };
   /** 주인공이 죽은 직후 GM이 서술하는 동안 보여 줄 죽기 직전 모습 */
   readonly frozenStatus?: unknown;
 };
 
 export function statusPayload(source: StatusSource, gate?: TurnGate): unknown {
   // 캐릭터를 만드는 중이면 안내 (만들어지면 첫 장면과 함께 시트가 열린다)
-  if (source.creating) return { open: false, creating: true, scenarioName: source.scenarioName };
+  if (source.creating) return { open: false, creating: true, scenarioName: source.scenarioName, creation: source.creation ?? null };
   const w = source.world;
   if (!w) return { open: false, scenarioName: source.scenarioName };
   // GM이 아직 서술하는 중이면 그 턴 전의 모습 (훅의 턴 문, 또는 사망 직후)
@@ -107,6 +112,35 @@ export async function handleOptions(source: StatusSource, req: IncomingMessage, 
   return json(res, 200, { open: true, options: result.options });
 }
 
+/** 상태 화면에서 고른 답. JSON만 받는다 (설정과 같은 까닭) */
+export async function handleCreation(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method !== "POST") return json(res, 405, { error: "POST" });
+  if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
+  if (!source.submitCreation || !source.creation) return json(res, 409, { error: "지금은 화면에서 고를 수 없다. Claude 세션에서 새 게임을 고르면 열린다." });
+  let body = "";
+  for await (const chunk of req) {
+    body += String(chunk);
+    if (body.length > 8192) return json(res, 413, { error: "너무 크다" });
+  }
+  let input: unknown;
+  try {
+    input = JSON.parse(body);
+  } catch {
+    return json(res, 400, { error: "JSON이 아니다" });
+  }
+  const ok = (x: unknown): x is { answer?: string | string[]; back?: boolean; chat?: boolean } => {
+    if (!x || typeof x !== "object" || Array.isArray(x)) return false;
+    const o = x as Record<string, unknown>;
+    const answerOk =
+      o.answer === undefined || (typeof o.answer === "string" && o.answer.length <= 1500) || (Array.isArray(o.answer) && o.answer.length <= 20 && o.answer.every((a) => typeof a === "string" && a.length <= 40));
+    return answerOk && (o.back === undefined || typeof o.back === "boolean") && (o.chat === undefined || typeof o.chat === "boolean");
+  };
+  if (!ok(input)) return json(res, 400, { error: "answer(글 또는 목록), back, chat 중 하나" });
+  const result = source.submitCreation(input);
+  if (!result.ok) return json(res, 400, { error: result.error });
+  return json(res, 200, { ok: true });
+}
+
 /** 상태 서버를 띄운다. 포트가 쓰이고 있으면 다음 포트로 (MCP 세션이 여럿일 수 있다). 주소를 돌려준다 */
 export async function startStatusServer(
   source: StatusSource,
@@ -165,6 +199,10 @@ export async function startStatusServer(
     }
     if (url === "/api/options") {
       void handleOptions(source, req, res);
+      return;
+    }
+    if (url === "/api/creation") {
+      void handleCreation(source, req, res);
       return;
     }
     if (url.startsWith("/api/status/stream")) {

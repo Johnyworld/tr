@@ -55,6 +55,7 @@ export {
   setCustomStart,
   type NewGameDraft,
 } from "./game/newGame.ts";
+export { newGameView, type NewGameView, type CharacterStepView } from "./game/newGameView.ts";
 export { customStartSchema, buildCustomRole, checkCustomStart, type CustomStartInput } from "./game/customStart.ts";
 export { loadContent, ContentError } from "./content/loader.ts";
 

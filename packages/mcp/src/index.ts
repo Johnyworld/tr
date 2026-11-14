@@ -67,6 +67,10 @@ if (process.env.TRPG_STATUS !== "off") {
     get creating() {
       return app.creating;
     },
+    get creation() {
+      return app.creation;
+    },
+    submitCreation: (input: Parameters<typeof app.submitCreation>[0]) => app.submitCreation(input),
     get frozenStatus() {
       return app.frozenStatus;
     },

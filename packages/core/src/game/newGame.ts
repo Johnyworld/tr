@@ -152,7 +152,7 @@ export function setCustomStart(packs: ReadonlyMap<string, Content>, draft: NewGa
 }
 
 /** 시나리오 보기: 콘텐츠의 시나리오들 + 자유 시나리오(월드가 열었으면) */
-function scenarioOptions(content: Content, unlocked: readonly string[] = []): { id: string; title: string; pitch: string }[] {
+export function scenarioOptions(content: Content, unlocked: readonly string[] = []): { id: string; title: string; pitch: string }[] {
   const list = scenarioInfos(content, unlocked).map((r) => ({ ...r, title: r.title }));
   // 직접 만들기가 먼저, 정해진 시나리오는 추천 시작으로 (기획서 12.6)
   if (content.scenario.custom_start) {

@@ -3,31 +3,29 @@ import { useEffect, useRef, useState } from "react";
 /** 세계 설정 (packages/core GameState.options, statusServer의 /api/options 와 맞춘다) */
 export type GameOptions = { mature: boolean; dialogue: "novel" | "script" };
 
+/** help: 그 값을 골랐을 때 보이는 설명 (지금 고른 값의 설명만 보인다) */
 type Row<K extends keyof GameOptions> = {
   key: K;
   label: string;
-  help: string;
-  choices: { value: GameOptions[K]; label: string }[];
+  choices: { value: GameOptions[K]; label: string; help: string }[];
 };
 
 const ROWS: [Row<"mature">, Row<"dialogue">] = [
   {
     key: "mature",
     label: "성인 콘텐츠",
-    help: "성인 사이의 연애, 성적인 농담·괴롭힘·위협. 폭력과 죽음은 어느 쪽이든 나옵니다.",
     // 기본(끔)을 왼쪽에
     choices: [
-      { value: false, label: "끔" },
-      { value: true, label: "켬" },
+      { value: false, label: "끔", help: "연애나 성적인 이야기는 나오지 않습니다. 폭력과 죽음, 생존의 잔혹함은 그대로 나옵니다." },
+      { value: true, label: "켬", help: "성인 사이의 끌림과 연애(장면은 암전), 성적인 농담·괴롭힘·위협이 나올 수 있습니다. 노골적인 묘사는 하지 않습니다." },
     ],
   },
   {
     key: "dialogue",
     label: "대화 형식",
-    help: "소설: 대사가 서술 속에 녹아 있습니다. 대본: 대사를 “이름: 대사” 줄로 따로 뗍니다.",
     choices: [
-      { value: "novel", label: "소설" },
-      { value: "script", label: "대본" },
+      { value: "novel", label: "소설", help: "대사가 서술 속에 녹아 있습니다." },
+      { value: "script", label: "대본", help: "대사를 “이름: 대사” 줄로 따로 뗍니다." },
     ],
   },
 ];
@@ -143,7 +141,7 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
                     </button>
                   ))}
                 </div>
-                <p className="settings-help">{row.help}</p>
+                <p className="settings-help">{row.choices.find((c) => c.value === options[row.key])?.help}</p>
               </div>
             ))}
           {error && <p className="settings-error">{error}</p>}

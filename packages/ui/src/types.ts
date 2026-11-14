@@ -34,7 +34,7 @@ export type PlayerView = {
   }[];
   service: { rankLabel?: string; merit: number; disobedience: number; daysServed: number; promotionMissing: string[] | null };
   mission: { title: string; briefing: string; deadlineLabel: string; deadlineLeftLabel?: string; urgent?: boolean; requirements: string[] } | null;
-  faction: { name: string; moraleLabel: string; rationLabel: string } | null;
+  faction: { name: string; about?: string; moraleLabel: string; rationLabel: string } | null;
   zone: { name: string; owner: string } | null;
   battle: { title: string; sideLabel: string; round: string; momentum: number; momentumMax: number; momentumLabel: string; alarmLabel: string; positionLabel: string } | null;
   gear?: { weapon: GearView | null; armor: GearView[]; weight: number; capacity: number; burden: 0 | 1 | 2 } | null;
@@ -48,6 +48,8 @@ export type PlayerView = {
   deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
   journal?: { key: string; timeLabel: string; scene: boolean; text: string }[];
+  /** 메모 (12-75). 메모장과 펜·연필이 있을 때만 */
+  memo?: { text: string } | null;
 };
 
 export type GearView = { id: string; name: string; slotLabel: string; detail: string; durability?: { left: number; max: number } | null; ammo: string | null; icon?: string };

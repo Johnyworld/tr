@@ -156,3 +156,4 @@ export { MemoryStore, memoryItemsOf, type MemoryKind } from "./rag/memory.ts";
 
 export { traitLabels, traitsOf, type TraitDef } from "./engine/traits.ts";
 export { CHEAT_PREFIX, isCheat, runCheat } from "./debug/cheats.ts";
+export { MAX_MEMO_LENGTH, memoAccess, parseMemoCommand, writeMemo, type MemoResult } from "./game/memo.ts";

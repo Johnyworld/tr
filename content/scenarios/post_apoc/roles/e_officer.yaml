@@ -21,7 +21,7 @@ age: 41
 # 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
 # 시작 훈련: 흥정과 셈 속이기. 총은 몸을 지킬 만큼만
 start_skills: { persuade: 1, deceive: 1 }
-start_inventory: [ledger, trade_token, pistol, pistol_rounds, pistol_rounds, coat, cigarettes]
+start_inventory: [ledger, notebook, pen, trade_token, pistol, pistol_rounds, pistol_rounds, coat, cigarettes]
 start_location: e_market
 access: [ration, mission_board]
 beliefs_preset: e_officer_start

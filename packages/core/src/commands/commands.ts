@@ -1,4 +1,5 @@
 import { disciplineOf } from "../game/culture.ts";
+import { memoAccess } from "../game/memo.ts";
 import { josa } from "../text.ts";
 import { aliasOf, headingAs, knowsName, playerCalls } from "../game/acquaintance.ts";
 import { traitLabels } from "../engine/traits.ts";
@@ -496,6 +497,29 @@ const settings: CommandDef = {
   },
 };
 
+const memo: CommandDef = {
+  id: "memo",
+  name: "메모",
+  aliases: ["memo", "note"],
+  args: "[내용 | 고침 내용 | 지움]",
+  description: "메모 읽기 (메모장이 있을 때). 내용을 붙이면 적는다",
+  run(ctx) {
+    const me = ctx.state.characters[ctx.state.playerId]!;
+    const access = memoAccess(ctx.content, me);
+    if (!access.read) return [header("메모"), "메모장이 없습니다."].join("\n");
+    const text = ctx.state.memos[me.id] ?? "";
+    const p = ctx.prefix ?? "!";
+    return [
+      header("메모"),
+      text || "(비어 있음)",
+      "",
+      access.write
+        ? `적기: ${p}메모 내용 (새 줄로 덧붙임) · ${p}메모 고침 내용 (통째로 바꿈) · ${p}메모 지움. 상태 화면의 메모 탭에서도 적을 수 있습니다.`
+        : "펜이나 연필이 없어 읽기만 할 수 있습니다.",
+    ].join("\n");
+  },
+};
+
 const help: CommandDef = {
   id: "help",
   name: "도움말",
@@ -528,6 +552,7 @@ export const COMMANDS: readonly CommandDef[] = [
   journal,
   chronicle,
   settings,
+  memo,
   help,
 ];
 

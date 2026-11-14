@@ -18,6 +18,7 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
 import type { Character } from "../game/character.ts";
+import { memoAccess } from "../game/memo.ts";
 import type { Content } from "../content/schemas.ts";
 import { calendarDate, formatClock, formatTime, minuteOfDay, MINUTES_PER_DAY, SEGMENT_LABELS, segmentOf, type TimeSegment } from "../rules/time.ts";
 import { itemIcon, type IconName } from "../content/icons.ts";
@@ -103,7 +104,8 @@ export type PlayerView = {
   /** deadlineLeftLabel: 기한까지 남은 때 ("하루 반", "5시간", "기한 지남"). urgent: 반나절 안 */
   mission: { title: string; briefing: string; deadlineLabel: string; deadlineLeftLabel: string; urgent: boolean; requirements: string[] } | null;
   /** 소속 무리 사정 (거점에서 느끼는 것, 대략). 세력 시뮬레이션이 없으면 null */
-  faction: { name: string; moraleLabel: string; rationLabel: string } | null;
+  /** about: 무리 소개 (공개된 것, 월드 이야기와 같은 말) */
+  faction: { name: string; about: string; moraleLabel: string; rationLabel: string } | null;
   /** 지금 있는 구역 */
   zone: { name: string; owner: string } | null;
   /** 진행 중인 전투 (대략적인 말로만) */
@@ -136,6 +138,8 @@ export type PlayerView = {
   deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   /** 최근 것부터 */
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
+  /** 메모 (12-75): 메모장과 펜·연필이 있으면 {text}. 없으면 null (메모 탭이 닫힌다) */
+  memo: { text: string } | null;
   /** 지난 일 요약 (최근 것부터, 현재 캐릭터의 것만). scene: 장면을 매듭지은 요약. GameWorld.playerView가 채운다 (?일지와 같은 기록) */
   journal: { key: string; timeLabel: string; scene: boolean; text: string }[];
 };
@@ -277,7 +281,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
             positionLabel: bc.positions.find((p) => p.id === b.position)?.label ?? b.position,
           }
         : null,
-    faction: outlook.own ? { name: outlook.own.name, moraleLabel: outlook.own.moraleLabel, rationLabel: outlook.own.rationLabel } : null,
+    faction: outlook.own ? { name: outlook.own.name, about: content.factions[player.factionId]?.public ?? "", moraleLabel: outlook.own.moraleLabel, rationLabel: outlook.own.rationLabel } : null,
     name: player.name,
     genderLabel: scenario.creation?.genders.find((g) => g.id === player.gender)?.label ?? null,
     portrait: player.portrait,
@@ -305,6 +309,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       };
     }),
     symptoms: symptomViews(scenario, player),
+    memo: memoAccess(content, player).write ? { text: state.memos[player.id] ?? "" } : null,
     conditionPenalty: conditionPenalty(scenario, player),
     dead: player.dead,
     stats: scenario.stats.map((s) => ({ id: s.id, label: s.label, value: player.stats[s.id] ?? 0 })),

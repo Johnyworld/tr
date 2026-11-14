@@ -1,4 +1,6 @@
+import type { ReactNode } from "react";
 import { HudPanel } from "./HudPanel.tsx";
+import { MemoPanel } from "./MemoPanel.tsx";
 import { Icon } from "./Icon.tsx";
 import { Portrait } from "./Portrait.tsx";
 import { SheetTabs } from "./SheetTabs.tsx";
@@ -27,8 +29,8 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
                   {player.growth && <XpBar growth={player.growth} />}
                 </div>
                 <div className="sheet-sub">
-                  {/* 소속과 직분만 (시나리오 이름은 계급과 직분이 겹쳐 보여 뺀다) */}
-                  {[player.faction?.name ?? "무소속", player.occupationLabel, player.age ? `${player.age}세` : null, player.genderLabel].filter(Boolean).join(" · ")}
+                  {/* 소속과 직분만 (시나리오 이름은 계급과 직분이 겹쳐 보여 뺀다). 복무 정보는 직분(없으면 소속)의 툴팁으로 */}
+                  <SubLine player={player} />
                 </div>
                 {/* 몸 상태: 같이 있는 인물과 같은 색 (2단계 노랑, 3단계 주황, 4단계 빨강, 죽음 빨강, 이상 없으면 초록). 처음 단계·숨은 단계는 안 보인다 */}
                 <div className="hero-conditions">
@@ -130,21 +132,12 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
             </dl>
           </section>
 
-          <section className="service">
-            <h3>{player.faction ? "복무" : "지낸 날"}</h3>
-            <div>
-              {player.faction
-                ? [player.service.rankLabel, `공적 ${player.service.merit}`, `복무 ${player.service.daysServed}일`].filter(Boolean).join(" · ")
-                : `${player.service.daysServed}일째 (무소속)`}
-              {player.service.disobedience > 0 && <span className="condition-worse"> · 불복종 {player.service.disobedience}</span>}
-            </div>
-            {player.service.promotionMissing && player.service.promotionMissing.length > 0 && (
-              <div className="muted small">진급까지: {player.service.promotionMissing.join(", ")}</div>
-            )}
-            {player.debts && player.debts.length > 0 && (
-              <div className="condition-worse small">빚: {player.debts.map((d) => `${d.name} ${d.amount}`).join(", ")}</div>
-            )}
-          </section>
+          {player.debts && player.debts.length > 0 && (
+            <section className="service">
+              <h3>빚</h3>
+              <div className="condition-worse small">{player.debts.map((d) => `${d.name} ${d.amount}`).join(", ")}</div>
+            </section>
+          )}
 
             </>
           ),
@@ -324,6 +317,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
           </section>
             </>
           ),
+          memo: player.memo ? <MemoPanel text={player.memo.text} /> : null,
         }}
       </SheetTabs>
     </aside>
@@ -365,6 +359,57 @@ function XpBar({ growth }: { growth: NonNullable<PlayerView["growth"]> }) {
   );
 }
 
+
+/** 이름 아래 줄: 소속 · 직분 · 나이 · 성별. 직분(없으면 소속)에 점선 밑줄, 올리면 복무 정보 */
+function SubLine({ player }: { player: PlayerView }) {
+  const s = player.service;
+  const tip = player.faction ? (
+    <>
+      <div>
+        {[s.rankLabel, `공적 ${s.merit}`, `복무 ${s.daysServed}일`].filter(Boolean).join(" · ")}
+        {s.disobedience > 0 && <span className="condition-worse"> · 불복종 {s.disobedience}</span>}
+      </div>
+      {s.promotionMissing && s.promotionMissing.length > 0 && <div className="muted">진급까지: {s.promotionMissing.join(", ")}</div>}
+    </>
+  ) : (
+    <div>{s.daysServed}일째 (무소속)</div>
+  );
+  // 소속: 무리 소개 (캐릭터 만들 때 월드 이야기에서 본 말과 같다)
+  // 직분이 없으면 복무 정보도 소속 툴팁에 함께
+  const about = player.faction?.about ? <div>{player.faction.about}</div> : null;
+  const factionTip = player.occupationLabel ? about : (
+    <>
+      {about}
+      {about && <div className="info-tip-sep" />}
+      {tip}
+    </>
+  );
+  const faction: ReactNode = factionTip ? <InfoTip key="faction" label={player.faction?.name ?? "무소속"} tip={factionTip} /> : (player.faction?.name ?? "무소속");
+  const parts: ReactNode[] = player.occupationLabel ? [faction, <InfoTip key="job" label={player.occupationLabel} tip={tip} />] : [faction];
+  for (const x of [player.age ? `${player.age}세` : null, player.genderLabel]) if (x) parts.push(x);
+  return (
+    <>
+      {parts.map((p, i) => (
+        <span key={i}>
+          {i > 0 && " · "}
+          {p}
+        </span>
+      ))}
+    </>
+  );
+}
+
+/** 점선 밑줄 글자: 올리거나(키보드로 초점을 주거나) 누르면 아래에 설명 상자 */
+function InfoTip({ label, tip }: { label: string; tip: ReactNode }) {
+  return (
+    <span className="info-tip" tabIndex={0}>
+      {label}
+      <span className="info-tip-box" role="tooltip">
+        {tip}
+      </span>
+    </span>
+  );
+}
 
 /**
  * 증상 목록 (주인공·같이 있는 인물 같이 쓴다, 12-74). 원인은 숨기고 증상만, 겹치는 증상은 하나.

@@ -7,6 +7,8 @@ const TABS = [
   { id: "items", label: "아이템" },
   { id: "people", label: "사람" },
   { id: "journal", label: "일지" },
+  // 메모장과 펜·연필이 있을 때만 (12-75)
+  { id: "memo", label: "메모" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -19,6 +21,8 @@ function fingerprints(p: PlayerView): Record<TabId, string> {
     items: JSON.stringify([p.gear?.weapon?.id, p.gear?.armor.map((a) => a.id), p.inventory.map((i) => [i.id, i.quantity]), p.sceneItems.map((i) => [i.id, i.quantity])]),
     people: JSON.stringify([p.companions?.map((c) => [c.id, c.note]), p.squad?.map((m) => m.report), p.relations.map((r) => r.id), p.ties?.length]),
     journal: JSON.stringify([p.journal?.length ?? 0, p.deeds.length, p.beliefs.length]),
+    // 메모는 플레이어가 쓰는 것이라 배지를 띄우지 않는다
+    memo: "",
   };
 }
 
@@ -33,7 +37,10 @@ function readTab(): TabId {
 
 /** head: 탭 위에 늘 보이는 HUD. HUD와 탭 줄을 한 덩어리로 위에 고정한다 (높이를 잴 필요가 없다) */
 export function SheetTabs({ player, head, children }: { player: PlayerView; head: ReactNode; children: Record<TabId, ReactNode> }) {
-  const [tab, setTab] = useState<TabId>(readTab);
+  const [chosen, setTab] = useState<TabId>(readTab);
+  // 메모 탭은 메모장과 펜·연필이 있을 때만 열린다. 없어지면 능력 탭으로
+  const visible = TABS.filter((t) => t.id !== "memo" || !!player.memo);
+  const tab: TabId = visible.some((t) => t.id === chosen) ? chosen : "ability";
   const [fresh, setFresh] = useState<Set<TabId>>(new Set());
   const seen = useRef<Record<TabId, string> | null>(null);
   const now = fingerprints(player);
@@ -81,7 +88,7 @@ export function SheetTabs({ player, head, children }: { player: PlayerView; head
       <div className="sheet-sticky">
         {head}
         <div className="sheet-tabs" role="tablist" aria-label="시트">
-          {TABS.map((t) => (
+          {visible.map((t) => (
             <button
               key={t.id}
               type="button"

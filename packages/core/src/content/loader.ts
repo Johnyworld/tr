@@ -73,6 +73,12 @@ export function loadContent(contentDir: string): Content {
   }
 
   problems.push(...checkReferences(content));
+  // 무리 소개는 월드 이야기(intro)의 "- 이름: 소개" 줄과 같아야 한다 (상태 화면 툴팁과 캐릭터 만들 때 본 말이 같게, 12-76)
+  for (const line of (content.scenario.introText ?? "").split("\n")) {
+    const m = /^- ([^:]+):\s*(.+)$/.exec(line.trim());
+    const f = m && Object.values(content.factions).find((x) => x.name === m[1]!.trim());
+    if (f && f.public !== m![2]!.trim()) problems.push(`factions.${f.id}.public: 월드 이야기의 소개와 다르다 ("${m![2]!.trim()}")`);
+  }
   // lore 문서 앞머리 검사 (RAG 적재 전에 잡는다)
   try {
     readLoreDocs(join(contentDir, "lore"));

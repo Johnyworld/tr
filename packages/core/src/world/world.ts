@@ -1,4 +1,5 @@
 import { dayOf } from "../rules/time.ts";
+import { parseMemoCommand, writeMemo, type MemoResult } from "../game/memo.ts";
 import { basename } from "node:path";
 import { runCheat } from "../debug/cheats.ts";
 import type { CharacterChoice } from "../game/state.ts";
@@ -384,6 +385,25 @@ ${this.sceneForGm()}` };
       target: null,
       narration_summary: null, for_mission: false,
     });
+  }
+
+  /**
+   * 메모 (12-75): 상태 화면의 메모 탭과 ?메모가 쓴다. 게임 시간을 쓰지 않는다.
+   * text: 통째로 바꾼다 (화면). 채팅의 "?메모 …" 적기는 memoCommand
+   */
+  setMemo(text: unknown): MemoResult {
+    if (typeof text !== "string") return { ok: false, error: "메모는 글로 보낸다." };
+    return writeMemo(this.ctx().store, this.content, "replace", text);
+  }
+
+  /** "?메모 내용"(덧붙이기), "?메모 고침 내용", "?메모 지움"이면 메모를 적고 결과를 돌려준다. 메모 적기가 아니면 null (읽기는 runCommand) */
+  memoCommand(input: string): string | null {
+    const cmd = parseMemoCommand(input);
+    if (!cmd) return null;
+    const r = writeMemo(this.ctx().store, this.content, cmd.mode, cmd.text);
+    if (!r.ok) return r.error;
+    const done = cmd.mode === "clear" ? "메모를 지웠습니다." : cmd.mode === "replace" ? "메모를 고쳤습니다." : "메모에 적었습니다.";
+    return `${done}\n\n${r.text || "(비어 있음)"}`;
   }
 
   /** 세계 설정 (수위, 대화 형식). 상태 화면의 설정 창이 읽는다 */

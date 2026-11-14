@@ -22,6 +22,7 @@ export const ICON_NAMES = [
   "tool",
   "light",
   "paper",
+  "pen",
   "key",
   "bag",
   "cloth",

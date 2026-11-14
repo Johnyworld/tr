@@ -17,6 +17,7 @@ const PATHS: Record<string, string[]> = {
   medicine: ["M4 7h16v12H4z", "M9 7V4h6v3", "M12 10v6", "M9 13h6"],
   tool: ["M14 4l6 6-3 3-6-6z", "M11 10l-7 7 3 3 7-7"],
   light: ["M8 3h8l-2 6v11h-4V9z", "M12 13v2"],
+  pen: ["M15 4l5 5L9 20H4v-5z", "M13 6l5 5"],
   paper: ["M6 3h9l4 4v14H6z", "M15 3v4h4", "M9 12h7", "M9 16h7"],
   key: ["M8 19a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M11 12l9-9", "M17 6l2 2", "M15 8l2 2"],
   bag: ["M5 8h14l-1 13H6z", "M9 8a3 3 0 0 1 6 0"],

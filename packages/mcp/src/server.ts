@@ -601,12 +601,17 @@ export function createMcpServer(
     "run_command",
     {
       description:
-        "정보 명령어(?상태, ?소지품, ?인물 강태호 등)를 실행한다. 플레이어 입력이 ?로 시작하면 이것을 부른다 (!도 받는다). 읽기 전용이며 시간이 흐르지 않는다. 결과를 코드 블록으로 그대로 보여 준다.",
-      inputSchema: z.strictObject({ input: z.string().min(1).max(200) }),
+        "정보 명령어(?상태, ?소지품, ?인물 강태호 등)를 실행한다. 플레이어 입력이 ?로 시작하면 이것을 부른다 (!도 받는다). 시간이 흐르지 않는다. 결과를 코드 블록으로 그대로 보여 준다. " +
+        "읽기 전용이지만 ?메모만 예외로, 뒤에 내용이 있으면 플레이어의 메모에 적는다 (입력을 고치지 말고 그대로 넘긴다).",
+      inputSchema: z.strictObject({ input: z.string().min(1).max(4100) }),
     },
     async (args) => {
       if (!world) return text(NO_WORLD, true);
-      return text(await world.runCommand(isCommand(args.input) ? args.input : `?${args.input}`));
+      const input = isCommand(args.input) ? args.input : `?${args.input}`;
+      // 메모 적기만 상태를 바꾼다 (규칙은 core GameWorld.memoCommand, 12-75)
+      const wrote = world.memoCommand(input);
+      if (wrote !== null) return text(wrote);
+      return text(await world.runCommand(input));
     },
   );
 

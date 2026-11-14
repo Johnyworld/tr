@@ -8,6 +8,7 @@ import type { GameWorld } from "@trpg/core";
  * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트 (정보 필터를 거친 core 뷰만)
  * - GET /api/status/stream: 같은 내용을 SSE로. 바뀔 때마다 밀어 준다
  * - GET·POST /api/options: 세계 설정(수위, 대화 형식, 12-63). 바꾸는 규칙은 core(GameWorld.setOptions)에 있다
+ * - POST /api/memo: 메모 탭에서 적은 메모 (12-75). 메모장과 펜·연필이 있을 때만. 규칙은 core(GameWorld.setMemo)
  * - POST /api/creation: 상태 화면에서 새 게임·새 캐릭터 고르기 (12-67). Claude 세션이 화면 만들기를 열었을 때만. 규칙은 core(answerNewGame)
  * 서술은 채팅(Claude 세션)에 있다. 이 화면은 시트와 새 게임 고르기를 보여 준다
  * - 나머지: React로 된 status.html (packages/ui). Vite 미들웨어로 바로 띄운다
@@ -112,6 +113,29 @@ export async function handleOptions(source: StatusSource, req: IncomingMessage, 
   return json(res, 200, { open: true, options: result.options });
 }
 
+/** 메모 탭이 보낸 메모 (통째로). JSON만 받는다 */
+export async function handleMemo(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method !== "POST") return json(res, 405, { error: "POST" });
+  if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
+  const w = source.world;
+  if (!w || source.creating) return json(res, 409, { error: "열린 게임이 없다" });
+  let body = "";
+  for await (const chunk of req) {
+    body += String(chunk);
+    if (body.length > 20000) return json(res, 413, { error: "너무 크다" });
+  }
+  let input: unknown;
+  try {
+    input = JSON.parse(body);
+  } catch {
+    return json(res, 400, { error: "JSON이 아니다" });
+  }
+  const text = input && typeof input === "object" ? (input as { text?: unknown }).text : undefined;
+  const result = w.setMemo(text);
+  if (!result.ok) return json(res, 400, { error: result.error });
+  return json(res, 200, { ok: true });
+}
+
 /** 상태 화면에서 고른 답. JSON만 받는다 (설정과 같은 까닭) */
 export async function handleCreation(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== "POST") return json(res, 405, { error: "POST" });
@@ -199,6 +223,10 @@ export async function startStatusServer(
     }
     if (url === "/api/options") {
       void handleOptions(source, req, res);
+      return;
+    }
+    if (url === "/api/memo") {
+      void handleMemo(source, req, res);
       return;
     }
     if (url === "/api/creation") {

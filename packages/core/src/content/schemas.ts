@@ -52,6 +52,8 @@ export const itemContentSchema = z.strictObject({
     .optional(),
   /** 지니고 있으면 들 수 있는 무게가 이만큼 는다 (배낭 틀 등, 가장 큰 것 하나) */
   carry_bonus: z.number().min(0).max(20).optional(),
+  /** 메모 (12-75): paper(메모장)와 tool(펜·연필)을 함께 지니면 메모를 적는다. paper만 있으면 읽기만 */
+  writing: z.enum(["paper", "tool"]).optional(),
   /** 도구: 지니고 있으면 그 스킬에 보정 (가장 큰 것 하나) */
   tool: z.strictObject({ bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)) }).optional(),
   /** 몇 번 닳으면 망가지는지, 망가지면 남는 것 */

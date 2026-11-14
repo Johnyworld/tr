@@ -179,6 +179,32 @@
   value: 8
   tool: { bonus: { carpentry: 1 } }
 
+# 메모 (12-75): 메모장(writing: paper)과 펜·연필(writing: tool)을 함께 지니면 상태 화면에 메모 탭이 열린다
+- id: notebook
+  name: 메모장
+  icon: paper
+  description: 손바닥만 한 스프링 수첩. 앞장 몇 장은 뜯겨 나갔다.
+  kind: misc
+  weight: 0.15
+  value: 2
+  writing: paper
+- id: pen
+  name: 펜
+  icon: pen
+  description: 잉크가 반쯤 남은 볼펜. 추우면 잘 안 나온다.
+  kind: misc
+  weight: 0.02
+  value: 2
+  writing: tool
+- id: pencil
+  name: 연필
+  icon: pen
+  description: 칼로 깎은 몽당연필. 오래 간다.
+  kind: misc
+  weight: 0.01
+  value: 1
+  writing: tool
+
 # ── 재료 ─────────────────────────────────────────
 - id: scrap_metal
   name: 고철

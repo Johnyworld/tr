@@ -262,6 +262,8 @@ export function createGameSchemas(s: Scenario) {
     options: z
       .strictObject({ mature: z.boolean().default(false), dialogue: z.enum(["novel", "script"]).default("novel") })
       .default({ mature: false, dialogue: "novel" }),
+    /** 캐릭터별 메모 (12-75). 플레이어가 적는 기록이라 세계의 사실이 아니다 */
+    memos: z.record(z.string(), z.string()).default({}),
     /** 구역에 맡겨 둔 물건 (구역 id → 아이템 → 수량). 그 구역을 떠날 때 돌려받는다 (12-54) */
     deposits: z.record(z.string(), z.record(z.string(), z.number().int().positive())).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
@@ -378,6 +380,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("flirted"), target: z.string(), day: z.number().int() }),
     /** 수위를 정한다 (새 게임에서, 또는 플레이어가 바꾸면, 12-57) */
     z.strictObject({ type: z.literal("content_options_set"), mature: z.boolean().optional(), dialogue: z.enum(["novel", "script"]).optional() }),
+    z.strictObject({ type: z.literal("memo_written"), characterId: z.string(), text: z.string().max(4000) }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
     z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()) }),
     z.strictObject({ type: z.literal("player_released"), returned: z.boolean() }),
@@ -699,6 +702,7 @@ export const EMPTY_STATE: GameState = {
   commanderOverride: null,
   lastRoute: null,
   options: { mature: false, dialogue: "novel" },
+  memos: {},
   romances: {},
   flirtDay: {},
   deposits: {},
@@ -1015,6 +1019,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "flirted":
       next.flirtDay[event.target] = event.day;
+      return next;
+    case "memo_written":
+      next.memos = { ...next.memos, [event.characterId]: event.text };
       return next;
     case "content_options_set":
       next.options = {

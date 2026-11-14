@@ -1186,10 +1186,13 @@ body {
 
 .settings-button {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
+  /* 정사각형 */
   width: 30px;
   height: 30px;
+  aspect-ratio: 1;
   padding: 0;
   background: none;
   border: 1px solid transparent;
@@ -1305,42 +1308,6 @@ body {
   min-width: 0;
 }
 
-.world-title {
-  min-width: 0;
-}
-
-.world-time {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* 시간대 색 (12-66): 새벽 보라, 아침 옅은 금빛, 낮 강조색, 저녁 주황, 밤 푸른 회색 */
-.clock-time.seg-dawn { color: #a99bc4; }
-.clock-time.seg-morning { color: #dcc38a; }
-.clock-time.seg-day { color: var(--accent); }
-.clock-time.seg-evening { color: #d4824a; }
-.clock-time.seg-night { color: #7f93b5; }
-
-.clock-sep::before,
-.clock-weather::before {
-  content: "·";
-  margin: 0 5px;
-  color: var(--muted);
-}
-
-.clock-weather {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.clock-weather.warn { color: var(--partial); }
-.clock-weather.bad { color: var(--error); }
 
 .bar {
   display: block;
@@ -2312,4 +2279,172 @@ body {
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+}
+
+/* 머리 (12-71): 왼쪽 월드 이름·날짜·날씨, 가운데 해·달 반원과 시각, 오른쪽 연결·설정 */
+.status-page .header.status-header {
+  display: grid;
+  /* 폭이 좁아 반원은 가운데 대신 날짜 오른쪽에 둔다 */
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 8px;
+  padding: 12px 0 10px;
+}
+
+.hdr-left {
+  min-width: 0;
+}
+
+.status-page .hdr-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hdr-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 15px;
+  color: var(--text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.hdr-weather {
+  display: inline-flex;
+}
+
+.hdr-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  align-self: center;
+  margin-left: 12px;
+}
+
+.hdr-right .status-live {
+  margin-left: 0;
+}
+
+.sun-dial {
+  position: relative;
+  width: 62px;
+  height: 36px;
+}
+
+.sun-dial svg {
+  display: block;
+}
+
+.dial-body {
+  position: absolute;
+  display: flex;
+  transform: translate(-50%, -50%);
+}
+
+.dial-body.sun {
+  color: #f5b82e;
+}
+
+.dial-body.moon {
+  color: #cfd6e6;
+}
+
+.dial-time {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  font-size: 20px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 여백 (12-71): 페이지 전체 여백은 없고, 섹션마다 안쪽 여백을 둔다 */
+.status-page {
+  padding: 0;
+}
+
+.status-page .header.status-header {
+  padding: 8px;
+  border-bottom: none;
+}
+
+.status-page .hdr-title,
+.status-page .hdr-date {
+  font-size: 12px;
+}
+
+/* 시계는 14px */
+.status-page .dial-time {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.status-page .sheet {
+  padding: 0;
+}
+
+.status-page .hud {
+  padding: 8px;
+}
+
+.status-page .sheet-panel {
+  padding: 0 8px;
+}
+
+.status-page .newgame,
+.status-page .status-empty,
+.status-page .status-created {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* 해·달 반원과 시각은 머리의 정가운데에 띄운다 (왼쪽·오른쪽 칸 폭과 상관없이) */
+.status-page .header.status-header {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.status-page .status-header .sun-dial {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+}
+
+/* 머리 안 글자의 줄 높이 */
+.status-page .status-header,
+.status-page .status-header .hdr-title,
+.status-page .status-header .hdr-date,
+.status-page .status-header .dial-time {
+  line-height: 1.2;
+}
+
+/* 연결 표시: 작은 원 + 글자 */
+.hdr-right .status-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-live.off .live-dot {
+  background: none;
+  border: 1px solid currentColor;
 }

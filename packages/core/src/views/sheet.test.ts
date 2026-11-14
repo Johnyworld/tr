@@ -41,7 +41,8 @@ describe("상태 화면 시트", () => {
   it("시계: 시간대, 계절, 날씨 아이콘과 추위 (12-66)", () => {
     const v = open().playerView();
     expect(v.clock.segment).toBe("dawn");
-    expect(v.clock.time).toBe("1일차 05:30 (새벽)");
+    expect(v.clock.time).toBe("05:30 (새벽)");
+    expect(v.clock).toMatchObject({ hhmm: "05:30", minute: 330, segmentLabel: "새벽", date: "2032. 11. 8." });
     expect(v.clock.season).toBeTruthy();
     const w = v.clock.weather;
     if (w) {

@@ -70,15 +70,19 @@ export function StatusApp() {
 
   return (
     <div className="status-page">
-      <header className="header">
-        <div className="world-title">
-          <h1>{status?.scenarioName ?? "TRPG"}</h1>
-          {status?.open && <WorldTime player={status.player} />}
+      <header className="header status-header">
+        <div className="hdr-left">
+          <h1 className="hdr-title">{status?.scenarioName ?? "TRPG"}</h1>
+          {status?.open && <HeaderDate player={status.player} />}
         </div>
-        <span className={connected ? "status-live" : "status-live off"} title={connected ? "Claude 세션과 연결됨" : "연결 끊김 (Claude 세션이 닫혔나요?)"}>
-          {connected ? "●" : "○ 연결 끊김"}
-        </span>
-        <SettingsButton enabled={connected && status?.open === true} />
+        {status?.open && status.player.clock?.minute !== undefined && <SunDial clock={status.player.clock} />}
+        <div className="hdr-right">
+          <span className={connected ? "status-live" : "status-live off"} title={connected ? "Claude 세션과 연결됨" : "연결 끊김 (Claude 세션이 닫혔나요?)"}>
+            <span className="live-dot" aria-hidden="true" />
+            {connected ? "연결됨" : "연결 끊김"}
+          </span>
+          <SettingsButton enabled={connected && status?.open === true} />
+        </div>
       </header>
       {!status ? (
         <p className="muted status-empty">불러오는 중…</p>
@@ -104,21 +108,59 @@ export function StatusApp() {
   );
 }
 
-/** 월드 이름 아래 시계 (12-66): 시간대마다 색이 바뀌고, 날씨는 아이콘. 추위를 부르는 날씨는 노랑, 많이 부르면 빨강 */
-function WorldTime({ player }: { player: PlayerView }) {
+/** 날씨 아이콘 색 (아이콘 이름별). 모르는 이름은 흐린 글자색 */
+const SKY = "#7fc8ff";
+const GRAY = "#9aa3b2";
+const WEATHER_TONE: Record<string, string> = {
+  sun: "#f5b82e", // 맑음: 노랑
+  cloud: GRAY, // 흐림
+  fog: GRAY, // 안개
+  rain: SKY, // 비: 하늘색
+  snow: "#ffffff", // 눈: 흰색
+  cold: SKY, // 한파: 하늘색
+};
+
+/** 머리 왼쪽 아래 줄: 달력 날짜 · 계절, 날씨 아이콘 (며칠째인지는 일지에서) */
+function HeaderDate({ player }: { player: PlayerView }) {
   const c = player.clock;
-  if (!c) return <div className="world-time">{player.timeLabel}</div>;
+  if (!c) return <div className="hdr-date">{player.timeLabel}</div>;
   const w = c.weather;
   return (
-    <div className="world-time">
-      <span className={`clock-time seg-${c.segment}`}>{c.time}</span>
-      {c.season && <span className="clock-sep">{c.season}</span>}
+    <div className="hdr-date">
+      <span>{[c.date, c.season].filter(Boolean).join(" · ")}</span>
       {w && (
-        <span className={w.chill >= 2 ? "clock-weather bad" : w.chill === 1 ? "clock-weather warn" : "clock-weather"} title={w.chill ? "추위가 스며드는 날씨" : undefined}>
-          {w.icon && <Icon name={w.icon} size={13} />}
-          {w.label}
+        <span
+          className={w.chill >= 2 ? "hdr-weather bad" : w.chill === 1 ? "hdr-weather warn" : "hdr-weather"}
+          style={{ color: WEATHER_TONE[w.icon ?? ""] }}
+          title={w.chill ? `${w.label} · 추위가 스며드는 날씨` : w.label}
+          aria-label={w.label}
+        >
+          <Icon name={w.icon ?? "cloud"} size={16} />
         </span>
       )}
+    </div>
+  );
+}
+
+/** 해·달 반원 (12-71): 낮(6~18시)은 해가, 밤은 달이 반원을 따라 움직인다. 가운데 아래에 시각 */
+const DIAL = { w: 62, h: 36, r: 28 };
+function SunDial({ clock }: { clock: NonNullable<PlayerView["clock"]> }) {
+  const minute = clock.minute ?? 0;
+  const day = minute >= 360 && minute < 1080;
+  const p = day ? (minute - 360) / 720 : (((minute - 1080 + 1440) % 1440) / 720);
+  const cx = DIAL.w / 2;
+  const cy = DIAL.h - 2;
+  const x = cx - DIAL.r * Math.cos(p * Math.PI);
+  const y = cy - DIAL.r * Math.sin(p * Math.PI);
+  return (
+    <div className="sun-dial" title={`${clock.hhmm} (${clock.segmentLabel})`}>
+      <svg width={DIAL.w} height={DIAL.h} viewBox={`0 0 ${DIAL.w} ${DIAL.h}`} aria-hidden="true">
+        <path d={`M${cx - DIAL.r} ${cy} A${DIAL.r} ${DIAL.r} 0 0 1 ${cx + DIAL.r} ${cy}`} fill="none" stroke="var(--border)" strokeWidth={2} strokeLinecap="round" />
+      </svg>
+      <span className={day ? "dial-body sun" : "dial-body moon"} style={{ left: x, top: y }}>
+        <Icon name={day ? "sun" : "moon"} size={14} />
+      </span>
+      <span className="dial-time">{clock.hhmm ?? clock.time}</span>
     </div>
   );
 }

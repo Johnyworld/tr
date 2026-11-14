@@ -15,9 +15,10 @@ const ROWS: [Row<"mature">, Row<"dialogue">] = [
     key: "mature",
     label: "성인 콘텐츠",
     help: "성인 사이의 연애, 성적인 농담·괴롭힘·위협. 폭력과 죽음은 어느 쪽이든 나옵니다.",
+    // 기본(끔)을 왼쪽에
     choices: [
-      { value: true, label: "켬" },
       { value: false, label: "끔" },
+      { value: true, label: "켬" },
     ],
   },
   {
@@ -42,18 +43,19 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
   const [saving, setSaving] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  /** 창의 자리: 버튼 아래, 화면 안 (머리가 줄바꿈되어 버튼이 왼쪽에 와도 밖으로 나가지 않게) */
+  /** 창의 자리: 버튼 바로 아래, 오른쪽 끝을 버튼에 맞춘다 */
   const [place, setPlace] = useState<{ top: number; left: number; width: number } | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    const GUTTER = 16;
+    const GUTTER = 8;
     const measure = () => {
       const b = buttonRef.current?.getBoundingClientRect();
       if (!b) return;
       const vw = document.documentElement.clientWidth;
       const width = Math.min(300, vw - GUTTER * 2);
-      const left = Math.min(Math.max(b.right - width, GUTTER), vw - GUTTER - width);
+      // 창의 오른쪽 끝을 톱니바퀴 버튼의 오른쪽 끝에 맞춘다 (왼쪽으로 넘치면 화면 안으로)
+      const left = Math.max(b.right - width, GUTTER);
       setPlace({ top: b.bottom + 6, left, width });
     };
     measure();

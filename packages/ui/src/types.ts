@@ -7,7 +7,7 @@ export type PlayerView = {
   roleLabel: string;
   occupationLabel: string | null;
   timeLabel: string;
-  clock?: { time: string; segment: string; season: string | null; weather: { label: string; icon: string | null; chill: number } | null };
+  clock?: { time: string; hhmm?: string; minute?: number; segmentLabel?: string; date?: string | null; segment: string; season: string | null; weather: { label: string; icon: string | null; chill: number } | null };
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon?: string | null; step?: number; penalty?: number }[];
   conditionPenalty: number;
   dead: boolean;

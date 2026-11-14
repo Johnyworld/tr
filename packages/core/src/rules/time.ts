@@ -56,6 +56,19 @@ export function nextSegmentStart(time: GameTime, segment: TimeSegment): GameTime
   return startOfToday > time ? startOfToday : startOfToday + MINUTES_PER_DAY;
 }
 
+/** 1일차가 start(YYYY-MM-DD)인 달력의 날짜: "2032. 11. 8." */
+export function calendarDate(start: string, time: GameTime): string {
+  const d = new Date(`${start}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dayOf(time) - 1);
+  return `${d.getUTCFullYear()}. ${d.getUTCMonth() + 1}. ${d.getUTCDate()}.`;
+}
+
+/** "05:30 (새벽)" (며칠째인지 없이) */
+export function formatClock(time: GameTime): string {
+  const m = minuteOfDay(time);
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")} (${SEGMENT_LABELS[segmentOf(time)]})`;
+}
+
 /** "1일차 05:30 (새벽)" */
 export function formatTime(time: GameTime): string {
   const m = minuteOfDay(time);

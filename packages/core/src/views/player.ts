@@ -18,7 +18,7 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
 import type { Content } from "../content/schemas.ts";
-import { formatTime, MINUTES_PER_DAY, segmentOf, type TimeSegment } from "../rules/time.ts";
+import { calendarDate, formatClock, formatTime, minuteOfDay, MINUTES_PER_DAY, SEGMENT_LABELS, segmentOf, type TimeSegment } from "../rules/time.ts";
 import { itemIcon, type IconName } from "../content/icons.ts";
 import { conditionPenalty, initialConditions, rankLabel, shownLevel } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
@@ -47,7 +47,11 @@ export type PlayerView = {
   /**
    * 시계 (12-66): 화면이 시간대 색과 날씨 아이콘을 그린다. 날씨 chill: 그 날씨가 하루에 더하는 추위 단계 (0이면 견딜 만하다)
    */
-  clock: { time: string; segment: TimeSegment; season: string | null; weather: { label: string; icon: IconName | null; chill: number } | null };
+  /**
+   * time: 시각과 시간대 ("05:30 (새벽)"). hhmm: "05:30". minute: 하루 중 몇 분째 (해·달 자리). date: 달력 날짜 (월드가 정했을 때).
+   * 며칠째인지는 일지에서 본다
+   */
+  clock: { time: string; hhmm: string; minute: number; segmentLabel: string; date: string | null; segment: TimeSegment; season: string | null; weather: { label: string; icon: IconName | null; chill: number } | null };
   /** 상태 트랙별 현재 단계 (예: 부상 경상). worsened: 첫 단계에서 나빠졌는지 */
   /** icon: 트랙의 아이콘 (없으면 null). step: 보이는 단계(0이 처음), penalty: 이 단계의 판정 보정 */
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon: IconName | null; step: number; penalty: number }[];
@@ -175,7 +179,11 @@ function clockView(state: GameState, content: Content): PlayerView["clock"] {
   const s = content.scenario;
   const weather = weatherNow(s, state);
   return {
-    time: formatTime(state.time),
+    time: formatClock(state.time),
+    hhmm: formatClock(state.time).slice(0, 5),
+    minute: minuteOfDay(state.time),
+    segmentLabel: SEGMENT_LABELS[segmentOf(state.time)],
+    date: s.world?.calendar_start ? calendarDate(s.world.calendar_start, state.time) : null,
     segment: segmentOf(state.time),
     season: seasonLabel(seasonAt(s, state.time)) || null,
     weather: weather ? { label: weather.label, icon: weather.icon ?? null, chill: s.body?.cold?.weather[weather.id] ?? 0 } : null,

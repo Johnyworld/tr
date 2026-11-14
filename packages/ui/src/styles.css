@@ -19,12 +19,16 @@
 }
 
 :root {
-  --bg: #121110;
-  --panel: #1b1a18;
-  --border: #2e2b27;
-  --text: #ddd6c8;
-  --muted: #8a8276;
-  --accent: #c08a3e;
+  --bg: #1d2026;
+  --panel: #252932;
+  /* 장비·소지품 같은 안쪽 상자 */
+  --surface: #16191e;
+  --border: #353b47;
+  --text: #e2e6ed;
+  --muted: #8c94a3;
+  --accent: #2e74d6;
+  /* 강조색 위의 글자 */
+  --on-accent: #ffffff;
   --player: #9fb3a1;
   --error: #d26a5c;
   --success: #8fb07a;
@@ -213,7 +217,7 @@ body {
   border: none;
   border-radius: 6px;
   background: var(--accent);
-  color: #1a1307;
+  color: var(--on-accent);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -751,7 +755,7 @@ body {
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: #1a1307;
+  color: var(--on-accent);
   font: inherit;
   font-size: 16px;
   font-weight: 700;
@@ -841,7 +845,8 @@ body {
 
 .portrait {
   flex: none;
-  border-radius: 6px;
+  /* 정원 */
+  border-radius: 50%;
   display: block;
 }
 
@@ -1545,7 +1550,7 @@ body {
 }
 
 .ability .cells i.on {
-  background: #b9b2a5;
+  background: #b4bac5;
 }
 
 .ability.top,
@@ -1595,7 +1600,7 @@ body {
   padding: 7px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #0d0c0b;
+  background: var(--surface);
 }
 
 .gear-box.empty {
@@ -1691,7 +1696,7 @@ body {
   padding: 5px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #0d0c0b;
+  background: var(--surface);
   font-size: 13px;
 }
 
@@ -1864,7 +1869,7 @@ body {
 .newgame button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #17140f;
+  color: var(--on-accent);
   font-weight: 700;
 }
 
@@ -1934,7 +1939,7 @@ body {
   font-size: 13px;
   line-height: 1.7;
   color: var(--text);
-  background: rgba(192, 138, 62, 0.07);
+  background: rgba(46, 116, 214, 0.07);
 }
 
 .choice-list {
@@ -1956,7 +1961,7 @@ body {
   gap: 4px;
   text-align: left;
   padding: 12px 14px;
-  background: #0d0c0b;
+  background: var(--surface);
 }
 
 .newgame .choice-card strong {
@@ -1964,8 +1969,8 @@ body {
 }
 
 .newgame .choice-card.featured {
-  border-color: rgba(192, 138, 62, 0.55);
-  background: rgba(192, 138, 62, 0.08);
+  border-color: rgba(46, 116, 214, 0.55);
+  background: rgba(46, 116, 214, 0.08);
 }
 
 .choice-tagline {
@@ -2025,7 +2030,7 @@ body {
   padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0d0c0b;
+  background: var(--surface);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -2058,7 +2063,7 @@ body {
   font-size: 14px;
   line-height: 1.6;
   color: var(--text);
-  background: #0d0c0b;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
@@ -2102,7 +2107,7 @@ body {
   flex-wrap: wrap;
   gap: 4px 10px;
   font-size: 13px;
-  color: #b9b2a5;
+  color: #b4bac5;
 }
 
 .chosen-stats .up {
@@ -2138,7 +2143,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: #0d0c0b;
+  background: var(--surface);
 }
 
 .tier-row + .tier-row {
@@ -2168,14 +2173,14 @@ body {
 .newgame .tier-btn.on.up {
   background: rgba(255, 255, 255, 0.9);
   border-color: #fff;
-  color: #17140f;
+  color: #14161a;
   font-weight: 700;
 }
 
 .newgame .tier-btn.on.down {
   background: var(--error);
   border-color: var(--error);
-  color: #17140f;
+  color: #14161a;
   font-weight: 700;
 }
 
@@ -2198,7 +2203,7 @@ body {
   gap: 2px;
   text-align: left;
   padding: 9px 12px;
-  background: #0d0c0b;
+  background: var(--surface);
 }
 
 .trait-head {
@@ -2222,7 +2227,7 @@ body {
 
 .newgame .trait-card.on {
   border-color: var(--accent);
-  background: rgba(192, 138, 62, 0.12);
+  background: rgba(46, 116, 214, 0.12);
 }
 
 .newgame-wait {
@@ -2261,7 +2266,7 @@ body {
   border: 1px solid var(--accent);
   border-radius: 8px;
   font-size: 13px;
-  background: rgba(192, 138, 62, 0.12);
+  background: rgba(46, 116, 214, 0.12);
 }
 
 .created-toast button {
@@ -2287,6 +2292,8 @@ body {
   padding: 3px;
   background: none;
   border: 2px solid transparent;
+  /* 고른 테두리도 초상화처럼 원 */
+  border-radius: 50%;
 }
 
 .newgame .portrait-pick.on {

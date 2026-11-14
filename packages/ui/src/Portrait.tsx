@@ -4,21 +4,24 @@
  */
 type Hair = "short" | "buzz" | "long" | "ponytail" | "hood" | "cap" | "bald" | "bob";
 type Gear = "none" | "goggles" | "scarf" | "eyepatch" | "scar" | "bandana" | "gasmask";
-type Preset = { skin: string; hair: string; hairStyle: Hair; cloth: string; bg: string; gear: Gear };
+type Preset = { skin: string; hair: string; hairStyle: Hair; cloth: string; gear: Gear };
+
+/** 초상화 배경 (모든 얼굴 같은 색, 화면 배경과 어우러지게) */
+const BG = "#15171b";
 
 const PRESETS: Record<string, Preset> = {
-  p0: { skin: "#c9a27e", hair: "#2b2420", hairStyle: "short", cloth: "#4a5240", bg: "#2a2622", gear: "none" },
-  p1: { skin: "#b98b64", hair: "#1d1a17", hairStyle: "buzz", cloth: "#5a4632", bg: "#26231f", gear: "scar" },
-  p2: { skin: "#d8b494", hair: "#3b2a1e", hairStyle: "long", cloth: "#3f4a52", bg: "#22262a", gear: "none" },
-  p3: { skin: "#c49572", hair: "#191614", hairStyle: "ponytail", cloth: "#5b3b34", bg: "#2a221f", gear: "goggles" },
-  p4: { skin: "#a87756", hair: "#2e2a26", hairStyle: "hood", cloth: "#3c3a33", bg: "#201f1c", gear: "scarf" },
-  p5: { skin: "#d2ab88", hair: "#5a4430", hairStyle: "cap", cloth: "#55573f", bg: "#272820", gear: "none" },
-  p6: { skin: "#b5835e", hair: "#2a2622", hairStyle: "bald", cloth: "#4b4038", bg: "#25211d", gear: "eyepatch" },
-  p7: { skin: "#cfa07a", hair: "#2d221b", hairStyle: "bob", cloth: "#46504a", bg: "#1f2422", gear: "bandana" },
-  p8: { skin: "#9c6c4c", hair: "#141210", hairStyle: "short", cloth: "#5d4c36", bg: "#2a251d", gear: "goggles" },
-  p9: { skin: "#d6b08f", hair: "#7a6a58", hairStyle: "long", cloth: "#3b3836", bg: "#232120", gear: "scar" },
-  p10: { skin: "#ba8a66", hair: "#221d19", hairStyle: "hood", cloth: "#4f3b2c", bg: "#261f19", gear: "gasmask" },
-  p11: { skin: "#c79b78", hair: "#4a3a2c", hairStyle: "bob", cloth: "#3e4651", bg: "#20232a", gear: "scarf" },
+  p0: { skin: "#c9a27e", hair: "#2b2420", hairStyle: "short", cloth: "#4a5240", gear: "none" },
+  p1: { skin: "#b98b64", hair: "#1d1a17", hairStyle: "buzz", cloth: "#5a4632", gear: "scar" },
+  p2: { skin: "#d8b494", hair: "#3b2a1e", hairStyle: "long", cloth: "#3f4a52", gear: "none" },
+  p3: { skin: "#c49572", hair: "#191614", hairStyle: "ponytail", cloth: "#5b3b34", gear: "goggles" },
+  p4: { skin: "#a87756", hair: "#2e2a26", hairStyle: "hood", cloth: "#3c3a33", gear: "scarf" },
+  p5: { skin: "#d2ab88", hair: "#5a4430", hairStyle: "cap", cloth: "#55573f", gear: "none" },
+  p6: { skin: "#b5835e", hair: "#2a2622", hairStyle: "bald", cloth: "#4b4038", gear: "eyepatch" },
+  p7: { skin: "#cfa07a", hair: "#2d221b", hairStyle: "bob", cloth: "#46504a", gear: "bandana" },
+  p8: { skin: "#9c6c4c", hair: "#141210", hairStyle: "short", cloth: "#5d4c36", gear: "goggles" },
+  p9: { skin: "#d6b08f", hair: "#7a6a58", hairStyle: "long", cloth: "#3b3836", gear: "scar" },
+  p10: { skin: "#ba8a66", hair: "#221d19", hairStyle: "hood", cloth: "#4f3b2c", gear: "gasmask" },
+  p11: { skin: "#c79b78", hair: "#4a3a2c", hairStyle: "bob", cloth: "#3e4651", gear: "scarf" },
 };
 
 export const PORTRAIT_IDS = Object.keys(PRESETS);
@@ -28,15 +31,16 @@ export function Portrait({ id, size = 64, title }: { id: string | null; size?: n
   if (!p) {
     return (
       <svg className="portrait" width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={title ?? "초상화 없음"}>
-        <rect width="100" height="100" fill="#24211e" />
-        <path d="M14 100 Q18 72 50 70 Q82 72 86 100 Z" fill="#33302b" />
-        <ellipse cx="50" cy="44" rx="17" ry="20" fill="#33302b" />
+        <rect width="100" height="100" fill={BG} />
+        {/* 배경 #15171b 위의 흐린 실루엣 */}
+        <path d="M14 100 Q18 72 50 70 Q82 72 86 100 Z" fill="#2b3039" />
+        <ellipse cx="50" cy="44" rx="17" ry="20" fill="#2b3039" />
       </svg>
     );
   }
   return (
     <svg className="portrait" width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={title ?? "초상화"}>
-      <rect width="100" height="100" fill={p.bg} />
+      <rect width="100" height="100" fill={BG} />
       {/* 뒤로 넘어가는 머리 */}
       {p.hairStyle === "ponytail" && <ellipse cx="68" cy="50" rx="7" ry="13" fill={p.hair} />}
       {p.hairStyle === "long" && <path d="M30 44 Q29 20 50 20 Q71 20 70 44 L73 70 Q64 64 63 48 L37 48 Q36 64 27 70 Z" fill={p.hair} />}

@@ -2659,3 +2659,36 @@ body {
   background: rgba(210, 106, 92, 0.1);
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * 넓은 창: 페이지(바탕·탭 줄)는 창 폭 전체를 쓰고, 내용만 가운데 480px 안에 둔다.
+ * --gutter = 섹션 좌우 여백 (좁으면 8px, 넓으면 480px 칸이 가운데 오도록)
+ */
+.status-page {
+  --gutter: max(8px, calc((100vw - 480px) / 2 + 8px));
+  max-width: none;
+}
+
+.status-page .header.status-header {
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+
+.status-page .hud {
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+
+.status-page .sheet-panel,
+.status-page .newgame,
+.status-page .status-empty,
+.status-page .status-created {
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+
+/* 탭 단추는 가운데 440px 안에 (아래 선은 창 폭 전체) */
+.status-page .sheet-tabs {
+  padding-left: max(0px, calc((100% - 440px) / 2));
+  padding-right: max(0px, calc((100% - 440px) / 2));
+}

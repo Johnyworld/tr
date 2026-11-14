@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Portrait, PORTRAIT_IDS } from "./Portrait.tsx";
 import type { CreationStatus, NewGameView } from "./types.ts";
 
 /**
@@ -252,6 +253,7 @@ function CharacterStep({ view, busy, answer }: StepProps) {
         </>
       )}
       <Chosen view={view} />
+      {step === "portrait" && <PortraitStep busy={busy} answer={answer} />}
       {step === "name" && <NameStep view={view} busy={busy} answer={answer} />}
       {step === "age" && <AgeStep view={view} busy={busy} answer={answer} />}
       {(step === "gender" || step === "abilities" || step === "traits") && (
@@ -304,18 +306,54 @@ function Chosen({ view }: { view: NewGameView }) {
   if (!ch.name && !ch.gender && ch.abilities.length === 0 && !ch.traits) return null;
   return (
     <div className="newgame-chosen">
-      {ch.name && <div className="chosen-name">{ch.name}</div>}
-      {(ch.gender || ch.age) && <div className="muted small">{[ch.gender, ch.age ? `${ch.age}세` : null].filter(Boolean).join(" · ")}</div>}
-      {ch.abilities.length > 0 && (
-        <div className="chosen-stats">
-          {ch.abilities.map((a) => (
-            <span key={a.label} className={a.value > 0 ? "up" : a.value < 0 ? "down" : ""}>
-              {a.label} {signed(a.value)}
-            </span>
-          ))}
-        </div>
-      )}
-      {ch.traits && <div className="muted small">트레잇: {ch.traits.length ? ch.traits.join(", ") : "없음"}</div>}
+      {ch.portrait && <Portrait id={ch.portrait} size={56} />}
+      <div className="chosen-info">
+        {ch.name && <div className="chosen-name">{ch.name}</div>}
+        {(ch.gender || ch.age) && <div className="muted small">{[ch.gender, ch.age ? `${ch.age}세` : null].filter(Boolean).join(" · ")}</div>}
+        {ch.abilities.length > 0 && (
+          <div className="chosen-stats">
+            {ch.abilities.map((a) => (
+              <span key={a.label} className={a.value > 0 ? "up" : a.value < 0 ? "down" : ""}>
+                {a.label} {signed(a.value)}
+              </span>
+            ))}
+          </div>
+        )}
+        {ch.traits && <div className="muted small">트레잇: {ch.traits.length ? ch.traits.join(", ") : "없음"}</div>}
+      </div>
+    </div>
+  );
+}
+
+/** 얼굴 고르기 (이름 다음 단계). 고르지 않으면 실루엣 */
+function PortraitStep({ busy, answer }: Pick<StepProps, "busy" | "answer">) {
+  const [picked, setPicked] = useState<string | null>(null);
+  return (
+    <div className="newgame-form">
+      <h2 className="newgame-title">얼굴을 골라 주세요</h2>
+      <div className="portrait-grid">
+        {PORTRAIT_IDS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            className={picked === id ? "portrait-pick on" : "portrait-pick"}
+            disabled={busy}
+            aria-pressed={picked === id}
+            aria-label={`초상화 ${id}`}
+            onClick={() => setPicked(picked === id ? null : id)}
+          >
+            <Portrait id={id} size={56} />
+          </button>
+        ))}
+      </div>
+      <div className="newgame-actions">
+        <button type="button" disabled={busy} onClick={() => answer("none")}>
+          고르지 않기
+        </button>
+        <button type="button" className="primary" disabled={busy || !picked} onClick={() => picked && answer(picked)}>
+          다음
+        </button>
+      </div>
     </div>
   );
 }

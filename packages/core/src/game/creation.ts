@@ -135,10 +135,22 @@ export function randomTraits(s: Scenario, rng: Rng): string[] {
   return [];
 }
 
-/** 포인트를 남김없이 쓰는 무작위 배분 (생성 화면의 "무작위" 버튼, 고르지 않은 MCP 새 게임) */
+/**
+ * 운에 맡기는 능력 배분 ("운에 맡기기", 고르지 않은 MCP 새 게임).
+ * 월드에 ability_array가 있으면 직접 정하기(등급 고르기)와 같은 배열을 섞어 나눈다 (가람: +2 하나, +1 둘, -1 하나).
+ * 없으면 포인트를 남김없이 쓰는 무작위 배분
+ */
 export function randomAbilityBuy(s: Scenario, rng: Rng): Record<string, number> {
   const c = s.creation;
   const zero = (): Record<string, number> => Object.fromEntries(s.stats.map((x) => [x.id, 0]));
+  if (s.ability_array) {
+    const array = [...s.ability_array];
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [array[i], array[j]] = [array[j]!, array[i]!];
+    }
+    return Object.fromEntries(s.stats.map((x, i) => [x.id, array[i] ?? 0]));
+  }
   if (!c) return zero();
   const values = Object.keys(c.cost).map(Number).sort((a, b) => a - b);
   let best = zero();

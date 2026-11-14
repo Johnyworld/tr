@@ -507,9 +507,13 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     await settle();
     expect(app.creation?.view).toMatchObject({ step: "world" });
     expect(app.submitCreation({ answer: "없는 월드" })).toMatchObject({ ok: false });
-    for (const answer of ["post_apoc", "role_a_grunt", "off", "윤하", "female", "31", "manual"]) {
-      expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
-    }
+    for (const answer of ["post_apoc", "role_a_grunt", "off", "윤하"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    // 화면에서 만들면 이름 다음에 얼굴을 고른다
+    expect(app.creation!.view.step).toBe("portrait");
+    expect(app.submitCreation({ answer: "../evil" })).toMatchObject({ ok: false });
+    expect(app.submitCreation({ answer: "p3" })).toEqual({ ok: true });
+    expect(app.creation!.view.character!.chosen.portrait).toBe("p3");
+    for (const answer of ["female", "31", "manual"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     const view = app.creation!.view;
     expect(view.step).toBe("ability_set");
     expect(view.character!.tiers!.map((t) => t.value)).toEqual([2, 1, -1]);
@@ -524,7 +528,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(done.isError).toBe(false);
     expect(done.text).toContain("상태 화면에서 골랐다");
     expect(done.text).toContain("# GM 지침");
-    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", age: 31, stats: { intellect: 2, charm: 1, senses: 1, strength: -1 } });
+    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", age: 31, portrait: "p3", stats: { intellect: 2, charm: 1, senses: 1, strength: -1 } });
     expect(app.creation).toBeNull();
   });
 
@@ -532,7 +536,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     const { app, call } = await connectWithScreen(30);
     const first = await call("start_session", { new_world: true, in_browser: true });
     expect(first.text).toContain("다 했어");
-    for (const answer of ["post_apoc", "role_a_grunt", "off", "서진", "male", "기본", "random", "none", "start"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    for (const answer of ["post_apoc", "role_a_grunt", "off", "서진", "none", "male", "기본", "random", "none", "start"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     expect(app.world).not.toBeNull();
     const later = await call("create_character", { wait: true });
     expect(later.text).toContain("상태 화면에서 골랐다");

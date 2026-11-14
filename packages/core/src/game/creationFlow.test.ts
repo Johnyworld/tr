@@ -67,6 +67,18 @@ describe("대화로 하는 캐릭터 생성", () => {
     });
   });
 
+  it("얼굴은 상태 화면에서 만들 때만 이름 다음에 묻는다", () => {
+    expect(currentStep(s, run(["서진"]).draft)).toBe("gender");
+    const screen = run(["서진"], { ...newCreationDraft("new_world"), withPortrait: true }).draft;
+    expect(currentStep(s, screen)).toBe("portrait");
+    expect(answerCreation(s, screen, "../x", createSeededRng(1)).ok).toBe(false);
+    const picked = answerCreation(s, screen, "p4", createSeededRng(1));
+    expect(picked.ok && draftChoice(picked.draft).portrait).toBe("p4");
+    const none = answerCreation(s, screen, "none", createSeededRng(1));
+    expect(none.ok && currentStep(s, none.draft)).toBe("gender");
+    expect(none.ok && draftChoice(none.draft).portrait).toBeNull();
+  });
+
   it("나이는 월드의 범위 안의 숫자만 (12-69)", () => {
     const { draft } = run(["서진", "male"]);
     expect(currentStep(s, draft)).toBe("age");

@@ -325,6 +325,8 @@ export function createMcpServer(
       return text(`상태 화면이 없어 채팅으로 만든다.\n\n${describeNewGameStep(packs, draft)}`);
     }
     screen ??= { waiters: new Set(), finished: null };
+    // 화면에서 만들면 얼굴도 고른다
+    if (!draft.character.withPortrait && draft.character.answers.length === 0) draft = { ...draft, character: { ...draft.character, withPortrait: true } };
     if (needsGm()) return gmTurn();
     const current = screen;
     const token = extra._meta?.progressToken;
@@ -367,6 +369,8 @@ export function createMcpServer(
   const submitFromScreen = (input: ScreenCreationInput): { ok: true } | { ok: false; error: string } => {
     if (!draft || !screen) return { ok: false, error: "Claude 세션에서 새 게임(또는 새 캐릭터)을 고른 뒤에 만들 수 있습니다." };
     if (input.chat) {
+      // 채팅으로는 얼굴을 고를 수 없다 (그 단계는 건너뛴다)
+      draft = { ...draft, character: { ...draft.character, withPortrait: false } };
       // 기다리던 GM이 채팅으로 이어 간다
       wakeWaiters(text(`플레이어가 상태 화면 대신 채팅으로 이어 하겠다고 했다. 지금 단계부터 묻는다.\n\n${describeNewGameStep(packs, draft)}`));
       screen = null;

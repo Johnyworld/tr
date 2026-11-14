@@ -58,7 +58,7 @@ export type NewGameView = {
     roleLabel: string;
     situation: string | null;
     startSkills: { label: string; value: number }[];
-    chosen: { name: string | null; gender: string | null; age?: number | null; abilities: { label: string; value: number }[]; traits: string[] | null };
+    chosen: { portrait?: string | null; name: string | null; gender: string | null; age?: number | null; abilities: { label: string; value: number }[]; traits: string[] | null };
     options: { value: string; label: string; description?: string }[];
     nameMax: number;
     age?: { min: number; max: number; default: number } | null;

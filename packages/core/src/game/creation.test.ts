@@ -1,6 +1,8 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadContent } from "../content/loader.ts";
 import { describe, expect, it } from "vitest";
 import type { Content } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
@@ -45,6 +47,17 @@ describe("캐릭터 생성", () => {
       const abilities = randomAbilityBuy(s, createSeededRng(seed));
       expect(checkCharacterChoice(s, { ...base, abilities })).toEqual([]);
       expect(abilitySpend(s, abilities).spent).toBe(4);
+      // 직접 정하기와 같은 모양: 월드의 ability_array를 섞은 것 (+2 하나, +1 둘, -1 하나)
+      if (s.ability_array) expect(Object.values(abilities).sort((a, b) => a - b)).toEqual([...s.ability_array].sort((a, b) => a - b));
+    }
+  });
+
+  it("ability_array가 있는 월드는 운에 맡겨도 직접 정하기와 같은 배열을 섞는다", () => {
+    const real = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc")).scenario;
+    for (let seed = 1; seed < 50; seed++) {
+      const abilities = randomAbilityBuy(real, createSeededRng(seed));
+      expect(Object.values(abilities).sort((a, b) => a - b)).toEqual([...real.ability_array!].sort((a, b) => a - b));
+      expect(checkCharacterChoice(real, { ...base, abilities })).toEqual([]);
     }
   });
 

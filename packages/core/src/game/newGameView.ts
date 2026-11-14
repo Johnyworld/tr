@@ -43,7 +43,7 @@ export type CharacterStepView = {
   situation: string | null;
   startSkills: { label: string; value: number }[];
   /** 지금까지 정한 것 */
-  chosen: { name: string | null; gender: string | null; age: number | null; abilities: { label: string; value: number }[]; traits: string[] | null };
+  chosen: { portrait: string | null; name: string | null; gender: string | null; age: number | null; abilities: { label: string; value: number }[]; traits: string[] | null };
   options: StepOption[];
   nameMax: number;
   /** 나이 고르기 (월드가 범위를 열었을 때). default: 시나리오의 나이 */
@@ -114,6 +114,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
       situation: draft.mode === "new_world" ? (role?.scenario?.intro ?? role?.opening_scene ?? null) : null,
       startSkills: rules?.startSkills ?? [],
       chosen: {
+        portrait: d.portrait ?? null,
         name: d.name ?? null,
         gender: d.gender !== undefined ? (s.creation?.genders.find((g) => g.id === d.gender)?.label ?? d.gender) : null,
         age: s.creation?.age ? (d.age ?? null) : null,

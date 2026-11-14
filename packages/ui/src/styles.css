@@ -2281,3 +2281,28 @@ body {
 .relations tr.relation-dead td:first-child {
   text-decoration: line-through;
 }
+
+/* 새 게임: 고른 얼굴 */
+.newgame .portrait-pick {
+  padding: 3px;
+  background: none;
+  border: 2px solid transparent;
+}
+
+.newgame .portrait-pick.on {
+  border-color: var(--accent);
+}
+
+.newgame-chosen:has(.portrait) {
+  flex-direction: row;
+  /* 초상화는 위에 붙인다 (오른쪽 글이 길어져도) */
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.chosen-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}

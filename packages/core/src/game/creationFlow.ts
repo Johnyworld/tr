@@ -14,16 +14,18 @@ import {
   type CreationRules,
 } from "./creation.ts";
 import type { CharacterChoice } from "./state.ts";
+import { PORTRAIT_ID } from "./character.ts";
 
 /**
  * 대화로 하는 캐릭터 생성 (기획서 4.2, 11.6): 한 번에 하나씩, 정해진 순서로 묻는다.
- * 세계 소개 → 이름 → 성별 → 나이(월드가 범위를 열었으면) → 능력(한 번에 정하기 / 무작위) → 트레잇(약점·강점 한 표 → 성격 / 무작위 / 없이) → 확인.
+ * 세계 소개 → 이름 → 얼굴(상태 화면에서 만들 때) → 성별 → 나이(월드가 범위를 열었으면) → 능력(한 번에 정하기 / 무작위) → 트레잇(약점·강점 한 표 → 성격 / 무작위 / 없이) → 확인.
  * 답은 모두 코드가 검증하고 포인트를 계산한다 (GM은 숫자를 만들지 않는다, 원칙 2).
  * 초안은 세이브에 쓰지 않는다. 확인을 마쳐야 세계(또는 새 캐릭터)를 만든다.
  */
 
 export type CreationAnswer =
   | { step: "name"; value: string }
+  | { step: "portrait"; value: string | null }
   | { step: "gender"; value: string }
   | { step: "age"; value: number }
   | { step: "abilities"; value: "manual" | "random"; rolled?: Record<string, number> }
@@ -37,10 +39,13 @@ export type CreationDraft = {
   answers: CreationAnswer[];
   /** 이미 정해진 나이 (직접 쓰는 시나리오에서 플레이어가 쓴 나이). 있으면 나이를 묻지 않는다 */
   presetAge?: number;
+  /** 얼굴(초상화) 단계를 묻는다: 그림을 보여 줄 수 있는 상태 화면에서 만들 때만 (채팅으로만 만들면 실루엣) */
+  withPortrait?: boolean;
 };
 
 export type CreationStepId =
   | "name"
+  | "portrait"
   | "gender"
   | "age"
   | "abilities"
@@ -67,6 +72,7 @@ type TraitStep = keyof typeof TRAIT_KIND_STEP;
 export function collectDraft(draft: CreationDraft) {
   let name: string | undefined;
   let gender: string | undefined;
+  let portrait: string | null | undefined;
   let age: number | undefined = draft.presetAge;
   let abilityMethod: "manual" | "random" | undefined;
   let abilitiesSet = false;
@@ -77,6 +83,7 @@ export function collectDraft(draft: CreationDraft) {
   for (const a of draft.answers) {
     if (a.step === "name") name = a.value;
     else if (a.step === "gender") gender = a.value;
+    else if (a.step === "portrait") portrait = a.value;
     else if (a.step === "age") age = a.value;
     else if (a.step === "abilities") {
       abilityMethod = a.value;
@@ -93,13 +100,14 @@ export function collectDraft(draft: CreationDraft) {
       traits.push(...a.value);
     }
   }
-  return { name, gender, age, abilityMethod, abilitiesSet, abilities, traitMethod, traits, traitSteps };
+  return { name, gender, portrait, age, abilityMethod, abilitiesSet, abilities, traitMethod, traits, traitSteps };
 }
 
 /** 다음에 물을 단계 */
 export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
   const d = collectDraft(draft);
   if (d.name === undefined) return "name";
+  if (draft.withPortrait && d.portrait === undefined) return "portrait";
   if (d.gender === undefined) return "gender";
   if (s.creation?.age && d.age === undefined) return "age";
   if (d.abilityMethod === undefined) return "abilities";
@@ -116,7 +124,7 @@ export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
 /** 고른 것 (확인 단계 요약, 세계 만들기) */
 export function draftChoice(draft: CreationDraft): CharacterChoice {
   const d = collectDraft(draft);
-  return { name: d.name ?? "", gender: d.gender ?? null, abilities: d.abilities, portrait: null, traits: d.traits, age: d.age ?? null };
+  return { name: d.name ?? "", gender: d.gender ?? null, abilities: d.abilities, portrait: d.portrait ?? null, traits: d.traits, age: d.age ?? null };
 }
 
 export type AbilityTier = { value: number; count: number; label: string };
@@ -296,6 +304,12 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     if (!name || name.length > MAX_NAME_LENGTH) return { ok: false, error: `이름은 1~${MAX_NAME_LENGTH}자다.` };
     return add({ step: "name", value: name });
   }
+  if (step === "portrait") {
+    const v = text.trim();
+    if (NONE_WORDS.includes(v.toLowerCase())) return add({ step: "portrait", value: null });
+    if (!PORTRAIT_ID.test(v)) return { ok: false, error: "초상화 id 형식이 올바르지 않다." };
+    return add({ step: "portrait", value: v });
+  }
   if (step === "age") {
     const n = Number.parseInt(text.trim().replace(/세$/, ""), 10);
     const problems = Number.isNaN(n) || !/^\d+\s*세?$/.test(text.trim()) ? [`나이는 숫자로 적는다 (${s.creation!.age!.min}~${s.creation!.age!.max}).`] : checkAge(s, n);
@@ -336,7 +350,7 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
   // 확인
   const v = pick(options, text);
   if (v === "back") return { ok: true, draft: backCreation(draft), done: false };
-  if (v === "restart") return { ok: true, draft: newCreationDraft(draft.mode), done: false };
+  if (v === "restart") return { ok: true, draft: { ...newCreationDraft(draft.mode), withPortrait: draft.withPortrait, presetAge: draft.presetAge }, done: false };
   if (v !== "start") return { ok: false, error: "이대로 시작(start), 한 단계 뒤로(back), 처음부터 다시(restart) 중에서 고른다." };
   const choice = draftChoice(draft);
   const problems = checkCharacterChoice(s, choice);
@@ -365,6 +379,7 @@ function summary(s: Scenario, draft: CreationDraft): string[] {
 
 const STEP_TITLE: Record<string, string> = {
   name: "이름",
+  portrait: "얼굴",
   gender: "성별",
   age: "나이",
   abilities: "능력",
@@ -415,6 +430,8 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   if (step === "name") {
     lines.push(`물을 것: 주인공의 이름 (1~${MAX_NAME_LENGTH}자, 자유롭게 입력). 보기 없이 글로 묻는다.`);
     if (narration.name) lines.push(`서술 힌트: ${narration.name}`);
+  } else if (step === "portrait") {
+    lines.push('물을 것: 얼굴(초상화). 그림은 상태 화면에서만 고를 수 있다. 채팅으로 이어 하면 묻지 말고 "none"을 넘긴다 (실루엣).');
   } else if (step === "gender") {
     lines.push("물을 것: 성별.");
     if (narration.gender) lines.push(`서술 힌트: ${narration.gender}`);
@@ -504,7 +521,8 @@ export function stepIndex(s: Scenario, draft: CreationDraft): { at: number; tota
   const abilitySteps = d.abilityMethod === "manual" ? 1 : 0;
   const traitSteps = d.traitMethod === "manual" ? 2 : 0;
   const ageStep = s.creation?.age && draft.presetAge === undefined ? 1 : 0;
-  const total = 5 + ageStep + abilitySteps + traitSteps;
+  const portraitStep = draft.withPortrait ? 1 : 0;
+  const total = 5 + portraitStep + ageStep + abilitySteps + traitSteps;
   return { at: Math.min(draft.answers.length + 1, total), total };
 }
 

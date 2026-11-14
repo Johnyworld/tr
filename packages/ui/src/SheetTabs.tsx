@@ -31,22 +31,11 @@ function readTab(): TabId {
   }
 }
 
-export function SheetTabs({ player, children }: { player: PlayerView; children: Record<TabId, ReactNode> }) {
+/** head: 탭 위에 늘 보이는 HUD. HUD와 탭 줄을 한 덩어리로 위에 고정한다 (높이를 잴 필요가 없다) */
+export function SheetTabs({ player, head, children }: { player: PlayerView; head: ReactNode; children: Record<TabId, ReactNode> }) {
   const [tab, setTab] = useState<TabId>(readTab);
   const [fresh, setFresh] = useState<Set<TabId>>(new Set());
   const seen = useRef<Record<TabId, string> | null>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-  // 탭 줄은 고정 HUD 바로 아래에 붙는다 (HUD 높이는 임무·전투에 따라 바뀐다)
-  const [hudHeight, setHudHeight] = useState(0);
-  useEffect(() => {
-    const hud = barRef.current?.parentElement?.querySelector(".hud");
-    if (!hud) return;
-    const measure = () => setHudHeight((hud as HTMLElement).offsetHeight);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(hud);
-    return () => ro.disconnect();
-  }, []);
   const now = fingerprints(player);
   const nowKey = JSON.stringify(now);
 
@@ -61,6 +50,17 @@ export function SheetTabs({ player, children }: { player: PlayerView; children: 
     if (changed.length) setFresh((s) => new Set([...s, ...changed]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nowKey]);
+
+  // 다른 곳(Lv UP 등)에서 탭을 바꾸라고 하면 따른다
+  useEffect(() => {
+    const on = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (TABS.some((t) => t.id === id)) choose(id as TabId);
+    };
+    window.addEventListener("trpg:tab", on);
+    return () => window.removeEventListener("trpg:tab", on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const choose = (id: TabId) => {
     setTab(id);
@@ -78,22 +78,25 @@ export function SheetTabs({ player, children }: { player: PlayerView; children: 
 
   return (
     <>
-      <div className="sheet-tabs" role="tablist" aria-label="시트" ref={barRef} style={{ top: hudHeight }}>
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            id={`tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`panel-${t.id}`}
-            className={tab === t.id ? "sheet-tab on" : "sheet-tab"}
-            onClick={() => choose(t.id)}
-          >
-            {t.label}
-            {fresh.has(t.id) && <span className="tab-dot" aria-label="새로 생긴 것" />}
-          </button>
-        ))}
+      <div className="sheet-sticky">
+        {head}
+        <div className="sheet-tabs" role="tablist" aria-label="시트">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              id={`tab-${t.id}`}
+              aria-selected={tab === t.id}
+              aria-controls={`panel-${t.id}`}
+              className={tab === t.id ? "sheet-tab on" : "sheet-tab"}
+              onClick={() => choose(t.id)}
+            >
+              {t.label}
+              {fresh.has(t.id) && <span className="tab-dot" aria-label="새로 생긴 것" />}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="sheet-panel" role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {children[tab]}

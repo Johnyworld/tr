@@ -8,7 +8,7 @@ export type PlayerView = {
   occupationLabel: string | null;
   timeLabel: string;
   clock?: { time: string; hhmm?: string; minute?: number; segmentLabel?: string; date?: string | null; segment: string; season: string | null; weather: { label: string; icon: string | null; chill: number } | null };
-  conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon?: string | null; step?: number; penalty?: number }[];
+  conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon?: string | null; step?: number; penalty?: number; fatal?: boolean }[];
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
@@ -18,8 +18,17 @@ export type PlayerView = {
   growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number } | null;
   inventory: ItemView[];
   sceneItems: ItemView[];
-  present: { id: string; name: string; rankLabel: string; look: string; conditionLabel: string | null }[];
-  service: { merit: number; disobedience: number; daysServed: number; promotionMissing: string[] | null };
+  present: {
+    id: string;
+    name: string;
+    rankLabel: string;
+    look: string;
+    conditionLabel: string | null;
+    states?: { label: string; step: number; fatal: boolean }[];
+    note?: string | null;
+    dead?: boolean;
+  }[];
+  service: { rankLabel?: string; merit: number; disobedience: number; daysServed: number; promotionMissing: string[] | null };
   mission: { title: string; briefing: string; deadlineLabel: string; deadlineLeftLabel?: string; urgent?: boolean; requirements: string[] } | null;
   faction: { name: string; moraleLabel: string; rationLabel: string } | null;
   zone: { name: string; owner: string } | null;

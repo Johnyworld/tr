@@ -66,6 +66,9 @@ describe("상태 화면 시트", () => {
     const name = w.state().characters[acquaintance]!.name;
     expect(w.runCheat(`~harm ${name} dead`).ok).toBe(true);
     expect(w.playerView().relations.find((r) => r.id === acquaintance)?.dead).toBe(true);
+    // 죽은 사람은 관계와 같이 있는 인물 모두 맨 아래
+    expect(w.playerView().relations.at(-1)?.id).toBe(acquaintance);
+    expect(w.playerView().present.at(-1)?.id).toBe(acquaintance);
   });
 
   it("일지 탭: ?일지와 같은 현재 캐릭터의 요약을 최근 것부터", () => {

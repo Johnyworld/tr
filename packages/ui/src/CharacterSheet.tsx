@@ -1,3 +1,4 @@
+import { HudPanel } from "./HudPanel.tsx";
 import { Icon } from "./Icon.tsx";
 import { Portrait } from "./Portrait.tsx";
 import { SheetTabs } from "./SheetTabs.tsx";
@@ -13,73 +14,111 @@ const SLOTS = ["손", "몸", "머리", "팔"];
 export function CharacterSheet({ player }: { player: PlayerView }) {
   return (
     <aside className={player.dead ? "sheet dead" : "sheet"} aria-label="캐릭터 시트">
-      <div className="hud">
-        <div className="sheet-hero">
-          <Portrait id={player.portrait} size={44} />
-          <div className="hero-who">
-            <h2>{player.name}</h2>
-            <div className="sheet-sub">
-              {[player.roleLabel, player.occupationLabel, player.age ? `${player.age}세` : null, player.genderLabel].filter(Boolean).join(" · ")}
+      <SheetTabs
+        player={player}
+        head={
+          <div className="hud">
+            <div className="sheet-hero">
+              <Portrait id={player.portrait} size={68} />
+              <div className="hero-who">
+                {/* 이름 오른쪽에 레벨·경험치 바·스킬 포인트 */}
+                <div className="hero-name-row">
+                  <h2>{player.name}</h2>
+                  {player.growth && <XpBar growth={player.growth} />}
+                </div>
+                <div className="sheet-sub">
+                  {/* 소속과 직분만 (시나리오 이름은 계급과 직분이 겹쳐 보여 뺀다) */}
+                  {[player.faction?.name ?? "무소속", player.occupationLabel, player.age ? `${player.age}세` : null, player.genderLabel].filter(Boolean).join(" · ")}
+                </div>
+                {/* 몸 상태: 같이 있는 인물과 같은 색 (2단계 노랑, 3단계 주황, 4단계 빨강, 죽음 빨강, 이상 없으면 초록). 처음 단계·숨은 단계는 안 보인다 */}
+                <div className="hero-conditions">
+                  {!player.conditions.some((c) => c.worsened) ? (
+                    <span className="hero-condition state-step-0" title="몸 상태에 이상이 없습니다">
+                      건강함
+                    </span>
+                  ) : (
+                    player.conditions
+                      .filter((c) => c.worsened)
+                      .map((c) => (
+                        <span
+                          key={c.id}
+                          className={`hero-condition ${c.fatal ? "state-dead" : `state-step-${Math.min(c.step ?? 1, 3)}`}`}
+                          title={`${c.label}: ${c.levelLabel}${c.penalty ? ` (판정 ${signed(c.penalty)})` : ""}`}
+                        >
+                          {c.levelLabel}
+                        </span>
+                      ))
+                  )}
+                  {/* 이 상태들 때문에 판정에 붙는 보정 (합) */}
+                  {player.conditionPenalty !== 0 && (
+                    <span className="penalty-chip" title="몸 상태 때문에 모든 판정에 붙는 보정">
+                      판정 {signed(player.conditionPenalty)}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
+
+
+            <HudPanel
+              id="present"
+              label="같이 있는 인물"
+              meta={player.present.length ? `${player.present.length}명` : null}
+              peek={player.present.length ? player.present.map((p) => p.name).join(", ") : "아무도 없습니다"}
+              empty={player.present.length === 0}
+            >
+              {player.present.length === 0 ? (
+                <span className="muted small">아무도 없습니다</span>
+              ) : (
+                <ul className="present-list">
+                  {player.present.map((p) => (
+                    <li key={p.id} className={p.dead ? "present-row dead" : "present-row"} title={p.look}>
+                      <span className="present-name">{p.name}</span>
+                      {p.rankLabel && <span className="present-rank">{p.rankLabel}</span>}
+                      <span className="present-states">
+                        {p.dead ? (
+                          <span className="state-dead">사망</span>
+                        ) : (
+                          <>
+                            {p.note && <span className="present-note">{p.note}</span>}
+                            {(p.states ?? []).length === 0 ? (
+                              <span className="state-step-0">정상</span>
+                            ) : (
+                              (p.states ?? []).map((st) => (
+                                <span key={st.label} className={st.fatal ? "state-dead" : `state-step-${Math.min(st.step, 3)}`}>
+                                  {st.label}
+                                </span>
+                              ))
+                            )}
+                          </>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </HudPanel>
+
+            {player.battle && (
+              <section className="sheet-battle">
+                <h3>
+                  {player.battle.title} <span className="muted small">({player.battle.sideLabel} · {player.battle.round}라운드)</span>
+                </h3>
+                <div className="gauge-row" title={`전세 ${player.battle.momentum}`}>
+                  전세 {"◀".repeat(Math.max(0, -player.battle.momentum))}
+                  {"·".repeat(player.battle.momentumMax - Math.abs(player.battle.momentum))}
+                  {"▶".repeat(Math.max(0, player.battle.momentum))} {player.battle.momentumLabel}
+                </div>
+                <div className="muted small">
+                  경보 {player.battle.alarmLabel} · 위치 {player.battle.positionLabel}
+                </div>
+              </section>
+            )}
+
+            <MissionCard mission={player.mission} loan={player.loan ?? []} />
           </div>
-        </div>
-
-        {player.growth && <XpBar growth={player.growth} />}
-
-        <div className="hud-conditions">
-          {/* 처음 단계는 보이지 않는다. 달라진 것만 쌓이고, 하나도 없으면 "건강함" (잠복처럼 숨은 단계는 처음 단계로 보인다) */}
-          {!player.conditions.some((c) => c.worsened) && (
-            <div className="hud-condition" title="몸 상태에 이상이 없습니다">
-              <Icon name="heart" size={18} />
-              <span>건강함</span>
-            </div>
-          )}
-          {player.conditions.filter((c) => c.worsened).map((c) => (
-            <div key={c.id} className={`hud-condition ${conditionTone(player.dead, c)}`} title={`${c.label}: ${c.levelLabel}${c.penalty ? ` (판정 ${signed(c.penalty)})` : ""}`}>
-              <Icon name={c.icon} size={18} />
-              <span>
-                {c.levelLabel}
-              </span>
-            </div>
-          ))}
-        </div>
-        {player.conditionPenalty !== 0 && <div className="hud-penalty">몸 상태 때문에 판정 {signed(player.conditionPenalty)}</div>}
-
-        <div className="hud-present" aria-label="같이 있는 인물">
-          <span className="hud-present-label">같이 있는 인물</span>
-          {player.present.length === 0 ? (
-            <span className="muted">아무도 없습니다</span>
-          ) : (
-            player.present.map((p) => (
-              <span key={p.id} className={p.conditionLabel ? "person-chip hurt" : "person-chip"} title={p.look}>
-                {p.name}
-                {p.rankLabel && <span className="person-rank"> {p.rankLabel}</span>}
-                {p.conditionLabel && <span className="person-cond"> · {p.conditionLabel}</span>}
-              </span>
-            ))
-          )}
-        </div>
-
-        {player.battle && (
-          <section className="sheet-battle">
-            <h3>
-              {player.battle.title} <span className="muted small">({player.battle.sideLabel} · {player.battle.round}라운드)</span>
-            </h3>
-            <div className="gauge-row" title={`전세 ${player.battle.momentum}`}>
-              전세 {"◀".repeat(Math.max(0, -player.battle.momentum))}
-              {"·".repeat(player.battle.momentumMax - Math.abs(player.battle.momentum))}
-              {"▶".repeat(Math.max(0, player.battle.momentum))} {player.battle.momentumLabel}
-            </div>
-            <div className="muted small">
-              경보 {player.battle.alarmLabel} · 위치 {player.battle.positionLabel}
-            </div>
-          </section>
-        )}
-
-        <MissionCard mission={player.mission} loan={player.loan ?? []} />
-      </div>
-
-      <SheetTabs player={player}>
+        }
+      >
         {{
           ability: (
             <>
@@ -101,7 +140,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
             )}
           </section>
 
-          <section className="block skills">
+          <section className="block skills" id="sheet-skills">
             <h3>스킬</h3>
             <dl className="stats">
               {player.skills.map((s) => (
@@ -118,7 +157,9 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
           <section className="service">
             <h3>{player.faction ? "복무" : "지낸 날"}</h3>
             <div>
-              {player.faction ? `공적 ${player.service.merit} · 복무 ${player.service.daysServed}일` : `${player.service.daysServed}일째 (무소속)`}
+              {player.faction
+                ? [player.service.rankLabel, `공적 ${player.service.merit}`, `복무 ${player.service.daysServed}일`].filter(Boolean).join(" · ")
+                : `${player.service.daysServed}일째 (무소속)`}
               {player.service.disobedience > 0 && <span className="condition-worse"> · 불복종 {player.service.disobedience}</span>}
             </div>
             {player.service.promotionMissing && player.service.promotionMissing.length > 0 && (
@@ -313,49 +354,65 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
   );
 }
 
+/** Lv UP을 누르면: 능력 탭으로 가서 스킬 목록을 보여 준다 */
+function showSkills() {
+  window.dispatchEvent(new CustomEvent("trpg:tab", { detail: "ability" }));
+  requestAnimationFrame(() => document.getElementById("sheet-skills")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+
 function XpBar({ growth }: { growth: NonNullable<PlayerView["growth"]> }) {
   const prev = growth.prev ?? 0;
   const span = Math.max(1, growth.next - prev);
   const ratio = Math.min(1, Math.max(0, (growth.xp - prev) / span));
   return (
     <div className="xp-row" title={`경험치 ${growth.xp} (다음 레벨 ${growth.next})`}>
-      <span className="xp-level">Lv {growth.level}</span>
+      {/* 찍을 스킬 포인트가 남았으면 레벨 자리에 "Lv UP"을 띄운다 (채팅에서 GM에게 올릴 스킬을 말한다) */}
+      {growth.skillPoints > 0 ? (
+        <button
+          type="button"
+          className="xp-level lvup"
+          title={`스킬 포인트 ${growth.skillPoints} — 누르면 스킬 목록으로. 올릴 스킬은 채팅에서 GM에게 말하세요`}
+          onClick={showSkills}
+        >
+          <span className="lvup-text">Lv UP</span>
+        </button>
+      ) : (
+        <span className="xp-level">Lv {growth.level}</span>
+      )}
       <div className="bar xp-bar">
         <div style={{ width: `${Math.round(ratio * 100)}%` }} />
       </div>
       <span className="xp-num">
         {growth.xp - prev}/{span}
       </span>
-      {growth.skillPoints > 0 && <span className="xp-points">스킬 +{growth.skillPoints}</span>}
     </div>
   );
 }
 
-function conditionTone(dead: boolean, c: PlayerView["conditions"][number]): string {
-  if (dead) return "bad";
-  if ((c.penalty ?? 0) <= -2) return "bad";
-  if (c.worsened) return "warn";
-  return "";
-}
 
 function MissionCard({ mission, loan }: { mission: PlayerView["mission"]; loan: string[] }) {
   if (!mission) {
     return (
-      <div className="mission-card empty">
-        <span className="mission-tag">임무</span>
+      <HudPanel id="mission" label="임무" peek="맡은 임무가 없습니다" empty>
         <div className="muted small">맡은 임무가 없습니다. 상관에게 일감을 받을 수 있습니다.</div>
-      </div>
+      </HudPanel>
     );
   }
+  const due = mission.deadlineLeftLabel ? (mission.deadlineLeftLabel === "기한 지남" ? "기한 지남" : `기한까지 ${mission.deadlineLeftLabel}`) : `기한 ${mission.deadlineLabel}`;
   return (
-    <div className="mission-card" title={mission.briefing}>
-      <div className="mission-top">
-        <span className="mission-tag">임무</span>
+    <HudPanel
+      id="mission"
+      label="임무"
+      meta={
         <span className={mission.urgent ? "mission-due urgent" : "mission-due"} title={`기한 ${mission.deadlineLabel}`}>
-          {mission.deadlineLeftLabel ? (mission.deadlineLeftLabel === "기한 지남" ? "기한 지남" : `기한까지 ${mission.deadlineLeftLabel}`) : `기한 ${mission.deadlineLabel}`}
+          {due}
         </span>
+      }
+      peek={mission.title}
+    >
+      <div className="mission-title" title={mission.briefing}>
+        {mission.title}
       </div>
-      <div className="mission-title">{mission.title}</div>
       <ul className="mission-reqs">
         {mission.requirements.map((r) => {
           const met = !r.includes("미충족");
@@ -370,7 +427,7 @@ function MissionCard({ mission, loan }: { mission: PlayerView["mission"]; loan: 
         })}
       </ul>
       {loan.length > 0 && <div className="muted small">빌린 장비 (반납): {loan.join(", ")}</div>}
-    </div>
+    </HudPanel>
   );
 }
 

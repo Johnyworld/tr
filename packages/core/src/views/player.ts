@@ -54,7 +54,7 @@ export type PlayerView = {
   clock: { time: string; hhmm: string; minute: number; segmentLabel: string; date: string | null; segment: TimeSegment; season: string | null; weather: { label: string; icon: IconName | null; chill: number } | null };
   /** 상태 트랙별 현재 단계 (예: 부상 경상). worsened: 첫 단계에서 나빠졌는지 */
   /** icon: 트랙의 아이콘 (없으면 null). step: 보이는 단계(0이 처음), penalty: 이 단계의 판정 보정 */
-  conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon: IconName | null; step: number; penalty: number }[];
+  conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon: IconName | null; step: number; penalty: number; fatal: boolean }[];
   conditionPenalty: number;
   dead: boolean;
   stats: { id: string; label: string; value: number }[];
@@ -70,10 +70,25 @@ export type PlayerView = {
   inventory: ItemView[];
   sceneItems: ItemView[];
   /** conditionLabel: 상태가 처음과 달라졌을 때만 요약 (예: "부상: 경상") */
-  present: { id: string; name: string; rankLabel: string; look: string; conditionLabel: string | null }[];
+  /**
+   * states: 처음과 달라진 몸 상태 (보이는 단계만). step: 트랙의 몇 번째 단계인지 (0이 처음), fatal: 죽음 단계.
+   * note: 떠남·붙잡혀 있음·행방 모름. dead: 죽었다
+   */
+  present: {
+    id: string;
+    name: string;
+    rankLabel: string;
+    look: string;
+    conditionLabel: string | null;
+    states: { label: string; step: number; fatal: boolean }[];
+    note: string | null;
+    dead: boolean;
+  }[];
   /** 직분과 그 사다리의 칸 (기획서 12.6) */
   occupationLabel: string | null;
   service: {
+    /** 계급 이름 (예: 하급 전투원, 분대장) */
+    rankLabel: string;
     merit: number;
     disobedience: number;
     daysServed: number;
@@ -190,6 +205,9 @@ function clockView(state: GameState, content: Content): PlayerView["clock"] {
   };
 }
 
+/** 죽은 사람은 맨 아래로 (나머지 순서는 그대로) */
+const deadLast = (a: { dead: boolean }, b: { dead: boolean }) => Number(a.dead) - Number(b.dead);
+
 export function buildPlayerView(state: GameState, content: Content): PlayerView {
   const scenario = content.scenario;
   const player = state.characters[state.playerId]!;
@@ -259,6 +277,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         icon: track.icon ?? null,
         step: track.levels.indexOf(shown),
         penalty: shown.penalty,
+        fatal: !!shown.fatal,
       };
     }),
     conditionPenalty: conditionPenalty(scenario, player),
@@ -283,9 +302,19 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         rankLabel: npc.extra && content.extras[npc.extra.template]?.animal ? "" : rankLabel(scenario, npc.rank),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
         conditionLabel: npc.dead ? "사망" : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : changed(npc) ? changedConditions(npc) : null,
+        states: npc.dead
+          ? []
+          : scenario.condition_tracks.flatMap((track) => {
+              const shown = shownLevel(track, npc.conditions[track.id]);
+              const step = track.levels.indexOf(shown);
+              return step > 0 ? [{ label: shown.label, step, fatal: !!shown.fatal }] : [];
+            }),
+        note: npc.dead ? null : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : null,
+        dead: npc.dead,
       };
-    }),
+    }).sort(deadLast),
     service: {
+      rankLabel: rankLabel(scenario, player.rank),
       merit: player.merit,
       disobedience: player.disobedience,
       daysServed: daysServed(state.time, state.runStartedAt),
@@ -364,7 +393,8 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       .map((id) => {
         const r = state.perceived[id] ?? NEUTRAL_RELATION;
         return { id, name: playerCalls(state, content, id), ...r, dead: state.characters[id]!.dead };
-      }),
+      })
+      .sort(deadLast),
     // 숨은 목격자는 UI에도 보내지 않는다
     deeds: Object.values(state.deeds)
       .filter((d) => d.actorId === player.id)

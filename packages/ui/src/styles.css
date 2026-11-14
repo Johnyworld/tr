@@ -2252,3 +2252,12 @@ body {
   border: 0;
   cursor: pointer;
 }
+
+/* 관계: 죽은 사람은 이름에 줄을 긋고 흐리게 */
+.relations tr.relation-dead {
+  opacity: 0.45;
+}
+
+.relations tr.relation-dead td:first-child {
+  text-decoration: line-through;
+}

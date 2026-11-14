@@ -106,7 +106,8 @@ export type PlayerView = {
   /** 알게 된 인물 사이의 관계 (예: 오지호 — 오정빈의 형제자매) */
   ties: { key: string; text: string }[];
   /** 아는 인물의 당신에 대한 관계 */
-  relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
+  /** 게임 안에서 직접 마주쳐 태도를 본 사람 (perceived). 이름만 알거나 지난 삶에서 알던 사람은 아직 태도를 모르니 빠진다. dead: 죽었다 (?인물과 같은 기준) */
+  relations: { id: string; name: string; trust: number; affection: number; respect: number; dead: boolean }[];
   /** 내 행적 (최근 것부터). 보이는 목격자만 담는다 */
   deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   /** 최근 것부터 */
@@ -350,11 +351,11 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       return [...out].map(([key, text]) => ({ key, text }));
     })(),
     // 진짜 관계가 아니라 플레이어가 마지막으로 느낀 태도 (숨은 목격자가 드러나지 않게)
-    relations: [...new Set([...(state.known[player.id] ?? []), ...(state.met[player.id] ?? [])])]
+    relations: Object.keys(state.perceived)
       .filter((id) => state.characters[id] && id !== player.id)
       .map((id) => {
         const r = state.perceived[id] ?? NEUTRAL_RELATION;
-        return { id, name: playerCalls(state, content, id), ...r };
+        return { id, name: playerCalls(state, content, id), ...r, dead: state.characters[id]!.dead };
       }),
     // 숨은 목격자는 UI에도 보내지 않는다
     deeds: Object.values(state.deeds)

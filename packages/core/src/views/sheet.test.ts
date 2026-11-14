@@ -51,6 +51,22 @@ describe("상태 화면 시트", () => {
     }
   });
 
+  it("관계: 게임 안에서 마주쳐 태도를 본 사람만, 죽은 사람은 표시", () => {
+    const w = open();
+    const s0 = w.state();
+    const ids = () => w.playerView().relations.map((r) => r.id);
+    expect(new Set(ids())).toEqual(new Set(Object.keys(s0.perceived)));
+    // 시작부터 이름을 아는 사람(상관·분대)도 마주치기 전에는 없다
+    const acquaintance = (s0.known.player ?? []).find((id) => !s0.perceived[id] && !s0.characters[id]!.dead)!;
+    expect(acquaintance).toBeTruthy();
+    expect(ids()).not.toContain(acquaintance);
+    expect(w.executeTool("npc_presence", { npc_id: acquaintance, action: "enter" }).ok).toBe(true);
+    expect(ids()).toContain(acquaintance);
+    const name = w.state().characters[acquaintance]!.name;
+    expect(w.runCheat(`~harm ${name} dead`).ok).toBe(true);
+    expect(w.playerView().relations.find((r) => r.id === acquaintance)?.dead).toBe(true);
+  });
+
   it("일지 탭: ?일지와 같은 현재 캐릭터의 요약을 최근 것부터", () => {
     const w = open();
     expect(w.playerView().journal).toEqual([]);

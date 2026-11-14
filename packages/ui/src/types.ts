@@ -31,7 +31,7 @@ export type PlayerView = {
   squad?: { id: string; name: string; doing: string; report: string | null }[] | null;
   policy?: { label: string; option: string }[];
   ties?: { key: string; text: string }[];
-  relations: { id: string; name: string; trust: number; affection: number; respect: number }[];
+  relations: { id: string; name: string; trust: number; affection: number; respect: number; dead?: boolean }[];
   deeds: { id: string; summary: string; tagLabels: string[]; visibleWitnesses: string[] }[];
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
   journal?: { key: string; timeLabel: string; scene: boolean; text: string }[];

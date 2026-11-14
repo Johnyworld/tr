@@ -209,7 +209,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
                   </thead>
                   <tbody>
                     {player.relations.map((r) => (
-                      <tr key={r.id}>
+                      <tr key={r.id} className={r.dead ? "relation-dead" : undefined} title={r.dead ? "죽었습니다" : undefined}>
                         <td>{r.name}</td>
                         <RelationCell value={r.trust} />
                         <RelationCell value={r.affection} />

@@ -1,3 +1,4 @@
+import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { runRestock } from "./gear.ts";
 import { runPromotions } from "./people.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
@@ -8,6 +9,7 @@ import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import { runStorylets } from "./storyletTools.ts";
 import { runNaturalRecovery } from "./body.ts";
+import { runHelpless } from "./helpless.ts";
 import { rollWeather } from "../sim/weather.ts";
 import { dayOf } from "../rules/time.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
@@ -31,6 +33,14 @@ function runDailyWeather(ctx: ToolContext) {
 }
 
 export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
+  // 의식불명 등 스스로 아무것도 못 하게 됐으면 진행 중이던 이야기는 거기서 끝난다 (깨어난 뒤에 대화가 이어지지 않게)
+  {
+    const s = ctx.store.getState();
+    const me = s.characters[s.playerId];
+    if (s.activeStorylet && me && !me.dead && incapacitatingSymptom(ctx.content.scenario, me)) ctx.store.append({ type: "storylet_expired", storyletId: s.activeStorylet.id });
+  }
+  // 의식불명 중 곁의 사람이 할 일 (12-90): 돌봄·옮김·붙잡힘·죽임·감염체
+  const helpless = runHelpless(ctx);
   runDailyWeather(ctx);
   spreadRumors(ctx);
   // 세력 단위 전쟁 (하루 단위). 자기 무리가 낀 교전 소식은 화면에 보인다
@@ -50,5 +60,5 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const storylets = runStorylets(ctx);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
   const healed = runNaturalRecovery(ctx);
-  return [...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed];
+  return [...helpless, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed];
 }

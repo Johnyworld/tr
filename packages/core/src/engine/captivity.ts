@@ -22,7 +22,7 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome }
  */
 
 const rules = (content: Content) => content.scenario.captivity;
-const baseOf = (content: Content, faction: string) => Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")?.id;
+export const baseOf = (content: Content, faction: string) => Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")?.id;
 
 /** 주인공이 붙잡힌다. 갇히는 곳은 zone이 없으면 붙잡은 무리의 거점. 돌려줄 한 줄 */
 export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause = "붙잡혔다"): string | null {

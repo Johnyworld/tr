@@ -1,3 +1,4 @@
+import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -99,6 +100,11 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["status", [
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
+      ...(incapacitatingSymptom(scenario, player)
+        ? [
+            `${incapacitatingSymptom(scenario, player)!.label}: 주인공은 스스로 아무것도 하지 못한다. 말하지도 움직이지도 판정하지도 않는다. 흐릿한 감각(소리, 냄새, 몸의 고통)의 조각만 짧게 서술하고, take_action의 activity(wait 또는 sleep, 전투 중이면 null)로 시간이 흐르게 한다. 이야기는 열리지 않는다. 곁의 사람(우리 편·적)이 주인공에게 무엇을 하는지는 코드가 정하고 take_action 결과로 알린다: 옮기거나 붙잡거나 해치는 일을 서술로 지어내지 않는다. 장면의 치료사가 돌보면 treatment {item: null}`,
+          ]
+        : []),
       `소지품: ${describeInventory(content, player.inventory)}`,
       ...(describeGear(content, player) ? [describeGear(content, player)] : []),
       ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감·물건으로만 준다`] : []),

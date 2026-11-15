@@ -25,7 +25,7 @@ Node 22 이상, pnpm 10이 필요하다. 로컬 설정이 필요하면 `cp .env.
 
 Claude Code에서는 **`/play`**(저장된 게임 번호 목록 → 고르기, 0번이 새 게임, `/play 2`·`/play 0`도 된다), 끝낼 때는 **`/quit`**. Claude 데스크톱에서는 `play` 프롬프트를 고르거나 "TRPG 시작해 줘"라고 하면 된다.
 진행은 행동마다 자동 저장된다. 같은 세계를 두 세션에서 동시에 열 수는 없다 (잠금 파일 `<세계>.db.lock`).
-새 게임은 **월드 → 무리 → 계급 → (동기와 이야기) → 수위 → 서술 방식 → 캐릭터** 순서로 고른다. 월드는 세계관·시대(지금은 "무너진 도시, 가람" 하나. 앞으로 시대가 다른 월드를 더한다)다. 무리를 고르면 계급(분대원·분대장·간부, 이름은 무리마다 다르다: 청솔형제단의 수색대원, 붉은연합의 약탈조원·조장 등)을 고르고, 무리·계급마다 준비된 시나리오로 시작한다. **떠돌이**를 고르면 계급 없이 동행(반려견·소규모 무리·혼자)을 고른다. 동기와 이야기는 건너뛸 수 있고, 쓰면 GM이 기억과 세계에 남는 지난 일로 옮긴다. 캐릭터는 **과거 배경**(붕괴 전에 하던 일)부터 고르고, 배경이 능력·스킬의 기본값을 준다 (같은 포인트 안에서 고칠 수 있다). 고르는 곳은 둘 중 하나다: **상태 화면**(카드와 단추로 고르고 "이대로 시작"을 누르면 채팅에서 첫 장면이 이어진다) 또는 **채팅**(GM이 월드 이야기와 지금 상황을 들려주고 한 단계씩 묻는다). 상태 화면에서 고르다가 "채팅으로"를 누르면 그 단계부터 채팅으로 이어진다. 사망 뒤 새 캐릭터는 같은 세계에서 동기와 이야기, 캐릭터 만들기부터 한다.
+새 게임은 **월드 → 시나리오 → 캐릭터 → 수위 → 서술 방식** 순서로 고른다. 월드는 세계관·시대(지금은 "무너진 도시 가람" 하나)다. 시나리오 목록의 맨 위는 **튜토리얼 "방문자"**이고, 나머지 시나리오(비극의 고리, 담 밖의 사람, 붉은 완장 등)는 잠겨 있다가 어느 판에서든 카드에 적힌 해금 조건을 채우면 열린다 (해금되면 채팅과 상태 화면 토스트로 알린다). 캐릭터는 **과거 배경**(붕괴 전에 하던 일)부터 고르고, 배경이 능력·스킬의 기본값을 준다 (같은 포인트 안에서 고칠 수 있다). 고르는 곳은 둘 중 하나다: **상태 화면**(카드를 누르며 고르고, 마지막을 고르면 채팅에서 첫 장면이 이어진다) 또는 **채팅**(GM이 한 단계씩 묻는다). 상태 화면에서 고르다가 "채팅으로"를 누르면 그 단계부터 채팅으로 이어진다. 게임이 시작되면 GM이 시나리오의 지금 상황을 먼저 들려준다. 주인공이 죽으면 시나리오 없이 같은 세계를 이어 간다: 조우한 사람, 또는 조우한 무리의 수색대원·분대장·간부로 새 캐릭터를 만든다 (튜토리얼은 죽으면 끝난다).
 게임을 열면 GM이 **상태 화면** 주소(`http://127.0.0.1:8790`, 세션마다 다음 포트)를 알려 준다. 앱의 브라우저 패널에 띄워 두면 캐릭터 시트가 바로바로 갱신된다. Claude Code에서는 저장소의 훅(`.claude/settings.json`)이 답변이 끝난 뒤에 시트를 갱신해, 채팅에 결과가 나온 다음 화면이 바뀐다. `TRPG_STATUS=off`로 끈다.
 
 ## MCP 서버 등록
@@ -70,7 +70,7 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 
 ### MCP 서버가 여는 것
 
-- tool: `start_session`, `load_world`, `list_worlds`, `end_session`, `delete_world`(목록을 보고 있을 때만), `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, `create_character`(새 게임·직접 쓰는 시나리오 포함), `learn_skill`, `spawn_extra`, `learn_name`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`), 지휘 tool(`squad_order` 분대장, `council_propose` 간부), 동행 tool(`companion_part` 떨어지기·헤어지기, `companion_crossroads` 갈림길), 인물 tool(`promote_extra` 이름 없는 인물 자라기, `reveal_tie` 숨은 관계 털어놓기), 물건 tool(`equip` 들기·입기, `barter` 흥정)
+- tool: `start_session`, `load_world`, `list_worlds`, `end_session`, `delete_world`(목록을 보고 있을 때만), `get_scene`, `take_action`, `fast_forward`, `recall`, `record_turn_summary`, `run_command`, `get_chronicle`, `choose_next_character`, `create_character`(새 게임·새 캐릭터 만들기), `learn_skill`, `spawn_extra`, `learn_name`, 장면 정리 tool(`npc_presence`, `transfer_item`, `add_belief`, 임무, 목격자, 비밀, `resolve_storylet`, `write_epitaph`), 지휘 tool(`squad_order` 분대장, `council_propose` 간부), 동행 tool(`companion_part` 떨어지기·헤어지기, `companion_crossroads` 갈림길), 인물 tool(`promote_extra` 이름 없는 인물 자라기, `reveal_tie` 숨은 관계 털어놓기), 물건 tool(`equip` 들기·입기, `barter` 흥정)
 - prompt: `play` (GM 지침 + 세션 시작 안내)
 - 로그는 stderr로만 쓴다. stdout은 MCP 프로토콜 전용이다
 - 월드 팩: `content/scenarios/` 아래 폴더마다 하나. 모두 읽는다 (`SCENARIO=<id>`로 하나만). 새 월드를 더하는 법은 기획서 12.4

@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 35;
+export const SAVE_SCHEMA_VERSION = 37;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -354,6 +354,8 @@ export function createGameSchemas(s: Scenario) {
       .nullable()
       .default(null),
     lastStoryletAt: z.number().int().nullable().default(null),
+    /** 의식불명 중 곁의 사람이 할 일을 정한 때 (12-90). 정신이 들면 비운다. 한 번 쓰러질 때 한 번만 정한다 */
+    helplessAt: z.number().int().nullable().default(null),
     /** 회복 기준 시각: 마지막으로 다치거나 나은 때, 마지막으로 치료사에게 치료받은 날 */
     recovery: z
       .strictObject({ lastChangeAt: z.record(z.string(), z.number().int()), lastHealerDay: z.record(z.string(), z.number().int()) })
@@ -433,6 +435,9 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("scenario_cleared"), roleId: z.string() }),
     /** 주인공이 찾는 가족이 정해졌다 (세계를 만들 때, 역할의 family) */
     z.strictObject({ type: z.literal("family_set"), ids: z.array(z.string()) }),
+    /** 의식불명 중 곁의 사람이 할 일을 정했다 (12-90). outcome: tended 돌봄, carried 옮겨짐, captured 붙잡힘, killed 죽임, bitten 감염체, none 아무 일 없음 */
+    z.strictObject({ type: z.literal("helpless_resolved"), outcome: z.enum(["tended", "carried", "captured", "killed", "bitten", "none"]), by: z.string().nullable() }),
+    z.strictObject({ type: z.literal("helpless_cleared") }),
     /** 숨은 관계를 털어놓았다 */
     z.strictObject({ type: z.literal("tie_revealed"), key: z.string() }),
     /** 함께 다니기 시작했다. kind가 없으면 이전 세이브 (코드가 틀로 정한다) */
@@ -580,7 +585,7 @@ export function createGameSchemas(s: Scenario) {
       characterId: z.string(),
       amount: z.number().int().positive(),
       source: z.enum(["check", "merit", "cheat"]),
-      level: z.number().int().nonnegative(),
+      level: z.number().int().min(1),
     }),
     /** 치트 (개발 모드, 기획서 17.2): 플레이어가 친 명령. 한 번이라도 쓰면 이 세이브는 치트를 쓴 것으로 남는다 */
     z.strictObject({ type: z.literal("cheat_used"), command: z.string() }),
@@ -777,6 +782,7 @@ export const EMPTY_STATE: GameState = {
   storyletLog: {},
   activeStorylet: null,
   lastStoryletAt: null,
+  helplessAt: null,
   recovery: { lastChangeAt: {}, lastHealerDay: {} },
   weather: null,
   recentClashes: [],
@@ -944,6 +950,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "scenario_cleared":
       if (!next.cleared.includes(event.roleId)) next.cleared = [...next.cleared, event.roleId];
       return next;
+    case "helpless_resolved":
+      next.helplessAt = state.time;
+      break;
+    case "helpless_cleared":
+      next.helplessAt = null;
+      break;
     case "family_set":
       next.family = [...event.ids];
       return next;

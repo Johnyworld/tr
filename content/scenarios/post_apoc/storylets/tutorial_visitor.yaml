@@ -1,7 +1,9 @@
 # 튜토리얼: 방문자의 이야기 (기획서 12.4.1). 태그 tutorial_visitor라 방문자 시나리오에서만 열린다 (청솔형제단에 든 뒤에도)
 # 1. 청솔형제단 정문: 몸 수색과 물음 → 받아 준다 (또는 오늘은 안 된다)
-# 2. 거점 생활 안내: 공용 숙소, 규칙, 일주일의 적응 기간. 가족 이름은 아무도 모른다 → 버들마을에 물어보라는 말
-# 3. 버들마을 사람: 가족의 이름을 안다. 버들마을에 산다고 알려 준다
+# 2. 형제단의 첫날: 공용 숙소, 규칙, 일주일의 적응 기간. 가족 이름은 아무도 모른다 → 버들마을에 물어보라는 말 (어느 길로 들어왔든)
+# 3. 버들마을 사람의 소식 (첫날 뒤): 가족의 이름을 안다. 버들마을에 산다고 알려 준다 (tv_family_known)
+# 4. 버들마을에서 수소문 (단서가 없으면): 이름을 대고 묻거나 둘러본다 (tv_family_where)
+# 5. 재회: 단서를 얻고 버들마을에 있으면 가족이 앞에 나타난다 → 클리어 (가족이 장면에 들어오면 코드가 판정한다)
 
 - id: tv_gate
   title: 청솔형제단의 정문
@@ -108,7 +110,6 @@
   when:
     factions: [faction_a]
     zones: [a_base]
-    flags_all: [tv_accepted]
     flags_none: [tv_settled]
   cast:
     host: { ids: [a_bokja] }
@@ -141,16 +142,17 @@
   urgent: true
   tags: [tutorial_visitor]
   when:
-    zones: [a_base, old_town, e_market, b_base]
-    flags_all: [bg_family_lost]
-    flags_none: [tv_family_known]
+    zones: [a_base, old_town, e_market]
+    flags_all: [bg_family_lost, tv_settled]
+    flags_none: [tv_family_known, tv_family_where]
   cast:
     villager: { faction: faction_b }
     kin: { background: family, enter: false }
   setup: "{villager:이/가} 당신이 중얼거린 이름을 듣고 걸음을 멈춘다. \"방금 {kin}이라고 했어요? 그 사람 우리 마을에 사는데.\""
   ai_direction: >-
     {villager}는 버들마을 사람이다. 가족은 모두 살아서 버들마을(청솔형제단 거점 서쪽의 옛 아파트 단지)에 산다.
-    {villager}는 가족의 얼굴과 사는 동을 안다. 데려다 달라고 하면 길을 알려 주거나 함께 간다. 가족을 실제로 만나는 것은 주인공이 버들마을에 들어갔을 때다.
+    {villager}는 가족의 얼굴과 사는 동을 안다. 데려다 달라고 하면 길을 알려 주거나 함께 가겠다고 한다. 가족은 이 장면에 나오지 않는다:
+    만나는 것은 주인공이 버들마을에 들어간 뒤 재회 이야기에서다.
   choices:
     - id: ask_way
       label: 버들마을로 가는 길을 묻는다
@@ -163,3 +165,78 @@
       effects:
         - set_flag: tv_family_known
         - belief: { fact: "버들마을 사람이 가족의 이름과 생김새를 맞혔다. 가족이 버들마을에 산다", source: report }
+
+# 단서 없이 버들마을에 들어왔으면: 가족을 수소문한다 (하루에 한 번까지)
+- id: tv_family_search
+  title: 단지 안에서 가족을 찾는다
+  tags: [tutorial_visitor]
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zones: [b_base]
+    flags_all: [bg_family_lost]
+    flags_none: [tv_family_known, tv_family_where]
+  cast:
+    resident: { faction: faction_b }
+  setup: "아파트 동들 사이 마당에서 빨래를 걷던 {resident:이/가} 낯선 얼굴을 보고 손을 멈춘다. 단지 안 사람들은 서로를 다 안다. 당신은 여기서 처음 보는 사람이다."
+  ai_direction: >-
+    가족은 이 단지에 산다. 버들마을 사람들은 가족을 안다. 이름을 대고 물으면 대개 알려 주고, 경계하면 말을 아낀다.
+    가족은 이 장면에 나오지 않는다: 어느 동에 사는지까지만 알게 되고, 만나는 것은 다음 재회 이야기에서다.
+  choices:
+    - id: ask
+      label: 가족의 이름을 대며 아는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: tv_family_where
+          - relation: { who: resident, axis: affection, delta: 1 }
+          - belief: { fact: "가족이 버들마을에 산다. 단지 사람이 사는 동을 알려 주었다", source: report }
+        partial:
+          - set_flag: tv_family_where
+          - belief: { fact: "가족이 버들마을에 산다고 한다. 단지 사람은 경계하며 동만 손으로 가리켰다", source: report }
+        miss:
+          - relation: { who: resident, axis: trust, delta: -1 }
+          - belief: { fact: "버들마을 사람은 낯선 사람에게 단지 사람 일을 말해 주지 않았다. 다른 날 다시 물어볼 수 있다", source: seen }
+    - id: look
+      label: 말없이 단지를 둘러보며 얼굴들을 살핀다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: tv_family_where
+          - belief: { fact: "버들마을 단지 안에서 가족의 물건을 알아보았다. 가족이 이 단지에 산다", source: seen }
+        partial:
+          - set_flag: tv_family_where
+          - belief: { fact: "버들마을 단지 어느 동 앞에서 낯익은 것을 보았다. 가족이 여기 있는 것 같다", source: seen }
+        miss:
+          - belief: { fact: "버들마을 단지를 둘러보았지만 가족의 흔적을 찾지 못했다", source: seen }
+    - id: later
+      label: 오늘은 그냥 둔다
+      effects: []
+
+# 재회: 단서를 얻고 버들마을에 있으면 가족이 나타난다. 가족이 장면에 들어오면 클리어 목표가 찬다
+- id: tv_reunion
+  title: 다시 만난 사람들
+  urgent: true
+  tags: [tutorial_visitor]
+  when:
+    zones: [b_base]
+    flags_all: [bg_family_lost]
+    flags_any: [tv_family_known, tv_family_where]
+    flags_none: [tv_reunited]
+  cast:
+    kin: { background: family, enter: true }
+  setup: "알려 준 동의 계단 앞. 3층 창문에서 누군가 빨래를 털다가 손을 멈춘다. 창틀을 붙잡은 손이 떨린다. {kin:이/가} 당신의 이름을 부른다."
+  ai_direction: >-
+    2년 만의 재회다. 이 장면이 튜토리얼의 엔딩이다 (시스템이 클리어를 알린다). 가족이 먼저 알아본다.
+    서두르지 말고, 알아보는 순간과 계단을 뛰어 내려오는 소리, 이름을 부르는 목소리부터 쓴다. 나머지 가족도 곧 나타난다.
+  choices:
+    - id: run
+      label: 계단을 뛰어 올라간다
+      effects:
+        - set_flag: tv_reunited
+        - relation: { who: kin, axis: affection, delta: 1 }
+    - id: call
+      label: 그 자리에 서서 이름을 부른다
+      effects:
+        - set_flag: tv_reunited
+        - relation: { who: kin, axis: affection, delta: 1 }

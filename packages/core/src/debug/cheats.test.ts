@@ -24,7 +24,7 @@ describe("치트", () => {
     expect(w.runCheat("~trait add coward").ok).toBe(true);
     expect(w.runCheat("~give bomb 2").ok).toBe(true);
     expect(w.runCheat("~xp 12").ok).toBe(true);
-    expect(p()).toMatchObject({ stats: { strength: 3 }, skills: { fight: 2 }, traits: ["coward"], inventory: { bomb: 2 }, xp: 12, level: 1, skillPoints: 1 });
+    expect(p()).toMatchObject({ stats: { strength: 3 }, skills: { fight: 2 }, traits: ["coward"], inventory: { bomb: 2 }, xp: 12, level: 2, skillPoints: 1 });
     expect(w.state().cheated).toBe(true);
     w.close();
     expect(m.listSlots()[0]!.cheated).toBe(true);

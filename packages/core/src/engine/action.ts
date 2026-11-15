@@ -38,6 +38,7 @@ import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { createStoryletCheck, endActiveStorylet } from "./storyletTools.ts";
 import { recordDeath } from "./succession.ts";
+import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { applyTreatment, maybeInfect, useItem } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
@@ -190,6 +191,18 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const player = start.characters[start.playerId];
   if (!player) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
   if (player.dead) return { ok: false, error: "캐릭터가 사망했습니다." };
+  // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
+  const out = incapacitatingSymptom(scenario, player);
+  if (out) {
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.craft || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
+    if (acts || !passive) {
+      return {
+        ok: false,
+        error: `${player.name}은(는) ${out.label} 상태라 스스로 아무것도 할 수 없다. 판정·이동·말·물건 쓰기 없이 activity(wait 또는 sleep, 전투 중이면 null)로 시간만 흐르게 한다. 장면의 치료사가 돌보면 treatment {item: null}. 서술은 흐릿한 감각의 조각만 짧게.`,
+      };
+    }
+  }
   if (input.target && !start.scene.present.includes(input.target)) {
     return { ok: false, error: `${josa(input.target, "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
   }
@@ -437,7 +450,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   lines.push(...bodyLines(after));
   for (const display of after) {
     displays.push(display);
-    if (display.type === "presence" && display.note) lines.push(display.note);
+    if ((display.type === "presence" || display.type === "belief") && display.note) lines.push(display.note);
     if (display.type === "mission" && display.title.startsWith(SQUAD_REPORT_PREFIX)) {
       lines.push(`${display.title}: ${display.detail}. 보고 내용은 상태의 '분대' 섹션에 있다. 분대원이 돌아와(또는 전령으로) 보고하는 장면을 짧게 서술한다. 보고에 없는 것을 지어내지 않는다.`);
     } else if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);

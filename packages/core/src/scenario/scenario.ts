@@ -95,6 +95,11 @@ export function visibleSymptoms(s: Scenario, character: Pick<Character, "conditi
   return picked;
 }
 
+/** 스스로 아무것도 하지 못하게 하는 증상 (의식불명 등). 없으면 undefined */
+export function incapacitatingSymptom(s: Scenario, character: Pick<Character, "conditions">): Symptom | undefined {
+  return visibleSymptoms(s, character).find((x) => x.incapacitates);
+}
+
 /**
  * 몸 상태의 판정 보정. 증상이 정해진 월드는 가장 큰 증상은 그대로, 나머지 증상 보정의 합은 반(올림)만 더한다 (12-74).
  * 예: 고열 3 → -3, 1+1 → -2, 1+1+1+1 → -3, 3+2 → -4, 2+2+2 → -4. 바닥은 없다

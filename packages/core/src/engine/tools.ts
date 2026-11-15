@@ -1,3 +1,4 @@
+import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { ROMANCE_TOOLS } from "./romance.ts";
 import { CAPTIVITY_TOOLS } from "./captivity.ts";
 import { carriedWeight, carryCapacity, DEFAULT_WEIGHT, GEAR_TOOLS } from "./gear.ts";
@@ -282,9 +283,19 @@ export function gmToolSpecs(s: Scenario): ToolSpec[] {
 }
 
 /** tool 호출을 검증하고 실행한다. 입력이 스키마에 맞지 않으면 실행하지 않는다 */
+/** 의식불명 등 스스로 아무것도 못 하는 동안에도 쓰는 tool: 시간 흐르기·돌봄(take_action이 가린다), 누가 오고 가는 것, 묘비명, 설정 */
+const WHILE_INCAPACITATED = new Set(["take_action", "npc_presence", "spawn_extra", "write_epitaph", "set_content_options"]);
+
 export function executeTool(name: string, input: unknown, ctx: ToolContext): ToolOutcome {
   const tool = gmTools(ctx.content.scenario).find((t) => t.name === name);
   if (!tool) return { ok: false, error: `알 수 없는 tool: ${name}` };
+  // 의식불명 등 스스로 아무것도 못 하는 동안은 플레이어의 행동이 되는 tool을 막는다 (시간 흐르기·돌봄은 take_action, 장면 정리 일부만)
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  const out = me && !me.dead ? incapacitatingSymptom(ctx.content.scenario, me) : undefined;
+  if (out && !WHILE_INCAPACITATED.has(name)) {
+    return { ok: false, error: `${me!.name}은(는) ${out.label} 상태라 이 일을 할 수 없다 (${name}). 이야기와 대화는 깨어난 뒤에. take_action의 activity(wait 또는 sleep)로 시간만 흐르게 한다.` };
+  }
   const parsed = tool.schema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: `입력이 올바르지 않습니다: ${z.prettifyError(parsed.error)}` };

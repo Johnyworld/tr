@@ -59,11 +59,12 @@ describe("능력과 스킬", () => {
 });
 
 describe("경험치와 레벨업", () => {
-  it("레벨마다 필요한 경험치가 5씩 는다 (10, 15, 20…)", () => {
+  it("레벨은 1부터, 레벨마다 필요한 경험치가 5씩 는다 (10, 15, 20…)", () => {
     const s = content().scenario;
-    expect([1, 2, 3].map((l) => xpForLevel(s, l))).toEqual([10, 25, 45]);
-    expect(levelForXp(s, 9)).toBe(0);
-    expect(levelForXp(s, 25)).toBe(2);
+    expect([1, 2, 3, 4].map((l) => xpForLevel(s, l))).toEqual([0, 10, 25, 45]);
+    expect(levelForXp(s, 0)).toBe(1);
+    expect(levelForXp(s, 9)).toBe(1);
+    expect(levelForXp(s, 25)).toBe(3);
   });
 
   it("실패는 2, 성공은 1. 판정 경험치는 하루 6까지", () => {
@@ -81,7 +82,7 @@ describe("경험치와 레벨업", () => {
     player(env).xp = 8;
     const out = executeTool("take_action", check(), env.ctx);
     expect(out.ok && out.resultText).toContain("레벨이 올랐다");
-    expect(player(env)).toMatchObject({ level: 1, skillPoints: 1 });
+    expect(player(env)).toMatchObject({ level: 2, skillPoints: 1 });
     const learned = executeTool("learn_skill", { skill: "stealth" }, env.ctx);
     expect(learned.ok && learned.resultText).toContain("아마추어 +0 → 숙련 +1");
     expect(player(env)).toMatchObject({ skillPoints: 0, skills: { stealth: 1 } });

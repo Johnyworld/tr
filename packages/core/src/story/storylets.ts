@@ -1,3 +1,4 @@
+import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { roleOf } from "../game/state.ts";
 import { attracted, loversOf, romanceCast } from "../engine/romance.ts";
 import { tiesOf } from "../game/ties.ts";
@@ -324,6 +325,9 @@ export const WORLD_TAG = "world";
 
 /** 지금 발동할 수 있는 스토리렛 (역할 태그, 반복·쿨다운, 조건, 배역) */
 export function eligibleStorylets(state: GameState, content: Content, at: GameTime = state.time): StoryletContent[] {
+  // 의식불명 등 스스로 아무것도 못 하는 동안은 이야기가 열리지 않는다
+  const me = state.characters[state.playerId];
+  if (me && incapacitatingSymptom(content.scenario, me)) return [];
   // 지금 역할(무리에 들었으면 그 자리)의 태그와, 지금 플레이하는 시나리오의 태그 (기획서 12.4.1).
   // 시나리오의 태그는 무소속으로 시작한 시나리오(튜토리얼)이거나 아직 그 무리에 있을 때만: 무리에 든 뒤에도 튜토리얼이 이어지게, 무리를 떠나면 옛 무리 이야기는 닫히게
   const playing = content.roles[state.scenarioRole];

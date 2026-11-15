@@ -146,8 +146,16 @@ export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
     const player = state.characters[state.playerId];
     if (!player || player.dead) break;
     const index = levelIndex(ctx, state, player.id, track.id);
-    if (index <= 0 || index > maxIndex) break;
     const since = state.recovery.lastChangeAt[player.id] ?? state.runStartedAt;
+    // 의식불명 등: 그 단계에 wake_hours만큼 머물면 정신이 든다 (한 단계 나아진다)
+    const out = track.levels[index]?.symptoms?.some((id) => ctx.content.scenario.symptoms?.find((x) => x.id === id)?.incapacitates);
+    if (out && recovery.wake_hours !== undefined) {
+      if (state.time - since < recovery.wake_hours * 60) break;
+      const c = changeCondition(ctx, player.id, track.id, -1, "rest", "정신이 들었다");
+      if (c?.display) displays.push(c.display);
+      break;
+    }
+    if (index <= 0 || index > maxIndex) break;
     const days = Math.max(1, recovery.natural_days + bodyTraits(ctx.content, player).recoveryDays);
     if (state.time - since < days * MINUTES_PER_DAY) break;
     const c = changeCondition(ctx, player.id, track.id, -1, "rest", "쉬면서 나음");

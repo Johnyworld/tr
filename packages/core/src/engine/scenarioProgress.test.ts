@@ -49,24 +49,41 @@ describe("튜토리얼: 방문자", () => {
     w.close();
   });
 
-  it("버들마을에 들어가 가족을 만나면 클리어하고, 비극의 고리가 열린다 (모든 판에 남고, 알림은 닫을 때까지)", () => {
+  it("버들마을에 들어가기만 해서는 클리어가 아니다. 단서를 얻고 재회 이야기로 가족이 나타나면 클리어하고, 비극의 고리가 열린다 (모든 판에 남고, 알림은 닫을 때까지)", () => {
     const { dir, m, w } = tutorial();
     w.runCheat("~time +8h");
-    const r = w.runCheat("~goto b_base");
-    expect(r.ok).toBe(true);
+    const entered = w.runCheat("~goto b_base");
+    expect(entered.ok && entered.text).not.toContain("시나리오 클리어");
+    expect(w.state().cleared).toEqual([]);
+    // 단서 없이 버들마을에 있으면 수소문 이야기가, 단서가 있으면 재회 이야기가 열린다
+    w.ctx().store.append({ type: "flag_set", characterId: "player", flag: "tv_family_where" });
+    const r = w.runCheat("~storylet tv_reunion");
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
     const text = r.ok ? r.text : "";
+    expect(w.state().scene.present.some((id) => w.state().family.includes(id))).toBe(true);
     expect(text).toContain("시나리오 클리어: 튜토리얼: 방문자");
     expect(text).toContain("end_session");
-    // 튜토리얼이 끝나 "담 밖의 사람"도, 버들마을에 처음 들어갔으니 "문을 지키는 사람"도 함께 열린다
-    expect(text).toContain("시나리오 「비극의 고리」, 「문을 지키는 사람」, 「담 밖의 사람」을 플레이할 수 있습니다");
+    // 튜토리얼이 끝나 "담 밖의 사람"도, 버들마을에 처음 들어갔을 때 "문을 지키는 사람"도 열렸다
+    expect(text).toContain("시나리오 「비극의 고리」, 「담 밖의 사람」을 플레이할 수 있습니다");
     expect(w.state().cleared).toEqual(["role_t_visitor"]);
     expect(w.state().unlocked).toEqual(expect.arrayContaining(["role_a_grunt", "role_b_guard", "role_l_wanderer"]));
     expect(w.guide()).toContain("이미 이뤘다");
     expect(JSON.parse(readFileSync(join(dir, "unlocks.json"), "utf8")).post_apoc.sort()).toEqual(["role_a_grunt", "role_b_guard", "role_l_wanderer"]);
     expect(m.unlockNotices().map((n) => n.title).sort()).toEqual(["담 밖의 사람", "문을 지키는 사람", "비극의 고리"]);
-    // 다시 들어와도 또 클리어하지 않는다
+    // 다시 오가도 또 클리어하지 않는다
     const again = w.runCheat("~goto old_town");
     expect(again.ok && again.text).not.toContain("시나리오 클리어");
+    w.close();
+  });
+
+  it("가족 소식은 청솔에서 첫날을 보낸 뒤에, 가족 이야기는 GM 지침에 행방 없이", () => {
+    const { w } = tutorial();
+    const news = w.content.storylets.tv_family_news!;
+    expect(news.when.flags_all).toContain("tv_settled");
+    expect(news.when.zones).not.toContain("b_base");
+    const section = w.guide().split("## 시나리오:")[1]!.split("\n## ")[0]!;
+    expect(section).toContain("가족");
+    expect(section).not.toContain("버들마을");
     w.close();
   });
 

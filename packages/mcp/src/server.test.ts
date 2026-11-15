@@ -122,7 +122,7 @@ describe("세이브 슬롯과 종료", () => {
 
     const menu = await call("start_session");
     expect(app.world).toBeNull();
-    expect(menu.text).toMatch(/^1\. 신병 \(23세\) · .*분대원 · 레벨 0 — .+ · 1일차/m);
+    expect(menu.text).toMatch(/^1\. 신병 \(23세\) · .*분대원 · 레벨 1 — .+ · 1일차/m);
     expect(menu.text).toMatch(/^0\. 새 게임\n1\. /m); // 새 게임이 맨 위
 
     const opened = await call("start_session", { slot: 1 });

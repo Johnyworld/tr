@@ -448,8 +448,8 @@ symptoms:
   - { id: starving, label: 굶주림, group: hunger, penalty: -2 }
   - { id: starvation, label: 기아, group: hunger, penalty: -3 }
   - { id: impaired, label: 의식장애, group: consciousness, penalty: -1, tone: 3 }
-  # 의식불명: 아무것도 하지 못한다 (행동 규칙은 다음 단계)
-  - { id: unconscious, label: 의식불명, group: consciousness, tone: 3 }
+  # 의식불명: 스스로 아무것도 하지 못한다 (판정·이동·대화·이야기 없이 시간만 흐르고, 남이 돌볼 수만 있다)
+  - { id: unconscious, label: 의식불명, group: consciousness, tone: 3, incapacitates: true }
   - { id: nausea, label: 메스꺼움, penalty: -1, tone: 3 }
   - { id: distressed, label: 괴로움, group: mind }
   - { id: depressed, label: 우울함, group: mind, penalty: -1 }
@@ -626,6 +626,8 @@ recovery:
   natural_days: 2
   # 중상까지는 저절로 낫는다. 치명상은 치료가 필요하다
   natural_max_level: serious
+  # 의식불명에 이만큼(시간) 머물면 정신이 든다 (의식장애로 한 단계). 그사이 더 다치면 다시 센다 (*임시*)
+  wake_hours: 6
   # 치료사에게 받으면 (하루 한 번) 트랙별로 낫는 단계
   healer: { harm: 1, infection: 1, disease: 1 }
   # 무리의 돌봄 (12-52): 의무병 한 사람이 하루 두 명까지, 무리의 의약품으로. 부상 한 단계 1, 드러난 감염 떼기 2
@@ -660,6 +662,22 @@ captivity:
   interrogate_moves: [intimidate, persuade]
   recruit_move: persuade
   war_capture_chance: 0.12
+
+# 의식불명 중 곁의 사람 (12-90, *임시*): 쓰러질 때마다 한 번, 곁에 누가 있느냐로 코드가 정한다
+helpless:
+  # 그 사람이 주인공을 보는 믿음+호감이 이 이상이면 돌봐 준다, 이 이하면 적으로 군다
+  ally_regard: 4
+  hostile_regard: -4
+  # 무리의 태도가 이 이하면 그 무리 사람은 적이다
+  hostile_disposition: -2
+  # 무리 없는 떠돌이를 보면 잡아가는 무리
+  prey_on_strangers: [faction_c]
+  # 장면에 아무도 없을 때 구역 주인 무리의 사람이 찾아낼 확률
+  found_chance: 0.4
+  # 아무도 찾지 않았을 때 감염체가 먼저 찾을 확률 (구역 위험 0~3)
+  infected_chance: [0, 0.1, 0.25, 0.4]
+  # 적이 죽일 확률: 기본 + 자비(mercy) 한 점마다 + 원한이 있으면
+  kill: { base: 0.15, per_mercy: -0.05, feud: 0.4 }
 
 # 길 위의 일 (12-53): 구역을 옮길 때 길의 위험(두 구역의 danger 중 높은 쪽 0~3)별로 태그 road인 이야기가 열릴 확률
 travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }

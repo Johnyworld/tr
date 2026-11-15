@@ -108,7 +108,8 @@ export function createCharacterSchema(s: Scenario) {
     skills: createSkillsSchema(s),
     /** 경험치와 레벨, 아직 쓰지 않은 스킬 포인트 */
     xp: z.number().int().min(0).default(0),
-    level: z.number().int().min(0).default(0),
+    /** 레벨 (1부터) */
+    level: z.number().int().min(1).default(1),
     skillPoints: z.number().int().min(0).default(0),
     /** 상태 트랙별 현재 단계 (예: harm → light) */
     // 새 상태 트랙이 생기기 전의 세이브는 그 트랙을 첫 단계로 본다

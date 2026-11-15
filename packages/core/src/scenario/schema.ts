@@ -192,6 +192,8 @@ export const scenarioFileSchema = z
           label: z.string().min(1),
           group: id.optional(),
           penalty: z.number().int().max(0).default(0),
+          /** 이 증상이면 스스로 아무것도 하지 못한다 (의식불명): 판정·이동·대화·이야기 없이 시간만 흐르고, 남이 돌볼 수만 있다 */
+          incapacitates: z.boolean().optional(),
           /** 화면 색 (1 노랑 · 2 주황 · 3 빨강). 없으면 판정 보정 크기로. 보정은 작아도 위험한 증상(의식장애 등)은 3 */
           tone: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
         }),
@@ -605,6 +607,8 @@ export const scenarioFileSchema = z
         natural_days: z.number().positive(),
         /** 이 단계까지만 저절로 낫는다 (더 나쁘면 치료가 필요하다) */
         natural_max_level: id,
+        /** 스스로 아무것도 못 하는 증상(의식불명)의 단계에 이만큼(시간) 머물면 한 단계 나아져 정신이 든다. 없으면 치료로만 */
+        wake_hours: z.number().positive().optional(),
         /** 치료사(장면에 있는 healer NPC)에게 받으면 트랙별로 낫는 단계 수. 하루에 한 번 */
         healer: z.record(id, z.number().int().min(0)),
         /**
@@ -669,6 +673,28 @@ export const scenarioFileSchema = z
         recruit_move: id,
         /** 무리 사이 싸움에서 이긴 쪽이 이름 있는 사람 하나를 붙잡아 갈 확률 */
         war_capture_chance: z.number().min(0).max(1).default(0),
+      })
+      .optional(),
+    /**
+     * 의식불명 중 곁의 사람 (12-90): 스스로 아무것도 못 하게 된 동안 곁에 누가 있느냐로 코드가 한 번 정한다.
+     * 우리 편은 돌보거나 자기 거점으로 옮기고, 적은 끌고 가거나(captivity) 죽이고, 아무도 없으면 감염체를 만날 수 있다. 없으면 이 규칙을 쓰지 않는다
+     */
+    helpless: z
+      .strictObject({
+        /** 이 사람이 주인공을 보는 믿음+호감이 이 이상이면 돌봐 준다 */
+        ally_regard: z.number().int(),
+        /** 이 이하면 적으로 군다 (무리와 상관없이) */
+        hostile_regard: z.number().int(),
+        /** 무리의 태도가 이 이하면 그 무리 사람은 적이다 */
+        hostile_disposition: z.number().int(),
+        /** 무리 없는 사람(떠돌이)을 만나면 적으로 대하는 무리 */
+        prey_on_strangers: z.array(id).default([]),
+        /** 장면에 아무도 없을 때 그 구역 주인 무리의 사람이 찾아낼 확률 */
+        found_chance: z.number().min(0).max(1),
+        /** 아무도 찾지 않았을 때 감염체를 만날 확률 (구역 danger 0~3) */
+        infected_chance: z.array(z.number().min(0).max(1)).length(4),
+        /** 적이 죽일 확률: 기본 + 가치관 mercy 한 점마다 + 원수(hostile_regard 이하인 사람이 있을 때) */
+        kill: z.strictObject({ base: z.number().min(0).max(1), per_mercy: z.number(), feud: z.number().min(0).max(1) }),
       })
       .optional(),
     /**

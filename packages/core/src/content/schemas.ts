@@ -76,7 +76,7 @@ export const valueScoreSchema = z.number().int().min(-3).max(3);
  * - fight: 그 무리 사람과 싸웠다 (공격 판정의 상대, 또는 그 무리와의 전투 장면)
  * - join: 그 무리에 들어갔다
  * - promoted: 계급이 올랐다
- * - reunite: 찾던 가족(역할의 family)을 만났다 (같은 구역, 클리어 목표에서만)
+ * - reunite: 찾던 가족(역할의 family)을 만났다 (가족이 주인공 앞에 나타났다, 클리어 목표에서만)
  */
 export const scenarioConditionSchema = z.union([
   z.strictObject({ scenario_ended: contentIdSchema }),

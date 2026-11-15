@@ -11,19 +11,21 @@ import type { ToolContext, ToolOutcome } from "./toolkit.ts";
 
 /**
  * 경험치와 레벨업 (기획서 4.2). 수치는 시나리오 `growth`. 없으면 성장하지 않는다.
- * 레벨 n에 필요한 누적 경험치: first + (first+step) + … (레벨마다 step씩 더 든다)
+ * 레벨은 1부터 시작한다. 레벨 n에 필요한 누적 경험치: first + (first+step) + … (n-1번, 레벨마다 step씩 더 든다)
  */
+export const FIRST_LEVEL = 1;
+
 export function xpForLevel(s: Scenario, level: number): number {
   const g = s.growth;
-  if (!g || level <= 0) return 0;
+  if (!g || level <= FIRST_LEVEL) return 0;
   let total = 0;
-  for (let i = 0; i < level; i++) total += g.first + g.step * i;
+  for (let i = 0; i < level - FIRST_LEVEL; i++) total += g.first + g.step * i;
   return total;
 }
 
 export function levelForXp(s: Scenario, xp: number): number {
-  if (!s.growth) return 0;
-  let level = 0;
+  if (!s.growth) return FIRST_LEVEL;
+  let level = FIRST_LEVEL;
   while (xpForLevel(s, level + 1) <= xp) level += 1;
   return level;
 }

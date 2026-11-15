@@ -63,7 +63,7 @@ export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): Sav
         portrait: player.portrait ?? null,
         rankLabel: player.rank ? rankName(content, player.factionId, player.rank) : "?",
         factionName: (player.factionId && content.factions[player.factionId]?.name) || "",
-        level: player.level ?? 0,
+        level: player.level ?? 1,
         conditions: s.condition_tracks
           .map((t) => ({ track: t, shown: shownLevel(t, player.conditions?.[t.id]) }))
           .filter(({ track, shown }) => shown.id !== track.levels[0]!.id && !shown.fatal)

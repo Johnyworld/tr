@@ -1,3 +1,4 @@
+import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
@@ -76,6 +77,12 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       continue;
     }
     const me = s.characters[s.playerId]!;
+    // 의식불명이면 시간만 흐른다
+    if (incapacitatingSymptom(content.scenario, me)) {
+      const r = world.executeTool("take_action", { intent: "의식이 없다", check: null, activity: s.battle ? null : { kind: "wait", until: null }, deed: null, target: null, narration_summary: null, for_mission: false });
+      if (!r.ok) stats.errors.push(`의식불명 중 기다리기: ${r.error}`);
+      continue;
+    }
     for (const track of content.scenario.condition_tracks) {
       if ((track.levels.find((l) => l.id === me.conditions[track.id])?.penalty ?? 0) < 0) stats.sufferingTurns[track.id] = (stats.sufferingTurns[track.id] ?? 0) + 1;
     }

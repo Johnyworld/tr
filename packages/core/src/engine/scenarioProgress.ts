@@ -21,10 +21,10 @@ export type ProgressNotice =
 /** 조건 하나를 이번 이벤트들(과 지금 상태)이 채웠는지. roleAt: 이벤트가 일어날 때 플레이하던 시나리오 */
 function met(content: Content, state: GameState, events: readonly GameEvent[], roleAt: string, c: ScenarioCondition): boolean {
   if ("reunite" in c) {
-    // 찾던 가족 중 누구든 살아서 주인공과 같은 구역에 있다
+    // 찾던 가족 중 누구든 살아서 주인공 앞에 나타났다 (같은 장면). 같은 구역에 들어가기만 해서는 아니다
     return state.family.some((id) => {
       const k = state.characters[id];
-      return !!k && !k.dead && !k.captive && !!state.playerZone && (k.extra?.zone ?? null) === state.playerZone;
+      return !!k && !k.dead && !k.captive && state.scene.present.includes(id);
     });
   }
   const attack = new Set(content.scenario.gear?.attack_moves ?? []);

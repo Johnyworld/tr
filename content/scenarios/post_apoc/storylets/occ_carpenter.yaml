@@ -7,7 +7,7 @@
 # - 붉은연합: occ_carp_cage_order → occ_carp_cage_inspect (수용소 우리, 약한 이음매)
 # - 버들마을: occ_carp_willow_gate (집집의 문, 회의)
 # - 둘째 칸(목수): occ_carp_watchtower (망루 세우기, 일꾼을 부린다)
-# - 셋째 칸(도편수): occ_carp_master_plan (거점 전체 설계) / occ_carp_wall_blame (내가 세운 담이 무너졌다)
+# - 셋째 칸(목수 반장): occ_carp_master_plan (거점 전체 설계) / occ_carp_wall_blame (내가 세운 담이 무너졌다)
 
 - id: occ_carp_wave_eve
   title: 물결 전날 밤
@@ -477,7 +477,7 @@
         - belief: { fact: "망루는 미뤘다. 상관은 기둥감을 구해 오라고 했다. 폐가 마루를 뜯어야 한다", source: seen }
 
 - id: occ_carp_master_plan
-  title: 도편수의 종이
+  title: 목수 반장의 종이
   tags: [occ_carpenter]
   when:
     occupation_step_gte: 2
@@ -486,7 +486,7 @@
     flags_none: [occ_carp_plan_done]
   cast:
     boss: { commander: true }
-  setup: "{boss:이/가} 거점의 낡은 도면을 펼친다. 연필 자국 위에 또 연필 자국이다. \"겨울 전에 큰일은 하나밖에 못 해. 담을 두껍게 하든, 숙소에 바람을 막든, 빗물 받을 통을 짜든. 도편수가 정해.\" 이제 당신의 줄 하나가 무리 전체의 겨울이 된다."
+  setup: "{boss:이/가} 거점의 낡은 도면을 펼친다. 연필 자국 위에 또 연필 자국이다. \"겨울 전에 큰일은 하나밖에 못 해. 담을 두껍게 하든, 숙소에 바람을 막든, 빗물 받을 통을 짜든. 목수 반장이 정해.\" 이제 당신의 줄 하나가 무리 전체의 겨울이 된다."
   ai_direction: 판자와 사람 손은 한 가지 큰일 몫뿐이다. 담은 습격을 막고, 숙소는 추위와 땔감을 아끼고, 빗물 통은 물을 모은다. 무엇을 고르든 고르지 않은 쪽에서 사람이 상한다. 결정의 무게를 서술한다. 수치를 말하지 않는다.
   choices:
     - id: wall
@@ -525,7 +525,7 @@
           - faction_resource: { faction: own, resource: fuel, delta: 8 }
           - faction_resource: { faction: own, resource: water, delta: 10 }
           - faction_morale: { faction: own, delta: 1 }
-          - deed: { summary: 도편수로서 거점의 겨울 설계를 짜서 해냈다, tags: [diligence], severity: 2, privacy: public }
+          - deed: { summary: 목수 반장으로서 거점의 겨울 설계를 짜서 해냈다, tags: [diligence], severity: 2, privacy: public }
           - belief: { fact: "담 모퉁이 셋을 보강하고, 숙소 북벽을 막고, 빗물 홈을 이었다. 판자 한 장도 남지 않았다", source: seen }
         partial:
           - set_flag: occ_carp_plan_done
@@ -537,7 +537,7 @@
           - faction_morale: { faction: own, delta: -1 }
           - faction_resource: { faction: own, resource: fuel, delta: -10 }
           - relation: { who: boss, axis: trust, delta: -2 }
-          - belief: { fact: "판자를 셋으로 나누다 셋 다 모자랐다. 도편수가 욕심을 냈다는 말이 돈다", source: seen }
+          - belief: { fact: "판자를 셋으로 나누다 셋 다 모자랐다. 목수 반장이 욕심을 냈다는 말이 돈다", source: seen }
 
 - id: occ_carp_wall_blame
   title: 내가 세운 담
@@ -553,7 +553,7 @@
     boss: { commander: true }
     widow: { faction: own, known: true }
   setup: "지난 싸움 때 담 한 칸이 무너졌다. 그 아래 보초 하나가 깔려 실려 갔다. {boss:이/가} 무너진 자리에 서서 당신을 기다린다. 뒤에 그 보초의 식구인 {widow:이/가} 팔짱을 끼고 서 있다. 그 칸은 당신이 그은 줄대로 세운 것이다."
-  ai_direction: 담이 무너진 것이 목수 탓인지, 판자가 모자랐던 탓인지, 적이 그만큼 셌던 탓인지는 확실하지 않다. 사람들은 이름 하나를 원한다. 도편수가 책임을 지면 사람들은 조용해지지만 무게가 남는다. 판자 탓을 하면 창고를 맡은 사람에게 화살이 간다.
+  ai_direction: 담이 무너진 것이 목수 탓인지, 판자가 모자랐던 탓인지, 적이 그만큼 셌던 탓인지는 확실하지 않다. 사람들은 이름 하나를 원한다. 목수 반장이 책임을 지면 사람들은 조용해지지만 무게가 남는다. 판자 탓을 하면 창고를 맡은 사람에게 화살이 간다.
   choices:
     - id: own_it
       label: 내 설계가 모자랐다고 말한다
@@ -589,4 +589,4 @@
           - set_flag: occ_carp_blame_done
           - standing: -2
           - zone_noise: 1
-          - belief: { fact: "서둘러 세운 기둥이 기울었다. 도편수가 손을 떤다는 말이 돈다", source: seen }
+          - belief: { fact: "서둘러 세운 기둥이 기울었다. 목수 반장이 손을 떤다는 말이 돈다", source: seen }

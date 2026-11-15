@@ -11,15 +11,15 @@ import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
 import type { HistoryPart } from "./background.ts";
 import { buildCustomRole, checkCustomStart, type CustomStartInput } from "./customStart.ts";
-import { occupationTitle } from "./occupation.ts";
+import { careerStep, occupationTitle } from "./occupation.ts";
 
 /** 직분과 배경 부품 (기획서 12.6) */
 const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
 const cook: CustomStartInput = {
   faction: "faction_a",
-  rank: "staff",
+  rank: "grunt",
   occupation: "cook",
-  title: "청솔형제단 숙수",
+  title: "청솔형제단 요리사",
   location: "a_base",
   kit: "trader",
   skills: { persuade: 1 },
@@ -34,36 +34,45 @@ const open = (input: CustomStartInput) => {
 };
 
 describe("직분", () => {
-  it("직분 훈련·도구가 더해지고, 전투원이 아니면 무리의 전투 임무를 빌리지 않는다", () => {
+  it("직분 훈련·도구가 더해지고, 무리의 시나리오에서 임무를 빌린다", () => {
     const role = buildCustomRole(content, cook);
     expect(role.occupation).toBe("cook");
     expect(role.start_skills).toMatchObject({ persuade: 1, survival: 1 });
     expect(role.start_inventory).toContain("kitchen_knife");
-    expect(role.missions).toEqual([]);
-    const soldier = buildCustomRole(content, { ...cook, rank: "grunt", occupation: "soldier" });
-    expect(soldier.missions.length).toBeGreaterThan(0);
+    expect(role.missions.length).toBeGreaterThan(0);
   });
 
-  it("직분에 맞지 않는 계급, 무리 안의 일인데 무소속이면 막는다", () => {
-    expect(checkCustomStart(content, { ...cook, rank: "squad_leader" }).join()).toContain("요리사의 계급");
-    expect(checkCustomStart(content, { ...cook, faction: null, rank: "loner", location: "old_town" }).join()).toContain("무소속으로 고를 수 없다");
-    expect(checkCustomStart(content, { ...cook, faction: null, rank: "loner", location: "old_town", occupation: "trader" })).toEqual([]);
+  it("없는 직분은 막고, 떠돌이는 직분이 없다", () => {
+    expect(checkCustomStart(content, cook)).toEqual([]);
+    expect(checkCustomStart(content, { ...cook, occupation: "baker" }).join()).toContain("직분은");
+    const loner = { ...cook, faction: null, rank: "loner", location: "old_town" };
+    expect(checkCustomStart(content, loner).join()).toContain("떠돌이는 직분이 없다");
+    expect(checkCustomStart(content, { ...loner, occupation: null })).toEqual([]);
   });
 
-  it("평판이 쌓이면 직분 사다리를 오르고, GM 상태에 직분이 보인다", () => {
+  it("직분에는 사다리가 없다: 평판은 숫자로만 쌓이고, GM 상태에는 직분 이름이 보인다 (12-83)", () => {
     const w = open(cook);
     const me = () => w.state().characters[w.state().playerId]!;
-    expect(occupationTitle(w.content, me())).toBe("요리사 · 숙수");
-    expect(describePlayerState(w.state(), w.content)).toContain("직분: 요리사 · 숙수");
-    const note = changeStanding(w.ctx(), w.state().playerId, 3, "test") ?? changeStanding(w.ctx(), w.state().playerId, 1, "test");
-    expect(note).toContain("부엌 반장");
-    expect(occupationTitle(w.content, me())).toBe("요리사 · 부엌 반장");
+    expect(occupationTitle(w.content, me())).toBe("요리사");
+    expect(describePlayerState(w.state(), w.content)).toContain("직분: 요리사");
+    expect(changeStanding(w.ctx(), w.state().playerId, 3, "test")).toBeNull();
+    expect(me().occupation).toEqual({ id: "cook", standing: 3 });
   });
 
-  it("NPC도 직분이 있고, 배역 occupations로 같은 직분의 동료를 부른다", async () => {
+  it("계급이 곧 사다리다 (12-82): 이야기 조건의 칸은 분대원·주민 0, 분대장 1, 간부 2", () => {
+    const scout = (rank: string) => ({ rank, occupation: { id: "scavenger", standing: 99 } });
+    expect([careerStep(content, scout("grunt")), careerStep(content, scout("squad_leader")), careerStep(content, scout("officer"))]).toEqual([0, 1, 2]);
+    expect(careerStep(content, { rank: "staff", occupation: { id: "cook", standing: 99 } })).toBe(0);
+    expect(occupationTitle(content, scout("officer"))).toBe("수색대원");
+  });
+
+  it("NPC도 직분이 있고 (간호사·의사는 서로 다른 직업), 배역 occupations로 같은 직분의 동료를 부른다", async () => {
     const { castCandidates } = await import("../story/storylets.ts");
     const w = open(cook);
-    expect(w.state().characters.a_bokja!.occupation?.id).toBe("cook");
+    const c = w.state().characters;
+    expect(c.a_bokja!.occupation?.id).toBe("cook");
+    expect(c.a_chaewon).toMatchObject({ rank: "staff", occupation: { id: "nurse" } });
+    expect(occupationTitle(w.content, c.d_eunyoung)).toBe("의사");
     const role = { commander: false, known: false, enter: true, optional: false, here: false, faction: "own", occupations: ["same"] } as never;
     expect(castCandidates(w.state(), w.content, role)).toEqual(["a_bokja"]);
   });

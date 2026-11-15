@@ -45,6 +45,7 @@
   alias: 분필 가루 묻은 아이들 선생
   faction: faction_y
   rank: grunt
+  occupation: guard
   age: 27
   gender: female
   look: 둥근 얼굴에 분필 가루가 묻은 소매. 앞치마 주머니에 쓰다 만 편지 몇 장을 접어 넣었다. 잘 웃는다.
@@ -124,6 +125,7 @@
   alias: 고무 앞치마를 두른 저장고지기
   faction: faction_y
   rank: grunt
+  occupation: guard
   age: 38
   gender: male
   look: 무릎까지 오는 검은 고무 앞치마, 팔뚝에 붉은 완장을 떼어 낸 자국이 하얗게 남았다. 손을 하루에도 몇 번씩 바닷물에 씻는다.
@@ -163,7 +165,7 @@
   alias: 약초 냄새 나는 늙은 약방 의사
   faction: faction_y
   rank: staff
-  occupation: medic
+  occupation: doctor
   age: 68
   gender: male
   look: 반쯤 센 수염, 뿔테 안경을 고무줄로 머리에 맸다. 조끼 주머니마다 작은 약병이 들어 딸그락거린다.

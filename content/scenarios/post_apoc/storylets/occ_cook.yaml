@@ -578,7 +578,7 @@
     own_territory: true
     segments: [morning, evening]
   cast:
-    nurse: { faction: own, ranks: [squad_leader, officer, staff] }
+    nurse: { faction: own, ranks: [grunt, staff, squad_leader, officer], occupations: [medic, nurse, doctor] }
     patient: { extra: refugee, label: 격리실의 떠돌이, keep: occ_cook_quarantined }
   setup: "하얀매의 부엌은 솥이 둘이다. 하나는 사람들 몫, 하나는 환자 죽. 쌀을 오래 퍼지게 끓여 소금만 친다. {nurse:이/가} 격리실 문 아래 배식구를 가리킨다. \"사흘째인 사람이에요. 그릇은 문 아래로만. 손 닿지 않게.\" 배식구 너머에서 {patient:이/가} 쉰 목소리로 고맙다고 한다."
   ai_direction: 하얀매의 규칙으로는 물리거나 긁힌 사람은 누구든 격리실에서 사흘. {patient}은(는) 사흘째다. 감염인지 아닌지는 아직 모른다 (GM 상태와 판정으로만). 죽은 값을 받지 않는다. 배식구 너머로 손을 내미는 사람도 있다. 감염 지식이 있으면 문 너머의 숨소리로 무언가를 알아챌 수 있다.

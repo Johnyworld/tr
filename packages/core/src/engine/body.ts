@@ -383,7 +383,7 @@ function firstAid(ctx: ToolContext, targetId: string): { ok: true; lines: string
   const target = state.characters[targetId];
   if (!rule) return { ok: false, error: "이 월드에서는 아이템 없이 남을 치료할 수 없다." };
   if (!target || target.dead || !state.scene.present.includes(targetId)) return { ok: false, error: "그 사람이 장면에 없다." };
-  const skilled = (rule.occupation && me.occupation?.id === rule.occupation) || (me.skills[rule.skill] ?? -9) >= rule.min;
+  const skilled = (!!me.occupation && rule.occupations.includes(me.occupation.id)) || (me.skills[rule.skill] ?? -9) >= rule.min;
   if (!skilled) return { ok: false, error: "아이템 없이 남을 꿰매고 돌볼 줄 모른다. 치료 아이템을 쓰거나 치료사를 데려온다." };
   const harm = harmTrack(content.scenario);
   if (shownIndex(ctx, state, targetId, harm.id) <= 0) return { ok: false, error: "그 사람은 다친 데가 없다." };
@@ -423,7 +423,7 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
   if (!care) return displays;
   for (const factionId of Object.keys(store.getState().factions)) {
     const members = npcs().filter((c) => c.factionId === factionId && !c.captive);
-    const medics = members.filter((c) => c.occupation?.id === care.occupation && !isIncapacitated(content, c)).length;
+    const medics = members.filter((c) => !!c.occupation && care.occupations.includes(c.occupation.id) && !isIncapacitated(content, c)).length;
     let slots = medics * care.per_medic;
     if (slots === 0) continue;
     const severity = (c: (typeof members)[number]) => harm.levels.findIndex((l) => l.id === c.conditions[harm.id]);

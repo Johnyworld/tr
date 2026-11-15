@@ -2,7 +2,7 @@
 # 갈래:
 #   숨긴 상처: om_stitch_quiet → om_scratch_hidden: om_barracks_fever (정말 감염됐을 때만, 코드가 굴린다)
 #   포로 치료: om_enemy_cot (붉은연합 아닌 무리) / om_enemy_cot_red (붉은연합)
-#   사다리: om_cabinet_key·om_death_count (의무병부터) → om_dose_rule (의무장)
+#   사다리: om_cabinet_key·om_death_count (의무병은 분대장부터, 의료는 간호사부터) → om_dose_rule (의무병은 간부, 의료는 의사)
 #   떠돌이 의사: om_road_doctor → om_road_name: om_road_messenger (버들마을에 들어갈 길)
 
 # ── 어느 무리든: 누구를 먼저 ─────────────────────────────
@@ -390,7 +390,7 @@
           - relation: { who: boss, axis: trust, delta: -1 }
           - belief: { fact: "식구를 찾아가 말을 꺼냈다가 멱살을 잡혔다. 왜 우리 애만 못 살렸냐고", source: seen }
 
-# ── 사다리: 의무장이 되면 ─────────────────────────────
+# ── 사다리: 의료를 책임지게 되면 ─────────────────────────────
 
 - id: om_dose_rule
   title: 약 나누는 법

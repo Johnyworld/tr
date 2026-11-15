@@ -1,4 +1,4 @@
-# 수색꾼 직분의 물건 (기획서 12.6). 찾은 것을 낼지 숨길지(storylets/occ_scavenger.yaml)
+# 수색대원 직분의 물건 (기획서 12.6). 찾은 것을 낼지 숨길지(storylets/occ_scavenger.yaml)
 - id: sealed_med_case
   name: 봉인된 약품 상자
   icon: medicine

@@ -1,3 +1,4 @@
+import { rankName } from "../game/ranks.ts";
 import { occupationOf } from "../game/occupation.ts";
 import { changeStanding } from "./growth.ts";
 import { issueArmory, returnArmory } from "./armory.ts";
@@ -8,7 +9,7 @@ import { josa } from "../text.ts";
 import { gainMeritXp } from "./growth.ts";
 import { z } from "zod";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
-import { moveLabel, rankLabel } from "../scenario/scenario.ts";
+import { moveLabel } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import { ACTIVITY_LABELS, dayOf, formatDuration, formatTime } from "../rules/time.ts";
 import type { MissionRequirement } from "../content/schemas.ts";
@@ -170,8 +171,8 @@ const reportMission = defineTool({
     const promotion = scenario.promotion;
     if (checkPromotion(player, promotion, after.time, after.runStartedAt, commanderTrust, disciplineOf(ctx.content, player.factionId).maxDisobedience).eligible) {
       ctx.store.append({ type: "promoted", characterId: player.id, from: promotion.from, to: promotion.to });
-      const fromLabel = rankLabel(scenario, promotion.from);
-      const toLabel = rankLabel(scenario, promotion.to);
+      const fromLabel = rankName(ctx.content, player.factionId, promotion.from);
+      const toLabel = rankName(ctx.content, player.factionId, promotion.to);
       lines.push(`진급: ${josa(player.name, "이/가")} ${fromLabel}에서 ${josa(toLabel, "으로/로")} 진급했다. 상관이 이를 알리는 장면을 서술하라.`);
       extra.push({ type: "promotion", name: player.name, fromLabel, toLabel });
     }
@@ -260,7 +261,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   if (!player) return "";
   const active = activeMissionOf(state.missions, player.id);
   // 무소속은 복무·공적·불복종이 없다
-  const lines = [player.factionId ? `복무: ${rankLabel(ctx.content.scenario, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회` : `무소속 (${rankLabel(ctx.content.scenario, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
+  const lines = [player.factionId ? `복무: ${rankName(ctx.content, player.factionId, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
     const loan = state.loans?.[active.id];

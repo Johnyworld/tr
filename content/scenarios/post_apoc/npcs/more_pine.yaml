@@ -6,7 +6,7 @@
   alias: 왼손에 붕대를 감은 각진 분대장
   faction: faction_a
   rank: squad_leader
-  occupation: soldier
+  occupation: scavenger
   age: 46
   gender: male
   look: 턱이 각지고 눈 밑이 늘 거뭇하다. 왼손 손가락 두 개에 붕대를 감았는데, 상처가 아문 지 오래인데도 풀지 않는다.
@@ -88,7 +88,7 @@
   alias: 형의 군번줄을 목에 건 젊은 분대원
   faction: faction_a
   rank: grunt
-  occupation: soldier
+  occupation: scavenger
   age: 23
   gender: male
   look: 목에 군번줄 두 개를 겹쳐 걸었다. 하나는 형 것이다. 키가 크고 어깨가 좁으며, 웃을 때 한쪽 볼에만 보조개가 팬다.
@@ -125,7 +125,7 @@
   alias: 장갑 한 짝만 낀 마른 분대원
   faction: faction_a
   rank: grunt
-  occupation: soldier
+  occupation: scavenger
   age: 26
   gender: male
   look: 마르고 볕에 그을렸다. 오른손에만 털장갑을 낀다. 왼손 약지에 철사를 감아 만든 반지 자국이 하얗게 남아 있다.

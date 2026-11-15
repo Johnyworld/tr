@@ -130,7 +130,7 @@
   alias: 큰 군복 점퍼를 걸친 경비 당번
   faction: faction_b
   rank: grunt
-  occupation: soldier
+  occupation: scavenger
   age: 23
   gender: female
   look: 품이 큰 군복 점퍼를 지퍼까지 올려 입었다. 머리를 하나로 땋아 점퍼 안에 넣는다. 요즘 자꾸 배를 손으로 감싼다.
@@ -168,7 +168,7 @@
   alias: 옥상 먼지를 뒤집어쓴 까까머리 소년
   faction: faction_b
   rank: grunt
-  occupation: soldier
+  occupation: scavenger
   age: 16
   gender: male
   look: 까까머리에 무릎이 다 해진 체육복 바지. 손바닥과 무릎에 옥상 방수포 가루가 늘 묻어 있다. 아버지 것이라는 손목시계를 두 번 감아 찼다.

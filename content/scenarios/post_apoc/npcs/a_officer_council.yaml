@@ -5,7 +5,7 @@
   alias: 군화 끈을 두 번 감은 짧은 머리 간부
   faction: faction_a
   rank: officer
-  occupation: soldier
+  occupation: scavenger
   age: 49
   gender: male
   look: 짧게 민 회색 머리에 볕에 탄 목. 군화 끈을 발목에 두 번 감아 맨다. 왼쪽 귀 밑에 오래된 화상 자국이 있다.
@@ -118,6 +118,7 @@
   alias: 끈 떨어진 배낭을 멘 마른 전령
   faction: faction_a
   rank: grunt
+  occupation: scavenger
   age: 17
   gender: male
   look: 목이 길고 마른 소년. 끈 하나가 끊어진 배낭을 한쪽 어깨에만 멘다. 운동화 밑창을 철사로 묶었다.

@@ -41,7 +41,7 @@
   alias: 손에 붕대 감은 주근깨 경비병
   faction: faction_b
   rank: grunt
-  occupation: soldier
+  occupation: scavenger
   age: 24
   gender: female
   look: 오지호와 똑같은 주근깨. 머리를 짧게 자르고 오른손에 붕대를 감았다.
@@ -79,7 +79,7 @@
   alias: 붉은 완장의 마른 정찰병
   faction: faction_c
   rank: grunt
-  occupation: soldier
+  occupation: scavenger
   age: 27
   gender: male
   look: 왼팔에 붉은 완장. 광대뼈가 드러날 만큼 말랐고 눈 밑이 검다.
@@ -117,9 +117,9 @@
   alias: 장갑 낀 장교 외투 사내
   faction: faction_c
   rank: officer
+  occupation: scavenger
   # 성적 위협 (12-59, 수위가 켜져 있을 때만 쓰인다)
   menace: coerce
-  occupation: soldier
   age: 45
   gender: male
   look: 깔끔하게 빗어 넘긴 머리, 장교 외투. 손이 늘 장갑 속에 있다.
@@ -152,7 +152,7 @@
   alias: 흰 가운의 안경 쓴 여자
   faction: faction_d
   rank: leader
-  occupation: medic
+  occupation: doctor
   age: 39
   gender: female
   look: 소매를 걷은 흰 가운, 안경 한쪽 다리를 철사로 감았다.
@@ -194,7 +194,7 @@
   age: 31
   gender: male
   look: 덩치가 크고 목에 방독면을 걸었다. 등에 빈 배낭을 지고 다닌다.
-  reputation: 하얀매의 수색꾼. 옛 시립병원을 드나드는 몇 안 되는 사람.
+  reputation: 하얀매의 수색대원. 옛 시립병원을 드나드는 몇 안 되는 사람.
   want: 병원 지하 약제실을 혼자 다 털어 하얀매에서 한자리 얻는 것
   fear: 병원 지하의 어둠
   values: { discipline: 0, loyalty: 1, mercy: 0, honesty: 0, self_interest: 2 }
@@ -261,6 +261,7 @@
   alias: 빨간 털모자 쓴 심부름꾼
   faction: faction_e
   rank: grunt
+  occupation: guard
   age: 17
   gender: female
   look: 빨간 털모자에 큰 배낭. 운동화 끈이 짝짝이다.

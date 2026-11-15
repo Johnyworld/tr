@@ -142,7 +142,7 @@
   alias: 작살총을 멘 해안 경비조장
   faction: faction_y
   rank: squad_leader
-  occupation: soldier
+  occupation: scavenger
   age: 44
   gender: male
   look: 어깨가 넓고 손이 거칠다. 등에 개조한 작살총을 메고, 늘 바다 쪽을 본다.
@@ -175,7 +175,7 @@
   alias: 노를 잘 젓는 젊은 경비
   faction: faction_y
   rank: grunt
-  occupation: soldier
+  occupation: scavenger
   age: 22
   gender: female
   look: 볕에 그을린 얼굴, 머리를 수건으로 질끈 묶었다. 손바닥에 노 굳은살이 박였다.
@@ -205,6 +205,7 @@
   alias: 그물을 손질하는 늙은 어부
   faction: faction_y
   rank: grunt
+  occupation: guard
   age: 58
   gender: male
   look: 허리가 조금 굽은 노인. 손가락이 그물 바늘을 놓지 않는다. 잔치 국을 받으면 몰래 바다에 쏟는다.

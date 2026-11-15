@@ -49,6 +49,7 @@
   alias: 낡은 사진을 품은 마른 짐꾼
   faction: faction_e
   rank: grunt
+  occupation: guard
   age: 31
   gender: male
   look: 키가 크고 마른 몸에 해진 군용 배낭. 쉴 때마다 비닐로 싼 사진 한 장을 꺼내 피난민들 얼굴과 맞춰 본다.
@@ -130,8 +131,9 @@
   name: 감태식
   alias: 목에 굵은 흉터가 있는 호위대장
   faction: faction_e
-  rank: squad_leader
-  occupation: soldier
+  # 호위대 전체를 맡은 간부 (분대장들의 상관)
+  rank: officer
+  occupation: guard
   age: 37
   gender: male
   look: 목을 가로지르는 굵은 흉터, 짧게 깎은 머리. 엽총 개머리판에 금을 새겨 지나간 거래선의 수를 센다.

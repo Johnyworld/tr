@@ -92,7 +92,7 @@
   cast:
     boss: { ids: [e_bongsu] }
   setup: "장터 뒷방, {boss:이/가} 금니를 드러내며 웃는다. 탁자 위에 통조림이 두 줄로 쌓여 있다. \"싸우는 놈들은 겨울에 다 같이 굶어. 장사꾼은 안 굶지. 우리 짐마차 호위를 맡아. 분대 하나 줄게. 저건 계약금이고.\""
-  ai_direction: 탁봉수는 누구에게나 웃으며 판다. 호위대장 자리는 진짜지만, 그는 당신이 지금 무리에 대해 아는 것도 함께 사고 싶어 한다. 넘어오면 나루상단 짐마차 호위 분대를 맡는다. 거절하면 계약금 이야기는 없던 일이 된다.
+  ai_direction: 탁봉수는 누구에게나 웃으며 판다. 호위대 분대장 자리는 진짜지만, 그는 당신이 지금 무리에 대해 아는 것도 함께 사고 싶어 한다. 넘어오면 나루상단 짐마차 호위 분대를 맡는다. 거절하면 계약금 이야기는 없던 일이 된다.
   choices:
     - id: sign
       label: 계약금을 받고 상단으로 옮긴다
@@ -100,7 +100,7 @@
         - relation: { who: commander, axis: trust, delta: -2 }
         - deed: { summary: 나루상단의 계약금을 받고 무리를 떠났다, tags: [betrayal, selfishness], severity: 2, privacy: semi_private }
         - give_item: { item: canned_food, quantity: 2 }
-        - join_faction: { faction: faction_e, rank: squad_leader, title: 나루상단 호위대장 }
+        - join_faction: { faction: faction_e, rank: squad_leader, title: 나루상단 호위대 분대장 }
         - belief: { fact: 나루상단으로 옮겨 짐마차 호위 분대를 맡았다. 탁봉수는 계약금을 셈에 넣었다, source: seen }
     - id: sell_info
       label: 옮기지는 않고, 들은 것 몇 가지만 통조림과 바꾼다
@@ -125,7 +125,7 @@
   cast:
     courier: { ids: [e_yuri] }
   setup: "{courier:이/가} 빨간 털모자를 벗으며 접힌 종이를 내민다. 하얀매의 매 그림이 찍혀 있다. \"하얀매 대표가 전해 달래요. 답은 저한테 주면 돼요.\" 편지에는 짧게 적혀 있다: 진료소에 사람이 필요합니다. 우리는 어느 편에도 서지 않습니다. 총 대신 사람을 살리는 일을 해 보지 않겠습니까."
-  ai_direction: 서은영은 무리들 사이를 오가며 이름이 난 사람을 찾고 있다. 하얀매로 가면 전쟁에서 빠지지만, 진료소 규칙과 약값의 무게를 함께 진다. 하얀매에서는 지원 인력이 된다. 하유리는 답만 전한다.
+  ai_direction: 서은영은 무리들 사이를 오가며 이름이 난 사람을 찾고 있다. 하얀매로 가면 전쟁에서 빠지지만, 진료소 규칙과 약값의 무게를 함께 진다. 하얀매에서는 주민이 된다. 하유리는 답만 전한다.
   choices:
     - id: go_clinic
       label: 진료소로 가겠다고 답한다

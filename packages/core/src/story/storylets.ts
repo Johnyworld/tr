@@ -15,7 +15,7 @@ import { harmTrack } from "../scenario/scenario.ts";
 import { daysOfStock } from "../sim/war.ts";
 import { fill } from "../text.ts";
 import { seasonAt } from "../sim/season.ts";
-import { occupationOf, occupationStep, occupationTag } from "../game/occupation.ts";
+import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
 
 /**
  * 스토리렛 엔진 (기획서 10.3). 조건과 배역은 코드가 판정한다.
@@ -213,13 +213,14 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (any !== w.own_people_captive) return false;
   }
   if (w.occupations && !w.occupations.includes(player.occupation?.id ?? "none")) return false;
+  if (w.occupations_not && w.occupations_not.includes(player.occupation?.id ?? "none")) return false;
   if (w.road_touches && (!state.lastRoute || !w.road_touches.some((z) => z === state.lastRoute!.from || z === state.lastRoute!.to))) return false;
   if (w.road_danger_gte !== undefined && routeDanger(content, state) < w.road_danger_gte) return false;
   if (w.road_danger_lte !== undefined && (!state.lastRoute || routeDanger(content, state) > w.road_danger_lte)) return false;
   if (w.at_loss_place && !state.background.some((e) => e.part.kind === "loss" && e.part.where && e.part.where === state.playerZone)) return false;
   if (w.occupation_step_gte !== undefined) {
     const occ = occupationOf(content, player);
-    if (!occ || occupationStep(occ, player.occupation!.standing) < w.occupation_step_gte) return false;
+    if (!occ || careerStep(content, player) < w.occupation_step_gte) return false;
   }
   if (w.zone_owner) {
     const owner = state.playerZone ? (state.zones[state.playerZone]?.owner ?? null) : null;

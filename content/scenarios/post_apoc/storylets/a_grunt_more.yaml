@@ -1,4 +1,4 @@
-# 하급 전투원 스토리렛 추가 (12단계 초안). 형식은 a_grunt.yaml 머리말 참고
+# 분대원 스토리렛 추가 (12단계 초안). 형식은 a_grunt.yaml 머리말 참고
 
 # ── 고정 ───────────────────────────────────────────
 
@@ -158,7 +158,7 @@
       outcomes:
         success:
           - give_item: { item: antibiotics, quantity: 2 }
-          - deed: { summary: 하얀매의 수색꾼을 따돌리고 병원 약을 혼자 챙겼다, tags: [selfishness], severity: 1, privacy: private }
+          - deed: { summary: 하얀매의 수색대원을 따돌리고 병원 약을 혼자 챙겼다, tags: [selfishness], severity: 1, privacy: private }
         partial:
           - give_item: { item: medkit }
         miss:

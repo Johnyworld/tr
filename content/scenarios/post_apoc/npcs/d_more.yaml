@@ -1,11 +1,11 @@
-# 하얀매 인물 추가 (수습 의무병 시나리오). 대표 서은영과 수색꾼 남민호는 others.yaml에 있다
+# 하얀매 인물 추가 (수습 의무병 시나리오). 대표 서은영과 수색대원 남민호는 others.yaml에 있다
 
 - id: d_jeongsuk
   name: 권정숙
   alias: 흰머리를 바짝 묶은 수간호사
   faction: faction_d
   rank: squad_leader
-  occupation: medic
+  occupation: nurse
   age: 52
   gender: female
   look: 흰머리를 뒤로 바짝 묶었다. 앞치마 주머니에 가위와 볼펜, 접은 종이가 늘 꽂혀 있다. 손톱을 짧게 깎았다.
@@ -87,7 +87,7 @@
   alias: 단발머리 수습 간호사
   faction: faction_d
   rank: staff
-  occupation: medic
+  occupation: nurse
   age: 19
   gender: female
   look: 귀밑에서 자른 단발. 소매가 긴 털 스웨터 위에 큰 가운을 걸쳤다. 손목에 늘 붕대를 감고 다닌다.
@@ -108,7 +108,7 @@
     - 수간호사의 말에는 대들지 않지만 뒤에서 투덜댄다
   knows:
     - 진료소 사람들이 서로 어떤 소문을 나누는지 대부분
-    - 수색꾼 남민호가 병원 지하에서 무언가를 혼자 숨겨 두었다는 소문
+    - 수색대원 남민호가 병원 지하에서 무언가를 혼자 숨겨 두었다는 소문
   doesnt_know:
     - 하얀매 대표가 붉은연합과 따로 이야기를 나눴는지
   secret:
@@ -126,7 +126,7 @@
   alias: 목에 호루라기 건 문지기
   faction: faction_d
   rank: grunt
-  occupation: soldier
+  occupation: guard
   age: 38
   gender: male
   look: 경찰 방한점퍼를 아직도 입는다. 목에 호루라기, 허리에 진압봉. 왼쪽 귓바퀴가 찢어져 아물었다.
@@ -160,7 +160,7 @@
   alias: 돋보기 목에 건 늙은 약사
   faction: faction_d
   rank: staff
-  occupation: medic
+  occupation: nurse
   age: 67
   gender: female
   look: 굽은 등에 털조끼. 돋보기를 줄에 꿰어 목에 걸었다. 손가락 마디가 굵고, 약 이름을 중얼거리는 버릇이 있다.

@@ -45,6 +45,7 @@
   alias: 코가 휘어진 덩치 큰 짐꾼
   faction: faction_e
   rank: grunt
+  occupation: guard
   # 성적 위협 (12-59, 수위가 켜져 있을 때만 쓰인다)
   menace: harass
   age: 34
@@ -163,6 +164,7 @@
   alias: 손등에 덴 자국 있는 앳된 짐꾼
   faction: faction_e
   rank: grunt
+  occupation: guard
   age: 19
   gender: female
   look: 손등에 오래된 덴 자국이 있다. 큰 배낭에 비해 몸이 가늘다. 출발 전마다 신발 끈을 세 번 다시 묶는다.

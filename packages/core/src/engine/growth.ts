@@ -1,4 +1,4 @@
-import { occupationOf, occupationStep } from "../game/occupation.ts";
+import { occupationOf } from "../game/occupation.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import { xpMultiplier } from "./traits.ts";
 import { dayOf } from "../rules/time.ts";
@@ -112,18 +112,12 @@ export function growthLine(s: Scenario, c: { level: number; xp: number; skillPoi
 }
 
 /**
- * 직분의 평판 ± (기획서 12.6). 사다리의 칸이 바뀌면 그 한 줄을 돌려준다 (GM이 서술한다).
+ * 직분의 평판 ± (기획서 12.6). 직분에는 사다리가 없어 평판은 숫자로만 쌓인다 (12-83). 돌려줄 줄은 없다.
  * 직분이 없으면 아무 일도 없다
  */
 export function changeStanding(ctx: ToolContext, characterId: string, delta: number, reason: string): string | null {
   const before = ctx.store.getState().characters[characterId];
-  const occ = occupationOf(ctx.content, before);
-  if (!before?.occupation || !occ || delta === 0) return null;
-  const from = occupationStep(occ, before.occupation.standing);
+  if (!before?.occupation || !occupationOf(ctx.content, before) || delta === 0) return null;
   ctx.store.append({ type: "occupation_standing_changed", characterId, delta, reason });
-  const after = ctx.store.getState().characters[characterId]!;
-  const to = occupationStep(occ, after.occupation!.standing);
-  if (to > from) return `직분이 올랐다: ${occ.label} · ${occ.ladder[to]!.label}. 무리 사람들이 그 일을 맡길 때 이 사람을 먼저 찾는다.`;
-  if (to < from) return `직분에서 밀려났다: ${occ.label} · ${occ.ladder[to]!.label}.`;
   return null;
 }

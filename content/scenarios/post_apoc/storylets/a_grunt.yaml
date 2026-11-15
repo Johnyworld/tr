@@ -1,4 +1,4 @@
-# 하급 전투원 스토리렛 초안 (10단계, 기획서 10.3). 12단계에서 늘리고 다듬는다
+# 분대원 스토리렛 초안 (10단계, 기획서 10.3). 12단계에서 늘리고 다듬는다
 # - when: 조건 (모두 맞아야 한다). cast: 배역 (조건에 맞는 NPC 중 하나를 고른다)
 # - setup·ai_direction·label·fact의 {배역} {zone} {scarce}는 세계 상태로 채운다. 조사는 {friend:이/가}
 # - 효과는 코드가 적용한다: set_flag, relation, belief, merit, give_item, clock, faction_morale, deed

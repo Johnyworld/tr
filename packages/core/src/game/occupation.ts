@@ -17,19 +17,18 @@ export function occupationTag(o: Occupation): string {
   return o.storylet_tag ?? `occ_${o.id}`;
 }
 
-/** 평판으로 오른 사다리의 칸 (0부터) */
-export function occupationStep(o: Occupation, standing: number): number {
-  let step = 0;
-  o.ladder.forEach((rung, i) => {
-    if (standing >= rung.standing) step = i;
-  });
-  return step;
+/**
+ * 이 사람이 직분 안에서 오른 칸 (이야기 조건 occupation_step_gte). 직분에는 사다리가 없고 계급이 곧 사다리다 (12-82, 12-83):
+ * 첫 진급 전의 계급(promotion.from, 분대원)과 그 아래·같은 단계(주민)가 0, 분대장 1, 간부 2
+ */
+export function careerStep(content: Content, c: Pick<Character, "occupation" | "rank">): number {
+  if (!occupationOf(content, c)) return 0;
+  const ladder = content.scenario.rank_ladder;
+  const base = ladder.find((r) => r.id === content.scenario.promotion.from)?.level ?? 0;
+  return Math.max(0, (ladder.find((r) => r.id === c.rank)?.level ?? base) - base);
 }
 
-/** "요리사 · 부엌 반장" */
+/** 직분 이름 ("요리사") */
 export function occupationTitle(content: Content, c: Pick<Character, "occupation"> | undefined): string | null {
-  const o = occupationOf(content, c);
-  if (!o) return null;
-  const rung = o.ladder[occupationStep(o, c!.occupation!.standing)]!;
-  return rung.label === o.label ? o.label : `${o.label} · ${rung.label}`;
+  return occupationOf(content, c)?.label ?? null;
 }

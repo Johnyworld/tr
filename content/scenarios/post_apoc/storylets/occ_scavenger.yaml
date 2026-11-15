@@ -1,15 +1,15 @@
-# 수색꾼 직분 이야기 (기획서 12.6). tags: [occ_scavenger]. 무리를 가리지 않는다 (무소속 수색꾼도)
+# 수색대원 직분 이야기 (기획서 12.6). tags: [occ_scavenger]. 무리를 가리지 않는다 (무소속 수색대원도)
 # 찾은 물건의 양은 효과(give_item, faction_resource)와 판정으로만 정한다. 무엇이 무너지고 누가 다치는지도 마찬가지
 # 플래그 사슬
-#   - 먼저 온 다른 무리 수색꾼: occ_sc_rival_crew (반복)
+#   - 먼저 온 다른 무리 수색대원: occ_sc_rival_crew (반복)
 #   - 무너진 바닥: occ_sc_pinned_mate (동료를 두고 나올지)
 #   - 찾은 것을 낼지 숨길지: occ_sc_sealed_case(occ_sc_case_hidden / occ_sc_skimmed) → occ_sc_skim_witness
-#   - 길잡이: occ_sc_guide_refugees
-#   - 수색대장: occ_sc_deep_run_pick(occ_sc_took_vet / occ_sc_took_green / occ_sc_went_alone) → occ_sc_deep_run
+#   - 누구나: occ_sc_guide_refugees
+#   - 분대장부터: occ_sc_deep_run_pick(occ_sc_took_vet / occ_sc_took_green / occ_sc_went_alone) → occ_sc_deep_run
 #   - 붉은연합 갈래: occ_sc_red_quota (할당량)
 #   - 무소속: occ_sc_dead_scav_pack(occ_sc_letter_carried) → occ_sc_letter_delivered
 
-# ── 먼저 온 다른 무리 수색꾼 ─────────────────────────────
+# ── 먼저 온 다른 무리 수색대원 ─────────────────────────────
 
 - id: occ_sc_rival_crew
   title: 먼저 그어진 표시
@@ -203,7 +203,7 @@
     무너진 벽장 안쪽, 천장 판 사이에 쇠 상자 하나가 끼어 있다. 붕괴 전 병원 이름이 찍혀 있고 고무 패킹이 아직 말랑하다. 흔들어도 소리가 나지 않는다. 꽉 찼다는 뜻이다.
     주변에 아무도 없다. 돌아가면 창고 앞에서 찾은 것을 내놓고 장부에 적는다.
   ai_direction: >-
-    상자 안은 붕대와 알약이다. 무리 창고에 넣으면 큰 몫이다(양은 효과가 정했다). 혼자 가지면 아무도 모를 수도 있다. 다만 수색꾼끼리는 누가 무엇을 들고 나오는지 서로 눈여겨본다.
+    상자 안은 붕대와 알약이다. 무리 창고에 넣으면 큰 몫이다(양은 효과가 정했다). 혼자 가지면 아무도 모를 수도 있다. 다만 수색대원끼리는 누가 무엇을 들고 나오는지 서로 눈여겨본다.
     무리의 규칙(남의 몫에 손대는 것, 짐을 빼돌리는 것)이 얼마나 무거운지는 culture를 따른다.
   choices:
     - id: turn_in
@@ -282,7 +282,7 @@
           - merit: -1
           - relation: { who: witness, axis: trust, delta: -2 }
           - deed: { summary: 수색에서 찾은 약을 빼돌린 것이 동료의 입으로 퍼졌다, tags: [theft, deceit], severity: 2, privacy: public }
-          - belief: { fact: "{witness}가 다음 날 아침 식사 자리에서 말을 흘렸다. 수색꾼들이 내 짐을 보는 눈이 달라졌다", source: seen }
+          - belief: { fact: "{witness}가 다음 날 아침 식사 자리에서 말을 흘렸다. 수색대원들이 내 짐을 보는 눈이 달라졌다", source: seen }
     - id: confess
       label: 같이 상관에게 가서 털어놓자고 한다
       when: { cast: [boss] }
@@ -297,7 +297,7 @@
         - deed: { summary: 수색에서 빼돌린 약을 스스로 털어놓고 창고에 돌려놓았다, tags: [honesty], severity: 1, privacy: semi_private }
         - belief: { fact: "상관에게 빼돌린 약 이야기를 털어놓았다. 벌은 받았지만 {witness}가 내 편을 들어 주었다", source: seen }
 
-# ── 길잡이 ──────────────────────────────────────────────
+# ── 길 아는 사람 ──────────────────────────────────────────────
 
 - id: occ_sc_guide_refugees
   title: 길을 아는 사람
@@ -307,7 +307,6 @@
   when:
     zones: [old_town, hospital_ruins, riverside]
     segments: [morning, day]
-    occupation_step_gte: 1
   cast:
     lead: { extra: refugee, label: 보따리를 진 피난민, keep: occ_sc_guided }
   setup: >-
@@ -340,7 +339,7 @@
         - relation: { who: lead, axis: trust, delta: 1 }
         - belief: { fact: "피난민들에게 진료소 가는 길을 흙바닥에 그려 주었다. 그들이 닿았는지는 모른다", source: seen }
 
-# ── 수색대장: 누구를 데려갈지 ───────────────────────────
+# ── 분대장: 누구를 데려갈지 ───────────────────────────
 
 - id: occ_sc_deep_run_pick
   title: 깊은 수색의 명단
@@ -349,14 +348,14 @@
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
     zone_owner: [own]
     segments: [evening]
-    occupation_step_gte: 2
+    occupation_step_gte: 1
     flags_none: [occ_sc_run_planned]
   cast:
     boss: { commander: true, enter: false }
     vet: { faction: own, ranks: [grunt, staff, squad_leader], known: true, trust_gte: 0, keep: occ_sc_vet }
     green: { faction: own, ranks: [grunt], keep: occ_sc_green }
   setup: >-
-    시립병원 지하 약제실까지 내려가는 깊은 수색. 수색대장인 당신이 명단을 정한다. 둘을 데려가면 서로 등을 볼 수 있고, 하나면 덜 들킨다.
+    시립병원 지하 약제실까지 내려가는 깊은 수색. 분대장인 당신이 명단을 정한다. 둘을 데려가면 서로 등을 볼 수 있고, 하나면 덜 들킨다.
     {vet:은/는} 말없이 장비를 손질하고 있다. 그 옆에서 {green:이/가} 당신을 따라다니며 조른다. "저도 데려가 주세요. 배워야 언젠가 혼자 가죠."
   ai_direction: >-
     {vet:은/는} 손이 빠르고 겁이 없지만, 지난 수색에서 동료를 잃은 뒤로 지하에 들어가면 숨이 가빠진다 (본인은 말하지 않는다). {green:은/는} 서툴지만 눈이 밝다.
@@ -424,7 +423,7 @@
           - standing: 2
           - faction_resource: { faction: own, resource: medicine, delta: 8 }
           - relation: { who: vet, axis: trust, delta: 2 }
-          - deed: { summary: 수색대장으로 시립병원 약제실까지 내려가 약을 건져 왔다, tags: [bravery, diligence], severity: 2, privacy: public }
+          - deed: { summary: 분대장으로 시립병원 약제실까지 내려가 약을 건져 왔다, tags: [bravery, diligence], severity: 2, privacy: public }
           - belief: { fact: "시립병원 약제실 안쪽 선반을 털어 왔다. 계단에서 {vet}의 숨이 가빠졌지만 끝까지 내 등을 지켰다", source: seen }
         partial:
           - set_flag: occ_sc_run_done
@@ -490,7 +489,7 @@
       effects:
         - set_flag: occ_sc_run_done
         - standing: -1
-        - belief: { fact: "약제실 계단에서 돌아섰다. 살아서 돌아온 것도 수색대장의 일이다. 창고는 그렇게 생각하지 않는다", source: seen }
+        - belief: { fact: "약제실 계단에서 돌아섰다. 살아서 돌아온 것도 분대장의 일이다. 창고는 그렇게 생각하지 않는다", source: seen }
 
 # ── 붉은연합 갈래: 할당량 ───────────────────────────────
 
@@ -510,7 +509,7 @@
     해가 넘어가는데 자루가 반도 안 찼다. 오늘 할당을 못 채우면 조 전체의 배급이 깎인다. 점호까지 얼마 안 남았다.
     무너진 담 밑에서 {beggar:이/가} 자루를 품에 안고 웅크린다. 자루 안에서 깡통끼리 부딪는 소리가 난다.
   ai_direction: >-
-    붉은연합은 할당량으로 굴러간다. 못 채우면 조 전체가 배급을 깎이고, 그 탓은 수색꾼에게 온다. 떠돌이의 자루에는 그가 오늘 하루 종일 주운 것이 들었다.
+    붉은연합은 할당량으로 굴러간다. 못 채우면 조 전체가 배급을 깎이고, 그 탓은 수색대원에게 온다. 떠돌이의 자루에는 그가 오늘 하루 종일 주운 것이 들었다.
     빼앗으면 그는 굶는다 (죽지는 않는다, 이야기는 사람을 죽이지 않는다). 숫자를 속이면 규율반의 장부와 맞춰 볼 때 판정으로 갈린다.
   choices:
     - id: rob

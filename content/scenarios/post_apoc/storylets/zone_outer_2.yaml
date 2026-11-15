@@ -164,7 +164,7 @@
   when:
     zones: [cathedral]
     segments: [evening, night]
-    occupations: [none, soldier, cook, carpenter, trader, medic, mechanic, scavenger]
+    occupations_not: [preacher]
     day_gte: 3
     flags_all: [zo2_ca_met]
     flags_none: [zo2_ca_informer_known]

@@ -7,7 +7,7 @@ describe("조사", () => {
     expect(josa("박만수", "은/는")).toBe("박만수는");
     expect(josa("윤채원", "이/가")).toBe("윤채원이");
     expect(josa("분대장", "으로/로")).toBe("분대장으로");
-    expect(josa("하급 전투원", "으로/로")).toBe("하급 전투원으로");
+    expect(josa("분대원", "으로/로")).toBe("분대원으로");
     expect(josa("밤", "으로/로")).toBe("밤으로");
     expect(josa("저녁", "으로/로")).toBe("저녁으로");
     expect(josa("새벽", "으로/로")).toBe("새벽으로");

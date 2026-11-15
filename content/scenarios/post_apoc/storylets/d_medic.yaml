@@ -1,4 +1,4 @@
-# 하얀매 수습 의무병 스토리렛. 형식은 a_grunt.yaml 머리말 참고
+# 하얀매 수비대원 스토리렛 (12-84, 예전 수습 의무병. 진료소 일도 거드는 수비대원). 형식은 a_grunt.yaml 머리말 참고
 # 갈래:
 #   약 도둑: d_count_short → (d_theft_traced) d_back_door → d_theft_exposed: d_verdict / d_bribed: d_officer_errand
 #   긁힌 동기: d_sori_wrist → d_sori_secret: d_sori_fever / d_sori_quarantined: d_quarantine_door
@@ -86,7 +86,7 @@
           - belief: { fact: "도상필은 상자를 놓지 않고, 못 본 걸로 하면 다음에 몫을 챙겨 주겠다고 했다", source: seen }
         miss:
           - relation: { who: sangpil, axis: trust, delta: -2 }
-          - belief: { fact: "도상필이 웃으며 말했다: 수습이 간부 일을 캐묻는 건 하얀매에서 처음 보네요", source: seen }
+          - belief: { fact: "도상필이 웃으며 말했다: 수비대원이 간부 일을 캐묻는 건 하얀매에서 처음 보네요", source: seen }
     - id: wake_head
       label: 수간호사를 깨우러 간다
       effects:
@@ -113,7 +113,7 @@
     boss: { ids: [d_eunyoung] }
     sangpil: { ids: [d_sangpil], enter: false }
   setup: "{boss:이/가} 약제실 장부를 펼친 책상 너머에서 안경을 고쳐 쓴다. \"앉으세요. {sangpil} 일, 처음부터 본 대로만 말해 주세요. 들은 것 말고.\""
-  ai_direction: 서은영은 이미 대강 안다. 도상필을 내치면 다른 무리와의 거래 줄이 끊기고, 감싸면 하얀매 안의 규칙이 무너진다. 수습의 증언이 얼마나 단단한지 따진다. 숫자는 말하지 않는다.
+  ai_direction: 서은영은 이미 대강 안다. 도상필을 내치면 다른 무리와의 거래 줄이 끊기고, 감싸면 하얀매 안의 규칙이 무너진다. 수비대원의 증언이 얼마나 단단한지 따진다. 숫자는 말하지 않는다.
   choices:
     - id: testify
       label: 본 것을 차근차근 증언한다
@@ -154,8 +154,8 @@
     flags_none: [d_errand_done]
   cast:
     sangpil: { ids: [d_sangpil] }
-  setup: "{sangpil:이/가} 수습 숙소 문간에 기대어 기름종이 꾸러미를 내민다. \"선생님, 내일 장터 가는 길에 이것 좀. 금니 박힌 상인한테 주면 됩니다. 수고비는 넉넉히.\""
-  ai_direction: 꾸러미에는 진료소 항생제가 들었다. 이 일을 하면 수습도 공범이 된다. 거절하면 도상필은 은근히 협박한다(수습도 이미 받았으니). 숫자는 말하지 않는다.
+  setup: "{sangpil:이/가} 수비대 숙소 문간에 기대어 기름종이 꾸러미를 내민다. \"선생님, 내일 장터 가는 길에 이것 좀. 금니 박힌 상인한테 주면 됩니다. 수고비는 넉넉히.\""
+  ai_direction: 꾸러미에는 진료소 항생제가 들었다. 이 일을 하면 수비대원도 공범이 된다. 거절하면 도상필은 은근히 협박한다(수비대원도 이미 받았으니). 숫자는 말하지 않는다.
   choices:
     - id: carry
       label: 꾸러미를 받아 든다
@@ -340,7 +340,7 @@
     sori: { ids: [d_sori], enter: false }
     head: { commander: true, enter: false }
   setup: 격리실 당직을 서는 밤. 철문 너머에서 {sori:이/가} 손톱으로 문을 긁는다. "야, 거기 있지. 나 열 없어. 진짜야. 문 좀 열어 줘. 여기 너무 추워."
-  ai_direction: 임소리는 정말로 열이 없을 수도 있다. 문을 열지 말지는 수습이 정할 일이 아니라고 {head:은/는} 말해 두었다. 이 장면은 {head}의 비밀(붕괴 첫 달, 병동 문을 밖에서 잠근 일)과 겹친다. 신뢰가 깊으면 수간호사가 그 이야기를 꺼낼 계기가 된다.
+  ai_direction: 임소리는 정말로 열이 없을 수도 있다. 문을 열지 말지는 수비대원이 정할 일이 아니라고 {head:은/는} 말해 두었다. 이 장면은 {head}의 비밀(붕괴 첫 달, 병동 문을 밖에서 잠근 일)과 겹친다. 신뢰가 깊으면 수간호사가 그 이야기를 꺼낼 계기가 된다.
   choices:
     - id: talk_through
       label: 문 앞에 앉아 밤새 말을 걸어 준다
@@ -517,8 +517,8 @@
   cast:
     envoy: { ids: [c_gyeongsu] }
     guard: { ids: [d_dojin], enter: false }
-  setup: 장교 외투를 입은 {envoy:이/가} 장갑 낀 손을 정문 쇠창살에 얹고 기다린다. 대표는 자리에 없다. "수습이라. 괜찮아. 말만 전해 주면 돼. 겨울 동안 약은 우리만 산다. 값은 두 배로 쳐 주지. 싫다면, 뭐, 겨울은 길고."
-  ai_direction: 붉은연합은 동쪽 공세를 앞두고 하얀매의 약을 독점하려 한다. 마경수는 협박할수록 상냥해진다. 수습의 대답은 대표에게 전해지고 붉은연합도 기억한다. 숫자는 말하지 않는다.
+  setup: 장교 외투를 입은 {envoy:이/가} 장갑 낀 손을 정문 쇠창살에 얹고 기다린다. 대표는 자리에 없다. "수비대원이라. 괜찮아. 말만 전해 주면 돼. 겨울 동안 약은 우리만 산다. 값은 두 배로 쳐 주지. 싫다면, 뭐, 겨울은 길고."
+  ai_direction: 붉은연합은 동쪽 공세를 앞두고 하얀매의 약을 독점하려 한다. 마경수는 협박할수록 상냥해진다. 수비대원의 대답은 대표에게 전해지고 붉은연합도 기억한다. 숫자는 말하지 않는다.
   choices:
     - id: relay
       label: 그대로 대표에게 전하겠다고만 한다
@@ -538,7 +538,7 @@
         partial:
           - clock: { id: d_lean, delta: -1 }
           - relation: { who: envoy, axis: affection, delta: -1 }
-          - belief: { fact: "붉은연합 간부는 수습의 대답을 듣고 웃으며 돌아갔다. 웃음이 오래 남았다", source: seen }
+          - belief: { fact: "붉은연합 간부는 수비대원의 대답을 듣고 웃으며 돌아갔다. 웃음이 오래 남았다", source: seen }
         miss:
           - clock: { id: d_lean, delta: 1 }
           - relation: { who: envoy, axis: affection, delta: -2 }
@@ -567,7 +567,7 @@
   cast:
     courier: { ids: [e_yuri] }
     nurse: { ids: [a_chaewon], enter: false }
-  setup: "빨간 털모자를 쓴 심부름꾼이 정문 옆에서 손짓한다. 청솔형제단 의무실의 {nurse:이/가} 보낸 쪽지라며 내민다. \"대표님 말고, 진료소 수습한테 주랬어요.\" 쪽지에는 항생제 한 줄만 보내 달라고, 아이가 열이 난다고 적혀 있다."
+  setup: "빨간 털모자를 쓴 심부름꾼이 정문 옆에서 손짓한다. 청솔형제단 의무실의 {nurse:이/가} 보낸 쪽지라며 내민다. \"대표님 말고, 진료소 일 거드는 수비대원한테 주랬어요.\" 쪽지에는 항생제 한 줄만 보내 달라고, 아이가 열이 난다고 적혀 있다."
   ai_direction: 윤채원은 예전에 하얀매 간호사였고, 감염된 아이를 살리려고 약을 들고 나갔다가 쫓겨났다. 하얀매 사람들은 그 일을 함부로 입에 올리지 않는다. 대표 서은영은 그 이름에 민감하다. {courier:은/는} 담배 한 개비를 바란다.
   choices:
     - id: send_own

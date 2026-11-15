@@ -9,7 +9,7 @@ import { describePlayerState } from "../engine/context.ts";
 import { createSeededRng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
-import { answerNewGame, describeNewGameStep, newGameDraft, newGameStep } from "./newGame.ts";
+import { answerNewGame, backNewGame, describeNewGameStep, newGameDraft, newGameStep } from "./newGame.ts";
 
 /** 수위와 나이 제한 (12-57) */
 const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
@@ -22,7 +22,7 @@ describe("수위", () => {
   it("새 게임에서 시나리오 다음에 묻고, 기본은 끔이다", () => {
     const packs = new Map([[content.scenario.id, content]]);
     let d = newGameDraft();
-    for (const a of ["post_apoc", "role_a_grunt"]) {
+    for (const a of ["post_apoc", "role_a_grunt", "skip"]) {
       const r = answerNewGame(packs, d, a, createSeededRng(1));
       if (!r.ok) throw new Error(r.error);
       d = r.draft;
@@ -30,7 +30,14 @@ describe("수위", () => {
     expect(newGameStep(d)).toBe("content");
     expect(describeNewGameStep(packs, d)).toContain("성인 주제");
     const r = answerNewGame(packs, d, "on", createSeededRng(1));
-    expect(r.ok && newGameStep(r.draft)).toBe("character");
+    // 수위 다음은 서술 방식 (12-85): 소설식 / 대본식
+    expect(r.ok && newGameStep(r.draft)).toBe("dialogue");
+    if (!r.ok) return;
+    expect(answerNewGame(packs, r.draft, "모르는 방식", createSeededRng(1)).ok).toBe(false);
+    const s2 = answerNewGame(packs, r.draft, "대본식", createSeededRng(1));
+    expect(s2.ok && newGameStep(s2.draft)).toBe("character");
+    expect(s2.ok && s2.draft.options).toEqual({ mature: true, dialogue: "script" });
+    expect(s2.ok && newGameStep(backNewGame(s2.draft))).toBe("dialogue");
   });
 
   it("꺼져 있으면 성인 주제 이야기가 열리지 않고, 켜져 있어도 미성년자는 배역이 되지 않는다", () => {

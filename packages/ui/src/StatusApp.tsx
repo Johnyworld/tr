@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { SettingsButton } from "./Settings.tsx";
 import { Icon } from "./Icon.tsx";
-import { CreatedToast, NewGame } from "./NewGame.tsx";
+import { canGoBack, CreatedToast, NewGame, newGameTitle } from "./NewGame.tsx";
 import type { CreationStatus, PlayerView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
@@ -68,11 +68,14 @@ export function StatusApp() {
     };
   }, []);
 
+  // 상태 화면에서 새 게임·새 캐릭터를 고르는 중
+  const creating = !!status && !status.open && !!status.creation;
   return (
     <div className="status-page">
       <header className="header status-header">
+        {creating && canGoBack(status.creation!.view) && <BackButton disabled={status.creation!.gmWorking} />}
         <div className="hdr-left">
-          <h1 className="hdr-title">{status?.scenarioName ?? "TRPG"}</h1>
+          <h1 className="hdr-title">{creating ? newGameTitle(status.creation!.view) : (status?.scenarioName ?? "TRPG")}</h1>
           {status?.open && <HeaderDate player={status.player} />}
         </div>
         {status?.open && status.player.clock?.minute !== undefined && <SunDial clock={status.player.clock} />}
@@ -81,7 +84,8 @@ export function StatusApp() {
             <span className="live-dot" aria-hidden="true" />
             {connected ? "연결됨" : "연결 끊김"}
           </span>
-          <SettingsButton enabled={connected && status?.open === true} />
+          {/* 고르는 동안은 설정 대신 "채팅으로" (이 단계부터 채팅에서 GM과 이어 고른다) */}
+          {creating ? <ChatHandoffButton /> : <SettingsButton enabled={connected && status?.open === true} />}
         </div>
       </header>
       {!status ? (
@@ -162,5 +166,44 @@ function SunDial({ clock }: { clock: NonNullable<PlayerView["clock"]> }) {
       </span>
       <span className="dial-time">{clock.hhmm ?? clock.time}</span>
     </div>
+  );
+}
+
+/** 새 게임 고르기 중 머리 오른쪽: 이 단계부터 채팅에서 GM과 이어 고른다 */
+function ChatHandoffButton() {
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      className="hdr-chat"
+      disabled={busy}
+      title="이 단계부터 채팅에서 GM과 이어서 고릅니다"
+      onClick={() => {
+        setBusy(true);
+        void fetch("/api/creation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat: true }) }).finally(() => setBusy(false));
+      }}
+    >
+      채팅으로
+    </button>
+  );
+}
+
+/** 새 게임 고르기 중 머리 왼쪽: 한 단계 뒤로 */
+function BackButton({ disabled }: { disabled: boolean }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      className="hdr-back"
+      aria-label="뒤로"
+      title="한 단계 뒤로"
+      disabled={busy || disabled}
+      onClick={() => {
+        setBusy(true);
+        void fetch("/api/creation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ back: true }) }).finally(() => setBusy(false));
+      }}
+    >
+      <Icon name="arrow-left" size={16} />
+    </button>
   );
 }

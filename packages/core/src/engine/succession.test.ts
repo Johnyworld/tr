@@ -51,7 +51,7 @@ describe("사망과 연대기", () => {
     const [record] = world.state().chronicle;
     expect(record).toMatchObject({ characterId: "player", name: "신병", factionId: "faction_a", rank: "grunt", cause: "총상", epitaph: null });
     expect(record!.deeds).toEqual(["총격 속에서 분대장을 감쌌다"]);
-    expect(world.chronicleText()).toContain("1. 신병 · 우리 무리 하급 전투원 · 1일 생존");
+    expect(world.chronicleText()).toContain("1. 신병 · 우리 무리 분대원 · 1일 생존");
   });
 
   it("묘비명은 죽은 직후 한 번만 쓸 수 있다", () => {

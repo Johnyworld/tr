@@ -1,3 +1,4 @@
+import { rankName } from "../game/ranks.ts";
 import { occupationTitle } from "../game/occupation.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem } from "../engine/gear.ts";
 import { activeCompanions, apartCompanions, BOND_LABELS, bondOf, describeUntil } from "../game/companions.ts";
@@ -95,8 +96,10 @@ export type PlayerView = {
   }[];
   /** 직분과 그 사다리의 칸 (기획서 12.6) */
   occupationLabel: string | null;
+  /** 동기 (12-77) */
+  motive: { label: string; summary: string } | null;
   service: {
-    /** 계급 이름 (예: 하급 전투원, 분대장) */
+    /** 계급 이름 (예: 분대원, 분대장) */
     rankLabel: string;
     merit: number;
     disobedience: number;
@@ -294,9 +297,10 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     age: player.age,
     roleLabel:
       content.roles[state.roleId]?.rank === player.rank
-        ? (content.roles[state.roleId]?.label ?? rankLabel(scenario, player.rank))
-        : rankLabel(scenario, player.rank),
+        ? (content.roles[state.roleId]?.label ?? rankName(content, player.factionId, player.rank))
+        : rankName(content, player.factionId, player.rank),
     occupationLabel: occupationTitle(content, player),
+    motive: player.motive ? { label: player.motive.label, summary: player.motive.summary } : null,
     clock: clockView(state, content),
     timeLabel: [formatTime(state.time), seasonLabel(seasonAt(content.scenario, state.time)), weatherNow(content.scenario, state)?.label ?? ""]
       .filter(Boolean)
@@ -334,8 +338,8 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       return {
         id,
         name: headingAs(state, content, player.id, id),
-        // 동물은 계급이 없다 (호칭에 이미 "동물")
-        rankLabel: npc.extra && content.extras[npc.extra.template]?.animal ? "" : rankLabel(scenario, npc.rank),
+        // 동물은 계급이 없다 (호칭에 이미 "동물"). 연고(가족·길동무)도 계급 대신 이름 옆의 부르는 말로 (떠돌이 계급 "혼자"를 붙이지 않는다)
+        rankLabel: (npc.extra && content.extras[npc.extra.template]?.animal) || bondOf(state, content, id)?.kind === "kin" ? "" : rankName(content, npc.factionId, npc.rank),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
         conditionLabel: npc.dead ? "사망" : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : changed(npc) ? changedConditions(npc) : null,
         states: npc.dead ? [] : symptomViews(scenario, npc),
@@ -350,7 +354,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       // 동행이 먼저, 죽은 사람은 맨 아래
       .sort((a, b) => deadLast(a, b) || Number(b.bond !== null) - Number(a.bond !== null)),
     service: {
-      rankLabel: rankLabel(scenario, player.rank),
+      rankLabel: rankName(content, player.factionId, player.rank),
       merit: player.merit,
       disobedience: player.disobedience,
       daysServed: daysServed(state.time, state.runStartedAt),
@@ -404,7 +408,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         if (!mine) return null;
         const row = (id: string, doing: string) => ({ id, name: playerCalls(state, content, id), doing, report: null, states: symptomViews(scenario, state.characters[id]!) });
         const where = (id: string) => (state.scene.present.includes(id) ? "곁에 있음" : "");
-        return [...(mine.leader ? [row(mine.leader, rankLabel(scenario, state.characters[mine.leader]!.rank))] : []), ...mine.mates.map((id) => row(id, where(id)))];
+        return [...(mine.leader ? [row(mine.leader, rankName(content, state.characters[mine.leader]!.factionId, state.characters[mine.leader]!.rank))] : []), ...mine.mates.map((id) => row(id, where(id)))];
       }
       return members.map((id) => {
         const o = state.squadOrders[id];

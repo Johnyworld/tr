@@ -132,6 +132,10 @@ export function createCharacterSchema(s: Scenario) {
     attraction: z.array(z.string()).nullable().default(null),
     /** 직분과 그 일의 평판 (기획서 12.6). 직분이 없으면 null */
     occupation: z.strictObject({ id: z.string(), standing: z.number().int().default(0) }).nullable().default(null),
+    /** 과거 배경: 붕괴 전에 하던 일 (12-84). 없으면 null */
+    past: z.strictObject({ id: z.string(), label: z.string(), summary: z.string() }).nullable().default(null),
+    /** 이 사람을 움직이는 것 (12-77, 새 게임에서 고른 동기). 없으면 null */
+    motive: z.strictObject({ id: z.string(), label: z.string(), summary: z.string() }).nullable().default(null),
     /** 명령 불복종 횟수 (임무 포기·기한 초과) */
     disobedience: z.number().int().nonnegative().default(0),
     inventory: inventorySchema,

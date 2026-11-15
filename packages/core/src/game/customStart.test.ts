@@ -4,15 +4,12 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadContent } from "../content/loader.ts";
-import type { Content } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
 import { buildCustomRole, checkCustomStart, joinRole, type CustomStartInput } from "./customStart.ts";
-import { answerNewGame, describeNewGameStep, newGameDraft, newGameStep, setCustomStart, type NewGameDraft } from "./newGame.ts";
 import { CUSTOM_ROLE_ID } from "./state.ts";
 
 const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
-const packs = new Map<string, Content>([[content.scenario.id, content]]);
 
 const base: CustomStartInput = {
   faction: "faction_a",
@@ -56,7 +53,7 @@ describe("자유 시나리오: 코드가 정하는 엔진 값", () => {
     expect(officer).toMatchObject({ id: CUSTOM_ROLE_ID, faction: "faction_a", rank: "officer", commander: "a_seonghee", start_location: "a_base" });
     expect(officer.known_npcs).toContain("a_taeho");
     expect(officer.missions.length).toBeGreaterThan(0);
-    expect(officer.beliefs_preset).toBe("a_officer"); // 같은 계급(참모) 시나리오의 시작 지식. 하급 전투원의 것은 주지 않는다
+    expect(officer.beliefs_preset).toBe("a_officer"); // 같은 계급(참모) 시나리오의 시작 지식. 분대원의 것은 주지 않는다
     expect(officer.start_inventory).toEqual(["ledger", "radio", "water_bottle", "canned_food"]);
     expect(buildCustomRole(content, { ...base, rank: "squad_leader" }).commander).toBe("a_doyun");
     const grunt = buildCustomRole(content, { ...base, rank: "grunt" });
@@ -68,40 +65,6 @@ describe("자유 시나리오: 코드가 정하는 엔진 값", () => {
     const loner = buildCustomRole(content, { ...base, faction: null, rank: "loner", location: "old_town" });
     expect(loner).toMatchObject({ faction: "", known_npcs: [], missions: [] });
     expect(loner.commander).toBeUndefined();
-  });
-});
-
-function run(steps: (string | CustomStartInput)[]) {
-  const rng = createSeededRng(4);
-  let d: NewGameDraft = newGameDraft();
-  for (const step of steps) {
-    const r = typeof step === "string" ? answerNewGame(packs, d, step, rng) : setCustomStart(packs, d, step);
-    if (!r.ok) throw new Error(`${JSON.stringify(step)}: ${r.error}`);
-    if (r.done) return r;
-    d = r.draft;
-  }
-  return { ok: true as const, done: false as const, draft: d };
-}
-
-describe("자유 시나리오: 새 게임 흐름", () => {
-  it("직접 쓰기 → 글 → 옮기기(코드 검증) → 확인 → 캐릭터 만들기", () => {
-    expect(describeNewGameStep(packs, run(["post_apoc"]).draft)).toContain("직접 만들기");
-    const story = run(["post_apoc", "custom"]).draft;
-    expect(newGameStep(story)).toBe("custom_story");
-    const setup = run(["post_apoc", "custom", "나는 청솔형제단의 참모다. 마흔 하나."]).draft;
-    expect(newGameStep(setup)).toBe("custom_setup");
-    expect(describeNewGameStep(packs, setup)).toContain("나는 청솔형제단의 참모다");
-    expect(setCustomStart(packs, setup, { ...base, rank: "leader" }).ok).toBe(false);
-    const confirm = run(["post_apoc", "custom", "참모", base]).draft;
-    expect(describeNewGameStep(packs, confirm)).toContain("상관: 최선희");
-    const remap = run(["post_apoc", "custom", "참모", base, "remap"]).draft;
-    expect(newGameStep(remap)).toBe("custom_setup");
-    const name = run(["post_apoc", "custom", "참모", base, "confirm", "off"]).draft;
-    expect(newGameStep(name)).toBe("character");
-    expect(describeNewGameStep(packs, name)).toContain("지도 위에서 고개를 든다");
-    const done = run(["post_apoc", "custom", "참모", base, "confirm", "off", "한서진", "female", "random", "none", "start"]);
-    expect(done.done).toBe(true);
-    if (done.done) expect(done.custom).toMatchObject({ role: { id: "custom", rank: "officer" }, background: base.background });
   });
 });
 

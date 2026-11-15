@@ -26,6 +26,8 @@ function tempContent(files: Record<string, string>) {
   delete scenario.gear;
   delete scenario.crafting;
   delete scenario.occupations;
+  // 과거 배경도 실제 아이템을 참조한다
+  delete (scenario.creation as Record<string, unknown>).pasts;
   writeFileSync(join(dir, "scenario.yaml"), stringify(scenario));
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(join(dir, path, ".."), { recursive: true });

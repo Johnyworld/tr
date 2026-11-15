@@ -20,8 +20,8 @@ scenario:
     이야기는 어느 아침, 사무동 위원회실에서 시작한다.
 age: 44
 # 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
-# 시작 훈련: 지휘(전략)와 위협. 공단 시절 작업반장이었다. 말보다 숫자와 목소리로 사람을 움직였다
-start_skills: { tactics: 1, intimidate: 1 }
+# 스킬은 시나리오가 아니라 과거 배경에서 온다 (12-84)
+start_skills: {}
 start_inventory: [ledger, notebook, pencil, c_armband, pistol, pistol_rounds, pistol_rounds, coat, radio]
 start_location: c_base
 access: [ration, mission_board]

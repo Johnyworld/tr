@@ -148,7 +148,7 @@ export function addStartCompanions(ctx: ToolContext, role: RoleContent | undefin
     const state = store.getState();
     const id = `ex_${state.nextExtraNo}`;
     const usedNames = new Set(Object.values(state.characters).map((c) => c.name));
-    const character = createExtraCharacter(content, template, { id, label: sc.label, zone: state.playerZone, time: state.time, usedNames }, rng);
+    const character = createExtraCharacter(content, template, { id, label: sc.label, zone: state.playerZone, time: state.time, usedNames, name: sc.name, age: sc.age, gender: sc.gender }, rng);
     store.append({ type: "extra_spawned", character });
     // 연고는 서로 이름을 안다
     if (!template.animal) {

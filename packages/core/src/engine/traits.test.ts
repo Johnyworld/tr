@@ -17,6 +17,9 @@ function content(): Content {
     points: 4,
     cost: { "-1": -1, "0": 0, "1": 1, "2": 3 },
     max_low: 2,
+    pasts: [],
+    rank_skills: {},
+    rank_min_age: {},
     genders: [{ id: "male", label: "남성" }, { id: "female", label: "여성" }],
     traits: { max_positive: 3, max_negative: 3, max_personality: 2 },
   };

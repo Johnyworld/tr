@@ -24,7 +24,7 @@ function withMission(roleId: string, template: string) {
 }
 
 describe("무기고 (기획서 4.8)", () => {
-  it("부엌칼만 든 하급 전투원이 작전을 받으면 낡은 소총과 소총탄을 받아 손에 든다. 보고하면 반납하고 칼을 다시 든다", () => {
+  it("부엌칼만 든 분대원이 작전을 받으면 낡은 소총과 소총탄을 받아 손에 든다. 보고하면 반납하고 칼을 다시 든다", () => {
     const { w, text } = withMission("role_a_grunt", "front_recon");
     expect(text).toContain("무기고에서");
     const p = w.state().characters.player!;

@@ -380,6 +380,7 @@ function SubLine({ player }: { player: PlayerView }) {
   );
   const faction: ReactNode = factionTip ? <InfoTip key="faction" label={player.faction?.name ?? "무소속"} tip={factionTip} /> : (player.faction?.name ?? "무소속");
   const parts: ReactNode[] = player.occupationLabel ? [faction, <InfoTip key="job" label={player.occupationLabel} tip={tip} />] : [faction];
+  if (player.motive) parts.push(<InfoTip key="motive" label={player.motive.label} tip={<div>동기: {player.motive.summary}</div>} />);
   for (const x of [player.age ? `${player.age}세` : null, player.genderLabel]) if (x) parts.push(x);
   return (
     <>

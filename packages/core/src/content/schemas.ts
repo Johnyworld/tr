@@ -83,7 +83,7 @@ export function createContentSchemas(s: Scenario) {
     /** 새 게임의 시나리오 고르기에 보이는 것 (월드를 고른 뒤). 없으면 label만 */
     scenario: z
       .strictObject({
-        /** 시나리오 이름 (예: 청솔형제단의 하급 전투원) */
+        /** 시나리오 이름 (예: 청솔형제단의 수색대원) */
         title: z.string().min(1),
         /** 고를 때 보여 주는 두세 문장 */
         pitch: z.string().min(1),
@@ -105,7 +105,17 @@ export function createContentSchemas(s: Scenario) {
     commander: contentIdSchema.optional(),
     /** 처음부터 함께 다니는 사람·동물 (엑스트라 틀, 기획서 7.9). 떠돌이의 가족 등. kind가 없으면 동물은 animal, 사람은 kin */
     start_companions: z
-      .array(z.strictObject({ template: contentIdSchema, label: z.string().min(1).max(20), kind: z.enum(["animal", "kin", "purpose"]).optional() }))
+      .array(
+        z.strictObject({
+          template: contentIdSchema,
+          label: z.string().min(1).max(20),
+          kind: z.enum(["animal", "kin", "purpose"]).optional(),
+          /** 플레이어가 정한 사람 (떠돌이의 소규모 무리, 12-77). 없으면 틀에서 무작위 */
+          name: z.string().min(1).optional(),
+          age: z.number().int().min(0).optional(),
+          gender: z.string().optional(),
+        }),
+      )
       .optional(),
     /** 주인공 밑의 분대원 (NPC id, 기획서 9.11). 분대 명령(squad_order)을 받는다 */
     squad: z.array(contentIdSchema).optional(),
@@ -262,6 +272,8 @@ export function createContentSchemas(s: Scenario) {
      * ammo_cost: 한 번 빌려줄 때마다 무리 창고에서 줄어드는 탄약 (모자라면 탄약 없이 무기만)
      */
     armory: z.strictObject({ items: z.record(contentIdSchema, z.number().int().min(1)), ammo_cost: z.number().int().min(0).default(0) }).optional(),
+    /** 이 무리에서 부르는 계급 이름 (12-84, 예: grunt → 약탈조원). 없는 계급은 월드의 이름 */
+    rank_labels: z.record(z.string(), z.string().min(1)).default({}),
     /** false면 이 무리로 시작할 수 없다 (처음 시나리오·자유 시나리오에 없다. 해금된 시나리오로만, 기획서 9.12) */
     startable: z.boolean().optional(),
     /** 공격 성향 0 ~ 3. 0이면 먼저 공격하지 않는다 */
@@ -617,6 +629,8 @@ export function createContentSchemas(s: Scenario) {
         own_people_captive: z.boolean().optional(),
         /** 플레이어의 직분 (none = 직분 없음, 기획서 12.6) */
         occupations: z.array(z.string().min(1)).optional(),
+        /** 플레이어의 직분이 이 중 어느 것도 아닐 때만 */
+        occupations_not: z.array(z.string().min(1)).optional(),
         /** 길 위의 이야기 (12-53, 태그 road): 지금 오가는 길의 한쪽 끝이 이 중 하나일 때만 */
         road_touches: z.array(contentIdSchema).optional(),
         /** 길 위의 이야기: 오가는 길의 위험(두 구역 중 높은 쪽)이 이 이상일 때만 */

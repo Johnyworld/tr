@@ -7,7 +7,7 @@ import type { Content, MissionRequirement } from "../content/schemas.ts";
 import type { Character } from "./character.ts";
 
 /**
- * 임무와 진급 (기획서 15.1: 배정 → 수행 → 보고, 명령 불복종 반영, 하급 전투원 → 분대장).
+ * 임무와 진급 (기획서 15.1: 배정 → 수행 → 보고, 명령 불복종 반영, 분대원 → 분대장).
  * 진행도는 임무를 받은 뒤의 이벤트(시간 소비, 판정)로 코드가 집계한다. AI는 보고를 요청할 뿐이다.
  */
 

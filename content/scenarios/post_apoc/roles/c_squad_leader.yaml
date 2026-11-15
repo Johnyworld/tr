@@ -4,7 +4,7 @@ id: role_c_squad_leader
 label: 붉은연합 약탈 사조장
 faction: faction_c
 rank: squad_leader
-occupation: soldier
+occupation: scavenger
 default_name: 조장
 opening_scene: 새벽, 고가도로 너머 물류창고 마당. 드럼통 불가에 조원 넷이 서 있다. 거구는 팔짱을 끼고, 앳된 조원은 완장을 만지작거리고, 늙은 조원은 털모자를 벗어 인사한다. 마른 정찰병만 당신 쪽을 보지 않는다. 창고 위 지휘소 창문에 장갑 낀 손이 보인다.
 scenario:
@@ -19,7 +19,7 @@ scenario:
     붉은연합의 규율은 군율이다. 명령을 어기면 광장에서 본보기가 되고, 할당량을 못 채운 조는 조 전체가 굶는다.
     이야기는 조장이 되고 처음 조원을 모으는 새벽, 물류창고 마당에서 시작한다.
 age: 31
-start_skills: { intimidate: 1, tactics: 1 }
+start_skills: {}
 start_inventory: [c_armband, sawn_shotgun, shells, shells, shells, radio, padded_armor]
 start_location: c_warehouse
 access: [ration, mission_board]

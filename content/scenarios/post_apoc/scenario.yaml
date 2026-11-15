@@ -69,13 +69,39 @@ creation:
     - { id: female, label: 여성 }
   # 나이: 고를 수 있는 범위 (고르지 않으면 시나리오의 나이)
   age: { min: 16, max: 65 }
+  # 계급 기본 훈련 (12-87): 그 자리에 꼭 필요한 솜씨. 과거 배경과 따로 더한다 (총을 드는 분대원, 분대에 일을 맡기는 분대장, 회의에 안을 올리는 간부)
+  rank_skills: { grunt: { shoot: 1 }, squad_leader: { tactics: 1 }, officer: { persuade: 1 } }
+  # 계급의 최소 나이 (12-87). 과거 배경의 min_age(붕괴 전에 그 일을 했을 나이, 붕괴는 몇 해 전)와 함께 나이의 아래 끝이 된다
+  rank_min_age: { squad_leader: 20, officer: 25 }
+  # 시작 스킬 (12-84): 2포인트, 스킬 하나에 +1까지. 과거 배경이 기본 배치를 준다
+  skills: { points: 2, max: 1 }
+  # 과거 배경 (12-84): 붕괴 전에 무엇을 했는지. 능력 배치(ability_array와 같은 값: +2 하나, +1 둘, -1 하나)와 스킬 기본값, 물건.
+  # 플레이어는 같은 포인트 안에서 고칠 수 있다. 무리원·떠돌이 모두 고른다 (떠돌이의 재주를 합쳤다)
+  pasts:
+    - { id: firefighter, label: 소방관, summary: 불길과 무너지는 건물 속으로 들어가던 사람, stats: { strength: 2, vitality: 1, nerve: 1, intellect: -1 }, skills: { endure: 1, fight: 1 }, items: [crowbar], min_age: 24 }
+    - { id: police, label: 경찰, summary: 순찰을 돌고 사건 현장을 보던 사람. 총을 쏴 본 적이 있다, stats: { senses: 2, nerve: 1, agility: 1, charm: -1 }, skills: { shoot: 1, sense_danger: 1 }, items: [flashlight], min_age: 24 }
+    - { id: soldier, label: 군인, summary: 붕괴 때 부대에 있었다. 명령과 사격을 몸이 기억한다, stats: { agility: 2, vitality: 1, nerve: 1, charm: -1 }, skills: { shoot: 1, tactics: 1 }, items: [binoculars], min_age: 21 }
+    - { id: doctor, label: 의사, summary: 병원에서 일했다. 약이 없어도 무엇이 사람을 죽이는지 안다, stats: { intellect: 2, senses: 1, nerve: 1, strength: -1 }, skills: { first_aid: 1, infected_lore: 1 }, items: [medkit], min_age: 30 }
+    - { id: nurse, label: 간호사, summary: 병동을 지켰다. 상처를 꿰매고 밤새 환자 곁에 있던 손, stats: { senses: 2, intellect: 1, vitality: 1, strength: -1 }, skills: { first_aid: 1, endure: 1 }, items: [bandage, cloth], min_age: 24 }
+    - { id: thief, label: 도둑, summary: 남의 문을 열고 들키지 않게 나오던 사람, stats: { agility: 2, senses: 1, nerve: 1, vitality: -1 }, skills: { stealth: 1, deceive: 1 }, items: [flashlight], min_age: 16 }
+    - { id: gangster, label: 조폭, summary: 주먹과 겁으로 먹고살았다. 사람이 언제 물러서는지 안다, stats: { strength: 2, nerve: 1, vitality: 1, intellect: -1 }, skills: { intimidate: 1, fight: 1 }, items: [arm_guards], min_age: 19 }
+    - { id: mechanic, label: 정비사, summary: 차와 기계를 고쳤다. 쇳소리만 들어도 어디가 나갔는지 안다, stats: { intellect: 2, strength: 1, agility: 1, charm: -1 }, skills: { mechanics: 1, maintenance: 1 }, items: [toolkit], min_age: 20 }
+    - { id: builder, label: 건설 노동자, summary: 현장에서 벽을 세우고 비계를 탔다, stats: { strength: 2, vitality: 1, intellect: 1, charm: -1 }, skills: { carpentry: 1, endure: 1 }, items: [carpentry_kit], min_age: 20 }
+    - { id: cook, label: 요리사, summary: 식당 주방에서 일했다. 모자란 재료로 끼니를 만든다, stats: { vitality: 2, senses: 1, charm: 1, nerve: -1 }, skills: { survival: 1, persuade: 1 }, items: [kitchen_knife, canned_food], min_age: 20 }
+    - { id: salesman, label: 영업사원, summary: 말로 물건을 팔았다. 웃는 얼굴 뒤의 셈을 읽는다, stats: { charm: 2, intellect: 1, nerve: 1, strength: -1 }, skills: { persuade: 1, deceive: 1 }, items: [cigarettes, trade_token], min_age: 23 }
+    - { id: courier, label: 배달원, summary: 오토바이로 도시 골목을 누볐다. 길과 지름길을 안다, stats: { agility: 2, senses: 1, vitality: 1, intellect: -1 }, skills: { scavenge: 1, sense_danger: 1 }, items: [moto_helmet], min_age: 19 }
+    - { id: teacher, label: 교사, summary: 아이들을 가르쳤다. 사람을 모으고 말을 듣게 하는 법을 안다, stats: { intellect: 2, charm: 1, nerve: 1, strength: -1 }, skills: { history: 1, persuade: 1 }, items: [notebook, pencil], min_age: 26 }
+    - { id: farmer, label: 농부, summary: 도시 끝에서 밭을 갈았다. 덫을 놓고 날씨를 읽는다, stats: { vitality: 2, strength: 1, senses: 1, charm: -1 }, skills: { survival: 1, endure: 1 }, items: [wire_roll, seed_packet], min_age: 18 }
+    - { id: student, label: 학생, summary: 붕괴 때 학교에 있었다. 아무거나 엮어 쓸 것을 만드는 손재주가 있다, stats: { agility: 2, intellect: 1, senses: 1, nerve: -1 }, skills: { improvise: 1, scavenge: 1 }, items: [duct_tape, scrap_metal] }
   # 트레잇 고르기: 긍정 비용 합 ≤ 부정 보상 합. 종류별 최대
   traits: { max_positive: 3, max_negative: 3, max_personality: 2 }
   # 대화로 만들 때(MCP) GM이 단계마다 장면처럼 묻도록 주는 힌트
   narration:
     name: "시작 장면 속 누군가가 이름을 묻는다 (명부나 장부를 든 사람, 문을 지키는 사람, 깨진 거울 조각에 비친 얼굴 등 그 시나리오에 맞게)"
     gender: "명부의 다음 칸. 담담하게 묻는다"
+    past: "붕괴 전의 삶. 그때 무엇을 하던 사람이었는지 떠올리게 한다"
     abilities: "이 세상을 몇 해 버텨 온 몸과 머리. 무엇이 남달랐는지 떠올리게 한다"
+    skills: "몸에 익은 일. 과거의 일과 붕괴 뒤에 배운 것"
     traits: "타고난 기질과 버릇. 무리 사람들이 당신을 뭐라고 수군거리는지로 풀어 간다"
 # 역할 권한(roles의 access)의 이름. ration(배급)·mission_board(임무)는 core가 쓰고, 나머지는 GM이 보는 특권
 access_labels:
@@ -281,18 +307,18 @@ command:
 # 자유 시나리오 (기획서 12.5): 플레이어가 쓴 시작을 이 범위 안의 부품으로 옮긴다
 custom_start:
   # 세력에 속할 때 고를 수 있는 계급. 지도부(leader)는 무리마다 한 자리뿐이라 뺀다. 참모·간부급은 officer
-  ranks: [grunt, staff, squad_leader, officer]
+  ranks: [grunt, squad_leader, officer]
   # 무소속으로 시작할 때의 계급과 장소 (누구의 땅도 아닌 곳)
   free_rank: loner
   free_locations: [old_town, riverside, hospital_ruins, cathedral, campus, mall_ruins, subway_hub]
-  # 시작 훈련 (하급 전투원의 근접전 +1, 사격 +1과 같은 무게)
+  # 시작 훈련 (분대원의 근접전 +1, 사격 +1과 같은 무게)
   skill_points: 2
   skill_max: 1
   age: { min: 16, max: 65 }
   # 배경 부품의 빚 크기 (기획서 12.6)
   debt_sizes: { small: 5, large: 15 }
   # 무소속으로 시작할 때 고를 수 있는 연고 (extras/kin.yaml, 기획서 7.9)
-  kin: [kin_young, kin_elder, kin_sibling, kin_partner, stray_dog]
+  kin: [kin_young, kin_elder, kin_sibling, kin_partner, kin_comrade, stray_dog]
   kits:
     - { id: fighter, label: 싸울 채비, description: 몸으로 부딪치는 사람, items: [machete, padded_armor, water_bottle, dry_ration] }
     - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, crossbow, bolts, bolts, kitchen_knife, water_bottle, dry_ration] }
@@ -300,6 +326,67 @@ custom_start:
     - { id: trader, label: 거래 채비, description: 말과 물건으로 사는 사람, items: [cigarettes, canned_food, water_bottle] }
     - { id: clerk, label: 장부 채비, description: 숫자와 소식을 다루는 사람, items: [ledger, radio, water_bottle, canned_food] }
     - { id: wanderer, label: 떠돌이 채비, description: 담 밖에서 버텨 온 사람, items: [blanket, pipe_spear, leather_jacket, dry_ration, fishing_kit] }
+    - { id: camp, label: 생활 채비, description: 무리 안에서 지내는 사람, items: [kitchen_knife, water_bottle, dry_ration, blanket] }
+  # 떠돌이로 시작할 때의 꾸러미 (12-77)
+  free_kit: wanderer
+  pet: stray_dog
+  # 떠돌이의 소규모 무리 (12-77): 처음 start명을 무작위로, max명까지. 관계는 주인공 기준. 부모·자식은 parent_gap살 이상 차이, 배우자는 다른 성별
+  group:
+    start: 3
+    max: 5
+    parent_gap: 18
+    relations:
+      - { id: spouse, label: 배우자, kind: spouse, max: 1, age: [18, 75], labels: { male: 남편, female: 아내 } }
+      - { id: parent, label: 부모, kind: parent, max: 2, age: [34, 90], labels: { male: 아버지, female: 어머니 } }
+      - { id: child, label: 자식, kind: child, age: [1, 60], labels: { male: 아들, female: 딸 } }
+      - { id: sibling, label: 형제자매, kind: sibling, age: [3, 80] }
+      - { id: comrade, label: 길동무, kind: other, age: [16, 70] }
+    # 형제자매를 부르는 말: 손위는 [그 사람 성별][주인공 성별], 손아래는 [그 사람 성별]
+    sibling_labels:
+      older: { male: { male: 형, female: 오빠 }, female: { male: 누나, female: 언니 } }
+      younger: { male: 남동생, female: 여동생 }
+    # 엑스트라 틀: young_below살 아래는 young, elder_from살부터 elder, 배우자는 partner, 길동무는 other, 나머지 adult
+    templates: { young: kin_young, elder: kin_elder, adult: kin_sibling, partner: kin_partner, other: kin_comrade }
+    young_below: 16
+    elder_from: 55
+  # 동기 (12-77): 역할을 고른 뒤 고르고, 자세한 이야기를 쓴다. 이야기 중 세계의 사실이 되는 것은 배경 부품으로 남는다
+  motives:
+    - id: revenge
+      label: 복수
+      summary: 빼앗긴 것이 있고, 빼앗은 자가 아직 살아 있다.
+      prompt: 누구를 잃었는지, 누가 그랬는지, 그 사람(또는 무리)이 당신을 아는지 써 주세요.
+      example: 붉은연합이 우리 마을을 불태웠다. 그날 밤 어머니는 돌아오지 않았다. 불을 지른 자들의 붉은 완장을 아직 기억한다. 그들은 내가 살아남은 줄 모른다.
+      parts: [loss, enemy]
+    - id: flight
+      label: 도망
+      summary: 무언가에게서 달아나는 중이다. 뒤를 돌아볼 여유가 없다.
+      prompt: 어디서, 누구에게서 도망쳤는지, 무엇을 두고 왔는지, 쫓기고 있는지 써 주세요.
+      example: 나는 붉은연합에서 도망쳐 나왔다. 분대장의 명령으로 사람을 쏘라는 걸 거부했다. 이름은 바꿨지만, 그쪽 사람과 마주치면 알아볼지도 모른다.
+      parts: [deserter, debt, enemy]
+    - id: survival
+      label: 생존
+      summary: 오늘을 넘기는 것. 그게 전부다.
+      prompt: 무너진 뒤 어떻게 버텨 왔는지, 무엇을 잃고 무엇을 배웠는지 써 주세요.
+      example: 첫 겨울을 지하 주차장에서 났다. 같이 있던 사람들은 하나둘 사라졌다. 그때 배운 건 하나다. 먹을 것은 나누되, 등은 보이지 말 것.
+      parts: [loss]
+    - id: search
+      label: 찾기
+      summary: 잃어버린 누군가가 어딘가에 살아 있다고 믿는다.
+      prompt: 누구를 찾는지, 언제 어떻게 헤어졌는지, 무엇을 단서로 붙들고 있는지 써 주세요.
+      example: 붕괴 첫 주, 피난 버스에서 여동생과 헤어졌다. 강 하류 쪽으로 간다는 말만 들었다. 동생이 늘 매던 노란 목도리를 찾아 헤맨다.
+      parts: [seeking, loss]
+    - id: protect
+      label: 지키기
+      summary: 지켜야 할 사람이 있다. 그 사람 때문에 아직 서 있다.
+      prompt: 누구를 지키는지, 그 사람이 지금 어디서 기다리는지, 왜 곁을 떠나 있는지 써 주세요.
+      example: 늙은 아버지가 나루상단 장터 근처 움막에서 기다린다. 다리가 불편해 멀리 못 간다. 나는 약과 먹을 것을 구해 돌아가야 한다.
+      parts: [kin_alive]
+    - id: atonement
+      label: 속죄
+      summary: 저지른 일이 있다. 씻을 수 없다는 걸 알면서도 갚으려 한다.
+      prompt: 무엇을 저질렀는지, 누가 그 일을 아는지, 무엇으로 갚으려 하는지 써 주세요.
+      example: 배급을 빼돌려 하얀매에 팔았다. 그 탓에 누군가 겨울을 넘기지 못했을 것이다. 아직 아무도 모른다. 그 빚을 갚기 전엔 잠들 수 없다.
+      parts: [debt, loss]
 
 # 이전 세이브의 옛 능력 id
 renamed:
@@ -480,88 +567,87 @@ condition_tracks:
 harm_track: harm
 
 # 소속 등급 사다리. level은 지휘 계통상의 높이 (화법 규칙에 쓴다)
-# staff(지원 인력)와 leader(지도부)는 기획서 12.3 예시에 더해 쓰는 곳이 있어 둔다
+# staff(주민: 전투 조직 밖에서 무리의 살림을 맡는 사람)와 leader(지도부)는 기획서 12.3 예시에 더해 쓰는 곳이 있어 둔다
 rank_ladder:
   - { id: loner, label: 혼자, level: 0 }
   - { id: outsider, label: 외부 무리 일원, level: 0 }
-  - { id: grunt, label: 하급 전투원, level: 1 }
-  - { id: staff, label: 지원 인력, level: 1 }
+  - { id: grunt, label: 분대원, level: 1 }
+  - { id: staff, label: 주민, level: 1 }
   - { id: squad_leader, label: 분대장, level: 2 }
   - { id: officer, label: 간부, level: 3 }
   - { id: leader, label: 지도부, level: 4 }
-# 진급 경로 (MVP: 하급 전투원 → 분대장)
+# 진급 경로 (MVP: 분대원 → 분대장)
 promotion: { from: grunt, to: squad_leader }
 
-# 직분 (기획서 12.6): 무리 안에서 맡은 일. 계급과 따로 고른다 (요리사도 하급일 수도, 간부일 수도 있다)
-# 직분마다 직분 훈련·도구가 시작에 더해지고, 직분의 일감(missions)과 이야기(태그 occ_<id>)가 붙는다
-# ladder: 직분 안의 사다리. 직분의 일감을 해내거나 이야기의 standing 효과로 평판이 쌓이면 오른다
+# 직분 (기획서 12.6): 무리 안에서 맡은 일. 시나리오(역할)와 인물이 정한다 (새 게임에서 따로 고르지 않는다, 12-80).
+# 직분마다 훈련·도구가 더해지고, 일감(missions)과 이야기(태그 occ_<id>)가 붙는다.
+# 직분 안의 사다리는 없다. 계급(분대원·분대장·간부)이 곧 사다리다 (12-83)
+# - 군: 수색대원(나가는 사람: 폐허·길·전선·습격·호위), 수비대원(지키는 사람: 담·문·창고), 의무병. 큰 전쟁이 나면 모두 나간다
+# - 살림: 요리사, 목수, 상인, 종교인, 정비공, 간호사, 의사 (간호사·의사는 붕괴 전에 의술을 배운 사람)
+# 떠돌이는 직분이 없다. 스킬은 직분이 아니라 과거 배경(creation.pasts)에서 온다 (12-84)
 occupations:
-  - id: soldier
-    label: 전투원
-    summary: 총을 들고 담을 지키고 바깥에 나간다. 무리의 시나리오 임무와 이야기를 그대로 받는다
-    borrows_role: true
-    missions: [occ_soldier_cleaning, occ_soldier_drill]
-    ladder: [{ label: 전투원, standing: 0 }, { label: 고참, standing: 5 }, { label: 선임, standing: 12 }]
   - id: cook
     label: 요리사
     summary: 무리의 솥을 맡는다. 모자란 재료로 배급을 늘리고, 식당에서 오가는 말을 가장 먼저 듣는다
-    ranks: [grunt, staff, officer]
     skills: { survival: 1 }
     kit: [kitchen_knife, canned_food]
     missions: [occ_cook_morning_pot, occ_cook_stretch, occ_cook_forage, occ_cook_salt_store]
-    ladder: [{ label: 숙수, standing: 0 }, { label: 부엌 반장, standing: 4 }, { label: 주방장, standing: 10 }]
   - id: carpenter
     label: 목수
     summary: 담과 문, 지붕과 침상을 고친다. 무너진 데를 메우는 사람이라 어디든 불려 다닌다
-    ranks: [grunt, staff, squad_leader]
     skills: { carpentry: 1 }
     kit: [carpentry_kit, planks]
     missions: [occ_carpenter_wall_patch, occ_carpenter_roof, occ_carpenter_watchtower, occ_carpenter_timber_run]
-    ladder: [{ label: 목수 일꾼, standing: 0 }, { label: 목수, standing: 4 }, { label: 도편수, standing: 10 }]
   - id: trader
     label: 상인
     summary: 무리의 물건을 바깥과 바꾼다. 값과 소문을 다루고, 무리 밖에도 아는 얼굴이 많다
-    ranks: [grunt, staff, officer]
-    free: true
     skills: { persuade: 1 }
     kit: [trade_token, cigarettes]
     missions: [occ_trader_market_run, occ_trader_price_ears, occ_trader_credit_book, occ_trader_stock_count]
-    ladder: [{ label: 행상, standing: 0 }, { label: 상인, standing: 4 }, { label: 큰손, standing: 10 }]
   - id: preacher
     label: 종교인
     summary: 무너진 세상에서 기도와 장례를 맡는다. 사람들의 고해를 듣고, 무리의 사기를 붙든다
-    ranks: [grunt, staff, officer]
-    free: true
     skills: { endure: 1 }
     kit: [blanket]
     missions: [occ_preacher_burial, occ_preacher_sickbed, occ_preacher_evening_word, occ_preacher_quarantine_rite]
-    ladder: [{ label: 기도하는 사람, standing: 0 }, { label: 설교자, standing: 4 }, { label: 목자, standing: 10 }]
   - id: medic
     label: 의무병
     summary: 다친 사람을 꿰매고 열을 내린다. 약이 모자란 날마다 누구를 먼저 볼지 정해야 한다
-    ranks: [grunt, staff, squad_leader, officer]
-    free: true
     skills: { first_aid: 1 }
     kit: [bandage]
     missions: [occ_medic_rounds, occ_medic_boil, occ_medic_pharmacy, occ_medic_field]
-    ladder: [{ label: 수습 의무병, standing: 0 }, { label: 의무병, standing: 4 }, { label: 의무장, standing: 10 }]
   - id: mechanic
     label: 정비공
     summary: 총과 펌프, 발전기와 무전기를 살린다. 쇳소리와 기름 냄새 속에서 산다
-    ranks: [grunt, staff, squad_leader]
     skills: { mechanics: 1 }
     kit: [toolkit, scrap_metal]
     missions: [occ_mechanic_rifle_service, occ_mechanic_generator, occ_mechanic_radio, occ_mechanic_parts_run]
-    ladder: [{ label: 견습 정비공, standing: 0 }, { label: 정비공, standing: 4 }, { label: 정비 반장, standing: 10 }]
   - id: scavenger
-    label: 수색꾼
-    summary: 무너진 건물에 들어가 쓸 것을 건져 온다. 길을 알고, 길에서 죽는 사람을 많이 봤다
-    ranks: [grunt, staff, squad_leader]
-    free: true
-    skills: { scavenge: 1 }
+    label: 수색대원
+    summary: 담 밖으로 나가는 사람. 폐허를 뒤지고, 길을 살피고, 싸움이 나면 총을 든다. 무리의 시나리오 임무와 이야기를 그대로 받는다
+    skills: { shoot: 1, scavenge: 1 }
     kit: [flashlight, crowbar]
-    missions: [occ_scavenger_sweep, occ_scavenger_mark_route, occ_scavenger_medicine, occ_scavenger_haul]
-    ladder: [{ label: 수색꾼, standing: 0 }, { label: 길잡이, standing: 4 }, { label: 수색대장, standing: 10 }]
+    missions: [occ_scavenger_sweep, occ_scavenger_mark_route, occ_scavenger_medicine, occ_scavenger_haul, occ_soldier_cleaning, occ_soldier_drill]
+  - id: guard
+    label: 수비대원
+    skills: { sense_danger: 1 }
+    summary: 담과 문, 창고와 우물을 지킨다. 바깥에 나가는 날은 적지만, 거점이 습격당하면 가장 먼저 맞선다
+    kit: [binoculars]
+    missions: []
+  - id: nurse
+    label: 간호사
+    summary: 붕괴 전에 간호를 배웠다. 상처를 꿰매고 열을 재고, 환자 곁을 지킨다. 귀한 사람이라 바깥 싸움에는 내보내지 않는다
+    skills: { first_aid: 1 }
+    kit: [fever_reducer]
+    storylet_tag: occ_medic
+    missions: [occ_medic_rounds, occ_medic_boil, occ_medic_pharmacy]
+  - id: doctor
+    label: 의사
+    summary: 붕괴 전에 의사였다. 약이 없어도 무엇이 사람을 죽이는지 안다. 무리마다 탐내는 사람이라 바깥에는 나가지 않는다
+    skills: { first_aid: 2 }
+    kit: [fever_reducer, medkit]
+    storylet_tag: occ_medic
+    missions: [occ_medic_rounds, occ_medic_pharmacy]
 
 speech_rules: speech/post_apoc.yaml
 # GM 지침 (두 플레이 모드가 같은 파일을 읽는다, 기획서 11.6)
@@ -579,9 +665,9 @@ recovery:
   # 치료사에게 받으면 (하루 한 번) 트랙별로 낫는 단계
   healer: { harm: 1, infection: 1, disease: 1 }
   # 무리의 돌봄 (12-52): 의무병 한 사람이 하루 두 명까지, 무리의 의약품으로. 부상 한 단계 1, 드러난 감염 떼기 2
-  faction_care: { occupation: medic, resource: medicine, per_medic: 2, infection_cost: 2 }
+  faction_care: { occupations: [medic, nurse, doctor], resource: medicine, per_medic: 2, infection_cost: 2 }
   # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
-  first_aid: { occupation: medic, skill: first_aid, min: 1 }
+  first_aid: { occupations: [medic, nurse, doctor], skill: first_aid, min: 1 }
 
 # 수위 (12-57): 성인 주제(연애·성적 위협) 이야기의 태그와 나이 하한. 세계의 수위가 꺼져 있으면 이 태그 이야기는 열리지 않고,
 # 켜져 있어도 주인공과 배역이 모두 이 나이 이상이어야 열린다

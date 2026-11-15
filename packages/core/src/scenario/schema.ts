@@ -79,13 +79,39 @@ export const scenarioFileSchema = z
         traits: z
           .strictObject({ max_positive: z.number().int().min(0), max_negative: z.number().int().min(0), max_personality: z.number().int().min(0) })
           .default({ max_positive: 3, max_negative: 3, max_personality: 2 }),
+        /**
+         * 과거 배경 (12-84): 붕괴 전에 무엇을 했는지. 능력 배치(stats: ability_array와 같은 값들)와 스킬(skills)의 기본값,
+         * 지니고 시작하는 물건(items). 플레이어는 같은 포인트 안에서 능력과 스킬을 고칠 수 있다. 무리원·떠돌이 모두 고른다
+         */
+        pasts: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              summary: z.string().min(1),
+              stats: z.record(id, z.number().int()),
+              skills: z.record(id, z.number().int().min(1).max(2)).default({}),
+              items: z.array(id).default([]),
+              /** 이 일을 했을 수 있는 최소 나이 (12-87) */
+              min_age: z.number().int().min(0).optional(),
+            }),
+          )
+          .default([]),
+        /** 계급 기본 훈련 (12-87): 그 계급으로 시작하면 과거 배경과 따로 더해지는 스킬 (계급 id → 스킬 id → 수준). 그 자리에 꼭 필요한 솜씨 */
+        rank_skills: z.record(id, z.record(id, z.number().int().min(1).max(2))).default({}),
+        /** 계급의 최소 나이 (12-87, 계급 id → 나이) */
+        rank_min_age: z.record(id, z.number().int().min(0)).default({}),
+        /** 시작 스킬 (12-84): 포인트(points)를 스킬마다 max까지 나눈다. 과거 배경이 기본 배치를 준다 */
+        skills: z.strictObject({ points: z.number().int().min(0), max: z.number().int().min(1) }).optional(),
         /** 대화로 만들 때(MCP) 단계별로 GM에게 주는 서술 힌트 */
         narration: z
           .strictObject({
             name: z.string().optional(),
             gender: z.string().optional(),
             age: z.string().optional(),
+            past: z.string().optional(),
             abilities: z.string().optional(),
+            skills: z.string().optional(),
             traits: z.string().optional(),
           })
           .optional(),
@@ -200,8 +226,8 @@ export const scenarioFileSchema = z
     rank_ladder: z.array(z.strictObject({ id, label: z.string().min(1), level: z.number().int() })).min(1),
     promotion: z.strictObject({ from: id, to: id }),
     /**
-     * 직분 (기획서 12.6): 무리 안에서 맡은 일. 계급(배급·상관·회의 자리)과 따로 고른다.
-     * 직분마다 시작 훈련·소지품·일감·이야기(storylet_tag)가 붙고, 직분 안의 사다리(ladder)를 일의 평판(standing)으로 오른다
+     * 직분 (기획서 12.6): 무리 안에서 맡은 일. 시나리오(역할)와 인물이 정한다 (새 게임에서 따로 고르지 않는다, 12-80).
+     * 직분마다 시작 훈련·소지품·일감·이야기(storylet_tag)가 붙는다. 직분 안의 사다리는 없고, 계급(분대원·분대장·간부)이 곧 사다리다 (12-82, 12-83)
      */
     occupations: z
       .array(
@@ -209,12 +235,6 @@ export const scenarioFileSchema = z
           id,
           label: z.string().min(1),
           summary: z.string().min(1),
-          /** 이 직분으로 고를 수 있는 계급 (비면 모두) */
-          ranks: z.array(id).default([]),
-          /** 이 직분이 무소속으로도 가능한지 (떠돌이 상인, 떠돌이 설교자) */
-          free: z.boolean().default(false),
-          /** 무리의 같은 계급 시나리오의 임무·이야기를 그대로 받는지 (전투원). 아니면 직분의 일감·이야기와 공통 이야기만 */
-          borrows_role: z.boolean().default(false),
           /** 시작 훈련에 더해지는 직분 훈련 (스킬 id → 수준) */
           skills: z.record(id, z.number().int().min(1).max(2)).default({}),
           /** 시작 소지품에 더해지는 직분 도구 */
@@ -223,8 +243,6 @@ export const scenarioFileSchema = z
           missions: z.array(id).default([]),
           /** 직분 이야기의 태그 (없으면 occ_<id>) */
           storylet_tag: id.optional(),
-          /** 직분 안의 사다리: 평판이 standing 이상이면 그 이름 (첫 칸은 0) */
-          ladder: z.array(z.strictObject({ label: z.string().min(1), standing: z.number().int().min(0) })).min(1),
         }),
       )
       .default([]),
@@ -255,6 +273,57 @@ export const scenarioFileSchema = z
         debt_sizes: z.strictObject({ small: z.number().int().min(1), large: z.number().int().min(1) }).default({ small: 5, large: 15 }),
         /** 시작 소지품 꾸러미 */
         kits: z.array(z.strictObject({ id, label: z.string().min(1), description: z.string().default(""), items: z.array(id) })).min(1),
+        /** 떠돌이로 시작할 때의 소지품 꾸러미 (12-77) */
+        free_kit: id.optional(),
+        /** 떠돌이가 "반려견과 함께"를 고르면 붙는 연고 틀 (kin 중에서) */
+        pet: id.optional(),
+        /**
+         * 떠돌이의 소규모 무리 (12-77 3단계): 동행을 "소규모 무리"로 고르면 start명을 무작위로 만들고 max명까지 고친다.
+         * 관계는 주인공 기준 (kind: spouse 배우자, parent 부모, child 자식, sibling 형제자매, other 그 밖). 부모·자식은 parent_gap살 이상 차이, 배우자는 다른 성별.
+         * labels: 그 사람의 성별 → 부르는 말. templates: 나이·관계에 맞는 엑스트라 틀
+         */
+        group: z
+          .strictObject({
+            start: z.number().int().min(0),
+            max: z.number().int().min(1),
+            parent_gap: z.number().int().min(0).default(18),
+            relations: z
+              .array(
+                z.strictObject({
+                  id,
+                  label: z.string().min(1),
+                  kind: z.enum(["spouse", "parent", "child", "sibling", "other"]),
+                  max: z.number().int().min(1).optional(),
+                  age: z.tuple([z.number().int().min(0), z.number().int().min(0)]),
+                  labels: z.record(z.string(), z.string().min(1)).default({}),
+                }),
+              )
+              .min(1),
+            sibling_labels: z
+              .strictObject({ older: z.record(z.string(), z.record(z.string(), z.string().min(1))), younger: z.record(z.string(), z.string().min(1)) })
+              .optional(),
+            templates: z.strictObject({ young: id, elder: id, adult: id, partner: id, other: id }),
+            young_below: z.number().int().default(16),
+            elder_from: z.number().int().default(55),
+          })
+          .optional(),
+        /**
+         * 동기 (12-77 2단계): 역할을 고른 뒤 "왜 살아가는지"를 고르고 이야기를 쓴다. prompt는 무엇을 쓰면 좋은지,
+         * parts는 이 동기에서 자주 나오는 배경 부품 종류 (GM이 옮길 때 참고, 강제하지 않는다)
+         */
+        motives: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              summary: z.string().min(1),
+              prompt: z.string().min(1),
+              /** 쓰기 도움: 이런 식으로 쓰면 된다는 예시 (이 월드의 무리·사람으로) */
+              example: z.string().min(1).optional(),
+              parts: z.array(z.enum(["loss", "enemy", "kin_alive", "seeking", "debt", "deserter"])).default([]),
+            }),
+          )
+          .default([]),
       })
       .optional(),
     /**
@@ -559,10 +628,10 @@ export const scenarioFileSchema = z
          * 한 사람이 per_medic명까지. 부상 한 단계에 자원 1, 드러난 감염을 떼는 데 infection_cost
          */
         faction_care: z
-          .strictObject({ occupation: id, resource: id, per_medic: z.number().int().min(1), infection_cost: z.number().int().min(1) })
+          .strictObject({ occupations: z.array(id).min(1), resource: id, per_medic: z.number().int().min(1), infection_cost: z.number().int().min(1) })
           .optional(),
         /** 주인공이 아이템 없이 다른 사람을 돌볼 수 있는 조건 (이 직분이거나 이 스킬이 min 이상), 하루에 한 사람 한 번, 부상 한 단계 */
-        first_aid: z.strictObject({ occupation: id.optional(), skill: id, min: z.number().int() }).optional(),
+        first_aid: z.strictObject({ occupations: z.array(id).default([]), skill: id, min: z.number().int() }).optional(),
       })
       .optional(),
     /**

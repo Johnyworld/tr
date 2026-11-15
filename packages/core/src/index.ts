@@ -52,11 +52,12 @@ export {
   heirDraft,
   newGameDraft,
   newGameStep,
-  setCustomStart,
+  setStoryStart,
   type NewGameDraft,
 } from "./game/newGame.ts";
 export { newGameView, type NewGameView, type CharacterStepView } from "./game/newGameView.ts";
-export { customStartSchema, buildCustomRole, checkCustomStart, type CustomStartInput } from "./game/customStart.ts";
+export { motivesOf, storyStartSchema, type StoryStartInput } from "./game/storyStart.ts";
+export { buildCustomRole, checkCustomStart, type CustomStartInput } from "./game/customStart.ts";
 export { loadContent, ContentError } from "./content/loader.ts";
 
 export { InMemoryRepository, type GameRepository } from "./persistence/repository.ts";

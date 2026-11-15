@@ -19,15 +19,26 @@ const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url))
 const s = content.scenario;
 const roleId = Object.keys(content.roles)[0]!;
 
+/** 과거 배경(경찰)과 스킬(배경대로) 단계는 따로 묻지 않는 테스트에서 저절로 넘긴다 (12-84) */
+function autoPast(d: CreationDraft, rng: ReturnType<typeof createSeededRng>): CreationDraft {
+  for (;;) {
+    const step = currentStep(s, d);
+    if (step !== "past" && step !== "skills") return d;
+    const r = answerCreation(s, d, step === "past" ? "police" : "past", rng);
+    if (!r.ok || r.done) throw new Error(`auto ${step}`);
+    d = r.draft;
+  }
+}
+
 /** 답을 차례로 넣는다. 오류가 나면 실패 */
 function run(answers: (string | string[])[], draft = newCreationDraft("new_world")) {
   const rng = createSeededRng(5);
-  let d: CreationDraft = draft;
+  let d: CreationDraft = autoPast(draft, rng);
   for (const a of answers) {
     const r = answerCreation(s, d, a, rng);
     if (!r.ok) throw new Error(`${String(a)}: ${r.error}`);
     if (r.done) return { draft: r.draft, choice: r.choice };
-    d = r.draft;
+    d = autoPast(r.draft, rng);
   }
   return { draft: d, choice: null };
 }
@@ -37,7 +48,8 @@ describe("대화로 하는 캐릭터 생성", () => {
     const first = describeCreationStep(content, newCreationDraft("new_world"), roleId);
     expect(first).toContain("지금 상황");
     expect(first).toContain("분대장 강태호");
-    expect(first).toContain("1/6: 이름");
+    expect(first).toContain("1/8: 과거 배경");
+    expect(first).toContain("경찰");
     expect(first).not.toContain("<!--");
     const heir = describeCreationStep(content, newCreationDraft("heir"), roleId);
     expect(heir).not.toContain("지금 상황");
@@ -64,12 +76,39 @@ describe("대화로 하는 캐릭터 생성", () => {
       portrait: null,
       traits: ["frail", "beautiful"],
       age: 30,
+      past: "police",
+      skills: { shoot: 1, sense_danger: 1 },
     });
   });
 
-  it("이름은 폭으로 센다: 한글 8자, 영문 16자까지 (12-72)", () => {
-    const d = newCreationDraft("new_world");
+  it("과거 배경이 능력·스킬의 기본값을 주고, 같은 포인트 안에서 고칠 수 있다 (12-84)", () => {
     const rng = createSeededRng(1);
+    let d = newCreationDraft("new_world");
+    const step = (a: string) => {
+      const r = answerCreation(s, d, a, rng);
+      if (!r.ok) throw new Error(r.error);
+      if (!r.done) d = r.draft;
+      return r;
+    };
+    expect(currentStep(s, d)).toBe("past");
+    expect(answerCreation(s, d, "우주비행사", rng).ok).toBe(false);
+    step("소방관");
+    for (const a of ["서진", "male", "30"]) step(a);
+    expect(stepOptions(s, d, "abilities").map((o) => o.value)).toEqual(["past", "manual", "random"]);
+    step("past");
+    expect(draftChoice(d).abilities).toMatchObject({ strength: 2, vitality: 1, nerve: 1, intellect: -1 });
+    expect(currentStep(s, d)).toBe("skills");
+    step("manual");
+    expect(answerCreation(s, d, "사격, 경계, 은밀", rng).ok).toBe(false); // 2포인트
+    expect(answerCreation(s, d, "사격 +2", rng).ok).toBe(false); // 스킬 하나에 +1까지
+    step("사격, 경계");
+    expect(draftChoice(d)).toMatchObject({ past: "firefighter", skills: { shoot: 1, sense_danger: 1 } });
+    expect(currentStep(s, d)).toBe("traits");
+  });
+
+  it("이름은 폭으로 센다: 한글 8자, 영문 16자까지 (12-72)", () => {
+    const rng = createSeededRng(1);
+    const d = autoPast(newCreationDraft("new_world"), rng);
     expect(answerCreation(s, d, "가나다라마바사아", rng).ok).toBe(true);
     expect(answerCreation(s, d, "가나다라마바사아자", rng).ok).toBe(false);
     expect(answerCreation(s, d, "Abcdefghijklmnop", rng).ok).toBe(true);
@@ -92,8 +131,10 @@ describe("대화로 하는 캐릭터 생성", () => {
   it("나이는 월드의 범위 안의 숫자만 (12-69)", () => {
     const { draft } = run(["서진", "male"]);
     expect(currentStep(s, draft)).toBe("age");
-    expect(describeCreationStep(content, draft, roleId)).toContain("16~65세");
-    for (const bad of ["15", "66", "스무 살", "30.5"]) expect(answerCreation(s, draft, bad, createSeededRng(1)).ok, bad).toBe(false);
+    // 경찰(과거 배경)은 24세부터 (12-87)
+    expect(describeCreationStep(content, draft, roleId)).toContain("24~65세");
+    expect(describeCreationStep(content, draft, roleId)).toContain("과거 배경 경찰");
+    for (const bad of ["23", "66", "스무 살", "30.5"]) expect(answerCreation(s, draft, bad, createSeededRng(1)).ok, bad).toBe(false);
     const ok = answerCreation(s, draft, "42세", createSeededRng(1));
     expect(ok.ok && draftChoice(ok.draft).age).toBe(42);
     // 이미 정한 나이(직접 쓰는 시나리오)가 있으면 묻지 않는다
@@ -119,7 +160,7 @@ describe("대화로 하는 캐릭터 생성", () => {
   it("ability_array가 없는 월드는 포인트 배분 글로 받는다", () => {
     const s0 = { ...s, ability_array: undefined };
     let draft = newCreationDraft("new_world");
-    for (const a of ["서진", "male", "30", "manual"]) {
+    for (const a of ["police", "서진", "male", "30", "manual"]) {
       const r = answerCreation(s0, draft, a, createSeededRng(1));
       if (r.ok) draft = r.draft;
     }
@@ -134,7 +175,7 @@ describe("대화로 하는 캐릭터 생성", () => {
     expect(bad("근력 1, 근력 0")).toContain("두 번");
     expect(bad("근력 높게")).toContain("쉼표");
     const ok = answerCreation(s0, draft, "근력 2, 민첩 1, 체력 -1, 냉정 1", createSeededRng(1));
-    expect(ok.ok && currentStep(s0, ok.draft)).toBe("traits");
+    expect(ok.ok && currentStep(s0, ok.draft)).toBe("skills");
   });
 
   it("강점은 약점으로 얻은 포인트만큼만, 반대 트레잇은 함께 못 고른다", () => {

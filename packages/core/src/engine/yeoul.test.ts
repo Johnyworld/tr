@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadContent } from "../content/loader.ts";
 import type { Content } from "../content/schemas.ts";
-import { checkCustomStart, describeCustomStartOptions } from "../game/customStart.ts";
+import { checkCustomStart } from "../game/customStart.ts";
 import { answerNewGame, describeNewGameStep, newGameDraft } from "../game/newGame.ts";
 import { createSeededRng, type Rng } from "../rng.ts";
 import { initialWarWorld, simulateWarDay } from "../sim/war.ts";
@@ -28,18 +28,19 @@ function atRiverside(savesDir: string, rng: () => Rng = () => createSeededRng(3)
   return { m, w };
 }
 
+/** 무리 고르기에서 여울섬을 고르면 나오는 역할 단계 (해금 전에는 여울섬을 고를 수 없다) */
 function scenarioStep(unlocked: Record<string, string[]>): string {
   const d = answerNewGame(packs, newGameDraft(unlocked), "post_apoc", createSeededRng(1));
   if (!d.ok) throw new Error(d.error);
-  return describeNewGameStep(packs, d.draft);
+  const y = answerNewGame(packs, d.draft, "faction_y", createSeededRng(1));
+  return y.ok ? describeNewGameStep(packs, y.draft) : describeNewGameStep(packs, d.draft);
 }
 
 describe("여울섬은 시작할 수 없다", () => {
-  it("처음 시나리오 고르기와 직접 쓰기에 없다", () => {
+  it("처음 무리 고르기와 만든 역할에 없다", () => {
     expect(scenarioStep({})).not.toContain("여울섬의 새 식구");
     const custom = { faction: "faction_y", rank: "grunt", title: "섬사람", location: "yeoul_isle", kit: "fighter", skills: {}, age: 30, opening: "o", background: [] };
     expect(checkCustomStart(content, custom).join()).toContain("시작할 수 없다");
-    expect(describeCustomStartOptions(content)).not.toContain("여울섬(faction_y)");
   });
 
   it("어느 구역과도 맞닿아 있지 않아 전쟁에 끼지 않는다", () => {

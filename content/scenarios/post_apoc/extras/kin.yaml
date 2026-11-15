@@ -107,3 +107,30 @@
     secrets:
       - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
   appears: { zones: [] }
+
+# 떠돌이의 소규모 무리 (12-77): 피가 섞이지 않은 동료. 길 위에서 만나 같이 버텨 온 사람
+- id: kin_comrade
+  label: 길동무 (동료)
+  rank: loner
+  age: [18, 60]
+  looks:
+    - 챙 넓은 모자를 눌러쓴 사람. 걸으면서도 늘 길가의 건물 창을 센다
+    - 왼손 새끼손가락이 없는 사람. 불 앞에 앉으면 붕괴 전 이야기를 조금씩 한다
+  stats: { senses: [0, 1], vitality: [0, 1], agility: [0, 1], nerve: [0, 1] }
+  skills: { survival: 1, scavenge: 1, sense_danger: 1 }
+  traits: [genial, cautious, blunt, guarded, protective]
+  trait_count: 2
+  inventory:
+    - { item: water_bottle }
+    - { item: kitchen_knife, chance: 0.4 }
+  values: { loyalty: 1, self_interest: 1 }
+  profile:
+    wants: [다 같이 겨울을 넘기는 것, 몫을 공정하게 나누는 것, 언젠가 담 안에 자리를 얻는 것]
+    fears: [무리가 흩어지는 것, 감염체의 물결, 굶주림]
+    voices:
+      - { style: 오래 같이 걸은 사람의 무심한 반말, samples: ["오늘은 저 건물에서 자자.", "물은 아껴. 내일 비 안 온다."] }
+    rules: [몫은 똑같이 나눈다]
+    reputations: [당신과 함께 다니는 길동무]
+    secrets:
+      - { content: 붕괴 전에 지은 죄가 있다. 그래서 담 안으로 들어가기를 꺼린다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+  appears: { zones: [] }

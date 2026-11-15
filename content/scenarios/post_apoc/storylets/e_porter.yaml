@@ -1,4 +1,4 @@
-# 나루상단 짐꾼 스토리렛. 형식은 a_grunt.yaml 머리말 참고
+# 나루상단 호위대원(예전 짐꾼) 스토리렛. caravan_life는 나루상단의 장터·길 일상이라 호위대 분대장도 함께 쓴다. 형식은 a_grunt.yaml 머리말 참고
 # 플래그 사슬
 #   - 새는 출발 시간: e_road_ambush(e_route_leak_suspected) → e_hana_confession(e_hana_covered / e_hana_exposed / e_false_route) → e_decoy_raid
 #   - 펌프의 쇳소리: e_pump_groan(e_pump_failing) → e_deoksu_bearing(e_bearing_quest / e_pump_told_boss / e_pump_secret_kept) → e_bearing_salvage
@@ -9,7 +9,8 @@
 
 - id: e_first_haul
   title: 행상대장의 저울
-  tags: [caravan_life]
+  # 상관이 행상대장 주옥희일 때만 (호위대원 시나리오의 첫 짐)
+  tags: [e_porter]
   when:
     zones: [e_market]
     segments: [dawn, morning]

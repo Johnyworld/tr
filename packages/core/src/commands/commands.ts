@@ -1,3 +1,4 @@
+import { rankName } from "../game/ranks.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { memoAccess } from "../game/memo.ts";
 import { josa } from "../text.ts";
@@ -11,7 +12,7 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { activeMissionOf, commanderOf, daysServed, MISSION_STATUS_LABELS } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
-import { conditionPenalty, rankLabel, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
+import { conditionPenalty, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
 import { factionOutlook, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
@@ -62,7 +63,7 @@ function playerOf(ctx: CommandContext) {
 function roleLabelOf(ctx: CommandContext) {
   const player = playerOf(ctx);
   const role = ctx.content.roles[ctx.state.roleId];
-  return role?.rank === player.rank ? role.label : rankLabel(ctx.content.scenario, player.rank);
+  return role?.rank === player.rank ? role.label : rankName(ctx.content, player.factionId, player.rank);
 }
 
 function clockLine(state: GameState) {
@@ -229,7 +230,7 @@ const people: CommandDef = {
           const shown = present.get(id);
           const here = state.scene.present.includes(id) ? ` · 함께 있음${shown?.conditionLabel ? ` (${shown.conditionLabel})` : ""}` : "";
           const attitude = state.perceived[id] ? `신뢰 ${relationLabel(r.trust)} · 호감 ${relationLabel(r.affection)} · 존중 ${relationLabel(r.respect)}` : "아직 만나 보지 않음";
-          return `${headingAs(state, content, state.playerId, id)}  ${rankLabel(content.scenario, c.rank)}${c.dead ? " · 사망" : c.away ? " · 떠남" : c.captive ? (state.playerZone === c.captive.zone ? " · 여기 붙잡혀 있음" : " · 행방 모름") : ""}${here}  (${attitude})`;
+          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead ? " · 사망" : c.away ? " · 떠남" : c.captive ? (state.playerZone === c.captive.zone ? " · 여기 붙잡혀 있음" : " · 행방 모름") : ""}${here}  (${attitude})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,

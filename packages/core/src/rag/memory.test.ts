@@ -190,7 +190,7 @@ describe("memoryItemsOf", () => {
     expect(named.text).toContain(`${player.name}: 목마른 사람에게 물을 나눠 줬다`);
     expect(unnamed.knownBy).toEqual(["npc_stranger"]);
     expect(unnamed.text).not.toContain(player.name);
-    expect(unnamed.text).toContain("우리 무리 하급 전투원: 목마른 사람에게 물을 나눠 줬다");
+    expect(unnamed.text).toContain("우리 무리 분대원: 목마른 사람에게 물을 나눠 줬다");
     world.close();
   });
 });

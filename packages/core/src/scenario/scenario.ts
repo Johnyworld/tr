@@ -44,7 +44,8 @@ export const statLabel = (s: Scenario, id: string) => s.stats.find((x) => x.id =
 export const moveOf = (s: Scenario, id: string) => s.moves.find((x) => x.id === id);
 export const moveLabel = (s: Scenario, id: string) => moveOf(s, id)?.label ?? id;
 export const rankOf = (s: Scenario, id: string) => s.rank_ladder.find((x) => x.id === id);
-export const rankLabel = (s: Scenario, id: string) => rankOf(s, id)?.label ?? id;
+/** 계급 이름. labels: 무리마다 부르는 이름 (factions.rank_labels, 12-84) */
+export const rankLabel = (s: Scenario, id: string, labels?: Record<string, string>) => labels?.[id] ?? rankOf(s, id)?.label ?? id;
 
 export function trackOf(s: Scenario, id: string): ConditionTrack {
   const track = s.condition_tracks.find((t) => t.id === id);

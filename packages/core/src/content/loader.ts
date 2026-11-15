@@ -1,4 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
+import { occupationById } from "../game/occupation.ts";
+import { checkSkills } from "../game/creation.ts";
 import { join, relative } from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
@@ -95,18 +97,36 @@ function checkReferences(content: Content): string[] {
   const problems: string[] = [];
   // 직분 (기획서 12.6)
   const occIds = new Set(content.scenario.occupations.map((o) => o.id));
-  const rankIds = new Set(content.scenario.rank_ladder.map((r) => r.id));
   for (const o of content.scenario.occupations) {
     const at = `scenario.occupations.${o.id}`;
     for (const m of Object.keys(o.skills)) if (!content.scenario.moves.some((x) => x.id === m)) problems.push(`${at}: 알 수 없는 스킬 ${m}`);
     for (const i of o.kit) if (!content.items[i]) problems.push(`${at}: 알 수 없는 아이템 ${i}`);
     for (const m of o.missions) if (!content.missions[m]) problems.push(`${at}: 알 수 없는 임무 ${m}`);
-    for (const r of o.ranks) if (!rankIds.has(r)) problems.push(`${at}: 알 수 없는 계급 ${r}`);
-    if (o.ladder[0]!.standing !== 0) problems.push(`${at}: 사다리의 첫 칸은 standing 0이다`);
   }
-  for (const r of Object.values(content.roles)) if (r.occupation && !occIds.has(r.occupation)) problems.push(`roles.${r.id}: 알 수 없는 직분 ${r.occupation}`);
-  for (const n of Object.values(content.npcs)) if (n.occupation && !occIds.has(n.occupation)) problems.push(`npcs.${n.id}: 알 수 없는 직분 ${n.occupation}`);
-  for (const st of Object.values(content.storylets)) for (const o of st.when.occupations ?? []) if (o !== "none" && !occIds.has(o)) problems.push(`storylets.${st.id}.when.occupations: 알 수 없는 직분 ${o}`);
+  // 계급 기본 훈련과 최소 나이 (12-87)
+  for (const [rank, skills] of Object.entries(content.scenario.creation?.rank_skills ?? {})) {
+    if (!content.scenario.rank_ladder.some((r) => r.id === rank)) problems.push(`scenario.creation.rank_skills: 알 수 없는 계급 ${rank}`);
+    for (const m of Object.keys(skills)) if (!content.scenario.moves.some((x) => x.id === m)) problems.push(`scenario.creation.rank_skills.${rank}: 알 수 없는 스킬 ${m}`);
+  }
+  for (const rank of Object.keys(content.scenario.creation?.rank_min_age ?? {})) if (!content.scenario.rank_ladder.some((r) => r.id === rank)) problems.push(`scenario.creation.rank_min_age: 알 수 없는 계급 ${rank}`);
+  // 과거 배경 (12-84): 능력 배치는 능력 배열과 같은 값들, 스킬은 스킬 포인트 규칙 안, 물건은 있는 것
+  for (const p of content.scenario.creation?.pasts ?? []) {
+    const at = `scenario.creation.pasts.${p.id}`;
+    for (const m of Object.keys(p.skills)) if (!content.scenario.moves.some((x) => x.id === m)) problems.push(`${at}: 알 수 없는 스킬 ${m}`);
+    for (const k of Object.keys(p.stats)) if (!content.scenario.stats.some((x) => x.id === k)) problems.push(`${at}: 알 수 없는 능력 ${k}`);
+    for (const i of p.items) if (!content.items[i]) problems.push(`${at}: 알 수 없는 아이템 ${i}`);
+    const arr = content.scenario.ability_array;
+    if (arr) {
+      const given = content.scenario.stats.map((x) => p.stats[x.id] ?? 0).sort((a, b) => a - b).join(",");
+      if (given !== [...arr].sort((a, b) => a - b).join(",")) problems.push(`${at}: 능력 배치가 능력 배열(${arr.join(", ")})과 다르다`);
+    }
+    for (const q of checkSkills(content.scenario, p.skills)) problems.push(`${at}: ${q}`);
+  }
+  // 역할·인물의 직분
+  for (const [at, x] of [...Object.values(content.roles).map((r) => [`roles.${r.id}`, r] as const), ...Object.values(content.npcs).map((n) => [`npcs.${n.id}`, n] as const)]) {
+    if (x.occupation && !occIds.has(x.occupation)) problems.push(`${at}: 알 수 없는 직분 ${x.occupation}`);
+  }
+  for (const st of Object.values(content.storylets)) for (const o of [...(st.when.occupations ?? []), ...(st.when.occupations_not ?? [])]) if (o !== "none" && !occIds.has(o)) problems.push(`storylets.${st.id}.when.occupations: 알 수 없는 직분 ${o}`);
   for (const st of Object.values(content.storylets))
     for (const [k, r] of Object.entries(st.cast)) for (const o of r.occupations ?? []) if (o !== "same" && !occIds.has(o)) problems.push(`storylets.${st.id}.cast.${k}: 알 수 없는 직분 ${o}`);
   for (const p of content.scenario.command?.policies ?? []) {
@@ -305,6 +325,17 @@ function checkReferences(content: Content): string[] {
       for (const i of k.items) if (!content.items[i]) problems.push(`scenario.custom_start.kits.${k.id}: 알 수 없는 아이템 ${i}`);
     }
     if (custom.age.min > custom.age.max) problems.push("scenario.custom_start.age: min이 max보다 크다");
+    // 떠돌이의 소규모 무리 (12-77): 틀·꾸러미·연고가 있는지
+    for (const id of [custom.pet, ...(custom.group ? Object.values(custom.group.templates) : [])]) {
+      if (id && !content.extras[id]) problems.push(`scenario.custom_start: 알 수 없는 엑스트라 틀 ${id}`);
+    }
+    for (const id of [custom.free_kit]) if (id && !custom.kits.some((k) => k.id === id)) problems.push(`scenario.custom_start: 알 수 없는 꾸러미 ${id}`);
+    if (custom.group) {
+      const ids = custom.group.relations.map((r) => r.id);
+      if (new Set(ids).size !== ids.length) problems.push("scenario.custom_start.group.relations: id가 겹친다");
+      for (const r of custom.group.relations) if (r.age[0] > r.age[1]) problems.push(`scenario.custom_start.group.relations.${r.id}: 나이 범위가 거꾸로다`);
+      if (custom.group.start > custom.group.max) problems.push("scenario.custom_start.group: start가 max보다 크다");
+    }
   }
   problems.push(...checkStorylets(content));
   const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));

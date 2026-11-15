@@ -4,6 +4,8 @@
 - id: faction_a
   name: 청솔형제단
   public: 옛 공업고등학교에 자리 잡은 무리. "버리지 않는다"가 원칙이다.
+  # 무리에서 부르는 계급 이름 (12-84). 간부가 아니면 누구나 무리의 바깥 일을 맡는 대(수색대)에 속한다
+  rank_labels: { grunt: 수색대원 }
   # 무기고 (기획서 4.8): 작전에 낡은 소총과 소총탄 두 묶음을 빌려준다
   armory: { items: { old_rifle: 1, rifle_rounds: 2 }, ammo_cost: 4 }
   population: 70
@@ -31,6 +33,8 @@
 - id: faction_b
   name: 버들마을
   public: 청솔형제단과 손잡은 작은 무리. 붉은연합의 회유가 들어온다는 소문이 끊이지 않는다.
+  # 무리에서 부르는 계급 이름 (12-84). 간부가 아니면 누구나 무리의 바깥 일을 맡는 대(수색대)에 속한다
+  rank_labels: { grunt: 정찰대원 }
   # 무기고: 마을 사냥총 몇 자루뿐이다
   armory: { items: { shotgun: 1, shells: 2 }, ammo_cost: 3 }
   population: 40
@@ -67,6 +71,8 @@
 - id: faction_c
   name: 붉은연합
   public: 가장 큰 무리. 이익 앞에서 잔혹하다는 평이 있다. 지금 청솔형제단·버들마을과 전쟁 중이고, 사람 수에서 크게 앞선다.
+  # 무리에서 부르는 계급 이름 (12-84). 간부가 아니면 누구나 무리의 바깥 일을 맡는 대(수색대)에 속한다
+  rank_labels: { grunt: 약탈조원, squad_leader: 조장 }
   # 무기고: 작전에 개조 산탄총과 산탄. 쓴 산탄은 할당량에서 깐다
   armory: { items: { sawn_shotgun: 1, shells: 2 }, ammo_cost: 4 }
   population: 200
@@ -94,6 +100,8 @@
 - id: faction_d
   name: 하얀매
   public: 약과 의술을 가진 작은 무리. 약을 거래 조건으로 쓴다.
+  # 무리에서 부르는 계급 이름 (12-84). 간부가 아니면 누구나 무리의 바깥 일을 맡는 대(수색대)에 속한다
+  rank_labels: { grunt: 수비대원 }
   population: 30
   combatants: 6
   resources: { food: 300, water: 300, ammo: 60, medicine: 200, fuel: 40 }
@@ -124,6 +132,8 @@
 - id: faction_e
   name: 나루상단
   public: 교역으로 사는 상인들. 강 하류 정수장의 펌프를 차지하고 물을 판다. 이기는 쪽에 붙을 거라는 말이 많다.
+  # 무리에서 부르는 계급 이름 (12-84). 간부가 아니면 누구나 무리의 바깥 일을 맡는 대(수색대)에 속한다
+  rank_labels: { grunt: 호위대원 }
   population: 50
   combatants: 12
   resources: { food: 700, water: 500, ammo: 200, medicine: 30, fuel: 200 }

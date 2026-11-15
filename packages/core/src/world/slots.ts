@@ -1,3 +1,4 @@
+import { rankName } from "../game/ranks.ts";
 import type { Content } from "../content/schemas.ts";
 import { daysServed } from "../game/missions.ts";
 import { formatTime } from "../rules/time.ts";
@@ -57,7 +58,7 @@ export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): Sav
         age: player.age ?? null,
         genderLabel: s.creation?.genders.find((g) => g.id === player.gender)?.label ?? null,
         portrait: player.portrait ?? null,
-        rankLabel: player.rank ? rankLabel(s, player.rank) : "?",
+        rankLabel: player.rank ? rankName(content, player.factionId, player.rank) : "?",
         factionName: (player.factionId && content.factions[player.factionId]?.name) || "",
         level: player.level ?? 0,
         conditions: s.condition_tracks
@@ -87,7 +88,7 @@ export function formatPlayedAt(iso: string): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-/** MCP용 한 줄: "1. 신병 (23세) · 청솔형제단 하급 전투원 · 레벨 1 — 3일차 아침, 청솔형제단 거점 · 부상 경상 · 2대째 · 마지막 플레이 11월 12일 21:40" */
+/** MCP용 한 줄: "1. 신병 (23세) · 청솔형제단 분대원 · 레벨 1 — 3일차 아침, 청솔형제단 거점 · 부상 경상 · 2대째 · 마지막 플레이 11월 12일 21:40" */
 export function formatSlotLine(slot: SaveSlot, index: number): string {
   const h = slot.hero;
   if (!h) return `${index}. (읽을 수 없는 세이브) · ${slot.worldTitle} · 마지막 플레이 ${formatPlayedAt(slot.updatedAt)}`;

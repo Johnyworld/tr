@@ -125,9 +125,12 @@ export class WorldManager {
     roleId?: string,
     choice?: CharacterChoice,
     packId?: string,
-    custom?: { role: RoleContent; background: string[]; history?: HistoryPart[] },
-    options?: { mature: boolean },
+    custom?: { role: RoleContent; background: string[]; history?: HistoryPart[]; motive?: { id: string; label: string; summary: string } | null },
+    options?: { mature: boolean; dialogue?: "novel" | "script" },
+    /** 준비된 시나리오에 얹는 동기와 이야기 (12-86). custom이 있으면 그쪽 것을 쓴다 */
+    story?: { background: string[]; history?: HistoryPart[]; motive?: { id: string; label: string; summary: string } | null } | null,
   ): GameWorld {
+    const told = custom ?? story ?? null;
     const content = packId ? this.pack(packId) : this.content;
     const role = custom ? custom.role.id : (roleId ?? Object.keys(content.roles)[0]);
     if (!custom && (!role || !content.roles[role])) throw new Error(`알 수 없는 시작 역할: ${role}`);
@@ -141,14 +144,16 @@ export class WorldManager {
       const ctx = world.ctx();
       // 능력을 고르지 않았으면(null) 포인트를 무작위로 배분한다
       const filled = choice ? fillCharacterChoice(content.scenario, choice, ctx.rng) : choice;
-      ctx.store.append(createWorldEvent(content, role!, worldId, ctx.rng, filled, custom?.role, custom?.background));
+      ctx.store.append(createWorldEvent(content, role!, worldId, ctx.rng, filled, custom?.role, told?.background, told?.motive));
       // 첫날의 임무 후보, 소문 기준일, 시작 구역. 자유 시나리오의 역할은 이벤트를 넣은 뒤에야 콘텐츠에 보이므로 새로 받는다
       // 다른 판에서 얻은 해금을 이 세계에도 (기획서 9.12)
       this.#inheritUnlocks(world);
       // 수위 (12-57). 기본은 끔
       if (options?.mature) ctx.store.append({ type: "content_options_set", mature: true });
+      // 서술 방식 (12-85). 기본은 소설식
+      if (options?.dialogue === "script") ctx.store.append({ type: "content_options_set", dialogue: "script" });
       // 배경 부품: 플레이어가 쓴 지난 일 중 세계의 사실이 되는 것 (기획서 12.6)
-      applyBackground(world.ctx(), custom?.history ?? []);
+      applyBackground(world.ctx(), told?.history ?? []);
       // 처음부터 함께 다니는 사람·동물 (떠돌이의 가족 등, 기획서 7.9)
       addStartCompanions(world.ctx(), roleOf(world.content, world.state()));
       // 판마다 다른 인물 사이의 관계 (기획서 7.10)

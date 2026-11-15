@@ -71,8 +71,32 @@ export function checkCharacterChoice(s: Scenario, choice: CharacterChoice): stri
   if (choice.portrait !== null && !PORTRAIT_ID.test(choice.portrait)) problems.push("초상화 id 형식이 올바르지 않다.");
   if (choice.age != null) problems.push(...checkAge(s, choice.age));
   if (choice.traits) problems.push(...checkTraits(s, choice.traits));
+  if (choice.past != null && !pastOf(s, choice.past)) problems.push(`과거 배경은 ${(c.pasts ?? []).map((p) => `${p.label}(${p.id})`).join(", ")} 중 하나다.`);
+  const pastMin = pastOf(s, choice.past)?.min_age;
+  if (pastMin !== undefined && choice.age != null && choice.age < pastMin) problems.push(`${pastOf(s, choice.past)!.label}은(는) ${pastMin}세 이상이어야 한다.`);
+  if (choice.skills) problems.push(...checkSkills(s, choice.skills));
   if (choice.abilities === null) return problems;
   problems.push(...checkAbilities(s, choice.abilities));
+  return problems;
+}
+
+/** 과거 배경 (12-84) */
+export function pastOf(s: Scenario, id: string | null | undefined) {
+  return id ? s.creation?.pasts.find((p) => p.id === id) : undefined;
+}
+
+/** 고른 스킬이 규칙에 맞는지 (모르는 스킬, 스킬 하나의 상한, 포인트 합) */
+export function checkSkills(s: Scenario, skills: Record<string, number>): string[] {
+  const rule = s.creation?.skills;
+  if (!rule) return Object.keys(skills).length ? ["이 월드에서는 시작 스킬을 고르지 않는다."] : [];
+  const problems: string[] = [];
+  for (const [id, v] of Object.entries(skills)) {
+    const move = s.moves.find((m) => m.id === id);
+    if (!move) problems.push(`알 수 없는 스킬: ${id}`);
+    else if (!Number.isInteger(v) || v < 1 || v > rule.max) problems.push(`${move.label}은(는) +1~+${rule.max}까지 올린다.`);
+  }
+  const spent = Object.values(skills).reduce((a, b) => a + b, 0);
+  if (spent > rule.points) problems.push(`스킬 포인트를 ${spent - rule.points}만큼 넘게 썼다 (${spent}/${rule.points}).`);
   return problems;
 }
 
@@ -195,7 +219,7 @@ export function randomAbilityBuy(s: Scenario, rng: Rng): Record<string, number> 
 
 export type CreationRules = {
   defaultName: string;
-  /** 시작 역할 이름 (예: 청솔형제단 하급 전투원) */
+  /** 시작 역할 이름 (예: 청솔형제단 분대원) */
   roleLabel: string;
   points: number;
   cost: { value: number; cost: number }[];

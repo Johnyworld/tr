@@ -1,3 +1,4 @@
+import { rankName } from "../game/ranks.ts";
 import { segmentOf } from "../rules/time.ts";
 import { z } from "zod";
 import type { Content, ExtraContent } from "../content/schemas.ts";
@@ -5,7 +6,7 @@ import { createCharacterSchema, type Character } from "../game/character.ts";
 import { generateName } from "../game/names.ts";
 import type { GameState } from "../game/state.ts";
 import type { Rng } from "../rng.ts";
-import { initialConditions, rankLabel } from "../scenario/scenario.ts";
+import { initialConditions } from "../scenario/scenario.ts";
 import { josa } from "../text.ts";
 import { aliasOf, knowsName } from "../game/acquaintance.ts";
 import { firstImpression } from "./charm.ts";
@@ -25,12 +26,12 @@ const between = (rng: Rng, [lo, hi]: readonly [number, number]) => lo + Math.flo
 export function createExtraCharacter(
   content: Content,
   template: ExtraContent,
-  input: { id: string; label: string; zone: string | null; time: number; usedNames: ReadonlySet<string> },
+  input: { id: string; label: string; zone: string | null; time: number; usedNames: ReadonlySet<string>; name?: string; age?: number; gender?: string },
   rng: Rng,
 ): Character {
   const s = content.scenario;
   const genders = s.creation?.genders.map((g) => g.id) ?? [];
-  const gender = template.gender ?? (genders.length ? pick(rng, genders) : null);
+  const gender = input.gender ?? template.gender ?? (genders.length ? pick(rng, genders) : null);
   const stats = Object.fromEntries(Object.entries(template.stats).map(([k, range]) => [k, between(rng, range!)]));
   const pool = [...template.traits];
   const traits: string[] = [];
@@ -43,13 +44,13 @@ export function createExtraCharacter(
   for (const i of template.inventory) if (rng() < i.chance) inventory[i.item] = (inventory[i.item] ?? 0) + i.quantity;
   // 이름 재료가 없는 시나리오면 호칭이 이름이 된다
   // 동물은 사람 이름을 짓지 않는다 (호칭이 이름)
-  const name = template.animal ? input.label : (generateName(rng, s.names, gender, input.usedNames) ?? input.label);
+  const name = input.name ?? (template.animal ? input.label : (generateName(rng, s.names, gender, input.usedNames) ?? input.label));
   return createCharacterSchema(s).parse({
     id: input.id,
     name,
     factionId: template.faction ?? "",
     rank: template.rank,
-    age: between(rng, template.age),
+    age: input.age ?? between(rng, template.age),
     gender,
     stats,
     skills: template.skills,
@@ -97,7 +98,7 @@ const spawnExtra = defineTool({
     return {
       ok: true,
       resultText:
-        `${josa(input.label, "이/가")} 장면에 들어왔다 (id: ${id}, ${rankLabel(content.scenario, character.rank)}). 겉모습: ${character.extra!.look}. ` +
+        `${josa(input.label, "이/가")} 장면에 들어왔다 (id: ${id}, ${rankName(content, character.factionId, character.rank)}). 겉모습: ${character.extra!.look}. ` +
         `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 이 인물은 이제 판정 대상(target)이 되고 행적을 본다. 이름은 아직 모른다.`,
       display: { type: "presence", npcName: input.label, action: "enter" },
     };

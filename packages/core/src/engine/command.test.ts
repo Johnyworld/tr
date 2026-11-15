@@ -27,7 +27,7 @@ function passHours(w: ReturnType<typeof open>, hours: number) {
 }
 
 describe("분대 명령 (기획서 9.11)", () => {
-  it("분대장은 분대원 넷이 있고, 장면에 분대 섹션과 맡길 수 있는 일이 나온다. 하급 전투원은 분대가 없다", () => {
+  it("분대장은 분대원 넷이 있고, 장면에 분대 섹션과 맡길 수 있는 일이 나온다. 분대원은 분대가 없다", () => {
     const w = open("role_a_squad_leader");
     expect(squadMembers(w.state(), w.content)).toEqual(SQUAD);
     const scene = w.sceneForGm();
@@ -142,7 +142,7 @@ describe("지도부 회의 (기획서 9.11)", () => {
     w.close();
   });
 
-  it("기각되면 사흘 동안 같은 주제를 다시 올리지 못한다. 하급 전투원은 회의에 앉지 않는다 (주사위가 늘 1)", () => {
+  it("기각되면 사흘 동안 같은 주제를 다시 올리지 못한다. 분대원은 회의에 앉지 않는다 (주사위가 늘 1)", () => {
     const w = open("role_a_officer", () => () => 0);
     w.executeTool("npc_presence", { npc_id: "a_seonghee", action: "enter" });
     const r = w.executeTool("council_propose", { topic: "stance", option: "attack", approach: "tactics", stat: "intellect", intent: "먼저 친다" });

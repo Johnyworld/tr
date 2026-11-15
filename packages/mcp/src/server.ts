@@ -13,9 +13,10 @@ import {
   newGameStep,
   newGameView,
   heirDraft,
+  motivesOf,
   newGameDraft,
-  setCustomStart,
-  customStartSchema,
+  setStoryStart,
+  storyStartSchema,
   worldInfo,
   type Content,
   type NewGameDraft,
@@ -246,14 +247,14 @@ export function createMcpServer(
    * error: 이 단계에 맞지 않는 답 / step: 다음 단계로 / done: 세계(또는 새 캐릭터)가 생겼다
    */
   type CreationAdvance = { kind: "error"; error: string } | { kind: "step" } | { kind: "done"; result: TextResult };
-  const advanceCreation = (args: { answer?: string | string[] | null; back?: boolean; custom_start?: unknown }): CreationAdvance => {
+  const advanceCreation = (args: { answer?: string | string[] | null; back?: boolean; story_start?: unknown }): CreationAdvance => {
     if (!draft) return { kind: "error", error: "만들고 있는 캐릭터가 없다." };
     if (args.back) {
       draft = backNewGame(draft);
       return { kind: "step" };
     }
-    if (args.custom_start) {
-      const set = setCustomStart(packs, draft, args.custom_start as Parameters<typeof setCustomStart>[2]);
+    if (args.story_start) {
+      const set = setStoryStart(packs, draft, args.story_start as Parameters<typeof setStoryStart>[2]);
       if (!set.ok) return { kind: "error", error: set.error };
       draft = set.draft;
       return { kind: "step" };
@@ -269,14 +270,14 @@ export function createMcpServer(
     if (draft.mode === "heir") {
       const result = withWorld((w) => {
         const heirRole = draft?.roleId && draft.roleId !== w.state().roleId ? `new:${draft.roleId}` : "new";
-        const next = w.chooseNextCharacter(heirRole, null, choice);
+        const next = w.chooseNextCharacter(heirRole, null, choice, r.story);
         return next.ok ? text(`캐릭터를 만들었다. 세계 소개는 하지 않고 바로 새 캐릭터의 첫 장면을 서술한다.\n\n${next.text}`) : text(next.error, true);
       });
       if (result.isError) return { kind: "error", error: result.content[0]?.text ?? "" };
       draft = null;
       return { kind: "done", result };
     }
-    const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId, r.custom ?? undefined, r.options));
+    const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId, r.custom ?? undefined, r.options, r.story));
     if (result.isError) return { kind: "error", error: result.content[0]?.text ?? "" };
     return {
       kind: "done",
@@ -305,11 +306,11 @@ export function createMcpServer(
       },
     ],
   });
-  /** 직접 쓰는 시나리오의 옮기기는 GM이 한다: 화면에서 글을 받으면 GM에게 넘긴다 */
-  const needsGm = () => draft !== null && newGameStep(draft) === "custom_setup";
+  /** 이야기 옮기기는 GM이 한다: 화면에서 글을 받으면 GM에게 넘긴다 */
+  const needsGm = () => draft !== null && newGameStep(draft) === "story_setup";
   const gmTurn = (): TextResult =>
     text(
-      `플레이어가 상태 화면에서 직접 쓰는 시나리오의 글을 썼다. 아래대로 옮겨 create_character(custom_start: {...})로 넘긴 뒤, 곧바로 create_character(wait: true)로 다시 기다린다 (확인과 캐릭터 만들기는 화면에서 이어 한다). 플레이어에게는 "이야기를 옮기는 중"이라고만 짧게 알린다.\n\n${describeNewGameStep(packs, draft!)}`,
+      `플레이어가 상태 화면에서 동기와 이야기를 썼다. 아래대로 옮겨 create_character(story_start: {...})로 넘긴 뒤, 곧바로 create_character(wait: true)로 다시 기다린다 (확인과 캐릭터 만들기는 화면에서 이어 한다). 플레이어에게는 "이야기를 옮기는 중"이라고만 짧게 알린다.\n\n${describeNewGameStep(packs, draft!)}`,
     );
 
   async function waitForScreen(extra: WaitExtra): Promise<TextResult> {
@@ -392,14 +393,14 @@ export function createMcpServer(
     "create_character",
     {
       description:
-        "새 게임(월드 → 시나리오 → 캐릭터)이나 새 캐릭터 만들기를 한 단계 진행한다 (start_session(new_world) 또는 choose_next_character(new)로 시작한 뒤). " +
+        "새 게임(월드 → 무리 → 역할 → 동기·이야기 → 캐릭터)이나 새 캐릭터 만들기를 한 단계 진행한다 (start_session(new_world) 또는 choose_next_character(new)로 시작한 뒤). " +
         "플레이어가 이번 단계에 답한 것을 answer로 넘긴다 (보기가 있으면 그 값, 트레잇은 이름이나 id 목록, 없으면 \"없음\"). " +
         "back: true면 한 단계 뒤로, 아무것도 없으면 지금 단계를 다시 돌려준다. 마지막 확인에서 \"start\"를 넘기면 세계(또는 새 캐릭터)가 만들어진다. 대신 답하지 않는다. " +
         "wait: true는 상태 화면에서 만드는 중일 때: 플레이어가 화면에서 다 고를 때까지 기다린다.",
       inputSchema: z.strictObject({
         answer: z.union([z.string().max(1500), z.array(z.string().max(40)).max(10)]).nullable().optional(),
         back: z.boolean().optional(),
-        custom_start: customStartSchema().nullable().optional().describe("직접 쓰는 시나리오의 옮기기 단계에서만: 플레이어의 글을 월드의 부품으로 옮긴 것"),
+        story_start: storyStartSchema().nullable().optional().describe("이야기 옮기기 단계에서만: 플레이어가 쓴 동기와 이야기를 첫 장면·기억·배경 부품으로 옮긴 것"),
         wait: z.boolean().optional().describe("상태 화면에서 만드는 중이면 true: 다 고를 때까지 기다린다"),
       }),
     },
@@ -411,7 +412,7 @@ export function createMcpServer(
       }
       const r = advanceCreation(args);
       if (r.kind === "error") {
-        const hint = args.custom_start ? "고쳐서 다시 넘긴다." : "플레이어에게 알리고 이 단계를 다시 묻는다.";
+        const hint = args.story_start ? "고쳐서 다시 넘긴다." : "플레이어에게 알리고 이 단계를 다시 묻는다.";
         return text(`${r.error} ${hint}\n\n${describeNewGameStep(packs, draft)}`, true);
       }
       if (r.kind === "done") {
@@ -419,7 +420,7 @@ export function createMcpServer(
         return r.result;
       }
       // 화면에서 만드는 중에 GM이 옮기기를 마쳤으면 다시 화면 차례 (그대로 기다린다)
-      if (screen && args.custom_start) return waitForScreen(extra as WaitExtra);
+      if (screen && args.story_start) return waitForScreen(extra as WaitExtra);
       return creationStep(draft);
     },
   );
@@ -647,7 +648,13 @@ export function createMcpServer(
       if ((args.character_id === "new" || newAs) && !args.character && !args.name && creationRules(world.content, roleId)) {
         if (!world.isPlayerDead()) return text("캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다.", true);
         if (newAs && !world.successionOptions().some((o) => o.id === args.character_id)) return text(`고를 수 없는 캐릭터: ${args.character_id}`, true);
-        draft = heirDraft(world.content.scenario.id, roleId, newAs ? null : world.state().customRole);
+        draft = heirDraft(
+          world.content.scenario.id,
+          roleId,
+          newAs ? null : world.state().customRole,
+          motivesOf(world.content).length > 0,
+          world.content.scenario.creation?.rank_min_age[world.content.roles[roleId]?.rank ?? ""],
+        );
         screen = null;
         if (args.in_browser) return waitForScreen(extra as WaitExtra);
         return creationStep(draft);

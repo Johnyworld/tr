@@ -20,7 +20,7 @@ import type { LoreLibrary, LoreSearch } from "../rag/library.ts";
 import { memoryItemsOf, type MemoryStore } from "../rag/memory.ts";
 import type { SearchOptions } from "../rag/index.ts";
 import { COMMANDS } from "../commands/commands.ts";
-import { formatChronicle, successionOptions, switchCharacter, type SuccessionOption } from "../engine/succession.ts";
+import { formatChronicle, successionOptions, switchCharacter, type HeirStory, type SuccessionOption } from "../engine/succession.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
 import type { Viewer } from "../rag/index.ts";
 import type { RetrievalRecord } from "../engine/log.ts";
@@ -242,9 +242,14 @@ export class GameWorld {
   /**
    * 사망 뒤 다음 캐릭터로 이어 간다. 대화 기록에 경계를 남겨, GM이 이전 캐릭터의 서술을 이어받지 않게 한다
    */
-  chooseNextCharacter(choice: string, name: string | null = null, character?: CharacterChoice): { ok: true; text: string } | { ok: false; error: string } {
+  chooseNextCharacter(
+    choice: string,
+    name: string | null = null,
+    character?: CharacterChoice,
+    story?: HeirStory | null,
+  ): { ok: true; text: string } | { ok: false; error: string } {
     const ctx = this.ctx();
-    const result = switchCharacter(ctx, choice, name, character);
+    const result = switchCharacter(ctx, choice, name, character, story);
     if (!result.ok) return result;
     const heir = this.state().characters[this.state().playerId]!;
     this.appendTranscript([{ kind: "note", text: `— ${heir.name}의 이야기가 시작된다 —`, characterSwitch: true }]);

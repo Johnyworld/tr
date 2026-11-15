@@ -9,6 +9,7 @@ setAutoFreeze(process.env.TRPG_FREEZE === "1");
 import { historyPartSchema } from "./background.ts";
 import { TIE_KINDS } from "./ties.ts";
 import { z } from "zod";
+import { josa } from "../text.ts";
 import type { Rng } from "../rng.ts";
 import { CHECK_OUTCOMES, difficultySchema } from "../rules/check.ts";
 import { harmSeveritySchema } from "../rules/harm.ts";
@@ -36,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 31;
+export const SAVE_SCHEMA_VERSION = 34;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -1588,9 +1589,19 @@ export type CharacterChoice = {
   traits?: string[] | null;
   /** 나이 (12-69). 없으면 시나리오(역할)의 나이 */
   age?: number | null;
+  /** 과거 배경 id (12-84). 그 배경의 물건을 지니고, 캐릭터에 남는다 */
+  past?: string | null;
+  /** 시작 스킬 (12-84, 과거 배경이 기본값을 준다). 없으면 과거 배경의 스킬 */
+  skills?: Record<string, number> | null;
 };
 
 export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player", rng?: Rng, choice?: CharacterChoice): Character {
+  const past = choice?.past ? s.creation?.pasts.find((p) => p.id === choice.past) : undefined;
+  // 스킬은 시나리오의 것(이제 비어 있다)에 고른 스킬(없으면 과거 배경의 것)을 더한다. 스킬 하나의 상한은 지킨다
+  const skills: Record<string, number> = Object.fromEntries(Object.entries(role.start_skills).filter((e): e is [string, number] => !!e[1]));
+  for (const [m, v] of Object.entries(choice?.skills ?? past?.skills ?? {})) skills[m] = Math.min(s.ranges.skill.max, (skills[m] ?? 0) + v);
+  // 계급 기본 훈련 (12-87): 그 자리에 꼭 필요한 솜씨는 과거 배경과 따로 더한다
+  for (const [m, v] of Object.entries(s.creation?.rank_skills[role.rank] ?? {})) skills[m] = Math.min(s.ranges.skill.max, (skills[m] ?? 0) + v);
   return createCharacterSchema(s).parse({
     id,
     name: choice?.name.trim() || role.default_name,
@@ -1602,9 +1613,11 @@ export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "pl
     occupation: role.occupation ? { id: role.occupation, standing: 0 } : null,
     age: choice?.age ?? role.age,
     stats: choice?.abilities ?? role.start_stats ?? rollAbilities(s, rng),
-    skills: role.start_skills,
+    skills,
+    past: past ? { id: past.id, label: past.label, summary: past.summary } : null,
     conditions: initialConditions(s),
-    inventory: toInventory(role.start_inventory),
+    // 과거 배경의 물건 중 시나리오가 이미 주는 것은 겹쳐 주지 않는다
+    inventory: toInventory([...role.start_inventory, ...(past?.items ?? []).filter((i) => !role.start_inventory.includes(i))]),
     debts: { ...(role.start_debt ?? {}) },
   });
 }
@@ -1634,10 +1647,19 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
  * 새 세계를 여는 첫 이벤트. 시작 캐릭터, 모든 NPC, 시작 지식을 담는다.
  * customRole을 주면 콘텐츠의 역할 대신 그것으로 시작한다 (자유 시나리오, roleId는 CUSTOM_ROLE_ID)
  */
-export function createWorldEvent(content: Content, roleId: string, worldId: string, rng?: Rng, choice?: CharacterChoice, customRole?: RoleContent, background?: string[]): GameEvent {
+export function createWorldEvent(
+  content: Content,
+  roleId: string,
+  worldId: string,
+  rng?: Rng,
+  choice?: CharacterChoice,
+  customRole?: RoleContent,
+  background?: string[],
+  motive?: { id: string; label: string; summary: string } | null,
+): GameEvent {
   const role = customRole ?? content.roles[roleId];
   if (!role) throw new Error(`알 수 없는 역할: ${roleId}`);
-  const player = createCharacterFromRole(content.scenario, role, "player", rng, choice);
+  const player = { ...createCharacterFromRole(content.scenario, role, "player", rng, choice), ...(motive ? { motive } : {}) };
   const npcs = Object.values(content.npcs).map((npc) => createCharacterFromNpc(content.scenario, npc));
 
   let no = 0;
@@ -1653,6 +1675,10 @@ export function createWorldEvent(content: Content, roleId: string, worldId: stri
   beliefs[player.id] = (preset?.beliefs ?? []).map((b) => belief(b.fact, b.source, b.accuracy));
   // 자유 시나리오에서 플레이어가 쓴 지난 삶: 캐릭터 자신의 기억이다 (세계의 사실로 확정되지 않는다)
   for (const fact of background ?? []) beliefs[player.id]!.push(belief(fact, "seen", "approximate"));
+  // 고른 동기도 자기 자신에 대한 기억으로 (12-77)
+  if (motive) beliefs[player.id]!.push(belief(`내가 버티는 이유: ${motive.label}. ${motive.summary}`, "seen", "exact"));
+  // 과거 배경도 자기 자신에 대한 기억으로 (12-84)
+  if (player.past) beliefs[player.id]!.push(belief(`붕괴 전에 나는 ${josa(player.past.label, "이었다/였다")}. ${player.past.summary}.`, "seen", "exact"));
   for (const npc of Object.values(content.npcs)) {
     beliefs[npc.id] = npc.knows.map((fact) => belief(fact, "seen", "exact"));
   }

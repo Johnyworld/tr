@@ -1,3 +1,4 @@
+import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { describeRomanceForGm } from "./romance.ts";
@@ -22,7 +23,6 @@ import {
   conditionPenalty,
   describeConditions,
   initialConditions,
-  rankLabel,
   speechLevel,
 } from "../scenario/scenario.ts";
 import { formatTime } from "../rules/time.ts";
@@ -107,10 +107,12 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(player.skillPoints > 0 ? [`레벨업 대기: 올릴 스킬 ${player.skillPoints}개. 적당한 때 플레이어에게 무엇을 올릴지 묻고 learn_skill로 올린다`] : []),
     ].join("\n")],
     ["sheet", [
-      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankLabel(scenario, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
+      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankName(content, player.factionId, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
       ...(occupationOf(content, player)
         ? [`직분: ${occupationTitle(content, player)} (${occupationOf(content, player)!.summary}). 이 일로 평판을 쌓으면 직분 안에서 오른다 (이야기·일감의 결과로만)`]
         : []),
+      ...(player.past ? [`과거 배경: ${player.past.label} — ${player.past.summary} (붕괴 전에 하던 일. 몸에 밴 솜씨와 버릇, 아는 사람과 기억에 묻어난다)`] : []),
+      ...(player.motive ? [`동기: ${player.motive.label} — ${player.motive.summary} (이 사람을 움직이는 것. 장면과 선택, 독백에 묻어나게. 대신 행동을 정하지는 않는다)`] : []),
       ...(state.background.length && state.playerId === "player"
         ? [`지난 일 (세계의 사실, 주인공이 아는 대로): ${state.background.map((e) => describeHistoryPart(content, e.part)).join(" / ")}`]
         : []),
@@ -176,7 +178,7 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
   return [
     animal
       ? `### ${headingAs(state, content, player.id, c.id)} (${c.id})`
-      : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankLabel(content.scenario, c.rank)}${occupationTitle(content, c) ? ` · ${occupationTitle(content, c)}` : ""}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
+      : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}${occupationTitle(content, c) ? ` · ${occupationTitle(content, c)}` : ""}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
     `겉모습: ${ex.look}`,
     `상태: ${describeConditions(content.scenario, c)} / 지닌 것: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
     `[GM 전용: 연기에만 쓴다] ${animal ? "동물" : c.profile ? "자란 인물" : "이름 없는 인물"} (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
@@ -225,7 +227,7 @@ function describeNpcCard(
   })();
 
   return [
-    `### ${headingAs(state, content, player.id, npc.id)} (${npc.id}) · ${rankLabel(content.scenario, character.rank)}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
+    `### ${headingAs(state, content, player.id, npc.id)} (${npc.id}) · ${rankName(content, character.factionId, character.rank)}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
     `외모: ${npc.look}`,
     `상태: ${describeConditions(content.scenario, character)} / 소지품: ${describeInventory(content, character.inventory)}`,
     `화법: 이 인물의 말투 — ${npc.voice.style} (말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer})`,
@@ -315,7 +317,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
       const gender = genderOf(content.scenario, character.gender ?? npc?.gender ?? null);
-      return `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankLabel(content.scenario, character.rank)}${gender}${statusNote(content, character, state)}`;
+      return `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankName(content, character.factionId, character.rank)}${gender}${statusNote(content, character, state)}`;
     };
     const lines: string[] = [];
     const rest: string[] = [];

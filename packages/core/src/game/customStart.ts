@@ -1,9 +1,8 @@
 import { z } from "zod";
 import type { Content, RoleContent } from "../content/schemas.ts";
-import { MAX_NAME_LENGTH } from "./creation.ts";
 import { CUSTOM_ROLE_ID } from "./state.ts";
 import { occupationById } from "./occupation.ts";
-import { checkHistory, describeHistoryOptions, historyPartSchema, MAX_HISTORY } from "./background.ts";
+import { checkHistory, historyPartSchema, MAX_HISTORY } from "./background.ts";
 
 /**
  * 자유 시나리오 (기획서 12.5): 플레이어가 "누구로, 어디서 시작하는지"를 글로 쓰면, GM이 그 글을 월드가 허락한
@@ -17,13 +16,12 @@ export const MAX_TITLE_LENGTH = 24;
 export const MAX_OPENING_LENGTH = 300;
 export const MAX_BACKGROUND = 4;
 export const MAX_BACKGROUND_LENGTH = 200;
-export const MAX_STORY_LENGTH = 1500;
 
 export function customStartSchema() {
   return z.strictObject({
     faction: z.string().nullable().describe("세력 id. 무소속이면 null"),
     rank: z.string().describe("계급 id (고를 수 있는 것 중에서)"),
-    occupation: z.string().nullable().optional().describe("직분 id (무리 안에서 맡은 일, 고를 수 있는 것 중에서). 없으면 null"),
+    occupation: z.string().nullable().optional().describe("직분 id (무리 안에서 맡은 일). 떠돌이는 null"),
     title: z.string().trim().min(1).max(MAX_TITLE_LENGTH).describe("짧은 직함 (예: 청솔형제단 참모, 떠돌이 약초꾼)"),
     location: z.string().describe("시작 구역 id"),
     kit: z.string().describe("소지품 꾸러미 id"),
@@ -73,11 +71,9 @@ export function checkCustomStart(content: Content, input: CustomStartInput): str
       if (!places.includes(input.location)) problems.push(`${content.factions[input.faction]!.name}으로 시작할 수 있는 곳: ${places.map((l) => `${content.locations[l]?.name ?? l}(${l})`).join(", ")}`);
     }
   }
-  if (input.occupation !== null && input.occupation !== undefined) {
-    const occ = occupationById(content, input.occupation);
-    if (!occ) problems.push(`직분은 ${content.scenario.occupations.map((o) => `${o.label}(${o.id})`).join(", ")} 중 하나다.`);
-    else if (input.faction === null && !occ.free) problems.push(`${occ.label}은(는) 무리 안의 일이라 무소속으로 고를 수 없다.`);
-    else if (input.faction !== null && occ.ranks.length && !occ.ranks.includes(input.rank)) problems.push(`${occ.label}의 계급은 ${occ.ranks.map((r) => `${rankLabel(r)}(${r})`).join(", ")}이다.`);
+  if (input.occupation) {
+    if (input.faction === null) problems.push("떠돌이는 직분이 없다 (무리 안의 일이다).");
+    else if (!occupationById(content, input.occupation)) problems.push(`직분은 ${content.scenario.occupations.map((o) => `${o.label}(${o.id})`).join(", ")} 중 하나다.`);
   }
   problems.push(...checkHistory(content, input.history ?? [], input.faction));
   if (!c.kits.some((k) => k.id === input.kit)) problems.push(`소지품 꾸러미는 ${c.kits.map((k) => `${k.label}(${k.id})`).join(", ")} 중 하나다.`);
@@ -99,8 +95,9 @@ export function checkCustomStart(content: Content, input: CustomStartInput): str
 /**
  * 검증된 고르기로 역할을 만든다. 엔진 값은 코드가 정한다:
  * - 아는 인물: 같은 세력의 인물 모두 (무소속이면 없음)
- * - 상관: 같은 세력에서 계급이 바로 위인 인물 (없으면 없음)
- * - 임무·배급·시작 지식·스토리렛 태그: 같은 세력의 콘텐츠 역할에서. 시작 지식은 계급이 같을 때만 (분대원의 지식을 참모에게 주지 않는다)
+ * - 상관: 같은 계급 시나리오의 상관, 없으면 같은 세력에서 계급이 더 높은 사람 (없으면 없음)
+ * - 임무·배급·시작 지식·스토리렛 태그: 같은 세력·같은 계급의 콘텐츠 역할에서.
+ *   시작 지식은 계급이 같을 때만 (분대원의 지식을 참모에게 주지 않는다)
  */
 export function buildCustomRole(content: Content, input: CustomStartInput): RoleContent {
   const kit = content.scenario.custom_start!.kits.find((k) => k.id === input.kit)!;
@@ -110,22 +107,15 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
   const same = roles.find((r) => r.rank === input.rank) ?? roles[0];
   const level = rankLevel(content, input.rank);
   const members = faction ? Object.values(content.npcs).filter((n) => n.faction === faction) : [];
-  // 같은 계급의 콘텐츠 시나리오가 있으면 그 상관, 없으면 바로 위 계급 중 id 순으로 첫 사람 (파일 순서와 무관하게)
-  // 전투원이 아닌 직분은 거점에 머무는 윗사람(간부, 간부면 지도부)을 상관으로: 바깥을 도는 분대장은 일찍 붙잡히거나 죽는다
-  const occ = occupationById(content, input.occupation);
+  // 같은 계급의 콘텐츠 시나리오가 있으면 그 상관, 없으면 더 높은 계급 중 낮은 순·id 순으로 첫 사람 (파일 순서와 무관하게)
   const above = members
     .filter((n) => rankLevel(content, n.rank) > level && !n.start_captive && !n.roams?.length)
     .sort((a, b) => rankLevel(content, a.rank) - rankLevel(content, b.rank) || a.id.localeCompare(b.id));
-  const officerLevel = rankLevel(content, "officer");
-  const commander =
-    (same?.rank === input.rank && same.commander && (!occ || occ.borrows_role) ? content.npcs[same.commander] : undefined) ??
-    (occ && !occ.borrows_role ? above.find((n) => rankLevel(content, n.rank) >= Math.max(officerLevel, level + 1)) : undefined) ??
-    above[0];
+  const commander = (same?.rank === input.rank && same.commander ? content.npcs[same.commander] : undefined) ?? above[0];
   // 직분의 훈련은 시작 훈련에 더한다 (포인트와 따로, 스킬 하나의 상한은 지킨다)
+  const occ = occupationById(content, input.occupation);
   const skills: Record<string, number> = Object.fromEntries(Object.entries(input.skills).filter(([, v]) => v > 0));
   for (const [m, v] of Object.entries(occ?.skills ?? {})) skills[m] = Math.min(content.scenario.ranges.skill.max, (skills[m] ?? 0) + v);
-  // 전투원이 아닌 직분은 무리의 같은 계급 시나리오에서 배급·회의만 빌리고, 임무와 그 시나리오의 이야기는 빌리지 않는다
-  const borrows = !occ || occ.borrows_role;
   return {
     id: CUSTOM_ROLE_ID,
     label: input.title,
@@ -145,8 +135,8 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
     ...(commander ? { commander: commander.id } : {}),
     // 같은 계급 시나리오의 분대를 이어받는다 (기획서 9.11). 분대장이 비어 있는 분대다
     ...(same?.rank === input.rank && same.squad?.length ? { squad: [...same.squad] } : {}),
-    missions: borrows ? (same?.missions ?? []) : [],
-    storylet_tags: borrows ? (same?.storylet_tags ?? []) : (same?.storylet_tags ?? []).filter((t) => t === "world" || t === "council"),
+    missions: same?.missions ?? [],
+    storylet_tags: same?.storylet_tags ?? [],
     ...(input.kin ? { start_companions: [{ template: input.kin.template, label: input.kin.label }] } : {}),
   } as RoleContent;
 }
@@ -155,7 +145,12 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
  * 무소속 주인공이 무리에 들어갈 때의 역할 (스토리렛 효과 join_faction). 계급은 콘텐츠가 정하고(없으면 자유 시나리오의 가장 낮은 계급),
  * 상관·아는 사람·임무는 buildCustomRole과 같은 규칙으로 코드가 정한다. 시작 장면·소지품은 이미 지난 일이라 비워 둔다
  */
-export function joinRole(content: Content, faction: string, rank: string | undefined, player: { age: number | null; title?: string; occupation?: string | null }): RoleContent {
+export function joinRole(
+  content: Content,
+  faction: string,
+  rank: string | undefined,
+  player: { age: number | null; title?: string; occupation?: string | null },
+): RoleContent {
   const c = content.scenario.custom_start;
   const levelOf = (id: string) => rankLevel(content, id);
   const lowest = [...(c?.ranks ?? [])].sort((a, b) => levelOf(a) - levelOf(b))[0] ?? content.scenario.rank_ladder[0]!.id;
@@ -191,34 +186,5 @@ export function describeCustomRole(content: Content, role: RoleContent): string 
     ...(role.squad?.length ? [`분대원: ${role.squad.map((id) => content.npcs[id]?.name ?? id).join(", ")}`] : []),
     ...(role.start_companions?.length ? [`함께 다니는 사람: ${role.start_companions.map((k) => `${k.label} (${content.extras[k.template]?.label ?? k.template})`).join(", ")}`] : []),
     `첫 장면: ${role.opening_scene}`,
-  ].join("\n");
-}
-
-/** GM이 플레이어의 글을 옮길 때 고를 수 있는 것 */
-export function describeCustomStartOptions(content: Content): string {
-  const s = content.scenario;
-  const c = s.custom_start!;
-  const rankLabel = (id: string) => s.rank_ladder.find((r) => r.id === id)?.label ?? id;
-  const factions = Object.values(content.factions).filter((f) => f.startable !== false);
-  return [
-    `세력과 시작 장소:`,
-    ...factions.map((f) => `- ${f.name}(${f.id}): ${factionLocations(content, f.id).map((l) => `${content.locations[l]?.name ?? l}(${l})`).join(", ") || "(시작할 구역 없음)"}`),
-    ...(c.free_rank ? [`- 무소속(faction: null, rank: ${c.free_rank}): ${c.free_locations.map((l) => `${content.locations[l]?.name ?? l}(${l})`).join(", ")}`] : []),
-    `계급 (세력에 속할 때): ${c.ranks.map((r) => `${rankLabel(r)}(${r})`).join(", ")}. 지도부는 한 자리뿐이라 고를 수 없다 (리더를 원하면 가장 가까운 계급으로 옮기고 알린다). 참모·간부는 간부(officer)`,
-    ...(s.occupations.length
-      ? [
-          `직분 (무리 안에서 맡은 일, occupation): ${s.occupations
-            .map((o) => `${o.label}(${o.id})${o.ranks.length ? ` [계급 ${o.ranks.map(rankLabel).join("·")}]` : ""}${o.free ? " [무소속 가능]" : ""} — ${o.summary}`)
-            .join(" / ")}. 글에 맞는 것이 없으면 가장 가까운 것, 무리와 무관하면 null`,
-        ]
-      : []),
-    `소지품 꾸러미: ${c.kits.map((k) => `${k.label}(${k.id}): ${k.items.map((i) => content.items[i]?.name ?? i).join(", ")}${k.description ? ` — ${k.description}` : ""}`).join(" / ")}`,
-    `시작 훈련: ${c.skill_points}포인트, 스킬 하나에 최대 +${c.skill_max}. 스킬: ${s.moves.map((m) => `${m.label}(${m.id})`).join(", ")}`,
-    `나이: ${c.age.min}~${c.age.max}세`,
-    ...(c.kin.length
-      ? [`연고 (무소속만, 플레이어가 함께 다니는 가족·짝·동물을 썼을 때만 kin으로): ${c.kin.map((k) => `${content.extras[k]?.label ?? k}(${k})`).join(", ")}. label은 부르는 말 (예: 동생, 아버지)`]
-      : []),
-    describeHistoryOptions(content),
-    `직함은 ${MAX_TITLE_LENGTH}자 안, 첫 장면은 ${MAX_OPENING_LENGTH}자 안, 지난 삶(background)은 ${MAX_BACKGROUND}문장까지. 이름은 다음 단계에서 묻는다 (한글 ${MAX_NAME_LENGTH}자, 영문 ${MAX_NAME_LENGTH * 2}자 안)`,
   ].join("\n");
 }

@@ -1,3 +1,4 @@
+import { rankName } from "../game/ranks.ts";
 import { autoEquip } from "./gear.ts";
 import { addStartCompanions } from "./companionTools.ts";
 import { z } from "zod";
@@ -6,9 +7,10 @@ import { checkCharacterChoice, checkName, fillCharacterChoice } from "../game/cr
 import type { CharacterChoice } from "../game/state.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Belief } from "../game/belief.ts";
+import { applyBackground } from "./background.ts";
+import type { HistoryPart } from "../game/background.ts";
 import { createCharacterFromRole, type GameState, type RunRecord } from "../game/state.ts";
 import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
-import { rankLabel } from "../scenario/scenario.ts";
 import { josa, sentence } from "../text.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
@@ -86,17 +88,20 @@ export function successionOptions(state: GameState, content: Content): Successio
     if (!c || c.dead || c.away || c.captive || !npc.playable || !known.has(npc.id) || c.factionId !== dead.factionId) continue;
     options.push({
       id: npc.id,
-      label: `${npc.name} (${content.factions[c.factionId]?.name ?? c.factionId} ${rankLabel(content.scenario, c.rank)})`,
+      label: `${npc.name} (${content.factions[c.factionId]?.name ?? c.factionId} ${rankName(content, c.factionId, c.rank)})`,
       detail: npc.reputation,
     });
   }
   // 자란 인물도 같은 무리면 이어 갈 수 있다 (기획서 7.10)
   for (const c of Object.values(state.characters)) {
     if (!c.profile || c.dead || c.away || c.captive || !known.has(c.id) || c.factionId !== dead.factionId) continue;
-    options.push({ id: c.id, label: `${c.name} (${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankLabel(content.scenario, c.rank)})`, detail: c.profile.reputation });
+    options.push({ id: c.id, label: `${c.name} (${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)})`, detail: c.profile.reputation });
   }
   return options;
 }
+
+/** 사망 뒤 새 캐릭터의 동기와 이야기 (12-86) */
+export type HeirStory = { background: string[]; history: HistoryPart[]; motive: { id: string; label: string; summary: string } | null };
 
 /**
  * 다음 캐릭터로 이어 간다. 새 캐릭터(new)는 캐릭터 생성에서 고른 것(character: 이름·성별·능력·트레잇·초상화)으로 만들 수 있다.
@@ -107,6 +112,7 @@ export function switchCharacter(
   choice: string,
   name: string | null,
   character?: CharacterChoice,
+  story?: HeirStory | null,
 ): { ok: true; text: string } | { ok: false; error: string } {
   const { store, content } = ctx;
   const state = store.getState();
@@ -131,6 +137,7 @@ export function switchCharacter(
       if (problem) return { ok: false, error: problem };
       made.name = name.trim();
     }
+    if (story?.motive) made.motive = story.motive;
     store.append({ type: "character_switched", characterId: id, character: made, known: [...role.known_npcs], ...(switchedRole ? { roleId: switchedRole } : {}) });
     // 그 자리에 오는 사람의 동행 (역할의 시작 동행)
     addStartCompanions(ctx, role);
@@ -144,6 +151,15 @@ export function switchCharacter(
         belief: { id: `b_${s.nextBeliefNo}`, fact: b.fact, source: b.source, accuracy: b.accuracy, learnedAt: s.time },
       });
     }
+    // 새 캐릭터의 동기와 이야기 (12-86): 동기·과거 배경·지난 삶은 자기 기억으로, 배경 부품은 세계의 사실로
+    const remember = (fact: string, accuracy: Belief["accuracy"]) => {
+      const s = store.getState();
+      store.append({ type: "belief_added", characterId: id, belief: { id: `b_${s.nextBeliefNo}`, fact, source: "seen", accuracy, learnedAt: s.time } });
+    };
+    if (made.past) remember(`붕괴 전에 나는 ${josa(made.past.label, "이었다/였다")}. ${made.past.summary}.`, "exact");
+    if (story?.motive) remember(`내가 버티는 이유: ${story.motive.label}. ${story.motive.summary}`, "exact");
+    for (const fact of story?.background ?? []) remember(fact, "approximate");
+    applyBackground(ctx, story?.history ?? []);
   } else {
     const successor = state.characters[choice]!;
     // 같은 무리 사람들은 서로 안다
@@ -246,7 +262,7 @@ export function formatChronicle(state: GameState, content: Content): string[] {
   state.chronicle.forEach((r, i) => {
     const faction = content.factions[r.factionId]?.name ?? r.factionId;
     lines.push(
-      `${i + 1}. ${r.name} · ${faction} ${rankLabel(content.scenario, r.rank)} · ${daysSurvived(r)}일 생존 · 공적 ${r.merit}`,
+      `${i + 1}. ${r.name} · ${faction} ${rankName(content, r.factionId, r.rank)} · ${daysSurvived(r)}일 생존 · 공적 ${r.merit}`,
       `   ${formatTime(r.startedAt)} ~ ${formatTime(r.diedAt)} · 사망: ${r.cause}`,
       ...r.deeds.map((d) => `   - ${d}`),
       ...(r.epitaph ? [`   "${r.epitaph}"`] : []),

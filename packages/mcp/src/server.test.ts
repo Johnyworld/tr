@@ -122,7 +122,7 @@ describe("세이브 슬롯과 종료", () => {
 
     const menu = await call("start_session");
     expect(app.world).toBeNull();
-    expect(menu.text).toMatch(/^1\. 신병 \(23세\) · .*하급 전투원 · 레벨 0 — .+ · 1일차/m);
+    expect(menu.text).toMatch(/^1\. 신병 \(23세\) · .*분대원 · 레벨 0 — .+ · 1일차/m);
     expect(menu.text).toMatch(/^0\. 새 게임\n1\. /m); // 새 게임이 맨 위
 
     const opened = await call("start_session", { slot: 1 });
@@ -180,26 +180,33 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect(first.text).toContain("월드 고르기");
     expect(first.text).toContain("무너진 도시, 가람");
     const scenario = await call("create_character", { answer: "post_apoc" });
-    expect(scenario.text).toContain("시나리오 고르기");
+    expect(scenario.text).toContain("어느 무리에 속해 있나요");
     expect(scenario.text).toContain("열병"); // 월드 이야기
-    expect(scenario.text).toContain("청솔형제단의 하급 전투원");
+    expect(scenario.text).toContain("청솔형제단");
     expect((await call("create_character", { back: true })).text).toContain("월드 고르기");
     await call("create_character", { answer: "무너진 도시, 가람" });
-    expect((await call("create_character", { answer: "청솔형제단의 하급 전투원" })).text).toContain("수위");
-    const name = await call("create_character", { answer: "off" });
-    expect(name.text).toContain("지금 상황");
-    expect(name.text).toContain("간이침대");
-    expect(name.text).toContain("이름");
+    // 지금 상황은 동기 단계에서 먼저 들려주고 (12-86), 캐릭터 만들기에서는 되풀이하지 않는다
+    const motive = await call("create_character", { answer: "청솔형제단의 수색대원" });
+    expect(motive.text).toContain("지금 상황");
+    expect(motive.text).toContain("간이침대");
+    expect(motive.text).toContain("무엇이 당신을 움직이나요");
+    expect((await call("create_character", { answer: "skip" })).text).toContain("수위");
+    expect((await call("create_character", { answer: "off" })).text).toContain("서술 방식");
+    const name = await call("create_character", { answer: "script" });
+    expect(name.text).not.toContain("## 먼저: 지금 상황");
+    expect(name.text).toContain("과거 배경");
+    expect((await call("create_character", { answer: "teacher" })).text).toContain("이름");
     expect((await call("create_character", { answer: "윤하" })).text).toContain("성별");
     expect((await call("create_character", { answer: "female" })).text).toContain("나이");
     expect((await call("create_character", { answer: "70" })).isError).toBe(true);
-    expect((await call("create_character", { answer: "27세" })).text).toContain("직접 정하기");
+    expect((await call("create_character", { answer: "27세" })).text).toContain("고치기");
     const set = await call("create_character", { answer: "manual" });
     expect(set.text).toContain("근력");
     expect(set.text).toContain("가장 자신 있는 것");
     const bad = await call("create_character", { answer: "지능 / 매력" });
     expect(bad.isError).toBe(true);
-    await call("create_character", { answer: "지능 / 매력, 감각 / 체력" });
+    expect((await call("create_character", { answer: "지능 / 매력, 감각 / 체력" })).text).toContain("배경대로");
+    await call("create_character", { answer: "past" });
     const confirm = await call("create_character", { answer: "none" });
     expect(confirm.text).toContain("확인");
     expect(confirm.text).toContain("매력 +1");
@@ -209,7 +216,8 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect(ok.text).toContain("# GM 지침");
     expect(app.creating).toBe(false);
     const p = app.world!.state().characters[app.world!.state().playerId]!;
-    expect(p).toMatchObject({ name: "윤하", gender: "female", age: 27, stats: { intellect: 2, charm: 1, strength: 0 }, traits: [] });
+    expect(p).toMatchObject({ name: "윤하", gender: "female", age: 27, stats: { intellect: 2, charm: 1, strength: 0 }, skills: { history: 1, persuade: 1 }, past: { id: "teacher" }, traits: [] });
+    expect(app.world!.state().options).toEqual({ mature: false, dialogue: "script" }); // 새 게임에서 고른 서술 방식 (12-85)
   });
 
   it("만드는 중이 아니면 create_character는 오류. character를 주면 바로 만든다 (자동 진행용), 규칙 위반은 오류", async () => {
@@ -400,13 +408,24 @@ describe("사망 뒤 새 캐릭터 만들기", () => {
     expect(app.world!.isPlayerDead()).toBe(true);
     const worldId = app.world!.id;
 
+    // 새 캐릭터도 동기와 이야기를 쓸 수 있다 (12-86). 시나리오의 상관은 원수로 둘 수 없다
     const first = await call("choose_next_character", { character_id: "new" });
+    expect(first.text).toContain("새 캐릭터");
+    expect(first.text).toContain("무엇이 당신을 움직이나요");
     expect(first.text).toContain("다른 사람의 삶");
     expect(first.text).not.toContain("월드 고르기");
-    expect(first.text).not.toContain("지금 상황");
+    await call("create_character", { answer: "search" });
+    expect((await call("create_character", { answer: "피난 버스에서 여동생과 헤어졌다." })).text).toContain("첫 장면(opening)은 넣지 않는다");
+    const guarded = await call("create_character", { story_start: { background: ["동생의 노란 목도리를 기억한다."], history: [{ kind: "enemy", target: "a_taeho", why: "버스를 버리고 갔다", knows_you: false }] } });
+    expect(guarded.isError).toBe(true);
+    expect(guarded.text).toContain("상관·분대원·지도부");
+    await call("create_character", { story_start: { background: ["동생의 노란 목도리를 기억한다."], history: [{ kind: "seeking", template: "kin_sibling", label: "여동생" }] } });
+    const named = await call("create_character", { answer: "confirm" });
+    expect(named.text).not.toContain("다른 사람의 삶");
+    expect(named.text).toContain("과거 배경");
     const source = { get world() { return app.world; }, scenarioName: "x", get creating() { return app.creating; } };
     expect(statusPayload(source)).toMatchObject({ creating: true });
-    for (const a of ["서진", "여성", "기본", "random", "manual", ["허약 체질", "아름다운 외모"], "없음"]) {
+    for (const a of ["police", "서진", "여성", "기본", "random", "past", "manual", ["허약 체질", "아름다운 외모"], "없음"]) {
       const r = await call("create_character", { answer: a });
       expect(r.isError, r.text).toBe(false);
     }
@@ -415,6 +434,11 @@ describe("사망 뒤 새 캐릭터 만들기", () => {
     expect(app.world!.id).toBe(worldId);
     const p = app.world!.state().characters[app.world!.state().playerId]!;
     expect(p).toMatchObject({ name: "서진", gender: "female", traits: ["frail", "beautiful"], dead: false });
+    expect(p.motive).toMatchObject({ id: "search" });
+    const facts = app.world!.state().beliefs[p.id]!.map((b) => b.fact).join(" / ");
+    expect(facts).toContain("동생의 노란 목도리");
+    expect(facts).toContain("여동생");
+    expect(facts).toContain("붕괴 전에 나는 경찰이었다");
     expect(statusPayload(source)).toMatchObject({ open: true });
   });
 });
@@ -461,26 +485,60 @@ describe("월드가 여럿일 때 (MCP)", () => {
   });
 });
 
-describe("자유 시나리오 (MCP)", () => {
-  it("직접 쓰기를 고르면 글 → custom_start로 옮기기 → 확인 → 캐릭터 만들기로 이어진다", async () => {
+describe("동기와 이야기 (MCP, 12-77)", () => {
+  it("떠돌이 → 동기 → 이야기 → story_start로 옮기기 → 확인 → 세계의 역사로 남는다", async () => {
     const { call, app } = await connect(REAL_CONTENT);
     await call("start_session", { new_world: true });
     await call("create_character", { answer: "post_apoc" });
-    expect((await call("create_character", { answer: "직접 만들기" })).text).toContain("직접 쓰는 시나리오");
-    expect((await call("create_character", { answer: "나는 청솔형제단의 분대장이다." })).text).toContain("옮기기");
-    const input = {
-      faction: "faction_a", rank: "squad_leader", title: "청솔형제단 분대장", location: "a_base", kit: "fighter",
-      skills: { fight: 1, tactics: 1 }, age: 34, opening: "새벽, 당신은 분대원들을 깨운다.", background: ["붕괴 전에는 소방관이었다."],
+    await call("create_character", { answer: "떠돌이" });
+    await call("create_character", { answer: "alone" });
+    expect((await call("create_character", { answer: "haggle" })).text).toContain("무엇이 당신을 움직이나요");
+    expect((await call("create_character", { answer: "revenge" })).text).toContain("누구를 잃었는지");
+    expect((await call("create_character", { answer: "붉은연합이 마을을 불태웠다." })).text).toContain("story_start");
+    const story = {
+      opening: "구시가의 새벽. 당신은 붉은 완장을 떠올린다.",
+      background: ["불타는 마을을 등지고 달렸다."],
+      history: [{ kind: "enemy", target: "faction_c", why: "마을을 불태웠다", knows_you: false }],
     };
-    const bad = await call("create_character", { custom_start: { ...input, rank: "leader" } });
-    expect(bad.isError).toBe(true);
-    expect((await call("create_character", { custom_start: input })).text).toContain("상관: 한도윤");
-    expect((await call("create_character", { answer: "confirm" })).text).toContain("수위");
-    expect((await call("create_character", { answer: "off" })).text).toContain("분대원들을 깨운다");
-    for (const a of ["강민", "male", "random", "none"]) await call("create_character", { answer: a });
+    expect((await call("create_character", { story_start: { ...story, history: [{ kind: "debt", faction: "nowhere", size: "small" }] } })).isError).toBe(true);
+    expect((await call("create_character", { story_start: story })).text).toContain("세계에 남는 지난 일");
+    await call("create_character", { answer: "confirm" });
+    await call("create_character", { answer: "off" });
+    expect((await call("create_character", { answer: "novel" })).text).toContain("붉은 완장");
+    for (const a of ["police", "윤하", "female", "30", "random", "past", "none"]) await call("create_character", { answer: a });
     const done = await call("create_character", { answer: "start" });
     expect(done.isError).toBe(false);
-    expect(app.world!.state().characters.player).toMatchObject({ name: "강민", rank: "squad_leader" });
+    expect(app.world!.state().background.map((b) => b.part.kind)).toContain("enemy");
+    const player = app.world!.state().characters.player!;
+    expect(player.motive).toMatchObject({ id: "revenge", label: "복수" });
+    expect(app.world!.state().beliefs.player!.map((b) => b.fact)).toContain("내가 버티는 이유: 복수. 빼앗긴 것이 있고, 빼앗은 자가 아직 살아 있다.");
+    expect((await call("get_scene")).text).toContain("동기: 복수");
+  });
+});
+
+describe("떠돌이의 소규모 무리 (MCP, 12-77)", () => {
+  it("채팅으로 무리를 고치고(edit·remove·me) done하면 역할로, 세계에 그 사람들이 함께 다닌다", async () => {
+    const { call, app } = await connect(REAL_CONTENT);
+    await call("start_session", { new_world: true });
+    await call("create_character", { answer: "post_apoc" });
+    expect((await call("create_character", { answer: "떠돌이" })).text).toContain("소규모 무리");
+    const group = await call("create_character", { answer: "group" });
+    expect(group.text).toContain("나 (주인공)");
+    await call("create_character", { answer: "me 나이=40 성별=female" });
+    await call("create_character", { answer: "remove 3" });
+    await call("create_character", { answer: "remove 2" });
+    const edited = await call("create_character", { answer: "edit 1 관계=child 이름=한별 나이=12 성별=male" });
+    expect(edited.text).toContain("1. 아들 한별 (12세, 남성)");
+    // 떠돌이는 역할 단계가 없다: 무리를 다 고치면 바로 동기로
+    expect((await call("create_character", { answer: "done" })).text).toContain("무엇이 당신을 움직이나요");
+    await call("create_character", { answer: "skip" });
+    await call("create_character", { answer: "off" });
+    await call("create_character", { answer: "novel" });
+    for (const a of ["police", "윤하", "random", "past", "none"]) await call("create_character", { answer: a });
+    expect((await call("create_character", { answer: "start" })).isError).toBe(false);
+    const state = app.world!.state();
+    expect(state.characters.player).toMatchObject({ age: 40, gender: "female" });
+    expect(Object.values(state.characters).some((c) => c.name === "한별" && c.age === 12)).toBe(true);
   });
 });
 
@@ -507,7 +565,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     await settle();
     expect(app.creation?.view).toMatchObject({ step: "world" });
     expect(app.submitCreation({ answer: "없는 월드" })).toMatchObject({ ok: false });
-    for (const answer of ["post_apoc", "role_a_grunt", "off", "윤하"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    for (const answer of ["post_apoc", "role_a_grunt", "skip", "off", "novel", "police", "윤하"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     // 화면에서 만들면 이름 다음에 얼굴을 고른다
     expect(app.creation!.view.step).toBe("portrait");
     expect(app.submitCreation({ answer: "../evil" })).toMatchObject({ ok: false });
@@ -518,6 +576,9 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(view.step).toBe("ability_set");
     expect(view.character!.tiers!.map((t) => t.value)).toEqual([2, 1, -1]);
     expect(app.submitCreation({ answer: "intellect / charm, senses / strength" })).toEqual({ ok: true });
+    expect(app.creation!.view.step).toBe("skills");
+    expect(app.submitCreation({ answer: "manual" })).toEqual({ ok: true });
+    expect(app.submitCreation({ answer: ["사격", "응급처치"] })).toEqual({ ok: true });
     expect(app.submitCreation({ answer: "manual" })).toEqual({ ok: true });
     expect(app.creation!.view.character!.traits.length).toBeGreaterThan(0);
     expect(app.submitCreation({ answer: [] })).toEqual({ ok: true });
@@ -528,7 +589,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(done.isError).toBe(false);
     expect(done.text).toContain("상태 화면에서 골랐다");
     expect(done.text).toContain("# GM 지침");
-    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", age: 31, portrait: "p3", stats: { intellect: 2, charm: 1, senses: 1, strength: -1 } });
+    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", age: 31, portrait: "p3", stats: { intellect: 2, charm: 1, senses: 1, strength: -1 }, skills: { shoot: 2, first_aid: 1 } }); // 사격은 고른 +1에 분대원 계급 기본 훈련 +1
     expect(app.creation).toBeNull();
   });
 
@@ -536,30 +597,26 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     const { app, call } = await connectWithScreen(30);
     const first = await call("start_session", { new_world: true, in_browser: true });
     expect(first.text).toContain("다 했어");
-    for (const answer of ["post_apoc", "role_a_grunt", "off", "서진", "none", "male", "기본", "random", "none", "start"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    for (const answer of ["post_apoc", "role_a_grunt", "skip", "off", "novel", "police", "서진", "none", "male", "기본", "random", "past", "none", "start"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     expect(app.world).not.toBeNull();
     const later = await call("create_character", { wait: true });
     expect(later.text).toContain("상태 화면에서 골랐다");
   });
 
-  it("직접 쓰는 시나리오는 화면의 글을 GM이 옮기고, 다시 화면 차례가 된다. 채팅으로 넘길 수도 있다", async () => {
+  it("동기와 이야기는 화면의 글을 GM이 옮기고, 다시 화면 차례가 된다. 채팅으로 넘길 수도 있다", async () => {
     const { app, call } = await connectWithScreen();
     const waiting = call("start_session", { new_world: true, in_browser: true });
     await settle();
-    app.submitCreation({ answer: "post_apoc" });
-    app.submitCreation({ answer: "custom" });
-    expect(app.submitCreation({ answer: "나는 청솔형제단의 분대장이다." })).toEqual({ ok: true });
+    for (const a of ["post_apoc", "loner"]) app.submitCreation({ answer: a });
+    app.submitCreation({ answer: "alone" });
+    expect(app.submitCreation({ answer: ["revenge", "붉은연합이 마을을 불태웠다."] })).toEqual({ ok: true });
     const gm = await waiting;
-    expect(gm.text).toContain("custom_start");
+    expect(gm.text).toContain("story_start");
     expect(app.creation).toMatchObject({ gmWorking: true });
     expect(app.submitCreation({ answer: "confirm" })).toMatchObject({ ok: false });
-    const input = {
-      faction: "faction_a", rank: "squad_leader", title: "청솔형제단 분대장", location: "a_base", kit: "fighter",
-      skills: { fight: 1, tactics: 1 }, age: 34, opening: "새벽, 당신은 분대원들을 깨운다.", background: [],
-    };
-    const again = call("create_character", { custom_start: input });
+    const again = call("create_character", { story_start: { opening: "구시가의 새벽.", background: [], history: [] } });
     await settle();
-    expect(app.creation).toMatchObject({ gmWorking: false, view: { step: "custom_confirm" } });
+    expect(app.creation).toMatchObject({ gmWorking: false, view: { step: "story_confirm" } });
     expect(app.submitCreation({ chat: true })).toEqual({ ok: true });
     const handed = await again;
     expect(handed.text).toContain("채팅으로 이어 하겠다");

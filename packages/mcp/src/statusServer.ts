@@ -156,7 +156,8 @@ export async function handleCreation(source: StatusSource, req: IncomingMessage,
     if (!x || typeof x !== "object" || Array.isArray(x)) return false;
     const o = x as Record<string, unknown>;
     const answerOk =
-      o.answer === undefined || (typeof o.answer === "string" && o.answer.length <= 1500) || (Array.isArray(o.answer) && o.answer.length <= 20 && o.answer.every((a) => typeof a === "string" && a.length <= 40));
+      o.answer === undefined || (typeof o.answer === "string" && o.answer.length <= 1500) || // 목록: 트레잇 이름들, 또는 [동기, 이야기] (12-77)
+      (Array.isArray(o.answer) && o.answer.length <= 20 && o.answer.every((a) => typeof a === "string" && a.length <= 1500) && o.answer.join("").length <= 1600);
     return answerOk && (o.back === undefined || typeof o.back === "boolean") && (o.chat === undefined || typeof o.chat === "boolean");
   };
   if (!ok(input)) return json(res, 400, { error: "answer(글 또는 목록), back, chat 중 하나" });

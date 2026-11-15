@@ -1,0 +1,82 @@
+# 하얀매 수비대 (수비대 분대장 시나리오의 분대원, 초안)
+# 수비대는 문지기 백도진(d_more.yaml), 수색대원 남민호(others.yaml)와 아래 둘. 격리실 문지기 구만석(more_hawk.yaml)은 따로 철문을 지킨다
+# 전 분대장 하재문은 지난달 병원 수색에서 긁혀 격리실에 들어간 뒤 나오지 못했다
+
+- id: d_yuna
+  name: 지윤아
+  alias: 가운을 벗은 젊은 수비대원
+  faction: faction_d
+  rank: grunt
+  occupation: scavenger
+  age: 23
+  gender: female
+  look: 수습 가운을 벗고 수비대 방한복을 입었지만 소매 끝에 아직 소독약 얼룩이 남았다. 머리를 하나로 질끈 묶었다. 손을 자꾸 비빈다.
+  reputation: 진료소 수습이었다가 지난달 스스로 수비대로 옮겨 왔다. 붕대는 누구보다 빨리 감는데 총을 쥐면 손이 굳는다. 왜 치료실을 떠났는지는 말하지 않는다.
+  want: 다시는 격리실 철문 앞에 서지 않는 것
+  fear: 철문 안쪽에서 들리던 소리가 다시 들리는 밤
+  values: { discipline: 1, loyalty: 2, mercy: 2, honesty: 0, self_interest: -1 }
+  traits: [timid, quick_learner, meticulous]
+  voice:
+    style: 조용하고 또박또박한 존댓말. 다친 곳 이야기를 할 때만 목소리가 단단해진다
+    samples:
+      - "분대장님, 그 손 이리 주세요. 피부터 멈추고 얘기해요."
+      - "격리실 당번은… 다른 사람이 서면 안 될까요."
+  routine: { dawn: 약제실 창고 앞, morning: 정문 소매 검사, day: 수색 나간 수비대 따라가기, evening: 수습 숙소 앞 벤치, night: 수비대 숙소 }
+  rules:
+    - 다친 사람을 보면 소속을 묻기 전에 상처부터 본다
+    - 격리실 쪽으로는 돌아서 다닌다
+  knows:
+    - 감염체에게 긁힌 상처가 사흘 동안 어떻게 변하는지
+    - 하재문이 격리실에 들어간 사흘째 밤에 무슨 일이 있었는지
+  doesnt_know:
+    - 하재문이 왜 병원 안쪽 복도로 돌아 들어갔는지
+  secret:
+    content: 하재문의 열이 오른 사흘째 밤, 격리실 철문 당번이 자기였다. 수간호사가 주사기를 들고 들어갔다가 혼자 나왔고, 대표는 그날 밤 일을 아무에게도 말하지 말라고 했다. 그 뒤로 치료실에 들어가지 못한다
+    reveal_when: 격리실 일로 함께 밤을 새우거나, 누군가 열이 올라 같은 결정을 앞뒀을 때 둘만 있다면
+    min_trust: 3
+  stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: -1, charm: 1, intellect: 2 }
+  skills: { first_aid: 2, infected_lore: 1, scavenge: 1 }
+  start_inventory: [bandage, bandage, water_bottle]
+  playable: true
+  healer: true
+  zone: d_clinic
+  ties:
+    - { to: d_sori, kind: friend }
+
+- id: d_deokgu
+  name: 홍덕구
+  alias: 들것 메는 늙수그레한 사내
+  faction: faction_d
+  rank: grunt
+  occupation: scavenger
+  age: 54
+  gender: male
+  look: 반백의 짧은 머리에 무릎이 나온 구급대 방한바지. 어깨에 들것 멜빵 자국이 굳은살로 박였다. 웃을 때 눈이 다 감긴다.
+  reputation: 붕괴 전 구급차를 몰던 사람. 도시의 옛길과 샛길을 다 안다. 왕진과 부상자 수습에는 늘 들것 한쪽을 멘다. 총은 메고 다니지만 쏘는 것을 본 사람이 없다.
+  want: 버들마을에 맡긴 손녀가 이번 겨울을 배불리 넘기는 것
+  fear: 쓸모없는 늙은이로 담 밖에 내보내지는 것
+  values: { discipline: 0, loyalty: 1, mercy: 2, honesty: -1, self_interest: 1 }
+  traits: [genial, patient, coward]
+  voice:
+    style: 느긋한 반존대. 사람을 "우리 분대장", "우리 선생님" 하고 부른다
+    samples:
+      - "우리 분대장, 그 길 말고. 거기 육교 무너졌어. 내가 돌아서 갈게."
+      - "에이, 총은 무게 맞추려고 메는 거지."
+  routine: { dawn: 수비대 숙소, morning: 들것 손질, day: 왕진 호위, evening: 진료소 쪽문 근처, night: 수비대 숙소 }
+  rules:
+    - 들것 위의 사람은 누구든 끝까지 들고 간다
+    - 장날 전날 밤이면 쪽문 근처에서 담배를 피운다
+  knows:
+    - 구시가와 강변 사이 무너지지 않은 옛 골목길
+    - 장날 전날 밤 쪽문을 지나가는 사람이 누구인지
+  doesnt_know:
+    - 쪽문으로 나가는 상자 안의 약이 장부에서 빠진 것이라는 것. 대표가 허락한 거래 일인 줄 안다
+  secret:
+    content: 장날 전날 밤마다 간부 도상필의 부탁으로 진료소 쪽문 빗장을 풀어 둔다. 수고비로 받은 통조림과 담배는 버들마을에 맡긴 손녀에게 보낸다
+    reveal_when: 쪽문 일로 몰렸을 때 둘만 있다면, 또는 손녀 이야기를 진심으로 물어 준 사람에게
+    min_trust: 2
+  stats: { strength: 1, agility: -1, vitality: 1, senses: 1, nerve: -1, charm: 1, intellect: 0 }
+  skills: { survival: 1, first_aid: 1, endure: 2, history: 1 }
+  start_inventory: [cigarettes, water_bottle]
+  playable: true
+  zone: d_clinic

@@ -1,0 +1,34 @@
+# 버들마을 정찰대 신임 분대장이 시작할 때 알고 있는 것 (초안). 일부는 틀렸다
+# accuracy는 GM에게 보이지 않는다. 캐릭터는 자기 믿음이 틀렸는지 모른다
+id: b_squad_leader_start
+beliefs:
+  - fact: 버들마을은 청솔형제단과 연합해 붉은연합과 전쟁 중이다. 탄약은 청솔형제단에게서 받고, 그 대신 텃밭 수확 일부와 사람을 내준다.
+    source: report
+    accuracy: exact
+  - fact: 첫째 분대(경비조)는 문과 담을 지키고, 둘째 분대는 단지 밖에 나간다. 둘째 분대의 일은 연락 간부 표승민이 내리고, 보고도 그에게 한다.
+    source: seen
+    accuracy: exact
+  - fact: 전 분대장 차영만은 보름 전 구시가 정찰에서 혼자 북쪽 골목으로 들어갔다가 돌아오지 않았다.
+    source: report
+    accuracy: exact
+  - fact: 차영만이 붉은연합으로 넘어갔다는 말이 경비병 사이에 돈다.
+    source: rumor
+    accuracy: "false"
+  - fact: 우경태는 지난겨울 약조에 따라 청솔형제단 동쪽 초소에 갔다가 봄에 돌아왔다. 마을이 불러서 돌아왔다고 한다.
+    source: report
+    accuracy: approximate
+  - fact: 도해솔은 여름에 쪽문 앞에 쓰러져 있다가 들어왔다. 강 건너 마을이 감염체에 넘어가 혼자 살아남았다고 했다.
+    source: report
+    accuracy: "false"
+  - fact: 양태준의 동생 수진이는 지난봄 장터 가는 길에서 사라졌다. 103동 동대표 양명숙이 그의 어머니다.
+    source: report
+    accuracy: exact
+  - fact: 단지 사람 한 명에게 돌아가는 탄은 몇 발뿐이다. 정찰대는 나갈 때 마을 사냥총을 빌려 쓰고 돌아오면 반납한다.
+    source: seen
+    accuracy: exact
+  - fact: 밤이면 쪽문 밖 진흙에 낯선 발자국이 찍힌다는 말이 있다. 붉은연합 사람이 대표를 만나러 온다는 소문도 있다.
+    source: rumor
+    accuracy: exact
+  - fact: 아랫단 우물의 물이 줄고 있다. 정수장 펌프의 부품이 있으면 더 깊이 팔 수 있다고 남상구가 말한다.
+    source: report
+    accuracy: approximate

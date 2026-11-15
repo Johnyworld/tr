@@ -1,0 +1,37 @@
+# 버들마을의 신임 분대장 (시작 역할, 초안)
+# 정찰대(간부가 아닌 어른이 모두 속한 대)의 정찰대원이던 주인공이 둘째 분대(단지 밖에 나가는 분대)를 맡았다. 전 분대장 차영만은 보름 전 구시가 정찰에서 돌아오지 않았다
+# 일은 연락 간부 표승민이 내린다. 대표는 다른 말을 할 때가 있다
+id: role_b_squad_leader
+label: 버들마을 정찰대 분대장
+faction: faction_b
+rank: squad_leader
+occupation: scavenger
+default_name: 분대장
+opening_scene: 아침, 버들마을 정문 안쪽 경비실 앞. 정찰대원 넷이 배낭을 발치에 내려놓고 서 있다. 앞치마를 두른 늙은 대원이 접힌 지도를 내밀고, 초록 띠를 찬 사내는 차렷 비슷하게 선다. 목도리를 두른 사내는 고개만 끄덕이고, 소매를 끌어내린 여자는 정문 바깥만 본다. 경비실 벽에는 아직 "차영만 분대" 라고 쓴 분필 글씨가 남아 있다.
+scenario:
+  title: 버들마을의 분대장
+  pitch: >-
+    마흔 명이 사는 옛 아파트 단지에서, 담 밖으로 나가는 사람들을 처음으로 맡는다. 구시가를 뒤지고, 장터 길을 지키고, 청솔형제단과 함께 적의 땅을 엿본다.
+    정찰대원 넷은 저마다 담 밖에 두고 온 것이 있다. 연락 간부는 연합을 위해 나가라 하고, 대표는 오늘 밤은 나가지 말라 한다. 누구의 말을 듣고 누구를 데리고 돌아올지 당신이 정한다.
+  intro: >-
+    가을이 깊어 간다. 당신은 버들마을 정찰대에서 두 해를 다니다 사흘 전 둘째 분대의 분대장이 됐다. 버들마을은 간부가 아닌 어른이 모두 정찰대에 속한다. 첫째 분대는 배동철이 맡아 문과 담을 지키고 (마을에서는 예전대로 경비조라 부른다), 둘째 분대는 단지 밖에 나간다. 구시가를 뒤지고, 장터 가는 길을 지키고, 청솔형제단이 부르면 함께 정찰을 나간다.
+    전 분대장 차영만은 보름 전 구시가 정찰에서 혼자 골목으로 들어갔다가 돌아오지 않았다. 정찰대 일은 연락 간부 표승민이 내린다.
+    분대원은 넷. 구시가를 손금 보듯 아는 늙은 철물점 주인 구본식, 103동 동대표의 아들 양태준, 여름에 쪽문 앞에 쓰러져 있다 들어온 도해솔, 청솔형제단 초소에서 돌아온 우경태.
+    탄은 모자라고 아랫단 우물에서는 두레박이 바닥을 긁는다. 밤이면 쪽문 밖에 낯선 발자국이 찍힌다는 말이 돈다.
+    이야기는 분대장이 되고 처음 분대를 모으는 아침, 정문 경비실 앞에서 시작한다.
+age: 28
+# 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
+# 시나리오는 스킬을 주지 않는다 (지난 배경이 준다)
+start_skills: {}
+start_inventory: [pipe_spear, binoculars, radio, water_bottle, flashlight, notebook, pencil]
+start_location: b_base
+access: [ration, mission_board]
+beliefs_preset: b_squad_leader_start
+# 정찰대 넷, 직속 상관, 단지의 주요 인물
+known_npcs: [b_bonsik, b_taejun, b_haesol, b_gyeongtae, b_seungmin, b_hyunwoo, b_dongcheol, b_myeongsuk, pb_seokgyu, b_sunrye, pb_sanggu, pb_yeongja, b_eunji, b_jaehyuk, b_mina, pb_sua, pb_yunjae]
+commander: b_seungmin
+# 둘째 분대 넷 (기획서 9.11: squad_order로 일을 맡긴다)
+squad: [b_bonsik, b_taejun, b_haesol, b_gyeongtae]
+missions: [b_sl_old_town_sweep, b_sl_market_escort, b_sl_pump_scout, b_sl_empty_block, b_sl_joint_recon, b_sl_hospital_fever, b_sl_drill]
+# b_squad_leader: 둘째 분대에 묶인 이야기, command: 분대장이면 누구나, village_life: 버들마을의 일상, world: 도시의 일
+storylet_tags: [b_squad_leader, command, village_life, world]

@@ -1,0 +1,31 @@
+# 나루상단 호위대 신임 분대장이 시작할 때 알고 있는 것 (초안). 일부는 틀렸다
+# accuracy는 GM에게 보이지 않는다. 캐릭터는 자기 믿음이 틀렸는지 모른다
+id: e_squad_leader_start
+beliefs:
+  - fact: 나루상단은 정수장의 손펌프를 쥐고 모든 무리에 물을 판다. 정수장 안에서는 어느 무리도 총을 꺼내지 않는다는 약속이 있다.
+    source: report
+    accuracy: exact
+  - fact: 호위대는 호위대장 감태식 밑에서 짐마차를 지키고, 무리 사이 길에서 밀린 값을 받고, 길을 살핀다. 임무는 감태식에게서 받고 그에게 보고한다.
+    source: seen
+    accuracy: exact
+  - fact: 탁봉수와 맺은 분대장 계약에는 호위하다 잃은 짐을 분대장 장부에 올린다는 조항이 있다. 사람을 잃은 일은 계약서에 없다.
+    source: seen
+    accuracy: exact
+  - fact: 전 분대장 차문석은 지난달 발전소 길에서 떠돌이 도적 떼에게 짐마차가 털린 날 죽었다. 석만길이 혼자 짐마차를 끌고 돌아왔다.
+    source: report
+    accuracy: approximate
+  - fact: 석만길이 앞장선 짐마차는 한 번도 털린 적이 없다고들 한다. 길을 워낙 잘 알아서라고 한다.
+    source: rumor
+    accuracy: "false"
+  - fact: 붉은연합 물류창고 쪽 거래는 사장님이 직접 날을 정한다. 붉은연합은 늘 탄약으로 값을 치른다.
+    source: report
+    accuracy: exact
+  - fact: 버들마을은 물값을 두 번 미뤘다. 상단 사람들은 버들마을이 붉은연합의 사자를 만났다고 수군거린다.
+    source: rumor
+    accuracy: approximate
+  - fact: 공은채는 버들마을 가는 짐마차에는 늘 빠진다. 피동주는 붉은연합 물류창고 가는 날마다 배탈이 난다.
+    source: seen
+    accuracy: exact
+  - fact: 상단 사람들은 겨울이 오기 전에 이기는 쪽이 보일 거라고, 그러면 상단도 그쪽에 붙을 거라고 말한다.
+    source: rumor
+    accuracy: approximate

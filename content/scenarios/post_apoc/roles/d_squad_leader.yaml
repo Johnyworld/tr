@@ -1,0 +1,40 @@
+# 하얀매 수비대의 신임 분대장 (시작 역할, 초안). 다른 무리의 분대 (기획서 9.11)
+# 하얀매는 서른 남짓한 의술의 무리라 싸우는 사람은 수비대 여섯이 전부다. 수비대는 정문·약제실 창고를 지키고,
+# 약을 찾으러 구시가 약국과 옛 시립병원에 들어가고, 왕진과 장날 약 상자를 호위한다.
+# 전 분대장 하재문은 지난달 병원 수색에서 긁혀 격리실에 들어간 뒤 나오지 못했다
+id: role_d_squad_leader
+label: 하얀매 수비대 분대장
+faction: faction_d
+rank: squad_leader
+occupation: scavenger
+default_name: 분대장
+opening_scene: 새벽, 하얀매 진료소 정문 초소. 쇠창살 너머로 문진 줄이 벌써 서기 시작한다. 초소 벽의 교대표에는 아직 하재문이라는 이름이 분필로 남아 있다. 호루라기를 목에 건 문지기는 차렷 자세로, 방독면을 건 덩치는 하품을 하며, 가운을 벗은 지 얼마 안 된 젊은 여자는 손을 비비며, 늙수그레한 사내는 들것을 벽에 세워 두고 당신을 기다린다. 이층 대표 방 창문에 불이 켜져 있다.
+scenario:
+  title: 하얀매의 수비대 분대장
+  pitch: >-
+    약은 있지만 총은 없는 작은 무리의 담을 맡는다. 수비대 넷과 함께 정문을 지키고, 무너진 약국과 병원에 약을 찾으러 들어가고, 의사를 지켜 왕진길을 다닌다.
+    싸움꾼이 아닌 사람들을 데리고, 어느 편에도 서지 않는다는 약속 하나로 버티는 자리. 정문에서 총을 내려놓으라고 말하는 사람이 당신이다.
+  intro: >-
+    가을이 깊어 간다. 하얀매는 옛 보건소 건물을 진료소로 삼은 서른 명 남짓의 작은 무리로, 약과 의술을 거래 조건으로 써서 전쟁 중인 무리들 사이에서 중립을 지켜 왔다.
+    서른 명 가운데 총을 드는 사람은 수비대 여섯뿐이다. 수비대는 정문과 약제실 창고를 지키고, 구시가의 약국과 옛 시립병원에 약을 찾으러 들어가고, 왕진 가는 의사와 장날의 약 상자를 호위한다.
+    당신은 사흘 전 대표 서은영에게서 수비대 분대장 자리를 받았다. 전 분대장 하재문은 지난달 병원 수색에서 긁혀 격리실에 들어갔고, 나오지 못했다.
+    분대원은 넷. 붕괴 전 순경이던 문지기 백도진, 병원을 드나드는 수색대원 남민호, 수습에서 수비대로 옮겨 온 지윤아, 들것을 메는 늙은 구급차 운전사 홍덕구. 격리실 철문은 구만석이 따로 지킨다.
+    요즘 붉은 완장들이 정문을 자주 기웃거리고, 진료소 문 앞의 줄은 날마다 길어진다.
+    이야기는 분대장이 되고 처음 교대를 서는 새벽, 진료소 정문 초소에서 시작한다.
+age: 34
+# 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
+# 시나리오는 스킬을 주지 않는다 (지난 배경이 준다)
+start_skills: {}
+start_inventory: [pistol, pistol_rounds, crowbar, radio, flashlight, bandage, water_bottle]
+start_location: d_clinic
+access: [ration, mission_board]
+beliefs_preset: d_squad_leader_start
+# 수비대 넷, 대표, 진료소의 손들, 격리실 문지기
+known_npcs: [d_dojin, d_minho, d_yuna, d_deokgu, d_eunyoung, d_jeongsuk, d_sangpil, d_gisun, d_sori, pd_ugyeong, pd_sugyeong, pd_dahyeon, pd_manseok]
+# 수비대는 대표 직속이다 (간부 도상필은 거래, 수간호사 권정숙은 치료를 맡는다)
+commander: d_eunyoung
+# 수비대 넷 (squad_order로 일을 맡긴다)
+squad: [d_dojin, d_minho, d_yuna, d_deokgu]
+missions: [d_sl_gate_watch, d_sl_pharmacy_alley, d_sl_hospital_shaft, d_sl_house_call_escort, d_sl_market_crate, d_sl_wall_mend]
+# d_squad_leader: 수비대에 묶인 이야기, command: 분대장이면 누구나, clinic_life: 진료소의 일상, world: 도시의 일
+storylet_tags: [d_squad_leader, command, clinic_life, world]

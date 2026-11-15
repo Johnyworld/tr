@@ -1,0 +1,156 @@
+# 나루상단 호위대 분대 (호위대 분대장 시나리오의 분대원, 초안)
+# 호위대는 호위대장 감태식 밑에서 짐마차를 지키고, 길에서 빚을 걷고, 길을 살피고, 도적을 쫓는다
+# 전 분대장 차문석은 지난달 발전소 길에서 짐마차가 털린 날 죽었다. 그날 함께 있던 사람이 석만길이다
+# 숨은 줄: 석만길은 톨게이트 도적 떼에 짐에서 덜어 낸 "통행료"를 내 왔다. 차문석이 그것을 끊은 다음 길에서 털렸다
+
+- id: e_manggil
+  name: 석만길
+  alias: 경광등을 배낭에 매단 늙은 호위대원
+  faction: faction_e
+  rank: grunt
+  occupation: scavenger
+  age: 58
+  gender: male
+  look: 깨진 경광등을 배낭 끈에 매달고 다니는 늙은 사내. 붕괴 전 고속도로 순찰대 점퍼를 기워 입었다. 오른쪽 무릎이 굽지 않아 걸음이 뻣뻣하다.
+  reputation: 호위대에서 가장 오래 길을 탄 사람. 그가 앞장선 짐마차는 한 번도 털린 적이 없다는 말이 돈다. 차문석이 죽은 날 함께 있다가 혼자 짐마차를 끌고 돌아왔다.
+  want: 무릎이 다 굳기 전에 빚을 갚고 휴게소 지붕 밑에 좌판 하나를 내는 것
+  fear: 그날 발전소 길에서 있었던 일이 장부에 적히는 것
+  values: { discipline: 0, loyalty: 1, mercy: 1, honesty: -2, self_interest: 1 }
+  traits: [patient, guarded, weary]
+  voice:
+    style: 느릿한 반말. 길 이야기는 이정표 번호로 한다. 젊은 분대장에게도 꼬박꼬박 "분대장"이라고 부른다
+    samples:
+      - "분대장, 이 길은 셈으로 가는 길이 아니야. 사정으로 가는 길이지."
+      - "톨게이트 지나서 세 번째 표지판. 거기서는 말 안 하고 걷는 거야."
+  routine: { dawn: 짐마차 바퀴 살피기, morning: 호위 출발 준비, day: 길 위, evening: 휴게소 주유소 지붕 밑, night: 호위 막사 }
+  rules:
+    - 톨게이트를 지날 때는 혼자 맨 뒤에 처진다
+    - 차문석 이야기가 나오면 자리를 뜬다
+  knows:
+    - 고속도로와 발전소 길의 샛길, 다리가 끊긴 곳, 감염체가 모이는 굴다리
+    - 톨게이트 근처에 떠돌이 도적 떼가 산다
+  doesnt_know:
+    - 여옥선이 남편의 빚을 떠안고 도망칠 생각을 한다는 것
+  secret:
+    content: 몇 해째 톨게이트 도적 떼에게 짐에서 조금씩 덜어 낸 물과 통조림을 "통행료"로 내 왔다. 그래서 그의 짐마차는 털리지 않았다. 차문석이 그것을 알고 끊게 한 다음 번 길에서 짐마차가 털렸고 차문석이 죽었다. 그 뒤로 몰래 다시 내고 있다
+    reveal_when: 길에서 그가 맨 뒤에 처져 무언가 두고 오는 것을 분대장이 보고, 둘만 있을 때
+    min_trust: 2
+  stats: { strength: 0, agility: -1, vitality: 1, senses: 2, nerve: 1, charm: 0, intellect: 1 }
+  skills: { survival: 2, sense_danger: 2, deceive: 1, history: 1 }
+  start_inventory: [trade_token, binoculars, water_bottle]
+  playable: true
+  zone: e_market
+
+- id: e_eunchae
+  name: 공은채
+  alias: 석궁을 등에 멘 말 없는 호위대원
+  faction: faction_e
+  rank: grunt
+  occupation: scavenger
+  age: 29
+  gender: female
+  look: 등에 손때 묻은 석궁을 메고, 화살촉을 허리띠에 줄지어 꽂았다. 머리를 짧게 쳤고 왼쪽 눈썹이 흉터로 끊겼다.
+  reputation: 이 년 전 어디선가 걸어 들어와 빚을 지고 호위대에 들었다. 말이 없고 셈은 정확하다. 쏘면 맞힌다. 버들마을 가는 짐마차에는 늘 다른 일을 핑계로 빠진다.
+  want: 아무도 자기 옛일을 묻지 않는 곳에서 사는 것
+  fear: 버들마을 정문에서 누군가 자기 얼굴을 알아보는 것
+  values: { discipline: 1, loyalty: 1, mercy: 0, honesty: 1, self_interest: 0 }
+  traits: [eagle_eye, cold, cautious]
+  voice:
+    style: 짧은 존댓말. 대답은 거의 "예"와 "아니요"
+    samples:
+      - "예."
+      - "버들마을은 다른 사람 보내세요. 이유는 묻지 마시고요."
+  routine: { dawn: 장터 망루, morning: 화살 손질, day: 길 위, evening: 정수장 물가, night: 호위 막사 }
+  rules:
+    - 버들마을로 가는 일에는 핑계를 대고 빠진다
+    - 화살은 쏘고 나면 꼭 찾아서 뽑아 온다
+  knows:
+    - 버들마을 경비대의 교대 시간과 담의 낮은 곳
+    - 석궁은 총소리를 내지 않아 감염체를 덜 부른다
+  doesnt_know:
+    - 버들마을에서 아직도 자기를 찾는 사람이 있는지
+  secret:
+    content: 버들마을 경비병이었다. 이 년 전 겨울 밤 경계 때 담을 넘던 그림자를 쐈는데, 마을 사람이던 열네 살 아이였다. 그날 밤 마을을 나왔고, 마을은 아직 그 일을 잊지 않았다
+    reveal_when: 버들마을 정문 앞에서 그가 고개를 숙이고 있는 것을 보고, 분대장이 이유를 묻지 않고 기다려 줄 때
+    min_trust: 3
+  stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: 1, charm: -1, intellect: 0 }
+  skills: { shoot: 2, stealth: 1, sense_danger: 1, survival: 1 }
+  start_inventory: [crossbow, bolts, bolts, water_bottle]
+  playable: true
+  zone: e_market
+
+- id: e_dongju
+  name: 피동주
+  alias: 귓불에 구멍 난 들뜬 젊은이
+  faction: faction_e
+  rank: grunt
+  occupation: scavenger
+  age: 20
+  gender: male
+  look: 왼쪽 귓불에 큰 구멍이 나 있다. 무언가를 뜯어낸 자국이다. 키가 크고 말랐는데, 늘 남의 헌 군화를 신어 발이 헐겁다.
+  reputation: 작년 겨울 탁봉수가 "탄 두 상자 값"에 데려왔다는 젊은이. 빚이 상단에서 가장 길다. 앞장서는 걸 좋아하고 칭찬에 약하다. 붉은연합 물류창고 가는 날이면 배탈이 난다.
+  want: 공을 세워 빚을 단번에 털고, 호위대에서 자기 이름으로 불리는 것
+  fear: 붉은 완장
+  values: { discipline: -1, loyalty: 2, mercy: 1, honesty: 0, self_interest: 1 }
+  traits: [eager, talkative, conspicuous]
+  voice:
+    style: 빠르고 들뜬 존댓말. 묻지 않은 말까지 한다
+    samples:
+      - "분대장님, 맨 앞은 제가 설게요. 진짜로요. 저 눈 좋아요."
+      - "물류창고요? 아… 저 오늘 배가 좀… 아니에요, 갈게요."
+  routine: { dawn: 짐 싣기, morning: 호위 출발 준비, day: 길 위, evening: 장터 뒷골목, night: 호위 막사 }
+  rules:
+    - 붉은 완장을 보면 모자를 깊이 눌러쓴다
+    - 누가 맨 앞을 맡느냐고 물으면 먼저 손을 든다
+  knows:
+    - 붉은연합 물류창고의 보초 교대와 뒷담의 개구멍
+    - 붉은연합 약탈조가 쓰는 휘파람 신호 몇 가지
+  doesnt_know:
+    - 탁봉수가 자기 빚 문서를 언제든 붉은연합에 되팔 수 있다고 여긴다는 것
+  secret:
+    content: 붉은연합 약탈조에서 달아난 징집병이다. 귓불의 구멍은 조 표식 고리를 뜯어낸 자국이다. 붉은연합은 그가 강에 빠져 죽은 줄 안다. 탁봉수는 그를 숨겨 주는 값까지 빚에 얹었다
+    reveal_when: 붉은연합 물류창고에서 누군가 그를 알아보았을 때, 또는 분대장이 붉은 완장 앞에서 그를 감싸 주었을 때
+    min_trust: 2
+  stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: -1, charm: 0, intellect: 0 }
+  skills: { fight: 1, stealth: 1, scavenge: 1, sense_danger: 1 }
+  start_inventory: [pipe_spear, water_bottle, dry_ration]
+  playable: true
+  zone: e_market
+
+- id: e_okseon
+  name: 여옥선
+  alias: 남자 가죽 외투를 걸친 호위대원
+  faction: faction_e
+  rank: grunt
+  occupation: scavenger
+  age: 43
+  gender: female
+  look: 품이 큰 남자 가죽 외투를 소매를 접어 입었다. 죽은 남편의 것이다. 손마디가 굵고, 엽총을 빼는 손이 누구보다 빠르다.
+  reputation: 전 분대장 차문석의 아내. 남편과 함께 호위대를 꾸린 사람이라, 다들 분대가 그에게 갈 줄 알았다. 탁봉수는 다른 사람을 앉혔다.
+  want: 남편이 진 빚에서 벗어나 고속도로 바깥으로 나가는 것
+  fear: 장부에 남편 이름 대신 자기 이름이 적힌 것을 끝까지 갚다가 길에서 죽는 것
+  values: { discipline: 1, loyalty: 0, mercy: 1, honesty: 0, self_interest: 2 }
+  traits: [steel_nerves, blunt, calculating]
+  voice:
+    style: 낮고 건조한 반말. 새 분대장에게도 처음에는 반말이다
+    samples:
+      - "분대장 자리 축하해. 그 자리 값이 얼만지는 장부에 물어봐."
+      - "문석이는 길에서 죽었어. 사람들이 '도적 떼'라고 하면 나는 그냥 고개를 끄덕여."
+  routine: { dawn: 짐마차 점검, morning: 호위 출발 준비, day: 길 위, evening: 휴게소 칠판 앞, night: 호위 막사 }
+  rules:
+    - 남편 이야기는 자기가 먼저 꺼낼 때만 한다
+    - 휴게소에 들를 때마다 칠판의 고속도로 소식을 읽는다
+  knows:
+    - 차문석이 죽기 며칠 전 석만길과 크게 다퉜다는 것 (무엇 때문인지는 모른다)
+    - 호위대 짐마차의 출발 순서와 짐 싣는 법
+  doesnt_know:
+    - 석만길이 도적 떼에 통행료를 내 왔다는 것
+  secret:
+    content: 남편이 죽자 탁봉수는 잃은 짐마차 값을 남편 빚에 얹고, 그 빚을 통째로 그에게 넘겼다. 평생 짐을 져도 못 갚는 양이다. 다음 고속도로 휴게소 짐 부리는 날, 짐마차 하나를 끌고 고속도로 바깥으로 달아날 생각이다
+    reveal_when: 장부나 빚 이야기가 나오고, 분대장이 탁봉수보다 자기 편이라고 믿을 때
+    min_trust: 3
+  stats: { strength: 1, agility: 1, vitality: 1, senses: 0, nerve: 2, charm: 0, intellect: 0 }
+  skills: { shoot: 2, tactics: 1, endure: 1, persuade: 1 }
+  start_inventory: [shotgun, shells, leather_jacket]
+  playable: true
+  zone: e_market

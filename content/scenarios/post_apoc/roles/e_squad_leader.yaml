@@ -1,0 +1,42 @@
+# 나루상단 호위대의 신임 분대장 (시작 역할, 초안). 다른 무리의 분대 (기획서 9.11)
+# 짐을 지던 주인공이 호위대 분대를 맡았다. 호위대는 호위대장 감태식 밑에서 짐마차를 지키고, 길에서 빚을 걷고, 길을 살피고, 도적을 쫓는다
+# 상단은 명령이 아니라 계약으로 묶인 무리다. 분대장 자리도 탁봉수와 맺은 계약이고, 잃은 짐은 분대장 장부에 오른다
+id: role_e_squad_leader
+label: 나루상단 호위대 분대장
+faction: faction_e
+rank: squad_leader
+occupation: scavenger
+default_name: 분대장
+opening_scene: 새벽, 나루상단 장터. 옛 휴게소 주차장에 짐마차 두 대가 물통을 싣고 서 있다. 바퀴 옆에 호위대원 넷이 모여 있다. 늙은 사내는 배낭에 매단 깨진 경광등을 닦고, 석궁을 멘 여자는 화살촉을 세고, 키 큰 젊은이는 당신을 보고 너무 빨리 일어선다. 남자 가죽 외투를 걸친 여자만 짐마차 바퀴에 등을 기댄 채 움직이지 않는다. 매점 계산대 쪽에서 장부 넘기는 소리가 들린다.
+scenario:
+  title: 나루상단의 호위대 분대장
+  pitch: >-
+    어느 편에도 서지 않는 상인 무리의 호위대 분대를 맡는다. 짐마차를 지키고, 길에서 빚을 걷고, 도적과 감염체가 깔린 길을 앞서 걷는다.
+    분대장 자리도 계약이고, 잃은 짐은 당신 장부에 오른다. 중립은 값이 매겨져 있고, 그 값을 치르는 것은 분대원 넷이다.
+  intro: >-
+    가을이 깊어 간다. 당신은 나루상단에서 짐을 지며 빚을 갚다가, 사흘 전 우두머리 탁봉수와 계약을 맺고 호위대 분대장이 됐다.
+    상단은 강 하류의 옛 휴게소를 장터로 쓰고, 정수장의 손펌프를 쥐고 모든 무리에 물을 판다. 정수장 안에서는 어느 무리도 총을 꺼내지 않는다.
+    호위대는 호위대장 감태식 밑에서 짐마차를 지키고, 무리 사이 길에서 밀린 값을 받아 오고, 고속도로와 발전소 길을 살핀다. 전 분대장 차문석은 지난달 발전소 길에서 짐마차가 털린 날 돌아오지 못했다.
+    분대원은 넷. 길을 가장 오래 탄 늙은 석만길, 석궁을 쓰는 말 없는 공은채, 빚이 가장 긴 젊은 피동주, 그리고 차문석의 아내 여옥선. 다들 분대가 여옥선에게 갈 줄 알았다.
+    계약서에는 이렇게 적혀 있다. 호위하다 잃은 짐은 분대장 장부에 올린다.
+    이야기는 분대장이 되고 처음 짐마차를 내보내는 새벽, 장터 주차장에서 시작한다.
+age: 32
+# 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
+# 시나리오는 스킬을 주지 않는다 (지나온 배경이 정한다)
+start_skills: {}
+start_inventory: [trade_token, shotgun, shells, shells, shells, water_bottle, cigarettes, coat]
+start_location: e_market
+access: [ration, mission_board]
+beliefs_preset: e_squad_leader_start
+# 호위대 분대 넷, 직속 상관, 장터와 정수장의 주요 인물, 휴게소 칠판지기
+known_npcs: [e_manggil, e_eunchae, e_dongju, e_okseon, pe_taesik, e_bongsu, e_okhee, e_sora, e_deoksu, e_cheolgu, e_hana, e_yuri, pe_sundeok, pe_junki, pe_sangcheol, zo2_gyudeok]
+# 직속 상관은 호위대장. 아침 호위조 점검 때 일을 나눈다
+commander: pe_taesik
+# 호위대 분대 넷 (squad_order로 일을 맡긴다)
+squad: [e_manggil, e_eunchae, e_dongju, e_okseon]
+missions: [es_rest_stop_run, es_red_warehouse_run, es_willow_arrears, es_plant_road_scout, es_pump_night_guard, es_toll_clear, es_column_drill]
+# 분대장 자리를 받으며 짐꾼 때 빚의 절반에 줄이 그어졌다. 나머지는 호위로 갚는다 (기획서 9.10)
+start_debt: { faction_e: 6 }
+# e_squad_leader: 호위대 분대에 묶인 이야기, command: 분대장이면 누구나, world: 도시의 일
+# caravan_life: 나루상단의 장터·길 일상 (상관을 행상대장으로 전제한 첫 짐 이야기는 e_porter 태그로 뺐다)
+storylet_tags: [e_squad_leader, command, caravan_life, world]

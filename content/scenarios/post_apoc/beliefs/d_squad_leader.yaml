@@ -1,0 +1,34 @@
+# 하얀매 수비대 신임 분대장이 시작할 때 알고 있는 것 (초안). 일부는 틀렸다
+# accuracy는 GM에게 보이지 않는다. 캐릭터는 자기 믿음이 틀렸는지 모른다
+id: d_squad_leader_start
+beliefs:
+  - fact: 하얀매는 어느 무리 편도 들지 않는다. 다친 사람은 소속을 가리지 않고 받지만, 약은 값을 받고 내준다.
+    source: seen
+    accuracy: exact
+  - fact: 진료소 담 안에는 누구도 무기를 들이지 않는다. 정문에서 무기를 맡기고 소매를 걷어 보이게 하는 것이 수비대의 일이다.
+    source: seen
+    accuracy: exact
+  - fact: 수비대는 대표 서은영 직속이다. 임무는 대표에게서 받고 대표에게 보고한다. 약값 흥정은 간부 도상필이, 치료 순서는 수간호사 권정숙이 정한다.
+    source: report
+    accuracy: exact
+  - fact: 하얀매에서 총을 드는 사람은 수비대 여섯이 전부다. 분대장과 분대원 넷, 그리고 격리실 철문을 지키는 구만석.
+    source: seen
+    accuracy: exact
+  - fact: 전 분대장 하재문은 지난달 옛 시립병원 수색에서 감염체에게 긁혀 격리실에 들어갔다. 사흘째 밤에 열이 올랐고, 그 뒤로 아무도 그를 보지 못했다.
+    source: report
+    accuracy: approximate
+  - fact: 하재문이 긁힌 날 함께 병원에 들어간 사람은 남민호였다. 남민호는 그날 이야기를 하지 않는다.
+    source: report
+    accuracy: exact
+  - fact: 수비대원들은 문지기 백도진이 분대를 물려받을 줄 알았다. 그는 아무 말도 하지 않았다.
+    source: seen
+    accuracy: exact
+  - fact: 붉은연합 사람들이 요즘 정문을 자주 기웃거린다. 약을 통째로 사들이려 한다는 소문이 있다.
+    source: rumor
+    accuracy: exact
+  - fact: 장날 전날 밤에는 거래 일 때문에 진료소 쪽문을 잠그지 않는다고 들었다.
+    source: rumor
+    accuracy: "false"
+  - fact: 하얀매의 탄약은 약을 주고 사 온다. 수비대가 한 발 쏠 때마다 약장에서 무언가가 빠진다.
+    source: report
+    accuracy: approximate

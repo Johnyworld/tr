@@ -1,0 +1,161 @@
+# 버들마을 정찰대 둘째 분대 (버들마을 분대장 시나리오의 정찰대원, 초안)
+# 버들마을은 간부가 아닌 어른이 모두 정찰대에 속한다. 둘째 분대는 단지 밖에 나간다 (첫째 분대는 문과 담을 지키는 경비조). 구시가 수색, 장터 길 호위, 청솔형제단과의 합동 정찰. 연락 간부 표승민이 일을 내린다
+# 전 분대장 차영만은 보름 전 구시가 정찰에서 돌아오지 않았다
+
+- id: b_bonsik
+  name: 구본식
+  alias: 철물점 앞치마를 두른 늙은 대원
+  faction: faction_b
+  rank: grunt
+  occupation: scavenger
+  age: 57
+  gender: male
+  look: 짧게 깎은 흰머리에 뿔테 안경. 붕괴 전 가게에서 두르던 두꺼운 캔버스 앞치마를 지금도 두르고, 주머니마다 나사와 철사 토막이 들어 있다.
+  reputation: 단지 앞 상가에서 철물점을 하던 사람. 정찰대에서 가장 오래 버텼다. 구시가 상가의 어느 셔터 뒤에 무엇이 남았는지 다 안다는 말을 듣는다. 손녀가 지하 교실에 다닌다.
+  want: 손녀 지우가 봄에 열 살이 되는 것을 보는 것
+  fear: 단지가 무너지는 날 손녀를 데리고 갈 데가 없는 것
+  values: { discipline: 0, loyalty: 1, mercy: 1, honesty: -1, self_interest: 1 }
+  traits: [patient, meticulous, cold_hardy]
+  voice:
+    style: 느긋한 반말. 물건 이름을 정확하게 부르고, 값을 매기듯 사람을 본다. 새 분대장에게는 "대장"이라고 부른다
+    samples:
+      - "대장, 그 셔터는 손으로 들면 안 돼. 스프링이 녹슬어서 한 번에 떨어져."
+      - "차 대장도 그 골목 좋아했지. 좋아하는 골목에서 사람이 안 돌아와."
+      - "우리 지우가 그러더라. 별을 열한 개 접었대. 열한 개."
+  routine: { dawn: 101동, morning: 정문 정찰대 집합, day: 구시가 수색, evening: 관리사무소 지하 교실 앞, night: 101동 }
+  rules:
+    - 구시가 상가는 자기가 앞장선다. 다른 사람이 먼저 셔터를 들지 못하게 한다
+    - 해가 지기 전에 손녀 얼굴을 보러 지하 교실 앞에 간다. 정찰이 늦어지면 말이 짧아진다
+  knows:
+    - 구시가 상가 골목과 셔터 뒤에 무엇이 남았는지
+    - 전 분대장 차영만이 마지막 정찰 때 구시가 북쪽 골목으로 혼자 들어갔다는 것
+  doesnt_know:
+    - 차영만은 쪽문 밖 발자국을 쫓다가 돌아오지 못했다
+  secret:
+    content: 구시가 옛 철물점 지하 창고에 연료통과 공구, 통조림을 숨겨 두었다. 관리사무소 장부에 올리지 않았다. 단지가 무너지는 날 손녀를 데리고 숨어들 곳이다
+    reveal_when: 구시가에서 둘만 있을 때, 단지가 무너지면 어떻게 할지 함께 이야기한 사람에게
+    min_trust: 3
+  stats: { strength: 0, agility: -1, vitality: 1, senses: 2, nerve: 0, charm: 0, intellect: 2 }
+  skills: { scavenge: 2, carpentry: 1, improvise: 1, sense_danger: 1, survival: 1 }
+  start_inventory: [crowbar, wire_roll, flashlight]
+  playable: true
+  zone: b_base
+
+- id: b_taejun
+  name: 양태준
+  alias: 낡은 털목도리를 두른 말 없는 사내
+  faction: faction_b
+  rank: grunt
+  occupation: scavenger
+  age: 26
+  gender: male
+  look: 어깨가 넓고 말랐다. 어머니가 떠 준 갈색 털목도리를 여름에도 두른다. 정찰대 배낭을 남에게 들게 하지 않는다.
+  reputation: 103동 동대표 양명숙의 아들. 정찰대에서 눈이 가장 밝고 말이 가장 적다. 지난봄 동생 수진이가 장터 가는 길에서 사라진 뒤로 더 말이 없어졌다.
+  want: 어머니가 다시 웃는 것
+  fear: 어머니가 수진이를 찾겠다며 혼자 단지 밖으로 나가는 것
+  values: { discipline: 1, loyalty: 2, mercy: 1, honesty: 0, self_interest: -1 }
+  traits: [guarded, blunt, eagle_eye]
+  voice:
+    style: 짧은 존댓말. 대답 대신 고개를 끄덕이거나 손짓을 한다. 동생 이야기에는 대답하지 않는다
+    samples:
+      - "왼쪽. 둘."
+      - "...어머니한테는 제가 말합니다. 분대장님은 하지 마세요."
+      - "그 길은 제가 앞에 서겠습니다."
+  routine: { dawn: 103동 계단, morning: 정문 정찰대 집합, day: 단지 밖 정찰, evening: 103동, night: 102동 옥상 망루 }
+  rules:
+    - 장터 가는 길을 지날 때 수로 옆에서 한 번은 걸음을 멈춘다
+    - 배낭 바닥은 누구에게도 보여 주지 않는다
+  knows:
+    - 장터 가는 길과 남쪽 텃밭 둘레에서 감염체가 다니는 길
+    - 지난봄 수진이가 사라진 날 장터 가는 길에 무슨 짐을 들고 갔는지
+  doesnt_know:
+    - 어머니가 수진이가 붉은연합 쪽에 살아 있다는 쪽지를 받았다는 것
+    - 목도리 하나만으로는 수진이가 죽었는지 알 수 없다
+  secret:
+    content: 지난봄 장터 가는 길 수로 옆에서 수진이의 빨간 목도리를 주웠다. 한쪽이 피에 젖어 있었다. 어머니에게 보이지 못하고 정찰대 배낭 바닥에 넣어 다닌다. 그날부터 동생이 죽었다고 믿는다
+    reveal_when: 수로 옆에서 걸음을 멈춘 그를 재촉하지 않고 기다려 준 사람에게, 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 1, agility: 1, vitality: 0, senses: 2, nerve: 0, charm: -1, intellect: 0 }
+  skills: { survival: 2, shoot: 1, stealth: 1, sense_danger: 1 }
+  start_inventory: [binoculars, kitchen_knife, water_bottle]
+  playable: true
+  zone: b_base
+  # 103동 동대표의 아들
+  ties:
+    - { to: b_myeongsuk, kind: child }
+
+- id: b_haesol
+  name: 도해솔
+  alias: 소매를 손등까지 끌어내린 여자
+  faction: faction_b
+  rank: grunt
+  occupation: scavenger
+  age: 22
+  gender: female
+  look: 작고 단단한 체구. 머리를 아무렇게나 짧게 잘랐다. 날이 더워도 소매를 손등까지 끌어내리고, 붉은색 옷은 걸치지 않는다.
+  reputation: 여름에 쪽문 앞에 쓰러져 있다가 단지에 들어온 사람. 강 건너 마을이 감염체에 넘어가 혼자 살아남았다고 했다. 발이 빠르고 소리 없이 다녀 정찰대에 들어왔다.
+  want: 아무도 자기 얼굴을 알아보지 못하는 곳에서 겨울을 나는 것
+  fear: 붉은연합 사람 앞에서 얼굴을 들키는 것
+  values: { discipline: 0, loyalty: 1, mercy: 1, honesty: -2, self_interest: 2 }
+  traits: [cautious, shadow, light_eater]
+  voice:
+    style: 낮고 빠른 반말. 질문을 받으면 질문으로 돌린다. 겁이 나면 오히려 농담을 한다
+    samples:
+      - "강 건너? 거기 뭐 볼 거 있다고. 다 먹혔어."
+      - "대장, 저 고가도로 쪽은 내가 안 가면 안 돼? ...아니, 그냥."
+      - "발소리 내지 마. 저것들은 귀로 사냥해."
+  routine: { dawn: 102동 지하, morning: 정문 정찰대 집합, day: 단지 밖 정찰, evening: 102동 지하, night: 102동 지하 }
+  rules:
+    - 붉은연합 사람이 쪽문이나 정문에 오면 그날은 102동 지하에서 나오지 않는다
+    - 배낭은 잘 때도 끌어안고 잔다
+  knows:
+    - 고가도로 너머 붉은연합 약탈조가 다니는 길과 순찰 시간 (여름 무렵의 것)
+    - 붉은연합에서 달아나다 잡히면 광장에서 본보기가 된다는 것
+  doesnt_know:
+    - 쪽문으로 드나드는 붉은연합 사자가 약탈조 시절 그를 아는 사람인지
+  secret:
+    content: 붉은연합 약탈조의 징집병이었다. 여름에 담을 넘어 달아났고 강 건너 마을 이야기는 지어낸 것이다. 그때 찼던 붉은 완장을 버리지 못하고 배낭 바닥에 숨겨 두었다
+    reveal_when: 붉은연합 이야기가 나올 때 그를 감싸 준 사람에게, 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 0, agility: 2, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 0 }
+  skills: { stealth: 2, fight: 1, scavenge: 1, sense_danger: 1, deceive: 1 }
+  start_inventory: [kitchen_knife, dry_ration]
+  playable: true
+  zone: b_base
+
+- id: b_gyeongtae
+  name: 우경태
+  alias: 초록 띠를 떼지 않은 각진 사내
+  faction: faction_b
+  rank: grunt
+  occupation: scavenger
+  age: 36
+  gender: male
+  look: 각진 어깨에 짧은 상고머리. 청솔형제단에서 받은 초록 띠를 버들마을 완장 위에 겹쳐 찼다. 총을 메는 자세가 군인처럼 반듯하다.
+  reputation: 지난겨울 약조에 따라 청솔형제단 동쪽 초소에 보내졌다가 이번 봄에 돌아온 정찰대원. 청솔형제단 방식을 입에 달고 산다. 연락 간부 표승민이 아끼는 사람이다.
+  want: 버들마을이 연합을 지켜, 언젠가 청솔형제단 대원으로 떳떳하게 다시 서는 것
+  fear: 동쪽 초소에서 있었던 일을 누가 아는 것
+  values: { discipline: 2, loyalty: 2, mercy: 0, honesty: -1, self_interest: 0 }
+  traits: [blunt, principled, coward]
+  voice:
+    style: 딱딱 끊어지는 존댓말. 청솔형제단 말투로 "분대장님"을 꼬박꼬박 붙인다. 붉은연합 이야기에는 목소리가 커진다
+    samples:
+      - "분대장님, 청솔에서는 출발 전에 수신호부터 맞춥니다."
+      - "대표님이 저쪽 사람을 만난다고요? 그런 소리 함부로 하지 마십시오."
+      - "동쪽 초소요? ...마을이 불러서 돌아온 겁니다."
+  routine: { dawn: 정문, morning: 정문 정찰대 집합, day: 단지 밖 정찰, evening: 관리사무소 앞 표승민 곁, night: 102동 }
+  rules:
+    - 정찰 전에 수신호와 후퇴 순서를 꼭 맞춘다
+    - 동쪽 초소 이야기가 나오면 자리를 뜬다
+  knows:
+    - 청솔형제단 동쪽 초소와 고가도로 너머 붉은연합의 움직임 (지난겨울 무렵의 것)
+    - 청솔형제단의 수신호와 분대 대열
+  secret:
+    content: 지난겨울 동쪽 초소에 붉은연합이 밀려든 밤, 총을 버리고 달아났다. 함께 서던 청솔형제단 대원 하나가 그 밤 돌아오지 못했다. 청솔형제단은 그를 조용히 돌려보냈고, 그는 마을이 불러서 돌아왔다고 말한다
+    reveal_when: 싸움 앞에서 그가 얼어붙은 것을 보고도 탓하지 않은 사람에게, 밤에 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: -1, charm: 0, intellect: 1 }
+  skills: { shoot: 1, tactics: 1, fight: 1, sense_danger: 1, survival: 1 }
+  start_inventory: [pipe_spear, water_bottle]
+  playable: true
+  zone: b_base

@@ -1,0 +1,477 @@
+# 하얀매 수비대 분대장 스토리렛 (초안). 형식은 a_grunt.yaml 머리말 참고
+# 갈래:
+# - 교대표: d_sl_first_shift (백도진이 써 오던 교대표를 누가 쥐나)
+# - 정문: d_sl_armed_visitors (총을 내려놓지 않는 붉은 완장), d_sl_fence_offer (담 밖의 제안)
+# - 지하: d_sl_shaft_stash (남민호의 숨긴 상자, 하재문이 긁힌 까닭)
+# - 쪽문: d_sl_side_gate → d_sl_deokgu_choice (홍덕구가 쪽문을 풀어 둔다. d_theft_traced를 세우면 진료소의 약 도둑 갈래로 이어진다)
+# - 철문: d_sl_yuna_door (지윤아가 본 하재문의 마지막 밤)
+# - 왕진길: d_sl_escort_stop (의사가 길에서 멈춘다)
+# - 담: d_sl_six_guards (대표가 수비대의 무장을 묻는다)
+# tags: d_squad_leader = 수비대에 묶인 이야기
+
+- id: d_sl_first_shift
+  title: 초소의 교대표
+  tags: [d_squad_leader]
+  when:
+    zones: [d_clinic]
+    segments: [dawn, morning]
+    flags_none: [d_sl_mustered]
+  cast:
+    gate: { ids: [d_dojin] }
+    big: { ids: [d_minho] }
+  setup: '정문 초소. {gate:이/가} 벽의 교대표 앞에 차렷 자세로 서 있다. 하재문의 이름 위에 줄이 하나 그어져 있을 뿐, 다른 칸은 다 그의 글씨다. "교대표는 제가 써 왔습니다. 분대장님이 쓰시겠습니까." 뒤에서 {big:이/가} 하품을 삼킨다.'
+  ai_direction: 백도진은 분대를 물려받을 줄 알았지만 그걸 입에 올릴 사람이 아니다. 규칙과 순서를 믿는 사람이라, 새 분대장이 교대표를 어떻게 다루는지로 사람을 잰다. 남민호는 누가 분대장이든 병원에만 안 묶이면 된다는 얼굴이다. 나머지 둘은 숨죽이고 본다.
+  choices:
+    - id: take
+      label: 분필을 받아 교대표를 새로 짠다
+      check: tactics
+      outcomes:
+        success:
+          - set_flag: d_sl_mustered
+          - relation: { who: gate, axis: respect, delta: 1 }
+          - belief: { fact: "교대표를 새로 짰다. 백도진은 한참 들여다보더니 고칠 데가 없다고 했다", source: seen }
+        partial:
+          - set_flag: d_sl_mustered
+          - relation: { who: big, axis: affection, delta: -1 }
+          - belief: { fact: "교대표를 새로 짰지만 남민호의 병원 수색 날이 겹쳤다. 그는 대놓고 투덜댔다", source: seen }
+        miss:
+          - set_flag: d_sl_mustered
+          - relation: { who: gate, axis: respect, delta: -1 }
+          - belief: { fact: "새로 짠 교대표에 정문이 두 시간 비는 칸이 있었다. 백도진이 말없이 고쳐 적었다", source: seen }
+    - id: deputy
+      label: 교대표는 계속 그에게 맡기고 부분대장으로 세운다
+      effects:
+        - set_flag: d_sl_mustered
+        - set_flag: d_sl_dojin_deputy
+        - relation: { who: gate, axis: respect, delta: 2 }
+        - belief: { fact: "백도진에게 교대표를 맡겼다. 수비대원들은 이제 누구에게 물어야 하는지 헷갈려 한다", source: seen }
+    - id: stand
+      label: 첫 교대를 문지기와 나란히 선다
+      effects:
+        - set_flag: d_sl_mustered
+        - relation: { who: gate, axis: trust, delta: 1 }
+        - belief: { fact: "첫 교대를 백도진과 나란히 섰다. 그는 문진 줄의 얼굴을 하나하나 짚어 가며 누가 어디 사람인지 일러 주었다", source: seen }
+
+- id: d_sl_armed_visitors
+  title: 총을 내려놓지 않는 손님
+  tags: [d_squad_leader]
+  when:
+    zones: [d_clinic]
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [d_sl_visitors_done]
+  cast:
+    visitor: { extra: c_sentry_rifle, label: 소총 멘 붉은 완장 }
+    gate: { ids: [d_dojin] }
+  setup: '정문 쇠창살 앞. 붉은 완장 둘이 피범벅이 된 동료를 문짝에 눕혀 들고 왔다. {visitor:은/는} 소총 멜빵을 놓지 않는다. "사람이 죽어 가는데 총부터 내놓으라고? 여기 들어갔다가 청솔 놈들이 오면 뭘로 막아." {gate:이/가} 호루라기를 입에 문 채 당신을 본다.'
+  ai_direction: 진료소 담 안에는 누구도 무기를 들이지 않는다. 이 규칙이 하얀매의 중립을 지키는 담이다. 붉은 완장들은 겁을 먹었지 싸우러 온 것은 아니지만, 밀리면 밀어붙인다. 들것 위의 사람은 피를 많이 흘렸다. 문진 줄의 다른 무리 사람들이 다 보고 있다.
+  choices:
+    - id: hold_rule
+      label: 총을 맡기지 않으면 아무도 못 들어온다고 버틴다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: d_sl_visitors_done
+          - relation: { who: gate, axis: respect, delta: 1 }
+          - faction_morale: { faction: own, delta: 1 }
+          - deed: { summary: 총을 든 붉은연합 사람들을 정문에서 무장 해제시키고 부상자를 들였다, tags: [bravery, diligence], severity: 2, privacy: public }
+        partial:
+          - set_flag: d_sl_visitors_done
+          - relation: { who: visitor, axis: affection, delta: -1 }
+          - belief: { fact: "붉은 완장들은 소총을 맡겼지만, 하나가 허리춤에 무언가를 남긴 것 같았다. 확인하지 못했다", source: seen }
+        miss:
+          - set_flag: d_sl_visitors_done
+          - relation: { who: visitor, axis: affection, delta: -2 }
+          - faction_relation: { from: faction_c, to: faction_d, delta: -1, mutual: false }
+          - belief: { fact: "붉은 완장들은 부상자를 도로 들고 돌아갔다. 문진 줄 앞에서 하얀매를 두고 욕을 퍼부었다", source: seen }
+    - id: outside
+      label: 부상자만 들이고 둘은 쇠창살 밖에 세워 둔다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: d_sl_visitors_done
+          - relation: { who: visitor, axis: trust, delta: 1 }
+          - relation: { who: gate, axis: respect, delta: 1 }
+          - belief: { fact: "붉은 완장 둘은 총을 멘 채 정문 밖에서 기다리기로 했다. 부상자는 치료실로 들어갔다", source: seen }
+        partial:
+          - set_flag: d_sl_visitors_done
+          - belief: { fact: "붉은 완장 둘은 정문 밖에 남았지만, 쇠창살 너머로 진료소 마당을 오래 훑어보았다", source: seen }
+        miss:
+          - relation: { who: visitor, axis: affection, delta: -1 }
+          - belief: { fact: "붉은 완장들은 동료 곁을 떠나지 않겠다고 버틴다. 들것 위의 사람은 아직 쇠창살 앞에 있다", source: seen }
+    - id: let_in
+      label: 사람부터 살리자며 총을 든 채 들인다
+      effects:
+        - set_flag: d_sl_visitors_done
+        - set_flag: d_sl_rule_broken
+        - relation: { who: gate, axis: respect, delta: -2 }
+        - relation: { who: visitor, axis: trust, delta: 1 }
+        - relation: { who: commander, axis: trust, delta: -1 }
+        - deed: { summary: 총을 든 붉은연합 사람들을 진료소 담 안에 들였다, tags: [disobedience, mercy], severity: 2, privacy: public }
+
+- id: d_sl_shaft_stash
+  title: 방수포 밑의 상자
+  tags: [d_squad_leader]
+  when:
+    zones: [hospital_ruins]
+    segments: [morning, day, evening]
+    flags_none: [d_sl_stash_done]
+  cast:
+    big: { ids: [d_minho] }
+  setup: '엘리베이터 통로를 밧줄로 내려오자 발목까지 물이 찬 복도다. 약제실은 왼쪽인데 {big:이/가} 오른쪽 복도로 손전등을 돌린다. 막다른 벽 아래 방수포가 덮여 있고, 들춰 보니 약 상자 셋에 그의 배낭 끈이 묶여 있다. "…분대장. 이건 나중에 얘기하자. 여기선 소리 내지 말고."'
+  ai_direction: 남민호는 병원에서 찾은 약 일부를 따로 숨겨 왔다. 언젠가 하얀매에서 한자리 얻을 때 내밀 밑천이다. 지난달 하재문은 남민호가 이 상자를 챙기러 오른쪽 복도로 돌아간 사이 그를 엄호하다 긁혔다. 남민호는 그걸 먼저 말하지 않는다. 몰리면 몫을 나누자고 하지, 주먹을 쓰지는 않는다. 복도 끝 어둠에서 무언가 물을 헤치는 소리가 난다.
+  choices:
+    - id: haul_all
+      label: 상자를 다 지고 올라가 대표 앞에 내놓게 한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: d_sl_stash_done
+          - faction_resource: { faction: own, resource: medicine, delta: 8 }
+          - relation: { who: big, axis: respect, delta: 1 }
+          - relation: { who: big, axis: affection, delta: -1 }
+          - merit: 1
+          - deed: { summary: 수비대원이 병원에 숨겨 둔 약 상자를 찾아 진료소로 들였다, tags: [diligence, honesty], severity: 2, privacy: semi_private }
+        partial:
+          - set_flag: d_sl_stash_done
+          - faction_resource: { faction: own, resource: medicine, delta: 4 }
+          - zone_noise: 1
+          - relation: { who: big, axis: affection, delta: -1 }
+          - belief: { fact: "상자를 지고 오르다 하나를 물에 빠뜨렸다. 남은 둘만 진료소로 가져왔다", source: seen }
+        miss:
+          - zone_noise: 2
+          - wound: { steps: 1, cause: 물 찬 복도에서 감염체와 맞붙은 상처 }
+          - belief: { fact: "상자를 두고 실랑이하는 사이 복도 끝에서 감염체가 몰려왔다. 빈손으로 밧줄을 탔다", source: seen }
+    - id: share
+      label: 몫을 나누자는 그의 말을 받는다
+      effects:
+        - set_flag: d_sl_stash_done
+        - set_flag: d_sl_minho_cut
+        - give_item: { item: antibiotics }
+        - relation: { who: big, axis: trust, delta: 2 }
+        - deed: { summary: 수비대원과 병원에서 찾은 약을 진료소 몰래 나눠 가졌다, tags: [theft, selfishness], severity: 2, privacy: private }
+    - id: ask_jaemun
+      label: 하재문이 그날 왜 긁혔는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: d_sl_stash_done
+          - set_flag: d_sl_jaemun_truth
+          - relation: { who: big, axis: trust, delta: 1 }
+          - belief: { fact: "남민호가 털어놓았다. 하재문은 그가 이 상자를 챙기러 오른쪽 복도로 돌아간 사이 엄호하다 긁혔다", source: report }
+        partial:
+          - set_flag: d_sl_stash_done
+          - belief: { fact: "남민호는 하재문이 운이 없었다고만 했다. 손전등 불빛이 방수포 쪽을 피했다", source: seen }
+        miss:
+          - relation: { who: big, axis: affection, delta: -1 }
+          - belief: { fact: "하재문 이름을 꺼내자 남민호가 입을 닫았다. 올라가는 내내 한 마디도 하지 않았다", source: seen }
+
+- id: d_sl_side_gate
+  title: 풀려 있는 빗장
+  tags: [d_squad_leader]
+  when:
+    zones: [d_clinic]
+    segments: [night, dawn]
+    day_gte: 3
+    flags_none: [d_sl_side_gate_done]
+  cast:
+    old: { ids: [d_deokgu] }
+  setup: '밤 순찰. 진료소 뒤편 쪽문의 빗장이 걸쇠에서 빠져 담에 기대 세워져 있다. 그 옆에서 {old:이/가} 담배를 피우다 당신을 보고 눈이 다 감기게 웃는다. "아, 우리 분대장. 장날 전날은 원래 이래. 거래 일 때문에."'
+  ai_direction: 간부 도상필이 장날 전날 밤마다 약제실 뒷문으로 약을 빼서 이 쪽문으로 나루상단 사람에게 넘긴다. 홍덕구는 수고비를 받고 빗장을 풀어 둘 뿐, 상자 안의 약이 장부에서 빠진 것인 줄 모른다. 대표가 허락한 일인 줄 안다. 받은 것은 버들마을의 손녀에게 보낸다. 오늘 밤 누가 지나갈지는 아직 보이지 않는다.
+  choices:
+    - id: ask_who
+      label: 빗장을 지르고 누가 풀라고 했는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: d_sl_side_gate_done
+          - set_flag: d_sl_deokgu_paid
+          - set_flag: d_theft_traced
+          - relation: { who: old, axis: trust, delta: 1 }
+          - belief: { fact: "홍덕구가 털어놓았다. 장날 전날 밤마다 도상필 간부의 부탁으로 쪽문 빗장을 풀어 두고 통조림과 담배를 받는다. 대표가 허락한 거래인 줄 알았다고 한다", source: report }
+        partial:
+          - set_flag: d_sl_side_gate_done
+          - set_flag: d_sl_deokgu_paid
+          - belief: { fact: "홍덕구는 윗사람이 시킨 일이라고만 했다. 누구인지는 끝내 대지 않았다", source: report }
+        miss:
+          - set_flag: d_sl_side_gate_done
+          - relation: { who: old, axis: affection, delta: -1 }
+          - belief: { fact: "홍덕구는 원래 이런 거라며 웃어넘겼다. 빗장은 다시 질렀지만 새벽에 보니 또 풀려 있었다", source: seen }
+    - id: hide_watch
+      label: 모른 척 돌아섰다가 담 그늘에 숨어 지켜본다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: d_sl_side_gate_done
+          - set_flag: d_sl_deokgu_paid
+          - set_flag: d_theft_traced
+          - belief: { fact: "자정 넘어 간부 도상필이 상자 하나를 안고 쪽문으로 나갔다. 홍덕구가 문을 잡아 주었고, 도상필은 그의 주머니에 무언가를 찔러 넣었다", source: seen }
+        partial:
+          - set_flag: d_sl_side_gate_done
+          - set_flag: d_sl_deokgu_paid
+          - belief: { fact: "자정 넘어 열쇠 꾸러미 소리를 내는 사람이 상자를 안고 쪽문으로 나갔다. 얼굴은 보지 못했다", source: seen }
+        miss:
+          - relation: { who: old, axis: trust, delta: -1 }
+          - belief: { fact: "담 그늘에 숨었다가 홍덕구에게 들켰다. 그는 그날 밤 내내 쪽문 곁을 떠나지 않았다", source: seen }
+    - id: leave
+      label: 거래 일이라니 그냥 둔다
+      effects:
+        - set_flag: d_sl_side_gate_done
+        - relation: { who: old, axis: affection, delta: 1 }
+
+- id: d_sl_deokgu_choice
+  title: 손녀의 통조림
+  tags: [d_squad_leader]
+  when:
+    segments: [evening, night]
+    flags_all: [d_sl_deokgu_paid]
+    flags_none: [d_sl_deokgu_done]
+  cast:
+    old: { ids: [d_deokgu] }
+  setup: '수비대 숙소 뒤. {old:이/가} 들것 멜빵을 꿰매다 말고 고개를 든다. 무릎 위에 통조림 두 개가 놓여 있다. "우리 분대장. 그거, 대표님한테 할 거지. 하려면 해. 근데 이건 버들마을 우리 손녀 거야. 그것만 보내 놓고."'
+  ai_direction: 홍덕구는 자기가 도둑질을 거든 줄 이제 어렴풋이 안다. 하얀매는 약을 빼돌리면 내보낸다. 일러바치면 그는 담 밖으로 나가고, 손녀에게 갈 것도 끊긴다. 눈감아 주면 쪽문은 계속 열린다. 그를 그대로 두고 다음 장날 밤 도상필을 잡는 데 쓸 수도 있다. 그는 울지 않고 웃으려 애쓴다.
+  choices:
+    - id: report
+      label: 대표에게 있는 그대로 알린다
+      effects:
+        - set_flag: d_sl_deokgu_done
+        - set_flag: d_theft_traced
+        - merit: 1
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - relation: { who: old, axis: trust, delta: -3 }
+        - deed: { summary: 쪽문을 풀어 준 수비대원을 대표에게 알렸다, tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+        - npc_depart: { who: old }
+        - belief: { fact: "홍덕구는 사흘 뒤 들것을 두고 담 밖으로 나갔다. 버들마을로 간다고 했다", source: seen }
+    - id: bait
+      label: 다음 장날 밤에도 빗장을 풀되, 이번엔 함께 지켜보자고 한다
+      check: tactics
+      outcomes:
+        success:
+          - set_flag: d_sl_deokgu_done
+          - set_flag: d_theft_traced
+          - relation: { who: old, axis: trust, delta: 2 }
+          - belief: { fact: "홍덕구와 짰다. 다음 장날 전날 밤, 쪽문으로 나가는 사람을 둘이 함께 본다", source: seen }
+        partial:
+          - set_flag: d_sl_deokgu_done
+          - set_flag: d_theft_traced
+          - relation: { who: old, axis: affection, delta: -1 }
+          - belief: { fact: "홍덕구는 그러겠다고 했지만 손이 떨렸다. 도상필 앞에서 티를 낼지도 모른다", source: seen }
+        miss:
+          - relation: { who: old, axis: trust, delta: -1 }
+          - belief: { fact: "홍덕구는 간부를 잡는 일에는 끼지 않겠다고 했다. 무섭다고, 그 말만 했다", source: seen }
+    - id: cover
+      label: 통조림을 보내 주고 이 일은 없던 걸로 한다
+      effects:
+        - set_flag: d_sl_deokgu_done
+        - relation: { who: old, axis: trust, delta: 2 }
+        - relation: { who: old, axis: affection, delta: 1 }
+        - deed: { summary: 약 도둑질에 쪽문을 열어 준 수비대원을 덮어 주었다, tags: [loyalty, disobedience], severity: 2, privacy: private }
+
+- id: d_sl_yuna_door
+  title: 철문 앞의 빈 의자
+  tags: [d_squad_leader]
+  when:
+    zones: [d_clinic]
+    segments: [night]
+    day_gte: 3
+    flags_none: [d_sl_yuna_done]
+  cast:
+    yuna: { ids: [d_yuna] }
+    door: { ids: [pd_manseok], enter: false }
+  setup: '격리실 철문 앞. {door:이/가} 자리를 비운 사이 당번을 대신 서기로 한 {yuna:이/가} 의자에 앉지 못하고 서 있다. 철문 안쪽은 조용하다. 당신을 보자 손을 비비며 묻는다. "분대장님은… 하재문 분대장님이 어떻게 되셨는지 들으셨어요?"'
+  ai_direction: 지윤아는 하재문의 열이 오른 사흘째 밤 이 철문 당번이었다. 수간호사가 주사기를 들고 들어갔다가 혼자 나왔고, 대표는 아무에게도 말하지 말라고 했다 (비밀). 그 뒤로 치료실에 들어가지 못해 수비대로 옮겨 왔다. 지금은 묻기만 한다. 다그치면 입을 닫고, 곁에 있어 주면 조금씩 말한다. 열이 오른 사람을 어떻게 할지는 수간호사와 대표만 정한다는 것이 하얀매의 규칙이다.
+  choices:
+    - id: stay
+      label: 당번을 같이 서며 그 밤 이야기를 기다린다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: d_sl_yuna_done
+          - set_flag: d_sl_jaemun_night
+          - relation: { who: yuna, axis: trust, delta: 2 }
+          - belief: { fact: "지윤아가 털어놓았다. 하재문의 열이 오른 밤 철문 당번이 자기였다. 수간호사가 주사기를 들고 들어갔다가 혼자 나왔고, 대표는 아무에게도 말하지 말라고 했다", source: report }
+        partial:
+          - set_flag: d_sl_yuna_done
+          - relation: { who: yuna, axis: trust, delta: 1 }
+          - belief: { fact: "지윤아는 하재문이 들어간 사흘째 밤에 자기가 여기 있었다는 말까지만 했다", source: report }
+        miss:
+          - relation: { who: yuna, axis: affection, delta: -1 }
+          - belief: { fact: "지윤아는 아무것도 아니라며 고개를 저었다. 그날 밤 내내 철문 쪽을 보지 않았다", source: seen }
+    - id: take_shift
+      label: 당번을 대신 서 주고 들어가 자라고 한다
+      effects:
+        - set_flag: d_sl_yuna_done
+        - relation: { who: yuna, axis: affection, delta: 2 }
+        - belief: { fact: "지윤아 대신 격리실 철문 당번을 섰다. 그는 숙소로 가다 말고 한 번 돌아보았다", source: seen }
+    - id: rule
+      label: 그건 수간호사와 대표가 정할 일이라고 잘라 말한다
+      effects:
+        - set_flag: d_sl_yuna_done
+        - relation: { who: yuna, axis: trust, delta: -1 }
+        - relation: { who: commander, axis: respect, delta: 1 }
+
+- id: d_sl_escort_stop
+  title: 골목의 청솔 정찰병
+  tags: [d_squad_leader]
+  when:
+    zones: [old_town]
+    segments: [day, evening]
+    day_gte: 2
+    flags_none: [d_sl_escort_stop_done]
+  cast:
+    doc: { ids: [pd_ugyeong, d_jeongsuk] }
+    hurt: { faction: faction_a, ranks: [grunt] }
+  setup: '왕진에서 돌아오는 구시가 골목. 담벼락에 기대 주저앉은 {hurt:이/가} 옆구리를 움켜쥐고 있다. 청솔 쪽 사람이다. 동쪽 몇 블록 너머에서 총소리가 끊겼다 이어진다. {doc:은/는} 이미 가방을 내려놓고 무릎을 꿇었다. "오 분이면 돼요. 막아 줘요."'
+  ai_direction: 수비대의 일은 의사를 살려서 진료소로 데려가는 것이다. 의사는 다친 사람을 지나치지 못한다. 총소리는 다가오는지 멀어지는지 알 수 없다. 이 정찰병을 쫓는 사람들이 붉은연합이라면, 하얀매가 청솔 사람을 살렸다는 것을 기억할 것이다.
+  choices:
+    - id: drag
+      label: 의사의 팔을 잡아끌고 그대로 진료소로 간다
+      effects:
+        - set_flag: d_sl_escort_stop_done
+        - relation: { who: doc, axis: respect, delta: -1 }
+        - belief: { fact: "구시가 골목에서 다친 청솔 정찰병을 두고 의사를 끌고 돌아왔다. 의사는 진료소에 닿을 때까지 한 마디도 하지 않았다", source: seen }
+    - id: cover
+      label: 골목 어귀를 막고 그 자리에서 지혈하게 둔다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: d_sl_escort_stop_done
+          - relation: { who: hurt, axis: trust, delta: 2 }
+          - relation: { who: doc, axis: respect, delta: 1 }
+          - deed: { summary: 총소리 나는 골목에서 의사를 지키며 청솔 정찰병을 살렸다, tags: [mercy, bravery], severity: 2, privacy: semi_private }
+        partial:
+          - set_flag: d_sl_escort_stop_done
+          - relation: { who: hurt, axis: trust, delta: 1 }
+          - wound: { steps: 1, cause: 골목 어귀로 튄 총알 파편 }
+        miss:
+          - set_flag: d_sl_escort_stop_done
+          - wound: { steps: 1, cause: 골목 어귀를 막다 맞은 총알 파편 }
+          - npc_hurt: { who: doc, steps: 1 }
+          - belief: { fact: "골목으로 총알이 날아들었다. 의사가 팔을 다쳤고, 정찰병은 혼자 기어서 달아났다", source: seen }
+    - id: carry
+      label: 정찰병을 둘러메고 진료소까지 데려간다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: d_sl_escort_stop_done
+          - relation: { who: hurt, axis: trust, delta: 2 }
+          - faction_relation: { from: faction_a, to: faction_d, delta: 1, mutual: false }
+          - deed: { summary: 다친 청솔 정찰병을 둘러메고 진료소까지 날랐다, tags: [mercy], severity: 2, privacy: public }
+        partial:
+          - set_flag: d_sl_escort_stop_done
+          - relation: { who: hurt, axis: trust, delta: 1 }
+          - delay: 120
+          - belief: { fact: "정찰병을 메고 돌아가느라 길을 한참 돌았다. 진료소에 닿았을 때는 해가 기울었다", source: seen }
+        miss:
+          - set_flag: d_sl_escort_stop_done
+          - body: { track: cold, delta: 1 }
+          - delay: 180
+          - belief: { fact: "정찰병을 메고 가다 주저앉았다. 의사와 번갈아 끌며 겨우 진료소에 닿았다", source: seen }
+
+- id: d_sl_fence_offer
+  title: 담 너머의 담배
+  tags: [d_squad_leader]
+  when:
+    zones: [d_clinic]
+    segments: [evening, night]
+    day_gte: 4
+    flags_none: [d_sl_fence_done]
+  cast:
+    red: { extra: c_sentry_shotgun, label: 담 너머의 붉은 완장 }
+  setup: '담장 순찰 중, 철조망 너머에서 성냥 긋는 소리가 난다. {red:이/가} 담배 한 갑과 통조림을 철조망 사이로 들이민다. "분대장이라며. 어렵게 안 할게. 몇 시에 교대하는지, 약 상자는 어느 창고에 두는지. 그것만."'
+  ai_direction: 붉은연합은 동쪽 공세를 앞두고 하얀매의 약을 손에 넣을 길을 재고 있다. 이 보초는 심부름꾼일 뿐 결정권이 없다. 교대표와 창고 자리를 넘기면 언젠가 그 담이 뚫린다. 떠보면 붉은연합이 무엇을 준비하는지 조금 엿들을 수 있다.
+  choices:
+    - id: refuse
+      label: 철조망에서 손 떼고 꺼지라고 한다
+      effects:
+        - set_flag: d_sl_fence_done
+        - belief: { fact: "붉은 완장 하나가 담 너머로 수비대 교대 시간과 약 창고 자리를 사려 했다. 쫓아 보냈다", source: seen }
+    - id: probe
+      label: 받는 척하며 무엇에 쓰려는지 떠본다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: d_sl_fence_done
+          - overhear: { faction: faction_c, source: report }
+          - belief: { fact: "붉은 완장은 담배를 더 줄 테니 다음에 또 보자고 했다. 위에서 진료소 그림을 그려 오라고 시켰다고 흘렸다", source: report }
+        partial:
+          - set_flag: d_sl_fence_done
+          - belief: { fact: "붉은 완장은 위에서 시킨 일이라는 말만 하고 입을 닫았다", source: report }
+        miss:
+          - set_flag: d_sl_fence_done
+          - faction_relation: { from: faction_c, to: faction_d, delta: -1, mutual: false }
+          - belief: { fact: "붉은 완장은 떠보는 걸 눈치채고 담에 침을 뱉고 갔다. 다음엔 말로 안 할 거라고 했다", source: seen }
+    - id: sell
+      label: 교대 시간을 일러 주고 통조림을 받는다
+      effects:
+        - set_flag: d_sl_fence_done
+        - set_flag: d_sl_rota_sold
+        - give_item: { item: canned_food, quantity: 2 }
+        - give_item: { item: cigarettes }
+        - fortify: -1
+        - deed: { summary: 붉은연합 보초에게 진료소 수비대의 교대 시간을 팔았다, tags: [betrayal, selfishness], severity: 3, privacy: private }
+    - id: report
+      label: 그 길로 대표에게 알린다
+      effects:
+        - set_flag: d_sl_fence_done
+        - merit: 1
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - belief: { fact: "붉은연합이 수비대 교대 시간과 약 창고 자리를 캐고 있다고 대표에게 알렸다. 대표는 오래 창밖을 보았다", source: seen }
+
+- id: d_sl_six_guards
+  title: 여섯 명의 담
+  tags: [d_squad_leader]
+  when:
+    zones: [d_clinic]
+    segments: [morning, day]
+    day_gte: 5
+    flags_none: [d_sl_six_done]
+  cast:
+    boss: { commander: true }
+    trader: { ids: [d_sangpil], enter: false }
+  setup: '대표의 방. {boss:이/가} 철사 감은 안경을 벗어 닦는다. "붉은 완장들이 이번 주에만 정문을 세 번 기웃거렸습니다. {trader:은/는} 약을 탄약과 바꿔 수비대를 무장시키자고 하더군요. 수비대 분대장 생각을 듣지요. 총이 담입니까, 약이 담입니까."'
+  ai_direction: 하얀매는 약을 거래 조건으로 써서 중립을 지켜 왔다. 탄약을 사려면 약장을 비워야 하고, 어느 무리와 바꾸느냐가 곧 기울기가 된다. 서은영은 이미 마음을 정한 듯 보이지만, 수비대 분대장의 말을 듣고 싶어 한다. 숫자는 말하지 않는다.
+  choices:
+    - id: arm
+      label: 약을 탄약과 바꿔 수비대를 무장시키자고 한다
+      effects:
+        - set_flag: d_sl_six_done
+        - faction_resource: { faction: own, resource: medicine, delta: -15 }
+        - faction_resource: { faction: own, resource: ammo, delta: 20 }
+        - clock: { id: d_lean, delta: 1 }
+        - belief: { fact: "약장의 약 일부를 탄약과 바꾸기로 했다. 거래는 도상필이 맡는다", source: seen }
+    - id: wall
+      label: 총 대신 담을 높이고 깡통 경보를 달자고 한다
+      check: tactics
+      outcomes:
+        success:
+          - set_flag: d_sl_six_done
+          - fortify: 1
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - belief: { fact: "대표가 진료소 뒤편 담을 높이고 경보를 다는 데 손을 내주었다", source: seen }
+        partial:
+          - set_flag: d_sl_six_done
+          - fortify: 1
+          - delay: 240
+          - belief: { fact: "담은 보강했지만 진료소 사람들 손을 빌리느라 하루가 다 갔다. 수간호사가 불평했다", source: seen }
+        miss:
+          - set_flag: d_sl_six_done
+          - belief: { fact: "담을 보강하자는 안은 일손이 없다는 말에 밀렸다", source: seen }
+    - id: neutral
+      label: 총이 아니라 중립이 담이라고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: d_sl_six_done
+          - clock: { id: d_lean, delta: -2 }
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: commander, axis: trust, delta: 1 }
+          - belief: { fact: "대표는 탄약을 사지 않기로 했다. 하얀매는 누구에게도 총을 사지 않는다는 말이 진료소에 돌았다", source: seen }
+        partial:
+          - set_flag: d_sl_six_done
+          - clock: { id: d_lean, delta: -1 }
+          - belief: { fact: "대표는 고개를 끄덕였지만 도상필의 안도 버리지 않았다", source: seen }
+        miss:
+          - set_flag: d_sl_six_done
+          - relation: { who: commander, axis: respect, delta: -1 }
+          - belief: { fact: "중립은 담이 될 수 없다는 도상필의 말에 대표가 기울었다", source: seen }

@@ -1,0 +1,545 @@
+# 나루상단 호위대 분대장 스토리렛 (초안). 형식은 a_grunt.yaml 머리말 참고
+# 갈래:
+# - 계약: es_contract_clause (탁봉수가 분대원 빚의 보증을 계약에 얹으려 한다)
+# - 통행료: es_toll_cache(es_toll_known) → es_manggil_confess(es_toll_paid / es_toll_stopped) → es_toll_ambush
+# - 정문: es_eunchae_gate (공은채가 버들마을 정문 앞에서 멈춘다)
+# - 완장: es_dongju_armband (붉은연합 보초가 피동주를 알아본다)
+# - 빚: es_okseon_ledger (여옥선이 남편 빚을 떠안고 달아날 궁리를 한다)
+# - 중립의 값: es_red_offer (마경수가 청솔 가는 짐마차를 "늦게" 해 달라고 한다), es_taesik_boat (섬 거래선 호위를 빌려 달라는 호위대장)
+# tags: e_squad_leader = 호위대 분대에 묶인 이야기
+
+- id: es_first_muster
+  title: 짐마차 바퀴 옆의 점호
+  tags: [e_squad_leader]
+  when:
+    zones: [e_market]
+    segments: [dawn, morning]
+    flags_none: [es_mustered]
+  cast:
+    widow: { ids: [e_okseon] }
+    old: { ids: [e_manggil] }
+  setup: >-
+    분대장이 되고 처음 짐마차를 내보내는 새벽. {old:은/는} 경광등을 닦던 손을 멈추고 "분대장" 하고 꼬박꼬박 부른다.
+    {widow:은/는} 바퀴에 등을 기댄 채 일어서지 않는다. 품이 큰 가죽 외투 소매가 손등을 덮었다.
+    "계약서에 뭐라고 적혀 있는지는 다들 알아. 분대장 입으로 한 번 들어 보자고."
+  ai_direction: >-
+    여옥선은 죽은 남편의 분대를 남이 맡은 것을 아직 삼키지 못했다. 분대원들은 새 분대장이 탁봉수의 셈을 따르는 사람인지 분대원의 목숨을 세는 사람인지 재고 있다.
+    계약서의 "잃은 짐은 분대장 장부에" 조항은 분대원도 다 안다. 무엇을 말하든 넷이 함께 듣는다.
+  choices:
+    - id: clause
+      label: 잃은 짐은 내 장부에 오르지 너희 장부에 오르지 않는다고 말한다
+      effects:
+        - set_flag: es_mustered
+        - relation: { who: old, axis: trust, delta: 1 }
+        - relation: { who: widow, axis: respect, delta: 1 }
+        - deed: { summary: "첫 점호에서 잃은 짐은 분대장이 떠안겠다고 말했다", tags: [loyalty], severity: 1, privacy: semi_private }
+    - id: second
+      label: 여옥선에게 짐마차 앞자리를 맡긴다
+      effects:
+        - set_flag: es_mustered
+        - set_flag: es_okseon_front
+        - relation: { who: widow, axis: trust, delta: 2 }
+        - relation: { who: commander, axis: respect, delta: -1 }
+        - belief: { fact: "첫 점호에서 여옥선에게 짐마차 앞자리를 맡겼다. 여옥선은 대답 대신 엽총을 들고 일어섰다", source: seen }
+    - id: short
+      label: 출발 순서만 부르고 바퀴를 굴린다
+      effects:
+        - set_flag: es_mustered
+
+- id: es_contract_clause
+  title: 계약서의 마지막 줄
+  tags: [e_squad_leader]
+  when:
+    zones: [e_market]
+    segments: [morning, day]
+    day_gte: 2
+    flags_none: [es_contract_done]
+  cast:
+    boss: { ids: [e_bongsu] }
+    young: { ids: [e_dongju], enter: false }
+  setup: >-
+    매점 계산대, {boss:이/가} 금니를 드러내며 계약서를 다시 펼친다. 맨 아래 빈칸에 연필로 한 줄이 새로 적혀 있다.
+    "분대원이 빚을 남기고 떠나거나 죽으면 남은 빚은 분대장이 잇는다." 그가 손가락으로 그 줄을 두드린다.
+    "형님, 이건 그냥 보증입니다. 형님 분대원이 어디 도망갈 사람들입니까."
+  ai_direction: >-
+    탁봉수는 분대원의 빚을 분대장에게 묶어 두면 분대장이 분대원을 놓치지 않는다는 것을 안다. 특히 빚이 가장 긴 {young}의 빚이다.
+    서명하면 분대원 넷의 빚이 분대장 목에 걸린다. 그는 흥정을 즐기고, 지는 흥정도 셈에 넣는다. 맞서면 판정이 걸린다.
+  choices:
+    - id: sign
+      label: 말없이 서명한다
+      effects:
+        - set_flag: es_contract_done
+        - set_flag: es_guarantor
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "분대원이 빚을 남기고 떠나거나 죽으면 남은 빚은 내가 잇는다는 줄에 서명했다", source: seen }
+    - id: haggle
+      label: 그 줄을 빼 달라고 흥정한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: es_contract_done
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "탁봉수가 웃으며 그 줄에 줄을 그었다. '형님, 장사하셔도 되겠습니다'", source: seen }
+        partial:
+          - set_flag: es_contract_done
+          - set_flag: es_guarantor
+          - belief: { fact: "그 줄은 남았지만 탁봉수가 '죽은 사람 빚은 빼 드리지요'라고 옆에 적었다. 떠난 사람 빚은 내가 잇는다", source: seen }
+        miss:
+          - set_flag: es_contract_done
+          - set_flag: es_guarantor
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "흥정 끝에 그 줄에 서명하고 말았다. 탁봉수는 흥정 값으로 물 한 통을 장부에 더 얹었다", source: seen }
+          - debt: { faction: own, delta: 1 }
+    - id: refuse
+      label: 분대원 빚까지는 못 진다고 계약서를 밀어 놓는다
+      effects:
+        - set_flag: es_contract_done
+        - relation: { who: boss, axis: trust, delta: -2 }
+        - relation: { who: young, axis: trust, delta: 1 }
+        - deed: { summary: "분대원의 빚을 분대장에게 묶는 계약 줄에 서명하지 않았다", tags: [loyalty, disobedience], severity: 1, privacy: semi_private }
+
+- id: es_toll_cache
+  title: 톨게이트 기둥의 물통
+  tags: [e_squad_leader]
+  when:
+    zones: [rest_stop, power_plant]
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [es_toll_seen]
+  cast:
+    old: { ids: [e_manggil] }
+  setup: >-
+    톨게이트를 지나며 짐마차가 속도를 줄인다. 맨 뒤에 처진 {old:이/가} 뻣뻣한 무릎을 굽혀 부스 기둥 밑에 물통 하나를 내려놓는다.
+    기둥에는 분필로 그은 금이 여럿이다. 그가 새 금을 하나 긋고, 아무 일 없다는 듯 짐마차를 따라온다.
+  ai_direction: >-
+    석만길은 톨게이트 도적 떼에 짐에서 덜어 낸 "통행료"를 놓고 왔다. 그래서 그의 짐마차는 털리지 않았다. 지금 보이는 것은 물통과 분필 금까지다.
+    차문석이 죽은 일과의 관계는 아직 드러내지 않는다. 짐을 빼돌린 사람은 상단에서 쫓겨난다는 규칙을 분대원들도 안다.
+  choices:
+    - id: confront
+      label: 그 자리에서 물통을 가리킨다
+      effects:
+        - set_flag: es_toll_seen
+        - set_flag: es_toll_known
+        - relation: { who: old, axis: trust, delta: -1 }
+        - belief: { fact: "석만길이 톨게이트 기둥 밑에 물통을 두고 왔다. 따지자 '길값'이라고만 하고 입을 닫았다", source: seen }
+    - id: watch
+      label: 못 본 척하고 기억해 둔다
+      effects:
+        - set_flag: es_toll_seen
+        - set_flag: es_toll_known
+        - belief: { fact: "석만길이 톨게이트 기둥 밑에 짐마차의 물통 하나를 두고 분필로 금을 긋는 것을 봤다", source: seen }
+    - id: nothing
+      label: 쉬어 가는 늙은이의 버릇이라 여기고 넘긴다
+      effects:
+        - set_flag: es_toll_seen
+
+- id: es_manggil_confess
+  title: 주유소 지붕 밑의 길값
+  tags: [e_squad_leader]
+  when:
+    segments: [evening, night]
+    flags_all: [es_toll_known]
+    flags_none: [es_toll_done]
+  cast:
+    old: { ids: [e_manggil] }
+    widow: { ids: [e_okseon], enter: false, optional: true }
+  setup: >-
+    {old:이/가} 혼자 경광등의 깨진 유리를 만지작거리고 있다. 당신을 보고도 일어서지 않는다.
+    "분대장. 내 짐마차가 왜 안 털렸는지 알지. 문석이도 알았어. 알고서 끊었지. 그다음 길에서 그렇게 된 거야."
+  ai_direction: >-
+    석만길은 몇 해째 짐에서 덜어 낸 물과 통조림을 톨게이트 도적 떼에 놓아 왔다. 차문석이 그것을 끊게 한 다음 번 길에서 짐마차가 털리고 차문석이 죽었다. 그 뒤로 몰래 다시 놓는다.
+    짐을 빼돌린 사람은 상단에서 쫓겨난다. 그는 빌지 않고 길의 셈을 말한다. 계속 내면 짐마차는 무사하지만 분대장이 짐 빼돌리기를 덮는 것이다. 끊으면 도적 떼가 길에 나온다.
+    여옥선은 남편이 왜 죽었는지 모른다. 그에게 알릴지는 분대장이 정한다.
+  choices:
+    - id: keep
+      label: 앞으로는 분대 몫에서 덜어 내라고 한다
+      effects:
+        - set_flag: es_toll_done
+        - set_flag: es_toll_paid
+        - relation: { who: old, axis: trust, delta: 2 }
+        - deed: { summary: "늙은 호위대원이 짐에서 덜어 도적 떼에 길값을 내는 것을 덮어 주었다", tags: [theft, mercy], severity: 2, privacy: private }
+    - id: stop
+      label: 이제부터 끊는다고 한다
+      effects:
+        - set_flag: es_toll_done
+        - set_flag: es_toll_stopped
+        - relation: { who: old, axis: affection, delta: -1 }
+        - belief: { fact: "석만길에게 길값을 끊으라고 했다. 그는 '그럼 다음 길은 분대장이 맨 앞에 서'라고만 했다", source: seen }
+    - id: report
+      label: 호위대장에게 알린다
+      effects:
+        - set_flag: es_toll_done
+        - set_flag: es_toll_stopped
+        - merit: 1
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - relation: { who: old, axis: trust, delta: -3 }
+        - deed: { summary: "짐에서 길값을 덜어 내던 늙은 분대원을 호위대장에게 알렸다", tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+    - id: tell_widow
+      label: 여옥선에게 남편이 죽은 까닭을 알린다
+      when: { cast: [widow] }
+      effects:
+        - set_flag: es_toll_done
+        - set_flag: es_toll_stopped
+        - set_flag: es_okseon_knows
+        - relation: { who: widow, axis: trust, delta: 2 }
+        - relation: { who: old, axis: trust, delta: -2 }
+        - npc_relation: { from: widow, to: old, axis: trust, delta: -3 }
+        - belief: { fact: "여옥선에게 차문석이 길값을 끊은 다음 길에서 죽었다고 말했다. 여옥선은 한참 말이 없다가 석만길의 막사 쪽을 봤다", source: seen }
+
+- id: es_toll_ambush
+  title: 끊긴 길값
+  urgent: true
+  tags: [e_squad_leader]
+  when:
+    zones: [rest_stop, power_plant]
+    segments: [morning, day, evening]
+    day_gte: 3
+    flags_all: [es_toll_stopped]
+    flags_none: [es_toll_ambush_done]
+  cast:
+    bandit: { extra: drifter_leader, label: 톨게이트 도적 떼 우두머리 }
+    hurt: { ids: [e_dongju, e_eunchae, e_okseon, e_manggil] }
+  setup: >-
+    톨게이트 부스 뒤에서 누더기를 겹쳐 입은 사람들이 짐마차 앞을 막는다. 쇠파이프와 녹슨 엽총 하나.
+    앞에 선 {bandit:이/가} 기둥의 분필 금을 손톱으로 긁는다. "요새 길값이 안 들어와. 그럼 짐을 통째로 받아야지. 사람은 안 건드려. 짐만."
+  ai_direction: >-
+    도적 떼는 굶는 떠돌이들이다. 총은 하나뿐이고 탄도 몇 발 없다. 총소리가 나면 발전소 쪽 감염체가 모인다는 것을 그들도 안다.
+    짐을 잃으면 계약대로 분대장 장부에 오른다. 맞서면 판정이 걸리고, 다치는 것은 대열에 선 분대원일 수 있다. 앞에 선 하나는 이미 인물로 만들었다 (나머지는 서술로만, 싸움이 커지면 spawn_extra).
+  choices:
+    - id: hold
+      label: 대열을 세우고 맞선다
+      check: tactics
+      outcomes:
+        success:
+          - set_flag: es_toll_ambush_done
+          - set_flag: es_toll_broken
+          - merit: 2
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - deed: { summary: "톨게이트에서 도적 떼에 맞서 짐마차를 지켰다", tags: [bravery], severity: 2, privacy: public }
+        partial:
+          - set_flag: es_toll_ambush_done
+          - npc_hurt: { who: hurt, steps: 1 }
+          - zone_noise: 2
+          - belief: { fact: "도적 떼를 쫓아냈지만 대열에 선 분대원 하나가 다쳤다. 총소리를 듣고 굴다리 쪽이 술렁였다", source: seen }
+        miss:
+          - set_flag: es_toll_ambush_done
+          - wound: { steps: 1, cause: 톨게이트 도적 떼와의 싸움 }
+          - faction_resource: { faction: own, resource: water, delta: -10 }
+          - debt: { faction: own, delta: 3 }
+          - belief: { fact: "톨게이트에서 짐마차 하나를 통째로 잃었다. 계약대로 잃은 짐이 내 장부에 올랐다", source: seen }
+    - id: pay
+      label: 오늘 몫의 길값을 내주고 지나간다
+      effects:
+        - set_flag: es_toll_ambush_done
+        - set_flag: es_toll_paid
+        - faction_resource: { faction: own, resource: water, delta: -3 }
+        - debt: { faction: own, delta: 1 }
+        - belief: { fact: "도적 떼에 물통 셋을 길값으로 내주고 지나갔다. 그 값은 내 장부에 올랐다", source: seen }
+    - id: parley
+      label: 휴게소에서 물을 정식으로 사 가라고 흥정한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: es_toll_ambush_done
+          - set_flag: es_toll_broken
+          - relation: { who: bandit, axis: trust, delta: 2 }
+          - deed: { summary: "톨게이트 도적 떼에게 털지 말고 물을 사 가라고 흥정을 텄다", tags: [mercy], severity: 1, privacy: public }
+          - belief: { fact: "도적 떼 우두머리가 고물과 일손으로 물값을 치르겠다고 했다. 상단 장부에 새 손님이 생겼다", source: seen }
+        partial:
+          - set_flag: es_toll_ambush_done
+          - set_flag: es_toll_paid
+          - faction_resource: { faction: own, resource: water, delta: -2 }
+          - belief: { fact: "흥정은 반만 됐다. 물통 둘을 외상으로 넘겼다. 갚을지는 모르겠다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 흥정 중에 날아든 쇠파이프 }
+          - relation: { who: bandit, axis: affection, delta: -2 }
+
+- id: es_eunchae_gate
+  title: 버들마을 정문 앞의 석궁
+  tags: [e_squad_leader]
+  when:
+    zones: [b_base]
+    segments: [morning, day, evening]
+    flags_none: [es_eunchae_done]
+  cast:
+    archer: { ids: [e_eunchae] }
+  setup: >-
+    버들마을 정문이 보이자 {archer:이/가} 걸음을 멈춘다. 모자챙을 끝까지 내려 눈썹의 흉터를 가린다.
+    "분대장님. 저는 여기 담 밖에서 짐마차를 보겠습니다." 정문 위 경비병 하나가 이쪽을 오래 본다.
+  ai_direction: >-
+    공은채는 이 년 전 버들마을 경비병이었고, 밤 경계 중 담을 넘던 마을 아이를 쐈다. 그날 마을을 나왔다. 마을은 그 일을 잊지 않았다. 지금은 담 밖에 있겠다는 말뿐이다.
+    정문 위 경비병이 그를 알아보는지는 아직 정해지지 않았다. 억지로 데려가면 판정 없이도 일이 커질 수 있다. 묻지 않고 기다려 주면 그가 먼저 말할지도 모른다.
+  choices:
+    - id: let_wait
+      label: 담 밖에서 짐마차를 보라고 한다
+      effects:
+        - set_flag: es_eunchae_done
+        - relation: { who: archer, axis: trust, delta: 1 }
+    - id: stay_with
+      label: 이유를 묻지 않고 함께 담 밖에 남는다
+      effects:
+        - set_flag: es_eunchae_done
+        - set_flag: es_eunchae_told
+        - relation: { who: archer, axis: trust, delta: 2 }
+        - relation: { who: archer, axis: affection, delta: 1 }
+        - belief: { fact: "짐마차가 정문 안에 있는 동안 공은채가 '이 마을에서 사람을 쐈습니다. 아이였어요'라고만 말했다", source: report }
+    - id: order_in
+      label: 호위대원은 짐마차 옆에 선다고 데리고 들어간다
+      effects:
+        - set_flag: es_eunchae_done
+        - set_flag: es_eunchae_recognized
+        - relation: { who: archer, axis: affection, delta: -2 }
+        - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+        - belief: { fact: "정문 안에서 버들마을 사람 몇이 공은채를 알아보고 수군거렸다. 물값을 받는 내내 그쪽 눈빛이 차가웠다", source: seen }
+
+- id: es_dongju_armband
+  title: 붉은 완장의 눈
+  tags: [e_squad_leader]
+  when:
+    zones: [c_warehouse]
+    segments: [morning, day, evening]
+    flags_none: [es_dongju_done]
+  cast:
+    young: { ids: [e_dongju] }
+    sentry: { extra: c_sentry_shotgun, label: 물통을 세던 붉은연합 보초 }
+  setup: >-
+    물류창고 마당에서 물통을 세던 {sentry:이/가} 손을 멈추고 {young}의 귀를 본다. 귓불의 뜯어진 구멍.
+    "너… 삼조 그놈 아니냐. 강에 빠져 죽었다던." {young:은/는} 모자를 깊이 눌러쓰고 물통만 내려다본다.
+  ai_direction: >-
+    피동주는 붉은연합 약탈조에서 달아난 징집병이다. 귓불 구멍은 조 표식 고리를 뜯어낸 자국이다. 붉은연합은 탈영병을 본보기로 삼는다.
+    보초는 확신하지 못한다. 넘기면 붉은연합은 상단을 좋게 보고 탄으로 값을 친다. 감싸면 이 길의 거래가 껄끄러워질 수 있다. 상단 사람이라는 것과 정수장 약속은 여기서도 힘이 있다.
+  choices:
+    - id: lie
+      label: 상단에서 나고 자란 놈이라고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: es_dongju_done
+          - relation: { who: young, axis: trust, delta: 2 }
+          - belief: { fact: "보초에게 피동주가 상단에서 나고 자랐다고 둘러댔다. 보초는 고개를 갸웃하고 물통을 다시 셌다", source: seen }
+        partial:
+          - set_flag: es_dongju_done
+          - lose_item: { item: shells, quantity: 2 }
+          - relation: { who: young, axis: trust, delta: 1 }
+          - belief: { fact: "보초가 입을 닫는 값으로 엽총 탄 두 발을 받아 갔다. 다음에도 그 얼굴을 기억할 것이다", source: seen }
+        miss:
+          - set_flag: es_dongju_done
+          - npc_capture: { who: young, by: faction_c, zone: c_warehouse }
+          - belief: { fact: "보초가 사람을 불렀다. 피동주는 물류창고 안으로 끌려갔다", source: seen }
+    - id: hand_over
+      label: 피동주를 넘기고 값을 받는다
+      effects:
+        - set_flag: es_dongju_done
+        - npc_capture: { who: young, by: faction_c, zone: c_warehouse }
+        - give_item: { item: rifle_rounds, quantity: 2 }
+        - clock: { id: e_side, delta: 1 }
+        - deed: { summary: "분대원을 탈영병이라며 붉은연합에 넘기고 탄을 받았다", tags: [betrayal, cruelty], severity: 3, privacy: semi_private }
+    - id: neutral
+      label: 상단 사람은 상단이 다룬다고 버틴다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: es_dongju_done
+          - relation: { who: young, axis: trust, delta: 3 }
+          - deed: { summary: "붉은연합 보초 앞에서 분대원을 상단 사람이라며 감쌌다", tags: [loyalty, bravery], severity: 2, privacy: public }
+        partial:
+          - set_flag: es_dongju_done
+          - relation: { who: young, axis: trust, delta: 2 }
+          - belief: { fact: "보초는 물러났지만 장갑 낀 간부에게 무언가 일렀다. 물류창고 배달에서 피동주를 빼라는 말이 곧 돌아올 것 같다", source: seen }
+        miss:
+          - set_flag: es_dongju_done
+          - npc_hurt: { who: young, steps: 1 }
+          - belief: { fact: "보초가 개머리판으로 피동주를 쳤다. 데리고 나오긴 했지만 다음 배달 날이 걱정이다", source: seen }
+
+- id: es_okseon_ledger
+  title: 칠판 앞의 외투
+  tags: [e_squad_leader]
+  when:
+    zones: [rest_stop, e_market]
+    segments: [evening, night]
+    day_gte: 4
+    flags_none: [es_okseon_done]
+  cast:
+    widow: { ids: [e_okseon], trust_gte: 1 }
+  setup: >-
+    휴게소 칠판 앞, {widow:이/가} 고속도로 바깥 소식이 적힌 줄을 손가락으로 따라 읽는다. 당신이 다가오자 돌아보지 않고 묻는다.
+    "분대장. 다음 짐 부리는 날에 짐마차 하나가 바퀴가 빠져서 영영 안 돌아오면, 그거 분대장 장부에 얼마나 올라?"
+  ai_direction: >-
+    탁봉수는 차문석이 잃은 짐마차 값을 그 빚에 얹고, 빚을 통째로 여옥선에게 넘겼다. 평생 짐을 져도 못 갚는 양이다. 여옥선은 짐마차 하나를 끌고 고속도로 바깥으로 달아날 생각이다.
+    그가 묻는 것은 분대장이 그 값을 떠안아 줄 것인지다. 눈감아 주면 그는 떠나고 잃은 짐은 분대장 장부에 오른다. 탁봉수와 빚을 흥정해 볼 수도 있다. 알리면 그는 남지만 분대장을 다시는 믿지 않는다.
+  choices:
+    - id: let_go
+      label: 바퀴가 어디서 빠질지는 묻지 않겠다고 한다
+      effects:
+        - set_flag: es_okseon_done
+        - set_flag: es_okseon_gone
+        - relation: { who: widow, axis: trust, delta: 3 }
+        - debt: { faction: own, delta: 3 }
+        - deed: { summary: "남편 빚에 묶인 분대원이 짐마차를 끌고 달아나게 눈감고 그 값을 떠안았다", tags: [mercy, disobedience], severity: 2, privacy: private }
+        - npc_depart: { who: widow }
+        - belief: { fact: "여옥선이 짐 부리는 날 짐마차 하나와 함께 고속도로 바깥으로 사라졌다. 칠판에 그 이름이 새로 적혔다", source: seen }
+    - id: share
+      label: 사장님과 빚을 나눠 지는 흥정을 해 보겠다고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: es_okseon_done
+          - set_flag: es_okseon_stays
+          - debt: { faction: own, delta: 2 }
+          - relation: { who: widow, axis: trust, delta: 2 }
+          - relation: { who: widow, axis: affection, delta: 1 }
+          - deed: { summary: "죽은 분대장의 빚 일부를 제 장부로 옮겨 그 아내를 붙잡았다", tags: [mercy, loyalty], severity: 2, privacy: semi_private }
+        partial:
+          - set_flag: es_okseon_done
+          - set_flag: es_okseon_stays
+          - debt: { faction: own, delta: 3 }
+          - relation: { who: widow, axis: trust, delta: 1 }
+          - belief: { fact: "탁봉수는 빚을 나누는 대신 흥정 값까지 얹었다. 여옥선은 겨울까지는 남겠다고 했다", source: seen }
+        miss:
+          - relation: { who: widow, axis: trust, delta: -1 }
+          - belief: { fact: "탁봉수는 '형님이 왜 남의 빚을 사십니까'라며 웃기만 했다. 여옥선은 칠판 앞에서 다시 바깥 소식을 읽는다", source: seen }
+    - id: report
+      label: 호위대장에게 알린다
+      effects:
+        - set_flag: es_okseon_done
+        - merit: 1
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - relation: { who: widow, axis: trust, delta: -3 }
+        - deed: { summary: "달아날 궁리를 하던 분대원을 호위대장에게 알렸다", tags: [diligence, betrayal], severity: 2, privacy: semi_private }
+        - belief: { fact: "여옥선은 휴게소 가는 짐마차에서 빠졌다. 그 뒤로 내게 반말도 하지 않는다", source: seen }
+
+- id: es_red_offer
+  title: 바퀴가 빠지는 날
+  tags: [e_squad_leader]
+  when:
+    zones: [c_warehouse]
+    segments: [morning, day, evening]
+    day_gte: 3
+    flags_none: [es_red_offer_done]
+  cast:
+    officer: { ids: [c_gyeongsu] }
+  setup: >-
+    탄약 상자로 물값을 치르던 {officer:이/가} 장갑 낀 손으로 상자 하나를 더 밀어 놓는다.
+    "분대장. 청솔 거점에 물 가는 날 있지. 그 짐마차가 동쪽 초소 앞에서 바퀴가 빠져 반나절 늦으면, 이건 분대 몫이야. 장부에는 안 적어도 되고."
+  ai_direction: >-
+    마경수는 청솔형제단이 물을 제때 받지 못하게 해 동쪽 초소를 말리려 한다. 상단의 중립은 값이 매겨져 있고, 그는 그 값을 분대장에게 직접 치르려 한다.
+    받으면 상단이 붉은연합 쪽으로 기울고, 청솔형제단은 상단을 의심하게 된다. 탁봉수에게 알리면 그는 이 제안마저 누군가에게 팔 것이다.
+  choices:
+    - id: take
+      label: 상자를 받는다
+      effects:
+        - set_flag: es_red_offer_done
+        - set_flag: es_red_deal
+        - give_item: { item: rifle_rounds, quantity: 3 }
+        - clock: { id: e_side, delta: 1 }
+        - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+        - relation: { who: officer, axis: trust, delta: 1 }
+        - deed: { summary: "붉은연합 간부의 탄을 받고 청솔 가는 짐마차를 늦추기로 했다", tags: [betrayal, selfishness], severity: 2, privacy: private }
+    - id: refuse
+      label: 상단 짐마차는 바퀴가 안 빠진다고 상자를 밀어 돌려준다
+      effects:
+        - set_flag: es_red_offer_done
+        - relation: { who: officer, axis: affection, delta: -1 }
+        - deed: { summary: "붉은연합 간부가 내민 뒷돈을 물리고 짐마차를 제때 보냈다", tags: [honesty, loyalty], severity: 1, privacy: semi_private }
+    - id: tell_boss
+      label: 장터에 돌아가 사장님에게 그대로 전한다
+      effects:
+        - set_flag: es_red_offer_done
+        - merit: 1
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - belief: { fact: "탁봉수는 마경수의 제안을 듣고 '그 말 얼마나 하던가요' 하고 웃었다. 그 말을 누구에게 되팔지 셈하는 얼굴이었다", source: seen }
+
+- id: es_taesik_boat
+  title: 물때에 모자란 둘
+  tags: [e_squad_leader]
+  when:
+    zones: [e_market, water_plant]
+    segments: [evening, night]
+    day_gte: 5
+    flags_none: [es_boat_done]
+  cast:
+    chief: { commander: true }
+  setup: >-
+    호위 막사 앞, {chief:이/가} 엽총 개머리판의 새긴 자국을 엄지로 쓸고 있다. "다음 물때에 섬 거래선이 떠. 호위가 둘 모자라. 네 분대에서 둘 내."
+    잠깐 말을 멈춘다. "배에 탄 사람 얼굴은 안 봐도 돼. 그게 편해."
+  ai_direction: >-
+    감태식은 거래선에 사람이 실린다는 것을 알고, 그것이 마음에 걸린다. 분대장에게 무엇을 보게 될지 미리 말하지는 않는다.
+    누구를 보내느냐는 분대장이 정한다. 직접 가겠다면 감태식은 반기지만 이유를 묻는다. 배에 누가 타느냐고 캐물으면 판정이 걸린다. 섬 안의 진실은 감태식도 모른다.
+  choices:
+    - id: send
+      label: 분대원 둘을 고른다
+      effects:
+        - set_flag: es_boat_done
+        - set_flag: es_boat_lent
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - belief: { fact: "다음 물때 섬 거래선 호위에 분대원 둘을 내주었다. 돌아오면 무엇을 봤는지 물어봐야겠다", source: seen }
+    - id: self
+      label: 내가 한 자리를 서겠다고 한다
+      effects:
+        - set_flag: es_boat_done
+        - set_flag: es_boat_self
+        - relation: { who: commander, axis: trust, delta: 2 }
+        - belief: { fact: "다음 물때 섬 거래선 호위에 직접 서기로 했다. 감태식이 '짐 목록에 사람 칸이 있어'라고 중얼거렸다", source: seen }
+    - id: ask
+      label: 배에 누가 타느냐고 묻는다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: es_boat_done
+          - relation: { who: commander, axis: trust, delta: 1 }
+          - belief: { fact: "감태식이 지난 거래선에 손이 묶인 빚쟁이가 탔다고 털어놓았다. 전당포에서 넘긴 사람들이라고 한다", source: report }
+        partial:
+          - belief: { fact: "감태식은 '일손'이라고만 하고 개머리판의 자국을 셌다. 금이 아니라 글자처럼 보였다", source: seen }
+        miss:
+          - relation: { who: commander, axis: affection, delta: -1 }
+
+- id: es_underpass
+  title: 굴다리 밑의 숨소리
+  tags: [e_squad_leader]
+  when:
+    zones: [power_plant, riverside]
+    segments: [morning, day, evening]
+    day_gte: 2
+    flags_none: [es_underpass_done]
+  cast:
+    archer: { ids: [e_eunchae] }
+    young: { ids: [e_dongju] }
+  setup: >-
+    짐마차가 굴다리 앞에서 선다. 그늘 안쪽에 감염체 여럿이 벽에 기대 서 있다. 아직 이쪽을 보지 않는다.
+    {young:이/가} 쇠창을 고쳐 쥐고 "제가 먼저 갈까요" 하고 너무 크게 속삭인다. {archer:은/는} 소리 없이 석궁을 내린다.
+  ai_direction: >-
+    굴다리를 돌아가면 반나절이 더 들고 해 지기 전에 휴게소에 못 닿을 수 있다. 조용히 지나가면 판정이 걸린다. 총을 쓰면 끝내기는 쉽지만 소리가 더 많은 것을 부른다.
+    공은채의 석궁은 소리를 내지 않는다. 피동주는 공을 세우고 싶어 들떠 있다.
+  choices:
+    - id: detour
+      label: 굴다리를 돌아간다
+      effects:
+        - set_flag: es_underpass_done
+        - delay: 180
+        - relation: { who: archer, axis: respect, delta: 1 }
+    - id: sneak
+      label: 바퀴에 천을 감고 조용히 지나간다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: es_underpass_done
+          - merit: 1
+          - belief: { fact: "바퀴에 천을 감고 굴다리를 숨죽여 지나갔다. 감염체들은 끝까지 벽만 보고 있었다", source: seen }
+        partial:
+          - set_flag: es_underpass_done
+          - faction_resource: { faction: own, resource: water, delta: -2 }
+          - belief: { fact: "굴다리를 빠져나오다 물통 둘이 떨어져 굴렀다. 돌아보지 않고 달렸다", source: seen }
+        miss:
+          - set_flag: es_underpass_done
+          - wound: { steps: 1, cause: 굴다리 밑 감염체 }
+          - npc_body: { who: young, track: infection, delta: 1, chance: 0.3 }
+          - belief: { fact: "굴다리에서 감염체가 덮쳤다. 피동주가 팔을 긁혔다며 소매를 내렸다", source: seen }
+    - id: let_young
+      label: 피동주에게 앞장을 맡긴다
+      effects:
+        - set_flag: es_underpass_done
+        - set_flag: es_dongju_led
+        - relation: { who: young, axis: trust, delta: 2 }
+        - npc_hurt: { who: young, steps: 1 }
+        - zone_noise: 1
+        - belief: { fact: "피동주가 앞장서 굴다리를 뚫었다. 공은채의 화살이 뒤를 받쳤다. 피동주는 다쳤지만 하루 내내 웃었다", source: seen }

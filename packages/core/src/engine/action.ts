@@ -69,7 +69,10 @@ export function createTakeActionSchema(s: Scenario) {
         difficulty: difficultySchema.describe("상황의 난이도. 대부분은 normal. very_easy +2 / easy +1 / normal 0 / hard -1 / very_hard -2"),
         harm_on_failure: z
           .enum(["none", "light", "heavy"])
-          .describe("판정 전에 선언하는 몸의 위험. 실패·대가 있는 성공이면 시스템이 적용한다. none은 몸을 다칠 위험이 없는 행동"),
+          .describe(
+            "판정 전에 선언하는 몸의 위험. 실패·대가 있는 성공이면 시스템이 적용한다. none은 몸을 다칠 위험이 없는 행동. " +
+              "플레이어가 고른 행동이 부르는 위험만 선언한다: 이번 턴에 처음 드러나는 상대의 피해는 걸지 않는다 (드러난 위협에 대한 대응은 플레이어가 고른 뒤 판정한다)",
+          ),
         harm_cause: z.string().max(120).describe("다친다면 그 원인 한 문장 (위험이 none이면 빈 문자열)"),
         target_harm: z
           .enum(["none", "light", "heavy"])

@@ -1310,6 +1310,7 @@ repeatable: false
 
 - `intent`: 하려는 것
 - `check`: `{ move, stat, difficulty, harm_on_failure, harm_cause }` 또는 null. **몸의 위험(`harm_on_failure`: none·light·heavy)은 판정 전에 선언한다.** 결과가 실패·대가 있는 성공이면 코드가 피해를 적용한다 (AI가 결과를 보고 수위를 고르지 않는다)
+  - **드러내면 멈춘다** (GM 지침 `prompts/gm_rules.md`): 한 턴에 하나만, 플레이어가 말한 행동만 판정한다. 정체나 새 위협이 드러나면 덤비기 직전에서 멈추고 대응을 묻는다. 위험은 플레이어가 고른 행동이 부르는 것만 선언한다 (이번 턴에 처음 드러난 상대의 피해는 걸지 않는다). 조건을 걸어 둔 행동("다가오면 찌른다")만 예외. 마주침을 드러내는 판정이 실패하면 피해 대신 상황이 나빠진다
 - `deed`: `{ summary, tags, severity, privacy, noisy, condition }` 또는 null. `condition`이 `on_success`면 판정이 실패했을 때 기록하지 않는다
 - `activity`: `{ kind, until }` 또는 null(잠깐의 행동 5분)
 - `target`: 상대 인물 id (장면에 있어야 함) 또는 null

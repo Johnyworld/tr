@@ -60,7 +60,7 @@ function baseStatus(source: StatusSource): unknown {
 }
 
 /** 턴 문이 풀리지 않아도 이만큼 지나면 푼다 (훅의 끝 신호를 놓쳤을 때) */
-const TURN_GATE_MAX_MS = 5 * 60 * 1000;
+const TURN_GATE_MAX_MS = 90 * 1000;
 
 /**
  * 턴 문 (Claude Code 훅, 기획서 11.6): 플레이어가 메시지를 보내면 상태 화면을 지금 모습에서 멈추고,

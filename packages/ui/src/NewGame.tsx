@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Portrait, PORTRAIT_IDS } from "./Portrait.tsx";
 import { Icon } from "./Icon.tsx";
 import type { CreationStatus, NewGameView } from "./types.ts";
@@ -47,7 +47,7 @@ export function NewGame({ creation, onStatus }: { creation: CreationStatus; onSt
   const answer = (a: string | string[]) => void send({ answer: a });
 
   return (
-    <div className="newgame" ref={rootRef}>
+    <div className={busy ? "newgame busy" : "newgame"} ref={rootRef}>
       <Step view={view} busy={busy} answer={answer} />
       {error && (
         <p className="newgame-error" role="alert">
@@ -207,12 +207,14 @@ function CharacterStep({ view, busy, answer }: StepProps) {
   const c = view.character!;
   const step = view.step;
   const options = c.options;
+  // 고르는 중인 단계의 남은 수 (능력·스킬·트레잇): 위의 현황 카드에 보인다
+  const [live, setLive] = useState<{ step: string; text: string; bad?: boolean } | null>(null);
+  const onLive = useCallback((text: string, bad = false) => setLive({ step, text, bad }), [step]);
   return (
     <>
-      {c.situation && c.index.at === 1 && <Story text={c.situation} title="지금 상황" />}
-      <Chosen view={view} />
+      <Chosen view={view} live={live?.step === step ? live : null} />
       {step === "past" && <PastStep view={view} busy={busy} answer={answer} />}
-      {step === "skill_set" && <SkillStep view={view} busy={busy} answer={answer} />}
+      {step === "skill_set" && <SkillStep view={view} busy={busy} answer={answer} onLive={onLive} />}
       {step === "portrait" && <PortraitStep busy={busy} answer={answer} />}
       {step === "name" && <NameStep view={view} busy={busy} answer={answer} />}
       {step === "age" && <AgeStep view={view} busy={busy} answer={answer} />}
@@ -249,8 +251,8 @@ function CharacterStep({ view, busy, answer }: StepProps) {
           </div>
         </>
       )}
-      {step === "ability_set" && (c.tiers ? <TierStep view={view} busy={busy} answer={answer} /> : <PointStep view={view} busy={busy} answer={answer} />)}
-      {(step === "traits_pick" || step === "traits_personality") && <TraitStep key={step} view={view} busy={busy} answer={answer} />}
+      {step === "ability_set" && (c.tiers ? <TierStep view={view} busy={busy} answer={answer} onLive={onLive} /> : <PointStep view={view} busy={busy} answer={answer} />)}
+      {(step === "traits_pick" || step === "traits_personality") && <TraitStep key={step} view={view} busy={busy} answer={answer} onLive={onLive} />}
       {step === "confirm" && (
         <>
           <h2 className="newgame-title">이 사람으로 시작할까요?</h2>
@@ -268,10 +270,10 @@ function CharacterStep({ view, busy, answer }: StepProps) {
   );
 }
 
-/** 지금까지 정한 것 */
-function Chosen({ view }: { view: NewGameView }) {
+/** 지금까지 정한 것 (위에 붙어 있다). live: 고르는 중인 단계의 남은 수 */
+function Chosen({ view, live }: { view: NewGameView; live: { text: string; bad?: boolean } | null }) {
   const ch = view.character!.chosen;
-  if (!ch.past && !ch.name && !ch.gender && ch.abilities.length === 0 && !ch.traits) return null;
+  if (!ch.past && !ch.name && !ch.gender && ch.abilities.length === 0 && !ch.traits && !live) return null;
   return (
     <div className="newgame-chosen">
       {ch.portrait && <Portrait id={ch.portrait} size={56} />}
@@ -290,6 +292,7 @@ function Chosen({ view }: { view: NewGameView }) {
         )}
         {ch.skills && <div className="muted small">스킬: {ch.skills.length ? ch.skills.map((x) => `${x.label} ${signed(x.value)}`).join(", ") : "없음"}</div>}
         {ch.traits && <div className="muted small">트레잇: {ch.traits.length ? ch.traits.join(", ") : "없음"}</div>}
+        {live && <div className={live.bad ? "chosen-live bad" : "chosen-live"}>{live.text}</div>}
       </div>
     </div>
   );
@@ -395,56 +398,47 @@ function AgeStep({ view, busy, answer }: StepProps) {
 }
 
 /** 등급 고르기: 능력마다 등급 단추. 등급별 개수가 다 차면 다음 */
-/** 과거 배경 (12-84): 붕괴 전에 하던 일. 능력·스킬의 기본값과 물건을 준다 */
+/** 과거 배경 (12-84): 붕괴 전에 하던 일. 능력·스킬의 기본값과 물건을 준다. 누르면 바로 고른다 */
 function PastStep({ view, busy, answer }: StepProps) {
   const c = view.character!;
-  const [picked, setPicked] = useState<string | null>(null);
-  const card = (on: boolean) => (on ? "choice-card motive on" : "choice-card motive");
   return (
     <>
       <h2 className="newgame-title">붕괴 전에는 무엇을 했나요?</h2>
       <p className="newgame-note">과거 배경이 능력과 스킬의 기본값을 정합니다. 뒤에서 같은 포인트 안에서 고칠 수 있습니다.</p>
-      <div className="motive-grid">
+      <div className="past-grid">
         {c.pasts.map((p) => (
-          <button key={p.id} type="button" className={card(picked === p.id)} aria-pressed={picked === p.id} disabled={busy} onClick={() => setPicked(p.id)}>
-            <strong>{p.label}</strong>
-            <span className="choice-desc">{p.summary}</span>
-            <span className="choice-gains">{p.skills}</span>
-            <span className="choice-gains">{p.stats}</span>
-            {p.items && <span className="choice-gains">{p.items}</span>}
-            {p.minAge && <span className="choice-gains">{p.minAge}세부터</span>}
+          <button key={p.id} type="button" className="past-card" disabled={busy} onClick={() => answer(p.id)}>
+            <span className="past-head">
+              <strong>{p.label}</strong>
+              {p.minAge && <span className="past-age">{p.minAge}세부터</span>}
+            </span>
+            <span className="past-line">{p.skills}</span>
+            <span className="past-line">{p.stats}</span>
+            {p.items && <span className="past-line muted">{p.items}</span>}
           </button>
         ))}
-      </div>
-      <div className="newgame-actions">
-        <button type="button" className="primary" disabled={busy || !picked} onClick={() => answer(picked!)}>
-          이 배경으로
-        </button>
       </div>
     </>
   );
 }
 
-/** 스킬 고치기 (12-84): 포인트 안에서 스킬마다 +max까지. 과거 배경의 스킬에서 시작한다 */
-function SkillStep({ view, busy, answer }: StepProps) {
+/** 스킬 고치기 (12-84): 포인트 안에서 스킬마다 +max까지. 과거 배경의 스킬에서 시작한다. 남은 포인트는 위의 현황 카드에 */
+function SkillStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: string) => void }) {
   const c = view.character!;
   const rule = c.skillRule ?? { points: 0, max: 1 };
   const [picked, setPicked] = useState<string[]>(() => Object.keys(c.pastDefaults?.skills ?? {}));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < rule.points ? [...p, id] : p));
   const categories = [...new Set(c.moves.map((m) => m.category))];
+  const left = rule.points - picked.length;
+  useEffect(() => onLive(`남은 스킬 포인트 ${left}`), [left, onLive]);
   return (
     <>
       <h2 className="newgame-title">스킬을 골라 주세요</h2>
-      {c.rankSkills && <p className="newgame-note">계급 기본 훈련({c.rankSkills})은 따로 더해집니다.</p>}
-      <div className="tier-legend">
-        <span className={picked.length === rule.points ? "done" : ""}>
-          +{rule.max} · {picked.length}/{rule.points}
-        </span>
-      </div>
+      <p className="newgame-note">고른 스킬은 +{rule.max}입니다.{c.rankSkills ? ` 계급 기본 훈련(${c.rankSkills})은 따로 더해집니다.` : ""}</p>
       {categories.map((cat) => (
         <div key={cat}>
           <h3 className="newgame-sub">{cat || "그 밖"}</h3>
-          <div className="choice-row">
+          <div className="skill-grid">
             {c.moves
               .filter((m) => m.category === cat)
               .map((m) => {
@@ -453,13 +447,16 @@ function SkillStep({ view, busy, answer }: StepProps) {
                   <button
                     key={m.id}
                     type="button"
-                    className={on ? "chip on" : "chip"}
+                    className={on ? "skill-card on" : "skill-card"}
                     aria-pressed={on}
-                    title={m.description}
-                    disabled={busy || (!on && picked.length >= rule.points)}
+                    disabled={busy || (!on && left <= 0)}
                     onClick={() => toggle(m.id)}
                   >
-                    {m.label}
+                    <span className="past-head">
+                      <strong>{m.label}</strong>
+                      {m.stats && <span className="past-age">{m.stats}</span>}
+                    </span>
+                    {m.description && <span className="skill-desc">{m.description}</span>}
                   </button>
                 );
               })}
@@ -468,14 +465,14 @@ function SkillStep({ view, busy, answer }: StepProps) {
       ))}
       <div className="newgame-actions">
         <button type="button" className="primary" disabled={busy} onClick={() => answer(picked.length ? picked.map((id) => c.moves.find((m) => m.id === id)!.label) : "없음")}>
-          {picked.length < rule.points ? `${rule.points - picked.length}포인트 남기고 다음` : "다음"}
+          {left > 0 ? `${left}포인트 남기고 다음` : "다음"}
         </button>
       </div>
     </>
   );
 }
 
-function TierStep({ view, busy, answer }: StepProps) {
+function TierStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: string) => void }) {
   const c = view.character!;
   const tiers = c.tiers!;
   // 과거 배경이 있으면 그 배치에서 고치기 시작한다 (12-84)
@@ -490,17 +487,13 @@ function TierStep({ view, busy, answer }: StepProps) {
       return next;
     });
   const submit = () => answer(tiers.map((t) => Object.keys(picked).filter((id) => picked[id] === t.value).join(", ")).join(" / "));
+  // 골라야 하는 수 (등급별 개수의 합)에서 고른 수를 뺀 것
+  const left = tiers.reduce((n, t) => n + t.count, 0) - Object.keys(picked).length;
+  useEffect(() => onLive(`남은 선택 ${left}`), [left, onLive]);
   return (
     <>
       <h2 className="newgame-title">타고난 능력을 골라 주세요</h2>
-      <div className="tier-legend">
-        {tiers.map((t) => (
-          <span key={t.value} className={count(t.value) === t.count ? "done" : ""}>
-            {t.label} {signed(t.value)} · {count(t.value)}/{t.count}
-          </span>
-        ))}
-        <span className="muted">나머지 0</span>
-      </div>
+      <p className="newgame-note">{tiers.map((t) => `${signed(t.value)} ${t.count}개`).join(", ")}를 고르고, 나머지는 0입니다.</p>
       <div className="tier-table">
         {c.stats.map((s) => (
           <div key={s.id} className="tier-row">
@@ -597,68 +590,82 @@ function PointStep({ view, busy, answer }: StepProps) {
 }
 
 /** 트레잇 고르기: 약점·강점은 한 표(포인트 잔액), 성격은 따로 */
-function TraitStep({ view, busy, answer }: StepProps) {
+function TraitStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: string, bad?: boolean) => void }) {
   const c = view.character!;
   const personality = view.step === "traits_personality";
   const [picked, setPicked] = useState<string[]>([]);
   const byId = useMemo(() => new Map(c.traits.map((t) => [t.id, t])), [c.traits]);
   const chosen = picked.map((id) => byId.get(id)!).filter(Boolean);
   const gained = chosen.filter((t) => t.kind === "negative").reduce((n, t) => n + t.cost, 0);
-  const used = chosen.filter((t) => t.kind === "positive").reduce((n, t) => n + t.cost, 0);
+  const spent = chosen.filter((t) => t.kind === "positive").reduce((n, t) => n + t.cost, 0);
   const lim = c.traitLimits;
   const countOf = (kind: string) => chosen.filter((t) => t.kind === kind).length;
   const limitOf = (kind: string) => (kind === "negative" ? lim?.max_negative : kind === "positive" ? lim?.max_positive : lim?.max_personality) ?? 99;
-  const over = used > gained;
+  const over = spent > gained;
   const blockedBy = (t: (typeof c.traits)[number]) =>
     !picked.includes(t.id) && (countOf(t.kind) >= limitOf(t.kind) || t.opposites.some((o) => picked.includes(o)) || chosen.some((x) => x.opposites.includes(t.id)));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  // 남은 포인트: 약점으로 얻고 강점에 쓴다 (0에서 시작). 성격은 포인트 없이 남은 개수
+  const live = personality ? `고른 성격 ${countOf("personality")}` : `남은 포인트 ${gained - spent}`;
+  useEffect(() => onLive(live, over), [live, over, onLive]);
 
-  const groups: { kind: string; title: string }[] = personality
-    ? [{ kind: "personality", title: "성격" }]
-    : [
-        { kind: "negative", title: "약점 (포인트를 얻는다)" },
-        { kind: "positive", title: "강점 (포인트를 쓴다)" },
-      ];
+  // 반대되는 것끼리 한 줄에 (왼쪽·오른쪽). 하나를 고르면 맞은편은 막힌다. 짝이 없는 것은 아래에 따로
+  type T = (typeof c.traits)[number];
+  const pool = c.traits.filter((t) => (personality ? t.kind === "personality" : t.kind !== "personality"));
+  const used = new Set<string>();
+  const pairs: [T, T][] = [];
+  const firsts = personality ? pool : pool.filter((t) => t.kind === "negative");
+  for (const t of firsts) {
+    if (used.has(t.id)) continue;
+    const partner = pool.find((o) => !used.has(o.id) && o.id !== t.id && (t.opposites.includes(o.id) || o.opposites.includes(t.id)) && (personality || o.kind === "positive"));
+    if (!partner) continue;
+    used.add(t.id);
+    used.add(partner.id);
+    pairs.push([t, partner]);
+  }
+  const singles = pool.filter((t) => !used.has(t.id));
+  const card = (t: T) => {
+    const on = picked.includes(t.id);
+    return (
+      <button key={t.id} type="button" className={`trait-card ${t.kind}${on ? " on" : ""}`} disabled={busy || blockedBy(t)} aria-pressed={on} onClick={() => toggle(t.id)}>
+        <span className="trait-head">
+          <strong>{t.label}</strong>
+          {t.kind !== "personality" && <span className="trait-cost">{t.kind === "negative" ? `+${t.cost}` : `-${t.cost}`}</span>}
+        </span>
+        <span className="choice-desc">{t.description}</span>
+      </button>
+    );
+  };
   return (
     <>
       <h2 className="newgame-title">{personality ? "성격을 골라 주세요" : "약점과 강점을 골라 주세요"}</h2>
+      <p className="newgame-note">
+        {personality
+          ? "성격은 GM이 이 사람을 그릴 때의 말투와 태도입니다. 몇 개든 고를 수 있고, 반대되는 것끼리는 함께 고를 수 없습니다."
+          : "약점을 고르면 포인트를 얻고, 그 포인트로 강점을 고릅니다. 반대되는 것끼리는 함께 고를 수 없습니다."}
+      </p>
       {!personality && (
-        <p className={over ? "newgame-warn" : "newgame-note"}>
-          약점으로 얻은 {gained} · 강점에 쓴 {used}
-          {over ? " — 강점이 약점보다 많습니다" : ""} · 약점 {countOf("negative")}/{lim?.max_negative} · 강점 {countOf("positive")}/{lim?.max_positive}
-        </p>
+        <div className="trait-pair-head">
+          <span>약점 (포인트를 얻는다)</span>
+          <span>강점 (포인트를 쓴다)</span>
+        </div>
       )}
-      {personality && <p className="newgame-note">포인트 없음 · {countOf("personality")}/{lim?.max_personality}개까지</p>}
-      {groups.map((g) => {
-        const list = c.traits.filter((t) => t.kind === g.kind);
-        if (list.length === 0) return null;
-        return (
-          <div key={g.kind}>
-            <h3 className="newgame-sub">{g.title}</h3>
-            <div className="trait-list">
-              {list.map((t) => {
-                const on = picked.includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className={`trait-card ${t.kind}${on ? " on" : ""}`}
-                    disabled={busy || blockedBy(t)}
-                    aria-pressed={on}
-                    onClick={() => toggle(t.id)}
-                  >
-                    <span className="trait-head">
-                      <strong>{t.label}</strong>
-                      {t.kind !== "personality" && <span className="trait-cost">{t.kind === "negative" ? `+${t.cost}` : `-${t.cost}`}</span>}
-                    </span>
-                    <span className="choice-desc">{t.description}</span>
-                  </button>
-                );
-              })}
-            </div>
+      <div className="trait-pairs">
+        {pairs.map(([l, r]) => (
+          <div key={l.id} className="trait-pair">
+            {card(l)}
+            {card(r)}
           </div>
-        );
-      })}
+        ))}
+      </div>
+      {singles.length > 0 && (
+        <>
+          <h3 className="newgame-sub">{personality ? "그 밖의 성격" : "짝이 없는 것"}</h3>
+          <div className="trait-pairs">
+            <div className="trait-single">{singles.map(card)}</div>
+          </div>
+        </>
+      )}
       <div className="newgame-actions">
         <button type="button" className="primary" disabled={busy || over} onClick={() => answer(picked)}>
           {picked.length ? `${picked.length}개로 다음` : "고르지 않고 다음"}

@@ -44,15 +44,15 @@ function run(answers: (string | string[])[], draft = newCreationDraft("new_world
 }
 
 describe("대화로 하는 캐릭터 생성", () => {
-  it("첫 단계는 시나리오의 지금 상황과 이름. 사망 뒤 새 캐릭터는 그 없이", () => {
+  it("첫 단계는 과거 배경. 지금 상황은 캐릭터를 다 만든 뒤 첫 장면 앞에서 (여기서는 묻지 않는다). 사망 뒤 새 캐릭터는 다른 사람의 삶으로 운을 띄운다", () => {
     const first = describeCreationStep(content, newCreationDraft("new_world"), roleId);
-    expect(first).toContain("지금 상황");
-    expect(first).toContain("분대장 강태호");
+    expect(first).not.toContain("지금 상황");
     expect(first).toContain("1/8: 과거 배경");
     expect(first).toContain("경찰");
     expect(first).not.toContain("<!--");
     const heir = describeCreationStep(content, newCreationDraft("heir"), roleId);
     expect(heir).not.toContain("지금 상황");
+    expect(heir).toContain("다른 사람의 삶");
     expect(heir).toContain("이름");
   });
 

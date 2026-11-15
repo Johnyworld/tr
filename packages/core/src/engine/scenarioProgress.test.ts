@@ -34,6 +34,9 @@ describe("튜토리얼: 방문자", () => {
       expect(st.known.player).toContain(id);
       expect(st.known.b_dongcheol).toContain(id);
       expect(st.known.a_taeho ?? []).not.toContain(id);
+      // 가족은 서로 아낀다 (거의 최상급)
+      expect(st.relations[id]?.player).toMatchObject({ trust: 5, affection: 5, respect: 4 });
+      expect(st.relations.player?.[id]).toMatchObject({ trust: 5, affection: 5, respect: 4 });
     }
     // 부모·형제자매·자식 중 적어도 한 사람은 주인공의 성을 따른다
     expect(st.family.some((id) => st.characters[id]!.name.startsWith("김"))).toBe(true);

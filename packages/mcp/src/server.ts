@@ -169,6 +169,20 @@ export function createMcpServer(
     }
   };
 
+  /**
+   * 새 게임을 막 만들었을 때 GM에게: 시나리오의 지금 상황을 먼저 그대로 보여 주고 첫 장면으로 (캐릭터 만들기에서는 묻지 않는다)
+   */
+  const startingWords = (w: GameWorld | null): string => {
+    const intro = w ? w.content.roles[w.state().scenarioRole]?.scenario?.intro : undefined;
+    if (!intro) return "캐릭터를 만들었다. 지금 만든 사람으로 바로 첫 장면을 서술한다.";
+    return [
+      "캐릭터를 만들었다. 첫 장면을 서술하기 전에, 아래 \"지금 상황\"을 플레이어에게 먼저 보여 준다. 글을 고치거나 줄이지 말고, 단락(빈 줄)을 그대로 지켜 읽기 좋게 쓴다. 그다음 지금 만든 사람으로 첫 장면을 서술한다.",
+      "",
+      "## 지금 상황",
+      intro,
+    ].join("\n");
+  };
+
   const sceneAfter = (w: GameWorld) =>
     w.isPlayerDead()
       ? w.storyEnded()
@@ -282,7 +296,7 @@ export function createMcpServer(
     if (result.isError) return { kind: "error", error: result.content[0]?.text ?? "" };
     return {
       kind: "done",
-      result: { ...result, content: [{ type: "text", text: `캐릭터를 만들었다. 지금 상황은 이미 했으니 되풀이하지 말고, 지금 만든 사람으로 바로 첫 장면을 서술한다.\n\n${result.content[0]?.text ?? ""}` }] },
+      result: { ...result, content: [{ type: "text", text: `${startingWords(world)}\n\n${result.content[0]?.text ?? ""}` }] },
     };
   };
 
@@ -303,7 +317,7 @@ export function createMcpServer(
     content: [
       {
         type: "text",
-        text: `플레이어가 상태 화면에서 골랐다. 시나리오 소개와 지금 상황은 화면에서 이미 읽었다.\n\n${result.content[0]?.text ?? ""}`,
+        text: `플레이어가 상태 화면에서 골랐다.\n\n${result.content[0]?.text ?? ""}`,
       },
     ],
   });

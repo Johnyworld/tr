@@ -74,7 +74,6 @@ export type NewGameView = {
   character?: {
     index: { at: number; total: number };
     roleLabel: string;
-    situation: string | null;
     startSkills: { label: string; value: number }[];
     chosen: {
       past?: string | null;
@@ -90,7 +89,7 @@ export type NewGameView = {
     pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge?: number | null }[];
     rankSkills?: string;
     pastDefaults: { stats: Record<string, number>; skills: Record<string, number> } | null;
-    moves: { id: string; label: string; category: string; description: string }[];
+    moves: { id: string; label: string; category: string; description: string; stats?: string }[];
     skillRule: { points: number; max: number } | null;
     options: { value: string; label: string; description?: string }[];
     nameMax: number;
@@ -99,7 +98,7 @@ export type NewGameView = {
     tiers: { value: number; count: number; label: string }[] | null;
     points: { total: number; cost: { value: number; cost: number }[]; maxLow: number } | null;
     traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[] }[];
-    traitLimits: { max_positive: number; max_negative: number; max_personality: number } | null;
+    traitLimits: { max_positive: number; max_negative: number; max_personality?: number } | null;
     unusedPoints: number;
   };
 };

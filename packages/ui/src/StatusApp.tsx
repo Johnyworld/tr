@@ -41,6 +41,37 @@ export function StatusApp() {
     let es: EventSource | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let received = false;
+    const open = () => {
+      es = new EventSource("/api/status/stream");
+      es.onopen = () => setConnected(true);
+      es.onmessage = (e) => {
+        received = true;
+        setConnected(true);
+        setStatus(JSON.parse(e.data as string) as StatusView);
+      };
+      es.onerror = () => {
+        setConnected(false);
+        if (!received) {
+          // 한 번도 받지 못했으면 SSE가 없는 서버다
+          es?.close();
+          es = null;
+          void poll();
+        }
+      };
+    };
+    // 패널이 숨겨졌다 다시 보이거나 창이 앞으로 오면 한 번 새로 받는다. 연결이 끊겨 있었으면 다시 잇는다
+    // (숨겨진 패널에서는 실시간 연결이 멈추거나 끊길 수 있다)
+    const refresh = async () => {
+      if (stop || document.visibilityState !== "visible") return;
+      try {
+        const res = await fetch("/api/status", { cache: "no-store" });
+        setStatus((await res.json()) as StatusView);
+        setConnected(true);
+      } catch {
+        setConnected(false);
+      }
+      if (received && es?.readyState === EventSource.CLOSED) open();
+    };
     const poll = async () => {
       try {
         const res = await fetch("/api/status", { cache: "no-store" });
@@ -51,26 +82,16 @@ export function StatusApp() {
       }
       if (!stop) timer = setTimeout(() => void poll(), 1500);
     };
-    es = new EventSource("/api/status/stream");
-    es.onopen = () => setConnected(true);
-    es.onmessage = (e) => {
-      received = true;
-      setConnected(true);
-      setStatus(JSON.parse(e.data as string) as StatusView);
-    };
-    es.onerror = () => {
-      setConnected(false);
-      if (!received) {
-        // 한 번도 받지 못했으면 SSE가 없는 서버다
-        es?.close();
-        es = null;
-        void poll();
-      }
-    };
+    open();
+    const onVisible = () => void refresh();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     return () => {
       stop = true;
       es?.close();
       if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
     };
   }, []);
 

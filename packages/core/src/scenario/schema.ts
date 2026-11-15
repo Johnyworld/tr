@@ -77,8 +77,9 @@ export const scenarioFileSchema = z
         age: z.strictObject({ min: z.number().int().positive(), max: z.number().int().positive() }).optional(),
         /** 트레잇 고르기 (기획서 4.6): 종류별 최대 개수. 긍정 비용 합 ≤ 부정 보상 합 */
         traits: z
-          .strictObject({ max_positive: z.number().int().min(0), max_negative: z.number().int().min(0), max_personality: z.number().int().min(0) })
-          .default({ max_positive: 3, max_negative: 3, max_personality: 2 }),
+          /** 성격은 연기 힌트라 max_personality가 없으면 개수 제한이 없다 (반대끼리만 막는다) */
+          .strictObject({ max_positive: z.number().int().min(0), max_negative: z.number().int().min(0), max_personality: z.number().int().min(0).optional() })
+          .default({ max_positive: 3, max_negative: 3 }),
         /**
          * 과거 배경 (12-84): 붕괴 전에 무엇을 했는지. 능력 배치(stats: ability_array와 같은 값들)와 스킬(skills)의 기본값,
          * 지니고 시작하는 물건(items). 플레이어는 같은 포인트 안에서 능력과 스킬을 고칠 수 있다. 무리원·떠돌이 모두 고른다

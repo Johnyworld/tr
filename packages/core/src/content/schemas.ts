@@ -146,7 +146,14 @@ export function createContentSchemas(s: Scenario) {
       })
       .optional(),
     /** 찾는 가족 (튜토리얼): 코드가 주인공 나이에 맞춰 가족 몇 사람을 만들어 이 구역에 둔다. 주인공은 어디 있는지 모른다 */
-    family: z.strictObject({ zone: contentIdSchema, count: z.tuple([z.number().int().min(1), z.number().int().min(1)]).default([2, 3]) }).optional(),
+    family: z
+      .strictObject({
+        zone: contentIdSchema,
+        count: z.tuple([z.number().int().min(1), z.number().int().min(1)]).default([2, 3]),
+        /** 가족과 주인공이 서로를 보는 관계 (축마다, 관계의 범위 안) */
+        bond: z.strictObject({ trust: z.number().int(), affection: z.number().int(), respect: z.number().int() }).default({ trust: 5, affection: 5, respect: 4 }),
+      })
+      .optional(),
     /** 정해진 능력 (특별한 역할·테스트용). 없으면 시나리오의 ability_array를 무작위로 섞는다 — 능력은 계급과 무관하다 */
     start_stats: createStatsSchema(s).optional(),
     /** 이 역할이 받은 훈련 (스킬 id → 수준). 나머지는 스킬의 기본값 */

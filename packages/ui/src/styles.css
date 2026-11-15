@@ -1777,8 +1777,11 @@ body {
 .newgame button:disabled {
   opacity: 0.45;
   cursor: default;
-  /* 답을 보내는 잠깐 동안은 흐리지 않는다 (흐려졌다 돌아오며 깜빡이지 않게). 풀릴 때는 바로 */
-  transition: opacity 0s 0.3s;
+}
+
+/* 답을 보내는 잠깐 동안은 흐리지 않는다 (흐려졌다 돌아오며 깜빡이지 않게). 고를 수 없는 칸은 바로 흐려진다 */
+.newgame.busy button:disabled {
+  opacity: 1;
 }
 
 .newgame button.primary {
@@ -1998,7 +2001,12 @@ body {
   gap: 8px;
 }
 
+/* 캐릭터 만들기 현황: 스크롤해도 위에 붙어 있다 */
 .newgame-chosen {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.6);
   padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2160,6 +2168,96 @@ body {
   background: none;
   border: 0;
   cursor: pointer;
+}
+
+/* 현황 카드의 남은 수 (능력·스킬·트레잇을 고르는 중) */
+.chosen-live {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.chosen-live.bad {
+  color: var(--error);
+}
+
+/* 과거 배경: 같은 크기의 카드 2열, 누르면 바로 고른다 */
+.past-grid,
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.newgame .past-card,
+.newgame .skill-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: normal;
+  background: var(--surface);
+}
+
+.past-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.past-head strong,
+.skill-card strong {
+  font-size: 15px;
+  color: var(--heading);
+}
+
+.past-age {
+  flex: none;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.past-line {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b4bac5;
+}
+
+.skill-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.newgame .skill-card.on {
+  border-color: var(--accent);
+  background: rgba(46, 116, 214, 0.12);
+}
+
+/* 트레잇: 반대되는 것끼리 한 줄에 두 칸 */
+.trait-pair-head {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.trait-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trait-pair,
+.trait-single {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 /* 시나리오 해금 알림 (기획서 12.4.1): 시트 위에 남는다. ×로만 닫힌다 */

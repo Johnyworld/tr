@@ -110,9 +110,11 @@ export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined):
     // 그 구역 무리에 받아들여져 산다 (그 무리 사람들이 안다)
     store.append({ type: "extra_spawned", character: owner && content.factions[owner] ? { ...character, factionId: owner } : character });
     if (family.zone !== s.playerZone && store.getState().scene.present.includes(id)) store.append({ type: "npc_left", npcId: id });
-    // 가족은 서로 이름을 안다
+    // 가족은 서로 이름을 알고, 서로 아낀다 (거의 가장 깊은 사이)
     store.append({ type: "name_learned", characterId: s.playerId, targetId: id });
     store.append({ type: "name_learned", characterId: id, targetId: s.playerId });
+    store.append({ type: "relation_changed", from: id, to: s.playerId, delta: family.bond, reason: "가족" });
+    store.append({ type: "relation_changed", from: s.playerId, to: id, delta: family.bond, reason: "가족" });
     for (const other of ids) {
       store.append({ type: "name_learned", characterId: id, targetId: other });
       store.append({ type: "name_learned", characterId: other, targetId: id });

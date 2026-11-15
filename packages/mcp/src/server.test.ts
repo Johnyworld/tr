@@ -186,10 +186,9 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect((await call("create_character", { back: true })).text).toContain("월드 고르기");
     await call("create_character", { answer: "무너진 도시 가람" });
     expect((await call("create_character", { answer: "비극의 고리" })).isError).toBe(true); // 잠겨 있다
-    // 고른 시나리오의 지금 상황은 캐릭터 만들기의 처음에
+    // 지금 상황은 캐릭터 만들기에서 묻지 않는다 (게임을 시작할 때 첫 장면 앞에서)
     const name = await call("create_character", { answer: "튜토리얼: 방문자" });
-    expect(name.text).toContain("## 먼저: 지금 상황");
-    expect(name.text).toContain("고가도로");
+    expect(name.text).not.toContain("지금 상황");
     expect(name.text).toContain("과거 배경");
     expect((await call("create_character", { answer: "teacher" })).text).toContain("이름");
     expect((await call("create_character", { answer: "윤하" })).text).toContain("성별");
@@ -212,6 +211,10 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect(manager.listSlots()).toHaveLength(0); // 다 고르기 전에는 세이브가 없다
     const ok = await call("create_character", { answer: "script" });
     expect(ok.isError).toBe(false);
+    // 게임을 시작하면 첫 장면 앞에서 지금 상황을 단락 그대로 보여 준다
+    expect(ok.text).toContain("## 지금 상황");
+    expect(ok.text).toContain("이 모든 일이 시작되고 나서 2년이 지났다.");
+    expect(ok.text).toContain("인간은 패배했다.\n\n2년 동안");
     expect(ok.text).toContain("# GM 지침");
     expect(app.creating).toBe(false);
     const p = app.world!.state().characters[app.world!.state().playerId]!;

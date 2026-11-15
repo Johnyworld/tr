@@ -38,8 +38,6 @@ export type NewGameView = {
 export type CharacterStepView = {
   index: { at: number; total: number };
   roleLabel: string;
-  /** 새 게임의 첫 단계에서 보여 줄 지금 상황 (시나리오 소개) */
-  situation: string | null;
   startSkills: { label: string; value: number }[];
   /** 지금까지 정한 것. past: 과거 배경 이름, skills: 고른 스킬 */
   chosen: {
@@ -59,7 +57,8 @@ export type CharacterStepView = {
   /** 고친 능력·스킬의 처음 값: 고른 과거 배경의 것 */
   pastDefaults: { stats: Record<string, number>; skills: Record<string, number> } | null;
   /** 스킬 고치기: 고를 수 있는 스킬과 규칙 */
-  moves: { id: string; label: string; category: string; description: string }[];
+  /** stats: 이 스킬과 함께 쓰는 능력 (예: 근력·민첩) */
+  moves: { id: string; label: string; category: string; description: string; stats: string }[];
   skillRule: { points: number; max: number } | null;
   options: StepOption[];
   /** 이름 폭 상한 (한글 2, 영문 1로 센다) */
@@ -72,7 +71,7 @@ export type CharacterStepView = {
   points: { total: number; cost: { value: number; cost: number }[]; maxLow: number } | null;
   /** 이 단계에서 고를 수 있는 트레잇 */
   traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[] }[];
-  traitLimits: { max_positive: number; max_negative: number; max_personality: number } | null;
+  traitLimits: { max_positive: number; max_negative: number; max_personality?: number } | null;
   /** 확인 단계: 쓰지 않은 능력 포인트 */
   unusedPoints: number;
 };
@@ -102,7 +101,6 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
     character: {
       index: stepIndex(s, draft.character),
       roleLabel: rules?.roleLabel ?? role?.label ?? "",
-      situation: draft.mode === "new_world" ? (role?.scenario?.intro ?? role?.opening_scene ?? null) : null,
       startSkills: rules?.startSkills ?? [],
       chosen: {
         past: pastOf(s, d.past)?.label ?? null,
@@ -132,7 +130,13 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
       })),
       rankSkills: describeSkills(s, s.creation?.rank_skills[role?.rank ?? ""] ?? {}).replace(/^없음$/, ""),
       pastDefaults: pastOf(s, d.past) ? { stats: { ...pastOf(s, d.past)!.stats }, skills: { ...pastOf(s, d.past)!.skills } } : null,
-      moves: s.moves.map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", description: m.description ?? "" })),
+      moves: s.moves.map((m) => ({
+        id: m.id,
+        label: m.label,
+        category: m.category ?? "",
+        description: m.description ?? "",
+        stats: (m.stats ?? []).map((id) => s.stats.find((x) => x.id === id)?.label ?? id).join("·"),
+      })),
       skillRule: s.creation?.skills ?? null,
       nameMax: MAX_NAME_WIDTH,
       age: s.creation?.age ? { min: ageFloor(s, draft.character), max: s.creation.age.max, default: Math.max(role?.age ?? s.creation.age.min, ageFloor(s, draft.character)) } : null,

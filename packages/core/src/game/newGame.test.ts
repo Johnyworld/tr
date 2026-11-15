@@ -56,8 +56,8 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터 → 수위 → 서�
     const list = describeNewGameStep(packs, draft);
     expect(list).toContain("항구의 정찰병");
     expect(list).not.toContain("비극의 고리");
-    // 고른 시나리오의 지금 상황은 캐릭터 만들기의 처음에
-    expect(describeNewGameStep(packs, run(["second_world", "항구의 정찰병"]).draft)).toContain("부두 창고에서 눈을 뜬다.");
+    // 고른 시나리오의 지금 상황은 캐릭터 만들기에서 묻지 않는다 (게임을 시작할 때 첫 장면 앞에서)
+    expect(describeNewGameStep(packs, run(["second_world", "항구의 정찰병"]).draft)).not.toContain("부두 창고에서 눈을 뜬다.");
   });
 
   it("시나리오 목록: 튜토리얼이 맨 위, 잠긴 시나리오는 해금 조건과 함께 보이지만 고를 수 없다 (기획서 12.4.1)", () => {

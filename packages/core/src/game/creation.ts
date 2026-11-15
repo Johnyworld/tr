@@ -142,7 +142,7 @@ export function traitBalance(s: Scenario, traits: readonly string[]) {
 /** 트레잇 고르기 규칙 (기획서 4.6): 아는 것·고를 수 있는 것, 겹치지 않기, 반대끼리 안 됨, 종류별 최대, 긍정 비용 ≤ 부정 보상 */
 export function checkTraits(s: Scenario, traits: readonly string[]): string[] {
   const problems: string[] = [];
-  const limits = s.creation?.traits ?? { max_positive: 3, max_negative: 3, max_personality: 2 };
+  const limits: { max_positive: number; max_negative: number; max_personality?: number } = s.creation?.traits ?? { max_positive: 3, max_negative: 3 };
   if (new Set(traits).size !== traits.length) problems.push("같은 트레잇을 두 번 고를 수 없다.");
   for (const id of traits) {
     const t = s.traits.find((x) => x.id === id);
@@ -155,7 +155,7 @@ export function checkTraits(s: Scenario, traits: readonly string[]): string[] {
   const b = traitBalance(s, traits);
   if (b.positive > limits.max_positive) problems.push(`긍정 트레잇은 ${limits.max_positive}개까지다.`);
   if (b.negative > limits.max_negative) problems.push(`부정 트레잇은 ${limits.max_negative}개까지다.`);
-  if (b.personality > limits.max_personality) problems.push(`성격 트레잇은 ${limits.max_personality}개까지다.`);
+  if (limits.max_personality !== undefined && b.personality > limits.max_personality) problems.push(`성격 트레잇은 ${limits.max_personality}개까지다.`);
   if (b.spent > b.earned) problems.push(`트레잇 포인트가 ${b.spent - b.earned} 모자란다 (긍정 ${b.spent} > 부정 ${b.earned}). 부정 트레잇을 더 고르거나 긍정을 뺀다.`);
   // 반대끼리는 양쪽에서 한 번씩 걸리므로 하나로
   return [...new Set(problems)];
@@ -229,7 +229,7 @@ export type CreationRules = {
   startSkills: { label: string; value: number }[];
   /** 고를 수 있는 트레잇과 종류별 최대 개수 */
   traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[] }[];
-  traitLimits: { max_positive: number; max_negative: number; max_personality: number };
+  traitLimits: { max_positive: number; max_negative: number; max_personality?: number };
 };
 
 /** 생성 화면·MCP 안내에 쓰는 규칙 */

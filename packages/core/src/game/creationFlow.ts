@@ -527,17 +527,8 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   const lines: string[] = [];
 
   if (draft.answers.length === 0 && !introShown) {
-    if (draft.mode === "new_world") {
-      lines.push(
-        "## 먼저: 지금 상황",
-        "고른 시나리오의 지금 상황을 바탕으로, 주인공이 지금 어디에 어떤 처지로 있는지 GM의 목소리로 들려준다 (두세 문단, 목록 말고 이야기로). 소개에 없는 사실은 만들지 않고, 세계 배경을 길게 풀지 않는다 (세계는 플레이하며 조금씩 알게 한다). 그다음 아래 단계를 묻는다.",
-        "",
-        content.roles[roleId]?.scenario?.intro ?? content.roles[roleId]?.opening_scene ?? "",
-        "",
-        `시작 역할: ${rules?.roleLabel ?? ""}`,
-        "",
-      );
-    } else {
+    // 새 게임의 지금 상황은 캐릭터를 다 만든 뒤 첫 장면 앞에서 들려준다 (MCP 어댑터가 붙인다)
+    if (draft.mode === "heir") {
       lines.push(
         "## 먼저: 다른 사람의 삶",
         "같은 세계에서 다른 사람으로 이어 간다. 이전 주인공의 죽음 뒤, 같은 무리의 막사에서 누군가가 눈을 뜬다는 느낌으로 짧게 운을 띄운다. 새 캐릭터는 이전 캐릭터가 알던 것을 모른다. 그다음 아래 단계를 묻는다.",
@@ -615,7 +606,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   } else if (step === "traits") {
     const lim = rules?.traitLimits;
     lines.push(
-      `물을 것: 트레잇(타고난 기질과 버릇)을 어떻게 정할지. 강점은 약점으로 얻은 포인트만큼만 가질 수 있다. 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개·성격 ${lim?.max_personality}개까지.`,
+      `물을 것: 트레잇(타고난 기질과 버릇)을 어떻게 정할지. 강점은 약점으로 얻은 포인트만큼만 가질 수 있다. 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개까지${lim?.max_personality !== undefined ? `, 성격 ${lim.max_personality}개까지` : ", 성격은 몇 개든"}. 반대되는 것끼리는 함께 가질 수 없다.`,
     );
     if (narration.traits) lines.push(`서술 힌트: ${narration.traits}`);
   } else if (step === "traits_pick") {
@@ -633,7 +624,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   } else if (step === "traits_personality") {
     const list = traitChoices(s, draft, step);
     lines.push(
-      `물을 것: 성격 (0개 이상, 포인트 없음, ${rules?.traitLimits.max_personality}개까지).`,
+      `물을 것: 성격 (0개 이상, 포인트 없음, ${rules?.traitLimits.max_personality !== undefined ? `${rules.traitLimits.max_personality}개까지` : "몇 개든"}). 성격은 서술의 연기 힌트다. 반대되는 성격끼리는 함께 가질 수 없다.`,
       "목록을 아래 번호 그대로 번호 목록(1. 2. 3.)으로 짧게 보여 주고 글로 답하게 한다. 번호나 이름으로, 여러 개면 쉼표로, 없으면 \"없음\". 답은 받은 그대로 넘긴다.",
       list.length ? `고를 수 있는 것:\n${list.map((t, i) => `${i + 1}. ${t.label}: ${t.description}`).join("\n")}` : "고를 수 있는 것: (없다. \"없음\"으로 넘어간다)",
     );

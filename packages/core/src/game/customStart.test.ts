@@ -101,11 +101,11 @@ describe("자유 시나리오: 세계", () => {
     w.close();
   });
 
-  it("사망 뒤 새 캐릭터도 같은 자유 시나리오 역할로 이어 간다", () => {
+  it("사망 뒤 새 캐릭터는 조우한 무리의 자리로 이어 간다 (간부 자리)", () => {
     const m = manager();
     const w = m.create("mcp", undefined, choice, undefined, { role: buildCustomRole(content, base), background: [] });
     w.runCheat("~kill me");
-    const r = w.chooseNextCharacter("new", null, { ...choice, name: "윤하" });
+    const r = w.chooseNextCharacter("new:faction_a:officer", null, { ...choice, name: "윤하" });
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     const heir = w.state().characters[w.state().playerId]!;
     expect(heir).toMatchObject({ name: "윤하", rank: "officer", factionId: "faction_a" });

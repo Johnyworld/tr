@@ -37,10 +37,3 @@ export function worldInfo(content: Content): { id: string; title: string; taglin
   return { id: s.id, title: s.world?.title ?? s.name, tagline: s.world?.tagline ?? "", description: s.world?.description ?? "" };
 }
 
-/** 시나리오(시작 역할) 고르기에 보이는 것 */
-export function scenarioInfos(content: Content, unlocked: readonly string[] = []): { id: string; title: string; pitch: string }[] {
-  // 해금이 필요한 시나리오는 열렸을 때만 (기획서 9.12)
-  return Object.values(content.roles)
-    .filter((r) => !r.unlock || unlocked.includes(r.unlock))
-    .map((r) => ({ id: r.id, title: r.scenario?.title ?? r.label, pitch: r.scenario?.pitch ?? "" }));
-}

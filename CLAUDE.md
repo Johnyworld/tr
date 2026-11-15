@@ -23,7 +23,7 @@ Claude 앱 세션(Claude Code·Claude 데스크톱)이 GM이고, 엔진은 로�
 
 - 판정: 2d6 + 능력 + 스킬(합쳐서 최대 +4) + 난이도 + 몸 상태. 10+ 성공 / 7~9 대가 있는 성공 / 6- 실패
 - 엔딩: 주인공 사망뿐. 이후 같은 세계에서 새 캐릭터로 계승. 아이언맨(자동 저장만)
-- MVP 시작 역할: 세력 A의 분대원
+- 새 게임: 월드 → 시나리오 → 캐릭터 → 시작. 시나리오는 튜토리얼(방문자)부터, 나머지는 해금 조건을 채우면 열린다 (`docs/design.md` 12.4.1)
 - 시간: 평시엔 행동 비용만큼 흐르고, 이동·전쟁은 끼어들기 조건이 있는 빨리감기
 - 자원 5종: 식량, 물, 탄약, 의약품, 연료 (인원수만큼 매일 소모)
 
@@ -75,5 +75,5 @@ pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마
 - RAG: 첫 실행 때 bge-m3 모델(약 570MB)을 `.cache/models/`에 받고, lore 색인을 `.cache/rag/`에 만든다 (둘 다 git 제외). 세계별 memory 색인은 `saves/worlds/<worldId>.memory.db` (세이브에서 다시 만들 수 있는 파생 파일). `RAG=off`로 끈다
 - **말 정하기**: 플레이어의 "월드" = 코드의 시나리오 팩(`content/scenarios/<id>/`, `Scenario`), 플레이어의 "시나리오" = 코드의 역할(`roles/*.yaml`), 플레이어의 "게임" = 코드의 세계(`GameWorld`, 세이브 하나). 화면·GM에 보이는 말은 월드·시나리오로 쓴다
 - 월드 팩은 `content/scenarios/` 아래를 모두 읽는다. `SCENARIO=<id>`로 하나만. 새 월드 추가 체크리스트는 `docs/design.md` 12.4
-- 세이브는 `saves/worlds/<worldId>.db` (`SAVES_DIR`로 폴더 변경). 모든 판에 남는 해금(여울섬 시나리오 등)은 `saves/unlocks.json`. 열려 있는 세계는 `<worldId>.db.lock`으로 잠긴다. 형식·시나리오가 맞지 않는 세이브는 `saves/archive/`로 옮겨진다
+- 세이브는 `saves/worlds/<worldId>.db` (`SAVES_DIR`로 폴더 변경). 모든 판에 남는 시나리오 해금은 `saves/unlocks.json`, 아직 닫지 않은 해금 알림(상태 화면 토스트)은 `saves/unlock-notices.json`. 열려 있는 세계는 `<worldId>.db.lock`으로 잠긴다. 형식·시나리오가 맞지 않는 세이브는 `saves/archive/`로 옮겨진다
 - 게임 상태나 이벤트 형태를 바꾸면 `SAVE_SCHEMA_VERSION`을 올린다 (`packages/core/src/game/state.ts`)

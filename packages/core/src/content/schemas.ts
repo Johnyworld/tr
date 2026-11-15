@@ -6,6 +6,7 @@ import { beliefAccuracySchema, beliefSourceSchema } from "../game/belief.ts";
 import { deedTagSchema, privacySchema, RELATION_AXES } from "../game/reputation.ts";
 import { createStatsSchema } from "../game/character.ts";
 import { idEnum, type Scenario } from "../scenario/schema.ts";
+import { historyPartSchema } from "../game/background.ts";
 import { moveIds, rankIds, statIds } from "../scenario/scenario.ts";
 
 /**
@@ -67,12 +68,34 @@ export type ItemContent = z.infer<typeof itemContentSchema>;
 /** 가치관 점수 (-3 ~ +3). 평판·관계 계산에 쓴다 (기획서 8.1) */
 export const valueScoreSchema = z.number().int().min(-3).max(3);
 
+/**
+ * 시나리오의 해금 조건·클리어 목표 (기획서 12.4.1). 코드가 이벤트와 상태로 판정한다. 목록이면 그중 하나만 맞으면 된다
+ * - scenario_ended: 그 시나리오가 끝났다 (클리어했거나 주인공이 죽었다)
+ * - scenario_cleared: 그 시나리오의 클리어 목표를 이뤘다
+ * - enter: 그 구역에 처음 들어갔다
+ * - fight: 그 무리 사람과 싸웠다 (공격 판정의 상대, 또는 그 무리와의 전투 장면)
+ * - join: 그 무리에 들어갔다
+ * - promoted: 계급이 올랐다
+ * - reunite: 찾던 가족(역할의 family)을 만났다 (같은 구역, 클리어 목표에서만)
+ */
+export const scenarioConditionSchema = z.union([
+  z.strictObject({ scenario_ended: contentIdSchema }),
+  z.strictObject({ scenario_cleared: contentIdSchema }),
+  z.strictObject({ enter: contentIdSchema }),
+  z.strictObject({ fight: contentIdSchema }),
+  z.strictObject({ join: contentIdSchema }),
+  z.strictObject({ promoted: z.literal(true) }),
+  z.strictObject({ reunite: z.literal("family") }),
+]);
+export type ScenarioCondition = z.infer<typeof scenarioConditionSchema>;
+
 /** 시나리오에 맞춘 콘텐츠 스키마들 */
 export function createContentSchemas(s: Scenario) {
   const role = z.strictObject({
     id: contentIdSchema,
     label: z.string().min(1),
-    faction: contentIdSchema,
+    /** 소속 무리. 빈 글이면 무리 없이 시작한다 (떠돌이, 튜토리얼의 방문자) */
+    faction: contentIdSchema.or(z.literal("")),
     rank: idEnum(rankIds(s)),
     /** 직분 (기획서 12.6). 직분의 일감·이야기가 더해진다 */
     occupation: contentIdSchema.optional(),
@@ -80,17 +103,50 @@ export function createContentSchemas(s: Scenario) {
     age: z.number().int().positive(),
     /** 시작 장면. 화면에 먼저 보여 주고 GM 프롬프트에도 넣는다 */
     opening_scene: z.string().min(1),
-    /** 새 게임의 시나리오 고르기에 보이는 것 (월드를 고른 뒤). 없으면 label만 */
+    /**
+     * 새 게임의 시나리오 (기획서 12.4.1). order가 있으면 월드를 고른 뒤의 시나리오 목록에 그 순서로 보인다.
+     * order가 없는 역할은 목록에 없고, 무리에 들거나 다음 캐릭터로 이어 갈 때 그 자리의 규칙(상관·임무·이야기)으로만 쓴다
+     */
     scenario: z
       .strictObject({
-        /** 시나리오 이름 (예: 청솔형제단의 수색대원) */
+        /** 시나리오 이름 (예: 비극의 고리) */
         title: z.string().min(1),
-        /** 고를 때 보여 주는 두세 문장 */
+        /** 목록의 짧은 설명 (주인공의 말로 두세 문장) */
         pitch: z.string().min(1),
         /** 캐릭터를 만들기 전에 들려주는 지금 상황 (시작 캐릭터가 아는 것만) */
         intro: z.string().min(1).optional(),
+        /** 목록 순서 (작을수록 위). 없으면 목록에 없다 */
+        order: z.number().int().min(0).optional(),
+        /** 해금 조건. 없으면 처음부터 고를 수 있다. text는 잠긴 카드에 보이는 말 */
+        unlock: z.strictObject({ text: z.string().min(1), when: z.array(scenarioConditionSchema).min(1) }).optional(),
+        /** 클리어 목표. 이루면 GM이 엔딩을 연출하고, 계속할지 끝낼지 묻는다. 없으면 죽음이 끝이다 */
+        goal: z.strictObject({ text: z.string().min(1), when: z.array(scenarioConditionSchema).min(1), ending: z.string().min(1) }).optional(),
+        /** 주인공이 죽으면 같은 세계의 다음 캐릭터로 이어 갈 수 있는지. false면 그 판은 죽음으로 끝난다 (튜토리얼) */
+        heirs: z.boolean().default(true),
+        /** 이 시나리오 내내 GM이 따를 연출 지침 (GM 지침에 들어간다. 시작 캐릭터가 모르는 진실은 쓰지 않는다) */
+        gm: z.string().min(1).optional(),
       })
       .optional(),
+    /** 미리 정해진 사연 (기획서 12.6의 배경 부품). 세계를 만들 때 세이브의 역사가 된다 */
+    history: z.array(historyPartSchema()).default([]),
+    /** 미리 정해진 지난 삶 (주인공의 기억 몇 문장) */
+    background: z.array(z.string().min(1).max(200)).default([]),
+    /**
+     * 시작할 때 가까운 사람들 (오래 함께 버틴 동료 등): 이 인물들이 주인공을 보는 관계를 축마다 [하한, 상한] 안에서 무작위로 올린다.
+     * 서로 이름을 알게 하려면 known_npcs에도 넣는다
+     */
+    start_bonds: z
+      .strictObject({
+        ids: z.array(contentIdSchema).min(1),
+        trust: z.tuple([z.number().int(), z.number().int()]).default([1, 2]),
+        affection: z.tuple([z.number().int(), z.number().int()]).default([1, 2]),
+        respect: z.tuple([z.number().int(), z.number().int()]).default([0, 1]),
+        /** 이 중 한 사람(가장 가까운 친구)은 축마다 하나씩 더 */
+        best: contentIdSchema.optional(),
+      })
+      .optional(),
+    /** 찾는 가족 (튜토리얼): 코드가 주인공 나이에 맞춰 가족 몇 사람을 만들어 이 구역에 둔다. 주인공은 어디 있는지 모른다 */
+    family: z.strictObject({ zone: contentIdSchema, count: z.tuple([z.number().int().min(1), z.number().int().min(1)]).default([2, 3]) }).optional(),
     /** 정해진 능력 (특별한 역할·테스트용). 없으면 시나리오의 ability_array를 무작위로 섞는다 — 능력은 계급과 무관하다 */
     start_stats: createStatsSchema(s).optional(),
     /** 이 역할이 받은 훈련 (스킬 id → 수준). 나머지는 스킬의 기본값 */
@@ -123,8 +179,6 @@ export function createContentSchemas(s: Scenario) {
     squad_mates: z.array(contentIdSchema).optional(),
     /** 시작할 때 진 빚 (세력 id → 양, 기획서 9.10) */
     start_debt: z.record(contentIdSchema, z.number().int().min(1)).optional(),
-    /** 이 해금이 있어야 고를 수 있다 (구역의 unlocks로 얻는다, 모든 판에 남는다, 기획서 9.12) */
-    unlock: contentIdSchema.optional(),
     /** 이 역할에 내려오는 임무 템플릿 */
     missions: z.array(contentIdSchema).default([]),
     storylet_tags: z.array(contentIdSchema).default([]),
@@ -355,8 +409,6 @@ export function createContentSchemas(s: Scenario) {
       .optional(),
     /** 외딴곳: 도시 공통 이야기(world)와 엑스트라 틀은 이 구역을 zones로 직접 적은 것만 나온다 (닫힌 섬 등, 기획서 9.12) */
     isolated: z.boolean().optional(),
-    /** 처음 들어오면 이 해금을 얻는다 (모든 판에 남는다. 역할의 unlock과 짝) */
-    unlocks: contentIdSchema.optional(),
     /** 소유 세력이 하루에 얻는 자원 */
     yields: resourceAmounts.default({}),
     /** 수색하면 나올 수 있는 것 (기획서 4.7). chance: 한 번 굴릴 때 무언가 나올 확률, items: 무게로 고른다 */
@@ -522,9 +574,9 @@ export function createContentSchemas(s: Scenario) {
     keep: contentIdSchema.optional(),
     /**
      * 주인공의 배경에서 (기획서 12.6): enemy 원수인 인물(또는 가해자), enemy_member 원수 무리의 사람,
-     * kin 살아서 기다리는 가족, sought 찾고 있는 사람
+     * kin 살아서 기다리는 가족, sought 찾고 있는 사람, family 찾는 가족 (역할의 family, 튜토리얼)
      */
-    background: z.enum(["enemy", "enemy_member", "kin", "sought", "creditor", "deserted"]).optional(),
+    background: z.enum(["enemy", "enemy_member", "kin", "sought", "creditor", "deserted", "family"]).optional(),
     /** 성적 위협을 가진 사람만 (12-59, 이 중 하나). 그 사람이 주인공에게 끌릴 때만 */
     menace: z.array(z.enum(["harass", "coerce", "assault"])).optional(),
     /** 연애 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람, jealous 다른 연인을 알아챈 연인, rival_lover 주인공이 다가간 사람의 다른 연인 */

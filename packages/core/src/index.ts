@@ -44,7 +44,7 @@ export * from "./game/reputation.ts";
 export { describeRequirement, describeMission } from "./engine/missionTools.ts";
 
 export * from "./content/schemas.ts";
-export { loadContentPacks, worldInfo, scenarioInfos } from "./content/packs.ts";
+export { loadContentPacks, worldInfo } from "./content/packs.ts";
 export {
   answerNewGame,
   backNewGame,
@@ -52,11 +52,10 @@ export {
   heirDraft,
   newGameDraft,
   newGameStep,
-  setStoryStart,
   type NewGameDraft,
 } from "./game/newGame.ts";
 export { newGameView, type NewGameView, type CharacterStepView } from "./game/newGameView.ts";
-export { motivesOf, storyStartSchema, type StoryStartInput } from "./game/storyStart.ts";
+export { scenarioChoices, type ScenarioChoice } from "./game/startChoice.ts";
 export { buildCustomRole, checkCustomStart, type CustomStartInput } from "./game/customStart.ts";
 export { loadContent, ContentError } from "./content/loader.ts";
 
@@ -85,6 +84,7 @@ export {
   type TakeActionResult,
 } from "./engine/action.ts";
 export { runAfterTimeAdvance } from "./engine/turnStart.ts";
+export { STORY_ENDED, heirSeat, parseNewAs } from "./engine/succession.ts";
 export type { TranscriptEntry, TurnSummary, SummaryKind, PlayMode, RetrievalRecord } from "./engine/log.ts";
 
 export { GameWorld, RECAP_TURNS } from "./world/world.ts";

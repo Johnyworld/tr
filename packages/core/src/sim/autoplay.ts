@@ -63,6 +63,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     if (s.playerZone) stats.zonesVisited.add(s.playerZone);
     if (world.isPlayerDead()) {
       stats.deaths++;
+      // 이어 갈 수 없으면(튜토리얼, 아무도 만나지 못했다) 죽음으로 끝난다
+      if (world.storyEnded()) break;
       const options = world.successionOptions();
       if (options.length === 0) {
         stats.errors.push("죽었는데 다음 캐릭터 후보가 없다");

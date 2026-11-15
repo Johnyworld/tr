@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 34;
+export const SAVE_SCHEMA_VERSION = 35;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -231,8 +231,17 @@ export function createGameSchemas(s: Scenario) {
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 상인이 마지막으로 물건을 채운 날 */
     restockedDay: z.record(z.string(), z.number().int()).default({}),
-    /** 이 세계에서 열린 해금 (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 9.12) */
+    /** 이 세계에서 열린 해금: 시나리오(역할) id (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 12.4.1, 9.12) */
     unlocked: z.array(z.string()).default([]),
+    /**
+     * 지금 주인공이 플레이하는 시나리오(목록의 역할 id, 기획서 12.4.1). 무리에 들어 역할(roleId)이 바뀌어도 그대로다.
+     * 클리어 목표와 시나리오의 연출 지침은 이것을 본다. 다음 캐릭터가 새 시나리오로 시작하면 바뀐다
+     */
+    scenarioRole: z.string().default(""),
+    /** 이 세계에서 클리어 목표를 이룬 시나리오(역할) id (기획서 12.4.1) */
+    cleared: z.array(z.string()).default([]),
+    /** 주인공이 찾는 가족 (역할의 family로 코드가 만든 인물 id, 튜토리얼) */
+    family: z.array(z.string()).default([]),
     /** 주인공이 털어놓음을 들은 숨은 관계 (tieKey) */
     revealedTies: z.array(z.string()).default([]),
     /** 함께 다니는 이유 (NPC id → 이유, 기획서 7.9). 지금 곁에 있는 사람(companions)과 잠시 떨어져 있는 사람 모두 */
@@ -420,6 +429,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("merchant_restocked"), npcId: z.string(), day: z.number().int(), items: z.record(z.string(), z.number().int().min(1)) }),
     /** 해금을 얻었다 (inherited: 다른 판에서 얻은 것을 옮겨 왔다) */
     z.strictObject({ type: z.literal("unlock_earned"), id: z.string(), inherited: z.boolean().default(false) }),
+    /** 지금 시나리오의 클리어 목표를 이뤘다 (기획서 12.4.1). 게임은 끝나지 않는다: 플레이어가 계속할지 정한다 */
+    z.strictObject({ type: z.literal("scenario_cleared"), roleId: z.string() }),
+    /** 주인공이 찾는 가족이 정해졌다 (세계를 만들 때, 역할의 family) */
+    z.strictObject({ type: z.literal("family_set"), ids: z.array(z.string()) }),
     /** 숨은 관계를 털어놓았다 */
     z.strictObject({ type: z.literal("tie_revealed"), key: z.string() }),
     /** 함께 다니기 시작했다. kind가 없으면 이전 세이브 (코드가 틀로 정한다) */
@@ -534,8 +547,12 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({
       type: z.literal("character_switched"),
       characterId: z.string(),
-      /** 다른 시작 역할로 이어 갈 때 (해금된 시나리오, 기획서 9.12) */
+      /** 다른 역할로 이어 갈 때: 다른 시나리오의 새 캐릭터, 또는 이어받는 인물의 자리 (기획서 12.4.1) */
       roleId: z.string().optional(),
+      /** 그 자리가 콘텐츠에 없어 코드가 만든 역할 (roleId는 그 역할의 id) */
+      customRole: customRoleSchema.optional(),
+      /** 이제 플레이하는 시나리오. 빈 글이면 시나리오 없이 (두 번째 주인공부터는 세계만 이어 간다, 기획서 12.4.1). 없으면 roleId */
+      scenarioRole: z.string().optional(),
       character: character.optional(),
       known: z.array(z.string()),
     }),
@@ -713,6 +730,9 @@ export const EMPTY_STATE: GameState = {
   dynamicTies: [],
   revealedTies: [],
   unlocked: [],
+  scenarioRole: "",
+  cleared: [],
+  family: [],
   zoneNoise: {},
   loans: {},
   restockedDay: {},
@@ -795,6 +815,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         scenarioId: event.scenarioId,
         worldId: event.worldId,
         roleId: event.roleId,
+        scenarioRole: event.roleId,
         customRole: event.customRole ? structuredClone(event.customRole) : null,
         playerId: event.player.id,
         characters,
@@ -919,6 +940,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "unlock_earned":
       if (!next.unlocked.includes(event.id)) next.unlocked = [...next.unlocked, event.id];
+      return next;
+    case "scenario_cleared":
+      if (!next.cleared.includes(event.roleId)) next.cleared = [...next.cleared, event.roleId];
+      return next;
+    case "family_set":
+      next.family = [...event.ids];
       return next;
     case "tie_revealed":
       if (!next.revealedTies.includes(event.key)) next.revealedTies = [...next.revealedTies, event.key];
@@ -1321,8 +1348,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.runStartedAt = state.time;
       if (event.roleId) {
         next.roleId = event.roleId;
-        next.customRole = null;
+        next.customRole = event.customRole ? structuredClone(event.customRole) : null;
       }
+      const playing = event.scenarioRole ?? event.roleId;
+      if (playing !== undefined) next.scenarioRole = playing;
       // 이어받는 인물이 원래 알던 사람은 그대로 알고, 같은 무리 동료와는 서로 이름을 안다
       for (const id of event.known) {
         acquaint(next, successor.id, id, true);

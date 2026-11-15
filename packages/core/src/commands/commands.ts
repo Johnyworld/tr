@@ -16,7 +16,7 @@ import { conditionPenalty, shownLevel, visibleSymptoms } from "../scenario/scena
 import { describeRequirement } from "../engine/missionTools.ts";
 import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
 import { factionOutlook, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
-import { formatChronicle, successionOptions } from "../engine/succession.ts";
+import { formatChronicle, storyEnded, successionOptions } from "../engine/succession.ts";
 import { seasonAt, seasonLabel } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { buildPlayerView, type PlayerView } from "../views/player.ts";
@@ -385,6 +385,7 @@ const chronicle: CommandDef = {
       header("연대기"),
       ...formatChronicle(ctx.state, ctx.content),
       ...(options.length ? ["다음 캐릭터 후보", ...options.map((o) => `  ${o.id}  ${o.label} — ${o.detail}`)] : []),
+      ...(storyEnded(ctx.state, ctx.content) ? ["다음 캐릭터로 이어 갈 수 없습니다. 이야기는 여기서 끝났습니다. 새 게임에서 열린 시나리오를 고를 수 있습니다."] : []),
     ]
       .join("\n")
       .trimEnd();

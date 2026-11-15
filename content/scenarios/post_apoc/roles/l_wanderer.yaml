@@ -1,0 +1,34 @@
+# 떠돌이 (기획서 12.4.1). 어느 무리에도 속하지 않고 담 밖에서 산다. 누렁이 한 마리와 함께 시작한다.
+# 무리마다 들어갈 길이 있다 (storylets/world_loner*.yaml, 태그 world + factions: [none]). 들어가지 않고 끝까지 밖에 남아도 된다
+id: role_l_wanderer
+label: 떠돌이
+faction: ""
+rank: loner
+default_name: 떠돌이
+opening_scene: 새벽, 구시가의 무너진 상가 2층. 깨진 유리창으로 찬바람이 든다. 담요 끝을 물고 있던 누렁이가 고개를 들고 귀를 세운다. 아래 골목 어딘가에서 깡통 구르는 소리가 난다.
+scenario:
+  title: 담 밖의 사람
+  order: 2
+  unlock: { text: "튜토리얼을 마친다 (가족을 찾거나, 주인공이 죽는다)", when: [{ scenario_ended: role_t_visitor }] }
+  pitch: >-
+    어느 무리에도 속하지 않았다. 담 안의 규칙도, 배급도, 나를 지켜 줄 사람도 없다. 나와 이 개 한 마리, 그리고 무너진 도시뿐이다.
+    오늘 먹을 것을 찾고, 오늘 밤 잘 곳을 찾는다. 어느 담 안으로 들어갈지, 끝까지 밖에 남을지는 내가 정한다.
+  intro: >-
+    늦가을. 붕괴 뒤 두 해 가까이, 당신은 어느 무리에도 들지 않고 혼자 버텨 왔다. 지난여름부터는 누렁이 한 마리가 곁을 따른다. 짖지 않도록 배운 개다.
+    가람시에는 담을 두른 무리가 다섯 있다. 청솔형제단은 옛 공업고등학교에, 버들마을은 그 서쪽 아파트 단지에, 붉은연합은 동쪽 공단에 산다. 하얀매는 약을, 나루상단은 물을 판다.
+    무리에 들면 배급과 지붕이 생기지만, 그 무리의 전쟁과 규칙도 함께 진다. 겨울이 다가오고, 담 밖의 겨울은 길다.
+    이야기는 어느 새벽, 구시가의 무너진 상가 2층에서 시작한다.
+  gm: >-
+    무리 없는 사람의 이야기다. 배급도 임무도 상관도 없다: 먹을 것, 물, 잠자리, 추위가 매일의 문제다. 무리들은 떠돌이를 쓸모와 위협으로 본다.
+    어느 무리에 들지(들 수 있는 길은 이야기가 연다) 정해 주지 않는다. 누렁이는 말없는 동료로, 위험을 먼저 알아채는 존재로 그린다.
+age: 32
+start_skills: {}
+start_inventory: [pipe_spear, leather_jacket, blanket, water_bottle, dry_ration, fishing_kit]
+start_location: old_town
+access: []
+known_npcs: []
+missions: []
+start_companions:
+  - { template: stray_dog, label: 누렁이, kind: animal }
+# world: 도시의 일과 무소속의 이야기 (무리마다 들어갈 길)
+storylet_tags: [world]

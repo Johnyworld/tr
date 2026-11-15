@@ -36,6 +36,8 @@ const PATHS: Record<string, string[]> = {
   snow: ["M7 13a4 4 0 0 1-.6-8A6 6 0 0 1 18 4a4.5 4.5 0 0 1-.5 9z", "M8 17h.01", "M12 16h.01", "M16 17h.01", "M10 20h.01", "M14 20h.01"],
   // Lucide arrow-left (ISC 라이선스, lucide.dev)
   "arrow-left": ["m12 19-7-7 7-7", "M19 12H5"],
+  // Lucide lock (ISC 라이선스, lucide.dev)
+  lock: ["M5 11h14v10H5z", "M7 11V7a5 5 0 0 1 10 0v4"],
   moon: ["M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"],
   mind: ["M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z", "M10 21h4", "M12 8v4", "M10 10h4"],
 };

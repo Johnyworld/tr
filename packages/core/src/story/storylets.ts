@@ -1,3 +1,4 @@
+import { roleOf } from "../game/state.ts";
 import { attracted, loversOf, romanceCast } from "../engine/romance.ts";
 import { tiesOf } from "../game/ties.ts";
 import { activeCompanions, bondOf } from "../game/companions.ts";
@@ -76,8 +77,10 @@ function bodyMatches(content: Content, level: string | undefined, cond: { track:
 }
 
 /** 배경 배역의 후보 (기획서 12.6) */
-function backgroundCast(state: GameState, content: Content, kind: "enemy" | "enemy_member" | "kin" | "sought" | "creditor" | "deserted"): string[] {
+function backgroundCast(state: GameState, content: Content, kind: "enemy" | "enemy_member" | "kin" | "sought" | "creditor" | "deserted" | "family"): string[] {
   const out: string[] = [];
+  // 찾는 가족 (역할의 family, 튜토리얼)
+  if (kind === "family") return [...state.family].sort();
   const membersOf = (f: string) => Object.values(state.characters).filter((c) => c.factionId === f && c.id !== state.playerId).map((c) => c.id);
   for (const { part, characterId } of state.background) {
     if (kind === "creditor" && part.kind === "debt") out.push(...membersOf(part.faction));
@@ -321,7 +324,11 @@ export const WORLD_TAG = "world";
 
 /** 지금 발동할 수 있는 스토리렛 (역할 태그, 반복·쿨다운, 조건, 배역) */
 export function eligibleStorylets(state: GameState, content: Content, at: GameTime = state.time): StoryletContent[] {
-  const roleTags = new Set(content.roles[state.roleId]?.storylet_tags ?? []);
+  // 지금 역할(무리에 들었으면 그 자리)의 태그와, 지금 플레이하는 시나리오의 태그 (기획서 12.4.1).
+  // 시나리오의 태그는 무소속으로 시작한 시나리오(튜토리얼)이거나 아직 그 무리에 있을 때만: 무리에 든 뒤에도 튜토리얼이 이어지게, 무리를 떠나면 옛 무리 이야기는 닫히게
+  const playing = content.roles[state.scenarioRole];
+  const keepsScenario = !!playing && (!playing.faction || playing.faction === state.characters[state.playerId]?.factionId);
+  const roleTags = new Set([...(roleOf(content, state)?.storylet_tags ?? []), ...(keepsScenario ? playing.storylet_tags : [])]);
   // 갇혀 있으면 갇힌 동안의 이야기만, 아니면 그 이야기는 열리지 않는다 (12-55)
   const captivityTag = content.scenario.captivity?.tag;
   const captive = !!state.characters[state.playerId]?.captive;

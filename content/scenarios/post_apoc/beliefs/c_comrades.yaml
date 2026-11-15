@@ -1,0 +1,43 @@
+# 붉은 완장 (붉은연합 약탈 육조원)이 시작할 때 알고 있는 것
+# accuracy는 GM에게 보이지 않는다. 거점에서 듣는 선전 중 일부는 틀렸다
+id: c_comrades_start
+beliefs:
+  - fact: 붕괴 뒤 두 해를 함께 버틴 여덟 명이 석 달 전 통째로 붉은연합에 들었다. 다들 저마다 다른 일을 맡았지만 저녁이면 물류창고 마당 불가에 모인다.
+    source: seen
+    accuracy: exact
+  - fact: 한재호는 약탈 육조의 조장이다. 육조는 안다혜, 하범수, 그리고 나. 임무는 재호를 통해 내려온다.
+    source: seen
+    accuracy: exact
+  - fact: 곽윤호는 물류창고 수용소 경비, 엄기택은 정비소, 노순애는 취사 천막, 송민지는 의무를 맡았다.
+    source: seen
+    accuracy: exact
+  - fact: 붉은연합의 목표는 감염체를 모두 죽이고 세상을 다시 세우는 것이다. 위원장 국혜란이 광장에서 날마다 그렇게 말한다.
+    source: report
+    accuracy: exact
+  - fact: 붉은연합은 지난봄 북쪽 군부대를 장악해 총과 탄약, 트럭을 끌어왔다.
+    source: report
+    accuracy: exact
+  - fact: 물류창고 창고에는 통조림과 마른 식량이 천장까지 쌓여 있다. 붉은연합에 들고 나서 굶은 날이 없다.
+    source: seen
+    accuracy: exact
+  - fact: 약탈조는 감염체를 털어 세상을 되찾는 조라는 뜻이라고 한다. 실제로는 연합에 맞서는 무리의 땅과 사람도 턴다.
+    source: seen
+    accuracy: exact
+  - fact: 청솔형제단은 붙잡은 사람을 잡아먹는다고 한다. 위원회 연설에서도, 배급 줄에서도 같은 말을 듣는다.
+    source: rumor
+    accuracy: "false"
+  - fact: 청솔형제단은 무고한 사람을 죽인다고 한다. 그래서 이 전쟁은 지면 끝이라고들 한다.
+    source: report
+    accuracy: "false"
+  - fact: 붉은연합은 지금 청솔형제단·버들마을과 전쟁 중이다. 사람 수로는 우리가 크게 앞선다.
+    source: report
+    accuracy: exact
+  - fact: 할당량을 못 채운 조는 다음 날 배급이 깎인다. 탈영하다 잡힌 자는 광장에서 본보기로 벌을 받는다.
+    source: report
+    accuracy: exact
+  - fact: 물류창고 안쪽에 붙잡은 사람들을 가둬 두는 수용소가 있다. 간부 마경수가 맡는다.
+    source: seen
+    accuracy: exact
+  - fact: 겨울이 오기 전에 동쪽으로 큰 공세가 있다는 말이 돈다.
+    source: rumor
+    accuracy: approximate

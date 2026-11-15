@@ -1,0 +1,268 @@
+# 붉은 완장 시나리오의 동료 일곱 (role_c_comrades)
+# 붕괴 뒤 두 해를 주인공과 함께 버틴 여덟 명 중 일곱. 석 달 전 통째로 붉은연합에 들어 저마다 다른 일을 맡았다
+# 한재호(약탈 육조장)가 주인공의 가장 친한 친구. 안다혜·하범수는 같은 약탈 육조
+
+- id: c_cm_jaeho
+  name: 한재호
+  alias: 완장을 두 번 감아 맨 조장
+  faction: faction_c
+  rank: squad_leader
+  occupation: scavenger
+  age: 28
+  gender: male
+  look: 어깨가 넓고 광대에 흰 흉터가 비스듬히 지나간다. 붉은 완장을 두 번 감아 맨다. 웃을 때는 눈부터 접힌다.
+  reputation: 석 달 전 들어온 여덟 명 무리의 맏형 노릇을 하던 사내. 입단 시험에서 감염체를 혼자 넷 쓰러뜨려 바로 약탈 육조장이 됐다. 할당량을 한 번도 빠뜨린 적이 없다.
+  want: 동료들을 다시는 굶기지 않는 것. 붉은연합이 세상을 다시 세우는 날 그 앞줄에 서는 것
+  fear: 동료 중 누가 약해서 죽는 것
+  values: { discipline: 2, loyalty: 3, mercy: -1, honesty: 1, self_interest: -1 }
+  traits: [protective, principled]
+  voice:
+    style: 힘 있는 반말. 동료에게는 장난스럽고, 명령할 때는 짧게 끊는다
+    samples:
+      - "강한 놈만 살아남아. 그러니까 너도 강해져. 내가 옆에 있을 때."
+      - "위원장님 말 들었지? 우리가 세상을 다시 세운다고. 난 그거 믿어."
+      - "밥 먹었냐? 안 먹었으면 내 거 먹어."
+  routine: { dawn: 조원 점호, morning: 약탈조 출발, day: 구시가·강변 털이, evening: 창고 앞 할당량 검수, night: 물류창고 마당 불가 }
+  rules:
+    - 조원이 다치면 할당량보다 조원을 먼저 챙긴다
+    - 붉은연합을 욕하는 말은 동료에게도 그 자리에서 막는다
+    - 약한 소리를 하는 동료를 혼자 두지 않고 끝까지 단련시킨다
+  knows:
+    - 청솔형제단은 붙잡은 사람을 잡아먹고, 무고한 사람을 죽인다는 것 (위원회 연설에서 들었다)
+    - 약탈조라는 이름은 감염체를 털어 세상을 되찾는 조라는 뜻이라는 것
+    - 동쪽 공세가 겨울 전에 있다는 것. 육조도 나갈 수 있다는 것
+    - 여덟 명이 처음 만난 곳은 구시가 초등학교 체육관이었다는 것
+  doesnt_know:
+    - 청솔형제단이 사람을 먹는다는 말은 위원회가 퍼뜨린 선전이라는 것
+  secret:
+    content: 첫 겨울, 여덟 명은 원래 아홉이었다. 감염체 떼에 쫓길 때 발을 다친 윤서를 두고 가자고 정한 사람이 한재호였다. 동료들에게는 윤서가 물려서 어쩔 수 없었다고 말했다. "강한 자만 살아남는다"는 말은 그날부터 했다
+    reveal_when: 주인공과 단둘이, 동료 하나가 크게 다치거나 죽을 뻔한 날 밤
+    min_trust: 4
+  stats: { strength: 2, agility: 1, vitality: 1, senses: 0, nerve: 2, charm: 1, intellect: 0 }
+  skills: { fight: 2, tactics: 1, intimidate: 1, endure: 1 }
+  start_inventory: [c_armband, sawn_shotgun, shells, shells, padded_armor]
+  playable: true
+  zone: c_warehouse
+  ties:
+    - { to: c_cm_beomsu, kind: friend }
+    - { to: c_cm_gitaek, kind: friend }
+
+- id: c_cm_dahye
+  name: 안다혜
+  alias: 쌍안경을 목에 건 척후
+  faction: faction_c
+  rank: grunt
+  occupation: scavenger
+  age: 23
+  gender: female
+  look: 짧게 자른 머리에 목에는 금 간 쌍안경. 걸을 때 소리가 거의 나지 않는다.
+  reputation: 약탈 육조의 척후. 여덟 명 중 길눈이 가장 밝다. 위원장의 광장 연설을 한 번도 빠지지 않고 듣는다.
+  want: 위원회 정찰대에 뽑히는 것
+  fear: 쓸모없는 사람으로 취급받는 것
+  values: { discipline: 1, loyalty: 2, mercy: 0, honesty: 1, self_interest: 1 }
+  traits: [eager, curious]
+  voice:
+    style: 빠르고 들뜬 반말. 들은 이야기를 옮길 때 목소리가 커진다
+    samples:
+      - "저쪽 골목 비었어. 감염체 둘, 느린 놈들이야."
+      - "들었어? 청솔 놈들 포로를 솥에 넣는대. 그러니까 절대 잡히면 안 돼."
+  routine: { dawn: 감시탑, morning: 약탈조 출발, day: 구시가·강변 털이, evening: 광장 연설, night: 물류창고 마당 불가 }
+  rules:
+    - 낯선 곳에 들어가면 먼저 높은 곳에 오른다
+    - 위원회 연설에서 들은 말을 그대로 옮긴다
+  knows:
+    - 청솔형제단이 사람을 먹는다는 것 (광장 연설과 막사 소문으로 들었다)
+    - 구시가와 강변의 감염체가 모이는 골목들
+    - 버들마을이 청솔형제단에 식량을 대 준다는 것
+  doesnt_know:
+    - 청솔형제단이 사람을 먹는다는 말은 선전이라는 것
+  stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: 0, charm: 0, intellect: 0 }
+  skills: { stealth: 2, sense_danger: 1, scavenge: 1 }
+  start_inventory: [c_armband, binoculars, water_bottle]
+  playable: true
+  zone: c_warehouse
+  ties:
+    - { to: c_cm_beomsu, kind: rival }
+
+- id: c_cm_beomsu
+  name: 하범수
+  alias: 쇠파이프를 어깨에 멘 막내
+  faction: faction_c
+  rank: grunt
+  occupation: scavenger
+  age: 19
+  gender: male
+  look: 키만 훌쩍 크고 아직 얼굴이 앳되다. 쇠파이프를 늘 어깨에 걸치고 다닌다. 손등에 물린 자국 같은 오래된 흉터가 있다.
+  reputation: 여덟 명의 막내. 붕괴 때 열일곱이었다. 약탈 육조에서 짐을 지고 문을 부순다. 한재호를 형이라 부르며 따라다닌다.
+  want: 재호 형에게 인정받는 것. 다시는 막내 취급을 받지 않는 것
+  fear: 겁먹은 모습을 동료들에게 들키는 것
+  values: { discipline: 1, loyalty: 3, mercy: 0, honesty: 0, self_interest: 0 }
+  traits: [hot_tempered, eager]
+  voice:
+    style: 거친 척하는 반말. 재호 앞에서는 말끝에 "형"이 붙는다
+    samples:
+      - "형, 이번엔 내가 앞에 설게. 진짜야."
+      - "청솔 놈들 하나라도 걸리면 내가 다 부숴 버린다."
+  routine: { dawn: 조원 점호, morning: 약탈조 출발, day: 구시가·강변 털이, evening: 고가도로 밑 연습장, night: 막사 }
+  rules:
+    - 한재호가 하는 말은 그대로 따라 한다
+    - 누가 막내라고 부르면 얼굴이 빨개진다
+  knows:
+    - 청솔형제단이 사람을 먹는다는 것 (재호 형에게 들었다)
+    - 동쪽 공세에서 공을 세우면 조장이 될 수 있다는 소문
+  doesnt_know:
+    - 손등의 흉터가 감염체에게 물린 게 아니라 첫 겨울 철조망에 긁힌 것이라는 것. 동료들은 다 알지만 놀리느라 말하지 않는다
+  stats: { strength: 2, agility: 0, vitality: 1, senses: -1, nerve: 0, charm: 0, intellect: -1 }
+  skills: { fight: 1, endure: 1, intimidate: 1 }
+  start_inventory: [c_armband, crowbar, water_bottle]
+  playable: true
+  zone: c_warehouse
+
+- id: c_cm_yunho
+  name: 곽윤호
+  alias: 열쇠 꾸러미를 찬 말 없는 경비
+  faction: faction_c
+  rank: grunt
+  occupation: guard
+  age: 31
+  gender: male
+  look: 마르고 등이 조금 굽었다. 허리에 열쇠 꾸러미 대신 빈 고리를 찬다. 열쇠는 경비조장이 쥐고 있다.
+  reputation: 여덟 명 중 말수가 가장 적은 사내. 붕괴 전에는 동네 학원에서 아이들을 가르쳤다. 지금은 물류창고 수용소의 경비조에 있다.
+  want: 동료들이 수용소 안을 보지 않는 것
+  fear: 언젠가 자기가 수용소 안의 누군가를 때려야 하는 날
+  values: { discipline: 0, loyalty: 2, mercy: 2, honesty: 0, self_interest: 0 }
+  traits: [guarded, patient]
+  voice:
+    style: 낮고 느린 말투. 반말이지만 끝을 흐린다
+    samples:
+      - "…거기 얘기는 하지 말자. 밥 먹을 때는."
+      - "포로들도 밥은 먹어. 하루에 한 번."
+  routine: { dawn: 수용소 담 보초, morning: 수용소 배식, day: 수용소 바깥문, evening: 물류창고 마당 불가, night: 막사 }
+  rules:
+    - 수용소에서 본 것을 동료에게 말하지 않는다
+    - 배식 때 가장 작은 포로에게 국을 조금 더 담는다
+  knows:
+    - 수용소 안 포로들 대부분이 청솔형제단과 버들마을 사람이라는 것
+    - 수용소 포로들은 하루 한 번 묽은 죽을 먹는다는 것
+    - 청솔형제단이 사람을 먹는다는 말 (거점에서 모두가 한다)
+  doesnt_know:
+    - 동료 송민지도 같은 의심을 품고 있다는 것
+  secret:
+    content: 수용소의 청솔형제단 포로 가운데 열두 살 아이가 있다. 아이는 붉은연합이 사람을 잡아먹는다고 들었다며 윤호를 보고 울었다. 그날부터 윤호는 어느 쪽 말도 믿지 않는다. 몰래 아이에게 먹을 것을 넣어 준다
+    reveal_when: 주인공이 수용소 이야기를 먼저 꺼내고, 둘만 있을 때
+    min_trust: 3
+  stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 2 }
+  skills: { sense_danger: 1, persuade: 1, history: 1 }
+  start_inventory: [c_armband, kitchen_knife]
+  playable: true
+  zone: c_warehouse
+  ties:
+    - { to: c_cm_minji, kind: friend }
+
+- id: c_cm_gitaek
+  name: 엄기택
+  alias: 기름때 묻은 장갑의 늙은 정비공
+  faction: faction_c
+  rank: grunt
+  occupation: mechanic
+  age: 54
+  gender: male
+  look: 머리가 반쯤 벗겨진 단단한 사내. 늘 기름때 묻은 목장갑을 끼고, 귀 뒤에 몽당연필을 꽂았다.
+  reputation: 여덟 명의 큰형님. 붕괴 전 카센터를 했다. 지금은 물류창고 정비소에서 트럭과 총을 손본다. 그가 손본 산탄총은 걸리지 않는다는 말이 있다.
+  want: 군부대에서 끌어온 트럭을 한 대라도 다시 굴리는 것
+  fear: 쓸모없어져 담 밖으로 내쫓기는 것
+  values: { discipline: 1, loyalty: 2, mercy: 1, honesty: 2, self_interest: 0 }
+  traits: [meticulous, blunt]
+  voice:
+    style: 투박한 반말. 기계 이야기를 할 때만 말이 길어진다
+    samples:
+      - "총은 사람 같아. 닦아 주면 배신 안 해."
+      - "세상 다시 세운다고? 그럼 바퀴부터 굴려야지."
+  routine: { dawn: 막사, morning: 물류창고 정비소, day: 물류창고 정비소, evening: 물류창고 마당 불가, night: 정비소 뒷방 }
+  rules:
+    - 동료의 무기는 할당 순서와 상관없이 먼저 손봐 준다
+    - 정비소에서는 담배를 피우지 못하게 한다
+  knows:
+    - 붉은연합이 지난봄 북쪽 군부대를 장악해 총과 트럭을 끌어왔다는 것. 트럭은 대부분 서 있다는 것
+    - 무기고의 산탄이 생각보다 빨리 줄고 있다는 것
+    - 청솔형제단이 사람을 먹는다는 말 (믿는 편이다)
+  doesnt_know:
+    - 청솔형제단이 사람을 먹는다는 말은 선전이라는 것
+  stats: { strength: 1, agility: 0, vitality: 0, senses: 1, nerve: 0, charm: -1, intellect: 2 }
+  skills: { mechanics: 2, maintenance: 2, improvise: 1 }
+  start_inventory: [c_armband, toolkit]
+  playable: true
+  zone: c_warehouse
+
+- id: c_cm_sunae
+  name: 노순애
+  alias: 국자를 든 억척스러운 아주머니
+  faction: faction_c
+  rank: staff
+  occupation: cook
+  age: 51
+  gender: female
+  look: 작고 단단한 몸에 앞치마를 두 겹 둘렀다. 소매를 팔꿈치까지 걷어 올리고, 국자를 무기처럼 들고 다닌다.
+  reputation: 여덟 명의 밥을 두 해 동안 책임진 사람. 지금은 물류창고 취사 천막을 맡았다. 배식 줄에서 그를 건드리는 사람은 없다.
+  want: 다 같이 살아서 세 번째 겨울을 넘기는 것
+  fear: 다시 굶주리는 것. 첫 겨울에 아들을 굶주림 끝에 잃었다
+  values: { discipline: 0, loyalty: 3, mercy: 1, honesty: 1, self_interest: 0 }
+  traits: [motherly, talkative]
+  voice:
+    style: 걸걸한 반말 섞인 잔소리. 누구든 "얘"라고 부른다
+    samples:
+      - "얘, 밥은 먹고 털러 가. 빈속에 감염체 만나면 다리부터 풀려."
+      - "창고 좀 봐라. 저 통조림이면 겨울이 아니라 다섯 겨울도 나겠다."
+  routine: { dawn: 물류창고 취사 천막, morning: 배급 줄, day: 물류창고 취사 천막, evening: 물류창고 마당 불가, night: 취사 천막 뒷방 }
+  rules:
+    - 동료들 밥그릇에는 꼭 건더기를 하나 더 넣는다
+    - 끼니를 거른 사람은 끝까지 쫓아가 먹인다
+  knows:
+    - 물류창고 창고에 통조림과 마른 식량이 천장까지 쌓여 있다는 것
+    - 청솔형제단이 사람을 먹는다는 것 (배급 줄에서 날마다 듣는다)
+    - 누가 요즘 밥을 남기는지, 누가 잠을 못 자는지
+  doesnt_know:
+    - 청솔형제단이 사람을 먹는다는 말은 선전이라는 것
+  stats: { strength: 0, agility: -1, vitality: 2, senses: 1, nerve: 1, charm: 1, intellect: 0 }
+  skills: { survival: 2, persuade: 1, endure: 1 }
+  start_inventory: [c_armband, kitchen_knife, canned_food]
+  playable: true
+  zone: c_warehouse
+
+- id: c_cm_minji
+  name: 송민지
+  alias: 소매에 피가 마른 의무병
+  faction: faction_c
+  rank: grunt
+  occupation: medic
+  age: 29
+  gender: female
+  look: 안경 한쪽 다리를 철사로 감았다. 소매 끝에 늘 마른 핏자국이 있다. 손이 가늘고 빠르다.
+  reputation: 붕괴 전 간호학과를 다니다 그만둔 사람. 여덟 명의 상처를 두 해 동안 꿰맸다. 지금은 거점과 물류창고를 오가며 의무를 본다. 다친 포로도 그의 손을 거친다.
+  want: 자기가 꿰맨 사람이 다시 피를 흘리지 않는 세상
+  fear: 자기가 믿고 있는 것이 거짓이라는 걸 확인하게 되는 것
+  values: { discipline: 0, loyalty: 1, mercy: 3, honesty: 2, self_interest: -1 }
+  traits: [warm, cautious]
+  voice:
+    style: 조용하고 또박또박한 반말. 확신이 없을 때는 질문으로 말한다
+    samples:
+      - "가만있어. 꿰매는 동안만 참아."
+      - "그 사람… 사람을 먹은 사람 같지는 않았어. 그냥 배고픈 사람이었어."
+  routine: { dawn: 막사, morning: 거점 치료실, day: 수용소 바깥문, evening: 물류창고 마당 불가, night: 막사 }
+  rules:
+    - 다친 사람은 완장 색을 보지 않고 꿰맨다
+    - 광장 연설 때는 맨 뒤에 서서 듣는다
+  knows:
+    - 수용소의 다친 청솔형제단 포로를 꿰맨 적이 있다. 포로는 가족 이야기만 했다
+    - 청솔형제단이 사람을 먹는다는 말을 직접 본 사람을 아직 하나도 만나지 못했다는 것
+    - 의약품이 거점에서 가장 모자란 물자라는 것
+  doesnt_know:
+    - 동료 곽윤호도 같은 의심을 품고 있다는 것
+  stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
+  skills: { first_aid: 2, sense_danger: 1, persuade: 1 }
+  start_inventory: [c_armband, bandage, bandage, water_bottle]
+  playable: true
+  healer: true
+  zone: c_warehouse
+  ties:
+    - { to: c_cm_sunae, kind: friend }

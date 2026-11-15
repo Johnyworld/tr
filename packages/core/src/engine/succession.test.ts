@@ -67,7 +67,8 @@ describe("사망과 연대기", () => {
     expect(await createTestWorld().runCommand("!연대기")).toContain("아직 죽은 캐릭터가 없습니다");
     const out = await deadWorld().runCommand("!연대기");
     expect(out).toContain("다음 캐릭터 후보");
-    expect(out).toContain("new  새 캐릭터 (테스트 전투원)");
+    // 새 캐릭터: 조우한 무리의 자리 (시나리오 없이 세계만 이어 간다)
+    expect(out).toContain("new:faction_a:grunt  새 캐릭터 (우리 무리 분대원)");
     expect(out).toContain("npc_leader  강분대");
     // 이전 캐릭터가 모르는 인물(npc_stranger)은 후보가 아니다
     expect(out).not.toContain("npc_stranger");
@@ -76,14 +77,14 @@ describe("사망과 연대기", () => {
 
 describe("다음 캐릭터", () => {
   it("살아 있는 동안에는 바꿀 수 없고, 후보가 아닌 인물도 안 된다", () => {
-    expect(createTestWorld().chooseNextCharacter("new").ok).toBe(false);
+    expect(createTestWorld().chooseNextCharacter("new:faction_a:grunt").ok).toBe(false);
     const world = deadWorld();
     expect(world.chooseNextCharacter("npc_stranger").ok).toBe(false);
   });
 
   it("새 캐릭터: 시작 역할로 만들고, 이전 캐릭터의 기억은 넘어가지 않고 죽음과 큰 행적만 소문으로 듣는다", () => {
     const world = deadWorld();
-    const result = world.chooseNextCharacter("new", "두번째");
+    const result = world.chooseNextCharacter("new:faction_a:grunt", "두번째");
     expect(result.ok).toBe(true);
     const s = world.state();
     expect(s.playerId).toBe("pc_2");
@@ -125,7 +126,7 @@ describe("다음 캐릭터", () => {
 
   it("두 대 앞 캐릭터의 죽음과, 이어받는 인물이 직접 본 그 행적도 넘어간다", () => {
     const world = deadWorld();
-    world.chooseNextCharacter("new", "두번째");
+    world.chooseNextCharacter("new:faction_a:grunt", "두번째");
     for (let i = 0; i < 3 && !world.isPlayerDead(); i++) world.executeTool("take_action", act({ intent: "돌격", check: deadly }));
     expect(world.isPlayerDead()).toBe(true);
     expect(world.chooseNextCharacter("npc_leader").ok).toBe(true);
@@ -138,7 +139,7 @@ describe("다음 캐릭터", () => {
 
   it("두 번째 죽음도 연대기에 이어 쌓인다", () => {
     const world = deadWorld();
-    world.chooseNextCharacter("new");
+    world.chooseNextCharacter("new:faction_a:grunt");
     for (let i = 0; i < 3 && !world.isPlayerDead(); i++) world.executeTool("take_action", act({ intent: "돌격", check: deadly }));
     expect(world.state().chronicle.map((r) => r.characterId)).toEqual(["player", "pc_2"]);
   });

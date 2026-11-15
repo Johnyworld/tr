@@ -1,0 +1,47 @@
+# 붉은 완장 (해금 시나리오, 기획서 12.4.1). 처음에는 잠겨 있고, 어느 판에서든 붉은연합 사람과 한 번 싸우면 열린다
+# 붕괴 뒤 두 해를 함께 버틴 여덟 명이 통째로 붉은연합에 들었다. 주인공은 그중 하나, 가장 친한 친구 한재호의 약탈 육조원이다
+# 동료 일곱은 npcs/c_comrades.yaml. 청솔형제단이 사람을 먹는다는 말은 붉은연합 안의 선전이다 (beliefs의 accuracy로만 표시)
+id: role_c_comrades
+label: 붉은연합 약탈조원
+faction: faction_c
+rank: grunt
+occupation: scavenger
+default_name: 약탈조원
+opening_scene: 새벽, 고가도로 너머 물류창고 마당. 드럼통 불가에서 한재호가 조원들의 완장을 하나씩 고쳐 매 준다. 창고 문틈으로 천장까지 쌓인 통조림 상자가 보인다. 취사 천막에서 노순애가 국자를 두드리며 밥 먹고 가라고 소리친다. 두 해 전 같은 불가에 둘러앉던 얼굴들이 지금은 모두 붉은 완장을 찼다.
+scenario:
+  title: 붉은 완장
+  order: 3
+  unlock: { text: "어느 시나리오에서든 붉은연합 사람과 싸운다", when: [{ fight: faction_c }] }
+  pitch: >-
+    어느 날, 나와 오래 함께 살아남은 일곱 명은 붉은연합이라는 무리에 들어갔다. 그들은 군부대를 장악해 무기를 넉넉히 챙겼고, 지금은 물류창고에 자리 잡아 물자가 넘친다.
+    감염체를 모두 죽이고 세상을 다시 세운다는 붉은연합의 목표가, 여기서라면 정말 이루어질 것만 같다.
+  intro: >-
+    늦가을, 세 번째 겨울이 다가온다. 당신은 붕괴 뒤 두 해를 함께 버틴 여덟 명 중 하나다. 석 달 전, 여덟 명은 통째로 붉은연합에 들었다.
+    이제 동료들은 저마다 다른 일을 맡았다. 가장 친한 친구 한재호는 약탈 육조의 조장이 됐고, 당신은 안다혜·하범수와 함께 그 밑의 조원이다. 나머지는 수용소 경비, 정비, 취사, 의무로 흩어졌지만 저녁이면 여전히 한 불가에 모인다.
+    약탈조는 감염체를 털어 세상을 되찾는 조라는 뜻이라고들 한다. 실제로는 연합에 맞서는 무리의 땅도 턴다. 붉은연합은 지금 청솔형제단·버들마을과 전쟁 중이고, 거점에서는 청솔형제단이 사람을 잡아먹고 무고한 사람을 죽인다는 말이 돈다.
+    이야기는 어느 새벽, 물류창고 마당의 불가에서 시작한다.
+  gm: >-
+    이 시나리오의 중심은 동료애다. 여덟 명은 두 해를 함께 버틴 가족 같은 사이고, 서로를 위해 붉은연합에 들었다. 동료들의 따뜻함을 먼저 보여 주고, 무리의 거친 일은 그 따뜻함 곁에서 일어나게 한다.
+    한재호는 "강한 자만이 살아남는다"고 믿는다. 그는 동료들을 진심으로 아끼고, 그래서 동료들이 강해지기를 바란다. 붉은연합에 대한 충성도 진심이다. 악당으로 그리지 않는다.
+    청솔형제단이 사람을 먹는다는 말, 약탈조가 감염체를 턴다는 말은 주인공 주변 모두가 믿는 말이다. GM은 이것을 사람들의 믿음으로 서술하고, 사실로 단정하지 않는다. 반대로 거짓이라고 먼저 밝히지도 않는다.
+    의심은 천천히, 작은 장면으로 스민다: 포로의 얼굴, 약탈한 집의 아이 신발, 동료 하나의 말끝. 플레이어가 무엇을 믿을지는 플레이어가 정한다.
+age: 26
+start_skills: {}
+start_inventory: [c_armband, crowbar, water_bottle, padded_armor]
+start_location: c_warehouse
+access: [ration, mission_board]
+beliefs_preset: c_comrades_start
+known_npcs: [c_cm_jaeho, c_cm_dahye, c_cm_beomsu, c_cm_yunho, c_cm_gitaek, c_cm_sunae, c_cm_minji, c_gyeongsu, c_hyeran, c_sangok, c_pilsu]
+commander: c_cm_jaeho
+# 같은 약탈 육조 (조장은 commander)
+squad_mates: [c_cm_dahye, c_cm_beomsu]
+# 두 해를 함께 버틴 일곱. 관계가 높은 편에서 시작한다. 한재호가 가장 친한 친구
+start_bonds:
+  ids: [c_cm_jaeho, c_cm_dahye, c_cm_beomsu, c_cm_yunho, c_cm_gitaek, c_cm_sunae, c_cm_minji]
+  trust: [1, 3]
+  affection: [1, 3]
+  respect: [0, 2]
+  best: c_cm_jaeho
+missions: [c_quota_old_town, c_tower_watch, c_willow_shakedown, c_riverside_fuel, c_field_raid, c_overpass_haul, c_east_probe, c_prison_guard, c_deserter_hunt]
+# c_comrades: 여덟 동료의 이야기, red_life: 붉은연합의 일상, world: 도시의 일
+storylet_tags: [c_comrades, red_life, world]

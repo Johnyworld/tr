@@ -1777,6 +1777,8 @@ body {
 .newgame button:disabled {
   opacity: 0.45;
   cursor: default;
+  /* 답을 보내는 잠깐 동안은 흐리지 않는다 (흐려졌다 돌아오며 깜빡이지 않게). 풀릴 때는 바로 */
+  transition: opacity 0s 0.3s;
 }
 
 .newgame button.primary {
@@ -1845,16 +1847,6 @@ body {
   background: rgba(210, 106, 92, 0.12);
 }
 
-.newgame-premise {
-  margin: 4px 0 0;
-  padding: 10px 12px;
-  border-left: 2px solid var(--accent);
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--text);
-  background: rgba(46, 116, 214, 0.07);
-}
-
 .choice-list {
   display: flex;
   flex-direction: column;
@@ -1879,6 +1871,21 @@ body {
 
 .newgame .choice-card strong {
   font-size: 15px;
+}
+
+/* 잠긴 시나리오: 고를 수 없다. 해금 조건만 보인다 */
+.newgame .choice-card.locked {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: none;
+  opacity: 0.6;
+}
+
+.newgame .choice-card.locked strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
 }
 
 .newgame .choice-card.featured {
@@ -1939,128 +1946,10 @@ body {
   color: var(--muted);
 }
 
-.newgame-box {
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.newgame-box .story-part {
-  padding-left: 12px;
-  text-indent: -8px;
-}
-
-.newgame-box .story-part::before {
-  content: "· ";
-  color: var(--muted);
-}
-
-.group-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.group-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.group-card.me {
-  background: rgba(46, 116, 214, 0.07);
-}
-
-.group-card.bad {
-  border-color: rgba(210, 106, 92, 0.6);
-}
-
-.group-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.group-row .newgame-input {
-  width: auto;
-  padding: 6px 8px;
-  font-size: 13px;
-}
-
-.group-who {
-  flex: 1;
-  font-size: 14px;
-}
-
-.group-relation {
-  min-width: 96px;
-}
-
-.group-label {
-  flex: 1;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.group-row .group-name {
-  flex: 1;
-  min-width: 0;
-}
-
-.group-row .group-age {
-  width: 56px;
-}
-
-.newgame .group-remove {
-  padding: 2px 8px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 16px;
-}
-
-.group-problem {
-  margin: 0;
-  font-size: 12px;
-  color: var(--error);
-}
-
-.motive-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
 .newgame .choice-gains {
   margin: 0;
   font-size: 11px;
   color: var(--muted);
-}
-
-.newgame .choice-card.motive.on {
-  border-color: var(--accent);
-  background: rgba(46, 116, 214, 0.1);
-}
-
-.newgame .newgame-link {
-  align-self: flex-start;
-  padding: 0;
-  border: none;
-  background: none;
-  font-size: 12px;
-  color: var(--accent);
-  cursor: pointer;
-}
-
-.newgame-box p {
-  margin: 4px 0;
 }
 
 .pre-line {
@@ -2080,7 +1969,6 @@ body {
   margin-right: auto;
 }
 
-.newgame-textarea,
 .newgame-input {
   width: 100%;
   font: inherit;
@@ -2094,7 +1982,6 @@ body {
   resize: vertical;
 }
 
-.newgame-textarea:focus,
 .newgame-input:focus {
   outline: none;
   border-color: var(--accent);
@@ -2254,33 +2141,6 @@ body {
   background: rgba(46, 116, 214, 0.12);
 }
 
-.newgame-wait {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: 40px 12px;
-  text-align: center;
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--muted);
-}
-
-.newgame-spinner {
-  width: 26px;
-  height: 26px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: newgame-spin 0.9s linear infinite;
-}
-
-@keyframes newgame-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .created-toast {
   display: flex;
   align-items: center;
@@ -2296,6 +2156,48 @@ body {
 .created-toast button {
   margin-left: auto;
   font: inherit;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* 시나리오 해금 알림 (기획서 12.4.1): 시트 위에 남는다. ×로만 닫힌다 */
+.unlock-toasts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 16px 0;
+}
+
+.unlock-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #c9a227;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  background: rgba(201, 162, 39, 0.12);
+}
+
+.unlock-toast .icon {
+  flex: none;
+  color: #e0b93a;
+}
+
+.unlock-toast strong {
+  color: var(--heading);
+}
+
+.unlock-toast button {
+  flex: none;
+  margin-left: auto;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 16px;
   color: var(--muted);
   background: none;
   border: 0;
@@ -2988,6 +2890,7 @@ body {
 .person-tip-attitude {
   display: flex;
   gap: 10px;
+}
 
 /* 머리 왼쪽(월드 이름·날짜)은 위아래 가운데. 날짜가 없는 화면(새 게임 고르기)에서도 한 줄이 가운데 온다 */
 .status-page .status-header .hdr-left {
@@ -3015,6 +2918,7 @@ body {
 .hdr-chat:disabled {
   opacity: 0.45;
   cursor: default;
+  transition: opacity 0s 0.3s;
 }
 
 /* 새 게임 고르기 중 머리 왼쪽의 뒤로가기. 있으면 제목 앞에 한 칸 */
@@ -3052,58 +2956,7 @@ body {
 .hdr-back:disabled {
   opacity: 0.4;
   cursor: default;
-}
-
-/* 월드 카드 (새 게임 첫 단계): 눌러 펼치면 월드 이야기와 시작 단추 */
-.world-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.world-card.open {
-  border-color: rgba(46, 116, 214, 0.55);
-}
-
-.newgame .world-card-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 14px;
-  text-align: left;
-  white-space: normal;
-  background: none;
-  border: 0;
-  border-radius: 8px;
-}
-
-.world-card-text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.world-card-text strong {
-  font-size: 15px;
-}
-
-.world-card-chevron {
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--muted);
-  transform: rotate(-90deg);
-  transition: transform 0.15s;
-}
-
-.world-card.open .world-card-chevron {
-  transform: none;
-}
-
-.world-card-body {
-  padding: 0 14px 14px;
+  transition: opacity 0s 0.3s;
 }
 
 .story-text h4 {
@@ -3127,17 +2980,10 @@ body {
   color: var(--muted);
 }
 
-.newgame .world-card-start {
-  width: 100%;
-  margin-top: 14px;
-  padding: 10px;
-}
-
 /* 제목은 본문보다 밝게 (--heading). 머리의 월드 이름(흰색 50%)은 따로 */
 .sheet h2,
 .newgame-title,
 .newgame .choice-card strong,
-.world-card-text strong,
 .story-text h4,
 .newgame-story h4,
 .chosen-name,

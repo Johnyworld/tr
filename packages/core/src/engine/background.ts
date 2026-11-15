@@ -3,6 +3,8 @@ import { describeHistoryPart, historyFlags } from "../game/background.ts";
 import { sentence } from "../text.ts";
 import { createExtraCharacter } from "./extras.ts";
 import type { ToolContext } from "./toolkit.ts";
+import type { RoleContent } from "../content/schemas.ts";
+import { groupRules, makeFamily, memberLabel, memberTemplate } from "../game/startGroup.ts";
 
 /**
  * 배경 부품을 세이브의 역사로 남긴다 (기획서 12.6). 새 세계를 만들 때 한 번.
@@ -74,4 +76,84 @@ export function applyBackground(ctx: ToolContext, parts: readonly HistoryPart[])
     entries.push({ part });
   }
   store.append({ type: "background_set", entries });
+}
+
+/**
+ * 찾는 가족 (역할의 family, 튜토리얼, 기획서 12.4.1). 세계를 만들 때 한 번.
+ * 코드가 주인공 나이에 맞춰 가족 몇 사람을 만들어 그 구역에 둔다. 그 구역 무리의 사람이 되고, 그 무리 사람들은 이름을 안다.
+ * 주인공은 가족의 이름을 알지만 어디 있는지는 모른다 (믿음에는 "어디 있는지 모른다"만). 만나면 클리어 목표(reunite)가 찬다
+ */
+export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined): void {
+  const { store, content, rng } = ctx;
+  const family = role?.family;
+  if (!family || !groupRules(content)) return;
+  const state = store.getState();
+  const me = state.characters[state.playerId];
+  if (!me) return;
+  const [lo, hi] = family.count;
+  const count = lo + Math.floor(rng() * (hi - lo + 1));
+  const surnames = content.scenario.names?.surnames ?? [];
+  const surname = surnames.find((s) => me.name.startsWith(s)) ?? null;
+  const usedNames = new Set(Object.values(state.characters).map((c) => c.name));
+  const genders = content.scenario.creation?.genders.map((g) => g.id) ?? [];
+  const members = makeFamily(content, { age: me.age ?? role!.age, gender: me.gender ?? genders[0] ?? "" }, count, rng, surname, usedNames);
+  const owner = content.locations[family.zone]?.owner ?? null;
+  const ids: string[] = [];
+  const labels: string[] = [];
+  for (const m of members) {
+    const t = content.extras[memberTemplate(content, m)];
+    if (!t) continue;
+    const s = store.getState();
+    const id = `ex_${s.nextExtraNo}`;
+    const label = memberLabel(content, { me: { age: me.age ?? role!.age, gender: me.gender ?? "" } }, m);
+    const character = createExtraCharacter(content, t, { id, label, zone: family.zone, time: s.time, usedNames, name: m.name, age: m.age, gender: m.gender }, rng);
+    // 그 구역 무리에 받아들여져 산다 (그 무리 사람들이 안다)
+    store.append({ type: "extra_spawned", character: owner && content.factions[owner] ? { ...character, factionId: owner } : character });
+    if (family.zone !== s.playerZone && store.getState().scene.present.includes(id)) store.append({ type: "npc_left", npcId: id });
+    // 가족은 서로 이름을 안다
+    store.append({ type: "name_learned", characterId: s.playerId, targetId: id });
+    store.append({ type: "name_learned", characterId: id, targetId: s.playerId });
+    for (const other of ids) {
+      store.append({ type: "name_learned", characterId: id, targetId: other });
+      store.append({ type: "name_learned", characterId: other, targetId: id });
+    }
+    ids.push(id);
+    labels.push(`${label} ${m.name}`);
+  }
+  if (!ids.length) return;
+  // 그 무리 사람들은 가족의 이름을 안다 (물어보면 그 무리 사람만 답할 수 있다)
+  if (owner) {
+    for (const npc of Object.values(content.npcs)) {
+      if (npc.faction !== owner || !store.getState().characters[npc.id]) continue;
+      for (const id of ids) store.append({ type: "name_learned", characterId: npc.id, targetId: id });
+    }
+  }
+  store.append({ type: "family_set", ids });
+  store.append({ type: "flag_set", characterId: state.playerId, flag: "bg_family_lost" });
+  const s = store.getState();
+  store.append({
+    type: "belief_added",
+    characterId: s.playerId,
+    belief: { id: `b_${s.nextBeliefNo}`, fact: `가족(${labels.join(", ")})과 헤어졌다. 살아 있다고 믿지만 어디 있는지 모른다.`, source: "seen", accuracy: "exact", learnedAt: s.time },
+  });
+}
+
+/** 시작할 때 가까운 사람들 (역할의 start_bonds): 그 사람들이 주인공을 보는 관계를 범위 안에서 무작위로 올린다 */
+export function applyStartBonds(ctx: ToolContext, role: RoleContent | undefined): void {
+  const { store, rng } = ctx;
+  const b = role?.start_bonds;
+  if (!b) return;
+  const roll = ([lo, hi]: [number, number]) => lo + Math.floor(rng() * (hi - lo + 1));
+  const me = store.getState().playerId;
+  for (const id of b.ids) {
+    if (!store.getState().characters[id]) continue;
+    const extra = id === b.best ? 1 : 0;
+    store.append({
+      type: "relation_changed",
+      from: id,
+      to: me,
+      delta: { trust: roll(b.trust) + extra, affection: roll(b.affection) + extra, respect: roll(b.respect) + extra },
+      reason: "오래 함께 버텨 온 사이",
+    });
+  }
 }

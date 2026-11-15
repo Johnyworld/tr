@@ -1,14 +1,29 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Portrait, PORTRAIT_IDS } from "./Portrait.tsx";
-import type { CreationStatus, NewGameView, RoleChoicesView } from "./types.ts";
+import { Icon } from "./Icon.tsx";
+import type { CreationStatus, NewGameView } from "./types.ts";
 
 /**
  * 상태 화면의 새 게임·새 캐릭터 고르기 (12-67): 월드 → 무리 → (떠돌이 동행) → 역할 → (수위) → 캐릭터 (12-77).
  * 화면은 core가 준 단계(newGameView)를 그리고, 고른 것을 채팅과 같은 말로 보낸다. 검증과 계산은 core가 한다.
  * 다 고르면 Claude 세션에서 기다리던 GM이 첫 장면을 서술한다
  */
-export function NewGame({ creation }: { creation: CreationStatus }) {
-  const { view, gmWorking } = creation;
+/**
+ * 화면이 보낸 답 (POST /api/creation). 응답에 바뀐 화면(status)이 실려 온다.
+ * 부르는 쪽은 busy 풀기와 status 적용을 한 번에 한다: SSE를 기다리면 앞 단계가, 따로 하면 흐린 새 단계가 잠깐 보인다
+ */
+export async function postCreation(body: { answer?: string | string[]; back?: boolean; chat?: boolean }): Promise<{ ok: boolean; error?: string; status?: unknown }> {
+  try {
+    const res = await fetch("/api/creation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const out = (await res.json()) as { ok?: boolean; error?: string; status?: unknown };
+    return res.ok && out.ok ? { ok: true, status: out.status } : { ok: false, error: out.error ?? "보내지 못했습니다." };
+  } catch {
+    return { ok: false, error: "Claude 세션과 연결이 끊겼습니다." };
+  }
+}
+
+export function NewGame({ creation, onStatus }: { creation: CreationStatus; onStatus: (status: unknown) => void }) {
+  const { view } = creation;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 단계가 바뀌면 오류를 지운다
@@ -24,28 +39,16 @@ export function NewGame({ creation }: { creation: CreationStatus }) {
   const send = async (body: { answer?: string | string[]; back?: boolean; chat?: boolean }) => {
     setBusy(true);
     setError(null);
-    try {
-      const res = await fetch("/api/creation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-      const out = (await res.json()) as { ok?: boolean; error?: string };
-      if (!res.ok || !out.ok) setError(out.error ?? "보내지 못했습니다.");
-    } catch {
-      setError("Claude 세션과 연결이 끊겼습니다.");
-    } finally {
-      setBusy(false);
-    }
+    const out = await postCreation(body);
+    setBusy(false);
+    if (out.status) onStatus(out.status);
+    if (!out.ok) setError(out.error ?? "보내지 못했습니다.");
   };
   const answer = (a: string | string[]) => void send({ answer: a });
 
   return (
     <div className="newgame" ref={rootRef}>
-      {gmWorking ? (
-        <div className="newgame-wait">
-          <div className="newgame-spinner" aria-hidden="true" />
-          <p>GM이 쓰신 이야기를 이 세계의 사람과 장소로 옮기고 있습니다. 잠시 뒤 이어서 고르실 수 있습니다.</p>
-        </div>
-      ) : (
-        <Step view={view} busy={busy} answer={answer} />
-      )}
+      <Step view={view} busy={busy} answer={answer} />
       {error && (
         <p className="newgame-error" role="alert">
           {error}
@@ -55,12 +58,10 @@ export function NewGame({ creation }: { creation: CreationStatus }) {
   );
 }
 
-/** 머리 제목: 지금 단계 (예: 새 게임 · 월드, 무너진 도시, 가람 · 시나리오, 캐릭터 3/7) */
+/** 머리 제목: 지금 단계 (예: 새 게임 · 월드, 무너진 도시 가람 · 시나리오, 캐릭터 3/7) */
 export function newGameTitle(view: NewGameView): string {
   if (view.step === "world") return "새 게임 · 월드";
-  if (view.step === "faction" || view.step === "companion" || view.step === "group") return `${view.world?.title} · 무리`;
-  if (view.step === "role") return `${view.world?.title} · 계급`;
-  if (view.step === "motive" || view.step.startsWith("story")) return `${view.world?.title} · 이야기`;
+  if (view.step === "scenario") return `${view.world?.title} · 시나리오`;
   if (view.step === "content") return `${view.world?.title} · 수위`;
   if (view.step === "dialogue") return `${view.world?.title} · 서술 방식`;
   const c = view.character;
@@ -83,93 +84,17 @@ function Step({ view, busy, answer }: StepProps) {
           <h2 className="newgame-title">어느 월드에서 시작할까요?</h2>
           <div className="choice-list">
             {view.worlds!.map((w) => (
-              <WorldCard key={w.id} world={w} busy={busy} start={() => answer(w.id)} />
-            ))}
-          </div>
-          {view.premise && <p className="newgame-premise">{view.premise}</p>}
-        </>
-      );
-    case "faction": {
-      const f = view.factions!;
-      return (
-        <>
-          <h2 className="newgame-title">당신은 어느 무리에 속해 있나요?</h2>
-          <div className="choice-list">
-            {f.list.map((x) => (
-              <button key={x.id} type="button" className="choice-card" disabled={busy} onClick={() => answer(x.id)}>
-                <strong>{x.name}</strong>
-                <span className="choice-desc">{x.about}</span>
+              <button key={w.id} type="button" className="choice-card" disabled={busy} onClick={() => answer(w.id)}>
+                <strong>{w.title}</strong>
+                {w.tagline && <span className="choice-tagline">{w.tagline}</span>}
+                {w.description && <span className="choice-desc">{w.description}</span>}
               </button>
             ))}
-            {f.loner && (
-              <button type="button" className="choice-card" disabled={busy} onClick={() => answer(f.loner!)}>
-                <strong>떠돌이</strong>
-                <span className="choice-desc">어느 무리에도 속하지 않고 담 밖에서 버텨 왔습니다.</span>
-              </button>
-            )}
           </div>
         </>
       );
-    }
-    case "companion":
-      return <CompanionStep view={view} busy={busy} answer={answer} />;
-    case "group":
-      return <GroupEditor view={view} busy={busy} answer={answer} />;
-    case "role":
-      return <RoleStep role={view.role!} busy={busy} answer={answer} />;
-    case "motive":
-    case "story":
-      return <MotiveStory key={view.story!.motive ?? ""} view={view} busy={busy} answer={answer} />;
-    case "story_setup":
-      return (
-        <div className="newgame-wait">
-          <div className="newgame-spinner" aria-hidden="true" />
-          <p>GM이 이야기를 옮기고 있습니다.</p>
-        </div>
-      );
-    case "story_confirm": {
-      const r = view.story!.result!;
-      return (
-        <>
-          <h2 className="newgame-title">이렇게 옮겼습니다</h2>
-          <div className="newgame-box">
-            {r.opening && (
-              <p>
-                <strong>첫 장면</strong> {r.opening}
-              </p>
-            )}
-            {r.history.length > 0 && (
-              <>
-                <p>
-                  <strong>세계에 남는 지난 일</strong>
-                </p>
-                {r.history.map((h, i) => (
-                  <p key={i} className="story-part">
-                    {h}
-                  </p>
-                ))}
-              </>
-            )}
-            {r.background.length > 0 && (
-              <p>
-                <strong>기억</strong> {r.background.join(" ")}
-              </p>
-            )}
-          </div>
-          <div className="newgame-actions">
-            <button type="button" className="primary" disabled={busy} onClick={() => answer("confirm")}>
-              이대로
-            </button>
-            <button type="button" disabled={busy} onClick={() => answer("remap")}>
-              다시 옮기기
-            </button>
-            <button type="button" disabled={busy} onClick={() => answer("rewrite")}>
-              다시 쓰기
-            </button>
-          </div>
-        </>
-      );
-    }
+    case "scenario":
+      return <ScenarioStep view={view} busy={busy} answer={answer} />;
     case "content":
       return (
         <>
@@ -214,209 +139,31 @@ function Step({ view, busy, answer }: StepProps) {
   }
 }
 
-/**
- * 떠돌이의 소규모 무리 고치기 (12-77 3단계): 코드가 만든 사람들의 관계·이름·나이·성별을 고치고 더하고 뺀다.
- * 고친 것은 채팅과 같은 말(add, remove N, edit N 키=값, me 키=값)로 보내고, 규칙 확인은 core가 한다
- */
-function GroupEditor({ view, busy, answer }: StepProps) {
-  const g = view.group!;
-  const has = (xs: string[]) => xs.length > 0;
-  const ok = g.members.length > 0 && !has(g.problems) && !has(g.me.problems) && g.members.every((m) => !has(m.problems));
-  // 글 칸은 다 쓰고 나서(초점이 떠나거나 Enter) 보낸다. 서버가 바꾼 값으로 다시 그려지게 key에 값을 넣는다
-  const commit = (cmd: string) => answer(cmd);
-  const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-  };
+/** 시나리오 고르기 (기획서 12.4.1): 카드를 누르면 바로 고른다. 잠긴 시나리오는 해금 조건과 함께 흐리게 */
+function ScenarioStep({ view, busy, answer }: StepProps) {
   return (
     <>
-      <h2 className="newgame-title">누구와 함께 다니나요?</h2>
-      <p className="newgame-note">
-        관계·이름·나이·성별을 고칠 수 있습니다. {g.max}명까지. 능력과 소지품은 세계가 만들어질 때 정해집니다. 부모·자식은 18살 이상 차이, 배우자는 나와 다른 성별입니다.
-      </p>
-      <div className="group-list">
-        <div className={has(g.me.problems) ? "group-card me bad" : "group-card me"}>
-          <div className="group-row">
-            <strong className="group-who">나</strong>
-            <input
-              key={`me-age:${g.me.age}`}
-              className="newgame-input group-age"
-              type="number"
-              inputMode="numeric"
-              min={g.meAge.min}
-              max={g.meAge.max}
-              defaultValue={g.me.age}
-              aria-label="내 나이"
-              disabled={busy}
-              onKeyDown={onEnter}
-              onBlur={(e) => Number(e.target.value) !== g.me.age && e.target.value && commit(`me 나이=${Number(e.target.value)}`)}
-            />
-            <span className="muted small">세</span>
-            <select className="newgame-input group-gender" value={g.me.gender} aria-label="내 성별" disabled={busy} onChange={(e) => commit(`me 성별=${e.target.value}`)}>
-              {g.genders.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {x.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {g.me.problems.map((p) => (
-            <p key={p} className="group-problem">
-              {p}
-            </p>
-          ))}
-        </div>
-        {g.members.map((m, i) => (
-          <div key={i} className={has(m.problems) ? "group-card bad" : "group-card"}>
-            <div className="group-row">
-              <select className="newgame-input group-relation" value={m.relation} aria-label={`${i + 1}번 관계`} disabled={busy} onChange={(e) => commit(`edit ${i + 1} 관계=${e.target.value}`)}>
-                {g.relations.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-              <span className="group-label">{m.label}</span>
-              <button type="button" className="group-remove" aria-label={`${m.name} 빼기`} disabled={busy} onClick={() => commit(`remove ${i + 1}`)}>
-                ×
-              </button>
+      <h2 className="newgame-title">어떤 시나리오로 시작할까요?</h2>
+      <div className="choice-list">
+        {view.scenarios!.map((c) =>
+          c.locked ? (
+            <div key={c.roleId} className="choice-card locked" aria-disabled="true">
+              <strong>
+                <Icon name="lock" size={14} /> {c.title}
+              </strong>
+              <span className="choice-desc">해금 조건: {c.locked}</span>
             </div>
-            <div className="group-row">
-              <input
-                key={`name:${m.name}`}
-                className="newgame-input group-name"
-                defaultValue={m.name}
-                aria-label={`${i + 1}번 이름`}
-                disabled={busy}
-                onKeyDown={onEnter}
-                onBlur={(e) => {
-                  const v = e.target.value.trim().replace(/\s+/g, "");
-                  if (v && v !== m.name) commit(`edit ${i + 1} 이름=${v}`);
-                  else e.target.value = m.name;
-                }}
-              />
-              <input
-                key={`age:${m.age}`}
-                className="newgame-input group-age"
-                type="number"
-                inputMode="numeric"
-                defaultValue={m.age}
-                aria-label={`${i + 1}번 나이`}
-                disabled={busy}
-                onKeyDown={onEnter}
-                onBlur={(e) => Number(e.target.value) !== m.age && e.target.value && commit(`edit ${i + 1} 나이=${Number(e.target.value)}`)}
-              />
-              <span className="muted small">세</span>
-              <select className="newgame-input group-gender" value={m.gender} aria-label={`${i + 1}번 성별`} disabled={busy} onChange={(e) => commit(`edit ${i + 1} 성별=${e.target.value}`)}>
-                {g.genders.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {m.problems.map((p) => (
-              <p key={p} className="group-problem">
-                {p}
-              </p>
-            ))}
-          </div>
-        ))}
-      </div>
-      {g.problems.map((p) => (
-        <p key={p} className="group-problem">
-          {p}
-        </p>
-      ))}
-      <div className="newgame-actions">
-        {g.members.length < g.max && (
-          <button type="button" disabled={busy} onClick={() => commit("add")}>
-            + 사람 더하기 ({g.members.length}/{g.max})
-          </button>
-        )}
-        {g.members.length === 0 ? (
-          <button type="button" className="primary" disabled={busy} onClick={() => commit("alone")}>
-            사실 난 혼자였다
-          </button>
-        ) : (
-          <button type="button" className="primary" disabled={busy || !ok} onClick={() => commit("done")}>
-            이대로
-          </button>
+          ) : (
+            <button key={c.roleId} type="button" className="choice-card" disabled={busy} onClick={() => answer(c.roleId)}>
+              <strong>{c.title}</strong>
+              <span className="choice-tagline">{c.who}</span>
+              <span className="choice-desc">{c.pitch}</span>
+              {c.goal && <span className="choice-gains">목표: {c.goal}</span>}
+            </button>
+          ),
         )}
       </div>
     </>
-  );
-}
-
-
-/** 계급 고르기 (12-84): 무리에서 부르는 계급 이름과 그 자리의 시나리오. 카드를 고르고 시작한다 */
-function RoleStep({ role, busy, answer }: { role: RoleChoicesView; busy: boolean; answer: (a: string) => void }) {
-  const [picked, setPicked] = useState<string | null>(role.presets.length === 1 ? role.presets[0]!.rank : null);
-  const card = (on: boolean) => (on ? "choice-card motive on" : "choice-card motive");
-  return (
-    <>
-      <h2 className="newgame-title">{role.factionName}에서 어떤 계급으로 시작할까요?</h2>
-      <div className="choice-list">
-        {role.presets.map((p) => (
-          <button key={p.roleId} type="button" className={card(picked === p.rank)} aria-pressed={picked === p.rank} disabled={busy} onClick={() => setPicked(p.rank)}>
-            <strong>{p.rankLabel}</strong>
-            <span className="choice-tagline">{p.title}</span>
-            <span className="choice-desc">{p.pitch}</span>
-            {p.gains && <span className="choice-gains">받는 것: {p.gains}</span>}
-          </button>
-        ))}
-      </div>
-      <p className="newgame-note">계급마다 그 자리에 필요한 솜씨 하나를 받고, 나머지 스킬은 다음에 고르는 과거 배경에서 옵니다.</p>
-      <div className="newgame-actions">
-        <button type="button" className="primary" disabled={busy || !picked} onClick={() => answer(picked!)}>
-          이 계급으로 시작
-        </button>
-      </div>
-    </>
-  );
-}
-
-/** 떠돌이: 누구와 다니는지 (붕괴 전의 일은 캐릭터를 만들 때 과거 배경으로 고른다) */
-function CompanionStep({ view, busy, answer }: StepProps) {
-  return (
-    <>
-      <h2 className="newgame-title">누구와 함께 다니고 있나요?</h2>
-      <p className="newgame-note">떠돌이는 무리가 없어 계급도 직분도 없습니다.</p>
-      <div className="choice-list">
-        {view.companions!.map((c) => (
-          <button key={c.id} type="button" className="choice-card" disabled={busy} onClick={() => answer(c.id)}>
-            <strong>{c.label}</strong>
-            <span className="choice-desc">{c.summary}</span>
-          </button>
-        ))}
-      </div>
-    </>
-  );
-}
-
-/** 월드 카드: 누르면 펼쳐져 월드 이야기를 읽고, 맨 아래 단추로 이 월드에서 시작한다 */
-function WorldCard({ world, busy, start }: { world: NonNullable<NewGameView["worlds"]>[number]; busy: boolean; start: () => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className={open ? "world-card open" : "world-card"}>
-      <button type="button" className="world-card-head" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <span className="world-card-text">
-          <strong>{world.title}</strong>
-          {world.tagline && <span className="choice-tagline">{world.tagline}</span>}
-          {!open && world.description && <span className="choice-desc">{world.description}</span>}
-        </span>
-        <span className="world-card-chevron" aria-hidden="true">
-          ▾
-        </span>
-      </button>
-      {open && (
-        <div className="world-card-body">
-          <StoryText text={world.intro ?? world.description} />
-          <button type="button" className="primary world-card-start" disabled={busy} onClick={start}>
-            이 월드에서 게임 시작
-          </button>
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -451,77 +198,6 @@ function Story({ text, title }: { text: string; title?: string }) {
       <summary>{title ?? "이야기"}</summary>
       <StoryText text={text} />
     </details>
-  );
-}
-
-/**
- * 동기와 이야기 (12-77 2단계): 한 화면에서 동기를 고르면 바로 아래에 이야기 칸이 열린다.
- * 보낼 때는 [동기, 이야기]를 한 번에 (채팅은 두 단계로 묻는다). 쓰기 도움: 동기별 예시, 이 도시의 무리와 알 만한 사람
- */
-function MotiveStory({ view, busy, answer }: StepProps) {
-  const st = view.story!;
-  const [picked, setPicked] = useState<string | null>(st.motive);
-  const [text, setText] = useState(st.text ?? "");
-  const m = st.motives.find((x) => x.id === picked) ?? null;
-  return (
-    <>
-      {st.situation && <Story text={st.situation} title="지금 상황" />}
-      <h2 className="newgame-title">무엇이 당신을 움직이나요?</h2>
-      <p className="newgame-note">
-        {st.title}. 동기를 고르고 그 이야기를 써 주세요. 쓴 이야기 중 일부는 이 세계의 역사로 남습니다.
-        {st.situation ? " 이야기 없이 시작해도 됩니다. 지금 상황과 어긋나는 부분은 옮기지 않습니다." : ""}
-      </p>
-      <div className="motive-grid">
-        {st.motives.map((x) => (
-          <button key={x.id} type="button" className={picked === x.id ? "choice-card motive on" : "choice-card motive"} aria-pressed={picked === x.id} disabled={busy} onClick={() => setPicked(x.id)}>
-            <strong>{x.label}</strong>
-            <span className="choice-desc">{x.summary}</span>
-          </button>
-        ))}
-      </div>
-      {m && (
-        <>
-          <p className="newgame-note">{m.prompt} 서너 문장이면 됩니다.</p>
-          <textarea className="newgame-textarea" value={text} maxLength={st.maxLength} rows={6} onChange={(e) => setText(e.target.value)} placeholder={m.example ?? "나는…"} />
-          {m.example && (
-            <button type="button" className="newgame-link" disabled={busy} onClick={() => setText(m.example!)}>
-              예시로 채우기
-            </button>
-          )}
-          <details className="newgame-story">
-            <summary>이 도시의 무리와 사람들</summary>
-            <h4>무리</h4>
-            {st.help.factions.map((f) => (
-              <p key={f.name}>
-                <strong>{f.name}</strong> — {f.about}
-              </p>
-            ))}
-            <h4>이름이 알려진 사람</h4>
-            {st.help.people.map((p) => (
-              <p key={p.name}>
-                <strong>{p.name}</strong> · {p.who}
-              </p>
-            ))}
-            <p className="muted">원수나 잃은 사람을 이 사람들 중에서 고르면, 그 일이 이 세계의 사실이 됩니다.</p>
-          </details>
-        </>
-      )}
-      <div className="newgame-actions">
-        <button type="button" disabled={busy} onClick={() => answer("skip")}>
-          이야기 없이 시작
-        </button>
-        {m && (
-          <>
-            <span className="muted small">
-              {text.length}/{st.maxLength}
-            </span>
-            <button type="button" className="primary" disabled={busy || text.trim().length === 0} onClick={() => answer([m.id, text.trim()])}>
-              이 이야기로
-            </button>
-          </>
-        )}
-      </div>
-    </>
   );
 }
 

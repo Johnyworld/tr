@@ -13,10 +13,7 @@ import {
   newGameStep,
   newGameView,
   heirDraft,
-  motivesOf,
   newGameDraft,
-  setStoryStart,
-  storyStartSchema,
   worldInfo,
   type Content,
   type NewGameDraft,
@@ -25,6 +22,9 @@ import {
   formatReferences,
   formatSlotLine,
   createTakeActionSchema,
+  STORY_ENDED,
+  heirSeat,
+  parseNewAs,
   gmTools,
   timeSegmentSchema,
   WorldLockedError,
@@ -51,7 +51,7 @@ const NO_WORLD = "열린 세계가 없습니다. 먼저 start_session(또는 loa
 /** 세션을 시작할 때 GM이 할 일 (MCP prompt `play`, Claude Code 스킬 /play 가 같은 흐름) */
 export const PLAY_START =
   "지금 list_worlds를 호출해 저장된 게임 목록(0번 새 게임, 1번부터 저장된 게임)을 플레이어에게 그대로 보여 주고, 어느 것을 할지 묻는다. " +
-  "플레이어가 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 월드 → 시나리오 → 캐릭터를 고른다 (마지막 확인에서 세계가 열린다). 고르기 전에는 세계를 열지 않는다. " +
+  "플레이어가 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 월드 → 시나리오 → 캐릭터 → 수위 → 서술 방식을 고른다 (마지막 것을 고르면 세계가 열린다). 고르기 전에는 세계를 열지 않는다. " +
   "상태 화면이 있으면 먼저 어디서 고를지 묻는다: 상태 화면에서 고르기(start_session(new_world: true, in_browser: true), 다 고를 때까지 기다린다) / 채팅으로(start_session(new_world: true), create_character로 한 단계씩). " +
   "플레이어가 그만하자고 하면 end_session으로 닫는다.";
 
@@ -158,7 +158,10 @@ export function createMcpServer(
       menu = null;
       draft = null;
       syncTools(next.content.scenario);
-      return sessionStart(next);
+      const started = sessionStart(next);
+      // 끝난 판(튜토리얼에서 죽었다)을 다시 열었으면: 이어 할 것이 없다
+      if (next.storyEnded()) return { ...started, content: [...started.content, { type: "text" as const, text: `\n\n(이 판은 끝났다) ${STORY_ENDED} 연대기는 get_chronicle로 볼 수 있다.` }] };
+      return started;
     } catch (err) {
       if (err instanceof WorldLockedError) return text(err.message, true);
       if (err instanceof CharacterChoiceError) return text(`캐릭터 설정이 규칙에 맞지 않는다: ${err.message} 플레이어에게 알리고 다시 고르게 한다.`, true);
@@ -166,7 +169,12 @@ export function createMcpServer(
     }
   };
 
-  const sceneAfter = (w: GameWorld) => (w.isPlayerDead() ? "\n\n캐릭터가 사망했다. 죽음을 서술하고 write_epitaph로 묘비명을 남긴 뒤, get_chronicle로 연대기와 다음 캐릭터 후보를 보여 주고 플레이어가 고르면 choose_next_character를 호출하라." : `\n\n## 현재 장면 (지난번에서 바뀐 것)\n${w.sceneUpdate()}`);
+  const sceneAfter = (w: GameWorld) =>
+    w.isPlayerDead()
+      ? w.storyEnded()
+        ? "\n\n캐릭터가 사망했다. 이 판은 다음 캐릭터로 이어 갈 수 없다: 죽음을 이야기의 끝으로 서술하고 write_epitaph로 묘비명을 남긴 뒤, get_chronicle로 연대기를 보여 주고 이 판이 끝났다고 알린다. 새 게임에서 열린 시나리오를 고를 수 있다고 안내하고 end_session으로 닫는다."
+        : "\n\n캐릭터가 사망했다. 죽음을 서술하고 write_epitaph로 묘비명을 남긴 뒤, get_chronicle로 연대기와 다음 캐릭터 후보를 보여 주고 플레이어가 고르면 choose_next_character를 호출하라."
+      : `\n\n## 현재 장면 (지난번에서 바뀐 것)\n${w.sceneUpdate()}`;
 
   // ── 세계 ─────────────────────────────────────────
 
@@ -247,16 +255,10 @@ export function createMcpServer(
    * error: 이 단계에 맞지 않는 답 / step: 다음 단계로 / done: 세계(또는 새 캐릭터)가 생겼다
    */
   type CreationAdvance = { kind: "error"; error: string } | { kind: "step" } | { kind: "done"; result: TextResult };
-  const advanceCreation = (args: { answer?: string | string[] | null; back?: boolean; story_start?: unknown }): CreationAdvance => {
+  const advanceCreation = (args: { answer?: string | string[] | null; back?: boolean }): CreationAdvance => {
     if (!draft) return { kind: "error", error: "만들고 있는 캐릭터가 없다." };
     if (args.back) {
       draft = backNewGame(draft);
-      return { kind: "step" };
-    }
-    if (args.story_start) {
-      const set = setStoryStart(packs, draft, args.story_start as Parameters<typeof setStoryStart>[2]);
-      if (!set.ok) return { kind: "error", error: set.error };
-      draft = set.draft;
       return { kind: "step" };
     }
     if (args.answer == null) return { kind: "step" };
@@ -269,19 +271,18 @@ export function createMcpServer(
     const choice = r.choice;
     if (draft.mode === "heir") {
       const result = withWorld((w) => {
-        const heirRole = draft?.roleId && draft.roleId !== w.state().roleId ? `new:${draft.roleId}` : "new";
-        const next = w.chooseNextCharacter(heirRole, null, choice, r.story);
+        const next = w.chooseNextCharacter(r.heirOption ?? "", null, choice);
         return next.ok ? text(`캐릭터를 만들었다. 세계 소개는 하지 않고 바로 새 캐릭터의 첫 장면을 서술한다.\n\n${next.text}`) : text(next.error, true);
       });
       if (result.isError) return { kind: "error", error: result.content[0]?.text ?? "" };
       draft = null;
       return { kind: "done", result };
     }
-    const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId, r.custom ?? undefined, r.options, r.story));
+    const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId, undefined, r.options));
     if (result.isError) return { kind: "error", error: result.content[0]?.text ?? "" };
     return {
       kind: "done",
-      result: { ...result, content: [{ type: "text", text: `캐릭터를 만들었다. 월드 이야기와 지금 상황은 이미 했으니 되풀이하지 말고, 지금 만든 사람으로 바로 첫 장면을 서술한다.\n\n${result.content[0]?.text ?? ""}` }] },
+      result: { ...result, content: [{ type: "text", text: `캐릭터를 만들었다. 지금 상황은 이미 했으니 되풀이하지 말고, 지금 만든 사람으로 바로 첫 장면을 서술한다.\n\n${result.content[0]?.text ?? ""}` }] },
     };
   };
 
@@ -302,17 +303,10 @@ export function createMcpServer(
     content: [
       {
         type: "text",
-        text: `플레이어가 상태 화면에서 골랐다. 월드 소개와 지금 상황은 화면에서 이미 읽었다.\n\n${result.content[0]?.text ?? ""}`,
+        text: `플레이어가 상태 화면에서 골랐다. 시나리오 소개와 지금 상황은 화면에서 이미 읽었다.\n\n${result.content[0]?.text ?? ""}`,
       },
     ],
   });
-  /** 이야기 옮기기는 GM이 한다: 화면에서 글을 받으면 GM에게 넘긴다 */
-  const needsGm = () => draft !== null && newGameStep(draft) === "story_setup";
-  const gmTurn = (): TextResult =>
-    text(
-      `플레이어가 상태 화면에서 동기와 이야기를 썼다. 아래대로 옮겨 create_character(story_start: {...})로 넘긴 뒤, 곧바로 create_character(wait: true)로 다시 기다린다 (확인과 캐릭터 만들기는 화면에서 이어 한다). 플레이어에게는 "이야기를 옮기는 중"이라고만 짧게 알린다.\n\n${describeNewGameStep(packs, draft!)}`,
-    );
-
   async function waitForScreen(extra: WaitExtra): Promise<TextResult> {
     const url = options.statusUrl?.();
     if (screen?.finished) {
@@ -328,7 +322,6 @@ export function createMcpServer(
     screen ??= { waiters: new Set(), finished: null };
     // 화면에서 만들면 얼굴도 고른다
     if (!draft.character.withPortrait && draft.character.answers.length === 0) draft = { ...draft, character: { ...draft.character, withPortrait: true } };
-    if (needsGm()) return gmTurn();
     const current = screen;
     const token = extra._meta?.progressToken;
     let tick = 0;
@@ -377,7 +370,6 @@ export function createMcpServer(
       screen = null;
       return { ok: true };
     }
-    if (needsGm()) return { ok: false, error: "GM이 이야기를 옮기는 중입니다." };
     const r = advanceCreation({ answer: input.answer ?? null, back: input.back });
     if (r.kind === "error") return { ok: false, error: r.error };
     if (r.kind === "done") {
@@ -386,21 +378,19 @@ export function createMcpServer(
       else screen = null;
       return { ok: true };
     }
-    if (needsGm()) wakeWaiters(gmTurn());
     return { ok: true };
   };
   server.registerTool(
     "create_character",
     {
       description:
-        "새 게임(월드 → 무리 → 역할 → 동기·이야기 → 캐릭터)이나 새 캐릭터 만들기를 한 단계 진행한다 (start_session(new_world) 또는 choose_next_character(new)로 시작한 뒤). " +
+        "새 게임(월드 → 시나리오 → 캐릭터 → 수위 → 서술 방식)이나 새 캐릭터 만들기를 한 단계 진행한다 (start_session(new_world) 또는 choose_next_character(new)로 시작한 뒤). " +
         "플레이어가 이번 단계에 답한 것을 answer로 넘긴다 (보기가 있으면 그 값, 트레잇은 이름이나 id 목록, 없으면 \"없음\"). " +
-        "back: true면 한 단계 뒤로, 아무것도 없으면 지금 단계를 다시 돌려준다. 마지막 확인에서 \"start\"를 넘기면 세계(또는 새 캐릭터)가 만들어진다. 대신 답하지 않는다. " +
+        "back: true면 한 단계 뒤로, 아무것도 없으면 지금 단계를 다시 돌려준다. 캐릭터 확인에서 \"start\"를 넘기고, 새 게임이면 수위·서술 방식까지 고르면 세계(또는 새 캐릭터)가 만들어진다. 대신 답하지 않는다. " +
         "wait: true는 상태 화면에서 만드는 중일 때: 플레이어가 화면에서 다 고를 때까지 기다린다.",
       inputSchema: z.strictObject({
         answer: z.union([z.string().max(1500), z.array(z.string().max(40)).max(10)]).nullable().optional(),
         back: z.boolean().optional(),
-        story_start: storyStartSchema().nullable().optional().describe("이야기 옮기기 단계에서만: 플레이어가 쓴 동기와 이야기를 첫 장면·기억·배경 부품으로 옮긴 것"),
         wait: z.boolean().optional().describe("상태 화면에서 만드는 중이면 true: 다 고를 때까지 기다린다"),
       }),
     },
@@ -408,19 +398,16 @@ export function createMcpServer(
       if (args.wait) return waitForScreen(extra as WaitExtra);
       if (!draft) {
         if (screen?.finished) return waitForScreen(extra as WaitExtra);
-        return text("만들고 있는 캐릭터가 없다. 새 게임은 start_session(new_world: true), 사망 뒤 새 캐릭터는 choose_next_character(new)로 시작한다.", true);
+        return text("만들고 있는 캐릭터가 없다. 새 게임은 start_session(new_world: true), 사망 뒤 새 캐릭터는 choose_next_character(new:<세력>:<계급>)로 시작한다.", true);
       }
       const r = advanceCreation(args);
       if (r.kind === "error") {
-        const hint = args.story_start ? "고쳐서 다시 넘긴다." : "플레이어에게 알리고 이 단계를 다시 묻는다.";
-        return text(`${r.error} ${hint}\n\n${describeNewGameStep(packs, draft)}`, true);
+        return text(`${r.error} 플레이어에게 알리고 이 단계를 다시 묻는다.\n\n${describeNewGameStep(packs, draft)}`, true);
       }
       if (r.kind === "done") {
         screen = null;
         return r.result;
       }
-      // 화면에서 만드는 중에 GM이 옮기기를 마쳤으면 다시 화면 차례 (그대로 기다린다)
-      if (screen && args.story_start) return waitForScreen(extra as WaitExtra);
       return creationStep(draft);
     },
   );
@@ -629,32 +616,27 @@ export function createMcpServer(
     "choose_next_character",
     {
       description:
-        "사망 후 같은 세계에서 다음 캐릭터로 이어 간다. get_chronicle의 후보 중 하나: \"new\"(새 캐릭터), \"new:<역할 id>\"(해금된 다른 시나리오의 새 캐릭터) 또는 인물 id. 플레이어가 고른 것만 넘긴다. 새 캐릭터는 이전 캐릭터의 기억을 모른다. " +
-        "new는 새 게임처럼 캐릭터를 한 단계씩 만든다: 첫 단계를 돌려주고, 그 뒤로는 create_character로 진행한다. " +
+        "사망 후 같은 세계에서 다음 캐릭터로 이어 간다 (시나리오 없이 세계만 이어 간다). get_chronicle의 후보 중 하나: \"new:<세력>:<계급>\"(조우한 무리의 새 캐릭터) 또는 조우한 인물 id. 플레이어가 고른 것만 넘긴다. 새 캐릭터는 이전 캐릭터의 기억을 모른다. " +
+        "new:…는 새 게임처럼 캐릭터를 한 단계씩 만든다: 첫 단계를 돌려주고, 그 뒤로는 create_character로 진행한다. " +
         "상태 화면이 있으면 어디서 만들지 묻고, 상태 화면이면 in_browser: true (다 만들 때까지 기다린다).",
       inputSchema: z.strictObject({
         character_id: z.string(),
         name: z.string().max(20).nullable().optional().describe("(이전 방식) 새 캐릭터의 이름만 정할 때"),
-        in_browser: z.boolean().optional().describe("new일 때 상태 화면에서 만든다 (플레이어가 골랐을 때). 다 만들 때까지 기다린다"),
+        in_browser: z.boolean().optional().describe("new:…일 때 상태 화면에서 만든다 (플레이어가 골랐을 때). 다 만들 때까지 기다린다"),
         character: characterChoiceSchema().nullable().optional().describe("이미 다 정해진 새 캐릭터 (자동 진행·테스트용). 플레이어와 함께라면 create_character로 한 단계씩"),
       }),
     },
     async (args, extra) => {
       releaseFrozen();
       if (!world) return text(NO_WORLD, true);
-      // new:<역할>이면 해금된 다른 시나리오로 (기획서 9.12)
-      const newAs = args.character_id.startsWith("new:") ? args.character_id.slice(4) : null;
-      const roleId = newAs ?? world.state().roleId;
-      if ((args.character_id === "new" || newAs) && !args.character && !args.name && creationRules(world.content, roleId)) {
+      // new:<세력>:<계급>이면 그 무리·계급의 새 캐릭터 (기획서 12.4.1): 캐릭터 만들기부터
+      const newAs = parseNewAs(args.character_id);
+      if (newAs && !args.character && !args.name && world.content.scenario.creation) {
         if (!world.isPlayerDead()) return text("캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다.", true);
-        if (newAs && !world.successionOptions().some((o) => o.id === args.character_id)) return text(`고를 수 없는 캐릭터: ${args.character_id}`, true);
-        draft = heirDraft(
-          world.content.scenario.id,
-          roleId,
-          newAs ? null : world.state().customRole,
-          motivesOf(world.content).length > 0,
-          world.content.scenario.creation?.rank_min_age[world.content.roles[roleId]?.rank ?? ""],
-        );
+        if (world.storyEnded()) return text(STORY_ENDED, true);
+        if (!world.successionOptions().some((o) => o.id === args.character_id)) return text(`고를 수 없는 캐릭터: ${args.character_id}`, true);
+        const seat = heirSeat(world.content, newAs.faction, newAs.rank, { age: null });
+        draft = heirDraft(world.content.scenario.id, args.character_id, seat.role, seat.custom, world.content.scenario.creation?.rank_min_age[newAs.rank]);
         screen = null;
         if (args.in_browser) return waitForScreen(extra as WaitExtra);
         return creationStep(draft);
@@ -712,10 +694,14 @@ export function createMcpServer(
     /** 상태 화면에서 만드는 중이면 그 단계 (화면이 그린다), 아니면 null */
     get creation() {
       if (!draft || !screen) return null;
-      return { view: newGameView(packs, draft), gmWorking: needsGm() };
+      return { view: newGameView(packs, draft) };
     },
     /** 상태 화면이 보낸 답 */
     submitCreation: (input: ScreenCreationInput) => submitFromScreen(input),
+    /** 아직 닫지 않은 시나리오 해금 알림 (상태 화면의 토스트) */
+    unlockNotices: () => manager.unlockNotices(),
+    /** 해금 알림을 닫는다 (토스트의 ×) */
+    dismissUnlockNotice: (pack: string, roleId: string) => manager.dismissUnlockNotice(pack, roleId),
     /** 상태 화면 머리의 이름: 열린 세계의 월드, 없으면 "TRPG" */
     get title() {
       return world ? titleOf(world.content) : "TRPG";

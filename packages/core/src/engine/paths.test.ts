@@ -63,7 +63,7 @@ describe("무소속이 무리에 들어간다", () => {
     cheat(w, "~storylet wl_red_toll");
     w.executeTool("resolve_storylet", { choice_id: "join_red" });
     cheat(w, "~kill me");
-    const r = w.chooseNextCharacter("new", "후임");
+    const r = w.chooseNextCharacter("new:faction_c:grunt", "후임");
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     const heir = w.state().characters[w.state().playerId]!;
     expect(heir.factionId).toBe("faction_c");
@@ -104,7 +104,7 @@ describe("동행과 빚을 지닌 채 죽은 뒤", () => {
     const options = w.chronicleText();
     expect(options).toBeTruthy();
     const heirId = Object.values(w.content.npcs).find((n) => n.playable && n.faction === "faction_e" && w.state().known.player?.includes(n.id))?.id;
-    const r = w.chooseNextCharacter(heirId ?? "new", null);
+    const r = w.chooseNextCharacter(heirId ?? "new:faction_e:grunt", null);
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().companions).toEqual([]);
     const heir = w.state().characters[w.state().playerId]!;
@@ -113,10 +113,10 @@ describe("동행과 빚을 지닌 채 죽은 뒤", () => {
     w.close();
   });
 
-  it("새 캐릭터는 시작 역할의 빚을 새로 진다 (그 자리에 오는 사람의 사정)", () => {
+  it("새 캐릭터는 그 자리의 빚을 새로 진다 (그 자리에 오는 사람의 사정)", () => {
     const w = manager().create("mcp", "role_e_porter", choice);
     cheat(w, "~kill me");
-    expect(w.chooseNextCharacter("new", "새 짐꾼").ok).toBe(true);
+    expect(w.chooseNextCharacter("new:faction_e:grunt", "새 짐꾼").ok).toBe(true);
     expect(w.state().characters[w.state().playerId]!.debts.faction_e).toBe(12);
     w.close();
   });

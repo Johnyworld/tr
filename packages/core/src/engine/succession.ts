@@ -1,15 +1,14 @@
 import { rankName } from "../game/ranks.ts";
 import { autoEquip } from "./gear.ts";
-import { addStartCompanions } from "./companionTools.ts";
 import { z } from "zod";
 import { nameAs } from "../game/acquaintance.ts";
 import { checkCharacterChoice, checkName, fillCharacterChoice } from "../game/creation.ts";
 import type { CharacterChoice } from "../game/state.ts";
-import type { Content } from "../content/schemas.ts";
 import type { Belief } from "../game/belief.ts";
-import { applyBackground } from "./background.ts";
-import type { HistoryPart } from "../game/background.ts";
 import { createCharacterFromRole, type GameState, type RunRecord } from "../game/state.ts";
+import type { Content, RoleContent } from "../content/schemas.ts";
+import { buildCustomRole, joinRole } from "../game/customStart.ts";
+import { npcZoneAt } from "../game/whereabouts.ts";
 import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import { josa, sentence } from "../text.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
@@ -63,45 +62,114 @@ export function daysSurvived(record: RunRecord): number {
 export type SuccessionOption = { id: string; label: string; detail: string };
 
 /**
- * 다음 캐릭터 후보. 플레이어가 죽었을 때만 있다.
- * - new: 시작 역할로 새로 만든 캐릭터
- * - 이전 캐릭터가 알던, 살아 있고 플레이할 수 있는 NPC
+ * 다음 캐릭터 후보 (기획서 3.1, 12.4.1). 플레이어가 죽었을 때만 있다. 두 번째 주인공부터는 시나리오 없이 세계만 이어 간다.
+ * - 새 캐릭터 (new:<세력>:<계급>): 이전 주인공들이 조우한 무리에서, 그 무리의 수색대원·분대장·간부 자리 (`custom_start.ranks`)
+ * - 조우한 사람: 이전 주인공들이 이름을 알게 된, 살아 있고 플레이할 수 있는 인물 (무리의 우두머리는 뺀다)
+ * 어느 쪽이든 그 무리·계급의 자리(역할)를 받는다 (heirSeat)
  */
-/** 해금된 다른 시나리오로 새 캐릭터를 만들 때의 후보 id 머리 (new:<역할 id>) */
+/** 새 캐릭터 후보 id 머리 (new:<세력 id>:<계급 id>) */
 export const NEW_AS_PREFIX = "new:";
 
-export function successionOptions(state: GameState, content: Content): SuccessionOption[] {
-  const dead = state.characters[state.playerId];
-  if (!dead?.dead) return [];
-  const role = content.roles[state.roleId];
-  const options: SuccessionOption[] = [];
-  if (role) options.push({ id: "new", label: `새 캐릭터 (${role.label})`, detail: "이 세계에 막 들어온 사람. 아무도 모른다." });
-  // 해금된 다른 시나리오로 새로 시작할 수도 있다 (기획서 9.12)
-  for (const r of Object.values(content.roles)) {
-    if (!r.unlock || !state.unlocked.includes(r.unlock) || r.id === state.roleId) continue;
-    options.push({ id: `${NEW_AS_PREFIX}${r.id}`, label: `새 캐릭터 (${r.label})`, detail: r.scenario?.pitch ?? "해금된 시나리오" });
+/**
+ * 이 판이 끝났는지 (기획서 12.4.1): 주인공이 죽었고, 지금 시나리오가 다음 캐릭터로 이어 갈 수 없거나(튜토리얼),
+ * 이어 갈 사람이 없다 (아무도 만나지 못한 채 죽었다)
+ */
+export function storyEnded(state: GameState, content: Content): boolean {
+  if (!state.characters[state.playerId]?.dead) return false;
+  return content.roles[state.scenarioRole]?.scenario?.heirs === false || heirCandidates(state, content).length === 0;
+}
+
+/** 이전 주인공들(지금 죽은 사람 포함)이 이름을 알게 된 사람 */
+function encountered(state: GameState): Set<string> {
+  const ids = new Set<string>();
+  for (const who of [state.playerId, ...state.chronicle.map((r) => r.characterId)]) for (const id of state.known[who] ?? []) ids.add(id);
+  return ids;
+}
+
+/** 이전 주인공들이 조우한 무리: 이름을 아는 사람의 무리와, 주인공들이 속했던 무리 */
+export function encounteredFactions(state: GameState, content: Content): string[] {
+  const out = new Set<string>();
+  for (const id of encountered(state)) {
+    const f = state.characters[id]?.factionId;
+    if (f && content.factions[f]) out.add(f);
   }
-  const known = new Set(state.known[state.playerId] ?? []);
+  for (const r of state.chronicle) if (r.factionId && content.factions[r.factionId]) out.add(r.factionId);
+  return Object.keys(content.factions).filter((f) => out.has(f));
+}
+
+/** 개인 사연이 있는 시나리오 역할 (지난 일·가까운 동료·찾는 가족): 그 주인공의 것이라 다음 주인공의 자리로 쓰지 않는다 */
+export const personalRole = (r: RoleContent): boolean => (r.history?.length ?? 0) > 0 || (r.background?.length ?? 0) > 0 || !!r.start_bonds || !!r.family;
+
+/**
+ * 다음 주인공이 받는 자리: 그 무리·계급의 콘텐츠 역할(개인 사연이 없는 것), 없으면 코드가 만든 자리.
+ * 무리가 없으면 떠돌이 자리. 첫 장면·사연·시나리오는 없다
+ */
+export function heirSeat(content: Content, faction: string, rank: string, who: { age: number | null; occupation?: string | null; zone?: string | null }): { role: RoleContent; custom: boolean } {
+  const roles = Object.values(content.roles).sort((a, b) => Number(personalRole(a)) - Number(personalRole(b)) || a.id.localeCompare(b.id));
+  const c = content.scenario.custom_start;
+  if (faction) {
+    const seat = roles.find((r) => r.faction === faction && r.rank === rank && !personalRole(r));
+    if (seat) return { role: seat, custom: false };
+    if (c) return { role: joinRole(content, faction, rank, { age: who.age, occupation: who.occupation ?? null }), custom: true };
+  }
+  // 역할을 만드는 규칙이 없는 월드: 그 무리(없으면 아무)의 역할을 빌린다
+  if (!c) return { role: roles.find((r) => r.faction === faction && r.rank === rank) ?? roles.find((r) => r.faction === faction) ?? roles[0]!, custom: false };
+  const location = (who.zone && content.locations[who.zone] ? who.zone : null) ?? c.free_locations[0] ?? "";
+  const role = buildCustomRole(content, {
+    faction: null,
+    rank: c.free_rank ?? rank,
+    occupation: null,
+    title: "떠돌이",
+    location,
+    kit: c.free_kit ?? c.kits[0]!.id,
+    skills: {},
+    age: who.age ?? 30,
+    opening: `${content.locations[location]?.name ?? location}. 떠돌이로 오늘을 시작한다.`,
+    background: [],
+  });
+  return { role: { ...role, start_inventory: [] }, custom: true };
+}
+
+/** 새 캐릭터 후보 id에서 세력·계급 */
+export function parseNewAs(id: string): { faction: string; rank: string } | null {
+  if (!id.startsWith(NEW_AS_PREFIX)) return null;
+  const [faction, rank] = id.slice(NEW_AS_PREFIX.length).split(":");
+  return faction && rank ? { faction, rank } : null;
+}
+
+export function successionOptions(state: GameState, content: Content): SuccessionOption[] {
+  if (!state.characters[state.playerId]?.dead) return [];
+  if (content.roles[state.scenarioRole]?.scenario?.heirs === false) return [];
+  return heirCandidates(state, content);
+}
+
+function heirCandidates(state: GameState, content: Content): SuccessionOption[] {
+  const options: SuccessionOption[] = [];
+  // 새 캐릭터: 조우한 무리의 수색대원·분대장·간부 (역할을 만드는 규칙이 없는 월드면 그 무리에 있는 역할의 계급만)
+  for (const f of encounteredFactions(state, content)) {
+    const ranks = content.scenario.custom_start?.ranks ?? [...new Set(Object.values(content.roles).filter((r) => r.faction === f).map((r) => r.rank))];
+    for (const rank of ranks) {
+      options.push({ id: `${NEW_AS_PREFIX}${f}:${rank}`, label: `새 캐릭터 (${content.factions[f]!.name} ${rankName(content, f, rank)})`, detail: content.factions[f]!.public });
+    }
+  }
+  // 조우한 사람: 이름을 아는, 살아 있고 플레이할 수 있는 인물. 무리의 우두머리(사다리 맨 위)는 맡을 자리가 없어 뺀다
+  const top = content.scenario.rank_ladder.reduce((a, b) => (b.level > a.level ? b : a)).id;
+  const met = encountered(state);
+  const free = (c: GameState["characters"][string]) => !c.dead && !c.away && !c.captive && c.rank !== top && met.has(c.id);
+  const who = (c: GameState["characters"][string]) => `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}`;
   for (const npc of Object.values(content.npcs)) {
     const c = state.characters[npc.id];
-    // MVP: 역할 규칙(상관, 임무, 이야기)이 시작 역할의 것이라 같은 무리 사람으로만 이어 간다
-    if (!c || c.dead || c.away || c.captive || !npc.playable || !known.has(npc.id) || c.factionId !== dead.factionId) continue;
-    options.push({
-      id: npc.id,
-      label: `${npc.name} (${content.factions[c.factionId]?.name ?? c.factionId} ${rankName(content, c.factionId, c.rank)})`,
-      detail: npc.reputation,
-    });
+    if (!c || !npc.playable || !free(c)) continue;
+    options.push({ id: npc.id, label: `${npc.name} (${who(c)})`, detail: npc.reputation });
   }
-  // 자란 인물도 같은 무리면 이어 갈 수 있다 (기획서 7.10)
+  // 자란 인물 (기획서 7.10)
   for (const c of Object.values(state.characters)) {
-    if (!c.profile || c.dead || c.away || c.captive || !known.has(c.id) || c.factionId !== dead.factionId) continue;
-    options.push({ id: c.id, label: `${c.name} (${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)})`, detail: c.profile.reputation });
+    if (!c.profile || !free(c)) continue;
+    options.push({ id: c.id, label: `${c.name} (${who(c)})`, detail: c.profile.reputation });
   }
   return options;
 }
 
-/** 사망 뒤 새 캐릭터의 동기와 이야기 (12-86) */
-export type HeirStory = { background: string[]; history: HistoryPart[]; motive: { id: string; label: string; summary: string } | null };
 
 /**
  * 다음 캐릭터로 이어 간다. 새 캐릭터(new)는 캐릭터 생성에서 고른 것(character: 이름·성별·능력·트레잇·초상화)으로 만들 수 있다.
@@ -112,36 +180,35 @@ export function switchCharacter(
   choice: string,
   name: string | null,
   character?: CharacterChoice,
-  story?: HeirStory | null,
 ): { ok: true; text: string } | { ok: false; error: string } {
   const { store, content } = ctx;
   const state = store.getState();
   const options = successionOptions(state, content);
+  if (storyEnded(state, content)) return { ok: false, error: STORY_ENDED };
   if (options.length === 0) return { ok: false, error: "캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다." };
   if (!options.some((o) => o.id === choice)) {
     return { ok: false, error: `고를 수 없는 캐릭터: ${choice} (가능: ${options.map((o) => o.id).join(", ")})` };
   }
   const previous = state.characters[state.playerId]!;
-  const switchedRole = choice.startsWith(NEW_AS_PREFIX) ? choice.slice(NEW_AS_PREFIX.length) : null;
-  const role = content.roles[switchedRole ?? state.roleId]!;
+  const newAs = parseNewAs(choice);
 
-  if (choice === "new" || switchedRole) {
+  if (newAs) {
     const id = `pc_${state.chronicle.length + 1}`;
     if (character) {
       const problems = checkCharacterChoice(content.scenario, character);
       if (problems.length) return { ok: false, error: `캐릭터 설정이 규칙에 맞지 않는다: ${problems.join(" ")}` };
     }
+    const seat = heirSeat(content, newAs.faction, newAs.rank, { age: character?.age ?? null });
+    const role = seat.role;
     const made = createCharacterFromRole(content.scenario, role, id, ctx.rng, character ? fillCharacterChoice(content.scenario, character, ctx.rng) : undefined);
     if (!character && name?.trim()) {
       const problem = checkName(name);
       if (problem) return { ok: false, error: problem };
       made.name = name.trim();
     }
-    if (story?.motive) made.motive = story.motive;
-    store.append({ type: "character_switched", characterId: id, character: made, known: [...role.known_npcs], ...(switchedRole ? { roleId: switchedRole } : {}) });
-    // 그 자리에 오는 사람의 동행 (역할의 시작 동행)
-    addStartCompanions(ctx, role);
-    // 역할의 시작 지식은 이전 캐릭터의 기억이 아니라 그 자리에 오는 사람이면 아는 것이다
+    // 두 번째 주인공부터는 시나리오 없이 세계만 이어 간다 (기획서 12.4.1)
+    store.append({ type: "character_switched", characterId: id, character: made, known: [...role.known_npcs], roleId: role.id, ...(seat.custom ? { customRole: role } : {}), scenarioRole: "" });
+    // 그 자리의 시작 지식은 이전 캐릭터의 기억이 아니라 그 자리에 오는 사람이면 아는 것이다
     const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
     for (const b of preset?.beliefs ?? []) {
       const s = store.getState();
@@ -151,22 +218,22 @@ export function switchCharacter(
         belief: { id: `b_${s.nextBeliefNo}`, fact: b.fact, source: b.source, accuracy: b.accuracy, learnedAt: s.time },
       });
     }
-    // 새 캐릭터의 동기와 이야기 (12-86): 동기·과거 배경·지난 삶은 자기 기억으로, 배경 부품은 세계의 사실로
-    const remember = (fact: string, accuracy: Belief["accuracy"]) => {
+    if (made.past) {
       const s = store.getState();
-      store.append({ type: "belief_added", characterId: id, belief: { id: `b_${s.nextBeliefNo}`, fact, source: "seen", accuracy, learnedAt: s.time } });
-    };
-    if (made.past) remember(`붕괴 전에 나는 ${josa(made.past.label, "이었다/였다")}. ${made.past.summary}.`, "exact");
-    if (story?.motive) remember(`내가 버티는 이유: ${story.motive.label}. ${story.motive.summary}`, "exact");
-    for (const fact of story?.background ?? []) remember(fact, "approximate");
-    applyBackground(ctx, story?.history ?? []);
+      store.append({ type: "belief_added", characterId: id, belief: { id: `b_${s.nextBeliefNo}`, fact: `붕괴 전에 나는 ${josa(made.past.label, "이었다/였다")}. ${made.past.summary}.`, source: "seen", accuracy: "exact", learnedAt: s.time } });
+    }
   } else {
     const successor = state.characters[choice]!;
+    // 이어받는 사람의 무리·계급 자리 (무리가 없으면 떠돌이)
+    const zone = content.npcs[choice] ? npcZoneAt(content.npcs[choice]!, state.time) : (successor.extra?.zone ?? null);
+    const seat = heirSeat(content, successor.factionId, successor.rank, { age: successor.age, occupation: successor.occupation?.id ?? null, zone });
     // 같은 무리 사람들은 서로 안다
     const comrades = Object.values(state.characters)
-      .filter((c) => c.id !== choice && c.id !== previous.id && content.npcs[c.id] && c.factionId === successor.factionId)
+      .filter((c) => c.id !== choice && c.id !== previous.id && content.npcs[c.id] && successor.factionId && c.factionId === successor.factionId)
       .map((c) => c.id);
-    store.append({ type: "character_switched", characterId: choice, known: comrades });
+    store.append({ type: "character_switched", characterId: choice, known: comrades, roleId: seat.role.id, ...(seat.custom ? { customRole: seat.role } : {}), scenarioRole: "" });
+    // 그 사람이 있던 곳에서 이어 간다
+    if (zone && content.locations[zone]) store.append({ type: "zone_moved", from: null, to: zone });
   }
 
   // 이전 캐릭터들의 죽음과 큰 행적은 소문으로 남는다 (기억은 넘어가지 않는다).
@@ -218,10 +285,12 @@ export function switchCharacter(
   }
 
   autoEquip(ctx, store.getState().playerId);
-  const opening =
-    choice === "new" || switchedRole
-      ? role.opening_scene
-      : `${heir.name}의 하루가 시작된다. ${josa(previous.name, "이/가")} 죽은 뒤의 거점이다.`;
+  const zoneNow = store.getState().playerZone;
+  const place = zoneNow ? (content.locations[zoneNow]?.name ?? zoneNow) : null;
+  const seatRole = content.roles[store.getState().roleId];
+  const opening = newAs
+    ? (seatRole?.opening_scene ?? `${place ? `${place}. ` : ""}${josa(heir.name, "이/가")} 이 무리에 들어와 맞는 첫날이다.`)
+    : `${place ? `${place}. ` : ""}${heir.name}의 하루가 시작된다. ${josa(previous.name, "이/가")} 죽은 뒤다.`;
   return {
     ok: true,
     text: [
@@ -230,6 +299,10 @@ export function switchCharacter(
     ].join("\n"),
   };
 }
+
+/** 이어 갈 수 없는 시나리오가 끝났을 때 GM에게 */
+export const STORY_ENDED =
+  "이 판은 주인공의 죽음으로 끝났다 (이 시나리오는 다음 캐릭터로 이어 갈 수 없거나, 이어 갈 만한 사람을 만나지 못했다). 플레이어에게 그렇게 알리고, 새 게임에서 열린 시나리오를 고를 수 있다고 안내한 뒤 end_session으로 닫는다.";
 
 export const writeEpitaph = defineTool({
   name: "write_epitaph",
@@ -247,7 +320,9 @@ export const writeEpitaph = defineTool({
     ctx.store.append({ type: "epitaph_written", index, text: input.text.trim() });
     return {
       ok: true,
-      resultText: "묘비명을 남겼다. 연대기와 다음 캐릭터 후보를 플레이어에게 보여 준다 (get_chronicle).",
+      resultText: storyEnded(ctx.store.getState(), ctx.content)
+        ? `묘비명을 남겼다. 연대기를 플레이어에게 보여 준다 (get_chronicle). ${STORY_ENDED}`
+        : "묘비명을 남겼다. 연대기와 다음 캐릭터 후보를 플레이어에게 보여 준다 (get_chronicle).",
       display: { type: "epitaph", name: record.name, text: input.text.trim() },
     };
   },

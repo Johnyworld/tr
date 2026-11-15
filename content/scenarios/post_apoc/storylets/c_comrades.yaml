@@ -1,0 +1,210 @@
+# 붉은 완장 (role_c_comrades) 스토리렛. 형식은 a_grunt.yaml 머리말 참고
+# 갈래:
+# - 동료애: cm_old_fire(두 해 전 이야기), cm_sunae_bowl(배식 줄)
+# - 강한 자: cm_strength_test(재호의 단련)
+# - 의심: cm_minji_doubt(민지가 꿰맨 포로) → cm_yunho_child(수용소의 아이)
+# - 약탈: cm_night_raid(감염체가 아닌 사람들을 터는 밤)
+
+- id: cm_old_fire
+  title: 불가의 옛이야기
+  tags: [c_comrades]
+  when:
+    zones: [c_warehouse]
+    segments: [evening, night]
+  cast:
+    old: { ids: [c_cm_gitaek, c_cm_sunae] }
+    friend: { ids: [c_cm_jaeho] }
+  setup: "물류창고 마당의 드럼통 불가. 일을 마친 동료들이 하나둘 모여 앉는다. {old:이/가} 통조림 깡통을 불에 올리며 웃는다. \"그때 기억나? 체육관 지붕에서 빗물 받아 먹던 거. 지금은 통조림을 데워 먹는다, 우리가.\""
+  ai_direction: 여덟 명이 처음 만난 구시가 초등학교 체육관, 첫 겨울의 굶주림, 서로를 살린 이야기가 오간다. 웃음이 많다. {friend:은/는} 이야기가 첫 겨울의 어느 대목에 닿으면 잠깐 말이 없어지고 불을 뒤적인다. 그 이유는 말하지 않는다.
+  choices:
+    - id: tell_story
+      label: 그 시절 동료가 나를 살린 이야기를 꺼낸다
+      effects:
+        - relation: { who: old, axis: affection, delta: 1 }
+        - relation: { who: friend, axis: affection, delta: 1 }
+        - belief: { fact: "여덟 명은 구시가 초등학교 체육관에서 처음 만나 첫 겨울을 함께 버텼다", source: seen }
+    - id: ask_friend
+      label: 재호가 왜 말이 없어지는지 묻는다
+      effects:
+        - relation: { who: friend, axis: trust, delta: 1 }
+        - belief: { fact: "{friend}는 첫 겨울 이야기가 나오면 말을 돌린다. \"지난 일이야. 우린 살아남았잖아.\"", source: seen }
+    - id: listen
+      label: 말없이 불을 쬐며 듣는다
+      effects:
+        - body: { track: cold, delta: -1 }
+
+- id: cm_strength_test
+  title: 강한 놈만 살아남아
+  tags: [c_comrades]
+  when:
+    zones: [c_warehouse, c_base]
+    segments: [dawn, morning, evening]
+  cast:
+    boss: { commander: true }
+  setup: "고가도로 밑 공터. {boss:이/가} 겉옷을 벗어 던지고 쇠파이프 두 자루를 바닥에 내려놓는다. \"하나 집어. 공세 전에 네가 얼마나 버티는지 봐야겠어. 봐주는 거 없다. 강한 놈만 살아남아.\""
+  ai_direction: "{boss}는 화가 난 게 아니다. 동쪽 공세에서 친구가 죽지 않기를 바라서 하는 일이다. 다른 조원들이 둘러서서 구경한다. 판정 결과에 따라 피가 조금 날 수는 있어도 크게 다치게 하지는 않는다."
+  choices:
+    - id: spar
+      label: 쇠파이프를 집고 정면으로 맞선다
+      check: fight
+      outcomes:
+        success:
+          - relation: { who: boss, axis: respect, delta: 2 }
+          - merit: 1
+          - belief: { fact: "{boss}와 맞붙어 버텼다. 그가 웃으며 말했다: \"됐어. 넌 살아남을 놈이야.\"", source: seen }
+        partial:
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - belief: { fact: "{boss}에게 몇 대 맞았지만 끝까지 쓰러지지 않았다", source: seen }
+        miss:
+          - relation: { who: boss, axis: affection, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{boss}에게 졌다. 그는 손을 내밀어 일으켜 주며 내일 새벽에 또 하자고 했다", source: seen }
+    - id: refuse
+      label: 동료끼리 이러는 건 아니라며 파이프를 내려놓는다
+      effects:
+        - relation: { who: boss, axis: respect, delta: -1 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "{boss}의 말: \"약한 건 죄가 아니야. 약한 채로 있는 게 죄지.\"", source: report }
+
+- id: cm_sunae_bowl
+  title: 건더기 하나 더
+  tags: [c_comrades]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    zones: [c_warehouse]
+    segments: [morning, evening]
+  cast:
+    cook: { ids: [c_cm_sunae] }
+  setup: "배식 줄. {cook:이/가} 국자로 당신 그릇을 툭 친다. 건더기가 하나 더 들어 있다. \"얘, 너 요즘 얼굴이 못쓰겠다. 잠은 자니?\" 뒤에 선 낯선 조원이 그릇을 들여다보고 혀를 찬다."
+  ai_direction: "{cook}는 동료들에게만 몰래 더 준다. 배급 줄에서 이런 일은 규율반이 싫어한다. 뒤에 선 조원이 말을 옮길지는 정하지 않는다. {cook}는 수다스럽게 배식 줄에서 들은 소문 하나를 덧붙인다(청솔형제단 이야기, 동쪽 공세 이야기 등)."
+  choices:
+    - id: thank
+      label: 고맙다고 웃고 그릇을 받는다
+      effects:
+        - relation: { who: cook, axis: affection, delta: 1 }
+        - body: { track: hunger, delta: -1 }
+    - id: give_back
+      label: 남들 눈이 있으니 건더기를 도로 넣는다
+      effects:
+        - relation: { who: cook, axis: respect, delta: 1 }
+        - deed: { summary: 배식 줄에서 동료가 더 얹어 준 몫을 도로 내려놓았다, tags: [honesty], severity: 1, privacy: semi_private }
+
+- id: cm_minji_doubt
+  title: 꿰맨 손
+  tags: [c_comrades]
+  when:
+    zones: [c_warehouse, c_base]
+    segments: [evening, night]
+    flags_none: [cm_minji_doubt_heard]
+  cast:
+    medic: { ids: [c_cm_minji] }
+  setup: "막사 뒤 물통 앞. {medic:이/가} 소매의 핏자국을 박박 문지르고 있다. 당신을 보더니 손을 멈춘다. \"오늘 수용소에서 청솔 사람 하나를 꿰맸어. 허벅지에 산탄이 박혔더라. 그 사람… 꿰매는 내내 딸 이름만 불렀어.\""
+  ai_direction: "{medic}는 무언가를 확신하는 게 아니라 흔들리고 있다. \"사람을 먹는다던 사람들\"이 자기가 꿰맨 사람과 잘 겹치지 않는다. 그러나 이 말이 규율반 귀에 들어가면 큰일이라는 것도 안다. 진실이 무엇인지 GM이 밝히지 않는다."
+  choices:
+    - id: share_doubt
+      label: 나도 그 말을 직접 본 사람을 만난 적이 없다고 말한다
+      effects:
+        - set_flag: cm_minji_doubt_heard
+        - relation: { who: medic, axis: trust, delta: 2 }
+        - belief: { fact: "{medic}는 청솔형제단이 사람을 먹는다는 말을 의심한다. 그 말을 직접 본 사람을 아직 하나도 못 만났다고 했다", source: report }
+        - deed: { summary: 동료와 함께 청솔형제단에 대한 위원회의 말을 의심했다, tags: [enemy_sympathy], severity: 1, privacy: private }
+    - id: reassure
+      label: 위원회가 거짓말을 할 리 없다고 다독인다
+      effects:
+        - set_flag: cm_minji_doubt_heard
+        - relation: { who: medic, axis: affection, delta: 1 }
+        - belief: { fact: "{medic}는 수용소에서 꿰맨 청솔형제단 포로 때문에 마음이 흔들리고 있다", source: seen }
+    - id: warn
+      label: 그런 말은 재호 앞에서도 하지 말라고 낮게 경고한다
+      effects:
+        - set_flag: cm_minji_doubt_heard
+        - relation: { who: medic, axis: trust, delta: 1 }
+        - belief: { fact: "{medic}가 청솔형제단 이야기를 의심하는 말을 했다. 아무도 듣지 못하게 막았다", source: seen }
+
+- id: cm_yunho_child
+  title: 수용소의 작은 그릇
+  tags: [c_comrades]
+  when:
+    zones: [c_warehouse]
+    segments: [morning, evening]
+    flags_all: [cm_minji_doubt_heard]
+    flags_none: [cm_yunho_child_seen]
+  cast:
+    guard: { ids: [c_cm_yunho] }
+  setup: "수용소 바깥문 앞, 배식 시간. {guard:이/가} 죽 솥 앞에 서 있다. 창살 너머로 그릇들이 내밀어진다. 그중 하나가 유난히 작고, 그걸 내민 손도 작다. {guard:은/는} 그 그릇에 한 국자를 더 붓고, 당신과 눈이 마주친다."
+  ai_direction: "창살 너머의 손은 열두 살쯤 된 아이의 것이다. 청솔형제단 쪽 포로다. 아이는 붉은 완장을 보면 몸을 움츠린다. {guard}는 당신이 무엇을 할지 기다린다. 경비조장은 바깥문 안쪽에 있고 지금은 보지 않는다."
+  choices:
+    - id: say_nothing
+      label: 못 본 척 고개를 돌려 준다
+      effects:
+        - set_flag: cm_yunho_child_seen
+        - relation: { who: guard, axis: trust, delta: 2 }
+        - belief: { fact: "물류창고 수용소에 청솔형제단 쪽 아이 포로가 있다. {guard}가 몰래 죽을 더 준다", source: seen }
+    - id: ask_child
+      label: 창살 앞에 쭈그려 앉아 아이에게 말을 건다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: cm_yunho_child_seen
+          - relation: { who: guard, axis: trust, delta: 1 }
+          - belief: { fact: "수용소의 아이가 말했다: 형제단에서는 붉은연합이 사람을 잡아먹는다고 했다고. 아이는 그래서 붉은 완장이 무섭다고 했다", source: report }
+          - deed: { summary: 수용소의 적 포로 아이와 몰래 말을 나눴다, tags: [enemy_sympathy, mercy], severity: 1, privacy: private }
+        partial:
+          - set_flag: cm_yunho_child_seen
+          - belief: { fact: "수용소의 아이는 붉은 완장을 보고 울기만 했다. 잡아먹지 말라는 말만 겨우 알아들었다", source: seen }
+        miss:
+          - set_flag: cm_yunho_child_seen
+          - relation: { who: guard, axis: trust, delta: -1 }
+          - deed: { summary: 수용소 포로와 말을 섞다 경비조 눈에 띄었다, tags: [enemy_sympathy], severity: 1, privacy: semi_private }
+    - id: report
+      label: 경비가 포로에게 몰래 더 준다고 경비조장에게 알린다
+      effects:
+        - set_flag: cm_yunho_child_seen
+        - merit: 1
+        - relation: { who: guard, axis: trust, delta: -3 }
+        - relation: { who: guard, axis: affection, delta: -2 }
+        - deed: { summary: 오랜 동료가 포로에게 몰래 먹을 것을 준다고 경비조장에게 알렸다, tags: [betrayal, diligence], severity: 2, privacy: semi_private }
+
+- id: cm_night_raid
+  title: 감염체가 아닌 집
+  tags: [c_comrades]
+  when:
+    segments: [night, dawn]
+    zone_owner: [none, other]
+  cast:
+    boss: { commander: true }
+    young: { ids: [c_cm_beomsu] }
+  setup: "어둠 속 낡은 연립주택. {boss:이/가} 손짓으로 멈추라고 한다. 창문 틈으로 촛불이 보인다. 감염체가 아니다. 사람이다. 연합에 들지 않겠다고 버틴 사람들이라고 {boss:이/가} 속삭인다. \"식량이 있어. 오늘 할당량이 저기 있다.\" {young:이/가} 쇠파이프를 고쳐 쥔다."
+  ai_direction: "안에는 어른 셋과 아이 하나가 있다. 무장은 엽총 한 자루 정도. {boss}는 이것도 약탈조의 일이라고 믿는다: 연합에 맞서는 자들은 결국 청솔형제단 편이 된다고. {young}는 겁을 감추려고 더 앞으로 나선다. 누구를 다치게 할지는 GM이 정하지 않고 플레이어의 행동과 판정에 맡긴다."
+  choices:
+    - id: storm
+      label: 조장을 따라 문을 부수고 들어간다
+      effects:
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - merit: 1
+        - deed: { summary: 감염체가 아닌 사람들의 집에 쳐들어가 식량을 털었다, tags: [cruelty, loyalty], severity: 2, privacy: semi_private }
+        - belief: { fact: "약탈 육조는 연합에 들지 않은 사람들의 집도 턴다. {boss}는 그것도 세상을 다시 세우는 일이라고 했다", source: seen }
+    - id: bargain
+      label: 문을 두드려 식량 절반만 내놓으면 그냥 가겠다고 말한다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - deed: { summary: 피를 보지 않고 위협만으로 식량을 받아 냈다, tags: [mercy], severity: 1, privacy: semi_private }
+          - belief: { fact: "연립주택 사람들은 식량 절반을 내놓았다. 아이가 문틈으로 우리를 보고 있었다", source: seen }
+        partial:
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - zone_noise: 1
+          - belief: { fact: "흥정은 반쯤 먹혔다. 안에서 총소리가 한 번 났고, {boss}가 혀를 찼다", source: seen }
+        miss:
+          - relation: { who: boss, axis: respect, delta: -1 }
+          - zone_noise: 2
+          - belief: { fact: "흥정은 실패했다. 안에서 총을 쏘았고, {boss}는 결국 문을 부수고 들어갔다", source: seen }
+    - id: hold_back
+      label: 오늘은 그냥 가자고 재호를 붙잡는다
+      effects:
+        - relation: { who: boss, axis: trust, delta: -1 }
+        - relation: { who: boss, axis: affection, delta: 1 }
+        - relation: { who: young, axis: respect, delta: -1 }
+        - deed: { summary: 약탈 중에 조장을 붙잡아 사람 사는 집을 털지 않고 돌아섰다, tags: [mercy, disobedience], severity: 1, privacy: semi_private }

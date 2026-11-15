@@ -85,14 +85,17 @@ describe("플레이 테스트 2회차 회귀", () => {
     expect(urgent.store.getState().time % MINUTES_PER_DAY).not.toBe(6 * 60);
   });
 
-  it("P22: 다음 캐릭터 후보는 같은 무리 사람만", () => {
+  it("P22 (12.4.1에서 바뀜): 다음 캐릭터 후보는 조우한 사람이면 무리가 달라도 되고, 그 무리의 새 캐릭터도 된다. 이름을 모르면 아니다", () => {
     const world = createTestWorld("mcp", () => 0);
-    world.executeTool("npc_presence", { npc_id: "npc_stranger", action: "enter" }); // 다른 무리 사람을 알게 된다
+    world.executeTool("npc_presence", { npc_id: "npc_stranger", action: "enter" }); // 다른 무리 사람을 보기만 했다
     const deadly = { move: "fight", stat: "strength", difficulty: "hard", harm_on_failure: "heavy", harm_cause: "총상" };
     for (let i = 0; i < 3 && !world.isPlayerDead(); i++) world.executeTool("take_action", act({ check: deadly }));
     TEST_CONTENT.npcs.npc_stranger!.playable = true;
     try {
-      expect(world.successionOptions().map((o) => o.id)).toEqual(["new", "npc_leader"]);
+      expect(world.successionOptions().map((o) => o.id)).toEqual(["new:faction_a:grunt", "npc_leader"]);
+      world.ctx().store.append({ type: "name_learned", characterId: "player", targetId: "npc_stranger" });
+      // 테스트 월드에는 faction_e의 자리(역할)가 없어 새 캐릭터는 없고, 그 사람으로는 이어 갈 수 있다
+      expect(world.successionOptions().map((o) => o.id)).toEqual(["new:faction_a:grunt", "npc_leader", "npc_stranger"]);
     } finally {
       TEST_CONTENT.npcs.npc_stranger!.playable = false;
     }

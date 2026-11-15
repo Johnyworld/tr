@@ -2,13 +2,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { SettingsButton } from "./Settings.tsx";
 import { Icon } from "./Icon.tsx";
-import { canGoBack, CreatedToast, NewGame, newGameTitle } from "./NewGame.tsx";
+import { canGoBack, CreatedToast, NewGame, newGameTitle, postCreation } from "./NewGame.tsx";
 import type { CreationStatus, PlayerView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
-type StatusView =
+/** 아직 닫지 않은 시나리오 해금 알림 (기획서 12.4.1) */
+type UnlockNotice = { pack: string; roleId: string; title: string; particle?: string };
+
+type StatusView = (
   | { open: false; scenarioName: string; creating?: boolean; creation?: CreationStatus | null }
-  | { open: true; scenarioName: string; worldId: string; player: PlayerView };
+  | { open: true; scenarioName: string; worldId: string; player: PlayerView }
+) & { unlockNotices?: UnlockNotice[] };
 
 /**
  * MCP 모드의 상태 화면: Claude 앱 옆(브라우저 패널)에 띄워 두는 캐릭터 시트. 바꿀 수 있는 것은 설정(톱니바퀴)과,
@@ -29,6 +33,8 @@ export function StatusApp() {
     wasCreating.current = creatingHere;
   }, [status]);
   const closeToast = useCallback(() => setCreated(false), []);
+  // 새 게임 고르기에서 답을 보내면 응답에 실린 화면을 바로 쓴다
+  const applyStatus = useCallback((s: unknown) => setStatus(s as StatusView), []);
 
   useEffect(() => {
     let stop = false;
@@ -73,7 +79,7 @@ export function StatusApp() {
   return (
     <div className="status-page">
       <header className="header status-header">
-        {creating && canGoBack(status.creation!.view) && <BackButton disabled={status.creation!.gmWorking} />}
+        {creating && canGoBack(status.creation!.view) && <BackButton onStatus={applyStatus} />}
         <div className="hdr-left">
           <h1 className="hdr-title">{creating ? newGameTitle(status.creation!.view) : (status?.scenarioName ?? "TRPG")}</h1>
           {status?.open && <HeaderDate player={status.player} />}
@@ -85,14 +91,15 @@ export function StatusApp() {
             {connected ? "연결됨" : "연결 끊김"}
           </span>
           {/* 고르는 동안은 설정 대신 "채팅으로" (이 단계부터 채팅에서 GM과 이어 고른다) */}
-          {creating ? <ChatHandoffButton /> : <SettingsButton enabled={connected && status?.open === true} />}
+          {creating ? <ChatHandoffButton onStatus={applyStatus} /> : <SettingsButton enabled={connected && status?.open === true} />}
         </div>
       </header>
+      {!creating && status?.unlockNotices?.length ? <UnlockToasts notices={status.unlockNotices} onStatus={applyStatus} /> : null}
       {!status ? (
         <p className="muted status-empty">불러오는 중…</p>
       ) : !status.open && status.creation ? (
         <div key="newgame" className="status-sheet">
-          <NewGame creation={status.creation} />
+          <NewGame creation={status.creation} onStatus={applyStatus} />
         </div>
       ) : !status.open && status.creating ? (
         // Claude 세션에서 대화로 캐릭터를 만드는 중. 다 만들면 첫 장면과 함께 시트가 열린다
@@ -169,8 +176,39 @@ function SunDial({ clock }: { clock: NonNullable<PlayerView["clock"]> }) {
   );
 }
 
+/** 시나리오 해금 알림 (기획서 12.4.1): ×를 눌러야 닫힌다. 닫은 것은 세이브 폴더에 남아 다시 뜨지 않는다 */
+function UnlockToasts({ notices, onStatus }: { notices: UnlockNotice[]; onStatus: (status: unknown) => void }) {
+  const [closing, setClosing] = useState<string | null>(null);
+  const close = (n: UnlockNotice) => {
+    setClosing(`${n.pack}/${n.roleId}`);
+    void fetch("/api/unlock-notice", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack: n.pack, roleId: n.roleId }) })
+      .then((r) => r.json() as Promise<{ ok?: boolean; status?: unknown }>)
+      .then((out) => {
+        setClosing(null);
+        if (out.status) onStatus(out.status);
+      })
+      .catch(() => setClosing(null));
+  };
+  return (
+    <div className="unlock-toasts">
+      {notices.map((n) => (
+        <div key={`${n.pack}/${n.roleId}`} className="unlock-toast" role="status">
+          <Icon name="key" size={16} />
+          <span>
+            시나리오 <strong>{n.title}</strong>
+            {n.particle ?? "을(를)"} 플레이할 수 있습니다.
+          </span>
+          <button type="button" aria-label="닫기" disabled={closing === `${n.pack}/${n.roleId}`} onClick={() => close(n)}>
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** 새 게임 고르기 중 머리 오른쪽: 이 단계부터 채팅에서 GM과 이어 고른다 */
-function ChatHandoffButton() {
+function ChatHandoffButton({ onStatus }: { onStatus: (status: unknown) => void }) {
   const [busy, setBusy] = useState(false);
   return (
     <button
@@ -180,7 +218,10 @@ function ChatHandoffButton() {
       title="이 단계부터 채팅에서 GM과 이어서 고릅니다"
       onClick={() => {
         setBusy(true);
-        void fetch("/api/creation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat: true }) }).finally(() => setBusy(false));
+        void postCreation({ chat: true }).then((out) => {
+          setBusy(false);
+          if (out.status) onStatus(out.status);
+        });
       }}
     >
       채팅으로
@@ -189,7 +230,7 @@ function ChatHandoffButton() {
 }
 
 /** 새 게임 고르기 중 머리 왼쪽: 한 단계 뒤로 */
-function BackButton({ disabled }: { disabled: boolean }) {
+function BackButton({ onStatus }: { onStatus: (status: unknown) => void }) {
   const [busy, setBusy] = useState(false);
   return (
     <button
@@ -197,10 +238,13 @@ function BackButton({ disabled }: { disabled: boolean }) {
       className="hdr-back"
       aria-label="뒤로"
       title="한 단계 뒤로"
-      disabled={busy || disabled}
+      disabled={busy}
       onClick={() => {
         setBusy(true);
-        void fetch("/api/creation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ back: true }) }).finally(() => setBusy(false));
+        void postCreation({ back: true }).then((out) => {
+          setBusy(false);
+          if (out.status) onStatus(out.status);
+        });
       }}
     >
       <Icon name="arrow-left" size={16} />

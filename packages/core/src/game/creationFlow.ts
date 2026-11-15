@@ -530,7 +530,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
     if (draft.mode === "new_world") {
       lines.push(
         "## 먼저: 지금 상황",
-        "월드 이야기는 이미 들려줬다. 아래를 바탕으로 주인공이 지금 어디에 어떤 처지로 있는지 GM의 목소리로 들려준다 (두세 문단, 목록 말고 이야기로). 소개에 없는 사실은 만들지 않는다. 그다음 아래 단계를 묻는다.",
+        "고른 시나리오의 지금 상황을 바탕으로, 주인공이 지금 어디에 어떤 처지로 있는지 GM의 목소리로 들려준다 (두세 문단, 목록 말고 이야기로). 소개에 없는 사실은 만들지 않고, 세계 배경을 길게 풀지 않는다 (세계는 플레이하며 조금씩 알게 한다). 그다음 아래 단계를 묻는다.",
         "",
         content.roles[roleId]?.scenario?.intro ?? content.roles[roleId]?.opening_scene ?? "",
         "",

@@ -30,16 +30,31 @@ export type StatusSource = {
   submitCreation?(input: { answer?: string | string[]; back?: boolean; chat?: boolean }): { ok: true } | { ok: false; error: string };
   /** 주인공이 죽은 직후 GM이 서술하는 동안 보여 줄 죽기 직전 모습 */
   readonly frozenStatus?: unknown;
+  /** 아직 닫지 않은 시나리오 해금 알림 (기획서 12.4.1). ×를 누를 때까지 화면 위에 남는다 */
+  unlockNotices?(): { pack: string; roleId: string; title: string; particle?: string }[];
+  dismissUnlockNotice?(pack: string, roleId: string): boolean;
 };
 
 export function statusPayload(source: StatusSource, gate?: TurnGate): unknown {
+  // 해금 알림은 어느 화면에서든 함께 (토스트). 시트가 멈춰 있으면(GM이 서술하는 중) 멈춘 때의 알림 중 아직 닫지 않은 것만:
+  // 새 알림은 서술이 끝난 뒤 시트와 함께 뜨고, 닫은 알림은 바로 사라진다
+  const pending = source.unlockNotices?.() ?? [];
+  const held = !source.creating && source.world ? (gate?.held(source) as Record<string, unknown> | null | undefined) : null;
+  if (held) {
+    const shown = ((held.unlockNotices ?? []) as { pack: string; roleId: string }[]).filter((n) => pending.some((p) => p.pack === n.pack && p.roleId === n.roleId));
+    const { unlockNotices: _, ...rest } = held;
+    return shown.length ? { ...rest, unlockNotices: shown } : rest;
+  }
+  const body = baseStatus(source) as Record<string, unknown>;
+  return pending.length ? { ...body, unlockNotices: pending } : body;
+}
+
+function baseStatus(source: StatusSource): unknown {
   // 캐릭터를 만드는 중이면 안내 (만들어지면 첫 장면과 함께 시트가 열린다)
   if (source.creating) return { open: false, creating: true, scenarioName: source.scenarioName, creation: source.creation ?? null };
   const w = source.world;
   if (!w) return { open: false, scenarioName: source.scenarioName };
   // GM이 아직 서술하는 중이면 그 턴 전의 모습 (훅의 턴 문, 또는 사망 직후)
-  const held = gate?.held(source);
-  if (held) return held;
   if (source.frozenStatus) return source.frozenStatus;
   return { open: true, scenarioName: source.scenarioName, worldId: w.id, player: w.playerView() };
 }
@@ -133,10 +148,31 @@ export async function handleMemo(source: StatusSource, req: IncomingMessage, res
   const text = input && typeof input === "object" ? (input as { text?: unknown }).text : undefined;
   const result = w.setMemo(text);
   if (!result.ok) return json(res, 400, { error: result.error });
-  return json(res, 200, { ok: true });
+  // 바뀐 화면을 응답에 함께 싣는다: SSE를 기다리는 사이 앞 단계가 다시 보이며 깜빡이지 않게
+  return json(res, 200, { ok: true, status: statusPayload(source) });
 }
 
 /** 상태 화면에서 고른 답. JSON만 받는다 (설정과 같은 까닭) */
+/** 해금 알림 닫기 (POST /api/unlock-notice {pack, roleId}) */
+export async function handleUnlockNotice(source: StatusSource, req: IncomingMessage, res: ServerResponse, gate?: TurnGate): Promise<void> {
+  if (req.method !== "POST") return json(res, 405, { error: "POST" });
+  if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
+  let body = "";
+  for await (const chunk of req) {
+    body += String(chunk);
+    if (body.length > 1024) return json(res, 413, { error: "너무 크다" });
+  }
+  let input: { pack?: unknown; roleId?: unknown };
+  try {
+    input = JSON.parse(body) as typeof input;
+  } catch {
+    return json(res, 400, { error: "JSON이 아니다" });
+  }
+  if (typeof input.pack !== "string" || typeof input.roleId !== "string") return json(res, 400, { error: "pack, roleId" });
+  source.dismissUnlockNotice?.(input.pack, input.roleId);
+  return json(res, 200, { ok: true, status: statusPayload(source, gate) });
+}
+
 export async function handleCreation(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== "POST") return json(res, 405, { error: "POST" });
   if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
@@ -163,7 +199,8 @@ export async function handleCreation(source: StatusSource, req: IncomingMessage,
   if (!ok(input)) return json(res, 400, { error: "answer(글 또는 목록), back, chat 중 하나" });
   const result = source.submitCreation(input);
   if (!result.ok) return json(res, 400, { error: result.error });
-  return json(res, 200, { ok: true });
+  // 바뀐 화면을 응답에 함께 싣는다: SSE를 기다리는 사이 앞 단계가 다시 보이며 깜빡이지 않게
+  return json(res, 200, { ok: true, status: statusPayload(source) });
 }
 
 /** 상태 서버를 띄운다. 포트가 쓰이고 있으면 다음 포트로 (MCP 세션이 여럿일 수 있다). 주소를 돌려준다 */
@@ -228,6 +265,10 @@ export async function startStatusServer(
     }
     if (url === "/api/memo") {
       void handleMemo(source, req, res);
+      return;
+    }
+    if (url === "/api/unlock-notice") {
+      void handleUnlockNotice(source, req, res, gate);
       return;
     }
     if (url === "/api/creation") {

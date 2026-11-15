@@ -29,6 +29,8 @@ export type SaveSlot = {
     /** 몇 번째 주인공인지 (이전 주인공이 죽고 이어 간 횟수 + 1) */
     generation: number;
     dead: boolean;
+    /** 이어 갈 수 없는 시나리오(튜토리얼)에서 죽어 이 판이 끝났다 */
+    ended: boolean;
   } | null;
   timeLabel: string | null;
   updatedAt: string;
@@ -43,6 +45,7 @@ type RawState = {
   time?: number;
   runStartedAt?: number;
   playerZone?: string | null;
+  scenarioRole?: string;
   chronicle?: unknown[];
   cheated?: boolean;
   characters?: Record<string, { name?: string; age?: number; gender?: string | null; portrait?: string | null; rank?: string; factionId?: string; level?: number; dead?: boolean; conditions?: Record<string, string> }>;
@@ -69,6 +72,8 @@ export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): Sav
         daysServed: typeof state.time === "number" ? daysServed(state.time, state.runStartedAt ?? state.time) + 1 : 1,
         generation: (state.chronicle?.length ?? 0) + (player.dead ? 0 : 1),
         dead: player.dead === true,
+        // 이어 갈 수 없는 시나리오에서 죽었다 (튜토리얼): 이 판은 끝났다
+        ended: player.dead === true && content.roles[state.scenarioRole ?? ""]?.scenario?.heirs === false,
       }
     : null;
   return {
@@ -95,7 +100,7 @@ export function formatSlotLine(slot: SaveSlot, index: number): string {
   const who = `${h.name}${h.age || h.genderLabel ? ` (${[h.genderLabel, h.age ? `${h.age}세` : null].filter(Boolean).join(", ")})` : ""} · ${[h.factionName, h.rankLabel].filter(Boolean).join(" ")} · 레벨 ${h.level}`;
   const where = [slot.timeLabel, h.zoneName].filter(Boolean).join(", ");
   const tags = [
-    h.dead ? "사망 (다음 주인공을 고를 차례)" : h.conditions.length ? h.conditions.join(", ") : "몸 성함",
+    h.ended ? "사망 (이야기가 끝남)" : h.dead ? "사망 (다음 주인공을 고를 차례)" : h.conditions.length ? h.conditions.join(", ") : "몸 성함",
     `복무 ${h.daysServed}일째`,
     h.generation > 1 ? `${h.generation}대째` : null,
     slot.cheated ? "🛠 치트 사용" : null,

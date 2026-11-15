@@ -1,7 +1,8 @@
-import { applyBackground } from "../engine/background.ts";
+import { objectParticle } from "../engine/scenarioProgress.ts";
+import { addStartFamily, applyBackground, applyStartBonds } from "../engine/background.ts";
 import type { HistoryPart } from "../game/background.ts";
 import { autoEquip } from "../engine/gear.ts";
-import { addUnlocks, readUnlocks, type UnlockRecord } from "../persistence/unlocks.ts";
+import { addUnlockNotices, addUnlocks, dismissUnlockNotice, readUnlockNotices, readUnlocks, type UnlockRecord } from "../persistence/unlocks.ts";
 import { generateDynamicTies } from "../engine/people.ts";
 import { roleOf } from "../game/state.ts";
 import { addStartCompanions } from "../engine/companionTools.ts";
@@ -130,8 +131,10 @@ export class WorldManager {
     /** 준비된 시나리오에 얹는 동기와 이야기 (12-86). custom이 있으면 그쪽 것을 쓴다 */
     story?: { background: string[]; history?: HistoryPart[]; motive?: { id: string; label: string; summary: string } | null } | null,
   ): GameWorld {
-    const told = custom ?? story ?? null;
     const content = packId ? this.pack(packId) : this.content;
+    // 준비된 시나리오의 사연 (역할의 history·background, 기획서 12.4.1)
+    const preset = !custom && roleId ? content.roles[roleId] : undefined;
+    const told = custom ?? story ?? (preset && (preset.history.length || preset.background.length) ? { background: preset.background, history: preset.history, motive: null } : null);
     const role = custom ? custom.role.id : (roleId ?? Object.keys(content.roles)[0]);
     if (!custom && (!role || !content.roles[role])) throw new Error(`알 수 없는 시작 역할: ${role}`);
     if (choice) {
@@ -156,6 +159,10 @@ export class WorldManager {
       applyBackground(world.ctx(), told?.history ?? []);
       // 처음부터 함께 다니는 사람·동물 (떠돌이의 가족 등, 기획서 7.9)
       addStartCompanions(world.ctx(), roleOf(world.content, world.state()));
+      // 시작할 때 가까운 사람들 (오래 함께 버틴 동료)
+      applyStartBonds(world.ctx(), roleOf(world.content, world.state()));
+      // 찾는 가족 (튜토리얼, 기획서 12.4.1)
+      addStartFamily(world.ctx(), roleOf(world.content, world.state()));
       // 판마다 다른 인물 사이의 관계 (기획서 7.10)
       generateDynamicTies(world.ctx());
       // 가진 무기를 손에 든다 (기획서 4.8)
@@ -217,6 +224,22 @@ export class WorldManager {
     return readUnlocks(this.savesDir);
   }
 
+  /** 아직 닫지 않은 해금 알림 (상태 화면의 토스트, 기획서 12.4.1): "시나리오 ○○를 플레이할 수 있습니다" */
+  unlockNotices(): { pack: string; roleId: string; title: string; particle: string }[] {
+    return Object.entries(readUnlockNotices(this.savesDir)).flatMap(([pack, ids]) => {
+      const content = this.packs.get(pack);
+      return ids.map((roleId) => {
+        const title = content?.roles[roleId]?.scenario?.title ?? roleId;
+        return { pack, roleId, title, particle: objectParticle(title) };
+      });
+    });
+  }
+
+  /** 해금 알림 하나를 닫는다 */
+  dismissUnlockNotice(pack: string, roleId: string): boolean {
+    return dismissUnlockNotice(this.savesDir, pack, roleId);
+  }
+
   /** 다른 판에서 얻은 해금을 이 세계의 상태로 옮긴다 (계승·시나리오 고르기가 상태만 보면 되게) */
   #inheritUnlocks(world: GameWorld): void {
     const have = new Set(world.state().unlocked ?? []);
@@ -241,7 +264,12 @@ export class WorldManager {
         release,
         lore: this.#lore(pack),
         memory,
-        onUnlock: (ids) => addUnlocks(this.savesDir, pack, ids),
+        onUnlock: (ids) => {
+          // 처음 얻은 해금만 알린다 (다른 판에서 옮겨 온 것은 이미 알렸다)
+          const before = new Set(readUnlocks(this.savesDir)[pack] ?? []);
+          addUnlocks(this.savesDir, pack, ids);
+          addUnlockNotices(this.savesDir, pack, ids.filter((id) => !before.has(id)));
+        },
       });
       if (world.state().worldId) this.#inheritUnlocks(world);
       // 이미 있는 세계: 시간이 흐른 뒤의 처리를 한 번 맞춘다. 시간이 그대로라 보통은 아무 일도 없고,

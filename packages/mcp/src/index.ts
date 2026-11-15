@@ -71,6 +71,8 @@ if (process.env.TRPG_STATUS !== "off") {
       return app.creation;
     },
     submitCreation: (input: Parameters<typeof app.submitCreation>[0]) => app.submitCreation(input),
+    unlockNotices: () => app.unlockNotices(),
+    dismissUnlockNotice: (pack: string, roleId: string) => app.dismissUnlockNotice(pack, roleId),
     get frozenStatus() {
       return app.frozenStatus;
     },

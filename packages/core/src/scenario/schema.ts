@@ -307,23 +307,6 @@ export const scenarioFileSchema = z
             elder_from: z.number().int().default(55),
           })
           .optional(),
-        /**
-         * 동기 (12-77 2단계): 역할을 고른 뒤 "왜 살아가는지"를 고르고 이야기를 쓴다. prompt는 무엇을 쓰면 좋은지,
-         * parts는 이 동기에서 자주 나오는 배경 부품 종류 (GM이 옮길 때 참고, 강제하지 않는다)
-         */
-        motives: z
-          .array(
-            z.strictObject({
-              id,
-              label: z.string().min(1),
-              summary: z.string().min(1),
-              prompt: z.string().min(1),
-              /** 쓰기 도움: 이런 식으로 쓰면 된다는 예시 (이 월드의 무리·사람으로) */
-              example: z.string().min(1).optional(),
-              parts: z.array(z.enum(["loss", "enemy", "kin_alive", "seeking", "debt", "deserter"])).default([]),
-            }),
-          )
-          .default([]),
       })
       .optional(),
     /**
@@ -491,7 +474,7 @@ export const scenarioFileSchema = z
     /** 새 게임의 월드 고르기에 보이는 것 (기획서 12.3). 없으면 name만 */
     world: z
       .strictObject({
-        /** 월드 이름 (예: 무너진 도시, 가람) */
+        /** 월드 이름 (예: 무너진 도시 가람) */
         title: z.string().min(1),
         /** 한 줄 소개 */
         tagline: z.string().min(1),

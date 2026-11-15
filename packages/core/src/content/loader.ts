@@ -1,3 +1,4 @@
+import { checkHistory } from "../game/background.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { occupationById } from "../game/occupation.ts";
 import { checkSkills } from "../game/creation.ts";
@@ -208,7 +209,28 @@ function checkReferences(content: Content): string[] {
   const factionRef = (where: string, id: string) => {
     if (hasFactions && !factionIds.has(id)) problems.push(`${where}: 알 수 없는 세력 ${id}`);
   };
-  for (const role of Object.values(content.roles)) factionRef(`roles.${role.id}`, role.faction);
+  for (const role of Object.values(content.roles)) {
+    if (role.faction) factionRef(`roles.${role.id}`, role.faction);
+    problems.push(...checkHistory(content, role.history, role.faction || null).map((p) => `roles.${role.id}.history: ${p}`));
+    for (const id of role.start_bonds?.ids ?? []) if (!content.npcs[id]) problems.push(`roles.${role.id}.start_bonds: 알 수 없는 NPC ${id}`);
+    if (role.start_bonds?.best && !role.start_bonds.ids.includes(role.start_bonds.best)) problems.push(`roles.${role.id}.start_bonds.best: ids 안의 사람이어야 한다`);
+    if (role.family && !content.locations[role.family.zone]) problems.push(`roles.${role.id}.family: 알 수 없는 구역 ${role.family.zone}`);
+    if (role.family && !content.scenario.custom_start?.group) problems.push(`roles.${role.id}.family: 가족을 만들려면 scenario.custom_start.group(관계 규칙)이 있어야 한다`);
+    const sc = role.scenario;
+    const conds = [...(sc?.unlock?.when ?? []).map((c) => ["unlock", c] as const), ...(sc?.goal?.when ?? []).map((c) => ["goal", c] as const)];
+    for (const [where, c] of conds) {
+      const at = `roles.${role.id}.scenario.${where}`;
+      if ("scenario_ended" in c || "scenario_cleared" in c) {
+        const id = "scenario_ended" in c ? c.scenario_ended : c.scenario_cleared;
+        if (!content.roles[id]) problems.push(`${at}: 알 수 없는 시나리오 ${id}`);
+      } else if ("enter" in c && !content.locations[c.enter]) problems.push(`${at}: 알 수 없는 구역 ${c.enter}`);
+      else if ("fight" in c) factionRef(at, c.fight);
+      else if ("join" in c) factionRef(at, c.join);
+      else if ("reunite" in c && !role.family) problems.push(`${at}: reunite는 family가 있는 시나리오에서만 쓴다`);
+      if (where === "unlock" && "reunite" in c) problems.push(`${at}: reunite는 클리어 목표에서만 쓴다`);
+    }
+    if (sc?.unlock && sc.order === undefined) problems.push(`roles.${role.id}.scenario: 목록에 없는(order 없는) 시나리오에 해금 조건을 둘 수 없다`);
+  }
   for (const faction of Object.values(content.factions)) {
     for (const other of Object.keys(faction.disposition)) factionRef(`factions.${faction.id}.disposition`, other);
     for (const plan of faction.plans) {

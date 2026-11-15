@@ -103,7 +103,9 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
   const kit = content.scenario.custom_start!.kits.find((k) => k.id === input.kit)!;
   const faction = input.faction;
   // 같은 세력의 콘텐츠 역할 중 계급이 같은 것, 없으면 아무거나 (임무·배급·태그를 빌린다)
-  const roles = faction ? Object.values(content.roles).filter((r) => r.faction === faction) : [];
+  // 개인 사연이 있는 시나리오(가까운 동료·지난 일·찾는 가족)는 그 사람의 것이라 뒤로 미룬다 (그 무리의 보통 자리를 먼저 빌린다)
+  const personal = (r: RoleContent) => !!r.start_bonds || (r.history?.length ?? 0) > 0 || !!r.family;
+  const roles = faction ? Object.values(content.roles).filter((r) => r.faction === faction).sort((a, b) => Number(personal(a)) - Number(personal(b))) : [];
   const same = roles.find((r) => r.rank === input.rank) ?? roles[0];
   const level = rankLevel(content, input.rank);
   const members = faction ? Object.values(content.npcs).filter((n) => n.faction === faction) : [];

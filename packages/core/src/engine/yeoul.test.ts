@@ -28,17 +28,18 @@ function atRiverside(savesDir: string, rng: () => Rng = () => createSeededRng(3)
   return { m, w };
 }
 
-/** 무리 고르기에서 여울섬을 고르면 나오는 역할 단계 (해금 전에는 여울섬을 고를 수 없다) */
-function scenarioStep(unlocked: Record<string, string[]>): string {
+/** 시나리오 고르기에서 여울섬의 새 식구를 고를 수 있는지 (해금 전에는 잠겨 있다, 기획서 12.4.1) */
+function canPickIslander(unlocked: Record<string, string[]>): boolean {
   const d = answerNewGame(packs, newGameDraft(unlocked), "post_apoc", createSeededRng(1));
   if (!d.ok) throw new Error(d.error);
-  const y = answerNewGame(packs, d.draft, "faction_y", createSeededRng(1));
-  return y.ok ? describeNewGameStep(packs, y.draft) : describeNewGameStep(packs, d.draft);
+  return answerNewGame(packs, d.draft, "role_y_islander", createSeededRng(1)).ok;
 }
 
 describe("여울섬은 시작할 수 없다", () => {
-  it("처음 무리 고르기와 만든 역할에 없다", () => {
-    expect(scenarioStep({})).not.toContain("여울섬의 새 식구");
+  it("처음에는 시나리오 목록에 잠겨 있고, 만든 역할로도 고를 수 없다", () => {
+    expect(canPickIslander({})).toBe(false);
+    const d = answerNewGame(packs, newGameDraft({}), "post_apoc", createSeededRng(1));
+    expect(d.ok && describeNewGameStep(packs, d.draft)).toContain("🔒 여울섬의 새 식구 (잠김)");
     const custom = { faction: "faction_y", rank: "grunt", title: "섬사람", location: "yeoul_isle", kit: "fighter", skills: {}, age: 30, opening: "o", background: [] };
     expect(checkCustomStart(content, custom).join()).toContain("시작할 수 없다");
   });
@@ -77,10 +78,12 @@ describe("건너가기", () => {
     const r = w.executeTool("take_action", act("밤바다로 배를 띄운다", { move_to: "yeoul_isle", check: crossCheck }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().playerZone).toBe("yeoul_isle");
-    expect(r.ok && r.resultText).toContain("새 시나리오가 열렸다");
-    expect(w.state().unlocked).toContain("yeoul");
+    expect(r.ok && r.resultText).toContain("시나리오 「여울섬의 새 식구」를 플레이할 수 있습니다");
+    expect(w.state().unlocked).toContain("role_y_islander");
     expect(existsSync(join(dir, "unlocks.json"))).toBe(true);
-    expect(JSON.parse(readFileSync(join(dir, "unlocks.json"), "utf8"))).toEqual({ post_apoc: ["yeoul"] });
+    expect(JSON.parse(readFileSync(join(dir, "unlocks.json"), "utf8"))).toEqual({ post_apoc: ["role_y_islander"] });
+    // 상태 화면의 토스트: ×를 누를 때까지 남는다
+    expect(JSON.parse(readFileSync(join(dir, "unlock-notices.json"), "utf8"))).toEqual({ post_apoc: ["role_y_islander"] });
     expect(w.state().activeStorylet?.id).toBe("wy_landing");
     // 쓸모를 보이면 받아들여진다
     const pitch = w.executeTool("take_action", act("총 솜씨를 보인다", { check: { move: "persuade", stat: "charm", difficulty: "normal", harm_on_failure: "none", harm_cause: "", infected_source: false, target_harm: "none" } }));
@@ -114,10 +117,13 @@ describe("해금은 모든 판에 남는다", () => {
     w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle" }));
     w.close();
     const m = new WorldManager({ savesDir: dir, content, rngFactory: () => createSeededRng(4) });
-    expect(m.unlocks()).toEqual({ post_apoc: ["yeoul"] });
-    expect(scenarioStep(m.unlocks())).toContain("여울섬의 새 식구");
+    expect(m.unlocks()).toEqual({ post_apoc: ["role_y_islander"] });
+    expect(canPickIslander(m.unlocks())).toBe(true);
+    expect(m.unlockNotices()).toEqual([{ pack: "post_apoc", roleId: "role_y_islander", title: "여울섬의 새 식구", particle: "를" }]);
+    expect(m.dismissUnlockNotice("post_apoc", "role_y_islander")).toBe(true);
+    expect(m.unlockNotices()).toEqual([]);
     const fresh = m.create("mcp", "role_b_guard", choice);
-    expect(fresh.state().unlocked).toEqual(["yeoul"]);
+    expect(fresh.state().unlocked).toEqual(["role_y_islander"]);
     fresh.close();
     const islander = m.create("mcp", "role_y_islander", choice);
     expect(islander.state().playerZone).toBe("yeoul_isle");
@@ -125,16 +131,18 @@ describe("해금은 모든 판에 남는다", () => {
     islander.close();
   });
 
-  it("같은 판에서 죽은 뒤 다음 캐릭터로 섬사람을 고를 수 있다", () => {
+  it("섬사람을 만났으면 죽은 뒤 여울섬 무리의 새 캐릭터로 이어 갈 수 있다 (그 자리는 섬사람 역할)", () => {
     const dir = mkdtempSync(join(tmpdir(), "trpg-y-"));
     const { w } = atRiverside(dir);
     w.ctx().store.append({ type: "flag_set", characterId: "player", flag: "y_passage" });
     w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle" }));
+    w.ctx().store.append({ type: "name_learned", characterId: "player", targetId: "y_gangho" });
     w.runCheat("~kill me");
-    expect(w.successionOptions().map((o) => o.id)).toContain("new:role_y_islander");
-    const r = w.chooseNextCharacter("new:role_y_islander", "섬사람");
+    expect(w.successionOptions().map((o) => o.id)).toContain("new:faction_y:grunt");
+    const r = w.chooseNextCharacter("new:faction_y:grunt", "섬사람");
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().roleId).toBe("role_y_islander");
+    expect(w.state().scenarioRole).toBe(""); // 두 번째 주인공부터는 시나리오 없이 세계만 이어 간다
     expect(w.state().characters[w.state().playerId]!.factionId).toBe("faction_y");
     w.executeTool("take_action", act("부두를 둘러본다"));
     expect(w.state().playerZone).toBe("yeoul_isle");

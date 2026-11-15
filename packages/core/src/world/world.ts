@@ -14,13 +14,16 @@ import type { PlayMode, TranscriptEntry, TurnSummary } from "../engine/log.ts";
 import { buildGmGuide } from "../engine/prompt.ts";
 import { executeTool, gmToolSpecs } from "../engine/tools.ts";
 import type { ToolContext, ToolOutcome, ToolSpec } from "../engine/toolkit.ts";
+import { checkScenarioProgress, describeProgressNotices, type ProgressNotice } from "../engine/scenarioProgress.ts";
+import type { GameEvent } from "../game/state.ts";
+import type { GameStore } from "../game/store.ts";
 import { buildPlayerView, type PlayerView } from "../views/player.ts";
 import { commandPrefixFor, runCommand, stripCommandPrefix } from "../commands/commands.ts";
 import type { LoreLibrary, LoreSearch } from "../rag/library.ts";
 import { memoryItemsOf, type MemoryStore } from "../rag/memory.ts";
 import type { SearchOptions } from "../rag/index.ts";
 import { COMMANDS } from "../commands/commands.ts";
-import { formatChronicle, successionOptions, switchCharacter, type HeirStory, type SuccessionOption } from "../engine/succession.ts";
+import { formatChronicle, storyEnded, successionOptions, switchCharacter, type SuccessionOption } from "../engine/succession.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
 import type { Viewer } from "../rag/index.ts";
 import type { RetrievalRecord } from "../engine/log.ts";
@@ -74,6 +77,27 @@ export class GameWorld {
   #closed = false;
   #onUnlock: ((ids: string[]) => void) | null = null;
   #reportedUnlocks = new Set<string>();
+  /** tool 하나 동안 쌓인 이벤트 (시나리오 해금·클리어 판정용, 기획서 12.4.1). 기록 중이 아니면 null */
+  #recording: GameEvent[] | null = null;
+  #store: GameStore | null = null;
+
+  /** 이벤트를 쌓으며 실행하고, 끝나면 시나리오 해금·클리어를 판정한다 */
+  #tracked<T>(run: () => T): { value: T; notices: ProgressNotice[] } {
+    const roleAt = this.state().scenarioRole;
+    const outer = this.#recording;
+    this.#recording = [];
+    let value: T;
+    try {
+      value = run();
+    } catch (err) {
+      this.#recording = outer;
+      throw err;
+    }
+    const events = this.#recording;
+    this.#recording = outer;
+    const notices = events.length && this.state().worldId ? checkScenarioProgress(this.ctx(), events, roleAt) : [];
+    return { value, notices };
+  }
 
   /** 이 세계에서 새로 얻은 해금을 바깥(모든 판의 기록)에 알린다 */
   #syncUnlocks(): void {
@@ -141,7 +165,17 @@ export class GameWorld {
 
   /** core 규칙이 쓰는 실행 컨텍스트 */
   ctx(): ToolContext {
-    return { store: this.#repo, rng: this.#rng, content: this.content };
+    // 쓰는 이벤트를 판정용으로도 쌓는 저장소 (읽기는 그대로)
+    this.#store ??= {
+      getState: () => this.#repo.getState(),
+      events: () => this.#repo.events(),
+      append: (event) => {
+        const next = this.#repo.append(event);
+        this.#recording?.push(event);
+        return next;
+      },
+    };
+    return { store: this.#store, rng: this.#rng, content: this.content };
   }
 
   isPlayerDead(): boolean {
@@ -151,7 +185,7 @@ export class GameWorld {
 
   /** GM 지침 (시나리오 톤 + 시작 장면 + 공통 규칙, MCP 모드면 진행 규칙 추가) */
   guide(): string {
-    return buildGmGuide(this.content, this.state().roleId, this.mode);
+    return buildGmGuide(this.content, this.state().roleId, this.mode, this.state());
   }
 
   /** GM에게 여는 tool 명세 (두 모드 공통) */
@@ -176,7 +210,11 @@ export class GameWorld {
         this.appendTranscript([{ kind: "player", text: intent.trim() }]);
       }
     }
-    const outcome = executeTool(name, input, this.ctx());
+    const tracked = this.#tracked(() => executeTool(name, input, this.ctx()));
+    let outcome = tracked.value;
+    // 시나리오 해금·클리어는 tool 결과 뒤에 GM에게 알린다
+    const progress = describeProgressNotices(tracked.notices);
+    if (outcome.ok && progress.length) outcome = { ...outcome, resultText: [outcome.resultText, ...progress].filter(Boolean).join("\n") };
     if (outcome.ok && !outcome.silent) {
       this.appendTranscript([outcome.display, ...(outcome.extra ?? [])].map((display) => ({ kind: "tool", display })));
     } else if (outcome.ok && outcome.extra?.length) {
@@ -190,7 +228,10 @@ export class GameWorld {
 
   /** 치트 (개발 모드). 켜는 것은 어댑터가 정한다. 바뀐 상태는 저장하고 기억 색인도 맞춘다 */
   runCheat(input: string): { ok: true; text: string } | { ok: false; error: string } {
-    const result = runCheat(input, this.ctx());
+    const tracked = this.#tracked(() => runCheat(input, this.ctx()));
+    let result = tracked.value;
+    const progress = describeProgressNotices(tracked.notices);
+    if (result.ok && progress.length) result = { ...result, text: [result.text, ...progress].join("\n") };
     if (result.ok) {
       this.#syncUnlocks();
       this.#repo.saveSnapshot();
@@ -235,6 +276,11 @@ export class GameWorld {
   }
 
   /** 다음 캐릭터 후보 (사망한 뒤에만) */
+  /** 이어 갈 수 없는 시나리오(튜토리얼)에서 주인공이 죽어 이 판이 끝났는지 */
+  storyEnded(): boolean {
+    return storyEnded(this.state(), this.content);
+  }
+
   successionOptions(): SuccessionOption[] {
     return successionOptions(this.state(), this.content);
   }
@@ -246,10 +292,9 @@ export class GameWorld {
     choice: string,
     name: string | null = null,
     character?: CharacterChoice,
-    story?: HeirStory | null,
   ): { ok: true; text: string } | { ok: false; error: string } {
     const ctx = this.ctx();
-    const result = switchCharacter(ctx, choice, name, character, story);
+    const result = switchCharacter(ctx, choice, name, character);
     if (!result.ok) return result;
     const heir = this.state().characters[this.state().playerId]!;
     this.appendTranscript([{ kind: "note", text: `— ${heir.name}의 이야기가 시작된다 —`, characterSwitch: true }]);

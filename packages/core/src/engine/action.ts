@@ -427,13 +427,6 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`오는 길에 일이 생겼다: "${d.title}". 도착하기 전, 길 위의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
     }
-    // 처음 들어온 곳이면 해금 (모든 판에 남는다)
-    const unlock = content.locations[input.move_to]?.unlocks;
-    if (unlock && !store.getState().unlocked.includes(unlock)) {
-      store.append({ type: "unlock_earned", id: unlock, inherited: false });
-      const roles = Object.values(content.roles).filter((r) => r.unlock === unlock).map((r) => r.scenario?.title ?? r.label);
-      if (roles.length) lines.push(`(게임 밖 알림: 새 시나리오가 열렸다 — ${roles.join(", ")}. 이제 어느 판에서든 새 게임과 다음 캐릭터로 고를 수 있다. 장면 서술과 섞지 말고 짧게 알린다)`);
-    }
   }
 
   // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문, 전쟁, 예정된 교전)

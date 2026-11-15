@@ -227,7 +227,6 @@
     from: [riverside, water_plant]
     pass_flags: [y_passage, y_leave_pass]
     attempt: { moves: [survival, stealth], label: "배를 구해 밤바다를 건너 섬 경비를 피하는 판정" }
-  unlocks: yeoul
   # 외딴곳: 도시 공통 이야기·떠돌이는 오지 않는다
   isolated: true
   yields: { food: 150, water: 150, fuel: 22, ammo: 12, medicine: 2 }

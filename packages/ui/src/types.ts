@@ -62,46 +62,14 @@ export type ItemView = { id: string; name: string; quantity: number; icon?: stri
 
 export type TraitKind = "positive" | "negative" | "personality";
 
-/** 역할 고르기 (core roleChoices, 12-77) */
-export type RoleChoicesView = {
-  faction: string;
-  factionName: string;
-  /** 이 무리의 준비된 시나리오 (12-80). gains: 시작할 때 받는 것 */
-  presets: { roleId: string; rank: string; rankLabel: string; occupation: string | null; title: string; pitch: string; gains: string }[];
-};
-
 /** 상태 화면의 새 게임 고르기 (core newGameView, 12-67) */
 export type NewGameView = {
   mode: "new_world" | "heir";
   step: string;
-  worlds?: { id: string; title: string; tagline: string; description: string; intro?: string }[];
-  premise?: string;
-  world?: { title: string; intro: string };
-  factions?: { list: { id: string; name: string; about: string }[]; loner: string | null };
-  story?: {
-    title: string;
-    motives: { id: string; label: string; summary: string; prompt: string; example: string | null }[];
-    motive: string | null;
-    maxLength: number;
-    text: string | null;
-    help: { factions: { name: string; about: string }[]; people: { name: string; who: string }[] };
-    result: { opening: string | null; history: string[]; background: string[] } | null;
-    /** 준비된 시나리오·새 캐릭터면 그 시나리오의 지금 상황 (12-86) */
-    situation?: string | null;
-  };
-  companions?: { id: "pet" | "group" | "alone"; label: string; summary: string }[];
-  companion?: string | null;
-  group?: {
-    me: { age: number; gender: string; problems: string[] };
-    members: { relation: string; label: string; name: string; age: number; gender: string; problems: string[] }[];
-    problems: string[];
-    relations: { id: string; label: string; age: [number, number] }[];
-    genders: { id: string; label: string }[];
-    max: number;
-    meAge: { min: number; max: number };
-    nameMax: number;
-  };
-  role?: RoleChoicesView;
+  worlds?: { id: string; title: string; tagline: string; description: string }[];
+  world?: { title: string };
+  /** 시나리오 고르기 (core scenarioChoices). locked: 잠겼으면 해금 조건 */
+  scenarios?: { roleId: string; title: string; pitch: string; who: string; locked: string | null; goal: string | null }[];
   content?: { adultAge: number };
   character?: {
     index: { at: number; total: number };
@@ -136,7 +104,7 @@ export type NewGameView = {
   };
 };
 
-export type CreationStatus = { view: NewGameView; gmWorking: boolean };
+export type CreationStatus = { view: NewGameView };
 
 /** 한 인물에 대해 플레이어가 아는 것 (?인물 이름과 같다) */
 export type PersonProfile = {

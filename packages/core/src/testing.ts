@@ -294,6 +294,8 @@ export const TEST_CONTENT: Content = {
       start_inventory: ["kitchen_knife", "water_bottle"],
       access: [],
       storylet_tags: [],
+      history: [],
+      background: [],
       beliefs_preset: "test_preset",
       known_npcs: ["npc_leader"],
       commander: "npc_leader",

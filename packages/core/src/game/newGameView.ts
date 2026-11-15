@@ -1,4 +1,3 @@
-import { rankName } from "./ranks.ts";
 import type { Content } from "../content/schemas.ts";
 import { worldInfo } from "../content/packs.ts";
 import { abilitySpend, creationRules, MAX_NAME_WIDTH, pastOf } from "./creation.ts";
@@ -16,11 +15,8 @@ import {
   type CreationStepId,
   type StepOption,
 } from "./creationFlow.ts";
-import { describeHistoryPart } from "./background.ts";
-import { draftContent, GAME_PREMISE, introShownBefore, newGameStep, type NewGameDraft } from "./newGame.ts";
-import { MAX_STORY_TEXT, motivesOf } from "./storyStart.ts";
-import { checkGroup, groupRules, memberLabel } from "./startGroup.ts";
-import { factionChoices, lonerAllowed, LONER, roleChoices, type FactionChoice, type RolePreset } from "./startChoice.ts";
+import { draftContent, newGameStep, type NewGameDraft } from "./newGame.ts";
+import { scenarioChoices, type ScenarioChoice } from "./startChoice.ts";
 
 /**
  * 상태 화면의 새 게임·새 캐릭터 만들기 (12-67). GM 안내(describeNewGameStep)와 같은 초안을 화면이 그릴 수 있게 나눈 모습.
@@ -28,49 +24,13 @@ import { factionChoices, lonerAllowed, LONER, roleChoices, type FactionChoice, t
  */
 export type NewGameView = {
   mode: NewGameDraft["mode"];
-  step: "world" | "faction" | "companion" | "group" | "role" | "motive" | "story" | "story_setup" | "story_confirm" | "content" | "dialogue" | CreationStepId;
-  /** 월드 고르기 */
-  /** intro: 월드 이야기 (고르기 전에 펼쳐 읽는다) */
-  worlds?: { id: string; title: string; tagline: string; description: string; intro: string }[];
-  /** 어느 월드든 같은 게임 규칙 (core가 말한다) */
-  premise?: string;
+  step: "world" | "scenario" | "content" | "dialogue" | CreationStepId;
+  /** 월드 고르기: 이름, 한 줄 소개, 짧은 설명 */
+  worlds?: { id: string; title: string; tagline: string; description: string }[];
   /** 고른 월드 */
-  world?: { title: string; intro: string };
-  /** 무리 고르기 (12-77). loner: 떠돌이를 고를 수 있으면 그 답 */
-  factions?: { list: FactionChoice[]; loner: string | null };
-  /** 동기와 이야기 (12-77 2단계). motives: 고를 동기, motive: 고른 동기, text: 쓴 글, result: 옮긴 것(확인 단계) */
-  story?: {
-    title: string;
-    motives: { id: string; label: string; summary: string; prompt: string; example: string | null }[];
-    /** 고른 동기 id */
-    motive: string | null;
-    maxLength: number;
-    /** 쓴 글 (다시 쓰기면 앞의 글) */
-    text: string | null;
-    /** 쓰기 도움: 이 도시의 무리와 이 사람이 알 만한 사람 */
-    help: StoryHelp;
-    /** 옮긴 것. opening은 떠돌이만 (준비된 시나리오는 시나리오의 첫 장면 그대로) */
-    result: { opening: string | null; history: string[]; background: string[] } | null;
-    /** 준비된 시나리오·새 캐릭터면 그 시나리오의 지금 상황 (이야기가 어긋나지 않게, 12-86). 떠돌이면 null */
-    situation: string | null;
-  };
-  /** 떠돌이 동행 */
-  companions?: { id: "pet" | "group" | "alone"; label: string; summary: string }[];
-  /** 지금 고른 동행 (돌아왔을 때) */
-  companion?: "pet" | "group" | "alone" | null;
-  /** 떠돌이의 소규모 무리 고치기 (12-77 3단계). problems: 모두에 걸친 것, 사람마다는 members[].problems */
-  group?: {
-    me: { age: number; gender: string; problems: string[] };
-    members: { relation: string; label: string; name: string; age: number; gender: string; problems: string[] }[];
-    problems: string[];
-    relations: { id: string; label: string; age: [number, number] }[];
-    genders: { id: string; label: string }[];
-    max: number;
-    meAge: { min: number; max: number };
-    nameMax: number;
-  };
-  /** 계급 고르기: 고른 무리의 계급과 그 자리의 시나리오 (12-84) */
-  role?: { presets: RolePreset[]; faction: string; factionName: string };
+  world?: { title: string };
+  /** 시나리오 고르기 (잠긴 것도 해금 조건과 함께) */
+  scenarios?: ScenarioChoice[];
   content?: { adultAge: number };
   character?: CharacterStepView;
 };
@@ -117,121 +77,14 @@ export type CharacterStepView = {
   unusedPoints: number;
 };
 
-export type StoryHelp = {
-  factions: { name: string; about: string }[];
-  /** 이름이 알려진 사람: 자기 무리 사람들(무리에 속하면)과 각 무리의 우두머리 */
-  people: { name: string; who: string }[];
-};
-
-/**
- * 이야기 쓰기 도움 (12-77). 시작하는 사람이 알 만한 것만: 무리 소개(월드 이야기와 같은 말),
- * 자기 무리 사람들, 각 무리의 우두머리. 비밀·숨은 관계는 넣지 않는다 (원칙 4)
- */
-function storyHelp(content: Content, faction: string | null): StoryHelp {
-  const top = content.scenario.rank_ladder.reduce((a, b) => (b.level > a.level ? b : a)).id;
-  const people = Object.values(content.npcs)
-    // 붙잡혀 있는 사람은 빼 둔다 (어디 있는지는 시작하는 사람이 모른다)
-    .filter((n) => n.faction && !n.start_captive && content.factions[n.faction]?.startable !== false && (n.faction === faction || n.rank === top))
-    .sort((a, b) => Number(b.faction === faction) - Number(a.faction === faction) || (a.faction ?? "").localeCompare(b.faction ?? ""))
-    .map((n) => ({ name: n.name, who: `${content.factions[n.faction!]?.name ?? ""} ${rankName(content, n.faction, n.rank)}${n.faction === faction ? ` · ${n.reputation}` : ""}` }));
-  return { factions: Object.values(content.factions).filter((f) => f.startable !== false).map((f) => ({ name: f.name, about: f.public })), people };
-}
-
 export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameDraft): NewGameView {
   const step = newGameStep(draft);
-  if (step === "world") {
-    return {
-      mode: draft.mode,
-      step,
-      worlds: [...packs.values()].map((c) => {
-        const w = worldInfo(c);
-        return { ...w, intro: c.scenario.introText ?? `${w.tagline}\n${w.description}` };
-      }),
-      premise: GAME_PREMISE,
-    };
-  }
+  if (step === "world") return { mode: draft.mode, step, worlds: [...packs.values()].map(worldInfo) };
   const pack = packs.get(draft.packId!)!;
-  const info = worldInfo(pack);
-  const world = { title: info.title, intro: pack.scenario.introText ?? `${info.tagline}\n${info.description}` };
-  const unlocked = draft.unlocked?.[pack.scenario.id] ?? [];
-  if (step === "faction") {
-    return {
-      mode: draft.mode,
-      step,
-      world,
-      factions: { list: factionChoices(pack, unlocked), loner: lonerAllowed(pack) ? LONER : null },
-    };
-  }
-  if (step === "companion") {
-    const pet = pack.scenario.custom_start?.pet;
-    return {
-      mode: draft.mode,
-      step,
-      world,
-      companion: draft.companion ?? null,
-      companions: [
-        ...(pet ? [{ id: "pet" as const, label: "반려견과 함께", summary: `${pack.extras[pet]?.label ?? "개"} 한 마리가 곁을 지킨다.` }] : []),
-        ...(groupRules(pack) ? [{ id: "group" as const, label: "소규모 무리", summary: "가족이나 길동무 몇 사람과 함께 다닌다." }] : []),
-        { id: "alone" as const, label: "혼자", summary: "아무도 없이, 혼자 버텨 왔다." },
-      ],
-    };
-  }
-  if (step === "group") {
-    const rules = groupRules(pack)!;
-    const g = draft.group!;
-    const problems = checkGroup(pack, g);
-    const at = (i: number) => problems.filter((p) => p.at === i).map((p) => p.problem);
-    // 주인공 줄의 문제와 모두에 걸친 문제를 나눈다 (주인공 나이·성별에 관한 것은 주인공 줄에)
-    const meProblems = at(-1).filter((p) => p.startsWith("주인공"));
-    return {
-      mode: draft.mode,
-      step,
-      world,
-      group: {
-        me: { ...g.me, problems: meProblems },
-        members: g.members.map((m, i) => ({ ...m, label: memberLabel(pack, g, m), problems: at(i) })),
-        problems: at(-1).filter((p) => !p.startsWith("주인공")),
-        relations: rules.relations.map((r) => ({ id: r.id, label: r.label, age: r.age })),
-        genders: pack.scenario.creation?.genders ?? [],
-        max: rules.max,
-        meAge: pack.scenario.custom_start?.age ?? { min: 16, max: 65 },
-        nameMax: MAX_NAME_WIDTH,
-      },
-    };
-  }
-  if (step === "role") {
-    const faction = draft.faction!;
-    return {
-      mode: draft.mode,
-      step,
-      world,
-      role: { presets: roleChoices(pack, faction, unlocked), faction, factionName: pack.factions[faction]?.name ?? faction },
-    };
-  }
-  if (step === "motive" || step === "story" || step === "story_setup" || step === "story_confirm") {
-    const motives = motivesOf(pack);
-    const st = draft.story;
-    const m = motives.find((x) => x.id === st?.motive) ?? null;
-    const mapped = step === "story_confirm" ? st!.mapped! : null;
-    const role = draftContent(packs, draft).roles[draft.roleId!]!;
-    return {
-      mode: draft.mode,
-      step,
-      world,
-      story: {
-        title: draft.built?.title ?? role.scenario?.title ?? role.label,
-        motives: motives.map((x) => ({ id: x.id, label: x.label, summary: x.summary, prompt: x.prompt, example: x.example ?? null })),
-        motive: m?.id ?? null,
-        maxLength: MAX_STORY_TEXT,
-        text: st?.text ?? st?.previous ?? null,
-        help: storyHelp(pack, draft.built ? draft.built.faction : role.faction || null),
-        situation: draft.built ? null : (role.scenario?.intro ?? role.opening_scene),
-        result: mapped ? { opening: mapped.opening ?? null, history: mapped.history.map((p) => describeHistoryPart(pack, p)), background: mapped.background } : null,
-      },
-    };
-  }
+  const world = { title: worldInfo(pack).title };
+  if (step === "scenario") return { mode: draft.mode, step, world, scenarios: scenarioChoices(pack, draft.unlocked?.[pack.scenario.id] ?? []) };
   if (step === "content") return { mode: draft.mode, step, world, content: { adultAge: pack.scenario.content_rating?.adult_age ?? 18 } };
-  if (step === "dialogue") return { mode: draft.mode, step, world };
+  if (step === "dialogue" && draft.choice) return { mode: draft.mode, step, world };
 
   const content = draftContent(packs, draft);
   const s = content.scenario;
@@ -249,8 +102,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
     character: {
       index: stepIndex(s, draft.character),
       roleLabel: rules?.roleLabel ?? role?.label ?? "",
-      // 동기 단계에서 이미 보여 줬으면 다시 보여 주지 않는다
-      situation: draft.mode === "new_world" && !introShownBefore(draft) ? (role?.scenario?.intro ?? role?.opening_scene ?? null) : null,
+      situation: draft.mode === "new_world" ? (role?.scenario?.intro ?? role?.opening_scene ?? null) : null,
       startSkills: rules?.startSkills ?? [],
       chosen: {
         past: pastOf(s, d.past)?.label ?? null,

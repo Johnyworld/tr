@@ -19,10 +19,10 @@ const open = (options?: { mature: boolean }) =>
 const story = (cast: Record<string, unknown>) => parse({ id: "m", title: "m", tags: ["world", "mature"], cast, setup: "x", choices: [{ id: "a", label: "a", effects: [] }] });
 
 describe("수위", () => {
-  it("새 게임에서 시나리오 다음에 묻고, 기본은 끔이다", () => {
+  it("새 게임에서 캐릭터를 다 만든 다음에 묻고, 기본은 끔이다", () => {
     const packs = new Map([[content.scenario.id, content]]);
     let d = newGameDraft();
-    for (const a of ["post_apoc", "role_a_grunt", "skip"]) {
+    for (const a of ["post_apoc", "role_t_visitor", "police", "서진", "female", "30", "random", "past", "none", "start"]) {
       const r = answerNewGame(packs, d, a, createSeededRng(1));
       if (!r.ok) throw new Error(r.error);
       d = r.draft;
@@ -34,10 +34,10 @@ describe("수위", () => {
     expect(r.ok && newGameStep(r.draft)).toBe("dialogue");
     if (!r.ok) return;
     expect(answerNewGame(packs, r.draft, "모르는 방식", createSeededRng(1)).ok).toBe(false);
+    // 서술 방식이 마지막: 고르면 끝난다
     const s2 = answerNewGame(packs, r.draft, "대본식", createSeededRng(1));
-    expect(s2.ok && newGameStep(s2.draft)).toBe("character");
-    expect(s2.ok && s2.draft.options).toEqual({ mature: true, dialogue: "script" });
-    expect(s2.ok && newGameStep(backNewGame(s2.draft))).toBe("dialogue");
+    expect(s2.ok && s2.done && s2.options).toEqual({ mature: true, dialogue: "script" });
+    expect(newGameStep(backNewGame(r.draft))).toBe("content");
   });
 
   it("꺼져 있으면 성인 주제 이야기가 열리지 않고, 켜져 있어도 미성년자는 배역이 되지 않는다", () => {

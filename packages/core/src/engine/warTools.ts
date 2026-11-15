@@ -1,3 +1,4 @@
+import { roleOf } from "../game/state.ts";
 import { runRomance } from "./romance.ts";
 import { runCaptivity, warCaptures } from "./captivity.ts";
 import type { Content } from "../content/schemas.ts";
@@ -90,7 +91,7 @@ function ensurePlayerZone(ctx: ToolContext) {
   if (state.playerZone || Object.keys(ctx.content.locations).length === 0) return;
   const player = state.characters[state.playerId];
   if (!player) return;
-  const start = ctx.content.roles[state.roleId]?.start_location;
+  const start = roleOf(ctx.content, state)?.start_location;
   const zone =
     (start && ctx.content.locations[start] ? start : null) ??
     Object.values(ctx.content.locations).find((l) => l.kind === "base" && l.owner === player.factionId)?.id ??

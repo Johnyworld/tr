@@ -960,7 +960,7 @@ war:
       - { min_days: 0, label: 배급 끊김, hunger: 1 }
   # 사기 -3 ~ +3
   morale_labels: [무너지기 직전, 흉흉함, 가라앉음, 그럭저럭, 괜찮음, 들떠 있음, 기세등등]
-  # 무리 형편을 대하는 말투 (12-99): 장면의 같은 무리 사람이 어려움을 어떻게 입에 올리는지. 트레잇이 가장 많이 겹치는 것
+  # 무리 형편을 대하는 말투 (12-105): 장면의 같은 무리 사람이 어려움을 어떻게 입에 올리는지. 트레잇이 가장 많이 겹치는 것
   talk:
     attitudes:
       - { id: grumble, label: 투덜댄다, hint: "몫이 줄었다, 윗사람들은 뭐 하냐는 불평. 남 탓이 섞인다", traits: [cynical, greedy, lazy, hot_tempered, weary, blunt] }

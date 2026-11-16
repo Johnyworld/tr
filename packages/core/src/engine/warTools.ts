@@ -58,7 +58,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       scheduled,
     });
     displays.push(...deliverNews(ctx, result.clashes));
-    // 다른 무리의 형편이 소문으로 (12-99)
+    // 다른 무리의 형편이 소문으로 (12-105)
     displays.push(...spreadTroubleRumors(ctx));
     // 무리 사이 싸움의 포로, 포로를 먹이고 부리기 (12-55)
     displays.push(...warCaptures(ctx, result.clashes));

@@ -65,7 +65,7 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const storylets = runStorylets(ctx);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
   const healed = runNaturalRecovery(ctx);
-  // 다른 무리의 땅에 오면 그 무리에 대해 들은 소문을 직접 확인한다 (12-99)
+  // 다른 무리의 땅에 오면 그 무리에 대해 들은 소문을 직접 확인한다 (12-105)
   const checked = checkRumorsOnSite(ctx);
   // 무서운 것이 장면에 없으면 공포가 가라앉는다 (12-95)
   const calmed = runFearDecay(ctx);

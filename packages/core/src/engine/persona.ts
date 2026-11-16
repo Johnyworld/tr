@@ -76,8 +76,8 @@ export function describePersona(content: Content, c: Pick<Character, "id" | "tra
     .join(", ");
 }
 
-/** 캐릭터 시트의 성격: 0이 아닌 축마다 이름(다혈질 2)과 연기 지침 (축 순서대로) */
-export function personaChips(content: Content, c: Pick<Character, "id" | "traits" | "persona">): { id: string; label: string; acting: string }[] {
+/** 캐릭터 시트의 성격: 0이 아닌 축마다 쪽 이름(다혈질), 단계(1~2), 연기 지침 (축 순서대로) */
+export function personaChips(content: Content, c: Pick<Character, "id" | "traits" | "persona">): { id: string; label: string; level: number; acting: string }[] {
   const rules = content.scenario.persona;
   if (!rules) return [];
   const p = personaOf(content, c);
@@ -85,7 +85,7 @@ export function personaChips(content: Content, c: Pick<Character, "id" | "traits
     .filter((a) => (p[a.id] ?? 0) !== 0)
     .map((a) => {
       const v = p[a.id]!;
-      return { id: a.id, label: sideLabel(a, v), acting: (v > 0 ? a.high_acting : a.low_acting)[Math.abs(v) - 1] ?? "" };
+      return { id: a.id, label: v > 0 ? a.high : a.low, level: Math.abs(v), acting: (v > 0 ? a.high_acting : a.low_acting)[Math.abs(v) - 1] ?? "" };
     });
 }
 

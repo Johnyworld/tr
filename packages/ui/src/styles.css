@@ -410,6 +410,20 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* 캐릭터 시트의 목록 (트레잇·성격·스킬): 두 칸 */
+.stats.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+}
+
+.stats .trait-positive {
+  color: var(--success);
+}
+
+.stats .trait-negative {
+  color: var(--miss);
+}
+
 .condition-worse {
   color: var(--partial);
 }
@@ -1136,37 +1150,6 @@ body {
   padding-left: 18px;
 }
 
-.trait-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.persona-chips {
-  align-items: center;
-  margin-top: 6px;
-}
-
-.persona-chips > .muted {
-  margin-right: 2px;
-}
-
-.trait-chip {
-  font-size: 12px;
-  padding: 1px 8px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-
-.trait-chip.positive {
-  border-color: var(--success);
-}
-
-.trait-chip.negative {
-  border-color: var(--miss);
-}
-
 .status-created {
   margin: 48px auto 0;
   max-width: 420px;
@@ -1328,6 +1311,11 @@ body {
   min-width: 0;
 }
 
+/* 이름·소속·몸 상태 줄 사이를 조금 띄운다 */
+.hero-who .sheet-sub {
+  margin-top: 4px;
+}
+
 /* 레벨·경험치는 이름 오른쪽 한 줄에 */
 .hero-name-row {
   display: flex;
@@ -1476,7 +1464,6 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px 24px;
-  margin-bottom: 10px;
 }
 
 .ability {
@@ -2771,7 +2758,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 2px 10px;
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: 12px;
   line-height: 1.2;
 }

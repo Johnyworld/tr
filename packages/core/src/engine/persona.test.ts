@@ -153,8 +153,8 @@ describe("성격 축", () => {
   it("캐릭터 시트에 0이 아닌 축만 축 순서대로 보인다", () => {
     const { me, store } = setup();
     me().persona = { talk: -1, temper: 2 };
-    expect(personaChips(content, me()).map((p) => p.label)).toEqual(["다혈질 2", "과묵함 1"]);
-    expect(buildPlayerView(store.getState(), content).persona[0]).toMatchObject({ label: "다혈질 2", acting: "같은 지시도 거칠게 하고 도발에 쉽게 발끈한다" });
+    expect(personaChips(content, me()).map((p) => `${p.label} ${p.level}`)).toEqual(["다혈질 2", "과묵함 1"]);
+    expect(buildPlayerView(store.getState(), content).persona[0]).toMatchObject({ label: "다혈질", level: 2, acting: "같은 지시도 거칠게 하고 도발에 쉽게 발끈한다" });
     me().persona = {};
     expect(buildPlayerView(store.getState(), content).persona).toEqual([]);
   });

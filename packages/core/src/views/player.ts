@@ -83,8 +83,8 @@ export type PlayerView = {
   statRange: { min: number; max: number };
   /** 트레잇 (자기 것은 모두 보인다) */
   traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; description: string }[];
-  /** 성격 축 (0이 아닌 것만, 축 순서). acting: 그 성격이 드러나는 모습 */
-  persona: { id: string; label: string; acting: string }[];
+  /** 성격 축 (0이 아닌 것만, 축 순서). label: 쪽 이름(다혈질), level: 1~2, acting: 그 성격이 드러나는 모습 */
+  persona: { id: string; label: string; level: number; acting: string }[];
   /** 할 줄 아는 스킬 (아마추어 이상) */
   skills: { id: string; label: string; category: string; value: number }[];
   /** 레벨·경험치 (성장 규칙이 없으면 null). next: 다음 레벨까지 필요한 누적 경험치 */

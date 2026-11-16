@@ -9,6 +9,7 @@ import type { GearView, ItemView, PersonProfile, PlayerView, SymptomView } from 
 
 /** 장비 칸 (core views/player.ts의 SLOT_LABELS 순서) */
 const SLOTS = ["손", "몸", "머리", "팔"];
+const TRAIT_KIND_LABELS: Record<PlayerView["traits"][number]["kind"], string> = { positive: "장점", negative: "약점", personality: "성격" };
 
 /**
  * 캐릭터 시트 (12-64): 위에 고정한 HUD(누구, 경험치, 몸 상태, 전투, 임무)와
@@ -95,30 +96,39 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
                 <AbilityRow key={s.id} label={s.label} value={s.value} range={player.statRange ?? { min: -1, max: 2 }} />
               ))}
             </div>
-            {player.traits.length > 0 && (
-              <div className="trait-chips">
-                {player.traits.map((t) => (
-                  <span key={t.id} className={`trait-chip ${t.kind}`} title={t.description}>
-                    {t.label}
-                  </span>
-                ))}
-              </div>
-            )}
-            {(player.persona?.length ?? 0) > 0 && (
-              <div className="trait-chips persona-chips">
-                <span className="muted small">성격</span>
-                {player.persona!.map((p) => (
-                  <span key={p.id} className="trait-chip personality" title={p.acting}>
-                    {p.label}
-                  </span>
-                ))}
-              </div>
-            )}
           </section>
+
+          {player.traits.length > 0 && (
+            <section className="block traits">
+              <h3>트레잇</h3>
+              <dl className="stats two-col">
+                {player.traits.map((t) => (
+                  <div key={t.id} title={t.description}>
+                    <dt className={`trait-${t.kind}`}>{t.label}</dt>
+                    <dd className="muted small">{TRAIT_KIND_LABELS[t.kind]}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          {(player.persona?.length ?? 0) > 0 && (
+            <section className="block persona">
+              <h3>성격</h3>
+              <dl className="stats two-col">
+                {player.persona!.map((p) => (
+                  <div key={p.id} title={p.acting}>
+                    <dt>{p.label}</dt>
+                    <dd>{p.level}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
 
           <section className="block skills" id="sheet-skills">
             <h3>스킬</h3>
-            <dl className="stats">
+            <dl className="stats two-col">
               {player.skills.map((s) => (
                 <div key={s.id}>
                   <dt>

@@ -8,7 +8,7 @@ import { createSeededRng } from "../rng.ts";
 import { clashForces } from "../sim/war.ts";
 import { WorldManager } from "../world/manager.ts";
 import { describePlayerState } from "./context.ts";
-import { runDailyNerves, shakeNerves } from "./body.ts";
+import { runDailyNerves, shakeNerves, sleepNerves } from "./body.ts";
 import { fireStorylet } from "./storyletTools.ts";
 import { executeTool } from "./tools.ts";
 
@@ -42,6 +42,19 @@ describe("마음", () => {
     expect(me().conditions.nerves).toBe("shaken");
     runDailyNerves({ ...w.ctx(), rng: () => 0.1 });
     expect(me().conditions.nerves).toBe("steady");
+  });
+
+  it("끊기지 않고 푹 자면 마음이 가라앉을 기회가 있다 (혼자면 25%, 짧은 잠은 없다)", () => {
+    const w = open("role_l_wanderer", () => 0.99);
+    const me = () => w.state().characters[w.state().playerId]!;
+    me().stats.nerve = 0;
+    w.state().companions = [];
+    shakeNerves(w.ctx(), 2, "test");
+    expect(me().conditions.nerves).toBe("low");
+    expect(sleepNerves({ ...w.ctx(), rng: () => 0.2 }, 3 * 60)).toBeNull(); // 3시간은 푹 잔 게 아니다
+    expect(sleepNerves({ ...w.ctx(), rng: () => 0.3 }, 7 * 60)).toBeNull(); // 25%를 넘었다
+    expect(sleepNerves({ ...w.ctx(), rng: () => 0.2 }, 7 * 60)?.line).toContain("푹 잤다");
+    expect(me().conditions.nerves).toBe("shaken");
   });
 
   it("허기짐·추움으로는 막히지 않고, 굶주림·오한이면 가라앉지 않는다", () => {

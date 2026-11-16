@@ -418,6 +418,24 @@ function safety(state: GameState, me: Character): { mine: boolean; company: bool
 }
 
 /**
+ * 푹 자고 나면 마음이 가라앉을 기회 (body.nerves.sleep). take_action이 끊기지 않은 잠 뒤에 부른다.
+ * slept: 실제로 잔 분. min_hours보다 짧으면 없다
+ */
+export function sleepNerves(ctx: ToolContext, slept: number): Change | null {
+  const nerves = ctx.content.scenario.body?.nerves;
+  const rule = nerves?.sleep;
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!nerves || !rule || !me || me.dead || slept < rule.min_hours * 60) return null;
+  if (levelIndex(ctx, state, me.id, nerves.track) <= 0) return null;
+  if (severe(ctx, me, ctx.content.scenario.body?.hunger?.track) || severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return null;
+  const { mine, company } = safety(state, me);
+  const chance = (mine || company ? rule.safe : rule.unsafe) + nerves.recover.per_point * (me.stats[nerves.resist.ability] ?? 0);
+  if (ctx.rng() >= chance) return null;
+  return changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 푹 잤다" : company ? "곁에 사람을 두고 푹 잤다" : "모처럼 푹 잤다");
+}
+
+/**
  * 주인공이 아이템 없이 다른 사람을 돌본다 (12-52): 의무병이거나 응급처치를 익힌 사람만. 한 사람에게 하루 한 번, 부상 한 단계
  */
 function firstAid(ctx: ToolContext, targetId: string): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {

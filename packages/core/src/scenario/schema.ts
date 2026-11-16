@@ -795,6 +795,11 @@ export const scenarioFileSchema = z
             witness_death: z.number().int().min(0),
             resist: z.strictObject({ ability: id, per_point: z.number().min(0).max(1) }),
             recover: z.strictObject({ chance: z.number().min(0).max(1), per_point: z.number().min(0).max(1), safe: z.number().min(0).max(1).default(0) }),
+            /**
+             * 푹 자면 가라앉는다: 끊기지 않고 min_hours 이상 자고 나면 한 단계 가라앉을 확률 (안전한 곳 safe, 아니면 unsafe, 능력 1당 recover.per_point 더).
+             * 하루마다 가라앉는 것과 따로 굴린다. 굶주림·오한 이상이면 없다
+             */
+            sleep: z.strictObject({ min_hours: z.number().positive(), safe: z.number().min(0).max(1), unsafe: z.number().min(0).max(1) }).optional(),
           })
           .optional(),
         /**

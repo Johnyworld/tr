@@ -1,7 +1,7 @@
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { calmAfterSleep, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { runRoadEvent } from "./storyletTools.ts";
-import { shakeNerves } from "./body.ts";
+import { shakeNerves, sleepNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
 import { scavenge } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
@@ -485,11 +485,16 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.activity || input.move_to) displays.push(time.display);
   displays.push(...time.extra);
   lines.push(...bodyLines(time.extra));
-  // 자고 나면 공포가 가라앉는다 (12-95)
+  // 자고 나면 공포가 가라앉고 (12-95), 끊기지 않고 푹 자면 마음도 가라앉을 수 있다
   if (activity === "sleep") {
     const calm = calmAfterSleep(ctx);
     lines.push(...calm.lines);
     displays.push(...calm.displays);
+    const rested = time.interrupted ? null : sleepNerves(ctx, store.getState().time - start.time);
+    if (rested?.display) {
+      lines.push(rested.line);
+      displays.push(rested.display);
+    }
   }
   // 건너기 시도가 실패하면 물살에 밀려 되돌아온다 (시간과 위험은 이미 치렀다)
   const sweptBack = crossingAttempt && outcome === "miss";

@@ -1,3 +1,4 @@
+import { effectiveSkill } from "./traits.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { roleOf, type GameState } from "../game/state.ts";
@@ -188,9 +189,9 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
     const move = s.moves.find((m) => m.id === task.move);
     const stat = task.stat ?? move?.stats[0] ?? "";
     const ability = npc.stats[stat] ?? 0;
-    const skill = move ? (npc.skills[move.id] ?? move.default) : 0;
+    const skill = move ? effectiveSkill(content, npc, move.id) : 0;
     const leadSkill = s.command?.lead_skill;
-    const lead = leadSkill && (player.skills[leadSkill] ?? 0) >= 1 ? 1 : 0;
+    const lead = leadSkill && effectiveSkill(content, player, leadSkill) >= 1 ? 1 : 0;
     const roll = roll2d6(rng, Math.min(s.ranges.cap, ability + skill) + zoneRisk(state, content, order.zone) + lead);
     const outcome: CheckOutcome = roll.outcome;
 

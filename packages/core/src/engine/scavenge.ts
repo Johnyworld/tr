@@ -1,3 +1,4 @@
+import { effectiveSkill } from "./traits.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import { dayOf } from "../rules/time.ts";
 import { josa } from "../text.ts";
@@ -24,7 +25,7 @@ export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null): { line
   const rolls = outcome === "success" ? 2 : outcome === "partial" ? 1 : outcome === "miss" ? 0 : 1;
   // 옛 지도·건물 용도를 아는 사람은 어디를 뒤질지 안다 (search_lore, 역사)
   const lore = content.scenario.search_lore;
-  const known = lore ? Math.max(0, state.characters[state.playerId]?.skills[lore.skill] ?? 0) : 0;
+  const known = lore ? Math.max(0, effectiveSkill(content, state.characters[state.playerId]!, lore.skill)) : 0;
   const chance = Math.min(1, loot.chance * 0.5 ** count * (outcome === null ? 0.5 : 1) * (1 + (lore?.per_level ?? 0) * known));
   const total = loot.items.reduce((n, i) => n + i.weight, 0);
   const found = new Map<string, number>();

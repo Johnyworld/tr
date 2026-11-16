@@ -28,6 +28,12 @@ export function traitSkillMod(content: Content, c: Character, move: string): num
   return sum(traitsOf(content, c).map((t) => t.effects.skills?.[move] ?? 0));
 }
 
+/** 실제로 쓰는 스킬 값: 배운 스킬(없으면 기본값) + 트레잇 보정. 성장·배우기는 배운 값(c.skills)만 본다 */
+export function effectiveSkill(content: Content, c: Pick<Character, "id" | "skills" | "traits">, move: string): number {
+  const def = content.scenario.moves.find((m) => m.id === move)?.default ?? 0;
+  return (c.skills[move] ?? def) + traitSkillMod(content, c as Character, move);
+}
+
 export function xpMultiplier(content: Content, c: Character): number {
   return product(traitsOf(content, c).map((t) => t.effects.xp ?? 1));
 }

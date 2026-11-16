@@ -114,10 +114,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
         gender: d.gender !== undefined ? (s.creation?.genders.find((g) => g.id === d.gender)?.label ?? d.gender) : null,
         age: s.creation?.age ? (d.age ?? null) : null,
         abilities: s.stats.filter((x) => d.abilities[x.id] !== undefined).map((x) => ({ label: x.label, value: d.abilities[x.id]! })),
-        skills:
-          d.skillMethod !== undefined && (d.skillMethod !== "manual" || d.skillsSet)
-            ? Object.entries(d.skills).map(([id, v]) => ({ label: s.moves.find((m) => m.id === id)?.label ?? id, value: v }))
-            : null,
+        skills: chosenSkills(s, d),
         traits:
           d.traitMethod !== undefined && (d.traitMethod !== "manual" || d.traitSteps.has("traits_pick"))
             ? d.traits.map((id) => s.traits.find((t) => t.id === id)?.label ?? id)
@@ -158,4 +155,20 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
       unusedPoints: cstep === "confirm" && d.abilityMethod === "manual" && Number.isFinite(spent) && left > 0 ? left : 0,
     },
   };
+}
+
+/**
+ * 맨 위 카드의 스킬: 고른 스킬에 트레잇이 주는 스킬을 더한다 (게임 안의 effectiveSkill과 같은 셈).
+ * 스킬도 트레잇도 아직 안 정했으면 null
+ */
+function chosenSkills(s: Content["scenario"], d: ReturnType<typeof collectDraft>): { label: string; value: number }[] | null {
+  const skillsSet = d.skillMethod !== undefined && (d.skillMethod !== "manual" || d.skillsSet);
+  const bonus: Record<string, number> = {};
+  for (const id of d.traits) for (const [m, v] of Object.entries(s.traits.find((t) => t.id === id)?.effects.skills ?? {})) bonus[m] = (bonus[m] ?? 0) + v;
+  if (!skillsSet && !Object.keys(bonus).length) return null;
+  const base = skillsSet ? d.skills : {};
+  return s.moves
+    .filter((m) => base[m.id] !== undefined || bonus[m.id] !== undefined)
+    .map((m) => ({ label: m.label, value: (base[m.id] ?? m.default) + (bonus[m.id] ?? 0) }))
+    .filter((x) => x.value !== 0);
 }

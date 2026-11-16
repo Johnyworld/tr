@@ -3,7 +3,7 @@ import type { GameState } from "../game/state.ts";
 import { segmentOf } from "../rules/time.ts";
 import { incapacitatingSymptom, trackOf } from "../scenario/scenario.ts";
 import { changeCondition, shakeNerves } from "./body.ts";
-import { traitsOf } from "./traits.ts";
+import { effectiveSkill, traitsOf } from "./traits.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -55,7 +55,7 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
   steps += traitsOf(ctx.content, me).reduce((n, t) => n + (t.effects.fear ?? 0), 0);
   steps -= f.desensitize.filter((n) => exposure >= n).length;
   // 아는 것은 덜 무섭다 (감염체 지식 → 감염체)
-  if (f.lore.some((l) => tags.includes(l.tag) && (me.skills[l.skill] ?? -9) >= l.min)) steps -= 1;
+  if (f.lore.some((l) => tags.includes(l.tag) && effectiveSkill(ctx.content, me, l.skill) >= l.min)) steps -= 1;
   const nerves = ctx.content.scenario.body?.nerves;
   if (f.nerves_from && nerves) {
     const from = trackOf(ctx.content.scenario, nerves.track).levels.findIndex((l) => l.id === f.nerves_from);

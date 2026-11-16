@@ -15,7 +15,7 @@ import {
   commanderOf,
   daysServed,
 } from "../game/missions.ts";
-import { traitsOf } from "../engine/traits.ts";
+import { effectiveSkill, traitsOf } from "../engine/traits.ts";
 import { xpForLevel } from "../engine/growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
@@ -344,7 +344,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     statRange: { min: scenario.ranges.ability.min, max: scenario.ranges.ability.max },
     traits: traitsOf(content, player).map((t) => ({ id: t.id, label: t.label, kind: t.kind, description: t.description })),
     skills: scenario.moves
-      .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: player.skills[m.id] ?? m.default }))
+      .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: effectiveSkill(content, player, m.id) }))
       .filter((m) => m.value >= 0),
     growth: scenario.growth
       ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level) }

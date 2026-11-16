@@ -21,7 +21,7 @@ import { weatherNow } from "../sim/weather.ts";
 import { describeExtraTemplates } from "./extras.ts";
 import { aliasOf, hasMet, headingAs, knowsName } from "../game/acquaintance.ts";
 import { isIncapacitated, waterHere } from "./body.ts";
-import { attractionOf, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
+import { attractionOf, effectiveSkill, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
 import {
   conditionPenalty,
@@ -137,7 +137,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
           ]
         : []),
       `능력: ${stats}`,
-      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
+      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(effectiveSkill(content, player, m.id))}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n")],
     ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content)].filter(Boolean).join("\n")],

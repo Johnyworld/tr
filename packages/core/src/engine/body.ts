@@ -5,7 +5,7 @@ import type { GameState } from "../game/state.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
-import { bodyTraits } from "./traits.ts";
+import { bodyTraits, effectiveSkill } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { harmTrack, shownLevel, trackOf } from "../scenario/scenario.ts";
 import { daysOfStock, rationLevel } from "../sim/war.ts";
@@ -575,7 +575,7 @@ function firstAid(ctx: ToolContext, targetId: string): { ok: true; lines: string
   const target = state.characters[targetId];
   if (!rule) return { ok: false, error: "이 월드에서는 아이템 없이 남을 치료할 수 없다." };
   if (!target || target.dead || !state.scene.present.includes(targetId)) return { ok: false, error: "그 사람이 장면에 없다." };
-  const skilled = (!!me.occupation && rule.occupations.includes(me.occupation.id)) || (me.skills[rule.skill] ?? -9) >= rule.min;
+  const skilled = (!!me.occupation && rule.occupations.includes(me.occupation.id)) || effectiveSkill(ctx.content, me, rule.skill) >= rule.min;
   if (!skilled) return { ok: false, error: "아이템 없이 남을 꿰매고 돌볼 줄 모른다. 치료 아이템을 쓰거나 치료사를 데려온다." };
   const harm = harmTrack(content.scenario);
   // 치료할 줄 알면 피부터 멎게 한다 (12-91)

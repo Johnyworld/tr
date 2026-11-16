@@ -1,3 +1,4 @@
+import { effectiveSkill } from "./traits.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -166,7 +167,7 @@ export function wearItem(ctx: ToolContext, holder: string, itemId: string, delta
   const m = content.scenario.gear?.maintenance;
   const who = store.getState().characters[holder];
   if (m && who && delta > 0) {
-    const level = Math.min(2, who.skills[m.move] ?? content.scenario.moves.find((x) => x.id === m.move)?.default ?? 0);
+    const level = Math.min(2, effectiveSkill(content, who, m.move));
     if (level >= 0 && ctx.rng() < m.save_chance[level]!) return null;
   }
   store.append({ type: "item_worn", characterId: holder, itemId, delta });

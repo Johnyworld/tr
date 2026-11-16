@@ -1,3 +1,4 @@
+import { effectiveSkill } from "./traits.ts";
 import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
@@ -23,7 +24,7 @@ export function skillScore(content: Content, c: Character, moveId: string): numb
   const move = content.scenario.moves.find((m) => m.id === moveId);
   if (!move) return 0;
   const stat = Math.max(...move.stats.map((s) => c.stats[s] ?? 0));
-  return Math.min(content.scenario.ranges.cap, stat + (c.skills[moveId] ?? move.default));
+  return Math.min(content.scenario.ranges.cap, stat + effectiveSkill(content, c, moveId));
 }
 
 /** 상대 점수 → 판정 보정: 0~1 그대로, 2~3 -1, 4 -2, 음수면 +1 */

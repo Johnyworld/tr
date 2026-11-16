@@ -296,22 +296,22 @@ function pick(options: StepOption[], answer: string): string | null {
   return options.find((o) => o.value.toLowerCase() === a || o.label.toLowerCase() === a)?.value ?? null;
 }
 
-/** 단계의 보기 (보기가 정해진 단계만) */
-export function stepOptions(s: Scenario, draft: CreationDraft, step: CreationStepId): StepOption[] {
+/** 단계의 보기 (보기가 정해진 단계만). itemName: 과거 배경이 주는 물건의 이름 (콘텐츠의 아이템 이름) */
+export function stepOptions(s: Scenario, draft: CreationDraft, step: CreationStepId, itemName?: (id: string) => string): StepOption[] {
   if (step === "gender") return (s.creation?.genders ?? []).map((g) => ({ value: g.id, label: g.label }));
   if (step === "past")
-    return (s.creation?.pasts ?? []).map((p) => ({ value: p.id, label: p.label, description: `${p.summary}. ${pastGains(s, p)}${p.min_age ? ` (${p.min_age}세부터)` : ""}` }));
+    return (s.creation?.pasts ?? []).map((p) => ({ value: p.id, label: p.label, description: `${p.summary}. ${pastGains(s, p, itemName)}${p.min_age ? ` (${p.min_age}세부터)` : ""}` }));
   const past = pastOf(s, collectDraft(draft).past);
   if (step === "skills") {
     return [
       { value: "past", label: "배경대로", description: past ? describeSkills(s, past.skills) : "스킬 없이" },
-      { value: "manual", label: "고치기", description: `${s.creation?.skills?.points ?? 0}포인트를 스킬마다 +${s.creation?.skills?.max ?? 1}까지 나눈다` },
+      { value: "manual", label: "고치기", description: `과거 배경의 스킬에서 시작해 ${s.creation?.skills?.points ?? 0}포인트를 스킬마다 +${s.creation?.skills?.max ?? 1}까지 다시 나눈다` },
     ];
   }
   if (step === "abilities") {
     return [
       ...(past ? [{ value: "past", label: "배경대로", description: describeStats(s, past.stats) }] : []),
-      { value: "manual", label: past ? "고치기" : "직접 정하기", description: `능력 ${s.stats.length}가지를 한 번에 정한다` },
+      { value: "manual", label: past ? "고치기" : "직접 정하기", description: past ? `과거 배경의 배치에서 시작해 능력 ${s.stats.length}가지를 다시 정한다` : `능력 ${s.stats.length}가지를 한 번에 정한다` },
       { value: "random", label: "운에 맡기기", description: past ? "과거 배경과 상관없이 규칙대로 무작위로 나눈다" : "규칙대로 무작위로 나눈다" },
     ];
   }
@@ -522,8 +522,9 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   const s = content.scenario;
   const rules = creationRules(content, roleId);
   const step = currentStep(s, draft);
-  const options = stepOptions(s, draft, step);
+  const options = stepOptions(s, draft, step, (id) => content.items[id]?.name ?? id);
   const narration = s.creation?.narration ?? {};
+  const past = pastOf(s, collectDraft(draft).past);
   const lines: string[] = [];
 
   if (draft.answers.length === 0 && !introShown) {
@@ -558,7 +559,12 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
     const sk = s.creation?.skills;
     lines.push(
       `물을 것: 스킬 ${sk?.points ?? 0}포인트를 한 번에 (스킬마다 +${sk?.max ?? 1}까지). 아래 목록을 보여 주고 글로 답하게 한다 (보기 없이).`,
-      `스킬: ${s.moves.map((m) => `${m.label}(${m.description ?? ""})`).join(" / ")}`,
+      `스킬: ${s.moves.map((m) => `${m.label}(${m.description ?? ""}; ${m.stats.map((id) => s.stats.find((x) => x.id === id)?.label ?? id).join("·")})`).join(" / ")}`,
+      ...(past
+        ? [
+            `지금 고른 것 (과거 배경 ${past.label}): ${describeSkills(s, past.skills)}. 여기서 고치는 것이다: 이것을 먼저 보여 주고, 플레이어가 바꿀 것만 말하면 이 목록에서 바꿔 전체를 넘긴다.`,
+          ]
+        : []),
       '답 형식: 스킬 이름을 쉼표로 (예: 사격, 경계). 받은 답은 그대로 넘긴다.',
     );
   } else if (step === "name") {
@@ -594,6 +600,12 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
       "",
       ...s.stats.map((x, i) => `${i + 1}. ${x.label} — ${x.description ?? ""}`),
       "",
+      ...(past
+        ? [
+            `지금 배치 (과거 배경 ${past.label}): ${describeStats(s, past.stats)}. 답 형식으로는 "${tiers.map((t) => s.stats.map((x, i) => (past.stats[x.id] === t.value ? String(i + 1) : null)).filter(Boolean).join(", ")).join(" / ")}". 여기서 고치는 것이다: 이 배치를 먼저 보여 주고, 플레이어가 바꿀 것만 말하면 이 배치에서 바꿔 전체를 넘긴다.`,
+            "",
+          ]
+        : []),
       `답 형식: 등급 순서대로 "/"로 나눠 번호나 이름 (예: ${exampleTiers(tiers)}). 받은 답은 그대로 넘긴다. 운에 맡기고 싶다고 하면 create_character(back: true) 뒤 "random".`,
     );
   } else if (step === "ability_set") {
@@ -601,6 +613,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
       `물을 것: 능력 ${s.stats.length}가지를 한 번에. 능력마다 따로 묻거나 능력마다 장면을 붙이지 않는다. 아래 표와 규칙을 한 번에 보여 주고 글로 답하게 한다 (보기 없이).`,
       `규칙: 모두 0(보통)에서 시작해 ${rules?.points ?? 0}포인트를 나눠 쓴다. 값별 비용 ${rules?.cost.map((c) => `${signed(c.value)}=${c.cost}`).join(", ")}. 0보다 낮추면 포인트를 돌려받고, ${rules?.maxLow ?? 0}개까지 낮출 수 있다.`,
       `능력 표: ${s.stats.map((x) => `${x.label}(${x.description ?? ""})`).join(" / ")}`,
+      ...(past ? [`지금 배치 (과거 배경 ${past.label}): ${describeStats(s, past.stats)}. 여기서 고치는 것이다: 이 배치를 먼저 보여 주고, 플레이어가 바꿀 것만 말하면 이 배치에서 바꿔 전체를 넘긴다.`] : []),
       `답 형식: 올리거나 낮출 능력만 "이름 값"으로 쉼표로 이어 적는다 (예: ${s.stats[0]?.label ?? ""} +1, ${s.stats[1]?.label ?? ""} +2). 적지 않은 능력은 0. 운에 맡기고 싶다고 하면 create_character(back: true) 뒤 "random".`,
     );
   } else if (step === "traits") {

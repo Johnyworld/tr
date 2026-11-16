@@ -115,6 +115,29 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터 → 수위 → 서�
   });
 });
 
+describe("채팅과 상태 화면이 같은 것을 보여 준다", () => {
+  const start = ["post_apoc", "role_t_visitor"];
+  it("과거 배경의 물건은 이름으로 (id가 아니라)", () => {
+    const text = describeNewGameStep(packs, run(start).draft);
+    expect(text).toContain("쇠지렛대");
+    expect(text).not.toContain("crowbar");
+  });
+
+  it("능력·스킬을 고치면 과거 배경의 배치를 보여 주고, 그 배치를 답 형식 그대로 넘기면 같은 값이 된다", () => {
+    const abilities = run([...start, "soldier", "서진", "female", "30", "manual"]);
+    const text = describeNewGameStep(packs, abilities.draft);
+    expect(text).toContain("지금 배치 (과거 배경 군인): 민첩 +2");
+    const asAnswer = /답 형식으로는 "([^"]+)"/.exec(text)![1]!;
+    const view = newGameView(packs, abilities.draft);
+    const next = run([asAnswer], abilities.draft);
+    const set = next.draft.character.answers.at(-1);
+    expect(set?.step === "ability_set" && Object.fromEntries(Object.entries(set.values).filter(([, v]) => v !== 0))).toEqual(view.character!.pastDefaults!.stats);
+    // 스킬 고치기도 지금 고른 것부터
+    const skills = run(["manual"], next.draft);
+    expect(describeNewGameStep(packs, skills.draft)).toContain("지금 고른 것 (과거 배경 군인): 사격 +1, 전략 +1");
+  });
+});
+
 describe("월드가 여럿인 세이브", () => {
   it("고른 월드로 만들고, 목록에 월드 이름이 보이고, 열 때 그 월드로 연다. 모르는 월드의 세이브는 목록에 없다", () => {
     const savesDir = mkdtempSync(join(tmpdir(), "trpg-packs-"));

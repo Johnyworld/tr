@@ -118,7 +118,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
             ? d.traits.map((id) => s.traits.find((t) => t.id === id)?.label ?? id)
             : null,
       },
-      options: stepOptions(s, draft.character, cstep),
+      options: stepOptions(s, draft.character, cstep, (id) => content.items[id]?.name ?? id),
       pasts: (s.creation?.pasts ?? []).map((p) => ({
         id: p.id,
         label: p.label,

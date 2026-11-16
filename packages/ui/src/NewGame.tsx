@@ -69,9 +69,9 @@ export function newGameTitle(view: NewGameView): string {
   return c ? `${who} ${c.index.at}/${c.index.total}` : who;
 }
 
-/** 한 단계 뒤로 갈 수 있는지 (처음 단계에서는 못 간다) */
+/** 한 단계 뒤로 갈 수 있는지 (처음 단계에서는 못 간다. 새 캐릭터는 캐릭터 만들기의 첫 단계가 처음이다: 과거 배경이 있으면 그것, 없으면 이름) */
 export function canGoBack(view: NewGameView): boolean {
-  return !(view.step === "world" || (view.mode === "heir" && view.step === "name" && (view.character?.index.at ?? 1) === 1));
+  return !(view.step === "world" || (view.mode === "heir" && (view.character?.index.at ?? 1) === 1));
 }
 
 type StepProps = { view: NewGameView; busy: boolean; answer: (a: string | string[]) => void };
@@ -238,7 +238,8 @@ function CharacterStep({ view, busy, answer }: StepProps) {
           )}
           {step === "traits" && c.traitLimits && (
             <p className="newgame-note">
-              강점은 약점으로 얻은 포인트만큼만 가질 수 있습니다. 약점 {c.traitLimits.max_negative}개 · 강점 {c.traitLimits.max_positive}개 · 성격 {c.traitLimits.max_personality}개까지.
+              강점은 약점으로 얻은 포인트만큼만 가질 수 있습니다. 약점 {c.traitLimits.max_negative}개 · 강점 {c.traitLimits.max_positive}개까지
+              {c.traitLimits.max_personality !== undefined ? `, 성격 ${c.traitLimits.max_personality}개까지` : ", 성격은 몇 개든"}.
             </p>
           )}
           <div className={step === "gender" ? "choice-row" : "choice-list"}>

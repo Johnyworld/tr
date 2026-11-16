@@ -30,6 +30,8 @@ export type ToolDisplayEvent =
       fromLabel: string;
       toLabel: string;
       cause: string;
+      /** GM에게 문장으로 실을 소식 (의식이 없는 동안 일어난 일 등) */
+      note?: string;
     }
   | { type: "item"; fromName: string; toName: string; itemName: string; quantity: number }
   | { type: "presence"; npcName: string; action: "enter" | "leave"; /** GM에게 문장으로 실을 소식 (동행 합류·떠남 등) */ note?: string }

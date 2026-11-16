@@ -384,8 +384,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     }
   }
 
-  // 1-2. 전투 한 라운드 (판정이 없어도 라운드는 흐른다)
-  if (inBattle) {
+  // 1-2. 전투 한 라운드 (판정이 없어도 라운드는 흐른다). 쓰러져 있으면 남은 전투를 코드가 한 번에 굴려 끝낸다
+  const fellInBattle = inBattle && store.getState().battle !== null && !!incapacitatingSymptom(scenario, store.getState().characters[start.playerId]!);
+  if (fellInBattle) {
+    const end = endBattle(ctx, false);
+    lines.push(...end.lines);
+    displays.push(...end.displays);
+  } else if (inBattle) {
     const round = playBattleRound(
       ctx,
       battleAction && input.check ? { ...battleAction, outcome: outcome!, checkId: lastCheckId(ctx) } : null,

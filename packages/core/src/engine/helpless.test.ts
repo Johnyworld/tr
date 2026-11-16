@@ -82,4 +82,32 @@ describe("의식불명 중 곁의 사람", () => {
     if (r.ok) expect(r.resultText).toContain("의식이 없는 동안 일어난 일");
     w.close();
   });
+
+  it("무리 전투 중 쓰러지면 남은 전투를 한 번에 끝내고, 이겼으면 우리 무리가 돌보고 졌으면 적의 손에 떨어진다", () => {
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 12 && seen.size < 2; seed++) {
+      const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-helpless-")), content, rngFactory: () => createSeededRng(seed) });
+      const w = m.create("mcp", "role_b_guard", choice);
+      expect(w.runCheat("~battle").ok).toBe(true);
+      expect(w.state().battle).not.toBeNull();
+      expect(w.runCheat("~harm me unconscious").ok).toBe(true);
+      const r = w.executeTool("take_action", { intent: "쓰러져 있다", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false });
+      expect(r.ok, r.ok ? "" : r.error).toBe(true);
+      // 라운드를 하나씩 넘기지 않는다
+      expect(w.state().battle).toBeNull();
+      const text = r.ok ? r.resultText : "";
+      expect(text).toContain("쓰러진 채였다");
+      const p = me(w);
+      if (text.includes("우리 편이 이겼다")) {
+        seen.add("won");
+        expect(p.conditions.harm).toBe("impaired");
+      } else {
+        seen.add("lost");
+        expect(p.dead || p.captive?.by !== undefined).toBe(true);
+      }
+      expect(text).toContain("의식이 없는 동안 일어난 일");
+      w.close();
+    }
+    expect(seen.size).toBeGreaterThan(0);
+  });
 });

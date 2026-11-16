@@ -1,4 +1,6 @@
 import { maybeCaptureAfterDefeat } from "./captivity.ts";
+import { helplessAfterBattle } from "./helpless.ts";
+import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import type { Content } from "../content/schemas.ts";
 import { gainMeritXp } from "./growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
@@ -154,7 +156,9 @@ export function endBattle(ctx: ToolContext, withdrew: boolean): BattleTurn {
   const morale = { ours: moraleOf(state.factions, battle.ours.faction), theirs: moraleOf(state.factions, battle.theirs.faction) };
   const config = battleConfig(ctx.content);
   const player = state.characters[state.playerId]!;
-  if (withdrew || player.dead || (Math.abs(battle.momentum) < config.momentum_to_win && battle.round < config.max_rounds)) {
+  // 쓰러져(의식불명 등) 더 싸우지 못하면 남은 전투는 코드가 한 번에 굴린다
+  const down = !player.dead && !!incapacitatingSymptom(ctx.content.scenario, player);
+  if (withdrew || down || player.dead || (Math.abs(battle.momentum) < config.momentum_to_win && battle.round < config.max_rounds)) {
     battle = finishWithoutPlayer(ctx.content, battle, morale, ctx.rng);
   }
   const won = wonBy(battle);
@@ -167,24 +171,29 @@ export function endBattle(ctx: ToolContext, withdrew: boolean): BattleTurn {
   ctx.store.append({ type: "battle_ended", won, withdrew, clash, factions: world.factions, zones: world.zones, merit });
 
   const lines = [
-    `전투가 끝났다: ${won ? "우리 편이 이겼다" : "우리 편이 졌다"}${withdrew ? " (당신은 먼저 물러났다)" : ""}. ` +
+    `전투가 끝났다: ${won ? "우리 편이 이겼다" : "우리 편이 졌다"}${withdrew ? " (당신은 먼저 물러났다)" : down ? " (당신은 쓰러진 채였다)" : ""}. ` +
       `우리 쪽 사상자 ${battle.ours.losses}명, 적 ${battle.theirs.losses}명.` +
       (merit > 0 ? ` 당신의 활약으로 공적 +${merit}.` : ""),
     "결과에 맞게 전투가 끝나는 장면을 서술하라. 사상자 수를 바꾸지 마라.",
   ];
   const growthNote = gainMeritXp(ctx, player.id, merit);
   if (growthNote) lines.push(growthNote);
+  // 쓰러져 있었으면: 이겼으면 우리 무리가 돌보고, 졌으면 적의 손에 떨어진다 (12-90, 코드가 굴린다)
+  const fallen = down ? helplessAfterBattle(ctx, won, battle.ours.faction, battle.theirs.faction) : null;
+  const afterFall: ToolDisplayEvent[] = fallen ?? [];
+  for (const d of afterFall) if ((d.type === "belief" || d.type === "presence" || d.type === "harm") && d.note) lines.push(d.note);
   // 지고도 물러나지 않았으면 쓰러진 채 끌려갈 수 있다 (12-55, 코드가 굴린다)
-  if (!won && !withdrew && !player.dead) {
+  if (!fallen && !won && !withdrew && !player.dead) {
     const caught = maybeCaptureAfterDefeat(ctx, battle.theirs.faction);
     if (caught) lines.push(caught);
   }
   const displays: ToolDisplayEvent[] = [
     { type: "battle", event: "ended", title: battleTitle(ctx.content, battle), detail: lines[0]! },
     ...reportClash(ctx, clash),
+    ...afterFall,
   ];
   // 공이 크면 용기 있는 행적으로 남는다 (소문이 된다)
-  if (!player.dead && battle.contribution >= 3) {
+  if (!ctx.store.getState().characters[player.id]!.dead && battle.contribution >= 3) {
     const zoneName = ctx.content.locations[battle.zone]?.name ?? battle.zone;
     const { deed } = recordDeed(ctx, {
       summary: `${zoneName} 전투에서 앞장서 판세를 바꿨다`,

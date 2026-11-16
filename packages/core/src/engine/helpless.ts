@@ -107,6 +107,18 @@ export function runHelpless(ctx: ToolContext): ToolDisplayEvent[] {
   return [];
 }
 
+/**
+ * 무리 전투가 끝났을 때 주인공이 쓰러져 있으면 (endBattle): 이겼으면 우리 무리가 돌보고, 졌으면 적의 손에 떨어진다.
+ * 이 월드에 helpless 규칙이 없으면 null (포로 규칙의 on_defeat가 맡는다)
+ */
+export function helplessAfterBattle(ctx: ToolContext, won: boolean, ours: string, theirs: string): ToolDisplayEvent[] | null {
+  if (!ctx.content.scenario.helpless) return null;
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me || me.dead || me.captive || !incapacitatingSymptom(ctx.content.scenario, me)) return null;
+  return won ? byFaction(ctx, ours) : byEnemies(ctx, [], theirs);
+}
+
 /** 주인공의 기억으로 남기고(깨어나서 아는 것), GM에게 한 줄로 알린다 */
 function remember(ctx: ToolContext, text: string): ToolDisplayEvent {
   const state = ctx.store.getState();
@@ -171,7 +183,7 @@ function byEnemies(ctx: ToolContext, hostiles: Character[], factionId: string | 
     ctx.store.append({ type: "helpless_resolved", outcome: "killed", by });
     const track = harmTrack(ctx.content.scenario);
     const c = changeCondition(ctx, me.id, track.id, track.levels.length, "enemy", "정신을 잃은 채 적의 손에 죽었다");
-    return c?.display ? [c.display] : [];
+    return c?.display ? [{ ...c.display, note: `의식이 없는 동안 일어난 일 (코드가 정했다): ${c.line}` } as ToolDisplayEvent] : [];
   }
   if (factionId) {
     ctx.store.append({ type: "helpless_resolved", outcome: "captured", by: factionId });

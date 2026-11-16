@@ -651,7 +651,8 @@ romance:
 # 포로 (12-55): 진 전투에서 물러나지 않았으면 부상 단계별 확률로 붙잡힌다 (항복하면 반드시). 갇힌 동안은 태그 captivity 이야기만 열린다
 captivity:
   tag: captivity
-  on_defeat: { light: 0.15, serious: 0.5, critical: 0.8 }
+  # 의식불명은 helpless 규칙(적의 손에 떨어짐)이 먼저 맡는다. 여기 값은 그 규칙이 없을 때
+  on_defeat: { light: 0.15, serious: 0.5, critical: 0.8, impaired: 0.9, unconscious: 1 }
   confiscate: [weapon, ammo]
   escape_moves: [stealth, endure]
   # 갇힌 동안 허기는 굶주림까지만 (붙잡은 쪽이 겨우 먹인다)

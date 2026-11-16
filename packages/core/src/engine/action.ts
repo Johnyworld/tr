@@ -41,7 +41,7 @@ import { bleedFromHarm, woundKind } from "./bleeding.ts";
 import { createStoryletCheck, endActiveStorylet } from "./storyletTools.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
-import { applyTreatment, maybeInfect, useItem } from "./body.ts";
+import { applyTreatment, drinkWater, maybeInfect, refillWater, useItem } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -159,6 +159,14 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("몸 상태가 나아지는 물건을 쓰면 그 아이템 id (먹을 것, 구급상자, 약 등. 가진 것만). 효과는 시스템이 정한다. 아니면 null"),
+    drink: z
+      .boolean()
+      .default(false)
+      .describe("물이 있는 곳(상태의 \"물\" 줄)에서 플레이어가 물을 마시겠다고 하면 true. 얼마나 풀리는지, 거점에서 보급을 받는지는 시스템이 정한다"),
+    refill: z
+      .boolean()
+      .default(false)
+      .describe("물이 있는 곳에서 플레이어가 빈 물병을 채우겠다고(거점이면 물 보급을 받겠다고) 하면 true. 거점 보급은 마시기까지 한다. 저절로 채워지지 않는다"),
     treatment: z
       .strictObject({
         item: z.string().nullable().describe("치료에 쓸 아이템 id (구급상자 등). 장면에 있는 치료사에게 받거나, 다른 사람을 아이템 없이 돌보면 null"),
@@ -222,7 +230,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {
-    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.craft || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || input.drink || input.refill || !!input.craft || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
     const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
     if (acts || !passive) {
       return {
@@ -266,7 +274,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (input.activity && input.activity.kind !== "brief") return { ok: false, error: "전투 중에는 잠·보초·기다림 같은 활동을 할 수 없다. activity는 null로 둔다 (한 라운드가 흐른다)." };
     if (input.move_to) return { ok: false, error: "전투 중에는 구역을 옮길 수 없다. 빠지려면 물러나는 전투 효과를 쓴다." };
     if (input.prepare) return { ok: false, error: "전투 중에는 준비물을 설치할 수 없다." };
-    if (input.treatment || input.use_item) return { ok: false, error: "전투 중에는 치료하거나 물건을 쓸 수 없다. 먼저 물러난다." };
+    if (input.treatment || input.use_item || input.drink || input.refill) return { ok: false, error: "전투 중에는 치료하거나 물건을 쓸 수 없다. 먼저 물러난다." };
     if (input.battle && !input.check) return { ok: false, error: "전투 효과에는 판정(check)을 함께 선언한다." };
     const effect = input.battle ? scenario.battle?.effects.find((e) => e.id === input.battle!.effect) : undefined;
     const HARM_RANK = { none: 0, light: 1, heavy: 2 } as const;
@@ -433,6 +441,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   for (const [request, run] of [
     [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null)],
     [input.use_item, () => useItem(ctx, input.use_item!)],
+    [input.drink || null, () => drinkWater(ctx)],
+    [input.refill || null, () => refillWater(ctx)],
   ] as const) {
     if (!request) continue;
     const t = run();
@@ -479,7 +489,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? "eat" : input.craft ? "work" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item || input.drink || input.refill ? "eat" : input.craft ? "work" : "brief"));
   const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission);
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);

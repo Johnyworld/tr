@@ -169,6 +169,7 @@ function checkReferences(content: Content): string[] {
       for (const m of Object.keys(it.armor?.penalty ?? {})) moveRef(`items.${it.id}.armor.penalty`, m);
       for (const m of Object.keys(it.tool?.bonus ?? {})) moveRef(`items.${it.id}.tool`, m);
       if (it.breaks_into) itemRef(`items.${it.id}.breaks_into`, it.breaks_into);
+      if (it.used_into) itemRef(`items.${it.id}.used_into`, it.used_into);
       if (it.breaks_into && !it.durability) problems.push(`items.${it.id}: breaks_into는 durability가 있을 때만`);
       if (it.repair) {
         moveRef(`items.${it.id}.repair`, it.repair.move);

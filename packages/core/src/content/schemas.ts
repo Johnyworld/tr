@@ -64,6 +64,8 @@ export const itemContentSchema = z.strictObject({
   /** 몇 번 닳으면 망가지는지, 망가지면 남는 것 */
   durability: z.number().int().min(1).max(20).optional(),
   breaks_into: contentIdSchema.optional(),
+  /** 소모품으로 쓰고 나면 이 아이템이 남는다 (물병 → 빈 물병) */
+  used_into: contentIdSchema.optional(),
   /** 고치는 법 */
   repair: z.strictObject({ move: contentIdSchema, materials: z.record(contentIdSchema, z.number().int().min(1)), /** 목록이면 그중 하나 */ tools: z.array(z.union([contentIdSchema, z.array(contentIdSchema).min(1)])).default([]) }).optional(),
 });

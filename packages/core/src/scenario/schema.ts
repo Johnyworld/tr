@@ -736,12 +736,31 @@ export const scenarioFileSchema = z
      */
     travel: z.strictObject({ tag: id, chance: z.array(z.number().min(0).max(1)).length(4) }).optional(),
     /** 쓰면 몸 상태가 나아지는 아이템: 아이템 → 상태 트랙 → 나아지는 단계 수 (take_action.use_item) */
-    consumables: z.record(id, z.record(id, z.number().int().positive())).default({}),
+    /** 음수면 그만큼 나빠진다 (짠 음식은 목이 마르다). 나아지는 효과가 하나는 있어야 한다 */
+    consumables: z.record(id, z.record(id, z.number().int().refine((n) => n !== 0, "0이 아닌 정수"))).default({}),
     /** 몸 상태 (12-1): 허기와 감염. 없으면 그 규칙을 쓰지 않는다 */
     body: z
       .strictObject({
         /** 허기 트랙. 하루마다 배급 수준(war.ration.levels[].hunger)만큼 바뀐다. 마지막 단계에서는 하루마다 부상 */
         hunger: z.strictObject({ track: id, starving_harm: z.number().int().min(0).default(0) }).optional(),
+        /**
+         * 갈증 트랙 (12-97). 하루마다 daily만큼 마른다. 물이 넉넉한 곳에서 직접 마시면(take_action.drink) drink만큼 풀리고 빈 물병을 채운다.
+         * 물이 넉넉한 곳: 산출에 resource가 있는 구역(강·우물·정수장), 또는 배급을 받는 우리 땅이면서 무리의 resource가 min_days 이상. 갇혀 있으면 captive_max까지만
+         */
+        thirst: z
+          .strictObject({
+            track: id,
+            resource: id,
+            daily: z.number().int().min(0),
+            drink: z.number().int().min(1),
+            min_days: z.number().min(0).default(1),
+            /** 마시면 채워지는 빈 그릇: 빈 아이템 → 채운 아이템 */
+            refill: z.record(id, id).default({}),
+            captive_max: id.optional(),
+            /** 이 단계부터 몸이 괴롭다 (질병 확률 chance.thirst) */
+            suffering_from: id.optional(),
+          })
+          .optional(),
         /**
          * 감염 트랙. 감염체에게 다치면(take_action.check.infected_source) 확률로 두 번째 단계(잠복)가 된다.
          * 하루마다 한 단계씩 나빠지고, 마지막 단계에서는 하루마다 부상
@@ -776,7 +795,7 @@ export const scenarioFileSchema = z
           .strictObject({
             track: id,
             chance: z.strictObject({ base: z.number().min(0).max(1), starving: z.number().min(0).max(1), cold: z.number().min(0).max(1), thirst: z.number().min(0).max(1) }),
-            /** 무리의 이 자원이 하루치보다 적으면 더러운 물을 마신다 */
+            /** 무리의 이 자원이 하루치보다 적으면 더러운 물을 마신다 (갈증 규칙이 있으면 갈증 suffering_from 단계로 대신한다) */
             thirst_resource: id.optional(),
             resist: z.strictObject({ ability: id, per_point: z.number().min(0).max(1) }),
             recover: z.strictObject({ chance: z.number().min(0).max(1), per_point: z.number().min(0).max(1) }),
@@ -982,7 +1001,7 @@ export const scenarioFileSchema = z
       for (const t of Object.keys(effects)) if (!trackIdSet.has(t)) problem(`consumables.${item}: 알 수 없는 상태 트랙 ${t}`);
     }
     for (const t of Object.keys(s.recovery?.healer ?? {})) if (!trackIdSet.has(t)) problem(`recovery.healer: 알 수 없는 상태 트랙 ${t}`);
-    for (const t of [s.body?.hunger?.track, s.body?.infection?.track, s.body?.cold?.track, s.body?.disease?.track, s.body?.nerves?.track, s.body?.fear?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
+    for (const t of [s.body?.hunger?.track, s.body?.thirst?.track, s.body?.infection?.track, s.body?.cold?.track, s.body?.disease?.track, s.body?.nerves?.track, s.body?.fear?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
     if (s.body?.fear?.nerves_from) {
       const nerves = s.condition_tracks.find((t) => t.id === s.body?.nerves?.track);
       if (!nerves?.levels.some((l) => l.id === s.body!.fear!.nerves_from)) problem(`body.fear.nerves_from: 마음 트랙에 없는 단계 ${s.body.fear.nerves_from}`);

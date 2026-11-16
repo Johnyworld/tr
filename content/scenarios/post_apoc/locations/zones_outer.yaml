@@ -87,6 +87,7 @@
   loot:
     chance: 0.2
     items:
+      - { item: wild_greens, weight: 1, qty: [1, 2] }
       - { item: cloth, weight: 2, qty: [1, 2] }
       - { item: blanket, weight: 1, qty: [1, 1] }
       - { item: bandage, weight: 1, qty: [1, 1] }
@@ -103,6 +104,8 @@
   loot:
     chance: 0.35
     items:
+      - { item: wild_greens, weight: 2, qty: [1, 2] }
+      - { item: mushroom, weight: 1, qty: [1, 2] }
       - { item: fever_reducer, weight: 2, qty: [1, 1] }
       - { item: bandage, weight: 2, qty: [1, 1] }
       - { item: ledger, weight: 1, qty: [1, 1] }

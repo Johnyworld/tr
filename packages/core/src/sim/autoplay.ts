@@ -1,3 +1,4 @@
+import { waterHere } from "../engine/body.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import type { Content } from "../content/schemas.ts";
@@ -167,10 +168,13 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     const harmTrack = content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)!;
     // 추위·질병 등: 맞는 소모품이 있으면 가끔 쓴다
     {
+      // 단계가 오른 트랙 (증상 체계에서는 단계 자체의 penalty가 비어 있어 단계 순서로 본다)
+      const stage = (t: string) => Math.max(0, content.scenario.condition_tracks.find((x) => x.id === t)?.levels.findIndex((l) => l.id === me.conditions[t]) ?? 0);
       const usable = Object.entries(content.scenario.consumables).find(
-        ([i, e]) => (me.inventory[i] ?? 0) > 0 && Object.keys(e).some((t) => t !== harmTrack.id && (content.scenario.condition_tracks.find((x) => x.id === t)?.levels.find((l) => l.id === me.conditions[t])?.penalty ?? 0) < 0),
+        ([i, e]) => (me.inventory[i] ?? 0) > 0 && Object.entries(e).some(([t, n]) => n > 0 && t !== harmTrack.id && stage(t) > 0),
       );
-      if (usable && rng() < 0.3) {
+      const urgent = usable && Object.entries(usable[1]).some(([t, n]) => n > 0 && stage(t) >= 2);
+      if (usable && rng() < (urgent ? 0.8 : 0.3)) {
         tool("take_action", { ...base, intent: "소모품", use_item: usable[0] });
         continue;
       }
@@ -204,10 +208,25 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     }
     const cold = content.scenario.body?.cold?.track;
     const home = Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id;
-    if (cold && idx(cold) >= 2 && home && s.playerZone && s.playerZone !== home && rng() < 0.8) {
+    // 목이 마르고 물이 넉넉한 곳이면 마신다 (12-97)
+    const thirst = content.scenario.body?.thirst?.track;
+    const water = waterHere(content, s);
+    if (thirst && water && water.grant !== "refused" && !(cold && idx(cold) >= 2)) {
+      const empty = Object.keys(content.scenario.body!.thirst!.refill).some((i) => (me.inventory[i] ?? 0) > 0);
+      if (idx(thirst) > 0 && rng() < 0.7) {
+        tool("take_action", { ...base, intent: "물을 마신다", drink: true });
+        continue;
+      }
+      if (empty && rng() < 0.7) {
+        tool("take_action", { ...base, intent: "물병을 채운다", refill: true });
+        continue;
+      }
+    }
+    const parched = !!thirst && idx(thirst) >= 2;
+    if (((cold && idx(cold) >= 2) || parched) && home && s.playerZone && s.playerZone !== home && rng() < 0.8) {
       const step = nextStep(content, s.playerZone, home);
       if (step) {
-        tool("take_action", { ...base, intent: "추워서 거점으로 돌아간다", move_to: step });
+        tool("take_action", { ...base, intent: parched ? "목이 말라 거점으로 돌아간다" : "추워서 거점으로 돌아간다", move_to: step });
         continue;
       }
     }

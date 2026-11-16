@@ -456,6 +456,9 @@ symptoms:
   - { id: hungry, label: 허기짐, group: hunger, penalty: -1 }
   - { id: starving, label: 굶주림, group: hunger, penalty: -2 }
   - { id: starvation, label: 기아, group: hunger, penalty: -3 }
+  - { id: thirsty, label: 목마름, group: thirst }
+  - { id: parched, label: 탈수, group: thirst, penalty: -1 }
+  - { id: severe_dehydration, label: 심한 탈수, group: thirst, penalty: -2 }
   - { id: impaired, label: 의식장애, group: consciousness, penalty: -1, tone: 3 }
   # 의식불명: 스스로 아무것도 하지 못한다 (판정·이동·대화·이야기 없이 시간만 흐르고, 남이 돌볼 수만 있다)
   - { id: unconscious, label: 의식불명, group: consciousness, tone: 3, incapacitates: true }
@@ -501,6 +504,17 @@ condition_tracks:
       - { id: faint, symptoms: [starvation, impaired] }
       - { id: unconscious, symptoms: [unconscious] }
       - { id: starved, symptoms: [death], fatal: true }
+  # 갈증 (12-97, *임시*): 허기보다 빨리 죽는다 (물 없이 나흘째 쓰러지고 닷새째 죽는다)
+  - id: thirst
+    label: 갈증
+    icon: water
+    levels:
+      - { id: quenched }
+      - { id: thirsty, symptoms: [thirsty] }
+      - { id: parched, symptoms: [parched] }
+      - { id: severe, symptoms: [severe_dehydration, impaired] }
+      - { id: unconscious, symptoms: [unconscious] }
+      - { id: dead, symptoms: [death], fatal: true }
   # 감염 (12-1): 감염체에게 다치면 확률로 잠복기. 잠복기는 캐릭터가 모른다(hidden). 하루마다 나빠지고, 끝까지 가면 변이한다
   - id: infection
     label: 감염
@@ -748,6 +762,15 @@ consumables:
   antibiotics: { harm: 1, infection: 2 }
   canned_food: { hunger: 2 }
   dry_ration: { hunger: 1 }
+  water_bottle: { thirst: 2 }
+  cucumber: { hunger: 1, thirst: 1 }
+  tomato: { hunger: 1, thirst: 1 }
+  apple: { hunger: 1, thirst: 1 }
+  dried_fish: { hunger: 2, thirst: -1 }
+  salted_meat: { hunger: 2, thirst: -1 }
+  potato: { hunger: 1 }
+  wild_greens: { hunger: 1 }
+  mushroom: { hunger: 1 }
   blanket: { cold: 2 }
   fever_reducer: { disease: 1 }
 
@@ -755,6 +778,17 @@ consumables:
 body:
   # 굶주림은 부상을 주지 않고 허기 트랙 끝에서 죽는다 (12-74)
   hunger: { track: hunger }
+  # 갈증 (12-97, *임시*): 하루마다 한 단계 마른다. 물이 넉넉한 곳(물이 나는 구역, 물이 하루치 넘게 남은 우리 거점)에서
+  # 직접 마시면(take_action.drink) 3단계 풀리고 빈 물병을 채운다. 밖에 나갈 땐 물병을 챙긴다
+  thirst:
+    track: thirst
+    resource: water
+    daily: 1
+    drink: 3
+    min_days: 1
+    refill: { empty_bottle: water_bottle }
+    captive_max: thirsty
+    suffering_from: parched
   infection:
     track: infection
     # 감염체에게 다쳤을 때 감염될 확률 (선언한 위험 크기별)

@@ -13,10 +13,11 @@
 - id: water_bottle
   name: 물병
   icon: water
-  description: 찌그러진 알루미늄 물병.
+  description: 물을 채운 찌그러진 알루미늄 물병. 마시면 갈증이 가신다 (갈증 2단계).
   kind: misc
   weight: 0.6
   value: 1
+  used_into: empty_bottle
 - id: radio
   name: 무전기
   icon: tool
@@ -147,3 +148,58 @@
   kind: food
   weight: 0.3
   value: 2
+- id: cucumber
+  name: 오이
+  description: 껍질이 우둘투둘한 오이 한 개. 물기가 많아 목도 조금 축인다.
+  kind: food
+  weight: 0.3
+  value: 1
+- id: tomato
+  name: 토마토
+  description: 덜 익어 단단한 토마토 한 알. 며칠 지나면 무른다.
+  kind: food
+  weight: 0.2
+  value: 1
+- id: apple
+  name: 사과
+  description: 작고 시큼한 사과 한 알. 벌레 먹은 자리를 도려내면 먹을 만하다.
+  kind: food
+  weight: 0.2
+  value: 1
+- id: dried_fish
+  name: 말린 생선
+  description: 소금에 절여 바싹 말린 생선. 짜고 질기지만 오래 간다.
+  kind: food
+  weight: 0.3
+  value: 3
+- id: salted_meat
+  name: 소금 절임 고기
+  description: 무슨 고기인지 묻지 않는 게 좋은 절임 고기 한 덩이. 짜다.
+  kind: food
+  weight: 0.4
+  value: 3
+- id: potato
+  name: 감자
+  description: 흙이 묻은 감자 몇 알. 싹이 난 데를 도려내야 한다.
+  kind: food
+  weight: 0.4
+  value: 1
+- id: wild_greens
+  name: 들풀
+  description: 냉이와 씀바귀 같은 들풀 한 줌. 쓰지만 배는 조금 찬다.
+  kind: food
+  weight: 0.1
+  value: 1
+- id: mushroom
+  name: 버섯
+  description: 축축한 그늘에서 딴 버섯 몇 송이. 먹을 수 있는 것만 골랐기를.
+  kind: food
+  weight: 0.1
+  value: 1
+- id: empty_bottle
+  name: 빈 물병
+  icon: water
+  description: 찌그러진 알루미늄 물병. 비어 있다. 물을 채우면 다시 마실 수 있다.
+  kind: misc
+  weight: 0.2
+  value: 1

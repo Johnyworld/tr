@@ -17,7 +17,7 @@ import { commanderOf } from "../game/missions.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { describeExtraTemplates } from "./extras.ts";
 import { aliasOf, hasMet, headingAs, knowsName } from "../game/acquaintance.ts";
-import { isIncapacitated } from "./body.ts";
+import { isIncapacitated, waterHere } from "./body.ts";
 import { attractionOf, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
 import {
@@ -140,7 +140,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["deeds", describeOwnDeeds(state)],
     ["present", describePresentNpcs(state, content, player)],
     ["known", describeKnownPeople(state, content)],
-    ["zone_people", [describeFort(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
+    ["zone_people", [describeFort(state, content), describeWater(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
     ["zone_extras", describeZoneExtras(state, content)],
     ["templates", describeExtraTemplates(state, content)],
     ["beliefs", describeBeliefs(state, content)],
@@ -418,6 +418,25 @@ function describeInventory(content: Content, inventory: Inventory): string {
 
 function signed(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
+}
+
+/**
+ * 물 (12-97): 목이 마르거나 빈 물병이 있을 때만 GM에게 알린다. 마시고 채우는 것은 플레이어가 직접 (take_action.drink, refill).
+ * 거점의 보급이 넉넉한지는 알리지 않는다 (해 보면 시스템이 정한다)
+ */
+function describeWater(state: GameState, content: Content): string {
+  const source = waterHere(content, state);
+  const rules = content.scenario.body?.thirst;
+  const me = state.characters[state.playerId];
+  if (!source || !rules || !me) return "";
+  const empties = Object.keys(rules.refill).filter((i) => (me.inventory[i] ?? 0) > 0).map((i) => content.items[i]?.name ?? i);
+  const track = content.scenario.condition_tracks.find((t) => t.id === rules.track);
+  const thirsty = (track?.levels.findIndex((l) => l.id === me.conditions[rules.track]) ?? 0) > 0;
+  if (!empties.length && !thirsty) return "";
+  if (source.kind === "supply") {
+    return `물: 우리 거점이다. 서술에서 "물 보급을 받아야 할 것 같다"고 한 번 언급한다${empties.length ? ` (${empties.join("·")}이 비어 있다)` : ""}. 플레이어가 보급을 받겠다고 하면 take_action.refill (마시기까지 한다. 마시기만 하면 drink). 창고 사정에 따라 보급 담당이 조금만 주거나 거절할 수 있다 (시스템이 정한다)`;
+  }
+  return `물: 이곳에는 물이 충분하다.${empties.length ? ` 서술에서 "빈 물병을 가지고 있으니 물을 채우면 될 것 같다"고 한 번 언급한다.` : " 물이 흐르는 모습을 장면에 묘사한다."} 플레이어가 마시겠다고 하면 take_action.drink, 채우겠다고 하면 refill. 저절로 마시거나 채우지 않는다`;
 }
 
 /** 우리 땅의 보강 (12-48). 주인공은 자기 무리 담만 안다 */

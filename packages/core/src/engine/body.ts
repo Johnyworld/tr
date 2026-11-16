@@ -99,9 +99,11 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
   const target = targetId && targetId !== player.id ? targetId : player.id;
   if (target !== player.id && (!state.scene.present.includes(target) || state.characters[target]?.dead)) return { ok: false, error: "그 사람이 장면에 없다." };
   // 겉으로 드러난 것만 본다 (숨은 잠복기는 주인공도 모른다)
-  const needed = Object.keys(effects).some((t) => shownIndex(ctx, state, target, t) > 0);
+  const needed = Object.entries(effects).some(([t, n]) => n > 0 && shownIndex(ctx, state, target, t) > 0);
   if (!needed) return { ok: false, error: `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.` };
   store.append({ type: "item_consumed", holder: player.id, itemId: item, quantity: 1 });
+  const leftover = content.items[item]?.used_into;
+  if (leftover) store.append({ type: "item_granted", to: player.id, itemId: leftover, quantity: 1 });
   const lines = [target === player.id ? `${josa(name, "을/를")} 썼다.` : `${playerCalls(state, content, target)}에게 ${josa(name, "을/를")} 썼다.`];
   const displays: ToolDisplayEvent[] = [];
   for (const [t, steps] of Object.entries(effects)) {
@@ -240,6 +242,7 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
       if (push(changeCondition(ctx, state.playerId, harm, body.hunger.starving_harm, "daily", "굶주림"))) return displays;
     }
   }
+  if (body.thirst && push(dailyThirst(ctx, body.thirst))) return displays;
   if (body.infection) {
     const state = ctx.store.getState();
     const track = trackOf(content.scenario, body.infection.track);
@@ -344,11 +347,107 @@ function sufferingOf(ctx: ToolContext, state: GameState): { starving: boolean; c
   };
   const own = state.factions[me.factionId];
   const thirstResource = s.body?.disease?.thirst_resource;
+  const thirst = s.body?.thirst;
+  const parched = (() => {
+    if (!thirst?.suffering_from) return false;
+    const track = trackOf(s, thirst.track);
+    return track.levels.findIndex((l) => l.id === me.conditions[thirst.track]) >= track.levels.findIndex((l) => l.id === thirst.suffering_from);
+  })();
   return {
     starving: hurting(s.body?.hunger?.track),
     cold: hurting(s.body?.cold?.track),
-    thirst: !!thirstResource && !!own && daysOfStock(ctx.content, own, thirstResource) < 1,
+    thirst: thirst ? parched : !!thirstResource && !!own && daysOfStock(ctx.content, own, thirstResource) < 1,
   };
+}
+
+type ThirstRules = NonNullable<NonNullable<Content["scenario"]["body"]>["thirst"]>;
+
+/**
+ * 지금 있는 곳의 물 (12-97).
+ * - spring: 물이 나는 바깥 구역(강·우물·정수장). 마음껏 마시고 채운다
+ * - supply: 우리 거점(우리 땅이면서 거점). 무리의 물 보급을 받는다: 넉넉하면 full, 하루치도 안 남으면 limited(조금만), 바닥이거나 배급 권한이 없으면 refused
+ */
+export type WaterSource = { kind: "spring" | "supply"; grant: "full" | "limited" | "refused" };
+
+export function waterHere(content: Content, state: GameState): WaterSource | null {
+  const rules = content.scenario.body?.thirst;
+  const me = state.characters[state.playerId];
+  const zone = state.playerZone;
+  if (!rules || !me || me.dead || me.captive || !zone) return null;
+  const base = content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === me.factionId;
+  if (base) {
+    const own = state.factions[me.factionId];
+    if (!own || !hasAccess(content, state, "ration")) return { kind: "supply", grant: "refused" };
+    const days = daysOfStock(content, own, rules.resource);
+    return { kind: "supply", grant: days >= rules.min_days ? "full" : (own.resources[rules.resource] ?? 0) >= 1 ? "limited" : "refused" };
+  }
+  return (content.locations[zone]?.yields[rules.resource] ?? 0) > 0 ? { kind: "spring", grant: "full" } : null;
+}
+
+type WaterResult = { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string };
+
+function waterSource(ctx: ToolContext): { rules: ThirstRules; source: WaterSource } | { error: string } {
+  const rules = ctx.content.scenario.body?.thirst;
+  if (!rules) return { error: "이 월드에는 갈증 규칙이 없다." };
+  const source = waterHere(ctx.content, ctx.store.getState());
+  if (!source) return { error: "여기에는 물이 없다. 물병을 쓰거나(use_item) 물이 나는 곳·우리 거점으로 간다." };
+  if (source.grant === "refused") return { error: "물 보급을 거절당했다: 무리의 물이 바닥났거나 받을 자격이 없다. 보급 담당 NPC가 거절하는 장면으로 서술한다." };
+  return { rules, source };
+}
+
+/** 물을 마신다 (take_action.drink). 거점에서 물이 모자라면 조금만 받는다 */
+export function drinkWater(ctx: ToolContext): WaterResult {
+  const w = waterSource(ctx);
+  if ("error" in w) return { ok: false, error: w.error };
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId]!;
+  if (levelIndex(ctx, state, me.id, w.rules.track) <= 0) return { ok: false, error: "목이 마르지 않다." };
+  const limited = w.source.grant === "limited";
+  const c = changeCondition(ctx, me.id, w.rules.track, limited ? -1 : -w.rules.drink, "drink", w.source.kind === "spring" ? "물을 떠 마셨다" : limited ? "물 보급 (아껴서 조금만)" : "물 보급");
+  const lines = [c?.line ?? "물을 마셨다."];
+  if (limited) lines.push("물이 모자라 보급 담당이 한 모금만 나눠 줬다. 아끼는 기색으로 서술한다.");
+  return { ok: true, lines, displays: c?.display ? [c.display] : [] };
+}
+
+/** 빈 물병을 채운다 (take_action.refill). 거점에서는 보급을 받으며 마시기까지 한다. 물이 모자라면 하나만 */
+export function refillWater(ctx: ToolContext): WaterResult {
+  const w = waterSource(ctx);
+  if ("error" in w) return { ok: false, error: w.error };
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId]!;
+  const limited = w.source.grant === "limited";
+  const lines: string[] = [];
+  const displays: ToolDisplayEvent[] = [];
+  // 거점에서 보급을 받으면 그 자리에서 마시기까지 한다
+  if (w.source.kind === "supply" && levelIndex(ctx, state, me.id, w.rules.track) > 0) {
+    const d = drinkWater(ctx);
+    if (d.ok) {
+      lines.push(...d.lines);
+      displays.push(...d.displays);
+    }
+  }
+  let left = limited ? 1 : Infinity;
+  for (const [empty, full] of Object.entries(w.rules.refill)) {
+    const n = Math.min(left, me.inventory[empty] ?? 0);
+    if (n <= 0) continue;
+    left -= n;
+    ctx.store.append({ type: "item_consumed", holder: me.id, itemId: empty, quantity: n });
+    ctx.store.append({ type: "item_granted", to: me.id, itemId: full, quantity: n });
+    lines.push(`${ctx.content.items[empty]?.name ?? empty} ${n}개를 채웠다.`);
+  }
+  if (!lines.length) return { ok: false, error: "채울 빈 그릇이 없다." };
+  if (limited && lines.some((l) => l.includes("채웠다"))) lines.push("물이 모자라 보급 담당이 하나만 채워 줬다.");
+  return { ok: true, lines, displays };
+}
+
+/** 하루의 갈증 (12-97). 끝 단계(fatal)에 이르면 changeCondition이 죽음을 처리한다 */
+function dailyThirst(ctx: ToolContext, rules: ThirstRules): Change | null {
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId]!;
+  const track = trackOf(ctx.content.scenario, rules.track);
+  let delta = rules.daily;
+  if (me.captive && rules.captive_max) delta = Math.max(0, Math.min(delta, track.levels.findIndex((l) => l.id === rules.captive_max) - levelIndex(ctx, state, me.id, track.id)));
+  return changeCondition(ctx, me.id, track.id, delta, "daily", me.captive ? "갇힌 곳의 물" : "하루가 지나 목이 마르다");
 }
 
 /** 우리 거점에서 무리의 연료로 몸을 녹일 수 있는가 */

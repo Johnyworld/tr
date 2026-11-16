@@ -14,6 +14,8 @@
   loot:
     chance: 0.3
     items:
+      - { item: water_bottle, weight: 2, qty: [1, 1] }
+      - { item: salted_meat, weight: 1, qty: [1, 1] }
       - { item: canned_food, weight: 3, qty: [1, 1] }
       - { item: wire_roll, weight: 2, qty: [1, 1] }
       - { item: cigarettes, weight: 1, qty: [1, 2] }
@@ -69,6 +71,7 @@
   loot:
     chance: 0.25
     items:
+      - { item: salted_meat, weight: 2, qty: [1, 1] }
       - { item: canned_food, weight: 2, qty: [1, 1] }
       - { item: c_armband, weight: 1, qty: [1, 1] }
 
@@ -88,6 +91,8 @@
   loot:
     chance: 0.55
     items:
+      - { item: dried_fish, weight: 1, qty: [1, 1] }
+      - { item: mushroom, weight: 1, qty: [1, 2] }
       - { item: wire_roll, weight: 3, qty: [1, 2] }
       - { item: canned_food, weight: 2, qty: [1, 1] }
       - { item: water_bottle, weight: 1, qty: [1, 1] }
@@ -109,6 +114,7 @@
   loot:
     chance: 0.5
     items:
+      - { item: mushroom, weight: 1, qty: [1, 1] }
       - { item: canned_food, weight: 3, qty: [1, 2] }
       - { item: cigarettes, weight: 2, qty: [1, 3] }
       - { item: blanket, weight: 2, qty: [1, 1] }
@@ -131,7 +137,11 @@
   loot:
     chance: 0.3
     items:
+      - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: canned_food, weight: 2, qty: [1, 1] }
+      - { item: potato, weight: 1, qty: [1, 1] }
+      - { item: cucumber, weight: 1, qty: [1, 1] }
+      - { item: tomato, weight: 1, qty: [1, 1] }
       - { item: dry_ration, weight: 2, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }
 
@@ -160,6 +170,9 @@
   loot:
     chance: 0.3
     items:
+      - { item: water_bottle, weight: 1, qty: [1, 1] }
+      - { item: dried_fish, weight: 1, qty: [1, 1] }
+      - { item: salted_meat, weight: 1, qty: [1, 1] }
       - { item: cigarettes, weight: 2, qty: [1, 2] }
       - { item: canned_food, weight: 1, qty: [1, 1] }
       - { item: trade_token, weight: 1, qty: [1, 1] }
@@ -209,6 +222,11 @@
   loot:
     chance: 0.35
     items:
+      - { item: potato, weight: 2, qty: [1, 2] }
+      - { item: wild_greens, weight: 1, qty: [1, 2] }
+      - { item: cucumber, weight: 2, qty: [1, 2] }
+      - { item: tomato, weight: 2, qty: [1, 2] }
+      - { item: apple, weight: 1, qty: [1, 1] }
       - { item: dry_ration, weight: 1, qty: [1, 1] }
       - { item: wire_roll, weight: 1, qty: [1, 1] }
       - { item: kitchen_knife, weight: 0.5, qty: [1, 1] }
@@ -233,6 +251,10 @@
   loot:
     chance: 0.25
     items:
+      - { item: water_bottle, weight: 2, qty: [1, 1] }
+      - { item: dried_fish, weight: 3, qty: [1, 2] }
+      - { item: apple, weight: 1, qty: [1, 2] }
+      - { item: tomato, weight: 1, qty: [1, 1] }
       - { item: canned_food, weight: 2, qty: [1, 2] }
       - { item: medkit, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }

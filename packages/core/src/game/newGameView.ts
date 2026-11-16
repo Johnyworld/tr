@@ -74,7 +74,7 @@ export type CharacterStepView = {
   points: { total: number; cost: { value: number; cost: number }[]; maxLow: number } | null;
   /** 이 단계에서 고를 수 있는 트레잇 */
   traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[] }[];
-  traitLimits: { max_positive: number; max_negative: number; max_personality?: number } | null;
+  traitLimits: { max_positive: number; max_negative: number; max_personality?: number; max_phobia?: number } | null;
   /** 확인 단계: 쓰지 않은 능력 포인트 */
   unusedPoints: number;
   /** 성격 축 (12-99). 없는 월드는 빈 목록 */

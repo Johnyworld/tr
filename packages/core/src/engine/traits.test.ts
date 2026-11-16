@@ -46,6 +46,17 @@ describe("트레잇 고르기", () => {
     expect(traitBalance(s, ["quick", "frail", "warm"])).toMatchObject({ spent: 2, earned: 2, personality: 1 });
   });
 
+  it("공포증은 max_phobia개까지 (12-108)", () => {
+    const c = content().scenario;
+    c.creation!.traits.max_phobia = 1;
+    c.traits.push(
+      { ...c.traits.find((t) => t.id === "frail")!, id: "fear_a", label: "가 공포", opposites: [], effects: { phobia: ["a"] } },
+      { ...c.traits.find((t) => t.id === "frail")!, id: "fear_b", label: "나 공포", opposites: [], effects: { phobia: ["b"] } },
+    );
+    expect(checkTraits(c, ["fear_a"])).toEqual([]);
+    expect(checkTraits(c, ["fear_a", "fear_b"]).join()).toContain("공포증 트레잇은 1개까지");
+  });
+
   it("무작위 트레잇은 언제나 규칙에 맞는다", () => {
     for (let seed = 1; seed < 100; seed++) expect(checkTraits(s, randomTraits(s, createSeededRng(seed)))).toEqual([]);
   });

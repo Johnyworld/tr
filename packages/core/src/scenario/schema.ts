@@ -80,7 +80,13 @@ export const scenarioFileSchema = z
         /** 트레잇 고르기 (기획서 4.6): 종류별 최대 개수. 긍정 비용 합 ≤ 부정 보상 합 */
         traits: z
           /** 성격은 연기 힌트라 max_personality가 없으면 개수 제한이 없다 (반대끼리만 막는다) */
-          .strictObject({ max_positive: z.number().int().min(0), max_negative: z.number().int().min(0), max_personality: z.number().int().min(0).optional() })
+          .strictObject({
+            max_positive: z.number().int().min(0),
+            max_negative: z.number().int().min(0),
+            max_personality: z.number().int().min(0).optional(),
+            /** 공포증(effects.phobia) 트레잇을 몇 개까지 (12-108). 없으면 제한 없음 */
+            max_phobia: z.number().int().min(0).optional(),
+          })
           .default({ max_positive: 3, max_negative: 3 }),
         /**
          * 과거 배경 (12-84): 붕괴 전에 무엇을 했는지. 능력 배치(stats: ability_array와 같은 값들)와 스킬(skills)의 기본값,

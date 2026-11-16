@@ -238,7 +238,7 @@ function CharacterStep({ view, busy, answer }: StepProps) {
           )}
           {step === "traits" && c.traitLimits && (
             <p className="newgame-note">
-              강점은 약점으로 얻은 포인트만큼만 가질 수 있습니다. 약점 {c.traitLimits.max_negative}개 · 강점 {c.traitLimits.max_positive}개까지
+              강점은 약점으로 얻은 포인트만큼만 가질 수 있습니다. 약점 {c.traitLimits.max_negative}개 · 강점 {c.traitLimits.max_positive}개까지{c.traitLimits.max_phobia !== undefined ? ` · 공포증 ${c.traitLimits.max_phobia}개까지` : ""}
               {c.traitLimits.max_personality !== undefined ? `, 성격 ${c.traitLimits.max_personality}개까지` : ", 성격은 몇 개든"}.
             </p>
           )}
@@ -616,15 +616,25 @@ function TraitStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
   type T = (typeof c.traits)[number];
   const pool = c.traits.filter((t) => (personality ? t.kind === "personality" : t.kind !== "personality"));
   const used = new Set<string>();
-  const pairs: [T, T][] = [];
+  const pairs: [T | null, T][] = [];
   const firsts = personality ? pool : pool.filter((t) => t.kind === "negative");
+  const opposed = (a: T, b: T) => a.opposites.includes(b.id) || b.opposites.includes(a.id);
   for (const t of firsts) {
     if (used.has(t.id)) continue;
-    const partner = pool.find((o) => !used.has(o.id) && o.id !== t.id && (t.opposites.includes(o.id) || o.opposites.includes(t.id)) && (personality || o.kind === "positive"));
+    // 반대가 여럿이면 값이 가장 가까운 것과 짝 (험악한 인상 1 ↔ 호감형 외모 1)
+    const partner = pool
+      .filter((o) => !used.has(o.id) && o.id !== t.id && opposed(t, o) && (personality || o.kind === "positive"))
+      .sort((a, b) => Math.abs(a.cost - t.cost) - Math.abs(b.cost - t.cost))[0];
     if (!partner) continue;
     used.add(t.id);
     used.add(partner.id);
     pairs.push([t, partner]);
+    // 짝을 못 찾은 같은 계열 강점은 바로 아래 오른쪽에 (아름다운 외모는 호감형 외모 아래)
+    for (const o of pool) {
+      if (used.has(o.id) || personality || o.kind !== "positive" || !opposed(t, o)) continue;
+      used.add(o.id);
+      pairs.push([null, o]);
+    }
   }
   const singles = pool.filter((t) => !used.has(t.id));
   const card = (t: T) => {
@@ -655,8 +665,8 @@ function TraitStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
       )}
       <div className="trait-pairs">
         {pairs.map(([l, r]) => (
-          <div key={l.id} className="trait-pair">
-            {card(l)}
+          <div key={r.id} className="trait-pair">
+            {l ? card(l) : <div className="trait-empty" aria-hidden="true" />}
             {card(r)}
           </div>
         ))}

@@ -115,7 +115,8 @@ creation:
     - { id: student, label: 학생, summary: 붕괴 때 학교에 있었다. 아무거나 엮어 쓸 것을 만드는 손재주가 있다, stats: { agility: 2, intellect: 1, senses: 1, nerve: -1 }, skills: { improvise: 1, scavenge: 1 }, items: [duct_tape, scrap_metal] }
   # 트레잇 고르기: 긍정 비용 합 ≤ 부정 보상 합. 종류별 최대
   # 성격은 개수 제한 없이 (연기 힌트). 반대되는 것끼리만 막는다
-  traits: { max_positive: 3, max_negative: 3 }
+  # 공포증은 하나까지 (드문 공포증을 쌓아 포인트를 버는 것을 막는다, 12-108)
+  traits: { max_positive: 3, max_negative: 3, max_phobia: 1 }
   # 대화로 만들 때(MCP) GM이 단계마다 장면처럼 묻도록 주는 힌트
   narration:
     name: "시작 장면 속 누군가가 이름을 묻는다 (명부나 장부를 든 사람, 문을 지키는 사람, 깨진 거울 조각에 비친 얼굴 등 그 시나리오에 맞게)"
@@ -408,9 +409,9 @@ traits:
   - { id: beautiful, label: 아름다운 외모, kind: positive, cost: 2, visible: true, description: "첫인상이 좋다 (외모 +2). 이성에게 끌리는 사람은 더 끌리고, 같은 성별은 질투할 수 있다", opposites: [attractive, ugly], effects: { looks: 2 } }
   - { id: attractive, label: 호감형 외모, kind: positive, cost: 1, visible: true, description: 첫인상이 좋다 (외모 +1), opposites: [beautiful, ugly], effects: { looks: 1 } }
   # ── 부정 ──
-  - { id: slow_learner, label: 느린 학습, kind: negative, cost: 2, description: 경험치 0.75배, opposites: [quick_learner], effects: { xp: 0.75 } }
+  - { id: slow_learner, label: 느린 학습, kind: negative, cost: 2, description: 경험치 0.6배, opposites: [quick_learner], effects: { xp: 0.6 } }
   - { id: slow_healer, label: 더디게 낫는 체질, kind: negative, cost: 1, description: 저절로 낫는 데 하루 더 걸린다, opposites: [fast_healer], effects: { recovery_days: 1 } }
-  - { id: frail, label: 허약 체질, kind: negative, cost: 2, description: "병에 잘 걸리고 잘 낫지 않는다 (질병 2배, 감염 1.3배, 낫는 확률 -15%)", opposites: [iron_gut], effects: { disease: 2, infection: 1.3, disease_recover: -0.15 } }
+  - { id: frail, label: 허약 체질, kind: negative, cost: 2, description: "병에 잘 걸리고 잘 낫지 않는다 (질병 2배, 낫는 확률 -15%)", opposites: [iron_gut], effects: { disease: 2, disease_recover: -0.15 } }
   - { id: cold_sensitive, label: 추위를 탐, kind: negative, cost: 1, description: 추운 날 더 춥다, opposites: [cold_hardy], effects: { cold: 1 } }
   - { id: big_eater, label: 대식가, kind: negative, cost: 1, description: 정량이 아니면 더 배고프다, opposites: [light_eater], effects: { hunger: 1 } }
   - { id: dull_senses, label: 둔한 감각, kind: negative, cost: 1, description: 경계 -1, opposites: [eagle_eye], effects: { skills: { sense_danger: -1 } } }
@@ -418,8 +419,8 @@ traits:
   - { id: bad_liar, label: 서툰 거짓말, kind: negative, cost: 1, description: 거짓말 -1, acting: 거짓말을 하면 눈을 피하고 말이 꼬인다, opposites: [silver_tongue], effects: { skills: { deceive: -1 } } }
   - { id: coward, label: 겁쟁이, kind: negative, cost: 2, description: "버티기 -1, 공포가 더 오른다", acting: 위험 앞에서 망설이고 먼저 몸을 뺀다, opposites: [steel_nerves], effects: { skills: { endure: -1 }, fear: 1 } }
   # 공포증 (12-103): 그것이 나오는 장면이면 공포가 한 단계 더 오른다 (보통 사람에게 무섭지 않은 장면이어도). 겪을수록 둔감해진다
-  - { id: nyctophobia, label: 어둠 공포, kind: negative, cost: 1, description: "어둠이 무섭다 (밤에는 겁이 더 난다)", acting: 불빛 없는 곳에서는 말이 빨라지고 손전등을 놓지 않는다, effects: { phobia: [dark] } }
-  - { id: claustrophobia, label: 폐소 공포, kind: negative, cost: 1, description: "좁고 갇힌 곳이 무섭다 (지하·터널에서 겁이 난다)", acting: 지하로 내려가면 숨이 가빠지고 출구 쪽을 자꾸 돌아본다, effects: { phobia: [enclosed] } }
+  - { id: nyctophobia, label: 어둠 공포, kind: negative, cost: 2, description: "어둠이 무섭다 (밤에는 겁이 더 난다)", acting: 불빛 없는 곳에서는 말이 빨라지고 손전등을 놓지 않는다, effects: { phobia: [dark] } }
+  - { id: claustrophobia, label: 폐소 공포, kind: negative, cost: 2, description: "좁고 갇힌 곳이 무섭다 (지하·터널에서 겁이 난다)", acting: 지하로 내려가면 숨이 가빠지고 출구 쪽을 자꾸 돌아본다, effects: { phobia: [enclosed] } }
   - { id: aquaphobia, label: 물 공포, kind: negative, cost: 1, description: "깊은 물이 무섭다 (잠긴 곳·물가에서 겁이 난다)", acting: 물이 무릎 위로 오르면 얼굴이 하얗게 질린다, effects: { phobia: [water] } }
   - { id: cynophobia, label: 개 공포, kind: negative, cost: 1, description: "개가 무섭다 (개가 나타나면 겁이 난다)", acting: 개를 보면 몸이 굳고 눈을 떼지 못한다, effects: { phobia: [dog] } }
   - { id: ugly, label: 험악한 인상, kind: negative, cost: 1, visible: true, description: 첫인상이 나쁘다 (외모 -1), acting: 사람들이 첫눈에 경계한다, opposites: [beautiful, attractive], effects: { looks: -1 } }

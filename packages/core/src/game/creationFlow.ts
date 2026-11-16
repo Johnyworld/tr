@@ -634,14 +634,14 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   } else if (step === "traits") {
     const lim = rules?.traitLimits;
     lines.push(
-      `물을 것: 트레잇(타고난 기질과 버릇)을 어떻게 정할지. 강점은 약점으로 얻은 포인트만큼만 가질 수 있다. 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개까지${s.persona ? "" : lim?.max_personality !== undefined ? `, 성격 ${lim.max_personality}개까지` : ", 성격은 몇 개든"}.${s.persona ? " 성격은 다음 단계에서 따로 정한다." : ""} 반대되는 것끼리는 함께 가질 수 없다.`,
+      `물을 것: 트레잇(타고난 기질과 버릇)을 어떻게 정할지. 강점은 약점으로 얻은 포인트만큼만 가질 수 있다. 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개까지${lim?.max_phobia !== undefined ? `, 공포증 ${lim.max_phobia}개까지` : ""}${s.persona ? "" : lim?.max_personality !== undefined ? `, 성격 ${lim.max_personality}개까지` : ", 성격은 몇 개든"}.${s.persona ? " 성격은 다음 단계에서 따로 정한다." : ""} 반대되는 것끼리는 함께 가질 수 없다.`,
     );
     if (narration.traits) lines.push(`서술 힌트: ${narration.traits}`);
   } else if (step === "traits_pick") {
     const lim = rules?.traitLimits;
     const list = traitChoices(s, draft, step);
     lines.push(
-      `물을 것: 약점과 강점을 한 번에 (각각 0개 이상, 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개까지). 약점은 포인트를 얻고 강점은 포인트를 쓴다. 강점에 쓴 포인트 합이 약점으로 얻은 포인트 합을 넘으면 안 된다.`,
+      `물을 것: 약점과 강점을 한 번에 (각각 0개 이상, 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개까지${lim?.max_phobia !== undefined ? `, 공포증 ${lim.max_phobia}개까지` : ""}). 약점은 포인트를 얻고 강점은 포인트를 쓴다. 강점에 쓴 포인트 합이 약점으로 얻은 포인트 합을 넘으면 안 된다.`,
       "아래 표를 번호 그대로 마크다운 표로 보여 주고 글로 답하게 한다. 번호나 이름으로, 여러 개면 쉼표로(예: 2, 5, 14), 없으면 \"없음\". 답은 받은 그대로 넘긴다 (번호를 이름으로 바꾸지 않아도 된다).",
       "",
       "| 번호 | 종류 | 이름 | 포인트 | 효과 |",

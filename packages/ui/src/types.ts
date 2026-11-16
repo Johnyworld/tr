@@ -101,7 +101,7 @@ export type NewGameView = {
     tiers: { value: number; count: number; label: string }[] | null;
     points: { total: number; cost: { value: number; cost: number }[]; maxLow: number } | null;
     traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[] }[];
-    traitLimits: { max_positive: number; max_negative: number; max_personality?: number } | null;
+    traitLimits: { max_positive: number; max_negative: number; max_personality?: number; max_phobia?: number } | null;
     unusedPoints: number;
     /** 성격 축 (12-99) */
     personaAxes?: { id: string; low: string; high: string; romance: boolean }[];

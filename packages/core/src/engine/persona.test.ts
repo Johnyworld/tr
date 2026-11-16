@@ -5,7 +5,8 @@ import { loadContent } from "../content/loader.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { describePlayerState } from "./context.ts";
-import { parsePersona, personaCheckParts, personaOf, rapportImpression, rollBlowup, rollHear, rollLeak, romanceShift } from "./persona.ts";
+import { buildPlayerView } from "../views/player.ts";
+import { parsePersona, personaCheckParts, personaChips, personaOf, rapportImpression, rollBlowup, rollHear, rollLeak, romanceShift } from "./persona.ts";
 import { executeTool } from "./tools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 
@@ -147,6 +148,15 @@ describe("성격 축", () => {
     // 온화하면 붙지 않는다
     env.me().persona = { temper: -2 };
     expect(personaCheckParts(content, env.me(), "intimidate")).toEqual([]);
+  });
+
+  it("캐릭터 시트에 0이 아닌 축만 축 순서대로 보인다", () => {
+    const { me, store } = setup();
+    me().persona = { talk: -1, temper: 2 };
+    expect(personaChips(content, me()).map((p) => p.label)).toEqual(["다혈질 2", "과묵함 1"]);
+    expect(buildPlayerView(store.getState(), content).persona[0]).toMatchObject({ label: "다혈질 2", acting: "같은 지시도 거칠게 하고 도발에 쉽게 발끈한다" });
+    me().persona = {};
+    expect(buildPlayerView(store.getState(), content).persona).toEqual([]);
   });
 
   it("GM 상태에 주인공의 성격과 연기 지침, 꼬리표 규칙이 들어간다", () => {

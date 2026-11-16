@@ -17,7 +17,7 @@ const STORAGE_KEY = "trpg.sheetTab";
 /** 탭마다 "새로 생긴 것"을 알아보는 지문. 보고 있지 않은 탭의 지문이 바뀌면 배지를 띄운다 */
 function fingerprints(p: PlayerView): Record<TabId, string> {
   return {
-    ability: JSON.stringify([p.stats, p.skills, p.traits.map((t) => t.id), p.growth?.skillPoints, p.service.promotionMissing]),
+    ability: JSON.stringify([p.stats, p.skills, p.traits.map((t) => t.id), p.persona?.map((x) => x.label), p.growth?.skillPoints, p.service.promotionMissing]),
     items: JSON.stringify([p.gear?.weapon?.id, p.gear?.armor.map((a) => a.id), p.inventory.map((i) => [i.id, i.quantity]), p.sceneItems.map((i) => [i.id, i.quantity])]),
     people: JSON.stringify([p.companions?.map((c) => [c.id, c.note]), p.squad?.map((m) => m.report), p.relations.map((r) => r.id), p.ties?.length]),
     journal: JSON.stringify([p.journal?.length ?? 0, p.deeds.length, p.beliefs.length]),

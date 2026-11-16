@@ -16,6 +16,7 @@ import {
   daysServed,
 } from "../game/missions.ts";
 import { effectiveSkill, traitsOf } from "../engine/traits.ts";
+import { personaChips } from "../engine/persona.ts";
 import { xpForLevel } from "../engine/growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
@@ -82,6 +83,8 @@ export type PlayerView = {
   statRange: { min: number; max: number };
   /** 트레잇 (자기 것은 모두 보인다) */
   traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; description: string }[];
+  /** 성격 축 (0이 아닌 것만, 축 순서). acting: 그 성격이 드러나는 모습 */
+  persona: { id: string; label: string; acting: string }[];
   /** 할 줄 아는 스킬 (아마추어 이상) */
   skills: { id: string; label: string; category: string; value: number }[];
   /** 레벨·경험치 (성장 규칙이 없으면 null). next: 다음 레벨까지 필요한 누적 경험치 */
@@ -343,6 +346,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     stats: scenario.stats.map((s) => ({ id: s.id, label: s.label, value: player.stats[s.id] ?? 0 })),
     statRange: { min: scenario.ranges.ability.min, max: scenario.ranges.ability.max },
     traits: traitsOf(content, player).map((t) => ({ id: t.id, label: t.label, kind: t.kind, description: t.description })),
+    persona: personaChips(content, player),
     skills: scenario.moves
       .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: effectiveSkill(content, player, m.id) }))
       .filter((m) => m.value >= 0),

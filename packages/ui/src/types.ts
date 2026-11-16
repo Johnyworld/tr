@@ -19,6 +19,8 @@ export type PlayerView = {
   stats: { id: string; label: string; value: number }[];
   statRange?: { min: number; max: number };
   traits: { id: string; label: string; kind: TraitKind; description: string }[];
+  /** 성격 축 (0이 아닌 것만) */
+  persona?: { id: string; label: string; acting: string }[];
   skills: { id: string; label: string; category: string; value: number }[];
   growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number } | null;
   inventory: ItemView[];

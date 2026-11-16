@@ -104,6 +104,16 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
                 ))}
               </div>
             )}
+            {(player.persona?.length ?? 0) > 0 && (
+              <div className="trait-chips persona-chips">
+                <span className="muted small">성격</span>
+                {player.persona!.map((p) => (
+                  <span key={p.id} className="trait-chip personality" title={p.acting}>
+                    {p.label}
+                  </span>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="block skills" id="sheet-skills">

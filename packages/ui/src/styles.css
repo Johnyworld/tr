@@ -1142,6 +1142,15 @@ body {
   gap: 4px;
 }
 
+.persona-chips {
+  align-items: center;
+  margin-top: 6px;
+}
+
+.persona-chips > .muted {
+  margin-right: 2px;
+}
+
 .trait-chip {
   font-size: 12px;
   padding: 1px 8px;

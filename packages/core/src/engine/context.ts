@@ -1,6 +1,7 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { describePersona } from "./persona.ts";
 import { describeTemperature } from "./climate.ts";
+import { troubleLine } from "./factionTalk.ts";
 import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -202,6 +203,7 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
     ...describeTieLines(state, content, c.id),
     `트레잇: ${traitLabels(content, c, { acting: true }).join(", ") || "-"}`,
     ...(describePersona(content, c) ? [`성격: ${describePersona(content, c)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
+    ...(animal ? [] : [troubleLine(state, content, c)].filter((x): x is string => !!x)),
     ...attractionNotes(content, c, player),
     ...(animal ? [] : nameNotes(state, player.id, c.id)),
   ]
@@ -254,6 +256,7 @@ function describeNpcCard(
     `원하는 것: ${npc.want} / 두려워하는 것: ${npc.fear}`,
     `트레잇: ${traitLabels(content, character, { acting: true }).join(", ") || "-"} / 가치관: ${values || "-"}`,
     ...(describePersona(content, character) ? [`성격: ${describePersona(content, character)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
+    ...[troubleLine(state, content, character)].filter((x): x is string => !!x),
     ...attractionNotes(content, character, player),
     ...nameNotes(state, player.id, npc.id),
     `행동 규칙:\n${npc.rules.map((r) => `  - ${r}`).join("\n") || "  - 없음"}`,

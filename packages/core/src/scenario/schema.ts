@@ -576,6 +576,16 @@ export const scenarioFileSchema = z
         }),
         /** 사기 -3 ~ +3을 부르는 말 (7개) */
         morale_labels: z.array(z.string().min(1)).length(7),
+        /**
+         * 무리 형편을 대하는 말투 (12-99): 장면의 같은 무리 사람이 어려움(분위기·배급·창고·전황)을 어떻게 입에 올리는지.
+         * 인물의 트레잇이 가장 많이 겹치는 태도를 고르고, 없으면 default. hint: GM의 연기 힌트
+         */
+        talk: z
+          .strictObject({
+            attitudes: z.array(z.strictObject({ id, label: z.string().min(1), hint: z.string().min(1), traits: z.array(id).min(1) })).min(1),
+            default: z.strictObject({ label: z.string().min(1), hint: z.string().min(1) }),
+          })
+          .optional(),
         /** 남은 양 판단 (며칠 치) → 말. min_days 내림차순 */
         stock_labels: z.array(z.strictObject({ min_days: z.number().min(0), label: z.string().min(1) })).min(1),
         /**
@@ -1075,6 +1085,7 @@ export const scenarioFileSchema = z
       if (harm && !harm.levels.some((l) => l.id === level)) problem(`recovery.natural_max_level: 알 수 없는 단계 ${level}`);
     }
     const trackIdSet = new Set(s.condition_tracks.map((t) => t.id));
+    for (const a of s.war?.talk?.attitudes ?? []) for (const t of a.traits) if (!s.traits.some((x) => x.id === t)) problem(`war.talk.${a.id}: 알 수 없는 트레잇 ${t}`);
     if (s.wounds) {
       const w = s.wounds;
       const bleed = s.condition_tracks.find((t) => t.id === w.track);

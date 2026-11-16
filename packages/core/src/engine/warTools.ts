@@ -1,4 +1,5 @@
 import { roleOf } from "../game/state.ts";
+import { factionTroubles } from "./factionTalk.ts";
 import { runRomance } from "./romance.ts";
 import { runCaptivity, warCaptures } from "./captivity.ts";
 import type { Content } from "../content/schemas.ts";
@@ -263,6 +264,11 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
         ]
       : []),
     `무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`,
+    ...(factionTroubles(state, content).length
+      ? [
+          `무리 사람들 사이에 도는 말: ${factionTroubles(state, content).join(" · ")}. 우리 땅의 장면이면 배경의 수군거림, 끼니·당번 자리의 불평이나 다독임으로 한두 마디 드러낸다 (매 턴 같은 말을 되풀이하지 않는다). 인물마다의 태도는 인물 카드의 "무리 형편에 대해". 숫자·사상자를 지어내지 않는다.`,
+        ]
+      : []),
     `세력 관계: ${o.others.map((f) => `${f.name} ${f.stance}`).join(", ")}`,
     ...o.own.plans.map(
       (p) =>

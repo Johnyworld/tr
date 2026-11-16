@@ -211,6 +211,11 @@ export const scenarioFileSchema = z
         leak: z.strictObject({ axis: id, chance: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]) }).optional(),
         /** 궁합: 처음 만날 때 이 축들이 같은 쪽이면 same, 반대쪽이면 opposite만큼 호감 (합은 -2~2) */
         rapport: z.strictObject({ axes: z.array(id), same: z.number().int(), opposite: z.number().int() }).optional(),
+        /**
+         * 빈 축 채우기: NPC의 성격 트레잇이 정하지 않은 축은 인물 id에서 이 무게로 값을 뽑는다 (판마다 같다).
+         * 축 id → { "-2": 무게, "-1": …, "0": …, "1": …, "2": … }. 없는 축은 0으로 둔다
+         */
+        fill: z.record(id, z.record(z.enum(["-2", "-1", "0", "1", "2"]), z.number().min(0))).optional(),
         /** 연애 문턱: NPC의 이 축 값 × per_level만큼 마음이 생기는 호감과 고백을 받아들이는 호감이 오른다 (+쪽 = 마음이 늦다) */
         romance: z.strictObject({ axis: id, per_level: z.number().int() }).optional(),
       })
@@ -1070,7 +1075,7 @@ export const scenarioFileSchema = z
       const axes = new Set(s.persona.axes.map((x) => x.id));
       if (axes.size !== s.persona.axes.length) problem("persona.axes: 중복된 id가 있다");
       for (const t of s.traits) for (const ax of Object.keys(t.persona ?? {})) if (!axes.has(ax)) problem(`traits.${t.id}.persona: 알 수 없는 성격 축 ${ax}`);
-      const used = [s.persona.blowup?.axis, s.persona.leak?.axis, s.persona.romance?.axis, ...(s.persona.rapport?.axes ?? [])];
+      const used = [s.persona.blowup?.axis, s.persona.leak?.axis, s.persona.romance?.axis, ...(s.persona.rapport?.axes ?? []), ...Object.keys(s.persona.fill ?? {})];
       for (const ax of used) if (ax && !axes.has(ax)) problem(`persona: 알 수 없는 성격 축 ${ax}`);
     } else if (s.traits.some((t) => t.persona)) problem("traits의 persona는 persona(성격 축)가 있을 때만 쓴다");
     if (s.body?.fear?.nerves_from) {

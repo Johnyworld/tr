@@ -102,12 +102,12 @@ function Step({ view, busy, answer }: StepProps) {
           <div className="choice-list">
             <button type="button" className="choice-card" disabled={busy} onClick={() => answer("off")}>
               <strong>끄기 (기본)</strong>
-              <span className="choice-desc">연애나 성적인 이야기는 나오지 않습니다. 폭력과 죽음, 생존의 잔혹함은 어느 쪽이든 나옵니다.</span>
+              <span className="choice-desc">성적인 이야기는 나오지 않습니다. 연애는 나오지만 손잡기·입맞춤까지입니다. 폭력과 죽음, 생존의 잔혹함은 어느 쪽이든 나옵니다.</span>
             </button>
             <button type="button" className="choice-card" disabled={busy} onClick={() => answer("on")}>
               <strong>켜기</strong>
               <span className="choice-desc">
-                성인 사이의 끌림과 연애(장면은 암전), 성적인 농담·괴롭힘·위협(시도까지만)이 나올 수 있습니다. {view.content!.adultAge}세 미만은 어떤 경우에도 그 대상이
+                성인 사이의 잠자리(장면은 암전), 성적인 농담·괴롭힘·위협(시도까지만)이 나올 수 있습니다. {view.content!.adultAge}세 미만은 어떤 경우에도 그 대상이
                 되지 않습니다.
               </span>
             </button>
@@ -713,7 +713,6 @@ function PersonaStep({ view, busy, answer }: StepProps) {
               })}
             </div>
             <span className="persona-side high">{a.high}</span>
-            {a.romance && <span className="persona-note muted small">연애: 성인 주제를 끈 세계에서는 쓰이지 않습니다</span>}
           </div>
         ))}
       </div>

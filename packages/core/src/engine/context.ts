@@ -201,6 +201,7 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
     ...describeProfileLines(state, content, c),
     ...describeTieLines(state, content, c.id),
     `트레잇: ${traitLabels(content, c, { acting: true }).join(", ") || "-"}`,
+    ...(describePersona(content, c) ? [`성격: ${describePersona(content, c)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
     ...attractionNotes(content, c, player),
     ...(animal ? [] : nameNotes(state, player.id, c.id)),
   ]
@@ -252,6 +253,7 @@ function describeNpcCard(
     `당신에 대한 태도: ${attitude}`,
     `원하는 것: ${npc.want} / 두려워하는 것: ${npc.fear}`,
     `트레잇: ${traitLabels(content, character, { acting: true }).join(", ") || "-"} / 가치관: ${values || "-"}`,
+    ...(describePersona(content, character) ? [`성격: ${describePersona(content, character)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
     ...attractionNotes(content, character, player),
     ...nameNotes(state, player.id, npc.id),
     `행동 규칙:\n${npc.rules.map((r) => `  - ${r}`).join("\n") || "  - 없음"}`,
@@ -457,11 +459,14 @@ function describeFort(state: GameState, content: Content): string {
   return `${content.locations[zone]?.name ?? zone}의 담: ${["", "메워 둠", "단단히 보강함", "망루와 이중 담"][fort]} (습격을 받으면 지키는 쪽이 더 버틴다)`;
 }
 
-/** 수위 (12-57): GM이 지킬 선. 성인 주제가 꺼져 있으면 연애·성적인 것을 들이지 않는다 */
+/** 수위 (12-57): GM이 지킬 선. 연애는 수위와 상관없이 나오고, 꺼져 있으면 성적인 것(잠자리, 성적 농담·괴롭힘·위협)을 들이지 않는다 */
 function describeContentRating(state: GameState, content: Content): string {
   const age = content.scenario.content_rating?.adult_age ?? 18;
   if (!state.options?.mature) {
-    return "수위: 성인 주제 꺼짐. 연애, 성적인 농담·괴롭힘·위협을 장면에 들이지 않는다 (플레이어가 원하면 set_content_options로 켤 수 있다고만 알린다). 폭력과 죽음은 담담하게 다룬다";
+    return (
+      `수위: 성인 주제 꺼짐. 성인 사이의 끌림과 연애는 나온다 (${age}세 미만은 어떤 경우에도 연애 대상이 아니다). 연인 사이도 손잡기·기대기·입맞춤까지, 잠자리는 없다. ` +
+      "성적인 농담·괴롭힘·위협을 장면에 들이지 않는다 (플레이어가 원하면 set_content_options로 켤 수 있다고만 알린다). 폭력과 죽음은 담담하게 다룬다"
+    );
   }
   return (
     `수위: 성인 주제 켜짐. ${age}세 미만은 주인공이든 인물이든 어떤 경우에도 연애·성적인 대상이 아니다 (나이를 확인한다). ` +

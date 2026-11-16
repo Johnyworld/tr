@@ -266,7 +266,7 @@ export function createGameSchemas(s: Scenario) {
     flirtDay: z.record(z.string(), z.number().int()).default({}),
     /**
      * 이 세계의 설정. 게임 중 상태 화면의 설정이나 대화로 바꾼다.
-     * mature: 수위 (12-57). 성인 주제(연애·성적 위협)를 다룬다. 기본은 끔
+     * mature: 수위 (12-57). 성인 주제(잠자리, 성적 농담·괴롭힘·위협)를 다룬다. 연애는 이것과 상관없다. 기본은 끔
      * dialogue: 대화 형식 (12-63). novel 소설(대사를 서술에 녹인다) / script 대본(대사를 "이름: 대사" 줄로 뗀다)
      */
     options: z

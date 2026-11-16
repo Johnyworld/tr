@@ -17,12 +17,39 @@ export type PersonaAxis = PersonaRules["axes"][number];
 
 const clamp = (n: number) => Math.max(-2, Math.min(2, n));
 
-/** 이 캐릭터의 축 값 (0인 축은 빠질 수 있다) */
+/** 인물 id와 축에서 정해지는 0 ~ 1 (판마다 같다) */
+function seeded(id: string, axis: string): number {
+  let h = 2166136261;
+  for (const ch of `${id}:${axis}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  h = Math.imul(h ^ (h >>> 15), 2246822507);
+  h = Math.imul(h ^ (h >>> 13), 3266489909);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/** 빈 축을 무게대로 뽑는다 */
+function fillAxis(weights: Partial<Record<string, number>>, roll: number): number {
+  const entries = (["-2", "-1", "0", "1", "2"] as const).map((k) => [Number(k), weights[k] ?? 0] as const);
+  const total = entries.reduce((n, [, w]) => n + w, 0);
+  if (total <= 0) return 0;
+  let acc = 0;
+  for (const [v, w] of entries) {
+    acc += w / total;
+    if (roll < acc) return v;
+  }
+  return 0;
+}
+
+/**
+ * 이 캐릭터의 축 값 (0인 축은 빠질 수 있다).
+ * 주인공처럼 persona가 있으면 그것. NPC는 성격 트레잇의 합이고, 트레잇이 정하지 않은 축은 fill의 무게로 인물 id에서 뽑는다
+ */
 export function personaOf(content: Content, c: Pick<Character, "id" | "traits" | "persona">): Record<string, number> {
-  if (!content.scenario.persona) return {};
+  const rules = content.scenario.persona;
+  if (!rules) return {};
   if (c.persona) return c.persona;
   const sum: Record<string, number> = {};
   for (const t of traitsOf(content, c)) for (const [axis, v] of Object.entries(t.persona ?? {})) sum[axis] = (sum[axis] ?? 0) + v;
+  for (const [axis, weights] of Object.entries(rules.fill ?? {})) if (sum[axis] === undefined) sum[axis] = fillAxis(weights, seeded(c.id, axis));
   return Object.fromEntries(Object.entries(sum).map(([k, v]) => [k, clamp(v)]).filter(([, v]) => v !== 0));
 }
 

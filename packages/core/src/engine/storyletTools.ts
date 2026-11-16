@@ -678,7 +678,7 @@ export const DIALOGUE_STYLE_LABELS: Record<DialogueStyle, string> = { novel: "�
 
 export const gameOptionsPatchSchema = z
   .strictObject({
-    mature: z.boolean().optional().describe("성인 주제(성인 사이의 연애, 성적인 농담·괴롭힘·위협)를 다룬다"),
+    mature: z.boolean().optional().describe("성인 주제(성인 사이의 잠자리를 암전으로, 성적인 농담·괴롭힘·위협)를 다룬다. 연애는 이것과 상관없이 나온다"),
     dialogue: z.enum(DIALOGUE_STYLES).optional().describe("대화 형식. novel 소설(대사를 서술에 녹인다) / script 대본(대사를 '이름: \"대사\"' 줄로 뗀다)"),
   })
   .refine((x) => x.mature !== undefined || x.dialogue !== undefined, "바꿀 설정을 하나 이상 준다.");
@@ -703,7 +703,7 @@ export function setGameOptions(ctx: ToolContext, patch: GameOptionsPatch): strin
 export const setContentOptions = defineTool({
   name: "set_content_options",
   description:
-    "이 세계의 설정을 바꾼다. mature: 수위 (12-57). 성인 주제(성인 사이의 연애, 성적인 농담·괴롭힘·위협)를 다룬다. " +
+    "이 세계의 설정을 바꾼다. mature: 수위 (12-57). 성인 주제(성인 사이의 잠자리는 암전으로, 성적인 농담·괴롭힘·위협)를 다룬다. 연애는 수위와 상관없이 나온다. " +
     "켜져 있어도 미성년자는 어떤 경우에도 그 대상이 아니고, 노골적인 묘사는 하지 않는다. " +
     "dialogue: 대화 형식. novel(소설, 대사를 서술에 녹인다) / script(대본, 대사를 따로 줄로 뗀다). 플레이어가 직접 바꾸겠다고 할 때만 부른다.",
   schema: gameOptionsPatchSchema,

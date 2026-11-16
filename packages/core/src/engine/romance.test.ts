@@ -26,12 +26,12 @@ const men = (w: W) =>
     .slice(0, 3);
 
 describe("연애", () => {
-  it("수위가 꺼져 있으면 연애를 다루지 않는다", () => {
+  it("연애는 성인 콘텐츠가 아니라 수위가 꺼져 있어도 다룬다 (수위는 잠자리·성적 위협만 가린다)", () => {
     const w = open(false);
     const [m] = men(w);
     enter(w, m!);
     const out = w.executeTool("romance", { target: m, action: "confess", approach: null, stat: null });
-    expect(!out.ok && out.error).toContain("수위");
+    expect(out.ok).toBe(true);
   });
 
   it("끌림은 인물마다 다르고 판마다 같다", () => {

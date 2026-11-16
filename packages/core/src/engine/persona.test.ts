@@ -39,6 +39,18 @@ describe("성격 축", () => {
     expect(p.talk).toBe(-2);
   });
 
+  it("트레잇이 정하지 않은 축은 인물 id에서 채운다: 판마다 같고, 트레잇·직접 적은 값이 우선이다", () => {
+    const npcs = Object.values(content.npcs).map((n) => ({ id: n.id, traits: n.traits, persona: null }));
+    const hearts = npcs.map((n) => personaOf(content, n).heart ?? 0);
+    expect(new Set(hearts).size).toBeGreaterThanOrEqual(4); // 금사빠 ↔ 돌부처가 퍼진다
+    expect(npcs.map((n) => personaOf(content, n).heart ?? 0)).toEqual(hearts); // 같은 인물은 늘 같다
+    const hot = npcs.find((n) => n.traits.includes("hot_tempered"))!;
+    expect(personaOf(content, hot).temper).toBe(2); // 트레잇이 정한 축은 채우지 않는다
+    expect(personaOf(content, { ...hot, persona: { temper: -1 } })).toEqual({ temper: -1 }); // 직접 적은 값 (주인공)
+    // 주인공처럼 비워 둔 값({})은 채우지 않는다
+    expect(personaOf(content, { ...hot, persona: {} })).toEqual({});
+  });
+
   it("플레이어의 답을 읽는다: 이름과 단계, 이름만이면 1, 기본은 모두 0", () => {
     expect(parsePersona(s, "다혈질 2, 과묵함 1")).toEqual({ ok: true, values: { temper: 2, talk: -1 } });
     expect(parsePersona(s, "돌부처")).toEqual({ ok: true, values: { heart: 1 } });

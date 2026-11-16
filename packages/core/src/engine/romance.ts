@@ -16,7 +16,7 @@ import { rollPlayerCheck } from "./checks.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
- * 연애 (12-58). 수위가 켜져 있고 둘 다 성인일 때만 (12-57).
+ * 연애 (12-58). 둘 다 성인일 때만. 연애는 성인 콘텐츠가 아니라 수위(12-57)와 상관없다 (수위는 잠자리·성적 위협만 가린다).
  * - 끌림은 인물 데이터 (attracted_to). 없으면 월드의 비율로 인물 id에서 정해진다 (판마다 같다). 성별만으로 정하지 않는다
  * - 마음: 끌리고 호감이 interest_affection 이상이면 마음이 있다. GM에게는 낌새(눈길)로만 보인다 (속마음을 말하지 않는다, 원칙 4)
  * - 다가가기(flirt)는 판정, 고백(confess)을 받아들일지는 코드가 정한다 (끌림·호감·신뢰, 이미 마음을 둔 사람이 있는지)
@@ -49,11 +49,12 @@ export function attractionOf(state: GameState, content: Content, c: Character): 
   return [];
 }
 
-/** 연애가 가능한가: 수위가 켜져 있고 둘 다 성인이고 살아 있다 */
+/** 연애가 가능한가: 둘 다 성인이고 살아 있다 */
 export function romanceAllowed(state: GameState, content: Content, a: string, b: string): boolean {
   const ca = state.characters[a];
   const cb = state.characters[b];
-  return !!rules(content) && !!state.options?.mature && !!ca && !!cb && !ca.dead && !cb.dead && a !== b && isAdult(content, ca) && isAdult(content, cb);
+  // 연애는 성인 콘텐츠가 아니다 (수위와 상관없이). 성인끼리만: 미성년자는 어떤 경우에도 대상이 아니다
+  return !!rules(content) && !!ca && !!cb && !ca.dead && !cb.dead && a !== b && isAdult(content, ca) && isAdult(content, cb);
 }
 
 /** from이 to에게 끌리는가 */
@@ -108,7 +109,7 @@ export function runRomance(ctx: ToolContext): ToolDisplayEvent[] {
   const r = rules(ctx.content);
   const state = ctx.store.getState();
   const me = state.playerId;
-  if (!r || !state.options?.mature) return [];
+  if (!r) return [];
   const lovers = loversOf(state, ctx.content, me).filter((id) => state.romances[key(me, id)]?.stage === "lovers");
   const displays: ToolDisplayEvent[] = [];
   // 둘이 주인공에게 마음이 있고 한자리에 있으면 서로 앙금이 생긴다 (삼각관계)
@@ -159,7 +160,7 @@ export function onLoverDeath(ctx: ToolContext, id: string): void {
 
 /** GM 상태: 연인, 그리고 장면에서 보이는 낌새 (속마음 대신 겉으로 보이는 것) */
 export function describeRomanceForGm(state: GameState, content: Content): string {
-  if (!rules(content) || !state.options?.mature) return "";
+  if (!rules(content)) return "";
   const me = state.playerId;
   const lines: string[] = [];
   const lovers = loversOf(state, content, me).filter((id) => state.romances[key(me, id)]?.stage === "lovers");
@@ -181,7 +182,7 @@ export function describeRomanceForGm(state: GameState, content: Content): string
 const romanceTool = defineTool({
   name: "romance",
   description:
-    "연애 (12-58, 수위가 켜져 있고 둘 다 성인일 때만). 플레이어가 그렇게 하기로 했을 때만. " +
+    "연애 (12-58, 둘 다 성인일 때만. 수위가 꺼져 있으면 연인 사이도 손잡기·입맞춤까지, 잠자리는 없다). 플레이어가 그렇게 하기로 했을 때만. " +
     "flirt 다가간다 (approach: 교섭 등 스킬, 하루에 한 사람 한 번), confess 마음을 고백한다 (받아들일지는 시스템이 정한다), break_up 헤어진다. " +
     "상대는 장면에 있어야 한다. 결과를 미리 말하지 않는다. 잠자리는 암전으로 넘긴다.",
   schema: z.strictObject({
@@ -197,7 +198,7 @@ const romanceTool = defineTool({
     const me = state.playerId;
     const t = input.target;
     if (!r) return { ok: false, error: "이 월드에는 연애 규칙이 없다." };
-    if (!romanceAllowed(state, content, me, t)) return { ok: false, error: "연애는 수위가 켜져 있고 둘 다 성인일 때만 다룬다." };
+    if (!romanceAllowed(state, content, me, t)) return { ok: false, error: "연애는 둘 다 성인이고 살아 있을 때만 다룬다." };
     if (!state.scene.present.includes(t)) return { ok: false, error: "그 사람이 장면에 없다." };
     const name = playerCalls(state, content, t);
     const lovers = loversOf(state, content, me);

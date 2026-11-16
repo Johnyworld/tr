@@ -1,5 +1,6 @@
 # 연애·질투·삼각관계·성적 위협 (기획서 12.7, 12-58, 12-59)
-# 모두 성인 주제 태그 mature: 수위가 켜져 있고 주인공과 배역이 모두 성인일 때만 열린다 (엔진이 거른다)
+# 연애 이야기는 수위와 상관없이 열린다 (배역은 둘 다 성인일 때만 정해진다). 잠자리(같은 담요)와 성적 위협·그 뒷이야기만
+# 성인 주제 태그 mature: 수위가 켜져 있고 주인공과 배역이 모두 성인일 때만 열린다 (엔진이 거른다)
 # 지킬 선: 잠자리는 암전. 몸과 행위를 그리지 않는다. 성폭력은 위협과 시도까지만, 어떤 선택·결과에서도 일어나지 않는다.
 #          판정은 어떻게 벗어나는지와 무엇을 대가로 치르는지(다침, 마음, 빼앗김, 다른 사람의 개입)를 정한다. 피해자를 탓하지 않는다
 # 연애와 위협은 한 이야기에 섞지 않는다
@@ -18,7 +19,7 @@
 
 - id: rm_glance
   title: 눈이 마주친 순간
-  tags: [world, mature]
+  tags: [world]
   when:
     day_gte: 2
     segments: [morning, day, evening]
@@ -54,7 +55,7 @@
 
 - id: rm_fireside
   title: 불가에 남은 둘
-  tags: [world, mature]
+  tags: [world]
   when:
     day_gte: 3
     segments: [evening, night]
@@ -84,7 +85,7 @@
 
 - id: rm_guarded_outside
   title: 등 뒤를 맡긴 사람
-  tags: [world, mature]
+  tags: [world]
   when:
     day_gte: 3
     zone_owner: [none, other]
@@ -168,7 +169,7 @@
 
 - id: rm_lover_hurt
   title: 피 묻은 소매
-  tags: [world, mature]
+  tags: [world]
   urgent: true
   when:
     has_lover: true
@@ -225,7 +226,7 @@
 
 - id: rm_lover_sent_away
   title: 섬으로 가는 배
-  tags: [world, mature]
+  tags: [world]
   when:
     has_lover: true
     day_gte: 8
@@ -273,7 +274,7 @@
 
 - id: rm_lover_or_squad
   title: 사라진 약 상자
-  tags: [world, mature]
+  tags: [world]
   when:
     has_lover: true
     day_gte: 6
@@ -337,7 +338,7 @@
 
 - id: rm_two_suitors
   title: 서로 하겠다는 일
-  tags: [world, mature]
+  tags: [world]
   when:
     day_gte: 4
     segments: [morning, day, evening]
@@ -388,7 +389,7 @@
 
 - id: rm_lover_and_suitor
   title: 연인이 보는 앞에서
-  tags: [world, mature]
+  tags: [world]
   when:
     has_lover: true
     day_gte: 5
@@ -424,7 +425,7 @@
 
 - id: rm_jealous_confront
   title: 누구야
-  tags: [world, mature]
+  tags: [world]
   urgent: true
   when:
     has_lover: true
@@ -469,7 +470,7 @@
 
 - id: rm_ex_again
   title: 헤어진 사람
-  tags: [world, mature]
+  tags: [world]
   when:
     flags_all: [rm_split]
     flags_none: [rm_ex_met]
@@ -508,7 +509,7 @@
 
 - id: rm_rival_meet
   title: 그 사람의 다른 연인
-  tags: [world, mature]
+  tags: [world]
   when:
     day_gte: 3
     segments: [morning, day, evening]

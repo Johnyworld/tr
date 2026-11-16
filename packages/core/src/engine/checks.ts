@@ -7,7 +7,8 @@ import { conditionPenalty, moveOf, statLabel } from "../scenario/scenario.ts";
 import { gainCheckXp } from "./growth.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
-export type PlayerCheckInput = { move: string; stat: string; difficulty: Difficulty; intent: string };
+/** distance: 장면의 인물을 칠 때 상대와의 거리 (12-93). 무기의 거리 보정이 붙는다 */
+export type PlayerCheckInput = { move: string; stat: string; difficulty: Difficulty; intent: string; distance?: string | null };
 
 export type PlayerCheckResult =
   | {
@@ -49,7 +50,7 @@ export function rollPlayerCheck(
   const ability = actor.stats[input.stat] ?? 0;
   const skill = (actor.skills[input.move] ?? move.default) + traitSkillMod(content, actor, input.move) + (actor.id === state.playerId ? Math.max(companionSkillMod(state, content, input.move), squadFollowBonus(state, content, input.move)) : 0);
   // 손에 든 무기·지닌 도구의 보정은 상한 안에서, 방어구·짐의 불리함은 따로 (기획서 4.8)
-  const gear = gearModifiers(content, actor, input.move);
+  const gear = gearModifiers(content, actor, input.move, input.distance);
   const capped = Math.min(scenario.ranges.cap, ability + skill + gear.skill);
   const target = options.target ? state.characters[options.target] : undefined;
   const modifiers = {

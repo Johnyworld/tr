@@ -60,7 +60,34 @@ export function encumbrance(content: Content, c: Character): 0 | 1 | 2 {
  * - skill: 손에 든 무기의 보정(그 무기의 스킬일 때) 또는 지닌 도구 중 가장 큰 보정. 능력+스킬 상한 안에서 더한다
  * - penalty: 입은 방어구의 불리함 + 짐이 무거울 때. 상한과 따로 뺀다
  */
-export function gearModifiers(content: Content, c: Character, move: string): { skill: number; penalty: number } {
+/**
+ * 사거리 (12-93): 손에 든 무기(이 스킬에 쓰지 않으면 맨손·기본)로 이 스킬을 쓸 때 거리별 판정 보정. 거리 규칙이 없거나 이 스킬에 거리가 없으면 null
+ */
+export function rangeOf(content: Content, c: Character, move: string): Record<string, number> | null {
+  const g = content.scenario.gear;
+  if (!g?.distances?.length) return null;
+  const w = itemOf(content, equippedItem(c, "weapon"))?.weapon;
+  if (w && w.moves.includes(move) && w.range?.[move]) return w.range[move]!;
+  return g.default_range[move] ?? null;
+}
+
+/** 이 거리에서 칠 수 있는지. 안 되면 오류 문장 */
+export function rangeProblem(content: Content, c: Character, move: string, distance: string | null | undefined): string | null {
+  const g = content.scenario.gear;
+  const r = rangeOf(content, c, move);
+  if (!r || !g?.distances) return null;
+  const label = (d: string) => g.distances!.find((x) => x.id === d)?.label ?? d;
+  if (!distance) return `상대와의 거리(check.distance)를 고른다: ${g.distances.map((d) => `${d.id} ${d.label}`).join(", ")}`;
+  if (!g.distances.some((d) => d.id === distance)) return `알 수 없는 거리: ${distance}`;
+  if (r[distance] === undefined) {
+    const weaponId = equippedItem(c, "weapon");
+    const what = weaponId && itemOf(content, weaponId)?.weapon?.moves.includes(move) ? nameOf(content, weaponId) : "맨손";
+    return `${what}(으)로는 ${label(distance)}에서 칠 수 없다 (닿는 거리: ${Object.keys(r).map(label).join(", ")}). 거리를 좁히거나 벌리는 행동을 먼저 하거나, 다른 무기를 든다.`;
+  }
+  return null;
+}
+
+export function gearModifiers(content: Content, c: Character, move: string, distance?: string | null): { skill: number; penalty: number } {
   let skill = 0;
   const weapon = itemOf(content, equippedItem(c, "weapon"))?.weapon;
   if (weapon?.moves.includes(move)) skill = Math.max(skill, weapon.bonus);
@@ -72,6 +99,8 @@ export function gearModifiers(content: Content, c: Character, move: string): { s
   for (const slot of ARMOR_SLOTS) penalty += itemOf(content, equippedItem(c, slot))?.armor?.penalty[move] ?? 0;
   const carry = content.scenario.gear?.carry;
   if (carry && encumbrance(content, c) > 0 && carry.encumbered_moves.includes(move)) penalty += carry.penalty;
+  // 거리 보정은 상황 보정이라 상한과 따로 (12-93)
+  if (distance) penalty += rangeOf(content, c, move)?.[distance] ?? 0;
   return { skill, penalty };
 }
 
@@ -160,12 +189,20 @@ export function armorAbsorb(ctx: ToolContext, steps: number): { steps: number; l
   return { steps: left, lines };
 }
 
-/** 감염원에게 다칠 때 입은 방어구가 감염을 막는지 */
-export function armorBlocksInfection(ctx: ToolContext): boolean {
+/**
+ * 감염원에게 다칠 때 입은 방어구가 감염을 막는지. 자리마다 덮는 곳이 달라 따로 막을 기회를 가진다 (하나라도 막으면 막는다).
+ * 막을 확률 = 1 - Π(1 - 각 방어구의 확률). 예: 0.6과 0.5를 입으면 0.8. 막아 낸 방어구는 1 닳는다
+ */
+export function armorBlocksInfection(ctx: ToolContext): { blocked: boolean; lines: string[] } {
   const me = ctx.store.getState().characters[ctx.store.getState().playerId]!;
-  let p = 0;
-  for (const slot of ARMOR_SLOTS) p = Math.max(p, itemOf(ctx.content, equippedItem(me, slot))?.armor?.blocks_infection ?? 0);
-  return p > 0 && ctx.rng() < p;
+  for (const slot of ARMOR_SLOTS) {
+    const id = equippedItem(me, slot);
+    const p = itemOf(ctx.content, id)?.armor?.blocks_infection ?? 0;
+    if (!id || p <= 0 || ctx.rng() >= p) continue;
+    const broke = wearItem(ctx, me.id, id, 1);
+    return { blocked: true, lines: [`${nameOf(ctx.content, id)}이(가) 물림을 막아 냈다. 살갗까지 닿지 않았다.`, ...(broke ? [broke] : [])] };
+  }
+  return { blocked: false, lines: [] };
 }
 
 const equipTool = defineTool({
@@ -290,6 +327,12 @@ export function runRestock(ctx: ToolContext): void {
 }
 
 /** 제작·수리를 이 판정으로 할 수 있는지. 안 되면 오류 문장 */
+/** 도구 하나(또는 그중 하나)를 지녔는지 */
+export function hasTool(c: Character, tool: string | readonly string[]): boolean {
+  return (typeof tool === "string" ? [tool] : tool).some((t) => (c.inventory[t] ?? 0) > 0);
+}
+const toolName = (content: Content, tool: string | readonly string[]) => (typeof tool === "string" ? [tool] : tool).map((t) => nameOf(content, t)).join(" 또는 ");
+
 export function planCraft(content: Content, c: Character, craft: { recipe: string | null; repair: string | null }, move: string | undefined): string | null {
   const has = (bundle: Record<string, number>) => Object.entries(bundle).find(([id, q]) => (c.inventory[id] ?? 0) < q);
   if (craft.recipe) {
@@ -298,8 +341,8 @@ export function planCraft(content: Content, c: Character, craft: { recipe: strin
     if (move !== r.move) return `${r.label}은(는) ${r.move} 판정으로 만든다 (check.move).`;
     const missing = has(r.materials);
     if (missing) return `${r.label}에 ${nameOf(content, missing[0])}이(가) ${missing[1]}개 필요하다.`;
-    const tool = r.tools.find((t) => (c.inventory[t] ?? 0) < 1);
-    if (tool) return `${r.label}에는 ${nameOf(content, tool)}이(가) 있어야 한다.`;
+    const tool = r.tools.find((t) => !hasTool(c, t));
+    if (tool) return `${r.label}에는 ${toolName(content, tool)}이(가) 있어야 한다.`;
     return null;
   }
   if (craft.repair) {
@@ -309,8 +352,8 @@ export function planCraft(content: Content, c: Character, craft: { recipe: strin
     if (move !== item.repair.move) return `${item.name}은(는) ${item.repair.move} 판정으로 고친다 (check.move).`;
     const missing = has(item.repair.materials);
     if (missing) return `${item.name}을(를) 고치려면 ${nameOf(content, missing[0])}이(가) ${missing[1]}개 필요하다.`;
-    const tool = item.repair.tools.find((t) => (c.inventory[t] ?? 0) < 1);
-    if (tool) return `${item.name}을(를) 고치려면 ${nameOf(content, tool)}이(가) 있어야 한다.`;
+    const tool = item.repair.tools.find((t) => !hasTool(c, t));
+    if (tool) return `${item.name}을(를) 고치려면 ${toolName(content, tool)}이(가) 있어야 한다.`;
     return null;
   }
   return "craft에는 recipe나 repair 하나를 넣는다.";

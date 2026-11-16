@@ -30,7 +30,7 @@
   kind: weapon
   weight: 3.5
   value: 18
-  weapon: { moves: [shoot, fight], max_harm: heavy, noise: 2, ammo: rifle_rounds, ammo_moves: [shoot], wound: { shoot: gunshot, fight: blunt } }
+  weapon: { moves: [shoot, fight], max_harm: heavy, noise: 2, ammo: rifle_rounds, ammo_moves: [shoot], wound: { shoot: gunshot, fight: blunt }, range: { shoot: { close: -1, near: 0, far: 0 } } }
   durability: 8
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
@@ -127,7 +127,7 @@
   kind: weapon
   weight: 3.0
   value: 16
-  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, bonus: 1, wound: { shoot: gunshot } }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, wound: { shoot: gunshot }, range: { shoot: { close: 1, near: 0 } } }
   durability: 6
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }

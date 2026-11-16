@@ -157,6 +157,11 @@ function checkReferences(content: Content): string[] {
     for (const it of Object.values(content.items)) {
       for (const m of it.weapon?.moves ?? []) moveRef(`items.${it.id}.weapon`, m);
       if (it.weapon?.ammo) itemRef(`items.${it.id}.weapon.ammo`, it.weapon.ammo);
+      const distances = new Set((content.scenario.gear?.distances ?? []).map((d) => d.id));
+      for (const [m, byDistance] of Object.entries(it.weapon?.range ?? {})) {
+        moveRef(`items.${it.id}.weapon.range`, m);
+        for (const d of Object.keys(byDistance)) if (!distances.has(d)) problems.push(`items.${it.id}.weapon.range.${m}: 알 수 없는 거리 ${d}`);
+      }
       for (const [m, k] of Object.entries(it.weapon?.wound ?? {})) {
         moveRef(`items.${it.id}.weapon.wound`, m);
         if (!content.scenario.wounds?.kinds.some((x) => x.id === k)) problems.push(`items.${it.id}.weapon.wound: 알 수 없는 상처 종류 ${k}`);
@@ -167,7 +172,7 @@ function checkReferences(content: Content): string[] {
       if (it.breaks_into && !it.durability) problems.push(`items.${it.id}: breaks_into는 durability가 있을 때만`);
       if (it.repair) {
         moveRef(`items.${it.id}.repair`, it.repair.move);
-        for (const m of [...Object.keys(it.repair.materials), ...it.repair.tools]) itemRef(`items.${it.id}.repair`, m);
+        for (const m of [...Object.keys(it.repair.materials), ...it.repair.tools.flat()]) itemRef(`items.${it.id}.repair`, m);
         if (!it.durability) problems.push(`items.${it.id}: repair는 durability가 있을 때만`);
       }
     }
@@ -175,7 +180,7 @@ function checkReferences(content: Content): string[] {
     if (g) for (const m of [...g.unarmed.moves, ...g.attack_moves, ...g.carry.encumbered_moves, ...g.haggle_moves]) moveRef("scenario.gear", m);
     for (const r of content.scenario.crafting?.recipes ?? []) {
       moveRef(`scenario.crafting.${r.id}`, r.move);
-      for (const m of [...Object.keys(r.materials), ...r.tools, r.yields.item]) itemRef(`scenario.crafting.${r.id}`, m);
+      for (const m of [...Object.keys(r.materials), ...r.tools.flat(), r.yields.item]) itemRef(`scenario.crafting.${r.id}`, m);
     }
     for (const npc of Object.values(content.npcs)) for (const m of Object.keys(npc.merchant?.restock ?? {})) itemRef(`npcs.${npc.id}.merchant`, m);
     for (const f of Object.values(content.factions)) for (const m of Object.keys(f.armory?.items ?? {})) itemRef(`factions.${f.id}.armory`, m);

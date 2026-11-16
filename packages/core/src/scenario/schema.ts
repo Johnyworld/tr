@@ -435,6 +435,12 @@ export const scenarioFileSchema = z
         unarmed: z.strictObject({ moves: z.array(id).min(1), max_harm: z.enum(["light", "heavy"]), /** 맨손 상처 종류 (스킬 → wounds.kinds, 12-91) */ wound: z.record(id, id).optional() }),
         /** 전투 중에 공격으로 보는 스킬 (무기·탄약을 따진다) */
         attack_moves: z.array(id).min(1),
+        /**
+         * 거리 (12-93): 장면의 인물을 칠 때 GM이 고르는 상대와의 거리. 가까운 것부터. 없으면 거리를 따지지 않는다
+         */
+        distances: z.array(z.strictObject({ id, label: z.string().min(1) })).optional(),
+        /** 무기에 range가 없을 때 스킬별로 닿는 거리와 그 거리의 판정 보정 (스킬 → 거리 → 보정). 없는 거리에서는 칠 수 없다 */
+        default_range: z.record(id, z.record(id, z.number().int().min(-3).max(3))).default({}),
         carry: z.strictObject({
           base: z.number().min(1),
           per_strength: z.number().min(0),
@@ -461,7 +467,8 @@ export const scenarioFileSchema = z
             label: z.string().min(1),
             move: id,
             materials: z.record(id, z.number().int().min(1)),
-            tools: z.array(id).default([]),
+            /** 있어야 하는 도구. 목록이면 그중 하나 (예: [[kitchen_knife, combat_knife]]) */
+            tools: z.array(z.union([id, z.array(id).min(1)])).default([]),
             yields: z.strictObject({ item: id, qty: z.number().int().min(1) }),
           }),
         ),

@@ -26,6 +26,12 @@
   kind: ammo
   weight: 0.15
   value: 1
+- id: arrows
+  name: 화살 (몇 대)
+  description: 곧은 나뭇가지에 깃 대신 비닐을 붙이고 못 촉을 단 화살 몇 대. 주워서 다시 쓸 수도 있다.
+  kind: ammo
+  weight: 0.1
+  value: 1
 - id: harpoons
   name: 작살 (몇 대)
   description: 끝을 갈아 세운 쇠작살 몇 대. 여울섬 공방에서 만든다.
@@ -34,6 +40,19 @@
   value: 4
 
 # ── 무기 ─────────────────────────────────────────
+# 나이프 (12-94): 깊게 베지는 못하지만 맞붙으면 빠르고(+1), 조용하고, 가볍다. 지니고만 있어도 생존을 돕고 화살·볼트를 깎는다
+- id: combat_knife
+  name: 전투 나이프
+  icon: blade
+  description: 손잡이에 끈을 감은 날 넓은 나이프. 붙어서 싸울 때 빠르고, 밖에서 사는 데 쓸 데가 많다.
+  kind: weapon
+  weight: 0.3
+  value: 10
+  weapon: { moves: [fight], max_harm: light, noise: 0, wound: { fight: cut }, range: { fight: { close: 1 } } }
+  tool: { bonus: { survival: 1 } }
+  durability: 10
+  breaks_into: scrap_metal
+  repair: { move: maintenance, materials: { scrap_metal: 1 } }
 - id: machete
   name: 마체테
   description: 칼등이 두꺼운 정글도. 휘두르면 소리 없이 깊게 벤다.
@@ -71,7 +90,7 @@
   kind: weapon
   weight: 0.9
   value: 20
-  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: pistol_rounds, wound: { shoot: gunshot } }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: pistol_rounds, wound: { shoot: gunshot }, range: { shoot: { close: 0, near: 0, far: -2 } } }
   durability: 6
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1 }, tools: [toolkit] }
@@ -82,17 +101,40 @@
   kind: weapon
   weight: 3.0
   value: 14
-  weapon: { moves: [shoot], max_harm: heavy, noise: 0, ammo: bolts, bonus: -1, wound: { shoot: pierce } }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 0, ammo: bolts, wound: { shoot: pierce }, range: { shoot: { close: -1, near: 0, far: 0 } } }
   durability: 6
   breaks_into: planks
   repair: { move: improvise, materials: { planks: 1, wire_roll: 1 } }
+# 활 (12-93): 소리 없이 쏘고 화살은 깎아 만든다. 맞붙으면 시위를 당길 틈이 없다
+- id: wooden_bow
+  name: 급조한 나무 활
+  icon: bow
+  description: 생나무를 휘어 노끈을 건 활. 가볍고 조용하지만 힘이 약해 깊이 박히지 않는다.
+  kind: weapon
+  weight: 0.5
+  value: 4
+  weapon: { moves: [shoot], max_harm: light, noise: 0, ammo: arrows, bonus: -1, wound: { shoot: pierce }, range: { shoot: { close: -1, near: 0 } } }
+  durability: 4
+  breaks_into: planks
+  repair: { move: carpentry, materials: { planks: 1 } }
+- id: recurve_bow
+  name: 양궁 활
+  icon: bow
+  description: 대학 양궁부 창고에서 나온 리커브 활. 다룰 줄 알면 멀리서도 조용히 꿰뚫는다.
+  kind: weapon
+  weight: 1.0
+  value: 18
+  weapon: { moves: [shoot], max_harm: heavy, noise: 0, ammo: arrows, wound: { shoot: pierce }, range: { shoot: { close: -1, near: 0, far: -1 } } }
+  durability: 7
+  breaks_into: scrap_metal
+  repair: { move: maintenance, materials: { wire_roll: 1 } }
 - id: sawn_shotgun
   name: 개조 산탄총
   description: 총열을 잘라 낸 붉은연합식 산탄총. 가까이서는 무섭고, 오래 버티지 못한다.
   kind: weapon
   weight: 2.2
   value: 15
-  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, bonus: 1, wound: { shoot: gunshot } }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, wound: { shoot: gunshot }, range: { shoot: { close: 1, near: -1 } } }
   durability: 4
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
@@ -103,7 +145,7 @@
   kind: weapon
   weight: 4.0
   value: 22
-  weapon: { moves: [shoot], max_harm: heavy, noise: 1, ammo: harpoons, wound: { shoot: pierce } }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 1, ammo: harpoons, wound: { shoot: pierce }, range: { shoot: { close: 0, near: 0 } } }
   durability: 8
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1, wire_roll: 1 } }
@@ -267,7 +309,7 @@
   kind: weapon
   weight: 0.6
   value: 6
-  weapon: { moves: [shoot], max_harm: heavy, noise: 1, ammo: molotov, wound: { shoot: other } }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 1, ammo: molotov, wound: { shoot: other }, range: { shoot: { close: -1, near: 0 } } }
 - id: arm_guards
   name: 손목 보호대
   description: 잡지와 쇳조각을 덕트 테이프로 팔뚝에 감은 것. 물리는 자리를 막는다.

@@ -42,6 +42,8 @@ export const itemContentSchema = z.strictObject({
       bonus: z.number().int().min(-1).max(1).default(0),
       /** 이 무기로 친 상처 종류 (스킬 → scenario.wounds.kinds, 12-91). 소총을 쏘면 총상, 개머리판이면 둔기 */
       wound: z.record(contentIdSchema, contentIdSchema).optional(),
+      /** 사거리 (12-93): 스킬 → 거리(scenario.gear.distances) → 판정 보정. 없는 거리에서는 칠 수 없다. 없는 스킬은 gear.default_range */
+      range: z.record(contentIdSchema, z.record(contentIdSchema, z.number().int().min(-3).max(3))).optional(),
     })
     .optional(),
   /** 방어구: 입는 자리, 받는 피해를 줄이는 단계, 입으면 불리해지는 스킬, 감염을 막을 확률 */
@@ -63,7 +65,7 @@ export const itemContentSchema = z.strictObject({
   durability: z.number().int().min(1).max(20).optional(),
   breaks_into: contentIdSchema.optional(),
   /** 고치는 법 */
-  repair: z.strictObject({ move: contentIdSchema, materials: z.record(contentIdSchema, z.number().int().min(1)), tools: z.array(contentIdSchema).default([]) }).optional(),
+  repair: z.strictObject({ move: contentIdSchema, materials: z.record(contentIdSchema, z.number().int().min(1)), /** 목록이면 그중 하나 */ tools: z.array(z.union([contentIdSchema, z.array(contentIdSchema).min(1)])).default([]) }).optional(),
 });
 export type ItemContent = z.infer<typeof itemContentSchema>;
 

@@ -125,6 +125,13 @@ gear:
   unarmed: { moves: [fight], max_harm: light, wound: { fight: blunt } }
   # 전투 중 근접·사격 판정은 공격으로 보고 무기·탄약을 따진다
   attack_moves: [fight, shoot]
+  # 거리 (12-93, *임시*): 장면의 인물을 칠 때 GM이 고르는 상대와의 거리
+  distances:
+    - { id: close, label: "맞붙은 거리 (손이 닿는다)" }
+    - { id: near, label: "가까운 거리 (방 하나, 길 건너)" }
+    - { id: far, label: "먼 거리 (건물 사이, 백 걸음 넘게)" }
+  # 무기에 range가 없으면: 근접은 맞붙어야 하고, 쏘는 것은 가까운 거리까지
+  default_range: { fight: { close: 0 }, shoot: { close: 0, near: 0 } }
   # 들 수 있는 무게 = 12kg + 근력 1당 4kg. 넘으면 은밀·근접 -1, 1.5배를 넘으면 옮겨 가지 못한다
   carry: { base: 12, per_strength: 4, encumbered_moves: [stealth, fight], penalty: -1, hard_limit: 1.5 }
   # 값의 70% 이상이면 흥정 판정으로 깎을 수 있다
@@ -139,7 +146,9 @@ crafting:
     - { id: reload_rounds, label: 재생 소총탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: rifle_rounds, qty: 3 } }
     - { id: reload_pistol_rounds, label: 재생 권총탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: pistol_rounds, qty: 3 } }
     - { id: reload_shells, label: 재생 산탄, move: mechanics, materials: { casings: 2, gunpowder: 1 }, tools: [toolkit], yields: { item: shells, qty: 3 } }
-    - { id: whittle_bolts, label: 석궁 볼트 깎기, move: carpentry, materials: { planks: 1, scrap_metal: 1 }, tools: [kitchen_knife], yields: { item: bolts, qty: 4 } }
+    - { id: whittle_bolts, label: 석궁 볼트 깎기, move: carpentry, materials: { planks: 1, scrap_metal: 1 }, tools: [[kitchen_knife, combat_knife]], yields: { item: bolts, qty: 4 } }
+    - { id: wooden_bow, label: 나무 활 만들기, move: carpentry, materials: { planks: 1, cloth: 1 }, tools: [[kitchen_knife, combat_knife]], yields: { item: wooden_bow, qty: 1 } }
+    - { id: whittle_arrows, label: 화살 깎기, move: carpentry, materials: { planks: 1, scrap_metal: 1 }, tools: [[kitchen_knife, combat_knife]], yields: { item: arrows, qty: 4 } }
     - { id: pipe_spear, label: 사제 창 만들기, move: improvise, materials: { scrap_metal: 1, kitchen_knife: 1, duct_tape: 1 }, yields: { item: pipe_spear, qty: 1 } }
     - { id: padded_armor, label: 덧댄 갑옷 두르기, move: improvise, materials: { cloth: 3, scrap_metal: 2, duct_tape: 2 }, yields: { item: padded_armor, qty: 1 } }
     - { id: bandages, label: 붕대 만들기, move: first_aid, materials: { cloth: 2 }, yields: { item: bandage, qty: 2 } }
@@ -322,7 +331,7 @@ custom_start:
   kin: [kin_young, kin_elder, kin_sibling, kin_partner, kin_comrade, stray_dog]
   kits:
     - { id: fighter, label: 싸울 채비, description: 몸으로 부딪치는 사람, items: [machete, padded_armor, water_bottle, dry_ration] }
-    - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, crossbow, bolts, bolts, kitchen_knife, water_bottle, dry_ration] }
+    - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, crossbow, bolts, bolts, combat_knife, water_bottle, dry_ration] }
     - { id: medic, label: 의무 채비, description: 다친 사람을 돌보는 사람, items: [medkit, fever_reducer, bandage, cloth, water_bottle, dry_ration] }
     - { id: trader, label: 거래 채비, description: 말과 물건으로 사는 사람, items: [cigarettes, canned_food, water_bottle] }
     - { id: clerk, label: 장부 채비, description: 숫자와 소식을 다루는 사람, items: [ledger, radio, water_bottle, canned_food] }

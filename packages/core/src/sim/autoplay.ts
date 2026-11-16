@@ -232,7 +232,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       if (!out.ok) stats.errors.push(`장비: ${out.error}`);
       continue;
     }
-    const doable = (content.scenario.crafting?.recipes ?? []).filter((r) => Object.entries(r.materials).every(([i, q]) => (me.inventory[i] ?? 0) >= q) && r.tools.every((t) => (me.inventory[t] ?? 0) > 0));
+    const doable = (content.scenario.crafting?.recipes ?? []).filter((r) => Object.entries(r.materials).every(([i, q]) => (me.inventory[i] ?? 0) >= q) && r.tools.every((t) => (typeof t === "string" ? [t] : t).some((x) => (me.inventory[x] ?? 0) > 0)));
     if (doable.length && rng() < 0.1) {
       {
         const r = pick(rng, doable);

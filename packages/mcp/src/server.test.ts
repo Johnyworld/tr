@@ -372,7 +372,7 @@ describe("엑스트라 (실제 콘텐츠)", () => {
     const spawned = await call("spawn_extra", { template: "c_sentry_shotgun", label: "엽총 든 보초" });
     expect(spawned.text).toContain("엽총(shotgun)");
     // 부엌칼로는 무거운 피해를 노릴 수 없다 (기획서 4.8). 가벼운 피해로 두 번
-    const strike = { move: "fight", stat: "strength", difficulty: "normal", harm_on_failure: "light", harm_cause: "몸싸움", harm_kind: "blunt" };
+    const strike = { move: "fight", stat: "strength", difficulty: "normal", harm_on_failure: "light", harm_cause: "몸싸움", harm_kind: "blunt", distance: "close" };
     const heavy = await call("take_action", action({ intent: "보초를 덮친다", target: "ex_1", check: { ...strike, target_harm: "heavy" } }));
     expect(heavy.isError).toBe(true);
     await call("take_action", action({ intent: "보초를 덮친다", target: "ex_1", check: { ...strike, target_harm: "light" } }));

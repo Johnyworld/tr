@@ -13,7 +13,7 @@ import { carriedWeight, carryCapacity, encumbrance, equippedItem, gearModifiers 
 const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
 const choice = { name: "서진", gender: "female" as const, abilities: { strength: 0, agility: 1, senses: 1, nerve: 1 }, portrait: null, traits: [] };
-const chk = (move: string, stat: string, extra: Record<string, unknown> = {}) => ({ move, stat, difficulty: "normal", harm_on_failure: "none", harm_cause: "", infected_source: false, target_harm: "none", ...extra });
+const chk = (move: string, stat: string, extra: Record<string, unknown> = {}) => ({ move, stat, difficulty: "normal", harm_on_failure: "none", harm_cause: "", infected_source: false, target_harm: "none", distance: "close", ...extra });
 
 function open(roleId = "role_a_grunt", rng: () => Rng = () => createSeededRng(3)) {
   const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-gear-")), content, rngFactory: rng });

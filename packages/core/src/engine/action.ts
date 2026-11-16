@@ -1,7 +1,7 @@
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { runRoadEvent } from "./storyletTools.ts";
 import { shakeNerves } from "./body.ts";
-import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft } from "./gear.ts";
+import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
 import { scavenge } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -91,6 +91,15 @@ export function createTakeActionSchema(s: Scenario) {
           .describe(
             "target(장면의 인물)을 다치게 하려는 공격이면 판정 전에 선언하는 상대의 피해. 성공이면 선언한 만큼, 대가 있는 성공이면 1단계, 실패면 없음. " +
               "상대가 중상 이상이면 무력화되어 소지품을 뒤질 수 있다. 공격이 아니면 none",
+          ),
+        distance: z
+          .string()
+          .nullable()
+          .default(null)
+          .describe(
+            s.gear?.distances?.length
+              ? `장면의 인물을 칠 때(target_harm) 반드시 고르는 상대와의 거리: ${s.gear.distances.map((d) => `${d.id} ${d.label}`).join(", ")}. 무기마다 닿는 거리와 보정이 다르다 (근접은 맞붙어야 한다). 공격이 아니면 null`
+              : "이 월드에서는 쓰지 않는다. null",
           ),
         infected_source: z
           .boolean()
@@ -230,6 +239,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const attacking = !!input.check && !!gearRules && ((!!input.target && input.check.target_harm !== "none") || (inBattle && gearRules.attack_moves.includes(input.check.move)));
   const attack = attacking ? planAttack(content, player, input.check!.move, input.check!.target_harm) : null;
   if (typeof attack === "string") return { ok: false, error: attack };
+  // 사거리 (12-93): 장면의 인물을 치면 거리를 고르고, 무기가 닿는 거리여야 한다. 전투 라운드의 공격은 거리를 고르면 보정만
+  const strikes = !!input.check && !!input.target && input.check.target_harm !== "none";
+  if (input.check && (strikes || input.check.distance)) {
+    const far = rangeProblem(content, player, input.check.move, input.check.distance);
+    if (far) return { ok: false, error: far };
+  }
   if (input.craft) {
     if (!input.check) return { ok: false, error: "만들거나 고치려면 판정(check)이 필요하다." };
     const why = planCraft(content, player, input.craft, input.check.move);
@@ -313,7 +328,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 1. 판정과 선언한 위험
   if (input.check) {
     const roll = rollPlayerCheck(
-      { move: input.check.move, stat: input.check.stat, difficulty: input.check.difficulty, intent: input.intent },
+      { move: input.check.move, stat: input.check.stat, difficulty: input.check.difficulty, intent: input.intent, distance: input.check.distance },
       ctx,
       { target: input.target, forMission },
     );
@@ -359,7 +374,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       // 감염은 살갗이 찢긴 상처(피가 나는 종류)일 때만 (12-91). 출혈 규칙이 없는 월드면 그대로
       const broken = !scenario.wounds || !!woundKind(ctx, input.check.harm_kind)?.bleeds;
       if (!harm.fatal && input.check.infected_source && broken) {
-        if (armorBlocksInfection(ctx)) lines.push("입은 것이 물림을 막아 냈다. 살갗까지 닿지 않았다.");
+        const guard = armorBlocksInfection(ctx);
+        if (guard.blocked) lines.push(...guard.lines);
         else maybeInfect(ctx, input.check.harm_on_failure);
       }
       if (harm.fatal) {

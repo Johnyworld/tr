@@ -6,13 +6,14 @@ import { describe, expect, it } from "vitest";
 import { loadContent } from "../content/loader.ts";
 import type { Rng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
+import { armorBlocksInfection } from "./gear.ts";
 import type { GameWorld } from "../world/world.ts";
 
 /** 상처 종류와 출혈 (12-91) */
 const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
 const choice = { name: "서진", gender: "female" as const, abilities: null, portrait: null, traits: [] };
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
-const chk = (move: string, stat: string, extra: Record<string, unknown> = {}) => ({ move, stat, difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", ...extra });
+const chk = (move: string, stat: string, extra: Record<string, unknown> = {}) => ({ move, stat, difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close", ...extra });
 
 /** 주사위를 조절할 수 있는 세계: roll.value가 0이면 늘 1, 0.99면 늘 6 */
 function world(): { w: GameWorld; roll: { value: number } } {
@@ -177,5 +178,23 @@ describe("상처 종류와 출혈", () => {
     expect(me(shove.w).conditions.harm).toBe("serious");
     expect(me(shove.w).conditions.infection).toBe("clean");
     shove.w.close();
+  });
+
+  it("방어구는 덮는 곳마다 따로 물림을 막고(가죽 재킷 0.6, 손목 보호대 0.5), 막아 낸 것은 닳는다", () => {
+    const { w } = world();
+    w.runCheat("~give leather_jacket");
+    w.runCheat("~give arm_guards");
+    expect(w.executeTool("equip", { item_id: "leather_jacket", slot: null }).ok).toBe(true);
+    expect(w.executeTool("equip", { item_id: "arm_guards", slot: null }).ok).toBe(true);
+    /** 굴림을 차례로 (손질로 닳음을 피하는 굴림 0.99 포함) */
+    const blocks = (...rolls: number[]) => armorBlocksInfection({ ...w.ctx(), rng: () => rolls.shift() ?? 0.99 });
+    // 재킷이 뚫리고(0.7) 손목 보호대가 막는다(0.3): 보호대가 닳는다
+    const r = blocks(0.7, 0.3, 0.99);
+    expect(r.blocked).toBe(true);
+    expect(r.lines[0]).toContain("손목 보호대");
+    expect(w.state().characters[w.state().playerId]!.wear.arm_guards).toBe(1);
+    // 둘 다 뚫린다
+    expect(blocks(0.7, 0.6).blocked).toBe(false);
+    w.close();
   });
 });

@@ -682,7 +682,11 @@ export function createGameSchemas(s: Scenario) {
         trait: z.number().int().default(0),
         /** 물건의 불리함 (입은 방어구, 무거운 짐, 기획서 4.8) */
         gear: z.number().int().default(0),
+        /** 상대와 상황 (상대의 실력, 지켜보는 눈, 어둠, 12-104) */
+        opposition: z.number().int().default(0),
       }),
+      /** 맞선 상대 인물 id (12-104) */
+      opponent: z.string().optional(),
       total: z.number().int(),
       outcome: checkOutcomeSchema,
       /** 상대 인물 id */

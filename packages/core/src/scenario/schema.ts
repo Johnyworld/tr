@@ -955,6 +955,21 @@ export const scenarioFileSchema = z
     /**
      * 계절 (12-1). 첫 날은 start의 계절·날짜. 계절마다 하루 소모·산출에 곱하는 배수
      */
+    /**
+     * 상대와 상황 (12-104). 주사위는 주인공만 굴리고, 상대의 실력·지켜보는 눈·어둠을 코드가 판정 보정으로 바꾼다.
+     * moves: 내 스킬 → 상대가 맞서는 스킬. crowd: 이 스킬은 장면의 눈(동행 빼고)이 at을 넘을 때마다 -1.
+     * dark: 이 시간대면 value. visibility: 날씨 visibility가 below 아래면 value.
+     * harm: 판정이 나빠 다칠 때 상대의 moves 중 가장 잘하는 점수가 strong 이상이면 한 단계 더, weak 이하면 한 단계 덜
+     */
+    opposition: z
+      .strictObject({
+        moves: z.record(id, id).default({}),
+        crowd: z.strictObject({ moves: z.array(id), at: z.array(z.number().int().positive()) }).optional(),
+        dark: z.strictObject({ moves: z.array(id), segments: z.array(z.enum(TIME_SEGMENTS)), value: z.number().int() }).optional(),
+        visibility: z.strictObject({ moves: z.array(id), below: z.number(), value: z.number().int() }).optional(),
+        harm: z.strictObject({ moves: z.array(id), strong: z.number().int(), weak: z.number().int() }).optional(),
+      })
+      .optional(),
     seasons: z
       .strictObject({
         start: z.strictObject({ season: id, day: z.number().int().positive() }),

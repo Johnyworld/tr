@@ -51,6 +51,26 @@ moves:
   - { id: maintenance, label: 손질, category: 전투, stats: [intellect, senses], default: -1, description: "무기를 손질할 때. 총·칼이 덜 닳고 덜 망가진다" }
   - { id: tactics, label: 전략, category: 지식, stats: [intellect, nerve], default: -1, description: "싸움을 이끌 때. 전투 지휘, 분대 운용, 전쟁 계획" }
 
+# 상대와 상황 (12-104, *임시*). 주사위는 주인공만 굴리고, 상대의 실력·지켜보는 눈·어둠은 코드가 판정 보정으로 바꾼다.
+# 상대 점수(맞서는 스킬의 능력 + 스킬): 0~1 보정 없음, 2~3 -1, 4 -2, 음수 +1
+opposition:
+  # 내 스킬 → 상대가 맞서는 스킬
+  moves:
+    stealth: sense_danger     # 숨으면 상대가 알아챈다
+    fight: fight              # 맞붙으면 상대도 싸운다
+    shoot: sense_danger       # 쏘면 상대가 엄폐한다
+    sense_danger: stealth     # 매복을 알아채려면 상대가 숨은 솜씨를 넘어야 한다
+    deceive: sense_danger     # 속이면 상대가 눈치챈다
+    persuade: persuade        # 흥정하면 상대도 셈한다
+    intimidate: endure        # 겁주면 상대가 버틴다
+  # 장면에 지켜보는 눈(동행 빼고)이 3·6을 넘을 때마다 -1
+  crowd: { moves: [stealth, deceive], at: [3, 6] }
+  # 밤이나 새벽이면 숨기 +1, 안개·비처럼 잘 안 보이는 날씨(visibility 0.7 아래)도 +1
+  dark: { moves: [stealth], segments: [night, dawn], value: 1 }
+  visibility: { moves: [stealth], below: 0.7, value: 1 }
+  # 다칠 때 상대의 근접전·사격 점수가 3 이상이면 한 단계 더, 0 이하면 한 단계 덜 (적어도 1단계)
+  harm: { moves: [fight, shoot], strong: 3, weak: 0 }
+
 # 능력·스킬 범위. 능력 + 스킬은 최대 +4 (2d6에서 +5부터는 실패가 사라진다)
 ranges:
   ability: { min: -1, max: 2 }

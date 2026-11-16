@@ -1,4 +1,5 @@
 import { gearModifiers } from "./gear.ts";
+import { oppositionParts } from "./opposition.ts";
 import { companionSkillMod } from "../game/companions.ts";
 import { squadFollowBonus } from "./command.ts";
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
@@ -10,7 +11,8 @@ import { gainCheckXp } from "./growth.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /** distance: 장면의 인물을 칠 때 상대와의 거리 (12-93). 무기의 거리 보정이 붙는다 */
-export type PlayerCheckInput = { move: string; stat: string; difficulty: Difficulty; intent: string; distance?: string | null };
+/** opponent: 맞서는 상대 (12-104). 상대의 실력이 판정 보정이 된다 */
+export type PlayerCheckInput = { move: string; stat: string; difficulty: Difficulty; intent: string; distance?: string | null; opponent?: string | null };
 
 export type PlayerCheckResult =
   | {
@@ -74,8 +76,13 @@ export function rollPlayerCheck(
     condition: conditionPenalty(scenario, actor),
     trait: attractionCheckBonus(content, actor, target, input.move),
     gear: gear.penalty,
+    opposition: 0,
   };
-  const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition + modifiers.trait + modifiers.gear);
+  // 상대와 상황 (12-104): 맞서는 상대가 없으면 공격 대상이 상대다
+  const opponent = input.opponent ?? options.target ?? null;
+  const against = oppositionParts(content, state, input.move, opponent);
+  modifiers.opposition = against.reduce((n, p) => n + p.value, 0);
+  const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition + modifiers.trait + modifiers.gear + modifiers.opposition);
   const checkId = `chk_${state.nextCheckNo}`;
 
   store.append({
@@ -92,6 +99,7 @@ export function rollPlayerCheck(
     total: roll.total,
     outcome: roll.outcome,
     ...(options.target ? { target: options.target } : {}),
+    ...(opponent ? { opponent } : {}),
     ...(options.forMission ? { forMission: options.forMission } : {}),
   });
 
@@ -124,6 +132,7 @@ export function rollPlayerCheck(
         { label: conditionLabel(scenario, actor), value: modifiers.condition },
         { label: "끌림", value: modifiers.trait },
         ...gear.penaltyParts,
+        ...against,
       ], roll.dice, roll.total, CHECK_OUTCOME_LABELS[roll.outcome]),
     },
   };

@@ -1,6 +1,7 @@
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { rollBlowup, rollLeak } from "./persona.ts";
 import { exposeToCold } from "./climate.ts";
+import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { runRoadEvent } from "./storyletTools.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
@@ -103,6 +104,14 @@ export function createTakeActionSchema(s: Scenario) {
             s.gear?.distances?.length
               ? `장면의 인물을 칠 때(target_harm) 반드시 고르는 상대와의 거리: ${s.gear.distances.map((d) => `${d.id} ${d.label}`).join(", ")}. 무기마다 닿는 거리와 보정이 다르다 (근접은 맞붙어야 한다). 공격이 아니면 null`
               : "이 월드에서는 쓰지 않는다. null",
+          ),
+        opponent: z
+          .string()
+          .nullable()
+          .default(null)
+          .describe(
+            "맞서는 상대 인물 id (장면에 있어야 한다): 숨는 나를 찾는 사람, 덤벼드는 사람, 속이려는 상대. 공격이면 비워도 target이 상대다. " +
+              "상대의 실력, 지켜보는 눈의 수, 어둠은 시스템이 판정 보정으로 바꾸므로 난이도에 넣지 않는다. 판정이 나빠 다치면 이 상대의 솜씨가 피해에 붙는다. 없으면 null",
           ),
         infected_source: z
           .boolean()
@@ -357,6 +366,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
 
   const unknownTag = input.fright_tags.find((t) => !fearTagIds(scenario).includes(t));
   if (unknownTag) return { ok: false, error: `알 수 없는 fright_tags: ${unknownTag} (가능: ${fearTagIds(scenario).join(", ") || "없음"})` };
+  if (input.check?.opponent) {
+    const o = start.characters[input.check.opponent];
+    if (!o || o.dead || !start.scene.present.includes(input.check.opponent)) return { ok: false, error: `맞서는 상대 ${input.check.opponent}은(는) 장면에 없다. check.opponent는 장면에 있는 인물 id다.` };
+  }
+
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
   const forMission = input.for_mission ? (activeMissionOf(start.missions, start.playerId)?.id ?? null) : null;
   const lines: string[] = [];
@@ -379,7 +393,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 1. 판정과 선언한 위험
   if (input.check) {
     const roll = rollPlayerCheck(
-      { move: input.check.move, stat: input.check.stat, difficulty: input.check.difficulty, intent: input.intent, distance: input.check.distance },
+      { move: input.check.move, stat: input.check.stat, difficulty: input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
       ctx,
       { target: input.target, forMission },
     );
@@ -405,7 +419,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       displays.push(...hit.displays);
     }
     if (roll.outcome !== "success" && input.check.harm_on_failure !== "none") {
-      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent);
+      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, input.check.opponent ?? input.target ?? null);
       lines.push(harm.text);
       displays.push(harm.display);
       // 피가 나는 상처면 출혈 (12-91)
@@ -630,14 +644,18 @@ function lastCheckId(ctx: ToolContext): string {
 }
 
 /** 판정 결과에 따른 피해 (원칙 3: 사망은 부상 트랙과 판정 결과로만) */
-function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, cause: string) {
+function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, cause: string, opponentId: string | null = null) {
   const { store, content } = ctx;
   const state = store.getState();
   const track = harmTrack(content.scenario);
   const target = state.characters[state.playerId]!;
   const check = state.checks[checkId]!;
+  // 상대의 몫 (12-104): 솜씨 좋은 상대는 한 단계 더, 서툰 상대는 한 단계 덜 (적어도 1단계)
+  const against = opponentHarm(content, state, opponentId);
+  const raw = Math.max(1, harmSteps(check.outcome, severity) + (against?.delta ?? 0));
   // 입은 방어구가 피해를 줄인다 (기획서 4.8)
-  const absorbed = armorAbsorb(ctx, harmSteps(check.outcome, severity));
+  const absorbed = armorAbsorb(ctx, raw);
+  if (against) absorbed.lines.unshift(`${against.line}.`);
   const steps = absorbed.steps;
   const from = target.conditions[track.id] ?? track.levels[0]!.id;
   if (steps <= 0) {

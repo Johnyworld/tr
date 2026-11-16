@@ -301,7 +301,15 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
     return { ok: false, error: `입력이 올바르지 않습니다: ${z.prettifyError(parsed.error)}` };
   }
   // 각 tool의 run은 자기 스키마로 파싱된 입력만 받는다
-  return (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
+  return withCheckLines((tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx));
+}
+
+/** 이번 tool에서 굴린 판정의 한 줄(🎲)을 결과 끝에 붙인다. GM은 이 줄을 고치지 않고 서술 끝에 옮겨 적는다 */
+function withCheckLines(outcome: ToolOutcome): ToolOutcome {
+  if (!outcome.ok) return outcome;
+  const lines = [outcome.display, ...(outcome.extra ?? [])].flatMap((d) => (d?.type === "check" && d.line ? [d.line] : []));
+  if (!lines.length) return outcome;
+  return { ...outcome, resultText: [outcome.resultText, `판정 줄 (서술 끝에 그대로 옮겨 적는다):`, ...lines.map((l) => `\`${l}\``)].filter(Boolean).join("\n") };
 }
 
 

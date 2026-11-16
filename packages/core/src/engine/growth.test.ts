@@ -56,6 +56,29 @@ describe("능력과 스킬", () => {
     const out = executeTool("take_action", check("stealth", "agility", "very_easy"), env.ctx);
     expect(out.ok && out.display.type === "check" && out.display.modifiers).toEqual({ stat: 3, skill: 1, difficulty: 2, condition: 0, trait: 0, gear: 0 });
   });
+
+  it("판정 줄: 0인 보정은 빼고 주사위 합을 붙여, tool 결과 끝에 실린다", () => {
+    const env = setup(content(), () => 0.5);
+    player(env).skills.stealth = 1;
+    player(env).stats.agility = 2;
+    const out = executeTool("take_action", check("stealth", "agility", "hard"), env.ctx);
+    if (!out.ok || out.display.type !== "check") throw new Error("판정이 없다");
+    const d = out.display;
+    const sum = d.dice[0] + d.dice[1];
+    expect(d.line).toBe(`🎲 ${d.moveLabel}: +2(${d.statLabel}) +1(${d.moveLabel}) ${d.modifiers.difficulty}(${d.difficultyLabel}) +${sum}(주사위) = ${d.total} · ${d.outcomeLabel}`);
+    expect(d.total).toBe(2 + 1 + d.modifiers.difficulty + sum);
+    expect(out.resultText.endsWith(`\`${d.line}\``)).toBe(true);
+  });
+
+  it("판정 줄: 상한에 잘리면 잘린 만큼을 '상한'으로 보여 합이 맞는다", () => {
+    const env = setup(content(), () => 0.5);
+    player(env).skills.stealth = 2;
+    player(env).stats.agility = 3; // 3 + 2 = 5 → 상한 4
+    const out = executeTool("take_action", check("stealth", "agility", "normal"), env.ctx);
+    if (!out.ok || out.display.type !== "check") throw new Error("판정이 없다");
+    const d = out.display;
+    expect(d.line).toContain(`+3(${d.statLabel}) +2(${d.moveLabel}) -1(상한) +`);
+  });
 });
 
 describe("경험치와 레벨업", () => {

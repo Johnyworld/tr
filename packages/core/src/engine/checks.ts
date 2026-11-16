@@ -2,8 +2,10 @@ import { gearModifiers } from "./gear.ts";
 import { companionSkillMod } from "../game/companions.ts";
 import { squadFollowBonus } from "./command.ts";
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
-import { attractionCheckBonus, traitSkillMod } from "./traits.ts";
-import { conditionPenalty, moveOf, statLabel } from "../scenario/scenario.ts";
+import { attractionCheckBonus, traitSkillMod, traitsOf } from "./traits.ts";
+import { conditionPenalty, moveOf, shownLevel, statLabel, visibleSymptoms } from "../scenario/scenario.ts";
+import type { Scenario } from "../scenario/schema.ts";
+import type { Character } from "../game/character.ts";
 import { gainCheckXp } from "./growth.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
@@ -48,10 +50,22 @@ export function rollPlayerCheck(
   // 능력 + 스킬은 상한까지만 (기획서 4.2). 몸 상태 보정은 그 뒤에 따로 뺀다
   // 트레잇의 스킬 보정도 상한 안에서 더한다. 끌림(상대가 이성에게 끌린다)은 상황 보정이라 따로 (기획서 4.6)
   const ability = actor.stats[input.stat] ?? 0;
-  const skill = (actor.skills[input.move] ?? move.default) + traitSkillMod(content, actor, input.move) + (actor.id === state.playerId ? Math.max(companionSkillMod(state, content, input.move), squadFollowBonus(state, content, input.move)) : 0);
+  const base = actor.skills[input.move] ?? move.default;
+  const companion = actor.id === state.playerId ? companionSkillMod(state, content, input.move) : 0;
+  const squad = actor.id === state.playerId ? squadFollowBonus(state, content, input.move) : 0;
+  const skill = base + traitSkillMod(content, actor, input.move) + Math.max(companion, squad);
   // 손에 든 무기·지닌 도구의 보정은 상한 안에서, 방어구·짐의 불리함은 따로 (기획서 4.8)
   const gear = gearModifiers(content, actor, input.move, input.distance);
   const capped = Math.min(scenario.ranges.cap, ability + skill + gear.skill);
+  // 판정 줄에 보일 상한 안의 내역: 스킬, 트레잇, 동행·분대, 무기·도구, 상한에 잘린 만큼
+  const cappedParts = [
+    { label: statLabel(scenario, input.stat), value: ability },
+    { label: move.label, value: base },
+    ...traitsOf(content, actor).map((t) => ({ label: t.label, value: t.effects.skills?.[input.move] ?? 0 })),
+    { label: companion >= squad ? "동행" : "분대", value: Math.max(companion, squad) },
+    { label: gear.skillLabel, value: gear.skill },
+    { label: "상한", value: capped - (ability + skill + gear.skill) },
+  ];
   const target = options.target ? state.characters[options.target] : undefined;
   const modifiers = {
     stat: ability,
@@ -104,6 +118,35 @@ export function rollPlayerCheck(
       total: roll.total,
       outcome: roll.outcome,
       outcomeLabel: CHECK_OUTCOME_LABELS[roll.outcome],
+      line: checkLine(move.label, [
+        ...cappedParts,
+        { label: DIFFICULTY_LABELS[input.difficulty], value: modifiers.difficulty },
+        { label: conditionLabel(scenario, actor), value: modifiers.condition },
+        { label: "끌림", value: modifiers.trait },
+        ...gear.penaltyParts,
+      ], roll.dice, roll.total, CHECK_OUTCOME_LABELS[roll.outcome]),
     },
   };
+}
+
+const signed = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
+
+/**
+ * 플레이어에게 그대로 보일 판정 한 줄. GM은 옮겨 적기만 한다 (원칙 2).
+ * 예: 🎲 사격: +2(민첩) +2(사격) +1(소총) -1(상한) -1(어려움) +9(주사위) = 10 · 성공. 0인 보정은 뺀다
+ */
+export function checkLine(moveLabel: string, parts: { label: string; value: number }[], dice: [number, number], total: number, outcomeLabel: string): string {
+  const terms = [...parts.filter((p) => p.value !== 0), { label: "주사위", value: dice[0] + dice[1] }].map((p) => `${signed(p.value)}(${p.label})`);
+  return `🎲 ${moveLabel}: ${terms.join(" ")} = ${total} · ${outcomeLabel}`;
+}
+
+/** 몸 상태 보정의 이름: 보정이 붙은 증상들, 증상이 없는 월드는 상태 트랙의 단계 이름 */
+function conditionLabel(s: Scenario, c: Pick<Character, "conditions">): string {
+  const names = s.symptoms?.length
+    ? visibleSymptoms(s, c).filter((x) => x.penalty < 0).map((x) => x.label)
+    : s.condition_tracks.flatMap((t) => {
+        const level = t.levels.find((l) => l.id === c.conditions[t.id]);
+        return level?.penalty ? [shownLevel(t, level.id).label ?? t.label] : [];
+      });
+  return names.join("·") || "몸 상태";
 }

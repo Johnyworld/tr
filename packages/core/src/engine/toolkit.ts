@@ -19,6 +19,8 @@ export type ToolDisplayEvent =
       total: number;
       outcome: CheckOutcome;
       outcomeLabel: string;
+      /** 플레이어에게 그대로 보일 판정 한 줄 (🎲 ...). GM이 서술 끝에 옮겨 적는다 */
+      line?: string;
     }
   | {
       type: "harm";

@@ -87,21 +87,28 @@ export function rangeProblem(content: Content, c: Character, move: string, dista
   return null;
 }
 
-export function gearModifiers(content: Content, c: Character, move: string, distance?: string | null): { skill: number; penalty: number } {
+/** skillLabel: 보정을 준 무기·도구 이름. penaltyParts: 판정 줄에 보일 불리함의 내역 (방어구 이름, 짐, 거리) */
+export function gearModifiers(content: Content, c: Character, move: string, distance?: string | null): { skill: number; skillLabel: string; penalty: number; penaltyParts: { label: string; value: number }[] } {
   let skill = 0;
-  const weapon = itemOf(content, equippedItem(c, "weapon"))?.weapon;
-  if (weapon?.moves.includes(move)) skill = Math.max(skill, weapon.bonus);
+  let skillLabel = "장비";
+  const weaponId = equippedItem(c, "weapon");
+  const weapon = itemOf(content, weaponId)?.weapon;
+  if (weapon?.moves.includes(move) && weapon.bonus > skill) [skill, skillLabel] = [weapon.bonus, nameOf(content, weaponId!)];
   for (const [id, q] of Object.entries(c.inventory)) {
     const b = q > 0 ? (content.items[id]?.tool?.bonus[move] ?? 0) : 0;
-    if (b > skill) skill = b;
+    if (b > skill) [skill, skillLabel] = [b, nameOf(content, id)];
   }
-  let penalty = 0;
-  for (const slot of ARMOR_SLOTS) penalty += itemOf(content, equippedItem(c, slot))?.armor?.penalty[move] ?? 0;
+  const penaltyParts: { label: string; value: number }[] = [];
+  const add = (label: string, value: number) => value && penaltyParts.push({ label, value });
+  for (const slot of ARMOR_SLOTS) {
+    const id = equippedItem(c, slot);
+    add(id ? nameOf(content, id) : slot, itemOf(content, id)?.armor?.penalty[move] ?? 0);
+  }
   const carry = content.scenario.gear?.carry;
-  if (carry && encumbrance(content, c) > 0 && carry.encumbered_moves.includes(move)) penalty += carry.penalty;
+  if (carry && encumbrance(content, c) > 0 && carry.encumbered_moves.includes(move)) add("짐", carry.penalty);
   // 거리 보정은 상황 보정이라 상한과 따로 (12-93)
-  if (distance) penalty += rangeOf(content, c, move)?.[distance] ?? 0;
-  return { skill, penalty };
+  if (distance) add(content.scenario.gear?.distances?.find((d) => d.id === distance)?.label ?? distance, rangeOf(content, c, move)?.[distance] ?? 0);
+  return { skill, skillLabel, penalty: penaltyParts.reduce((n, x) => n + x.value, 0), penaltyParts };
 }
 
 /** wound: 이 공격의 상처 종류 (12-91, 무기·맨손 데이터에서). 모르면 null */

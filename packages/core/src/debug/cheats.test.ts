@@ -8,7 +8,7 @@ import { WorldManager } from "../world/manager.ts";
 
 function world() {
   const c = structuredClone(TEST_CONTENT);
-  c.scenario.growth = { first: 10, step: 5, xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6 };
+  c.scenario.growth = { first: 10, step: 5, ratio: 1, resilience: [], xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6 };
   for (const f of Object.values(c.factions)) f.aggression = 0;
   const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-cheat-")), content: c, rngFactory: () => createSeededRng(4) });
   return { m, w: m.create("web") };

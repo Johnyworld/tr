@@ -431,7 +431,10 @@ describe("턴 문 (Claude Code 훅)", () => {
 describe("사망 뒤 새 캐릭터 만들기", () => {
   it("new를 고르면 세계 소개 없이 한 단계씩 만들고, 확인하면 같은 세계에서 이어 간다", async () => {
     const { statusPayload } = await import("./statusServer.ts");
-    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-heir-")), content: REAL_CONTENT, rngFactory: () => () => 0 });
+    // 난수가 늘 0이면 버팀(12-109)이 언제나 이겨 죽지 않는다: 이 테스트에서는 끈다
+    const content = structuredClone(REAL_CONTENT);
+    content.scenario.growth!.resilience = [];
+    const manager = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-heir-")), content, rngFactory: () => () => 0 });
     const app = createMcpServer(manager, { statusUrl: () => "http://127.0.0.1:8790" });
     opened.push(app);
     const [c, s] = InMemoryTransport.createLinkedPair();

@@ -1,3 +1,4 @@
+import { resistSteps } from "./growth.ts";
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { rollBlowup, rollHear, rollLeak } from "./persona.ts";
@@ -663,7 +664,9 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   // 입은 방어구가 피해를 줄인다 (기획서 4.8)
   const absorbed = armorAbsorb(ctx, raw);
   if (against) absorbed.lines.unshift(`${against.line}.`);
-  const steps = absorbed.steps;
+  // 버팀 (12-109): 레벨만큼 단계를 피한다
+  const steps = resistSteps(content.scenario, target.level ?? 1, absorbed.steps, ctx.rng);
+  if (steps < absorbed.steps) absorbed.lines.push(`${target.name}은(는) ${absorbed.steps - steps}단계를 버텨 냈다.`);
   const from = target.conditions[track.id] ?? track.levels[0]!.id;
   if (steps <= 0) {
     // 방어구가 다 막았다 (기획서 4.8)

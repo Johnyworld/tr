@@ -56,6 +56,15 @@ export const scenarioFileSchema = z
         /** 첫 레벨업에 필요한 경험치, 그 뒤로 늘어나는 양 */
         first: z.number().int().positive(),
         step: z.number().int().min(0),
+        /** 레벨마다 필요한 경험치에 곱하는 배수 (12-109). 1이면 step만 더한다 */
+        ratio: z.number().min(1).default(1),
+        /** 최대 레벨 (12-109). 없으면 끝이 없다 */
+        max_level: z.number().int().min(2).optional(),
+        /**
+         * 버팀 (12-109): 몸·마음이 한 단계 나빠질 때 그 단계를 피할 확률이 레벨업마다 오르는 양.
+         * 구간마다 `from` 레벨부터 `per`씩 (다음 구간 전까지). 레벨 1은 0
+         */
+        resilience: z.array(z.strictObject({ from: z.number().int().min(2), per: z.number().min(0).max(1) })).default([]),
         xp: z.strictObject({ success: z.number().int().min(0), partial: z.number().int().min(0), miss: z.number().int().min(0), merit: z.number().int().min(0) }),
         /** 판정으로 하루에 얻을 수 있는 경험치 상한 */
         daily_check_cap: z.number().int().positive(),

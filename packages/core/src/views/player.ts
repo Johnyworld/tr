@@ -17,7 +17,7 @@ import {
 } from "../game/missions.ts";
 import { effectiveSkill, traitsOf } from "../engine/traits.ts";
 import { personaChips } from "../engine/persona.ts";
-import { xpForLevel } from "../engine/growth.ts";
+import { atMaxLevel, xpForLevel } from "../engine/growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
@@ -351,7 +351,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: effectiveSkill(content, player, m.id) }))
       .filter((m) => m.value >= 0),
     growth: scenario.growth
-      ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level) }
+      ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, atMaxLevel(scenario, player.level) ? player.level : player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level) }
       : null,
     inventory: items(carried),
     sceneItems: items(state.scene.items),

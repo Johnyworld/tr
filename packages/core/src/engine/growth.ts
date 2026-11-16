@@ -19,14 +19,41 @@ export function xpForLevel(s: Scenario, level: number): number {
   const g = s.growth;
   if (!g || level <= FIRST_LEVEL) return 0;
   let total = 0;
-  for (let i = 0; i < level - FIRST_LEVEL; i++) total += g.first + g.step * i;
+  for (let i = 0; i < level - FIRST_LEVEL; i++) total += Math.round((g.first + g.step * i) * (g.ratio ?? 1) ** i);
   return total;
+}
+
+/** 버팀 확률 (12-109): 레벨 2부터 그 레벨이 속한 구간의 per를 더해 간다. 1을 넘지 않는다 */
+export function resilienceOf(s: Scenario, level: number): number {
+  const tiers = s.growth?.resilience ?? [];
+  let r = 0;
+  for (let l = FIRST_LEVEL + 1; l <= level; l++) {
+    let per = 0;
+    for (const t of tiers) if (t.from <= l) per = t.per;
+    r += per;
+  }
+  return Math.min(1, Math.round(r * 1000) / 1000);
+}
+
+/** 최대 레벨이면 true (12-109) */
+export function atMaxLevel(s: Scenario, level: number): boolean {
+  const max = s.growth?.max_level;
+  return max !== undefined && level >= max;
+}
+
+/** 나빠지는 steps단계를 한 단계씩 버팀으로 굴려 남는 단계 수 (12-109) */
+export function resistSteps(s: Scenario, level: number, steps: number, rng: () => number): number {
+  const r = resilienceOf(s, level);
+  if (r <= 0 || steps <= 0) return steps;
+  let kept = 0;
+  for (let i = 0; i < steps; i++) if (rng() >= r) kept++;
+  return kept;
 }
 
 export function levelForXp(s: Scenario, xp: number): number {
   if (!s.growth) return FIRST_LEVEL;
   let level = FIRST_LEVEL;
-  while (xpForLevel(s, level + 1) <= xp) level += 1;
+  while (!atMaxLevel(s, level) && xpForLevel(s, level + 1) <= xp) level += 1;
   return level;
 }
 
@@ -110,7 +137,8 @@ export function skillLines(s: Scenario, skills: Record<string, number>): string[
 /** 레벨·경험치 한 줄 (성장 규칙이 없으면 null) */
 export function growthLine(s: Scenario, c: { level: number; xp: number; skillPoints: number }): string | null {
   if (!s.growth) return null;
-  return `레벨 ${c.level} · 경험치 ${c.xp}/${xpForLevel(s, c.level + 1)}` + (c.skillPoints > 0 ? ` · 올릴 수 있는 스킬 ${c.skillPoints}개 (레벨업)` : "");
+  const xp = atMaxLevel(s, c.level) ? `경험치 ${c.xp} (최대 레벨)` : `경험치 ${c.xp}/${xpForLevel(s, c.level + 1)}`;
+  return `레벨 ${c.level} · ${xp}` + (c.skillPoints > 0 ? ` · 올릴 수 있는 스킬 ${c.skillPoints}개 (레벨업)` : "");
 }
 
 /**

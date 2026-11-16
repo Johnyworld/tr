@@ -96,7 +96,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     }
     const check = (move: (typeof moves)[number], harm: string) => {
       // 위험한 판정의 일부는 감염체에게서 오는 것으로 (물림·할큄)
-      const infected = harm !== "none" && rng() < 0.4;
+      // 감염체는 위험의 일부만 (사람·짐승·사고가 더 많다, 12-109에서 0.4 → 0.15)
+      const infected = harm !== "none" && rng() < 0.15;
       const kinds = content.scenario.wounds?.kinds ?? [];
       const infectedKinds = kinds.filter((k) => (content.scenario.body?.infection?.chance[k.id] ?? 0) > 0);
       const kind = harm === "none" || !kinds.length ? null : pick(rng, infected && infectedKinds.length ? infectedKinds : kinds).id;
@@ -165,6 +166,25 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       }
     }
 
+    // 감염이 드러났으면 (플레이어처럼): 혈청이 있으면 쓰고, 없으면 항생제를 하루 하나 (12-106)
+    {
+      const inf = content.scenario.body?.infection;
+      const t = inf && content.scenario.condition_tracks.find((x) => x.id === inf.track);
+      const at = t ? t.levels.findIndex((l) => l.id === me.conditions[t.id]) : -1;
+      if (inf && t && at > 0 && !t.levels[at]!.hidden) {
+        const serum = inf.cure.find((i) => (me.inventory[i] ?? 0) > 0);
+        const pill = inf.slow.find((i) => (me.inventory[i] ?? 0) > 0);
+        const day = Math.floor(s.time / 1440);
+        if (serum) {
+          tool("take_action", { ...base, intent: "혈청", use_item: serum });
+          continue;
+        }
+        if (pill && s.recovery.slowDay[me.id] !== day + 1) {
+          tool("take_action", { ...base, intent: "항생제", use_item: pill });
+          continue;
+        }
+      }
+    }
     // 다쳤으면 가끔 치료한다 (치료사·구급상자)
     const harmTrack = content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)!;
     // 추위·질병 등: 맞는 소모품이 있으면 가끔 쓴다

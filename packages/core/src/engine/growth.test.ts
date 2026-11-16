@@ -5,13 +5,13 @@ import { InMemoryGameStore } from "../game/store.ts";
 import type { Rng } from "../rng.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { TEST_CONTENT } from "../testing.ts";
-import { gainMeritXp, levelForXp, xpForLevel } from "./growth.ts";
+import { gainMeritXp, levelForXp, resilienceOf, xpForLevel } from "./growth.ts";
 import { executeTool } from "./tools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 
 function content(): Content {
   const c = structuredClone(TEST_CONTENT);
-  c.scenario.growth = { first: 10, step: 5, xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6 };
+  c.scenario.growth = { first: 10, step: 5, ratio: 1, resilience: [], xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6 };
   c.scenario.ability_array = [2, 1, 0, 0, -1];
   c.scenario.charm = { ability: "persuasion", first_impression_per: 2, bonus_at: 2 };
   for (const f of Object.values(c.factions)) f.aggression = 0;
@@ -88,6 +88,13 @@ describe("경험치와 레벨업", () => {
     expect(levelForXp(s, 0)).toBe(1);
     expect(levelForXp(s, 9)).toBe(1);
     expect(levelForXp(s, 25)).toBe(3);
+  });
+
+  it("최대 레벨에서 멈추고, 버팀은 구간마다 다르게 오른다 (12-109)", () => {
+    const s = content().scenario;
+    s.growth = { ...s.growth!, max_level: 3, resilience: [{ from: 2, per: 0.04 }, { from: 3, per: 0.03 }] };
+    expect(levelForXp(s, 10_000)).toBe(3);
+    expect([1, 2, 3].map((l) => resilienceOf(s, l))).toEqual([0, 0.04, 0.07]);
   });
 
   it("실패는 2, 성공은 1. 판정 경험치는 하루 6까지", () => {

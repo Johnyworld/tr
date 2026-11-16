@@ -26,8 +26,8 @@ describe("NPC의 몸 (기획서 7.7)", () => {
     const w = medicWorld();
     w.ctx().store.append({ type: "condition_changed", targetId: "d_sori", track: "infection", from: "clean", to: "incubating", fatal: false, by: "test", cause: "긁힘", day: 1, harmTrack: false });
     const day0 = Math.floor(w.state().time / 1440) + 1;
-    // 잠복 → 추움 (하루에 한 단계, 첫 증상부터 열이 오르는 이야기가 열린다, 12-74)
-    for (let i = 0; i < 10 && Math.floor(w.state().time / 1440) + 1 < day0 + 1; i++) w.executeTool("take_action", sleep);
+    // 잠복 이틀 → 추움 (하루에 한 단계, 첫 증상부터 열이 오르는 이야기가 열린다, 12-74·12-109)
+    for (let i = 0; i < 20 && Math.floor(w.state().time / 1440) + 1 < day0 + 2; i++) w.executeTool("take_action", sleep);
     expect(w.state().characters.d_sori!.conditions.infection).toBe("chill");
     expect(ids(w, dawnOf(w, 5))).toContain("d_sori_fever");
     expect(ids(w, morningOf(7))).not.toContain("d_sori_clear");

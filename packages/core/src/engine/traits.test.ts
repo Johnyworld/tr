@@ -23,7 +23,7 @@ function content(): Content {
     genders: [{ id: "male", label: "남성" }, { id: "female", label: "여성" }],
     traits: { max_positive: 3, max_negative: 3, max_personality: 2 },
   };
-  c.scenario.growth = { first: 10, step: 5, xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6 };
+  c.scenario.growth = { first: 10, step: 5, ratio: 1, resilience: [], xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6 };
   for (const f of Object.values(c.factions)) f.aggression = 0;
   return c;
 }

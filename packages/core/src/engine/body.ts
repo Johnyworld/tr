@@ -1,3 +1,4 @@
+import { resistSteps } from "./growth.ts";
 import { onPersonDeath } from "./people.ts";
 import { lightFire } from "./climate.ts";
 import { hasAccess } from "../game/culture.ts";
@@ -32,6 +33,17 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
   if (!character || character.dead || steps === 0) return null;
   const track = trackOf(ctx.content.scenario, trackId);
   const index = Math.max(0, track.levels.findIndex((l) => l.id === character.conditions[trackId]));
+  // 버팀 (12-109): 나빠지는 단계마다 레벨만큼 피한다. 치트는 그대로
+  if (steps > 0 && by !== "cheat") {
+    const kept = resistSteps(ctx.content.scenario, character.level ?? 1, steps, ctx.rng);
+    if (kept === 0) {
+      const would = track.levels[Math.min(track.levels.length - 1, index + steps)]!;
+      // 숨은 단계로 가는 것(잠복)은 버텨도 알리지 않는다
+      const visible = shownLevel(track, would.id).id !== shownLevel(track, track.levels[index]!.id).id;
+      return { line: visible ? `${playerCalls(state, ctx.content, characterId)}은(는) 버텨 냈다 (${track.label}이 나빠지지 않았다).` : "", display: null, died: false };
+    }
+    steps = kept;
+  }
   const nextIndex = Math.max(0, Math.min(track.levels.length - 1, index + steps));
   if (nextIndex === index) return null;
   const from = track.levels[index]!;

@@ -334,7 +334,7 @@ function XpBar({ growth }: { growth: NonNullable<PlayerView["growth"]> }) {
   const span = Math.max(1, growth.next - prev);
   const ratio = Math.min(1, Math.max(0, (growth.xp - prev) / span));
   return (
-    <div className="xp-row" title={`경험치 ${growth.xp} (다음 레벨 ${growth.next})`}>
+    <div className="xp-row" title={growth.next <= prev ? `경험치 ${growth.xp} (최대 레벨)` : `경험치 ${growth.xp} (다음 레벨 ${growth.next})`}>
       {/* 찍을 스킬 포인트가 남았으면 레벨 자리에 "Lv UP"을 띄운다 (채팅에서 GM에게 올릴 스킬을 말한다) */}
       {growth.skillPoints > 0 ? (
         <button

@@ -72,4 +72,38 @@ describe("무리 형편", () => {
     // 우리 무리 것은 소문이 아니라 도는 말로
     expect(spreadTroubleRumors(ctx).some((d) => d.type === "belief" && d.fact.startsWith(content.factions[me().factionId]!.name))).toBe(false);
   });
+
+  /** 굴림을 차례로 돌려주는 난수 (다 쓰면 마지막 값) */
+  const seq = (...xs: number[]) => () => (xs.length > 1 ? xs.shift()! : xs[0]!);
+  const heardAbout = (state: ReturnType<ReturnType<typeof setup>["state"]>, me: string, f: string) =>
+    (state.beliefs[me] ?? []).filter((b) => b.topic === `faction_trouble:${f}`);
+
+  it("성당에서는 부풀려 듣고 (정확도 approximate), 장터에서는 그대로 듣는다 (exact)", () => {
+    for (const [zone, expected] of [["cathedral", "approximate"], ["e_market", "exact"]] as const) {
+      const { store, state, me } = setup();
+      const other = Object.keys(state().factions).find((f) => f !== me().factionId)!;
+      for (const f of Object.values(state().factions)) for (const r of Object.keys(f.resources)) f.resources[r] = 99999;
+      state().factions[other]!.morale = -1;
+      state().playerZone = zone;
+      // 듣는다(0) → 고른다(0) → 부풀릴지 굴림 0.3 (성당 0.5보다 작고, 장터 0.1보다 크다) → 나머지 무리는 듣지 않는다(0.99)
+      spreadTroubleRumors({ store, rng: seq(0, 0, 0.3, 0.99), content });
+      const b = heardAbout(state(), me().id, other)[0]!;
+      expect(b.accuracy).toBe(expected);
+      expect(b.fact).toContain(expected === "exact" ? "가라앉음" : "흉흉함");
+    }
+  });
+
+  it("멀쩡한 무리도 헛소문이 돈다 (정확도 false, 실제로 겪지 않는 어려움)", () => {
+    const { store, state, me } = setup();
+    for (const f of Object.values(state().factions)) {
+      f.morale = 1;
+      for (const r of Object.keys(f.resources)) f.resources[r] = 99999;
+    }
+    state().playerZone = "e_market";
+    spreadTroubleRumors({ store, rng: () => 0, content });
+    const other = Object.keys(state().factions).find((f) => f !== me().factionId)!;
+    const b = heardAbout(state(), me().id, other)[0]!;
+    expect(b.accuracy).toBe("false");
+    expect(b.fact.startsWith(content.factions[other]!.name)).toBe(true);
+  });
 });

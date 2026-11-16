@@ -968,8 +968,17 @@ war:
       - { id: worry, label: 불안해한다, hint: "이러다 어떻게 되냐고 묻고 소문을 확인하려 든다", traits: [timid, cautious, curious, talkative] }
       - { id: reckon, label: 셈한다, hint: "감정 없이 며칠 버틸지, 누가 먼저 빠질지 따진다", traits: [cold, calculating, meticulous, ruthless] }
     default: { label: 조심스럽게 입에 올린다, hint: "지나가듯 한마디 하고 화제를 돌린다" }
-    # 다른 무리의 형편은 말이 모이는 곳에서 소문으로 듣는다 (장터, 휴게소, 성당, 정수장, 구시가). 무리마다 하루 35% (*임시*)
-    rumor: { zones: [e_market, rest_stop, cathedral, water_plant, old_town], chance: 0.35 }
+    # 다른 무리의 형편은 말이 모이는 곳에서 소문으로 듣는다. 무리마다 하루 35%, 멀쩡한 무리도 10%로 헛소문 (*임시*)
+    # exaggerate: 그곳의 말이 한 단계 부풀려질 확률. 상인 장터는 정확하고, 피난민이 모이는 성당은 과장이 심하다
+    rumor:
+      chance: 0.35
+      false_chance: 0.1
+      zones:
+        e_market: { exaggerate: 0.1 }
+        water_plant: { exaggerate: 0.2 }
+        rest_stop: { exaggerate: 0.3 }
+        old_town: { exaggerate: 0.4 }
+        cathedral: { exaggerate: 0.5 }
   # 창고 사정 (며칠 치 남았는지)
   stock_labels:
     - { min_days: 20, label: 넉넉하다는 말 }

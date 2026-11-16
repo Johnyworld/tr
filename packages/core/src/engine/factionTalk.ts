@@ -15,25 +15,47 @@ import { moraleLabel, WAR_TOPIC } from "./warTools.ts";
 /** 최근 전황 소식으로 치는 시간 */
 const NEWS_HOURS = 48;
 
-/** 한 무리의 형편 (분위기·배급·창고). 진짜 상태에서 나오므로 주인공에게는 자기 무리 것이나 소문으로만 보인다 */
-export type Trouble = { text: string; /** 다른 무리 사람이 소문으로 옮기는 말 ("{무리} 쪽은 …") */ rumor: string };
+/**
+ * 한 무리의 형편 (분위기·배급·창고). 진짜 상태에서 나오므로 주인공에게는 자기 무리 것이나 소문으로만 보인다.
+ * kind와 level(나쁠수록 크다)로 나눠 두어 소문이 부풀거나 지어질 수 있게 한다
+ */
+export type TroubleKind = { kind: "morale" } | { kind: "ration" } | { kind: "stock"; resource: string };
+export type Trouble = TroubleKind & { level: number; text: string };
+
+/** 단계마다의 이름: morale는 -1(가라앉음)부터 -3(무너지기 직전), ration·stock은 배급·창고 단계의 차례 */
+function levelLabels(content: Content, kind: TroubleKind["kind"]): string[] {
+  const war = content.scenario.war!;
+  if (kind === "morale") return [1, 2, 3].map((n) => moraleLabel(content, -n));
+  if (kind === "ration") return war.ration.levels.map((l) => l.label);
+  return war.stock_labels.map((l) => l.label);
+}
+
+/** 소문 한 줄: "{무리} 쪽 …" */
+function rumorText(content: Content, name: string, t: TroubleKind, level: number): string {
+  const label = levelLabels(content, t.kind)[level] ?? "";
+  if (t.kind === "morale") return `${name} 쪽 분위기가 영 좋지 않다는 말이 돈다 (${label})`;
+  if (t.kind === "ration") return `${name} 쪽은 배급을 줄였다는 말이 돈다 (${label})`;
+  const r = content.scenario.resources.find((x) => x.id === t.resource)?.label ?? t.resource;
+  return `${name} 쪽 ${r} 창고는 ${label}이 돈다`;
+}
 
 export function troublesOf(state: GameState, content: Content, factionId: string): Trouble[] {
   const war = content.scenario.war;
   const f = state.factions[factionId];
   if (!war || !f) return [];
-  const name = content.factions[factionId]?.name ?? factionId;
   const out: Trouble[] = [];
-  if (f.morale <= -1) out.push({ text: `분위기가 ${moraleLabel(content, f.morale)}`, rumor: `${name} 쪽 분위기가 영 좋지 않다는 말이 돈다 (${moraleLabel(content, f.morale)})` });
+  if (f.morale <= -1) out.push({ kind: "morale", level: -f.morale - 1, text: `분위기가 ${moraleLabel(content, f.morale)}` });
   const ration = rationLevel(content, f);
-  if (ration !== war.ration.levels[0]) out.push({ text: `배급: ${ration.label}`, rumor: `${name} 쪽은 배급을 줄였다는 말이 돈다 (${ration.label})` });
+  const ri = war.ration.levels.indexOf(ration);
+  if (ri > 0) out.push({ kind: "ration", level: ri, text: `배급: ${ration.label}` });
   // 창고: "빠듯하다"보다 나쁜 것만 (두 번째 문턱 아래)
   const tight = war.stock_labels[1]?.min_days ?? 7;
   for (const r of content.scenario.resources) {
     if ((war.upkeep[r.id] ?? 0) <= 0) continue;
     const days = daysOfStock(content, f, r.id);
-    const stock = war.stock_labels.find((l) => days >= l.min_days)?.label ?? war.stock_labels.at(-1)!.label;
-    if (days < tight) out.push({ text: `${r.label}: ${stock}`, rumor: `${name} 쪽 ${r.label} 창고는 ${stock}이 돈다` });
+    const si = Math.max(0, war.stock_labels.findIndex((l) => days >= l.min_days));
+    const level = war.stock_labels.findIndex((l) => days >= l.min_days) < 0 ? war.stock_labels.length - 1 : si;
+    if (days < tight) out.push({ kind: "stock", resource: r.id, level, text: `${r.label}: ${war.stock_labels[level]!.label}` });
   }
   return out;
 }
@@ -52,30 +74,53 @@ export function factionTroubles(state: GameState, content: Content): string[] {
 export const TROUBLE_TOPIC = "faction_trouble";
 
 /**
- * 다른 무리의 형편이 소문으로 들린다 (하루에 한 번, 전쟁 틱과 함께). 말이 모이는 곳(war.talk.rumor.zones)에 있으면
- * 형편이 어려운 다른 무리마다 확률로 하나를 듣는다. 같은 무리의 같은 말은 사흘 안에 다시 듣지 않는다
+ * 다른 무리의 형편이 소문으로 들린다 (하루에 한 번, 전쟁 틱과 함께). 말이 모이는 곳(war.talk.rumor.zones)에 있으면 무리마다:
+ * - 형편이 어려우면 chance로 그중 하나를 듣는다. 그곳의 exaggerate 확률로 한 단계 부풀려진다
+ * - 멀쩡해도 false_chance로 없는 어려움을 듣는다 (헛소문)
+ * 정확도(exact·approximate·false)는 시뮬레이션만 안다 (GM 프롬프트에 넣지 않는다). 같은 무리의 같은 말은 사흘 안에 다시 듣지 않는다
  */
 export function spreadTroubleRumors(ctx: ToolContext): ToolDisplayEvent[] {
   const { store, content, rng } = ctx;
   const rule = content.scenario.war?.talk?.rumor;
   const state = store.getState();
   const me = state.characters[state.playerId];
-  if (!rule || !me || me.dead || !state.playerZone || !rule.zones.includes(state.playerZone)) return [];
+  const place = state.playerZone ? rule?.zones[state.playerZone] : undefined;
+  if (!rule || !place || !me || me.dead) return [];
+  const war = content.scenario.war!;
+  const kinds: TroubleKind[] = [
+    { kind: "morale" },
+    { kind: "ration" },
+    ...content.scenario.resources.filter((r) => (war.upkeep[r.id] ?? 0) > 0).map((r) => ({ kind: "stock" as const, resource: r.id })),
+  ];
   const displays: ToolDisplayEvent[] = [];
   for (const f of Object.values(content.factions)) {
-    if (f.id === me.factionId) continue;
+    if (f.id === me.factionId || !state.factions[f.id]) continue;
     const troubles = troublesOf(state, content, f.id);
-    if (!troubles.length || rng() >= rule.chance) continue;
-    const fact = troubles[Math.floor(rng() * troubles.length)]!.rumor;
+    let heard: { fact: string; accuracy: "exact" | "approximate" | "false" } | null = null;
+    if (troubles.length && rng() < rule.chance) {
+      const t = troubles[Math.floor(rng() * troubles.length)]!;
+      const top = levelLabels(content, t.kind).length - 1;
+      const puffed = rng() < place.exaggerate && t.level < top;
+      heard = { fact: rumorText(content, f.name, t, puffed ? t.level + 1 : t.level), accuracy: puffed ? "approximate" : "exact" };
+    } else if (rng() < rule.false_chance) {
+      // 없는 어려움: 실제로 겪고 있지 않은 종류를 고른다
+      const free = kinds.filter((k) => !troubles.some((t) => t.kind === k.kind && (k.kind !== "stock" || (t.kind === "stock" && t.resource === k.resource))));
+      if (free.length) {
+        const k = free[Math.floor(rng() * free.length)]!;
+        const labels = levelLabels(content, k.kind);
+        heard = { fact: rumorText(content, f.name, k, k.kind === "morale" ? 1 : Math.max(1, labels.length - 2)), accuracy: "false" };
+      }
+    }
+    if (!heard) continue;
     const now = store.getState();
-    const recent = (now.beliefs[me.id] ?? []).some((b) => b.topic === `${TROUBLE_TOPIC}:${f.id}` && b.fact === fact && now.time - b.learnedAt < 3 * 24 * 60);
+    const recent = (now.beliefs[me.id] ?? []).some((b) => b.topic === `${TROUBLE_TOPIC}:${f.id}` && b.fact === heard!.fact && now.time - b.learnedAt < 3 * 24 * 60);
     if (recent) continue;
     store.append({
       type: "belief_added",
       characterId: me.id,
-      belief: { id: `b_${now.nextBeliefNo}`, fact, source: "rumor", accuracy: "approximate", learnedAt: now.time, topic: `${TROUBLE_TOPIC}:${f.id}` },
+      belief: { id: `b_${now.nextBeliefNo}`, fact: heard.fact, source: "rumor", accuracy: heard.accuracy, learnedAt: now.time, topic: `${TROUBLE_TOPIC}:${f.id}` },
     });
-    displays.push({ type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS.rumor });
+    displays.push({ type: "belief", fact: heard.fact, sourceLabel: BELIEF_SOURCE_LABELS.rumor });
   }
   return displays;
 }

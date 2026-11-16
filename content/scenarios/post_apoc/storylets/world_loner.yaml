@@ -80,6 +80,7 @@
 
 - id: wl_clinic_scav
   title: 약제실의 다른 손
+  fright_tags: [enclosed]
   tags: [world]
   when:
     factions: [none]

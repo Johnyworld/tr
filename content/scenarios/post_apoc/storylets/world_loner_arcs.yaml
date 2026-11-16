@@ -232,6 +232,7 @@
 
 - id: wa_band_crossroads
   title: 무리가 갈 곳
+  fright_tags: [enclosed]
   tags: [world]
   when:
     factions: [none]

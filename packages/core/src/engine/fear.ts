@@ -25,27 +25,37 @@ function levelIndex(ctx: ToolContext, state: GameState, id: string, trackId: str
   return Math.max(0, track.levels.findIndex((l) => l.id === state.characters[id]?.conditions[trackId]));
 }
 
+/** 공포의 태그 (공포증·지식이 아는 것). GM이 즉흥 장면에 고를 수 있는 값 */
+export function fearTagIds(s: import("../scenario/schema.ts").Scenario): string[] {
+  return [...new Set([...s.traits.flatMap((t) => t.effects?.phobia ?? []), ...(s.body?.fear?.lore ?? []).map((l) => l.tag)])].sort();
+}
+
 /** GM이 고르는 take_action.fright의 이름 */
 export const FRIGHT_CAUSES = { startle: "깜짝 놀랐다", dread: "두려움에 압도됐다" } as const;
 
 /**
  * 주인공의 공포가 오른다. base: 계기가 주는 단계. 버텼으면 그렇다고 알린다 (GM이 서술에 쓴다)
  */
-export function frighten(ctx: ToolContext, base: number, cause: string, tag?: string): FearResult {
+export function frighten(ctx: ToolContext, base: number, cause: string, tags: readonly string[] = []): FearResult {
   const f = rules(ctx);
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
-  if (!f || !me || me.dead || base <= 0) return EMPTY;
+  if (!f || !me || me.dead) return EMPTY;
   if (incapacitatingSymptom(ctx.content.scenario, me)) return EMPTY; // 정신을 잃은 사람은 겁먹지 않는다
+  const dark = f.dark.segments.includes(segmentOf(state.time));
+  // 공포증 (12-103): 무서워하는 것이 계기에 있으면 한 단계 더. 보통 사람에게 무섭지 않은 것(base 0)이어도 온다
+  const fears = new Set(traitsOf(ctx.content, me).flatMap((t) => t.effects.phobia ?? []));
+  const phobia = [...tags, ...(dark ? ["dark"] : [])].some((t) => fears.has(t));
+  if (base <= 0 && !phobia) return EMPTY;
 
   const exposure = state.fearExposure[me.id] ?? 0;
-  let steps = base;
-  if (f.dark.segments.includes(segmentOf(state.time))) steps += f.dark.steps;
+  let steps = base + (phobia ? 1 : 0);
+  if (dark) steps += f.dark.steps;
   if (activeCompanions(state).length > 0) steps -= f.companion;
   steps += traitsOf(ctx.content, me).reduce((n, t) => n + (t.effects.fear ?? 0), 0);
   steps -= f.desensitize.filter((n) => exposure >= n).length;
   // 아는 것은 덜 무섭다 (감염체 지식 → 감염체)
-  if (tag && f.lore.some((l) => l.tag === tag && (me.skills[l.skill] ?? -9) >= l.min)) steps -= 1;
+  if (f.lore.some((l) => tags.includes(l.tag) && (me.skills[l.skill] ?? -9) >= l.min)) steps -= 1;
   const nerves = ctx.content.scenario.body?.nerves;
   if (f.nerves_from && nerves) {
     const from = trackOf(ctx.content.scenario, nerves.track).levels.findIndex((l) => l.id === f.nerves_from);
@@ -127,24 +137,26 @@ export function fearAfterTool(ctx: ToolContext, before: FearWatch): FearResult {
   const f = rules(ctx);
   if (!f) return EMPTY;
   const state = ctx.store.getState();
-  const triggers: { steps: number; cause: string; tag?: string }[] = [];
+  const triggers: { steps: number; cause: string; tags: string[] }[] = [];
 
-  const arrivals = state.scene.present.filter((id) => !before.present.has(id) && fearsomeOf(ctx, state, id) > 0);
+  const tagsOf = (id: string) => ctx.content.extras[state.characters[id]?.extra?.template ?? ""]?.fright_tags ?? [];
+  const arrivals = state.scene.present.filter((id) => !before.present.has(id) && !state.characters[id]?.dead && (fearsomeOf(ctx, state, id) > 0 || tagsOf(id).length > 0));
   if (arrivals.length) {
-    const steps = Math.max(...arrivals.map((id) => fearsomeOf(ctx, state, id))) + (arrivals.length >= 3 ? 1 : 0);
+    const scary = arrivals.filter((id) => fearsomeOf(ctx, state, id) > 0);
+    const steps = scary.length ? Math.max(...scary.map((id) => fearsomeOf(ctx, state, id))) + (scary.length >= 3 ? 1 : 0) : 0;
     const names = arrivals.map((id) => state.characters[id]!.name);
-    const scariest = arrivals.reduce((a, b) => (fearsomeOf(ctx, state, b) > fearsomeOf(ctx, state, a) ? b : a));
-    const tag = ctx.content.extras[state.characters[scariest]!.extra?.template ?? ""]?.fright_tag;
-    triggers.push({ tag, steps, cause: `${names.slice(0, 3).join(", ")}${names.length > 3 ? ` 외 ${names.length - 3}` : ""}이(가) 나타났다` });
+    const tags = [...new Set(arrivals.flatMap(tagsOf))];
+    triggers.push({ tags, steps, cause: `${names.slice(0, 3).join(", ")}${names.length > 3 ? ` 외 ${names.length - 3}` : ""}이(가) 나타났다` });
   }
   const storylet = state.activeStorylet?.id;
   if (storylet && storylet !== before.storylet) {
     const s = ctx.content.storylets[storylet];
-    if (s?.fright) triggers.push({ steps: s.fright, cause: s.title, tag: s.fright_tag });
+    if (s && ((s.fright ?? 0) > 0 || (s.fright_tags ?? []).length > 0)) triggers.push({ steps: s.fright ?? 0, cause: s.title, tags: s.fright_tags ?? [] });
   }
-  if (state.battle && !before.battle && f.battle > 0) triggers.push({ steps: f.battle, cause: "전투가 붙었다" });
+  if (state.battle && !before.battle && f.battle > 0) triggers.push({ steps: f.battle, cause: "전투가 붙었다", tags: [] });
 
   if (!triggers.length) return EMPTY;
+  // 가장 큰 계기 하나로 세되, 태그는 모두 본다 (감염체 무리가 지하에서 나오면 infected와 enclosed 둘 다)
   const top = triggers.reduce((a, b) => (b.steps > a.steps ? b : a));
-  return frighten(ctx, top.steps, top.cause, top.tag);
+  return frighten(ctx, top.steps, top.cause, [...new Set(triggers.flatMap((t) => t.tags))]);
 }

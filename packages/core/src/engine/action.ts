@@ -1,7 +1,7 @@
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { rollBlowup, rollLeak } from "./persona.ts";
 import { exposeToCold } from "./climate.ts";
-import { calmAfterSleep, frighten, FRIGHT_CAUSES } from "./fear.ts";
+import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { runRoadEvent } from "./storyletTools.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
@@ -151,6 +151,15 @@ export function createTakeActionSchema(s: Scenario) {
         s.body?.fear
           ? "이번 턴에 플레이어 캐릭터가 겁먹을 일이 드러났는데 이야기·인물 데이터로 잡히지 않는 순간일 때만: startle 깜짝 놀람(기습, 갑자기 튀어나옴), dread 압도됨(떼, 끔찍한 광경). 오를지·얼마나는 시스템이 정한다. 대부분 none"
           : "이 월드에서는 쓰지 않는다. none",
+      ),
+    fright_tags: z
+      .array(z.string())
+      .max(4)
+      .default([])
+      .describe(
+        s.body?.fear
+          ? `이번 턴 장면에 있는 것 중 공포를 부를 수 있는 것 (이야기·인물 데이터에 없는 즉흥 장면일 때만): ${fearTagIds(s).join(", ")}. 공포증이 있는 캐릭터는 fright가 none이어도 겁먹는다. 시스템이 정한다. 없으면 빈 목록`
+          : "이 월드에서는 쓰지 않는다. 빈 목록",
       ),
     move_to: z
       .string()
@@ -346,6 +355,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (!input.check) return { ok: false, error: `${prep.label} 설치에는 판정(check)이 필요하다.` };
   }
 
+  const unknownTag = input.fright_tags.find((t) => !fearTagIds(scenario).includes(t));
+  if (unknownTag) return { ok: false, error: `알 수 없는 fright_tags: ${unknownTag} (가능: ${fearTagIds(scenario).join(", ") || "없음"})` };
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
   const forMission = input.for_mission ? (activeMissionOf(start.missions, start.playerId)?.id ?? null) : null;
   const lines: string[] = [];
@@ -359,8 +370,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 0. 겁먹을 일이 드러났으면 공포부터 (이번 판정에 바로 붙는다, 12-95)
-  if (input.fright !== "none" && scenario.body?.fear) {
-    const fear = frighten(ctx, scenario.body.fear.gm[input.fright], FRIGHT_CAUSES[input.fright]);
+  if ((input.fright !== "none" || input.fright_tags.length > 0) && scenario.body?.fear) {
+    const fear = frighten(ctx, input.fright === "none" ? 0 : scenario.body.fear.gm[input.fright], input.fright === "none" ? "무서운 것과 마주쳤다" : FRIGHT_CAUSES[input.fright], input.fright_tags);
     lines.push(...fear.lines);
     displays.push(...fear.displays);
   }

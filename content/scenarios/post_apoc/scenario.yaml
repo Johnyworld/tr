@@ -397,6 +397,11 @@ traits:
   - { id: conspicuous, label: 눈에 띄는 사람, kind: negative, cost: 1, visible: true, description: 하는 일이 잘 들킨다, opposites: [shadow], effects: { noticed: 1.3 } }
   - { id: bad_liar, label: 서툰 거짓말, kind: negative, cost: 1, description: 거짓말 -1, acting: 거짓말을 하면 눈을 피하고 말이 꼬인다, opposites: [silver_tongue], effects: { skills: { deceive: -1 } } }
   - { id: coward, label: 겁쟁이, kind: negative, cost: 2, description: "버티기 -1, 공포가 더 오른다", acting: 위험 앞에서 망설이고 먼저 몸을 뺀다, opposites: [steel_nerves], effects: { skills: { endure: -1 }, fear: 1 } }
+  # 공포증 (12-103): 그것이 나오는 장면이면 공포가 한 단계 더 오른다 (보통 사람에게 무섭지 않은 장면이어도). 겪을수록 둔감해진다
+  - { id: nyctophobia, label: 어둠 공포, kind: negative, cost: 1, description: "어둠이 무섭다 (밤에는 겁이 더 난다)", acting: 불빛 없는 곳에서는 말이 빨라지고 손전등을 놓지 않는다, effects: { phobia: [dark] } }
+  - { id: claustrophobia, label: 폐소 공포, kind: negative, cost: 1, description: "좁고 갇힌 곳이 무섭다 (지하·터널에서 겁이 난다)", acting: 지하로 내려가면 숨이 가빠지고 출구 쪽을 자꾸 돌아본다, effects: { phobia: [enclosed] } }
+  - { id: aquaphobia, label: 물 공포, kind: negative, cost: 1, description: "깊은 물이 무섭다 (잠긴 곳·물가에서 겁이 난다)", acting: 물이 무릎 위로 오르면 얼굴이 하얗게 질린다, effects: { phobia: [water] } }
+  - { id: cynophobia, label: 개 공포, kind: negative, cost: 1, description: "개가 무섭다 (개가 나타나면 겁이 난다)", acting: 개를 보면 몸이 굳고 눈을 떼지 못한다, effects: { phobia: [dog] } }
   - { id: ugly, label: 험악한 인상, kind: negative, cost: 1, visible: true, description: 첫인상이 나쁘다 (외모 -1), acting: 사람들이 첫눈에 경계한다, opposites: [beautiful, attractive], effects: { looks: -1 } }
   # ── 성격 (0) ──
   - { id: warm, label: 다정함, kind: personality, visible: true, description: 남을 살뜰히 챙긴다, acting: 말끝이 부드럽고 먼저 안부를 묻는다, opposites: [cold], persona: { warmth: 2 } }

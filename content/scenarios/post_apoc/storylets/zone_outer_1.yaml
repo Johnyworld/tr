@@ -55,7 +55,7 @@
 - id: zo1_sub_shutter
   title: 셔터 너머의 소리
   fright: 1
-  fright_tag: infected
+  fright_tags: [infected, enclosed]
   tags: [world]
   when:
     zones: [subway_hub]
@@ -162,6 +162,7 @@
 
 - id: zo1_sub_tunnel
   title: 남쪽 터널
+  fright_tags: [enclosed, dark]
   fright: 1
   tags: [world]
   when:
@@ -685,6 +686,7 @@
 
 - id: zo1_pr_armory
   title: 무기고의 철문
+  fright_tags: [enclosed]
   tags: [world]
   when:
     zones: [prison]
@@ -1140,6 +1142,7 @@
 
 - id: zo1_ml_den
   title: 아이들의 굴
+  fright_tags: [enclosed]
   tags: [world]
   when:
     zones: [mall_ruins]
@@ -1189,6 +1192,7 @@
 
 - id: zo1_ml_cold_store
   title: 하역장의 냉동 창고
+  fright_tags: [enclosed]
   tags: [world]
   when:
     zones: [mall_ruins]

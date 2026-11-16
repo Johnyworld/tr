@@ -91,6 +91,7 @@
 
 - id: wy_drifting_islander
   title: 떠내려온 사람
+  fright_tags: [water]
   tags: [world]
   when:
     zones: [riverside, water_plant]

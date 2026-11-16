@@ -285,6 +285,7 @@
 
 - id: e_bearing_salvage
   title: 물에 잠긴 양수장
+  fright_tags: [enclosed, water]
   tags: [caravan_life]
   when:
     zones: [riverside]

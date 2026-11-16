@@ -547,6 +547,7 @@
 
 - id: zo2_cp_lab
   title: 약대 실험실 지하
+  fright_tags: [enclosed]
   tags: [world]
   when:
     zones: [campus]
@@ -594,6 +595,7 @@
 
 - id: zo2_cp_cage
   title: 목에 걸린 출입증
+  fright_tags: [enclosed]
   tags: [world]
   when:
     zones: [campus]

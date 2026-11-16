@@ -128,9 +128,48 @@ describe("공포", () => {
   it("감염체 지식이 있으면 감염체가 부른 공포는 한 단계 덜 오른다 (다른 공포는 그대로)", () => {
     const env = setup();
     env.me().skills.infected_lore = 1;
-    frighten(env.ctx, 2, "감염체 무리", "infected");
+    frighten(env.ctx, 2, "감염체 무리", ["infected"]);
     expect(env.fear()).toBe("tense");
     frighten(env.ctx, 1, "매복");
     expect(env.fear()).toBe("scared");
+  });
+
+  it("공포증: 무서워하는 것이 나오면 한 단계 더, 보통 사람에게 무섭지 않은 장면(fright 0)에도 온다", () => {
+    const plain = setup();
+    frighten(plain.ctx, 0, "지하 계단", ["enclosed"]);
+    expect(plain.fear()).toBe("calm");
+    const phobic = setup();
+    phobic.me().traits = ["claustrophobia"];
+    frighten(phobic.ctx, 0, "지하 계단", ["enclosed"]);
+    expect(phobic.fear()).toBe("tense");
+    frighten(phobic.ctx, 1, "지하의 감염체", ["infected", "enclosed"]);
+    expect(phobic.fear()).toBe("panic"); // 1 + 공포증 1
+  });
+
+  it("어둠 공포는 어둠 시간대의 모든 공포에 붙는다", () => {
+    const c = content();
+    c.scenario.body!.fear!.dark = { segments: ["dawn", "morning", "day", "evening", "night"], steps: 0 };
+    const env = setup(c);
+    env.me().traits = ["nyctophobia"];
+    frighten(env.ctx, 1, "기습");
+    expect(env.fear()).toBe("scared");
+  });
+
+  it("무서워하는 동물이 장면에 나타나면 (fearsome 0이어도) 공포가 실린다", () => {
+    const env = setup();
+    env.me().traits = ["cynophobia"];
+    const out = executeTool("spawn_extra", { template: "road_dog", label: "목줄 끊긴 개" }, env.ctx);
+    expect(out.ok).toBe(true);
+    expect(env.fear()).toBe("tense");
+  });
+
+  it("GM이 즉흥 장면에 고른 태그로도 공포증이 걸리고, 모르는 태그는 막는다", () => {
+    const env = setup();
+    env.me().traits = ["aquaphobia"];
+    const out = executeTool("take_action", act({ fright_tags: ["water"] }), env.ctx);
+    expect(out.ok).toBe(true);
+    expect(env.fear()).toBe("tense");
+    const bad = executeTool("take_action", act({ fright_tags: ["spiders"] }), env.ctx);
+    expect(bad.ok).toBe(false);
   });
 });

@@ -111,6 +111,7 @@
 
 - id: d_sl_shaft_stash
   title: 방수포 밑의 상자
+  fright_tags: [enclosed, water]
   tags: [d_squad_leader]
   when:
     zones: [hospital_ruins]

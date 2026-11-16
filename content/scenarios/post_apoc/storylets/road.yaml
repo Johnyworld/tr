@@ -8,6 +8,7 @@
 
 - id: rd_lost_dog
   title: 따라오는 개
+  fright_tags: [dog]
   tags: [road]
   repeatable: true
   cooldown_days: 15
@@ -314,7 +315,7 @@
 - id: rd_infected_pack
   title: 길을 막은 무리
   fright: 2
-  fright_tag: infected
+  fright_tags: [infected]
   tags: [road]
   repeatable: true
   cooldown_days: 3
@@ -446,6 +447,7 @@
 
 - id: rd_flooded_underpass
   title: 잠긴 지하도
+  fright_tags: [enclosed, water]
   tags: [road]
   repeatable: true
   cooldown_days: 6
@@ -529,6 +531,7 @@
 
 - id: rd_subway_tunnel
   title: 환승역 터널
+  fright_tags: [enclosed, dark]
   fright: 1
   tags: [road]
   repeatable: true
@@ -719,6 +722,7 @@
 
 - id: rd_night_road
   title: 밤길의 발소리
+  fright_tags: [dark]
   fright: 1
   tags: [road]
   repeatable: true

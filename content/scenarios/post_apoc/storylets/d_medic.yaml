@@ -406,6 +406,7 @@
 
 - id: d_pharmacy_vault
   title: 냉장실 옆 금고
+  fright_tags: [enclosed, water]
   tags: [d_medic]
   when:
     zones: [hospital_ruins]

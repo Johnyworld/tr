@@ -551,7 +551,7 @@
 - id: b_fence_drawn
   title: 철망에 매달린 것들
   fright: 1
-  fright_tag: infected
+  fright_tags: [infected]
   tags: [b_guard]
   repeatable: true
   urgent: true

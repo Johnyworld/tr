@@ -381,6 +381,7 @@
 
 - id: w_stray_dog
   title: 따라오는 누렁이
+  fright_tags: [dog]
   tags: [world]
   when:
     own_territory: false
@@ -408,6 +409,7 @@
 
 - id: w_dog_warns
   title: 그르렁거리는 개
+  fright_tags: [dog]
   urgent: true
   tags: [world]
   when:

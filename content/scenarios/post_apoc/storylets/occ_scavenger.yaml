@@ -396,6 +396,7 @@
 
 - id: occ_sc_deep_run
   title: 약제실의 계단
+  fright_tags: [enclosed]
   tags: [occ_scavenger]
   urgent: true
   when:

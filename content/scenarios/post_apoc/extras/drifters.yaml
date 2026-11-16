@@ -131,6 +131,7 @@
   appears: { zone_owner: [none] }
 - id: stray_dog
   label: 누렁이
+  fright_tags: [dog]
   animal: true
   rank: loner
   age: [2, 6]

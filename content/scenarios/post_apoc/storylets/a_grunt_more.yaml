@@ -132,6 +132,7 @@
 
 - id: hospital_descent
   title: 병원 지하로
+  fright_tags: [enclosed]
   tags: [grunt]
   when:
     zones: [hospital_ruins]
@@ -231,7 +232,7 @@
 - id: infected_at_wall
   title: 담장 틈의 감염체
   fright: 1
-  fright_tag: infected
+  fright_tags: [infected]
   urgent: true
   tags: [grunt]
   repeatable: true

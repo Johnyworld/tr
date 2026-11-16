@@ -161,6 +161,8 @@ export const scenarioFileSchema = z
               recovery_days: z.number().int().optional(),
               /** 공포가 오를 때 더하는 단계 (12-95. 겁이 많으면 +1, 담대하면 -1) */
               fear: z.number().int().optional(),
+              /** 공포증 (12-103): 계기에 이 태그가 있으면 공포가 한 단계 더 오른다 (그 계기가 보통 사람에게 무섭지 않아도). dark는 어둠 시간대 전부 */
+              phobia: z.array(id).optional(),
               /** 내가 한 일이 숨은 목격자에게 들킬 확률 배수 */
               noticed: z.number().min(0).optional(),
               /** 내가 남의 일을 목격할 확률 배수 */
@@ -922,7 +924,7 @@ export const scenarioFileSchema = z
             panic_nerves: z.number().min(0).max(1),
             /** 마음 트랙이 이 단계 이상이면 공포가 한 단계 더 오른다 */
             nerves_from: id.optional(),
-            /** 아는 것은 덜 무섭다: 계기의 fright_tag가 tag이고 이 스킬이 min 이상이면 한 단계 덜 오른다 (감염체 지식 → 감염체) */
+            /** 아는 것은 덜 무섭다: 계기의 fright_tags에 tag가 있고 이 스킬이 min 이상이면 한 단계 덜 오른다 (감염체 지식 → 감염체) */
             lore: z.array(z.strictObject({ skill: id, tag: id, min: z.number().int() })).default([]),
           })
           .optional(),

@@ -785,6 +785,37 @@ export const scenarioFileSchema = z
             gear: z.record(id, z.number().int().min(0)).default({}),
             shelter: z.strictObject({ resource: id, min_days: z.number().min(0), warm: z.number().int().max(0) }),
             worst_harm: z.number().int().min(0).default(0),
+            /**
+             * 기온 (12-98). 있으면 하루 단위 추위(season·weather·gear) 대신 시간대마다 기온을 재고 냉기를 쌓는다.
+             * 바깥 기온 = 계절 평균 + 시간대 + 날씨 + 그날의 들쭉날쭉(±jitter). 체감 = 바깥 + 실내(구역 cover, 날씨는 indoor_weather배) + 난방 + 옷차림 + 트레잇.
+             * 체감이 comfort보다 낮으면 (모자란 도 × 시간)만큼 냉기가 쌓이고 per_step마다 한 단계 오른다.
+             * comfort 이상이면 시간당 mild_rate, warm 이상이면 warm_rate만큼 냉기가 빠지고 per_step마다 한 단계 풀린다
+             */
+            climate: z
+              .strictObject({
+                season: z.record(id, z.number()),
+                segments: z.strictObject({ dawn: z.number(), morning: z.number(), day: z.number(), evening: z.number(), night: z.number() }),
+                weather: z.record(id, z.number()).default({}),
+                jitter: z.number().min(0).default(0),
+                comfort: z.number(),
+                warm: z.number(),
+                per_step: z.number().positive(),
+                mild_rate: z.number().min(0),
+                warm_rate: z.number().min(0),
+                /** 실내에서 날씨가 미치는 정도 (0 ~ 1) */
+                indoor_weather: z.number().min(0).max(1).default(0.5),
+                /** 바깥에서 하는 활동 (나머지는 그 구역의 실내에서) */
+                outdoor: z.array(z.string()).default(["travel", "search", "guard_duty", "combat"]),
+                /** 불 땐 거점 실내 (shelter 조건)의 최저 체감 */
+                heated: z.number(),
+                /** 트레잇 효과 cold 1당 체감에서 빼는 도 (추위를 탐 +1, 추위에 강함 -1) */
+                trait_degrees: z.number().min(0).default(3),
+                /** 모닥불: 연료 아이템 → 타는 시간. 같은 구역에 있으면 체감 +warmth, 피우면 그 구역 소음 +noise */
+                fire: z
+                  .strictObject({ items: z.record(id, z.number().positive()), warmth: z.number().positive(), noise: z.number().int().min(0).default(0) })
+                  .optional(),
+              })
+              .optional(),
           })
           .optional(),
         /**

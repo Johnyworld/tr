@@ -6,12 +6,14 @@
   name: 지하철 환승역
   description: 세 노선이 만나던 지하 환승역. 첫 겨울에 피난민이 몰려들었다가 그 안에서 물결이 일었다. 터널로 구시가와 강변, 마트 밑까지 이어지지만 아무도 오래 머물지 않는다.
   kind: zone
+  cover: 6
   owner: null
   danger: 3
   adjacent: [old_town, riverside, mall_ruins]
   loot:
     chance: 0.6
     items:
+      - { item: firewood, weight: 1, qty: [1, 2] }
       - { item: canned_food, weight: 2, qty: [1, 2] }
       - { item: flashlight, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 2, qty: [1, 1] }
@@ -24,6 +26,7 @@
   name: 화력발전소 터
   description: 강 상류의 꺼진 화력발전소. 저탄장에 석탄과 기름이 아직 남아 있다. 굴뚝이 도시 어디서나 보여서, 누가 거기 깃발을 세우는지 다들 안다.
   kind: zone
+  cover: 4
   owner: null
   danger: 2
   adjacent: [riverside, c_warehouse, rest_stop, prison]
@@ -31,6 +34,7 @@
   loot:
     chance: 0.4
     items:
+      - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: fuel_bottle, weight: 3, qty: [1, 2] }
       - { item: scrap_metal, weight: 3, qty: [1, 2] }
       - { item: wire_roll, weight: 2, qty: [1, 1] }
@@ -41,6 +45,7 @@
   name: 북쪽 교도소
   description: 붉은연합 거점 북쪽의 옛 교도소. 담이 가장 높은 곳이라 첫 해에 여러 무리가 차지하려다 안에서 무너졌다. 무기고가 아직 다 털리지 않았다는 말과, 감방 안에 아직 누가 갇혀 있다는 말이 같이 돈다.
   kind: zone
+  cover: 6
   owner: null
   danger: 3
   adjacent: [c_base, power_plant]
@@ -60,6 +65,7 @@
   name: 대형 마트 폐허
   description: 남쪽 대로변의 대형 마트. 첫 주에 다 털렸지만 지붕이 무너진 창고 쪽에는 아직 손이 닿지 않은 선반이 있다. 여러 무리의 수색조가 마주치는 곳이다.
   kind: zone
+  cover: 4
   owner: null
   danger: 2
   adjacent: [subway_hub, south_fields, b_base]
@@ -67,6 +73,7 @@
   loot:
     chance: 0.55
     items:
+      - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: canned_food, weight: 3, qty: [1, 2] }
       - { item: dry_ration, weight: 2, qty: [1, 2] }
       - { item: water_bottle, weight: 2, qty: [1, 1] }
@@ -80,6 +87,7 @@
   name: 언덕 위 성당
   description: 구시가 언덕 위의 붉은 벽돌 성당. 어느 무리에도 들지 못한 피난민이 종탑 아래 모여 산다. 늙은 신부가 장례를 치러 주고, 누구에게도 총을 들고 들어오지 말라고 한다.
   kind: zone
+  cover: 5
   owner: null
   sanctuary: true
   danger: 0
@@ -96,6 +104,7 @@
   name: 가람대학교 캠퍼스
   description: 언덕 너머의 대학 캠퍼스. 도서관에 몇 사람이 틀어박혀 책을 지키며 산다. 약대 실험실과 농대 온실이 있다는 말에 무리마다 사람을 보내 보지만, 학자들은 아무 무리에도 들지 않는다.
   kind: zone
+  cover: 6
   owner: null
   sanctuary: true
   danger: 1
@@ -104,6 +113,7 @@
   loot:
     chance: 0.35
     items:
+      - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: wild_greens, weight: 2, qty: [1, 2] }
       - { item: mushroom, weight: 1, qty: [1, 2] }
       - { item: fever_reducer, weight: 2, qty: [1, 1] }
@@ -120,6 +130,7 @@
   name: 고속도로 휴게소
   description: 도시 밖으로 나가는 고속도로의 마지막 휴게소. 나루상단이 주유소 지붕 밑에 짐을 부리는 곳이고, 바깥에서 들어오는 떠돌이와 소문이 가장 먼저 닿는 곳이다.
   kind: zone
+  cover: 4
   owner: faction_e
   danger: 1
   adjacent: [e_market, power_plant]
@@ -127,6 +138,7 @@
   loot:
     chance: 0.3
     items:
+      - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: fuel_bottle, weight: 2, qty: [1, 1] }
       - { item: canned_food, weight: 1, qty: [1, 1] }
       - { item: cigarettes, weight: 2, qty: [1, 2] }
@@ -137,12 +149,14 @@
   name: 무너진 고가도로
   description: 도시 서쪽 들머리의 끊어진 고가도로. 버려진 차들이 줄지어 서 있고, 난간 너머로 멀리 운동장에 철판 담을 두른 학교가 보인다.
   kind: zone
+  cover: 0
   owner: null
   danger: 1
   adjacent: [old_town, riverside]
   loot:
     chance: 0.45
     items:
+      - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: dry_ration, weight: 2, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }

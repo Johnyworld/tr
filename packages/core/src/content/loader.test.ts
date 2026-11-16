@@ -28,6 +28,9 @@ function tempContent(files: Record<string, string>) {
   delete scenario.occupations;
   // 과거 배경도 실제 아이템을 참조한다
   delete (scenario.creation as Record<string, unknown>).pasts;
+  // 모닥불 연료도 실제 아이템을 참조한다 (12-98)
+  const cold = (scenario.body as Record<string, Record<string, Record<string, unknown>>> | undefined)?.cold?.climate;
+  if (cold) delete cold.fire;
   writeFileSync(join(dir, "scenario.yaml"), stringify(scenario));
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(join(dir, path, ".."), { recursive: true });

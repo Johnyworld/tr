@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { describeTemperature } from "./climate.ts";
 import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -99,6 +100,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
   const sections: [string, string][] = [
     ["status", [
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
+      ...(describeTemperature(content, state) ? [`기온: ${describeTemperature(content, state)}. 추위는 시스템이 기온으로 정한다 (불 피우기는 take_action.use_item에 땔감·판자·기름)`] : []),
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       ...(incapacitatingSymptom(scenario, player)
         ? [

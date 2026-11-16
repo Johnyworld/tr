@@ -1,0 +1,114 @@
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { loadContent } from "../content/loader.ts";
+import { createWorldEvent } from "../game/state.ts";
+import { InMemoryGameStore } from "../game/store.ts";
+import { MINUTES_PER_DAY, SEGMENT_START_HOUR } from "../rules/time.ts";
+import { seasonAt } from "../sim/season.ts";
+import { exposeToCold, feelsLike, outsideTemp } from "./climate.ts";
+import { autoEquip } from "./gear.ts";
+import { executeTool } from "./tools.ts";
+
+/** 기온 (12-98) */
+const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });
+
+/** 겨울 어느 날 hour시, zone에 있는 주인공 (날씨 없음, 동행 없음, 트레잇 없음, 빈손) */
+function setup(opts: { hour?: number; zone?: string; role?: string; season?: string; quiet?: boolean } = {}) {
+  // quiet: 이야기·끼어들기 없이 시간만 흐른다
+  const c = opts.quiet ? { ...content, storylets: {} } : content;
+  const store = new InMemoryGameStore([createWorldEvent(c, opts.role ?? "role_l_wanderer", "world_cold", () => 0.5)]);
+  const ctx = { store, rng: () => 0.5, content: c };
+  const state = store.getState();
+  let day = Math.floor(state.time / MINUTES_PER_DAY);
+  while (seasonAt(content.scenario, day * MINUTES_PER_DAY)?.label !== (opts.season ?? "겨울")) day++;
+  state.time = day * MINUTES_PER_DAY + (opts.hour ?? 12) * 60;
+  state.weather = null;
+  state.playerZone = opts.zone ?? "old_town";
+  const me = () => store.getState().characters[store.getState().playerId]!;
+  me().traits = [];
+  me().inventory = {};
+  me().equipped = { weapon: null, body: null, head: null, arms: null, outer: null };
+  me().conditions.cold = "warm";
+  store.getState().companions = [];
+  return { store, ctx, me };
+}
+
+describe("기온", () => {
+  it("밤이 낮보다 춥고, 같은 날 같은 시각은 늘 같다", () => {
+    const night = setup({ hour: SEGMENT_START_HOUR.night + 1 });
+    const day = setup({ hour: SEGMENT_START_HOUR.day + 1 });
+    const n = outsideTemp(content, night.store.getState())!;
+    const d = outsideTemp(content, day.store.getState())!;
+    expect(n.value).toBeLessThan(d.value);
+    expect(outsideTemp(content, night.store.getState())!.value).toBe(n.value);
+    // 가을 낮은 겨울 낮보다 따뜻하다
+    expect(outsideTemp(content, setup({ season: "가을" }).store.getState())!.value).toBeGreaterThan(d.value);
+  });
+
+  it("체감: 실내는 바깥보다 따뜻하고, 방한복은 입어야, 담요는 자거나 쉴 때만", () => {
+    const { store, me } = setup();
+    const out = feelsLike(content, store.getState(), "search")!;
+    const inside = feelsLike(content, store.getState(), "rest")!;
+    expect(inside.value).toBeGreaterThan(out.value);
+    expect(inside.indoor).toBe(true);
+    me().inventory.coat = 1;
+    expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value); // 가방에만 있다
+    me().equipped.outer = "coat";
+    expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value + 6);
+    me().inventory.blanket = 1;
+    expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value + 6);
+    expect(feelsLike(content, store.getState(), "sleep")!.value).toBe(inside.value + 6 + 5);
+  });
+
+  it("덮을 곳이 없는 구역은 쉬어도 바깥", () => {
+    const { store } = setup({ zone: "overpass" });
+    const f = feelsLike(content, store.getState(), "sleep")!;
+    expect(f.indoor).toBe(false);
+    expect(f.value).toBe(outsideTemp(content, store.getState())!.value);
+  });
+
+  it("겨울밤을 맨몸으로 바깥에서 보내면 추위가 오르고, 따뜻한 곳에서 쉬면 풀린다", () => {
+    const { ctx, store, me } = setup({ hour: SEGMENT_START_HOUR.night, zone: "overpass" });
+    const t = store.getState().time;
+    exposeToCold(ctx, "wait", t, t + 8 * 60);
+    expect(me().conditions.cold).not.toBe("warm");
+    const cold = me().conditions.cold;
+    // 모닥불 곁의 실내에서 쉰다
+    store.getState().playerZone = "old_town";
+    store.getState().fires.old_town = t + 20 * 60;
+    me().inventory.blanket = 1;
+    exposeToCold(ctx, "rest", t + 8 * 60, t + 14 * 60);
+    expect(me().conditions.cold).not.toBe(cold);
+  });
+
+  it("땔감으로 불을 피우면 연료가 줄고, 그 구역이 따뜻해지고, 소음이 난다", () => {
+    const { ctx, store, me } = setup({ hour: SEGMENT_START_HOUR.night });
+    me().inventory.firewood = 1;
+    const before = feelsLike(content, store.getState(), "rest")!.value;
+    const out = executeTool("take_action", act({ use_item: "firewood" }), ctx);
+    expect(out.ok).toBe(true);
+    if (out.ok) expect(out.resultText).toContain("불을 피웠다");
+    expect(me().inventory.firewood ?? 0).toBe(0);
+    expect(store.getState().fires.old_town).toBeGreaterThan(store.getState().time);
+    expect(feelsLike(content, store.getState(), "rest")!.parts.join()).toContain("모닥불");
+    expect(feelsLike(content, store.getState(), "rest")!.value).toBeGreaterThanOrEqual(before + 9);
+    expect(store.getState().zoneNoise.old_town?.level).toBeGreaterThan(0);
+  });
+
+  it("take_action으로 시간을 흘리면 GM에게 추위의 까닭(기온·체감)이 간다", () => {
+    const { ctx, me } = setup({ hour: SEGMENT_START_HOUR.evening, zone: "overpass", quiet: true });
+    const out = executeTool("take_action", act({ activity: { kind: "wait", until: "dawn" } }), ctx);
+    expect(out.ok).toBe(true);
+    expect(me().conditions.cold).not.toBe("warm");
+    if (out.ok) expect(out.resultText).toMatch(/추위: .*바깥 -?\d+°.*체감 -?\d+°/);
+  });
+
+  it("방한복을 가지고 시작하면 외투 칸에 입는다", () => {
+    const { ctx, me } = setup();
+    me().inventory.coat = 1;
+    autoEquip(ctx, me().id);
+    expect(me().equipped.outer).toBe("coat");
+  });
+});

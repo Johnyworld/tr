@@ -1,4 +1,5 @@
 import { onPersonDeath } from "./people.ts";
+import { lightFire } from "./climate.ts";
 import { hasAccess } from "../game/culture.ts";
 import type { GameState } from "../game/state.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -92,6 +93,9 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
   const state = store.getState();
   const player = state.characters[state.playerId]!;
   const name = content.items[item]?.name ?? item;
+  // 모닥불 연료 (12-98)
+  const fire = lightFire(ctx, item);
+  if (fire) return fire.ok ? { ok: true, lines: fire.lines, displays: [] } : fire;
   const effects = content.scenario.consumables[item];
   if (!effects) return { ok: false, error: `${josa(name, "은/는")} 써서 몸이 나아지는 물건이 아니다 (가능: ${Object.keys(content.scenario.consumables).join(", ")}).` };
   if ((player.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(name, "이/가")} 없다.` };
@@ -255,7 +259,8 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
       }
     }
   }
-  if (body.cold) {
+  // 기온이 있는 월드는 시간대마다 냉기를 쌓는다 (climate.ts, 12-98). 하루 단위 추위는 없는 월드만
+  if (body.cold && !body.cold.climate) {
     const cold = body.cold;
     const state = ctx.store.getState();
     const me = player()!;

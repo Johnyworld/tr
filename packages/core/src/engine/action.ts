@@ -1,4 +1,5 @@
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
+import { exposeToCold } from "./climate.ts";
 import { calmAfterSleep, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { runRoadEvent } from "./storyletTools.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
@@ -683,6 +684,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
         ...(result.interrupt ? { interrupt: result.interrupt } : {}),
         ...(forMission ? { forMission } : {}),
       });
+      // 그동안의 기온 (12-98): 자정 전에 재야 그날의 날씨로 잰다
+      extra.push(...exposeToCold(ctx, activity, cursor, result.end));
       cursor = result.end;
       interrupt = result.interrupt;
       if (interrupt || cursor >= target) break;
@@ -699,6 +702,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       to,
       ...(forMission ? { forMission } : {}),
     });
+    extra.push(...exposeToCold(ctx, activity, from, to));
   }
 
   const label = ACTIVITY_LABELS[activity];

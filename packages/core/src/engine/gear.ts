@@ -18,8 +18,8 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome }
 export const DEFAULT_WEIGHT = 0.5;
 export const DEFAULT_VALUE = 1;
 type Item = Content["items"][string];
-type Slot = "weapon" | "body" | "head" | "arms";
-const ARMOR_SLOTS = ["body", "head", "arms"] as const;
+type Slot = "weapon" | "body" | "head" | "arms" | "outer";
+const ARMOR_SLOTS = ["body", "head", "arms", "outer"] as const;
 
 export const itemOf = (content: Content, id: string | null | undefined): Item | undefined => (id ? content.items[id] : undefined);
 const nameOf = (content: Content, id: string) => content.items[id]?.name ?? id;
@@ -218,7 +218,7 @@ const equipTool = defineTool({
     "주인공이 무기를 손에 들거나 방어구를 입는다(벗는다). 가진 것만. 공격 판정은 손에 든 무기로 한다 (없으면 맨손). 방어구는 받는 피해를 줄이지만 무겁고 불리한 판정이 있을 수 있다. 시간은 거의 들지 않는다.",
   schema: z.strictObject({
     item_id: z.string().nullable().describe("들거나 입을 아이템 id. 벗으려면 null"),
-    slot: z.enum(["weapon", "body", "head", "arms"]).nullable().describe("벗을 때만 자리. 들거나 입을 때는 null (아이템이 정한다)"),
+    slot: z.enum(["weapon", "body", "head", "arms", "outer"]).nullable().describe("벗을 때만 자리. 들거나 입을 때는 null (아이템이 정한다)"),
   }),
   run(input, ctx): ToolOutcome {
     const { store, content } = ctx;
@@ -422,6 +422,7 @@ export function describeGear(content: Content, c: Character): string {
 export function autoEquip(ctx: ToolContext, characterId: string): void {
   const { store, content } = ctx;
   if (!content.scenario.gear) return;
+  autoWearOuter(ctx, characterId);
   const c = store.getState().characters[characterId];
   if (!c || equippedItem(c, "weapon")) return;
   const score = (id: string) => {
@@ -433,4 +434,15 @@ export function autoEquip(ctx: ToolContext, characterId: string): void {
   };
   const best = Object.keys(c.inventory).filter((id) => score(id) >= 0).sort((a, b) => score(b) - score(a) || a.localeCompare(b))[0];
   if (best) store.append({ type: "item_equipped", characterId, slot: "weapon", itemId: best });
+}
+
+/** 외투 칸이 비어 있으면 가진 것 중 가장 따뜻한 외투를 입는다 (시작할 때, 이어 갈 때. 12-98) */
+export function autoWearOuter(ctx: ToolContext, characterId: string): void {
+  const { store, content } = ctx;
+  const c = store.getState().characters[characterId];
+  if (!c || equippedItem(c, "outer")) return;
+  const coat = Object.keys(c.inventory)
+    .filter((id) => (c.inventory[id] ?? 0) > 0 && content.items[id]?.armor?.slot === "outer")
+    .sort((a, b) => (content.items[b]?.warmth?.degrees ?? 0) - (content.items[a]?.warmth?.degrees ?? 0) || a.localeCompare(b))[0];
+  if (coat) store.append({ type: "item_equipped", characterId, slot: "outer", itemId: coat });
 }

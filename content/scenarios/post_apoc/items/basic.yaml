@@ -105,17 +105,27 @@
 - id: blanket
   name: 담요
   icon: cloth
-  description: 군데군데 해진 군용 담요. 덮으면 언 몸이 녹는다 (쓰면 추위 2단계).
-  kind: consumable
+  description: 군데군데 해진 군용 담요. 자거나 쉴 때 덮으면 덜 춥다 (체감 +5°).
+  kind: tool
   weight: 1.5
   value: 3
+  warmth: { degrees: 5, when: resting }
 - id: coat
   name: 방한복
   icon: cloth
-  description: 솜이 뭉친 두꺼운 방한 외투. 지니고 다니면 추위를 덜 탄다.
-  kind: misc
+  description: 솜이 뭉친 두꺼운 방한 외투. 입으면 덜 춥고 (체감 +6°), 두꺼운 솜이 이빨을 조금 막는다.
+  kind: armor
   weight: 2.0
   value: 6
+  armor: { slot: outer, reduces: 0, blocks_infection: 0.3 }
+  warmth: { degrees: 6, when: worn }
+- id: firewood
+  name: 땔감
+  icon: fire
+  description: 부러진 가구와 마른 나뭇가지 한 아름. 불을 피우면 네 시간쯤 탄다.
+  kind: material
+  weight: 2.0
+  value: 1
 - id: fever_reducer
   name: 해열제
   description: 유통기한이 지난 해열제 몇 알. 앓는 몸을 조금 낫게 한다 (질병 1단계).

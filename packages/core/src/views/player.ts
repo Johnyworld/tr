@@ -1,4 +1,5 @@
 import { rankName } from "../game/ranks.ts";
+import { feelsLike } from "../engine/climate.ts";
 import { occupationTitle } from "../game/occupation.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem } from "../engine/gear.ts";
 import { activeCompanions, apartCompanions, BOND_LABELS, bondOf, describeUntil } from "../game/companions.ts";
@@ -55,7 +56,18 @@ export type PlayerView = {
    * time: 시각과 시간대 ("05:30 (새벽)"). hhmm: "05:30". minute: 하루 중 몇 분째 (해·달 자리). date: 달력 날짜 (월드가 정했을 때).
    * 며칠째인지는 일지에서 본다
    */
-  clock: { time: string; hhmm: string; minute: number; segmentLabel: string; date: string | null; segment: TimeSegment; season: string | null; weather: { label: string; icon: IconName | null; chill: number } | null };
+  clock: {
+    time: string;
+    hhmm: string;
+    minute: number;
+    segmentLabel: string;
+    date: string | null;
+    segment: TimeSegment;
+    season: string | null;
+    weather: { label: string; icon: IconName | null; chill: number } | null;
+    /** 기온 (12-98): 바깥, 여기서 쉬면 체감, 체감의 내역. 기온이 없는 월드는 null */
+    temperature: { outside: number; feels: number; detail: string } | null;
+  };
   /** 상태 트랙별 현재 단계 (예: 부상 경상). worsened: 첫 단계에서 나빠졌는지 */
   /** icon: 트랙의 아이콘 (없으면 null). step: 보이는 단계(0이 처음), penalty: 이 단계의 판정 보정 */
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon: IconName | null; step: number; penalty: number; fatal: boolean }[];
@@ -186,7 +198,7 @@ export function timeLeftLabel(minutes: number): string {
   return `${words[days] ?? `${days}일`}${halves % 2 ? " 반" : ""}`;
 }
 
-const SLOT_LABELS: Record<string, string> = { weapon: "손", body: "몸", head: "머리", arms: "팔" };
+const SLOT_LABELS: Record<string, string> = { weapon: "손", body: "몸", head: "머리", arms: "팔", outer: "외투" };
 const HARM_CAP_LABELS: Record<string, string> = { light: "가벼운 피해까지", heavy: "무거운 피해까지" };
 
 function gearView(state: GameState, content: Content): PlayerView["gear"] {
@@ -215,7 +227,7 @@ function gearView(state: GameState, content: Content): PlayerView["gear"] {
   };
   return {
     weapon: one(equippedItem(me, "weapon"), "weapon"),
-    armor: (["body", "head", "arms"] as const).map((s) => one(equippedItem(me, s), s)).filter((x): x is GearView => !!x),
+    armor: (["body", "head", "arms", "outer"] as const).map((s) => one(equippedItem(me, s), s)).filter((x): x is GearView => !!x),
     weight: Math.round(carriedWeight(content, me) * 10) / 10,
     capacity: Math.round(carryCapacity(content, me)),
     burden: encumbrance(content, me),
@@ -234,7 +246,13 @@ function clockView(state: GameState, content: Content): PlayerView["clock"] {
     segment: segmentOf(state.time),
     season: seasonLabel(seasonAt(s, state.time)) || null,
     weather: weather ? { label: weather.label, icon: weather.icon ?? null, chill: s.body?.cold?.weather[weather.id] ?? 0 } : null,
+    temperature: temperatureView(state, content),
   };
+}
+
+function temperatureView(state: GameState, content: Content): PlayerView["clock"]["temperature"] {
+  const f = feelsLike(content, state, "rest");
+  return f ? { outside: f.outside.value, feels: f.value, detail: f.parts.join(", ") } : null;
 }
 
 /** 죽은 사람은 맨 아래로 (나머지 순서는 그대로) */
@@ -266,7 +284,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
   // 장비로 걸친 것은 소지품에서 하나씩 뺀다 (장비 블록에 따로 보인다)
   const carried = { ...player.inventory };
   if (content.scenario.gear) {
-    for (const slot of ["weapon", "body", "head", "arms"] as const) {
+    for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) {
       const id = equippedItem(player, slot);
       if (id) carried[id] = (carried[id] ?? 0) - 1;
     }

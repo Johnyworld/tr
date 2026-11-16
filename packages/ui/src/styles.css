@@ -2529,6 +2529,23 @@ body {
   display: inline-flex;
 }
 
+/* 기온 (12-98): 바깥 기온과, 여기서 쉬면 체감. 체감이 8° 아래면 노랑, 0° 아래면 빨강 */
+.hdr-temp {
+  font-size: 13px;
+}
+
+.hdr-temp .muted {
+  color: var(--muted);
+}
+
+.hdr-temp.warn .muted {
+  color: var(--partial);
+}
+
+.hdr-temp.bad .muted {
+  color: var(--miss);
+}
+
 .hdr-right {
   display: flex;
   align-items: center;

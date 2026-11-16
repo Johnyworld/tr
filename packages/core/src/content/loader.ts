@@ -255,6 +255,13 @@ function checkReferences(content: Content): string[] {
     }
     if (loc.kind === "base" && !loc.owner) problems.push(`locations.${loc.id}: 거점에는 소유 세력이 있어야 한다`);
   }
+  // 기온 (12-98): 모닥불 연료, 계절·날씨 id
+  const climate = content.scenario.body?.cold?.climate;
+  if (climate) {
+    for (const item of Object.keys(climate.fire?.items ?? {})) if (!content.items[item]) problems.push(`body.cold.climate.fire: 알 수 없는 아이템 ${item}`);
+    for (const id of Object.keys(climate.season)) if (!content.scenario.seasons?.list.some((x) => x.id === id)) problems.push(`body.cold.climate.season: 알 수 없는 계절 ${id}`);
+    for (const id of Object.keys(climate.weather)) if (!content.scenario.weather?.kinds.some((x) => x.id === id)) problems.push(`body.cold.climate.weather: 알 수 없는 날씨 ${id}`);
+  }
   for (const item of Object.keys(content.scenario.consumables)) {
     if (!content.items[item]) problems.push(`scenario.consumables: 알 수 없는 아이템 ${item}`);
   }

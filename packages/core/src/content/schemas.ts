@@ -49,12 +49,17 @@ export const itemContentSchema = z.strictObject({
   /** 방어구: 입는 자리, 받는 피해를 줄이는 단계, 입으면 불리해지는 스킬, 감염을 막을 확률 */
   armor: z
     .strictObject({
-      slot: z.enum(["body", "head", "arms"]),
+      /** outer: 외투 (방한복 등, 12-98). 몸 칸의 방어구 위에 따로 입는다 */
+      slot: z.enum(["body", "head", "arms", "outer"]),
       reduces: z.number().int().min(0).max(2),
       penalty: z.record(contentIdSchema, z.number().int().min(-2).max(0)).default({}),
       blocks_infection: z.number().min(0).max(1).default(0),
     })
     .optional(),
+  /**
+   * 따뜻함 (12-98): 체감 기온에 더하는 도. worn: 입고 있을 때 (외투), resting: 지니고 자거나 쉴 때 덮는다 (담요)
+   */
+  warmth: z.strictObject({ degrees: z.number().int().min(1).max(15), when: z.enum(["worn", "resting"]) }).optional(),
   /** 지니고 있으면 들 수 있는 무게가 이만큼 는다 (배낭 틀 등, 가장 큰 것 하나) */
   carry_bonus: z.number().min(0).max(20).optional(),
   /** 메모 (12-75): paper(메모장)와 tool(펜·연필)을 함께 지니면 메모를 적는다. paper만 있으면 읽기만 */
@@ -409,6 +414,8 @@ export function createContentSchemas(s: Scenario) {
     adjacent: z.array(contentIdSchema).default([]),
     /** 피난처: 어느 무리도 차지하거나 치지 않는다 (성당, 학자들의 캠퍼스, 12-53) */
     sanctuary: z.boolean().optional(),
+    /** 실내 (12-98): 들어가 쉬면 바깥보다 따뜻한 도. 0이면 덮을 곳이 없다 (쉬어도 노숙). 폐허 4, 온전한 건물 7 정도 */
+    cover: z.number().int().min(0).max(12).optional(),
     /** 위험 (0 안전 ~ 3 아주 위험, 12-53). 오가는 길에서 일이 생길 확률(scenario.travel)을 정한다 */
     danger: z.number().int().min(0).max(3).default(1),
     /**

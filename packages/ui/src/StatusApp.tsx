@@ -170,6 +170,14 @@ function HeaderDate({ player }: { player: PlayerView }) {
           <Icon name={w.icon ?? "cloud"} size={16} />
         </span>
       )}
+      {c.temperature && (
+        <span
+          className={c.temperature.feels < 0 ? "hdr-temp bad" : c.temperature.feels < 8 ? "hdr-temp warn" : "hdr-temp"}
+          title={`바깥 ${c.temperature.outside}° · 여기서 쉬면 체감 ${c.temperature.feels}° (${c.temperature.detail})`}
+        >
+          {c.temperature.outside}° <span className="muted">체감 {c.temperature.feels}°</span>
+        </span>
+      )}
     </div>
   );
 }

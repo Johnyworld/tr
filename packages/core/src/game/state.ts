@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 39;
+export const SAVE_SCHEMA_VERSION = 40;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -276,6 +276,10 @@ export function createGameSchemas(s: Scenario) {
     memos: z.record(z.string(), z.string()).default({}),
     /** 공포를 부른 것을 마주한 횟수 (12-95, 캐릭터마다). 쌓이면 둔감해진다 */
     fearExposure: z.record(z.string(), z.number().int()).default({}),
+    /** 쌓인 냉기 (12-98, 캐릭터마다). per_step을 넘으면 추위 트랙이 오르고, 음수로 per_step만큼 빠지면 풀린다 */
+    coldLoad: z.record(z.string(), z.number()).default({}),
+    /** 피워 둔 모닥불 (12-98): 구역 → 꺼지는 시각 */
+    fires: z.record(z.string(), z.number().int()).default({}),
     /** 구역에 맡겨 둔 물건 (구역 id → 아이템 → 수량). 그 구역을 떠날 때 돌려받는다 (12-54) */
     deposits: z.record(z.string(), z.record(z.string(), z.number().int().positive())).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
@@ -401,6 +405,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("content_options_set"), mature: z.boolean().optional(), dialogue: z.enum(["novel", "script"]).optional() }),
     z.strictObject({ type: z.literal("memo_written"), characterId: z.string(), text: z.string().max(4000) }),
     z.strictObject({ type: z.literal("fear_exposed"), characterId: z.string() }),
+    z.strictObject({ type: z.literal("cold_load_set"), characterId: z.string(), load: z.number() }),
+    z.strictObject({ type: z.literal("fire_lit"), zone: z.string(), until: z.number().int(), itemId: z.string() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
     z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()) }),
     z.strictObject({ type: z.literal("player_released"), returned: z.boolean() }),
@@ -424,7 +430,7 @@ export function createGameSchemas(s: Scenario) {
     /** 이름 없는 인물이 자랐다 (프로필은 틀의 재료에서 코드가 골랐다) */
     z.strictObject({ type: z.literal("extra_promoted"), characterId: z.string(), profile: z.custom<NonNullable<Character["profile"]>>((v) => typeof v === "object" && v !== null), ties: z.array(tieRecordSchema).default([]) }),
     /** 무기를 들거나 방어구를 입었다 (null이면 벗었다) */
-    z.strictObject({ type: z.literal("item_equipped"), characterId: z.string(), slot: z.enum(["weapon", "body", "head", "arms"]), itemId: z.string().nullable() }),
+    z.strictObject({ type: z.literal("item_equipped"), characterId: z.string(), slot: z.enum(["weapon", "body", "head", "arms", "outer"]), itemId: z.string().nullable() }),
     /** 물건이 닳았다 (delta 음수면 고쳤다) */
     z.strictObject({ type: z.literal("item_worn"), characterId: z.string(), itemId: z.string(), delta: z.number().int() }),
     /** 물건이 망가졌다: 하나 줄고, 닳은 것은 처음으로, into가 있으면 그것이 남는다 */
@@ -737,6 +743,8 @@ export const EMPTY_STATE: GameState = {
   options: { mature: false, dialogue: "novel" },
   memos: {},
   fearExposure: {},
+  coldLoad: {},
+  fires: {},
   romances: {},
   flirtDay: {},
   deposits: {},
@@ -923,7 +931,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       else c.inventory[event.itemId] = have - 1;
       delete c.wear[event.itemId];
       if (event.into) c.inventory[event.into] = (c.inventory[event.into] ?? 0) + 1;
-      for (const slot of ["weapon", "body", "head", "arms"] as const) if (c.equipped[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
+      for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) if (c.equipped[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
       return next;
     }
     case "noise_made": {
@@ -1080,6 +1088,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "fear_exposed":
       next.fearExposure = { ...next.fearExposure, [event.characterId]: (next.fearExposure[event.characterId] ?? 0) + 1 };
       return next;
+    case "cold_load_set":
+      next.coldLoad = { ...next.coldLoad, [event.characterId]: event.load };
+      return next;
+    case "fire_lit":
+      next.fires = { ...next.fires, [event.zone]: Math.max(next.fires[event.zone] ?? 0, event.until) };
+      return next;
     case "content_options_set":
       next.options = {
         ...next.options,
@@ -1095,7 +1109,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         if (left < 0) throw new Error(`빼앗을 것이 모자란다: ${item}`);
         if (left === 0) delete me.inventory[item];
         else me.inventory[item] = left;
-        for (const slot of ["weapon", "body", "head", "arms"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
+        for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
       }
       next.deposits[`held:${event.by}`] = { ...(next.deposits[`held:${event.by}`] ?? {}), ...event.held };
       // 갇힌 곳으로 끌려간다. 동행은 따라오지 못한다 (그 자리에서 기다린다)
@@ -1127,7 +1141,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         if (have === n) delete me.inventory[item];
         else me.inventory[item] = have - n;
         box[item] = (box[item] ?? 0) + n;
-        for (const slot of ["weapon", "body", "head", "arms"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
+        for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
       }
       return next;
     }

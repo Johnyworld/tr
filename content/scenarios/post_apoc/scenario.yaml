@@ -771,7 +771,6 @@ consumables:
   potato: { hunger: 1 }
   wild_greens: { hunger: 1 }
   mushroom: { hunger: 1 }
-  blanket: { cold: 2 }
   fever_reducer: { disease: 1 }
 
 # 몸 상태 (12-1, *임시*)
@@ -799,8 +798,26 @@ body:
     season: { winter: 1 }
     weather: { snow: 1, cold_snap: 2, rain: 1 }
     gear: { coat: 1 }
-    # 우리 거점에서 무리의 연료가 하루치 이상 있으면 2단계 녹는다
+    # 우리 거점에서 무리의 연료가 하루치 이상 있으면 불 땐 거처 (기온이 있으면 실내 체감이 heated 아래로 내려가지 않는다)
     shelter: { resource: fuel, min_days: 1, warm: -2 }
+    # 기온 (12-98, *임시*). 있으면 위의 하루 단위 추위(season·weather·gear) 대신 시간대마다 기온을 재고 냉기를 쌓는다.
+    # 바깥 = 계절 평균 + 시간대 + 날씨 + 그날 ±2. 체감 = 바깥 + 실내(구역 cover) + 모닥불 + 방한복(입으면) + 담요(자거나 쉴 때) ± 체질 3
+    # 체감이 8°보다 낮으면 (모자란 도 × 시간)만큼 냉기, 100마다 추위 한 단계. 8° 이상이면 시간당 20, 15° 이상이면 50씩 빠지고 100마다 풀린다
+    climate:
+      season: { winter: -3, spring: 9, summer: 24, autumn: 8 }
+      segments: { dawn: -5, morning: -2, day: 3, evening: 0, night: -4 }
+      weather: { fog: -1, rain: -2, snow: -3, cold_snap: -10 }
+      jitter: 2
+      comfort: 8
+      warm: 15
+      per_step: 100
+      mild_rate: 20
+      warm_rate: 50
+      indoor_weather: 0.5
+      heated: 16
+      trait_degrees: 3
+      # 모닥불: 연료 → 타는 시간. 곁에 있으면 +10°, 피우면 그 구역 소음 +1 (연기와 불빛)
+      fire: { items: { firewood: 4, planks: 3, fuel_bottle: 2 }, warmth: 10, noise: 1 }
   # 질병: 하루마다 확률. 굶주림·추위·무리의 물 부족마다 더하고, 체력 1당 25% 덜 걸린다
   disease:
     track: disease

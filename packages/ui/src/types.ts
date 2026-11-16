@@ -10,7 +10,7 @@ export type PlayerView = {
   occupationLabel: string | null;
   motive?: { label: string; summary: string } | null;
   timeLabel: string;
-  clock?: { time: string; hhmm?: string; minute?: number; segmentLabel?: string; date?: string | null; segment: string; season: string | null; weather: { label: string; icon: string | null; chill: number } | null };
+  clock?: { time: string; hhmm?: string; minute?: number; segmentLabel?: string; date?: string | null; segment: string; season: string | null; weather: { label: string; icon: string | null; chill: number } | null; temperature?: { outside: number; feels: number; detail: string } | null };
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon?: string | null; step?: number; penalty?: number; fatal?: boolean }[];
   /** 보이는 증상 (12-74). tone: 1 노랑 · 2 주황 · 3 빨강 */
   symptoms?: SymptomView[];

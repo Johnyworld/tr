@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { describePersona } from "./persona.ts";
 import { describeTemperature } from "./climate.ts";
 import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
@@ -128,6 +129,12 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       describeContentRating(state, content),
       describeDialogueStyle(state),
       `트레잇 (서술에 반영한다): ${traitLabels(content, player, { acting: true }).join(", ") || "없음"}`,
+      ...(scenario.persona
+        ? [
+            `성격: ${describePersona(content, player, { acting: true }) || "보통 (말투·태도는 플레이어 뜻대로)"}. ` +
+              "말투·태도·말의 양은 이 성격대로 연기한다 (1은 가끔, 2는 자주). 플레이어가 말하지 않은 행동·말을 성격 때문에 넣었으면 문장 끝에 (다혈질)처럼 꼬리표를 붙인다 (한 턴에 한두 번까지). 결과가 남는 일(공격, 거래, 약속, 비밀 털어놓기)은 성격으로 끼워 넣지 않는다. 도발당하면 take_action.provoked",
+          ]
+        : []),
       `능력: ${stats}`,
       `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(player.skills[m.id] ?? m.default)}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,

@@ -84,6 +84,7 @@ export type NewGameView = {
       abilities: { label: string; value: number }[];
       skills?: { label: string; value: number }[] | null;
       traits: string[] | null;
+      persona?: string | null;
     };
     /** 과거 배경 (12-84) */
     pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge?: number | null }[];
@@ -100,6 +101,8 @@ export type NewGameView = {
     traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[] }[];
     traitLimits: { max_positive: number; max_negative: number; max_personality?: number } | null;
     unusedPoints: number;
+    /** 성격 축 (12-99) */
+    personaAxes?: { id: string; low: string; high: string; romance: boolean }[];
   };
 };
 

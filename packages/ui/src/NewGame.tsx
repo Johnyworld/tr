@@ -254,6 +254,7 @@ function CharacterStep({ view, busy, answer }: StepProps) {
       )}
       {step === "ability_set" && (c.tiers ? <TierStep view={view} busy={busy} answer={answer} onLive={onLive} /> : <PointStep view={view} busy={busy} answer={answer} />)}
       {(step === "traits_pick" || step === "traits_personality") && <TraitStep key={step} view={view} busy={busy} answer={answer} onLive={onLive} />}
+      {step === "persona" && <PersonaStep view={view} busy={busy} answer={answer} />}
       {step === "confirm" && (
         <>
           <h2 className="newgame-title">이 사람으로 시작할까요?</h2>
@@ -293,6 +294,7 @@ function Chosen({ view, live }: { view: NewGameView; live: { text: string; bad?:
         )}
         {ch.skills && <div className="muted small">스킬: {ch.skills.length ? ch.skills.map((x) => `${x.label} ${signed(x.value)}`).join(", ") : "없음"}</div>}
         {ch.traits && <div className="muted small">트레잇: {ch.traits.length ? ch.traits.join(", ") : "없음"}</div>}
+        {ch.persona && <div className="muted small">성격: {ch.persona}</div>}
         {live && <div className={live.bad ? "chosen-live bad" : "chosen-live"}>{live.text}</div>}
       </div>
     </div>
@@ -670,6 +672,54 @@ function TraitStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
       <div className="newgame-actions">
         <button type="button" className="primary" disabled={busy || over} onClick={() => answer(picked)}>
           {picked.length ? `${picked.length}개로 다음` : "고르지 않고 다음"}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/** 성격 (12-99): 축마다 다섯 칸 (2 1 0 1 2), 기본 0. 답은 채팅과 같은 말 ("다혈질 2, 과묵함 1" / "기본") */
+function PersonaStep({ view, busy, answer }: StepProps) {
+  const axes = view.character!.personaAxes ?? [];
+  const [values, setValues] = useState<Record<string, number>>({});
+  const submit = () => {
+    const parts = axes.filter((a) => values[a.id]).map((a) => `${values[a.id]! > 0 ? a.high : a.low} ${Math.abs(values[a.id]!)}`);
+    answer(parts.length ? parts.join(", ") : "기본");
+  };
+  return (
+    <>
+      <h2 className="newgame-title">어떤 성격인가요?</h2>
+      <p className="newgame-note">가운데(0)는 플레이어 뜻대로, 끝(2)으로 갈수록 캐릭터의 성격이 강하게 드러납니다. GM이 말투와 태도를 이 성격대로 그리고, 다혈질이면 도발에 발끈하거나 수다스러우면 말이 새어 나가기도 합니다.</p>
+      <div className="persona-table">
+        {axes.map((a) => (
+          <div key={a.id} className="persona-row">
+            <span className="persona-side low">{a.low}</span>
+            <div className="persona-buttons">
+              {[-2, -1, 0, 1, 2].map((v) => {
+                const on = (values[a.id] ?? 0) === v;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    className={`persona-btn${on ? " on" : ""}${v === 0 ? " mid" : ""}`}
+                    disabled={busy}
+                    aria-pressed={on}
+                    aria-label={v === 0 ? `${a.low}·${a.high} 보통` : `${v > 0 ? a.high : a.low} ${Math.abs(v)}`}
+                    onClick={() => setValues((x) => ({ ...x, [a.id]: v }))}
+                  >
+                    {Math.abs(v)}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="persona-side high">{a.high}</span>
+            {a.romance && <span className="persona-note muted small">연애: 성인 주제를 끈 세계에서는 쓰이지 않습니다</span>}
+          </div>
+        ))}
+      </div>
+      <div className="newgame-actions">
+        <button type="button" className="primary" disabled={busy} onClick={submit}>
+          다음
         </button>
       </div>
     </>

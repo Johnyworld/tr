@@ -399,29 +399,29 @@ traits:
   - { id: coward, label: 겁쟁이, kind: negative, cost: 2, description: "버티기 -1, 공포가 더 오른다", acting: 위험 앞에서 망설이고 먼저 몸을 뺀다, opposites: [steel_nerves], effects: { skills: { endure: -1 }, fear: 1 } }
   - { id: ugly, label: 험악한 인상, kind: negative, cost: 1, visible: true, description: 첫인상이 나쁘다 (외모 -1), acting: 사람들이 첫눈에 경계한다, opposites: [beautiful, attractive], effects: { looks: -1 } }
   # ── 성격 (0) ──
-  - { id: warm, label: 다정함, kind: personality, visible: true, description: 남을 살뜰히 챙긴다, acting: 말끝이 부드럽고 먼저 안부를 묻는다, opposites: [cold] }
-  - { id: guarded, label: 경계심, kind: personality, visible: true, description: 쉽게 마음을 열지 않는다, acting: 대답을 아끼고 상대를 살핀다, opposites: [genial] }
-  - { id: principled, label: 원칙주의, kind: personality, visible: true, description: 정한 원칙을 굽히지 않는다, acting: 규칙과 약속을 앞세워 말한다, opposites: [calculating] }
-  - { id: cynical, label: 냉소적, kind: personality, visible: true, description: 무엇이든 비꼬아 본다, acting: 희망적인 말에 코웃음 친다 }
-  - { id: hot_tempered, label: 다혈질, kind: personality, visible: true, description: 화가 빨리 난다, acting: 쉽게 언성을 높이고 금방 식는다, opposites: [patient] }
-  - { id: calculating, label: 계산적, kind: personality, visible: false, description: 손익부터 따진다, acting: 대가와 이득을 먼저 묻는다, opposites: [principled] }
-  - { id: cautious, label: 신중함, kind: personality, visible: true, description: 서두르지 않는다, acting: 한 번 더 확인하고 움직인다 }
-  - { id: blunt, label: 무뚝뚝, kind: personality, visible: true, description: 말이 짧고 퉁명스럽다, acting: 필요한 말만 짧게 한다, opposites: [formal] }
-  - { id: greedy, label: 탐욕, kind: personality, visible: false, description: 가진 것을 더 가지려 한다, acting: 값을 깎고 더 얻을 것을 노린다 }
-  - { id: curious, label: 호기심, kind: personality, visible: true, description: 모르는 것을 못 참는다, acting: 질문이 많다 }
-  - { id: patient, label: 인내심, kind: personality, visible: false, description: 오래 기다릴 줄 안다, acting: 서두르지 않고 상대가 지치기를 기다린다, opposites: [hot_tempered] }
-  - { id: ruthless, label: 잔혹함, kind: personality, visible: false, description: 남의 고통에 무감하다, acting: 협박을 담담하게 한다, opposites: [protective] }
+  - { id: warm, label: 다정함, kind: personality, visible: true, description: 남을 살뜰히 챙긴다, acting: 말끝이 부드럽고 먼저 안부를 묻는다, opposites: [cold], persona: { warmth: 2 } }
+  - { id: guarded, label: 경계심, kind: personality, visible: true, description: 쉽게 마음을 열지 않는다, acting: 대답을 아끼고 상대를 살핀다, opposites: [genial], persona: { warmth: -1, talk: -1 } }
+  - { id: principled, label: 원칙주의, kind: personality, visible: true, description: 정한 원칙을 굽히지 않는다, acting: 규칙과 약속을 앞세워 말한다, opposites: [calculating], persona: { principle: -2 } }
+  - { id: cynical, label: 냉소적, kind: personality, visible: true, description: 무엇이든 비꼬아 본다, acting: 희망적인 말에 코웃음 친다, persona: { warmth: -1 } }
+  - { id: hot_tempered, label: 다혈질, kind: personality, visible: true, description: 화가 빨리 난다, acting: 쉽게 언성을 높이고 금방 식는다, opposites: [patient], persona: { temper: 2 } }
+  - { id: calculating, label: 계산적, kind: personality, visible: false, description: 손익부터 따진다, acting: 대가와 이득을 먼저 묻는다, opposites: [principled], persona: { principle: 2 } }
+  - { id: cautious, label: 신중함, kind: personality, visible: true, description: 서두르지 않는다, acting: 한 번 더 확인하고 움직인다, persona: { impulse: -2 } }
+  - { id: blunt, label: 무뚝뚝, kind: personality, visible: true, description: 말이 짧고 퉁명스럽다, acting: 필요한 말만 짧게 한다, opposites: [formal], persona: { talk: -2 } }
+  - { id: greedy, label: 탐욕, kind: personality, visible: false, description: 가진 것을 더 가지려 한다, acting: 값을 깎고 더 얻을 것을 노린다, persona: { principle: 1 } }
+  - { id: curious, label: 호기심, kind: personality, visible: true, description: 모르는 것을 못 참는다, acting: 질문이 많다, persona: { impulse: 1 } }
+  - { id: patient, label: 인내심, kind: personality, visible: false, description: 오래 기다릴 줄 안다, acting: 서두르지 않고 상대가 지치기를 기다린다, opposites: [hot_tempered], persona: { temper: -1, impulse: -1 } }
+  - { id: ruthless, label: 잔혹함, kind: personality, visible: false, description: 남의 고통에 무감하다, acting: 협박을 담담하게 한다, opposites: [protective], persona: { warmth: -2 } }
   - { id: lazy, label: 게으름, kind: personality, visible: true, description: 할 수 있으면 빠진다, acting: 일을 미루고 핑계를 댄다, opposites: [meticulous] }
-  - { id: protective, label: 보호 본능, kind: personality, visible: true, description: 약한 사람을 지키려 한다, acting: 다친 사람 앞에서 먼저 나선다, opposites: [ruthless] }
-  - { id: cold, label: 냉정함, kind: personality, visible: true, description: 감정을 드러내지 않는다, acting: 표정 없이 사실만 말한다, opposites: [warm] }
-  - { id: meticulous, label: 꼼꼼함, kind: personality, visible: true, description: 세세한 것까지 따진다, acting: 숫자와 기록을 들먹인다, opposites: [lazy] }
-  - { id: formal, label: 격식, kind: personality, visible: true, description: 예의와 절차를 따진다, acting: 존대와 직함을 깍듯이 쓴다, opposites: [blunt] }
-  - { id: genial, label: 넉살, kind: personality, visible: true, description: 누구에게나 웃으며 다가간다, acting: 농담으로 분위기를 푼다, opposites: [guarded] }
-  - { id: timid, label: 소심함, kind: personality, visible: true, description: 눈치를 많이 본다, acting: 말을 더듬고 눈을 피한다 }
-  - { id: eager, label: 열성적, kind: personality, visible: true, description: 뭐든 해 보겠다고 나선다, acting: 먼저 손을 들고 들떠 있다, opposites: [weary] }
+  - { id: protective, label: 보호 본능, kind: personality, visible: true, description: 약한 사람을 지키려 한다, acting: 다친 사람 앞에서 먼저 나선다, opposites: [ruthless], persona: { warmth: 1 } }
+  - { id: cold, label: 냉정함, kind: personality, visible: true, description: 감정을 드러내지 않는다, acting: 표정 없이 사실만 말한다, opposites: [warm], persona: { warmth: -2 } }
+  - { id: meticulous, label: 꼼꼼함, kind: personality, visible: true, description: 세세한 것까지 따진다, acting: 숫자와 기록을 들먹인다, opposites: [lazy], persona: { impulse: -1 } }
+  - { id: formal, label: 격식, kind: personality, visible: true, description: 예의와 절차를 따진다, acting: 존대와 직함을 깍듯이 쓴다, opposites: [blunt], persona: { principle: -1 } }
+  - { id: genial, label: 넉살, kind: personality, visible: true, description: 누구에게나 웃으며 다가간다, acting: 농담으로 분위기를 푼다, opposites: [guarded], persona: { talk: 1, warmth: 1 } }
+  - { id: timid, label: 소심함, kind: personality, visible: true, description: 눈치를 많이 본다, acting: 말을 더듬고 눈을 피한다, persona: { talk: -1 } }
+  - { id: eager, label: 열성적, kind: personality, visible: true, description: 뭐든 해 보겠다고 나선다, acting: 먼저 손을 들고 들떠 있다, opposites: [weary], persona: { impulse: 1 } }
   - { id: weary, label: 지침, kind: personality, visible: true, description: 오래 버텨 지쳐 있다, acting: 한숨이 잦고 말이 느리다, opposites: [eager] }
-  - { id: motherly, label: 어머니 같음, kind: personality, visible: true, description: 잔소리와 챙김이 함께 온다, acting: 밥은 먹었냐고 묻고 잔소리를 한다 }
-  - { id: talkative, label: 수다쟁이, kind: personality, visible: true, description: 들은 이야기를 잘 옮긴다 (소문 2배), acting: 묻지 않은 소식까지 늘어놓는다, effects: { rumor: 2 } }
+  - { id: motherly, label: 어머니 같음, kind: personality, visible: true, description: 잔소리와 챙김이 함께 온다, acting: 밥은 먹었냐고 묻고 잔소리를 한다, persona: { warmth: 2, talk: 1 } }
+  - { id: talkative, label: 수다쟁이, kind: personality, visible: true, description: 들은 이야기를 잘 옮긴다 (소문 2배), acting: 묻지 않은 소식까지 늘어놓는다, effects: { rumor: 2 }, persona: { talk: 2 } }
   - { id: flirt, label: 이성편력, kind: personality, visible: false, description: 이성에게 쉽게 끌리고 이성의 설득·거짓말에 약하다, acting: 이성 앞에서 말이 많아지고 허세를 부린다, effects: { attraction: { moves: [persuade, deceive] } } }
 
 # 상대를 쓰러뜨리기 (기획서 7.5, *임시*): 부상이 중상 이상이면 무력화 (더 맞서지 못하고 뒤질 수 있다)
@@ -437,6 +437,25 @@ names:
 
 # 매력의 수동 효과: 처음 만난 인물의 호감 + (매력 ÷ 2), 매력 +2면 호감이 오를 때 +1
 charm: { ability: charm, first_impression_per: 2, bonus_at: 2 }
+
+# 성격 축 (12-99, *임시*): 축마다 -2(low) ~ +2(high). 주인공은 만들 때 정하고, NPC는 성격 트레잇의 persona를 더한다.
+# 말투·태도는 GM이 acting대로 연기하고, 결과가 남는 순간(발끈·말 새어 나감·궁합·연애 문턱)은 코드가 정한다
+persona:
+  axes:
+    - { id: temper, low: 온화함, high: 다혈질, low_acting: [언성을 잘 높이지 않는다, 화낼 자리에서도 부드럽게 넘긴다], high_acting: [말끝에 날이 선다, 같은 지시도 거칠게 하고 도발에 쉽게 발끈한다] }
+    - { id: talk, low: 과묵함, high: 수다스러움, low_acting: [말을 아낀다, 플레이어가 길게 말해도 짧게 끊어 말한다], high_acting: [말이 많다, 묻지 않은 말까지 술술 늘어놓는다] }
+    - { id: impulse, low: 신중함, high: 충동적, low_acting: [한 번 더 확인하고 움직인다, 머뭇거리며 주위부터 살핀다], high_acting: [생각보다 몸이 먼저 나간다, 망설임 없이 거칠게 몸부터 움직인다] }
+    - { id: warmth, low: 차가움, high: 다정함, low_acting: [표정이 적고 사무적이다, 남의 사정에 눈길을 주지 않는다], high_acting: [상대를 살뜰히 챙긴다, 다친 사람·아이에게 먼저 손을 내민다] }
+    - { id: principle, low: 원칙적, high: 실리적, low_acting: [정한 선을 지키려 한다, 손해를 봐도 원칙을 굽히지 않는다], high_acting: [손익부터 따진다, 무엇이든 값을 매기고 흥정하려 든다] }
+    - { id: heart, low: 금사빠, high: 돌부처, romance: true, low_acting: [호감 가는 사람 앞에서 눈길이 간다, 매력적인 사람 앞에서 말이 꼬이고 얼굴이 달아오른다], high_acting: [호감을 보여도 담담하다, 다가오는 마음을 무덤덤하게 받아넘긴다] }
+  # 도발당하면 다혈질 1이면 25%, 2면 50%로 발끈한다. 상대의 호감 -1
+  blowup: { axis: temper, chance: [0.25, 0.5], delta: { trust: 0, affection: -1, respect: 0 } }
+  # 장면의 인물과 이야기하면 수다스러움 1이면 10%, 2면 25%로 아는 사실 하나가 새어 나간다
+  leak: { axis: talk, chance: [0.1, 0.25] }
+  # 처음 만날 때 다정함·원칙 축이 같은 쪽이면 호감 +1, 반대쪽이면 -1 (합 -2~2)
+  rapport: { axes: [warmth, principle], same: 1, opposite: -1 }
+  # NPC의 금사빠 ↔ 돌부처 1단계마다 마음이 생기는 호감·고백을 받아들이는 호감이 1 달라진다 (돌부처 쪽이 높다)
+  romance: { axis: heart, per_level: 1 }
 
 # 시스템이 특정 역할로 쓰는 행동 (목격자 살피기, 목격 확률 낮추기)
 move_roles:

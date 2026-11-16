@@ -1,4 +1,5 @@
 import type { RelationDelta } from "../game/reputation.ts";
+import { rapportImpression } from "./persona.ts";
 import { affectionTraitBonus, looksImpression } from "./traits.ts";
 import type { ToolContext } from "./toolkit.ts";
 
@@ -42,7 +43,8 @@ export function firstImpression(ctx: ToolContext, npcId: string): void {
   const player = state.characters[state.playerId];
   if (!viewer || !player) return;
   const charmBonus = charm && value !== null ? Math.max(0, Math.floor(value / charm.first_impression_per)) : 0;
-  const total = charmBonus + looksImpression(ctx.content, viewer, player);
+  // 성격 궁합 (12-99): 같은 쪽이면 조금 더, 반대쪽이면 조금 덜
+  const total = charmBonus + looksImpression(ctx.content, viewer, player) + rapportImpression(ctx.content, viewer, player);
   if (total === 0) return;
   ctx.store.append({ type: "relation_changed", from: npcId, to: state.playerId, delta: { trust: 0, affection: total, respect: 0 }, reason: "첫인상" });
 }

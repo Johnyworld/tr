@@ -41,6 +41,7 @@ export function characterChoiceSchema() {
     portrait: z.string().regex(PORTRAIT_ID).nullable().describe("초상화 id (웹 화면에서 고른다. MCP에서는 null)"),
     traits: z.array(z.string()).max(10).nullable().optional().describe("트레잇 id 목록. null이면 무작위, 생략하면 없음"),
     age: z.number().int().positive().nullable().optional().describe("나이. 생략하면 시나리오의 나이"),
+    persona: z.record(z.string(), z.number().int().min(-2).max(2)).nullable().optional().describe("성격 축 id → -2~2 (12-99). 생략하면 모두 0"),
   });
 }
 
@@ -75,6 +76,12 @@ export function checkCharacterChoice(s: Scenario, choice: CharacterChoice): stri
   const pastMin = pastOf(s, choice.past)?.min_age;
   if (pastMin !== undefined && choice.age != null && choice.age < pastMin) problems.push(`${pastOf(s, choice.past)!.label}은(는) ${pastMin}세 이상이어야 한다.`);
   if (choice.skills) problems.push(...checkSkills(s, choice.skills));
+  if (choice.persona) {
+    for (const [axis, v] of Object.entries(choice.persona)) {
+      if (!s.persona?.axes.some((a) => a.id === axis)) problems.push(`알 수 없는 성격 축: ${axis}`);
+      else if (!Number.isInteger(v) || v < -2 || v > 2) problems.push(`성격 축 ${axis}은(는) -2 ~ 2다.`);
+    }
+  }
   if (choice.abilities === null) return problems;
   problems.push(...checkAbilities(s, choice.abilities));
   return problems;
@@ -175,7 +182,8 @@ export function randomTraits(s: Scenario, rng: Rng): string[] {
     };
     add("negative", Math.floor(rng() * 3));
     add("positive", Math.floor(rng() * 3));
-    add("personality", Math.floor(rng() * 3));
+    // 성격 축이 있는 월드는 성격을 축으로 정한다 (12-99)
+    if (!s.persona) add("personality", Math.floor(rng() * 3));
     if (checkTraits(s, chosen).length === 0) return chosen;
   }
   return [];

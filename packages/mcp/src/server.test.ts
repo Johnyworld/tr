@@ -202,9 +202,12 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect(bad.isError).toBe(true);
     expect((await call("create_character", { answer: "지능 / 매력, 감각 / 체력" })).text).toContain("배경대로");
     await call("create_character", { answer: "past" });
-    const confirm = await call("create_character", { answer: "none" });
+    // 성격 축 (12-99): 한 번에 한 줄로
+    expect((await call("create_character", { answer: "none" })).text).toContain("다혈질");
+    const confirm = await call("create_character", { answer: "다혈질 2, 과묵함 1" });
     expect(confirm.text).toContain("확인");
     expect(confirm.text).toContain("매력 +1");
+    expect(confirm.text).toContain("성격: 다혈질 2, 과묵함 1");
     // 캐릭터를 다 만들면 수위 → 서술 방식. 마지막을 고르면 세계가 열린다
     expect((await call("create_character", { answer: "start" })).text).toContain("수위");
     expect((await call("create_character", { answer: "off" })).text).toContain("서술 방식");
@@ -577,7 +580,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     const { app, call } = await connectWithScreen(30);
     const first = await call("start_session", { new_world: true, in_browser: true });
     expect(first.text).toContain("다 했어");
-    for (const answer of ["post_apoc", "role_t_visitor", "police", "서진", "none", "male", "기본", "random", "past", "none", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    for (const answer of ["post_apoc", "role_t_visitor", "police", "서진", "none", "male", "기본", "random", "past", "none", "기본", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     expect(app.world).not.toBeNull();
     const later = await call("create_character", { wait: true });
     expect(later.text).toContain("상태 화면에서 골랐다");

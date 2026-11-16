@@ -1,4 +1,5 @@
 import type { Content } from "../content/schemas.ts";
+import { personaSummary } from "../engine/persona.ts";
 import { worldInfo } from "../content/packs.ts";
 import { abilitySpend, creationRules, MAX_NAME_WIDTH, pastOf } from "./creation.ts";
 import {
@@ -49,6 +50,8 @@ export type CharacterStepView = {
     abilities: { label: string; value: number }[];
     skills: { label: string; value: number }[] | null;
     traits: string[] | null;
+    /** 성격 축 요약 ("다혈질 2, 과묵함 1" / "보통"). 아직 안 정했으면 null */
+    persona: string | null;
   };
   /** 과거 배경 고르기 (12-84): 배경마다 스킬·능력·물건 */
   pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge: number | null }[];
@@ -74,6 +77,8 @@ export type CharacterStepView = {
   traitLimits: { max_positive: number; max_negative: number; max_personality?: number } | null;
   /** 확인 단계: 쓰지 않은 능력 포인트 */
   unusedPoints: number;
+  /** 성격 축 (12-99). 없는 월드는 빈 목록 */
+  personaAxes: { id: string; low: string; high: string; romance: boolean }[];
 };
 
 export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameDraft): NewGameView {
@@ -117,6 +122,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
           d.traitMethod !== undefined && (d.traitMethod !== "manual" || d.traitSteps.has("traits_pick"))
             ? d.traits.map((id) => s.traits.find((t) => t.id === id)?.label ?? id)
             : null,
+        persona: d.persona !== undefined ? personaSummary(s, d.persona) : null,
       },
       options: stepOptions(s, draft.character, cstep, (id) => content.items[id]?.name ?? id),
       pasts: (s.creation?.pasts ?? []).map((p) => ({
@@ -148,6 +154,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
           ? traitChoices(s, draft.character, cstep).map((t) => ({ id: t.id, label: t.label, kind: t.kind, cost: t.cost, description: t.description, opposites: t.opposites }))
           : [],
       traitLimits: rules?.traitLimits ?? null,
+      personaAxes: (s.persona?.axes ?? []).map((a) => ({ id: a.id, low: a.low, high: a.high, romance: !!a.romance })),
       unusedPoints: cstep === "confirm" && d.abilityMethod === "manual" && Number.isFinite(spent) && left > 0 ? left : 0,
     },
   };

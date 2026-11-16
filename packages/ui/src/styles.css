@@ -3113,3 +3113,58 @@ body {
   opacity: 0.35;
   cursor: default;
 }
+
+/* 성격 축 (12-99): 왼쪽 이름 · 다섯 칸 · 오른쪽 이름 */
+.persona-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+
+.persona-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.persona-side {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.persona-side.low {
+  text-align: right;
+}
+
+.persona-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.persona-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.persona-btn.mid {
+  color: var(--text);
+}
+
+.persona-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.persona-note {
+  grid-column: 1 / -1;
+  text-align: center;
+}

@@ -22,7 +22,7 @@ describe("수위", () => {
   it("새 게임에서 캐릭터를 다 만든 다음에 묻고, 기본은 끔이다", () => {
     const packs = new Map([[content.scenario.id, content]]);
     let d = newGameDraft();
-    for (const a of ["post_apoc", "role_t_visitor", "police", "서진", "female", "30", "random", "past", "none", "start"]) {
+    for (const a of ["post_apoc", "role_t_visitor", "police", "서진", "female", "30", "random", "past", "none", "기본", "start"]) {
       const r = answerNewGame(packs, d, a, createSeededRng(1));
       if (!r.ok) throw new Error(r.error);
       d = r.draft;

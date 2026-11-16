@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { romanceShift } from "./persona.ts";
 import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
@@ -66,7 +67,9 @@ export function attracted(state: GameState, content: Content, from: string, to: 
 export function hasInterest(state: GameState, content: Content, from: string, to: string): boolean {
   const r = rules(content);
   if (!r || !romanceAllowed(state, content, from, to) || !attracted(state, content, from, to)) return false;
-  return (state.relations[from]?.[to] ?? NEUTRAL_RELATION).affection >= r.interest_affection;
+  // 금사빠 ↔ 돌부처 (12-99): NPC의 마음이 생기는 문턱. 주인공의 마음은 플레이어가 정하므로 NPC에게만
+  const shift = from === state.playerId ? 0 : romanceShift(content, state.characters[from]!);
+  return (state.relations[from]?.[to] ?? NEUTRAL_RELATION).affection >= r.interest_affection + shift;
 }
 
 /** 이 사람의 연인들 (주인공과의 연애 + 정해진 관계의 연인·배우자) */
@@ -223,7 +226,7 @@ const romanceTool = defineTool({
       const others = loversOf(state, content, t).filter((x) => x !== me);
       // 이미 마음을 둔 사람이 있으면, 그 사람보다 주인공을 더 좋아할 때만
       const fondOfOther = others.some((o) => (state.relations[t]?.[o] ?? NEUTRAL_RELATION).affection >= rel.affection);
-      const yes = attracted(state, content, t, me) && rel.affection >= r.accept.affection && rel.trust >= r.accept.trust && !fondOfOther;
+      const yes = attracted(state, content, t, me) && rel.affection >= r.accept.affection + romanceShift(content, state.characters[t]!) && rel.trust >= r.accept.trust && !fondOfOther;
       if (yes) {
         store.append({ type: "romance_changed", a: me, b: t, stage: "lovers" });
         lines.push(`${josa(name, "이/가")} 마음을 받아들였다. 이제 연인이다.`);

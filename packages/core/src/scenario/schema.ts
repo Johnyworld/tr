@@ -138,6 +138,8 @@ export const scenarioFileSchema = z
           opposites: z.array(id).default([]),
           /** 캐릭터 생성에서 고를 수 있는지 */
           selectable: z.boolean().default(true),
+          /** 성격 축 값 (12-99): 이 트레잇을 가진 NPC의 축 (예: 다혈질 → temper +2). 여러 트레잇이면 더하고 -2~2로 자른다 */
+          persona: z.record(id, z.number().int().min(-2).max(2)).optional(),
           effects: z
             .strictObject({
               /** 스킬 보정 (능력 + 스킬 상한 안에서) */
@@ -182,6 +184,37 @@ export const scenarioFileSchema = z
       .optional(),
     /** 매력의 수동 효과 (기획서 4.2): 처음 만난 NPC의 호감 + (능력 ÷ first_impression_per, 내림), 능력이 bonus_at 이상이면 호감이 오를 때 +1 */
     charm: z.strictObject({ ability: id, first_impression_per: z.number().int().positive(), bonus_at: z.number().int() }).optional(),
+    /**
+     * 성격 축 (기획서 4.6.1, 12-99). 축마다 -2(low 쪽) ~ +2(high 쪽). 주인공은 만들 때 정하고, NPC는 성격 트레잇의 persona를 더한다.
+     * 말투·태도는 GM이 acting대로 연기하고, 결과가 남는 순간(발끈, 말 새어 나감, 궁합, 연애 문턱)은 코드가 정한다
+     */
+    persona: z
+      .strictObject({
+        axes: z
+          .array(
+            z.strictObject({
+              id,
+              /** -쪽 이름과 +쪽 이름 (예: 온화함 / 다혈질) */
+              low: z.string().min(1),
+              high: z.string().min(1),
+              /** 단계 1, 2의 연기 지침 (GM용) */
+              low_acting: z.tuple([z.string().min(1), z.string().min(1)]),
+              high_acting: z.tuple([z.string().min(1), z.string().min(1)]),
+              /** 연애 축 (수위가 꺼지면 쓰이지 않는다) */
+              romance: z.boolean().optional(),
+            }),
+          )
+          .min(1),
+        /** 발끈 (+쪽 단계별 확률): take_action.provoked면 굴리고, 터지면 target의 관계가 바뀐다 */
+        blowup: z.strictObject({ axis: id, chance: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]), delta: z.strictObject({ trust: z.number().int(), affection: z.number().int(), respect: z.number().int() }) }).optional(),
+        /** 말 새어 나감 (+쪽 단계별 확률): 장면의 인물과 이야기하면 굴리고, 터지면 주인공이 아는 사실 하나를 그 인물이 알게 된다 */
+        leak: z.strictObject({ axis: id, chance: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]) }).optional(),
+        /** 궁합: 처음 만날 때 이 축들이 같은 쪽이면 same, 반대쪽이면 opposite만큼 호감 (합은 -2~2) */
+        rapport: z.strictObject({ axes: z.array(id), same: z.number().int(), opposite: z.number().int() }).optional(),
+        /** 연애 문턱: NPC의 이 축 값 × per_level만큼 마음이 생기는 호감과 고백을 받아들이는 호감이 오른다 (+쪽 = 마음이 늦다) */
+        romance: z.strictObject({ axis: id, per_level: z.number().int() }).optional(),
+      })
+      .optional(),
     /**
      * 증상 (12-74): 플레이어에게 보이는 몸 상태. 상태 트랙의 단계가 증상을 가리킨다 (원인은 숨긴다: 감염과 질병의 열은 같은 "고열").
      * group: 같은 묶음은 크기 차이라 가장 큰 것(목록에서 뒤에 있는 것) 하나만 보인다. 이름(id)이 같아도 하나만.
@@ -1033,6 +1066,13 @@ export const scenarioFileSchema = z
     }
     for (const t of Object.keys(s.recovery?.healer ?? {})) if (!trackIdSet.has(t)) problem(`recovery.healer: 알 수 없는 상태 트랙 ${t}`);
     for (const t of [s.body?.hunger?.track, s.body?.thirst?.track, s.body?.infection?.track, s.body?.cold?.track, s.body?.disease?.track, s.body?.nerves?.track, s.body?.fear?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
+    if (s.persona) {
+      const axes = new Set(s.persona.axes.map((x) => x.id));
+      if (axes.size !== s.persona.axes.length) problem("persona.axes: 중복된 id가 있다");
+      for (const t of s.traits) for (const ax of Object.keys(t.persona ?? {})) if (!axes.has(ax)) problem(`traits.${t.id}.persona: 알 수 없는 성격 축 ${ax}`);
+      const used = [s.persona.blowup?.axis, s.persona.leak?.axis, s.persona.romance?.axis, ...(s.persona.rapport?.axes ?? [])];
+      for (const ax of used) if (ax && !axes.has(ax)) problem(`persona: 알 수 없는 성격 축 ${ax}`);
+    } else if (s.traits.some((t) => t.persona)) problem("traits의 persona는 persona(성격 축)가 있을 때만 쓴다");
     if (s.body?.fear?.nerves_from) {
       const nerves = s.condition_tracks.find((t) => t.id === s.body?.nerves?.track);
       if (!nerves?.levels.some((l) => l.id === s.body!.fear!.nerves_from)) problem(`body.fear.nerves_from: 마음 트랙에 없는 단계 ${s.body.fear.nerves_from}`);

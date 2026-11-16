@@ -1,4 +1,5 @@
 import type { Content } from "../content/schemas.ts";
+import { parsePersona, personaSummary } from "../engine/persona.ts";
 import type { Rng } from "../rng.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import {
@@ -36,7 +37,8 @@ export type CreationAnswer =
   | { step: "skills"; value: "manual" | "past"; values?: Record<string, number> }
   | { step: "skill_set"; values: Record<string, number> }
   | { step: "traits"; value: "manual" | "random" | "none"; rolled?: string[] }
-  | { step: "traits_pick" | "traits_personality"; value: string[] };
+  | { step: "traits_pick" | "traits_personality"; value: string[] }
+  | { step: "persona"; values: Record<string, number> };
 
 export type CreationDraft = {
   /** new_world: 새 게임 (세계 소개부터) / heir: 사망 뒤 같은 세계의 새 캐릭터 */
@@ -65,6 +67,7 @@ export type CreationStepId =
   | "traits"
   | "traits_pick"
   | "traits_personality"
+  | "persona"
   | "confirm";
 
 export type StepOption = { value: string; label: string; description?: string };
@@ -96,6 +99,7 @@ export function collectDraft(draft: CreationDraft) {
   let traitMethod: "manual" | "random" | "none" | undefined;
   const traits: string[] = [];
   const traitSteps = new Set<string>();
+  let persona: Record<string, number> | undefined;
   for (const a of draft.answers) {
     if (a.step === "past") past = a.value;
     else if (a.step === "skills") {
@@ -115,6 +119,7 @@ export function collectDraft(draft: CreationDraft) {
       abilitiesSet = true;
       Object.assign(abilities, a.values);
     }
+    else if (a.step === "persona") persona = { ...a.values };
     else if (a.step === "traits") {
       traitMethod = a.value;
       if (a.rolled) traits.push(...a.rolled);
@@ -123,7 +128,7 @@ export function collectDraft(draft: CreationDraft) {
       traits.push(...a.value);
     }
   }
-  return { past, name, gender, portrait, age, abilityMethod, abilitiesSet, abilities, skillMethod, skillsSet, skills, traitMethod, traits, traitSteps };
+  return { past, name, gender, portrait, age, abilityMethod, abilitiesSet, abilities, skillMethod, skillsSet, skills, traitMethod, traits, traitSteps, persona };
 }
 
 /** 다음에 물을 단계 */
@@ -140,10 +145,12 @@ export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
   if (d.skillMethod === "manual" && !d.skillsSet) return "skill_set";
   if (d.traitMethod === undefined) return "traits";
   if (d.traitMethod === "manual") {
-    for (const step of ["traits_pick", "traits_personality"] as const) {
+    // 성격 축이 있는 월드는 성격 트레잇을 고르지 않고 축으로 정한다 (12-99)
+    for (const step of s.persona ? (["traits_pick"] as const) : (["traits_pick", "traits_personality"] as const)) {
       if (!d.traitSteps.has(step)) return step;
     }
   }
+  if (s.persona && d.persona === undefined) return "persona";
   return "confirm";
 }
 
@@ -158,6 +165,7 @@ export function draftChoice(draft: CreationDraft): CharacterChoice {
     traits: d.traits,
     age: d.age ?? null,
     ...(d.past !== undefined ? { past: d.past } : {}),
+    ...(d.persona !== undefined ? { persona: d.persona } : {}),
     ...(d.skillMethod !== undefined ? { skills: d.skills } : {}),
   };
 }
@@ -317,7 +325,7 @@ export function stepOptions(s: Scenario, draft: CreationDraft, step: CreationSte
   }
   if (step === "traits") {
     return [
-      { value: "manual", label: "직접 고르기", description: "약점·강점을 한 표에서 고르고, 성격을 고른다" },
+      { value: "manual", label: "직접 고르기", description: s.persona ? "약점·강점을 한 표에서 고른다" : "약점·강점을 한 표에서 고르고, 성격을 고른다" },
       { value: "random", label: "운에 맡기기", description: "규칙에 맞게 무작위로" },
       { value: "none", label: "없이", description: "트레잇 없이 시작한다" },
     ];
@@ -457,6 +465,11 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     if (v === "manual" || v === "none") return add({ step: "traits", value: v });
     return { ok: false, error: "직접 고를지(manual), 운에 맡길지(random), 없이 갈지(none) 고른다." };
   }
+  if (step === "persona") {
+    const parsed = parsePersona(s, text);
+    if (!parsed.ok) return parsed;
+    return add({ step: "persona", values: parsed.values });
+  }
   if (step === "traits_pick" || step === "traits_personality") {
     const parsed = parseTraits(s, TRAIT_KIND_STEP[step], answer, traitChoices(s, draft, step));
     if (!parsed.ok) return parsed;
@@ -494,6 +507,7 @@ function summary(s: Scenario, draft: CreationDraft): string[] {
   if (d.traitMethod !== undefined && (d.traitMethod !== "manual" || d.traitSteps.has("traits_pick"))) {
     lines.push(`트레잇: ${d.traits.length ? d.traits.map((id) => s.traits.find((t) => t.id === id)?.label ?? id).join(", ") : "없음"}`);
   }
+  if (d.persona !== undefined) lines.push(`성격: ${personaSummary(s, d.persona)}`);
   return lines;
 }
 
@@ -510,6 +524,7 @@ const STEP_TITLE: Record<string, string> = {
   traits: "트레잇",
   traits_pick: "트레잇: 약점·강점",
   traits_personality: "트레잇: 성격",
+  persona: "성격",
   confirm: "확인",
 };
 
@@ -619,7 +634,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   } else if (step === "traits") {
     const lim = rules?.traitLimits;
     lines.push(
-      `물을 것: 트레잇(타고난 기질과 버릇)을 어떻게 정할지. 강점은 약점으로 얻은 포인트만큼만 가질 수 있다. 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개까지${lim?.max_personality !== undefined ? `, 성격 ${lim.max_personality}개까지` : ", 성격은 몇 개든"}. 반대되는 것끼리는 함께 가질 수 없다.`,
+      `물을 것: 트레잇(타고난 기질과 버릇)을 어떻게 정할지. 강점은 약점으로 얻은 포인트만큼만 가질 수 있다. 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개까지${s.persona ? "" : lim?.max_personality !== undefined ? `, 성격 ${lim.max_personality}개까지` : ", 성격은 몇 개든"}.${s.persona ? " 성격은 다음 단계에서 따로 정한다." : ""} 반대되는 것끼리는 함께 가질 수 없다.`,
     );
     if (narration.traits) lines.push(`서술 힌트: ${narration.traits}`);
   } else if (step === "traits_pick") {
@@ -640,6 +655,16 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
       `물을 것: 성격 (0개 이상, 포인트 없음, ${rules?.traitLimits.max_personality !== undefined ? `${rules.traitLimits.max_personality}개까지` : "몇 개든"}). 성격은 서술의 연기 힌트다. 반대되는 성격끼리는 함께 가질 수 없다.`,
       "목록을 아래 번호 그대로 번호 목록(1. 2. 3.)으로 짧게 보여 주고 글로 답하게 한다. 번호나 이름으로, 여러 개면 쉼표로, 없으면 \"없음\". 답은 받은 그대로 넘긴다.",
       list.length ? `고를 수 있는 것:\n${list.map((t, i) => `${i + 1}. ${t.label}: ${t.description}`).join("\n")}` : "고를 수 있는 것: (없다. \"없음\"으로 넘어간다)",
+    );
+  } else if (step === "persona") {
+    const axes = s.persona!.axes;
+    lines.push(
+      "물을 것: 성격. 축마다 어느 쪽으로 얼마나 기울었는지 (-2 ~ +2, 기본 0). 0은 플레이어 뜻대로, 2는 캐릭터가 강하게 드러난다: GM이 말투·태도를 이 성격대로 연기하고, 다혈질이면 도발에 발끈하거나 수다스러우면 말이 새어 나가는 일을 시스템이 정한다.",
+      "아래 목록을 그대로 한 번에 보여 주고 글로 답하게 한다 (보기 없이). 축마다 따로 묻지 않는다.",
+      "",
+      ...axes.map((a, i) => `${i + 1}. ${a.low} ← 2 · 1 · 0 · 1 · 2 → ${a.high}${a.romance ? " (연애: 성인 주제를 끈 세계에서는 쓰이지 않는다)" : ""}`),
+      "",
+      `답 형식: 기운 쪽 이름과 단계를 쉼표로 (예: ${axes[0]!.high} 2, ${axes[1]?.low ?? axes[0]!.low} 1). 적지 않은 축은 0. 상관없다고 하면 "기본". 받은 답은 그대로 넘긴다.`,
     );
   } else {
     lines.push("물을 것: 이대로 시작할지. 정한 것을 한 사람의 모습으로 그려 보여 준 뒤 묻는다.");
@@ -669,11 +694,12 @@ export function stepIndex(s: Scenario, draft: CreationDraft): { at: number; tota
   const abilitySteps = d.abilityMethod === "manual" ? 1 : 0;
   const pastStep = s.creation?.pasts.length ? 1 : 0;
   const skillSteps = s.creation?.skills ? (d.skillMethod === "manual" ? 2 : 1) : 0;
-  const traitSteps = d.traitMethod === "manual" ? 2 : 0;
+  const traitSteps = d.traitMethod === "manual" ? (s.persona ? 1 : 2) : 0;
+  const personaStep = s.persona ? 1 : 0;
   const ageStep = s.creation?.age && draft.presetAge === undefined ? 1 : 0;
   const portraitStep = draft.withPortrait ? 1 : 0;
   const genderStep = draft.presetGender === undefined ? 1 : 0;
-  const total = 4 + pastStep + skillSteps + genderStep + portraitStep + ageStep + abilitySteps + traitSteps;
+  const total = 4 + pastStep + skillSteps + genderStep + portraitStep + ageStep + abilitySteps + traitSteps + personaStep;
   return { at: Math.min(draft.answers.length + 1, total), total };
 }
 

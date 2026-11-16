@@ -100,6 +100,8 @@ export function createCharacterSchema(s: Scenario) {
     wear: z.record(z.string(), z.number().int().min(0)).default({}),
     /** 트레잇 id (기획서 4.6). 이전 세이브는 빈 목록 (NPC는 콘텐츠의 것을 쓴다) */
     traits: z.array(z.string()).default([]),
+    /** 성격 축 값 (12-99). null이면 성격 트레잇에서 계산한다 (NPC). 주인공은 만들 때 정한다 */
+    persona: z.record(z.string(), z.number().int().min(-2).max(2)).nullable().default(null),
     /** 초상화 id (화면에서 그린다). 없으면 null */
     portrait: z.string().regex(PORTRAIT_ID).nullable().default(null),
     /** 능력 (기획서 4.2): 타고난 것. 계급과 관계없고 바뀌지 않는다 */

@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 40;
+export const SAVE_SCHEMA_VERSION = 41;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -1667,6 +1667,8 @@ export type CharacterChoice = {
   past?: string | null;
   /** 시작 스킬 (12-84, 과거 배경이 기본값을 준다). 없으면 과거 배경의 스킬 */
   skills?: Record<string, number> | null;
+  /** 성격 축 값 (12-99). 없으면 성격 트레잇에서 계산한다 */
+  persona?: Record<string, number> | null;
 };
 
 export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player", rng?: Rng, choice?: CharacterChoice): Character {
@@ -1681,6 +1683,7 @@ export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "pl
     name: choice?.name.trim() || role.default_name,
     gender: choice?.gender ?? null,
     traits: choice?.traits ?? [],
+    persona: choice?.persona ?? null,
     portrait: choice?.portrait ?? null,
     factionId: role.faction,
     rank: role.rank,

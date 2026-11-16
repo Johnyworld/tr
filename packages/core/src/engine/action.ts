@@ -1,4 +1,5 @@
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
+import { rollBlowup, rollLeak } from "./persona.ts";
 import { exposeToCold } from "./climate.ts";
 import { calmAfterSleep, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { runRoadEvent } from "./storyletTools.ts";
@@ -135,6 +136,14 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .describe("남들이 알면 평판이 달라질 행동일 때만. 이미 기록된 행적은 다시 넣지 않는다"),
     target: z.string().nullable().describe("행동의 상대 인물 id (장면에 있어야 한다). 없으면 null"),
+    provoked: z
+      .boolean()
+      .default(false)
+      .describe(
+        s.persona?.blowup
+          ? "이번 턴에 누군가 주인공을 도발·모욕·조롱했으면 true (그 사람을 target으로). 성격(다혈질)에 따라 발끈할지는 시스템이 정한다. 대부분 false"
+          : "이 월드에서는 쓰지 않는다. false",
+      ),
     fright: z
       .enum(["none", "startle", "dread"])
       .default("none")
@@ -342,6 +351,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const lines: string[] = [];
   const displays: ToolDisplayEvent[] = [];
   let outcome: CheckOutcome | null = null;
+
+  // 0. 성격이 결과를 남기는 순간 (12-99): 도발당하면 발끈, 장면의 인물과 이야기하면 말이 새어 나갈 수 있다. 줄은 GM이 그대로 옮긴다
+  {
+    const moments = [input.provoked ? rollBlowup(ctx, input.target) : null, input.activity?.kind === "talk" ? rollLeak(ctx, input.target) : null].filter((x): x is string => !!x);
+    if (moments.length) lines.push("성격 줄 (서술 끝에 그대로 옮겨 적는다. 플레이어가 말하지 않은 반응이니 그 장면을 연출한다):", ...moments.map((m) => `\`${m}\``));
+  }
 
   // 0. 겁먹을 일이 드러났으면 공포부터 (이번 판정에 바로 붙는다, 12-95)
   if (input.fright !== "none" && scenario.body?.fear) {

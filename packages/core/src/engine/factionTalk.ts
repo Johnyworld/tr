@@ -125,6 +125,41 @@ export function spreadTroubleRumors(ctx: ToolContext): ToolDisplayEvent[] {
   return displays;
 }
 
+/**
+ * 소문을 직접 확인한다 (턴마다): 주인공이 그 무리의 땅에 있고, 그 무리에 대해 들은 소문이 마지막으로 직접 본 뒤로 있으면
+ * 지금의 진짜 형편을 본 것(정확도 exact)으로 남긴다. 들은 말과 다르면 GM이 그 차이를 서술한다 (옛 믿음은 지우지 않고 새 믿음이 앞선다)
+ */
+export function checkRumorsOnSite(ctx: ToolContext): ToolDisplayEvent[] {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const me = state.characters[state.playerId];
+  const owner = state.playerZone ? state.zones[state.playerZone]?.owner : null;
+  if (!content.scenario.war?.talk?.rumor || !me || me.dead || !owner || owner === me.factionId || !state.factions[owner]) return [];
+  const topic = `${TROUBLE_TOPIC}:${owner}`;
+  const about = (state.beliefs[me.id] ?? []).filter((b) => b.topic === topic);
+  const lastSeen = Math.max(-Infinity, ...about.filter((b) => b.source === "seen").map((b) => b.learnedAt));
+  const rumors = about.filter((b) => b.source === "rumor" && b.learnedAt > lastSeen);
+  if (!rumors.length) return [];
+  const name = content.factions[owner]?.name ?? owner;
+  const troubles = troublesOf(state, content, owner);
+  const fact = troubles.length
+    ? `${name} 땅에 와서 직접 보니: ${troubles.map((t) => t.text).join(" · ")}`
+    : `${name} 땅에 와서 직접 보니 들은 소문만큼 어려워 보이지는 않았다`;
+  store.append({
+    type: "belief_added",
+    characterId: me.id,
+    belief: { id: `b_${state.nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time, topic },
+  });
+  return [
+    {
+      type: "belief",
+      fact,
+      sourceLabel: BELIEF_SOURCE_LABELS.seen,
+      note: `${name}에 대해 들었던 소문(${rumors.map((b) => `"${b.fact}"`).join(", ")})을 직접 보고 확인했다: ${fact}. 들은 것과 다르면 그 차이를 짧게 서술한다 (무엇이 맞고 틀렸는지는 이 줄에 있는 것만).`,
+    },
+  ];
+}
+
 /** 이 인물이 무리 형편을 대하는 태도: 트레잇이 가장 많이 겹치는 것, 없으면 기본 */
 export function troubleAttitude(content: Content, c: Character): { label: string; hint: string } | null {
   const talk = content.scenario.war?.talk;

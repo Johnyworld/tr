@@ -5,7 +5,7 @@ import { loadContent } from "../content/loader.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { describePlayerState } from "./context.ts";
-import { factionTroubles, spreadTroubleRumors, troubleAttitude, troubleLine } from "./factionTalk.ts";
+import { checkRumorsOnSite, factionTroubles, spreadTroubleRumors, troubleAttitude, troubleLine } from "./factionTalk.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 
 /** 무리 형편 (12-105) */
@@ -91,6 +91,27 @@ describe("무리 형편", () => {
       expect(b.accuracy).toBe(expected);
       expect(b.fact).toContain(expected === "exact" ? "가라앉음" : "흉흉함");
     }
+  });
+
+  it("그 무리의 땅에 가면 들은 소문을 직접 보고 확인한다 (한 번만, 새 소문이 오면 다시)", () => {
+    const { store, state, me } = setup();
+    const ctx = { store, rng: () => 0, content };
+    const zone = Object.entries(state().zones).find(([, z]) => z.owner && z.owner !== me().factionId)![0];
+    const other = state().zones[zone]!.owner!;
+    for (const r of Object.keys(state().factions[other]!.resources)) state().factions[other]!.resources[r] = 99999;
+    state().factions[other]!.morale = 1;
+    const rumor = (fact: string) =>
+      store.append({ type: "belief_added", characterId: me().id, belief: { id: `b_${state().nextBeliefNo}`, fact, source: "rumor", accuracy: "false", learnedAt: state().time, topic: `faction_trouble:${other}` } });
+    rumor("헛소문");
+    expect(checkRumorsOnSite(ctx)).toEqual([]); // 아직 그 땅이 아니다
+    state().playerZone = zone;
+    const seen = checkRumorsOnSite(ctx);
+    expect(seen[0]?.type === "belief" && seen[0].fact).toContain("들은 소문만큼 어려워 보이지는 않았다");
+    expect(seen[0]?.type === "belief" && seen[0].note).toContain("헛소문");
+    expect(checkRumorsOnSite(ctx)).toEqual([]);
+    state().time += 60;
+    rumor("또 다른 말");
+    expect(checkRumorsOnSite(ctx)).toHaveLength(1);
   });
 
   it("멀쩡한 무리도 헛소문이 돈다 (정확도 false, 실제로 겪지 않는 어려움)", () => {

@@ -13,7 +13,7 @@ import { seasonAt } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { josa } from "../text.ts";
 import { recordDeath } from "./succession.ts";
-import { bleedingBlocksRecovery, staunch } from "./bleeding.ts";
+import { bleedingBlocksRecovery, staunch, stopBleeding } from "./bleeding.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import { DEATH_GUIDE, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -120,7 +120,13 @@ export function applyTreatment(
   check: { move: string; outcome: CheckOutcome } | null = null,
 ): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   if (item) return useItem(ctx, item, targetId);
-  if (targetId && targetId !== ctx.store.getState().playerId) return firstAid(ctx, targetId);
+  if (targetId && targetId !== ctx.store.getState().playerId) {
+    // 남의 피를 맨손으로 멎게 한다 (12-91): 지혈 판정을 걸었으면 그것으로
+    const w = ctx.content.scenario.wounds;
+    const s = ctx.store.getState();
+    if (w && check?.move === w.staunch_move && s.scene.present.includes(targetId) && levelIndex(ctx, s, targetId, w.track) > 0) return staunch(ctx, check, targetId);
+    return firstAid(ctx, targetId);
+  }
   const recovery = ctx.content.scenario.recovery;
   if (!recovery) return { ok: false, error: "이 시나리오에는 치료 규칙이 없다." };
   const state = ctx.store.getState();
@@ -408,10 +414,14 @@ function firstAid(ctx: ToolContext, targetId: string): { ok: true; lines: string
   const skilled = (!!me.occupation && rule.occupations.includes(me.occupation.id)) || (me.skills[rule.skill] ?? -9) >= rule.min;
   if (!skilled) return { ok: false, error: "아이템 없이 남을 꿰매고 돌볼 줄 모른다. 치료 아이템을 쓰거나 치료사를 데려온다." };
   const harm = harmTrack(content.scenario);
-  if (shownIndex(ctx, state, targetId, harm.id) <= 0) return { ok: false, error: "그 사람은 다친 데가 없다." };
-  if (state.recovery.lastHealerDay[targetId] === dayOf(state.time)) return { ok: false, error: "그 사람은 오늘 이미 치료를 받았다." };
+  // 치료할 줄 알면 피부터 멎게 한다 (12-91)
+  const staunched = stopBleeding(ctx, targetId, `${me.name}의 지혈`);
+  if (shownIndex(ctx, state, targetId, harm.id) <= 0 || state.recovery.lastHealerDay[targetId] === dayOf(state.time)) {
+    if (staunched.length) return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 피를 멎게 했다.`], displays: staunched };
+    return { ok: false, error: shownIndex(ctx, state, targetId, harm.id) <= 0 ? "그 사람은 다친 데가 없다." : "그 사람은 오늘 이미 치료를 받았다." };
+  }
   const c = changeCondition(ctx, targetId, harm.id, -1, "healer", `${me.name}의 치료`);
-  return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 상처를 돌봤다.`, ...(c?.line ? [c.line] : [])], displays: c?.display ? [c.display] : [] };
+  return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 상처를 돌봤다.`, ...(c?.line ? [c.line] : [])], displays: [...staunched, ...(c?.display ? [c.display] : [])] };
 }
 
 /**
@@ -433,6 +443,8 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
   const npcs = () => Object.values(store.getState().characters).filter((c) => c.id !== store.getState().playerId && !c.dead && !c.away);
   for (const c of npcs()) {
     if (c.captive) continue;
+    // 피가 멎지 않으면 저절로 낫지 않는다 (12-91)
+    if (bleedingBlocksRecovery(ctx, c)) continue;
     const state = store.getState();
     const index = harm.levels.findIndex((l) => l.id === c.conditions[harm.id]);
     if (index <= 0 || index > maxIndex) continue;

@@ -36,7 +36,7 @@ import { SQUAD_REPORT_PREFIX } from "./command.ts";
 import { activeMissionOf } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
-import { bleedFromHarm } from "./bleeding.ts";
+import { bleedFromHarm, woundKind } from "./bleeding.ts";
 import { createStoryletCheck, endActiveStorylet } from "./storyletTools.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -148,7 +148,7 @@ export function createTakeActionSchema(s: Scenario) {
           .string()
           .nullable()
           .default(null)
-          .describe("다른 사람을 치료하면 그 사람 id (장면에 있어야 한다. 아이템 없이는 의무병이나 응급처치를 익힌 사람만). 주인공 자신이면 null"),
+          .describe("다른 사람을 치료하면 그 사람 id (장면에 있어야 한다. 아이템 없이는 의무병이나 응급처치를 익힌 사람만. 피만 멎게 하는 맨손 지혈은 누구나: check move를 응급처치로 함께). 주인공 자신이면 null"),
       })
       .nullable()
       .default(null)
@@ -252,6 +252,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
   // 상처 종류 (12-91): 몸의 위험을 걸면 고른다
   if (input.check && scenario.wounds) {
+    // 감염체에게 다칠 위험인데 종류를 비웠으면 기본 종류(물림·할큄)로 본다
+    if (!input.check.harm_kind && input.check.infected_source && scenario.wounds.infected_default) input.check.harm_kind = scenario.wounds.infected_default;
     const kind = input.check.harm_kind;
     if (input.check.harm_on_failure !== "none" && !kind) {
       return { ok: false, error: `몸의 위험을 걸면 check.harm_kind(상처 종류)를 고른다: ${scenario.wounds.kinds.map((k) => k.id).join(", ")}` };
@@ -332,7 +334,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (attack) lines.push(...afterAttack(ctx, attack, roll.outcome).lines);
     // 상대를 다치게 한다 (기획서 7.5). 사망은 부상 트랙으로만 (원칙 3)
     if (input.check.target_harm !== "none" && input.target) {
-      const hit = hitTarget(ctx, input.target, input.check.target_harm, roll.outcome, input.intent);
+      const hit = hitTarget(ctx, input.target, input.check.target_harm, roll.outcome, input.intent, attack?.wound ?? null);
       lines.push(...hit.lines);
       displays.push(...hit.displays);
     }
@@ -354,7 +356,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
         const shaken = shakeNerves(ctx, nerves.heavy_harm, `크게 다쳤다 (${input.check.harm_cause || input.intent})`);
         if (shaken?.line) lines.push(shaken.line);
       }
-      if (!harm.fatal && input.check.infected_source) {
+      // 감염은 살갗이 찢긴 상처(피가 나는 종류)일 때만 (12-91). 출혈 규칙이 없는 월드면 그대로
+      const broken = !scenario.wounds || !!woundKind(ctx, input.check.harm_kind)?.bleeds;
+      if (!harm.fatal && input.check.infected_source && broken) {
         if (armorBlocksInfection(ctx)) lines.push("입은 것이 물림을 막아 냈다. 살갗까지 닿지 않았다.");
         else maybeInfect(ctx, input.check.harm_on_failure);
       }
@@ -506,7 +510,7 @@ function bodyLines(displays: readonly ToolDisplayEvent[]): string[] {
 }
 
 /** 상대에게 피해: 성공 = 선언한 만큼(light 1, heavy 2), 대가 있는 성공 = 1, 실패 = 0. 무력화되면 지닌 것을 알린다 */
-function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heavy", outcome: CheckOutcome, cause: string) {
+function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heavy", outcome: CheckOutcome, cause: string, wound: string | null) {
   const state = ctx.store.getState();
   const target = state.characters[targetId];
   const lines: string[] = [];
@@ -522,6 +526,12 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
   const change = changeCondition(ctx, targetId, ctx.content.scenario.harm_track, steps, "attack", cause);
   if (change?.line) lines.push(change.line);
   if (change?.display) displays.push(change.display);
+  // 무기가 낸 상처에서 피가 난다 (12-91)
+  if (!change?.died) {
+    const bleed = bleedFromHarm(ctx, targetId, wound);
+    if (bleed?.line) lines.push(`${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.`);
+    if (bleed?.display) displays.push(bleed.display);
+  }
   const after = ctx.store.getState().characters[targetId]!;
   if (after.dead) lines.push(`${josa(called, "이/가")} 죽었다. 죽음을 서술에 반영하라.`);
   if (isIncapacitated(ctx.content, after)) {

@@ -40,6 +40,8 @@ export const itemContentSchema = z.strictObject({
       /** 탄약을 쓰는 스킬 (없으면 moves 전부). 소총으로 개머리판을 휘두를 때는 탄약이 들지 않게 */
       ammo_moves: z.array(contentIdSchema).optional(),
       bonus: z.number().int().min(-1).max(1).default(0),
+      /** 이 무기로 친 상처 종류 (스킬 → scenario.wounds.kinds, 12-91). 소총을 쏘면 총상, 개머리판이면 둔기 */
+      wound: z.record(contentIdSchema, contentIdSchema).optional(),
     })
     .optional(),
   /** 방어구: 입는 자리, 받는 피해를 줄이는 단계, 입으면 불리해지는 스킬, 감염을 막을 확률 */

@@ -10,7 +10,9 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
  * - 출혈은 판정 보정이 없다. 시간이 흐르면 worsen_hours마다 부상이 한 단계 나빠지고, clot_hours가 지나면 저절로 멎는다
  * - blocks_recovery_from 이상이면 정신이 들지 않고 저절로 낫지 않는다 (지혈해야 한다)
  * - 지혈: 붕대·구급상자(consumables), 치료사(recovery.healer), 맨손 지혈 판정(staunch_move), 곁의 사람의 돌봄(12-90)
- * 지금은 주인공만 흘린다 (NPC 출혈은 다음 단계)
+ * - 피를 흘려 부상이 깊어지면 출혈도 그 부상 단계만큼 심해진다 (from_harm)
+ * - NPC도 같은 규칙으로 흘린다 (원칙 6). 주인공이 친 상처의 종류는 무기·맨손 데이터(weapon.wound)에서 온다.
+ *   장면 밖의 NPC는 무리가 있으면(또는 갇혀 있으면) 곁의 사람이 지혈하고, 무리 없는 사람은 계속 흘린다
  */
 
 const rules = (ctx: ToolContext) => ctx.content.scenario.wounds;
@@ -27,8 +29,14 @@ export function woundKind(ctx: ToolContext, id: string | null | undefined) {
 
 /** 다친 직후: 피가 나는 상처면 부상 단계만큼 출혈이 오른다. 화면에 알릴 줄 */
 export function bleedFromHarm(ctx: ToolContext, characterId: string, kind: string | null | undefined): { line: string; display: ToolDisplayEvent | null } | null {
+  if (!rules(ctx) || !woundKind(ctx, kind)?.bleeds) return null;
+  return raiseBleeding(ctx, characterId, "상처에서 피가 난다");
+}
+
+/** 지금 부상 단계에 맞춰 출혈을 올린다 (내리지는 않는다) */
+function raiseBleeding(ctx: ToolContext, characterId: string, cause: string): { line: string; display: ToolDisplayEvent | null } | null {
   const w = rules(ctx);
-  if (!w || !woundKind(ctx, kind)?.bleeds) return null;
+  if (!w) return null;
   const c = ctx.store.getState().characters[characterId];
   if (!c || c.dead) return null;
   const harm = harmTrack(ctx.content.scenario);
@@ -38,7 +46,7 @@ export function bleedFromHarm(ctx: ToolContext, characterId: string, kind: strin
   const want = track.levels.findIndex((l) => l.id === target);
   const now = levelIndexOf(ctx, c, w.track);
   if (want <= now) return null;
-  const ch = changeCondition(ctx, characterId, w.track, want - now, "wound", "상처에서 피가 난다");
+  const ch = changeCondition(ctx, characterId, w.track, want - now, "wound", cause);
   return ch ? { line: ch.line, display: ch.display } : null;
 }
 
@@ -63,41 +71,72 @@ export function stopBleeding(ctx: ToolContext, characterId: string, cause: strin
 }
 
 /** 맨손 지혈 (옷을 찢어 누른다): 판정 결과대로. 성공이면 멎고, 대가 있는 성공이면 한 단계, 실패면 그대로 */
-export function staunch(ctx: ToolContext, check: { move: string; outcome: CheckOutcome } | null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+export function staunch(
+  ctx: ToolContext,
+  check: { move: string; outcome: CheckOutcome } | null,
+  targetId?: string,
+): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const w = rules(ctx);
   if (!w) return { ok: false, error: "이 월드에는 출혈 규칙이 없다." };
   const state = ctx.store.getState();
-  const me = state.characters[state.playerId]!;
+  const me = state.characters[targetId ?? state.playerId];
+  if (!me || me.dead) return { ok: false, error: "그 사람이 없다." };
   if (levelIndexOf(ctx, me, w.track) === 0) return { ok: false, error: "피가 나지 않는다. 지혈할 것이 없다." };
   if (!check || check.move !== w.staunch_move) {
     return { ok: false, error: `아이템 없이 지혈하려면 check(move: ${w.staunch_move})를 함께 선언한다 (옷을 찢어 누르기 등). 붕대·구급상자가 있으면 treatment.item으로.` };
   }
   if (check.outcome === "miss") return { ok: true, lines: ["지혈하지 못했다. 피가 계속 난다."], displays: [] };
   const displays = stopBleeding(ctx, me.id, "맨손 지혈", check.outcome === "success" ? undefined : 1);
+  // 지혈한 순간부터 다시 센다 (남은 출혈이 바로 부상을 키우지 않게)
+  if (check.outcome !== "success") ctx.store.append({ type: "track_clock_reset", characterId: me.id, track: w.track });
   return { ok: true, lines: [check.outcome === "success" ? "피를 멎게 했다." : "피가 조금 줄었지만 아직 멎지 않았다."], displays };
 }
 
-/** 시간이 흐른 뒤마다 (runAfterTimeAdvance): 출혈이 부상을 키우거나 저절로 멎는다 */
+/** 시간이 흐른 뒤마다 (runAfterTimeAdvance): 피를 흘리는 모든 사람의 출혈이 부상을 키우거나 저절로 멎는다 */
 export function runBleeding(ctx: ToolContext): ToolDisplayEvent[] {
   const w = rules(ctx);
-  if (!w) return [];
+  const state = ctx.store.getState();
+  if (!w || state.battle) return [];
   const displays: ToolDisplayEvent[] = [];
+  const bleeding = Object.values(state.characters)
+    .filter((c) => !c.dead && !c.away && levelIndexOf(ctx, c, w.track) > 0)
+    .map((c) => c.id)
+    .sort((a, b) => (a === state.playerId ? -1 : b === state.playerId ? 1 : a.localeCompare(b)));
+  for (const id of bleeding) {
+    const now = ctx.store.getState();
+    // 화면에는 주인공과 장면에 있는 사람의 변화만
+    const seen = id === now.playerId || now.scene.present.includes(id);
+    for (const d of bleedOne(ctx, id)) if (seen) displays.push(d);
+  }
+  return displays;
+}
+
+/** 한 사람의 출혈: 장면 밖의 무리 사람은 곁의 사람이 지혈하고, 아니면 흘린 시간만큼 부상이 커지거나 긁힘이 멎는다 */
+function bleedOne(ctx: ToolContext, id: string): ToolDisplayEvent[] {
+  const w = rules(ctx)!;
+  const state = ctx.store.getState();
+  const c = state.characters[id]!;
+  if (id !== state.playerId && !state.scene.present.includes(id) && !state.companions.includes(id) && (c.factionId || c.captive)) {
+    return stopBleeding(ctx, id, c.captive ? "붙잡은 쪽이 상처를 묶었다" : "곁의 동료가 지혈했다");
+  }
   const track = trackOf(ctx.content.scenario, w.track);
   const harm = harmTrack(ctx.content.scenario);
-  const state = ctx.store.getState();
-  const me = state.characters[state.playerId];
-  if (!me || me.dead || state.battle) return [];
-  const level = track.levels[levelIndexOf(ctx, me, w.track)]!;
-  const since = state.recovery.trackAt[`${me.id}:${w.track}`] ?? state.time;
+  const level = track.levels[levelIndexOf(ctx, c, w.track)]!;
+  const since = state.recovery.trackAt[`${id}:${w.track}`] ?? state.time;
   const elapsed = state.time - since;
   const clot = w.clot_hours[level.id];
-  if (clot !== undefined && elapsed >= clot * 60) return stopBleeding(ctx, me.id, "피가 저절로 멎었다");
+  if (clot !== undefined && elapsed >= clot * 60) return stopBleeding(ctx, id, "피가 저절로 멎었다");
   const every = w.worsen_hours[level.id];
   if (every === undefined) return [];
   const times = Math.floor(elapsed / (every * 60));
   if (times <= 0) return [];
-  const ch = changeCondition(ctx, me.id, harm.id, times, "bleeding", "피를 많이 흘렸다");
+  const displays: ToolDisplayEvent[] = [];
+  const ch = changeCondition(ctx, id, harm.id, times, "bleeding", "피를 많이 흘렸다");
   if (ch?.display) displays.push(ch.display);
-  if (!ctx.store.getState().characters[me.id]!.dead) ctx.store.append({ type: "track_clock_reset", characterId: me.id, track: w.track });
+  if (ctx.store.getState().characters[id]!.dead) return displays;
+  // 부상이 깊어진 만큼 출혈도 심해진다
+  const up = raiseBleeding(ctx, id, "상처가 더 벌어졌다");
+  if (up?.display) displays.push(up.display);
+  ctx.store.append({ type: "track_clock_reset", characterId: id, track: w.track });
   return displays;
 }

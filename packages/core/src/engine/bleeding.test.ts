@@ -59,7 +59,8 @@ describe("상처 종류와 출혈", () => {
     expect(w.runCheat("~set bleeding bleeding").ok).toBe(true);
     expect(w.runCheat("~time +7h").ok).toBe(true);
     expect(me(w).conditions.harm).toBe("critical");
-    expect(me(w).conditions.bleeding).toBe("bleeding");
+    // 부상이 깊어진 만큼 출혈도 심해진다 (치명상 → 심한 출혈)
+    expect(me(w).conditions.bleeding).toBe("heavy");
     w.close();
 
     const s = world();
@@ -115,5 +116,66 @@ describe("상처 종류와 출혈", () => {
     expect(me(helped.w).conditions.bleeding).toBe("none");
     expect(me(helped.w).conditions.harm).toBe("impaired");
     helped.w.close();
+  });
+
+  it("NPC도 흘린다: 날붙이로 친 상처는 피가 나고 맨손은 나지 않는다. 장면에 두면 깊어지고, 맨손 지혈로 멎게 할 수 있다", () => {
+    const { w, roll } = world();
+    w.runCheat("~goto subway_hub");
+    w.runCheat("~summon c_cheolgu");
+    w.runCheat("~give machete");
+    expect(w.executeTool("equip", { item_id: "machete", slot: null }).ok).toBe(true);
+    roll.value = 0.99;
+    const hit = w.executeTool("take_action", act("마체테를 휘두른다", { target: "c_cheolgu", check: chk("fight", "strength", { target_harm: "heavy" }) }));
+    expect(hit.ok, hit.ok ? "" : hit.error).toBe(true);
+    const npc = () => w.state().characters.c_cheolgu!;
+    expect(npc().conditions.harm).toBe("serious");
+    expect(npc().conditions.bleeding).toBe("bleeding");
+    // 장면에 둔 채 시간이 흐르면 깊어진다
+    w.runCheat("~time +7h");
+    expect(npc().conditions.harm).toBe("critical");
+    expect(npc().conditions.bleeding).toBe("heavy");
+    // 응급처치 판정으로 남의 피를 멎게 한다
+    const aid = w.executeTool("take_action", act("옷을 찢어 상처를 누른다", { treatment: { item: null, target: "c_cheolgu" }, check: chk("first_aid", "intellect") }));
+    expect(aid.ok, aid.ok ? "" : aid.error).toBe(true);
+    expect(npc().conditions.bleeding).toBe("none");
+    w.close();
+
+    const fist = world();
+    fist.w.runCheat("~goto subway_hub");
+    fist.w.runCheat("~summon c_cheolgu");
+    fist.w.executeTool("equip", { item_id: null, slot: "weapon" });
+    fist.roll.value = 0.99;
+    fist.w.executeTool("take_action", act("주먹을 날린다", { target: "c_cheolgu", check: chk("fight", "strength", { target_harm: "light" }) }));
+    expect(fist.w.state().characters.c_cheolgu!.conditions.harm).toBe("light");
+    expect(fist.w.state().characters.c_cheolgu!.conditions.bleeding).toBe("none");
+    fist.w.close();
+  });
+
+  it("장면 밖의 무리 사람은 동료가 지혈한다", () => {
+    const { w } = world();
+    w.runCheat("~set bleeding heavy c_cheolgu");
+    w.runCheat("~time +1h");
+    expect(w.state().characters.c_cheolgu!.conditions.bleeding).toBe("none");
+    expect(w.state().characters.c_cheolgu!.conditions.harm).toBe("none");
+    w.close();
+  });
+
+  it("감염체: 종류를 비우면 물림·할큄으로 보고 피가 나며 감염을 굴린다. 넘어뜨려 생긴 둔기 상처로는 감염되지 않는다", () => {
+    const bite = world();
+    bite.roll.value = 0;
+    {
+      const r = bite.w.executeTool("take_action", act("감염체를 밀어낸다", { check: chk("fight", "strength", { harm_on_failure: "heavy", harm_cause: "감염체에게 물렸다", infected_source: true }) }));
+      expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    }
+    expect(me(bite.w).conditions.bleeding).toBe("bleeding");
+    expect(me(bite.w).conditions.infection).toBe("incubating");
+    bite.w.close();
+
+    const shove = world();
+    shove.roll.value = 0;
+    shove.w.executeTool("take_action", act("감염체를 밀어낸다", { check: chk("fight", "strength", { harm_on_failure: "heavy", harm_cause: "감염체에게 떠밀려 넘어졌다", harm_kind: "blunt", infected_source: true }) }));
+    expect(me(shove.w).conditions.harm).toBe("serious");
+    expect(me(shove.w).conditions.infection).toBe("clean");
+    shove.w.close();
   });
 });

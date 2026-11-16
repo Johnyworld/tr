@@ -122,7 +122,7 @@ discipline:
 # 물건 (기획서 4.8, *임시* 수치): 맨손, 무게, 흥정
 gear:
   # 무기 없이: 근접으로 가벼운 피해까지
-  unarmed: { moves: [fight], max_harm: light }
+  unarmed: { moves: [fight], max_harm: light, wound: { fight: blunt } }
   # 전투 중 근접·사격 판정은 공격으로 보고 무기·탄약을 따진다
   attack_moves: [fight, shoot]
   # 들 수 있는 무게 = 12kg + 근력 1당 4kg. 넘으면 은밀·근접 -1, 1.5배를 넘으면 옮겨 가지 못한다
@@ -697,6 +697,8 @@ wounds:
   blocks_recovery_from: bleeding
   # 옷을 찢어 누르는 맨손 지혈
   staunch_move: first_aid
+  # 감염체에게 다칠 위험인데 종류를 비웠으면 물림·할큄으로 본다. 감염은 피가 나는 상처일 때만 굴린다
+  infected_default: claw
 
 # 의식불명 중 곁의 사람 (12-90, *임시*): 쓰러질 때마다 한 번, 곁에 누가 있느냐로 코드가 정한다
 helpless:

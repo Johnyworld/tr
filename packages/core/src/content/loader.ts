@@ -157,6 +157,10 @@ function checkReferences(content: Content): string[] {
     for (const it of Object.values(content.items)) {
       for (const m of it.weapon?.moves ?? []) moveRef(`items.${it.id}.weapon`, m);
       if (it.weapon?.ammo) itemRef(`items.${it.id}.weapon.ammo`, it.weapon.ammo);
+      for (const [m, k] of Object.entries(it.weapon?.wound ?? {})) {
+        moveRef(`items.${it.id}.weapon.wound`, m);
+        if (!content.scenario.wounds?.kinds.some((x) => x.id === k)) problems.push(`items.${it.id}.weapon.wound: 알 수 없는 상처 종류 ${k}`);
+      }
       for (const m of Object.keys(it.armor?.penalty ?? {})) moveRef(`items.${it.id}.armor.penalty`, m);
       for (const m of Object.keys(it.tool?.bonus ?? {})) moveRef(`items.${it.id}.tool`, m);
       if (it.breaks_into) itemRef(`items.${it.id}.breaks_into`, it.breaks_into);

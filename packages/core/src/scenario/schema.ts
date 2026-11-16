@@ -432,7 +432,7 @@ export const scenarioFileSchema = z
     gear: z
       .strictObject({
         /** 무기 없이 공격할 수 있는 스킬과 피해 상한 */
-        unarmed: z.strictObject({ moves: z.array(id).min(1), max_harm: z.enum(["light", "heavy"]) }),
+        unarmed: z.strictObject({ moves: z.array(id).min(1), max_harm: z.enum(["light", "heavy"]), /** 맨손 상처 종류 (스킬 → wounds.kinds, 12-91) */ wound: z.record(id, id).optional() }),
         /** 전투 중에 공격으로 보는 스킬 (무기·탄약을 따진다) */
         attack_moves: z.array(id).min(1),
         carry: z.strictObject({
@@ -695,6 +695,8 @@ export const scenarioFileSchema = z
         blocks_recovery_from: id,
         /** 아이템 없이 지혈하는 판정 (take_action.treatment {item: null} + check). 성공이면 멎고, 대가 있는 성공이면 한 단계 준다 */
         staunch_move: id,
+        /** 감염체에게 다칠 위험(infected_source)인데 상처 종류를 비웠을 때 쓰는 종류 */
+        infected_default: id.optional(),
       })
       .optional(),
     /**
@@ -927,6 +929,7 @@ export const scenarioFileSchema = z
         if (!bleedLevels.has(b)) problem(`wounds.from_harm.${h}: 알 수 없는 출혈 단계 ${b}`);
       }
       for (const b of [...Object.keys(w.worsen_hours), ...Object.keys(w.clot_hours), w.blocks_recovery_from]) if (!bleedLevels.has(b)) problem(`wounds: 알 수 없는 출혈 단계 ${b}`);
+      if (w.infected_default && !w.kinds.some((k) => k.id === w.infected_default)) problem(`wounds.infected_default: 알 수 없는 상처 종류 ${w.infected_default}`);
       if (!s.moves.some((m) => m.id === w.staunch_move)) problem(`wounds.staunch_move: 알 수 없는 스킬 ${w.staunch_move}`);
     }
     const symptomIds = new Set((s.symptoms ?? []).map((x) => x.id));

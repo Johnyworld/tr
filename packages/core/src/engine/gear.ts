@@ -75,12 +75,13 @@ export function gearModifiers(content: Content, c: Character, move: string): { s
   return { skill, penalty };
 }
 
-export type AttackPlan = { weapon: string | null; ammo: string | null; noise: number };
+/** wound: 이 공격의 상처 종류 (12-91, 무기·맨손 데이터에서). 모르면 null */
+export type AttackPlan = { weapon: string | null; ammo: string | null; noise: number; wound: string | null };
 
 /** 공격 판정이 이 무기로 가능한지. 안 되면 오류 문장 */
 export function planAttack(content: Content, c: Character, move: string, harm: "none" | "light" | "heavy"): AttackPlan | string {
   const g = content.scenario.gear;
-  if (!g) return { weapon: null, ammo: null, noise: 0 };
+  if (!g) return { weapon: null, ammo: null, noise: 0, wound: null };
   const weaponId = equippedItem(c, "weapon");
   const w = itemOf(content, weaponId)?.weapon;
   const rank = (h: string) => (h === "heavy" ? 2 : h === "light" ? 1 : 0);
@@ -89,13 +90,13 @@ export function planAttack(content: Content, c: Character, move: string, harm: "
     const usesAmmo = !!w.ammo && (w.ammo_moves ?? w.moves).includes(move);
     if (usesAmmo && (c.inventory[w.ammo!] ?? 0) < 1) return `${nameOf(content, weaponId!)}에 쓸 ${nameOf(content, w.ammo!)}이(가) 없다. 쏠 수 없다 (다른 무기를 들거나 맨손으로).`;
     // 소리는 쏠 때만 (개머리판·칼은 조용하다)
-    return { weapon: weaponId, ammo: usesAmmo ? w.ammo! : null, noise: usesAmmo || !w.ammo ? w.noise : 0 };
+    return { weapon: weaponId, ammo: usesAmmo ? w.ammo! : null, noise: usesAmmo || !w.ammo ? w.noise : 0, wound: w.wound?.[move] ?? null };
   }
   if (g.unarmed.moves.includes(move)) {
     if (rank(harm) > rank(g.unarmed.max_harm)) {
       return `맨손${weaponId ? `(손에 든 ${nameOf(content, weaponId)}은(는) 이 판정에 쓰지 않는다)` : ""}으로는 ${harm} 피해를 노릴 수 없다. 무기를 들려면 equip.`;
     }
-    return { weapon: null, ammo: null, noise: 0 };
+    return { weapon: null, ammo: null, noise: 0, wound: g.unarmed.wound?.[move] ?? null };
   }
   return `${weaponId ? `손에 든 ${nameOf(content, weaponId)}(으)로는` : "맨손으로는"} 이 판정(${move})으로 공격할 수 없다. 맞는 무기를 equip으로 든다.`;
 }

@@ -40,7 +40,7 @@
   kind: weapon
   weight: 1.0
   value: 9
-  weapon: { moves: [fight], max_harm: heavy, noise: 0 }
+  weapon: { moves: [fight], max_harm: heavy, noise: 0, wound: { fight: cut } }
   durability: 8
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1 } }
@@ -51,7 +51,7 @@
   kind: weapon
   weight: 1.0
   value: 3
-  weapon: { moves: [fight], max_harm: light, noise: 0, bonus: 1 }
+  weapon: { moves: [fight], max_harm: light, noise: 0, bonus: 1, wound: { fight: blunt } }
   durability: 6
   breaks_into: planks
   repair: { move: improvise, materials: { duct_tape: 1 } }
@@ -61,7 +61,7 @@
   kind: weapon
   weight: 1.8
   value: 5
-  weapon: { moves: [fight], max_harm: heavy, noise: 0 }
+  weapon: { moves: [fight], max_harm: heavy, noise: 0, wound: { fight: pierce } }
   durability: 4
   breaks_into: scrap_metal
   repair: { move: improvise, materials: { duct_tape: 1 } }
@@ -71,7 +71,7 @@
   kind: weapon
   weight: 0.9
   value: 20
-  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: pistol_rounds }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: pistol_rounds, wound: { shoot: gunshot } }
   durability: 6
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1 }, tools: [toolkit] }
@@ -82,7 +82,7 @@
   kind: weapon
   weight: 3.0
   value: 14
-  weapon: { moves: [shoot], max_harm: heavy, noise: 0, ammo: bolts, bonus: -1 }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 0, ammo: bolts, bonus: -1, wound: { shoot: pierce } }
   durability: 6
   breaks_into: planks
   repair: { move: improvise, materials: { planks: 1, wire_roll: 1 } }
@@ -92,7 +92,7 @@
   kind: weapon
   weight: 2.2
   value: 15
-  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, bonus: 1 }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, bonus: 1, wound: { shoot: gunshot } }
   durability: 4
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }
@@ -103,7 +103,7 @@
   kind: weapon
   weight: 4.0
   value: 22
-  weapon: { moves: [shoot], max_harm: heavy, noise: 1, ammo: harpoons }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 1, ammo: harpoons, wound: { shoot: pierce } }
   durability: 8
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1, wire_roll: 1 } }
@@ -267,7 +267,7 @@
   kind: weapon
   weight: 0.6
   value: 6
-  weapon: { moves: [shoot], max_harm: heavy, noise: 1, ammo: molotov }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 1, ammo: molotov, wound: { shoot: other } }
 - id: arm_guards
   name: 손목 보호대
   description: 잡지와 쇳조각을 덕트 테이프로 팔뚝에 감은 것. 물리는 자리를 막는다.

@@ -215,6 +215,10 @@ export const scenarioFileSchema = z
         blowup: z.strictObject({ axis: id, chance: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]), delta: z.strictObject({ trust: z.number().int(), affection: z.number().int(), respect: z.number().int() }) }).optional(),
         /** 말 새어 나감 (+쪽 단계별 확률): 장면의 인물과 이야기하면 굴리고, 터지면 주인공이 아는 사실 하나를 그 인물이 알게 된다 */
         leak: z.strictObject({ axis: id, chance: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]) }).optional(),
+        /** 얻어듣기 (+쪽 단계별 확률, 12-107): 말이 오가면 상대도 털어놓는다. 장면의 인물과 이야기하면 굴리고, 터지면 그 인물이 아는 사실 하나를 주인공이 알게 된다 */
+        hear: z.strictObject({ axis: id, chance: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]) }).optional(),
+        /** 성격의 득 (12-107): 축이 +쪽(1 이상)이면 이 행동들의 판정에 bonus (상한 밖, 판정 줄에 성격 이름으로). 손해 규칙(blowup·leak)이 있는 쪽에 득도 준다 */
+        edges: z.array(z.strictObject({ axis: id, moves: z.array(id).min(1), bonus: z.number().int() })).default([]),
         /** 궁합: 처음 만날 때 이 축들이 같은 쪽이면 same, 반대쪽이면 opposite만큼 호감 (합은 -2~2) */
         rapport: z.strictObject({ axes: z.array(id), same: z.number().int(), opposite: z.number().int() }).optional(),
         /**
@@ -1132,7 +1136,8 @@ export const scenarioFileSchema = z
       const axes = new Set(s.persona.axes.map((x) => x.id));
       if (axes.size !== s.persona.axes.length) problem("persona.axes: 중복된 id가 있다");
       for (const t of s.traits) for (const ax of Object.keys(t.persona ?? {})) if (!axes.has(ax)) problem(`traits.${t.id}.persona: 알 수 없는 성격 축 ${ax}`);
-      const used = [s.persona.blowup?.axis, s.persona.leak?.axis, s.persona.romance?.axis, ...(s.persona.rapport?.axes ?? []), ...Object.keys(s.persona.fill ?? {})];
+      for (const e of s.persona.edges) for (const m of e.moves) if (!s.moves.some((x) => x.id === m)) problem(`persona.edges: 알 수 없는 스킬 ${m}`);
+      const used = [s.persona.blowup?.axis, s.persona.leak?.axis, s.persona.hear?.axis, ...s.persona.edges.map((e) => e.axis), s.persona.romance?.axis, ...(s.persona.rapport?.axes ?? []), ...Object.keys(s.persona.fill ?? {})];
       for (const ax of used) if (ax && !axes.has(ax)) problem(`persona: 알 수 없는 성격 축 ${ax}`);
     } else if (s.traits.some((t) => t.persona)) problem("traits의 persona는 persona(성격 축)가 있을 때만 쓴다");
     if (s.body?.fear?.nerves_from) {

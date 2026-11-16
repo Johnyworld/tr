@@ -5,7 +5,7 @@ import { loadContent } from "../content/loader.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { describePlayerState } from "./context.ts";
-import { parsePersona, personaOf, rapportImpression, rollBlowup, rollLeak, romanceShift } from "./persona.ts";
+import { parsePersona, personaCheckParts, personaOf, rapportImpression, rollBlowup, rollHear, rollLeak, romanceShift } from "./persona.ts";
 import { executeTool } from "./tools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 
@@ -115,6 +115,38 @@ describe("성격 축", () => {
     // 과묵하면 새지 않는다
     env.me().persona = { talk: -1 };
     expect(rollLeak(env.ctx, npc.id)).toBeNull();
+  });
+
+  it("수다스러우면 상대도 털어놓는다: 그 인물이 아는 사실 하나를 얻어듣는다 (12-107)", () => {
+    const env = setup(() => 0.01);
+    env.me().persona = { talk: 2 };
+    const npc = withNpc(env, Object.keys(content.npcs)[0]!);
+    const st = env.store.getState();
+    env.ctx.store.append({ type: "belief_added", characterId: npc.id, belief: { id: `b_${st.nextBeliefNo}`, fact: "북쪽 다리 밑에 배가 한 척 묶여 있다", source: "seen", accuracy: "exact", learnedAt: st.time } });
+    const mine = () => (env.store.getState().beliefs[env.me().id] ?? []).map((b) => b.fact);
+    // 그 인물이 아는 것이 하나뿐이 되게 (주인공이 이미 아는 것은 고르지 않는다)
+    for (const b of env.store.getState().beliefs[npc.id] ?? []) if (b.fact !== "북쪽 다리 밑에 배가 한 척 묶여 있다" && !mine().includes(b.fact)) env.ctx.store.append({ type: "belief_added", characterId: env.me().id, belief: { ...b, id: `b_${env.store.getState().nextBeliefNo}` } });
+    const heard = rollHear(env.ctx, npc.id);
+    expect(heard?.line).toContain("🎭 수다스러움 2: 말이 오가다");
+    expect(mine()).toContain("북쪽 다리 밑에 배가 한 척 묶여 있다");
+    // 더 들을 것이 없으면 아무 일 없다. 과묵하면 굴리지 않는다
+    expect(rollHear(env.ctx, npc.id)).toBeNull();
+    env.me().persona = { talk: -1 };
+    expect(rollHear(env.ctx, npc.id)).toBeNull();
+  });
+
+  it("다혈질이면 위협 판정에 +1이 붙고, 판정 줄에 성격 이름으로 보인다 (12-107)", () => {
+    const env = setup(() => 0.01);
+    env.me().persona = { temper: 1 };
+    expect(personaCheckParts(content, env.me(), "intimidate")).toEqual([{ label: "다혈질 1", value: 1 }]);
+    expect(personaCheckParts(content, env.me(), "persuade")).toEqual([]);
+    const out = executeTool("take_action", act({ check: { move: "intimidate", stat: "nerve", difficulty: "normal", harm_on_failure: "none", harm_cause: "" } }), env.ctx);
+    expect(JSON.stringify(out)).toContain("+1(다혈질 1)");
+    const rolled = env.store.events().filter((e) => e.type === "check_rolled").at(-1) as { modifiers: { trait: number } };
+    expect(rolled.modifiers.trait).toBe(1);
+    // 온화하면 붙지 않는다
+    env.me().persona = { temper: -2 };
+    expect(personaCheckParts(content, env.me(), "intimidate")).toEqual([]);
   });
 
   it("GM 상태에 주인공의 성격과 연기 지침, 꼬리표 규칙이 들어간다", () => {

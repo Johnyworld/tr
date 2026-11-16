@@ -477,6 +477,11 @@ persona:
   blowup: { axis: temper, chance: [0.25, 0.5], delta: { trust: 0, affection: -1, respect: 0 } }
   # 장면의 인물과 이야기하면 수다스러움 1이면 10%, 2면 25%로 아는 사실 하나가 새어 나간다
   leak: { axis: talk, chance: [0.1, 0.25] }
+  # 대신 말이 오가면 상대도 털어놓는다: 같은 확률로 그 인물이 아는 사실 하나를 얻어듣는다 (12-107)
+  hear: { axis: talk, chance: [0.1, 0.25] }
+  # 성격의 득 (12-107): 다혈질이면 위협 판정 +1 (발끈하는 손해와 짝)
+  edges:
+    - { axis: temper, moves: [intimidate], bonus: 1 }
   # 처음 만날 때 다정함·원칙 축이 같은 쪽이면 호감 +1, 반대쪽이면 -1 (합 -2~2)
   rapport: { axes: [warmth, principle], same: 1, opposite: -1 }
   # 빈 축 채우기: NPC의 성격 트레잇이 정하지 않은 축은 인물 id에서 이 무게로 뽑는다 (판마다 같다, *임시*).

@@ -138,6 +138,16 @@ export function romanceShift(content: Content, c: Character): number {
 /** 🎭 줄 (판정 줄처럼 GM이 서술 끝에 그대로 옮긴다) */
 const persona = (axis: PersonaAxis, value: number, what: string) => `🎭 ${sideLabel(axis, value)}: ${what}`;
 
+/** 성격의 득 (edges, 12-107): 이 행동에 붙는 판정 보정과 그 이름 (예: 다혈질 위협 +1). 없으면 빈 목록 */
+export function personaCheckParts(content: Content, actor: Pick<Character, "id" | "traits" | "persona">, move: string): { label: string; value: number }[] {
+  const rules = content.scenario.persona;
+  if (!rules?.edges?.length) return [];
+  const values = personaOf(content, actor);
+  return rules.edges
+    .filter((e) => e.moves.includes(move) && (values[e.axis] ?? 0) > 0)
+    .map((e) => ({ label: sideLabel(rules.axes.find((a) => a.id === e.axis)!, values[e.axis]!), value: e.bonus }));
+}
+
 /**
  * 도발당했을 때 발끈하는지 (blowup). 주인공의 +쪽 단계만큼 굴린다. 터지면 상대(target)의 관계가 바뀐다.
  * 돌려주는 줄은 GM이 그대로 옮겨 적는다. 안 터지면 null
@@ -182,4 +192,29 @@ export function rollLeak(ctx: ToolContext, targetId: string | null): string | nu
     belief: { id: `b_${state.nextBeliefNo}`, fact: fact.fact, source: "report", accuracy: fact.accuracy, learnedAt: state.time, ...(fact.topic ? { topic: fact.topic } : {}) },
   });
   return persona(axis, v, `무심코 말해 버렸다 · ${josa(target.name, "이/가")} 알게 됐다: "${fact.fact}"`);
+}
+
+/**
+ * 장면의 인물과 이야기하다 상대가 묻지 않은 말까지 털어놓는지 (hear, 12-107). 주인공의 +쪽 단계만큼 굴린다.
+ * 터지면 그 인물이 아는 사실(믿음, GM에게도 "물으면 말해 줄 수 있다"로 보이는 것) 중 주인공이 모르는 하나를 주인공이 알게 된다. 안 터지면 null
+ */
+export function rollHear(ctx: ToolContext, targetId: string | null): { line: string; fact: string } | null {
+  const rule = ctx.content.scenario.persona?.hear;
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  const target = targetId ? state.characters[targetId] : undefined;
+  if (!rule || !me || me.dead || !target || target.dead || !state.scene.present.includes(target.id)) return null;
+  const axis = ctx.content.scenario.persona!.axes.find((a) => a.id === rule.axis)!;
+  const v = personaOf(ctx.content, me)[rule.axis] ?? 0;
+  if (v <= 0 || ctx.rng() >= rule.chance[v - 1]!) return null;
+  const mine = new Set((state.beliefs[me.id] ?? []).map((b) => b.fact));
+  const theirs = (state.beliefs[target.id] ?? []).filter((b) => !mine.has(b.fact));
+  if (!theirs.length) return null;
+  const fact = theirs[Math.floor(ctx.rng() * theirs.length)]!;
+  ctx.store.append({
+    type: "belief_added",
+    characterId: me.id,
+    belief: { id: `b_${state.nextBeliefNo}`, fact: fact.fact, source: "report", accuracy: fact.accuracy, learnedAt: state.time, ...(fact.topic ? { topic: fact.topic } : {}) },
+  });
+  return { line: persona(axis, v, `말이 오가다 ${josa(target.name, "이/가")} 묻지 않은 말까지 했다: "${fact.fact}"`), fact: fact.fact };
 }

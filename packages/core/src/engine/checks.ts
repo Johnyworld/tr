@@ -3,6 +3,7 @@ import { oppositionParts } from "./opposition.ts";
 import { companionSkillMod } from "../game/companions.ts";
 import { squadFollowBonus } from "./command.ts";
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
+import { personaCheckParts } from "./persona.ts";
 import { attractionCheckBonus, traitSkillMod, traitsOf } from "./traits.ts";
 import { conditionPenalty, moveOf, shownLevel, statLabel, visibleSymptoms } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
@@ -69,12 +70,14 @@ export function rollPlayerCheck(
     { label: "상한", value: capped - (ability + skill + gear.skill) },
   ];
   const target = options.target ? state.characters[options.target] : undefined;
+  // 성격의 득 (12-107): 다혈질은 위협에 +1 같은 것. 끌림처럼 상한 밖의 상황 보정
+  const temperament = personaCheckParts(content, actor, input.move);
   const modifiers = {
     stat: ability,
     skill: capped - ability,
     difficulty: DIFFICULTY_MODIFIER[input.difficulty],
     condition: conditionPenalty(scenario, actor),
-    trait: attractionCheckBonus(content, actor, target, input.move),
+    trait: attractionCheckBonus(content, actor, target, input.move) + temperament.reduce((n, p) => n + p.value, 0),
     gear: gear.penalty,
     opposition: 0,
   };
@@ -130,7 +133,8 @@ export function rollPlayerCheck(
         ...cappedParts,
         { label: DIFFICULTY_LABELS[input.difficulty], value: modifiers.difficulty },
         { label: conditionLabel(scenario, actor), value: modifiers.condition },
-        { label: "끌림", value: modifiers.trait },
+        { label: "끌림", value: modifiers.trait - temperament.reduce((n, p) => n + p.value, 0) },
+        ...temperament,
         ...gear.penaltyParts,
         ...against,
       ], roll.dice, roll.total, CHECK_OUTCOME_LABELS[roll.outcome]),

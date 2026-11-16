@@ -1,5 +1,6 @@
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
-import { rollBlowup, rollLeak } from "./persona.ts";
+import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
+import { rollBlowup, rollHear, rollLeak } from "./persona.ts";
 import { exposeToCold } from "./climate.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
@@ -379,7 +380,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
 
   // 0. 성격이 결과를 남기는 순간 (12-99): 도발당하면 발끈, 장면의 인물과 이야기하면 말이 새어 나갈 수 있다. 줄은 GM이 그대로 옮긴다
   {
-    const moments = [input.provoked ? rollBlowup(ctx, input.target) : null, input.activity?.kind === "talk" ? rollLeak(ctx, input.target) : null].filter((x): x is string => !!x);
+    // 수다는 흘리기도 하고 얻어듣기도 한다 (12-107)
+    const talk = input.activity?.kind === "talk";
+    const blowup = input.provoked ? rollBlowup(ctx, input.target) : null;
+    const leaked = talk ? rollLeak(ctx, input.target) : null;
+    const heard = talk ? rollHear(ctx, input.target) : null;
+    if (heard) displays.push({ type: "belief", fact: heard.fact, sourceLabel: BELIEF_SOURCE_LABELS.report });
+    const moments = [blowup, leaked, heard?.line ?? null].filter((x): x is string => !!x);
     if (moments.length) lines.push("성격 줄 (서술 끝에 그대로 옮겨 적는다. 플레이어가 말하지 않은 반응이니 그 장면을 연출한다):", ...moments.map((m) => `\`${m}\``));
   }
 

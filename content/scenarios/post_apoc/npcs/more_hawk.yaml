@@ -79,7 +79,7 @@
     min_trust: 3
   stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 0, charm: 1, intellect: 2 }
   skills: { first_aid: 1, scavenge: 1, infected_lore: 1, history: 1 }
-  start_inventory: [antibiotics, fever_reducer]
+  start_inventory: [antibiotics, antibiotics, fever_reducer, serum]
   playable: true
   healer: true
   zone: d_clinic

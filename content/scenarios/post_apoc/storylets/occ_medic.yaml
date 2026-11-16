@@ -108,9 +108,8 @@
       effects:
         - take_item: { item: antibiotics }
         - set_flag: om_scratch_hidden
-        # 긁힌 날 바로 쓴 항생제는 감염을 막는다 (굴린 뒤 바로 낫게 한다)
+        # 항생제는 상처가 곪는 것만 막는다. 감염은 떼지 못한다 (혈청뿐, 12-106)
         - npc_body: { who: pt, track: infection, delta: 1, chance: 0.4 }
-        - npc_body: { who: pt, track: infection, delta: -2 }
         - standing: 1
         - relation: { who: pt, axis: trust, delta: 2 }
         - relation: { who: pt, axis: affection, delta: 1 }
@@ -138,7 +137,7 @@
   cast:
     pt: { recall: om_scratched, condition: { track: infection, at_least: fever } }
   setup: 누가 어깨를 흔든다. 같은 숙소 사람이다. "와 봐. {pt:이/가} 이상해." 담요 밑에서 {pt:이/가} 떨고 있다. 이마가 불덩이다. 종아리의 꿰맨 자리 둘레가 검붉게 부었다. 옆 침상들에서 사람들이 하나둘 고개를 든다.
-  ai_direction: 정말 감염이다 (코드가 정한 상태는 발열 이상). 플레이어에게 확정해 말하지는 않는다. 숙소에는 잠든 사람이 많다. 항생제가 듣는 단계는 거의 지났다. 이 사람은 끝까지 철조망이라고 우긴다. 장부에 적지 않은 것이 드러나면 의무병도 같이 문책된다.
+  ai_direction: 정말 감염이다 (코드가 정한 상태는 발열 이상). 플레이어에게 확정해 말하지는 않는다. 숙소에는 잠든 사람이 많다. 항생제로는 늦출 뿐이고, 혈청 없이는 돌이킬 수 없다. 이 사람은 끝까지 철조망이라고 우긴다. 장부에 적지 않은 것이 드러나면 의무병도 같이 문책된다.
   choices:
     - id: tell_now
       label: 상관을 깨워 다 털어놓는다. 장부에 적지 않은 것까지
@@ -156,10 +155,9 @@
       outcomes:
         success:
           - set_flag: om_scratch_done
-          - npc_body: { who: pt, track: infection, delta: -1 }
           - standing: 1
           - relation: { who: pt, axis: trust, delta: 2 }
-          - belief: { fact: "창고에서 밤새 붙들었다. 새벽녘 열이 한 고비 꺾였다. 숙소 사람들은 무엇을 봤는지 서로 묻지 않는다", source: seen }
+          - belief: { fact: "창고에서 밤새 붙들었다. 새벽녘 열이 잠깐 내렸지만 꿰맨 자리는 여전히 뜨겁다. 숙소 사람들은 무엇을 봤는지 서로 묻지 않는다", source: seen }
         partial:
           - set_flag: om_scratch_done
           - faction_morale: { faction: own, delta: -1 }

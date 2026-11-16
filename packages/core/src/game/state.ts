@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 41;
+export const SAVE_SCHEMA_VERSION = 42;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -369,8 +369,12 @@ export function createGameSchemas(s: Scenario) {
         lastHealerDay: z.record(z.string(), z.number().int()),
         /** 트랙별로 마지막으로 바뀐(또는 출혈이 부상을 키운) 때: "인물:트랙" → 시각 (12-91) */
         trackAt: z.record(z.string(), z.number().int()).default({}),
+        /** 감염을 늦추는 약(항생제)이 듣는 하루: 인물 → 날 (그날로 넘어가는 하루치 진행에 듣는다) (12-106) */
+        slowDay: z.record(z.string(), z.number().int()).default({}),
+        /** 약 덕분에 감염이 멈춘 마지막 날: 인물 → 날. 멈춘 다음 날은 진행한다 (절반 속도) */
+        heldDay: z.record(z.string(), z.number().int()).default({}),
       })
-      .default({ lastChangeAt: {}, lastHealerDay: {}, trackAt: {} }),
+      .default({ lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} }),
     /** 오늘의 날씨 (12-3) */
     weather: z.strictObject({ day: z.number().int(), id: z.string() }).nullable().default(null),
     /** 최근 교전 (오래된 것부터, 최대 RECENT_CLASHES). 계승한 캐릭터가 직전 전황을 듣는 데 쓴다 */
@@ -553,6 +557,10 @@ export function createGameSchemas(s: Scenario) {
       /** 부상 트랙이면 회복 기준 시각을 새로 잡는다 */
       harmTrack: z.boolean(),
     }),
+    /** 감염을 늦추는 약을 썼다: day로 넘어가는 하루치 진행에 듣는다 (12-106) */
+    z.strictObject({ type: z.literal("infection_slowed"), targetId: z.string(), day: z.number().int() }),
+    /** 약 덕분에 day로 넘어가며 감염이 퍼지지 않았다 (12-106) */
+    z.strictObject({ type: z.literal("infection_held"), targetId: z.string(), day: z.number().int() }),
     /** (이전 형식) 부상이 나았다. 새 기록은 condition_changed를 쓴다 */
     z.strictObject({
       type: z.literal("harm_healed"),
@@ -806,7 +814,7 @@ export const EMPTY_STATE: GameState = {
   activeStorylet: null,
   lastStoryletAt: null,
   helplessAt: null,
-  recovery: { lastChangeAt: {}, lastHealerDay: {}, trackAt: {} },
+  recovery: { lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} },
   weather: null,
   recentClashes: [],
   chronicle: [],
@@ -1366,6 +1374,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.by === "healer") next.recovery.lastHealerDay[event.targetId] = event.day;
       break;
     }
+    case "infection_slowed":
+      mustGet(next.characters, event.targetId, "캐릭터");
+      next.recovery.slowDay = { ...next.recovery.slowDay, [event.targetId]: event.day };
+      break;
+    case "infection_held":
+      mustGet(next.characters, event.targetId, "캐릭터");
+      next.recovery.heldDay = { ...next.recovery.heldDay, [event.targetId]: event.day };
+      break;
     case "harm_healed": {
       const target = mustGet(next.characters, event.targetId, "캐릭터");
       if (target.dead) throw new Error("사망한 캐릭터는 낫지 않습니다.");

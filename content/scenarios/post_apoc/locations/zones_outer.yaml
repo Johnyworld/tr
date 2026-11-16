@@ -124,7 +124,7 @@
       - { item: recurve_bow, weight: 0.3, qty: [1, 1] }
       - { item: radio, weight: 0.5, qty: [1, 1] }
       - { item: cloth, weight: 2, qty: [1, 2] }
-      - { item: antibiotics, weight: 0.3, qty: [1, 1] }
+      - { item: antibiotics, weight: 0.6, qty: [1, 1] }
 
 - id: rest_stop
   name: 고속도로 휴게소

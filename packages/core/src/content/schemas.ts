@@ -276,7 +276,14 @@ export function createContentSchemas(s: Scenario) {
     /** 사망 후 이 인물로 이어서 플레이할 수 있는지 */
     playable: z.boolean().default(false),
     /** 상인 (기획서 4.8): 날마다 이만큼까지 다시 채운다, 흥정할 때 값에 곱한다 */
-    merchant: z.strictObject({ restock: z.record(contentIdSchema, z.number().int().min(1)), markup: z.number().min(1).max(3).default(1.2) }).optional(),
+    merchant: z
+      .strictObject({
+        restock: z.record(contentIdSchema, z.number().int().min(1)),
+        markup: z.number().min(1).max(3).default(1.2),
+        /** 가끔만 들여오는 귀한 물건: 아이템 → 떨어졌을 때 하루마다 하나 들여올 확률 (12-106) */
+        rare: z.record(contentIdSchema, z.number().min(0).max(1)).default({}),
+      })
+      .optional(),
     /** 떠도는 인물: 날마다 이 구역들 중 한 곳에 있다 (유랑상인 등). 있으면 zone 대신 쓴다 (기획서 7.11) */
     roams: z.array(contentIdSchema).min(1).optional(),
     /** 치료사: 장면에 있으면 치료(take_action.treatment)를 해 줄 수 있다 */

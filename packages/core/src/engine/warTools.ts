@@ -80,10 +80,10 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       displays.push({ type: "belief", fact: sentence(shift.news), sourceLabel: BELIEF_SOURCE_LABELS[source] });
     }
     // 하루가 지난 몸: 배급에 따른 허기, 감염 진행
-    displays.push(...runDailyBody(ctx));
+    displays.push(...runDailyBody(ctx, day));
     // NPC도 낫는다: 저절로, 그리고 무리 의무실의 돌봄 (12-52). 병이 진행되기 전에 돌보므로, 오늘 드러난 열은 하루를 넘긴 뒤에야 의무실이 손쓴다
     displays.push(...runNpcRecovery(ctx));
-    displays.push(...runDailyNpcBody(ctx));
+    displays.push(...runDailyNpcBody(ctx, day));
   }
   return displays;
 }

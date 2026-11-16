@@ -15,6 +15,8 @@
     - { item: water_bottle, chance: 0.5 }
     - { item: kitchen_knife, chance: 0.5 }
     - { item: blanket, chance: 0.3 }
+    - { item: antibiotics, chance: 0.1 }
+    - { item: serum, chance: 0.02 }
   values: { self_interest: 1 }
   profile:
     wants: [바깥에서 헤어진 사람을 다시 찾는 것, 담 안에서 한 번 푹 자는 것, 다시 길을 떠날 채비, 소문으로 듣던 섬에 닿는 것]

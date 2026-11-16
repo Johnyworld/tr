@@ -31,6 +31,12 @@ function tempContent(files: Record<string, string>) {
   // 모닥불 연료도 실제 아이템을 참조한다 (12-98)
   const cold = (scenario.body as Record<string, Record<string, Record<string, unknown>>> | undefined)?.cold?.climate;
   if (cold) delete cold.fire;
+  // 감염을 늦추고 떼는 약도 실제 아이템이다 (12-106)
+  const infection = (scenario.body as Record<string, Record<string, unknown>> | undefined)?.infection;
+  if (infection) {
+    delete infection.slow;
+    delete infection.cure;
+  }
   writeFileSync(join(dir, "scenario.yaml"), stringify(scenario));
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(join(dir, path, ".."), { recursive: true });

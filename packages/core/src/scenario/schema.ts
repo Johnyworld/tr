@@ -685,10 +685,10 @@ export const scenarioFileSchema = z
         healer: z.record(id, z.number().int().min(0)),
         /**
          * 무리의 돌봄 (12-52): 무리에 이 직분(occupation)의 인물이 있으면, 하루마다 무리 자원(resource)을 써서 다친 사람을 돌본다.
-         * 한 사람이 per_medic명까지. 부상 한 단계에 자원 1, 드러난 감염을 떼는 데 infection_cost
+         * 한 사람이 per_medic명까지. 부상 한 단계에 자원 1. 감염은 떼지 못한다 (혈청뿐, body.infection.cure)
          */
         faction_care: z
-          .strictObject({ occupations: z.array(id).min(1), resource: id, per_medic: z.number().int().min(1), infection_cost: z.number().int().min(1) })
+          .strictObject({ occupations: z.array(id).min(1), resource: id, per_medic: z.number().int().min(1) })
           .optional(),
         /** 주인공이 아이템 없이 다른 사람을 돌볼 수 있는 조건 (이 직분이거나 이 스킬이 min 이상), 하루에 한 사람 한 번, 부상 한 단계 */
         first_aid: z.strictObject({ occupations: z.array(id).default([]), skill: id, min: z.number().int() }).optional(),
@@ -825,14 +825,19 @@ export const scenarioFileSchema = z
           })
           .optional(),
         /**
-         * 감염 트랙. 감염체에게 다치면(take_action.check.infected_source) 확률로 두 번째 단계(잠복)가 된다.
-         * 하루마다 한 단계씩 나빠지고, 마지막 단계에서는 하루마다 부상
+         * 감염 트랙. 감염체에게 다치면(take_action.check.infected_source) 상처 종류별 확률로 두 번째 단계(잠복)가 된다.
+         * 하루마다 한 단계씩 나빠지고, 마지막 단계에서는 하루마다 부상 (12-106)
          */
         infection: z
           .strictObject({
             track: id,
-            chance: z.strictObject({ light: z.number().min(0).max(1), heavy: z.number().min(0).max(1) }),
+            /** 감염체에게 입은 상처 종류(wounds.kinds) → 감염될 확률. 없는 종류는 감염되지 않는다 */
+            chance: z.record(id, z.number().min(0).max(1)),
             worst_harm: z.number().int().min(0).default(0),
+            /** 진행을 절반으로 늦추는 약: 하나 쓰면 하루 동안 듣는다 (그사이 하루치 진행이 반 단계) */
+            slow: z.array(id).default([]),
+            /** 감염을 떼는 약. 잠복에도 듣는다 (걸렸는지 몰라도 쓸 수 있다). 있으면 감염을 낫게 하는 것은 이것뿐 (치료사·소모품은 못 뗀다) */
+            cure: z.array(id).default([]),
           })
           .optional(),
         /**
@@ -1115,6 +1120,13 @@ export const scenarioFileSchema = z
       for (const t of Object.keys(effects)) if (!trackIdSet.has(t)) problem(`consumables.${item}: 알 수 없는 상태 트랙 ${t}`);
     }
     for (const t of Object.keys(s.recovery?.healer ?? {})) if (!trackIdSet.has(t)) problem(`recovery.healer: 알 수 없는 상태 트랙 ${t}`);
+    const infection = s.body?.infection;
+    if (infection) {
+      for (const k of Object.keys(infection.chance)) if (!s.wounds?.kinds.some((x) => x.id === k)) problem(`body.infection.chance: 알 수 없는 상처 종류 ${k}`);
+      for (const t of [...Object.keys(s.recovery?.healer ?? {}), ...Object.values(s.consumables).flatMap((e) => Object.keys(e))]) {
+        if (infection.cure.length && t === infection.track) problem(`감염은 혈청(body.infection.cure)으로만 낫는다: recovery.healer·consumables에서 ${t}를 뺀다`);
+      }
+    }
     for (const t of [s.body?.hunger?.track, s.body?.thirst?.track, s.body?.infection?.track, s.body?.cold?.track, s.body?.disease?.track, s.body?.nerves?.track, s.body?.fear?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
     if (s.persona) {
       const axes = new Set(s.persona.axes.map((x) => x.id));

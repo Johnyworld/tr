@@ -196,7 +196,6 @@
         - take_item: { item: bandage }
         - npc_hurt: { who: lover, steps: 1 }
         - npc_heal: { who: lover, steps: 1 }
-        - npc_body: { who: lover, track: infection, delta: -1 }
         - relation: { who: lover, axis: affection, delta: 1 }
         - relation: { who: lover, axis: trust, delta: 2 }
     - id: dress

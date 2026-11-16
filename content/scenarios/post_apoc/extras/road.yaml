@@ -34,6 +34,8 @@
     - { item: pipe_spear, chance: 0.5 }
     - { item: dry_ration, chance: 0.4 }
     - { item: blanket, chance: 0.4 }
+    - { item: antibiotics, chance: 0.1 }
+    - { item: serum, chance: 0.02 }
   values: { loyalty: 1, self_interest: 1 }
   profile:
     wants: [겨울 전에 들어갈 담 안, 바깥으로 나가는 길, 소식이 끊긴 사람의 행방, 혼자 걷지 않는 것]

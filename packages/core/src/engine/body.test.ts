@@ -10,6 +10,7 @@ import { seasonOfDay } from "../sim/season.ts";
 import { initialWarWorld, simulateWarDay } from "../sim/war.ts";
 import { runCommand } from "../commands/commands.ts";
 import { TEST_CONTENT } from "../testing.ts";
+import { maybeInfect } from "./body.ts";
 import { describePlayerState } from "./context.ts";
 import { executeTool } from "./tools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
@@ -40,9 +41,9 @@ function content(): Content {
   );
   c.scenario.body = {
     hunger: { track: "belly", starving_harm: 1 },
-    infection: { track: "rot", chance: { light: 1, heavy: 1 }, worst_harm: 1 },
+    infection: { track: "rot", chance: { bite: 1 }, worst_harm: 1, slow: ["rope"], cure: ["radio"] },
   };
-  c.scenario.consumables = { rope: { belly: 2 }, radio: { rot: 2 } };
+  c.scenario.consumables = { rope: { belly: 2 } };
   c.scenario.war!.ration.levels = [
     { min_days: 10, label: "정량", hunger: -2 },
     { min_days: 1, label: "반쪽 배급", hunger: 1 },
@@ -157,7 +158,7 @@ describe("감염", () => {
     expect(level(env, "rot")).toBe("clean");
   });
 
-  it("하루마다 나빠지고, 악화에 이르면 하루마다 다친다. 약으로 낫는다", () => {
+  it("하루마다 나빠지고, 악화에 이르면 하루마다 다친다. 떼는 약(혈청)으로 낫는다", () => {
     const env = setup(content(), () => 0);
     executeTool("take_action", act({ check: bite }), env.ctx);
     passDays(env, 1);
@@ -169,7 +170,58 @@ describe("감염", () => {
     expect(level(env, "harm")).not.toBe(harmBefore);
     env.store.getState().characters.player!.inventory.radio = 1;
     executeTool("take_action", act({ use_item: "radio" }), env.ctx);
+    expect(level(env, "rot")).toBe("clean");
+  });
+
+  it("떼는 약은 잠복에도 듣고, 걸렸는지 몰라도 쓸 수 있다 (12-106)", () => {
+    const env = setup(content(), () => 0);
+    executeTool("take_action", act({ check: bite }), env.ctx);
     expect(level(env, "rot")).toBe("latent");
+    env.store.getState().characters.player!.inventory.radio = 2;
+    const used = executeTool("take_action", act({ use_item: "radio" }), env.ctx);
+    expect(used.ok && used.resultText).not.toContain("쓸 필요가 없다");
+    expect(level(env, "rot")).toBe("clean");
+    expect(env.store.getState().characters.player!.inventory.radio).toBe(1);
+    // 안 걸렸어도 쓰면 버린 셈이다
+    executeTool("take_action", act({ use_item: "radio" }), env.ctx);
+    expect(env.store.getState().characters.player!.inventory.radio ?? 0).toBe(0);
+  });
+
+  it("늦추는 약을 먹은 날은 하루 멈추고, 이어 먹어도 다음 날은 퍼진다: 절반 속도 (12-106)", () => {
+    const env = setup(content(), () => 0);
+    executeTool("take_action", act({ check: bite }), env.ctx);
+    passDays(env, 1);
+    expect(level(env, "rot")).toBe("fever");
+    const pill = () => {
+      env.store.getState().characters.player!.inventory.rope = 1;
+      const r = executeTool("take_action", act({ use_item: "rope" }), env.ctx);
+      expect(r.ok && r.resultText).toContain("더디게");
+    };
+    pill();
+    passDays(env, 1);
+    expect(level(env, "rot")).toBe("fever");
+    pill();
+    passDays(env, 1);
+    expect(level(env, "rot")).toBe("grave");
+    // 약이 떨어지면 다시 하루마다
+    env.store.getState().characters.player!.conditions.rot = "fever";
+    passDays(env, 1);
+    expect(level(env, "rot")).toBe("grave");
+  });
+
+  it("상처 종류마다 감염 확률이 다르다. 표에 없는 종류는 감염되지 않는다 (12-106)", () => {
+    const c = content();
+    c.scenario.body!.infection!.chance = { bite: 0.6, claw: 0.2 };
+    const roll = (kind: string | null, r: number) => {
+      const env = setup(c, () => r);
+      return maybeInfect(env.ctx, kind) !== null;
+    };
+    expect(roll("bite", 0.5)).toBe(true);
+    expect(roll("claw", 0.5)).toBe(false);
+    expect(roll("claw", 0.1)).toBe(true);
+    expect(roll("blunt", 0)).toBe(false);
+    // 종류를 모르면 가장 위험한 종류로
+    expect(roll(null, 0.5)).toBe(true);
   });
 });
 
@@ -307,13 +359,13 @@ describe("질병", () => {
 describe("숨은 단계가 새지 않는다", () => {
   it("잠복기에 약을 쓰려 하면, 아무 일 없을 때와 똑같이 쓸 필요가 없다고 한다", () => {
     const env = setup();
-    env.store.getState().characters.player!.inventory.radio = 1;
-    const clean = executeTool("take_action", act({ use_item: "radio" }), env.ctx);
+    env.store.getState().characters.player!.inventory.rope = 1;
+    const clean = executeTool("take_action", act({ use_item: "rope" }), env.ctx);
     env.store.getState().characters.player!.conditions.rot = "latent";
-    const latent = executeTool("take_action", act({ use_item: "radio" }), env.ctx);
+    const latent = executeTool("take_action", act({ use_item: "rope" }), env.ctx);
     expect(clean.ok && clean.resultText).toContain("쓸 필요가 없다");
     const first = (o: typeof clean) => (o.ok ? o.resultText.split("\n")[0] : o.error);
     expect(first(latent)).toBe(first(clean));
-    expect(env.store.getState().characters.player!.inventory.radio).toBe(1);
+    expect(env.store.getState().characters.player!.inventory.rope).toBe(1);
   });
 });

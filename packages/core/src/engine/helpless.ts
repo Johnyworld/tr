@@ -98,7 +98,7 @@ export function runHelpless(ctx: ToolContext): ToolDisplayEvent[] {
     const c = changeCondition(ctx, me.id, harmTrack(content.scenario).id, 1, "infected", "쓰러진 사이 감염체에게 물렸다");
     if (c?.display) displays.push(c.display);
     if (!c?.died) {
-      const i = maybeInfect(ctx, "heavy");
+      const i = maybeInfect(ctx, null);
       if (i?.display) displays.push(i.display);
       displays.push(remember(ctx, "정신을 잃은 사이 무언가에게 물어뜯겼다. 몸에 이빨 자국이 남았다"));
     }

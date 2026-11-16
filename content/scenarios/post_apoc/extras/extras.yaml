@@ -148,6 +148,7 @@
     - { item: trade_token }
     - { item: canned_food, chance: 0.5 }
     - { item: cigarettes, chance: 0.5 }
+    - { item: serum, chance: 0.03 }
   values: { self_interest: 1, honesty: 1 }
   profile:
     wants: [장부의 빚을 다 갚는 것, 자기 짐마차를 갖는 것, 이기는 쪽에 서는 것]

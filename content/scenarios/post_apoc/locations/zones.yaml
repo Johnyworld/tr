@@ -167,6 +167,8 @@
     items:
       - { item: fever_reducer, weight: 2, qty: [1, 1] }
       - { item: medkit, weight: 1, qty: [1, 1] }
+      - { item: antibiotics, weight: 1, qty: [1, 1] }
+      - { item: serum, weight: 0.05, qty: [1, 1] }
 
 - id: e_market
   name: 나루상단의 장터
@@ -203,7 +205,8 @@
       - { item: firewood, weight: 1, qty: [1, 2] }
       - { item: fever_reducer, weight: 3, qty: [1, 2] }
       - { item: medkit, weight: 2, qty: [1, 1] }
-      - { item: antibiotics, weight: 1, qty: [1, 1] }
+      - { item: antibiotics, weight: 2, qty: [1, 2] }
+      - { item: serum, weight: 0.05, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }
       - { item: bandage, weight: 2, qty: [1, 2] }
       - { item: cloth, weight: 2, qty: [1, 2] }

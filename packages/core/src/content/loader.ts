@@ -183,7 +183,7 @@ function checkReferences(content: Content): string[] {
       moveRef(`scenario.crafting.${r.id}`, r.move);
       for (const m of [...Object.keys(r.materials), ...r.tools.flat(), r.yields.item]) itemRef(`scenario.crafting.${r.id}`, m);
     }
-    for (const npc of Object.values(content.npcs)) for (const m of Object.keys(npc.merchant?.restock ?? {})) itemRef(`npcs.${npc.id}.merchant`, m);
+    for (const npc of Object.values(content.npcs)) for (const m of [...Object.keys(npc.merchant?.restock ?? {}), ...Object.keys(npc.merchant?.rare ?? {})]) itemRef(`npcs.${npc.id}.merchant`, m);
     for (const f of Object.values(content.factions)) for (const m of Object.keys(f.armory?.items ?? {})) itemRef(`factions.${f.id}.armory`, m);
   }
   for (const k of content.scenario.custom_start?.kin ?? []) {
@@ -266,6 +266,9 @@ function checkReferences(content: Content): string[] {
   if (Object.keys(content.locations).length) for (const z of Object.keys(content.scenario.war?.talk?.rumor?.zones ?? {})) if (!content.locations[z]) problems.push(`war.talk.rumor: 알 수 없는 구역 ${z}`);
   for (const item of Object.keys(content.scenario.consumables)) {
     if (!content.items[item]) problems.push(`scenario.consumables: 알 수 없는 아이템 ${item}`);
+  }
+  for (const item of [...(content.scenario.body?.infection?.slow ?? []), ...(content.scenario.body?.infection?.cure ?? [])]) {
+    if (!content.items[item]) problems.push(`body.infection: 알 수 없는 아이템 ${item}`);
   }
   const battle = content.scenario.battle;
   if (battle) {

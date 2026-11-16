@@ -98,7 +98,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       // 위험한 판정의 일부는 감염체에게서 오는 것으로 (물림·할큄)
       const infected = harm !== "none" && rng() < 0.4;
       const kinds = content.scenario.wounds?.kinds ?? [];
-      const kind = harm === "none" || !kinds.length ? null : infected ? (kinds.find((k) => k.id === "claw") ?? pick(rng, kinds)).id : pick(rng, kinds).id;
+      const infectedKinds = kinds.filter((k) => (content.scenario.body?.infection?.chance[k.id] ?? 0) > 0);
+      const kind = harm === "none" || !kinds.length ? null : pick(rng, infected && infectedKinds.length ? infectedKinds : kinds).id;
       return {
         move: move.id,
         stat: pick(rng, move.stats),

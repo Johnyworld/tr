@@ -18,6 +18,8 @@
     - { item: kitchen_knife }
     - { item: water_bottle }
     - { item: blanket, chance: 0.5 }
+    - { item: antibiotics, chance: 0.15 }
+    - { item: serum, chance: 0.02 }
   values: { mercy: 1, loyalty: 2 }
   profile:
     wants: [겨울을 날 담 안의 자리, 잃어버린 가족을 찾는 것, 혼자가 아닌 것, 뭍이든 섬이든 정착할 곳]

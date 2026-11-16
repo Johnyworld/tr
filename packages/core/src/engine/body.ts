@@ -7,7 +7,6 @@ import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
 import { bodyTraits } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
-import type { HarmSeverity } from "../rules/harm.ts";
 import { harmTrack, shownLevel, trackOf } from "../scenario/scenario.ts";
 import { daysOfStock, rationLevel } from "../sim/war.ts";
 import { seasonAt } from "../sim/season.ts";
@@ -96,14 +95,23 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
   // 모닥불 연료 (12-98)
   const fire = lightFire(ctx, item);
   if (fire) return fire.ok ? { ok: true, lines: fire.lines, displays: [] } : fire;
-  const effects = content.scenario.consumables[item];
-  if (!effects) return { ok: false, error: `${josa(name, "은/는")} 써서 몸이 나아지는 물건이 아니다 (가능: ${Object.keys(content.scenario.consumables).join(", ")}).` };
+  // 감염: 늦추는 약(항생제)과 떼는 약(혈청, 잠복에도 듣는다) (12-106)
+  const infection = content.scenario.body?.infection;
+  const cure = !!infection?.cure?.includes(item);
+  const slow = !!infection?.slow?.includes(item);
+  const effects = content.scenario.consumables[item] ?? {};
+  if (!content.scenario.consumables[item] && !cure && !slow) {
+    const usable = [...new Set([...Object.keys(content.scenario.consumables), ...(infection?.slow ?? []), ...(infection?.cure ?? [])])];
+    return { ok: false, error: `${josa(name, "은/는")} 써서 몸이 나아지는 물건이 아니다 (가능: ${usable.join(", ")}).` };
+  }
   if ((player.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(name, "이/가")} 없다.` };
   // 다른 사람에게 쓴다 (12-52): 장면에 있는 살아 있는 사람만
   const target = targetId && targetId !== player.id ? targetId : player.id;
   if (target !== player.id && (!state.scene.present.includes(target) || state.characters[target]?.dead)) return { ok: false, error: "그 사람이 장면에 없다." };
   // 겉으로 드러난 것만 본다 (숨은 잠복기는 주인공도 모른다)
-  const needed = Object.entries(effects).some(([t, n]) => n > 0 && shownIndex(ctx, state, target, t) > 0);
+  // 혈청은 걸렸는지 몰라도 쓸 수 있다 (안 걸렸으면 버린 셈이다. 쓸 수 있느냐로 잠복이 새지 않게)
+  const needed =
+    cure || Object.entries(effects).some(([t, n]) => n > 0 && shownIndex(ctx, state, target, t) > 0) || (slow && shownIndex(ctx, state, target, infection!.track) > 0);
   if (!needed) return { ok: false, error: `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.` };
   store.append({ type: "item_consumed", holder: player.id, itemId: item, quantity: 1 });
   const leftover = content.items[item]?.used_into;
@@ -115,7 +123,34 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
     if (c?.line) lines.push(c.line);
     if (c?.display) displays.push(c.display);
   }
+  if (infection && slow) {
+    store.append({ type: "infection_slowed", targetId: target, day: dayOf(store.getState().time) + 1 });
+    if (shownIndex(ctx, store.getState(), target, infection.track) > 0) lines.push("약이 듣는 하루 동안은 감염이 더디게 퍼진다.");
+  }
+  if (infection && cure) {
+    const c = changeCondition(ctx, target, infection.track, -levelIndex(ctx, store.getState(), target, infection.track), item, name);
+    if (c?.line) lines.push(c.line);
+    if (c?.display) displays.push(c.display);
+  }
   return { ok: true, lines, displays };
+}
+
+/**
+ * 감염이 하루치 퍼진다 (걸려 있을 때만 부른다). 마지막 단계면 부상.
+ * 늦추는 약이 듣는 동안은 하루 멈추고 하루 퍼진다: 절반 속도 (12-106)
+ */
+function spreadInfection(ctx: ToolContext, characterId: string, day: number): Change | null {
+  const infection = ctx.content.scenario.body!.infection!;
+  const state = ctx.store.getState();
+  const slowed = state.recovery.slowDay[characterId] === day;
+  const heldYesterday = state.recovery.heldDay[characterId] === day - 1;
+  if (slowed && !heldYesterday) {
+    ctx.store.append({ type: "infection_held", targetId: characterId, day });
+    return null;
+  }
+  const track = trackOf(ctx.content.scenario, infection.track);
+  if (levelIndex(ctx, state, characterId, track.id) < track.levels.length - 1) return changeCondition(ctx, characterId, track.id, 1, "infection", "감염이 퍼진다");
+  return infection.worst_harm > 0 ? changeCondition(ctx, characterId, ctx.content.scenario.harm_track, infection.worst_harm, "infection", "감염") : null;
 }
 
 /** 치료사에게 치료받는다 (하루 한 번). 아이템이면 useItem */
@@ -190,15 +225,17 @@ export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
   return displays;
 }
 
-/** 감염체에게 다쳤을 때 감염되는지 (선언한 위험의 크기에 따른 확률) */
-export function maybeInfect(ctx: ToolContext, severity: HarmSeverity | "none"): Change | null {
+/** 감염체에게 다쳤을 때 감염되는지 (상처 종류별 확률, 12-106). kind가 없으면 가장 위험한 종류(물려 뜯김 같은)로 본다 */
+export function maybeInfect(ctx: ToolContext, kind: string | null): Change | null {
   const infection = ctx.content.scenario.body?.infection;
-  if (!infection || severity === "none") return null;
+  if (!infection) return null;
+  const chance = kind ? (infection.chance[kind] ?? 0) : Math.max(0, ...Object.values(infection.chance));
+  if (chance <= 0) return null;
   const state = ctx.store.getState();
   if (levelIndex(ctx, state, state.playerId, infection.track) > 0) return null;
   const me = state.characters[state.playerId];
   const factor = me ? bodyTraits(ctx.content, me).infection : 1;
-  if (ctx.rng() >= Math.min(1, infection.chance[severity] * factor)) return null;
+  if (ctx.rng() >= Math.min(1, chance * factor)) return null;
   return changeCondition(ctx, state.playerId, infection.track, 1, "infection", "감염체에게 입은 상처");
 }
 
@@ -209,7 +246,7 @@ export function maybeInfect(ctx: ToolContext, severity: HarmSeverity | "none"): 
  * - 추위: 계절·날씨만큼 (거점의 불, 방한 장비가 막는다). 마지막 단계면 부상
  * - 질병: 확률로 걸리고(잠복), 드러나고, 배부르고 따뜻하면 확률로 낫고 아니면 깊어진다. 마지막 단계면 부상
  */
-export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
+export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.getState().time)): ToolDisplayEvent[] {
   const { content } = ctx;
   const body = content.scenario.body;
   const war = content.scenario.war;
@@ -251,13 +288,7 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
     const state = ctx.store.getState();
     const track = trackOf(content.scenario, body.infection.track);
     const index = levelIndex(ctx, state, state.playerId, track.id);
-    if (index > 0) {
-      if (index < track.levels.length - 1) {
-        push(changeCondition(ctx, state.playerId, track.id, 1, "infection", "감염이 퍼진다"));
-      } else if (body.infection.worst_harm > 0) {
-        if (push(changeCondition(ctx, state.playerId, harm, body.infection.worst_harm, "infection", "감염"))) return displays;
-      }
-    }
+    if (index > 0 && push(spreadInfection(ctx, state.playerId, day))) return displays;
   }
   // 기온이 있는 월드는 시간대마다 냉기를 쌓는다 (climate.ts, 12-98). 하루 단위 추위는 없는 월드만
   if (body.cold && !body.cold.climate) {
@@ -312,10 +343,9 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
  * NPC의 하루 몸 (기획서 7.7): 감염된 인물은 하루에 한 단계 나빠지고, 마지막 단계면 부상을 입는다 (죽을 수 있다, 코드가 정한다).
  * 장면에 있는 사람의 보이는 변화만 화면에 알린다
  */
-export function runDailyNpcBody(ctx: ToolContext): ToolDisplayEvent[] {
+export function runDailyNpcBody(ctx: ToolContext, day: number = dayOf(ctx.store.getState().time)): ToolDisplayEvent[] {
   const infection = ctx.content.scenario.body?.infection;
   if (!infection) return [];
-  const harm = ctx.content.scenario.harm_track;
   const track = trackOf(ctx.content.scenario, infection.track);
   const displays: ToolDisplayEvent[] = [];
   const start = ctx.store.getState();
@@ -323,12 +353,7 @@ export function runDailyNpcBody(ctx: ToolContext): ToolDisplayEvent[] {
     if (c.id === start.playerId || c.dead || c.away) continue;
     const index = Math.max(0, track.levels.findIndex((l) => l.id === c.conditions[track.id]));
     if (index === 0) continue;
-    const change =
-      index < track.levels.length - 1
-        ? changeCondition(ctx, c.id, track.id, 1, "infection", "감염이 퍼진다")
-        : infection.worst_harm > 0
-          ? changeCondition(ctx, c.id, harm, infection.worst_harm, "infection", "감염")
-          : null;
+    const change = spreadInfection(ctx, c.id, day);
     if (change?.display && ctx.store.getState().scene.present.includes(c.id)) displays.push(change.display);
   }
   return displays;
@@ -592,7 +617,6 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
     show(changeCondition(ctx, c.id, harm.id, -1, "rest", "쉬면서 나음"), c.id);
   }
   const care = recovery.faction_care;
-  const infection = content.scenario.body?.infection;
   if (!care) return displays;
   for (const factionId of Object.keys(store.getState().factions)) {
     const members = npcs().filter((c) => c.factionId === factionId && !c.captive);
@@ -608,16 +632,6 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
         store.append({ type: "faction_resource_changed", factionId, resource: care.resource, delta: -1 });
         show(changeCondition(ctx, c.id, harm.id, -1, "healer", "무리 의무실의 치료"), c.id);
         treated = true;
-      }
-      // 드러난 감염 (잠복은 의무병도 모른다)
-      if (infection) {
-        const t = trackOf(content.scenario, infection.track);
-        const at = t.levels.findIndex((l) => l.id === store.getState().characters[c.id]!.conditions[t.id]);
-        if (at > 0 && !t.levels[at]!.hidden && stock() >= care.infection_cost) {
-          store.append({ type: "faction_resource_changed", factionId, resource: care.resource, delta: -care.infection_cost });
-          show(changeCondition(ctx, c.id, t.id, -at, "healer", "무리 의무실의 약"), c.id);
-          treated = true;
-        }
       }
       if (treated) slots--;
     }

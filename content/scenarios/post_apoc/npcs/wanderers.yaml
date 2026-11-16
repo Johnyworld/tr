@@ -333,7 +333,7 @@
   skills: { first_aid: 2, deceive: 2, persuade: 1, infected_lore: 1 }
   start_inventory: [medkit, fever_reducer, antibiotics, cigarettes, bandage, bandage]
   # 약장수: 약값은 비싸다
-  merchant: { restock: { medkit: 2, fever_reducer: 3, antibiotics: 1, bandage: 4 }, markup: 1.5 }
+  merchant: { restock: { medkit: 2, fever_reducer: 3, antibiotics: 3, bandage: 4 }, markup: 1.5, rare: { serum: 0.08 } }
   playable: false
   healer: true
   roams: [old_town, riverside, e_market, b_base, d_clinic, water_plant]

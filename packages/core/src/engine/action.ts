@@ -441,7 +441,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       if (!harm.fatal && input.check.infected_source && broken) {
         const guard = armorBlocksInfection(ctx);
         if (guard.blocked) lines.push(...guard.lines);
-        else maybeInfect(ctx, input.check.harm_on_failure);
+        else maybeInfect(ctx, input.check.harm_kind ?? null);
       }
       if (harm.fatal) {
         // 연대기 기록 (전투 중이면 그 자리를 원인에 붙인다), 남은 전투는 코드가 굴린다

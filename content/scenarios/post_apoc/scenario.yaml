@@ -734,9 +734,10 @@ recovery:
   # 의식불명에 이만큼(시간) 머물면 정신이 든다 (의식장애로 한 단계). 그사이 더 다치면 다시 센다 (*임시*)
   wake_hours: 6
   # 치료사에게 받으면 (하루 한 번) 트랙별로 낫는 단계
-  healer: { harm: 1, infection: 1, disease: 1, bleeding: 3 }
-  # 무리의 돌봄 (12-52): 의무병 한 사람이 하루 두 명까지, 무리의 의약품으로. 부상 한 단계 1, 드러난 감염 떼기 2
-  faction_care: { occupations: [medic, nurse, doctor], resource: medicine, per_medic: 2, infection_cost: 2 }
+  # 감염은 치료사도 떼지 못한다 (혈청뿐, body.infection.cure)
+  healer: { harm: 1, disease: 1, bleeding: 3 }
+  # 무리의 돌봄 (12-52): 의무병 한 사람이 하루 두 명까지, 무리의 의약품으로 부상 한 단계에 1. 감염은 떼지 못한다
+  faction_care: { occupations: [medic, nurse, doctor], resource: medicine, per_medic: 2 }
   # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
   first_aid: { occupations: [medic, nurse, doctor], skill: first_aid, min: 1 }
 
@@ -775,7 +776,8 @@ wounds:
     - { id: cut, label: 베임 (칼·날붙이·유리), bleeds: true }
     - { id: pierce, label: 찔림 (창·꼬챙이·화살), bleeds: true }
     - { id: gunshot, label: 총상, bleeds: true }
-    - { id: claw, label: 물림·할큄 (이빨·손톱), bleeds: true }
+    - { id: claw, label: 할큄 (손톱), bleeds: true }
+    - { id: bite, label: 물림 (이빨), bleeds: true }
     - { id: blunt, label: 둔기·타박 (몽둥이·주먹·추락), bleeds: false }
     - { id: other, label: 그 밖 (화상·삠·탈진 등), bleeds: false }
   track: bleeding
@@ -789,7 +791,7 @@ wounds:
   blocks_recovery_from: bleeding
   # 옷을 찢어 누르는 맨손 지혈
   staunch_move: first_aid
-  # 감염체에게 다칠 위험인데 종류를 비웠으면 물림·할큄으로 본다. 감염은 피가 나는 상처일 때만 굴린다
+  # 감염체에게 다칠 위험인데 종류를 비웠으면 할큄으로 본다. 감염은 피가 나는 상처일 때만 굴린다
   infected_default: claw
 
 # 의식불명 중 곁의 사람 (12-90, *임시*): 쓰러질 때마다 한 번, 곁에 누가 있느냐로 코드가 정한다
@@ -815,7 +817,8 @@ travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 consumables:
   medkit: { harm: 1, bleeding: 3 }
   bandage: { harm: 1, bleeding: 3 }
-  antibiotics: { harm: 1, infection: 2 }
+  # 항생제는 감염을 떼지 못하고 늦추기만 한다 (body.infection.slow)
+  antibiotics: { harm: 1 }
   canned_food: { hunger: 2 }
   dry_ration: { hunger: 1 }
   water_bottle: { thirst: 2 }
@@ -844,10 +847,15 @@ body:
     refill: { empty_bottle: water_bottle }
     captive_max: thirsty
     suffering_from: parched
+  # 감염 (12-106): 한 번 걸리면 혈청 없이는 낫지 않는다. 하루에 한 단계, 변이까지 닷새쯤. 항생제를 계속 먹으면 열흘쯤
   infection:
     track: infection
-    # 감염체에게 다쳤을 때 감염될 확률 (선언한 위험 크기별)
-    chance: { light: 0.3, heavy: 0.6 }
+    # 감염체에게 입은 상처 종류별 감염 확률 (*임시*). 둔기·그 밖(살갗이 안 찢김)은 감염되지 않는다
+    chance: { claw: 0.2, cut: 0.35, pierce: 0.35, bite: 0.6 }
+    # 하나 먹으면 하루 동안 감염이 절반 속도로 퍼진다
+    slow: [antibiotics]
+    # 감염을 떼는 유일한 약. 잠복에도 듣는다
+    cure: [serum]
   # 추위: 하루마다 계절·날씨의 추위만큼 (방한복은 들고 있으면 1 덜어 준다). 끝까지 가면 얼어 죽는다 (부상 없이)
   cold:
     track: cold

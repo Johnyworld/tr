@@ -29,7 +29,7 @@ describe("NPC의 회복", () => {
     expect(w.state().characters.a_gicheol_scout!.conditions.harm).toBe("light");
   });
 
-  it("무리 의무실이 의약품을 써서 크게 다친 사람과 드러난 감염을 돌본다", () => {
+  it("무리 의무실이 의약품을 써서 크게 다친 사람을 돌본다. 감염은 떼지 못한다 (혈청뿐, 12-106)", () => {
     const w = manager().create("mcp", "role_a_grunt");
     hurt(w, "a_mansu", "critical");
     hurt(w, "a_seoyeon", "fever", "infection");
@@ -37,8 +37,8 @@ describe("NPC의 회복", () => {
     const before = med();
     runNpcRecovery(w.ctx());
     expect(w.state().characters.a_mansu!.conditions.harm).toBe("serious");
-    expect(w.state().characters.a_seoyeon!.conditions.infection).toBe("clean");
-    expect(med()).toBe(before - 3);
+    expect(w.state().characters.a_seoyeon!.conditions.infection).toBe("fever");
+    expect(med()).toBe(before - 1);
   });
 });
 

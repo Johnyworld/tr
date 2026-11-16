@@ -105,7 +105,12 @@ export function StatusApp() {
           <h1 className="hdr-title">{creating ? newGameTitle(status.creation!.view) : (status?.scenarioName ?? "TRPG")}</h1>
           {status?.open && <HeaderDate player={status.player} />}
         </div>
-        {status?.open && status.player.clock?.minute !== undefined && <SunDial clock={status.player.clock} />}
+        {status?.open && status.player.clock?.minute !== undefined && (
+          <div className="hdr-clock">
+            <SunDial clock={status.player.clock} />
+            <HeaderTemp clock={status.player.clock} />
+          </div>
+        )}
         <div className="hdr-right">
           <span className={connected ? "status-live" : "status-live off"} title={connected ? "Claude 세션과 연결됨" : "연결 끊김 (Claude 세션이 닫혔나요?)"}>
             <span className="live-dot" aria-hidden="true" />
@@ -170,19 +175,24 @@ function HeaderDate({ player }: { player: PlayerView }) {
           <Icon name={w.icon ?? "cloud"} size={16} />
         </span>
       )}
-      {c.temperature && (
-        <span
-          className={c.temperature.feels < 0 ? "hdr-temp bad" : c.temperature.feels < 8 ? "hdr-temp warn" : "hdr-temp"}
-          title={`바깥 ${c.temperature.outside}° · 여기서 쉬면 체감 ${c.temperature.feels}° (${c.temperature.detail})`}
-        >
-          {c.temperature.outside}° <span className="muted">체감 {c.temperature.feels}°</span>
-        </span>
-      )}
     </div>
   );
 }
 
 /** 해·달 반원 (12-71): 낮(6~18시)은 해가, 밤은 달이 반원을 따라 움직인다. 가운데 아래에 시각 */
+/** 시간 표시 오른쪽: 바깥 기온과 여기서 쉬면 체감 (12-98) */
+function HeaderTemp({ clock: c }: { clock: NonNullable<PlayerView["clock"]> }) {
+  if (!c.temperature) return null;
+  return (
+    <span
+      className={c.temperature.feels < 0 ? "hdr-temp bad" : c.temperature.feels < 8 ? "hdr-temp warn" : "hdr-temp"}
+      title={`바깥 ${c.temperature.outside}°C · 여기서 쉬면 체감 ${c.temperature.feels}°C (${c.temperature.detail})`}
+    >
+      {c.temperature.outside}°C <span className="muted">체감 {c.temperature.feels}°C</span>
+    </span>
+  );
+}
+
 const DIAL = { w: 62, h: 36, r: 28 };
 function SunDial({ clock }: { clock: NonNullable<PlayerView["clock"]> }) {
   const minute = clock.minute ?? 0;

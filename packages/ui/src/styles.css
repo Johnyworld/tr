@@ -2530,8 +2530,21 @@ body {
 }
 
 /* 기온 (12-98): 바깥 기온과, 여기서 쉬면 체감. 체감이 8° 아래면 노랑, 0° 아래면 빨강 */
+/* 기온은 시간 표시(반원) 오른쪽에 붙여 둔다: 반원은 가운데 그대로, 기온은 반원 높이의 가운데 */
+.hdr-clock {
+  position: relative;
+}
+
+.hdr-clock .hdr-temp {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .hdr-temp {
-  font-size: 13px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .hdr-temp .muted {
@@ -2639,7 +2652,7 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.status-page .status-header .sun-dial {
+.status-page .status-header .hdr-clock {
   position: absolute;
   left: 50%;
   bottom: 8px;

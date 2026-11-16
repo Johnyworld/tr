@@ -113,7 +113,7 @@ export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined):
     // 가족은 서로 이름을 알고, 서로 아낀다 (거의 가장 깊은 사이)
     store.append({ type: "name_learned", characterId: s.playerId, targetId: id });
     store.append({ type: "name_learned", characterId: id, targetId: s.playerId });
-    store.append({ type: "relation_changed", from: id, to: s.playerId, delta: family.bond, reason: "가족" });
+    store.append({ type: "relation_changed", from: id, to: s.playerId, delta: family.bond, reason: "가족", known: true });
     store.append({ type: "relation_changed", from: s.playerId, to: id, delta: family.bond, reason: "가족" });
     for (const other of ids) {
       store.append({ type: "name_learned", characterId: id, targetId: other });
@@ -156,6 +156,7 @@ export function applyStartBonds(ctx: ToolContext, role: RoleContent | undefined)
       to: me,
       delta: { trust: roll(b.trust) + extra, affection: roll(b.affection) + extra, respect: roll(b.respect) + extra },
       reason: "오래 함께 버텨 온 사이",
+      known: true,
     });
   }
 }

@@ -601,7 +601,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("flag_set"), characterId: z.string(), flag: z.string() }),
     z.strictObject({ type: z.literal("flag_cleared"), characterId: z.string(), flag: z.string() }),
     /** 스토리렛 효과 등으로 관계가 바뀌었다 (from이 to를 보는 관계) */
-    z.strictObject({ type: z.literal("relation_changed"), from: z.string(), to: z.string(), delta: relationDeltaSchema, reason: z.string() }),
+    /** known: 주인공이 장면 밖에서도 그 태도를 안다 (가족·오랜 동료처럼 원래 알던 사이) */
+    z.strictObject({ type: z.literal("relation_changed"), from: z.string(), to: z.string(), delta: relationDeltaSchema, reason: z.string(), known: z.boolean().optional() }),
     z.strictObject({ type: z.literal("merit_awarded"), characterId: z.string(), delta: z.number().int(), reason: z.string() }),
     /** 경험치를 얻었다. level은 얻은 뒤의 레벨 (코드가 계산), source가 check면 하루 상한에 센다 */
     z.strictObject({
@@ -1464,7 +1465,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       mustGet(next.characters, event.from, "캐릭터");
       const toward = (next.relations[event.from] ??= {});
       toward[event.to] = applyRelationDelta(toward[event.to] ?? NEUTRAL_RELATION, event.delta);
-      if (event.to === state.playerId && next.scene.present.includes(event.from)) perceive(next, event.from);
+      if (event.to === state.playerId && (event.known || next.scene.present.includes(event.from))) perceive(next, event.from);
       break;
     }
     case "merit_awarded":

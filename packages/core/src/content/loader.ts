@@ -262,6 +262,8 @@ function checkReferences(content: Content): string[] {
     for (const id of Object.keys(climate.season)) if (!content.scenario.seasons?.list.some((x) => x.id === id)) problems.push(`body.cold.climate.season: 알 수 없는 계절 ${id}`);
     for (const id of Object.keys(climate.weather)) if (!content.scenario.weather?.kinds.some((x) => x.id === id)) problems.push(`body.cold.climate.weather: 알 수 없는 날씨 ${id}`);
   }
+  // 구역이 하나도 없는 팩(부분 팩·테스트)은 건너뛴다
+  if (Object.keys(content.locations).length) for (const z of content.scenario.war?.talk?.rumor?.zones ?? []) if (!content.locations[z]) problems.push(`war.talk.rumor: 알 수 없는 구역 ${z}`);
   for (const item of Object.keys(content.scenario.consumables)) {
     if (!content.items[item]) problems.push(`scenario.consumables: 알 수 없는 아이템 ${item}`);
   }

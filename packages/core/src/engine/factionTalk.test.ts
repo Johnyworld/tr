@@ -5,7 +5,7 @@ import { loadContent } from "../content/loader.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { describePlayerState } from "./context.ts";
-import { factionTroubles, troubleAttitude, troubleLine } from "./factionTalk.ts";
+import { factionTroubles, spreadTroubleRumors, troubleAttitude, troubleLine } from "./factionTalk.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 
 /** 무리 형편 (12-105) */
@@ -55,5 +55,21 @@ describe("무리 형편", () => {
     expect(troubleLine(state(), content, mate)).toContain("무리 형편에 대해");
     const stranger = Object.values(state().characters).find((c) => c.factionId && c.factionId !== me().factionId)!;
     expect(troubleLine(state(), content, stranger)).toBeNull();
+  });
+
+  it("다른 무리의 형편은 말이 모이는 곳에서만 소문으로 들리고, 사흘 안에 같은 말은 다시 듣지 않는다", () => {
+    const { store, state, me } = setup();
+    const other = Object.keys(state().factions).find((f) => f !== me().factionId)!;
+    state().factions[other]!.morale = -3;
+    const ctx = { store, rng: () => 0, content };
+    state().playerZone = "south_fields";
+    expect(spreadTroubleRumors(ctx)).toEqual([]);
+    state().playerZone = "e_market";
+    const heard = spreadTroubleRumors(ctx).filter((d) => d.type === "belief");
+    expect(heard.some((d) => d.type === "belief" && d.fact.startsWith(content.factions[other]!.name))).toBe(true);
+    const again = spreadTroubleRumors(ctx).filter((d) => d.type === "belief" && d.fact.startsWith(content.factions[other]!.name));
+    expect(again).toEqual([]);
+    // 우리 무리 것은 소문이 아니라 도는 말로
+    expect(spreadTroubleRumors(ctx).some((d) => d.type === "belief" && d.fact.startsWith(content.factions[me().factionId]!.name))).toBe(false);
   });
 });

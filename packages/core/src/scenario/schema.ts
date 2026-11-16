@@ -584,6 +584,8 @@ export const scenarioFileSchema = z
           .strictObject({
             attitudes: z.array(z.strictObject({ id, label: z.string().min(1), hint: z.string().min(1), traits: z.array(id).min(1) })).min(1),
             default: z.strictObject({ label: z.string().min(1), hint: z.string().min(1) }),
+            /** 다른 무리의 형편이 소문으로 들리는 곳과 하루 확률 (무리마다) */
+            rumor: z.strictObject({ zones: z.array(id).min(1), chance: z.number().min(0).max(1) }).optional(),
           })
           .optional(),
         /** 남은 양 판단 (며칠 치) → 말. min_days 내림차순 */

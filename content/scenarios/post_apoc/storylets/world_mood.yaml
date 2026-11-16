@@ -1,0 +1,262 @@
+# 무리의 형편과 담 밖의 전조 (12-105). 어느 시나리오로 시작해도 열리도록 무리를 가정하지 않는다
+# - tags: [world]. 우리 땅(own_territory)에서만
+# - 형편: 식량이 바닥나 갈 때(own_food_days_lte), 사기가 가라앉았을 때(own_morale_lte)
+# - 전조: 밤·새벽에 담 밖의 기척, 총소리 뒤에 모이는 그림자. 위협은 아직 닥치지 않았다 (정체를 확정하지 않는다)
+
+# ── 형편 ─────────────────────────────────────────
+
+- id: w_mood_hoarding
+  title: 마루 밑의 깡통
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    own_territory: true
+    own_food_days_lte: 7
+    segments: [evening, night]
+  cast:
+    hoarder: { faction: own }
+  setup: 숙소 복도 끝, {hoarder:이/가} 들뜬 마루판을 들어 올리다 당신과 눈이 마주친다. 마루 밑에 {scarce} 깡통 몇 개가 줄지어 있다. 창고가 바닥을 보인다는 말이 돈 지 며칠째다.
+  ai_direction: "{hoarder}은(는) 아이나 아픈 사람 몫이라고 둘러댈 수도, 정말 그럴 수도 있다. 들키면 무리에서 쫓겨날 수 있다는 걸 안다. 깡통이 몇 개인지, 누구 몫인지는 지어내지 않고 대답을 듣는 데까지만 연출한다."
+  choices:
+    - id: look_away
+      label: 못 본 걸로 한다
+      effects:
+        - relation: { who: hoarder, axis: trust, delta: 2 }
+        - belief: { fact: "{hoarder}이(가) 숙소 마루 밑에 깡통을 숨겨 둔 걸 봤지만 모른 척했다", source: seen }
+    - id: share_out
+      label: 나눠 먹자고 설득한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: hoarder, axis: respect, delta: 1 }
+          - faction_morale: { faction: own, delta: 1 }
+          - deed: { summary: "{hoarder}이(가) 숨긴 먹을 것을 모두와 나누게 했다", tags: [loyalty], severity: 1, privacy: semi_private }
+        partial:
+          - relation: { who: hoarder, axis: affection, delta: -1 }
+          - belief: { fact: "{hoarder}은(는) 깡통 절반만 내놓았다. 나머지는 아픈 동생 몫이라고 했다", source: seen }
+        miss:
+          - relation: { who: hoarder, axis: trust, delta: -2 }
+          - belief: { fact: "{hoarder}은(는) 그건 자기 몫이라며 마루판을 도로 덮었다", source: seen }
+    - id: report
+      label: 윗사람에게 알린다
+      effects:
+        - relation: { who: hoarder, axis: trust, delta: -3 }
+        - deed: { summary: "{hoarder}이(가) 먹을 것을 숨긴 것을 윗사람에게 알렸다", tags: [diligence], severity: 2, privacy: semi_private }
+
+- id: w_mood_thin_soup
+  title: 멀건 국
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    own_territory: true
+    own_food_days_lte: 10
+    segments: [morning, evening]
+  cast:
+    diner: { faction: own }
+  setup: 배식 솥의 국이 오늘은 거의 맹물이다. {scarce} 냄새만 겨우 난다. 옆자리의 {diner:이/가} 숟가락을 내려놓고 한숨을 쉰다. "이걸로 오늘 담을 지키라고?"
+  ai_direction: "{diner}의 말은 불평이지만 겁이 더 크다. 창고가 며칠 치 남았는지는 아무도 정확히 모른다 (숫자를 지어내지 않는다)."
+  choices:
+    - id: joke
+      label: 농담으로 받아 준다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: diner, axis: affection, delta: 1 }
+          - faction_morale: { faction: own, delta: 1 }
+        partial:
+          - relation: { who: diner, axis: affection, delta: 1 }
+        miss:
+          - belief: { fact: "{diner}은(는) 농담에 웃지 않았다. 배식 줄이 조용해졌다", source: seen }
+    - id: agree
+      label: 맞장구친다
+      effects:
+        - relation: { who: diner, axis: trust, delta: 1 }
+        - faction_morale: { faction: own, delta: -1 }
+    - id: eat
+      label: 말없이 먹는다
+      effects:
+        - belief: { fact: 멀건 국을 말없이 비웠다. 배식 줄에서 불평이 오갔다, source: seen }
+
+- id: w_mood_leaving_talk
+  title: 불가의 수군거림
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    own_territory: true
+    own_morale_lte: -2
+    segments: [evening, night]
+  cast:
+    talker: { faction: own }
+  setup: 드럼통 불가에 몇 사람이 등을 웅크리고 있다. {talker:이/가} 목소리를 낮춘다. "솔직히 여기 있어 봐야 뭐가 나아져? 남쪽으로 내려가면 받아 주는 데가 있다던데." 다들 불만 쳐다본다.
+  ai_direction: 떠나자는 말은 반쯤은 진심이고 반쯤은 하소연이다. 누군가 붙잡아 주기를 바라는 사람도 있다. 남쪽에 받아 주는 곳이 정말 있는지는 아무도 모른다.
+  choices:
+    - id: hold
+      label: 같이 버티자고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: talker, axis: respect, delta: 1 }
+          - deed: { summary: 무너지던 불가의 사람들을 붙잡았다, tags: [loyalty], severity: 1, privacy: public }
+        partial:
+          - belief: { fact: "불가의 사람들은 고개를 끄덕였지만 {talker}의 눈은 남쪽을 보고 있었다", source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "{talker}은(는) 듣기 좋은 소리 그만하라며 자리를 떴다", source: seen }
+    - id: listen
+      label: 조용히 듣는다
+      effects:
+        - relation: { who: talker, axis: trust, delta: 1 }
+        - belief: { fact: "불가에서 {talker}이(가) 무리를 떠나 남쪽으로 가자는 말을 했다", source: seen }
+    - id: shut_down
+      label: 그런 말은 그만하라고 자른다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: talker, axis: affection, delta: -1 }
+          - deed: { summary: 떠나자는 말을 하던 사람들의 입을 막았다, tags: [diligence], severity: 1, privacy: public }
+        partial:
+          - relation: { who: talker, axis: affection, delta: -1 }
+        miss:
+          - relation: { who: talker, axis: trust, delta: -2 }
+          - faction_morale: { faction: own, delta: -1 }
+
+- id: w_mood_singing
+  title: 누군가의 노래
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    own_territory: true
+    own_morale_lte: -1
+    segments: [evening]
+  cast:
+    singer: { faction: own }
+  setup: 저녁 배식이 끝난 마당, {singer:이/가} 빈 깡통을 두드리며 옛날 노래를 흥얼거린다. 박자가 엉망이다. 몇 사람이 피식 웃고, 누군가는 시끄럽다고 짜증을 낸다.
+  ai_direction: "{singer}은(는) 일부러 밝게 군다. 다들 지쳐 있다는 걸 알기 때문이다. 함께 웃어 줄 사람이 하나라도 있으면 분위기가 풀린다."
+  choices:
+    - id: join
+      label: 같이 부른다
+      effects:
+        - faction_morale: { faction: own, delta: 1 }
+        - relation: { who: singer, axis: affection, delta: 2 }
+    - id: smile
+      label: 웃어 주고 지나간다
+      effects:
+        - relation: { who: singer, axis: affection, delta: 1 }
+    - id: hush
+      label: 소리 좀 낮추라고 한다
+      effects:
+        - relation: { who: singer, axis: affection, delta: -1 }
+
+# ── 담 밖의 전조 ─────────────────────────────────────
+
+- id: w_omen_scratching
+  title: 담을 긁는 소리
+  fright: 1
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    own_territory: true
+    segments: [night, dawn]
+  setup: 잠결에 무언가 담을 긁는 소리가 들린다. 손톱인지 나뭇가지인지. 멎었다가, 조금 옆에서 다시 시작된다. 보초 망루 쪽은 조용하다.
+  ai_direction: 정체는 아직 모른다. 감염체일 수도, 바람에 쓸리는 철사일 수도 있다. 위험은 플레이어가 고른 행동이 부를 때만 판정으로 정한다. 정체를 확정하지 않고 대응을 기다린다.
+  choices:
+    - id: warn
+      label: 보초에게 알린다
+      effects:
+        - belief: { fact: 밤중에 담을 긁는 소리를 듣고 보초에게 알렸다, source: seen }
+    - id: check
+      label: 직접 담 쪽으로 가 본다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: 담 아래 흙에 끌린 자국과 맨발 자국이 있었다. 밖으로 이어진다, source: seen }
+        partial:
+          - belief: { fact: 담 쪽에 갔을 때는 소리가 멎어 있었다. 무언가 비릿한 냄새가 남았다, source: seen }
+        miss:
+          - body: { track: fear, delta: 1 }
+          - belief: { fact: 담 쪽 어둠에서 무언가 움직였다. 정체는 보지 못했다, source: seen }
+    - id: ignore
+      label: 이불을 뒤집어쓴다
+      effects:
+        - belief: { fact: 밤새 담을 긁는 소리를 듣고도 나가 보지 않았다, source: seen }
+
+- id: w_omen_tracks
+  title: 남쪽 담 밑의 발자국
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    own_territory: true
+    segments: [morning]
+  setup: 아침 순찰 길, 남쪽 담 밑 진흙에 발자국이 어지럽게 찍혀 있다. 신발 자국이 아니다. 담을 따라 몇 번이고 오간 흔적이다. 누군가 벌써 수군거린다. "요즘 밤마다 저쪽이 시끄럽더라."
+  ai_direction: 감염체가 담 밖을 맴돈 흔적으로 보이지만 몇인지, 언제였는지는 모른다. 무리 사람들은 불안해하고 소문이 금방 퍼진다. 숫자를 지어내지 않는다.
+  choices:
+    - id: read
+      label: 발자국을 살핀다
+      check: infected_lore
+      outcomes:
+        success:
+          - belief: { fact: 남쪽 담 밑의 발자국은 감염체의 것이다. 담을 따라 빈틈을 찾듯 오갔다, source: seen }
+        partial:
+          - belief: { fact: 남쪽 담 밑에 맨발 자국이 어지러웠다. 사람 것인지 감염체 것인지 확실하지 않다, source: seen }
+        miss:
+          - belief: { fact: 남쪽 담 밑 발자국은 들짐승 것 같았다, source: seen }
+    - id: report
+      label: 윗사람에게 알린다
+      effects:
+        - deed: { summary: 남쪽 담 밑 발자국을 윗사람에게 알렸다, tags: [diligence], severity: 1, privacy: semi_private }
+    - id: calm
+      label: 수군거리는 사람들을 진정시킨다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+        partial:
+          - belief: { fact: 사람들은 진정했지만 오늘 밤 보초를 서겠다는 사람이 줄었다, source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+
+- id: w_omen_after_shots
+  title: 총소리 뒤의 그림자
+  fright: 1
+  tags: [world]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    own_territory: true
+    zone_noise_gte: 2
+    segments: [evening, night]
+  setup: 낮에 울린 총소리가 아직 귀에 남아 있다. 해가 지자 담 너머 공터 끝에 그림자가 하나둘 선다. 다가오지는 않는다. 망루의 보초가 손전등을 껐다 켠다.
+  ai_direction: 총소리가 무언가를 불렀다. 그림자가 몇인지, 감염체인지는 아직 확실하지 않다. 오늘 밤 더 소리를 내면 모여들 수 있다. 정체를 확정하지 않고 대응을 기다린다.
+  choices:
+    - id: douse
+      label: 불과 소리를 줄이자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: 그날 밤은 불을 끄고 숨죽였다. 새벽에 그림자는 흩어져 있었다, source: seen }
+        partial:
+          - belief: { fact: 몇 사람은 불을 끄지 않았다. 그림자 몇이 담 가까이까지 왔다가 돌아갔다, source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: 누군가 겁에 질려 허공에 총을 쏘았다. 그림자가 늘었다, source: seen }
+    - id: watch
+      label: 망루에 올라 지켜본다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: 담 너머의 그림자는 감염체였다. 소리 나는 쪽으로 고개를 돌렸다, source: seen }
+        partial:
+          - belief: { fact: 그림자는 어둠에 섞여 몇인지 셀 수 없었다, source: seen }
+        miss:
+          - body: { track: fear, delta: 1 }
+    - id: rest
+      label: 보초에게 맡기고 눕는다
+      effects:
+        - belief: { fact: 담 너머 그림자 이야기를 듣고도 보초에게 맡기고 잤다, source: seen }

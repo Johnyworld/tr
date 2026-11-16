@@ -1,5 +1,5 @@
 import { roleOf } from "../game/state.ts";
-import { factionTroubles } from "./factionTalk.ts";
+import { factionTroubles, spreadTroubleRumors } from "./factionTalk.ts";
 import { runRomance } from "./romance.ts";
 import { runCaptivity, warCaptures } from "./captivity.ts";
 import type { Content } from "../content/schemas.ts";
@@ -58,6 +58,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       scheduled,
     });
     displays.push(...deliverNews(ctx, result.clashes));
+    // 다른 무리의 형편이 소문으로 (12-99)
+    displays.push(...spreadTroubleRumors(ctx));
     // 무리 사이 싸움의 포로, 포로를 먹이고 부리기 (12-55)
     displays.push(...warCaptures(ctx, result.clashes));
     runCaptivity(ctx);

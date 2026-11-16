@@ -46,6 +46,7 @@
   armed: true
   briefing: 구시가 빈 상가에서 땔감이 될 문짝과 가구, 쓸 만한 물자를 찾아 온다. 해가 지기 전에 돌아온다.
   giver_rank: squad_leader
+  supplies: { fuel: 8 }
   deadline_hours: 10
   requirements:
     - check: scavenge

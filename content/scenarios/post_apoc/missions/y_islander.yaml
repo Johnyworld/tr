@@ -15,6 +15,7 @@
   title: 양식장 그물 걷기
   briefing: 새벽 물때에 양식장 그물을 걷는다. 섬에서 쓸모를 보이는 가장 쉬운 길이다.
   giver_rank: squad_leader
+  supplies: { food: 30 }
   deadline_hours: 10
   requirements:
     - activity: work

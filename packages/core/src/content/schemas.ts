@@ -312,6 +312,8 @@ export function createContentSchemas(s: Scenario) {
     fortifies: z.number().int().min(1).max(2).optional(),
     /** 완수하면 이 세력 클락을 당긴다 (일부 완수는 절반). 전선 임무가 우리 무리의 계획을 앞당긴다 */
     advances: z.strictObject({ clock: contentIdSchema, delta: z.number().int().min(-5).max(5) }).optional(),
+    /** 완수하면 임무를 준 무리의 창고에 이만큼 들어간다 (수색·채집으로 구해 온 몫). 일부 완수는 절반(내림). 플레이어 소지품과는 따로 */
+    supplies: z.partialRecord(idEnum(s.resources.map((r) => r.id)), z.number().int().min(1)).optional(),
   });
 
   const resourceAmounts = z.partialRecord(idEnum(s.resources.map((r) => r.id)), z.number().min(0));

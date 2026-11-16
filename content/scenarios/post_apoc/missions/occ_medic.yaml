@@ -25,6 +25,7 @@
   title: 약 찾으러 나가기
   briefing: 무너진 약국, 버려진 구급차, 빈집의 약상자를 뒤져 쓸 만한 것을 건져 온다. 유통기한은 보지 말고 포장이 뜯겼는지만 본다.
   giver_rank: squad_leader
+  supplies: { medicine: 3 }
   deadline_hours: 12
   requirements:
     - check: sense_danger

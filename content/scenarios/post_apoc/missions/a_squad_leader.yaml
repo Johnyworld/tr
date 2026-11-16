@@ -28,6 +28,7 @@
   armed: true
   briefing: 분대를 이끌고 구시가 상가를 한 블록씩 훑는다. 연료든 통조림이든 겨울에 쓸 것을 찾아 온다. 흩어지지 말고, 둘씩 짝을 지운다.
   giver_rank: officer
+  supplies: { food: 15, fuel: 5 }
   deadline_hours: 12
   requirements:
     - check: tactics

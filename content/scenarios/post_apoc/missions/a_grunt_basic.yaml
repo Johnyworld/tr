@@ -28,6 +28,7 @@
   armed: true
   briefing: 거점 근처 폐건물에서 쓸 만한 물자를 찾아 온다. 해가 지기 전에 돌아온다.
   giver_rank: squad_leader
+  supplies: { food: 8 }
   deadline_hours: 10
   requirements:
     - check: scavenge
@@ -72,6 +73,7 @@
   armed: true
   briefing: 의무실 약이 바닥났다. 옛 시립병원에 들어가 쓸 만한 약을 찾아 온다. 감염체가 많으니 소리를 내지 않는다.
   giver_rank: squad_leader
+  supplies: { medicine: 3 }
   deadline_hours: 14
   requirements:
     - check: stealth
@@ -101,6 +103,7 @@
   buddy: true
   briefing: 붉은연합이 차지한 구역에 몰래 들어가 쌓아 둔 보급품을 털거나 망가뜨린다. 들키면 끝이다.
   giver_rank: squad_leader
+  supplies: { food: 15, ammo: 20 }
   deadline_hours: 16
   requirements:
     - check: stealth

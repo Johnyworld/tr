@@ -25,6 +25,7 @@
   title: 들풀과 버섯 캐기
   briefing: 무너진 담장 너머 빈터에서 먹을 수 있는 풀과 버섯을 캐 온다. 모르는 건 따지 않는다. 해 지기 전에 돌아온다.
   giver_rank: squad_leader
+  supplies: { food: 6 }
   deadline_hours: 10
   requirements:
     - check: sense_danger

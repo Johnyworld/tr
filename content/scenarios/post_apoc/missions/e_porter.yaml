@@ -3,6 +3,7 @@
   title: 정수장 물 길어 나르기
   briefing: 정수장에서 펌프로 길어 올린 물을 통에 채워 장터까지 나른다. 통 하나라도 쏟으면 장부에 빚으로 적힌다.
   giver_rank: squad_leader
+  supplies: { water: 20 }
   repays_debt: 2
   deadline_hours: 10
   requirements:

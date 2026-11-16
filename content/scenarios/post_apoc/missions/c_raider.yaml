@@ -6,6 +6,7 @@
   armed: true
   briefing: 구시가의 옛 상가를 뒤져 오늘 할당량을 채운다. 통조림이든 약이든 연료든 가리지 않는다. 저녁 검수 전에 창고 앞으로 돌아온다.
   giver_rank: squad_leader
+  supplies: { food: 20 }
   deadline_hours: 12
   requirements:
     - check: scavenge
@@ -43,6 +44,7 @@
   armed: true
   briefing: 강변 공장 지대의 버려진 탱크와 창고에서 연료를 퍼 온다. 다른 무리와 마주치면 물러서지 말고 쫓아낸다.
   giver_rank: squad_leader
+  supplies: { fuel: 20 }
   deadline_hours: 14
   requirements:
     - check: scavenge

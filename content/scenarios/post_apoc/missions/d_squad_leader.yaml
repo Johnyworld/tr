@@ -16,6 +16,7 @@
   title: 약국 골목 수색
   briefing: 구시가의 옛 약국 골목을 수비대와 함께 훑는다. 붕대, 소독약, 유효기간이 남은 알약이면 무엇이든. 해 지기 전에 돌아오고, 다친 사람 없이 돌아온다.
   giver_rank: leader
+  supplies: { medicine: 5 }
   deadline_hours: 10
   requirements:
     - check: scavenge

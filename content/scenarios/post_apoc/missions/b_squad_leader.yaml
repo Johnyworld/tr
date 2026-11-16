@@ -6,6 +6,7 @@
   armed: true
   briefing: 분대를 이끌고 구시가 상가를 한 줄씩 훑는다. 겨울에 땔 것과 먹을 것을 찾아 온다. 차영만이 들어간 북쪽 골목은 둘 이상이 아니면 들어가지 않는다. 해가 지기 전에 정문으로 돌아온다.
   giver_rank: officer
+  supplies: { food: 12 }
   deadline_hours: 12
   requirements:
     - check: tactics
@@ -45,6 +46,7 @@
   armed: true
   briefing: 비워 두고 출입구를 막은 동에서 밤마다 무언가 긁는 소리가 난다는 말이 있다. 분대를 둘씩 나눠 계단을 한 층씩 올라가며 훑는다. 아이들이 숨어들 틈이 있으면 막는다.
   giver_rank: officer
+  supplies: { food: 8 }
   deadline_hours: 10
   requirements:
     - check: tactics
@@ -72,6 +74,7 @@
   armed: true
   briefing: 지하 교실 아이 둘이 열이 내리지 않는다. 옛 시립병원 약국 쪽에 해열제가 남았는지 뒤져 온다. 병동 안쪽은 감염체가 모이는 곳이다. 약국 너머로는 들어가지 않는다.
   giver_rank: officer
+  supplies: { medicine: 3 }
   deadline_hours: 14
   requirements:
     - check: scavenge

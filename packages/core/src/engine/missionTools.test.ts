@@ -85,6 +85,23 @@ describe("임무 수행과 보고", () => {
     expect(evaluateMission(mission, mission.deadline + 1)).toMatchObject({ late: true, merit: 0 });
   });
 
+  it("구해 오는 일감은 완수하면 상관의 무리 창고에 들어가고, 일부 완수는 절반", () => {
+    const content = structuredClone(TEST_CONTENT);
+    content.missions.m_guard!.supplies = { food: 9 };
+    const store = createTestStore();
+    store.append({ type: "turn_started", turn: 1, input: "" });
+    const env = withLeader({ store, ctx: { store, rng: sixes, content } });
+    runStartOfTurn(env.ctx);
+    const faction = env.store.getState().characters.npc_leader!.factionId;
+    const food = () => env.store.getState().factions[faction]?.resources.food ?? 0;
+    const before = food();
+    executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
+    executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: true, activity: { kind: "guard_duty", until: null } }, env.ctx);
+    const out = executeTool("report_mission", {}, env.ctx);
+    expect(out.ok && out.resultText).toContain("무리 창고에 들어갔다");
+    expect(food()).toBe(before + 9);
+  });
+
   it("보고는 상관이 장면에 있어야 한다", () => {
     const env = withLeader(setup());
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);

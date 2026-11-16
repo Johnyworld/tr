@@ -58,6 +58,7 @@
   title: 구시가 약국 뒤지기
   briefing: 구시가의 옛 약국과 병원 의원 자리를 뒤져 붕대, 소독약, 남은 알약을 찾아 온다. 해 지기 전에 돌아온다.
   giver_rank: squad_leader
+  supplies: { medicine: 4 }
   deadline_hours: 10
   requirements:
     - check: sense_danger
@@ -69,6 +70,7 @@
   title: 시립병원 지하 약제실
   briefing: 남민호와 함께 옛 시립병원에 들어가 지하 약제실 쪽을 살핀다. 감염체가 많으니 소리를 내지 않는다. 무리하지 말고 길만 확인해도 된다.
   giver_rank: squad_leader
+  supplies: { medicine: 8 }
   deadline_hours: 14
   requirements:
     - check: stealth

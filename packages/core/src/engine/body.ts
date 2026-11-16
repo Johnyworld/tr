@@ -327,6 +327,13 @@ export function runDailyNpcBody(ctx: ToolContext): ToolDisplayEvent[] {
 }
 
 /** 지금 몸이 괴로운가 (질병에 걸리기 쉽고 낫기 어렵다): 굶주림·추위는 판정 보정이 있는 단계부터, 목마름은 무리의 물이 하루치보다 적을 때 */
+/** 이 트랙 때문에 판정 보정 -2 이상을 받고 있는가 (굶주림, 오한) */
+function severe(ctx: ToolContext, me: Character, trackId: string | undefined): boolean {
+  if (!trackId) return false;
+  const track = trackOf(ctx.content.scenario, trackId);
+  return (track.levels.find((l) => l.id === me.conditions[trackId])?.penalty ?? 0) <= -2;
+}
+
 function sufferingOf(ctx: ToolContext, state: GameState): { starving: boolean; cold: boolean; thirst: boolean } {
   const s = ctx.content.scenario;
   const me = state.characters[state.playerId]!;
@@ -384,20 +391,30 @@ export function shakeNerves(ctx: ToolContext, steps: number, cause: string): Cha
   return changeCondition(ctx, me.id, nerves.track, steps, "nerves", cause);
 }
 
-/** 하루마다 마음이 가라앉는다: 굶주리거나 얼지 않고, 우리 땅이거나 곁에 사람이 있을 때 */
+/**
+ * 하루마다 마음이 가라앉는다: 굶주리거나 얼지 않으면 확률로, 우리 땅이거나 곁에 사람이 있으면 더 잘 (떠돌이도 천천히 낫는다).
+ * 막는 것은 굶주림·오한(보정 -2) 이상만이다. 허기짐·추움(-1)으로는 막지 않는다
+ */
 export function runDailyNerves(ctx: ToolContext): ToolDisplayEvent[] {
   const nerves = ctx.content.scenario.body?.nerves;
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   if (!nerves || !me || me.dead) return [];
   if (levelIndex(ctx, state, me.id, nerves.track) <= 0) return [];
-  const suffering = sufferingOf(ctx, state);
-  const mine = !!state.playerZone && !!me.factionId && state.zones[state.playerZone]?.owner === me.factionId;
-  if (suffering.starving || suffering.cold || !(mine || state.companions.length > 0)) return [];
-  const chance = nerves.recover.chance + nerves.recover.per_point * (me.stats[nerves.resist.ability] ?? 0);
+  if (severe(ctx, me, ctx.content.scenario.body?.hunger?.track) || severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return [];
+  const { mine, company } = safety(state, me);
+  const chance = nerves.recover.chance + nerves.recover.per_point * (me.stats[nerves.resist.ability] ?? 0) + (mine || company ? nerves.recover.safe : 0);
   if (ctx.rng() >= chance) return [];
-  const c = changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 잠을 잤다" : "곁에 사람이 있었다");
+  const c = changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 하루를 보냈다" : company ? "곁에 사람이 있었다" : "하루를 버텨 냈다");
   return c?.display ? [c.display] : [];
+}
+
+/** 마음이 쉬는 곳: 우리 땅이거나 곁에 동행이 있다 */
+function safety(state: GameState, me: Character): { mine: boolean; company: boolean } {
+  return {
+    mine: !!state.playerZone && !!me.factionId && state.zones[state.playerZone]?.owner === me.factionId,
+    company: state.companions.length > 0,
+  };
 }
 
 /**

@@ -786,7 +786,7 @@ export const scenarioFileSchema = z
           .optional(),
         /**
          * 마음 (12-48): 크게 다치거나 곁의 사람이 죽는 것을 보면 흔들린다. 능력(resist.ability, 냉정)이 높으면 덜 흔들린다.
-         * 굶주리거나 얼지 않고 우리 땅이나 곁에 사람이 있으면 하루마다 확률로 가라앉는다. 부상은 주지 않는다 (판정 보정만)
+         * 굶주리거나 얼지 않으면 하루마다 확률로 가라앉고, 우리 땅이나 곁에 사람이 있으면 더 잘 가라앉는다 (recover.safe). 부상은 주지 않는다 (판정 보정만)
          */
         nerves: z
           .strictObject({
@@ -794,7 +794,7 @@ export const scenarioFileSchema = z
             heavy_harm: z.number().int().min(0),
             witness_death: z.number().int().min(0),
             resist: z.strictObject({ ability: id, per_point: z.number().min(0).max(1) }),
-            recover: z.strictObject({ chance: z.number().min(0).max(1), per_point: z.number().min(0).max(1) }),
+            recover: z.strictObject({ chance: z.number().min(0).max(1), per_point: z.number().min(0).max(1), safe: z.number().min(0).max(1).default(0) }),
           })
           .optional(),
         /**

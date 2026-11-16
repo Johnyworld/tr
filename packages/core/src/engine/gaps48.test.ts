@@ -29,6 +29,34 @@ describe("마음", () => {
     runDailyNerves(calm);
     expect(me().conditions.nerves).toBe("shaken");
   });
+
+  it("혼자 떠돌아도 굶주리거나 얼지 않으면 천천히 가라앉고, 우리 땅이나 동행이 있으면 더 잘 가라앉는다", () => {
+    const w = open("role_l_wanderer", () => 0.99);
+    const me = () => w.state().characters[w.state().playerId]!;
+    me().stats.nerve = 0;
+    w.state().companions = [];
+    shakeNerves(w.ctx(), 1, "test");
+    expect(me().conditions.nerves).toBe("shaken");
+    // 혼자면 15%: 0.2를 굴리면 가라앉지 않는다
+    runDailyNerves({ ...w.ctx(), rng: () => 0.2 });
+    expect(me().conditions.nerves).toBe("shaken");
+    runDailyNerves({ ...w.ctx(), rng: () => 0.1 });
+    expect(me().conditions.nerves).toBe("steady");
+  });
+
+  it("허기짐·추움으로는 막히지 않고, 굶주림·오한이면 가라앉지 않는다", () => {
+    const w = open("role_l_wanderer", () => 0.99);
+    const me = () => w.state().characters[w.state().playerId]!;
+    shakeNerves(w.ctx(), 1, "test");
+    me().conditions.hunger = "hungry";
+    me().conditions.cold = "cold";
+    runDailyNerves({ ...w.ctx(), rng: () => 0.05 });
+    expect(me().conditions.nerves).toBe("steady");
+    shakeNerves(w.ctx(), 1, "test");
+    me().conditions.hunger = "starving";
+    runDailyNerves({ ...w.ctx(), rng: () => 0.05 });
+    expect(me().conditions.nerves).toBe("shaken");
+  });
 });
 
 describe("구역 보강", () => {

@@ -153,6 +153,8 @@ export const scenarioFileSchema = z
               infection: z.number().min(0).optional(),
               /** 저절로 낫는 데 걸리는 날 ± */
               recovery_days: z.number().int().optional(),
+              /** 공포가 오를 때 더하는 단계 (12-95. 겁이 많으면 +1, 담대하면 -1) */
+              fear: z.number().int().optional(),
               /** 내가 한 일이 숨은 목격자에게 들킬 확률 배수 */
               noticed: z.number().min(0).optional(),
               /** 내가 남의 일을 목격할 확률 배수 */
@@ -795,6 +797,36 @@ export const scenarioFileSchema = z
             recover: z.strictObject({ chance: z.number().min(0).max(1), per_point: z.number().min(0).max(1) }),
           })
           .optional(),
+        /**
+         * 공포 (12-95): 그 자리에서 오르고 몇 시간 안에 빠지는 단기 상태. 판정 보정만 준다 (행동을 막지 않는다).
+         * 계기(이야기 fright, 엑스트라 fearsome, 전투, 목격한 죽음, GM의 take_action.fright)가 주는 단계에
+         * 어둠·동행·트레잇·둔감해짐을 더하고 빼며, 능력(resist.ability)으로 한 단계 버틸 수 있다
+         */
+        fear: z
+          .strictObject({
+            track: id,
+            /** GM이 고르는 take_action.fright의 단계 */
+            gm: z.strictObject({ startle: z.number().int().min(0), dread: z.number().int().min(0) }),
+            /** 무리 전투가 붙을 때 */
+            battle: z.number().int().min(0),
+            /** 곁의 사람이 눈앞에서 죽을 때 */
+            witness_death: z.number().int().min(0),
+            /** 이 시간대면 더한다 (어둠) */
+            dark: z.strictObject({ segments: z.array(z.enum(TIME_SEGMENTS)), steps: z.number().int().min(0) }),
+            /** 동행이 곁에 있으면 뺀다 */
+            companion: z.number().int().min(0),
+            /** 한 단계 버틸 확률: 능력 1당 per_point (최대 0.8) */
+            resist: z.strictObject({ ability: id, per_point: z.number().min(0).max(1) }),
+            /** 둔감해짐: 공포를 부른 것을 마주한 횟수가 문턱을 넘을 때마다 오르는 양이 한 단계 준다 */
+            desensitize: z.array(z.number().int().positive()),
+            /** 공포를 부른 것이 장면에 없으면 이 시간마다 한 단계 가라앉는다. 자고 나면 첫 단계 */
+            decay_hours: z.number().positive(),
+            /** 마지막 단계(공황)에 이르면 마음 트랙이 오를 확률 (마음 규칙의 버티기도 거친다) */
+            panic_nerves: z.number().min(0).max(1),
+            /** 마음 트랙이 이 단계 이상이면 공포가 한 단계 더 오른다 */
+            nerves_from: id.optional(),
+          })
+          .optional(),
       })
       .optional(),
     /**
@@ -945,7 +977,11 @@ export const scenarioFileSchema = z
       for (const t of Object.keys(effects)) if (!trackIdSet.has(t)) problem(`consumables.${item}: 알 수 없는 상태 트랙 ${t}`);
     }
     for (const t of Object.keys(s.recovery?.healer ?? {})) if (!trackIdSet.has(t)) problem(`recovery.healer: 알 수 없는 상태 트랙 ${t}`);
-    for (const t of [s.body?.hunger?.track, s.body?.infection?.track, s.body?.cold?.track, s.body?.disease?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
+    for (const t of [s.body?.hunger?.track, s.body?.infection?.track, s.body?.cold?.track, s.body?.disease?.track, s.body?.nerves?.track, s.body?.fear?.track]) if (t && !trackIdSet.has(t)) problem(`body: 알 수 없는 상태 트랙 ${t}`);
+    if (s.body?.fear?.nerves_from) {
+      const nerves = s.condition_tracks.find((t) => t.id === s.body?.nerves?.track);
+      if (!nerves?.levels.some((l) => l.id === s.body!.fear!.nerves_from)) problem(`body.fear.nerves_from: 마음 트랙에 없는 단계 ${s.body.fear.nerves_from}`);
+    }
     for (const track of s.condition_tracks) {
       if (track.levels[0]?.hidden) problem(`condition_tracks.${track.id}: 첫 단계는 숨길 수 없다`);
       for (const l of track.levels) {

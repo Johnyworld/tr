@@ -188,6 +188,7 @@
 
 - id: es_toll_ambush
   title: 끊긴 길값
+  fright: 1
   urgent: true
   tags: [e_squad_leader]
   when:
@@ -495,6 +496,7 @@
 
 - id: es_underpass
   title: 굴다리 밑의 숨소리
+  fright: 1
   tags: [e_squad_leader]
   when:
     zones: [power_plant, riverside]

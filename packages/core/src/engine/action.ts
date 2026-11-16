@@ -1,4 +1,5 @@
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
+import { calmAfterSleep, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { runRoadEvent } from "./storyletTools.ts";
 import { shakeNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
@@ -133,6 +134,14 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .describe("남들이 알면 평판이 달라질 행동일 때만. 이미 기록된 행적은 다시 넣지 않는다"),
     target: z.string().nullable().describe("행동의 상대 인물 id (장면에 있어야 한다). 없으면 null"),
+    fright: z
+      .enum(["none", "startle", "dread"])
+      .default("none")
+      .describe(
+        s.body?.fear
+          ? "이번 턴에 플레이어 캐릭터가 겁먹을 일이 드러났는데 이야기·인물 데이터로 잡히지 않는 순간일 때만: startle 깜짝 놀람(기습, 갑자기 튀어나옴), dread 압도됨(떼, 끔찍한 광경). 오를지·얼마나는 시스템이 정한다. 대부분 none"
+          : "이 월드에서는 쓰지 않는다. none",
+      ),
     move_to: z
       .string()
       .nullable()
@@ -325,6 +334,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const displays: ToolDisplayEvent[] = [];
   let outcome: CheckOutcome | null = null;
 
+  // 0. 겁먹을 일이 드러났으면 공포부터 (이번 판정에 바로 붙는다, 12-95)
+  if (input.fright !== "none" && scenario.body?.fear) {
+    const fear = frighten(ctx, scenario.body.fear.gm[input.fright], FRIGHT_CAUSES[input.fright]);
+    lines.push(...fear.lines);
+    displays.push(...fear.displays);
+  }
+
   // 1. 판정과 선언한 위험
   if (input.check) {
     const roll = rollPlayerCheck(
@@ -469,6 +485,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.activity || input.move_to) displays.push(time.display);
   displays.push(...time.extra);
   lines.push(...bodyLines(time.extra));
+  // 자고 나면 공포가 가라앉는다 (12-95)
+  if (activity === "sleep") {
+    const calm = calmAfterSleep(ctx);
+    lines.push(...calm.lines);
+    displays.push(...calm.displays);
+  }
   // 건너기 시도가 실패하면 물살에 밀려 되돌아온다 (시간과 위험은 이미 치렀다)
   const sweptBack = crossingAttempt && outcome === "miss";
   const escapeFailed = escapeAttempt && outcome === "miss";

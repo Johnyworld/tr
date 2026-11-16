@@ -736,6 +736,8 @@ export function createContentSchemas(s: Scenario) {
     setup: z.string().min(1),
     /** GM 전용 연출 지시 */
     ai_direction: z.string().optional(),
+    /** 열릴 때 주인공의 공포가 오르는 단계 (12-95, 감염체 무리 같은 이야기) */
+    fright: z.number().int().min(0).max(3).optional(),
     choices: z.array(storyletChoice).min(1),
   });
 
@@ -795,6 +797,8 @@ export function createContentSchemas(s: Scenario) {
       .optional(),
     /** 동행하면 주인공의 스킬에 더하는 보정 (예: 개 → 경계 +1). 능력+스킬 상한 안에서 */
     companion_bonus: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(-1).max(2)).optional(),
+    /** 장면에 나타나면 주인공의 공포가 오르는 단계 (12-95). 한꺼번에 셋 이상 나타나면 한 단계 더 */
+    fearsome: z.number().int().min(0).max(3).optional(),
   });
 
   return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location, storylet, extra };

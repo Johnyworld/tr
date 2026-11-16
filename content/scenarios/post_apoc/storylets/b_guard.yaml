@@ -550,6 +550,7 @@
 
 - id: b_fence_drawn
   title: 철망에 매달린 것들
+  fright: 1
   tags: [b_guard]
   repeatable: true
   urgent: true

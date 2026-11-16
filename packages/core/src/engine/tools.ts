@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { fearAfterTool, watchFear, type FearResult } from "./fear.ts";
 import { ROMANCE_TOOLS } from "./romance.ts";
 import { CAPTIVITY_TOOLS } from "./captivity.ts";
 import { carriedWeight, carryCapacity, DEFAULT_WEIGHT, GEAR_TOOLS } from "./gear.ts";
@@ -301,7 +302,15 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
     return { ok: false, error: `입력이 올바르지 않습니다: ${z.prettifyError(parsed.error)}` };
   }
   // 각 tool의 run은 자기 스키마로 파싱된 입력만 받는다
-  return withCheckLines((tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx));
+  const before = watchFear(state);
+  const outcome = (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
+  return withCheckLines(withFear(outcome, fearAfterTool(ctx, before)));
+}
+
+/** 이 tool로 무서운 것이 나타났으면(인물·이야기·전투) 공포가 오른 결과를 붙인다 (12-95) */
+function withFear(outcome: ToolOutcome, fear: FearResult): ToolOutcome {
+  if (!outcome.ok || !fear.lines.length) return outcome;
+  return { ...outcome, resultText: [outcome.resultText, ...fear.lines].filter(Boolean).join("\n"), extra: [...(outcome.extra ?? []), ...fear.displays] };
 }
 
 /** 이번 tool에서 굴린 판정의 한 줄(🎲)을 결과 끝에 붙인다. GM은 이 줄을 고치지 않고 서술 끝에 옮겨 적는다 */

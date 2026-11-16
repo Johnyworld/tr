@@ -230,6 +230,7 @@
 
 - id: infected_at_wall
   title: 담장 틈의 감염체
+  fright: 1
   urgent: true
   tags: [grunt]
   repeatable: true

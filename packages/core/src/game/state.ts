@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 38;
+export const SAVE_SCHEMA_VERSION = 39;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -274,6 +274,8 @@ export function createGameSchemas(s: Scenario) {
       .default({ mature: false, dialogue: "novel" }),
     /** 캐릭터별 메모 (12-75). 플레이어가 적는 기록이라 세계의 사실이 아니다 */
     memos: z.record(z.string(), z.string()).default({}),
+    /** 공포를 부른 것을 마주한 횟수 (12-95, 캐릭터마다). 쌓이면 둔감해진다 */
+    fearExposure: z.record(z.string(), z.number().int()).default({}),
     /** 구역에 맡겨 둔 물건 (구역 id → 아이템 → 수량). 그 구역을 떠날 때 돌려받는다 (12-54) */
     deposits: z.record(z.string(), z.record(z.string(), z.number().int().positive())).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
@@ -398,6 +400,7 @@ export function createGameSchemas(s: Scenario) {
     /** 수위를 정한다 (새 게임에서, 또는 플레이어가 바꾸면, 12-57) */
     z.strictObject({ type: z.literal("content_options_set"), mature: z.boolean().optional(), dialogue: z.enum(["novel", "script"]).optional() }),
     z.strictObject({ type: z.literal("memo_written"), characterId: z.string(), text: z.string().max(4000) }),
+    z.strictObject({ type: z.literal("fear_exposed"), characterId: z.string() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
     z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()) }),
     z.strictObject({ type: z.literal("player_released"), returned: z.boolean() }),
@@ -733,6 +736,7 @@ export const EMPTY_STATE: GameState = {
   lastRoute: null,
   options: { mature: false, dialogue: "novel" },
   memos: {},
+  fearExposure: {},
   romances: {},
   flirtDay: {},
   deposits: {},
@@ -1072,6 +1076,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "memo_written":
       next.memos = { ...next.memos, [event.characterId]: event.text };
+      return next;
+    case "fear_exposed":
+      next.fearExposure = { ...next.fearExposure, [event.characterId]: (next.fearExposure[event.characterId] ?? 0) + 1 };
       return next;
     case "content_options_set":
       next.options = {

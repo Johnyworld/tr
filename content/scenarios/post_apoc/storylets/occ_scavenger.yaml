@@ -90,6 +90,7 @@
 
 - id: occ_sc_pinned_mate
   title: 꺼진 바닥
+  fright: 1
   tags: [occ_scavenger]
   urgent: true
   when:

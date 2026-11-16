@@ -11,6 +11,7 @@ import { runStorylets } from "./storyletTools.ts";
 import { runNaturalRecovery } from "./body.ts";
 import { runHelpless } from "./helpless.ts";
 import { runBleeding } from "./bleeding.ts";
+import { runFearDecay } from "./fear.ts";
 import { rollWeather } from "../sim/weather.ts";
 import { dayOf } from "../rules/time.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
@@ -63,5 +64,7 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const storylets = runStorylets(ctx);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
   const healed = runNaturalRecovery(ctx);
-  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed];
+  // 무서운 것이 장면에 없으면 공포가 가라앉는다 (12-95)
+  const calmed = runFearDecay(ctx);
+  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed, ...calmed];
 }

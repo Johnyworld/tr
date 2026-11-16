@@ -46,6 +46,7 @@
 
 - id: w_first_snow_tracks
   title: 눈 위의 맨발
+  fright: 1
   tags: [world]
   when:
     weather: [snow]

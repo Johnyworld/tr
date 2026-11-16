@@ -313,6 +313,7 @@
 
 - id: rd_infected_pack
   title: 길을 막은 무리
+  fright: 2
   tags: [road]
   repeatable: true
   cooldown_days: 3
@@ -527,6 +528,7 @@
 
 - id: rd_subway_tunnel
   title: 환승역 터널
+  fright: 1
   tags: [road]
   repeatable: true
   cooldown_days: 8
@@ -716,6 +718,7 @@
 
 - id: rd_night_road
   title: 밤길의 발소리
+  fright: 1
   tags: [road]
   repeatable: true
   cooldown_days: 3

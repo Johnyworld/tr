@@ -54,6 +54,7 @@
 
 - id: zo1_sub_shutter
   title: 셔터 너머의 소리
+  fright: 1
   tags: [world]
   when:
     zones: [subway_hub]
@@ -160,6 +161,7 @@
 
 - id: zo1_sub_tunnel
   title: 남쪽 터널
+  fright: 1
   tags: [world]
   when:
     zones: [subway_hub]

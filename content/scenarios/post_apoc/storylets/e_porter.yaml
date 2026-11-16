@@ -46,6 +46,7 @@
 
 - id: e_road_ambush
   title: 강변 길의 검댕 얼굴들
+  fright: 1
   urgent: true
   tags: [e_porter]
   when:

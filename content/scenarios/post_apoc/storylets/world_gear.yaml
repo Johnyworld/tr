@@ -3,6 +3,7 @@
 
 - id: wg_gunshot_wave
   title: 총소리를 듣고 온 것들
+  fright: 2
   tags: [world]
   urgent: true
   repeatable: true

@@ -1,4 +1,5 @@
 import { onLoverDeath } from "./romance.ts";
+import { frighten } from "./fear.ts";
 import { shakeNerves } from "./body.ts";
 import { z } from "zod";
 import type { Content, NpcContent } from "../content/schemas.ts";
@@ -147,6 +148,11 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
   const nerves = content.scenario.body?.nerves;
   if (nerves && (state.scene.present.includes(id) || state.companions.includes(id)) && !state.characters[id]?.extra?.template?.includes("infected")) {
     shakeNerves(ctx, nerves.witness_death, `${dead}이(가) 눈앞에서 죽었다`);
+  }
+  // 눈앞의 죽음은 공포도 부른다 (12-95)
+  const fear = content.scenario.body?.fear;
+  if (fear && (state.scene.present.includes(id) || state.companions.includes(id)) && !state.characters[id]?.extra?.template?.includes("infected")) {
+    frighten(ctx, fear.witness_death, `${dead}이(가) 눈앞에서 죽었다`);
   }
   for (const t of tiesOf(state, content, id)) {
     if (t.kind === "rival") continue;

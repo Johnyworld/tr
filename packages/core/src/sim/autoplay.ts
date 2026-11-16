@@ -142,6 +142,9 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
         tool("take_action", { ...base, intent: choice.label, check: check(move, "none") });
         // 판정하는 사이 시간이 흘러 이야기가 지나갔거나 다른 이야기로 바뀌었으면 고르지 않는다
         if (world.state().activeStorylet?.id !== storylet.id) continue;
+        // 그 판정으로 죽거나 정신을 잃었으면 고르지 않는다 (다음 턴에 의식불명 처리)
+        const after = world.state().characters[world.state().playerId];
+        if (!after || after.dead || incapacitatingSymptom(content.scenario, after)) continue;
       }
       const out = tool("resolve_storylet", { choice_id: choice.id });
       if (!out.ok && !out.error.includes("진행 중인 이야기가 없다")) {

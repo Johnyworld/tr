@@ -292,7 +292,7 @@ export function runDailyBody(ctx: ToolContext): ToolDisplayEvent[] {
       push(changeCondition(ctx, me.id, track.id, 1, "disease", "병이 드러났다"));
     } else {
       const resting = !suffering.starving && !suffering.cold;
-      const recover = resting ? Math.max(0, disease.recover.chance + disease.recover.per_point * vitality) : 0;
+      const recover = resting ? Math.max(0, disease.recover.chance + disease.recover.per_point * vitality + bodyTraits(content, me).diseaseRecover) : 0;
       const roll = ctx.rng();
       if (roll < recover) {
         // 나으면 숨은 단계를 건너뛰고 한 단계씩 (위중 → 앓음 → 없음)

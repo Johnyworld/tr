@@ -124,4 +124,13 @@ describe("공포", () => {
     expect(env.fear()).toBe("tense");
     if (out.ok) expect(out.resultText).toContain("공포");
   });
+
+  it("감염체 지식이 있으면 감염체가 부른 공포는 한 단계 덜 오른다 (다른 공포는 그대로)", () => {
+    const env = setup();
+    env.me().skills.infected_lore = 1;
+    frighten(env.ctx, 2, "감염체 무리", "infected");
+    expect(env.fear()).toBe("tense");
+    frighten(env.ctx, 1, "매복");
+    expect(env.fear()).toBe("scared");
+  });
 });

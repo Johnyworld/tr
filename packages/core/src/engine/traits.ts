@@ -41,6 +41,7 @@ export function bodyTraits(content: Content, c: Character) {
     disease: product(ts.map((t) => t.effects.disease ?? 1)),
     infection: product(ts.map((t) => t.effects.infection ?? 1)),
     recoveryDays: sum(ts.map((t) => t.effects.recovery_days ?? 0)),
+    diseaseRecover: sum(ts.map((t) => t.effects.disease_recover ?? 0)),
   };
 }
 

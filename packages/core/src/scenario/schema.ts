@@ -63,6 +63,8 @@ export const scenarioFileSchema = z
       .optional(),
     /** 시스템이 특정 역할로 쓰는 행동 */
     move_roles: z.strictObject({ notice: id, stealth: id }),
+    /** 수색을 돕는 지식 (옛 지도·건물 용도를 안다): 이 스킬 1당 찾을 확률 ×(1 + per_level). 0 이하면 보정 없음 */
+    search_lore: z.strictObject({ skill: id, per_level: z.number().min(0).max(1) }).optional(),
     /**
      * 캐릭터 생성 (12-6): 능력은 포인트 구매. 모두 0에서 시작해 points를 나눠 쓴다.
      * cost: 능력 값 → 드는 포인트 (음수면 돌려받는다), max_low: 기본값보다 낮출 수 있는 능력 수. genders: 고를 수 있는 성별
@@ -152,6 +154,8 @@ export const scenarioFileSchema = z
               cold: z.number().int().optional(),
               /** 질병·감염에 걸릴 확률 배수 */
               disease: z.number().min(0).optional(),
+              /** 앓는 병이 하루마다 나을 확률 ± (튼튼하면 빨리 털고 일어난다) */
+              disease_recover: z.number().min(-1).max(1).optional(),
               infection: z.number().min(0).optional(),
               /** 저절로 낫는 데 걸리는 날 ± */
               recovery_days: z.number().int().optional(),
@@ -918,6 +922,8 @@ export const scenarioFileSchema = z
             panic_nerves: z.number().min(0).max(1),
             /** 마음 트랙이 이 단계 이상이면 공포가 한 단계 더 오른다 */
             nerves_from: id.optional(),
+            /** 아는 것은 덜 무섭다: 계기의 fright_tag가 tag이고 이 스킬이 min 이상이면 한 단계 덜 오른다 (감염체 지식 → 감염체) */
+            lore: z.array(z.strictObject({ skill: id, tag: id, min: z.number().int() })).default([]),
           })
           .optional(),
       })
@@ -1019,6 +1025,8 @@ export const scenarioFileSchema = z
     for (const [role, move] of Object.entries(s.move_roles)) {
       if (!moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);
     }
+    if (s.search_lore && !moves.has(s.search_lore.skill)) problem(`search_lore: 알 수 없는 스킬 ${s.search_lore.skill}`);
+    for (const l of s.body?.fear?.lore ?? []) if (!moves.has(l.skill)) problem(`body.fear.lore: 알 수 없는 스킬 ${l.skill}`);
     for (const track of s.condition_tracks) {
       const fatal = track.levels.findIndex((l) => l.fatal);
       if (fatal !== -1 && fatal !== track.levels.length - 1) problem(`condition_tracks.${track.id}: fatal은 마지막 단계여야 한다`);

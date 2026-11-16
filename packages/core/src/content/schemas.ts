@@ -751,6 +751,8 @@ export function createContentSchemas(s: Scenario) {
     ai_direction: z.string().optional(),
     /** 열릴 때 주인공의 공포가 오르는 단계 (12-95, 감염체 무리 같은 이야기) */
     fright: z.number().int().min(0).max(3).optional(),
+    /** 무엇이 부른 공포인지 (예: infected). 그것을 아는 스킬이 공포를 덜어 준다 (body.fear.lore) */
+    fright_tag: contentIdSchema.optional(),
     choices: z.array(storyletChoice).min(1),
   });
 
@@ -812,6 +814,8 @@ export function createContentSchemas(s: Scenario) {
     companion_bonus: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(-1).max(2)).optional(),
     /** 장면에 나타나면 주인공의 공포가 오르는 단계 (12-95). 한꺼번에 셋 이상 나타나면 한 단계 더 */
     fearsome: z.number().int().min(0).max(3).optional(),
+    /** 무엇이 부른 공포인지 (예: infected) */
+    fright_tag: contentIdSchema.optional(),
   });
 
   return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location, storylet, extra };

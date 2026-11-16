@@ -31,7 +31,7 @@ export const FRIGHT_CAUSES = { startle: "깜짝 놀랐다", dread: "두려움에
 /**
  * 주인공의 공포가 오른다. base: 계기가 주는 단계. 버텼으면 그렇다고 알린다 (GM이 서술에 쓴다)
  */
-export function frighten(ctx: ToolContext, base: number, cause: string): FearResult {
+export function frighten(ctx: ToolContext, base: number, cause: string, tag?: string): FearResult {
   const f = rules(ctx);
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
@@ -44,6 +44,8 @@ export function frighten(ctx: ToolContext, base: number, cause: string): FearRes
   if (activeCompanions(state).length > 0) steps -= f.companion;
   steps += traitsOf(ctx.content, me).reduce((n, t) => n + (t.effects.fear ?? 0), 0);
   steps -= f.desensitize.filter((n) => exposure >= n).length;
+  // 아는 것은 덜 무섭다 (감염체 지식 → 감염체)
+  if (tag && f.lore.some((l) => l.tag === tag && (me.skills[l.skill] ?? -9) >= l.min)) steps -= 1;
   const nerves = ctx.content.scenario.body?.nerves;
   if (f.nerves_from && nerves) {
     const from = trackOf(ctx.content.scenario, nerves.track).levels.findIndex((l) => l.id === f.nerves_from);
@@ -125,22 +127,24 @@ export function fearAfterTool(ctx: ToolContext, before: FearWatch): FearResult {
   const f = rules(ctx);
   if (!f) return EMPTY;
   const state = ctx.store.getState();
-  const triggers: { steps: number; cause: string }[] = [];
+  const triggers: { steps: number; cause: string; tag?: string }[] = [];
 
   const arrivals = state.scene.present.filter((id) => !before.present.has(id) && fearsomeOf(ctx, state, id) > 0);
   if (arrivals.length) {
     const steps = Math.max(...arrivals.map((id) => fearsomeOf(ctx, state, id))) + (arrivals.length >= 3 ? 1 : 0);
     const names = arrivals.map((id) => state.characters[id]!.name);
-    triggers.push({ steps, cause: `${names.slice(0, 3).join(", ")}${names.length > 3 ? ` 외 ${names.length - 3}` : ""}이(가) 나타났다` });
+    const scariest = arrivals.reduce((a, b) => (fearsomeOf(ctx, state, b) > fearsomeOf(ctx, state, a) ? b : a));
+    const tag = ctx.content.extras[state.characters[scariest]!.extra?.template ?? ""]?.fright_tag;
+    triggers.push({ tag, steps, cause: `${names.slice(0, 3).join(", ")}${names.length > 3 ? ` 외 ${names.length - 3}` : ""}이(가) 나타났다` });
   }
   const storylet = state.activeStorylet?.id;
   if (storylet && storylet !== before.storylet) {
     const s = ctx.content.storylets[storylet];
-    if (s?.fright) triggers.push({ steps: s.fright, cause: s.title });
+    if (s?.fright) triggers.push({ steps: s.fright, cause: s.title, tag: s.fright_tag });
   }
   if (state.battle && !before.battle && f.battle > 0) triggers.push({ steps: f.battle, cause: "전투가 붙었다" });
 
   if (!triggers.length) return EMPTY;
   const top = triggers.reduce((a, b) => (b.steps > a.steps ? b : a));
-  return frighten(ctx, top.steps, top.cause);
+  return frighten(ctx, top.steps, top.cause, top.tag);
 }

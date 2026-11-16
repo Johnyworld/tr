@@ -314,6 +314,7 @@
 - id: rd_infected_pack
   title: 길을 막은 무리
   fright: 2
+  fright_tag: infected
   tags: [road]
   repeatable: true
   cooldown_days: 3

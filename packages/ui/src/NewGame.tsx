@@ -689,7 +689,7 @@ function PersonaStep({ view, busy, answer }: StepProps) {
   return (
     <>
       <h2 className="newgame-title">어떤 성격인가요?</h2>
-      <p className="newgame-note">가운데(0)는 플레이어 뜻대로, 끝(2)으로 갈수록 캐릭터의 성격이 강하게 드러납니다. GM이 말투와 태도를 이 성격대로 그리고, 다혈질이면 도발에 발끈하거나 수다스러우면 말이 새어 나가기도 합니다.</p>
+      <p className="newgame-note">양 끝은 캐릭터의 성격이 강하게 드러냅니다. GM이 말투와 태도를 이 성격대로 그립니다. 그리고 사회 관계에 영향이 있을 수도 있습니다.</p>
       <div className="persona-table">
         {axes.map((a) => (
           <div key={a.id} className="persona-row">

@@ -105,6 +105,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
             `${incapacitatingSymptom(scenario, player)!.label}: 주인공은 스스로 아무것도 하지 못한다. 말하지도 움직이지도 판정하지도 않는다. 흐릿한 감각(소리, 냄새, 몸의 고통)의 조각만 짧게 서술하고, take_action의 activity(wait 또는 sleep, 전투 중이면 null)로 시간이 흐르게 한다. 이야기는 열리지 않는다. 곁의 사람(우리 편·적)이 주인공에게 무엇을 하는지는 코드가 정하고 take_action 결과로 알린다: 옮기거나 붙잡거나 해치는 일을 서술로 지어내지 않는다. 장면의 치료사가 돌보면 treatment {item: null}`,
           ]
         : []),
+      ...bleedingLine(content, player),
       `소지품: ${describeInventory(content, player.inventory)}`,
       ...(describeGear(content, player) ? [describeGear(content, player)] : []),
       ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감·물건으로만 준다`] : []),
@@ -457,3 +458,18 @@ const MENACE_LABELS = {
   coerce: "몸을 거래 조건으로 요구하는 자",
   assault: "힘으로 덮치려 드는 자 (위협·시도)",
 } as const;
+
+/** 피를 흘리는 중이면 GM에게 지혈하는 길을 알린다 (12-91) */
+function bleedingLine(content: Content, player: Character): string[] {
+  const w = content.scenario.wounds;
+  if (!w || player.dead) return [];
+  const track = content.scenario.condition_tracks.find((t) => t.id === w.track);
+  const at = track ? track.levels.findIndex((l) => l.id === player.conditions[w.track]) : -1;
+  if (!track || at <= 0) return [];
+  const level = track.levels[at]!;
+  const every = w.worsen_hours[level.id];
+  return [
+    `피를 흘리고 있다 (${track.label}): ${every ? `멎지 않으면 ${every}시간마다 부상이 한 단계 나빠지고, 정신이 들거나 저절로 낫지 않는다` : "곧 저절로 멎는다"}. ` +
+      `지혈은 붕대·구급상자(treatment.item), 장면의 치료사(treatment {item: null}), 맨손(treatment {item: null} + check move ${w.staunch_move}, 옷을 찢어 누르기 등)`,
+  ];
+}

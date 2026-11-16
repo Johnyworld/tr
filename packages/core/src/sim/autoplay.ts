@@ -93,15 +93,21 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       else if (!out.error.includes("최고 단계")) stats.errors.push(`learn_skill: ${out.error}`);
       continue;
     }
-    const check = (move: (typeof moves)[number], harm: string) => ({
-      move: move.id,
-      stat: pick(rng, move.stats),
-      difficulty: "normal",
-      harm_on_failure: harm,
-      harm_cause: harm === "none" ? "" : "위험",
-      // 위험한 판정의 일부는 감염체에게서 오는 것으로
-      infected_source: harm !== "none" && rng() < 0.4,
-    });
+    const check = (move: (typeof moves)[number], harm: string) => {
+      // 위험한 판정의 일부는 감염체에게서 오는 것으로 (물림·할큄)
+      const infected = harm !== "none" && rng() < 0.4;
+      const kinds = content.scenario.wounds?.kinds ?? [];
+      const kind = harm === "none" || !kinds.length ? null : infected ? (kinds.find((k) => k.id === "claw") ?? pick(rng, kinds)).id : pick(rng, kinds).id;
+      return {
+        move: move.id,
+        stat: pick(rng, move.stats),
+        difficulty: "normal",
+        harm_on_failure: harm,
+        harm_cause: harm === "none" ? "" : "위험",
+        harm_kind: kind,
+        infected_source: infected,
+      };
+    };
 
     // 전투 중: 쓸 수 있는 효과 하나
     if (s.battle) {

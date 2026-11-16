@@ -36,6 +36,7 @@ import { SQUAD_REPORT_PREFIX } from "./command.ts";
 import { activeMissionOf } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
+import { bleedFromHarm } from "./bleeding.ts";
 import { createStoryletCheck, endActiveStorylet } from "./storyletTools.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -75,6 +76,15 @@ export function createTakeActionSchema(s: Scenario) {
               "플레이어가 고른 행동이 부르는 위험만 선언한다: 이번 턴에 처음 드러나는 상대의 피해는 걸지 않는다 (드러난 위협에 대한 대응은 플레이어가 고른 뒤 판정한다)",
           ),
         harm_cause: z.string().max(120).describe("다친다면 그 원인 한 문장 (위험이 none이면 빈 문자열)"),
+        harm_kind: z
+          .string()
+          .nullable()
+          .default(null)
+          .describe(
+            s.wounds
+              ? `몸의 위험을 걸면 반드시 고르는 상처 종류: ${s.wounds.kinds.map((k) => `${k.id} ${k.label}${k.bleeds ? " (피가 난다)" : ""}`).join(", ")}. 피가 나는 종류로 다치면 시스템이 출혈을 정한다. 위험이 none이면 null`
+              : "이 월드에서는 쓰지 않는다. null",
+          ),
         target_harm: z
           .enum(["none", "light", "heavy"])
           .default("none")
@@ -240,6 +250,14 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       return { ok: false, error: `${effect.label}에는 몸의 위험을 ${effect.min_harm} 이상으로 선언한다 (harm_on_failure).` };
     }
   }
+  // 상처 종류 (12-91): 몸의 위험을 걸면 고른다
+  if (input.check && scenario.wounds) {
+    const kind = input.check.harm_kind;
+    if (input.check.harm_on_failure !== "none" && !kind) {
+      return { ok: false, error: `몸의 위험을 걸면 check.harm_kind(상처 종류)를 고른다: ${scenario.wounds.kinds.map((k) => k.id).join(", ")}` };
+    }
+    if (kind && !scenario.wounds.kinds.some((k) => k.id === kind)) return { ok: false, error: `알 수 없는 상처 종류: ${kind} (${scenario.wounds.kinds.map((k) => k.id).join(", ")})` };
+  }
   const battleAction = validateBattleAction(ctx, input.battle);
   if (typeof battleAction === "string") return { ok: false, error: battleAction };
   // 건너가기 (기획서 9.12): 맞닿지 않은 곳이라도 crossing.from에서는 배로 건넌다. 표(pass_flags)가 없으면 위험한 시도
@@ -322,6 +340,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent);
       lines.push(harm.text);
       displays.push(harm.display);
+      // 피가 나는 상처면 출혈 (12-91)
+      if (!harm.fatal) {
+        const bleed = bleedFromHarm(ctx, start.playerId, input.check.harm_kind);
+        if (bleed?.line) lines.push(`${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.`);
+        if (bleed?.display) displays.push(bleed.display);
+      }
       // 감염체에게 입은 상처는 감염될 수 있다 (잠복기는 캐릭터도 GM도 모른다)
       // 입은 방어구가 물림·긁힘을 막을 수 있다 (기획서 4.8)
       // 크게 다치면 마음도 흔들린다 (12-48)
@@ -371,7 +395,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
 
   // 1-1-1. 치료 (낫는 정도는 시스템이 정한다)
   for (const [request, run] of [
-    [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target)],
+    [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null)],
     [input.use_item, () => useItem(ctx, input.use_item!)],
   ] as const) {
     if (!request) continue;

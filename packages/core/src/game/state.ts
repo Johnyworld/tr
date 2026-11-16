@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 37;
+export const SAVE_SCHEMA_VERSION = 38;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -358,8 +358,13 @@ export function createGameSchemas(s: Scenario) {
     helplessAt: z.number().int().nullable().default(null),
     /** 회복 기준 시각: 마지막으로 다치거나 나은 때, 마지막으로 치료사에게 치료받은 날 */
     recovery: z
-      .strictObject({ lastChangeAt: z.record(z.string(), z.number().int()), lastHealerDay: z.record(z.string(), z.number().int()) })
-      .default({ lastChangeAt: {}, lastHealerDay: {} }),
+      .strictObject({
+        lastChangeAt: z.record(z.string(), z.number().int()),
+        lastHealerDay: z.record(z.string(), z.number().int()),
+        /** 트랙별로 마지막으로 바뀐(또는 출혈이 부상을 키운) 때: "인물:트랙" → 시각 (12-91) */
+        trackAt: z.record(z.string(), z.number().int()).default({}),
+      })
+      .default({ lastChangeAt: {}, lastHealerDay: {}, trackAt: {} }),
     /** 오늘의 날씨 (12-3) */
     weather: z.strictObject({ day: z.number().int(), id: z.string() }).nullable().default(null),
     /** 최근 교전 (오래된 것부터, 최대 RECENT_CLASHES). 계승한 캐릭터가 직전 전황을 듣는 데 쓴다 */
@@ -438,6 +443,8 @@ export function createGameSchemas(s: Scenario) {
     /** 의식불명 중 곁의 사람이 할 일을 정했다 (12-90). outcome: tended 돌봄, carried 옮겨짐, captured 붙잡힘, killed 죽임, bitten 감염체, none 아무 일 없음 */
     z.strictObject({ type: z.literal("helpless_resolved"), outcome: z.enum(["tended", "carried", "captured", "killed", "bitten", "none"]), by: z.string().nullable() }),
     z.strictObject({ type: z.literal("helpless_cleared") }),
+    /** 출혈이 부상을 키웠다: 그 트랙의 시계를 다시 센다 (12-91) */
+    z.strictObject({ type: z.literal("track_clock_reset"), characterId: z.string(), track: z.string() }),
     /** 숨은 관계를 털어놓았다 */
     z.strictObject({ type: z.literal("tie_revealed"), key: z.string() }),
     /** 함께 다니기 시작했다. kind가 없으면 이전 세이브 (코드가 틀로 정한다) */
@@ -783,7 +790,7 @@ export const EMPTY_STATE: GameState = {
   activeStorylet: null,
   lastStoryletAt: null,
   helplessAt: null,
-  recovery: { lastChangeAt: {}, lastHealerDay: {} },
+  recovery: { lastChangeAt: {}, lastHealerDay: {}, trackAt: {} },
   weather: null,
   recentClashes: [],
   chronicle: [],
@@ -955,6 +962,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "helpless_cleared":
       next.helplessAt = null;
+      break;
+    case "track_clock_reset":
+      next.recovery.trackAt = { ...next.recovery.trackAt, [`${event.characterId}:${event.track}`]: state.time };
       break;
     case "family_set":
       next.family = [...event.ids];
@@ -1206,6 +1216,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       target.conditions[event.track] = event.to;
       if (event.fatal) target.dead = true;
       next.recovery.lastChangeAt[event.targetId] = state.time;
+      next.recovery.trackAt = { ...next.recovery.trackAt, [`${event.targetId}:${event.track}`]: state.time };
       mustGet(next.checks, event.checkId, "판정").harmApplied = true;
       break;
     }
@@ -1326,6 +1337,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       target.conditions[event.track] = event.to;
       if (event.fatal) target.dead = true;
       if (event.harmTrack) next.recovery.lastChangeAt[event.targetId] = state.time;
+      next.recovery.trackAt = { ...next.recovery.trackAt, [`${event.targetId}:${event.track}`]: state.time };
       if (event.by === "healer") next.recovery.lastHealerDay[event.targetId] = event.day;
       break;
     }

@@ -10,6 +10,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import { runStorylets } from "./storyletTools.ts";
 import { runNaturalRecovery } from "./body.ts";
 import { runHelpless } from "./helpless.ts";
+import { runBleeding } from "./bleeding.ts";
 import { rollWeather } from "../sim/weather.ts";
 import { dayOf } from "../rules/time.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
@@ -40,7 +41,9 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
     if (s.activeStorylet && me && !me.dead && incapacitatingSymptom(ctx.content.scenario, me)) ctx.store.append({ type: "storylet_expired", storyletId: s.activeStorylet.id });
   }
   // 의식불명 중 곁의 사람이 할 일 (12-90): 돌봄·옮김·붙잡힘·죽임·감염체
+  // 곁의 사람이 먼저 (쓰러진 그 자리에 있던 사람이 지혈부터 한다), 그다음 피를 흘린 만큼 부상이 커진다. 긁힘은 저절로 멎는다 (12-91)
   const helpless = runHelpless(ctx);
+  const bled = runBleeding(ctx);
   runDailyWeather(ctx);
   spreadRumors(ctx);
   // 세력 단위 전쟁 (하루 단위). 자기 무리가 낀 교전 소식은 화면에 보인다
@@ -60,5 +63,5 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const storylets = runStorylets(ctx);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
   const healed = runNaturalRecovery(ctx);
-  return [...helpless, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed];
+  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed];
 }

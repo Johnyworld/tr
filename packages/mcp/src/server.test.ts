@@ -372,7 +372,7 @@ describe("엑스트라 (실제 콘텐츠)", () => {
     const spawned = await call("spawn_extra", { template: "c_sentry_shotgun", label: "엽총 든 보초" });
     expect(spawned.text).toContain("엽총(shotgun)");
     // 부엌칼로는 무거운 피해를 노릴 수 없다 (기획서 4.8). 가벼운 피해로 두 번
-    const strike = { move: "fight", stat: "strength", difficulty: "normal", harm_on_failure: "light", harm_cause: "몸싸움" };
+    const strike = { move: "fight", stat: "strength", difficulty: "normal", harm_on_failure: "light", harm_cause: "몸싸움", harm_kind: "blunt" };
     const heavy = await call("take_action", action({ intent: "보초를 덮친다", target: "ex_1", check: { ...strike, target_harm: "heavy" } }));
     expect(heavy.isError).toBe(true);
     await call("take_action", action({ intent: "보초를 덮친다", target: "ex_1", check: { ...strike, target_harm: "light" } }));
@@ -392,7 +392,7 @@ describe("주인공 사망: 서술 먼저, 상태 화면은 뒤에", () => {
     const { call, app } = await connect(TEST_CONTENT, 0, () => 0); // 1+1 실패
     await call("start_session", { new_world: true });
     const source = { get world() { return app.world; }, scenarioName: "x", get frozenStatus() { return app.frozenStatus; } };
-    const lethal = { move: "fight", stat: "strength", difficulty: "hard", harm_on_failure: "heavy", harm_cause: "목이 졸려" };
+    const lethal = { move: "fight", stat: "strength", difficulty: "hard", harm_on_failure: "heavy", harm_cause: "목이 졸려", harm_kind: "blunt" };
     let out = { text: "" };
     for (let i = 0; i < 3 && !app.world!.isPlayerDead(); i++) out = await call("take_action", action({ intent: "몸싸움", check: lethal }));
     expect(app.world!.isPlayerDead()).toBe(true);
@@ -441,7 +441,7 @@ describe("사망 뒤 새 캐릭터 만들기", () => {
     };
     await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: {}, portrait: null } });
     expect((await call("choose_next_character", { character_id: "new:faction_a:grunt" })).isError).toBe(true); // 살아 있다
-    const lethal = { move: "fight", stat: "strength", difficulty: "very_hard", harm_on_failure: "heavy", harm_cause: "총상" };
+    const lethal = { move: "fight", stat: "strength", difficulty: "very_hard", harm_on_failure: "heavy", harm_cause: "총상", harm_kind: "gunshot" };
     for (let i = 0; i < 4 && !app.world!.isPlayerDead(); i++) await call("take_action", action({ intent: "돌격", check: lethal }));
     expect(app.world!.isPlayerDead()).toBe(true);
     const worldId = app.world!.id;

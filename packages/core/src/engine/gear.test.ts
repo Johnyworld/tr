@@ -82,7 +82,7 @@ describe("방어구와 도구", () => {
     give(w, "kevlar_vest");
     expect(w.executeTool("equip", { item_id: "kevlar_vest", slot: null }).ok).toBe(true);
     expect(gearModifiers(w.content, me(w), "stealth").penalty).toBe(-1);
-    const r = w.executeTool("take_action", act("뛰어든다", { check: chk("endure", "vitality", { harm_on_failure: "heavy", harm_cause: "총상" }) }));
+    const r = w.executeTool("take_action", act("뛰어든다", { check: chk("endure", "vitality", { harm_on_failure: "heavy", harm_cause: "총상", harm_kind: "gunshot" }) }));
     expect(r.ok && r.resultText).toContain("방탄 조끼이(가) 피해를 1단계 막았다");
     expect(me(w).wear.kevlar_vest).toBe(1);
   });

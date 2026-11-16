@@ -42,7 +42,7 @@ describe("주인공이 붙잡힌다", () => {
     capturePlayer(w.ctx(), "faction_c");
     const plain = w.executeTool("take_action", act({ move_to: "c_warehouse" }));
     expect(!plain.ok && plain.error).toContain("갇혀 있다");
-    const out = w.executeTool("take_action", act({ move_to: "c_warehouse", check: { move: "stealth", stat: "agility", difficulty: "normal", harm_on_failure: "heavy", harm_cause: "", infected_source: false, target_harm: "none" } }));
+    const out = w.executeTool("take_action", act({ move_to: "c_warehouse", check: { move: "stealth", stat: "agility", difficulty: "normal", harm_on_failure: "heavy", harm_cause: "", harm_kind: "blunt", infected_source: false, target_harm: "none" } }));
     expect(out.ok).toBe(true);
     const me = w.state().characters[w.state().playerId]!;
     expect(me.captive).toBeNull();

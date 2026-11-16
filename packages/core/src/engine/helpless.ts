@@ -7,6 +7,7 @@ import { disposition } from "../sim/war.ts";
 import { josa, sentence } from "../text.ts";
 import { changeCondition, maybeInfect } from "./body.ts";
 import { baseOf, capturePlayer } from "./captivity.ts";
+import { stopBleeding } from "./bleeding.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -132,10 +133,12 @@ function tend(ctx: ToolContext, cause: string): ToolDisplayEvent[] {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId]!;
   const s = ctx.content.scenario;
+  // 피부터 멎게 한다 (12-91)
+  const out = stopBleeding(ctx, me.id, cause);
   const track = s.condition_tracks.find((t) => t.levels.find((l) => l.id === me.conditions[t.id])?.symptoms?.some((id) => s.symptoms?.find((x) => x.id === id)?.incapacitates));
-  if (!track) return [];
+  if (!track) return out;
   const c = changeCondition(ctx, me.id, track.id, -1, "rest", cause);
-  return c?.display ? [c.display] : [];
+  return c?.display ? [...out, c.display] : out;
 }
 
 function byAllies(ctx: ToolContext, allies: Character[]): ToolDisplayEvent[] {
@@ -188,6 +191,8 @@ function byEnemies(ctx: ToolContext, hostiles: Character[], factionId: string | 
   if (factionId) {
     ctx.store.append({ type: "helpless_resolved", outcome: "captured", by: factionId });
     const line = capturePlayer(ctx, factionId, undefined, "정신을 잃은 채 끌려갔다");
+    // 산 포로가 쓸모 있으니 상처는 묶어 준다 (12-91)
+    if (line) stopBleeding(ctx, me.id, "붙잡은 자들이 상처를 묶었다");
     if (line) {
       const fact = ctx.store.getState().beliefs[me.id]?.at(-1)?.fact ?? line;
       return [{ type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS.seen, note: `의식이 없는 동안 일어난 일 (코드가 정했다): ${line} 주인공은 정신이 든 뒤에 이만큼만 안다.` }];

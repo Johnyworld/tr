@@ -455,6 +455,10 @@ symptoms:
   - { id: depressed, label: 우울함, group: mind, penalty: -1 }
   - { id: frantic, label: 미칠 것 같음, group: mind, penalty: -2 }
   - { id: breakdown, label: 멘탈붕괴, group: mind, penalty: -3 }
+  # 출혈 (12-91): 판정 보정은 없다. 지금 피가 나는지 알려 준다
+  - { id: scratch, label: 긁힘, group: bleeding }
+  - { id: bleeding, label: 출혈, group: bleeding, tone: 2 }
+  - { id: heavy_bleeding, label: 심한 출혈, group: bleeding, tone: 3 }
   - { id: death, label: 사망, group: death }
   # 변이: 감염으로 죽어 감염체가 된다 (다음 캐릭터가 발견하는 규칙은 다음 단계)
   - { id: turned, label: 변이, group: death }
@@ -517,6 +521,15 @@ condition_tracks:
       - { id: chill, symptoms: [chill] }
       - { id: shiver, symptoms: [shiver] }
       - { id: sick, symptoms: [high_fever] }
+  # 출혈 (12-91): 날붙이·찔림·총상·물림으로 다치면 부상 단계만큼 오른다. 보정은 없고, 시간이 흐르면 부상을 키운다. 지혈해야 멎는다
+  - id: bleeding
+    label: 출혈
+    icon: blood
+    levels:
+      - { id: none }
+      - { id: scratch, symptoms: [scratch] }
+      - { id: bleeding, symptoms: [bleeding] }
+      - { id: heavy, symptoms: [heavy_bleeding] }
   # 마음 (12-48): 크게 다치거나 곁의 사람이 죽는 것을 보면 흔들린다. 무너져도 죽지는 않는다 (판정만 어렵다)
   - id: nerves
     label: 마음
@@ -629,7 +642,7 @@ recovery:
   # 의식불명에 이만큼(시간) 머물면 정신이 든다 (의식장애로 한 단계). 그사이 더 다치면 다시 센다 (*임시*)
   wake_hours: 6
   # 치료사에게 받으면 (하루 한 번) 트랙별로 낫는 단계
-  healer: { harm: 1, infection: 1, disease: 1 }
+  healer: { harm: 1, infection: 1, disease: 1, bleeding: 3 }
   # 무리의 돌봄 (12-52): 의무병 한 사람이 하루 두 명까지, 무리의 의약품으로. 부상 한 단계 1, 드러난 감염 떼기 2
   faction_care: { occupations: [medic, nurse, doctor], resource: medicine, per_medic: 2, infection_cost: 2 }
   # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
@@ -664,6 +677,27 @@ captivity:
   recruit_move: persuade
   war_capture_chance: 0.12
 
+# 상처 종류와 출혈 (12-91, *임시*): 몸의 위험을 걸 때 GM이 상처 종류(harm_kind)를 고른다
+wounds:
+  kinds:
+    - { id: cut, label: 베임 (칼·날붙이·유리), bleeds: true }
+    - { id: pierce, label: 찔림 (창·꼬챙이·화살), bleeds: true }
+    - { id: gunshot, label: 총상, bleeds: true }
+    - { id: claw, label: 물림·할큄 (이빨·손톱), bleeds: true }
+    - { id: blunt, label: 둔기·타박 (몽둥이·주먹·추락), bleeds: false }
+    - { id: other, label: 그 밖 (화상·삠·탈진 등), bleeds: false }
+  track: bleeding
+  # 피가 나는 종류로 다쳐 부상이 이 단계가 되면 출혈이 여기까지 오른다
+  from_harm: { light: scratch, serious: bleeding, critical: heavy, impaired: heavy, unconscious: heavy }
+  # 이만큼(시간) 피를 흘릴 때마다 부상이 한 단계 나빠진다
+  worsen_hours: { bleeding: 6, heavy: 1 }
+  # 긁힘은 한 시간이면 저절로 멎는다
+  clot_hours: { scratch: 1 }
+  # 출혈 이상이면 정신이 들지 않고 저절로 낫지 않는다
+  blocks_recovery_from: bleeding
+  # 옷을 찢어 누르는 맨손 지혈
+  staunch_move: first_aid
+
 # 의식불명 중 곁의 사람 (12-90, *임시*): 쓰러질 때마다 한 번, 곁에 누가 있느냐로 코드가 정한다
 helpless:
   # 그 사람이 주인공을 보는 믿음+호감이 이 이상이면 돌봐 준다, 이 이하면 적으로 군다
@@ -685,8 +719,8 @@ travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 
 # 쓰면 몸이 나아지는 물건 (take_action.use_item): 아이템 → 트랙 → 나아지는 단계 (*임시*)
 consumables:
-  medkit: { harm: 1 }
-  bandage: { harm: 1 }
+  medkit: { harm: 1, bleeding: 3 }
+  bandage: { harm: 1, bleeding: 3 }
   antibiotics: { harm: 1, infection: 2 }
   canned_food: { hunger: 2 }
   dry_ration: { hunger: 1 }

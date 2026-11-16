@@ -13,6 +13,8 @@ import { seasonAt } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { josa } from "../text.ts";
 import { recordDeath } from "./succession.ts";
+import { bleedingBlocksRecovery, staunch } from "./bleeding.ts";
+import type { CheckOutcome } from "../rules/check.ts";
 import { DEATH_GUIDE, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -111,7 +113,12 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
 }
 
 /** 치료사에게 치료받는다 (하루 한 번). 아이템이면 useItem */
-export function applyTreatment(ctx: ToolContext, item: string | null, targetId: string | null = null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+export function applyTreatment(
+  ctx: ToolContext,
+  item: string | null,
+  targetId: string | null = null,
+  check: { move: string; outcome: CheckOutcome } | null = null,
+): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   if (item) return useItem(ctx, item, targetId);
   if (targetId && targetId !== ctx.store.getState().playerId) return firstAid(ctx, targetId);
   const recovery = ctx.content.scenario.recovery;
@@ -119,7 +126,12 @@ export function applyTreatment(ctx: ToolContext, item: string | null, targetId: 
   const state = ctx.store.getState();
   const player = state.characters[state.playerId]!;
   const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer);
-  if (!healer) return { ok: false, error: "치료해 줄 사람이 장면에 없다. 치료 아이템을 쓰거나 치료사를 찾아간다." };
+  if (!healer) {
+    // 맨손 지혈 (12-91): 피가 나면 판정으로 멎게 한다
+    const w = ctx.content.scenario.wounds;
+    if (w && levelIndex(ctx, state, player.id, w.track) > 0) return staunch(ctx, check);
+    return { ok: false, error: "치료해 줄 사람이 장면에 없다. 치료 아이템을 쓰거나 치료사를 찾아간다." };
+  }
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
   if (!needed) return { ok: false, error: "다친 데가 없어 치료할 것이 없다." };
   if (state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return { ok: false, error: "오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다." };
@@ -145,6 +157,8 @@ export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
     const state = ctx.store.getState();
     const player = state.characters[state.playerId];
     if (!player || player.dead) break;
+    // 피가 멎지 않으면 정신이 들지도, 저절로 낫지도 않는다 (12-91)
+    if (bleedingBlocksRecovery(ctx, player)) break;
     const index = levelIndex(ctx, state, player.id, track.id);
     const since = state.recovery.lastChangeAt[player.id] ?? state.runStartedAt;
     // 의식불명 등: 그 단계에 wake_hours만큼 머물면 정신이 든다 (한 단계 나아진다)

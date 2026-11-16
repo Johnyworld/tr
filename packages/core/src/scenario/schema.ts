@@ -676,6 +676,28 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
+     * 상처 종류와 출혈 (12-91). 없으면 상처 종류를 받지 않고 피를 흘리지 않는다.
+     * GM이 몸의 위험을 걸 때 상처 종류(take_action.check.harm_kind)를 고르고, 피가 나는 종류로 다치면 부상 단계에 맞춰 출혈 트랙이 오른다.
+     * 출혈은 판정 보정이 없고, 시간이 흐르면 부상을 키운다. 지혈해야 멎는다 (붕대 등 consumables, 치료사 recovery.healer, 맨손 지혈 판정)
+     */
+    wounds: z
+      .strictObject({
+        kinds: z.array(z.strictObject({ id, label: z.string().min(1), bleeds: z.boolean() })).min(1),
+        /** 출혈 트랙 */
+        track: id,
+        /** 피가 나는 종류로 다쳐 부상이 이 단계가 되면 출혈이 이 단계까지 오른다 (부상 단계 id → 출혈 단계 id) */
+        from_harm: z.record(id, id),
+        /** 이 출혈 단계에 이만큼(시간) 머물 때마다 부상이 한 단계 나빠진다 */
+        worsen_hours: z.record(id, z.number().positive()),
+        /** 이 출혈 단계는 이만큼(시간) 지나면 저절로 멎는다 */
+        clot_hours: z.record(id, z.number().positive()).default({}),
+        /** 출혈이 이 단계 이상이면 정신이 들지 않고 저절로 낫지 않는다 */
+        blocks_recovery_from: id,
+        /** 아이템 없이 지혈하는 판정 (take_action.treatment {item: null} + check). 성공이면 멎고, 대가 있는 성공이면 한 단계 준다 */
+        staunch_move: id,
+      })
+      .optional(),
+    /**
      * 의식불명 중 곁의 사람 (12-90): 스스로 아무것도 못 하게 된 동안 곁에 누가 있느냐로 코드가 한 번 정한다.
      * 우리 편은 돌보거나 자기 거점으로 옮기고, 적은 끌고 가거나(captivity) 죽이고, 아무도 없으면 감염체를 만날 수 있다. 없으면 이 규칙을 쓰지 않는다
      */
@@ -894,6 +916,19 @@ export const scenarioFileSchema = z
       if (harm && !harm.levels.some((l) => l.id === level)) problem(`recovery.natural_max_level: 알 수 없는 단계 ${level}`);
     }
     const trackIdSet = new Set(s.condition_tracks.map((t) => t.id));
+    if (s.wounds) {
+      const w = s.wounds;
+      const bleed = s.condition_tracks.find((t) => t.id === w.track);
+      const harm = s.condition_tracks.find((t) => t.id === s.harm_track);
+      if (!bleed) problem(`wounds.track: 알 수 없는 상태 트랙 ${w.track}`);
+      const bleedLevels = new Set(bleed?.levels.map((l) => l.id) ?? []);
+      for (const [h, b] of Object.entries(w.from_harm)) {
+        if (harm && !harm.levels.some((l) => l.id === h)) problem(`wounds.from_harm: 알 수 없는 부상 단계 ${h}`);
+        if (!bleedLevels.has(b)) problem(`wounds.from_harm.${h}: 알 수 없는 출혈 단계 ${b}`);
+      }
+      for (const b of [...Object.keys(w.worsen_hours), ...Object.keys(w.clot_hours), w.blocks_recovery_from]) if (!bleedLevels.has(b)) problem(`wounds: 알 수 없는 출혈 단계 ${b}`);
+      if (!s.moves.some((m) => m.id === w.staunch_move)) problem(`wounds.staunch_move: 알 수 없는 스킬 ${w.staunch_move}`);
+    }
     const symptomIds = new Set((s.symptoms ?? []).map((x) => x.id));
     if (symptomIds.size !== (s.symptoms ?? []).length) problem("symptoms에 중복된 id가 있다");
     for (const [item, effects] of Object.entries(s.consumables)) {

@@ -16,7 +16,7 @@ const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url))
 const packs = new Map<string, Content>([[content.scenario.id, content]]);
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
 const choice = { name: "서진", gender: "female" as const, abilities: null, portrait: null, traits: [] };
-const crossCheck = { move: "survival", stat: "senses", difficulty: "hard", harm_on_failure: "heavy", harm_cause: "밤바다", infected_source: false, target_harm: "none" };
+const crossCheck = { move: "survival", stat: "senses", difficulty: "hard", harm_on_failure: "heavy", harm_cause: "밤바다", harm_kind: "other", infected_source: false, target_harm: "none" };
 
 function atRiverside(savesDir: string, rng: () => Rng = () => createSeededRng(3)) {
   const m = new WorldManager({ savesDir, content, rngFactory: rng });

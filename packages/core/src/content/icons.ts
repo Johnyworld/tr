@@ -31,6 +31,7 @@ export const ICON_NAMES = [
   // 몸 상태
   "heart",
   "hunger",
+  "blood",
   "virus",
   "cold",
   "fever",

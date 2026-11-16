@@ -13,6 +13,7 @@ want: 의무실에서 더는 사람을 잃지 않는 것
 fear: 하얀매와의 관계가 드러나 거점에서 쫓겨나는 것
 values: { discipline: 0, loyalty: 0, mercy: 3, honesty: -1, self_interest: 0 }
 traits: [warm, guarded, attractive]
+persona: { temper: -1 }
 voice:
   style: 차분한 존댓말. 다친 사람에게는 반말로 단호하게 지시한다
   samples:

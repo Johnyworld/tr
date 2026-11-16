@@ -15,6 +15,7 @@
   fear: 엄태주가 형이 어떻게 죽었는지 묻는 날
   values: { discipline: 2, loyalty: 3, mercy: 1, honesty: -1, self_interest: 0 }
   traits: [protective, weary, principled]
+  persona: { temper: 0 }
   voice:
     style: 낮고 짧은 반말. 분대원 이름을 꼭 부른다. 원칙 이야기를 할 때만 말이 길어진다
     samples:
@@ -57,6 +58,7 @@
   fear: 약이 없어서 눈앞의 사람을 그냥 보내야 하는 날
   values: { discipline: 1, loyalty: 1, mercy: 3, honesty: 1, self_interest: 0 }
   traits: [curious, quick_learner, blunt]
+  persona: { talk: 0 }
   voice:
     style: 빠르고 똑 부러지는 존댓말. 다친 사람에게는 반말로 바뀐다. 아버지를 "분대장님"이라 부른다
     samples:
@@ -174,6 +176,7 @@
   fear: 창고 장부가 맞지 않는다는 것이 한도윤의 눈에 띄는 날
   values: { discipline: 1, loyalty: 1, mercy: 1, honesty: -2, self_interest: 1 }
   traits: [genial, calculating, talkative]
+  persona: { temper: -1 }
   voice:
     style: 웃음이 섞인 빠른 반말. 숫자를 말할 때만 또박또박하다. 곤란하면 농담으로 넘긴다
     samples:

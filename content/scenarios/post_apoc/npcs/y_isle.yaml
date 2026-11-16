@@ -184,6 +184,7 @@
   fear: 자기도 쓸모가 다하는 날
   values: { discipline: 0, loyalty: 2, mercy: 1, honesty: 1, self_interest: 0 }
   traits: [eager, curious, talkative]
+  persona: { temper: 1 }
   voice:
     style: 밝은 반말. 흥분하면 말이 빨라진다
     samples:

@@ -15,6 +15,7 @@
   fear: 손이 수술 중에 떨리는 것. 그리고 장부의 빈 숫자가 자기 이름으로 채워지는 것
   values: { discipline: 1, loyalty: 1, mercy: 1, honesty: -2, self_interest: 1 }
   traits: [cold, meticulous, frail]
+  persona: { talk: -1 }
   voice:
     style: 조용하고 정확한 존댓말. 환자 이름 대신 다친 곳으로 부른다
     samples:
@@ -143,6 +144,7 @@
   fear: 남편이 하는 일이 들통나는 날. 그리고 그날 자기가 어느 편에 서야 하는지
   values: { discipline: 0, loyalty: 1, mercy: 2, honesty: -1, self_interest: 1 }
   traits: [warm, talkative, attractive]
+  persona: { temper: -1, principle: 0 }
   voice:
     style: 상냥한 존댓말. 줄 선 사람에게는 "조금만요, 조금만" 하고 달랜다
     samples:
@@ -185,6 +187,7 @@
   fear: 붉은 완장을 찬 환자가 자기 얼굴을 알아보는 것
   values: { discipline: 1, loyalty: 1, mercy: 2, honesty: -1, self_interest: 0 }
   traits: [guarded, quick_learner, shadow]
+  persona: { temper: 0 }
   voice:
     style: 낮고 짧은 존댓말. 부엌 말버릇이 남아 상처를 "썬다", "데친다"고 한다
     samples:

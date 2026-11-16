@@ -91,6 +91,7 @@
   fear: 누군가의 실수로 또 분대가 무너지는 것
   values: { discipline: 3, loyalty: 1, mercy: -1, honesty: 2, self_interest: 0 }
   traits: [cold, guarded, marksman, meticulous]
+  persona: { temper: 0 }
   voice:
     style: 짧은 존댓말. 감정을 싣지 않는다. 숫자로 말한다
     samples:

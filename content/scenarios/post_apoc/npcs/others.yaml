@@ -14,6 +14,7 @@
   fear: 청솔형제단과 함께 가라앉는 것
   values: { discipline: 1, loyalty: 0, mercy: 1, honesty: -1, self_interest: 2 }
   traits: [cautious, calculating]
+  persona: { talk: -1 }
   voice:
     style: 정중하지만 거리를 두는 존댓말. 질문에 질문으로 답한다
     samples:
@@ -161,6 +162,7 @@
   fear: 약을 둘러싸고 무리들이 쳐들어오는 것
   values: { discipline: 2, loyalty: 1, mercy: 1, honesty: 2, self_interest: 1 }
   traits: [meticulous, guarded]
+  persona: { temper: -1 }
   voice:
     style: 건조한 존댓말. 감정 없이 조건부터 말한다
     samples:

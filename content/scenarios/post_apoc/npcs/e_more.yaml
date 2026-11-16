@@ -13,6 +13,7 @@
   fear: 길 위에서 짐꾼을 버리고 와야 하는 날
   values: { discipline: 2, loyalty: 2, mercy: 0, honesty: 1, self_interest: 1 }
   traits: [meticulous, blunt, steel_nerves]
+  persona: { warmth: 0 }
   voice:
     style: 짧고 셈 빠른 반말. 짐꾼은 "짐"이나 이름으로 부르고, 손님에게는 깍듯한 존댓말로 바뀐다
     samples:
@@ -173,6 +174,7 @@
   fear: 오빠가 자기 때문에 죽는 것
   values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 0, self_interest: 0 }
   traits: [timid, eager, shadow]
+  persona: { warmth: 0 }
   voice:
     style: 작고 빠른 존댓말. 말끝을 흐린다
     samples:

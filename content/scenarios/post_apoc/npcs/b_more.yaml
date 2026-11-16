@@ -14,6 +14,7 @@
   fear: 어느 편에 붙든 마지막에 단지가 불타는 것
   values: { discipline: 2, loyalty: 2, mercy: 1, honesty: 0, self_interest: 0 }
   traits: [weary, protective, cold_hardy]
+  persona: { talk: 0 }
   voice:
     style: 느릿한 반말. 경비원 시절 버릇으로 사람을 "몇 동 누구"로 부른다. 대표 이야기가 나오면 말을 돌린다
     samples:
@@ -92,6 +93,7 @@
   fear: 청솔형제단의 전쟁에 끌려가 개죽음당하는 것
   values: { discipline: -1, loyalty: 0, mercy: 1, honesty: -1, self_interest: 2 }
   traits: [hot_tempered, eager, big_eater]
+  persona: { warmth: 1 }
   voice:
     style: 빠르고 거친 반말. 화가 나면 "청솔 놈들"이라고 부른다. 부탁할 때는 갑자기 목소리가 작아진다
     samples:

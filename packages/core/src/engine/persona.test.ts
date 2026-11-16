@@ -51,6 +51,13 @@ describe("성격 축", () => {
     expect(personaOf(content, { ...hot, persona: {} })).toEqual({});
   });
 
+  it("콘텐츠가 적은 축은 그 축만 덮어쓴다 (말투와 맞추기): 윤채원은 차분해서 다혈질이 아니라 온화함", () => {
+    const n = content.npcs.a_chaewon!;
+    const p = personaOf(content, { id: n.id, traits: n.traits, persona: null });
+    expect(p.temper).toBe(-1);
+    expect(p.warmth).toBe(1); // 덮어쓰지 않은 축은 트레잇 그대로
+  });
+
   it("플레이어의 답을 읽는다: 이름과 단계, 이름만이면 1, 기본은 모두 0", () => {
     expect(parsePersona(s, "다혈질 2, 과묵함 1")).toEqual({ ok: true, values: { temper: 2, talk: -1 } });
     expect(parsePersona(s, "돌부처")).toEqual({ ok: true, values: { heart: 1 } });

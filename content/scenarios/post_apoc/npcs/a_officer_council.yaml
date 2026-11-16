@@ -127,6 +127,7 @@
   fear: 자기가 뛰다가 죽으면 여동생 혼자 남는 것
   values: { discipline: 1, loyalty: 2, mercy: 2, honesty: 1, self_interest: 1 }
   traits: [eager, talkative, light_eater]
+  persona: { warmth: 1 }
   voice:
     style: 숨 가쁜 존댓말. 소식을 전할 때는 들은 그대로 외워서 말하고, 끝에 자기 생각을 슬쩍 붙인다
     samples:

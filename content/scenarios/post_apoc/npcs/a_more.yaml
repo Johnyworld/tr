@@ -12,6 +12,7 @@
   fear: 원칙을 지키다 모두를 잃는 것
   values: { discipline: 2, loyalty: 3, mercy: 2, honesty: 2, self_interest: -2 }
   traits: [principled, weary]
+  persona: { talk: -1 }
   voice:
     style: 차분한 존댓말. 하급 대원에게도 존댓말을 쓴다. 결정을 말할 때는 짧다
     samples:

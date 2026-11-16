@@ -14,6 +14,7 @@
   fear: 회의가 숫자만 보고 아이들 몫부터 깎는 것
   values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 0, self_interest: 1 }
   traits: [blunt, protective]
+  persona: { talk: 1 }
   voice:
     style: 크고 빠른 반말 섞인 존댓말. 사람을 "누구네"로 부르고, 숫자 대신 식구 이름을 댄다
     samples:

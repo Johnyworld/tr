@@ -232,6 +232,8 @@ export function createContentSchemas(s: Scenario) {
     values: z.record(contentIdSchema, valueScoreSchema),
     /** 트레잇 id (시나리오 traits). 성격·체질·외모. 예전의 temperament를 대신한다 */
     traits: z.array(idEnum(s.traits.map((t) => t.id))).default([]),
+    /** 성격 축 덮어쓰기 (12-99): 적은 축만 이 값으로 (나머지는 트레잇과 빈 축 채우기). 말투·설정과 어긋날 때 */
+    persona: z.partialRecord(idEnum((s.persona?.axes ?? []).map((a) => a.id)), z.number().int().min(-2).max(2)).optional(),
     voice: z.strictObject({
       style: z.string().min(1),
       samples: z.array(z.string().min(1)).min(1).max(4),

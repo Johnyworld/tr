@@ -60,6 +60,7 @@
   fear: 겨울이 와서 사람들이 책을 땔감으로 보는 것. 자기도 그렇게 보게 되는 것
   values: { discipline: 1, loyalty: 1, mercy: 0, honesty: 2, self_interest: -1 }
   traits: [meticulous, principled, formal, cold_sensitive]
+  persona: { talk: 1 }
   voice:
     style: 또박또박한 존댓말. 강의하던 버릇이 남아 말끝에 꼭 질문을 붙인다
     samples:

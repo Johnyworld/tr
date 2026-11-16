@@ -142,6 +142,7 @@
   fear: 자기가 버들마을에서 한 약속이 거짓으로 드러나는 날
   values: { discipline: 1, loyalty: 1, mercy: 2, honesty: -1, self_interest: 0 }
   traits: [silver_tongue, principled, weary]
+  persona: { impulse: 0 }
   voice:
     style: 연설하듯 또박또박한 존댓말. 혼자 있을 때는 말끝이 흐려진다
     samples:

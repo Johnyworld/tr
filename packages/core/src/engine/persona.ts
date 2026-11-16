@@ -41,7 +41,8 @@ function fillAxis(weights: Partial<Record<string, number>>, roll: number): numbe
 
 /**
  * 이 캐릭터의 축 값 (0인 축은 빠질 수 있다).
- * 주인공처럼 persona가 있으면 그것. NPC는 성격 트레잇의 합이고, 트레잇이 정하지 않은 축은 fill의 무게로 인물 id에서 뽑는다
+ * 주인공처럼 persona가 있으면 그것. NPC는 성격 트레잇의 합이고, 트레잇이 정하지 않은 축은 fill의 무게로 인물 id에서 뽑는다.
+ * 콘텐츠(npcs의 persona)에 적은 축은 마지막에 그 값으로 덮어쓴다
  */
 export function personaOf(content: Content, c: Pick<Character, "id" | "traits" | "persona">): Record<string, number> {
   const rules = content.scenario.persona;
@@ -50,6 +51,8 @@ export function personaOf(content: Content, c: Pick<Character, "id" | "traits" |
   const sum: Record<string, number> = {};
   for (const t of traitsOf(content, c)) for (const [axis, v] of Object.entries(t.persona ?? {})) sum[axis] = (sum[axis] ?? 0) + v;
   for (const [axis, weights] of Object.entries(rules.fill ?? {})) if (sum[axis] === undefined) sum[axis] = fillAxis(weights, seeded(c.id, axis));
+  // 콘텐츠가 직접 적은 축 (말투·설정과 맞추려고): 그 축만 덮어쓴다
+  for (const [axis, v] of Object.entries(content.npcs[c.id]?.persona ?? {})) if (v !== undefined) sum[axis] = v;
   return Object.fromEntries(Object.entries(sum).map(([k, v]) => [k, clamp(v)]).filter(([, v]) => v !== 0));
 }
 

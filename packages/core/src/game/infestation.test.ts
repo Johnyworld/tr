@@ -90,4 +90,20 @@ describe("감염체 압력", () => {
     expect(infestationSign(content, state(), wild.id)).toContain("드물다");
     expect(infestationSign(content, state(), wild.id)).not.toMatch(/\d/);
   });
+
+  it("감염체가 몰려든 구역은 덜 거둔다: 기준값보다 한 단계 높을 때마다 산출 yields_cut만큼 (12-118)", async () => {
+    const { initialWarWorld, simulateWarDay } = await import("../sim/war.ts");
+    const quiet = structuredClone(content);
+    for (const f of Object.values(quiet.factions)) f.aggression = 0;
+    const farm = Object.values(quiet.locations).find((l) => l.owner && (l.yields.food ?? 0) >= 20)!;
+    const day = (infested: Record<string, number>) =>
+      simulateWarDay(initialWarWorld(quiet), quiet, () => 0.5, { infested }).factions[farm.owner!]!.resources.food ?? 0;
+    const calm = day({});
+    const two = day({ [farm.id]: Math.min(3, baseInfestation(quiet, farm.id) + 2) });
+    const cut = quiet.scenario.infestation!.yields_cut;
+    const overrun = Math.min(3, baseInfestation(quiet, farm.id) + 2) - baseInfestation(quiet, farm.id);
+    expect(cut).toBeGreaterThan(0);
+    expect(calm - two).toBeGreaterThan(0);
+    expect(calm - two).toBeLessThanOrEqual(Math.ceil((farm.yields.food ?? 0) * 1.2 * cut * overrun) + 1);
+  });
 });

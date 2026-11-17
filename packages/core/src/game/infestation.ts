@@ -26,7 +26,7 @@ export type InfestationChange = { zone: string; level: number; cause: string };
  * 하루가 바뀔 때의 변화 (day: 새로 시작한 날). 전날의 소음과 그날 새벽 교전의 사상자로 오르고,
  * 오르지 않은 구역은 settle 확률로 기준값 쪽으로 한 단계 돌아간다. 기준값에 있는 구역은 난수를 쓰지 않는다
  */
-export function infestationDay(content: Content, state: GameState, day: number, clashes: readonly Clash[], rng: Rng): InfestationChange[] {
+export function infestationDay(content: Content, state: Pick<GameState, "infested" | "zoneNoise">, day: number, clashes: readonly Clash[], rng: Rng): InfestationChange[] {
   const rules = content.scenario.infestation;
   if (!rules) return [];
   const out: InfestationChange[] = [];

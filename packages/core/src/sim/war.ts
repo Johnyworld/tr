@@ -1,4 +1,5 @@
 import type { Content, FactionContent } from "../content/schemas.ts";
+import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import type { Clash, ClockState, FactionState } from "../game/state.ts";
 import type { Rng } from "../rng.ts";
 
@@ -40,6 +41,8 @@ export type WarDayOptions = {
   season?: { upkeep: Record<string, number>; yields: Record<string, number> } | null;
   /** true면 이 교전을 계산하지 않고 미룬다 (플레이어가 그 자리에 있을 때) */
   defer?: (spec: ClashSpec) => boolean;
+  /** 구역의 감염체 압력 (12-118). 기준값보다 높으면 산출이 준다. 없으면 기준값 */
+  infested?: Record<string, number>;
 };
 
 /** 이 세력이 저 세력을 적으로 보는지 (태도 -2 이하) */
@@ -208,11 +211,14 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const workforce = clamp(f.population / Math.max(1, startPop), 0.7, 1.2);
     for (const loc of Object.values(content.locations)) {
       if (next.zones[loc.id]?.owner !== id) continue;
+      // 감염체가 몰려든 구역은 덜 거둔다 (12-118)
+      const overrun = Math.max(0, infestationOf(content, { infested: options.infested ?? {} }, loc.id) - baseInfestation(content, loc.id));
+      const kept = Math.max(0, 1 - (content.scenario.infestation?.yields_cut ?? 0) * overrun);
       // 콘텐츠의 산출 + 이야기로 늘린 산출 (12-54)
       const boost = next.zones[loc.id]?.boost ?? {};
       for (const r of new Set([...Object.keys(loc.yields), ...Object.keys(boost)])) {
         const amount = ((loc.yields as Record<string, number | undefined>)[r] ?? 0) + (boost[r] ?? 0);
-        f.resources[r] = (f.resources[r] ?? 0) + Math.round(amount * (options.season?.yields[r] ?? 1) * workforce);
+        f.resources[r] = (f.resources[r] ?? 0) + Math.round(amount * (options.season?.yields[r] ?? 1) * workforce * kept);
       }
     }
     let short = false;

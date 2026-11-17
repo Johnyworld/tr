@@ -821,13 +821,15 @@ export const scenarioFileSchema = z
      * 구역의 감염체 압력 (12-112): 0~3, 기준값은 구역의 danger. 날이 바뀔 때마다
      * 전날 그 구역의 소음이 noise_at 이상이면 +1, 그날 그 구역 교전의 사상자가 corpses_at 이상이면 +1 (최대 3).
      * 오르지 않은 날은 settle 확률로 기준값 쪽으로 한 단계 돌아간다. 이야기 효과 infested로 소탕한다.
-     * 길 위의 일·감염체 틀의 등장·쓰러졌을 때 물릴 확률이 이 값을 쓴다
+     * 길 위의 일·감염체 틀의 등장·쓰러졌을 때 물릴 확률이 이 값을 쓴다.
+     * yields_cut: 기준값보다 한 단계 높을 때마다 그 구역의 하루 산출이 이만큼 준다 (12-118: 감염체가 몰려든 밭과 우물은 덜 거둔다)
      */
     infestation: z
       .strictObject({
         noise_at: z.number().int().min(1),
         corpses_at: z.number().int().min(1),
         settle: z.number().min(0).max(1),
+        yields_cut: z.number().min(0).max(1).default(0),
       })
       .optional(),
     /** 쓰면 몸 상태가 나아지는 아이템: 아이템 → 상태 트랙 → 나아지는 단계 수 (take_action.use_item) */

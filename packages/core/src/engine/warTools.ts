@@ -47,6 +47,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     const result = simulateWarDay({ factions: state.factions, zones: state.zones, clocks: state.clocks }, content, ctx.rng, {
       defer: (spec) => canDefer && playerInvolvement(state, content, spec) !== null,
       season: seasonOfDay(content.scenario, day),
+      infested: state.infested,
     });
     const scheduled = result.deferred.map((spec, i) => ({ ...spec, id: `battle_${state.nextBattleNo + i}`, at }));
     store.append({

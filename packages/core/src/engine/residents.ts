@@ -50,7 +50,7 @@ export function runResidentBodies(ctx: ToolContext, day: number = dayOf(ctx.stor
     if (hunger && rules.hunger_max) {
       const level = rationLevel(content, faction);
       const now = indexOf(content, hunger, c.conditions[hunger]) < 0 ? 0 : indexOf(content, hunger, c.conditions[hunger]);
-      let delta = level.hunger;
+      let delta = level.hunger ?? 1; // 배급 단계에 허기 변화가 없으면 하루 한 단계 (주인공의 하루 몸과 같다)
       if (delta > 0) {
         const caps = [indexOf(content, hunger, level.hunger_max), indexOf(content, hunger, rules.hunger_max)].filter((i) => i >= 0);
         delta = Math.max(0, Math.min(delta, Math.min(...caps) - now));

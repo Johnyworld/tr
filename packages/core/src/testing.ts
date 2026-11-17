@@ -263,6 +263,7 @@ export const TEST_CONTENT: Content = {
   extras: {
     test_sentry: {
       id: "test_sentry",
+      kind: "person",
       label: "C 보초 — 폭탄",
       faction: "faction_c",
       rank: "grunt",

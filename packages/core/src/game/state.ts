@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 52;
+export const SAVE_SCHEMA_VERSION = 53;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -415,6 +415,9 @@ export function createGameSchemas(s: Scenario) {
     chronicle: z.array(runRecordSchema).default([]),
     /** 유해와 무덤 (12-130) */
     remains: z.array(remainsSchema).default([]),
+    /** 현상금 (12-136): 무리마다 주인공이 죽인 것을 아는 사람 수, 현상금을 건 무리 (먼저 건 것부터) */
+    killsKnown: z.record(z.string(), z.number().int().min(0)).default({}),
+    bounties: z.array(z.string()).default([]),
     /** 주인공에게 복수를 다짐한 사람 (12-135): 주인공이 죽인 사람(victim)의 가족·친구(avenger) */
     vendettas: z.array(z.strictObject({ avenger: z.string(), victim: z.string(), since: z.number().int() })).default([]),
     /** 놓아 둔 덫 (12-131). caught: 걸린 아이템 (아직이면 null) */
@@ -604,6 +607,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
     /** 죽은 사람의 유해가 그 구역에 남았다 (12-130) */
     z.strictObject({ type: z.literal("remains_left"), remains: remainsSchema }),
+    /** 그 무리가 주인공이 자기 사람을 죽인 것을 알았다 / 현상금을 걸었다 / 거뒀다 (12-136) */
+    z.strictObject({ type: z.literal("kill_known"), factionId: z.string() }),
+    z.strictObject({ type: z.literal("bounty_posted"), factionId: z.string() }),
+    z.strictObject({ type: z.literal("bounty_cleared"), factionId: z.string() }),
     /** 주인공에게 복수를 다짐했다 / 원한이 풀렸다 (12-135) */
     z.strictObject({ type: z.literal("vendetta_sworn"), avenger: z.string(), victim: z.string() }),
     z.strictObject({ type: z.literal("vendetta_settled"), avenger: z.string() }),
@@ -902,6 +909,8 @@ export const EMPTY_STATE: GameState = {
   remains: [],
   traps: [],
   vendettas: [],
+  killsKnown: {},
+  bounties: [],
   chronicle: [],
 };
 
@@ -1508,6 +1517,17 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.record.characterId !== state.playerId) throw new Error("현재 캐릭터의 기록이 아닙니다.");
       if (!state.characters[state.playerId]?.dead) throw new Error("캐릭터가 아직 살아 있습니다.");
       next.chronicle.push(structuredClone(event.record));
+      break;
+    case "kill_known":
+      next.killsKnown = { ...next.killsKnown, [event.factionId]: (next.killsKnown[event.factionId] ?? 0) + 1 };
+      break;
+    case "bounty_posted":
+      if (!next.bounties.includes(event.factionId)) next.bounties = [...next.bounties, event.factionId];
+      break;
+    case "bounty_cleared":
+      next.bounties = next.bounties.filter((f) => f !== event.factionId);
+      // 거두면 셈도 처음부터 (다시 죽이면 다시 쌓인다)
+      next.killsKnown = { ...next.killsKnown, [event.factionId]: 0 };
       break;
     case "vendetta_sworn":
       if (next.vendettas.some((v) => v.avenger === event.avenger)) break;

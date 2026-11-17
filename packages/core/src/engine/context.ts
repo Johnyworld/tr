@@ -116,6 +116,9 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(content.scenario.fame && fameOf(state, content).tier > 0
         ? [`명성: ${fameOf(state, content).label}. 소문을 들은 사람이 처음 보고도 당신을 알아볼 수 있다 (인물 카드의 팬·안티 줄). 플레이어에게 숫자는 말하지 않는다`]
         : []),
+      ...((state.bounties ?? []).length
+        ? [`현상금: ${state.bounties.map((f) => content.factions[f]?.name ?? f).join(", ")}이(가) 당신 머리에 값을 걸었다 (소문으로 안다). 그 무리의 땅과 말이 모이는 곳에서는 알아보는 눈이 있다. 값은 시스템이 정한다 (지어내지 않는다)`]
+        : []),
       ...(incapacitatingSymptom(scenario, player)
         ? [
             `${incapacitatingSymptom(scenario, player)!.label}: 주인공은 스스로 아무것도 하지 못한다. 말하지도 움직이지도 판정하지도 않는다. 흐릿한 감각(소리, 냄새, 몸의 고통)의 조각만 짧게 서술하고, take_action의 activity(wait 또는 sleep, 전투 중이면 null)로 시간이 흐르게 한다. 이야기는 열리지 않는다. 곁의 사람(우리 편·적)이 주인공에게 무엇을 하는지는 코드가 정하고 take_action 결과로 알린다: 옮기거나 붙잡거나 해치는 일을 서술로 지어내지 않는다. 장면의 치료사가 돌보면 treatment {item: null}`,

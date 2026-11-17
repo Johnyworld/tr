@@ -105,5 +105,5 @@ describe("연고와 함께 다니는 떠돌이 자동 플레이 (기획서 7.9)"
     }
     expect(parted).toBeGreaterThan(0);
     expect(rejoined).toBeGreaterThan(0);
-  }, 30_000);
+  }, 60_000); // 네 판을 돌려 기계 부하에 따라 18~38초로 들쭉날쭉하다
 });

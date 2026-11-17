@@ -402,6 +402,12 @@ function applyEffect(
     const c = changeCondition(ctx, id, harmTrack(content.scenario).id, -effect.npc_heal.steps, "healer", "돌봄");
     return c?.line && store.getState().scene.present.includes(id) ? { line: c.line, display: c.display ?? undefined } : {};
   }
+  if ("clear_bounty" in effect) {
+    const f = state.bounties[0];
+    if (!f) return {};
+    store.append({ type: "bounty_cleared", factionId: f });
+    return { line: `${content.factions[f]?.name ?? f}의 현상금이 거둬졌다.` };
+  }
   if ("settle_vendetta" in effect) {
     const id = whoOf(ctx, effect.settle_vendetta.who, cast);
     if (!id || !state.vendettas.some((v) => v.avenger === id)) return {};
@@ -776,5 +782,6 @@ function factionRef(state: GameState, x: string): string {
   if (x === "own") return state.characters[state.playerId]?.factionId ?? "";
   if (x === "zone_owner") return (state.playerZone && state.zones[state.playerZone]?.owner) || "";
   if (x === "captor") return state.characters[state.playerId]?.captive?.by ?? "";
+  if (x === "bounty") return state.bounties[0] ?? "";
   return x;
 }

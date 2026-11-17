@@ -1,0 +1,120 @@
+# 현상금 (12-136): 주인공이 한 무리의 사람을 셋 죽였고 그 무리가 알게 되면 현상금이 걸린다 (state.bounties)
+# - 조건 bounty: true, 자리 {bounty_by}(먼저 건 무리), 효과 clear_bounty(그 무리의 현상금을 거둔다), capture_player { by: bounty }
+# - 벽보(경고) → 현상금 사냥꾼(결판) / 장터 중개인(값을 치르고 거두기)
+# - 우리 땅에서는 열리지 않는다 (own_territory: false)
+
+- id: bt_poster
+  title: 기둥의 벽보
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    bounty: true
+    own_territory: false
+    segments: [morning, day]
+  setup: 무너진 버스 정류장 기둥에 종이 한 장이 못으로 박혀 있다. 숯으로 그린 얼굴, 그 아래 "{bounty_by}. 산 채로면 두 배." 얼굴은 서툴지만 흉터 자리가 맞다.
+  ai_direction: 벽보는 {bounty_by}이(가) 붙였다. 값이 얼마인지는 적혀 있지 않다(지어내지 않는다). 지나가던 사람이 벽보와 주인공 얼굴을 번갈아 볼 수 있다.
+  choices:
+    - id: tear
+      label: 벽보를 뜯어 불쏘시개로 쓴다
+      effects:
+        - belief: { fact: "{bounty_by}이(가) 내 얼굴을 그린 벽보를 붙였다. 하나를 뜯었다. 더 있을 것이다", source: seen }
+    - id: hood
+      label: 얼굴을 가리고 서둘러 지나간다
+      effects:
+        - belief: { fact: "{bounty_by}의 현상 벽보를 봤다. 얼굴을 가리고 다녀야겠다", source: seen }
+
+- id: bt_hunter
+  title: 수갑을 든 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  weight: 2
+  when:
+    bounty: true
+    own_territory: false
+    segments: [evening, night]
+  cast:
+    hunter: { extra: bounty_hunter, label: 현상금 사냥꾼 }
+  setup: '{hunter:이/가} 길 한가운데 서서 접은 벽보를 펴 보인다. "{bounty_by}에서 너 데려오면 값을 쳐 준대. 산 채로면 두 배라. 나는 두 배가 좋은데."'
+  ai_direction: "{hunter}은(는) 돈(물건)을 보고 움직인다. 원한은 없다. 더 나은 값을 부르면 흔들릴 수 있다. 붙잡히면 {bounty_by}에 넘겨진다 (코드가 정한다). 다치게 하는 것은 판정으로."
+  choices:
+    - id: fight
+      label: 맞선다
+      check: fight
+      outcomes:
+        success:
+          - npc_hurt: { who: hunter, steps: 2 }
+          - belief: { fact: "{bounty_by}의 현상금을 노린 사냥꾼을 쓰러뜨렸다. 또 올 것이다", source: seen }
+        partial:
+          - npc_hurt: { who: hunter, steps: 1 }
+          - wound: { steps: 1, cause: 현상금 사냥꾼의 칼 }
+          - belief: { fact: 현상금 사냥꾼과 엉겨 붙었다가 둘 다 피를 보고 떨어졌다, source: seen }
+        miss:
+          - wound: { steps: 1, cause: 현상금 사냥꾼의 칼 }
+          - capture_player: { by: bounty }
+    - id: outbid
+      label: 내가 더 줄 테니 못 본 걸로 하라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "현상금 사냥꾼에게 더 나은 값을 약속했다. 그는 오늘은 못 본 걸로 하겠다며 돌아섰다", source: seen }
+        partial:
+          - belief: { fact: 현상금 사냥꾼은 웃기만 하고 물러섰다. 다음에는 값을 먼저 보자고 했다, source: seen }
+        miss:
+          - wound: { steps: 1, cause: 현상금 사냥꾼의 주먹 }
+          - belief: { fact: 현상금 사냥꾼은 말로는 안 된다며 달려들었다. 겨우 뿌리쳤다, source: seen }
+    - id: run
+      label: 골목으로 달아난다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: 현상금 사냥꾼을 골목에서 따돌렸다, source: seen }
+        partial:
+          - wound: { steps: 1, cause: 등 뒤에서 날아온 돌 }
+        miss:
+          - capture_player: { by: bounty }
+
+- id: bt_broker
+  title: 장부를 고치는 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    bounty: true
+    zones: [e_market]
+    segments: [day, evening]
+  setup: 장터 천막 뒤, 주판을 튕기던 상단 중개인이 눈짓을 한다. "{bounty_by} 장부에서 네 이름 지워 줄 수 있어. 공짜는 아니고. 그쪽도 값을 받으면 조용해지거든."
+  ai_direction: 나루상단은 무리들 사이의 빚과 값을 맞춰 주는 장사도 한다. 값을 치르면 {bounty_by}에 그만한 것이 넘어가고 현상금이 거둬진다 (코드가 정한다). 중개인은 어느 편도 아니다.
+  choices:
+    - id: pay_serum
+      label: 혈청을 내놓는다
+      when: { has_items: [serum] }
+      effects:
+        - take_item: { item: serum }
+        - clear_bounty: true
+        - belief: { fact: "나루상단 중개인에게 혈청을 내고 {bounty_by}의 현상금을 거두게 했다", source: seen }
+    - id: pay_rifle
+      label: 소총을 내놓는다
+      when: { has_items: [old_rifle] }
+      effects:
+        - take_item: { item: old_rifle }
+        - clear_bounty: true
+        - belief: { fact: "나루상단 중개인에게 소총을 넘기고 {bounty_by}의 현상금을 거두게 했다", source: seen }
+    - id: haggle
+      label: 담배 한 갑으로 말을 맞춰 보자고 한다
+      when: { has_items: [cigarettes] }
+      check: persuade
+      outcomes:
+        success:
+          - take_item: { item: cigarettes }
+          - clear_bounty: true
+          - belief: { fact: "담배 한 갑과 말솜씨로 {bounty_by}의 현상금을 거두게 했다", source: seen }
+        partial:
+          - take_item: { item: cigarettes }
+          - belief: { fact: 중개인은 담배만 받고 생각해 보겠다고 했다, source: seen }
+        miss:
+          - belief: { fact: 중개인은 담배 한 갑에 웃음을 터뜨렸다, source: seen }
+    - id: leave
+      label: 지금은 낼 것이 없다
+      effects: []

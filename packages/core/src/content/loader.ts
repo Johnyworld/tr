@@ -471,7 +471,7 @@ export function checkStorylets(content: Content): string[] {
     }
     for (const text of texts) {
       for (const [, key] of text.matchAll(/\{([a-z_]+)(?::[^}]+)?\}/g)) {
-        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
+        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !(key === "bounty_by" && s.when.bounty) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
       }
     }
     for (const c of s.choices) {
@@ -529,5 +529,5 @@ function listYamlFiles(dir: string): string[] {
 
 /** 효과·배역의 무리 자리에 쓸 수 있는 별칭: own(주인공의 무리), zone_owner(지금 구역의 주인, 12-54) */
 function isFactionAlias(x: string): boolean {
-  return x === "own" || x === "zone_owner" || x === "captor";
+  return x === "own" || x === "zone_owner" || x === "captor" || x === "bounty";
 }

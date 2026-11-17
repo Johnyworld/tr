@@ -262,6 +262,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const over = !!state.playerZone && infestationOf(content, state, state.playerZone) > baseInfestation(content, state.playerZone);
     if (over !== w.zone_overrun) return false;
   }
+  if (w.bounty !== undefined && (state.bounties ?? []).length > 0 !== w.bounty) return false;
   if (w.predecessor_here) {
     const want = w.predecessor_here === "grave";
     const found = state.remains.some((r) => r.zone === state.playerZone && (r.buriedAt !== null) === want && state.chronicle.some((c) => c.characterId === r.of));
@@ -411,6 +412,9 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   // 배역은 주인공이 부르는 말로 (이름을 모르면 호칭, 기획서 6.3)
   for (const [key, id] of Object.entries(cast)) vars[key] = playerCalls(state, content, id);
   vars.zone = (state.playerZone && content.locations[state.playerZone]?.name) || "거점";
+  // 현상금을 건 무리 (12-136)
+  const bountyBy = (state.bounties ?? [])[0];
+  if (bountyBy) vars.bounty_by = content.factions[bountyBy]?.name ?? bountyBy;
   // 복수하러 온 사람이 갚으려는 사람 (12-135): 주인공이 죽인 사람을 주인공이 부르는 말로
   const vendetta = (state.vendettas ?? []).find((v) => Object.values(cast).includes(v.avenger));
   if (vendetta) vars.victim = playerCalls(state, content, vendetta.victim);

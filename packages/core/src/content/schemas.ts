@@ -504,6 +504,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ npc_heal: z.strictObject({ who: z.string().min(1), steps: z.number().int().min(1).max(2) }) }),
     /** 이 배역을 주인공의 원수로 삼는다 (12-59: 위협한 자를 잊지 않는다). 배경 부품 enemy가 더해진다 */
     z.strictObject({ grudge: z.strictObject({ who: z.string().min(1), why: z.string().min(1).max(80) }) }),
+    /** 현상금을 거둔다 (12-136): 먼저 건 무리({bounty_by})의 것 */
+    z.strictObject({ clear_bounty: z.literal(true) }),
     /** 그 사람의 복수 다짐이 풀린다 (12-135: 화해, 대가를 치름, 결판) */
     z.strictObject({ settle_vendetta: z.strictObject({ who: z.string().min(1) }) }),
     /** 붙잡힌 배역이 어디 갇혔는지 주인공이 알게 된다 (진짜 상태에서 코드가 채운다, 12-56) */
@@ -763,6 +765,8 @@ export function createContentSchemas(s: Scenario) {
         zone_infested_gte: z.number().int().min(0).max(3).optional(),
         /** 지금 구역의 감염체 압력이 평소(기준값)보다 높다 (12-123: 담 밖의 전조) */
         zone_overrun: z.boolean().optional(),
+        /** 주인공에게 현상금이 걸려 있다 (12-136). 문장의 자리 {bounty_by}는 먼저 건 무리 */
+        bounty: z.boolean().optional(),
         /** 이 구역에 이전 주인공의 유해(remains, 묻히지 않은 것)나 무덤(grave)이 있다 (12-130: 계승의 흔적) */
         predecessor_here: z.enum(["remains", "grave"]).optional(),
         /** 주인공의 명성 단계가 이 이상 (12-127, scenario.fame.tiers의 차례) */

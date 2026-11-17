@@ -180,6 +180,29 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
   }
   // 복수할 사람이 아무도 나서지 않았으면, 세상 어딘가의 그 사람의 가족·친구가 (12-135)
   if (by === "attack" && !store.getState().vendettas.some((v) => v.victim === id)) spawnAvenger(ctx, id, witnesses.length > 0);
+  if (by === "attack") noteKillForBounty(ctx, id, witnesses.length > 0);
+}
+
+/** 그 무리가 주인공이 자기 사람을 이만큼 죽인 것을 알면 현상금을 건다 (12-136, *임시*) */
+export const BOUNTY_AT = 3;
+
+/** 주인공이 다른 무리 사람을 죽였고 그 무리가 알게 되면(목격자, 흔적) 센다. BOUNTY_AT에 이르면 현상금 */
+function noteKillForBounty(ctx: ToolContext, deadId: string, witnessed: boolean): void {
+  const { store, content, rng } = ctx;
+  const state = store.getState();
+  const dead = state.characters[deadId];
+  const me = state.characters[state.playerId];
+  if (!dead || !me || isInfected(content, dead) || dead.extra?.turnedFrom) return;
+  if (dead.extra && templateKind(content.extras[dead.extra.template]) !== "person") return;
+  const faction = dead.factionId;
+  if (!faction || faction === me.factionId || !state.factions[faction]) return;
+  if (!witnessed && rng() >= VENDETTA_TRACE_CHANCE) return;
+  store.append({ type: "kill_known", factionId: faction });
+  const now = store.getState();
+  if ((now.killsKnown[faction] ?? 0) < BOUNTY_AT || now.bounties.includes(faction)) return;
+  store.append({ type: "bounty_posted", factionId: faction });
+  const fact = `${content.factions[faction]?.name ?? faction}이(가) 내 머리에 값을 걸었다는 소문이 돈다`;
+  store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "rumor", accuracy: "approximate", learnedAt: now.time } });
 }
 
 /** 목격자 없이 죽였어도 가족·친구가 흔적으로 누가 죽였는지 알게 될 확률 (12-135, *임시*) */

@@ -146,3 +146,25 @@
   trait_count: 0
   companion_bonus: { sense_danger: 1 }
   appears: { zone_owner: [none] }
+
+# 현상금 사냥꾼 (12-136): 주인공에게 걸린 현상금을 노리고 나타난다 (storylets/bounty.yaml). 무리에 속하지 않는다
+- id: bounty_hunter
+  label: 현상금 사냥꾼
+  rank: loner
+  age: [24, 50]
+  appears: { zones: [] }
+  looks:
+    - 오른쪽 귀가 반쯤 없는 마른 남자. 허리에 수갑 두 벌을 매달았다
+    - 머리를 바짝 민 여자. 손목에 현상 벽보를 접어 고무줄로 감아 두었다
+    - 낡은 경찰 점퍼를 입은 중년. 말끝마다 "일은 일이고"를 붙인다
+  stats: { strength: [0, 1], agility: [0, 1], senses: [1, 1], nerve: [1, 1] }
+  skills: { fight: 2, shoot: 1, sense_danger: 1, survival: 1 }
+  traits: [calculating, cold, patient, greedy]
+  trait_count: 2
+  inventory:
+    - { item: machete, chance: 0.6 }
+    - { item: kitchen_knife }
+    - { item: wire_roll, chance: 0.7 }
+    - { item: water_bottle }
+    - { item: cigarettes, chance: 0.5 }
+  values: { mercy: -1, self_interest: 2 }

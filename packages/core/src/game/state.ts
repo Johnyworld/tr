@@ -218,6 +218,8 @@ export function createGameSchemas(s: Scenario) {
   const state = z.strictObject({
     scenarioId: z.string(),
     worldId: z.string(),
+    /** 세계의 날마다 정해지는 것(기온의 들쭉날쭉)의 씨앗. 세계의 RNG에서 뽑는다 (같은 시드면 같은 세계). 없으면(이전 세이브) worldId */
+    worldSeed: z.number().int().nullable().default(null),
     roleId: z.string(),
     /** 자유 시나리오로 시작했으면 그때 코드가 만든 역할 (콘텐츠에 없다, 기획서 12.5). roleId는 CUSTOM_ROLE_ID */
     customRole: customRoleSchema.nullable().default(null),
@@ -391,6 +393,7 @@ export function createGameSchemas(s: Scenario) {
       type: z.literal("world_created"),
       scenarioId: z.string().min(1),
       worldId: z.string().min(1),
+      worldSeed: z.number().int().nullable().default(null),
       roleId: z.string().min(1),
       customRole: customRoleSchema.nullable().default(null),
       player: character,
@@ -751,6 +754,7 @@ export type GameEvent = z.infer<GameSchemas["event"]>;
 export const EMPTY_STATE: GameState = {
   scenarioId: "",
   worldId: "",
+  worldSeed: null,
   roleId: "",
   customRole: null,
   zoneSearches: {},
@@ -857,6 +861,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         ...structuredClone(EMPTY_STATE),
         scenarioId: event.scenarioId,
         worldId: event.worldId,
+        worldSeed: event.worldSeed,
         roleId: event.roleId,
         scenarioRole: event.roleId,
         customRole: event.customRole ? structuredClone(event.customRole) : null,
@@ -1793,6 +1798,8 @@ export function createWorldEvent(
     type: "world_created",
     scenarioId: content.scenario.id,
     worldId,
+    // 다른 무작위를 흔들지 않게 맨 끝에 뽑는다
+    worldSeed: rng ? Math.floor(rng() * 2 ** 31) : null,
     roleId: customRole ? CUSTOM_ROLE_ID : roleId,
     customRole: customRole ?? null,
     player,

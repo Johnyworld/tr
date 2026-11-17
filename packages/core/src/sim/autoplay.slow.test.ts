@@ -24,6 +24,19 @@ describe("랜덤 자동 플레이 (실제 콘텐츠)", () => {
     expect(stats.zonesVisited.size).toBeGreaterThanOrEqual(6);
     expect(stats.successions).toBe(stats.deaths);
   }, 30_000); // 1500턴: 인물이 늘면 전체 실행 중에는 5초를 넘긴다
+
+  it("같은 시드면 같은 판이 된다 (시계·세계 id에 기대는 무작위가 없다)", () => {
+    const content = loadContent(REAL);
+    const run = () => {
+      const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(11) });
+      const world = m.create("mcp", "role_e_porter");
+      const stats = autoplay(world, content, createSeededRng(110), 200);
+      const end = { time: world.state().time, zone: world.state().playerZone, player: world.state().playerId };
+      world.close();
+      return JSON.stringify({ stats: { ...stats, zonesVisited: [...stats.zonesVisited] }, end });
+    };
+    expect(run()).toBe(run());
+  }, 30_000);
 });
 
 /** 시작 시나리오마다 (새로 더한 콘텐츠 포함) 무작위 플레이가 막히지 않는지, 그 시나리오의 이야기가 열리는지 */

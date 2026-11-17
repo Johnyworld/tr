@@ -31,10 +31,10 @@ function heatedHere(content: Content, state: GameState): boolean {
 /** 활동이 없을 때(상태 화면·GM 상태)의 기준: 그 구역에서 쉬고 있다 */
 const RESTING_ACTIVITIES: readonly string[] = ["sleep", "rest", "wait"];
 
-/** 그날의 들쭉날쭉: 세계와 날에서 정해지는 -1 ~ 1 */
-function dayNoise(worldId: string, day: number): number {
+/** 그날의 들쭉날쭉: 세계와 날에서 정해지는 -1 ~ 1. 세계의 씨앗(같은 시드면 같다), 없으면(이전 세이브) 세계 id */
+function dayNoise(world: string | number, day: number): number {
   let h = 2166136261;
-  for (const ch of `${worldId}:${day}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  for (const ch of `${world}:${day}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   return ((h >>> 0) % 2001) / 1000 - 1;
 }
 
@@ -49,7 +49,7 @@ export function outsideTemp(content: Content, state: GameState, time: number = s
   const weather = dayOf(time) === dayOf(state.time) ? weatherNow(s, state) : null;
   const weatherDegrees = weather ? (c.weather[weather.id] ?? 0) : 0;
   const segment = segmentOf(time);
-  const value = (season ? (c.season[season.id] ?? 0) : 0) + c.segments[segment] + weatherDegrees + c.jitter * dayNoise(state.worldId, dayOf(time));
+  const value = (season ? (c.season[season.id] ?? 0) : 0) + c.segments[segment] + weatherDegrees + c.jitter * dayNoise(state.worldSeed ?? state.worldId, dayOf(time));
   return { value: Math.round(value), segmentLabel: SEGMENT_LABELS[segment], weatherLabel: weather?.label ?? null, weatherDegrees };
 }
 

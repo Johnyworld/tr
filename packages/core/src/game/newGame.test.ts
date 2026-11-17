@@ -172,11 +172,11 @@ describe("월드 팩 읽기", () => {
     const dir = root();
     expect(loadContentPacks(dir).map((c) => c.scenario.id)).toEqual(["harbor", "post_apoc"]);
     expect(loadContentPacks(dir, "harbor").map((c) => c.scenario.id)).toEqual(["harbor"]);
-  }, 20_000); // 실제 월드 팩을 두 번 읽는다. 전체 테스트가 함께 돌면 5초를 넘기기도 한다
+  }, 60_000); // 실제 월드 팩을 두 번 읽는다. 전체 테스트가 함께 돌면 20초를 넘기기도 한다
 
   it("폴더 이름과 id가 다르면 오류", () => {
     const dir = root();
     cpSync(REAL_DIR, join(dir, "wrong"), { recursive: true });
     expect(() => loadContentPacks(dir)).toThrow(ContentError);
-  }, 20_000); // 실제 월드 팩을 세 번 읽는다
+  }, 60_000); // 실제 월드 팩을 세 번 읽는다. 전체 테스트가 함께 돌면 20초를 넘기기도 한다
 });

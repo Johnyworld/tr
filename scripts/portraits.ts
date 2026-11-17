@@ -34,6 +34,8 @@ type Style = {
   sampler: string;
   scheduler: string;
   grade?: Grade;
+  /** 이 화풍 전체의 자르는 영역 배율 (기본 1). 1보다 작으면 얼굴이 커진다. 얼굴의 crop_scale과 곱한다 */
+  crop_scale?: number;
   /** 머리가 위로 잘리는 화풍용: 위쪽을 이만큼(px, 8의 배수) 이어 그린 뒤 위에서부터 정사각형으로 자른다 */
   extend_top?: number;
 };
@@ -195,7 +197,7 @@ for (const job of jobs) {
   job.crop = null;
   if (framing) {
     const { width, height } = pngSize(job.raw);
-    if (face) job.crop = planCrop(face, width, height, job.ch.crop_scale ?? 1);
+    if (face) job.crop = planCrop(face, width, height, (style.crop_scale ?? 1) * (job.ch.crop_scale ?? 1));
     else console.error(`  ! ${job.prefix}: 얼굴을 찾지 못해 가운데를 자릅니다`);
   }
   const p = job.crop?.pad;

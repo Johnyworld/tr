@@ -67,6 +67,8 @@ styles:
     sampler: dpmpp_2m
     scheduler: karras
     grade: { ref: palette_A.png, strength: 0.7 }
+    # 실사 얼굴은 같은 너비 기준이어도 다른 화풍보다 작아 보인다: 조금 더 당겨 자른다
+    crop_scale: 0.88
 
   D:
     label: 미국 애니메이션
@@ -265,3 +267,144 @@ faces:
     tags: 1boy, black hair, headband
     subject: >-
       a young man fighter, messy black hair, cloth headband, torn school uniform jacket, determined stare
+
+  # ── 추가 얼굴 (화풍마다 남 2·여 2) ──
+  # A 실사 회화
+  a_m3:
+    style: A
+    gender: male
+    seed: 2011
+    # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
+    cleanup: true
+    subject: >-
+      a 58 year old korean man, former farmer, deeply wrinkled sun-darkened skin, grey buzz cut,
+      heavy-lidded tired eyes, wide flat nose, faded knit cap, frayed wool coat
+  a_m4:
+    style: A
+    gender: male
+    seed: 2012
+    subject: >-
+      a 27 year old korean man, field medic, long narrow face, sharp cheekbones, messy parted hair,
+      round glasses with frames mended with tape, thin stubble, stained grey hoodie under a vest
+  a_f3:
+    style: A
+    gender: female
+    seed: 2013
+    # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
+    cleanup: true
+    subject: >-
+      a 48 year old korean woman, former market vendor, round face, laugh lines, short permed hair
+      streaked with grey, warm but wary eyes, padded quilted vest over a thick sweater
+  a_f4:
+    style: A
+    gender: female
+    seed: 2014
+    # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
+    cleanup: true
+    subject: >-
+      a 19 year old korean young woman, scavenger, broad nose, strong eyebrows, shaved sides with a short
+      braid on top, an old burn scar on the side of her neck, oversized dark hoodie
+
+  # D 미국 애니메이션
+  d_m3:
+    style: D
+    gender: male
+    seed: 2111
+    subject: >-
+      a 60 year old korean man, veteran survivor, bald head, heavy brow, crooked broken nose,
+      thick grey beard, deep forehead lines, worn military field jacket
+  d_m4:
+    style: D
+    gender: male
+    seed: 2112
+    subject: >-
+      a 30 year old korean man, heavy-set brawler, long black hair tied in a topknot, angular face,
+      a scar across his upper lip, sleeveless padded vest over a dark shirt
+  d_f3:
+    style: D
+    gender: female
+    seed: 2113
+    subject: >-
+      a 45 year old korean woman, militia commander, short cropped silver hair, hard square jaw,
+      crow's feet, stern stare, high-collared military coat
+  d_f4:
+    style: D
+    gender: female
+    seed: 2114
+    # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
+    cleanup: true
+    subject: >-
+      a 24 year old korean young woman, smuggler, wavy shoulder-length hair under a bandana, round face,
+      a small mole under one eye, sly half smile, patched denim jacket
+
+  # C 현대 애니메이션
+  c_m1:
+    style: C
+    gender: male
+    seed: 2211
+    tags: 1boy, white hair, messy hair, golden eyes
+    subject: >-
+      a young man scout, messy white hair, golden eyes, cool calm expression, black tactical hooded jacket
+      with straps and buckles
+  c_m2:
+    style: C
+    gender: male
+    seed: 2212
+    # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
+    cleanup: true
+    tags: 1boy, mature male, black hair, slicked back hair, stubble, grey eyes
+    subject: >-
+      a mature man mercenary leader, slicked-back black hair, light stubble, grey eyes, calm confident look,
+      long dark coat with a high collar over light body armor
+  c_f5:
+    style: C
+    gender: female
+    seed: 2213
+    tags: 1girl, blonde hair, wolf cut, short hair, purple eyes
+    subject: >-
+      a young woman engineer, ash blonde wolf cut hair, purple eyes, confident grin, goggles resting on top of
+      her head, orange work jacket with tool pouches
+  c_f6:
+    style: C
+    gender: female
+    seed: 2214
+    tags: 1girl, twintails, red hair, amber eyes
+    subject: >-
+      an energetic teenage girl mechanic, dark red hair in twin tails, amber eyes, smudge of oil on her cheek,
+      cropped bomber jacket over a black turtleneck
+
+  # B 일본 레트로 일러스트
+  b_m2:
+    style: B
+    gender: male
+    seed: 2311
+    # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
+    cleanup: true
+    tags: 1boy, mature male, black hair, stubble
+    subject: >-
+      a tough man in his forties, square jaw, slicked-back black hair, stubble, narrow tired eyes,
+      worn tan trench coat with the collar up
+  b_m3:
+    style: B
+    gender: male
+    seed: 2312
+    tags: 1boy, glasses, long bangs, brown hair
+    subject: >-
+      a shy young man radio technician, brown hair with long bangs, round glasses, gentle worried expression,
+      green army surplus jacket with a radio strap
+  b_f4:
+    style: B
+    gender: female
+    seed: 2313
+    tags: 1girl, curly hair, long hair, headband, brown hair
+    subject: >-
+      a confident young woman, big curly permed brown hair with a headband, bold eyebrows, red lipstick,
+      black leather jacket
+  b_f5:
+    style: B
+    gender: female
+    seed: 2314
+    tags: 1girl, short hair, spiked hair, black hair, tomboy
+    subject: >-
+      a tomboyish young woman fighter, short spiky black hair, sharp determined eyes, a bandage on her nose,
+      navy bomber jacket over a white shirt

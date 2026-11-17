@@ -25,7 +25,7 @@ describe("상태 화면의 새 항목", () => {
     expect(v.gear?.capacity).toBeGreaterThan(0);
     expect(v.loan.join()).toContain("낡은 소총");
     expect(v.debts).toEqual([{ name: "나루상단", amount: 5 }]);
-    expect(v.policy.map((p) => p.label)).toEqual(["배급", "태세", "교역"]);
+    expect(v.policy.map((p) => p.label)).toEqual(["배급", "태세", "교역", "탄약 분배", "의약품 분배", "연료 분배"]);
     // 하급 전투원은 분대원: 분대장이 맨 위, 같은 분대 사람 (명령은 못 한다)
     expect(v.squad?.map((m) => m.id)).toEqual(["a_taeho", "a_jiho", "a_seoyeon", "a_mansu"]);
     expect(v.squad?.[0]?.doing).toBe("분대장");

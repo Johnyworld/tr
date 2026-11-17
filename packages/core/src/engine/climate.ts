@@ -2,7 +2,7 @@ import type { Content } from "../content/schemas.ts";
 import { isCreature } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
 import type { GameState } from "../game/state.ts";
-import { daysOfStock, disposition } from "../sim/war.ts";
+import { daysOfStock, disposition, policyEffects } from "../sim/war.ts";
 import { dayOf, nextSegmentStart, SEGMENT_LABELS, segmentOf, TIME_SEGMENTS, type Activity } from "../rules/time.ts";
 import { trackOf } from "../scenario/scenario.ts";
 import { seasonAt } from "../sim/season.ts";
@@ -126,8 +126,10 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
     value -= trait;
     parts.push(`체질 ${signed(-trait)}`);
   }
-  if (indoor && heatedHere(content, state) && value < c.heated) {
-    value = c.heated;
+  // 분배 (12-128): 그 거점 무리의 연료 방침만큼 불 땐 거처가 덜(더) 따뜻하다
+  const floor = c.heated + (zone && state.zones[zone]?.owner ? policyEffects(content, state.factions[state.zones[zone]!.owner!]).heated : 0);
+  if (indoor && heatedHere(content, state) && value < floor) {
+    value = floor;
     parts.push("불 땐 거처");
   } else if (indoor && c.sanctuary !== undefined && zone && content.locations[zone]?.sanctuary && value < c.sanctuary) {
     // 피난처 (12-122): 성당·캠퍼스처럼 누구의 땅도 아닌 곳도 모여 사는 사람들이 불을 땐다. 거점보다는 덜 따뜻하다

@@ -1,4 +1,5 @@
 import { resistSteps } from "./growth.ts";
+import { policyEffects } from "../sim/war.ts";
 import { turnIntoInfected } from "./turning.ts";
 import { fatigueBlocksRecovery } from "./fatigue.ts";
 import { onPersonDeath } from "./people.ts";
@@ -641,7 +642,8 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
   for (const factionId of Object.keys(store.getState().factions)) {
     const members = npcs().filter((c) => c.factionId === factionId && !c.captive);
     const medics = members.filter((c) => !!c.occupation && care.occupations.includes(c.occupation.id) && !isIncapacitated(content, c)).length;
-    let slots = medics * care.per_medic;
+    // 분배 (12-128): 의약품을 아끼면 덜, 아낌없이 쓰면 더 돌본다
+    let slots = Math.round(medics * care.per_medic * policyEffects(content, store.getState().factions[factionId]).care);
     if (slots === 0) continue;
     const severity = (c: (typeof members)[number]) => harm.levels.findIndex((l) => l.id === c.conditions[harm.id]);
     for (const c of [...members].sort((a, b) => severity(b) - severity(a) || a.id.localeCompare(b.id))) {

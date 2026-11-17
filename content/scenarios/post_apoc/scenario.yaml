@@ -344,6 +344,64 @@ command:
           summary: 날마다 나루상단(나루상단 자신이면 버들마을)에 연료를 넘기고 식량을 받는다. 겨울에는 추위가 걱정이다
           trade: { partner: faction_e, fallback_partner: faction_b, give: { fuel: 4 }, get: { food: 8 } }
           opposed_by: [a_jeonghun]
+    # 분배 (12-128, *임시*): 무리 창고의 탄약·의약품·연료를 어디에 더 쓰고 어디를 아낄지. 회의에서 정한다 (council_propose)
+    - id: ammo
+      label: 탄약 분배
+      default: normal
+      options:
+        - id: save
+          label: 아끼기
+          summary: 교전마다 탄약을 반만 쓰고 그만큼 화력이 떨어진다
+          ammo_use: 0.5
+          firepower: 0.85
+          opposed_by: [a_doyun, pb_seokgyu, c_gyeongsu]
+        - id: normal
+          label: 보통
+          summary: 하던 대로
+        - id: front
+          label: 전선에 몰기
+          summary: 교전마다 탄약을 더 쓰는 대신 화력이 오른다. 창고가 빨리 빈다
+          ammo_use: 1.5
+          firepower: 1.2
+          opposed_by: [a_jeonghun, b_myeongsuk, d_sangpil, e_deoksu]
+    - id: medicine
+      label: 의약품 분배
+      default: normal
+      options:
+        - id: save
+          label: 아끼기
+          summary: 의무실이 크게 다친 사람만 돌본다 (하루 돌보는 사람이 반)
+          care: 0.5
+          opposed_by: [a_jeonghun, d_sangpil]
+        - id: normal
+          label: 보통
+          summary: 하던 대로
+        - id: generous
+          label: 아낌없이
+          summary: 의무실이 하루에 두 배를 돌본다. 의약품이 빨리 빈다
+          care: 2
+          opposed_by: [a_doyun, e_deoksu, c_gyeongsu]
+    - id: fuel
+      label: 연료 분배
+      default: normal
+      options:
+        - id: save
+          label: 아끼기
+          summary: 땔 것을 줄인다. 창고는 오래가지만 거처가 덜 따뜻하다 (불 땐 거처가 6도 낮다)
+          upkeep: { fuel: 0.6 }
+          heated: -6
+          opposed_by: [a_jeonghun, b_myeongsuk]
+        - id: normal
+          label: 보통
+          summary: 하던 대로
+        - id: warm
+          label: 넉넉히 때기
+          summary: 거처가 늘 따뜻하고 사기가 조금 오르지만 연료가 빨리 빈다
+          upkeep: { fuel: 1.4 }
+          heated: 4
+          morale: { delta: 1, chance: 0.1 }
+          opposed_by: [a_doyun, pb_seokgyu, e_deoksu]
+
 
 # 자유 시나리오 (기획서 12.5): 플레이어가 쓴 시작을 이 범위 안의 부품으로 옮긴다
 custom_start:

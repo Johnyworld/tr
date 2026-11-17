@@ -141,18 +141,26 @@ export function factionPolicy(content: Content, faction: { policy?: Record<strin
 }
 
 /** 방침이 전쟁 틱에 주는 배수: 소모(자원별), 공격 성향, 지키는 병력. 사기 변화는 따로 */
-function policyEffects(content: Content, faction: FactionState | undefined) {
+export function policyEffects(content: Content, faction: FactionState | undefined) {
   const upkeep: Record<string, number> = {};
   let aggression = 1;
   let defense = 1;
+  let firepower = 1;
+  let ammoUse = 1;
+  let care = 1;
+  let heated = 0;
   const morale: { delta: number; chance: number }[] = [];
   for (const { option } of factionPolicy(content, faction)) {
     for (const [r, m] of Object.entries(option.upkeep)) upkeep[r] = (upkeep[r] ?? 1) * m;
     aggression *= option.aggression;
     defense *= option.defense;
+    firepower *= option.firepower;
+    ammoUse *= option.ammo_use;
+    care *= option.care;
+    heated += option.heated;
     if (option.morale) morale.push(option.morale);
   }
-  return { upkeep, aggression, defense, morale };
+  return { upkeep, aggression, defense, morale, firepower, ammoUse, care, heated };
 }
 
 /** 무리 사람이 받는 배급 단계: 창고가 며칠 치 남았는지로 정하고, 방침(ration_shift)만큼 옮긴다 */
@@ -382,7 +390,7 @@ export function applyBattleOutcome(
   const defenderLosses = Math.min(d.combatants, outcome.defenderLosses);
   lose(a, attackerLosses);
   lose(d, defenderLosses);
-  for (const f of [a, d]) f.resources[war.ammo] = Math.max(0, (f.resources[war.ammo] ?? 0) - war.ammo_per_clash);
+  for (const f of [a, d]) f.resources[war.ammo] = Math.max(0, (f.resources[war.ammo] ?? 0) - Math.round(war.ammo_per_clash * policyEffects(content, f).ammoUse));
   a.resources[war.medicine] = Math.max(0, (a.resources[war.medicine] ?? 0) - attackerLosses * war.medicine_per_casualty);
   d.resources[war.medicine] = Math.max(0, (d.resources[war.medicine] ?? 0) - defenderLosses * war.medicine_per_casualty);
   const committed = Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind])));
@@ -467,7 +475,9 @@ function fight(
   const d = world.factions[defenderId]!;
   const committed = Math.max(1, Math.round(a.combatants * (plan ? PLAN_COMMIT : COMMIT[kind])));
   const defenders = Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * defenseOf(content, d)));
-  const power = (n: number, f: FactionState) => n * (1 + 0.1 * f.morale) * ((f.resources[war.ammo] ?? 0) >= war.ammo_per_clash ? 1 : NO_AMMO_FACTOR);
+  // 분배 (12-128): 탄약을 전선에 몰면 화력이 오르고 그만큼 빨리 쓴다
+  const use = (f: FactionState) => Math.round(war.ammo_per_clash * policyEffects(content, f).ammoUse);
+  const power = (n: number, f: FactionState) => n * (1 + 0.1 * f.morale) * ((f.resources[war.ammo] ?? 0) >= use(f) ? policyEffects(content, f).firepower : NO_AMMO_FACTOR);
   const attack = power(committed, a);
   const defense = power(defenders, d) * (content.locations[zone]?.kind === "base" ? BASE_DEFENSE_BONUS : 1);
   const success = rng() < attack / (attack + defense);
@@ -480,7 +490,7 @@ function fight(
   const defenderLosses = Math.min(d.combatants, success ? loserLosses : winnerLosses);
   lose(a, attackerLosses);
   lose(d, defenderLosses);
-  for (const f of [a, d]) f.resources[war.ammo] = Math.max(0, (f.resources[war.ammo] ?? 0) - war.ammo_per_clash);
+  for (const f of [a, d]) f.resources[war.ammo] = Math.max(0, (f.resources[war.ammo] ?? 0) - Math.round(war.ammo_per_clash * policyEffects(content, f).ammoUse));
   a.resources[war.medicine] = Math.max(0, (a.resources[war.medicine] ?? 0) - attackerLosses * war.medicine_per_casualty);
   d.resources[war.medicine] = Math.max(0, (d.resources[war.medicine] ?? 0) - defenderLosses * war.medicine_per_casualty);
 

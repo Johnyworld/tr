@@ -466,6 +466,13 @@ export const scenarioFileSchema = z
                     aggression: z.number().min(0).max(3).default(1),
                     /** 지키는 병력 배수 */
                     defense: z.number().min(0).max(3).default(1),
+                    /** 분배 (12-128): 교전의 화력 배수, 교전마다 쓰는 탄약 배수 */
+                    firepower: z.number().min(0).max(3).default(1),
+                    ammo_use: z.number().min(0).max(3).default(1),
+                    /** 분배 (12-128): 무리 의무실이 하루에 돌보는 사람 수 배수 (한 사람에 의약품 하나) */
+                    care: z.number().min(0).max(3).default(1),
+                    /** 분배 (12-128): 이 무리 거점의 불 땐 거처 최저 체감에 더하는 도 (아끼면 음수) */
+                    heated: z.number().int().min(-15).max(10).default(0),
                     /** 무리 사람이 받는 배급 단계를 이만큼 옮긴다 (+1이면 한 단계 적게, war.ration.levels) */
                     ration_shift: z.number().int().min(-2).max(2).default(0),
                     /** 하루마다 사기 변화 */

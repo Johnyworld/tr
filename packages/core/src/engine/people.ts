@@ -201,7 +201,7 @@ function noteKillForBounty(ctx: ToolContext, deadId: string, witnessed: boolean)
   const now = store.getState();
   if ((now.killsKnown[faction] ?? 0) < BOUNTY_AT || now.bounties.includes(faction)) return;
   store.append({ type: "bounty_posted", factionId: faction });
-  const fact = `${content.factions[faction]?.name ?? faction}이(가) 내 머리에 값을 걸었다는 소문이 돈다`;
+  const fact = `${josa(content.factions[faction]?.name ?? faction, "이/가")} 내 머리에 값을 걸었다는 소문이 돈다`;
   store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "rumor", accuracy: "approximate", learnedAt: now.time } });
 }
 

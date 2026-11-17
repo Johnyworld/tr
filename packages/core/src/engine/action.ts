@@ -644,7 +644,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     lines.push(...deliverPrisoners(ctx));
     lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다. 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
     if (rideUsed) {
-      lines.push(`${rideUsed.name}을(를) 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 무언가 몰려들 수 있다." : ""}`);
+      lines.push(`${josa(rideUsed.name, "을/를")} 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 무언가 몰려들 수 있다." : ""}`);
       if (rideUsed.noise) store.append({ type: "noise_made", zone: input.move_to, level: rideUsed.noise, day: dayOf(store.getState().time) });
     }
     // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
@@ -795,7 +795,7 @@ function planRide(ctx: ToolContext, itemId: string, blocked: boolean):
   const me = state.characters[state.playerId]!;
   const item = content.items[itemId];
   if (!item?.vehicle) return { ok: false, error: `${item?.name ?? itemId}은(는) 탈 것이 아니다.` };
-  if ((me.inventory[itemId] ?? 0) < 1) return { ok: false, error: `${item.name}이(가) 없다.` };
+  if ((me.inventory[itemId] ?? 0) < 1) return { ok: false, error: `${josa(item.name, "이/가")} 없다.` };
   if (blocked) return { ok: false, error: "물을 건너거나 몰래 빠져나가는 길에는 탈 수 없다." };
   // 함께 걷는 사람이 있으면 그 걸음에 맞춘다 (개는 따라 뛴다)
   const walkers = activeCompanions(state).filter((id) => {
@@ -804,7 +804,7 @@ function planRide(ctx: ToolContext, itemId: string, blocked: boolean):
   });
   if (walkers.length) return { ok: false, error: "함께 걷는 사람이 있어 그 걸음에 맞췄다." };
   const fuel = item.vehicle.fuel ?? null;
-  if (fuel && (me.inventory[fuel] ?? 0) < 1) return { ok: false, error: `${content.items[fuel]?.name ?? fuel}이(가) 없어 ${item.name}을(를) 끌고 걸었다.` };
+  if (fuel && (me.inventory[fuel] ?? 0) < 1) return { ok: false, error: `${josa(content.items[fuel]?.name ?? fuel, "이/가")} 없어 ${josa(item.name, "을/를")} 끌고 걸었다.` };
   return { ok: true, name: item.name, speed: item.vehicle.speed, fuel, noise: item.vehicle.noise, roadRisk: item.vehicle.road_risk };
 }
 

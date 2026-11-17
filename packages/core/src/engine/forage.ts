@@ -71,7 +71,7 @@ export function forage(ctx: ToolContext, kindId: string, outcome: CheckOutcome |
     displays.push({ type: "item", fromName: "", toName: me.name, itemName, quantity });
   }
   const tired = count > 0 ? " 오늘 이미 한 곳이라 덜 잡힌다." : "";
-  const dog = helper ? ` ${state.characters[helper]!.name}이(가) 몰이를 도왔다.` : "";
+  const dog = helper ? ` ${josa(state.characters[helper]!.name, "이/가")} 몰이를 도왔다.` : "";
   lines.push(
     names.length
       ? `${kind.label}: ${josa(names.join(", "), "을/를")} 얻었다 (소지품에 들어왔다). 얻은 것만 서술한다.${dog}${tired}`
@@ -143,7 +143,7 @@ export function runDailyFood(ctx: ToolContext): ToolDisplayEvent[] {
     spoiled.push(`${content.items[item]?.name ?? item} ${lost}개`);
   }
   if (!spoiled.length) return [];
-  const fact = `${spoiled.join(", ")}이(가) 상해서 버렸다`;
+  const fact = `상해서 버렸다: ${spoiled.join(", ")}`;
   return [{ type: "belief", fact, sourceLabel: "소지품", note: `${fact}. 상한 냄새를 서술에 비춘다` }];
 }
 

@@ -63,6 +63,8 @@ const LOOT_PER_RAIDER = 10;
 const DESERTION_CHANCE = 0.5;
 const TRAINING_CHANCE = 0.3;
 const REFUGEE_CHANCE = 0.08;
+/** 무작위 습격은 상대 전투원의 이만큼은 있어야 한다 (12-138, *임시*) */
+export const WEAK_RAID_RATIO = 0.5;
 /** 공격 종류 가중치 */
 const KIND_WEIGHT: Record<Clash["kind"], number> = { occupy: 3, raid: 3, skirmish: 2, assault: 1 };
 
@@ -332,6 +334,8 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const options = attackOptions(next, content, profile);
     const choice = pickWeighted(rng, options.map((o) => ({ item: o, weight: KIND_WEIGHT[o.kind] })));
     if (!choice) continue;
+    // 상대 전투원의 절반도 안 되면 먼저 치지 않는다 (12-138: 청솔이 세 배 강한 붉은연합을 120일에 스무 번 쳐서 무너졌다). 클락으로 준비한 공세는 그대로
+    if (choice.kind !== "occupy" && choice.defender && next.factions[attacker]!.combatants < (next.factions[choice.defender]?.combatants ?? 0) * WEAK_RAID_RATIO) continue;
     if (choice.kind === "occupy") clashes.push(occupy(next, attacker, choice.zone));
     else fightOrDefer({ kind: choice.kind, attacker, defender: choice.defender!, zone: choice.zone });
   }

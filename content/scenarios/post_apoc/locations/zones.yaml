@@ -11,7 +11,8 @@
   danger: 0
   owner: faction_a
   adjacent: [a_east_post, old_town, riverside, b_base]
-  yields: { food: 58, water: 75, fuel: 12, ammo: 3 }
+  # 연료 16 (*임시*, 12-138): 겨울(소모 ×2) 적자를 비축분으로 버티고 평소에 다시 채운다. 12면 첫 겨울 끝에 바닥나 거점 실내에서 얼어 죽었다
+  yields: { food: 58, water: 75, fuel: 16, ammo: 3 }
   loot:
     chance: 0.3
     items:
@@ -143,7 +144,8 @@
   cover: 7
   danger: 0
   owner: faction_b
-  yields: { food: 36, water: 42, fuel: 6, ammo: 1 }
+  # 식량 44·연료 9 (*임시*, 12-138): 40명이 한 해 평균으로는 남고 겨울 적자는 비축분으로 버틴다. 식량 36·연료 6이면 한 해 내내 적자라 첫 겨울에 연료가, 60일에 식량이 바닥났다
+  yields: { food: 44, water: 42, fuel: 9, ammo: 1 }
   loot:
     chance: 0.3
     items:
@@ -162,7 +164,8 @@
   cover: 7
   danger: 0
   owner: faction_d
-  yields: { food: 30, water: 33, fuel: 5, medicine: 4 }
+  # 식량 36·연료 7 (*임시*, 12-138): 30명이 한 해 평균으로는 남는다. 식량 30·연료 5면 첫 겨울에 연료가, 120일에 식량이 바닥났다
+  yields: { food: 36, water: 33, fuel: 7, medicine: 4 }
   loot:
     chance: 0.25
     items:

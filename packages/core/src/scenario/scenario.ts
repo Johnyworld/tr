@@ -123,6 +123,7 @@ export function conditionPenalty(s: Scenario, character: Pick<Character, "condit
 /** "부상: 경상, 감염: 없음" 같은 상태 요약 */
 export function describeConditions(s: Scenario, character: Pick<Character, "conditions">): string {
   return s.condition_tracks
+    .filter((t) => !t.quiet || shownLevel(t, character.conditions[t.id]) !== t.levels[0])
     .map((t) => `${t.label}: ${shownLevel(t, character.conditions[t.id]).label}`)
     .join(", ");
 }

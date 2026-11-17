@@ -1,7 +1,7 @@
 /**
  * 월드 팩의 세력 전쟁을 미리 돌려 본다 (기획서 12.4: 새 월드를 더할 때 산출·소모 균형 맞추기).
- * pnpm war:sim [팩 id] [--days N] [--seeds N]
- * 무리마다 인원·전투원·식량·물·사기와 구역 주인을 30일마다 찍는다. LLM 없음, 세이브 없음
+ * pnpm war:sim [팩 id] [--days N] [--seeds N] [--every N]
+ * 무리마다 인원·전투원·식량·물·연료·사기와 구역 주인을 N일(기본 30)마다 찍는다. 연료는 겨울을 넘기는지 본다 (12-138). LLM 없음, 세이브 없음
  */
 import { resolve } from "node:path";
 import { baseInfestation, infestationDay, infestationOf } from "../game/infestation.ts";
@@ -19,6 +19,7 @@ const flag = (name: string, fallback: number) => {
 const pack = args.find((a) => !a.startsWith("--") && Number.isNaN(Number(a))) ?? process.env.SCENARIO ?? "post_apoc";
 const days = flag("--days", 90);
 const seeds = flag("--seeds", 3);
+const every = flag("--every", 30);
 const root = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios", pack);
 const content = loadContent(root);
 
@@ -33,9 +34,9 @@ for (let seed = 1; seed <= seeds; seed++) {
     world = { factions: r.factions, zones: r.zones, clocks: r.clocks };
     clashes += r.clashes.length;
     for (const c of infestationDay(content, { infested, zoneNoise: {} }, day, r.clashes, rng)) infested[c.zone] = c.level;
-    if (day % 30 === 0 || day === days) {
+    if (day % every === 0 || day === days) {
       const factions = Object.entries(world.factions)
-        .map(([id, f]) => `${content.factions[id]?.name ?? id} 인원 ${f.population} 전투원 ${f.combatants} 식량 ${f.resources.food ?? 0} 물 ${f.resources.water ?? 0} 사기 ${f.morale}`)
+        .map(([id, f]) => `${content.factions[id]?.name ?? id} 인원 ${f.population} 전투원 ${f.combatants} 식량 ${f.resources.food ?? 0} 물 ${f.resources.water ?? 0} 연료 ${f.resources.fuel ?? 0} 사기 ${f.morale}`)
         .join(" | ");
       const zones = Object.entries(world.zones)
         .map(([z, o]) => `${content.locations[z]?.name ?? z}:${o.owner ? (content.factions[o.owner]?.name ?? o.owner) : "-"}`)

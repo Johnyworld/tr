@@ -276,6 +276,8 @@ export const scenarioFileSchema = z
           label: z.string().min(1),
           /** 상태 화면 아이콘 (12-64) */
           icon: iconNameSchema.optional(),
+          /** 처음 단계면 상태 문장에서 뺀다 (12-138: 골초만 쓰는 담배처럼 대부분에게 상관없는 트랙) */
+          quiet: z.boolean().optional(),
           levels: z
             .array(
               z.strictObject({

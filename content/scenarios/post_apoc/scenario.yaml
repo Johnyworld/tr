@@ -743,6 +743,7 @@ condition_tracks:
   - id: craving
     label: 담배
     icon: fire
+    quiet: true
     levels:
       - { id: satisfied }
       - { id: restless, symptoms: [restless] }

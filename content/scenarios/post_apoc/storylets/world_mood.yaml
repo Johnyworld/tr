@@ -160,8 +160,10 @@
   tags: [world]
   repeatable: true
   cooldown_days: 4
+  # 감염체가 평소보다 몰려들었을 때만 (12-123)
   when:
     own_territory: true
+    zone_overrun: true
     segments: [night, dawn]
   setup: 잠결에 무언가 담을 긁는 소리가 들린다. 손톱인지 나뭇가지인지. 멎었다가, 조금 옆에서 다시 시작된다. 보초 망루 쪽은 조용하다.
   ai_direction: 정체는 아직 모른다. 감염체일 수도, 바람에 쓸리는 철사일 수도 있다. 위험은 플레이어가 고른 행동이 부를 때만 판정으로 정한다. 정체를 확정하지 않고 대응을 기다린다.
@@ -191,8 +193,10 @@
   tags: [world]
   repeatable: true
   cooldown_days: 6
+  # 감염체가 평소보다 몰려들었을 때만 (12-123)
   when:
     own_territory: true
+    zone_overrun: true
     segments: [morning]
   setup: 아침 순찰 길, 남쪽 담 밑 진흙에 발자국이 어지럽게 찍혀 있다. 신발 자국이 아니다. 담을 따라 몇 번이고 오간 흔적이다. 누군가 벌써 수군거린다. "요즘 밤마다 저쪽이 시끄럽더라."
   ai_direction: 감염체가 담 밖을 맴돈 흔적으로 보이지만 몇인지, 언제였는지는 모른다. 무리 사람들은 불안해하고 소문이 금방 퍼진다. 숫자를 지어내지 않는다.
@@ -245,6 +249,7 @@
           - belief: { fact: 몇 사람은 불을 끄지 않았다. 그림자 몇이 담 가까이까지 왔다가 돌아갔다, source: seen }
         miss:
           - faction_morale: { faction: own, delta: -1 }
+          - zone_noise: 2
           - belief: { fact: 누군가 겁에 질려 허공에 총을 쏘았다. 그림자가 늘었다, source: seen }
     - id: watch
       label: 망루에 올라 지켜본다

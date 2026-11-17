@@ -749,6 +749,8 @@ export function createContentSchemas(s: Scenario) {
         zone_noise_gte: z.number().int().min(1).max(5).optional(),
         /** 지금 구역의 감염체 압력이 이 이상 (12-112) */
         zone_infested_gte: z.number().int().min(0).max(3).optional(),
+        /** 지금 구역의 감염체 압력이 평소(기준값)보다 높다 (12-123: 담 밖의 전조) */
+        zone_overrun: z.boolean().optional(),
         /** 우리 무리의 방침이 이 중 하나 (주제 id → 선택지 id 목록, 기획서 9.11). 무리 사람은 누구나 안다 */
         own_policy: z.record(contentIdSchema, z.array(contentIdSchema).min(1)).optional(),
         /** 우리 무리 식량이 며칠 치 이하 */

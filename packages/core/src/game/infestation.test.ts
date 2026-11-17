@@ -136,4 +136,25 @@ describe("감염체 압력", () => {
     store.append({ type: "infestation_changed", zone: own.id, level: own.danger + 2, cause: "소음" });
     expect(troublesOf(state(), content, "faction_a").find((t) => t.kind === "infested")!.level).toBe(1);
   });
+
+  it("담 밖의 전조는 우리 구역에 감염체가 평소보다 몰려들었을 때만 열린다 (12-123)", async () => {
+    const { conditionsMet } = await import("../story/storylets.ts");
+    const { initialWarWorld } = await import("../sim/war.ts");
+    const real = loadRealContent();
+    const omen = real.storylets.w_omen_tracks!;
+    const store = new InMemoryGameStore([createWorldEvent(real, "role_a_grunt", "world_omen", () => 0.5)]);
+    const s = store.getState();
+    const w = initialWarWorld(real);
+    s.factions = w.factions;
+    s.zones = w.zones;
+    s.playerZone = "a_base";
+    const morning = Math.floor(s.time / 1440) * 1440 + 7 * 60;
+    expect(conditionsMet(s, real, omen, morning)).toBe(false);
+    store.append({ type: "infestation_changed", zone: "a_base", level: baseInfestation(real, "a_base") + 1, cause: "소음" });
+    const t = store.getState();
+    t.factions = w.factions;
+    t.zones = w.zones;
+    t.playerZone = "a_base";
+    expect(conditionsMet(t, real, omen, morning)).toBe(true);
+  });
 });

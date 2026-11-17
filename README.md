@@ -107,7 +107,8 @@ Claude 데스크톱은 터미널의 `PATH`(nvm 등)를 모를 수 있으므로 *
 ## 개발
 
 ```bash
-pnpm test            # 단위 테스트 (LLM 호출 없음)
+pnpm test            # 단위 테스트 (LLM 호출 없음). 느린 자동 플레이는 빠진다
+pnpm test:slow       # 실제 콘텐츠로 수백 턴을 돌리는 자동 플레이 (test:all은 전부)
 pnpm typecheck       # 전체 타입 체크
 pnpm content:check   # 모든 월드 팩 검증 (검색 평가 세트 포함)
 pnpm war:sim post_apoc # 월드 팩의 세력 전쟁을 90일 미리 돌려 보기 (--days, --seeds)

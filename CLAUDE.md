@@ -61,7 +61,8 @@ docs/design.md    기획서
 ```bash
 pnpm install        # 설치
 cp .env.example .env  # 선택. 로컬 설정 (RAG, 치트 등)
-pnpm test           # 단위 테스트 (vitest, LLM 호출 없음)
+pnpm test           # 단위 테스트 (vitest, LLM 호출 없음). 느린 자동 플레이(*.slow.test.ts)는 빠진다
+pnpm test:slow      # 실제 콘텐츠로 수백 턴을 돌리는 자동 플레이만. test:all은 전부
 pnpm typecheck      # 전체 타입 체크
 pnpm content:check  # 모든 월드 팩 검증 (검색 평가 세트 포함)
 pnpm rag:eval       # RAG 검색 평가 (bge-m3). --compare로 설정 비교, --hash로 모델 없이

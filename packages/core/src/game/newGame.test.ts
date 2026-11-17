@@ -177,5 +177,5 @@ describe("월드 팩 읽기", () => {
     const dir = root();
     cpSync(REAL_DIR, join(dir, "wrong"), { recursive: true });
     expect(() => loadContentPacks(dir)).toThrow(ContentError);
-  });
+  }, 20_000); // 실제 월드 팩을 세 번 읽는다
 });

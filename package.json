@@ -9,6 +9,8 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "vitest run",
+    "test:slow": "TEST_SLOW=1 vitest run .slow.test",
+    "test:all": "TEST_SLOW=1 vitest run",
     "typecheck": "pnpm -r typecheck",
     "content:check": "pnpm --filter @trpg/core content:check",
     "mcp": "pnpm --silent --filter @trpg/mcp start",

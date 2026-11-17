@@ -131,6 +131,7 @@
       - { item: dry_ration, weight: 1, qty: [1, 1] }
       - { item: radio, weight: 0.5, qty: [1, 1] }
       - { item: duct_tape, weight: 2, qty: [1, 1] }
+      - { item: bicycle, weight: 0.3, qty: [1, 1] }
       - { item: cloth, weight: 2, qty: [1, 2] }
       - { item: baseball_bat, weight: 1, qty: [1, 1] }
       - { item: moto_helmet, weight: 1, qty: [1, 1] }

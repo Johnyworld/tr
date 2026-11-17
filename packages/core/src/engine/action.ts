@@ -1,3 +1,5 @@
+import { templateKind } from "../game/kinds.ts";
+import { activeCompanions } from "../game/companions.ts";
 import { forage, handleTrap } from "./forage.ts";
 import { buryRemains } from "./remains.ts";
 import { resistSteps } from "./growth.ts";
@@ -194,6 +196,11 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("몸 상태가 나아지는 물건을 쓰면 그 아이템 id (먹을 것, 구급상자, 약 등. 가진 것만). 효과는 시스템이 정한다. 아니면 null"),
+    ride: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("move_to와 함께: 타고 가는 이동 수단 (가진 아이템 id, 자전거·오토바이 등). 빨라지는 정도·연료·소음은 시스템이 정한다. 함께 걷는 사람이 있으면 그 걸음에 맞춘다. 걸으면 null"),
     forage: z
       .string()
       .nullable()
@@ -597,7 +604,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
   const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item || input.drink || input.refill ? "eat" : input.craft || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : "brief"));
-  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission);
+  // 이동 수단 (12-137): 타고 가면 이동 시간이 줄고, 연료를 쓰고, 도착한 곳에 소리가 난다
+  const ride = input.move_to && input.ride ? planRide(ctx, input.ride, !!crossingAttempt || escapeAttempt) : null;
+  if (ride && !ride.ok) lines.push(`타지 못하고 걸었다: ${ride.error}`);
+  const rideUsed = ride?.ok ? ride : null;
+  if (rideUsed?.fuel) store.append({ type: "item_consumed", holder: start.playerId, itemId: rideUsed.fuel, quantity: 1 });
+  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? 1);
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);
   displays.push(...time.extra);
@@ -631,8 +643,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     // 끌고 온 포로: 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다 (12-55)
     lines.push(...deliverPrisoners(ctx));
     lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다. 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
+    if (rideUsed) {
+      lines.push(`${rideUsed.name}을(를) 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 무언가 몰려들 수 있다." : ""}`);
+      if (rideUsed.noise) store.append({ type: "noise_made", zone: input.move_to, level: rideUsed.noise, day: dayOf(store.getState().time) });
+    }
     // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
-    for (const d of runRoadEvent(ctx)) {
+    for (const d of runRoadEvent(ctx, rideUsed?.roadRisk ?? 1)) {
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`오는 길에 일이 생겼다: "${d.title}". 도착하기 전, 길 위의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
     }
@@ -770,8 +786,30 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   };
 }
 
+/** 이동 수단을 탈 수 있는가 (12-137). 가진 것, 연료, 함께 걷는 사람, 물을 건너거나 빠져나가는 길 */
+function planRide(ctx: ToolContext, itemId: string, blocked: boolean):
+  | { ok: true; name: string; speed: number; fuel: string | null; noise: number; roadRisk: number }
+  | { ok: false; error: string } {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const me = state.characters[state.playerId]!;
+  const item = content.items[itemId];
+  if (!item?.vehicle) return { ok: false, error: `${item?.name ?? itemId}은(는) 탈 것이 아니다.` };
+  if ((me.inventory[itemId] ?? 0) < 1) return { ok: false, error: `${item.name}이(가) 없다.` };
+  if (blocked) return { ok: false, error: "물을 건너거나 몰래 빠져나가는 길에는 탈 수 없다." };
+  // 함께 걷는 사람이 있으면 그 걸음에 맞춘다 (개는 따라 뛴다)
+  const walkers = activeCompanions(state).filter((id) => {
+    const c = state.characters[id];
+    return c && templateKind(c.extra ? content.extras[c.extra.template] : undefined) === "person";
+  });
+  if (walkers.length) return { ok: false, error: "함께 걷는 사람이 있어 그 걸음에 맞췄다." };
+  const fuel = item.vehicle.fuel ?? null;
+  if (fuel && (me.inventory[fuel] ?? 0) < 1) return { ok: false, error: `${content.items[fuel]?.name ?? fuel}이(가) 없어 ${item.name}을(를) 끌고 걸었다.` };
+  return { ok: true, name: item.name, speed: item.vehicle.speed, fuel, noise: item.vehicle.noise, roadRisk: item.vehicle.road_risk };
+}
+
 /** 활동만큼 시간을 흘린다. 보초·잠·기다림은 빨리감기로, 도중에 끼어들기가 생기면 멈춘다 */
-export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null) {
+export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null, speed = 1) {
   const { store, rng, content } = ctx;
   const state = store.getState();
   const cost = ACTIVITY_COSTS[activity];
@@ -807,7 +845,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     }
     to = cursor;
   } else {
-    to = from + (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, rollActivityMinutes(cost, rng)));
+    to = from + (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round(rollActivityMinutes(cost, rng) * speed)));
     store.append({
       type: "time_advanced",
       activity,

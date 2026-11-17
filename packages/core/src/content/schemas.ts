@@ -71,6 +71,13 @@ export const itemContentSchema = z.strictObject({
   breaks_into: contentIdSchema.optional(),
   /** 소모품으로 쓰고 나면 이 아이템이 남는다 (물병 → 빈 물병) */
   used_into: contentIdSchema.optional(),
+  /**
+   * 이동 수단 (12-137): take_action.ride로 타고 이동하면 이동 시간 × speed. fuel이 있으면 한 번 이동에 하나를 쓴다 (없으면 못 탄다).
+   * noise: 도착한 구역에 그만큼 소음 (감염체를 부른다). road_risk: 길 위의 일이 생길 확률 배수 (빨리 지나간다)
+   */
+  vehicle: z
+    .strictObject({ speed: z.number().positive().max(1), fuel: contentIdSchema.optional(), noise: z.number().int().min(0).max(5).default(0), road_risk: z.number().min(0).max(1).default(1) })
+    .optional(),
   /** 상하는 음식 (12-131): 하루가 지날 때 하나하나가 이 확률로 상해 없어진다 (계절 배수 scenario.spoilage) */
   perishable: z.number().min(0).max(1).optional(),
   /** 끓이지 않은 물 (12-131): 쓰면 이 확률로 병(body.disease)에 걸린다. 그 구역에 불이 피어 있으면 끓여 마셔 괜찮다 */

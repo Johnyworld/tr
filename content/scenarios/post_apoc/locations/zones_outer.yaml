@@ -81,6 +81,7 @@
       - { item: coat, weight: 1, qty: [1, 1] }
       - { item: duct_tape, weight: 1, qty: [1, 1] }
       - { item: kitchen_knife, weight: 1, qty: [1, 1] }
+      - { item: bicycle, weight: 0.3, qty: [1, 1] }
       - { item: pack_frame, weight: 0.5, qty: [1, 1] }
 
 - id: cathedral
@@ -143,6 +144,8 @@
       - { item: canned_food, weight: 1, qty: [1, 1] }
       - { item: cigarettes, weight: 2, qty: [1, 2] }
       - { item: water_bottle, weight: 1, qty: [1, 1] }
+      - { item: motorbike, weight: 0.2, qty: [1, 1] }
+      - { item: bicycle, weight: 0.3, qty: [1, 1] }
 
 # 튜토리얼(방문자)이 시작하는 곳 (기획서 12.4.1). 청솔형제단 거점(옛 공업고등학교)이 멀리 내려다보인다
 - id: overpass

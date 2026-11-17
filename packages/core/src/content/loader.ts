@@ -265,6 +265,8 @@ function checkReferences(content: Content): string[] {
   // 구역이 하나도 없는 팩(부분 팩·테스트)은 건너뛴다
   if (Object.keys(content.locations).length) for (const z of Object.keys(content.scenario.war?.talk?.rumor?.zones ?? {})) if (!content.locations[z]) problems.push(`war.talk.rumor: 알 수 없는 구역 ${z}`);
   for (const t of content.scenario.traits) for (const item of t.effects.habit?.items ?? []) if (!content.items[item]) problems.push(`scenario.traits.${t.id}.habit: 알 수 없는 아이템 ${item}`);
+  // 이동 수단의 연료 (12-137)
+  for (const item of Object.values(content.items)) if (item.vehicle?.fuel && !content.items[item.vehicle.fuel]) problems.push(`items.${item.id}.vehicle: 알 수 없는 연료 ${item.vehicle.fuel}`);
   // 먹을 것 구하기·덫·끓이지 않은 물이 가리키는 아이템 (12-131)
   const f = content.scenario.foraging;
   const refs = [

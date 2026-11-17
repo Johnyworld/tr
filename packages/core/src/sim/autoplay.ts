@@ -355,7 +355,10 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     const roll = rng();
     let out;
     if (roll < 0.2 && s.playerZone) {
-      out = tool("take_action", { ...base, intent: "이동", move_to: pick(rng, neighbors(content, s.playerZone)) });
+      // 탈 것이 있으면 절반쯤은 타고 간다 (12-137)
+      const me = s.characters[s.playerId]!;
+      const vehicle = Object.keys(me.inventory).find((i) => (me.inventory[i] ?? 0) > 0 && content.items[i]?.vehicle);
+      out = tool("take_action", { ...base, intent: "이동", move_to: pick(rng, neighbors(content, s.playerZone)), ride: vehicle && rng() < 0.5 ? vehicle : null });
     } else if (roll < 0.45) {
       // 다친 몸으로는 위험한 일을 하지 않는다
       out = tool("take_action", { ...base, intent: "판정", check: check(pick(rng, moves), hurt > 0 ? "none" : pick(rng, ["none", "none", "light"])) });

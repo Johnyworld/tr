@@ -334,3 +334,22 @@
   weight: 1.5
   value: 5
   carry_bonus: 6
+
+# 이동 수단 (12-137): take_action.ride. 무게는 들고 다니는 짐으로 치지 않는다 (끌고 다닌다)
+- id: bicycle
+  name: 자전거
+  icon: tool
+  description: 체인에 녹이 슨 산악자전거. 조용하고 빠르다. 사람과 함께 걸을 때는 끌고 간다.
+  kind: tool
+  weight: 0
+  value: 25
+  vehicle: { speed: 0.55, road_risk: 0.7 }
+- id: motorbike
+  name: 오토바이
+  icon: tool
+  description: 배달용 소형 오토바이. 한 번 달릴 때마다 기름병 하나를 먹고, 엔진 소리가 구역을 깨운다. 그래도 가장 빠르다.
+  kind: tool
+  weight: 0
+  value: 60
+  vehicle: { speed: 0.3, fuel: fuel_bottle, noise: 2, road_risk: 0.5 }
+

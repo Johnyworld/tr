@@ -1,3 +1,5 @@
+import { seasonAt } from "../sim/season.ts";
+import { stockOutlook } from "../sim/war.ts";
 import { effectiveSkill } from "./traits.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
@@ -343,10 +345,29 @@ export function describePolicyForGm(state: GameState, content: Content): string 
   const lines = [`무리 방침: ${list.map(({ topic, option }) => `${topic.label} ${option.label}`).join(" · ")}`];
   if (council) {
     lines.push(`회의 (council_propose, 상관이 장면에 있을 때 주제마다 하루 한 번, 스킬: ${content.scenario.command.council_moves.join("/")}):`);
+    // 창고 전망 (12-139): 지금 방침대로면 줄어드는 자원이 며칠 가는지, 안을 바꾸면 어떻게 되는지. GM 전용 숫자: 지도부 사람이 말로 전한다
+    const faction = state.factions[player.factionId]!;
+    const season = seasonAt(content.scenario, state.time);
+    const label = (r: string) => content.scenario.resources.find((x) => x.id === r)?.label ?? r;
+    const outlook = (f: typeof faction) => stockOutlook(content, state, player.factionId, f, season);
+    const now = outlook(faction);
+    lines.push(
+      now.length
+        ? `창고 전망 (지금 방침·${season?.label ?? "이 계절"}대로, 교전·교역 빼고): ${now.map((o) => `${label(o.resource)} 약 ${o.days}일`).join(", ")}. 지도부 사람이 말로 전한다 ("이대로면 겨울을 못 넘긴다"). 숫자를 그대로 말하지 않는다`
+        : `창고 전망 (지금 방침·${season?.label ?? "이 계절"}대로): 줄어드는 자원이 없다`,
+    );
     for (const { topic, option } of list) {
       const blocked = state.council[topic.id];
       const note = blocked && state.time < blocked.blockedUntil ? ` (기각됨, ${formatTime(blocked.blockedUntil)}까지)` : blocked?.day === dayOf(state.time) ? " (오늘 이미 올림)" : "";
-      lines.push(`- ${topic.id} ${topic.label}: 지금 ${option.id}${note} · 선택지 ${topic.options.map((o) => `${o.id} ${o.label}(${o.summary})`).join(" / ")}`);
+      const ahead = (o: (typeof topic.options)[number]) => {
+        if (o.id === option.id) return "";
+        const after = outlook({ ...faction, policy: { ...(faction.policy ?? {}), [topic.id]: o.id } });
+        const changed = after.filter((a) => now.find((n) => n.resource === a.resource)?.days !== a.days || !now.some((n) => n.resource === a.resource));
+        const gone = now.filter((n) => !after.some((a) => a.resource === n.resource));
+        const parts = [...changed.map((a) => `${label(a.resource)} 약 ${a.days}일`), ...gone.map((n) => `${label(n.resource)} 줄지 않음`)];
+        return parts.length ? ` → ${parts.join(", ")}` : "";
+      };
+      lines.push(`- ${topic.id} ${topic.label}: 지금 ${option.id}${note} · 선택지 ${topic.options.map((o) => `${o.id} ${o.label}(${o.summary})${ahead(o)}`).join(" / ")}`);
     }
   }
   return lines.join("\n");

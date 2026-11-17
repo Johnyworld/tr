@@ -464,7 +464,7 @@ export function checkStorylets(content: Content): string[] {
     if (new Set(ids).size !== ids.length) problems.push(`${where}: 선택지 id가 겹친다`);
     // 문장의 자리는 배역 이름이나 zone·scarce만 쓸 수 있다. victim은 복수 배역(vendetta)이 있을 때만 (12-135)
     const hasVendetta = Object.values(s.cast).some((r) => r.vendetta);
-    const texts = [s.setup, s.ai_direction ?? "", ...s.choices.map((c) => c.label)];
+    const texts = [s.setup, ...(s.variants ?? []), s.ai_direction ?? "", ...s.choices.map((c) => c.label)];
     for (const c of s.choices) {
       for (const e of [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])]) {
         if ("belief" in e) texts.push(e.belief.fact);

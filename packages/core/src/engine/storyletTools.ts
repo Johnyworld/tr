@@ -148,10 +148,17 @@ function activeOf(state: GameState, content: Content): { storylet: StoryletConte
   return active && storylet ? { storylet, cast: active.cast } : null;
 }
 
+/** 이번에 쓸 상황 문장 (12-139): 몇 번째로 열렸는지에 따라 setup과 variants를 돌아가며 */
+export function storySetup(state: GameState, storylet: StoryletContent): string {
+  const all = [storylet.setup, ...(storylet.variants ?? [])];
+  const n = Math.max(1, state.storyletLog[storylet.id]?.fired ?? 1);
+  return all[(n - 1) % all.length]!;
+}
+
 function setupText(state: GameState, content: Content): string {
   const a = activeOf(state, content);
   if (!a) return "";
-  return fillStorylet(a.storylet.setup, storyletVars(state, content, a.cast));
+  return fillStorylet(storySetup(state, a.storylet), storyletVars(state, content, a.cast));
 }
 
 /** GM 컨텍스트: 진행 중인 이야기. 조건(클락 등)은 넣지 않는다 */
@@ -161,7 +168,7 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
   const vars = storyletVars(state, content, a.cast);
   const lines = [
     `진행 중인 이야기: ${a.storylet.title}`,
-    `  상황: ${fillStorylet(a.storylet.setup, vars)}`,
+    `  상황: ${fillStorylet(storySetup(state, a.storylet), vars)}`,
     ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${fillStorylet(a.storylet.ai_direction, vars)}`] : []),
     `  등장: ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
     `  선택지 (resolve_storylet): ${a.storylet.choices

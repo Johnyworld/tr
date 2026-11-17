@@ -106,3 +106,53 @@
       effects:
         - set_flag: ms_truth
         - belief: { fact: 하류 다리 밑 버려진 배에서 번호와 이름이 빼곡한 공책을 챙겼다, source: seen }
+
+# 혈청을 얻는 길 (12-139): 밤배를 알게 된 뒤(ms_island) 장터 선착장에서 냉장 상자의 앰플을 빼돌린다. 감염이 사망 원인 1위라 혈청을 구할 길을 미스터리와 잇는다
+- id: ms_boat_heist
+  title: 냉장 상자의 앰플
+  tags: [world]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    zones: [e_market]
+    segments: [night]
+    flags_all: [ms_island]
+  setup: 오늘 밤도 선착장 끝에 불 끈 배가 닿았다. 상단 사람 둘이 아이스박스를 내려 창고 문 앞에 두고, 하나가 담배를 피우러 물가로 간다. 창고 문 앞에는 한 사람만 남았다.
+  variants:
+    - "밤배가 늦었다. 상단 사람들은 기다리다 지쳐 천막 안에서 화투를 친다. 선착장 끝에 내려 둔 아이스박스 하나가 달빛을 받고 있다."
+  ai_direction: 아이스박스에는 섬의 혈청 앰플이 들어 있다 (바닥마다 번호와 여 자). 하나쯤 빠져도 당장은 모른다. 들키면 나루상단과 척을 지고, 상단 사람이 칼을 뽑을 수 있다. 앰플을 손에 넣을지는 판정으로 정한다 (코드가 준다). 앰플의 번호가 누구의 피인지 아는 주인공이라면 그 무게를 서술에 비춘다.
+  choices:
+    - id: lift
+      label: 그림자에 붙어 상자를 열고 앰플 하나를 빼낸다
+      check: stealth
+      outcomes:
+        success:
+          - give_item: { item: serum }
+          - deed: { summary: 나루상단 선착장에서 섬의 혈청 앰플 하나를 몰래 빼냈다, tags: [theft], severity: 2, privacy: private }
+          - belief: { fact: "장터 선착장의 냉장 상자에서 혈청 앰플 하나를 빼냈다. 바닥에 번호와 여 자가 있었다", source: seen }
+        partial:
+          - give_item: { item: serum }
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - belief: { fact: 혈청 앰플 하나를 쥐고 달아났다. 등 뒤에서 상단 사람이 고함을 질렀다. 얼굴을 봤을지도 모른다, source: seen }
+        miss:
+          - wound: { steps: 1, cause: 상단 경비의 칼 }
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - belief: { fact: 냉장 상자에 손을 대다 상단 경비에게 들켰다. 빈손으로 칼을 피해 달아났다, source: seen }
+    - id: buy
+      label: 담배 한 갑을 내밀며 앰플 하나만 팔라고 한다
+      when: { has_items: [cigarettes] }
+      check: persuade
+      outcomes:
+        success:
+          - take_item: { item: cigarettes, quantity: 1 }
+          - give_item: { item: serum }
+          - belief: { fact: "선착장의 상단 사람에게 담배를 쥐여 주고 혈청 앰플 하나를 샀다. 장부에는 안 적는 거라고 했다", source: seen }
+        partial:
+          - take_item: { item: cigarettes, quantity: 1 }
+          - belief: { fact: 상단 사람은 담배만 받고 다음 배 때 보자고 했다, source: seen }
+        miss:
+          - belief: { fact: 상단 사람은 섬 물건은 장부 밖으로 안 나간다며 손을 내저었다, source: seen }
+    - id: leave
+      label: 섬 사람들의 피다. 손대지 않는다
+      effects:
+        - belief: { fact: 선착장의 냉장 상자를 보고도 손대지 않았다, source: seen }

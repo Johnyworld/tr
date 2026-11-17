@@ -168,6 +168,40 @@ export function policyEffects(content: Content, faction: FactionState | undefine
   return { upkeep, aggression, defense, morale, firepower, ammoUse, care, heated };
 }
 
+/**
+ * 창고가 며칠 버티는지 (12-139: 회의 안내). 이 계절, 이 방침으로 하루 들어오는 것(가진 구역의 산출 × 계절 × 일손)과 나가는 것(소모 × 계절 × 방침)을 맞대어
+ * 줄어드는 자원만 며칠 남았는지 센다. 교전·교역·감염체 압력은 빼고 본다 (대략의 전망)
+ */
+export function stockOutlook(
+  content: Content,
+  world: Pick<WarWorld, "zones">,
+  factionId: string,
+  faction: FactionState,
+  season: { yields: Record<string, number | undefined>; upkeep: Record<string, number | undefined> } | null,
+): { resource: string; days: number }[] {
+  const war = content.scenario.war;
+  if (!war) return [];
+  const startPop = content.factions[factionId]?.population ?? faction.population;
+  const workforce = clamp(faction.population / Math.max(1, startPop), 0.7, 1.2);
+  const income: Record<string, number> = {};
+  for (const loc of Object.values(content.locations)) {
+    if (world.zones[loc.id]?.owner !== factionId) continue;
+    const boost = world.zones[loc.id]?.boost ?? {};
+    for (const r of new Set([...Object.keys(loc.yields), ...Object.keys(boost)])) {
+      const amount = ((loc.yields as Record<string, number | undefined>)[r] ?? 0) + (boost[r] ?? 0);
+      income[r] = (income[r] ?? 0) + amount * (season?.yields[r] ?? 1) * workforce;
+    }
+  }
+  const out: { resource: string; days: number }[] = [];
+  for (const [r, rate] of Object.entries(war.upkeep)) {
+    const need = rate * (season?.upkeep[r] ?? 1) * (policyEffects(content, faction).upkeep[r] ?? 1) * faction.population;
+    const net = need - (income[r] ?? 0);
+    if (net <= 0) continue;
+    out.push({ resource: r, days: Math.floor((faction.resources[r] ?? 0) / net) });
+  }
+  return out;
+}
+
 /** 무리 사람이 받는 배급 단계: 창고가 며칠 치 남았는지로 정하고, 방침(ration_shift)만큼 옮긴다 */
 export function rationLevel(content: Content, faction: FactionState) {
   const war = content.scenario.war!;
@@ -332,7 +366,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const profile = content.factions[attacker];
     if (!profile || profile.aggression <= 0) continue;
     if (next.factions[attacker]!.combatants <= 0) continue;
-    const aggression = profile.aggression * policyEffects(content, next.factions[attacker]).aggression;
+    const aggression = profile.aggression * policyEffects(content, next.factions[attacker]).aggression * (profile.war_share ?? 1);
     if (rng() >= Math.min(0.9, aggression * war.attack_chance_per_aggression)) continue;
     const options = attackOptions(next, content, profile);
     const choice = pickWeighted(rng, options.map((o) => ({ item: o, weight: KIND_WEIGHT[o.kind] })));
@@ -402,7 +436,7 @@ export function applyBattleOutcome(
   for (const f of [a, d]) f.resources[war.ammo] = Math.max(0, (f.resources[war.ammo] ?? 0) - Math.round(war.ammo_per_clash * policyEffects(content, f).ammoUse));
   a.resources[war.medicine] = Math.max(0, (a.resources[war.medicine] ?? 0) - attackerLosses * war.medicine_per_casualty);
   d.resources[war.medicine] = Math.max(0, (d.resources[war.medicine] ?? 0) - defenderLosses * war.medicine_per_casualty);
-  const committed = Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind])));
+  const committed = Math.max(1, Math.round(a.combatants * (content.factions[spec.attacker]?.war_share ?? 1) * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind])));
   const clash: Clash = { ...spec, success: outcome.success, attackerLosses, defenderLosses };
   applySpoils(next, spec.kind, a, d, spec.attacker, spec.defender, spec.zone, outcome.success, committed, clash);
   return { world: next, clash };
@@ -482,7 +516,9 @@ function fight(
   const war = content.scenario.war!;
   const a = world.factions[attackerId]!;
   const d = world.factions[defenderId]!;
-  const committed = Math.max(1, Math.round(a.combatants * (plan ? PLAN_COMMIT : COMMIT[kind])));
+  // 바깥의 적·감염체를 막느라 이 전쟁에는 그 몫만 내보낸다 (12-139)
+  const share = content.factions[attackerId]?.war_share ?? 1;
+  const committed = Math.max(1, Math.round(a.combatants * share * (plan ? PLAN_COMMIT : COMMIT[kind])));
   const defenders = Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * defenseOf(content, d)));
   // 분배 (12-128): 탄약을 전선에 몰면 화력이 오르고 그만큼 빨리 쓴다
   const use = (f: FactionState) => Math.round(war.ammo_per_clash * policyEffects(content, f).ammoUse);

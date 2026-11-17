@@ -377,6 +377,11 @@ export function createContentSchemas(s: Scenario) {
     startable: z.boolean().optional(),
     /** 공격 성향 0 ~ 3. 0이면 먼저 공격하지 않는다 */
     aggression: z.number().int().min(0).max(3),
+    /**
+     * 이 전쟁에 돌릴 수 있는 몫 (12-139, 0 ~ 1, 기본 1). 나머지는 감염체와 게임에 나오지 않는 바깥의 적을 막는다.
+     * 먼저 치는 확률과 치러 내보내는 병력에 곱한다. 지킬 때는 다 쓴다
+     */
+    war_share: z.number().gt(0).max(1).optional(),
     /** 다른 세력에 대한 태도 -3 ~ +3 (없으면 0). -2 이하면 적대 */
     disposition: z.record(contentIdSchema, z.number().int().min(-3).max(3)).default({}),
     /** 세력 클락: 하루에 한 칸씩 차고, 다 차면 목표 구역을 총공격한다. 그 세력 사람만 안다 */
@@ -794,6 +799,8 @@ export function createContentSchemas(s: Scenario) {
     cast: z.record(contentIdSchema, castRole).default({}),
     /** 상황 (GM이 서술의 출발점으로 쓴다). {배역} {zone} {scarce}, 조사는 {friend:이/가} */
     setup: z.string().min(1),
+    /** 같은 이야기의 다른 상황 문장 (12-139). 되풀이될 때마다 setup → variants 차례로 돌아가며 쓴다 (같은 장면이 같은 말로 반복되지 않게) */
+    variants: z.array(z.string().min(1)).default([]),
     /** GM 전용 연출 지시 */
     ai_direction: z.string().optional(),
     /** 열릴 때 주인공의 공포가 오르는 단계 (12-95, 감염체 무리 같은 이야기) */

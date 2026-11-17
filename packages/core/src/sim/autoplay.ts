@@ -1,3 +1,4 @@
+import { remainsHere } from "../engine/remains.ts";
 import { waterHere } from "../engine/body.ts";
 import { isCreature } from "../game/kinds.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -241,6 +242,50 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       }
       if (empty && rng() < 0.7) {
         tool("take_action", { ...base, intent: "물병을 채운다", refill: true });
+        continue;
+      }
+    }
+    // 생존 행동 (12-139): 사람이라면 할 일. 새 기능(먹고 마시기·담배·유해·덫)의 밸런스를 자동 플레이로도 보게
+    {
+      const shown = (trackId: string | undefined) => {
+        if (!trackId) return 0;
+        const t = content.scenario.condition_tracks.find((x) => x.id === trackId);
+        const i = idx(trackId);
+        return t && i > 0 && !t.levels[i]!.hidden ? i : 0;
+      };
+      const has = (i: string) => (me.inventory[i] ?? 0) > 0;
+      const usable = (track: string) =>
+        Object.entries(content.scenario.consumables)
+          .filter(([i, e]) => (e[track] ?? 0) > 0 && has(i))
+          .map(([i]) => i)
+          // 상하는 것부터, 끓이지 않은 물은 나중에
+          .sort((a, b) => (content.items[b]?.perishable ?? 0) - (content.items[a]?.perishable ?? 0) || (content.items[a]?.contaminated ?? 0) - (content.items[b]?.contaminated ?? 0));
+      const infection = content.scenario.body?.infection;
+      const cure = infection?.cure.find(has);
+      const hunger = content.scenario.body?.hunger?.track;
+      const fireItems = Object.keys(content.scenario.body?.cold?.climate?.fire?.items ?? {});
+      const fuelHere = fireItems.find(has);
+      const fireLit = !!s.playerZone && (s.fires[s.playerZone] ?? 0) > s.time;
+      const atBase = !!s.playerZone && content.locations[s.playerZone]?.kind === "base";
+      const trapHere = !!s.playerZone && s.traps.some((t) => t.zone === s.playerZone);
+      // 덫은 하루가 지나야 걸린다: 놓은 지 하루 넘은 것만 거둔다
+      const trapReady = !!s.playerZone && s.traps.some((t) => t.zone === s.playerZone && s.time - t.setAt >= 24 * 60);
+      const trapItem = content.scenario.foraging?.trap?.item;
+      const wet = !!s.playerZone && !!content.scenario.body?.thirst && (content.locations[s.playerZone]?.yields[content.scenario.body.thirst.resource] ?? 0) > 0;
+      const survival = moves.find((m) => m.id === content.scenario.foraging?.move);
+      let act: Record<string, unknown> | null = null;
+      if (cure && infection && shown(infection.track) > 0) act = { intent: "혈청을 맞는다", use_item: cure };
+      else if (hunger && shown(hunger) > 0 && usable(hunger).length && rng() < 0.7) act = { intent: "먹는다", use_item: usable(hunger)[0] };
+      else if (thirst && shown(thirst) > 0 && usable(thirst).length && rng() < 0.7) act = { intent: "물병을 마신다", use_item: usable(thirst)[0] };
+      else if (shown("craving") > 0 && usable("craving").length) act = { intent: "담배를 피운다", use_item: usable("craving")[0] };
+      else if (cold && shown(cold) > 0 && fuelHere && !fireLit && rng() < 0.6) act = { intent: "불을 피운다", use_item: fuelHere };
+      else if (remainsHere(s).length && rng() < 0.3) act = { intent: "묻어 준다", bury: { who: remainsHere(s)[0]!.holder, words: null } };
+      else if (trapReady && rng() < 0.6) act = { intent: "덫을 거둔다", trap: "check" };
+      else if (trapItem && has(trapItem) && !atBase && !trapHere && rng() < 0.06) act = { intent: "덫을 놓는다", trap: "set" };
+      else if (survival && content.scenario.foraging && !atBase && rng() < 0.06) act = { intent: wet ? "낚시" : "사냥", forage: wet ? "fish" : "hunt", check: check(survival, "none") };
+      if (act) {
+        const out = tool("take_action", { ...base, ...act });
+        if (!out.ok) stats.errors.push(`생존(${String(act.intent)}): ${out.error}`);
         continue;
       }
     }

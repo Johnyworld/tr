@@ -1,0 +1,82 @@
+# 명성 (12-127): 소문으로만 주인공을 아는 팬과 안티가 찾아온다. 배역 stance, 조건 fame_gte (명성 단계)
+
+- id: wf_fan_visit
+  title: 소문을 듣고 온 사람
+  cast:
+    fan: { stance: fan }
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  weight: 0.8
+  when:
+    fame_gte: 1
+    segments: [morning, day, evening]
+  setup: "{fan:이/가} 머뭇거리며 다가온다. 당신 얼굴을 한 번, 들은 이야기를 떠올리는 듯 허공을 한 번 본다. \"혹시… 그 사람 맞죠? 이야기 많이 들었어요.\""
+  ai_direction: "{fan}은(는) 당신을 직접 본 적 없이 소문으로만 알고 동경한다. 들은 이야기는 이 인물 카드의 '아는 당신의 행적'에 있는 것뿐이고, 부풀려 들었으면 실제보다 크게 말한다. 무엇을 원하는지(함께 다니고 싶다, 부탁이 있다, 그냥 보고 싶었다)는 이 인물의 원하는 것에서 고른다. 지어낸 행적을 말하지 않는다."
+  choices:
+    - id: welcome
+      label: 반갑게 맞아 이야기를 들어 준다
+      effects:
+        - relation: { who: fan, axis: affection, delta: 1 }
+        - relation: { who: fan, axis: trust, delta: 1 }
+        - belief: { fact: "{fan:이/가} 내 소문을 듣고 찾아왔다", source: seen }
+    - id: correct
+      label: 소문이 부풀려졌다고 바로잡는다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: fan, axis: respect, delta: 1 }
+          - belief: { fact: "{fan}에게 소문이 부풀려졌다고 말했다. 오히려 더 좋게 보는 눈치였다", source: seen }
+        partial:
+          - belief: { fact: "{fan}에게 소문을 바로잡으려 했지만 겸손으로만 들은 것 같다", source: seen }
+        miss:
+          - relation: { who: fan, axis: affection, delta: -1 }
+          - belief: { fact: "{fan}은(는) 소문과 다른 내 모습에 실망한 눈치였다", source: seen }
+    - id: brush_off
+      label: 바쁘다며 돌려보낸다
+      effects:
+        - relation: { who: fan, axis: affection, delta: -1 }
+
+- id: wf_anti_confront
+  title: 앞을 막는 사람
+  cast:
+    anti: { stance: anti }
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  weight: 0.8
+  when:
+    fame_gte: 1
+    segments: [morning, day, evening]
+  setup: "{anti:이/가} 길을 막아선다. 처음 보는 얼굴인데 당신을 안다는 눈빛이다. \"네가 그 사람이구나. 이야기는 들었어.\" 목소리가 차갑다."
+  ai_direction: "{anti}은(는) 당신을 직접 본 적 없이 소문으로만 알고 경멸한다. 들은 이야기는 이 인물 카드의 '아는 당신의 행적'에 있는 것뿐이고, 부풀려 들었으면 실제보다 나쁘게 말한다. 바로 칼을 뽑지는 않는다. 험담하거나 사람들 앞에서 망신을 주려 한다. 싸움으로 번지면 위험은 판정 전에 선언한다."
+  choices:
+    - id: explain
+      label: 무슨 이야기를 들었는지 묻고 해명한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: anti, axis: respect, delta: 2 }
+          - belief: { fact: "{anti}에게 해명했다. 들은 소문이 다 맞지는 않았다는 걸 알아들은 것 같다", source: seen }
+        partial:
+          - relation: { who: anti, axis: respect, delta: 1 }
+          - belief: { fact: "{anti}에게 해명했지만 반쯤만 믿는 눈치였다", source: seen }
+        miss:
+          - relation: { who: anti, axis: affection, delta: -1 }
+          - belief: { fact: "{anti}에게 해명하려다 오히려 비웃음만 샀다", source: seen }
+    - id: stare_down
+      label: 맞받아 노려본다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: anti, axis: respect, delta: 1 }
+          - belief: { fact: "{anti:이/가} 결국 눈을 피하고 물러났다", source: seen }
+        partial:
+          - belief: { fact: "{anti:은/는} 물러났지만 돌아서며 침을 뱉었다", source: seen }
+        miss:
+          - relation: { who: anti, axis: affection, delta: -1 }
+          - belief: { fact: "{anti}에게 맞섰다가 사람들 앞에서 망신만 당했다", source: seen }
+    - id: walk_past
+      label: 대꾸하지 않고 지나간다
+      effects:
+        - belief: { fact: "{anti:이/가} 내 소문을 듣고 시비를 걸었다. 대꾸하지 않았다", source: seen }

@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 47;
+export const SAVE_SCHEMA_VERSION = 48;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -339,6 +339,8 @@ export function createGameSchemas(s: Scenario) {
     deeds: z.record(z.string(), deedSchema),
     /** NPC가 어떤 행적을 어떤 출처로 알고 있는지: npcId → deedId → source */
     deedKnowledge: z.record(z.string(), z.record(z.string(), beliefSourceSchema)),
+    /** 부풀려 들은 행적의 크기 (NPC → 행적 → 크기, 12-127). 없으면 행적 그대로 */
+    deedHeardAs: z.record(z.string(), z.record(z.string(), z.number().int())).default({}),
     /** 관계: fromId → toId → 신뢰·호감·존중 */
     relations: z.record(z.string(), z.record(z.string(), relationSchema)),
     /**
@@ -552,6 +554,8 @@ export function createGameSchemas(s: Scenario) {
       source: beliefSourceSchema,
       /** 이 NPC의 행위자에 대한 관계 변화 (코드가 계산) */
       delta: relationDeltaSchema,
+      /** 부풀려 들은 행적의 크기 (12-127). 없으면 행적 그대로 */
+      heardAs: z.number().int().min(1).max(3).optional(),
     }),
     z.strictObject({ type: z.literal("witnesses_searched"), deedId: z.string() }),
     z.strictObject({ type: z.literal("rumors_spread"), day: z.number().int() }),
@@ -839,6 +843,7 @@ export const EMPTY_STATE: GameState = {
   runStartedAt: START_TIME,
   deeds: {},
   deedKnowledge: {},
+  deedHeardAs: {},
   relations: {},
   perceived: {},
   revealedSecrets: [],
@@ -1374,6 +1379,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       const known = (next.deedKnowledge[event.npcId] ??= {});
       if (known[deed.id]) throw new Error(`이미 아는 행적: ${event.npcId} ${deed.id}`);
       known[deed.id] = event.source;
+      if (event.heardAs !== undefined && event.heardAs !== deed.severity) (next.deedHeardAs[event.npcId] ??= {})[deed.id] = event.heardAs;
       const toward = (next.relations[event.npcId] ??= {});
       toward[deed.actorId] = applyRelationDelta(toward[deed.actorId] ?? NEUTRAL_RELATION, event.delta);
       if (next.scene.present.includes(event.npcId)) perceive(next, event.npcId);

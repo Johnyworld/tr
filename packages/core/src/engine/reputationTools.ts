@@ -1,4 +1,6 @@
 import { profileOf } from "./people.ts";
+import { npcZoneAt } from "../game/whereabouts.ts";
+import { fameOf } from "../game/fame.ts";
 import { isCreature } from "../game/kinds.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -48,10 +50,12 @@ function noticeMove(ctx: ToolContext) {
 }
 
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
-function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource) {
+function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, heardAs?: number) {
   const values = valuesOf(ctx.content, ctx.store.getState(), npcId);
-  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, deed.tags, deed.severity, source));
-  ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
+  // 부풀려 들었으면 그만큼 크게 반응한다 (12-127)
+  const severity = heardAs ?? deed.severity;
+  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, deed.tags, severity, source));
+  ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta, ...(severity !== deed.severity ? { heardAs: severity } : {}) });
 }
 
 /**
@@ -230,6 +234,12 @@ export function spreadRumors(ctx: ToolContext): void {
     const npcIds = Object.values(state.characters)
       .filter((c) => c.id !== state.playerId && !c.dead && !c.away && !c.captive && ctx.content.npcs[c.id])
       .map((c) => c.id);
+    // 명성 (12-127): 무명이면 목격자의 무리 안에서만, 알려지면 말이 모이는 곳을 거쳐 다른 무리로, 이름나면 소문으로 들은 사람도 옮긴다
+    const fame = ctx.content.scenario.fame;
+    const talk = ctx.content.scenario.war?.talk?.rumor?.zones ?? {};
+    const tierOf = new Map<string, number>();
+    const tier = (actor: string) => tierOf.get(actor) ?? (tierOf.set(actor, fameOf(state, ctx.content, actor).tier), tierOf.get(actor)!);
+    const zoneOf = (id: string) => (ctx.content.npcs[id] ? npcZoneAt(ctx.content.npcs[id]!, state.time) : undefined);
     const learned = spreadOneDay({
       deeds: Object.values(state.deeds),
       knowledge: state.deedKnowledge,
@@ -239,8 +249,27 @@ export function spreadRumors(ctx: ToolContext): void {
         return c ? rumorFactor(ctx.content, c) : 1;
       },
       rng: ctx.rng,
+      ...(fame
+        ? {
+            canPass: (deed, teller, listener) => {
+              const a = state.characters[teller]?.factionId;
+              if (a && a === state.characters[listener]?.factionId) return true;
+              const zone = zoneOf(listener);
+              return tier(deed.actorId) >= fame.cross_from && !!zone && !!talk[zone];
+            },
+            relayRumor: (deed) => tier(deed.actorId) >= fame.relay_from,
+          }
+        : {}),
     });
-    for (const l of learned) learn(ctx, state.deeds[l.deedId]!, l.npcId, l.source);
+    for (const l of learned) {
+      const deed = state.deeds[l.deedId]!;
+      // 왜곡 (12-127): 말이 모이는 곳에서 들으면 그곳의 부풀림 확률로 한 단계 크게. 부풀려 들은 사람이 옮기면 부풀린 채로
+      let heard = ctx.store.getState().deedHeardAs[l.teller]?.[deed.id] ?? deed.severity;
+      const zone = zoneOf(l.npcId);
+      const place = zone ? talk[zone] : undefined;
+      if (fame && place && heard < 3 && ctx.rng() < place.exaggerate) heard += 1;
+      learn(ctx, deed, l.npcId, l.source, heard);
+    }
   }
   ctx.store.append({ type: "rumors_spread", day });
 }

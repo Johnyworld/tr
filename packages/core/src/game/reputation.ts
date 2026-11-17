@@ -208,7 +208,7 @@ export function nextSource(source: BeliefSource): BeliefSource | null {
   return source === "seen" ? "report" : source === "report" ? "rumor" : null;
 }
 
-export type SpreadCandidate = { deedId: string; npcId: string; source: BeliefSource };
+export type SpreadCandidate = { deedId: string; npcId: string; source: BeliefSource; teller: string };
 
 /**
  * 하루치 1단계 전파. 오늘 아침 기준으로 아는 사람만 옮긴다 (같은 날 여러 번 건너가지 않음).
@@ -221,13 +221,17 @@ export function spreadOneDay(input: {
   /** 이 사람이 소문을 옮기는 배수 (트레잇: 수다쟁이 ×2 등) */
   spreadFactor: (npcId: string) => number;
   rng: Rng;
+  /** teller가 listener에게 이 행적을 옮길 수 있는가 (12-127: 무리 안 / 말이 모이는 곳). 없으면 누구에게나 */
+  canPass?: (deed: Deed, teller: string, listener: string) => boolean;
+  /** 소문으로만 들은 사람도 다시 옮기는가 (12-127: 이름난 사람의 소문). 없으면 옮기지 않는다 */
+  relayRumor?: (deed: Deed) => boolean;
 }): SpreadCandidate[] {
   const learned: SpreadCandidate[] = [];
   const taken = new Set<string>();
   for (const deed of input.deeds) {
     for (const teller of input.npcIds) {
       const source = input.knowledge[teller]?.[deed.id];
-      const passed = source ? nextSource(source) : null;
+      const passed = source ? (nextSource(source) ?? (source === "rumor" && input.relayRumor?.(deed) ? "rumor" : null)) : null;
       if (!passed) continue;
       const chance = Math.min(1, SPREAD_CHANCE * input.spreadFactor(teller));
       for (const listener of input.npcIds) {
@@ -235,9 +239,10 @@ export function spreadOneDay(input: {
         if (listener === teller || listener === deed.actorId || input.knowledge[listener]?.[deed.id] || taken.has(key)) {
           continue;
         }
+        if (input.canPass && !input.canPass(deed, teller, listener)) continue;
         if (input.rng() < chance) {
           taken.add(key);
-          learned.push({ deedId: deed.id, npcId: listener, source: passed });
+          learned.push({ deedId: deed.id, npcId: listener, source: passed, teller });
         }
       }
     }

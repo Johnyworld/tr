@@ -596,6 +596,8 @@ export function createContentSchemas(s: Scenario) {
     known: z.boolean().default(false),
     /** 이 인물의 플레이어에 대한 신뢰 하한 */
     trust_gte: z.number().int().optional(),
+    /** 소문으로만 주인공을 아는 팬(fan) 또는 안티(anti)만 (12-127) */
+    stance: z.enum(["fan", "anti"]).optional(),
     /** 발동할 때 장면에 들어온다 */
     enter: z.boolean().default(true),
     /** 이 인물의 몸 상태 (기획서 7.7): track의 단계가 at_least 이상, at_most 이하 (단계 id). 진짜 상태로 본다 (연출은 GM 전용) */
@@ -751,6 +753,8 @@ export function createContentSchemas(s: Scenario) {
         zone_infested_gte: z.number().int().min(0).max(3).optional(),
         /** 지금 구역의 감염체 압력이 평소(기준값)보다 높다 (12-123: 담 밖의 전조) */
         zone_overrun: z.boolean().optional(),
+        /** 주인공의 명성 단계가 이 이상 (12-127, scenario.fame.tiers의 차례) */
+        fame_gte: z.number().int().min(0).optional(),
         /** 우리 무리의 방침이 이 중 하나 (주제 id → 선택지 id 목록, 기획서 9.11). 무리 사람은 누구나 안다 */
         own_policy: z.record(contentIdSchema, z.array(contentIdSchema).min(1)).optional(),
         /** 우리 무리 식량이 며칠 치 이하 */

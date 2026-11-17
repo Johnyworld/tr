@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { fameOf, stanceOf } from "../game/fame.ts";
 import { describeDiplomacyForGm } from "./diplomacy.ts";
 import { heardRumors } from "./factionTalk.ts";
 import { describeFatigue } from "./fatigue.ts";
@@ -110,6 +111,9 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(describeTemperature(content, state) ? [`기온: ${describeTemperature(content, state)}. 추위는 시스템이 기온으로 정한다 (불 피우기는 take_action.use_item에 땔감·판자·기름)`] : []),
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       ...(describeFatigue(content, state) ? [describeFatigue(content, state)!] : []),
+      ...(content.scenario.fame && fameOf(state, content).tier > 0
+        ? [`명성: ${fameOf(state, content).label}. 소문을 들은 사람이 처음 보고도 당신을 알아볼 수 있다 (인물 카드의 팬·안티 줄). 플레이어에게 숫자는 말하지 않는다`]
+        : []),
       ...(incapacitatingSymptom(scenario, player)
         ? [
             `${incapacitatingSymptom(scenario, player)!.label}: 주인공은 스스로 아무것도 하지 못한다. 말하지도 움직이지도 판정하지도 않는다. 흐릿한 감각(소리, 냄새, 몸의 고통)의 조각만 짧게 서술하고, take_action의 activity(wait 또는 sleep, 전투 중이면 null)로 시간이 흐르게 한다. 이야기는 열리지 않는다. 곁의 사람(우리 편·적)이 주인공에게 무엇을 하는지는 코드가 정하고 take_action 결과로 알린다: 옮기거나 붙잡거나 해치는 일을 서술로 지어내지 않는다. 장면의 치료사가 돌보면 treatment {item: null}`,
@@ -222,6 +226,14 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
     .join("\n");
 }
 
+/** 팬·안티 (12-127): 주인공을 직접 보지 않고 소문으로만 아는 사람의 마음 */
+function stanceLines(state: GameState, content: Content, id: string): string[] {
+  const stance = stanceOf(state, content, id);
+  if (stance === "fan") return ["이 인물은 당신을 직접 본 적 없이 소문으로만 알고 동경한다 (팬). 마주치면 알아보고 반기거나 들뜬다"];
+  if (stance === "anti") return ["이 인물은 당신을 직접 본 적 없이 소문으로만 알고 경멸한다 (안티). 마주치면 알아보고 차갑게 굴거나 시비를 건다"];
+  return [];
+}
+
 /** 이 인물이 들은 다른 무리 소문 (12-124): 무리마다 가장 최근 것. 틀렸을 수 있고, 이 인물은 들은 대로 믿는다 */
 function rumorLines(state: GameState, content: Content, id: string): string[] {
   const heard = heardRumors(state, content, id);
@@ -250,7 +262,8 @@ function describeNpcCard(
   const knownDeeds = Object.entries(state.deedKnowledge[npc.id] ?? {})
     .map(([deedId, source]) => {
       const deed = state.deeds[deedId];
-      return deed?.actorId === player.id ? `  - ${deed.summary} (${SOURCE_LABELS[source]})` : null;
+      const puffed = (state.deedHeardAs[npc.id]?.[deedId] ?? deed?.severity ?? 0) > (deed?.severity ?? 0);
+      return deed?.actorId === player.id ? `  - ${deed.summary} (${SOURCE_LABELS[source]}${puffed ? ", 부풀려 들었다: 실제보다 크게 안다" : ""})` : null;
     })
     .filter((line) => line !== null)
     .slice(-5);
@@ -284,6 +297,7 @@ function describeNpcCard(
       ? [`이 인물이 아는 당신의 행적 (당신은 이 인물이 안다는 걸 모를 수 있다. 바로 밝히지 말고 태도에 반영):\n${knownDeeds.join("\n")}`]
       : []),
     ...(secretLine ? [secretLine] : []),
+    ...stanceLines(state, content, npc.id),
     ...describeTieLines(state, content, npc.id),
   ].join("\n");
 }

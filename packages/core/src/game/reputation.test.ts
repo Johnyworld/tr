@@ -86,8 +86,8 @@ describe("소문 전파", () => {
       rng: always,
     });
     expect(learned).toEqual([
-      { deedId: "d_1", npcId: "b", source: "report" },
-      { deedId: "d_1", npcId: "c", source: "report" },
+      { deedId: "d_1", npcId: "b", source: "report", teller: "a" },
+      { deedId: "d_1", npcId: "c", source: "report", teller: "a" },
     ]);
   });
 
@@ -118,5 +118,14 @@ describe("소문 전파", () => {
       return n / 2000;
     };
     expect(rate(true)).toBeGreaterThan(rate(false) * 1.6);
+  });
+
+  it("옮길 수 있는 사람만, 그리고 이름난 사람의 소문은 소문으로 들은 사람도 옮긴다 (12-127)", () => {
+    const base = { deeds: [deed], spreadFactor: () => 1, rng: () => 0 };
+    // 무리 밖으로는 못 넘어간다
+    expect(spreadOneDay({ ...base, knowledge: { a: { d_1: "seen" } }, npcIds: ["a", "b"], canPass: () => false })).toEqual([]);
+    // 소문으로 들은 사람: 보통은 옮기지 않지만 relay면 소문 그대로 옮긴다
+    const relay = spreadOneDay({ ...base, knowledge: { a: { d_1: "rumor" } }, npcIds: ["a", "b"], relayRumor: () => true });
+    expect(relay).toEqual([{ deedId: "d_1", npcId: "b", source: "rumor", teller: "a" }]);
   });
 });

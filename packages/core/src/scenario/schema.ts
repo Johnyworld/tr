@@ -818,6 +818,21 @@ export const scenarioFileSchema = z
      */
     travel: z.strictObject({ tag: id, chance: z.array(z.number().min(0).max(1)).length(4) }).optional(),
     /**
+     * 명성 (12-127). 주인공이 남에게 보인 행적(목격자가 있는 것)의 크기 합이 points다. tiers는 낮은 것부터 (min 이상이면 그 단계).
+     * cross_from: 이 단계부터 행적이 말이 모이는 곳을 거쳐 다른 무리로 넘어간다 (그 전에는 목격자의 무리 안에서만).
+     * relay_from: 이 단계부터 소문으로만 들은 사람도 다시 옮긴다 (더 멀리 퍼진다).
+     * fan_at·anti_at: 주인공을 직접 보지 않고 소문으로만 아는 사람의 호감 또는 존중이 이 이상이면 팬, 이 이하면 안티
+     */
+    fame: z
+      .strictObject({
+        tiers: z.array(z.strictObject({ min: z.number().int().min(0), label: z.string().min(1) })).min(2),
+        cross_from: z.number().int().min(0),
+        relay_from: z.number().int().min(0),
+        fan_at: z.number().int(),
+        anti_at: z.number().int(),
+      })
+      .optional(),
+    /**
      * 외교 (12-126). 지도부 회의에 앉는 주인공이 다른 무리의 간부 이상(envoy_level)과 한 장면에 있을 때 협정을 제안한다 (negotiate).
      * pacts: 협정 종류. kind는 truce(days 동안 서로 치지 않는다) 또는 exchange(서로 잡은 포로를 돌려보낸다). cost는 대가 있는 성공에 우리 창고에서 내주는 것.
      * moves: 협상에 쓰는 스킬. retry_days: 거절당하면 그 무리에 다시 꺼내기까지. broken: 휴전을 깨면 두 무리의 태도

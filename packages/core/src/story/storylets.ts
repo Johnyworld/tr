@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { fameOf, stanceOf } from "../game/fame.ts";
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import { roleOf } from "../game/state.ts";
 import { attracted, loversOf, romanceCast } from "../engine/romance.ts";
@@ -56,6 +57,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => (role.captive_anywhere ? !!c.captive : role.captive ? !!c.captive && c.captive.zone === state.playerZone : !c.captive))
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
     .filter((c) => !role.ids || role.ids.includes(c.id))
+    .filter((c) => !role.stance || stanceOf(state, content, c.id) === role.stance)
     .filter((c) => !role.commander || c.id === commander)
     .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction === "captor" ? (player.captive?.by ?? "-") : role.faction))
     .filter((c) => !role.ranks || role.ranks.includes(c.rank))
@@ -252,6 +254,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   for (const [id, n] of Object.entries(w.clock_lte ?? {})) if ((state.clocks[id]?.filled ?? Infinity) > n) return false;
   if (w.own_morale_lte !== undefined && (!own || own.morale > w.own_morale_lte)) return false;
   if (w.zone_infested_gte !== undefined && (!state.playerZone || infestationOf(content, state, state.playerZone) < w.zone_infested_gte)) return false;
+  if (w.fame_gte !== undefined && fameOf(state, content).tier < w.fame_gte) return false;
   if (w.zone_overrun !== undefined) {
     const over = !!state.playerZone && infestationOf(content, state, state.playerZone) > baseInfestation(content, state.playerZone);
     if (over !== w.zone_overrun) return false;

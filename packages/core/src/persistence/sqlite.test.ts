@@ -67,6 +67,26 @@ describe("SqliteRepository", () => {
     repo.close();
   });
 
+  it("스냅샷은 마지막 하나만 남긴다 (지난 것은 지워 세이브가 불어나지 않는다)", () => {
+    const path = tempPath();
+    const repo = SqliteRepository.open(path, TEST_SCENARIO);
+    playSomeEvents(repo);
+    repo.saveSnapshot();
+    repo.append({ type: "turn_started", turn: 2, input: "줍는다" });
+    repo.saveSnapshot();
+    repo.append({ type: "turn_started", turn: 3, input: "걷는다" });
+    repo.saveSnapshot();
+    const before = repo.getState();
+    repo.close();
+
+    const raw = new Database(path);
+    expect(raw.prepare("SELECT seq FROM snapshots").all()).toEqual([{ seq: 5 }]);
+    raw.close();
+    const reopened = SqliteRepository.open(path, TEST_SCENARIO);
+    expect(reopened.getState()).toEqual(before);
+    reopened.close();
+  });
+
   it("이벤트와 대화 기록은 수정·삭제할 수 없다 (append-only)", () => {
     const path = tempPath();
     const repo = SqliteRepository.open(path, TEST_SCENARIO);

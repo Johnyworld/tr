@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, renameSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
-import { asc, desc, eq, gt } from "drizzle-orm";
+import { asc, desc, eq, gt, lt } from "drizzle-orm";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import {
@@ -179,11 +179,12 @@ export class SqliteRepository implements GameRepository {
     // 스냅숏은 불러오기를 빠르게 할 뿐이다 (이벤트가 원본). 턴마다 상태 전체를 쓰지 않는다
     if (options.every && this.#lastSeq - this.#snapSeq < options.every) return;
     this.#snapSeq = this.#lastSeq;
-    this.#db
-      .insert(schema.snapshots)
-      .values({ seq: this.#lastSeq, state: this.#state, createdAt: new Date().toISOString() })
-      .onConflictDoNothing()
-      .run();
+    const seq = this.#lastSeq;
+    // 불러올 때는 마지막 스냅숏만 쓴다. 지난 스냅숏(하나에 상태 전체, 180KB 안팎)은 지워 세이브가 불어나지 않게 한다
+    this.#sqlite.transaction(() => {
+      this.#db.insert(schema.snapshots).values({ seq, state: this.#state, createdAt: new Date().toISOString() }).onConflictDoNothing().run();
+      this.#db.delete(schema.snapshots).where(lt(schema.snapshots.seq, seq)).run();
+    })();
   }
 
   close(): void {

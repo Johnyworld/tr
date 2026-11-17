@@ -540,6 +540,12 @@ function applyEffect(
     store.append({ type: "faction_resource_changed", factionId: id, resource, delta });
     return {}; // 창고 사정은 배급과 소문으로만 드러난다
   }
+  if ("faction_population" in effect) {
+    const id = factionRef(state, effect.faction_population.faction);
+    if (!state.factions[id]) return {};
+    store.append({ type: "faction_population_changed", factionId: id, delta: effect.faction_population.delta });
+    return {}; // 늘어난 입과 손은 배급·산출로 드러난다
+  }
   if ("send_to" in effect) {
     const to = effect.send_to;
     // 갇힌 곳에서 다른 곳으로 옮겨지면 빠져나온 것이다 (빼앗긴 것은 두고 온다, 12-55)

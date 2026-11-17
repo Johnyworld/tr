@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 50;
+export const SAVE_SCHEMA_VERSION = 51;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -528,6 +528,8 @@ export function createGameSchemas(s: Scenario) {
     /** NPC가 떠난다: toFaction이면 그 세력으로 넘어가고(도시에 남는다), null이면 도시를 떠난다 (기획서 10.4) */
     z.strictObject({ type: z.literal("npc_departed"), npcId: z.string(), toFaction: z.string().nullable() }),
     z.strictObject({ type: z.literal("faction_resource_changed"), factionId: z.string(), resource: z.string(), delta: z.number().int() }),
+    /** 무리의 사람 수가 바뀌었다 (12-133) */
+    z.strictObject({ type: z.literal("faction_population_changed"), factionId: z.string(), delta: z.number().int() }),
     /** 세력 사이 태도가 바뀐다 (값은 코드가 계산한 새 값) */
     z.strictObject({ type: z.literal("faction_disposition_changed"), from: z.string(), to: z.string(), value: z.number().int().min(-3).max(3) }),
     /** 협정을 맺었다 (12-126). 포로 교환은 그 자리에서 끝나므로 기록만 남는다 (until 없음) */
@@ -989,6 +991,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!f) return next;
       f.disposition = { ...(f.disposition ?? {}), [event.to]: event.value };
       return next;
+    }
+    case "faction_population_changed": {
+      const f = mustGet(next.factions, event.factionId, "세력");
+      f.population = Math.max(0, f.population + event.delta);
+      // 떠난 사람만큼 싸울 사람도 준다
+      if (event.delta < 0) f.combatants = Math.min(f.combatants, f.population);
+      break;
     }
     case "faction_resource_changed": {
       const f = next.factions[event.factionId];

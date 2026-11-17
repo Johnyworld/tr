@@ -480,7 +480,7 @@
   title: 끼어 버린 다리
   tags: [command]
   repeatable: true
-  cooldown_days: 3
+  cooldown_days: 6  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   when:
     own_territory: false
     mission_active: true

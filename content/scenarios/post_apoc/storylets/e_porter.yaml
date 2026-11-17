@@ -569,7 +569,7 @@
   title: 빈 쌀통
   tags: [e_porter]
   repeatable: true
-  cooldown_days: 3
+  cooldown_days: 5  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   when:
     segments: [day, evening]
     day_gte: 2

@@ -404,7 +404,7 @@
   title: 보초 순번 다툼
   tags: [squad_life]
   repeatable: true
-  cooldown_days: 3
+  cooldown_days: 6  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   when:
     own_territory: true
     day_gte: 2

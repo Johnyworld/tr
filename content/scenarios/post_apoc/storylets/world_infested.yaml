@@ -10,7 +10,7 @@
   fright_tags: [infected]
   tags: [world]
   repeatable: true
-  cooldown_days: 2
+  cooldown_days: 4  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   weight: 1
   when:
     zone_infested_gte: 3

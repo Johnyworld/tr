@@ -206,7 +206,7 @@
   title: 흘려듣는 소문
   tags: [squad_life]
   repeatable: true
-  cooldown_days: 2
+  cooldown_days: 4  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   when:
     own_territory: true
     segments: [day, evening]

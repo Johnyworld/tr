@@ -259,6 +259,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const over = !!state.playerZone && infestationOf(content, state, state.playerZone) > baseInfestation(content, state.playerZone);
     if (over !== w.zone_overrun) return false;
   }
+  if (w.predecessor_here) {
+    const want = w.predecessor_here === "grave";
+    const found = state.remains.some((r) => r.zone === state.playerZone && (r.buriedAt !== null) === want && state.chronicle.some((c) => c.characterId === r.of));
+    if (!found) return false;
+  }
   if (w.zone_noise_gte !== undefined) {
     const noise = state.playerZone ? state.zoneNoise?.[state.playerZone] : undefined;
     if (!noise || noise.day !== dayOf(at) || noise.level < w.zone_noise_gte) return false;

@@ -753,6 +753,8 @@ export function createContentSchemas(s: Scenario) {
         zone_infested_gte: z.number().int().min(0).max(3).optional(),
         /** 지금 구역의 감염체 압력이 평소(기준값)보다 높다 (12-123: 담 밖의 전조) */
         zone_overrun: z.boolean().optional(),
+        /** 이 구역에 이전 주인공의 유해(remains, 묻히지 않은 것)나 무덤(grave)이 있다 (12-130: 계승의 흔적) */
+        predecessor_here: z.enum(["remains", "grave"]).optional(),
         /** 주인공의 명성 단계가 이 이상 (12-127, scenario.fame.tiers의 차례) */
         fame_gte: z.number().int().min(0).optional(),
         /** 우리 무리의 방침이 이 중 하나 (주제 id → 선택지 id 목록, 기획서 9.11). 무리 사람은 누구나 안다 */

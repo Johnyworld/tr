@@ -1,3 +1,4 @@
+import { lootRemainsDaily } from "./remains.ts";
 import { roleOf } from "../game/state.ts";
 import { endExpiredTruces } from "./diplomacy.ts";
 import { runResidentBodies } from "./residents.ts";
@@ -94,6 +95,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     displays.push(...runDailyNpcBody(ctx, day));
     // 거점 사람들의 허기·추위 (12-125): 무리의 형편이 사람 몸에 보인다
     displays.push(...runResidentBodies(ctx, day));
+    // 묻지 않은 유해는 누군가 조금씩 털어 간다 (12-130)
+    lootRemainsDaily(ctx);
   }
   return displays;
 }

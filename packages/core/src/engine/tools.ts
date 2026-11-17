@@ -49,6 +49,7 @@ import { STORYLET_TOOLS } from "./storyletTools.ts";
 import { SUCCESSION_TOOLS } from "./succession.ts";
 import { createLearnSkillTool } from "./growth.ts";
 import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
+import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
 
@@ -68,7 +69,8 @@ const transferItem = defineTool({
     const state = store.getState();
     if (input.from === input.to) return { ok: false, error: "보내는 쪽과 받는 쪽이 같습니다." };
     for (const holder of [input.from, input.to]) {
-      const reachable = holder === SCENE_HOLDER || holder === state.playerId || state.scene.present.includes(holder);
+      // 이 구역의 묻히지 않은 유해도 뒤질 수 있다 (12-130)
+      const reachable = holder === SCENE_HOLDER || holder === state.playerId || state.scene.present.includes(holder) || remainsHere(state).some((r) => r.holder === holder);
       if (!reachable) return { ok: false, error: `${josa(holderName(state, content, holder), "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
     }
     const fromInv = findHolderInventory(state, input.from);
@@ -305,7 +307,10 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   }
   // 각 tool의 run은 자기 스키마로 파싱된 입력만 받는다
   const before = watchFear(state);
+  const living = livingIds(state);
   const outcome = (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
+  // 이번에 죽은 사람은 그 자리에 유해를 남긴다 (12-130)
+  leaveRemainsForNewDeaths(ctx, living);
   return withCheckLines(withFear(outcome, fearAfterTool(ctx, before)));
 }
 

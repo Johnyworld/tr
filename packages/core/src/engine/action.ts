@@ -1,3 +1,4 @@
+import { buryRemains } from "./remains.ts";
 import { resistSteps } from "./growth.ts";
 import { breakTruceIfAny } from "./diplomacy.ts";
 import { exposeToFatigue } from "./fatigue.ts";
@@ -192,6 +193,14 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("몸 상태가 나아지는 물건을 쓰면 그 아이템 id (먹을 것, 구급상자, 약 등. 가진 것만). 효과는 시스템이 정한다. 아니면 null"),
+    bury: z
+      .strictObject({
+        who: z.string().describe("상태의 '묻히지 않은 유해' 줄의 보관 위치"),
+        words: z.string().max(60).nullable().describe("묘비에 새길 짧은 말 (플레이어가 정했으면 그대로, 아니면 null). 주인공이었던 사람은 연대기의 묘비명을 쓴다"),
+      })
+      .nullable()
+      .default(null)
+      .describe("이 구역의 유해를 묻는다 (두 시간 작업). 같은 무리 사람이면 사기·지켜본 사람의 호감은 시스템이 정한다. 아니면 null"),
     drink: z
       .boolean()
       .default(false)
@@ -263,7 +272,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {
-    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || input.drink || input.refill || !!input.craft || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || input.drink || input.refill || !!input.craft || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
     const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
     if (acts || !passive) {
       return {
@@ -308,6 +317,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (input.move_to) return { ok: false, error: "전투 중에는 구역을 옮길 수 없다. 빠지려면 물러나는 전투 효과를 쓴다." };
     if (input.prepare) return { ok: false, error: "전투 중에는 준비물을 설치할 수 없다." };
     if (input.treatment || input.use_item || input.drink || input.refill) return { ok: false, error: "전투 중에는 치료하거나 물건을 쓸 수 없다. 먼저 물러난다." };
+    if (input.bury) return { ok: false, error: "전투 중에는 묻을 수 없다. 먼저 싸움을 끝낸다." };
     if (input.battle && !input.check) return { ok: false, error: "전투 효과에는 판정(check)을 함께 선언한다." };
     const effect = input.battle ? scenario.battle?.effects.find((e) => e.id === input.battle!.effect) : undefined;
     const HARM_RANK = { none: 0, light: 1, heavy: 2 } as const;
@@ -513,6 +523,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     [input.use_item, () => useItem(ctx, input.use_item!)],
     [input.drink || null, () => drinkWater(ctx)],
     [input.refill || null, () => refillWater(ctx)],
+    [input.bury, () => buryRemains(ctx, input.bury!.who, input.bury!.words)],
   ] as const) {
     if (!request) continue;
     const t = run();
@@ -520,7 +531,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       lines.push(...t.lines);
       displays.push(...t.displays);
     } else {
-      lines.push(`몸을 돌보지 못했다: ${t.error}`);
+      lines.push(`${request === input.bury ? "묻지 못했다" : "몸을 돌보지 못했다"}: ${t.error}`);
     }
   }
 
@@ -559,7 +570,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item || input.drink || input.refill ? "eat" : input.craft ? "work" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item || input.drink || input.refill ? "eat" : input.craft || input.bury ? "work" : "brief"));
   const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission);
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);

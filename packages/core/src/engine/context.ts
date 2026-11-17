@@ -1,3 +1,4 @@
+import { describeRemains } from "./remains.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { fameOf, stanceOf } from "../game/fame.ts";
 import { describeDiplomacyForGm } from "./diplomacy.ts";
@@ -124,6 +125,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(describeGear(content, player) ? [describeGear(content, player)] : []),
       ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감·물건으로만 준다`] : []),
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
+      ...describeRemains(state, content),
       ...(describeCompanions(state, content) ? [describeCompanions(state, content)] : []),
       ...(player.skillPoints > 0 ? [`레벨업 대기: 올릴 스킬 ${player.skillPoints}개. 적당한 때 플레이어에게 무엇을 올릴지 묻고 learn_skill로 올린다`] : []),
     ].join("\n")],

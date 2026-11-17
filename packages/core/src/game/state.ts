@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 48;
+export const SAVE_SCHEMA_VERSION = 49;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -156,6 +156,20 @@ export const runRecordSchema = z.strictObject({
   epitaph: z.string().nullable(),
 });
 export type RunRecord = z.infer<typeof runRecordSchema>;
+
+/**
+ * 유해와 무덤 (12-130). of: 누구의 유해인지, holder: 짐을 지닌 캐릭터 (보통 그 사람, 변이했다 쓰러졌으면 그 감염체).
+ * buriedAt이 있으면 무덤이고 marker가 묘비에 적힌 말이다
+ */
+export const remainsSchema = z.strictObject({
+  of: z.string(),
+  holder: z.string(),
+  zone: z.string(),
+  diedAt: z.number().int(),
+  buriedAt: z.number().int().nullable(),
+  marker: z.string().nullable(),
+});
+export type Remains = z.infer<typeof remainsSchema>;
 
 /** 진행 중인 전투 장면. 전세는 플레이어 편 기준 (+면 우리가 이기고 있다) */
 export const battleStateSchema = z.strictObject({
@@ -399,6 +413,8 @@ export function createGameSchemas(s: Scenario) {
     recentClashes: z.array(z.strictObject({ clash: clashSchema, at: z.number().int() })).default([]),
     /** 죽은 캐릭터들의 기록 (오래된 것부터) */
     chronicle: z.array(runRecordSchema).default([]),
+    /** 유해와 무덤 (12-130) */
+    remains: z.array(remainsSchema).default([]),
   });
 
   /** 상태 변경은 반드시 이벤트로 기록한다 (append-only). 상태는 이벤트를 차례로 적용한 결과다 */
@@ -580,6 +596,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
     z.strictObject({ type: z.literal("weather_set"), day: z.number().int(), weatherId: z.string() }),
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
+    /** 죽은 사람의 유해가 그 구역에 남았다 (12-130) */
+    z.strictObject({ type: z.literal("remains_left"), remains: remainsSchema }),
+    /** 유해를 묻었다. marker: 묘비에 적힌 말 (12-130) */
+    z.strictObject({ type: z.literal("remains_buried"), holder: z.string(), at: z.number().int(), marker: z.string() }),
     /**
      * 몸 상태 트랙이 바뀌었다 (12-1: 치료, 소모품, 배급에 따른 허기, 감염 진행, 굶주림·감염의 부상).
      * 판정에 묶인 피해는 harm_applied를 쓴다. by: healer | rest | daily | infection | 아이템 id
@@ -866,6 +886,7 @@ export const EMPTY_STATE: GameState = {
   recovery: { lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} },
   weather: null,
   recentClashes: [],
+  remains: [],
   chronicle: [],
 };
 
@@ -1466,6 +1487,18 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!state.characters[state.playerId]?.dead) throw new Error("캐릭터가 아직 살아 있습니다.");
       next.chronicle.push(structuredClone(event.record));
       break;
+    case "remains_left":
+      if (next.remains.some((r) => r.holder === event.remains.holder)) throw new Error(`이미 남은 유해: ${event.remains.holder}`);
+      next.remains.push(structuredClone(event.remains));
+      break;
+    case "remains_buried": {
+      const r = next.remains.find((x) => x.holder === event.holder);
+      if (!r) throw new Error(`없는 유해: ${event.holder}`);
+      if (r.buriedAt !== null) throw new Error("이미 묻었습니다.");
+      r.buriedAt = event.at;
+      r.marker = event.marker;
+      break;
+    }
     case "epitaph_written": {
       const record = next.chronicle[event.index];
       if (!record) throw new Error(`없는 연대기: ${event.index}`);

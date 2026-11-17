@@ -501,7 +501,7 @@ traits:
   - { id: aquaphobia, label: 물 공포, kind: negative, cost: 1, description: "깊은 물이 무섭다 (잠긴 곳·물가에서 겁이 난다)", acting: 물이 무릎 위로 오르면 얼굴이 하얗게 질린다, effects: { phobia: [water] } }
   - { id: cynophobia, label: 개 공포, kind: negative, cost: 1, description: "개가 무섭다 (개가 나타나면 겁이 난다)", acting: 개를 보면 몸이 굳고 눈을 떼지 못한다, effects: { phobia: [dog] } }
   # 버릇 (12-129): 하루가 지나면 담배 한 갑을 저절로 피운다. 가진 게 없으면 안절부절 (판정 -1), 담배를 피우면(use_item) 풀린다
-  - { id: chain_smoker, label: 골초, kind: negative, cost: 1, description: "하루 한 갑을 피운다. 담배가 떨어지면 안절부절한다 (판정 -1)", acting: 손가락이 쉴 새 없이 주머니를 뒤지고 담배 연기 속에서 말한다, effects: { habit: { items: [cigarettes], track: craving, start: 3 } } }
+  - { id: chain_smoker, label: 골초, kind: negative, cost: 2, description: "하루 한 갑을 피운다. 담배가 떨어지면 안절부절한다 (판정 -1)", acting: 손가락이 쉴 새 없이 주머니를 뒤지고 담배 연기 속에서 말한다, effects: { habit: { items: [cigarettes], track: craving, start: 3 } } }
   - { id: ugly, label: 험악한 인상, kind: negative, cost: 1, visible: true, description: 첫인상이 나쁘다 (외모 -1), acting: 사람들이 첫눈에 경계한다, opposites: [beautiful, attractive], effects: { looks: -1 } }
   # ── 성격 (0) ──
   - { id: warm, label: 다정함, kind: personality, visible: true, description: 남을 살뜰히 챙긴다, acting: 말끝이 부드럽고 먼저 안부를 묻는다, opposites: [cold], persona: { warmth: 2 } }

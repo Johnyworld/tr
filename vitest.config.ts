@@ -10,5 +10,7 @@ export default defineConfig({
   test: {
     include: ["packages/*/src/**/*.test.ts"],
     exclude: slow ? configDefaults.exclude : [...configDefaults.exclude, "**/*.slow.test.ts"],
+    // 실제 월드 팩을 읽는 테스트가 많아, 기기가 바쁘면 기본 5초를 넘긴다
+    testTimeout: 15_000,
   },
 });

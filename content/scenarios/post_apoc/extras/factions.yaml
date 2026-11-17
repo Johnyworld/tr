@@ -1,0 +1,534 @@
+# 무리 사람 틀 (12-116, *임시*): 청솔형제단·하얀매는 틀이 없고 버들마을·나루상단·여울섬은 하나뿐이라,
+# 다른 무리의 이름 없는 사람을 마주칠 때 GM이 고를 틀이 거의 없었다. 무리마다 2~3개를 더한다
+# 능력·소지품·트레잇은 코드가 굴린다. GM은 물건을 지어내지 않는다
+
+# ── 청솔형제단: 옛 공업고 거점, 분대 체계, "버리지 않는다" ──
+
+- id: a_scout
+  label: 청솔형제단 수색대원
+  faction: faction_a
+  rank: grunt
+  age: [18, 40]
+  looks:
+    - 무릎을 덧댄 작업복 차림의 수색대원. 공업고 실습복 주머니에 분필로 그린 지도를 넣고 다닌다
+    - 낡은 소총을 등에 비껴 멘 수색대원. 장갑 한쪽만 끼고, 맨손으로 담벼락의 표시를 더듬는다
+  stats: { agility: [0, 1], senses: [0, 1], vitality: [0, 1], nerve: [-1, 1] }
+  skills: { shoot: 1, scavenge: 1, sense_danger: 1 }
+  traits: [eagle_eye, principled, protective, weary, eager, cautious]
+  trait_count: 2
+  inventory:
+    - { item: old_rifle, chance: 0.6 }
+    - { item: rifle_rounds, quantity: 2, chance: 0.6 }
+    - { item: crowbar, chance: 0.4 }
+    - { item: water_bottle, chance: 0.7 }
+    - { item: dry_ration, chance: 0.5 }
+    - { item: bandage, chance: 0.3 }
+  values: { loyalty: 2, discipline: 1, mercy: 1 }
+  profile:
+    wants: [분대 누구도 두고 오지 않는 것, 남쪽 담이 더는 무너지지 않는 것, 분대장 자리, 첫 해에 잃은 동생을 찾는 것]
+    fears: [다친 동료를 두고 와야 하는 순간, 붉은연합의 야간 습격, 배급이 반쪽으로 줄어드는 겨울]
+    voices:
+      - { style: 짧고 또박또박한 반말. 동료 이름을 꼭 부른다, samples: ["둘씩 붙어. 혼자 떨어지지 마.", "우린 안 버려. 그게 다야."] }
+      - { style: 지친 존댓말. 말끝에 한숨이 섞인다, samples: ["분대장님한테 먼저 여쭤봐야 해요.", "여기까지 왔으면 다 같이 돌아가야죠."] }
+    rules: [담벼락에 분필로 표시를 남긴다, 물을 마시기 전에 옆 사람에게 먼저 권한다]
+    reputations: [동쪽 초소를 몇 번이고 지켜 낸 사람, 수색 때마다 남의 짐까지 지고 오는 사람, 첫 해부터 공업고에 있던 사람]
+    secrets:
+      - { content: "수색 중에 다친 동료를 한 번 두고 왔다. 아무도 모른다고 믿는다", reveal_when: "둘만 있고 \"버리지 않는다\"는 말이 나왔을 때", min_trust: 3 }
+      - { content: "창고 뒷문이 잠기지 않는 것을 알면서 말하지 않았다. 배고픈 아이들이 드나들어서다", reveal_when: "창고 이야기가 나왔을 때", min_trust: 2 }
+  ties: { chance: 0.3, kinds: [sibling, friend, rival] }
+  appears: { zones: [a_base, a_east_post, south_fields, old_town, riverside, overpass] }
+
+- id: a_field_hand
+  label: 청솔형제단 텃밭 일꾼
+  faction: faction_a
+  rank: staff
+  age: [15, 65]
+  looks:
+    - 흙이 손톱 밑까지 낀 텃밭 일꾼. 챙 넓은 모자를 쓰고 호미를 허리에 찼다
+    - 등이 굽은 일꾼. 감자 자루를 끌며 고랑마다 무엇을 심었는지 중얼거린다
+  stats: { vitality: [0, 2], strength: [0, 1], senses: [-1, 1] }
+  skills: { survival: 1, scavenge: 0 }
+  traits: [patient, warm, motherly, blunt, iron_gut, light_eater]
+  trait_count: 2
+  inventory:
+    - { item: potato, quantity: 2, chance: 0.6 }
+    - { item: wild_greens, chance: 0.5 }
+    - { item: seed_packet, chance: 0.3 }
+    - { item: kitchen_knife, chance: 0.3 }
+  values: { loyalty: 1, mercy: 1, honesty: 1 }
+  profile:
+    wants: [올해 감자가 겨울까지 버티는 것, 텃밭에 담을 하나 더 두르는 것, 손주가 밭일을 배우는 것]
+    fears: [수확 전에 들이닥치는 약탈조, 가뭄, 밤에 밭으로 넘어오는 감염체]
+    voices:
+      - { style: 느릿한 사투리 섞인 반말. 날씨 이야기로 시작한다, samples: ["오늘은 해가 좋아. 고랑이 마르겄다.", "먹는 건 땅이 주는 거여. 총이 주는 게 아니고."] }
+    rules: [남의 발에 밟힌 싹을 손으로 다시 세운다, 처음 보는 사람에게도 먹을 것을 쥐여 준다]
+    reputations: [남쪽 텃밭을 처음 일군 사람, 씨앗을 가장 많이 모아 둔 사람]
+    secrets:
+      - { content: "씨앗 봉투 몇 개를 창고 장부에 올리지 않고 따로 숨겨 두었다. 무리가 무너져도 다시 심으려고", reveal_when: "무리의 앞날이 어둡다는 말이 나왔을 때", min_trust: 3 }
+  ties: { chance: 0.35, kinds: [parent, child, spouse, friend] }
+  appears: { zones: [south_fields, a_base] }
+
+- id: a_wall_crew
+  label: 청솔형제단 담장 보수조
+  faction: faction_a
+  rank: staff
+  age: [17, 55]
+  looks:
+    - 목장갑에 못 주머니를 찬 보수조원. 어깨에 철판 조각을 메고 다닌다
+    - 톱밥을 뒤집어쓴 보수조원. 귀에 몽당연필을 꽂았다
+  stats: { strength: [1, 2], intellect: [0, 1], vitality: [0, 1] }
+  skills: { carpentry: 1, improvise: 1 }
+  traits: [meticulous, blunt, hot_tempered, patient, big_eater, cold_hardy]
+  trait_count: 2
+  inventory:
+    - { item: carpentry_kit, chance: 0.5 }
+    - { item: planks, quantity: 2, chance: 0.5 }
+    - { item: scrap_metal, chance: 0.4 }
+    - { item: duct_tape, chance: 0.3 }
+  values: { discipline: 1, loyalty: 1, honesty: 1 }
+  profile:
+    wants: [남쪽 담을 한 번에 제대로 다시 쌓는 것, 판자와 못이 넉넉한 것, 망루를 하나 더 올리는 것]
+    fears: [자기가 메운 담이 무너지는 것, 판자가 떨어지는 겨울, 밤의 담장 보수]
+    voices:
+      - { style: 툭툭 던지는 반말. 재료 이름을 정확히 댄다, samples: ["판자 두 장이면 돼. 세 장이면 더 좋고.", "대충 막으면 대충 무너져."] }
+    rules: [벽을 보면 손바닥으로 두드려 본다, 쓰다 남은 못을 주워 주머니에 넣는다]
+    reputations: [남쪽 담을 열 번도 넘게 다시 쌓은 사람, 공업고 실습실 공구를 다 아는 사람]
+    secrets:
+      - { content: "지난번 무너진 담은 자기가 판자를 아끼느라 대충 메운 곳이었다", reveal_when: "담이 무너진 이야기가 나왔을 때", min_trust: 3 }
+  ties: { chance: 0.3, kinds: [sibling, friend, rival] }
+  appears: { zones: [a_base, a_east_post, south_fields] }
+
+# ── 하얀매: 진료소, 의술의 순서, 중립과 예외 없는 규칙 ──
+
+- id: d_guard
+  label: 하얀매 수비대원
+  faction: faction_d
+  rank: grunt
+  age: [20, 45]
+  looks:
+    - 흰 천을 팔에 감은 수비대원. 진료소 정문 옆에서 들어오는 사람의 손과 목을 먼저 살핀다
+    - 마스크를 턱에 걸친 수비대원. 소총보다 손전등을 먼저 든다
+  stats: { senses: [0, 1], nerve: [0, 1], strength: [0, 1] }
+  skills: { sense_danger: 1, shoot: 1, infected_lore: 1 }
+  traits: [guarded, principled, formal, cold, meticulous, eagle_eye]
+  trait_count: 2
+  inventory:
+    - { item: old_rifle, chance: 0.5 }
+    - { item: rifle_rounds, chance: 0.5 }
+    - { item: flashlight, chance: 0.6 }
+    - { item: cloth, chance: 0.5 }
+    - { item: bandage, chance: 0.3 }
+  values: { discipline: 2, honesty: 1, mercy: 1 }
+  profile:
+    wants: [격리실 규칙이 한 번도 깨지지 않는 것, 진료소가 어느 편에도 서지 않는 것, 의술을 배우는 것]
+    fears: [물린 걸 숨기고 들어온 사람, 약제실이 털리는 밤, 어느 무리가 진료소를 차지하려 드는 것]
+    voices:
+      - { style: 정중하고 딱딱한 존댓말. 규칙을 그대로 읽듯 말한다, samples: ["손목하고 목 좀 보겠습니다.", "물렸으면 사흘입니다. 예외는 없습니다."] }
+    rules: [누구든 들어오기 전에 상처부터 확인한다, 총구를 사람 쪽으로 두지 않는다]
+    reputations: [격리실 문을 지키는 사람, 붉은연합 간부도 돌려보낸 적 있다는 사람]
+    secrets:
+      - { content: "아는 사람 하나가 물린 걸 알면서 격리실에 넣지 않고 하루 숨겨 준 적이 있다. 그 사람은 결국 변했다", reveal_when: "격리실 규칙을 두고 다툴 때", min_trust: 3 }
+  ties: { chance: 0.25, kinds: [sibling, friend] }
+  appears: { zones: [d_clinic, hospital_ruins] }
+
+- id: d_orderly
+  label: 하얀매 간호조무사
+  faction: faction_d
+  rank: staff
+  age: [17, 50]
+  looks:
+    - 소매를 걷어붙인 간호조무사. 앞치마에 핏자국이 말라 붙었고 주머니마다 붕대 뭉치가 삐져나와 있다
+    - 안경테를 철사로 고친 조무사. 장부 한 귀퉁이에 환자 이름을 적으며 걷는다
+  stats: { intellect: [0, 1], senses: [0, 1], nerve: [0, 1] }
+  skills: { first_aid: 1, infected_lore: 1 }
+  traits: [warm, meticulous, weary, patient, calculating, frail]
+  trait_count: 2
+  inventory:
+    - { item: bandage, quantity: 2, chance: 0.7 }
+    - { item: fever_reducer, chance: 0.3 }
+    - { item: antibiotics, chance: 0.15 }
+    - { item: notebook, chance: 0.5 }
+    - { item: pencil, chance: 0.5 }
+  values: { mercy: 2, honesty: 1, discipline: 1 }
+  profile:
+    wants: [의사 선생님께 정식으로 의술을 배우는 것, 약값을 못 내는 사람도 한 번은 돌보는 것, 하루를 끝까지 자 보는 것]
+    fears: [약이 떨어지는 날, 격리실에서 들려오는 소리, 장부가 틀려 약이 빈 것을 들키는 것]
+    voices:
+      - { style: 빠르고 다정한 존댓말. 일하면서 말한다, samples: ["잠깐만요, 이것만 묶고요.", "아파도 참지 마세요. 참으면 덧나요."] }
+    rules: [다친 곳을 보면 손이 먼저 간다, 약 이야기를 할 때는 목소리를 낮춘다]
+    reputations: [진료소에서 가장 오래 버틴 조무사, 값을 못 낸 아이를 몰래 돌본다는 소문이 있는 사람]
+    secrets:
+      - { content: "장부에 적힌 것보다 붕대와 해열제를 조금씩 더 써서, 값을 못 내는 사람들에게 몰래 쓴다", reveal_when: "약값 이야기가 나왔을 때", min_trust: 3 }
+  ties: { chance: 0.3, kinds: [sibling, parent, friend] }
+  appears: { zones: [d_clinic] }
+
+- id: d_runner
+  label: 하얀매 약 심부름꾼
+  faction: faction_d
+  rank: staff
+  age: [14, 35]
+  looks:
+    - 흰 끈으로 묶은 상자를 품에 안은 심부름꾼. 걸음이 빠르고 사람 많은 길을 피한다
+    - 운동화 밑창이 다 닳은 심부름꾼. 가방끈에 하얀 깃털 하나를 달았다
+  stats: { agility: [1, 2], senses: [0, 1], vitality: [0, 1] }
+  skills: { stealth: 1, survival: 1, persuade: 0 }
+  traits: [shadow, cautious, timid, curious, light_eater, talkative]
+  trait_count: 2
+  inventory:
+    - { item: sealed_med_case, chance: 0.4 }
+    - { item: bandage, chance: 0.4 }
+    - { item: water_bottle, chance: 0.6 }
+    - { item: ledger, chance: 0.3 }
+  values: { honesty: 1, self_interest: 1, mercy: 1 }
+  profile:
+    wants: [약을 한 번도 잃지 않고 배달을 마치는 것, 진료소 안에 자리를 얻는 것, 장터에서 신발 한 켤레를 사는 것]
+    fears: [길목의 약탈조, 상자를 연 게 들키는 것, 해 지고 남은 길]
+    voices:
+      - { style: 숨찬 반말. 길 이야기를 늘어놓는다, samples: ["이 길로 가면 반 시간 빨라. 대신 개가 있어.", "상자는 못 열어. 열면 나 끝나."] }
+    rules: [상자를 몸에서 떼지 않는다, 쉬는 동안에도 갈 길 쪽을 보고 앉는다]
+    reputations: [진료소와 장터 사이를 가장 빨리 오가는 아이, 상자를 한 번도 잃지 않았다는 심부름꾼]
+    secrets:
+      - { content: "상자 하나를 길에서 잃어버리고 빈 상자를 대신 갖다 놓은 적이 있다", reveal_when: "배달 이야기가 나왔을 때", min_trust: 2 }
+  ties: { chance: 0.3, kinds: [sibling, parent, friend] }
+  appears: { zones: [d_clinic, old_town, e_market, hospital_ruins] }
+
+# ── 버들마을: 아파트 단지, 이웃 공동체, 붉은연합의 회유 ──
+
+- id: b_villager
+  label: 버들마을 주민
+  faction: faction_b
+  rank: staff
+  age: [14, 70]
+  looks:
+    - 아파트 동 번호를 등에 페인트로 쓴 점퍼를 입은 주민. 물동이를 들고 우물 줄에 서 있다
+    - 빨래를 한 아름 안은 주민. 옆집 사람 안부를 묻느라 걸음이 자꾸 멈춘다
+  stats: { charm: [0, 1], vitality: [0, 1], senses: [-1, 1] }
+  skills: { persuade: 1, survival: 0 }
+  traits: [warm, talkative, timid, motherly, genial, cynical]
+  trait_count: 2
+  inventory:
+    - { item: empty_bottle, chance: 0.5 }
+    - { item: cucumber, chance: 0.4 }
+    - { item: cloth, chance: 0.4 }
+  values: { loyalty: 1, mercy: 1, self_interest: 1 }
+  profile:
+    wants: [식구가 다 같이 겨울을 나는 것, 우물 순서가 공평한 것, 붉은연합과 싸우지 않고 끝나는 것]
+    fears: [회의에서 이웃끼리 갈라서는 것, 아이가 옥상에 올라가는 것, 붉은 완장을 단 사람들이 단지에 들어오는 것]
+    voices:
+      - { style: 수다스러운 반말 섞인 존댓말. 남의 집 사정을 다 안다, samples: ["3동 할머니 얘기 들었어요?", "회의 때 또 싸웠대. 우리 단지 언제 조용해지나."] }
+    rules: [이웃 이름과 동 호수를 붙여 부른다, 들은 말을 한 번 더 옮긴다]
+    reputations: [단지 소식을 가장 먼저 아는 사람, 우물 당번을 빼먹은 적 없는 사람]
+    secrets:
+      - { content: "붉은연합 쪽 사람이 넘긴 쌀 한 자루를 받았다. 회유에 넘어간 건 아니라고 스스로 다짐한다", reveal_when: "붉은연합의 회유 이야기가 나왔을 때", min_trust: 3 }
+  ties: { chance: 0.4, kinds: [parent, child, spouse, sibling, friend] }
+  appears: { zones: [b_base] }
+
+- id: b_scout
+  label: 버들마을 정찰대원
+  faction: faction_b
+  rank: grunt
+  age: [17, 40]
+  looks:
+    - 자전거 체인을 허리띠 삼아 감은 정찰대원. 엽총보다 쌍안경을 더 아낀다
+    - 얼굴에 검은 칠을 반쯤 지운 정찰대원. 걸을 때 소리가 거의 나지 않는다
+  stats: { agility: [0, 1], senses: [1, 1], nerve: [-1, 1] }
+  skills: { stealth: 1, sense_danger: 1, shoot: 0 }
+  traits: [shadow, cautious, guarded, eager, coward, eagle_eye]
+  trait_count: 2
+  inventory:
+    - { item: shotgun, chance: 0.4 }
+    - { item: shells, quantity: 2, chance: 0.4 }
+    - { item: binoculars, chance: 0.3 }
+    - { item: dry_ration, chance: 0.5 }
+  values: { loyalty: 1, self_interest: 1, discipline: 0 }
+  profile:
+    wants: [붉은연합이 언제 올지 먼저 아는 것, 청솔형제단 수색대처럼 제대로 된 소총을 갖는 것, 회의에서 말발이 서는 것]
+    fears: [붉은연합 보초에게 들키는 것, 청솔형제단이 버들마을을 버리는 것, 돌아왔는데 단지가 비어 있는 것]
+    voices:
+      - { style: 낮고 빠른 반말. 본 것만 짧게 말한다, samples: ["셋. 고가도로 쪽. 총은 둘.", "청솔 사람들은 우릴 믿을까?"] }
+    rules: [말하기 전에 주위를 한 바퀴 둘러본다, 본 것과 들은 것을 꼭 나눠서 말한다]
+    reputations: [붉은연합 순찰 시각을 외우는 사람, 한 번도 들키지 않았다는 정찰대원]
+    secrets:
+      - { content: "붉은연합 보초 하나와 담배를 나누며 서로 못 본 척하기로 했다", reveal_when: "둘만 있고 붉은연합 보초 이야기가 나왔을 때", min_trust: 3 }
+  ties: { chance: 0.3, kinds: [sibling, friend, rival] }
+  appears: { zones: [b_base, old_town, overpass, riverside] }
+
+# ── 나루상단: 계약과 장부, 정수장의 물 ──
+
+- id: e_escort
+  label: 나루상단 호위대원
+  faction: faction_e
+  rank: grunt
+  age: [20, 45]
+  looks:
+    - 짐마차 옆을 걷는 호위대원. 엽총을 무릎 높이로 늘어뜨리고 길 양쪽 창문을 번갈아 본다
+    - 동전 통행패를 열 개도 넘게 꿰어 찬 호위대원. 계약서를 접어 모자 안에 넣었다
+  stats: { strength: [0, 1], nerve: [0, 1], senses: [0, 1] }
+  skills: { shoot: 1, intimidate: 1, sense_danger: 1 }
+  traits: [calculating, cold, blunt, greedy, steel_nerves, marksman]
+  trait_count: 2
+  inventory:
+    - { item: shotgun, chance: 0.6 }
+    - { item: shells, quantity: 3, chance: 0.6 }
+    - { item: trade_token, chance: 0.6 }
+    - { item: cigarettes, chance: 0.4 }
+  values: { self_interest: 2, honesty: 1, loyalty: 0 }
+  profile:
+    wants: [계약한 날수만 채우고 몫을 받는 것, 짐마차 하나를 통째로 맡는 것, 이기는 쪽이 정해지기 전에 몫을 챙기는 것]
+    fears: [짐을 잃고 빚을 떠안는 것, 길목 매복, 계약을 어긴 사람으로 장부에 적히는 것]
+    voices:
+      - { style: 건조한 반말. 계약 조건부터 말한다, samples: ["계약엔 짐 지키는 것까지야. 사람은 안 들어 있어.", "몫 얘기는 장부 앞에서 하자."] }
+    rules: [짐마차에서 열 걸음 넘게 떨어지지 않는다, 공짜로는 아무것도 해 주지 않는다]
+    reputations: [매복을 세 번 뚫었다는 호위대원, 값만 맞으면 어느 편 짐이든 지킨다는 사람]
+    secrets:
+      - { content: "붉은연합 약탈조에게 짐마차가 지나는 시각을 판 적이 있다. 그날 자기 짐마차만 무사했다", reveal_when: "매복 이야기가 나왔을 때", min_trust: 3 }
+  ties: { chance: 0.2, kinds: [sibling, friend, rival] }
+  appears: { zones: [e_market, water_plant, rest_stop, riverside, old_town] }
+
+- id: e_water_seller
+  label: 정수장 물장수
+  faction: faction_e
+  rank: staff
+  age: [16, 60]
+  looks:
+    - 물통을 줄줄이 매단 장대를 어깨에 걸친 물장수. 통마다 눈금을 칼로 새겼다
+    - 장화를 신고 펌프 손잡이 옆에 선 물장수. 손님 물병을 받아 들면 먼저 흔들어 본다
+  stats: { strength: [0, 1], charm: [0, 1], intellect: [0, 1] }
+  skills: { persuade: 1, mechanics: 0 }
+  traits: [genial, calculating, greedy, talkative, patient, cynical]
+  trait_count: 2
+  inventory:
+    - { item: water_bottle, quantity: 2, chance: 0.8 }
+    - { item: empty_bottle, quantity: 2, chance: 0.6 }
+    - { item: trade_token, chance: 0.5 }
+    - { item: ledger, chance: 0.3 }
+  values: { self_interest: 2, honesty: 1, mercy: 0 }
+  profile:
+    wants: [펌프가 멈추지 않는 것, 물값을 올려도 손님이 끊기지 않는 것, 장부에 자기 이름으로 된 줄을 갖는 것]
+    fears: [펌프가 고장 나는 날, 정수장을 노리는 무리, 물에 탄 독 이야기]
+    voices:
+      - { style: 넉살 좋은 반말. 물값을 노래하듯 부른다, samples: ["한 통에 통행패 하나! 끓인 물은 반 개 더!", "물 없이 사흘 버틴 사람은 못 봤어."] }
+    rules: [물병을 받으면 냄새부터 맡는다, 값을 깎으면 웃으면서 물을 덜 담는다]
+    reputations: [정수장 펌프 소리만 듣고 고장을 안다는 사람, 물값을 가장 비싸게 부르는 장수]
+    secrets:
+      - { content: "끓이지 않은 강물을 끓인 물이라고 팔 때가 있다", reveal_when: "배탈 난 사람 이야기가 나왔을 때", min_trust: 2 }
+  ties: { chance: 0.3, kinds: [parent, child, sibling, friend] }
+  appears: { zones: [water_plant, e_market] }
+
+# ── 여울섬: 바다 건너의 닫힌 낙원 ──
+
+- id: y_boatman
+  label: 여울섬 뱃사공
+  faction: faction_y
+  rank: grunt
+  age: [20, 55]
+  looks:
+    - 소금기에 하얗게 바랜 우비를 입은 뱃사공. 노를 쥔 손바닥이 가죽처럼 두껍다
+    - 섬 쪽으로만 고개를 돌리는 뱃사공. 뭍 사람과 눈을 오래 맞추지 않는다
+  stats: { strength: [1, 2], vitality: [0, 1], senses: [0, 1] }
+  skills: { survival: 1, sense_danger: 1, fight: 0 }
+  traits: [guarded, blunt, formal, cold_hardy, patient, cynical]
+  trait_count: 2
+  inventory:
+    - { item: harpoon_gun, chance: 0.4 }
+    - { item: harpoons, quantity: 2, chance: 0.4 }
+    - { item: fishing_kit, chance: 0.5 }
+    - { item: dried_fish, chance: 0.6 }
+    - { item: canned_food, chance: 0.4 }
+  values: { discipline: 2, loyalty: 1, mercy: -1 }
+  profile:
+    wants: [의회가 맡긴 날짜를 어기지 않는 것, 섬에 남을 자격을 계속 증명하는 것, 바다가 잔잔한 것]
+    fears: [의회의 눈 밖에 나는 것, 배에 몰래 타려는 뭍 사람, 뭍으로 내보낸다는 의회의 말]
+    voices:
+      - { style: 짧고 정중하지만 차가운 존댓말. 섬 이야기는 하지 않는다, samples: ["배에는 의회가 허락한 사람만 탑니다.", "뭍 일은 뭍 사람이 알아서 하세요."] }
+    rules: [물때를 입속으로 센다, 섬 안 사정을 물으면 날씨 이야기로 돌린다]
+    reputations: [여울섬과 뭍 사이를 오가는 몇 안 되는 사람, 누구도 배에 몰래 태우지 않는다는 뱃사공]
+    secrets:
+      - { content: "의회가 뭍으로 내보낸 사람들을 자기 배로 실어 날랐다. 그 사람들이 어디서 내렸는지 안다", reveal_when: "섬에서 나간 사람 이야기가 나왔을 때", min_trust: 4 }
+  ties: { chance: 0.25, kinds: [sibling, spouse, friend] }
+  appears: { zones: [riverside, yeoul_isle] }
+
+# ── 붉은연합: 공단에서 시작한 가장 큰 무리. 싸우는 사람 말고도 사람이 산다 (12-116) ──
+
+- id: c_absorbed
+  label: 붉은연합에 흡수된 주민
+  faction: faction_c
+  rank: staff
+  age: [15, 65]
+  looks:
+    - 새것처럼 빳빳한 붉은 완장을 찬 주민. 팔을 자꾸 내려다본다. 완장을 찬 지 얼마 안 됐다
+    - 배급 줄 맨 뒤에 선 주민. 공단 출신들이 지나가면 저도 모르게 비켜선다
+  stats: { vitality: [-1, 1], charm: [0, 1], nerve: [-1, 0] }
+  skills: { survival: 1, deceive: 0 }
+  traits: [timid, weary, guarded, cynical, light_eater, protective]
+  trait_count: 2
+  inventory:
+    - { item: c_armband }
+    - { item: dry_ration, chance: 0.3 }
+    - { item: cloth, chance: 0.3 }
+  values: { self_interest: 1, loyalty: 0, mercy: 1 }
+  profile:
+    wants: [아이들 배급 순서가 공단 출신과 같아지는 것, 예전 무리 사람들을 다시 모으는 것, 공세 앞줄에 식구가 끌려가지 않는 것]
+    fears: [규율반의 명부에 이름이 오르는 것, 광장의 본보기, 흡수된 사람부터 앞줄로 보내는 공세]
+    voices:
+      - { style: 조심스러운 존댓말. 위원회 이야기에는 대답하지 않는다, samples: ["저희는 나중에 들어온 사람들이라서요.", "그런 말은 여기서 하시면 안 돼요."] }
+    rules: [말하기 전에 막사 쪽을 한 번 본다, 예전 무리 이름은 입에 올리지 않는다]
+    reputations: [작은 무리와 함께 흡수된 사람, 배급 줄에서 아이들 몫을 챙기는 사람]
+    secrets:
+      - { content: "예전 무리 사람들끼리 밤에 몰래 모여 떠날 날을 이야기한다", reveal_when: "둘만 있고 규율반이 멀 때", min_trust: 4 }
+  ties: { chance: 0.4, kinds: [parent, child, sibling, spouse, friend] }
+  appears: { zones: [c_base, c_warehouse] }
+
+- id: c_discipline
+  label: 붉은연합 규율반원
+  faction: faction_c
+  rank: grunt
+  age: [22, 50]
+  looks:
+    - 완장 위에 검은 줄을 하나 더 두른 규율반원. 명부 수첩을 가슴 주머니에 꽂았다
+    - 말없이 막사 사이를 걷는 규율반원. 사람들이 그가 지나가면 대화를 멈춘다
+  stats: { senses: [1, 1], nerve: [1, 2], intellect: [0, 1] }
+  skills: { sense_danger: 1, intimidate: 1, deceive: 1 }
+  traits: [cold, meticulous, ruthless, calculating, formal, eagle_eye]
+  trait_count: 2
+  inventory:
+    - { item: c_armband }
+    - { item: notebook }
+    - { item: pencil, chance: 0.7 }
+    - { item: crowbar, chance: 0.4 }
+    - { item: cigarettes, chance: 0.5 }
+  values: { discipline: 2, loyalty: 1, mercy: -1 }
+  profile:
+    wants: [명부에 빈칸이 없는 것, 위원회 서기 자리, 탈영 모의를 먼저 잡아내는 것]
+    fears: [자기 이름이 명부에 오르는 날, 위원장의 눈 밖에 나는 것, 막사의 원한]
+    voices:
+      - { style: 낮고 느린 존댓말. 질문으로만 말한다, samples: ["어제 저녁엔 어디 계셨습니까?", "그 말, 누구한테서 들으셨죠?"] }
+    rules: [이름을 들으면 수첩에 적는다, 먼저 웃지 않는다]
+    reputations: [쪽지 상자를 맡은 사람, 이 사람이 다녀간 막사에서는 꼭 한 명이 사라진다는 사람]
+    secrets:
+      - { content: "명부에서 동생 이름 하나를 몰래 지웠다. 동생은 탈영을 준비하고 있다", reveal_when: "탈영 이야기가 나왔을 때", min_trust: 4 }
+  ties: { chance: 0.25, kinds: [sibling, friend, rival] }
+  appears: { zones: [c_base, c_warehouse] }
+
+- id: c_laborer
+  label: 붉은연합 노역조
+  faction: faction_c
+  rank: staff
+  age: [16, 60]
+  looks:
+    - 쇳가루가 눈썹까지 앉은 노역조원. 공단 용접기 앞에서 철판을 담장으로 바꾸고 있다
+    - 손목에 붕대를 칭칭 감은 노역조원. 할당량이 적힌 칠판을 지나칠 때마다 숫자를 세어 본다
+  stats: { strength: [1, 2], vitality: [0, 1], intellect: [-1, 1] }
+  skills: { improvise: 1, mechanics: 1, carpentry: 0 }
+  traits: [weary, blunt, patient, big_eater, hot_tempered, cold_hardy]
+  trait_count: 2
+  inventory:
+    - { item: c_armband }
+    - { item: scrap_metal, quantity: 2, chance: 0.5 }
+    - { item: toolkit, chance: 0.3 }
+    - { item: duct_tape, chance: 0.3 }
+  values: { loyalty: 1, self_interest: 1, discipline: 1 }
+  profile:
+    wants: [오늘 할당량을 채우고 조 배급이 깎이지 않는 것, 공단이 예전처럼 무언가를 만드는 곳이 되는 것, 손목이 낫는 것]
+    fears: [기계에 손이 말려 들어가는 것, 조가 해체되는 것, 수용소 경비로 흩어지는 것]
+    voices:
+      - { style: 거친 반말. 숫자와 공구 이름으로 말한다, samples: ["철판 열두 장. 오늘 안에.", "기계는 거짓말 안 해. 사람이 하지."] }
+    rules: [쉬는 틈에도 손을 놀린다, 공단 출신이면 위원회를 감싸고 흡수된 사람이면 입을 다문다]
+    reputations: [공단 시절부터 용접기를 잡은 사람, 감시탑 철판을 다 붙였다는 노역조원]
+    secrets:
+      - { content: "공세용 철판 몇 장을 일부러 얇게 붙였다. 앞줄에 설 사람들이 흡수된 사람들이라서", reveal_when: "공세 이야기가 나왔을 때", min_trust: 3 }
+  ties: { chance: 0.35, kinds: [parent, child, sibling, friend] }
+  appears: { zones: [c_base, c_warehouse] }
+
+# ── 바깥의 피난처: 성당과 캠퍼스 ──
+
+- id: cathedral_refugee
+  label: 종탑 아래 사는 피난민
+  faction: null
+  rank: loner
+  age: [10, 80]
+  looks:
+    - 성당 의자를 침대 삼아 사는 피난민. 묵주 대신 탄피 몇 개를 실에 꿰어 손에 감았다
+    - 종탑 계단에 앉아 빨래를 너는 피난민. 총을 든 사람이 들어오면 신부부터 찾는다
+  stats: { vitality: [-1, 1], charm: [0, 1], senses: [0, 1] }
+  skills: { survival: 1, first_aid: 0 }
+  traits: [warm, timid, weary, motherly, patient, frail]
+  trait_count: 2
+  inventory:
+    - { item: blanket, chance: 0.4 }
+    - { item: wild_greens, chance: 0.4 }
+    - { item: cloth, chance: 0.4 }
+  values: { mercy: 2, honesty: 1, self_interest: 0 }
+  profile:
+    wants: [성당이 끝까지 아무 무리에도 들지 않는 것, 묘지에 이름을 새겨 줄 사람이 있는 것, 아이들이 종을 치며 노는 것]
+    fears: [무리 사람들이 총을 들고 성당에 들어오는 것, 신부가 떠나는 날, 겨울 장례가 늘어나는 것]
+    voices:
+      - { style: 나지막한 존댓말. 죽은 사람 이름을 자주 입에 올린다, samples: ["여기선 총 내려놓으셔야 해요.", "어제도 한 분 묻었어요. 이름은 알았는데."] }
+    rules: [성당 문을 지날 때 고개를 숙인다, 낯선 사람에게도 먼저 물을 권한다]
+    reputations: [종탑 아래에서 가장 오래 산 사람, 장례 때마다 무덤을 파는 사람]
+    secrets:
+      - { content: "종탑 위에 무리 사람들 몰래 총 한 자루를 숨겨 두었다. 신부도 모른다", reveal_when: "누군가 성당을 위협한다는 말이 나왔을 때", min_trust: 3 }
+  ties: { chance: 0.35, kinds: [parent, child, sibling, friend] }
+  appears: { zones: [cathedral] }
+
+- id: campus_scholar
+  label: 도서관을 지키는 사람
+  faction: null
+  rank: loner
+  age: [25, 75]
+  looks:
+    - 털실 장갑의 손끝을 잘라 낸 사람. 책장 사이를 다니며 책등을 손가락으로 센다
+    - 안경을 두 개 겹쳐 쓴 사람. 온실 쪽에서 흙 묻은 공책을 들고 나온다
+  stats: { intellect: [1, 2], senses: [0, 1], strength: [-1, 0] }
+  skills: { history: 1, first_aid: 0, survival: 0 }
+  traits: [curious, meticulous, guarded, principled, talkative, quick_learner]
+  trait_count: 2
+  inventory:
+    - { item: notebook, chance: 0.8 }
+    - { item: pen, chance: 0.6 }
+    - { item: mushroom, chance: 0.3 }
+    - { item: fever_reducer, chance: 0.2 }
+  values: { honesty: 2, mercy: 1, loyalty: -1 }
+  profile:
+    wants: [도서관의 책이 땔감이 되지 않는 것, 약대 실험실의 약을 다시 만드는 것, 아는 것을 받아 적을 제자를 얻는 것]
+    fears: [무리 사람들이 실험실을 털어 가는 것, 겨울에 책을 태워야 하는 날, 온실이 얼어붙는 것]
+    voices:
+      - { style: 길고 꼼꼼한 존댓말. 묻지 않은 것까지 설명한다, samples: ["그건 정확히 말하면 감염이 아니라 다른 병이에요.", "책은 빌려드릴 수 없어요. 여기서 읽으시는 건 괜찮고요."] }
+    rules: [모르는 것은 모른다고 말한다, 책을 바닥에 내려놓는 사람을 그냥 두지 않는다]
+    reputations: [캠퍼스 도서관에 처음부터 남은 사람, 하얀매 의사도 가끔 물으러 온다는 사람]
+    secrets:
+      - { content: "약대 실험실에서 해열제를 몇 번 만들어 냈다. 무리들이 알면 캠퍼스가 끝장날까 봐 숨긴다", reveal_when: "약 이야기가 나오고 그 사람이 무리 편이 아니라고 믿을 때", min_trust: 4 }
+  ties: { chance: 0.2, kinds: [child, friend, rival] }
+  appears: { zones: [campus] }
+
+# ── 여울섬: 의회의 눈 ──
+
+- id: y_watcher
+  label: 여울섬 의회의 눈
+  faction: faction_y
+  rank: grunt
+  age: [25, 55]
+  looks:
+    - 늘 웃는 얼굴로 새로 온 사람 곁에 붙어 다니는 주민. 묻지 않아도 섬 자랑을 늘어놓는다
+    - 의회 회관 계단에 기대 선 사람. 손에 든 장부에 오가는 사람 이름을 적는다
+  stats: { charm: [1, 1], senses: [0, 1], nerve: [0, 1] }
+  skills: { deceive: 1, persuade: 1, sense_danger: 1 }
+  traits: [genial, calculating, cold, formal, silver_tongue, guarded]
+  trait_count: 2
+  inventory:
+    - { item: ledger, chance: 0.6 }
+    - { item: pencil, chance: 0.6 }
+    - { item: canned_food, chance: 0.5 }
+    - { item: dried_fish, chance: 0.4 }
+  values: { discipline: 2, loyalty: 2, honesty: -1 }
+  profile:
+    wants: [새로 온 사람이 쓸모를 증명하는지 지켜보는 것, 의회 회관 안에 자리를 얻는 것, 섬 안에서 아무 일도 일어나지 않는 것]
+    fears: [의회가 자기를 의심하는 것, 섬 안 사정이 뭍으로 새는 것, 쓸모가 다했다는 말]
+    voices:
+      - { style: 지나치게 다정한 존댓말. 질문을 칭찬으로 감싼다, samples: ["손이 참 야무지시네요. 뭍에선 무슨 일 하셨어요?", "여기선 다들 행복해요. 정말로요."] }
+    rules: [섬에 대한 나쁜 말이 나오면 화제를 돌린다, 들은 것은 저녁에 의회 회관으로 가져간다]
+    reputations: [새로 온 사람을 가장 먼저 반기는 사람, 의회 사람들과 가깝다는 주민]
+    secrets:
+      - { content: "뭍으로 내보낸 이웃의 신발을 의회 저장고 근처에서 본 적이 있다. 그 뒤로 저장고 쪽을 보지 않는다", reveal_when: "섬에서 나간 사람 이야기가 나오고 둘만 있을 때", min_trust: 4 }
+  ties: { chance: 0.25, kinds: [spouse, sibling, friend] }
+  appears: { zones: [yeoul_isle] }

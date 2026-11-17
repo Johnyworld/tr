@@ -106,4 +106,34 @@ describe("감염체 압력", () => {
     expect(calm - two).toBeGreaterThan(0);
     expect(calm - two).toBeLessThanOrEqual(Math.ceil((farm.yields.food ?? 0) * 1.2 * cut * overrun) + 1);
   });
+
+  it("자기 거점에 감염체가 몰려들면 그 무리의 사기가 흔들린다 (12-120)", async () => {
+    const { initialWarWorld, simulateWarDay } = await import("../sim/war.ts");
+    const quiet = structuredClone(content);
+    for (const f of Object.values(quiet.factions)) f.aggression = 0;
+    const base = Object.values(quiet.locations).find((l) => l.kind === "base" && l.owner)!;
+    const world = initialWarWorld(quiet);
+    const before = world.factions[base.owner!]!.morale;
+    const calm = simulateWarDay(world, quiet, () => 0, { infested: {} }).factions[base.owner!]!.morale;
+    const besieged = simulateWarDay(world, quiet, () => 0, { infested: { [base.id]: baseInfestation(quiet, base.id) + 1 } }).factions[base.owner!]!.morale;
+    expect(besieged).toBe(Math.max(-3, calm - 1));
+    expect(calm).toBeLessThanOrEqual(before + 1);
+  });
+
+  it("땅에 감염체가 몰려든 무리는 형편(9.13)에 오른다: 기준값보다 높은 만큼 말이 세진다 (12-120)", async () => {
+    const { troublesOf } = await import("../engine/factionTalk.ts");
+    const { initialWarWorld } = await import("../sim/war.ts");
+    const { store, state } = setup();
+    const world = initialWarWorld(content);
+    state().factions = world.factions;
+    state().zones = world.zones;
+    const own = Object.values(content.locations).find((l) => l.owner === "faction_a" && l.danger <= 1)!;
+    expect(troublesOf(state(), content, "faction_a").some((t) => t.kind === "infested")).toBe(false);
+    store.append({ type: "infestation_changed", zone: own.id, level: own.danger + 1, cause: "소음" });
+    const one = troublesOf(state(), content, "faction_a").find((t) => t.kind === "infested")!;
+    expect(one.level).toBe(0);
+    expect(one.text).toContain(own.name);
+    store.append({ type: "infestation_changed", zone: own.id, level: own.danger + 2, cause: "소음" });
+    expect(troublesOf(state(), content, "faction_a").find((t) => t.kind === "infested")!.level).toBe(1);
+  });
 });

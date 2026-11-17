@@ -1,4 +1,5 @@
 import { rankName } from "../game/ranks.ts";
+import { infestationOf, worstOverrun } from "../game/infestation.ts";
 import { occupationOf } from "../game/occupation.ts";
 import { changeStanding } from "./growth.ts";
 import { issueArmory, returnArmory } from "./armory.ts";
@@ -148,6 +149,16 @@ const reportMission = defineTool({
     const base = Object.values(ctx.content.locations).find((l) => l.owner === lender && l.kind === "base")?.id;
     const fortSteps = fortifies ? (result.outcome === "success" ? fortifies : result.outcome === "partial" ? Math.trunc(fortifies / 2) : 0) : 0;
     if (fortSteps > 0 && base && ctx.store.getState().zones[base]?.owner === lender) ctx.store.append({ type: "zone_fortified", zone: base, delta: fortSteps });
+    // 소탕 일감은 그 무리 땅에서 감염체가 가장 많이 몰려든 곳을 쓸어 낸다 (12-120). 일부 완수는 절반
+    const clears = ctx.content.missions[mission.templateId]?.clears;
+    const clearSteps = clears ? (result.outcome === "success" ? clears : result.outcome === "partial" ? Math.trunc(clears / 2) : 0) : 0;
+    let cleared: string | null = null;
+    const worst = clearSteps > 0 ? worstOverrun(ctx.content, ctx.store.getState(), lender) : null;
+    if (worst) {
+      const now = infestationOf(ctx.content, ctx.store.getState(), worst.zone);
+      ctx.store.append({ type: "infestation_changed", zone: worst.zone, level: Math.max(0, now - clearSteps), cause: "소탕" });
+      cleared = ctx.content.locations[worst.zone]?.name ?? worst.zone;
+    }
     // 수색·채집 일감은 구해 온 몫이 그 무리 창고로 들어간다. 일부 완수는 절반
     const supplied: string[] = [];
     const supplies = ctx.content.missions[mission.templateId]?.supplies;
@@ -167,6 +178,7 @@ const reportMission = defineTool({
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
       ...(supplied.length ? [`구해 온 ${supplied.join("·")}이(가) 무리 창고에 들어갔다.`] : []),
+      ...(cleared ? [`${cleared}에 몰려든 감염체를 쓸어 냈다. 한동안 조용할 것이다.`] : []),
       ...releaseBuddies(ctx, mission.id),
       ...[returnArmory(ctx, mission.id)].filter((l): l is string => !!l),
       ...(occNote ? [occNote] : []),
@@ -261,7 +273,9 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
   }
   if (commanderOf(state, ctx) && hasAccess(ctx.content, state, "mission_board")) {
     const occ = occupationOf(ctx.content, state.characters[state.playerId]);
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, occ?.missions ?? []);
+    const me = state.characters[state.playerId];
+    const overrun = !!me?.factionId && !!worstOverrun(ctx.content, state, me.factionId);
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, occ?.missions ?? [], overrun);
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;

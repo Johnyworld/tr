@@ -330,6 +330,11 @@ export function createContentSchemas(s: Scenario) {
     advances: z.strictObject({ clock: contentIdSchema, delta: z.number().int().min(-5).max(5) }).optional(),
     /** 완수하면 임무를 준 무리의 창고에 이만큼 들어간다 (수색·채집으로 구해 온 몫). 일부 완수는 절반(내림). 플레이어 소지품과는 따로 */
     supplies: z.partialRecord(idEnum(s.resources.map((r) => r.id)), z.number().int().min(1)).optional(),
+    /**
+     * 소탕 (12-120): 임무를 준 무리 땅 가운데 감염체가 가장 많이 몰려든 구역의 압력을 이만큼 낮춘다 (일부 완수는 절반, 내림).
+     * 역할의 임무 목록과 상관없이, 그 무리 땅에 기준값보다 높은 구역이 있는 날에만 오늘의 후보에 오른다
+     */
+    clears: z.number().int().min(1).max(2).optional(),
   });
 
   const resourceAmounts = z.partialRecord(idEnum(s.resources.map((r) => r.id)), z.number().min(0));

@@ -830,6 +830,13 @@ export const scenarioFileSchema = z
         corpses_at: z.number().int().min(1),
         settle: z.number().min(0).max(1),
         yields_cut: z.number().min(0).max(1).default(0),
+        /** 자기 거점(kind: base)의 압력이 기준값보다 높으면 하루 이 확률로 그 무리의 사기 -1 (12-120) */
+        morale_chance: z.number().min(0).max(1).default(0),
+        /**
+         * 무리 형편(9.13)에 오르는 말 (12-120): 그 무리 땅의 압력이 기준값보다 1·2·3 높을 때. "{무리} 쪽 {말}는 말이 돈다"로 소문이 된다.
+         * 없으면 형편에 오르지 않는다
+         */
+        trouble_labels: z.array(z.string().min(1)).length(3).optional(),
       })
       .optional(),
     /** 쓰면 몸 상태가 나아지는 아이템: 아이템 → 상태 트랙 → 나아지는 단계 수 (take_action.use_item) */

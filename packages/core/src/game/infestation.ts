@@ -48,6 +48,17 @@ export function infestationDay(content: Content, state: Pick<GameState, "infeste
   return out;
 }
 
+/** 이 무리 땅 가운데 감염체가 기준값보다 가장 많이 몰려든 구역 (없으면 null) */
+export function worstOverrun(content: Content, state: Pick<GameState, "infested" | "zones">, factionId: string): { zone: string; by: number } | null {
+  let worst: { zone: string; by: number } | null = null;
+  for (const l of Object.values(content.locations)) {
+    if (state.zones[l.id]?.owner !== factionId) continue;
+    const by = infestationOf(content, state, l.id) - baseInfestation(content, l.id);
+    if (by > 0 && (!worst || by > worst.by)) worst = { zone: l.id, by };
+  }
+  return worst;
+}
+
 /**
  * GM 상태의 낌새 줄: 그 구역에 있는 사람이 보고 들을 수 있는 흔적만 (숫자는 내보내지 않는다, 원칙 4).
  * 기준값보다 높거나 낮을 때, 그리고 아주 높을 때

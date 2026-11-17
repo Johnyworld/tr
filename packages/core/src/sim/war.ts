@@ -245,6 +245,21 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     }
   }
 
+  // 2-0. 거점에 감염체가 몰려들면 사기가 흔들린다 (12-120). 담 밖이 밤새 시끄러운 무리
+  const besiege = content.scenario.infestation?.morale_chance ?? 0;
+  if (besiege > 0) {
+    for (const id of alive) {
+      const f = next.factions[id]!;
+      const overrun = Object.values(content.locations).some(
+        (l) => l.kind === "base" && next.zones[l.id]?.owner === id && infestationOf(content, { infested: options.infested ?? {} }, l.id) > baseInfestation(content, l.id),
+      );
+      if (overrun && rng() < besiege) {
+        troubled.add(id);
+        f.morale = clamp(f.morale - 1, -3, 3);
+      }
+    }
+  }
+
   // 2-1. 교역 방침 (기획서 9.11): 서로 등을 돌리지 않았고 양쪽 창고에 있으면 바꾼다
   for (const id of alive) {
     for (const { option } of factionPolicy(content, next.factions[id])) {

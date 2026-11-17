@@ -1,4 +1,5 @@
 import type { Content } from "../content/schemas.ts";
+import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
 import { daysOfStock, rationLevel } from "../sim/war.ts";
@@ -19,7 +20,7 @@ const NEWS_HOURS = 48;
  * 한 무리의 형편 (분위기·배급·창고). 진짜 상태에서 나오므로 주인공에게는 자기 무리 것이나 소문으로만 보인다.
  * kind와 level(나쁠수록 크다)로 나눠 두어 소문이 부풀거나 지어질 수 있게 한다
  */
-export type TroubleKind = { kind: "morale" } | { kind: "ration" } | { kind: "stock"; resource: string };
+export type TroubleKind = { kind: "morale" } | { kind: "ration" } | { kind: "stock"; resource: string } | { kind: "infested" };
 export type Trouble = TroubleKind & { level: number; text: string };
 
 /** 단계마다의 이름: morale는 -1(가라앉음)부터 -3(무너지기 직전), ration·stock은 배급·창고 단계의 차례 */
@@ -27,6 +28,7 @@ function levelLabels(content: Content, kind: TroubleKind["kind"]): string[] {
   const war = content.scenario.war!;
   if (kind === "morale") return [1, 2, 3].map((n) => moraleLabel(content, -n));
   if (kind === "ration") return war.ration.levels.map((l) => l.label);
+  if (kind === "infested") return content.scenario.infestation?.trouble_labels ?? [];
   return war.stock_labels.map((l) => l.label);
 }
 
@@ -35,6 +37,7 @@ function rumorText(content: Content, name: string, t: TroubleKind, level: number
   const label = levelLabels(content, t.kind)[level] ?? "";
   if (t.kind === "morale") return `${name} 쪽 분위기가 영 좋지 않다는 말이 돈다 (${label})`;
   if (t.kind === "ration") return `${name} 쪽은 배급을 줄였다는 말이 돈다 (${label})`;
+  if (t.kind === "infested") return `${name} 쪽 ${label}는 말이 돈다`;
   const r = content.scenario.resources.find((x) => x.id === t.resource)?.label ?? t.resource;
   return `${name} 쪽 ${r} 창고는 ${label}이 돈다`;
 }
@@ -56,6 +59,19 @@ export function troublesOf(state: GameState, content: Content, factionId: string
     const si = Math.max(0, war.stock_labels.findIndex((l) => days >= l.min_days));
     const level = war.stock_labels.findIndex((l) => days >= l.min_days) < 0 ? war.stock_labels.length - 1 : si;
     if (days < tight) out.push({ kind: "stock", resource: r.id, level, text: `${r.label}: ${war.stock_labels[level]!.label}` });
+  }
+  // 땅에 감염체가 몰려들었다 (12-120): 기준값보다 가장 많이 높은 곳만큼
+  const labels = content.scenario.infestation?.trouble_labels;
+  if (labels) {
+    const over = Object.values(content.locations)
+      .filter((l) => state.zones[l.id]?.owner === factionId)
+      .map((l) => ({ name: l.name, by: infestationOf(content, state, l.id) - baseInfestation(content, l.id) }))
+      .filter((z) => z.by > 0);
+    const worst = Math.max(0, ...over.map((z) => z.by));
+    if (worst > 0) {
+      const level = Math.min(labels.length - 1, worst - 1);
+      out.push({ kind: "infested", level, text: `${labels[level]} (${over.map((z) => z.name).join(", ")})` });
+    }
   }
   return out;
 }
@@ -91,6 +107,7 @@ export function spreadTroubleRumors(ctx: ToolContext): ToolDisplayEvent[] {
     { kind: "morale" },
     { kind: "ration" },
     ...content.scenario.resources.filter((r) => (war.upkeep[r.id] ?? 0) > 0).map((r) => ({ kind: "stock" as const, resource: r.id })),
+    ...(content.scenario.infestation?.trouble_labels ? [{ kind: "infested" as const }] : []),
   ];
   const displays: ToolDisplayEvent[] = [];
   for (const f of Object.values(content.factions)) {

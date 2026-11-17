@@ -1,0 +1,26 @@
+# 소탕 일감 (12-120): 역할의 임무 목록과 상관없이, 우리 무리 땅에 감염체가 몰려든 날에만 오늘의 후보에 오른다
+# clears: 완수하면 우리 땅에서 감염체가 가장 많이 몰려든 구역의 압력이 이만큼 내려간다 (일부 완수는 절반, 내림)
+- id: clear_overrun
+  title: 감염체 소탕
+  armed: true
+  buddy: true
+  briefing: 우리 땅에 감염체가 몰려들었다. 둘씩 붙어 다니며 하나씩 끌어내 처리한다. 총은 아낀다. 총소리가 더 부른다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  clears: 1
+  requirements:
+    - activity: search
+      minutes: 60
+    - check: fight
+      min_outcome: partial
+- id: clear_overrun_lure
+  title: 감염체 떼 끌어내기
+  briefing: 몰려든 감염체 떼를 소리 나는 덫으로 우리 땅 밖으로 끌어낸다. 덫을 만들고, 떼가 따라오는 동안 들키지 않는다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  clears: 1
+  requirements:
+    - check: improvise
+      min_outcome: partial
+    - check: stealth
+      min_outcome: partial

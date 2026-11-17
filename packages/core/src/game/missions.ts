@@ -134,10 +134,13 @@ export function pickDailyOffers(
   rng: Rng,
   /** 직분의 일감 (기획서 12.6) */
   extra: readonly string[] = [],
+  /** 우리 무리 땅에 감염체가 몰려들었는지 (12-120). 그날만 소탕 임무(clears)가 후보에 오른다 */
+  overrun = false,
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
-  const pool = [...new Set([...(content.roles[roleId]?.missions ?? []), ...extra])].filter((id) => content.missions[id]);
+  const clearing = overrun ? Object.values(content.missions).filter((m) => m.clears).map((m) => m.id) : [];
+  const pool = [...new Set([...(content.roles[roleId]?.missions ?? []), ...extra, ...clearing])].filter((id) => content.missions[id] && (overrun || !content.missions[id]!.clears));
   if (pool.length === 0) return null;
   const picked: string[] = [];
   const count = Math.min(OFFERS_PER_DAY, pool.length);

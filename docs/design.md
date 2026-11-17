@@ -227,7 +227,7 @@ storylet_tags: [grunt, squad_life]
     - 다 만들면 상태 화면은 시트로 바뀌고 "Claude 세션에서 첫 장면이 이어진다"를 잠깐 띄운다
     - 상태 서버의 `POST /api/creation`은 Claude 세션이 화면 고르기를 열었을 때만 받는다 (JSON만, 설정 창과 같은 까닭)
   - 초상화는 id만 세이브에 남는다. 월드 팩에 주인공 초상화 목록(`art/portraits.yaml`)이 있으면 그 그림(`art/portraits/<id>.png`, 상태 화면이 `/portraits/<팩>/<id>.png`로 내준다)을, 없으면 코드로 그린 실루엣 12종(`ui/Portrait.tsx`, 예전 세이브도)을 그린다
-  - **주인공 초상화** (12-139): NPC 얼굴은 만들지 않고 주인공 얼굴만 고른다. 사용자가 화풍을 고를 수 있게 화풍마다 섹션을 나눈다. post_apoc은 실사 회화(A, 남4·여4) → 미국 애니메이션(D, 남4·여4) → 현대 애니메이션(C, 남2·여6) → 일본 레트로 일러스트(B, 남3·여5) 순. 일반 플레이어는 A·D를, 애니메이션 취향은 B·C를 고를 것으로 본다. core는 `art/portraits.yaml`에서 화풍 이름(`styles.<id>.label`, 적힌 순서가 섹션 순서)과 얼굴의 화풍·성별(`faces.<id>.style·gender`)만 읽고, 나머지 칸은 그림 생성 도구(`pnpm portraits <팩>`, 로컬 ComfyUI)의 설정이다. 목록이 있는 월드는 목록 밖 id와 다른 성별의 얼굴을 받지 않는다
+  - **주인공 초상화** (12-139): NPC 얼굴은 만들지 않고 주인공 얼굴만 고른다. 사용자가 화풍을 고를 수 있게 화풍마다 섹션을 나눈다. post_apoc은 실사 회화(A, 남4·여4) → 미국 애니메이션(D, 남6·여8) → 현대 애니메이션(C, 남2·여6) → 일본 레트로 일러스트(B, 남3·여5) 순. 일반 플레이어는 A·D를, 애니메이션 취향은 B·C를 고를 것으로 본다. core는 `art/portraits.yaml`에서 화풍 이름(`styles.<id>.label`, 적힌 순서가 섹션 순서)과 얼굴의 화풍·성별(`faces.<id>.style·gender`)만 읽고, 나머지 칸은 그림 생성 도구(`pnpm portraits <팩>`, 로컬 ComfyUI)의 설정이다. 목록이 있는 월드는 목록 밖 id와 다른 성별의 얼굴을 받지 않는다
   - 그림 생성 (`scripts/portraits.ts`): 화풍마다 모델이 다르다(A·D는 SDXL Base, B·C는 Animagine XL 4.0). 모든 얼굴의 크기·위치를 맞추려고 상반신까지 넉넉히 그린 뒤 얼굴을 찾아(SAM 3.1) 같은 기준(`framing`)으로 자른다. 여백이 많이 모자라거나 원본에 액자·비네트가 있으면 Qwen Image 2.1 편집(`cleanup`)으로 장면을 이어 채우고 지운다. **Qwen Image 2.1은 Qwen RESEARCH LICENSE(비상업, 연구·평가용)라서 배포용 그림에 쓰려면 상업 라이선스를 받아야 한다.** 마음에 든 옛 그림은 `art/sources/`에 두고 `faces.<id>.source`로 그대로 쓴다
   - 캐릭터에 `gender`, `portrait`가 생겼다. NPC도 콘텐츠에 성별이 있다 (GM 상태의 인물 줄에 보인다)
 - NPC는 콘텐츠에서 한 사람씩 정한다

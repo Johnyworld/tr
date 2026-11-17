@@ -408,3 +408,67 @@ faces:
     subject: >-
       a tomboyish young woman fighter, short spiky black hair, sharp determined eyes, a bandage on her nose,
       navy bomber jacket over a white shirt
+
+  # D 미국 애니메이션: 아이돌처럼 잘생기고 예쁜 한국인 남녀 (무표정)
+  d_m5:
+    style: D
+    gender: male
+    seed: 2124
+    subject: >-
+      a strikingly handsome korean man in his early twenties with a k-pop idol look, slim oval face,
+      smooth clear skin, gentle double-lidded eyes, high straight nose bridge, soft full lips,
+      neat black hair with soft bangs falling over his forehead, blank expressionless face,
+      tall slim build, worn dark bomber jacket over a grey hoodie
+  d_f5:
+    style: D
+    gender: female
+    seed: 2123
+    subject: >-
+      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face,
+      short chin, soft rounded jawline, full cheeks, compact youthful facial proportions, large clear eyes,
+      defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs,
+      blank expressionless face, long dusty trench coat over a black turtleneck
+  d_f6:
+    style: D
+    gender: female
+    seed: 2131
+    # d_f5와 같은 느낌을 살짝 옆으로 돌린 각도로 (돌린 얼굴은 너비가 좁게 재진다)
+    crop_scale: 1.1
+    subject: >-
+      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face,
+      short chin, soft rounded jawline, compact youthful facial proportions, large clear eyes, defined double eyelids,
+      delicate small nose, small full lips, long straight black hair with see-through bangs, blank expressionless face,
+      three-quarter view portrait, her face and shoulders angled about thirty degrees to the right,
+      one cheek turned away from the viewer, both eyes visible and glancing toward the viewer,
+      long dusty trench coat over a black turtleneck
+
+  # 아이돌형 후보 중 살린 것들 (d_f5와 같은 묘사 / d_f6과 같은 옆 각도 묘사 / d_m5와 같은 묘사)
+  d_f7:
+    style: D
+    gender: female
+    seed: 2134
+    crop_scale: 1.1
+    subject: >-
+      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face,
+      short chin, soft rounded jawline, compact youthful facial proportions, large clear eyes, defined double eyelids,
+      delicate small nose, small full lips, long straight black hair with see-through bangs, blank expressionless face,
+      three-quarter view portrait, her face and shoulders angled about thirty degrees to the right,
+      one cheek turned away from the viewer, both eyes visible and glancing toward the viewer,
+      long dusty trench coat over a black turtleneck
+  d_f8:
+    style: D
+    gender: female
+    seed: 2122
+    # 처음 그린 d_f5 (얼굴이 긴 버전). 그 원본을 그대로 쓴다
+    source: sources/d_f8.png
+    subject: >-
+      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, long straight black hair
+  d_m6:
+    style: D
+    gender: male
+    seed: 2122
+    subject: >-
+      a strikingly handsome korean man in his early twenties with a k-pop idol look, slim oval face,
+      smooth clear skin, gentle double-lidded eyes, high straight nose bridge, soft full lips,
+      neat black hair with soft bangs falling over his forehead, blank expressionless face,
+      tall slim build, worn dark bomber jacket over a grey hoodie

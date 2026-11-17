@@ -36,6 +36,7 @@ export const ICON_NAMES = [
   "cold",
   "fever",
   "mind",
+  "moon",
   // 날씨
   "sun",
   "cloud",

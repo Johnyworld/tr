@@ -842,6 +842,18 @@ export const scenarioFileSchema = z
          * 갈증 트랙 (12-97). 하루마다 daily만큼 마른다. 물이 넉넉한 곳에서 직접 마시면(take_action.drink) drink만큼 풀리고 빈 물병을 채운다.
          * 물이 넉넉한 곳: 산출에 resource가 있는 구역(강·우물·정수장), 또는 배급을 받는 우리 땅이면서 무리의 resource가 min_days 이상. 갇혀 있으면 captive_max까지만
          */
+        /**
+         * 피로 (12-114). 깨어 있는 동안 시간당 1(활동별로 rates가 덮어쓴다: 잠은 음수로 풀리고, 휴식은 0)씩 쌓인다.
+         * 쌓인 것이 grace 이상이면 첫 단계, 그 뒤 per_step마다 한 단계. 피로로 죽지 않는다 (트랙에 fatal을 두지 않는다)
+         */
+        fatigue: z
+          .strictObject({
+            track: id,
+            grace: z.number().min(0),
+            per_step: z.number().positive(),
+            rates: z.record(z.string(), z.number()).default({}),
+          })
+          .optional(),
         thirst: z
           .strictObject({
             track: id,

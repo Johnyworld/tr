@@ -1,4 +1,5 @@
 import { resistSteps } from "./growth.ts";
+import { exposeToFatigue } from "./fatigue.ts";
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { rollBlowup, rollHear, rollLeak } from "./persona.ts";
@@ -756,6 +757,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       });
       // 그동안의 기온 (12-98): 자정 전에 재야 그날의 날씨로 잰다
       extra.push(...exposeToCold(ctx, activity, cursor, result.end));
+      extra.push(...exposeToFatigue(ctx, activity, cursor, result.end));
       cursor = result.end;
       interrupt = result.interrupt;
       if (interrupt || cursor >= target) break;
@@ -773,6 +775,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       ...(forMission ? { forMission } : {}),
     });
     extra.push(...exposeToCold(ctx, activity, from, to));
+    extra.push(...exposeToFatigue(ctx, activity, from, to));
   }
 
   const label = ACTIVITY_LABELS[activity];

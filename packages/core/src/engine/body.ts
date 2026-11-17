@@ -34,7 +34,8 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
   const track = trackOf(ctx.content.scenario, trackId);
   const index = Math.max(0, track.levels.findIndex((l) => l.id === character.conditions[trackId]));
   // 버팀 (12-109): 나빠지는 단계마다 레벨만큼 피한다. 치트는 그대로
-  if (steps > 0 && by !== "cheat") {
+  // 피로는 깨어 있은 시간에서 바로 정해지므로 버티지 않는다 (12-114)
+  if (steps > 0 && by !== "cheat" && by !== "fatigue") {
     const kept = resistSteps(ctx.content.scenario, character.level ?? 1, steps, ctx.rng);
     if (kept === 0) {
       const would = track.levels[Math.min(track.levels.length - 1, index + steps)]!;

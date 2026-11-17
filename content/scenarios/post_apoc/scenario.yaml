@@ -544,6 +544,10 @@ symptoms:
   - { id: frantic, label: 미칠 것 같음, group: mind, penalty: -2 }
   - { id: breakdown, label: 멘탈붕괴, group: mind, penalty: -3 }
   # 공포 (12-95, *임시*): 그 자리에서 오르고 몇 시간 안에 빠진다
+  # 피로 (12-114)
+  - { id: drowsy, label: 졸림, group: fatigue }
+  - { id: weary, label: 지침, group: fatigue, penalty: -1 }
+  - { id: exhausted, label: 탈진, group: fatigue, penalty: -2 }
   - { id: tense, label: 긴장, group: fear }
   - { id: scared, label: 겁먹음, group: fear, penalty: -1 }
   - { id: panic, label: 공황, group: fear, penalty: -2, tone: 3 }
@@ -647,6 +651,15 @@ condition_tracks:
       - { id: low, symptoms: [depressed] }
       - { id: frayed, symptoms: [frantic] }
       - { id: broken, symptoms: [breakdown] }
+  # 피로 (12-114, *임시*): 깨어 있은 시간만큼 쌓이고 자면 풀린다. 죽지는 않는다 (판정만 어렵다)
+  - id: fatigue
+    label: 피로
+    icon: moon
+    levels:
+      - { id: rested }
+      - { id: drowsy, symptoms: [drowsy] }
+      - { id: weary, symptoms: [weary] }
+      - { id: exhausted, symptoms: [exhausted] }
   # 공포 (12-95): 감염체·떼·기습 앞에서 오르고, 위협이 없으면 시간마다 가라앉는다. 판정만 어렵다
   - id: fear
     label: 공포
@@ -863,6 +876,9 @@ consumables:
 
 # 몸 상태 (12-1, *임시*)
 body:
+  # 피로 (12-114, *임시*): 깨어 있으면 시간당 1씩 쌓이고, 자면 시간당 3씩(6시간 자면 18) 풀리고, 쉬기만 하면 그대로다
+  # 16시간 깨어 있으면 졸림(보정 없음), 24시간이면 지침 -1, 32시간이면 탈진 -2
+  fatigue: { track: fatigue, grace: 16, per_step: 8, rates: { sleep: -3, rest: 0 } }
   # 굶주림은 부상을 주지 않고 허기 트랙 끝에서 죽는다 (12-74)
   hunger: { track: hunger }
   # 갈증 (12-97, *임시*): 하루마다 한 단계 마른다. 물이 넉넉한 곳(물이 나는 구역, 물이 하루치 넘게 남은 우리 거점)에서

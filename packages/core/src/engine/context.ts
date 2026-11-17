@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { describeFatigue } from "./fatigue.ts";
 import { infestationSign } from "../game/infestation.ts";
 import { KIND_LABELS, templateKind } from "../game/kinds.ts";
 import { describePersona } from "./persona.ts";
@@ -106,6 +107,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
       ...(describeTemperature(content, state) ? [`기온: ${describeTemperature(content, state)}. 추위는 시스템이 기온으로 정한다 (불 피우기는 take_action.use_item에 땔감·판자·기름)`] : []),
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
+      ...(describeFatigue(content, state) ? [describeFatigue(content, state)!] : []),
       ...(incapacitatingSymptom(scenario, player)
         ? [
             `${incapacitatingSymptom(scenario, player)!.label}: 주인공은 스스로 아무것도 하지 못한다. 말하지도 움직이지도 판정하지도 않는다. 흐릿한 감각(소리, 냄새, 몸의 고통)의 조각만 짧게 서술하고, take_action의 activity(wait 또는 sleep, 전투 중이면 null)로 시간이 흐르게 한다. 이야기는 열리지 않는다. 곁의 사람(우리 편·적)이 주인공에게 무엇을 하는지는 코드가 정하고 take_action 결과로 알린다: 옮기거나 붙잡거나 해치는 일을 서술로 지어내지 않는다. 장면의 치료사가 돌보면 treatment {item: null}`,

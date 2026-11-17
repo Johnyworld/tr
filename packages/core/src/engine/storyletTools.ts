@@ -1,4 +1,5 @@
 import { capturePlayer, releasePlayer } from "./captivity.ts";
+import { exposeToFatigue } from "./fatigue.ts";
 import { infestationOf } from "../game/infestation.ts";
 import { exposeToCold } from "./climate.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
@@ -469,6 +470,7 @@ function applyEffect(
     store.append({ type: "time_advanced", activity: "wait", from: state.time, to: state.time + effect.delay });
     // 걸린 시간만큼 바깥에 있었다 (12-98)
     const cold = exposeToCold(ctx, "travel", state.time, state.time + effect.delay);
+    exposeToFatigue(ctx, "travel", state.time, state.time + effect.delay);
     const harm = cold.find((d) => d.type === "harm");
     return { line: `시간이 더 걸렸다 (${Math.round(effect.delay / 60)}시간쯤).${harm && harm.type === "harm" ? ` ${harm.trackLabel}: ${harm.fromLabel} → ${harm.toLabel}.` : ""}` };
   }

@@ -253,6 +253,13 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       }
     }
 
+    // 지치면 잔다 (12-114). 사람은 졸리면 자러 간다
+    const fatigue = content.scenario.body?.fatigue?.track;
+    if (fatigue && idx(fatigue) >= 2 && !s.battle && rng() < 0.7) {
+      tool("take_action", { ...base, intent: "지쳐서 잔다", activity: { kind: "sleep", until: null } });
+      continue;
+    }
+
     // 동행 (기획서 7.9): 갈림길이면 정하고, 가끔 잠시 떼어 놓는다
     const crossing = s.companions.find((id) => s.bonds[id]?.crossroads);
     if (crossing && rng() < 0.5) {

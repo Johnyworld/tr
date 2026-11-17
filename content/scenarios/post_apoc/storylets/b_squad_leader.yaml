@@ -341,6 +341,9 @@
     day_gte: 3
     flags_none: [b_sl_freeze_seen]
   cast:
+    inf_a: { extra: infected_hungry, label: 맨 앞의 감염체 }
+    inf_b: { extra: infected_hungry, label: 비틀거리는 감염체 }
+    inf_c: { extra: infected_crawler, label: 담 밑을 기는 감염체 }
     green: { ids: [b_gyeongtae] }
   setup: "무너진 담 너머에서 감염체 서넛이 비틀거리며 나온다. 수신호를 맞추자던 {green:이/가} 맨 앞에 서 있다. 총구가 아래로 처진다. 숨소리만 거칠고 발은 움직이지 않는다. 감염체와의 거리가 줄어든다."
   ai_direction: 우경태는 지난겨울 동쪽 초소에서 총을 버리고 달아났다 (비밀). 지금 그 밤처럼 얼어붙었다. 분대장이 어떻게 하느냐로 분대가 산다. 그가 얼어붙은 것을 다른 분대원들도 본다.

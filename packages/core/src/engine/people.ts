@@ -1,4 +1,5 @@
 import { onLoverDeath } from "./romance.ts";
+import { isInfected, templateKind } from "../game/kinds.ts";
 import { frighten } from "./fear.ts";
 import { shakeNerves } from "./body.ts";
 import { z } from "zod";
@@ -93,7 +94,7 @@ export function promoteExtra(ctx: ToolContext, id: string): boolean {
   const state = store.getState();
   const c = state.characters[id];
   const template = c?.extra ? content.extras[c.extra.template] : undefined;
-  if (!c || c.dead || c.profile || !template?.profile || template.animal) return false;
+  if (!c || c.dead || c.profile || !template?.profile || templateKind(template) !== "person") return false;
   const p = template.profile;
   const secret = p.secrets.length && rng() < 0.6 ? pickFrom(rng, p.secrets) : null;
   const profile = {
@@ -146,12 +147,12 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
   onLoverDeath(ctx, id);
   // 곁에서 죽는 것을 보면 마음이 흔들린다 (12-48)
   const nerves = content.scenario.body?.nerves;
-  if (nerves && (state.scene.present.includes(id) || state.companions.includes(id)) && !state.characters[id]?.extra?.template?.includes("infected")) {
+  if (nerves && (state.scene.present.includes(id) || state.companions.includes(id)) && !isInfected(content, state.characters[id])) {
     shakeNerves(ctx, nerves.witness_death, `${dead}이(가) 눈앞에서 죽었다`);
   }
   // 눈앞의 죽음은 공포도 부른다 (12-95)
   const fear = content.scenario.body?.fear;
-  if (fear && (state.scene.present.includes(id) || state.companions.includes(id)) && !state.characters[id]?.extra?.template?.includes("infected")) {
+  if (fear && (state.scene.present.includes(id) || state.companions.includes(id)) && !isInfected(content, state.characters[id])) {
     frighten(ctx, fear.witness_death, `${dead}이(가) 눈앞에서 죽었다`);
   }
   for (const t of tiesOf(state, content, id)) {
@@ -202,7 +203,8 @@ const promoteTool = defineTool({
     if (!c?.extra || !state.scene.present.includes(input.target)) return { ok: false, error: "장면에 있는 이름 없는 인물이 아니다." };
     if (c.profile) return { ok: false, error: "이미 자란 인물이다." };
     const template = content.extras[c.extra.template];
-    if (template?.animal) return { ok: false, error: "동물은 자라지 않는다 (이미 동행이면 충분하다)." };
+    if (template?.kind === "animal") return { ok: false, error: "동물은 자라지 않는다 (이미 동행이면 충분하다)." };
+    if (template?.kind === "infected") return { ok: false, error: "감염체는 자라지 않는다." };
     if (!template?.profile) return { ok: false, error: `이 틀(${template?.label ?? c.extra.template})은 자랄 재료가 없다.` };
     promoteExtra(ctx, input.target);
     const p = store.getState().characters[input.target]!.profile!;

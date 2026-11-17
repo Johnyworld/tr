@@ -10,6 +10,7 @@ import { initialConditions } from "../scenario/scenario.ts";
 import { josa } from "../text.ts";
 import { aliasOf, knowsName } from "../game/acquaintance.ts";
 import { firstImpression } from "./charm.ts";
+import { isCreature, KIND_LABELS, templateKind } from "../game/kinds.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
 
 /**
@@ -44,7 +45,7 @@ export function createExtraCharacter(
   for (const i of template.inventory) if (rng() < i.chance) inventory[i.item] = (inventory[i.item] ?? 0) + i.quantity;
   // 이름 재료가 없는 시나리오면 호칭이 이름이 된다
   // 동물은 사람 이름을 짓지 않는다 (호칭이 이름)
-  const name = input.name ?? (template.animal ? input.label : (generateName(rng, s.names, gender, input.usedNames) ?? input.label));
+  const name = input.name ?? (templateKind(template) !== "person" ? input.label : (generateName(rng, s.names, gender, input.usedNames) ?? input.label));
   return createCharacterSchema(s).parse({
     id: input.id,
     name,
@@ -99,7 +100,9 @@ const spawnExtra = defineTool({
       ok: true,
       resultText:
         `${josa(input.label, "이/가")} 장면에 들어왔다 (id: ${id}, ${rankName(content, character.factionId, character.rank)}). 겉모습: ${character.extra!.look}. ` +
-        `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 이 인물은 이제 판정 대상(target)이 되고 행적을 본다. 이름은 아직 모른다.`,
+        (template.kind === "infected"
+          ? `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 감염체다: 판정의 상대(target·opponent)가 되고, 말이 통하지 않으며 행적을 보지 않는다. 이것에게 다칠 위험에는 감염 위험이 저절로 붙는다.`
+          : `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 이 인물은 이제 판정 대상(target)이 되고 행적을 본다.${templateKind(template) === "person" ? " 이름은 아직 모른다." : ""}`),
       display: { type: "presence", npcName: input.label, action: "enter" },
     };
   },
@@ -123,6 +126,7 @@ const learnName = defineTool({
     if (!c || input.target === state.playerId) return { ok: false, error: `알 수 없는 인물: ${input.target}` };
     const alias = aliasOf(state, content, c.id);
     if (!state.scene.present.includes(c.id)) return { ok: false, error: `${josa(alias, "은/는")} 지금 장면에 없다.` };
+    if (isCreature(content, c)) return { ok: false, error: `${josa(alias, "은/는")} 사람이 아니라 이름을 나누지 않는다.` };
     const player = state.characters[state.playerId]!;
     const [learner, target] = input.who === "player" ? [state.playerId, c.id] : [c.id, state.playerId];
     if (knowsName(state, learner, target)) {
@@ -169,7 +173,8 @@ function noteFirstMeeting(ctx: ToolContext, id: string): void {
   if (knowsName(state, state.playerId, id)) return;
   const alias = aliasOf(state, ctx.content, id);
   const look = state.characters[id]?.extra?.look ?? ctx.content.npcs[id]?.look ?? "";
-  const opening = `${josa(alias, "과/와")} 마주쳤다. 이름은 모른다.`;
+  // 동물·감염체는 이름이 없다 (12-111)
+  const opening = isCreature(ctx.content, state.characters[id]) ? `${josa(alias, "과/와")} 마주쳤다.` : `${josa(alias, "과/와")} 마주쳤다. 이름은 모른다.`;
   if ((state.beliefs[state.playerId] ?? []).some((b) => b.fact.startsWith(opening))) return;
   const fact = `${opening}${look ? ` 겉모습: ${look}` : ""}`;
   addBeliefTo(ctx, state.playerId, fact, "seen");
@@ -200,8 +205,9 @@ export function describeExtraTemplates(state: GameState, content: Content): stri
     if (a.zones && (!zone || !a.zones.includes(zone))) return false;
     if (a.zone_owner && !a.zone_owner.includes(ownerKind)) return false;
     if (a.segments && !a.segments.includes(segment)) return false;
+    if (a.min_danger !== undefined && (!zone || (content.locations[zone]?.danger ?? 0) < a.min_danger)) return false;
     return true;
   });
   if (list.length === 0) return "";
-  return `엑스트라 틀 (지금 여기서 마주칠 만한 사람. 이름 없는 인물이 주인공과 엮이면 spawn_extra로 만든다. 이야기에 붙잡을 사람이면 promote_extra):\n${list.map((t) => `- ${t.id}: ${t.label}`).join("\n")}`;
+  return `엑스트라 틀 (지금 여기서 마주칠 만한 사람·동물·감염체. 이름 없는 인물이 주인공과 엮이면 spawn_extra로 만든다. 이야기에 붙잡을 사람이면 promote_extra. 감염체와 맞서면 하나하나 spawn_extra로 장면에 들인다):\n${list.map((t) => `- ${t.id}: ${t.label}${templateKind(t) === "person" ? "" : ` (${KIND_LABELS[templateKind(t)]})`}`).join("\n")}`;
 }

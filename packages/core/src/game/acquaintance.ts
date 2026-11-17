@@ -1,4 +1,5 @@
 import { rankName } from "./ranks.ts";
+import { isCreature, kindOf, KIND_LABELS } from "./kinds.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "./state.ts";
 
@@ -41,8 +42,8 @@ export function nameAs(state: GameState, content: Content, viewer: string, targe
 export function headingAs(state: GameState, content: Content, viewer: string, target: string): string {
   const c = state.characters[target];
   if (!c) return target;
-  // 동물은 이름을 나누지 않는다 (호칭이 이름)
-  if (c.extra && content.extras[c.extra.template]?.animal) return `${c.extra.label} · 동물`;
+  // 동물·감염체는 이름을 나누지 않는다 (호칭이 이름, 12-111)
+  if (c.extra && isCreature(content, c)) return `${c.extra.label} · ${KIND_LABELS[kindOf(content, c)]}`;
   if (!knowsName(state, viewer, target)) return `${aliasOf(state, content, target)} (이름 모름)`;
   return c.extra ? `${c.name} (${c.extra.label})` : c.name;
 }

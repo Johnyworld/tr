@@ -794,8 +794,14 @@ export function createContentSchemas(s: Scenario) {
     inventory: z.array(z.strictObject({ item: contentIdSchema, chance: z.number().min(0).max(1).default(1), quantity: z.number().int().positive().default(1) })).default([]),
     /** 행적을 보고 반응하는 가치관 */
     values: z.record(contentIdSchema, valueScoreSchema).default({}),
-    /** 동물이다: 사람 이름을 짓지 않고 호칭(label)이 이름이 된다 (기획서 7.8 동행) */
-    animal: z.boolean().optional(),
+    /**
+     * 무엇인가 (12-111). person 사람 / animal 동물: 사람 이름을 짓지 않고 호칭(label)이 이름이 된다 (기획서 7.8 동행) /
+     * infected 감염체: 동물처럼 이름이 없고, 말이 통하지 않아 사람의 일(대화·흥정·포로·관계·목격·소문·자라기·동행)에서 빠진다.
+     * 감염체가 맞서는 판정에서 다치면 감염 위험이 저절로 붙는다 (scenario.opposition.mindless)
+     */
+    kind: z.enum(["person", "animal", "infected"]).default("person"),
+    /** 이것에게 다칠 때의 상처 종류 (wounds.kinds). 감염체·동물의 물림·할큄. GM이 상처 종류를 비우면 이것을 쓴다 */
+    wound: contentIdSchema.optional(),
     /**
      * 자랄 때(이름 없는 인물 → 이름 있는 인물, 기획서 7.10) 코드가 하나씩 고르는 재료. 없으면 자라지 않는다
      */
@@ -818,6 +824,8 @@ export function createContentSchemas(s: Scenario) {
         /** none: 누구의 땅도 아닌 곳, own: 주인공 무리의 땅, other: 다른 무리의 땅 */
         zone_owner: z.array(z.enum(["none", "own", "other"])).optional(),
         segments: z.array(z.enum(TIME_SEGMENTS)).optional(),
+        /** 구역 위험(danger)이 이 이상인 곳에서만 (12-111: 감염체는 위험한 곳에) */
+        min_danger: z.number().int().min(0).max(3).optional(),
       })
       .optional(),
     /** 동행하면 주인공의 스킬에 더하는 보정 (예: 개 → 경계 +1). 능력+스킬 상한 안에서 */

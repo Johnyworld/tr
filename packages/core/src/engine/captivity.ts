@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isCreature } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { Clash, GameState } from "../game/state.ts";
@@ -167,6 +168,7 @@ const takePrisoner = defineTool({
     if (!rules(content)) return { ok: false, error: "이 월드에는 포로 규칙이 없다." };
     if (state.characters[state.playerId]?.captive) return { ok: false, error: "갇혀 있는 몸으로는 누구도 묶을 수 없다." };
     if (!t || t.dead || t.id === state.playerId || !state.scene.present.includes(t.id)) return { ok: false, error: "그 사람이 장면에 없다." };
+    if (isCreature(content, t)) return { ok: false, error: "사람만 포로로 묶는다." };
     if (t.captive || state.companions.includes(t.id)) return { ok: false, error: "그 사람은 이미 붙잡혀 있거나 함께 다니는 사람이다." };
     const track = harmTrack(content.scenario);
     const at = track.levels.findIndex((l) => l.id === t.conditions[track.id]);

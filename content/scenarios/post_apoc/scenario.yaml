@@ -70,6 +70,11 @@ opposition:
   visibility: { moves: [stealth], below: 0.7, value: 1 }
   # 다칠 때 상대의 근접전·사격 점수가 3 이상이면 한 단계 더, 0 이하면 한 단계 덜 (적어도 1단계)
   harm: { moves: [fight, shoot], strong: 3, weak: 0 }
+  # 말이 통하지 않는 상대 (엑스트라 kind: infected, 12-111): 말로 하는 스킬은 쓸 수 없고,
+  # 장면에 덤빌 수 있는 감염체가 둘·넷 이상이면 근접전 -1씩 (수에 밀림)
+  mindless:
+    refuses: [persuade, deceive, intimidate]
+    outnumbered: { moves: [fight], at: [2, 4] }
 
 # 능력·스킬 범위. 능력 + 스킬은 최대 +4 (2d6에서 +5부터는 실패가 사라진다)
 ranges:

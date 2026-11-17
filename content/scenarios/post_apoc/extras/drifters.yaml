@@ -134,7 +134,7 @@
 - id: stray_dog
   label: 누렁이
   fright_tags: [dog]
-  animal: true
+  kind: animal
   rank: loner
   age: [2, 6]
   looks:

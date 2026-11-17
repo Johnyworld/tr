@@ -5,6 +5,8 @@ import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
 import { segmentOf } from "../rules/time.ts";
 import { weatherNow } from "../sim/weather.ts";
+import { isInfected } from "../game/kinds.ts";
+import { isIncapacitated } from "./body.ts";
 
 /**
  * 상대와 상황 (기획서 4.1.1, 12-104): 주사위는 주인공만 굴린다. 상대의 실력·지켜보는 눈·어둠은 코드가 판정 보정으로 바꾼다.
@@ -49,12 +51,27 @@ export function oppositionParts(content: Content, state: GameState, moveId: stri
     const value = -r.crowd.at.filter((n) => eyes >= n).length;
     if (value) parts.push({ label: `지켜보는 눈 ${eyes}`, value });
   }
+  // 수에 밀림 (12-111): 맞서는 감염체가 여럿이면 맞붙기 어렵다
+  const outnumbered = r.mindless?.outnumbered;
+  if (outnumbered?.moves.includes(moveId)) {
+    const pack = infectedFoes(content, state).length;
+    const value = -outnumbered.at.filter((n) => pack >= n).length;
+    if (value) parts.push({ label: `감염체 ${pack}`, value });
+  }
   if (r.dark?.moves.includes(moveId) && r.dark.segments.includes(segmentOf(state.time))) parts.push({ label: "어둠", value: r.dark.value });
   if (r.visibility?.moves.includes(moveId)) {
     const weather = weatherNow(content.scenario, state);
     if (weather && weather.visibility < r.visibility.below) parts.push({ label: weather.label, value: r.visibility.value });
   }
   return parts.filter((p) => p.value !== 0);
+}
+
+/** 장면에서 아직 덤빌 수 있는 감염체 (쓰러진 것은 빼고, 12-111) */
+export function infectedFoes(content: Content, state: GameState): string[] {
+  return state.scene.present.filter((id) => {
+    const c = state.characters[id];
+    return !!c && !c.dead && isInfected(content, c) && !isIncapacitated(content, c);
+  });
 }
 
 /** 장면에서 주인공을 볼 수 있는 사람: 살아 있고, 함께 다니는 사람이 아니다 */

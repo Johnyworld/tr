@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isCreature } from "../game/kinds.ts";
 import { romanceShift } from "./persona.ts";
 import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -54,7 +55,7 @@ export function romanceAllowed(state: GameState, content: Content, a: string, b:
   const ca = state.characters[a];
   const cb = state.characters[b];
   // 연애는 성인 콘텐츠가 아니다 (수위와 상관없이). 성인끼리만: 미성년자는 어떤 경우에도 대상이 아니다
-  return !!rules(content) && !!ca && !!cb && !ca.dead && !cb.dead && a !== b && isAdult(content, ca) && isAdult(content, cb);
+  return !!rules(content) && !!ca && !!cb && !ca.dead && !cb.dead && a !== b && !isCreature(content, ca) && !isCreature(content, cb) && isAdult(content, ca) && isAdult(content, cb);
 }
 
 /** from이 to에게 끌리는가 */

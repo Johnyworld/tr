@@ -1,4 +1,5 @@
 import type { Content } from "../content/schemas.ts";
+import { isCreature } from "../game/kinds.ts";
 import type { Character } from "../game/character.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import { josa } from "../text.ts";
@@ -174,7 +175,7 @@ export function rollBlowup(ctx: ToolContext, targetId: string | null): string | 
   const v = personaOf(ctx.content, me)[rule.axis] ?? 0;
   if (v <= 0 || ctx.rng() >= rule.chance[v - 1]!) return null;
   const target = targetId ? state.characters[targetId] : undefined;
-  if (target && !target.dead && state.scene.present.includes(target.id)) {
+  if (target && !target.dead && !isCreature(ctx.content, target) && state.scene.present.includes(target.id)) {
     ctx.store.append({ type: "relation_changed", from: target.id, to: me.id, delta: rule.delta, reason: `${me.name}이(가) 발끈했다` });
     const parts = [rule.delta.trust && `신뢰 ${rule.delta.trust > 0 ? "+" : ""}${rule.delta.trust}`, rule.delta.affection && `호감 ${rule.delta.affection > 0 ? "+" : ""}${rule.delta.affection}`, rule.delta.respect && `존중 ${rule.delta.respect > 0 ? "+" : ""}${rule.delta.respect}`].filter(Boolean);
     return persona(axis, v, `발끈했다 · ${target.name}의 ${parts.join(", ")}`);
@@ -191,7 +192,7 @@ export function rollLeak(ctx: ToolContext, targetId: string | null): string | nu
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   const target = targetId ? state.characters[targetId] : undefined;
-  if (!rule || !me || me.dead || !target || target.dead || !state.scene.present.includes(target.id)) return null;
+  if (!rule || !me || me.dead || !target || target.dead || isCreature(ctx.content, target) || !state.scene.present.includes(target.id)) return null;
   const axis = ctx.content.scenario.persona!.axes.find((a) => a.id === rule.axis)!;
   const v = personaOf(ctx.content, me)[rule.axis] ?? 0;
   if (v <= 0 || ctx.rng() >= rule.chance[v - 1]!) return null;
@@ -216,7 +217,7 @@ export function rollHear(ctx: ToolContext, targetId: string | null): { line: str
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   const target = targetId ? state.characters[targetId] : undefined;
-  if (!rule || !me || me.dead || !target || target.dead || !state.scene.present.includes(target.id)) return null;
+  if (!rule || !me || me.dead || !target || target.dead || isCreature(ctx.content, target) || !state.scene.present.includes(target.id)) return null;
   const axis = ctx.content.scenario.persona!.axes.find((a) => a.id === rule.axis)!;
   const v = personaOf(ctx.content, me)[rule.axis] ?? 0;
   if (v <= 0 || ctx.rng() >= rule.chance[v - 1]!) return null;

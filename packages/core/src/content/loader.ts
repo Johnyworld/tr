@@ -391,6 +391,8 @@ function checkReferences(content: Content): string[] {
     if (ex.faction) factionRef(`extras.${ex.id}`, ex.faction);
     for (const i of ex.inventory) if (!content.items[i.item]) problems.push(`extras.${ex.id}: 알 수 없는 아이템 ${i.item}`);
     if (ex.age[0] > ex.age[1]) problems.push(`extras.${ex.id}: 나이 범위가 거꾸로다`);
+    if (ex.wound && !content.scenario.wounds?.kinds.some((k) => k.id === ex.wound)) problems.push(`extras.${ex.id}.wound: 알 수 없는 상처 종류 ${ex.wound}`);
+    if (ex.kind === "infected" && ex.profile) problems.push(`extras.${ex.id}: 감염체는 자라지 않는다 (profile을 뺀다)`);
   }
   for (const npc of Object.values(content.npcs)) {
     if (npc.faction) factionRef(`npcs.${npc.id}`, npc.faction);

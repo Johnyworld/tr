@@ -1,4 +1,5 @@
 import type { RelationDelta } from "../game/reputation.ts";
+import { isInfected } from "../game/kinds.ts";
 import { rapportImpression } from "./persona.ts";
 import { affectionTraitBonus, looksImpression } from "./traits.ts";
 import type { ToolContext } from "./toolkit.ts";
@@ -41,7 +42,8 @@ export function firstImpression(ctx: ToolContext, npcId: string): void {
   if (state.relations[npcId]?.[state.playerId]) return;
   const viewer = state.characters[npcId];
   const player = state.characters[state.playerId];
-  if (!viewer || !player) return;
+  // 감염체는 사람을 보고 마음이 움직이지 않는다 (12-111)
+  if (!viewer || !player || isInfected(ctx.content, viewer)) return;
   const charmBonus = charm && value !== null ? Math.max(0, Math.floor(value / charm.first_impression_per)) : 0;
   // 성격 궁합 (12-99): 같은 쪽이면 조금 더, 반대쪽이면 조금 덜
   const total = charmBonus + looksImpression(ctx.content, viewer, player) + rapportImpression(ctx.content, viewer, player);

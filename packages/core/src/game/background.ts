@@ -1,4 +1,5 @@
 import { josa, sentence } from "../text.ts";
+import { templateKind } from "./kinds.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 
@@ -66,7 +67,7 @@ export function checkHistory(content: Content, parts: readonly HistoryPart[], ow
       if (!isFaction(content, p.target) && !isNpc(content, p.target)) problems.push(`enemy.target: 알 수 없는 세력·인물 ${p.target}`);
       if (p.target === own) problems.push("enemy.target: 자기 무리를 통째로 원수로 둘 수는 없다 (그 안의 사람을 고른다).");
     } else if (p.kind === "kin_alive" || p.kind === "seeking") {
-      if (!kin.includes(p.template) || content.extras[p.template]?.animal) problems.push(`${p.kind}.template: 사람 연고 틀은 ${kin.filter((k) => !content.extras[k]?.animal).join(", ")} 중 하나다.`);
+      if (!kin.includes(p.template) || templateKind(content.extras[p.template]) !== "person") problems.push(`${p.kind}.template: 사람 연고 틀은 ${kin.filter((k) => templateKind(content.extras[k]) === "person").join(", ")} 중 하나다.`);
       if (p.kind === "kin_alive" && (!content.locations[p.zone] || content.locations[p.zone]!.isolated)) problems.push(`kin_alive.zone: 갈 수 있는 구역이 아니다 ${p.zone}`);
     } else if (p.kind === "debt") {
       if (!isFaction(content, p.faction)) problems.push(`debt.faction: 알 수 없는 세력 ${p.faction}`);
@@ -128,7 +129,7 @@ export function historyFlags(content: Content, p: HistoryPart): string[] {
 
 /** GM에게 줄 고를 수 있는 것 (옮기기 단계) */
 export function describeHistoryOptions(content: Content): string {
-  const kin = (content.scenario.custom_start?.kin ?? []).filter((k) => !content.extras[k]?.animal);
+  const kin = (content.scenario.custom_start?.kin ?? []).filter((k) => templateKind(content.extras[k]) === "person");
   const npcs = Object.values(content.npcs)
     .filter((n) => n.faction && content.factions[n.faction]?.startable !== false)
     .map((n) => `${n.name}(${n.id}, ${content.factions[n.faction!]?.name})`);

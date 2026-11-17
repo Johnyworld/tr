@@ -1,0 +1,66 @@
+# 감염체 틀 (12-111, *임시*): 이야기와 GM 서술 안에만 있던 감염체에게 몸을 준다
+# kind: infected — 이름이 없고 말이 통하지 않는다. 대화·흥정·포로·관계·목격·소문·자라기에서 빠진다
+# 맞서는 판정(opponent·target)에서 다치면 감염 위험과 이 틀의 상처 종류(wound)가 저절로 붙는다
+# 수에 밀림: 장면에 덤빌 수 있는 감염체가 둘·넷을 넘으면 근접전 -1씩 (scenario.opposition.mindless)
+# 소지품 표는 생전의 짐이다. 쓰러뜨리면 transfer_item으로 뒤질 수 있다
+
+- id: infected_hungry
+  label: 굶주린 감염체
+  kind: infected
+  wound: bite
+  fearsome: 1
+  fright_tags: [infected]
+  rank: loner
+  age: [16, 70]
+  looks:
+    - 찢어진 작업복을 걸친 감염체. 턱이 한쪽으로 처져 이빨이 다 드러났다. 발을 끌며 소리 쪽으로 고개를 돌린다
+    - 머리카락이 반쯤 빠진 감염체. 손톱이 검게 갈라졌고, 숨을 쉴 때마다 목에서 젖은 소리가 난다
+    - 등산 조끼를 입은 감염체. 주머니가 아직 불룩하다. 눈이 허옇게 흐려졌는데도 냄새를 맡듯 코를 쳐든다
+  stats: { strength: [1, 1], agility: [-1, 0], vitality: [1, 2], senses: [1, 1] }
+  skills: { fight: 1, sense_danger: 1 }
+  inventory:
+    - { item: cloth, chance: 0.3 }
+    - { item: cigarettes, chance: 0.15 }
+    - { item: dry_ration, chance: 0.1 }
+    - { item: bandage, chance: 0.08 }
+    - { item: serum, chance: 0.01 }
+  appears: { min_danger: 2 }
+
+- id: infected_crawler
+  label: 기어다니는 감염체
+  kind: infected
+  wound: claw
+  fearsome: 1
+  fright_tags: [infected]
+  rank: loner
+  age: [16, 70]
+  looks:
+    - 허리 아래가 짓뭉개진 감염체. 두 팔로 바닥을 긁으며 기어 온다. 손톱 밑이 시커멓다
+    - 다리 한쪽이 없는 감염체. 무너진 벽 밑에 반쯤 깔린 채 지나가는 발목을 향해 손을 뻗는다
+  stats: { strength: [0, 1], agility: [-1, -1], senses: [0, 1] }
+  skills: { fight: 0, stealth: 1 }
+  inventory:
+    - { item: cloth, chance: 0.2 }
+    - { item: scrap_metal, chance: 0.1 }
+  appears: { min_danger: 1 }
+
+- id: infected_fresh
+  label: 막 변한 감염체
+  kind: infected
+  wound: bite
+  fearsome: 2
+  fright_tags: [infected]
+  rank: loner
+  age: [16, 60]
+  looks:
+    - 아직 얼굴빛이 남은 감염체. 옷도 멀쩡하다. 사람처럼 보이다가, 고개를 꺾으며 달려든다
+    - 팔에 감은 붕대가 피로 젖은 감염체. 며칠 전까지 사람이었을 것이다. 움직임이 빠르고 거칠다
+  stats: { strength: [1, 2], agility: [1, 1], vitality: [1, 1], senses: [1, 1] }
+  skills: { fight: 2, sense_danger: 1 }
+  inventory:
+    - { item: water_bottle, chance: 0.2 }
+    - { item: dry_ration, chance: 0.2 }
+    - { item: bandage, chance: 0.15 }
+    - { item: kitchen_knife, chance: 0.1 }
+    - { item: antibiotics, chance: 0.05 }
+  appears: { min_danger: 2, segments: [evening, night, dawn] }

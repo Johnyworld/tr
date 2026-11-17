@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { templateKind } from "../game/kinds.ts";
 import type { RoleContent } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { activeCompanions, bondOf } from "../game/companions.ts";
@@ -151,11 +152,11 @@ export function addStartCompanions(ctx: ToolContext, role: RoleContent | undefin
     const character = createExtraCharacter(content, template, { id, label: sc.label, zone: state.playerZone, time: state.time, usedNames, name: sc.name, age: sc.age, gender: sc.gender }, rng);
     store.append({ type: "extra_spawned", character });
     // 연고는 서로 이름을 안다
-    if (!template.animal) {
+    if (templateKind(template) === "person") {
       store.append({ type: "name_learned", characterId: state.playerId, targetId: id });
       store.append({ type: "name_learned", characterId: id, targetId: state.playerId });
     }
-    store.append({ type: "companion_joined", characterId: id, kind: sc.kind ?? (template.animal ? "animal" : "kin") });
+    store.append({ type: "companion_joined", characterId: id, kind: sc.kind ?? (template.kind === "animal" ? "animal" : "kin") });
   }
 }
 

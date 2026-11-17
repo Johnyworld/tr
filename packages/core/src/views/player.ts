@@ -1,4 +1,5 @@
 import { rankName } from "../game/ranks.ts";
+import { isCreature } from "../game/kinds.ts";
 import { feelsLike } from "../engine/climate.ts";
 import { occupationTitle } from "../game/occupation.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem } from "../engine/gear.ts";
@@ -361,7 +362,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         id,
         name: headingAs(state, content, player.id, id),
         // 동물은 계급이 없다 (호칭에 이미 "동물"). 연고(가족·길동무)도 계급 대신 이름 옆의 부르는 말로 (떠돌이 계급 "혼자"를 붙이지 않는다)
-        rankLabel: (npc.extra && content.extras[npc.extra.template]?.animal) || bondOf(state, content, id)?.kind === "kin" ? "" : rankName(content, npc.factionId, npc.rank),
+        rankLabel: isCreature(content, npc) || bondOf(state, content, id)?.kind === "kin" ? "" : rankName(content, npc.factionId, npc.rank),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
         conditionLabel: npc.dead ? "사망" : npc.away ? "떠남" : npc.captive ? (state.playerZone === npc.captive.zone ? "붙잡혀 있음" : "행방 모름") : changed(npc) ? changedConditions(npc) : null,
         states: npc.dead ? [] : symptomViews(scenario, npc),

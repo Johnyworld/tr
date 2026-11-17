@@ -1,4 +1,5 @@
 import { effectiveSkill } from "./traits.ts";
+import { isCreature } from "../game/kinds.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -273,6 +274,7 @@ const barterTool = defineTool({
     const me = state.characters[state.playerId]!;
     const npc = state.characters[input.npc_id];
     if (!npc || !state.scene.present.includes(input.npc_id) || npc.dead) return { ok: false, error: "장면에 있는 인물이 아니다." };
+    if (isCreature(content, npc)) return { ok: false, error: "사람이 아니라 물건을 주고받을 수 없다. 쓰러뜨린 뒤 지닌 것을 챙기려면 transfer_item." };
     if (isEmpty(input.get) && isEmpty(input.give)) return { ok: false, error: "주고받는 것이 없다." };
     for (const [id, q] of Object.entries(input.give)) if ((me.inventory[id] ?? 0) < q) return { ok: false, error: `${nameOf(content, id)}이(가) ${me.inventory[id] ?? 0}개뿐이다.` };
     const name = playerCalls(state, content, input.npc_id);

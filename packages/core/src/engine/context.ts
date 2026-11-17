@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { KIND_LABELS, templateKind } from "../game/kinds.ts";
 import { describePersona } from "./persona.ts";
 import { describeTemperature } from "./climate.ts";
 import { troubleLine } from "./factionTalk.ts";
@@ -191,18 +192,21 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
   const relation = state.relations[c.id]?.[player.id] ?? NEUTRAL_RELATION;
   const attitude = RELATION_AXES.map((axis) => `${RELATION_AXIS_LABELS[axis]} ${relationLabel(relation[axis])}`).join(", ");
   const template = content.extras[ex.template];
-  const animal = template?.animal === true;
+  // 동물·감염체는 사람의 사정(계급·곤경·이름)을 쓰지 않는다 (12-111)
+  const animal = templateKind(template) !== "person";
   return [
     animal
       ? `### ${headingAs(state, content, player.id, c.id)} (${c.id})`
       : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}${occupationTitle(content, c) ? ` · ${occupationTitle(content, c)}` : ""}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
     `겉모습: ${ex.look}`,
     `상태: ${describeConditions(content.scenario, c)} / 지닌 것: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
-    `[GM 전용: 연기에만 쓴다] ${animal ? "동물" : c.profile ? "자란 인물" : "이름 없는 인물"} (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
+    template?.kind === "infected"
+      ? `[GM 전용] 감염체 (틀: ${template.label}). 말이 통하지 않고 산 사람을 보면 덤빈다. 맞서는 판정의 opponent·target으로 둔다 (다칠 위험에 감염이 저절로 붙는다)`
+      : `[GM 전용: 연기에만 쓴다] ${animal ? KIND_LABELS[templateKind(template)] : c.profile ? "자란 인물" : "이름 없는 인물"} (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
     ...describeProfileLines(state, content, c),
     ...describeTieLines(state, content, c.id),
     `트레잇: ${traitLabels(content, c, { acting: true }).join(", ") || "-"}`,
-    ...(describePersona(content, c) ? [`성격: ${describePersona(content, c)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
+    ...(!animal && describePersona(content, c) ? [`성격: ${describePersona(content, c)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
     ...(animal ? [] : [troubleLine(state, content, c)].filter((x): x is string => !!x)),
     ...attractionNotes(content, c, player),
     ...(animal ? [] : nameNotes(state, player.id, c.id)),

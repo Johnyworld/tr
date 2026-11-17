@@ -575,7 +575,7 @@ function applyEffect(
     const c = id ? state.characters[id] : undefined;
     if (!id || !c || id === playerId || c.dead || c.away || c.captive || state.companions.includes(id)) return {};
     const template = c.extra?.template ? content.extras[c.extra.template] : undefined;
-    const kind = effect.companion_join.kind ?? (template?.animal ? "animal" : "purpose");
+    const kind = effect.companion_join.kind ?? (template?.kind === "animal" ? "animal" : "purpose");
     const u = effect.companion_join.until;
     const until =
       kind === "purpose"
@@ -590,7 +590,7 @@ function applyEffect(
     if (!id || !state.companions.includes(id)) return {};
     if (!state.bonds?.[id]) {
       const t = state.characters[id]?.extra?.template;
-      store.append({ type: "companion_bond_changed", characterId: id, kind: t && content.extras[t]?.animal ? "animal" : "kin" });
+      store.append({ type: "companion_bond_changed", characterId: id, kind: t && content.extras[t]?.kind === "animal" ? "animal" : "kin" });
     }
     const name = playerCalls(state, content, id);
     if (!effect.companion_part.hours) {

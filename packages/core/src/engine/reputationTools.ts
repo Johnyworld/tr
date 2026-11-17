@@ -1,4 +1,5 @@
 import { profileOf } from "./people.ts";
+import { isCreature } from "../game/kinds.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { valuesOf } from "./extras.ts";
@@ -71,7 +72,8 @@ export function recordDeed(
   if (official) {
     witnesses.push({ npcId: official.npcId, hidden: !state.scene.present.includes(official.npcId) });
   } else {
-    for (const npcId of state.scene.present) witnesses.push({ npcId, hidden: false });
+    // 동물·감염체는 행적을 보고 옮기지 않는다 (12-111)
+    for (const npcId of state.scene.present) if (!isCreature(ctx.content, state.characters[npcId])) witnesses.push({ npcId, hidden: false });
     const scenario = ctx.content.scenario;
     const stealth = stealthThisTurn(state, scenario.move_roles.stealth);
     const notice = noticeMove(ctx);

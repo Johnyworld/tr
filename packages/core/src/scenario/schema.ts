@@ -1011,6 +1011,17 @@ export const scenarioFileSchema = z
         dark: z.strictObject({ moves: z.array(id), segments: z.array(z.enum(TIME_SEGMENTS)), value: z.number().int() }).optional(),
         visibility: z.strictObject({ moves: z.array(id), below: z.number(), value: z.number().int() }).optional(),
         harm: z.strictObject({ moves: z.array(id), strong: z.number().int(), weak: z.number().int() }).optional(),
+        /**
+         * 말이 통하지 않는 상대 (엑스트라 kind: infected, 12-111).
+         * refuses: 이 상대에게 쓸 수 없는 스킬 (말로 하는 것). outnumbered: 장면에 맞서는 감염체가 at을 넘을 때마다 이 스킬 -1.
+         * 감염체가 상대(opponent·target)인 판정에서 다치면 감염 위험(infected_source)과 그 틀의 상처 종류가 저절로 붙는다
+         */
+        mindless: z
+          .strictObject({
+            refuses: z.array(id).default([]),
+            outnumbered: z.strictObject({ moves: z.array(id), at: z.array(z.number().int().positive()) }).optional(),
+          })
+          .optional(),
       })
       .optional(),
     seasons: z

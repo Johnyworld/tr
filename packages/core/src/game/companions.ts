@@ -28,7 +28,7 @@ export function bondOf(state: GameState, content: Content, id: string): Bond | n
   if (bond) return bond;
   if (!state.companions.includes(id)) return null;
   const template = state.characters[id]?.extra?.template;
-  return { kind: template && content.extras[template]?.animal ? "animal" : "kin", since: 0 };
+  return { kind: template && content.extras[template]?.kind === "animal" ? "animal" : "kin", since: 0 };
 }
 
 /** 잠시 떨어져 있는 동행 */

@@ -1,4 +1,5 @@
 import { waterHere } from "../engine/body.ts";
+import { isCreature } from "../game/kinds.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import type { Content } from "../content/schemas.ts";
@@ -333,7 +334,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       } else if (local.length) {
         tool("npc_presence", { npc_id: pick(rng, local).id, action: "enter" });
       }
-      const here = world.state().scene.present.filter((id) => !world.state().characters[id]?.dead);
+      // 이름은 사람끼리만 나눈다 (동물·감염체는 빼고, 12-111)
+      const here = world.state().scene.present.filter((id) => !world.state().characters[id]?.dead && !isCreature(content, world.state().characters[id]));
       if (here.length && rng() < 0.5) {
         const target = pick(rng, here);
         const who = pick(rng, ["player", "target"] as const);

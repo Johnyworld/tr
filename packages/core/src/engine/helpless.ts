@@ -1,4 +1,6 @@
 import { playerCalls } from "../game/acquaintance.ts";
+import { isCreature } from "../game/kinds.ts";
+import { infectedFoes } from "./opposition.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
@@ -54,7 +56,8 @@ function factionSide(ctx: ToolContext, factionId: string): Side {
   return d <= rules.hostile_disposition ? "hostile" : d >= 1 ? "ally" : null;
 }
 
-const isAnimal = (ctx: ToolContext, c: Character) => !!c.extra?.template && !!ctx.content.extras[c.extra.template]?.animal;
+/** 사람만 돌보거나 끌고 간다 (동물·감염체는 빠진다, 12-111) */
+const isAnimal = (ctx: ToolContext, c: Character) => isCreature(ctx.content, c);
 
 const mercyOf = (ctx: ToolContext, c: Character) =>
   ctx.content.npcs[c.id]?.values.mercy ?? (c.extra?.template ? ctx.content.extras[c.extra.template]?.values.mercy : undefined) ?? 0;
@@ -83,6 +86,9 @@ export function runHelpless(ctx: ToolContext): ToolDisplayEvent[] {
 
   if (hostiles.length > 0 && hostiles.length >= allies.length) return byEnemies(ctx, hostiles, hostiles.find((c) => c.factionId)?.factionId ?? null);
   if (allies.length > 0) return byAllies(ctx, allies);
+  // 곁에 감염체가 있고 지켜 줄 사람이 없으면 반드시 물린다 (12-111)
+  const biter = infectedFoes(content, state)[0];
+  if (biter) return bitten(ctx, biter);
 
   // 장면에 아무도 없다: 구역 주인 무리의 사람이 찾아낼 수 있다
   const owner = state.zones[zone]?.owner ?? content.locations[zone]?.owner ?? null;
@@ -92,20 +98,25 @@ export function runHelpless(ctx: ToolContext): ToolDisplayEvent[] {
   }
   // 홀로 쓰러져 있다: 위험한 곳일수록 감염체가 먼저 찾는다
   const danger = Math.max(0, Math.min(3, content.locations[zone]?.danger ?? 1));
-  if (ctx.rng() < rules.infected_chance[danger]!) {
-    store.append({ type: "helpless_resolved", outcome: "bitten", by: null });
-    const displays: ToolDisplayEvent[] = [];
-    const c = changeCondition(ctx, me.id, harmTrack(content.scenario).id, 1, "infected", "쓰러진 사이 감염체에게 물렸다");
-    if (c?.display) displays.push(c.display);
-    if (!c?.died) {
-      const i = maybeInfect(ctx, null);
-      if (i?.display) displays.push(i.display);
-      displays.push(remember(ctx, "정신을 잃은 사이 무언가에게 물어뜯겼다. 몸에 이빨 자국이 남았다"));
-    }
-    return displays;
-  }
+  if (ctx.rng() < rules.infected_chance[danger]!) return bitten(ctx, null);
   store.append({ type: "helpless_resolved", outcome: "none", by: null });
   return [];
+}
+
+/** 쓰러진 사이 감염체에게 물렸다 (by: 장면에 있던 감염체, 없으면 찾아온 무언가) */
+function bitten(ctx: ToolContext, by: string | null): ToolDisplayEvent[] {
+  const { store, content } = ctx;
+  const me = store.getState().characters[store.getState().playerId]!;
+  store.append({ type: "helpless_resolved", outcome: "bitten", by });
+  const displays: ToolDisplayEvent[] = [];
+  const c = changeCondition(ctx, me.id, harmTrack(content.scenario).id, 1, "infected", "쓰러진 사이 감염체에게 물렸다");
+  if (c?.display) displays.push(c.display);
+  if (!c?.died) {
+    const i = maybeInfect(ctx, null);
+    if (i?.display) displays.push(i.display);
+    displays.push(remember(ctx, "정신을 잃은 사이 무언가에게 물어뜯겼다. 몸에 이빨 자국이 남았다"));
+  }
+  return displays;
 }
 
 /**

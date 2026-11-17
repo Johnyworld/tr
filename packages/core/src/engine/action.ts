@@ -10,6 +10,7 @@ import { shakeNerves, sleepNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
 import { scavenge } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
+import { isInfected } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { changeCondition, isIncapacitated } from "./body.ts";
 import { z } from "zod";
@@ -118,7 +119,7 @@ export function createTakeActionSchema(s: Scenario) {
         infected_source: z
           .boolean()
           .default(false)
-          .describe("그 위험이 감염체에게 물리거나 긁히는 것이면 true. 다치면 시스템이 감염 여부를 정한다 (캐릭터는 바로 알지 못한다)"),
+          .describe("그 위험이 감염체에게 물리거나 긁히는 것이면 true. 장면의 감염체를 opponent·target으로 두면 시스템이 저절로 켠다. 다치면 시스템이 감염 여부를 정한다 (캐릭터는 바로 알지 못한다)"),
       })
       .nullable()
       .describe("결과가 불확실하고 실패하면 대가가 있는 행동일 때만. 사소하거나 확실한 행동은 null"),
@@ -311,6 +312,21 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (effect && input.check && HARM_RANK[input.check.harm_on_failure] < HARM_RANK[effect.min_harm]) {
       return { ok: false, error: `${effect.label}에는 몸의 위험을 ${effect.min_harm} 이상으로 선언한다 (harm_on_failure).` };
     }
+  }
+  // 동물·감염체가 상대면 (12-111): 말로 하는 스킬은 통하지 않고, 다칠 위험에는 그것의 상처 종류와 감염 위험이 저절로 붙는다
+  if (input.check) {
+    const foeId = input.check.opponent ?? input.target ?? null;
+    const foe = foeId ? start.characters[foeId] : undefined;
+    if (foe && isInfected(content, foe)) {
+      const refuses = scenario.opposition?.mindless?.refuses ?? [];
+      if (refuses.includes(input.check.move)) {
+        const label = scenario.moves.find((m) => m.id === input.check!.move)?.label ?? input.check.move;
+        return { ok: false, error: `감염체에게는 말이 통하지 않는다 (${label}). 숨기·맞붙기·피하기·버티기처럼 몸으로 하는 판정을 고른다.` };
+      }
+      if (input.check.harm_on_failure !== "none") input.check.infected_source = true;
+    }
+    const template = foe?.extra ? content.extras[foe.extra.template] : undefined;
+    if (template?.wound && input.check.harm_on_failure !== "none" && !input.check.harm_kind) input.check.harm_kind = template.wound;
   }
   // 상처 종류 (12-91): 몸의 위험을 걸면 고른다
   if (input.check && scenario.wounds) {

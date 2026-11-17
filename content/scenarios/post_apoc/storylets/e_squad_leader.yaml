@@ -505,6 +505,9 @@
     day_gte: 2
     flags_none: [es_underpass_done]
   cast:
+    inf_a: { extra: infected_hungry, label: 벽에 기댄 감염체 }
+    inf_b: { extra: infected_hungry, label: 그늘 안쪽의 감염체 }
+    inf_c: { extra: infected_fresh, label: 막 변한 감염체 }
     archer: { ids: [e_eunchae] }
     young: { ids: [e_dongju] }
   setup: >-

@@ -1,4 +1,5 @@
 import { rankName } from "../game/ranks.ts";
+import { infestationOf } from "../game/infestation.ts";
 import { segmentOf } from "../rules/time.ts";
 import { z } from "zod";
 import type { Content, ExtraContent } from "../content/schemas.ts";
@@ -206,6 +207,7 @@ export function describeExtraTemplates(state: GameState, content: Content): stri
     if (a.zone_owner && !a.zone_owner.includes(ownerKind)) return false;
     if (a.segments && !a.segments.includes(segment)) return false;
     if (a.min_danger !== undefined && (!zone || (content.locations[zone]?.danger ?? 0) < a.min_danger)) return false;
+    if (a.min_infested !== undefined && (!zone || infestationOf(content, state, zone) < a.min_infested)) return false;
     return true;
   });
   if (list.length === 0) return "";

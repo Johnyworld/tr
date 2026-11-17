@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 42;
+export const SAVE_SCHEMA_VERSION = 43;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -288,6 +288,8 @@ export function createGameSchemas(s: Scenario) {
     commanderOverride: z.string().nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
     zoneSearches: z.record(z.string(), z.strictObject({ day: z.number().int(), count: z.number().int() })).default({}),
+    /** 구역의 감염체 압력 0~3 (12-112). 없는 구역은 그 구역의 위험(danger)이 기준값이다 */
+    infested: z.record(z.string(), z.number().int().min(0).max(3)).default({}),
     turn: z.number().int().nonnegative(),
     /** 게임 시간 (1일차 00:00부터 흐른 분) */
     time: z.number().int().nonnegative(),
@@ -441,6 +443,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("item_broken"), characterId: z.string(), itemId: z.string(), into: z.string().nullable() }),
     /** 소리가 났다 (총소리 등): 그 구역의 오늘 소음 */
     z.strictObject({ type: z.literal("noise_made"), zone: z.string(), level: z.number().int().min(1), day: z.number().int() }),
+    /** 구역의 감염체 압력이 바뀌었다 (12-112): 소음·시체로 오르고, 소탕으로 내리고, 날이 가며 기준값으로 돌아간다 */
+    z.strictObject({ type: z.literal("infestation_changed"), zone: z.string(), level: z.number().int().min(0).max(3), cause: z.string() }),
     /** 무기고가 작전 장비를 빌려줬다 (무리 창고의 탄약 resource가 cost만큼 준다) */
     z.strictObject({ type: z.literal("armory_issued"), missionId: z.string(), factionId: z.string(), items: z.record(z.string(), z.number().int().min(1)), resource: z.string(), cost: z.number().int().min(0) }),
     /** 빌린 장비를 반납했다 (returned: 돌려준 것. 모자란 것은 잃어버린 것) */
@@ -750,6 +754,7 @@ export const EMPTY_STATE: GameState = {
   roleId: "",
   customRole: null,
   zoneSearches: {},
+  infested: {},
   keptExtras: {},
   commanderOverride: null,
   lastRoute: null,
@@ -1190,6 +1195,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.keptExtras[event.key] = event.characterId;
       return next;
     }
+    case "infestation_changed":
+      next.infested[event.zone] = event.level;
+      return next;
     case "zone_searched": {
       const prev = next.zoneSearches[event.zone];
       next.zoneSearches[event.zone] = { day: event.day, count: prev && prev.day === event.day ? prev.count + 1 : 1 };

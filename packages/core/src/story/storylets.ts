@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { infestationOf } from "../game/infestation.ts";
 import { roleOf } from "../game/state.ts";
 import { attracted, loversOf, romanceCast } from "../engine/romance.ts";
 import { tiesOf } from "../game/ties.ts";
@@ -250,6 +251,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   for (const [id, n] of Object.entries(w.clock_gte ?? {})) if ((state.clocks[id]?.filled ?? -Infinity) < n) return false;
   for (const [id, n] of Object.entries(w.clock_lte ?? {})) if ((state.clocks[id]?.filled ?? Infinity) > n) return false;
   if (w.own_morale_lte !== undefined && (!own || own.morale > w.own_morale_lte)) return false;
+  if (w.zone_infested_gte !== undefined && (!state.playerZone || infestationOf(content, state, state.playerZone) < w.zone_infested_gte)) return false;
   if (w.zone_noise_gte !== undefined) {
     const noise = state.playerZone ? state.zoneNoise?.[state.playerZone] : undefined;
     if (!noise || noise.day !== dayOf(at) || noise.level < w.zone_noise_gte) return false;
@@ -420,7 +422,9 @@ export function fillStorylet(text: string, vars: Record<string, string>): string
 /** 지금 오간 길의 위험: 두 구역 중 높은 쪽 (12-53) */
 export function routeDanger(content: Content, state: GameState): number {
   if (!state.lastRoute) return 0;
-  return Math.max(content.locations[state.lastRoute.from]?.danger ?? 0, content.locations[state.lastRoute.to]?.danger ?? 0);
+  // 감염체가 몰려든 구역은 위험보다 더 위험하다 (12-112)
+  const of = (zone: string) => Math.max(content.locations[zone]?.danger ?? 0, infestationOf(content, state, zone));
+  return Math.max(of(state.lastRoute.from), of(state.lastRoute.to));
 }
 
 /** 길 위의 이야기 후보: 태그가 맞고, 아직 안 열렸거나 쿨다운이 지났고, 조건과 배역이 맞는 것 */

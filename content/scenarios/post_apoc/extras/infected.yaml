@@ -2,6 +2,7 @@
 # kind: infected — 이름이 없고 말이 통하지 않는다. 대화·흥정·포로·관계·목격·소문·자라기에서 빠진다
 # 맞서는 판정(opponent·target)에서 다치면 감염 위험과 이 틀의 상처 종류(wound)가 저절로 붙는다
 # 수에 밀림: 장면에 덤빌 수 있는 감염체가 둘·넷을 넘으면 근접전 -1씩 (scenario.opposition.mindless)
+# 등장은 구역의 감염체 압력(12-112)을 본다: 총소리·시체로 몰려들면 안전하던 곳에도 나온다
 # 소지품 표는 생전의 짐이다. 쓰러뜨리면 transfer_item으로 뒤질 수 있다
 
 - id: infected_hungry
@@ -24,7 +25,7 @@
     - { item: dry_ration, chance: 0.1 }
     - { item: bandage, chance: 0.08 }
     - { item: serum, chance: 0.01 }
-  appears: { min_danger: 2 }
+  appears: { min_infested: 2 }
 
 - id: infected_crawler
   label: 기어다니는 감염체
@@ -42,7 +43,7 @@
   inventory:
     - { item: cloth, chance: 0.2 }
     - { item: scrap_metal, chance: 0.1 }
-  appears: { min_danger: 1 }
+  appears: { min_infested: 1 }
 
 - id: infected_fresh
   label: 막 변한 감염체
@@ -63,4 +64,4 @@
     - { item: bandage, chance: 0.15 }
     - { item: kitchen_knife, chance: 0.1 }
     - { item: antibiotics, chance: 0.05 }
-  appears: { min_danger: 2, segments: [evening, night, dawn] }
+  appears: { min_infested: 2, segments: [evening, night, dawn] }

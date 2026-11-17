@@ -261,6 +261,7 @@
     - id: shoot
       label: 쏜다
       effects:
+        - zone_noise: 2
         - faction_morale: { faction: own, delta: -1 }
         - deed: { summary: 거점 안에서 총을 쏴 감염체 무리를 불러들일 뻔했다, tags: [disobedience], severity: 2, privacy: public }
     - id: alert

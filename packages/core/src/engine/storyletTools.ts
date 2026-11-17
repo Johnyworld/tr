@@ -1,4 +1,5 @@
 import { capturePlayer, releasePlayer } from "./captivity.ts";
+import { infestationOf } from "../game/infestation.ts";
 import { exposeToCold } from "./climate.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
@@ -299,6 +300,15 @@ function applyEffect(
     const after = store.getState().zones[zone]?.fort ?? 0;
     if (after === before) return {};
     return { line: after > before ? `${content.locations[zone]?.name ?? zone}의 담이 단단해졌다. 습격을 받으면 더 버틴다.` : `${content.locations[zone]?.name ?? zone}의 담이 헐렸다.` };
+  }
+  if ("infested" in effect) {
+    const zone = state.playerZone;
+    if (!zone || !content.scenario.infestation) return {};
+    const before = infestationOf(content, state, zone);
+    const level = Math.max(0, Math.min(3, before + effect.infested));
+    if (level === before) return {};
+    store.append({ type: "infestation_changed", zone, level, cause: effect.infested < 0 ? "소탕" : "불러 모음" });
+    return { line: effect.infested < 0 ? "이 구역의 감염체가 줄었다. 한동안 조용할 것이다." : "이 구역에 감염체가 더 몰려든다." };
   }
   if ("zone_noise" in effect) {
     if (!state.playerZone) return {};

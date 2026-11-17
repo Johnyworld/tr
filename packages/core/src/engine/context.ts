@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { infestationSign } from "../game/infestation.ts";
 import { KIND_LABELS, templateKind } from "../game/kinds.ts";
 import { describePersona } from "./persona.ts";
 import { describeTemperature } from "./climate.ts";
@@ -151,7 +152,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["deeds", describeOwnDeeds(state)],
     ["present", describePresentNpcs(state, content, player)],
     ["known", describeKnownPeople(state, content)],
-    ["zone_people", [describeFort(state, content), describeWater(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
+    ["zone_people", [describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
     ["zone_extras", describeZoneExtras(state, content)],
     ["templates", describeExtraTemplates(state, content)],
     ["beliefs", describeBeliefs(state, content)],
@@ -464,6 +465,12 @@ function describeFort(state: GameState, content: Content): string {
   const fort = zone ? (state.zones[zone]?.fort ?? 0) : 0;
   if (!zone || !me?.factionId || state.zones[zone]?.owner !== me.factionId || fort <= 0) return "";
   return `${content.locations[zone]?.name ?? zone}의 담: ${["", "메워 둠", "단단히 보강함", "망루와 이중 담"][fort]} (습격을 받으면 지키는 쪽이 더 버틴다)`;
+}
+
+/** 감염체 낌새 (12-112): 이 구역에서 보이고 들리는 흔적만. 압력 숫자는 넣지 않는다 */
+function describeInfestation(state: GameState, content: Content): string {
+  const sign = state.playerZone ? infestationSign(content, state, state.playerZone) : null;
+  return sign ? `감염체 낌새: ${sign}. 장면에 흔적으로 묘사한다 (마주치면 엑스트라 틀의 감염체를 spawn_extra로 들인다)` : "";
 }
 
 /** 수위 (12-57): GM이 지킬 선. 연애는 수위와 상관없이 나오고, 꺼져 있으면 성적인 것(잠자리, 성적 농담·괴롭힘·위협)을 들이지 않는다 */

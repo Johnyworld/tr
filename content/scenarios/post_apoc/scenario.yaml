@@ -837,6 +837,11 @@ helpless:
 # 길 위의 일 (12-53): 구역을 옮길 때 길의 위험(두 구역의 danger 중 높은 쪽 0~3)별로 태그 road인 이야기가 열릴 확률
 travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 
+# 구역의 감염체 압력 (12-112, *임시*): 0~3, 기준값은 구역의 danger
+# 전날 그 구역 소음이 noise_at 이상(총 한 발이면 2)이면 +1, 그날 그 구역 교전 사상자가 corpses_at 이상이면 +1 (3이면 전쟁이 60일에 거의 닿지 않아 2로)
+# 오르지 않은 날은 settle 확률로 기준값 쪽으로 한 단계. 길 위의 일, 감염체 틀 등장, 쓰러졌을 때 물릴 확률에 쓴다
+infestation: { noise_at: 2, corpses_at: 2, settle: 0.3 }
+
 # 쓰면 몸이 나아지는 물건 (take_action.use_item): 아이템 → 트랙 → 나아지는 단계 (*임시*)
 consumables:
   medkit: { harm: 1, bleeding: 3 }

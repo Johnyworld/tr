@@ -1,4 +1,5 @@
 import { playerCalls } from "../game/acquaintance.ts";
+import { infestationOf } from "../game/infestation.ts";
 import { isCreature } from "../game/kinds.ts";
 import { infectedFoes } from "./opposition.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
@@ -96,8 +97,8 @@ export function runHelpless(ctx: ToolContext): ToolDisplayEvent[] {
   if (owner && side && ctx.rng() < rules.found_chance) {
     return side === "ally" ? byFaction(ctx, owner) : byEnemies(ctx, [], owner);
   }
-  // 홀로 쓰러져 있다: 위험한 곳일수록 감염체가 먼저 찾는다
-  const danger = Math.max(0, Math.min(3, content.locations[zone]?.danger ?? 1));
+  // 홀로 쓰러져 있다: 감염체가 많은 곳일수록 먼저 찾는다 (12-112: 구역의 감염체 압력)
+  const danger = infestationOf(content, state, zone);
   if (ctx.rng() < rules.infected_chance[danger]!) return bitten(ctx, null);
   store.append({ type: "helpless_resolved", outcome: "none", by: null });
   return [];

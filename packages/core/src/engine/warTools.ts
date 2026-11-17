@@ -1,4 +1,5 @@
 import { roleOf } from "../game/state.ts";
+import { infestationDay } from "../game/infestation.ts";
 import { factionTroubles, spreadTroubleRumors } from "./factionTalk.ts";
 import { runRomance } from "./romance.ts";
 import { runCaptivity, warCaptures } from "./captivity.ts";
@@ -57,6 +58,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       clashes: result.clashes,
       scheduled,
     });
+    // 감염체 압력: 전날의 소음, 오늘 새벽 교전의 시체 (12-112)
+    for (const change of infestationDay(content, store.getState(), day, result.clashes, ctx.rng)) store.append({ type: "infestation_changed", ...change });
     displays.push(...deliverNews(ctx, result.clashes));
     // 다른 무리의 형편이 소문으로 (12-105)
     displays.push(...spreadTroubleRumors(ctx));

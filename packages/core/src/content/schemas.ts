@@ -468,6 +468,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ fortify: z.number().int().min(-1).max(2) }),
     /** 지금 구역에 소리가 난다 (총소리·쇳소리, 기획서 4.8). 감염체가 몰려드는 조건이 된다 */
     z.strictObject({ zone_noise: z.number().int().min(1).max(3) }),
+    /** 지금 구역의 감염체 압력을 바꾼다 (12-112). 음수면 소탕, 양수면 불러 모음 */
+    z.strictObject({ infested: z.number().int().min(-2).max(2).refine((n) => n !== 0, "0이 아닌 정수") }),
     /** 배역 NPC가 다친다 (부상 트랙 steps 단계). 죽음 바로 앞에서 멈춘다 (원칙 3: 이야기는 사람을 죽이지 않는다) */
     z.strictObject({ npc_hurt: z.strictObject({ who: z.string().min(1), steps: z.number().int().min(1).max(2) }) }),
     /** 배역 NPC의 계급을 바꾼다 (지도부 교체·강등) */
@@ -738,6 +740,8 @@ export function createContentSchemas(s: Scenario) {
         own_morale_lte: z.number().int().optional(),
         /** 지금 구역의 오늘 소음이 이 이상 (총소리, 기획서 4.8) */
         zone_noise_gte: z.number().int().min(1).max(5).optional(),
+        /** 지금 구역의 감염체 압력이 이 이상 (12-112) */
+        zone_infested_gte: z.number().int().min(0).max(3).optional(),
         /** 우리 무리의 방침이 이 중 하나 (주제 id → 선택지 id 목록, 기획서 9.11). 무리 사람은 누구나 안다 */
         own_policy: z.record(contentIdSchema, z.array(contentIdSchema).min(1)).optional(),
         /** 우리 무리 식량이 며칠 치 이하 */
@@ -826,6 +830,8 @@ export function createContentSchemas(s: Scenario) {
         segments: z.array(z.enum(TIME_SEGMENTS)).optional(),
         /** 구역 위험(danger)이 이 이상인 곳에서만 (12-111: 감염체는 위험한 곳에) */
         min_danger: z.number().int().min(0).max(3).optional(),
+        /** 구역의 감염체 압력이 이 이상인 곳에서만 (12-112) */
+        min_infested: z.number().int().min(0).max(3).optional(),
       })
       .optional(),
     /** 동행하면 주인공의 스킬에 더하는 보정 (예: 개 → 경계 +1). 능력+스킬 상한 안에서 */

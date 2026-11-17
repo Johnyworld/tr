@@ -52,7 +52,7 @@
   tool: { bonus: { first_aid: 1 } }
 - id: cigarettes
   name: 담배
-  description: 눅눅해진 담배 몇 개비. 거점 안에서는 돈처럼 쓰인다.
+  description: 눅눅해진 담배 한 갑. 거점 안에서는 돈처럼 쓰인다. 골초는 하루에 한 갑을 피운다.
   kind: misc
   weight: 0.1
   value: 2

@@ -1786,9 +1786,20 @@ export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "pl
     past: past ? { id: past.id, label: past.label, summary: past.summary } : null,
     conditions: initialConditions(s),
     // 과거 배경의 물건 중 시나리오가 이미 주는 것은 겹쳐 주지 않는다
-    inventory: toInventory([...role.start_inventory, ...(past?.items ?? []).filter((i) => !role.start_inventory.includes(i))]),
+    inventory: habitStart(s, choice?.traits ?? [], toInventory([...role.start_inventory, ...(past?.items ?? []).filter((i) => !role.start_inventory.includes(i))])),
     debts: { ...(role.start_debt ?? {}) },
   });
+}
+
+/** 버릇 트레잇(12-129)이 있으면 그 아이템을 start만큼 쥐고 시작한다 (가진 것과 합쳐 그만큼까지) */
+function habitStart(s: Scenario, traits: string[], inventory: Record<string, number>): Record<string, number> {
+  for (const t of s.traits) {
+    const h = t.effects.habit;
+    if (!h || !h.start || !traits.includes(t.id)) continue;
+    const item = h.items[0]!;
+    inventory[item] = Math.max(inventory[item] ?? 0, h.start);
+  }
+  return inventory;
 }
 
 /** NPC 프로필로 캐릭터를 만든다. 플레이어와 같은 스키마다 (CLAUDE.md 원칙 6) */

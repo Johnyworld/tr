@@ -188,6 +188,11 @@ export const scenarioFileSchema = z
               looks: z.number().int().optional(),
               /** 이성에게 끌린다. moves: 이성이 나를 상대로 하면 쉬워지는 스킬 */
               attraction: z.strictObject({ moves: z.array(id).min(1) }).optional(),
+              /**
+               * 버릇 (12-129, 골초): 하루가 지날 때 items 중 하나를 저절로 하나 쓴다. 가진 게 없으면 track이 한 단계 오른다 (쓰면 바로 풀린다).
+               * 낮에 풀려면 consumables에 그 아이템 → track을 적어 둔다. start: 새 캐릭터가 이만큼 가지고 시작한다
+               */
+              habit: z.strictObject({ items: z.array(id).min(1), track: id, start: z.number().int().min(0).default(0) }).optional(),
             })
             .default({}),
         }),
@@ -1250,6 +1255,7 @@ export const scenarioFileSchema = z
       for (const t of Object.keys(effects)) if (!trackIdSet.has(t)) problem(`consumables.${item}: 알 수 없는 상태 트랙 ${t}`);
     }
     for (const t of Object.keys(s.recovery?.healer ?? {})) if (!trackIdSet.has(t)) problem(`recovery.healer: 알 수 없는 상태 트랙 ${t}`);
+    for (const t of s.traits) if (t.effects.habit && !trackIdSet.has(t.effects.habit.track)) problem(`traits.${t.id}.habit: 알 수 없는 상태 트랙 ${t.effects.habit.track}`);
     const infection = s.body?.infection;
     if (infection) {
       for (const k of Object.keys(infection.chance)) if (!s.wounds?.kinds.some((x) => x.id === k)) problem(`body.infection.chance: 알 수 없는 상처 종류 ${k}`);

@@ -51,6 +51,10 @@ export function bodyTraits(content: Content, c: Character) {
   };
 }
 
+/** 버릇 (12-129): 하루에 하나씩 저절로 쓰는 아이템과, 못 쓰면 오르는 트랙 */
+export const habitsOf = (content: Content, c: Character) =>
+  traitsOf(content, c).flatMap((t) => (t.effects.habit ? [{ trait: t, ...t.effects.habit }] : []));
+
 /** 내가 한 일이 숨은 목격자에게 들킬 확률 배수 */
 export const noticedFactor = (content: Content, c: Character) => product(traitsOf(content, c).map((t) => t.effects.noticed ?? 1));
 /** 내가 남의 일을 목격할 확률 배수 */

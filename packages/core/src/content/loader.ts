@@ -264,6 +264,7 @@ function checkReferences(content: Content): string[] {
   }
   // 구역이 하나도 없는 팩(부분 팩·테스트)은 건너뛴다
   if (Object.keys(content.locations).length) for (const z of Object.keys(content.scenario.war?.talk?.rumor?.zones ?? {})) if (!content.locations[z]) problems.push(`war.talk.rumor: 알 수 없는 구역 ${z}`);
+  for (const t of content.scenario.traits) for (const item of t.effects.habit?.items ?? []) if (!content.items[item]) problems.push(`scenario.traits.${t.id}.habit: 알 수 없는 아이템 ${item}`);
   for (const item of Object.keys(content.scenario.consumables)) {
     if (!content.items[item]) problems.push(`scenario.consumables: 알 수 없는 아이템 ${item}`);
   }

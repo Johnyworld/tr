@@ -9,7 +9,7 @@ import type { GameState } from "../game/state.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
-import { bodyTraits, effectiveSkill } from "./traits.ts";
+import { bodyTraits, effectiveSkill, habitsOf } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { harmTrack, shownLevel, trackOf } from "../scenario/scenario.ts";
 import { daysOfStock, rationLevel } from "../sim/war.ts";
@@ -38,7 +38,7 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
   const index = Math.max(0, track.levels.findIndex((l) => l.id === character.conditions[trackId]));
   // 버팀 (12-109): 나빠지는 단계마다 레벨만큼 피한다. 치트는 그대로
   // 피로는 깨어 있은 시간에서 바로 정해지므로 버티지 않는다 (12-114)
-  if (steps > 0 && by !== "cheat" && by !== "fatigue") {
+  if (steps > 0 && by !== "cheat" && by !== "fatigue" && by !== "habit") {
     const kept = resistSteps(ctx.content.scenario, character.level ?? 1, steps, ctx.rng);
     if (kept === 0) {
       const would = track.levels[Math.min(track.levels.length - 1, index + steps)]!;
@@ -304,6 +304,7 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     }
   }
   if (body.thirst && push(dailyThirst(ctx, body.thirst))) return displays;
+  for (const c of dailyHabits(ctx)) push(c);
   if (body.infection) {
     const state = ctx.store.getState();
     const track = trackOf(content.scenario, body.infection.track);
@@ -499,6 +500,28 @@ function dailyThirst(ctx: ToolContext, rules: ThirstRules): Change | null {
   let delta = rules.daily;
   if (me.captive && rules.captive_max) delta = Math.max(0, Math.min(delta, track.levels.findIndex((l) => l.id === rules.captive_max) - levelIndex(ctx, state, me.id, track.id)));
   return changeCondition(ctx, me.id, track.id, delta, "daily", me.captive ? "갇힌 곳의 물" : "하루가 지나 목이 마르다");
+}
+
+/**
+ * 버릇 (12-129): 골초는 하루에 한 갑을 저절로 피운다. 피우면 그 트랙이 풀리고, 가진 게 없으면 한 단계 오른다.
+ * 참는 일이라 버팀(레벨)으로 피하지 않는다
+ */
+function dailyHabits(ctx: ToolContext): Change[] {
+  const changes: Change[] = [];
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me || me.dead) return changes;
+  for (const h of habitsOf(ctx.content, me)) {
+    const now = ctx.store.getState().characters[me.id]!;
+    const item = h.items.find((i) => (now.inventory[i] ?? 0) > 0);
+    let c: Change | null;
+    if (item) {
+      ctx.store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: 1 });
+      c = changeCondition(ctx, me.id, h.track, -levelIndex(ctx, ctx.store.getState(), me.id, h.track), "habit", `${ctx.content.items[item]?.name ?? item} (${h.trait.label})`);
+    } else c = changeCondition(ctx, me.id, h.track, 1, "habit", `${h.items.map((i) => ctx.content.items[i]?.name ?? i).join("·")}이 떨어졌다 (${h.trait.label})`);
+    if (c) changes.push(c);
+  }
+  return changes;
 }
 
 /** 우리 거점에서 무리의 연료로 몸을 녹일 수 있는가 */

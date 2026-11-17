@@ -91,6 +91,10 @@
 - id: rf_ears_among
   title: 새 얼굴 가운데 귀
   tags: [world]
+  # 피난민을 다시 받으면 다시 열린다 (한 번뿐이면 두 번째 받아들인 뒤 플래그만 남는다)
+  repeatable: true
+  cooldown_days: 10
+  weight: 3
   when:
     own_territory: true
     flags_all: [rf_taken_in]

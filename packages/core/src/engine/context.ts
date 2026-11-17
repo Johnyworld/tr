@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { heardRumors } from "./factionTalk.ts";
 import { describeFatigue } from "./fatigue.ts";
 import { infestationSign } from "../game/infestation.ts";
 import { KIND_LABELS, templateKind } from "../game/kinds.ts";
@@ -213,9 +214,17 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
     ...(animal ? [] : [troubleLine(state, content, c)].filter((x): x is string => !!x)),
     ...attractionNotes(content, c, player),
     ...(animal ? [] : nameNotes(state, player.id, c.id)),
+    ...(animal ? [] : rumorLines(state, content, c.id)),
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/** 이 인물이 들은 다른 무리 소문 (12-124): 무리마다 가장 최근 것. 틀렸을 수 있고, 이 인물은 들은 대로 믿는다 */
+function rumorLines(state: GameState, content: Content, id: string): string[] {
+  const heard = heardRumors(state, content, id);
+  if (heard.length === 0) return [];
+  return [`이 인물이 들은 다른 무리 소문 (무리마다 가장 최근 것. 물으면 들은 대로 말한다. 맞는지는 이 인물도 모른다):\n${heard.map((h) => `  - ${h}`).join("\n")}`];
 }
 
 /** 장면에 있는 NPC의 연기용 카드. secret, doesnt_know는 절대 넣지 않는다 */
@@ -268,6 +277,7 @@ function describeNpcCard(
     ...nameNotes(state, player.id, npc.id),
     `행동 규칙:\n${npc.rules.map((r) => `  - ${r}`).join("\n") || "  - 없음"}`,
     `이 인물이 아는 것 (물으면 말해 줄 수 있다):\n${knows.join("\n") || "  - 특별히 없음"}`,
+    ...rumorLines(state, content, npc.id),
     ...(knownDeeds.length > 0
       ? [`이 인물이 아는 당신의 행적 (당신은 이 인물이 안다는 걸 모를 수 있다. 바로 밝히지 말고 태도에 반영):\n${knownDeeds.join("\n")}`]
       : []),

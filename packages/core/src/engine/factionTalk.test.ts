@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { describePlayerState } from "./context.ts";
-import { checkRumorsOnSite, factionTroubles, spreadTroubleRumors, troubleAttitude, troubleLine } from "./factionTalk.ts";
+import { checkRumorsOnSite, factionTroubles, heardRumors, spreadTroubleRumors, troubleAttitude, troubleLine } from "./factionTalk.ts";
+import { npcZoneAt } from "../game/whereabouts.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { loadRealContent } from "../testing.ts";
 
@@ -124,5 +125,28 @@ describe("무리 형편", () => {
     const b = heardAbout(state(), me().id, other)[0]!;
     expect(b.accuracy).toBe("false");
     expect(b.fact.startsWith(content.factions[other]!.name)).toBe(true);
+  });
+
+  it("말이 모이는 곳에 머무는 사람도 소문을 듣고 지우지 않는다. 카드에는 무리마다 가장 최근 것 (12-124)", () => {
+    const { store, state, me } = setup();
+    const other = Object.keys(state().factions).find((f) => f !== me().factionId)!;
+    const merchant = Object.values(content.npcs).find((n) => npcZoneAt(n, state().time) === "e_market" && n.faction !== other && !state().characters[n.id]!.captive)!;
+    state().factions[other]!.morale = -3;
+    state().playerZone = "south_fields"; // 주인공은 장터에 없어도
+    const ctx = { store, rng: () => 0, content };
+    spreadTroubleRumors(ctx);
+    const first = (state().beliefs[merchant.id] ?? []).filter((b) => b.topic === `faction_trouble:${other}`);
+    expect(first.length).toBe(1);
+    expect(heardRumors(state(), content, merchant.id).some((h) => h.startsWith(content.factions[other]!.name) && h.includes("오늘 들음"))).toBe(true);
+    // 며칠 뒤 다른 소문을 들어도 옛 것은 기억에 남고, 카드에는 최근 것만
+    state().time += 4 * 24 * 60;
+    state().factions[other]!.morale = 0;
+    for (const r of Object.keys(state().factions[other]!.resources)) state().factions[other]!.resources[r] = 0;
+    spreadTroubleRumors(ctx);
+    const all = (state().beliefs[merchant.id] ?? []).filter((b) => b.topic === `faction_trouble:${other}`);
+    expect(all.length).toBeGreaterThanOrEqual(2);
+    const lines = heardRumors(state(), content, merchant.id).filter((h) => h.startsWith(content.factions[other]!.name));
+    expect(lines.length).toBe(1);
+    expect(lines[0]).toContain("오늘 들음");
   });
 });

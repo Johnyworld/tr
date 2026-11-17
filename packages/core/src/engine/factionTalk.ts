@@ -1,4 +1,6 @@
 import type { Content } from "../content/schemas.ts";
+import { npcZoneAt } from "../game/whereabouts.ts";
+import { isCreature } from "../game/kinds.ts";
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
@@ -96,50 +98,92 @@ export const TROUBLE_TOPIC = "faction_trouble";
  * 정확도(exact·approximate·false)는 시뮬레이션만 안다 (GM 프롬프트에 넣지 않는다). 같은 무리의 같은 말은 사흘 안에 다시 듣지 않는다
  */
 export function spreadTroubleRumors(ctx: ToolContext): ToolDisplayEvent[] {
-  const { store, content, rng } = ctx;
+  const { store, content } = ctx;
   const rule = content.scenario.war?.talk?.rumor;
+  if (!rule) return [];
+  const displays: ToolDisplayEvent[] = [];
   const state = store.getState();
   const me = state.characters[state.playerId];
-  const place = state.playerZone ? rule?.zones[state.playerZone] : undefined;
-  if (!rule || !place || !me || me.dead) return [];
+  const place = state.playerZone ? rule.zones[state.playerZone] : undefined;
+  if (place && me && !me.dead) {
+    for (const f of Object.values(content.factions)) {
+      if (f.id === me.factionId || !state.factions[f.id]) continue;
+      const fact = hearRumor(ctx, me.id, f.id, place);
+      if (fact) displays.push({ type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS.rumor });
+    }
+  }
+  // 말이 모이는 곳에 머무는 사람들도 듣는다 (12-124). 지우지 않고 그 사람의 기억으로 남는다. 주인공과 함께 다니는 사람은 주인공과 같이 듣는다고 보고 뺀다
+  const listeners = Object.values(store.getState().characters).filter((c) => {
+    if (c.id === state.playerId || c.dead || c.away || c.captive || state.companions.includes(c.id) || isCreature(content, c)) return false;
+    const zone = content.npcs[c.id] ? npcZoneAt(content.npcs[c.id]!, state.time) : c.extra?.zone;
+    return !!zone && !!rule.zones[zone];
+  });
+  for (const c of listeners) {
+    const zone = (content.npcs[c.id] ? npcZoneAt(content.npcs[c.id]!, state.time) : c.extra?.zone)!;
+    for (const f of Object.values(content.factions)) {
+      if (f.id === c.factionId || !state.factions[f.id]) continue;
+      hearRumor(ctx, c.id, f.id, rule.zones[zone]!);
+    }
+  }
+  return displays;
+}
+
+/**
+ * listener가 말이 모이는 곳(place)에서 faction의 형편을 소문으로 듣는다. 들은 말(믿음)을 남기고 그 문장을 돌려준다 (못 들었으면 null).
+ * - 형편이 어려우면 chance로 그중 하나. 그곳의 exaggerate 확률로 한 단계 부풀려진다
+ * - 멀쩡해도 false_chance로 없는 어려움 (헛소문)
+ * 정확도는 시뮬레이션만 안다. 같은 말은 사흘 안에 다시 듣지 않는다
+ */
+function hearRumor(ctx: ToolContext, listener: string, factionId: string, place: { exaggerate: number }): string | null {
+  const { store, content, rng } = ctx;
+  const rule = content.scenario.war!.talk!.rumor!;
   const war = content.scenario.war!;
+  const state = store.getState();
+  const f = content.factions[factionId]!;
   const kinds: TroubleKind[] = [
     { kind: "morale" },
     { kind: "ration" },
     ...content.scenario.resources.filter((r) => (war.upkeep[r.id] ?? 0) > 0).map((r) => ({ kind: "stock" as const, resource: r.id })),
     ...(content.scenario.infestation?.trouble_labels ? [{ kind: "infested" as const }] : []),
   ];
-  const displays: ToolDisplayEvent[] = [];
-  for (const f of Object.values(content.factions)) {
-    if (f.id === me.factionId || !state.factions[f.id]) continue;
-    const troubles = troublesOf(state, content, f.id);
-    let heard: { fact: string; accuracy: "exact" | "approximate" | "false" } | null = null;
-    if (troubles.length && rng() < rule.chance) {
-      const t = troubles[Math.floor(rng() * troubles.length)]!;
-      const top = levelLabels(content, t.kind).length - 1;
-      const puffed = rng() < place.exaggerate && t.level < top;
-      heard = { fact: rumorText(content, f.name, t, puffed ? t.level + 1 : t.level), accuracy: puffed ? "approximate" : "exact" };
-    } else if (rng() < rule.false_chance) {
-      // 없는 어려움: 실제로 겪고 있지 않은 종류를 고른다
-      const free = kinds.filter((k) => !troubles.some((t) => t.kind === k.kind && (k.kind !== "stock" || (t.kind === "stock" && t.resource === k.resource))));
-      if (free.length) {
-        const k = free[Math.floor(rng() * free.length)]!;
-        const labels = levelLabels(content, k.kind);
-        heard = { fact: rumorText(content, f.name, k, k.kind === "morale" ? 1 : Math.max(1, labels.length - 2)), accuracy: "false" };
-      }
+  const troubles = troublesOf(state, content, f.id);
+  let heard: { fact: string; accuracy: "exact" | "approximate" | "false" } | null = null;
+  if (troubles.length && rng() < rule.chance) {
+    const t = troubles[Math.floor(rng() * troubles.length)]!;
+    const top = levelLabels(content, t.kind).length - 1;
+    const puffed = rng() < place.exaggerate && t.level < top;
+    heard = { fact: rumorText(content, f.name, t, puffed ? t.level + 1 : t.level), accuracy: puffed ? "approximate" : "exact" };
+  } else if (rng() < rule.false_chance) {
+    // 없는 어려움: 실제로 겪고 있지 않은 종류를 고른다
+    const free = kinds.filter((k) => !troubles.some((t) => t.kind === k.kind && (k.kind !== "stock" || (t.kind === "stock" && t.resource === k.resource))));
+    if (free.length) {
+      const k = free[Math.floor(rng() * free.length)]!;
+      const labels = levelLabels(content, k.kind);
+      heard = { fact: rumorText(content, f.name, k, k.kind === "morale" ? 1 : Math.max(1, labels.length - 2)), accuracy: "false" };
     }
-    if (!heard) continue;
-    const now = store.getState();
-    const recent = (now.beliefs[me.id] ?? []).some((b) => b.topic === `${TROUBLE_TOPIC}:${f.id}` && b.fact === heard!.fact && now.time - b.learnedAt < 3 * 24 * 60);
-    if (recent) continue;
-    store.append({
-      type: "belief_added",
-      characterId: me.id,
-      belief: { id: `b_${now.nextBeliefNo}`, fact: heard.fact, source: "rumor", accuracy: heard.accuracy, learnedAt: now.time, topic: `${TROUBLE_TOPIC}:${f.id}` },
-    });
-    displays.push({ type: "belief", fact: heard.fact, sourceLabel: BELIEF_SOURCE_LABELS.rumor });
   }
-  return displays;
+  if (!heard) return null;
+  const topic = `${TROUBLE_TOPIC}:${f.id}`;
+  const recent = (state.beliefs[listener] ?? []).some((b) => b.topic === topic && b.fact === heard!.fact && state.time - b.learnedAt < 3 * 24 * 60);
+  if (recent) return null;
+  store.append({
+    type: "belief_added",
+    characterId: listener,
+    belief: { id: `b_${state.nextBeliefNo}`, fact: heard.fact, source: "rumor", accuracy: heard.accuracy, learnedAt: state.time, topic },
+  });
+  return heard.fact;
+}
+
+/** 이 사람이 들은 다른 무리의 소문: 무리마다 가장 최근 것 하나 (12-124, 인물 카드용). 정확도는 넣지 않는다 */
+export function heardRumors(state: GameState, content: Content, id: string): string[] {
+  const latest = new Map<string, { fact: string; at: number }>();
+  for (const b of state.beliefs[id] ?? []) {
+    if (!b.topic?.startsWith(`${TROUBLE_TOPIC}:`)) continue;
+    const prev = latest.get(b.topic);
+    if (!prev || b.learnedAt >= prev.at) latest.set(b.topic, { fact: b.fact, at: b.learnedAt });
+  }
+  const days = (at: number) => Math.floor((state.time - at) / (24 * 60));
+  return [...latest.values()].sort((a, b) => b.at - a.at).map((r) => `${r.fact} (${days(r.at) === 0 ? "오늘" : `${days(r.at)}일 전`} 들음)`);
 }
 
 /**

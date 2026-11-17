@@ -1,0 +1,108 @@
+# 큰 미스터리: 혈청의 출처 (12-132). 장기 떡밥, 이어지는 이야기 넷
+# - 무전 이야기(w_radio_static → w_radio_again, "남쪽 섬", 숫자), 여울섬 소문("쓸모 있는 사람은 받아 준다", "나루상단이 섬과 거래한다"),
+#   명서진의 연구("왜 어떤 사람은 열이 오르지 않는가")를 하나로 엮는다
+# - 흐름: 앰플의 번호(ms_lot) 또는 명서진의 가설(ms_theory) → 장터의 밤배(ms_island) → 하류 다리의 배(ms_truth)
+# - 알게 된 것은 lore/serum_theory.md(secret:ms_theory), lore/serum_truth.md(secret:ms_truth)로 검색에 열린다
+# - 끝을 맺지 않는다: 섬에 갇힌 사람들, 무전의 여자가 어디로 갔는지는 열어 둔다
+
+- id: ms_lot_number
+  title: 앰플 바닥의 글씨
+  tags: [world]
+  when:
+    has_items: [serum]
+    segments: [day, evening, night]
+    flags_none: [ms_lot]
+  setup: 혈청 앰플을 불빛에 비춰 본다. 바닥에 유성펜 손글씨가 있다. 숫자 셋과 한글 한 자. "372 여".
+  ai_direction: 숫자와 글자의 뜻은 정해 주지 않는다. 주인공이 무전에서 숫자 읽는 방송을 들었다면(믿음에 있으면) 그 숫자가 떠오르게 한다 (셋, 일곱, 둘). 공장에서 찍은 번호가 아니라 사람 손으로 적은 것이라는 점이 이상하다.
+  choices:
+    - id: note
+      label: 숫자와 글자를 적어 둔다
+      effects:
+        - set_flag: ms_lot
+        - belief: { fact: "혈청 앰플 바닥에 손글씨로 372 여 라고 적혀 있었다. 공장 번호가 아니다", source: seen }
+    - id: ignore
+      label: 약은 약이다. 다시 넣어 둔다
+      effects:
+        - set_flag: ms_lot
+
+- id: ms_seojin_theory
+  title: 버티는 사람
+  tags: [world]
+  when:
+    zones: [campus]
+    segments: [day, evening]
+    flags_all: [zo2_cp_lab_done]
+    flags_none: [ms_theory]
+  cast:
+    seojin: { ids: [zo2_seojin] }
+  setup: '{seojin:은/는} 장갑을 벗지도 않고 칠판에 숫자를 적어 내려간다. "물린 사람 열에 하나. 오한에서 멈추고 일어나요. 그 사람들 피를 보고 싶어요. 혈청이 어디서 오는지 생각해 본 적 있어요?"'
+  ai_direction: 명서진은 혈청이 "버티는 사람"(물리고도 열이 오르지 않은 사람)의 피에서 나온다고 본다 (lore/serum_theory). 늘 "아직은 가설"이라고 덧붙인다. 장터에 혈청이 꾸준히 나온다면 어딘가에 그런 사람이 여럿 모여 있을 거라는 데까지만 말한다. 섬은 모른다.
+  choices:
+    - id: ask
+      label: 혈청이 어디서 오는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: ms_theory
+          - belief: { fact: "명서진이 말하기를, 물리고도 열이 오르지 않는 사람이 열에 하나 있고 혈청은 그런 사람의 피에서 나온다. 장터에 혈청이 꾸준하다면 어딘가에 그런 사람이 여럿 모여 있다", source: report }
+        partial:
+          - set_flag: ms_theory
+          - belief: { fact: 명서진은 혈청이 사람 피에서 나온다고 본다. 누구의 피인지는 말을 아꼈다, source: report }
+        miss:
+          - belief: { fact: 명서진은 아직 말할 단계가 아니라며 칠판을 지웠다, source: seen }
+    - id: show
+      label: 앰플 바닥의 글씨 이야기를 꺼낸다
+      when: { flags_all: [ms_lot] }
+      effects:
+        - set_flag: ms_theory
+        - belief: { fact: "앰플 글씨 이야기를 듣고 명서진이 말하기를, 그 번호는 사람 번호일 거다. 피를 뽑힌 사람마다 번호를 매긴 것이다", source: report }
+
+- id: ms_night_boat
+  title: 장터의 밤배
+  tags: [world]
+  when:
+    zones: [e_market]
+    segments: [night]
+    flags_any: [ms_lot, ms_theory]
+    flags_none: [ms_island]
+  setup: 장터가 문을 닫은 한밤. 선착장 끝에 불을 끈 작은 배가 닿는다. 상단 사람 둘이 아이스박스 하나를 조심스럽게 받아 든다. 배는 바다 쪽으로 돌아간다.
+  ai_direction: 아이스박스에는 혈청 앰플이 들어 있다. 앰플마다 바닥에 손글씨 번호와 "여" 자. 배는 여울섬에서 왔다. 상단 사람들은 들키면 못 본 걸로 하자고 담배를 쥐여 주려 하거나, 위협한다. 상단과 섬의 거래는 상단의 큰 비밀이다.
+  choices:
+    - id: sneak
+      label: 그림자를 따라 다가가 박스 안을 본다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: ms_island
+          - belief: { fact: "나루상단이 한밤에 섬에서 온 배로 혈청 상자를 받는다. 앰플 바닥마다 손글씨 번호와 여 자가 있었다. 여울섬이다", source: seen }
+        partial:
+          - set_flag: ms_island
+          - belief: { fact: 나루상단이 한밤에 바다 쪽에서 온 배로 냉장 상자를 받는 것을 봤다. 들킬 뻔했다, source: seen }
+        miss:
+          - belief: { fact: 장터 선착장에서 상단 사람에게 들켰다. 아무것도 못 봤다고 했다, source: seen }
+    - id: leave
+      label: 못 본 걸로 하고 돌아선다
+      effects:
+        - belief: { fact: 장터가 닫은 밤 선착장에 불 끈 배가 닿는 것을 봤다, source: seen }
+
+- id: ms_downstream_boat
+  title: 하류 다리 밑의 배
+  tags: [world]
+  when:
+    zones: [riverside]
+    segments: [evening, night]
+    flags_all: [ms_island]
+    flags_none: [ms_truth]
+  setup: 하류 다리 교각 밑, 물풀에 걸린 작은 배 하나. 노는 없고 바닥에 물이 고였다. 비닐로 싼 공책과 배터리가 빠진 무전기가 뱃전 아래 끼어 있다.
+  ai_direction: 공책은 무전의 여자(섬 진료동의 간호사)가 남긴 것이다 (lore/serum_truth). 번호마다 이름이 적혀 있고, 마지막 장에 "섬은 버티는 사람을 데려가 피를 뽑는다. 우리는 약이 되려고 간 게 아니다"라고 적혀 있다. 주인공이 무전 방송을 들었다면 그 목소리가 떠오른다. 그가 어디로 갔는지는 정하지 않는다. 공책을 어떻게 하느냐가 다음 이야기의 씨앗이 된다.
+  choices:
+    - id: read
+      label: 공책을 끝까지 읽는다
+      effects:
+        - set_flag: ms_truth
+        - belief: { fact: "하류 다리 밑 배의 공책: 여울섬은 물리고도 버틴 사람을 데려가 피를 뽑아 혈청을 만든다. 앰플 번호는 그 사람들의 번호다. 공책을 쓴 사람은 섬 진료동의 간호사였고 배를 훔쳐 달아났다", source: seen }
+    - id: keep
+      label: 읽지 않고 공책을 품에 넣는다
+      effects:
+        - set_flag: ms_truth
+        - belief: { fact: 하류 다리 밑 버려진 배에서 번호와 이름이 빼곡한 공책을 챙겼다, source: seen }

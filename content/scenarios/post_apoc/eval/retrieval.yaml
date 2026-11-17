@@ -12,6 +12,8 @@ viewers:
   c_soldier: { character: c_soldier, faction: faction_c, flags: [] }
   a_knows_scouts: { character: player, faction: faction_a, flags: [scouts_captured] }
   a_successor: { character: npc_kim, faction: faction_a, flags: [] }
+  # 혈청의 출처를 알아낸 사람 (12-132)
+  a_serum_truth: { character: player, faction: faction_a, flags: [ms_theory, ms_truth] }
 
 # memory 컬렉션 평가용 합성 기억 (세이브 없이 검색 품질과 필터만 본다)
 memory:
@@ -236,3 +238,13 @@ cases:
     viewer: a_recruit
     collection: memory
     expect: ["memory:d_canteen_rumor"]
+  # ── 혈청의 출처 (12-132): 모르는 사람에게는 비밀 문서가 나오지 않는다 ──
+  - id: serum_hidden
+    query: 혈청은 어디서 만들어지나
+    viewer: a_recruit
+    expect: ["lore/infected > 약"]
+    forbid: ["lore/serum_theory", "lore/serum_truth"]
+  - id: serum_known
+    query: 혈청은 어디서 만들어지나
+    viewer: a_serum_truth
+    expect: ["lore/serum_truth", "lore/serum_theory"]

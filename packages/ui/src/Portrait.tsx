@@ -1,6 +1,7 @@
 /**
- * 코드로 그린 초상화 (실루엣). 세이브에는 id만 남고 그림은 화면이 그린다.
- * 그림 파일이 생기면 이 목록을 이미지로 바꾸면 된다.
+ * 초상화. 세이브에는 id만 남는다.
+ * - 월드 팩의 그림 (12-139): /portraits/<팩>/<id>.png (art/portraits.yaml의 얼굴)
+ * - 코드로 그린 실루엣 12종 (p0~p11): 그림 목록이 없는 월드와 예전 세이브
  */
 type Hair = "short" | "buzz" | "long" | "ponytail" | "hood" | "cap" | "bald" | "bob";
 type Gear = "none" | "goggles" | "scarf" | "eyepatch" | "scar" | "bandana" | "gasmask";
@@ -26,8 +27,20 @@ const PRESETS: Record<string, Preset> = {
 
 export const PORTRAIT_IDS = Object.keys(PRESETS);
 
-export function Portrait({ id, size = 64, title }: { id: string | null; size?: number; title?: string }) {
+export function Portrait({ id, pack, size = 64, title, square }: { id: string | null; pack?: string | null; size?: number; title?: string; square?: boolean }) {
   const p = (id && PRESETS[id]) || null;
+  if (!p && id && pack) {
+    return (
+      <img
+        className={square ? "portrait portrait-square" : "portrait"}
+        src={`/portraits/${encodeURIComponent(pack)}/${encodeURIComponent(id)}.png`}
+        width={size}
+        height={size}
+        alt={title ?? "초상화"}
+        draggable={false}
+      />
+    );
+  }
   if (!p) {
     return (
       <svg className="portrait" width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={title ?? "초상화 없음"}>

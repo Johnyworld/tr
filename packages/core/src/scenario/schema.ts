@@ -1394,6 +1394,26 @@ export type Scenario = ScenarioFile & {
   mcpGuide: string;
   /** 세계 소개 원문 (intro 파일의 내용) */
   introText: string | null;
+  /** 주인공 초상화 목록 (art/portraits.yaml, 12-139). 파일이 없는 월드는 없다 */
+  portraits?: PortraitCatalog;
+};
+
+/**
+ * 주인공 초상화 (12-139). art/portraits.yaml에서 게임이 쓰는 칸만 읽는다 (나머지는 그림을 만드는 도구의 설정).
+ * styles: 화풍(적힌 순서가 섹션 순서), faces: 얼굴 id → 화풍과 성별. 그림은 art/portraits/<id>.png
+ */
+export const portraitFileSchema = z.looseObject({
+  styles: z.record(z.string().regex(/^[A-Za-z0-9_]+$/), z.looseObject({ label: z.string().min(1) })),
+  faces: z.record(
+    z.string().regex(/^[a-z0-9_-]{1,40}$/, "초상화 id는 소문자·숫자·_·- (40자까지)"),
+    z.looseObject({ style: z.string(), gender: z.string() }),
+  ),
+});
+
+export type PortraitCatalog = {
+  /** 얼굴이 있는 화풍만, 적힌 순서대로 */
+  styles: { id: string; label: string }[];
+  faces: { id: string; style: string; gender: string }[];
 };
 
 export type ConditionTrack = Scenario["condition_tracks"][number];

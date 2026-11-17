@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
+import { portraitSections } from "../scenario/scenario.ts";
 import { checkCharacterChoice } from "./creation.ts";
 import {
   answerCreation,
@@ -116,16 +117,34 @@ describe("대화로 하는 캐릭터 생성", () => {
     expect(answerCreation(s, d, "Kim 서진", rng).ok).toBe(true);
   });
 
-  it("얼굴은 상태 화면에서 만들 때만 이름 다음에 묻는다", () => {
-    expect(currentStep(s, run(["서진"]).draft)).toBe("gender");
-    const screen = run(["서진"], { ...newCreationDraft("new_world"), withPortrait: true }).draft;
-    expect(currentStep(s, screen)).toBe("portrait");
-    expect(answerCreation(s, screen, "../x", createSeededRng(1)).ok).toBe(false);
-    const picked = answerCreation(s, screen, "p4", createSeededRng(1));
-    expect(picked.ok && draftChoice(picked.draft).portrait).toBe("p4");
-    const none = answerCreation(s, screen, "none", createSeededRng(1));
-    expect(none.ok && currentStep(s, none.draft)).toBe("gender");
+  it("얼굴은 상태 화면에서 만들 때만, 성별 다음에 그 성별의 얼굴 중에서 묻는다 (12-139)", () => {
+    expect(currentStep(s, run(["서진", "female"]).draft)).toBe("age");
+    const screen = { ...newCreationDraft("new_world"), withPortrait: true };
+    expect(currentStep(s, run(["서진"], screen).draft)).toBe("gender");
+    const female = run(["서진", "female"], screen).draft;
+    expect(currentStep(s, female)).toBe("portrait");
+    // 화풍 섹션은 art/portraits.yaml에 적힌 순서, 고른 성별의 얼굴만
+    const sections = portraitSections(s, "female");
+    expect(sections.map((x) => x.style)).toEqual(["A", "D", "C", "B"]);
+    expect(sections.flatMap((x) => x.faces)).toContain("c_f1");
+    expect(portraitSections(s, "male").flatMap((x) => x.faces)).not.toContain("c_f1");
+    expect(answerCreation(s, female, "../x", createSeededRng(1)).ok).toBe(false);
+    expect(answerCreation(s, female, "p4", createSeededRng(1)).ok).toBe(false); // 목록이 있는 월드는 목록 밖 id를 받지 않는다
+    expect(answerCreation(s, female, "a_m1", createSeededRng(1)).ok).toBe(false); // 다른 성별의 얼굴
+    const picked = answerCreation(s, female, "c_f1", createSeededRng(1));
+    expect(picked.ok && draftChoice(picked.draft).portrait).toBe("c_f1");
+    expect(picked.ok && currentStep(s, picked.draft)).toBe("age");
+    const none = answerCreation(s, female, "none", createSeededRng(1));
+    expect(none.ok && currentStep(s, none.draft)).toBe("age");
     expect(none.ok && draftChoice(none.draft).portrait).toBeNull();
+  });
+
+  it("초상화 목록이 없는 월드는 코드로 그린 실루엣 id를 받는다", () => {
+    const bare = { ...s, portraits: undefined };
+    const draft = run(["서진", "male"], { ...newCreationDraft("new_world"), withPortrait: true }).draft;
+    expect(currentStep(bare, draft)).toBe("portrait");
+    const picked = answerCreation(bare, draft, "p4", createSeededRng(1));
+    expect(picked.ok && draftChoice(picked.draft).portrait).toBe("p4");
   });
 
   it("나이는 월드의 범위 안의 숫자만 (12-69)", () => {

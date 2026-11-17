@@ -23,7 +23,7 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
         head={
           <div className="hud">
             <div className="sheet-hero">
-              <Portrait id={player.portrait} size={68} />
+              <Portrait id={player.portrait} pack={player.packId} size={68} />
               <div className="hero-who">
                 {/* 이름 오른쪽에 레벨·경험치 바·스킬 포인트 */}
                 <div className="hero-name-row">

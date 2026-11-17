@@ -1,5 +1,6 @@
+import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { GameWorld } from "@trpg/core";
 
@@ -10,6 +11,7 @@ import type { GameWorld } from "@trpg/core";
  * - GET·POST /api/options: 세계 설정(수위, 대화 형식, 12-63). 바꾸는 규칙은 core(GameWorld.setOptions)에 있다
  * - POST /api/memo: 메모 탭에서 적은 메모 (12-75). 메모장과 펜·연필이 있을 때만. 규칙은 core(GameWorld.setMemo)
  * - POST /api/creation: 상태 화면에서 새 게임·새 캐릭터 고르기 (12-67). Claude 세션이 화면 만들기를 열었을 때만. 규칙은 core(answerNewGame)
+ * - GET /portraits/<팩>/<id>.png: 주인공 초상화 그림 (12-139, 월드 팩의 art/portraits/)
  * 서술은 채팅(Claude 세션)에 있다. 이 화면은 시트와 새 게임 고르기를 보여 준다
  * - 나머지: React로 된 status.html (packages/ui). Vite 미들웨어로 바로 띄운다
  * stdout은 MCP 프로토콜 전용이라 로그는 모두 stderr로 보낸다 (원칙 12). 게임 상태는 설정과 새 게임 고르기 말고는 바꾸지 않는다
@@ -207,6 +209,8 @@ export async function handleCreation(source: StatusSource, req: IncomingMessage,
 export async function startStatusServer(
   source: StatusSource,
   firstPort: number,
+  /** 월드 팩 id → 팩 폴더 (초상화 그림을 찾는다). 없으면 그림을 내주지 않는다 */
+  packDir?: (packId: string) => string | undefined,
 ): Promise<{ url: string; close: () => Promise<void> }> {
   const { createServer: createVite, createLogger } = await import("vite");
   const base = createLogger("warn");
@@ -298,6 +302,10 @@ export async function startStatusServer(
       res.writeHead(404).end();
       return;
     }
+    if (url.startsWith("/portraits/")) {
+      void servePortrait(url, res, packDir);
+      return;
+    }
     vite.middlewares(req, res, () => res.writeHead(404).end());
   });
 
@@ -320,4 +328,21 @@ export async function startStatusServer(
   }
   await vite.close();
   throw new Error(`상태 화면을 띄울 포트가 없습니다 (${firstPort}~${firstPort + 9})`);
+}
+
+/** 주인공 초상화 그림 (GET /portraits/<팩>/<id>.png). 팩과 id는 이름 규칙으로 막아 폴더 밖을 읽지 않는다 */
+async function servePortrait(url: string, res: ServerResponse, packDir?: (packId: string) => string | undefined) {
+  const m = /^\/portraits\/([a-z][a-z0-9_]*)\/([a-z0-9_-]{1,40})\.png(?:\?.*)?$/.exec(url);
+  const dir = m && packDir?.(m[1]!);
+  if (!m || !dir) {
+    res.writeHead(404).end();
+    return;
+  }
+  try {
+    const data = await readFile(join(dir, "art", "portraits", `${m[2]}.png`));
+    res.writeHead(200, { "content-type": "image/png", "cache-control": "max-age=3600" });
+    res.end(data);
+  } catch {
+    res.writeHead(404).end();
+  }
 }

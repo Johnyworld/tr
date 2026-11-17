@@ -70,6 +70,7 @@ pnpm rag:eval       # RAG 검색 평가 (bge-m3). --compare로 설정 비교, --
 pnpm war:sim <팩>    # 월드 팩의 세력 전쟁을 미리 돌려 보기 (산출·소모 균형, --days --seeds)
 pnpm mcp            # MCP 서버 실행 (stdio). Claude 앱 등록 방법은 README
 pnpm --filter @trpg/core db:generate  # 세이브 DB 스키마를 바꾼 뒤 마이그레이션 생성
+pnpm portraits <팩>   # 주인공 초상화 그림 생성 (로컬 ComfyUI 필요). 목록·설정은 content/scenarios/<팩>/art/portraits.yaml, --style --only --variants --force
 ```
 
 - 플레이: 이 폴더에서 Claude Code 세션을 열고 `/play` (MCP 서버는 `.mcp.json`으로 등록돼 있다). 코드를 바꾸면 세션을 새로 열어야 MCP 서버가 새 코드로 뜬다

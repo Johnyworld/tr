@@ -24,10 +24,13 @@ let app: ReturnType<typeof createMcpServer>;
 /** 상태 화면 주소 (TRPG_STATUS=off면 띄우지 않는다). 못 띄워도 게임은 그대로 한다 */
 let statusUrl: string | null = null;
 let closeStatus: (() => Promise<void>) | null = null;
+/** 월드 팩 id → 팩 폴더 (상태 화면이 초상화 그림을 찾는다) */
+const packDirs = new Map<string, string>();
 try {
   const packs: { content: Content; dir: string }[] = process.env.CONTENT_DIR
     ? [{ content: loadContent(resolve(ROOT, process.env.CONTENT_DIR)), dir: resolve(ROOT, process.env.CONTENT_DIR) }]
     : loadContentPacks(packsDir, process.env.SCENARIO).map((content) => ({ content, dir: resolve(packsDir, content.scenario.id) }));
+  for (const p of packs) packDirs.set(p.content.scenario.id, p.dir);
   // RAG: 임베딩 모델은 lore와 memory가 함께 쓴다. 모델 로딩·임베딩은 백그라운드로 (RAG=off면 끈다)
   const embedder = process.env.RAG === "off" ? null : new BgeM3Embedder({ cacheDir: resolve(ROOT, ".cache/models") });
   // lore 색인은 월드마다 따로, 처음 쓸 때 연다
@@ -77,7 +80,7 @@ if (process.env.TRPG_STATUS !== "off") {
       return app.frozenStatus;
     },
   };
-  startStatusServer(source, Number(process.env.TRPG_STATUS_PORT ?? 8790))
+  startStatusServer(source, Number(process.env.TRPG_STATUS_PORT ?? 8790), (packId) => packDirs.get(packId))
     .then((s) => {
       statusUrl = s.url;
       closeStatus = s.close;

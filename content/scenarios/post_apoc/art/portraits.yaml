@@ -1,0 +1,267 @@
+# 주인공 초상화 (12-139). 새 캐릭터를 만들 때 성별 다음에 고르는 얼굴이다. NPC 얼굴은 만들지 않는다.
+#
+# 게임(core)이 읽는 칸: styles.<id>.label, faces.<id>.style·gender
+#   - 화풍은 적힌 순서대로 섹션이 된다 (얼굴이 하나도 없는 화풍은 보이지 않는다)
+#   - gender는 scenario.yaml creation.genders의 id. 고른 성별의 얼굴만 보인다
+#   - 그림 파일: art/portraits/<id>.png
+# 나머지는 그림을 만드는 도구용 (pnpm portraits post_apoc, 로컬 ComfyUI):
+#   - common: 모든 화풍에 붙는 구도 규칙 (양쪽 눈이 보이게, 가슴까지)
+#   - styles.<id>: 모델과 프롬프트. grade: 기준 그림(art/ 안)의 색감을 옮겨 컬러감을 맞춘다.
+#     extend_top: 얼굴 맞추기(framing)가 없을 때, 머리가 위로 잘리는 화풍의 위쪽을 이어 그린다
+#   - framing: 그린 뒤 얼굴을 찾아 같은 크기·위치로 자른다. 여백이 조금(4% 이하) 모자라면 자를 자리를 민다
+#   - cleanup: 여백이 많이 모자라면 회색 여백을 붙여 Qwen Image 편집으로 장면을 이어 채운다 (액자·비네트도 지운다)
+#     ※ Qwen Image 2.1은 Qwen RESEARCH LICENSE(비상업·연구/평가용)다. 배포용 그림에 쓰기 전에 라이선스를 확인한다
+#   - faces.<id>.source: 그리지 않고 이 그림(art/ 안)을 원본으로 쓴다. grade: 화풍 대신 이 색 보정. cleanup: true면 늘 정리한다
+#     (원본을 덮어쓰지 않고 Qwen이 전체를 다듬는다. 글이면 지시에 덧붙인다). crop_scale: 자르는 영역 배율 (고개를 돌린 얼굴 등)
+#   - faces.<id>: seed와 외모 묘사(영어 subject, 애니메이션 모델용 tags)
+#   - 설정이 바뀐 얼굴만 portraits.lock.json의 해시로 골라 다시 만든다 (화풍을 바꾸면 그 화풍 전부)
+#   - seed를 바꾸면 같은 묘사로 다른 얼굴. 후보를 여럿 보려면 --only <id> --variants 4
+
+output_size: 256
+
+# 얼굴 맞추기: 그린 뒤 얼굴을 찾아(SAM 3) 모든 초상화의 얼굴 크기·위치를 같게 자른다 (가슴까지 보이는 구도)
+framing:
+  detector: sam3.1_multiplex_fp16.safetensors
+  target: face
+  # 크기는 얼굴 상자 너비, 위치는 턱 끝으로 맞춘다 (상자 높이는 앞머리에 따라 달라져 쓰지 않는다. 머리카락은 조금 잘려도 된다)
+  # 기준: 처음에 마음에 들었던 a_f1, d_f1, b_f1~b_f3에 가깝게 (pnpm portraits post_apoc --measure <id>로 잰다)
+  face_width: 0.31
+  chin_y: 0.63
+
+cleanup:
+  unet: qwen_image_2.1_turbo_int8_convrot.safetensors
+  clip: qwen3vl_8b_int8_convrot.safetensors
+  vae: qwen_image_2.1_vae_bf16.safetensors
+  seed: 7
+  instruction: >-
+    Fill the flat grey margins around the picture by seamlessly extending the existing scene into them,
+    in exactly the same art style, colours, lighting and level of detail. Remove any picture frame, paper border,
+    vignette, canvas edge or faded unfinished edges so the illustration fills the whole image edge to edge.
+    Keep the person, their face, expression, hair, clothing and line work exactly the same, without any change.
+
+common:
+  # 얼굴 맞추기로 자를 여유가 있게 상반신까지 그린다
+  prompt: >-
+    upper body portrait, head, shoulders and chest visible, face fully visible, both eyes visible and open,
+    looking toward the viewer
+  negative: >-
+    profile, side view, looking away, eyes closed, one eye hidden, covered eyes, goggles over eyes,
+    sunglasses, headphones, full body, legs, hands, holding object, wide shot, close-up, face only,
+    head out of frame, cropped head, cropped forehead, glowing eyes, cleavage, revealing clothes, nsfw
+
+styles:
+  A:
+    label: 실사 회화
+    checkpoint: sd_xl_base_1.0.safetensors
+    prompt: >-
+      portrait of {subject}, gritty post-apocalyptic survivor, worn dusty clothes,
+      painterly realistic digital painting, muted desaturated colors, soft side lighting,
+      detailed face, plain very dark charcoal background
+    negative: >-
+      blurry, low quality, jpeg artifacts, deformed, disfigured, extra limbs,
+      text, watermark, signature, logo, frame, bright background, cartoon, anime
+    width: 1024
+    height: 1024
+    steps: 28
+    cfg: 6.5
+    sampler: dpmpp_2m
+    scheduler: karras
+    grade: { ref: palette_A.png, strength: 0.7 }
+
+  D:
+    label: 미국 애니메이션
+    checkpoint: sd_xl_base_1.0.safetensors
+    prompt: >-
+      portrait of {subject}, post-apocalyptic survivor, ruined city skyline at night behind,
+      1990s american superhero animated series style, bold thick black outlines,
+      flat cel shading with hard shadows, angular simplified shapes, limited muted color palette,
+      dramatic noir lighting, comic book illustration
+    negative: >-
+      photo, realistic, 3d render, anime, manga, soft shading, blurry, low quality, deformed,
+      text, watermark, signature, speech bubble, panel border
+    width: 1024
+    height: 1024
+    steps: 28
+    cfg: 7
+    sampler: dpmpp_2m
+    scheduler: karras
+
+  C:
+    label: 현대 애니메이션
+    checkpoint: animagine-xl-4.0-opt.safetensors
+    prompt: >-
+      {tags}, solo, upper body, looking at viewer, head fully in frame, {subject},
+      post-apocalypse, fully clothed, ruined skyscrapers background,
+      depth of field, detailed glossy anime illustration, sharp clean lineart, soft gradient shading,
+      cinematic rim lighting, high contrast, game character portrait, masterpiece, high score,
+      great score, absurdres, newest
+    negative: >-
+      lowres, bad anatomy, bad hands, text, error, missing fingers, extra digits, cropped,
+      worst quality, low quality, low score, bad score, average score, signature, watermark,
+      username, blurry, retro artstyle, 3d, realistic, hair over one eye, hair over eyes
+    width: 1024
+    height: 1024
+    steps: 28
+    cfg: 5
+    sampler: euler_ancestral
+    scheduler: normal
+
+  B:
+    label: 일본 레트로 일러스트
+    checkpoint: animagine-xl-4.0-opt.safetensors
+    prompt: >-
+      {tags}, solo, upper body, {subject}, post-apocalypse, fully clothed, ruined city street, collapsed buildings,
+      overcast gloomy sky, dim dusk light, dust in the air, debris, rusted signs,
+      retro artstyle, 1990s (style), 1980s (style), anime screencap, cel shading, flat colors,
+      thick eyelashes, film grain, muted desaturated colors, dark color palette, masterpiece, high score, great score, absurdres
+    negative: >-
+      lowres, bad anatomy, bad hands, text, error, missing fingers, extra digits, cropped,
+      worst quality, low quality, low score, bad score, average score, signature, watermark,
+      username, blurry, 3d, realistic, bright colors, vivid colors, sunny, clear blue sky, pastel colors
+    width: 1024
+    height: 1024
+    steps: 28
+    cfg: 5
+    sampler: euler_ancestral
+    scheduler: normal
+
+faces:
+  # A 실사 회화: 남 2, 여 2
+  a_m1:
+    style: A
+    gender: male
+    seed: 2001
+    # 원본 가장자리에 붓 자국이 있어 원본을 덮어쓰면 경계가 남는다: 전체를 정리한다
+    cleanup: true
+    subject: >-
+      a 34 year old korean man, former soldier, short buzzed hair, stubble, a thin scar on his cheek,
+      faded olive field jacket
+  a_m2:
+    style: A
+    gender: male
+    seed: 2002
+    subject: >-
+      a 22 year old korean young man, courier, messy black hair, lean face, dirty neck scarf,
+      patched hooded jacket
+  a_f1:
+    style: A
+    gender: female
+    seed: 2003
+    # 원본의 재킷·어깨가 아래로 흐려지는 미완성 스케치처럼 그려졌다: 끝까지 칠하게 한다
+    cleanup: >-
+      The woman's jacket and shoulders fade out into the background like an unfinished sketch; paint them fully
+      and solidly all the way down to the bottom edge, and make the background a solid dark charcoal wall to every edge.
+    subject: >-
+      a 31 year old korean woman, scavenger, black hair tied in a low ponytail, sharp determined eyes,
+      weathered leather jacket
+  a_f2:
+    style: A
+    gender: female
+    seed: 2004
+    subject: >-
+      a 24 year old korean woman, mechanic, short bob hair, grease smudge on her cheek,
+      worn work overalls over a dark shirt
+
+  # D 미국 애니메이션: 남 2, 여 2
+  d_m1:
+    style: D
+    gender: male
+    seed: 2101
+    # 원본에 종이 액자 테두리가 그려져 있다: 정리로 지운다
+    cleanup: true
+    subject: >-
+      a 42 year old korean man, grizzled survivor, square jaw, short graying hair, heavy stubble,
+      worn trench coat with upturned collar
+  d_m2:
+    style: D
+    gender: male
+    seed: 2102
+    subject: >-
+      a 23 year old korean young man, scavenger, spiky black hair, determined look, bandana around his neck,
+      torn bomber jacket
+  d_f1:
+    style: D
+    gender: female
+    seed: 2103
+    subject: >-
+      a 30 year old korean woman, scout, long black hair in a high ponytail, confident smirk,
+      dark tactical vest
+  d_f2:
+    style: D
+    gender: female
+    seed: 2104
+    subject: >-
+      a 21 year old korean young woman, runner, short pixie cut hair, freckles, fierce eyes,
+      hooded sweatshirt under a scuffed vest
+
+  # C 현대 애니메이션: 여 4
+  c_f1:
+    style: C
+    gender: female
+    seed: 2201
+    # 원본 덮어쓰기 경계가 겹쳐 보인다: 전체를 정리한다
+    cleanup: true
+    tags: 1girl, short hair, black hair, brown eyes
+    subject: >-
+      a young woman scout, short black hair, olive green high-collared field jacket, binoculars on her chest
+  c_f2:
+    style: C
+    gender: female
+    seed: 2202
+    tags: 1girl, long hair, ponytail, silver hair, blue eyes, forehead, hair pulled back
+    subject: >-
+      a young woman medic, long silver hair in a ponytail, white and gray tactical coat with a red cross armband
+  c_f3:
+    style: C
+    gender: female
+    seed: 2203
+    tags: 1girl, twin braids, brown hair, green eyes, hood
+    subject: >-
+      a teenage girl survivor, brown hair in twin braids, oversized hooded parka, gas mask hanging at her neck
+  c_f4:
+    style: C
+    gender: female
+    seed: 2209
+    # 원본 덮어쓰기 경계가 겹쳐 보인다: 전체를 정리한다
+    cleanup: true
+    tags: 1girl, mature female, black hair, medium hair, dark eyes, scar on face, swept bangs
+    subject: >-
+      a mature woman mercenary, shoulder-length black hair, a small scar across her nose,
+      long dark military coat with a high collar
+
+  # B 일본 레트로 일러스트: 여 3, 남 1
+  b_f1:
+    style: B
+    gender: female
+    seed: 2301
+    tags: 1girl, short hair, black hair, brown eyes
+    subject: >-
+      a young woman scavenger, short black bob hair, faded denim jacket, binoculars strap on her shoulder
+  b_f2:
+    style: B
+    gender: female
+    seed: 2302
+    # 화풍을 어둡게 바꾸기 전의 밝은 그림이 마음에 들어 그 원본을 그대로 쓰고, b_f1(어두운 B)의 색감으로 톤만 낮춘다
+    source: sources/b_f2.png
+    grade: { ref: palette_B.png, strength: 0.9 }
+    tags: 1girl, long hair, black hair, hoop earrings
+    subject: >-
+      a young woman wanderer, long straight black hair with bangs, oversized yellow work jacket over a white t-shirt
+  b_f3:
+    style: B
+    gender: female
+    seed: 2303
+    # 원본에서 잘린 머리 위를 이어 그리면 떠 있는 머리카락이 생긴다: 전체를 정리한다
+    cleanup: true
+    # 고개를 돌려 얼굴 너비가 좁게 재진다: 자르는 영역을 넓혀 다른 얼굴과 크기를 맞춘다
+    crop_scale: 1.12
+    tags: 1girl, ponytail, brown hair, bandaid on face
+    subject: >-
+      a tomboyish young woman mechanic, brown ponytail, bandage on her cheek, red bandana, grease-stained jumpsuit
+  b_m1:
+    style: B
+    gender: male
+    seed: 2304
+    tags: 1boy, black hair, headband
+    subject: >-
+      a young man fighter, messy black hair, cloth headband, torn school uniform jacket, determined stare

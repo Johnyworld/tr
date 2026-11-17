@@ -2,6 +2,7 @@ import type { Content } from "../content/schemas.ts";
 import { parsePersona, personaSummary } from "../engine/persona.ts";
 import type { Rng } from "../rng.ts";
 import type { Scenario } from "../scenario/schema.ts";
+import { portraitSections } from "../scenario/scenario.ts";
 import {
   abilitySpend,
   checkAbilities,
@@ -136,8 +137,9 @@ export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
   const d = collectDraft(draft);
   if (s.creation?.pasts.length && d.past === undefined) return "past";
   if (d.name === undefined) return "name";
-  if (draft.withPortrait && d.portrait === undefined) return "portrait";
   if (d.gender === undefined) return "gender";
+  // 얼굴은 성별 다음 (12-139): 고른 성별의 얼굴만 보인다. 월드에 그 성별 얼굴이 없으면 묻지 않는다 (실루엣)
+  if (draft.withPortrait && d.portrait === undefined && (!s.portraits || portraitSections(s, d.gender).length > 0)) return "portrait";
   if (s.creation?.age && d.age === undefined) return "age";
   if (d.abilityMethod === undefined) return "abilities";
   if (d.abilityMethod === "manual" && !d.abilitiesSet) return "ability_set";
@@ -425,6 +427,10 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     const v = text.trim();
     if (NONE_WORDS.includes(v.toLowerCase())) return add({ step: "portrait", value: null });
     if (!PORTRAIT_ID.test(v)) return { ok: false, error: "초상화 id 형식이 올바르지 않다." };
+    // 초상화 목록이 있는 월드는 그 목록에서, 고른 성별의 얼굴만 (12-139)
+    if (s.portraits && !portraitSections(s, collectDraft(draft).gender).some((sec) => sec.faces.includes(v))) {
+      return { ok: false, error: "고른 성별의 초상화 목록에 없는 얼굴이다." };
+    }
     return add({ step: "portrait", value: v });
   }
   if (step === "age") {

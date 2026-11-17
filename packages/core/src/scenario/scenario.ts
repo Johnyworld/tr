@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
 import type { Character } from "../game/character.ts";
-import { scenarioFileSchema, speechRulesSchema, type ConditionTrack, type Scenario } from "./schema.ts";
+import { portraitFileSchema, scenarioFileSchema, speechRulesSchema, type ConditionTrack, type PortraitCatalog, type Scenario } from "./schema.ts";
 
 export class ScenarioError extends Error {
   override name = "ScenarioError";
@@ -22,6 +22,7 @@ export function loadScenario(dir: string): Scenario {
   if (!file.success) throw new ScenarioError(`scenario.yaml: ${z.prettifyError(file.error)}`);
   const speech = speechRulesSchema.safeParse(parse(read(file.data.speech_rules)));
   if (!speech.success) throw new ScenarioError(`${file.data.speech_rules}: ${z.prettifyError(speech.error)}`);
+  const portraits = loadPortraits(dir, file.data.creation?.genders.map((g) => g.id) ?? []);
   return {
     ...file.data,
     speech: speech.data,
@@ -30,7 +31,36 @@ export function loadScenario(dir: string): Scenario {
     mcpGuide: read(file.data.mcp_guide).trim(),
     // 작성자용 HTML 주석은 GM에게 보내지 않는다
     introText: file.data.intro ? read(file.data.intro).replace(/<!--[\s\S]*?-->/g, "").trim() : null,
+    ...(portraits ? { portraits } : {}),
   };
+}
+
+/** 주인공 초상화 목록 (art/portraits.yaml, 12-139). 없으면 undefined. 그림 파일(art/portraits/<id>.png)도 있어야 한다 */
+function loadPortraits(dir: string, genders: string[]): PortraitCatalog | undefined {
+  const file = join(dir, "art", "portraits.yaml");
+  if (!existsSync(file)) return undefined;
+  const parsed = portraitFileSchema.safeParse(parse(readFileSync(file, "utf8")));
+  if (!parsed.success) throw new ScenarioError(`art/portraits.yaml: ${z.prettifyError(parsed.error)}`);
+  const problems: string[] = [];
+  const faces = Object.entries(parsed.data.faces).map(([id, f]) => {
+    if (!parsed.data.styles[f.style]) problems.push(`${id}: 없는 화풍 ${f.style}`);
+    if (!genders.includes(f.gender)) problems.push(`${id}: 성별 ${f.gender}은(는) creation.genders에 없다`);
+    if (!existsSync(join(dir, "art", "portraits", `${id}.png`))) problems.push(`${id}: 그림 파일 art/portraits/${id}.png가 없다 (pnpm portraits로 만든다)`);
+    return { id, style: f.style, gender: f.gender };
+  });
+  if (problems.length) throw new ScenarioError(`art/portraits.yaml: ${problems.join(" / ")}`);
+  const styles = Object.entries(parsed.data.styles)
+    .filter(([sid]) => faces.some((f) => f.style === sid))
+    .map(([sid, st]) => ({ id: sid, label: st.label }));
+  return { styles, faces };
+}
+
+/** 고른 성별의 얼굴을 화풍 섹션으로 (12-139). 목록이 없는 월드는 빈 목록 */
+export function portraitSections(s: Scenario, gender: string | null | undefined): { style: string; label: string; faces: string[] }[] {
+  if (!s.portraits) return [];
+  return s.portraits.styles
+    .map((st) => ({ style: st.id, label: st.label, faces: s.portraits!.faces.filter((f) => f.style === st.id && f.gender === gender).map((f) => f.id) }))
+    .filter((sec) => sec.faces.length > 0);
 }
 
 // ── 조회 도우미 ───────────────────────────────────────

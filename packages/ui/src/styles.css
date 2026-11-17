@@ -2472,6 +2472,39 @@ body {
   border-color: var(--accent);
 }
 
+/* 새 게임: 화풍 섹션 (12-139). 그림 얼굴은 크게, 둥근 네모로 */
+.portrait-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.portrait-section + .portrait-section {
+  margin-top: 10px;
+}
+
+.portrait-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.portrait-grid-art {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.newgame .portrait-grid-art .portrait-pick {
+  border-radius: 12px;
+}
+
+.portrait-square {
+  border-radius: 8px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
 .newgame-chosen:has(.portrait) {
   flex-direction: row;
   /* 초상화는 위에 붙인다 (오른쪽 글이 길어져도) */

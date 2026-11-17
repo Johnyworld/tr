@@ -48,6 +48,8 @@ export type PlayerView = {
   /** 성별 이름 (정하지 않았으면 null), 초상화 id */
   genderLabel: string | null;
   portrait: string | null;
+  /** 월드 팩 id: 초상화 그림 주소에 쓴다 (12-139) */
+  packId: string;
   age: number | null;
   roleLabel: string;
   timeLabel: string;
@@ -316,6 +318,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     name: player.name,
     genderLabel: scenario.creation?.genders.find((g) => g.id === player.gender)?.label ?? null,
     portrait: player.portrait,
+    packId: content.scenario.id,
     age: player.age,
     roleLabel:
       content.roles[state.roleId]?.rank === player.rank

@@ -15,11 +15,13 @@
     "content:check": "pnpm --filter @trpg/core content:check",
     "mcp": "pnpm --silent --filter @trpg/mcp start",
     "rag:eval": "pnpm --silent --filter @trpg/core rag:eval",
-    "war:sim": "pnpm --silent --filter @trpg/core war:sim"
+    "war:sim": "pnpm --silent --filter @trpg/core war:sim",
+    "portraits": "node scripts/portraits.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "typescript": "7.0.2",
-    "vitest": "5.1.0"
+    "vitest": "5.1.0",
+    "yaml": "2.9.1"
   }
 }

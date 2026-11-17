@@ -5,6 +5,8 @@ export type PlayerView = {
   name: string;
   genderLabel: string | null;
   portrait: string | null;
+  /** 월드 팩 id: 초상화 그림 주소 (/portraits/<팩>/<id>.png) */
+  packId?: string;
   age: number | null;
   roleLabel: string;
   occupationLabel: string | null;
@@ -69,7 +71,7 @@ export type NewGameView = {
   mode: "new_world" | "heir";
   step: string;
   worlds?: { id: string; title: string; tagline: string; description: string }[];
-  world?: { title: string };
+  world?: { id?: string; title: string };
   /** 시나리오 고르기 (core scenarioChoices). locked: 잠겼으면 해금 조건 */
   scenarios?: { roleId: string; title: string; pitch: string; who: string; locked: string | null; goal: string | null }[];
   content?: { adultAge: number };
@@ -95,6 +97,8 @@ export type NewGameView = {
     moves: { id: string; label: string; category: string; description: string; stats?: string }[];
     skillRule: { points: number; max: number } | null;
     options: { value: string; label: string; description?: string }[];
+    /** 얼굴 고르기 (12-139): 고른 성별의 얼굴을 화풍 섹션으로. 비었으면 기본 실루엣 */
+    portraits?: { style: string; label: string; faces: string[] }[];
     nameMax: number;
     age?: { min: number; max: number; default: number } | null;
     stats: { id: string; label: string; description: string }[];

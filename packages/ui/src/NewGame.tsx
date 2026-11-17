@@ -215,7 +215,7 @@ function CharacterStep({ view, busy, answer }: StepProps) {
       <Chosen view={view} live={live?.step === step ? live : null} />
       {step === "past" && <PastStep view={view} busy={busy} answer={answer} />}
       {step === "skill_set" && <SkillStep view={view} busy={busy} answer={answer} onLive={onLive} />}
-      {step === "portrait" && <PortraitStep busy={busy} answer={answer} />}
+      {step === "portrait" && <PortraitStep view={view} busy={busy} answer={answer} />}
       {step === "name" && <NameStep view={view} busy={busy} answer={answer} />}
       {step === "age" && <AgeStep view={view} busy={busy} answer={answer} />}
       {(step === "gender" || step === "abilities" || step === "skills" || step === "traits") && (
@@ -278,7 +278,7 @@ function Chosen({ view, live }: { view: NewGameView; live: { text: string; bad?:
   if (!ch.past && !ch.name && !ch.gender && ch.abilities.length === 0 && !ch.traits && !live) return null;
   return (
     <div className="newgame-chosen">
-      {ch.portrait && <Portrait id={ch.portrait} size={56} />}
+      {ch.portrait && <Portrait id={ch.portrait} pack={view.world?.id} size={56} />}
       <div className="chosen-info">
         {ch.name && <div className="chosen-name">{ch.name}</div>}
         {ch.past && <div className="muted small">과거: {ch.past}</div>}
@@ -301,27 +301,40 @@ function Chosen({ view, live }: { view: NewGameView; live: { text: string; bad?:
   );
 }
 
-/** 얼굴 고르기 (이름 다음 단계). 고르지 않으면 실루엣 */
-function PortraitStep({ busy, answer }: Pick<StepProps, "busy" | "answer">) {
+/**
+ * 얼굴 고르기 (성별 다음 단계, 12-139). 고른 성별의 얼굴을 화풍 섹션으로 보인다.
+ * 월드에 초상화 목록이 없으면 코드로 그린 실루엣 12종. 고르지 않으면 실루엣
+ */
+function PortraitStep({ view, busy, answer }: StepProps) {
   const [picked, setPicked] = useState<string | null>(null);
+  const sections = view.character!.portraits ?? [];
+  const pack = view.world?.id;
+  const pick = (id: string, size: number, square: boolean) => (
+    <button
+      key={id}
+      type="button"
+      className={picked === id ? "portrait-pick on" : "portrait-pick"}
+      disabled={busy}
+      aria-pressed={picked === id}
+      aria-label={`초상화 ${id}`}
+      onClick={() => setPicked(picked === id ? null : id)}
+    >
+      <Portrait id={id} pack={pack} size={size} square={square} />
+    </button>
+  );
   return (
     <div className="newgame-form">
       <h2 className="newgame-title">얼굴을 골라 주세요</h2>
-      <div className="portrait-grid">
-        {PORTRAIT_IDS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            className={picked === id ? "portrait-pick on" : "portrait-pick"}
-            disabled={busy}
-            aria-pressed={picked === id}
-            aria-label={`초상화 ${id}`}
-            onClick={() => setPicked(picked === id ? null : id)}
-          >
-            <Portrait id={id} size={56} />
-          </button>
-        ))}
-      </div>
+      {sections.length > 0 ? (
+        sections.map((sec) => (
+          <section key={sec.style} className="portrait-section">
+            <h3 className="portrait-section-title">{sec.label}</h3>
+            <div className="portrait-grid portrait-grid-art">{sec.faces.map((id) => pick(id, 96, true))}</div>
+          </section>
+        ))
+      ) : (
+        <div className="portrait-grid">{PORTRAIT_IDS.map((id) => pick(id, 56, false))}</div>
+      )}
       <div className="newgame-actions">
         <button type="button" disabled={busy} onClick={() => answer("none")}>
           고르지 않기

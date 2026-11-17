@@ -1,6 +1,7 @@
 import type { Content } from "../content/schemas.ts";
 import { personaSummary } from "../engine/persona.ts";
 import { worldInfo } from "../content/packs.ts";
+import { portraitSections } from "../scenario/scenario.ts";
 import { abilitySpend, creationRules, MAX_NAME_WIDTH, pastOf } from "./creation.ts";
 import {
   abilityTiers,
@@ -28,8 +29,8 @@ export type NewGameView = {
   step: "world" | "scenario" | "content" | "dialogue" | CreationStepId;
   /** 월드 고르기: 이름, 한 줄 소개, 짧은 설명 */
   worlds?: { id: string; title: string; tagline: string; description: string }[];
-  /** 고른 월드 */
-  world?: { title: string };
+  /** 고른 월드. id: 월드 팩 id (초상화 그림 주소에 쓴다) */
+  world?: { id: string; title: string };
   /** 시나리오 고르기 (잠긴 것도 해금 조건과 함께) */
   scenarios?: ScenarioChoice[];
   content?: { adultAge: number };
@@ -64,6 +65,8 @@ export type CharacterStepView = {
   moves: { id: string; label: string; category: string; description: string; stats: string }[];
   skillRule: { points: number; max: number } | null;
   options: StepOption[];
+  /** 얼굴 고르기 (12-139): 고른 성별의 얼굴을 화풍 섹션으로. 초상화 목록이 없는 월드는 빈 목록 (화면이 기본 실루엣을 보인다) */
+  portraits: { style: string; label: string; faces: string[] }[];
   /** 이름 폭 상한 (한글 2, 영문 1로 센다) */
   nameMax: number;
   /** 나이 고르기 (월드가 범위를 열었을 때). default: 시나리오의 나이 */
@@ -85,7 +88,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
   const step = newGameStep(draft);
   if (step === "world") return { mode: draft.mode, step, worlds: [...packs.values()].map(worldInfo) };
   const pack = packs.get(draft.packId!)!;
-  const world = { title: worldInfo(pack).title };
+  const world = { id: draft.packId!, title: worldInfo(pack).title };
   if (step === "scenario") return { mode: draft.mode, step, world, scenarios: scenarioChoices(pack, draft.unlocked?.[pack.scenario.id] ?? []) };
   if (step === "content") return { mode: draft.mode, step, world, content: { adultAge: pack.scenario.content_rating?.adult_age ?? 18 } };
   if (step === "dialogue" && draft.choice) return { mode: draft.mode, step, world };
@@ -122,6 +125,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
         persona: d.persona !== undefined ? personaSummary(s, d.persona) : null,
       },
       options: stepOptions(s, draft.character, cstep, (id) => content.items[id]?.name ?? id),
+      portraits: cstep === "portrait" ? portraitSections(s, d.gender) : [],
       pasts: (s.creation?.pasts ?? []).map((p) => ({
         id: p.id,
         label: p.label,

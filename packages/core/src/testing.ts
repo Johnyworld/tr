@@ -1,6 +1,10 @@
 /**
  * 테스트용 고정 콘텐츠와 도우미. index.ts에서 내보내지 않는다.
  */
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadContent } from "./content/loader.ts";
 import type { Content } from "./content/schemas.ts";
 import type { Scenario } from "./scenario/schema.ts";
 import { createWorldEvent } from "./game/state.ts";
@@ -452,4 +456,18 @@ export function createTestWorld(mode: PlayMode = "web", rng: Rng = createSeededR
   repo.append(createWorldEvent(TEST_CONTENT, "role_test", "world_test"));
   runAfterTimeAdvance(world.ctx());
   return world;
+}
+
+/** 저장소의 실제 월드 팩 폴더 (post_apoc) */
+export const REAL_CONTENT_DIR = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../content/scenarios/post_apoc");
+
+/**
+ * 실제 월드 팩 (post_apoc). 읽고 검증하는 데 파일마다 0.4초쯤 걸리므로, 테스트 실행 전에
+ * 한 번 읽어 둔 것(vitest.global-setup.ts가 TRPG_TEST_CONTENT에 적은 JSON)을 쓴다. 없으면 직접 읽는다.
+ * 부를 때마다 새 객체다 (고쳐 써도 다른 테스트에 번지지 않는다)
+ */
+export function loadRealContent(): Content {
+  const cache = process.env.TRPG_TEST_CONTENT;
+  if (cache && existsSync(cache)) return JSON.parse(readFileSync(cache, "utf8")) as Content;
+  return loadContent(REAL_CONTENT_DIR);
 }

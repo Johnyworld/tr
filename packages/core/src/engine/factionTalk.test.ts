@@ -1,15 +1,13 @@
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { describePlayerState } from "./context.ts";
 import { checkRumorsOnSite, factionTroubles, spreadTroubleRumors, troubleAttitude, troubleLine } from "./factionTalk.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 무리 형편 (12-105) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 
 function setup() {
   const store = new InMemoryGameStore([createWorldEvent(content, "role_b_guard", "world_talk", () => 0.5)]);

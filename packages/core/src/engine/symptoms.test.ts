@@ -1,16 +1,15 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createSeededRng } from "../rng.ts";
 import { conditionPenalty, visibleSymptoms } from "../scenario/scenario.ts";
 import { WorldManager } from "../world/manager.ts";
 import { changeCondition } from "./body.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 증상 (12-74): 원인은 숨기고 증상만, 겹치는 증상은 하나, 판정 보정은 보이는 증상의 합 */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const s = content.scenario;
 const labels = (conditions: Record<string, string>) => visibleSymptoms(s, { conditions }).map((x) => x.label);
 const base = { harm: "none", hunger: "fed", infection: "clean", cold: "warm", disease: "healthy", nerves: "steady" };

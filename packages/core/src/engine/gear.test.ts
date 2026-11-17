@@ -1,16 +1,15 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createSeededRng, type Rng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem, gearModifiers } from "./gear.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 물건 (기획서 4.8) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
 const choice = { name: "서진", gender: "female" as const, abilities: { strength: 0, agility: 1, senses: 1, nerve: 1 }, portrait: null, traits: [] };
 const chk = (move: string, stat: string, extra: Record<string, unknown> = {}) => ({ move, stat, difficulty: "normal", harm_on_failure: "none", harm_cause: "", infected_source: false, target_harm: "none", distance: "close", ...extra });

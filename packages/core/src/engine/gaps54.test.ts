@@ -1,18 +1,17 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createContentSchemas } from "../content/schemas.ts";
 import { initialWarWorld, simulateWarDay } from "../sim/war.ts";
 import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
 import { fireStorylet } from "./storyletTools.ts";
 import { executeTool } from "./tools.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 12-54: 맡기기, 산출 늘리기, 배우기, 시간 쓰기, 지금 구역의 주인, 남겨 둔 사람 */
-const base = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const base = loadRealContent();
 const parse = createContentSchemas(base.scenario).storylet.parse;
 const open = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-54-")), content: base, rngFactory: () => createSeededRng(3) }).create("mcp", "role_a_grunt");
 const resolveWith = (w: ReturnType<typeof open>, effects: unknown[]) => {

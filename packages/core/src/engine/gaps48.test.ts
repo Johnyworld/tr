@@ -1,9 +1,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createSeededRng } from "../rng.ts";
 import { clashForces } from "../sim/war.ts";
 import { WorldManager } from "../world/manager.ts";
@@ -11,9 +9,10 @@ import { describePlayerState } from "./context.ts";
 import { runDailyNerves, shakeNerves, sleepNerves } from "./body.ts";
 import { fireStorylet } from "./storyletTools.ts";
 import { executeTool } from "./tools.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 12-48: 마음, 구역 보강, 엿듣기 */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const open = (role = "role_a_grunt", rng = () => 0.99) =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-48-")), content, rngFactory: () => rng }).create("mcp", role);
 

@@ -1,14 +1,12 @@
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { scavenge } from "./scavenge.ts";
 import { runDailyBody } from "./body.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 잘 안 쓰이던 스킬·트레잇에 붙인 쓰임새 */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 
 function world(rng: () => number, c = content) {
   const store = new InMemoryGameStore([createWorldEvent(c, "role_l_wanderer", "w", () => 0.5)]);

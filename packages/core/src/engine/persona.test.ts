@@ -1,7 +1,4 @@
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { describePlayerState } from "./context.ts";
@@ -9,9 +6,10 @@ import { buildPlayerView } from "../views/player.ts";
 import { parsePersona, personaCheckParts, personaChips, personaOf, rapportImpression, rollBlowup, rollHear, rollLeak, romanceShift } from "./persona.ts";
 import { executeTool } from "./tools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 성격 축 (12-99) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const s = content.scenario;
 const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });
 

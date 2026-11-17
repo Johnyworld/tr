@@ -1,18 +1,17 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createContentSchemas } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
 import { capturePlayer, runCaptivity, warCaptures } from "./captivity.ts";
 import { describePlayerState } from "./context.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 포로 (12-55) */
-const base = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const base = loadRealContent();
 const open = (rng: () => number = createSeededRng(4)) =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-cap-")), content: base, rngFactory: () => rng }).create("mcp", "role_a_grunt");
 const act = (extra: Record<string, unknown>) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });

@@ -1,7 +1,4 @@
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createSeededRng } from "../rng.ts";
 import { checkCharacterChoice } from "./creation.ts";
 import {
@@ -14,8 +11,9 @@ import {
   stepOptions,
   type CreationDraft,
 } from "./creationFlow.ts";
+import { loadRealContent } from "../testing.ts";
 
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const s = content.scenario;
 const roleId = Object.keys(content.roles)[0]!;
 

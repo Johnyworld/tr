@@ -1,7 +1,4 @@
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { MINUTES_PER_DAY, SEGMENT_START_HOUR } from "../rules/time.ts";
@@ -9,9 +6,10 @@ import { seasonAt } from "../sim/season.ts";
 import { exposeToCold, feelsLike, outsideTemp } from "./climate.ts";
 import { autoEquip } from "./gear.ts";
 import { executeTool } from "./tools.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 기온 (12-98) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });
 
 /** 겨울 어느 날 hour시, zone에 있는 주인공 (날씨 없음, 동행 없음, 트레잇 없음, 빈손) */

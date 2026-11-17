@@ -1,12 +1,10 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { loadContent } from "../content/loader.ts";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Content } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
-import { TEST_CONTENT } from "../testing.ts";
+import { loadRealContent, TEST_CONTENT } from "../testing.ts";
 import { CharacterChoiceError, WorldManager } from "../world/manager.ts";
 import { describePlayerState } from "../engine/context.ts";
 import { abilitySpend, checkCharacterChoice, creationRules, randomAbilityBuy } from "./creation.ts";
@@ -56,7 +54,7 @@ describe("캐릭터 생성", () => {
   });
 
   it("ability_array가 있는 월드는 운에 맡겨도 직접 정하기와 같은 배열을 섞는다", () => {
-    const real = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc")).scenario;
+    const real = loadRealContent().scenario;
     for (let seed = 1; seed < 50; seed++) {
       const abilities = randomAbilityBuy(real, createSeededRng(seed));
       expect(Object.values(abilities).sort((a, b) => a - b)).toEqual([...real.ability_array!].sort((a, b) => a - b));

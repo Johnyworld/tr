@@ -1,15 +1,14 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
 import { buildCustomRole, checkCustomStart, joinRole, type CustomStartInput } from "./customStart.ts";
 import { CUSTOM_ROLE_ID } from "./state.ts";
+import { loadRealContent } from "../testing.ts";
 
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 
 const base: CustomStartInput = {
   faction: "faction_a",

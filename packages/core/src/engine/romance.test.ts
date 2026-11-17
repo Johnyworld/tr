@@ -1,15 +1,14 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { WorldManager } from "../world/manager.ts";
 import { describePlayerState } from "./context.ts";
 import { attractionOf, hasInterest, loversOf, romanceCast, runRomance } from "./romance.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 연애와 삼각관계 (12-58) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const choice = { name: "서진", gender: "female" as const, abilities: null, portrait: null, traits: [] };
 const open = (mature = true, rng: () => number = () => 0.99) =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-love-")), content, rngFactory: () => rng }).create("mcp", "role_a_grunt", choice, undefined, undefined, { mature });

@@ -1,15 +1,14 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createSeededRng } from "../rng.ts";
 import { buildPlayerView } from "../views/player.ts";
 import { WorldManager } from "../world/manager.ts";
 import { effectiveSkill } from "./traits.ts";
+import { loadRealContent } from "../testing.ts";
 
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const manager = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-known-")), content, rngFactory: () => createSeededRng(2) });
 
 describe("시작할 때 원래 알던 사이", () => {

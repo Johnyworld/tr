@@ -1,15 +1,14 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { WorldManager } from "../world/manager.ts";
 import type { GameWorld } from "../world/world.ts";
 import { gearModifiers, planCraft } from "./gear.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 사거리 (12-93): 상대와의 거리에 따라 닿는지와 판정 보정 */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const choice = { name: "서진", gender: "female" as const, abilities: null, portrait: null, traits: [] };
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
 const strike = (move: string, stat: string, distance: string | null, harm = "light") => ({

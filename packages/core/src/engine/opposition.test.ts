@@ -1,15 +1,13 @@
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { MINUTES_PER_DAY, SEGMENT_START_HOUR } from "../rules/time.ts";
 import { opposeModifier } from "./opposition.ts";
 import { executeTool } from "./tools.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 상대와 상황 (12-104) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 
 function setup(hour = 12) {
   const roll = { value: 0.5 };

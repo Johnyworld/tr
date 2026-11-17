@@ -1,17 +1,16 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { buildCustomRole } from "../game/customStart.ts";
 import { tiesOf } from "../game/ties.ts";
 import { createSeededRng } from "../rng.ts";
 import { castCandidates } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
 import { onPersonDeath } from "./people.ts";
+import { loadRealContent } from "../testing.ts";
 
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
 const choice = { name: "서진", gender: "female" as const, abilities: null, portrait: null, traits: [] };
 const manager = (seed = 7) => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-people-")), content, rngFactory: () => createSeededRng(seed) });

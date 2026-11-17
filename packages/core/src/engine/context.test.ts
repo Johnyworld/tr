@@ -1,14 +1,11 @@
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { applyEvent, createWorldEvent, EMPTY_STATE, type GameState } from "../game/state.ts";
-import { TEST_CONTENT } from "../testing.ts";
+import { loadRealContent, TEST_CONTENT } from "../testing.ts";
 import { describePlayerState } from "./context.ts";
 import { buildGmGuide } from "./prompt.ts";
 import { gmToolSpecs } from "./tools.ts";
 
-const REAL_CONTENT = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const REAL_CONTENT = loadRealContent();
 
 /** 모든 NPC가 장면에 있는 상태 (가장 많은 정보가 프롬프트에 들어가는 경우) */
 function everyoneHere(content = REAL_CONTENT, roleId = "role_a_grunt"): GameState {

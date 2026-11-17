@@ -6,7 +6,7 @@ import { createSeededRng, type Rng } from "../rng.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { checkStorylets } from "../content/loader.ts";
-import { createTestWorld, TEST_CONTENT, TEST_SCENARIO } from "../testing.ts";
+import { createTestWorld, loadRealContent, TEST_CONTENT, TEST_SCENARIO } from "../testing.ts";
 import { describePlayerState } from "./context.ts";
 import { executeTool } from "./tools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
@@ -289,11 +289,8 @@ describe("배역을 이름 없는 인물로 (엑스트라 틀)", () => {
 
 describe("효과: 무리 사이 태도, 몸 상태 (실제 콘텐츠)", () => {
   it("faction_relation은 양쪽 태도를 바꾸고(-3~+3), body는 부상 트랙을 못 건드리고 죽음 전 단계에서 멈춘다", async () => {
-    const { resolve } = await import("node:path");
-    const { fileURLToPath } = await import("node:url");
-    const { loadContent } = await import("../content/loader.ts");
     const { disposition } = await import("../sim/war.ts");
-    const real = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+    const real = loadRealContent();
     const c = structuredClone(real);
     const schema = createContentSchemas(c.scenario).storylet;
     c.storylets = {

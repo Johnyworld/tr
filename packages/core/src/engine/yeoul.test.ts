@@ -1,18 +1,17 @@
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import type { Content } from "../content/schemas.ts";
 import { checkCustomStart } from "../game/customStart.ts";
 import { answerNewGame, describeNewGameStep, newGameDraft } from "../game/newGame.ts";
 import { createSeededRng, type Rng } from "../rng.ts";
 import { initialWarWorld, simulateWarDay } from "../sim/war.ts";
 import { WorldManager } from "../world/manager.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 여울섬: 닫힌 낙원 (기획서 9.12) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const packs = new Map<string, Content>([[content.scenario.id, content]]);
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
 const choice = { name: "서진", gender: "female" as const, abilities: null, portrait: null, traits: [] };

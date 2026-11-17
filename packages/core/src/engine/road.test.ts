@@ -1,14 +1,13 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createContentSchemas } from "../content/schemas.ts";
 import { WorldManager } from "../world/manager.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 길 위의 일과 피난처 (12-53) */
-const base = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const base = loadRealContent();
 const road = createContentSchemas(base.scenario).storylet.parse({
   id: "road_test",
   title: "길 위의 사람",

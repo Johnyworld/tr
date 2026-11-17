@@ -1,18 +1,17 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { buildCustomRole } from "../game/customStart.ts";
 import { createSeededRng } from "../rng.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
 import { runNpcRecovery } from "./body.ts";
 import { executeTool } from "./tools.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** NPC도 낫는다 (12-52) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const manager = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-care-")), content, rngFactory: () => createSeededRng(2) });
 const hurt = (w: ReturnType<WorldManager["create"]>, id: string, to: string, track = "harm") =>
   w.ctx().store.append({ type: "condition_changed", targetId: id, track, from: w.state().characters[id]!.conditions[track]!, to, fatal: false, by: "test", cause: "test", day: 1, harmTrack: track === "harm" });

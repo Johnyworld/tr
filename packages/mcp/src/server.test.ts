@@ -1,17 +1,14 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { COMMANDS, createSeededRng, loadContent, WorldManager, type Content } from "@trpg/core";
-import { TEST_CONTENT } from "@trpg/core/testing";
+import { COMMANDS, createSeededRng, WorldManager, type Content } from "@trpg/core";
+import { loadRealContent, TEST_CONTENT } from "@trpg/core/testing";
 import { createMcpServer } from "./server.ts";
 
-const REAL_CONTENT = loadContent(
-  resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../content/scenarios/post_apoc"),
-);
+const REAL_CONTENT = loadRealContent();
 
 const opened: { close(): void }[] = [];
 afterEach(() => {

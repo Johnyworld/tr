@@ -1,18 +1,17 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { buildCustomRole } from "../game/customStart.ts";
 import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
+import { loadRealContent } from "../testing.ts";
 
 /**
  * 플레이테스트에서 가 보지 못한 길 (실제 콘텐츠로):
  * 무소속이 무리에 들어가기, 뛰어난 사람의 스카우트, 동행·빚을 지닌 채 죽은 뒤의 계승
  */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
 const manager = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-paths-")), content, rngFactory: () => createSeededRng(5) });
 const choice = { name: "도경", gender: "male" as const, abilities: null, portrait: null, traits: [] };

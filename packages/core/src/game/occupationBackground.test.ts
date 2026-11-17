@@ -1,9 +1,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { describePlayerState } from "../engine/context.ts";
 import { changeStanding } from "../engine/growth.ts";
 import { createSeededRng } from "../rng.ts";
@@ -12,9 +10,10 @@ import { WorldManager } from "../world/manager.ts";
 import type { HistoryPart } from "./background.ts";
 import { buildCustomRole, checkCustomStart, type CustomStartInput } from "./customStart.ts";
 import { careerStep, occupationTitle } from "./occupation.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 직분과 배경 부품 (기획서 12.6) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const cook: CustomStartInput = {
   faction: "faction_a",
   rank: "grunt",

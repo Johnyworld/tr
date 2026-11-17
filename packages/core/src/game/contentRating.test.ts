@@ -1,18 +1,17 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createContentSchemas } from "../content/schemas.ts";
 import { describePlayerState } from "../engine/context.ts";
 import { createSeededRng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
 import { answerNewGame, backNewGame, describeNewGameStep, newGameDraft, newGameStep } from "./newGame.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 수위와 나이 제한 (12-57) */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const parse = createContentSchemas(content.scenario).storylet.parse;
 const open = (options?: { mature: boolean }) =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-rating-")), content, rngFactory: () => createSeededRng(2) }).create("mcp", "role_a_grunt", undefined, undefined, undefined, options);

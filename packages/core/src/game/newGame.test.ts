@@ -3,16 +3,17 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { ContentError, loadContent } from "../content/loader.ts";
+import { ContentError } from "../content/loader.ts";
 import { loadContentPacks } from "../content/packs.ts";
 import type { Content } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
 import { newGameView } from "./newGameView.ts";
 import { answerNewGame, backNewGame, describeNewGameStep, newGameDraft, newGameStep, type NewGameDraft } from "./newGame.ts";
+import { loadRealContent } from "../testing.ts";
 
 const REAL_DIR = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc");
-const real = loadContent(REAL_DIR);
+const real = loadRealContent();
 
 /** 두 번째 월드: 실제 팩을 복제해 id·이름·시나리오만 바꾼다 */
 function secondWorld(): Content {

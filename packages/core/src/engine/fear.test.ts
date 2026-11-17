@@ -1,15 +1,13 @@
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import type { Content } from "../content/schemas.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { calmAfterSleep, frighten, runFearDecay } from "./fear.ts";
 import { executeTool } from "./tools.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 공포 (12-95) */
-const loaded = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const loaded = loadRealContent();
 
 /** 어둠 보정은 꺼 둔 월드 (따로 시험한다) */
 function content(): Content {

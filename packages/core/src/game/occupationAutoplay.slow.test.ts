@@ -1,16 +1,15 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadContent } from "../content/loader.ts";
 import { createSeededRng } from "../rng.ts";
 import { autoplay } from "../sim/autoplay.ts";
 import { WorldManager } from "../world/manager.ts";
 import { buildCustomRole, type CustomStartInput } from "./customStart.ts";
+import { loadRealContent } from "../testing.ts";
 
 /** 직분마다 실제 콘텐츠로 자동 플레이를 돌려 직분 이야기가 열리는지 본다 (기획서 12.6). 느려서 `pnpm test:slow`에서만 돈다 */
-const content = loadContent(resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc"));
+const content = loadRealContent();
 const cook: CustomStartInput = {
   faction: "faction_a",
   rank: "grunt",

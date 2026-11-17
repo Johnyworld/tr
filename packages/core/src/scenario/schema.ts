@@ -934,6 +934,8 @@ export const scenarioFileSchema = z
                 outdoor: z.array(z.string()).default(["travel", "search", "guard_duty", "combat"]),
                 /** 불 땐 거점 실내 (shelter 조건)의 최저 체감 */
                 heated: z.number(),
+                /** 피난처(location.sanctuary) 실내의 최저 체감 (12-122). 없으면 피난처도 보통 실내 */
+                sanctuary: z.number().optional(),
                 /** 트레잇 효과 cold 1당 체감에서 빼는 도 (추위를 탐 +1, 추위에 강함 -1) */
                 trait_degrees: z.number().min(0).default(3),
                 /** 모닥불: 연료 아이템 → 타는 시간. 같은 구역에 있으면 체감 +warmth, 피우면 그 구역 소음 +noise */

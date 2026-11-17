@@ -156,4 +156,34 @@ describe("기온", () => {
     expect(out.ok && out.resultText).toContain("젖었다");
     expect(store.getState().wetUntil[me().id]).toBeGreaterThan(store.getState().time);
   });
+
+  it("함께 다니는 사람도 같은 추위를 겪는다. 옷과 체질은 그 사람의 것 (12-122)", () => {
+    const { store, ctx } = setup({ hour: SEGMENT_START_HOUR.night + 1, zone: "overpass" });
+    const s = store.getState();
+    const [bare, dressed] = Object.keys(content.npcs).filter((id) => !s.characters[id]!.dead).slice(0, 2);
+    for (const id of [bare!, dressed!]) {
+      const c = s.characters[id]!;
+      c.traits = [];
+      c.inventory = {};
+      c.conditions.cold = "warm";
+    }
+    s.characters[dressed!]!.inventory = { coat: 1 };
+    s.companions = [bare!, dressed!];
+    exposeToCold(ctx, "guard_duty", s.time, s.time + 12 * 60);
+    const after = store.getState();
+    const idx = (id: string) => content.scenario.condition_tracks.find((t) => t.id === "cold")!.levels.findIndex((l) => l.id === after.characters[id]!.conditions.cold);
+    expect(idx(bare!)).toBeGreaterThan(0);
+    expect(idx(dressed!)).toBeLessThan(idx(bare!));
+    expect(feelsLike(content, after, "guard_duty", after.time, dressed!)!.parts.some((p) => p.includes("방한복"))).toBe(true);
+  });
+
+  it("성당·캠퍼스 같은 피난처의 실내는 거점보다는 춥지만 얼지 않는다 (12-122)", () => {
+    const { store } = setup({ zone: "cathedral", hour: SEGMENT_START_HOUR.night + 1 });
+    store.getState().weather = { day: dayOf(store.getState().time), id: "cold_snap" };
+    const f = feelsLike(content, store.getState(), "sleep")!;
+    expect(f.parts).toContain("피난처의 난로");
+    expect(f.value).toBe(content.scenario.body!.cold!.climate!.sanctuary);
+    // 바깥에서 보초를 서면 그대로 춥다
+    expect(feelsLike(content, store.getState(), "guard_duty")!.parts).not.toContain("피난처의 난로");
+  });
 });

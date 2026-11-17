@@ -1,4 +1,6 @@
 import type { Content } from "../content/schemas.ts";
+import { isCreature } from "../game/kinds.ts";
+import { activeCompanions } from "../game/companions.ts";
 import type { GameState } from "../game/state.ts";
 import { daysOfStock, disposition } from "../sim/war.ts";
 import { dayOf, nextSegmentStart, SEGMENT_LABELS, segmentOf, TIME_SEGMENTS, type Activity } from "../rules/time.ts";
@@ -66,11 +68,14 @@ export type Feels = { outside: OutsideTemp; value: number; indoor: boolean; part
 
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
-/** 지금 주인공이 있는 곳의 체감 기온. activity: 이 시간 동안 하는 일 (실내인지, 덮고 있는지를 정한다) */
-export function feelsLike(content: Content, state: GameState, activity: Activity | string, time: number = state.time): Feels | null {
+/**
+ * 지금 주인공이 있는 곳의 체감 기온. activity: 이 시간 동안 하는 일 (실내인지, 덮고 있는지를 정한다).
+ * who: 그 자리의 다른 사람(동행, 12-122). 옷차림·체질·젖은 옷은 그 사람의 것, 자리와 불 땐 거처는 주인공과 같다
+ */
+export function feelsLike(content: Content, state: GameState, activity: Activity | string, time: number = state.time, who: string = state.playerId): Feels | null {
   const c = climateOf(content);
   const outside = outsideTemp(content, state, time);
-  const me = state.characters[state.playerId];
+  const me = state.characters[who];
   if (!c || !outside || !me) return null;
   const zone = state.playerZone;
   const cover = (zone ? content.locations[zone]?.cover : undefined) ?? 0;
@@ -103,7 +108,8 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
     }
     return top;
   };
-  const worn = best("worn", (id) => Object.values(me.equipped ?? {}).includes(id) && (me.inventory[id] ?? 0) > 0);
+  // 다른 사람은 장비 칸을 따로 고르지 않으므로 지닌 옷을 입은 것으로 본다 (12-122)
+  const worn = best("worn", (id) => (who !== state.playerId || Object.values(me.equipped ?? {}).includes(id)) && (me.inventory[id] ?? 0) > 0);
   if (worn) {
     value += worn.degrees;
     parts.push(`${content.items[worn.id]!.name} ${signed(worn.degrees)}`);
@@ -123,6 +129,10 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   if (indoor && heatedHere(content, state) && value < c.heated) {
     value = c.heated;
     parts.push("불 땐 거처");
+  } else if (indoor && c.sanctuary !== undefined && zone && content.locations[zone]?.sanctuary && value < c.sanctuary) {
+    // 피난처 (12-122): 성당·캠퍼스처럼 누구의 땅도 아닌 곳도 모여 사는 사람들이 불을 땐다. 거점보다는 덜 따뜻하다
+    value = c.sanctuary;
+    parts.push("피난처의 난로");
   }
   return { outside, value: Math.round(value), indoor, parts };
 }
@@ -137,10 +147,21 @@ function nextBoundary(time: number): number {
  * 바뀐 게 있으면 화면·GM에 알릴 결과를 돌려준다
  */
 export function exposeToCold(ctx: ToolContext, activity: Activity | string, from: number, to: number): ToolDisplayEvent[] {
+  const state = ctx.store.getState();
+  const displays = exposeOne(ctx, state.playerId, activity, from, to);
+  // 함께 다니는 사람도 같은 추위를 겪는다 (12-122). 거점에 사는 사람은 무리가 불을 때 준다고 보고 계산하지 않는다
+  for (const id of activeCompanions(state)) {
+    if (isCreature(ctx.content, state.characters[id])) continue;
+    displays.push(...exposeOne(ctx, id, activity, from, to));
+  }
+  return displays;
+}
+
+function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, from: number, to: number): ToolDisplayEvent[] {
   const c = climateOf(ctx.content);
   const track = ctx.content.scenario.body?.cold?.track;
   const state = ctx.store.getState();
-  const me = state.characters[state.playerId];
+  const me = state.characters[who];
   if (!c || !track || !me || me.dead || to <= from) return [];
   const before = state.coldLoad[me.id] ?? 0;
   let load = before;
@@ -151,7 +172,7 @@ export function exposeToCold(ctx: ToolContext, activity: Activity | string, from
   let warmest: Feels | null = null;
   for (let t = from; t < to; ) {
     const end = Math.min(to, nextBoundary(t));
-    const f = feelsLike(ctx.content, { ...state, wetUntil: { ...state.wetUntil, [me.id]: wetUntil } }, activity, t);
+    const f = feelsLike(ctx.content, { ...state, wetUntil: { ...state.wetUntil, [me.id]: wetUntil } }, activity, t, me.id);
     if (!f) break;
     if (c.wet) {
       const weather = dayOf(t) === dayOf(state.time) ? weatherNow(ctx.content.scenario, state) : null;

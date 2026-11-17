@@ -187,6 +187,8 @@ crafting:
     - { id: arm_guards, label: 손목 보호대, move: improvise, materials: { cloth: 1, scrap_metal: 1, duct_tape: 1 }, yields: { item: arm_guards, qty: 1 } }
     - { id: tin_alarm, label: 깡통 경보줄, move: improvise, materials: { wire_roll: 1, scrap_metal: 1 }, yields: { item: tin_alarm, qty: 1 } }
     - { id: pack_frame, label: 배낭 틀, move: improvise, materials: { planks: 1, cloth: 1, duct_tape: 1 }, yields: { item: pack_frame, qty: 1 } }
+    # 땔감 패기 (12-122): 판자를 그대로 태우면 3시간, 패서 땔감 둘로 만들면 8시간 탄다. 목공의 겨울 쓸모
+    - { id: split_firewood, label: 땔감 패기, move: carpentry, materials: { planks: 1 }, tools: [[carpentry_kit, machete]], yields: { item: firewood, qty: 2 } }
 
 # 판마다 다른 인물 사이의 관계 (기획서 7.10): 세계를 만들 때 이름 있는 인물들을 이만큼 무작위로 잇는다. 무리가 다르면 숨은 관계
 dynamic_ties: { count: 5, kinds: [sibling, parent, child, spouse, friend, rival] }
@@ -940,6 +942,8 @@ body:
       warm_rate: 50
       indoor_weather: 0.5
       heated: 16
+      # 피난처(성당·캠퍼스) 실내의 최저 체감 (12-122): 모여 사는 사람들이 불을 때지만 거점보다는 춥다
+      sanctuary: 10
       trait_degrees: 3
       # 모닥불: 연료 → 타는 시간. 곁에 있으면 +10°, 피우면 그 구역 소음 +1 (연기와 불빛)
       fire: { items: { firewood: 4, planks: 3, fuel_bottle: 2 }, warmth: 10, noise: 1 }

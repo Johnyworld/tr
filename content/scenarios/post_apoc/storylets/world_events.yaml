@@ -144,10 +144,9 @@
 
 - id: w_wave_night_wall
   title: 담장 너머의 물결
-  urgent: true
   tags: [world]
   repeatable: true
-  cooldown_days: 5
+  cooldown_days: 10  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   when:
     own_territory: true
     segments: [night]

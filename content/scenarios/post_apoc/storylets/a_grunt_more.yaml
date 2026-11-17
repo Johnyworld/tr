@@ -238,7 +238,7 @@
   urgent: true
   tags: [grunt]
   repeatable: true
-  cooldown_days: 3
+  cooldown_days: 7  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   weight: 0.6
   when:
     zones: [a_base, south_fields]

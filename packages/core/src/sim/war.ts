@@ -63,6 +63,9 @@ const LOOT_PER_RAIDER = 10;
 const DESERTION_CHANCE = 0.5;
 const TRAINING_CHANCE = 0.3;
 const REFUGEE_CHANCE = 0.08;
+/** 피난민이 드는 무리의 사기 하한, 시작 인원의 이만큼 아래면 두 배로 든다 (12-138, *임시*) */
+const REFUGEE_MIN_MORALE = -2;
+const REFUGEE_ROOM_BELOW = 0.7;
 /** 무작위 습격은 상대 전투원의 이만큼은 있어야 한다 (12-138, *임시*) */
 export const WEAK_RAID_RATIO = 0.5;
 /** 공격 종류 가중치 */
@@ -357,7 +360,9 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     if (!beaten && f.cohesion < start.cohesion && f.morale >= 0 && rng() < 0.1) f.cohesion += 1;
     // 전투원 비율이 처음보다 낮으면 남은 사람 중에서 키운다
     if (f.combatants < Math.round((f.population * start.combatants) / start.population) && rng() < TRAINING_CHANCE) f.combatants += 1;
-    if (f.morale >= 0 && daysOfStock(content, f, war.ration.resource) >= 14 && rng() < REFUGEE_CHANCE) f.population += 1;
+    // 피난민: 창고에 두 주 치 먹을 것이 있는 담 안으로 사람이 든다. 사람이 많이 줄어 빈자리가 있으면 더 (12-138: 사기 0 이상일 때만 들면 밀리는 무리는 다시 늘 길이 없어 240일에 사라졌다)
+    const room = f.population < (start.population * REFUGEE_ROOM_BELOW);
+    if (f.morale >= REFUGEE_MIN_MORALE && daysOfStock(content, f, war.ration.resource) >= 14 && rng() < REFUGEE_CHANCE * (room ? 2 : 1)) f.population += 1;
   }
 
   return { ...next, clashes, deferred, shifts };

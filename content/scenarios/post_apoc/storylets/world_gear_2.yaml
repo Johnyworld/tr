@@ -426,7 +426,7 @@
   tags: [world]
   urgent: true
   repeatable: true
-  cooldown_days: 4
+  cooldown_days: 8  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   when:
     zone_owner: [none, other]
     day_gte: 2

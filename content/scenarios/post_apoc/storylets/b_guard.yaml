@@ -558,7 +558,7 @@
   tags: [b_guard]
   repeatable: true
   urgent: true
-  cooldown_days: 2
+  cooldown_days: 6  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   when:
     zones: [b_base, south_fields]
     segments: [night, dawn]

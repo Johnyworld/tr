@@ -11,8 +11,8 @@
   danger: 0
   owner: faction_a
   adjacent: [a_east_post, old_town, riverside, b_base]
-  # 연료 16 (*임시*, 12-138): 겨울(소모 ×2) 적자를 비축분으로 버티고 평소에 다시 채운다. 12면 첫 겨울 끝에 바닥나 거점 실내에서 얼어 죽었다
-  yields: { food: 58, water: 75, fuel: 16, ammo: 3 }
+  # 연료 16·물 85 (*임시*, 12-138): 겨울(연료 ×2) 적자를 비축분으로 버티고 평소에 다시 채운다. 연료 12면 첫 겨울 끝에 바닥나 거점 실내에서 얼어 죽었다. 물 75면 여름(×1.15)마다 적자였다
+  yields: { food: 58, water: 85, fuel: 16, ammo: 3 }
   loot:
     chance: 0.3
     items:
@@ -271,7 +271,8 @@
     attempt: { moves: [survival, stealth], label: "배를 구해 밤바다를 건너 섬 경비를 피하는 판정" }
   # 외딴곳: 도시 공통 이야기·떠돌이는 오지 않는다
   isolated: true
-  yields: { food: 150, water: 150, fuel: 22, ammo: 12, medicine: 2 }
+  # 연료 30 (*임시*, 12-138): 22면 150명의 겨울 소모를 못 대 두 번째 겨울에 바닥났다
+  yields: { food: 150, water: 150, fuel: 30, ammo: 12, medicine: 2 }
   loot:
     chance: 0.25
     items:

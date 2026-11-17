@@ -228,7 +228,7 @@
   urgent: true
   tags: [grunt]
   repeatable: true
-  cooldown_days: 1
+  cooldown_days: 4  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   when:
     zones: [a_east_post]
     segments: [night]

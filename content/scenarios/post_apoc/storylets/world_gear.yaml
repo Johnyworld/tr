@@ -27,6 +27,7 @@
           - belief: { fact: "{zone}에서 총소리를 듣고 온 물결을 피해 빠져나왔다", source: seen }
         partial:
           - body: { track: cold, delta: 1 }
+          - soak: true
           - belief: { fact: "물결을 피해 하수구로 빠져나왔다. 온몸이 젖었다", source: seen }
         miss:
           - belief: { fact: "물결을 피하지 못했다. 몸으로 부딪쳐야 한다", source: seen }

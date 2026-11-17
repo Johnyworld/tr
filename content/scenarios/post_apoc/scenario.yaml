@@ -69,7 +69,10 @@ opposition:
   dark: { moves: [stealth], segments: [night, dawn], value: 1 }
   visibility: { moves: [stealth], below: 0.7, value: 1 }
   # 다칠 때 상대의 근접전·사격 점수가 3 이상이면 한 단계 더, 0 이하면 한 단계 덜 (적어도 1단계)
-  harm: { moves: [fight, shoot], strong: 3, weak: 0 }
+  # 상대가 무거운 피해를 낼 무기(엽총·소총·마체테 등, 탄약이 있으면)를 지녔으면 +1. 합쳐서 -1 ~ +1 (12-121)
+  harm: { moves: [fight, shoot], strong: 3, weak: 0, armed: 1 }
+  # 숨을 때 상대와의 거리 (12-121): 멀면 +1, 맞붙으면 -1
+  distance: { moves: [stealth], values: { far: 1, close: -1 } }
   # 말이 통하지 않는 상대 (엑스트라 kind: infected, 12-111): 말로 하는 스킬은 쓸 수 없고,
   # 장면에 덤빌 수 있는 감염체가 둘·넷 이상이면 근접전 -1씩 (수에 밀림)
   mindless:
@@ -920,7 +923,8 @@ body:
     weather: { snow: 1, cold_snap: 2, rain: 1 }
     gear: { coat: 1 }
     # 우리 거점에서 무리의 연료가 하루치 이상 있으면 불 땐 거처 (기온이 있으면 실내 체감이 heated 아래로 내려가지 않는다)
-    shelter: { resource: fuel, min_days: 1, warm: -2 }
+    # guests (12-121): 다른 무리 거점도 그 무리가 우리를 0 이상으로 보면 불 땐 방에 재워 준다 (적대·떠돌이를 노리는 무리는 아니다)
+    shelter: { resource: fuel, min_days: 1, warm: -2, guests: 0 }
     # 기온 (12-98, *임시*). 있으면 위의 하루 단위 추위(season·weather·gear) 대신 시간대마다 기온을 재고 냉기를 쌓는다.
     # 바깥 = 계절 평균 + 시간대 + 날씨 + 그날 ±2. 체감 = 바깥 + 실내(구역 cover) + 모닥불 + 방한복(입으면) + 담요(자거나 쉴 때) ± 체질 3
     # 체감이 8°보다 낮으면 (모자란 도 × 시간)만큼 냉기, 100마다 추위 한 단계. 8° 이상이면 시간당 20, 15° 이상이면 50씩 빠지고 100마다 풀린다
@@ -939,6 +943,8 @@ body:
       trait_degrees: 3
       # 모닥불: 연료 → 타는 시간. 곁에 있으면 +10°, 피우면 그 구역 소음 +1 (연기와 불빛)
       fire: { items: { firewood: 4, planks: 3, fuel_bottle: 2 }, warmth: 10, noise: 1 }
+      # 젖은 옷 (12-121, *임시*): 비 오는 날 바깥에 있었거나 강·하수구에 빠지면 3시간 동안 체감 -5. 모닥불 곁에서는 한 시간이면 마른다
+      wet: { weather: [rain], degrees: 5, hours: 3 }
   # 질병: 하루마다 확률. 굶주림·추위·무리의 물 부족마다 더하고, 체력 1당 25% 덜 걸린다
   disease:
     track: disease

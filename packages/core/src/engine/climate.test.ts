@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
-import { MINUTES_PER_DAY, SEGMENT_START_HOUR } from "../rules/time.ts";
+import { dayOf, MINUTES_PER_DAY, SEGMENT_START_HOUR } from "../rules/time.ts";
+import { initialWarWorld } from "../sim/war.ts";
 import { seasonAt } from "../sim/season.ts";
 import { exposeToCold, feelsLike, outsideTemp } from "./climate.ts";
 import { autoEquip } from "./gear.ts";
 import { executeTool } from "./tools.ts";
+import { fireStorylet } from "./storyletTools.ts";
 import { loadRealContent } from "../testing.ts";
 
 /** 기온 (12-98) */
@@ -108,5 +110,50 @@ describe("기온", () => {
     me().inventory.coat = 1;
     autoEquip(ctx, me().id);
     expect(me().equipped.outer).toBe("coat");
+  });
+
+  it("다른 무리 거점도 우리를 나쁘게 보지 않으면 불 땐 방에 재워 준다. 적대하는 무리는 아니다 (12-121)", () => {
+    const at = (zone: string) => {
+      const { store } = setup({ zone, role: "role_a_grunt", hour: SEGMENT_START_HOUR.night + 1 });
+      const w = initialWarWorld(content);
+      store.getState().factions = w.factions;
+      store.getState().zones = w.zones;
+      return feelsLike(content, store.getState(), "sleep")!;
+    };
+    expect(at("b_base").parts).toContain("불 땐 거처"); // 버들마을은 청솔을 좋게 본다
+    expect(at("c_base").parts).not.toContain("불 땐 거처"); // 붉은연합은 적
+  });
+
+  it("비 오는 날 바깥에 있으면 옷이 젖어 몇 시간 춥고, 모닥불 곁에서는 마른다 (12-121)", () => {
+    const { store, ctx, me } = setup({ hour: SEGMENT_START_HOUR.day + 1 });
+    const s = store.getState();
+    s.weather = { day: dayOf(s.time), id: "rain" };
+    const wet = content.scenario.body!.cold!.climate!.wet!;
+    exposeToCold(ctx, "search", s.time, s.time + 60);
+    const until = store.getState().wetUntil[me().id]!;
+    expect(until).toBe(s.time + 60 + wet.hours * 60);
+    // 비가 그친 뒤에도 젖어 있는 동안은 실내에서도 춥다
+    store.getState().weather = null;
+    store.getState().time = s.time + 90;
+    const f = feelsLike(content, store.getState(), "rest")!;
+    expect(f.parts).toContain(`젖은 옷 -${wet.degrees}`);
+    // 모닥불 곁에서는 한 시간이면 마른다
+    store.getState().fires[store.getState().playerZone!] = store.getState().time + 240;
+    exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 60);
+    expect(store.getState().wetUntil[me().id]).toBeLessThanOrEqual(store.getState().time + 60);
+    store.getState().fires = {};
+    store.getState().time += 120;
+    expect(feelsLike(content, store.getState(), "rest")!.parts.some((p) => p.startsWith("젖은 옷"))).toBe(false);
+  });
+
+  it("이야기에서 물에 빠지면 젖는다 (soak)", () => {
+    const { store, ctx, me } = setup({ quiet: true });
+    const base = content.storylets.wg_gunshot_wave!;
+    const story = { ...base, cast: {}, choices: [{ id: "x", label: "x", effects: [{ soak: true as const }] }] };
+    const c = { ...ctx, content: { ...ctx.content, storylets: { ...ctx.content.storylets, [story.id]: story } } };
+    fireStorylet(c, story as never, {});
+    const out = executeTool("resolve_storylet", { choice_id: "x" }, c);
+    expect(out.ok && out.resultText).toContain("젖었다");
+    expect(store.getState().wetUntil[me().id]).toBeGreaterThan(store.getState().time);
   });
 });

@@ -908,7 +908,8 @@ export const scenarioFileSchema = z
             weather: z.record(id, z.number().int().min(0)).default({}),
             /** 들고 있으면 추위를 덜어 주는 장비 (쓰지 않는다): 아이템 → 덜어 주는 양 */
             gear: z.record(id, z.number().int().min(0)).default({}),
-            shelter: z.strictObject({ resource: id, min_days: z.number().min(0), warm: z.number().int().max(0) }),
+            /** guests (12-121): 다른 무리 거점도 그 무리가 주인공의 무리를 이만큼 이상으로 보면 손님을 불 땐 방에 재운다 (무소속은 0으로 본다). 없으면 우리 땅만 */
+            shelter: z.strictObject({ resource: id, min_days: z.number().min(0), warm: z.number().int().max(0), guests: z.number().int().min(-3).max(3).optional() }),
             worst_harm: z.number().int().min(0).default(0),
             /**
              * 기온 (12-98). 있으면 하루 단위 추위(season·weather·gear) 대신 시간대마다 기온을 재고 냉기를 쌓는다.
@@ -939,6 +940,11 @@ export const scenarioFileSchema = z
                 fire: z
                   .strictObject({ items: z.record(id, z.number().positive()), warmth: z.number().positive(), noise: z.number().int().min(0).default(0) })
                   .optional(),
+                /**
+                 * 젖은 옷 (12-121): weather 날씨에 바깥에 있었거나 이야기 효과 soak로 젖으면 hours 동안 체감 -degrees.
+                 * 젖을 때마다 다시 센다. 모닥불 곁에서는 마른다 (그 동안 빼지 않고, 불 곁에서 한 시간이면 다 마른다)
+                 */
+                wet: z.strictObject({ weather: z.array(id).default([]), degrees: z.number().positive(), hours: z.number().positive() }).optional(),
               })
               .optional(),
           })
@@ -1048,7 +1054,10 @@ export const scenarioFileSchema = z
         crowd: z.strictObject({ moves: z.array(id), at: z.array(z.number().int().positive()) }).optional(),
         dark: z.strictObject({ moves: z.array(id), segments: z.array(z.enum(TIME_SEGMENTS)), value: z.number().int() }).optional(),
         visibility: z.strictObject({ moves: z.array(id), below: z.number(), value: z.number().int() }).optional(),
-        harm: z.strictObject({ moves: z.array(id), strong: z.number().int(), weak: z.number().int() }).optional(),
+        /** armed (12-121): 상대가 무거운 피해를 낼 무기(max_harm heavy, 탄약이 있으면)를 지녔으면 이만큼 더한다. 상대의 몫은 -1 ~ +1로 자른다 */
+        harm: z.strictObject({ moves: z.array(id), strong: z.number().int(), weak: z.number().int(), armed: z.number().int().min(0).max(1).default(0) }).optional(),
+        /** 거리 (12-121): 이 스킬은 상대와의 거리(check.distance)에 따라 보정 (숨기: 멀면 쉽고 맞붙으면 어렵다) */
+        distance: z.strictObject({ moves: z.array(id), values: z.record(id, z.number().int()) }).optional(),
         /**
          * 말이 통하지 않는 상대 (엑스트라 kind: infected, 12-111).
          * refuses: 이 상대에게 쓸 수 없는 스킬 (말로 하는 것). outnumbered: 장면에 맞서는 감염체가 at을 넘을 때마다 이 스킬 -1.

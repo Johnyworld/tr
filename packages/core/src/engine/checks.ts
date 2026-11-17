@@ -83,7 +83,7 @@ export function rollPlayerCheck(
   };
   // 상대와 상황 (12-104): 맞서는 상대가 없으면 공격 대상이 상대다
   const opponent = input.opponent ?? options.target ?? null;
-  const against = oppositionParts(content, state, input.move, opponent);
+  const against = oppositionParts(content, state, input.move, opponent, input.distance);
   modifiers.opposition = against.reduce((n, p) => n + p.value, 0);
   const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition + modifiers.trait + modifiers.gear + modifiers.opposition);
   const checkId = `chk_${state.nextCheckNo}`;

@@ -272,6 +272,7 @@
           - send_to: b_base
           - body: { track: cold, delta: 1 }
           - deed: { summary: 붉은연합 거점의 배수로로 탈영했다, tags: [betrayal, disobedience], severity: 3, privacy: public }
+          - soak: true
           - belief: { fact: "배수로 물에 허리까지 젖은 채 밤새 걸었다. 뒤에서 감시탑 호루라기가 울렸다. 그날 교대는 석유나였다", source: seen }
         miss:
           - set_flag: pr2_drain_night_done

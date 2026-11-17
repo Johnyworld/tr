@@ -311,6 +311,12 @@ function applyEffect(
     store.append({ type: "infestation_changed", zone, level, cause: effect.infested < 0 ? "소탕" : "불러 모음" });
     return { line: effect.infested < 0 ? "이 구역의 감염체가 줄었다. 한동안 조용할 것이다." : "이 구역에 감염체가 더 몰려든다." };
   }
+  if ("soak" in effect) {
+    const wet = content.scenario.body?.cold?.climate?.wet;
+    if (!wet) return {};
+    store.append({ type: "soaked", characterId: playerId, until: Math.max(state.wetUntil?.[playerId] ?? 0, state.time + Math.round(wet.hours * 60)) });
+    return { line: `옷이 흠뻑 젖었다. 불 곁에서 말리지 않으면 ${wet.hours}시간쯤 춥다.` };
+  }
   if ("zone_noise" in effect) {
     if (!state.playerZone) return {};
     store.append({ type: "noise_made", zone: state.playerZone, level: effect.zone_noise, day: dayOf(state.time) });

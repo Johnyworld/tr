@@ -473,6 +473,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ fortify: z.number().int().min(-1).max(2) }),
     /** 지금 구역에 소리가 난다 (총소리·쇳소리, 기획서 4.8). 감염체가 몰려드는 조건이 된다 */
     z.strictObject({ zone_noise: z.number().int().min(1).max(3) }),
+    /** 주인공의 옷이 흠뻑 젖는다 (12-121: 강·하수구·물웅덩이). 기온 규칙의 wet.hours 동안 체감이 떨어진다 */
+    z.strictObject({ soak: z.literal(true) }),
     /** 지금 구역의 감염체 압력을 바꾼다 (12-112). 음수면 소탕, 양수면 불러 모음 */
     z.strictObject({ infested: z.number().int().min(-2).max(2).refine((n) => n !== 0, "0이 아닌 정수") }),
     /** 배역 NPC가 다친다 (부상 트랙 steps 단계). 죽음 바로 앞에서 멈춘다 (원칙 3: 이야기는 사람을 죽이지 않는다) */

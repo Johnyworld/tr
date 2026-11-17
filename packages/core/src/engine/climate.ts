@@ -1,6 +1,6 @@
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
-import { daysOfStock } from "../sim/war.ts";
+import { daysOfStock, disposition } from "../sim/war.ts";
 import { dayOf, nextSegmentStart, SEGMENT_LABELS, segmentOf, TIME_SEGMENTS, type Activity } from "../rules/time.ts";
 import { trackOf } from "../scenario/scenario.ts";
 import { seasonAt } from "../sim/season.ts";
@@ -23,9 +23,18 @@ const climateOf = (content: Content) => content.scenario.body?.cold?.climate;
 function heatedHere(content: Content, state: GameState): boolean {
   const shelter = content.scenario.body?.cold?.shelter;
   const me = state.characters[state.playerId];
-  if (!shelter || !me || !state.playerZone || state.zones[state.playerZone]?.owner !== me.factionId) return false;
-  const own = state.factions[me.factionId];
-  return !!own && daysOfStock(content, own, shelter.resource) >= shelter.min_days;
+  const zone = state.playerZone;
+  const owner = zone ? state.zones[zone]?.owner : null;
+  if (!shelter || !me || !zone || !owner) return false;
+  if (owner !== me.factionId) {
+    // 다른 무리의 거점에 손님으로 묵는다 (12-121): 그 무리가 우리를 나쁘게 보지 않으면. 갇힌 몸은 손님이 아니다
+    if (shelter.guests === undefined || me.captive || content.locations[zone]?.kind !== "base") return false;
+    // 무소속은 0으로 보되, 떠돌이를 먹잇감으로 보는 무리(helpless.prey_on_strangers)는 재워 주지 않는다
+    const regard = me.factionId ? disposition(content, owner, me.factionId, state) : content.scenario.helpless?.prey_on_strangers.includes(owner) ? -3 : 0;
+    if (regard < shelter.guests) return false;
+  }
+  const host = state.factions[owner];
+  return !!host && daysOfStock(content, host, shelter.resource) >= shelter.min_days;
 }
 
 /** 활동이 없을 때(상태 화면·GM 상태)의 기준: 그 구역에서 쉬고 있다 */
@@ -75,9 +84,15 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   } else {
     parts.push(cover > 0 ? "바깥" : "덮을 곳 없는 바깥");
   }
-  if (zone && c.fire && (state.fires[zone] ?? 0) > time) {
-    value += c.fire.warmth;
-    parts.push(`모닥불 ${signed(c.fire.warmth)}`);
+  const fireHere = !!zone && !!c.fire && (state.fires[zone] ?? 0) > time;
+  if (fireHere) {
+    value += c.fire!.warmth;
+    parts.push(`모닥불 ${signed(c.fire!.warmth)}`);
+  }
+  // 젖은 옷 (12-121): 불 곁이 아니면 체감이 떨어진다
+  if (c.wet && !fireHere && (state.wetUntil?.[me.id] ?? 0) > time) {
+    value -= c.wet.degrees;
+    parts.push(`젖은 옷 ${signed(-c.wet.degrees)}`);
   }
   // 옷차림: 입은 것(worn)과, 자거나 쉴 때 덮는 것(resting). 종류마다 가장 따뜻한 하나
   const best = (when: "worn" | "resting", have: (id: string) => boolean) => {
@@ -129,12 +144,20 @@ export function exposeToCold(ctx: ToolContext, activity: Activity | string, from
   if (!c || !track || !me || me.dead || to <= from) return [];
   const before = state.coldLoad[me.id] ?? 0;
   let load = before;
+  // 젖은 옷 (12-121): 젖는 날씨에 바깥에 있으면 젖고, 불 곁에 있으면 마른다
+  let wetUntil = state.wetUntil?.[me.id] ?? 0;
+  const wetBefore = wetUntil;
   let coldest: Feels | null = null;
   let warmest: Feels | null = null;
   for (let t = from; t < to; ) {
     const end = Math.min(to, nextBoundary(t));
-    const f = feelsLike(ctx.content, state, activity, t);
+    const f = feelsLike(ctx.content, { ...state, wetUntil: { ...state.wetUntil, [me.id]: wetUntil } }, activity, t);
     if (!f) break;
+    if (c.wet) {
+      const weather = dayOf(t) === dayOf(state.time) ? weatherNow(ctx.content.scenario, state) : null;
+      if (!f.indoor && weather && c.wet.weather.includes(weather.id)) wetUntil = Math.max(wetUntil, end + Math.round(c.wet.hours * 60));
+      else if (wetUntil > t && f.parts.some((p) => p.startsWith("모닥불"))) wetUntil = Math.min(wetUntil, t + 60);
+    }
     const hours = (end - t) / 60;
     if (f.value < c.comfort) {
       load += (c.comfort - f.value) * hours;
@@ -164,6 +187,7 @@ export function exposeToCold(ctx: ToolContext, activity: Activity | string, from
     if (ch?.display) displays.push(ch.display);
   }
   if (load !== before && !ctx.store.getState().characters[me.id]?.dead) ctx.store.append({ type: "cold_load_set", characterId: me.id, load });
+  if (wetUntil !== wetBefore && !ctx.store.getState().characters[me.id]?.dead) ctx.store.append({ type: "soaked", characterId: me.id, until: wetUntil });
   return displays;
 }
 

@@ -35,7 +35,7 @@ export function opposeModifier(score: number): number {
 }
 
 /** 판정에 붙는 상대·상황 보정의 내역 (0인 것은 빼고) */
-export function oppositionParts(content: Content, state: GameState, moveId: string, opponentId: string | null): Part[] {
+export function oppositionParts(content: Content, state: GameState, moveId: string, opponentId: string | null, distance?: string | null): Part[] {
   const r = rules(content);
   if (!r) return [];
   const parts: Part[] = [];
@@ -58,6 +58,12 @@ export function oppositionParts(content: Content, state: GameState, moveId: stri
     const value = -outnumbered.at.filter((n) => pack >= n).length;
     if (value) parts.push({ label: `감염체 ${pack}`, value });
   }
+  // 거리 (12-121): 숨을 때 상대가 멀면 쉽고 가까우면 어렵다
+  if (r.distance?.moves.includes(moveId) && distance) {
+    const value = r.distance.values[distance] ?? 0;
+    const label = content.scenario.gear?.distances?.find((d) => d.id === distance)?.label.replace(/\s*\(.*\)$/, "") ?? distance;
+    if (value) parts.push({ label, value });
+  }
   if (r.dark?.moves.includes(moveId) && r.dark.segments.includes(segmentOf(state.time))) parts.push({ label: "어둠", value: r.dark.value });
   if (r.visibility?.moves.includes(moveId)) {
     const weather = weatherNow(content.scenario, state);
@@ -72,6 +78,18 @@ export function infectedFoes(content: Content, state: GameState): string[] {
     const c = state.characters[id];
     return !!c && !c.dead && isInfected(content, c) && !isIncapacitated(content, c);
   });
+}
+
+/** 무거운 피해를 낼 수 있는 무기 (든 것 먼저, 아니면 지닌 것). 탄약을 쓰는 무기는 탄약이 있거나 탄약 없이 쓰는 스킬이 있어야 */
+export function heavyWeapon(content: Content, c: Character): string | null {
+  const ids = [c.equipped?.weapon, ...Object.keys(c.inventory)].filter((id): id is string => !!id && (c.inventory[id] ?? 0) > 0);
+  for (const id of ids) {
+    const w = content.items[id]?.weapon;
+    if (!w || w.max_harm !== "heavy") continue;
+    const loaded = !w.ammo || (c.inventory[w.ammo] ?? 0) > 0 || w.moves.some((m) => !(w.ammo_moves ?? w.moves).includes(m));
+    if (loaded) return id;
+  }
+  return null;
 }
 
 /** 장면에서 주인공을 볼 수 있는 사람: 살아 있고, 함께 다니는 사람이 아니다 */
@@ -91,12 +109,16 @@ export function opponentHarm(content: Content, state: GameState, opponentId: str
     .map((m) => ({ m, score: skillScore(content, opponent, m) }))
     .sort((a, b) => b.score - a.score)[0];
   if (!best) return null;
-  const delta = best.score >= r.strong ? 1 : best.score <= r.weak ? -1 : 0;
+  const skill = best.score >= r.strong ? 1 : best.score <= r.weak ? -1 : 0;
+  // 무거운 무기를 지녔으면 더 아프다 (12-121). 실력과 합쳐 -1 ~ +1
+  const weapon = r.armed ? heavyWeapon(content, opponent) : null;
+  const delta = Math.max(-1, Math.min(1, skill + (weapon ? r.armed : 0)));
   const label = content.scenario.moves.find((m) => m.id === best.m)?.label ?? best.m;
   const who = playerCalls(state, content, opponent.id);
   const signed = best.score >= 0 ? `+${best.score}` : `${best.score}`;
+  const why = [skill > 0 ? "솜씨가 좋다" : skill < 0 ? "서툴다" : "", weapon ? `${content.items[weapon]?.name ?? weapon}을(를) 들었다` : ""].filter(Boolean).join(", ");
   return {
     delta,
-    line: `상대의 몫: ${who} (${label} ${signed})${delta > 0 ? " → 솜씨가 좋아 한 단계 더" : delta < 0 ? " → 서툴러 한 단계 덜" : ""}`,
+    line: `상대의 몫: ${who} (${label} ${signed}${weapon ? `, ${content.items[weapon]?.name ?? weapon}` : ""})${why ? ` → ${why}` : ""}${delta > 0 ? ". 한 단계 더" : delta < 0 ? ". 한 단계 덜" : ""}`,
   };
 }

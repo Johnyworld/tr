@@ -106,7 +106,7 @@ export function createTakeActionSchema(s: Scenario) {
           .default(null)
           .describe(
             s.gear?.distances?.length
-              ? `장면의 인물을 칠 때(target_harm) 반드시 고르는 상대와의 거리: ${s.gear.distances.map((d) => `${d.id} ${d.label}`).join(", ")}. 무기마다 닿는 거리와 보정이 다르다 (근접은 맞붙어야 한다). 공격이 아니면 null`
+              ? `장면의 인물을 칠 때(target_harm) 반드시 고르는 상대와의 거리: ${s.gear.distances.map((d) => `${d.id} ${d.label}`).join(", ")}. 무기마다 닿는 거리와 보정이 다르다 (근접은 맞붙어야 한다). 숨거나 몰래 지나갈 때(stealth)도 그 상대와의 거리를 고른다 (멀면 쉽고 맞붙으면 어렵다). 둘 다 아니면 null`
               : "이 월드에서는 쓰지 않는다. null",
           ),
         opponent: z

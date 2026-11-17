@@ -464,6 +464,7 @@
           - belief: { fact: "{zone}에서 총이 걸린 채로 그것을 따돌리고 빠져나왔다", source: seen }
         partial:
           - body: { track: cold, delta: 1 }
+          - soak: true
           - belief: { fact: "{zone}에서 물웅덩이를 기어 그것을 따돌렸다. 온몸이 젖었다", source: seen }
         miss:
           - belief: { fact: "{zone}에서 물러나다 발이 걸렸다. 그것이 바로 뒤에 있다", source: seen }

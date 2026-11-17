@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 45;
+export const SAVE_SCHEMA_VERSION = 46;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -280,6 +280,8 @@ export function createGameSchemas(s: Scenario) {
     fearExposure: z.record(z.string(), z.number().int()).default({}),
     /** 쌓인 냉기 (12-98, 캐릭터마다). per_step을 넘으면 추위 트랙이 오르고, 음수로 per_step만큼 빠지면 풀린다 */
     coldLoad: z.record(z.string(), z.number()).default({}),
+    /** 옷이 젖어 있는 때까지 (12-121, 게임 시각). 캐릭터마다 */
+    wetUntil: z.record(z.string(), z.number()).default({}),
     /** 쌓인 피로 (깨어 있은 시간, 12-114). 캐릭터마다 */
     fatigueLoad: z.record(z.string(), z.number()).default({}),
     /** 피워 둔 모닥불 (12-98): 구역 → 꺼지는 시각 */
@@ -417,6 +419,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("memo_written"), characterId: z.string(), text: z.string().max(4000) }),
     z.strictObject({ type: z.literal("fear_exposed"), characterId: z.string() }),
     z.strictObject({ type: z.literal("cold_load_set"), characterId: z.string(), load: z.number() }),
+    /** 옷이 젖었다 / 말랐다 (until이 지금 이하면 마름, 12-121) */
+    z.strictObject({ type: z.literal("soaked"), characterId: z.string(), until: z.number().int() }),
     z.strictObject({ type: z.literal("fatigue_load_set"), characterId: z.string(), load: z.number() }),
     z.strictObject({ type: z.literal("fire_lit"), zone: z.string(), until: z.number().int(), itemId: z.string() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
@@ -770,6 +774,7 @@ export const EMPTY_STATE: GameState = {
   memos: {},
   fearExposure: {},
   coldLoad: {},
+  wetUntil: {},
   fatigueLoad: {},
   fires: {},
   romances: {},
@@ -1118,6 +1123,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "fatigue_load_set":
       next.fatigueLoad = { ...next.fatigueLoad, [event.characterId]: event.load };
+      return next;
+    case "soaked":
+      next.wetUntil = { ...next.wetUntil, [event.characterId]: event.until };
       return next;
     case "cold_load_set":
       next.coldLoad = { ...next.coldLoad, [event.characterId]: event.load };

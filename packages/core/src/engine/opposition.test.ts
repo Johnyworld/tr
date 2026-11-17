@@ -83,4 +83,33 @@ describe("상대와 상황", () => {
     const weak = harmOf({ fight: -1 }, {});
     expect(weak.harm).toBe("light"); // 1 - 1 이지만 적어도 1단계
   });
+
+  it("무거운 무기를 지닌 상대는 한 단계 더 아프게 한다. 실력과 합쳐 -1 ~ +1 (12-121)", () => {
+    const harmOf = (skills: Record<string, number>, inventory: Record<string, number>) => {
+      const { ctx, roll, store, place } = setup();
+      const [foe] = place(1, skills, {});
+      const c = store.getState().characters[foe!]!;
+      c.inventory = inventory;
+      c.equipped = { ...c.equipped, weapon: null };
+      roll.value = 0;
+      const out = executeTool("take_action", act({ move: "endure", stat: "vitality", harm_on_failure: "light", harm_cause: "총", harm_kind: "blunt", opponent: foe }), ctx);
+      return { text: out.ok ? out.resultText : (out as { error: string }).error, harm: store.getState().characters[store.getState().playerId]!.conditions.harm };
+    };
+    // 보통 실력 + 엽총(탄약 있음) → 한 단계 더
+    const armed = harmOf({ fight: 1, shoot: 1 }, { shotgun: 1, shells: 2 });
+    expect(armed.harm).toBe("serious");
+    expect(armed.text).toContain("엽총");
+    // 탄약 없는 엽총은 무겁지 않다
+    expect(harmOf({ fight: 1, shoot: 1 }, { shotgun: 1 }).harm).toBe("light");
+    // 서툰 상대(-1) + 무기(+1) = 그대로
+    expect(harmOf({ fight: -1, shoot: -1 }, { shotgun: 1, shells: 2 }).harm).toBe("light");
+  });
+
+  it("숨을 때 상대가 멀면 쉽고 맞붙으면 어렵다 (12-121)", () => {
+    const { ctx, place } = setup(13);
+    const [foe] = place(1);
+    expect(lineOf(executeTool("take_action", act({ move: "stealth", stat: "agility", opponent: foe, distance: "far" }), ctx))).toContain("+1(먼 거리)");
+    expect(lineOf(executeTool("take_action", act({ move: "stealth", stat: "agility", opponent: foe, distance: "close" }), ctx))).toContain("-1(맞붙은 거리)");
+    expect(lineOf(executeTool("take_action", act({ move: "stealth", stat: "agility", opponent: foe, distance: "near" }), ctx))).not.toContain("거리)");
+  });
 });

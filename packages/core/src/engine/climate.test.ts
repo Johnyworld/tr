@@ -83,6 +83,26 @@ describe("기온", () => {
     expect(me().conditions.cold).not.toBe(cold);
   });
 
+  it("연료가 바닥난 우리 거점 실내에서는 거점 사람들처럼 오한에서 멈춘다. 바깥은 계속 나빠진다 (12-138)", () => {
+    const { ctx, store, me } = setup({ hour: SEGMENT_START_HOUR.night, zone: "a_base", role: "role_a_grunt", quiet: true });
+    const w = initialWarWorld(content);
+    store.getState().factions = w.factions;
+    store.getState().zones = w.zones;
+    store.getState().playerZone = "a_base";
+    store.getState().factions.faction_a!.resources.fuel = 0;
+    me().factionId = "faction_a";
+    const t = store.getState().time;
+    for (let h = 0; h < 10; h++) exposeToCold(ctx, "rest", t + h * 6 * 60, t + (h + 1) * 6 * 60);
+    expect(me().conditions.cold).toBe(content.scenario.body!.residents!.cold_max);
+    expect(me().dead).toBe(false);
+    // 한도에 걸린 냉기를 쌓아 두지 않아, 밖에 나가도 한꺼번에 여러 단계가 떨어지지 않는다
+    expect(store.getState().coldLoad[me().id] ?? 0).toBeLessThan(content.scenario.body!.cold!.climate!.per_step);
+    // 담 밖 바깥에서는 한도가 없다
+    store.getState().playerZone = "overpass";
+    for (let h = 10; h < 14; h++) exposeToCold(ctx, "wait", t + h * 6 * 60, t + (h + 1) * 6 * 60);
+    expect(me().conditions.cold).not.toBe(content.scenario.body!.residents!.cold_max);
+  });
+
   it("땔감으로 불을 피우면 연료가 줄고, 그 구역이 따뜻해지고, 소음이 난다", () => {
     const { ctx, store, me } = setup({ hour: SEGMENT_START_HOUR.night });
     me().inventory.firewood = 1;

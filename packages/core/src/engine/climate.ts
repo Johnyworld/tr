@@ -148,6 +148,21 @@ function nextBoundary(time: number): number {
  * from부터 to까지 activity를 하며 보낸 시간의 냉기를 쌓고, 추위 트랙을 바꾼다. take_action이 시간을 흘릴 때마다 부른다.
  * 바뀐 게 있으면 화면·GM에 알릴 결과를 돌려준다
  */
+/** 거점 사람들의 추위 한도 단계 (residents.cold_max). 없으면 null */
+function residentsColdCap(ctx: ToolContext, factionId: string, levels: readonly { id: string }[]): number | null {
+  const max = ctx.content.scenario.body?.residents?.cold_max;
+  if (!max || !factionId) return null;
+  const i = levels.findIndex((l) => l.id === max);
+  return i >= 0 ? i : null;
+}
+
+/** 지금 구역이 그 무리의 거점인가 (주인공이 있는 곳: 동행도 함께 있다) */
+function atOwnBase(ctx: ToolContext, factionId: string): boolean {
+  const state = ctx.store.getState();
+  const zone = state.playerZone;
+  return !!zone && !!factionId && ctx.content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === factionId;
+}
+
 export function exposeToCold(ctx: ToolContext, activity: Activity | string, from: number, to: number): ToolDisplayEvent[] {
   const state = ctx.store.getState();
   const displays = exposeOne(ctx, state.playerId, activity, from, to);
@@ -172,10 +187,12 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
   const wetBefore = wetUntil;
   let coldest: Feels | null = null;
   let warmest: Feels | null = null;
+  let allIndoor = true;
   for (let t = from; t < to; ) {
     const end = Math.min(to, nextBoundary(t));
     const f = feelsLike(ctx.content, { ...state, wetUntil: { ...state.wetUntil, [me.id]: wetUntil } }, activity, t, me.id);
     if (!f) break;
+    if (!f.indoor) allIndoor = false;
     if (c.wet) {
       const weather = dayOf(t) === dayOf(state.time) ? weatherNow(ctx.content.scenario, state) : null;
       if (!f.indoor && weather && c.wet.weather.includes(weather.id)) wetUntil = Math.max(wetUntil, end + Math.round(c.wet.hours * 60));
@@ -197,7 +214,14 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
   let steps = 0;
   if (load >= c.per_step) steps = Math.floor(load / c.per_step);
   else if (load <= -c.per_step && index > 0) steps = -Math.min(index, Math.floor(-load / c.per_step));
+  // 우리 거점 실내에서는 거점 사람들과 같은 한도에서 멈춘다 (12-138, 4.5.4): 불을 못 때도 모여서 버틴다.
+  // 같은 방의 거점 사람은 오한에서 멈추는데 이어받은 주인공만 얼어 죽어 계승이 연달아 끊겼다. 바깥은 그대로 위험하다
+  const cap = residentsColdCap(ctx, me.factionId, levels);
+  const capped = steps > 0 && allIndoor && cap !== null && atOwnBase(ctx, me.factionId) && index + steps > cap;
+  if (capped) steps = Math.max(0, cap! - index);
   load -= steps * c.per_step;
+  // 한도에 걸렸으면 남은 냉기를 쌓아 두지 않는다 (밖에 나가자마자 여러 단계가 한꺼번에 떨어지지 않게)
+  if (capped) load = Math.min(load, c.per_step - 1);
   // 멀쩡할 때는 따뜻함을 쌓아 두지 않는다
   if (index + steps <= 0) load = Math.max(0, load);
   load = Math.round(load * 10) / 10;

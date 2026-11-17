@@ -1,5 +1,6 @@
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
+import type { Character } from "../game/character.ts";
 import { trackOf } from "../scenario/scenario.ts";
 import { changeCondition } from "./body.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
@@ -10,6 +11,15 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
  */
 
 const rulesOf = (content: Content) => content.scenario.body?.fatigue;
+
+/** 지쳐서 몸이 낫지 않는가 (blocks_recovery_from 이상): 부상이 저절로 낫지 않고 질병도 낫지 않는다 */
+export function fatigueBlocksRecovery(content: Content, c: Character): boolean {
+  const r = rulesOf(content);
+  if (!r?.blocks_recovery_from) return false;
+  const levels = trackOf(content.scenario, r.track).levels;
+  const at = levels.findIndex((l) => l.id === r.blocks_recovery_from);
+  return at >= 0 && levels.findIndex((l) => l.id === c.conditions[r.track]) >= at;
+}
 
 /** 쌓인 피로 → 트랙 단계 번호 */
 export function fatigueLevel(content: Content, load: number): number {
@@ -49,5 +59,5 @@ export function describeFatigue(content: Content, state: GameState): string | nu
   const level = Math.max(0, trackOf(content.scenario, r.track).levels.findIndex((l) => l.id === me.conditions[r.track]));
   if (level === 0) return null;
   const awake = Math.round(state.fatigueLoad[me.id] ?? 0);
-  return `피로: 깨어 있은 지 오래다 (쌓인 피로 약 ${awake}시간). 하품·무거운 눈꺼풀·느린 반응으로 서술한다. 자면(take_action activity sleep) 시간당 풀린다. 쉬기만 하면 더 쌓이지 않을 뿐이다`;
+  return `피로: 깨어 있은 지 오래다 (쌓인 피로 약 ${awake}시간). 하품·무거운 눈꺼풀·느린 반응으로 서술한다. 자면(take_action activity sleep) 시간당 풀린다. 쉬기만 하면 더 쌓이지 않을 뿐이다${fatigueBlocksRecovery(content, me) ? ". 지친 동안은 상처가 저절로 낫지 않고 병도 낫지 않는다" : ""}`;
 }

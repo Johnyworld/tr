@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { exposeToFatigue, describeFatigue } from "./fatigue.ts";
+import { runNaturalRecovery } from "./body.ts";
 import { executeTool } from "./tools.ts";
 import { loadRealContent } from "../testing.ts";
 
@@ -62,4 +63,19 @@ describe("피로", () => {
     expect(describeFatigue(content, ctx.store.getState())).toBeNull();
   });
 
+  it("지친 동안은 상처가 저절로 낫지 않고, 자고 나면 밀린 만큼 낫는다 (12-115)", () => {
+    const { ctx, store, me } = setup();
+    const s = store.getState();
+    s.time += 3 * 24 * H;
+    s.characters[s.playerId]!.conditions.harm = "light";
+    s.recovery.lastChangeAt[s.playerId] = s.time - 3 * 24 * H;
+    exposeToFatigue(ctx, "search", s.time - 25 * H, s.time);
+    expect(me().conditions.fatigue).toBe("weary");
+    runNaturalRecovery(ctx);
+    expect(me().conditions.harm).toBe("light");
+    expect(describeFatigue(content, store.getState())).toContain("저절로 낫지 않고");
+    exposeToFatigue(ctx, "sleep", store.getState().time, store.getState().time + 6 * H);
+    runNaturalRecovery(ctx);
+    expect(me().conditions.harm).toBe("none");
+  });
 });

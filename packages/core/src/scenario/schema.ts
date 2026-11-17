@@ -844,7 +844,8 @@ export const scenarioFileSchema = z
          */
         /**
          * 피로 (12-114). 깨어 있는 동안 시간당 1(활동별로 rates가 덮어쓴다: 잠은 음수로 풀리고, 휴식은 0)씩 쌓인다.
-         * 쌓인 것이 grace 이상이면 첫 단계, 그 뒤 per_step마다 한 단계. 피로로 죽지 않는다 (트랙에 fatal을 두지 않는다)
+         * 쌓인 것이 grace 이상이면 첫 단계, 그 뒤 per_step마다 한 단계. 피로로 죽지 않는다 (트랙에 fatal을 두지 않는다).
+         * blocks_recovery_from: 이 단계 이상이면 부상이 저절로 낫지 않고 질병도 낫지 않는다 (자야 낫는다)
          */
         fatigue: z
           .strictObject({
@@ -852,6 +853,7 @@ export const scenarioFileSchema = z
             grace: z.number().min(0),
             per_step: z.number().positive(),
             rates: z.record(z.string(), z.number()).default({}),
+            blocks_recovery_from: id.optional(),
           })
           .optional(),
         thirst: z

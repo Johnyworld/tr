@@ -1,4 +1,5 @@
 import { resistSteps } from "./growth.ts";
+import { fatigueBlocksRecovery } from "./fatigue.ts";
 import { onPersonDeath } from "./people.ts";
 import { lightFire } from "./climate.ts";
 import { hasAccess } from "../game/culture.ts";
@@ -230,6 +231,8 @@ export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
       break;
     }
     if (index <= 0 || index > maxIndex) break;
+    // 지친 동안은 저절로 낫지 않는다 (12-115). 자고 나면 밀린 만큼 낫는다
+    if (fatigueBlocksRecovery(ctx.content, player)) break;
     const days = Math.max(1, recovery.natural_days + bodyTraits(ctx.content, player).recoveryDays);
     if (state.time - since < days * MINUTES_PER_DAY) break;
     const c = changeCondition(ctx, player.id, track.id, -1, "rest", "쉬면서 나음");
@@ -335,7 +338,8 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     } else if (track.levels[index]!.hidden) {
       push(changeCondition(ctx, me.id, track.id, 1, "disease", "병이 드러났다"));
     } else {
-      const resting = !suffering.starving && !suffering.cold;
+      // 배부르고 따뜻하고, 지치지 않았으면 (12-115: 자야 낫는다)
+      const resting = !suffering.starving && !suffering.cold && !fatigueBlocksRecovery(content, me);
       const recover = resting ? Math.max(0, disease.recover.chance + disease.recover.per_point * vitality + bodyTraits(content, me).diseaseRecover) : 0;
       const roll = ctx.rng();
       if (roll < recover) {

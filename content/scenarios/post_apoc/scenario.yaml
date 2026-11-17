@@ -878,7 +878,8 @@ consumables:
 body:
   # 피로 (12-114, *임시*): 깨어 있으면 시간당 1씩 쌓이고, 자면 시간당 3씩(6시간 자면 18) 풀리고, 쉬기만 하면 그대로다
   # 16시간 깨어 있으면 졸림(보정 없음), 24시간이면 지침 -1, 32시간이면 탈진 -2
-  fatigue: { track: fatigue, grace: 16, per_step: 8, rates: { sleep: -3, rest: 0 } }
+  # 지침 이상이면 부상이 저절로 낫지 않고 질병도 낫지 않는다 (12-115, 자야 낫는다)
+  fatigue: { track: fatigue, grace: 16, per_step: 8, rates: { sleep: -3, rest: 0 }, blocks_recovery_from: weary }
   # 굶주림은 부상을 주지 않고 허기 트랙 끝에서 죽는다 (12-74)
   hunger: { track: hunger }
   # 갈증 (12-97, *임시*): 하루마다 한 단계 마른다. 물이 넉넉한 곳(물이 나는 구역, 물이 하루치 넘게 남은 우리 거점)에서

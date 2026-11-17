@@ -865,6 +865,10 @@ export const scenarioFileSchema = z
             blocks_recovery_from: id.optional(),
           })
           .optional(),
+        /**
+         * 거점에 사는 사람들의 몸 (12-125). 무리의 배급·연료가 그 무리 사람들의 허기·추위가 된다. 이 단계까지만 (죽지 않는다)
+         */
+        residents: z.strictObject({ hunger_max: id.optional(), cold_max: id.optional() }).optional(),
         thirst: z
           .strictObject({
             track: id,

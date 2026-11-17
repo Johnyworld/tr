@@ -1,4 +1,5 @@
 import { roleOf } from "../game/state.ts";
+import { runResidentBodies } from "./residents.ts";
 import { infestationDay } from "../game/infestation.ts";
 import { factionTroubles, spreadTroubleRumors } from "./factionTalk.ts";
 import { runRomance } from "./romance.ts";
@@ -88,6 +89,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     // NPC도 낫는다: 저절로, 그리고 무리 의무실의 돌봄 (12-52). 병이 진행되기 전에 돌보므로, 오늘 드러난 열은 하루를 넘긴 뒤에야 의무실이 손쓴다
     displays.push(...runNpcRecovery(ctx));
     displays.push(...runDailyNpcBody(ctx, day));
+    // 거점 사람들의 허기·추위 (12-125): 무리의 형편이 사람 몸에 보인다
+    displays.push(...runResidentBodies(ctx, day));
   }
   return displays;
 }

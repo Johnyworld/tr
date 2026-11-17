@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 44;
+export const SAVE_SCHEMA_VERSION = 45;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -635,7 +635,8 @@ export function createGameSchemas(s: Scenario) {
     /** 치트: 세력의 자원을 바꾼다 (준 것만) */
     z.strictObject({ type: z.literal("faction_patched"), factionId: z.string(), resources: z.record(z.string(), z.number()) }),
     /** 이름 없는 인물이 주인공과 엮여 캐릭터가 됐다 (기획서 7.5). 장면에 들어온다 */
-    z.strictObject({ type: z.literal("extra_spawned"), character }),
+    /** unseen: 주인공이 보지 않은 곳에서 생겼다 (변이, 12-117). 장면에 넣지 않고 만난 것으로 치지 않는다 */
+    z.strictObject({ type: z.literal("extra_spawned"), character, unseen: z.boolean().optional() }),
     /** characterId가 targetId의 이름을 알게 됐다 (기획서 6.3) */
     z.strictObject({ type: z.literal("name_learned"), characterId: z.string(), targetId: z.string() }),
     /** 레벨업으로 스킬 하나를 올렸다 */
@@ -1525,6 +1526,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!c.extra) throw new Error("엑스트라 정보가 없습니다.");
       next.characters[c.id] = structuredClone(c);
       next.nextExtraNo += 1;
+      if (event.unseen) break;
       next.scene.present.push(c.id);
       perceive(next, c.id);
       acquaint(next, state.playerId, c.id, false);

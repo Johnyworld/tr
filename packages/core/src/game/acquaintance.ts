@@ -24,6 +24,12 @@ export function hasMet(state: GameState, viewer: string, target: string): boolea
 export function aliasOf(state: GameState, content: Content, id: string): string {
   const c = state.characters[id];
   if (!c) return id;
+  // 변이한 감염체 (12-117): 지금 주인공이 그 사람 이름을 알면 이름, 모르면 그 사람의 호칭
+  if (c.extra?.turnedFrom) {
+    const from = c.extra.turnedFrom;
+    const who = state.characters[from] && knowsName(state, state.playerId, from) ? state.characters[from]!.name : aliasOf(state, content, from);
+    return `변이한 ${who}`;
+  }
   if (c.extra) return c.extra.label;
   const npc = content.npcs[id];
   if (npc) return npc.alias;
@@ -43,7 +49,7 @@ export function headingAs(state: GameState, content: Content, viewer: string, ta
   const c = state.characters[target];
   if (!c) return target;
   // 동물·감염체는 이름을 나누지 않는다 (호칭이 이름, 12-111)
-  if (c.extra && isCreature(content, c)) return `${c.extra.label} · ${KIND_LABELS[kindOf(content, c)]}`;
+  if (c.extra && isCreature(content, c)) return `${aliasOf(state, content, target)} · ${KIND_LABELS[kindOf(content, c)]}`;
   if (!knowsName(state, viewer, target)) return `${aliasOf(state, content, target)} (이름 모름)`;
   return c.extra ? `${c.name} (${c.extra.label})` : c.name;
 }

@@ -556,7 +556,7 @@ symptoms:
   - { id: bleeding, label: 출혈, group: bleeding, tone: 2 }
   - { id: heavy_bleeding, label: 심한 출혈, group: bleeding, tone: 3 }
   - { id: death, label: 사망, group: death }
-  # 변이: 감염으로 죽어 감염체가 된다 (다음 캐릭터가 발견하는 규칙은 다음 단계)
+  # 변이: 감염으로 죽어 감염체가 된다. 그 자리에 감염체로 남는다 (body.infection.turns_into, 12-117)
   - { id: turned, label: 변이, group: death }
 
 # 상태 트랙. 앞에서 뒤로 악화된다. fatal 단계에 이르면 사망. 단계 이름·판정 보정은 증상에서 나온다 (GM에게는 트랙 이름과 함께 보인다)
@@ -902,6 +902,8 @@ body:
     slow: [antibiotics]
     # 감염을 떼는 유일한 약. 잠복에도 듣는다
     cure: [serum]
+    # 감염으로 죽으면 그 자리에 막 변한 감염체로 남는다 (12-117). 겉모습과 짐은 그 사람의 것
+    turns_into: infected_fresh
   # 추위: 하루마다 계절·날씨의 추위만큼 (방한복은 들고 있으면 1 덜어 준다). 끝까지 가면 얼어 죽는다 (부상 없이)
   cold:
     track: cold

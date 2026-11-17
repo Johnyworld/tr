@@ -1,4 +1,5 @@
 import type { Content } from "../content/schemas.ts";
+import { aliasOf } from "./acquaintance.ts";
 import type { Bond, BondKind, GameState } from "./state.ts";
 import { formatTime } from "../rules/time.ts";
 
@@ -64,7 +65,7 @@ export function describeUntil(content: Content, until: Bond["until"]): string {
 export function describeCompanions(state: GameState, content: Content): string {
   const name = (id: string) => {
     const c = state.characters[id]!;
-    return c.extra?.label && !(state.known[state.playerId] ?? []).includes(id) ? c.extra.label : c.name;
+    return c.extra?.label && !(state.known[state.playerId] ?? []).includes(id) ? aliasOf(state, content, id) : c.name;
   };
   const lines: string[] = [];
   const list = activeCompanions(state);

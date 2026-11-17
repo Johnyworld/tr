@@ -884,6 +884,8 @@ export const scenarioFileSchema = z
             slow: z.array(id).default([]),
             /** 감염을 떼는 약. 잠복에도 듣는다 (걸렸는지 몰라도 쓸 수 있다). 있으면 감염을 낫게 하는 것은 이것뿐 (치료사·소모품은 못 뗀다) */
             cure: z.array(id).default([]),
+            /** 감염으로 죽으면(마지막 단계) 그 자리에 이 엑스트라 틀의 감염체로 남는다 (12-117). 겉모습과 짐은 그 사람의 것 */
+            turns_into: id.optional(),
           })
           .optional(),
         /**

@@ -1,4 +1,5 @@
 import { resistSteps } from "./growth.ts";
+import { turnIntoInfected } from "./turning.ts";
 import { fatigueBlocksRecovery } from "./fatigue.ts";
 import { onPersonDeath } from "./people.ts";
 import { lightFire } from "./climate.ts";
@@ -64,6 +65,8 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
     harmTrack: isHarm,
   });
   if (to.fatal && characterId === state.playerId) recordDeath(ctx, cause, null);
+  // 감염으로 죽으면 그 자리에 감염체로 남는다 (12-117)
+  if (to.fatal && trackId === ctx.content.scenario.body?.infection?.track) turnIntoInfected(ctx, characterId);
   // 이름 있는 인물이 죽으면 가족·친구가 듣는다 (기획서 7.10)
   if (to.fatal && characterId !== state.playerId) onPersonDeath(ctx, characterId, by);
   const shownFrom = shownLevel(track, from.id);

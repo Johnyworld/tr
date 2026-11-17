@@ -73,6 +73,8 @@ export function createCharacterSchema(s: Scenario) {
         zone: z.string().nullable(),
         /** 마지막으로 엮인 시각. GM 상태의 "이 구역에서 엮인 인물" 목록은 최근 것부터 몇 명만 보여 준다 */
         lastSeenAt: z.number().int(),
+        /** 변이한 감염체면 누구였는지 (12-117). 호칭은 보는 사람이 그 사람 이름을 아는지로 정한다 */
+        turnedFrom: z.string().optional(),
       })
       .nullable()
       .default(null),

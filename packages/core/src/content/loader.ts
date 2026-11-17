@@ -387,6 +387,8 @@ function checkReferences(content: Content): string[] {
     if (m.advances && !plans.includes(m.advances.clock)) problems.push(`missions.${m.id}.advances: 알 수 없는 세력 클락 ${m.advances.clock}`);
   }
   if (new Set(plans).size !== plans.length) problems.push("factions: 세력 클락(plans) id가 겹친다");
+  const turns = content.scenario.body?.infection?.turns_into;
+  if (turns && Object.keys(content.extras).length > 0 && content.extras[turns]?.kind !== "infected") problems.push(`scenario.body.infection.turns_into: 감염체 틀(kind: infected)이 아니다: ${turns}`);
   for (const ex of Object.values(content.extras)) {
     if (ex.faction) factionRef(`extras.${ex.id}`, ex.faction);
     for (const i of ex.inventory) if (!content.items[i.item]) problems.push(`extras.${ex.id}: 알 수 없는 아이템 ${i.item}`);

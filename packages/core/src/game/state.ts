@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 51;
+export const SAVE_SCHEMA_VERSION = 52;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -415,6 +415,8 @@ export function createGameSchemas(s: Scenario) {
     chronicle: z.array(runRecordSchema).default([]),
     /** 유해와 무덤 (12-130) */
     remains: z.array(remainsSchema).default([]),
+    /** 주인공에게 복수를 다짐한 사람 (12-135): 주인공이 죽인 사람(victim)의 가족·친구(avenger) */
+    vendettas: z.array(z.strictObject({ avenger: z.string(), victim: z.string(), since: z.number().int() })).default([]),
     /** 놓아 둔 덫 (12-131). caught: 걸린 아이템 (아직이면 null) */
     traps: z.array(z.strictObject({ zone: z.string(), setAt: z.number().int(), caught: z.string().nullable(), qty: z.number().int().min(0).default(0) })).default([]),
   });
@@ -602,6 +604,9 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
     /** 죽은 사람의 유해가 그 구역에 남았다 (12-130) */
     z.strictObject({ type: z.literal("remains_left"), remains: remainsSchema }),
+    /** 주인공에게 복수를 다짐했다 / 원한이 풀렸다 (12-135) */
+    z.strictObject({ type: z.literal("vendetta_sworn"), avenger: z.string(), victim: z.string() }),
+    z.strictObject({ type: z.literal("vendetta_settled"), avenger: z.string() }),
     /** 덫을 놓았다 / 덫에 걸렸다 / 덫을 거뒀다 (12-131) */
     z.strictObject({ type: z.literal("trap_set"), zone: z.string(), at: z.number().int() }),
     z.strictObject({ type: z.literal("trap_caught"), zone: z.string(), item: z.string(), qty: z.number().int().min(1) }),
@@ -896,6 +901,7 @@ export const EMPTY_STATE: GameState = {
   recentClashes: [],
   remains: [],
   traps: [],
+  vendettas: [],
   chronicle: [],
 };
 
@@ -1502,6 +1508,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.record.characterId !== state.playerId) throw new Error("현재 캐릭터의 기록이 아닙니다.");
       if (!state.characters[state.playerId]?.dead) throw new Error("캐릭터가 아직 살아 있습니다.");
       next.chronicle.push(structuredClone(event.record));
+      break;
+    case "vendetta_sworn":
+      if (next.vendettas.some((v) => v.avenger === event.avenger)) break;
+      next.vendettas.push({ avenger: event.avenger, victim: event.victim, since: state.time });
+      break;
+    case "vendetta_settled":
+      next.vendettas = next.vendettas.filter((v) => v.avenger !== event.avenger);
       break;
     case "trap_set":
       if (next.traps.some((t) => t.zone === event.zone)) throw new Error(`이미 덫이 있다: ${event.zone}`);

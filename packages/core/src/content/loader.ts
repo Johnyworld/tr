@@ -443,7 +443,7 @@ export function checkStorylets(content: Content): string[] {
     }
     for (const [key, role] of Object.entries(s.cast)) {
       for (const id of role.ids ?? []) if (!content.npcs[id]) problems.push(`${where}.cast.${key}: 알 수 없는 NPC ${id}`);
-      if (role.faction && !isFactionAlias(role.faction) && Object.keys(content.factions).length && !content.factions[role.faction]) {
+      if (role.faction && role.faction !== "other" && !isFactionAlias(role.faction) && Object.keys(content.factions).length && !content.factions[role.faction]) {
         problems.push(`${where}.cast.${key}: 알 수 없는 세력 ${role.faction}`);
       }
     }
@@ -460,7 +460,8 @@ export function checkStorylets(content: Content): string[] {
     if (s.when.harm_at_least && !harmLevels.has(s.when.harm_at_least)) problems.push(`${where}.when: 알 수 없는 부상 단계 ${s.when.harm_at_least}`);
     const ids = s.choices.map((c) => c.id);
     if (new Set(ids).size !== ids.length) problems.push(`${where}: 선택지 id가 겹친다`);
-    // 문장의 자리는 배역 이름이나 zone·scarce만 쓸 수 있다
+    // 문장의 자리는 배역 이름이나 zone·scarce만 쓸 수 있다. victim은 복수 배역(vendetta)이 있을 때만 (12-135)
+    const hasVendetta = Object.values(s.cast).some((r) => r.vendetta);
     const texts = [s.setup, s.ai_direction ?? "", ...s.choices.map((c) => c.label)];
     for (const c of s.choices) {
       for (const e of [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])]) {
@@ -470,7 +471,7 @@ export function checkStorylets(content: Content): string[] {
     }
     for (const text of texts) {
       for (const [, key] of text.matchAll(/\{([a-z_]+)(?::[^}]+)?\}/g)) {
-        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
+        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
       }
     }
     for (const c of s.choices) {

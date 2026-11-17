@@ -504,6 +504,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ npc_heal: z.strictObject({ who: z.string().min(1), steps: z.number().int().min(1).max(2) }) }),
     /** 이 배역을 주인공의 원수로 삼는다 (12-59: 위협한 자를 잊지 않는다). 배경 부품 enemy가 더해진다 */
     z.strictObject({ grudge: z.strictObject({ who: z.string().min(1), why: z.string().min(1).max(80) }) }),
+    /** 그 사람의 복수 다짐이 풀린다 (12-135: 화해, 대가를 치름, 결판) */
+    z.strictObject({ settle_vendetta: z.strictObject({ who: z.string().min(1) }) }),
     /** 붙잡힌 배역이 어디 갇혔는지 주인공이 알게 된다 (진짜 상태에서 코드가 채운다, 12-56) */
     z.strictObject({ locate: z.strictObject({ who: z.string().min(1), source: z.enum(["seen", "report", "rumor"]).default("report") }) }),
     /** 주인공이 붙잡힌다 (12-55): by 무리(own 외에 zone_owner 등 별칭), zone이 없으면 그 무리의 거점에 갇힌다 */
@@ -593,7 +595,7 @@ export function createContentSchemas(s: Scenario) {
     companion: z.strictObject({ kinds: z.array(z.enum(["animal", "buddy", "squad", "purpose", "kin", "prisoner"])).optional(), templates: z.array(contentIdSchema).optional() }).optional(),
     /** 플레이어의 직속 상관 */
     commander: z.boolean().default(false),
-    /** own = 플레이어 소속, 또는 세력 id */
+    /** own = 플레이어 소속, other = 플레이어 소속이 아닌 사람 (12-135), 또는 세력 id */
     faction: z.string().optional(),
     ranks: z.array(idEnum(rankIds(s))).optional(),
     /** 이 직분인 사람만 (기획서 12.6: 같은 부엌의 요리사, 같은 진료소의 의무병). same이면 주인공과 같은 직분 */
@@ -602,6 +604,8 @@ export function createContentSchemas(s: Scenario) {
     known: z.boolean().default(false),
     /** 이 인물의 플레이어에 대한 신뢰 하한 */
     trust_gte: z.number().int().optional(),
+    /** 주인공에게 복수를 다짐한 사람만 (12-135: 주인공이 죽인 사람의 가족·친구) */
+    vendetta: z.boolean().optional(),
     /** 소문으로만 주인공을 아는 팬(fan) 또는 안티(anti)만 (12-127) */
     stance: z.enum(["fan", "anti"]).optional(),
     /** 발동할 때 장면에 들어온다 */

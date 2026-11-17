@@ -1,4 +1,5 @@
 import { onLoverDeath } from "./romance.ts";
+import { createExtraCharacter } from "./extras.ts";
 import { isInfected, templateKind } from "../game/kinds.ts";
 import { frighten } from "./fear.ts";
 import { shakeNerves } from "./body.ts";
@@ -155,6 +156,8 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
   if (fear && (state.scene.present.includes(id) || state.companions.includes(id)) && !isInfected(content, state.characters[id])) {
     frighten(ctx, fear.witness_death, `${dead}이(가) 눈앞에서 죽었다`);
   }
+  // 그 자리에 있던 다른 사람 (주인공·죽은 사람 빼고): 누가 죽였는지 말이 퍼진다
+  const witnesses = state.scene.present.filter((w) => w !== id && w !== state.playerId && !state.characters[w]?.dead);
   for (const t of tiesOf(state, content, id)) {
     if (t.kind === "rival") continue;
     const kin = state.characters[t.other];
@@ -165,11 +168,76 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
       characterId: t.other,
       belief: { id: `b_${s.nextBeliefNo}`, fact: `${dead}(내 ${TIE_LABELS[TIE_INVERSE[t.kind]]})이 죽었다`, source: "report", accuracy: "exact", learnedAt: s.time },
     });
-    if (by === "attack" && state.scene.present.includes(t.other)) {
-      const family = FAMILY_KINDS.includes(t.kind);
-      store.append({ type: "relation_changed", from: t.other, to: state.playerId, delta: { trust: -3, affection: family ? -3 : -2, respect: 0 }, reason: `${dead}을(를) 눈앞에서 죽였다` });
-    }
+    if (by !== "attack") continue;
+    const family = FAMILY_KINDS.includes(t.kind);
+    // 누가 죽였는지 안다: 그 자리에 있었거나, 다른 목격자가 있어 말이 퍼졌거나, 흔적으로 (12-135)
+    const present = state.scene.present.includes(t.other);
+    const learned = present || witnesses.length > 0 || ctx.rng() < VENDETTA_TRACE_CHANCE;
+    if (!learned) continue;
+    store.append({ type: "relation_changed", from: t.other, to: state.playerId, delta: { trust: -3, affection: family ? -3 : -2, respect: 0 }, reason: present ? `${dead}을(를) 눈앞에서 죽였다` : `${dead}을(를) 죽였다고 들었다` });
+    // 가족·연인·친구는 복수를 다짐한다
+    if (family || t.kind === "lover" || t.kind === "friend") store.append({ type: "vendetta_sworn", avenger: t.other, victim: id });
   }
+  // 복수할 사람이 아무도 나서지 않았으면, 세상 어딘가의 그 사람의 가족·친구가 (12-135)
+  if (by === "attack" && !store.getState().vendettas.some((v) => v.victim === id)) spawnAvenger(ctx, id, witnesses.length > 0);
+}
+
+/** 목격자 없이 죽였어도 가족·친구가 흔적으로 누가 죽였는지 알게 될 확률 (12-135, *임시*) */
+export const VENDETTA_TRACE_CHANCE = 0.3;
+/** 이름 없는 사람을 죽였을 때 그 사람의 가족·친구가 복수하러 나설 확률: 목격자가 있으면 / 없으면 (12-135, *임시*) */
+export const EXTRA_AVENGER_CHANCE = { witnessed: 0.25, unseen: 0.1 };
+/** 한꺼번에 복수를 다짐한 사람의 상한 (넘으면 새로 만들지 않는다) */
+export const MAX_VENDETTAS = 3;
+
+/** 복수자가 그 사람에게 무엇인지와 나이 차 (복수자 나이 = 죽은 사람 나이 + 차) */
+const AVENGER_KINDS: { kind: TieKind; gap: [number, number] }[] = [
+  { kind: "sibling", gap: [-6, 6] },
+  { kind: "parent", gap: [20, 30] },
+  { kind: "child", gap: [-28, -18] },
+  { kind: "spouse", gap: [-4, 4] },
+  { kind: "friend", gap: [-5, 5] },
+];
+
+/** 복수자를 만들 틀: 죽은 사람이 엑스트라면 그 틀, 아니면 같은 무리의 사람 틀 (무리가 없으면 무리 없는 사람 틀). 자랄 재료가 있어야 한다 */
+function avengerTemplate(content: Content, dead: Character) {
+  const own = dead.extra ? content.extras[dead.extra.template] : undefined;
+  if (own?.profile && templateKind(own) === "person") return own;
+  const people = Object.values(content.extras).filter((t) => t.profile && templateKind(t) === "person" && t.appears?.zones?.length !== 0);
+  const faction = dead.factionId || null;
+  return people.find((t) => (t.faction ?? null) === faction) ?? people.find((t) => !t.faction);
+}
+
+/**
+ * 주인공이 죽인 사람에게 복수할 가족·친구가 아무도 없을 때 (12-135): 확률로 엑스트라 가족·친구를 만들어 복수를 다짐하게 한다.
+ * 이름 없는 사람이든 이름 있는 인물이든 (정해진 인물의 가족이 엑스트라일 수도 있다).
+ * 사람 틀로 만들어 바로 자라게 하고(이름·원하는 것·말투), 죽은 사람과 잇고, 그 무리의 땅에 둔다.
+ * 장면에 들이지 않고 만난 것으로도 치지 않는다 (이야기로만 나타난다)
+ */
+function spawnAvenger(ctx: ToolContext, deadId: string, witnessed: boolean): void {
+  const { store, content, rng } = ctx;
+  const state = store.getState();
+  const dead = state.characters[deadId];
+  if (!dead || dead.extra?.turnedFrom || isInfected(content, dead)) return;
+  if (dead.extra && templateKind(content.extras[dead.extra.template]) !== "person") return;
+  const template = avengerTemplate(content, dead);
+  if (!template) return;
+  if ((state.vendettas ?? []).length >= MAX_VENDETTAS) return;
+  if (rng() >= (witnessed ? EXTRA_AVENGER_CHANCE.witnessed : EXTRA_AVENGER_CHANCE.unseen)) return;
+  const base = dead.age ?? 30;
+  const options = AVENGER_KINDS.filter((k) => base + k.gap[0] >= 16 && base + k.gap[1] <= 75);
+  const pick = options[Math.floor(rng() * options.length)];
+  if (!pick) return;
+  const age = Math.max(16, base + pick.gap[0] + Math.floor(rng() * (pick.gap[1] - pick.gap[0] + 1)));
+  const home = Object.values(content.locations).find((l) => l.kind === "base" && l.owner === dead.factionId)?.id ?? dead.extra?.zone ?? state.playerZone;
+  const id = `ex_${state.nextExtraNo}`;
+  const usedNames = new Set(Object.values(state.characters).map((c) => c.name));
+  const avenger = createExtraCharacter(content, template, { id, label: template.label, zone: home ?? null, time: state.time, usedNames }, rng);
+  avenger.age = age;
+  store.append({ type: "extra_spawned", character: avenger, unseen: true });
+  promoteExtra(ctx, id);
+  store.append({ type: "ties_generated", ties: [{ a: id, b: deadId, kind: pick.kind, secret: null }] });
+  store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: -3, affection: -3, respect: 0 }, reason: `${TIE_LABELS[TIE_INVERSE[pick.kind]]}을(를) 죽였다` });
+  store.append({ type: "vendetta_sworn", avenger: id, victim: deadId });
 }
 
 /** 카드에 붙일 관계 줄: 아는 관계, 털어놓을 수 있는 숨은 관계 */
@@ -187,6 +255,9 @@ export function describeTieLines(state: GameState, content: Content, id: string)
       lines.push(`털어놓을 수 있는 숨은 관계: ${who}의 ${TIE_LABELS[t.kind]}${where}${fate} (공개 상황: ${t.secret.reveal_when}). 상황이 맞으면 reveal_tie`);
     }
   }
+  // 복수 다짐 (12-135): GM이 연기하는 그 인물의 속마음. 주인공에게 드러내는지는 장면이 정한다
+  const v = (state.vendettas ?? []).find((x) => x.avenger === id);
+  if (v) lines.push(`원한: 당신이 ${playerCalls(state, content, v.victim)}을(를) 죽인 것을 알고 복수를 다짐했다. 겉으로 드러낼지, 기회를 노릴지는 그 사람의 성격대로`);
   return lines;
 }
 

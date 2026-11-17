@@ -58,8 +58,11 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.stance || stanceOf(state, content, c.id) === role.stance)
+    .filter((c) => !role.vendetta || (state.vendettas ?? []).some((v) => v.avenger === c.id))
     .filter((c) => !role.commander || c.id === commander)
-    .filter((c) => !role.faction || c.factionId === (role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction === "captor" ? (player.captive?.by ?? "-") : role.faction))
+    // other: 주인공의 무리가 아닌 사람. 떠돌이에게는 같은 무리가 없으니 누구나
+    .filter((c) => role.faction !== "other" || !player.factionId || c.factionId !== player.factionId)
+    .filter((c) => !role.faction || role.faction === "other" || c.factionId === (role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction === "captor" ? (player.captive?.by ?? "-") : role.faction))
     .filter((c) => !role.ranks || role.ranks.includes(c.rank))
     // 성적 위협을 가진 사람: 수위가 켜져 있고, 그 사람이 주인공에게 끌릴 때만 (12-59)
     .filter((c) => !role.menace || (!!c.menace && role.menace.includes(c.menace) && !!state.options?.mature && attracted(state, content, c.id, state.playerId)))
@@ -408,6 +411,9 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   // 배역은 주인공이 부르는 말로 (이름을 모르면 호칭, 기획서 6.3)
   for (const [key, id] of Object.entries(cast)) vars[key] = playerCalls(state, content, id);
   vars.zone = (state.playerZone && content.locations[state.playerZone]?.name) || "거점";
+  // 복수하러 온 사람이 갚으려는 사람 (12-135): 주인공이 죽인 사람을 주인공이 부르는 말로
+  const vendetta = (state.vendettas ?? []).find((v) => Object.values(cast).includes(v.avenger));
+  if (vendetta) vars.victim = playerCalls(state, content, vendetta.victim);
   // 길 위의 이야기: 떠나온 곳과 가는 곳 (12-53)
   if (state.lastRoute) {
     vars.from = content.locations[state.lastRoute.from]?.name ?? state.lastRoute.from;

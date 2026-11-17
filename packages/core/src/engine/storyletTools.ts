@@ -402,6 +402,12 @@ function applyEffect(
     const c = changeCondition(ctx, id, harmTrack(content.scenario).id, -effect.npc_heal.steps, "healer", "돌봄");
     return c?.line && store.getState().scene.present.includes(id) ? { line: c.line, display: c.display ?? undefined } : {};
   }
+  if ("settle_vendetta" in effect) {
+    const id = whoOf(ctx, effect.settle_vendetta.who, cast);
+    if (!id || !state.vendettas.some((v) => v.avenger === id)) return {};
+    store.append({ type: "vendetta_settled", avenger: id });
+    return {};
+  }
   if ("grudge" in effect) {
     const id = whoOf(ctx, effect.grudge.who, cast);
     if (!id || !state.characters[id] || id === playerId) return {};

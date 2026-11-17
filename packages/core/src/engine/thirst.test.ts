@@ -28,6 +28,7 @@ describe("갈증", () => {
   it("바깥의 물이 나는 곳: 마시면 3단계, 채우기는 따로. 빈 물병이 있으면 GM이 언급한다", () => {
     const { w, me, thirst } = open();
     w.state().playerZone = "riverside";
+    w.state().fires.riverside = w.state().time + 60; // 불이 있으면 끓여서 깨끗한 물 (12-131)
     me().conditions.thirst = "severe";
     me().inventory.empty_bottle = 2;
     const full = me().inventory.water_bottle ?? 0;

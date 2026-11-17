@@ -37,11 +37,11 @@ describe("직분 자동 플레이", () => {
     it(`${occupation}: 오류 없이 돌고, 직분 이야기가 열린다`, () => {
       const location = faction ? Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")!.id : "old_town";
       const w = open({ ...cook, faction, rank, occupation, location });
-      const stats = autoplay(w, w.content, createSeededRng(9), 300);
+      const stats = autoplay(w, w.content, createSeededRng(9), 500); // 300턴(열흘)이면 시드에 따라 직분 이야기가 한 번도 안 열리기도 한다
       w.close();
       expect(stats.errors).toEqual([]);
       const tag = `occ_${occupation}`;
       expect(Object.keys(stats.storyletsFired).some((id) => content.storylets[id]?.tags.includes(tag))).toBe(true);
-    }, 30_000);
+    }, 60_000);
   }
 });

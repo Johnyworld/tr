@@ -1,3 +1,4 @@
+import { drinkDirty, fireHere } from "./forage.ts";
 import { resistSteps } from "./growth.ts";
 import { policyEffects } from "../sim/war.ts";
 import { turnIntoInfected } from "./turning.ts";
@@ -132,9 +133,13 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
     cure || Object.entries(effects).some(([t, n]) => n > 0 && shownIndex(ctx, state, target, t) > 0) || (slow && shownIndex(ctx, state, target, infection!.track) > 0);
   if (!needed) return { ok: false, error: `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.` };
   store.append({ type: "item_consumed", holder: player.id, itemId: item, quantity: 1 });
+  // 끓이지 않은 물 (12-131): 불이 없으면 탈이 날 수 있다 (자기가 마실 때만)
+  const dirty = content.items[item]?.contaminated;
+  const boiled = dirty && target === player.id ? drinkDirty(ctx, dirty) : null;
   const leftover = content.items[item]?.used_into;
   if (leftover) store.append({ type: "item_granted", to: player.id, itemId: leftover, quantity: 1 });
   const lines = [target === player.id ? `${josa(name, "을/를")} 썼다.` : `${playerCalls(state, content, target)}에게 ${josa(name, "을/를")} 썼다.`];
+  if (boiled) lines.push(boiled);
   const displays: ToolDisplayEvent[] = [];
   for (const [t, steps] of Object.entries(effects)) {
     const c = changeCondition(ctx, target, t, -steps, item, name);
@@ -457,6 +462,11 @@ export function drinkWater(ctx: ToolContext): WaterResult {
   const limited = w.source.grant === "limited";
   const c = changeCondition(ctx, me.id, w.rules.track, limited ? -1 : -w.rules.drink, "drink", w.source.kind === "spring" ? "물을 떠 마셨다" : limited ? "물 보급 (아껴서 조금만)" : "물 보급");
   const lines = [c?.line ?? "물을 마셨다."];
+  // 바깥의 물은 끓이지 않으면 탈이 날 수 있다 (12-131)
+  if (w.source.kind === "spring" && w.rules.dirty) {
+    const boiled = drinkDirty(ctx, w.rules.dirty.chance);
+    if (boiled) lines.push(boiled);
+  }
   if (limited) lines.push("물이 모자라 보급 담당이 한 모금만 나눠 줬다. 아끼는 기색으로 서술한다.");
   return { ok: true, lines, displays: c?.display ? [c.display] : [] };
 }
@@ -479,7 +489,10 @@ export function refillWater(ctx: ToolContext): WaterResult {
     }
   }
   let left = limited ? 1 : Infinity;
-  for (const [empty, full] of Object.entries(w.rules.refill)) {
+  // 바깥의 물을 불 없이 채우면 끓이지 않은 물이 된다 (12-131)
+  const dirtyRefill = w.source.kind === "spring" && w.rules.dirty && !fireHere(state) ? w.rules.dirty.refill : {};
+  for (const [empty, clean] of Object.entries(w.rules.refill)) {
+    const full = dirtyRefill[empty] ?? clean;
     const n = Math.min(left, me.inventory[empty] ?? 0);
     if (n <= 0) continue;
     left -= n;

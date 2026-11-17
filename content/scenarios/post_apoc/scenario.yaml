@@ -188,6 +188,9 @@ crafting:
     - { id: tin_alarm, label: 깡통 경보줄, move: improvise, materials: { wire_roll: 1, scrap_metal: 1 }, yields: { item: tin_alarm, qty: 1 } }
     - { id: pack_frame, label: 배낭 틀, move: improvise, materials: { planks: 1, cloth: 1, duct_tape: 1 }, yields: { item: pack_frame, qty: 1 } }
     # 땔감 패기 (12-122): 판자를 그대로 태우면 3시간, 패서 땔감 둘로 만들면 8시간 탄다. 목공의 겨울 쓸모
+    # 훈연 (12-131): 날것을 땔감 연기에 그을려 오래 가게 한다
+    - { id: smoke_fish, label: 생선 훈연, move: survival, materials: { raw_fish: 2, firewood: 1 }, yields: { item: dried_fish, qty: 2 } }
+    - { id: smoke_meat, label: 고기 훈연, move: survival, materials: { raw_meat: 2, firewood: 1 }, yields: { item: smoked_meat, qty: 2 } }
     - { id: split_firewood, label: 땔감 패기, move: carpentry, materials: { planks: 1 }, tools: [[carpentry_kit, machete]], yields: { item: firewood, qty: 2 } }
 
 # 판마다 다른 인물 사이의 관계 (기획서 7.10): 세계를 만들 때 이름 있는 인물들을 이만큼 무작위로 잇는다. 무리가 다르면 숨은 관계
@@ -964,6 +967,24 @@ infestation:
   trouble_labels: [땅에 감염체가 몰려들었다, 감염체에 시달린다, 감염체에 둘러싸였다]
 
 # 쓰면 몸이 나아지는 물건 (take_action.use_item): 아이템 → 트랙 → 나아지는 단계 (*임시*)
+# 음식이 상하는 빠르기의 계절 배수 (12-131, *임시*): 아이템 perishable × 이 값
+spoilage:
+  season: { summer: 1.5, winter: 0.4 }
+
+# 먹을 것 구하기 (12-131, *임시*): take_action.forage. 수색처럼 판정 결과만큼 굴리고, 같은 날 같은 곳에서 다시 할수록 절반.
+# 낚시는 물이 나는 구역에서, 사냥은 거점이 아닌 구역에서. 개가 동행하면 사냥에서 한 번 더 굴린다
+foraging:
+  move: survival
+  kinds:
+    - { id: fish, label: 낚시, water: true, chance: 0.55, items: [{ item: raw_fish, weight: 1, qty: [1, 2] }] }
+    - id: hunt
+      label: 사냥
+      chance: 0.35
+      items: [{ item: raw_meat, weight: 3, qty: [1, 1] }, { item: raw_meat, weight: 1, qty: [2, 3] }]
+      companions: [stray_dog, road_dog]
+  # 덫: 철사 한 뭉치를 놓고 하루가 지날 때마다 40%로 날고기가 걸린다. 거두면 철사가 돌아온다
+  trap: { item: wire_roll, chance: 0.4, catch: { item: raw_meat, qty: [1, 1] } }
+
 consumables:
   medkit: { harm: 1, bleeding: 3 }
   bandage: { harm: 1, bleeding: 3 }
@@ -980,6 +1001,11 @@ consumables:
   dried_fish: { hunger: 2, thirst: -1 }
   salted_meat: { hunger: 2, thirst: -1 }
   potato: { hunger: 1 }
+  # 먹고 마시기 (12-131)
+  raw_fish: { hunger: 1 }
+  raw_meat: { hunger: 2 }
+  smoked_meat: { hunger: 2, thirst: -1 }
+  dirty_water: { thirst: 2 }
   wild_greens: { hunger: 1 }
   mushroom: { hunger: 1 }
   fever_reducer: { disease: 1 }
@@ -1006,6 +1032,8 @@ body:
     refill: { empty_bottle: water_bottle }
     captive_max: thirsty
     suffering_from: parched
+    # 끓이지 않은 물 (12-131, *임시*): 바깥의 물을 불 없이 마시면 15%로 병에 걸리고, 채우면 끓이지 않은 물병이 된다
+    dirty: { chance: 0.15, refill: { empty_bottle: dirty_water } }
   # 감염 (12-106): 한 번 걸리면 혈청 없이는 낫지 않는다. 하루에 한 단계, 변이까지 여드레 (12-109). 항생제를 계속 먹으면 보름쯤
   infection:
     track: infection

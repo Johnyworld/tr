@@ -71,6 +71,10 @@ export const itemContentSchema = z.strictObject({
   breaks_into: contentIdSchema.optional(),
   /** 소모품으로 쓰고 나면 이 아이템이 남는다 (물병 → 빈 물병) */
   used_into: contentIdSchema.optional(),
+  /** 상하는 음식 (12-131): 하루가 지날 때 하나하나가 이 확률로 상해 없어진다 (계절 배수 scenario.spoilage) */
+  perishable: z.number().min(0).max(1).optional(),
+  /** 끓이지 않은 물 (12-131): 쓰면 이 확률로 병(body.disease)에 걸린다. 그 구역에 불이 피어 있으면 끓여 마셔 괜찮다 */
+  contaminated: z.number().min(0).max(1).optional(),
   /** 고치는 법 */
   repair: z.strictObject({ move: contentIdSchema, materials: z.record(contentIdSchema, z.number().int().min(1)), /** 목록이면 그중 하나 */ tools: z.array(z.union([contentIdSchema, z.array(contentIdSchema).min(1)])).default([]) }).optional(),
 });

@@ -168,18 +168,21 @@
   name: 오이
   description: 껍질이 우둘투둘한 오이 한 개. 물기가 많아 목도 조금 축인다.
   kind: food
+  perishable: 0.1
   weight: 0.3
   value: 1
 - id: tomato
   name: 토마토
   description: 덜 익어 단단한 토마토 한 알. 며칠 지나면 무른다.
   kind: food
+  perishable: 0.15
   weight: 0.2
   value: 1
 - id: apple
   name: 사과
   description: 작고 시큼한 사과 한 알. 벌레 먹은 자리를 도려내면 먹을 만하다.
   kind: food
+  perishable: 0.05
   weight: 0.2
   value: 1
 - id: dried_fish
@@ -198,20 +201,53 @@
   name: 감자
   description: 흙이 묻은 감자 몇 알. 싹이 난 데를 도려내야 한다.
   kind: food
+  perishable: 0.02
   weight: 0.4
   value: 1
 - id: wild_greens
   name: 들풀
   description: 냉이와 씀바귀 같은 들풀 한 줌. 쓰지만 배는 조금 찬다.
   kind: food
+  perishable: 0.3
   weight: 0.1
   value: 1
 - id: mushroom
   name: 버섯
   description: 축축한 그늘에서 딴 버섯 몇 송이. 먹을 수 있는 것만 골랐기를.
   kind: food
+  perishable: 0.25
   weight: 0.1
   value: 1
+# 먹고 마시기 (12-131): 사냥·낚시로 얻는 날것, 훈연한 것, 끓이지 않은 물
+- id: raw_fish
+  name: 날생선
+  description: 강에서 막 건진 붕어 한 마리. 비린내가 난다. 하루 이틀이면 상한다.
+  kind: food
+  weight: 0.4
+  value: 2
+  perishable: 0.4
+- id: raw_meat
+  name: 날고기
+  description: 막 잡은 짐승의 고기 한 덩이. 피가 덜 빠졌다. 하루 이틀이면 상한다.
+  kind: food
+  weight: 0.6
+  value: 3
+  perishable: 0.4
+- id: smoked_meat
+  name: 훈제 고기
+  description: 연기에 그을려 말린 고기. 검고 질기지만 오래 간다.
+  kind: food
+  weight: 0.4
+  value: 4
+- id: dirty_water
+  name: 끓이지 않은 물병
+  icon: water
+  description: 강이나 우물에서 그냥 떠 온 물. 끓이지 않고 마시면 탈이 날 수 있다. 불 곁에서 마시면 끓여 마신다.
+  kind: misc
+  weight: 0.6
+  value: 0
+  used_into: empty_bottle
+  contaminated: 0.15
 - id: empty_bottle
   name: 빈 물병
   icon: water

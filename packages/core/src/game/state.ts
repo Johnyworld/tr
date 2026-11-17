@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 49;
+export const SAVE_SCHEMA_VERSION = 50;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -415,6 +415,8 @@ export function createGameSchemas(s: Scenario) {
     chronicle: z.array(runRecordSchema).default([]),
     /** 유해와 무덤 (12-130) */
     remains: z.array(remainsSchema).default([]),
+    /** 놓아 둔 덫 (12-131). caught: 걸린 아이템 (아직이면 null) */
+    traps: z.array(z.strictObject({ zone: z.string(), setAt: z.number().int(), caught: z.string().nullable(), qty: z.number().int().min(0).default(0) })).default([]),
   });
 
   /** 상태 변경은 반드시 이벤트로 기록한다 (append-only). 상태는 이벤트를 차례로 적용한 결과다 */
@@ -598,6 +600,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
     /** 죽은 사람의 유해가 그 구역에 남았다 (12-130) */
     z.strictObject({ type: z.literal("remains_left"), remains: remainsSchema }),
+    /** 덫을 놓았다 / 덫에 걸렸다 / 덫을 거뒀다 (12-131) */
+    z.strictObject({ type: z.literal("trap_set"), zone: z.string(), at: z.number().int() }),
+    z.strictObject({ type: z.literal("trap_caught"), zone: z.string(), item: z.string(), qty: z.number().int().min(1) }),
+    z.strictObject({ type: z.literal("trap_collected"), zone: z.string() }),
     /** 유해를 묻었다. marker: 묘비에 적힌 말 (12-130) */
     z.strictObject({ type: z.literal("remains_buried"), holder: z.string(), at: z.number().int(), marker: z.string() }),
     /**
@@ -887,6 +893,7 @@ export const EMPTY_STATE: GameState = {
   weather: null,
   recentClashes: [],
   remains: [],
+  traps: [],
   chronicle: [],
 };
 
@@ -1486,6 +1493,20 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.record.characterId !== state.playerId) throw new Error("현재 캐릭터의 기록이 아닙니다.");
       if (!state.characters[state.playerId]?.dead) throw new Error("캐릭터가 아직 살아 있습니다.");
       next.chronicle.push(structuredClone(event.record));
+      break;
+    case "trap_set":
+      if (next.traps.some((t) => t.zone === event.zone)) throw new Error(`이미 덫이 있다: ${event.zone}`);
+      next.traps.push({ zone: event.zone, setAt: event.at, caught: null, qty: 0 });
+      break;
+    case "trap_caught": {
+      const t = next.traps.find((x) => x.zone === event.zone);
+      if (!t) throw new Error(`없는 덫: ${event.zone}`);
+      t.caught = event.item;
+      t.qty = event.qty;
+      break;
+    }
+    case "trap_collected":
+      next.traps = next.traps.filter((t) => t.zone !== event.zone);
       break;
     case "remains_left":
       if (next.remains.some((r) => r.holder === event.remains.holder)) throw new Error(`이미 남은 유해: ${event.remains.holder}`);

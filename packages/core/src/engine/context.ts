@@ -1,3 +1,4 @@
+import { fireHere } from "./forage.ts";
 import { describeRemains } from "./remains.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { fameOf, stanceOf } from "../game/fame.ts";
@@ -163,7 +164,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["deeds", describeOwnDeeds(state)],
     ["present", describePresentNpcs(state, content, player)],
     ["known", describeKnownPeople(state, content)],
-    ["zone_people", [describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
+    ["zone_people", [describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeTrap(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
     ["zone_extras", describeZoneExtras(state, content)],
     ["templates", describeExtraTemplates(state, content)],
     ["beliefs", describeBeliefs(state, content)],
@@ -485,7 +486,14 @@ function describeWater(state: GameState, content: Content): string {
   if (source.kind === "supply") {
     return `물: 우리 거점이다. 서술에서 "물 보급을 받아야 할 것 같다"고 한 번 언급한다${empties.length ? ` (${empties.join("·")}이 비어 있다)` : ""}. 플레이어가 보급을 받겠다고 하면 take_action.refill (마시기까지 한다. 마시기만 하면 drink). 창고 사정에 따라 보급 담당이 조금만 주거나 거절할 수 있다 (시스템이 정한다)`;
   }
-  return `물: 이곳에는 물이 충분하다.${empties.length ? ` 서술에서 "빈 물병을 가지고 있으니 물을 채우면 될 것 같다"고 한 번 언급한다.` : " 물이 흐르는 모습을 장면에 묘사한다."} 플레이어가 마시겠다고 하면 take_action.drink, 채우겠다고 하면 refill. 저절로 마시거나 채우지 않는다`;
+  const dirty = rules.dirty ? (fireHere(state) ? " 불이 피어 있어 끓여 마실 수 있다." : " 끓이지 않은 물이다 (불을 피우면 끓여 마신다. 그냥 마시면 탈이 날 수 있다는 것을 서술에 비춘다)") : "";
+  return `물: 이곳에는 물이 충분하다.${dirty}${empties.length ? ` 서술에서 "빈 물병을 가지고 있으니 물을 채우면 될 것 같다"고 한 번 언급한다.` : " 물이 흐르는 모습을 장면에 묘사한다."} 플레이어가 마시겠다고 하면 take_action.drink, 채우겠다고 하면 refill. 저절로 마시거나 채우지 않는다`;
+}
+
+/** 이 구역에 놓아 둔 덫 (12-131). 걸렸는지는 거둬 봐야 안다 */
+function describeTrap(state: GameState, content: Content): string {
+  if (!content.scenario.foraging?.trap || !state.traps.some((t) => t.zone === state.playerZone)) return "";
+  return "덫: 이 구역에 놓아 둔 덫이 있다. 걸렸는지는 거둬 봐야 안다 (take_action.trap check)";
 }
 
 /** 우리 땅의 보강 (12-48). 주인공은 자기 무리 담만 안다 */

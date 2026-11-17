@@ -265,6 +265,15 @@ function checkReferences(content: Content): string[] {
   // 구역이 하나도 없는 팩(부분 팩·테스트)은 건너뛴다
   if (Object.keys(content.locations).length) for (const z of Object.keys(content.scenario.war?.talk?.rumor?.zones ?? {})) if (!content.locations[z]) problems.push(`war.talk.rumor: 알 수 없는 구역 ${z}`);
   for (const t of content.scenario.traits) for (const item of t.effects.habit?.items ?? []) if (!content.items[item]) problems.push(`scenario.traits.${t.id}.habit: 알 수 없는 아이템 ${item}`);
+  // 먹을 것 구하기·덫·끓이지 않은 물이 가리키는 아이템 (12-131)
+  const f = content.scenario.foraging;
+  const refs = [
+    ...(f?.kinds.flatMap((k) => k.items.map((i) => i.item)) ?? []),
+    ...(f?.trap ? [f.trap.item, f.trap.catch.item] : []),
+    ...Object.entries(content.scenario.body?.thirst?.dirty?.refill ?? {}).flat(),
+  ];
+  for (const item of refs) if (!content.items[item]) problems.push(`scenario: 알 수 없는 아이템 ${item} (foraging·thirst.dirty)`);
+  for (const k of f?.kinds ?? []) for (const t of k.companions) if (!content.extras[t]) problems.push(`scenario.foraging.${k.id}: 알 수 없는 엑스트라 틀 ${t}`);
   for (const item of Object.keys(content.scenario.consumables)) {
     if (!content.items[item]) problems.push(`scenario.consumables: 알 수 없는 아이템 ${item}`);
   }

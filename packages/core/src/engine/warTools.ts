@@ -1,3 +1,4 @@
+import { runDailyFood } from "./forage.ts";
 import { lootRemainsDaily } from "./remains.ts";
 import { roleOf } from "../game/state.ts";
 import { endExpiredTruces } from "./diplomacy.ts";
@@ -97,6 +98,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     displays.push(...runResidentBodies(ctx, day));
     // 묻지 않은 유해는 누군가 조금씩 털어 간다 (12-130)
     lootRemainsDaily(ctx);
+    // 덫에 걸리고, 날것이 상한다 (12-131)
+    displays.push(...runDailyFood(ctx));
   }
   return displays;
 }

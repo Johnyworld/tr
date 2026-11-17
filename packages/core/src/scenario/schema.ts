@@ -894,6 +894,31 @@ export const scenarioFileSchema = z
     /** 쓰면 몸 상태가 나아지는 아이템: 아이템 → 상태 트랙 → 나아지는 단계 수 (take_action.use_item) */
     /** 음수면 그만큼 나빠진다 (짠 음식은 목이 마르다). 나아지는 효과가 하나는 있어야 한다 */
     consumables: z.record(id, z.record(id, z.number().int().refine((n) => n !== 0, "0이 아닌 정수"))).default({}),
+    /** 음식이 상하는 빠르기의 계절 배수 (12-131, 아이템 perishable에 곱한다). 없는 계절은 1 */
+    spoilage: z.strictObject({ season: z.record(id, z.number().min(0)).default({}) }).optional(),
+    /**
+     * 먹을 것 구하기 (12-131): take_action.forage. 판정 결과만큼 굴린다 (수색과 같다: 성공 2, 대가 1, 실패 0, 판정 없으면 1번을 절반 확률로).
+     * 같은 날 같은 구역에서 같은 일을 다시 할수록 절반. water: 물이 나는 구역에서만 (아니면 거점이 아닌 구역). companions: 이 엑스트라 틀이 동행이면 한 번 더 굴린다
+     * trap: 덫 (take_action.trap). item을 놓고 하루가 지날 때마다 chance로 catch가 걸린다. 확인하면 걸린 것과 덫을 거둔다
+     */
+    foraging: z
+      .strictObject({
+        move: id,
+        kinds: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              water: z.boolean().default(false),
+              chance: z.number().min(0).max(1),
+              items: z.array(z.strictObject({ item: id, weight: z.number().positive(), qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) })).min(1),
+              companions: z.array(id).default([]),
+            }),
+          )
+          .min(1),
+        trap: z.strictObject({ item: id, chance: z.number().min(0).max(1), catch: z.strictObject({ item: id, qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }) }).optional(),
+      })
+      .optional(),
     /** 몸 상태 (12-1): 허기와 감염. 없으면 그 규칙을 쓰지 않는다 */
     body: z
       .strictObject({
@@ -933,6 +958,11 @@ export const scenarioFileSchema = z
             captive_max: id.optional(),
             /** 이 단계부터 몸이 괴롭다 (질병 확률 chance.thirst) */
             suffering_from: id.optional(),
+            /**
+             * 끓이지 않은 물 (12-131): 바깥의 물이 나는 곳에서 그냥 마시면 chance로 병(body.disease)에 걸린다.
+             * 그곳에서 채우면 refill 대신 이 그릇이 된다 (빈 아이템 → 끓이지 않은 물). 그 구역에 불이 피어 있으면 끓여서 깨끗하다
+             */
+            dirty: z.strictObject({ chance: z.number().min(0).max(1), refill: z.record(id, id).default({}) }).optional(),
           })
           .optional(),
         /**

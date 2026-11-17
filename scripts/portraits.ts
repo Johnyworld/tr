@@ -34,6 +34,10 @@ type Style = {
   sampler: string;
   scheduler: string;
   grade?: Grade;
+  /**
+   * 색 입히기 지시 (Qwen 편집). colorize: true인 얼굴은 자른 뒤 이 지시로 색을 입힌다 (흑백 그림을 화풍의 컬러로 맞출 때)
+   */
+  colorize?: string;
   /** 이 화풍 전체의 자르는 영역 배율 (기본 1). 1보다 작으면 얼굴이 커진다. 얼굴의 crop_scale과 곱한다 */
   crop_scale?: number;
   /** 머리가 위로 잘리는 화풍용: 위쪽을 이만큼(px, 8의 배수) 이어 그린 뒤 위에서부터 정사각형으로 자른다 */
@@ -49,6 +53,8 @@ type Character = {
   source?: string;
   /** 화풍의 색 보정 대신 이것을 쓴다 (톤만 바꿀 때) */
   grade?: Grade;
+  /** 화풍의 colorize 지시로 색을 입힌다 (흑백·회색조로 그려진 그림) */
+  colorize?: boolean;
   /** 자르는 영역 배율 (기본 1). 고개를 돌려 얼굴 너비가 좁게 재지는 얼굴은 1보다 크게 (얼굴이 작아진다) */
   crop_scale?: number;
   /** 여백이 모자라지 않아도 정리(cleanup)를 한다: 원본에 액자·테두리가 그려진 그림. 글이면 정리 지시에 덧붙인다 */
@@ -308,6 +314,8 @@ async function finishWorkflow(rawName: string, size: { width: number; height: nu
   let image: [string, number] = ["raw", 0];
   const pad = crop?.pad;
   const padded = !!pad && pad.left + pad.top + pad.right + pad.bottom > 0;
+  const colorizeHere = !!(ch.colorize && style.colorize && cleanup);
+  let colorized = false;
   if (cleanup && (padded || ch.cleanup)) {
     // Qwen 편집: 회색 여백을 붙인 그림을 주고 장면을 이어 채우게 한다. 인물은 그대로 두라고 지시한다
     if (padded) {
@@ -321,7 +329,7 @@ async function finishWorkflow(rawName: string, size: { width: number; height: nu
       q_vae: { class_type: "VAELoader", inputs: { vae_name: cleanup.vae } },
       q_enc: {
         class_type: "TextEncodeQwenImage21",
-        inputs: { clip: ["q_clip", 0], vae: ["q_vae", 0], prompt: [cleanup.instruction.trim(), typeof ch.cleanup === "string" ? ch.cleanup.trim() : ""].filter(Boolean).join(" "), negative_prompt: "", resolution: 1024, "images.image_1": image },
+        inputs: { clip: ["q_clip", 0], vae: ["q_vae", 0], prompt: [cleanup.instruction.trim(), typeof ch.cleanup === "string" ? ch.cleanup.trim() : "", colorizeHere ? style.colorize!.trim() : ""].filter(Boolean).join(" "), negative_prompt: "", resolution: 1024, "images.image_1": image },
       },
       q_guider: { class_type: "CFGGuider", inputs: { model: ["q_cache", 0], positive: ["q_enc", 0], negative: ["q_enc", 1], cfg: 1 } },
       q_noise: { class_type: "RandomNoise", inputs: { noise_seed: cleanup.seed } },
@@ -340,9 +348,12 @@ async function finishWorkflow(rawName: string, size: { width: number; height: nu
     const H = size.height + (padded ? pad!.top + pad!.bottom : 0);
     wf.q_size = { class_type: "ImageScale", inputs: { image: ["q_rgb", 0], upscale_method: "lanczos", width: W, height: H, crop: "disabled" } };
     image = ["q_size", 0];
+    // 색 입히기를 이 편집에 함께 실었다 (Qwen을 한 번만 돌린다)
+    colorized = colorizeHere;
     // 원본 안쪽을 고치라는 지시(ch.cleanup)가 없으면, 원래 그림 자리는 원본 픽셀로 다시 덮는다 (Qwen이 인물을 바꾸지 못하게).
     // 이어 채운 쪽 경계만 부드럽게 섞는다
-    if (padded && !ch.cleanup) {
+    // 색 입히기를 함께 했으면 원본(흑백)으로 덮으면 색이 지워진다: 덮지 않는다
+    if (padded && !ch.cleanup && !colorizeHere) {
       const feather = 48;
       wf.keep_mask = { class_type: "SolidMask", inputs: { value: 1, width: size.width, height: size.height } };
       wf.keep_feather = {
@@ -382,6 +393,30 @@ async function finishWorkflow(rawName: string, size: { width: number; height: nu
     wf.crop = { class_type: "ImageCrop", inputs: { image, width: crop.side, height: crop.side, x: crop.x, y: crop.y } };
     image = ["crop", 0];
   }
+  if (colorizeHere && !colorized) {
+    // 자른 그림에 색을 입힌다 (Qwen 편집, 약 1메가픽셀). 결과를 자른 크기로 되돌린다
+    Object.assign(wf, {
+      col_unet: { class_type: "UNETLoader", inputs: { unet_name: cleanup.unet, weight_dtype: "default" } },
+      col_cache: { class_type: "QwenImage21Cache", inputs: { model: ["col_unet", 0], device: "auto", dtype: "default" } },
+      col_clip: { class_type: "CLIPLoader", inputs: { clip_name: cleanup.clip, type: "qwen_image", device: "default" } },
+      col_vae: { class_type: "VAELoader", inputs: { vae_name: cleanup.vae } },
+      col_enc: {
+        class_type: "TextEncodeQwenImage21",
+        inputs: { clip: ["col_clip", 0], vae: ["col_vae", 0], prompt: style.colorize!.trim(), negative_prompt: "", resolution: 1024, "images.image_1": image },
+      },
+      col_guider: { class_type: "CFGGuider", inputs: { model: ["col_cache", 0], positive: ["col_enc", 0], negative: ["col_enc", 1], cfg: 1 } },
+      col_noise: { class_type: "RandomNoise", inputs: { noise_seed: cleanup.seed } },
+      col_sampler: { class_type: "KSamplerSelect", inputs: { sampler_name: "euler" } },
+      col_sigmas: { class_type: "ManualSigmas", inputs: { sigmas: "1.0, 0.978453, 0.95418, 0.926626, 0.89508, 0.845148, 0.704534, 0.414568, 0" } },
+      col_sample: {
+        class_type: "SamplerCustomAdvanced",
+        inputs: { noise: ["col_noise", 0], guider: ["col_guider", 0], sampler: ["col_sampler", 0], sigmas: ["col_sigmas", 0], latent_image: ["col_enc", 2] },
+      },
+      col_decode: { class_type: "VAEDecode", inputs: { samples: ["col_sample", 0], vae: ["col_vae", 0] } },
+      col_rgb: { class_type: "SplitImageWithAlpha", inputs: { image: ["col_decode", 0] } },
+    });
+    image = ["col_rgb", 0];
+  } else if (ch.colorize && !colorizeHere) console.error(`  ! ${prefix}: colorize는 화풍의 colorize 지시와 cleanup 모델이 있어야 합니다`);
   const grade = ch.grade ?? style.grade;
   const gradeRef = grade ? join(artDir, grade.ref) : null;
   if (grade && gradeRef && existsSync(gradeRef)) {

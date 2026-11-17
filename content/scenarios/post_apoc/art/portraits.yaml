@@ -87,6 +87,16 @@ styles:
     cfg: 7
     sampler: dpmpp_2m
     scheduler: karras
+    # 흑백·회색조 그림과 컬러 그림이 섞여 있어 모두 차분한 컬러로 맞춘다:
+    # colorize: true인 얼굴은 색을 입히고, 모두 palette_D(d_m1)의 색감으로 맞춘다
+    grade: { ref: palette_D.png, strength: 0.6 }
+    colorize: >-
+      Colorize this black-and-white ink comic illustration with flat comic-book colours in a muted, desaturated
+      post-apocalyptic palette: natural warm skin tones, dusty olive, khaki, tan, faded denim blue, rust brown
+      and grey-brown for the clothes, and a hazy dull grey-blue or dusty orange sky behind the ruined city.
+      Keep every ink line, shape, shadow, the face, expression, hair and the composition exactly the same;
+      only add colour.
+
 
   C:
     label: 현대 애니메이션
@@ -178,6 +188,7 @@ faces:
     style: D
     gender: male
     seed: 2102
+    colorize: true
     subject: >-
       a 23 year old korean young man, scavenger, spiky black hair, determined look, bandana around his neck,
       torn bomber jacket
@@ -185,6 +196,7 @@ faces:
     style: D
     gender: female
     seed: 2103
+    colorize: true
     subject: >-
       a 30 year old korean woman, scout, long black hair in a high ponytail, confident smirk,
       dark tactical vest
@@ -192,6 +204,8 @@ faces:
     style: D
     gender: female
     seed: 2104
+    # 컬러 그림이지만 얼굴이 흰 면으로 그려졌다: 색을 입힌다
+    colorize: true
     subject: >-
       a 21 year old korean young woman, runner, short pixie cut hair, freckles, fierce eyes,
       hooded sweatshirt under a scuffed vest
@@ -310,6 +324,7 @@ faces:
     style: D
     gender: male
     seed: 2111
+    colorize: true
     subject: >-
       a 60 year old korean man, veteran survivor, bald head, heavy brow, crooked broken nose,
       thick grey beard, deep forehead lines, worn military field jacket
@@ -317,6 +332,7 @@ faces:
     style: D
     gender: male
     seed: 2112
+    colorize: true
     subject: >-
       a 30 year old korean man, heavy-set brawler, long black hair tied in a topknot, angular face,
       a scar across his upper lip, sleeveless padded vest over a dark shirt
@@ -324,6 +340,7 @@ faces:
     style: D
     gender: female
     seed: 2113
+    colorize: true
     subject: >-
       a 45 year old korean woman, militia commander, short cropped silver hair, hard square jaw,
       crow's feet, stern stare, high-collared military coat
@@ -331,6 +348,7 @@ faces:
     style: D
     gender: female
     seed: 2114
+    colorize: true
     # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
     cleanup: true
     subject: >-
@@ -423,6 +441,7 @@ faces:
     style: D
     gender: female
     seed: 2123
+    colorize: true
     subject: >-
       a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face,
       short chin, soft rounded jawline, full cheeks, compact youthful facial proportions, large clear eyes,
@@ -432,6 +451,7 @@ faces:
     style: D
     gender: female
     seed: 2131
+    colorize: true
     # d_f5와 같은 느낌을 살짝 옆으로 돌린 각도로 (돌린 얼굴은 너비가 좁게 재진다)
     crop_scale: 1.1
     subject: >-
@@ -472,3 +492,221 @@ faces:
       smooth clear skin, gentle double-lidded eyes, high straight nose bridge, soft full lips,
       neat black hair with soft bangs falling over his forehead, blank expressionless face,
       tall slim build, worn dark bomber jacket over a grey hoodie
+
+  # 사진을 참고한 얼굴 (각도·헤어·얼굴형·나이만 따르고 옷은 바꾼다. 실존 인물과 똑같지 않게 글 묘사로만 그린다)
+  d_m7:
+    style: D
+    gender: male
+    seed: 2141
+    colorize: true
+    subject: >-
+      a korean man in his mid thirties, short cropped dark hair, long angular face, high cheekbones,
+      strong square jaw, intense straight stare, wearing a faded navy henley t-shirt
+  d_m8:
+    style: D
+    gender: male
+    seed: 2142
+    colorize: true
+    subject: >-
+      a korean man in his mid twenties, textured black hair swept back and up, sharp jawline, defined
+      cheekbones, calm slightly raised chin, wearing a worn grey t-shirt with a stretched collar
+  d_m9:
+    style: D
+    gender: male
+    seed: 2143
+    colorize: true
+    subject: >-
+      a korean man in his early thirties, buzzed head, short full beard and mustache, broad face, faint
+      confident smirk, wearing a dirty white tank top
+  d_m10:
+    style: D
+    gender: male
+    seed: 2144
+    colorize: true
+    subject: >-
+      a korean man in his late sixties, short grey buzz cut, heavily wrinkled weathered face, droopy
+      heavy-lidded eyes, large ears, stern mouth, wearing a faded collared shirt with a worn grey wool
+      scarf
+  d_m11:
+    style: D
+    gender: male
+    seed: 2145
+    colorize: true
+    subject: >-
+      a korean man in his late twenties, shoulder-length wavy black hair parted in the middle, soft gentle
+      face, slight warm smile, wearing a washed-out black t-shirt
+  d_m12:
+    style: D
+    gender: male
+    seed: 2146
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes
+      visible and looking toward the viewer, a korean man in his mid twenties, very short buzzed hair,
+      sharp cheekbones, lean face, cool sideways glance, wearing a ripped grey sleeveless tank top
+  d_m13:
+    style: D
+    gender: male
+    seed: 2147
+    colorize: true
+    subject: >-
+      a korean man in his late twenties, slicked-back black hair, narrow monolid eyes, long narrow face,
+      serious flat expression, wearing a torn charcoal t-shirt
+  d_m14:
+    style: D
+    gender: male
+    seed: 2148
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes
+      visible and looking toward the viewer, a korean young man in his early twenties, thick straight
+      bowl-cut hair with heavy bangs, angular face, freckles, fierce glare, wearing a plain sleeveless
+      undershirt
+  d_m15:
+    style: D
+    gender: male
+    seed: 2149
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
+      visible and looking toward the viewer, a korean man in his mid twenties, tousled wet-look black
+      hair, very sharp jawline and cheekbones, chin slightly lowered, intense stare, wearing a thin white
+      tank top
+  d_m16:
+    style: D
+    gender: male
+    seed: 2150
+    colorize: true
+    subject: >-
+      a korean young man around twenty, messy windswept wavy hair covering his ears, soft youthful face,
+      calm look, wearing a ragged white sleeveless shirt
+  d_m17:
+    style: D
+    gender: male
+    seed: 2151
+    colorize: true
+    subject: >-
+      a korean man in his late forties, hair tied back in a small knot, salt-and-pepper beard and
+      mustache, deep facial lines, a wooden bead necklace, wearing a worn white t-shirt
+  d_m18:
+    style: D
+    gender: male
+    seed: 2152
+    # 원본에 네모 틀이 그려졌다: 정리로 지운다
+    cleanup: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
+      visible and looking toward the viewer, a korean man in his late fifties, grey hair swept back, hard
+      stern face, deep nasolabial lines, watchful eyes, wearing a faded dark collarless work shirt
+  d_f9:
+    style: D
+    gender: female
+    seed: 2161
+    colorize: true
+    subject: >-
+      a korean woman in her early twenties, long straight black hair parted in the middle, doll-like
+      features, almond eyes with winged eyeliner, full lips, cool expression, wearing a faded grey tank
+      top
+  d_f10:
+    style: D
+    gender: female
+    seed: 2162
+    colorize: true
+    subject: >-
+      a korean young woman around nineteen, messy shoulder-length curly black hair with curtain bangs,
+      freckles, round soft face, head slightly tilted, blank look, wearing a thin white tank top with a
+      small pendant necklace
+  d_f11:
+    style: D
+    gender: female
+    seed: 2163
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
+      visible and looking toward the viewer, a korean woman in her mid twenties, long straight black hair
+      tucked behind one ear, round thin wire-frame glasses, calm gaze, wearing a worn green t-shirt
+  d_f12:
+    style: D
+    gender: female
+    seed: 2164
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
+      visible and looking toward the viewer, a korean young woman around twenty, chin-length bob with full
+      blunt bangs, big eyes, small mouth, quiet expression, wearing a faded checked shirt
+  d_f13:
+    style: D
+    gender: female
+    seed: 2165
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes
+      visible and looking toward the viewer, a korean young woman in her early twenties, long voluminous
+      wavy curly black hair with bangs, soft features, glancing to the side, wearing an oversized worn
+      white shirt with rolled sleeves
+  d_f14:
+    style: D
+    gender: female
+    seed: 2166
+    colorize: true
+    subject: >-
+      a korean woman in her early twenties, long hair pulled back with face-framing bangs, round face,
+      rosy cheeks, slightly looking up at the viewer, wearing a frayed cream knit top
+  d_f15:
+    style: D
+    gender: female
+    seed: 2167
+    colorize: true
+    subject: >-
+      a korean woman in her late twenties, long wavy black hair parted in the middle, high cheekbones,
+      faint confident smile, wearing a black tank top
+  d_f16:
+    style: D
+    gender: female
+    seed: 2168
+    subject: >-
+      a plus-size korean woman around thirty with light warm east asian skin, round full face, small eyes,
+      black hair pulled straight back into a low ponytail, no earrings, plain neutral expression,
+      wearing a faded yellow tank top
+  d_f17:
+    style: D
+    gender: female
+    seed: 2169
+    colorize: true
+    subject: >-
+      a korean young woman around twenty, long straight hair parted in the middle, round full face, rosy
+      cheeks, puffy tired eyes, plain look, wearing an old stained white t-shirt
+  d_f18:
+    style: D
+    gender: female
+    seed: 2170
+    colorize: true
+    subject: >-
+      a korean woman around fifty, long straight brown hair, rimless glasses, gentle mature face with fine
+      lines, calm faint smile, wearing a worn grey t-shirt
+  d_f19:
+    style: D
+    gender: female
+    seed: 2171
+    # 원본에 네모 틀이 그려졌다: 정리로 지운다
+    cleanup: true
+    colorize: true
+    subject: >-
+      a korean woman in her mid twenties, black hair tied tightly back, round flat face, light freckles,
+      neutral steady gaze, wearing a beige collarless wrap shirt
+  d_f20:
+    style: D
+    gender: female
+    seed: 2172
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
+      visible and looking toward the viewer, a korean woman in her early twenties, long straight black
+      hair falling over one shoulder, sharp cheekbones, monolid eyes, cold stare, wearing a black tank top

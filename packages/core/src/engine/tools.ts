@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { DIPLOMACY_TOOLS } from "./diplomacy.ts";
 import { fearAfterTool, watchFear, type FearResult } from "./fear.ts";
 import { ROMANCE_TOOLS } from "./romance.ts";
 import { CAPTIVITY_TOOLS } from "./captivity.ts";
@@ -252,6 +253,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       createLearnSkillTool(s),
       ...MISSION_TOOLS,
       ...COMMAND_TOOLS,
+      ...DIPLOMACY_TOOLS,
       ...COMPANION_TOOLS,
       ...PEOPLE_TOOLS,
       ...GEAR_TOOLS,

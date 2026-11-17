@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { describeDiplomacyForGm } from "./diplomacy.ts";
 import { heardRumors } from "./factionTalk.ts";
 import { describeFatigue } from "./fatigue.ts";
 import { infestationSign } from "../game/infestation.ts";
@@ -150,6 +151,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["storylet", describeStoryletForGm(state, content)],
     ["missions", [describeMissionsForGm(state, { content }), describePolicyForGm(state, content)].filter(Boolean).join("\n")],
     ["squad", describeSquadForGm(state, content)],
+    ["diplomacy", describeDiplomacyForGm(state, content)],
     ["culture", player.factionId ? [describeAccess(content, state.roleId), describeCultureForGm(content, player.factionId)].filter(Boolean).join("\n") : ""],
     ["factions", describeFactionsForGm(state, content)],
     ["deeds", describeOwnDeeds(state)],

@@ -1,4 +1,5 @@
 import { roleOf } from "../game/state.ts";
+import { endExpiredTruces } from "./diplomacy.ts";
 import { runResidentBodies } from "./residents.ts";
 import { infestationDay } from "../game/infestation.ts";
 import { factionTroubles, spreadTroubleRumors } from "./factionTalk.ts";
@@ -41,6 +42,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
   const last = store.getState().lastWarDay ?? today;
   const displays: ToolDisplayEvent[] = [];
   for (let day = Math.max(last + 1, today - MAX_CATCH_UP_DAYS + 1); day <= today; day++) {
+    // 기한이 된 휴전을 끝낸다 (12-126). 그날 전쟁 틱 전에
+    displays.push(...endExpiredTruces(ctx));
     const state = store.getState();
     // 오늘 새벽 교전 중 플레이어가 그 자리에 있는 것은 계산하지 않고 예정해 둔다 (전투 장면, 기획서 9.5)
     const at = scheduleTime(day, ctx.rng);

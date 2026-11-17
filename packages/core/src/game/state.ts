@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 46;
+export const SAVE_SCHEMA_VERSION = 47;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -294,6 +294,14 @@ export function createGameSchemas(s: Scenario) {
     commanderOverride: z.string().nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
     zoneSearches: z.record(z.string(), z.strictObject({ day: z.number().int(), count: z.number().int() })).default({}),
+    /**
+     * 무리 사이 협정 (12-126). truce: until까지 서로 치지 않는다 (그동안 두 무리의 태도를 적대 기준 위로 올려 두고, 끝나면 restore로 돌린다)
+     */
+    pacts: z
+      .array(z.strictObject({ id: z.string(), kind: z.literal("truce"), a: z.string(), b: z.string(), until: z.number().int(), restore: z.strictObject({ ab: z.number().int(), ba: z.number().int() }) }))
+      .default([]),
+    /** 협상이 거절된 무리 → 다시 꺼낼 수 있는 때 (12-126) */
+    negotiationBlocked: z.record(z.string(), z.number().int()).default({}),
     /** 구역의 감염체 압력 0~3 (12-112). 없는 구역은 그 구역의 위험(danger)이 기준값이다 */
     infested: z.record(z.string(), z.number().int().min(0).max(3)).default({}),
     turn: z.number().int().nonnegative(),
@@ -502,6 +510,20 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("faction_resource_changed"), factionId: z.string(), resource: z.string(), delta: z.number().int() }),
     /** 세력 사이 태도가 바뀐다 (값은 코드가 계산한 새 값) */
     z.strictObject({ type: z.literal("faction_disposition_changed"), from: z.string(), to: z.string(), value: z.number().int().min(-3).max(3) }),
+    /** 협정을 맺었다 (12-126). 포로 교환은 그 자리에서 끝나므로 기록만 남는다 (until 없음) */
+    z.strictObject({
+      type: z.literal("pact_made"),
+      id: z.string(),
+      kind: z.enum(["truce", "exchange"]),
+      a: z.string(),
+      b: z.string(),
+      until: z.number().int().optional(),
+      restore: z.strictObject({ ab: z.number().int(), ba: z.number().int() }).optional(),
+    }),
+    /** 휴전이 끝났다 (기한이 됐거나 깨졌다) */
+    z.strictObject({ type: z.literal("pact_ended"), id: z.string(), broken: z.boolean() }),
+    /** 협상이 거절됐다: until까지 그 무리에 다시 꺼내지 못한다 */
+    z.strictObject({ type: z.literal("negotiation_refused"), factionId: z.string(), until: z.number().int() }),
     /**
      * 주인공이 무리에 들어간다 (무소속이면 가입, 무리에 있으면 옮김). 역할은 코드가 만든다 (game/customStart.ts joinRole, 기획서 12.5).
      * beliefs: 그 무리에서 처음 듣는 사정 (같은 계급 시나리오의 시작 지식)
@@ -766,6 +788,8 @@ export const EMPTY_STATE: GameState = {
   roleId: "",
   customRole: null,
   zoneSearches: {},
+  pacts: [],
+  negotiationBlocked: {},
   infested: {},
   keptExtras: {},
   commanderOverride: null,
@@ -916,6 +940,17 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.nextBeliefNo += event.beliefs.length;
       return next;
     }
+    case "pact_made":
+      if (event.kind === "truce" && event.until !== undefined && event.restore) {
+        next.pacts.push({ id: event.id, kind: "truce", a: event.a, b: event.b, until: event.until, restore: event.restore });
+      }
+      return next;
+    case "pact_ended":
+      next.pacts = next.pacts.filter((p) => p.id !== event.id);
+      return next;
+    case "negotiation_refused":
+      next.negotiationBlocked[event.factionId] = event.until;
+      return next;
     case "faction_disposition_changed": {
       const f = next.factions[event.from];
       if (!f) return next;

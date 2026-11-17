@@ -1,4 +1,5 @@
 import { resistSteps } from "./growth.ts";
+import { breakTruceIfAny } from "./diplomacy.ts";
 import { exposeToFatigue } from "./fatigue.ts";
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
@@ -442,6 +443,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       const hit = hitTarget(ctx, input.target, input.check.target_harm, roll.outcome, input.intent, attack?.wound ?? null);
       lines.push(...hit.lines);
       displays.push(...hit.displays);
+      // 휴전 중인 무리의 사람을 치면 휴전이 깨진다 (12-126)
+      const broke = breakTruceIfAny(ctx, input.target);
+      if (broke) lines.push(broke);
     }
     if (roll.outcome !== "success" && input.check.harm_on_failure !== "none") {
       const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, input.check.opponent ?? input.target ?? null);

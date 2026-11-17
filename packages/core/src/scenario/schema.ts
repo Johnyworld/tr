@@ -818,6 +818,31 @@ export const scenarioFileSchema = z
      */
     travel: z.strictObject({ tag: id, chance: z.array(z.number().min(0).max(1)).length(4) }).optional(),
     /**
+     * 외교 (12-126). 지도부 회의에 앉는 주인공이 다른 무리의 간부 이상(envoy_level)과 한 장면에 있을 때 협정을 제안한다 (negotiate).
+     * pacts: 협정 종류. kind는 truce(days 동안 서로 치지 않는다) 또는 exchange(서로 잡은 포로를 돌려보낸다). cost는 대가 있는 성공에 우리 창고에서 내주는 것.
+     * moves: 협상에 쓰는 스킬. retry_days: 거절당하면 그 무리에 다시 꺼내기까지. broken: 휴전을 깨면 두 무리의 태도
+     */
+    diplomacy: z
+      .strictObject({
+        envoy_level: z.number().int().min(0),
+        moves: z.array(id).min(1),
+        retry_days: z.number().int().min(0),
+        broken: z.number().int().min(-3).max(3),
+        pacts: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              kind: z.enum(["truce", "exchange"]),
+              days: z.number().int().positive().optional(),
+              summary: z.string().min(1),
+              cost: z.record(id, z.number().int().min(1)).default({}),
+            }),
+          )
+          .min(1),
+      })
+      .optional(),
+    /**
      * 구역의 감염체 압력 (12-112): 0~3, 기준값은 구역의 danger. 날이 바뀔 때마다
      * 전날 그 구역의 소음이 noise_at 이상이면 +1, 그날 그 구역 교전의 사상자가 corpses_at 이상이면 +1 (최대 3).
      * 오르지 않은 날은 settle 확률로 기준값 쪽으로 한 단계 돌아간다. 이야기 효과 infested로 소탕한다.

@@ -255,3 +255,17 @@
   kind: misc
   weight: 0.2
   value: 1
+# 바깥 세계의 손길 (12-150): 남쪽에서 떨어진 보급 상자에서만 나온다
+- id: mil_ration
+  name: 군용 전투식량
+  description: 국방색 비닐 봉지. 유통기한이 붕괴 뒤의 날짜로 찍혀 있다. 누군가 아직 이걸 만들고 있다.
+  kind: food
+  weight: 0.5
+  value: 6
+- id: mil_serum
+  name: 찍힌 번호의 혈청
+  description: 군용 냉장 팩에 든 앰플 하나. 바닥에 손글씨가 아니라 기계로 찍은 번호가 있다. 물린 사람을 되돌린다.
+  icon: medicine
+  kind: consumable
+  weight: 0.1
+  value: 70

@@ -16,6 +16,8 @@ viewers:
   a_serum_truth: { character: player, faction: faction_a, flags: [ms_theory, ms_truth] }
   # 열병의 시작을 알아낸 사람 (12-148)
   a_origin_truth: { character: player, faction: faction_a, flags: [og_ledger, og_truth] }
+  # 다시 열린 집결지를 들은 사람 (12-150)
+  a_south_truth: { character: player, faction: faction_a, flags: [ow_south_truth] }
 
 # memory 컬렉션 평가용 합성 기억 (세이브 없이 검색 품질과 필터만 본다)
 memory:
@@ -260,3 +262,13 @@ cases:
     query: 열병은 어디서 처음 시작됐나
     viewer: a_origin_truth
     expect: ["lore/origin_truth"]
+  # ── 바깥 세계의 손길 (12-150): 남쪽에서 올라온 사람에게 듣기 전에는 집결지의 속사정이 나오지 않는다 ──
+  - id: south_hidden
+    query: 가람항 집결지에 가면 어떻게 되나
+    viewer: a_recruit
+    expect: []
+    forbid: ["lore/outside_south"]
+  - id: south_known
+    query: 가람항 집결지에 가면 어떻게 되나
+    viewer: a_south_truth
+    expect: ["lore/outside_south"]

@@ -1,0 +1,281 @@
+# 바깥 세계의 손길 (12-150, 기획서 10.6). 도시 밖에서 오는 한 해 한두 번의 큰 일. 코드는 그대로이고 이야기·아이템·lore만 더했다
+# - 열병의 시작(mystery_origin.yaml)이 열어 둔 "남쪽 집결지"와 "R을 태운 배"를 잇는다
+# - 흐름: 정찰기(ow_plane, 해마다) → 보급 상자와 전단(ow_leaflet) → 남쪽으로 떠나는 사람들(무리·떠돌이) / 남쪽에서 올라온 사람(ow_south_truth)
+#   보급 상자의 혈청 앰플(mil_serum)에는 기계로 찍은 번호가 있다 (ow_ampoule)
+# - 진실 (lore/outside_south.md secret:ow_south_truth): 집결지는 다시 열렸다. 피 한 방울로 R을 가려 따로 막사에 두고, 배가 오면 태워 간다.
+#   R이 아닌 사람은 철조망 밖에서 일하고 먹는다. 군이 R로 혈청을 찍어 내는지, 배가 어디로 가는지는 열어 둔다
+# - 이야기는 사람을 죽이지 않는다 (원칙 3). 군대를 장면에 직접 세우지 않는다 (멀리서 보이고, 남긴 것과 들은 말로만)
+
+- id: ow_plane
+  title: 남쪽에서 온 비행기
+  tags: [world]
+  repeatable: true
+  cooldown_days: 150
+  when:
+    day_gte: 15
+    segments: [morning, day]
+  setup: "멀리서 낯선 소리가 난다. 기계 소리. 고개를 들면 남쪽 하늘에 작은 비행기 하나가 낮게 떠 있다. 프로펠러 하나, 회색 동체. 도시 위를 크게 한 바퀴 돌고, 강 쪽에서 한 번 더 낮게 내려온다."
+  variants:
+    - "그 소리가 다시 온다. 이번에는 둘이다. 회색 비행기 두 대가 남쪽에서 와 강을 따라 올라가며 무언가를 세듯 천천히 돈다. 거점 지붕마다 사람들이 올라가 손을 흔든다."
+    - "구름 위에서 엔진 소리만 길게 지나간다. 보이지는 않는다. 소리는 북쪽 고개까지 갔다가 남쪽으로 돌아간다."
+  ai_direction: 군의 정찰기다 (꼬리에 흰 별과 숫자). 누가 보냈는지, 무엇을 찾는지는 말하지 않는다. 도시 사람들은 저마다 다르게 받아들인다 (구조가 온다, 폭격하러 왔다, 무리를 세러 왔다). 신호를 보내도 비행기는 대답하지 않는다. 날개를 한 번 흔드는 것처럼 보일 수는 있다.
+  choices:
+    - id: signal
+      label: 높은 곳에 올라 거울과 천으로 신호를 보낸다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: ow_plane
+          - set_flag: ow_signaled
+          - belief: { fact: "{zone}에서 남쪽에서 온 회색 정찰기에 신호를 보냈다. 비행기가 날개를 한 번 흔든 것 같았다. 꼬리에 흰 별이 있었다", source: seen }
+        partial:
+          - set_flag: ow_plane
+          - belief: { fact: "{zone}에서 남쪽에서 온 회색 비행기에 신호를 보냈지만 보았는지는 모르겠다", source: seen }
+        miss:
+          - set_flag: ow_plane
+          - zone_noise: 1
+          - belief: { fact: "{zone}에서 비행기에 신호를 보내려다 소리만 냈다. 비행기는 남쪽으로 돌아갔다", source: seen }
+    - id: watch
+      label: 그늘에 서서 어디로 가는지 끝까지 지켜본다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: ow_plane
+          - belief: { fact: "남쪽에서 온 회색 정찰기는 꼬리에 흰 별을 달았고, 강과 거점들 위를 세듯이 돌다가 가람항 쪽으로 돌아갔다", source: seen }
+        partial:
+          - set_flag: ow_plane
+          - belief: { fact: 회색 비행기 하나가 도시 위를 돌다 남쪽으로 돌아갔다, source: seen }
+        miss:
+          - set_flag: ow_plane
+          - body: { track: nerves, delta: 1 }
+    - id: hide
+      label: 건물 안으로 들어가 몸을 숨긴다
+      effects:
+        - set_flag: ow_plane
+        - belief: { fact: "{zone}에서 낯선 비행기 소리를 듣고 숨었다. 남쪽으로 멀어졌다", source: seen }
+
+- id: ow_drop
+  title: 떨어지는 상자
+  tags: [world]
+  repeatable: true
+  cooldown_days: 200
+  when:
+    flags_all: [ow_plane]
+    day_gte: 40
+    segments: [day, evening]
+    zones: [old_town, riverside, hospital_ruins, overpass, south_fields, mall_ruins, subway_hub]
+  setup: "비행기 소리가 지나간 뒤 하늘에 하얀 것이 핀다. 낙하산이다. 국방색 상자 하나가 흔들리며 내려와 몇 블록 너머 무너진 지붕 위에 걸린다. 사방에서 사람들이 고개를 든다. 저쪽 골목에서도 누가 뛰기 시작한다."
+  variants:
+    - "낙하산 둘이 내려온다. 하나는 강으로 떨어져 떠내려가고, 하나는 가까운 공터에 박힌다. 바람에 끌린 하얀 천이 땅을 쓸며 펄럭인다. 멀리서 호루라기 소리."
+  ai_direction: 군이 떨어뜨린 보급 상자다. 다른 무리의 수색대나 떠돌이도 보고 뛰고 있다 (누구인지는 장면에서 GM이 정해도 되지만 다툼은 판정과 전투로). 상자에는 군용 전투식량, 냉장 팩의 혈청 앰플 하나(코드가 준다), 그리고 비닐로 싼 전단 뭉치. 전단 내용은 효과의 믿음 그대로 (지어서 덧붙이지 않는다). 상자를 차지하면 다른 무리의 눈에 띈다.
+  choices:
+    - id: run
+      label: 먼저 닿으려고 지붕 쪽으로 내달린다
+      check: endure
+      outcomes:
+        success:
+          - give_item: { item: mil_ration, quantity: 3 }
+          - give_item: { item: mil_serum }
+          - set_flag: ow_leaflet
+          - deed: { summary: 하늘에서 떨어진 군 보급 상자를 먼저 차지했다, tags: [bravery], severity: 1, privacy: public }
+          - belief: { fact: "{zone}에 떨어진 군 보급 상자를 차지했다. 전단: '가람항 집결지를 다시 엽니다. 분류소에서 R 여부를 확인합니다. R은 배로 안전한 곳에 모십니다.'", source: seen }
+        partial:
+          - give_item: { item: mil_ration, quantity: 2 }
+          - set_flag: ow_leaflet
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에 떨어진 군 보급 상자를 다른 사람들과 다투다 전투식량 몇 개와 전단만 건졌다. 전단: '가람항 집결지를 다시 엽니다. R은 배로 안전한 곳에 모십니다.'", source: seen }
+        miss:
+          - set_flag: ow_leaflet
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에 떨어진 군 보급 상자는 남이 먼저 가져갔다. 바닥에 흩어진 전단 한 장만 주웠다: '가람항 집결지를 다시 엽니다.'", source: seen }
+    - id: watch_who
+      label: 몸을 숨기고 누가 가져가는지 지켜본다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: ow_leaflet
+          - belief: { fact: "{zone}에 떨어진 군 보급 상자를 다른 무리 사람들이 가져가는 것을 숨어서 봤다. 그들이 버린 전단: '가람항 집결지를 다시 엽니다. R은 배로 안전한 곳에 모십니다.'", source: seen }
+        partial:
+          - belief: { fact: "{zone}에 떨어진 군 보급 상자를 누군가 가져갔다. 멀어서 누군지 못 봤다", source: seen }
+        miss:
+          - zone_noise: 1
+          - belief: { fact: "{zone}에서 보급 상자를 노리던 사람들에게 들켜 물러났다", source: seen }
+    - id: for_faction
+      label: 우리 무리를 위해 상자를 통째로 거점에 가져간다
+      when: { in_faction: true }
+      check: endure
+      outcomes:
+        success:
+          - faction_resource: { faction: own, resource: food, delta: 10 }
+          - faction_resource: { faction: own, resource: medicine, delta: 3 }
+          - merit: 1
+          - set_flag: ow_leaflet
+          - belief: { fact: "{zone}에 떨어진 군 보급 상자를 통째로 거점에 가져갔다. 안에 든 전단: '가람항 집결지를 다시 엽니다. R은 배로 안전한 곳에 모십니다.'", source: seen }
+        partial:
+          - faction_resource: { faction: own, resource: food, delta: 5 }
+          - set_flag: ow_leaflet
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - set_flag: ow_leaflet
+          - wound: { steps: 1, cause: 상자를 두고 다투다 밀려 넘어졌다 }
+
+- id: ow_printed_ampoule
+  title: 찍힌 번호
+  tags: [world]
+  when:
+    has_items: [mil_serum]
+    flags_none: [ow_ampoule]
+  setup: 상자에서 나온 혈청 앰플을 불빛에 비춰 본다. 바닥에 번호가 있다. 손글씨가 아니다. 기계로 반듯하게 찍었다. "GH-R 0412 · 채혈 3차".
+  ai_direction: GH는 가람항, R은 버티는 사람의 분류, 0412는 사람 번호, 채혈 3차는 그 사람에게서 세 번째로 뽑은 피라는 뜻이다. 주인공이 섬의 앰플(손글씨 "372 여")을 알거나 군의 R 분류를 안다면 바로 이어진다. 모르면 뜻을 다 알려 주지 않는다. 섬은 손으로 적고, 남쪽은 기계로 찍는다.
+  choices:
+    - id: note
+      label: 번호를 적어 둔다
+      effects:
+        - set_flag: ow_ampoule
+        - belief: { fact: "군 보급 상자의 혈청 앰플 바닥에 기계로 찍은 번호: 'GH-R 0412 · 채혈 3차'. 손글씨가 아니다", source: seen }
+
+- id: ow_leaving
+  title: 남쪽으로 가겠다는 사람들
+  tags: [world]
+  when:
+    flags_all: [ow_leaflet]
+    own_territory: true
+    day_gte: 50
+    segments: [evening, night]
+  cast:
+    leaver: { faction: own, ranks: [grunt] }
+  setup: '저녁 배급 줄 끝에서 {leaver:이/가} 짐을 싸고 있다. 곁에 몇이 더 있다. 손에 하얀 전단이 들려 있다. "가람항이 다시 열렸대. 배가 온대. 여기서 또 겨울을 날 바에야." 다른 사람들이 당신을 본다.'
+  ai_direction: 전단을 본 사람들이 남쪽 집결지로 떠나려 한다 ({leaver}와 서넛). 무리를 버리는 게 아니라 살 곳을 찾는 것이라고 믿는다. 붙잡을 말은 주인공이 아는 것(군의 R 분류, 이송 장부, 트럭의 녹음, 찍힌 번호)이 있으면 무게가 실린다 (GM은 주인공의 믿음에 있는 것만 말하게 한다). 떠난 사람들이 어떻게 됐는지는 이 장면에서 알 수 없다.
+  choices:
+    - id: persuade
+      label: 집결지가 사람을 가려낸다고, 가지 말라고 설득한다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: leaver, axis: trust, delta: 1 }
+          - belief: { fact: "전단을 보고 남쪽으로 떠나려던 {leaver}와 몇 사람을 붙잡았다", source: seen }
+        partial:
+          - faction_population: { faction: own, delta: -1 }
+          - belief: { fact: "{leaver}는 남았지만 몇 사람은 전단을 들고 남쪽으로 떠났다", source: seen }
+        miss:
+          - faction_population: { faction: own, delta: -3 }
+          - faction_morale: { faction: own, delta: -1 }
+          - npc_depart: { who: leaver }
+          - belief: { fact: "{leaver}와 서넛이 전단을 들고 남쪽 집결지로 떠났다. 붙잡지 못했다", source: seen }
+    - id: let_go
+      label: 막지 않는다. 마른 식량을 나눠 준다
+      effects:
+        - take_item: { item: dry_ration }
+        - faction_population: { faction: own, delta: -3 }
+        - npc_depart: { who: leaver }
+        - relation: { who: leaver, axis: affection, delta: 2 }
+        - belief: { fact: "{leaver}와 서넛이 남쪽 집결지로 떠났다. 마른 식량을 쥐여 보냈다", source: seen }
+    - id: report
+      label: 지도부에 알린다
+      effects:
+        - faction_population: { faction: own, delta: -1 }
+        - relation: { who: leaver, axis: trust, delta: -2 }
+        - merit: 1
+        - belief: { fact: "남쪽으로 떠나려던 {leaver}의 일을 지도부에 알렸다. 몇은 붙잡혔고 몇은 밤에 빠져나갔다", source: seen }
+
+- id: ow_south_column
+  title: 남쪽으로 가는 행렬
+  tags: [world]
+  when:
+    flags_all: [ow_leaflet]
+    factions: [none]
+    zones: [rest_stop, riverside, old_town]
+    segments: [morning, day]
+  setup: 고속도로 쪽으로 사람들이 줄지어 간다. 수레, 아이를 업은 사람, 지팡이를 짚은 노인. 손마다 하얀 전단. 행렬 맨 앞의 남자가 당신을 보고 손짓한다. "같이 가요. 배가 온대요. 혼자 다니는 사람은 더 반겨 준대요."
+  ai_direction: 전단을 믿고 남쪽 집결지로 가는 피난민들이다. 떠돌이인 주인공도 함께 가자고 한다. 주인공이 도시를 떠나는 선택은 이 게임에 없다 (따라가면 하루쯤 걷다 돌아오는 것으로 연출한다). 이들에게서 길 이야기를 듣거나, 먹을 것을 나누거나, 붙잡을 수 있다. 이들이 어떻게 됐는지는 알 수 없다.
+  choices:
+    - id: ask
+      label: 행렬과 반나절 걸으며 남쪽 이야기를 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "남쪽으로 가는 피난민 행렬에게 들었다: 집결지 철조망 앞에서 손가락을 찔러 피 한 방울을 받는다. 그다음 줄이 둘로 갈린다고 한다", source: report }
+        partial:
+          - belief: { fact: 남쪽으로 가는 피난민들은 배가 온다는 말 말고는 아는 게 없었다, source: report }
+        miss:
+          - body: { track: hunger, delta: 1 }
+    - id: share
+      label: 마른 식량을 나눠 주고 배웅한다
+      effects:
+        - take_item: { item: dry_ration }
+        - deed: { summary: 남쪽으로 가는 피난민 행렬에 먹을 것을 나눠 주었다, tags: [mercy], severity: 1, privacy: public }
+        - belief: { fact: 남쪽으로 가는 피난민 행렬에 마른 식량을 나눠 주고 배웅했다, source: seen }
+    - id: warn
+      label: 집결지가 사람을 가려낸다고 말한다
+      when: { flags_any: [og_ledger, og_truth] }
+      check: persuade
+      outcomes:
+        success:
+          - deed: { summary: 남쪽으로 가던 피난민들에게 집결지의 분류를 알려 몇을 돌려세웠다, tags: [mercy], severity: 1, privacy: public }
+          - belief: { fact: "남쪽으로 가던 피난민 몇이 내 말을 듣고 돌아섰다", source: seen }
+        partial:
+          - belief: { fact: "남쪽으로 가던 피난민들은 내 말을 듣고도 대부분 갔다", source: seen }
+        miss:
+          - belief: { fact: "남쪽으로 가던 피난민들이 겁주지 말라며 등을 돌렸다", source: seen }
+
+- id: ow_southerner
+  title: 거꾸로 걸어온 사람
+  tags: [world]
+  when:
+    flags_all: [ow_leaflet]
+    flags_none: [ow_south_truth]
+    zones: [rest_stop]
+    segments: [day, evening]
+    day_gte: 70
+  cast:
+    walker: { extra: highway_traveler, label: 남쪽에서 올라온 사람, keep: ow_walker }
+  setup: 휴게소 칠판 앞에 낯선 사람이 앉아 있다. 남쪽으로 가는 사람들 사이에서 혼자 거꾸로 걸어온 사람이다. 소매를 끝까지 내려 손목을 덮었고, 누가 가람항 이야기를 꺼내면 자리를 뜬다.
+  ai_direction: 이 사람은 집결지에 갔다가 달아났다 (lore/outside_south). 팔뚝 안쪽에 지워지지 않는 R 도장이 있다. 믿기 전에는 말하지 않고, 도장도 보이지 않는다. R은 막사에 따로 두고 잘 먹이지만 주마다 피를 뽑는다, 배가 오면 R만 태워 간다, 배가 어디로 가는지는 막사 안의 누구도 모른다. 군이 무엇을 하려는지는 이 사람도 모른다 (구하는 건지 쓰는 건지). 쫓기고 있다고 믿는다.
+  choices:
+    - id: ask
+      label: 곁에 앉아 남쪽 이야기를 천천히 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: ow_south_truth
+          - relation: { who: walker, axis: trust, delta: 1 }
+          - belief: { fact: "가람항에서 달아난 사람에게 들었다: 집결지는 피 한 방울로 R을 가려 막사에 따로 두고 잘 먹이며 주마다 피를 뽑는다. 배가 오면 R만 태워 간다. 어디로 가는지는 아무도 모른다. 그의 팔뚝 안쪽에 R 도장이 있었다", source: report }
+        partial:
+          - belief: { fact: "휴게소의 남쪽에서 온 사람은 집결지에서 사람을 둘로 나눈다는 말만 하고 입을 닫았다", source: report }
+        miss:
+          - relation: { who: walker, axis: trust, delta: -1 }
+          - belief: { fact: 휴게소의 남쪽에서 온 사람은 가람항 이야기가 나오자 자리를 떴다, source: seen }
+    - id: feed
+      label: 아무것도 묻지 않고 통조림 하나를 내민다
+      effects:
+        - take_item: { item: canned_food }
+        - relation: { who: walker, axis: affection, delta: 2 }
+        - relation: { who: walker, axis: trust, delta: 1 }
+        - belief: { fact: "휴게소에서 남쪽에서 거꾸로 걸어온 사람에게 통조림을 주었다. 손목을 소매로 가리고 있었다", source: seen }
+
+- id: ow_flares
+  title: 남쪽 하늘의 조명탄
+  tags: [world]
+  repeatable: true
+  cooldown_days: 120
+  when:
+    flags_all: [ow_plane]
+    day_gte: 30
+    segments: [night]
+  setup: 남쪽 하늘 낮은 곳에 붉은 빛이 셋 떠오른다. 조명탄이다. 천천히 내려앉으며 구름 밑을 물들이고, 한참 뒤에 아주 먼 데서 둔한 소리가 하나 굴러온다.
+  ai_direction: 가람항 쪽이다. 무슨 신호인지는 정하지 않는다 (배가 닿았다, 떠난다, 무언가를 쏘았다). 주인공이 집결지 이야기를 안다면 배를 떠올린다. 장면은 짧게.
+  choices:
+    - id: count
+      label: 빛이 몇인지, 어느 쪽인지 세어 둔다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "밤에 남쪽 가람항 쪽 하늘에 붉은 조명탄 셋이 올랐다. 한참 뒤 먼 데서 둔한 소리가 났다", source: seen }
+        partial:
+          - belief: { fact: 밤에 남쪽 하늘에 붉은 빛이 몇 개 올랐다, source: seen }
+        miss: []
+    - id: ignore
+      label: 등을 돌린다. 남쪽 일은 남쪽 일이다
+      effects:
+        - belief: { fact: 밤에 남쪽 하늘에 붉은 빛이 올랐다, source: seen }

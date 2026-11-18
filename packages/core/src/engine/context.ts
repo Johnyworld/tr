@@ -1,4 +1,5 @@
 import { originLine } from "./extras.ts";
+import { standingInFaction } from "../game/politics.ts";
 import { tiesOf } from "../game/ties.ts";
 import { fireHere } from "./forage.ts";
 import { describeRemains } from "./remains.ts";
@@ -118,6 +119,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       ...(describeFatigue(content, state) ? [describeFatigue(content, state)!] : []),
       ...(describeCamp(content, state) ? [describeCamp(content, state)!] : []),
+      ...standingLines(state, content),
       ...(content.scenario.fame && fameOf(state, content).tier > 0
         ? [`명성: ${fameOf(state, content).label}. 소문을 들은 사람이 처음 보고도 당신을 알아볼 수 있다 (인물 카드의 팬·안티 줄). 플레이어에게 숫자는 말하지 않는다`]
         : []),
@@ -587,3 +589,17 @@ function bleedingLine(content: Content, player: Character): string[] {
       `지혈은 붕대·구급상자(treatment.item), 장면의 치료사(treatment {item: null}), 맨손(treatment {item: null} + check move ${w.staunch_move}, 옷을 찢어 누르기 등)`,
   ];
 }
+
+/** 무리 안의 눈 (12-152): 같은 무리에서 주인공을 믿지 않는 사람이 여럿이거나, 믿고 따르는 사람이 많을 때. 숫자는 주지 않는다 */
+function standingLines(state: GameState, content: Content): string[] {
+  const player = state.characters[state.playerId];
+  if (!player?.factionId) return [];
+  const { distrust, trust } = standingInFaction(state, content, player.id);
+  const lines: string[] = [];
+  if (distrust >= STANDING_NOTE_AT) lines.push("무리 안의 눈: 무리 안에 당신을 믿지 않는 사람이 여럿이다. 수군거림과 등 돌린 태도를 연기에 반영한다 (숫자는 말하지 않는다)");
+  if (trust >= STANDING_NOTE_AT * 2) lines.push("무리 안의 눈: 무리 안에 당신을 믿고 따르는 사람이 많다");
+  return lines;
+}
+
+/** 무리 안의 눈 줄을 띄우는 사람 수 */
+const STANDING_NOTE_AT = 3;

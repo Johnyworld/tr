@@ -513,6 +513,10 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ set_commander: z.strictObject({ who: z.string().min(1) }) }),
     z.strictObject({ belief: z.strictObject({ fact: z.string().min(1).max(300), source: beliefSourceSchema.default("seen") }) }),
     z.strictObject({ merit: z.number().int().min(-3).max(3) }),
+    /** 주인공의 계급을 바꾼다 (12-152: 강등·추대). 같은 무리 안에서. 무소속이면 아무 일도 없다 */
+    z.strictObject({ player_rank: z.strictObject({ rank: idEnum(rankIds(s)) }) }),
+    /** 주인공이 무리에서 쫓겨나 떠돌이가 된다 (12-152). 배급·임무·분대·회의가 끊긴다. 무소속이면 아무 일도 없다 */
+    z.strictObject({ expel: z.literal(true) }),
     /** 직분의 평판 ± (기획서 12.6). 쌓이면 직분 사다리를 오른다. 직분이 없으면 아무 일도 없다 */
     z.strictObject({ standing: z.number().int().min(-2).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
@@ -630,6 +634,8 @@ export function createContentSchemas(s: Scenario) {
     known: z.boolean().default(false),
     /** 이 인물의 플레이어에 대한 신뢰 하한 */
     trust_gte: z.number().int().optional(),
+    /** 같은 무리의 이름 있는 사람 가운데 이 사람을 믿지 않는(신뢰 -2 이하) 사람이 이만큼 이상 (12-152: 재판·불신임) */
+    distrusted_gte: z.number().int().min(1).optional(),
     /** 주인공에게 복수를 다짐한 사람만 (12-135: 주인공이 죽인 사람의 가족·친구) */
     vendetta: z.boolean().optional(),
     /** 소문으로만 주인공을 아는 팬(fan) 또는 안티(anti)만 (12-127) */
@@ -769,6 +775,10 @@ export function createContentSchemas(s: Scenario) {
         road_danger_lte: z.number().int().min(0).max(3).optional(),
         /** 야영의 이야기 (12-148, 태그 camp): 지켜보는 밤(깨어 있거나 보초를 설 동행이 있다)일 때만 (true) / 아무도 지키지 않고 잠든 밤일 때만 (false) */
         camp_watched: z.boolean().optional(),
+        /** 무리 안의 신망 (12-152): 같은 무리의 이름 있는 사람 가운데 주인공을 믿지 않는(신뢰 -2 이하) 사람이 이만큼 이상 */
+        own_distrust_gte: z.number().int().min(1).optional(),
+        /** 주인공을 믿는(신뢰 +2 이상) 같은 무리 사람이 이만큼 이상 */
+        own_trust_gte: z.number().int().min(1).optional(),
         /** 지금 구역의 위험(위험과 감염체 압력 중 높은 쪽)이 이 이상 / 이하 (야영의 이야기) */
         camp_danger_gte: z.number().int().min(0).max(3).optional(),
         camp_danger_lte: z.number().int().min(0).max(3).optional(),

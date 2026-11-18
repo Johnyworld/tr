@@ -1,4 +1,5 @@
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { standingInFaction } from "../game/politics.ts";
 import { fameOf, stanceOf } from "../game/fame.ts";
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import { roleOf } from "../game/state.ts";
@@ -69,6 +70,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.occupations || role.occupations.some((o) => (o === "same" ? player.occupation?.id : o) === c.occupation?.id && !!c.occupation))
     .filter((c) => !role.known || known.has(c.id))
     .filter((c) => role.trust_gte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).trust >= role.trust_gte)
+    .filter((c) => role.distrusted_gte === undefined || standingInFaction(state, content, c.id).distrust >= role.distrusted_gte)
     .map((c) => c.id)
     .sort();
 }
@@ -264,6 +266,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   for (const [id, n] of Object.entries(w.clock_lte ?? {})) if ((state.clocks[id]?.filled ?? Infinity) > n) return false;
   if (w.own_morale_lte !== undefined && (!own || own.morale > w.own_morale_lte)) return false;
   if (w.zone_infested_gte !== undefined && (!state.playerZone || infestationOf(content, state, state.playerZone) < w.zone_infested_gte)) return false;
+  if (w.own_distrust_gte !== undefined || w.own_trust_gte !== undefined) {
+    const standing = standingInFaction(state, content, player.id);
+    if (w.own_distrust_gte !== undefined && standing.distrust < w.own_distrust_gte) return false;
+    if (w.own_trust_gte !== undefined && standing.trust < w.own_trust_gte) return false;
+  }
   if (w.fame_gte !== undefined && fameOf(state, content).tier < w.fame_gte) return false;
   if (w.zone_overrun !== undefined) {
     const over = !!state.playerZone && infestationOf(content, state, state.playerZone) > baseInfestation(content, state.playerZone);

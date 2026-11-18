@@ -1,0 +1,334 @@
+# 무리 안의 정치 (12-152, 기획서 9.17). 재판·지도부 불신임·반란·추대·쫓겨난 뒤. 우리 땅에서만 (쫓겨난 뒤는 빼고)
+# - 조건 own_distrust_gte·own_trust_gte: 같은 무리의 이름 있는 사람 가운데 주인공을 믿지 않는(신뢰 -2 이하)·믿는(+2 이상) 사람 수
+# - 배역 distrusted_gte: 같은 무리에서 그 사람을 믿지 않는 사람 수 (소문 조작 12-151로 움직일 수 있다)
+# - 효과 player_rank(강등·추대), expel(무리에서 쫓겨나 떠돌이가 된다). 쫓겨나면 pol_expelled를 세워 다음 이야기로 잇는다
+# - 지도부(leader)는 무리마다 한 자리라, 누가 오르면 앉아 있던 사람은 내려온다 (npc_rank)
+# - 이야기는 사람을 죽이지 않는다 (원칙 3). 반란의 싸움은 판정으로 풀고, 더 크게 번지면 GM이 전투로 넘긴다
+
+# ── 재판: 주인공 ─────────────────────────────────────
+
+- id: pol_trial_low
+  title: 회의에 불려 가다
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    own_territory: true
+    own_distrust_gte: 3
+    ranks: [grunt, staff]
+    segments: [morning, day, evening]
+  cast:
+    judge: { faction: own, ranks: [leader, officer] }
+  setup: '저녁 배식이 끝나자 {judge:이/가} 당신을 부른다. 회의 자리에 사람들이 둘러앉아 있다. 몇은 당신을 보지 않는다. "요즘 너를 두고 말이 많다. 여기서 직접 듣자."'
+  ai_direction: 무리 안에 주인공을 믿지 않는 사람이 여럿이다 (주인공의 행적이나 주인공에 대한 소문 때문이다. 상태의 행적·인물 카드를 보고 무엇이 문제인지 연기한다. 지어내지 않는다). {judge}의 판단은 무리의 문화(규율)를 따른다. 해명이 통하지 않으면 무리에서 내보내는 것까지 갈 수 있다. 위험은 판정 전에 선언한다.
+  choices:
+    - id: explain
+      label: 일어서서 해명한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: judge, axis: trust, delta: 2 }
+          - belief: { fact: "회의에 불려 가 해명했다. {judge:이/가} 이번은 넘어가자고 했다", source: seen }
+        partial:
+          - merit: -2
+          - relation: { who: judge, axis: respect, delta: 1 }
+          - belief: { fact: "회의에서 해명했지만 벌을 받았다: 배급을 줄이고 보초를 더 선다", source: seen }
+        miss:
+          - set_flag: pol_expelled
+          - expel: true
+          - deed: { summary: 회의에서 무리 사람들의 믿음을 잃고 쫓겨났다, tags: [disobedience], severity: 2, privacy: public }
+    - id: accept
+      label: 변명하지 않고 벌을 받겠다고 한다
+      effects:
+        - merit: -2
+        - relation: { who: judge, axis: respect, delta: 2 }
+        - belief: { fact: "회의에서 변명하지 않고 벌을 받았다", source: seen }
+    - id: walk_out
+      label: 이런 무리는 필요 없다며 나간다
+      effects:
+        - set_flag: pol_expelled
+        - expel: true
+        - relation: { who: judge, axis: trust, delta: -3 }
+        - deed: { summary: 회의 자리를 박차고 무리를 떠났다, tags: [disobedience, betrayal], severity: 2, privacy: public }
+
+- id: pol_trial_high
+  title: 자리를 걸고 서다
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    own_territory: true
+    own_distrust_gte: 3
+    ranks: [squad_leader, officer]
+    segments: [morning, day, evening]
+  cast:
+    judge: { faction: own, ranks: [leader] }
+  setup: '회의가 끝날 무렵 {judge:이/가} 서류를 덮고 당신을 본다. "다들 할 말이 있는 것 같은데. 자리에 앉은 사람이 아래의 믿음을 잃으면 그 자리를 다시 봐야 해."'
+  ai_direction: 무리 안에 주인공을 믿지 않는 사람이 여럿이다. 주인공이 맡은 자리(분대장·간부)가 걸려 있다. 무엇이 문제인지는 상태의 행적·인물 카드를 보고 연기한다 (지어내지 않는다). 판정이 나쁘면 분대원으로 내려간다.
+  choices:
+    - id: explain
+      label: 한 사람씩 눈을 보며 해명한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: judge, axis: trust, delta: 2 }
+          - belief: { fact: "회의에서 자리를 걸고 해명했다. 자리를 지켰다", source: seen }
+        partial:
+          - merit: -2
+          - relation: { who: judge, axis: trust, delta: -1 }
+          - belief: { fact: "회의에서 자리는 지켰지만 공적이 깎였다. {judge}의 눈이 차가워졌다", source: seen }
+        miss:
+          - player_rank: { rank: grunt }
+          - deed: { summary: 무리 사람들의 믿음을 잃고 자리에서 내려왔다, tags: [disobedience], severity: 2, privacy: public }
+    - id: step_down
+      label: 스스로 자리에서 내려오겠다고 한다
+      effects:
+        - player_rank: { rank: grunt }
+        - relation: { who: judge, axis: respect, delta: 2 }
+        - deed: { summary: 믿음을 잃었다며 스스로 자리에서 내려왔다, tags: [honesty], severity: 1, privacy: public }
+
+# ── 재판: 믿음을 잃은 동료 ───────────────────────────
+
+- id: pol_trial_peer
+  title: 둘러앉은 사람들 앞의 동료
+  tags: [world]
+  repeatable: true
+  cooldown_days: 15
+  when:
+    own_territory: true
+    segments: [day, evening]
+  cast:
+    accused: { faction: own, ranks: [grunt, squad_leader, officer], distrusted_gte: 3 }
+  setup: '식당 의자를 둥글게 놓고 사람들이 앉았다. 가운데 {accused:이/가} 서 있다. 누가 먼저 말을 꺼낸다. "다들 들었잖아." 고개를 끄덕이는 사람이 여럿이다. {accused}의 눈이 사람들 사이에서 당신을 찾는다.'
+  ai_direction: 무리 사람 여럿이 {accused}을(를) 믿지 않는다 (이 사람에 대한 행적이나 소문 때문이다. 인물 카드의 "들은 남의 일"을 보고 연기한다. 그 소문이 사실인지는 사람들도 모른다). 주인공이 이 사람에 대한 소문을 지어냈다면(상태의 "당신이 퍼뜨린 거짓 소문") 그 무게를 서술에 비춘다. 주인공의 말 한마디가 결과를 기울인다. 감싸다 실패하면 이 사람은 무리에서 쫓겨난다.
+  choices:
+    - id: defend
+      label: 앞으로 나가 {accused:을/를} 감싼다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: accused, axis: trust, delta: 3 }
+          - relation: { who: accused, axis: affection, delta: 2 }
+          - deed: { summary: "회의에서 믿음을 잃은 {accused:을/를} 감싸 지켰다", tags: [loyalty], severity: 2, privacy: public }
+        partial:
+          - npc_rank: { who: accused, rank: grunt }
+          - relation: { who: accused, axis: trust, delta: 2 }
+          - belief: { fact: "{accused:은/는} 쫓겨나지 않았지만 자리에서 내려왔다. 내가 감쌌다", source: seen }
+        miss:
+          - npc_depart: { who: accused }
+          - relation: { who: accused, axis: affection, delta: 1 }
+          - belief: { fact: "감쌌지만 {accused:은/는} 무리에서 쫓겨났다", source: seen }
+    - id: silent
+      label: 아무 말도 하지 않는다
+      effects:
+        - npc_rank: { who: accused, rank: grunt }
+        - relation: { who: accused, axis: trust, delta: -1 }
+        - belief: { fact: "{accused}의 회의에서 아무 말도 하지 않았다. {accused:은/는} 자리에서 내려왔다", source: seen }
+    - id: pile_on
+      label: 사람들 편에 서서 내보내자고 한다
+      effects:
+        - npc_depart: { who: accused }
+        - relation: { who: accused, axis: trust, delta: -3 }
+        - relation: { who: accused, axis: affection, delta: -3 }
+        - merit: 1
+        - deed: { summary: "회의에서 {accused:을/를} 내보내자고 했다", tags: [diligence], severity: 1, privacy: public }
+
+# ── 지도부 불신임과 반란 ─────────────────────────────
+
+- id: pol_no_confidence
+  title: 바꾸자는 말
+  tags: [world]
+  repeatable: true
+  cooldown_days: 30
+  when:
+    own_territory: true
+    own_morale_lte: 0
+    segments: [evening, night]
+  cast:
+    leader: { faction: own, ranks: [leader], distrusted_gte: 3 }
+    successor: { faction: own, ranks: [officer] }
+  setup: '회의 자리가 평소와 다르다. {successor:이/가} 일어서서 {leader:을/를} 똑바로 본다. "이대로는 겨울을 못 넘깁니다. 사람들이 더는 믿지 않아요. 지도부를 바꿉시다." 방 안이 조용해지고, 시선이 하나둘 당신에게 온다.'
+  ai_direction: 무리 사람 여럿이 지도부 {leader:을/를} 믿지 않고, 사기도 가라앉았다. {successor:이/가} 교체를 꺼냈다. 표는 갈리고, 주인공의 말이 기울인다. 교체되면 {leader:은/는} 간부로 내려오고 {successor:이/가} 지도부가 된다 (코드가 정한다). {leader}은(는) 이 일을 잊지 않는다.
+  choices:
+    - id: back_change
+      label: "{successor} 쪽에 선다"
+      check: persuade
+      outcomes:
+        success:
+          - npc_rank: { who: leader, rank: officer }
+          - npc_rank: { who: successor, rank: leader }
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: successor, axis: trust, delta: 2 }
+          - relation: { who: leader, axis: trust, delta: -2 }
+          - belief: { fact: "회의에서 지도부가 바뀌었다. {leader:은/는} 내려오고 {successor:이/가} 지도부가 됐다. 나는 {successor} 쪽에 섰다", source: seen }
+        partial:
+          - npc_rank: { who: leader, rank: officer }
+          - npc_rank: { who: successor, rank: leader }
+          - relation: { who: leader, axis: trust, delta: -3 }
+          - relation: { who: leader, axis: affection, delta: -2 }
+          - belief: { fact: "지도부가 {successor:으로/로} 바뀌었다. {leader:은/는} 나를 오래 노려봤다", source: seen }
+        miss:
+          - relation: { who: leader, axis: trust, delta: -3 }
+          - merit: -1
+          - belief: { fact: "교체 표결은 한 표 차로 무산됐다. {leader:은/는} 누가 어느 쪽에 섰는지 기억한다", source: seen }
+    - id: back_leader
+      label: "{leader:을/를} 지킨다"
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: leader, axis: trust, delta: 3 }
+          - relation: { who: successor, axis: trust, delta: -2 }
+          - belief: { fact: "회의에서 지도부 {leader:을/를} 지켰다. 교체는 무산됐다", source: seen }
+        partial:
+          - relation: { who: leader, axis: trust, delta: 2 }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "{leader:은/는} 자리를 지켰지만 회의가 끝나도 사람들은 흩어지지 않고 수군거렸다", source: seen }
+        miss:
+          - npc_rank: { who: leader, rank: officer }
+          - npc_rank: { who: successor, rank: leader }
+          - relation: { who: successor, axis: trust, delta: -2 }
+          - belief: { fact: "{leader:을/를} 지키려 했지만 지도부는 {successor:으로/로} 바뀌었다", source: seen }
+    - id: abstain
+      label: 어느 쪽에도 서지 않는다
+      effects:
+        - npc_rank: { who: leader, rank: officer }
+        - npc_rank: { who: successor, rank: leader }
+        - belief: { fact: "회의에서 지도부가 {leader}에서 {successor:으로/로} 바뀌었다. 나는 어느 쪽에도 서지 않았다", source: seen }
+
+- id: pol_uprising
+  title: 무기고 앞의 횃불
+  tags: [world]
+  urgent: true
+  repeatable: true
+  cooldown_days: 40
+  when:
+    own_territory: true
+    own_morale_lte: -2
+    segments: [night]
+  cast:
+    leader: { faction: own, ranks: [leader], distrusted_gte: 2 }
+    rebel: { faction: own, ranks: [officer, squad_leader] }
+  setup: '한밤에 고함이 울린다. 무기고 앞에 횃불이 여럿이다. {rebel:이/가} 쇠지레로 무기고 자물쇠를 부수고 돌아서서 외친다. "굶는 건 우리고 결정은 저들이 한다! 오늘 밤 끝낸다!" 본관 창문에 {leader}의 그림자가 비친다. 사람들이 갈라선다.'
+  ai_direction: 사기가 바닥이고 지도부를 믿지 않는 사람이 많아 반란이 터졌다. {rebel:이/가} 앞장섰다. 누가 이기는지는 주인공이 어느 편에 서고 판정이 어떻게 나오느냐로 정해진다 (코드가 정한다). 반란이 이기면 {leader:은/는} 무리를 떠나고 {rebel:이/가} 지도부가 된다. 반란 편에 섰다가 지면 쫓겨난다. 위험은 판정 전에 선언한다. 더 크게 번지면 GM이 전투로 넘긴다.
+  choices:
+    - id: rebel
+      label: 횃불 쪽에 선다
+      check: fight
+      outcomes:
+        success:
+          - npc_depart: { who: leader }
+          - npc_rank: { who: rebel, rank: leader }
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: rebel, axis: trust, delta: 3 }
+          - deed: { summary: 반란에 앞장서 지도부를 몰아냈다, tags: [bravery, disobedience], severity: 3, privacy: public }
+        partial:
+          - npc_depart: { who: leader }
+          - npc_rank: { who: rebel, rank: leader }
+          - wound: { steps: 1, cause: 반란의 밤 본관 계단의 몸싸움 }
+          - deed: { summary: 반란에 끼어 지도부를 몰아냈다, tags: [disobedience], severity: 2, privacy: public }
+        miss:
+          - wound: { steps: 1, cause: 반란이 진압되던 밤의 몽둥이 }
+          - npc_depart: { who: rebel }
+          - set_flag: pol_expelled
+          - expel: true
+          - deed: { summary: 반란에 끼었다가 진압돼 쫓겨났다, tags: [disobedience, betrayal], severity: 3, privacy: public }
+    - id: loyal
+      label: 본관 문 앞을 막아선다
+      check: fight
+      outcomes:
+        success:
+          - npc_depart: { who: rebel }
+          - relation: { who: leader, axis: trust, delta: 3 }
+          - merit: 2
+          - deed: { summary: 반란의 밤에 지도부를 지켰다, tags: [loyalty, bravery], severity: 3, privacy: public }
+        partial:
+          - npc_depart: { who: rebel }
+          - relation: { who: leader, axis: trust, delta: 2 }
+          - wound: { steps: 1, cause: 본관 문 앞에서 맞은 쇠지레 }
+          - deed: { summary: 반란의 밤에 지도부를 지켰다, tags: [loyalty], severity: 2, privacy: public }
+        miss:
+          - npc_depart: { who: leader }
+          - npc_rank: { who: rebel, rank: leader }
+          - relation: { who: rebel, axis: trust, delta: -3 }
+          - wound: { steps: 1, cause: 본관 문 앞에서 밀려 넘어졌다 }
+          - belief: { fact: "반란의 밤에 지도부를 지키려 했지만 막지 못했다. {rebel:이/가} 지도부가 됐다", source: seen }
+    - id: hide
+      label: 숙소 문을 잠그고 아침을 기다린다
+      effects:
+        - npc_depart: { who: leader }
+        - npc_rank: { who: rebel, rank: leader }
+        - belief: { fact: "반란의 밤에 숙소에 숨어 있었다. 아침에 보니 {leader:은/는} 떠났고 {rebel:이/가} 지도부가 됐다", source: seen }
+
+# ── 추대 ─────────────────────────────────────────────
+
+- id: pol_acclaim
+  title: 당신 이름이 나오다
+  tags: [world]
+  repeatable: true
+  cooldown_days: 30
+  when:
+    own_territory: true
+    own_trust_gte: 6
+    ranks: [officer]
+    segments: [evening]
+  cast:
+    leader: { faction: own, ranks: [leader] }
+  setup: '회의가 길어진다. 누가 불쑥 말한다. "차라리 저 사람한테 맡기는 게 어때요." 여러 사람이 당신을 본다. 고개를 끄덕이는 사람이 많다. {leader:은/는} 한참 말없이 탁자를 두드린다.'
+  ai_direction: 무리 안에 주인공을 믿고 따르는 사람이 많다. 주인공을 지도부로 올리자는 말이 나왔다. 받아들이고 판정이 좋으면 {leader:은/는} 간부로 내려오고 주인공이 지도부가 된다 (코드가 정한다). {leader}이(가) 순순히 물러날지는 판정과 성격대로. 지도부가 되어도 무리 전체를 직접 지휘하지는 않는다 (지금처럼 회의 방침으로 움직인다).
+  choices:
+    - id: accept
+      label: 맡겠다고 한다
+      check: persuade
+      outcomes:
+        success:
+          - npc_rank: { who: leader, rank: officer }
+          - player_rank: { rank: leader }
+          - faction_morale: { faction: own, delta: 1 }
+          - relation: { who: leader, axis: respect, delta: 1 }
+          - deed: { summary: 무리 사람들의 추대로 지도부가 됐다, tags: [diligence], severity: 3, privacy: public }
+        partial:
+          - npc_rank: { who: leader, rank: officer }
+          - player_rank: { rank: leader }
+          - relation: { who: leader, axis: trust, delta: -2 }
+          - relation: { who: leader, axis: affection, delta: -2 }
+          - deed: { summary: 무리 사람들의 추대로 지도부가 됐다, tags: [diligence], severity: 2, privacy: public }
+        miss:
+          - relation: { who: leader, axis: trust, delta: -3 }
+          - belief: { fact: "회의에서 나를 지도부로 올리자는 말이 나왔지만 {leader:이/가} 받아들이지 않았다. 나를 경계하기 시작했다", source: seen }
+    - id: decline
+      label: 지금 자리가 맞다며 사양한다
+      effects:
+        - relation: { who: leader, axis: trust, delta: 2 }
+        - relation: { who: leader, axis: respect, delta: 1 }
+        - belief: { fact: "회의에서 나를 지도부로 올리자는 말이 나왔다. 사양했다", source: seen }
+
+# ── 쫓겨난 뒤 ────────────────────────────────────────
+
+- id: pol_after_expelled
+  title: 담 밖의 첫날
+  tags: [world]
+  when:
+    factions: [none]
+    flags_all: [pol_expelled]
+    flags_none: [pol_after_seen]
+    segments: [morning, day, evening]
+  cast:
+    friend: { known: true, trust_gte: 2 }
+  setup: '담 밖에서 맞는 첫날이다. 짐은 가볍고 갈 곳은 정해지지 않았다. 해 질 녘, 무너진 담 그늘에서 누가 손짓한다. {friend}다. 주위를 살피며 보따리 하나를 내민다. "나는 너 안 믿는 사람 아니야. 몸조심해."'
+  ai_direction: "{friend}은(는) 아직 주인공을 믿는다. 옛 무리 사람이면 들키면 곤란해지는 걸 알면서 왔다. 다시 무리로 돌아갈 길은 열어 두지 않는다 (지금은). 짧고 조용하게."
+  choices:
+    - id: take
+      label: 보따리를 받는다
+      effects:
+        - set_flag: pol_after_seen
+        - clear_flag: pol_expelled
+        - give_item: { item: dry_ration, quantity: 2 }
+        - relation: { who: friend, axis: affection, delta: 2 }
+        - belief: { fact: "쫓겨난 첫날 {friend:이/가} 몰래 먹을 것을 건네주었다", source: seen }
+    - id: refuse
+      label: 너까지 곤란해진다며 돌려보낸다
+      effects:
+        - set_flag: pol_after_seen
+        - clear_flag: pol_expelled
+        - relation: { who: friend, axis: respect, delta: 2 }
+        - belief: { fact: "쫓겨난 첫날 {friend:이/가} 찾아왔지만 돌려보냈다", source: seen }

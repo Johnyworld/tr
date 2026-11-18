@@ -295,7 +295,8 @@ command:
         miss: "{member}: 곁에 있다"
   # 분대원이 곁에 있으면 (follow) 싸움에서 받는 보정
   follow_bonus: { fight: 1, shoot: 1 }
-  council_ranks: [officer]
+  # 지도부(leader)도 회의에 앉는다 (12-152: 추대된 주인공)
+  council_ranks: [officer, leader]
   council_moves: [persuade, tactics]
   policies:
     - id: ration

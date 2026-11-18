@@ -1,4 +1,5 @@
 import { capturePlayer, releasePlayer } from "./captivity.ts";
+import { rankName } from "../game/ranks.ts";
 import { exposeToFatigue } from "./fatigue.ts";
 import { infestationOf } from "../game/infestation.ts";
 import { exposeToCold } from "./climate.ts";
@@ -390,6 +391,29 @@ function applyEffect(
   if ("standing" in effect) {
     const note = changeStanding(ctx, playerId, effect.standing, reason);
     return note ? { line: note } : {};
+  }
+  // 무리 안의 정치 (12-152): 주인공의 강등·추대, 쫓겨남
+  if ("player_rank" in effect) {
+    const player = state.characters[playerId]!;
+    const to = effect.player_rank.rank;
+    if (!player.factionId || player.rank === to) return {};
+    store.append({ type: "promoted", characterId: playerId, from: player.rank, to });
+    const fromLabel = rankName(content, player.factionId, player.rank);
+    const toLabel = rankName(content, player.factionId, to);
+    return { line: `${josa(player.name, "은/는")} 이제 ${toLabel}다 (전에는 ${fromLabel}).`, display: { type: "promotion", name: player.name, fromLabel, toLabel } };
+  }
+  if ("expel" in effect) {
+    const player = state.characters[playerId]!;
+    if (!player.factionId) return {};
+    const from = content.factions[player.factionId]?.name ?? player.factionId;
+    const fromLabel = rankName(content, player.factionId, player.rank);
+    const rank = content.scenario.custom_start?.free_rank ?? content.scenario.rank_ladder[0]!.id;
+    const role = joinRole(content, "", rank, { age: player.age, title: "떠돌이", occupation: player.occupation?.id ?? null });
+    store.append({ type: "player_joined_faction", factionId: "", rank: role.rank, role, beliefs: [] });
+    return {
+      line: `${from}에서 쫓겨났다. 이제 무소속이다: 배급·임무·분대·회의가 끊겼고, 거점의 사물함은 쓸 수 없다 (맡긴 물건은 거기 남아 있다). 그 무리 사람들이 당신을 어떻게 볼지는 저마다 다르다.`,
+      display: { type: "promotion", name: player.name, fromLabel: `${from} ${fromLabel}`, toLabel: "무소속" },
+    };
   }
   if ("merit" in effect) {
     store.append({ type: "merit_awarded", characterId: playerId, delta: effect.merit, reason });

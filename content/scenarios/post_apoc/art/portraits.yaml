@@ -498,6 +498,8 @@ faces:
     style: D
     gender: male
     seed: 2141
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.8
     colorize: true
     subject: >-
       a korean man in his mid thirties, short cropped dark hair, long angular face, high cheekbones,
@@ -522,6 +524,8 @@ faces:
     style: D
     gender: male
     seed: 2144
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.91
     colorize: true
     subject: >-
       a korean man in his late sixties, short grey buzz cut, heavily wrinkled weathered face, droopy
@@ -549,6 +553,8 @@ faces:
     style: D
     gender: male
     seed: 2147
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.89
     colorize: true
     subject: >-
       a korean man in his late twenties, slicked-back black hair, narrow monolid eyes, long narrow face,
@@ -558,7 +564,8 @@ faces:
     gender: male
     seed: 2148
     colorize: true
-    crop_scale: 1.1
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.93
     subject: >-
       three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes
       visible and looking toward the viewer, a korean young man in his early twenties, thick straight
@@ -569,7 +576,8 @@ faces:
     gender: male
     seed: 2149
     colorize: true
-    crop_scale: 1.1
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
     subject: >-
       three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
       visible and looking toward the viewer, a korean man in his mid twenties, tousled wet-look black
@@ -587,6 +595,8 @@ faces:
     style: D
     gender: male
     seed: 2151
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.78
     colorize: true
     subject: >-
       a korean man in his late forties, hair tied back in a small knot, salt-and-pepper beard and
@@ -597,7 +607,8 @@ faces:
     seed: 2152
     # 원본에 네모 틀이 그려졌다: 정리로 지운다
     cleanup: true
-    crop_scale: 1.1
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
     subject: >-
       three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
       visible and looking toward the viewer, a korean man in his late fifties, grey hair swept back, hard
@@ -624,7 +635,8 @@ faces:
     style: D
     gender: female
     seed: 2163
-    crop_scale: 1.1
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.84
     subject: >-
       three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
       visible and looking toward the viewer, a korean woman in her mid twenties, long straight black hair
@@ -634,7 +646,8 @@ faces:
     gender: female
     seed: 2164
     colorize: true
-    crop_scale: 1.1
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
     subject: >-
       three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
       visible and looking toward the viewer, a korean young woman around twenty, chin-length bob with full
@@ -644,7 +657,8 @@ faces:
     gender: female
     seed: 2165
     colorize: true
-    crop_scale: 1.1
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
     subject: >-
       three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes
       visible and looking toward the viewer, a korean young woman in her early twenties, long voluminous
@@ -678,6 +692,8 @@ faces:
     style: D
     gender: female
     seed: 2169
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.84
     colorize: true
     subject: >-
       a korean young woman around twenty, long straight hair parted in the middle, round full face, rosy

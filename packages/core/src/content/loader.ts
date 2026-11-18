@@ -297,6 +297,14 @@ function checkReferences(content: Content): string[] {
       }
     }
   }
+  // 거점 손보기 (12-167): 재료·텃밭 아이템·판정·자원
+  for (const f of content.scenario.facilities ?? []) {
+    for (const item of Object.keys(f.materials)) if (!content.items[item]) problems.push(`scenario.facilities.${f.id}: 알 수 없는 재료 ${item}`);
+    if (!content.scenario.moves.some((m) => m.id === f.move)) problems.push(`scenario.facilities.${f.id}: 알 수 없는 판정 ${f.move}`);
+    const g = f.effects.garden;
+    if (g && !content.items[g.item]) problems.push(`scenario.facilities.${f.id}.garden: 알 수 없는 아이템 ${g.item}`);
+    if (g?.resource && !content.scenario.resources.some((r) => r.id === g.resource)) problems.push(`scenario.facilities.${f.id}.garden: 알 수 없는 자원 ${g.resource}`);
+  }
   // 탐험할 곳 (12-162): 구역·아이템·감염체 틀
   for (const r of content.scenario.exploration?.ruins ?? []) {
     if (!content.locations[r.zone]) problems.push(`scenario.exploration.ruins.${r.id}: 알 수 없는 구역 ${r.zone}`);

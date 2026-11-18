@@ -1,3 +1,4 @@
+import { breakFacilities, runFacilitiesDaily } from "./facilities.ts";
 import { runBrokenPromises } from "./promises.ts";
 import { runDailyFood } from "./forage.ts";
 import { lootRemainsDaily } from "./remains.ts";
@@ -73,6 +74,14 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     displays.push(...spreadTroubleRumors(ctx));
     // 무리 사이 싸움의 포로, 포로를 먹이고 부리기 (12-55)
     displays.push(...warCaptures(ctx, result.clashes));
+    // 시설이 싸움통에 부서진다 (12-167). 내 거처·우리 거점이면 소식이 온다
+    {
+      const now = store.getState();
+      const mine = new Set([now.homes[now.playerId], ...Object.entries(now.zones).filter(([, z]) => z.owner === now.characters[now.playerId]?.factionId).map(([id]) => id)]);
+      for (const b of breakFacilities(ctx, result.clashes)) if (mine.has(b.zone)) displays.push({ type: "belief", fact: b.line, sourceLabel: "소식" });
+    }
+    // 텃밭이 자란다 (12-167)
+    runFacilitiesDaily(ctx, day);
     runCaptivity(ctx);
     // 연애: 다른 연인을 알아채기, 같은 사람을 보는 두 사람 (12-58)
     displays.push(...runRomance(ctx));

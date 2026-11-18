@@ -37,6 +37,8 @@ function tempContent(files: Record<string, string>) {
   if (scenario.body) delete (scenario.body as Record<string, unknown>).dependence;
   // 탐험할 곳(12-162)도 실제 구역·아이템을 참조한다
   delete scenario.exploration;
+  // 거점 손보기(12-167)도 실제 아이템을 재료로 쓴다
+  delete scenario.facilities;
   // 모닥불 연료도 실제 아이템을 참조한다 (12-98)
   const cold = (scenario.body as Record<string, Record<string, Record<string, unknown>>> | undefined)?.cold?.climate;
   if (cold) delete cold.fire;

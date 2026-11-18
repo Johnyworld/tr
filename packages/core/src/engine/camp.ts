@@ -1,3 +1,4 @@
+import { campFactor, watchedHere } from "./facilities.ts";
 import type { Content, StoryletContent } from "../content/schemas.ts";
 import { activeCompanions, bondOf } from "../game/companions.ts";
 import { infestationOf } from "../game/infestation.ts";
@@ -61,14 +62,16 @@ export function campWatchers(content: Content, state: GameState): string[] {
 
 /** 지켜보는 밤인가: 깨어 있는 활동이거나 보초를 설 동행이 있다 */
 export function campWatched(content: Content, state: GameState, activity: Activity | string): boolean {
-  return activity !== "sleep" || campWatchers(content, state).length > 0;
+  // 거처의 경보줄 (12-167): 잠들어도 다가오는 것을 미리 안다
+  return activity !== "sleep" || campWatchers(content, state).length > 0 || watchedHere(content, state);
 }
 
 /** 시간당 확률 */
 export function campChance(content: Content, state: GameState, site: CampSite, at: GameTime): number {
   const camp = content.scenario.camp!;
   const fire = !!state.playerZone && (state.fires[state.playerZone] ?? 0) > at;
-  return (camp.chance[site.danger] ?? 0) * (fire ? camp.fire : 1) * (site.ownLand ? camp.own_land : 1);
+  // 바리케이드 (12-167)
+  return (camp.chance[site.danger] ?? 0) * (fire ? camp.fire : 1) * (site.ownLand ? camp.own_land : 1) * campFactor(content, state, state.playerZone);
 }
 
 /** 지금 열 수 있는 야영의 이야기 */

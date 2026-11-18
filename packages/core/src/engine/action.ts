@@ -1,3 +1,4 @@
+import { applyBuild, planBuild } from "./facilities.ts";
 import { templateKind } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
 import { forage, handleTrap } from "./forage.ts";
@@ -251,6 +252,11 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("물건을 만들거나 고치면 (기획서 4.8). 판정(check: 그 제작 법·물건의 스킬)이 필요하고, 재료와 결과는 시스템이 정한다. 아니면 null"),
+    build: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("시설을 지으면 (12-167): 상태의 '지을 수 있는 시설' id. 판정(check: 그 시설의 move)이 필요하고, 재료·시간·결과는 시스템이 정한다. 아니면 null"),
     battle: z
       .strictObject({
         effect: z.string().describe("상태의 '지금 쓸 수 있는 전투 효과' 중 하나의 id"),
@@ -298,7 +304,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {
-    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || !!input.craft || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || !!input.craft || !!input.build || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
     const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
     if (acts || !passive) {
       return {
@@ -329,6 +335,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.check && (strikes || input.check.distance)) {
     const far = rangeProblem(content, player, input.check.move, input.check.distance);
     if (far) return { ok: false, error: far };
+  }
+  if (input.build) {
+    if (!input.check) return { ok: false, error: "시설을 지으려면 판정(check)이 필요하다." };
+    const why = planBuild(content, store.getState(), player, input.build, input.check.move);
+    if (why) return { ok: false, error: why };
   }
   if (input.craft) {
     if (!input.check) return { ok: false, error: "만들거나 고치려면 판정(check)이 필요하다." };
@@ -527,6 +538,15 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
 
   // 1-0-1. 제작·수리 (기획서 4.8)
   if (input.craft && outcome) lines.push(...applyCraft(ctx, input.craft, outcome));
+  // 1-0-2. 시설 짓기 (12-167): 시설이 오래 걸리면 그만큼 더 흐른다
+  if (input.build && outcome) {
+    const built = applyBuild(ctx, input.build, outcome);
+    lines.push(...built.lines);
+    if (built.extraMinutes > 0) {
+      const more = advanceTime(ctx, "work", null, null, built.extraMinutes / 120);
+      displays.push(...more.extra);
+    }
+  }
 
   // 1-0. 수색: 그 구역에서 찾을 거리를 코드가 굴린다 (기획서 4.7)
   if (input.activity?.kind === "search" && !inBattle) {
@@ -612,7 +632,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item || input.drink || input.refill ? "eat" : input.craft || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item || input.drink || input.refill ? "eat" : input.craft || input.build || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : "brief"));
   // 이동 수단 (12-137): 타고 가면 이동 시간이 줄고, 연료를 쓰고, 도착한 곳에 소리가 난다
   const ride = input.move_to && input.ride ? planRide(ctx, input.ride, !!crossingAttempt || escapeAttempt) : null;
   if (ride && !ride.ok) lines.push(`타지 못하고 걸었다: ${ride.error}`);

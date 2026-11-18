@@ -1,3 +1,4 @@
+import { stoveAt } from "./facilities.ts";
 import type { Content } from "../content/schemas.ts";
 import { isCreature } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
@@ -98,7 +99,8 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   } else {
     parts.push(cover > 0 ? "바깥" : "덮을 곳 없는 바깥");
   }
-  const fireHere = !!zone && !!c.fire && (state.fires[zone] ?? 0) > time;
+  // 난로 (12-167): 그 구역의 실내에는 꺼지지 않는 불이 있다
+  const fireHere = !!zone && !!c.fire && ((state.fires[zone] ?? 0) > time || (indoor && stoveAt(content, state, zone)));
   if (fireHere) {
     value += c.fire!.warmth;
     parts.push(`모닥불 ${signed(c.fire!.warmth)}`);

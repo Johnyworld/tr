@@ -881,6 +881,37 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
+     * 거점 손보기 (12-167): 떠돌이의 거처(home)와 무리의 거점(base)에 짓는 시설. move 판정, hours 시간, materials 재료.
+     * 효과는 기존 장치로만: fort 담 단단함 +, camp 야영 이야기 확률 배수, watched 잠들어도 지켜보는 밤, water 물이 나는 곳,
+     * garden 텃밭(거처: days마다 item×qty를 창고에, 거점: 날마다 무리 resource + resource_delta, seasons에만), preserve 날것이 안 상한다, fire 실내의 불
+     */
+    facilities: z
+      .array(
+        z.strictObject({
+          id,
+          label: z.string().min(1),
+          description: z.string().min(1),
+          where: z.array(z.enum(["home", "base"])).min(1),
+          move: id,
+          hours: z.number().min(1).max(24),
+          materials: z.record(id, z.number().int().min(1)),
+          effects: z
+            .strictObject({
+              fort: z.number().int().min(1).max(2).optional(),
+              camp: z.number().min(0).max(1).optional(),
+              watched: z.boolean().optional(),
+              water: z.boolean().optional(),
+              garden: z
+                .strictObject({ item: id, qty: z.number().int().min(1), days: z.number().int().min(1), seasons: z.array(id).default([]), resource: id.optional(), resource_delta: z.number().int().default(0) })
+                .optional(),
+              preserve: z.boolean().optional(),
+              fire: z.boolean().optional(),
+            })
+            .default({}),
+        }),
+      )
+      .optional(),
+    /**
      * 유품과 이어지는 끈 (12-158): 죽은 주인공과 가까운 사람 (관계가 있거나 호감이 close_affection 이상).
      * 가까운 사람이 뒤를 이으면 사물함·거처의 짐을 물려받고, 가까운 사람은 이야기에서 그를 기억하는 배역(mourner)이 된다
      */

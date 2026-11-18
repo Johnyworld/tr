@@ -1,3 +1,4 @@
+import { preservesHere } from "./facilities.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import { dayOf } from "../rules/time.ts";
 import { seasonAt } from "../sim/season.ts";
@@ -130,6 +131,8 @@ export function runDailyFood(ctx: ToolContext): ToolDisplayEvent[] {
   const state = store.getState();
   const me = state.characters[state.playerId];
   if (!me || me.dead) return [];
+  // 훈제 막 (12-167): 그곳에서 날을 넘기면 날것이 상하지 않는다
+  if (preservesHere(content, state)) return [];
   const season = seasonAt(content.scenario, state.time)?.id ?? "";
   const factor = content.scenario.spoilage?.season[season] ?? 1;
   const spoiled: string[] = [];

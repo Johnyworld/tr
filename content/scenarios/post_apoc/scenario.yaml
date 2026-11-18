@@ -1062,6 +1062,58 @@ wounds:
   # 감염체에게 다칠 위험인데 종류를 비웠으면 할큄으로 본다. 감염은 피가 나는 상처일 때만 굴린다
   infected_default: claw
 
+# 거점 손보기 (12-167, *임시*): 떠돌이의 거처(home)와 우리 무리의 거점(base)에 짓는 시설. 판정·시간·재료는 여기, 결과는 코드.
+# 시간으로는 닳지 않고, 그 구역에 습격·공격이 오면 하나가 부서진다. 거점에 지으면 성실함 행적이 남는다
+facilities:
+  - id: barricade
+    label: 바리케이드
+    description: 판자와 고철로 틈을 막았다. 습격을 받으면 더 버티고, 밤에 다가오는 것이 줄어든다.
+    where: [home, base]
+    move: carpentry
+    hours: 4
+    materials: { planks: 3, scrap_metal: 2 }
+    effects: { fort: 1, camp: 0.7 }
+  - id: alarm_line
+    label: 깡통 경보줄
+    description: 드나드는 길목마다 깡통을 매단 줄을 쳤다. 잠들어도 무언가 다가오면 먼저 안다.
+    where: [home, base]
+    move: improvise
+    hours: 1
+    materials: { tin_alarm: 1, wire_roll: 1 }
+    effects: { watched: true }
+  - id: rain_catcher
+    label: 빗물받이
+    description: 천과 고철로 빗물을 모아 거르는 통을 걸었다. 이곳에서 물을 마시고 채울 수 있다.
+    where: [home, base]
+    move: improvise
+    hours: 3
+    materials: { cloth: 2, scrap_metal: 1, duct_tape: 1 }
+    effects: { water: true }
+  - id: garden
+    label: 텃밭
+    description: 흙을 고르고 씨를 뿌렸다. 봄부터 가을까지 먹을 것이 자란다.
+    where: [home, base]
+    move: survival
+    hours: 6
+    materials: { seed_packet: 1 }
+    effects: { garden: { item: potato, qty: 2, days: 4, seasons: [spring, summer, autumn], resource: food, resource_delta: 1 } }
+  - id: smokehouse
+    label: 훈제 막
+    description: 판자로 작은 연기 막을 세웠다. 이곳에서 날을 넘기면 날것이 상하지 않는다.
+    where: [home]
+    move: carpentry
+    hours: 4
+    materials: { planks: 2, firewood: 2 }
+    effects: { preserve: true }
+  - id: stove
+    label: 난로
+    description: 고철로 연통 달린 난로를 짰다. 이곳 실내에는 꺼지지 않는 불이 있다.
+    where: [home]
+    move: improvise
+    hours: 5
+    materials: { scrap_metal: 3, wire_roll: 1 }
+    effects: { fire: true }
+
 # 유품과 이어지는 끈 (12-158, *임시*): 죽은 주인공과 관계(앙숙 빼고)가 있거나 호감이 이 이상이면 가까운 사람.
 # 가까운 사람이 뒤를 이으면 사물함·거처의 짐을 물려받고, 이야기에서 그를 기억하는 배역(mourner)이 된다
 legacy:

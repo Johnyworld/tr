@@ -582,6 +582,7 @@ faces:
     style: D
     gender: female
     seed: 2209
+    zoom: 1.08
     # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
     crop_scale: 0.93
     colorize: true

@@ -1,3 +1,6 @@
+import { josa } from "../text.ts";
+import { leaveRemainsForNewDeaths, livingIds } from "../engine/remains.ts";
+import { runDisasters } from "../engine/disasters.ts";
 import type { Character } from "../game/character.ts";
 import { pickCast } from "../story/storylets.ts";
 import { dayOf, MINUTES_PER_DAY, nextSegmentStart, timeSegmentSchema } from "../rules/time.ts";
@@ -44,6 +47,7 @@ const HELP = [
   "~battle                지금 구역에서 전투 장면을 연다",
   "~relation 인물 축 ±값  그 인물의 나에 대한 관계 (축: trust, affection, respect)",
   "~faction 세력 자원|morale 값  세력 자원·사기",
+  "~disaster 재난 [구역]  큰 재난이 지금 덮친다 (구역이 없으면 지금 구역, 12-169)",
 ].join("\n");
 
 /** "me", "나", 캐릭터 id, 이름(앞부분 일치)으로 캐릭터를 찾는다 */
@@ -74,8 +78,23 @@ export function runCheat(input: string, ctx: ToolContext): Result {
   if (!cmd || cmd === "help" || cmd === "도움말") return { ok: true, text: HELP };
   const state = store.getState();
   if (!state.worldId) return { ok: false, error: "열린 세계가 없다." };
+  // 치트로 죽은 사람도 유해를 남긴다 (도구와 같이, 12-130·12-163 장례를 시험할 수 있게)
+  const living = livingIds(state);
   const result = ((): Result => {
     switch (cmd) {
+      case "disaster": {
+        const kinds = s.disasters?.kinds ?? [];
+        const kind = kinds.find((k) => k.id === args[0]);
+        if (!kind) return { ok: false, error: `~disaster 재난 [구역] — ${kinds.map((k) => k.id).join(", ") || "없음"}` };
+        const zone = args[1] ?? null;
+        if (zone && !content.locations[zone]) return { ok: false, error: `없는 구역: ${zone}` };
+        if (state.disaster) store.append({ type: "disaster_ended" });
+        const day = dayOf(state.time);
+        const target = zone ?? (kind.target === "all" ? null : state.playerZone);
+        store.append({ type: "disaster_scheduled", kind: kind.id, zone: target, faction: target ? (state.zones[target]?.owner ?? null) : null, day });
+        runDisasters(ctx, day);
+        return { ok: true, text: `재난: ${kind.label}${target ? ` (${content.locations[target]?.name ?? target})` : ""}` };
+      }
       case "kill": {
         const c = findCharacter(ctx, args[0]);
         if (!c) return { ok: false, error: `없는 인물: ${args[0]}` };
@@ -151,9 +170,9 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         const c = findCharacter(ctx, args.join(" "));
         if (!c || c.id === state.playerId) return { ok: false, error: `없는 인물: ${args.join(" ")}` };
         if (c.dead) return { ok: false, error: `${c.name}은(는) 죽었다.` };
-        if (state.scene.present.includes(c.id)) return { ok: true, text: `${c.name}은(는) 이미 장면에 있다.` };
+        if (state.scene.present.includes(c.id)) return { ok: true, text: `${josa(c.name, "은/는")} 이미 장면에 있다.` };
         enterScene(ctx, c.id);
-        return { ok: true, text: `${c.name}이(가) 장면에 들어왔다.` };
+        return { ok: true, text: `${josa(c.name, "이/가")} 장면에 들어왔다.` };
       }
       case "goto": {
         const zone = args[0];
@@ -231,6 +250,7 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         return { ok: false, error: `모르는 치트: ${cmd}. ~help` };
     }
   })();
+  if (result.ok) leaveRemainsForNewDeaths(ctx, living);
   // 실제로 바꾼 명령만 기록한다 (세이브에 치트 표시)
   if (result.ok) store.append({ type: "cheat_used", command: input.trim().slice(0, 200) });
   return result;

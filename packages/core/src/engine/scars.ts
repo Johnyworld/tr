@@ -34,6 +34,6 @@ export function scarFromHarm(ctx: ToolContext, characterId: string, kind: string
   ctx.store.append({ type: "character_patched", characterId, traits: [...have, pick.trait] });
   const who = playerCalls(state, ctx.content, characterId);
   return characterId === state.playerId
-    ? `이 상처는 아물어도 흔적을 남길 것이다: ${def.label} (${def.description}).`
+    ? `이 상처는 아물어도 흔적을 남길 것이다: ${def.label} — ${def.description}.`
     : `${josa(who, "은/는")} 이 상처의 흔적을 오래 안고 갈 것이다: ${def.label}.`;
 }

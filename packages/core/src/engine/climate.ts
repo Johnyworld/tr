@@ -103,7 +103,8 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   const fireHere = !!zone && !!c.fire && ((state.fires[zone] ?? 0) > time || (indoor && stoveAt(content, state, zone)));
   if (fireHere) {
     value += c.fire!.warmth;
-    parts.push(`모닥불 ${signed(c.fire!.warmth)}`);
+    // 지핀 모닥불이 없으면 난로의 불이다 (12-167)
+    parts.push(`${(state.fires[zone!] ?? 0) > time ? "모닥불" : "난로"} ${signed(c.fire!.warmth)}`);
   }
   // 젖은 옷 (12-121): 불 곁이 아니면 체감이 떨어진다
   if (c.wet && !fireHere && (state.wetUntil?.[me.id] ?? 0) > time) {

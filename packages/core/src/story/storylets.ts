@@ -69,11 +69,10 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.resolve_target || currentResolve(state)?.target === c.id)
     .filter((c) => !role.agenda_half || agendaShowing(content, state, c.id))
     .filter((c) => !role.agenda_ids || role.agenda_ids.includes(agendaOf(content, state, c.id)?.agenda.id ?? ""))
-    // 다짐의 대상·자기 일을 가진 사람을 here로 부르면 지금 이 구역에 있을 때만 (장면에 있거나, 함께 다니거나, 있을 곳이 여기)
+    // here: 지금 이 구역에 있는 사람만 (장면에 있거나, 함께 다니거나, 있을 곳이 여기) (장면에 있거나, 함께 다니거나, 있을 곳이 여기)
     .filter(
       (c) =>
         !role.here ||
-        !(role.resolve_target || role.agenda_half) ||
         state.scene.present.includes(c.id) ||
         state.companions.includes(c.id) ||
         (c.extra ? c.extra.zone === state.playerZone : content.npcs[c.id] ? npcZoneAt(content.npcs[c.id]!, state.time) === state.playerZone : false),

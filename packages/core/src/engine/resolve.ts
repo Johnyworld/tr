@@ -262,6 +262,9 @@ export const RESOLVE_TOOLS = [resolveTool] as const;
 /** 연대기 줄: 그 캐릭터가 이루거나 꺾거나 내려놓은 다짐 */
 export function resolveChronicle(state: GameState, characterId: string): string[] {
   const label: Record<ResolveOutcome, string> = { achieved: "이룬 다짐", let_go: "내려놓은 다짐", broken: "꺾인 다짐", by_others: "남의 손으로 이룬 다짐" };
-  return (state.resolveLog ?? []).filter((x) => x.characterId === characterId).map((x) => `${label[x.outcome]}: ${x.text}${x.note ? ` (${x.note})` : ""}`);
+  const ended = (state.resolveLog ?? []).filter((x) => x.characterId === characterId).map((x) => `${label[x.outcome]}: ${x.text}${x.note ? ` (${x.note})` : ""}`);
+  // 죽을 때까지 품고 있던 다짐
+  const open = state.resolves?.[characterId];
+  return open && state.characters[characterId]?.dead ? [...ended, `못 이룬 다짐: ${open.text}`] : ended;
 }
 

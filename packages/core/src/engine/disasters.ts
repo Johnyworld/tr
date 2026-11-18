@@ -113,6 +113,8 @@ function strike(ctx: ToolContext, d: Disaster, day: number): ToolDisplayEvent[] 
     collapsed = k.collapse && content.locations[d.zone]?.kind === "base" && !!store.getState().zones[d.zone]?.owner && rng() < r.collapse_chance * m;
   }
   store.append({ type: "disaster_struck", until: day + k.recover_days, stall: k.stall_yields ? (d.zone ? [d.zone] : []) : [], collapsed });
+  // 날씨를 바꾸는 재난(혹한)은 덮친 날부터 (12-169)
+  if (k.weather) store.append({ type: "weather_set", day, weatherId: k.weather });
   if (collapsed && d.faction) store.append({ type: "faction_morale_changed", factionId: d.faction, delta: -2 });
   // 돌림병: 그 무리의 이름 있는 사람이 확률로 앓기 시작한다 (주인공도 그 무리면)
   const displays: ToolDisplayEvent[] = [];

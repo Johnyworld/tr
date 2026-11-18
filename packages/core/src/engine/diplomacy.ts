@@ -199,6 +199,10 @@ export function describeDiplomacyForGm(state: GameState, content: Content): stri
     if (p.a !== me.factionId && p.b !== me.factionId) continue;
     lines.push(`- ${factionName(content, p.a === me.factionId ? p.b : p.a)}과(와) 휴전 중 (${formatTime(p.until)}까지). 그쪽 사람을 치면 휴전이 깨진다`);
   }
+  // 지도부끼리 맺은 휴전 (12-146): 크게 밀린 무리가 얻어 낸 숨 돌릴 틈
+  for (const [other, t] of Object.entries(state.factions[me.factionId]?.truces ?? {})) {
+    lines.push(`- ${factionName(content, other)}과(와) 지도부끼리 맺은 휴전 중 (약 ${t.days}일 남음). 그동안 무리끼리는 서로 치지 않는다. 주인공이 먼저 손을 쓰면 그쪽이 가만있지 않는다 (서술로)`);
+  }
   if (sitsOnCouncil(state, content)) {
     lines.push(`협상할 수 있는 협정 (negotiate, 다른 무리의 간부 이상이 장면에 있을 때): ${rules.pacts.map((p) => `${p.id} ${p.label}(${p.summary})`).join(", ")}. 스킬: ${rules.moves.join(", ")}`);
   }

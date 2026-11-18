@@ -58,6 +58,14 @@ const DEFENSE_COMMIT = 0.2;
 /** 방침이 아무리 지키자고 해도 전투원의 이 비율까지만 지킨다 */
 const DEFENSE_COMMIT_MAX = 0.4;
 const BASE_DEFENSE_BONUS = 1.5;
+/** 지키는 쪽 거점에서 한 칸·두 칸 떨어진 구역의 방어 배수 (12-146, *임시*): 집에 가까울수록 단단해 전선이 어느 선에서 멈춘다 */
+const HOME_DEFENSE = [BASE_DEFENSE_BONUS, 1.3, 1.15];
+/** AI 무리끼리의 휴전 (12-146, *임시*): 서로 적대하는 두 무리 중 약한 쪽이 시작 인원의 이만큼 아래면, 하루 이 확률로 이 날수만큼 */
+const AI_TRUCE_BELOW = 0.5;
+const AI_TRUCE_CHANCE = 0.04;
+const AI_TRUCE_DAYS: readonly [number, number] = [14, 28];
+/** 휴전 동안의 태도 (적대 기준 바로 위, 12-126과 같다) */
+const AI_TRUCE_DISPOSITION = -1;
 /** 탄약이 모자라면 전투력이 이만큼으로 준다 */
 const NO_AMMO_FACTOR = 0.6;
 /** 습격에 성공하면 상대 자원의 이 비율을 빼앗는다 (내보낸 1명당 10까지) */
@@ -220,6 +228,62 @@ export function warShareOf(content: Content, world: Pick<WarWorld, "zones">, fac
     over += Math.max(0, infestationOf(content, { infested }, loc.id) - baseInfestation(content, loc.id));
   }
   return base * Math.max(rules?.war_share_floor ?? 0, 1 - cut * over);
+}
+
+/** 그 무리의 거점에서 이 구역까지 몇 칸인가 (거점이 없으면 Infinity) */
+export function hopsFromBase(content: Content, world: Pick<WarWorld, "zones">, factionId: string, zone: string): number {
+  const bases = Object.values(content.locations).filter((l) => l.kind === "base" && world.zones[l.id]?.owner === factionId).map((l) => l.id);
+  if (!bases.length) return Infinity;
+  const seen = new Set(bases);
+  let frontier = bases;
+  for (let hops = 0; frontier.length; hops++) {
+    if (frontier.includes(zone)) return hops;
+    const next: string[] = [];
+    for (const z of frontier) for (const n of neighbors(content, z)) if (!seen.has(n)) (seen.add(n), next.push(n));
+    frontier = next;
+  }
+  return Infinity;
+}
+
+/**
+ * AI 무리끼리의 휴전 (12-146). 날마다 남은 날을 줄이고 끝나면 태도를 돌린다 (그사이 다른 일로 바뀌었으면 그대로).
+ * 서로 적대하는 두 무리 중 약한 쪽(전투원이 적은 쪽)이 시작 인원의 AI_TRUCE_BELOW 아래면 하루 AI_TRUCE_CHANCE로 휴전한다.
+ * 휴전 동안은 두 무리의 태도가 적대 기준 위라 서로 치지 않는다 (12-126과 같은 방식). 소식은 태도가 바뀐 소식으로 퍼진다
+ */
+function runAiTruces(world: WarWorld, content: Content, rng: Rng, alive: string[]): WarDayResult["shifts"] {
+  const out: WarDayResult["shifts"] = [];
+  const name = (id: string) => content.factions[id]?.name ?? id;
+  for (const id of alive) {
+    const f = world.factions[id]!;
+    for (const [other, t] of Object.entries(f.truces ?? {})) {
+      t.days -= 1;
+      if (t.days > 0) continue;
+      delete f.truces![other];
+      if ((f.disposition?.[other] ?? content.factions[id]?.disposition[other] ?? 0) === AI_TRUCE_DISPOSITION) f.disposition = { ...f.disposition, [other]: t.restore };
+      if (id < other) out.push({ clockId: "truce_end", factionId: id, to: other, news: `${name(id)}과(와) ${name(other)}의 휴전이 끝났다` });
+    }
+  }
+  for (const a of alive) {
+    for (const b of alive) {
+      if (a >= b) continue;
+      const fa = world.factions[a]!;
+      const fb = world.factions[b]!;
+      if (fa.truces?.[b] || fb.truces?.[a]) continue;
+      if (disposition(content, a, b, world) > HOSTILE && disposition(content, b, a, world) > HOSTILE) continue;
+      const [weak, weakId] = fa.combatants <= fb.combatants ? [fa, a] : [fb, b];
+      const start = content.factions[weakId]?.population ?? weak.population;
+      if (weak.population >= start * AI_TRUCE_BELOW || rng() >= AI_TRUCE_CHANCE) continue;
+      const days = AI_TRUCE_DAYS[0] + Math.floor(rng() * (AI_TRUCE_DAYS[1] - AI_TRUCE_DAYS[0] + 1));
+      const restoreA = disposition(content, a, b, world);
+      const restoreB = disposition(content, b, a, world);
+      fa.truces = { ...fa.truces, [b]: { days, restore: restoreA } };
+      fb.truces = { ...fb.truces, [a]: { days, restore: restoreB } };
+      fa.disposition = { ...fa.disposition, [b]: Math.max(restoreA, AI_TRUCE_DISPOSITION) };
+      fb.disposition = { ...fb.disposition, [a]: Math.max(restoreB, AI_TRUCE_DISPOSITION) };
+      out.push({ clockId: "truce", factionId: a, to: b, news: `${name(a)}과(와) ${name(b)}가 휴전했다. 한동안 서로 치지 않는다` });
+    }
+  }
+  return out;
 }
 
 /** 무리 사람이 받는 배급 단계: 창고가 며칠 치 남았는지로 정하고, 방침(ration_shift)만큼 옮긴다 */
@@ -391,6 +455,9 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     }
   }
 
+  // 3-1. AI 무리끼리의 휴전 (12-146): 끝난 휴전은 태도를 돌리고, 크게 밀린 무리는 휴전을 얻을 수 있다
+  shifts.push(...runAiTruces(next, content, rng, alive));
+
   // 4. 교전
   for (const attacker of alive) {
     const profile = content.factions[attacker];
@@ -561,7 +628,8 @@ function fight(
   const use = (f: FactionState) => Math.round(war.ammo_per_clash * policyEffects(content, f).ammoUse);
   const power = (n: number, f: FactionState) => n * (1 + 0.1 * f.morale) * ((f.resources[war.ammo] ?? 0) >= use(f) ? policyEffects(content, f).firepower : NO_AMMO_FACTOR);
   const attack = power(committed, a);
-  const defense = (power(own, d) + allies.reduce((n, x) => n + power(x.n, x.f), 0)) * (content.locations[zone]?.kind === "base" ? BASE_DEFENSE_BONUS : 1);
+  // 집에 가까울수록 단단하다 (12-146): 거점, 한 칸, 두 칸
+  const defense = (power(own, d) + allies.reduce((n, x) => n + power(x.n, x.f), 0)) * (HOME_DEFENSE[hopsFromBase(content, world, defenderId, zone)] ?? 1);
   const success = rng() < attack / (attack + defense);
 
   // 진 쪽은 내보낸 병력의 최대 20%, 이긴 쪽은 0~1명

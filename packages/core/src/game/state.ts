@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 54;
+export const SAVE_SCHEMA_VERSION = 55;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -68,6 +68,8 @@ export const factionStateSchema = z.strictObject({
   disposition: z.record(z.string(), z.number().int().min(-3).max(3)).optional(),
   /** 무리 방침 (주제 id → 선택지 id, 기획서 9.11). 없는 주제는 시나리오의 default */
   policy: z.record(z.string(), z.string()).optional(),
+  /** AI 무리끼리 맺은 휴전 (12-146): 상대 무리 id → 남은 날, 끝나면 돌릴 이 무리의 태도 */
+  truces: z.record(z.string(), z.strictObject({ days: z.number().int().min(0), restore: z.number().int().min(-3).max(3) })).optional(),
 });
 export type FactionState = z.infer<typeof factionStateSchema>;
 

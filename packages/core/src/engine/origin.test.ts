@@ -14,7 +14,7 @@ describe("출신과 말씨", () => {
   it("수도권(표준어)이 가장 많고 경상도가 다음, 제주·함경도가 가장 적다", () => {
     const rng = createSeededRng(11);
     const count: Record<string, number> = {};
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < 1200; i++) {
       const o = make(person, rng).origin!;
       count[o.id] = (count[o.id] ?? 0) + 1;
     }

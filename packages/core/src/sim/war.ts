@@ -51,6 +51,9 @@ export const HOSTILE = -2;
 /** 교전에 내보내는 병력 비율 */
 const COMMIT: Record<Clash["kind"], number> = { raid: 0.15, skirmish: 0.2, assault: 0.35, occupy: 0.1 };
 const PLAN_COMMIT = 0.5;
+/** 지원 방어 (12-140, *임시*): 이 태도 이상인 무리가 전투원의 이만큼을 보탠다 */
+const ALLY_AT = 2;
+const ALLY_COMMIT = 0.1;
 const DEFENSE_COMMIT = 0.2;
 /** 방침이 아무리 지키자고 해도 전투원의 이 비율까지만 지킨다 */
 const DEFENSE_COMMIT_MAX = 0.4;
@@ -339,6 +342,14 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     if (plan?.kind === "shift") {
       // 태도가 바뀌는 계획은 한 번 일어나고 끝난다 (찬 채로 둔다)
       if (clock.filled >= clock.max) continue;
+      // 힘의 저울 (12-140): 당기는 쪽이 강할수록 그날 찰 확률이 높다
+      if (plan.pull) {
+        const power = (id: string) => Math.max(0, next.factions[id]?.combatants ?? 0);
+        const toward = power(plan.pull.toward);
+        // 붙잡는 쪽은 함께 해 온 시간만큼 더 무겁다 (bond)
+        const total = toward + power(plan.pull.against) * (plan.pull.bond ?? 1);
+        if (total > 0 && rng() >= toward / total) continue;
+      }
       clock.filled += 1;
       if (clock.filled >= clock.max) shifts.push(applyShift(next, content, clock.factionId, clockId, plan));
       continue;
@@ -519,12 +530,19 @@ function fight(
   // 바깥의 적·감염체를 막느라 이 전쟁에는 그 몫만 내보낸다 (12-139)
   const share = content.factions[attackerId]?.war_share ?? 1;
   const committed = Math.max(1, Math.round(a.combatants * share * (plan ? PLAN_COMMIT : COMMIT[kind])));
-  const defenders = Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * defenseOf(content, d)));
+  const own = Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * defenseOf(content, d)));
+  // 지원 방어 (12-140): 지키는 쪽을 우호(ALLY_AT 이상)로 보고 치는 쪽과는 우호가 아닌 무리가 전투원 일부를 보탠다
+  const allies = Object.entries(world.factions)
+    .filter(([id, f]) => id !== attackerId && id !== defenderId && f.population > 0 && f.combatants > 0)
+    .filter(([id]) => disposition(content, id, defenderId, world) >= ALLY_AT && disposition(content, id, attackerId, world) < ALLY_AT)
+    .map(([id, f]) => ({ id, f, n: Math.round(f.combatants * ALLY_COMMIT) }))
+    .filter((x) => x.n > 0);
+  const defenders = own + allies.reduce((n, x) => n + x.n, 0);
   // 분배 (12-128): 탄약을 전선에 몰면 화력이 오르고 그만큼 빨리 쓴다
   const use = (f: FactionState) => Math.round(war.ammo_per_clash * policyEffects(content, f).ammoUse);
   const power = (n: number, f: FactionState) => n * (1 + 0.1 * f.morale) * ((f.resources[war.ammo] ?? 0) >= use(f) ? policyEffects(content, f).firepower : NO_AMMO_FACTOR);
   const attack = power(committed, a);
-  const defense = power(defenders, d) * (content.locations[zone]?.kind === "base" ? BASE_DEFENSE_BONUS : 1);
+  const defense = (power(own, d) + allies.reduce((n, x) => n + power(x.n, x.f), 0)) * (content.locations[zone]?.kind === "base" ? BASE_DEFENSE_BONUS : 1);
   const success = rng() < attack / (attack + defense);
 
   // 진 쪽은 내보낸 병력의 최대 20%, 이긴 쪽은 0~1명
@@ -532,7 +550,14 @@ function fight(
   const loserLosses = randInt(rng, 1, Math.max(1, Math.round(loserSide * 0.2)));
   const winnerLosses = rng() < 0.5 ? 0 : 1;
   const attackerLosses = Math.min(a.combatants, success ? winnerLosses : loserLosses);
-  const defenderLosses = Math.min(d.combatants, success ? loserLosses : winnerLosses);
+  let defenderLosses = Math.min(d.combatants + allies.reduce((n, x) => n + x.f.combatants, 0), success ? loserLosses : winnerLosses);
+  // 도우러 온 무리도 보탠 만큼 잃는다
+  for (const x of allies) {
+    const share = Math.min(x.f.combatants, Math.floor((defenderLosses * x.n) / defenders));
+    lose(x.f, share);
+    defenderLosses -= share;
+  }
+  defenderLosses = Math.min(d.combatants, defenderLosses);
   lose(a, attackerLosses);
   lose(d, defenderLosses);
   for (const f of [a, d]) f.resources[war.ammo] = Math.max(0, (f.resources[war.ammo] ?? 0) - Math.round(war.ammo_per_clash * policyEffects(content, f).ammoUse));

@@ -61,6 +61,9 @@
       label: 연합에서 발 빼기
       kind: shift
       days: 30
+      # 날마다 찰지는 힘의 저울로 (12-140): 붉은연합이 강할수록 빨리, 청솔이 강해지면 더디다.
+      # 청솔과 함께 해 온 시간이 있어 청솔의 힘을 2배로 친다 (bond, *임시*)
+      pull: { toward: faction_c, against: faction_a, bond: 2 }
       shift:
         - { to: faction_a, value: 0 }
         - { to: faction_c, value: 0 }

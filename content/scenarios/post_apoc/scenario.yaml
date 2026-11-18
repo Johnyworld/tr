@@ -226,6 +226,20 @@ command:
         success: "{member}: {zone}에서 쓸 만한 걸 찾아 돌아왔다"
         partial: "{member}: {zone}을(를) 훑었지만 건진 게 많지 않다"
         miss: "{member}: {zone}에서 감염체에 쫓겨 빈손으로 돌아왔다"
+    # 외부인 찾기 (12-140, *임시*): 담 밖을 떠도는 사람을 찾아 설득해 데려온다. 무리의 입과 손이 함께 는다
+    - id: outsiders
+      label: 외부인 찾기
+      kind: work
+      hours: 8
+      move: persuade
+      stat: charm
+      needs_zone: true
+      dangerous: true
+      rewards: { population: 2, merit: 1 }
+      report:
+        success: "{member}: {zone}에서 떠돌던 사람 둘을 데려왔다. 굶주렸지만 일할 수 있다"
+        partial: "{member}: {zone}에서 한 사람만 따라왔다. 나머지는 담 안을 믿지 못했다"
+        miss: "{member}: {zone}에서 아무도 못 데려왔다. 떠돌이들이 돌을 던지며 쫓아냈다"
     - id: scout
       label: 정찰
       kind: work
@@ -535,6 +549,71 @@ traits:
 # 상대를 쓰러뜨리기 (기획서 7.5, *임시*): 부상이 중상 이상이면 무력화 (더 맞서지 못하고 뒤질 수 있다)
 combat:
   incapacitated_at: serious
+
+# 출신과 말씨 (12-142, *임시*): 동적으로 생기는 사람(엑스트라)의 출신. weight는 대략의 인구 비율, dialect.chance는 그 출신이 사투리를 쓸 확률 (아니면 표준어).
+# GM은 인물 카드의 말씨 줄대로, 예문만큼만 연기한다 (과장하거나 웃음거리로 만들지 않는다)
+origins:
+  - { id: capital, label: 수도권, weight: 50 }
+  - id: gyeongsang
+    label: 경상도
+    weight: 25
+    dialect:
+      label: 경상도 사투리
+      chance: 0.75
+      style: '말이 짧고 억양이 세다. 말끝이 "~나", "~노", "~데이", "마"로 뚝 끊긴다'
+      samples:
+        - "뭐 하노, 퍼뜩 온나."
+        - "됐다 마. 내가 할게."
+  - id: jeolla
+    label: 전라도
+    weight: 10
+    dialect:
+      label: 전라도 사투리
+      chance: 0.7
+      style: '구수하고 말이 길다. "~잉", "~당께", "~했는디"가 붙고 놀라면 "워메"'
+      samples:
+        - "워메, 이것이 뭔 일이당가."
+        - "그라믄 쪼까 기다려 보랑께."
+  - id: chungcheong
+    label: 충청도
+    weight: 10
+    dialect:
+      label: 충청도 사투리
+      chance: 0.6
+      style: '느긋하고 하고 싶은 말을 돌려 한다. 말끝에 "~유", "~겨"가 붙는다'
+      samples:
+        - "급할 거 뭐 있대유. 천천히 혀."
+        - "그거 안 되는 거 아닌가 싶은디유."
+  - id: gangwon
+    label: 강원도
+    weight: 3
+    dialect:
+      label: 강원도 사투리
+      chance: 0.6
+      style: '산골 말씨. "~드래요", "~나?", "마카(모두)"가 섞인다'
+      samples:
+        - "그 고개는 마카 눈에 묻혔드래요."
+        - "밥은 먹었나?"
+  - id: jeju
+    label: 제주도
+    weight: 1
+    dialect:
+      label: 제주 말
+      chance: 0.5
+      style: '말끝이 "~수다", "~마씸", "~게"로 끝난다. 뭍 사람은 처음에 잘 못 알아듣는다'
+      samples:
+        - "어디 감수광?"
+        - "혼저 옵서. 밥 먹읍서."
+  - id: hamgyeong
+    label: 함경도
+    weight: 1
+    dialect:
+      label: 함경도 말씨
+      chance: 0.8
+      style: '북에서 온 사람의 말씨. 말끝이 "~했음둥", "~하오", "~슴메"로 끝난다'
+      samples:
+        - "어디서 왔음둥?"
+        - "괜찮소. 내 이런 일 처음 아니오."
 
 # 이름 재료 (기획서 7.5): 엑스트라가 이름을 얻을 때 성 + 이름을 고른다
 names:

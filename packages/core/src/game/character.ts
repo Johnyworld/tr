@@ -65,6 +65,8 @@ export function createCharacterSchema(s: Scenario) {
      * 이름은 처음부터 name에 있고, 누가 그 이름을 아는지는 GameState.known (기획서 6.3).
      * 이름 있는 콘텐츠 NPC와 플레이어는 null
      */
+    /** 출신과 말씨를 쓰는지 (12-142, 동적으로 생긴 사람만. 시나리오 origins의 id) */
+    origin: z.strictObject({ id: z.string(), dialect: z.boolean() }).nullable().default(null),
     extra: z
       .strictObject({
         template: z.string(),

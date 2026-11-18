@@ -200,6 +200,20 @@ export const scenarioFileSchema = z
       .default([]),
     /** 상대를 쓰러뜨리기 (기획서 7.5): 부상이 이 단계 이상이면 무력화 (더 맞서지 못하고 소지품을 뒤질 수 있다) */
     combat: z.strictObject({ incapacitated_at: id }).optional(),
+    /**
+     * 출신과 말씨 (12-142): 동적으로 생기는 사람(엑스트라)의 출신을 weight로 뽑고, dialect가 있으면 chance로 그 말씨를 쓴다 (아니면 표준어).
+     * GM이 인물 카드의 말씨 줄대로 연기한다 (예문만큼만)
+     */
+    origins: z
+      .array(
+        z.strictObject({
+          id,
+          label: z.string().min(1),
+          weight: z.number().positive(),
+          dialect: z.strictObject({ label: z.string().min(1), chance: z.number().min(0).max(1), style: z.string().min(1), samples: z.array(z.string().min(1)).min(1) }).optional(),
+        }),
+      )
+      .default([]),
     /** 이름 재료 (기획서 7.5): 성과 성별별 이름. 엑스트라가 이름을 얻을 때, 이름 없이 만든 캐릭터에 쓴다 */
     names: z
       .strictObject({
@@ -438,8 +452,10 @@ export const scenarioFileSchema = z
                   /** 주인공에게 가져다주는 물건 (구역 수색 표에서 고른다면 loot: true) */
                   loot: z.boolean().default(false),
                   merit: z.number().int().min(0).max(3).default(0),
+                  /** 데려와 무리에 들이는 사람 수 (12-140: 외부인 찾기). 대가 있는 성공은 절반(내림) */
+                  population: z.number().int().min(0).max(5).default(0),
                 })
-                .default({ resources: {}, loot: false, merit: 0 }),
+                .default({ resources: {}, loot: false, merit: 0, population: 0 }),
               /** 보고 문구. {member} {zone} */
               report: z.strictObject({ success: z.string().min(1), partial: z.string().min(1), miss: z.string().min(1) }),
             }),

@@ -62,7 +62,26 @@ export function createExtraCharacter(
     extra: { template: template.id, label: input.label, look: pick(rng, template.looks), zone: input.zone, lastSeenAt: input.time },
     // 성적 위협은 틀이 정한 확률로 (12-59). 틀에 없으면 굴리지 않는다
     menace: template.menace && rng() < template.menace.chance ? template.menace.kind : null,
+    // 출신과 말씨 (12-142): 사람만
+    origin: templateKind(template) === "person" ? pickOrigin(s, rng) : null,
   });
+}
+
+/** 출신을 가중치로 뽑고, 그 출신의 말씨를 쓸지 굴린다 */
+function pickOrigin(s: Content["scenario"], rng: Rng): { id: string; dialect: boolean } | null {
+  const total = s.origins.reduce((n, o) => n + o.weight, 0);
+  if (!total) return null;
+  let r = rng() * total;
+  const o = s.origins.find((x) => (r -= x.weight) < 0) ?? s.origins[s.origins.length - 1]!;
+  return { id: o.id, dialect: !!o.dialect && rng() < o.dialect.chance };
+}
+
+/** GM 인물 카드의 말씨 줄 (12-142) */
+export function originLine(content: Content, c: Pick<Character, "origin">): string | null {
+  const o = c.origin ? content.scenario.origins.find((x) => x.id === c.origin!.id) : undefined;
+  if (!o) return null;
+  if (!c.origin!.dialect || !o.dialect) return `말씨: ${o.label} 출신. 표준어를 쓴다`;
+  return `말씨: ${o.label} 출신, ${o.dialect.label} — ${o.dialect.style} (예: "${o.dialect.samples[0]}"). 예문만큼만, 과장하지 않는다`;
 }
 
 /** 이 인물의 가치관 (콘텐츠 NPC면 프로필, 엑스트라면 틀) — 행적에 대한 반응에 쓴다 */

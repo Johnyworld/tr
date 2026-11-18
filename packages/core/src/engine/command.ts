@@ -214,6 +214,12 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
           lines.push(`${content.items[entry.item]?.name ?? entry.item} ×${entry.qty[0]}을(를) 가져왔다`);
         }
       }
+      // 데려온 사람 (12-140): 무리의 입과 손이 함께 는다
+      const people = half ? Math.floor(task.rewards.population / 2) : task.rewards.population;
+      if (people > 0 && player.factionId) {
+        store.append({ type: "faction_population_changed", factionId: player.factionId, delta: people });
+        lines.push(`떠돌던 사람 ${people}명을 데려와 무리에 들였다`);
+      }
       const merit = half ? Math.floor(task.rewards.merit / 2) : task.rewards.merit;
       if (merit > 0) {
         store.append({ type: "merit_awarded", characterId: state.playerId, delta: merit, reason: `분대: ${task.label}` });

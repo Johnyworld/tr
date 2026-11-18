@@ -42,6 +42,7 @@ export const TEST_SCENARIO: Scenario = {
     { id: "endure", label: "버티기", stats: ["cool"], default: 0 },
     { id: "persuade", label: "설득·압박", stats: ["persuasion"], default: 0 },
   ],
+  origins: [],
   move_roles: { notice: "sense_danger", stealth: "stealth" },
   ranges: { ability: { min: -1, max: 3 }, skill: { min: -1, max: 2 }, cap: 4 },
   renamed: { abilities: {} },

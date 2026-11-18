@@ -403,6 +403,18 @@ export function createContentSchemas(s: Scenario) {
             shift: z
               .array(z.strictObject({ from: contentIdSchema.optional(), to: z.string().min(1), value: z.number().int().min(-3).max(3) }))
               .optional(),
+            /**
+             * 하루에 한 칸 찰지를 두 세력의 힘으로 굴린다 (12-140). 찰 확률 = toward의 전투원 / (toward + against의 전투원).
+             * 당기는 쪽(toward)이 강할수록 빨리 차고, 붙잡는 쪽(against)이 강해지면 더디다. 없으면 날마다 찬다
+             */
+            pull: z
+              .strictObject({
+                toward: contentIdSchema,
+                against: contentIdSchema,
+                /** 붙잡는 쪽의 힘에 곱하는 정 (함께 해 온 시간). 1이면 힘만 본다 */
+                bond: z.number().min(1).max(5).default(1),
+              })
+              .optional(),
             /** shift가 일어났을 때 퍼지는 소식 ({faction} = 이 세력, {to} = 대상) */
             news: z.string().optional(),
           })

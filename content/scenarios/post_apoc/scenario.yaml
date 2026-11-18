@@ -658,10 +658,11 @@ persona:
   # NPC의 금사빠 ↔ 돌부처 1단계마다 마음이 생기는 호감·고백을 받아들이는 호감이 1 달라진다 (돌부처 쪽이 높다)
   romance: { axis: heart, per_level: 1 }
 
-# 시스템이 특정 역할로 쓰는 행동 (목격자 살피기, 목격 확률 낮추기)
+# 시스템이 특정 역할로 쓰는 행동 (목격자 살피기, 목격 확률 낮추기, 거짓 소문 퍼뜨리기 12-151)
 move_roles:
   notice: sense_danger
   stealth: stealth
+  deceive: deceive
 
 # 수색을 돕는 지식: 역사 1당 찾을 확률 +25% (옛 지도·건물 용도를 안다, *임시*)
 search_lore: { skill: history, per_level: 0.25 }

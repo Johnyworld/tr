@@ -24,6 +24,10 @@ import {
   type Privacy,
 } from "../game/reputation.ts";
 import { rollPlayerCheck } from "./checks.ts";
+import { knowsName } from "../game/acquaintance.ts";
+import { tiesOf } from "../game/ties.ts";
+import { loversOf } from "./romance.ts";
+import { isIncapacitated } from "./body.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -215,7 +219,91 @@ const revealSecret = defineTool({
   },
 });
 
-export const REPUTATION_TOOLS = [lookForWitnesses, revealSecret] as const;
+/** 지어낸 행적 하나의 크기 상한과 같은 대상에게 다시 퍼뜨릴 수 있는 간격 (12-151) */
+const RUMOR_EVERY_DAYS = 1;
+
+/**
+ * 거짓 소문 퍼뜨리기·누명 (기획서 8.9, 12-151). 판정은 월드의 move_roles.deceive.
+ * 성공·대가 있는 성공이면 지어낸 행적(그 사람이 하지 않은 일)이 장면의 듣는 사람들에게 "전해 들음"으로 들어가고, 그 뒤로는 행적 전파 규칙 그대로 퍼진다.
+ * 대가 있는 성공이면 듣던 한 사람이 출처를 기억하고(주인공의 거짓말 행적, 그 사람만 안다), 실패면 아무도 믿지 않고 그 자리 모두가 주인공의 거짓말을 본다
+ */
+const spreadRumor = defineTool({
+  name: "spread_rumor",
+  description:
+    "거짓 소문을 퍼뜨린다 (누명 씌우기). 플레이어가 장면에 있는 사람들에게, 이름 있는 인물이 하지 않은 일을 했다고 말할 때만 쓴다 (진짜 본 일을 전할 때는 쓰지 않는다). " +
+    "판정은 시스템이 굴린다. 대상과 가까운 사람(가족·친구·연인)이 듣는 자리면 어렵다. 믿으면 그 말은 그 사람의 행적처럼 퍼지고, 듣는 사람마다 가치관대로 그 사람을 보는 눈이 바뀐다. " +
+    "실패하면 거짓말한 것이 드러난다. 같은 사람에게는 하루에 한 번.",
+  schema: z.strictObject({
+    about: z.string().describe("누명을 씌울 인물 id (이름 있는 인물. 장면에 없어도 된다)"),
+    summary: z.string().min(1).max(120).describe("지어낸 일 한 줄 (예: 보급 창고에서 통조림을 빼돌렸다)"),
+    tags: z.array(deedTagSchema).min(1).max(3).describe("지어낸 일의 성격 (행적 태그)"),
+    severity: z.number().int().min(1).max(3).describe("지어낸 일의 크기 1~3"),
+  }),
+  run(input, ctx) {
+    const { store, content } = ctx;
+    const state = store.getState();
+    const move = content.scenario.move_roles.deceive;
+    if (!move) return { ok: false, error: "이 월드에는 소문을 지어낼 규칙이 없다." };
+    const me = state.characters[state.playerId]!;
+    const target = state.characters[input.about];
+    if (!target || target.id === me.id || isCreature(content, target)) return { ok: false, error: `알 수 없는 인물: ${input.about}` };
+    if (!knowsName(state, me.id, target.id)) return { ok: false, error: "이름을 아는 사람에게만 누명을 씌울 수 있다." };
+    const listeners = state.scene.present.filter((id) => {
+      const c = state.characters[id];
+      return id !== target.id && c && !c.dead && !isCreature(content, c) && !isIncapacitated(content, c);
+    });
+    if (!listeners.length) return { ok: false, error: "들을 사람이 없다. 장면에 누명을 쓸 사람 말고 다른 사람이 있어야 한다." };
+    const today = dayOf(state.time);
+    const again = Object.values(state.deeds).some((d) => d.fabricatedBy === me.id && d.actorId === target.id && today - dayOf(d.at) < RUMOR_EVERY_DAYS);
+    if (again) return { ok: false, error: `${playerCalls(state, content, target.id)}에 대한 말은 오늘 이미 퍼뜨렸다.` };
+    // 대상과 이어진 사람(가족·친구·연인)이 듣는 자리면 어렵다
+    const close = new Set([...tiesOf(state, content, target.id).filter((t) => t.kind !== "rival").map((t) => t.other), ...loversOf(state, content, target.id)]);
+    const hard = listeners.some((id) => close.has(id));
+    const m = moveOf(content.scenario, move)!;
+    const check = rollPlayerCheck(
+      { move, stat: m.stats[0]!, difficulty: hard ? "hard" : "normal", intent: `${playerCalls(state, content, target.id)}에 대해 지어낸 말을 퍼뜨린다` },
+      ctx,
+      { target: listeners[0]! },
+    );
+    if (!check.ok) return check;
+    const who = playerCalls(state, content, target.id);
+    const lines: string[] = [];
+    if (check.outcome !== "miss") {
+      const now = store.getState();
+      const deed: Deed = {
+        id: `d_${now.nextDeedNo}`,
+        actorId: target.id,
+        summary: input.summary,
+        tags: input.tags,
+        severity: input.severity,
+        at: now.time,
+        witnesses: [],
+        searched: false,
+        fabricatedBy: me.id,
+      };
+      store.append({ type: "deed_recorded", deed });
+      for (const id of listeners) learn(ctx, deed, id, "report");
+      lines.push(`${listeners.map((id) => playerCalls(state, content, id)).join(", ")}이(가) ${who}에 대한 말을 믿었다. 이제 이 말은 ${who}의 일처럼 퍼진다 (말이 모이는 곳에서는 부풀기도 한다).`);
+      if (check.outcome === "partial") {
+        const doubter = listeners[Math.floor(ctx.rng() * listeners.length)]!;
+        recordDeed(ctx, { summary: `${who}에 대한 말을 지어냈다`, tags: ["deceit"], severity: 1, privacy: "private", noisy: false }, { npcId: doubter, source: "seen" });
+        lines.push(`다만 ${josa(playerCalls(state, content, doubter), "은/는")} 이 말이 어디서 나왔는지 기억한다 (속으로 의심한다. 드러낼지는 성격대로).`);
+      }
+    } else {
+      recordDeed(ctx, { summary: `${who}에 대해 거짓말을 퍼뜨리려다 들켰다`, tags: ["deceit", "betrayal"], severity: 1, privacy: "semi_private", noisy: false });
+      lines.push(`아무도 믿지 않았다. 거짓말인 것이 드러났다 (그 자리 사람들이 당신을 보는 눈이 바뀐다).`);
+    }
+    return {
+      ok: true,
+      resultText:
+        `거짓 소문 판정 ${check.checkId}: ${check.display.outcomeLabel}${hard ? ` (${who}와 가까운 사람이 듣고 있어 어렵다)` : ""}. ${lines.join(" ")} 이 결과대로 서술하라.` +
+        (check.growthNote ? `\n${check.growthNote}` : ""),
+      display: check.display,
+    };
+  },
+});
+
+export const REPUTATION_TOOLS = [lookForWitnesses, revealSecret, spreadRumor] as const;
 
 /**
  * 하루 단위 소문 전파 (기획서 8.4). 턴 시작에 날이 바뀌었으면 지난 날 수만큼(최대 3일) 1단계씩 퍼진다.

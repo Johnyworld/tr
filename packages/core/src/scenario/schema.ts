@@ -71,7 +71,12 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /** 시스템이 특정 역할로 쓰는 행동 */
-    move_roles: z.strictObject({ notice: id, stealth: id }),
+    move_roles: z.strictObject({
+      notice: id,
+      stealth: id,
+      /** 거짓 소문을 퍼뜨릴 때의 판정 (12-151). 없으면 소문 조작을 쓸 수 없다 */
+      deceive: id.optional(),
+    }),
     /** 수색을 돕는 지식 (옛 지도·건물 용도를 안다): 이 스킬 1당 찾을 확률 ×(1 + per_level). 0 이하면 보정 없음 */
     search_lore: z.strictObject({ skill: id, per_level: z.number().min(0).max(1) }).optional(),
     /**
@@ -1267,7 +1272,7 @@ export const scenarioFileSchema = z
     }
     if (s.charm && !s.stats.some((x) => x.id === s.charm!.ability)) problem(`charm.ability: 알 수 없는 능력 ${s.charm.ability}`);
     for (const [role, move] of Object.entries(s.move_roles)) {
-      if (!moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);
+      if (move && !moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);
     }
     if (s.search_lore && !moves.has(s.search_lore.skill)) problem(`search_lore: 알 수 없는 스킬 ${s.search_lore.skill}`);
     for (const l of s.body?.fear?.lore ?? []) if (!moves.has(l.skill)) problem(`body.fear.lore: 알 수 없는 스킬 ${l.skill}`);

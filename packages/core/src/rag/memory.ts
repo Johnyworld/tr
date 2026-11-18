@@ -42,8 +42,13 @@ export function memoryItemsOf(state: GameState, content: Content, summaries: rea
 
   for (const deed of Object.values(state.deeds)) {
     // 행적은 한 사람과, 그 일을 보거나 전해 들은 사람이 안다 (소문이 퍼지면 늘어난다)
+    // 지어낸 행적 (12-151): 누명을 쓴 사람은 그 일을 한 적이 없다. 지어낸 사람은 거짓인 줄 안다 (따로 적는다)
+    if (deed.fabricatedBy) {
+      const target = state.characters[deed.actorId];
+      items.push(memo(`deed:${deed.id}:made`, "deed", "지어낸 소문", `[${formatTime(deed.at)} · 지어낸 소문] ${target?.name ?? deed.actorId}에 대해 지어낸 말: ${deed.summary}`, [deed.fabricatedBy], deed.at));
+    }
     const knowers = [
-      deed.actorId,
+      ...(deed.fabricatedBy ? [] : [deed.actorId]),
       ...Object.entries(state.deedKnowledge)
         .filter(([, known]) => known[deed.id])
         .map(([npcId]) => npcId),

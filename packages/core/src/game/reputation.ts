@@ -165,6 +165,11 @@ export const deedSchema = z.strictObject({
   witnesses: z.array(z.strictObject({ npcId: z.string(), hidden: z.boolean() })),
   /** 숨은 목격자를 살펴봤는지 (행적 하나에 한 번) */
   searched: z.boolean().default(false),
+  /**
+   * 지어낸 행적 (12-151, 소문 조작): actorId는 하지 않은 일이다. by는 지어낸 사람.
+   * 듣는 사람은 진짜로 믿고 똑같이 퍼뜨린다. 지어낸 사람과 누명을 쓴 사람만 거짓인 줄 안다
+   */
+  fabricatedBy: z.string().optional(),
 });
 export type Deed = z.infer<typeof deedSchema>;
 

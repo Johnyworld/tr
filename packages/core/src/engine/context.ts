@@ -1,4 +1,5 @@
 import { originLine } from "./extras.ts";
+import { tiesOf } from "../game/ties.ts";
 import { fireHere } from "./forage.ts";
 import { describeRemains } from "./remains.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -279,6 +280,16 @@ function describeNpcCard(
     })
     .filter((line) => line !== null)
     .slice(-5);
+  // 이 인물이 들은 남의 일 (12-151): 장면에 함께 있는 사람이나 이 인물과 이어진 사람의 일만. 거짓인지는 이 인물도 모른다
+  const near = new Set([...state.scene.present, ...tiesOf(state, content, npc.id).map((t) => t.other)]);
+  const othersDeeds = Object.entries(state.deedKnowledge[npc.id] ?? {})
+    .map(([deedId, source]) => {
+      const deed = state.deeds[deedId];
+      if (!deed || deed.actorId === player.id || deed.actorId === npc.id || !near.has(deed.actorId)) return null;
+      return `  - ${headingAs(state, content, player.id, deed.actorId)}: ${deed.summary} (${SOURCE_LABELS[source]})`;
+    })
+    .filter((line) => line !== null)
+    .slice(-3);
   const secretLine = (() => {
     if (!npc.secret) return null;
     if (state.revealedSecrets.includes(npc.id)) return `당신에게 털어놓은 비밀: ${npc.secret.content}`;
@@ -308,6 +319,7 @@ function describeNpcCard(
     ...(knownDeeds.length > 0
       ? [`이 인물이 아는 당신의 행적 (당신은 이 인물이 안다는 걸 모를 수 있다. 바로 밝히지 말고 태도에 반영):\n${knownDeeds.join("\n")}`]
       : []),
+    ...(othersDeeds.length > 0 ? [`이 인물이 들은 남의 일 (이 인물은 사실로 믿는다. 그 사람을 대하는 태도에 반영):\n${othersDeeds.join("\n")}`] : []),
     ...(secretLine ? [secretLine] : []),
     ...stanceLines(state, content, npc.id),
     ...describeTieLines(state, content, npc.id),
@@ -319,8 +331,16 @@ function describeOwnDeeds(state: GameState): string {
   const deeds = Object.values(state.deeds)
     .filter((d) => d.actorId === state.playerId)
     .slice(-5);
-  if (deeds.length === 0) return "";
-  return `이미 기록된 당신의 행적 (take_action의 deed로 다시 넣지 않는다):\n${deeds.map((d) => `- ${d.id}: ${d.summary}`).join("\n")}`;
+  // 당신이 지어낸 소문 (12-151): 듣는 사람은 사실로 믿는다. 당신은 거짓인 줄 안다
+  const made = Object.values(state.deeds)
+    .filter((d) => d.fabricatedBy === state.playerId)
+    .slice(-3)
+    .map((d) => `- ${state.characters[d.actorId]?.name ?? d.actorId}에 대해: ${d.summary}`);
+  const parts = [
+    ...(deeds.length ? [`이미 기록된 당신의 행적 (take_action의 deed로 다시 넣지 않는다):\n${deeds.map((d) => `- ${d.id}: ${d.summary}`).join("\n")}`] : []),
+    ...(made.length ? [`당신이 퍼뜨린 거짓 소문 (듣는 사람은 사실로 믿고 퍼뜨린다):\n${made.join("\n")}`] : []),
+  ];
+  return parts.join("\n");
 }
 
 /**

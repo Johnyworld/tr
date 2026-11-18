@@ -108,6 +108,10 @@ const { values: opts, positionals } = parseArgs({
     dry: { type: "boolean", default: false },
     /** 기준 맞추기용: 캐시의 원본에서 얼굴 상자의 비율을 잰다 (예: --measure a_f1,d_f1) */
     measure: { type: "string" },
+    /** 완성본을 바로 당겨 자른다: --zoom d_m2:1.2,d_f7:1.1 (저장된 얼굴 위치로, yaml의 zoom도 갱신한다) */
+    zoom: { type: "string" },
+    /** 얼굴 위치 기록이 없는 완성본을 모두 재서 채운다 */
+    boxes: { type: "boolean", default: false },
   },
 });
 
@@ -158,6 +162,84 @@ if (opts.measure) {
 }
 
 const cleanup = config.cleanup;
+
+// 완성본(output_size) 기준 얼굴 위치. 생성할 때 기록하고, --zoom이 다시 재지 않고 쓴다
+type FinalBox = { x: number; y: number; w: number; h: number };
+const boxesPath = join(cacheDir, "boxes.json");
+const boxes: Record<string, FinalBox> = existsSync(boxesPath) ? JSON.parse(readFileSync(boxesPath, "utf8")) : {};
+const saveBoxes = () => {
+  mkdirSync(cacheDir, { recursive: true });
+  writeFileSync(boxesPath, JSON.stringify(sortKeys(boxes as unknown as Record<string, string>), null, 2) + "\n");
+};
+
+/** 완성본에서 얼굴을 찾아 기록한다 (SAM 3) */
+async function measureFinal(id: string): Promise<FinalBox | null> {
+  const data = readFileSync(join(outDir, `${id}.png`));
+  const name = await upload(data, `trpg_final_${id}.png`);
+  const f = await detectFace({ img: { class_type: "LoadImage", inputs: { image: name } } }, ["img", 0]);
+  if (!f) return null;
+  boxes[id] = { x: f.x, y: f.y, w: f.width, h: f.height };
+  saveBoxes();
+  return boxes[id];
+}
+
+if (opts.boxes || opts.zoom) {
+  if (!framing) fail("portraits.yaml에 framing이 없습니다");
+  await checkServer(new Set([framing.detector]), null);
+}
+
+if (opts.boxes) {
+  const missing = Object.keys(config.faces).filter((id) => !boxes[id] && existsSync(join(outDir, `${id}.png`)));
+  console.error(`얼굴 위치 기록이 없는 완성본 ${missing.length}장을 잽니다`);
+  for (const id of missing) {
+    const b = await measureFinal(id);
+    console.error(`  ${id}: ${b ? `${b.w.toFixed(0)}x${b.h.toFixed(0)}` : "얼굴을 찾지 못했습니다"}`);
+  }
+  process.exit(0);
+}
+
+if (opts.zoom) {
+  // 완성본을 바로 잘라 키운다: 얼굴을 가로 가운데, 턱 끝을 chin_y에 두고 한 변 S/zoom을 잘라 S로 늘린다
+  const S = config.output_size;
+  let yamlText = readFileSync(configPath, "utf8");
+  for (const part of opts.zoom.split(",").map((x) => x.trim()).filter(Boolean)) {
+    const [id, zs] = part.split(":");
+    const z = Number(zs);
+    if (!config.faces[id!]) fail(`portraits.yaml에 없는 id: ${id}`);
+    if (!(z > 0.5 && z < 2)) fail(`${id}: zoom은 0.5~2 사이`);
+    if (!existsSync(join(outDir, `${id}.png`))) fail(`${id}: 완성본이 없습니다`);
+    const b = boxes[id!] ?? (await measureFinal(id!));
+    if (!b) fail(`${id}: 얼굴을 찾지 못했습니다`);
+    if (z < 1) console.error(`  ! ${id}: 1보다 작으면 원본 밖이 없어 가장자리에서 멈춥니다`);
+    const side = Math.min(S, Math.round(S / z));
+    const x = Math.round(Math.min(Math.max(b.x + b.w / 2 - side / 2, 0), S - side));
+    const y = Math.round(Math.min(Math.max(b.y + b.h - framing!.chin_y * side, 0), S - side));
+    const name = await upload(readFileSync(join(outDir, `${id}.png`)), `trpg_zoom_${id}.png`);
+    const entry = await run({
+      img: { class_type: "LoadImage", inputs: { image: name } },
+      crop: { class_type: "ImageCrop", inputs: { image: ["img", 0], width: side, height: side, x, y } },
+      scale: { class_type: "ImageScale", inputs: { image: ["crop", 0], upscale_method: "lanczos", width: S, height: S, crop: "disabled" } },
+      save_small: { class_type: "SaveImage", inputs: { images: ["scale", 0], filename_prefix: `trpg/${id}_zoom` } },
+    });
+    writeFileSync(join(outDir, `${id}.png`), await fetchImg(entry, "save_small"));
+    const k = S / side;
+    boxes[id!] = { x: (b.x - x) * k, y: (b.y - y) * k, w: b.w * k, h: b.h * k };
+    saveBoxes();
+    // yaml의 zoom을 곱해 갱신한다 (다시 그릴 때도 같은 결과가 나오게)
+    const zoomNow = Number(config.faces[id!].zoom ?? 1);
+    const zoomNew = Math.round(zoomNow * (S / side) * 100) / 100;
+    config.faces[id!].zoom = zoomNew;
+    const head = new RegExp(`(\\n  ${id}:\\n    style: \\w+\\n    gender: \\w+\\n    seed: \\d+\\n)`);
+    if (new RegExp(`\\n  ${id}:\\n(?:    [^\\n]*\\n|      [^\\n]*\\n)*?    zoom: [\\d.]+\\n`).test(yamlText)) {
+      yamlText = yamlText.replace(new RegExp(`(\\n  ${id}:\\n(?:    [^\\n]*\\n|      [^\\n]*\\n)*?    zoom: )[\\d.]+`), `$1${zoomNew}`);
+    } else if (head.test(yamlText)) {
+      yamlText = yamlText.replace(head, `$1    zoom: ${zoomNew}\n`);
+    } else console.error(`  ! ${id}: yaml에 zoom을 적지 못했습니다. 직접 zoom: ${zoomNew}을 넣어 주세요`);
+    console.error(`  ${id}: ${(S / side).toFixed(2)}배 → zoom ${zoomNew}`);
+  }
+  writeFileSync(configPath, yamlText);
+  process.exit(0);
+}
 const needed = new Set(ids.filter((id) => !config.faces[id].source).map((id) => config.styles[config.faces[id].style].checkpoint));
 if (framing) needed.add(framing.detector);
 if (!opts.dry) await checkServer(needed, cleanup ? { unet: cleanup.unet, clip: cleanup.clip, vae: cleanup.vae } : null);
@@ -165,7 +247,7 @@ if (!opts.dry) await checkServer(needed, cleanup ? { unet: cleanup.unet, clip: c
 // 지금 다루는 화풍 (promptFor·workflow가 쓴다)
 let style: Style = undefined as unknown as Style;
 
-type Job = { id: string; ch: Character; prefix: string; dest: string; hash?: string; raw?: Buffer; crop?: Crop | null; t0?: number };
+type Job = { id: string; ch: Character; prefix: string; dest: string; hash?: string; raw?: Buffer; crop?: Crop | null; face?: Box | null; t0?: number };
 const jobs: Job[] = [];
 for (const id of ids) {
   const ch = config.faces[id];
@@ -208,6 +290,7 @@ for (const job of jobs) {
     if (framing) face = parseFace(first);
   }
   job.crop = null;
+  job.face = face;
   if (framing) {
     const { width, height } = pngSize(job.raw);
     if (face) job.crop = planCrop(face, width, height, ((style.crop_scale ?? 1) * (job.ch.crop_scale ?? 1)) / (job.ch.zoom ?? 1));
@@ -232,6 +315,13 @@ for (const job of jobs) {
   if (job.hash) {
     mkdirSync(cacheDir, { recursive: true });
     writeFileSync(join(cacheDir, `${job.id}.png`), job.raw!);
+    // 완성본 기준 얼굴 위치를 기록한다 (--zoom이 다시 재지 않게)
+    if (job.face && job.crop) {
+      const k = config.output_size / job.crop.side;
+      const f = job.face;
+      boxes[job.id] = { x: (f.x + job.crop.pad.left - job.crop.x) * k, y: (f.y + job.crop.pad.top - job.crop.y) * k, w: f.width * k, h: f.height * k };
+      saveBoxes();
+    } else delete boxes[job.id];
     lock[job.id] = job.hash;
     writeFileSync(lockPath, JSON.stringify(sortKeys(lock), null, 2) + "\n");
   }

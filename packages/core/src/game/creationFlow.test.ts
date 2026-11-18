@@ -125,14 +125,14 @@ describe("대화로 하는 캐릭터 생성", () => {
     expect(currentStep(s, female)).toBe("portrait");
     // 화풍 섹션은 art/portraits.yaml에 적힌 순서, 고른 성별의 얼굴만
     const sections = portraitSections(s, "female");
-    expect(sections.map((x) => x.style)).toEqual(["A", "D", "C", "B"]);
-    expect(sections.flatMap((x) => x.faces)).toContain("c_f1");
-    expect(portraitSections(s, "male").flatMap((x) => x.faces)).not.toContain("c_f1");
+    expect(sections.map((x) => x.style)).toEqual(["D"]);
+    expect(sections.flatMap((x) => x.faces)).toContain("d_f1");
+    expect(portraitSections(s, "male").flatMap((x) => x.faces)).not.toContain("d_f1");
     expect(answerCreation(s, female, "../x", createSeededRng(1)).ok).toBe(false);
     expect(answerCreation(s, female, "p4", createSeededRng(1)).ok).toBe(false); // 목록이 있는 월드는 목록 밖 id를 받지 않는다
-    expect(answerCreation(s, female, "a_m1", createSeededRng(1)).ok).toBe(false); // 다른 성별의 얼굴
-    const picked = answerCreation(s, female, "c_f1", createSeededRng(1));
-    expect(picked.ok && draftChoice(picked.draft).portrait).toBe("c_f1");
+    expect(answerCreation(s, female, "d_m1", createSeededRng(1)).ok).toBe(false); // 다른 성별의 얼굴
+    const picked = answerCreation(s, female, "d_f1", createSeededRng(1));
+    expect(picked.ok && draftChoice(picked.draft).portrait).toBe("d_f1");
     expect(picked.ok && currentStep(s, picked.draft)).toBe("age");
     const none = answerCreation(s, female, "none", createSeededRng(1));
     expect(none.ok && currentStep(s, none.draft)).toBe("age");

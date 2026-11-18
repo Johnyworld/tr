@@ -547,11 +547,11 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     // 화면에서 만들면 성별 다음에 그 성별의 얼굴을 화풍 섹션으로 고른다 (12-139)
     expect(app.creation!.view.step).toBe("portrait");
     expect(app.creation!.view.world?.id).toBe("post_apoc");
-    expect(app.creation!.view.character!.portraits.map((x) => x.style)).toEqual(["A", "D", "C", "B"]);
+    expect(app.creation!.view.character!.portraits.map((x) => x.style)).toEqual(["D"]);
     expect(app.submitCreation({ answer: "../evil" })).toMatchObject({ ok: false });
-    expect(app.submitCreation({ answer: "a_m1" })).toMatchObject({ ok: false });
-    expect(app.submitCreation({ answer: "b_f1" })).toEqual({ ok: true });
-    expect(app.creation!.view.character!.chosen.portrait).toBe("b_f1");
+    expect(app.submitCreation({ answer: "d_m1" })).toMatchObject({ ok: false });
+    expect(app.submitCreation({ answer: "d_f1" })).toEqual({ ok: true });
+    expect(app.creation!.view.character!.chosen.portrait).toBe("d_f1");
     for (const answer of ["31", "manual"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     const view = app.creation!.view;
     expect(view.step).toBe("ability_set");
@@ -575,7 +575,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(done.isError).toBe(false);
     expect(done.text).toContain("상태 화면에서 골랐다");
     expect(done.text).toContain("# GM 지침");
-    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", age: 31, portrait: "b_f1", stats: { intellect: 2, charm: 1, senses: 1, strength: -1 }, skills: { shoot: 1, first_aid: 1 } }); // 방문자는 무소속이라 계급 기본 훈련이 없다
+    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", age: 31, portrait: "d_f1", stats: { intellect: 2, charm: 1, senses: 1, strength: -1 }, skills: { shoot: 1, first_aid: 1 } }); // 방문자는 무소속이라 계급 기본 훈련이 없다
     expect(app.creation).toBeNull();
   });
 

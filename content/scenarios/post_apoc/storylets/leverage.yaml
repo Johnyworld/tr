@@ -1,0 +1,156 @@
+# 인질과 되갚기 (12-153, 기획서 8.10). 인질은 새 규칙 없이 이야기로만 푼다 (포로 7.6, 배역·효과는 그대로)
+# - 우리 사람이 인질로: 붙잡힌 우리 사람을 두고 그 무리가 대가를 걸어온다
+# - 끌고 가는 포로를 앞세우기: 포로를 끌고 남의 땅을 지나다 그 땅의 순찰과 맞닥뜨린다
+# - 되갚는 사람: 주인공에게 협박당해 원한을 품은 사람(배역 blackmailed)이 되갚으러 온다
+# 이야기는 사람을 죽이지 않는다 (원칙 3). 인질을 해치는 길은 위협까지만, 더 가면 GM이 판정으로 넘긴다
+
+- id: lv_hostage_demand
+  title: 문 앞에 꽂힌 쪽지
+  tags: [world]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    own_territory: true
+    own_people_captive: true
+    segments: [morning, day]
+  cast:
+    lost: { captive_anywhere: true, faction: own, known: true, enter: false }
+  setup: '아침에 정문 철망에 쪽지가 꽂혀 있다. 비닐에 싸여 있고, 머리카락 한 줌이 같이 묶였다. "{lost}을(를) 돌려받고 싶으면 탄약 한 상자를 다리 밑에 두고 가라. 사흘 준다." 쪽지를 읽은 사람들이 지도부 쪽을 본다.'
+  ai_direction: "{lost}을(를) 붙잡은 무리가 대가를 걸어왔다. 어느 무리인지는 쪽지에 적혀 있지 않다 (주인공이 이미 알면 안다). 내주면 정말 돌려보낼지는 판정과 결과대로. 무리는 내주자는 사람과, 한 번 내주면 다음에도 잡아 간다는 사람으로 갈린다."
+  choices:
+    - id: pay
+      label: 지도부에 탄약을 내주자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - faction_resource: { faction: own, resource: ammo, delta: -30 }
+          - npc_release: { who: lost }
+          - belief: { fact: "다리 밑에 탄약 상자를 두고 왔다. 이틀 뒤 {lost:이/가} 돌아왔다", source: seen }
+        partial:
+          - faction_resource: { faction: own, resource: ammo, delta: -30 }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "다리 밑에 탄약 상자를 두고 왔다. {lost:은/는} 아직 돌아오지 않았다. 속은 것인지 모른다", source: seen }
+        miss:
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "지도부는 탄약을 내주지 않기로 했다. 쪽지는 식당 벽에 붙어 있다", source: seen }
+    - id: trace
+      label: 쪽지를 들고 누가 꽂았는지 발자국을 따라간다
+      check: survival
+      outcomes:
+        success:
+          - locate: { who: lost, source: seen }
+          - belief: { fact: "쪽지를 꽂고 간 발자국을 따라가 {lost:이/가} 어디 붙잡혀 있는지 알아냈다", source: seen }
+        partial:
+          - locate: { who: lost, source: rumor }
+        miss:
+          - body: { track: hunger, delta: 1 }
+    - id: refuse
+      label: 한 번 내주면 끝이 없다고 말한다
+      effects:
+        - merit: 1
+        - faction_morale: { faction: own, delta: -1 }
+        - deed: { summary: "{lost}의 몸값을 내주지 말자고 했다", tags: [diligence], severity: 1, privacy: public }
+
+- id: lv_hostage_shield
+  title: 앞세운 포로
+  tags: [world]
+  urgent: true
+  repeatable: true
+  cooldown_days: 6
+  when:
+    zone_owner: [other]
+    segments: [morning, day, evening, night]
+  cast:
+    captive: { companion: { kinds: [prisoner] } }
+    patrol: { faction: zone_owner, ranks: [grunt, squad_leader] }
+  setup: '끌고 가던 {captive:을/를} 데리고 골목을 돌자 {patrol:이/가} 이끄는 이 땅의 순찰조와 정면으로 맞닥뜨린다. 총구가 올라온다. {captive}의 묶인 손이 떨린다. 순찰조가 {captive:을/를} 알아보는 눈치다.'
+  ai_direction: "순찰조는 여럿이고 무장했다. {captive:을/를} 앞세우면 그들이 물러설 수도 있다. 그 사람이 이 무리 사람이면 더 그렇다 (아니어도 사람 목숨을 앞세운 자로 기억한다). 인질을 실제로 해치는 일은 이 이야기에서 일어나지 않는다. 더 가면 GM이 판정으로 넘긴다. 위험은 판정 전에 선언한다."
+  choices:
+    - id: shield
+      label: "{captive:을/를} 앞세우고 칼을 목에 댄다. 물러서라고 한다"
+      check: intimidate
+      outcomes:
+        success:
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+          - deed: { summary: 포로의 목에 칼을 대고 순찰조를 물러서게 했다, tags: [cruelty], severity: 2, privacy: public }
+          - belief: { fact: "{zone}에서 포로를 앞세워 순찰조를 물러서게 했다", source: seen }
+        partial:
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+          - relation: { who: patrol, axis: trust, delta: -3 }
+          - deed: { summary: 포로의 목에 칼을 대고 순찰조를 물러서게 했다, tags: [cruelty], severity: 2, privacy: public }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - npc_release: { who: captive }
+          - wound: { steps: 1, cause: 포로를 빼앗기며 맞은 개머리판 }
+          - belief: { fact: "{zone}에서 포로를 앞세웠지만 순찰조가 물러서지 않았다. 포로를 빼앗겼다", source: seen }
+    - id: hand_over
+      label: "{captive:을/를} 넘기고 지나가게 해 달라고 한다"
+      check: persuade
+      outcomes:
+        success:
+          - npc_release: { who: captive }
+          - relation: { who: patrol, axis: trust, delta: 1 }
+          - belief: { fact: "{zone}의 순찰조에게 포로를 넘기고 지나왔다", source: seen }
+        partial:
+          - npc_release: { who: captive }
+          - take_item: { item: cigarettes }
+        miss:
+          - npc_release: { who: captive }
+          - capture_player: { by: zone_owner }
+    - id: let_go
+      label: 밧줄을 끊어 {captive:을/를} 풀어 주고 반대쪽으로 뛴다
+      check: stealth
+      outcomes:
+        success:
+          - npc_release: { who: captive }
+          - relation: { who: captive, axis: trust, delta: 1 }
+          - belief: { fact: "{zone}에서 포로를 풀어 주고 순찰조가 그쪽에 정신 팔린 사이 빠져나왔다", source: seen }
+        partial:
+          - npc_release: { who: captive }
+          - zone_noise: 1
+        miss:
+          - npc_release: { who: captive }
+          - capture_player: { by: zone_owner }
+
+- id: lv_payback
+  title: 되갚는 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    segments: [day, evening, night]
+  cast:
+    avenger: { blackmailed: true }
+  setup: '{avenger:이/가} 길을 막고 선다. 늘 피하던 눈이 오늘은 똑바로 당신을 본다. "그동안 잘 써먹었지. 이제 내 차례야. 네가 나한테 한 일, 들을 사람한테 다 들려줄 거다."'
+  ai_direction: "{avenger}은(는) 주인공에게 약점을 잡혀 협박당했고, 되갚을 날을 기다렸다. 주인공이 협박한 일(그리고 주인공의 다른 행적)을 사람들에게 퍼뜨리려 한다. 겁줘서 다시 누르거나, 사과하고 약점을 내려놓거나, 무시할 수 있다. 판정이 나쁘면 주인공의 협박이 사람들 입에 오른다."
+  choices:
+    - id: press
+      label: 다시 누른다. 약점은 아직 내 손에 있다고
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: avenger, axis: trust, delta: -1 }
+          - belief: { fact: "{avenger:이/가} 되갚겠다고 나섰지만 다시 눌러 앉혔다", source: seen }
+        partial:
+          - relation: { who: avenger, axis: affection, delta: -2 }
+          - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty], severity: 2, privacy: semi_private }
+        miss:
+          - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty, betrayal], severity: 2, privacy: public }
+          - belief: { fact: "{avenger:이/가} 내가 협박한 일을 사람들 앞에서 떠들었다", source: seen }
+    - id: apologize
+      label: 그 일은 끝내자고, 약점은 묻겠다고 한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: avenger, axis: trust, delta: 2 }
+          - belief: { fact: "{avenger}에게 협박한 일을 사과했다. {avenger:은/는} 오래 말이 없다가 고개를 끄덕였다", source: seen }
+        partial:
+          - relation: { who: avenger, axis: trust, delta: 1 }
+          - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty], severity: 1, privacy: semi_private }
+        miss:
+          - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty], severity: 2, privacy: public }
+    - id: ignore
+      label: 마음대로 하라며 지나간다
+      effects:
+        - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty], severity: 2, privacy: public }
+        - belief: { fact: "{avenger:이/가} 내가 협박한 일을 퍼뜨리고 다닌다", source: seen }

@@ -253,7 +253,7 @@ function priceFactor(content: Content, state: GameState, npcId: string): number 
   return markup * rel;
 }
 
-const valueOf = (content: Content, bundle: Record<string, number>) =>
+export const valueOf = (content: Content, bundle: Record<string, number>) =>
   Object.entries(bundle).reduce((n, [id, q]) => n + (content.items[id]?.value ?? DEFAULT_VALUE) * q, 0);
 
 const barterTool = defineTool({

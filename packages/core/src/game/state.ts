@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 57;
+export const SAVE_SCHEMA_VERSION = 58;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -296,6 +296,12 @@ export function createGameSchemas(s: Scenario) {
     stashes: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.number().int().positive()))).default({}),
     /** 떠돌이의 거처 (12-149): 캐릭터 → 구역 */
     homes: z.record(z.string(), z.string()).default({}),
+    /** 뇌물을 받은 사람 (12-153): 그 사람의 약점이 된다 (주인공만 안다). by: 준 사람 */
+    bribes: z.array(z.strictObject({ npcId: z.string(), by: z.string(), favor: z.string(), at: z.number().int() })).default([]),
+    /** 협박당한 사람 (12-153). grudge: 되갚을 마음을 품었다 */
+    blackmails: z.array(z.strictObject({ npcId: z.string(), by: z.string(), leverage: z.string(), at: z.number().int(), grudge: z.boolean() })).default([]),
+    /** 폭로해서 더는 쥘 수 없는 약점 (12-153, "by|약점 키") */
+    exposed: z.array(z.string()).default([]),
     /** 짐이 무거울 때 창고를 한 번 알렸다 (12-149, 캐릭터마다) */
     stashHinted: z.array(z.string()).default([]),
     /** 공포를 부른 것을 마주한 횟수 (12-95, 캐릭터마다). 쌓이면 둔감해진다 */
@@ -462,6 +468,12 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("item_stashed"), characterId: z.string(), zone: z.string(), itemId: z.string(), quantity: z.number().int().positive(), direction: z.enum(["put", "take"]) }),
     /** 떠돌이가 이 구역을 거처로 삼았다 (12-149) */
     z.strictObject({ type: z.literal("home_settled"), characterId: z.string(), zone: z.string() }),
+    /** 뇌물을 받았다 (12-153). 물건은 item_transferred로 따로 옮긴다 */
+    z.strictObject({ type: z.literal("bribe_taken"), npcId: z.string(), by: z.string(), favor: z.string() }),
+    /** 약점을 쥐고 협박했다 (12-153) */
+    z.strictObject({ type: z.literal("blackmailed"), npcId: z.string(), by: z.string(), leverage: z.string(), grudge: z.boolean() }),
+    /** 약점을 폭로했다 (12-153) */
+    z.strictObject({ type: z.literal("leverage_exposed"), by: z.string(), key: z.string() }),
     /** 짐이 무거울 때 창고 안내를 했다 (12-149) */
     z.strictObject({ type: z.literal("stash_hinted"), characterId: z.string() }),
     z.strictObject({ type: z.literal("fear_exposed"), characterId: z.string() }),
@@ -857,6 +869,9 @@ export const EMPTY_STATE: GameState = {
   stashes: {},
   homes: {},
   stashHinted: [],
+  bribes: [],
+  blackmails: [],
+  exposed: [],
   fearExposure: {},
   coldLoad: {},
   wetUntil: {},
@@ -1245,6 +1260,18 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "home_settled":
       next.homes = { ...next.homes, [event.characterId]: event.zone };
+      return next;
+    case "bribe_taken":
+      next.bribes = [...next.bribes, { npcId: event.npcId, by: event.by, favor: event.favor, at: state.time }];
+      return next;
+    case "blackmailed": {
+      const rest = next.blackmails.filter((b) => !(b.npcId === event.npcId && b.by === event.by));
+      const was = next.blackmails.find((b) => b.npcId === event.npcId && b.by === event.by);
+      next.blackmails = [...rest, { npcId: event.npcId, by: event.by, leverage: event.leverage, at: state.time, grudge: event.grudge || !!was?.grudge }];
+      return next;
+    }
+    case "leverage_exposed":
+      if (!next.exposed.includes(`${event.by}|${event.key}`)) next.exposed = [...next.exposed, `${event.by}|${event.key}`];
       return next;
     case "stash_hinted":
       if (!next.stashHinted.includes(event.characterId)) next.stashHinted = [...next.stashHinted, event.characterId];

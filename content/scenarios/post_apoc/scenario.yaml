@@ -1009,6 +1009,19 @@ helpless:
 # 길 위의 일 (12-53): 구역을 옮길 때 길의 위험(두 구역의 danger 중 높은 쪽 0~3)별로 태그 road인 이야기가 열릴 확률
 travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 
+# 뇌물과 협박 (12-153, *임시*). 뇌물의 값(물건 값의 합): 계급별 값 × (1 − 0.25 × 욕심), 주인공을 믿으면 ×0.8.
+# 정직 2 이상이고 욕심 0 이하인 사람은 값과 상관없이 거절한다. 값의 절반 이상이면 교섭 판정. 협박은 위협 판정
+leverage:
+  bribe:
+    move: persuade
+    greed: self_interest
+    scruple: honesty
+    prices: { loner: 3, outsider: 4, grunt: 4, staff: 4, squad_leader: 8, officer: 15, leader: 30, default: 5 }
+    greed_step: 0.25
+    trusted: 0.8
+    refuse_at: 2
+  blackmail: { move: intimidate }
+
 # 야영 (12-148, *임시*): 지켜 주는 지붕이 없는 곳에서 자거나 쉬거나 기다리거나 보초를 서면, 구역의 위험(위험과 감염체 압력 중 높은 쪽)별
 # 시간당 확률로 태그 camp 이야기가 열린다. 6시간 자면 위험 0: 6%, 1: 17%, 2: 31%, 3: 47%. 모닥불이 타면 ×1.5, 우리 땅이면 ×0.5
 camp: { tag: camp, chance: [0.01, 0.03, 0.06, 0.1], fire: 1.5, own_land: 0.5 }

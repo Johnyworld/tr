@@ -54,7 +54,7 @@ function noticeMove(ctx: ToolContext) {
 }
 
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
-function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, heardAs?: number) {
+export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, heardAs?: number) {
   const values = valuesOf(ctx.content, ctx.store.getState(), npcId);
   // 부풀려 들었으면 그만큼 크게 반응한다 (12-127)
   const severity = heardAs ?? deed.severity;

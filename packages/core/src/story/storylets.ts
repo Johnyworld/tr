@@ -70,6 +70,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.occupations || role.occupations.some((o) => (o === "same" ? player.occupation?.id : o) === c.occupation?.id && !!c.occupation))
     .filter((c) => !role.known || known.has(c.id))
     .filter((c) => role.trust_gte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).trust >= role.trust_gte)
+    .filter((c) => !role.blackmailed || (state.blackmails ?? []).some((b) => b.npcId === c.id && b.by === state.playerId && b.grudge))
     .filter((c) => role.distrusted_gte === undefined || standingInFaction(state, content, c.id).distrust >= role.distrusted_gte)
     .map((c) => c.id)
     .sort();

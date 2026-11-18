@@ -853,6 +853,25 @@ export const scenarioFileSchema = z
      */
     travel: z.strictObject({ tag: id, chance: z.array(z.number().min(0).max(1)).length(4) }).optional(),
     /**
+     * 뇌물과 협박 (12-153). bribe: 값은 prices[계급](없으면 default) × (1 − greed_step × 욕심 가치관), 주인공을 믿으면(신뢰 +2) ×trusted.
+     * 정직 가치관(scruple)이 refuse_at 이상이고 욕심이 0 이하인 사람은 값과 상관없이 거절한다. 모자라면(절반 이상) move로 판정.
+     * blackmail: 협박 판정의 행동
+     */
+    leverage: z
+      .strictObject({
+        bribe: z.strictObject({
+          move: id,
+          greed: id,
+          scruple: id,
+          prices: z.record(z.string(), z.number().positive()),
+          greed_step: z.number().min(0).max(0.4).default(0.25),
+          trusted: z.number().positive().default(0.8),
+          refuse_at: z.number().int().default(2),
+        }),
+        blackmail: z.strictObject({ move: id }),
+      })
+      .optional(),
+    /**
      * 야영 (12-148): 지켜 주는 지붕이 없는 곳(우리 거점·재워 주는 거점·피난처가 아닌 곳)에서 자거나 쉬거나 기다리거나 보초를 서면,
      * 그 구역의 위험(위험과 감염체 압력 중 높은 쪽)별 시간당 확률로 태그(tag)가 붙은 이야기 하나가 열려 그 시간을 끊는다.
      * fire: 모닥불이 타는 동안 확률 배수 (불빛과 연기). own_land: 우리 무리 땅이면 확률 배수 (우리 순찰이 돈다).

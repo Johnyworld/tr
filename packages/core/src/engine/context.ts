@@ -1,4 +1,5 @@
 import { originLine } from "./extras.ts";
+import { leverageLines } from "./leverage.ts";
 import { standingInFaction } from "../game/politics.ts";
 import { tiesOf } from "../game/ties.ts";
 import { fireHere } from "./forage.ts";
@@ -321,6 +322,7 @@ function describeNpcCard(
     ...(knownDeeds.length > 0
       ? [`이 인물이 아는 당신의 행적 (당신은 이 인물이 안다는 걸 모를 수 있다. 바로 밝히지 말고 태도에 반영):\n${knownDeeds.join("\n")}`]
       : []),
+    ...leverageLines(state, content, npc.id),
     ...(othersDeeds.length > 0 ? [`이 인물이 들은 남의 일 (이 인물은 사실로 믿는다. 그 사람을 대하는 태도에 반영):\n${othersDeeds.join("\n")}`] : []),
     ...(secretLine ? [secretLine] : []),
     ...stanceLines(state, content, npc.id),

@@ -50,6 +50,7 @@ import { SUCCESSION_TOOLS } from "./succession.ts";
 import { createLearnSkillTool } from "./growth.ts";
 import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
 import { stashHint, stashTool } from "./stash.ts";
+import { LEVERAGE_TOOLS } from "./leverage.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
@@ -262,6 +263,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...PEOPLE_TOOLS,
       ...GEAR_TOOLS,
       ...REPUTATION_TOOLS,
+      ...LEVERAGE_TOOLS,
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,
       ...EXTRA_TOOLS,

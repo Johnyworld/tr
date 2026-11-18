@@ -1124,12 +1124,14 @@ export const scenarioFileSchema = z
      * 정직 가치관(scruple)이 refuse_at 이상이고 욕심이 0 이하인 사람은 값과 상관없이 거절한다. 모자라면(절반 이상) move로 판정.
      * blackmail: 협박 판정의 행동
      */
-    /** 부탁 (12-174): 하루에 chance로 부탁 하나를 품는다. 품은 부탁은 max_open까지, expire_days 안에 꺼내지 못하면 접는다 */
-    favors: z.strictObject({ chance: z.number().min(0).max(1), max_open: z.number().int().min(1).default(2), expire_days: z.number().int().min(1).default(4) }).optional(),
-    /** 약속 (12-160): 지키면·접으면·어기면 그 사람의 관계 변화, 한 번에 열어 둘 수 있는 약속 수 */
+    /**
+     * 약속 (12-160): 지키면·접으면·어기면 그 사람의 관계 변화, 한 번에 열어 둘 수 있는 약속 수.
+     * asks (12-174, 12-181): 인물의 부탁. 하루에 chance로 하나를 품는다. 품은 부탁은 max_open까지, expire_days 안에 꺼내지 못하면 접는다
+     */
     promises: z
       .strictObject({
         max_open: z.number().int().min(1).default(5),
+        asks: z.strictObject({ chance: z.number().min(0).max(1), max_open: z.number().int().min(1).default(2), expire_days: z.number().int().min(1).default(4) }).optional(),
         kept: z.strictObject({ trust: z.number().int().default(0), affection: z.number().int().default(0), respect: z.number().int().default(0) }),
         folded: z.strictObject({ trust: z.number().int().default(0), affection: z.number().int().default(0), respect: z.number().int().default(0) }),
         broken: z.strictObject({ trust: z.number().int().default(0), affection: z.number().int().default(0), respect: z.number().int().default(0) }),

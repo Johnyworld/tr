@@ -50,7 +50,7 @@ describe("명성", () => {
     expect(fameOf(state(), content).label).toBe(content.scenario.fame!.tiers[1]!.label);
   });
 
-  it("무명이면 목격자의 무리 안에서만 돈다. 알려지면 말이 모이는 곳을 거쳐 다른 무리로 넘어가고, 그 길에서 부풀려진다", () => {
+  it("무명이면 목격자의 무리 안에서만 돈다. 알려지면 말이 모이는 곳을 거쳐 다른 무리로 넘어간다", () => {
     const quiet = setup();
     const small = quiet.deed(1);
     quiet.days(3);
@@ -67,8 +67,6 @@ describe("명성", () => {
     // 다른 무리 사람은 말이 모이는 곳(장터 등)에서 들은 사람이거나, 그 사람의 무리 동료다
     const talk = content.scenario.war!.talk!.rumor!.zones;
     expect(out.some((n) => talk[npcZoneAt(content.npcs[n]!, known.state().time) ?? ""])).toBe(true);
-    // 난수 0이라 말이 모이는 곳에서 들은 사람은 부풀려 들었다 (크기 1 → 2)
-    expect(Object.values(known.state().deedHeardAs).some((m) => (m[big] ?? 0) > 1)).toBe(true);
   });
 });
 

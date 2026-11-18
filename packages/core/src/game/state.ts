@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 71;
+export const SAVE_SCHEMA_VERSION = 72;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -365,21 +365,10 @@ export function createGameSchemas(s: Scenario) {
           due: z.number().int(),
           item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
           made: z.number().int(),
-          status: z.enum(["open", "kept", "broken", "folded"]),
-          /** 부탁에서 맺어진 약속이면 그 부탁 id (12-174) */
+          /** asked: 인물이 부탁을 꺼냈고 아직 답하지 않았다 (due는 꺼낼 기한). declined·lapsed: 거절했거나 꺼내지 못하고 접혔다 */
+          status: z.enum(["asked", "open", "kept", "broken", "folded", "declined", "lapsed"]),
+          /** 인물의 부탁에서 온 약속이면 그 부탁의 콘텐츠 id (12-174, 12-181) */
           favor: z.string().nullable().default(null),
-        }),
-      )
-      .default([]),
-    /** 부탁 (12-174): 인물이 품은 사적인 부탁. favor는 인물 콘텐츠의 부탁 id */
-    favors: z
-      .array(
-        z.strictObject({
-          id: z.string(),
-          npc: z.string(),
-          favor: z.string(),
-          offeredAt: z.number().int(),
-          status: z.enum(["offered", "accepted", "declined", "lapsed", "kept", "broken"]),
         }),
       )
       .default([]),
@@ -464,8 +453,6 @@ export function createGameSchemas(s: Scenario) {
     deeds: z.record(z.string(), deedSchema),
     /** NPC가 어떤 행적을 어떤 출처로 알고 있는지: npcId → deedId → source */
     deedKnowledge: z.record(z.string(), z.record(z.string(), beliefSourceSchema)),
-    /** 부풀려 들은 행적의 크기 (NPC → 행적 → 크기, 12-127). 없으면 행적 그대로 */
-    deedHeardAs: z.record(z.string(), z.record(z.string(), z.number().int())).default({}),
     /** 관계: fromId → toId → 신뢰·호감·존중 */
     relations: z.record(z.string(), z.record(z.string(), relationSchema)),
     /**
@@ -609,7 +596,25 @@ export function createGameSchemas(s: Scenario) {
       item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
       favor: z.string().nullable().default(null),
     }),
-    // 부탁 (12-174)
+    // 부탁 (12-181): 인물이 꺼낼 부탁도 약속 목록에 asked로 든다. 받으면 promise_accepted
+    z.strictObject({
+      type: z.literal("promise_asked"),
+      id: z.string(),
+      by: z.string(),
+      to: z.string(),
+      what: z.string(),
+      due: z.number().int(),
+      item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
+      favor: z.string(),
+    }),
+    z.strictObject({
+      type: z.literal("promise_accepted"),
+      id: z.string(),
+      what: z.string(),
+      due: z.number().int(),
+      item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
+    }),
+    // 예전 부탁 이벤트 (12-174, 세이브 71까지). 읽을 때 약속 목록으로 옮긴다
     z.strictObject({ type: z.literal("favor_offered"), id: z.string(), npc: z.string(), favor: z.string() }),
     z.strictObject({ type: z.literal("favor_settled"), id: z.string(), status: z.enum(["accepted", "declined", "lapsed", "kept", "broken"]) }),
     // 포상 (12-171). itemId가 없으면 말뿐인 포상
@@ -622,7 +627,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("ambush_changed"), ambush: z.strictObject({ zone: z.string(), until: z.number().int(), bonus: z.number().int().min(1), confuse: z.boolean() }).nullable() }),
     z.strictObject({ type: z.literal("ambushed_changed"), until: z.number().int().nullable() }),
     z.strictObject({ type: z.literal("confusion_changed"), characterId: z.string(), on: z.boolean() }),
-    z.strictObject({ type: z.literal("promise_settled"), id: z.string(), status: z.enum(["kept", "broken", "folded"]) }),
+    z.strictObject({ type: z.literal("promise_settled"), id: z.string(), status: z.enum(["kept", "broken", "folded", "declined", "lapsed"]) }),
     /** 약점을 쥐고 협박했다 (12-153) */
     z.strictObject({ type: z.literal("blackmailed"), npcId: z.string(), by: z.string(), leverage: z.string(), grudge: z.boolean() }),
     /** 약점을 폭로했다 (12-153) */
@@ -760,7 +765,7 @@ export function createGameSchemas(s: Scenario) {
       source: beliefSourceSchema,
       /** 이 NPC의 행위자에 대한 관계 변화 (코드가 계산) */
       delta: relationDeltaSchema,
-      /** 부풀려 들은 행적의 크기 (12-127). 없으면 행적 그대로 */
+      /** 예전 세이브의 부풀려 들은 크기 (12-127, 12-181에 왜곡을 뺐다). 읽기만 하고 쓰지 않는다 */
       heardAs: z.number().int().min(1).max(3).optional(),
     }),
     z.strictObject({ type: z.literal("witnesses_searched"), deedId: z.string() }),
@@ -1040,7 +1045,6 @@ export const EMPTY_STATE: GameState = {
   exploration: null,
   bribes: [],
   promises: [],
-  favors: [],
   rewardsGiven: {},
   tricks: {},
   lastBroadcastDay: null,
@@ -1092,7 +1096,6 @@ export const EMPTY_STATE: GameState = {
   runStartedAt: START_TIME,
   deeds: {},
   deedKnowledge: {},
-  deedHeardAs: {},
   relations: {},
   perceived: {},
   revealedSecrets: [],
@@ -1535,14 +1538,28 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "exploration_ended":
       next.exploration = null;
       return next;
-    case "promise_made":
-      next.promises = [...(next.promises ?? []), { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "open", favor: event.favor ?? null }];
+    case "promise_made": {
+      // 예전 세이브: 받은 부탁(f_N)에서 맺은 약속이면 부탁 자리를 지우고 콘텐츠 id를 옮긴다
+      const legacy = event.favor ? (next.promises ?? []).find((p) => p.id === event.favor) : undefined;
+      const rest = legacy ? (next.promises ?? []).filter((p) => p !== legacy) : (next.promises ?? []);
+      next.promises = [...rest, { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "open", favor: legacy ? legacy.favor : (event.favor ?? null) }];
+      return next;
+    }
+    case "promise_asked":
+      next.promises = [...(next.promises ?? []), { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "asked", favor: event.favor }];
+      return next;
+    case "promise_accepted":
+      next.promises = (next.promises ?? []).map((p) => (p.id === event.id && p.status === "asked" ? { ...p, status: "open", what: event.what, due: event.due, item: event.item, made: state.time } : p));
       return next;
     case "favor_offered":
-      next.favors = [...(next.favors ?? []), { id: event.id, npc: event.npc, favor: event.favor, offeredAt: state.time, status: "offered" }];
+      next.promises = [...(next.promises ?? []), { id: event.id, by: state.playerId, to: event.npc, what: "", due: 0, item: null, made: state.time, status: "asked", favor: event.favor }];
       return next;
     case "favor_settled":
-      next.favors = (next.favors ?? []).map((f) => (f.id === event.id ? { ...f, status: event.status } : f));
+      // 받은 것(accepted)은 뒤따르는 promise_made가 옮긴다. 지키고 어긴 것은 약속 쪽에 이미 남는다
+      if (event.status === "declined" || event.status === "lapsed") {
+        const status = event.status;
+        next.promises = (next.promises ?? []).map((p) => (p.id === event.id ? { ...p, status } : p));
+      }
       return next;
     case "reward_given":
       next.rewardsGiven = { ...(next.rewardsGiven ?? {}), [event.characterId]: (next.rewardsGiven?.[event.characterId] ?? 0) + 1 };
@@ -1820,7 +1837,6 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       const known = (next.deedKnowledge[event.npcId] ??= {});
       if (known[deed.id]) throw new Error(`이미 아는 행적: ${event.npcId} ${deed.id}`);
       known[deed.id] = event.source;
-      if (event.heardAs !== undefined && event.heardAs !== deed.severity) (next.deedHeardAs[event.npcId] ??= {})[deed.id] = event.heardAs;
       const toward = (next.relations[event.npcId] ??= {});
       toward[deed.actorId] = applyRelationDelta(toward[deed.actorId] ?? NEUTRAL_RELATION, event.delta);
       if (next.scene.present.includes(event.npcId)) perceive(next, event.npcId);

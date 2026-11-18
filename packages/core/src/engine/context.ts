@@ -6,7 +6,6 @@ import { describeAmbush } from "./ambush.ts";
 import { describeResolve } from "./resolve.ts";
 import { describeExploration } from "./exploration.ts";
 import { promiseLines } from "./promises.ts";
-import { favorLines } from "./favors.ts";
 import { originLine } from "./extras.ts";
 import { describeMarket } from "./market.ts";
 import { describeInfiltration } from "./infiltration.ts";
@@ -296,8 +295,7 @@ function describeNpcCard(
   const knownDeeds = Object.entries(state.deedKnowledge[npc.id] ?? {})
     .map(([deedId, source]) => {
       const deed = state.deeds[deedId];
-      const puffed = (state.deedHeardAs[npc.id]?.[deedId] ?? deed?.severity ?? 0) > (deed?.severity ?? 0);
-      return deed?.actorId === player.id ? `  - ${deed.summary} (${SOURCE_LABELS[source]}${puffed ? ", 부풀려 들었다: 실제보다 크게 안다" : ""})` : null;
+      return deed?.actorId === player.id ? `  - ${deed.summary} (${SOURCE_LABELS[source]})` : null;
     })
     .filter((line) => line !== null)
     .slice(-5);
@@ -343,7 +341,6 @@ function describeNpcCard(
     ...leverageLines(state, content, npc.id),
     ...[agendaCue(content, state, npc.id)].filter((x): x is string => !!x),
     ...promiseLines(state, content, npc.id),
-    ...favorLines(state, content, npc.id),
     ...(othersDeeds.length > 0 ? [`이 인물이 들은 남의 일 (이 인물은 사실로 믿는다. 그 사람을 대하는 태도에 반영):\n${othersDeeds.join("\n")}`] : []),
     ...(secretLine ? [secretLine] : []),
     ...stanceLines(state, content, npc.id),

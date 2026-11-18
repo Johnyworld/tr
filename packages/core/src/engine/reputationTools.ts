@@ -54,12 +54,10 @@ function noticeMove(ctx: ToolContext) {
 }
 
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
-export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, heardAs?: number) {
+export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource) {
   const values = valuesOf(ctx.content, ctx.store.getState(), npcId);
-  // 부풀려 들었으면 그만큼 크게 반응한다 (12-127)
-  const severity = heardAs ?? deed.severity;
-  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, deed.tags, severity, source));
-  ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta, ...(severity !== deed.severity ? { heardAs: severity } : {}) });
+  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, deed.tags, deed.severity, source));
+  ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
 }
 
 /**
@@ -283,7 +281,7 @@ const spreadRumor = defineTool({
       };
       store.append({ type: "deed_recorded", deed });
       for (const id of listeners) learn(ctx, deed, id, "report");
-      lines.push(`${josa(listeners.map((id) => playerCalls(state, content, id)).join(", "), "이/가")} ${who}에 대한 말을 믿었다. 이제 이 말은 ${who}의 일처럼 퍼진다 (말이 모이는 곳에서는 부풀기도 한다).`);
+      lines.push(`${josa(listeners.map((id) => playerCalls(state, content, id)).join(", "), "이/가")} ${who}에 대한 말을 믿었다. 이제 이 말은 ${who}의 일처럼 퍼진다.`);
       if (check.outcome === "partial") {
         const doubter = listeners[Math.floor(ctx.rng() * listeners.length)]!;
         recordDeed(ctx, { summary: `${who}에 대한 말을 지어냈다`, tags: ["deceit"], severity: 1, privacy: "private", noisy: false }, { npcId: doubter, source: "seen" });
@@ -349,15 +347,7 @@ export function spreadRumors(ctx: ToolContext): void {
           }
         : {}),
     });
-    for (const l of learned) {
-      const deed = state.deeds[l.deedId]!;
-      // 왜곡 (12-127): 말이 모이는 곳에서 들으면 그곳의 부풀림 확률로 한 단계 크게. 부풀려 들은 사람이 옮기면 부풀린 채로
-      let heard = ctx.store.getState().deedHeardAs[l.teller]?.[deed.id] ?? deed.severity;
-      const zone = zoneOf(l.npcId);
-      const place = zone ? talk[zone] : undefined;
-      if (fame && place && heard < 3 && ctx.rng() < place.exaggerate) heard += 1;
-      learn(ctx, deed, l.npcId, l.source, heard);
-    }
+    for (const l of learned) learn(ctx, state.deeds[l.deedId]!, l.npcId, l.source);
   }
   ctx.store.append({ type: "rumors_spread", day });
 }

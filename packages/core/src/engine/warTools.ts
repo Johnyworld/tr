@@ -1,8 +1,7 @@
 import { runDisasters } from "./disasters.ts";
 import { runAgendas } from "./agenda.ts";
 import { breakFacilities, runFacilitiesDaily } from "./facilities.ts";
-import { runBrokenPromises } from "./promises.ts";
-import { runFavorsDaily } from "./favors.ts";
+import { runPromisesDaily } from "./promises.ts";
 import { runDailyFood } from "./forage.ts";
 import { lootRemainsDaily } from "./remains.ts";
 import { roleOf } from "../game/state.ts";
@@ -118,10 +117,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     lootRemainsDaily(ctx);
     // 덫에 걸리고, 날것이 상한다 (12-131)
     displays.push(...runDailyFood(ctx));
-    // 기한을 넘긴 약속은 어긴 것이다 (12-160)
-    for (const line of runBrokenPromises(ctx)) displays.push({ type: "belief", fact: line, sourceLabel: "약속" });
-    // 부탁 (12-174): 오래된 부탁을 접고, 새 부탁을 품는다
-    runFavorsDaily(ctx);
+    // 기한을 넘긴 약속은 어긴 것이다 (12-160). 꺼내지 못한 부탁은 접고, 새 부탁을 품는다 (12-174)
+    for (const line of runPromisesDaily(ctx)) displays.push({ type: "belief", fact: line, sourceLabel: "약속" });
   }
   return displays;
 }

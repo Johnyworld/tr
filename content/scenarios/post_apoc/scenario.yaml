@@ -1295,12 +1295,12 @@ infiltration:
     - { id: sabotage, label: 망가뜨리기, move: improvise, resource: { ammo: -20, fuel: -10 }, morale: -1 }
     - { id: eavesdrop, label: 엿듣기, move: stealth, overhear: true }
 
-# 부탁 (12-174, *임시*): 하루에 이 확률로 만난 인물 하나가 부탁을 품는다. 부탁 내용은 인물 YAML의 favors
-favors: { chance: 0.3, max_open: 2, expire_days: 4 }
 
 # 약속 (12-160, *임시*): 주인공이 한 약속을 코드가 기억한다. 지키면 믿음이 오르고, 털어놓고 접으면 조금, 말없이 어기면 크게 깎인다
+# asks (12-174, 12-181): 인물의 부탁도 약속이다. 하루에 이 확률로 만난 인물 하나가 부탁을 품는다. 부탁 내용은 인물 YAML의 favors
 promises:
   max_open: 5
+  asks: { chance: 0.3, max_open: 2, expire_days: 4 }
   kept: { trust: 1, affection: 1 }
   folded: { trust: -1 }
   broken: { trust: -2, affection: -1 }
@@ -1406,7 +1406,7 @@ ambush: { move: stealth, hours: 12, attack_moves: [fight, shoot], bonus: 2, part
 radio_call: { item: radio, tag: radio_call, chance: 0.6 }
 
 # 명성 (12-127, *임시*): 남에게 보인 행적의 크기 합. 한두 번으로는 무명이다
-# 알려지면(1단계) 행적이 말이 모이는 곳을 거쳐 다른 무리로 넘어가고, 그 길에서 부풀려진다. 이름나면(2단계) 소문으로 들은 사람도 다시 옮긴다
+# 알려지면(1단계) 행적이 말이 모이는 곳을 거쳐 다른 무리로 넘어간다. 이름나면(2단계) 소문으로 들은 사람도 다시 옮긴다
 # 소문으로만 아는 사람의 호감·존중이 3 이상이면 팬, -3 이하면 안티
 fame:
   tiers:
@@ -1667,7 +1667,7 @@ war:
       - { id: reckon, label: 셈한다, hint: "감정 없이 며칠 버틸지, 누가 먼저 빠질지 따진다", traits: [cold, calculating, meticulous, ruthless] }
     default: { label: 조심스럽게 입에 올린다, hint: "지나가듯 한마디 하고 화제를 돌린다" }
     # 다른 무리의 형편은 말이 모이는 곳에서 소문으로 듣는다. 무리마다 하루 35%, 멀쩡한 무리도 10%로 헛소문 (*임시*)
-    # exaggerate: 그곳의 말이 한 단계 부풀려질 확률. 상인 장터는 정확하고, 피난민이 모이는 성당은 과장이 심하다
+    # exaggerate: 그곳에서 들은 무리 형편 소문이 한 단계 부풀려질 확률 (행적 소문은 부풀리지 않는다, 12-181). 상인 장터는 정확하고, 피난민이 모이는 성당은 과장이 심하다
     rumor:
       chance: 0.35
       false_chance: 0.1

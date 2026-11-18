@@ -405,7 +405,9 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       // 탈 것이 있으면 절반쯤은 타고 간다 (12-137)
       const me = s.characters[s.playerId]!;
       const vehicle = Object.keys(me.inventory).find((i) => (me.inventory[i] ?? 0) > 0 && content.items[i]?.vehicle);
-      out = tool("take_action", { ...base, intent: "이동", move_to: pick(rng, neighbors(content, s.playerZone)), ride: vehicle && rng() < 0.5 ? vehicle : null });
+      // 사람은 거점으로 돌아온다: 밖에 있으면 열에 넷은 거점 쪽으로 (무작위로만 걸으면 거점 이야기를 못 보고 떠돈다)
+      const homeward = home && s.playerZone !== home && rng() < 0.4 ? nextStep(content, s.playerZone, home) : null;
+      out = tool("take_action", { ...base, intent: "이동", move_to: homeward ?? pick(rng, neighbors(content, s.playerZone)), ride: vehicle && rng() < 0.5 ? vehicle : null });
     } else if (roll < 0.45) {
       // 다친 몸으로는 위험한 일을 하지 않는다
       out = tool("take_action", { ...base, intent: "판정", check: check(pick(rng, moves), hurt > 0 ? "none" : pick(rng, ["none", "none", "light"])) });

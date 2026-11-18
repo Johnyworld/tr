@@ -250,9 +250,12 @@ export function describeResolve(state: GameState, content: Content): string[] {
   const r = currentResolve(state);
   if (!r) return [];
   const kind = kindOf(content, r.kind);
-  const who = r.target && state.characters[r.target] ? ` (대상: ${playerCalls(state, content, r.target)})` : "";
+  const text = resolveText(state, content, r);
+  // 다짐 문구에 이미 대상이 나오면 다시 적지 않는다
+  const name = r.target && state.characters[r.target] ? playerCalls(state, content, r.target) : null;
+  const who = name && !text.includes(name) ? ` (대상: ${name})` : "";
   return [
-    `주인공의 다짐: ${resolveText(state, content, r)}${who} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
+    `주인공의 다짐: ${text}${who} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
   ];
 }
 

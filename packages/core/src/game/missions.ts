@@ -40,6 +40,14 @@ export const missionInstanceSchema = z.strictObject({
   deadline: z.number().int(),
   /** 배정 시점의 요구 조건 사본 (콘텐츠가 바뀌어도 세이브가 깨지지 않게) */
   requirements: z.array(missionRequirementSchema),
+  /**
+   * 임무를 해야 하는 곳 (플레이 테스트 4). 그 자리에서 한 판정·활동만 진행으로 센다. null이면 어디서든.
+   * zone: 그 구역, notZone: 그 구역(우리 거점)만 아니면 담 밖 어디든, enemyOf: 이 무리와 적대하는 무리의 땅. label은 보여 줄 말
+   */
+  place: z
+    .strictObject({ zone: z.string().nullable(), notZone: z.string().nullable(), enemyOf: z.string().nullable(), label: z.string() })
+    .nullable()
+    .default(null),
   /** 요구 조건별 진행도: 활동은 누적 분, 판정은 충족 시 1 */
   progress: z.array(z.number().int().nonnegative()),
   status: z.enum(MISSION_STATUSES),
@@ -89,6 +97,25 @@ const OUTCOME_RANK: Record<CheckOutcome, number> = Object.fromEntries(
 /** 판정 결과가 요구 수준 이상인지 (success > partial > miss) */
 export function outcomeAtLeast(outcome: CheckOutcome, min: "success" | "partial"): boolean {
   return OUTCOME_RANK[outcome] >= OUTCOME_RANK[min];
+}
+
+/** 지금 있는 곳이 임무의 장소인가 (장소가 없으면 늘 그렇다) */
+export function atMissionPlace(
+  mission: Pick<MissionInstance, "place">,
+  zone: string | null,
+  zones: Record<string, { owner: string | null } | undefined>,
+  factions: Record<string, { disposition?: Record<string, number> } | undefined>,
+): boolean {
+  const p = mission.place;
+  if (!p) return true;
+  if (!zone) return false;
+  if (p.zone) return zone === p.zone;
+  if (p.notZone) return zone !== p.notZone;
+  if (p.enemyOf) {
+    const owner = zones[zone]?.owner;
+    return !!owner && owner !== p.enemyOf && (factions[p.enemyOf]?.disposition?.[owner] ?? 0) < 0;
+  }
+  return true;
 }
 
 export function activeMissionOf(missions: Record<string, MissionInstance>, characterId: string) {
@@ -155,11 +182,30 @@ export function pickDailyOffers(
  * 현재 캐릭터의 직속 상관 (역할의 commander). 계승으로 그 상관 자신이 플레이어가 됐거나 상관이 죽었으면 없다
  */
 export function commanderOf(
-  state: { playerId: string; roleId: string; commanderOverride?: string | null; characters: Record<string, { dead: boolean; away?: boolean; captive?: unknown }> },
-  content: { roles: Record<string, { commander?: string | undefined }> },
+  state: {
+    playerId: string;
+    roleId: string;
+    commanderOverride?: string | null;
+    characters: Record<string, { dead: boolean; away?: unknown; captive?: unknown; rank?: string; factionId?: string | null }>;
+  },
+  content: { roles: Record<string, { commander?: string | undefined }>; scenario?: { rank_ladder: readonly { id: string; level: number }[] }; npcs?: Record<string, unknown> },
 ): string | null {
   // 이야기로 지도부가 바뀌었으면 그 사람 (기획서 10.4)
   const id = state.commanderOverride ?? content.roles[state.roleId]?.commander;
-  if (!id || id === state.playerId || state.characters[id]?.dead || state.characters[id]?.away || state.characters[id]?.captive) return null;
+  const usable = (cid: string) => cid !== state.playerId && !!state.characters[cid] && !state.characters[cid]!.dead && !state.characters[cid]!.away && !state.characters[cid]!.captive;
+  if (!id || !usable(id)) return null;
+  // 진급해서 상관과 같은 계급이 되면, 같은 무리에서 바로 위 계급인 사람이 상관이다 (플레이 테스트 4)
+  const ladder = content.scenario?.rank_ladder;
+  const me = state.characters[state.playerId];
+  if (ladder && me) {
+    const level = (rank?: string) => ladder.find((r) => r.id === rank)?.level ?? 0;
+    const mine = level(me.rank);
+    if (level(state.characters[id]!.rank) <= mine) {
+      const above = Object.entries(state.characters)
+        .filter(([cid, c]) => usable(cid) && (!content.npcs || !!content.npcs[cid]) && c.factionId === me.factionId && level(c.rank) > mine)
+        .sort(([a, x], [b, y]) => level(x.rank) - level(y.rank) || a.localeCompare(b));
+      return above[0]?.[0] ?? null;
+    }
+  }
   return id;
 }

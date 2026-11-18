@@ -903,7 +903,7 @@ harm_track: harm
 # 소속 등급 사다리. level은 지휘 계통상의 높이 (화법 규칙에 쓴다)
 # staff(주민: 전투 조직 밖에서 무리의 살림을 맡는 사람)와 leader(지도부)는 기획서 12.3 예시에 더해 쓰는 곳이 있어 둔다
 rank_ladder:
-  - { id: loner, label: 혼자, level: 0 }
+  - { id: loner, label: 떠돌이, level: 0 }
   - { id: outsider, label: 외부 무리 일원, level: 0 }
   - { id: grunt, label: 분대원, level: 1 }
   - { id: staff, label: 주민, level: 1 }

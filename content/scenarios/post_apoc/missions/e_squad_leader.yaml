@@ -2,6 +2,7 @@
 # 분대를 이끌고 짐마차를 지키는 일이라 지휘(tactics)와 경계(sense_danger) 판정이 자주 붙는다. 일부는 짐꾼 때 빚을 갚는다 (repays_debt)
 - id: es_rest_stop_run
   title: 고속도로 휴게소 짐 부리기 호위
+  where: rest_stop
   briefing: 물통과 통조림을 실은 짐마차를 고속도로 휴게소까지 호위해 주유소 지붕 밑에 짐을 부린다. 칠판지기에게 바깥 소식을 받아 적어 온다. 해 지기 전에 돌아온다.
   giver_rank: squad_leader
   repays_debt: 2
@@ -14,6 +15,7 @@
 
 - id: es_red_warehouse_run
   title: 붉은연합 물류창고 물 배달
+  where: c_warehouse
   briefing: 사장님이 정한 날이다. 물통을 고가도로 너머 물류창고까지 호위하고 값으로 탄약을 받아 온다. 저쪽 보초가 물통을 세다 한두 개씩 "빠뜨리는" 버릇이 있다. 한 통도 빠뜨리지 않게 한다.
   giver_rank: squad_leader
   deadline_hours: 14
@@ -27,6 +29,7 @@
 
 - id: es_willow_arrears
   title: 버들마을 밀린 물값 받기
+  where: b_base
   briefing: 버들마을이 물값을 두 번 미뤘다. 짐마차를 호위해 물을 넘기고, 밀린 값을 받아 온다. 정문 앞에서 총을 보이지 않는다. 받을 것은 받되 사람들 앞에서 망신 주지 않는다.
   giver_rank: squad_leader
   repays_debt: 2
@@ -39,6 +42,7 @@
 
 - id: es_plant_road_scout
   title: 발전소 길 새로 그리기
+  where: power_plant
   briefing: 차문석이 죽은 뒤로 발전소 길은 아무도 다시 그리지 않았다. 분대를 데리고 먼저 걸으며 매복 자리와 굴다리의 감염체를 살피고, 짐마차가 돌아갈 샛길을 표시해 온다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -50,6 +54,7 @@
 
 - id: es_pump_night_guard
   title: 정수장 밤 경비
+  where: water_plant
   briefing: 펌프가 서 있는 밤 동안 정수장 문을 지킨다. 물을 사러 온 사람은 무리를 묻지 않는다. 문 안에서 총을 꺼내는 사람만 막는다. 펌프실 쪽 창고 뒷문도 함께 돈다.
   giver_rank: squad_leader
   deadline_hours: 14
@@ -59,6 +64,7 @@
 
 - id: es_toll_clear
   title: 톨게이트 도적 떼 쫓기
+  where: outside
   briefing: 고속도로 톨게이트 근처에 사는 떠돌이 도적 떼가 다시 짐을 노린다는 말이 돈다. 분대를 데리고 가서 그들이 길목을 비우게 만든다. 죽이라는 게 아니다. 길이 비면 된다.
   giver_rank: squad_leader
   deadline_hours: 16

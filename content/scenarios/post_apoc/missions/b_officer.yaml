@@ -14,6 +14,7 @@
 
 - id: bo_pine_talks
   title: 청솔 회의 대신 다녀오기
+  where: a_base
   briefing: 오늘 청솔형제단 회의에는 간부님이 가 주세요. 약조는 약조대로 지킨다고 전하시고, 경비 인원 이야기가 나오면 단지 사정을 말씀하십시오. 제 안부를 묻거든 몸이 안 좋다고만 하시고요.
   giver_rank: leader
   deadline_hours: 16
@@ -26,6 +27,7 @@
 
 - id: bo_market_seeds
   title: 장터에서 씨앗과 소금
+  where: e_market
   briefing: 함영자 반장과 나루상단 장터에 가서 봄에 심을 씨앗과 소금 값을 알아 오세요. 무와 감자는 내줘도 되지만 탄은 안 됩니다. 마을에 진 빚 이야기가 나오면 제 이름을 대십시오.
   giver_rank: leader
   deadline_hours: 16
@@ -52,6 +54,7 @@
 
 - id: bo_pump_parts
   title: 정수장 펌프 부품 구하기
+  where: water_plant
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   briefing: 남상구 씨 말로는 정수장에 쓸 만한 펌프 부품이 남아 있답니다. 가서 찾아 오세요. 나루상단 사람들이 지키고 있을 테니 시비는 걸지 말고, 해 지기 전에 돌아오십시오.

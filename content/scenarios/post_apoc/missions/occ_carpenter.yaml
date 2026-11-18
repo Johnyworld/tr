@@ -38,6 +38,7 @@
 
 - id: occ_carpenter_timber_run
   title: 폐가에서 목재 뜯어 오기
+  where: old_town
   briefing: 판자가 바닥났다. 구시가 폐가의 마루와 문짝을 뜯어 온다. 뜯는 소리가 나면 무언가 온다. 들고 올 수 있는 만큼만.
   giver_rank: squad_leader
   deadline_hours: 12

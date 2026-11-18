@@ -19,7 +19,7 @@ import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
 import { idEnum, type Scenario } from "../scenario/schema.ts";
 import { initialConditions, moveIds, rankIds, statIds, trackIds } from "../scenario/scenario.ts";
 import { beliefSchema, beliefSourceSchema, type Belief } from "./belief.ts";
-import { activeMissionOf, isRequirementMet, missionInstanceSchema, outcomeAtLeast } from "./missions.ts";
+import { activeMissionOf, atMissionPlace, isRequirementMet, missionInstanceSchema, outcomeAtLeast } from "./missions.ts";
 import {
   applyRelationDelta,
   deedSchema,
@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 70;
+export const SAVE_SCHEMA_VERSION = 71;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -1738,7 +1738,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "check_rolled": {
       // 임무를 위한 판정만 임무 진행으로 센다 (거점 안의 사적인 행동이 정찰 조건을 채우지 않게)
       const mission = activeMissionOf(next.missions, event.actorId);
-      if (mission && mission.id === event.forMission) mission.requirements.forEach((r, i) => {
+      if (mission && mission.id === event.forMission && atMissionPlace(mission, next.playerZone, next.zones, next.factions)) mission.requirements.forEach((r, i) => {
         if ("check" in r && r.check === event.move && outcomeAtLeast(event.outcome, r.min_outcome)) {
           mission.progress[i] = 1;
         }
@@ -1770,7 +1770,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.time = event.to;
       {
         const mission = activeMissionOf(next.missions, state.playerId);
-        if (mission && mission.id === event.forMission) mission.requirements.forEach((r, i) => {
+        if (mission && mission.id === event.forMission && atMissionPlace(mission, next.playerZone, next.zones, next.factions)) mission.requirements.forEach((r, i) => {
           if ("activity" in r && r.activity === event.activity && !isRequirementMet(r, mission.progress[i] ?? 0)) {
             mission.progress[i] = (mission.progress[i] ?? 0) + (event.to - event.from);
           }

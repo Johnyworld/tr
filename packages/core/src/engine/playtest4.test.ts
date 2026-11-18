@@ -6,6 +6,7 @@ import { WorldManager } from "../world/manager.ts";
 import type { GameWorld } from "../world/world.ts";
 import { loadRealContent } from "../testing.ts";
 import { runCommand } from "../commands/commands.ts";
+import { commanderOf } from "../game/missions.ts";
 
 /** 플레이 테스트 4 (docs/playtests/2026-11-18-mcp-4.md)에서 고친 것 */
 const real = loadRealContent();
@@ -80,6 +81,53 @@ describe("플레이 테스트 4", () => {
     expect(w.sceneForGm()).toContain("길목 바리케이드가 버티는 중");
     const r = w.executeTool("take_action", { intent: "엄폐", check: chk("fight", "strength"), activity: null, deed: null, target: null, narration_summary: null, for_mission: false, battle: { effect: "cover_hold", objective: null } });
     expect(!r.ok && r.error).toContain("모래주머니 엄폐가 없다");
+  });
+
+  it("임무는 그 장소에서 한 것만 센다: 거점 안에서 선 보초는 동쪽 초소 보초가 아니다", () => {
+    const w = make("role_a_grunt");
+    const day = Math.floor(w.state().time / 1440) + 1;
+    w.ctx().store.append({ type: "missions_offered", day, templateIds: ["guard_east_post"] });
+    expect(w.executeTool("npc_presence", { npc_id: "a_taeho", action: "enter" }).ok).toBe(true);
+    const a = w.executeTool("assign_mission", { template_id: "guard_east_post" });
+    expect(a.ok && a.resultText).toContain("장소: 동쪽 초소");
+    const guard = () => w.executeTool("take_action", { intent: "보초", check: null, activity: { kind: "guard_duty", until: null }, deed: null, target: null, narration_summary: null, for_mission: true });
+    const here = guard();
+    expect(here.ok && here.resultText).toContain("임무로 치지 않는다");
+    const m = () => Object.values(w.state().missions)[0]!;
+    expect(m().progress[0]).toBe(0);
+    look(w);
+    expect(w.executeTool("take_action", { intent: "초소로", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, move_to: "a_east_post" }).ok).toBe(true);
+    guard();
+    expect(m().progress[0]).toBeGreaterThan(0);
+  });
+
+  it("분대장으로 진급하면 상관은 분대장이 아니라 바로 위 계급의 사람이다", () => {
+    const w = make("role_a_grunt");
+    expect(commanderOf(w.state(), content)).toBe("a_taeho");
+    w.ctx().store.append({ type: "promoted", characterId: w.state().playerId, from: "grunt", to: "squad_leader" });
+    const boss = commanderOf(w.state(), content)!;
+    expect(boss).not.toBe("a_taeho");
+    expect(w.state().characters[boss]!.factionId).toBe("faction_a");
+    expect(["officer", "leader"]).toContain(w.state().characters[boss]!.rank);
+  });
+
+  it("주인공이 모르는 곳의 죽음은 GM 장면·?인물에 '사망'으로 나오지 않는다. 시신이 있는 곳에 가면 안다", () => {
+    const w = make("role_a_grunt");
+    w.ctx().store.append({ type: "name_learned", characterId: w.state().playerId, targetId: "c_cheolgu" });
+    expect(w.runCheat("~kill c_cheolgu").ok).toBe(true);
+    expect(w.sceneForGm()).not.toMatch(/염철구[^\n]*· 사망/);
+    expect(runCommand("?인물", { state: w.state(), content, summaries: [] })).not.toMatch(/염철구[^\n]*사망/);
+    const where = w.state().remains.find((x) => x.of === "c_cheolgu")!.zone;
+    expect(w.runCheat(`~goto ${where}`).ok).toBe(true);
+    expect(runCommand("?인물", { state: w.state(), content, summaries: [] })).toMatch(/염철구[^\n]*사망/);
+  });
+
+  it("'…와 마주쳤다' 믿음은 최근 믿음 자리를 차지하지 않는다", () => {
+    const w = make("role_a_grunt");
+    for (let i = 0; i < 12; i++) w.ctx().store.append({ type: "belief_added", characterId: w.state().playerId, belief: { id: `b_x${i}`, fact: `낯선 사람 ${i}와 마주쳤다. 이름은 모른다. 겉모습: 모자`, source: "seen", accuracy: "exact", learnedAt: w.state().time } });
+    const gm = w.sceneForGm();
+    expect(gm).not.toContain("낯선 사람 11와 마주쳤다");
+    expect(gm).toContain("원수: 목에 화상 자국");
   });
 
   it("?인물 검색어가 따옴표로 감싸여도 조사가 맞다", () => {

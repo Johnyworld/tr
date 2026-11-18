@@ -3,6 +3,7 @@
 
 - id: occ_trader_market_run
   title: 장터에 물건 지고 가기
+  where: outside
   briefing: 창고에서 남는 것을 골라 지고 가까운 장터에 가서 모자란 것과 바꿔 온다. 값은 네가 정한다. 대신 돌아와서 장부 앞에서 설명해야 한다.
   giver_rank: officer
   deadline_hours: 16
@@ -14,6 +15,7 @@
 
 - id: occ_trader_price_ears
   title: 남의 장터 값 알아 오기
+  where: outside
   briefing: 요즘 다른 무리 장터에서 탄약 한 줌, 약 한 줄이 얼마에 도는지 알아 온다. 사지 말고 듣기만 한다. 누가 무엇을 사재는지가 값보다 중요하다.
   giver_rank: officer
   deadline_hours: 20
@@ -27,6 +29,7 @@
 
 - id: occ_trader_credit_book
   title: 외상 장부 털기
+  where: outside
   briefing: 장부에 기한이 지난 외상이 쌓였다. 찾아가서 받을 것을 받아 오고, 못 받으면 언제 받을지 날짜라도 받아 온다. 사람들 앞에서 망신 주지는 마라. 손님은 또 와야 한다.
   giver_rank: officer
   deadline_hours: 12

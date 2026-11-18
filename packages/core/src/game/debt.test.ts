@@ -34,6 +34,8 @@ describe("빚 (기획서 9.10)", () => {
     w.executeTool("npc_presence", { npc_id: boss, action: "enter" });
     w.ctx().store.append({ type: "missions_offered", day: Math.floor(w.state().time / 1440) + 1, templateIds: ["e_water_haul"] });
     expect(w.executeTool("assign_mission", { template_id: "e_water_haul" }).ok).toBe(true);
+    // 일감의 장소(정수장)에서 해야 센다
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "water_plant" });
     w.executeTool("take_action", act("물을 나른다", { activity: { kind: "work", until: null }, for_mission: true }));
     // 판정은 주사위에 맡기지 않고 기록으로 넣는다 (버티기 대가 있는 성공 이상)
     const passed = () => Object.values(w.state().checks).some((c) => c.move === "endure" && c.outcome !== "miss");

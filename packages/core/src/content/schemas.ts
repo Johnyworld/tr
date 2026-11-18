@@ -377,6 +377,11 @@ export function createContentSchemas(s: Scenario) {
     giver_rank: idEnum(rankIds(s)),
     deadline_hours: z.number().int().positive().max(72),
     requirements: z.array(missionRequirement).min(1),
+    /**
+     * 임무를 해야 하는 곳 (플레이 테스트 4). 그 자리에서 한 판정·활동만 진행으로 센다. 없으면 어디서든 (거점 안의 일).
+     * 구역 id, outside(우리 거점 밖 어디든), enemy(적대하는 무리의 땅)
+     */
+    where: z.union([z.literal("outside"), z.literal("enemy"), contentIdSchema]).optional(),
     /** 무장이 필요한 작전: 받으면 무리의 무기고가 무기·탄약을 빌려주고, 끝나면 반납한다 (기획서 4.8) */
     armed: z.boolean().optional(),
     /** 2인 1조: 받으면 같은 무리 동료 하나가 짝으로 붙고, 임무가 끝나면 돌아간다 (기획서 7.9) */

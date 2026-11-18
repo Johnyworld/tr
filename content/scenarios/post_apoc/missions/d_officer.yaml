@@ -15,6 +15,7 @@
 
 - id: do_willow_price
   title: 버들마을 겨울 약값
+  where: b_base
   briefing: 버들마을에 가서 겨울 동안의 약값을 정해 오세요. 텃밭 수확으로 받되, 우리 몫을 깎아 주지는 마세요. 저쪽이 누구 편에 기우는지도 보고 오시고요.
   giver_rank: leader
   deadline_hours: 16
@@ -27,6 +28,7 @@
 
 - id: do_pine_ward
   title: 청솔형제단 의무실 왕진
+  where: a_base
   briefing: 청솔형제단 의무실에 다녀오세요. 앓는 사람을 보고, 저쪽이 무엇을 내놓을 수 있는지 들어 오세요. 약은 값이 정해지기 전에는 한 알도 두고 오지 않습니다.
   giver_rank: leader
   deadline_hours: 16
@@ -41,6 +43,7 @@
 
 - id: do_market_supplies
   title: 장터에서 붕대감 사기
+  where: e_market
   briefing: 나루상단 장터에서 붕대 천과 소독할 술, 탄을 조금 사 오세요. 물과 식량은 내줘도 되지만 약은 안 됩니다. 우리 약장 사정은 들키지 마세요. 장터 사람들은 그걸로 값을 매깁니다.
   giver_rank: leader
   deadline_hours: 16

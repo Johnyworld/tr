@@ -29,7 +29,7 @@ import { describeTemperature } from "./climate.ts";
 import { troubleLine } from "./factionTalk.ts";
 import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
-import { playerCalls } from "../game/acquaintance.ts";
+import { knowsDeath, playerCalls } from "../game/acquaintance.ts";
 import { describeRomanceForGm } from "./romance.ts";
 import { describeCaptivityForGm } from "./captivity.ts";
 import { describeHistoryPart, type HistoryPart } from "../game/background.ts";
@@ -393,8 +393,10 @@ function statusNote(content: Content, character: Character, state?: GameState): 
   const changed = Object.entries(initial).some(([track, level]) => character.conditions[track] !== level);
   // 붙잡혀 있다는 것은 그 자리에 있어야 안다 (원칙 4). 아니면 행방을 모를 뿐이다
   if (character.captive && !character.dead) return state && state.playerZone === character.captive.zone ? " · 여기 붙잡혀 있다" : " · 행방 모름";
-  return character.dead ? " · 사망" : character.away ? " · 떠남" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
+  if (character.dead) return !state || knowsDeath(state, content, character.id) ? " · 사망" : "";
+  return character.away ? " · 떠남" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
 }
+
 
 /**
  * 장면에 없지만 플레이어가 아는 인물. 공개 정보만.
@@ -437,7 +439,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
       const npc = content.npcs[id];
       if (detailed.has(id)) lines.push(`${head(id)}: ${npc ? `${npc.look} ${npc.reputation}` : (character.extra?.look ?? "")}`);
       // 관계가 생겼거나 상태가 있는 사람은 한 줄, 아무 일 없는 사람은 이름만 모은다
-      else if (depth(id) > 0 || character.captive || character.dead || character.away || !npc) lines.push(`${head(id)}${npc ? `: ${shortNote(npc.reputation)}` : ""}`);
+      else if (depth(id) > 0 || character.captive || (character.dead && knowsDeath(state, content, id)) || character.away || !npc) lines.push(`${head(id)}${npc ? `: ${shortNote(npc.reputation)}` : ""}`);
       else rest.push(`${headingAs(state, content, viewer, id)}(${id})`);
     }
     blocks.push(
@@ -501,12 +503,16 @@ function describeZoneExtras(state: GameState, content: Content): string {
 }
 
 /** 플레이어의 Belief. 출처는 넣고 진짜 정확도는 넣지 않는다 */
-function describeBeliefs(state: GameState, _content: Content): string {
+function describeBeliefs(state: GameState, content: Content): string {
   const all = state.beliefs[state.playerId] ?? [];
   if (all.length === 0) return "";
   // 최근 것과, 지금 장면에 있는 인물에 관한 것만 (나머지는 recall로 찾는다, 기획서 11.6 토큰)
-  const names = state.scene.present.map((id) => state.characters[id]?.name).filter((n): n is string => !!n && n.length >= 2);
-  const recent = new Set(all.slice(-RECENT_BELIEFS_IN_PROMPT).map((b) => b.id));
+  const names = state.scene.present
+    .flatMap((id) => [state.characters[id]?.name, state.characters[id] ? playerCalls(state, content, id) : undefined])
+    .filter((n): n is string => !!n && n.length >= 2);
+  // "…와 마주쳤다. 이름은 모른다. 겉모습: …"은 인물 목록이 이미 알려 준다. 최근 자리를 차지하지 않고, 그 사람이 장면에 있을 때만 싣는다 (플레이 테스트 4)
+  const meeting = (fact: string) => /마주쳤다\.( 이름은 모른다\.)?( 겉모습: .*)?$/.test(fact);
+  const recent = new Set(all.filter((b) => !meeting(b.fact)).slice(-RECENT_BELIEFS_IN_PROMPT).map((b) => b.id));
   const about = all.filter((b) => !recent.has(b.id) && names.some((n) => b.fact.includes(n))).slice(-MAX_BELIEFS_IN_PROMPT + RECENT_BELIEFS_IN_PROMPT);
   const shown = all.filter((b) => recent.has(b.id) || about.includes(b));
   // 알게 된 때를 붙인다 (12-178): 사흘 전에 본 병력은 지금과 다를 수 있다

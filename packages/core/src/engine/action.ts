@@ -51,7 +51,7 @@ import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { SQUAD_REPORT_PREFIX } from "./command.ts";
-import { activeMissionOf } from "../game/missions.ts";
+import { activeMissionOf, atMissionPlace } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
@@ -474,6 +474,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
   const forMission = input.for_mission ? (activeMissionOf(start.missions, start.playerId)?.id ?? null) : null;
   const lines: string[] = [];
+  // 임무의 장소가 아니면 임무로 치지 않는다 (플레이 테스트 4: 거점 안에서 초소 보초를 마쳤다)
+  {
+    const m = forMission ? start.missions[forMission] : undefined;
+    if (m?.place && !input.move_to && !atMissionPlace(m, start.playerZone, start.zones, start.factions)) lines.push(`(여기는 임무의 장소(${m.place.label})가 아니라 이번 행동은 임무로 치지 않는다.)`);
+  }
   const displays: ToolDisplayEvent[] = [];
   let outcome: CheckOutcome | null = null;
 
@@ -501,7 +506,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const roll = rollPlayerCheck(
       { move: input.check.move, stat: input.check.stat, difficulty: input.ambush ? ambushDifficulty(input.check.difficulty) : input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
       ctx,
-      { target: input.target, forMission },
+      { target: input.target, forMission, noTools: !!input.train },
     );
     if (!roll.ok) {
       // 턴은 이미 시작됐으므로 잠깐의 시간만 흐르게 하고 오류를 알린다
@@ -854,7 +859,9 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   const toLabel = levelOf(track, to).label;
   const note = fatal
     ? `${DEATH_GUIDE} 장면을 끝내고 더 이상 행동을 제시하지 마라.`
-    : ` 앞으로 판정에 ${signed(conditionPenalty(content.scenario, after))} 보정을 받는다. 다친 감각을 서술에 반영하라.`;
+    : incapacitatingSymptom(content.scenario, after)
+      ? ` ${josa(target.name, "은/는")} 스스로 아무것도 할 수 없다 (${incapacitatingSymptom(content.scenario, after)!.label}). 흐려지는 감각을 서술에 반영하라.`
+      : ` 앞으로 판정에 ${signed(conditionPenalty(content.scenario, after))} 보정을 받는다. 다친 감각을 서술에 반영하라.`;
   return {
     fatal,
     text: `${absorbed.lines.length ? absorbed.lines.join(" ") + " " : ""}${target.name}의 ${track.label}: ${fromLabel} → ${toLabel} (${cause}).${note}`,

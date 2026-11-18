@@ -4,7 +4,7 @@ import { rankName } from "../game/ranks.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { memoAccess } from "../game/memo.ts";
 import { josa } from "../text.ts";
-import { headingAs, playerCalls } from "../game/acquaintance.ts";
+import { headingAs, knowsDeath, playerCalls } from "../game/acquaintance.ts";
 import { traitLabels } from "../engine/traits.ts";
 import { growthLine, skillLines } from "../engine/growth.ts";
 import type { Content } from "../content/schemas.ts";
@@ -244,7 +244,7 @@ const people: CommandDef = {
           const shown = present.get(id);
           const here = state.scene.present.includes(id) ? ` · 함께 있음${shown?.conditionLabel ? ` (${shown.conditionLabel})` : ""}` : "";
           const attitude = state.perceived[id] ? `신뢰 ${relationLabel(r.trust)} · 호감 ${relationLabel(r.affection)} · 존중 ${relationLabel(r.respect)}` : "아직 만나 보지 않음";
-          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead ? " · 사망" : c.away ? " · 떠남" : c.captive ? (state.playerZone === c.captive.zone ? " · 여기 붙잡혀 있음" : " · 행방 모름") : ""}${here}  (${attitude})`;
+          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead && knowsDeath(state, content, id) ? " · 사망" : c.away ? " · 떠남" : c.captive ? (state.playerZone === c.captive.zone ? " · 여기 붙잡혀 있음" : " · 행방 모름") : ""}${here}  (${attitude})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,
@@ -315,12 +315,12 @@ const mission: CommandDef = {
       .slice(-3);
     const lines = [header("임무")];
     if (active) {
-      lines.push(active.title, active.briefing, `기한 ${formatTime(active.deadline)}`, "");
+      lines.push(active.title, active.briefing, `기한 ${formatTime(active.deadline)}${active.place ? ` · 장소 ${active.place.label}` : ""}`, "");
       active.requirements.forEach((r, i) => lines.push(`  - ${describeRequirement(content.scenario, r, active.progress[i] ?? 0)}`));
       const loan = buildPlayerView(state, content).loan;
       if (loan.length) lines.push("", `빌린 장비 (반납): ${loan.join(", ")}`);
     } else {
-      lines.push("수행 중인 임무가 없습니다. 상관에게 물어보세요.");
+      lines.push(state.characters[state.playerId]?.factionId && commanderOf(state, content) ? "수행 중인 임무가 없습니다. 상관에게 물어보세요." : "수행 중인 임무가 없습니다. 임무를 내릴 상관이 없습니다.");
     }
     if (ended.length) lines.push("", "최근 임무", ...ended.map((m) => `  ${m.title} — ${MISSION_STATUS_LABELS[m.status]}`));
     // 약속 (12-160)·받아 준 부탁 (12-174)

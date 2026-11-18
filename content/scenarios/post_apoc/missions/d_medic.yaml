@@ -56,6 +56,7 @@
 
 - id: d_oldtown_pharmacy
   title: 구시가 약국 뒤지기
+  where: old_town
   briefing: 구시가의 옛 약국과 병원 의원 자리를 뒤져 붕대, 소독약, 남은 알약을 찾아 온다. 해 지기 전에 돌아온다.
   giver_rank: squad_leader
   supplies: { medicine: 4 }
@@ -68,6 +69,7 @@
 
 - id: d_hospital_pharmacy
   title: 시립병원 지하 약제실
+  where: hospital_ruins
   briefing: 남민호와 함께 옛 시립병원에 들어가 지하 약제실 쪽을 살핀다. 감염체가 많으니 소리를 내지 않는다. 무리하지 말고 길만 확인해도 된다.
   giver_rank: squad_leader
   supplies: { medicine: 8 }
@@ -80,6 +82,7 @@
 
 - id: d_willow_house_call
   title: 버들마을 왕진
+  where: b_base
   briefing: 버들마을 거점에 왕진을 간다. 앓는 사람을 보고, 약값은 도상필이 정한 대로 받아 온다. 깎아 주지 않는다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -91,6 +94,7 @@
 
 - id: d_riverside_wounded
   title: 강변 부상자 수습
+  where: riverside
   briefing: 어젯밤 강변 공장 지대에서 교전이 있었다. 남은 부상자가 있으면 어느 쪽이든 응급처치를 하고 데려온다. 총소리가 나면 바로 물러난다.
   giver_rank: squad_leader
   deadline_hours: 10

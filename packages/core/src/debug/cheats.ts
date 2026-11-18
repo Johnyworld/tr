@@ -164,7 +164,7 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         if (args[0] === "extra") {
           const [, template, ...label] = args;
           const spawn = EXTRA_TOOLS.find((t) => t.name === "spawn_extra")!.run as (i: { template: string; label: string }, c: ToolContext) => ToolOutcome;
-          const out = spawn({ template: template ?? "", label: label.join(" ") || content.extras[template ?? ""]?.label || "이름 없는 인물" }, ctx);
+          const out = spawn({ template: template ?? "", label: label.join(" ") || content.extras[template ?? ""]?.label.split(" — ")[0] || "이름 없는 인물" }, ctx);
           return out.ok ? { ok: true, text: out.resultText } : out;
         }
         const c = findCharacter(ctx, args.join(" "));
@@ -202,7 +202,12 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         if (!storylet) return { ok: false, error: `없는 이야기: ${args[0]} — ${Object.keys(content.storylets).join(", ")}` };
         if (state.activeStorylet) endActiveStorylet(ctx, "치트로 다른 이야기를 열었다");
         const cast = pickCast(store.getState(), content, storylet, ctx.rng);
-        if (!cast) return { ok: false, error: "배역을 채울 인물이 없다 (조건에 맞는 인물이 살아 있어야 한다)." };
+        if (!cast) {
+          // 다짐의 대상을 쓰는 이야기인데 다짐이 없으면 그 까닭을 말한다 (다짐은 첫 행동 때 선다)
+          const needsResolve = Object.values(storylet.cast ?? {}).some((r) => r.resolve_target);
+          if (needsResolve && !store.getState().resolves?.[store.getState().playerId]) return { ok: false, error: "주인공의 다짐이 없다 (다짐의 대상이 배역이다. 시나리오의 다짐은 첫 행동 때 선다)." };
+          return { ok: false, error: "배역을 채울 인물이 없다 (조건에 맞는 인물이 살아 있어야 한다)." };
+        }
         fireStorylet(ctx, storylet, cast);
         return { ok: true, text: `이야기 시작: ${storylet.title}` };
       }

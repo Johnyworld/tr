@@ -4,6 +4,7 @@
 #   - check: 판정 행동과 최소 결과(partial = 대가 있는 성공 이상)
 - id: guard_east_post
   title: 동쪽 초소 보초
+  where: a_east_post
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   # 2인 1조 (기획서 7.9)
@@ -24,6 +25,7 @@
       minutes: 120
 - id: search_nearby_ruins
   title: 인근 폐건물 수색
+  where: outside
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   briefing: 거점 근처 폐건물에서 쓸 만한 물자를 찾아 온다. 해가 지기 전에 돌아온다.
@@ -35,6 +37,7 @@
       min_outcome: partial
 - id: scout_north_overpass
   title: 북쪽 고가도로 정찰
+  where: overpass
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   # 2인 1조 (기획서 7.9)
@@ -49,6 +52,7 @@
       min_outcome: partial
 - id: fields_watch
   title: 남쪽 텃밭 지키기
+  where: south_fields
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   briefing: 남쪽 텃밭에서 밭일하는 사람들을 지킨다. 담장이 무너진 쪽이라 감염체와 좀도둑을 조심한다.
@@ -59,6 +63,7 @@
       minutes: 180
 - id: market_errand
   title: 나루상단 장터 심부름
+  where: e_market
   briefing: 나루상단의 장터에 가서 담배를 소금과 바꿔 오는 흥정을 한다. 강변을 지날 때 조심한다.
   giver_rank: squad_leader
   deadline_hours: 12
@@ -69,6 +74,7 @@
       min_outcome: partial
 - id: hospital_supply_run
   title: 옛 시립병원 약 찾기
+  where: hospital_ruins
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   briefing: 의무실 약이 바닥났다. 옛 시립병원에 들어가 쓸 만한 약을 찾아 온다. 감염체가 많으니 소리를 내지 않는다.
@@ -82,6 +88,7 @@
       min_outcome: partial
 - id: front_recon
   title: 전선 정찰
+  where: enemy
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   # 2인 1조 (기획서 7.9)
@@ -97,6 +104,7 @@
   advances: { clock: a_counteroffensive, delta: 2 }
 - id: supply_raid
   title: 붉은연합 보급 털기
+  where: enemy
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   # 2인 1조 (기획서 7.9)

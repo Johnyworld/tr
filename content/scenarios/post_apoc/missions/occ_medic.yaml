@@ -23,6 +23,7 @@
 
 - id: occ_medic_pharmacy
   title: 약 찾으러 나가기
+  where: outside
   briefing: 무너진 약국, 버려진 구급차, 빈집의 약상자를 뒤져 쓸 만한 것을 건져 온다. 유통기한은 보지 말고 포장이 뜯겼는지만 본다.
   giver_rank: squad_leader
   supplies: { medicine: 3 }
@@ -35,6 +36,7 @@
 
 - id: occ_medic_field
   title: 작전 따라가기
+  where: outside
   briefing: 바깥으로 나가는 조를 따라가 뒤에서 걷는다. 누가 쓰러지면 그 자리에서 피를 막고 데려온다. 총은 맨 나중에 든다.
   giver_rank: squad_leader
   deadline_hours: 12

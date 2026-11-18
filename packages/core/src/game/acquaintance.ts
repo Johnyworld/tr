@@ -56,3 +56,17 @@ export function headingAs(state: GameState, content: Content, viewer: string, ta
 
 /** 현재 플레이어 캐릭터가 부르는 말 (가장 흔한 경우) */
 export const playerCalls = (state: GameState, content: Content, target: string) => nameAs(state, content, state.playerId, target);
+
+/**
+ * 주인공이 그 사람의 죽음을 아는가 (원칙 4, 플레이 테스트 4): 유해가 지금 구역에 있거나, 같은 무리 사람이거나(거점에 소식이 돈다),
+ * 그 죽음을 전하는 믿음이 있다. 모르면 GM에게도 살아 있는 것처럼 보인다
+ */
+export function knowsDeath(state: GameState, content: Content, id: string): boolean {
+  const c = state.characters[id];
+  if (!c?.dead) return false;
+  if (state.remains.some((r) => r.of === id && r.zone === state.playerZone)) return true;
+  const me = state.characters[state.playerId];
+  if (me?.factionId && c.factionId === me.factionId) return true;
+  const names = [c.name, playerCalls(state, content, id)];
+  return (state.beliefs[state.playerId] ?? []).some((b) => names.some((n) => b.fact.includes(n)) && /죽|숨졌|숨을 거|시신|유해/.test(b.fact));
+}

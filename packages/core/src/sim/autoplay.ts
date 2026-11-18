@@ -205,7 +205,9 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     // 갇혀 있으면 (12-55): 가끔 탈출을 시도하고, 아니면 버틴다
     if (me.captive && s.playerZone) {
       const c = content.scenario.captivity;
-      if (c && rng() < 0.25) {
+      // 크게 다친 몸으로는 무거운 위험을 건 탈출을 하지 않는다 (사람이라면 낫기를 기다린다. 시드 11에서 연달아 시도하다 피를 흘려 죽었다)
+      const hurtNow = harmTrack.levels.findIndex((l) => l.id === me.conditions[harmTrack.id]);
+      if (c && hurtNow < 2 && rng() < 0.25) {
         const move = moves.find((m) => m.id === c.escape_moves[0])!;
         const out = tool("take_action", { ...base, intent: "탈출", move_to: pick(rng, neighbors(content, s.playerZone)), check: check(move, "heavy") });
         if (!out.ok) stats.errors.push(`탈출: ${out.error}`);

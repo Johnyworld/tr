@@ -14,6 +14,7 @@
 
 - id: d_sl_pharmacy_alley
   title: 약국 골목 수색
+  where: old_town
   briefing: 구시가의 옛 약국 골목을 수비대와 함께 훑는다. 붕대, 소독약, 유효기간이 남은 알약이면 무엇이든. 해 지기 전에 돌아오고, 다친 사람 없이 돌아온다.
   giver_rank: leader
   supplies: { medicine: 5 }
@@ -26,6 +27,7 @@
 
 - id: d_sl_hospital_shaft
   title: 시립병원 엘리베이터 통로
+  where: hospital_ruins
   briefing: 남민호를 앞세워 옛 시립병원 엘리베이터 통로로 지하에 내려간다. 약제실까지 가는 길을 확인하고 밧줄을 새로 건다. 하재문이 긁힌 곳이니 아무도 혼자 두지 않는다.
   giver_rank: leader
   deadline_hours: 14
@@ -37,6 +39,7 @@
 
 - id: d_sl_house_call_escort
   title: 왕진 호위
+  where: b_base
   briefing: 버들마을로 왕진 가는 의사를 호위한다. 의사가 환자를 보는 동안 문 앞을 지키고, 오가는 길에 의사가 아무 데서나 멈추지 않게 한다. 의사가 다치면 하얀매가 다친다.
   giver_rank: leader
   deadline_hours: 12
@@ -48,6 +51,7 @@
 
 - id: d_sl_market_crate
   title: 장날 약 상자 호위
+  where: e_market
   briefing: 도상필이 나루상단 장터에서 바꿀 약 상자를 지고 간다. 수비대는 상자를 지키기만 한다. 흥정에는 끼지 않고, 상자 수는 떠날 때와 돌아올 때 센다.
   giver_rank: leader
   deadline_hours: 12

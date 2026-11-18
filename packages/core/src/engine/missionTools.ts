@@ -13,7 +13,8 @@ import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
 import { moveLabel } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import { ACTIVITY_LABELS, dayOf, formatDuration, formatTime } from "../rules/time.ts";
-import type { MissionRequirement } from "../content/schemas.ts";
+import type { Content, MissionRequirement } from "../content/schemas.ts";
+import { baseOf } from "./captivity.ts";
 import type { GameState } from "../game/state.ts";
 import {
   activeMissionOf,
@@ -41,7 +42,20 @@ export function describeRequirement(s: Scenario, requirement: MissionRequirement
 
 export function describeMission(s: Scenario, mission: MissionInstance): string {
   const reqs = mission.requirements.map((r, i) => `  - ${describeRequirement(s, r, mission.progress[i] ?? 0)}`).join("\n");
-  return `${mission.title} (id: ${mission.id}, 기한 ${formatTime(mission.deadline)})\n  ${mission.briefing}\n${reqs}`;
+  const place = mission.place ? `\n  장소: ${mission.place.label} (그 자리에서 한 판정·활동만 임무로 센다)` : "";
+  return `${mission.title} (id: ${mission.id}, 기한 ${formatTime(mission.deadline)})\n  ${mission.briefing}${place}\n${reqs}`;
+}
+
+/** 임무 템플릿의 where를 이 판의 장소로 (배정할 때 정해 둔다) */
+export function missionPlace(content: Content, where: string | undefined, factionId: string | null): MissionInstance["place"] {
+  if (!where) return null;
+  const zoneName = (id: string) => content.locations[id]?.name ?? id;
+  if (where === "outside") {
+    const base = factionId ? baseOf(content, factionId) : undefined;
+    return base ? { zone: null, notZone: base, enemyOf: null, label: `${zoneName(base)} 밖` } : null;
+  }
+  if (where === "enemy") return factionId ? { zone: null, notZone: null, enemyOf: factionId, label: "적대하는 무리의 땅" } : null;
+  return { zone: where, notZone: null, enemyOf: null, label: zoneName(where) };
 }
 
 /** 플레이어의 직속 상관. 살아 있지 않으면 undefined */
@@ -86,6 +100,7 @@ const assignMission = defineTool({
       assignedAt: state.time,
       deadline: state.time + template.deadline_hours * 60,
       requirements: structuredClone(template.requirements),
+      place: missionPlace(ctx.content, template.where, player.factionId),
       progress: template.requirements.map(() => 0),
       status: "active",
     };

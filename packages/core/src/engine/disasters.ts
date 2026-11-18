@@ -2,7 +2,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { infestationOf } from "../game/infestation.ts";
 import { seasonOfDay } from "../sim/season.ts";
-import { sentence } from "../text.ts";
+import { fill, josa, sentence } from "../text.ts";
 import { changeCondition } from "./body.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
@@ -130,7 +130,7 @@ function strike(ctx: ToolContext, d: Disaster, day: number): ToolDisplayEvent[] 
   const now = store.getState();
   const place = d.zone ? (content.locations[d.zone]?.name ?? d.zone) : "도시 전체";
   const who = d.faction ? (content.factions[d.faction]?.name ?? d.faction) : null;
-  const fact = sentence(`${place}에 ${k.label}${who ? ` (${who})` : ""}${collapsed ? `. ${who ?? "그 무리"}은(는) 거점을 잃었다` : ""}`);
+  const fact = sentence(`${fill(k.news, { zone: place, faction: who ?? "" })}${collapsed && who ? `. ${josa(who, "은/는")} 거점을 잃었다` : ""}`);
   const near = disasterNear(content, now, d);
   store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: near ? "seen" : "rumor", accuracy: near ? "exact" : "approximate", learnedAt: now.time } });
   displays.push({ type: "belief", fact, sourceLabel: near ? "직접 봄" : "소문" });

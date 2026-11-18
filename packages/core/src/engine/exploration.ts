@@ -7,6 +7,8 @@ import { josa } from "../text.ts";
 import { advanceTime } from "./action.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { EXTRA_TOOLS } from "./extras.ts";
+import { kindOf } from "../game/kinds.ts";
+import { isIncapacitated } from "./body.ts";
 import { applyEffect } from "./storyletTools.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
@@ -144,20 +146,29 @@ const explore = defineTool({
       return { ok: true as const, resultText: [...lines, ...(cue ? [`낌새: ${cue}`] : []), "이 결과대로 서술하라."].join("\n"), display: shown, extra };
     };
 
+    // 깨어난 감염체가 장면에 있으면 더 들어가거나 뒤지지 못한다: 싸우거나(take_action) 빠져나온다(leave)
+    const awake = state.scene.present.filter((id) => {
+      const c = state.characters[id];
+      return !!c && !c.dead && kindOf(content, c) === "infected" && !isIncapacitated(content, c);
+    });
+    if ((input.action === "deeper" || input.action === "search") && awake.length) {
+      return { ok: false, error: `깨어난 것들이 바로 앞에 있다 (${awake.join(", ")}). 먼저 싸우거나(take_action, target) 빠져나온다(leave).` };
+    }
+
     if (input.action === "deeper") {
       if (state.battle) return { ok: false, error: "전투 중이다. 먼저 싸우거나 물러난다." };
       if (ex.depth >= last) return { ok: false, error: `이미 가장 깊은 곳(${label(last)})이다.` };
       const m = moveOf(content.scenario, r.move)!;
-      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: difficultyAt(ex.depth + 1, last), intent: `${label(ex.depth + 1)}(으)로 내려간다` }, ctx);
+      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: difficultyAt(ex.depth + 1, last), intent: `${josa(label(ex.depth + 1), "으로/로")} 내려간다` }, ctx);
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
       if (check.outcome !== "miss") {
         store.append({ type: "exploration_changed", depth: ex.depth + 1, noise: ex.noise, searched: ex.searched });
-        lines.push(`${label(ex.depth + 1)}(으)로 내려갔다.`);
+        lines.push(`${josa(label(ex.depth + 1), "으로/로")} 내려갔다.`);
         if (check.outcome === "partial") lines.push(...raiseNoise(ctx, 1));
       } else {
-        lines.push(`${label(ex.depth + 1)}(으)로 가는 길에서 발을 헛디뎠다. 아직 ${label(ex.depth)}.`);
+        lines.push(`${josa(label(ex.depth + 1), "으로/로")} 가는 길에서 발을 헛디뎠다. 아직 ${label(ex.depth)}.`);
         const hurt = applyEffect(ctx, { wound: { steps: 1, cause: ruin.hazard } } as StoryletEffect, {}, {}, ruin.hazard);
         if (hurt.line) lines.push(hurt.line);
         if (hurt.display) extra.push(hurt.display);
@@ -168,9 +179,9 @@ const explore = defineTool({
 
     if (input.action === "search") {
       if (state.battle) return { ok: false, error: "전투 중이다." };
-      if (ex.searched.includes(ex.depth)) return { ok: false, error: `${label(ex.depth)}은(는) 이미 뒤졌다. 더 내려가거나 나온다.` };
+      if (ex.searched.includes(ex.depth)) return { ok: false, error: `${josa(label(ex.depth), "은/는")} 이미 뒤졌다. 더 내려가거나 나온다.` };
       const m = moveOf(content.scenario, r.search_move)!;
-      const check = rollPlayerCheck({ move: r.search_move, stat: m.stats[0]!, difficulty: "normal", intent: `${label(ex.depth)}을(를) 뒤진다` }, ctx);
+      const check = rollPlayerCheck({ move: r.search_move, stat: m.stats[0]!, difficulty: "normal", intent: `${josa(label(ex.depth), "을/를")} 뒤진다` }, ctx);
       if (!check.ok) return check;
       const extra = step(ctx);
       const now = store.getState().exploration!;

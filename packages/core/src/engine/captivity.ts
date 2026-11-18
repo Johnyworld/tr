@@ -113,7 +113,7 @@ export function warCaptures(ctx: ToolContext, clashes: readonly Clash[]): ToolDi
     ctx.store.append({ type: "npc_captured", npcId: taken.id, by: winner, zone });
     const me = state.characters[state.playerId];
     if (me && !me.dead && me.factionId === loser && (state.known[state.playerId] ?? []).includes(taken.id)) {
-      const fact = sentence(`${playerCalls(state, ctx.content, taken.id)}이(가) ${ctx.content.factions[winner]?.name ?? winner}과(와)의 싸움에서 붙잡혀 갔다고 한다`);
+      const fact = sentence(`${josa(playerCalls(state, ctx.content, taken.id), "이/가")} ${josa(ctx.content.factions[winner]?.name ?? winner, "과/와")}의 싸움에서 붙잡혀 갔다고 한다`);
       ctx.store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${ctx.store.getState().nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: state.time, topic: "war" } });
       displays.push({ type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS.report });
     }

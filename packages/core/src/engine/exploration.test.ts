@@ -67,5 +67,10 @@ describe("탐험할 곳", () => {
     expect(w.state().exploration?.noise).toBe(3);
     const infected = w.state().scene.present.filter((id) => w.state().characters[id]?.extra?.template?.startsWith("infected"));
     expect(infected.length).toBeGreaterThan(0);
+    // 깨어난 것이 앞에 있으면 더 들어가거나 뒤지지 못하고, 나오기만 된다
+    const blocked = explore(w, "deeper");
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.error).toContain("깨어난 것들");
+    expect(explore(w, "search").ok).toBe(false);
   });
 });

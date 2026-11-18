@@ -1076,6 +1076,7 @@ disasters:
       target: base
       omen: 바람이 세고 마른 냄새가 난다. 누군가 아궁이 불씨를 걱정하고, 창고 뒤에 기름통이 쌓여 있다
       aftermath: 그을린 벽, 타다 남은 창고, 연기 냄새가 며칠 간다
+      news: "{zone}에 큰불이 났다"
       recover_days: 6
       resources: { fuel: 0.3, food: 0.2 }
       population: 0.03
@@ -1090,6 +1091,7 @@ disasters:
       target: water
       omen: 비가 사흘째 그치지 않는다. 강물이 다리 밑까지 차올랐고, 하수구가 거꾸로 넘친다
       aftermath: 진흙에 덮인 바닥, 떠내려간 짐, 썩는 냄새
+      news: "{zone:이/가} 물에 잠겼다"
       recover_days: 5
       resources: { food: 0.15, water: 0.1 }
       population: 0.02
@@ -1101,6 +1103,7 @@ disasters:
       target: infested
       omen: 담을 긁는 소리가 잦아졌다. 쥐와 들개가 한쪽으로 도망치고, 밤마다 먼 곳에서 무리 지은 울음이 들린다
       aftermath: 무너진 담 틈, 끌려간 자국, 아직 근처를 떠도는 것들
+      news: "감염체 떼가 {zone:을/를} 덮쳤다"
       recover_days: 6
       population: 0.05
       morale: 1
@@ -1113,6 +1116,7 @@ disasters:
       target: all
       omen: 하늘이 낮게 내려앉았다. 새벽 서리가 한낮에도 녹지 않고, 물통에 살얼음이 낀다
       aftermath: 얼어붙은 물, 땔감 다툼, 아침마다 깨어나지 않는 사람
+      news: "도시에 혹한이 닥쳤다"
       recover_days: 4
       resources: { fuel: 0.25 }
       morale: 1
@@ -1123,6 +1127,7 @@ disasters:
       target: faction
       omen: 밤새 기침하는 사람이 늘었다. 피난민 막사에서 열이 오른 아이가 둘 나왔다는 말이 돈다
       aftermath: 격리된 막사, 바닥난 약장, 마스크 대신 천을 감은 얼굴들
+      news: "{faction}에 돌림병이 돈다"
       recover_days: 8
       resources: { medicine: 0.3 }
       population: 0.04

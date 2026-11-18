@@ -899,6 +899,8 @@ export const scenarioFileSchema = z
             target: z.enum(["base", "water", "infested", "faction", "all"]),
             omen: z.string().min(1),
             aftermath: z.string().min(1),
+            /** 소식 문장. {zone} 덮친 곳, {faction} 그 무리 (조사 문법 {zone:이/가} 등을 쓴다) */
+            news: z.string().min(1),
             recover_days: z.number().int().min(1),
             resources: z.record(id, z.number().min(0).max(1)).default({}),
             population: z.number().min(0).max(1).default(0),

@@ -184,8 +184,17 @@ export const resolveStorylet = defineTool({
   name: "resolve_storylet",
   description:
     "진행 중인 이야기(상태의 '진행 중인 이야기')에서 플레이어가 고른 선택지를 알린다. 효과는 시스템이 적용한다. " +
-    "판정이 붙은 선택지는 같은 턴에 take_action으로 그 판정을 먼저 한 뒤 호출한다. 플레이어의 행동이 어느 선택지에도 맞지 않으면 호출하지 않는다.",
-  schema: z.strictObject({ choice_id: z.string().describe("선택지 id") }),
+    "판정이 붙은 선택지는 같은 턴에 take_action으로 그 판정을 먼저 한 뒤 호출한다. " +
+    "플레이어가 선택지에 없는 방법을 썼어도 결과의 성격(맞서기·속이기·달아나기 등)이 어느 선택지와 같으면 그 선택지로 즉흥으로 푼다: 그 방법에 맞는 스킬로 판정하고 improvised_move에 적는다 (효과는 그 선택지의 것). " +
+    "결과의 성격이 어느 선택지와도 다르면 호출하지 않고 평소처럼 진행한다.",
+  schema: z.strictObject({
+    choice_id: z.string().describe("선택지 id (플레이어의 행동과 결과의 성격이 같은 것)"),
+    improvised_move: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("즉흥으로 풀 때: 이번 턴 take_action에서 실제로 판정한 스킬 (선택지의 스킬과 다를 때만). 아니면 null"),
+  }),
   run(input, ctx) {
     const state = ctx.store.getState();
     const a = activeOf(state, ctx.content);
@@ -196,12 +205,14 @@ export const resolveStorylet = defineTool({
     let outcome: CheckOutcome | null = null;
     let effects = choice.effects;
     if (choice.check) {
-      // 이번 턴 그 행동의 판정 결과로 갈린다
+      // 이번 턴 그 행동의 판정 결과로 갈린다. 즉흥으로 풀면 플레이어의 방법에 맞는 스킬의 판정으로 (12-145)
+      const move = input.improvised_move ?? choice.check;
+      if (!ctx.content.scenario.moves.some((m) => m.id === move)) return { ok: false, error: `알 수 없는 스킬: ${move}` };
       const check = Object.values(state.checks)
-        .filter((c) => c.turn === state.turn && c.actorId === state.playerId && c.move === choice.check)
+        .filter((c) => c.turn === state.turn && c.actorId === state.playerId && c.move === move)
         .at(-1);
       if (!check) {
-        return { ok: false, error: `이 선택지는 이번 턴 take_action에서 ${moveLabel(ctx.content.scenario, choice.check)}(${choice.check}) 판정을 먼저 해야 한다.` };
+        return { ok: false, error: `이 선택지는 이번 턴 take_action에서 ${moveLabel(ctx.content.scenario, move)}(${move}) 판정을 먼저 해야 한다.` };
       }
       outcome = check.outcome;
       effects = choice.outcomes![check.outcome];
@@ -216,7 +227,10 @@ export const resolveStorylet = defineTool({
     }
     const vars = storyletVars(state, ctx.content, a.cast);
     ctx.store.append({ type: "storylet_resolved", storyletId: a.storylet.id, choiceId: choice.id, outcome });
-    const lines: string[] = [`이야기 "${a.storylet.title}": ${fillStorylet(choice.label, vars)}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`];
+    const improvised = !!input.improvised_move && input.improvised_move !== choice.check;
+    const lines: string[] = [
+      `이야기 "${a.storylet.title}": ${improvised ? `플레이어의 방법으로 즉흥으로 풀었다 (${moveLabel(ctx.content.scenario, input.improvised_move!)} 판정, "${fillStorylet(choice.label, vars)}"의 결과를 따른다)` : fillStorylet(choice.label, vars)}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`,
+    ];
     const extra: ToolDisplayEvent[] = [];
     for (const effect of effects) {
       const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title);

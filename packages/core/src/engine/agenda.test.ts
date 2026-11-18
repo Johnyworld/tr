@@ -17,11 +17,20 @@ const facts = (w: GameWorld) => (w.state().beliefs[w.state().playerId] ?? []).ma
 describe("인물의 자기 일", () => {
   it("날마다 한 칸씩 차고, 반을 넘으면 GM 카드에 낌새가 보인다", () => {
     const w = make();
-    const steps = agendaOf(content, w.state(), "a_dongwook")!.agenda.steps;
-    expect(agendaCue(content, w.state(), "a_dongwook")).toBeNull();
+    const steps = agendaOf(content, w.state(), "a_jiho")!.agenda.steps;
+    expect(agendaCue(content, w.state(), "a_jiho")).toBeNull();
     for (let d = 1; d <= Math.ceil(steps / 2); d++) runAgendas(w.ctx(), d);
-    expect(agendaOf(content, w.state(), "a_dongwook")!.filled).toBe(Math.ceil(steps / 2));
-    expect(agendaCue(content, w.state(), "a_dongwook")).toContain("요즘 이 인물은");
+    expect(agendaOf(content, w.state(), "a_jiho")!.filled).toBe(Math.ceil(steps / 2));
+    expect(agendaCue(content, w.state(), "a_jiho")).toContain("요즘 이 인물은");
+  });
+
+  it("주인공과 조우하기 전에는 시작하지 않고, 만난 뒤부터 찬다", () => {
+    const w = make();
+    runAgendas(w.ctx(), 1);
+    expect(w.state().agendas.pd_ugyeong).toBeUndefined();
+    expect(w.runCheat("~summon pd_ugyeong").ok).toBe(true);
+    runAgendas(w.ctx(), 2);
+    expect(agendaOf(content, w.state(), "pd_ugyeong")!.filled).toBe(1);
   });
 
   it("다 차면 끝 효과가 일어나고, 같은 무리 주인공은 소식을 듣고, 다음 일로 넘어간다", () => {
@@ -55,6 +64,6 @@ describe("인물의 자기 일", () => {
   it("확률을 넘기지 못한 날은 차지 않는다", () => {
     const w = make(0.99);
     runAgendas(w.ctx(), 1);
-    expect(agendaOf(content, w.state(), "a_dongwook")!.filled).toBe(0);
+    expect(agendaOf(content, w.state(), "a_jiho")!.filled).toBe(0);
   });
 });

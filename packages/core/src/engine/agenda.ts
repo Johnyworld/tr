@@ -1,5 +1,5 @@
 import type { Content, NpcContent } from "../content/schemas.ts";
-import { playerCalls } from "../game/acquaintance.ts";
+import { hasMet, playerCalls } from "../game/acquaintance.ts";
 import type { GameState } from "../game/state.ts";
 import { harmTrack } from "../scenario/scenario.ts";
 import { seasonAt } from "../sim/season.ts";
@@ -11,7 +11,7 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
  * 인물의 자기 일 (기획서 7.12, 12-168). 사연이 있는 인물이 주인공 없이도 제 일을 밀고 나간다.
- * - 일은 콘텐츠 NPC의 agenda (차례대로). 하루에 한 칸, fill의 조건이 맞고 chance를 넘으면
+ * - 일은 콘텐츠 NPC의 agenda (차례대로). 주인공과 조우한 뒤에 시작한다 (만난 적이 있거나 이름을 안다). 하루에 한 칸, fill의 조건이 맞고 chance를 넘으면
  * - 다 차면 end(이야기 효과, 배역 self·other)와 death가 일어나고 다음 일로 넘어간다. 사망은 부상 트랙의 끝 단계로만 (원칙 3), 주인공은 대상이 될 수 없다
  * - 클락은 진짜 상태다 (원칙 4). 주인공은 반을 넘으면 GM 카드의 낌새(cue)와, 끝난 뒤의 소식(news)으로만 안다
  * - 주인공이 끼어드는 길: 이야기 효과 agenda {who, delta | stop}, 배역 agenda_half
@@ -92,7 +92,12 @@ export function runAgendas(ctx: ToolContext, day: number): ToolDisplayEvent[] {
     const state = store.getState();
     const c = state.characters[npcId];
     if (!c || c.dead || c.away || c.captive || npcId === state.playerId) continue;
-    const cur = agendaOf(content, state, npcId);
+    // 주인공과 조우한 뒤에 시작한다. 한 번 시작한 일은 주인공이 바뀌어도 이어진다
+    if (!state.agendas?.[npcId]) {
+      if (!hasMet(state, state.playerId, npcId)) continue;
+      store.append({ type: "agenda_filled", npcId, delta: 0 });
+    }
+    const cur = agendaOf(content, store.getState(), npcId);
     if (!cur || !fills(content, state, npcId, cur.agenda, day) || ctx.rng() >= cur.agenda.fill.chance) continue;
     store.append({ type: "agenda_filled", npcId, delta: 1 });
     if (cur.filled + 1 >= cur.agenda.steps) displays.push(...finish(ctx, npcId, cur.agenda));

@@ -1,0 +1,229 @@
+# 쉬는 시간 (12-161): 우리 땅이나 모닥불 곁에서, 저녁과 밤. 버티는 사이사이의 사람 냄새.
+# 관계가 오르는 정식 통로이고, 마음(nerves)이 조금 풀린다. 내기는 담배가 오간다 (판정으로)
+
+- id: dt_card_game
+  title: 담배 내기
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    own_territory: true
+    segments: [evening, night]
+  cast:
+    dealer: { faction: own, here: true }
+  setup: "{dealer}이(가) 뒤집은 상자 위에 닳은 화투장을 펼친다. 판돈은 담배다. \"한 갑. 겁나면 구경만 하든가.\""
+  variants:
+    - "막사 구석에서 웃음소리가 난다. {dealer}이(가) 귀퉁이가 다 떨어진 트럼프를 섞고 있다. 바닥에 담배 몇 갑이 쌓였다."
+  ai_direction: "{dealer}은(는) 판을 즐긴다. 속임수를 쓰는지는 정하지 말고 표정과 손놀림으로만 비춘다. 이기고 지는 것은 판정 결과대로. 판이 끝나면 다들 조금 가까워진다."
+  choices:
+    - id: play
+      label: 담배 한 갑을 걸고 낀다
+      when: { has_items: [cigarettes] }
+      check: deceive
+      outcomes:
+        success:
+          - give_item: { item: cigarettes, quantity: 2 }
+          - relation: { who: dealer, axis: respect, delta: 1 }
+          - body: { track: nerves, delta: -1 }
+        partial:
+          - relation: { who: dealer, axis: affection, delta: 1 }
+          - body: { track: nerves, delta: -1 }
+        miss:
+          - lose_item: { item: cigarettes, quantity: 1 }
+          - relation: { who: dealer, axis: affection, delta: 1 }
+    - id: watch
+      label: 옆에서 구경하며 훈수를 둔다
+      effects:
+        - relation: { who: dealer, axis: affection, delta: 1 }
+    - id: pass
+      label: 일찍 눕는다
+      effects: []
+
+- id: dt_old_world
+  title: 무너지기 전 이야기
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    campfire: true
+    segments: [evening, night]
+  cast:
+    teller: { companion: {}, enter: false }
+  setup: "불이 사그라들 무렵 {teller}이(가) 묻지도 않았는데 말을 꺼낸다. 무너지기 전, 아침마다 줄 서서 사 먹던 빵 이야기다."
+  ai_direction: "{teller}의 붕괴 전 삶의 작은 조각 하나 (직업, 동네, 좋아하던 음식). 프로필에 있는 것과 어긋나지 않게, 없으면 사소한 것으로. 슬픔보다는 그리움. 주인공에게도 차례가 온다."
+  choices:
+    - id: share
+      label: 나도 내 이야기를 하나 꺼낸다
+      effects:
+        - relation: { who: teller, axis: affection, delta: 1 }
+        - relation: { who: teller, axis: trust, delta: 1 }
+        - body: { track: nerves, delta: -1 }
+    - id: listen
+      label: 듣기만 한다
+      effects:
+        - relation: { who: teller, axis: affection, delta: 1 }
+    - id: cut
+      label: 지난 얘기 해 봐야 소용없다고 끊는다
+      effects:
+        - relation: { who: teller, axis: affection, delta: -1 }
+
+- id: dt_arm_wrestle
+  title: 팔씨름
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    own_territory: true
+    segments: [evening]
+  cast:
+    rival: { faction: own, here: true }
+  setup: "식탁 하나를 둘러싸고 사람들이 모였다. {rival}이(가) 소매를 걷어붙이고 팔꿈치를 세운다. \"다음.\" 눈이 당신에게 머문다."
+  ai_direction: "구경꾼들이 떠든다. 이기든 지든 웃고 끝나는 판이다. 진 사람을 놀려도 악의는 없다. 팔씨름은 판정 결과대로."
+  choices:
+    - id: take
+      label: 팔꿈치를 맞댄다
+      check: fight
+      outcomes:
+        success:
+          - relation: { who: rival, axis: respect, delta: 2 }
+          - faction_morale: { faction: own, delta: 1 }
+        partial:
+          - relation: { who: rival, axis: respect, delta: 1 }
+          - relation: { who: rival, axis: affection, delta: 1 }
+        miss:
+          - relation: { who: rival, axis: affection, delta: 1 }
+          - body: { track: fatigue, delta: 1 }
+    - id: cheer
+      label: 구경꾼 틈에서 판돈을 부른다
+      effects:
+        - relation: { who: rival, axis: affection, delta: 1 }
+
+- id: dt_sparring
+  title: 해 질 녘 대련
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    own_territory: true
+    segments: [day, evening]
+  cast:
+    partner: { faction: own, here: true }
+  setup: "{partner}이(가) 나무 막대 두 개를 들고 온다. \"몸이 굳었어. 좀 맞춰 볼래?\""
+  ai_direction: "{partner}은(는) 진지하지만 다치게 할 생각은 없다. 대련 중에 버릇 하나를 알려 준다 (발 디딤, 막는 각도). 결과는 판정대로."
+  choices:
+    - id: spar
+      label: 막대를 받아 든다
+      check: fight
+      outcomes:
+        success:
+          - train: { skill: fight, max: 2 }
+          - relation: { who: partner, axis: respect, delta: 1 }
+        partial:
+          - relation: { who: partner, axis: respect, delta: 1 }
+          - body: { track: fatigue, delta: 1 }
+        miss:
+          - wound: { steps: 1, cause: 대련에서 막대에 맞았다 }
+          - relation: { who: partner, axis: affection, delta: 1 }
+    - id: decline
+      label: 오늘은 쉰다고 한다
+      effects: []
+
+- id: dt_drinks
+  title: 몰래 돌린 술병
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    own_territory: true
+    segments: [night]
+  cast:
+    host: { faction: own, here: true }
+  setup: "불 꺼진 막사에서 {host}이(가) 담요 밑에서 병을 꺼낸다. \"쉿. 한 모금씩만.\" 몇 사람이 숨죽여 웃는다."
+  ai_direction: "규율로는 안 되는 일이다. 들키면 곤란하지만 오늘 밤은 아무도 말하지 않는다. 술이 돌면 평소 말이 없던 사람이 한마디씩 한다."
+  choices:
+    - id: drink
+      label: 병을 받아 한 모금 마신다
+      effects:
+        - body: { track: drink, delta: 1 }
+        - relation: { who: host, axis: affection, delta: 1 }
+        - relation: { who: host, axis: trust, delta: 1 }
+        - body: { track: nerves, delta: -1, chance: 0.5 }
+    - id: bring
+      label: 내 술도 내놓는다
+      when: { has_items: [soju] }
+      effects:
+        - lose_item: { item: soju }
+        - relation: { who: host, axis: affection, delta: 2 }
+        - relation: { who: host, axis: trust, delta: 1 }
+    - id: refuse
+      label: 모르는 척 돌아눕는다
+      effects: []
+
+- id: dt_lessons
+  title: 글자 가르치기
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    own_territory: true
+    segments: [day, evening]
+  cast:
+    kid: { extra: mall_kid, label: 거점의 아이 }
+  setup: "{kid}이(가) 숯 조각으로 벽에 무언가를 긁적이고 있다. 글자를 흉내 낸 것 같다. 당신을 보더니 벽을 몸으로 가린다."
+  ai_direction: "{kid}은(는) 붕괴 뒤에 자라서 학교를 모른다. 처음엔 경계하지만 이름 쓰는 법을 배우면 눈이 반짝인다. 가르치는 동안 주변 어른들이 하나둘 멈춰 서서 본다."
+  choices:
+    - id: teach
+      label: 옆에 앉아 이름 쓰는 법을 알려 준다
+      effects:
+        - relation: { who: kid, axis: affection, delta: 2 }
+        - deed: { summary: 거점의 아이에게 글자를 가르쳤다, tags: [mercy], severity: 1, privacy: public }
+        - body: { track: nerves, delta: -1 }
+    - id: leave
+      label: 할 일이 많다며 지나친다
+      effects: []
+
+- id: dt_mending
+  title: 해진 옷 깁기
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    segments: [evening, night]
+  cast:
+    mate: { companion: { kinds: [buddy, squad, kin, purpose] }, enter: false }
+  setup: "{mate}이(가) 바늘에 실을 꿰려고 눈을 찡그린다. 무릎에 해진 소매가 놓여 있다. \"이거 좀 꿰어 줘. 눈이 예전 같지 않아.\""
+  ai_direction: "말없이 손을 놀리는 시간. 바느질을 하다 보면 평소 하지 않던 말이 나온다 ({mate}의 걱정 하나, 바람 하나). 대단한 고백이 아니라 작은 속내."
+  choices:
+    - id: help
+      label: 실을 꿰어 주고 같이 깁는다
+      effects:
+        - relation: { who: mate, axis: affection, delta: 1 }
+        - relation: { who: mate, axis: trust, delta: 1 }
+    - id: tease
+      label: 늙었다고 놀리며 실을 꿰어 준다
+      effects:
+        - relation: { who: mate, axis: affection, delta: 1 }
+
+- id: dt_stars
+  title: 지붕 위
+  tags: [world]
+  repeatable: true
+  cooldown_days: 9
+  when:
+    segments: [night]
+    weather: [clear]
+  cast:
+    other: { companion: {}, enter: false }
+  setup: "맑은 밤이다. 전기가 끊긴 뒤로 별이 이렇게 많아졌다. {other}이(가) 지붕 위로 올라가며 손짓한다."
+  ai_direction: "도시가 어두워서 하늘이 밝다. {other}은(는) 별자리를 하나 안다고 우기거나, 아무 말 없이 누워 있다. 이 순간만은 아무도 쫓지 않는다. 연애 감정은 코드가 정한 대로만 (끌림이 있으면 그 결로, 없으면 동료로)."
+  choices:
+    - id: climb
+      label: 따라 올라가 나란히 눕는다
+      effects:
+        - relation: { who: other, axis: affection, delta: 1 }
+        - body: { track: nerves, delta: -1 }
+        - body: { track: fear, delta: -1 }
+    - id: stay
+      label: 아래에서 망을 본다고 한다
+      effects:
+        - relation: { who: other, axis: trust, delta: 1 }

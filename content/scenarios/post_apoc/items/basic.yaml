@@ -307,3 +307,10 @@
   kind: consumable
   weight: 0.05
   value: 8
+# 유품 (12-158): 쓸모는 없고 마음의 물건이다
+- id: faded_photo
+  name: 빛바랜 사진
+  description: 모서리가 닳은 사진 한 장. 누군가 오래 품고 다녔다. 값은 없다.
+  kind: misc
+  weight: 0.01
+  value: 0

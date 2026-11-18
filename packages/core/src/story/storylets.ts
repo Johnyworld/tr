@@ -1,3 +1,4 @@
+import { mournedBy } from "../engine/legacy.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { standingInFaction } from "../game/politics.ts";
 import { fameOf, stanceOf } from "../game/fame.ts";
@@ -60,6 +61,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.stance || stanceOf(state, content, c.id) === role.stance)
     .filter((c) => !role.vendetta || (state.vendettas ?? []).some((v) => v.avenger === c.id))
+    .filter((c) => !role.mourner || mournedBy(state, content, c.id).length > 0)
     .filter((c) => !role.commander || c.id === commander)
     // other: 주인공의 무리가 아닌 사람. 떠돌이에게는 같은 무리가 없으니 누구나
     .filter((c) => role.faction !== "other" || !player.factionId || c.factionId !== player.factionId)
@@ -434,6 +436,14 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   // 복수하러 온 사람이 갚으려는 사람 (12-135): 주인공이 죽인 사람을 주인공이 부르는 말로
   const vendetta = (state.vendettas ?? []).find((v) => Object.values(cast).includes(v.avenger));
   if (vendetta) vars.victim = playerCalls(state, content, vendetta.victim);
+  // 기억하는 사람이 이야기하는 앞 주인공 (12-158): 배역 중 처음 찾은 사람이 기억하는 가장 최근의 사람
+  for (const id of Object.values(cast)) {
+    const departed = mournedBy(state, content, id)[0];
+    if (departed) {
+      vars.departed = playerCalls(state, content, departed);
+      break;
+    }
+  }
   // 길 위의 이야기: 떠나온 곳과 가는 곳 (12-53)
   if (state.lastRoute) {
     vars.from = content.locations[state.lastRoute.from]?.name ?? state.lastRoute.from;

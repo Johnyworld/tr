@@ -642,6 +642,8 @@ export function createContentSchemas(s: Scenario) {
     distrusted_gte: z.number().int().min(1).optional(),
     /** 주인공에게 복수를 다짐한 사람만 (12-135: 주인공이 죽인 사람의 가족·친구) */
     vendetta: z.boolean().optional(),
+    /** 죽은 앞 주인공을 기억하는 사람만 (12-158: 관계가 있거나 호감이 legacy.close_affection 이상). 문장의 {departed}가 그 앞 주인공 */
+    mourner: z.boolean().optional(),
     /** 소문으로만 주인공을 아는 팬(fan) 또는 안티(anti)만 (12-127) */
     stance: z.enum(["fan", "anti"]).optional(),
     /** 발동할 때 장면에 들어온다 */

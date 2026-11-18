@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 59;
+export const SAVE_SCHEMA_VERSION = 60;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -485,6 +485,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("leverage_exposed"), by: z.string(), key: z.string() }),
     /** 짐이 무거울 때 창고 안내를 했다 (12-149) */
     z.strictObject({ type: z.literal("stash_hinted"), characterId: z.string() }),
+    // 유품 (12-158): 죽은 사람의 사물함·거처의 짐이 가까운 사람에게 간다
+    z.strictObject({ type: z.literal("stash_inherited"), from: z.string(), to: z.string() }),
     z.strictObject({ type: z.literal("fear_exposed"), characterId: z.string() }),
     z.strictObject({ type: z.literal("cold_load_set"), characterId: z.string(), load: z.number() }),
     /** 옷이 젖었다 / 말랐다 (until이 지금 이하면 마름, 12-121) */
@@ -1292,6 +1294,19 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "leverage_exposed":
       if (!next.exposed.includes(`${event.by}|${event.key}`)) next.exposed = [...next.exposed, `${event.by}|${event.key}`];
       return next;
+    case "stash_inherited": {
+      const from = next.stashes[event.from] ?? {};
+      const places = { ...(next.stashes[event.to] ?? {}) };
+      for (const [zone, items] of Object.entries(from)) {
+        const box = { ...(places[zone] ?? {}) };
+        for (const [item, n] of Object.entries(items)) box[item] = (box[item] ?? 0) + n;
+        places[zone] = box;
+      }
+      const rest = { ...next.stashes, [event.to]: places };
+      delete rest[event.from];
+      next.stashes = rest;
+      return next;
+    }
     case "stash_hinted":
       if (!next.stashHinted.includes(event.characterId)) next.stashHinted = [...next.stashHinted, event.characterId];
       return next;

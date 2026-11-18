@@ -71,3 +71,76 @@
           - belief: { fact: "{zone}의 무덤을 판 자들은 둘 이상이다. 발자국이 중간에 끊겼다", source: seen }
         miss:
           - belief: { fact: "{zone}의 무덤을 판 자들의 흔적을 놓쳤다", source: seen }
+
+# 그를 기억하는 사람 (12-158): 죽은 앞 주인공과 가까웠던 사람(관계가 있거나 호감이 legacy.close_affection 이상)이 배역 mourner.
+# {departed}는 그 사람이 기억하는 앞 주인공을 새 주인공이 부르는 말이다 (이름을 모르면 호칭)
+
+- id: lg_empty_cup
+  title: 빈 잔
+  tags: [world]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    segments: [evening, night]
+  cast:
+    friend: { mourner: true, here: true }
+  setup: "{friend}이(가) 잔 둘을 놓고 하나에만 술을 따른다. 빈 잔은 맞은편 자리에 그대로 둔다."
+  ai_direction: "{friend}은(는) {departed}을(를) 기억한다. 빈 잔은 {departed}의 몫이다. 새 주인공은 {departed}의 기억이 없다 (이름을 알면 소문으로 들은 만큼만 안다). 플레이어는 누구인지 알 수 있으니 그 거리감을 살린다. {friend}이(가) 꺼내는 이야기는 연대기의 행적과 이 인물이 아는 것 안에서만."
+  choices:
+    - id: sit
+      label: 맞은편에 앉아 이야기를 듣는다
+      effects:
+        - relation: { who: friend, axis: affection, delta: 1 }
+        - belief: { fact: "{friend}은(는) 아직 {departed}을(를) 잊지 못했다", source: report }
+    - id: drink
+      label: 빈 잔에 같이 술을 따른다
+      effects:
+        - relation: { who: friend, axis: trust, delta: 1 }
+        - belief: { fact: "{friend}과(와) {departed}의 몫으로 한 잔을 따랐다", source: seen }
+    - id: leave
+      label: 방해하지 않고 자리를 비켜 준다
+      effects: []
+
+- id: lg_keepsake
+  title: 맡겨 둔 것
+  tags: [world]
+  when:
+    segments: [morning, day, evening]
+  cast:
+    friend: { mourner: true, here: true }
+  setup: "{friend}이(가) 품에서 접힌 천 뭉치를 꺼낸다. \"{departed}이(가) 나한테 맡겨 둔 거야. 이제 누가 가져야 할지 모르겠어.\""
+  ai_direction: "천 안에는 빛바랜 사진 한 장이 있다 (사진 속 얼굴은 {departed}의 붕괴 전 모습이거나 그가 찾던 사람이다. 정하지 말고 흐릿하게). {friend}은(는) 새 주인공이 이것을 가질 만한 사람인지 본다. 값나가는 물건이 아니라 마음의 물건이다."
+  choices:
+    - id: take
+      label: 받아 들고 잘 간직하겠다고 한다
+      effects:
+        - give_item: { item: faded_photo }
+        - relation: { who: friend, axis: trust, delta: 1 }
+        - belief: { fact: "{friend}이(가) {departed}의 사진을 내게 건넸다", source: seen }
+    - id: refuse
+      label: 그건 당신이 가져야 한다고 돌려준다
+      effects:
+        - relation: { who: friend, axis: affection, delta: 1 }
+        - belief: { fact: "{friend}은(는) {departed}의 사진을 품고 다닌다", source: seen }
+
+- id: lg_old_story
+  title: 그 사람 이야기
+  tags: [world]
+  repeatable: true
+  cooldown_days: 15
+  when:
+    segments: [day, evening]
+  cast:
+    friend: { mourner: true, here: true }
+  setup: "{friend}이(가) 일하던 손을 멈추고 문득 웃는다. \"{departed}도 꼭 그렇게 했는데.\""
+  ai_direction: "새 주인공의 몸짓이나 말버릇 하나가 {friend}에게 {departed}을(를) 떠올리게 했다. {friend}은(는) {departed}의 이야기 하나를 꺼낸다 (연대기의 행적이나 이 인물이 함께 겪은 일. 없는 일은 지어내지 않는다). 듣고 나면 새 주인공에게 {departed}은(는) 소문이 아니라 사람이 된다."
+  choices:
+    - id: ask
+      label: 그 사람은 어떤 사람이었는지 묻는다
+      effects:
+        - relation: { who: friend, axis: affection, delta: 1 }
+        - belief: { fact: "{friend}에게서 {departed}의 이야기를 들었다", source: report }
+    - id: brush
+      label: 나는 그 사람이 아니라고 선을 긋는다
+      effects:
+        - relation: { who: friend, axis: affection, delta: -1 }

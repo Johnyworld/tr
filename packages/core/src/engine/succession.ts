@@ -1,3 +1,4 @@
+import { inheritStashes } from "./legacy.ts";
 import { rankName } from "../game/ranks.ts";
 import { autoEquip } from "./gear.ts";
 import { z } from "zod";
@@ -284,6 +285,8 @@ export function switchCharacter(
     }
   }
 
+  // 유품 (12-158): 가까운 사람이 뒤를 이으면 사물함·거처의 짐을 물려받는다
+  const inherited = inheritStashes(ctx, recentDeaths.map((r) => r.characterId));
   autoEquip(ctx, store.getState().playerId);
   const zoneNow = store.getState().playerZone;
   const place = zoneNow ? (content.locations[zoneNow]?.name ?? zoneNow) : null;
@@ -296,6 +299,7 @@ export function switchCharacter(
     text: [
       `이제 ${josa(heir.name, "으로/로")} 이어 간다. 새 캐릭터는 이전 캐릭터의 기억을 모른다. 이전 이야기를 이 캐릭터가 아는 것처럼 서술하지 마라.`,
       `시작 장면: ${opening}`,
+      ...inherited,
     ].join("\n"),
   };
 }

@@ -466,6 +466,7 @@ export function checkStorylets(content: Content): string[] {
     if (new Set(ids).size !== ids.length) problems.push(`${where}: 선택지 id가 겹친다`);
     // 문장의 자리는 배역 이름이나 zone·scarce만 쓸 수 있다. victim은 복수 배역(vendetta)이 있을 때만 (12-135)
     const hasVendetta = Object.values(s.cast).some((r) => r.vendetta);
+    const hasMourner = Object.values(s.cast).some((r) => r.mourner && !r.optional);
     const texts = [s.setup, ...(s.variants ?? []), s.ai_direction ?? "", ...s.choices.map((c) => c.label)];
     for (const c of s.choices) {
       for (const e of [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])]) {
@@ -475,7 +476,7 @@ export function checkStorylets(content: Content): string[] {
     }
     for (const text of texts) {
       for (const [, key] of text.matchAll(/\{([a-z_]+)(?::[^}]+)?\}/g)) {
-        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !(key === "bounty_by" && s.when.bounty) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
+        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !(key === "departed" && hasMourner) && !(key === "bounty_by" && s.when.bounty) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
       }
     }
     for (const c of s.choices) {

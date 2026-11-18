@@ -1,3 +1,4 @@
+import { promiseLines } from "./promises.ts";
 import { originLine } from "./extras.ts";
 import { describeMarket } from "./market.ts";
 import { describeInfiltration } from "./infiltration.ts";
@@ -327,6 +328,7 @@ function describeNpcCard(
       ? [`이 인물이 아는 당신의 행적 (당신은 이 인물이 안다는 걸 모를 수 있다. 바로 밝히지 말고 태도에 반영):\n${knownDeeds.join("\n")}`]
       : []),
     ...leverageLines(state, content, npc.id),
+    ...promiseLines(state, content, npc.id).map((l) => `당신이 이 인물에게 한 ${l}`),
     ...(othersDeeds.length > 0 ? [`이 인물이 들은 남의 일 (이 인물은 사실로 믿는다. 그 사람을 대하는 태도에 반영):\n${othersDeeds.join("\n")}`] : []),
     ...(secretLine ? [secretLine] : []),
     ...stanceLines(state, content, npc.id),

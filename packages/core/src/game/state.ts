@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 60;
+export const SAVE_SCHEMA_VERSION = 61;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -303,6 +303,21 @@ export function createGameSchemas(s: Scenario) {
       .default(null),
     /** 뇌물을 받은 사람 (12-153): 그 사람의 약점이 된다 (주인공만 안다). by: 준 사람 */
     bribes: z.array(z.strictObject({ npcId: z.string(), by: z.string(), favor: z.string(), at: z.number().int() })).default([]),
+    /** 약속 (12-160): 주인공이 한 약속. due는 기한 날(그날까지) */
+    promises: z
+      .array(
+        z.strictObject({
+          id: z.string(),
+          by: z.string(),
+          to: z.string(),
+          what: z.string(),
+          due: z.number().int(),
+          item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
+          made: z.number().int(),
+          status: z.enum(["open", "kept", "broken", "folded"]),
+        }),
+      )
+      .default([]),
     /** 협박당한 사람 (12-153). grudge: 되갚을 마음을 품었다 */
     blackmails: z.array(z.strictObject({ npcId: z.string(), by: z.string(), leverage: z.string(), at: z.number().int(), grudge: z.boolean() })).default([]),
     /** 폭로해서 더는 쥘 수 없는 약점 (12-153, "by|약점 키") */
@@ -479,6 +494,17 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("infiltration_ended"), how: z.enum(["out", "caught", "gone"]) }),
     /** 뇌물을 받았다 (12-153). 물건은 item_transferred로 따로 옮긴다 */
     z.strictObject({ type: z.literal("bribe_taken"), npcId: z.string(), by: z.string(), favor: z.string() }),
+    // 약속 (12-160)
+    z.strictObject({
+      type: z.literal("promise_made"),
+      id: z.string(),
+      by: z.string(),
+      to: z.string(),
+      what: z.string(),
+      due: z.number().int(),
+      item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
+    }),
+    z.strictObject({ type: z.literal("promise_settled"), id: z.string(), status: z.enum(["kept", "broken", "folded"]) }),
     /** 약점을 쥐고 협박했다 (12-153) */
     z.strictObject({ type: z.literal("blackmailed"), npcId: z.string(), by: z.string(), leverage: z.string(), grudge: z.boolean() }),
     /** 약점을 폭로했다 (12-153) */
@@ -882,6 +908,7 @@ export const EMPTY_STATE: GameState = {
   stashHinted: [],
   infiltration: null,
   bribes: [],
+  promises: [],
   blackmails: [],
   exposed: [],
   fearExposure: {},
@@ -1281,6 +1308,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "infiltration_ended":
       next.infiltration = null;
+      return next;
+    case "promise_made":
+      next.promises = [...(next.promises ?? []), { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "open" }];
+      return next;
+    case "promise_settled":
+      next.promises = (next.promises ?? []).map((p) => (p.id === event.id ? { ...p, status: event.status } : p));
       return next;
     case "bribe_taken":
       next.bribes = [...next.bribes, { npcId: event.npcId, by: event.by, favor: event.favor, at: state.time }];

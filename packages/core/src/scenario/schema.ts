@@ -946,6 +946,15 @@ export const scenarioFileSchema = z
      * 정직 가치관(scruple)이 refuse_at 이상이고 욕심이 0 이하인 사람은 값과 상관없이 거절한다. 모자라면(절반 이상) move로 판정.
      * blackmail: 협박 판정의 행동
      */
+    /** 약속 (12-160): 지키면·접으면·어기면 그 사람의 관계 변화, 한 번에 열어 둘 수 있는 약속 수 */
+    promises: z
+      .strictObject({
+        max_open: z.number().int().min(1).default(5),
+        kept: z.strictObject({ trust: z.number().int().default(0), affection: z.number().int().default(0), respect: z.number().int().default(0) }),
+        folded: z.strictObject({ trust: z.number().int().default(0), affection: z.number().int().default(0), respect: z.number().int().default(0) }),
+        broken: z.strictObject({ trust: z.number().int().default(0), affection: z.number().int().default(0), respect: z.number().int().default(0) }),
+      })
+      .optional(),
     leverage: z
       .strictObject({
         bribe: z.strictObject({

@@ -1126,6 +1126,13 @@ infiltration:
 
 # 뇌물과 협박 (12-153, *임시*). 뇌물의 값(물건 값의 합): 계급별 값 × (1 − 0.25 × 욕심), 주인공을 믿으면 ×0.8.
 # 정직 2 이상이고 욕심 0 이하인 사람은 값과 상관없이 거절한다. 값의 절반 이상이면 교섭 판정. 협박은 위협 판정
+# 약속 (12-160, *임시*): 주인공이 한 약속을 코드가 기억한다. 지키면 믿음이 오르고, 털어놓고 접으면 조금, 말없이 어기면 크게 깎인다
+promises:
+  max_open: 5
+  kept: { trust: 1, affection: 1 }
+  folded: { trust: -1 }
+  broken: { trust: -2, affection: -1 }
+
 leverage:
   bribe:
     move: persuade

@@ -51,6 +51,7 @@ import { createLearnSkillTool } from "./growth.ts";
 import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
 import { stashHint, stashTool } from "./stash.ts";
 import { LEVERAGE_TOOLS } from "./leverage.ts";
+import { PROMISE_TOOLS } from "./promises.ts";
 import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 
@@ -265,6 +266,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...GEAR_TOOLS,
       ...REPUTATION_TOOLS,
       ...LEVERAGE_TOOLS,
+      ...PROMISE_TOOLS,
       ...INFILTRATION_TOOLS,
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,

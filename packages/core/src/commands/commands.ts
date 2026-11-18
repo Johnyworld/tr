@@ -1,3 +1,4 @@
+import { promiseLines } from "../engine/promises.ts";
 import { rankName } from "../game/ranks.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { memoAccess } from "../game/memo.ts";
@@ -304,7 +305,7 @@ const mission: CommandDef = {
   id: "mission",
   name: "임무",
   aliases: ["mission"],
-  description: "현재 임무와 목표",
+  description: "현재 임무와 목표, 지킬 약속",
   run(ctx) {
     const { state, content } = ctx;
     const active = activeMissionOf(state.missions, state.playerId);
@@ -321,6 +322,9 @@ const mission: CommandDef = {
       lines.push("수행 중인 임무가 없습니다. 상관에게 물어보세요.");
     }
     if (ended.length) lines.push("", "최근 임무", ...ended.map((m) => `  ${m.title} — ${MISSION_STATUS_LABELS[m.status]}`));
+    // 약속 (12-160)
+    const promises = promiseLines(state, content);
+    if (promises.length) lines.push("", "지킬 약속", ...promises.map((l) => `  ${l}`));
     return lines.join("\n");
   },
 };

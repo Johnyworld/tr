@@ -397,7 +397,8 @@ export function storyletWindowOpen(state: GameState, content: Content, at: GameT
  * 급한 이야기(urgent)는 그 자리·그 시각에만 맞는 일이 많아, 간격 때문에 놓치지 않게 한다
  */
 export function storyletWindow(state: GameState, content: Content, at: GameTime): "open" | "urgent_only" | "closed" {
-  if (state.activeStorylet || state.battle) return "closed";
+  // 잠입 중에는 다른 이야기가 끼어들지 않는다 (12-154)
+  if (state.activeStorylet || state.battle || state.infiltration) return "closed";
   const pacing = content.scenario.storylet_pacing;
   // 지금 캐릭터의 이야기가 막 시작됐으면 조금 기다린다
   if (at - state.runStartedAt < pacing.first_after_hours * 60) return "closed";

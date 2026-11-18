@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 58;
+export const SAVE_SCHEMA_VERSION = 59;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -296,6 +296,11 @@ export function createGameSchemas(s: Scenario) {
     stashes: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.number().int().positive()))).default({}),
     /** 떠돌이의 거처 (12-149): 캐릭터 → 구역 */
     homes: z.record(z.string(), z.string()).default({}),
+    /** 잠입 중 (12-154). depth: 깊이 칸, alarm: 경보 0~3 (주인공도 GM도 정확히는 모른다), done: 목표를 마쳤다 */
+    infiltration: z
+      .strictObject({ zone: z.string(), owner: z.string(), goal: z.string(), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean(), since: z.number().int() })
+      .nullable()
+      .default(null),
     /** 뇌물을 받은 사람 (12-153): 그 사람의 약점이 된다 (주인공만 안다). by: 준 사람 */
     bribes: z.array(z.strictObject({ npcId: z.string(), by: z.string(), favor: z.string(), at: z.number().int() })).default([]),
     /** 협박당한 사람 (12-153). grudge: 되갚을 마음을 품었다 */
@@ -468,6 +473,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("item_stashed"), characterId: z.string(), zone: z.string(), itemId: z.string(), quantity: z.number().int().positive(), direction: z.enum(["put", "take"]) }),
     /** 떠돌이가 이 구역을 거처로 삼았다 (12-149) */
     z.strictObject({ type: z.literal("home_settled"), characterId: z.string(), zone: z.string() }),
+    /** 잠입을 시작했다 / 상태가 바뀌었다 / 끝났다 (12-154) */
+    z.strictObject({ type: z.literal("infiltration_started"), zone: z.string(), owner: z.string(), goal: z.string() }),
+    z.strictObject({ type: z.literal("infiltration_changed"), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean() }),
+    z.strictObject({ type: z.literal("infiltration_ended"), how: z.enum(["out", "caught", "gone"]) }),
     /** 뇌물을 받았다 (12-153). 물건은 item_transferred로 따로 옮긴다 */
     z.strictObject({ type: z.literal("bribe_taken"), npcId: z.string(), by: z.string(), favor: z.string() }),
     /** 약점을 쥐고 협박했다 (12-153) */
@@ -869,6 +878,7 @@ export const EMPTY_STATE: GameState = {
   stashes: {},
   homes: {},
   stashHinted: [],
+  infiltration: null,
   bribes: [],
   blackmails: [],
   exposed: [],
@@ -1261,6 +1271,15 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "home_settled":
       next.homes = { ...next.homes, [event.characterId]: event.zone };
       return next;
+    case "infiltration_started":
+      next.infiltration = { zone: event.zone, owner: event.owner, goal: event.goal, depth: 0, alarm: 0, done: false, since: state.time };
+      return next;
+    case "infiltration_changed":
+      if (next.infiltration) next.infiltration = { ...next.infiltration, depth: event.depth, alarm: event.alarm, done: event.done };
+      return next;
+    case "infiltration_ended":
+      next.infiltration = null;
+      return next;
     case "bribe_taken":
       next.bribes = [...next.bribes, { npcId: event.npcId, by: event.by, favor: event.favor, at: state.time }];
       return next;
@@ -1530,6 +1549,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.weather = { day: event.day, id: event.weatherId };
       break;
     case "zone_moved":
+      // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)
+      next.infiltration = null;
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
       next.lastRoute = event.from !== null ? { from: event.from, to: event.to } : null;
       // 떠나는 구역에 맡겨 둔 것을 돌려받는다 (12-54)

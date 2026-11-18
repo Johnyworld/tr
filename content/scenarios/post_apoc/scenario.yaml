@@ -1009,6 +1009,19 @@ helpless:
 # 길 위의 일 (12-53): 구역을 옮길 때 길의 위험(두 구역의 danger 중 높은 쪽 0~3)별로 태그 road인 이야기가 열릴 확률
 travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 
+# 잠입 장면 (12-154, *임시*): 다른 무리의 땅에서 담 밖 → 담 안 → 깊은 곳. 한 걸음 10분.
+# 전진·빠지기는 은밀, 살피기는 경계. 경보 숫자는 보이지 않고 낌새로만. 낮에는 어렵고 밤·비·안개에는 쉽다
+infiltration:
+  move: stealth
+  listen: sense_danger
+  depths: [담 밖, 담 안, 깊은 곳]
+  step_minutes: 10
+  goals:
+    - { id: steal, label: 물자 빼내기, move: scavenge, items: { canned_food: 2, rifle_rounds: 1 }, resource: { food: -10, ammo: -5 } }
+    - { id: free, label: 갇힌 사람 풀어 주기, move: stealth, release: true }
+    - { id: sabotage, label: 망가뜨리기, move: improvise, resource: { ammo: -20, fuel: -10 }, morale: -1 }
+    - { id: eavesdrop, label: 엿듣기, move: stealth, overhear: true }
+
 # 뇌물과 협박 (12-153, *임시*). 뇌물의 값(물건 값의 합): 계급별 값 × (1 − 0.25 × 욕심), 주인공을 믿으면 ×0.8.
 # 정직 2 이상이고 욕심 0 이하인 사람은 값과 상관없이 거절한다. 값의 절반 이상이면 교섭 판정. 협박은 위협 판정
 leverage:

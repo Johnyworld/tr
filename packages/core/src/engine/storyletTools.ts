@@ -256,8 +256,8 @@ function whoOf(ctx: ToolContext, who: string, cast: Record<string, string>): str
   return null;
 }
 
-/** 효과 하나를 적용한다. GM에게 돌려줄 한 줄 */
-function applyEffect(
+/** 효과 하나를 적용한다. GM에게 돌려줄 한 줄 (잠입의 목표처럼 이야기 밖에서도 쓴다, 12-154) */
+export function applyEffect(
   ctx: ToolContext,
   effect: StoryletEffect,
   cast: Record<string, string>,

@@ -290,6 +290,10 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const player = start.characters[start.playerId];
   if (!player) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
   if (player.dead) return { ok: false, error: "캐릭터가 사망했습니다." };
+  // 잠입 중 (12-154): 옮기거나 오래 머물지 않는다. 잠입은 infiltrate로 (빠지기부터)
+  if (start.infiltration && (input.move_to || (input.activity && ["sleep", "rest", "wait", "guard_duty", "search", "work"].includes(input.activity.kind)))) {
+    return { ok: false, error: "잠입 중이다. 옮기거나 오래 머물려면 먼저 infiltrate leave로 빠져나온다." };
+  }
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {

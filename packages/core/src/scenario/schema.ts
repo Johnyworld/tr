@@ -853,6 +853,34 @@ export const scenarioFileSchema = z
      */
     travel: z.strictObject({ tag: id, chance: z.array(z.number().min(0).max(1)).length(4) }).optional(),
     /**
+     * 잠입 장면 (12-154, 기획서 9.5.1). 다른 무리의 땅에 몰래 들어가 목표를 하고 나온다. 깊이(depths)와 경보(0~3)는 코드가 센다.
+     * move: 전진·빠지기 판정, listen: 낌새 살피기 판정. 한 걸음에 step_minutes. 경보 숫자는 보이지 않는다 (낌새로만).
+     * goals: 깊은 곳에서 하는 일. items(주인공이 얻는다)·resource(그 땅 주인 무리의 자원 증감)·morale·release(그 구역에 갇힌 사람을 푼다)·overhear(준비하는 일을 엿듣는다).
+     * 대가 있는 성공은 items·resource 절반, morale 없음
+     */
+    infiltration: z
+      .strictObject({
+        move: id,
+        listen: id,
+        depths: z.array(z.string().min(1)).min(2).max(5),
+        step_minutes: z.number().int().min(5).max(60).default(10),
+        goals: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              move: id,
+              items: z.record(z.string(), z.number().int().min(1)).default({}),
+              resource: z.record(z.string(), z.number().int()).default({}),
+              morale: z.number().int().min(-1).max(1).optional(),
+              release: z.boolean().default(false),
+              overhear: z.boolean().default(false),
+            }),
+          )
+          .min(1),
+      })
+      .optional(),
+    /**
      * 뇌물과 협박 (12-153). bribe: 값은 prices[계급](없으면 default) × (1 − greed_step × 욕심 가치관), 주인공을 믿으면(신뢰 +2) ×trusted.
      * 정직 가치관(scruple)이 refuse_at 이상이고 욕심이 0 이하인 사람은 값과 상관없이 거절한다. 모자라면(절반 이상) move로 판정.
      * blackmail: 협박 판정의 행동
@@ -1294,6 +1322,13 @@ export const scenarioFileSchema = z
       if (move && !moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);
     }
     if (s.search_lore && !moves.has(s.search_lore.skill)) problem(`search_lore: 알 수 없는 스킬 ${s.search_lore.skill}`);
+    // 잠입·뇌물·협박의 판정 행동 (12-153, 12-154)
+    if (s.infiltration) {
+      for (const m of [s.infiltration.move, s.infiltration.listen, ...s.infiltration.goals.map((g) => g.move)]) if (!moves.has(m)) problem(`infiltration: 알 수 없는 행동 ${m}`);
+      const resources = new Set(s.resources.map((r) => r.id));
+      for (const g of s.infiltration.goals) for (const r of Object.keys(g.resource)) if (!resources.has(r)) problem(`infiltration.goals.${g.id}: 알 수 없는 자원 ${r}`);
+    }
+    if (s.leverage) for (const m of [s.leverage.bribe.move, s.leverage.blackmail.move]) if (!moves.has(m)) problem(`leverage: 알 수 없는 행동 ${m}`);
     for (const l of s.body?.fear?.lore ?? []) if (!moves.has(l.skill)) problem(`body.fear.lore: 알 수 없는 스킬 ${l.skill}`);
     for (const track of s.condition_tracks) {
       const fatal = track.levels.findIndex((l) => l.fatal);

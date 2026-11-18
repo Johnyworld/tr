@@ -759,7 +759,7 @@ faces:
   d_m22:
     style: D
     gender: male
-    seed: 2185
+    seed: 2184
     colorize: true
     # 원본에서 얼굴이 너무 크게 그려져 자르기로는 맞출 수 없다: 미디엄 샷으로 다시 그린다
     subject: >-

@@ -278,6 +278,7 @@
   icon: bomb
   description: 비닐에 싼 화약 한 줌. 습기를 먹으면 끝이다.
   kind: material
+  resource: ammo
   weight: 0.2
   value: 5
 - id: casings
@@ -285,12 +286,14 @@
   icon: ammo
   description: 주워 모은 빈 탄피 한 줌. 화약만 있으면 다시 쓸 수 있다.
   kind: material
+  resource: ammo
   weight: 0.1
   value: 1
 - id: bandage
   name: 붕대
   description: 끓여 말린 천을 감아 둔 붕대. 피를 멎게 한다 (쓰면 부상 1단계, 구급상자보다 못 미덥다).
   kind: consumable
+  resource: medicine
   weight: 0.1
   value: 3
 
@@ -300,6 +303,7 @@
   icon: fire
   description: 차에서 빼낸 휘발유를 담은 유리병. 마개를 단단히 막아 두었다.
   kind: material
+  resource: fuel
   weight: 0.6
   value: 4
 - id: molotov

@@ -853,6 +853,24 @@ export const scenarioFileSchema = z
      */
     travel: z.strictObject({ tag: id, chance: z.array(z.number().min(0).max(1)).length(4) }).optional(),
     /**
+     * 시세 (12-155, 기획서 4.8.2). 그 땅 주인 무리의 창고가 처음보다 얼마나 남았는지(비율)로 물건 값이 오르내린다.
+     * 비율이 scarce 이하면 high배, 1이면 그대로, plenty 이상이면 low배 (사이는 곧게 잇는다). seasons: 계절 → 자원 → 배수.
+     * kinds: 아이템 종류 → 자원 (아이템의 resource가 먼저). 주인 없는 땅은 시세가 없다
+     */
+    market: z
+      .strictObject({
+        kinds: z.record(z.string(), id).default({}),
+        scarce: z.number().min(0).max(1).default(0.25),
+        plenty: z.number().min(1).default(2),
+        high: z.number().min(1).default(1.5),
+        low: z.number().min(0.1).max(1).default(0.7),
+        seasons: z.record(z.string(), z.record(z.string(), z.number().positive())).default({}),
+        /** GM 상태에 비싸다/싸다로 알리는 문턱 */
+        note_above: z.number().default(1.2),
+        note_below: z.number().default(0.85),
+      })
+      .optional(),
+    /**
      * 잠입 장면 (12-154, 기획서 9.5.1). 다른 무리의 땅에 몰래 들어가 목표를 하고 나온다. 깊이(depths)와 경보(0~3)는 코드가 센다.
      * move: 전진·빠지기 판정, listen: 낌새 살피기 판정. 한 걸음에 step_minutes. 경보 숫자는 보이지 않는다 (낌새로만).
      * goals: 깊은 곳에서 하는 일. items(주인공이 얻는다)·resource(그 땅 주인 무리의 자원 증감)·morale·release(그 구역에 갇힌 사람을 푼다)·overhear(준비하는 일을 엿듣는다).
@@ -1327,6 +1345,11 @@ export const scenarioFileSchema = z
       for (const m of [s.infiltration.move, s.infiltration.listen, ...s.infiltration.goals.map((g) => g.move)]) if (!moves.has(m)) problem(`infiltration: 알 수 없는 행동 ${m}`);
       const resources = new Set(s.resources.map((r) => r.id));
       for (const g of s.infiltration.goals) for (const r of Object.keys(g.resource)) if (!resources.has(r)) problem(`infiltration.goals.${g.id}: 알 수 없는 자원 ${r}`);
+    }
+    if (s.market) {
+      const resources = new Set(s.resources.map((r) => r.id));
+      for (const r of Object.values(s.market.kinds)) if (!resources.has(r)) problem(`market.kinds: 알 수 없는 자원 ${r}`);
+      for (const [season, table] of Object.entries(s.market.seasons)) for (const r of Object.keys(table)) if (!resources.has(r)) problem(`market.seasons.${season}: 알 수 없는 자원 ${r}`);
     }
     if (s.leverage) for (const m of [s.leverage.bribe.move, s.leverage.blackmail.move]) if (!moves.has(m)) problem(`leverage: 알 수 없는 행동 ${m}`);
     for (const l of s.body?.fear?.lore ?? []) if (!moves.has(l.skill)) problem(`body.fear.lore: 알 수 없는 스킬 ${l.skill}`);

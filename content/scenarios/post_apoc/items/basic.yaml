@@ -15,6 +15,7 @@
   icon: water
   description: 물을 채운 찌그러진 알루미늄 물병. 마시면 갈증이 가신다 (갈증 2단계).
   kind: misc
+  resource: water
   weight: 0.6
   value: 1
   used_into: empty_bottle
@@ -47,6 +48,7 @@
   name: 구급상자
   description: 붕대와 소독약이 조금 남은 구급상자. 지니고 있으면 응급처치가 수월하다 (쓰면 부상 1단계).
   kind: consumable
+  resource: medicine
   weight: 1.0
   value: 9
   tool: { bonus: { first_aid: 1 } }
@@ -80,6 +82,7 @@
   name: 항생제
   description: 유효기간이 지난 항생제 한 줄. 상처가 곪는 것을 막는다. 감염을 낫게 하지는 못하지만, 먹는 동안은 퍼지는 것이 더디다.
   kind: consumable
+  resource: medicine
   weight: 0.1
   value: 14
 - id: serum
@@ -130,12 +133,14 @@
   icon: fire
   description: 부러진 가구와 마른 나뭇가지 한 아름. 불을 피우면 네 시간쯤 탄다.
   kind: material
+  resource: fuel
   weight: 2.0
   value: 1
 - id: fever_reducer
   name: 해열제
   description: 유통기한이 지난 해열제 몇 알. 앓는 몸을 조금 낫게 한다 (질병 1단계).
   kind: consumable
+  resource: medicine
   weight: 0.1
   value: 5
 - id: shotgun

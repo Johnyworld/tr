@@ -157,6 +157,8 @@ function checkReferences(content: Content): string[] {
     for (const it of Object.values(content.items)) {
       for (const m of it.weapon?.moves ?? []) moveRef(`items.${it.id}.weapon`, m);
       if (it.weapon?.ammo) itemRef(`items.${it.id}.weapon.ammo`, it.weapon.ammo);
+      // 시세가 따르는 자원 (12-155)
+      if (it.resource && !content.scenario.resources.some((r) => r.id === it.resource)) problems.push(`items.${it.id}.resource: 알 수 없는 자원 ${it.resource}`);
       const distances = new Set((content.scenario.gear?.distances ?? []).map((d) => d.id));
       for (const [m, byDistance] of Object.entries(it.weapon?.range ?? {})) {
         moveRef(`items.${it.id}.weapon.range`, m);

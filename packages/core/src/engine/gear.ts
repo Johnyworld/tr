@@ -1,4 +1,5 @@
 import { effectiveSkill } from "./traits.ts";
+import { marketValue } from "./market.ts";
 import { isCreature } from "../game/kinds.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
@@ -253,9 +254,6 @@ function priceFactor(content: Content, state: GameState, npcId: string): number 
   return markup * rel;
 }
 
-export const valueOf = (content: Content, bundle: Record<string, number>) =>
-  Object.entries(bundle).reduce((n, [id, q]) => n + (content.items[id]?.value ?? DEFAULT_VALUE) * q, 0);
-
 const barterTool = defineTool({
   name: "barter",
   description:
@@ -279,8 +277,9 @@ const barterTool = defineTool({
     for (const [id, q] of Object.entries(input.give)) if ((me.inventory[id] ?? 0) < q) return { ok: false, error: `${nameOf(content, id)}이(가) ${me.inventory[id] ?? 0}개뿐이다.` };
     const name = playerCalls(state, content, input.npc_id);
     for (const [id, q] of Object.entries(input.get)) if ((npc.inventory[id] ?? 0) < q) return { ok: false, error: `${josa(name, "은/는")} ${nameOf(content, id)}을(를) ${npc.inventory[id] ?? 0}개만 가졌다.` };
-    const giving = valueOf(content, input.give);
-    const asking = Math.ceil(valueOf(content, input.get) * priceFactor(content, state, input.npc_id));
+    // 시세 (12-155): 그 땅 주인 무리의 창고 형편과 계절이 값에 닿는다
+    const giving = marketValue(content, state, input.give);
+    const asking = Math.ceil(marketValue(content, state, input.get) * priceFactor(content, state, input.npc_id));
     const floor = content.scenario.gear?.haggle_floor ?? 0.7;
     const lines = [`값: 내주는 것 ${giving} · 상대가 바라는 것 ${asking}`];
     let accepted = giving >= asking;

@@ -28,6 +28,8 @@ export const itemContentSchema = z.strictObject({
   /** 흥정 값. 없으면 1 */
   value: z.number().int().min(0).max(500).optional(),
   kind: z.enum(["weapon", "armor", "tool", "ammo", "material", "consumable", "food", "misc"]).optional(),
+  /** 시세가 따르는 무리 자원 (12-155). 없으면 월드의 market.kinds로 종류에서 정한다 */
+  resource: contentIdSchema.optional(),
   /** 상태 화면 아이콘 (12-64). 없으면 무기·방어구·종류로 고른다 (content/icons.ts) */
   icon: iconNameSchema.optional(),
   /** 무기: 공격에 쓰는 스킬, 입힐 수 있는 피해 상한, 소음(0~2), 쏠 때 하나씩 쓰는 탄약, 판정 보정 */

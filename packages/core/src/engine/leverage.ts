@@ -11,7 +11,8 @@ import { josa } from "../text.ts";
 import { isIncapacitated } from "./body.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { valuesOf } from "./extras.ts";
-import { equippedItem, valueOf } from "./gear.ts";
+import { equippedItem } from "./gear.ts";
+import { marketValue } from "./market.ts";
 import { profileOf } from "./people.ts";
 import { learn, recordDeed } from "./reputationTools.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
@@ -114,7 +115,7 @@ const bribeTool = defineTool({
       return { ok: true, resultText: `${josa(who, "은/는")} 물건을 쳐다보지도 않는다. 거절했고, 이 일을 기억한다 (신뢰가 떨어졌다). 이 결과대로 서술하라.`, display: { type: "time", activityLabel: "뇌물", durationLabel: "", fromLabel: "", toLabel: "" }, silent: true };
     }
     const price = bribePrice(content, state, input.npc_id)!;
-    const offered = valueOf(content, input.give);
+    const offered = marketValue(content, state, input.give);
     let accepted = offered >= price;
     let checkLine = "";
     let display: ToolDisplayEvent = { type: "time", activityLabel: "뇌물", durationLabel: "", fromLabel: "", toLabel: "" };

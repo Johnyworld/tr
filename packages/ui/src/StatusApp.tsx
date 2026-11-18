@@ -102,7 +102,20 @@ export function StatusApp() {
       <header className="header status-header">
         {creating && canGoBack(status.creation!.view) && <BackButton onStatus={applyStatus} />}
         <div className="hdr-left">
-          <h1 className="hdr-title">{creating ? newGameTitle(status.creation!.view) : (status?.scenarioName ?? "TRPG")}</h1>
+          {!creating && status?.open && status.player.zone ? (
+            // 게임 중에는 주인공이 있는 곳. 그 구역의 주인과 월드 이름은 툴팁에 (제목은 긴 이름을 줄여 자르므로 툴팁은 바깥에서 감싼다)
+            <div className="info-tip hdr-title-tip" tabIndex={0}>
+              <h1 className="hdr-title">{status.player.zone.name}</h1>
+              <span className="info-tip-box" role="tooltip">
+                {status.player.zone.name}
+                <div className="muted">{status.player.zone.owner}</div>
+                <div className="info-tip-sep" />
+                <div className="muted">{status.scenarioName}</div>
+              </span>
+            </div>
+          ) : (
+            <h1 className="hdr-title">{creating ? newGameTitle(status.creation!.view) : (status?.scenarioName ?? "TRPG")}</h1>
+          )}
           {status?.open && <HeaderDate player={status.player} />}
         </div>
         {status?.open && status.player.clock?.minute !== undefined && (
@@ -180,12 +193,24 @@ function HeaderDate({ player }: { player: PlayerView }) {
 }
 
 /** 해·달 반원 (12-71): 낮(6~18시)은 해가, 밤은 달이 반원을 따라 움직인다. 가운데 아래에 시각 */
-/** 시계 바로 위: 바깥 기온 (12-98). 체감은 아이템 탭의 장비 제목 옆에 (좁은 화면에서 머리가 겹치지 않게) */
+/**
+ * 시계 바로 위: 여기서 쉬면 체감 기온 (12-98). 점선 밑줄, 올리면 바깥 기온과 체감의 내역 (실내·불·젖은 옷·입은 옷·덮을 것).
+ * 체감이 8° 아래면 노랑, 0° 아래면 빨강
+ */
 function HeaderTemp({ clock: c }: { clock: NonNullable<PlayerView["clock"]> }) {
-  if (!c.temperature) return null;
+  const t = c.temperature;
+  if (!t) return null;
+  // 시트의 다른 툴팁(info-tip)과 같다: 점선 밑줄, 올리거나 누르면(초점) 아래에 상자
   return (
-    <span className="hdr-temp" title={`바깥 ${c.temperature.outside}°C · 여기서 쉬면 체감 ${c.temperature.feels}°C (${c.temperature.detail})`}>
-      {c.temperature.outside}°C
+    <span className={t.feels < 0 ? "info-tip hdr-temp bad" : t.feels < 8 ? "info-tip hdr-temp warn" : "info-tip hdr-temp"} tabIndex={0}>
+      {t.feels}°C
+      <span className="info-tip-box" role="tooltip">
+        체감 {t.feels}°C (여기서 쉬면)
+        <br />
+        바깥 {t.outside}°C
+        <div className="info-tip-sep" />
+        {t.detail}
+      </span>
     </span>
   );
 }

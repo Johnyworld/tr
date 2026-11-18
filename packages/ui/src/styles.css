@@ -2859,7 +2859,7 @@ body {
   position: relative;
 }
 
-/* 바깥 기온: 시계 바로 위 가운데, 작게 (반원 안의 빈 곳에 두어 머리 높이를 늘리지 않는다) */
+/* 체감 기온: 시계 바로 위 가운데, 작게 (반원 안의 빈 곳에 두어 머리 높이를 늘리지 않는다). 점선 밑줄, 올리면 툴팁 */
 .hdr-temp {
   position: absolute;
   left: 50%;
@@ -2870,24 +2870,55 @@ body {
   line-height: 1;
   white-space: nowrap;
   color: var(--muted);
-  pointer-events: none;
+  text-decoration: underline dotted;
+  /* 툴팁 밑줄은 글자보다 어둡게 */
+  text-decoration-color: var(--border-hover);
+  text-underline-offset: 2px;
+  cursor: help;
 }
 
-/* 체감 기온: 아이템 탭 장비 제목 오른쪽 */
-.feels-temp {
-  margin-left: 8px;
-  font-size: 10px;
-  font-weight: 400;
-  color: var(--muted);
+/* 머리 제목(있는 곳)의 툴팁: 제목 줄 전체를 감싼다. 밑줄은 제목 글자에만 */
+.hdr-title-tip {
+  display: block;
+  min-width: 0;
+  text-decoration: none;
 }
 
-.feels-temp.warn {
+.hdr-title-tip .hdr-title {
+  text-decoration: underline dotted;
+  /* 툴팁 밑줄은 글자보다 어둡게 */
+  text-decoration-color: var(--border-hover);
+  text-underline-offset: 3px;
+}
+
+/* 시계 위 자리는 info-tip(position: relative)보다 앞선다 */
+.info-tip.hdr-temp {
+  position: absolute;
+}
+
+/* 머리의 툴팁은 시트 위에 보이게 머리를 위 층에 두고, 상자는 글자 가운데 아래에 */
+.status-page .header.status-header {
+  z-index: 20;
+}
+
+.hdr-temp .info-tip-box {
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: normal;
+  color: var(--text);
+  text-align: left;
+}
+
+.hdr-temp.warn {
   color: var(--partial);
 }
 
-.feels-temp.bad {
+.hdr-temp.bad {
   color: var(--miss);
 }
+
 
 .hdr-right {
   display: flex;
@@ -3245,6 +3276,8 @@ body {
 .info-tip {
   position: relative;
   text-decoration: underline dotted;
+  /* 툴팁 밑줄은 글자보다 어둡게 */
+  text-decoration-color: var(--border-hover);
   text-underline-offset: 3px;
   cursor: help;
   outline: none;
@@ -3289,6 +3322,8 @@ body {
 /* 인물 이름 툴팁 (?인물과 같은 정보). 접는 칸에 잘리지 않게 화면 기준으로 띄운다 */
 .person-tip {
   text-decoration: underline dotted;
+  /* 툴팁 밑줄은 글자보다 어둡게 */
+  text-decoration-color: var(--border-hover);
   text-decoration-color: rgba(255, 255, 255, 0.3);
   text-underline-offset: 3px;
   cursor: help;

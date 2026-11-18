@@ -145,10 +145,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
             <EquipArea onStatus={onStatus}>
           {player.gear && (
             <section className="block">
-              <h3>
-                장비
-                <FeelsTemp player={player} />
-              </h3>
+              <h3>장비</h3>
               <div className="gear-boxes">
                 {SLOTS.map((slot) => {
                   const g = [player.gear!.weapon, ...player.gear!.armor].find((x) => x?.slotLabel === slot);
@@ -1020,16 +1017,6 @@ function PortraitChooser({ player, onStatus }: { player: PlayerView; onStatus?: 
   );
 }
 
-/** 장비 제목 오른쪽: 여기서 쉬면 체감 기온 (12-98). 바깥 기온은 머리의 시계 위에 */
-function FeelsTemp({ player }: { player: PlayerView }) {
-  const t = player.clock?.temperature;
-  if (!t) return null;
-  return (
-    <span className={t.feels < 0 ? "feels-temp bad" : t.feels < 8 ? "feels-temp warn" : "feels-temp"} title={`여기서 쉬면 체감 ${t.feels}°C (${t.detail})`}>
-      체감 {t.feels}°C
-    </span>
-  );
-}
 
 /** 장비 착용·해제 (12-139): 아이템 탭 안의 들기·입기·벗기 단추가 함께 쓴다. 규칙은 core (GM의 equip tool과 같다) */
 type EquipApi = { busy: boolean; send: (body: { itemId?: string; slot?: string }) => Promise<void> };

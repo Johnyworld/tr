@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { HudPanel } from "./HudPanel.tsx";
 import { MemoPanel } from "./MemoPanel.tsx";
@@ -26,7 +26,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
               {player.portraitChoices?.length ? (
                 <PortraitChooser player={player} onStatus={onStatus} />
               ) : (
-                <Portrait id={player.portrait} pack={player.packId} size={68} />
+                <Portrait id={player.portrait} pack={player.packId} size={90} />
               )}
               <div className="hero-who">
                 {/* 이름 오른쪽에 레벨·경험치 바·스킬 포인트 */}
@@ -130,19 +130,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
             </section>
           )}
 
-          <section className="block skills" id="sheet-skills">
-            <h3>스킬</h3>
-            <dl className="stats two-col">
-              {player.skills.map((s) => (
-                <div key={s.id}>
-                  <dt>
-                    {s.label} <span className="muted small">{s.category}</span>
-                  </dt>
-                  <dd>{signed(s.value)}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
+          <SkillBlock player={player} onStatus={onStatus} />
 
           {player.debts && player.debts.length > 0 && (
             <section className="service">
@@ -154,14 +142,17 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
             </>
           ),
           items: (
-            <>
+            <EquipArea onStatus={onStatus}>
           {player.gear && (
             <section className="block">
-              <h3>장비</h3>
+              <h3>
+                장비
+                <FeelsTemp player={player} />
+              </h3>
               <div className="gear-boxes">
                 {SLOTS.map((slot) => {
                   const g = [player.gear!.weapon, ...player.gear!.armor].find((x) => x?.slotLabel === slot);
-                  return g ? <GearBox key={slot} gear={g} /> : <EmptySlot key={slot} slot={slot} bare={slot === "손"} />;
+                  return g ? <GearBox key={slot} gear={g} canUnequip /> : <EmptySlot key={slot} slot={slot} bare={slot === "손"} />;
                 })}
               </div>
             </section>
@@ -172,7 +163,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
               <h3>소지품</h3>
               {player.gear && <WeightBar gear={player.gear} />}
             </div>
-            <ItemGrid items={player.inventory} empty="가진 것이 없습니다" move={player.stash?.canPut ? { direction: "put", onStatus } : undefined} />
+            <ItemGrid items={player.inventory} empty="가진 것이 없습니다" move={player.stash?.canPut ? { direction: "put", onStatus } : undefined} wearable={!!player.gear} />
           </section>
 
           {player.stash?.canPut && (
@@ -192,7 +183,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
             </section>
           )}
 
-            </>
+            </EquipArea>
           ),
           people: (
             <>
@@ -338,9 +329,21 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
 }
 
 /** Lv UP을 누르면: 능력 탭으로 가서 스킬 목록을 보여 준다 */
+/** Lv UP: 능력 탭의 스킬 블록으로 가서 잠깐 밝혀 보인다 (올릴 곳을 찾기 쉽게) */
 function showSkills() {
   window.dispatchEvent(new CustomEvent("trpg:tab", { detail: "ability" }));
-  requestAnimationFrame(() => document.getElementById("sheet-skills")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      const el = document.getElementById("sheet-skills");
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      // 다시 눌러도 처음부터 밝힌다
+      el.classList.remove("flash");
+      void el.offsetWidth;
+      el.classList.add("flash");
+      el.addEventListener("animationend", () => el.classList.remove("flash"), { once: true });
+    }),
+  );
 }
 
 function XpBar({ growth }: { growth: NonNullable<PlayerView["growth"]> }) {
@@ -354,7 +357,7 @@ function XpBar({ growth }: { growth: NonNullable<PlayerView["growth"]> }) {
         <button
           type="button"
           className="xp-level lvup"
-          title={`스킬 포인트 ${growth.skillPoints} — 누르면 스킬 목록으로. 올릴 스킬은 채팅에서 GM에게 말하세요`}
+          title={`스킬 포인트 ${growth.skillPoints} — 누르면 스킬 목록으로. 스킬 옆 +를 눌러 올린다`}
           onClick={showSkills}
         >
           <span className="lvup-text">Lv UP</span>
@@ -674,12 +677,48 @@ function AbilityRow({ label, value, range }: { label: string; value: number; ran
   );
 }
 
-function GearBox({ gear }: { gear: GearView }) {
+function GearBox({ gear, canUnequip }: { gear: GearView; canUnequip?: boolean }) {
   const d = gear.durability;
   const ratio = d ? d.left / d.max : 1;
   const tone = ratio <= 0.25 ? "bad" : ratio <= 0.5 ? "warn" : "good";
+  const equip = useContext(EquipContext);
+  const clickable = !!(canUnequip && equip && gear.slot);
+  const [confirm, setConfirm] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!confirm) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setConfirm(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [confirm]);
+  const verb = gear.slot === "weapon" ? "내려놓을까요" : "벗을까요";
   return (
-    <div className="gear-box">
+    <div
+      ref={box}
+      className={clickable ? "gear-box clickable" : "gear-box"}
+      {...(clickable
+        ? {
+            role: "button",
+            tabIndex: 0,
+            "aria-haspopup": "dialog" as const,
+            "aria-expanded": confirm,
+            title: gear.slot === "weapon" ? "눌러서 내려놓기" : "눌러서 벗기",
+            onClick: () => setConfirm((v) => !v),
+            onKeyDown: (e: React.KeyboardEvent) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setConfirm((v) => !v);
+              }
+            },
+          }
+        : {})}
+    >
       <span className="gear-slot">{gear.slotLabel}</span>
       <div className="gear-main">
         <div>
@@ -696,6 +735,30 @@ function GearBox({ gear }: { gear: GearView }) {
           <span>
             내구도 {d.left}/{d.max}
           </span>
+        </div>
+      )}
+      {clickable && confirm && (
+        // 팝오버 안을 누른 것은 상자 클릭(열고 닫기)으로 번지지 않게 막는다
+        <div className="gear-pop" role="dialog" aria-label={`${gear.name} ${verb}`} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+          <p className="gear-pop-q">
+            {gear.name}을(를) {verb}?
+          </p>
+          <div className="portrait-pop-actions">
+            <button
+              type="button"
+              className="primary"
+              disabled={equip!.busy}
+              onClick={() => {
+                setConfirm(false);
+                void equip!.send({ slot: gear.slot });
+              }}
+            >
+              예
+            </button>
+            <button type="button" onClick={() => setConfirm(false)}>
+              아니요
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -746,20 +809,44 @@ const HOLD_DELAY_MS = 500;
 /** 이만큼마다 하나씩 */
 const HOLD_EVERY_MS = 100;
 
-function ItemGrid({ items, empty, move }: { items: ItemView[]; empty: string; move?: StashMove }) {
+function ItemGrid({ items, empty, move, wearable }: { items: ItemView[]; empty: string; move?: StashMove; wearable?: boolean }) {
+  const equip = useContext(EquipContext);
   const [error, setError] = useState<string | null>(null);
   if (items.length === 0) return empty ? <div className="muted">{empty}</div> : null;
   return (
     <>
       <ul className={move ? "item-grid item-grid-move" : "item-grid"}>
-        {items.map((item) => (
-          <li key={item.id}>
+        {items.map((item) => {
+          const canWear = !!(wearable && equip && item.wear);
+          const wear = () => {
+            if (!equip!.busy) void equip!.send({ itemId: item.id });
+          };
+          return (
+          <li
+            key={item.id}
+            className={canWear ? "item-wearable" : undefined}
+            {...(canWear
+              ? {
+                  role: "button",
+                  tabIndex: 0,
+                  title: item.wear === "weapon" ? `${item.name} 손에 들기` : `${item.name} 입기`,
+                  onClick: wear,
+                  onKeyDown: (e: React.KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      wear();
+                    }
+                  },
+                }
+              : {})}
+          >
             <Icon name={item.icon} className={ICON_TONE[item.icon ?? ""] ?? "icon-muted"} />
             <span className="item-name">{item.name}</span>
             {item.quantity > 1 && <span className="muted">×{item.quantity}</span>}
             {move && <MoveButton item={item} move={move} onError={setError} />}
           </li>
-        ))}
+          );
+        })}
       </ul>
       {error && <div className="item-move-error">{error}</div>}
     </>
@@ -807,6 +894,8 @@ function MoveButton({ item, move, onError }: { item: ItemView; move: StashMove; 
   };
 
   const start = (e: ReactPointerEvent) => {
+    // 창고 단추를 누른 것은 아이템 칸(입기·들기)으로 번지지 않게 한다
+    e.stopPropagation();
     if (e.button !== 0) return;
     stop();
     void sendOne();
@@ -829,8 +918,10 @@ function MoveButton({ item, move, onError }: { item: ItemView; move: StashMove; 
       onContextMenu={(e) => e.preventDefault()}
       // 키보드(Enter·Space)로 누르면 하나 (포인터로 누른 것은 pointerdown이 이미 보냈다)
       onClick={(e) => {
+        e.stopPropagation();
         if (e.detail === 0) void sendOne();
       }}
+      onKeyDown={(e) => e.stopPropagation()}
     >
       <Icon name={move.direction === "put" ? "stash-in" : "stash-out"} size={15} />
     </button>
@@ -888,7 +979,7 @@ function PortraitChooser({ player, onStatus }: { player: PlayerView; onStatus?: 
   return (
     <div className="portrait-chooser" ref={box}>
       <button type="button" className="portrait-chooser-face" aria-haspopup="dialog" aria-expanded={open !== null} title="얼굴 고르기" onClick={() => setOpen(open ? null : "ask")}>
-        <Portrait id={null} size={68} title="얼굴 없음 (눌러서 고르기)" />
+        <Portrait id={null} size={90} title="얼굴 없음 (눌러서 고르기)" />
       </button>
       {open === "ask" && (
         <div className="portrait-pop" role="dialog" aria-label="얼굴 고르기">
@@ -926,5 +1017,135 @@ function PortraitChooser({ player, onStatus }: { player: PlayerView; onStatus?: 
         </div>
       )}
     </div>
+  );
+}
+
+/** 장비 제목 오른쪽: 여기서 쉬면 체감 기온 (12-98). 바깥 기온은 머리의 시계 위에 */
+function FeelsTemp({ player }: { player: PlayerView }) {
+  const t = player.clock?.temperature;
+  if (!t) return null;
+  return (
+    <span className={t.feels < 0 ? "feels-temp bad" : t.feels < 8 ? "feels-temp warn" : "feels-temp"} title={`여기서 쉬면 체감 ${t.feels}°C (${t.detail})`}>
+      체감 {t.feels}°C
+    </span>
+  );
+}
+
+/** 장비 착용·해제 (12-139): 아이템 탭 안의 들기·입기·벗기 단추가 함께 쓴다. 규칙은 core (GM의 equip tool과 같다) */
+type EquipApi = { busy: boolean; send: (body: { itemId?: string; slot?: string }) => Promise<void> };
+const EquipContext = createContext<EquipApi | null>(null);
+
+function EquipArea({ onStatus, children }: { onStatus?: (status: unknown) => void; children: ReactNode }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const send = async (body: { itemId?: string; slot?: string }) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/equip", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const out = (await res.json()) as { status?: unknown; error?: string };
+      if (!res.ok) setError(out.error ?? "바꾸지 못했습니다");
+      else if (out.status) onStatus?.(out.status);
+    } catch {
+      setError("바꾸지 못했습니다");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <EquipContext.Provider value={{ busy, send }}>
+      {error && <div className="item-move-error">{error}</div>}
+      {children}
+    </EquipContext.Provider>
+  );
+}
+
+/**
+ * 스킬 블록. 레벨업(스킬 포인트)이 남았으면 최고 단계 아래 스킬마다 + 단추로 올릴 것을 고른다 (12-139).
+ * 고른 것은 바로 적용하지 않고, 오른쪽 위 [저장]을 눌러야 적용한다 ([취소]로 되돌린다). 규칙은 core (GM의 learn_skill tool과 같다)
+ */
+function SkillBlock({ player, onStatus }: { player: PlayerView; onStatus?: (status: unknown) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // 저장 전에 고른 것: 스킬 id → 올릴 단계 수
+  const [pending, setPending] = useState<Record<string, number>>({});
+  const points = player.growth?.skillPoints ?? 0;
+  const max = player.growth?.skillMax;
+  const used = Object.values(pending).reduce((a, b) => a + b, 0);
+  const left = points - used;
+  const add = (skill: string) => setPending((p) => ({ ...p, [skill]: (p[skill] ?? 0) + 1 }));
+  const save = async () => {
+    if (busy || used === 0) return;
+    setBusy(true);
+    setError(null);
+    let last: unknown = null;
+    try {
+      // 한 단계씩 차례로 올린다 (서버 규칙이 단계마다 검사한다)
+      for (const [skill, n] of Object.entries(pending)) {
+        for (let i = 0; i < n; i++) {
+          const res = await fetch("/api/skill", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ skill }) });
+          const out = (await res.json()) as { status?: unknown; error?: string };
+          if (!res.ok) throw new Error(out.error ?? "올리지 못했습니다");
+          last = out.status ?? last;
+        }
+      }
+      setPending({});
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "올리지 못했습니다");
+      setPending({});
+    } finally {
+      if (last) onStatus?.(last);
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="block skills" id="sheet-skills">
+      <div className="block-head">
+        <h3>
+          스킬
+          {points > 0 && <span className="skill-points">올릴 수 있는 스킬 {left}</span>}
+        </h3>
+        {used > 0 && (
+          <div className="skill-actions">
+            <button type="button" disabled={busy} onClick={() => setPending({})}>
+              취소
+            </button>
+            <button type="button" className="primary" disabled={busy} onClick={() => void save()}>
+              저장
+            </button>
+          </div>
+        )}
+      </div>
+      {error && <div className="item-move-error">{error}</div>}
+      <dl className="stats two-col">
+        {player.skills.map((s) => {
+          const plus = pending[s.id] ?? 0;
+          const value = s.value + plus;
+          return (
+            <div key={s.id}>
+              <dt>
+                {s.label} <span className="muted small">{s.category}</span>
+              </dt>
+              <dd>
+                <span className={plus ? "skill-pending" : undefined}>{signed(value)}</span>
+                {points > 0 && max !== undefined && (
+                  <button
+                    type="button"
+                    className="skill-up"
+                    disabled={busy || left < 1 || value >= max}
+                    title={`${s.label} 한 단계 올리기 (저장해야 적용)`}
+                    aria-label={`${s.label} 올리기`}
+                    onClick={() => add(s.id)}
+                  >
+                    +
+                  </button>
+                )}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+    </section>
   );
 }

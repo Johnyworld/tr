@@ -26,7 +26,7 @@ export type PlayerView = {
   /** 성격 축 (0이 아닌 것만) */
   persona?: { id: string; label: string; level: number; acting: string }[];
   skills: { id: string; label: string; category: string; value: number }[];
-  growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number } | null;
+  growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number; skillMax?: number } | null;
   inventory: ItemView[];
   sceneItems: ItemView[];
   /** 창고 (12-149). label: 지금 넣을 수 있는 자리(사물함·거처)의 이름, canPut: 지금 넣을 수 있다, items: 이 구역에 맡겨 둔 것, home: 떠돌이의 거처(다른 구역일 때) */
@@ -66,9 +66,10 @@ export type PlayerView = {
   memo?: { text: string } | null;
 };
 
-export type GearView = { id: string; name: string; slotLabel: string; detail: string; durability?: { left: number; max: number } | null; ammo: string | null; icon?: string };
+export type GearView = { id: string; name: string; slot?: string; slotLabel: string; detail: string; durability?: { left: number; max: number } | null; ammo: string | null; icon?: string };
 
-export type ItemView = { id: string; name: string; quantity: number; icon?: string };
+/** wear: 들거나 입을 수 있으면 그 자리 id */
+export type ItemView = { id: string; name: string; quantity: number; icon?: string; wear?: string };
 
 export type TraitKind = "positive" | "negative" | "personality";
 

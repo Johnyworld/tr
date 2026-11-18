@@ -96,7 +96,8 @@ export type PlayerView = {
   /** 할 줄 아는 스킬 (아마추어 이상) */
   skills: { id: string; label: string; category: string; value: number }[];
   /** 레벨·경험치 (성장 규칙이 없으면 null). next: 다음 레벨까지 필요한 누적 경험치 */
-  growth: { level: number; xp: number; next: number; skillPoints: number; prev: number } | null;
+  /** skillMax: 스킬을 올릴 수 있는 최고 단계 (상태 화면의 스킬 올리기, 12-139) */
+  growth: { level: number; xp: number; next: number; skillPoints: number; prev: number; skillMax: number } | null;
   /** 지닌 물건 (장비로 걸친 것은 뺀다. 장비는 gear) */
   inventory: ItemView[];
   sceneItems: ItemView[];
@@ -201,10 +202,12 @@ function symptomViews(s: Content["scenario"], c: Pick<Character, "conditions">):
 }
 
 /** 장비 한 줄. durability: 남은 내구도 (내구도가 없는 물건은 null) */
-export type GearView = { id: string; name: string; slotLabel: string; detail: string; durability: { left: number; max: number } | null; ammo: string | null; icon: IconName };
+/** slot: 자리 id (벗을 때 쓴다) */
+export type GearView = { id: string; name: string; slot: string; slotLabel: string; detail: string; durability: { left: number; max: number } | null; ammo: string | null; icon: IconName };
 
 /** 물건 한 칸 */
-export type ItemView = { id: string; name: string; quantity: number; icon: IconName };
+/** wear: 들거나 입을 수 있는 물건이면 그 자리 id (화면의 착용 단추) */
+export type ItemView = { id: string; name: string; quantity: number; icon: IconName; wear?: string };
 
 /** 기한까지 남은 때를 말로 (분 단위) */
 export function timeLeftLabel(minutes: number): string {
@@ -237,6 +240,7 @@ function gearView(state: GameState, content: Content): PlayerView["gear"] {
     return {
       id,
       name: item.name,
+      slot,
       slotLabel: SLOT_LABELS[slot] ?? slot,
       detail,
       durability: item.durability ? { left: Math.max(0, item.durability - (me.wear[id] ?? 0)), max: item.durability } : null,
@@ -369,9 +373,14 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: effectiveSkill(content, player, m.id) }))
       .filter((m) => m.value >= 0),
     growth: scenario.growth
-      ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, atMaxLevel(scenario, player.level) ? player.level : player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level) }
+      ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, atMaxLevel(scenario, player.level) ? player.level : player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level), skillMax: scenario.ranges.skill.max }
       : null,
-    inventory: items(carried),
+    // 소지품은 들거나 입을 수 있는 물건에 그 자리를 붙인다 (상태 화면의 착용 단추, 12-139)
+    inventory: items(carried).map((it) => {
+      const def = content.items[it.id];
+      const wear = content.scenario.gear ? (def?.weapon ? "weapon" : def?.armor?.slot) : undefined;
+      return wear ? { ...it, wear } : it;
+    }),
     sceneItems: items(state.scene.items),
     stash: (() => {
       const place = stashPlace(content, state);

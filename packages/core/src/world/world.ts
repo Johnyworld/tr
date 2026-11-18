@@ -469,6 +469,34 @@ ${this.sceneForGm()}` };
     return { ok: true, text: r.lines.join(" ") };
   }
 
+  /**
+   * 장비 착용·해제 (12-139): 상태 화면에서 무기를 들거나 방어구를 입고 벗는다. GM의 equip tool과 같은 규칙으로 돌리고,
+   * 결과는 대화 기록에 남아 GM이 다음 장면에서 본다. 시간은 거의 들지 않는다
+   */
+  equip(input: unknown): { ok: true; text: string } | { ok: false; error: string } {
+    const o = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+    const itemId = typeof o.itemId === "string" ? o.itemId : null;
+    const slot = typeof o.slot === "string" ? o.slot : null;
+    if (!itemId && !slot) return { ok: false, error: "itemId(입기·들기) 또는 slot(벗기)으로 보낸다." };
+    const out = this.executeTool("equip", { item_id: itemId, slot: itemId ? null : slot });
+    if (!out.ok) return { ok: false, error: out.error };
+    this.#repo.saveSnapshot();
+    return { ok: true, text: out.resultText };
+  }
+
+  /**
+   * 스킬 올리기 (12-139): 상태 화면에서 레벨업(스킬 포인트)으로 스킬 하나를 +1. GM의 learn_skill tool과 같은 규칙으로 돌리고,
+   * 결과는 대화 기록에 남아 GM이 본다. 게임 시간을 쓰지 않는다
+   */
+  learnSkill(input: unknown): { ok: true; text: string } | { ok: false; error: string } {
+    const skill = input && typeof input === "object" ? (input as { skill?: unknown }).skill : undefined;
+    if (typeof skill !== "string") return { ok: false, error: "올릴 스킬(skill)을 보낸다." };
+    const out = this.executeTool("learn_skill", { skill });
+    if (!out.ok) return { ok: false, error: out.error };
+    this.#repo.saveSnapshot();
+    return { ok: true, text: out.resultText };
+  }
+
   /** 얼굴 고르기 기회 (12-139): 얼굴 없는 주인공이 시트에서 한 번 고른다. 규칙은 core game/portrait.ts */
   choosePortrait(id: unknown): { ok: true } | { ok: false; error: string } {
     const r = choosePortrait(this.ctx().store, this.content, id);

@@ -107,8 +107,8 @@ export function StatusApp() {
         </div>
         {status?.open && status.player.clock?.minute !== undefined && (
           <div className="hdr-clock">
-            <SunDial clock={status.player.clock} />
             <HeaderTemp clock={status.player.clock} />
+            <SunDial clock={status.player.clock} />
           </div>
         )}
         <div className="hdr-right">
@@ -180,15 +180,12 @@ function HeaderDate({ player }: { player: PlayerView }) {
 }
 
 /** 해·달 반원 (12-71): 낮(6~18시)은 해가, 밤은 달이 반원을 따라 움직인다. 가운데 아래에 시각 */
-/** 시간 표시 오른쪽: 바깥 기온과 여기서 쉬면 체감 (12-98) */
+/** 시계 바로 위: 바깥 기온 (12-98). 체감은 아이템 탭의 장비 제목 옆에 (좁은 화면에서 머리가 겹치지 않게) */
 function HeaderTemp({ clock: c }: { clock: NonNullable<PlayerView["clock"]> }) {
   if (!c.temperature) return null;
   return (
-    <span
-      className={c.temperature.feels < 0 ? "hdr-temp bad" : c.temperature.feels < 8 ? "hdr-temp warn" : "hdr-temp"}
-      title={`바깥 ${c.temperature.outside}°C · 여기서 쉬면 체감 ${c.temperature.feels}°C (${c.temperature.detail})`}
-    >
-      {c.temperature.outside}°C <span className="muted">체감 {c.temperature.feels}°C</span>
+    <span className="hdr-temp" title={`바깥 ${c.temperature.outside}°C · 여기서 쉬면 체감 ${c.temperature.feels}°C (${c.temperature.detail})`}>
+      {c.temperature.outside}°C
     </span>
   );
 }

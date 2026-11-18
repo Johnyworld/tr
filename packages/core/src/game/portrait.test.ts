@@ -40,8 +40,47 @@ describe("얼굴 고르기 기회", () => {
     const id = w.id;
     expect(w.choosePortrait("d_m1").ok).toBe(true);
     w.close();
-    const again = m.open(id);
+    const again = m.open(id, "mcp");
     expect(again.playerView().portrait).toBe("d_m1");
     again.close();
+  });
+});
+
+/** 장비 착용·해제 (12-139): 상태 화면에서 GM의 equip tool과 같은 규칙으로 */
+describe("화면에서 장비 착용·해제", () => {
+  it("소지품의 무기·방어구에 자리(wear)가 붙고, 들고 벗을 수 있다", () => {
+    const w = open(null);
+    w.runCheat("~give leather_jacket");
+    const jacket = w.playerView().inventory.find((i) => i.id === "leather_jacket");
+    expect(jacket?.wear).toBeTruthy();
+    expect(w.equip({ itemId: "leather_jacket" }).ok).toBe(true);
+    const worn = w.playerView().gear!.armor.find((g) => g.id === "leather_jacket");
+    expect(worn?.slot).toBe(jacket!.wear);
+    expect(w.playerView().inventory.some((i) => i.id === "leather_jacket")).toBe(false);
+    expect(w.equip({ slot: worn!.slot }).ok).toBe(true);
+    expect(w.playerView().gear!.armor.some((g) => g.id === "leather_jacket")).toBe(false);
+    expect(w.equip({ itemId: "no_such_item" }).ok).toBe(false);
+    expect(w.equip({}).ok).toBe(false);
+    w.close();
+  });
+});
+
+/** 스킬 올리기 (12-139): 상태 화면에서 GM의 learn_skill tool과 같은 규칙으로 */
+describe("화면에서 스킬 올리기", () => {
+  it("레벨업이 있으면 스킬을 한 단계 올리고, 없으면 못 올린다", () => {
+    const w = open(null);
+    expect(w.learnSkill({ skill: "first_aid" }).ok).toBe(false); // 레벨업 없음
+    w.runCheat("~xp 1000");
+    const before = w.playerView();
+    expect(before.growth!.skillPoints).toBeGreaterThan(0);
+    expect(before.growth!.skillMax).toBeGreaterThan(0);
+    const from = before.skills.find((s) => s.id === "first_aid")?.value ?? -1;
+    expect(w.learnSkill({ skill: "first_aid" }).ok).toBe(true);
+    const after = w.playerView();
+    expect(after.skills.find((s) => s.id === "first_aid")?.value).toBe(from + 1);
+    expect(after.growth!.skillPoints).toBe(before.growth!.skillPoints - 1);
+    expect(w.learnSkill({ skill: "no_such_skill" }).ok).toBe(false);
+    expect(w.learnSkill({}).ok).toBe(false);
+    w.close();
   });
 });

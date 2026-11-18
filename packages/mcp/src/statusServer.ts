@@ -12,6 +12,8 @@ import type { GameWorld } from "@trpg/core";
  * - POST /api/stash: 소지품을 창고로 넣고 꺼낸다 (12-149). 규칙은 core(GameWorld.moveStash)
  * - POST /api/memo: 메모 탭에서 적은 메모 (12-75). 메모장과 펜·연필이 있을 때만. 규칙은 core(GameWorld.setMemo)
  * - POST /api/creation: 상태 화면에서 새 게임·새 캐릭터 고르기 (12-67). Claude 세션이 화면 만들기를 열었을 때만. 규칙은 core(answerNewGame)
+ * - POST /api/skill: 스킬 올리기 (12-139). 규칙은 core(GameWorld.learnSkill, GM의 learn_skill tool과 같다)
+ * - POST /api/equip: 장비 착용·해제 (12-139). 규칙은 core(GameWorld.equip, GM의 equip tool과 같다)
  * - POST /api/portrait: 얼굴 없는 주인공이 얼굴을 한 번 고른다 (12-139). 규칙은 core(GameWorld.choosePortrait)
  * - GET /portraits/<팩>/<id>.png: 주인공 초상화 그림 (12-139, 월드 팩의 art/portraits/)
  * 서술은 채팅(Claude 세션)에 있다. 이 화면은 시트와 새 게임 고르기를 보여 준다
@@ -154,6 +156,50 @@ export async function handleMemo(source: StatusSource, req: IncomingMessage, res
   if (!result.ok) return json(res, 400, { error: result.error });
   // 바뀐 화면을 응답에 함께 싣는다: SSE를 기다리는 사이 앞 단계가 다시 보이며 깜빡이지 않게
   return json(res, 200, { ok: true, status: statusPayload(source) });
+}
+
+/** 스킬 올리기 (12-139): { skill }. JSON만 받는다. 규칙은 core(GameWorld.learnSkill) */
+export async function handleSkill(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method !== "POST") return json(res, 405, { error: "POST" });
+  if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
+  const w = source.world;
+  if (!w || source.creating) return json(res, 409, { error: "열린 게임이 없다" });
+  let body = "";
+  for await (const chunk of req) {
+    body += String(chunk);
+    if (body.length > 2000) return json(res, 413, { error: "너무 크다" });
+  }
+  let input: unknown;
+  try {
+    input = JSON.parse(body);
+  } catch {
+    return json(res, 400, { error: "JSON이 아니다" });
+  }
+  const result = w.learnSkill(input);
+  if (!result.ok) return json(res, 400, { error: result.error });
+  return json(res, 200, { ok: true, text: result.text, status: statusPayload(source) });
+}
+
+/** 장비 착용·해제 (12-139): { itemId } 들기·입기, { slot } 벗기. JSON만 받는다. 규칙은 core(GameWorld.equip) */
+export async function handleEquip(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method !== "POST") return json(res, 405, { error: "POST" });
+  if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
+  const w = source.world;
+  if (!w || source.creating) return json(res, 409, { error: "열린 게임이 없다" });
+  let body = "";
+  for await (const chunk of req) {
+    body += String(chunk);
+    if (body.length > 2000) return json(res, 413, { error: "너무 크다" });
+  }
+  let input: unknown;
+  try {
+    input = JSON.parse(body);
+  } catch {
+    return json(res, 400, { error: "JSON이 아니다" });
+  }
+  const result = w.equip(input);
+  if (!result.ok) return json(res, 400, { error: result.error });
+  return json(res, 200, { ok: true, text: result.text, status: statusPayload(source) });
 }
 
 /** 얼굴 고르기 기회 (12-139): 얼굴 없는 주인공이 얼굴을 한 번 고른다. JSON만 받는다. 규칙은 core(GameWorld.choosePortrait) */
@@ -317,6 +363,14 @@ export async function startStatusServer(
     }
     if (url === "/api/memo") {
       void handleMemo(source, req, res);
+      return;
+    }
+    if (url === "/api/skill") {
+      void handleSkill(source, req, res);
+      return;
+    }
+    if (url === "/api/equip") {
+      void handleEquip(source, req, res);
       return;
     }
     if (url === "/api/portrait") {

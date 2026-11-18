@@ -309,7 +309,7 @@ function PortraitStep({ view, busy, answer }: StepProps) {
   const [picked, setPicked] = useState<string | null>(null);
   const sections = view.character!.portraits ?? [];
   const pack = view.world?.id;
-  const pick = (id: string, size: number, square: boolean) => (
+  const pick = (id: string, size: number, square: boolean, number?: number) => (
     <button
       key={id}
       type="button"
@@ -320,6 +320,7 @@ function PortraitStep({ view, busy, answer }: StepProps) {
       onClick={() => setPicked(picked === id ? null : id)}
     >
       <Portrait id={id} pack={pack} size={size} square={square} />
+      {number !== undefined && <span className="portrait-number">{number}</span>}
     </button>
   );
   return (
@@ -329,7 +330,7 @@ function PortraitStep({ view, busy, answer }: StepProps) {
         sections.map((sec) => (
           <section key={sec.style} className="portrait-section">
             <h3 className="portrait-section-title">{sec.label}</h3>
-            <div className="portrait-grid portrait-grid-art">{sec.faces.map((id) => pick(id, 96, true))}</div>
+            <div className="portrait-grid portrait-grid-art">{sec.faces.map((id, i) => pick(id, 96, true, sec.numbered ? i + 1 : undefined))}</div>
           </section>
         ))
       ) : (

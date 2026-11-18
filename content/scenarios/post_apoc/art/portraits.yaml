@@ -72,6 +72,8 @@ styles:
 
   D:
     label: 미국 애니메이션
+    # 고르기 화면에서 얼굴마다 번호를 보인다 (번호로 가리키며 다듬는 중)
+    numbered: true
     checkpoint: sd_xl_base_1.0.safetensors
     prompt: >-
       portrait of {subject}, post-apocalyptic survivor, ruined city skyline at night behind,

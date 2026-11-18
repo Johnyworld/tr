@@ -1635,7 +1635,8 @@ export type Scenario = ScenarioFile & {
  * styles: 화풍(적힌 순서가 섹션 순서), faces: 얼굴 id → 화풍과 성별. 그림은 art/portraits/<id>.png
  */
 export const portraitFileSchema = z.looseObject({
-  styles: z.record(z.string().regex(/^[A-Za-z0-9_]+$/), z.looseObject({ label: z.string().min(1) })),
+  /** numbered: 고르기 화면에서 얼굴마다 번호를 보인다 (얼굴을 번호로 가리키며 다듬을 때) */
+  styles: z.record(z.string().regex(/^[A-Za-z0-9_]+$/), z.looseObject({ label: z.string().min(1), numbered: z.boolean().optional() })),
   faces: z.record(
     z.string().regex(/^[a-z0-9_-]{1,40}$/, "초상화 id는 소문자·숫자·_·- (40자까지)"),
     z.looseObject({ style: z.string(), gender: z.string() }),
@@ -1644,7 +1645,7 @@ export const portraitFileSchema = z.looseObject({
 
 export type PortraitCatalog = {
   /** 얼굴이 있는 화풍만, 적힌 순서대로 */
-  styles: { id: string; label: string }[];
+  styles: { id: string; label: string; numbered: boolean }[];
   faces: { id: string; style: string; gender: string }[];
 };
 

@@ -66,7 +66,7 @@ export type CharacterStepView = {
   skillRule: { points: number; max: number } | null;
   options: StepOption[];
   /** 얼굴 고르기 (12-139): 고른 성별의 얼굴을 화풍 섹션으로. 초상화 목록이 없는 월드는 빈 목록 (화면이 기본 실루엣을 보인다) */
-  portraits: { style: string; label: string; faces: string[] }[];
+  portraits: { style: string; label: string; numbered: boolean; faces: string[] }[];
   /** 이름 폭 상한 (한글 2, 영문 1로 센다) */
   nameMax: number;
   /** 나이 고르기 (월드가 범위를 열었을 때). default: 시나리오의 나이 */

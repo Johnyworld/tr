@@ -51,15 +51,15 @@ function loadPortraits(dir: string, genders: string[]): PortraitCatalog | undefi
   if (problems.length) throw new ScenarioError(`art/portraits.yaml: ${problems.join(" / ")}`);
   const styles = Object.entries(parsed.data.styles)
     .filter(([sid]) => faces.some((f) => f.style === sid))
-    .map(([sid, st]) => ({ id: sid, label: st.label }));
+    .map(([sid, st]) => ({ id: sid, label: st.label, numbered: st.numbered === true }));
   return { styles, faces };
 }
 
 /** 고른 성별의 얼굴을 화풍 섹션으로 (12-139). 목록이 없는 월드는 빈 목록 */
-export function portraitSections(s: Scenario, gender: string | null | undefined): { style: string; label: string; faces: string[] }[] {
+export function portraitSections(s: Scenario, gender: string | null | undefined): { style: string; label: string; numbered: boolean; faces: string[] }[] {
   if (!s.portraits) return [];
   return s.portraits.styles
-    .map((st) => ({ style: st.id, label: st.label, faces: s.portraits!.faces.filter((f) => f.style === st.id && f.gender === gender).map((f) => f.id) }))
+    .map((st) => ({ style: st.id, label: st.label, numbered: st.numbered, faces: s.portraits!.faces.filter((f) => f.style === st.id && f.gender === gender).map((f) => f.id) }))
     .filter((sec) => sec.faces.length > 0);
 }
 

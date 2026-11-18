@@ -2538,6 +2538,19 @@ body {
   border-radius: 12px;
 }
 
+/* 얼굴 번호 (화풍의 numbered) */
+.newgame .portrait-grid-art .portrait-pick {
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.portrait-number {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--muted);
+}
+
 .portrait-square {
   border-radius: 8px;
   width: 100%;

@@ -237,7 +237,8 @@ console.error(`${made}장 만들었습니다 → ${variants ? join(cacheDir, "ca
 
 /** 설정 해시: 이 그림에 영향을 주는 것 전부 (화풍, 공통 규칙, 얼굴 맞추기, 정리, 색 기준 그림, 원본 그림, 얼굴 설정) */
 function hashOf(ch: Character): string {
-  const st = config.styles[ch.style];
+  // 화면 표시용 칸(numbered)은 그림에 영향이 없어 해시에서 뺀다
+  const { numbered: _shown, ...st } = config.styles[ch.style] as Style & { numbered?: boolean };
   const grade = ch.grade ?? st.grade;
   const fileHash = (f?: string) => (f && existsSync(join(artDir, f)) ? sha(readFileSync(join(artDir, f))) : null);
   return sha(

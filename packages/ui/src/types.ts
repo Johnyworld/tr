@@ -100,7 +100,8 @@ export type NewGameView = {
     skillRule: { points: number; max: number } | null;
     options: { value: string; label: string; description?: string }[];
     /** 얼굴 고르기 (12-139): 고른 성별의 얼굴을 화풍 섹션으로. 비었으면 기본 실루엣 */
-    portraits?: { style: string; label: string; faces: string[] }[];
+    /** numbered: 얼굴마다 번호를 보인다 */
+    portraits?: { style: string; label: string; numbered?: boolean; faces: string[] }[];
     nameMax: number;
     age?: { min: number; max: number; default: number } | null;
     stats: { id: string; label: string; description: string }[];

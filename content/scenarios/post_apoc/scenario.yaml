@@ -559,7 +559,7 @@ origins:
     weight: 25
     dialect:
       label: 경상도 사투리
-      chance: 0.75
+      chance: 0.55
       style: '말이 짧고 억양이 세다. 말끝이 "~나", "~노", "~데이", "마"로 뚝 끊긴다'
       samples:
         - "뭐 하노, 퍼뜩 온나."
@@ -569,7 +569,7 @@ origins:
     weight: 10
     dialect:
       label: 전라도 사투리
-      chance: 0.7
+      chance: 0.5
       style: '구수하고 말이 길다. "~잉", "~당께", "~했는디"가 붙고 놀라면 "워메"'
       samples:
         - "워메, 이것이 뭔 일이당가."
@@ -579,7 +579,7 @@ origins:
     weight: 10
     dialect:
       label: 충청도 사투리
-      chance: 0.6
+      chance: 0.4
       style: '느긋하고 하고 싶은 말을 돌려 한다. 말끝에 "~유", "~겨"가 붙는다'
       samples:
         - "급할 거 뭐 있대유. 천천히 혀."
@@ -589,7 +589,7 @@ origins:
     weight: 3
     dialect:
       label: 강원도 사투리
-      chance: 0.6
+      chance: 0.4
       style: '산골 말씨. "~드래요", "~나?", "마카(모두)"가 섞인다'
       samples:
         - "그 고개는 마카 눈에 묻혔드래요."
@@ -599,7 +599,7 @@ origins:
     weight: 1
     dialect:
       label: 제주 말
-      chance: 0.5
+      chance: 0.3
       style: '말끝이 "~수다", "~마씸", "~게"로 끝난다. 뭍 사람은 처음에 잘 못 알아듣는다'
       samples:
         - "어디 감수광?"

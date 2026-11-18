@@ -1,6 +1,7 @@
 import { applyBuild, planBuild } from "./facilities.ts";
 import { applyTrain, planTrain } from "./training.ts";
 import { planBroadcast, runBroadcast } from "./broadcast.ts";
+import { ambushDifficulty, applyAmbush, isConfused, leaveAmbush, planAmbush } from "./ambush.ts";
 import { templateKind } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
 import { forage, handleTrap } from "./forage.ts";
@@ -194,7 +195,7 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe(
-        `전투에 대비해 지금 구역(우리 땅)에 준비물을 설치하면 그 id. ${(s.battle?.preparations ?? []).map((p) => `${p.id} ${p.label}(${p.description})`).join(", ") || "없음"}. 판정(check)이 필요하고, 성공·대가 있는 성공이면 설치된다. 아니면 null`,
+        `전투에 대비해 지금 구역(우리 땅)에 준비물을 설치하면 그 id. ${(s.battle?.preparations ?? []).map((p) => `${p.id} ${p.label}(${p.description}${Object.keys(p.materials ?? {}).length ? `; 재료 ${Object.entries(p.materials!).map(([id, n]) => `${id}×${n}`).join("·")}` : ""})`).join(", ") || "없음"}. 판정(check)이 필요하고, 성공·대가 있는 성공이면 설치된다. 아니면 null`,
       ),
     use_item: z
       .string()
@@ -259,6 +260,10 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("시설을 지으면 (12-167): 상태의 '지을 수 있는 시설' id. 판정(check: 그 시설의 move)이 필요하고, 재료·시간·결과는 시스템이 정한다. 아니면 null"),
+    ambush: z
+      .boolean()
+      .default(false)
+      .describe("이 구역에 자리를 잡고 매복하면 true (12-177, 플레이어가 숨어 기다렸다 치겠다고 할 때만). 판정(check: 은밀)이 필요하고 어렵게 굴린다. 기다리려면 activity wait를 함께"),
     broadcast: z
       .boolean()
       .default(false)
@@ -315,7 +320,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {
-    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || !!input.craft || !!input.build || !!input.train || input.broadcast || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || !!input.craft || !!input.build || !!input.train || input.broadcast || input.ambush || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
     const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
     if (acts || !passive) {
       return {
@@ -350,6 +355,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.build) {
     if (!input.check) return { ok: false, error: "시설을 지으려면 판정(check)이 필요하다." };
     const why = planBuild(content, store.getState(), player, input.build, input.check.move);
+    if (why) return { ok: false, error: why };
+  }
+  if (input.ambush) {
+    if (!input.check) return { ok: false, error: "매복하려면 판정(check)이 필요하다." };
+    const why = planAmbush(content, store.getState(), input.check.move);
     if (why) return { ok: false, error: why };
   }
   if (input.broadcast) {
@@ -448,6 +458,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const zone = start.playerZone;
     if (!zone || start.zones[zone]?.owner !== player.factionId) return { ok: false, error: "준비물은 우리 무리의 구역에만 설치할 수 있다." };
     if (prep.requires_item && (player.inventory[prep.requires_item] ?? 0) < 1) return { ok: false, error: `${prep.label}에는 ${josa(content.items[prep.requires_item]?.name ?? prep.requires_item, "이/가")} 필요하다.` };
+    const short = Object.entries(prep.materials ?? {}).filter(([id, n]) => (player.inventory[id] ?? 0) < n);
+    if (short.length) return { ok: false, error: `${prep.label}에는 재료가 모자라다: ${short.map(([id, n]) => `${content.items[id]?.name ?? id} ${n}개`).join(", ")}.` };
+    if ((start.preparations[zone] ?? []).includes(prep.id) && (prep.holds || prep.infested_rise !== undefined)) return { ok: false, error: `이 구역에는 이미 ${josa(prep.label, "이/가")} 있다.` };
     if (!input.check) return { ok: false, error: `${prep.label} 설치에는 판정(check)이 필요하다.` };
   }
 
@@ -486,7 +499,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 1. 판정과 선언한 위험
   if (input.check) {
     const roll = rollPlayerCheck(
-      { move: input.check.move, stat: input.check.stat, difficulty: input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
+      { move: input.check.move, stat: input.check.stat, difficulty: input.ambush ? ambushDifficulty(input.check.difficulty) : input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
       ctx,
       { target: input.target, forMission },
     );
@@ -503,6 +516,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       OUTCOME_GUIDE[roll.outcome],
     );
     if (roll.growthNote) lines.push(roll.growthNote);
+    lines.push(...roll.ambushNotes);
+    // 매복을 놓는다 (12-177)
+    if (input.ambush) lines.push(...applyAmbush(ctx, roll.outcome));
     // 무기: 탄약·소음·닳음 (기획서 4.8)
     if (attack) lines.push(...afterAttack(ctx, attack, roll.outcome).lines);
     // 상대를 다치게 한다 (기획서 7.5). 사망은 부상 트랙으로만 (원칙 3)
@@ -514,7 +530,10 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       const broke = breakTruceIfAny(ctx, input.target);
       if (broke) lines.push(broke);
     }
-    if (roll.outcome !== "success" && input.check.harm_on_failure !== "none") {
+    // 혼란에 빠진 상대는 주인공을 다치게 하지 못한다 (12-177)
+    const harmless = isConfused(start, input.check.opponent ?? input.target ?? null);
+    if (harmless && roll.outcome !== "success" && input.check.harm_on_failure !== "none") lines.push("상대가 허둥대느라 반격하지 못했다. 다치지 않았다.");
+    if (!harmless && roll.outcome !== "success" && input.check.harm_on_failure !== "none") {
       const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, input.check.opponent ?? input.target ?? null);
       lines.push(harm.text);
       displays.push(harm.display);
@@ -594,6 +613,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 1-1. 준비물 설치 (아이템은 판정 결과와 관계없이 쓴다)
   if (prep) {
     if (prep.requires_item) store.append({ type: "item_consumed", holder: start.playerId, itemId: prep.requires_item, quantity: 1 });
+    for (const [id, n] of Object.entries(prep.materials ?? {})) store.append({ type: "item_consumed", holder: start.playerId, itemId: id, quantity: n });
     if (outcome !== "miss") {
       store.append({ type: "preparation_set", zone: start.playerZone!, preparation: prep.id });
       lines.push(`${josa(prep.label, "을/를")} 이 구역에 설치했다. 이 구역에서 전투가 벌어지면 쓸 수 있다.`);
@@ -691,6 +711,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     // 자리를 뜨면 그 자리의 이야기는 끝난다 (장면의 인물도 따라오지 않는다)
     displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
     const deposited = start.playerZone ? store.getState().deposits?.[start.playerZone] : undefined;
+    leaveAmbush(ctx);
     store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to });
     if (deposited) lines.push(`맡겨 둔 것을 돌려받고 떠났다: ${Object.entries(deposited).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ")}.`);
     // 끌고 온 포로: 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다 (12-55)

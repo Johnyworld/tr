@@ -65,8 +65,12 @@ export function runPendingClashes(ctx: ToolContext): ToolDisplayEvent[] {
     if (side) {
       // 전투가 벌어지면 진행 중이던 이야기는 끝난다
       displays.push(...endActiveStorylet(ctx, "전투가 벌어졌다"));
-      const battle = startBattle(ctx.content, ctx.store.getState(), due, side, { id: due.id, at: state.time });
-      ctx.store.append({ type: "battle_started", pendingId: due.id, battle });
+      // 바리케이드 (12-176): 우리 구역을 지킬 때만, 이 전투에서 막기를 다 쓰고 부서진다
+      const preps = battleConfig(ctx.content).preparations;
+      const barriers = side === "defense" ? (state.preparations[due.zone] ?? []).filter((id) => preps.find((p) => p.id === id)?.holds) : [];
+      const holds = barriers.reduce((n, id) => n + (preps.find((p) => p.id === id)?.holds ?? 0), 0);
+      const battle = startBattle(ctx.content, ctx.store.getState(), due, side, { id: due.id, at: state.time, holds });
+      ctx.store.append({ type: "battle_started", pendingId: due.id, battle, barrierUsed: barriers });
       displays.push({ type: "battle", event: "started", title: battleTitle(ctx.content, battle), detail: describeStart(ctx.content, battle) });
       return displays;
     }
@@ -124,7 +128,8 @@ export function playBattleRound(
     ourLosses: r.battle.ours.losses,
     theirLosses: r.battle.theirs.losses,
     contribution: r.battle.contribution,
-    ...(action?.effect.requires_preparation ? { preparationUsed: action.effect.requires_preparation } : {}),
+    ...(action?.effect.requires_preparation && !action.effect.keeps_preparation ? { preparationUsed: action.effect.requires_preparation } : {}),
+    ...(r.battle.holds !== battle.holds ? { holds: r.battle.holds } : {}),
   });
 
   const label = (list: readonly { id: string; label: string }[], id: string) => list.find((x) => x.id === id)?.label ?? id;
@@ -133,6 +138,7 @@ export function playBattleRound(
       `배경 교전 뒤 전세 ${momentumLabel(r.battle.momentum, config.momentum_to_win)}, 경보 ${alarmLabel(r.battle.alarm, config.max_alarm)}, 위치 ${label(config.positions, r.battle.position)}.`,
   ];
   if (r.destroyed) lines.push(`${josa(label(config.objectives, r.destroyed), "을/를")} 무너뜨렸다.`);
+  if ((r.battle.holds ?? 0) < (battle.holds ?? 0)) lines.push(`밀고 들어오던 적이 바리케이드에 막혔다${r.battle.holds ? "" : ". 바리케이드는 이제 무너졌다"}.`);
   if (r.battle.alarm >= config.max_alarm && r.battle.position !== config.positions[0]!.id) {
     lines.push("적이 당신을 알아챘다. 적 진영 안에서 노출되었다.");
   }
@@ -260,7 +266,7 @@ export function forceWords(n: number): string {
 function describeStart(content: Content, b: BattleState): string {
   const zone = content.locations[b.zone]?.name ?? b.zone;
   return b.side === "defense"
-    ? `${josa(factionName(content, b.attacker), "이/가")} ${josa(zone, "을/를")} 덮쳤다. 적은 ${forceWords(b.theirs.committed)}, 우리 편은 ${forceWords(b.ours.committed)}.`
+    ? `${josa(factionName(content, b.attacker), "이/가")} ${josa(zone, "을/를")} 덮쳤다. 적은 ${forceWords(b.theirs.committed)}, 우리 편은 ${forceWords(b.ours.committed)}.${b.holds ? " 길목의 바리케이드가 적의 발을 묶는다." : ""}`
     : `${factionName(content, b.attacker)} 쪽이 ${josa(zone, "을/를")} 친다. 당신도 차출됐다. 우리 편은 ${forceWords(b.ours.committed)}, 적은 ${forceWords(b.theirs.committed)}.`;
 }
 
@@ -276,7 +282,7 @@ export function describeBattleForGm(state: GameState, content: Content): string 
   return [
     `전투 중: ${battleTitle(content, b)} (${b.side === "defense" ? "방어" : "공격"}) · ${b.round + 1}/${config.max_rounds}라운드 (한 라운드 ${config.round_minutes}분)`,
     `  적 ${factionName(content, b.theirs.faction)}: ${forceWords(b.theirs.committed - b.theirs.losses)} · 우리 편: ${forceWords(b.ours.committed - b.ours.losses)}`,
-    `  전세 ${momentumLabel(b.momentum, config.momentum_to_win)} · 경보 ${alarmLabel(b.alarm, config.max_alarm)} · 위치 ${label(config.positions, b.position)}`,
+    `  전세 ${momentumLabel(b.momentum, config.momentum_to_win)} · 경보 ${alarmLabel(b.alarm, config.max_alarm)} · 위치 ${label(config.positions, b.position)}${b.holds ? " · 바리케이드가 버티는 중" : ""}`,
     `  남은 적 목표물: ${b.objectives.length ? b.objectives.map((o) => `${o}(${label(config.objectives, o)})`).join(", ") : "없음"}`,
     `  지금 쓸 수 있는 전투 효과 (take_action.battle.effect): ${usable.map((e) => `${e.id} ${e.label} [위험 ${e.min_harm} 이상] — ${e.description}`).join(" / ") || "없음"}`,
     "  전투 중 행동은 take_action 한 번이 한 라운드다. 판정을 반드시 넣고, 몸의 위험은 효과마다 적힌 수준 이상으로 선언한다. 승패·사상자는 시스템이 정한다.",

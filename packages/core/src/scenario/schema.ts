@@ -729,6 +729,12 @@ export const scenarioFileSchema = z
               label: z.string().min(1),
               description: z.string().min(1),
               requires_item: id.optional(),
+              /** 여러 재료가 들면 (12-176). requires_item과 함께 쓸 수 있다. 판정 결과와 관계없이 쓴다 */
+              materials: z.record(id, z.number().int().min(1)).optional(),
+              /** 막기 (12-176): 이 구역을 지킬 때 배경 교전에서 밀리는 것을 이만큼 막고 부서진다 (전투 한 번에 다 쓴다) */
+              holds: z.number().int().min(1).max(5).optional(),
+              /** 이 구역의 감염체 압력이 오를 때 실제로 오를 확률 (12-176, 바리케이드). 없으면 1 */
+              infested_rise: z.number().min(0).max(1).optional(),
             }),
           )
           .default([]),
@@ -745,6 +751,8 @@ export const scenarioFileSchema = z
               requires_item: id.optional(),
               consumes_item: z.boolean().default(false),
               requires_preparation: id.optional(),
+              /** 써도 준비물이 남는다 (엄폐·사격 자리, 12-176). 아니면 한 번 쓰면 없어진다 (덫) */
+              keeps_preparation: z.boolean().optional(),
               /** 목표물을 하나 골라야 하는지 */
               targets_objective: z.boolean().default(false),
               /** GM이 선언해야 하는 최소 몸의 위험 (none이면 대가가 경보·전세로만 온다) */
@@ -920,6 +928,25 @@ export const scenarioFileSchema = z
      * 무전 송출 (12-173): item을 가진 주인공이 하루 한 번 송출하면 chance로 tag 이야기 하나가 열린다
      */
     radio_call: z.strictObject({ item: id, tag: id, chance: z.number().min(0).max(1) }).optional(),
+    /**
+     * 매복 (12-177). 내 매복: move 판정(어려움으로 굴린다)이 성공하면 hours 동안, 이 구역에 나타난 상대에게 하는 첫 attack_moves 판정에 bonus,
+     * 그리고 confuse_chance로 상대가 혼란 (다음 판정 하나 동안 맞서지 못한다). 대가 있는 성공은 partial_bonus만.
+     * 적의 매복: 이야기의 ambush: true로 열리면 다음 판정 하나에 ambushed, 실패하면 주인공이 혼란 (다음 판정 confused).
+     * forewarn_trick을 곁의 동물이 알면 적의 매복을 미리 안다
+     */
+    ambush: z
+      .strictObject({
+        move: id,
+        hours: z.number().min(1).max(24),
+        attack_moves: z.array(id).min(1),
+        bonus: z.number().int().min(1).max(3),
+        partial_bonus: z.number().int().min(0).max(3),
+        confuse_chance: z.number().min(0).max(1),
+        ambushed: z.number().int().min(-3).max(0),
+        confused: z.number().int().min(-3).max(0),
+        forewarn_trick: id.optional(),
+      })
+      .optional(),
     /**
      * 거점 손보기 (12-167): 떠돌이의 거처(home)와 무리의 거점(base)에 짓는 시설. move 판정, hours 시간, materials 재료.
      * 효과는 기존 장치로만: fort 담 단단함 +, camp 야영 이야기 확률 배수, watched 잠들어도 지켜보는 밤, water 물이 나는 곳,

@@ -33,7 +33,7 @@ for (let seed = 1; seed <= seeds; seed++) {
     const r = simulateWarDay(world, content, rng, { season: seasonOfDay(content.scenario, day), infested });
     world = { factions: r.factions, zones: r.zones, clocks: r.clocks };
     clashes += r.clashes.length;
-    for (const c of infestationDay(content, { infested, zoneNoise: {} }, day, r.clashes, rng)) infested[c.zone] = c.level;
+    for (const c of infestationDay(content, { infested, zoneNoise: {}, preparations: {} }, day, r.clashes, rng)) infested[c.zone] = c.level;
     if (day % every === 0 || day === days) {
       const factions = Object.entries(world.factions)
         .map(([id, f]) => `${content.factions[id]?.name ?? id} 인원 ${f.population} 전투원 ${f.combatants} 식량 ${f.resources.food ?? 0} 물 ${f.resources.water ?? 0} 연료 ${f.resources.fuel ?? 0} 사기 ${f.morale}`)

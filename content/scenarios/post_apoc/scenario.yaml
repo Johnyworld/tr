@@ -1398,6 +1398,10 @@ leverage:
 # 시간당 확률로 태그 camp 이야기가 열린다. 6시간 자면 위험 0: 6%, 1: 17%, 2: 31%, 3: 47%. 모닥불이 타면 ×1.5, 우리 땅이면 ×0.5
 camp: { tag: camp, chance: [0.01, 0.03, 0.06, 0.1], fire: 1.5, own_land: 0.5 }
 
+# 매복 (12-177, *임시*): 은밀 판정(어려움)으로 자리를 잡으면 12시간, 첫 근접전·사격 +2와 50%로 상대 혼란.
+# 적의 매복 이야기(ambush: true)가 열리면 다음 판정 -2, 실패하면 혼란(다음 판정 -1). 냄새 맡기를 배운 개가 곁에 있으면 미리 안다
+ambush: { move: stealth, hours: 12, attack_moves: [fight, shoot], bonus: 2, partial_bonus: 1, confuse_chance: 0.5, ambushed: -2, confused: -1, forewarn_trick: sniff }
+
 # 무전 송출 (12-173, *임시*): 무전기로 하루 한 번 열린 주파수에 부르면 이 확률로 응답 이야기(storylets/radio_call.yaml)가 열린다
 radio_call: { item: radio, tag: radio_call, chance: 0.6 }
 
@@ -1710,6 +1714,21 @@ battle:
       label: 철사 덫
       description: 길목에 철사와 깡통을 엮어 걸려 넘어지게 하고 소리로 알린다
       requires_item: wire_roll
+    # 12-176 (*임시*): 쓰고도 남는 엄폐·사격 자리, 전투 한 번을 버티고 부서지는 바리케이드
+    - id: sandbags
+      label: 모래주머니 엄폐
+      description: 천 자루에 흙을 채워 전선에 허리 높이로 쌓는다. 몸을 숨기고 버틸 수 있다
+      materials: { cloth: 2 }
+    - id: firing_post
+      label: 사격 자리
+      description: 판자로 받침과 가림막을 대어 길목이 내려다보이는 자리를 만든다
+      materials: { planks: 1 }
+    - id: road_barricade
+      label: 바리케이드
+      description: 판자와 고철로 길목을 막는다. 밀고 들어오는 적의 발을 두어 번 묶고, 감염체도 쉽게 넘어오지 못한다. 한 번의 싸움을 버티면 무너진다
+      materials: { planks: 3, scrap_metal: 2 }
+      holds: 2
+      infested_rise: 0.5
   effects:
     - id: hold
       label: 버티며 싸우기
@@ -1772,6 +1791,28 @@ battle:
         success: { momentum: 2, enemy_losses: 2 }
         partial: { momentum: 1, enemy_losses: 1 }
         miss: {}
+    - id: cover_hold
+      label: 엄폐하고 버티기
+      description: 쌓아 둔 모래주머니 뒤에서 버틴다. 몸을 드러내지 않아 크게 다치지 않는다
+      min_harm: none
+      positions: [line]
+      requires_preparation: sandbags
+      keeps_preparation: true
+      outcomes:
+        success: { momentum: 1, enemy_losses: 1 }
+        partial: { momentum: 1 }
+        miss: {}
+    - id: aimed_fire
+      label: 자리 잡고 쏘기
+      description: 미리 만든 사격 자리에서 다가오는 적을 하나씩 노린다
+      min_harm: light
+      positions: [line]
+      requires_preparation: firing_post
+      keeps_preparation: true
+      outcomes:
+        success: { momentum: 2, enemy_losses: 1 }
+        partial: { momentum: 1, enemy_losses: 1 }
+        miss: { momentum: -1 }
     - id: withdraw
       label: 물러나기
       description: 싸움에서 빠져 몸을 뺀다. 남은 싸움은 동료들이 치른다

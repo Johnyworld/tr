@@ -817,6 +817,8 @@ export function createContentSchemas(s: Scenario) {
     repeatable: z.boolean().default(false),
     /** 잠을 깨울 만큼 급한 일인지. 아니면 자는 동안에는 열리지 않는다 */
     urgent: z.boolean().default(false),
+    /** 적의 매복 (12-177): 열리면 주인공은 매복당한 것이다 (다음 판정 하나가 불리하다, 실패하면 혼란) */
+    ambush: z.boolean().optional(),
     cooldown_days: z.number().min(0).default(0),
     weight: z.number().positive().default(1),
     when: z

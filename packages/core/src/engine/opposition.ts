@@ -7,6 +7,7 @@ import { segmentOf } from "../rules/time.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { isInfected } from "../game/kinds.ts";
 import { isIncapacitated } from "./body.ts";
+import { isConfused } from "./ambush.ts";
 
 /**
  * 상대와 상황 (기획서 4.1.1, 12-104): 주사위는 주인공만 굴린다. 상대의 실력·지켜보는 눈·어둠은 코드가 판정 보정으로 바꾼다.
@@ -41,7 +42,8 @@ export function oppositionParts(content: Content, state: GameState, moveId: stri
   const parts: Part[] = [];
   const opposing = r.moves[moveId];
   const opponent = opponentId ? state.characters[opponentId] : undefined;
-  if (opposing && opponent && !opponent.dead) {
+  // 혼란에 빠진 상대는 맞서지 못한다 (12-177)
+  if (opposing && opponent && !opponent.dead && !isConfused(state, opponent.id)) {
     const value = opposeModifier(skillScore(content, opponent, opposing));
     const label = content.scenario.moves.find((m) => m.id === opposing)?.label ?? opposing;
     if (value) parts.push({ label: `${playerCalls(state, content, opponent.id)}의 ${label}`, value });

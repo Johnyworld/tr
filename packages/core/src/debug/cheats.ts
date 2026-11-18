@@ -219,8 +219,12 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         const defender = defense ? me.factionId : (owner ?? enemy);
         if (!attacker || !defender) return { ok: false, error: "맞붙을 세력이 없다." };
         const id = `cheat_${state.time}`;
-        const battle = startBattle(content, state, { kind: "raid", attacker, defender, zone }, defense ? "defense" : "attack", { id, at: state.time });
-        store.append({ type: "battle_started", pendingId: id, battle });
+        // 바리케이드 (12-176): 지키는 쪽이면 실제 전투와 같이 막기를 쓴다
+        const preps = content.scenario.battle?.preparations ?? [];
+        const barriers = defense ? (state.preparations[zone] ?? []).filter((x) => preps.find((p) => p.id === x)?.holds) : [];
+        const holds = barriers.reduce((n, x) => n + (preps.find((p) => p.id === x)?.holds ?? 0), 0);
+        const battle = startBattle(content, state, { kind: "raid", attacker, defender, zone }, defense ? "defense" : "attack", { id, at: state.time, holds });
+        store.append({ type: "battle_started", pendingId: id, battle, barrierUsed: barriers });
         return { ok: true, text: `전투 장면을 열었다 (${defense ? "방어" : "공격"}, ${content.factions[attacker]?.name} → ${content.factions[defender]?.name}).` };
       }
       case "relation": {

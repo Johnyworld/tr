@@ -1,3 +1,4 @@
+import { springEnemyAmbush } from "./ambush.ts";
 import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
@@ -117,6 +118,8 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     const keep = storylet.cast[key]?.keep;
     if (keep) store.append({ type: "extra_kept", key: keep, characterId: id });
   }
+  // 적의 매복 (12-177): 열리면 주인공이 매복당한다 (곁의 개가 알아채면 아니다). 줄은 GM 상태의 전투 칸에 보인다
+  if (storylet.ambush) springEnemyAmbush(ctx);
   store.append({
     type: "storylet_fired",
     storyletId: storylet.id,

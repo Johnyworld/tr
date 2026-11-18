@@ -1,6 +1,7 @@
 import { describeDisaster } from "./disasters.ts";
 import { agendaCue } from "./agenda.ts";
 import { describeFacilities } from "./facilities.ts";
+import { describeAmbush } from "./ambush.ts";
 import { describeResolve } from "./resolve.ts";
 import { describeExploration } from "./exploration.ts";
 import { promiseLines } from "./promises.ts";
@@ -177,7 +178,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(effectiveSkill(content, player, m.id))}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n")],
-    ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content)].filter(Boolean).join("\n")],
+    ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content), ...describeAmbush(content, state)].filter(Boolean).join("\n")],
     ["romance", describeRomanceForGm(state, content)],
     // 다짐·시설·재난은 자주 바뀌지 않아 따로 둔다 (시각이 바뀔 때마다 다시 싣지 않게)
     ["resolve", describeResolve(state, content).join("\n")],

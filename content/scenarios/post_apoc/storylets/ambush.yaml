@@ -1,0 +1,102 @@
+# 적의 매복 (12-177): ambush: true인 이야기가 열리면 주인공이 매복당한다. 다음 판정 -2, 실패하면 혼란(다음 판정 -1).
+# 냄새 맡기를 배운 개가 곁에 있으면 미리 알아채 불리함이 없다 (scenario.ambush.forewarn_trick).
+# 상대가 먼저 움직인다 (기획서 4.1.1): 선택지는 반응하는 판정(경계·근접전·버티기)이고 그 상대를 opponent로 둔다
+
+- id: rd_raider_ambush
+  title: 길목의 매복
+  ambush: true
+  urgent: true
+  tags: [road]
+  repeatable: true
+  cooldown_days: 8
+  weight: 0.8
+  when:
+    road_danger_gte: 2
+    own_territory: false
+  cast:
+    raider: { extra: c_raider, label: 매복한 약탈자, enter: true }
+  setup: "{to:을/를} 앞두고 길이 좁아지는 곳, 무너진 담 위에서 무언가 떨어진다. 그물처럼 엮은 철사가 발목에 감기고, 담 뒤에서 쇠지렛대를 든 사내가 뛰어내린다. \"짐 내려놓고 엎드려.\""
+  ai_direction: "{raider:은/는} 혼자다. 처음부터 숨어 기다렸다 (상대가 먼저 움직였다). 짐을 노린다. 맞서는 판정은 {raider}을(를) opponent로 둔다. 위험은 판정 전에 선언한다."
+  choices:
+    - id: dodge
+      label: 철사를 걷어차고 몸을 뺀다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "{to} 앞 길목에서 약탈자의 매복을 걷어차고 빠져나왔다", source: seen }
+        partial:
+          - lose_item: { item: canned_food }
+          - belief: { fact: "길목의 매복에서 빠져나오다 짐에서 통조림 하나를 떨궜다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 길목에 매복한 약탈자의 쇠지렛대 }
+          - belief: { fact: "{to} 앞 길목에서 매복한 약탈자에게 얻어맞았다", source: seen }
+    - id: fight
+      label: 그대로 맞붙는다
+      effects:
+        - belief: { fact: "{to} 앞 길목에서 매복한 약탈자와 맞붙었다", source: seen }
+
+- id: rd_crawler_ambush
+  title: 차 밑의 손
+  ambush: true
+  urgent: true
+  fright: 2
+  fright_tags: [infected]
+  tags: [road]
+  repeatable: true
+  cooldown_days: 10
+  weight: 0.6
+  when:
+    road_danger_gte: 2
+  cast:
+    crawler: { extra: infected_crawler, label: 차 밑의 감염체, enter: true }
+  setup: "버려진 승합차 옆을 지나는 순간, 차 밑에서 회색 손이 튀어나와 발목을 움켜쥔다. 썩은 냄새가 확 끼친다."
+  ai_direction: "{crawler:은/는} 차 밑에 숨어 기다리고 있었다 (상대가 먼저 움직였다). 물리면 감염 위험이 있다 (판정 전에 선언, 시스템이 붙인다). 맞서는 판정은 {crawler}을(를) opponent로 둔다."
+  choices:
+    - id: kick
+      label: 발을 빼며 걷어찬다
+      check: endure
+      outcomes:
+        success:
+          - belief: { fact: "길가 승합차 밑에 숨어 있던 감염체의 손을 걷어차고 빠져나왔다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "차 밑의 감염체에게서 겨우 발을 뺐다. 발목에 손자국이 남았다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "차 밑의 감염체에게 발목을 붙잡혀 넘어졌다", source: seen }
+    - id: fight
+      label: 쓰러진 채 내리친다
+      effects:
+        - belief: { fact: "차 밑에서 튀어나온 감염체와 엉겨 붙었다", source: seen }
+
+- id: camp_ambush
+  title: 불빛을 노린 자들
+  ambush: true
+  urgent: true
+  tags: [camp]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    camp_danger_gte: 2
+    campfire: true
+  cast:
+    raider: { extra: c_raider, label: 어둠 속의 약탈자, enter: true }
+  setup: "모닥불이 사그라들 무렵, 등 뒤에서 자갈 밟는 소리가 한 번에 여러 곳에서 난다. 불빛을 보고 오래 기다린 자들이다. 누군가 낮게 웃는다."
+  ai_direction: "불빛을 보고 둘러싼 약탈자들이다. 하나가 앞에 나섰고 나머지는 어둠 속에 있다 (몇인지 모른다). 먼저 움직인 쪽은 저쪽이다. 맞서는 판정은 {raider}을(를) opponent로 둔다."
+  choices:
+    - id: kick_fire
+      label: 모닥불을 걷어차 어둠 속으로 뛴다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "야영지를 둘러싼 약탈자들을 불을 걷어차고 어둠으로 따돌렸다", source: seen }
+        partial:
+          - lose_item: { item: blanket }
+          - belief: { fact: "야영지에서 달아나다 담요를 두고 왔다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 야영지를 덮친 약탈자 }
+          - belief: { fact: "야영지를 둘러싼 약탈자들에게 붙잡혀 얻어맞았다", source: seen }
+    - id: stand
+      label: 불 곁에서 맞선다
+      effects:
+        - belief: { fact: "불빛을 노리고 둘러싼 약탈자들과 맞섰다", source: seen }

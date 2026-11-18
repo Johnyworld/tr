@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 69;
+export const SAVE_SCHEMA_VERSION = 70;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -209,6 +209,8 @@ export const battleStateSchema = z.strictObject({
   /** 플레이어 행동이 바꾼 전세의 합 (공적 계산) */
   contribution: z.number().int(),
   startedAt: z.number().int(),
+  /** 바리케이드가 남은 막기 (12-176): 지키는 쪽이 배경 교전에서 밀릴 때 이만큼 막는다 */
+  holds: z.number().int().min(0).default(0),
 });
 export type BattleState = z.infer<typeof battleStateSchema>;
 
@@ -387,6 +389,12 @@ export function createGameSchemas(s: Scenario) {
     tricks: z.record(z.string(), z.strictObject({ learned: z.array(z.string()), half: z.array(z.string()), lastDay: z.number().int() })).default({}),
     /** 무전 송출 (12-173): 마지막으로 송출한 날 */
     lastBroadcastDay: z.number().int().nullable().default(null),
+    /** 매복 (12-177): 주인공이 자리를 잡은 매복 (bonus: 첫 공격 보정, until까지) */
+    ambush: z.strictObject({ zone: z.string(), until: z.number().int(), bonus: z.number().int().min(1), confuse: z.boolean() }).nullable().default(null),
+    /** 매복당함 (12-177): 다음 판정 하나에 붙는 불리함, until이 지나면 사라진다 */
+    ambushed: z.strictObject({ until: z.number().int() }).nullable().default(null),
+    /** 혼란 (12-177): 다음 판정 하나 동안 흔들린 사람 (주인공은 -1, 상대는 맞서지 못한다) */
+    confused: z.array(z.string()).default([]),
     /** 협박당한 사람 (12-153). grudge: 되갚을 마음을 품었다 */
     blackmails: z.array(z.strictObject({ npcId: z.string(), by: z.string(), leverage: z.string(), at: z.number().int(), grudge: z.boolean() })).default([]),
     /** 폭로해서 더는 쥘 수 없는 약점 (12-153, "by|약점 키") */
@@ -610,6 +618,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("trick_trained"), animalId: z.string(), trick: z.string(), result: z.enum(["learned", "half", "miss"]), day: z.number().int() }),
     // 무전 송출 (12-173)
     z.strictObject({ type: z.literal("radio_broadcast"), day: z.number().int() }),
+    // 매복 (12-177)
+    z.strictObject({ type: z.literal("ambush_changed"), ambush: z.strictObject({ zone: z.string(), until: z.number().int(), bonus: z.number().int().min(1), confuse: z.boolean() }).nullable() }),
+    z.strictObject({ type: z.literal("ambushed_changed"), until: z.number().int().nullable() }),
+    z.strictObject({ type: z.literal("confusion_changed"), characterId: z.string(), on: z.boolean() }),
     z.strictObject({ type: z.literal("promise_settled"), id: z.string(), status: z.enum(["kept", "broken", "folded"]) }),
     /** 약점을 쥐고 협박했다 (12-153) */
     z.strictObject({ type: z.literal("blackmailed"), npcId: z.string(), by: z.string(), leverage: z.string(), grudge: z.boolean() }),
@@ -893,7 +905,8 @@ export function createGameSchemas(s: Scenario) {
       factions: z.record(z.string(), factionStateSchema),
       zones: z.record(z.string(), zoneStateSchema),
     }),
-    z.strictObject({ type: z.literal("battle_started"), pendingId: z.string(), battle: battleStateSchema }),
+    /** barrierUsed: 이 전투에서 막기로 쓰고 부서지는 준비물 (바리케이드, 12-176) */
+    z.strictObject({ type: z.literal("battle_started"), pendingId: z.string(), battle: battleStateSchema, barrierUsed: z.array(z.string()).default([]) }),
     z.strictObject({
       type: z.literal("battle_round"),
       effect: z.string().nullable(),
@@ -907,6 +920,8 @@ export function createGameSchemas(s: Scenario) {
       contribution: z.number().int(),
       /** 쓴 준비물 (구역에서 빠진다) */
       preparationUsed: z.string().optional(),
+      /** 바리케이드가 남은 막기 (12-176) */
+      holds: z.number().int().min(0).optional(),
     }),
     z.strictObject({
       type: z.literal("battle_ended"),
@@ -1029,6 +1044,9 @@ export const EMPTY_STATE: GameState = {
   rewardsGiven: {},
   tricks: {},
   lastBroadcastDay: null,
+  ambush: null,
+  ambushed: null,
+  confused: [],
   blackmails: [],
   exposed: [],
   fearExposure: {},
@@ -1539,6 +1557,17 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "radio_broadcast":
       next.lastBroadcastDay = event.day;
       return next;
+    case "ambush_changed":
+      next.ambush = event.ambush ? { ...event.ambush } : null;
+      return next;
+    case "ambushed_changed":
+      next.ambushed = event.until === null ? null : { until: event.until };
+      return next;
+    case "confusion_changed": {
+      const rest = (next.confused ?? []).filter((id) => id !== event.characterId);
+      next.confused = event.on ? [...rest, event.characterId] : rest;
+      return next;
+    }
     case "promise_settled":
       next.promises = (next.promises ?? []).map((p) => (p.id === event.id ? { ...p, status: event.status } : p));
       return next;
@@ -2095,6 +2124,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (state.battle) throw new Error("이미 전투 중입니다.");
       next.pendingClashes = next.pendingClashes.filter((p) => p.id !== event.pendingId);
       next.battle = structuredClone(event.battle);
+      for (const used of event.barrierUsed ?? []) {
+        const list = next.preparations[event.battle.zone] ?? [];
+        const i = list.indexOf(used);
+        if (i >= 0) list.splice(i, 1);
+      }
       break;
     case "battle_round": {
       const b = next.battle;
@@ -2107,6 +2141,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       b.ours.losses = event.ourLosses;
       b.theirs.losses = event.theirLosses;
       b.contribution = event.contribution;
+      if (event.holds !== undefined) b.holds = event.holds;
       if (event.preparationUsed) {
         const list = next.preparations[b.zone] ?? [];
         const i = list.indexOf(event.preparationUsed);

@@ -346,6 +346,7 @@ function checkReferences(content: Content): string[] {
   if (battle) {
     for (const p of battle.preparations) {
       if (p.requires_item && !content.items[p.requires_item]) problems.push(`scenario.battle.preparations.${p.id}: 알 수 없는 아이템 ${p.requires_item}`);
+      for (const m of Object.keys(p.materials ?? {})) if (!content.items[m]) problems.push(`scenario.battle.preparations.${p.id}: 알 수 없는 재료 ${m}`);
     }
     for (const e of battle.effects) {
       if (e.requires_item && !content.items[e.requires_item]) problems.push(`scenario.battle.effects.${e.id}: 알 수 없는 아이템 ${e.requires_item}`);

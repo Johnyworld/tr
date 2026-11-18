@@ -27,7 +27,7 @@ export function startBattle(
   world: WarWorld,
   spec: ClashSpec,
   side: "attack" | "defense",
-  options: { id: string; at: number },
+  options: { id: string; at: number; holds?: number },
 ): BattleState {
   const config = battleConfig(content);
   const { attackers, defenders } = clashForces(world, spec, content);
@@ -50,6 +50,7 @@ export function startBattle(
     objectives: config.objectives.map((o) => o.id),
     contribution: 0,
     startedAt: options.at,
+    holds: options.holds ?? 0,
   };
 }
 
@@ -152,6 +153,9 @@ function exchange(b: BattleState, config: BattleConfig, morale: { ours: number; 
   if (rng() < p) {
     b.momentum = Math.min(config.momentum_to_win, b.momentum + 1);
     if (rng() < 0.5) b.theirs.losses = Math.min(b.theirs.committed, b.theirs.losses + 1);
+  } else if ((b.holds ?? 0) > 0) {
+    // 바리케이드 (12-176): 밀고 들어오는 적이 막힌다. 전세도 사람도 잃지 않고 막기 하나를 쓴다
+    b.holds = (b.holds ?? 0) - 1;
   } else {
     b.momentum = Math.max(-config.momentum_to_win, b.momentum - 1);
     if (rng() < 0.5) b.ours.losses = Math.min(b.ours.committed, b.ours.losses + 1);

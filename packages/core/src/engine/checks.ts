@@ -1,5 +1,6 @@
 import { gearModifiers } from "./gear.ts";
 import { oppositionParts } from "./opposition.ts";
+import { afterCheckAmbush, ambushParts } from "./ambush.ts";
 import { companionSkillMod } from "../game/companions.ts";
 import { squadFollowBonus } from "./command.ts";
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
@@ -26,6 +27,8 @@ export type PlayerCheckResult =
       display: Extract<ToolDisplayEvent, { type: "check" }>;
       /** 레벨이 올랐으면 GM에게 알릴 문장 */
       growthNote: string | null;
+      /** 매복·혼란 (12-177): 쓰였거나 생긴 것 */
+      ambushNotes: string[];
     }
   | { ok: false; error: string };
 
@@ -83,7 +86,8 @@ export function rollPlayerCheck(
   };
   // 상대와 상황 (12-104): 맞서는 상대가 없으면 공격 대상이 상대다
   const opponent = input.opponent ?? options.target ?? null;
-  const against = oppositionParts(content, state, input.move, opponent, input.distance);
+  // 매복·매복당함·혼란 (12-177)도 상황 보정이다
+  const against = [...oppositionParts(content, state, input.move, opponent, input.distance), ...ambushParts(content, state, input.move, opponent)];
   modifiers.opposition = against.reduce((n, p) => n + p.value, 0);
   const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition + modifiers.trait + modifiers.gear + modifiers.opposition);
   const checkId = `chk_${state.nextCheckNo}`;
@@ -107,11 +111,13 @@ export function rollPlayerCheck(
   });
 
   const growthNote = gainCheckXp({ store, rng, content }, actor.id, roll.outcome);
+  const ambushNotes = afterCheckAmbush({ store, rng, content }, input.move, opponent, roll.outcome, state);
 
   return {
     ok: true,
     checkId,
     growthNote,
+    ambushNotes,
     outcome: roll.outcome,
     dice: roll.dice,
     modifier: roll.modifier,

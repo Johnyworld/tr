@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
 import {
   dayOf,
+  formatAgo,
   formatDuration,
   formatTime,
   nextSegmentStart,
@@ -50,5 +51,16 @@ describe("게임 시간", () => {
       seen.add(m);
     }
     expect([...seen].sort()).toEqual([105, 120, 60, 75, 90]);
+  });
+});
+
+describe("얼마나 전인지 (12-178)", () => {
+  it("날짜로 센다", () => {
+    expect(formatAgo(at(3, 23), at(3, 1))).toBe("오늘");
+    expect(formatAgo(at(3, 1), at(2, 23))).toBe("어제");
+    expect(formatAgo(at(5, 9), at(3, 9))).toBe("그저께");
+    expect(formatAgo(at(10, 9), at(5, 9))).toBe("5일 전");
+    expect(formatAgo(at(30, 9), at(9, 9))).toBe("3주 전");
+    expect(formatAgo(at(100, 9), at(10, 9))).toBe("3달 전");
   });
 });

@@ -77,6 +77,20 @@ export function formatTime(time: GameTime): string {
   return `${dayOf(time)}일차 ${hh}:${mm} (${SEGMENT_LABELS[segmentOf(time)]})`;
 }
 
+/**
+ * 그때가 지금으로부터 얼마나 전인지 (12-178, 낡은 정보): 날짜로 센다. "오늘", "어제", "그저께", "5일 전", "2주 전", "두 달 전"
+ * 믿음 옆에 붙여 GM·플레이어가 정보가 얼마나 묵었는지 보게 한다 (정확도는 여전히 보이지 않는다)
+ */
+export function formatAgo(now: GameTime, then: GameTime): string {
+  const days = dayOf(now) - dayOf(then);
+  if (days <= 0) return "오늘";
+  if (days === 1) return "어제";
+  if (days === 2) return "그저께";
+  if (days < 14) return `${days}일 전`;
+  if (days < 60) return `${Math.floor(days / 7)}주 전`;
+  return `${Math.floor(days / 30)}달 전`;
+}
+
 /** "1시간 30분" */
 export function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);

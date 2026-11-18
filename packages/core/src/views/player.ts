@@ -30,7 +30,7 @@ import type { GameState } from "../game/state.ts";
 import type { Character } from "../game/character.ts";
 import { memoAccess } from "../game/memo.ts";
 import type { Content } from "../content/schemas.ts";
-import { calendarDate, formatClock, formatTime, minuteOfDay, MINUTES_PER_DAY, SEGMENT_LABELS, segmentOf, type TimeSegment } from "../rules/time.ts";
+import { calendarDate, formatAgo, formatClock, formatTime, minuteOfDay, MINUTES_PER_DAY, SEGMENT_LABELS, segmentOf, type TimeSegment } from "../rules/time.ts";
 import { itemIcon, type IconName } from "../content/icons.ts";
 import { conditionPenalty, initialConditions, rankLabel, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
@@ -578,7 +578,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         id: b.id,
         fact: b.fact,
         sourceLabel: BELIEF_SOURCE_LABELS[b.source],
-        learnedLabel: formatTime(b.learnedAt),
+        learnedLabel: `${formatAgo(state.time, b.learnedAt)} · ${formatTime(b.learnedAt)}`,
       }))
       .reverse(),
     journal: [],

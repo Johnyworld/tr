@@ -13,7 +13,7 @@ import type { TurnSummary } from "../engine/log.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { activeMissionOf, commanderOf, daysServed, MISSION_STATUS_LABELS } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
-import { dayOf, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
+import { dayOf, formatAgo, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
 import { conditionPenalty, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
@@ -297,7 +297,7 @@ const factions: CommandDef = {
     for (const f of o.others) lines.push(`${f.name}  [${f.stance}] ${f.size}`, `  ${f.public}`);
     const news = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.topic === WAR_TOPIC).slice(-5).reverse();
     lines.push("", "최근 전황 (들은 것)");
-    lines.push(...(news.length ? news.map((b) => `  [${formatTime(b.learnedAt)} · ${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`) : ["  들은 소식이 없습니다."]));
+    lines.push(...(news.length ? news.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)} · ${formatTime(b.learnedAt)} · ${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`) : ["  들은 소식이 없습니다."]));
     return lines.join("\n");
   },
 };
@@ -358,7 +358,7 @@ const rumors: CommandDef = {
   description: "최근 들은 소문",
   run(ctx) {
     const heard = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.source === "rumor").slice(-10).reverse();
-    return [header("소문"), ...(heard.length ? heard.map((b) => `  ${b.fact}`) : ["  들은 소문이 없습니다."])].join("\n");
+    return [header("소문"), ...(heard.length ? heard.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)}] ${b.fact}`) : ["  들은 소문이 없습니다."])].join("\n");
   },
 };
 

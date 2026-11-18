@@ -45,7 +45,7 @@ const HELP = [
   "~weather 날씨          오늘 날씨",
   "~storylet 이야기       그 이야기를 지금 시작한다",
   "~battle                지금 구역에서 전투 장면을 연다",
-  "~relation 인물 축 ±값  그 인물의 나에 대한 관계 (축: trust, affection, respect)",
+  "~relation 인물 [대상] 축 ±값  그 인물의 나(또는 대상)에 대한 관계 (축: trust, affection, respect)",
   "~faction 세력 자원|morale 값  세력 자원·사기",
   "~disaster 재난 [구역]  큰 재난이 지금 덮친다 (구역이 없으면 지금 구역, 12-169)",
 ].join("\n");
@@ -228,14 +228,17 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         return { ok: true, text: `전투 장면을 열었다 (${defense ? "방어" : "공격"}, ${content.factions[attacker]?.name} → ${content.factions[defender]?.name}).` };
       }
       case "relation": {
-        const [who, axis, value] = args;
+        // 인물끼리의 관계도 (장례의 "남은 사람"처럼 인물 사이 관계가 있어야 열리는 것을 시험한다)
+        const [who, ...rest] = args;
+        const [toward, axis, value] = rest.length >= 3 ? rest : [undefined, ...rest];
         const c = findCharacter(ctx, who);
+        const to = toward === undefined ? state.characters[state.playerId] : findCharacter(ctx, toward);
         const n = Number(value);
-        if (!c || c.id === state.playerId || !["trust", "affection", "respect"].includes(axis ?? "") || !Number.isInteger(n)) {
-          return { ok: false, error: "~relation 인물 trust|affection|respect ±값" };
+        if (!c || !to || c.id === to.id || !["trust", "affection", "respect"].includes(axis ?? "") || !Number.isInteger(n)) {
+          return { ok: false, error: "~relation 인물 [대상] trust|affection|respect ±값" };
         }
-        store.append({ type: "relation_changed", from: c.id, to: state.playerId, delta: { trust: 0, affection: 0, respect: 0, [axis!]: n }, reason: "치트" });
-        return { ok: true, text: `${c.name}의 ${axis} ${n > 0 ? "+" : ""}${n}` };
+        store.append({ type: "relation_changed", from: c.id, to: to.id, delta: { trust: 0, affection: 0, respect: 0, [axis!]: n }, reason: "치트" });
+        return { ok: true, text: `${c.name} → ${to.id === state.playerId ? "나" : to.name}: ${axis} ${n > 0 ? "+" : ""}${n}` };
       }
       case "faction": {
         const [fid, key, value] = args;

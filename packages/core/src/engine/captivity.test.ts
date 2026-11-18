@@ -82,6 +82,27 @@ describe("포로를 잡고 다룬다", () => {
     expect(["a_jeongbin", "a_gicheol_scout"].filter((id) => !w.state().characters[id]!.captive)).toHaveLength(1);
   });
 
+  it("12-178: 끌고 다니는 포로는 그 자리에서 심문하고 풀어 줄 수 있고, 아는 게 없으면 자기 무리 형편을 털어놓는다", () => {
+    const w = open(() => 0.99);
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "old_town" });
+    if (!w.state().scene.present.includes("c_seokjin")) w.ctx().store.append({ type: "npc_entered", npcId: "c_seokjin" } as never);
+    hurt(w, "c_seokjin", "serious");
+    expect(w.executeTool("take_prisoner", { target: "c_seokjin" }).ok).toBe(true);
+    expect(describePlayerState(w.state(), w.content)).toContain("끌고 다니는 포로");
+    // 자기 믿음은 비우고, 무리 형편을 어렵게 만든다
+    w.ctx().store.getState().beliefs.c_seokjin = [];
+    w.ctx().store.append({ type: "faction_morale_changed", factionId: "faction_c", delta: -2 - w.state().factions.faction_c!.morale });
+    expect(w.executeTool("handle_prisoner", { target: "c_seokjin", action: "labor", approach: null, stat: null }).ok).toBe(false);
+    const ask = w.executeTool("handle_prisoner", { target: "c_seokjin", action: "interrogate", approach: "persuade", stat: "charm" });
+    expect(ask.ok && ask.resultText).toContain("포로의 말로는");
+    const heard = w.state().beliefs[w.state().playerId]!.at(-1)!;
+    expect(heard.fact).toContain("분위기");
+    expect(heard.accuracy).toBe("approximate");
+    const free = w.executeTool("handle_prisoner", { target: "c_seokjin", action: "release", approach: null, stat: null });
+    expect(free.ok).toBe(true);
+    expect(w.state().companions).not.toContain("c_seokjin");
+  });
+
   it("무리 사이 싸움에서 진 쪽의 이름 있는 싸움꾼이 붙잡혀 가고, 우리 쪽이면 소식으로 안다", () => {
     const w = open(() => 0.01);
     const out = warCaptures(w.ctx(), [{ kind: "raid", attacker: "faction_c", defender: "faction_a", zone: "a_east_post", success: true, attackerLosses: 0, defenderLosses: 2 }]);

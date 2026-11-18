@@ -1,0 +1,152 @@
+# 믿음 (12-178): 종교인 직분이 아니어도 마주치는 믿음. 성당의 종, 식사 기도, 부적, 길 위의 순례자, 감염을 심판이라 부르는 사람들.
+# 새 규칙 없이 이야기로만. 믿음이 옳은지는 정하지 않는다. 감염의 근원(10.6)에 대해 아무것도 확정하지 않는다
+
+- id: fa_bell
+  title: 죽은 이를 위한 종
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    zones: [cathedral]
+    segments: [evening, night]
+  cast:
+    keeper: { extra: cathedral_refugee, label: 종지기 노인 }
+  setup: "종탑 아래에서 {keeper:이/가} 굵은 밧줄을 쥐고 있다. \"오늘 간 사람이 있으면 이름을 대요. 한 번씩 쳐 주니까. 믿든 안 믿든.\" 줄 선 사람이 서넛이다."
+  ai_direction: "{keeper}은(는) 신부가 아니다. 그냥 종을 치는 사람이다. 종소리는 멀리까지 간다 (감염체도 듣는다는 것을 아는 사람도 있다). 주인공이 대는 이름이 있으면 그 이름을 그대로 부른다."
+  choices:
+    - id: name
+      label: 잃은 사람의 이름을 댄다
+      effects:
+        - body: { track: nerves, delta: -1 }
+        - relation: { who: keeper, axis: affection, delta: 1 }
+        - zone_noise: 1
+    - id: pull
+      label: 노인 대신 밧줄을 잡아 준다
+      effects:
+        - relation: { who: keeper, axis: respect, delta: 2 }
+        - zone_noise: 1
+    - id: leave
+      label: 줄에 서지 않고 지나간다
+      effects: []
+
+- id: fa_grace
+  title: 식사 기도
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    own_territory: true
+    segments: [evening]
+  cast:
+    pious: { faction: own, here: true }
+    mocker: { faction: own, here: true }
+  setup: "배식 줄 끝, {pious:이/가} 그릇을 받아 들고 눈을 감는다. 입술만 움직인다. 옆자리 {mocker:이/가} 숟가락으로 그릇을 탁 친다. \"누구한테 고마운데? 이 국 끓인 건 부엌이야.\" 몇 사람이 웃는다."
+  ai_direction: "{pious}은(는) 대꾸하지 않고 기도를 마친다. {mocker}은(는) 악의라기보다 지쳐 있다. 누가 옳은지 정하지 않는다. 주인공의 편들기가 둘과의 사이를 바꾼다."
+  choices:
+    - id: join
+      label: 나도 잠깐 눈을 감는다
+      effects:
+        - relation: { who: pious, axis: affection, delta: 2 }
+        - relation: { who: mocker, axis: respect, delta: -1 }
+        - body: { track: nerves, delta: -1 }
+    - id: hush
+      label: "\"밥이나 먹자\" 하고 둘 사이를 끊는다"
+      effects:
+        - relation: { who: pious, axis: respect, delta: 1 }
+        - relation: { who: mocker, axis: respect, delta: 1 }
+    - id: laugh
+      label: 같이 웃는다
+      effects:
+        - relation: { who: mocker, axis: affection, delta: 1 }
+        - relation: { who: pious, axis: affection, delta: -2 }
+
+- id: fa_charm
+  title: 쥐여 준 부적
+  tags: [world]
+  repeatable: true
+  cooldown_days: 15
+  when:
+    own_territory: true
+    segments: [dawn, morning]
+  cast:
+    giver: { faction: own, here: true, known: true }
+  setup: "나서려는 당신을 {giver:이/가} 불러 세운다. 주먹을 펴니 손때 묻은 나무 묵주 알 하나, 아니면 그냥 매끈한 돌이다. \"이거 가지고 가. 우리 엄마가 준 거야. 돌아와서 돌려줘.\""
+  ai_direction: "{giver}은(는) 이것이 진짜로 지켜 준다고 믿는지 스스로도 모른다. 돌려달라는 말이 진짜 뜻이다 (돌아오라는). 판정에 아무 보정도 없다. 받든 안 받든 서술로만."
+  choices:
+    - id: take
+      label: 받아서 가슴 주머니에 넣는다
+      effects:
+        - relation: { who: giver, axis: affection, delta: 2 }
+        - body: { track: fear, delta: -1 }
+        - belief: { fact: "{giver:이/가} 부적을 쥐여 주며 돌아와서 돌려달라고 했다", source: seen }
+    - id: refuse
+      label: "\"너나 가지고 있어\" 하고 손을 접어 준다"
+      effects:
+        - relation: { who: giver, axis: respect, delta: 1 }
+
+- id: fa_pilgrims
+  title: 길 위의 순례자
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  weight: 0.5
+  when:
+    zones: [rest_stop, overpass, south_fields, riverside]
+    segments: [morning, day]
+  cast:
+    pilgrim: { extra: highway_traveler, label: 나무 십자가를 멘 사람 }
+  setup: "도로 한가운데를 {pilgrim:이/가} 걸어온다. 등에 사람 키만 한 나무 십자가를 묶었다. 뒤로 서넛이 따른다. 무기는 아무도 없다. \"남쪽으로 갑니다. 물 한 모금만 얻을 수 있을까요.\""
+  ai_direction: "{pilgrim}의 무리는 남쪽 바다에 닿으면 구원받는다고 믿는다. 정말 그런지는 아무도 모른다 (바깥 세계 10.6과 이어 붙이지 않는다). 그들은 이 도시의 무리 싸움을 거의 모르고, 지나온 길 이야기를 한다."
+  choices:
+    - id: water
+      label: 물병을 건넨다
+      effects:
+        - take_item: { item: water_bottle, quantity: 1 }
+        - deed: { summary: 남쪽으로 가는 순례자들에게 물을 나눠 주었다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "남쪽으로 가는 순례자들 말로는, 고속도로 남쪽 터널이 무너져 큰길로는 못 가고 강을 따라 돌아야 한다", source: report }
+    - id: ask
+      label: 물은 못 주지만 지나온 길을 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "남쪽으로 가는 순례자들 말로는, 고속도로 남쪽 터널이 무너져 큰길로는 못 가고 강을 따라 돌아야 한다", source: report }
+        partial:
+          - belief: { fact: "순례자들은 북쪽에서 왔다. 거기도 여기와 다르지 않다고만 했다", source: report }
+        miss: []
+    - id: warn
+      label: 남쪽엔 아무것도 없다고 말린다
+      effects:
+        - relation: { who: pilgrim, axis: affection, delta: -1 }
+
+- id: fa_judgment
+  title: 심판을 말하는 사람들
+  tags: [world]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    zones: [e_market, old_town, cathedral, rest_stop]
+    segments: [day, evening]
+  cast:
+    preacher: { extra: refugee, label: 흰 띠를 두른 사람 }
+  setup: "장바닥 한쪽에 사람들이 모였다. 이마에 흰 띠를 두른 {preacher:이/가} 상자 위에 서 있다. \"물린 자들은 벌을 받은 겁니다. 죄 없는 사람은 변하지 않아요. 우리한테 오면 깨끗해집니다.\" 듣는 사람 중에 감염으로 가족을 잃은 얼굴들이 보인다."
+  ai_direction: "흰 띠 무리는 아직 작다. 감염이 무엇인지 아무것도 확정하지 않는다 (감염의 근원 떡밥과 엮지 않는다). {preacher}은(는) 반박에 화내지 않고 웃으며 더 크게 말한다. 듣는 사람 일부는 고개를 끄덕인다. 싸움으로 번지지 않는다."
+  choices:
+    - id: argue
+      label: 물린 사람 중엔 아이도 있었다고 맞받는다
+      check: persuade
+      outcomes:
+        success:
+          - deed: { summary: 장바닥에서 감염을 죄의 벌이라 하는 사람에게 사람들 앞에서 맞섰다, tags: [bravery], severity: 1, privacy: public }
+          - belief: { fact: "흰 띠 무리의 설교에 맞섰더니 듣던 사람 몇이 자리를 떴다", source: seen }
+        partial:
+          - belief: { fact: "흰 띠 무리의 설교에 맞섰지만 듣는 사람들은 반반으로 갈렸다", source: seen }
+        miss:
+          - belief: { fact: "흰 띠 무리의 설교에 맞섰다가 듣던 사람들에게 오히려 손가락질을 받았다", source: seen }
+          - body: { track: nerves, delta: 1 }
+    - id: listen
+      label: 끝까지 듣는다
+      effects:
+        - belief: { fact: "이마에 흰 띠를 두른 무리가 감염은 죄의 벌이고 자기들에게 오면 깨끗해진다고 설교하고 다닌다. 어디 모여 사는지는 말하지 않았다", source: seen }
+    - id: leave
+      label: 자리를 뜬다
+      effects: []

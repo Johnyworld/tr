@@ -47,6 +47,10 @@ describe("치트", () => {
     expect(w.state().scene.present).toContain("npc_leader");
     expect(w.runCheat("~relation 강분대 trust 2").ok).toBe(true);
     expect(w.state().relations.npc_leader?.player?.trust).toBe(2);
+    // 인물끼리 (12-178)
+    expect(w.runCheat("~relation 강분대 npc_stranger affection 4").ok).toBe(true);
+    expect(w.state().relations.npc_leader?.npc_stranger?.affection).toBe(4);
+    expect(w.runCheat("~relation 강분대 강분대 affection 4").ok).toBe(false);
     expect(w.runCheat("~kill 강분대").ok).toBe(true);
     expect(w.state().characters.npc_leader!.dead).toBe(true);
     expect(w.runCheat("~summon extra test_sentry 보초").ok).toBe(true);

@@ -1,0 +1,170 @@
+# 아이들 (12-178): 붕괴 뒤에 자란 아이들. 배경이 아니라 심부름꾼·목격자·짐·거울로 장면에 선다.
+# 새 규칙 없이 이야기로만. 아이는 다치게 하지 않는다 (수위, 12.7). 판정의 대가는 어른과 주인공에게 돌아간다
+
+- id: ch_little_runner
+  title: 심부름값
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    zones: [e_market, old_town, rest_stop, cathedral]
+    segments: [morning, day]
+  cast:
+    kid: { extra: drifter_child, label: 심부름하는 아이 }
+  setup: "{kid:이/가} 당신 소매를 잡아당긴다. \"아저씨, 뭐 찾아? 이 동네 길은 내가 다 알아. 말린 거 하나면 어디든 데려다줘. 소식도 물어다 주고.\""
+  variants:
+    - "좌판 사이를 뛰어다니던 {kid:이/가} 당신 앞에 멈춰 선다. 맨발에 숨이 차다. \"심부름 시킬 거 있어? 싸게 해 줄게.\""
+  ai_direction: "{kid}은(는) 이 동네 어른들이 하는 말을 다 주워듣는다. 무엇을 들었는지는 결과 문장 그대로만 말하고, 그 이상은 모른다고 한다. 값을 치르면 진지해지고, 놀리면 금방 사라진다."
+  choices:
+    - id: pay
+      label: 말린 식량 하나를 주고 요즘 들리는 말을 묻는다
+      effects:
+        - take_item: { item: dry_ration, quantity: 1 }
+        - relation: { who: kid, axis: trust, delta: 2 }
+        - belief: { fact: "심부름하는 아이 말로는, 요즘 이 근처 어른들이 무리 사이 싸움이 곧 커진다고 수군댄다", source: rumor }
+    - id: talk
+      label: 값은 못 주지만 말동무는 해 준다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: kid, axis: affection, delta: 2 }
+          - belief: { fact: "아이가 공짜로 알려 줬다: 밤에는 구시가 뒷골목으로 다니지 말라고, 거기서 사람이 자꾸 없어진다고", source: rumor }
+        partial:
+          - relation: { who: kid, axis: affection, delta: 1 }
+        miss:
+          - lose_item: { item: cigarettes, quantity: 1 }
+          - belief: { fact: "말 많은 아이와 떠드는 사이 주머니가 가벼워졌다. 그 아이 짓인지는 모르겠다", source: seen }
+    - id: shoo
+      label: 손을 내젓는다
+      effects: []
+
+- id: ch_child_witness
+  title: 아이가 본 것
+  tags: [world]
+  repeatable: true
+  cooldown_days: 9
+  when:
+    own_territory: true
+    segments: [morning, day]
+  cast:
+    kid: { extra: mall_kid, label: 거점의 아이 }
+  setup: "{kid:이/가} 담장 그늘에 쪼그려 앉아 있다가 당신과 눈이 마주치자 고개를 숙인다. 무언가 말하고 싶은데 어른한테 혼날까 봐 망설이는 얼굴이다."
+  ai_direction: "{kid}은(는) 어젯밤 잠이 안 와 밖을 내다보다 무언가를 봤다. 아이 눈이라 무엇을 봤는지는 흐릿하다. 결과 문장의 내용만 말하고, 누구였는지는 확실히 모른다. 어른들에게 말해 봤지만 아무도 들어 주지 않았다."
+  choices:
+    - id: listen
+      label: 옆에 쪼그려 앉아 천천히 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: kid, axis: trust, delta: 2 }
+          - belief: { fact: "거점의 아이가 어젯밤 창고 뒤로 누군가 자루를 들고 나가는 걸 봤다고 했다. 어른이었고, 우리 사람 옷차림이었다고", source: report }
+        partial:
+          - relation: { who: kid, axis: trust, delta: 1 }
+          - belief: { fact: "거점의 아이가 밤에 담 쪽에서 무언가 움직이는 걸 봤다고 했다. 사람인지 아닌지는 모르겠다고", source: report }
+        miss:
+          - relation: { who: kid, axis: trust, delta: -1 }
+    - id: later
+      label: "\"나중에 얘기하자\" 하고 지나친다"
+      effects:
+        - relation: { who: kid, axis: affection, delta: -1 }
+
+- id: ch_follower
+  title: 따라오는 아이
+  tags: [world]
+  repeatable: true
+  cooldown_days: 14
+  weight: 0.6
+  when:
+    zone_owner: [none]
+    segments: [morning, day, evening]
+  cast:
+    kid: { extra: drifter_child, label: 따라오는 아이, keep: ch_follower_kid }
+  setup: "한참 전부터 발소리 하나가 당신 걸음에 맞춰 멈췄다 걷는다. 돌아보면 {kid:이/가} 폐차 뒤로 숨는다. 가방도 신발도 없다. 다시 걸으면 또 따라온다."
+  ai_direction: "{kid}의 가족은 지난겨울 없어졌다. 혼자서는 밤을 못 넘길 것을 안다. 데려가 달라고 먼저 말하지 않는다. 데려가면 짐이 되고 걸음이 느려지는 것을 서술로 보여 준다. 쫓으면 울지 않고 조용히 사라진다."
+  choices:
+    - id: take
+      label: 손짓해 부른다. 담 안까지는 데려간다
+      effects:
+        - companion_join: { who: kid, kind: purpose, until: { hours: 48 } }
+        - deed: { summary: 길에서 혼자 남은 아이를 거두어 데려갔다, tags: [mercy], severity: 1, privacy: semi_private }
+        - relation: { who: kid, axis: trust, delta: 2 }
+    - id: feed
+      label: 먹을 것을 쥐여 주고 성당 쪽을 가리킨다
+      effects:
+        - take_item: { item: dry_ration, quantity: 1 }
+        - relation: { who: kid, axis: affection, delta: 1 }
+        - belief: { fact: "길에서 따라오던 아이에게 먹을 것을 주고 언덕 위 성당으로 가라고 했다. 갔는지는 모른다", source: seen }
+    - id: shake
+      label: 걸음을 빨리해 떼어 낸다
+      effects:
+        - body: { track: nerves, delta: 1, chance: 0.5 }
+
+- id: ch_war_game
+  title: 전쟁놀이
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    own_territory: true
+    segments: [day, evening]
+  cast:
+    kid: { extra: mall_kid, label: 대장 노릇 하는 아이 }
+    parent: { faction: own, here: true }
+  setup: "공터에서 아이들이 막대기 총을 들고 뛰어다닌다. \"붉은 놈들 다 죽여!\" {kid:이/가} 대장 노릇을 하며 쓰러진 척하는 아이를 막대기로 찌른다. {parent:이/가} 팔짱을 끼고 보고만 있다."
+  ai_direction: "아이들 놀이는 어른들 말을 그대로 따라 한다. {parent}은(는) 말리지도 부추기지도 않는다. 주인공이 무엇을 하든 아이들은 금방 다른 놀이로 넘어간다. 설교로 끝내지 않는다."
+  choices:
+    - id: teach
+      label: 막대기 쥐는 법부터 제대로 가르친다
+      effects:
+        - relation: { who: kid, axis: respect, delta: 2 }
+        - relation: { who: parent, axis: respect, delta: 1 }
+        - faction_morale: { faction: own, delta: 1 }
+    - id: other_game
+      label: 다른 놀이를 가르쳐 준다. 사방치기라든가
+      effects:
+        - relation: { who: kid, axis: affection, delta: 1 }
+        - relation: { who: parent, axis: affection, delta: 1 }
+        - body: { track: nerves, delta: -1 }
+    - id: watch
+      label: 그냥 지나간다
+      effects: []
+
+- id: ch_fever
+  title: 열이 내리지 않는 아이
+  tags: [world]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    zones: [cathedral, old_town, rest_stop, e_market, d_clinic]
+  cast:
+    mother: { extra: refugee, label: 아이 업은 사람 }
+  setup: "{mother:이/가} 등에 업은 아이를 고쳐 업으며 사람마다 붙잡고 묻는다. \"약 있으면… 열이 사흘째 안 내려요.\" 아이 볼이 빨갛고 숨이 얕다. 당신 차례가 온다."
+  ai_direction: "아이는 감염이 아니라 그냥 열병이다 (주인공은 확신할 수 없다). {mother}은(는) 줄 것이 없다. 약을 받으면 몇 번이고 고개를 숙이고, 거절해도 원망하지 않고 다음 사람에게 간다."
+  choices:
+    - id: reducer
+      label: 해열제를 건넨다
+      effects:
+        - take_item: { item: fever_reducer, quantity: 1 }
+        - deed: { summary: 열이 내리지 않는 피난민 아이에게 해열제를 내주었다, tags: [mercy], severity: 1, privacy: semi_private }
+        - relation: { who: mother, axis: affection, delta: 3 }
+    - id: antibiotics
+      label: 아껴 둔 항생제를 건넨다
+      effects:
+        - take_item: { item: antibiotics, quantity: 1 }
+        - deed: { summary: 피난민 아이에게 귀한 항생제를 내주었다, tags: [mercy], severity: 2, privacy: semi_private }
+        - relation: { who: mother, axis: affection, delta: 3 }
+    - id: cool
+      label: 약은 없지만, 열 내리는 법을 알려 준다
+      check: first_aid
+      outcomes:
+        success:
+          - relation: { who: mother, axis: trust, delta: 2 }
+          - belief: { fact: "피난민 아이의 열을 물수건과 물로 다스리는 법을 알려 주었다. 숨이 조금 고르게 돌아왔다", source: seen }
+        partial:
+          - relation: { who: mother, axis: trust, delta: 1 }
+        miss:
+          - belief: { fact: "피난민 아이에게 해 줄 수 있는 것이 없었다", source: seen }
+          - body: { track: nerves, delta: 1 }
+    - id: none
+      label: 고개를 젓는다
+      effects: []

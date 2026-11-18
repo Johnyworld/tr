@@ -34,7 +34,7 @@ describe("정보 필터", () => {
 
   it("믿음의 진짜 정확도는 넣지 않는다 (틀린 소문도 그냥 소문으로 보인다)", () => {
     const prompt = describePlayerState(everyoneHere(TEST_CONTENT, "role_test"), TEST_CONTENT);
-    expect(prompt).toContain("[소문] 정찰조는 감염체에게 당했다는 소문");
+    expect(prompt).toContain("[소문 · 오늘] 정찰조는 감염체에게 당했다는 소문");
     expect(prompt).not.toMatch(/accuracy|approximate|정확도/);
   });
 

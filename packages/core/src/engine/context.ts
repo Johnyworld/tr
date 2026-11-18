@@ -33,7 +33,7 @@ import { describeRomanceForGm } from "./romance.ts";
 import { describeCaptivityForGm } from "./captivity.ts";
 import { describeHistoryPart, type HistoryPart } from "../game/background.ts";
 import { occupationOf, occupationTitle } from "../game/occupation.ts";
-import { dayOf } from "../rules/time.ts";
+import { dayOf, formatAgo } from "../rules/time.ts";
 import { describeGear } from "./gear.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { describeProfileLines, describeTieLines } from "./people.ts";
@@ -508,9 +508,10 @@ function describeBeliefs(state: GameState, _content: Content): string {
   const recent = new Set(all.slice(-RECENT_BELIEFS_IN_PROMPT).map((b) => b.id));
   const about = all.filter((b) => !recent.has(b.id) && names.some((n) => b.fact.includes(n))).slice(-MAX_BELIEFS_IN_PROMPT + RECENT_BELIEFS_IN_PROMPT);
   const shown = all.filter((b) => recent.has(b.id) || about.includes(b));
-  const lines = shown.map((b) => `- [${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`);
+  // 알게 된 때를 붙인다 (12-178): 사흘 전에 본 병력은 지금과 다를 수 있다
+  const lines = shown.map((b) => `- [${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}] ${b.fact}`);
   const rest = all.length - shown.length;
-  return `당신이 알고 있다고 믿는 것 (틀렸거나 오래된 정보일 수 있다):\n${lines.join("\n")}${rest > 0 ? `\n(이 밖에 더 오래된 것 ${rest}개. 필요하면 recall로 찾는다)` : ""}`;
+  return `당신이 알고 있다고 믿는 것 (틀렸거나 오래된 정보일 수 있다. 며칠 묵은 병력·형편·행방은 지금과 다를 수 있으니 인물이 단정하지 않게 한다):\n${lines.join("\n")}${rest > 0 ? `\n(이 밖에 더 오래된 것 ${rest}개. 필요하면 recall로 찾는다)` : ""}`;
 }
 
 function describeInventory(content: Content, inventory: Inventory): string {

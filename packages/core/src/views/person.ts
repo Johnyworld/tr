@@ -5,6 +5,7 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
 import { rankName } from "../game/ranks.ts";
+import { formatAgo } from "../rules/time.ts";
 
 /**
  * 한 인물에 대해 플레이어가 아는 것 (?인물 이름, 시트의 이름 툴팁이 같이 쓴다).
@@ -41,6 +42,6 @@ export function personProfile(state: GameState, content: Content, id: string): P
     facts: (state.beliefs[state.playerId] ?? [])
       .filter((b) => (named && b.fact.includes(c.name)) || b.fact.includes(alias))
       .slice(-5)
-      .map((b) => ({ source: BELIEF_SOURCE_LABELS[b.source], fact: b.fact })),
+      .map((b) => ({ source: `${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}`, fact: b.fact })),
   };
 }

@@ -11,6 +11,7 @@ import type { Content } from "../content/schemas.ts";
 import { endBattle } from "./battleTools.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
+import { TROUBLE_TOPIC, troublesOf } from "./factionTalk.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
@@ -152,7 +153,37 @@ export function describeCaptivityForGm(state: GameState, content: Content): stri
         .join(", ")}`,
     );
   }
+  const towed = state.companions.filter((id) => state.bonds[id]?.kind === "prisoner" && !state.characters[id]?.dead);
+  if (towed.length) {
+    lines.push(
+      `끌고 다니는 포로 (handle_prisoner의 interrogate·release는 여기서도 된다. 나머지는 우리 거점에 데려가야): ${towed
+        .map((id) => `${playerCalls(state, content, id)} (${id}, ${content.factions[state.characters[id]!.factionId]?.name ?? "무리 없음"})`)
+        .join(", ")}`,
+    );
+  }
   return lines.join("\n");
+}
+
+/**
+ * 포로가 털어놓는 것 (원칙 2·4: 코드가 고른다). 그 사람의 믿음 중 주인공이 모르는 것, 전황이 먼저.
+ * 털어놓을 믿음이 없으면 자기 무리의 형편을 말한다 (12-178: 엑스트라 포로도 빈손이 아니다). 진짜 형편에서 나오지만 포로의 입이라 정확도는 대략
+ */
+function confessions(state: GameState, content: Content, meId: string, t: { id: string; factionId: string }, count: number, exact: boolean) {
+  const known = new Set((state.beliefs[meId] ?? []).map((b) => b.fact));
+  const facts = (state.beliefs[t.id] ?? [])
+    .filter((b) => !known.has(b.fact))
+    .sort((a, b) => (b.topic === "war" ? 1 : 0) - (a.topic === "war" ? 1 : 0))
+    .slice(0, count)
+    .map((b) => ({ fact: b.fact, accuracy: exact ? b.accuracy : ("approximate" as const), topic: b.topic }));
+  const faction = content.factions[t.factionId];
+  if (facts.length === 0 && faction && state.factions[t.factionId]) {
+    const troubles = troublesOf(state, content, t.factionId);
+    const fact = troubles.length
+      ? `포로의 말로는 ${faction.name} 쪽 사정이 이렇다: ${troubles.map((x) => x.text).join(", ")}`
+      : `포로의 말로는 ${faction.name} 쪽은 아직 버틸 만하다`;
+    if (!known.has(fact)) facts.push({ fact, accuracy: "approximate" as const, topic: TROUBLE_TOPIC });
+  }
+  return facts;
 }
 
 const takePrisoner = defineTool({
@@ -204,8 +235,14 @@ const handlePrisoner = defineTool({
     const me = state.characters[state.playerId]!;
     const t = state.characters[input.target];
     if (!c) return { ok: false, error: "이 월드에는 포로 규칙이 없다." };
-    if (!t || t.dead || !t.captive || !me.factionId || t.captive.by !== me.factionId || t.captive.zone !== state.playerZone) {
-      return { ok: false, error: "여기 우리 무리가 가둔 포로가 아니다." };
+    // 끌고 다니는 포로 (12-178): 거점에 닿기 전에도 그 자리에서 캐묻거나 풀어 줄 수 있다
+    const towed = !!t && !t.dead && state.companions.includes(t.id) && state.bonds[t.id]?.kind === "prisoner";
+    if (!towed && (!t || t.dead || !t.captive || !me.factionId || t.captive.by !== me.factionId || t.captive.zone !== state.playerZone)) {
+      return { ok: false, error: "여기 우리 무리가 가둔 포로도, 끌고 다니는 포로도 아니다." };
+    }
+    if (!t) return { ok: false, error: "없는 사람이다." };
+    if (towed && input.action !== "interrogate" && input.action !== "release") {
+      return { ok: false, error: "끌고 다니는 포로는 그 자리에서 심문하거나 풀어 줄 수만 있다. 회유·몸값·노역은 우리 거점에 데려간 뒤에." };
     }
     const name = playerCalls(state, content, t.id);
     const theirs = t.factionId;
@@ -230,15 +267,12 @@ const handlePrisoner = defineTool({
         store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: -2, affection: -1, respect: 0 }, reason: "심문" });
       }
       if (r.outcome !== "miss") {
-        // 그 사람이 아는 것 중 주인공이 모르는 것 (코드가 고른다, 원칙 2·4)
-        const known = new Set((state.beliefs[me.id] ?? []).map((b) => b.fact));
-        const facts = (state.beliefs[t.id] ?? []).filter((b) => !known.has(b.fact)).sort((a, b) => (b.topic === "war" ? 1 : 0) - (a.topic === "war" ? 1 : 0));
-        const take = facts.slice(0, r.outcome === "success" ? 2 : 1);
+        const take = confessions(store.getState(), content, me.id, t, r.outcome === "success" ? 2 : 1, r.outcome === "success");
         for (const b of take) {
           store.append({
             type: "belief_added",
             characterId: me.id,
-            belief: { id: `b_${store.getState().nextBeliefNo}`, fact: b.fact, source: "report", accuracy: r.outcome === "success" ? b.accuracy : "approximate", learnedAt: state.time, ...(b.topic ? { topic: b.topic } : {}) },
+            belief: { id: `b_${store.getState().nextBeliefNo}`, fact: b.fact, source: "report", accuracy: b.accuracy, learnedAt: state.time, ...(b.topic ? { topic: b.topic } : {}) },
           });
           lines.push(`털어놓은 것: ${b.fact}`);
         }
@@ -258,9 +292,10 @@ const handlePrisoner = defineTool({
         lines.push(`회유: ${CHECK_OUTCOME_LABELS[r.outcome]}. ${r.outcome === "partial" ? "마음이 흔들리지만 아직은 아니다." : "고개를 돌렸다."}`);
       }
     } else if (input.action === "release") {
-      store.append({ type: "npc_released", npcId: t.id });
+      if (towed) store.append({ type: "companion_left", characterId: t.id, reason: "풀어 줌" });
+      else store.append({ type: "npc_released", npcId: t.id });
       store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: 2, affection: 1, respect: 0 }, reason: "풀어 줌" });
-      if (theirs && theirs !== me.factionId && state.factions[theirs]) {
+      if (theirs && me.factionId && theirs !== me.factionId && state.factions[theirs]) {
         const now = disposition(content, theirs, me.factionId, state);
         if (now < 3) store.append({ type: "faction_disposition_changed", from: theirs, to: me.factionId, value: now + 1 });
       }
@@ -284,7 +319,7 @@ const handlePrisoner = defineTool({
         lines.push(`몸값을 받고 ${josa(name, "을/를")} 돌려보냈다${pay > 0 ? "" : " (그 무리는 낼 것이 없었다)"}.`);
       }
     } else {
-      const labor = !t.captive.labor;
+      const labor = !t.captive?.labor;
       store.append({ type: "prisoner_labor", npcId: t.id, labor });
       if (labor) store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: -1, affection: -1, respect: 0 }, reason: "노역" });
       lines.push(labor ? `${josa(name, "을/를")} 노역에 부린다. 무리가 날마다 조금 얻는다.` : `${name}의 노역을 멈췄다.`);

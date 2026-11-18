@@ -452,7 +452,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       return { id, name: playerCalls(state, content, id), bondLabel: bond ? BOND_LABELS[bond.kind] : "", note, apart: !!apart, states: c ? symptomViews(scenario, c) : [] };
     }),
     debts: Object.entries(player.debts ?? {}).map(([f, n]) => ({ name: content.factions[f]?.name ?? f, amount: n })),
-    resolve: resolveLine(state),
+    resolve: resolveLine(state, content),
     loan: (() => {
       const m = activeMissionOf(state.missions, player.id);
       const loan = m ? state.loans?.[m.id] : undefined;

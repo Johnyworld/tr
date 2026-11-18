@@ -27,7 +27,9 @@ describe("다짐", () => {
     expect(v.kind).toBe("revenge");
     expect(v.target).toBe("c_cheolgu");
     expect(v.source).toBe("scenario");
-    expect(buildPlayerView(w.state(), content).resolve).toContain("염철구");
+    // 이름을 모르는 원수: 호칭으로 부른다 (비극의 고리, 이름은 이야기로 알게 된다)
+    expect(buildPlayerView(w.state(), content).resolve).toContain("화상 자국");
+    expect(buildPlayerView(w.state(), content).resolve).not.toContain("염철구");
     expect(runCommand("?임무", { state: w.state(), content, summaries: [] })).toContain("다짐");
     expect(w.sceneForGm()).toContain("주인공의 다짐");
     // 한 번만 세운다
@@ -44,7 +46,7 @@ describe("다짐", () => {
     if (r.ok) expect(r.resultText).toContain("다짐을 이뤘다");
     expect(currentResolve(w.state())).toBeNull();
     expect(me(w).xp).toBeGreaterThan(xp);
-    expect(resolveChronicle(w.state(), me(w).id)[0]).toContain("이룬 다짐");
+    expect(resolveChronicle(w.state(), content, me(w).id)[0]).toContain("이룬 다짐");
   });
 
   it("갚기는 내려놓을 수 있고, 이룬 것으로 친다", () => {
@@ -93,13 +95,17 @@ describe("다짐의 단계 (12-164)", () => {
     const rumor = full.storylets.rp_revenge_rumor!;
     const glimpse = full.storylets.rp_revenge_glimpse!;
     expect(conditionsMet(w.state(), full, rumor, w.state().time)).toBe(true);
+    expect(storyletVars(w.state(), full, {}).target).toBe("목에 화상 자국 있는 약탈조장");
+    // 그 이름을 알게 된다
+    const named = applyEffect(w.ctx(), { reveal_name: { who: "foe" } } as StoryletEffect, { foe: "c_cheolgu" }, {}, "테스트");
+    expect(named.line).toContain("염철구");
     expect(storyletVars(w.state(), full, {}).target).toBe("염철구");
     const out = applyEffect(w.ctx(), { resolve_step: { text: "{target:이/가} 어디 있는지 말을 들었다" } } as StoryletEffect, {}, storyletVars(w.state(), full, {}), "테스트");
     expect(out.line).toContain("한 걸음");
     expect(currentResolve(w.state())).toMatchObject({ stage: 1, step: "염철구가 어디 있는지 말을 들었다" });
     expect(conditionsMet(w.state(), full, rumor, w.state().time)).toBe(false); // 0단계 이야기는 닫힌다
     expect(conditionsMet(w.state(), full, glimpse, w.state().time)).toBe(true);
-    expect(buildPlayerView(w.state(), full).resolve).toContain("— 염철구");
+    expect(buildPlayerView(w.state(), full).resolve).toBe("염철구에게 갚는다 — 염철구가 어디 있는지 말을 들었다");
     const role = { resolve_target: true } as Parameters<typeof castCandidates>[2];
     expect(castCandidates(w.state(), full, role)).toEqual(["c_cheolgu"]);
     // 다른 갈래의 이야기는 열리지 않는다

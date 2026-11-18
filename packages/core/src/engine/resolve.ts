@@ -1,3 +1,4 @@
+import { fill } from "../text.ts";
 import { z } from "zod";
 import { RESOLVE_CHECK_IDS, RESOLVE_TARGET } from "../scenario/schema.ts";
 export { RESOLVE_TARGET };
@@ -124,18 +125,19 @@ function finish(ctx: ToolContext, r: Resolve, outcome: ResolveOutcome): { line: 
   const rule = rules(ctx.content)!;
   const state = ctx.store.getState();
   const me = state.playerId;
-  ctx.store.append({ type: "resolve_ended", characterId: me, outcome });
+  // 기록에는 그때 부르던 대로 남긴다
+  ctx.store.append({ type: "resolve_ended", characterId: me, outcome, text: resolveText(state, ctx.content, r) });
   const displays: ToolDisplayEvent[] = [];
   if (outcome === "broken") {
     const c = changeCondition(ctx, me, rule.relief_track, 1, "resolve", "꺾인 다짐");
     if (c?.display) displays.push(c.display);
-    return { line: `(다짐이 꺾였다: ${r.text}. 이 상실을 장면에 담는다. 이야기가 새 다짐을 건넬 수 있다)`, displays };
+    return { line: `(다짐이 꺾였다: ${resolveText(state, ctx.content, r)}. 이 상실을 장면에 담는다. 이야기가 새 다짐을 건넬 수 있다)`, displays };
   }
   const level = gainResolveXp(ctx, me, rule.xp);
   const c = changeCondition(ctx, me, rule.relief_track, -1, "resolve", "이룬 다짐");
   if (c?.display) displays.push(c.display);
   const how = outcome === "let_go" ? "내려놓았다" : outcome === "by_others" ? "이뤘다 (남의 손으로)" : "이뤘다";
-  return { line: `(다짐을 ${how}: ${r.text}. 이 순간을 이번 장면의 무게 중심으로 연출한다.${level ? ` ${level}` : ""})`, displays };
+  return { line: `(다짐을 ${how}: ${resolveText(state, ctx.content, r)}. 이 순간을 이번 장면의 무게 중심으로 연출한다.${level ? ` ${level}` : ""})`, displays };
 }
 
 /** tool이 끝날 때마다: 지금 다짐을 이뤘는지·꺾였는지 본다. 무리·구역 다짐이면 그 전투에 낀 것을 기억한다 */
@@ -181,7 +183,7 @@ export function setResolve(ctx: ToolContext, input: { kind: string; target?: str
     characterId: me.id,
     resolve: { kind: kind.id, target: input.target ?? null, target2: input.target2 ?? null, n: input.n ?? null, text: input.text, since: state.time, source, involved: false, stage: 0, step: null },
   });
-  return `새 다짐: ${input.text}`;
+  return `새 다짐: ${resolveText(ctx.store.getState(), ctx.content)}`;
 }
 
 /** 시나리오의 다짐: 역할에 resolve가 있으면 그것, 없으면 배경(history)을 resolve.from_history로 읽는다 */
@@ -193,7 +195,8 @@ export function scenarioResolve(ctx: ToolContext, roleId: string): string | null
   const state = ctx.store.getState();
   for (const part of role.history ?? []) {
     if (part.kind === "enemy" && rule.from_history.enemy && ctx.content.npcs[part.target]) {
-      return setResolve(ctx, { kind: rule.from_history.enemy, target: part.target, text: `${ctx.content.npcs[part.target]!.name}에게 갚는다` }, "scenario");
+      // 대상은 주인공이 부르는 말로 그때그때 (이름을 모르면 호칭, 알게 되면 이름)
+      return setResolve(ctx, { kind: rule.from_history.enemy, target: part.target, text: "{target}에게 갚는다" }, "scenario");
     }
   }
   const family = state.family[0];
@@ -205,10 +208,22 @@ export function scenarioResolve(ctx: ToolContext, roleId: string): string | null
   return null;
 }
 
+/** 다짐 한 줄 (대상 자리 {target}을 주인공이 지금 부르는 말로 채운다) */
+export function resolveText(state: GameState, content: Content, r: Resolve | null | undefined = currentResolve(state)): string {
+  if (!r) return "";
+  const t = r.target && state.characters[r.target] ? playerCalls(state, content, r.target) : (resolveTargetNameOf(state, content, r.target) ?? "");
+  return fill(r.text, { target: t });
+}
+
 /** 다짐 한 줄 (상태 화면·?임무): 다짐과 지금 어디까지 왔는지 */
-export function resolveLine(state: GameState): string | null {
+export function resolveLine(state: GameState, content: Content): string | null {
   const r = currentResolve(state);
-  return r ? `${r.text}${r.step ? ` — ${r.step}` : ""}` : null;
+  return r ? `${resolveText(state, content, r)}${r.step ? ` — ${r.step}` : ""}` : null;
+}
+
+function resolveTargetNameOf(state: GameState, content: Content, t: string | null): string | null {
+  if (!t) return null;
+  return content.locations[t]?.name ?? content.factions[t]?.name ?? content.scenario.rank_ladder.find((x) => x.id === t)?.label ?? null;
 }
 
 /** 다짐의 대상을 주인공이 부르는 말 (사람·구역·무리·등급) */
@@ -235,7 +250,7 @@ export function describeResolve(state: GameState, content: Content): string[] {
   const kind = kindOf(content, r.kind);
   const who = r.target && state.characters[r.target] ? ` (대상: ${playerCalls(state, content, r.target)})` : "";
   return [
-    `주인공의 다짐: ${r.text}${who} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
+    `주인공의 다짐: ${resolveText(state, content, r)}${who} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
   ];
 }
 
@@ -260,11 +275,11 @@ const resolveTool = defineTool({
 export const RESOLVE_TOOLS = [resolveTool] as const;
 
 /** 연대기 줄: 그 캐릭터가 이루거나 꺾거나 내려놓은 다짐 */
-export function resolveChronicle(state: GameState, characterId: string): string[] {
+export function resolveChronicle(state: GameState, content: Content, characterId: string): string[] {
   const label: Record<ResolveOutcome, string> = { achieved: "이룬 다짐", let_go: "내려놓은 다짐", broken: "꺾인 다짐", by_others: "남의 손으로 이룬 다짐" };
   const ended = (state.resolveLog ?? []).filter((x) => x.characterId === characterId).map((x) => `${label[x.outcome]}: ${x.text}${x.note ? ` (${x.note})` : ""}`);
   // 죽을 때까지 품고 있던 다짐
   const open = state.resolves?.[characterId];
-  return open && state.characters[characterId]?.dead ? [...ended, `못 이룬 다짐: ${open.text}`] : ended;
+  return open && state.characters[characterId]?.dead ? [...ended, `못 이룬 다짐: ${resolveText(state, content, open)}`] : ended;
 }
 

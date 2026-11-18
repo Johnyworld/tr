@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 67;
+export const SAVE_SCHEMA_VERSION = 68;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -543,6 +543,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("infiltration_started"), zone: z.string(), owner: z.string(), goal: z.string() }),
     z.strictObject({ type: z.literal("infiltration_changed"), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean() }),
     z.strictObject({ type: z.literal("infiltration_ended"), how: z.enum(["out", "caught", "gone"]) }),
+    /** 얼굴만 안다 (이름은 모른다): 배경의 원수처럼 장면 밖에서 아는 얼굴 */
+    z.strictObject({ type: z.literal("face_known"), characterId: z.string(), targetId: z.string() }),
     // 큰 재난 (12-169)
     z.strictObject({ type: z.literal("disaster_scheduled"), kind: z.string(), zone: z.string().nullable(), faction: z.string().nullable(), day: z.number().int() }),
     z.strictObject({ type: z.literal("disaster_prepared") }),
@@ -556,7 +558,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("facility_broken"), zone: z.string(), facility: z.string() }),
     // 다짐 (12-164)
     z.strictObject({ type: z.literal("resolve_set"), characterId: z.string(), resolve: resolveSchema }),
-    z.strictObject({ type: z.literal("resolve_ended"), characterId: z.string(), outcome: z.enum(["achieved", "let_go", "broken", "by_others"]) }),
+    z.strictObject({ type: z.literal("resolve_ended"), characterId: z.string(), outcome: z.enum(["achieved", "let_go", "broken", "by_others"]), text: z.string().optional() }),
     z.strictObject({ type: z.literal("resolve_involved"), characterId: z.string() }),
     z.strictObject({ type: z.literal("resolve_stepped"), characterId: z.string(), text: z.string() }),
     z.strictObject({ type: z.literal("resolve_note"), characterId: z.string(), note: z.string() }),
@@ -1399,6 +1401,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "infiltration_ended":
       next.infiltration = null;
       return next;
+    case "face_known": {
+      const had = next.met[event.characterId] ?? [];
+      if (!had.includes(event.targetId)) next.met = { ...next.met, [event.characterId]: [...had, event.targetId] };
+      return next;
+    }
     case "disaster_scheduled":
       next.disaster = { kind: event.kind, zone: event.zone, faction: event.faction, day: event.day, phase: "omen", until: event.day, prepared: 0 };
       return next;
@@ -1441,7 +1448,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "resolve_ended": {
       const r = next.resolves?.[event.characterId];
-      if (r) next.resolveLog = [...(next.resolveLog ?? []), { characterId: event.characterId, text: r.text, outcome: event.outcome, at: state.time, note: next.resolveNote ?? null }];
+      if (r) next.resolveLog = [...(next.resolveLog ?? []), { characterId: event.characterId, text: event.text ?? r.text, outcome: event.outcome, at: state.time, note: next.resolveNote ?? null }];
       next.resolves = { ...(next.resolves ?? {}), [event.characterId]: null };
       next.resolveNote = null;
       return next;

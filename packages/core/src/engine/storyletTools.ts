@@ -424,6 +424,17 @@ export function applyEffect(
     const growthNote = gainMeritXp(ctx, playerId, effect.merit);
     return { line: `공적 ${effect.merit > 0 ? "+" : ""}${effect.merit}.` + (growthNote ? ` ${growthNote}` : "") };
   }
+  if ("reveal_name" in effect) {
+    const id = whoOf(ctx, effect.reveal_name.who, cast);
+    const c = id ? state.characters[id] : undefined;
+    if (!id || !c || (state.known[playerId] ?? []).includes(id)) return {};
+    const alias = playerCalls(state, content, id);
+    store.append({ type: "name_learned", characterId: playerId, targetId: id });
+    const fact = `${alias}의 이름은 ${c.name}`;
+    const now = store.getState();
+    store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${now.nextBeliefNo}`, fact: sentence(fact), source: "report", accuracy: "exact", learnedAt: now.time } });
+    return { line: `(이름을 알게 됐다: ${fact}. 이제 이 이름으로 부른다)`, display: { type: "belief", fact, sourceLabel: "이름" } };
+  }
   if ("disaster_prepare" in effect) {
     const line = prepareDisaster(ctx);
     return line ? { line: `(${line})` } : {};

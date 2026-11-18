@@ -155,7 +155,9 @@ describe("해금 조건", () => {
     const w = m.create("mcp", "role_a_grunt", choice);
     const st = w.state();
     expect(st.background.map((b) => b.part.kind)).toEqual(["loss", "enemy"]);
-    expect(st.known.player).toContain("c_cheolgu");
+    // 원수는 얼굴만 안다: 이름은 이야기로 알게 된다
+    expect(st.known.player ?? []).not.toContain("c_cheolgu");
+    expect(st.met.player).toContain("c_cheolgu");
     expect(st.beliefs.player!.map((b) => b.fact).join(" / ")).toContain("청솔형제단 순찰조가 나를 구했다");
     w.close();
   });

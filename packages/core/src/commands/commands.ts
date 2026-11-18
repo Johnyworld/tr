@@ -327,7 +327,7 @@ const mission: CommandDef = {
     const promises = promiseLines(state, content);
     if (promises.length) lines.push("", "지킬 약속", ...promises.map((l) => `  ${l}`));
     // 다짐 (12-164): 임무 아래
-    const vow = resolveLine(state);
+    const vow = resolveLine(state, content);
     if (vow) lines.push("", `다짐  ${vow}`);
     return lines.join("\n");
   },

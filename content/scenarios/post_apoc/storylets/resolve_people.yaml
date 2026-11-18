@@ -12,28 +12,31 @@
   when:
     resolve: { kinds: [revenge], stage: 0 }
     segments: [evening, night]
-  setup: "술 냄새 나는 목소리들 사이에서 {target}이라는 이름이 지나간다. 고개를 돌리자 말하던 사람이 입을 다문다."
-  ai_direction: "말한 사람은 {target:을/를} 직접 알지는 못한다. 들은 이야기를 옮길 뿐이다. 주인공이 왜 그 이름에 반응하는지 상대는 모른다."
+  cast:
+    foe: { resolve_target: true, enter: false }
+  setup: "술 냄새 나는 목소리들 사이에서 누군가 {foe} 이야기를 꺼낸다. 고개를 돌리자 말하던 사람이 입을 다문다."
+  ai_direction: "말한 사람은 {foe:을/를} 직접 알지는 못한다. 들은 이야기를 옮길 뿐이다. 주인공이 왜 그 이야기에 반응하는지 상대는 모른다. 주인공이 아직 이름을 모르면, 이름은 판정이 성공했을 때만 나온다 (결과의 '이름을 알게 됐다')."
   choices:
     - id: press
-      label: 그 이름을 어디서 들었는지 캐묻는다
+      label: 그 사람을 뭐라고 부르는지 캐묻는다
       check: persuade
       outcomes:
         success:
-          - resolve_step: { text: "{target:이/가} 어디 있는지 말을 들었다" }
-          - belief: { fact: "{target}에 대한 말을 들었다. 요즘 어디서 무엇을 하는지 대략 안다", source: rumor }
+          - reveal_name: { who: foe }
+          - resolve_step: { text: "그 이름과 있는 곳을 들었다" }
         partial:
-          - resolve_step: { text: "{target}의 소문을 들었다" }
+          - resolve_step: { text: "{foe}의 소문을 들었다" }
         miss:
-          - belief: { fact: "누군가 {target}의 이름을 말했지만 더는 들을 수 없었다", source: rumor }
+          - belief: { fact: "누군가 {foe} 이야기를 했지만 더는 들을 수 없었다", source: rumor }
     - id: listen
       label: 모르는 척 귀만 기울인다
       check: sense_danger
       outcomes:
         success:
-          - resolve_step: { text: "{target:이/가} 어디 있는지 말을 들었다" }
+          - reveal_name: { who: foe }
+          - resolve_step: { text: "그 이름과 있는 곳을 들었다" }
         partial:
-          - belief: { fact: "{target:이/가} 아직 살아 있다는 말이 돈다", source: rumor }
+          - belief: { fact: "{foe:이/가} 아직 살아 있다는 말이 돈다", source: rumor }
         miss: []
 
 - id: rp_revenge_glimpse

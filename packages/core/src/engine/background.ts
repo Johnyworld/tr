@@ -44,7 +44,11 @@ export function applyBackground(ctx: ToolContext, parts: readonly HistoryPart[])
     // 같은 사람이 부품 여럿에 나올 수 있다 (가족을 죽인 자이자 원수): 이미 아는 이름은 다시 배우지 않는다
     const knows = (who: string, whom: string) => (store.getState().known[who] ?? []).includes(whom);
     if (person && state.characters[person] && content.npcs[person]) {
-      if (!knows(me, person)) store.append({ type: "name_learned", characterId: me, targetId: person });
+      // 얼굴만 아는 원수 (name_known: false): 이름은 플레이 중에 알게 된다
+      const nameKnown = part.kind === "loss" || part.kind === "enemy" ? part.name_known !== false : true;
+      if (!nameKnown) {
+        if (!(store.getState().met[me] ?? []).includes(person)) store.append({ type: "face_known", characterId: me, targetId: person });
+      } else if (!knows(me, person)) store.append({ type: "name_learned", characterId: me, targetId: person });
       if (part.kind === "enemy" && part.knows_you) {
         if (!knows(person, me)) store.append({ type: "name_learned", characterId: person, targetId: me });
         store.append({ type: "relation_changed", from: person, to: me, delta: { trust: -2, affection: -1, respect: 0 }, reason: "지난 일 (배경)" });

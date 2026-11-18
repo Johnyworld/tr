@@ -558,6 +558,8 @@ export function createContentSchemas(s: Scenario) {
      * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (지금 다짐은 바뀐다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
      * text는 다짐 한 줄 (문장의 자리를 쓸 수 있다)
      */
+    /** 주인공이 그 배역의 이름을 알게 된다 (얼굴만 알던 원수 등). 이미 알면 아무 일도 없다 */
+    z.strictObject({ reveal_name: z.strictObject({ who: z.string().min(1) }) }),
     /** 다가오는 재난에 대비한다 (12-169): 전조 동안에만. 한 번에 피해 25%, 최대 50% 준다 */
     z.strictObject({ disaster_prepare: z.literal(true) }),
     /** 인물의 자기 일에 끼어든다 (12-168): delta만큼 앞당기거나 늦춘다 (다 차면 그 자리에서 끝난다), stop이면 끝 효과 없이 그만두게 한다 */

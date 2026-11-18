@@ -76,7 +76,7 @@
           - belief: { fact: 도망치다 배낭 끈이 끊겨 비상식량을 떨어뜨렸다. 몸은 빠져나왔다, source: seen }
         miss:
           - relation: { who: boss, axis: affection, delta: -2 }
-          - belief: { fact: "막다른 골목에 몰렸다. 염철구가 다음엔 이 정도로 안 끝난다고 했다", source: seen }
+          - belief: { fact: "막다른 골목에 몰렸다. {boss:이/가} 다음엔 이 정도로 안 끝난다고 했다", source: seen }
 
 - id: wl_clinic_scav
   title: 약제실의 다른 손

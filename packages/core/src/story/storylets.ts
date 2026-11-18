@@ -1,7 +1,7 @@
 import { disasterNear } from "../engine/disasters.ts";
 import { agendaOf, agendaShowing } from "../engine/agenda.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
-import { currentResolve, resolveTargetName } from "../engine/resolve.ts";
+import { currentResolve, resolveTargetName, resolveText } from "../engine/resolve.ts";
 import { closeTo, mournedBy, recentlyDeadComrade } from "../engine/legacy.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { standingInFaction } from "../game/politics.ts";
@@ -476,7 +476,7 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   // 다짐 (12-164)
   const vow = currentResolve(state);
   if (vow) {
-    vars.resolve = vow.text;
+    vars.resolve = resolveText(state, content, vow);
     const target = resolveTargetName(state, content);
     if (target) vars.target = target;
   }

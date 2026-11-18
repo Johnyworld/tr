@@ -18,12 +18,16 @@ export function historyPartSchema() {
       who: text(40).describe("잃은 사람들 (예: 어머니와 마을 사람 열 명). 이름 없이 부르는 말"),
       by: z.string().nullable().describe("그 일을 한 세력 id 또는 인물 id. 모르거나 감염체면 null"),
       where: z.string().nullable().describe("그 일이 있었던 구역 id. 도시 밖이면 null"),
+      /** 그 사람의 이름을 아는지 (인물일 때). false면 얼굴만 안다: 호칭으로 부르고, 이름은 플레이 중에 알게 된다 */
+      name_known: z.boolean().optional(),
     }),
     z.strictObject({
       kind: z.literal("enemy"),
       target: z.string().describe("원수: 인물 id 또는 세력 id"),
       why: text(80).describe("왜 원수인지 한 문장"),
       knows_you: z.boolean().describe("원수도 주인공을 알아보는지 (쫓기는 사이)"),
+      /** 원수의 이름을 아는지. false면 얼굴만 안다: 호칭으로 부르고, 이름은 플레이 중에 알게 된다 */
+      name_known: z.boolean().optional(),
     }),
     z.strictObject({
       kind: z.literal("kin_alive"),
@@ -81,18 +85,18 @@ export function checkHistory(content: Content, parts: readonly HistoryPart[], ow
 }
 
 /** 부르는 이름 (세력 이름 또는 인물 이름) */
-export function whoName(content: Content, id: string | null): string {
+export function whoName(content: Content, id: string | null, nameKnown = true): string {
   if (!id) return "누군지 모를 자들";
-  return content.factions[id]?.name ?? content.npcs[id]?.name ?? id;
+  return content.factions[id]?.name ?? (nameKnown ? content.npcs[id]?.name : content.npcs[id]?.alias) ?? id;
 }
 
 /** 배경 한 줄 (주인공이 아는 대로) */
 export function describeHistoryPart(content: Content, p: HistoryPart): string {
   switch (p.kind) {
     case "loss":
-      return `${josa(p.who, "을/를")} 잃었다. ${p.by ? `${whoName(content, p.by)}의 짓이다` : "누구 짓인지 모른다"}${p.where ? ` (${content.locations[p.where]?.name ?? p.where})` : ""}`;
+      return `${josa(p.who, "을/를")} 잃었다. ${p.by ? `${whoName(content, p.by, p.name_known !== false)}의 짓이다` : "누구 짓인지 모른다"}${p.where ? ` (${content.locations[p.where]?.name ?? p.where})` : ""}`;
     case "enemy":
-      return `원수: ${whoName(content, p.target)}. ${sentence(p.why)}${p.knows_you ? " 저쪽도 나를 안다" : " 저쪽은 나를 모른다"}`;
+      return `원수: ${whoName(content, p.target, p.name_known !== false)}${p.name_known === false ? " (이름은 모른다)" : ""}. ${sentence(p.why)}${p.knows_you ? " 저쪽도 나를 안다" : " 저쪽은 나를 모른다"}`;
     case "kin_alive":
       return `${josa(p.label, "이/가")} 살아 있다. ${content.locations[p.zone]?.name ?? p.zone}에서 기다린다`;
     case "seeking":

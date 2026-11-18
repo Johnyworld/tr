@@ -29,7 +29,7 @@ import { attracted, romanceAllowed } from "./romance.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { describeRomanceForGm } from "./romance.ts";
 import { describeCaptivityForGm } from "./captivity.ts";
-import { describeHistoryPart } from "../game/background.ts";
+import { describeHistoryPart, type HistoryPart } from "../game/background.ts";
 import { occupationOf, occupationTitle } from "../game/occupation.ts";
 import { dayOf } from "../rules/time.ts";
 import { describeGear } from "./gear.ts";
@@ -161,7 +161,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(player.past ? [`과거 배경: ${player.past.label} — ${player.past.summary} (붕괴 전에 하던 일. 몸에 밴 솜씨와 버릇, 아는 사람과 기억에 묻어난다)`] : []),
       ...(player.motive ? [`동기: ${player.motive.label} — ${player.motive.summary} (이 사람을 움직이는 것. 장면과 선택, 독백에 묻어나게. 대신 행동을 정하지는 않는다)`] : []),
       ...(state.background.length && state.playerId === "player"
-        ? [`지난 일 (세계의 사실, 주인공이 아는 대로): ${state.background.map((e) => describeHistoryPart(content, e.part)).join(" / ")}`]
+        ? [`지난 일 (세계의 사실, 주인공이 아는 대로): ${state.background.map((e) => describeHistoryPart(content, nameNowKnown(state, e.part))).join(" / ")}`]
         : []),
       describeContentRating(state, content),
       describeDialogueStyle(state),
@@ -622,3 +622,10 @@ function standingLines(state: GameState, content: Content): string[] {
 
 /** 무리 안의 눈 줄을 띄우는 사람 수 */
 const STANDING_NOTE_AT = 3;
+
+/** 얼굴만 알던 사람의 이름을 그 뒤에 알게 됐으면, 지난 일도 이름으로 (비극의 고리의 원수) */
+function nameNowKnown(state: GameState, part: HistoryPart): HistoryPart {
+  if ((part.kind !== "loss" && part.kind !== "enemy") || part.name_known !== false) return part;
+  const who = part.kind === "loss" ? part.by : part.target;
+  return who && (state.known[state.playerId] ?? []).includes(who) ? { ...part, name_known: true } : part;
+}

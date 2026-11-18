@@ -853,6 +853,10 @@ faces:
     gender: female
     seed: 2208
     colorize: true
+    # 화면 왼쪽 광대와 턱 사이를 검은 머리카락 덩어리가 덮어 어색하다: 이 수정만 따로 한다
+    touchup: >-
+      Remove the solid black shape covering her cheek and jaw on the left side of the image, and show her bare cheek
+      there in the same skin tone as the other cheek, with a light flat shadow under the cheekbone.
     subject: >-
       a southeast asian woman in her early thirties living in korea, warm brown skin, long black hair tied
       back, calm resilient expression, wearing a washed-out green t-shirt
@@ -872,3 +876,23 @@ faces:
     subject: >-
       a rebellious 18 year old korean girl, faded dyed red hair in a messy shoulder-length cut, a bandage
       across her nose, smirking, wearing a torn band t-shirt
+
+  # 10대 여성 다시 뽑기 (d_f21·d_f29가 20대처럼 나와 더 앳되게 새로 추가)
+  d_f31:
+    style: D
+    gender: female
+    seed: 2223
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks,
+      small delicate features, slim small frame, short choppy self-cut black hair with uneven bangs, wary big eyes,
+      wearing an oversized faded hoodie that swallows her shoulders
+  d_f32:
+    style: D
+    gender: female
+    seed: 2231
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, chubby round cheeks,
+      small nose and mouth, slim small frame, black hair in two long braided pigtails hanging over her shoulders,
+      freckles across her nose, shy nervous look, wearing a too-big grey t-shirt

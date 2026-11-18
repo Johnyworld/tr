@@ -55,6 +55,8 @@ type Character = {
   grade?: Grade;
   /** 화풍의 colorize 지시로 색을 입힌다 (흑백·회색조로 그려진 그림) */
   colorize?: boolean;
+  /** 마지막에 이 지시 하나만으로 Qwen 편집을 한 번 더 한다 (특정 부분만 고칠 때. 다른 지시와 섞으면 잘 안 먹힌다) */
+  touchup?: string;
   /** 자르는 영역 배율 (기본 1). 고개를 돌려 얼굴 너비가 좁게 재지는 얼굴은 1보다 크게 (얼굴이 작아진다) */
   crop_scale?: number;
   /** 여백이 모자라지 않아도 정리(cleanup)를 한다: 원본에 액자·테두리가 그려진 그림. 글이면 정리 지시에 덧붙인다 */
@@ -416,7 +418,13 @@ async function finishWorkflow(rawName: string, size: { width: number; height: nu
       col_rgb: { class_type: "SplitImageWithAlpha", inputs: { image: ["col_decode", 0] } },
     });
     image = ["col_rgb", 0];
-  } else if (ch.colorize && !colorizeHere) console.error(`  ! ${prefix}: colorize는 화풍의 colorize 지시와 cleanup 모델이 있어야 합니다`);
+  }
+  if (ch.touchup && cleanup) {
+    // 특정 부분 고치기: 이 지시만으로 한 번 더 편집한다
+    Object.assign(wf, qwenEdit("tu", image, ch.touchup.trim()));
+    image = ["tu_rgb", 0];
+  }
+  if (ch.colorize && !colorizeHere) console.error(`  ! ${prefix}: colorize는 화풍의 colorize 지시와 cleanup 모델이 있어야 합니다`);
   const grade = ch.grade ?? style.grade;
   const gradeRef = grade ? join(artDir, grade.ref) : null;
   if (grade && gradeRef && existsSync(gradeRef)) {
@@ -597,4 +605,30 @@ function sortKeys(o: Record<string, string>) {
 function fail(msg: string): never {
   console.error(msg);
   process.exit(1);
+}
+
+/** Qwen Image 편집 노드들 (이름 앞에 prefix). 결과는 <prefix>_rgb */
+function qwenEdit(prefix: string, image: [string, number], prompt: string): Record<string, Node> {
+  const c = cleanup!;
+  const n = (k: string) => `${prefix}_${k}`;
+  return {
+    [n("unet")]: { class_type: "UNETLoader", inputs: { unet_name: c.unet, weight_dtype: "default" } },
+    [n("cache")]: { class_type: "QwenImage21Cache", inputs: { model: [n("unet"), 0], device: "auto", dtype: "default" } },
+    [n("clip")]: { class_type: "CLIPLoader", inputs: { clip_name: c.clip, type: "qwen_image", device: "default" } },
+    [n("vae")]: { class_type: "VAELoader", inputs: { vae_name: c.vae } },
+    [n("enc")]: {
+      class_type: "TextEncodeQwenImage21",
+      inputs: { clip: [n("clip"), 0], vae: [n("vae"), 0], prompt, negative_prompt: "", resolution: 1024, "images.image_1": image },
+    },
+    [n("guider")]: { class_type: "CFGGuider", inputs: { model: [n("cache"), 0], positive: [n("enc"), 0], negative: [n("enc"), 1], cfg: 1 } },
+    [n("noise")]: { class_type: "RandomNoise", inputs: { noise_seed: c.seed } },
+    [n("sampler")]: { class_type: "KSamplerSelect", inputs: { sampler_name: "euler" } },
+    [n("sigmas")]: { class_type: "ManualSigmas", inputs: { sigmas: "1.0, 0.978453, 0.95418, 0.926626, 0.89508, 0.845148, 0.704534, 0.414568, 0" } },
+    [n("sample")]: {
+      class_type: "SamplerCustomAdvanced",
+      inputs: { noise: [n("noise"), 0], guider: [n("guider"), 0], sampler: [n("sampler"), 0], sigmas: [n("sigmas"), 0], latent_image: [n("enc"), 2] },
+    },
+    [n("decode")]: { class_type: "VAEDecode", inputs: { samples: [n("sample"), 0], vae: [n("vae"), 0] } },
+    [n("rgb")]: { class_type: "SplitImageWithAlpha", inputs: { image: [n("decode"), 0] } },
+  };
 }

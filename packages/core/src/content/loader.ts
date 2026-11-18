@@ -482,7 +482,7 @@ export function checkStorylets(content: Content): string[] {
     }
     for (const text of texts) {
       for (const [, key] of text.matchAll(/\{([a-z_]+)(?::[^}]+)?\}/g)) {
-        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !(key === "departed" && hasMourner) && !(key === "bounty_by" && s.when.bounty) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
+        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !(key === "departed" && hasMourner) && !(key === "deceased" && s.when.funeral) && !(key === "bounty_by" && s.when.bounty) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
       }
     }
     for (const c of s.choices) {

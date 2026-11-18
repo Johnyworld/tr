@@ -43,3 +43,14 @@ export function inheritStashes(ctx: ToolContext, deadIds: string[]): string[] {
   }
   return lines;
 }
+
+/** 장례 (12-163): 사흘 안에 죽은 우리 무리의 이름 있는 사람 (가장 최근). 주인공이 그 죽음을 아는지는 묻지 않는다 (같은 무리에는 소식이 돈다) */
+export function recentlyDeadComrade(state: GameState, content: Content, at: number = state.time): string | null {
+  const me = state.characters[state.playerId];
+  if (!me?.factionId) return null;
+  const days = content.scenario.legacy?.funeral_days ?? 3;
+  const r = state.remains
+    .filter((x) => x.of !== state.playerId && !!content.npcs[x.of] && state.characters[x.of]?.factionId === me.factionId && at - x.diedAt <= days * 24 * 60)
+    .sort((a, b) => b.diedAt - a.diedAt)[0];
+  return r?.of ?? null;
+}

@@ -56,3 +56,29 @@ describe("유품과 이어지는 끈", () => {
     expect(storyletVars(s, content, { friend }).departed).toBeTruthy();
   });
 });
+
+describe("장례 (12-163)", () => {
+  it("사흘 안에 죽은 우리 무리 사람이 있으면 장례 이야기가 열리고, 가까웠던 사람이 남은 사람이 된다", async () => {
+    const full = loadRealContent();
+    const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-funeral-")), content: full, rngFactory: () => () => 0.99 }).create("mcp", "role_a_grunt");
+    const { conditionsMet } = await import("../story/storylets.ts");
+    const rites = full.storylets.fn_rites!;
+    const s0 = w.state();
+    const comrades = Object.values(s0.characters).filter((c) => c.id !== s0.playerId && full.npcs[c.id] && c.factionId === me(w).factionId && !c.dead);
+    const [dead, friend] = [comrades[0]!.id, comrades[1]!.id];
+    expect(w.runCheat("~time day").ok).toBe(true);
+    expect(conditionsMet(w.state(), full, rites, w.state().time)).toBe(false);
+    w.ctx().store.append({ type: "relation_changed", from: friend, to: dead, delta: { trust: 0, affection: 4, respect: 0 }, reason: "테스트" });
+    expect(w.runCheat(`~kill ${dead}`).ok).toBe(true);
+    // 유해는 도구 실행 전후로 남는다 (치트는 도구 밖이라 직접 남긴다)
+    w.ctx().store.append({ type: "remains_left", remains: { of: dead, holder: `remains_${dead}`, zone: w.state().playerZone!, diedAt: w.state().time, buriedAt: null, marker: null } });
+    const s = w.state();
+    expect(conditionsMet(s, full, rites, s.time)).toBe(true);
+    const role = { bereaved: true } as Parameters<typeof castCandidates>[2];
+    expect(castCandidates(s, full, role)).toContain(friend);
+    expect(storyletVars(s, full, {}).deceased).toBeTruthy();
+    // 나흘이 지나면 닫힌다
+    expect(w.runCheat("~time +4d").ok).toBe(true);
+    expect(conditionsMet(w.state(), full, rites, w.state().time)).toBe(false);
+  });
+});

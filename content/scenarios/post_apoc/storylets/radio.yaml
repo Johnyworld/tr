@@ -1,0 +1,124 @@
+# 무전기 (12-163): 무전기를 가진 주인공이 밤에 주파수를 돌린다. 먼 곳의 소식, 다른 무리의 교신, 이름 모를 목소리.
+# 혈청의 출처(w_radio_static·w_radio_again, mystery_serum)와 겹치지 않게, 여기는 일상의 무전이다
+
+- id: rd_crosstalk
+  title: 섞여 든 교신
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    has_items: [radio]
+    segments: [evening, night]
+  setup: "잡음 사이로 낮은 목소리가 짧게 끊어 말한다. 호출 부호, 숫자, \"교대\", \"북쪽 담\". 우리 무리 목소리가 아니다."
+  ai_direction: "어느 무리인지는 엿들은 결과대로만 (판정 성공이면 대략 알아듣는다). 들은 것은 단편이다. 지어낸 계획을 덧붙이지 않는다."
+  choices:
+    - id: listen
+      label: 숨죽이고 끝까지 듣는다
+      check: sense_danger
+      outcomes:
+        success:
+          - overhear: { faction: enemy, source: seen }
+        partial:
+          - overhear: { faction: other, source: rumor }
+        miss:
+          - belief: { fact: "밤 무전에 다른 무리의 교신이 섞여 들었지만 알아듣지 못했다", source: seen }
+    - id: off
+      label: 배터리를 아끼려 끈다
+      effects: []
+
+- id: rd_music
+  title: 누군가 트는 노래
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    has_items: [radio]
+    segments: [night]
+  setup: "주파수 하나에서 노래가 나온다. 테이프가 늘어나 음이 군데군데 처진, 붕괴 전 가요다. 노래가 끝나면 누군가 다시 처음부터 튼다."
+  ai_direction: "트는 사람은 끝까지 말하지 않는다. 어디선가 누군가 살아서 매일 밤 같은 노래를 튼다는 것만. 가사를 인용하지 말고 분위기와 기억으로만."
+  choices:
+    - id: listen
+      label: 불을 끄고 끝까지 듣는다
+      effects:
+        - body: { track: nerves, delta: -1 }
+        - body: { track: fear, delta: -1 }
+    - id: call
+      label: 송신 버튼을 눌러 "듣고 있다"고 말해 본다
+      effects:
+        - zone_noise: 1
+        - belief: { fact: "밤마다 무전으로 같은 노래를 트는 사람이 있다. 말을 걸었지만 노래만 다시 시작됐다", source: seen }
+
+- id: rd_mayday
+  title: 구조 요청
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    has_items: [radio]
+    segments: [evening, night]
+  setup: "\"…누구 듣는 사람… 다리가 부러졌고… 물이 하루치…\" 숨이 가쁜 목소리가 위치를 말하다 잡음에 묻힌다."
+  ai_direction: "진짜 조난자일 수도, 사람을 꾀는 미끼일 수도 있다 (정하지 않는다. 찾아가면 그때 장면으로 spawn_extra). 위치는 대략의 방향만."
+  choices:
+    - id: answer
+      label: 대답하고 위치를 다시 묻는다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "무전으로 구조를 청한 사람이 있다. 목소리에 거짓은 없어 보였다. 강 건너 무너진 고가 근처라고 했다", source: seen }
+        partial:
+          - belief: { fact: "무전으로 구조를 청한 사람이 있다. 위치는 끝까지 듣지 못했다", source: seen }
+        miss:
+          - belief: { fact: "무전으로 구조를 청한 목소리 뒤에서 다른 사람의 숨소리를 들은 것 같다. 미끼일지 모른다", source: seen }
+    - id: ignore
+      label: 못 들은 걸로 한다
+      effects:
+        - body: { track: nerves, delta: 1, chance: 0.3 }
+
+- id: rd_numbers
+  title: 숫자를 읽는 남자
+  tags: [world]
+  repeatable: true
+  cooldown_days: 9
+  when:
+    has_items: [radio]
+    segments: [night]
+  setup: "같은 시각, 같은 주파수. 남자 목소리가 숫자 다섯 개씩을 천천히 읽고, \"이상\"으로 끝낸다. 사흘째 같은 시간이다."
+  ai_direction: "섬의 여자(혈청 미스터리)와는 다른 목소리다. 무엇인지 정해 주지 않는다. 적어 두면 나중에 무엇과 맞춰 볼 수 있을 것처럼만."
+  choices:
+    - id: write
+      label: 숫자를 받아 적는다
+      when: { has_items_any: [pen, pencil] }
+      check: history
+      outcomes:
+        success:
+          - belief: { fact: "밤 무전의 숫자 다섯 개 묶음은 옛 군 좌표 형식과 닮았다", source: seen }
+        partial:
+          - belief: { fact: "밤 무전의 남자는 매일 같은 시각에 숫자 다섯 개씩을 읽는다. 적어 두었다", source: seen }
+        miss:
+          - belief: { fact: "밤 무전의 숫자를 적었지만 아무 규칙도 보이지 않는다", source: seen }
+    - id: listen
+      label: 그냥 듣는다
+      effects:
+        - belief: { fact: "밤마다 숫자를 읽는 남자의 무전이 있다", source: seen }
+
+- id: rd_own_net
+  title: 우리 무리의 무전망
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    has_items: [radio]
+    own_territory: false
+    segments: [day, evening]
+  setup: "익숙한 호출 부호가 들린다. 우리 거점의 무전 담당이 바깥에 나간 사람들을 하나씩 부르고 있다. 대답하는 목소리가 생각보다 적다."
+  ai_direction: "무리에 속하지 않은 주인공이면 남의 무리 망을 엿듣는 장면으로 바꿔 연출한다. 대답하지 않는 이름들에 대해 아무도 말하지 않는다."
+  choices:
+    - id: report
+      label: 내 위치를 짧게 알린다
+      effects:
+        - zone_noise: 1
+        - belief: { fact: "무전으로 거점에 내 위치를 알렸다", source: seen }
+    - id: silent
+      label: 듣기만 하고 대답하지 않는다
+      effects:
+        - belief: { fact: "무전으로 들으니 바깥에 나간 우리 무리 사람들 중 대답하지 않는 이름이 있다", source: report }

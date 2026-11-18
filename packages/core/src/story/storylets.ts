@@ -1,4 +1,4 @@
-import { mournedBy } from "../engine/legacy.ts";
+import { closeTo, mournedBy, recentlyDeadComrade } from "../engine/legacy.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { standingInFaction } from "../game/politics.ts";
 import { fameOf, stanceOf } from "../game/fame.ts";
@@ -62,6 +62,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.stance || stanceOf(state, content, c.id) === role.stance)
     .filter((c) => !role.vendetta || (state.vendettas ?? []).some((v) => v.avenger === c.id))
     .filter((c) => !role.mourner || mournedBy(state, content, c.id).length > 0)
+    .filter((c) => !role.bereaved || ((dead) => !!dead && closeTo(state, content, dead, c.id))(recentlyDeadComrade(state, content)))
     .filter((c) => !role.commander || c.id === commander)
     // other: 주인공의 무리가 아닌 사람. 떠돌이에게는 같은 무리가 없으니 누구나
     .filter((c) => role.faction !== "other" || !player.factionId || c.factionId !== player.factionId)
@@ -280,6 +281,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (over !== w.zone_overrun) return false;
   }
   if (w.bounty !== undefined && (state.bounties ?? []).length > 0 !== w.bounty) return false;
+  if (w.funeral !== undefined && !!recentlyDeadComrade(state, content, at) !== w.funeral) return false;
   if (w.predecessor_here) {
     const want = w.predecessor_here === "grave";
     const found = state.remains.some((r) => r.zone === state.playerZone && (r.buriedAt !== null) === want && state.chronicle.some((c) => c.characterId === r.of));
@@ -436,6 +438,9 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   // 복수하러 온 사람이 갚으려는 사람 (12-135): 주인공이 죽인 사람을 주인공이 부르는 말로
   const vendetta = (state.vendettas ?? []).find((v) => Object.values(cast).includes(v.avenger));
   if (vendetta) vars.victim = playerCalls(state, content, vendetta.victim);
+  // 장례 (12-163): 최근에 죽은 우리 무리 사람
+  const dead = recentlyDeadComrade(state, content);
+  if (dead) vars.deceased = playerCalls(state, content, dead);
   // 기억하는 사람이 이야기하는 앞 주인공 (12-158): 배역 중 처음 찾은 사람이 기억하는 가장 최근의 사람
   for (const id of Object.values(cast)) {
     const departed = mournedBy(state, content, id)[0];

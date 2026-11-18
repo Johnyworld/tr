@@ -854,7 +854,7 @@ export const scenarioFileSchema = z
      * 유품과 이어지는 끈 (12-158): 죽은 주인공과 가까운 사람 (관계가 있거나 호감이 close_affection 이상).
      * 가까운 사람이 뒤를 이으면 사물함·거처의 짐을 물려받고, 가까운 사람은 이야기에서 그를 기억하는 배역(mourner)이 된다
      */
-    legacy: z.strictObject({ close_affection: z.number().int() }).optional(),
+    legacy: z.strictObject({ close_affection: z.number().int(), funeral_days: z.number().int().min(1).default(3) }).optional(),
     /**
      * 몸에 남는 상처 (12-156): 부상이 at 단계 이상이 되는 상처를 입으면 chance로 오래 가는 약점 트레잇 하나가 붙는다 (흉터·절뚝임 등).
      * 그 상처 종류(wounds)에 맞는 것 중에서, 아직 없는 것만. 한 사람에 max개까지. 플레이어와 NPC가 같다 (원칙 6)

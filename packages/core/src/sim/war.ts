@@ -205,6 +205,23 @@ export function stockOutlook(
   return out;
 }
 
+/**
+ * 그날 전쟁에 돌리는 몫 (12-139, 12-144): 기본 몫(war_share)에서, 자기 땅에 감염체가 기준보다 몰린 단계의 합 × infestation.war_share_cut만큼 덜어 낸다.
+ * 기본 몫의 war_share_floor 아래로는 내려가지 않는다 (모든 무리가 자기 땅을 순찰하며 버틴다). 감염체가 몰린 땅을 지키느라 남의 땅을 칠 사람이 준다
+ */
+export function warShareOf(content: Content, world: Pick<WarWorld, "zones">, factionId: string, infested: Record<string, number>): number {
+  const base = content.factions[factionId]?.war_share ?? 1;
+  const rules = content.scenario.infestation;
+  const cut = rules?.war_share_cut ?? 0;
+  if (!cut) return base;
+  let over = 0;
+  for (const loc of Object.values(content.locations)) {
+    if (world.zones[loc.id]?.owner !== factionId) continue;
+    over += Math.max(0, infestationOf(content, { infested }, loc.id) - baseInfestation(content, loc.id));
+  }
+  return base * Math.max(rules?.war_share_floor ?? 0, 1 - cut * over);
+}
+
 /** 무리 사람이 받는 배급 단계: 창고가 며칠 치 남았는지로 정하고, 방침(ration_shift)만큼 옮긴다 */
 export function rationLevel(content: Content, faction: FactionState) {
   const war = content.scenario.war!;
@@ -244,9 +261,11 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
   const clashes: Clash[] = [];
   const deferred: ClashSpec[] = [];
   if (!war) return { ...next, clashes, deferred, shifts: [] };
+  // 오늘의 감염체 압력 (전쟁 몫이 이것으로 준다, 12-144)
+  const infestedToday = options.infested ?? {};
   const fightOrDefer = (spec: ClashSpec) => {
     if (options.defer?.(spec)) deferred.push(spec);
-    else clashes.push(fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan));
+    else clashes.push(fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan, warShareOf(content, next, spec.attacker, infestedToday)));
   };
 
   const alive = Object.keys(next.factions)
@@ -377,7 +396,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const profile = content.factions[attacker];
     if (!profile || profile.aggression <= 0) continue;
     if (next.factions[attacker]!.combatants <= 0) continue;
-    const aggression = profile.aggression * policyEffects(content, next.factions[attacker]).aggression * (profile.war_share ?? 1);
+    const aggression = profile.aggression * policyEffects(content, next.factions[attacker]).aggression * warShareOf(content, next, attacker, infestedToday);
     if (rng() >= Math.min(0.9, aggression * war.attack_chance_per_aggression)) continue;
     const options = attackOptions(next, content, profile);
     const choice = pickWeighted(rng, options.map((o) => ({ item: o, weight: KIND_WEIGHT[o.kind] })));
@@ -523,12 +542,12 @@ function fight(
   defenderId: string,
   zone: string,
   plan?: string,
+  share: number = content.factions[attackerId]?.war_share ?? 1,
 ): Clash {
   const war = content.scenario.war!;
   const a = world.factions[attackerId]!;
   const d = world.factions[defenderId]!;
-  // 바깥의 적·감염체를 막느라 이 전쟁에는 그 몫만 내보낸다 (12-139)
-  const share = content.factions[attackerId]?.war_share ?? 1;
+  // 바깥의 적·감염체를 막느라 이 전쟁에는 그 몫만 내보낸다 (12-139, 12-144: 자기 땅에 감염체가 몰리면 더 준다)
   const committed = Math.max(1, Math.round(a.combatants * share * (plan ? PLAN_COMMIT : COMMIT[kind])));
   const own = Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * defenseOf(content, d)));
   // 지원 방어 (12-140): 지키는 쪽을 우호(ALLY_AT 이상)로 보고 치는 쪽과는 우호가 아닌 무리가 전투원 일부를 보탠다

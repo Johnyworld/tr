@@ -51,3 +51,62 @@
       effects:
         - body: { track: cold, delta: 1 }
         - belief: { fact: "{zone}에서 물결이 지나갈 때까지 차 밑에 숨어 있었다", source: seen }
+
+# 소리를 쫓아온 순찰 (12-144): 어느 무리든 자기 땅에서 일부러 소리를 내 감염체를 불러들이는 자를 경계하고 순찰한다.
+# 적의 땅에서 물결을 깨워 그 무리의 공세를 늦추는 수(전쟁에 돌리는 몫이 감염체 압력으로 준다)에는 이 위험이 따른다
+- id: wg_noise_patrol
+  title: 소리를 쫓아온 순찰
+  tags: [world]
+  urgent: true
+  repeatable: true
+  cooldown_days: 2
+  weight: 2
+  when:
+    zone_noise_gte: 2
+    zone_owner: [other]
+  cast:
+    patrol: { faction: zone_owner, ranks: [grunt, squad_leader] }
+  setup: '소리가 가라앉기도 전에 골목 양쪽에서 발소리가 난다. 감염체의 끄는 걸음이 아니다. {patrol:이/가} 이끄는 순찰조가 총구를 낮게 들고 다가온다. "여기서 총 쏜 놈 누구야. 우리 땅에 그것들 불러들이는 놈은 그냥 안 보낸다."'
+  variants:
+    - '{zone}의 무너진 담 위로 손전등 불빛이 훑고 지나간다. 이 땅의 순찰조다. 앞장선 {patrol:이/가} 땅에 떨어진 탄피를 집어 들고 이쪽을 본다.'
+  ai_direction: "{patrol}의 무리는 자기 땅에 소리를 내 감염체를 끌어들이는 자를 몹시 경계한다 (적들이 그 수를 쓴다는 걸 안다). 순찰조는 무장했고 여럿이다. 둘러대기·달아나기·맞서기 모두 판정으로, 붙잡히면 이 무리에 넘겨진다 (코드가 정한다). 뒤에서는 소리를 듣고 감염체도 모이고 있다."
+  choices:
+    - id: bluff
+      label: 감염체에 쫓겨 어쩔 수 없이 쐈다고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 총을 쏘고 그 땅 순찰조에 걸렸다. 감염체 탓으로 둘러대고 빠져나왔다", source: seen }
+        partial:
+          - take_item: { item: cigarettes }
+          - belief: { fact: "{zone}의 순찰조는 담배를 받고서야 보내 줬다. 얼굴을 기억하겠다고 했다", source: seen }
+        miss:
+          - capture_player: { by: zone_owner }
+    - id: run
+      label: 감염체가 몰려오는 쪽으로 순찰조를 끌고 달아난다
+      check: stealth
+      outcomes:
+        success:
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}의 순찰조를 감염체 쪽으로 끌고 가 따돌렸다. 그 무리는 나를 찾을 것이다", source: seen }
+        partial:
+          - wound: { steps: 1, cause: 순찰조가 쏜 총알이 스쳤다 }
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+        miss:
+          - wound: { steps: 1, cause: 순찰조의 개머리판 }
+          - capture_player: { by: zone_owner }
+    - id: fight
+      label: 먼저 손을 쓴다
+      check: fight
+      outcomes:
+        success:
+          - npc_hurt: { who: patrol, steps: 2 }
+          - faction_relation: { from: zone_owner, to: own, delta: -2, mutual: false }
+          - deed: { summary: "{zone}에서 그 땅의 순찰조를 치고 달아났다", tags: [bravery], severity: 2, privacy: semi_private }
+        partial:
+          - npc_hurt: { who: patrol, steps: 1 }
+          - wound: { steps: 1, cause: 순찰조와의 몸싸움 }
+          - faction_relation: { from: zone_owner, to: own, delta: -2, mutual: false }
+        miss:
+          - wound: { steps: 2, cause: 순찰조의 총 }
+          - capture_player: { by: zone_owner }

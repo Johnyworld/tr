@@ -903,6 +903,12 @@ export const scenarioFileSchema = z
         /** 자기 거점(kind: base)의 압력이 기준값보다 높으면 하루 이 확률로 그 무리의 사기 -1 (12-120) */
         morale_chance: z.number().min(0).max(1).default(0),
         /**
+         * 감염체가 몰린 땅을 지키느라 전쟁에 돌리는 몫이 준다 (12-144): 자기 땅의 압력이 기준값보다 높은 단계의 합 하나당 이만큼.
+         * war_share_floor: 기본 몫의 이 비율 아래로는 내려가지 않는다
+         */
+        war_share_cut: z.number().min(0).max(1).optional(),
+        war_share_floor: z.number().min(0).max(1).optional(),
+        /**
          * 무리 형편(9.13)에 오르는 말 (12-120): 그 무리 땅의 압력이 기준값보다 1·2·3 높을 때. "{무리} 쪽 {말}는 말이 돈다"로 소문이 된다.
          * 없으면 형편에 오르지 않는다
          */

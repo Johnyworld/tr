@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 63;
+export const SAVE_SCHEMA_VERSION = 64;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -153,6 +153,9 @@ export const resolveSchema = z.strictObject({
   since: z.number().int(),
   source: z.enum(["scenario", "story"]),
   involved: z.boolean(),
+  /** 단계 (이야기가 올린다)와 지금 어디까지 왔는지 한 줄 */
+  stage: z.number().int().min(0).default(0),
+  step: z.string().nullable().default(null),
 });
 
 export const runRecordSchema = z.strictObject({
@@ -524,6 +527,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("resolve_set"), characterId: z.string(), resolve: resolveSchema }),
     z.strictObject({ type: z.literal("resolve_ended"), characterId: z.string(), outcome: z.enum(["achieved", "let_go", "broken", "by_others"]) }),
     z.strictObject({ type: z.literal("resolve_involved"), characterId: z.string() }),
+    z.strictObject({ type: z.literal("resolve_stepped"), characterId: z.string(), text: z.string() }),
     z.strictObject({ type: z.literal("resolve_note"), characterId: z.string(), note: z.string() }),
     z.strictObject({ type: z.literal("resolve_seeded"), characterId: z.string() }),
     // 탐험할 곳 (12-162)
@@ -1374,6 +1378,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "resolve_involved": {
       const r = next.resolves?.[event.characterId];
       if (r) next.resolves = { ...next.resolves, [event.characterId]: { ...r, involved: true } };
+      return next;
+    }
+    case "resolve_stepped": {
+      const r = next.resolves?.[event.characterId];
+      if (r) next.resolves = { ...next.resolves, [event.characterId]: { ...r, stage: (r.stage ?? 0) + 1, step: event.text } };
       return next;
     }
     case "resolve_note":

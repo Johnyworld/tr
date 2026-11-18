@@ -1,5 +1,5 @@
 import { recentlyDeadComrade } from "./legacy.ts";
-import { setResolve } from "./resolve.ts";
+import { setResolve, stepResolve } from "./resolve.ts";
 import { capturePlayer, releasePlayer } from "./captivity.ts";
 import { rankName } from "../game/ranks.ts";
 import { exposeToFatigue } from "./fatigue.ts";
@@ -421,6 +421,10 @@ export function applyEffect(
     store.append({ type: "merit_awarded", characterId: playerId, delta: effect.merit, reason });
     const growthNote = gainMeritXp(ctx, playerId, effect.merit);
     return { line: `공적 ${effect.merit > 0 ? "+" : ""}${effect.merit}.` + (growthNote ? ` ${growthNote}` : "") };
+  }
+  if ("resolve_step" in effect) {
+    const line = stepResolve(ctx, fillStorylet(effect.resolve_step.text, vars));
+    return line ? { line: `(${line})`, display: { type: "belief", fact: line, sourceLabel: "다짐" } } : {};
   }
   if ("resolve" in effect) {
     const e = effect.resolve;

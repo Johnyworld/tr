@@ -510,11 +510,12 @@ export function checkStorylets(content: Content): string[] {
         if ("belief" in e) texts.push(e.belief.fact);
         if ("deed" in e) texts.push(e.deed.summary);
         if ("resolve" in e) texts.push(e.resolve.text);
+        if ("resolve_step" in e) texts.push(e.resolve_step.text);
       }
     }
     for (const text of texts) {
       for (const [, key] of text.matchAll(/\{([a-z_]+)(?::[^}]+)?\}/g)) {
-        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !(key === "departed" && hasMourner) && !(key === "deceased" && s.when.funeral) && !(key === "bounty_by" && s.when.bounty) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
+        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !(key === "departed" && hasMourner) && !(key === "deceased" && s.when.funeral) && !(key === "bounty_by" && s.when.bounty) && !((key === "target" || key === "resolve") && s.when.resolve) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
       }
     }
     for (const c of s.choices) {

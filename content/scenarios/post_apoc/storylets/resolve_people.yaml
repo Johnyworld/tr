@@ -1,0 +1,380 @@
+# 다짐에 다가가는 이야기: 사람 (12-164). 주인공의 다짐이 그 갈래일 때만 열린다 (when.resolve).
+# 단계는 이야기가 올린다 (resolve_step). 다짐을 이뤘는지는 코드가 상태로 정한다: 이야기는 다가가는 길만 연다.
+# {target}은 다짐의 대상, {resolve}는 다짐 한 줄. 배역 resolve_target은 대상 그 사람
+
+# ── 갚기 (revenge) ───────────────────────────────────────────
+
+- id: rp_revenge_rumor
+  title: 그 이름
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    resolve: { kinds: [revenge], stage: 0 }
+    segments: [evening, night]
+  setup: "술 냄새 나는 목소리들 사이에서 {target}이라는 이름이 지나간다. 고개를 돌리자 말하던 사람이 입을 다문다."
+  ai_direction: "말한 사람은 {target:을/를} 직접 알지는 못한다. 들은 이야기를 옮길 뿐이다. 주인공이 왜 그 이름에 반응하는지 상대는 모른다."
+  choices:
+    - id: press
+      label: 그 이름을 어디서 들었는지 캐묻는다
+      check: persuade
+      outcomes:
+        success:
+          - resolve_step: { text: "{target:이/가} 어디 있는지 말을 들었다" }
+          - belief: { fact: "{target}에 대한 말을 들었다. 요즘 어디서 무엇을 하는지 대략 안다", source: rumor }
+        partial:
+          - resolve_step: { text: "{target}의 소문을 들었다" }
+        miss:
+          - belief: { fact: "누군가 {target}의 이름을 말했지만 더는 들을 수 없었다", source: rumor }
+    - id: listen
+      label: 모르는 척 귀만 기울인다
+      check: sense_danger
+      outcomes:
+        success:
+          - resolve_step: { text: "{target:이/가} 어디 있는지 말을 들었다" }
+        partial:
+          - belief: { fact: "{target:이/가} 아직 살아 있다는 말이 돈다", source: rumor }
+        miss: []
+
+- id: rp_revenge_glimpse
+  title: 먼발치
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [revenge], stage: 1 }
+    segments: [morning, day, evening]
+  cast:
+    foe: { resolve_target: true, enter: false }
+  setup: "길 건너 폐허 사이로 낯익은 걸음걸이가 지나간다. {foe}이다. 혼자가 아니다. 이쪽은 아직 들키지 않았다."
+  ai_direction: "{foe:은/는} 주인공을 보지 못했다. 거리는 멀고 그의 곁에는 사람이 있다. 지금 덤비는 것은 무모하다는 것이 보인다. 주인공의 몸이 먼저 반응하게 그린다 (손이 떨리거나, 숨이 멎거나)."
+  choices:
+    - id: follow
+      label: 숨어서 뒤를 밟는다
+      check: stealth
+      outcomes:
+        success:
+          - resolve_step: { text: "{foe:이/가} 드나드는 곳을 안다" }
+          - locate: { who: foe, source: seen }
+        partial:
+          - resolve_step: { text: "{foe}의 얼굴을 다시 봤다" }
+          - zone_noise: 1
+        miss:
+          - zone_noise: 2
+          - belief: { fact: "{foe:을/를} 뒤밟다 놓쳤다. 누군가 이쪽을 돌아봤다", source: seen }
+    - id: watch
+      label: 얼굴을 눈에 새기고 돌아선다
+      effects:
+        - resolve_step: { text: "{foe}의 얼굴을 다시 봤다" }
+        - body: { track: nerves, delta: 1, chance: 0.5 }
+
+- id: rp_revenge_other_side
+  title: 원수의 하루
+  tags: [world]
+  repeatable: false
+  when:
+    resolve: { kinds: [revenge], stage_gte: 2 }
+  cast:
+    foe: { resolve_target: true, enter: false }
+  setup: "{foe}에 대해 들은 말 하나가 마음에 걸린다. 그 사람에게도 매일 밤 먹여야 할 입이 있고, 그 사람을 기다리는 누군가가 있다고 한다."
+  ai_direction: "원수를 사람으로 보게 하는 장면이다. 용서하라고 말하지 않는다. 복수를 그만두라고도 하지 않는다. 그 무게만 놓아 둔다. 주인공이 다짐을 내려놓겠다고 분명히 말하면 resolve(action let_go)."
+  choices:
+    - id: harden
+      label: 그래도 갚아야 한다고 되뇐다
+      effects:
+        - resolve_step: { text: "흔들려도 다짐은 그대로다" }
+    - id: doubt
+      label: 처음으로 망설인다
+      effects:
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "{foe}에게도 기다리는 사람이 있다. 처음으로 망설였다", source: seen }
+
+- id: rp_revenge_face
+  title: 마주침
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [revenge], stage_gte: 2 }
+  cast:
+    foe: { resolve_target: true, here: true }
+  setup: "{foe:이/가} 바로 앞에 있다. 이번엔 숨을 곳도, 돌아설 시간도 없다. 그가 당신을 본다. 알아보는지는 모르겠다."
+  ai_direction: "결정의 순간. 싸움이면 판정(take_action, target)으로, 붙잡으려면 take_prisoner로, 놓아주거나 내려놓으면 resolve(action let_go). 결과는 코드가 정한다. {foe:은/는} 성격대로 군다 (비웃거나, 잊었거나, 두려워하거나)."
+  choices:
+    - id: confront
+      label: 이름을 부른다
+      effects:
+        - belief: { fact: "{foe:과/와} 마주했다", source: seen }
+    - id: wait
+      label: 아직은 아니다. 지켜본다
+      effects:
+        - body: { track: nerves, delta: 1 }
+
+# ── 찾기 (find) ──────────────────────────────────────────────
+
+- id: rp_find_trace
+  title: 벽의 이름
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    resolve: { kinds: [find], stage: 0 }
+    segments: [morning, day]
+  setup: "무너진 벽 한 면에 이름과 날짜가 빼곡하다. 살아 있다고, 어디로 간다고 적어 둔 사람들의 벽이다."
+  ai_direction: "{target}의 이름이 있을 수도, 없을 수도 있다 (판정대로). 이름이 있어도 날짜는 오래됐다."
+  choices:
+    - id: search
+      label: 이름을 하나하나 짚어 본다
+      check: scavenge
+      outcomes:
+        success:
+          - resolve_step: { text: "{target:이/가} 살아서 남긴 흔적을 찾았다" }
+          - belief: { fact: "벽에서 {target}의 이름을 찾았다. 살아서 어딘가로 갔다", source: seen }
+        partial:
+          - belief: { fact: "벽에 {target:과/와} 비슷한 이름이 있었다. 확실하지 않다", source: seen }
+        miss: []
+    - id: write
+      label: 내 이름과 찾는 사람을 적어 둔다
+      effects:
+        - belief: { fact: "{zone}의 벽에 {target:을/를} 찾는다고 적어 두었다", source: seen }
+
+- id: rp_find_witness
+  title: 본 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [find], stage: 1 }
+  cast:
+    seen: { resolve_target: true, enter: false }
+  setup: "누군가 당신이 찾는 사람의 생김새를 듣더니 고개를 끄덕인다. \"그런 사람 봤어. 한 달쯤 전에.\""
+  ai_direction: "본 사람의 기억은 흐릿하다. 대가를 바랄 수도 있다. 판정 결과만큼만 알려 준다."
+  choices:
+    - id: ask
+      label: 어디서 봤는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - resolve_step: { text: "{seen:이/가} 있던 곳을 안다" }
+          - locate: { who: seen, source: report }
+        partial:
+          - resolve_step: { text: "{seen:을/를} 본 사람을 만났다" }
+        miss:
+          - belief: { fact: "{seen:을/를} 봤다는 사람이 있었지만 말이 오락가락했다", source: rumor }
+    - id: pay
+      label: 통조림을 내밀고 기억을 산다
+      when: { has_items: [canned_food] }
+      effects:
+        - take_item: { item: canned_food }
+        - resolve_step: { text: "{seen:이/가} 있던 곳을 안다" }
+        - locate: { who: seen, source: report }
+
+# ── 구해 내기 (rescue) ───────────────────────────────────────
+
+- id: rp_rescue_where
+  title: 갇힌 곳
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    resolve: { kinds: [rescue], stage: 0 }
+  cast:
+    held: { resolve_target: true, enter: false, captive_anywhere: true }
+  setup: "포로를 맞바꾸러 다녀온 사람이 지나가며 말한다. 거기 갇힌 사람들 중에 {held:을/를} 본 것 같다고."
+  ai_direction: "갇힌 곳의 경비와 들어갈 틈은 판정 결과만큼만. 빼내는 것은 잠입(infiltrate의 free)이나 교섭·포로 교환으로 한다."
+  choices:
+    - id: ask
+      label: 경비가 몇이고 어디가 허술한지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - resolve_step: { text: "{held:이/가} 갇힌 곳과 경비를 안다" }
+          - locate: { who: held, source: report }
+        partial:
+          - resolve_step: { text: "{held:이/가} 갇힌 곳을 안다" }
+          - locate: { who: held, source: rumor }
+        miss: []
+
+# ── 살려 내기 (cure) ─────────────────────────────────────────
+
+- id: rp_cure_lead
+  title: 앰플을 쥔 손
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    resolve: { kinds: [cure], stage: 0 }
+  setup: "장터 뒷골목에서 누군가 낮게 말한다. 하얀매 말고도 혈청이 나오는 곳이 있다고. 다만 값은 사람 목숨만큼이라고."
+  ai_direction: "혈청은 아주 귀하다. 나루상단 사람이 섬에서 들여온다는 말, 옛 연구동 지하에 남았다는 말 (탐험 12-162). 지어낸 위치를 덧붙이지 않는다."
+  choices:
+    - id: dig
+      label: 어디서 나오는지 캐낸다
+      check: persuade
+      outcomes:
+        success:
+          - resolve_step: { text: "혈청이 나오는 곳을 짐작한다" }
+          - belief: { fact: "혈청은 나루상단이 남쪽 섬에서 들여온다는 말이 있다. 가람대 연구동 지하에 남았다는 말도 있다", source: rumor }
+        partial:
+          - resolve_step: { text: "혈청이 아직 돈다는 것을 안다" }
+        miss: []
+    - id: clinic
+      label: 하얀매 진료소에 사정해 보기로 한다
+      effects:
+        - belief: { fact: "{target:을/를} 위해 하얀매 진료소에 혈청을 사정해 보기로 했다", source: seen }
+
+- id: rp_cure_clock
+  title: 짧아지는 날
+  tags: [world]
+  repeatable: true
+  cooldown_days: 2
+  when:
+    resolve: { kinds: [cure] }
+    segments: [night]
+  cast:
+    sick: { resolve_target: true, enter: false, condition: { track: infection, at_least: fever } }
+  setup: "{sick}의 숨이 거칠다. 밤새 열에 들떠 누군가의 이름을 부른다. 시간이 많지 않다는 것을 둘 다 안다."
+  ai_direction: "감염이 깊어지고 있다 (코드의 상태대로). 무엇을 해도 오늘 밤 낫지는 않는다. 곁을 지키는 장면이다."
+  choices:
+    - id: stay
+      label: 곁에서 물수건을 갈아 준다
+      effects:
+        - relation: { who: sick, axis: affection, delta: 1 }
+        - body: { track: fatigue, delta: 1 }
+    - id: go
+      label: 지금 당장 혈청을 찾으러 나간다
+      effects:
+        - body: { track: nerves, delta: 1, chance: 0.5 }
+
+# ── 지키기 (protect) ─────────────────────────────────────────
+
+- id: rp_protect_reckless
+  title: 앞장서는 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [protect] }
+  cast:
+    ward: { resolve_target: true, here: true }
+  setup: "{ward:이/가} 오늘도 위험한 일에 먼저 손을 든다. 누가 말리기 전에 이미 장비를 챙기고 있다."
+  ai_direction: "{ward:은/는} 주인공이 자기를 지키려 한다는 것을 모른다 (또는 알면 싫어한다). 말리면 체면이 상한다."
+  choices:
+    - id: swap
+      label: 내가 대신 가겠다고 한다
+      effects:
+        - relation: { who: ward, axis: trust, delta: 1 }
+        - resolve_step: { text: "{ward} 대신 위험을 졌다" }
+    - id: talk
+      label: 이번엔 빠지라고 설득한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: ward, axis: trust, delta: 1 }
+        partial:
+          - relation: { who: ward, axis: respect, delta: -1 }
+        miss:
+          - relation: { who: ward, axis: affection, delta: -1 }
+    - id: let
+      label: 다 큰 사람이다. 내버려 둔다
+      effects: []
+
+- id: rp_protect_cough
+  title: 기침
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [protect] }
+    seasons: [winter]
+  cast:
+    ward: { resolve_target: true, here: true }
+  setup: "{ward}의 기침이 사흘째 멎지 않는다. 담요는 얇고, 밤은 길다."
+  ai_direction: "{ward:은/는} 괜찮다고 한다. 지켜 줄 수 있는 것은 담요와 불과 약 정도다."
+  choices:
+    - id: blanket
+      label: 내 담요를 덮어 준다
+      when: { has_items: [blanket] }
+      effects:
+        - take_item: { item: blanket }
+        - relation: { who: ward, axis: affection, delta: 2 }
+    - id: medicine
+      label: 해열제를 건넨다
+      when: { has_items: [fever_reducer] }
+      effects:
+        - take_item: { item: fever_reducer }
+        - relation: { who: ward, axis: affection, delta: 1 }
+    - id: nothing
+      label: 해 줄 것이 없다
+      effects:
+        - body: { track: nerves, delta: 1, chance: 0.3 }
+
+# ── 은혜 갚기 (repay) ────────────────────────────────────────
+
+- id: rp_repay_need
+  title: 그 사람의 부탁
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [repay] }
+  cast:
+    savior: { resolve_target: true, here: true }
+  setup: "{savior:이/가} 망설이다 입을 연다. 부탁할 데가 당신밖에 없다고. 무엇을 바라는지 말하기 전에 한참 손을 비빈다."
+  ai_direction: "{savior}의 부탁은 그 인물의 사정(프로필의 바람·두려움) 안에서 하나. 들어주겠다면 promise make로 약속을 맺게 한다 (지키면 다짐이 이뤄진다)."
+  choices:
+    - id: yes
+      label: 무엇이든 말해 보라고 한다
+      effects:
+        - relation: { who: savior, axis: trust, delta: 1 }
+        - resolve_step: { text: "{savior}의 부탁을 들었다" }
+    - id: later
+      label: 지금은 힘들다고 미룬다
+      effects:
+        - relation: { who: savior, axis: affection, delta: -1 }
+
+# ── 마음 (heart) ─────────────────────────────────────────────
+
+- id: rp_heart_small
+  title: 작은 것
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [heart] }
+    segments: [evening, night]
+  cast:
+    dear: { resolve_target: true, here: true }
+  setup: "{dear:이/가} 무언가를 만지작거리다 당신 손에 쥐여 준다. 깎다 만 나무 조각이다. 무엇인지는 말하지 않는다."
+  ai_direction: "연애의 진전은 코드가 정한다 (romance). 이 장면은 작은 다정함 하나. 크게 고백하지 않는다."
+  choices:
+    - id: keep
+      label: 주머니에 소중히 넣는다
+      effects:
+        - relation: { who: dear, axis: affection, delta: 1 }
+        - resolve_step: { text: "{dear}에게서 나무 조각을 받았다" }
+    - id: return
+      label: 무엇인지 묻는다
+      effects:
+        - relation: { who: dear, axis: affection, delta: 1 }
+
+# ── 묻기 (bury) ──────────────────────────────────────────────
+
+- id: rp_bury_road
+  title: 그곳까지의 길
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    resolve: { kinds: [bury], stage: 0 }
+  setup: "{target:이/가} 쓰러진 곳을 아는 사람이 있다. 가는 길은 감염체가 깔려 있고, 짐을 지고 돌아오기는 더 어렵다."
+  ai_direction: "유해는 상태의 '묻히지 않은 유해'에 있으면 그곳이다. 가서 take_action.bury로 묻는다. 길의 위험은 그 구역의 위험대로."
+  choices:
+    - id: ask
+      label: 가는 길을 자세히 묻는다
+      check: survival
+      outcomes:
+        success:
+          - resolve_step: { text: "{target:이/가} 쓰러진 곳으로 가는 길을 안다" }
+        partial:
+          - resolve_step: { text: "{target:이/가} 쓰러진 곳을 안다" }
+        miss: []

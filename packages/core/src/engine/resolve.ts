@@ -177,7 +177,7 @@ export function setResolve(ctx: ToolContext, input: { kind: string; target?: str
   ctx.store.append({
     type: "resolve_set",
     characterId: me.id,
-    resolve: { kind: kind.id, target: input.target ?? null, target2: input.target2 ?? null, n: input.n ?? null, text: input.text, since: state.time, source, involved: false },
+    resolve: { kind: kind.id, target: input.target ?? null, target2: input.target2 ?? null, n: input.n ?? null, text: input.text, since: state.time, source, involved: false, stage: 0, step: null },
   });
   return `새 다짐: ${input.text}`;
 }
@@ -203,9 +203,27 @@ export function scenarioResolve(ctx: ToolContext, roleId: string): string | null
   return null;
 }
 
-/** 다짐 한 줄 (상태 화면·?임무) */
+/** 다짐 한 줄 (상태 화면·?임무): 다짐과 지금 어디까지 왔는지 */
 export function resolveLine(state: GameState): string | null {
-  return currentResolve(state)?.text ?? null;
+  const r = currentResolve(state);
+  return r ? `${r.text}${r.step ? ` — ${r.step}` : ""}` : null;
+}
+
+/** 다짐의 대상을 주인공이 부르는 말 (사람·구역·무리·등급) */
+export function resolveTargetName(state: GameState, content: Content): string | null {
+  const r = currentResolve(state);
+  const t = r?.target;
+  if (!t) return null;
+  if (state.characters[t]) return playerCalls(state, content, t);
+  return content.locations[t]?.name ?? content.factions[t]?.name ?? content.scenario.rank_ladder.find((x) => x.id === t)?.label ?? null;
+}
+
+/** 이야기 효과 resolve_step: 단계를 한 칸 올린다 */
+export function stepResolve(ctx: ToolContext, text: string): string | null {
+  const state = ctx.store.getState();
+  if (!currentResolve(state)) return null;
+  ctx.store.append({ type: "resolve_stepped", characterId: state.playerId, text });
+  return `다짐에 한 걸음 다가갔다: ${text}`;
 }
 
 /** GM 상태의 줄 */
@@ -215,7 +233,7 @@ export function describeResolve(state: GameState, content: Content): string[] {
   const kind = kindOf(content, r.kind);
   const who = r.target && state.characters[r.target] ? ` (대상: ${playerCalls(state, content, r.target)})` : "";
   return [
-    `주인공의 다짐: ${r.text}${who} — ${kind?.label ?? r.kind}. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
+    `주인공의 다짐: ${r.text}${who} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
   ];
 }
 

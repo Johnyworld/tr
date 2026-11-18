@@ -1,0 +1,203 @@
+# 다짐에 다가가는 이야기: 나 자신 (12-164). 주인공의 다짐이 그 갈래일 때만 열린다 (when.resolve).
+# 이뤘는지는 코드가 상태(닿은 곳·믿음·트레잇·계절·찾은 숨은 곳)로 정한다
+
+# ── 떠나기 (journey) ─────────────────────────────────────────
+
+- id: rs_journey_boat
+  title: 배를 아는 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [journey], stage: 0 }
+  setup: "강가에서 그물을 깁던 노인이 남쪽 물길을 안다고 한다. 섬까지 노를 저어 간 사람이 있었다고. 돌아온 사람은 못 봤다고."
+  ai_direction: "{target}까지 가는 길은 쉽지 않다 (배, 물살, 섬의 감시). 이 장면은 길이 있다는 것을 아는 순간."
+  choices:
+    - id: ask
+      label: 물길과 배를 구할 곳을 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - resolve_step: { text: "{target:으로/로} 가는 물길을 안다" }
+          - belief: { fact: "남쪽 물길로 {target}에 닿을 수 있다. 하류 다리 밑에 버려진 배가 있다는 말이 있다", source: report }
+        partial:
+          - resolve_step: { text: "{target:으로/로} 가는 길이 있다는 것을 안다" }
+        miss: []
+    - id: doubt
+      label: 돌아온 사람이 없다는 말이 마음에 걸린다
+      effects:
+        - belief: { fact: "{target}에 간 사람은 돌아오지 않았다고 한다", source: rumor }
+
+- id: rs_journey_pack
+  title: 떠날 채비
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [journey], stage_gte: 1 }
+    segments: [evening, night]
+  setup: "짐을 몇 번이나 풀었다 쌌다. 가져갈 것과 두고 갈 것. 두고 갈 사람들."
+  ai_direction: "떠나는 것은 무엇을 두고 가는 일이기도 하다. 곁의 사람들(동행, 무리)이 눈치챌 수 있다."
+  choices:
+    - id: tell
+      label: 가까운 사람에게 떠날 거라고 털어놓는다
+      effects:
+        - resolve_step: { text: "떠날 채비를 마쳤다" }
+        - body: { track: nerves, delta: -1 }
+    - id: secret
+      label: 아무에게도 말하지 않는다
+      effects:
+        - resolve_step: { text: "몰래 떠날 채비를 마쳤다" }
+
+# ── 진실 (truth) ─────────────────────────────────────────────
+
+- id: rs_truth_ledger
+  title: 숫자 몇 줄
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [truth] }
+  setup: "찢어진 장부 한 장이 바람에 굴러온다. 숫자와 날짜, 그리고 '버티는 사람'이라는 글자가 반쯤 지워져 있다."
+  ai_direction: "혈청 미스터리(10.6)의 조각. 무엇인지 정해 주지 않는다. 판정 결과만큼만 읽힌다. 믿음으로 남은 것이 쌓이면 다짐이 이뤄진다."
+  choices:
+    - id: read
+      label: 지워진 글자를 읽어 낸다
+      check: history
+      outcomes:
+        success:
+          - belief: { fact: "찢어진 장부에 '버티는 사람'과 앰플 번호가 나란히 적혀 있었다. 여울섬과 거래한 기록 같다", source: seen }
+          - resolve_step: { text: "장부의 조각을 맞췄다" }
+        partial:
+          - belief: { fact: "찢어진 장부에 '버티는 사람'이라는 글자가 있었다", source: seen }
+        miss: []
+    - id: keep
+      label: 접어서 품에 넣는다
+      effects:
+        - belief: { fact: "숫자와 '버티는 사람'이 적힌 장부 조각을 주웠다", source: seen }
+
+- id: rs_truth_whisper
+  title: 입을 다문 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [truth], stage_gte: 1 }
+  setup: "혈청 이야기만 나오면 입을 다무는 사람이 있다. 오늘은 술에 취해 혼잣말을 한다. \"섬에 간 사람들… 피를…\""
+  ai_direction: "이 사람은 진실의 한 조각을 안다 (여울섬이 버틴 사람의 피로 혈청을 만든다). 다 말하지 않는다. 판정 결과만큼만."
+  choices:
+    - id: coax
+      label: 술을 더 따르며 말을 잇게 한다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "여울섬이 물리고도 버틴 사람을 데려가 피를 뽑는다는 말을 들었다", source: rumor }
+          - resolve_step: { text: "혈청의 출처를 거의 안다" }
+        partial:
+          - belief: { fact: "여울섬에 간 버틴 사람들에 대해 무언가 숨겨진 것이 있다", source: rumor }
+        miss: []
+
+# ── 버리기 (quit) ────────────────────────────────────────────
+
+- id: rs_quit_hand
+  title: 떨리는 손
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    resolve: { kinds: [quit] }
+    segments: [night]
+  setup: "자려고 누웠는데 손이 떨린다. 배낭 바닥에 하나 남은 것이 있다는 걸 몸이 먼저 안다."
+  ai_direction: "끊는 것은 금단의 끝 단계를 버티는 것이다 (버릇의 끊기, 12-157). 이 밤을 넘기는지는 플레이어의 선택. 쓰면 그만큼 처음으로 돌아간다."
+  choices:
+    - id: hold
+      label: 이를 악물고 버틴다
+      check: endure
+      outcomes:
+        success:
+          - resolve_step: { text: "또 하룻밤을 버텼다" }
+          - body: { track: nerves, delta: -1 }
+        partial:
+          - body: { track: fatigue, delta: 1 }
+        miss:
+          - body: { track: nerves, delta: 1 }
+    - id: throw
+      label: 남은 것을 꺼내 멀리 던진다
+      effects:
+        - lose_item: { item: soju }
+        - lose_item: { item: painkiller }
+        - lose_item: { item: stimulant }
+        - resolve_step: { text: "남은 것을 버렸다" }
+
+# ── 버텨 내기 (endure) ───────────────────────────────────────
+
+- id: rs_endure_count
+  title: 남은 날 세기
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [endure] }
+    segments: [evening]
+  setup: "누군가 벽에 그어 둔 줄을 센다. 이 계절이 며칠 남았는지. 다들 그 숫자를 모르는 척하면서 귀를 기울인다."
+  ai_direction: "버텨 내는 것은 날짜가 지나는 것이다 (코드가 계절로 정한다). 이 장면은 모두의 마음을 붙잡는 순간."
+  choices:
+    - id: hope
+      label: 얼마 안 남았다고 웃어 보인다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - resolve_step: { text: "다 같이 고비를 넘기는 중이다" }
+        partial:
+          - body: { track: nerves, delta: -1 }
+        miss: []
+    - id: ration
+      label: 내 몫을 조금 덜어 놓는다
+      effects:
+        - body: { track: hunger, delta: 1 }
+        - deed: { summary: 겨울을 넘기려고 제 몫을 덜어 놓았다, tags: [mercy], severity: 1, privacy: semi_private }
+
+# ── 알아내기 (explore) ───────────────────────────────────────
+
+- id: rs_explore_map
+  title: 낡은 지도
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [explore] }
+  setup: "누군가 버린 시내 지도에 볼펜으로 동그라미가 여럿 쳐져 있다. 몇 개는 X로 지워졌고, 몇 개는 아직이다."
+  ai_direction: "숨은 곳은 그 구역을 뒤지다 찾는다 (탐험 12-162). 지도의 동그라미는 어느 구역을 뒤질지 알려 줄 뿐이다. 위치를 지어내지 않는다."
+  choices:
+    - id: study
+      label: 동그라미를 옛 건물들과 맞춰 본다
+      check: history
+      outcomes:
+        success:
+          - resolve_step: { text: "숨은 곳이 더 있다는 것을 안다" }
+          - belief: { fact: "낡은 지도의 동그라미: 병원, 마트, 발전소, 교도소, 지하철, 대학 연구동. 지하에 무언가 남은 곳들이다", source: seen }
+        partial:
+          - belief: { fact: "낡은 지도에 지하가 있는 건물마다 동그라미가 쳐져 있다", source: seen }
+        miss: []
+
+# ── 돌아가기 (homecoming) ────────────────────────────────────
+
+- id: rs_home_memory
+  title: 아는 골목
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [homecoming], stage: 0 }
+  setup: "어느 골목 어귀의 간판 하나가 눈에 들어온다. 무너지기 전 매일 지나던 길과 닮았다. 아니, 그 길이다."
+  ai_direction: "{target}의 집으로 가는 길이 떠오른다. 그곳이 어떻게 됐는지는 가 봐야 안다. 기억과 지금의 폐허를 겹쳐 그린다."
+  choices:
+    - id: remember
+      label: 눈을 감고 그때의 길을 떠올린다
+      effects:
+        - resolve_step: { text: "{target:으로/로} 가는 길이 떠올랐다" }
+        - body: { track: nerves, delta: 1, chance: 0.3 }
+    - id: move_on
+      label: 지금은 갈 수 없다
+      effects: []

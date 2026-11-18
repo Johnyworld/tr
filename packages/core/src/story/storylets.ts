@@ -1,3 +1,5 @@
+import { npcZoneAt } from "../game/whereabouts.ts";
+import { currentResolve, resolveTargetName } from "../engine/resolve.ts";
 import { closeTo, mournedBy, recentlyDeadComrade } from "../engine/legacy.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { standingInFaction } from "../game/politics.ts";
@@ -62,6 +64,16 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.stance || stanceOf(state, content, c.id) === role.stance)
     .filter((c) => !role.vendetta || (state.vendettas ?? []).some((v) => v.avenger === c.id))
     .filter((c) => !role.mourner || mournedBy(state, content, c.id).length > 0)
+    .filter((c) => !role.resolve_target || currentResolve(state)?.target === c.id)
+    // 다짐의 대상을 here로 부르면 지금 이 구역에 있을 때만 (장면에 있거나, 함께 다니거나, 있을 곳이 여기)
+    .filter(
+      (c) =>
+        !role.here ||
+        !role.resolve_target ||
+        state.scene.present.includes(c.id) ||
+        state.companions.includes(c.id) ||
+        (c.extra ? c.extra.zone === state.playerZone : content.npcs[c.id] ? npcZoneAt(content.npcs[c.id]!, state.time) === state.playerZone : false),
+    )
     .filter((c) => !role.bereaved || ((dead) => !!dead && closeTo(state, content, dead, c.id))(recentlyDeadComrade(state, content)))
     .filter((c) => !role.commander || c.id === commander)
     // other: 주인공의 무리가 아닌 사람. 떠돌이에게는 같은 무리가 없으니 누구나
@@ -280,6 +292,15 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const over = !!state.playerZone && infestationOf(content, state, state.playerZone) > baseInfestation(content, state.playerZone);
     if (over !== w.zone_overrun) return false;
   }
+  if (w.resolve) {
+    const r = currentResolve(state);
+    if (!r) return false;
+    const stage = r.stage ?? 0;
+    if (w.resolve.kinds && !w.resolve.kinds.includes(r.kind)) return false;
+    if (w.resolve.stage !== undefined && stage !== w.resolve.stage) return false;
+    if (w.resolve.stage_gte !== undefined && stage < w.resolve.stage_gte) return false;
+    if (w.resolve.stage_lte !== undefined && stage > w.resolve.stage_lte) return false;
+  }
   if (w.bounty !== undefined && (state.bounties ?? []).length > 0 !== w.bounty) return false;
   if (w.funeral !== undefined && !!recentlyDeadComrade(state, content, at) !== w.funeral) return false;
   if (w.predecessor_here) {
@@ -435,6 +456,13 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   // 현상금을 건 무리 (12-136)
   const bountyBy = (state.bounties ?? [])[0];
   if (bountyBy) vars.bounty_by = content.factions[bountyBy]?.name ?? bountyBy;
+  // 다짐 (12-164)
+  const vow = currentResolve(state);
+  if (vow) {
+    vars.resolve = vow.text;
+    const target = resolveTargetName(state, content);
+    if (target) vars.target = target;
+  }
   // 복수하러 온 사람이 갚으려는 사람 (12-135): 주인공이 죽인 사람을 주인공이 부르는 말로
   const vendetta = (state.vendettas ?? []).find((v) => Object.values(cast).includes(v.avenger));
   if (vendetta) vars.victim = playerCalls(state, content, vendetta.victim);

@@ -82,3 +82,27 @@ describe("다짐", () => {
     expect(currentResolve(w.state())).toMatchObject({ kind: "journey", target: "yeoul_isle", source: "story", text: "거점을 떠나 섬에 간다" });
   });
 });
+
+describe("다짐의 단계 (12-164)", () => {
+  it("다짐 갈래·단계로 이야기가 열리고, resolve_step이 단계를 올려 상태 화면 줄에 붙는다", async () => {
+    const full = loadRealContent();
+    const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-resolve-step-")), content: full, rngFactory: () => () => 0.99 }).create("mcp", "role_a_grunt");
+    look(w);
+    const { conditionsMet, castCandidates, storyletVars } = await import("../story/storylets.ts");
+    expect(w.runCheat("~time evening").ok).toBe(true);
+    const rumor = full.storylets.rp_revenge_rumor!;
+    const glimpse = full.storylets.rp_revenge_glimpse!;
+    expect(conditionsMet(w.state(), full, rumor, w.state().time)).toBe(true);
+    expect(storyletVars(w.state(), full, {}).target).toBe("염철구");
+    const out = applyEffect(w.ctx(), { resolve_step: { text: "{target:이/가} 어디 있는지 말을 들었다" } } as StoryletEffect, {}, storyletVars(w.state(), full, {}), "테스트");
+    expect(out.line).toContain("한 걸음");
+    expect(currentResolve(w.state())).toMatchObject({ stage: 1, step: "염철구가 어디 있는지 말을 들었다" });
+    expect(conditionsMet(w.state(), full, rumor, w.state().time)).toBe(false); // 0단계 이야기는 닫힌다
+    expect(conditionsMet(w.state(), full, glimpse, w.state().time)).toBe(true);
+    expect(buildPlayerView(w.state(), full).resolve).toContain("— 염철구");
+    const role = { resolve_target: true } as Parameters<typeof castCandidates>[2];
+    expect(castCandidates(w.state(), full, role)).toEqual(["c_cheolgu"]);
+    // 다른 갈래의 이야기는 열리지 않는다
+    expect(conditionsMet(w.state(), full, full.storylets.rs_journey_boat!, w.state().time)).toBe(false);
+  });
+});

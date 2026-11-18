@@ -1,0 +1,267 @@
+# 다짐에 다가가는 이야기: 무리와 세상 (12-164). 주인공의 다짐이 그 갈래일 때만 열린다 (when.resolve).
+# 이뤘는지는 코드가 상태(계급·빚·휴전·구역 주인·직분 평판·무리의 믿음)로 정한다. 이야기는 그쪽으로 가는 길을 연다
+
+# ── 자리 (rise) ──────────────────────────────────────────────
+
+- id: rw_rise_noticed
+  title: 위에서 보는 눈
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [rise], stage: 0 }
+    own_territory: true
+  cast:
+    boss: { commander: true, here: true }
+  setup: "{boss:이/가} 보고를 듣다 말고 당신을 한참 본다. \"요즘 일 처리가 다르네.\" 칭찬인지 떠보는 건지 알 수 없다."
+  ai_direction: "{boss:은/는} 사람을 쉽게 올려 주지 않는다. 진급은 공적과 상관의 믿음으로 코드가 정한다 (8.6). 이 장면은 눈에 띄는 순간."
+  choices:
+    - id: ambition
+      label: 더 큰 일을 맡고 싶다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - resolve_step: { text: "위에서 나를 눈여겨보기 시작했다" }
+        partial:
+          - relation: { who: boss, axis: respect, delta: 1 }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+    - id: humble
+      label: 할 일을 했을 뿐이라고 한다
+      effects:
+        - relation: { who: boss, axis: trust, delta: 1 }
+
+- id: rw_rise_rival
+  title: 같은 자리를 보는 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    resolve: { kinds: [rise], stage_gte: 1 }
+    own_territory: true
+  cast:
+    rival: { faction: own, here: true }
+  setup: "{rival}도 같은 자리를 노린다는 것을 다들 안다. 배식 줄에서 그가 먼저 말을 건다. \"너도 그 자리 생각 있지?\""
+  ai_direction: "{rival:은/는} 노골적인 적이 아니다. 경쟁자다. 손을 잡을 수도, 밟을 수도 있다. 밟으면 무리 안에 소문이 난다."
+  choices:
+    - id: ally
+      label: 누가 되든 서로 밀어 주자고 한다
+      effects:
+        - relation: { who: rival, axis: trust, delta: 2 }
+        - resolve_step: { text: "경쟁자와 손을 잡았다" }
+    - id: undercut
+      label: 그의 실수를 위에 흘린다
+      effects:
+        - merit: 1
+        - relation: { who: rival, axis: trust, delta: -2 }
+        - deed: { summary: "같은 자리를 노리던 {rival}의 실수를 위에 흘렸다", tags: [betrayal], severity: 1, privacy: private }
+        - resolve_step: { text: "경쟁자를 밀어냈다" }
+    - id: shrug
+      label: 웃어넘긴다
+      effects: []
+
+# ── 빚 털기 (debt) ───────────────────────────────────────────
+
+- id: rw_debt_side_job
+  title: 장부 밖의 일
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [debt] }
+  setup: "누군가 귀띔한다. 장부에 안 올라가는 일이 하나 있다고. 하룻밤이면 빚 몇 줄은 지울 수 있을 거라고. 무슨 일인지는 가 봐야 안다고."
+  ai_direction: "더러운 일일 수도 있다 (밀수, 빚 받으러 가기). 빚이 줄어드는 것은 일감(repays_debt)이나 이 선택의 결과로만. 행적이 남는다."
+  choices:
+    - id: take
+      label: 하겠다고 한다
+      check: deceive
+      outcomes:
+        success:
+          - debt: { faction: own, delta: -3 }
+          - resolve_step: { text: "장부 밖의 일로 빚을 줄였다" }
+        partial:
+          - debt: { faction: own, delta: -2 }
+          - deed: { summary: 장부 밖의 일을 하다 얼굴이 팔렸다, tags: [deceit], severity: 1, privacy: semi_private }
+        miss:
+          - wound: { steps: 1, cause: 장부 밖의 일이 틀어졌다 }
+    - id: refuse
+      label: 빚은 정직하게 갚겠다고 한다
+      effects: []
+
+# ── 화해시키기 (peace) ───────────────────────────────────────
+
+- id: rw_peace_channel
+  title: 다리를 놓을 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [peace], stage: 0 }
+  setup: "두 무리 사이를 오가는 장사꾼이 있다. 양쪽 다 그를 쏘지 않는다. 그를 통하면 말 한마디쯤은 건너갈 수 있을지 모른다."
+  ai_direction: "휴전 자체는 간부의 협상(negotiate, 9.14)으로만 맺어진다. 이 장면은 그 자리를 마련하는 길. 주인공이 간부가 아니면 간부에게 이 길을 올리는 것까지."
+  choices:
+    - id: message
+      label: 상대 무리 간부에게 말을 전해 달라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - resolve_step: { text: "상대 무리에 말이 닿을 길을 텄다" }
+          - overhear: { faction: enemy, source: report }
+        partial:
+          - resolve_step: { text: "말을 전해 줄 사람을 찾았다" }
+        miss: []
+
+- id: rw_peace_hardliner
+  title: 싸우자는 목소리
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    resolve: { kinds: [peace], stage_gte: 1 }
+    own_territory: true
+  cast:
+    hawk: { faction: own, here: true }
+  setup: "{hawk:이/가} 식당 한가운데서 목소리를 높인다. 휴전은 겁쟁이들 얘기고, 우리가 흘린 피는 어떻게 하느냐고."
+  ai_direction: "{hawk}의 말에도 이유가 있다 (잃은 사람이 있다). 반박하면 무리가 갈린다. 설득은 판정대로."
+  choices:
+    - id: answer
+      label: 더 흘릴 피가 없다고 맞선다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - resolve_step: { text: "무리 안에서 휴전 쪽에 귀를 기울이는 사람이 늘었다" }
+        partial:
+          - relation: { who: hawk, axis: respect, delta: 1 }
+        miss:
+          - relation: { who: hawk, axis: trust, delta: -2 }
+    - id: quiet
+      label: 지금은 맞서지 않는다
+      effects: []
+
+# ── 무너뜨리기 (topple) ──────────────────────────────────────
+
+- id: rw_topple_crack
+  title: 갈라진 틈
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [topple] }
+  setup: "{target}에서 도망쳐 나온 사람이 있다. 안에서는 배급이 줄고, 위원회가 서로를 의심한다고 한다."
+  ai_direction: "무리는 전쟁(9.4)과 무리 안의 정치(9.17)로만 무너진다. 이 사람의 이야기는 그 틈을 알려 줄 뿐이다. 엿들은 것은 overhear로."
+  choices:
+    - id: debrief
+      label: 안의 사정을 자세히 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - overhear: { faction: enemy, source: report }
+          - resolve_step: { text: "{target}의 약한 곳을 안다" }
+        partial:
+          - resolve_step: { text: "{target} 안에 금이 갔다는 것을 안다" }
+        miss: []
+
+# ── 되찾기 (reclaim) ─────────────────────────────────────────
+
+- id: rw_reclaim_scout
+  title: 빼앗긴 땅
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [reclaim], stage: 0 }
+  setup: "{target:을/를} 내려다볼 수 있는 옥상에 섰다. 예전엔 우리 사람들이 저기서 일했다. 지금은 다른 깃발이 걸려 있다."
+  ai_direction: "되찾는 것은 무리의 반격(9.7)으로만. 주인공은 정찰로 반격을 앞당길 수 있다 (전선 임무). 이 장면은 그 땅을 다시 보는 순간."
+  choices:
+    - id: count
+      label: 경계가 몇이고 어디가 비는지 센다
+      check: sense_danger
+      outcomes:
+        success:
+          - resolve_step: { text: "{target}의 경계를 다 셌다" }
+          - overhear: { faction: zone_owner, source: seen }
+        partial:
+          - resolve_step: { text: "{target}의 경계를 대략 안다" }
+        miss:
+          - zone_noise: 1
+
+# ── 인정받기 (recognition) ───────────────────────────────────
+
+- id: rw_recognition_test
+  title: 맡겨진 일
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [recognition] }
+    own_territory: true
+  setup: "선배가 어려운 일 하나를 당신에게 넘긴다. 말은 없지만 지켜보고 있다는 것을 안다."
+  ai_direction: "직분의 일 하나 (직분 이야기의 결). 잘 해내면 직분 평판이 오른다 (standing). 실수하면 다들 기억한다."
+  choices:
+    - id: do
+      label: 맡아서 해낸다
+      check: endure
+      outcomes:
+        success:
+          - standing: 2
+          - resolve_step: { text: "맡겨진 일을 해내 눈도장을 받았다" }
+        partial:
+          - standing: 1
+        miss:
+          - standing: -1
+    - id: ask
+      label: 모르는 것을 솔직하게 묻는다
+      effects:
+        - standing: 1
+
+# ── 속죄 (atone) ─────────────────────────────────────────────
+
+- id: rw_atone_dirty_work
+  title: 아무도 안 하는 일
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    resolve: { kinds: [atone] }
+    own_territory: true
+  setup: "변소 구덩이를 새로 파야 하고, 시체 구덩이도 덮어야 한다. 다들 눈을 피한다."
+  ai_direction: "믿음은 말이 아니라 반복되는 행동으로 돌아온다. 한 번으로는 아무도 달라지지 않는다. 지켜보는 눈이 있다."
+  choices:
+    - id: dig
+      label: 삽을 든다
+      effects:
+        - body: { track: fatigue, delta: 1 }
+        - deed: { summary: 아무도 안 하려는 구덩이 일을 자청했다, tags: [diligence], severity: 1, privacy: public }
+        - resolve_step: { text: "궂은일을 자청했다" }
+    - id: skip
+      label: 오늘은 못 본 척한다
+      effects: []
+
+- id: rw_atone_apology
+  title: 사과
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [atone], stage_gte: 1 }
+  cast:
+    wronged: { faction: own, here: true, trust_gte: -5 }
+  setup: "{wronged:이/가} 혼자 있다. 당신을 가장 믿지 않는 사람 중 하나다. 지금이 아니면 말할 기회가 없을 것 같다."
+  ai_direction: "{wronged:은/는} 쉽게 받아 주지 않는다. 사과의 진심은 판정이 아니라 플레이어의 말로, 받아들이는지는 판정으로."
+  choices:
+    - id: sorry
+      label: 변명 없이 사과한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: wronged, axis: trust, delta: 2 }
+          - resolve_step: { text: "{wronged:이/가} 사과를 받았다" }
+        partial:
+          - relation: { who: wronged, axis: trust, delta: 1 }
+        miss:
+          - relation: { who: wronged, axis: affection, delta: -1 }
+    - id: not_yet
+      label: 아직 말할 자격이 없다고 물러선다
+      effects: []

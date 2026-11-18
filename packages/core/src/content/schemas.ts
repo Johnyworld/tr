@@ -531,6 +531,8 @@ export function createContentSchemas(s: Scenario) {
      * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (지금 다짐은 바뀐다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
      * text는 다짐 한 줄 (문장의 자리를 쓸 수 있다)
      */
+    /** 다짐의 단계를 한 칸 올린다 (12-164): text는 지금 어디까지 왔는지 한 줄 (상태 화면에 다짐 옆으로 보인다). 다짐이 없으면 아무 일도 없다 */
+    z.strictObject({ resolve_step: z.strictObject({ text: z.string().min(1).max(60) }) }),
     z.strictObject({
       resolve: z.strictObject({ kind: contentIdSchema, target: z.string().nullable().default(null), target2: z.string().nullable().default(null), n: z.number().int().nullable().default(null), text: z.string().min(1).max(80) }),
     }),
@@ -657,6 +659,8 @@ export function createContentSchemas(s: Scenario) {
     mourner: z.boolean().optional(),
     /** 장례 이야기에서 죽은 사람(when.funeral의 {deceased})과 가까웠던 사람만 (12-163) */
     bereaved: z.boolean().optional(),
+    /** 주인공의 다짐의 대상인 사람 (12-164). here와 함께 쓰면 지금 이 구역에 있을 때만 */
+    resolve_target: z.boolean().optional(),
     /** 소문으로만 주인공을 아는 팬(fan) 또는 안티(anti)만 (12-127) */
     stance: z.enum(["fan", "anti"]).optional(),
     /** 발동할 때 장면에 들어온다 */
@@ -827,6 +831,10 @@ export function createContentSchemas(s: Scenario) {
         zone_overrun: z.boolean().optional(),
         /** 주인공에게 현상금이 걸려 있다 (12-136). 문장의 자리 {bounty_by}는 먼저 건 무리 */
         bounty: z.boolean().optional(),
+        /** 주인공의 다짐 (12-164): 이 갈래 중 하나이고(kinds), 단계가 이 범위. 문장의 자리 {target}은 다짐의 대상, {resolve}는 다짐 한 줄 */
+        resolve: z
+          .strictObject({ kinds: z.array(contentIdSchema).min(1).optional(), stage: z.number().int().min(0).optional(), stage_gte: z.number().int().min(0).optional(), stage_lte: z.number().int().min(0).optional() })
+          .optional(),
         /** 이 구역에 이전 주인공의 유해(remains, 묻히지 않은 것)나 무덤(grave)이 있다 (12-130: 계승의 흔적) */
         predecessor_here: z.enum(["remains", "grave"]).optional(),
         /** 사흘 안에 우리 무리의 이름 있는 사람이 죽었다 (12-163: 장례). 문장의 자리 {deceased}는 그 사람 */

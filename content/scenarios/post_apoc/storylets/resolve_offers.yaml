@@ -36,7 +36,7 @@
     - id: vow
       label: 내 손으로 빼 오겠다고 다짐한다
       effects:
-        - resolve: { kind: rescue, target: held, text: "붙잡힌 {held}을(를) 빼 온다" }
+        - resolve: { kind: rescue, target: held, text: "붙잡힌 {held:을/를} 빼 온다" }
     - id: wait
       label: 위의 결정을 기다린다
       effects: []
@@ -87,13 +87,13 @@
     segments: [evening, night]
   cast:
     dear: { romance: suitor, here: true }
-  setup: "{dear}이(가) 무심한 척 당신 몫의 국에 건더기를 더 얹는다. 눈이 마주치자 먼저 고개를 돌린다."
+  setup: "{dear:이/가} 무심한 척 당신 몫의 국에 건더기를 더 얹는다. 눈이 마주치자 먼저 고개를 돌린다."
   ai_direction: "{dear}의 마음은 코드가 정한 그대로다. 이 세상에 내일이 있는지 모른다는 것이 두 사람 다 걸린다."
   choices:
     - id: vow
       label: 이 사람 곁에 있겠다고 마음먹는다
       effects:
-        - resolve: { kind: heart, target: dear, text: "{dear}과(와) 함께한다" }
+        - resolve: { kind: heart, target: dear, text: "{dear:과/와} 함께한다" }
         - relation: { who: dear, axis: affection, delta: 1 }
     - id: away
       label: 지금은 그럴 때가 아니라고 마음을 접는다

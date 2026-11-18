@@ -1067,6 +1067,35 @@ wounds:
 legacy:
   close_affection: 3
 
+# 다짐 (12-164, *임시*): 주인공의 큰 줄기. 시나리오(역할의 resolve, 없으면 배경)가 주거나 이야기가 건넨다. 한 번에 하나.
+# 이루면 경험치 60과 마음 한 단계 회복, 꺾이면 마음 한 단계 악화. 갚기는 스스로 내려놓을 수 있다 (내려놓아도 이룬 것으로 친다)
+resolve:
+  xp: 60
+  relief_track: nerves
+  from_history: { enemy: revenge, family: find, debt: debt }
+  kinds:
+    - { id: revenge, label: 갚기, check: gone, let_go: true }
+    - { id: find, label: 찾기, check: meet }
+    - { id: rescue, label: 구해 내기, check: released }
+    - { id: cure, label: 살려 내기, check: cured }
+    - { id: protect, label: 지키기, check: alive_days }
+    - { id: repay, label: 은혜 갚기, check: promise_kept }
+    - { id: rise, label: 자리, check: rank }
+    - { id: debt, label: 빚 털기, check: debt_clear }
+    - { id: journey, label: 떠나기, check: reach }
+    - { id: truth, label: 진실, check: beliefs }
+    - { id: atone, label: 속죄, check: trusted }
+    - { id: heart, label: 마음, check: relation }
+    - { id: quit, label: 버리기, check: trait_gone }
+    - { id: endure, label: 버텨 내기, check: season_passed }
+    - { id: bury, label: 묻기, check: buried }
+    - { id: peace, label: 화해시키기, check: truce }
+    - { id: topple, label: 무너뜨리기, check: faction_fallen }
+    - { id: reclaim, label: 되찾기, check: zone_owned }
+    - { id: recognition, label: 인정받기, check: standing, occupation_only: true }
+    - { id: explore, label: 알아내기, check: ruins_found }
+    - { id: homecoming, label: 돌아가기, check: reach }
+
 # 몸에 남는 상처 (12-156, *임시*): 부상이 치명상 이상인 상처를 입으면 30%로 흔적 트레잇 하나. 상처 종류에 맞는 것 중에서, 한 사람에 셋까지
 scars:
   at: critical

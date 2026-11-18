@@ -82,7 +82,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
               </section>
             )}
 
-            <MissionCard mission={player.mission} loan={player.loan ?? []} />
+            <MissionCard mission={player.mission} loan={player.loan ?? []} resolve={player.resolve ?? null} />
           </div>
         }
       >
@@ -600,11 +600,23 @@ function SymptomList({ list, itemClassName = "" }: { list: SymptomView[]; itemCl
   );
 }
 
-function MissionCard({ mission, loan }: { mission: PlayerView["mission"]; loan: string[] }) {
+/** 다짐 (12-164): 임무 칸 맨 아래 한 줄. 칸을 접으면 보이지 않는다 */
+function ResolveLine({ text }: { text: string | null }) {
+  if (!text) return null;
+  return (
+    <div className="mission-resolve" title="다짐: 이 주인공의 큰 줄기">
+      <span className="mission-resolve-label">다짐</span>
+      <span>{text}</span>
+    </div>
+  );
+}
+
+function MissionCard({ mission, loan, resolve }: { mission: PlayerView["mission"]; loan: string[]; resolve: string | null }) {
   if (!mission) {
     return (
       <HudPanel id="mission" label="임무" peek="맡은 임무가 없습니다" empty>
         <div className="muted small">맡은 임무가 없습니다. 상관에게 일감을 받을 수 있습니다.</div>
+        <ResolveLine text={resolve} />
       </HudPanel>
     );
   }
@@ -637,6 +649,7 @@ function MissionCard({ mission, loan }: { mission: PlayerView["mission"]; loan: 
         })}
       </ul>
       {loan.length > 0 && <div className="muted small">빌린 장비 (반납): {loan.join(", ")}</div>}
+      <ResolveLine text={resolve} />
     </HudPanel>
   );
 }

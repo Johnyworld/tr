@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 62;
+export const SAVE_SCHEMA_VERSION = 63;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -143,6 +143,18 @@ export const pendingClashSchema = z.strictObject({
 export type PendingClash = z.infer<typeof pendingClashSchema>;
 
 /** 연대기: 죽은 캐릭터 한 명의 기록 (기획서 3.2). 플레이어(사람)가 보는 기록이고, 다음 캐릭터의 지식은 아니다 */
+/** 다짐 (12-164): 갈래(kind), 대상, 둘째 대상(휴전의 상대), 수, 한 줄, 세운 때, 출처, 무리·구역 다짐에서 주인공이 그 전투에 꼈는지 */
+export const resolveSchema = z.strictObject({
+  kind: z.string(),
+  target: z.string().nullable(),
+  target2: z.string().nullable(),
+  n: z.number().int().nullable(),
+  text: z.string(),
+  since: z.number().int(),
+  source: z.enum(["scenario", "story"]),
+  involved: z.boolean(),
+});
+
 export const runRecordSchema = z.strictObject({
   characterId: z.string(),
   name: z.string(),
@@ -301,6 +313,14 @@ export function createGameSchemas(s: Scenario) {
       .strictObject({ zone: z.string(), owner: z.string(), goal: z.string(), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean(), since: z.number().int() })
       .nullable()
       .default(null),
+    /** 다짐 (12-164): 캐릭터마다 지금 품은 다짐, 시나리오의 다짐을 세웠는지, 끝난 다짐의 기록 */
+    resolves: z.record(z.string(), resolveSchema.nullable()).default({}),
+    resolveSeeded: z.array(z.string()).default([]),
+    /** 내려놓은 까닭 (resolve_ended에 붙인다) */
+    resolveNote: z.string().nullable().default(null),
+    resolveLog: z
+      .array(z.strictObject({ characterId: z.string(), text: z.string(), outcome: z.enum(["achieved", "let_go", "broken", "by_others"]), at: z.number().int(), note: z.string().nullable() }))
+      .default([]),
     /** 탐험할 곳 (12-162): 캐릭터마다 찾은 숨은 곳, 지금 탐험 중인 곳 (깊이, 소음 0~3, 뒤진 칸) */
     ruinsFound: z.record(z.string(), z.array(z.string())).default({}),
     exploration: z
@@ -498,6 +518,12 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("infiltration_started"), zone: z.string(), owner: z.string(), goal: z.string() }),
     z.strictObject({ type: z.literal("infiltration_changed"), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean() }),
     z.strictObject({ type: z.literal("infiltration_ended"), how: z.enum(["out", "caught", "gone"]) }),
+    // 다짐 (12-164)
+    z.strictObject({ type: z.literal("resolve_set"), characterId: z.string(), resolve: resolveSchema }),
+    z.strictObject({ type: z.literal("resolve_ended"), characterId: z.string(), outcome: z.enum(["achieved", "let_go", "broken", "by_others"]) }),
+    z.strictObject({ type: z.literal("resolve_involved"), characterId: z.string() }),
+    z.strictObject({ type: z.literal("resolve_note"), characterId: z.string(), note: z.string() }),
+    z.strictObject({ type: z.literal("resolve_seeded"), characterId: z.string() }),
     // 탐험할 곳 (12-162)
     z.strictObject({ type: z.literal("ruin_found"), characterId: z.string(), ruin: z.string() }),
     z.strictObject({ type: z.literal("exploration_started"), ruin: z.string() }),
@@ -919,6 +945,10 @@ export const EMPTY_STATE: GameState = {
   stashHinted: [],
   infiltration: null,
   ruinsFound: {},
+  resolves: {},
+  resolveSeeded: [],
+  resolveNote: null,
+  resolveLog: [],
   exploration: null,
   bribes: [],
   promises: [],
@@ -1321,6 +1351,28 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "infiltration_ended":
       next.infiltration = null;
+      return next;
+    case "resolve_set":
+      next.resolves = { ...(next.resolves ?? {}), [event.characterId]: { ...event.resolve } };
+      next.resolveNote = null;
+      return next;
+    case "resolve_ended": {
+      const r = next.resolves?.[event.characterId];
+      if (r) next.resolveLog = [...(next.resolveLog ?? []), { characterId: event.characterId, text: r.text, outcome: event.outcome, at: state.time, note: next.resolveNote ?? null }];
+      next.resolves = { ...(next.resolves ?? {}), [event.characterId]: null };
+      next.resolveNote = null;
+      return next;
+    }
+    case "resolve_involved": {
+      const r = next.resolves?.[event.characterId];
+      if (r) next.resolves = { ...next.resolves, [event.characterId]: { ...r, involved: true } };
+      return next;
+    }
+    case "resolve_note":
+      next.resolveNote = event.note;
+      return next;
+    case "resolve_seeded":
+      if (!(next.resolveSeeded ?? []).includes(event.characterId)) next.resolveSeeded = [...(next.resolveSeeded ?? []), event.characterId];
       return next;
     case "ruin_found": {
       const had = next.ruinsFound?.[event.characterId] ?? [];

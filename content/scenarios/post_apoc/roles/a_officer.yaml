@@ -24,6 +24,8 @@ scenario:
 age: 38
 # 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
 # 스킬은 시나리오가 아니라 과거 배경에서 온다 (12-84)
+# 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
+resolve: { kind: reclaim, target: "riverside", text: 강변 공장 지대를 되찾는다 }
 start_skills: {}
 start_inventory: [ledger, radio, coat, cigarettes]
 start_location: a_base

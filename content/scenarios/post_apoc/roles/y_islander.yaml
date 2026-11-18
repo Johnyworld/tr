@@ -23,6 +23,8 @@ scenario:
 
     이야기는 어느 아침, 여울섬 부두에서 시작한다.
 age: 27
+# 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
+resolve: { kind: truth, target: "내보내|혈청|버티는 사람", n: 2, text: 뭍으로 내보내진 사람들이 어디로 가는지 안다 }
 start_skills: {}
 start_inventory: [harpoon_gun, harpoons, harpoons, harpoons, old_rifle, rifle_rounds, rifle_rounds, rifle_rounds, rifle_rounds, leather_jacket, water_bottle, canned_food, fishing_kit]
 start_location: yeoul_isle

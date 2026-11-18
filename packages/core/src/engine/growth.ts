@@ -88,6 +88,12 @@ export function gainMeritXp(ctx: ToolContext, characterId: string, merit: number
   return grant(ctx, characterId, Math.round(merit * g.xp.merit * (c ? xpMultiplier(ctx.content, c) : 1)), "merit");
 }
 
+/** 다짐을 이룬 보상 (12-164): 정해진 경험치 (트레잇 배수를 탄다) */
+export function gainResolveXp(ctx: ToolContext, characterId: string, amount: number): string | null {
+  const c = ctx.store.getState().characters[characterId];
+  return grant(ctx, characterId, Math.round(amount * (c ? xpMultiplier(ctx.content, c) : 1)), "merit");
+}
+
 /** learn_skill: 쌓인 레벨업으로 스킬 하나를 +1 (스킬 상한까지). 게임 시간을 쓰지 않는다 */
 export function learnSkill(input: { skill: string }, ctx: ToolContext): ToolOutcome {
   const s = ctx.content.scenario;

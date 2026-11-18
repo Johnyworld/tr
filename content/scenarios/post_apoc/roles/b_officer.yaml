@@ -22,6 +22,8 @@ scenario:
 age: 45
 # 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
 # 스킬은 시나리오가 아니라 과거 배경에서 온다 (12-84)
+# 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
+resolve: { kind: peace, target: "faction_b", target2: faction_c, text: 붉은연합과 휴전을 맺어 마을을 지킨다 }
 start_skills: {}
 start_inventory: [ledger, radio, flashlight, coat]
 start_location: b_base

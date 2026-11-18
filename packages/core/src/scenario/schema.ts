@@ -1,3 +1,33 @@
+/** 다짐의 판정 종류 (12-164, engine/resolve.ts의 RESOLVE_CHECKS와 같다) */
+export const RESOLVE_CHECK_IDS = [
+  "meet", "gone", "released", "cured", "alive_days", "promise_kept", "rank", "debt_clear", "reach", "beliefs",
+  "fame", "relation", "trait_gone", "season_passed", "buried", "truce", "faction_fallen", "zone_owned", "standing", "ruins_found", "trusted",
+] as const;
+/** 판정 종류마다 대상의 종류 (콘텐츠 검사용) */
+export const RESOLVE_TARGET: Record<(typeof RESOLVE_CHECK_IDS)[number], "person" | "zone" | "faction" | "rank" | "trait" | "season" | "none"> = {
+  meet: "person",
+  gone: "person",
+  released: "person",
+  cured: "person",
+  alive_days: "person",
+  promise_kept: "person",
+  relation: "person",
+  buried: "person",
+  rank: "rank",
+  debt_clear: "faction",
+  truce: "faction",
+  faction_fallen: "faction",
+  reach: "zone",
+  zone_owned: "zone",
+  trait_gone: "trait",
+  season_passed: "season",
+  beliefs: "none",
+  fame: "none",
+  standing: "none",
+  ruins_found: "none",
+  trusted: "none",
+};
+
 import { z } from "zod";
 import { TIME_SEGMENTS } from "../rules/time.ts";
 import { iconNameSchema } from "../content/icons.ts";
@@ -856,6 +886,28 @@ export const scenarioFileSchema = z
      */
     legacy: z.strictObject({ close_affection: z.number().int(), funeral_days: z.number().int().min(1).default(3) }).optional(),
     /**
+     * 다짐 (12-164): 갈래(kind)마다 판정 종류(check, core가 아는 것), 내려놓을 수 있는지(let_go), 직분이 있는 사람만(occupation_only).
+     * 이루면 xp와 relief_track 한 단계 회복, 꺾이면 relief_track 한 단계 악화. from_history: 배경의 원수·찾는 가족·빚을 어느 갈래로 읽는지
+     */
+    resolve: z
+      .strictObject({
+        xp: z.number().int().min(0),
+        relief_track: id,
+        from_history: z.strictObject({ enemy: id.optional(), family: id.optional(), debt: id.optional() }).default({}),
+        kinds: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              check: z.enum(RESOLVE_CHECK_IDS),
+              let_go: z.boolean().default(false),
+              occupation_only: z.boolean().default(false),
+            }),
+          )
+          .min(1),
+      })
+      .optional(),
+    /**
      * 몸에 남는 상처 (12-156): 부상이 at 단계 이상이 되는 상처를 입으면 chance로 오래 가는 약점 트레잇 하나가 붙는다 (흉터·절뚝임 등).
      * 그 상처 종류(wounds)에 맞는 것 중에서, 아직 없는 것만. 한 사람에 max개까지. 플레이어와 NPC가 같다 (원칙 6)
      */
@@ -1503,6 +1555,10 @@ export const scenarioFileSchema = z
     if (s.exploration) {
       for (const m of [s.exploration.move, s.exploration.search_move]) if (!s.moves.some((x) => x.id === m)) problem(`exploration: 알 수 없는 행동 ${m}`);
       for (const r of s.exploration.ruins) if (r.loot.length !== r.depths.length) problem(`exploration.ruins.${r.id}: loot는 깊이 칸마다 하나 (${r.depths.length})`);
+    }
+    if (s.resolve) {
+      if (!s.condition_tracks.some((t) => t.id === s.resolve!.relief_track)) problem(`resolve.relief_track: 알 수 없는 상태 트랙 ${s.resolve.relief_track}`);
+      for (const [k, v] of Object.entries(s.resolve.from_history)) if (v && !s.resolve.kinds.some((x) => x.id === v)) problem(`resolve.from_history.${k}: 알 수 없는 갈래 ${v}`);
     }
     const scars = s.scars;
     if (scars) {

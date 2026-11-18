@@ -1,3 +1,5 @@
+import { recentlyDeadComrade } from "./legacy.ts";
+import { setResolve } from "./resolve.ts";
 import { capturePlayer, releasePlayer } from "./captivity.ts";
 import { rankName } from "../game/ranks.ts";
 import { exposeToFatigue } from "./fatigue.ts";
@@ -419,6 +421,13 @@ export function applyEffect(
     store.append({ type: "merit_awarded", characterId: playerId, delta: effect.merit, reason });
     const growthNote = gainMeritXp(ctx, playerId, effect.merit);
     return { line: `공적 ${effect.merit > 0 ? "+" : ""}${effect.merit}.` + (growthNote ? ` ${growthNote}` : "") };
+  }
+  if ("resolve" in effect) {
+    const e = effect.resolve;
+    const pick = (x: string | null) =>
+      x === null ? null : x === "zone" ? state.playerZone : x === "own" ? (state.characters[playerId]?.factionId ?? null) : x === "deceased" ? recentlyDeadComrade(state, content) : (whoOf(ctx, x, cast) ?? x);
+    const line = setResolve(ctx, { kind: e.kind, target: pick(e.target), target2: pick(e.target2), n: e.n, text: fillStorylet(e.text, vars) }, "story");
+    return line ? { line: `(${line}. 이것이 이제 주인공의 큰 줄기다)`, display: { type: "belief", fact: line, sourceLabel: "다짐" } } : {};
   }
   if ("give_item" in effect) {
     const { item, quantity } = effect.give_item;

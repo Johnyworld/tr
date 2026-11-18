@@ -29,6 +29,8 @@ scenario:
     청솔형제단이 사람을 먹는다는 말, 약탈조가 감염체를 턴다는 말은 주인공 주변 모두가 믿는 말이다. GM은 이것을 사람들의 믿음으로 서술하고, 사실로 단정하지 않는다. 반대로 거짓이라고 먼저 밝히지도 않는다.
     의심은 천천히, 작은 장면으로 스민다: 포로의 얼굴, 약탈한 집의 아이 신발, 동료 하나의 말끝. 플레이어가 무엇을 믿을지는 플레이어가 정한다.
 age: 26
+# 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
+resolve: { kind: protect, target: "c_cm_dahye", n: 40, text: 오래 함께 버틴 안다혜를 지킨다 }
 start_skills: {}
 start_inventory: [c_armband, crowbar, water_bottle, padded_armor]
 start_location: c_warehouse

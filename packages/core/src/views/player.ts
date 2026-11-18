@@ -1,3 +1,4 @@
+import { resolveLine } from "../engine/resolve.ts";
 import { rankName } from "../game/ranks.ts";
 import { stashHere, stashPlace } from "../engine/stash.ts";
 import { isCreature } from "../game/kinds.ts";
@@ -157,6 +158,8 @@ export type PlayerView = {
   debts: { name: string; amount: number }[];
   /** 지금 임무로 무기고에서 빌린 것 */
   loan: string[];
+  /** 다짐 (12-164): 상태 화면의 임무 칸 맨 아래 */
+  resolve: string | null;
   /** 맡은 분대 (분대장일 때), 또는 속한 분대 (분대원일 때: 분대장이 맨 위, doing은 계급) */
   squad: { id: string; name: string; doing: string; report: string | null; states: SymptomView[] }[] | null;
   /** 내 무리의 방침 */
@@ -436,6 +439,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       return { id, name: playerCalls(state, content, id), bondLabel: bond ? BOND_LABELS[bond.kind] : "", note, apart: !!apart, states: c ? symptomViews(scenario, c) : [] };
     }),
     debts: Object.entries(player.debts ?? {}).map(([f, n]) => ({ name: content.factions[f]?.name ?? f, amount: n })),
+    resolve: resolveLine(state),
     loan: (() => {
       const m = activeMissionOf(state.missions, player.id);
       const loan = m ? state.loans?.[m.id] : undefined;

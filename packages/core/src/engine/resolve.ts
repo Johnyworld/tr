@@ -1,0 +1,247 @@
+import { z } from "zod";
+import { RESOLVE_CHECK_IDS, RESOLVE_TARGET } from "../scenario/schema.ts";
+export { RESOLVE_TARGET };
+import type { Content } from "../content/schemas.ts";
+import { playerCalls } from "../game/acquaintance.ts";
+import { fameOf } from "../game/fame.ts";
+import { standingInFaction } from "../game/politics.ts";
+import type { GameState } from "../game/state.ts";
+import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
+import { seasonAt } from "../sim/season.ts";
+import { changeCondition } from "./body.ts";
+import { gainResolveXp } from "./growth.ts";
+import { loversOf } from "./romance.ts";
+import { traitIdsOf } from "./traits.ts";
+import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+
+/**
+ * 다짐 (기획서 3.5, 12-164). 주인공의 큰 줄기 (메인 임무에 가까운 것). 한 번에 하나.
+ * - 생기는 길은 둘: 시나리오(역할의 resolve, 없으면 배경 history를 resolve.from_history로 읽는다), 플레이 중 이야기 효과 resolve
+ * - 이뤘는지·꺾였는지는 코드가 지금 상태를 읽어 정한다 (판정 종류 RESOLVE_CHECKS). tool이 끝날 때마다 본다
+ * - 갚기처럼 let_go인 갈래는 스스로 내려놓을 수 있다 (resolve tool). 내려놓아도 이룬 다짐으로 친다
+ * - 무리·구역을 대상으로 하는 다짐은 주인공이 그 전투에 끼지 않고 이뤄지면 "남의 손으로 이뤘다"
+ */
+
+export const RESOLVE_CHECKS = RESOLVE_CHECK_IDS;
+export type ResolveCheck = (typeof RESOLVE_CHECKS)[number];
+
+/** 사람이 죽으면 꺾이는 판정 */
+const BROKEN_BY_DEATH: ReadonlySet<ResolveCheck> = new Set(["meet", "released", "cured", "alive_days", "promise_kept", "relation"]);
+/** 주인공이 끼지 않아도 이뤄질 수 있는 판정 (무리·구역) */
+const BY_OTHERS: ReadonlySet<ResolveCheck> = new Set(["faction_fallen", "zone_owned", "truce"]);
+
+export type Resolve = NonNullable<GameState["resolves"][string]>;
+export type ResolveOutcome = "achieved" | "let_go" | "broken" | "by_others";
+
+const rules = (content: Content) => content.scenario.resolve;
+export const kindOf = (content: Content, id: string) => rules(content)?.kinds.find((k) => k.id === id);
+
+/** 지금 주인공의 다짐 */
+export function currentResolve(state: GameState): Resolve | null {
+  return state.resolves?.[state.playerId] ?? null;
+}
+
+/** 이룬 것인지 (true), 꺾인 것인지 (false), 아직인지 (null) */
+function evaluate(content: Content, state: GameState, r: Resolve): boolean | null {
+  const kind = kindOf(content, r.kind);
+  if (!kind) return null;
+  const me = state.characters[state.playerId]!;
+  const t = r.target ? state.characters[r.target] : undefined;
+  if (BROKEN_BY_DEATH.has(kind.check) && t?.dead) return false;
+  switch (kind.check) {
+    case "meet":
+      // 살아서 주인공 앞에 나타났다 (같은 장면)
+      return t && !t.dead && state.scene.present.includes(r.target!) ? true : null;
+    case "gone":
+      return t && (t.dead || !!t.captive) ? true : null;
+    case "released":
+      return t && !t.dead && !t.captive ? true : null;
+    case "cured": {
+      const track = content.scenario.body?.infection?.track;
+      return t && track && (t.conditions[track] ?? "") === content.scenario.condition_tracks.find((x) => x.id === track)?.levels[0]?.id ? true : null;
+    }
+    case "alive_days":
+      return t && !t.dead && state.time - r.since >= (r.n ?? 1) * MINUTES_PER_DAY ? true : null;
+    case "promise_kept":
+      return (state.promises ?? []).some((p) => p.to === r.target && p.status === "kept" && p.made >= r.since) ? true : null;
+    case "rank": {
+      if (!me.factionId) return false;
+      const ladder = content.scenario.rank_ladder;
+      const level = (id: string) => ladder.find((x) => x.id === id)?.level ?? 0;
+      return level(me.rank) >= level(r.target ?? "") ? true : null;
+    }
+    case "debt_clear":
+      return (me.debts[r.target ?? ""] ?? 0) <= 0 ? true : null;
+    case "reach":
+      return state.playerZone === r.target ? true : null;
+    case "beliefs": {
+      const words = (r.target ?? "").split("|").filter(Boolean);
+      const n = (state.beliefs[state.playerId] ?? []).filter((b) => words.some((w) => b.fact.includes(w))).length;
+      return n >= (r.n ?? 1) ? true : null;
+    }
+    case "fame":
+      return fameOf(state, content).tier >= (r.n ?? 1) ? true : null;
+    case "relation":
+      return r.target && loversOf(state, content, state.playerId).includes(r.target) ? true : null;
+    case "trait_gone":
+      return !traitIdsOf(content, me).includes(r.target ?? "") ? true : null;
+    case "season_passed": {
+      // 그 계절에 들어갔다가 벗어날 때까지 살아 있으면
+      let entered = false;
+      for (let d = dayOf(r.since); d <= dayOf(state.time); d++) {
+        const id = seasonAt(content.scenario, (d - 1) * MINUTES_PER_DAY)?.id;
+        if (id === r.target) entered = true;
+        else if (entered) return true;
+      }
+      return null;
+    }
+    case "buried":
+      return state.remains.some((x) => x.of === r.target && (x.buriedAt !== null || x.zone === state.playerZone)) ? true : null;
+    case "truce":
+      return (state.pacts ?? []).some((p) => p.kind === "truce" && p.until > state.time && ((p.a === r.target && p.b === r.target2) || (p.a === r.target2 && p.b === r.target))) ? true : null;
+    case "faction_fallen": {
+      const f = r.target ?? "";
+      const bases = Object.entries(state.zones).filter(([z, info]) => info.owner === f && content.locations[z]?.kind === "base");
+      return bases.length === 0 ? true : null;
+    }
+    case "zone_owned":
+      return !!me.factionId && state.zones[r.target ?? ""]?.owner === me.factionId ? true : null;
+    case "standing":
+      return (me.occupation?.standing ?? -1) >= (r.n ?? 1) ? true : null;
+    case "trusted": {
+      // 속죄: 무리 안에 나를 믿지 않는 사람이 없고, 믿는 사람이 n명 이상
+      const st = standingInFaction(state, content, state.playerId);
+      return me.factionId && st.distrust === 0 && st.trust >= (r.n ?? 3) ? true : null;
+    }
+    case "ruins_found":
+      return (state.ruinsFound?.[state.playerId] ?? []).length >= (r.n ?? 1) ? true : null;
+  }
+}
+
+/** 다짐을 끝낸다: 보상(이룸)이나 마음의 상처(꺾임), 기록. GM에게 알릴 줄 */
+function finish(ctx: ToolContext, r: Resolve, outcome: ResolveOutcome): { line: string; displays: ToolDisplayEvent[] } {
+  const rule = rules(ctx.content)!;
+  const state = ctx.store.getState();
+  const me = state.playerId;
+  ctx.store.append({ type: "resolve_ended", characterId: me, outcome });
+  const displays: ToolDisplayEvent[] = [];
+  if (outcome === "broken") {
+    const c = changeCondition(ctx, me, rule.relief_track, 1, "resolve", "꺾인 다짐");
+    if (c?.display) displays.push(c.display);
+    return { line: `(다짐이 꺾였다: ${r.text}. 이 상실을 장면에 담는다. 이야기가 새 다짐을 건넬 수 있다)`, displays };
+  }
+  const level = gainResolveXp(ctx, me, rule.xp);
+  const c = changeCondition(ctx, me, rule.relief_track, -1, "resolve", "이룬 다짐");
+  if (c?.display) displays.push(c.display);
+  const how = outcome === "let_go" ? "내려놓았다" : outcome === "by_others" ? "이뤘다 (남의 손으로)" : "이뤘다";
+  return { line: `(다짐을 ${how}: ${r.text}. 이 순간을 이번 장면의 무게 중심으로 연출한다.${level ? ` ${level}` : ""})`, displays };
+}
+
+/** tool이 끝날 때마다: 지금 다짐을 이뤘는지·꺾였는지 본다. 무리·구역 다짐이면 그 전투에 낀 것을 기억한다 */
+export function checkResolve(ctx: ToolContext): { lines: string[]; displays: ToolDisplayEvent[] } {
+  let state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me || me.dead || !rules(ctx.content)) return { lines: [], displays: [] };
+  // 시나리오의 다짐은 그 캐릭터의 첫 판정 때 한 번 세운다 (시나리오 없이 이어 가는 계승 캐릭터는 없다)
+  const seeded: string[] = [];
+  if (!(state.resolveSeeded ?? []).includes(me.id)) {
+    ctx.store.append({ type: "resolve_seeded", characterId: me.id });
+    if (state.scenarioRole && !currentResolve(state)) {
+      const line = scenarioResolve(ctx, state.scenarioRole);
+      if (line) seeded.push(`(${line}. 이것이 이 주인공의 큰 줄기다. 서두르게 하지도 말리지도 않는다)`);
+    }
+    state = ctx.store.getState();
+  }
+  const r = currentResolve(state);
+  if (!r) return { lines: seeded, displays: [] };
+  const kind = kindOf(ctx.content, r.kind);
+  if (kind && BY_OTHERS.has(kind.check) && !r.involved && state.battle) {
+    const b = state.battle as { zone?: string; theirs?: { faction?: string } };
+    if (b.zone === r.target || b.theirs?.faction === r.target || b.theirs?.faction === r.target2) ctx.store.append({ type: "resolve_involved", characterId: me.id });
+  }
+  const result = evaluate(ctx.content, ctx.store.getState(), currentResolve(ctx.store.getState())!);
+  if (result === null) return { lines: seeded, displays: [] };
+  const now = currentResolve(ctx.store.getState())!;
+  const outcome: ResolveOutcome = !result ? "broken" : kind && BY_OTHERS.has(kind.check) && !now.involved ? "by_others" : "achieved";
+  const done = finish(ctx, now, outcome);
+  return { lines: [...seeded, done.line], displays: done.displays };
+}
+
+/** 다짐을 세운다 (시나리오 시작, 이야기 효과). 대상은 캐릭터·구역·무리·등급 id */
+export function setResolve(ctx: ToolContext, input: { kind: string; target?: string | null; target2?: string | null; n?: number | null; text: string }, source: "scenario" | "story"): string | null {
+  const kind = kindOf(ctx.content, input.kind);
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!kind || !me || me.dead) return null;
+  if (kind.occupation_only && !me.occupation) return null;
+  ctx.store.append({
+    type: "resolve_set",
+    characterId: me.id,
+    resolve: { kind: kind.id, target: input.target ?? null, target2: input.target2 ?? null, n: input.n ?? null, text: input.text, since: state.time, source, involved: false },
+  });
+  return `새 다짐: ${input.text}`;
+}
+
+/** 시나리오의 다짐: 역할에 resolve가 있으면 그것, 없으면 배경(history)을 resolve.from_history로 읽는다 */
+export function scenarioResolve(ctx: ToolContext, roleId: string): string | null {
+  const role = ctx.content.roles[roleId];
+  const rule = rules(ctx.content);
+  if (!role || !rule) return null;
+  if (role.resolve) return setResolve(ctx, role.resolve, "scenario");
+  const state = ctx.store.getState();
+  for (const part of role.history ?? []) {
+    if (part.kind === "enemy" && rule.from_history.enemy && ctx.content.npcs[part.target]) {
+      return setResolve(ctx, { kind: rule.from_history.enemy, target: part.target, text: `${ctx.content.npcs[part.target]!.name}에게 갚는다` }, "scenario");
+    }
+  }
+  const family = state.family[0];
+  if (family && rule.from_history.family) return setResolve(ctx, { kind: rule.from_history.family, target: family, text: "헤어진 가족을 찾는다" }, "scenario");
+  const debt = Object.entries(state.characters[state.playerId]?.debts ?? {}).find(([, n]) => n > 0);
+  if (debt && rule.from_history.debt) {
+    return setResolve(ctx, { kind: rule.from_history.debt, target: debt[0], text: `${ctx.content.factions[debt[0]]?.name ?? debt[0]}에 진 빚을 턴다` }, "scenario");
+  }
+  return null;
+}
+
+/** 다짐 한 줄 (상태 화면·?임무) */
+export function resolveLine(state: GameState): string | null {
+  return currentResolve(state)?.text ?? null;
+}
+
+/** GM 상태의 줄 */
+export function describeResolve(state: GameState, content: Content): string[] {
+  const r = currentResolve(state);
+  if (!r) return [];
+  const kind = kindOf(content, r.kind);
+  const who = r.target && state.characters[r.target] ? ` (대상: ${playerCalls(state, content, r.target)})` : "";
+  return [
+    `주인공의 다짐: ${r.text}${who} — ${kind?.label ?? r.kind}. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
+  ];
+}
+
+const resolveTool = defineTool({
+  name: "resolve",
+  description:
+    "주인공의 다짐(메인 줄기)을 스스로 내려놓는다 (갚기처럼 내려놓을 수 있는 다짐만). 플레이어가 장면에서 분명히 용서하거나 포기했을 때만 부른다. " +
+    "내려놓아도 이룬 다짐으로 친다 (보상은 시스템이 준다). 다짐을 세우거나 이뤘다고 알리는 데는 쓰지 않는다 (시스템이 정한다).",
+  schema: z.strictObject({ action: z.literal("let_go"), why: z.string().min(1).max(120).describe("내려놓은 까닭 한 줄 (연대기에 남는다)") }),
+  run(input, ctx): ToolOutcome {
+    const state = ctx.store.getState();
+    const r = currentResolve(state);
+    if (!r) return { ok: false, error: "지금 품은 다짐이 없다." };
+    const kind = kindOf(ctx.content, r.kind);
+    if (!kind?.let_go) return { ok: false, error: `이 다짐(${kind?.label ?? r.kind})은 내려놓는 길이 없다. 이루거나 꺾일 뿐이다.` };
+    ctx.store.append({ type: "resolve_note", characterId: state.playerId, note: input.why.trim() });
+    const done = finish(ctx, r, "let_go");
+    return { ok: true, resultText: done.line, display: done.displays[0] ?? { type: "time", activityLabel: "다짐", durationLabel: "", fromLabel: "", toLabel: "" }, extra: done.displays.slice(1) };
+  },
+});
+
+export const RESOLVE_TOOLS = [resolveTool] as const;
+
+/** 연대기 줄: 그 캐릭터가 이루거나 꺾거나 내려놓은 다짐 */
+export function resolveChronicle(state: GameState, characterId: string): string[] {
+  const label: Record<ResolveOutcome, string> = { achieved: "이룬 다짐", let_go: "내려놓은 다짐", broken: "꺾인 다짐", by_others: "남의 손으로 이룬 다짐" };
+  return (state.resolveLog ?? []).filter((x) => x.characterId === characterId).map((x) => `${label[x.outcome]}: ${x.text}${x.note ? ` (${x.note})` : ""}`);
+}
+

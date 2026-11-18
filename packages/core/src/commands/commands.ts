@@ -1,3 +1,4 @@
+import { resolveLine } from "../engine/resolve.ts";
 import { promiseLines } from "../engine/promises.ts";
 import { rankName } from "../game/ranks.ts";
 import { disciplineOf } from "../game/culture.ts";
@@ -325,6 +326,9 @@ const mission: CommandDef = {
     // 약속 (12-160)
     const promises = promiseLines(state, content);
     if (promises.length) lines.push("", "지킬 약속", ...promises.map((l) => `  ${l}`));
+    // 다짐 (12-164): 임무 아래
+    const vow = resolveLine(state);
+    if (vow) lines.push("", `다짐  ${vow}`);
     return lines.join("\n");
   },
 };

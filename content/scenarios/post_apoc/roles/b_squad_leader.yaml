@@ -26,6 +26,8 @@ scenario:
 age: 28
 # 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
 # 시나리오는 스킬을 주지 않는다 (지난 배경이 준다)
+# 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
+resolve: { kind: endure, target: "winter", text: 정찰대원들과 이번 겨울을 넘긴다 }
 start_skills: {}
 start_inventory: [pipe_spear, binoculars, radio, water_bottle, flashlight, notebook, pencil]
 start_location: b_base

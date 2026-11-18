@@ -1,3 +1,4 @@
+import { resolveChronicle } from "./resolve.ts";
 import { inheritStashes } from "./legacy.ts";
 import { rankName } from "../game/ranks.ts";
 import { autoEquip } from "./gear.ts";
@@ -344,6 +345,7 @@ export function formatChronicle(state: GameState, content: Content): string[] {
       `${i + 1}. ${r.name} · ${faction} ${rankName(content, r.factionId, r.rank)} · ${daysSurvived(r)}일 생존 · 공적 ${r.merit}`,
       `   ${formatTime(r.startedAt)} ~ ${formatTime(r.diedAt)} · 사망: ${r.cause}`,
       ...r.deeds.map((d) => `   - ${d}`),
+      ...resolveChronicle(state, r.characterId).map((d) => `   · ${d}`),
       ...(r.epitaph ? [`   "${r.epitaph}"`] : []),
       "",
     );

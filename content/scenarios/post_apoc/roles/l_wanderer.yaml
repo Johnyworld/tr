@@ -25,6 +25,8 @@ scenario:
     무리 없는 사람의 이야기다. 배급도 임무도 상관도 없다: 먹을 것, 물, 잠자리, 추위가 매일의 문제다. 무리들은 떠돌이를 쓸모와 위협으로 본다.
     어느 무리에 들지(들 수 있는 길은 이야기가 연다) 정해 주지 않는다. 누렁이는 말없는 동료로, 위험을 먼저 알아채는 존재로 그린다.
 age: 32
+# 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
+resolve: { kind: homecoming, target: "old_town", text: 무너지기 전 살던 구시가의 집에 가 본다 }
 start_skills: {}
 start_inventory: [pipe_spear, leather_jacket, blanket, water_bottle, dry_ration, fishing_kit]
 start_location: old_town

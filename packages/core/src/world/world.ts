@@ -1,3 +1,4 @@
+import { checkResolve } from "../engine/resolve.ts";
 import { dayOf } from "../rules/time.ts";
 import { moveStash } from "../engine/stash.ts";
 import { parseMemoCommand, writeMemo, type MemoResult } from "../game/memo.ts";
@@ -213,8 +214,10 @@ export class GameWorld {
     }
     const tracked = this.#tracked(() => executeTool(name, input, this.ctx()));
     let outcome = tracked.value;
-    // 시나리오 해금·클리어는 tool 결과 뒤에 GM에게 알린다
-    const progress = describeProgressNotices(tracked.notices);
+    // 시나리오 해금·클리어는 tool 결과 뒤에 GM에게 알린다. 다짐(12-164)도 tool이 끝날 때마다 본다
+    const resolved = outcome.ok ? checkResolve(this.ctx()) : { lines: [], displays: [] };
+    const progress = [...describeProgressNotices(tracked.notices), ...resolved.lines];
+    if (outcome.ok && resolved.displays.length) outcome = { ...outcome, extra: [...(outcome.extra ?? []), ...resolved.displays] };
     if (outcome.ok && progress.length) outcome = { ...outcome, resultText: [outcome.resultText, ...progress].filter(Boolean).join("\n") };
     if (outcome.ok && !outcome.silent) {
       this.appendTranscript([outcome.display, ...(outcome.extra ?? [])].map((display) => ({ kind: "tool", display })));

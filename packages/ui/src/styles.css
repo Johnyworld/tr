@@ -1447,6 +1447,24 @@ body {
   border-color: var(--success);
 }
 
+/* 다짐 (12-164): 임무 칸 맨 아래, 임무보다 한 단계 낮게 */
+.mission-resolve {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.mission-resolve-label {
+  flex: none;
+  color: var(--partial);
+  font-weight: 600;
+}
+
 .sheet section.block {
   margin-top: 0;
   padding: 14px 0;

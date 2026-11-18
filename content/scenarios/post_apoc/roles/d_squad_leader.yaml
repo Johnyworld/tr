@@ -29,6 +29,8 @@ scenario:
 age: 34
 # 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
 # 시나리오는 스킬을 주지 않는다 (지난 배경이 준다)
+# 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
+resolve: { kind: protect, target: "d_eunyoung", n: 40, text: 서은영 대표를 지킨다 }
 start_skills: {}
 start_inventory: [pistol, pistol_rounds, crowbar, radio, flashlight, bandage, water_bottle]
 start_location: d_clinic

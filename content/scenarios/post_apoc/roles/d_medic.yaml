@@ -25,6 +25,8 @@ scenario:
 
     이야기는 어느 아침, 진료소의 수비대 숙소에서 시작한다.
 age: 20
+# 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
+resolve: { kind: recognition, n: 3, text: 진료소 사람들에게 제 몫을 인정받는다 }
 start_skills: {}
 start_inventory: [medkit, fever_reducer, water_bottle, bandage, bandage, cloth, cloth, kitchen_knife]
 start_location: d_clinic

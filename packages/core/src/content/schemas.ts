@@ -153,6 +153,10 @@ export function createContentSchemas(s: Scenario) {
       .optional(),
     /** 미리 정해진 사연 (기획서 12.6의 배경 부품). 세계를 만들 때 세이브의 역사가 된다 */
     history: z.array(historyPartSchema()).default([]),
+    /** 다짐 (12-164): 이 시나리오 주인공의 큰 줄기. 없으면 배경(history)을 scenario.resolve.from_history로 읽는다 */
+    resolve: z
+      .strictObject({ kind: contentIdSchema, target: z.string().nullable().default(null), target2: z.string().nullable().default(null), n: z.number().int().nullable().default(null), text: z.string().min(1).max(80) })
+      .optional(),
     /** 미리 정해진 지난 삶 (주인공의 기억 몇 문장) */
     background: z.array(z.string().min(1).max(200)).default([]),
     /**
@@ -523,6 +527,13 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ standing: z.number().int().min(-2).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
     z.strictObject({ give_item: z.strictObject({ item: contentIdSchema, from: z.string().optional(), quantity: z.number().int().positive().default(1) }) }),
+    /**
+     * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (지금 다짐은 바뀐다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
+     * text는 다짐 한 줄 (문장의 자리를 쓸 수 있다)
+     */
+    z.strictObject({
+      resolve: z.strictObject({ kind: contentIdSchema, target: z.string().nullable().default(null), target2: z.string().nullable().default(null), n: z.number().int().nullable().default(null), text: z.string().min(1).max(80) }),
+    }),
     /**
      * 주인공이 다친다 (12-56): 판정이 붙은 선택지의 대가 있는 성공·실패에서만 (콘텐츠 검증이 막는다).
      * 부상 트랙 steps 단계, 죽음 바로 앞에서 멈춘다 (이야기는 사람을 죽이지 않는다, 원칙 3)

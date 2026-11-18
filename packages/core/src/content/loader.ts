@@ -1,3 +1,4 @@
+import { RESOLVE_TARGET } from "../scenario/schema.ts";
 import { checkHistory } from "../game/background.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { occupationById } from "../game/occupation.ts";
@@ -266,6 +267,36 @@ function checkReferences(content: Content): string[] {
   }
   // 구역이 하나도 없는 팩(부분 팩·테스트)은 건너뛴다
   if (Object.keys(content.locations).length) for (const z of Object.keys(content.scenario.war?.talk?.rumor?.zones ?? {})) if (!content.locations[z]) problems.push(`war.talk.rumor: 알 수 없는 구역 ${z}`);
+  // 다짐 (12-164): 갈래와 대상
+  const resolveTargetOk = (kindId: string, target: string | null, castKeys: Set<string>): string | null => {
+    const kind = content.scenario.resolve?.kinds.find((k) => k.id === kindId);
+    if (!kind) return `알 수 없는 다짐 갈래 ${kindId}`;
+    const type = RESOLVE_TARGET[kind.check];
+    if (!target || castKeys.has(target) || target === "zone" || target === "own" || target === "deceased") return null;
+    const ok =
+      type === "person" ? !!content.npcs[target] :
+      type === "zone" ? !!content.locations[target] :
+      type === "faction" ? !!content.factions[target] :
+      type === "rank" ? content.scenario.rank_ladder.some((r) => r.id === target) :
+      type === "trait" ? content.scenario.traits.some((t) => t.id === target) :
+      type === "season" ? (content.scenario.seasons?.list ?? []).some((x) => x.id === target) : true;
+    return ok ? null : `다짐 ${kindId}의 대상 ${target}을(를) 모른다`;
+  };
+  for (const role of Object.values(content.roles)) {
+    if (!role.resolve) continue;
+    const bad = resolveTargetOk(role.resolve.kind, role.resolve.target, new Set());
+    if (bad) problems.push(`roles.${role.id}.resolve: ${bad}`);
+  }
+  for (const st of Object.values(content.storylets)) {
+    const keys = new Set(Object.keys(st.cast));
+    for (const c of st.choices) {
+      for (const e of [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])]) {
+        if (!("resolve" in e)) continue;
+        const bad = resolveTargetOk(e.resolve.kind, e.resolve.target, keys);
+        if (bad) problems.push(`storylets.${st.id}.choices.${c.id}: ${bad}`);
+      }
+    }
+  }
   // 탐험할 곳 (12-162): 구역·아이템·감염체 틀
   for (const r of content.scenario.exploration?.ruins ?? []) {
     if (!content.locations[r.zone]) problems.push(`scenario.exploration.ruins.${r.id}: 알 수 없는 구역 ${r.zone}`);
@@ -478,6 +509,7 @@ export function checkStorylets(content: Content): string[] {
       for (const e of [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])]) {
         if ("belief" in e) texts.push(e.belief.fact);
         if ("deed" in e) texts.push(e.deed.summary);
+        if ("resolve" in e) texts.push(e.resolve.text);
       }
     }
     for (const text of texts) {

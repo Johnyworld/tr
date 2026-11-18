@@ -49,6 +49,8 @@ export type PlayerView = {
   companions?: { id: string; name: string; bondLabel: string; note: string | null; apart: boolean; states?: SymptomView[] }[];
   debts?: { name: string; amount: number }[];
   loan?: string[];
+  /** 다짐 (12-164): 임무 칸 맨 아래 */
+  resolve?: string | null;
   squad?: { id: string; name: string; doing: string; report: string | null; states?: SymptomView[] }[] | null;
   policy?: { label: string; option: string }[];
   ties?: { key: string; text: string }[];

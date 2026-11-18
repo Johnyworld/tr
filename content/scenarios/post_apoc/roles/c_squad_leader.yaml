@@ -28,6 +28,8 @@ scenario:
 
     이야기는 조장이 되고 처음 조원을 모으는 새벽, 물류창고 마당에서 시작한다.
 age: 31
+# 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
+resolve: { kind: protect, target: "c_areum", n: 40, text: 조원 진아름을 앞줄에서 살려 낸다 }
 start_skills: {}
 start_inventory: [c_armband, sawn_shotgun, shells, shells, shells, radio, padded_armor]
 start_location: c_warehouse

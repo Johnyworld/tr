@@ -1,3 +1,4 @@
+import { RESOLVE_TOOLS } from "./resolve.ts";
 import { EXPLORATION_TOOLS } from "./exploration.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { DIPLOMACY_TOOLS } from "./diplomacy.ts";
@@ -268,6 +269,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...REPUTATION_TOOLS,
       ...LEVERAGE_TOOLS,
       ...PROMISE_TOOLS,
+      ...RESOLVE_TOOLS,
       ...INFILTRATION_TOOLS,
       ...EXPLORATION_TOOLS,
       ...STORYLET_TOOLS,

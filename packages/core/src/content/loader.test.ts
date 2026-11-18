@@ -35,6 +35,8 @@ function tempContent(files: Record<string, string>) {
   scenario.traits = (scenario.traits as { effects?: { habit?: unknown } }[]).filter((t) => !t.effects?.habit);
   // 술·약의 의존(12-157)은 버릇 트레잇을 가리킨다
   if (scenario.body) delete (scenario.body as Record<string, unknown>).dependence;
+  // 탐험할 곳(12-162)도 실제 구역·아이템을 참조한다
+  delete scenario.exploration;
   // 모닥불 연료도 실제 아이템을 참조한다 (12-98)
   const cold = (scenario.body as Record<string, Record<string, Record<string, unknown>>> | undefined)?.cold?.climate;
   if (cold) delete cold.fire;

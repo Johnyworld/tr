@@ -919,6 +919,34 @@ export const scenarioFileSchema = z
      * goals: 깊은 곳에서 하는 일. items(주인공이 얻는다)·resource(그 땅 주인 무리의 자원 증감)·morale·release(그 구역에 갇힌 사람을 푼다)·overhear(준비하는 일을 엿듣는다).
      * 대가 있는 성공은 items·resource 절반, morale 없음
      */
+    /**
+     * 탐험할 곳 (12-162): 구역의 숨은 곳. 그 구역을 뒤지다(수색 성공) find_chance로 찾는다.
+     * 깊이 칸을 move 판정으로 내려가고, 칸마다 한 번 search_move로 뒤진다 (loot는 칸마다의 찾을 거리 표).
+     * 소음이 3에 닿으면 wake[깊이]의 감염체가 깊이+1만큼 깨어난다. hazard: 실패해 다칠 때의 원인
+     */
+    exploration: z
+      .strictObject({
+        move: id,
+        search_move: id,
+        step_minutes: z.number().int().min(5).max(60).default(15),
+        find_chance: z.number().min(0).max(1),
+        wake: z.array(id).min(1),
+        ruins: z
+          .array(
+            z.strictObject({
+              id,
+              zone: id,
+              label: z.string().min(1),
+              hint: z.string().min(1),
+              mood: z.string().min(1),
+              hazard: z.string().min(1).max(60),
+              depths: z.array(z.string().min(1)).min(2).max(5),
+              loot: z.array(z.array(z.strictObject({ item: id, weight: z.number().positive(), qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) })).min(1)).min(1),
+            }),
+          )
+          .default([]),
+      })
+      .optional(),
     infiltration: z
       .strictObject({
         move: id,
@@ -1471,6 +1499,10 @@ export const scenarioFileSchema = z
       if (harm && !harm.levels.some((l) => l.id === surgery.from)) problem(`recovery.surgery.from: 알 수 없는 부상 단계 ${surgery.from}`);
       if (!s.moves.some((m) => m.id === surgery.move)) problem(`recovery.surgery.move: 알 수 없는 스킬 ${surgery.move}`);
       if (!s.stats.some((x) => x.id === surgery.stat)) problem(`recovery.surgery.stat: 알 수 없는 능력 ${surgery.stat}`);
+    }
+    if (s.exploration) {
+      for (const m of [s.exploration.move, s.exploration.search_move]) if (!s.moves.some((x) => x.id === m)) problem(`exploration: 알 수 없는 행동 ${m}`);
+      for (const r of s.exploration.ruins) if (r.loot.length !== r.depths.length) problem(`exploration.ruins.${r.id}: loot는 깊이 칸마다 하나 (${r.depths.length})`);
     }
     const scars = s.scars;
     if (scars) {

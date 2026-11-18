@@ -1,3 +1,4 @@
+import { findRuin } from "./exploration.ts";
 import { effectiveSkill } from "./traits.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import { dayOf } from "../rules/time.ts";
@@ -47,9 +48,12 @@ export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null): { line
     names.push(`${itemName} ×${quantity}`);
     displays.push({ type: "item", fromName: "", toName: player.name, itemName, quantity });
   }
+  // 숨은 곳 (12-162): 제대로 뒤지면 찾을 수 있다
+  const ruin = outcome === "success" || outcome === "partial" ? findRuin(ctx) : null;
   const tired = count > 0 ? " 오늘 이미 뒤진 곳이라 남은 것이 적다." : "";
   const lines = names.length
     ? [`수색으로 ${josa(names.join(", "), "을/를")} 찾아 챙겼다 (소지품에 들어왔다). 찾은 것만 서술하고 다른 물건을 지어내지 않는다.${tired}`]
     : [`쓸 만한 것을 찾지 못했다.${tired} 빈손인 것을 서술한다.`];
+  if (ruin) lines.push(ruin);
   return { lines, displays };
 }

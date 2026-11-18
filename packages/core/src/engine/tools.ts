@@ -1,3 +1,4 @@
+import { EXPLORATION_TOOLS } from "./exploration.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { DIPLOMACY_TOOLS } from "./diplomacy.ts";
 import { fearAfterTool, watchFear, type FearResult } from "./fear.ts";
@@ -268,6 +269,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...LEVERAGE_TOOLS,
       ...PROMISE_TOOLS,
       ...INFILTRATION_TOOLS,
+      ...EXPLORATION_TOOLS,
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,
       ...EXTRA_TOOLS,

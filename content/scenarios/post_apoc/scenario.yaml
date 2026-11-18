@@ -1124,8 +1124,6 @@ infiltration:
     - { id: sabotage, label: 망가뜨리기, move: improvise, resource: { ammo: -20, fuel: -10 }, morale: -1 }
     - { id: eavesdrop, label: 엿듣기, move: stealth, overhear: true }
 
-# 뇌물과 협박 (12-153, *임시*). 뇌물의 값(물건 값의 합): 계급별 값 × (1 − 0.25 × 욕심), 주인공을 믿으면 ×0.8.
-# 정직 2 이상이고 욕심 0 이하인 사람은 값과 상관없이 거절한다. 값의 절반 이상이면 교섭 판정. 협박은 위협 판정
 # 약속 (12-160, *임시*): 주인공이 한 약속을 코드가 기억한다. 지키면 믿음이 오르고, 털어놓고 접으면 조금, 말없이 어기면 크게 깎인다
 promises:
   max_open: 5
@@ -1133,6 +1131,84 @@ promises:
   folded: { trust: -1 }
   broken: { trust: -2, affection: -1 }
 
+# 탐험할 곳 (12-162, *임시*): 구역의 숨은 곳. 그 구역을 뒤지다(수색 성공·대가 있는 성공) 40%로 찾는다. 찾은 것은 그 캐릭터만 안다.
+# 칸을 경계 판정으로 내려가고(마지막 칸은 어렵다), 칸마다 한 번 수색 판정으로 뒤진다. 소음이 3이면 깊이+1만큼 감염체가 깨어난다
+exploration:
+  move: sense_danger
+  search_move: scavenge
+  step_minutes: 15
+  find_chance: 0.4
+  wake: [infected_fresh, infected_hungry, infected_crawler]
+  ruins:
+    - id: subway_tracks
+      zone: subway_hub
+      label: 무너진 선로 아래 대피 통로
+      hint: 승강장 끝 철망 너머로 비상 사다리가 아래로 이어진다
+      mood: 물이 발목까지 찬 콘크리트 통로, 녹슨 안내판, 썩은 냄새와 멀리서 똑똑 떨어지는 물
+      hazard: 젖은 사다리에서 미끄러졌다
+      depths: [비상 사다리 아래, 물 찬 대피 통로, 막힌 열차 칸]
+      loot:
+        - [{ item: dirty_water, weight: 2, qty: [1, 2] }, { item: flashlight, weight: 1, qty: [1, 1] }, { item: scrap_metal, weight: 2, qty: [1, 2] }]
+        - [{ item: canned_food, weight: 2, qty: [1, 2] }, { item: bandage, weight: 1, qty: [1, 2] }, { item: stimulant, weight: 0.5, qty: [1, 1] }]
+        - [{ item: pistol_rounds, weight: 2, qty: [2, 4] }, { item: mil_ration, weight: 1, qty: [1, 2] }, { item: pistol, weight: 0.4, qty: [1, 1] }, { item: tunnel_map, weight: 0.5, qty: [1, 1] }]
+    - id: hospital_basement
+      zone: hospital_ruins
+      label: 옛 병원 지하 약제실
+      hint: 무너진 응급실 뒤 계단이 지하로 내려간다. 문에 '약제부' 글씨가 반쯤 남았다
+      mood: 깨진 형광등, 뒤집힌 침대, 소독약 냄새가 아직 희미하게 남은 복도
+      hazard: 무너진 천장 판에 깔렸다
+      depths: [지하 계단, 기록실 복도, 약제실 금고]
+      loot:
+        - [{ item: bandage, weight: 2, qty: [1, 2] }, { item: fever_reducer, weight: 1, qty: [1, 1] }, { item: cloth, weight: 1, qty: [1, 2] }]
+        - [{ item: painkiller, weight: 2, qty: [1, 2] }, { item: antibiotics, weight: 1, qty: [1, 1] }, { item: medkit, weight: 1, qty: [1, 1] }]
+        - [{ item: morphine, weight: 1.5, qty: [1, 2] }, { item: antibiotics, weight: 2, qty: [1, 2] }, { item: sealed_med_case, weight: 0.5, qty: [1, 1] }]
+    - id: mall_stockroom
+      zone: mall_ruins
+      label: 마트 지하 물류 창고
+      hint: 무너진 계산대 뒤 셔터가 허리 높이까지 들려 있다
+      mood: 끝없는 선반, 쓰러진 지게차, 어둠 속에서 뭔가 바스락거린다
+      hazard: 무너지는 선반에 맞았다
+      depths: [셔터 아래, 하역장, 냉동 창고]
+      loot:
+        - [{ item: canned_food, weight: 2, qty: [1, 2] }, { item: duct_tape, weight: 1, qty: [1, 1] }, { item: blanket, weight: 1, qty: [1, 1] }]
+        - [{ item: canned_food, weight: 2, qty: [2, 3] }, { item: soju, weight: 2, qty: [1, 3] }, { item: cigarettes, weight: 2, qty: [1, 3] }]
+        - [{ item: canned_food, weight: 2, qty: [3, 5] }, { item: fuel_bottle, weight: 1, qty: [1, 2] }, { item: coat, weight: 1, qty: [1, 1] }]
+    - id: plant_control
+      zone: power_plant
+      label: 발전소 지하 제어실
+      hint: 터빈 건물 바닥의 점검구 뚜껑이 열려 있다. 아래에서 기름 냄새가 올라온다
+      mood: 기름에 전 계단, 꺼진 계기판 수십 개, 쇠가 식으며 우는 소리
+      hazard: 기름 묻은 철계단에서 굴렀다
+      depths: [점검구 아래, 배관 통로, 제어실]
+      loot:
+        - [{ item: scrap_metal, weight: 2, qty: [1, 3] }, { item: wire_roll, weight: 1, qty: [1, 1] }]
+        - [{ item: fuel_bottle, weight: 2, qty: [1, 2] }, { item: toolkit, weight: 0.7, qty: [1, 1] }, { item: casings, weight: 1, qty: [2, 4] }]
+        - [{ item: fuel_bottle, weight: 2, qty: [2, 3] }, { item: gunpowder, weight: 1, qty: [1, 2] }, { item: explosive, weight: 0.3, qty: [1, 1] }]
+    - id: prison_armory
+      zone: prison
+      label: 교도소 무기고
+      hint: 관리동 지하 철문이 비틀려 사람 하나 지나갈 틈이 났다
+      mood: 철창이 끝없이 이어진 복도, 벽의 손톱자국, 문이 바람에 혼자 덜컹인다
+      hazard: 비틀린 철문 날에 베였다
+      depths: [관리동 지하, 보안 복도, 무기고]
+      loot:
+        - [{ item: cell_key_ring, weight: 1, qty: [1, 1] }, { item: baseball_bat, weight: 1, qty: [1, 1] }, { item: cloth, weight: 1, qty: [1, 2] }]
+        - [{ item: arm_guards, weight: 1, qty: [1, 1] }, { item: shells, weight: 2, qty: [2, 4] }, { item: moto_helmet, weight: 1, qty: [1, 1] }]
+        - [{ item: shotgun, weight: 1, qty: [1, 1] }, { item: shells, weight: 2, qty: [4, 6] }, { item: kevlar_vest, weight: 0.5, qty: [1, 1] }]
+    - id: campus_lab
+      zone: campus
+      label: 의생명 연구동 지하 실험실
+      hint: 연구동 계단에 '관계자 외 출입 금지' 테이프가 끊어져 있다. 계단 아래가 깜깜하다
+      mood: 깨진 유리 장, 뒤집힌 쥐 우리, 벽에 붙은 메모들, 비상 발전기가 오래전에 멎었다
+      hazard: 깨진 유리 장에 베였다
+      depths: [지하 계단, 동물실, 저온 보관실]
+      loot:
+        - [{ item: notebook, weight: 1, qty: [1, 1] }, { item: pen, weight: 1, qty: [1, 1] }, { item: bandage, weight: 1, qty: [1, 1] }]
+        - [{ item: antibiotics, weight: 1, qty: [1, 1] }, { item: fever_reducer, weight: 1, qty: [1, 2] }, { item: stimulant, weight: 0.7, qty: [1, 1] }]
+        - [{ item: sealed_med_case, weight: 1, qty: [1, 1] }, { item: serum, weight: 0.2, qty: [1, 1] }, { item: antibiotics, weight: 1.5, qty: [1, 2] }]
+
+# 뇌물과 협박 (12-153, *임시*). 뇌물의 값(물건 값의 합): 계급별 값 × (1 − 0.25 × 욕심), 주인공을 믿으면 ×0.8.
+# 정직 2 이상이고 욕심 0 이하인 사람은 값과 상관없이 거절한다. 값의 절반 이상이면 교섭 판정. 협박은 위협 판정
 leverage:
   bribe:
     move: persuade

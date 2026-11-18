@@ -266,6 +266,12 @@ function checkReferences(content: Content): string[] {
   }
   // 구역이 하나도 없는 팩(부분 팩·테스트)은 건너뛴다
   if (Object.keys(content.locations).length) for (const z of Object.keys(content.scenario.war?.talk?.rumor?.zones ?? {})) if (!content.locations[z]) problems.push(`war.talk.rumor: 알 수 없는 구역 ${z}`);
+  // 탐험할 곳 (12-162): 구역·아이템·감염체 틀
+  for (const r of content.scenario.exploration?.ruins ?? []) {
+    if (!content.locations[r.zone]) problems.push(`scenario.exploration.ruins.${r.id}: 알 수 없는 구역 ${r.zone}`);
+    for (const table of r.loot) for (const e of table) if (!content.items[e.item]) problems.push(`scenario.exploration.ruins.${r.id}: 알 수 없는 아이템 ${e.item}`);
+  }
+  for (const t of content.scenario.exploration?.wake ?? []) if (!content.extras[t]) problems.push(`scenario.exploration.wake: 알 수 없는 엑스트라 틀 ${t}`);
   for (const t of content.scenario.traits) for (const item of t.effects.habit?.items ?? []) if (!content.items[item]) problems.push(`scenario.traits.${t.id}.habit: 알 수 없는 아이템 ${item}`);
   // 이동 수단의 연료 (12-137)
   for (const item of Object.values(content.items)) if (item.vehicle?.fuel && !content.items[item.vehicle.fuel]) problems.push(`items.${item.id}.vehicle: 알 수 없는 연료 ${item.vehicle.fuel}`);

@@ -1,3 +1,4 @@
+import { describeExploration } from "./exploration.ts";
 import { promiseLines } from "./promises.ts";
 import { originLine } from "./extras.ts";
 import { describeMarket } from "./market.ts";
@@ -125,6 +126,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(describeCamp(content, state) ? [describeCamp(content, state)!] : []),
       ...standingLines(state, content),
       ...describeInfiltration(content, state),
+      ...describeExploration(content, state),
       ...(describeMarket(content, state) ? [describeMarket(content, state)!] : []),
       ...(content.scenario.fame && fameOf(state, content).tier > 0
         ? [`명성: ${fameOf(state, content).label}. 소문을 들은 사람이 처음 보고도 당신을 알아볼 수 있다 (인물 카드의 팬·안티 줄). 플레이어에게 숫자는 말하지 않는다`]

@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 61;
+export const SAVE_SCHEMA_VERSION = 62;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -301,6 +301,12 @@ export function createGameSchemas(s: Scenario) {
       .strictObject({ zone: z.string(), owner: z.string(), goal: z.string(), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean(), since: z.number().int() })
       .nullable()
       .default(null),
+    /** 탐험할 곳 (12-162): 캐릭터마다 찾은 숨은 곳, 지금 탐험 중인 곳 (깊이, 소음 0~3, 뒤진 칸) */
+    ruinsFound: z.record(z.string(), z.array(z.string())).default({}),
+    exploration: z
+      .strictObject({ ruin: z.string(), depth: z.number().int().min(0), noise: z.number().int().min(0).max(3), searched: z.array(z.number().int()), since: z.number().int() })
+      .nullable()
+      .default(null),
     /** 뇌물을 받은 사람 (12-153): 그 사람의 약점이 된다 (주인공만 안다). by: 준 사람 */
     bribes: z.array(z.strictObject({ npcId: z.string(), by: z.string(), favor: z.string(), at: z.number().int() })).default([]),
     /** 약속 (12-160): 주인공이 한 약속. due는 기한 날(그날까지) */
@@ -492,6 +498,11 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("infiltration_started"), zone: z.string(), owner: z.string(), goal: z.string() }),
     z.strictObject({ type: z.literal("infiltration_changed"), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean() }),
     z.strictObject({ type: z.literal("infiltration_ended"), how: z.enum(["out", "caught", "gone"]) }),
+    // 탐험할 곳 (12-162)
+    z.strictObject({ type: z.literal("ruin_found"), characterId: z.string(), ruin: z.string() }),
+    z.strictObject({ type: z.literal("exploration_started"), ruin: z.string() }),
+    z.strictObject({ type: z.literal("exploration_changed"), depth: z.number().int().min(0), noise: z.number().int().min(0).max(3), searched: z.array(z.number().int()) }),
+    z.strictObject({ type: z.literal("exploration_ended") }),
     /** 뇌물을 받았다 (12-153). 물건은 item_transferred로 따로 옮긴다 */
     z.strictObject({ type: z.literal("bribe_taken"), npcId: z.string(), by: z.string(), favor: z.string() }),
     // 약속 (12-160)
@@ -907,6 +918,8 @@ export const EMPTY_STATE: GameState = {
   homes: {},
   stashHinted: [],
   infiltration: null,
+  ruinsFound: {},
+  exploration: null,
   bribes: [],
   promises: [],
   blackmails: [],
@@ -1309,6 +1322,20 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "infiltration_ended":
       next.infiltration = null;
       return next;
+    case "ruin_found": {
+      const had = next.ruinsFound?.[event.characterId] ?? [];
+      if (!had.includes(event.ruin)) next.ruinsFound = { ...(next.ruinsFound ?? {}), [event.characterId]: [...had, event.ruin] };
+      return next;
+    }
+    case "exploration_started":
+      next.exploration = { ruin: event.ruin, depth: 0, noise: 0, searched: [], since: state.time };
+      return next;
+    case "exploration_changed":
+      if (next.exploration) next.exploration = { ...next.exploration, depth: event.depth, noise: event.noise, searched: [...event.searched] };
+      return next;
+    case "exploration_ended":
+      next.exploration = null;
+      return next;
     case "promise_made":
       next.promises = [...(next.promises ?? []), { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "open" }];
       return next;
@@ -1599,6 +1626,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "zone_moved":
       // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)
       next.infiltration = null;
+      next.exploration = null;
       if (state.battle) throw new Error("전투 중에는 구역을 옮길 수 없습니다.");
       next.lastRoute = event.from !== null ? { from: event.from, to: event.to } : null;
       // 떠나는 구역에 맡겨 둔 것을 돌려받는다 (12-54)

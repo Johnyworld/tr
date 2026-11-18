@@ -6,7 +6,7 @@ import { NEUTRAL_RELATION } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
 import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
-import { disposition, HOSTILE } from "../sim/war.ts";
+import { AI_TRUCE_DISPOSITION, disposition, HOSTILE } from "../sim/war.ts";
 import { josa } from "../text.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { sitsOnCouncil } from "./command.ts";
@@ -180,13 +180,34 @@ export function breakTruceIfAny(ctx: ToolContext, targetId: string): string | nu
   const target = state.characters[targetId];
   if (!rules || !me?.factionId || !target?.factionId) return null;
   const truce = truceBetween(state, me.factionId, target.factionId);
-  if (!truce) return null;
+  if (!truce) return breakAiTruceIfAny(ctx, me.factionId, target.factionId, rules.broken);
   store.append({ type: "pact_ended", id: truce.id, broken: true });
   store.append({ type: "faction_disposition_changed", from: truce.a, to: truce.b, value: rules.broken });
   store.append({ type: "faction_disposition_changed", from: truce.b, to: truce.a, value: rules.broken });
   const other = factionName(content, target.factionId);
   recordDeed(ctx, { summary: `휴전 중에 ${other} 사람을 쳤다`, tags: ["betrayal"], severity: 2, privacy: "public", noisy: false });
   return `휴전이 깨졌다. ${other}은(는) 이제 우리 무리를 깊이 미워한다. 배신으로 기억될 것이다.`;
+}
+
+/**
+ * 지도부끼리 맺은 휴전(12-146)도 주인공이 그쪽 사람을 치면 깨진다 (12-147). 태도가 아직 휴전 값일 때만
+ * (이미 다른 일로 틀어졌으면 깰 휴전이 없다). 남은 기록은 기한이 되면 저절로 지워진다
+ */
+function breakAiTruceIfAny(ctx: ToolContext, mine: string, theirs: string, broken: number): string | null {
+  const { store, content } = ctx;
+  const state = store.getState();
+  if (!aiTruceActive(state, content, mine, theirs)) return null;
+  store.append({ type: "faction_disposition_changed", from: mine, to: theirs, value: broken });
+  store.append({ type: "faction_disposition_changed", from: theirs, to: mine, value: broken });
+  const other = factionName(content, theirs);
+  recordDeed(ctx, { summary: `지도부가 맺은 휴전 중에 ${other} 사람을 쳤다`, tags: ["betrayal"], severity: 2, privacy: "public", noisy: false });
+  return `휴전이 깨졌다. 지도부가 얻어 낸 휴전이었다. ${other}은(는) 이제 우리 무리를 깊이 미워하고, 우리 무리 안에서도 말이 나올 것이다.`;
+}
+
+/** 두 무리 사이에 지도부끼리 맺은 휴전이 살아 있는가 (기록이 있고 태도가 아직 휴전 값) */
+function aiTruceActive(state: GameState, content: Content, mine: string, theirs: string): boolean {
+  const t = state.factions[mine]?.truces?.[theirs];
+  return !!t && t.days > 0 && disposition(content, mine, theirs, state) === AI_TRUCE_DISPOSITION && disposition(content, theirs, mine, state) === AI_TRUCE_DISPOSITION;
 }
 
 /** GM 상태의 외교 줄: 우리 무리의 휴전, 협상할 수 있는 협정 (간부일 때) */
@@ -201,7 +222,8 @@ export function describeDiplomacyForGm(state: GameState, content: Content): stri
   }
   // 지도부끼리 맺은 휴전 (12-146): 크게 밀린 무리가 얻어 낸 숨 돌릴 틈
   for (const [other, t] of Object.entries(state.factions[me.factionId]?.truces ?? {})) {
-    lines.push(`- ${factionName(content, other)}과(와) 지도부끼리 맺은 휴전 중 (약 ${t.days}일 남음). 그동안 무리끼리는 서로 치지 않는다. 주인공이 먼저 손을 쓰면 그쪽이 가만있지 않는다 (서술로)`);
+    if (!aiTruceActive(state, content, me.factionId, other)) continue;
+    lines.push(`- ${factionName(content, other)}과(와) 지도부끼리 맺은 휴전 중 (약 ${t.days}일 남음). 그동안 무리끼리는 서로 치지 않는다. 그쪽 사람을 치면 휴전이 깨진다`);
   }
   if (sitsOnCouncil(state, content)) {
     lines.push(`협상할 수 있는 협정 (negotiate, 다른 무리의 간부 이상이 장면에 있을 때): ${rules.pacts.map((p) => `${p.id} ${p.label}(${p.summary})`).join(", ")}. 스킬: ${rules.moves.join(", ")}`);

@@ -42,16 +42,17 @@
   age: 61
   gender: female
   look: 앞치마에 국자를 꽂고 다니는 키 작은 할머니. 목소리가 크다.
-  reputation: 식당 천막의 취사 담당. 거점의 소문은 다 이 사람 솥을 거쳐 간다.
+  reputation: 식당 천막의 취사 담당. 거점의 소문은 다 이 사람 솥을 거쳐 간다. 목포에서 식당을 하다 올라왔다는 말이 있다.
   want: 아이들이 배곯지 않는 것
   fear: 솥이 비는 날
   values: { discipline: 0, loyalty: 2, mercy: 3, honesty: 1, self_interest: 0 }
   traits: [talkative, motherly, big_eater]
   voice:
-    style: 사투리 섞인 반말. 누구에게나 "아가"라고 부른다
+    style: 전라도 사투리의 구수한 반말. 누구에게나 "아가"라고 부르고, 말끝에 "~잉", "~당께"가 붙는다. 놀라면 "워메"
     samples:
-      - "아가, 국물 한 국자 더 줄 테니 아무한테도 말하지 마."
-      - "그 얘기 들었나? 저 위에서 또 배급 줄인단다."
+      - "아가, 국물 한 국자 더 줄 텐께 아무헌티도 말하지 말어잉."
+      - "그 얘기 들었냐? 저 우에서 또 배급 줄인당께."
+      - "워메, 이 꼴로 보초를 선다고? 일단 묵고 가."
   routine: { dawn: 불 피우기, morning: 배식, evening: 배식, night: 식당 천막 }
   rules:
     - 배고픈 사람을 그냥 보내지 못한다

@@ -190,6 +190,8 @@ faces:
     style: D
     gender: male
     seed: 2102
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.36
     colorize: true
     subject: >-
       a 23 year old korean young man, scavenger, spiky black hair, determined look, bandana around his neck,
@@ -198,6 +200,8 @@ faces:
     style: D
     gender: female
     seed: 2103
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.23
     colorize: true
     subject: >-
       a 30 year old korean woman, scout, long black hair in a high ponytail, confident smirk,
@@ -206,6 +210,8 @@ faces:
     style: D
     gender: female
     seed: 2104
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.34
     # 컬러 그림이지만 얼굴이 흰 면으로 그려졌다: 색을 입힌다
     colorize: true
     subject: >-
@@ -326,6 +332,8 @@ faces:
     style: D
     gender: male
     seed: 2111
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.19
     colorize: true
     subject: >-
       a 60 year old korean man, veteran survivor, bald head, heavy brow, crooked broken nose,
@@ -334,6 +342,8 @@ faces:
     style: D
     gender: male
     seed: 2112
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.25
     colorize: true
     subject: >-
       a 30 year old korean man, heavy-set brawler, long black hair tied in a topknot, angular face,
@@ -342,6 +352,8 @@ faces:
     style: D
     gender: female
     seed: 2113
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.27
     colorize: true
     subject: >-
       a 45 year old korean woman, militia commander, short cropped silver hair, hard square jaw,
@@ -350,6 +362,8 @@ faces:
     style: D
     gender: female
     seed: 2114
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.17
     colorize: true
     # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
     cleanup: true
@@ -434,6 +448,8 @@ faces:
     style: D
     gender: male
     seed: 2124
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.34
     subject: >-
       a strikingly handsome korean man in his early twenties with a k-pop idol look, slim oval face,
       smooth clear skin, gentle double-lidded eyes, high straight nose bridge, soft full lips,
@@ -443,6 +459,8 @@ faces:
     style: D
     gender: female
     seed: 2123
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.33
     colorize: true
     subject: >-
       a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face,
@@ -453,6 +471,8 @@ faces:
     style: D
     gender: female
     seed: 2131
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.35
     colorize: true
     # d_f5와 같은 느낌을 살짝 옆으로 돌린 각도로 (돌린 얼굴은 너비가 좁게 재진다)
     crop_scale: 1.1
@@ -469,6 +489,8 @@ faces:
     style: D
     gender: female
     seed: 2134
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.43
     crop_scale: 1.1
     subject: >-
       a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face,
@@ -481,6 +503,8 @@ faces:
     style: D
     gender: female
     seed: 2122
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.26
     # 처음 그린 d_f5 (얼굴이 긴 버전). 그 원본을 그대로 쓴다
     source: sources/d_f8.png
     subject: >-
@@ -526,6 +550,8 @@ faces:
     style: D
     gender: male
     seed: 2144
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.1
     # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
     crop_scale: 0.8
     colorize: true
@@ -670,6 +696,8 @@ faces:
     style: D
     gender: female
     seed: 2166
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.19
     colorize: true
     subject: >-
       a korean woman in her early twenties, long hair pulled back with face-framing bangs, round face,
@@ -686,6 +714,8 @@ faces:
     style: D
     gender: female
     seed: 2168
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.17
     subject: >-
       a plus-size korean woman around thirty with light warm east asian skin, round full face, small eyes,
       black hair pulled straight back into a low ponytail, no earrings, plain neutral expression,
@@ -712,6 +742,8 @@ faces:
     style: D
     gender: female
     seed: 2171
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.2
     # 원본에 네모 틀이 그려졌다: 정리로 지운다
     cleanup: true
     colorize: true
@@ -772,6 +804,8 @@ faces:
     style: D
     gender: male
     seed: 2185
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.1
     # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
     crop_scale: 0.86
     colorize: true
@@ -782,6 +816,8 @@ faces:
     style: D
     gender: male
     seed: 2186
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.1
     # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
     crop_scale: 0.84
     colorize: true

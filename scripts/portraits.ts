@@ -53,6 +53,11 @@ type Character = {
   source?: string;
   /** 화풍의 색 보정 대신 이것을 쓴다 (톤만 바꿀 때) */
   grade?: Grade;
+  /**
+   * 완성본을 이만큼 더 당겨 자른다 (1.2면 얼굴이 1.2배). 완성된 256 그림을 바로 잘라 키우며 다듬을 때 기록해 두는 값으로,
+   * 다시 그릴 때는 자르는 영역을 1/zoom로 줄여 같은 결과를 낸다. 그림 자체가 바뀌지 않으니 설정 해시에서 뺀다
+   */
+  zoom?: number;
   /** 화풍의 colorize 지시로 색을 입힌다 (흑백·회색조로 그려진 그림) */
   colorize?: boolean;
   /** 마지막에 이 지시 하나만으로 Qwen 편집을 한 번 더 한다 (특정 부분만 고칠 때. 다른 지시와 섞으면 잘 안 먹힌다) */
@@ -205,7 +210,7 @@ for (const job of jobs) {
   job.crop = null;
   if (framing) {
     const { width, height } = pngSize(job.raw);
-    if (face) job.crop = planCrop(face, width, height, (style.crop_scale ?? 1) * (job.ch.crop_scale ?? 1));
+    if (face) job.crop = planCrop(face, width, height, ((style.crop_scale ?? 1) * (job.ch.crop_scale ?? 1)) / (job.ch.zoom ?? 1));
     else console.error(`  ! ${job.prefix}: 얼굴을 찾지 못해 가운데를 자릅니다`);
   }
   const p = job.crop?.pad;
@@ -243,7 +248,7 @@ function hashOf(ch: Character): string {
   const fileHash = (f?: string) => (f && existsSync(join(artDir, f)) ? sha(readFileSync(join(artDir, f))) : null);
   return sha(
     JSON.stringify({
-      style: st, common: config.common, framing, cleanup: config.cleanup, size: config.output_size, ch,
+      style: st, common: config.common, framing, cleanup: config.cleanup, size: config.output_size, ch: { ...ch, zoom: undefined },
       grade: grade ? { ...grade, file: fileHash(grade.ref) } : null, source: fileHash(ch.source),
     }),
   );
@@ -587,6 +592,7 @@ function validate(c: Config) {
   }
   for (const [id, ch] of Object.entries(c.faces ?? {})) {
     if (ch?.source && !existsSync(join(artDir, ch.source))) fail(`faces.${id}.source: ${ch.source} 가 없습니다`);
+    if (ch?.zoom !== undefined && !(ch.zoom >= 1 && ch.zoom <= 2)) fail(`faces.${id}.zoom은 1~2 사이`);
     if (ch?.crop_scale !== undefined && !(ch.crop_scale > 0.5 && ch.crop_scale < 2)) fail(`faces.${id}.crop_scale은 0.5~2 사이`);
     if (!/^[a-z0-9_-]{1,40}$/.test(id)) fail(`faces.${id}: id는 영문 소문자·숫자·_·-만 (40자까지)`);
     if (!c.styles[ch?.style]) fail(`faces.${id}: 없는 화풍 ${ch?.style}`);

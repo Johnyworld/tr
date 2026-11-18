@@ -2512,6 +2512,11 @@ body {
   border-color: var(--accent);
 }
 
+/* 누르면 바로 고르니, 올리면 고를 얼굴을 보인다 */
+.newgame .portrait-pick:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
 /* 새 게임: 화풍 섹션 (12-139). 그림 얼굴은 크게, 둥근 네모로 */
 .portrait-section {
   display: flex;

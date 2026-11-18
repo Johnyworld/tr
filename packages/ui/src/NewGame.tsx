@@ -306,30 +306,31 @@ function Chosen({ view, live }: { view: NewGameView; live: { text: string; bad?:
  * 월드에 초상화 목록이 없으면 코드로 그린 실루엣 12종. 고르지 않으면 실루엣
  */
 function PortraitStep({ view, busy, answer }: StepProps) {
-  const [picked, setPicked] = useState<string | null>(null);
   const sections = view.character!.portraits ?? [];
   const pack = view.world?.id;
+  // 누르면 바로 고른다 (다음 단계로 넘어간다)
   const pick = (id: string, size: number, square: boolean, number?: number) => (
     <button
       key={id}
       type="button"
-      className={picked === id ? "portrait-pick on" : "portrait-pick"}
+      className="portrait-pick"
       disabled={busy}
-      aria-pressed={picked === id}
-      aria-label={`초상화 ${id}`}
-      onClick={() => setPicked(picked === id ? null : id)}
+      aria-label={number !== undefined ? `초상화 ${number}` : `초상화 ${id}`}
+      onClick={() => answer(id)}
     >
       <Portrait id={id} pack={pack} size={size} square={square} />
       {number !== undefined && <span className="portrait-number">{number}</span>}
     </button>
   );
+  // 화풍이 하나뿐이면 화풍 이름은 보이지 않는다
+  const titled = sections.length > 1;
   return (
     <div className="newgame-form">
       <h2 className="newgame-title">얼굴을 골라 주세요</h2>
       {sections.length > 0 ? (
         sections.map((sec) => (
           <section key={sec.style} className="portrait-section">
-            <h3 className="portrait-section-title">{sec.label}</h3>
+            {titled && <h3 className="portrait-section-title">{sec.label}</h3>}
             <div className="portrait-grid portrait-grid-art">{sec.faces.map((id, i) => pick(id, 96, true, sec.numbered ? i + 1 : undefined))}</div>
           </section>
         ))
@@ -339,9 +340,6 @@ function PortraitStep({ view, busy, answer }: StepProps) {
       <div className="newgame-actions">
         <button type="button" disabled={busy} onClick={() => answer("none")}>
           고르지 않기
-        </button>
-        <button type="button" className="primary" disabled={busy || !picked} onClick={() => picked && answer(picked)}>
-          다음
         </button>
       </div>
     </div>

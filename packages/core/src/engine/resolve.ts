@@ -73,7 +73,8 @@ function evaluate(content: Content, state: GameState, r: Resolve): boolean | nul
     case "debt_clear":
       return (me.debts[r.target ?? ""] ?? 0) <= 0 ? true : null;
     case "reach":
-      return state.playerZone === r.target ? true : null;
+      // 그곳을 떠나 있다가 닿아야 한다 (처음부터 그곳에 있으면 이룬 것이 아니다)
+      return r.involved && state.playerZone === r.target ? true : null;
     case "beliefs": {
       const words = (r.target ?? "").split("|").filter(Boolean);
       const n = (state.beliefs[state.playerId] ?? []).filter((b) => words.some((w) => b.fact.includes(w))).length;
@@ -155,6 +156,7 @@ export function checkResolve(ctx: ToolContext): { lines: string[]; displays: Too
   const r = currentResolve(state);
   if (!r) return { lines: seeded, displays: [] };
   const kind = kindOf(ctx.content, r.kind);
+  if (kind?.check === "reach" && !r.involved && state.playerZone !== r.target) ctx.store.append({ type: "resolve_involved", characterId: me.id });
   if (kind && BY_OTHERS.has(kind.check) && !r.involved && state.battle) {
     const b = state.battle as { zone?: string; theirs?: { faction?: string } };
     if (b.zone === r.target || b.theirs?.faction === r.target || b.theirs?.faction === r.target2) ctx.store.append({ type: "resolve_involved", characterId: me.id });

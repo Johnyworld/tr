@@ -106,3 +106,22 @@ describe("다짐의 단계 (12-164)", () => {
     expect(conditionsMet(w.state(), full, full.storylets.rs_journey_boat!, w.state().time)).toBe(false);
   });
 });
+
+describe("닿는 다짐 (플레이 테스트에서 고침)", () => {
+  it("처음부터 그곳에 있으면 이루지 않고, 떠났다가 닿아야 이룬다", () => {
+    const w = make("role_l_wanderer");
+    const target = content.roles.role_l_wanderer!.resolve!.target!;
+    // 목표 구역에서 다짐이 세워진다
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: target });
+    look(w);
+    expect(currentResolve(w.state())).toMatchObject({ kind: "homecoming", target });
+    look(w);
+    expect(currentResolve(w.state())).not.toBeNull();
+    w.ctx().store.append({ type: "zone_moved", from: target, to: "old_town" });
+    look(w);
+    w.ctx().store.append({ type: "zone_moved", from: "old_town", to: target });
+    const r = look(w);
+    if (r.ok) expect(r.resultText).toContain("다짐을 이뤘다");
+    expect(currentResolve(w.state())).toBeNull();
+  });
+});

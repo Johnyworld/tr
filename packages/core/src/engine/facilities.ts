@@ -142,11 +142,8 @@ export function describeFacilities(content: Content, state: GameState): string[]
   if (site) {
     const can = rules(content).filter((f) => f.where.includes(site) && !here.includes(f));
     if (can.length) {
-      out.push(
-        `지을 수 있는 시설 (take_action.build + check, 플레이어가 짓겠다고 할 때만): ${can
-          .map((f) => `${f.id} ${f.label} (${f.move}, ${f.hours}시간, ${Object.entries(f.materials).map(([i, n]) => `${content.items[i]?.name ?? i} ${n}`).join("·")})`)
-          .join(" / ")}`,
-      );
+      // 재료·시간은 짓겠다고 할 때 오류 문구로 알린다 (늘 싣지 않는다)
+      out.push(`지을 수 있는 시설 (take_action.build + check(move), 플레이어가 짓겠다고 할 때만): ${can.map((f) => `${f.id} ${f.label}(${f.move})`).join(", ")}`);
     }
   }
   return out;

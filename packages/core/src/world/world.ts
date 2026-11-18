@@ -46,6 +46,9 @@ export const SCENE_FULL_EVERY = 8;
 /** 다시 싣지 않은 덩어리를 GM에게 알릴 때의 이름 */
 const SCENE_SECTION_LABELS: Record<string, string> = {
   status: "캐릭터 상태",
+  resolve: "주인공의 다짐",
+  disaster: "재난",
+  facilities: "시설",
   sheet: "능력·스킬·트레잇",
   culture: "무리의 문화·권한",
   battle: "전투",

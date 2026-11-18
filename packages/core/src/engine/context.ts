@@ -131,9 +131,6 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...standingLines(state, content),
       ...describeInfiltration(content, state),
       ...describeExploration(content, state),
-      ...describeResolve(state, content),
-      ...describeFacilities(content, state),
-      ...describeDisaster(content, state),
       ...(describeMarket(content, state) ? [describeMarket(content, state)!] : []),
       ...(content.scenario.fame && fameOf(state, content).tier > 0
         ? [`명성: ${fameOf(state, content).label}. 소문을 들은 사람이 처음 보고도 당신을 알아볼 수 있다 (인물 카드의 팬·안티 줄). 플레이어에게 숫자는 말하지 않는다`]
@@ -181,6 +178,9 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ].join("\n")],
     ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content)].filter(Boolean).join("\n")],
     ["romance", describeRomanceForGm(state, content)],
+    // 다짐·시설·재난은 자주 바뀌지 않아 따로 둔다 (시각이 바뀔 때마다 다시 싣지 않게)
+    ["resolve", describeResolve(state, content).join("\n")],
+    ["disaster", describeDisaster(content, state).join("\n")],
     ["storylet", describeStoryletForGm(state, content)],
     ["missions", [describeMissionsForGm(state, { content }), describePolicyForGm(state, content)].filter(Boolean).join("\n")],
     ["squad", describeSquadForGm(state, content)],
@@ -190,6 +190,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["deeds", describeOwnDeeds(state)],
     ["present", describePresentNpcs(state, content, player)],
     ["known", describeKnownPeople(state, content)],
+    ["facilities", describeFacilities(content, state).join("\n")],
     ["zone_people", [describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeTrap(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
     ["zone_extras", describeZoneExtras(state, content)],
     ["templates", describeExtraTemplates(state, content)],

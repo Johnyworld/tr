@@ -127,7 +127,10 @@ export function runBrokenPromises(ctx: ToolContext): string[] {
     relate(ctx, p.to, r.broken, "어긴 약속");
     const who = playerCalls(state, ctx.content, p.to);
     recordDeed(ctx, { summary: `${who}에게 한 약속을 어겼다: ${p.what}`, tags: ["deceit"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
-    lines.push(`${who}에게 한 약속(${p.what})의 기한이 지났다.`);
+    const line = `${who}에게 한 약속(${p.what})의 기한이 지났다. 지키지 못했다`;
+    const now = ctx.store.getState();
+    ctx.store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact: `${line}.`, source: "seen", accuracy: "exact", learnedAt: now.time } });
+    lines.push(`${line}.`);
   }
   return lines;
 }

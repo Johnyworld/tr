@@ -525,7 +525,7 @@ faces:
     gender: male
     seed: 2144
     # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.91
+    crop_scale: 0.8
     colorize: true
     subject: >-
       a korean man in his late sixties, short grey buzz cut, heavily wrinkled weathered face, droopy
@@ -636,7 +636,7 @@ faces:
     gender: female
     seed: 2163
     # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.84
+    crop_scale: 0.95
     subject: >-
       three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
       visible and looking toward the viewer, a korean woman in her mid twenties, long straight black hair
@@ -647,7 +647,7 @@ faces:
     seed: 2164
     colorize: true
     # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.83
+    crop_scale: 0.93
     subject: >-
       three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
       visible and looking toward the viewer, a korean young woman around twenty, chin-length bob with full
@@ -759,11 +759,11 @@ faces:
   d_m22:
     style: D
     gender: male
-    seed: 2184
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 1.3
+    seed: 2185
     colorize: true
+    # 원본에서 얼굴이 너무 크게 그려져 자르기로는 맞출 수 없다: 미디엄 샷으로 다시 그린다
     subject: >-
+      medium shot showing his head, shoulders and upper body with the ruined city around him,
       an emaciated korean man in his mid forties, hollow sunken cheeks from hunger, gaunt bony face, dark-
       ringed tired eyes, stubble, wearing a loose threadbare shirt
   d_m23:

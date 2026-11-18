@@ -19,7 +19,8 @@ import { weatherNow } from "../sim/weather.ts";
 import { josa } from "../text.ts";
 import { recordDeath } from "./succession.ts";
 import { bleedingBlocksRecovery, staunch, stopBleeding } from "./bleeding.ts";
-import type { CheckOutcome } from "../rules/check.ts";
+import { CHECK_OUTCOME_LABELS, roll2d6, type CheckOutcome } from "../rules/check.ts";
+import { scarFromHarm } from "./scars.ts";
 import { DEATH_GUIDE, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -196,7 +197,7 @@ export function applyTreatment(
     const w = ctx.content.scenario.wounds;
     const s = ctx.store.getState();
     if (w && check?.move === w.staunch_move && s.scene.present.includes(targetId) && levelIndex(ctx, s, targetId, w.track) > 0) return staunch(ctx, check, targetId);
-    return firstAid(ctx, targetId);
+    return firstAid(ctx, targetId, check);
   }
   const recovery = ctx.content.scenario.recovery;
   if (!recovery) return { ok: false, error: "이 시나리오에는 치료 규칙이 없다." };
@@ -215,12 +216,69 @@ export function applyTreatment(
   const name = playerCalls(state, ctx.content, healer);
   const lines = [`${name}에게 치료를 받았다.`];
   const displays: ToolDisplayEvent[] = [];
+  // 수술 (12-159): 치명상 이상이면 치료사의 솜씨와 장소로 코드가 굴린다
+  const surgery = needsSurgery(ctx, player.id) ? surgeonRoll(ctx, healer) : null;
+  if (surgery) lines.push(surgery.line);
   for (const [t, steps] of Object.entries(recovery.healer)) {
+    if (surgery && t === ctx.content.scenario.harm_track) {
+      const r = operate(ctx, player.id, surgery.outcome, name);
+      lines.push(...r.lines);
+      displays.push(...r.displays);
+      continue;
+    }
     const c = changeCondition(ctx, player.id, t, -steps, "healer", "치료");
     if (c?.line) lines.push(c.line);
     if (c?.display) displays.push(c.display);
   }
   return { ok: true, lines, displays };
+}
+
+/** 이 사람의 부상이 수술이 필요한 단계인가 (12-159) */
+export function needsSurgery(ctx: ToolContext, characterId: string): boolean {
+  const surgery = ctx.content.scenario.recovery?.surgery;
+  if (!surgery) return false;
+  const track = harmTrack(ctx.content.scenario);
+  const from = track.levels.findIndex((l) => l.id === surgery.from);
+  return from >= 0 && levelIndex(ctx, ctx.store.getState(), characterId, track.id) >= from;
+}
+
+/** 치료사(NPC)의 수술 굴림: 2d6 + 능력·스킬(상한) + 장소 */
+function surgeonRoll(ctx: ToolContext, healerId: string): { outcome: CheckOutcome; line: string } {
+  const s = ctx.content.scenario;
+  const surgery = s.recovery!.surgery!;
+  const state = ctx.store.getState();
+  const healer = state.characters[healerId]!;
+  const skill = Math.min(s.ranges.cap, (healer.stats[surgery.stat] ?? 0) + effectiveSkill(ctx.content, healer, surgery.move));
+  const zone = state.playerZone;
+  const place = zone && surgery.clinics.includes(zone) ? surgery.clinic_bonus : zone && ctx.content.locations[zone]?.kind === "base" ? 0 : surgery.field_penalty;
+  const roll = roll2d6(ctx.rng, skill + place);
+  const where = place > 0 ? "진료소" : place < 0 ? "맨땅" : "거점";
+  return {
+    outcome: roll.outcome,
+    line: `🩺 수술 (${playerCalls(state, ctx.content, healerId)}): ${roll.dice[0]}+${roll.dice[1]} ${roll.modifier >= 0 ? "+" : ""}${roll.modifier}(솜씨·${where}) = ${roll.total} · ${CHECK_OUTCOME_LABELS[roll.outcome]}`,
+  };
+}
+
+/** 수술 결과: 성공 = 한 단계 낫는다, 대가 있는 성공 = 낫되 흔적이 남을 수 있다, 실패 = 한 단계 나빠진다 */
+export function operate(ctx: ToolContext, targetId: string, outcome: CheckOutcome, by: string): { lines: string[]; displays: ToolDisplayEvent[] } {
+  const lines: string[] = [];
+  const displays: ToolDisplayEvent[] = [];
+  const harm = ctx.content.scenario.harm_track;
+  const push = (c: Change | null) => {
+    if (c?.line) lines.push(c.line);
+    if (c?.display) displays.push(c.display);
+  };
+  if (outcome === "miss") {
+    lines.push("수술이 잘못됐다. 상처가 더 깊어졌다.");
+    push(changeCondition(ctx, targetId, harm, 1, "healer", `${by}의 서툰 수술`));
+    return { lines, displays };
+  }
+  if (outcome === "partial") {
+    const scar = scarFromHarm(ctx, targetId, null);
+    if (scar) lines.push(scar);
+  }
+  push(changeCondition(ctx, targetId, harm, -1, "healer", `${by}의 수술`));
+  return { lines, displays };
 }
 
 /** 저절로 낫기 (부상 트랙). 시간이 흐른 뒤마다 부른다 */
@@ -690,7 +748,7 @@ export function sleepNerves(ctx: ToolContext, slept: number): Change | null {
 /**
  * 주인공이 아이템 없이 다른 사람을 돌본다 (12-52): 의무병이거나 응급처치를 익힌 사람만. 한 사람에게 하루 한 번, 부상 한 단계
  */
-function firstAid(ctx: ToolContext, targetId: string): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+function firstAid(ctx: ToolContext, targetId: string, check: { move: string; outcome: CheckOutcome } | null = null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const { store, content } = ctx;
   const rule = content.scenario.recovery?.first_aid;
   const state = store.getState();
@@ -706,6 +764,15 @@ function firstAid(ctx: ToolContext, targetId: string): { ok: true; lines: string
   if (shownIndex(ctx, state, targetId, harm.id) <= 0 || state.recovery.lastHealerDay[targetId] === dayOf(state.time)) {
     if (staunched.length) return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 피를 멎게 했다.`], displays: staunched };
     return { ok: false, error: shownIndex(ctx, state, targetId, harm.id) <= 0 ? "그 사람은 다친 데가 없다." : "그 사람은 오늘 이미 치료를 받았다." };
+  }
+  // 수술 (12-159): 치명상 이상이면 판정 결과대로
+  if (needsSurgery(ctx, targetId)) {
+    const surgery = content.scenario.recovery!.surgery!;
+    if (!check || check.move !== surgery.move) {
+      return { ok: false, error: `${playerCalls(state, content, targetId)}의 상처는 꿰매고 파내야 한다. check(move: ${surgery.move})를 걸고 treatment {target}으로 한다. 실패하면 상처가 더 깊어진다.` };
+    }
+    const r = operate(ctx, targetId, check.outcome, me.name);
+    return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 상처를 수술했다.`, ...r.lines], displays: [...staunched, ...r.displays] };
   }
   const c = changeCondition(ctx, targetId, harm.id, -1, "healer", `${me.name}의 치료`);
   return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 상처를 돌봤다.`, ...(c?.line ? [c.line] : [])], displays: [...staunched, ...(c?.display ? [c.display] : [])] };

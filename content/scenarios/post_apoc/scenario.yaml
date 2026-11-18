@@ -1005,6 +1005,9 @@ recovery:
   faction_care: { occupations: [medic, nurse, doctor], resource: medicine, per_medic: 2 }
   # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
   first_aid: { occupations: [medic, nurse, doctor], skill: first_aid, min: 1 }
+  # 수술 (12-159, *임시*): 치명상 이상을 돌보는 것은 판정이다. 치료사는 2d6 + 지능·응급처치 + 장소(하얀매 진료소 +1, 거점 밖 -1)로 코드가 굴리고,
+  # 주인공이 남을 돌보면 응급처치 판정이 있어야 한다. 실패하면 한 단계 나빠지고, 대가 있는 성공은 흔적(scars)을 굴린다
+  surgery: { from: critical, move: first_aid, stat: intellect, clinics: [d_clinic], clinic_bonus: 1, field_penalty: -1 }
 
 # 수위 (12-57): 성인 주제(연애·성적 위협) 이야기의 태그와 나이 하한. 세계의 수위가 꺼져 있으면 이 태그 이야기는 열리지 않고,
 # 켜져 있어도 주인공과 배역이 모두 이 나이 이상이어야 열린다

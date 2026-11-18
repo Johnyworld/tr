@@ -756,6 +756,21 @@ export const scenarioFileSchema = z
           .optional(),
         /** 주인공이 아이템 없이 다른 사람을 돌볼 수 있는 조건 (이 직분이거나 이 스킬이 min 이상), 하루에 한 사람 한 번, 부상 한 단계 */
         first_aid: z.strictObject({ occupations: z.array(id).default([]), skill: id, min: z.number().int() }).optional(),
+        /**
+         * 수술 (12-159): 부상이 from 이상인 사람을 돌보는 것은 판정이다. 치료사(NPC)면 코드가 2d6 + 능력·스킬(move) + 장소로 굴리고,
+         * 주인공이 남을 돌보면 move 판정(check)이 있어야 한다. 성공 = 한 단계 낫는다, 대가 있는 성공 = 낫되 흔적(scars)을 굴린다, 실패 = 한 단계 나빠진다.
+         * 장소: clinics(진료소) clinic_bonus, 거점이 아닌 곳 field_penalty (치료사의 굴림에만)
+         */
+        surgery: z
+          .strictObject({
+            from: id,
+            move: id,
+            stat: id,
+            clinics: z.array(id).default([]),
+            clinic_bonus: z.number().int().default(1),
+            field_penalty: z.number().int().default(-1),
+          })
+          .optional(),
       })
       .optional(),
     /**
@@ -1441,6 +1456,13 @@ export const scenarioFileSchema = z
       else if (!t.effects.habit) problem(`body.dependence.${item}: ${d.trait}은(는) 버릇(habit) 트레잇이 아니다`);
     }
     for (const x of s.symptoms ?? []) for (const g of x.masks ?? []) if (!(s.symptoms ?? []).some((y) => y.group === g)) problem(`symptoms.${x.id}.masks: 알 수 없는 증상 묶음 ${g}`);
+    const surgery = s.recovery?.surgery;
+    if (surgery) {
+      const harm = s.condition_tracks.find((t) => t.id === s.harm_track);
+      if (harm && !harm.levels.some((l) => l.id === surgery.from)) problem(`recovery.surgery.from: 알 수 없는 부상 단계 ${surgery.from}`);
+      if (!s.moves.some((m) => m.id === surgery.move)) problem(`recovery.surgery.move: 알 수 없는 스킬 ${surgery.move}`);
+      if (!s.stats.some((x) => x.id === surgery.stat)) problem(`recovery.surgery.stat: 알 수 없는 능력 ${surgery.stat}`);
+    }
     const scars = s.scars;
     if (scars) {
       const harm = s.condition_tracks.find((t) => t.id === s.harm_track);

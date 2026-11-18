@@ -848,6 +848,20 @@ export const scenarioFileSchema = z
      */
     travel: z.strictObject({ tag: id, chance: z.array(z.number().min(0).max(1)).length(4) }).optional(),
     /**
+     * 야영 (12-148): 지켜 주는 지붕이 없는 곳(우리 거점·재워 주는 거점·피난처가 아닌 곳)에서 자거나 쉬거나 기다리거나 보초를 서면,
+     * 그 구역의 위험(위험과 감염체 압력 중 높은 쪽)별 시간당 확률로 태그(tag)가 붙은 이야기 하나가 열려 그 시간을 끊는다.
+     * fire: 모닥불이 타는 동안 확률 배수 (불빛과 연기). own_land: 우리 무리 땅이면 확률 배수 (우리 순찰이 돈다).
+     * 깨어 있거나(자지 않는 활동) 곁에 보초를 설 동행(깨어 있는 사람·동물)이 있으면 '지켜보는 밤'이다 (이야기 조건 camp_watched)
+     */
+    camp: z
+      .strictObject({
+        tag: id,
+        chance: z.array(z.number().min(0).max(1)).length(4),
+        fire: z.number().min(0).default(1.5),
+        own_land: z.number().min(0).default(0.5),
+      })
+      .optional(),
+    /**
      * 명성 (12-127). 주인공이 남에게 보인 행적(목격자가 있는 것)의 크기 합이 points다. tiers는 낮은 것부터 (min 이상이면 그 단계).
      * cross_from: 이 단계부터 행적이 말이 모이는 곳을 거쳐 다른 무리로 넘어간다 (그 전에는 목격자의 무리 안에서만).
      * relay_from: 이 단계부터 소문으로만 들은 사람도 다시 옮긴다 (더 멀리 퍼진다).

@@ -1,0 +1,126 @@
+# 큰 미스터리 둘: 열병은 어디서 왔나 (12-148). 혈청의 출처(mystery_serum.yaml)와 남쪽 집결지 소문을 잇는 장기 떡밥
+# - 흐름: 옛 시립병원 접수대의 명부(og_ships) 또는 교도소 감방동의 격리 표식(og_quarantine)
+#   → 교도소 행정동의 이송 장부(og_ledger) → 고속도로 갓길 군용 트럭의 녹음(og_truth)
+# - 진실 (lore/origin_ledger.md secret:og_ledger, lore/origin_truth.md secret:og_truth):
+#   첫 환자는 남쪽 가람항에 들어온 화물선 선원들. 둘째 주에 군이 교도소를 격리동으로 바꿔 열 오른 사람(F)을 모으고,
+#   물리고도 버틴 사람(R)은 남쪽 집결지로 보냈다. 전기가 끊긴 밤 격리동이 무너져 군이 철수했다.
+#   집결지에서는 R의 피로 혈청을 시험했고, 폐쇄하던 날 R만 배에 태웠다
+# - 끝을 맺지 않는다: 배가 어디서 왔는지, R을 태운 배가 어디로 갔는지(섬인지), 군이 아직 남쪽에 있는지는 열어 둔다
+
+- id: og_er_register
+  title: 응급실 접수대의 명부
+  tags: [world]
+  when:
+    zones: [hospital_ruins]
+    segments: [morning, day, evening]
+    flags_none: [og_ships]
+  setup: 무너진 응급실 접수대 밑, 서랍 하나가 아직 잠겨 있다. 비틀어 열자 비닐에 싸인 접수 명부가 나온다. 날짜는 붕괴가 시작된 여름 끝, 첫 주. 종이가 누렇게 떴지만 볼펜 글씨는 읽힌다.
+  ai_direction: 명부의 첫 열병 환자 열한 명은 직업란이 모두 "선원"이고, 비고란에 같은 배 이름(동백 7호)과 "가람항"이 적혀 있다. 그 뒤로 사흘 만에 항만 노동자, 그 가족, 응급실 간호사 순으로 이름이 늘어난다. 마지막 장은 글씨가 흐트러져 날짜도 없다. 배가 어디서 왔는지는 명부에 없다. 판정이 나쁘면 명부가 바스러져 일부만 읽는다.
+  choices:
+    - id: read
+      label: 명부를 한 장씩 넘겨 읽는다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: og_ships
+          - belief: { fact: "옛 시립병원 응급실 명부: 붕괴 첫 주 첫 열병 환자 열한 명이 모두 가람항에 들어온 화물선 동백 7호의 선원이었다. 사흘 만에 항만 노동자와 그 가족으로 번졌다", source: seen }
+        partial:
+          - set_flag: og_ships
+          - belief: { fact: "옛 시립병원 응급실 명부의 첫 환자들은 가람항 선원이었다. 나머지는 바스러져 읽지 못했다", source: seen }
+        miss:
+          - belief: { fact: 옛 시립병원 응급실에서 붕괴 첫 주의 접수 명부를 찾았지만 손에서 바스러졌다, source: seen }
+    - id: leave
+      label: 죽은 사람들의 이름이다. 서랍을 닫는다
+      effects:
+        - belief: { fact: 옛 시립병원 응급실 접수대에 붕괴 첫 주의 명부가 남아 있다, source: seen }
+
+- id: og_quarantine_mark
+  title: 감방 문의 글씨
+  tags: [world]
+  when:
+    zones: [prison]
+    flags_all: [zo1_pr_inside]
+    flags_none: [og_quarantine]
+  setup: 감방동 복도. 철문마다 스프레이로 찍은 같은 글씨가 있다. 교도소의 것이 아니다. 군용 스텐실로, 반듯하게. "격리 B동 · 체온 38.5↑ · 입소" 그리고 그 밑에 손으로 쓴 날짜들. 붕괴 둘째 주의 날짜다.
+  ai_direction: 첫 해에 무리가 교도소를 요새로 쓰기 전, 붕괴 둘째 주에 군이 이곳을 격리동으로 썼다 (감방마다 열이 오른 사람을 가뒀다). 무리는 그 흔적 위에 제 글씨를 덧썼다. 날짜는 둘째 주에서 넷째 주 사이에 멈춘다. 감방 안쪽 벽에는 손톱으로 긁은 줄들이 있다. 행정동 쪽 복도는 철문이 반쯤 열려 있다.
+  choices:
+    - id: study
+      label: 문마다 날짜를 읽어 나간다
+      check: history
+      outcomes:
+        success:
+          - set_flag: og_quarantine
+          - belief: { fact: "북쪽 교도소 감방동은 붕괴 둘째 주에 군이 쓴 격리동이었다. 열이 오른 사람을 감방마다 가뒀고, 입소 날짜는 넷째 주에서 멈춘다", source: seen }
+        partial:
+          - set_flag: og_quarantine
+          - belief: { fact: 북쪽 교도소 감방 문에 군용 격리 표식이 찍혀 있다. 붕괴 초의 날짜다, source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: 북쪽 교도소 감방동의 긁힌 벽을 오래 보았다. 무엇을 뜻하는지 모르겠다, source: seen }
+    - id: pass
+      label: 글씨는 글씨다. 지나간다
+      effects:
+        - belief: { fact: 북쪽 교도소 감방 문마다 군용 스텐실 글씨가 찍혀 있다, source: seen }
+
+- id: og_admin_ledger
+  title: 행정동의 이송 장부
+  tags: [world]
+  when:
+    zones: [prison]
+    flags_all: [zo1_pr_inside]
+    flags_any: [og_ships, og_quarantine]
+    flags_none: [og_ledger]
+  setup: 행정동 이층, 교도소장실이었던 방에 야전 책상과 끊어진 통신선이 남아 있다. 벽에 붙은 도시 지도에 붉은 핀이 가람항에서 시작해 번져 나간다. 구석의 작은 금고는 닫혀 있고, 책상 서랍에는 젖은 서류철이 쌓였다.
+  ai_direction: 군의 임시 지휘소였다. 금고 안의 이송 장부에는 사람마다 분류가 적혀 있다 (lore/origin_ledger). F(열이 오른 사람)는 격리동, R(물리고도 열이 오르지 않은 사람)은 "남쪽 집결지 이송". 마지막 장은 "전력 차단. 격리동 통제 불가. 철수." 지도의 붉은 핀은 명부를 읽은 주인공이라면 바로 알아본다 (항구에서 시작했다). 금고를 열면 소리가 날 수 있다. 안마당에는 감염체가 있다.
+  choices:
+    - id: safe
+      label: 금고를 연다
+      check: mechanics
+      outcomes:
+        success:
+          - set_flag: og_ledger
+          - belief: { fact: "북쪽 교도소 행정동 금고의 군 이송 장부: 열이 오른 사람은 F로 격리동에, 물리고도 버틴 사람은 R로 남쪽 집결지에 보냈다. 마지막 장은 '전력 차단. 격리동 통제 불가. 철수.'", source: seen }
+        partial:
+          - set_flag: og_ledger
+          - zone_noise: 1
+          - belief: { fact: "교도소 금고를 비틀어 열다 큰 소리가 났다. 군 장부에 R로 분류된 사람은 남쪽 집결지로 보냈다고 적혀 있었다", source: seen }
+        miss:
+          - zone_noise: 2
+          - belief: { fact: 교도소 행정동의 금고를 열지 못했다. 쇠 긁는 소리가 안마당까지 울렸다, source: seen }
+    - id: files
+      label: 서랍의 젖은 서류철을 뒤진다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: og_ledger
+          - belief: { fact: "교도소 행정동 서류철: 군이 사람을 F와 R로 나눴다. R은 물려도 열이 오르지 않는 사람이고, 따로 남쪽 집결지로 보냈다", source: seen }
+        partial:
+          - belief: { fact: 교도소 행정동 서류철에서 R 분류라는 말과 남쪽 집결지라는 말만 겨우 읽었다, source: seen }
+        miss:
+          - belief: { fact: 교도소 행정동 서류철은 물에 불어 한 글자도 읽을 수 없었다, source: seen }
+    - id: map_only
+      label: 벽의 지도만 찢어 챙긴다
+      effects:
+        - belief: { fact: "교도소 행정동 벽의 군 지도: 붉은 핀이 가람항에서 시작해 도시로 번져 나갔다", source: seen }
+
+- id: og_roadside_tape
+  title: 남쪽으로 멈춘 트럭
+  tags: [world]
+  when:
+    zones: [rest_stop]
+    segments: [morning, day, evening]
+    flags_all: [og_ledger]
+    flags_none: [og_truth]
+  setup: 휴게소에서 남쪽으로 한참 걸으면, 갓길에 군용 트럭 한 대가 남쪽을 보고 멈춰 있다. 타이어는 주저앉았고 짐칸 덮개가 찢겼다. 운전석 계기판 위에 손바닥만 한 녹음기가 테이프를 문 채 놓여 있다. 짐칸 옆구리에 페인트 글씨. "R 이송 — 집결지".
+  ai_direction: 선별소 군의관의 마지막 녹음이다 (lore/origin_truth). 건전지가 거의 다 돼 목소리가 늘어진다. 첫 환자는 가람항의 화물선 선원들이었다는 것, 집결지에서 R의 피로 혈청을 시험했다는 것("열에 넷이 돌아왔다"), 폐쇄하던 날 R만 배에 태웠다는 것. 배가 어디로 갔는지는 말하기 전에 테이프가 끊긴다. 짐칸은 비어 있다 (태운 사람들이 어디로 걸어갔는지는 모른다). 섬과 이어진다고 확정하지 않는다. 혈청의 출처를 아는 주인공이라면 같은 방법이라는 것을 알아챈다.
+  choices:
+    - id: listen
+      label: 남은 건전지로 테이프를 끝까지 듣는다
+      effects:
+        - set_flag: og_truth
+        - belief: { fact: "남쪽으로 멈춘 군용 트럭의 녹음: 첫 환자는 가람항 화물선 선원들이었다. 남쪽 집결지에서 군은 R의 피로 혈청을 시험했고 열에 넷이 돌아왔다. 집결지를 닫던 날 R만 배에 태웠다. 배가 어디로 갔는지는 녹음이 끊겨 모른다", source: seen }
+    - id: pocket
+      label: 듣지 않고 녹음기를 품에 넣는다
+      effects:
+        - set_flag: og_truth
+        - belief: { fact: "고속도로 갓길의 군용 트럭에서 R 이송이라고 적힌 짐칸과 군의관의 녹음기를 찾았다", source: seen }

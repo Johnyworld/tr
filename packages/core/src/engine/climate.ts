@@ -28,15 +28,24 @@ function heatedHere(content: Content, state: GameState): boolean {
   const zone = state.playerZone;
   const owner = zone ? state.zones[zone]?.owner : null;
   if (!shelter || !me || !zone || !owner) return false;
-  if (owner !== me.factionId) {
-    // 다른 무리의 거점에 손님으로 묵는다 (12-121): 그 무리가 우리를 나쁘게 보지 않으면. 갇힌 몸은 손님이 아니다
-    if (shelter.guests === undefined || me.captive || content.locations[zone]?.kind !== "base") return false;
-    // 무소속은 0으로 보되, 떠돌이를 먹잇감으로 보는 무리(helpless.prey_on_strangers)는 재워 주지 않는다
-    const regard = me.factionId ? disposition(content, owner, me.factionId, state) : content.scenario.helpless?.prey_on_strangers.includes(owner) ? -3 : 0;
-    if (regard < shelter.guests) return false;
-  }
+  if (owner !== me.factionId && !welcomedAsGuest(content, state)) return false;
   const host = state.factions[owner];
   return !!host && daysOfStock(content, host, shelter.resource) >= shelter.min_days;
+}
+
+/**
+ * 다른 무리의 거점에 손님으로 묵을 수 있다 (12-121): 그 무리가 우리를 나쁘게 보지 않으면. 갇힌 몸은 손님이 아니다.
+ * 무소속은 0으로 보되, 떠돌이를 먹잇감으로 보는 무리(helpless.prey_on_strangers)는 재워 주지 않는다
+ */
+export function welcomedAsGuest(content: Content, state: GameState): boolean {
+  const shelter = content.scenario.body?.cold?.shelter;
+  const me = state.characters[state.playerId];
+  const zone = state.playerZone;
+  const owner = zone ? state.zones[zone]?.owner : null;
+  if (!shelter || shelter.guests === undefined || !me || me.captive || !zone || !owner || owner === me.factionId) return false;
+  if (content.locations[zone]?.kind !== "base") return false;
+  const regard = me.factionId ? disposition(content, owner, me.factionId, state) : content.scenario.helpless?.prey_on_strangers.includes(owner) ? -3 : 0;
+  return regard >= shelter.guests;
 }
 
 /** 활동이 없을 때(상태 화면·GM 상태)의 기준: 그 구역에서 쉬고 있다 */

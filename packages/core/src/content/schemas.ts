@@ -767,6 +767,13 @@ export function createContentSchemas(s: Scenario) {
         road_danger_gte: z.number().int().min(0).max(3).optional(),
         /** 길 위의 이야기: 오가는 길의 위험이 이 이하일 때만 (작은 일) */
         road_danger_lte: z.number().int().min(0).max(3).optional(),
+        /** 야영의 이야기 (12-148, 태그 camp): 지켜보는 밤(깨어 있거나 보초를 설 동행이 있다)일 때만 (true) / 아무도 지키지 않고 잠든 밤일 때만 (false) */
+        camp_watched: z.boolean().optional(),
+        /** 지금 구역의 위험(위험과 감염체 압력 중 높은 쪽)이 이 이상 / 이하 (야영의 이야기) */
+        camp_danger_gte: z.number().int().min(0).max(3).optional(),
+        camp_danger_lte: z.number().int().min(0).max(3).optional(),
+        /** 지금 구역에 모닥불이 타고 있다 (true) / 없다 (false) */
+        campfire: z.boolean().optional(),
         /** 주인공이 배경의 그 일이 있었던 구역(잃은 곳)에 있을 때만 (기획서 12.6) */
         at_loss_place: z.boolean().optional(),
         /** 직분 사다리의 칸이 이 이상 (0 = 첫 칸) */

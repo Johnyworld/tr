@@ -227,6 +227,13 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.road_touches && (!state.lastRoute || !w.road_touches.some((z) => z === state.lastRoute!.from || z === state.lastRoute!.to))) return false;
   if (w.road_danger_gte !== undefined && routeDanger(content, state) < w.road_danger_gte) return false;
   if (w.road_danger_lte !== undefined && (!state.lastRoute || routeDanger(content, state) > w.road_danger_lte)) return false;
+  if (w.campfire !== undefined && ((!!state.playerZone && (state.fires[state.playerZone] ?? 0) > at) !== w.campfire)) return false;
+  if (w.camp_danger_gte !== undefined || w.camp_danger_lte !== undefined) {
+    const zone = state.playerZone;
+    const danger = zone ? Math.max(content.locations[zone]?.danger ?? 0, infestationOf(content, state, zone)) : 0;
+    if ((w.camp_danger_gte !== undefined && danger < w.camp_danger_gte) || (w.camp_danger_lte !== undefined && danger > w.camp_danger_lte)) return false;
+  }
+  // camp_watched는 야영의 이야기를 고를 때 본다 (engine/camp.ts): 상태가 아니라 지금 하는 일에서 정해진다
   if (w.at_loss_place && !state.background.some((e) => e.part.kind === "loss" && e.part.where && e.part.where === state.playerZone)) return false;
   if (w.occupation_step_gte !== undefined) {
     const occ = occupationOf(content, player);
@@ -450,13 +457,13 @@ export function routeDanger(content: Content, state: GameState): number {
 }
 
 /** 길 위의 이야기 후보: 태그가 맞고, 아직 안 열렸거나 쿨다운이 지났고, 조건과 배역이 맞는 것 */
-export function roadStorylets(state: GameState, content: Content, tag: string): StoryletContent[] {
+export function roadStorylets(state: GameState, content: Content, tag: string, at: GameTime = state.time): StoryletContent[] {
   return Object.values(content.storylets)
     .filter((s) => s.tags.includes(tag))
     .filter((s) => {
       const log = state.storyletLog[s.id];
-      return !log || (s.repeatable && state.time - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY);
+      return !log || (s.repeatable && at - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY);
     })
-    .filter((s) => conditionsMet(state, content, s, state.time))
+    .filter((s) => conditionsMet(state, content, s, at))
     .filter((s) => pickCast(state, content, s, null) !== null);
 }

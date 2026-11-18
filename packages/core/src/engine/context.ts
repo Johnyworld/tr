@@ -6,6 +6,7 @@ import { fameOf, stanceOf } from "../game/fame.ts";
 import { describeDiplomacyForGm } from "./diplomacy.ts";
 import { heardRumors } from "./factionTalk.ts";
 import { describeFatigue } from "./fatigue.ts";
+import { describeCamp } from "./camp.ts";
 import { infestationSign } from "../game/infestation.ts";
 import { KIND_LABELS, templateKind } from "../game/kinds.ts";
 import { describePersona } from "./persona.ts";
@@ -114,6 +115,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(describeTemperature(content, state) ? [`기온: ${describeTemperature(content, state)}. 추위는 시스템이 기온으로 정한다 (불 피우기는 take_action.use_item에 땔감·판자·기름)`] : []),
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       ...(describeFatigue(content, state) ? [describeFatigue(content, state)!] : []),
+      ...(describeCamp(content, state) ? [describeCamp(content, state)!] : []),
       ...(content.scenario.fame && fameOf(state, content).tier > 0
         ? [`명성: ${fameOf(state, content).label}. 소문을 들은 사람이 처음 보고도 당신을 알아볼 수 있다 (인물 카드의 팬·안티 줄). 플레이어에게 숫자는 말하지 않는다`]
         : []),

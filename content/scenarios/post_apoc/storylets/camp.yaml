@@ -1,0 +1,440 @@
+# 야영의 밤 (12-148, 기획서 4.5.6). 지켜 주는 지붕이 없는 곳(우리 거점·재워 주는 거점·피난처가 아닌 곳)에서
+# 자거나 쉬거나 기다리거나 보초를 서는 동안, 그 구역의 위험만큼 확률로 하나가 열려 그 시간을 끊는다.
+# 태그 camp만 (world를 붙이지 않는다). 대부분 템플릿(repeatable)이다.
+# 조건 camp_watched: true 지켜보는 밤(깨어 있거나 보초를 설 동행이 있다) / false 아무도 지키지 않고 잠든 밤.
+# 조건 campfire: 모닥불이 타고 있다. camp_danger_gte/lte: 위험과 감염체 압력 중 높은 쪽.
+# 이야기는 사람을 죽이지 않는다 (원칙 3). 덮쳐 오면 GM이 전투로 넘기고, 위험은 판정 전에 선언한다.
+
+# ── 지켜보는 밤: 다가오는 것을 먼저 안다 ───────────────
+
+- id: cp_sniffing
+  title: 냄새를 맡는 것
+  tags: [camp]
+  urgent: true
+  repeatable: true
+  cooldown_days: 4
+  fright: 1
+  fright_tags: [infected, dark]
+  when:
+    camp_watched: true
+    camp_danger_gte: 1
+    segments: [evening, night, dawn]
+  cast:
+    inf: { extra: infected_crawler, label: 냄새를 맡는 감염체 }
+  setup: "어둠 저편에서 젖은 숨소리가 난다. 땅바닥 가까이, 무언가 코를 박고 이쪽으로 기어 온다. 멈췄다가, 고개를 들고 공기를 들이켜고, 다시 온다. 아직 몇십 걸음 밖이다."
+  variants:
+    - "무너진 벽 틈으로 그림자 하나가 들어온다. 걷지 않고 기어서. 우리가 낮에 먹고 버린 깡통 쪽에서 오래 멈춰 냄새를 맡는다."
+  ai_direction: 감염체 하나가 냄새를 따라 야영지로 오고 있다. 아직 이쪽을 정확히 모른다. 미리 알아챘으니 숨거나, 조용히 처리하거나, 자리를 뜰 틈이 있다. 맞붙으면 감염체 배역을 target으로 판정한다 (감염 위험은 시스템이 붙인다). 소리를 크게 내면 다른 것도 온다.
+  choices:
+    - id: still
+      label: 불씨를 덮고 숨죽여 지나가기를 기다린다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 야영하던 밤, 감염체 하나가 냄새를 맡으며 지나갔다. 숨죽여 보냈다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에서 야영하던 밤, 감염체가 코앞까지 왔다가 돌아갔다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에서 야영하던 밤, 숨어 있던 자리를 감염체가 알아챘다", source: seen }
+    - id: quiet_kill
+      label: 다가오기를 기다렸다가 조용히 처리한다
+      check: fight
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 야영지에 기어 온 감염체를 소리 없이 처리했다", source: seen }
+        partial:
+          - zone_noise: 1
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - zone_noise: 1
+          - body: { track: nerves, delta: 1 }
+    - id: move
+      label: 짐을 챙겨 어둠 속에서 자리를 옮긴다
+      check: survival
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 감염체가 다가와 밤중에 야영 자리를 옮겼다", source: seen }
+        partial:
+          - body: { track: cold, delta: 1 }
+        miss:
+          - body: { track: cold, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+
+- id: cp_stranger_at_fire
+  title: 불가로 오는 사람
+  tags: [camp]
+  urgent: true
+  repeatable: true
+  cooldown_days: 5
+  when:
+    camp_watched: true
+    campfire: true
+    segments: [evening, night]
+  cast:
+    guest: { extra: road_wanderer, label: 불빛을 보고 온 사람 }
+  setup: '불빛 너머 어둠에서 목소리가 먼저 온다. "쏘지 마시오. 혼자요." 두 손을 들고 한 사람이 걸어 나온다. 어깨가 젖었고 입술이 파랗다. "불 좀… 쬐면 안 되겠소. 아무것도 안 바라오."'
+  variants:
+    - '모닥불 연기를 따라 한 사람이 다가와 열 걸음 밖에 멈춘다. 손에 든 것을 땅에 내려놓는다. 녹슨 칼 하나. "이거 내려놨소. 밤새 걸었더니 발가락이 안 느껴져서."'
+  ai_direction: 이 사람은 정말로 춥고 혼자다 (속셈은 없다. 다만 굶주렸고 먹을 것이 보이면 눈이 간다). 불을 나누면 밤새 이 근방 길 이야기를 한다 (지어낸 사실은 덧붙이지 않는다). 쫓으면 순순히 간다. 받아들이고도 경계하면, 그 사람도 그걸 안다.
+  choices:
+    - id: share
+      label: 불가에 앉힌다
+      effects:
+        - relation: { who: guest, axis: affection, delta: 2 }
+        - relation: { who: guest, axis: trust, delta: 1 }
+        - deed: { summary: 야영하던 불가에 언 낯선 사람을 앉혔다, tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "{zone}에서 야영하던 밤, 불빛을 보고 온 떠돌이와 불을 나눴다", source: seen }
+    - id: watch_him
+      label: 앉히되, 잠들지 않고 밤새 지켜본다
+      check: sense_danger
+      outcomes:
+        success:
+          - relation: { who: guest, axis: trust, delta: 1 }
+          - belief: { fact: "{zone}의 불가에서 밤새 낯선 떠돌이를 지켜봤다. 아무 일도 없었다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - lose_item: { item: dry_ration }
+          - belief: { fact: "{zone}의 불가에 앉힌 떠돌이가 새벽에 마른 식량을 들고 사라졌다", source: seen }
+    - id: send_away
+      label: 불은 못 나눈다며 돌려보낸다
+      check: intimidate
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 야영하던 밤, 불을 쬐러 온 떠돌이를 돌려보냈다", source: seen }
+        partial:
+          - relation: { who: guest, axis: affection, delta: -1 }
+        miss:
+          - relation: { who: guest, axis: affection, delta: -2 }
+          - body: { track: nerves, delta: 1 }
+
+- id: cp_patrol_sees_fire
+  title: 불빛을 본 순찰
+  tags: [camp]
+  urgent: true
+  repeatable: true
+  cooldown_days: 4
+  when:
+    campfire: true
+    zone_owner: [other]
+    segments: [evening, night, dawn]
+  cast:
+    patrol: { faction: zone_owner, ranks: [grunt, squad_leader] }
+  setup: '모닥불 너머에서 손전등 두 개가 켜진다. "불 꺼. 천천히." {patrol:이/가} 이끄는 이 땅의 순찰조다. 하나는 총구를 이쪽에, 하나는 불을 발로 흩어 끈다. "남의 땅에서 불을 피워? 저것들 불러 모으려고?"'
+  variants:
+    - '연기 냄새를 따라온 발소리가 야영지를 둘러싼다. {patrol:이/가} 불가로 성큼 들어와 쪼그려 앉아, 남은 땔감을 집어 들고 무게를 가늠한다. "이 땅에서 불은 우리 허락을 받고 피우는 거다."'
+  ai_direction: "{patrol}의 무리는 자기 땅에서 남이 피운 불을 싫어한다 (감염체와 적을 부른다). 순찰조는 무장했고 여럿이다. 곧장 해치려는 게 아니라 누구인지, 왜 여기 있는지 따진다. 둘러대기·흥정·맞서기 모두 판정으로, 붙잡히면 이 무리에 넘겨진다 (코드가 정한다)."
+  choices:
+    - id: explain
+      label: 길을 가던 중이고 날이 밝으면 떠난다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 야영하다 그 땅 순찰조에 걸렸다. 날이 밝으면 떠난다는 말에 보내 줬다", source: seen }
+        partial:
+          - take_item: { item: cigarettes }
+          - belief: { fact: "{zone}의 순찰조가 불 피운 값으로 담배를 받아 갔다", source: seen }
+        miss:
+          - capture_player: { by: zone_owner }
+    - id: lie
+      label: 이 무리 사람에게 심부름 가는 길이라고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 순찰조를 심부름꾼이라 둘러대 넘겼다", source: seen }
+        partial:
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+        miss:
+          - capture_player: { by: zone_owner }
+    - id: bolt
+      label: 불을 걷어차고 어둠 속으로 달아난다
+      check: stealth
+      outcomes:
+        success:
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}에서 야영지를 버리고 순찰조를 따돌렸다", source: seen }
+        partial:
+          - wound: { steps: 1, cause: 어둠 속에서 달아나다 무너진 담에 처박혔다 }
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+        miss:
+          - wound: { steps: 1, cause: 순찰조의 개머리판 }
+          - capture_player: { by: zone_owner }
+
+- id: cp_watch_dozed
+  title: 졸던 보초
+  tags: [camp]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    camp_watched: true
+    segments: [night, dawn]
+  cast:
+    mate: { companion: { kinds: [buddy, squad, purpose, kin] } }
+  setup: "새벽 어스름에 눈을 뜨니, 보초를 서던 {mate:이/가} 벽에 기댄 채 고개를 떨구고 있다. 불은 다 사그라들었다. 그리고 야영지 둘레의 젖은 흙 위에, 어젯밤에는 없던 발자국이 한 바퀴 돌아 나가 있다."
+  ai_direction: 밤사이 무언가(사람인지 짐승인지 감염체인지는 끝내 모른다) 야영지를 한 바퀴 돌고 갔다. 아무것도 없어지지 않았다. {mate}는 깨우면 몹시 부끄러워하고, 변명하지 않는다. 이 일을 어떻게 다루느냐로 둘 사이가 바뀐다.
+  choices:
+    - id: scold
+      label: 흔들어 깨워 발자국을 보여 주고 다그친다
+      effects:
+        - relation: { who: mate, axis: respect, delta: 1 }
+        - relation: { who: mate, axis: affection, delta: -1 }
+        - belief: { fact: "{zone}에서 야영하던 밤 {mate:이/가} 보초를 서다 졸았다. 무언가 야영지를 돌고 갔다", source: seen }
+    - id: cover
+      label: 깨우지 않고 대신 남은 밤을 지킨다. 말하지 않는다
+      effects:
+        - relation: { who: mate, axis: affection, delta: 1 }
+        - belief: { fact: "{zone}에서 야영하던 밤 {mate:이/가} 보초를 서다 졸았다. 깨우지 않고 대신 지켰다", source: seen }
+    - id: track
+      label: 발자국을 따라가 무엇이었는지 본다
+      check: survival
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 야영지를 돌고 간 발자국을 따라가 보았다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - body: { track: cold, delta: 1 }
+
+- id: cp_dogs
+  title: 들개 떼
+  tags: [camp]
+  urgent: true
+  repeatable: true
+  cooldown_days: 6
+  fright: 1
+  fright_tags: [dog, dark]
+  when:
+    camp_danger_gte: 1
+    segments: [night, dawn]
+  cast:
+    lead: { extra: stray_dog, label: 앞장선 들개 }
+  setup: "어둠 속에서 눈 여러 쌍이 낮게 빛난다. 들개 떼다. 앞장선 놈이 으르렁거리며 반원을 그리고, 나머지가 뒤를 따라 천천히 좁혀 온다. 짐 속 고기 냄새를 맡은 모양이다."
+  ai_direction: 굶주린 들개 대여섯 마리. 앞장선 놈만 장면의 배역이고, 나머지는 그 뒤를 따른다. 불과 큰 소리를 싫어하고, 먹을 것을 던져 주면 그쪽으로 몰려간다. 잠들어 있었다면 이미 가까이 와 있고(GM이 상태의 동행·보초를 보고 연출), 보초가 있었다면 반원을 그리기 전에 알아챘다. 맞붙으면 앞장선 놈을 target으로 판정한다.
+  choices:
+    - id: fire_up
+      label: 땔감을 던져 넣어 불을 키운다
+      effects:
+        - take_item: { item: firewood }
+        - zone_noise: 1
+        - belief: { fact: "{zone}에서 야영하던 밤 들개 떼가 왔다. 불을 키워 쫓았다", source: seen }
+    - id: shout
+      label: 몽둥이를 휘두르며 소리쳐 쫓는다
+      check: intimidate
+      outcomes:
+        success:
+          - zone_noise: 1
+          - belief: { fact: "{zone}에서 야영하던 밤 들개 떼를 소리쳐 쫓았다", source: seen }
+        partial:
+          - zone_noise: 1
+          - lose_item: { item: smoked_meat }
+          - lose_item: { item: salted_meat }
+        miss:
+          - zone_noise: 1
+          - wound: { steps: 1, cause: 들개에게 종아리를 물렸다 }
+    - id: throw_food
+      label: 고기 한 덩이를 멀리 던지고 그 틈에 물러난다
+      effects:
+        - take_item: { item: raw_meat }
+        - belief: { fact: "{zone}에서 들개 떼에게 고기를 던져 주고 물러났다", source: seen }
+
+- id: cp_child_crying
+  title: 어둠 속의 울음
+  tags: [camp]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    camp_watched: true
+    camp_danger_gte: 2
+    segments: [night]
+  setup: "멀지 않은 어둠 속에서 아이 울음소리가 난다. 끊어질 듯 이어지다가, 뚝 그친다. 그리고 한참 뒤에 다시. 같은 자리에서, 같은 높이로."
+  ai_direction: 울음은 판정 결과만큼 나쁜 것이다. 경계 판정이 좋으면 미끼라는 것을 알아챈다 (약탈자가 녹음기나 아이를 써서 사람을 끌어내는 수다). 나쁘면 알아채지 못한다. 가 보면 GM이 결과에 맞게 연출하되 (빈 녹음기와 매복의 흔적, 혹은 정말 길 잃은 아이), 위험은 판정 전에 선언한다. 덮쳐 오면 전투로 넘긴다.
+  choices:
+    - id: listen
+      label: 움직이지 않고 귀를 기울인다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 밤에 들린 아이 울음은 같은 소리가 되풀이되는 것이었다. 사람을 끌어내는 미끼다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - body: { track: nerves, delta: 2 }
+    - id: go
+      label: 소리 나는 쪽으로 가 본다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 밤, 울음소리를 따라가 그 자리를 먼저 보았다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+          - zone_noise: 1
+        miss:
+          - wound: { steps: 1, cause: 어둠 속에서 누군가 휘두른 쇠파이프 }
+          - zone_noise: 1
+    - id: leave
+      label: 짐을 챙겨 반대쪽으로 자리를 옮긴다
+      effects:
+        - body: { track: cold, delta: 1 }
+        - belief: { fact: "{zone}의 밤, 아이 울음이 들려 야영 자리를 옮겼다", source: seen }
+
+# ── 아무도 지키지 않은 밤: 깨어 보면 이미 가까이 와 있다 ─────
+
+- id: cp_woke_to_teeth
+  title: 눈을 뜨니
+  tags: [camp]
+  urgent: true
+  repeatable: true
+  cooldown_days: 4
+  fright: 2
+  fright_tags: [infected, dark]
+  when:
+    camp_watched: false
+    camp_danger_gte: 1
+  cast:
+    inf: { extra: infected_hungry, label: 곁에 웅크린 감염체 }
+  setup: "썩은 냄새에 눈을 뜬다. 팔 하나 거리에 무언가 웅크리고 있다. 덮고 있던 천 끝을 냄새 맡고 있다. 아직 당신이 깬 것을 모른다."
+  variants:
+    - "무언가 발목을 건드린다. 눈을 뜨자 어둠 속 허연 눈이 바로 발치에 있다. 침낭 끝을 입에 물고 고개를 갸웃거린다."
+  ai_direction: 아무도 지키지 않은 잠자리에 감염체가 들어왔다. 아주 가깝다. 한 번의 판단이 몸을 가른다. 맞붙거나 빠져나가는 판정은 감염체 배역을 opponent(또는 target)로 두고 몸의 위험을 건다 (감염 위험은 시스템이 붙인다). 위험은 판정 전에 선언한다. 다음 판정부터는 GM이 전투로 넘겨도 된다.
+  choices:
+    - id: roll_away
+      label: 몸을 굴려 빠져나간다
+      check: endure
+      outcomes:
+        success:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에서 혼자 자다 감염체가 곁에 와 있었다. 굴러서 빠져나왔다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+          - lose_item: { item: blanket }
+        miss:
+          - body: { track: nerves, delta: 2 }
+    - id: strike
+      label: 머리맡의 무기를 잡고 먼저 친다
+      check: fight
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 혼자 자다 곁에 온 감염체를 먼저 쳤다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+          - zone_noise: 1
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - zone_noise: 1
+    - id: freeze
+      label: 숨을 멈추고 꼼짝하지 않는다
+      check: stealth
+      outcomes:
+        success:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에서 혼자 자다 감염체가 곁을 핥고 지나갔다. 숨을 멈추고 버텼다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 2 }
+        miss:
+          - body: { track: nerves, delta: 2 }
+
+- id: cp_thief
+  title: 짐을 뒤지는 손
+  tags: [camp]
+  urgent: true
+  repeatable: true
+  cooldown_days: 5
+  when:
+    camp_watched: false
+  cast:
+    thief: { extra: refugee, label: 짐을 뒤지는 사람 }
+  setup: "부스럭거리는 소리에 깬다. 머리맡의 짐이 열려 있고, 누군가 그 안에 팔을 깊이 넣고 있다. 얼굴은 보이지 않는다. 손이 깡통 하나를 쥐고 나온다."
+  variants:
+    - "새벽, 등 뒤에서 지퍼 내리는 소리가 아주 천천히 난다. 돌아보니 마른 사람 하나가 짐 앞에 엎드려 있다가 그대로 굳는다. 손에 물병이 들려 있다."
+  ai_direction: 굶주린 피난민이다. 무기는 없고, 들키면 먼저 달아나려 한다. 붙잡으면 울며 빈다 (거짓이 아니다). 놓치면 손에 쥔 것을 잃는다. 해치는 것은 그 사람을 다치게 하는 판정이고, 행적으로 남는다.
+  choices:
+    - id: grab
+      label: 손목을 낚아챈다
+      check: fight
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 혼자 자다 짐을 뒤지던 피난민의 손목을 잡았다", source: seen }
+        partial:
+          - lose_item: { item: canned_food }
+          - belief: { fact: "{zone}에서 짐을 뒤지던 사람이 깡통 하나를 들고 달아났다", source: seen }
+        miss:
+          - lose_item: { item: canned_food }
+          - lose_item: { item: water_bottle }
+          - belief: { fact: "{zone}에서 자는 사이 누군가 짐을 털어 달아났다", source: seen }
+    - id: shout
+      label: 소리를 질러 쫓는다
+      check: intimidate
+      outcomes:
+        success:
+          - zone_noise: 1
+          - belief: { fact: "{zone}에서 짐을 뒤지던 사람을 소리쳐 쫓았다. 빈손으로 달아났다", source: seen }
+        partial:
+          - zone_noise: 1
+          - lose_item: { item: canned_food }
+        miss:
+          - zone_noise: 1
+          - lose_item: { item: canned_food }
+          - lose_item: { item: dry_ration }
+    - id: let_go
+      label: 모른 척 눈을 감는다. 가져가게 둔다
+      effects:
+        - lose_item: { item: canned_food }
+        - deed: { summary: 짐을 뒤지는 굶주린 사람을 모른 척 보내 주었다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "{zone}에서 짐을 뒤지던 굶주린 사람을 모른 척 보내 주었다", source: seen }
+
+- id: cp_rats
+  title: 갉는 소리
+  tags: [camp]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    camp_watched: false
+    camp_danger_lte: 1
+  setup: "사각, 사각. 갉는 소리에 깨어 보니 식량 자루 귀퉁이가 뚫려 있고, 쥐 몇 마리가 어둠 속으로 흩어진다. 자루 안이 축축하다."
+  ai_direction: 쥐가 식량을 갉았다. 위험하지 않지만 잃는 것은 진짜다. 매달아 두거나 덮어 두지 않은 탓이다. 짧게 연출한다.
+  choices:
+    - id: salvage
+      label: 갉힌 것을 버리고 남은 것을 챙긴다
+      effects:
+        - lose_item: { item: dry_ration }
+        - belief: { fact: "{zone}에서 야영하다 쥐가 식량을 갉았다. 다음엔 매달아 둬야 한다", source: seen }
+    - id: eat_anyway
+      label: 갉힌 데만 떼어 내고 아깝게 먹는다
+      check: endure
+      outcomes:
+        success: []
+        partial:
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - lose_item: { item: dry_ration }
+
+- id: cp_rain_seep
+  title: 스며드는 비
+  tags: [camp]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    weather: [rain]
+    campfire: false
+  setup: "등이 차가워서 깬다. 빗물이 바닥을 타고 흘러들어 깔고 누운 것이 흠뻑 젖었다. 지붕인 줄 알았던 것이 반쯤은 하늘이었다."
+  ai_direction: 젖으면 몸이 빠르게 식는다 (시스템이 기온으로 정한다). 마른 자리를 찾아 옮기거나, 불을 피우거나, 참고 버틴다. 짧게 연출한다.
+  choices:
+    - id: find_dry
+      label: 어둠 속에서 마른 자리를 찾아 옮긴다
+      check: survival
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 빗물이 스며 밤중에 마른 자리로 옮겼다", source: seen }
+        partial:
+          - soak: true
+        miss:
+          - soak: true
+          - body: { track: nerves, delta: 1 }
+    - id: endure
+      label: 웅크리고 날이 밝기를 기다린다
+      effects:
+        - soak: true
+        - belief: { fact: "{zone}에서 젖은 채 비 오는 밤을 버텼다", source: seen }

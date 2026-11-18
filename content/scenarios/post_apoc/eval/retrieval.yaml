@@ -14,6 +14,8 @@ viewers:
   a_successor: { character: npc_kim, faction: faction_a, flags: [] }
   # 혈청의 출처를 알아낸 사람 (12-132)
   a_serum_truth: { character: player, faction: faction_a, flags: [ms_theory, ms_truth] }
+  # 열병의 시작을 알아낸 사람 (12-148)
+  a_origin_truth: { character: player, faction: faction_a, flags: [og_ledger, og_truth] }
 
 # memory 컬렉션 평가용 합성 기억 (세이브 없이 검색 품질과 필터만 본다)
 memory:
@@ -248,3 +250,13 @@ cases:
     query: 혈청은 어디서 만들어지나
     viewer: a_serum_truth
     expect: ["lore/serum_truth", "lore/serum_theory"]
+  # ── 열병의 시작 (12-148): 모르는 사람에게는 군의 장부와 녹음이 나오지 않는다 ──
+  - id: origin_hidden
+    query: 열병은 어디서 처음 시작됐나
+    viewer: a_recruit
+    expect: ["lore/collapse > 첫 해"]
+    forbid: ["lore/origin_ledger", "lore/origin_truth"]
+  - id: origin_known
+    query: 열병은 어디서 처음 시작됐나
+    viewer: a_origin_truth
+    expect: ["lore/origin_truth"]

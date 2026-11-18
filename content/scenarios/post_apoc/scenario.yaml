@@ -1062,6 +1062,74 @@ wounds:
   # 감염체에게 다칠 위험인데 종류를 비웠으면 할큄으로 본다. 감염은 피가 나는 상처일 때만 굴린다
   infected_default: claw
 
+# 큰 재난 (12-169, *임시*): 한 해에 두어 번 (앞 재난에서 25일 넘게 지나서), 사흘 전에 전조. 전조 이야기에서 대비하면 피해가 준다 (한 번 25%, 최대 50%).
+# 거점을 덮친 큰불·떼·돌림병은 15%로 그 무리가 거점을 잃는다 (대비한 만큼 덜)
+disasters:
+  per_year: 2
+  min_gap_days: 25
+  warn_days: 3
+  collapse_chance: 0.15
+  kinds:
+    - id: fire
+      label: 큰불
+      seasons: [autumn, winter]
+      target: base
+      omen: 바람이 세고 마른 냄새가 난다. 누군가 아궁이 불씨를 걱정하고, 창고 뒤에 기름통이 쌓여 있다
+      aftermath: 그을린 벽, 타다 남은 창고, 연기 냄새가 며칠 간다
+      recover_days: 6
+      resources: { fuel: 0.3, food: 0.2 }
+      population: 0.03
+      morale: 1
+      fort: 1
+      break_facilities: true
+      stall_yields: true
+      collapse: true
+    - id: flood
+      label: 홍수
+      seasons: [spring, summer]
+      target: water
+      omen: 비가 사흘째 그치지 않는다. 강물이 다리 밑까지 차올랐고, 하수구가 거꾸로 넘친다
+      aftermath: 진흙에 덮인 바닥, 떠내려간 짐, 썩는 냄새
+      recover_days: 5
+      resources: { food: 0.15, water: 0.1 }
+      population: 0.02
+      morale: 1
+      break_facilities: true
+      stall_yields: true
+    - id: horde
+      label: 감염체 떼의 이동
+      target: infested
+      omen: 담을 긁는 소리가 잦아졌다. 쥐와 들개가 한쪽으로 도망치고, 밤마다 먼 곳에서 무리 지은 울음이 들린다
+      aftermath: 무너진 담 틈, 끌려간 자국, 아직 근처를 떠도는 것들
+      recover_days: 6
+      population: 0.05
+      morale: 1
+      fort: 1
+      infestation: 2
+      collapse: true
+    - id: cold
+      label: 혹한
+      seasons: [winter]
+      target: all
+      omen: 하늘이 낮게 내려앉았다. 새벽 서리가 한낮에도 녹지 않고, 물통에 살얼음이 낀다
+      aftermath: 얼어붙은 물, 땔감 다툼, 아침마다 깨어나지 않는 사람
+      recover_days: 4
+      resources: { fuel: 0.25 }
+      morale: 1
+      weather: cold_snap
+    - id: plague
+      label: 돌림병
+      seasons: [winter, spring]
+      target: faction
+      omen: 밤새 기침하는 사람이 늘었다. 피난민 막사에서 열이 오른 아이가 둘 나왔다는 말이 돈다
+      aftermath: 격리된 막사, 바닥난 약장, 마스크 대신 천을 감은 얼굴들
+      recover_days: 8
+      resources: { medicine: 0.3 }
+      population: 0.04
+      morale: 1
+      disease: 0.35
+      collapse: true
+
 # 거점 손보기 (12-167, *임시*): 떠돌이의 거처(home)와 우리 무리의 거점(base)에 짓는 시설. 판정·시간·재료는 여기, 결과는 코드.
 # 시간으로는 닳지 않고, 그 구역에 습격·공격이 오면 하나가 부서진다. 거점에 지으면 성실함 행적이 남는다
 facilities:

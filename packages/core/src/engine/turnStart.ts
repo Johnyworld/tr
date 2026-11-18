@@ -1,3 +1,4 @@
+import { disasterWeather } from "./disasters.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { checkRumorsOnSite } from "./factionTalk.ts";
 import { runRestock } from "./gear.ts";
@@ -31,7 +32,8 @@ function runDailyWeather(ctx: ToolContext) {
   const state = ctx.store.getState();
   const today = dayOf(state.time);
   if (!s.weather || state.weather?.day === today) return;
-  const id = rollWeather(s, today, ctx.rng);
+  // 큰 재난(혹한)이 덮친 동안은 그 날씨 (12-169)
+  const id = disasterWeather(ctx.content, state, today) ?? rollWeather(s, today, ctx.rng);
   if (id) ctx.store.append({ type: "weather_set", day: today, weatherId: id });
 }
 

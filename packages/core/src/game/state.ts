@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 66;
+export const SAVE_SCHEMA_VERSION = 67;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -222,6 +222,8 @@ const zoneStateSchema = z.strictObject({
   fort: z.number().int().min(0).max(3).optional(),
   /** 이야기로 늘린 산출 (씨앗, 우물. 12-54) */
   boost: z.record(z.string(), z.number().int()).optional(),
+  /** 큰 재난으로 이날까지 산출이 멈춘다 (12-169) */
+  stalledUntil: z.number().int().optional(),
 });
 
 export function createGameSchemas(s: Scenario) {
@@ -316,6 +318,20 @@ export function createGameSchemas(s: Scenario) {
       .strictObject({ zone: z.string(), owner: z.string(), goal: z.string(), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean(), since: z.number().int() })
       .nullable()
       .default(null),
+    /** 큰 재난 (12-169): 잡힌 재난 (전조 omen → 덮침 struck), 마지막 재난이 덮친 날 */
+    disaster: z
+      .strictObject({
+        kind: z.string(),
+        zone: z.string().nullable(),
+        faction: z.string().nullable(),
+        day: z.number().int(),
+        phase: z.enum(["omen", "struck"]),
+        until: z.number().int(),
+        prepared: z.number().int().min(0),
+      })
+      .nullable()
+      .default(null),
+    lastDisasterDay: z.number().int().nullable().default(null),
     /** 인물의 자기 일 (12-168): 인물마다 지금 몇 번째 일(index)이고 몇 칸 찼는지 */
     agendas: z.record(z.string(), z.strictObject({ index: z.number().int().min(0), filled: z.number().int().min(0) })).default({}),
     /** 거점 손보기 (12-167): 구역마다 지어진 시설 id */
@@ -527,6 +543,11 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("infiltration_started"), zone: z.string(), owner: z.string(), goal: z.string() }),
     z.strictObject({ type: z.literal("infiltration_changed"), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean() }),
     z.strictObject({ type: z.literal("infiltration_ended"), how: z.enum(["out", "caught", "gone"]) }),
+    // 큰 재난 (12-169)
+    z.strictObject({ type: z.literal("disaster_scheduled"), kind: z.string(), zone: z.string().nullable(), faction: z.string().nullable(), day: z.number().int() }),
+    z.strictObject({ type: z.literal("disaster_prepared") }),
+    z.strictObject({ type: z.literal("disaster_struck"), until: z.number().int(), stall: z.array(z.string()), collapsed: z.boolean() }),
+    z.strictObject({ type: z.literal("disaster_ended") }),
     // 인물의 자기 일 (12-168)
     z.strictObject({ type: z.literal("agenda_filled"), npcId: z.string(), delta: z.number().int() }),
     z.strictObject({ type: z.literal("agenda_finished"), npcId: z.string() }),
@@ -964,6 +985,8 @@ export const EMPTY_STATE: GameState = {
   resolves: {},
   facilities: {},
   agendas: {},
+  disaster: null,
+  lastDisasterDay: null,
   resolveSeeded: [],
   resolveNote: null,
   resolveLog: [],
@@ -1375,6 +1398,24 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "infiltration_ended":
       next.infiltration = null;
+      return next;
+    case "disaster_scheduled":
+      next.disaster = { kind: event.kind, zone: event.zone, faction: event.faction, day: event.day, phase: "omen", until: event.day, prepared: 0 };
+      return next;
+    case "disaster_prepared":
+      if (next.disaster) next.disaster = { ...next.disaster, prepared: next.disaster.prepared + 1 };
+      return next;
+    case "disaster_struck": {
+      const d = next.disaster;
+      if (!d) return next;
+      next.disaster = { ...d, phase: "struck", until: event.until };
+      next.lastDisasterDay = d.day;
+      for (const z of event.stall) if (next.zones[z]) next.zones[z] = { ...next.zones[z]!, stalledUntil: event.until };
+      if (event.collapsed && d.zone && next.zones[d.zone]) next.zones[d.zone] = { ...next.zones[d.zone]!, owner: null };
+      return next;
+    }
+    case "disaster_ended":
+      next.disaster = null;
       return next;
     case "agenda_filled": {
       const at = next.agendas?.[event.npcId] ?? { index: 0, filled: 0 };

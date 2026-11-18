@@ -881,6 +881,40 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
+     * 큰 재난 (12-169): 한 해에 per_year번쯤 (앞 재난에서 min_gap_days 지나서), warn_days 전에 전조. 대비하면 피해가 준다.
+     * 재난마다: 계절, 덮칠 곳(target: base 무리 거점, water 물이 나는 곳, infested 감염체가 가장 많은 곳, faction 사람이 가장 많은 무리, all 도시 전체),
+     * 잃는 자원 비율(resources), 인원 비율(population), 사기, 담, 시설 부서짐, 산출 멈춤(recover_days 동안), 감염체 압력, 날씨, 돌림병 확률, 거점을 잃을 수 있는지(collapse)
+     */
+    disasters: z
+      .strictObject({
+        per_year: z.number().min(0),
+        min_gap_days: z.number().int().min(1),
+        warn_days: z.number().int().min(1),
+        collapse_chance: z.number().min(0).max(1),
+        kinds: z.array(
+          z.strictObject({
+            id,
+            label: z.string().min(1),
+            seasons: z.array(id).default([]),
+            target: z.enum(["base", "water", "infested", "faction", "all"]),
+            omen: z.string().min(1),
+            aftermath: z.string().min(1),
+            recover_days: z.number().int().min(1),
+            resources: z.record(id, z.number().min(0).max(1)).default({}),
+            population: z.number().min(0).max(1).default(0),
+            morale: z.number().int().min(0).max(3).default(0),
+            fort: z.number().int().min(0).max(3).default(0),
+            break_facilities: z.boolean().default(false),
+            stall_yields: z.boolean().default(false),
+            infestation: z.number().int().min(0).max(3).default(0),
+            weather: id.optional(),
+            disease: z.number().min(0).max(1).default(0),
+            collapse: z.boolean().default(false),
+          }),
+        ),
+      })
+      .optional(),
+    /**
      * 거점 손보기 (12-167): 떠돌이의 거처(home)와 무리의 거점(base)에 짓는 시설. move 판정, hours 시간, materials 재료.
      * 효과는 기존 장치로만: fort 담 단단함 +, camp 야영 이야기 확률 배수, watched 잠들어도 지켜보는 밤, water 물이 나는 곳,
      * garden 텃밭(거처: days마다 item×qty를 창고에, 거점: 날마다 무리 resource + resource_delta, seasons에만), preserve 날것이 안 상한다, fire 실내의 불
@@ -1590,6 +1624,11 @@ export const scenarioFileSchema = z
     if (s.resolve) {
       if (!s.condition_tracks.some((t) => t.id === s.resolve!.relief_track)) problem(`resolve.relief_track: 알 수 없는 상태 트랙 ${s.resolve.relief_track}`);
       for (const [k, v] of Object.entries(s.resolve.from_history)) if (v && !s.resolve.kinds.some((x) => x.id === v)) problem(`resolve.from_history.${k}: 알 수 없는 갈래 ${v}`);
+    }
+    for (const k of s.disasters?.kinds ?? []) {
+      for (const r of Object.keys(k.resources)) if (!s.resources.some((x) => x.id === r)) problem(`disasters.${k.id}: 알 수 없는 자원 ${r}`);
+      if (k.weather && !(s.weather?.kinds ?? []).some((w) => w.id === k.weather)) problem(`disasters.${k.id}: 알 수 없는 날씨 ${k.weather}`);
+      for (const x of k.seasons) if (!(s.seasons?.list ?? []).some((y) => y.id === x)) problem(`disasters.${k.id}: 알 수 없는 계절 ${x}`);
     }
     const scars = s.scars;
     if (scars) {

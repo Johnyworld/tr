@@ -17,7 +17,7 @@ import type { Rng } from "../rng.ts";
  *    사기가 시작값 쪽으로 돌아오고, 남은 사람 중에서 전투원을 키우고, 가끔 피란민이 합류한다 (끝없는 세계)
  */
 
-export type ZoneState = { owner: string | null; fort?: number; boost?: Record<string, number> };
+export type ZoneState = { owner: string | null; fort?: number; boost?: Record<string, number>; stalledUntil?: number };
 
 export type WarWorld = {
   factions: Record<string, FactionState>;
@@ -43,6 +43,8 @@ export type WarDayOptions = {
   defer?: (spec: ClashSpec) => boolean;
   /** 구역의 감염체 압력 (12-118). 기준값보다 높으면 산출이 준다. 없으면 기준값 */
   infested?: Record<string, number>;
+  /** 오늘 (큰 재난으로 산출이 멈춘 구역을 가린다, 12-169) */
+  day?: number;
 };
 
 /** 이 세력이 저 세력을 적으로 보는지 (태도 -2 이하) */
@@ -346,6 +348,8 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const workforce = clamp(f.population / Math.max(1, startPop), 0.7, 1.2);
     for (const loc of Object.values(content.locations)) {
       if (next.zones[loc.id]?.owner !== id) continue;
+      // 큰 재난이 덮친 구역은 그동안 거두지 못한다 (12-169)
+      if (options.day !== undefined && (next.zones[loc.id]?.stalledUntil ?? -1) >= options.day) continue;
       // 감염체가 몰려든 구역은 덜 거둔다 (12-118)
       const overrun = Math.max(0, infestationOf(content, { infested: options.infested ?? {} }, loc.id) - baseInfestation(content, loc.id));
       const kept = Math.max(0, 1 - (content.scenario.infestation?.yields_cut ?? 0) * overrun);

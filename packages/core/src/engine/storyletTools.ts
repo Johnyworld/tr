@@ -1,3 +1,4 @@
+import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
 import { setResolve, stepResolve } from "./resolve.ts";
@@ -422,6 +423,10 @@ export function applyEffect(
     store.append({ type: "merit_awarded", characterId: playerId, delta: effect.merit, reason });
     const growthNote = gainMeritXp(ctx, playerId, effect.merit);
     return { line: `공적 ${effect.merit > 0 ? "+" : ""}${effect.merit}.` + (growthNote ? ` ${growthNote}` : "") };
+  }
+  if ("disaster_prepare" in effect) {
+    const line = prepareDisaster(ctx);
+    return line ? { line: `(${line})` } : {};
   }
   if ("agenda" in effect) {
     const id = whoOf(ctx, effect.agenda.who, cast);

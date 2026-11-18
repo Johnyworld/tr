@@ -1,0 +1,275 @@
+# 큰 재난 (12-169): 전조(phase omen, 사흘)와 재난 뒤(phase struck). 주인공이 가까이 있을 때만 (그 구역·이웃·우리 무리·내 거처, 도시 전체 재난이면 늘).
+# 전조 이야기에서 대비하면(disaster_prepare) 피해가 준다. 무엇이 오는지는 정해 주지 않는다: 낌새만 보인다. {disaster_zone}은 덮칠 곳
+
+# ── 큰불 ──
+- id: ds_fire_omen
+  title: 마른 바람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: omen, kinds: [fire] }
+  setup: "바람이 세다. 공기가 바삭할 만큼 말랐다. 창고 뒤에 쌓인 기름통과 땔감 더미가 자꾸 눈에 밟힌다."
+  ai_direction: "불이 날지는 아무도 모른다. 주인공만 이상하다고 느낀다. 대비하면 피해가 준다 (얼마나인지는 시스템이 정한다)."
+  choices:
+    - id: move
+      label: 기름통과 땔감을 떨어진 곳으로 옮기자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - disaster_prepare: true
+          - disaster_prepare: true
+        partial:
+          - disaster_prepare: true
+        miss: []
+    - id: water
+      label: 물통을 채워 창고 곁에 둔다
+      effects:
+        - disaster_prepare: true
+        - body: { track: fatigue, delta: 1 }
+    - id: shrug
+      label: 괜한 걱정이라 여긴다
+      effects: []
+
+- id: ds_fire_after
+  title: 그을린 아침
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: struck, kinds: [fire] }
+  setup: "{disaster_zone}에서 아직 연기가 오른다. 사람들이 젖은 담요로 남은 불씨를 두드리고, 누군가 이름을 부르며 잿더미를 뒤진다."
+  ai_direction: "큰불이 지나갔다. 잃은 것은 시스템이 정한 대로 (상태의 무리 형편). 사람을 찾는 장면, 남은 것을 건지는 장면."
+  choices:
+    - id: dig
+      label: 잿더미를 같이 뒤져 사람을 찾는다
+      check: endure
+      outcomes:
+        success:
+          - deed: { summary: "{disaster_zone}의 잿더미에서 사람을 끌어냈다", tags: [bravery, mercy], severity: 2, privacy: public }
+          - faction_morale: { faction: own, delta: 1 }
+        partial:
+          - body: { track: fatigue, delta: 1 }
+        miss:
+          - wound: { steps: 1, cause: 무너지는 들보에 맞았다 }
+    - id: salvage
+      label: 쓸 만한 것을 건진다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: scrap_metal, quantity: 2 }
+          - give_item: { item: canned_food }
+        partial:
+          - give_item: { item: scrap_metal }
+        miss: []
+
+# ── 홍수 ──
+- id: ds_flood_omen
+  title: 그치지 않는 비
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: omen, kinds: [flood] }
+  setup: "비가 사흘째 그치지 않는다. 강물이 다리 밑을 핥고, 하수구에서 물이 거꾸로 솟는다."
+  ai_direction: "물이 어디까지 오를지는 모른다. 낮은 곳의 짐과 사람을 높은 곳으로 옮기면 피해가 준다."
+  choices:
+    - id: sandbags
+      label: 모래주머니를 쌓는 일을 거든다
+      check: endure
+      outcomes:
+        success:
+          - disaster_prepare: true
+          - disaster_prepare: true
+        partial:
+          - disaster_prepare: true
+          - body: { track: fatigue, delta: 1 }
+        miss:
+          - body: { track: cold, delta: 1 }
+    - id: up
+      label: 짐을 위층으로 옮긴다
+      effects:
+        - disaster_prepare: true
+
+- id: ds_flood_after
+  title: 물이 빠진 자리
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: struck, kinds: [flood] }
+  setup: "{disaster_zone}의 물이 빠지고 진흙이 남았다. 떠내려온 것들이 담장에 걸려 있다. 사람의 것도, 아닌 것도."
+  ai_direction: "물이 더러워졌다 (끓이지 않은 물 12-131). 진흙 속에 쓸 것과 쓰면 안 될 것이 섞여 있다."
+  choices:
+    - id: search
+      label: 진흙을 뒤진다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: canned_food, quantity: 2 }
+        partial:
+          - give_item: { item: dirty_water }
+        miss:
+          - body: { track: disease, delta: 1, chance: 0.3 }
+    - id: help
+      label: 무너진 집에서 사람들을 꺼내는 것을 돕는다
+      effects:
+        - deed: { summary: "홍수 뒤 {disaster_zone}에서 사람들을 꺼내는 것을 도왔다", tags: [mercy], severity: 1, privacy: public }
+        - body: { track: fatigue, delta: 1 }
+
+# ── 감염체 떼의 이동 ──
+- id: ds_horde_omen
+  title: 도망치는 짐승들
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: omen, kinds: [horde] }
+  setup: "쥐 떼가 한쪽으로 몰려간다. 들개들이 꼬리를 말고 반대편으로 달린다. 밤마다 먼 데서 여럿이 우는 소리가 들린다."
+  ai_direction: "무엇이 오는지 정확히는 모른다. 감염체를 아는 사람이면 떼가 움직인다는 것을 짐작한다. 담을 손보거나 길목을 막으면 피해가 준다."
+  choices:
+    - id: wall
+      label: 담의 틈을 막자고 나선다
+      check: carpentry
+      outcomes:
+        success:
+          - disaster_prepare: true
+          - disaster_prepare: true
+        partial:
+          - disaster_prepare: true
+        miss: []
+    - id: read
+      label: 소리의 방향과 짐승들의 길을 읽는다
+      check: infected_lore
+      outcomes:
+        success:
+          - disaster_prepare: true
+          - belief: { fact: "감염체 떼가 {disaster_zone} 쪽으로 움직이고 있다", source: seen }
+        partial:
+          - belief: { fact: "감염체 떼가 움직이는 것 같다. 어디로인지는 모르겠다", source: seen }
+        miss: []
+
+- id: ds_horde_after
+  title: 지나간 자리
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: struck, kinds: [horde] }
+  setup: "{disaster_zone}의 담 한쪽이 무너졌다. 바닥에 끌린 자국이 길게 나 있다. 아직 근처를 떠도는 것들이 있다."
+  ai_direction: "떼는 지나갔지만 낙오한 것들이 남았다 (그 구역의 감염체 압력은 시스템대로). 마주치면 spawn_extra로 감염체 틀을."
+  choices:
+    - id: sweep
+      label: 남은 것들을 치우러 나선다
+      check: fight
+      outcomes:
+        success:
+          - deed: { summary: "떼가 지나간 {disaster_zone}의 남은 감염체를 치웠다", tags: [bravery], severity: 1, privacy: public }
+          - infested: -1
+        partial:
+          - body: { track: fear, delta: 1 }
+        miss:
+          - wound: { steps: 1, cause: 낙오한 감염체에게 할퀴였다 }
+    - id: hide
+      label: 며칠은 나가지 않는다
+      effects:
+        - body: { track: nerves, delta: 1, chance: 0.3 }
+
+# ── 혹한 ──
+- id: ds_cold_omen
+  title: 녹지 않는 서리
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: omen, kinds: [cold] }
+  setup: "하늘이 낮게 내려앉았다. 한낮에도 서리가 녹지 않고, 물통에 살얼음이 낀다. 늙은 사람들이 무릎을 문지르며 큰 추위가 온다고 한다."
+  ai_direction: "며칠 뒤 한파가 온다 (도시 전체). 땔감을 모으고 사람을 한데 재울 준비를 하면 피해가 준다."
+  choices:
+    - id: wood
+      label: 땔감을 더 모으러 나간다
+      check: survival
+      outcomes:
+        success:
+          - give_item: { item: firewood, quantity: 3 }
+          - disaster_prepare: true
+        partial:
+          - give_item: { item: firewood }
+        miss:
+          - body: { track: cold, delta: 1 }
+    - id: gather
+      label: 한 방에 모여 자자고 말한다
+      effects:
+        - disaster_prepare: true
+
+- id: ds_cold_after
+  title: 깨어나지 않는 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: struck, kinds: [cold] }
+    segments: [morning]
+  setup: "아침 점호에서 대답 없는 이름이 둘 있다. 담요를 들추자 얼굴이 하얗다. 사람들이 말없이 땔감 더미를 본다."
+  ai_direction: "한파가 이어진다 (날씨는 시스템대로). 땔감을 두고 다툼이 생기기 쉽다. 누가 더 가져가는지 다들 본다."
+  choices:
+    - id: share
+      label: 내 땔감을 아이들 방에 넣는다
+      when: { has_items: [firewood] }
+      effects:
+        - take_item: { item: firewood }
+        - deed: { summary: 혹한에 제 땔감을 아이들 방에 넣었다, tags: [mercy], severity: 1, privacy: public }
+        - faction_morale: { faction: own, delta: 1 }
+    - id: keep
+      label: 내 몫은 지킨다
+      effects:
+        - body: { track: nerves, delta: 1, chance: 0.3 }
+
+# ── 돌림병 ──
+- id: ds_plague_omen
+  title: 밤새 기침
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: omen, kinds: [plague] }
+  setup: "피난민 막사에서 밤새 기침이 끊이지 않는다. 열이 오른 아이가 둘이라는 말이 돈다. 사람들이 그쪽을 피해 다닌다."
+  ai_direction: "돌림병이 번지려 한다. 아픈 사람을 따로 두고 물을 끓이면 덜 번진다. 따로 두자는 말은 차갑게 들릴 수 있다."
+  choices:
+    - id: isolate
+      label: 아픈 사람들을 따로 두자고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - disaster_prepare: true
+          - disaster_prepare: true
+        partial:
+          - disaster_prepare: true
+          - deed: { summary: 아픈 피난민들을 따로 두자고 했다, tags: [cruelty], severity: 1, privacy: public }
+        miss:
+          - deed: { summary: 아픈 피난민들을 쫓아내자고 했다는 말이 돌았다, tags: [cruelty], severity: 1, privacy: public }
+    - id: boil
+      label: 물을 끓여 마시라고 집집마다 일러둔다
+      effects:
+        - disaster_prepare: true
+        - body: { track: fatigue, delta: 1 }
+
+- id: ds_plague_after
+  title: 격리된 막사
+  tags: [world]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    disaster: { phase: struck, kinds: [plague] }
+  setup: "막사 하나에 천을 둘러 막았다. 안에서 누군가 물을 달라고 한다. 들어가는 사람은 없다."
+  ai_direction: "돌림병이 번졌다 (앓는 사람은 시스템대로, 주인공도 걸릴 수 있다). 들어가 돌보면 걸릴 위험이 있다."
+  choices:
+    - id: tend
+      label: 천으로 얼굴을 감고 들어가 물을 준다
+      effects:
+        - deed: { summary: 돌림병 막사에 들어가 물을 주었다, tags: [mercy, bravery], severity: 2, privacy: public }
+        - body: { track: disease, delta: 1, chance: 0.3 }
+    - id: door
+      label: 문 앞에 물통만 두고 간다
+      effects:
+        - deed: { summary: 돌림병 막사 문 앞에 물을 두고 갔다, tags: [mercy], severity: 1, privacy: semi_private }

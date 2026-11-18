@@ -558,6 +558,8 @@ export function createContentSchemas(s: Scenario) {
      * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (지금 다짐은 바뀐다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
      * text는 다짐 한 줄 (문장의 자리를 쓸 수 있다)
      */
+    /** 다가오는 재난에 대비한다 (12-169): 전조 동안에만. 한 번에 피해 25%, 최대 50% 준다 */
+    z.strictObject({ disaster_prepare: z.literal(true) }),
     /** 인물의 자기 일에 끼어든다 (12-168): delta만큼 앞당기거나 늦춘다 (다 차면 그 자리에서 끝난다), stop이면 끝 효과 없이 그만두게 한다 */
     z.strictObject({ agenda: z.strictObject({ who: z.string().min(1), delta: z.number().int().min(-10).max(10).default(0), stop: z.boolean().default(false) }) }),
     /** 다짐의 단계를 한 칸 올린다 (12-164): text는 지금 어디까지 왔는지 한 줄 (상태 화면에 다짐 옆으로 보인다). 다짐이 없으면 아무 일도 없다 */
@@ -869,6 +871,8 @@ export function createContentSchemas(s: Scenario) {
           .optional(),
         /** 이 구역에 이전 주인공의 유해(remains, 묻히지 않은 것)나 무덤(grave)이 있다 (12-130: 계승의 흔적) */
         predecessor_here: z.enum(["remains", "grave"]).optional(),
+        /** 큰 재난 (12-169): 그 재난이 이 단계 (omen 전조, struck 덮친 뒤)이고 주인공이 가까이 있을 때. kinds가 있으면 그 재난만. 문장의 {disaster_zone} */
+        disaster: z.strictObject({ phase: z.enum(["omen", "struck"]), kinds: z.array(contentIdSchema).optional() }).optional(),
         /** 사흘 안에 우리 무리의 이름 있는 사람이 죽었다 (12-163: 장례). 문장의 자리 {deceased}는 그 사람 */
         funeral: z.boolean().optional(),
         /** 주인공의 명성 단계가 이 이상 (12-127, scenario.fame.tiers의 차례) */

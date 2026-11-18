@@ -1,3 +1,4 @@
+import { runDisasters } from "./disasters.ts";
 import { runAgendas } from "./agenda.ts";
 import { breakFacilities, runFacilitiesDaily } from "./facilities.ts";
 import { runBrokenPromises } from "./promises.ts";
@@ -57,6 +58,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       defer: (spec) => canDefer && playerInvolvement(state, content, spec) !== null,
       season: seasonOfDay(content.scenario, day),
       infested: state.infested,
+      day,
     });
     const scheduled = result.deferred.map((spec, i) => ({ ...spec, id: `battle_${state.nextBattleNo + i}`, at }));
     store.append({
@@ -85,6 +87,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     runFacilitiesDaily(ctx, day);
     // 인물의 자기 일 (12-168)
     displays.push(...runAgendas(ctx, day));
+    // 큰 재난 (12-169)
+    displays.push(...runDisasters(ctx, day));
     runCaptivity(ctx);
     // 연애: 다른 연인을 알아채기, 같은 사람을 보는 두 사람 (12-58)
     displays.push(...runRomance(ctx));

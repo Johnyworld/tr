@@ -1,3 +1,4 @@
+import { disasterNear } from "../engine/disasters.ts";
 import { agendaOf, agendaShowing } from "../engine/agenda.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { currentResolve, resolveTargetName } from "../engine/resolve.ts";
@@ -295,6 +296,10 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const over = !!state.playerZone && infestationOf(content, state, state.playerZone) > baseInfestation(content, state.playerZone);
     if (over !== w.zone_overrun) return false;
   }
+  if (w.disaster) {
+    const d = state.disaster;
+    if (!d || d.phase !== w.disaster.phase || (w.disaster.kinds && !w.disaster.kinds.includes(d.kind)) || !disasterNear(content, state, d)) return false;
+  }
   if (w.resolve) {
     const r = currentResolve(state);
     if (!r) return false;
@@ -459,6 +464,8 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   // 현상금을 건 무리 (12-136)
   const bountyBy = (state.bounties ?? [])[0];
   if (bountyBy) vars.bounty_by = content.factions[bountyBy]?.name ?? bountyBy;
+  // 큰 재난 (12-169)
+  if (state.disaster) vars.disaster_zone = state.disaster.zone ? (content.locations[state.disaster.zone]?.name ?? state.disaster.zone) : "도시";
   // 인물의 자기 일 (12-168): 배역 중 일을 가진 사람의 그 일
   for (const id of Object.values(cast)) {
     const ag = agendaOf(content, state, id);

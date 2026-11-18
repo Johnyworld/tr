@@ -133,6 +133,9 @@
   look: 기름에 절은 목장갑을 끼고, 귀 뒤에 몽당연필을 꽂았다. 허리가 굽었지만 펌프 손잡이를 돌릴 때는 꼿꼿하다.
   reputation: 정수장 펌프를 맡은 간부. 붕괴 전 정수장 기사였다. "펌프 앞에서는 총 없다"는 약속을 처음 세운 사람.
   want: 펌프가 자기보다 오래 돌아가는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: tape_for_the_pump, ask: "덕트테이프 두 개만 구해 주게. 펌프가 또 숨을 헐떡여", item: { id: duct_tape, quantity: 2 }, days: 4, reward: { item: { id: trade_token, quantity: 2 }, affection: 1 } }
   fear: 펌프가 서는 날 도시가 어떻게 될지
   values: { discipline: 2, loyalty: 1, mercy: 2, honesty: 1, self_interest: -1 }
   traits: [principled, patient, weary]

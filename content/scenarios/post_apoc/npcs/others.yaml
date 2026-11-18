@@ -48,6 +48,9 @@
   look: 오지호와 똑같은 주근깨. 머리를 짧게 자르고 오른손에 붕대를 감았다.
   reputation: 버들마을의 경비병. 청솔형제단에 있는 남동생 이야기를 자주 한다.
   want: 동생과 같은 곳에서 사는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: blanket_for_sister, ask: "동생 덮을 담요 한 장만. 밤마다 떨어서 잠을 못 자", item: { id: blanket, quantity: 1 }, days: 5, reward: { affection: 2 } }
   fear: 버들마을이 무너지는 날 동생을 못 보는 것
   values: { discipline: 1, loyalty: 3, mercy: 1, honesty: 2, self_interest: 0 }
   traits: [blunt, protective, iron_gut]
@@ -198,6 +201,9 @@
   look: 덩치가 크고 목에 방독면을 걸었다. 등에 빈 배낭을 지고 다닌다.
   reputation: 하얀매의 수색대원. 옛 시립병원을 드나드는 몇 안 되는 사람.
   want: 병원 지하 약제실을 혼자 다 털어 하얀매에서 한자리 얻는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: flashlight_for_cellar, ask: "손전등 하나 구해 줘. 병원 지하 약제실, 불만 있으면 내려갈 수 있어", item: { id: flashlight, quantity: 1 }, days: 5, reward: { item: { id: antibiotics, quantity: 1 }, affection: 1 } }
   fear: 병원 지하의 어둠
   values: { discipline: 0, loyalty: 1, mercy: 0, honesty: 0, self_interest: 2 }
   traits: [blunt, greedy, iron_gut, ugly]
@@ -254,8 +260,8 @@
   stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: 1, charm: 2, intellect: 1 }
   skills: { persuade: 2, deceive: 2, history: 1, mechanics: 1 }
   start_inventory: [trade_token, cigarettes, canned_food, canned_food, rifle_rounds, rifle_rounds]
-  # 나루상단 사장: 먹을 것과 탄약 (섬에서 들여온 것)
-  merchant: { restock: { canned_food: 8, dry_ration: 6, rifle_rounds: 4, shells: 2 }, markup: 1.25 }
+  # 나루상단 사장: 먹을 것과 탄약 (섬에서 들여온 것). 산 닭과 가끔 염소 (12-175)
+  merchant: { restock: { canned_food: 8, dry_ration: 6, rifle_rounds: 4, shells: 2, hen: 2 }, markup: 1.25, rare: { goat: 0.15 } }
   playable: false
   zone: e_market
 
@@ -270,6 +276,9 @@
   look: 빨간 털모자에 큰 배낭. 운동화 끈이 짝짝이다.
   reputation: 나루상단의 심부름꾼. 거점 사이로 편지와 소식을 나른다.
   want: 언젠가 자기 장사를 하는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: stock_for_trade, ask: "담배 세 갑만 넘겨줘. 값은 나중에 내 장사로 갚을게", item: { id: cigarettes, quantity: 3 }, days: 6, reward: { item: { id: trade_token, quantity: 2 }, affection: 1 } }
   fear: 혼자 강변을 건너는 밤
   values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 1, self_interest: 1 }
   traits: [talkative, curious, shadow]

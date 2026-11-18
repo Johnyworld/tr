@@ -323,9 +323,9 @@ const mission: CommandDef = {
       lines.push("수행 중인 임무가 없습니다. 상관에게 물어보세요.");
     }
     if (ended.length) lines.push("", "최근 임무", ...ended.map((m) => `  ${m.title} — ${MISSION_STATUS_LABELS[m.status]}`));
-    // 약속 (12-160)
+    // 약속 (12-160)·받아 준 부탁 (12-174)
     const promises = promiseLines(state, content);
-    if (promises.length) lines.push("", "지킬 약속", ...promises.map((l) => `  ${l}`));
+    if (promises.length) lines.push("", "지킬 약속·부탁", ...promises.map((l) => `  ${l}`));
     // 다짐 (12-164): 임무 아래
     const vow = resolveLine(state, content);
     if (vow) lines.push("", `다짐  ${vow}`);

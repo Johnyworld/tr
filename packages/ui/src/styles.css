@@ -494,10 +494,6 @@ body {
   color: var(--success);
 }
 
-.mission-title {
-  font-weight: 600;
-}
-
 .small {
   font-size: 12px;
 }
@@ -1406,15 +1402,6 @@ body {
   border-radius: 8px;
 }
 
-.mission-due {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.mission-due.urgent {
-  color: var(--error);
-}
-
 .mission-reqs {
   list-style: none;
   margin: 0;
@@ -1449,22 +1436,85 @@ body {
   border-color: var(--success);
 }
 
-/* 다짐 (12-164): 임무 칸 맨 아래, 임무보다 한 단계 낮게 */
-.mission-resolve {
+/* 할 일 칸: 임무·부탁·약속·다짐을 같은 모양으로. 종류는 왼쪽 두 글자, 기한은 오른쪽 */
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.todo {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--border);
-  font-size: 12px;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 13px;
   line-height: 1.5;
+}
+
+.todo + .todo {
+  border-top: 1px dashed var(--border);
+}
+
+.todo-kind {
+  flex: none;
+  width: 2.2em;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--heading);
+}
+
+.todo[data-kind="부탁"] .todo-kind {
+  color: var(--success);
+}
+
+.todo[data-kind="약속"] .todo-kind {
+  color: var(--player);
+}
+
+.todo[data-kind="다짐"] .todo-kind {
+  color: var(--partial);
+}
+
+.todo-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.todo-title {
   color: var(--text);
 }
 
-.mission-resolve-label {
-  flex: none;
-  color: var(--partial);
+.todo[data-kind="임무"] .todo-title {
   font-weight: 600;
+}
+
+.todo-who {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.todo-main .mission-reqs {
+  margin-top: 2px;
+}
+
+.todo-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.todo-due,
+.todo-count {
+  flex: none;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.todo-due.urgent,
+.todo-count.urgent {
+  color: var(--error);
 }
 
 .sheet section.block {
@@ -2578,12 +2628,6 @@ body {
   padding: 0 10px 8px;
 }
 
-.hud-panel-body .mission-title {
-  margin: 0 0 4px;
-  /* 접혔을 때 한 줄(peek)과 같은 크기 */
-  font-size: 13px;
-}
-
 /* 같이 있는 인물 목록: 상태 단계별 색 (1단계 초록, 2 노랑, 3 주황, 4 빨강, 죽음은 줄 긋고 흐리게) */
 .present-list {
   list-style: none;
@@ -3483,7 +3527,6 @@ body {
 .story-text h4,
 .newgame-story h4,
 .chosen-name,
-.hud-panel-body .mission-title,
 .trait-card strong,
 .tier-stat strong {
   color: var(--heading);

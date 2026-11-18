@@ -14,6 +14,9 @@
   look: 깨진 경광등을 배낭 끈에 매달고 다니는 늙은 사내. 붕괴 전 고속도로 순찰대 점퍼를 기워 입었다. 오른쪽 무릎이 굽지 않아 걸음이 뻣뻣하다.
   reputation: 호위대에서 가장 오래 길을 탄 사람. 그가 앞장선 짐마차는 한 번도 털린 적이 없다는 말이 돈다. 차문석이 죽은 날 함께 있다가 혼자 짐마차를 끌고 돌아왔다.
   want: 무릎이 다 굳기 전에 빚을 갚고 휴게소 지붕 밑에 좌판 하나를 내는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: painkiller_for_knees, ask: "진통제 두 알만. 무릎이 이제 짐을 못 견뎌", item: { id: painkiller, quantity: 2 }, days: 4, reward: { item: { id: fuel_bottle, quantity: 1 }, affection: 1 } }
   fear: 그날 발전소 길에서 있었던 일이 장부에 적히는 것
   values: { discipline: 0, loyalty: 1, mercy: 1, honesty: -2, self_interest: 1 }
   traits: [patient, guarded, weary]

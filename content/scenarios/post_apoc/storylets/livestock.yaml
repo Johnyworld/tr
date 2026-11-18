@@ -1,0 +1,108 @@
+# 가축 (12-175): 짐승이 있는 거처·거점의 이야기 (조건 facility_here). 그리고 길 위에서 만나는 염소 (태그 road)
+
+- id: ls_coop_shadow
+  title: 닭장을 노리는 그림자
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    facility_here: coop
+    segments: [night, dawn]
+  setup: "닭장 쪽에서 날개 퍼덕이는 소리가 터진다. 어둠 속에 낮고 긴 몸뚱이 하나가 철사 틈에 주둥이를 들이밀고 있다."
+  ai_direction: 족제비다. 사람을 보면 달아나지만 닭 한 마리는 물고 가려 한다. 쫓을지, 닭장을 손볼지는 플레이어가 정한다.
+  choices:
+    - id: chase
+      label: 몽둥이를 들고 뛰어나간다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "닭장을 노리던 족제비를 쫓아냈다. 닭은 무사하다", source: seen }
+        partial:
+          - belief: { fact: "족제비를 쫓았지만 닭 한 마리가 물려 죽었다. 고기라도 건졌다", source: seen }
+          - give_item: { item: raw_meat }
+        miss:
+          - belief: { fact: "족제비가 닭장 철사를 뜯고 달아났다. 닭들이 겁에 질려 며칠은 알을 낳지 않을 것이다", source: seen }
+    - id: mend
+      label: 날이 밝으면 철사를 더 촘촘히 감는다
+      effects:
+        - lose_item: { item: wire_roll }
+        - belief: { fact: "족제비가 다녀간 닭장에 철사를 더 감았다", source: seen }
+
+- id: ls_goat_cries
+  title: 우는 염소
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    facility_here: goat_pen
+    segments: [evening, night]
+  setup: "염소가 멈추지 않고 운다. 끈을 당기며 담 쪽을 보고, 발굽으로 땅을 찬다. 그 울음이 조용한 밤에 멀리까지 퍼진다."
+  ai_direction: 염소는 담 너머에서 무언가 냄새를 맡았다. 울음은 무언가를 부를 수도 있다. 달래면 조용해진다.
+  choices:
+    - id: calm
+      label: 우리로 가서 염소를 달랜다
+      check: survival
+      outcomes:
+        success:
+          - belief: { fact: "밤새 울던 염소를 달래 재웠다", source: seen }
+        partial:
+          - zone_noise: 1
+          - belief: { fact: "염소를 달래는 데 한참 걸렸다. 울음이 멀리까지 퍼졌다", source: seen }
+        miss:
+          - zone_noise: 2
+          - belief: { fact: "염소가 밤새 울었다. 담 너머에서 무언가 서성이는 소리가 들렸다", source: seen }
+    - id: look
+      label: 염소가 보는 쪽 담을 살핀다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "염소가 울던 담 너머에 감염체 발자국이 찍혀 있었다. 염소가 먼저 알았다", source: seen }
+        partial:
+          - belief: { fact: "담 너머에 무언가 지나간 흔적이 있다. 무엇인지는 모르겠다", source: seen }
+        miss:
+          - belief: { fact: "담 너머에는 아무것도 보이지 않았다. 염소는 계속 운다", source: seen }
+
+- id: ls_egg_thief
+  title: 달걀을 훔친 아이
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    facility_here: coop
+    segments: [morning, day]
+  cast:
+    kid: { extra: drifter_child, label: 달걀 든 아이, keep: egg_thief }
+  setup: "닭장 앞에서 작은 그림자가 움찔한다. 양손에 달걀을 하나씩 쥔 아이가 당신을 보고 얼어붙는다. 볼이 홀쭉하다."
+  ai_direction: 굶은 아이다. 동생이 있다고 말한다 (사실이다). 혼내면 울고, 달래면 말이 많아진다.
+  choices:
+    - id: let_go
+      label: 달걀을 쥔 채 보내 준다
+      effects:
+        - deed: { summary: 달걀을 훔친 굶은 아이를 그냥 보내 주었다, tags: [mercy], severity: 1, privacy: private }
+        - relation: { who: kid, axis: affection, delta: 2 }
+    - id: take_back
+      label: 달걀을 돌려받는다
+      effects:
+        - give_item: { item: egg, quantity: 2 }
+        - relation: { who: kid, axis: affection, delta: -1 }
+
+- id: rd_stray_goat
+  title: 길 잃은 염소
+  tags: [road]
+  repeatable: true
+  cooldown_days: 20
+  weight: 0.5
+  when:
+    road_danger_lte: 1
+    segments: [morning, day]
+  setup: "{from:을/를} 벗어나 얼마 안 가 길가 덤불에서 매에 하는 소리가 난다. 끈이 끊긴 염소 한 마리가 풀을 뜯다가 당신을 빤히 본다. 주인은 보이지 않는다."
+  ai_direction: 누가 기르던 염소다. 주인은 근처에 없다. 끌고 가면 짐이 무겁고 걸음이 느려진다는 것을 서술로 보여 준다.
+  choices:
+    - id: take
+      label: 끈을 잡고 끌고 간다
+      effects:
+        - give_item: { item: goat }
+        - belief: { fact: "{from}에서 {to:으로/로} 오는 길에 주인 없는 염소를 주워 끌고 왔다", source: seen }
+    - id: leave
+      label: 그냥 둔다
+      effects: []

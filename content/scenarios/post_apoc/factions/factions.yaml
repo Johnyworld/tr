@@ -15,6 +15,13 @@
   cohesion: 2
   aggression: 1
   disposition: { faction_b: 2, faction_c: -3 }
+  # 포상 (12-171, *임시*): 같은 몫 원칙이라 큰 것은 없다. 분대장이 아껴 둔 작은 것
+  rewards:
+    every: 6
+    items:
+      - { id: cigarettes, qty: 1, line: "분대장이 아껴 둔 담배 한 갑을 손에 쥐여 준다" }
+      - { id: canned_food, qty: 2, line: "회의에서 이름이 불리고, 식당에서 통조림 두 개를 더 받는다" }
+      - { id: bandage, qty: 2, line: "의무실에서 붕대 두 롤을 챙겨 준다. 다음엔 덜 다치라는 말과 함께" }
   culture:
     discipline: orderly
     summary: 분대 체계로 움직이는 무리. 명령은 분대장을 거쳐 내려오지만, "버리지 않는다"는 원칙이 명령보다 위에 있다. 회의에서 큰일을 정하고, 지도부도 식당 줄에 선다.
@@ -44,6 +51,13 @@
   cohesion: 0
   aggression: 0
   disposition: { faction_a: 2, faction_c: -2 }
+  # 포상 (12-171, *임시*): 이웃들이 모아 주는 먹을 것
+  rewards:
+    every: 6
+    items:
+      - { id: apple, qty: 3, line: "대표가 마을 사과 세 알을 싸 준다" }
+      - { id: smoked_meat, qty: 1, line: "집집이 조금씩 모은 훈제 고기 한 덩이를 받는다" }
+      - { id: blanket, qty: 1, line: "누군가 손으로 기운 담요 한 장을 건넨다" }
   culture:
     discipline: loose
     summary: 마을 회의로 꾸려 가는 이웃 공동체. 경비조는 군대가 아니라 돌아가며 서는 당번이고, 서로의 사정을 들어 준다. 대신 식구가 많아 말이 많다.
@@ -87,6 +101,13 @@
   # 이 전쟁에 돌리는 몫 (12-139, *임시*): 감염체와 바깥의 적도 막느라 청솔과의 전쟁에 총력을 다하지 못한다 (먼저 치는 확률·내보내는 병력)
   war_share: 0.6
   disposition: { faction_a: -3, faction_b: -3, faction_d: -1 }
+  # 포상 (12-171, *임시*): 약탈품에서 떼어 주는 몫
+  rewards:
+    every: 6
+    items:
+      - { id: shells, qty: 3, line: "조장이 약탈품 더미에서 산탄 세 발을 떼어 던진다" }
+      - { id: soju, qty: 1, line: "약탈해 온 소주 한 병이 몫으로 떨어진다" }
+      - { id: mil_ration, qty: 1, line: "간부 창고에서 나온 전투식량 한 봉지를 받는다" }
   culture:
     discipline: strict
     summary: 숫자와 할당량으로 굴러가는 군대식 조직. 위원회의 결정은 되묻지 않고, 규율반이 막사마다 귀를 둔다. 크지만 서로를 믿지 않는다.
@@ -113,6 +134,13 @@
   morale: 0
   cohesion: 2
   aggression: 0
+  # 포상 (12-171, *임시*): 약
+  rewards:
+    every: 6
+    items:
+      - { id: painkiller, qty: 2, line: "의국에서 진통제 두 알을 내준다. 장부에 이름이 적힌다" }
+      - { id: antibiotics, qty: 1, line: "잘 나오지 않는 항생제 한 통이 몫으로 나온다" }
+      - { id: bandage, qty: 3, line: "소독한 붕대 세 롤을 받는다" }
   culture:
     discipline: orderly
     summary: 의술과 장부로 움직이는 작은 전문가 집단. 위계는 총이 아니라 의술의 순서다. 중립을 지키는 대신 규칙에는 예외가 없다.
@@ -145,6 +173,13 @@
   morale: 1
   cohesion: 1
   aggression: 0
+  # 포상 (12-171, *임시*): 흥정에 쓰는 물건
+  rewards:
+    every: 6
+    items:
+      - { id: trade_token, qty: 2, line: "행수가 상단 표찰 두 개를 내준다. 장터에서 값이 된다" }
+      - { id: cigarettes, qty: 2, line: "담배 두 갑. 어디서든 돈 대신 쓴다" }
+      - { id: fuel_bottle, qty: 1, line: "짐수레에서 기름 한 병을 따라 준다" }
   culture:
     discipline: free
     summary: 명령 대신 계약과 장부로 묶인 상인 무리. 일감을 받든 말든 각자 자유고, 위아래보다 셈이 먼저다. 다만 빚과 약속은 끝까지 따라온다.

@@ -1170,6 +1170,23 @@ facilities:
     hours: 6
     materials: { seed_packet: 1 }
     effects: { garden: { item: potato, qty: 2, days: 4, seasons: [spring, summer, autumn], resource: food, resource_delta: 1 } }
+  # 가축 (12-175): 짐승은 재료로 들어간다. 텃밭(garden)과 같은 길로 자라되 계절을 가리지 않는다
+  - id: coop
+    label: 닭장
+    description: 판자와 철사로 닭장을 짜고 닭을 넣었다. 이틀에 한 번 알을 거둔다.
+    where: [home, base]
+    move: carpentry
+    hours: 3
+    materials: { planks: 2, wire_roll: 1, hen: 2 }
+    effects: { garden: { item: egg, qty: 2, days: 2, resource: food, resource_delta: 1 } }
+  - id: goat_pen
+    label: 염소 우리
+    description: 판자로 우리를 두르고 염소를 매어 두었다. 날마다 젖을 짠다.
+    where: [home, base]
+    move: carpentry
+    hours: 4
+    materials: { planks: 3, wire_roll: 1, goat: 1 }
+    effects: { garden: { item: goat_milk, qty: 1, days: 1, resource: food, resource_delta: 1 } }
   - id: smokehouse
     label: 훈제 막
     description: 판자로 작은 연기 막을 세웠다. 이곳에서 날을 넘기면 날것이 상하지 않는다.
@@ -1278,6 +1295,9 @@ infiltration:
     - { id: sabotage, label: 망가뜨리기, move: improvise, resource: { ammo: -20, fuel: -10 }, morale: -1 }
     - { id: eavesdrop, label: 엿듣기, move: stealth, overhear: true }
 
+# 부탁 (12-174, *임시*): 하루에 이 확률로 만난 인물 하나가 부탁을 품는다. 부탁 내용은 인물 YAML의 favors
+favors: { chance: 0.3, max_open: 2, expire_days: 4 }
+
 # 약속 (12-160, *임시*): 주인공이 한 약속을 코드가 기억한다. 지키면 믿음이 오르고, 털어놓고 접으면 조금, 말없이 어기면 크게 깎인다
 promises:
   max_open: 5
@@ -1377,6 +1397,9 @@ leverage:
 # 야영 (12-148, *임시*): 지켜 주는 지붕이 없는 곳에서 자거나 쉬거나 기다리거나 보초를 서면, 구역의 위험(위험과 감염체 압력 중 높은 쪽)별
 # 시간당 확률로 태그 camp 이야기가 열린다. 6시간 자면 위험 0: 6%, 1: 17%, 2: 31%, 3: 47%. 모닥불이 타면 ×1.5, 우리 땅이면 ×0.5
 camp: { tag: camp, chance: [0.01, 0.03, 0.06, 0.1], fire: 1.5, own_land: 0.5 }
+
+# 무전 송출 (12-173, *임시*): 무전기로 하루 한 번 열린 주파수에 부르면 이 확률로 응답 이야기(storylets/radio_call.yaml)가 열린다
+radio_call: { item: radio, tag: radio_call, chance: 0.6 }
 
 # 명성 (12-127, *임시*): 남에게 보인 행적의 크기 합. 한두 번으로는 무명이다
 # 알려지면(1단계) 행적이 말이 모이는 곳을 거쳐 다른 무리로 넘어가고, 그 길에서 부풀려진다. 이름나면(2단계) 소문으로 들은 사람도 다시 옮긴다

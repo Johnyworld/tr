@@ -28,6 +28,7 @@ import {
 } from "../game/missions.ts";
 import { defineTool, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 import { recordDeed } from "./reputationTools.ts";
+import { grantRewards } from "./rewards.ts";
 
 /** 요구 조건 한 줄 설명 */
 export function describeRequirement(s: Scenario, requirement: MissionRequirement, progress: number): string {
@@ -185,6 +186,8 @@ const reportMission = defineTool({
     ];
     const growthNote = gainMeritXp(ctx, mission.assigneeId, result.merit);
     if (growthNote) lines.push(growthNote);
+    // 포상 (12-171): 공적이 무리의 포상 문턱을 새로 넘으면
+    if (result.merit > 0) lines.push(...grantRewards(ctx, mission.assigneeId, giver.id));
 
     const after = ctx.store.getState();
     const player = after.characters[after.playerId]!;

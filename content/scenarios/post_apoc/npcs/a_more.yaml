@@ -44,6 +44,9 @@
   look: 앞치마에 국자를 꽂고 다니는 키 작은 할머니. 목소리가 크다.
   reputation: 식당 천막의 취사 담당. 거점의 소문은 다 이 사람 솥을 거쳐 간다. 목포에서 식당을 하다 올라왔다는 말이 있다.
   want: 아이들이 배곯지 않는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: cans_for_kids, ask: "애들 몫으로 통조림 세 개만. 배식 줄에서 밀리는 애들이 있어서", item: { id: canned_food, quantity: 3 }, days: 5, reward: { affection: 2 } }
   fear: 솥이 비는 날
   values: { discipline: 0, loyalty: 2, mercy: 3, honesty: 1, self_interest: 0 }
   traits: [talkative, motherly, big_eater]

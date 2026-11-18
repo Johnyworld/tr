@@ -95,13 +95,13 @@ export function moveStash(ctx: ToolContext, direction: "put" | "take", moves: re
   if (direction === "take" && content.scenario.gear) {
     const add = [...total].reduce((w, [id, n]) => w + (content.items[id]?.weight ?? 0.5) * n, 0);
     const after = carriedWeight(content, me) + add;
-    if (after > carryCapacity(content, me) * content.scenario.gear.carry.hard_limit) return { ok: false, error: `그만큼 꺼내면 너무 무겁다 (${after.toFixed(1)}kg). 덜 꺼낸다.` };
+    if (after > carryCapacity(content, me, store.getState()) * content.scenario.gear.carry.hard_limit) return { ok: false, error: `그만큼 꺼내면 너무 무겁다 (${after.toFixed(1)}kg). 덜 꺼낸다.` };
   }
   for (const [id, n] of total) store.append({ type: "item_stashed", characterId: me.id, zone, itemId: id, quantity: n, direction });
   const listed = [...total].map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ");
   const where = place?.label ?? `${zoneName(content, zone)}에 맡겨 둔 곳`;
   const after = store.getState().characters[me.id]!;
-  const weight = content.scenario.gear ? ` 짐 ${carriedWeight(content, after).toFixed(1)}/${carryCapacity(content, after).toFixed(0)}kg.` : "";
+  const weight = content.scenario.gear ? ` 짐 ${carriedWeight(content, after).toFixed(1)}/${carryCapacity(content, after, store.getState()).toFixed(0)}kg.` : "";
   return { ok: true, lines: [`${direction === "put" ? `${where}에 넣었다` : `${where}에서 꺼냈다`}: ${listed}.${weight}`] };
 }
 
@@ -164,7 +164,7 @@ export function stashHint(ctx: ToolContext): string | null {
   const { store, content } = ctx;
   const state = store.getState();
   const me = state.characters[state.playerId];
-  if (!me || me.dead || state.stashHinted.includes(me.id) || encumbrance(content, me) === 0) return null;
+  if (!me || me.dead || state.stashHinted.includes(me.id) || encumbrance(content, me, state) === 0) return null;
   store.append({ type: "stash_hinted", characterId: me.id });
   const where = me.factionId
     ? "우리 무리 거점의 사물함(숙소·막사)에 물건을 맡겨 둘 수 있다"

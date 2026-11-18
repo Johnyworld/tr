@@ -1,4 +1,5 @@
 import { resolveLine } from "../engine/resolve.ts";
+import { pledges } from "../engine/promises.ts";
 import { portraitSections } from "../scenario/scenario.ts";
 import { rankName } from "../game/ranks.ts";
 import { stashHere, stashPlace } from "../engine/stash.ts";
@@ -15,6 +16,7 @@ import { disciplineOf } from "../game/culture.ts";
 import { headingAs, playerCalls } from "../game/acquaintance.ts";
 import {
   activeMissionOf,
+  isRequirementMet,
   checkPromotion,
   commanderOf,
   daysServed,
@@ -162,8 +164,13 @@ export type PlayerView = {
   debts: { name: string; amount: number }[];
   /** 지금 임무로 무기고에서 빌린 것 */
   loan: string[];
-  /** 다짐 (12-164): 상태 화면의 임무 칸 맨 아래 */
+  /** 다짐 (12-164) */
   resolve: string | null;
+  /**
+   * 할 일 (상태 화면의 "할 일" 칸): 임무·부탁·약속·다짐을 같은 모양으로. 기한이 있는 것이 먼저, 다짐은 맨 끝.
+   * steps: 임무의 요구 조건, note: 빌린 장비·다짐의 단계 같은 덧붙임
+   */
+  todos: TodoView[];
   /** 맡은 분대 (분대장일 때), 또는 속한 분대 (분대원일 때: 분대장이 맨 위, doing은 계급) */
   squad: { id: string; name: string; doing: string; report: string | null; states: SymptomView[] }[] | null;
   /** 내 무리의 방침 */
@@ -252,8 +259,8 @@ function gearView(state: GameState, content: Content): PlayerView["gear"] {
     weapon: one(equippedItem(me, "weapon"), "weapon"),
     armor: (["body", "head", "arms", "outer"] as const).map((s) => one(equippedItem(me, s), s)).filter((x): x is GearView => !!x),
     weight: Math.round(carriedWeight(content, me) * 10) / 10,
-    capacity: Math.round(carryCapacity(content, me)),
-    burden: encumbrance(content, me),
+    capacity: Math.round(carryCapacity(content, me, state)),
+    burden: encumbrance(content, me, state),
   };
 }
 
@@ -280,6 +287,52 @@ function temperatureView(state: GameState, content: Content): PlayerView["clock"
 
 /** 죽은 사람은 맨 아래로 (나머지 순서는 그대로) */
 const deadLast = (a: { dead: boolean }, b: { dead: boolean }) => Number(a.dead) - Number(b.dead);
+
+export type TodoView = {
+  key: string;
+  kind: "임무" | "부탁" | "약속" | "다짐";
+  title: string;
+  /** 맡긴 사람·약속한 사람 */
+  who: string | null;
+  /** 머리에 마우스를 올리면 보이는 설명 (임무 설명) */
+  detail: string | null;
+  /** "기한까지 5시간", "2일 남음". 기한이 없으면 null */
+  dueLabel: string | null;
+  urgent: boolean;
+  steps: { text: string; met: boolean }[];
+  note: string | null;
+};
+
+/** 할 일 목록: 임무 → 받아 준 부탁 → 약속 → 다짐 (부탁·약속은 기한 순) */
+function todoViews(state: GameState, content: Content): TodoView[] {
+  const me = state.characters[state.playerId]!;
+  const out: TodoView[] = [];
+  const m = activeMissionOf(state.missions, me.id);
+  if (m) {
+    const left = m.deadline - state.time;
+    const loan = state.loans?.[m.id];
+    out.push({
+      key: m.id,
+      kind: "임무",
+      title: m.title,
+      who: state.characters[m.giverId] ? playerCalls(state, content, m.giverId) : null,
+      detail: m.briefing,
+      dueLabel: left <= 0 ? "기한 지남" : `기한까지 ${timeLeftLabel(left)}`,
+      urgent: left < MINUTES_PER_DAY / 2,
+      steps: m.requirements.map((r, i) => ({ text: describeRequirement(content.scenario, r, m.progress[i] ?? 0), met: isRequirementMet(r, m.progress[i] ?? 0) })),
+      note: loan ? `빌린 장비 (반납): ${Object.entries(loan).map(([id, q]) => `${content.items[id]?.name ?? id}${q > 1 ? ` ×${q}` : ""}`).join(", ")}` : null,
+    });
+  }
+  const ps = pledges(state, content);
+  for (const kind of ["부탁", "약속"] as const) {
+    for (const p of ps.filter((x) => x.kind === kind)) {
+      out.push({ key: p.id, kind, title: p.text, who: p.who, detail: kind === "부탁" ? `${p.who}의 부탁을 들어주기로 했다` : `${p.who}에게 한 약속`, dueLabel: p.leftLabel, urgent: p.urgent, steps: [], note: null });
+    }
+  }
+  const vow = resolveLine(state, content);
+  if (vow) out.push({ key: "resolve", kind: "다짐", title: vow, who: null, detail: "이 주인공의 큰 줄기", dueLabel: null, urgent: false, steps: [], note: null });
+  return out;
+}
 
 export function buildPlayerView(state: GameState, content: Content): PlayerView {
   const scenario = content.scenario;
@@ -453,6 +506,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     }),
     debts: Object.entries(player.debts ?? {}).map(([f, n]) => ({ name: content.factions[f]?.name ?? f, amount: n })),
     resolve: resolveLine(state, content),
+    todos: todoViews(state, content),
     loan: (() => {
       const m = activeMissionOf(state.missions, player.id);
       const loan = m ? state.loans?.[m.id] : undefined;

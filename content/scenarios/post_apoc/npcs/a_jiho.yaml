@@ -10,6 +10,9 @@ gender: male
 look: 앳된 얼굴에 주근깨. 몸에 안 맞는 큰 방탄조끼를 입고 다닌다.
 reputation: 강태호 분대의 막내. 말이 많고 붙임성이 좋아 거점 소문은 다 안다.
 want: 인정받아 정찰조에 들어가는 것
+# 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+favors:
+  - { id: rounds_for_scouting, ask: "소총탄 좀 구해 줘. 혼자 나갈 때 쓸 거야. 분대장님한텐 비밀이고", item: { id: rifle_rounds, quantity: 1 }, days: 4, reward: { item: { id: cigarettes, quantity: 1 }, affection: 1 } }
 fear: 겁쟁이로 보이는 것
 values: { discipline: 0, loyalty: 2, mercy: 1, honesty: 1, self_interest: 0 }
 traits: [talkative, eager, coward, attractive]

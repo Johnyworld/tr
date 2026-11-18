@@ -1,0 +1,150 @@
+# 무전 송출 (12-173): 주인공이 열린 주파수로 먼저 부르면, 태그 radio_call 이야기 중 조건이 맞는 하나가 응답한다.
+# 열린 송신은 누구나 듣는다. 좋은 응답도, 위험한 응답도 있다 (scenario.radio_call)
+
+- id: rc_lost_drifter
+  title: 길 잃은 목소리
+  tags: [radio_call]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    own_territory: false
+    segments: [morning, day, evening]
+  cast:
+    lost: { extra: road_wanderer, label: 무전 속 떠돌이, keep: radio_lost }
+  setup: "\"들려요? 들리면 대답 좀… 다리를 다쳐서 하루째 같은 자리예요.\" 숨찬 목소리가 근처 건물 이름을 댄다. 멀지 않다. 한 시간쯤 뒤, 절뚝이는 사람 하나가 손을 흔들며 다가온다."
+  ai_direction: "{lost:은/는} 진짜로 다쳤고 혼자다. 가진 것은 거의 없다. 함께 가 주면 다음 구역까지만 같이 다니고 싶어 한다."
+  choices:
+    - id: take
+      label: 다음 구역까지 같이 간다
+      effects:
+        - companion_join: { who: lost, kind: purpose, until: { hours: 24 } }
+        - belief: { fact: "무전으로 부른 날 응답한 다친 떠돌이와 하루 같이 다니기로 했다", source: seen }
+    - id: patch
+      label: 다리만 싸매 주고 보낸다
+      effects:
+        - lose_item: { item: bandage }
+        - relation: { who: lost, axis: affection, delta: 2 }
+        - deed: { summary: 무전으로 만난 다친 떠돌이의 다리를 싸매 주었다, tags: [mercy], severity: 1, privacy: private }
+    - id: leave
+      label: 다가오기 전에 자리를 뜬다
+      effects:
+        - belief: { fact: "무전에 응답한 사람이 다가왔지만 만나지 않고 자리를 떴다", source: seen }
+
+- id: rc_trader_offer
+  title: 장사꾼의 주파수
+  tags: [radio_call]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    segments: [morning, day, evening]
+  setup: "\"나루상단 짐수레, 강변길 지나는 중. 필요한 거 있으면 말하쇼. 소금, 실, 건전지, 약 조금.\" 굵은 목소리가 웃는다. \"물론 공짜는 없고.\""
+  ai_direction: "상단의 짐수레가 근처를 지난다. 만나러 가면 흥정(barter)할 수 있다. 무전으로 값을 정하지는 않는다."
+  choices:
+    - id: meet
+      label: 만날 자리를 정한다
+      effects:
+        - belief: { fact: "나루상단 짐수레가 강변길을 지난다고 무전으로 들었다. 만날 자리를 정했다", source: seen }
+    - id: news
+      label: 길 소식만 묻는다
+      effects:
+        - overhear: { faction: faction_e, source: report }
+
+- id: rc_night_talk
+  title: 건너편 무전병
+  tags: [radio_call]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    segments: [evening, night]
+  setup: "한참 잡음이 흐르다 젊은 목소리가 들어온다. \"…거기 누구야. 우리 쪽 아니지?\" 잠시 침묵. \"괜찮아. 나도 보초야. 잠이 안 와서.\""
+  ai_direction: "다른 무리의 보초다. 경계하면서도 사람 목소리가 반가운 눈치다. 서로 이름은 대지 않는다. 오래 말하면 그쪽 사정이 조금 새어 나온다."
+  choices:
+    - id: talk
+      label: 밤새 이야기를 나눈다
+      check: persuade
+      outcomes:
+        success:
+          - overhear: { faction: enemy, source: report }
+          - body: { track: nerves, delta: -1 }
+        partial:
+          - overhear: { faction: other, source: rumor }
+        miss:
+          - belief: { fact: "건너편 무전병이 우리 쪽 위치를 캐물어 무전을 껐다", source: seen }
+    - id: off
+      label: 대답하지 않고 끈다
+      effects: []
+
+- id: rc_located
+  title: 위치를 짚은 목소리
+  tags: [radio_call]
+  repeatable: true
+  cooldown_days: 10
+  urgent: true
+  when:
+    own_territory: false
+    segments: [evening, night, dawn]
+  setup: "응답은 없다. 대신 몇 분 뒤 같은 주파수에 낮은 웃음소리가 들린다. \"고마워. 덕분에 찾았네.\" 어둠 저편에서 손전등 불빛 두 개가 이쪽으로 흔들리며 다가온다."
+  ai_direction: "송신을 엿들은 약탈자 둘이다. 가진 것을 노린다. 싸울지, 숨을지, 달아날지는 플레이어의 행동과 판정으로 정한다 (장면에 세우려면 spawn_extra c_raider 또는 road_wanderer)."
+  choices:
+    - id: hide
+      label: 불을 끄고 몸을 숨긴다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "무전을 엿들은 약탈자들이 다가왔지만 숨어서 지나 보냈다", source: seen }
+        partial:
+          - lose_item: { item: canned_food }
+          - belief: { fact: "숨는 사이 약탈자들이 내려 둔 짐을 뒤져 통조림을 가져갔다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 무전을 엿듣고 찾아온 약탈자 }
+          - belief: { fact: "무전을 엿듣고 찾아온 약탈자에게 들켜 얻어맞고 달아났다", source: seen }
+    - id: face
+      label: 맞선다
+      effects:
+        - belief: { fact: "무전을 엿듣고 찾아온 약탈자 둘과 맞섰다", source: seen }
+
+- id: rc_breathing
+  title: 대답 없는 숨소리
+  tags: [radio_call]
+  repeatable: true
+  cooldown_days: 14
+  when:
+    segments: [night, dawn]
+  setup: "누군가 송신 버튼을 누른다. 말은 없다. 숨소리만. 느리고, 고르다. 당신이 말을 멈추면 숨소리도 멈춘다. 당신이 다시 말하면 다시 들린다."
+  ai_direction: "정체는 정하지 않는다. 겁먹은 아이일 수도, 말을 잃은 사람일 수도 있다. 위험은 없다. 섬뜩함과 외로움 사이에 둔다."
+  choices:
+    - id: keep
+      label: 계속 말을 건다
+      effects:
+        - body: { track: fear, delta: 1, chance: 0.5 }
+        - belief: { fact: "밤 무전에서 말없이 숨소리만 들려주는 누군가가 있었다. 말을 걸 때만 숨소리가 들렸다", source: seen }
+    - id: off
+      label: 무전기를 끈다
+      effects: []
+
+- id: rc_own_net
+  title: 우리 무전망의 핀잔
+  tags: [radio_call]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    own_territory: true
+    factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
+  setup: "열린 주파수에 말을 꺼내자마자 우리 무리 무전망 목소리가 끼어든다. \"거기 누구야. 열린 채널로 뭘 떠들어? 위치 다 새.\""
+  ai_direction: "우리 무리의 무전 담당이다. 규율이 센 무리일수록 날카롭다. 누가 송출했는지 알아낸다."
+  choices:
+    - id: sorry
+      label: 사과하고 끈다
+      effects:
+        - belief: { fact: "열린 채널로 송출하다 우리 무전망에 핀잔을 들었다", source: seen }
+    - id: argue
+      label: 사람을 찾으려 했다고 버틴다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "열린 채널 송출을 따지는 무전 담당을 말로 넘겼다", source: seen }
+        partial:
+          - merit: -1
+        miss:
+          - merit: -1
+          - deed: { summary: 열린 무전 채널로 위치를 흘렸다, tags: [disobedience], severity: 1, privacy: semi_private }

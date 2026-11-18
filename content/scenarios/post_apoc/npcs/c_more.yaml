@@ -130,6 +130,9 @@
   look: 앞니 하나가 빠져 웃으면 바람이 샌다. 털모자를 눌러쓰고 주머니에는 늘 담배와 사탕 껍질이 있다.
   reputation: 약탈 삼조의 고참 조원. 누구에게나 담배를 권하고 농담을 건다. 신입이 오면 먼저 말을 거는 사람이다.
   want: 공세 맨 앞줄에 서지 않고 겨울을 넘기는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: soju_for_sergeant, ask: "소주 한 병만. 조장한테 찔러 주면 공세 때 뒷줄에 세워 줄지도 몰라", item: { id: soju, quantity: 1 }, days: 3, reward: { item: { id: shells, quantity: 2 }, affection: 1 } }
   fear: 자기 이름이 규율반 명부에 오르는 것
   values: { discipline: 0, loyalty: -1, mercy: 0, honesty: -2, self_interest: 3 }
   traits: [genial, talkative, coward]

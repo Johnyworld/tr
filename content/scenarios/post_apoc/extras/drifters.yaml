@@ -145,6 +145,11 @@
   traits: []
   trait_count: 0
   companion_bonus: { sense_danger: 1 }
+  # 개 기르기 (12-172, *임시*): 함께 지낸 날이 쌓이면 가르친다
+  tricks:
+    - { id: sniff, label: 냄새 맡기, move: survival, min_days: 3, bonus: { scavenge: 1 } }
+    - { id: bite, label: 물기, move: survival, min_days: 5, bonus: { fight: 1 } }
+    - { id: pack, label: 짐 나르기, move: survival, min_days: 7, carry: 4 }
   appears: { zone_owner: [none] }
 
 # 현상금 사냥꾼 (12-136): 주인공에게 걸린 현상금을 노리고 나타난다 (storylets/bounty.yaml). 무리에 속하지 않는다

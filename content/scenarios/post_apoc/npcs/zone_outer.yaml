@@ -57,6 +57,9 @@
   look: 백발을 뒤로 묶었다. 안경 한쪽 알에 금이 가서 테이프로 붙였다. 장갑 손가락 끝을 잘라 내고 책장을 넘긴다.
   reputation: 가람대학교 중앙도서관에 틀어박힌 국문과 교수. 책을 한 권도 내주지 않는다. 대신 묻는 것에는 아는 만큼 다 답해 준다.
   want: 도서관의 책이 다음 세대가 읽을 때까지 남는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: notebooks_for_records, ask: "공책 두 권만 구해 주게. 서가 목록을 다시 적어야 하네", item: { id: notebook, quantity: 2 }, days: 7, reward: { affection: 2 } }
   fear: 겨울이 와서 사람들이 책을 땔감으로 보는 것. 자기도 그렇게 보게 되는 것
   values: { discipline: 1, loyalty: 1, mercy: 0, honesty: 2, self_interest: -1 }
   traits: [meticulous, principled, formal, cold_sensitive]
@@ -99,6 +102,9 @@
   look: 체구가 작고 어깨가 단단하다. 늘 무릎까지 오는 고무장화를 신는다. 손톱 밑이 까맣고 목에 씨앗 봉투를 꿴 끈을 건다.
   reputation: 농대 온실을 지키는 사람. 원래 농대 실습장 기사였다. 씨앗을 달라는 사람에게 값 대신 "어디에 심을 거냐"고 묻는다.
   want: 온실의 씨앗이 겨울을 넘겨 다시 땅에 들어가는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: seeds_for_greenhouse, ask: "씨앗 봉투 하나만. 온실 한 칸이 비었어", item: { id: seed_packet, quantity: 1 }, days: 6, reward: { item: { id: tomato, quantity: 3 }, affection: 1 } }
   fear: 온실이 얼어 씨앗까지 다 죽는 것
   values: { discipline: 0, loyalty: 1, mercy: 1, honesty: 2, self_interest: 0 }
   traits: [blunt, patient, cold_hardy]

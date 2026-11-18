@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 68;
+export const SAVE_SCHEMA_VERSION = 69;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -364,9 +364,29 @@ export function createGameSchemas(s: Scenario) {
           item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
           made: z.number().int(),
           status: z.enum(["open", "kept", "broken", "folded"]),
+          /** 부탁에서 맺어진 약속이면 그 부탁 id (12-174) */
+          favor: z.string().nullable().default(null),
         }),
       )
       .default([]),
+    /** 부탁 (12-174): 인물이 품은 사적인 부탁. favor는 인물 콘텐츠의 부탁 id */
+    favors: z
+      .array(
+        z.strictObject({
+          id: z.string(),
+          npc: z.string(),
+          favor: z.string(),
+          offeredAt: z.number().int(),
+          status: z.enum(["offered", "accepted", "declined", "lapsed", "kept", "broken"]),
+        }),
+      )
+      .default([]),
+    /** 포상 (12-171): 캐릭터마다 받은 포상 횟수 */
+    rewardsGiven: z.record(z.string(), z.number().int().min(0)).default({}),
+    /** 개 기르기 (12-172): 동물마다 배운 재주, 반쯤 배운 재주, 마지막으로 가르친 날 */
+    tricks: z.record(z.string(), z.strictObject({ learned: z.array(z.string()), half: z.array(z.string()), lastDay: z.number().int() })).default({}),
+    /** 무전 송출 (12-173): 마지막으로 송출한 날 */
+    lastBroadcastDay: z.number().int().nullable().default(null),
     /** 협박당한 사람 (12-153). grudge: 되갚을 마음을 품었다 */
     blackmails: z.array(z.strictObject({ npcId: z.string(), by: z.string(), leverage: z.string(), at: z.number().int(), grudge: z.boolean() })).default([]),
     /** 폭로해서 더는 쥘 수 없는 약점 (12-153, "by|약점 키") */
@@ -579,7 +599,17 @@ export function createGameSchemas(s: Scenario) {
       what: z.string(),
       due: z.number().int(),
       item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
+      favor: z.string().nullable().default(null),
     }),
+    // 부탁 (12-174)
+    z.strictObject({ type: z.literal("favor_offered"), id: z.string(), npc: z.string(), favor: z.string() }),
+    z.strictObject({ type: z.literal("favor_settled"), id: z.string(), status: z.enum(["accepted", "declined", "lapsed", "kept", "broken"]) }),
+    // 포상 (12-171). itemId가 없으면 말뿐인 포상
+    z.strictObject({ type: z.literal("reward_given"), characterId: z.string(), itemId: z.string().nullable() }),
+    // 개 기르기 (12-172)
+    z.strictObject({ type: z.literal("trick_trained"), animalId: z.string(), trick: z.string(), result: z.enum(["learned", "half", "miss"]), day: z.number().int() }),
+    // 무전 송출 (12-173)
+    z.strictObject({ type: z.literal("radio_broadcast"), day: z.number().int() }),
     z.strictObject({ type: z.literal("promise_settled"), id: z.string(), status: z.enum(["kept", "broken", "folded"]) }),
     /** 약점을 쥐고 협박했다 (12-153) */
     z.strictObject({ type: z.literal("blackmailed"), npcId: z.string(), by: z.string(), leverage: z.string(), grudge: z.boolean() }),
@@ -995,6 +1025,10 @@ export const EMPTY_STATE: GameState = {
   exploration: null,
   bribes: [],
   promises: [],
+  favors: [],
+  rewardsGiven: {},
+  tricks: {},
+  lastBroadcastDay: null,
   blackmails: [],
   exposed: [],
   fearExposure: {},
@@ -1484,7 +1518,26 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.exploration = null;
       return next;
     case "promise_made":
-      next.promises = [...(next.promises ?? []), { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "open" }];
+      next.promises = [...(next.promises ?? []), { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "open", favor: event.favor ?? null }];
+      return next;
+    case "favor_offered":
+      next.favors = [...(next.favors ?? []), { id: event.id, npc: event.npc, favor: event.favor, offeredAt: state.time, status: "offered" }];
+      return next;
+    case "favor_settled":
+      next.favors = (next.favors ?? []).map((f) => (f.id === event.id ? { ...f, status: event.status } : f));
+      return next;
+    case "reward_given":
+      next.rewardsGiven = { ...(next.rewardsGiven ?? {}), [event.characterId]: (next.rewardsGiven?.[event.characterId] ?? 0) + 1 };
+      return next;
+    case "trick_trained": {
+      const had = next.tricks?.[event.animalId] ?? { learned: [], half: [], lastDay: 0 };
+      const learned = event.result === "learned" && !had.learned.includes(event.trick) ? [...had.learned, event.trick] : had.learned;
+      const half = event.result === "half" ? [...new Set([...had.half, event.trick])] : event.result === "learned" ? had.half.filter((t) => t !== event.trick) : had.half;
+      next.tricks = { ...(next.tricks ?? {}), [event.animalId]: { learned, half, lastDay: event.day } };
+      return next;
+    }
+    case "radio_broadcast":
+      next.lastBroadcastDay = event.day;
       return next;
     case "promise_settled":
       next.promises = (next.promises ?? []).map((p) => (p.id === event.id ? { ...p, status: event.status } : p));

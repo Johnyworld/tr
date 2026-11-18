@@ -917,6 +917,10 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
+     * 무전 송출 (12-173): item을 가진 주인공이 하루 한 번 송출하면 chance로 tag 이야기 하나가 열린다
+     */
+    radio_call: z.strictObject({ item: id, tag: id, chance: z.number().min(0).max(1) }).optional(),
+    /**
      * 거점 손보기 (12-167): 떠돌이의 거처(home)와 무리의 거점(base)에 짓는 시설. move 판정, hours 시간, materials 재료.
      * 효과는 기존 장치로만: fort 담 단단함 +, camp 야영 이야기 확률 배수, watched 잠들어도 지켜보는 밤, water 물이 나는 곳,
      * garden 텃밭(거처: days마다 item×qty를 창고에, 거점: 날마다 무리 resource + resource_delta, seasons에만), preserve 날것이 안 상한다, fire 실내의 불
@@ -1093,6 +1097,8 @@ export const scenarioFileSchema = z
      * 정직 가치관(scruple)이 refuse_at 이상이고 욕심이 0 이하인 사람은 값과 상관없이 거절한다. 모자라면(절반 이상) move로 판정.
      * blackmail: 협박 판정의 행동
      */
+    /** 부탁 (12-174): 하루에 chance로 부탁 하나를 품는다. 품은 부탁은 max_open까지, expire_days 안에 꺼내지 못하면 접는다 */
+    favors: z.strictObject({ chance: z.number().min(0).max(1), max_open: z.number().int().min(1).default(2), expire_days: z.number().int().min(1).default(4) }).optional(),
     /** 약속 (12-160): 지키면·접으면·어기면 그 사람의 관계 변화, 한 번에 열어 둘 수 있는 약속 수 */
     promises: z
       .strictObject({

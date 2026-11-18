@@ -10,6 +10,9 @@ gender: female
 look: 소매를 걷어붙인 30대. 손등에 소독약 얼룩이 늘 남아 있다.
 reputation: 거점 의무실 담당. 원래 하얀매 쪽에 있다가 청솔형제단으로 왔다는 말이 있다.
 want: 의무실에서 더는 사람을 잃지 않는 것
+# 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+favors:
+  - { id: antibiotics_quiet, ask: "항생제 한 통만 구해 줘요. 의무실 장부에는 안 적을 거예요", item: { id: antibiotics, quantity: 1 }, days: 5, reward: { item: { id: painkiller, quantity: 1 }, affection: 1 } }
 fear: 하얀매와의 관계가 드러나 거점에서 쫓겨나는 것
 values: { discipline: 0, loyalty: 0, mercy: 3, honesty: -1, self_interest: 0 }
 traits: [warm, guarded, attractive]

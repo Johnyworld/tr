@@ -93,6 +93,9 @@
   look: 귀밑에서 자른 단발. 소매가 긴 털 스웨터 위에 큰 가운을 걸쳤다. 손목에 늘 붕대를 감고 다닌다.
   reputation: 진료소의 수습 간호사. 붕괴 때 열네 살이었고 하얀매에서 자랐다. 손이 빠르고 말이 많다. 수간호사에게 가장 많이 혼나는 사람.
   want: 언젠가 수간호사처럼 혼자 수술을 해 보는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: notebook_for_surgery, ask: "공책 한 권만요. 수간호사님 수술 순서를 적어 두고 싶어서요", item: { id: notebook, quantity: 1 }, days: 5, reward: { item: { id: bandage, quantity: 2 }, affection: 1 } }
   fear: 격리실 안쪽에서 문이 잠기는 소리
   values: { discipline: 0, loyalty: 2, mercy: 3, honesty: 1, self_interest: 0 }
   traits: [eager, talkative, warm]
@@ -166,6 +169,9 @@
   look: 굽은 등에 털조끼. 돋보기를 줄에 꿰어 목에 걸었다. 손가락 마디가 굵고, 약 이름을 중얼거리는 버릇이 있다.
   reputation: 진료소의 약사 할머니. 시립병원 앞에서 약국을 했다. 알약을 보면 이름과 유효기간을 맞힌다. 약제실 장부를 손으로 옮겨 적는 일을 맡았다.
   want: 자기가 죽기 전에 누군가에게 약 다루는 법을 다 넘겨주는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: mushrooms_for_medicine, ask: "버섯 두 줌만 따다 주구려. 달여서 약을 만들 거라오", item: { id: mushroom, quantity: 2 }, days: 4, reward: { item: { id: painkiller, quantity: 1 }, affection: 1 } }
   fear: 장부가 틀렸는데 아무도 모르는 것
   values: { discipline: 1, loyalty: 1, mercy: 2, honesty: 3, self_interest: -1 }
   traits: [meticulous, motherly, patient]

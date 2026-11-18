@@ -40,15 +40,48 @@ export function apartCompanions(state: GameState): string[] {
     .sort();
 }
 
-/** 동행이 주는 스킬 보정 (엑스트라 틀의 companion_bonus). 같은 스킬은 가장 큰 것 하나만 */
+/** 동행이 주는 스킬 보정 (엑스트라 틀의 companion_bonus + 배운 재주, 12-172). 같은 스킬은 가장 큰 것 하나만 */
 export function companionSkillMod(state: GameState, content: Content, move: string): number {
   let best = 0;
   for (const id of activeCompanions(state)) {
     const template = state.characters[id]?.extra?.template;
-    const bonus = template ? (content.extras[template]?.companion_bonus?.[move] ?? 0) : 0;
+    const base = template ? (content.extras[template]?.companion_bonus?.[move] ?? 0) : 0;
+    const taught = learnedTricks(state, content, id).reduce((n, t) => n + (t.bonus?.[move] ?? 0), 0);
+    const bonus = Math.min(2, base + taught);
     if (bonus > best) best = bonus;
   }
   return best;
+}
+
+/** 개 기르기 (12-172): 동물 틀의 재주 */
+export type Trick = NonNullable<Content["extras"][string]["tricks"]>[number];
+
+/** 이 동물이 배울 수 있는 재주 (틀에 적힌 것) */
+export function tricksOf(state: GameState, content: Content, id: string): Trick[] {
+  const template = state.characters[id]?.extra?.template;
+  return (template ? content.extras[template]?.tricks : undefined) ?? [];
+}
+
+/** 이 동물이 배운 재주 */
+export function learnedTricks(state: GameState, content: Content, id: string): Trick[] {
+  const learned = state.tricks?.[id]?.learned ?? [];
+  return tricksOf(state, content, id).filter((t) => learned.includes(t.id));
+}
+
+/** 함께 지낸 날 (함께 다니기 시작한 때부터) */
+export function daysTogether(state: GameState, content: Content, id: string): number {
+  const since = bondOf(state, content, id)?.since ?? state.time;
+  return Math.max(0, Math.floor((state.time - since) / (24 * 60)));
+}
+
+/** 곁의 동물이 배운 재주로 더 드는 짐 무게 (주인공만) */
+export function animalCarry(state: GameState, content: Content): number {
+  return activeCompanions(state).reduce((n, id) => n + learnedTricks(state, content, id).reduce((m, t) => m + (t.carry ?? 0), 0), 0);
+}
+
+/** 곁의 동물 중 이 재주를 배운 것이 있는지 (이야기 조건 companion_trick) */
+export function companionKnows(state: GameState, content: Content, trick: string): boolean {
+  return activeCompanions(state).some((id) => learnedTricks(state, content, id).some((t) => t.id === trick));
 }
 
 /** 목적 동행의 끝나는 조건을 사람이 읽는 말로 */
@@ -62,6 +95,34 @@ export function describeUntil(content: Content, until: Bond["until"]): string {
 }
 
 /** GM에게 보여 줄 동행 줄 (곁에 있는 사람, 떨어져 있는 사람, 갈림길) */
+/** 동행 줄의 재주 (12-172): 배운 것, 반쯤 배운 것, 지금 가르칠 수 있는 것 */
+function describeTricks(state: GameState, content: Content, id: string): string {
+  const all = tricksOf(state, content, id);
+  if (!all.length) return "";
+  const rec = state.tricks?.[id];
+  const label = (t: Trick) => {
+    const fx = [
+      ...Object.entries(t.bonus ?? {}).map(([m, v]) => `${content.scenario.moves.find((x) => x.id === m)?.label ?? m} +${v}`),
+      ...(t.carry ? [`짐 +${t.carry}kg`] : []),
+    ].join(", ");
+    return `${t.label}${fx ? `(${fx})` : ""}`;
+  };
+  const learned = all.filter((t) => rec?.learned.includes(t.id));
+  const days = daysTogether(state, content, id);
+  const today = Math.floor(state.time / (24 * 60)) + 1;
+  const open = all.filter((t) => !rec?.learned.includes(t.id) && days >= t.min_days);
+  const parts: string[] = [];
+  if (learned.length) parts.push(`배운 재주: ${learned.map(label).join(", ")}`);
+  if (open.length && rec?.lastDay !== today) {
+    parts.push(
+      `가르칠 수 있는 재주 (take_action.train + check, 플레이어가 가르치겠다고 할 때만, 하루 한 번): ${open
+        .map((t) => `${t.id} ${label(t)} [${content.scenario.moves.find((x) => x.id === t.move)?.label ?? t.move}]${rec?.half.includes(t.id) ? " 반쯤 배움" : ""}`)
+        .join(", ")}`,
+    );
+  }
+  return parts.length ? ` · ${parts.join(" · ")}` : "";
+}
+
 export function describeCompanions(state: GameState, content: Content): string {
   const name = (id: string) => {
     const c = state.characters[id]!;
@@ -78,7 +139,7 @@ export function describeCompanions(state: GameState, content: Content): string {
         .join(", ");
       const bond = bondOf(state, content, id);
       const why = bond ? BOND_LABELS[bond.kind] + (bond.kind === "purpose" && bond.until ? ` (${describeUntil(content, bond.until)})` : "") : "";
-      return `${name(id)} (${id})${why ? ` · ${why}` : ""}${bonus ? ` · 함께 있으면 ${bonus}` : ""}`;
+      return `${name(id)} (${id})${why ? ` · ${why}` : ""}${bonus ? ` · 함께 있으면 ${bonus}` : ""}${describeTricks(state, content, id)}`;
     });
     lines.push(`동행 (구역을 옮겨도 따라온다. 잠시 떼어 놓거나 헤어지면 companion_part): ${items.join(", ")}`);
   }

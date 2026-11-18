@@ -4,6 +4,7 @@ import { describeFacilities } from "./facilities.ts";
 import { describeResolve } from "./resolve.ts";
 import { describeExploration } from "./exploration.ts";
 import { promiseLines } from "./promises.ts";
+import { favorLines } from "./favors.ts";
 import { originLine } from "./extras.ts";
 import { describeMarket } from "./market.ts";
 import { describeInfiltration } from "./infiltration.ts";
@@ -146,7 +147,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...bleedingLine(content, player),
       `소지품: ${describeInventory(content, player.inventory)}`,
       ...(describeStash(content, state) ? [describeStash(content, state)!] : []),
-      ...(describeGear(content, player) ? [describeGear(content, player)] : []),
+      ...(describeGear(content, player) ? [describeGear(content, player, state)] : []),
       ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감·물건으로만 준다`] : []),
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
       ...describeRemains(state, content),
@@ -339,7 +340,8 @@ function describeNpcCard(
       : []),
     ...leverageLines(state, content, npc.id),
     ...[agendaCue(content, state, npc.id)].filter((x): x is string => !!x),
-    ...promiseLines(state, content, npc.id).map((l) => `당신이 이 인물에게 한 ${l}`),
+    ...promiseLines(state, content, npc.id),
+    ...favorLines(state, content, npc.id),
     ...(othersDeeds.length > 0 ? [`이 인물이 들은 남의 일 (이 인물은 사실로 믿는다. 그 사람을 대하는 태도에 반영):\n${othersDeeds.join("\n")}`] : []),
     ...(secretLine ? [secretLine] : []),
     ...stanceLines(state, content, npc.id),

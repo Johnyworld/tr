@@ -8,6 +8,7 @@ import { josa } from "../text.ts";
 import { isIncapacitated } from "./body.ts";
 import { equippedItem } from "./gear.ts";
 import { recordDeed } from "./reputationTools.ts";
+import { settleFavor } from "./favors.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
@@ -30,13 +31,22 @@ export function openPromises(state: GameState, to?: string): PromiseRecord[] {
 const describe = (content: Content, p: PromiseRecord) =>
   p.item ? `${p.what} (${content.items[p.item.id]?.name ?? p.item.id} ×${p.item.quantity})` : p.what;
 
-/** 인물 카드·상태의 줄: 이 사람에게 한 약속과 남은 날 */
-export function promiseLines(state: GameState, content: Content, to?: string): string[] {
+/** 상태 화면·명령어의 한 줄 (12-174): 내가 한 약속인지, 받아 준 부탁인지 */
+export type Pledge = { id: string; kind: "약속" | "부탁"; who: string; text: string; leftLabel: string; urgent: boolean };
+
+export function pledges(state: GameState, content: Content, to?: string): Pledge[] {
   const today = dayOf(state.time);
   return openPromises(state, to).map((p) => {
     const left = p.due - today;
-    const when = left > 0 ? `${left}일 남음` : "오늘까지";
-    return `${to ? "" : `${playerCalls(state, content, p.to)}에게 `}약속 ${p.id}: ${describe(content, p)} — ${when}`;
+    return { id: p.id, kind: p.favor ? "부탁" : "약속", who: playerCalls(state, content, p.to), text: describe(content, p), leftLabel: left > 0 ? `${left}일 남음` : "오늘까지", urgent: left <= 0 };
+  });
+}
+
+/** 인물 카드·?임무의 줄: 이 사람에게 한 약속(또는 받아 준 부탁)과 남은 날 */
+export function promiseLines(state: GameState, content: Content, to?: string): string[] {
+  return pledges(state, content, to).map((p) => {
+    const head = p.kind === "부탁" ? `${to ? "이 인물의 " : `${p.who}의 `}부탁 ${p.id} (들어주기로 했다)` : `${to ? "당신이 이 인물에게 한 " : `${p.who}에게 한 `}약속 ${p.id}`;
+    return `${head}: ${p.text} — ${p.leftLabel}`;
   });
 }
 
@@ -82,7 +92,7 @@ const promiseTool = defineTool({
       if (openPromises(state).length >= r.max_open) return { ok: false, error: `지키지 못한 약속이 이미 ${r.max_open}개다. 먼저 지키거나 접는다.` };
       const id = `p_${(state.promises ?? []).length + 1}`;
       const due = dayOf(state.time) + input.days;
-      store.append({ type: "promise_made", id, by: me.id, to: input.npc_id, what: input.what.trim(), due, item: input.item ?? null });
+      store.append({ type: "promise_made", id, by: me.id, to: input.npc_id, what: input.what.trim(), due, item: input.item ?? null, favor: null });
       const who = playerCalls(state, content, input.npc_id);
       return { ok: true, resultText: `${who}에게 약속했다 (${id}, ${input.days}일 안에). ${josa(who, "은/는")} 이 약속을 기억한다.`, display: QUIET, silent: true };
     }
@@ -92,6 +102,7 @@ const promiseTool = defineTool({
     if (input.action === "fold") {
       store.append({ type: "promise_settled", id: p.id, status: "folded" });
       relate(ctx, p.to, r.folded, "못 지키겠다고 털어놓은 약속");
+      if (p.favor) settleFavor(ctx, p.favor, false);
       return { ok: true, resultText: `${who}에게 약속을 못 지키겠다고 털어놓았다. 실망했지만 숨기지 않은 것은 안다. 이 결과대로 서술하라.`, display: QUIET };
     }
     const bad = present(state, content, p.to);
@@ -106,7 +117,9 @@ const promiseTool = defineTool({
     store.append({ type: "promise_settled", id: p.id, status: "kept" });
     relate(ctx, p.to, r.kept, "지킨 약속");
     recordDeed(ctx, { summary: `${who}에게 한 약속을 지켰다: ${p.what}`, tags: ["honesty"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
-    return { ok: true, resultText: `${who}에게 한 약속을 지켰다${p.item ? " (물건을 건넸다)" : ""}. 이 결과대로 서술하라.`, display: QUIET };
+    // 부탁에서 맺은 약속이면 보답 (12-174)
+    const thanks = p.favor ? settleFavor(ctx, p.favor, true) : [];
+    return { ok: true, resultText: [`${who}에게 한 약속을 지켰다${p.item ? " (물건을 건넸다)" : ""}. 이 결과대로 서술하라.`, ...thanks].join("\n"), display: QUIET };
   },
 });
 
@@ -122,6 +135,7 @@ export function runBrokenPromises(ctx: ToolContext): string[] {
   for (const p of openPromises(state)) {
     if (p.due >= today) continue;
     ctx.store.append({ type: "promise_settled", id: p.id, status: "broken" });
+    if (p.favor) settleFavor(ctx, p.favor, false);
     const target = state.characters[p.to];
     if (!target || target.dead) continue;
     relate(ctx, p.to, r.broken, "어긴 약속");

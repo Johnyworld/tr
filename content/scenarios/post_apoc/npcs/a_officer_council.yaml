@@ -124,6 +124,9 @@
   look: 목이 길고 마른 소년. 끈 하나가 끊어진 배낭을 한쪽 어깨에만 멘다. 운동화 밑창을 철사로 묶었다.
   reputation: 지도부의 전령. 버들마을과 장터, 동쪽 초소를 하루에 몇 번씩 뛰어다닌다. 거점에서 다리가 가장 빠르다는 말이 있다. 어린 여동생 하나를 데리고 산다.
   want: 여동생이 이번 겨울에 기침을 멈추는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: cough_medicine, ask: "여동생 기침이 안 멎어. 해열제 두 알이면 이번 주는 넘길 것 같은데", item: { id: fever_reducer, quantity: 2 }, days: 5, reward: { item: { id: dry_ration, quantity: 1 }, affection: 2 } }
   fear: 자기가 뛰다가 죽으면 여동생 혼자 남는 것
   values: { discipline: 1, loyalty: 2, mercy: 2, honesty: 1, self_interest: 1 }
   traits: [eager, talkative, light_eater]

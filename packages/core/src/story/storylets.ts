@@ -10,7 +10,7 @@ import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import { roleOf } from "../game/state.ts";
 import { attracted, loversOf, romanceCast } from "../engine/romance.ts";
 import { tiesOf } from "../game/ties.ts";
-import { activeCompanions, bondOf } from "../game/companions.ts";
+import { activeCompanions, bondOf, companionKnows } from "../game/companions.ts";
 import { isAwayCompanion } from "../engine/companionTools.ts";
 import { factionPolicy } from "../sim/war.ts";
 import { disposition } from "../sim/war.ts";
@@ -248,6 +248,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.road_touches && (!state.lastRoute || !w.road_touches.some((z) => z === state.lastRoute!.from || z === state.lastRoute!.to))) return false;
   if (w.road_danger_gte !== undefined && routeDanger(content, state) < w.road_danger_gte) return false;
   if (w.road_danger_lte !== undefined && (!state.lastRoute || routeDanger(content, state) > w.road_danger_lte)) return false;
+  if (w.companion_trick && !companionKnows(state, content, w.companion_trick)) return false;
+  if (w.facility_here && !(state.playerZone && (state.facilities?.[state.playerZone] ?? []).includes(w.facility_here))) return false;
   if (w.campfire !== undefined && ((!!state.playerZone && (state.fires[state.playerZone] ?? 0) > at) !== w.campfire)) return false;
   if (w.camp_danger_gte !== undefined || w.camp_danger_lte !== undefined) {
     const zone = state.playerZone;

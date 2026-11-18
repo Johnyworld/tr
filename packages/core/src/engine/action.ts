@@ -1,4 +1,6 @@
 import { applyBuild, planBuild } from "./facilities.ts";
+import { applyTrain, planTrain } from "./training.ts";
+import { planBroadcast, runBroadcast } from "./broadcast.ts";
 import { templateKind } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
 import { forage, handleTrap } from "./forage.ts";
@@ -257,6 +259,15 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("시설을 지으면 (12-167): 상태의 '지을 수 있는 시설' id. 판정(check: 그 시설의 move)이 필요하고, 재료·시간·결과는 시스템이 정한다. 아니면 null"),
+    broadcast: z
+      .boolean()
+      .default(false)
+      .describe("무전기로 열린 주파수에 송출하면 true (12-173, 플레이어가 무전으로 부르겠다고 할 때만). 30분, 하루 한 번. 누가 응답하는지는 시스템이 정한다"),
+    train: z
+      .strictObject({ companion: z.string().describe("곁에 있는 동물 id (동행 줄)"), trick: z.string().describe("동행 줄의 '가르칠 수 있는 재주' id") })
+      .nullable()
+      .default(null)
+      .describe("곁의 동물에게 재주를 가르치면 (12-172). 판정(check: 그 재주의 move)이 필요하고, 결과는 시스템이 정한다. 동물마다 하루 한 번. 아니면 null"),
     battle: z
       .strictObject({
         effect: z.string().describe("상태의 '지금 쓸 수 있는 전투 효과' 중 하나의 id"),
@@ -304,7 +315,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {
-    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || !!input.craft || !!input.build || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || !!input.craft || !!input.build || !!input.train || input.broadcast || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
     const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
     if (acts || !passive) {
       return {
@@ -341,12 +352,21 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const why = planBuild(content, store.getState(), player, input.build, input.check.move);
     if (why) return { ok: false, error: why };
   }
+  if (input.broadcast) {
+    const why = planBroadcast(content, store.getState());
+    if (why) return { ok: false, error: why };
+  }
+  if (input.train) {
+    if (!input.check) return { ok: false, error: "재주를 가르치려면 판정(check)이 필요하다." };
+    const why = planTrain(content, store.getState(), input.train, input.check.move);
+    if (why) return { ok: false, error: why };
+  }
   if (input.craft) {
     if (!input.check) return { ok: false, error: "만들거나 고치려면 판정(check)이 필요하다." };
     const why = planCraft(content, player, input.craft, input.check.move);
     if (why) return { ok: false, error: why };
   }
-  if (input.move_to && gearRules && encumbrance(content, player) === 2) {
+  if (input.move_to && gearRules && encumbrance(content, player, store.getState()) === 2) {
     return { ok: false, error: `짐이 너무 무겁다 (${carriedWeight(content, player).toFixed(1)}kg). 내려놓아야(transfer_item to scene) 옮겨 갈 수 있다.` };
   }
   if (inBattle) {
@@ -548,6 +568,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     }
   }
 
+  // 1-0-3. 동물에게 재주 가르치기 (12-172)
+  if (input.train && outcome) lines.push(...applyTrain(ctx, input.train, outcome));
+
   // 1-0. 수색: 그 구역에서 찾을 거리를 코드가 굴린다 (기획서 4.7)
   if (input.activity?.kind === "search" && !inBattle) {
     const found = scavenge(ctx, outcome);
@@ -632,13 +655,14 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item || input.drink || input.refill ? "eat" : input.craft || input.build || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item || input.drink || input.refill ? "eat" : input.craft || input.build || input.train || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
   // 이동 수단 (12-137): 타고 가면 이동 시간이 줄고, 연료를 쓰고, 도착한 곳에 소리가 난다
   const ride = input.move_to && input.ride ? planRide(ctx, input.ride, !!crossingAttempt || escapeAttempt) : null;
   if (ride && !ride.ok) lines.push(`타지 못하고 걸었다: ${ride.error}`);
   const rideUsed = ride?.ok ? ride : null;
   if (rideUsed?.fuel) store.append({ type: "item_consumed", holder: start.playerId, itemId: rideUsed.fuel, quantity: 1 });
-  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? 1);
+  // 무전 송출은 30분 (대화 ×3, 12-173)
+  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1));
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);
   displays.push(...time.extra);
@@ -681,6 +705,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`오는 길에 일이 생겼다: "${d.title}". 도착하기 전, 길 위의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
     }
+  }
+
+  // 무전 송출 (12-173): 시간이 흐른 뒤 누가 응답하는지
+  if (input.broadcast && !time.interrupted && !store.getState().activeStorylet) {
+    const sent = runBroadcast(ctx);
+    lines.push(...sent.lines);
+    displays.push(...sent.displays);
   }
 
   // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문, 전쟁, 예정된 교전)

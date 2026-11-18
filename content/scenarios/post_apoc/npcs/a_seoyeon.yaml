@@ -10,6 +10,9 @@ gender: female
 look: 짧게 친 머리와 무표정한 얼굴. 쌍안경을 목에 걸고 다닌다.
 reputation: 강태호 분대의 사수. 분대에서 가장 눈이 좋고 말이 없다.
 want: 아픈 동생이 겨울을 넘기는 것
+# 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+favors:
+  - { id: fever_for_brother, ask: "해열제 하나만 구해 줄 수 있어? 동생 열이 안 내려", item: { id: fever_reducer, quantity: 1 }, days: 3, reward: { affection: 2 } }
 fear: 쓸모없어져 거점에서 밀려나는 것
 values: { discipline: 1, loyalty: 1, mercy: -1, honesty: 0, self_interest: 2 }
 traits: [cold, meticulous, eagle_eye, marksman]

@@ -13,6 +13,9 @@
   look: 짧게 깎은 흰머리에 뿔테 안경. 붕괴 전 가게에서 두르던 두꺼운 캔버스 앞치마를 지금도 두르고, 주머니마다 나사와 철사 토막이 들어 있다.
   reputation: 단지 앞 상가에서 철물점을 하던 사람. 정찰대에서 가장 오래 버텼다. 구시가 상가의 어느 셔터 뒤에 무엇이 남았는지 다 안다는 말을 듣는다. 손녀가 지하 교실에 다닌다.
   want: 손녀 지우가 봄에 열 살이 되는 것을 보는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: apples_for_jiu, ask: "지우 생일에 사과 두 알만 쥐여 주고 싶은데. 구해 줄 수 있겠나", item: { id: apple, quantity: 2 }, days: 7, reward: { item: { id: smoked_meat, quantity: 1 }, affection: 2 } }
   fear: 단지가 무너지는 날 손녀를 데리고 갈 데가 없는 것
   values: { discipline: 0, loyalty: 1, mercy: 1, honesty: -1, self_interest: 1 }
   traits: [patient, meticulous, cold_hardy]

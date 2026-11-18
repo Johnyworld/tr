@@ -1,0 +1,27 @@
+# 가축 (12-175): 산 짐승은 우리(시설)를 지을 때 재료로 들어간다. 나루상단 장터에서 사거나 이야기에서 얻는다
+- id: hen
+  name: 산 닭
+  description: 다리를 끈으로 묶은 암탉. 가끔 꼬꼬 소리를 낸다. 우리를 지어 넣으면 알을 낳는다.
+  kind: misc
+  weight: 2
+  value: 8
+- id: goat
+  name: 염소
+  description: 목에 끈을 맨 암염소. 아무거나 씹는다. 우리를 지어 두면 날마다 젖을 짤 수 있다.
+  kind: misc
+  weight: 30
+  value: 20
+- id: egg
+  name: 달걀
+  description: 아직 따뜻한 달걀. 깨지지 않게 천에 싸 둔다.
+  kind: food
+  perishable: 0.03
+  weight: 0.1
+  value: 1
+- id: goat_milk
+  name: 염소젖
+  description: 병에 받은 염소젖. 비린내가 조금 나지만 배가 든든하다. 하루 이틀이면 상한다.
+  kind: food
+  perishable: 0.2
+  weight: 0.5
+  value: 2

@@ -54,6 +54,7 @@ import { createTakeActionSchema, takeAction, type TakeActionInput } from "./acti
 import { stashHint, stashTool } from "./stash.ts";
 import { LEVERAGE_TOOLS } from "./leverage.ts";
 import { PROMISE_TOOLS } from "./promises.ts";
+import { FAVOR_TOOLS } from "./favors.ts";
 import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 
@@ -112,7 +113,7 @@ const transferItem = defineTool({
     if (input.to === state.playerId && content.scenario.gear) {
       const me = state.characters[state.playerId]!;
       const after = carriedWeight(content, me) + (item.weight ?? DEFAULT_WEIGHT) * input.quantity;
-      if (after > carryCapacity(content, me) * content.scenario.gear.carry.hard_limit) {
+      if (after > carryCapacity(content, me, state) * content.scenario.gear.carry.hard_limit) {
         return { ok: false, error: `${item.name}까지 들면 너무 무겁다 (${after.toFixed(1)}kg). 먼저 무언가를 내려놓는다.` };
       }
     }
@@ -269,6 +270,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...REPUTATION_TOOLS,
       ...LEVERAGE_TOOLS,
       ...PROMISE_TOOLS,
+      ...FAVOR_TOOLS,
       ...RESOLVE_TOOLS,
       ...INFILTRATION_TOOLS,
       ...EXPLORATION_TOOLS,

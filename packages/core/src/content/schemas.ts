@@ -308,6 +308,21 @@ export function createContentSchemas(s: Scenario) {
     /** 주로 머무는 전선 구역. 플레이어가 그 구역에 있으면 GM이 등장시킬 수 있다 */
     zone: contentIdSchema.optional(),
     /**
+     * 부탁 (12-174): 이 인물이 주인공에게 할 수 있는 사적인 부탁. 물건 부탁만 (코드가 확인한다).
+     * 받으면 그 물건·기한으로 약속이 되고, 지키면 reward(물건·호감)를 건넨다
+     */
+    favors: z
+      .array(
+        z.strictObject({
+          id: contentIdSchema,
+          ask: z.string().min(1),
+          item: z.strictObject({ id: contentIdSchema, quantity: z.number().int().min(1).default(1) }),
+          days: z.number().int().min(1).max(30),
+          reward: z.strictObject({ item: z.strictObject({ id: contentIdSchema, quantity: z.number().int().min(1).default(1) }).optional(), affection: z.number().int().min(0).max(3).default(1) }).default({ affection: 1 }),
+        }),
+      )
+      .optional(),
+    /**
      * 인물의 자기 일 (12-168): 주인공 없이도 진행되는 일. 차례대로 하나씩 (끝나면 다음 것).
      * steps칸이 다 차면 end(이야기 효과, 배역 self·other)와 death(self·other: 부상이 끝 단계로)가 일어난다.
      * 하루에 한 칸: fill의 조건이 맞고 chance를 넘으면. cue는 반을 넘으면 GM 카드에 보이는 낌새, news는 끝났을 때 아는 사람이 듣는 말
@@ -404,6 +419,17 @@ export function createContentSchemas(s: Scenario) {
      * ammo_cost: 한 번 빌려줄 때마다 무리 창고에서 줄어드는 탄약 (모자라면 탄약 없이 무기만)
      */
     armory: z.strictObject({ items: z.record(contentIdSchema, z.number().int().min(1)), ammo_cost: z.number().int().min(0).default(0) }).optional(),
+    /**
+     * 포상 (12-171): 임무 보고로 공적이 every의 배수를 새로 넘을 때마다 items에서 하나.
+     * 무리 식량이 hungry_days일치 아래면 말뿐인 포상 (상관의 존중 +1)
+     */
+    rewards: z
+      .strictObject({
+        every: z.number().int().min(1),
+        hungry_days: z.number().int().min(0).default(3),
+        items: z.array(z.strictObject({ id: contentIdSchema, qty: z.number().int().min(1).default(1), line: z.string().min(1) })).min(1),
+      })
+      .optional(),
     /** 이 무리에서 부르는 계급 이름 (12-84, 예: grunt → 약탈조원). 없는 계급은 월드의 이름 */
     rank_labels: z.record(z.string(), z.string().min(1)).default({}),
     /** false면 이 무리로 시작할 수 없다 (처음 시나리오·자유 시나리오에 없다. 해금된 시나리오로만, 기획서 9.12) */
@@ -843,6 +869,10 @@ export function createContentSchemas(s: Scenario) {
         camp_danger_lte: z.number().int().min(0).max(3).optional(),
         /** 지금 구역에 모닥불이 타고 있다 (true) / 없다 (false) */
         campfire: z.boolean().optional(),
+        /** 곁의 동물이 이 재주를 배웠다 (12-172) */
+        companion_trick: contentIdSchema.optional(),
+        /** 지금 구역에 이 시설이 있다 (12-175 가축 등) */
+        facility_here: contentIdSchema.optional(),
         /** 주인공이 배경의 그 일이 있었던 구역(잃은 곳)에 있을 때만 (기획서 12.6) */
         at_loss_place: z.boolean().optional(),
         /** 직분 사다리의 칸이 이 이상 (0 = 첫 칸) */
@@ -975,6 +1005,22 @@ export function createContentSchemas(s: Scenario) {
       .optional(),
     /** 동행하면 주인공의 스킬에 더하는 보정 (예: 개 → 경계 +1). 능력+스킬 상한 안에서 */
     companion_bonus: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(-1).max(2)).optional(),
+    /**
+     * 개 기르기 (12-172): 동물에게 가르치는 재주. move 판정, min_days 함께 지낸 날.
+     * 효과는 bonus(동행 보정에 더한다, 동물마다 +2까지)와 carry(주인공의 짐 무게 한도 +)
+     */
+    tricks: z
+      .array(
+        z.strictObject({
+          id: contentIdSchema,
+          label: z.string().min(1),
+          move: idEnum(moveIds(s)),
+          min_days: z.number().int().min(0).default(0),
+          bonus: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(1).max(2)).optional(),
+          carry: z.number().min(0).optional(),
+        }),
+      )
+      .optional(),
     /** 장면에 나타나면 주인공의 공포가 오르는 단계 (12-95). 한꺼번에 셋 이상 나타나면 한 단계 더 */
     fearsome: z.number().int().min(0).max(3).optional(),
     /** 무엇이 부른 공포인지 (예: infected, dog). fearsome이 0이어도 그것이 무서운 사람(트레잇 phobia)에게는 공포가 온다 */

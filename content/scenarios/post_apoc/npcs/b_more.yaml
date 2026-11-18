@@ -51,6 +51,9 @@
   look: 허리가 굽었고 손목에 두레박 줄을 감고 다닌다. 고무장화에 늘 흙이 묻어 있다.
   reputation: 버들마을의 우물지기이자 텃밭 반장. 물 한 바가지까지 장부 없이 머리로 센다. 경북 영천에서 시집와 이 단지에서만 서른 해를 살았다.
   want: 아이들이 봄에 심을 씨앗을 겨울 동안 지켜 내는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: seeds_for_spring, ask: "씨앗 봉투 하나만 구해 줘. 봄에 애들이랑 심을 거야", item: { id: seed_packet, quantity: 1 }, days: 6, reward: { item: { id: apple, quantity: 3 }, affection: 1 } }
   fear: 우물이 마르는 날
   values: { discipline: 1, loyalty: 1, mercy: 2, honesty: 1, self_interest: -1 }
   traits: [motherly, meticulous, iron_gut]

@@ -12,6 +12,9 @@
   look: 바지가 무릎까지 진흙으로 굳었다. 허리에 굵은 밧줄을 감고 다니고, 손바닥이 가죽처럼 두껍다. 말할 때 자꾸 땅을 내려다본다.
   reputation: 붕괴 전 지하수 관정 파던 기사. 단지 우물 두 곳을 처음 판 사람이다. 첫 겨울에 아들과 딸을 다 잃었다고 다들 안다.
   want: 아랫단 우물을 더 깊이 파서 살려 내는 것. 그러려면 정수장 펌프의 부품이 있어야 한다
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: tape_for_pump, ask: "덕트테이프 두 개만. 아랫단 우물 펌프 이음매가 샌다", item: { id: duct_tape, quantity: 2 }, days: 5, reward: { item: { id: dried_fish, quantity: 1 }, affection: 1 } }
   fear: 마을 사람들이 아들이 살아 있다는 것을 아는 날
   values: { discipline: 0, loyalty: 1, mercy: 2, honesty: -1, self_interest: 0 }
   traits: [patient, weary, iron_gut]

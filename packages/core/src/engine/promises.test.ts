@@ -28,7 +28,7 @@ describe("약속", () => {
     const r = promise(w, { action: "make", npc_id: NPC, what: "구급상자를 구해 주겠다", days: 3, item: { id: "medkit", quantity: 1 } });
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.sceneForGm()).toContain("약속 p_1");
-    expect(runCommand("?임무", { state: w.state(), content, summaries: [] })).toContain("지킬 약속");
+    expect(runCommand("?임무", { state: w.state(), content, summaries: [] })).toContain("지킬 약속·부탁");
     const id = "p_1";
     expect(promise(w, { action: "keep", promise_id: id }).ok).toBe(false); // 물건이 없다
     expect(w.runCheat("~give medkit").ok).toBe(true);

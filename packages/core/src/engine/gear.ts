@@ -1,3 +1,4 @@
+import { animalCarry } from "../game/companions.ts";
 import { effectiveSkill } from "./traits.ts";
 import { marketValue } from "./market.ts";
 import { isCreature } from "../game/kinds.ts";
@@ -39,21 +40,23 @@ export function carriedWeight(content: Content, c: Character): number {
 }
 
 /** 들 수 있는 무게 (근력에 따라) */
-export function carryCapacity(content: Content, c: Character): number {
+export function carryCapacity(content: Content, c: Character, state?: GameState): number {
   const carry = content.scenario.gear?.carry;
   if (!carry) return Infinity;
   const strength = content.scenario.stats.find((s) => s.id === "strength") ? (c.stats.strength ?? 0) : 0;
   // 배낭 틀처럼 지니면 더 드는 것 (가장 큰 것 하나)
   const pack = Object.entries(c.inventory).reduce((n, [id, q]) => Math.max(n, q > 0 ? (content.items[id]?.carry_bonus ?? 0) : 0), 0);
-  return carry.base + strength * carry.per_strength + pack;
+  // 짐을 나르는 개 (12-172): 주인공 곁의 동물이 배운 재주
+  const animal = state && c.id === state.playerId ? animalCarry(state, content) : 0;
+  return carry.base + strength * carry.per_strength + pack + animal;
 }
 
 /** 짐이 무거운 정도: 0 가벼움, 1 무거움(판정 보정), 2 너무 무거움(옮겨 가지 못한다) */
-export function encumbrance(content: Content, c: Character): 0 | 1 | 2 {
+export function encumbrance(content: Content, c: Character, state?: GameState): 0 | 1 | 2 {
   const carry = content.scenario.gear?.carry;
   if (!carry) return 0;
   const w = carriedWeight(content, c);
-  const cap = carryCapacity(content, c);
+  const cap = carryCapacity(content, c, state);
   if (w > cap * carry.hard_limit) return 2;
   return w > cap ? 1 : 0;
 }
@@ -91,7 +94,7 @@ export function rangeProblem(content: Content, c: Character, move: string, dista
 }
 
 /** skillLabel: 보정을 준 무기·도구 이름. penaltyParts: 판정 줄에 보일 불리함의 내역 (방어구 이름, 짐, 거리) */
-export function gearModifiers(content: Content, c: Character, move: string, distance?: string | null): { skill: number; skillLabel: string; penalty: number; penaltyParts: { label: string; value: number }[] } {
+export function gearModifiers(content: Content, c: Character, move: string, distance?: string | null, state?: GameState): { skill: number; skillLabel: string; penalty: number; penaltyParts: { label: string; value: number }[] } {
   let skill = 0;
   let skillLabel = "장비";
   const weaponId = equippedItem(c, "weapon");
@@ -108,7 +111,7 @@ export function gearModifiers(content: Content, c: Character, move: string, dist
     add(id ? nameOf(content, id) : slot, itemOf(content, id)?.armor?.penalty[move] ?? 0);
   }
   const carry = content.scenario.gear?.carry;
-  if (carry && encumbrance(content, c) > 0 && carry.encumbered_moves.includes(move)) add("짐", carry.penalty);
+  if (carry && encumbrance(content, c, state) > 0 && carry.encumbered_moves.includes(move)) add("짐", carry.penalty);
   // 거리 보정은 상황 보정이라 상한과 따로 (12-93)
   if (distance) add(content.scenario.gear?.distances?.find((d) => d.id === distance)?.label ?? distance, rangeOf(content, c, move)?.[distance] ?? 0);
   return { skill, skillLabel, penalty: penaltyParts.reduce((n, x) => n + x.value, 0), penaltyParts };
@@ -403,7 +406,7 @@ export function applyCraft(ctx: ToolContext, craft: { recipe: string | null; rep
 }
 
 /** GM 상태의 장비·짐 줄 */
-export function describeGear(content: Content, c: Character): string {
+export function describeGear(content: Content, c: Character, state?: GameState): string {
   if (!content.scenario.gear) return "";
   const parts: string[] = [];
   const weapon = equippedItem(c, "weapon");
@@ -417,8 +420,8 @@ export function describeGear(content: Content, c: Character): string {
   const worn = ARMOR_SLOTS.map((s) => equippedItem(c, s)).filter((x): x is string => !!x);
   if (worn.length) parts.push(`입은 것: ${worn.map(show).join(", ")}`);
   const w = carriedWeight(content, c);
-  const cap = carryCapacity(content, c);
-  const enc = encumbrance(content, c);
+  const cap = carryCapacity(content, c, state);
+  const enc = encumbrance(content, c, state);
   parts.push(`짐 ${w.toFixed(1)}/${cap.toFixed(0)}kg${enc === 2 ? " (너무 무겁다: 내려놓아야 옮겨 간다)" : enc === 1 ? ` (무겁다: ${content.scenario.gear.carry.encumbered_moves.join("·")} ${content.scenario.gear.carry.penalty})` : ""}`);
   return `장비: ${parts.join(" · ")} (들기·입기는 equip, 흥정은 barter, 고치기·만들기는 take_action.craft)`;
 }

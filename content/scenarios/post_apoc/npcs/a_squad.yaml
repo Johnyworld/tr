@@ -59,6 +59,9 @@
   look: 배가 조금 나온 중년. 오른쪽 무릎을 청테이프로 감아 다니고, 주머니마다 볼펜과 쪽지가 꽂혀 있다.
   reputation: 붕괴 전 택배 기사. 가람시 골목을 지도 없이 다 안다. 분대에서 제일 말이 느리고 제일 덜 다친다. 충남 논산 출신.
   want: 딸을 한 번 더 보는 것
+  # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
+  favors:
+    - { id: notebook_for_letters, ask: "공책 한 권 구해 주게. 딸한테 못 부칠 편지라도 써 두려고", item: { id: notebook, quantity: 1 }, days: 4, reward: { item: { id: cigarettes, quantity: 1 }, affection: 1 } }
   fear: 딸이 자기를 원망하며 죽는 것
   values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 1, self_interest: 1 }
   traits: [weary, patient, iron_gut]

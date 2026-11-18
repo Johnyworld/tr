@@ -6,6 +6,7 @@ import { WorldManager } from "../world/manager.ts";
 import type { GameWorld } from "../world/world.ts";
 import { loadRealContent } from "../testing.ts";
 import { waterHere } from "./body.ts";
+import { seasonAt } from "../sim/season.ts";
 import { breakFacilities, campFactor, runFacilitiesDaily } from "./facilities.ts";
 
 /** 거점 손보기 (12-167) */
@@ -91,5 +92,30 @@ describe("거점 손보기", () => {
     const zone = w.state().playerZone!;
     runFacilitiesDaily(w.ctx(), 4);
     expect(w.state().stashes[me(w).id]?.[zone]?.potato).toBe(2);
+  });
+
+  it("가축 (12-175): 닭장은 산 닭이 재료로 들고, 겨울에도 이틀마다 달걀을 남긴다. 거점이면 무리 식량", () => {
+    const w = home();
+    give(w, "planks", 2);
+    give(w, "wire_roll", 1);
+    expect(build(w, "coop", "carpentry", "strength").ok).toBe(false); // 닭이 없다
+    give(w, "hen", 2);
+    expect(build(w, "coop", "carpentry", "strength").ok).toBe(true);
+    expect(me(w).inventory.hen ?? 0).toBe(0);
+    const zone = w.state().playerZone!;
+    // 겨울 날 (텃밭은 자라지 않는 계절)
+    let day = 2;
+    while (seasonAt(content.scenario, (day - 1) * 24 * 60)?.id !== "winter" && day < 2000) day += 2;
+    runFacilitiesDaily(w.ctx(), day);
+    expect(w.state().stashes[me(w).id]?.[zone]?.egg).toBe(2);
+
+    const b = make("role_a_grunt");
+    give(b, "planks", 3);
+    give(b, "wire_roll", 1);
+    give(b, "goat", 1);
+    expect(build(b, "goat_pen", "carpentry", "strength").ok).toBe(true);
+    const food = b.state().factions.faction_a!.resources.food ?? 0;
+    runFacilitiesDaily(b.ctx(), 3);
+    expect(b.state().factions.faction_a!.resources.food).toBe(food + 1);
   });
 });

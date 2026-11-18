@@ -188,6 +188,12 @@ function checkReferences(content: Content): string[] {
     }
     for (const npc of Object.values(content.npcs)) for (const m of [...Object.keys(npc.merchant?.restock ?? {}), ...Object.keys(npc.merchant?.rare ?? {})]) itemRef(`npcs.${npc.id}.merchant`, m);
     for (const f of Object.values(content.factions)) for (const m of Object.keys(f.armory?.items ?? {})) itemRef(`factions.${f.id}.armory`, m);
+    for (const f of Object.values(content.factions)) for (const r of f.rewards?.items ?? []) itemRef(`factions.${f.id}.rewards`, r.id);
+    // 부탁 (12-174)
+    for (const n of Object.values(content.npcs)) for (const f of n.favors ?? []) {
+      itemRef(`npcs.${n.id}.favors.${f.id}`, f.item.id);
+      if (f.reward.item) itemRef(`npcs.${n.id}.favors.${f.id}.reward`, f.reward.item.id);
+    }
   }
   for (const k of content.scenario.custom_start?.kin ?? []) {
     if (!content.extras[k]) problems.push(`scenario.custom_start.kin: 알 수 없는 엑스트라 틀 ${k}`);
@@ -396,6 +402,9 @@ function checkReferences(content: Content): string[] {
       }
     }
     for (const f of st.when.factions ?? []) if (f !== "none" && !content.factions[f]) problems.push(`storylets.${st.id}.when.factions: 알 수 없는 세력 ${f}`);
+    // 개 기르기 (12-172)·가축 (12-175)
+    if (st.when.companion_trick && !Object.values(content.extras).some((x) => x.tricks?.some((t) => t.id === st.when.companion_trick))) problems.push(`storylets.${st.id}.when.companion_trick: 알 수 없는 재주 ${st.when.companion_trick}`);
+    if (st.when.facility_here && !(content.scenario.facilities ?? []).some((f) => f.id === st.when.facility_here)) problems.push(`storylets.${st.id}.when.facility_here: 알 수 없는 시설 ${st.when.facility_here}`);
     for (const [key, role] of Object.entries(st.cast)) {
       if (role.extra && !content.extras[role.extra]) problems.push(`storylets.${st.id}.cast.${key}: 알 수 없는 엑스트라 틀 ${role.extra}`);
     }

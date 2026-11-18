@@ -1,0 +1,85 @@
+# 개 기르기 (12-172): 곁의 개가 배운 재주로 열리는 이야기. 재주는 동물 틀의 tricks (extras/drifters.yaml 누렁이)
+
+- id: dog_digs
+  title: 땅을 파는 개
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    companion_trick: sniff
+    own_territory: false
+    segments: [morning, day, evening]
+  cast:
+    dog: { companion: { kinds: [animal] }, enter: false }
+  setup: "{dog:이/가} 무너진 화단 앞에서 코를 박고 킁킁거리더니 앞발로 흙을 긁기 시작한다. 한 번 돌아보고, 다시 판다."
+  ai_direction: 흙 밑에 누군가 묻어 둔 것이 있다. 무엇이 나오는지는 판정 결과대로만. 개는 칭찬을 기다리는 눈치다.
+  choices:
+    - id: dig
+      label: 같이 파 본다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: canned_food, quantity: 2 }
+          - belief: { fact: "{dog:이/가} 냄새로 찾아낸 자리에서 묻어 둔 통조림 두 개가 나왔다", source: seen }
+        partial:
+          - give_item: { item: scrap_metal }
+          - belief: { fact: "{dog:이/가} 판 자리에서 녹슨 고철 조각만 나왔다", source: seen }
+        miss:
+          - belief: { fact: "{dog:이/가} 판 자리에는 오래된 뼈 하나뿐이었다. 개는 그걸 물고 신이 났다", source: seen }
+    - id: leave
+      label: 개를 불러 갈 길을 간다
+      effects: []
+
+- id: dog_holds
+  title: 물고 늘어진 개
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  urgent: true
+  when:
+    companion_trick: bite
+    own_territory: false
+    segments: [evening, night]
+  cast:
+    dog: { companion: { kinds: [animal] }, enter: false }
+  setup: "어둠 속에서 누군가 당신 짐을 낚아채 달아난다. 다음 순간 {dog:이/가} 소리 없이 튀어 나가 그 사람의 종아리를 물고 늘어진다. 비명. 마른 소년 하나가 땅바닥에서 버둥거린다."
+  ai_direction: 소년은 굶주린 떠돌이다. 무기는 없다. 개는 놓으라는 말이 있을 때까지 놓지 않는다. 어떻게 할지는 플레이어가 정한다 (장면에 남기려면 spawn_extra).
+  choices:
+    - id: release
+      label: 개를 떼어 내고 소년을 보내 준다
+      effects:
+        - belief: { fact: "짐을 훔치려던 소년을 {dog:이/가} 물어 세웠다. 짐을 돌려받고 소년을 보내 주었다", source: seen }
+        - deed: { summary: 짐을 훔치려던 굶주린 소년을 놓아 보냈다, tags: [mercy], severity: 1, privacy: private }
+    - id: scare
+      label: 소년에게 다시는 얼씬하지 말라고 겁을 준다
+      check: intimidate
+      outcomes:
+        success:
+          - belief: { fact: "{dog:이/가} 물어 세운 소년을 겁줘 쫓아 보냈다. 다시는 오지 않을 것이다", source: seen }
+        partial:
+          - belief: { fact: "소년은 도망쳤지만 돌아보며 이를 갈았다", source: seen }
+        miss:
+          - lose_item: { item: canned_food }
+          - belief: { fact: "버둥거리던 소년이 통조림 하나를 움켜쥔 채 빠져 달아났다", source: seen }
+
+- id: dog_carries
+  title: 짐 진 개
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    companion_trick: pack
+    segments: [day, evening]
+  cast:
+    dog: { companion: { kinds: [animal] }, enter: false }
+  setup: "등에 천 자루를 얹은 {dog:이/가} 당신 옆을 묵묵히 걷는다. 지나가던 사람들이 걸음을 멈추고 쳐다본다. 누군가 \"그 개, 얼마면 넘기겠소?\" 하고 묻는다."
+  ai_direction: 묻는 사람은 장사꾼이다. 값을 꽤 쳐준다. 팔지 않으면 웃으며 물러난다. 개는 당신 쪽으로 붙어 선다.
+  choices:
+    - id: refuse
+      label: "\"식구는 안 팝니다\""
+      effects:
+        - belief: { fact: "짐 진 {dog:을/를} 사겠다는 장사꾼에게 식구는 안 판다고 했다", source: seen }
+    - id: pet
+      label: 대답 대신 개 머리를 쓰다듬는다
+      effects:
+        - body: { track: nerves, delta: -1 }

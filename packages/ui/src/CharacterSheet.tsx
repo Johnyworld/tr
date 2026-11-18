@@ -86,7 +86,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
               </section>
             )}
 
-            <MissionCard mission={player.mission} loan={player.loan ?? []} resolve={player.resolve ?? null} />
+            <TodoCard todos={player.todos ?? []} />
           </div>
         }
       >
@@ -604,56 +604,52 @@ function SymptomList({ list, itemClassName = "" }: { list: SymptomView[]; itemCl
   );
 }
 
-/** 다짐 (12-164): 임무 칸 맨 아래 한 줄. 칸을 접으면 보이지 않는다 */
-function ResolveLine({ text }: { text: string | null }) {
-  if (!text) return null;
-  return (
-    <div className="mission-resolve" title="다짐: 이 주인공의 큰 줄기">
-      <span className="mission-resolve-label">다짐</span>
-      <span>{text}</span>
-    </div>
-  );
-}
-
-function MissionCard({ mission, loan, resolve }: { mission: PlayerView["mission"]; loan: string[]; resolve: string | null }) {
-  if (!mission) {
-    return (
-      <HudPanel id="mission" label="임무" peek="맡은 임무가 없습니다" empty>
-        <div className="muted small">맡은 임무가 없습니다. 상관에게 일감을 받을 수 있습니다.</div>
-        <ResolveLine text={resolve} />
-      </HudPanel>
-    );
-  }
-  const due = mission.deadlineLeftLabel ? (mission.deadlineLeftLabel === "기한 지남" ? "기한 지남" : `기한까지 ${mission.deadlineLeftLabel}`) : `기한 ${mission.deadlineLabel}`;
+/**
+ * 할 일 칸: 임무·부탁·약속·다짐을 같은 모양의 목록으로 (core views/player.ts todoViews).
+ * 한 줄 = 종류 · 제목(맡긴 사람) · 기한. 임무는 요구 조건을 체크 목록으로 아래에 단다
+ */
+function TodoCard({ todos }: { todos: NonNullable<PlayerView["todos"]> }) {
+  const first = todos[0];
+  const urgent = todos.filter((t) => t.urgent).length;
   return (
     <HudPanel
-      id="mission"
-      label="임무"
-      meta={
-        <span className={mission.urgent ? "mission-due urgent" : "mission-due"} title={`기한 ${mission.deadlineLabel}`}>
-          {due}
-        </span>
-      }
-      peek={mission.title}
+      id="todo"
+      label="할 일"
+      meta={todos.length > 0 && <span className={urgent ? "todo-count urgent" : "todo-count"}>{urgent ? `급한 일 ${urgent} · ` : ""}{todos.length}개</span>}
+      peek={first ? `${first.kind} · ${first.title}${todos.length > 1 ? ` 외 ${todos.length - 1}` : ""}` : "할 일이 없습니다"}
+      empty={todos.length === 0}
     >
-      <div className="mission-title" title={mission.briefing}>
-        {mission.title}
-      </div>
-      <ul className="mission-reqs">
-        {mission.requirements.map((r) => {
-          const met = !r.includes("미충족");
-          return (
-            <li key={r} className={met ? "met" : ""}>
-              <span className="check" aria-hidden="true">
-                {met ? "✓" : ""}
-              </span>
-              {r}
+      {todos.length === 0 ? (
+        <div className="muted small">할 일이 없습니다. 상관에게 일감을 받거나, 사람들의 부탁을 들어줄 수 있습니다.</div>
+      ) : (
+        <ul className="todo-list">
+          {todos.map((t) => (
+            <li key={t.key} className="todo" data-kind={t.kind}>
+              <span className="todo-kind">{t.kind}</span>
+              <div className="todo-main">
+                <div className="todo-title" title={t.detail ?? undefined}>
+                  {t.title}
+                  {t.who && <span className="todo-who"> · {t.who}</span>}
+                </div>
+                {t.steps.length > 0 && (
+                  <ul className="mission-reqs">
+                    {t.steps.map((r) => (
+                      <li key={r.text} className={r.met ? "met" : ""}>
+                        <span className="check" aria-hidden="true">
+                          {r.met ? "✓" : ""}
+                        </span>
+                        {r.text}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {t.note && <div className="todo-note">{t.note}</div>}
+              </div>
+              {t.dueLabel && <span className={t.urgent ? "todo-due urgent" : "todo-due"}>{t.dueLabel}</span>}
             </li>
-          );
-        })}
-      </ul>
-      {loan.length > 0 && <div className="muted small">빌린 장비 (반납): {loan.join(", ")}</div>}
-      <ResolveLine text={resolve} />
+          ))}
+        </ul>
+      )}
     </HudPanel>
   );
 }

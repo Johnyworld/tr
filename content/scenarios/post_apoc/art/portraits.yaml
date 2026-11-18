@@ -710,3 +710,165 @@ faces:
       three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes
       visible and looking toward the viewer, a korean woman in her early twenties, long straight black
       hair falling over one shoulder, sharp cheekbones, monolid eyes, cold stare, wearing a black tank top
+
+  # D 다양성 보강: 나이(10대~60대), 체형, 흉터, 외국 출신 생존자 (모두 색 입히기)
+  d_m19:
+    style: D
+    gender: male
+    seed: 2181
+    colorize: true
+    subject: >-
+      a skinny 16 year old korean boy, thin face, messy black hair, scared wide eyes, wearing an oversized
+      ragged t-shirt
+  d_m20:
+    style: D
+    gender: male
+    seed: 2182
+    colorize: true
+    subject: >-
+      an 18 year old korean young man, faint acne marks, spiky black hair, rebellious scowl, wearing a
+      stretched black tank top
+  d_m21:
+    style: D
+    gender: male
+    seed: 2183
+    colorize: true
+    subject: >-
+      a big heavy-set korean man in his late thirties with a round belly and broad thick neck, short buzz
+      cut, kind gentle expression, wearing a sweat-stained grey t-shirt
+  d_m22:
+    style: D
+    gender: male
+    seed: 2184
+    colorize: true
+    subject: >-
+      an emaciated korean man in his mid forties, hollow sunken cheeks from hunger, gaunt bony face, dark-
+      ringed tired eyes, stubble, wearing a loose threadbare shirt
+  d_m23:
+    style: D
+    gender: male
+    seed: 2185
+    colorize: true
+    subject: >-
+      a korean man in his mid thirties, a bandage wrapped around his forehead, a scar across the bridge of
+      his nose, short beard, wearing a dirty olive tank top
+  d_m24:
+    style: D
+    gender: male
+    seed: 2186
+    colorize: true
+    subject: >-
+      a korean man in his early fifties who looks like a former schoolteacher, balding head, thin wire
+      glasses, mild tired eyes, wearing a faded button-up shirt
+  d_m25:
+    style: D
+    gender: male
+    seed: 2187
+    colorize: true
+    subject: >-
+      a south asian man around forty living in korea, warm brown skin, full black beard, sturdy build,
+      steady eyes, wearing a worn dark t-shirt
+  d_m26:
+    style: D
+    gender: male
+    seed: 2188
+    colorize: true
+    subject: >-
+      a white western man in his late twenties stranded in korea, short light brown hair, sun-burnt
+      weathered face, light stubble, wearing a grimy white t-shirt
+  d_m27:
+    style: D
+    gender: male
+    seed: 2189
+    colorize: true
+    subject: >-
+      an old korean farmer in his mid sixties, sparse grey beard, sun-darkened deeply lined face, a gap
+      from a missing front tooth in a lopsided grin, wearing a faded work shirt
+  d_m28:
+    style: D
+    gender: male
+    seed: 2190
+    colorize: true
+    subject: >-
+      a korean man in his early thirties, long black hair tied back, tattoos climbing up his neck, sharp
+      cold eyes, wearing a black sleeveless shirt
+  d_f21:
+    style: D
+    gender: female
+    seed: 2201
+    colorize: true
+    subject: >-
+      a 17 year old korean girl, youthful face, short choppy self-cut hair, wary eyes, wearing an
+      oversized faded hoodie
+  d_f22:
+    style: D
+    gender: female
+    seed: 2202
+    colorize: true
+    subject: >-
+      a muscular korean woman around thirty-five, broad shoulders and strong arms, nearly shaved buzz cut,
+      an old scar on her upper arm, hard stare, wearing a grey tank top
+  d_f23:
+    style: D
+    gender: female
+    seed: 2203
+    colorize: true
+    subject: >-
+      a tired korean woman in her late thirties, motherly face, hair carelessly tied up with loose
+      strands, dark circles under her eyes, wearing a stretched-out beige t-shirt
+  d_f24:
+    style: D
+    gender: female
+    seed: 2204
+    colorize: true
+    subject: >-
+      a sturdy stocky korean woman in her mid forties, short permed hair, sun-tanned skin, square face,
+      no-nonsense look, wearing a faded floral work blouse
+  d_f25:
+    style: D
+    gender: female
+    seed: 2205
+    colorize: true
+    subject: >-
+      a korean woman in her mid fifties, greying chin-length bob, thin-framed glasses, sharp intelligent
+      eyes, wearing a worn cardigan over a t-shirt
+  d_f26:
+    style: D
+    gender: female
+    seed: 2206
+    colorize: true
+    subject: >-
+      an elderly korean woman in her early sixties, white hair pulled into a low bun, deep wrinkles,
+      gentle but unbreakable expression, wearing a faded padded vest
+  d_f27:
+    style: D
+    gender: female
+    seed: 2207
+    colorize: true
+    subject: >-
+      a korean woman around twenty-nine, a large old burn scar across one cheek and jaw, short tousled
+      hair, steady defiant look, wearing a black t-shirt
+  d_f28:
+    style: D
+    gender: female
+    seed: 2208
+    colorize: true
+    subject: >-
+      a southeast asian woman in her early thirties living in korea, warm brown skin, long black hair tied
+      back, calm resilient expression, wearing a washed-out green t-shirt
+  d_f29:
+    style: D
+    gender: female
+    seed: 2209
+    colorize: true
+    subject: >-
+      a shy 16 year old korean girl, black hair in two braided pigtails, freckles, small round face,
+      nervous look, wearing a too-big grey t-shirt
+  d_f30:
+    style: D
+    gender: female
+    seed: 2210
+    colorize: true
+    subject: >-
+      a rebellious 18 year old korean girl, faded dyed red hair in a messy shoulder-length cut, a bandage
+      across her nose, smirking, wearing a torn band t-shirt

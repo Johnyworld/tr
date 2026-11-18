@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { HudPanel } from "./HudPanel.tsx";
 import { MemoPanel } from "./MemoPanel.tsx";
@@ -15,7 +15,7 @@ const TRAIT_KIND_LABELS: Record<PlayerView["traits"][number]["kind"], string> = 
  * 캐릭터 시트 (12-64): 위에 고정한 HUD(누구, 경험치, 몸 상태, 전투, 임무)와
  * 그 아래 블록(능력, 스킬, 장비, 소지품, 복무, 무리, 사람, 기록)
  */
-export function CharacterSheet({ player }: { player: PlayerView }) {
+export function CharacterSheet({ player, onStatus }: { player: PlayerView; onStatus?: (status: unknown) => void }) {
   return (
     <aside className={player.dead ? "sheet dead" : "sheet"} aria-label="캐릭터 시트">
       <SheetTabs
@@ -168,8 +168,18 @@ export function CharacterSheet({ player }: { player: PlayerView }) {
               <h3>소지품</h3>
               {player.gear && <WeightBar gear={player.gear} />}
             </div>
-            <ItemGrid items={player.inventory} empty="가진 것이 없습니다" />
+            <ItemGrid items={player.inventory} empty="가진 것이 없습니다" move={player.stash?.canPut ? { direction: "put", onStatus } : undefined} />
           </section>
+
+          {player.stash?.canPut && (
+            <section className="block stash">
+              <div className="block-head">
+                <h3>창고</h3>
+                <span className="muted stash-where">{player.stash.label}</span>
+              </div>
+              <ItemGrid items={player.stash.items} empty="비어 있습니다" move={{ direction: "take", onStatus }} />
+            </section>
+          )}
 
           {player.sceneItems.length > 0 && (
             <section className="block">
@@ -711,18 +721,102 @@ const ICON_TONE: Record<string, string> = {
   ammo: "icon-weapon",
 };
 
-function ItemGrid({ items, empty }: { items: ItemView[]; empty: string }) {
+/** 창고로 넣기·꺼내기 (12-149) */
+type StashMove = { direction: "put" | "take"; onStatus?: (status: unknown) => void };
+
+/** 누르고 있으면 이만큼 뒤부터 */
+const HOLD_DELAY_MS = 500;
+/** 이만큼마다 하나씩 */
+const HOLD_EVERY_MS = 100;
+
+function ItemGrid({ items, empty, move }: { items: ItemView[]; empty: string; move?: StashMove }) {
+  const [error, setError] = useState<string | null>(null);
   if (items.length === 0) return empty ? <div className="muted">{empty}</div> : null;
   return (
-    <ul className="item-grid">
-      {items.map((item) => (
-        <li key={item.id}>
-          <Icon name={item.icon} className={ICON_TONE[item.icon ?? ""] ?? "icon-muted"} />
-          <span className="item-name">{item.name}</span>
-          {item.quantity > 1 && <span className="muted">×{item.quantity}</span>}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className={move ? "item-grid item-grid-move" : "item-grid"}>
+        {items.map((item) => (
+          <li key={item.id}>
+            <Icon name={item.icon} className={ICON_TONE[item.icon ?? ""] ?? "icon-muted"} />
+            <span className="item-name">{item.name}</span>
+            {item.quantity > 1 && <span className="muted">×{item.quantity}</span>}
+            {move && <MoveButton item={item} move={move} onError={setError} />}
+          </li>
+        ))}
+      </ul>
+      {error && <div className="item-move-error">{error}</div>}
+    </>
+  );
+}
+
+/**
+ * 하나씩 옮기는 아이콘 버튼. 누르면 하나, 누르고 있으면 0.5초 뒤부터 0.1초마다 하나씩 (다 옮기거나 손을 떼면 멈춘다).
+ * 요청은 한 번에 하나만 보낸다 (앞 요청이 끝나기 전의 틱은 건너뛴다)
+ */
+function MoveButton({ item, move, onError }: { item: ItemView; move: StashMove; onError: (e: string | null) => void }) {
+  const busy = useRef(false);
+  const left = useRef(item.quantity);
+  const timers = useRef<{ delay?: ReturnType<typeof setTimeout>; every?: ReturnType<typeof setInterval> }>({});
+  left.current = item.quantity;
+
+  const stop = () => {
+    clearTimeout(timers.current.delay);
+    clearInterval(timers.current.every);
+    timers.current = {};
+  };
+  useEffect(() => stop, []);
+
+  const sendOne = async () => {
+    if (busy.current || left.current < 1) return;
+    busy.current = true;
+    try {
+      const res = await fetch("/api/stash", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ direction: move.direction, itemId: item.id, quantity: 1 }) });
+      const body = (await res.json()) as { status?: unknown; error?: string };
+      if (!res.ok) {
+        onError(body.error ?? "옮기지 못했습니다");
+        stop();
+      } else {
+        onError(null);
+        left.current -= 1;
+        if (left.current < 1) stop();
+        if (body.status) move.onStatus?.(body.status);
+      }
+    } catch {
+      onError("옮기지 못했습니다");
+      stop();
+    } finally {
+      busy.current = false;
+    }
+  };
+
+  const start = (e: ReactPointerEvent) => {
+    if (e.button !== 0) return;
+    stop();
+    void sendOne();
+    timers.current.delay = setTimeout(() => {
+      timers.current.every = setInterval(() => void sendOne(), HOLD_EVERY_MS);
+    }, HOLD_DELAY_MS);
+  };
+
+  const title = `${item.name} 하나를 ${move.direction === "put" ? "창고에 넣습니다" : "꺼냅니다"}${item.quantity > 1 ? " (누르고 있으면 계속)" : ""}`;
+  return (
+    <button
+      type="button"
+      className="item-move"
+      title={title}
+      aria-label={title}
+      onPointerDown={start}
+      onPointerUp={stop}
+      onPointerLeave={stop}
+      onPointerCancel={stop}
+      onContextMenu={(e) => e.preventDefault()}
+      // 키보드(Enter·Space)로 누르면 하나 (포인터로 누른 것은 pointerdown이 이미 보냈다)
+      onClick={(e) => {
+        if (e.detail === 0) void sendOne();
+      }}
+    >
+      <Icon name={move.direction === "put" ? "stash-in" : "stash-out"} size={15} />
+    </button>
   );
 }
 

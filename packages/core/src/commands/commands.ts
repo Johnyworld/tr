@@ -158,6 +158,18 @@ const inventory: CommandDef = {
       ...(own.length ? own : ["  없음"]),
       ...(scene.length ? ["", "주변에 놓인 물건", ...scene] : []),
       ...(() => {
+        // 창고 (12-149): 여기 맡겨 둔 것과 넣을 수 있는 자리
+        const stash = buildPlayerView(ctx.state, ctx.content).stash;
+        if (!stash) return [];
+        const kept = stash.items.map((i) => `  ${i.name}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`);
+        return [
+          "",
+          stash.label ? `창고 (${stash.label})` : "여기 맡겨 둔 물건",
+          ...(kept.length ? kept : stash.label ? ["  비어 있음"] : []),
+          ...(stash.home ? [`  거처: ${stash.home}`] : []),
+        ];
+      })(),
+      ...(() => {
         const gear = buildPlayerView(ctx.state, ctx.content).gear;
         return gear ? ["", burdenLine(gear), `장비는 ${ctx.prefix ?? "!"}장비`] : [];
       })(),

@@ -1,4 +1,5 @@
 import { dayOf } from "../rules/time.ts";
+import { moveStash } from "../engine/stash.ts";
 import { parseMemoCommand, writeMemo, type MemoResult } from "../game/memo.ts";
 import { basename } from "node:path";
 import { runCheat } from "../debug/cheats.ts";
@@ -444,6 +445,24 @@ ${this.sceneForGm()}` };
   setMemo(text: unknown): MemoResult {
     if (typeof text !== "string") return { ok: false, error: "메모는 글로 보낸다." };
     return writeMemo(this.ctx().store, this.content, "replace", text);
+  }
+
+  /**
+   * 창고 (12-149): 상태 화면에서 물건 하나를 넣거나 꺼낸다. 게임 시간을 쓰지 않는다. 규칙은 core engine/stash.ts (GM의 stash tool과 같다).
+   * 바뀐 것은 이벤트로 남아 GM은 다음 장면 정보에서 본다
+   */
+  moveStash(input: unknown): { ok: true; text: string } | { ok: false; error: string } {
+    const o = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+    const { direction, itemId, quantity } = o;
+    if ((direction !== "put" && direction !== "take") || typeof itemId !== "string" || !Number.isInteger(quantity) || (quantity as number) < 1) {
+      return { ok: false, error: "direction(put·take), itemId, quantity(1 이상)로 보낸다." };
+    }
+    const tracked = this.#tracked(() => moveStash(this.ctx(), direction, [{ item_id: itemId, quantity: quantity as number }]));
+    const r = tracked.value;
+    if (!r.ok) return r;
+    // 꺼낸 뒤 짐이 한도를 넘었으면 다음 tool 결과에서 GM이 알린다 (stashHint). 여기서는 화면만 바뀐다
+    this.#repo.saveSnapshot();
+    return { ok: true, text: r.lines.join(" ") };
   }
 
   /** "?메모 내용"(덧붙이기), "?메모 고침 내용", "?메모 지움"이면 메모를 적고 결과를 돌려준다. 메모 적기가 아니면 null (읽기는 runCommand) */

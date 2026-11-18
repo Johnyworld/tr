@@ -138,7 +138,7 @@ export function StatusApp() {
       ) : (
         <div key="sheet" className="status-sheet">
           {created && <CreatedToast onClose={closeToast} />}
-          <CharacterSheet player={status.player} />
+          <CharacterSheet player={status.player} onStatus={applyStatus} />
         </div>
       )}
     </div>

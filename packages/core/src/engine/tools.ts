@@ -49,6 +49,7 @@ import { STORYLET_TOOLS } from "./storyletTools.ts";
 import { SUCCESSION_TOOLS } from "./succession.ts";
 import { createLearnSkillTool } from "./growth.ts";
 import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
+import { stashHint, stashTool } from "./stash.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
@@ -250,6 +251,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
     tools = [
       createTakeActionTool(s),
       transferItem,
+      stashTool,
       npcPresence,
       addBelief,
       createLearnSkillTool(s),
@@ -311,7 +313,10 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   const outcome = (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
   // 이번에 죽은 사람은 그 자리에 유해를 남긴다 (12-130)
   leaveRemainsForNewDeaths(ctx, living);
-  return withCheckLines(withFear(outcome, fearAfterTool(ctx, before)));
+  // 짐이 한도를 넘으면 창고를 한 번 알린다 (12-149)
+  const hint = outcome.ok ? stashHint(ctx) : null;
+  const hinted = hint && outcome.ok ? { ...outcome, resultText: [outcome.resultText, hint].filter(Boolean).join("\n") } : outcome;
+  return withCheckLines(withFear(hinted, fearAfterTool(ctx, before)));
 }
 
 /** 이 tool로 무서운 것이 나타났으면(인물·이야기·전투) 공포가 오른 결과를 붙인다 (12-95) */

@@ -27,6 +27,8 @@ export type PlayerView = {
   growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number } | null;
   inventory: ItemView[];
   sceneItems: ItemView[];
+  /** 창고 (12-149). label: 지금 넣을 수 있는 자리(사물함·거처)의 이름, canPut: 지금 넣을 수 있다, items: 이 구역에 맡겨 둔 것, home: 떠돌이의 거처(다른 구역일 때) */
+  stash?: { label: string | null; canPut: boolean; items: ItemView[]; home: string | null } | null;
   present: {
     id: string;
     name: string;

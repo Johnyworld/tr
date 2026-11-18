@@ -1635,6 +1635,46 @@ body {
   font-size: 13px;
 }
 
+/* 창고로 넣기·꺼내기 (12-149): 아이콘 버튼, 누르고 있으면 계속 */
+.item-move {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.55;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity 0.12s;
+}
+
+.item-move:hover,
+.item-move:focus-visible {
+  opacity: 1;
+}
+
+.item-move:active {
+  background: var(--border);
+}
+
+.item-move-error {
+  margin-top: 6px;
+  color: var(--error);
+  font-size: 12px;
+}
+
+.stash-where {
+  font-size: 12px;
+}
+
 .item-name {
   flex: 1;
   min-width: 0;

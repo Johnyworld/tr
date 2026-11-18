@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 55;
+export const SAVE_SCHEMA_VERSION = 56;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -292,6 +292,12 @@ export function createGameSchemas(s: Scenario) {
       .default({ mature: false, dialogue: "novel" }),
     /** 캐릭터별 메모 (12-75). 플레이어가 적는 기록이라 세계의 사실이 아니다 */
     memos: z.record(z.string(), z.string()).default({}),
+    /** 내 물건 보관 (12-149): 캐릭터 → 구역 → 맡긴 물건. 무리 거점의 사물함이나 떠돌이의 거처에 둔다 */
+    stashes: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.number().int().positive()))).default({}),
+    /** 떠돌이의 거처 (12-149): 캐릭터 → 구역 */
+    homes: z.record(z.string(), z.string()).default({}),
+    /** 짐이 무거울 때 창고를 한 번 알렸다 (12-149, 캐릭터마다) */
+    stashHinted: z.array(z.string()).default([]),
     /** 공포를 부른 것을 마주한 횟수 (12-95, 캐릭터마다). 쌓이면 둔감해진다 */
     fearExposure: z.record(z.string(), z.number().int()).default({}),
     /** 쌓인 냉기 (12-98, 캐릭터마다). per_step을 넘으면 추위 트랙이 오르고, 음수로 per_step만큼 빠지면 풀린다 */
@@ -452,6 +458,12 @@ export function createGameSchemas(s: Scenario) {
     /** 수위를 정한다 (새 게임에서, 또는 플레이어가 바꾸면, 12-57) */
     z.strictObject({ type: z.literal("content_options_set"), mature: z.boolean().optional(), dialogue: z.enum(["novel", "script"]).optional() }),
     z.strictObject({ type: z.literal("memo_written"), characterId: z.string(), text: z.string().max(4000) }),
+    /** 내 물건을 창고에 넣거나(put) 꺼낸다(take) (12-149). zone: 창고가 있는 구역 */
+    z.strictObject({ type: z.literal("item_stashed"), characterId: z.string(), zone: z.string(), itemId: z.string(), quantity: z.number().int().positive(), direction: z.enum(["put", "take"]) }),
+    /** 떠돌이가 이 구역을 거처로 삼았다 (12-149) */
+    z.strictObject({ type: z.literal("home_settled"), characterId: z.string(), zone: z.string() }),
+    /** 짐이 무거울 때 창고 안내를 했다 (12-149) */
+    z.strictObject({ type: z.literal("stash_hinted"), characterId: z.string() }),
     z.strictObject({ type: z.literal("fear_exposed"), characterId: z.string() }),
     z.strictObject({ type: z.literal("cold_load_set"), characterId: z.string(), load: z.number() }),
     /** 옷이 젖었다 / 말랐다 (until이 지금 이하면 마름, 12-121) */
@@ -842,6 +854,9 @@ export const EMPTY_STATE: GameState = {
   lastRoute: null,
   options: { mature: false, dialogue: "novel" },
   memos: {},
+  stashes: {},
+  homes: {},
+  stashHinted: [],
   fearExposure: {},
   coldLoad: {},
   wetUntil: {},
@@ -1211,6 +1226,28 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "memo_written":
       next.memos = { ...next.memos, [event.characterId]: event.text };
+      return next;
+    case "item_stashed": {
+      const holder = next.characters[event.characterId];
+      if (!holder) throw new Error(`알 수 없는 캐릭터: ${event.characterId}`);
+      const places = { ...(next.stashes[event.characterId] ?? {}) };
+      const box = { ...(places[event.zone] ?? {}) };
+      const [from, to] = event.direction === "put" ? [holder.inventory, box] : [box, holder.inventory];
+      const left = (from[event.itemId] ?? 0) - event.quantity;
+      if (left < 0) throw new Error(`수량 부족: ${event.characterId}의 ${event.itemId} (${event.direction})`);
+      if (left === 0) delete from[event.itemId];
+      else from[event.itemId] = left;
+      to[event.itemId] = (to[event.itemId] ?? 0) + event.quantity;
+      if (Object.keys(box).length) places[event.zone] = box;
+      else delete places[event.zone];
+      next.stashes = { ...next.stashes, [event.characterId]: places };
+      return next;
+    }
+    case "home_settled":
+      next.homes = { ...next.homes, [event.characterId]: event.zone };
+      return next;
+    case "stash_hinted":
+      if (!next.stashHinted.includes(event.characterId)) next.stashHinted = [...next.stashHinted, event.characterId];
       return next;
     case "fear_exposed":
       next.fearExposure = { ...next.fearExposure, [event.characterId]: (next.fearExposure[event.characterId] ?? 0) + 1 };

@@ -1,4 +1,5 @@
 import { rankName } from "../game/ranks.ts";
+import { stashHere, stashPlace } from "../engine/stash.ts";
 import { isCreature } from "../game/kinds.ts";
 import { feelsLike } from "../engine/climate.ts";
 import { occupationTitle } from "../game/occupation.ts";
@@ -95,6 +96,12 @@ export type PlayerView = {
   /** 지닌 물건 (장비로 걸친 것은 뺀다. 장비는 gear) */
   inventory: ItemView[];
   sceneItems: ItemView[];
+  /**
+   * 창고 (12-149). label: 지금 넣을 수 있는 자리(사물함·거처)면 그 이름, canPut: 지금 넣을 수 있다,
+   * items: 이 구역에 맡겨 둔 것 (꺼낼 수 있다), home: 떠돌이의 거처가 다른 곳이면 그 구역 이름.
+   * 넣을 곳도 맡긴 것도 거처도 없으면 null
+   */
+  stash: { label: string | null; canPut: boolean; items: ItemView[]; home: string | null } | null;
   /** conditionLabel: 상태가 처음과 달라졌을 때만 요약 (예: "부상: 경상") */
   /**
    * states: 처음과 달라진 몸 상태 (보이는 단계만). step: 트랙의 몇 번째 단계인지 (0이 처음), fatal: 죽음 단계.
@@ -359,6 +366,14 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       : null,
     inventory: items(carried),
     sceneItems: items(state.scene.items),
+    stash: (() => {
+      const place = stashPlace(content, state);
+      const here = items(stashHere(state));
+      const homeZone = !player.factionId ? state.homes[player.id] : undefined;
+      const home = homeZone && homeZone !== state.playerZone ? (content.locations[homeZone]?.name ?? homeZone) : null;
+      if (!place && !here.length && !home) return null;
+      return { label: place?.label ?? null, canPut: !!place, items: here, home };
+    })(),
     present: state.scene.present.map((id) => {
       const npc = state.characters[id]!;
       return {

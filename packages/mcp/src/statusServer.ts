@@ -9,6 +9,7 @@ import type { GameWorld } from "@trpg/core";
  * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트 (정보 필터를 거친 core 뷰만)
  * - GET /api/status/stream: 같은 내용을 SSE로. 바뀔 때마다 밀어 준다
  * - GET·POST /api/options: 세계 설정(수위, 대화 형식, 12-63). 바꾸는 규칙은 core(GameWorld.setOptions)에 있다
+ * - POST /api/stash: 소지품을 창고로 넣고 꺼낸다 (12-149). 규칙은 core(GameWorld.moveStash)
  * - POST /api/memo: 메모 탭에서 적은 메모 (12-75). 메모장과 펜·연필이 있을 때만. 규칙은 core(GameWorld.setMemo)
  * - POST /api/creation: 상태 화면에서 새 게임·새 캐릭터 고르기 (12-67). Claude 세션이 화면 만들기를 열었을 때만. 규칙은 core(answerNewGame)
  * - GET /portraits/<팩>/<id>.png: 주인공 초상화 그림 (12-139, 월드 팩의 art/portraits/)
@@ -154,6 +155,29 @@ export async function handleMemo(source: StatusSource, req: IncomingMessage, res
   return json(res, 200, { ok: true, status: statusPayload(source) });
 }
 
+/** 창고 (12-149): 소지품 하나를 창고로 넣거나 꺼낸다. JSON만 받는다 (설정과 같은 까닭). 규칙은 core(GameWorld.moveStash) */
+export async function handleStash(source: StatusSource, req: IncomingMessage, res: ServerResponse, gate?: TurnGate): Promise<void> {
+  if (req.method !== "POST") return json(res, 405, { error: "POST" });
+  if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
+  const w = source.world;
+  if (!w || source.creating) return json(res, 409, { error: "열린 게임이 없다" });
+  let body = "";
+  for await (const chunk of req) {
+    body += String(chunk);
+    if (body.length > 1024) return json(res, 413, { error: "너무 크다" });
+  }
+  let input: unknown;
+  try {
+    input = JSON.parse(body);
+  } catch {
+    return json(res, 400, { error: "JSON이 아니다" });
+  }
+  const result = w.moveStash(input);
+  if (!result.ok) return json(res, 400, { error: result.error });
+  console.error(`[status] 창고: ${result.text}`);
+  return json(res, 200, { ok: true, status: statusPayload(source, gate) });
+}
+
 /** 상태 화면에서 고른 답. JSON만 받는다 (설정과 같은 까닭) */
 /** 해금 알림 닫기 (POST /api/unlock-notice {pack, roleId}) */
 export async function handleUnlockNotice(source: StatusSource, req: IncomingMessage, res: ServerResponse, gate?: TurnGate): Promise<void> {
@@ -269,6 +293,10 @@ export async function startStatusServer(
     }
     if (url === "/api/memo") {
       void handleMemo(source, req, res);
+      return;
+    }
+    if (url === "/api/stash") {
+      void handleStash(source, req, res, gate);
       return;
     }
     if (url === "/api/unlock-notice") {

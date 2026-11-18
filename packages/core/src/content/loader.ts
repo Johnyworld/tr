@@ -267,6 +267,13 @@ function checkReferences(content: Content): string[] {
   }
   // 구역이 하나도 없는 팩(부분 팩·테스트)은 건너뛴다
   if (Object.keys(content.locations).length) for (const z of Object.keys(content.scenario.war?.talk?.rumor?.zones ?? {})) if (!content.locations[z]) problems.push(`war.talk.rumor: 알 수 없는 구역 ${z}`);
+  // 인물의 자기 일 (12-168)
+  for (const npc of Object.values(content.npcs)) {
+    for (const a of npc.agenda ?? []) {
+      if (a.other && !content.npcs[a.other]) problems.push(`npcs.${npc.id}.agenda.${a.id}: 알 수 없는 인물 ${a.other}`);
+      if (a.death === "other" && !a.other) problems.push(`npcs.${npc.id}.agenda.${a.id}: death other에는 other가 필요하다`);
+    }
+  }
   // 다짐 (12-164): 갈래와 대상
   const resolveTargetOk = (kindId: string, target: string | null, castKeys: Set<string>): string | null => {
     const kind = content.scenario.resolve?.kinds.find((k) => k.id === kindId);
@@ -523,7 +530,7 @@ export function checkStorylets(content: Content): string[] {
     }
     for (const text of texts) {
       for (const [, key] of text.matchAll(/\{([a-z_]+)(?::[^}]+)?\}/g)) {
-        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !(key === "departed" && hasMourner) && !(key === "deceased" && s.when.funeral) && !(key === "bounty_by" && s.when.bounty) && !((key === "target" || key === "resolve") && s.when.resolve) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
+        if (key !== "zone" && key !== "scarce" && key !== "from" && key !== "to" && !(key === "victim" && hasVendetta) && !(key === "departed" && hasMourner) && !(key === "deceased" && s.when.funeral) && !(key === "bounty_by" && s.when.bounty) && !((key === "target" || key === "resolve") && s.when.resolve) && !(key === "agenda" && Object.values(s.cast).some((r) => r.agenda_half)) && !castKeys.has(key!)) problems.push(`${where}: 문장의 알 수 없는 자리 {${key}}`);
       }
     }
     for (const c of s.choices) {

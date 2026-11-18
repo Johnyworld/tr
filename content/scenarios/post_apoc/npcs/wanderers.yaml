@@ -85,6 +85,23 @@
   ties:
     - { to: c_dongpal, kind: rival, secret: { reveal_when: "붉은연합 규율반의 밀고자 이야기가 나왔을 때", min_trust: 3 } }
     - { to: c_pilsu, kind: friend, secret: { reveal_when: "물류창고 수용소에서 도망친 밤 이야기를 털어놓을 때", min_trust: 4 } }
+  agenda:
+    - id: who_informed
+      label: 탈영하던 밤 쪽지를 넣은 사람을 알아낸다
+      steps: 12
+      other: c_sangok
+      cue: 붉은연합 땅 근처를 맴돌며 규율반 사람들의 얼굴을 하나하나 본다
+      news: "{self:이/가} 붉은연합 규율반 쪽 사람을 캐고 다닌다는 말이 있다"
+      fill: { chance: 0.5 }
+      end: []
+    - id: settle_score
+      label: 쪽지를 넣은 사람에게 갚으러 간다
+      steps: 10
+      other: c_sangok
+      cue: 칼을 갈고, 붉은연합 물류창고 쪽 길을 몇 번이고 오간다
+      news: "붉은연합 규율반의 서기 {other:이/가} 밤길에서 죽었다고 한다. 누가 했는지는 아무도 말하지 않는다"
+      fill: { chance: 0.5 }
+      death: other
 
 - id: lone_jiwon
   name: 독고지원
@@ -126,6 +143,16 @@
   roams: [riverside, old_town, hospital_ruins]
   ties:
     - { to: y_dabin, kind: friend, secret: { reveal_when: "여울섬 이야기를 털어놓고 단짝 이름이 나왔을 때", min_trust: 3 } }
+  agenda:
+    - id: warn_friend
+      label: 섬에 남은 단짝에게 도망치라고 전하러 간다
+      steps: 16
+      cue: 남쪽 강가만 바라보고, 배 이야기가 나오면 눈빛이 달라진다
+      news: "{self:이/가} 남쪽 섬 쪽으로 배를 저어 갔다고 한다"
+      fill: { chance: 0.5 }
+      end:
+        - npc_depart: { who: self }
+
 
 # ── 외톨이 ──
 - id: lone_sunim

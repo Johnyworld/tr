@@ -1,3 +1,4 @@
+import { agendaOf, agendaShowing } from "../engine/agenda.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { currentResolve, resolveTargetName } from "../engine/resolve.ts";
 import { closeTo, mournedBy, recentlyDeadComrade } from "../engine/legacy.ts";
@@ -65,11 +66,13 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.vendetta || (state.vendettas ?? []).some((v) => v.avenger === c.id))
     .filter((c) => !role.mourner || mournedBy(state, content, c.id).length > 0)
     .filter((c) => !role.resolve_target || currentResolve(state)?.target === c.id)
-    // 다짐의 대상을 here로 부르면 지금 이 구역에 있을 때만 (장면에 있거나, 함께 다니거나, 있을 곳이 여기)
+    .filter((c) => !role.agenda_half || agendaShowing(content, state, c.id))
+    .filter((c) => !role.agenda_ids || role.agenda_ids.includes(agendaOf(content, state, c.id)?.agenda.id ?? ""))
+    // 다짐의 대상·자기 일을 가진 사람을 here로 부르면 지금 이 구역에 있을 때만 (장면에 있거나, 함께 다니거나, 있을 곳이 여기)
     .filter(
       (c) =>
         !role.here ||
-        !role.resolve_target ||
+        !(role.resolve_target || role.agenda_half) ||
         state.scene.present.includes(c.id) ||
         state.companions.includes(c.id) ||
         (c.extra ? c.extra.zone === state.playerZone : content.npcs[c.id] ? npcZoneAt(content.npcs[c.id]!, state.time) === state.playerZone : false),
@@ -456,6 +459,14 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   // 현상금을 건 무리 (12-136)
   const bountyBy = (state.bounties ?? [])[0];
   if (bountyBy) vars.bounty_by = content.factions[bountyBy]?.name ?? bountyBy;
+  // 인물의 자기 일 (12-168): 배역 중 일을 가진 사람의 그 일
+  for (const id of Object.values(cast)) {
+    const ag = agendaOf(content, state, id);
+    if (ag) {
+      vars.agenda = ag.agenda.label;
+      break;
+    }
+  }
   // 다짐 (12-164)
   const vow = currentResolve(state);
   if (vow) {

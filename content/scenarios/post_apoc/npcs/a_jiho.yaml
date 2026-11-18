@@ -39,3 +39,19 @@ skills: { fight: 0, shoot: 0, persuade: 1, deceive: 1, scavenge: 1 }
 start_inventory: [water_bottle]
 playable: true
 zone: a_base
+agenda:
+  - id: lone_scouting
+    label: 인정받으려고 혼자 정찰을 나간다
+    steps: 10
+    cue: 지도 한 장을 품에 넣고 다니며 밤마다 북쪽 고가를 바라본다
+    news: "{self:이/가} 혼자 정찰을 나갔다가 다쳐서 돌아왔다고 한다"
+    fill: { chance: 0.5 }
+    end:
+      - npc_hurt: { who: self, steps: 2 }
+  - id: scout_team
+    label: 다친 몸으로 정찰조에 넣어 달라고 버틴다
+    steps: 14
+    cue: 붕대를 감은 채 정찰조 막사 앞을 서성인다
+    news: "{self:이/가} 끝내 정찰조에 들어갔다고 한다"
+    fill: { chance: 0.5 }
+    end: []

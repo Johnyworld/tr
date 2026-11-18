@@ -1,3 +1,4 @@
+import { runAgendas } from "./agenda.ts";
 import { breakFacilities, runFacilitiesDaily } from "./facilities.ts";
 import { runBrokenPromises } from "./promises.ts";
 import { runDailyFood } from "./forage.ts";
@@ -82,6 +83,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     }
     // 텃밭이 자란다 (12-167)
     runFacilitiesDaily(ctx, day);
+    // 인물의 자기 일 (12-168)
+    displays.push(...runAgendas(ctx, day));
     runCaptivity(ctx);
     // 연애: 다른 연인을 알아채기, 같은 사람을 보는 두 사람 (12-58)
     displays.push(...runRomance(ctx));

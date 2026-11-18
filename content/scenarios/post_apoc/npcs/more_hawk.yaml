@@ -43,6 +43,21 @@
   zone: d_clinic
   ties:
     - { to: d_jeongsuk, kind: friend }
+  agenda:
+    - id: missing_ampoules
+      label: 약장의 진통제를 장부 몰래 빼 쓴다
+      steps: 10
+      cue: 수술이 끝나면 약장 앞에서 오래 머문다. 소매를 내려 팔뚝을 가린다
+      news: "하얀매 약장에서 진통제가 자꾸 비어 간다는 말이 돈다"
+      fill: { chance: 0.7 }
+      end: []
+    - id: shaking_hands
+      label: 손이 떨려 더는 버티지 못한다
+      steps: 8
+      cue: 눈 밑이 검고, 수술 도구를 쥔 손끝이 가늘게 떨린다
+      news: "하얀매의 외과 의사 {self:이/가} 진료소 뒷방에서 숨진 채 발견됐다. 곁에 빈 앰플이 굴러다녔다고 한다"
+      fill: { chance: 0.6 }
+      death: self
 
 - id: pd_sugyeong
   name: 연수경
@@ -172,6 +187,15 @@
   # 상단 짐꾼과 숨긴 혼인 (기획서 7.10)
   ties:
     - { to: e_cheolgu, kind: spouse, secret: { reveal_when: "장날 전날 저녁 진료소 뒷담에서 마주쳤을 때", min_trust: 3 } }
+  agenda:
+    - id: husband_found_out
+      label: 남편이 하는 일이 들통날 날이 다가온다
+      steps: 14
+      cue: 남편 이야기가 나오면 말을 돌리고, 밤늦게 혼자 정문을 내다본다
+      news: "{self:이/가} 남편을 따라 진료소를 떠났다고 한다. 남편이 하던 일이 들통났다는 말이 있다"
+      fill: { chance: 0.5 }
+      end:
+        - npc_depart: { who: self }
 
 - id: pd_eunsol
   name: 은솔
@@ -215,3 +239,19 @@
   # 무리를 가로지른 모녀
   ties:
     - { to: pc_sundeok, kind: child, secret: { reveal_when: "붉은연합 거점 부엌 이야기가 나왔을 때, 또는 어머니 소식을 가져온 사람에게", min_trust: 3 } }
+  agenda:
+    - id: word_to_mother
+      label: 어머니에게 살아 있다는 말을 전할 길을 찾는다
+      steps: 15
+      cue: 장터에서 오는 짐꾼마다 붙잡고 무언가를 조용히 묻는다
+      news: "{self:이/가} 붉은연합 땅 쪽으로 쪽지 한 장을 보냈다는 말이 있다"
+      fill: { chance: 0.5 }
+      end: []
+    - id: recognized
+      label: 붉은 완장을 찬 환자가 얼굴을 알아본다
+      steps: 10
+      cue: 붉은 완장을 찬 환자가 오면 얼굴을 가리고 뒷방으로 숨는다
+      news: "{self:이/가} 붉은연합 사람들에게 끌려갔다. 탈영병이었다고 한다"
+      fill: { chance: 0.5 }
+      end:
+        - npc_capture: { who: self, by: faction_c }

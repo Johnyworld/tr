@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 65;
+export const SAVE_SCHEMA_VERSION = 66;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -316,6 +316,8 @@ export function createGameSchemas(s: Scenario) {
       .strictObject({ zone: z.string(), owner: z.string(), goal: z.string(), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean(), since: z.number().int() })
       .nullable()
       .default(null),
+    /** 인물의 자기 일 (12-168): 인물마다 지금 몇 번째 일(index)이고 몇 칸 찼는지 */
+    agendas: z.record(z.string(), z.strictObject({ index: z.number().int().min(0), filled: z.number().int().min(0) })).default({}),
     /** 거점 손보기 (12-167): 구역마다 지어진 시설 id */
     facilities: z.record(z.string(), z.array(z.string())).default({}),
     /** 다짐 (12-164): 캐릭터마다 지금 품은 다짐, 시나리오의 다짐을 세웠는지, 끝난 다짐의 기록 */
@@ -525,6 +527,9 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("infiltration_started"), zone: z.string(), owner: z.string(), goal: z.string() }),
     z.strictObject({ type: z.literal("infiltration_changed"), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean() }),
     z.strictObject({ type: z.literal("infiltration_ended"), how: z.enum(["out", "caught", "gone"]) }),
+    // 인물의 자기 일 (12-168)
+    z.strictObject({ type: z.literal("agenda_filled"), npcId: z.string(), delta: z.number().int() }),
+    z.strictObject({ type: z.literal("agenda_finished"), npcId: z.string() }),
     // 거점 손보기 (12-167)
     z.strictObject({ type: z.literal("facility_built"), zone: z.string(), facility: z.string() }),
     z.strictObject({ type: z.literal("facility_broken"), zone: z.string(), facility: z.string() }),
@@ -958,6 +963,7 @@ export const EMPTY_STATE: GameState = {
   ruinsFound: {},
   resolves: {},
   facilities: {},
+  agendas: {},
   resolveSeeded: [],
   resolveNote: null,
   resolveLog: [],
@@ -1370,6 +1376,16 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "infiltration_ended":
       next.infiltration = null;
       return next;
+    case "agenda_filled": {
+      const at = next.agendas?.[event.npcId] ?? { index: 0, filled: 0 };
+      next.agendas = { ...(next.agendas ?? {}), [event.npcId]: { index: at.index, filled: Math.max(0, at.filled + event.delta) } };
+      return next;
+    }
+    case "agenda_finished": {
+      const at = next.agendas?.[event.npcId] ?? { index: 0, filled: 0 };
+      next.agendas = { ...(next.agendas ?? {}), [event.npcId]: { index: at.index + 1, filled: 0 } };
+      return next;
+    }
     case "facility_built": {
       const had = next.facilities?.[event.zone] ?? [];
       if (!had.includes(event.facility)) next.facilities = { ...(next.facilities ?? {}), [event.zone]: [...had, event.facility] };

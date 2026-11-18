@@ -307,6 +307,33 @@ export function createContentSchemas(s: Scenario) {
     healer: z.boolean().default(false),
     /** 주로 머무는 전선 구역. 플레이어가 그 구역에 있으면 GM이 등장시킬 수 있다 */
     zone: contentIdSchema.optional(),
+    /**
+     * 인물의 자기 일 (12-168): 주인공 없이도 진행되는 일. 차례대로 하나씩 (끝나면 다음 것).
+     * steps칸이 다 차면 end(이야기 효과, 배역 self·other)와 death(self·other: 부상이 끝 단계로)가 일어난다.
+     * 하루에 한 칸: fill의 조건이 맞고 chance를 넘으면. cue는 반을 넘으면 GM 카드에 보이는 낌새, news는 끝났을 때 아는 사람이 듣는 말
+     */
+    agenda: z
+      .array(
+        z.strictObject({
+          id: contentIdSchema,
+          label: z.string().min(1),
+          steps: z.number().int().min(2).max(30),
+          cue: z.string().min(1),
+          news: z.string().min(1),
+          other: contentIdSchema.optional(),
+          fill: z
+            .strictObject({
+              chance: z.number().min(0).max(1).default(1),
+              morale_lte: z.number().int().optional(),
+              food_days_lte: z.number().optional(),
+              seasons: z.array(contentIdSchema).optional(),
+            })
+            .default({ chance: 1 }),
+          end: z.array(z.lazy(() => storyletEffect)).default([]),
+          death: z.enum(["self", "other"]).optional(),
+        }),
+      )
+      .optional(),
   });
 
   /** 역할별 시작 지식 */
@@ -531,6 +558,8 @@ export function createContentSchemas(s: Scenario) {
      * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (지금 다짐은 바뀐다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
      * text는 다짐 한 줄 (문장의 자리를 쓸 수 있다)
      */
+    /** 인물의 자기 일에 끼어든다 (12-168): delta만큼 앞당기거나 늦춘다 (다 차면 그 자리에서 끝난다), stop이면 끝 효과 없이 그만두게 한다 */
+    z.strictObject({ agenda: z.strictObject({ who: z.string().min(1), delta: z.number().int().min(-10).max(10).default(0), stop: z.boolean().default(false) }) }),
     /** 다짐의 단계를 한 칸 올린다 (12-164): text는 지금 어디까지 왔는지 한 줄 (상태 화면에 다짐 옆으로 보인다). 다짐이 없으면 아무 일도 없다 */
     z.strictObject({ resolve_step: z.strictObject({ text: z.string().min(1).max(60) }) }),
     z.strictObject({
@@ -659,6 +688,9 @@ export function createContentSchemas(s: Scenario) {
     mourner: z.boolean().optional(),
     /** 장례 이야기에서 죽은 사람(when.funeral의 {deceased})과 가까웠던 사람만 (12-163) */
     bereaved: z.boolean().optional(),
+    /** 자기 일이 반을 넘은 사람만 (12-168: 낌새가 보이는 사람). agenda_ids가 있으면 그 일일 때만 */
+    agenda_half: z.boolean().optional(),
+    agenda_ids: z.array(contentIdSchema).optional(),
     /** 주인공의 다짐의 대상인 사람 (12-164). here와 함께 쓰면 지금 이 구역에 있을 때만 */
     resolve_target: z.boolean().optional(),
     /** 소문으로만 주인공을 아는 팬(fan) 또는 안티(anti)만 (12-127) */

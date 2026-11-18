@@ -44,6 +44,17 @@
   zone: c_base
   ties:
     - { to: c_sangok, kind: rival }
+  agenda:
+    - id: discipline_chief
+      label: 서기 우상옥보다 먼저 위원장 눈에 들어 규율반장 자리를 차지한다
+      steps: 15
+      other: c_sangok
+      cue: 위원장 앞에서는 목소리가 높아지고, 서기 우상옥의 명부를 곁눈질한다
+      news: "{self:이/가} 규율반장 자리에 올랐다. 서기 {other:과/와}는 말도 섞지 않는다고 한다"
+      fill: { chance: 0.6 }
+      end:
+        - npc_rank: { who: self, rank: squad_leader }
+        - npc_relation: { from: other, to: self, axis: trust, delta: -3 }
 
 - id: pc_yuna
   name: 석유나
@@ -128,6 +139,23 @@
   # 붉은연합 부엌에서 빼낸 아이 (기획서 7.10)
   ties:
     - { to: a_haneul, kind: friend, secret: { reveal_when: "문하늘이 붉은연합 부엌 이야기를 꺼냈을 때, 또는 옥금자이 주인공을 믿게 된 뒤", min_trust: 3 } }
+  agenda:
+    - id: kitchen_kids
+      label: 부엌 아이들을 하나씩 배수로 밖으로 내보낸다
+      steps: 12
+      cue: 배식이 끝나면 남은 빵을 앞치마에 감추고, 밤마다 배수로 쪽을 돌아본다
+      news: "{self}의 부엌에서 아이 몇이 사라졌다는 말이 돈다. 담 밖으로 빠져나갔다고들 한다"
+      fill: { chance: 0.6 }
+      end:
+        - faction_population: { faction: faction_c, delta: -2 }
+    - id: kitchen_ledger
+      label: 규율반이 부엌 장부를 들춘다
+      steps: 10
+      cue: 규율반 사람이 부엌에 들를 때마다 손이 떨려 국자를 놓친다
+      news: "{self:이/가} 부엌 장부 때문에 규율반에 끌려갔다가 피투성이로 돌아왔다고 한다"
+      fill: { chance: 0.5 }
+      end:
+        - npc_hurt: { who: self, steps: 2 }
 
 - id: pc_jongho
   name: 편종호

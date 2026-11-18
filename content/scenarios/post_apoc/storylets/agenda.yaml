@@ -1,0 +1,102 @@
+# 인물의 자기 일에 끼어들기 (12-168). 자기 일이 반을 넘어 낌새가 보이는 사람(agenda_half)과 마주친다.
+# {agenda}는 그 사람이 속으로 하는 일 (GM만 안다. 주인공은 낌새로만 본다). 끼어든 결과는 이야기 효과 agenda (앞당김·늦춤·그만두게 함)
+# 돕는 것이 늘 옳지 않다: 무엇을 돕는지는 그 사람의 일에 따라 다르다
+
+- id: ag_noticed
+  title: 눈에 걸리는 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  cast:
+    them: { agenda_half: true, here: true }
+  setup: "{them:이/가} 요즘 어딘가 이상하다. 오늘도 눈이 마주치자 먼저 시선을 피한다."
+  ai_direction: "{them:은/는} 속으로 이 일을 하고 있다: {agenda}. 인물 카드의 '요즘 이 인물은' 줄의 낌새대로만 보여 준다. 주인공이 먼저 묻지 않으면 털어놓지 않는다. 털어놓을지는 판정과 관계대로."
+  choices:
+    - id: ask
+      label: 무슨 일이 있느냐고 조용히 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: them, axis: trust, delta: 1 }
+          - belief: { fact: "{them:이/가} 속으로 하려는 일을 털어놓았다", source: report }
+        partial:
+          - belief: { fact: "{them:은/는} 무언가를 숨기고 있다. 말하지는 않았다", source: seen }
+        miss:
+          - relation: { who: them, axis: trust, delta: -1 }
+    - id: watch
+      label: 모르는 척 지켜본다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "{them:이/가} 남몰래 무언가를 꾸미는 것을 봤다", source: seen }
+        partial: []
+        miss: []
+
+- id: ag_crossroads
+  title: 털어놓은 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  cast:
+    them: { agenda_half: true, here: true, trust_gte: 1 }
+  setup: "{them:이/가} 주위를 살피고 낮게 말한다. \"너한테만 하는 말이야.\" 그리고 오래 품어 온 일을 꺼낸다."
+  ai_direction: "{them:이/가} 털어놓는 일: {agenda}. 주인공이 돕거나 말리거나 위에 알리는 것은 플레이어의 선택. 돕는 것이 그 사람을 위하는 길인지는 일에 따라 다르다 (빼돌리는 약, 탈영, 복수). 결과의 숫자는 시스템이 정한다."
+  choices:
+    - id: help
+      label: 돕겠다고 한다
+      effects:
+        - agenda: { who: them, delta: 3 }
+        - relation: { who: them, axis: trust, delta: 2 }
+    - id: stop
+      label: 그만두라고 설득한다
+      check: persuade
+      outcomes:
+        success:
+          - agenda: { who: them, stop: true }
+          - relation: { who: them, axis: respect, delta: 1 }
+        partial:
+          - agenda: { who: them, delta: -3 }
+        miss:
+          - relation: { who: them, axis: affection, delta: -1 }
+    - id: report
+      label: 위에 알리겠다고 한다
+      effects:
+        - agenda: { who: them, stop: true }
+        - relation: { who: them, axis: trust, delta: -3 }
+        - deed: { summary: "{them:이/가} 털어놓은 일을 위에 알렸다", tags: [betrayal], severity: 2, privacy: private }
+    - id: keep
+      label: 듣기만 하고 비밀을 지켜 준다
+      effects:
+        - relation: { who: them, axis: trust, delta: 1 }
+
+- id: ag_eleventh_hour
+  title: 마지막 밤
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    segments: [evening, night]
+  cast:
+    them: { agenda_half: true, here: true, trust_gte: 2 }
+  setup: "{them:이/가} 짐을 꾸리고 있다. 아니면 무언가를 결심한 얼굴이다. 오늘 밤이 지나면 늦을 것 같다."
+  ai_direction: "{them}의 일({agenda})이 거의 끝에 와 있다. 이 밤에 붙잡거나 등을 밀어 줄 수 있다. 무엇이 옳은지 GM이 정하지 않는다."
+  choices:
+    - id: hold
+      label: 붙잡는다
+      check: persuade
+      outcomes:
+        success:
+          - agenda: { who: them, stop: true }
+          - relation: { who: them, axis: affection, delta: 1 }
+        partial:
+          - agenda: { who: them, delta: -2 }
+        miss:
+          - agenda: { who: them, delta: 2 }
+    - id: push
+      label: 가라고, 하라고 등을 민다
+      effects:
+        - agenda: { who: them, delta: 5 }
+        - relation: { who: them, axis: affection, delta: 2 }
+    - id: away
+      label: 아무것도 보지 못한 걸로 한다
+      effects: []

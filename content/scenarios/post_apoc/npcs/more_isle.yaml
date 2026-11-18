@@ -119,6 +119,15 @@
   zone: yeoul_isle
   ties:
     - { to: y_cheonsu, kind: rival, secret: { reveal_when: 의회 자리 이야기가 나왔을 때, min_trust: 3 } }
+  agenda:
+    - id: sent_ashore
+      label: 쓸모를 묻는 사람들이 자기 쪽을 본다
+      steps: 20
+      cue: 잔치 준비에 누구보다 부지런하다. 무거운 짐을 들 때마다 허리를 감춘다
+      news: "여울섬에서 {self:이/가} 뭍으로 내보내졌다고 한다. 돌아온 사람은 아직 없다"
+      fill: { chance: 0.5 }
+      end:
+        - npc_depart: { who: self }
 
 - id: py_hoseong
   name: 단호성

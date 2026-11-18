@@ -1,3 +1,4 @@
+import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
 import { setResolve, stepResolve } from "./resolve.ts";
 import { capturePlayer, releasePlayer } from "./captivity.ts";
@@ -421,6 +422,12 @@ export function applyEffect(
     store.append({ type: "merit_awarded", characterId: playerId, delta: effect.merit, reason });
     const growthNote = gainMeritXp(ctx, playerId, effect.merit);
     return { line: `공적 ${effect.merit > 0 ? "+" : ""}${effect.merit}.` + (growthNote ? ` ${growthNote}` : "") };
+  }
+  if ("agenda" in effect) {
+    const id = whoOf(ctx, effect.agenda.who, cast);
+    if (!id || id === playerId) return {};
+    const out = nudgeAgenda(ctx, id, effect.agenda.delta, effect.agenda.stop);
+    return out[0] ? { line: out[0].type === "belief" ? out[0].fact : undefined, display: out[0] } : {};
   }
   if ("resolve_step" in effect) {
     const line = stepResolve(ctx, fillStorylet(effect.resolve_step.text, vars));

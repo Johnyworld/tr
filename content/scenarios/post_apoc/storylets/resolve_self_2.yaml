@@ -1,0 +1,512 @@
+# 다짐에 다가가는 이야기: 나 자신, 두 번째 묶음 (12-165). 주인공의 다짐이 그 갈래일 때만 열린다 (when.resolve).
+# 단계는 이야기가 올린다 (resolve_step). 이뤘는지는 코드가 상태(닿은 곳·믿음·트레잇·계절·찾은 숨은 곳)로 정한다: 이야기는 다가가는 길만 연다
+
+# ── 떠나기 (journey) ─────────────────────────────────────────
+
+- id: rs2_journey_current
+  title: 물살 재기
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [journey], stage_gte: 1 }
+    zones: [riverside, water_plant]
+    segments: [dawn, evening]
+  setup: "물가에 쪼그려 앉아 떠내려가는 나뭇가지를 눈으로 좇는다. 건너편 어딘가가 {target}이다. 물은 생각보다 빠르고 차다."
+  variants:
+    - "물안개가 걷히는 사이로 건너편이 잠깐 보였다가 다시 지워진다. 젖은 돌 위에 서서 물이 어디서 느려지는지 본다."
+  ai_direction: "건너는 일은 코드가 정한다 (구역의 crossing: 정해진 이야기로 표를 얻거나, 배를 구해 위험을 무겁게 선언하고 판정). 이 장면은 물을 읽는 순간일 뿐이다. 물때나 감시의 시각을 숫자로 정해 주지 않는다. {target:이/가} 여울섬이 아니면 그곳으로 가는 물길이나 길목으로 바꿔 그린다."
+  choices:
+    - id: watch
+      label: 해가 바뀔 때까지 물을 지켜본다
+      check: survival
+      outcomes:
+        success:
+          - resolve_step: { text: "{target:으로/로} 건널 물을 읽었다" }
+          - belief: { fact: "{target:으로/로} 가는 물은 물가에서 보는 것보다 빠르다. 덜 거친 물목이 어디쯤인지 눈으로 봐 두었다", source: seen }
+        partial:
+          - belief: { fact: "{target:으로/로} 가는 물은 빠르고 차다. 작은 배로는 쉽지 않아 보인다", source: seen }
+          - body: { track: cold, delta: 1 }
+        miss:
+          - soak: true
+          - belief: { fact: "물가에서 발을 헛디뎌 흠뻑 젖었다. 물살이 다리를 잡아끌었다", source: seen }
+    - id: back
+      label: 오늘은 눈에 담기만 하고 돌아선다
+      effects:
+        - body: { track: nerves, delta: -1, chance: 0.5 }
+
+- id: rs2_journey_porter
+  title: 길을 아는 짐꾼
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [journey], stage_gte: 2 }
+    segments: [day, evening]
+  cast:
+    porter: { extra: e_porter, label: 동전패를 목에 건 짐꾼 }
+  setup: "{porter:이/가} 짐을 내려놓고 물을 들이켠다. 안 가 본 데가 없다는 사람이다. {target} 이야기를 꺼내자 웃음을 거두고 당신을 위아래로 훑어본다. \"거기? 가는 것보다 받아 주느냐가 문제지.\""
+  ai_direction: "{porter:은/는} 길과 소문을 아는 사람일 뿐, 그곳에 들어가는 표를 쥐고 있지 않다. 여울섬이라면 공개된 소문만 안다 (쓸모 있는 사람은 받아 준다, 입도 심사, 강변·정수장에서 건넌다). 섬의 그늘이나 혈청 이야기는 하지 않는다."
+  choices:
+    - id: ask
+      label: 그곳에서 무엇을 보고 사람을 받는지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - resolve_step: { text: "{target:이/가} 무엇을 보고 사람을 들이는지 안다" }
+          - belief: { fact: "짐꾼 말로는 {target:은/는} 쓸모 있는 사람만 들인다. 손재주나 의술, 쓸 만한 물건을 가져가야 한다고 한다", source: report }
+        partial:
+          - belief: { fact: "짐꾼 말로는 {target:은/는} 아무나 들이지 않는다고 한다", source: rumor }
+        miss: []
+    - id: pay
+      label: 담배 한 갑을 쥐여 주고 아는 것을 다 듣는다
+      effects:
+        - take_item: { item: cigarettes }
+        - relation: { who: porter, axis: affection, delta: 1 }
+        - resolve_step: { text: "{target:으로/로} 가는 길과 들어가는 법을 들었다" }
+        - belief: { fact: "짐꾼에게 {target:으로/로} 가는 길목과 들어갈 때 무엇을 보는지 들었다", source: report }
+
+# ── 진실 (truth) ─────────────────────────────────────────────
+
+- id: rs2_truth_bitten
+  title: 아물어 버린 물린 자국
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [truth], stage: 0 }
+    segments: [morning, day, evening]
+  cast:
+    scarred: { extra: refugee, label: 팔에 오래된 물린 자국이 있는 사람 }
+  setup: "{scarred:이/가} 소매를 걷어 물을 뜬다. 팔뚝에 이빨 자국이 하얗게 아물어 있다. 물리고 열이 오르지 않은 사람은 드물다. 눈이 마주치자 황급히 소매를 내린다."
+  ai_direction: "{scarred:은/는} 물리고도 버틴 사람이다. 그런 사람을 찾는 이들이 있다는 말을 들어서 겁을 먹고 숨어 산다. 누가 왜 찾는지는 모른다 (혈청 미스터리 10.6의 조각). 판정 결과만큼만 말한다."
+  choices:
+    - id: gentle
+      label: 해치지 않겠다고 낮게 말을 건다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "물리고도 열이 오르지 않은 사람을 '버티는 사람'이라 부른다. 강 쪽에서 온 사람들이 그런 사람을 찾아 데려간다고 한다", source: report }
+          - resolve_step: { text: "'버티는 사람'을 찾는 이들이 있다는 것을 안다" }
+          - relation: { who: scarred, axis: trust, delta: 1 }
+        partial:
+          - belief: { fact: "물리고도 버틴 사람이 남의 눈을 피해 숨어 산다. 누군가 그런 사람을 찾는다고 한다", source: rumor }
+        miss:
+          - relation: { who: scarred, axis: trust, delta: -1 }
+    - id: let_be
+      label: 못 본 척 고개를 돌린다
+      effects:
+        - belief: { fact: "물리고도 살아남은 사람을 봤다. 그 사람은 그걸 숨기려 했다", source: seen }
+
+- id: rs2_truth_manifest
+  title: 선적 장부
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [truth], stage_gte: 2 }
+    segments: [evening, night]
+  setup: "장터 뒤 천막에 나루상단의 선적 장부가 펼쳐진 채 놓여 있다. 장부를 지키던 사람은 술자리에 불려 갔다. 등잔 불빛에 강으로 나가는 짐과 들어오는 짐의 칸이 보인다."
+  variants:
+    - "짐꾼들이 물건을 부리는 사이 낡은 장부 한 권이 상자 위에 덩그러니 남아 있다. 들어오는 상자 칸과 나가는 배 칸이 나란히 그어져 있다."
+  ai_direction: "혈청 미스터리(10.6)의 한 조각. 장부에는 숫자와 짧은 말뿐이다. 무엇을 뜻하는지 풀어 주지 않는다 (피를 뽑는다는 것, 간호사, 섬 안의 일은 이 장면에서 나오지 않는다). 들키면 나루상단 사람이 의심한다."
+  choices:
+    - id: copy
+      label: 몰래 칸을 베껴 적는다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "나루상단 선적 장부: 여울섬에서 오는 상자 칸에는 '앰플'과 번호가, 섬으로 가는 배 칸에는 '사람 둘', '사람 셋'이 적혀 있었다", source: seen }
+          - resolve_step: { text: "장부의 칸이 무엇을 세는지 거의 안다" }
+        partial:
+          - belief: { fact: "나루상단 선적 장부에 여울섬과 오가는 짐마다 번호가 붙어 있었다. 끝까지 읽지 못했다", source: seen }
+          - zone_noise: 1
+        miss:
+          - belief: { fact: "나루상단의 장부를 들여다보다 누군가의 발소리에 물러났다. 얼굴을 봤을지도 모른다", source: seen }
+          - body: { track: nerves, delta: 1 }
+    - id: read
+      label: 지나가는 척 숫자만 눈에 담는다
+      check: history
+      outcomes:
+        success:
+          - belief: { fact: "나루상단 장부의 번호 붙는 방식이 혈청 앰플 바닥의 번호와 같았다", source: seen }
+          - resolve_step: { text: "장부와 앰플의 번호가 맞물린다" }
+        partial:
+          - belief: { fact: "나루상단 장부에 여울섬이라는 글자가 여러 번 나왔다", source: seen }
+        miss: []
+
+# ── 버리기 (quit) ────────────────────────────────────────────
+
+- id: rs2_quit_say
+  title: 입 밖에 내기
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [quit], stage: 0 }
+    segments: [morning]
+  setup: "깨진 유리 조각에 얼굴이 비친다. 눈 밑이 거뭇하고 입술이 갈라졌다. 어젯밤 무엇을 얼마나 했는지 잘 기억나지 않는다."
+  variants:
+    - "아침에 눈을 뜨자마자 손이 먼저 배낭을 더듬는다. 그 손을 한참 내려다본다."
+  ai_direction: "끊었는지는 코드가 정한다 (금단의 끝 단계를 정한 날만큼 버티면 버릇 트레잇이 빠진다, 12-157). 이 장면은 처음으로 끊겠다고 스스로 인정하는 순간. 설교하지 않는다."
+  choices:
+    - id: say
+      label: 이번엔 끊는다고 소리 내어 말한다
+      effects:
+        - resolve_step: { text: "끊겠다고 입 밖에 냈다" }
+        - body: { track: nerves, delta: 1, chance: 0.3 }
+    - id: later
+      label: 오늘만, 하고 미룬다
+      effects: []
+
+- id: rs2_quit_offer
+  title: 내미는 병
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [quit], stage_gte: 1 }
+    segments: [evening, night]
+  cast:
+    giver: { extra: road_wanderer, label: 불가의 떠돌이 }
+  setup: "{giver:이/가} 불가에서 자리를 내주며 품에서 뭔가를 꺼낸다. \"추운데 한 모금 해. 아니면 이거라도. 아픈 데 듣는 거야.\" 아무 뜻 없는 호의다. 그래서 더 어렵다."
+  ai_direction: "{giver:은/는} 주인공이 끊는 중이라는 것을 모른다. 권하는 것은 술이든 알약이든 주인공이 끊으려는 것에 맞춰 그린다. 받으면 물건이 생길 뿐, 쓸지는 플레이어가 정한다. 쓰면 금단은 처음으로 돌아간다 (코드)."
+  choices:
+    - id: refuse
+      label: 고개를 젓는다
+      check: endure
+      outcomes:
+        success:
+          - resolve_step: { text: "권하는 손을 뿌리쳤다" }
+          - body: { track: nerves, delta: -1 }
+        partial:
+          - resolve_step: { text: "겨우 손을 거두었다" }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - body: { track: fatigue, delta: 1 }
+    - id: tell
+      label: 끊는 중이라고 털어놓는다
+      effects:
+        - relation: { who: giver, axis: respect, delta: 1 }
+        - resolve_step: { text: "끊는 중이라고 남에게 말했다" }
+    - id: take
+      label: 받아서 주머니에 넣어 둔다
+      effects:
+        - give_item: { item: soju }
+        - relation: { who: giver, axis: affection, delta: 1 }
+
+- id: rs2_quit_worst_night
+  title: 가장 나쁜 밤
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    resolve: { kinds: [quit], stage_gte: 2 }
+    segments: [night]
+  setup: "온몸이 젖은 솜 같다. 식은땀이 나는데 춥다. 귀에서 쉬지 않고 무언가가 울린다. 이 밤만 넘기면 된다고 몇 번째 되뇌는지 모르겠다."
+  variants:
+    - "새벽이 오지 않는다. 벽을 긁던 손톱이 갈라졌다. 누가 문을 두드리는 것 같아 돌아보면 아무도 없다."
+  ai_direction: "금단의 고비. 몸의 괴로움을 생생하게, 그러나 과장해 죽음처럼 그리지 않는다 (금단으로 죽지 않는다). 끊었는지는 날짜가 차야 코드가 정한다. 곁에 사람이 있으면 그 사람이 깨어 있어도 좋다."
+  choices:
+    - id: work
+      label: 일어나 손을 바쁘게 놀린다
+      check: endure
+      outcomes:
+        success:
+          - resolve_step: { text: "가장 나쁜 밤을 넘겼다" }
+          - body: { track: fatigue, delta: 1 }
+        partial:
+          - body: { track: fatigue, delta: 1 }
+          - body: { track: nerves, delta: 1 }
+        miss:
+          - body: { track: nerves, delta: 2 }
+    - id: reach_out
+      label: 곁의 누군가를 깨워 옆에 있어 달라고 한다
+      when:
+        in_faction: true
+      effects:
+        - resolve_step: { text: "고비를 남에게 털어놓았다" }
+        - body: { track: nerves, delta: -1 }
+        - body: { track: fatigue, delta: 1 }
+
+# ── 버텨 내기 (endure) ───────────────────────────────────────
+
+- id: rs2_endure_firewood
+  title: 땔감
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [endure], stage: 0 }
+    seasons: [autumn, winter]
+    segments: [morning, day]
+  setup: "아침 공기가 코끝을 찌른다. 쌓아 둔 땔감은 생각보다 낮다. 무너진 집들 사이에 아직 마른 나무가 남아 있을지도 모른다."
+  ai_direction: "버텨 내는 것은 계절이 지나도록 살아 있는 것이다 (코드). 이 장면은 그 계절을 날 채비를 하는 순간. 땔감의 양을 숫자로 정해 주지 않는다."
+  choices:
+    - id: gather
+      label: 무너진 집에서 마른 나무를 뜯어 온다
+      check: survival
+      outcomes:
+        success:
+          - resolve_step: { text: "추위를 날 채비를 시작했다" }
+          - body: { track: fatigue, delta: 1 }
+        partial:
+          - resolve_step: { text: "땔감을 조금 모았다" }
+          - body: { track: cold, delta: 1 }
+          - body: { track: fatigue, delta: 1 }
+        miss:
+          - body: { track: cold, delta: 1 }
+          - wound: { steps: 1, cause: 썩은 마룻바닥이 꺼졌다 }
+    - id: plan
+      label: 무엇을 아끼고 무엇을 태울지 따져 본다
+      check: history
+      outcomes:
+        success:
+          - resolve_step: { text: "추운 날을 셈해 아낄 것을 정했다" }
+        partial:
+          - body: { track: nerves, delta: 1 }
+        miss: []
+
+- id: rs2_endure_long_night
+  title: 가장 긴 밤
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [endure], stage_gte: 1 }
+    seasons: [winter]
+    segments: [night]
+  setup: "바람이 벽 틈으로 칼처럼 들어온다. 물통 겉에 살얼음이 낀다. 숨을 쉴 때마다 하얀 김이 나고, 발가락 감각이 점점 멀어진다."
+  variants:
+    - "한밤에 불이 사그라들었다. 누군가 기침을 하다 멈춘다. 다시 불을 살리지 않으면 아침이 멀다."
+  ai_direction: "겨울의 한가운데. 추위의 무게를 그리되 누가 얼어 죽는다고 정하지 않는다 (몸 상태는 코드). 혼자라면 웅크릴 곳을 찾는 장면으로 그린다."
+  choices:
+    - id: keep_fire
+      label: 밤새 불을 지킨다
+      check: endure
+      outcomes:
+        success:
+          - resolve_step: { text: "가장 추운 밤을 넘겼다" }
+          - body: { track: fatigue, delta: 1 }
+        partial:
+          - body: { track: cold, delta: 1 }
+          - body: { track: fatigue, delta: 1 }
+        miss:
+          - body: { track: cold, delta: 2 }
+    - id: huddle
+      label: 무리 사람들과 한 불가에 바짝 붙어 앉는다
+      when:
+        in_faction: true
+      effects:
+        - body: { track: cold, delta: -1 }
+        - resolve_step: { text: "가장 추운 밤을 다 같이 넘겼다" }
+        - faction_morale: { faction: own, delta: 1 }
+
+- id: rs2_endure_thaw
+  title: 처마 끝 물방울
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [endure], stage_gte: 2 }
+    seasons: [winter]
+    segments: [morning, day]
+  setup: "처마 끝 고드름에서 물방울이 하나 떨어진다. 또 하나. 겨울이 다 간 것은 아니지만 오늘 햇빛은 어제와 다르다."
+  ai_direction: "고비를 넘기고 있다는 느낌의 장면. 계절이 끝났다고 정하지 않는다 (계절은 코드의 날짜로 바뀐다). 아직 남은 날이 있다."
+  choices:
+    - id: share
+      label: 사람들을 불러 물방울을 보여 준다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - resolve_step: { text: "끝이 보이기 시작했다고 다 같이 믿는다" }
+        partial:
+          - resolve_step: { text: "끝이 보이기 시작했다" }
+        miss: []
+    - id: alone
+      label: 혼자 한참 올려다본다
+      effects:
+        - body: { track: nerves, delta: -1 }
+        - resolve_step: { text: "끝이 보이기 시작했다" }
+
+# ── 알아내기 (explore) ───────────────────────────────────────
+
+- id: rs2_explore_below
+  title: 아래에서 올라온 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [explore], stage: 0 }
+  cast:
+    dweller: { extra: subway_dweller, label: 옷에 흙물이 밴 사람 }
+  setup: "{dweller}의 옷자락에서 흙물과 녹 냄새가 난다. 해를 오래 못 본 얼굴이다. 땅 밑 이야기를 꺼내자 눈빛이 달라진다."
+  ai_direction: "숨은 곳은 그 구역을 뒤지다 찾는다 (탐험 12-162). {dweller:은/는} 지하철 환승역 아래 길을 들은 대로 말할 뿐, 안에 무엇이 있는지는 모른다. 다른 숨은 곳의 위치를 지어내지 않는다."
+  choices:
+    - id: ask
+      label: 땅 밑으로 내려가는 길을 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "지하철 환승역 승강장 끝 철망 너머로 비상 사다리가 아래로 이어진다고 한다. 아래는 물이 찬 대피 통로다", source: report }
+          - resolve_step: { text: "땅 밑으로 내려가는 길 하나를 들었다" }
+        partial:
+          - belief: { fact: "지하철 환승역 아래에 사람이 잘 안 가는 통로가 있다고 한다", source: rumor }
+        miss: []
+    - id: trade
+      label: 통조림 하나를 건네고 이야기를 청한다
+      effects:
+        - take_item: { item: canned_food }
+        - relation: { who: dweller, axis: trust, delta: 1 }
+        - belief: { fact: "지하철 환승역 승강장 끝 철망 너머로 비상 사다리가 아래로 이어진다고 한다. 아래는 물이 찬 대피 통로다", source: report }
+        - resolve_step: { text: "땅 밑으로 내려가는 길 하나를 들었다" }
+
+- id: rs2_explore_scholar
+  title: 책 보따리
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [explore], stage_gte: 1 }
+  cast:
+    scholar: { extra: campus_scholar, label: 책 보따리를 진 사람 }
+  setup: "{scholar:이/가} 젖은 책장을 한 장씩 떼어 말리고 있다. 병원 안내도, 대학 배치도, 공단 설비 도면 같은 것들이다. 당신이 들여다보자 손으로 가리지는 않는다."
+  ai_direction: "{scholar:은/는} 옛 도면과 안내도를 모으는 사람이다. 도면은 지하가 있는 건물을 알려 줄 뿐, 숨은 곳은 그 구역을 뒤져야 찾는다 (코드). 판정 결과만큼만 읽힌다."
+  choices:
+    - id: read
+      label: 도면을 함께 짚어 본다
+      check: history
+      outcomes:
+        success:
+          - belief: { fact: "옛 도면: 캠퍼스 의생명 연구동 계단 아래에 출입이 막힌 지하 실험실이 있다. 옛 병원 응급실 뒤 계단은 지하 약제부로 내려간다", source: seen }
+          - resolve_step: { text: "도면으로 숨은 곳 둘을 짚었다" }
+        partial:
+          - belief: { fact: "옛 도면: 옛 병원 응급실 뒤 계단이 지하로 내려간다", source: seen }
+        miss: []
+    - id: help
+      label: 책장 말리는 일을 거든다
+      effects:
+        - delay: 60
+        - relation: { who: scholar, axis: affection, delta: 1 }
+        - belief: { fact: "옛 도면: 캠퍼스 의생명 연구동에 지하층이 있다", source: seen }
+
+- id: rs2_explore_chalk
+  title: 분필 표시
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [explore], stage_gte: 2 }
+    segments: [morning, day]
+  setup: "무너진 벽마다 분필 자국이 있다. 세모, 가위표, 화살표. 폐허를 뒤지는 사람들이 서로에게 남기는 표시다. 어떤 세모는 아래를 향해 있다."
+  variants:
+    - "셔터에 숯으로 그은 표시가 있다. 아래를 가리키는 세모 옆에 누군가 해골을 그려 놓았다."
+  ai_direction: "표시는 마트·발전소·교도소처럼 지하가 있는 큰 건물 쪽을 가리킬 뿐이다. 숨은 곳은 그 구역을 뒤져야 찾는다 (코드). 표시만으로 찾았다고 하지 않는다. 숨은 곳의 위치를 새로 지어내지 않는다."
+  choices:
+    - id: decode
+      label: 표시를 하나하나 따라가 본다
+      check: scavenge
+      outcomes:
+        success:
+          - belief: { fact: "뒤지는 사람들의 분필 표시: 아래를 향한 세모는 지하가 남아 있다는 뜻이다. 마트, 발전소, 교도소 쪽 벽에 그런 세모가 많았다", source: seen }
+          - resolve_step: { text: "뒤지는 사람들의 표시를 읽을 줄 안다" }
+        partial:
+          - belief: { fact: "뒤지는 사람들이 벽에 분필 표시를 남긴다. 아래를 향한 세모가 무엇을 뜻하는지는 아직 모른다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 표시를 따라가다 무너진 잔해에 긁혔다 }
+    - id: mark
+      label: 나도 표시를 하나 남긴다
+      effects:
+        - deed: { summary: 폐허 벽에 뒤에 올 사람을 위한 표시를 남겼다, tags: [mercy], severity: 1, privacy: private }
+
+# ── 돌아가기 (homecoming) ────────────────────────────────────
+
+- id: rs2_home_dream
+  title: 부엌 꿈
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [homecoming], stage: 0 }
+    segments: [dawn]
+  setup: "꿈에서 부엌 창으로 햇빛이 들었다. 냄비 끓는 소리, 누군가 이름을 부르는 소리. 눈을 뜨자 곰팡이 핀 천장이다. 냄새만 아직 코에 남아 있다."
+  ai_direction: "{target}의 집 꿈이다. 집이 지금 어떤지는 가 봐야 안다. 꿈속 사람이 누구인지는 플레이어가 정하게 둔다."
+  choices:
+    - id: hold
+      label: 꿈을 놓치지 않으려 눈을 감고 다시 떠올린다
+      effects:
+        - resolve_step: { text: "{target}의 집을 다시 보기로 마음먹었다" }
+        - body: { track: nerves, delta: 1, chance: 0.3 }
+    - id: shake
+      label: 고개를 털고 일어난다
+      effects:
+        - body: { track: nerves, delta: -1, chance: 0.5 }
+
+- id: rs2_home_neighbor
+  title: 같은 동네 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [homecoming], stage_gte: 1 }
+    segments: [day, evening]
+  cast:
+    neighbor: { extra: refugee, label: 같은 동네에 살았다는 사람 }
+  setup: "불가에서 {neighbor:이/가} 옛 동네 이름을 댄다. {target}이다. 시장 골목, 문 닫은 목욕탕, 놀이터의 녹슨 미끄럼틀. 둘 다 한동안 말이 없다."
+  ai_direction: "{neighbor:은/는} 무너지기 전 {target}에 살았고 그 뒤로 떠돌았다. 지금 {target:을/를} 누가 쥐고 있는지는 장면 정보에 있는 만큼만 말하고, 모르면 모른다고 한다. 주인공의 집이 남았는지는 모른다."
+  choices:
+    - id: ask
+      label: 요즘 그 동네 길이 어떤지 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - resolve_step: { text: "{target}의 요즘 길을 들었다" }
+          - belief: { fact: "{target}에 살던 사람에게 옛 동네로 들어가는 길이 아직 다 막히진 않았다고 들었다", source: report }
+        partial:
+          - belief: { fact: "{target}에 살던 사람을 만났다. 동네는 많이 변했다고 한다", source: rumor }
+        miss: []
+    - id: share
+      label: 아무것도 묻지 않고 먹을 것을 나눈다
+      effects:
+        - take_item: { item: canned_food }
+        - relation: { who: neighbor, axis: affection, delta: 1 }
+        - deed: { summary: 같은 동네 사람과 먹을 것을 나눴다, tags: [mercy], severity: 1, privacy: semi_private }
+        - resolve_step: { text: "{target}의 옛 이웃을 만났다" }
+
+- id: rs2_home_threshold
+  title: 길목
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [homecoming], stage_gte: 2 }
+    segments: [dawn, morning]
+  setup: "높은 데 올라 {target} 쪽을 내려다본다. 낯익은 지붕선이 무너진 채로 남아 있다. 저 아래 어디쯤이 집이다. 가는 길에 무엇이 있을지는 여기서 다 보이지 않는다."
+  variants:
+    - "{target}까지 이어진 길이 안개 속에서 끊겼다 이어진다. 저 너머다. 발이 먼저 앞으로 나간다."
+  ai_direction: "닿는 것은 코드가 정한다 ({target}에 들어서면). 이 장면은 들어갈 길을 고르는 순간. 집이 어떻게 됐는지, 길에 누가 있는지 지어내지 않는다. 판정 결과만큼만 보인다."
+  choices:
+    - id: scout
+      label: 몸을 낮추고 들어갈 길을 살핀다
+      check: sense_danger
+      outcomes:
+        success:
+          - resolve_step: { text: "{target:으로/로} 들어갈 길목을 정했다" }
+          - belief: { fact: "{target:으로/로} 가는 길목을 내려다봤다. 어디로 몸을 숨기며 들어갈지 봐 두었다", source: seen }
+        partial:
+          - belief: { fact: "{target:으로/로} 가는 길이 멀리서 보였다. 가까이는 잘 보이지 않았다", source: seen }
+          - body: { track: fatigue, delta: 1 }
+        miss:
+          - zone_noise: 1
+          - body: { track: nerves, delta: 1 }
+    - id: remember
+      label: 그때 다니던 지름길을 떠올린다
+      check: history
+      outcomes:
+        success:
+          - resolve_step: { text: "{target:으로/로} 가는 옛 지름길이 떠올랐다" }
+        partial:
+          - body: { track: nerves, delta: 1 }
+        miss: []

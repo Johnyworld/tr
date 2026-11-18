@@ -1,0 +1,569 @@
+# 다짐에 다가가는 이야기: 무리와 세상, 둘째 묶음 (12-165). 주인공의 다짐이 그 갈래일 때만 열린다 (when.resolve).
+# 이뤘는지는 코드가 상태(계급·빚·휴전·구역 주인·직분 평판·무리의 믿음)로 정한다. 이야기는 그쪽으로 가는 길만 연다
+
+# ── 자리 (rise) ──────────────────────────────────────────────
+
+- id: rw2_rise_stand_in
+  title: 빈자리
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [rise], stage: 1 }
+    own_territory: true
+  cast:
+    boss: { commander: true, enter: false }
+  setup: "{boss:이/가} 자리를 비운 사이에 일이 터졌다. 담 밖에서 무언가 다가온다는 말에 다들 서로 얼굴만 본다. 누군가 당신을 본다."
+  variants:
+    - "보급 수레가 늦고, 보초 교대가 엉켰다. {boss:은/는} 아직 돌아오지 않았다. 사람들이 누구 말을 들어야 할지 모른다."
+  ai_direction: "{boss:은/는} 장면에 없다. 나중에 보고로 이 일을 듣는다. 주인공이 사람들을 움직이는 것은 이번 한 번이다. 계급은 바뀌지 않는다 (진급은 공적과 상관의 믿음으로 코드가 정한다, 8.6)."
+  choices:
+    - id: take_charge
+      label: 사람들을 나눠 자리에 세운다
+      check: tactics
+      outcomes:
+        success:
+          - merit: 2
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - resolve_step: { text: "빈자리를 맡아 사람들을 움직여 봤다" }
+        partial:
+          - merit: 1
+          - resolve_step: { text: "빈자리를 메웠지만 매끄럽지 않았다" }
+        miss:
+          - merit: -1
+          - relation: { who: boss, axis: trust, delta: -1 }
+    - id: wait
+      label: 상관이 돌아올 때까지 기다리자고 한다
+      effects:
+        - relation: { who: boss, axis: trust, delta: 1 }
+
+- id: rw2_rise_one_question
+  title: 위에서 내려온 질문
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    resolve: { kinds: [rise], stage_gte: 2 }
+    own_territory: true
+  cast:
+    boss: { commander: true, here: true }
+  setup: "{boss:이/가} 사람들을 물리고 문을 닫는다. \"윗선에서 네 이름이 나왔다. 그 전에 하나만 묻자. 너는 누구를 위해 그 자리에 앉으려는 거냐.\""
+  ai_direction: "{boss:은/는} 답의 내용보다 답하는 태도를 본다. 이 장면은 자리를 주지 않는다. 계급은 코드가 공적과 믿음으로 정한다 (8.6, 12-152). {target}이라는 자리를 약속하는 말을 지어내지 않는다."
+  choices:
+    - id: honest
+      label: 솔직하게 내 욕심과 이유를 말한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: boss, axis: trust, delta: 2 }
+          - resolve_step: { text: "상관이 내 속을 알고도 등을 밀어 준다" }
+        partial:
+          - relation: { who: boss, axis: trust, delta: 1 }
+        miss:
+          - relation: { who: boss, axis: respect, delta: -1 }
+    - id: polish
+      label: 듣고 싶어 할 대답을 골라 한다
+      check: deceive
+      outcomes:
+        success:
+          - merit: 1
+          - resolve_step: { text: "상관의 질문을 매끄럽게 넘겼다" }
+        partial:
+          - relation: { who: boss, axis: trust, delta: -1 }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - deed: { summary: "{boss}에게 속을 감추고 듣기 좋은 말만 했다가 들켰다", tags: [deceit], severity: 1, privacy: private }
+
+# ── 빚 털기 (debt) ───────────────────────────────────────────
+
+- id: rw2_debt_ledger_page
+  title: 내 이름이 적힌 줄
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [debt], stage: 0 }
+    debt_gte: { own: 1 }
+  setup: "장부꾼의 책상 위에 장부가 펼쳐져 있다. 당신 이름 옆으로 줄이 몇 개 이어진다. 무엇이 얼마인지는 한 번도 제대로 본 적이 없다."
+  ai_direction: "빚의 양은 GM 상태에 있는 값만 쓴다. 지어내지 않는다. 장부꾼은 갚을 길(일감, 물건)을 알려 줄 수 있다. 빚이 줄어드는 것은 일감(repays_debt)이나 이야기 효과로만."
+  choices:
+    - id: read
+      label: 장부를 보여 달라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "빚 장부를 직접 봤다. 어떤 일과 어떤 물건이 장부의 줄을 지우는지 안다", source: seen }
+          - resolve_step: { text: "빚이 어디서 얼마나 쌓였는지 안다" }
+        partial:
+          - belief: { fact: "장부꾼이 빚을 갚을 일감이 있다고 귀띔했다", source: report }
+        miss:
+          - belief: { fact: "장부꾼은 장부를 보여 주지 않았다. 빚진 사람이 볼 물건이 아니라고 했다", source: seen }
+    - id: ask_work
+      label: 장부는 됐고, 갚을 일감부터 묻는다
+      effects:
+        - belief: { fact: "장부꾼이 빚을 갚을 일감이 있다고 했다", source: report }
+
+- id: rw2_debt_in_kind
+  title: 물건으로 갚는 날
+  tags: [world]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    resolve: { kinds: [debt], stage: 1 }
+    debt_gte: { own: 1 }
+    own_territory: true
+  setup: "장부꾼이 물건 받는 날이다. 줄 선 사람들이 저마다 내놓을 것을 품에 안고 있다. 약은 값을 잘 쳐준다는 말이 돈다."
+  ai_direction: "물건은 코드가 정한 만큼 장부를 지운다. 값을 흥정하는 것은 연출일 뿐, 숫자는 바뀌지 않는다. 내놓을 것이 없으면 몸으로 갚는 길도 있다."
+  choices:
+    - id: medkit
+      label: 구급상자를 내놓는다
+      effects:
+        - take_item: { item: medkit }
+        - debt: { faction: own, delta: -3 }
+        - resolve_step: { text: "물건으로 빚을 한 덩이 덜었다" }
+    - id: antibiotics
+      label: 항생제를 내놓는다
+      effects:
+        - take_item: { item: antibiotics }
+        - debt: { faction: own, delta: -3 }
+        - resolve_step: { text: "물건으로 빚을 한 덩이 덜었다" }
+    - id: labor
+      label: 내놓을 게 없으니 밤새 짐을 나르겠다고 한다
+      check: endure
+      outcomes:
+        success:
+          - body: { track: fatigue, delta: 1 }
+          - debt: { faction: own, delta: -2 }
+          - resolve_step: { text: "몸으로 빚을 갚아 나간다" }
+        partial:
+          - body: { track: fatigue, delta: 2 }
+          - debt: { faction: own, delta: -1 }
+        miss:
+          - body: { track: fatigue, delta: 2 }
+          - wound: { steps: 1, cause: 밤새 짐을 나르다 허리를 다쳤다 }
+
+- id: rw2_debt_cosign
+  title: 한 줄만 더
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    resolve: { kinds: [debt], stage_gte: 2 }
+  cast:
+    friend: { faction: own, here: true, trust_gte: 1 }
+  setup: "{friend:이/가} 머뭇거리다 말을 꺼낸다. 아이가 아프다고, 약을 사야 하는데 자기 이름으로는 더 빌릴 수가 없다고. 당신 이름이면 장부꾼이 한 줄 더 적어 줄 거라고."
+  ai_direction: "빚을 거의 털어 가는 사람에게 오는 시험이다. 거절도 도와주는 것도 옳을 수 있다. 빚이 늘어나는 양은 코드가 정한다. {friend}의 사정은 거짓이 아니다."
+  choices:
+    - id: refuse
+      label: 미안하지만 장부에 다시 이름을 올리지 않겠다고 한다
+      effects:
+        - relation: { who: friend, axis: affection, delta: -1 }
+        - resolve_step: { text: "다시는 장부에 이름을 올리지 않기로 했다" }
+    - id: sign
+      label: 내 이름으로 빌려 준다
+      effects:
+        - debt: { faction: own, delta: 3 }
+        - relation: { who: friend, axis: trust, delta: 2 }
+        - relation: { who: friend, axis: affection, delta: 1 }
+        - deed: { summary: "{friend}의 아이 약값을 내 이름으로 빌려 주었다", tags: [mercy], severity: 1, privacy: semi_private }
+
+# ── 화해시키기 (peace) ───────────────────────────────────────
+
+- id: rw2_peace_same_well
+  title: 같은 물을 긷는 사람들
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [peace], stage: 1 }
+    zone_owner: [none]
+    segments: [morning, day]
+  setup: "누구의 땅도 아닌 우물가. 서로 다른 완장을 찬 사람들이 같은 줄에 서 있다. 눈은 마주치지 않지만 아무도 총을 꺼내지 않는다."
+  ai_direction: "싸우는 무리 사람들도 여기서는 줄을 선다. 이 장면은 휴전이 사람들 사이에서는 이미 조금씩 있다는 것을 보는 순간. 휴전 자체는 간부의 협상(negotiate, 9.14)으로만 맺어진다."
+  choices:
+    - id: talk
+      label: 옆 사람에게 그쪽 사정을 슬쩍 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - overhear: { faction: other, source: rumor }
+          - belief: { fact: "우물가에서 다른 무리 사람과 말을 나눴다. 그쪽에도 싸움에 지친 사람이 많다", source: report }
+          - resolve_step: { text: "저쪽에도 지친 사람이 있다는 것을 안다" }
+        partial:
+          - belief: { fact: "우물가의 다른 무리 사람은 말을 아꼈다. 그래도 총은 꺼내지 않았다", source: seen }
+        miss:
+          - zone_noise: 1
+    - id: watch
+      label: 말없이 줄을 서서 지켜본다
+      effects:
+        - belief: { fact: "누구의 땅도 아닌 우물가에서는 싸우는 무리 사람들도 같은 줄에 선다", source: seen }
+
+- id: rw2_peace_table
+  title: 자리를 마련하는 일
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    resolve: { kinds: [peace], stage_gte: 2 }
+    own_territory: true
+  cast:
+    boss: { commander: true, here: true }
+  setup: "{boss:이/가} 지도를 접으며 한숨을 쉰다. \"휴전이라. 말은 좋지. 저쪽이 우리를 쏘지 않는다는 걸 누가 보증하나.\""
+  ai_direction: "휴전은 간부가 상대 무리 간부와 한 장면에서 협상(negotiate)할 때만 맺어진다. 주인공이 간부면 그 자리를 어떻게 만들지 이야기하고, 아니면 {boss}에게 협상을 올리는 것까지. 휴전이 맺어졌다고 서술하지 않는다."
+  choices:
+    - id: case
+      label: 더 버틸 식량도 사람도 없다고 따져 보인다
+      check: tactics
+      outcomes:
+        success:
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - resolve_step: { text: "윗선이 협상 자리를 진지하게 생각한다" }
+        partial:
+          - relation: { who: boss, axis: respect, delta: 1 }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+    - id: guarantee
+      label: 보증할 사람이 없다면 내가 오가겠다고 한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: boss, axis: trust, delta: 1 }
+          - resolve_step: { text: "두 무리 사이를 오갈 사람으로 나섰다" }
+        partial:
+          - relation: { who: boss, axis: trust, delta: 1 }
+        miss:
+          - relation: { who: boss, axis: respect, delta: -1 }
+
+# ── 무너뜨리기 (topple) ──────────────────────────────────────
+
+- id: rw2_topple_marks
+  title: 남긴 흔적
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [topple], stage: 0 }
+    zone_owner: [none, other]
+  setup: "부서진 문짝에 {target}의 표식이 긁혀 있다. 안은 털렸고, 바닥에 끌려간 자국이 길게 나 있다."
+  ai_direction: "{target:이/가} 남긴 흔적이다. 언제, 몇 명이 왔는지는 판정 결과만큼만 읽힌다. 끌려간 사람이 누구인지 지어내지 않는다."
+  choices:
+    - id: read
+      label: 자국을 따라 언제 어디로 갔는지 읽는다
+      check: survival
+      outcomes:
+        success:
+          - belief: { fact: "{target}의 무리가 다니는 길목 하나를 안다. 흔적이 오래되지 않았다", source: seen }
+          - resolve_step: { text: "{target:이/가} 다니는 길목을 안다" }
+        partial:
+          - belief: { fact: "{target}의 무리가 이 근처를 지나갔다", source: seen }
+        miss: []
+    - id: leave
+      label: 표식을 칼로 긁어 지운다
+      effects:
+        - belief: { fact: "{zone}에서 {target}의 표식을 지웠다", source: seen }
+
+- id: rw2_topple_proposal
+  title: 위에 올리는 말
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [topple], stage: 1 }
+    own_territory: true
+  cast:
+    boss: { commander: true, here: true }
+  setup: "{boss:은/는} 늘 지키는 쪽이었다. 당신은 {target}에 대해 아는 것을 정리해 들고 그 앞에 섰다."
+  ai_direction: "무리의 태세(지키기·밀어붙이기)는 지도부 회의(council_propose, 9.11)로만 바뀐다. 이 장면은 상관이 주인공의 말을 들을지가 갈리는 순간. {target}의 전력을 숫자로 지어내지 않는다."
+  choices:
+    - id: present
+      label: "{target}의 약한 곳과 칠 때를 짚어 보인다"
+      check: tactics
+      outcomes:
+        success:
+          - merit: 1
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - resolve_step: { text: "{target:을/를} 칠 이야기를 위에 올렸다" }
+        partial:
+          - relation: { who: boss, axis: respect, delta: 1 }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+    - id: hold
+      label: 아직 더 알아야 한다고 물러선다
+      effects: []
+
+- id: rw2_topple_night_watch
+  title: 저쪽의 밤
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [topple], stage_gte: 2 }
+    segments: [evening, night]
+    has_items_any: [radio, binoculars]
+  setup: "밤이 깊다. {target} 쪽에서 불빛이 깜박이고, 잡음 사이로 낯선 목소리가 끊어졌다 이어진다."
+  ai_direction: "엿들은 것은 overhear로 코드가 진짜 상태에서 고른다. {target}의 계획을 GM이 지어내지 않는다. 오래 지켜보면 몸이 축난다."
+  choices:
+    - id: radio
+      label: 무전기를 켜고 밤새 잡음을 듣는다
+      when: { has_items: [radio] }
+      check: sense_danger
+      outcomes:
+        success:
+          - overhear: { faction: enemy, source: report }
+          - resolve_step: { text: "{target}의 속사정을 엿들었다" }
+        partial:
+          - overhear: { faction: enemy, source: rumor }
+          - body: { track: fatigue, delta: 1 }
+        miss:
+          - body: { track: fatigue, delta: 1 }
+    - id: count_lights
+      label: 망원경으로 불빛과 보초 교대를 센다
+      when: { has_items: [binoculars] }
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "{target}의 밤 보초가 언제 바뀌는지 안다", source: seen }
+          - resolve_step: { text: "{target}의 밤을 다 셌다" }
+        partial:
+          - belief: { fact: "{target} 쪽 보초가 밤에 한 번 비는 것 같다", source: seen }
+        miss:
+          - body: { track: fatigue, delta: 1 }
+
+# ── 되찾기 (reclaim) ─────────────────────────────────────────
+
+- id: rw2_reclaim_old_resident
+  title: 거기 살던 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [reclaim], stage: 0 }
+  cast:
+    old: { extra: refugee, label: 그 땅에 살던 사람 }
+  setup: "{old:이/가} 불가에서 {target} 이야기를 한다. 어느 골목에 우물이 있었고, 어느 담이 낮았는지. 지금은 가 볼 수도 없는 곳이다."
+  ai_direction: "{old}의 기억은 옛날 것이다. 지금도 맞는지는 모른다. 이 장면은 그 땅이 사람들이 살던 곳이었다는 것을 떠올리는 순간."
+  choices:
+    - id: ask
+      label: 담과 골목을 하나하나 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "{target}에 살던 사람에게 옛 골목과 낮은 담을 들었다. 지금도 맞는지는 모른다", source: report }
+          - resolve_step: { text: "{target}의 옛 골목을 안다" }
+        partial:
+          - belief: { fact: "{target}에 살던 사람의 이야기를 들었다. 기억이 흐릿했다", source: rumor }
+        miss: []
+    - id: listen
+      label: 그냥 그 사람의 옛이야기를 들어 준다
+      effects:
+        - body: { track: nerves, delta: -1 }
+
+- id: rw2_reclaim_push
+  title: 반격을 앞당기자는 말
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [reclaim], stage: 1 }
+    own_territory: true
+  cast:
+    boss: { commander: true, here: true }
+  setup: "{boss:은/는} 반격 이야기만 나오면 말을 돌린다. 아직 이르다고, 사람이 모자라다고. 당신은 {target:을/를} 내려다본 날의 일을 들고 왔다."
+  ai_direction: "땅을 되찾는 것은 무리의 반격(9.7)으로만. 반격 준비는 전선 임무와 정찰로 앞당겨진다. 이 장면에서 반격이 정해졌다고 서술하지 않는다."
+  choices:
+    - id: report_a
+      label: 정찰한 것을 반격 준비에 보탠다
+      when: { factions: [faction_a] }
+      check: tactics
+      outcomes:
+        success:
+          - clock: { id: a_counteroffensive, delta: 1 }
+          - merit: 1
+          - resolve_step: { text: "반격 준비에 내 정찰이 들어갔다" }
+        partial:
+          - relation: { who: boss, axis: respect, delta: 1 }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+    - id: urge
+      label: "{target:을/를} 되찾아야 할 까닭을 따져 말한다"
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - resolve_step: { text: "윗선이 {target} 이야기에 귀를 연다" }
+        partial:
+          - relation: { who: boss, axis: respect, delta: 1 }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+
+- id: rw2_reclaim_under_wall
+  title: 담 밑까지
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    resolve: { kinds: [reclaim], stage_gte: 2 }
+    segments: [night, dawn]
+  setup: "{target}의 담이 코앞이다. 예전엔 저 담 안에서 밥을 먹고 잠을 잤다. 지금은 남의 보초가 담 위를 오간다."
+  ai_direction: "담 안을 들여다보는 것뿐이다. 혼자 땅을 되찾을 수는 없다 (반격, 9.7). 들키면 소리가 나고 보초가 쏜다. 엿본 것은 overhear로."
+  choices:
+    - id: crawl
+      label: 엎드려 담 밑까지 기어간다
+      check: stealth
+      outcomes:
+        success:
+          - overhear: { faction: enemy, source: seen }
+          - belief: { fact: "밤에 {target}의 담 밑까지 가서 안을 봤다", source: seen }
+          - resolve_step: { text: "{target}의 담 안을 직접 봤다" }
+        partial:
+          - belief: { fact: "{target}의 담 밑까지 갔지만 오래 볼 수 없었다", source: seen }
+          - zone_noise: 1
+        miss:
+          - zone_noise: 2
+          - wound: { steps: 1, cause: "{target}의 담 밑에서 들켜 총알이 스쳤다" }
+    - id: turn_back
+      label: 오늘은 멀리서만 보고 돌아선다
+      effects:
+        - body: { track: nerves, delta: 1 }
+
+# ── 인정받기 (recognition) ───────────────────────────────────
+
+- id: rw2_recognition_mess
+  title: 아무도 손대지 않은 일
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [recognition], stage: 0 }
+    own_territory: true
+  setup: "누가 하다 만 일이 한쪽에 쌓여 있다. 어디서부터 꼬였는지 아무도 모르고, 다들 못 본 척 지나간다. 당신 일과 가까운 일이다."
+  ai_direction: "직분마다 결이 다르다 (요리사면 상한 재료와 엉킨 배급, 목수면 무너진 선반, 의무병이면 뒤섞인 약). 주인공의 직분에 맞게 그린다. 직분 평판은 standing으로만 오른다."
+  choices:
+    - id: sort
+      label: 처음부터 하나하나 짚어 바로잡는다
+      check: scavenge
+      outcomes:
+        success:
+          - standing: 2
+          - resolve_step: { text: "남들이 손 놓은 일을 바로잡았다" }
+        partial:
+          - standing: 1
+        miss:
+          - body: { track: fatigue, delta: 1 }
+    - id: pass
+      label: 내 일이 아니라며 지나간다
+      effects: []
+
+- id: rw2_recognition_junior
+  title: 묻는 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    resolve: { kinds: [recognition], stage: 1 }
+    own_territory: true
+  cast:
+    junior: { faction: own, here: true, ranks: [grunt, staff] }
+  setup: "{junior:이/가} 쭈뼛거리며 다가온다. 당신 하는 걸 봤다고, 자기한테도 가르쳐 줄 수 있느냐고."
+  ai_direction: "누군가 배우러 온다는 것은 이미 인정의 시작이다. 가르치는 일은 직분의 결로 그린다. {junior:은/는} 서툴다. 직분 평판은 standing으로만."
+  choices:
+    - id: teach
+      label: 시간을 내서 차근차근 가르친다
+      check: persuade
+      outcomes:
+        success:
+          - standing: 1
+          - relation: { who: junior, axis: respect, delta: 2 }
+          - resolve_step: { text: "배우러 오는 사람이 생겼다" }
+        partial:
+          - relation: { who: junior, axis: respect, delta: 1 }
+        miss:
+          - relation: { who: junior, axis: affection, delta: -1 }
+    - id: busy
+      label: 지금은 바쁘다고 돌려보낸다
+      effects:
+        - relation: { who: junior, axis: affection, delta: -1 }
+
+- id: rw2_recognition_sent_for
+  title: 이름으로 불리다
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    resolve: { kinds: [recognition], stage_gte: 2 }
+    own_territory: true
+  setup: "문간에 낯선 사람이 서 있다. 다른 무리에서 왔다고 한다. \"이 일은 당신한테 맡기라던데.\" 당신 이름을 정확히 안다."
+  ai_direction: "주인공의 솜씨가 무리 밖까지 알려졌다는 장면이다. 찾아온 사람은 이름 없는 인물로 그린다. 맡은 일이 무엇인지는 직분의 결로. 일이 잘 되면 직분 평판이 오른다 (standing). 인정받았다고 단정하지 않는다."
+  choices:
+    - id: accept
+      label: 맡아서 제대로 해 보인다
+      check: endure
+      outcomes:
+        success:
+          - standing: 2
+          - resolve_step: { text: "다른 무리에서도 내 이름을 듣고 찾아온다" }
+        partial:
+          - standing: 1
+        miss:
+          - standing: -1
+          - body: { track: fatigue, delta: 1 }
+    - id: decline
+      label: 우리 무리 일이 먼저라고 정중히 돌려보낸다
+      effects:
+        - relation: { who: commander, axis: trust, delta: 1 }
+
+# ── 속죄 (atone) ─────────────────────────────────────────────
+
+- id: rw2_atone_say_it
+  title: 모두 앞에서
+  tags: [world]
+  repeatable: false
+  when:
+    resolve: { kinds: [atone], stage: 0 }
+    own_territory: true
+    segments: [evening]
+  setup: "저녁 배식 자리. 다들 당신이 한 일을 안다. 아무도 꺼내지 않을 뿐이다. 숟가락 소리만 들린다."
+  ai_direction: "주인공이 무엇을 잘못했는지는 배경과 행적대로. 지어내지 않는다. 말로 믿음이 돌아오지는 않는다. 이 장면은 숨기지 않기로 하는 순간."
+  choices:
+    - id: confess
+      label: 일어서서 내가 한 일을 내 입으로 말한다
+      effects:
+        - deed: { summary: 모두 앞에서 자기 잘못을 숨기지 않고 말했다, tags: [honesty], severity: 1, privacy: public }
+        - body: { track: nerves, delta: 1 }
+        - resolve_step: { text: "모두 앞에서 잘못을 인정했다" }
+    - id: eat
+      label: 고개를 숙이고 밥만 먹는다
+      effects: []
+
+- id: rw2_atone_their_watch
+  title: 대신 서는 밤
+  tags: [world]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    resolve: { kinds: [atone], stage_gte: 2 }
+    own_territory: true
+    segments: [evening, night]
+  cast:
+    tired: { faction: own, here: true }
+  setup: "{tired:이/가} 사흘째 밤 보초다. 눈이 반쯤 감겨 있다. 당신을 믿지 않는 사람 중 하나라는 것도 안다."
+  ai_direction: "{tired:은/는} 고마워하지 않을 수도 있다. 믿음은 한 번에 돌아오지 않는다. 밤새 버티는지는 판정대로."
+  choices:
+    - id: take_over
+      label: 오늘 밤은 내가 서겠다고 한다
+      check: endure
+      outcomes:
+        success:
+          - body: { track: fatigue, delta: 1 }
+          - relation: { who: tired, axis: trust, delta: 2 }
+          - resolve_step: { text: "나를 믿지 않던 사람의 밤을 대신 섰다" }
+        partial:
+          - body: { track: fatigue, delta: 2 }
+          - relation: { who: tired, axis: trust, delta: 1 }
+        miss:
+          - body: { track: fatigue, delta: 2 }
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - deed: { summary: 남의 보초를 대신 서다 졸았다, tags: [disobedience], severity: 1, privacy: semi_private }
+    - id: leave_be
+      label: 괜히 나서지 않는다
+      effects: []

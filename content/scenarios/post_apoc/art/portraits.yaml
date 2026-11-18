@@ -716,6 +716,8 @@ faces:
     style: D
     gender: male
     seed: 2181
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.8
     colorize: true
     subject: >-
       a skinny 16 year old korean boy, thin face, messy black hair, scared wide eyes, wearing an oversized
@@ -724,6 +726,8 @@ faces:
     style: D
     gender: male
     seed: 2182
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.82
     colorize: true
     subject: >-
       an 18 year old korean young man, faint acne marks, spiky black hair, rebellious scowl, wearing a
@@ -740,6 +744,8 @@ faces:
     style: D
     gender: male
     seed: 2184
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 1.3
     colorize: true
     subject: >-
       an emaciated korean man in his mid forties, hollow sunken cheeks from hunger, gaunt bony face, dark-
@@ -748,6 +754,8 @@ faces:
     style: D
     gender: male
     seed: 2185
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.86
     colorize: true
     subject: >-
       a korean man in his mid thirties, a bandage wrapped around his forehead, a scar across the bridge of
@@ -756,6 +764,8 @@ faces:
     style: D
     gender: male
     seed: 2186
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.84
     colorize: true
     subject: >-
       a korean man in his early fifties who looks like a former schoolteacher, balding head, thin wire
@@ -764,6 +774,8 @@ faces:
     style: D
     gender: male
     seed: 2187
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.91
     colorize: true
     subject: >-
       a south asian man around forty living in korea, warm brown skin, full black beard, sturdy build,
@@ -772,6 +784,8 @@ faces:
     style: D
     gender: male
     seed: 2188
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.85
     colorize: true
     subject: >-
       a white western man in his late twenties stranded in korea, short light brown hair, sun-burnt
@@ -780,6 +794,8 @@ faces:
     style: D
     gender: male
     seed: 2189
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.93
     colorize: true
     subject: >-
       an old korean farmer in his mid sixties, sparse grey beard, sun-darkened deeply lined face, a gap
@@ -788,6 +804,8 @@ faces:
     style: D
     gender: male
     seed: 2190
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 1.09
     colorize: true
     subject: >-
       a korean man in his early thirties, long black hair tied back, tattoos climbing up his neck, sharp
@@ -804,6 +822,8 @@ faces:
     style: D
     gender: female
     seed: 2202
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
     colorize: true
     subject: >-
       a muscular korean woman around thirty-five, broad shoulders and strong arms, nearly shaved buzz cut,
@@ -812,6 +832,8 @@ faces:
     style: D
     gender: female
     seed: 2203
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.86
     colorize: true
     subject: >-
       a tired korean woman in her late thirties, motherly face, hair carelessly tied up with loose
@@ -820,6 +842,8 @@ faces:
     style: D
     gender: female
     seed: 2204
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.8
     colorize: true
     subject: >-
       a sturdy stocky korean woman in her mid forties, short permed hair, sun-tanned skin, square face,
@@ -836,6 +860,8 @@ faces:
     style: D
     gender: female
     seed: 2206
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
     colorize: true
     subject: >-
       an elderly korean woman in her early sixties, white hair pulled into a low bun, deep wrinkles,
@@ -844,6 +870,8 @@ faces:
     style: D
     gender: female
     seed: 2207
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.89
     colorize: true
     subject: >-
       a korean woman around twenty-nine, a large old burn scar across one cheek and jaw, short tousled
@@ -864,6 +892,8 @@ faces:
     style: D
     gender: female
     seed: 2209
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.93
     colorize: true
     subject: >-
       a shy 16 year old korean girl, black hair in two braided pigtails, freckles, small round face,
@@ -891,7 +921,14 @@ faces:
     style: D
     gender: female
     seed: 2231
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.8
     colorize: true
+    # 눈이 사시처럼 서로 다른 곳을 본다: 눈만 다시 그린다
+    touchup: >-
+      Fix her cross-eyed look. In each of her two eyes, place the dark iris exactly in the middle of the eye, with
+      equal white showing on both sides of each iris, so both eyes look straight ahead at the viewer. Change only
+      the irises; keep the eye shapes, eyelids and everything else exactly the same.
     subject: >-
       a young korean teenage girl of about sixteen with a clearly childlike youthful face, chubby round cheeks,
       small nose and mouth, slim small frame, black hair in two long braided pigtails hanging over her shoulders,

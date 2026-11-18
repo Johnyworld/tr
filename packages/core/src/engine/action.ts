@@ -51,6 +51,7 @@ import { activeMissionOf } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
+import { scarFromHarm } from "./scars.ts";
 import { createStoryletCheck, endActiveStorylet } from "./storyletTools.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -491,6 +492,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
         const bleed = bleedFromHarm(ctx, start.playerId, input.check.harm_kind);
         if (bleed?.line) lines.push(`${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.`);
         if (bleed?.display) displays.push(bleed.display);
+        // 크게 다치면 흔적이 남을 수 있다 (12-156)
+        const scar = scarFromHarm(ctx, start.playerId, input.check.harm_kind);
+        if (scar) lines.push(scar);
       }
       // 감염체에게 입은 상처는 감염될 수 있다 (잠복기는 캐릭터도 GM도 모른다)
       // 입은 방어구가 물림·긁힘을 막을 수 있다 (기획서 4.8)
@@ -712,6 +716,8 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
     const bleed = bleedFromHarm(ctx, targetId, wound);
     if (bleed?.line) lines.push(`${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.`);
     if (bleed?.display) displays.push(bleed.display);
+    const scar = change ? scarFromHarm(ctx, targetId, wound) : null;
+    if (scar) lines.push(scar);
   }
   const after = ctx.store.getState().characters[targetId]!;
   if (after.dead) lines.push(`${josa(called, "이/가")} 죽었다. 죽음을 서술에 반영하라.`);

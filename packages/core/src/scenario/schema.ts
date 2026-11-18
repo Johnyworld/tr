@@ -826,6 +826,19 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
+     * 몸에 남는 상처 (12-156): 부상이 at 단계 이상이 되는 상처를 입으면 chance로 오래 가는 약점 트레잇 하나가 붙는다 (흉터·절뚝임 등).
+     * 그 상처 종류(wounds)에 맞는 것 중에서, 아직 없는 것만. 한 사람에 max개까지. 플레이어와 NPC가 같다 (원칙 6)
+     */
+    scars: z
+      .strictObject({
+        at: id,
+        chance: z.number().min(0).max(1),
+        max: z.number().int().min(1).default(3),
+        /** 붙을 수 있는 트레잇. wounds가 비면 어느 상처로든 */
+        traits: z.array(z.strictObject({ trait: id, wounds: z.array(id).default([]) })).min(1),
+      })
+      .optional(),
+    /**
      * 의식불명 중 곁의 사람 (12-90): 스스로 아무것도 못 하게 된 동안 곁에 누가 있느냐로 코드가 한 번 정한다.
      * 우리 편은 돌보거나 자기 거점으로 옮기고, 적은 끌고 가거나(captivity) 죽이고, 아무도 없으면 감염체를 만날 수 있다. 없으면 이 규칙을 쓰지 않는다
      */
@@ -1398,6 +1411,15 @@ export const scenarioFileSchema = z
       for (const b of [...Object.keys(w.worsen_hours), ...Object.keys(w.clot_hours), w.blocks_recovery_from]) if (!bleedLevels.has(b)) problem(`wounds: 알 수 없는 출혈 단계 ${b}`);
       if (w.infected_default && !w.kinds.some((k) => k.id === w.infected_default)) problem(`wounds.infected_default: 알 수 없는 상처 종류 ${w.infected_default}`);
       if (!s.moves.some((m) => m.id === w.staunch_move)) problem(`wounds.staunch_move: 알 수 없는 스킬 ${w.staunch_move}`);
+    }
+    const scars = s.scars;
+    if (scars) {
+      const harm = s.condition_tracks.find((t) => t.id === s.harm_track);
+      if (harm && !harm.levels.some((l) => l.id === scars.at)) problem(`scars.at: 알 수 없는 부상 단계 ${scars.at}`);
+      for (const x of scars.traits) {
+        if (!s.traits.some((t) => t.id === x.trait)) problem(`scars.traits: 알 수 없는 트레잇 ${x.trait}`);
+        for (const w of x.wounds) if (!s.wounds?.kinds.some((k) => k.id === w)) problem(`scars.traits.${x.trait}: 알 수 없는 상처 종류 ${w}`);
+      }
     }
     const symptomIds = new Set((s.symptoms ?? []).map((x) => x.id));
     if (symptomIds.size !== (s.symptoms ?? []).length) problem("symptoms에 중복된 id가 있다");

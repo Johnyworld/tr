@@ -520,6 +520,13 @@ traits:
   - { id: cynophobia, label: 개 공포, kind: negative, cost: 1, description: "개가 무섭다 (개가 나타나면 겁이 난다)", acting: 개를 보면 몸이 굳고 눈을 떼지 못한다, effects: { phobia: [dog] } }
   # 버릇 (12-129): 하루가 지나면 담배 한 갑을 저절로 피운다. 가진 게 없으면 안절부절 (판정 -1), 담배를 피우면(use_item) 풀린다
   - { id: chain_smoker, label: 골초, kind: negative, cost: 2, description: "하루 한 갑을 피운다. 담배가 떨어지면 안절부절한다 (판정 -1)", acting: 손가락이 쉴 새 없이 주머니를 뒤지고 담배 연기 속에서 말한다, effects: { habit: { items: [cigarettes], track: craving, start: 3 } } }
+  # 몸에 남는 상처 (12-156): 고를 수 없다. 크게 다치면 scars 규칙으로 붙는다
+  - { id: limp, label: 절뚝임, kind: negative, selectable: false, visible: true, description: "다리를 다친 뒤로 걸음이 처진다 (은밀 -1)", acting: 오래 걸으면 한쪽 다리를 끌고 계단 앞에서 잠깐 멈춘다, effects: { skills: { stealth: -1 } } }
+  - { id: stiff_hand, label: 굳은 손, kind: negative, selectable: false, visible: true, description: "손가락이 예전처럼 굽혀지지 않는다 (사격 -1)", acting: 방아쇠에 건 손가락이 한 박자 늦고 단추를 잠그는 데 오래 걸린다, effects: { skills: { shoot: -1 } } }
+  - { id: face_scar, label: 얼굴 흉터, kind: negative, selectable: false, visible: true, description: "얼굴을 가로지르는 흉터. 첫인상이 나빠지지만 겁을 주기는 쉽다 (외모 -1, 위협 +1)", acting: 사람들이 흉터에 눈길을 줬다가 황급히 돌린다, effects: { looks: -1, skills: { intimidate: 1 } } }
+  - { id: short_breath, label: 짧은 숨, kind: negative, selectable: false, description: "가슴을 다친 뒤로 숨이 금방 찬다 (버티기 -1)", acting: 뛰고 나면 한참 허리를 굽히고 숨을 고른다, effects: { skills: { endure: -1 } } }
+  - { id: deaf_ear, label: 먹은 귀, kind: negative, selectable: false, description: "한쪽 귀가 잘 들리지 않는다 (경계 -1)", acting: 말을 걸면 고개를 돌려 성한 귀를 들이댄다, effects: { skills: { sense_danger: -1 } } }
+  - { id: aching_wound, label: 쑤시는 옛 상처, kind: negative, selectable: false, description: "궂은 날이면 옛 상처가 쑤신다 (추위 노출 +1)", acting: 날이 흐리면 옛 상처 자리를 문지른다, effects: { cold: 1 } }
   - { id: ugly, label: 험악한 인상, kind: negative, cost: 1, visible: true, description: 첫인상이 나쁘다 (외모 -1), acting: 사람들이 첫눈에 경계한다, opposites: [beautiful, attractive], effects: { looks: -1 } }
   # ── 성격 (0) ──
   - { id: warm, label: 다정함, kind: personality, visible: true, description: 남을 살뜰히 챙긴다, acting: 말끝이 부드럽고 먼저 안부를 묻는다, opposites: [cold], persona: { warmth: 2 } }
@@ -989,6 +996,19 @@ wounds:
   staunch_move: first_aid
   # 감염체에게 다칠 위험인데 종류를 비웠으면 할큄으로 본다. 감염은 피가 나는 상처일 때만 굴린다
   infected_default: claw
+
+# 몸에 남는 상처 (12-156, *임시*): 부상이 치명상 이상인 상처를 입으면 30%로 흔적 트레잇 하나. 상처 종류에 맞는 것 중에서, 한 사람에 셋까지
+scars:
+  at: critical
+  chance: 0.3
+  max: 3
+  traits:
+    - { trait: limp, wounds: [gunshot, pierce, bite, blunt, cut] }
+    - { trait: stiff_hand, wounds: [cut, bite, claw, gunshot] }
+    - { trait: face_scar, wounds: [cut, claw, other] }
+    - { trait: short_breath, wounds: [gunshot, pierce, blunt] }
+    - { trait: deaf_ear, wounds: [blunt, gunshot, other] }
+    - { trait: aching_wound }
 
 # 의식불명 중 곁의 사람 (12-90, *임시*): 쓰러질 때마다 한 번, 곁에 누가 있느냐로 코드가 정한다
 helpless:

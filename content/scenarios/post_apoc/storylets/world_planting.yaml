@@ -37,7 +37,7 @@
         - take_item: { item: seed_packet }
         - cultivate: { resource: food, delta: 2 }
         - relation: { who: hand, axis: affection, delta: 1 }
-        - belief: { fact: "{hand}와 함께 씨앗을 심었다. 물 대는 당번을 {hand}가 맡기로 했다", source: seen }
+        - belief: { fact: "{hand:과/와} 함께 씨앗을 심었다. 물 대는 당번을 {hand:이/가} 맡기로 했다", source: seen }
     - id: keep
       label: 아직은 아껴 둔다
       effects: []

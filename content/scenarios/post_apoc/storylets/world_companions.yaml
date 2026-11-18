@@ -109,7 +109,7 @@
       effects:
         - companion_part: { who: kin, hours: 20 }
         - relation: { who: kin, axis: trust, delta: 1 }
-        - belief: { fact: "{kin}이(가) 장터의 아는 사람을 만나러 하루 다녀오기로 했다", source: seen }
+        - belief: { fact: "{kin:이/가} 장터의 아는 사람을 만나러 하루 다녀오기로 했다", source: seen }
     - id: together
       label: 같이 가자고 한다
       effects:
@@ -136,7 +136,7 @@
       label: 안전한 곳을 찾아 기다리게 한다
       effects:
         - companion_part: { who: kin }
-        - belief: { fact: "{kin}을(를) {zone}의 안전한 곳에 두고 나중에 데리러 오기로 했다", source: seen }
+        - belief: { fact: "{kin:을/를} {zone}의 안전한 곳에 두고 나중에 데리러 오기로 했다", source: seen }
     - id: carry
       label: 업어서라도 같이 간다
       effects:

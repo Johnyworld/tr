@@ -88,7 +88,7 @@ export function rangeProblem(content: Content, c: Character, move: string, dista
   if (r[distance] === undefined) {
     const weaponId = equippedItem(c, "weapon");
     const what = weaponId && itemOf(content, weaponId)?.weapon?.moves.includes(move) ? nameOf(content, weaponId) : "맨손";
-    return `${what}(으)로는 ${label(distance)}에서 칠 수 없다 (닿는 거리: ${Object.keys(r).map(label).join(", ")}). 거리를 좁히거나 벌리는 행동을 먼저 하거나, 다른 무기를 든다.`;
+    return `${josa(what, "으로/로")}는 ${label(distance)}에서 칠 수 없다 (닿는 거리: ${Object.keys(r).map(label).join(", ")}). 거리를 좁히거나 벌리는 행동을 먼저 하거나, 다른 무기를 든다.`;
   }
   return null;
 }
@@ -128,19 +128,19 @@ export function planAttack(content: Content, c: Character, move: string, harm: "
   const w = itemOf(content, weaponId)?.weapon;
   const rank = (h: string) => (h === "heavy" ? 2 : h === "light" ? 1 : 0);
   if (w && w.moves.includes(move)) {
-    if (rank(harm) > rank(w.max_harm)) return `${nameOf(content, weaponId!)}(으)로는 ${harm} 피해를 노릴 수 없다 (상한 ${w.max_harm}). target_harm을 낮춘다.`;
+    if (rank(harm) > rank(w.max_harm)) return `${josa(nameOf(content, weaponId!), "으로/로")}는 ${harm} 피해를 노릴 수 없다 (상한 ${w.max_harm}). target_harm을 낮춘다.`;
     const usesAmmo = !!w.ammo && (w.ammo_moves ?? w.moves).includes(move);
-    if (usesAmmo && (c.inventory[w.ammo!] ?? 0) < 1) return `${nameOf(content, weaponId!)}에 쓸 ${nameOf(content, w.ammo!)}이(가) 없다. 쏠 수 없다 (다른 무기를 들거나 맨손으로).`;
+    if (usesAmmo && (c.inventory[w.ammo!] ?? 0) < 1) return `${nameOf(content, weaponId!)}에 쓸 ${josa(nameOf(content, w.ammo!), "이/가")} 없다. 쏠 수 없다 (다른 무기를 들거나 맨손으로).`;
     // 소리는 쏠 때만 (개머리판·칼은 조용하다)
     return { weapon: weaponId, ammo: usesAmmo ? w.ammo! : null, noise: usesAmmo || !w.ammo ? w.noise : 0, wound: w.wound?.[move] ?? null };
   }
   if (g.unarmed.moves.includes(move)) {
     if (rank(harm) > rank(g.unarmed.max_harm)) {
-      return `맨손${weaponId ? `(손에 든 ${nameOf(content, weaponId)}은(는) 이 판정에 쓰지 않는다)` : ""}으로는 ${harm} 피해를 노릴 수 없다. 무기를 들려면 equip.`;
+      return `맨손${weaponId ? `(손에 든 ${josa(nameOf(content, weaponId), "은/는")} 이 판정에 쓰지 않는다)` : ""}으로는 ${harm} 피해를 노릴 수 없다. 무기를 들려면 equip.`;
     }
     return { weapon: null, ammo: null, noise: 0, wound: g.unarmed.wound?.[move] ?? null };
   }
-  return `${weaponId ? `손에 든 ${nameOf(content, weaponId)}(으)로는` : "맨손으로는"} 이 판정(${move})으로 공격할 수 없다. 맞는 무기를 equip으로 든다.`;
+  return `${weaponId ? `손에 든 ${josa(nameOf(content, weaponId), "으로/로")}는` : "맨손으로는"} 이 판정(${move})으로 공격할 수 없다. 맞는 무기를 equip으로 든다.`;
 }
 
 /** 공격 뒤: 탄약을 쓰고, 소리를 내고, 실패하면 무기가 닳는다 */
@@ -179,7 +179,7 @@ export function wearItem(ctx: ToolContext, holder: string, itemId: string, delta
   const wear = store.getState().characters[holder]!.wear[itemId] ?? 0;
   if (wear < item.durability) return null;
   store.append({ type: "item_broken", characterId: holder, itemId, into: item.breaks_into ?? null });
-  return `${item.name}이(가) 망가졌다${item.breaks_into ? ` (${nameOf(content, item.breaks_into)}만 남았다)` : ""}. 망가지는 순간을 서술한다.`;
+  return `${josa(item.name, "이/가")} 망가졌다${item.breaks_into ? ` (${nameOf(content, item.breaks_into)}만 남았다)` : ""}. 망가지는 순간을 서술한다.`;
 }
 
 /** 입은 방어구가 받는 피해를 줄인다. 줄인 단계와 막은 방어구 */
@@ -195,7 +195,7 @@ export function armorAbsorb(ctx: ToolContext, steps: number): { steps: number; l
     if (!id || !armor?.reduces || left <= 0) continue;
     const cut = Math.min(armor.reduces, left);
     left -= cut;
-    lines.push(`${nameOf(content, id)}이(가) 피해를 ${cut}단계 막았다.`);
+    lines.push(`${josa(nameOf(content, id), "이/가")} 피해를 ${cut}단계 막았다.`);
     const broke = wearItem(ctx, me.id, id, 1);
     if (broke) lines.push(broke);
   }
@@ -213,7 +213,7 @@ export function armorBlocksInfection(ctx: ToolContext): { blocked: boolean; line
     const p = itemOf(ctx.content, id)?.armor?.blocks_infection ?? 0;
     if (!id || p <= 0 || ctx.rng() >= p) continue;
     const broke = wearItem(ctx, me.id, id, 1);
-    return { blocked: true, lines: [`${nameOf(ctx.content, id)}이(가) 물림을 막아 냈다. 살갗까지 닿지 않았다.`, ...(broke ? [broke] : [])] };
+    return { blocked: true, lines: [`${josa(nameOf(ctx.content, id), "이/가")} 물림을 막아 냈다. 살갗까지 닿지 않았다.`, ...(broke ? [broke] : [])] };
   }
   return { blocked: false, lines: [] };
 }
@@ -234,18 +234,18 @@ const equipTool = defineTool({
       if (!input.slot) return { ok: false, error: "벗을 자리(slot)를 정한다." };
       const was = equippedItem(me, input.slot);
       store.append({ type: "item_equipped", characterId: me.id, slot: input.slot, itemId: null });
-      return { ok: true, resultText: was ? `${nameOf(content, was)}을(를) 내려놓았다 (소지품에는 남는다).` : "그 자리에는 든 것이 없다.", display: { type: "item", fromName: me.name, toName: "", itemName: was ? nameOf(content, was) : "-", quantity: 0 } };
+      return { ok: true, resultText: was ? `${josa(nameOf(content, was), "을/를")} 내려놓았다 (소지품에는 남는다).` : "그 자리에는 든 것이 없다.", display: { type: "item", fromName: me.name, toName: "", itemName: was ? nameOf(content, was) : "-", quantity: 0 } };
     }
     const item = content.items[input.item_id];
     if (!item || (me.inventory[input.item_id] ?? 0) < 1) return { ok: false, error: `가진 물건이 아니다: ${input.item_id}` };
     const slot: Slot | null = item.weapon ? "weapon" : item.armor ? item.armor.slot : null;
-    if (!slot) return { ok: false, error: `${item.name}은(는) 들거나 입는 물건이 아니다.` };
+    if (!slot) return { ok: false, error: `${josa(item.name, "은/는")} 들거나 입는 물건이 아니다.` };
     store.append({ type: "item_equipped", characterId: me.id, slot, itemId: item.id });
     const what = slot === "weapon" ? "손에 들었다" : "입었다";
     const note = item.weapon
       ? ` (${item.weapon.moves.join("/")} 공격, 피해 상한 ${item.weapon.max_harm}${item.weapon.ammo ? `, 쏠 때마다 ${nameOf(content, item.weapon.ammo)} 하나` : ""}${item.weapon.noise >= 2 ? ", 시끄럽다" : ""})`
       : ` (피해 ${item.armor!.reduces}단계 줄임${Object.keys(item.armor!.penalty).length ? `, ${Object.entries(item.armor!.penalty).map(([m, v]) => `${m} ${v}`).join(", ")}` : ""})`;
-    return { ok: true, resultText: `${item.name}을(를) ${what}${note}.`, display: { type: "item", fromName: "", toName: me.name, itemName: item.name, quantity: 1 } };
+    return { ok: true, resultText: `${josa(item.name, "을/를")} ${what}${note}.`, display: { type: "item", fromName: "", toName: me.name, itemName: item.name, quantity: 1 } };
   },
 });
 
@@ -277,9 +277,9 @@ const barterTool = defineTool({
     if (!npc || !state.scene.present.includes(input.npc_id) || npc.dead) return { ok: false, error: "장면에 있는 인물이 아니다." };
     if (isCreature(content, npc)) return { ok: false, error: "사람이 아니라 물건을 주고받을 수 없다. 쓰러뜨린 뒤 지닌 것을 챙기려면 transfer_item." };
     if (isEmpty(input.get) && isEmpty(input.give)) return { ok: false, error: "주고받는 것이 없다." };
-    for (const [id, q] of Object.entries(input.give)) if ((me.inventory[id] ?? 0) < q) return { ok: false, error: `${nameOf(content, id)}이(가) ${me.inventory[id] ?? 0}개뿐이다.` };
+    for (const [id, q] of Object.entries(input.give)) if ((me.inventory[id] ?? 0) < q) return { ok: false, error: `${josa(nameOf(content, id), "이/가")} ${me.inventory[id] ?? 0}개뿐이다.` };
     const name = playerCalls(state, content, input.npc_id);
-    for (const [id, q] of Object.entries(input.get)) if ((npc.inventory[id] ?? 0) < q) return { ok: false, error: `${josa(name, "은/는")} ${nameOf(content, id)}을(를) ${npc.inventory[id] ?? 0}개만 가졌다.` };
+    for (const [id, q] of Object.entries(input.get)) if ((npc.inventory[id] ?? 0) < q) return { ok: false, error: `${josa(name, "은/는")} ${josa(nameOf(content, id), "을/를")} ${npc.inventory[id] ?? 0}개만 가졌다.` };
     // 시세 (12-155): 그 땅 주인 무리의 창고 형편과 계절이 값에 닿는다
     const giving = marketValue(content, state, input.give);
     const asking = Math.ceil(marketValue(content, state, input.get) * priceFactor(content, state, input.npc_id));
@@ -293,7 +293,7 @@ const barterTool = defineTool({
       if (!input.move || !input.stat || (moves.length && !moves.includes(input.move))) {
         return { ok: false, error: `값이 조금 모자란다 (${giving}/${asking}). 흥정하려면 move·stat (${moves.join("/") || "교섭"})을 넣는다. 아니면 더 얹는다.` };
       }
-      const check = rollPlayerCheck({ move: input.move, stat: input.stat, difficulty: "normal", intent: `${name}과(와) 흥정한다` }, ctx, { target: input.npc_id });
+      const check = rollPlayerCheck({ move: input.move, stat: input.stat, difficulty: "normal", intent: `${josa(name, "과/와")} 흥정한다` }, ctx, { target: input.npc_id });
       if (!check.ok) return check;
       display = check.display;
       lines.push(`흥정 판정: ${CHECK_OUTCOME_LABELS[check.outcome]}`);
@@ -353,22 +353,22 @@ export function planCraft(content: Content, c: Character, craft: { recipe: strin
   if (craft.recipe) {
     const r = content.scenario.crafting?.recipes.find((x) => x.id === craft.recipe);
     if (!r) return `없는 제작 법: ${craft.recipe} (가능: ${(content.scenario.crafting?.recipes ?? []).map((x) => x.id).join(", ")})`;
-    if (move !== r.move) return `${r.label}은(는) ${r.move} 판정으로 만든다 (check.move).`;
+    if (move !== r.move) return `${josa(r.label, "은/는")} ${r.move} 판정으로 만든다 (check.move).`;
     const missing = has(r.materials);
-    if (missing) return `${r.label}에 ${nameOf(content, missing[0])}이(가) ${missing[1]}개 필요하다.`;
+    if (missing) return `${r.label}에 ${josa(nameOf(content, missing[0]), "이/가")} ${missing[1]}개 필요하다.`;
     const tool = r.tools.find((t) => !hasTool(c, t));
-    if (tool) return `${r.label}에는 ${toolName(content, tool)}이(가) 있어야 한다.`;
+    if (tool) return `${r.label}에는 ${josa(toolName(content, tool), "이/가")} 있어야 한다.`;
     return null;
   }
   if (craft.repair) {
     const item = content.items[craft.repair];
     if (!item?.repair || (c.inventory[craft.repair] ?? 0) < 1) return `고칠 수 있는 가진 물건이 아니다: ${craft.repair}`;
-    if (!(c.wear[craft.repair] ?? 0)) return `${item.name}은(는) 닳지 않았다.`;
-    if (move !== item.repair.move) return `${item.name}은(는) ${item.repair.move} 판정으로 고친다 (check.move).`;
+    if (!(c.wear[craft.repair] ?? 0)) return `${josa(item.name, "은/는")} 닳지 않았다.`;
+    if (move !== item.repair.move) return `${josa(item.name, "은/는")} ${item.repair.move} 판정으로 고친다 (check.move).`;
     const missing = has(item.repair.materials);
-    if (missing) return `${item.name}을(를) 고치려면 ${nameOf(content, missing[0])}이(가) ${missing[1]}개 필요하다.`;
+    if (missing) return `${josa(item.name, "을/를")} 고치려면 ${josa(nameOf(content, missing[0]), "이/가")} ${missing[1]}개 필요하다.`;
     const tool = item.repair.tools.find((t) => !hasTool(c, t));
-    if (tool) return `${item.name}을(를) 고치려면 ${toolName(content, tool)}이(가) 있어야 한다.`;
+    if (tool) return `${josa(item.name, "을/를")} 고치려면 ${josa(toolName(content, tool), "이/가")} 있어야 한다.`;
     return null;
   }
   return "craft에는 recipe나 repair 하나를 넣는다.";
@@ -393,7 +393,7 @@ export function applyCraft(ctx: ToolContext, craft: { recipe: string | null; rep
     use(r.materials, 1);
     const qty = outcome === "success" ? r.yields.qty : Math.max(1, Math.floor(r.yields.qty / 2));
     store.append({ type: "item_granted", to: me.id, itemId: r.yields.item, quantity: qty });
-    return [`${r.label}: ${nameOf(content, r.yields.item)} ×${qty}을(를) 만들었다${outcome === "partial" ? " (대가 있는 성공: 절반만)" : ""}.`];
+    return [`${r.label}: ${nameOf(content, r.yields.item)} ×${josa(String(qty), "을/를")} 만들었다${outcome === "partial" ? " (대가 있는 성공: 절반만)" : ""}.`];
   }
   const id = craft.repair!;
   const item = content.items[id]!;
@@ -431,6 +431,7 @@ export function autoEquip(ctx: ToolContext, characterId: string): void {
   const { store, content } = ctx;
   if (!content.scenario.gear) return;
   autoWearOuter(ctx, characterId);
+  autoWearArmor(ctx, characterId);
   const c = store.getState().characters[characterId];
   if (!c || equippedItem(c, "weapon")) return;
   const score = (id: string) => {
@@ -442,6 +443,20 @@ export function autoEquip(ctx: ToolContext, characterId: string): void {
   };
   const best = Object.keys(c.inventory).filter((id) => score(id) >= 0).sort((a, b) => score(b) - score(a) || a.localeCompare(b))[0];
   if (best) store.append({ type: "item_equipped", characterId, slot: "weapon", itemId: best });
+}
+
+/** 몸·머리·팔 칸이 비어 있으면 가진 방어구 중 가장 잘 막는 것을 입는다 (시작할 때, 이어 갈 때) */
+function autoWearArmor(ctx: ToolContext, characterId: string): void {
+  const { store, content } = ctx;
+  for (const slot of ["body", "head", "arms"] as const) {
+    const c = store.getState().characters[characterId];
+    if (!c || equippedItem(c, slot)) continue;
+    const guard = (id: string) => (content.items[id]?.armor?.reduces ?? 0) * 10 + (content.items[id]?.armor?.blocks_infection ?? 0);
+    const best = Object.keys(c.inventory)
+      .filter((id) => (c.inventory[id] ?? 0) > 0 && content.items[id]?.armor?.slot === slot)
+      .sort((a, b) => guard(b) - guard(a) || a.localeCompare(b))[0];
+    if (best) store.append({ type: "item_equipped", characterId, slot, itemId: best });
+  }
 }
 
 /** 외투 칸이 비어 있으면 가진 것 중 가장 따뜻한 외투를 입는다 (시작할 때, 이어 갈 때. 12-98) */

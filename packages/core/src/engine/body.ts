@@ -47,7 +47,7 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
       const would = track.levels[Math.min(track.levels.length - 1, index + steps)]!;
       // 숨은 단계로 가는 것(잠복)은 버텨도 알리지 않는다
       const visible = shownLevel(track, would.id).id !== shownLevel(track, track.levels[index]!.id).id;
-      return { line: visible ? `${playerCalls(state, ctx.content, characterId)}은(는) 버텨 냈다 (${track.label}이 나빠지지 않았다).` : "", display: null, died: false };
+      return { line: visible ? `${josa(playerCalls(state, ctx.content, characterId), "은/는")} 버텨 냈다 (${track.label}이 나빠지지 않았다).` : "", display: null, died: false };
     }
     steps = kept;
   }
@@ -620,8 +620,8 @@ function quitHabit(ctx: ToolContext, characterId: string, h: ReturnType<typeof h
   if (since === undefined || dayOf(state.time) - dayOf(since) < h.quit_days) return null;
   const c = state.characters[characterId]!;
   ctx.store.append({ type: "character_patched", characterId, traits: traitIdsOf(ctx.content, c).filter((t) => t !== h.trait.id) });
-  changeCondition(ctx, characterId, h.track, -index, "habit", `${h.trait.label}을(를) 끊었다`);
-  return { line: `${h.trait.label}: 고비를 넘겼다. 더는 ${h.items.map((i) => ctx.content.items[i]?.name ?? i).join("·")}을(를) 찾지 않는다.`, display: null, died: false };
+  changeCondition(ctx, characterId, h.track, -index, "habit", `${josa(h.trait.label, "을/를")} 끊었다`);
+  return { line: `${h.trait.label}: 고비를 넘겼다. 더는 ${josa(h.items.map((i) => ctx.content.items[i]?.name ?? i).join("·"), "을/를")} 찾지 않는다.`, display: null, died: false };
 }
 
 /** 의존 (12-157): 이 아이템을 쓴 사람에게 chance로 버릇 트레잇이 붙는다. 붙으면 알릴 줄 */

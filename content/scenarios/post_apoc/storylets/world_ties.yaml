@@ -19,7 +19,7 @@
         - reveal_tie: { who: asker, other: kin }
         - relation: { who: asker, axis: trust, delta: 2 }
         - set_flag: wt_letter_carried
-        - belief: { fact: "{asker}의 가족 {kin}이(가) 다른 무리에 있다. 안부 쪽지를 전해 주기로 했다", source: seen }
+        - belief: { fact: "{asker}의 가족 {kin:이/가} 다른 무리에 있다. 안부 쪽지를 전해 주기로 했다", source: seen }
     - id: refuse
       label: 그럴 수 없다고 돌려준다
       effects:
@@ -54,7 +54,7 @@
           - reveal_tie: { who: stranger, other: known }
           - relation: { who: stranger, axis: trust, delta: 1 }
         partial:
-          - belief: { fact: "{stranger}은(는) 당신 무리에 아는 사람이 있는 눈치다. 이름은 말하지 않았다", source: seen }
+          - belief: { fact: "{stranger:은/는} 당신 무리에 아는 사람이 있는 눈치다. 이름은 말하지 않았다", source: seen }
         miss:
           - relation: { who: stranger, axis: trust, delta: -1 }
     - id: pass

@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { describeDisaster } from "./disasters.ts";
 import { agendaCue } from "./agenda.ts";
 import { describeFacilities } from "./facilities.ts";
@@ -138,7 +139,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
         ? [`명성: ${fameOf(state, content).label}. 소문을 들은 사람이 처음 보고도 당신을 알아볼 수 있다 (인물 카드의 팬·안티 줄). 플레이어에게 숫자는 말하지 않는다`]
         : []),
       ...((state.bounties ?? []).length
-        ? [`현상금: ${state.bounties.map((f) => content.factions[f]?.name ?? f).join(", ")}이(가) 당신 머리에 값을 걸었다 (소문으로 안다). 그 무리의 땅과 말이 모이는 곳에서는 알아보는 눈이 있다. 값은 시스템이 정한다 (지어내지 않는다)`]
+        ? [`현상금: ${josa(state.bounties.map((f) => content.factions[f]?.name ?? f).join(", "), "이/가")} 당신 머리에 값을 걸었다 (소문으로 안다). 그 무리의 땅과 말이 모이는 곳에서는 알아보는 눈이 있다. 값은 시스템이 정한다 (지어내지 않는다)`]
         : []),
       ...(incapacitatingSymptom(scenario, player)
         ? [
@@ -436,7 +437,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
       const npc = content.npcs[id];
       if (detailed.has(id)) lines.push(`${head(id)}: ${npc ? `${npc.look} ${npc.reputation}` : (character.extra?.look ?? "")}`);
       // 관계가 생겼거나 상태가 있는 사람은 한 줄, 아무 일 없는 사람은 이름만 모은다
-      else if (depth(id) > 0 || character.captive || !npc) lines.push(`${head(id)}${npc ? `: ${shortNote(npc.reputation)}` : ""}`);
+      else if (depth(id) > 0 || character.captive || character.dead || character.away || !npc) lines.push(`${head(id)}${npc ? `: ${shortNote(npc.reputation)}` : ""}`);
       else rest.push(`${headingAs(state, content, viewer, id)}(${id})`);
     }
     blocks.push(

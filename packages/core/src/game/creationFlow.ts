@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import type { Content } from "../content/schemas.ts";
 import { parsePersona, personaSummary } from "../engine/persona.ts";
 import type { Rng } from "../rng.ts";
@@ -217,12 +218,12 @@ export function parseAbilityTiers(
   const values: Record<string, number> = {};
   for (const [i, tier] of tiers.entries()) {
     const items = groups[i]!.split(/[,，、\s]+/).filter((x) => x.length > 0);
-    if (items.length !== tier.count) return { ok: false, error: `${tier.label}은(는) ${tier.count}개를 고른다. ${format}` };
+    if (items.length !== tier.count) return { ok: false, error: `${josa(tier.label, "은/는")} ${tier.count}개를 고른다. ${format}` };
     for (const item of items) {
       const n = /^\d+\.?$/.test(item) ? Number.parseInt(item, 10) : NaN;
       const stat = Number.isNaN(n) ? s.stats.find((x) => x.label === item || x.id.toLowerCase() === item.toLowerCase()) : s.stats[n - 1];
       if (!stat) return { ok: false, error: `"${item}"라는 능력은 없다. 능력: ${s.stats.map((x, k) => `${k + 1}. ${x.label}`).join(", ")}` };
-      if (values[stat.id] !== undefined) return { ok: false, error: `${stat.label}을(를) 두 번 골랐다.` };
+      if (values[stat.id] !== undefined) return { ok: false, error: `${josa(stat.label, "을/를")} 두 번 골랐다.` };
       values[stat.id] = tier.value;
     }
   }
@@ -245,7 +246,7 @@ export function parseAbilities(s: Scenario, text: string): { ok: true; values: R
     const key = m[1]!.trim();
     const stat = s.stats.find((x) => x.label === key || x.id.toLowerCase() === key.toLowerCase());
     if (!stat) return { ok: false, error: `"${key}"라는 능력은 없다. 능력: ${s.stats.map((x) => x.label).join(", ")}` };
-    if (values[stat.id] !== undefined) return { ok: false, error: `${stat.label}을(를) 두 번 적었다.` };
+    if (values[stat.id] !== undefined) return { ok: false, error: `${josa(stat.label, "을/를")} 두 번 적었다.` };
     values[stat.id] = Number(m[2]);
   }
   const rest = text.replace(pattern, "").replace(/[\s,，、/]+/g, "");
@@ -294,7 +295,7 @@ export function parseSkills(s: Scenario, text: string): { ok: true; values: Reco
     const key = m?.[1]?.trim() ?? part;
     const move = s.moves.find((x) => x.label === key || x.id.toLowerCase() === key.toLowerCase());
     if (!move) return { ok: false, error: `"${key}"라는 스킬은 없다. 스킬: ${s.moves.map((x) => x.label).join(", ")}` };
-    if (values[move.id] !== undefined) return { ok: false, error: `${move.label}을(를) 두 번 적었다.` };
+    if (values[move.id] !== undefined) return { ok: false, error: `${josa(move.label, "을/를")} 두 번 적었다.` };
     values[move.id] = m?.[2] ? Number(m[2]) : 1;
   }
   return { ok: true, values };
@@ -376,7 +377,7 @@ function parseTraits(
     }
     const t = s.traits.find((x) => x.selectable && (x.id === r || x.label === r));
     if (!t) return { ok: false, error: `"${r}"라는 트레잇은 없다.` };
-    if (!kinds.includes(t.kind)) return { ok: false, error: `${t.label}은(는) 이 단계에서 고르는 트레잇이 아니다.` };
+    if (!kinds.includes(t.kind)) return { ok: false, error: `${josa(t.label, "은/는")} 이 단계에서 고르는 트레잇이 아니다.` };
     ids.push(t.id);
   }
   return { ok: true, ids };
@@ -400,7 +401,7 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     if (!v) return { ok: false, error: `과거 배경은 ${options.map((o) => o.label).join(", ")} 중 하나다.` };
     // 나이를 이미 정했으면 (떠돌이의 소규모 무리) 그 나이에 했을 수 있는 일이어야 한다
     const min = pastOf(s, v)?.min_age ?? 0;
-    if (draft.presetAge !== undefined && draft.presetAge < min) return { ok: false, error: `${pastOf(s, v)!.label}은(는) ${min}세 이상이어야 한다 (정한 나이 ${draft.presetAge}세).` };
+    if (draft.presetAge !== undefined && draft.presetAge < min) return { ok: false, error: `${josa(pastOf(s, v)!.label, "은/는")} ${min}세 이상이어야 한다 (정한 나이 ${draft.presetAge}세).` };
     return add({ step: "past", value: v });
   }
   if (step === "skills") {
@@ -677,7 +678,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
     const { spent } = abilitySpend(s, collectDraft(draft).abilities);
     const left = (s.creation?.points ?? 0) - spent;
     if (collectDraft(draft).abilityMethod === "manual" && Number.isFinite(spent) && left > 0) {
-      lines.push(`능력 포인트 ${left}을(를) 쓰지 않았다. 이대로 시작하면 사라진다고 알려 주고, 쓰고 싶으면 "처음부터 다시"나 뒤로 가기로 고치게 한다.`);
+      lines.push(`능력 포인트 ${josa(String(left), "을/를")} 쓰지 않았다. 이대로 시작하면 사라진다고 알려 주고, 쓰고 싶으면 "처음부터 다시"나 뒤로 가기로 고치게 한다.`);
     }
   }
 

@@ -283,7 +283,7 @@ const spreadRumor = defineTool({
       };
       store.append({ type: "deed_recorded", deed });
       for (const id of listeners) learn(ctx, deed, id, "report");
-      lines.push(`${listeners.map((id) => playerCalls(state, content, id)).join(", ")}이(가) ${who}에 대한 말을 믿었다. 이제 이 말은 ${who}의 일처럼 퍼진다 (말이 모이는 곳에서는 부풀기도 한다).`);
+      lines.push(`${josa(listeners.map((id) => playerCalls(state, content, id)).join(", "), "이/가")} ${who}에 대한 말을 믿었다. 이제 이 말은 ${who}의 일처럼 퍼진다 (말이 모이는 곳에서는 부풀기도 한다).`);
       if (check.outcome === "partial") {
         const doubter = listeners[Math.floor(ctx.rng() * listeners.length)]!;
         recordDeed(ctx, { summary: `${who}에 대한 말을 지어냈다`, tags: ["deceit"], severity: 1, privacy: "private", noisy: false }, { npcId: doubter, source: "seen" });

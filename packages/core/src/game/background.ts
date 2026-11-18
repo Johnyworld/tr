@@ -90,13 +90,16 @@ export function whoName(content: Content, id: string | null, nameKnown = true): 
   return content.factions[id]?.name ?? (nameKnown ? content.npcs[id]?.name : content.npcs[id]?.alias) ?? id;
 }
 
-/** 배경 한 줄 (주인공이 아는 대로) */
-export function describeHistoryPart(content: Content, p: HistoryPart): string {
+/**
+ * 배경 한 줄 (주인공이 아는 대로).
+ * memory: 믿음으로 남기는 문장이면 "(이름은 모른다)"를 붙이지 않는다. 기억은 고쳐 쓰지 않으니, 이름을 알게 된 뒤에도 어긋나지 않게 (지난 일 줄은 그때그때 다시 만든다)
+ */
+export function describeHistoryPart(content: Content, p: HistoryPart, memory = false): string {
   switch (p.kind) {
     case "loss":
       return `${josa(p.who, "을/를")} 잃었다. ${p.by ? `${whoName(content, p.by, p.name_known !== false)}의 짓이다` : "누구 짓인지 모른다"}${p.where ? ` (${content.locations[p.where]?.name ?? p.where})` : ""}`;
     case "enemy":
-      return `원수: ${whoName(content, p.target, p.name_known !== false)}${p.name_known === false ? " (이름은 모른다)" : ""}. ${sentence(p.why)}${p.knows_you ? " 저쪽도 나를 안다" : " 저쪽은 나를 모른다"}`;
+      return `원수: ${whoName(content, p.target, p.name_known !== false)}${p.name_known === false && !memory ? " (이름은 모른다)" : ""}. ${sentence(p.why)}${p.knows_you ? " 저쪽도 나를 안다" : " 저쪽은 나를 모른다"}`;
     case "kin_alive":
       return `${josa(p.label, "이/가")} 살아 있다. ${content.locations[p.zone]?.name ?? p.zone}에서 기다린다`;
     case "seeking":

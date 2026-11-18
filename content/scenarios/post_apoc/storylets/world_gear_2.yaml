@@ -135,7 +135,7 @@
     boss: { commander: true }
     mate: { recall: wg2_skimmer, enter: false }
   setup: "창고 문이 활짝 열리고 탄약 상자가 마당에 줄지어 나와 있다. {boss:이/가} 뚜껑을 하나씩 열며 묶음을 센다. 다 세고 나서, 장부를 덮고 당신 앞에 선다. \"주머니 뒤집어 봐. 다들 하는 거다.\""
-  ai_direction: 상관은 탄약이 빈다는 것을 알았고, 누가 가져갔는지는 모른다. 주인공 주머니에 받은 몫이 남아 있는지는 지금 가진 것으로만 정해진다. 거짓말은 판정으로 갈린다. 빼돌린 동료 {mate}는 마당 저쪽에서 이쪽을 보지 않는다.
+  ai_direction: 상관은 탄약이 빈다는 것을 알았고, 누가 가져갔는지는 모른다. 주인공 주머니에 받은 몫이 남아 있는지는 지금 가진 것으로만 정해진다. 거짓말은 판정으로 갈린다. 빼돌린 동료 {mate:은/는} 마당 저쪽에서 이쪽을 보지 않는다.
   choices:
     - id: bluff
       label: 태연하게 주머니를 뒤집으며 둘러댄다
@@ -175,7 +175,7 @@
         - relation: { who: mate, axis: affection, delta: -2 }
         - npc_relation: { from: boss, to: mate, axis: trust, delta: -3 }
         - deed: { summary: 탄약 재고 조사에서 함께 빼돌린 동료의 이름을 댔다, tags: [betrayal], severity: 2, privacy: semi_private }
-        - belief: { fact: "재고 조사에서 {mate}의 이름을 댔다. 상관이 마당 저쪽으로 걸어갔다. {mate}는 끝까지 나를 보지 않았다", source: seen }
+        - belief: { fact: "재고 조사에서 {mate}의 이름을 댔다. 상관이 마당 저쪽으로 걸어갔다. {mate:은/는} 끝까지 나를 보지 않았다", source: seen }
     - id: point_finger
       label: 창고 당번 열쇠 이야기를 꺼내 눈길을 돌린다
       when: { flags_any: [wg2_lock_read] }

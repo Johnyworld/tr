@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { occupationOf } from "../game/occupation.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import { xpMultiplier } from "./traits.ts";
@@ -104,7 +105,7 @@ export function learnSkill(input: { skill: string }, ctx: ToolContext): ToolOutc
   const move = moveOf(s, input.skill);
   if (!move) return { ok: false, error: `알 수 없는 스킬: ${input.skill}` };
   const from = player.skills[input.skill] ?? move.default;
-  if (from >= s.ranges.skill.max) return { ok: false, error: `${move.label}은(는) 이미 최고 단계다.` };
+  if (from >= s.ranges.skill.max) return { ok: false, error: `${josa(move.label, "은/는")} 이미 최고 단계다.` };
   ctx.store.append({ type: "skill_learned", characterId: player.id, skill: input.skill, from, to: from + 1 });
   const left = player.skillPoints - 1;
   return {

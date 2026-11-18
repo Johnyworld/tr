@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
@@ -74,12 +75,12 @@ export function checkCharacterChoice(s: Scenario, choice: CharacterChoice): stri
   if (choice.traits) problems.push(...checkTraits(s, choice.traits));
   if (choice.past != null && !pastOf(s, choice.past)) problems.push(`과거 배경은 ${(c.pasts ?? []).map((p) => `${p.label}(${p.id})`).join(", ")} 중 하나다.`);
   const pastMin = pastOf(s, choice.past)?.min_age;
-  if (pastMin !== undefined && choice.age != null && choice.age < pastMin) problems.push(`${pastOf(s, choice.past)!.label}은(는) ${pastMin}세 이상이어야 한다.`);
+  if (pastMin !== undefined && choice.age != null && choice.age < pastMin) problems.push(`${josa(pastOf(s, choice.past)!.label, "은/는")} ${pastMin}세 이상이어야 한다.`);
   if (choice.skills) problems.push(...checkSkills(s, choice.skills));
   if (choice.persona) {
     for (const [axis, v] of Object.entries(choice.persona)) {
       if (!s.persona?.axes.some((a) => a.id === axis)) problems.push(`알 수 없는 성격 축: ${axis}`);
-      else if (!Number.isInteger(v) || v < -2 || v > 2) problems.push(`성격 축 ${axis}은(는) -2 ~ 2다.`);
+      else if (!Number.isInteger(v) || v < -2 || v > 2) problems.push(`성격 축 ${josa(axis, "은/는")} -2 ~ 2다.`);
     }
   }
   if (choice.abilities === null) return problems;
@@ -100,7 +101,7 @@ export function checkSkills(s: Scenario, skills: Record<string, number>): string
   for (const [id, v] of Object.entries(skills)) {
     const move = s.moves.find((m) => m.id === id);
     if (!move) problems.push(`알 수 없는 스킬: ${id}`);
-    else if (!Number.isInteger(v) || v < 1 || v > rule.max) problems.push(`${move.label}은(는) +1~+${rule.max}까지 올린다.`);
+    else if (!Number.isInteger(v) || v < 1 || v > rule.max) problems.push(`${josa(move.label, "은/는")} +1~+${rule.max}까지 올린다.`);
   }
   const spent = Object.values(skills).reduce((a, b) => a + b, 0);
   if (spent > rule.points) problems.push(`스킬 포인트를 ${spent - rule.points}만큼 넘게 썼다 (${spent}/${rule.points}).`);
@@ -154,9 +155,9 @@ export function checkTraits(s: Scenario, traits: readonly string[]): string[] {
   for (const id of traits) {
     const t = s.traits.find((x) => x.id === id);
     if (!t) problems.push(`알 수 없는 트레잇: ${id}`);
-    else if (!t.selectable) problems.push(`${t.label}은(는) 고를 수 없는 트레잇이다.`);
+    else if (!t.selectable) problems.push(`${josa(t.label, "은/는")} 고를 수 없는 트레잇이다.`);
     for (const o of t?.opposites ?? []) {
-      if (traits.includes(o)) problems.push(`${t!.label}과(와) ${s.traits.find((x) => x.id === o)?.label ?? o}은(는) 함께 가질 수 없다.`);
+      if (traits.includes(o)) problems.push(`${josa(t!.label, "과/와")} ${josa(s.traits.find((x) => x.id === o)?.label ?? o, "은/는")} 함께 가질 수 없다.`);
     }
   }
   const b = traitBalance(s, traits);

@@ -38,7 +38,7 @@ export function applyBackground(ctx: ToolContext, parts: readonly HistoryPart[])
     store.append({
       type: "belief_added",
       characterId: me,
-      belief: { id: `b_${state.nextBeliefNo}`, fact: sentence(describeHistoryPart(content, part)), source: "seen", accuracy: "exact", learnedAt: state.time },
+      belief: { id: `b_${state.nextBeliefNo}`, fact: sentence(describeHistoryPart(content, part, true)), source: "seen", accuracy: "exact", learnedAt: state.time },
     });
     const person = part.kind === "loss" ? part.by : part.kind === "enemy" ? part.target : null;
     // 같은 사람이 부품 여럿에 나올 수 있다 (가족을 죽인 자이자 원수): 이미 아는 이름은 다시 배우지 않는다

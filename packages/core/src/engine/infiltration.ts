@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -133,16 +134,16 @@ const infiltrate = defineTool({
     if (input.action === "advance") {
       if (inf.depth >= deepest) return { ok: false, error: `이미 가장 깊은 곳(${depthLabel(deepest)})이다. act로 목표를 한다.` };
       const m = moveOf(content.scenario, r.move)!;
-      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${depthLabel(inf.depth + 1)}(으)로 숨어든다` }, ctx);
+      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(depthLabel(inf.depth + 1), "으로/로")} 숨어든다` }, ctx);
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
       if (check.outcome !== "miss") {
         store.append({ type: "infiltration_changed", depth: inf.depth + 1, alarm: inf.alarm, done: inf.done });
-        lines.push(`${depthLabel(inf.depth + 1)}(으)로 들어갔다.`);
+        lines.push(`${josa(depthLabel(inf.depth + 1), "으로/로")} 들어갔다.`);
         if (check.outcome === "partial") lines.push(...raiseAlarm(ctx, 1));
       } else {
-        lines.push(`${depthLabel(inf.depth + 1)}(으)로 가는 길을 찾지 못했다. 아직 ${depthLabel(inf.depth)}.`);
+        lines.push(`${josa(depthLabel(inf.depth + 1), "으로/로")} 가는 길을 찾지 못했다. 아직 ${depthLabel(inf.depth)}.`);
         lines.push(...raiseAlarm(ctx, 2));
       }
       const cue = alarmCue(store.getState().infiltration?.alarm ?? 0);
@@ -179,7 +180,7 @@ const infiltrate = defineTool({
         }
         const now = store.getState().infiltration!;
         store.append({ type: "infiltration_changed", depth: now.depth, alarm: now.alarm, done: true });
-        lines.unshift(`${goal.label}: 해냈다${check.outcome === "partial" ? " (다 하지는 못했다)" : ""}.${captive && goal.release ? ` ${playerCalls(store.getState(), content, captive)}을(를) 풀어 냈다.` : ""}`);
+        lines.unshift(`${goal.label}: 해냈다${check.outcome === "partial" ? " (다 하지는 못했다)" : ""}.${captive && goal.release ? ` ${josa(playerCalls(store.getState(), content, captive), "을/를")} 풀어 냈다.` : ""}`);
         if (check.outcome === "partial") lines.push(...raiseAlarm(ctx, 1));
       } else {
         lines.push(`${goal.label}: 하지 못했다.`);

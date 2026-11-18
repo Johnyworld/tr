@@ -112,8 +112,8 @@ export function parsePersona(s: Scenario, text: string): { ok: true; values: Rec
     ]).find((x) => x.names.some((w) => w === name || w.toLowerCase() === name.toLowerCase()));
     if (!hit) return { ok: false, error: `"${name}"이라는 성격은 없다. 고를 수 있는 것: ${rules.axes.map((a) => `${a.low} ↔ ${a.high}`).join(", ")}` };
     const value = hit.sign === 0 ? n : hit.sign * Math.abs(n);
-    if (!Number.isInteger(value) || value < -2 || value > 2) return { ok: false, error: `${name}은(는) 1이나 2로 적는다 (축마다 -2 ~ +2).` };
-    if (values[hit.axis.id] !== undefined) return { ok: false, error: `${hit.axis.low} ↔ ${hit.axis.high}을(를) 두 번 적었다.` };
+    if (!Number.isInteger(value) || value < -2 || value > 2) return { ok: false, error: `${josa(name, "은/는")} 1이나 2로 적는다 (축마다 -2 ~ +2).` };
+    if (values[hit.axis.id] !== undefined) return { ok: false, error: `${hit.axis.low} ↔ ${josa(hit.axis.high, "을/를")} 두 번 적었다.` };
     if (value !== 0) values[hit.axis.id] = value;
   }
   return { ok: true, values };
@@ -176,7 +176,7 @@ export function rollBlowup(ctx: ToolContext, targetId: string | null): string | 
   if (v <= 0 || ctx.rng() >= rule.chance[v - 1]!) return null;
   const target = targetId ? state.characters[targetId] : undefined;
   if (target && !target.dead && !isCreature(ctx.content, target) && state.scene.present.includes(target.id)) {
-    ctx.store.append({ type: "relation_changed", from: target.id, to: me.id, delta: rule.delta, reason: `${me.name}이(가) 발끈했다` });
+    ctx.store.append({ type: "relation_changed", from: target.id, to: me.id, delta: rule.delta, reason: `${josa(me.name, "이/가")} 발끈했다` });
     const parts = [rule.delta.trust && `신뢰 ${rule.delta.trust > 0 ? "+" : ""}${rule.delta.trust}`, rule.delta.affection && `호감 ${rule.delta.affection > 0 ? "+" : ""}${rule.delta.affection}`, rule.delta.respect && `존중 ${rule.delta.respect > 0 ? "+" : ""}${rule.delta.respect}`].filter(Boolean);
     return persona(axis, v, `발끈했다 · ${target.name}의 ${parts.join(", ")}`);
   }

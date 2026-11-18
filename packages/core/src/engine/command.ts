@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { roleOf, type GameState } from "../game/state.ts";
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
-import { josa } from "../text.ts";
+import { fill as fillText, josa } from "../text.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { CHECK_OUTCOME_LABELS, roll2d6, type CheckOutcome } from "../rules/check.ts";
 import { dayOf, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
@@ -143,7 +143,7 @@ export const squadOrder = defineTool({
       const until = state.time + minutes;
       store.append({ type: "squad_order_given", npcId: id, task: task.id, zone, until });
       lines.push(
-        `${josa(name, "이/가")} ${task.needs_zone ? `${zoneName(content, zone)}(으)로 ` : ""}${task.label}에 나선다. ${formatTime(until)}쯤 끝난다${slow > 1 ? " (투덜대며 늑장을 부린다)" : ""}. 결과는 코드가 정하고, 끝나면 보고가 온다.`,
+        `${josa(name, "이/가")} ${task.needs_zone ? `${josa(zoneName(content, zone), "으로/로")} ` : ""}${task.label}에 나선다. ${formatTime(until)}쯤 끝난다${slow > 1 ? " (투덜대며 늑장을 부린다)" : ""}. 결과는 코드가 정하고, 끝나면 보고가 온다.`,
       );
       displays.push({ type: "presence", npcName: `${name} · ${task.label}`, action: "leave" });
     }
@@ -170,7 +170,7 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
     }
     const name = playerCalls(state, content, id);
     const zone = zoneName(content, order.zone);
-    const fill = (t: string) => t.replaceAll("{member}", name).replaceAll("{zone}", zone);
+    const fill = (t: string) => fillText(t, { member: name, zone });
 
     if (npc.dead || npc.captive || npc.away) {
       // 그사이 다른 일로 돌아오지 못했다. 주인공은 돌아오지 않았다는 것만 안다
@@ -211,7 +211,7 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
           let pick = rng() * total;
           const entry = loot.items.find((i) => (pick -= i.weight) < 0) ?? loot.items.at(-1)!;
           store.append({ type: "item_granted", to: state.playerId, itemId: entry.item, quantity: entry.qty[0] });
-          lines.push(`${content.items[entry.item]?.name ?? entry.item} ×${entry.qty[0]}을(를) 가져왔다`);
+          lines.push(`${content.items[entry.item]?.name ?? entry.item} ×${josa(String(entry.qty[0]), "을/를")} 가져왔다`);
         }
       }
       // 데려온 사람 (12-140): 무리의 입과 손이 함께 는다
@@ -274,7 +274,7 @@ export const councilPropose = defineTool({
     if (current?.id === option.id) return { ok: false, error: `이미 그 방침이다 (${topic.label}: ${option.label}).` };
     const today = dayOf(state.time);
     const log = state.council[topic.id];
-    if (log && log.day === today) return { ok: false, error: `${topic.label}은(는) 오늘 이미 안을 올렸다.` };
+    if (log && log.day === today) return { ok: false, error: `${josa(topic.label, "은/는")} 오늘 이미 안을 올렸다.` };
     if (log && state.time < log.blockedUntil) return { ok: false, error: `${topic.label} 안은 기각됐다. ${formatTime(log.blockedUntil)} 뒤에 다시 올릴 수 있다.` };
     if (!c!.council_moves.includes(input.approach)) return { ok: false, error: `회의에서 쓰는 스킬이 아니다 (가능: ${c!.council_moves.join(", ")})` };
 

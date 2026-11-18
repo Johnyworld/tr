@@ -134,7 +134,7 @@ export function runRomance(ctx: ToolContext): ToolDisplayEvent[] {
     const rel = ctx.store.getState().relations[a]?.[me] ?? NEUTRAL_RELATION;
     if (ctx.store.getState().romances[key(me, a)]?.jealousOf.length && rel.affection <= -1) {
       ctx.store.append({ type: "romance_changed", a: me, b: a, stage: "ended" });
-      const fact = sentence(`${playerCalls(state, ctx.content, a)}이(가) 떠났다. 다른 사람이 있다는 것을 알았다`);
+      const fact = sentence(`${josa(playerCalls(state, ctx.content, a), "이/가")} 떠났다. 다른 사람이 있다는 것을 알았다`);
       ctx.store.append({ type: "belief_added", characterId: me, belief: { id: `b_${ctx.store.getState().nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time } });
       displays.push({ type: "belief", fact, sourceLabel: "본 것" });
     }
@@ -156,7 +156,7 @@ export function onLoverDeath(ctx: ToolContext, id: string): void {
   const state = ctx.store.getState();
   if (!r || state.romances?.[key(state.playerId, id)]?.stage !== "lovers") return;
   const nerves = ctx.content.scenario.body?.nerves?.track;
-  if (nerves && r.grief_nerves > 0) changeCondition(ctx, state.playerId, nerves, r.grief_nerves, "grief", `${playerCalls(state, ctx.content, id)}을(를) 잃었다`);
+  if (nerves && r.grief_nerves > 0) changeCondition(ctx, state.playerId, nerves, r.grief_nerves, "grief", `${josa(playerCalls(state, ctx.content, id), "을/를")} 잃었다`);
 }
 
 /** GM 상태: 연인, 그리고 장면에서 보이는 낌새 (속마음 대신 겉으로 보이는 것) */
@@ -170,13 +170,13 @@ export function describeRomanceForGm(state: GameState, content: Content): string
       `연인: ${lovers
         .map((id) => {
           const j = state.romances[key(me, id)]!.jealousOf.map((x) => playerCalls(state, content, x));
-          return `${playerCalls(state, content, id)} (${id})${j.length ? ` · ${j.join(", ")}을(를) 알고 질투한다` : ""}`;
+          return `${playerCalls(state, content, id)} (${id})${j.length ? ` · ${josa(j.join(", "), "을/를")} 알고 질투한다` : ""}`;
         })
         .join(", ")}`,
     );
   }
   const glances = state.scene.present.filter((id) => !lovers.includes(id) && hasInterest(state, content, id, me));
-  if (glances.length) lines.push(`눈길 (겉으로 보이는 낌새만 서술한다, 속마음을 말하지 않는다): ${glances.map((id) => playerCalls(state, content, id)).join(", ")}이(가) 자꾸 당신을 본다`);
+  if (glances.length) lines.push(`눈길 (겉으로 보이는 낌새만 서술한다, 속마음을 말하지 않는다): ${josa(glances.map((id) => playerCalls(state, content, id)).join(", "), "이/가")} 자꾸 당신을 본다`);
   return lines.join("\n");
 }
 
@@ -247,7 +247,7 @@ const romanceTool = defineTool({
       if (romance?.stage !== "lovers") return { ok: false, error: "연인이 아니다." };
       store.append({ type: "romance_changed", a: me, b: t, stage: "ended" });
       store.append({ type: "relation_changed", from: t, to: me, delta: { trust: -1, affection: -2, respect: 0 }, reason: "이별" });
-      lines.push(`${name}와(과) 헤어졌다.`);
+      lines.push(`${josa(name, "과/와")} 헤어졌다.`);
     }
     for (const w of watchers()) {
       if (input.action === "break_up") continue;

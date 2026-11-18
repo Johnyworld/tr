@@ -145,7 +145,7 @@
   cast:
     leaver: { faction: own, ranks: [grunt] }
   setup: '저녁 배급 줄 끝에서 {leaver:이/가} 짐을 싸고 있다. 곁에 몇이 더 있다. 손에 하얀 전단이 들려 있다. "가람항이 다시 열렸대. 배가 온대. 여기서 또 겨울을 날 바에야." 다른 사람들이 당신을 본다.'
-  ai_direction: 전단을 본 사람들이 남쪽 집결지로 떠나려 한다 ({leaver}와 서넛). 무리를 버리는 게 아니라 살 곳을 찾는 것이라고 믿는다. 붙잡을 말은 주인공이 아는 것(군의 R 분류, 이송 장부, 트럭의 녹음, 찍힌 번호)이 있으면 무게가 실린다 (GM은 주인공의 믿음에 있는 것만 말하게 한다). 떠난 사람들이 어떻게 됐는지는 이 장면에서 알 수 없다.
+  ai_direction: 전단을 본 사람들이 남쪽 집결지로 떠나려 한다 ({leaver:과/와} 서넛). 무리를 버리는 게 아니라 살 곳을 찾는 것이라고 믿는다. 붙잡을 말은 주인공이 아는 것(군의 R 분류, 이송 장부, 트럭의 녹음, 찍힌 번호)이 있으면 무게가 실린다 (GM은 주인공의 믿음에 있는 것만 말하게 한다). 떠난 사람들이 어떻게 됐는지는 이 장면에서 알 수 없다.
   choices:
     - id: persuade
       label: 집결지가 사람을 가려낸다고, 가지 말라고 설득한다
@@ -154,15 +154,15 @@
         success:
           - faction_morale: { faction: own, delta: 1 }
           - relation: { who: leaver, axis: trust, delta: 1 }
-          - belief: { fact: "전단을 보고 남쪽으로 떠나려던 {leaver}와 몇 사람을 붙잡았다", source: seen }
+          - belief: { fact: "전단을 보고 남쪽으로 떠나려던 {leaver:과/와} 몇 사람을 붙잡았다", source: seen }
         partial:
           - faction_population: { faction: own, delta: -1 }
-          - belief: { fact: "{leaver}는 남았지만 몇 사람은 전단을 들고 남쪽으로 떠났다", source: seen }
+          - belief: { fact: "{leaver:은/는} 남았지만 몇 사람은 전단을 들고 남쪽으로 떠났다", source: seen }
         miss:
           - faction_population: { faction: own, delta: -3 }
           - faction_morale: { faction: own, delta: -1 }
           - npc_depart: { who: leaver }
-          - belief: { fact: "{leaver}와 서넛이 전단을 들고 남쪽 집결지로 떠났다. 붙잡지 못했다", source: seen }
+          - belief: { fact: "{leaver:과/와} 서넛이 전단을 들고 남쪽 집결지로 떠났다. 붙잡지 못했다", source: seen }
     - id: let_go
       label: 막지 않는다. 마른 식량을 나눠 준다
       effects:
@@ -170,7 +170,7 @@
         - faction_population: { faction: own, delta: -3 }
         - npc_depart: { who: leaver }
         - relation: { who: leaver, axis: affection, delta: 2 }
-        - belief: { fact: "{leaver}와 서넛이 남쪽 집결지로 떠났다. 마른 식량을 쥐여 보냈다", source: seen }
+        - belief: { fact: "{leaver:과/와} 서넛이 남쪽 집결지로 떠났다. 마른 식량을 쥐여 보냈다", source: seen }
     - id: report
       label: 지도부에 알린다
       effects:

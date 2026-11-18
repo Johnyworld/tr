@@ -59,7 +59,7 @@
   cast:
     suspect: { faction: own }
   setup: 창고 자물쇠가 쇠지레로 비틀려 있다. 식량 자루 몇 개가 비었다. 창고지기가 소리를 지르고, 사람들이 몰려든다. 바닥에 흙 묻은 발자국이 숙소 쪽으로 나 있다. 그 끝에 {suspect}의 숙소가 있다.
-  ai_direction: "{suspect}이(가) 정말 훔쳤는지는 판정으로 드러난다. 굶는 가족이 있을 수도, 누명일 수도 있다. 사람들은 범인을 원한다. 아무도 숫자를 말하지 않는다 (얼마나 없어졌는지 지어내지 않는다)."
+  ai_direction: "{suspect:이/가} 정말 훔쳤는지는 판정으로 드러난다. 굶는 가족이 있을 수도, 누명일 수도 있다. 사람들은 범인을 원한다. 아무도 숫자를 말하지 않는다 (얼마나 없어졌는지 지어내지 않는다)."
   choices:
     - id: track
       label: 발자국을 끝까지 따라가 확인한다
@@ -67,7 +67,7 @@
       outcomes:
         success:
           - relation: { who: suspect, axis: trust, delta: -2 }
-          - deed: { summary: "창고를 턴 {suspect}을(를) 찾아내 식량을 되찾았다", tags: [diligence], severity: 2, privacy: public }
+          - deed: { summary: "창고를 턴 {suspect:을/를} 찾아내 식량을 되찾았다", tags: [diligence], severity: 2, privacy: public }
         partial:
           - faction_resource: { faction: own, resource: food, delta: -5 }
           - belief: { fact: "{suspect}의 숙소에서 식량 자루 반을 찾았다. 나머지는 이미 어디론가 갔다", source: seen }
@@ -81,13 +81,13 @@
       outcomes:
         success:
           - relation: { who: suspect, axis: trust, delta: 2 }
-          - belief: { fact: "{suspect}이(가) 밤사이 식량 자루를 창고 앞에 도로 갖다 놓았다. 아무도 누군지 모른다", source: seen }
+          - belief: { fact: "{suspect:이/가} 밤사이 식량 자루를 창고 앞에 도로 갖다 놓았다. 아무도 누군지 모른다", source: seen }
         partial:
           - relation: { who: suspect, axis: trust, delta: 1 }
           - faction_resource: { faction: own, resource: food, delta: -5 }
         miss:
           - faction_resource: { faction: own, resource: food, delta: -10 }
-          - belief: { fact: "{suspect}은(는) 무슨 소리냐며 문을 닫았다", source: seen }
+          - belief: { fact: "{suspect:은/는} 무슨 소리냐며 문을 닫았다", source: seen }
     - id: stay_out
       label: 끼어들지 않는다
       effects:
@@ -119,7 +119,7 @@
           - deed: { summary: 배식 줄의 주먹다짐을 뜯어말렸다, tags: [loyalty], severity: 1, privacy: public }
         partial:
           - relation: { who: hitter, axis: affection, delta: -1 }
-          - belief: { fact: "{hitter}과(와) {hit}을(를) 떼어 놓았지만 팔꿈치에 한 대 맞았다", source: seen }
+          - belief: { fact: "{hitter:과/와} {hit:을/를} 떼어 놓았지만 팔꿈치에 한 대 맞았다", source: seen }
         miss:
           - faction_morale: { faction: own, delta: -1 }
           - belief: { fact: 말리다가 판이 더 커졌다. 배식이 한동안 멈췄다, source: seen }
@@ -132,7 +132,7 @@
       label: 구경꾼들 틈에 선다
       effects:
         - faction_morale: { faction: own, delta: -1 }
-        - belief: { fact: "배식 줄에서 {hitter}과(와) {hit}이(가) 주먹다짐을 했다. 아무도 말리지 않았다", source: seen }
+        - belief: { fact: "배식 줄에서 {hitter:과/와} {hit:이/가} 주먹다짐을 했다. 아무도 말리지 않았다", source: seen }
 
 - id: cf_mutiny_whisper
   title: 창고 열쇠 이야기
@@ -148,14 +148,14 @@
   cast:
     plotter: { faction: own }
   setup: '{plotter:이/가} 숙소 뒤로 당신을 끌고 간다. "윗사람들 창고에는 아직 통조림이 쌓였대. 우리만 굶는 거야. 며칠 뒤 밤에 몇이서 창고를 열 거야. 너도 끼어."'
-  ai_direction: "{plotter}은(는) 진심으로 분노해 있다. 지도부 창고가 정말 넉넉한지는 모른다 (소문일 수 있다). 가담하면 며칠 뒤 그 밤이 온다. 알리면 {plotter}은(는) 무거운 벌을 받는다."
+  ai_direction: "{plotter:은/는} 진심으로 분노해 있다. 지도부 창고가 정말 넉넉한지는 모른다 (소문일 수 있다). 가담하면 며칠 뒤 그 밤이 온다. 알리면 {plotter:은/는} 무거운 벌을 받는다."
   choices:
     - id: join
       label: 끼겠다고 한다
       effects:
         - set_flag: cf_mutiny_joined
         - relation: { who: plotter, axis: trust, delta: 2 }
-        - belief: { fact: "{plotter}과(와) 몇이 며칠 뒤 밤에 지도부 창고를 열기로 했다. 끼겠다고 했다", source: seen }
+        - belief: { fact: "{plotter:과/와} 몇이 며칠 뒤 밤에 지도부 창고를 열기로 했다. 끼겠다고 했다", source: seen }
     - id: report
       label: 지도부에 알린다
       effects:
@@ -166,7 +166,7 @@
       label: 듣지 않은 걸로 하겠다며 돌아선다
       effects:
         - relation: { who: plotter, axis: trust, delta: -1 }
-        - belief: { fact: "{plotter}이(가) 지도부 창고를 털자고 했다. 거절했다", source: seen }
+        - belief: { fact: "{plotter:이/가} 지도부 창고를 털자고 했다. 거절했다", source: seen }
 
 - id: cf_mutiny_night
   title: 창고 앞의 밤

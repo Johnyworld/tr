@@ -37,16 +37,42 @@ describe("다짐", () => {
     expect(w.state().resolveLog).toHaveLength(0);
   });
 
-  it("원수가 죽으면 이룬 다짐: 경험치와 기록", () => {
+  it("원수가 눈앞에서 죽으면 이룬 다짐: 경험치와 기록", () => {
     const w = make("role_a_grunt");
     look(w);
     const xp = me(w).xp;
+    expect(w.runCheat("~summon c_cheolgu").ok).toBe(true);
     expect(w.runCheat("~kill c_cheolgu").ok).toBe(true);
     const r = look(w);
     if (r.ok) expect(r.resultText).toContain("다짐을 이뤘다");
     expect(currentResolve(w.state())).toBeNull();
     expect(me(w).xp).toBeGreaterThan(xp);
     expect(resolveChronicle(w.state(), content, me(w).id)[0]).toContain("이룬 다짐");
+  });
+
+  it("모르는 곳에서 죽으면 아직이다. 유해가 있는 곳에 닿거나 우리 무리가 가두면 이룬다 (원칙 4)", () => {
+    const w = make("role_a_grunt");
+    look(w);
+    expect(w.runCheat("~kill c_cheolgu").ok).toBe(true);
+    look(w);
+    expect(currentResolve(w.state())).not.toBeNull();
+    const where = w.state().remains.find((x) => x.of === "c_cheolgu")!.zone;
+    expect(w.runCheat(`~goto ${where}`).ok).toBe(true);
+    const r = look(w);
+    if (r.ok) expect(r.resultText).toContain("다짐을 이뤘다");
+    expect(currentResolve(w.state())).toBeNull();
+  });
+
+  it("우리 거점 안에서 묶은 원수는 바로 우리 무리의 포로가 되고, 갚기를 이룬다", () => {
+    const w = make("role_a_grunt");
+    look(w);
+    expect(w.runCheat("~summon c_cheolgu").ok).toBe(true);
+    expect(w.runCheat("~harm c_cheolgu serious").ok).toBe(true);
+    const r = w.executeTool("take_prisoner", { target: "c_cheolgu" });
+    expect(r.ok && r.resultText).toContain("거점에 가뒀다");
+    expect(w.state().characters.c_cheolgu!.captive?.by).toBe("faction_a");
+    look(w);
+    expect(currentResolve(w.state())).toBeNull();
   });
 
   it("갚기는 내려놓을 수 있고, 이룬 것으로 친다", () => {

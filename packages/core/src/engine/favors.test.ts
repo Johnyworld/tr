@@ -56,6 +56,18 @@ describe("부탁", () => {
     expect(w.state().favors.find((x) => x.id === f.id)?.status).toBe("kept");
   });
 
+  it("약속한 물건을 transfer_item으로 건네도 지킨 것이다 (플레이 테스트 4)", () => {
+    const { w, f } = offered();
+    w.executeTool("favor", { favor_id: f.id, action: "accept" });
+    const p = w.state().promises.find((x) => x.favor === f.id)!;
+    expect(w.runCheat("~give antibiotics 1").ok).toBe(true);
+    const r = w.executeTool("transfer_item", { from: w.state().playerId, to: "a_chaewon", item_id: "antibiotics", quantity: 1 });
+    expect(r.ok && r.resultText).toContain("약속을 지켰다");
+    expect(r.ok && r.resultText).toContain("고맙다며");
+    expect(w.state().promises.find((x) => x.id === p.id)?.status).toBe("kept");
+    expect(w.state().favors.find((x) => x.id === f.id)?.status).toBe("kept");
+  });
+
   it("거절하면 접히고, 같은 부탁은 다시 오지 않는다", () => {
     const { w, f } = offered();
     expect(w.executeTool("favor", { favor_id: f.id, action: "decline" }).ok).toBe(true);

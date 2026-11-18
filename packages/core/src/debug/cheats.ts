@@ -65,8 +65,8 @@ function setLevel(ctx: ToolContext, c: Character, trackId: string, level: string
   const to = track.levels.findIndex((l) => l.id === level || l.label === level);
   if (to < 0) return { ok: false, error: `${track.label}의 단계: ${track.levels.map((l) => `${l.id}(${l.label})`).join(", ")}` };
   const from = Math.max(0, track.levels.findIndex((l) => l.id === c.conditions[track.id]));
-  if (c.dead) return { ok: false, error: `${c.name}은(는) 이미 죽었다.` };
-  if (to === from) return { ok: true, text: `${c.name}의 ${track.label}은(는) 이미 ${track.levels[to]!.label}.` };
+  if (c.dead) return { ok: false, error: `${josa(c.name, "은/는")} 이미 죽었다.` };
+  if (to === from) return { ok: true, text: `${c.name}의 ${josa(track.label, "은/는")} 이미 ${track.levels[to]!.label}.` };
   const change = changeCondition(ctx, c.id, track.id, to - from, "cheat", "치트");
   return { ok: true, text: change?.line || `${c.name}의 ${track.label}: ${track.levels[to]!.label}` };
 }
@@ -169,7 +169,7 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         }
         const c = findCharacter(ctx, args.join(" "));
         if (!c || c.id === state.playerId) return { ok: false, error: `없는 인물: ${args.join(" ")}` };
-        if (c.dead) return { ok: false, error: `${c.name}은(는) 죽었다.` };
+        if (c.dead) return { ok: false, error: `${josa(c.name, "은/는")} 죽었다.` };
         if (state.scene.present.includes(c.id)) return { ok: true, text: `${josa(c.name, "은/는")} 이미 장면에 있다.` };
         enterScene(ctx, c.id);
         return { ok: true, text: `${josa(c.name, "이/가")} 장면에 들어왔다.` };
@@ -179,7 +179,7 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         if (!zone || !content.locations[zone]) return { ok: false, error: `~goto 구역 — ${Object.keys(content.locations).join(", ")}` };
         if (state.battle) return { ok: false, error: "전투 중에는 옮길 수 없다." };
         store.append({ type: "zone_moved", from: state.playerZone, to: zone });
-        return { ok: true, text: `${content.locations[zone]!.name}(으)로 옮겼다.` };
+        return { ok: true, text: `${josa(content.locations[zone]!.name, "으로/로")} 옮겼다.` };
       }
       case "time": {
         const arg = args[0] ?? "";

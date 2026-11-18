@@ -1,4 +1,4 @@
-# 장례와 추모 (12-163): 사흘 안에 우리 무리의 이름 있는 사람이 죽었을 때 (when.funeral). {deceased}는 그 사람.
+# 장례와 추모 (12-163): 사흘 안에 우리 무리의 이름 있는 사람이 죽었을 때 (when.funeral). {deceased:은/는} 그 사람.
 # 배역 bereaved는 그 사람과 가까웠던 사람 (관계가 있거나 호감이 legacy.close_affection 이상)
 # 시신을 거두는 일은 take_action.bury로 (이야기 효과로 하지 않는다). 이야기는 산 사람들의 몫이다
 

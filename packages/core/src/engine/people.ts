@@ -149,12 +149,12 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
   // 곁에서 죽는 것을 보면 마음이 흔들린다 (12-48)
   const nerves = content.scenario.body?.nerves;
   if (nerves && (state.scene.present.includes(id) || state.companions.includes(id)) && !isInfected(content, state.characters[id])) {
-    shakeNerves(ctx, nerves.witness_death, `${dead}이(가) 눈앞에서 죽었다`);
+    shakeNerves(ctx, nerves.witness_death, `${josa(dead, "이/가")} 눈앞에서 죽었다`);
   }
   // 눈앞의 죽음은 공포도 부른다 (12-95)
   const fear = content.scenario.body?.fear;
   if (fear && (state.scene.present.includes(id) || state.companions.includes(id)) && !isInfected(content, state.characters[id])) {
-    frighten(ctx, fear.witness_death, `${dead}이(가) 눈앞에서 죽었다`);
+    frighten(ctx, fear.witness_death, `${josa(dead, "이/가")} 눈앞에서 죽었다`);
   }
   // 그 자리에 있던 다른 사람 (주인공·죽은 사람 빼고): 누가 죽였는지 말이 퍼진다
   const witnesses = state.scene.present.filter((w) => w !== id && w !== state.playerId && !state.characters[w]?.dead);
@@ -174,7 +174,7 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
     const present = state.scene.present.includes(t.other);
     const learned = present || witnesses.length > 0 || ctx.rng() < VENDETTA_TRACE_CHANCE;
     if (!learned) continue;
-    store.append({ type: "relation_changed", from: t.other, to: state.playerId, delta: { trust: -3, affection: family ? -3 : -2, respect: 0 }, reason: present ? `${dead}을(를) 눈앞에서 죽였다` : `${dead}을(를) 죽였다고 들었다` });
+    store.append({ type: "relation_changed", from: t.other, to: state.playerId, delta: { trust: -3, affection: family ? -3 : -2, respect: 0 }, reason: present ? `${josa(dead, "을/를")} 눈앞에서 죽였다` : `${josa(dead, "을/를")} 죽였다고 들었다` });
     // 가족·연인·친구는 복수를 다짐한다
     if (family || t.kind === "lover" || t.kind === "friend") store.append({ type: "vendetta_sworn", avenger: t.other, victim: id });
   }
@@ -259,7 +259,7 @@ function spawnAvenger(ctx: ToolContext, deadId: string, witnessed: boolean): voi
   store.append({ type: "extra_spawned", character: avenger, unseen: true });
   promoteExtra(ctx, id);
   store.append({ type: "ties_generated", ties: [{ a: id, b: deadId, kind: pick.kind, secret: null }] });
-  store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: -3, affection: -3, respect: 0 }, reason: `${TIE_LABELS[TIE_INVERSE[pick.kind]]}을(를) 죽였다` });
+  store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: -3, affection: -3, respect: 0 }, reason: `${josa(TIE_LABELS[TIE_INVERSE[pick.kind]], "을/를")} 죽였다` });
   store.append({ type: "vendetta_sworn", avenger: id, victim: deadId });
 }
 
@@ -280,7 +280,7 @@ export function describeTieLines(state: GameState, content: Content, id: string)
   }
   // 복수 다짐 (12-135): GM이 연기하는 그 인물의 속마음. 주인공에게 드러내는지는 장면이 정한다
   const v = (state.vendettas ?? []).find((x) => x.avenger === id);
-  if (v) lines.push(`원한: 당신이 ${playerCalls(state, content, v.victim)}을(를) 죽인 것을 알고 복수를 다짐했다. 겉으로 드러낼지, 기회를 노릴지는 그 사람의 성격대로`);
+  if (v) lines.push(`원한: 당신이 ${josa(playerCalls(state, content, v.victim), "을/를")} 죽인 것을 알고 복수를 다짐했다. 겉으로 드러낼지, 기회를 노릴지는 그 사람의 성격대로`);
   return lines;
 }
 

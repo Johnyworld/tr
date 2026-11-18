@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { campFactor, watchedHere } from "./facilities.ts";
 import type { Content, StoryletContent } from "../content/schemas.ts";
 import { activeCompanions, bondOf } from "../game/companions.ts";
@@ -129,7 +130,7 @@ export function describeCamp(content: Content, state: GameState): string | null 
   const fire = !!state.playerZone && (state.fires[state.playerZone] ?? 0) > state.time;
   return (
     `잠자리: 여기서 자면 야영이다 (지켜 주는 지붕이 없다). ` +
-    (watchers.length ? `${watchers.join("·")}이(가) 번갈아 보초를 설 수 있다. ` : "혼자 잠들면 아무도 지키지 않는다 (보초를 서려면 activity guard_duty, 그동안 잠은 못 잔다). ") +
+    (watchers.length ? `${josa(watchers.join("·"), "이/가")} 번갈아 보초를 설 수 있다. ` : "혼자 잠들면 아무도 지키지 않는다 (보초를 서려면 activity guard_duty, 그동안 잠은 못 잔다). ") +
     (fire ? "모닥불이 따뜻하지만 불빛과 연기가 멀리서 보인다. " : "") +
     (site.ownLand ? "우리 땅이라 우리 순찰이 돈다." : "무엇이 다가올지는 시스템이 정한다.")
   );

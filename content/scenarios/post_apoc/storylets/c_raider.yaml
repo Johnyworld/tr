@@ -225,7 +225,7 @@
   cast:
     sora: { ids: [c_sora], enter: false }
   setup: 감시탑 교대 시간. 탐조등이 한 바퀴 돌고 멎는 틈에 배수로 쪽에서 작은 그림자 둘이 움직인다. 당신이 손을 들어 신호하기만 하면 된다. 아니면 소리치면 된다.
-  ai_direction: "그림자 둘은 {sora}와 고석진이다. 옆 감시탑 보초가 졸고 있지만 언제 깰지 모른다. 탐조등이 다시 돌기 전에 끝내야 한다."
+  ai_direction: "그림자 둘은 {sora:과/와} 고석진이다. 옆 감시탑 보초가 졸고 있지만 언제 깰지 모른다. 탐조등이 다시 돌기 전에 끝내야 한다."
   choices:
     - id: cover
       label: 탐조등을 반대편으로 돌려 둘을 보낸다
@@ -237,7 +237,7 @@
           - clear_flag: c_sora_help
           - relation: { who: sora, axis: trust, delta: 2 }
           - deed: { summary: 감시탑 교대 때 탈영하는 동료들을 몰래 내보냈다, tags: [mercy, betrayal], severity: 3, privacy: private }
-          - belief: { fact: "{sora}와 고석진이 담을 넘어 구시가 쪽 어둠으로 사라졌다. 아무도 보지 못했다", source: seen }
+          - belief: { fact: "{sora:과/와} 고석진이 담을 넘어 구시가 쪽 어둠으로 사라졌다. 아무도 보지 못했다", source: seen }
         partial:
           - set_flag: c_sora_gone
           - npc_depart: { who: sora }

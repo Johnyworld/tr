@@ -67,9 +67,9 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
       continue;
     }
 
-    // 관계가 바닥이면 떠난다 (동물은 예외)
+    // 관계가 바닥이면 떠난다 (동물과 묶여 끌려가는 포로는 예외)
     const rel = state.relations[id]?.[state.playerId] ?? NEUTRAL_RELATION;
-    if (bond.kind !== "animal" && rel.trust <= (bond.kind === "kin" ? KIN_LEAVE_AT : LEAVE_AT)) {
+    if (bond.kind !== "animal" && bond.kind !== "prisoner" && rel.trust <= (bond.kind === "kin" ? KIN_LEAVE_AT : LEAVE_AT)) {
       store.append({ type: "companion_left", characterId: id, reason: "더는 믿지 않는다" });
       out.push(note(name, "leave", `${josa(name, "은/는")} 더는 당신을 믿지 않는다. 함께 다니지 않겠다며 떠난다. 떠나는 장면을 서술한다.`));
       continue;
@@ -235,7 +235,7 @@ const companionCrossroads = defineTool({
       return { ok: true, resultText: `${josa(name, "은/는")} 기다렸다는 듯 남는다. 이제 함께 다니는 사이다 (연고).`, display: { type: "presence", npcName: `${name} · 연고`, action: "enter" } };
     }
     if (!input.move || !input.stat) return { ok: false, error: "떠나려는 사람을 붙잡으려면 판정이 필요하다 (move, stat)." };
-    const check = rollPlayerCheck({ move: input.move, stat: input.stat, difficulty: "normal", intent: `${name}을(를) 붙잡는다` }, ctx, { target: input.target });
+    const check = rollPlayerCheck({ move: input.move, stat: input.stat, difficulty: "normal", intent: `${josa(name, "을/를")} 붙잡는다` }, ctx, { target: input.target });
     if (!check.ok) return check;
     const lines = [`판정: ${CHECK_OUTCOME_LABELS[check.outcome]}`];
     if (check.outcome === "success") {

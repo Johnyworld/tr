@@ -1,5 +1,5 @@
 # 큰 재난 (12-169): 전조(phase omen, 사흘)와 재난 뒤(phase struck). 주인공이 가까이 있을 때만 (그 구역·이웃·우리 무리·내 거처, 도시 전체 재난이면 늘).
-# 전조 이야기에서 대비하면(disaster_prepare) 피해가 준다. 무엇이 오는지는 정해 주지 않는다: 낌새만 보인다. {disaster_zone}은 덮칠 곳
+# 전조 이야기에서 대비하면(disaster_prepare) 피해가 준다. 무엇이 오는지는 정해 주지 않는다: 낌새만 보인다. {disaster_zone:은/는} 덮칠 곳
 
 # ── 큰불 ──
 - id: ds_fire_omen

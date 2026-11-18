@@ -118,9 +118,9 @@
       outcomes:
         success:
           - relation: { who: eager, axis: trust, delta: 1 }
-          - belief: { fact: "{eager}는 지난 일로 동료들 앞에서 체면을 잃었다고 여긴다. 그걸 만회하려 한다", source: seen }
+          - belief: { fact: "{eager:은/는} 지난 일로 동료들 앞에서 체면을 잃었다고 여긴다. 그걸 만회하려 한다", source: seen }
         partial:
-          - belief: { fact: "{eager}는 그냥 답답하다고만 했다", source: report }
+          - belief: { fact: "{eager:은/는} 그냥 답답하다고만 했다", source: report }
         miss:
           - relation: { who: eager, axis: affection, delta: -1 }
     - id: refuse
@@ -138,7 +138,7 @@
   cast:
     teller: { faction: own, ranks: [grunt], known: true }
   setup: "{teller:이/가} 오늘 다녀온 길을 보고한다. 말은 매끄러운데, 장화에 묻은 흙 색이 그가 말한 길의 흙이 아니다."
-  ai_direction: "{teller}는 맡은 길 대신 더 안전한 길로 돌아왔다. 겁이 나서였다. 큰일은 아니지만, 다음에 그 길에 무엇이 있었는지 아무도 모른다. 캐릭터가 알아챈 것은 흙 색뿐이다."
+  ai_direction: "{teller:은/는} 맡은 길 대신 더 안전한 길로 돌아왔다. 겁이 나서였다. 큰일은 아니지만, 다음에 그 길에 무엇이 있었는지 아무도 모른다. 캐릭터가 알아챈 것은 흙 색뿐이다."
   choices:
     - id: press
       label: 장화를 가리키며 어느 길로 왔는지 다시 묻는다
@@ -146,10 +146,10 @@
       outcomes:
         success:
           - relation: { who: teller, axis: respect, delta: 1 }
-          - belief: { fact: "{teller}는 맡은 길이 무서워 돌아왔다고 털어놓았다. 그 길은 아직 아무도 보지 않았다", source: seen }
+          - belief: { fact: "{teller:은/는} 맡은 길이 무서워 돌아왔다고 털어놓았다. 그 길은 아직 아무도 보지 않았다", source: seen }
         partial:
           - relation: { who: teller, axis: trust, delta: -1 }
-          - belief: { fact: "{teller}는 끝까지 그 길로 갔다고 우겼다. 거짓말 같다", source: seen }
+          - belief: { fact: "{teller:은/는} 끝까지 그 길로 갔다고 우겼다. 거짓말 같다", source: seen }
         miss:
           - relation: { who: teller, axis: affection, delta: -2 }
     - id: quiet
@@ -157,7 +157,7 @@
       effects:
         - relation: { who: teller, axis: trust, delta: 1 }
         - relation: { who: teller, axis: affection, delta: 1 }
-        - belief: { fact: "{teller}가 오늘 맡은 길로 가지 않은 것 같다. 둘만 있을 때 겁나면 말하라고 했다", source: seen }
+        - belief: { fact: "{teller:이/가} 오늘 맡은 길로 가지 않은 것 같다. 둘만 있을 때 겁나면 말하라고 했다", source: seen }
     - id: report_up
       label: 간부에게 그대로 알린다
       effects:
@@ -250,4 +250,4 @@
     - id: nod
       label: 고개만 끄덕인다
       effects:
-        - belief: { fact: "{leaving}이(가) 공세에 나갔다", source: seen }
+        - belief: { fact: "{leaving:이/가} 공세에 나갔다", source: seen }

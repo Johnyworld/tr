@@ -114,14 +114,29 @@ const promiseTool = defineTool({
       }
       store.append({ type: "item_transferred", from: me.id, to: p.to, itemId: p.item.id, quantity: p.item.quantity });
     }
-    store.append({ type: "promise_settled", id: p.id, status: "kept" });
-    relate(ctx, p.to, r.kept, "지킨 약속");
-    recordDeed(ctx, { summary: `${who}에게 한 약속을 지켰다: ${p.what}`, tags: ["honesty"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
-    // 부탁에서 맺은 약속이면 보답 (12-174)
-    const thanks = p.favor ? settleFavor(ctx, p.favor, true) : [];
-    return { ok: true, resultText: [`${who}에게 한 약속을 지켰다${p.item ? " (물건을 건넸다)" : ""}. 이 결과대로 서술하라.`, ...thanks].join("\n"), display: QUIET };
+    return { ok: true, resultText: settleKept(ctx, p).join("\n"), display: QUIET };
   },
 });
+
+/** 약속을 지킨 것으로 매듭짓는다 (물건은 이미 건넸다). GM에게 줄 줄 */
+function settleKept(ctx: ToolContext, p: PromiseRecord): string[] {
+  const r = rules(ctx.content)!;
+  const who = playerCalls(ctx.store.getState(), ctx.content, p.to);
+  ctx.store.append({ type: "promise_settled", id: p.id, status: "kept" });
+  relate(ctx, p.to, r.kept, "지킨 약속");
+  recordDeed(ctx, { summary: `${who}에게 한 약속을 지켰다: ${p.what}`, tags: ["honesty"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
+  // 부탁에서 맺은 약속이면 보답 (12-174)
+  const thanks = p.favor ? settleFavor(ctx, p.favor, true) : [];
+  return [`${who}에게 한 약속을 지켰다${p.item ? " (물건을 건넸다)" : ""}. 이 결과대로 서술하라.`, ...thanks];
+}
+
+/** 약속한 물건을 transfer_item으로 그 사람에게 건넸으면 그대로 지킨 것이다 (promise keep을 따로 부르지 않아도) */
+export function keepByGift(ctx: ToolContext, to: string, itemId: string, quantity: number): string[] {
+  if (!rules(ctx.content)) return [];
+  const state = ctx.store.getState();
+  const p = openPromises(state).find((x) => x.by === state.playerId && x.to === to && x.item?.id === itemId && x.item.quantity <= quantity);
+  return p ? settleKept(ctx, p) : [];
+}
 
 export const PROMISE_TOOLS = [promiseTool] as const;
 

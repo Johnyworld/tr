@@ -370,7 +370,7 @@
           - companion_join: { who: friend, kind: purpose, until: { zone: riverside } }
           - companion_join: { who: netter, kind: purpose, until: { zone: riverside } }
           - deed: { summary: 겨울 잔치 전날 밤 숨겨 둔 그물꾼까지 셋을 데리고 바위길로 빠져나갔다, tags: [mercy, disobedience], severity: 3, privacy: semi_private }
-          - belief: { fact: "{netter}는 아직 약 기운에 비틀거렸다. 추복만이 한쪽 어깨를, 내가 다른 쪽을 받쳤다. 바위길 끝의 배에 넷이 탔다", source: seen }
+          - belief: { fact: "{netter:은/는} 아직 약 기운에 비틀거렸다. 추복만이 한쪽 어깨를, 내가 다른 쪽을 받쳤다. 바위길 끝의 배에 넷이 탔다", source: seen }
         partial:
           - set_flag: y2_eve_done
           - set_flag: y_leave_pass
@@ -385,7 +385,7 @@
           - set_flag: y_marked
           - set_flag: y_suspected
           - npc_capture: { who: netter, by: faction_y, zone: yeoul_isle }
-          - belief: { fact: "다락에서 {netter}를 내리다 사다리가 무너졌다. 경비가 먼저 왔다. 우리는 흩어졌고, 그물꾼은 다시 저장고 쪽으로 끌려갔다", source: seen }
+          - belief: { fact: "다락에서 {netter:을/를} 내리다 사다리가 무너졌다. 경비가 먼저 왔다. 우리는 흩어졌고, 그물꾼은 다시 저장고 쪽으로 끌려갔다", source: seen }
     - id: sit_quiet
       label: 둘을 돌려보내고 내일 잔치를 기다린다
       effects:

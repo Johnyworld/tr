@@ -590,13 +590,13 @@
           - clear_flag: cp_guard_close
           - release_player: { returned: false }
           - send_to: old_town
-          - belief: { fact: "{guard}이(가) 걸지 않은 문으로 빠져나와 구시가에 닿았다. 빼앗긴 것은 두고 왔다", source: seen }
+          - belief: { fact: "{guard:이/가} 걸지 않은 문으로 빠져나와 구시가에 닿았다. 빼앗긴 것은 두고 왔다", source: seen }
         partial:
           - clear_flag: cp_guard_close
           - release_player: { returned: false }
           - send_to: old_town
           - npc_hurt: { who: guard, steps: 1 }
-          - belief: { fact: "뒤에서 호루라기가 울렸다. 빠져나오긴 했다. {guard}이(가) 그 값을 치렀을 것이다", source: seen }
+          - belief: { fact: "뒤에서 호루라기가 울렸다. 빠져나오긴 했다. {guard:이/가} 그 값을 치렀을 것이다", source: seen }
         miss:
           - clear_flag: cp_guard_close
           - set_flag: cp_watched
@@ -685,17 +685,17 @@
           - release_player: { returned: false, home: true }
           - relation: { who: rescuer, axis: trust, delta: 2 }
           - faction_morale: { faction: own, delta: 1 }
-          - belief: { fact: "{rescuer}이(가) 벽 너머로 와서 나를 빼내 거점까지 데려왔다", source: seen }
+          - belief: { fact: "{rescuer:이/가} 벽 너머로 와서 나를 빼내 거점까지 데려왔다", source: seen }
         partial:
           - clear_flag: cp_word_sent
           - release_player: { returned: false, home: true }
           - npc_hurt: { who: rescuer, steps: 1 }
-          - belief: { fact: "빠져나오다 총소리가 났다. {rescuer}이(가) 다쳤지만 둘 다 돌아왔다", source: seen }
+          - belief: { fact: "빠져나오다 총소리가 났다. {rescuer:이/가} 다쳤지만 둘 다 돌아왔다", source: seen }
         miss:
           - clear_flag: cp_word_sent
           - npc_capture: { who: rescuer, by: captor }
           - body: { track: nerves, delta: 2 }
-          - belief: { fact: "담을 넘기 전에 경비에게 들켰다. {rescuer}이(가) 나 대신 붙잡혔다", source: seen }
+          - belief: { fact: "담을 넘기 전에 경비에게 들켰다. {rescuer:이/가} 나 대신 붙잡혔다", source: seen }
     - id: wave_off
       label: 경비가 너무 많다고 돌려보낸다
       effects:
@@ -845,7 +845,7 @@
       label: 몸값을 마련해 오라고 한다
       effects:
         - reveal_tie: { who: kin, other: prisoner }
-        - belief: { fact: "{kin}은(는) {prisoner}의 몸값을 마련해 오겠다고 했다. 그 무리에 몸값 얘기를 넣을 수 있다", source: seen }
+        - belief: { fact: "{kin:은/는} {prisoner}의 몸값을 마련해 오겠다고 했다. 그 무리에 몸값 얘기를 넣을 수 있다", source: seen }
     - id: turn_away
       label: 돌아가라고 한다
       effects:
@@ -1015,7 +1015,7 @@
           - set_flag: cp_ours_freed
           - zone_noise: 2
           - body: { track: nerves, delta: 1 }
-          - belief: { fact: "{ours}을(를) 꺼냈지만 빠져나오다 경비에게 얼굴을 보였을지 모른다", source: seen }
+          - belief: { fact: "{ours:을/를} 꺼냈지만 빠져나오다 경비에게 얼굴을 보였을지 모른다", source: seen }
         miss:
           - zone_noise: 2
           - capture_player: { by: zone_owner }
@@ -1024,12 +1024,12 @@
       effects:
         - set_flag: cp_ours_promise
         - relation: { who: ours, axis: trust, delta: 1 }
-        - belief: { fact: "{ours}이(가) {zone} 창고 뒤 창살 안에 살아 있다. 다시 오겠다고 했다", source: seen }
+        - belief: { fact: "{ours:이/가} {zone} 창고 뒤 창살 안에 살아 있다. 다시 오겠다고 했다", source: seen }
     - id: leave
       label: 못 본 척 지나간다
       effects:
         - relation: { who: ours, axis: trust, delta: -3 }
-        - belief: { fact: "{ours}이(가) {zone}에 갇혀 있는 것을 보고도 지나쳤다", source: seen }
+        - belief: { fact: "{ours:이/가} {zone}에 갇혀 있는 것을 보고도 지나쳤다", source: seen }
 
 - id: cp_ours_breakout
   title: 교대 직전
@@ -1063,7 +1063,7 @@
           - set_flag: cp_ours_freed
           - clear_flag: cp_ours_promise
           - npc_hurt: { who: ours, steps: 1 }
-          - belief: { fact: "자물쇠가 늦게 열렸다. {ours}은(는) 담을 넘다 다쳤지만 함께 빠져나왔다", source: seen }
+          - belief: { fact: "자물쇠가 늦게 열렸다. {ours:은/는} 담을 넘다 다쳤지만 함께 빠져나왔다", source: seen }
         miss:
           - clear_flag: cp_ours_promise
           - zone_noise: 2

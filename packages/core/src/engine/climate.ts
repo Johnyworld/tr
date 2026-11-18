@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { stoveAt } from "./facilities.ts";
 import type { Content } from "../content/schemas.ts";
 import { isCreature } from "../game/kinds.ts";
@@ -260,7 +261,7 @@ export function lightFire(ctx: ToolContext, item: string): { ok: true; lines: st
   const name = ctx.content.items[item]?.name ?? item;
   const zone = state.playerZone;
   if (!zone) return { ok: false, error: "불을 피울 곳이 없다." };
-  if ((me.inventory[item] ?? 0) < 1) return { ok: false, error: `${name}이(가) 없다.` };
+  if ((me.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(name, "이/가")} 없다.` };
   const until = Math.max(state.time, state.fires[zone] ?? 0) + Math.round(hours * 60);
   ctx.store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: 1 });
   ctx.store.append({ type: "fire_lit", zone, until, itemId: item });
@@ -268,7 +269,7 @@ export function lightFire(ctx: ToolContext, item: string): { ok: true; lines: st
   const hoursLeft = Math.round(((until - state.time) / 60) * 10) / 10;
   return {
     ok: true,
-    lines: [`${name}(으)로 불을 피웠다. 앞으로 ${hoursLeft}시간쯤 탄다 (곁에 있으면 체감 +${fire.warmth}°). 연기와 불빛은 멀리서도 보일 수 있다.`],
+    lines: [`${josa(name, "으로/로")} 불을 피웠다. 앞으로 ${hoursLeft}시간쯤 탄다 (곁에 있으면 체감 +${fire.warmth}°). 연기와 불빛은 멀리서도 보일 수 있다.`],
   };
 }
 

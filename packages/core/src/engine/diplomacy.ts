@@ -80,7 +80,7 @@ const negotiate = defineTool({
     if (rankLevelOf(content, envoy.rank) < rules.envoy_level) return { ok: false, error: `${playerCalls(state, content, envoy.id)}에게는 무리를 대신해 약속할 권한이 없다 (간부 이상과 협상한다).` };
     if (!rules.moves.includes(input.approach)) return { ok: false, error: `협상에 쓰는 스킬이 아니다 (가능: ${rules.moves.join(", ")})` };
     const blocked = state.negotiationBlocked[theirs] ?? 0;
-    if (state.time < blocked) return { ok: false, error: `${factionName(content, theirs)}은(는) 얼마 전 제안을 거절했다. ${formatTime(blocked)} 뒤에 다시 꺼낼 수 있다.` };
+    if (state.time < blocked) return { ok: false, error: `${josa(factionName(content, theirs), "은/는")} 얼마 전 제안을 거절했다. ${formatTime(blocked)} 뒤에 다시 꺼낼 수 있다.` };
     const mine = me.factionId;
     if (pact.kind === "truce" && truceBetween(state, mine, theirs)) return { ok: false, error: "이미 휴전 중이다." };
     if (pact.kind === "truce" && disposition(content, theirs, mine, state) > HOSTILE && disposition(content, mine, theirs, state) > HOSTILE) {
@@ -104,7 +104,7 @@ const negotiate = defineTool({
       store.append({ type: "negotiation_refused", factionId: theirs, until });
       const now = disposition(content, theirs, mine, state);
       if (now > -3) store.append({ type: "faction_disposition_changed", from: theirs, to: mine, value: now - 1 });
-      lines.push(`${josa(envoyName, "이/가")} ${pact.label} 제안을 거절했다. ${factionName(content, theirs)}은(는) 우리를 전보다 나쁘게 본다. ${rules.retry_days}일 동안 다시 꺼내지 못한다.`);
+      lines.push(`${josa(envoyName, "이/가")} ${pact.label} 제안을 거절했다. ${josa(factionName(content, theirs), "은/는")} 우리를 전보다 나쁘게 본다. ${rules.retry_days}일 동안 다시 꺼내지 못한다.`);
     } else {
       const id = `pact_${state.turn}_${theirs}`;
       if (pact.kind === "truce") {
@@ -113,13 +113,13 @@ const negotiate = defineTool({
         store.append({ type: "pact_made", id, kind: "truce", a: mine, b: theirs, until, restore });
         store.append({ type: "faction_disposition_changed", from: mine, to: theirs, value: Math.max(restore.ab, TRUCE_DISPOSITION) });
         store.append({ type: "faction_disposition_changed", from: theirs, to: mine, value: Math.max(restore.ba, TRUCE_DISPOSITION) });
-        agreed = `${factionName(content, theirs)}과(와) 휴전했다. ${formatTime(until)}까지 서로 치지 않는다`;
+        agreed = `${josa(factionName(content, theirs), "과/와")} 휴전했다. ${formatTime(until)}까지 서로 치지 않는다`;
         lines.push(`${agreed}. 휴전 중에 그쪽 사람을 치면 휴전이 깨지고 배신으로 남는다.`);
       } else {
         store.append({ type: "pact_made", id, kind: "exchange", a: mine, b: theirs });
         for (const c of [...ourPeople, ...theirPeople]) store.append({ type: "npc_released", npcId: c.id });
         const back = ourPeople.map((c) => playerCalls(store.getState(), content, c.id)).join(", ");
-        agreed = `${factionName(content, theirs)}과(와) 포로를 바꿨다. 우리 사람(${back})이 풀려나 돌아온다`;
+        agreed = `${josa(factionName(content, theirs), "과/와")} 포로를 바꿨다. 우리 사람(${back})이 풀려나 돌아온다`;
         lines.push(`${agreed}${theirPeople.length ? `. 우리가 잡고 있던 ${factionName(content, theirs)} 사람 ${theirPeople.length}명도 돌려보낸다` : ""}.`);
       }
       if (outcome === "partial") {
@@ -132,7 +132,7 @@ const negotiate = defineTool({
           store.append({ type: "faction_resource_changed", factionId: theirs, resource, delta: give });
           paid.push(content.scenario.resources.find((r) => r.id === resource)?.label ?? resource);
         }
-        if (paid.length) lines.push(`대가로 우리 창고의 ${paid.join("·")}을(를) 내주기로 했다.`);
+        if (paid.length) lines.push(`대가로 우리 창고의 ${josa(paid.join("·"), "을/를")} 내주기로 했다.`);
       }
       // 협정은 우리 무리 사람이면 누구나 곧 안다
       const s = store.getState();
@@ -159,7 +159,7 @@ export function endExpiredTruces(ctx: ToolContext): ToolDisplayEvent[] {
     const me = state.characters[state.playerId];
     if (me && (p.a === me.factionId || p.b === me.factionId)) {
       const other = p.a === me.factionId ? p.b : p.a;
-      const fact = `${factionName(content, other)}과(와)의 휴전이 끝났다`;
+      const fact = `${josa(factionName(content, other), "과/와")}의 휴전이 끝났다`;
       const s = store.getState();
       store.append({ type: "belief_added", characterId: s.playerId, belief: { id: `b_${s.nextBeliefNo}`, fact, source: "report", accuracy: "exact", learnedAt: s.time } });
       displays.push({ type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS.report });
@@ -186,7 +186,7 @@ export function breakTruceIfAny(ctx: ToolContext, targetId: string): string | nu
   store.append({ type: "faction_disposition_changed", from: truce.b, to: truce.a, value: rules.broken });
   const other = factionName(content, target.factionId);
   recordDeed(ctx, { summary: `휴전 중에 ${other} 사람을 쳤다`, tags: ["betrayal"], severity: 2, privacy: "public", noisy: false });
-  return `휴전이 깨졌다. ${other}은(는) 이제 우리 무리를 깊이 미워한다. 배신으로 기억될 것이다.`;
+  return `휴전이 깨졌다. ${josa(other, "은/는")} 이제 우리 무리를 깊이 미워한다. 배신으로 기억될 것이다.`;
 }
 
 /**
@@ -201,7 +201,7 @@ function breakAiTruceIfAny(ctx: ToolContext, mine: string, theirs: string, broke
   store.append({ type: "faction_disposition_changed", from: theirs, to: mine, value: broken });
   const other = factionName(content, theirs);
   recordDeed(ctx, { summary: `지도부가 맺은 휴전 중에 ${other} 사람을 쳤다`, tags: ["betrayal"], severity: 2, privacy: "public", noisy: false });
-  return `휴전이 깨졌다. 지도부가 얻어 낸 휴전이었다. ${other}은(는) 이제 우리 무리를 깊이 미워하고, 우리 무리 안에서도 말이 나올 것이다.`;
+  return `휴전이 깨졌다. 지도부가 얻어 낸 휴전이었다. ${josa(other, "은/는")} 이제 우리 무리를 깊이 미워하고, 우리 무리 안에서도 말이 나올 것이다.`;
 }
 
 /** 두 무리 사이에 지도부끼리 맺은 휴전이 살아 있는가 (기록이 있고 태도가 아직 휴전 값) */
@@ -218,12 +218,12 @@ export function describeDiplomacyForGm(state: GameState, content: Content): stri
   const lines: string[] = [];
   for (const p of state.pacts) {
     if (p.a !== me.factionId && p.b !== me.factionId) continue;
-    lines.push(`- ${factionName(content, p.a === me.factionId ? p.b : p.a)}과(와) 휴전 중 (${formatTime(p.until)}까지). 그쪽 사람을 치면 휴전이 깨진다`);
+    lines.push(`- ${josa(factionName(content, p.a === me.factionId ? p.b : p.a), "과/와")} 휴전 중 (${formatTime(p.until)}까지). 그쪽 사람을 치면 휴전이 깨진다`);
   }
   // 지도부끼리 맺은 휴전 (12-146): 크게 밀린 무리가 얻어 낸 숨 돌릴 틈
   for (const [other, t] of Object.entries(state.factions[me.factionId]?.truces ?? {})) {
     if (!aiTruceActive(state, content, me.factionId, other)) continue;
-    lines.push(`- ${factionName(content, other)}과(와) 지도부끼리 맺은 휴전 중 (약 ${t.days}일 남음). 그동안 무리끼리는 서로 치지 않는다. 그쪽 사람을 치면 휴전이 깨진다`);
+    lines.push(`- ${josa(factionName(content, other), "과/와")} 지도부끼리 맺은 휴전 중 (약 ${t.days}일 남음). 그동안 무리끼리는 서로 치지 않는다. 그쪽 사람을 치면 휴전이 깨진다`);
   }
   if (sitsOnCouncil(state, content)) {
     lines.push(`협상할 수 있는 협정 (negotiate, 다른 무리의 간부 이상이 장면에 있을 때): ${rules.pacts.map((p) => `${p.id} ${p.label}(${p.summary})`).join(", ")}. 스킬: ${rules.moves.join(", ")}`);

@@ -53,7 +53,7 @@ import { createLearnSkillTool } from "./growth.ts";
 import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
 import { stashHint, stashTool } from "./stash.ts";
 import { LEVERAGE_TOOLS } from "./leverage.ts";
-import { PROMISE_TOOLS } from "./promises.ts";
+import { keepByGift, PROMISE_TOOLS } from "./promises.ts";
 import { FAVOR_TOOLS } from "./favors.ts";
 import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
@@ -72,7 +72,8 @@ const transferItem = defineTool({
     item_id: z.string().describe("아이템 id (상태에 표시된 것)"),
     quantity: z.number().int().min(1).describe("옮길 수량 (1 이상의 정수)"),
   }),
-  run(input, { store, content }) {
+  run(input, ctx) {
+    const { store, content } = ctx;
     const state = store.getState();
     if (input.from === input.to) return { ok: false, error: "보내는 쪽과 받는 쪽이 같습니다." };
     for (const holder of [input.from, input.to]) {
@@ -124,9 +125,11 @@ const transferItem = defineTool({
       itemId: item.id,
       quantity: input.quantity,
     });
+    // 약속한 물건을 그 사람에게 건넸으면 약속을 지킨 것이다 (12-174 부탁)
+    const kept = input.from === state.playerId ? keepByGift(ctx, input.to, item.id, input.quantity) : [];
     return {
       ok: true,
-      resultText: `${item.name} ${input.quantity}개: ${holderName(state, content, input.from)} → ${holderName(state, content, input.to)}.`,
+      resultText: [`${item.name} ${input.quantity}개: ${holderName(state, content, input.from)} → ${holderName(state, content, input.to)}.`, ...kept].join("\n"),
       display: {
         type: "item",
         fromName: holderName(state, content, input.from),
@@ -313,7 +316,7 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   const me = state.characters[state.playerId];
   const out = me && !me.dead ? incapacitatingSymptom(ctx.content.scenario, me) : undefined;
   if (out && !WHILE_INCAPACITATED.has(name)) {
-    return { ok: false, error: `${me!.name}은(는) ${out.label} 상태라 이 일을 할 수 없다 (${name}). 이야기와 대화는 깨어난 뒤에. take_action의 activity(wait 또는 sleep)로 시간만 흐르게 한다.` };
+    return { ok: false, error: `${josa(me!.name, "은/는")} ${out.label} 상태라 이 일을 할 수 없다 (${name}). 이야기와 대화는 깨어난 뒤에. take_action의 activity(wait 또는 sleep)로 시간만 흐르게 한다.` };
   }
   const parsed = tool.schema.safeParse(input);
   if (!parsed.success) {

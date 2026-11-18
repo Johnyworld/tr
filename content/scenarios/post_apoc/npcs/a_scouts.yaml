@@ -10,7 +10,7 @@
   gender: male
   start_captive: { by: faction_c, zone: c_warehouse }
   look: 광대뼈가 드러나게 마른 얼굴, 찢어진 초록 완장을 아직 팔에 매고 있다. 손목에 끈 자국이 붉다.
-  reputation: 지난달 동쪽으로 나갔다가 돌아오지 않은 청솔형제단 정찰조의 막내. 붉은연합 수용소에 갇혀 있다.
+  reputation: 지난달 동쪽으로 나갔다가 돌아오지 않은 청솔형제단 정찰조의 막내.
   want: 다리를 다친 조장을 살려서 거점에 돌아가는 것
   fear: 조장이 열로 죽고 자기만 남는 것
   values: { discipline: 1, loyalty: 3, mercy: 1, honesty: 2, self_interest: -1 }
@@ -45,7 +45,7 @@
   gender: male
   start_captive: { by: faction_c, zone: c_warehouse }
   look: 왼쪽 정강이를 판자로 묶어 두었다. 열에 들뜬 눈이 번들거린다. 수염이 제멋대로 자랐다.
-  reputation: 지난달 실종된 청솔형제단 정찰조의 조장. 붉은연합 수용소에서 다리 상처가 곪고 있다.
+  reputation: 지난달 실종된 청솔형제단 정찰조의 조장. 다리를 다쳤다는 말이 마지막 소식이었다.
   want: 막내만이라도 살려 보내는 것
   fear: 자기 때문에 구출조가 죽는 것
   values: { discipline: 2, loyalty: 3, mercy: 1, honesty: 1, self_interest: -2 }

@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { effectiveSkill } from "./traits.ts";
 import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -118,7 +119,7 @@ export function opponentHarm(content: Content, state: GameState, opponentId: str
   const label = content.scenario.moves.find((m) => m.id === best.m)?.label ?? best.m;
   const who = playerCalls(state, content, opponent.id);
   const signed = best.score >= 0 ? `+${best.score}` : `${best.score}`;
-  const why = [skill > 0 ? "솜씨가 좋다" : skill < 0 ? "서툴다" : "", weapon ? `${content.items[weapon]?.name ?? weapon}을(를) 들었다` : ""].filter(Boolean).join(", ");
+  const why = [skill > 0 ? "솜씨가 좋다" : skill < 0 ? "서툴다" : "", weapon ? `${josa(content.items[weapon]?.name ?? weapon, "을/를")} 들었다` : ""].filter(Boolean).join(", ");
   return {
     delta,
     line: `상대의 몫: ${who} (${label} ${signed}${weapon ? `, ${content.items[weapon]?.name ?? weapon}` : ""})${why ? ` → ${why}` : ""}${delta > 0 ? ". 한 단계 더" : delta < 0 ? ". 한 단계 덜" : ""}`,

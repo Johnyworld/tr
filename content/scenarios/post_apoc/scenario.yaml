@@ -224,7 +224,7 @@ command:
       rewards: { loot: true }
       report:
         success: "{member}: {zone}에서 쓸 만한 걸 찾아 돌아왔다"
-        partial: "{member}: {zone}을(를) 훑었지만 건진 게 많지 않다"
+        partial: "{member}: {zone:을/를} 훑었지만 건진 게 많지 않다"
         miss: "{member}: {zone}에서 감염체에 쫓겨 빈손으로 돌아왔다"
     # 외부인 찾기 (12-140, *임시*): 담 밖을 떠도는 사람을 찾아 설득해 데려온다. 무리의 입과 손이 함께 는다
     - id: outsiders
@@ -250,7 +250,7 @@ command:
       dangerous: true
       rewards: { merit: 1 }
       report:
-        success: "{member}: {zone}을(를) 들키지 않고 돌아봤다. 본 것을 차례로 보고한다"
+        success: "{member}: {zone:을/를} 들키지 않고 돌아봤다. 본 것을 차례로 보고한다"
         partial: "{member}: {zone} 가장자리까지만 갔다. 더 들어가면 들킬 것 같았다고 한다"
         miss: "{member}: {zone}에서 들켰다. 총소리를 뒤로 하고 겨우 빠져나왔다"
     - id: escort
@@ -277,7 +277,7 @@ command:
       report:
         success: "{member}: {zone}에서 먹을 것을 넉넉히 구해 왔다"
         partial: "{member}: {zone}에서 조금 구해 왔다"
-        miss: "{member}: {zone}을(를) 종일 헤맸지만 빈손이다"
+        miss: "{member}: {zone:을/를} 종일 헤맸지만 빈손이다"
     - id: rest
       label: 쉬게 하기
       kind: rest
@@ -1724,7 +1724,7 @@ battle:
       description: 판자로 받침과 가림막을 대어 길목이 내려다보이는 자리를 만든다
       materials: { planks: 1 }
     - id: road_barricade
-      label: 바리케이드
+      label: 길목 바리케이드
       description: 판자와 고철로 길목을 막는다. 밀고 들어오는 적의 발을 두어 번 묶고, 감염체도 쉽게 넘어오지 못한다. 한 번의 싸움을 버티면 무너진다
       materials: { planks: 3, scrap_metal: 2 }
       holds: 2

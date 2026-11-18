@@ -29,6 +29,8 @@ function leavesRemains(ctx: ToolContext, state: GameState, c: Character): boolea
 function placeOf(ctx: ToolContext, state: GameState, c: Character): string | null {
   if (c.id === state.playerId) return state.playerZone;
   if (c.captive) return c.captive.zone;
+  // 주인공 앞(장면·곁의 동행)에서 죽었으면 여기다. 평소 있던 자리가 아니라
+  if (state.scene.present.includes(c.id) || (state.companions.includes(c.id) && !state.bonds[c.id]?.apart)) return state.playerZone;
   const npc = ctx.content.npcs[c.id];
   if (npc) return npcZoneAt(npc, state.time) ?? null;
   return c.extra?.zone ?? null;
@@ -120,7 +122,7 @@ export function buryRemains(ctx: ToolContext, who: string, words: string | null)
     for (const id of store.getState().scene.present) {
       const c = store.getState().characters[id];
       if (!c || c.dead || id === me.id || c.factionId !== dead.factionId) continue;
-      store.append({ type: "relation_changed", from: id, to: me.id, delta: { trust: 0, affection: BURIAL_AFFECTION, respect: 0 }, reason: `${dead.name}을(를) 묻어 주었다` });
+      store.append({ type: "relation_changed", from: id, to: me.id, delta: { trust: 0, affection: BURIAL_AFFECTION, respect: 0 }, reason: `${josa(dead.name, "을/를")} 묻어 주었다` });
     }
   }
   return { ok: true, lines, displays: [] };

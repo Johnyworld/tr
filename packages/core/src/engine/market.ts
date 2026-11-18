@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { seasonAt } from "../sim/season.ts";
@@ -68,5 +69,5 @@ export function describeMarket(content: Content, state: GameState): string | nul
   const dear = resources.filter((r) => resourceFactor(content, state, r, owner) >= m.note_above).map(label);
   const cheap = resources.filter((r) => resourceFactor(content, state, r, owner) <= m.note_below).map(label);
   if (!dear.length && !cheap.length) return null;
-  return `시세 (${content.factions[owner]?.name ?? owner}의 땅, 흥정 값에 시스템이 반영한다): ${[dear.length ? `${dear.join("·")}이(가) 비싸다` : "", cheap.length ? `${cheap.join("·")}이(가) 싸다` : ""].filter(Boolean).join(", ")}. 숫자는 말하지 않는다`;
+  return `시세 (${content.factions[owner]?.name ?? owner}의 땅, 흥정 값에 시스템이 반영한다): ${[dear.length ? `${josa(dear.join("·"), "이/가")} 비싸다` : "", cheap.length ? `${josa(cheap.join("·"), "이/가")} 싸다` : ""].filter(Boolean).join(", ")}. 숫자는 말하지 않는다`;
 }

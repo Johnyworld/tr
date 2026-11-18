@@ -54,7 +54,9 @@ function evaluate(content: Content, state: GameState, r: Resolve): boolean | nul
       // 살아서 주인공 앞에 나타났다 (같은 장면)
       return t && !t.dead && state.scene.present.includes(r.target!) ? true : null;
     case "gone":
-      return t && (t.dead || !!t.captive) ? true : null;
+      // 주인공이 알 때만: 유해가 있는 자리에 있거나(눈앞에서 죽었거나 시신을 찾았다), 우리 무리가 가뒀다 (원칙 4)
+      if (t?.dead) return state.remains.some((x) => x.of === r.target && x.zone === state.playerZone) ? true : null;
+      return t?.captive && me.factionId && t.captive.by === me.factionId ? true : null;
     case "released":
       return t && !t.dead && !t.captive ? true : null;
     case "cured": {

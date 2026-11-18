@@ -178,7 +178,7 @@ const reportMission = defineTool({
     const lines = [
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
-      ...(supplied.length ? [`구해 온 ${supplied.join("·")}이(가) 무리 창고에 들어갔다.`] : []),
+      ...(supplied.length ? [`구해 온 ${josa(supplied.join("·"), "이/가")} 무리 창고에 들어갔다.`] : []),
       ...(cleared ? [`${cleared}에 몰려든 감염체를 쓸어 냈다. 한동안 조용할 것이다.`] : []),
       ...releaseBuddies(ctx, mission.id),
       ...[returnArmory(ctx, mission.id)].filter((l): l is string => !!l),
@@ -237,7 +237,7 @@ const abandonMission = defineTool({
     return {
       ok: true,
       resultText:
-        `임무 포기: ${mission.title}. 이 무리(규율: ${d.label})에서 ${d.orderWord}을(를) 버린 것이다. ` +
+        `임무 포기: ${mission.title}. 이 무리(규율: ${d.label})에서 ${josa(d.orderWord, "을/를")} 버린 것이다. ` +
         (d.countsDisobedience ? "불복종으로 기록되고 " : "불복종으로 치지는 않고 ") +
         `공적 ${signed(d.abandonMerit)}. ` +
         (d.deedSeverity > 0 ? "이 일은 상관과 동료의 시선에 영향을 줄 수 있다." : "이 무리에서는 크게 문제 삼지 않는다.") +

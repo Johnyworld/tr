@@ -88,6 +88,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.occupations || role.occupations.some((o) => (o === "same" ? player.occupation?.id : o) === c.occupation?.id && !!c.occupation))
     .filter((c) => !role.known || known.has(c.id))
     .filter((c) => role.trust_gte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).trust >= role.trust_gte)
+    .filter((c) => !role.adult || isAdult(content, c))
     .filter((c) => !role.blackmailed || (state.blackmails ?? []).some((b) => b.npcId === c.id && b.by === state.playerId && b.grudge))
     .filter((c) => role.distrusted_gte === undefined || standingInFaction(state, content, c.id).distrust >= role.distrusted_gte)
     .map((c) => c.id)
@@ -500,6 +501,9 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
   if (state.lastRoute) {
     vars.from = content.locations[state.lastRoute.from]?.name ?? state.lastRoute.from;
     vars.to = content.locations[state.lastRoute.to]?.name ?? state.lastRoute.to;
+  } else if (state.playerZone) {
+    // 길에서 열린 게 아니면(치트 등) 지금 구역으로 채운다. 자리표시자가 그대로 나가지 않게
+    vars.from = vars.to = content.locations[state.playerZone]?.name ?? state.playerZone;
   }
   const player = state.characters[state.playerId];
   const own = player ? state.factions[player.factionId] : undefined;

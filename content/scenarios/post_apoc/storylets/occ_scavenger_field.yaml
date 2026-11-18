@@ -296,7 +296,7 @@
     segments: [evening]
   cast:
     boss: { commander: true }
-    father: { faction: own, ranks: [grunt, staff] }
+    father: { faction: own, ranks: [grunt, staff], adult: true }
     rookie: { recall: os_rookie, optional: true }
   setup: "{boss:이/가} 지도를 접으며 말한다. \"오늘 밤에 둘을 내보내야 해. 돌아올 확률은 반반. 누구 보낼지는 선임이 정해.\" 숙소 쪽에서 {father:이/가} 아이를 무릎에 앉히고 신발 끈을 매 주는 것이 보인다."
   ai_direction: 선임은 사람을 고른다. 어느 쪽을 골라도 고른 사람의 무게가 남는다. 아이가 있는 사람은 가장 손이 익다. 맡아 키운 신병(있으면)은 아직 서툴다. 자기가 가겠다고 하면 상관은 말리지 않지만, 선임이 빠진 숙소는 그 밤 내내 불안하다. 결과(누가 다치는지)는 GM이 지어내지 않는다. 효과로만.

@@ -44,7 +44,7 @@ export function canSettle(content: Content, state: GameState): { ok: true } | { 
   if (me.factionId) return { ok: false, error: "무리에 든 사람은 거점의 사물함에 맡긴다. 거처는 떠돌이만 정한다." };
   const location = content.locations[zone];
   const owner = state.zones[zone]?.owner ?? null;
-  if (location?.kind === "base" && owner) return { ok: false, error: `${zoneName(content, zone)}은(는) 다른 무리의 거점이다. 남의 거점에 거처를 둘 수 없다.` };
+  if (location?.kind === "base" && owner) return { ok: false, error: `${josa(zoneName(content, zone), "은/는")} 다른 무리의 거점이다. 남의 거점에 거처를 둘 수 없다.` };
   if (location?.isolated) return { ok: false, error: `${zoneName(content, zone)}에는 거처를 둘 수 없다.` };
   if (state.homes[me.id] === zone) return { ok: false, error: "이미 여기가 거처다." };
   return { ok: true };
@@ -114,7 +114,7 @@ export function settleHome(ctx: ToolContext): { ok: true; lines: string[] } | { 
   const old = state.homes[state.playerId];
   store.append({ type: "home_settled", characterId: state.playerId, zone: state.playerZone! });
   const left = old && Object.keys(state.stashes[state.playerId]?.[old] ?? {}).length ? ` 예전 거처(${zoneName(content, old)})에 맡긴 물건은 거기 남아 있다. 가서 꺼낼 수 있다.` : "";
-  return { ok: true, lines: [`${zoneName(content, state.playerZone!)}을(를) 거처로 삼았다. 여기에 물건을 맡겨 둘 수 있다.${left}`] };
+  return { ok: true, lines: [`${josa(zoneName(content, state.playerZone!), "을/를")} 거처로 삼았다. 여기에 물건을 맡겨 둘 수 있다.${left}`] };
 }
 
 export const stashTool = defineTool({

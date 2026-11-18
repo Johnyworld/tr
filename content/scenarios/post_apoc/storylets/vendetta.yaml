@@ -14,14 +14,14 @@
   cast:
     avenger: { vendetta: true, faction: other, enter: false }
   setup: 아는 얼굴이 지나가며 낮게 말한다. "누가 당신을 찾고 다니던데. 어디서 자는지, 언제 혼자 다니는지를 묻더라고."
-  ai_direction: "찾고 다니는 사람은 {avenger}이다 (주인공이 죽인 사람의 가족이나 친구). 말을 전하는 사람은 생김새를 대충만 안다. 주인공이 {avenger}을(를) 알면 짐작이 가게, 모르면 낯선 사람으로."
+  ai_direction: "찾고 다니는 사람은 {avenger}이다 (주인공이 죽인 사람의 가족이나 친구). 말을 전하는 사람은 생김새를 대충만 안다. 주인공이 {avenger:을/를} 알면 짐작이 가게, 모르면 낯선 사람으로."
   choices:
     - id: ask_more
       label: 어떻게 생긴 사람이었는지 캐묻는다
       check: persuade
       outcomes:
         success:
-          - belief: { fact: "{avenger}이(가) 나를 찾고 다닌다. 내가 죽인 사람 때문이다", source: report }
+          - belief: { fact: "{avenger:이/가} 나를 찾고 다닌다. 내가 죽인 사람 때문이다", source: report }
         partial:
           - belief: { fact: 누군가 내 이름을 묻고 다닌다. 원한을 품은 눈이었다고 한다, source: report }
         miss:
@@ -43,7 +43,7 @@
   cast:
     avenger: { vendetta: true, faction: other }
   setup: '골목 끝에 {avenger:이/가} 서 있다. 손에 든 것이 불빛에 번뜩인다. "기억나? {victim}. 네가 죽였잖아."'
-  ai_direction: "{avenger}은(는) 주인공이 죽인 {victim}의 가족이나 친구다 (카드의 원한 줄). 분노와 슬픔이 섞여 있다. 싸우면 판정으로, 말로 풀려면 아주 어렵다(잃은 사람은 돌아오지 않는다). 대가를 치르겠다고 하면(물건, 부상) 받아들일 수도 있다. 다치게 하거나 죽이는 것은 코드가 판정으로 정한다."
+  ai_direction: "{avenger:은/는} 주인공이 죽인 {victim}의 가족이나 친구다 (카드의 원한 줄). 분노와 슬픔이 섞여 있다. 싸우면 판정으로, 말로 풀려면 아주 어렵다(잃은 사람은 돌아오지 않는다). 대가를 치르겠다고 하면(물건, 부상) 받아들일 수도 있다. 다치게 하거나 죽이는 것은 코드가 판정으로 정한다."
   choices:
     - id: fight
       label: 맞선다
@@ -52,11 +52,11 @@
         success:
           - npc_hurt: { who: avenger, steps: 2 }
           - settle_vendetta: { who: avenger }
-          - belief: { fact: "{avenger}이(가) 복수하러 왔다. 맞서서 쓰러뜨렸다", source: seen }
+          - belief: { fact: "{avenger:이/가} 복수하러 왔다. 맞서서 쓰러뜨렸다", source: seen }
         partial:
           - npc_hurt: { who: avenger, steps: 1 }
           - wound: { steps: 1, cause: 복수하러 온 사람의 칼 }
-          - belief: { fact: "{avenger}과(와) 맞붙었다. 둘 다 피를 흘렸고 그 사람은 달아났다. 끝나지 않았다", source: seen }
+          - belief: { fact: "{avenger:과/와} 맞붙었다. 둘 다 피를 흘렸고 그 사람은 달아났다. 끝나지 않았다", source: seen }
         miss:
           - wound: { steps: 2, cause: 복수하러 온 사람의 칼 }
           - belief: { fact: "{avenger}의 칼에 깊이 찔렸다. 그 사람은 끝까지 지켜보다 돌아섰다", source: seen }
@@ -67,12 +67,12 @@
         success:
           - settle_vendetta: { who: avenger }
           - relation: { who: avenger, axis: trust, delta: 1 }
-          - belief: { fact: "{avenger}에게 {victim}을(를) 죽인 그날 일을 털어놓았다. 그 사람은 오래 울다가 칼을 거뒀다", source: seen }
+          - belief: { fact: "{avenger}에게 {victim:을/를} 죽인 그날 일을 털어놓았다. 그 사람은 오래 울다가 칼을 거뒀다", source: seen }
         partial:
-          - belief: { fact: "{avenger}은(는) 끝까지 들었지만 칼을 거두지는 않았다. 다음에는 들어 주지 않을 것이다", source: seen }
+          - belief: { fact: "{avenger:은/는} 끝까지 들었지만 칼을 거두지는 않았다. 다음에는 들어 주지 않을 것이다", source: seen }
         miss:
           - wound: { steps: 1, cause: 복수하러 온 사람의 칼 }
-          - belief: { fact: "{avenger}은(는) 변명은 듣기 싫다며 달려들었다", source: seen }
+          - belief: { fact: "{avenger:은/는} 변명은 듣기 싫다며 달려들었다", source: seen }
     - id: pay
       label: 대가를 치르겠다며 피하지 않고 맞는다
       check: endure
@@ -88,13 +88,13 @@
         miss:
           - wound: { steps: 2, cause: 멈추지 않은 복수자의 주먹 }
           - settle_vendetta: { who: avenger }
-          - belief: { fact: "{avenger}은(는) 멈추지 않았다. 정신을 잃기 직전에야 손을 거뒀다", source: seen }
+          - belief: { fact: "{avenger:은/는} 멈추지 않았다. 정신을 잃기 직전에야 손을 거뒀다", source: seen }
     - id: flee
       label: 등을 돌려 달아난다
       check: stealth
       outcomes:
         success:
-          - belief: { fact: "{avenger}을(를) 따돌렸다. 그 사람은 다시 올 것이다", source: seen }
+          - belief: { fact: "{avenger:을/를} 따돌렸다. 그 사람은 다시 올 것이다", source: seen }
         partial:
           - wound: { steps: 1, cause: 등 뒤에서 날아온 것 }
         miss:

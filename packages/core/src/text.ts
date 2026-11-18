@@ -11,7 +11,8 @@ const LATIN_DIGIT_FINAL: Record<string, number> = {
 
 /** 마지막 글자의 받침 번호 (0 = 받침 없음). 읽는 법을 모르는 글자면 null */
 export function finalConsonant(word: string): number | null {
-  const last = word.trim().at(-1);
+  // 닫는 따옴표·괄호는 건너뛰고 그 앞 글자로 읽는다 ("염철구"가)
+  const last = word.trim().replace(/["'”’」』\]]+$/, "").at(-1);
   if (!last) return null;
   // 대문자·숫자만 읽는다 (소문자는 id 같은 것이라 읽는 법을 모른다)
   if (/^[A-Z0-9]$/.test(last)) return LATIN_DIGIT_FINAL[last] ?? 0;

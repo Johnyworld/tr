@@ -1,3 +1,4 @@
+import { fill, josa } from "../text.ts";
 import type { Content, FactionContent } from "../content/schemas.ts";
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import type { Clash, ClockState, FactionState } from "../game/state.ts";
@@ -133,7 +134,7 @@ function applyShift(world: WarWorld, content: Content, factionId: string, clockI
     world.factions[from]!.disposition = { ...(world.factions[from]!.disposition ?? {}), [to]: s.value };
   }
   const name = (id: string) => content.factions[id]?.name ?? id;
-  const news = (plan.news ?? "{faction}의 태도가 달라졌다는 말이 돈다").replaceAll("{faction}", name(factionId)).replaceAll("{to}", target ? name(target) : "");
+  const news = fill(plan.news ?? "{faction}의 태도가 달라졌다는 말이 돈다", { faction: name(factionId), to: target ? name(target) : "" });
   return { clockId, factionId, to: target, news };
 }
 
@@ -264,7 +265,7 @@ function runAiTruces(world: WarWorld, content: Content, rng: Rng, alive: string[
       if (t.days > 0) continue;
       delete f.truces![other];
       if ((f.disposition?.[other] ?? content.factions[id]?.disposition[other] ?? 0) === AI_TRUCE_DISPOSITION) f.disposition = { ...f.disposition, [other]: t.restore };
-      if (id < other) out.push({ clockId: "truce_end", factionId: id, to: other, news: `${name(id)}과(와) ${name(other)}의 휴전이 끝났다` });
+      if (id < other) out.push({ clockId: "truce_end", factionId: id, to: other, news: `${josa(name(id), "과/와")} ${name(other)}의 휴전이 끝났다` });
     }
   }
   for (const a of alive) {
@@ -284,7 +285,7 @@ function runAiTruces(world: WarWorld, content: Content, rng: Rng, alive: string[
       fb.truces = { ...fb.truces, [a]: { days, restore: restoreB } };
       fa.disposition = { ...fa.disposition, [b]: Math.max(restoreA, AI_TRUCE_DISPOSITION) };
       fb.disposition = { ...fb.disposition, [a]: Math.max(restoreB, AI_TRUCE_DISPOSITION) };
-      out.push({ clockId: "truce", factionId: a, to: b, news: `${name(a)}과(와) ${name(b)}가 휴전했다. 한동안 서로 치지 않는다` });
+      out.push({ clockId: "truce", factionId: a, to: b, news: `${josa(name(a), "과/와")} ${josa(name(b), "이/가")} 휴전했다. 한동안 서로 치지 않는다` });
     }
   }
   return out;

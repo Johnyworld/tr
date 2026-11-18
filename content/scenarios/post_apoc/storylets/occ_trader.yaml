@@ -183,13 +183,13 @@
         - faction_resource: { faction: own, resource: food, delta: -6 }
         - relation: { who: mate, axis: trust, delta: 2 }
         - deed: { summary: 무리 창고에서 덜어 낸 식량을 몰래 바깥에 내다 팔았다, tags: [theft, selfishness], severity: 2, privacy: private }
-        - belief: { fact: "{mate}와 무리 창고의 콩을 몰래 내다 판다. 바깥 손님이 값을 잘 쳤다", source: seen }
+        - belief: { fact: "{mate:과/와} 무리 창고의 콩을 몰래 내다 판다. 바깥 손님이 값을 잘 쳤다", source: seen }
     - id: refuse
       label: 못 들은 걸로 하겠다고 하고 돌아선다
       effects:
         - set_flag: occ_tr_side_refused
         - relation: { who: mate, axis: trust, delta: -1 }
-        - belief: { fact: "{mate}가 창고에서 덜어 낸 식량을 바깥에 팔자고 했다. 거절했지만 아무에게도 말하지 않았다", source: seen }
+        - belief: { fact: "{mate:이/가} 창고에서 덜어 낸 식량을 바깥에 팔자고 했다. 거절했지만 아무에게도 말하지 않았다", source: seen }
     - id: report
       label: 자루를 들고 상관에게 간다
       effects:
@@ -201,7 +201,7 @@
         - relation: { who: mate, axis: trust, delta: -3 }
         - npc_relation: { from: boss, to: mate, axis: trust, delta: -3 }
         - deed: { summary: 창고 식량을 빼돌리던 동료를 상관에게 알렸다, tags: [loyalty], severity: 2, privacy: semi_private }
-        - belief: { fact: "{mate}가 빼돌린 콩 자루를 상관에게 가져갔다. 상관은 자루보다 {mate}의 얼굴을 오래 봤다", source: seen }
+        - belief: { fact: "{mate:이/가} 빼돌린 콩 자루를 상관에게 가져갔다. 상관은 자루보다 {mate}의 얼굴을 오래 봤다", source: seen }
 
 - id: occ_tr_side_buyer
   title: 더 달라는 손님
@@ -266,7 +266,7 @@
         - relation: { who: mate, axis: trust, delta: -3 }
         - npc_relation: { from: boss, to: mate, axis: trust, delta: -3 }
         - deed: { summary: 함께 빼돌린 동료에게 죄를 다 넘겼다, tags: [betrayal, deceit], severity: 2, privacy: semi_private }
-        - belief: { fact: "콩 자루 일을 {mate}에게 다 넘겼다. 상관은 나를 믿는 눈치다. {mate}는 아직 모른다", source: seen }
+        - belief: { fact: "콩 자루 일을 {mate}에게 다 넘겼다. 상관은 나를 믿는 눈치다. {mate:은/는} 아직 모른다", source: seen }
 
 # ── 외상 손님 ───────────────────────────────────────────
 

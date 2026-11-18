@@ -325,7 +325,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (acts || !passive) {
       return {
         ok: false,
-        error: `${player.name}은(는) ${out.label} 상태라 스스로 아무것도 할 수 없다. 판정·이동·말·물건 쓰기 없이 activity(wait 또는 sleep, 전투 중이면 null)로 시간만 흐르게 한다. 장면의 치료사가 돌보면 treatment {item: null}. 서술은 흐릿한 감각의 조각만 짧게.`,
+        error: `${josa(player.name, "은/는")} ${out.label} 상태라 스스로 아무것도 할 수 없다. 판정·이동·말·물건 쓰기 없이 activity(wait 또는 sleep, 전투 중이면 null)로 시간만 흐르게 한다. 장면의 치료사가 돌보면 treatment {item: null}. 서술은 흐릿한 감각의 조각만 짧게.`,
       };
     }
   }
@@ -434,7 +434,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (!dest) return { ok: false, error: `알 수 없는 구역: ${input.move_to}` };
     const crossing = dest.crossing && here && dest.crossing.from.includes(here) ? dest.crossing : null;
     if (!here || (!neighbors(content, here).includes(input.move_to) && !crossing)) {
-      return { ok: false, error: `${input.move_to}은(는) 지금 구역과 맞닿아 있지 않다. 인접 구역: ${here ? neighbors(content, here).join(", ") : "없음"}` };
+      return { ok: false, error: `${josa(input.move_to, "은/는")} 지금 구역과 맞닿아 있지 않다. 인접 구역: ${here ? neighbors(content, here).join(", ") : "없음"}` };
     }
     if (input.activity) return { ok: false, error: "이동하는 턴에는 activity를 null로 둔다 (이동 시간은 시스템이 정한다)." };
     if (crossing && !neighbors(content, here).includes(input.move_to)) {
@@ -444,7 +444,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
           return {
             ok: false,
             error:
-              `${dest.name}(으)로 건너갈 표가 없다. 직접 건너려면 ${crossing.attempt.label}: check.move는 ${crossing.attempt.moves.join("/")} 중 하나, ` +
+              `${josa(dest.name, "으로/로")} 건너갈 표가 없다. 직접 건너려면 ${crossing.attempt.label}: check.move는 ${crossing.attempt.moves.join("/")} 중 하나, ` +
               "harm_on_failure는 heavy로 위험을 먼저 선언한다 (실패하면 다치고 되돌아온다). 아니면 이야기로 건너는 길을 얻는다.",
           };
         }
@@ -468,7 +468,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (unknownTag) return { ok: false, error: `알 수 없는 fright_tags: ${unknownTag} (가능: ${fearTagIds(scenario).join(", ") || "없음"})` };
   if (input.check?.opponent) {
     const o = start.characters[input.check.opponent];
-    if (!o || o.dead || !start.scene.present.includes(input.check.opponent)) return { ok: false, error: `맞서는 상대 ${input.check.opponent}은(는) 장면에 없다. check.opponent는 장면에 있는 인물 id다.` };
+    if (!o || o.dead || !start.scene.present.includes(input.check.opponent)) return { ok: false, error: `맞서는 상대 ${josa(input.check.opponent, "은/는")} 장면에 없다. check.opponent는 장면에 있는 인물 id다.` };
   }
 
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
@@ -582,7 +582,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const built = applyBuild(ctx, input.build, outcome);
     lines.push(...built.lines);
     if (built.extraMinutes > 0) {
+      const before = store.getState().time;
       const more = advanceTime(ctx, "work", null, null, built.extraMinutes / 120);
+      lines.push(`짓는 데 ${formatDuration(store.getState().time - before)}이 더 들었다 (그만큼 시간이 더 흘렀다).`);
       displays.push(...more.extra);
     }
   }
@@ -823,14 +825,14 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   if (against) absorbed.lines.unshift(`${against.line}.`);
   // 버팀 (12-109): 레벨만큼 단계를 피한다
   const steps = resistSteps(content.scenario, target.level ?? 1, absorbed.steps, ctx.rng);
-  if (steps < absorbed.steps) absorbed.lines.push(`${target.name}은(는) ${absorbed.steps - steps}단계를 버텨 냈다.`);
+  if (steps < absorbed.steps) absorbed.lines.push(`${josa(target.name, "은/는")} ${absorbed.steps - steps}단계를 버텨 냈다.`);
   const from = target.conditions[track.id] ?? track.levels[0]!.id;
   if (steps <= 0) {
     // 방어구가 다 막았다 (기획서 4.8)
     const label = levelOf(track, from).label;
     return {
       fatal: false,
-      text: `${absorbed.lines.join(" ")} ${target.name}은(는) 다치지 않았다. 막아 낸 순간을 서술한다.`.trim(),
+      text: `${absorbed.lines.join(" ")} ${josa(target.name, "은/는")} 다치지 않았다. 막아 낸 순간을 서술한다.`.trim(),
       display: { type: "harm" as const, targetName: target.name, trackLabel: track.label, severityLabel: HARM_LABELS[severity], fatal: false, fromLabel: label, toLabel: label, cause },
     };
   }
@@ -877,7 +879,7 @@ function planRide(ctx: ToolContext, itemId: string, blocked: boolean):
   const state = store.getState();
   const me = state.characters[state.playerId]!;
   const item = content.items[itemId];
-  if (!item?.vehicle) return { ok: false, error: `${item?.name ?? itemId}은(는) 탈 것이 아니다.` };
+  if (!item?.vehicle) return { ok: false, error: `${josa(item?.name ?? itemId, "은/는")} 탈 것이 아니다.` };
   if ((me.inventory[itemId] ?? 0) < 1) return { ok: false, error: `${josa(item.name, "이/가")} 없다.` };
   if (blocked) return { ok: false, error: "물을 건너거나 몰래 빠져나가는 길에는 탈 수 없다." };
   // 함께 걷는 사람이 있으면 그 걸음에 맞춘다 (개는 따라 뛴다)

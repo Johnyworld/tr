@@ -17,13 +17,13 @@
   cast:
     hoarder: { faction: own }
   setup: 숙소 복도 끝, {hoarder:이/가} 들뜬 마루판을 들어 올리다 당신과 눈이 마주친다. 마루 밑에 {scarce} 깡통 몇 개가 줄지어 있다. 창고가 바닥을 보인다는 말이 돈 지 며칠째다.
-  ai_direction: "{hoarder}은(는) 아이나 아픈 사람 몫이라고 둘러댈 수도, 정말 그럴 수도 있다. 들키면 무리에서 쫓겨날 수 있다는 걸 안다. 깡통이 몇 개인지, 누구 몫인지는 지어내지 않고 대답을 듣는 데까지만 연출한다."
+  ai_direction: "{hoarder:은/는} 아이나 아픈 사람 몫이라고 둘러댈 수도, 정말 그럴 수도 있다. 들키면 무리에서 쫓겨날 수 있다는 걸 안다. 깡통이 몇 개인지, 누구 몫인지는 지어내지 않고 대답을 듣는 데까지만 연출한다."
   choices:
     - id: look_away
       label: 못 본 걸로 한다
       effects:
         - relation: { who: hoarder, axis: trust, delta: 2 }
-        - belief: { fact: "{hoarder}이(가) 숙소 마루 밑에 깡통을 숨겨 둔 걸 봤지만 모른 척했다", source: seen }
+        - belief: { fact: "{hoarder:이/가} 숙소 마루 밑에 깡통을 숨겨 둔 걸 봤지만 모른 척했다", source: seen }
     - id: share_out
       label: 나눠 먹자고 설득한다
       check: persuade
@@ -31,18 +31,18 @@
         success:
           - relation: { who: hoarder, axis: respect, delta: 1 }
           - faction_morale: { faction: own, delta: 1 }
-          - deed: { summary: "{hoarder}이(가) 숨긴 먹을 것을 모두와 나누게 했다", tags: [loyalty], severity: 1, privacy: semi_private }
+          - deed: { summary: "{hoarder:이/가} 숨긴 먹을 것을 모두와 나누게 했다", tags: [loyalty], severity: 1, privacy: semi_private }
         partial:
           - relation: { who: hoarder, axis: affection, delta: -1 }
-          - belief: { fact: "{hoarder}은(는) 깡통 절반만 내놓았다. 나머지는 아픈 동생 몫이라고 했다", source: seen }
+          - belief: { fact: "{hoarder:은/는} 깡통 절반만 내놓았다. 나머지는 아픈 동생 몫이라고 했다", source: seen }
         miss:
           - relation: { who: hoarder, axis: trust, delta: -2 }
-          - belief: { fact: "{hoarder}은(는) 그건 자기 몫이라며 마루판을 도로 덮었다", source: seen }
+          - belief: { fact: "{hoarder:은/는} 그건 자기 몫이라며 마루판을 도로 덮었다", source: seen }
     - id: report
       label: 윗사람에게 알린다
       effects:
         - relation: { who: hoarder, axis: trust, delta: -3 }
-        - deed: { summary: "{hoarder}이(가) 먹을 것을 숨긴 것을 윗사람에게 알렸다", tags: [diligence], severity: 2, privacy: semi_private }
+        - deed: { summary: "{hoarder:이/가} 먹을 것을 숨긴 것을 윗사람에게 알렸다", tags: [diligence], severity: 2, privacy: semi_private }
 
 - id: w_mood_thin_soup
   title: 멀건 국
@@ -68,7 +68,7 @@
         partial:
           - relation: { who: diner, axis: affection, delta: 1 }
         miss:
-          - belief: { fact: "{diner}은(는) 농담에 웃지 않았다. 배식 줄이 조용해졌다", source: seen }
+          - belief: { fact: "{diner:은/는} 농담에 웃지 않았다. 배식 줄이 조용해졌다", source: seen }
     - id: agree
       label: 맞장구친다
       effects:
@@ -105,12 +105,12 @@
           - belief: { fact: "불가의 사람들은 고개를 끄덕였지만 {talker}의 눈은 남쪽을 보고 있었다", source: seen }
         miss:
           - faction_morale: { faction: own, delta: -1 }
-          - belief: { fact: "{talker}은(는) 듣기 좋은 소리 그만하라며 자리를 떴다", source: seen }
+          - belief: { fact: "{talker:은/는} 듣기 좋은 소리 그만하라며 자리를 떴다", source: seen }
     - id: listen
       label: 조용히 듣는다
       effects:
         - relation: { who: talker, axis: trust, delta: 1 }
-        - belief: { fact: "불가에서 {talker}이(가) 무리를 떠나 남쪽으로 가자는 말을 했다", source: seen }
+        - belief: { fact: "불가에서 {talker:이/가} 무리를 떠나 남쪽으로 가자는 말을 했다", source: seen }
     - id: shut_down
       label: 그런 말은 그만하라고 자른다
       check: intimidate
@@ -136,7 +136,7 @@
   cast:
     singer: { faction: own }
   setup: 저녁 배식이 끝난 마당, {singer:이/가} 빈 깡통을 두드리며 옛날 노래를 흥얼거린다. 박자가 엉망이다. 몇 사람이 피식 웃고, 누군가는 시끄럽다고 짜증을 낸다.
-  ai_direction: "{singer}은(는) 일부러 밝게 군다. 다들 지쳐 있다는 걸 알기 때문이다. 함께 웃어 줄 사람이 하나라도 있으면 분위기가 풀린다."
+  ai_direction: "{singer:은/는} 일부러 밝게 군다. 다들 지쳐 있다는 걸 알기 때문이다. 함께 웃어 줄 사람이 하나라도 있으면 분위기가 풀린다."
   choices:
     - id: join
       label: 같이 부른다

@@ -73,7 +73,7 @@
           - belief: { fact: "{zone}의 무덤을 판 자들의 흔적을 놓쳤다", source: seen }
 
 # 그를 기억하는 사람 (12-158): 죽은 앞 주인공과 가까웠던 사람(관계가 있거나 호감이 legacy.close_affection 이상)이 배역 mourner.
-# {departed}는 그 사람이 기억하는 앞 주인공을 새 주인공이 부르는 말이다 (이름을 모르면 호칭)
+# {departed:은/는} 그 사람이 기억하는 앞 주인공을 새 주인공이 부르는 말이다 (이름을 모르면 호칭)
 
 - id: lg_empty_cup
   title: 빈 잔

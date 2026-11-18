@@ -15,8 +15,8 @@
     own_territory: false
   cast:
     raider: { extra: c_raider, label: 매복한 약탈자, enter: true }
-  setup: "{to:을/를} 앞두고 길이 좁아지는 곳, 무너진 담 위에서 무언가 떨어진다. 그물처럼 엮은 철사가 발목에 감기고, 담 뒤에서 쇠지렛대를 든 사내가 뛰어내린다. \"짐 내려놓고 엎드려.\""
-  ai_direction: "{raider:은/는} 혼자다. 처음부터 숨어 기다렸다 (상대가 먼저 움직였다). 짐을 노린다. 맞서는 판정은 {raider}을(를) opponent로 둔다. 위험은 판정 전에 선언한다."
+  setup: "{to:을/를} 앞두고 길이 좁아지는 곳, 무너진 담 위에서 무언가 떨어진다. 그물처럼 엮은 철사가 발목에 감기고, 담 뒤에서 쇠지렛대를 든 {raider:이/가} 뛰어내린다. \"짐 내려놓고 엎드려.\""
+  ai_direction: "{raider:은/는} 혼자다. 처음부터 숨어 기다렸다 (상대가 먼저 움직였다). 짐을 노린다. 맞서는 판정은 {raider:을/를} opponent로 둔다. 위험은 판정 전에 선언한다."
   choices:
     - id: dodge
       label: 철사를 걷어차고 몸을 뺀다
@@ -50,7 +50,7 @@
   cast:
     crawler: { extra: infected_crawler, label: 차 밑의 감염체, enter: true }
   setup: "버려진 승합차 옆을 지나는 순간, 차 밑에서 회색 손이 튀어나와 발목을 움켜쥔다. 썩은 냄새가 확 끼친다."
-  ai_direction: "{crawler:은/는} 차 밑에 숨어 기다리고 있었다 (상대가 먼저 움직였다). 물리면 감염 위험이 있다 (판정 전에 선언, 시스템이 붙인다). 맞서는 판정은 {crawler}을(를) opponent로 둔다."
+  ai_direction: "{crawler:은/는} 차 밑에 숨어 기다리고 있었다 (상대가 먼저 움직였다). 물리면 감염 위험이 있다 (판정 전에 선언, 시스템이 붙인다). 맞서는 판정은 {crawler:을/를} opponent로 둔다."
   choices:
     - id: kick
       label: 발을 빼며 걷어찬다
@@ -82,7 +82,7 @@
   cast:
     raider: { extra: c_raider, label: 어둠 속의 약탈자, enter: true }
   setup: "모닥불이 사그라들 무렵, 등 뒤에서 자갈 밟는 소리가 한 번에 여러 곳에서 난다. 불빛을 보고 오래 기다린 자들이다. 누군가 낮게 웃는다."
-  ai_direction: "불빛을 보고 둘러싼 약탈자들이다. 하나가 앞에 나섰고 나머지는 어둠 속에 있다 (몇인지 모른다). 먼저 움직인 쪽은 저쪽이다. 맞서는 판정은 {raider}을(를) opponent로 둔다."
+  ai_direction: "불빛을 보고 둘러싼 약탈자들이다. 하나가 앞에 나섰고 나머지는 어둠 속에 있다 (몇인지 모른다). 먼저 움직인 쪽은 저쪽이다. 맞서는 판정은 {raider:을/를} opponent로 둔다."
   choices:
     - id: kick_fire
       label: 모닥불을 걷어차 어둠 속으로 뛴다

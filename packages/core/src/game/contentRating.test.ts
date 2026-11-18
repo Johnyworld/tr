@@ -74,7 +74,7 @@ describe("대화 형식 (12-63)", () => {
     expect(describePlayerState(w.state(), w.content)).toContain("대화 형식: 소설");
     w.sceneForGm();
     const r = w.setOptions({ dialogue: "script" });
-    expect(r.ok && r.changed).toEqual(["대화 형식을 대본(으)로 바꿨다. 다음 서술부터 그 형식으로 쓴다."]);
+    expect(r.ok && r.changed).toEqual(["대화 형식을 대본으로 바꿨다. 다음 서술부터 그 형식으로 쓴다."]);
     expect(w.state().options).toEqual({ mature: false, dialogue: "script" });
     // 다음 장면 정보(바뀐 덩어리만)에 실린다
     expect(w.sceneUpdate()).toContain('대화 형식: 대본. 인물의 대사는 서술 문장에 섞지 않고 따로 떼어 한 줄씩 쓴다: **이름**: "대사"');

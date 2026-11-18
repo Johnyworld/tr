@@ -206,9 +206,11 @@ const takePrisoner = defineTool({
     if (at < 2) return { ok: false, error: "아직 저항할 힘이 있다. 먼저 쓰러뜨리거나(크게 다치게) 이야기로 붙잡는다." };
     store.append({ type: "companion_joined", characterId: t.id, kind: "prisoner" });
     const name = playerCalls(state, content, t.id);
+    // 이미 우리 무리의 거점이면 그 자리에서 가둔다
+    const delivered = deliverPrisoners(ctx);
     return {
       ok: true,
-      resultText: `${josa(name, "을/를")} 묶었다. 끌고 다닌다 (우리 무리의 거점에 닿으면 우리 무리의 포로가 된다).`,
+      resultText: `${josa(name, "을/를")} 묶었다. ${delivered.length ? delivered.join(" ") : "끌고 다닌다 (우리 무리의 거점에 닿으면 우리 무리의 포로가 된다)."}`,
       display: { type: "presence", npcName: name, action: "enter" },
     };
   },
@@ -263,7 +265,7 @@ const handlePrisoner = defineTool({
       lines.push(`심문: ${CHECK_OUTCOME_LABELS[r.outcome]}.`);
       const threat = input.approach === "intimidate";
       if (threat) {
-        recordDeed(ctx, { summary: `포로 ${name}을(를) 윽박질러 심문했다`, tags: ["cruelty"], severity: 1, privacy: "semi_private", noisy: false });
+        recordDeed(ctx, { summary: `포로 ${josa(name, "을/를")} 윽박질러 심문했다`, tags: ["cruelty"], severity: 1, privacy: "semi_private", noisy: false });
         store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: -2, affection: -1, respect: 0 }, reason: "심문" });
       }
       if (r.outcome !== "miss") {
@@ -299,7 +301,7 @@ const handlePrisoner = defineTool({
         const now = disposition(content, theirs, me.factionId, state);
         if (now < 3) store.append({ type: "faction_disposition_changed", from: theirs, to: me.factionId, value: now + 1 });
       }
-      const { deed } = recordDeed(ctx, { summary: `포로 ${name}을(를) 풀어 주었다`, tags: ["mercy"], severity: 1, privacy: "semi_private", noisy: false });
+      const { deed } = recordDeed(ctx, { summary: `포로 ${josa(name, "을/를")} 풀어 주었다`, tags: ["mercy"], severity: 1, privacy: "semi_private", noisy: false });
       lines.push(`${josa(name, "을/를")} 풀어 주었다. ${deed.summary}.`);
     } else if (input.action === "ransom") {
       if (!theirs || !state.factions[theirs] || theirs === me.factionId) return { ok: false, error: "몸값을 낼 무리가 없다." };

@@ -79,7 +79,7 @@ export function settleFavor(ctx: ToolContext, favorId: string, kept: boolean): s
   if (c.reward.affection) store.append({ type: "relation_changed", from: f.npc, to: state.playerId, delta: { trust: 0, affection: c.reward.affection, respect: 0 }, reason: "들어준 부탁" });
   if (c.reward.item) {
     store.append({ type: "item_granted", to: state.playerId, itemId: c.reward.item.id, quantity: c.reward.item.quantity });
-    lines.push(`${josa(who, "이/가")} 고맙다며 ${content.items[c.reward.item.id]?.name ?? c.reward.item.id} ×${c.reward.item.quantity}을(를) 건넨다.`);
+    lines.push(`${josa(who, "이/가")} 고맙다며 ${content.items[c.reward.item.id]?.name ?? c.reward.item.id} ×${josa(String(c.reward.item.quantity), "을/를")} 건넨다.`);
   } else lines.push(`${josa(who, "은/는")} 이 일을 잊지 않을 것이다.`);
   return lines;
 }
@@ -115,7 +115,7 @@ const favorTool = defineTool({
     store.append({ type: "promise_made", id, by: state.playerId, to: f.npc, what: c.ask, due: dayOf(state.time) + c.days, item: { id: c.item.id, quantity: c.item.quantity }, favor: f.id });
     return {
       ok: true,
-      resultText: `${who}의 부탁을 받았다 (약속 ${id}, ${c.days}일 안에 ${content.items[c.item.id]?.name ?? c.item.id} ×${c.item.quantity}). 물건을 구해 그 사람 앞에서 promise keep. 이 결과대로 서술하라.`,
+      resultText: `${who}의 부탁을 받았다 (약속 ${id}, ${c.days}일 안에 ${content.items[c.item.id]?.name ?? c.item.id} ×${c.item.quantity}). 물건을 구해 그 사람 앞에서 promise keep (transfer_item으로 건네도 지킨 것이 된다). 이 결과대로 서술하라.`,
       display: QUIET,
     };
   },

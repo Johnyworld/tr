@@ -708,6 +708,8 @@ export function createContentSchemas(s: Scenario) {
     known: z.boolean().default(false),
     /** 이 인물의 플레이어에 대한 신뢰 하한 */
     trust_gte: z.number().int().optional(),
+    /** 어른만 (월드의 성인 나이 이상. 부모·보호자 자리에 아이가 들지 않게) */
+    adult: z.boolean().optional(),
     /** 주인공에게 협박당해 되갚을 마음을 품은 사람만 (12-153) */
     blackmailed: z.boolean().optional(),
     /** 같은 무리의 이름 있는 사람 가운데 이 사람을 믿지 않는(신뢰 -2 이하) 사람이 이만큼 이상 (12-152: 재판·불신임) */

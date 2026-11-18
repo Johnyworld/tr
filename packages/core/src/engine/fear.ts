@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { activeCompanions } from "../game/companions.ts";
 import type { GameState } from "../game/state.ts";
 import { segmentOf } from "../rules/time.ts";
@@ -65,7 +66,7 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
   if (steps > 0 && ctx.rng() < hold) steps -= 1;
   ctx.store.append({ type: "fear_exposed", characterId: me.id });
 
-  if (steps <= 0) return { lines: [`${me.name}은(는) 두려움을 눌러 참았다 (${cause}). 공포가 오르지 않았다.`], displays: [] };
+  if (steps <= 0) return { lines: [`${josa(me.name, "은/는")} 두려움을 눌러 참았다 (${cause}). 공포가 오르지 않았다.`], displays: [] };
   const c = changeCondition(ctx, me.id, f.track, steps, "fear", cause);
   if (!c?.display) return EMPTY;
   const out: FearResult = { lines: [c.line], displays: [c.display] };
@@ -146,7 +147,7 @@ export function fearAfterTool(ctx: ToolContext, before: FearWatch): FearResult {
     const steps = scary.length ? Math.max(...scary.map((id) => fearsomeOf(ctx, state, id))) + (scary.length >= 3 ? 1 : 0) : 0;
     const names = arrivals.map((id) => state.characters[id]!.name);
     const tags = [...new Set(arrivals.flatMap(tagsOf))];
-    triggers.push({ tags, steps, cause: `${names.slice(0, 3).join(", ")}${names.length > 3 ? ` 외 ${names.length - 3}` : ""}이(가) 나타났다` });
+    triggers.push({ tags, steps, cause: `${names.slice(0, 3).join(", ")}${josa(names.length > 3 ? ` 외 ${names.length - 3}` : "", "이/가")} 나타났다` });
   }
   const storylet = state.activeStorylet?.id;
   if (storylet && storylet !== before.storylet) {

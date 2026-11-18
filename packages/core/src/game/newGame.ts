@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import type { Content, RoleContent } from "../content/schemas.ts";
 import { worldInfo } from "../content/packs.ts";
 import type { Rng } from "../rng.ts";
@@ -125,7 +126,7 @@ export function answerNewGame(packs: ReadonlyMap<string, Content>, draft: NewGam
     const role = Object.values(content.roles).find((r) => r.scenario?.order !== undefined && (norm(r.id) === v || norm(r.scenario.title) === v));
     const choices = scenarioChoices(content, unlocked);
     if (!role) return { ok: false, error: `시나리오는 ${choices.filter((c) => !c.locked).map((c) => c.title).join(", ")} 중 하나다.` };
-    if (!scenarioOpen(role, unlocked)) return { ok: false, error: `${role.scenario!.title}은(는) 아직 잠겨 있다. 해금 조건: ${role.scenario!.unlock!.text}` };
+    if (!scenarioOpen(role, unlocked)) return { ok: false, error: `${josa(role.scenario!.title, "은/는")} 아직 잠겨 있다. 해금 조건: ${role.scenario!.unlock!.text}` };
     return { ok: true, draft: pickRole(content, draft, role.id), done: false };
   }
   if (step === "content") {

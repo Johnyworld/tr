@@ -26,6 +26,9 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
 import { endActiveStorylet } from "./storyletTools.ts";
 
+/** 지키는 전투에서 막아 주는 준비물의 이름 (월드 팩의 holds 준비물) */
+const barrierLabel = (content: Content) => content.scenario.battle?.preparations.find((p) => p.holds)?.label ?? "막아 둔 것";
+
 /**
  * 전투 장면 연결 (기획서 9.5).
  * - 하루 틱에서 플레이어가 낄 교전은 그날 새벽으로 예정한다 (예정은 플레이어도 GM도 모른다)
@@ -97,7 +100,7 @@ export function validateBattleAction(
   const effect = config.effects.find((e) => e.id === input.effect);
   if (!effect) return `알 수 없는 전투 효과: ${input.effect} (가능: ${config.effects.map((e) => e.id).join(", ")})`;
   const player = state.characters[state.playerId]!;
-  const blocker = effectBlocker(effect, state.battle, { items: player.inventory, preparations: state.preparations[state.battle.zone] ?? [] });
+  const blocker = effectBlocker(effect, state.battle, { items: player.inventory, preparations: state.preparations[state.battle.zone] ?? [] }, (id) => ctx.content.items[id]?.name ?? battleConfig(ctx.content).preparations.find((p) => p.id === id)?.label ?? id);
   if (blocker) return `${effect.label}: ${blocker}`;
   if (input.objective && !state.battle.objectives.includes(input.objective)) return `남은 목표물이 아니다: ${input.objective}`;
   return { effect, objective: input.objective };
@@ -138,7 +141,7 @@ export function playBattleRound(
       `배경 교전 뒤 전세 ${momentumLabel(r.battle.momentum, config.momentum_to_win)}, 경보 ${alarmLabel(r.battle.alarm, config.max_alarm)}, 위치 ${label(config.positions, r.battle.position)}.`,
   ];
   if (r.destroyed) lines.push(`${josa(label(config.objectives, r.destroyed), "을/를")} 무너뜨렸다.`);
-  if ((r.battle.holds ?? 0) < (battle.holds ?? 0)) lines.push(`밀고 들어오던 적이 바리케이드에 막혔다${r.battle.holds ? "" : ". 바리케이드는 이제 무너졌다"}.`);
+  if ((r.battle.holds ?? 0) < (battle.holds ?? 0)) lines.push(`밀고 들어오던 적이 ${barrierLabel(ctx.content)}에 막혔다${r.battle.holds ? "" : `. ${josa(barrierLabel(ctx.content), "은/는")} 이제 무너졌다`}.`);
   if (r.battle.alarm >= config.max_alarm && r.battle.position !== config.positions[0]!.id) {
     lines.push("적이 당신을 알아챘다. 적 진영 안에서 노출되었다.");
   }
@@ -266,7 +269,7 @@ export function forceWords(n: number): string {
 function describeStart(content: Content, b: BattleState): string {
   const zone = content.locations[b.zone]?.name ?? b.zone;
   return b.side === "defense"
-    ? `${josa(factionName(content, b.attacker), "이/가")} ${josa(zone, "을/를")} 덮쳤다. 적은 ${forceWords(b.theirs.committed)}, 우리 편은 ${forceWords(b.ours.committed)}.${b.holds ? " 길목의 바리케이드가 적의 발을 묶는다." : ""}`
+    ? `${josa(factionName(content, b.attacker), "이/가")} ${josa(zone, "을/를")} 덮쳤다. 적은 ${forceWords(b.theirs.committed)}, 우리 편은 ${forceWords(b.ours.committed)}.${b.holds ? ` ${josa(barrierLabel(content), "이/가")} 적의 발을 묶는다.` : ""}`
     : `${factionName(content, b.attacker)} 쪽이 ${josa(zone, "을/를")} 친다. 당신도 차출됐다. 우리 편은 ${forceWords(b.ours.committed)}, 적은 ${forceWords(b.theirs.committed)}.`;
 }
 
@@ -282,7 +285,7 @@ export function describeBattleForGm(state: GameState, content: Content): string 
   return [
     `전투 중: ${battleTitle(content, b)} (${b.side === "defense" ? "방어" : "공격"}) · ${b.round + 1}/${config.max_rounds}라운드 (한 라운드 ${config.round_minutes}분)`,
     `  적 ${factionName(content, b.theirs.faction)}: ${forceWords(b.theirs.committed - b.theirs.losses)} · 우리 편: ${forceWords(b.ours.committed - b.ours.losses)}`,
-    `  전세 ${momentumLabel(b.momentum, config.momentum_to_win)} · 경보 ${alarmLabel(b.alarm, config.max_alarm)} · 위치 ${label(config.positions, b.position)}${b.holds ? " · 바리케이드가 버티는 중" : ""}`,
+    `  전세 ${momentumLabel(b.momentum, config.momentum_to_win)} · 경보 ${alarmLabel(b.alarm, config.max_alarm)} · 위치 ${label(config.positions, b.position)}${b.holds ? ` · ${josa(barrierLabel(content), "이/가")} 버티는 중` : ""}`,
     `  남은 적 목표물: ${b.objectives.length ? b.objectives.map((o) => `${o}(${label(config.objectives, o)})`).join(", ") : "없음"}`,
     `  지금 쓸 수 있는 전투 효과 (take_action.battle.effect): ${usable.map((e) => `${e.id} ${e.label} [위험 ${e.min_harm} 이상] — ${e.description}`).join(" / ") || "없음"}`,
     "  전투 중 행동은 take_action 한 번이 한 라운드다. 판정을 반드시 넣고, 몸의 위험은 효과마다 적힌 수준 이상으로 선언한다. 승패·사상자는 시스템이 정한다.",

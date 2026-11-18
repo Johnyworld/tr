@@ -34,8 +34,8 @@ export function forage(ctx: ToolContext, kindId: string, outcome: CheckOutcome |
   const state = store.getState();
   const zone = state.playerZone;
   if (!zone) return { ok: false, error: "어디에 있는지 모른다." };
-  if (kind.water && !watery(ctx, zone)) return { ok: false, error: `여기는 물가가 아니라 ${kind.label}을(를) 할 수 없다.` };
-  if (!kind.water && content.locations[zone]?.kind === "base") return { ok: false, error: `거점 안에서는 ${kind.label}을(를) 할 수 없다. 담 밖으로 나간다.` };
+  if (kind.water && !watery(ctx, zone)) return { ok: false, error: `여기는 물가가 아니라 ${josa(kind.label, "을/를")} 할 수 없다.` };
+  if (!kind.water && content.locations[zone]?.kind === "base") return { ok: false, error: `거점 안에서는 ${josa(kind.label, "을/를")} 할 수 없다. 담 밖으로 나간다.` };
 
   // 같은 날 같은 곳에서 다시 할수록 덜 잡힌다 (수색과 같은 기록을 일마다 따로 쓴다)
   const key = `${zone}#${kind.id}`;
@@ -105,7 +105,7 @@ export function handleTrap(ctx: ToolContext, action: "set" | "check"): Result {
   if (!here) return { ok: false, error: "이 구역에 놓아 둔 덫이 없다." };
   store.append({ type: "trap_collected", zone });
   store.append({ type: "item_granted", to: me.id, itemId: trap.item, quantity: 1 });
-  const lines = [`덫을 거뒀다 (${trapName}은(는) 다시 소지품으로).`];
+  const lines = [`덫을 거뒀다 (${josa(trapName, "은/는")} 다시 소지품으로).`];
   const displays: ToolDisplayEvent[] = [];
   if (here.caught) {
     store.append({ type: "item_granted", to: me.id, itemId: here.caught, quantity: here.qty });

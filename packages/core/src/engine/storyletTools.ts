@@ -313,7 +313,7 @@ export function applyEffect(
     if (!target || !clock) return {};
     const ratio = clock.filled / clock.max;
     const stage = ratio >= 0.75 ? "거의 다 됐다" : ratio >= 0.4 ? "절반쯤 와 있다" : ratio > 0 ? "막 시작됐다" : "아직 말뿐이다";
-    const fact = sentence(`${content.factions[target]?.name ?? target}이(가) 준비하는 일: ${clock.label}. ${stage}`);
+    const fact = sentence(`${josa(content.factions[target]?.name ?? target, "이/가")} 준비하는 일: ${clock.label}. ${stage}`);
     store.append({
       type: "belief_added",
       characterId: playerId,
@@ -388,7 +388,8 @@ export function applyEffect(
   }
   if ("belief" in effect) {
     const fact = sentence(fillStorylet(effect.belief.fact, vars));
-    store.append({
+    // 되풀이되는 이야기가 같은 문장을 또 남기면 쌓지 않는다 (알게 된 것으로는 알린다)
+    if (!(state.beliefs[playerId] ?? []).some((b) => b.fact === fact)) store.append({
       type: "belief_added",
       characterId: playerId,
       belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.belief.source, accuracy: "approximate", learnedAt: state.time },
@@ -465,7 +466,7 @@ export function applyEffect(
     if (effect.give_item.from) {
       const holder = whoOf(ctx, effect.give_item.from, cast);
       const have = holder ? (state.characters[holder]?.inventory[item] ?? 0) : 0;
-      if (!holder || have < quantity) return { line: `${name}은(는) 건네받을 수 없었다 (가진 것이 없다).` };
+      if (!holder || have < quantity) return { line: `${josa(name, "은/는")} 건네받을 수 없었다 (가진 것이 없다).` };
       store.append({ type: "item_transferred", from: holder, to: playerId, itemId: item, quantity });
       const fromName = playerCalls(state, content, holder);
       return { line: `${josa(fromName, "이/가")} ${josa(`${name} ×${quantity}`, "을/를")} 건넸다.`, display: { type: "item", fromName, toName: state.characters[playerId]!.name, itemName: name, quantity } };
@@ -478,7 +479,7 @@ export function applyEffect(
     const r = id ? state.romances?.[[playerId, id].sort().join("|")] : undefined;
     if (!id || r?.stage !== "lovers") return {};
     store.append({ type: "romance_changed", a: playerId, b: id, stage: "ended" });
-    return { line: `${playerCalls(state, content, id)}와(과)의 사이가 끝났다.` };
+    return { line: `${josa(playerCalls(state, content, id), "과/와")}의 사이가 끝났다.` };
   }
   if ("npc_heal" in effect) {
     const id = whoOf(ctx, effect.npc_heal.who, cast);
@@ -522,7 +523,7 @@ export function applyEffect(
     const id = whoOf(ctx, effect.locate.who, cast);
     const c = id ? state.characters[id] : undefined;
     if (!id || !c?.captive) return {};
-    const fact = sentence(`${playerCalls(state, content, id)}은(는) ${content.factions[c.captive.by]?.name ?? c.captive.by}의 ${content.locations[c.captive.zone]?.name ?? c.captive.zone}에 갇혀 있다고 한다`);
+    const fact = sentence(`${josa(playerCalls(state, content, id), "은/는")} ${content.factions[c.captive.by]?.name ?? c.captive.by}의 ${content.locations[c.captive.zone]?.name ?? c.captive.zone}에 갇혀 있다고 한다`);
     store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.locate.source, accuracy: "approximate", learnedAt: state.time } });
     return { line: `알게 된 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.locate.source] } };
   }
@@ -537,7 +538,7 @@ export function applyEffect(
     const line = releasePlayer(ctx, effect.release_player.returned);
     const home = effect.release_player.home ? Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id : undefined;
     if (home && home !== store.getState().playerZone) store.append({ type: "zone_moved", from: store.getState().playerZone, to: home });
-    return { line: `${line ?? "풀려났다."}${home ? ` ${content.locations[home]?.name ?? home}(으)로 돌아왔다.` : ""}` };
+    return { line: `${line ?? "풀려났다."}${home ? ` ${josa(content.locations[home]?.name ?? home, "으로/로")} 돌아왔다.` : ""}` };
   }
   if ("deposit_weapons" in effect) {
     const zone = state.playerZone;
@@ -547,7 +548,7 @@ export function applyEffect(
     if (Object.keys(items).length === 0) return {};
     store.append({ type: "items_deposited", zone, items });
     const names = Object.entries(items).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ");
-    return { line: `무기를 맡겼다 (${names}). ${content.locations[zone]?.name ?? zone}을(를) 떠날 때 돌려받는다.` };
+    return { line: `무기를 맡겼다 (${names}). ${josa(content.locations[zone]?.name ?? zone, "을/를")} 떠날 때 돌려받는다.` };
   }
   if ("cultivate" in effect) {
     const me = state.characters[playerId]!;
@@ -648,7 +649,7 @@ export function applyEffect(
     if (state.characters[playerId]?.captive && content.locations[to] && state.playerZone !== to) releasePlayer(ctx, false);
     if (!content.locations[to] || state.playerZone === to) return {};
     store.append({ type: "zone_moved", from: state.playerZone, to });
-    return { line: `${content.locations[to]!.name}(으)로 옮겨졌다. 함께 있던 인물은 따라오지 않는다.` };
+    return { line: `${josa(content.locations[to]!.name, "으로/로")} 옮겨졌다. 함께 있던 인물은 따라오지 않는다.` };
   }
   if ("reveal_tie" in effect) {
     const a = whoOf(ctx, effect.reveal_tie.who, cast);
@@ -656,7 +657,7 @@ export function applyEffect(
     const tie = a && b ? tiesOf(state, content, a).find((t) => t.other === b) : undefined;
     if (!tie || tieKnown(state, tie)) return {};
     store.append({ type: "tie_revealed", key: tie.key });
-    return { line: `알게 된 관계: ${playerCalls(state, content, a!)}은(는) ${playerCalls(state, content, b!)}의 ${TIE_LABELS[tie.kind]}다.` };
+    return { line: `알게 된 관계: ${josa(playerCalls(state, content, a!), "은/는")} ${playerCalls(state, content, b!)}의 ${TIE_LABELS[tie.kind]}다.` };
   }
   if ("faction_policy" in effect) {
     const { topic, option } = effect.faction_policy;
@@ -814,7 +815,7 @@ export function setGameOptions(ctx: ToolContext, patch: GameOptionsPatch): strin
   };
   const lines: string[] = [];
   if (event.mature !== undefined) lines.push(event.mature ? "성인 주제를 켰다. 이제 그런 이야기가 열릴 수 있다 (성인끼리만, 장면은 암전)." : "성인 주제를 껐다. 그런 이야기는 열리지 않는다.");
-  if (event.dialogue !== undefined) lines.push(`대화 형식을 ${DIALOGUE_STYLE_LABELS[event.dialogue]}(으)로 바꿨다. 다음 서술부터 그 형식으로 쓴다.`);
+  if (event.dialogue !== undefined) lines.push(`대화 형식을 ${josa(DIALOGUE_STYLE_LABELS[event.dialogue], "으로/로")} 바꿨다. 다음 서술부터 그 형식으로 쓴다.`);
   if (lines.length) ctx.store.append(event);
   return lines;
 }

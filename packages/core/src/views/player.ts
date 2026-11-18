@@ -1,4 +1,5 @@
 import { resolveLine } from "../engine/resolve.ts";
+import { portraitSections } from "../scenario/scenario.ts";
 import { rankName } from "../game/ranks.ts";
 import { stashHere, stashPlace } from "../engine/stash.ts";
 import { isCreature } from "../game/kinds.ts";
@@ -52,6 +53,8 @@ export type PlayerView = {
   portrait: string | null;
   /** 월드 팩 id: 초상화 그림 주소에 쓴다 (12-139) */
   packId: string;
+  /** 얼굴 고르기 기회 (12-139): 얼굴이 없으면 고를 수 있는 얼굴 (화풍 섹션). 고를 수 없으면 null */
+  portraitChoices: { style: string; label: string; numbered: boolean; faces: string[] }[] | null;
   age: number | null;
   roleLabel: string;
   timeLabel: string;
@@ -329,6 +332,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     genderLabel: scenario.creation?.genders.find((g) => g.id === player.gender)?.label ?? null,
     portrait: player.portrait,
     packId: content.scenario.id,
+    portraitChoices: !player.dead && player.portrait === null && portraitSections(scenario, player.gender).length > 0 ? portraitSections(scenario, player.gender) : null,
     age: player.age,
     roleLabel:
       content.roles[state.roleId]?.rank === player.rank

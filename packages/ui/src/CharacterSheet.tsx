@@ -23,7 +23,11 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
         head={
           <div className="hud">
             <div className="sheet-hero">
-              <Portrait id={player.portrait} pack={player.packId} size={68} />
+              {player.portraitChoices?.length ? (
+                <PortraitChooser player={player} onStatus={onStatus} />
+              ) : (
+                <Portrait id={player.portrait} pack={player.packId} size={68} />
+              )}
               <div className="hero-who">
                 {/* 이름 오른쪽에 레벨·경험치 바·스킬 포인트 */}
                 <div className="hero-name-row">
@@ -839,4 +843,88 @@ function RelationCell({ value }: { value: number }) {
 
 function signed(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
+}
+
+/**
+ * 얼굴 고르기 기회 (12-139): 얼굴 없이 만든 주인공의 빈 초상화. 누르면 "얼굴을 선택하시겠습니까?"를 묻고,
+ * [예]면 고를 수 있는 얼굴을 보인다. 얼굴을 누르면 바로 정해진다 (한 번만, 규칙은 core)
+ */
+function PortraitChooser({ player, onStatus }: { player: PlayerView; onStatus?: (status: unknown) => void }) {
+  const [open, setOpen] = useState<null | "ask" | "pick">(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(null);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+  const choose = async (id: string) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/portrait", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }) });
+      const body = (await res.json()) as { status?: unknown; error?: string };
+      if (!res.ok) setError(body.error ?? "고르지 못했습니다");
+      else {
+        setOpen(null);
+        if (body.status) onStatus?.(body.status);
+      }
+    } catch {
+      setError("고르지 못했습니다");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const sections = player.portraitChoices ?? [];
+  return (
+    <div className="portrait-chooser" ref={box}>
+      <button type="button" className="portrait-chooser-face" aria-haspopup="dialog" aria-expanded={open !== null} title="얼굴 고르기" onClick={() => setOpen(open ? null : "ask")}>
+        <Portrait id={null} size={68} title="얼굴 없음 (눌러서 고르기)" />
+      </button>
+      {open === "ask" && (
+        <div className="portrait-pop" role="dialog" aria-label="얼굴 고르기">
+          <p className="portrait-pop-q">얼굴을 선택하시겠습니까?</p>
+          <p className="muted small">한 번만 고를 수 있습니다.</p>
+          <div className="portrait-pop-actions">
+            <button type="button" className="primary" onClick={() => setOpen("pick")}>
+              예
+            </button>
+            <button type="button" onClick={() => setOpen(null)}>
+              아니요
+            </button>
+          </div>
+        </div>
+      )}
+      {open === "pick" && (
+        <div className="portrait-pop portrait-pop-pick" role="dialog" aria-label="얼굴 고르기">
+          <p className="portrait-pop-q">얼굴을 골라 주세요</p>
+          {error && <p className="portrait-pop-error">{error}</p>}
+          <div className="portrait-pop-list">
+            {sections.map((sec) => (
+              <section key={sec.style}>
+                {sections.length > 1 && <h3 className="portrait-section-title">{sec.label}</h3>}
+                <div className="portrait-pop-grid">
+                  {sec.faces.map((id, i) => (
+                    <button key={id} type="button" className="portrait-pick" disabled={busy} aria-label={sec.numbered ? `초상화 ${i + 1}` : `초상화 ${id}`} onClick={() => void choose(id)}>
+                      <Portrait id={id} pack={player.packId} size={72} square />
+                      {sec.numbered && <span className="portrait-number">{i + 1}</span>}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

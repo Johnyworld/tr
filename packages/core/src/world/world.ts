@@ -1,4 +1,5 @@
 import { checkResolve } from "../engine/resolve.ts";
+import { choosePortrait } from "../game/portrait.ts";
 import { dayOf } from "../rules/time.ts";
 import { moveStash } from "../engine/stash.ts";
 import { parseMemoCommand, writeMemo, type MemoResult } from "../game/memo.ts";
@@ -466,6 +467,13 @@ ${this.sceneForGm()}` };
     // 꺼낸 뒤 짐이 한도를 넘었으면 다음 tool 결과에서 GM이 알린다 (stashHint). 여기서는 화면만 바뀐다
     this.#repo.saveSnapshot();
     return { ok: true, text: r.lines.join(" ") };
+  }
+
+  /** 얼굴 고르기 기회 (12-139): 얼굴 없는 주인공이 시트에서 한 번 고른다. 규칙은 core game/portrait.ts */
+  choosePortrait(id: unknown): { ok: true } | { ok: false; error: string } {
+    const r = choosePortrait(this.ctx().store, this.content, id);
+    if (r.ok) this.#repo.saveSnapshot();
+    return r;
   }
 
   /** "?메모 내용"(덧붙이기), "?메모 고침 내용", "?메모 지움"이면 메모를 적고 결과를 돌려준다. 메모 적기가 아니면 null (읽기는 runCommand) */

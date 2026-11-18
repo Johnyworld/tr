@@ -2574,6 +2574,84 @@ body {
   color: var(--muted);
 }
 
+/* 얼굴 고르기 기회 (12-139): 시트의 빈 초상화와 팝오버 */
+.portrait-chooser {
+  position: relative;
+  flex: none;
+}
+
+.portrait-chooser-face {
+  padding: 0;
+  border: 2px dashed var(--border);
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  display: block;
+}
+
+.portrait-chooser-face:hover,
+.portrait-chooser-face[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+
+.portrait-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: 220px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+}
+
+.portrait-pop-pick {
+  width: min(360px, calc(100vw - 32px));
+}
+
+.portrait-pop-q {
+  margin: 0 0 4px;
+  color: var(--heading);
+  font-weight: 600;
+}
+
+.portrait-pop-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.portrait-pop-error {
+  margin: 4px 0;
+  color: var(--error);
+  font-size: 13px;
+}
+
+.portrait-pop-list {
+  max-height: 360px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.portrait-pop-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.portrait-pop-grid .portrait-pick {
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border-radius: 10px;
+}
+
+.portrait-pop-grid .portrait-pick:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
 .portrait-square {
   border-radius: 8px;
   width: 100%;

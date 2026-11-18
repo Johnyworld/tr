@@ -510,6 +510,8 @@ export function createGameSchemas(s: Scenario) {
     /** 수위를 정한다 (새 게임에서, 또는 플레이어가 바꾸면, 12-57) */
     z.strictObject({ type: z.literal("content_options_set"), mature: z.boolean().optional(), dialogue: z.enum(["novel", "script"]).optional() }),
     z.strictObject({ type: z.literal("memo_written"), characterId: z.string(), text: z.string().max(4000) }),
+    /** 얼굴이 없는 주인공이 시트에서 얼굴을 고른다 (12-139, 한 번만) */
+    z.strictObject({ type: z.literal("portrait_chosen"), characterId: z.string(), portrait: z.string() }),
     /** 내 물건을 창고에 넣거나(put) 꺼낸다(take) (12-149). zone: 창고가 있는 구역 */
     z.strictObject({ type: z.literal("item_stashed"), characterId: z.string(), zone: z.string(), itemId: z.string(), quantity: z.number().int().positive(), direction: z.enum(["put", "take"]) }),
     /** 떠돌이가 이 구역을 거처로 삼았다 (12-149) */
@@ -1324,6 +1326,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "memo_written":
       next.memos = { ...next.memos, [event.characterId]: event.text };
       return next;
+    case "portrait_chosen": {
+      const who = next.characters[event.characterId];
+      if (!who) throw new Error(`알 수 없는 캐릭터: ${event.characterId}`);
+      next.characters = { ...next.characters, [who.id]: { ...who, portrait: event.portrait } };
+      return next;
+    }
     case "item_stashed": {
       const holder = next.characters[event.characterId];
       if (!holder) throw new Error(`알 수 없는 캐릭터: ${event.characterId}`);

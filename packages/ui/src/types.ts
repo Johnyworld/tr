@@ -7,6 +7,8 @@ export type PlayerView = {
   portrait: string | null;
   /** 월드 팩 id: 초상화 그림 주소 (/portraits/<팩>/<id>.png) */
   packId?: string;
+  /** 얼굴 고르기 기회 (12-139): 얼굴이 없으면 고를 수 있는 얼굴 (화풍 섹션). 없으면 null */
+  portraitChoices?: { style: string; label: string; numbered?: boolean; faces: string[] }[] | null;
   age: number | null;
   roleLabel: string;
   occupationLabel: string | null;

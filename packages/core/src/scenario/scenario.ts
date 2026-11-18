@@ -134,9 +134,16 @@ export function incapacitatingSymptom(s: Scenario, character: Pick<Character, "c
  * 몸 상태의 판정 보정. 증상이 정해진 월드는 가장 큰 증상은 그대로, 나머지 증상 보정의 합은 반(올림)만 더한다 (12-74).
  * 예: 고열 3 → -3, 1+1 → -2, 1+1+1+1 → -3, 3+2 → -4, 2+2+2 → -4. 바닥은 없다
  */
+/** 판정 보정을 주는 증상: 보이는 증상 중 다른 증상이 가리지 않는 것 (12-157: 진통제 기운이 고통을 가린다) */
+export function penaltySymptoms(s: Scenario, character: Pick<Character, "conditions">): Symptom[] {
+  const shown = visibleSymptoms(s, character);
+  const masked = new Set(shown.flatMap((x) => x.masks ?? []));
+  return shown.filter((x) => x.group === undefined || !masked.has(x.group));
+}
+
 export function conditionPenalty(s: Scenario, character: Pick<Character, "conditions">): number {
   if (s.symptoms?.length) {
-    const sizes = visibleSymptoms(s, character)
+    const sizes = penaltySymptoms(s, character)
       .map((x) => -x.penalty)
       .filter((n) => n > 0)
       .sort((a, b) => b - a);

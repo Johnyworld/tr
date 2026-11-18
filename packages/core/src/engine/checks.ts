@@ -5,7 +5,7 @@ import { squadFollowBonus } from "./command.ts";
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
 import { personaCheckParts } from "./persona.ts";
 import { attractionCheckBonus, traitSkillMod, traitsOf } from "./traits.ts";
-import { conditionPenalty, moveOf, shownLevel, statLabel, visibleSymptoms } from "../scenario/scenario.ts";
+import { conditionPenalty, moveOf, shownLevel, statLabel, penaltySymptoms } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import type { Character } from "../game/character.ts";
 import { gainCheckXp } from "./growth.ts";
@@ -156,7 +156,7 @@ export function checkLine(moveLabel: string, parts: { label: string; value: numb
 /** 몸 상태 보정의 이름: 보정이 붙은 증상들, 증상이 없는 월드는 상태 트랙의 단계 이름 */
 function conditionLabel(s: Scenario, c: Pick<Character, "conditions">): string {
   const names = s.symptoms?.length
-    ? visibleSymptoms(s, c).filter((x) => x.penalty < 0).map((x) => x.label)
+    ? penaltySymptoms(s, c).filter((x) => x.penalty < 0).map((x) => x.label)
     : s.condition_tracks.flatMap((t) => {
         const level = t.levels.find((l) => l.id === c.conditions[t.id]);
         return level?.penalty ? [shownLevel(t, level.id).label ?? t.label] : [];

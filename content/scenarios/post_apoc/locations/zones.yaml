@@ -21,6 +21,7 @@
       - { item: canned_food, weight: 3, qty: [1, 1] }
       - { item: wire_roll, weight: 2, qty: [1, 1] }
       - { item: cigarettes, weight: 1, qty: [1, 2] }
+      - { item: soju, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }
 
 - id: a_east_post
@@ -126,6 +127,8 @@
       - { item: mushroom, weight: 1, qty: [1, 1] }
       - { item: canned_food, weight: 3, qty: [1, 2] }
       - { item: cigarettes, weight: 2, qty: [1, 3] }
+      - { item: soju, weight: 2, qty: [1, 2] }
+      - { item: painkiller, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 2, qty: [1, 1] }
       - { item: coat, weight: 1, qty: [1, 1] }
       - { item: kitchen_knife, weight: 1, qty: [1, 1] }
@@ -172,6 +175,7 @@
       - { item: fever_reducer, weight: 2, qty: [1, 1] }
       - { item: medkit, weight: 1, qty: [1, 1] }
       - { item: antibiotics, weight: 1, qty: [1, 1] }
+      - { item: painkiller, weight: 1, qty: [1, 2] }
       - { item: serum, weight: 0.05, qty: [1, 1] }
 
 - id: e_market
@@ -191,6 +195,9 @@
       - { item: dried_fish, weight: 1, qty: [1, 1] }
       - { item: salted_meat, weight: 1, qty: [1, 1] }
       - { item: cigarettes, weight: 2, qty: [1, 2] }
+      - { item: soju, weight: 2, qty: [1, 2] }
+      - { item: moonshine, weight: 2, qty: [1, 2] }
+      - { item: stimulant, weight: 0.5, qty: [1, 1] }
       - { item: canned_food, weight: 1, qty: [1, 1] }
       - { item: trade_token, weight: 1, qty: [1, 1] }
 
@@ -210,6 +217,8 @@
       - { item: fever_reducer, weight: 3, qty: [1, 2] }
       - { item: medkit, weight: 2, qty: [1, 1] }
       - { item: antibiotics, weight: 2, qty: [1, 2] }
+      - { item: painkiller, weight: 2, qty: [1, 2] }
+      - { item: morphine, weight: 0.7, qty: [1, 1] }
       - { item: serum, weight: 0.05, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }
       - { item: bandage, weight: 2, qty: [1, 2] }

@@ -197,7 +197,15 @@ export const scenarioFileSchema = z
                * 버릇 (12-129, 골초): 하루가 지날 때 items 중 하나를 저절로 하나 쓴다. 가진 게 없으면 track이 한 단계 오른다 (쓰면 바로 풀린다).
                * 낮에 풀려면 consumables에 그 아이템 → track을 적어 둔다. start: 새 캐릭터가 이만큼 가지고 시작한다
                */
-              habit: z.strictObject({ items: z.array(id).min(1), track: id, start: z.number().int().min(0).default(0) }).optional(),
+              habit: z
+                .strictObject({
+                  items: z.array(id).min(1),
+                  track: id,
+                  start: z.number().int().min(0).default(0),
+                  /** 끊기 (12-157): track이 마지막 단계에 이만큼(날) 머물면 버릇이 떨어진다 (트레잇을 뺀다). 없으면 끊을 수 없다 */
+                  quit_days: z.number().int().positive().optional(),
+                })
+                .optional(),
             })
             .default({}),
         }),
@@ -285,6 +293,8 @@ export const scenarioFileSchema = z
           incapacitates: z.boolean().optional(),
           /** 화면 색 (1 노랑 · 2 주황 · 3 빨강). 없으면 판정 보정 크기로. 보정은 작아도 위험한 증상(의식장애 등)은 3 */
           tone: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+          /** 이 증상이 있는 동안 이 묶음(group)의 증상은 판정 보정을 주지 않는다 (12-157: 진통제는 고통을, 술은 공포를 가린다). 증상은 그대로 보인다 */
+          masks: z.array(id).optional(),
         }),
       )
       .optional(),
@@ -1043,6 +1053,13 @@ export const scenarioFileSchema = z
     /** 몸 상태 (12-1): 허기와 감염. 없으면 그 규칙을 쓰지 않는다 */
     body: z
       .strictObject({
+        /**
+         * 기운 (12-157): 술·진통제·각성제처럼 쓰면 오르고 시간이 지나면 빠지는 트랙. 트랙 id → 한 단계 빠지는 데 걸리는 시간.
+         * 이 트랙을 올리는 소모품(consumables에 음수)은 나아질 데가 없어도 쓸 수 있다
+         */
+        wear_off: z.record(id, z.number().positive()).optional(),
+        /** 의존 (12-157): 이 아이템을 쓸 때마다 chance로 trait(버릇)이 붙는다. 쓴 사람에게 */
+        dependence: z.record(id, z.strictObject({ trait: id, chance: z.number().min(0).max(1) })).optional(),
         /** 허기 트랙. 하루마다 배급 수준(war.ration.levels[].hunger)만큼 바뀐다. 마지막 단계에서는 하루마다 부상 */
         hunger: z.strictObject({ track: id, starving_harm: z.number().int().min(0).default(0) }).optional(),
         /**
@@ -1412,6 +1429,13 @@ export const scenarioFileSchema = z
       if (w.infected_default && !w.kinds.some((k) => k.id === w.infected_default)) problem(`wounds.infected_default: 알 수 없는 상처 종류 ${w.infected_default}`);
       if (!s.moves.some((m) => m.id === w.staunch_move)) problem(`wounds.staunch_move: 알 수 없는 스킬 ${w.staunch_move}`);
     }
+    for (const t of Object.keys(s.body?.wear_off ?? {})) if (!s.condition_tracks.some((x) => x.id === t)) problem(`body.wear_off: 알 수 없는 상태 트랙 ${t}`);
+    for (const [item, d] of Object.entries(s.body?.dependence ?? {})) {
+      const t = s.traits.find((x) => x.id === d.trait);
+      if (!t) problem(`body.dependence.${item}: 알 수 없는 트레잇 ${d.trait}`);
+      else if (!t.effects.habit) problem(`body.dependence.${item}: ${d.trait}은(는) 버릇(habit) 트레잇이 아니다`);
+    }
+    for (const x of s.symptoms ?? []) for (const g of x.masks ?? []) if (!(s.symptoms ?? []).some((y) => y.group === g)) problem(`symptoms.${x.id}.masks: 알 수 없는 증상 묶음 ${g}`);
     const scars = s.scars;
     if (scars) {
       const harm = s.condition_tracks.find((t) => t.id === s.harm_track);

@@ -19,6 +19,7 @@
       - { item: blanket, weight: 2, qty: [1, 1] }
       - { item: medkit, weight: 1, qty: [1, 1] }
       - { item: cigarettes, weight: 2, qty: [1, 2] }
+      - { item: stimulant, weight: 0.5, qty: [1, 1] }
       - { item: crowbar, weight: 1, qty: [1, 1] }
       - { item: rifle_rounds, weight: 1, qty: [1, 1] }
 
@@ -126,6 +127,8 @@
       - { item: radio, weight: 0.5, qty: [1, 1] }
       - { item: cloth, weight: 2, qty: [1, 2] }
       - { item: antibiotics, weight: 0.6, qty: [1, 1] }
+      - { item: painkiller, weight: 1, qty: [1, 1] }
+      - { item: stimulant, weight: 0.5, qty: [1, 1] }
 
 - id: rest_stop
   name: 고속도로 휴게소
@@ -143,6 +146,8 @@
       - { item: fuel_bottle, weight: 2, qty: [1, 1] }
       - { item: canned_food, weight: 1, qty: [1, 1] }
       - { item: cigarettes, weight: 2, qty: [1, 2] }
+      - { item: soju, weight: 2, qty: [1, 2] }
+      - { item: painkiller, weight: 1, qty: [1, 1] }
       - { item: water_bottle, weight: 1, qty: [1, 1] }
       - { item: motorbike, weight: 0.2, qty: [1, 1] }
       - { item: bicycle, weight: 0.3, qty: [1, 1] }
@@ -166,3 +171,4 @@
       - { item: duct_tape, weight: 2, qty: [1, 1] }
       - { item: scrap_metal, weight: 2, qty: [1, 1] }
       - { item: cigarettes, weight: 1, qty: [1, 2] }
+      - { item: moonshine, weight: 1, qty: [1, 1] }

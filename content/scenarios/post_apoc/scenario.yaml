@@ -527,6 +527,10 @@ traits:
   - { id: short_breath, label: 짧은 숨, kind: negative, selectable: false, description: "가슴을 다친 뒤로 숨이 금방 찬다 (버티기 -1)", acting: 뛰고 나면 한참 허리를 굽히고 숨을 고른다, effects: { skills: { endure: -1 } } }
   - { id: deaf_ear, label: 먹은 귀, kind: negative, selectable: false, description: "한쪽 귀가 잘 들리지 않는다 (경계 -1)", acting: 말을 걸면 고개를 돌려 성한 귀를 들이댄다, effects: { skills: { sense_danger: -1 } } }
   - { id: aching_wound, label: 쑤시는 옛 상처, kind: negative, selectable: false, description: "궂은 날이면 옛 상처가 쑤신다 (추위 노출 +1)", acting: 날이 흐리면 옛 상처 자리를 문지른다, effects: { cold: 1 } }
+  # 술·약 (12-157): 술꾼은 고를 수 있다. 진통제 의존·각성제 중독은 쓰다 보면 붙는다 (body.dependence). 끝 단계를 며칠 버티면 끊는다
+  - { id: drinker, label: 술꾼, kind: negative, cost: 1, description: "하루 한 병을 마신다. 술이 떨어지면 안절부절하다 손이 떨린다 (판정 -1, -2). 열흘을 버티면 끊는다", acting: 해가 지면 병을 찾고 술이 들어가면 말이 많아진다, effects: { habit: { items: [soju, moonshine], track: craving_drink, start: 2, quit_days: 10 } } }
+  - { id: pill_habit, label: 진통제 의존, kind: negative, selectable: false, description: "하루 한 번 진통제를 먹는다. 떨어지면 안절부절하다 금단이 온다 (판정 -1, -2). 이레를 버티면 끊는다", acting: 아프지 않아도 약통을 흔들어 남은 알을 센다, effects: { habit: { items: [painkiller, morphine], track: craving_pills, quit_days: 7 } } }
+  - { id: stim_habit, label: 각성제 중독, kind: negative, selectable: false, description: "하루 한 번 각성제를 한다. 떨어지면 처지다 금단이 온다 (판정 -1, -2). 보름을 버티면 끊는다", acting: 눈 밑이 검고 말이 빨라졌다가 갑자기 멍해진다, effects: { habit: { items: [stimulant], track: craving_stim, quit_days: 14 } } }
   - { id: ugly, label: 험악한 인상, kind: negative, cost: 1, visible: true, description: 첫인상이 나쁘다 (외모 -1), acting: 사람들이 첫눈에 경계한다, opposites: [beautiful, attractive], effects: { looks: -1 } }
   # ── 성격 (0) ──
   - { id: warm, label: 다정함, kind: personality, visible: true, description: 남을 살뜰히 챙긴다, acting: 말끝이 부드럽고 먼저 안부를 묻는다, opposites: [cold], persona: { warmth: 2 } }
@@ -703,6 +707,13 @@ symptoms:
   # 피로 (12-114)
   # 담배 (12-129): 골초 트레잇이 담배 없이 하루를 넘기면
   - { id: restless, label: 안절부절, group: craving, penalty: -1 }
+  # 술·진통제·마약 (12-157): 기운은 다른 증상의 보정을 가린다 (증상은 보인다). 끊으면 금단
+  - { id: tipsy, label: 얼큰함, group: drink, masks: [fear] }
+  - { id: drunk, label: 취함, group: drink, penalty: -1, masks: [fear] }
+  - { id: numbed, label: 진통제 기운, group: numb, masks: [pain] }
+  - { id: wired, label: 각성, group: wired, masks: [fatigue] }
+  - { id: shakes, label: 손떨림, group: craving, penalty: -2 }
+  - { id: withdrawal, label: 금단 증상, group: craving, penalty: -2, tone: 3 }
   - { id: drowsy, label: 졸림, group: fatigue }
   - { id: weary, label: 지침, group: fatigue, penalty: -1 }
   - { id: exhausted, label: 탈진, group: fatigue, penalty: -2 }
@@ -835,6 +846,57 @@ condition_tracks:
     levels:
       - { id: satisfied }
       - { id: restless, symptoms: [restless] }
+  # 술·진통제·각성제 기운 (12-157): 쓰면 오르고 body.wear_off 시간마다 한 단계 빠진다
+  - id: drink
+    label: 술기운
+    icon: mind
+    quiet: true
+    levels:
+      - { id: sober }
+      - { id: tipsy, symptoms: [tipsy] }
+      - { id: drunk, symptoms: [drunk] }
+      - { id: wasted, symptoms: [drunk, nausea] }
+  - id: numb
+    label: 진통
+    icon: heart
+    quiet: true
+    levels:
+      - { id: none }
+      - { id: numbed, symptoms: [numbed] }
+      - { id: deep, symptoms: [numbed] }
+  - id: wired
+    label: 각성
+    icon: moon
+    quiet: true
+    levels:
+      - { id: none }
+      - { id: wired, symptoms: [wired] }
+      - { id: high, symptoms: [wired] }
+  # 버릇의 금단 (12-157): 술꾼·진통제 의존·각성제 중독. 하루치를 못 하면 한 단계씩 오르고, 끝 단계를 버티면 끊는다 (habit.quit_days)
+  - id: craving_drink
+    label: 술
+    icon: fire
+    quiet: true
+    levels:
+      - { id: satisfied }
+      - { id: restless, symptoms: [restless] }
+      - { id: shakes, symptoms: [shakes] }
+  - id: craving_pills
+    label: 약
+    icon: fire
+    quiet: true
+    levels:
+      - { id: satisfied }
+      - { id: restless, symptoms: [restless] }
+      - { id: withdrawal, symptoms: [withdrawal, nausea] }
+  - id: craving_stim
+    label: 각성제
+    icon: fire
+    quiet: true
+    levels:
+      - { id: satisfied }
+      - { id: restless, symptoms: [restless, drowsy] }
+      - { id: withdrawal, symptoms: [withdrawal, weary] }
 # apply_harm이 쓰는 트랙
 harm_track: harm
 
@@ -1156,9 +1218,24 @@ consumables:
   wild_greens: { hunger: 1 }
   mushroom: { hunger: 1 }
   fever_reducer: { disease: 1 }
+  # 술·진통제·각성제 (12-157): 기운을 올린다 (음수). 진통제는 고통을, 술은 공포를, 각성제는 피로를 가린다
+  soju: { drink: -1 }
+  moonshine: { drink: -2 }
+  painkiller: { numb: -1 }
+  morphine: { numb: -2 }
+  stimulant: { wired: -2 }
 
 # 몸 상태 (12-1, *임시*)
 body:
+  # 기운이 한 단계 빠지는 시간 (12-157, *임시*): 술 3시간, 진통제 4시간, 각성제 5시간
+  wear_off: { drink: 3, numb: 4, wired: 5 }
+  # 쓸 때마다 버릇이 붙을 확률 (12-157, *임시*)
+  dependence:
+    soju: { trait: drinker, chance: 0.03 }
+    moonshine: { trait: drinker, chance: 0.05 }
+    painkiller: { trait: pill_habit, chance: 0.05 }
+    morphine: { trait: pill_habit, chance: 0.2 }
+    stimulant: { trait: stim_habit, chance: 0.15 }
   # 거점에 사는 사람들의 몸 (12-125): 무리의 배급·연료가 그 무리 사람들의 허기·추위가 된다. 굶주림·오한까지만 (죽지 않는다)
   residents: { hunger_max: starving, cold_max: shiver }
   # 피로 (12-114, *임시*): 깨어 있으면 시간당 1씩 쌓이고, 자면 시간당 3씩(6시간 자면 18) 풀리고, 쉬기만 하면 그대로다

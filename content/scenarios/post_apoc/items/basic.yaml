@@ -274,3 +274,36 @@
   kind: consumable
   weight: 0.1
   value: 70
+# 술·진통제·각성제 (12-157). 효과는 scenario.yaml consumables, 버릇은 body.dependence
+- id: soju
+  name: 소주
+  description: 상표가 반쯤 벗겨진 초록 병 소주. 마시면 얼큰해져 겁이 덜 난다 (술기운 1단계).
+  kind: consumable
+  weight: 0.4
+  value: 3
+- id: moonshine
+  name: 밀주
+  description: 감자와 썩은 과일로 담근 탁한 술. 독하다 (술기운 2단계). 많이 마시면 속이 뒤집힌다.
+  kind: consumable
+  weight: 0.5
+  value: 2
+- id: painkiller
+  name: 진통제
+  description: 알약 몇 개가 남은 진통제 통. 몇 시간 동안 고통을 무디게 한다 (상처는 그대로). 자꾸 먹으면 끊기 어렵다.
+  kind: consumable
+  resource: medicine
+  weight: 0.1
+  value: 4
+- id: morphine
+  name: 모르핀 앰플
+  description: 군 의료품 상자에서 나온 모르핀 앰플. 반나절 가까이 고통을 지운다. 몸이 금방 기억한다.
+  kind: consumable
+  resource: medicine
+  weight: 0.1
+  value: 10
+- id: stimulant
+  name: 각성제
+  description: 은박지에 싼 흰 알약. 잠과 피로를 잊게 한다 (열 시간쯤). 쉽게 손이 간다.
+  kind: consumable
+  weight: 0.05
+  value: 8

@@ -9,7 +9,7 @@ import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import { runStorylets } from "./storyletTools.ts";
-import { runNaturalRecovery } from "./body.ts";
+import { runNaturalRecovery, runWearOff } from "./body.ts";
 import { runHelpless } from "./helpless.ts";
 import { runBleeding } from "./bleeding.ts";
 import { runFearDecay } from "./fear.ts";
@@ -69,5 +69,7 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const checked = checkRumorsOnSite(ctx);
   // 무서운 것이 장면에 없으면 공포가 가라앉는다 (12-95)
   const calmed = runFearDecay(ctx);
-  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed, ...checked, ...calmed];
+  // 술·진통제·각성제 기운이 빠진다 (12-157)
+  const worn = runWearOff(ctx);
+  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed, ...checked, ...calmed, ...worn];
 }

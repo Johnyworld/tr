@@ -10,7 +10,7 @@ import type { GameState } from "../game/state.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
-import { bodyTraits, effectiveSkill, habitsOf } from "./traits.ts";
+import { bodyTraits, effectiveSkill, habitsOf, traitIdsOf } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { harmTrack, shownLevel, trackOf } from "../scenario/scenario.ts";
 import { daysOfStock, rationLevel } from "../sim/war.ts";
@@ -129,8 +129,12 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
   if (target !== player.id && (!state.scene.present.includes(target) || state.characters[target]?.dead)) return { ok: false, error: "그 사람이 장면에 없다." };
   // 겉으로 드러난 것만 본다 (숨은 잠복기는 주인공도 모른다)
   // 혈청은 걸렸는지 몰라도 쓸 수 있다 (안 걸렸으면 버린 셈이다. 쓸 수 있느냐로 잠복이 새지 않게)
+  // 기운을 올리는 것(술·진통제·각성제, 12-157)은 나아질 데가 없어도 쓴다
+  const wearOff = content.scenario.body?.wear_off ?? {};
   const needed =
-    cure || Object.entries(effects).some(([t, n]) => n > 0 && shownIndex(ctx, state, target, t) > 0) || (slow && shownIndex(ctx, state, target, infection!.track) > 0);
+    cure ||
+    Object.entries(effects).some(([t, n]) => (n > 0 && shownIndex(ctx, state, target, t) > 0) || (n < 0 && wearOff[t] !== undefined)) ||
+    (slow && shownIndex(ctx, state, target, infection!.track) > 0);
   if (!needed) return { ok: false, error: `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.` };
   store.append({ type: "item_consumed", holder: player.id, itemId: item, quantity: 1 });
   // 끓이지 않은 물 (12-131): 불이 없으면 탈이 날 수 있다 (자기가 마실 때만)
@@ -146,6 +150,9 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
     if (c?.line) lines.push(c.line);
     if (c?.display) displays.push(c.display);
   }
+  // 의존 (12-157): 쓸 때마다 버릇이 붙을 수 있다
+  const hooked = dependOn(ctx, target, item);
+  if (hooked) lines.push(hooked);
   if (infection && slow) {
     store.append({ type: "infection_slowed", targetId: target, day: dayOf(store.getState().time) + 1 });
     if (shownIndex(ctx, store.getState(), target, infection.track) > 0) lines.push("약이 듣는 하루 동안은 감염이 더디게 퍼진다.");
@@ -531,10 +538,69 @@ function dailyHabits(ctx: ToolContext): Change[] {
     if (item) {
       ctx.store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: 1 });
       c = changeCondition(ctx, me.id, h.track, -levelIndex(ctx, ctx.store.getState(), me.id, h.track), "habit", `${ctx.content.items[item]?.name ?? item} (${h.trait.label})`);
-    } else c = changeCondition(ctx, me.id, h.track, 1, "habit", `${h.items.map((i) => ctx.content.items[i]?.name ?? i).join("·")}이 떨어졌다 (${h.trait.label})`);
+    } else {
+      // 끊기 (12-157): 가장 괴로운 단계를 quit_days 동안 견디면 버릇이 떨어진다
+      const quit = quitHabit(ctx, me.id, h);
+      c = quit ?? changeCondition(ctx, me.id, h.track, 1, "habit", `${h.items.map((i) => ctx.content.items[i]?.name ?? i).join("·")}이 떨어졌다 (${h.trait.label})`);
+    }
     if (c) changes.push(c);
   }
   return changes;
+}
+
+/** 버릇의 트랙이 마지막 단계에 quit_days 넘게 머물렀으면 트레잇을 빼고 트랙을 처음으로 */
+function quitHabit(ctx: ToolContext, characterId: string, h: ReturnType<typeof habitsOf>[number]): Change | null {
+  if (!h.quit_days) return null;
+  const state = ctx.store.getState();
+  const track = trackOf(ctx.content.scenario, h.track);
+  const index = levelIndex(ctx, state, characterId, h.track);
+  if (index < track.levels.length - 1) return null;
+  const since = state.recovery.trackAt[`${characterId}:${h.track}`];
+  if (since === undefined || dayOf(state.time) - dayOf(since) < h.quit_days) return null;
+  const c = state.characters[characterId]!;
+  ctx.store.append({ type: "character_patched", characterId, traits: traitIdsOf(ctx.content, c).filter((t) => t !== h.trait.id) });
+  changeCondition(ctx, characterId, h.track, -index, "habit", `${h.trait.label}을(를) 끊었다`);
+  return { line: `${h.trait.label}: 고비를 넘겼다. 더는 ${h.items.map((i) => ctx.content.items[i]?.name ?? i).join("·")}을(를) 찾지 않는다.`, display: null, died: false };
+}
+
+/** 의존 (12-157): 이 아이템을 쓴 사람에게 chance로 버릇 트레잇이 붙는다. 붙으면 알릴 줄 */
+function dependOn(ctx: ToolContext, characterId: string, item: string): string | null {
+  const d = ctx.content.scenario.body?.dependence?.[item];
+  const c = ctx.store.getState().characters[characterId];
+  if (!d || !c || c.dead) return null;
+  const have = traitIdsOf(ctx.content, c);
+  if (have.includes(d.trait) || ctx.rng() >= d.chance) return null;
+  const def = ctx.content.scenario.traits.find((t) => t.id === d.trait);
+  if (!def) return null;
+  ctx.store.append({ type: "character_patched", characterId, traits: [...have, d.trait] });
+  const who = playerCalls(ctx.store.getState(), ctx.content, characterId);
+  return characterId === ctx.store.getState().playerId
+    ? `몸이 이것을 다시 찾기 시작했다: ${def.label} (${def.description}).`
+    : `${josa(who, "이/가")} 이것에 기대기 시작했다: ${def.label}.`;
+}
+
+/**
+ * 기운이 빠진다 (12-157): body.wear_off의 트랙은 마지막으로 바뀐 뒤 그 시간마다 한 단계 내려간다.
+ * 살아 있는 모든 사람 (진통제를 맞은 동료도 깬다)
+ */
+export function runWearOff(ctx: ToolContext): ToolDisplayEvent[] {
+  const wear = ctx.content.scenario.body?.wear_off ?? {};
+  const displays: ToolDisplayEvent[] = [];
+  if (!Object.keys(wear).length) return displays;
+  const state = ctx.store.getState();
+  for (const c of Object.values(state.characters)) {
+    if (c.dead) continue;
+    for (const [trackId, hours] of Object.entries(wear)) {
+      const index = levelIndex(ctx, ctx.store.getState(), c.id, trackId);
+      if (index <= 0) continue;
+      const since = ctx.store.getState().recovery.trackAt[`${c.id}:${trackId}`] ?? state.time;
+      const times = Math.min(index, Math.floor((state.time - since) / (hours * 60)));
+      if (times <= 0) continue;
+      const ch = changeCondition(ctx, c.id, trackId, -times, "wear_off", "기운이 빠졌다");
+      if (ch?.display && c.id === state.playerId) displays.push(ch.display);
+    }
+  }
+  return displays;
 }
 
 /** 우리 거점에서 무리의 연료로 몸을 녹일 수 있는가 */

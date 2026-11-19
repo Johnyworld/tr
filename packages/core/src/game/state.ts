@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 73;
+export const SAVE_SCHEMA_VERSION = 74;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -404,8 +404,6 @@ export function createGameSchemas(s: Scenario) {
     deposits: z.record(z.string(), z.record(z.string(), z.number().int().positive())).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
     lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
-    /** 이야기가 바꾼 주인공의 상관 (지도부가 바뀐 뒤). null이면 역할의 상관 */
-    commanderOverride: z.string().nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
     zoneSearches: z.record(z.string(), z.strictObject({ day: z.number().int(), count: z.number().int() })).default({}),
     /**
@@ -658,8 +656,6 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("background_set"), entries: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })) }),
     /** 직분의 평판 ± (기획서 12.6) */
     z.strictObject({ type: z.literal("occupation_standing_changed"), characterId: z.string(), delta: z.number().int(), reason: z.string() }),
-    /** 주인공의 상관이 바뀐다 (null이면 역할의 상관으로 돌아간다) */
-    z.strictObject({ type: z.literal("commander_changed"), characterId: z.string().nullable() }),
     z.strictObject({ type: z.literal("npc_captured"), npcId: z.string(), by: z.string(), zone: z.string() }),
     z.strictObject({ type: z.literal("npc_released"), npcId: z.string() }),
     /** 인물 사이의 관계가 생겼다 (세계를 만들 때 무작위로) */
@@ -1027,7 +1023,6 @@ export const EMPTY_STATE: GameState = {
   negotiationBlocked: {},
   infested: {},
   keptExtras: {},
-  commanderOverride: null,
   lastRoute: null,
   options: { mature: false, dialogue: "novel" },
   memos: {},
@@ -1194,7 +1189,6 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.squadOrders = {};
       next.squadReports = {};
       next.council = {};
-      next.commanderOverride = null;
       // 무리 사람들과 서로 이름을 안다 (같은 무리 동료, 기획서 6.3)
       for (const id of event.role.known_npcs) {
         acquaint(next, next.playerId, id, true);
@@ -1712,10 +1706,6 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "npc_rank_changed":
       mustGet(next.characters, event.npcId, "캐릭터").rank = event.rank;
       return next;
-    case "commander_changed":
-      if (event.characterId) mustGet(next.characters, event.characterId, "캐릭터");
-      next.commanderOverride = event.characterId;
-      return next;
     case "extra_kept": {
       next.keptExtras[event.key] = event.characterId;
       return next;
@@ -2012,7 +2002,6 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.squadOrders = {};
       next.squadReports = {};
       next.council = {};
-      next.commanderOverride = null;
       next.offers = null;
       next.playerZone = null;
       next.battle = null;

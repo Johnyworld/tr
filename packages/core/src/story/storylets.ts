@@ -68,7 +68,6 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.mourner || mournedBy(state, content, c.id).length > 0)
     .filter((c) => !role.resolve_target || currentResolve(state)?.target === c.id)
     .filter((c) => !role.agenda_half || agendaShowing(content, state, c.id))
-    .filter((c) => !role.agenda_ids || role.agenda_ids.includes(agendaOf(content, state, c.id)?.agenda.id ?? ""))
     // here: 지금 이 구역에 있는 사람만 (장면에 있거나, 함께 다니거나, 있을 곳이 여기) (장면에 있거나, 함께 다니거나, 있을 곳이 여기)
     .filter(
       (c) =>
@@ -258,7 +257,6 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if ((w.camp_danger_gte !== undefined && danger < w.camp_danger_gte) || (w.camp_danger_lte !== undefined && danger > w.camp_danger_lte)) return false;
   }
   // camp_watched는 야영의 이야기를 고를 때 본다 (engine/camp.ts): 상태가 아니라 지금 하는 일에서 정해진다
-  if (w.at_loss_place && !state.background.some((e) => e.part.kind === "loss" && e.part.where && e.part.where === state.playerZone)) return false;
   if (w.occupation_step_gte !== undefined) {
     const occ = occupationOf(content, player);
     if (!occ || careerStep(content, player) < w.occupation_step_gte) return false;
@@ -377,7 +375,6 @@ export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: 
   if (choice.when && !itemFlagsMet(state, choice.when)) return false;
   // 있으면 쓰는 배역이 비었으면 그 배역을 쓰는 선택지는 빠진다
   if (choice.when?.cast && !choice.when.cast.every((k) => !!cast[k])) return false;
-  if (choice.when?.cast_empty && choice.when.cast_empty.some((k) => !!cast[k])) return false;
   if (choice.when?.factions && !choice.when.factions.includes(state.characters[state.playerId]?.factionId || "none")) return false;
   if (choice.when?.in_faction !== undefined && !!state.characters[state.playerId]?.factionId !== choice.when.in_faction) return false;
   const player = state.characters[state.playerId];
@@ -420,11 +417,6 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
     .filter((s) => conditionsMet(state, content, s, at))
     .filter((s) => pickCast(state, content, s, null) !== null)
     .sort((a, b) => a.id.localeCompare(b.id));
-}
-
-/** 다음 스토리렛을 열 수 있는 때인지 (진행 중인 것·전투가 없고, 간격이 지났다) */
-export function storyletWindowOpen(state: GameState, content: Content, at: GameTime): boolean {
-  return storyletWindow(state, content, at) === "open";
 }
 
 /**

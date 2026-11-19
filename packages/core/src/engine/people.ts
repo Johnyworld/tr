@@ -35,11 +35,6 @@ export function profileOf(state: GameState, content: Content, id: string): Profi
   return state.characters[id]?.profile ?? null;
 }
 
-/** 이름 있는 인물인가 (콘텐츠 NPC이거나 자란 인물) */
-export function isNamedPerson(state: GameState, content: Content, id: string): boolean {
-  return !!content.npcs[id] || !!state.characters[id]?.profile;
-}
-
 const pickFrom = <T,>(rng: Rng, list: readonly T[]): T => list[Math.floor(rng() * list.length)]!;
 const ageOf = (state: GameState, content: Content, id: string) => state.characters[id]?.age ?? content.npcs[id]?.age ?? null;
 

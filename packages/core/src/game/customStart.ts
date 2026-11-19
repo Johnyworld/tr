@@ -174,19 +174,3 @@ export function joinRole(
   return { ...role, start_inventory: [] };
 }
 
-/** 확인 단계에 보여 줄 요약 (코드가 만든 것) */
-export function describeCustomRole(content: Content, role: RoleContent): string {
-  const s = content.scenario;
-  const faction = role.faction ? (content.factions[role.faction]?.name ?? role.faction) : "무소속";
-  const commander = role.commander ? content.npcs[role.commander] : undefined;
-  return [
-    `직함: ${role.label} · ${faction} · ${s.rank_ladder.find((r) => r.id === role.rank)?.label ?? role.rank}${role.occupation ? ` · ${occupationById(content, role.occupation)?.label ?? role.occupation}` : ""} · ${role.age}세`,
-    `시작 장소: ${role.start_location ? (content.locations[role.start_location]?.name ?? role.start_location) : "-"}`,
-    `소지품: ${role.start_inventory.map((i) => content.items[i]?.name ?? i).join(", ") || "없음"}`,
-    `시작 훈련: ${Object.entries(role.start_skills).map(([m, v]) => `${s.moves.find((x) => x.id === m)?.label ?? m} +${v}`).join(", ") || "없음"}`,
-    `상관: ${commander ? `${commander.name} (${s.rank_ladder.find((r) => r.id === commander.rank)?.label ?? commander.rank})` : "없음"} · 아는 사람 ${role.known_npcs.length}명${role.missions.length ? " · 임무를 받을 수 있다" : " · 정해진 임무 없음"}`,
-    ...(role.squad?.length ? [`분대원: ${role.squad.map((id) => content.npcs[id]?.name ?? id).join(", ")}`] : []),
-    ...(role.start_companions?.length ? [`함께 다니는 사람: ${role.start_companions.map((k) => `${k.label} (${content.extras[k.template]?.label ?? k.template})`).join(", ")}`] : []),
-    `첫 장면: ${role.opening_scene}`,
-  ].join("\n");
-}

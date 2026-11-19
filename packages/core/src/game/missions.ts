@@ -185,13 +185,11 @@ export function commanderOf(
   state: {
     playerId: string;
     roleId: string;
-    commanderOverride?: string | null;
     characters: Record<string, { dead: boolean; away?: unknown; captive?: unknown; rank?: string; factionId?: string | null }>;
   },
   content: { roles: Record<string, { commander?: string | undefined }>; scenario?: { rank_ladder: readonly { id: string; level: number }[] }; npcs?: Record<string, unknown> },
 ): string | null {
-  // 이야기로 지도부가 바뀌었으면 그 사람 (기획서 10.4)
-  const id = state.commanderOverride ?? content.roles[state.roleId]?.commander;
+  const id = content.roles[state.roleId]?.commander;
   const usable = (cid: string) => cid !== state.playerId && !!state.characters[cid] && !state.characters[cid]!.dead && !state.characters[cid]!.away && !state.characters[cid]!.captive;
   if (!id || !usable(id)) return null;
   // 진급해서 상관과 같은 계급이 되면, 같은 무리에서 바로 위 계급인 사람이 상관이다 (플레이 테스트 4)

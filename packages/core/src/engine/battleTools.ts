@@ -5,7 +5,7 @@ import type { Content } from "../content/schemas.ts";
 import { gainMeritXp } from "./growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { BattleState, Clash, GameState, PendingClash } from "../game/state.ts";
-import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
+import { MINUTES_PER_DAY } from "../rules/time.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import type { Rng } from "../rng.ts";
 import {
@@ -290,9 +290,4 @@ export function describeBattleForGm(state: GameState, content: Content): string 
     `  지금 쓸 수 있는 전투 효과 (take_action.battle.effect): ${usable.map((e) => `${e.id} ${e.label} [위험 ${e.min_harm} 이상] — ${e.description}`).join(" / ") || "없음"}`,
     "  전투 중 행동은 take_action 한 번이 한 라운드다. 판정을 반드시 넣고, 몸의 위험은 효과마다 적힌 수준 이상으로 선언한다. 승패·사상자는 시스템이 정한다.",
   ].join("\n");
-}
-
-/** 예정 시각 문구 (디버깅·테스트용) */
-export function describePending(p: PendingClash): string {
-  return `${p.id} ${p.attacker}→${p.zone} ${formatTime(p.at)}`;
 }

@@ -134,20 +134,3 @@ export function historyFlags(content: Content, p: HistoryPart): string[] {
   }
 }
 
-/** GM에게 줄 고를 수 있는 것 (옮기기 단계) */
-export function describeHistoryOptions(content: Content): string {
-  const kin = (content.scenario.custom_start?.kin ?? []).filter((k) => templateKind(content.extras[k]) === "person");
-  const npcs = Object.values(content.npcs)
-    .filter((n) => n.faction && content.factions[n.faction]?.startable !== false)
-    .map((n) => `${n.name}(${n.id}, ${content.factions[n.faction!]?.name})`);
-  return [
-    `배경 부품 (history, ${MAX_HISTORY}개까지, 글에 있을 때만): 지난 삶 중 세계의 사실이 되는 것. 나머지는 background(기억)로`,
-    "- loss { who, by, where }: 잃은 사람들. by는 세력 id·인물 id·null",
-    "- enemy { target, why, knows_you }: 원수 (세력 또는 인물). 인물이면 그 사람이 정말 그 일을 한 것이 된다",
-    `- kin_alive { template, label, zone }: 살아서 다른 곳에서 기다리는 가족 (틀: ${kin.join(", ")})`,
-    `- seeking { template, label }: 찾고 있는 사람 (어디 있는지는 코드가 정하고 아무도 모른다)`,
-    "- debt { faction, size: small|large }: 진 빚",
-    "- deserter { faction }: 도망쳐 나온 무리",
-    `인물 (원수·가해자로 고를 수 있다): ${npcs.join(", ")}`,
-  ].join("\n");
-}

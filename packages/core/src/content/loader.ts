@@ -557,7 +557,6 @@ export function checkStorylets(content: Content): string[] {
           "npc_relation" in e ? [e.npc_relation.from, e.npc_relation.to]
           : "npc_hurt" in e ? [e.npc_hurt.who]
           : "npc_rank" in e ? [e.npc_rank.who]
-          : "set_commander" in e && e.set_commander.who !== "reset" ? [e.set_commander.who]
           : "end_romance" in e ? [e.end_romance.who]
           : "npc_heal" in e ? [e.npc_heal.who]
           : "grudge" in e ? [e.grudge.who]

@@ -421,7 +421,6 @@ describe("효과: NPC끼리, 소음, NPC 부상, 지도부 (12-44)", () => {
           { zone_noise: 2 },
           { npc_hurt: { who: "boss", steps: 2 } },
           { npc_rank: { who: "other", rank: "squad_leader" } },
-          { set_commander: { who: "other" } },
         ],
       },
     ],
@@ -432,10 +431,10 @@ describe("효과: NPC끼리, 소음, NPC 부상, 지도부 (12-44)", () => {
     when: { day_gte: 1 },
     cast: { boss: { recall: "old_boss" } },
     setup: "{boss:이/가} 다시 나타난다.",
-    choices: [{ id: "back", label: "되돌린다", effects: [{ set_commander: { who: "reset" } }] }],
+    choices: [{ id: "back", label: "다시 본다", effects: [] }],
   };
 
-  it("NPC끼리 관계가 바뀌고, 소리가 나고, 다쳐도 죽지 않고, 상관이 바뀐다. 이름 있는 NPC도 keep → recall로 다시 부른다", () => {
+  it("NPC끼리 관계가 바뀌고, 소리가 나고, 다쳐도 죽지 않고, 계급이 바뀐다. 이름 있는 NPC도 keep → recall로 다시 부른다", () => {
     const env = setup([coup, again]);
     expect(env.store.getState().activeStorylet?.id).toBe("coup");
     // 이미 많이 다쳤어도 죽음 앞에서 멈춘다
@@ -448,12 +447,11 @@ describe("효과: NPC끼리, 소음, NPC 부상, 지도부 (12-44)", () => {
     expect(s.zoneNoise[s.playerZone!]?.level).toBe(2);
     expect(s.characters.npc_leader!.dead).toBe(false);
     expect(s.characters.npc_stranger!.rank).toBe("squad_leader");
-    expect(s.commanderOverride).toBe("npc_stranger");
     // 한 번 더 다쳐도 죽지 않는다
     const env2 = setup([{ ...coup, choices: [{ id: "go", label: "x", effects: Array(5).fill({ npc_hurt: { who: "boss", steps: 2 } }) }] }]);
     executeTool("resolve_storylet", { choice_id: "go" }, env2.ctx);
     expect(env2.store.getState().characters.npc_leader!.dead).toBe(false);
-    // 옛 상관을 다시 불러 되돌린다
+    // 옛 상관을 다시 부른다
     expect(eligibleStorylets(s, env.content, s.time + 24 * 60).map((x) => x.id)).toContain("again");
   });
 });

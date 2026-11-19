@@ -573,8 +573,6 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ npc_hurt: z.strictObject({ who: z.string().min(1), steps: z.number().int().min(1).max(2) }) }),
     /** 배역 NPC의 계급을 바꾼다 (지도부 교체·강등) */
     z.strictObject({ npc_rank: z.strictObject({ who: z.string().min(1), rank: idEnum(rankIds(s)) }) }),
-    /** 주인공의 상관이 이 배역으로 바뀐다 (지도부가 바뀐 뒤). who: reset이면 역할의 상관으로 돌아간다 */
-    z.strictObject({ set_commander: z.strictObject({ who: z.string().min(1) }) }),
     z.strictObject({ belief: z.strictObject({ fact: z.string().min(1).max(300), source: beliefSourceSchema.default("seen") }) }),
     z.strictObject({ merit: z.number().int().min(-3).max(3) }),
     /** 주인공의 계급을 바꾼다 (12-152: 강등·추대). 같은 무리 안에서. 무소속이면 아무 일도 없다 */
@@ -730,9 +728,8 @@ export function createContentSchemas(s: Scenario) {
     mourner: z.boolean().optional(),
     /** 장례 이야기에서 죽은 사람(when.funeral의 {deceased})과 가까웠던 사람만 (12-163) */
     bereaved: z.boolean().optional(),
-    /** 자기 일이 반을 넘은 사람만 (12-168: 낌새가 보이는 사람). agenda_ids가 있으면 그 일일 때만 */
+    /** 자기 일이 반을 넘은 사람만 (12-168: 낌새가 보이는 사람) */
     agenda_half: z.boolean().optional(),
-    agenda_ids: z.array(contentIdSchema).optional(),
     /** 주인공의 다짐의 대상인 사람 (12-164). here와 함께 쓰면 지금 이 구역에 있을 때만 */
     resolve_target: z.boolean().optional(),
     /** 소문으로만 주인공을 아는 팬(fan) 또는 안티(anti)만 (12-127) */
@@ -800,8 +797,6 @@ export function createContentSchemas(s: Scenario) {
           ...itemFlagConditions,
           /** 있으면 쓰는 배역(optional)이 채워졌을 때만 */
           cast: z.array(contentIdSchema).optional(),
-          /** 있으면 쓰는 배역이 비었을 때만 (그 사람이 없을 때의 길) */
-          cast_empty: z.array(contentIdSchema).optional(),
           /** 주인공이 무리에 속해 있을 때만 (true) / 무소속일 때만 (false) */
           in_faction: z.boolean().optional(),
           /** 주인공의 무리가 이 중 하나일 때만 (none = 무소속) */
@@ -887,8 +882,6 @@ export function createContentSchemas(s: Scenario) {
         companion_trick: contentIdSchema.optional(),
         /** 지금 구역에 이 시설이 있다 (12-175 가축 등) */
         facility_here: contentIdSchema.optional(),
-        /** 주인공이 배경의 그 일이 있었던 구역(잃은 곳)에 있을 때만 (기획서 12.6) */
-        at_loss_place: z.boolean().optional(),
         /** 직분 사다리의 칸이 이 이상 (0 = 첫 칸) */
         occupation_step_gte: z.number().int().min(0).optional(),
         ...itemFlagConditions,

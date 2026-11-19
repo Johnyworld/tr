@@ -374,19 +374,6 @@ export function applyEffect(
     const label = content.scenario.rank_ladder.find((r) => r.id === effect.npc_rank.rank)?.label ?? effect.npc_rank.rank;
     return { line: `${josa(playerCalls(state, content, id), "은/는")} 이제 ${label}다.` };
   }
-  if ("set_commander" in effect) {
-    if (effect.set_commander.who === "reset") {
-      if (!state.commanderOverride) return {};
-      store.append({ type: "commander_changed", characterId: null });
-      const back = commanderOf(store.getState(), content);
-      return { line: back ? `상관이 다시 ${playerCalls(state, content, back)}(이)다.` : "" };
-    }
-    const id = whoOf(ctx, effect.set_commander.who, cast);
-    const npc = id ? state.characters[id] : undefined;
-    if (!id || !npc || npc.dead || id === playerId || id === commanderOf(state, content)) return {};
-    store.append({ type: "commander_changed", characterId: id });
-    return { line: `이제 주인공의 상관은 ${playerCalls(state, content, id)}다. 임무와 회의는 이 사람에게서 받는다.` };
-  }
   if ("belief" in effect) {
     const fact = sentence(fillStorylet(effect.belief.fact, vars));
     // 되풀이되는 이야기가 같은 문장을 또 남기면 쌓지 않는다 (알게 된 것으로는 알린다)

@@ -77,7 +77,7 @@ export function stopBleeding(ctx: ToolContext, characterId: string, cause: strin
   return ch?.display ? [ch.display] : [];
 }
 
-/** 맨손 지혈 (옷을 찢어 누른다): 판정 결과대로. 성공이면 멎고, 대가 있는 성공이면 한 단계, 실패면 그대로 */
+/** 맨손 지혈 (옷을 찢어 누른다): 판정 결과대로. 성공이면 멎고, 대가 있는 성공이면 심한 출혈만 한 단계 줄고 나머지는 멎는다 (12-195), 실패면 그대로 */
 export function staunch(
   ctx: ToolContext,
   check: { move: string; outcome: CheckOutcome } | null,
@@ -93,10 +93,13 @@ export function staunch(
     return { ok: false, error: `아이템 없이 지혈하려면 check(move: ${w.staunch_move})를 함께 선언한다 (옷을 찢어 누르기 등). 붕대·구급상자가 있으면 treatment.item으로.` };
   }
   if (check.outcome === "miss") return { ok: true, lines: ["지혈하지 못했다. 피가 계속 난다."], displays: [] };
-  const displays = stopBleeding(ctx, me.id, "맨손 지혈", check.outcome === "success" ? undefined : 1);
+  // 대가 있는 성공: 심한 출혈(트랙 끝 단계)은 한 단계만, 그보다 가벼우면 멎는다 (떠돌이가 맨손 지혈을 거의 못 했다, 플레이 테스트 9)
+  const heavy = levelIndexOf(ctx, me, w.track) >= trackOf(ctx.content.scenario, w.track).levels.length - 1;
+  const partialStep = check.outcome !== "success" && heavy;
+  const displays = stopBleeding(ctx, me.id, "맨손 지혈", partialStep ? 1 : undefined);
   // 지혈한 순간부터 다시 센다 (남은 출혈이 바로 부상을 키우지 않게)
-  if (check.outcome !== "success") ctx.store.append({ type: "track_clock_reset", characterId: me.id, track: w.track });
-  return { ok: true, lines: [check.outcome === "success" ? "피를 멎게 했다." : "피가 조금 줄었지만 아직 멎지 않았다."], displays };
+  if (partialStep) ctx.store.append({ type: "track_clock_reset", characterId: me.id, track: w.track });
+  return { ok: true, lines: [partialStep ? "피가 조금 줄었지만 아직 멎지 않았다." : check.outcome === "success" ? "피를 멎게 했다." : "한참을 눌러 겨우 피를 멎게 했다. 손이 피투성이다."], displays };
 }
 
 /** 시간이 흐른 뒤마다 (runAfterTimeAdvance): 피를 흘리는 모든 사람의 출혈이 부상을 키우거나 저절로 멎는다 */

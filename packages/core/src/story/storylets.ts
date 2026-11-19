@@ -485,9 +485,11 @@ export function storyletAllowed(state: GameState, content: Content, s: StoryletC
 /** 무게로 하나 고른다 */
 /** 시나리오에 묶인 이야기는 도시 공통 이야기(world)보다 이만큼 자주 고른다 (공통 이야기가 늘어도 시나리오 이야기가 묻히지 않게) */
 export const ROLE_STORY_BOOST = 3;
+/** 다짐의 단계 이야기(when.resolve, 다짐이 있을 때만 열린다)도 이만큼 자주 고른다 (12-195: 두 판 모두 열흘 넘게 0단계였다) */
+export const RESOLVE_STORY_BOOST = 3;
 
 export function pickStorylet(candidates: readonly StoryletContent[], rng: Rng): StoryletContent | null {
-  const weightOf = (s: StoryletContent) => s.weight * (s.tags.includes(WORLD_TAG) ? 1 : ROLE_STORY_BOOST);
+  const weightOf = (s: StoryletContent) => s.weight * (s.tags.includes(WORLD_TAG) ? 1 : ROLE_STORY_BOOST) * (s.when.resolve ? RESOLVE_STORY_BOOST : 1);
   const total = candidates.reduce((n, s) => n + weightOf(s), 0);
   if (total <= 0) return null;
   let r = rng() * total;

@@ -89,10 +89,21 @@ function encountered(state: GameState): Set<string> {
   return ids;
 }
 
+/** 이전 주인공들이 얼굴이라도 마주친 사람 (무리를 조우했는지 볼 때, 12-195) */
+function faced(state: GameState): Set<string> {
+  const ids = encountered(state);
+  for (const who of [state.playerId, ...state.chronicle.map((r) => r.characterId)]) for (const id of state.met[who] ?? []) ids.add(id);
+  return ids;
+}
+
+/** 새 캐릭터 후보의 "무리 없음" 자리 (new:none:<계급>) */
+const NO_FACTION = "none";
+
 /** 이전 주인공들이 조우한 무리: 이름을 아는 사람의 무리와, 주인공들이 속했던 무리 */
 export function encounteredFactions(state: GameState, content: Content): string[] {
   const out = new Set<string>();
-  for (const id of encountered(state)) {
+  // 이름을 몰라도 마주친 무리 (12-195: 붉은연합에 붙잡혔다 죽은 떠돌이에게 후보가 신부 한 명뿐이었다)
+  for (const id of faced(state)) {
     const f = state.characters[id]?.factionId;
     if (f && content.factions[f]) out.add(f);
   }
@@ -137,7 +148,7 @@ export function heirSeat(content: Content, faction: string, rank: string, who: {
 export function parseNewAs(id: string): { faction: string; rank: string } | null {
   if (!id.startsWith(NEW_AS_PREFIX)) return null;
   const [faction, rank] = id.slice(NEW_AS_PREFIX.length).split(":");
-  return faction && rank ? { faction, rank } : null;
+  return faction && rank ? { faction: faction === NO_FACTION ? "" : faction, rank } : null;
 }
 
 export function successionOptions(state: GameState, content: Content): SuccessionOption[] {
@@ -154,6 +165,11 @@ function heirCandidates(state: GameState, content: Content): SuccessionOption[] 
     for (const rank of ranks) {
       options.push({ id: `${NEW_AS_PREFIX}${f}:${rank}`, label: `새 캐릭터 (${content.factions[f]!.name} ${rankName(content, f, rank)})`, detail: content.factions[f]!.public });
     }
+  }
+  // 떠돌이였던 주인공이 있으면 새 떠돌이로도 이어 갈 수 있다 (12-195)
+  const freeRank = content.scenario.custom_start?.free_rank;
+  if (freeRank && state.chronicle.some((r) => !r.factionId)) {
+    options.push({ id: `${NEW_AS_PREFIX}${NO_FACTION}:${freeRank}`, label: `새 캐릭터 (${rankName(content, "", freeRank)})`, detail: "어느 무리에도 속하지 않고 담 밖에서 산다" });
   }
   // 조우한 사람: 이름을 아는, 살아 있고 플레이할 수 있는 인물. 무리의 우두머리(사다리 맨 위)는 맡을 자리가 없어 뺀다
   const top = content.scenario.rank_ladder.reduce((a, b) => (b.level > a.level ? b : a)).id;

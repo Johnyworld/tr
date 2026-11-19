@@ -1,3 +1,4 @@
+import { npcZoneAt } from "../game/whereabouts.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { hasMet, knowsName, playerCalls } from "../game/acquaintance.ts";
@@ -240,6 +241,10 @@ export function runAsksDaily(ctx: ToolContext): void {
     .filter((n) => {
       const c = state.characters[n.id];
       if (!c || c.dead || c.captive || n.id === me || !(hasMet(state, me, n.id) || knowsName(state, me, n.id))) return false;
+      // 주인공이 다시 마주칠 만한 사람만: 지금 구역, 내 거처, 우리 거점에 있는 사람 (12-195)
+      const where = npcZoneAt(n, state.time);
+      const myBase = Object.values(content.locations).find((l) => l.kind === "base" && !!state.characters[me]?.factionId && state.zones[l.id]?.owner === state.characters[me]?.factionId)?.id;
+      if (!where || ![state.playerZone, state.homes?.[me], myBase].includes(where)) return false;
       if ((state.relations[n.id]?.[me]?.trust ?? 0) < -1) return false;
       return !fromAsks.some((p) => p.to === n.id);
     })

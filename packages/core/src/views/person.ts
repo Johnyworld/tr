@@ -14,6 +14,8 @@ import { formatAgo } from "../rules/time.ts";
 export type PersonProfile = {
   heading: string;
   rankLabel: string;
+  /** 이름을 아는 사람의 나이 (12-195) */
+  age: number | null;
   look: string | null;
   reputation: string | null;
   traits: string[];
@@ -33,6 +35,7 @@ export function personProfile(state: GameState, content: Content, id: string): P
   return {
     heading: headingAs(state, content, state.playerId, id),
     rankLabel: rankName(content, c.factionId, c.rank),
+    age: named ? c.age : null,
     look: npc?.look ?? c.extra?.look ?? null,
     // 평판은 그 인물을 아는(이름을 아는) 사람이 아는 모습이다
     reputation: npc && named ? npc.reputation : null,

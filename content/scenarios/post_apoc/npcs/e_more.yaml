@@ -10,6 +10,8 @@
   look: 허리춤에 쇠 저울추를 매단 단단한 체구의 여자. 손등이 밧줄 자국으로 거칠다. 짐 무게를 손으로 들어 보고 맞힌다.
   reputation: 나루상단 짐마차를 이끄는 행상대장. 짐 하나 사람 하나 빠뜨리지 않고 돌아온다는 평. 대신 셈이 틀리면 끝까지 따진다.
   want: 짐마차와 짐꾼을 겨울까지 하나도 잃지 않는 것
+  # 장사 (12-195): 장터에서 먹을 것·땔감을 판다. 떠돌이가 먹을 것을 살 데가 없었다
+  merchant: { restock: { dried_fish: 4, salted_meat: 3, potato: 6, firewood: 4, dry_ration: 3 }, markup: 1.3 }
   # 부탁 (12-193): 떠돌이도 만나는 사람
   favors:
     - { id: rope_for_cart, ask: "철사 한 타래만 구해 줘요. 짐마차 바퀴 축을 묶어야 하는데 장터에 남은 게 없어", item: { id: wire_roll, quantity: 1 }, days: 5, reward: { item: { id: trade_token, quantity: 2 }, affection: 1 } }

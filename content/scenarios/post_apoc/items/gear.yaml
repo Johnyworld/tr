@@ -291,7 +291,7 @@
   value: 1
 - id: bandage
   name: 붕대
-  description: 끓여 말린 천을 감아 둔 붕대. 피를 멎게 한다 (쓰면 부상 1단계, 구급상자보다 못 미덥다).
+  description: 끓여 말린 천을 감아 둔 붕대. 피를 멎게 한다. 상처 자체를 낫게 하지는 못한다 (구급상자·치료사·시간).
   kind: consumable
   resource: medicine
   weight: 0.1

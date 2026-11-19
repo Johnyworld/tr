@@ -45,7 +45,8 @@ export function campSite(content: Content, state: GameState): CampSite | null {
   const location = content.locations[zone];
   if (!location) return null;
   const owner = state.zones[zone]?.owner ?? null;
-  const ownLand = !!me.factionId && owner === me.factionId;
+  // 내 거처도 우리 땅처럼 덜 위험하다 (12-195: 거처로 정한 마트도 밤마다 들개·매복이 왔다). 시설(바리케이드·경보줄)은 그 위에 더한다
+  const ownLand = (!!me.factionId && owner === me.factionId) || state.homes?.[me.id] === zone;
   if (location.sanctuary) return null;
   if (location.kind === "base" && (ownLand || welcomedAsGuest(content, state))) return null;
   return { danger: Math.min(3, Math.max(location.danger ?? 0, infestationOf(content, state, zone))), ownLand };

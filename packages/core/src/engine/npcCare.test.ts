@@ -57,8 +57,8 @@ describe("주인공이 남을 치료한다", () => {
     hurt(grunt, "a_jiho", "light");
     const no = grunt.executeTool("take_action", { intent: "치료", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, treatment: { item: null, target: "a_jiho" } });
     expect(no.ok && no.resultText).toContain("돌볼 줄 모른다");
-    grunt.ctx().store.append({ type: "item_granted", to: "player", itemId: "bandage", quantity: 1 });
-    const yes = grunt.executeTool("take_action", { intent: "치료", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, treatment: { item: "bandage", target: "a_jiho" } });
+    grunt.ctx().store.append({ type: "item_granted", to: "player", itemId: "medkit", quantity: 1 });
+    const yes = grunt.executeTool("take_action", { intent: "치료", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, treatment: { item: "medkit", target: "a_jiho" } });
     expect(yes.ok).toBe(true);
     expect(grunt.state().characters.a_jiho!.conditions.harm).toBe("none");
   });

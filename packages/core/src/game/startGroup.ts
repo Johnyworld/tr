@@ -24,6 +24,7 @@ const between = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (h
 
 /** 이 관계로 가질 수 있는 나이 범위 (주인공 나이와 관계 규칙을 함께 본다). 없으면 null */
 function ageRange(rules: GroupRules, rel: Relation, me: StartGroup["me"]): [number, number] | null {
+  if (rel.min_me_age !== undefined && me.age < rel.min_me_age) return null;
   let [lo, hi] = rel.age;
   if (rel.kind === "parent") lo = Math.max(lo, me.age + rules.parent_gap);
   if (rel.kind === "child") hi = Math.min(hi, me.age - rules.parent_gap);
@@ -98,8 +99,13 @@ export const FAMILY_KINDS = ["parent", "sibling", "spouse", "child"] as const;
 export function makeFamily(content: Content, me: StartGroup["me"], count: number, rng: Rng, surname: string | null, used: ReadonlySet<string> = new Set()): GroupMember[] {
   const group: StartGroup = { me, members: [] };
   const taken = new Set(used);
+  // 부모·형제가 기본이고, 결혼·자식은 나이가 되면 확률로 (12-195)
+  const kinds = FAMILY_KINDS.filter((k) => {
+    const rel = groupRules(content)!.relations.find((r) => r.kind === k);
+    return !rel || rel.chance === undefined || rng() < rel.chance;
+  });
   for (let i = 0; i < count; i++) {
-    const m = randomMember(content, group, rng, taken, FAMILY_KINDS);
+    const m = randomMember(content, group, rng, taken, kinds);
     if (!m) break;
     const kind = groupRules(content)!.relations.find((r) => r.id === m.relation)?.kind;
     const keeps = kind === "spouse" || (kind === "parent" && group.members.some((x) => x.relation === m.relation));

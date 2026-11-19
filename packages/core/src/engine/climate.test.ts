@@ -154,10 +154,10 @@ describe("기온", () => {
     const shown = exposeToCold(ctx, "search", s.time, s.time + 60);
     expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60);
     expect(shown.some((d) => d.type === "harm" && d.trackLabel === "옷" && d.toLabel === "젖음")).toBe(true);
-    // 비가 그치고 하루가 지나도 젖어 있다
+    // 비가 그치고 한나절이 지나도 젖어 있다 (12-195: 냉기 기준이 70으로 무거워져, 젖은 채 바깥에서 하루를 버티면 얼어 죽는다)
     store.getState().weather = null;
-    exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 24 * 60);
-    store.getState().time += 24 * 60;
+    exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 6 * 60);
+    store.getState().time += 6 * 60;
     expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60);
     expect(feelsLike(content, store.getState(), "rest")!.parts).toContain(`젖은 옷 -${wet.degrees}`);
     // 불 곁에서 한 시간이면 반쯤, 두 시간이면 마른다

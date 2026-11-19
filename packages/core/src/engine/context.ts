@@ -5,7 +5,7 @@ import { describeFacilities } from "./facilities.ts";
 import { describeAmbush } from "./ambush.ts";
 import { describeResolve } from "./resolve.ts";
 import { describeExploration } from "./exploration.ts";
-import { promiseLines } from "./promises.ts";
+import { askedPromises, promiseLines } from "./promises.ts";
 import { originLine } from "./extras.ts";
 import { describeMarket } from "./market.ts";
 import { describeInfiltration } from "./infiltration.ts";
@@ -480,17 +480,22 @@ export function describeZonePeople(state: GameState, content: Content): string {
   const people = Object.values(content.npcs).filter(
     (npc) => (state.characters[npc.id]?.captive ? state.characters[npc.id]!.captive!.zone === zone : npcZoneAt(npc, state.time) === zone) && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
   );
+  // 부탁을 품은 아는 사람이 이 구역에 있으면 GM에게 알린다 (12-195: 다시 만나지 못해 부탁이 조용히 접혔다)
+  const askers = [...new Set(askedPromises(state).map((p) => p.to))].filter((id) => people.some((n) => n.id === id));
+  const askLine = askers.length
+    ? `부탁할 것이 있는 사람이 이 구역에 있다: ${askers.map((id) => `${playerCalls(state, content, id)} (${id})`).join(", ")}. 장면에 들이면(npc_presence) 그 사람이 부탁을 꺼낸다`
+    : "";
   const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id));
-  if (strangers.length === 0) return "";
+  if (strangers.length === 0) return askLine;
   // 갇힌 사람은 이 구역에 와 있으니 갇혀 있다는 것까지 보인다 (돌아다니지 않는다). 사람이 많으면 몇 명만 (토큰, 12-42):
   // 갇힌 사람·떠도는 사람(오늘만 여기 있다) 먼저, 나머지는 날마다 돌아가며
   const captive = (id: string) => !!state.characters[id]?.captive;
   const day = dayOf(state.time);
   const ordered = [...strangers].sort((a, b) => Number(captive(b.id)) - Number(captive(a.id)) || Number(!!b.roams) - Number(!!a.roams) || rotate(a.id, day) - rotate(b.id, day));
   const shown = ordered.slice(0, ZONE_PEOPLE_IN_PROMPT);
-  const lines = shown.map((npc) => `- (${npc.id}) ${npc.alias}${captive(npc.id) ? " · 이곳에 갇혀 있다 (창살 안, 돌아다니지 않는다)" : ""}: ${shortNote(npc.look)}`);
+  const lines = shown.map((npc) => `- (${npc.id}) ${npc.alias}${npc.merchant ? " · 물건을 판다 (barter)" : ""}${captive(npc.id) ? " · 이곳에 갇혀 있다 (창살 안, 돌아다니지 않는다)" : ""}: ${shortNote(npc.look)}`);
   const more = strangers.length - shown.length;
-  return `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나도 이름은 모른다${more > 0 ? `. 이 밖에 ${more}명이 더 있다` : ""}):\n${lines.join("\n")}`;
+  return [askLine, `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나도 이름은 모른다${more > 0 ? `. 이 밖에 ${more}명이 더 있다` : ""}):\n${lines.join("\n")}`].filter(Boolean).join("\n");
 }
 
 /** 이 구역에서 전에 엮인, 이름을 모르는 엑스트라 (다시 마주칠 수 있다. npc_presence로 다시 등장시킨다). 최근 몇 명만 */

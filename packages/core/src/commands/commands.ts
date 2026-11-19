@@ -257,7 +257,7 @@ const people: CommandDef = {
     if (!id) return `아는 인물 중에 ${josa(`"${query}"`, "이/가")} 없습니다. 목록: ${ctx.prefix ?? "!"}인물`;
     const p = personProfile(state, content, id);
     return [
-      header(`${p.heading} · ${p.rankLabel}`),
+      header(`${p.heading} · ${p.rankLabel}${p.age !== null ? ` · ${p.age}세` : ""}`),
       ...[p.look, p.reputation].filter((x): x is string => !!x),
       ...(p.traits.length ? [`보이는 모습: ${p.traits.join(" · ")}`] : []),
       "",

@@ -130,6 +130,7 @@ export type CreationStatus = { view: NewGameView };
 export type PersonProfile = {
   heading: string;
   rankLabel: string;
+  age: number | null;
   look: string | null;
   reputation: string | null;
   traits: string[];

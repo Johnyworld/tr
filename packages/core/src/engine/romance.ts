@@ -70,6 +70,9 @@ export function attracted(state: GameState, content: Content, from: string, to: 
 export function hasInterest(state: GameState, content: Content, from: string, to: string): boolean {
   const r = rules(content);
   if (!r || !romanceAllowed(state, content, from, to) || !attracted(state, content, from, to)) return false;
+  const fa = state.characters[from]?.age;
+  const ta = state.characters[to]?.age;
+  if (r.age_gap !== undefined && fa != null && ta != null && Math.abs(fa - ta) > r.age_gap) return false;
   // 금사빠 ↔ 돌부처 (12-99): NPC의 마음이 생기는 문턱. 주인공의 마음은 플레이어가 정하므로 NPC에게만
   const shift = from === state.playerId ? 0 : romanceShift(content, state.characters[from]!);
   return (state.relations[from]?.[to] ?? NEUTRAL_RELATION).affection >= r.interest_affection + shift;

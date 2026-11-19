@@ -19,7 +19,8 @@ const enter = (w: W, id: string) => { if (!w.state().scene.present.includes(id))
 /** 주인공(여성)에게 끌리는 성인 남성 둘 */
 const men = (w: W) =>
   Object.values(w.state().characters)
-    .filter((c) => c.gender === "male" && (c.age ?? 0) >= 18 && content.npcs[c.id] && !c.captive && attractionOf(w.state(), content, c).includes("female"))
+    // 주인공과 나이 차가 연애 규칙의 한도 안인 사람 (12-195)
+    .filter((c) => c.gender === "male" && (c.age ?? 0) >= 18 && Math.abs((c.age ?? 0) - (w.state().characters.player!.age ?? 0)) <= (content.scenario.romance?.age_gap ?? 99) && content.npcs[c.id] && !c.captive && attractionOf(w.state(), content, c).includes("female"))
     .map((c) => c.id)
     .sort()
     .slice(0, 3);

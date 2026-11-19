@@ -508,6 +508,7 @@ function PersonCard({ profile: p }: { profile: PersonProfile }) {
       <span className="person-tip-head">
         <strong>{p.heading}</strong>
         {p.rankLabel && <span className="muted"> · {p.rankLabel}</span>}
+        {p.age !== null && <span className="muted"> · {p.age}세</span>}
       </span>
       {p.look && <span className="person-tip-line">{p.look}</span>}
       {p.reputation && <span className="person-tip-line muted">{p.reputation}</span>}

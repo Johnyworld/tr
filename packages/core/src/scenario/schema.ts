@@ -432,6 +432,10 @@ export const scenarioFileSchema = z
                   max: z.number().int().min(1).optional(),
                   age: z.tuple([z.number().int().min(0), z.number().int().min(0)]),
                   labels: z.record(z.string(), z.string().min(1)).default({}),
+                  /** 주인공이 이 나이 이상이어야 이 관계가 있다 (12-195: 25세 주인공에게 자식이 있었다) */
+                  min_me_age: z.number().int().min(0).optional(),
+                  /** 찾는 가족(makeFamily)에서 이 관계가 있을 확률. 나이가 되어도 결혼하지 않았을 수 있다. 없으면 늘 후보 */
+                  chance: z.number().min(0).max(1).optional(),
                 }),
               )
               .min(1),
@@ -822,6 +826,8 @@ export const scenarioFileSchema = z
         orientation: z.strictObject({ other: z.number().min(0), both: z.number().min(0), same: z.number().min(0), none: z.number().min(0) }),
         /** 호감이 이 이상이고 끌리면 마음이 있다 (낌새가 보인다) */
         interest_affection: z.number().int(),
+        /** 나이 차가 이보다 크면 마음이 생기지 않는다 (12-195: 71세 신부가 32세 주인공에게 눈길을 줬다). 없으면 보지 않는다 */
+        age_gap: z.number().int().min(0).optional(),
         /** 고백을 받아들이는 문턱 */
         accept: z.strictObject({ affection: z.number().int(), trust: z.number().int() }),
         /** 다가가기에 쓰는 판정 */

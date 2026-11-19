@@ -4,7 +4,7 @@
 - id: occ_carpenter_wall_patch
   title: 무너진 담 메우기
   fortifies: 1
-  briefing: 밤사이 담 한쪽이 주저앉았다. 해 지기 전에 기둥을 다시 세우고 판자와 철판을 대서 사람이 넘지 못하게 막는다. 망치 소리는 짧게.
+  briefing: 밤사이 담 한쪽이 주저앉았다. 늦지 않게 기둥을 다시 세우고 판자와 철판을 대서 사람이 넘지 못하게 막는다. 망치 소리는 짧게.
   giver_rank: squad_leader
   deadline_hours: 12
   requirements:

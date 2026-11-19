@@ -23,6 +23,7 @@ import { scavenge } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
 import { isInfected } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
+import { moveLabel } from "../scenario/scenario.ts";
 import { changeCondition, isIncapacitated } from "./body.ts";
 import { z } from "zod";
 import { CHECK_OUTCOME_LABELS, difficultySchema, type CheckOutcome } from "../rules/check.ts";
@@ -56,7 +57,7 @@ import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
 import { scarFromHarm } from "./scars.ts";
-import { createStoryletCheck, endActiveStorylet, resolveStorylet } from "./storyletTools.ts";
+import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle } from "./storyletTools.ts";
 import { choiceAvailable } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -126,7 +127,7 @@ export function createTakeActionSchema(s: Scenario) {
           .nullable()
           .default(null)
           .describe(
-            "맞서는 상대 인물 id (장면에 있어야 한다): 숨는 나를 찾는 사람, 덤벼드는 사람, 속이려는 상대. 공격이면 비워도 target이 상대다. " +
+            "맞서는 상대 인물 id (장면에 있어야 한다): 숨는 나를 찾는 사람, 덤벼드는 사람, 속이려는 상대. 공격이면 비워도 target이 상대다 (설득처럼 함께하는 말은 target만으로 상대가 되지 않는다. 맞서는 흥정이면 여기에 둔다). " +
               "상대의 실력, 지켜보는 눈의 수, 어둠은 시스템이 판정 보정으로 바꾸므로 난이도에 넣지 않는다. 판정이 나빠 다치면 이 상대의 솜씨가 피해에 붙는다. 없으면 null",
           ),
         infected_source: z
@@ -135,15 +136,17 @@ export function createTakeActionSchema(s: Scenario) {
           .describe("그 위험이 감염체에게 물리거나 긁히는 것이면 true. 장면의 감염체를 opponent·target으로 두면 시스템이 저절로 켠다. 다치면 시스템이 감염 여부를 정한다 (캐릭터는 바로 알지 못한다)"),
       })
       .nullable()
+      .default(null)
       .describe("결과가 불확실하고 실패하면 대가가 있는 행동일 때만. 사소하거나 확실한 행동은 null"),
     activity: z
       .strictObject({
         kind: activitySchema.exclude(["travel", "combat"]).describe(
           "brief 잠깐의 행동, talk 대화, eat 식사, treat 응급처치, search 수색, work 작업·정비, rest 휴식, guard_duty 보초, sleep 잠, wait 기다림",
         ),
-        until: timeSegmentSchema.nullable().describe("sleep·wait 전용: 이 시간대가 시작될 때까지. 다른 활동은 null"),
+        until: timeSegmentSchema.nullable().default(null).describe("sleep·wait 전용: 이 시간대가 시작될 때까지. 다른 활동은 null"),
       })
       .nullable()
+      .default(null)
       .describe("이번 턴에 시간이 드는 주된 활동. null이면 잠깐의 행동(5분)"),
     deed: z
       .strictObject({
@@ -159,8 +162,9 @@ export function createTakeActionSchema(s: Scenario) {
         condition: z.enum(["always", "on_success"]).describe("always: 시도만으로 평판이 걸린 일, on_success: 판정이 성공·대가 있는 성공일 때만 일어난 일"),
       })
       .nullable()
+      .default(null)
       .describe("남들이 알면 평판이 달라질 행동일 때만. 이미 기록된 행적은 다시 넣지 않는다"),
-    target: z.string().nullable().describe("행동의 상대 인물 id (장면에 있어야 한다). 없으면 null"),
+    target: z.string().nullable().default(null).describe("행동의 상대 인물 id (장면에 있어야 한다). 없으면 null"),
     provoked: z
       .boolean()
       .default(false)
@@ -288,11 +292,13 @@ export function createTakeActionSchema(s: Scenario) {
       .describe("전투 중일 때만: 이번 라운드에 하려는 전투 효과. 판정과 몸의 위험을 반드시 함께 선언한다. 전투가 아니면 null"),
     for_mission: z
       .boolean()
+      .default(false)
       .describe("수행 중인 임무를 위한 행동이면 true. true일 때만 판정과 활동이 임무 진행으로 집계된다 (임무 장소·목적과 맞는 행동만)"),
     narration_summary: z
       .string()
       .max(1000)
       .nullable()
+      .default(null)
       .describe("MCP 모드 전용: 직전 턴에 서술한 내용의 짧은 요약. 일지에 쌓이므로 평서체(~했다)로 쓴다. 웹 앱 모드에서는 null (시스템이 자동 저장)"),
   });
 }
@@ -321,21 +327,28 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const player = start.characters[start.playerId];
   if (!player) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
   if (player.dead) return { ok: false, error: "캐릭터가 사망했습니다." };
+  // 마시기·채우기는 지금 있는 곳의 물로 한다: 이동과 함께 오면 출발지에서 물을 찾았다 (플레이 테스트 11)
+  if (input.move_to && input.refill) return { ok: false, error: "이동과 물 채우기는 한 번에 하지 않는다. 먼저 옮긴 뒤, 도착한 곳에서 refill을 따로 한다 (시간은 흐르지 않았다)." };
   // 진행 중인 이야기를 두고 떠나거나 오래 머물면 결과 없이 사라졌다 (플레이 테스트 11: 깔린 동료를 두고 갔는데 아무 일 없었다).
   // 외면하는 선택지(leave·ignore 등, 판정 없는 것)가 있으면 그것을 고른 것으로 풀고, 없으면 지나갔다고 분명히 알린다
   // 수색·일·쉬기는 이야기 안에서도 하는 일이라 넣지 않는다 (선택지의 판정을 거기서 굴린다)
   const long = !!input.move_to || (!!input.activity && ["sleep", "wait", "guard_duty", "travel"].includes(input.activity.kind));
+  // 길 위의 일은 도착하기 전의 장면이다: 판정 없이 다른 일을 하면 길에서 두고 온 것으로 친다 (플레이 테스트 11: 붉은연합 순찰조원이 우리 거점 장면에 남아 목격자가 됐다)
+  const roadTag = scenario.travel?.tag;
+  const onRoad = !!roadTag && !!start.activeStorylet && !!content.storylets[start.activeStorylet.id]?.tags.includes(roadTag) && !input.check && (!!input.deed || (!!input.activity && input.activity.kind !== "talk"));
   const leftLines: string[] = [];
-  if (start.activeStorylet && long && !isIncapacitated(ctx.content, player)) {
+  if (start.activeStorylet && (long || onRoad) && !isIncapacitated(ctx.content, player)) {
     const s = content.storylets[start.activeStorylet.id];
     const pick = s?.choices.find((c) => WALK_AWAY_CHOICES.includes(c.id) && !c.check && choiceAvailable(start, c, start.activeStorylet!.cast));
     const r = pick ? resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx) : null;
-    if (r?.ok) leftLines.push(`(이야기 "${s!.title}"를 두고 자리를 떠, "${pick!.label}"를 고른 것으로 처리했다)`, r.resultText ?? "");
+    if (r?.ok) leftLines.push(`(이야기 "${storyTitle(start, ctx.content, s!)}"를 두고 자리를 떠, "${pick!.label}"를 고른 것으로 처리했다)`, r.resultText ?? "");
     else {
       endActiveStorylet(ctx, "외면하고 떠났다");
-      leftLines.push(`이야기 "${s?.title ?? start.activeStorylet.id}"를 외면하고 자리를 떴다. 그 일은 그대로 지나갔다 (이야기 속 사람들은 그것을 기억할 수 있다).`);
+      leftLines.push(`이야기 "${s ? storyTitle(start, ctx.content, s) : start.activeStorylet.id}"를 외면하고 자리를 떴다. 그 일은 그대로 지나갔다 (이야기 속 사람들은 그것을 기억할 수 있다).`);
     }
   }
+  // 혼란은 그 자리의 일이다: 자리를 옮기거나 오래 쉬면 가신다 (플레이 테스트 11: 매복의 혼란이 14시간 잠 뒤 판정에 붙었다)
+  if (long && isConfused(start, start.playerId)) store.append({ type: "confusion_changed", characterId: start.playerId, on: false });
   // 잠입 중 (12-154): 옮기거나 오래 머물지 않는다. 잠입은 infiltrate로 (빠지기부터)
   if (start.infiltration && (input.move_to || (input.activity && ["sleep", "rest", "wait", "guard_duty", "search", "work"].includes(input.activity.kind)))) {
     return { ok: false, error: "잠입 중이다. 옮기거나 오래 머물려면 먼저 infiltrate leave로 빠져나온다." };
@@ -567,7 +580,10 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (attack) lines.push(...afterAttack(ctx, attack, roll.outcome).lines);
     // 상대를 다치게 한다 (기획서 7.5). 사망은 부상 트랙으로만 (원칙 3)
     if (input.check.target_harm !== "none" && input.target) {
-      const hit = hitTarget(ctx, input.target, input.check.target_harm, roll.outcome, input.intent, attack?.wound ?? null);
+      // 원인은 짧게: 누가 무엇으로 (플레이 테스트 11: 상대의 피해 원인 줄에 플레이어 intent 문장이 통째로 들어갔다)
+      const by = attack?.weapon ? content.items[attack.weapon]?.name ?? attack.weapon : null;
+      const hitCause = `${playerCalls(store.getState(), content, start.playerId)}의 ${by ? `${by} 공격` : moveLabel(content.scenario, input.check.move)}`;
+      const hit = hitTarget(ctx, input.target, input.check.target_harm, roll.outcome, hitCause, attack?.wound ?? null);
       lines.push(...hit.lines);
       displays.push(...hit.displays);
       // 휴전 중인 무리의 사람을 치면 휴전이 깨진다 (12-126)
@@ -589,7 +605,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       // 피가 나는 상처면 출혈 (12-91)
       if (!harm.fatal && hurt) {
         const bleed = bleedFromHarm(ctx, start.playerId, input.check.harm_kind);
-        if (bleed?.line) lines.push(`${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.`);
+        if (bleed?.line) lines.push(bleed.display ? `${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.` : bleed.line);
         if (bleed?.display) displays.push(bleed.display);
         // 크게 다치면 흔적이 남을 수 있다 (12-156)
         const scar = scarFromHarm(ctx, start.playerId, input.check.harm_kind);
@@ -734,11 +750,15 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const rideUsed = ride?.ok ? ride : null;
   if (rideUsed?.fuel) store.append({ type: "item_consumed", holder: start.playerId, itemId: rideUsed.fuel, quantity: 1 });
   // 무전 송출은 30분 (대화 ×3, 12-173)
-  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null);
+  // 사냥·낚시·채집은 바깥 일이다 (플레이 테스트 11: activity work로 낚시해 실내로 쳐져 비 오는 날 옷이 말랐다)
+  const exposure: Activity = input.forage && !["travel", "guard_duty", "combat"].includes(activity) ? "search" : activity;
+  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure);
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);
   displays.push(...time.extra);
   lines.push(...bodyLines(time.extra));
+  // 긴 활동이 자정을 넘으며 생긴 일(분대 보고, 동행이 떠남, 임무 기한, 어긴 약속)도 글로 알린다 (플레이 테스트 11: 잠든 사이의 분대 보고가 빠졌다)
+  lines.push(...worldLines(time.extra));
   // 자고 나면 공포가 가라앉고 (12-95), 끊기지 않고 푹 자면 마음도 가라앉을 수 있다
   if (activity === "sleep") {
     const calm = calmAfterSleep(ctx);
@@ -793,8 +813,18 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 이야기 선택지를 판정하는 행동이면 기한을 넘겨 끝나도 이야기를 붙잡아 둔다 (B6)
   const after = runAfterTimeAdvance(ctx, { urgentOnly: time.wokenByStory, actionStartedAt: input.check ? start.time : undefined });
   lines.push(...bodyLines(after));
-  for (const display of after) {
-    displays.push(display);
+  displays.push(...after);
+  lines.push(...worldLines(after));
+  // 끼니 활동만으로는 허기가 풀리지 않는다 (플레이 테스트 11: "끼니를 받아 먹는다" 뒤에도 허기짐)
+  if (input.activity?.kind === "eat" && !input.use_item) lines.push("끼니 활동은 시간만 쓴다: 무리의 배급은 하루 한 번 저절로 먹고, 지닌 먹을 것은 use_item으로 먹어야 허기가 풀린다.");
+
+  return { ok: true, resultText: lines.join("\n"), displays, outcome, dead: false };
+}
+
+/** 시간이 흐르며 세계에 생긴 일을 GM에게 알린다 (몸의 변화는 bodyLines) */
+function worldLines(displays: readonly ToolDisplayEvent[]): string[] {
+  const lines: string[] = [];
+  for (const display of displays) {
     if ((display.type === "presence" || display.type === "belief") && display.note) lines.push(display.note);
     if (display.type === "mission" && display.title.startsWith(SQUAD_REPORT_PREFIX)) {
       lines.push(`${display.title}: ${display.detail}. 보고 내용은 상태의 '분대' 섹션에 있다. 분대원이 돌아와(또는 전령으로) 보고하는 장면을 짧게 서술한다. 보고에 없는 것을 지어내지 않는다.`);
@@ -806,8 +836,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       lines.push(`전투가 시작됐다: ${display.detail} 상태의 '전투 중' 정보를 보고 첫 장면을 서술한 뒤 플레이어의 행동을 기다려라.`);
     }
   }
-
-  return { ok: true, resultText: lines.join("\n"), displays, outcome, dead: false };
+  return lines;
 }
 
 /** 시간이 흐르며 바뀐 몸 상태(허기, 감염, 저절로 낫기)를 GM에게 알린다 */
@@ -841,7 +870,7 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
   // 무기가 낸 상처에서 피가 난다 (12-91)
   if (!change?.died) {
     const bleed = bleedFromHarm(ctx, targetId, wound);
-    if (bleed?.line) lines.push(`${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.`);
+    if (bleed?.line) lines.push(bleed.display ? `${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.` : bleed.line);
     if (bleed?.display) displays.push(bleed.display);
     const scar = change ? scarFromHarm(ctx, targetId, wound) : null;
     if (scar) lines.push(scar);
@@ -871,7 +900,7 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   const target = state.characters[state.playerId]!;
   const check = state.checks[checkId]!;
   // 상대의 몫 (12-104): 솜씨 좋은 상대는 한 단계 더, 서툰 상대는 한 단계 덜 (적어도 1단계)
-  const against = opponentHarm(content, state, opponentId);
+  const against = opponentHarm(content, state, opponentId, check.move);
   const raw = Math.max(1, harmSteps(check.outcome, severity) + (against?.delta ?? 0));
   // 입은 방어구가 피해를 줄인다 (기획서 4.8)
   const absorbed = armorAbsorb(ctx, raw);
@@ -952,7 +981,8 @@ function planRide(ctx: ToolContext, itemId: string, blocked: boolean):
 /** 잠 한 번의 최대 길이 (분) */
 const MAX_SLEEP_MINUTES = 16 * 60;
 
-export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null, speed = 1, dest: string | null = null) {
+/** exposure: 추위·젖음을 따질 때의 활동 (사냥·낚시는 activity가 무엇이든 바깥 일이다) */
+export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null, speed = 1, dest: string | null = null, exposure: Activity = activity) {
   const { store, rng, content } = ctx;
   const state = store.getState();
   const cost = ACTIVITY_COSTS[activity];
@@ -986,7 +1016,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
         ...(dest ? { dest } : {}),
       });
       // 그동안의 기온 (12-98): 자정 전에 재야 그날의 날씨로 잰다
-      extra.push(...exposeToCold(ctx, activity, cursor, result.end));
+      extra.push(...exposeToCold(ctx, exposure, cursor, result.end));
       extra.push(...exposeToFatigue(ctx, activity, cursor, result.end));
       cursor = result.end;
       interrupt = result.interrupt;
@@ -1007,7 +1037,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       ...(forMission ? { forMission } : {}),
         ...(dest ? { dest } : {}),
     });
-    extra.push(...exposeToCold(ctx, activity, from, to));
+    extra.push(...exposeToCold(ctx, exposure, from, to));
     extra.push(...exposeToFatigue(ctx, activity, from, to));
   }
 

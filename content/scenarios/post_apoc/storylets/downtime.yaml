@@ -105,11 +105,12 @@
   cooldown_days: 5
   when:
     own_territory: true
-    segments: [day, evening]
+    # 제목대로 해 질 녘에만 (플레이 테스트 11: 14시에 열렸다)
+    segments: [evening]
   cast:
     partner: { faction: own, here: true }
-  setup: "{partner:이/가} 나무 막대 두 개를 들고 온다. \"몸이 굳었어. 좀 맞춰 볼래?\""
-  ai_direction: "{partner:은/는} 진지하지만 다치게 할 생각은 없다. 대련 중에 버릇 하나를 알려 준다 (발 디딤, 막는 각도). 결과는 판정대로."
+  setup: "{partner:이/가} 나무 막대 두 개를 들고 와 하나를 내민다. 몸이 굳었다며 좀 맞춰 보자고 한다."
+  ai_direction: "{partner:은/는} 진지하지만 다치게 할 생각은 없다. 대련 중에 버릇 하나를 알려 준다 (발 디딤, 막는 각도). 대사는 {partner}의 말투대로. 나무 막대로 하는 대련이라 서로 든 무기는 쓰지 않는다. 결과는 판정대로."
   choices:
     - id: spar
       label: 막대를 받아 든다

@@ -128,7 +128,7 @@
   zone: e_market
   # 연인 (12-58: 삼각관계의 재료, 기획서 7.10)
   ties:
-    - { to: pe_junki, kind: lover, secret: { reveal_when: "모준기의 빚 이야기가 나왔을 때, 장부꾼이 그 장을 덮는 것을 보면", min_trust: 2 } }
+    - { to: pe_junki, kind: lover, secret: { reveal_when: "장부에서 그 젊은 짐꾼의 빚 이야기가 나왔을 때, 장부꾼이 그 장을 덮는 것을 보면", min_trust: 2 } }
 
 - id: e_deoksu
   name: 염덕수
@@ -195,8 +195,8 @@
   rules:
     - 짐마차 출발 시간을 묻는 사람에게 대답을 피한다
     - 붉은 완장을 보면 얼굴을 돌린다
-  knows:
-    - 오빠 진태가 붉은연합 약탈조에 있다
+  # 오빠가 붉은연합에 있다는 것은 비밀(secret)에 들어 있다. 물으면 말해 줄 일이 아니다 (플레이 테스트 11)
+  knows: []
   doesnt_know: []
   secret:
     content: 붉은연합 약탈조에 있는 오빠를 살려 두는 대가로, 강변 정류장 표지판 밑에 짐마차 출발 시간을 적어 둔다. 지난 두 번의 습격은 그 쪽지 때문이었다

@@ -52,5 +52,8 @@ export function josa(word: string, pair: JosaPair): string {
 
 /** 문장 끝 마침표를 하나로 맞춘다 (요약에 이미 마침표가 있을 때 ".."이 되지 않게) */
 export function sentence(text: string): string {
-  return `${text.trim().replace(/[.。]+$/, "")}.`;
+  const t = text.trim();
+  // 따옴표로 끝나는 말 뒤에 이미 마침표가 있으면 그대로 (플레이 테스트 11: `"…살아남았잖아.".`)
+  if (/[.!?…。][\"”’']$/.test(t)) return t;
+  return `${t.replace(/[.。]+$/, "")}.`;
 }

@@ -13,6 +13,8 @@
   when:
     zones: [a_base]
     segments: [morning, day]
+    # 분대를 넘겨받은 첫머리의 장면 (플레이 테스트 11: 7일차에 열려 "첫 보초"가 어긋났다)
+    day_lte: 3
     flags_none: [a_sl_mustered]
   cast:
     dongwook: { ids: [a_dongwook] }
@@ -40,7 +42,7 @@
       effects:
         - set_flag: a_sl_mustered
         - relation: { who: dongwook, axis: trust, delta: 1 }
-        - belief: { fact: 첫날 임동욱과 나란히 창고 앞 보초를 섰다. 그는 서기철 이야기를 한 마디도 하지 않았다, source: seen }
+        - belief: { fact: 임동욱과 나란히 창고 앞 보초를 섰다. 그는 서기철 이야기를 한 마디도 하지 않았다, source: seen }
     - id: make_deputy
       label: 교대표를 그에게 맡기고 부분대장처럼 세운다
       effects:

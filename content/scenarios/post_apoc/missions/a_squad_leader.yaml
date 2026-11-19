@@ -15,7 +15,7 @@
   where: riverside
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
-  briefing: 물통을 실은 손수레 두 대를 강변 공장 지대까지 호위해 물을 길어 온다. 서기철이 죽은 길이다. 해가 지기 전에 돌아오고, 소리를 내지 않는다.
+  briefing: 물통을 실은 손수레 두 대를 강변 공장 지대까지 호위해 물을 길어 온다. 서기철이 죽은 길이다. 늦지 않게 돌아오고, 소리를 내지 않는다.
   giver_rank: officer
   deadline_hours: 12
   requirements:

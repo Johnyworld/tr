@@ -26,7 +26,7 @@ import type { LoreLibrary, LoreSearch } from "../rag/library.ts";
 import { memoryItemsOf, type MemoryStore } from "../rag/memory.ts";
 import type { SearchOptions } from "../rag/index.ts";
 import { COMMANDS } from "../commands/commands.ts";
-import { formatChronicle, storyEnded, successionOptions, switchCharacter, type SuccessionOption } from "../engine/succession.ts";
+import { formatChronicle, storyEnded, storyEndedText, successionOptions, switchCharacter, type SuccessionOption } from "../engine/succession.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
 import type { Viewer } from "../rag/index.ts";
 import type { RetrievalRecord } from "../engine/log.ts";
@@ -51,7 +51,9 @@ const SCENE_SECTION_LABELS: Record<string, string> = {
   facilities: "시설",
   sheet: "능력·스킬·트레잇",
   culture: "무리의 문화·권한",
-  battle: "전투",
+  battle: "전투·매복·포로",
+  romance: "눈길·연인",
+  diplomacy: "외교",
   storylet: "진행 중인 이야기",
   missions: "복무·임무",
   squad: "분대",
@@ -287,6 +289,11 @@ export class GameWorld {
   /** 이어 갈 수 없는 시나리오(튜토리얼)에서 주인공이 죽어 이 판이 끝났는지 */
   storyEnded(): boolean {
     return storyEnded(this.state(), this.content);
+  }
+
+  /** 판이 끝난 까닭과 GM 안내 */
+  storyEndedText(): string {
+    return storyEndedText(this.state(), this.content);
   }
 
   successionOptions(): SuccessionOption[] {

@@ -1,3 +1,4 @@
+import { maskUnknownNames } from "./storyletTools.ts";
 import { rankName } from "../game/ranks.ts";
 import { describePromotionOffer, offerPromotion } from "./promotion.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -32,6 +33,9 @@ import {
 import { defineTool, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { grantRewards } from "./rewards.ts";
+import { itemResource } from "./market.ts";
+
+const resourceLabel = (s: Scenario, id: string) => s.resources.find((r) => r.id === id)?.label ?? id;
 
 /** 요구 조건 한 줄 설명 */
 export function describeRequirement(s: Scenario, requirement: MissionRequirement, progress: number): string {
@@ -39,7 +43,17 @@ export function describeRequirement(s: Scenario, requirement: MissionRequirement
   if ("activity" in requirement) {
     return `${ACTIVITY_LABELS[requirement.activity]} ${formatDuration(requirement.minutes)} (지금까지 ${formatDuration(progress)}, ${done})`;
   }
+  if ("goal" in requirement) return `${requirement.goal} (${done})`;
+  if ("bring" in requirement) return `${resourceLabel(s, requirement.bring)} ${requirement.quantity}개를 구해 와 건네기 (보고할 때 소지품에서 센다)`;
   return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (${done})`;
+}
+
+/** 받기 전의 요구 조건 (진행 없이). 플레이 테스트 11: 버티기 판정이 필요한 줄 모르고 받았다 */
+function requirementLabel(s: Scenario, requirement: MissionRequirement): string {
+  if ("activity" in requirement) return `${ACTIVITY_LABELS[requirement.activity]} ${formatDuration(requirement.minutes)}`;
+  if ("goal" in requirement) return requirement.goal;
+  if ("bring" in requirement) return `${resourceLabel(s, requirement.bring)} ${requirement.quantity}개 구해 오기`;
+  return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상`;
 }
 
 export function describeMission(s: Scenario, mission: MissionInstance): string {
@@ -95,8 +109,9 @@ const assignMission = defineTool({
     const mission: MissionInstance = {
       id: `m_${state.nextMissionNo}`,
       templateId: template.id,
-      title: template.title,
-      briefing: template.briefing,
+      // 이름 모르는 사람은 호칭으로 (플레이 테스트 11: "우물지기 탁순례")
+      title: maskUnknownNames(state, ctx.content, template.title),
+      briefing: maskUnknownNames(state, ctx.content, template.briefing),
       assigneeId: player.id,
       giverId: commander.id,
       assignedAt: state.time,
@@ -125,6 +140,12 @@ const assignMission = defineTool({
   },
 });
 
+/** 채우지 못한 결과 조건 (일부 완수·실패의 까닭을 보인다) */
+function unmetLines(s: Scenario, mission: MissionInstance): string[] {
+  const unmet = mission.requirements.filter((r, i) => !isRequirementMet(r, mission.progress[i] ?? 0));
+  return unmet.length ? [`채우지 못한 것: ${unmet.map((r) => requirementLabel(s, r)).join(" · ")}`] : [];
+}
+
 const reportMission = defineTool({
   name: "report_mission",
   description:
@@ -140,14 +161,33 @@ const reportMission = defineTool({
       return { ok: false, error: `보고는 임무를 준 ${giver?.name ?? "상관"}에게 직접 한다. 먼저 npc_presence로 등장시키세요.` };
     }
 
-    const result = evaluateMission(mission, state.time);
+    // 찾아오기 (플레이 테스트 11): 지닌 물건 가운데 그 자원에 속하는 것을 상관에게 건넨다. 모자라면 건네지 않고 미충족
+    const handed: string[] = [];
+    mission.requirements.forEach((r, i) => {
+      if (!("bring" in r) || isRequirementMet(r, mission.progress[i] ?? 0)) return;
+      const inv = ctx.store.getState().characters[state.playerId]!.inventory;
+      const matching = Object.entries(inv).filter(([id, q]) => q > 0 && itemResource(ctx.content, id) === r.bring);
+      if (matching.reduce((n, [, q]) => n + q, 0) < r.quantity) return;
+      let left = r.quantity;
+      for (const [id, q] of matching) {
+        if (left <= 0) break;
+        const take = Math.min(q, left);
+        ctx.store.append({ type: "item_transferred", from: state.playerId, to: giver.id, itemId: id, quantity: take });
+        handed.push(`${ctx.content.items[id]?.name ?? id} ×${take}`);
+        left -= take;
+      }
+      ctx.store.append({ type: "mission_requirement_met", missionId: mission.id, index: i });
+    });
+    const reported = ctx.store.getState().missions[mission.id]!;
+    const result = evaluateMission(reported, state.time);
     ctx.store.append({ type: "mission_reported", missionId: mission.id, ...result });
-    // 완수는 상관이 직접 확인한 성실함으로 남는다 (관계 변화는 상관의 가치관으로 계산)
+    // 완수는 상관이 보고로 확인한 성실함으로 남는다 (관계 변화는 상관의 가치관으로 계산)
     if (result.outcome === "success") {
+      // 상관은 그 자리에 없었다. 보고로 듣는다 (플레이 테스트 11: 다른 구역에서 한 일이 "직접 봄"으로 남았다)
       recordDeed(
         ctx,
         { summary: `임무 완수: ${mission.title}`, tags: ["diligence"], severity: 1, privacy: "public", noisy: false },
-        { npcId: giver.id, source: "seen" },
+        { npcId: giver.id, source: "report" },
       );
     }
     // 빚 갚는 일감: 임무를 준 무리에 진 빚이 준다 (기획서 9.10)
@@ -197,9 +237,17 @@ const reportMission = defineTool({
     const label = MISSION_STATUS_LABELS[result.outcome === "success" ? "completed" : result.outcome];
     const lines = [
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
+      ...(handed.length ? [`구해 온 것을 상관에게 건넸다: ${handed.join(", ")}`] : []),
+      ...unmetLines(ctx.content.scenario, reported),
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
       // 주인공이 실제로 찾은 물건과는 따로 셈한다 (플레이 테스트 11: 약을 못 찾았는데 "구해 온 의약품"이라고 했다)
-      ...(supplied.length ? [`이 일감의 몫으로 무리 창고의 ${josa(supplied.join("·"), "이/가")} 조금 늘었다 (같이 나선 사람들의 몫까지 장부에 셈한 것. 주인공이 찾은 물건은 소지품에 그대로 있고, 내놓을지는 플레이어가 정한다).`] : []),
+      ...(supplied.length
+        ? [
+            mission.requirements.some((r) => "bring" in r)
+              ? `이 일감의 몫으로 무리 창고의 ${josa(supplied.join("·"), "이/가")} 조금 늘었다 (건넨 것과 같이 나선 사람들의 몫까지 장부에 셈한 것).`
+              : `이 일감의 몫으로 무리 창고의 ${josa(supplied.join("·"), "이/가")} 조금 늘었다 (같이 나선 사람들의 몫까지 장부에 셈한 것. 주인공이 찾은 물건은 소지품에 그대로 있고, 내놓을지는 플레이어가 정한다).`,
+          ]
+        : []),
       ...(cleared ? [`${cleared}에 몰려든 감염체를 쓸어 냈다. 한동안 조용할 것이다.`] : []),
       ...releaseBuddies(ctx, mission.id),
       ...[returnArmory(ctx, mission.id)].filter((l): l is string => !!l),
@@ -306,7 +354,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const occ = occupationOf(ctx.content, state.characters[state.playerId]);
     const me = state.characters[state.playerId];
     const overrun = !!me?.factionId && !!worstOverrun(ctx.content, state, me.factionId);
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, occ?.missions ?? [], overrun);
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, occ?.missions ?? [], overrun, { factionId: me?.factionId ?? null, owners: state.zones });
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;
@@ -318,7 +366,9 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   if (!player) return "";
   const active = activeMissionOf(state.missions, player.id);
   // 무소속은 복무·공적·불복종이 없다
-  const lines = [player.factionId ? `복무: ${rankName(ctx.content, player.factionId, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
+  // 무리에 들 때 맡은 일 (플레이 테스트 11: "버들마을 경비병"으로 들었는데 복무 줄은 "정찰대원"뿐이었다)
+  const joinedAs = state.customRole && player.factionId && state.customRole.rank === player.rank && !state.customRole.label.includes(rankName(ctx.content, player.factionId, player.rank)) ? ` (맡은 일: ${state.customRole.label})` : "";
+  const lines = [player.factionId ? `복무: ${rankName(ctx.content, player.factionId, player.rank)}${joinedAs} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
   const offer = describePromotionOffer(ctx.content, state);
   if (offer) lines.push(offer);
   if (active) {
@@ -329,7 +379,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
     const offers = state.offers.templateIds
       .map((id) => ctx.content.missions[id])
       .filter((m) => m !== undefined)
-      .map((m) => `  - ${m.id}: ${m.title} — ${m.briefing}`);
+      .map((m) => `  - ${m.id}: ${maskUnknownNames(state, ctx.content, m.title)} — ${maskUnknownNames(state, ctx.content, m.briefing)}\n    해야 할 일: ${m.requirements.map((r) => requirementLabel(ctx.content.scenario, r)).join(" · ")}`);
     lines.push(`오늘 받을 수 있는 임무 (상관이 장면에 있을 때 assign_mission):\n${offers.join("\n")}`);
   } else {
     lines.push("수행 중인 임무 없음");

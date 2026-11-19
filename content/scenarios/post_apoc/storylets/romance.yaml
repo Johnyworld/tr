@@ -62,8 +62,9 @@
     segments: [evening, night]
     flags_none: [rm_fireside_done]
   cast:
-    them: { romance: suitor }
-  setup: 다들 자러 들어갔다. {them:이/가} 아직 자리를 뜨지 않는다. "잠이 안 와서." 밤바람이 둘 사이로 지나간다.
+    # 지금 이 구역에 있는 사람만 (플레이 테스트 11: 하얀매 외과 의사가 버들마을 담 밖 불가에 앉아 있었다)
+    them: { romance: suitor, here: true }
+  setup: 밤이 깊어 주위가 조용해졌다. {them:이/가} 아직 당신 곁을 뜨지 않는다. 잠이 안 온다고 한다. 밤바람이 둘 사이로 지나간다.
   ai_direction: 오래 앉아 있을 핑계를 찾는 사람이다. 지난 삶 이야기(붕괴 전의 직업, 잃은 사람)가 나오면 길게 듣는다. 손이 닿을 듯한 거리에서 멈춘다. 무엇을 털어놓는지는 플레이어의 몫이다. 이 사람이 아는 것만 말하게 한다.
   choices:
     - id: open
@@ -93,8 +94,8 @@
     segments: [morning, day, evening]
     flags_none: [rm_guarded_done]
   cast:
-    them: { romance: suitor }
-  setup: 무너진 담 사이를 지나는데 {them:이/가} 굳이 따라붙었다. "혼자 가면 안 되는 길이야." 모퉁이 너머에서 젖은 발소리가 겹쳐 들린다. 하나가 아니다.
+    them: { romance: suitor, here: true }
+  setup: 무너진 담 사이 골목 어귀, {them:이/가} 굳이 당신 곁에 붙어 선다. 혼자 가면 안 되는 길이라고 한다. 모퉁이 너머에서 젖은 발소리가 겹쳐 들린다. 하나가 아니다.
   ai_direction: 감염체 몇이 골목을 막고 있다. 이 사람은 주인공보다 반걸음 앞에 서려고 한다. 무사히 넘기면 둘 다 한동안 말이 없다. 고마움과 그 이상을 섞지 말고, 숨 고르는 소리와 떨리는 손으로만 보인다.
   choices:
     - id: watch

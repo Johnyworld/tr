@@ -96,7 +96,7 @@ describe("엿듣기", () => {
     const out = executeTool("resolve_storylet", { choice_id: "x" }, c);
     expect(out.ok && out.resultText).toMatch(/엿들은 것: .+[이가] 준비하는 일/);
     const last = w.state().beliefs[w.state().playerId]!.at(-1)!;
-    expect(last.topic).toBe("war");
+    expect(last.topic).toBe("war_intel");
     expect(last.fact).not.toContain("청솔형제단");
   });
 });

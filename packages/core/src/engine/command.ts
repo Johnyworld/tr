@@ -14,6 +14,8 @@ export { factionPolicy };
 import { changeCondition } from "./body.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { gainMeritXp } from "./growth.ts";
+import { baseOf } from "./captivity.ts";
+import { LEAVE_AT } from "./companionTools.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
@@ -115,22 +117,35 @@ export const squadOrder = defineTool({
     const squad = squadMembers(state, content);
     if (!squad.length) return { ok: false, error: "지휘할 분대가 없다. 분대 명령은 분대를 맡은 사람만 내린다." };
     const role = roleOf(content, state);
-    const atBase = !!role?.start_location && state.playerZone === role.start_location;
+    // 무리 거점도 거점이다 (플레이 테스트 11: 시작 구역이 물류창고인 역할은 붉은연합 거점에서도 "장면에 없다"였다)
+    const home = state.characters[state.playerId]?.factionId ? baseOf(content, state.characters[state.playerId]!.factionId) : undefined;
+    const atBase = (!!role?.start_location && state.playerZone === role.start_location) || (!!home && state.playerZone === home);
     let zone = state.playerZone ?? role?.start_location ?? "";
     if (task.needs_zone) {
       if (!input.zone || !content.locations[input.zone]) return { ok: false, error: `${task.label}에는 구역이 필요하다 (zone). 구역 id: ${Object.keys(content.locations).join(", ")}` };
       zone = input.zone;
     }
-    for (const id of input.members) {
-      if (!squad.includes(id)) return { ok: false, error: `${id}는 분대원이 아니다 (분대원: ${squad.join(", ")}).` };
-      if (isOnSquadOrder(state, id)) return { ok: false, error: `${playerCalls(state, content, id)}는 이미 일을 나가 있다 (${formatTime(state.squadOrders[id]!.until)}에 돌아온다).` };
-      if (!state.scene.present.includes(id) && !atBase) return { ok: false, error: `${playerCalls(state, content, id)}가 장면에 없다. 거점이 아니면 곁에 있는 분대원에게만 명령한다.` };
-      if (task.kind === "follow" && state.companions.includes(id)) return { ok: false, error: `${playerCalls(state, content, id)}는 이미 곁에 있다.` };
-    }
+    // 명령할 수 없는 사람은 건너뛰고 나머지는 처리한다 (플레이 테스트 11: 하나가 오류면 아무도 움직이지 않았다)
+    const skipped: string[] = [];
+    const why = (id: string): string | null => {
+      if (!squad.includes(id)) return `${josa(id, "은/는")} 분대원이 아니다 (분대원: ${squad.join(", ")}).`;
+      if (isOnSquadOrder(state, id)) return `${josa(playerCalls(state, content, id), "은/는")} 이미 일을 나가 있다 (${formatTime(state.squadOrders[id]!.until)}에 돌아온다).`;
+      if (!state.scene.present.includes(id) && !atBase) return `${josa(playerCalls(state, content, id), "이/가")} 장면에 없다. 거점이 아니면 곁에 있는 분대원에게만 명령한다.`;
+      if (task.kind === "follow" && state.companions.includes(id)) return `${josa(playerCalls(state, content, id), "은/는")} 이미 곁에 있다.`;
+      // 믿음이 바닥난 분대원은 곁에 붙자마자 떠났다 (플레이 테스트 11): 처음부터 따르지 않는다
+      if (task.kind === "follow" && (state.relations[id]?.[state.playerId] ?? NEUTRAL_RELATION).trust <= LEAVE_AT) return `${josa(playerCalls(state, content, id), "은/는")} 당신을 믿지 않아 곁에 붙으려 하지 않는다 (신뢰가 바닥이다).`;
+      return null;
+    };
+    const members = [...new Set(input.members)].filter((id) => {
+      const problem = why(id);
+      if (problem) skipped.push(problem);
+      return !problem;
+    });
+    if (members.length === 0) return { ok: false, error: skipped.join(" ") };
 
-    const lines: string[] = [];
+    const lines: string[] = skipped.map((p) => `건너뜀: ${p}`);
     const displays: ToolDisplayEvent[] = [];
-    for (const id of input.members) {
+    for (const id of members) {
       const name = playerCalls(state, content, id);
       const respect = (state.relations[id]?.[state.playerId] ?? NEUTRAL_RELATION).respect;
       if (respect <= REFUSE_AT) {
@@ -230,7 +245,8 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
       const merit = half ? Math.floor(task.rewards.merit / 2) : task.rewards.merit;
       if (merit > 0) {
         store.append({ type: "merit_awarded", characterId: state.playerId, delta: merit, reason: `분대: ${task.label}` });
-        gainMeritXp(ctx, state.playerId, merit);
+        const levelUp = gainMeritXp(ctx, state.playerId, merit);
+        if (levelUp) lines.push(levelUp);
       }
       if (task.dangerous && !half) {
         store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: 0, affection: 0, respect: 1 }, reason: "위험한 일을 맡기고 해냈다" });
@@ -238,6 +254,7 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
     } else {
       if (task.dangerous) changeCondition(ctx, id, s.harm_track, 1, "분대 명령", `${task.label} 중 다침`);
       store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: -1, affection: 0, respect: 0 }, reason: "분대장이 맡긴 일이 틀어졌다" });
+      lines.push("일이 틀어져 분대장을 믿는 마음이 조금 줄었다");
     }
 
     const after = store.getState().characters[id]!;

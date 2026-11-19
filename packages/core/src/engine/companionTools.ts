@@ -23,8 +23,8 @@ const EXTEND_MINUTES = 48 * 60;
 /** 신뢰+호감이 이 이상이면 갈림길에서 남고 싶어 한다 */
 const STAY_AT = 3;
 /** 이 신뢰 이하면 떠난다 (연고는 KIN_LEAVE_AT) */
-const LEAVE_AT = -2;
-const KIN_LEAVE_AT = -3;
+export const LEAVE_AT = -2;
+export const KIN_LEAVE_AT = -3;
 
 /** GM 문장으로 실을 동행 소식 (presence 표시의 note) */
 function note(npcName: string, action: "enter" | "leave", text: string): ToolDisplayEvent {
@@ -72,7 +72,7 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
     // 관계가 바닥이면 떠난다 (동물과 묶여 끌려가는 포로는 예외)
     const rel = state.relations[id]?.[state.playerId] ?? NEUTRAL_RELATION;
     if (bond.kind !== "animal" && bond.kind !== "prisoner" && rel.trust <= (bond.kind === "kin" ? KIN_LEAVE_AT : LEAVE_AT)) {
-      store.append({ type: "companion_left", characterId: id, reason: "더는 믿지 않는다" });
+      leaveScene(store, id, "더는 믿지 않는다");
       out.push(note(name, "leave", `${josa(name, "은/는")} 더는 당신을 믿지 않는다. 함께 다니지 않겠다며 떠난다. 떠나는 장면을 서술한다.`));
       continue;
     }
@@ -85,7 +85,7 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
         store.append({ type: "companion_bond_changed", characterId: id, kind: "kin" });
         out.push(note(name, "enter", `${josa(name, "은/는")} 아무 말 없이 계속 곁에 남았다. 이제 함께 다니는 사이다 (연고).`));
       } else {
-        store.append({ type: "companion_left", characterId: id, reason: "자기 길을 갔다" });
+        leaveScene(store, id, "자기 길을 갔다");
         out.push(note(name, "leave", `${josa(name, "은/는")} 자기 길을 가기로 했다. 짧게 인사하고 떠나는 장면을 서술한다.`));
       }
       continue;
@@ -184,7 +184,7 @@ const companionPart = defineTool({
     }
     if (!activeCompanions(state).includes(input.target)) return { ok: false, error: "곁에 있는 동행이 아니다." };
     if (input.how === "end") {
-      store.append({ type: "companion_left", characterId: input.target, reason: "헤어졌다" });
+      leaveScene(store, input.target, "헤어졌다");
       return { ok: true, resultText: `${josa(name, "은/는")} 더는 함께 다니지 않는다. 헤어지는 장면을 서술한다.`, display: { type: "presence", npcName: name, action: "leave" } };
     }
     if (!state.bonds?.[input.target]) {
@@ -220,8 +220,8 @@ const companionCrossroads = defineTool({
   schema: z.strictObject({
     target: z.string(),
     choice: z.enum(["let_go", "ask_stay"]),
-    move: z.string().nullable().describe("ask_stay일 때 설득 스킬 id (예: 교섭). let_go면 null"),
-    stat: z.string().nullable().describe("그 스킬의 능력 id. let_go면 null"),
+    move: z.string().nullable().default(null).describe("ask_stay일 때 설득 스킬 id (예: 교섭). let_go면 null"),
+    stat: z.string().nullable().default(null).describe("그 스킬의 능력 id. let_go면 null"),
   }),
   run(input, ctx): ToolOutcome {
     const { store, content } = ctx;
@@ -230,7 +230,7 @@ const companionCrossroads = defineTool({
     if (!bond?.crossroads || !state.companions.includes(input.target)) return { ok: false, error: "갈림길에 선 동행이 아니다." };
     const name = playerCalls(state, content, input.target);
     if (input.choice === "let_go") {
-      store.append({ type: "companion_left", characterId: input.target, reason: "보냈다" });
+      leaveScene(store, input.target, "보냈다");
       return { ok: true, resultText: `${josa(name, "을/를")} 보냈다. 헤어지는 장면을 서술한다.`, display: { type: "presence", npcName: name, action: "leave" } };
     }
     if (bond.crossroads.lean === "stay") {
@@ -248,7 +248,7 @@ const companionCrossroads = defineTool({
       store.append({ type: "companion_bond_changed", characterId: input.target, kind: "purpose", until: { at: state.time + EXTEND_MINUTES } });
       lines.push(`${josa(name, "은/는")} 조금만 더 함께 가겠다고 한다 (${formatTime(state.time + EXTEND_MINUTES)}까지). 그 뒤는 다시 갈림길이다.`);
     } else {
-      store.append({ type: "companion_left", characterId: input.target, reason: "붙잡았지만 떠났다" });
+      leaveScene(store, input.target, "붙잡았지만 떠났다");
       lines.push(`${josa(name, "은/는")} 고개를 젓고 떠난다.`);
     }
     return { ok: true, resultText: lines.join("\n"), display: check.display };
@@ -262,4 +262,10 @@ export function isAwayCompanion(state: Pick<GameState, "bonds" | "playerZone">, 
   const apart = state.bonds?.[id]?.apart;
   if (!apart) return false;
   return !(apart.zone && apart.zone === state.playerZone);
+}
+
+/** 동행이 떠나면 장면에서도 나간다 (플레이 테스트 11: 갈림길에서 "고개를 젓고 떠난다" 뒤에도, 믿지 않는다며 떠난 분대원도 장면에 남았다) */
+function leaveScene(store: ToolContext["store"], id: string, reason: string) {
+  store.append({ type: "companion_left", characterId: id, reason });
+  if (store.getState().scene.present.includes(id)) store.append({ type: "npc_left", npcId: id });
 }

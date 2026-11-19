@@ -27,6 +27,8 @@ export const MISSION_STATUS_LABELS: Record<MissionStatus, string> = {
 const missionRequirementSchema = z.union([
   z.strictObject({ activity: z.enum(ACTIVITIES), minutes: z.number().int().positive() }),
   z.strictObject({ check: z.string(), min_outcome: z.enum(["success", "partial"]) }),
+  z.strictObject({ goal: z.string() }),
+  z.strictObject({ bring: z.string(), quantity: z.number().int().positive() }),
 ]);
 
 export const missionInstanceSchema = z.strictObject({
@@ -163,11 +165,18 @@ export function pickDailyOffers(
   extra: readonly string[] = [],
   /** 우리 무리 땅에 감염체가 몰려들었는지 (12-120). 그날만 소탕 임무(clears)가 후보에 오른다 */
   overrun = false,
+  /** 임무를 받을 사람의 무리와 지금 땅 주인 (플레이 테스트 11): 우리 땅이던 곳을 빼앗겼으면 그곳으로 가는 임무(증원, 시찰)는 내지 않는다 */
+  lost?: { factionId: string | null; owners: Record<string, { owner: string | null } | undefined> },
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
   const clearing = overrun ? Object.values(content.missions).filter((m) => m.clears).map((m) => m.id) : [];
-  const pool = [...new Set([...(content.roles[roleId]?.missions ?? []), ...extra, ...clearing])].filter((id) => content.missions[id] && (overrun || !content.missions[id]!.clears));
+  const pool = [...new Set([...(content.roles[roleId]?.missions ?? []), ...extra, ...clearing])].filter((id) => content.missions[id] && (overrun || !content.missions[id]!.clears))
+    .filter((id) => {
+      const where = content.missions[id]!.where;
+      if (!lost?.factionId || !where || where === "outside" || where === "enemy") return true;
+      return content.locations[where]?.owner !== lost.factionId || lost.owners[where]?.owner === lost.factionId;
+    });
   if (pool.length === 0) return null;
   const picked: string[] = [];
   const count = Math.min(OFFERS_PER_DAY, pool.length);
@@ -187,7 +196,7 @@ export function commanderOf(
     roleId: string;
     characters: Record<string, { dead: boolean; away?: unknown; captive?: unknown; rank?: string; factionId?: string | null }>;
   },
-  content: { roles: Record<string, { commander?: string | undefined }>; scenario?: { rank_ladder: readonly { id: string; level: number }[] }; npcs?: Record<string, unknown> },
+  content: { roles: Record<string, { commander?: string | undefined; faction?: string | null | undefined; rank?: string | undefined }>; scenario?: { rank_ladder: readonly { id: string; level: number }[] }; npcs?: Record<string, unknown> },
 ): string | null {
   const id = content.roles[state.roleId]?.commander;
   const usable = (cid: string) => cid !== state.playerId && !!state.characters[cid] && !state.characters[cid]!.dead && !state.characters[cid]!.away && !state.characters[cid]!.captive;
@@ -199,6 +208,9 @@ export function commanderOf(
     const level = (rank?: string) => ladder.find((r) => r.id === rank)?.level ?? 0;
     const mine = level(me.rank);
     if (level(state.characters[id]!.rank) <= mine) {
+      // 그 계급으로 시작하는 역할에 정해진 상관이 먼저다 (플레이 테스트 11: 이름순으로 고르다 비리를 알린 사람이 상관이 됐다)
+      const byRole = Object.values(content.roles).find((r) => r.faction === me.factionId && r.rank === me.rank && r.commander)?.commander;
+      if (byRole && usable(byRole) && level(state.characters[byRole]!.rank) > mine) return byRole;
       const above = Object.entries(state.characters)
         .filter(([cid, c]) => usable(cid) && (!content.npcs || !!content.npcs[cid]) && c.factionId === me.factionId && level(c.rank) > mine)
         .sort(([a, x], [b, y]) => level(x.rank) - level(y.rank) || a.localeCompare(b));

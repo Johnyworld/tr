@@ -41,8 +41,9 @@
     segments: [evening]
   cast:
     pious: { faction: own, here: true }
-    mocker: { faction: own, here: true }
-  setup: "배식 줄 끝, {pious:이/가} 그릇을 받아 들고 눈을 감는다. 입술만 움직인다. 옆자리 {mocker:이/가} 숟가락으로 그릇을 탁 친다. \"누구한테 고마운데? 이 국 끓인 건 부엌이야.\" 몇 사람이 웃는다."
+    # 이름난 윗사람(의장, 간부)은 배식 줄에서 빈정대는 자리에 넣지 않는다 (플레이 테스트 11)
+    mocker: { faction: own, here: true, ranks: [grunt, staff, squad_leader] }
+  setup: "배식 줄 끝, {pious:이/가} 그릇을 받아 들고 눈을 감는다. 입술만 움직인다. 옆자리 {mocker:이/가} 숟가락으로 그릇을 탁 치며, 이 국 끓인 건 부엌인데 누구한테 고맙냐고 빈정댄다. 몇 사람이 웃는다."
   ai_direction: "{pious:은/는} 대꾸하지 않고 기도를 마친다. {mocker:은/는} 악의라기보다 지쳐 있다. 누가 옳은지 정하지 않는다. 주인공의 편들기가 둘과의 사이를 바꾼다."
   choices:
     - id: join
@@ -70,10 +71,12 @@
   when:
     own_territory: true
     segments: [dawn, morning]
+    # 바깥으로 나갈 일이 있을 때만 (플레이 테스트 11: 임무도 없는 새벽에 "돌아와서 돌려줘")
+    mission_active: true
   cast:
     giver: { faction: own, here: true, known: true }
-  setup: "{giver:이/가} 당신을 불러 세운다. 주먹을 펴니 손때 묻은 나무 묵주 알 하나, 아니면 그냥 매끈한 돌이다. \"이거 가지고 가. 우리 엄마가 준 거야. 돌아와서 돌려줘.\""
-  ai_direction: "{giver:은/는} 이것이 진짜로 지켜 준다고 믿는지 스스로도 모른다. 돌려달라는 말이 진짜 뜻이다 (돌아오라는). 판정에 아무 보정도 없다. 받든 안 받든 서술로만."
+  setup: "{giver:이/가} 당신을 불러 세운다. 주먹을 펴니 손때 묻은 나무 묵주 알 하나가 있다. 어머니가 준 것이라며, 가지고 나갔다가 돌아와서 돌려 달라고 한다."
+  ai_direction: "{giver:은/는} 이것이 진짜로 지켜 준다고 믿는지 스스로도 모른다. 돌려달라는 말이 진짜 뜻이다 (돌아오라는). 판정에 아무 보정도 없다. 받든 안 받든 서술로만 (소지품에 들어오는 물건이 아니다). 대사는 {giver}의 말투대로."
   choices:
     - id: take
       label: 받아서 가슴 주머니에 넣는다
@@ -82,7 +85,7 @@
         - body: { track: fear, delta: -1 }
         - belief: { fact: "{giver:이/가} 부적을 쥐여 주며 돌아와서 돌려달라고 했다", source: seen }
     - id: refuse
-      label: "\"너나 가지고 있어\" 하고 손을 접어 준다"
+      label: 괜찮다며 그 손을 도로 접어 준다
       effects:
         - relation: { who: giver, axis: respect, delta: 1 }
 

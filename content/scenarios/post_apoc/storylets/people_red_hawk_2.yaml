@@ -21,7 +21,7 @@
   setup: >-
     진료소 마당 벤치. {gate:이/가} 쇠파이프 목발을 무릎에 걸쳐 두고 앉아 있다.
     격리실 철문 열쇠가 목에서 흔들린다. 당신이 지나가자 고개도 안 돌리고 묻는다.
-    "거점 쪽 소식 아나. 광장, 아직도 아침마다 서?"
+    "붉은연합 거점 쪽 소식 아나. 광장, 아직도 아침마다 서?"
   ai_direction: >-
     {gate:은/는} 지난봄 붉은연합 광장에서 규율반원 {stick}에게 맞고 담 밖에 버려졌다.
     탈영한 적이 없다. 그날 밤 보초였을 뿐이고, 왜 자기 이름이 본보기 명단에 올랐는지 모른다.
@@ -37,7 +37,7 @@
         - relation: { who: gate, axis: trust, delta: 2 }
         - belief: { fact: "구만석은 지난봄 붉은연합 광장에서 규율반원 석중기에게 맞고 담 밖에 버려졌다. 그날 밤 보초였을 뿐 탈영한 적이 없다고 한다. 왜 자기 이름이 명단에 올랐는지 모른다", source: report }
     - id: ask_message
-      label: 석중기에게 전할 말이 있느냐고 묻는다
+      label: 그때 자기를 친 사람에게 전할 말이 있느냐고 묻는다
       check: persuade
       outcomes:
         success:
@@ -58,7 +58,7 @@
           - relation: { who: gate, axis: trust, delta: -1 }
           - belief: { fact: "구만석은 남의 일에 왜 끼느냐며 등을 돌렸다. 등에 줄 자국이 겹겹이 나 있었다", source: seen }
     - id: leave
-      label: 붉은연합 이야기는 하지 않는다며 자리를 뜬다
+      label: 남의 무리 일에는 끼지 않는다며 자리를 뜬다
       effects:
         - set_flag: pr2_bench_done
         - relation: { who: gate, axis: affection, delta: -1 }

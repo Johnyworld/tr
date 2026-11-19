@@ -18,7 +18,7 @@
     boss: { commander: true }
   setup: >-
     {boss:이/가} 당신 배낭을 한 손으로 들어 보더니 물통 하나를 더 얹는다.
-    "오늘은 강변을 건넌다. 이 무게로 못 가겠으면 지금 말해. 길 한복판에서 말하면 늦어."
+    "오늘 네 몫이다. 이 무게로 못 가겠으면 지금 말해. 길 한복판에서 말하면 늦어."
   ai_direction: 주옥희는 새 짐꾼을 시험하는 게 아니라 셈하는 중이다. 무리하다 쓰러지는 짐꾼이 짐을 버리는 짐꾼보다 비싸다는 것을 안다. 정직한 대답을 높이 산다.
   choices:
     - id: carry
@@ -29,7 +29,7 @@
           - merit: 1
           - relation: { who: boss, axis: respect, delta: 1 }
         partial:
-          - belief: { fact: "더 얹은 물통을 지고 일어서긴 했지만 강변까지 어깨가 버틸지 모르겠다", source: seen }
+          - belief: { fact: "더 얹은 물통을 지고 일어서긴 했지만 길 끝까지 어깨가 버틸지 모르겠다", source: seen }
         miss:
           - relation: { who: boss, axis: trust, delta: -1 }
           - belief: { fact: "일어서다 무릎이 꺾였다. 주옥희가 말없이 물통 하나를 다시 내렸다", source: seen }
@@ -59,14 +59,14 @@
   setup: >-
     강변 공장 담장 그늘에서 얼굴에 검댕을 칠한 사내 넷이 길을 막는다. 쇠지렛대 셋에 엽총 하나.
     "짐 내려놓고 가. 사람은 안 건드려. 상단 사람 죽이면 우리도 물 못 사 먹으니까."
-  ai_direction: 이들은 완장을 뗀 붉은연합 약탈조다. 짐마차가 이 시간에 지나간다는 것을 미리 알고 기다렸다 (진하나가 강변 정류장 표지판 밑에 남긴 쪽지). 누가 흘렸는지는 드러내지 않는다. 총은 쏘지 않으려 한다. 소리가 감염체를 부르기 때문이다. 앞에 나선 하나는 {raider}로 이미 인물로 만들었다 (나머지 셋은 서술로만, 싸움이 커지면 spawn_extra).
+  ai_direction: 이들은 완장을 뗀 붉은연합 약탈조다. 상단 사람이 이 시간에 이 길을 지난다는 것을 미리 알고 기다렸다 (진하나가 강변 정류장 표지판 밑에 남긴 쪽지). 주인공이 혼자 다른 일감을 하던 중이어도 상단 사람이라 노린다. 그들이 말하는 '짐'은 상단의 짐이다. 주인공 소지품을 빼앗는 것은 판정 효과가 정한 만큼뿐이다. 누가 흘렸는지는 드러내지 않는다. 총은 쏘지 않으려 한다. 소리가 감염체를 부르기 때문이다. 앞에 나선 하나는 {raider}로 이미 인물로 만들었다 (나머지 셋은 서술로만, 싸움이 커지면 spawn_extra).
   choices:
     - id: drop
-      label: 짐을 내려놓고 물러난다
+      label: 상단 짐을 내려놓고 물러난다
       effects:
         - set_flag: e_route_leak_suspected
         - faction_morale: { faction: own, delta: -1 }
-        - belief: { fact: "강변 길의 약탈자들은 우리 짐마차가 그 시간에 지나갈 것을 알고 기다린 듯했다", source: seen }
+        - belief: { fact: "강변 길의 약탈자들은 상단 사람이 그 시간에 지나갈 것을 알고 기다린 듯했다", source: seen }
     - id: bargain
       label: 통행패를 보이며 반만 내주자고 흥정한다
       check: persuade
@@ -74,13 +74,13 @@
         success:
           - set_flag: e_route_leak_suspected
           - merit: 1
-          - belief: { fact: "흥정 끝에 짐 절반만 내주었다. 우두머리가 '오늘은 좀 늦었네'라고 중얼거렸다. 출발 시간을 아는 투였다", source: seen }
+          - belief: { fact: "흥정 끝에 상단 짐을 절반만 내주었다. 우두머리가 '오늘은 좀 늦었네'라고 중얼거렸다. 출발 시간을 아는 투였다", source: seen }
         partial:
           - set_flag: e_route_leak_suspected
-          - belief: { fact: "짐을 거의 다 내주고 물통 둘만 지켰다. 약탈자들은 우리가 올 줄 알고 있었다", source: seen }
+          - belief: { fact: "상단의 짐을 거의 다 내주고 물통 둘만 지켰다. 약탈자들은 우리가 올 줄 알고 있었다", source: seen }
         miss:
           - faction_morale: { faction: own, delta: -1 }
-          - belief: { fact: "흥정은 먹히지 않았다. 약탈자들은 짐을 다 가져갔다", source: seen }
+          - belief: { fact: "흥정은 먹히지 않았다. 약탈자들은 상단의 짐을 다 가져갔다", source: seen }
     - id: study
       label: 흥정하는 동안 그들을 뜯어본다
       check: sense_danger
@@ -92,7 +92,7 @@
           - set_flag: e_route_leak_suspected
           - belief: { fact: "약탈자들은 떠돌이 도적치고 너무 가지런했다. 누군가 우리 출발 시간을 알려 준 것 같다", source: seen }
         miss:
-          - belief: { fact: "강변 길에서 떠돌이 도적들에게 짐을 털렸다", source: seen }
+          - belief: { fact: "강변 길에서 떠돌이 도적들에게 상단의 짐을 털렸다", source: seen }
     - id: fight
       label: 쇠지렛대 든 놈부터 친다
       check: fight
@@ -101,13 +101,13 @@
           - set_flag: e_route_leak_suspected
           - merit: 1
           - relation: { who: commander, axis: respect, delta: 1 }
-          - deed: { summary: 강변 길에서 약탈자들에게 맞서 짐을 지켰다, tags: [bravery], severity: 2, privacy: public }
+          - deed: { summary: 강변 길에서 약탈자들에게 맞서 상단 짐을 지켰다, tags: [bravery], severity: 2, privacy: public }
         partial:
           - set_flag: e_route_leak_suspected
-          - belief: { fact: "약탈자들은 짐 몇 개만 들고 달아났다. 달아나면서 '쪽지엔 짐꾼 셋이라더니'라고 욕했다", source: seen }
+          - belief: { fact: "약탈자들은 상단 짐 몇 개만 들고 달아났다. 달아나면서 '쪽지엔 짐꾼 셋이라더니'라고 욕했다", source: seen }
         miss:
           - faction_morale: { faction: own, delta: -1 }
-          - deed: { summary: 강변 길에서 약탈자들과 싸우다 짐을 모두 잃었다, tags: [bravery], severity: 1, privacy: public }
+          - deed: { summary: 강변 길에서 약탈자들과 싸우다 상단 짐을 모두 잃었다, tags: [bravery], severity: 1, privacy: public }
 
 - id: e_hana_confession
   title: 물가의 쪽지

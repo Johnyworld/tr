@@ -11,10 +11,12 @@
   tags: [c_raider]
   when:
     zones: [c_base]
-    segments: [dawn, morning]
+    # 아침 점호 뒤, 들어온 첫머리에만 (플레이 테스트 11: 04시에 "점호가 끝나자", 임무 둘을 끝낸 뒤에 "오늘부터")
+    segments: [morning]
+    day_lte: 2
   cast:
     boss: { commander: true }
-  setup: "점호가 끝나자 {boss:이/가} 신입 앞에 선다. 손바닥만 한 판자에 분필로 숫자가 적혀 있다. \"오늘부터 너도 할당량에 들어간다. 조 전체가 못 채우면 조 전체가 굶는다. 신입이라고 봐주는 거 없다.\""
+  setup: "아침 점호가 끝나자 {boss:이/가} 신입 앞에 선다. 손바닥만 한 판자에 분필로 숫자가 적혀 있다. \"이제부터 너도 할당량에 들어간다. 조 전체가 못 채우면 조 전체가 굶는다. 신입이라고 봐주는 거 없다.\""
   ai_direction: 염철구는 신입을 겁주려는 게 아니라 규칙을 한 번에 박아 두려는 것이다. 다른 조원들은 눈을 피한다. 지난달 이 조에서 한 사람이 탈영하다 잡혔다는 걸 다들 기억한다.
   choices:
     - id: vow
@@ -31,7 +33,7 @@
       label: 신입한테 너무하다고 툴툴댄다
       effects:
         - relation: { who: boss, axis: respect, delta: -1 }
-        - deed: { summary: 첫날 점호에서 할당량에 대고 툴툴댔다, tags: [disobedience], severity: 1, privacy: public }
+        - deed: { summary: 점호에서 할당량에 대고 툴툴댔다, tags: [disobedience], severity: 1, privacy: public }
 
 - id: c_prisoner_water
   title: 간수의 물통

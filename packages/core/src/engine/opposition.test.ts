@@ -57,7 +57,7 @@ describe("상대와 상황", () => {
   it("지켜보는 눈이 많으면 숨기 어렵고, 밤이면 숨기 쉽다", () => {
     const day = setup(SEGMENT_START_HOUR.day + 1);
     day.place(3);
-    expect(lineOf(executeTool("take_action", act({ move: "stealth" }), day.ctx))).toContain("-1(지켜보는 눈 3)");
+    expect(lineOf(executeTool("take_action", act({ move: "stealth" }), day.ctx))).toContain("-1(지켜보는 눈)");
     const night = setup(SEGMENT_START_HOUR.night + 1);
     expect(lineOf(executeTool("take_action", act({ move: "stealth" }), night.ctx))).toContain("+1(어둠)");
   });

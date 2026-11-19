@@ -455,16 +455,16 @@
     segments: [day, evening]
   cast:
     neighbor: { extra: refugee, label: 같은 동네에 살았다는 사람 }
-  setup: "{neighbor:이/가} 옛 동네 이름을 댄다. {target}이다. 시장 골목, 문 닫은 목욕탕, 놀이터의 녹슨 미끄럼틀. 둘 다 한동안 말이 없다."
-  ai_direction: "{neighbor:은/는} 무너지기 전 {target}에 살았고 그 뒤로 떠돌았다. 지금 {target:을/를} 누가 쥐고 있는지는 장면 정보에 있는 만큼만 말하고, 모르면 모른다고 한다. 주인공의 집이 남았는지는 모른다."
+  setup: "{neighbor:이/가} 옛 동네 이름을 댄다. {target}이다. 무너지기 전 그곳의 시장 골목, 문 닫은 목욕탕, 놀이터의 녹슨 미끄럼틀. 둘 다 한동안 말이 없다."
+  ai_direction: "{neighbor:은/는} 무너지기 전 {target}에 살았고 그 뒤로 떠돌았다. 지금 {target:을/를} 누가 쥐고 있는지는 장면 정보에 있는 만큼만 말하고, 모르면 모른다고 한다. 주인공의 집이 남았는지는 모른다. 주인공이 이미 {target}에 와 있어도 어색하지 않게, 옛 동네 안쪽(몇 동, 어느 골목)의 사정으로 이야기한다."
   choices:
     - id: ask
-      label: 요즘 그 동네 길이 어떤지 묻는다
+      label: 옛 동네 안쪽 사정이 요즘 어떤지 묻는다
       check: persuade
       outcomes:
         success:
-          - resolve_step: { text: "{target}의 요즘 길을 들었다" }
-          - belief: { fact: "{target}에 살던 사람에게 옛 동네로 들어가는 길이 아직 다 막히진 않았다고 들었다", source: report }
+          - resolve_step: { text: "{target} 안쪽의 요즘 사정을 들었다" }
+          - belief: { fact: "{target}에 살던 사람에게 옛 동네 안쪽으로 들어가는 골목이 아직 다 막히진 않았다고 들었다", source: report }
         partial:
           - belief: { fact: "{target}에 살던 사람을 만났다. 동네는 많이 변했다고 한다", source: rumor }
         miss: []

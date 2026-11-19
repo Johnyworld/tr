@@ -1,3 +1,4 @@
+import { maskUnknownNames } from "./storyletTools.ts";
 import { josa } from "../text.ts";
 import { describeDisaster } from "./disasters.ts";
 import { agendaCue } from "./agenda.ts";
@@ -130,16 +131,9 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       ...(describeFatigue(content, state) ? [describeFatigue(content, state)!] : []),
       ...(describeCamp(content, state) ? [describeCamp(content, state)!] : []),
-      ...standingLines(state, content),
       ...describeInfiltration(content, state),
       ...describeExploration(content, state),
       ...(describeMarket(content, state) ? [describeMarket(content, state)!] : []),
-      ...(content.scenario.fame && fameOf(state, content).tier > 0
-        ? [`명성: ${fameOf(state, content).label}. 소문을 들은 사람이 처음 보고도 당신을 알아볼 수 있다 (인물 카드의 팬·안티 줄). 플레이어에게 숫자는 말하지 않는다`]
-        : []),
-      ...((state.bounties ?? []).length
-        ? [`현상금: ${josa(state.bounties.map((f) => content.factions[f]?.name ?? f).join(", "), "이/가")} 당신 머리에 값을 걸었다 (소문으로 안다). 그 무리의 땅과 말이 모이는 곳에서는 알아보는 눈이 있다. 값은 시스템이 정한다 (지어내지 않는다)`]
-        : []),
       ...(incapacitatingSymptom(scenario, player)
         ? [
             `${incapacitatingSymptom(scenario, player)!.label}: 주인공은 스스로 아무것도 하지 못한다. 말하지도 움직이지도 판정하지도 않는다. 흐릿한 감각(소리, 냄새, 몸의 고통)의 조각만 짧게 서술하고, take_action의 activity(wait 또는 sleep, 전투 중이면 null)로 시간이 흐르게 한다. 이야기는 열리지 않는다. 곁의 사람(우리 편·적)이 주인공에게 무엇을 하는지는 코드가 정하고 take_action 결과로 알린다: 옮기거나 붙잡거나 해치는 일을 서술로 지어내지 않는다. 장면의 치료사가 돌보면 treatment {item: null}`,
@@ -157,6 +151,14 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(player.skillPoints > 0 ? [`레벨업 대기: 올릴 스킬 ${player.skillPoints}개. 적당한 때 플레이어에게 무엇을 올릴지 묻고 learn_skill로 올린다`] : []),
     ].join("\n")],
     ["sheet", [
+      // 명성·무리 안의 눈·현상금은 자주 바뀌지 않아 시트에 둔다 (플레이 테스트 11: 상태 덩어리에 있어 매 턴 되풀이됐다)
+      ...standingLines(state, content),
+      ...(content.scenario.fame && fameOf(state, content).tier > 0
+        ? [`명성: ${fameOf(state, content).label}. 소문을 들은 사람이 처음 보고도 당신을 알아볼 수 있다 (인물 카드의 팬·안티 줄). 플레이어에게 숫자는 말하지 않는다`]
+        : []),
+      ...((state.bounties ?? []).length
+        ? [`현상금: ${josa(state.bounties.map((f) => content.factions[f]?.name ?? f).join(", "), "이/가")} 당신 머리에 값을 걸었다 (소문으로 안다). 그 무리의 땅과 말이 모이는 곳에서는 알아보는 눈이 있다. 값은 시스템이 정한다 (지어내지 않는다)`]
+        : []),
       `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankName(content, player.factionId, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
       ...(occupationOf(content, player)
         ? [`직분: ${occupationTitle(content, player)} (${occupationOf(content, player)!.summary}). 이 일로 평판을 쌓으면 직분 안에서 오른다 (이야기·일감의 결과로만)`]
@@ -296,7 +298,9 @@ function describeNpcCard(
   const values = Object.entries(npc.values)
     .map(([k, v]) => `${VALUE_LABELS[k] ?? k} ${signed(v)}`)
     .join(", ");
-  const knows = (state.beliefs[npc.id] ?? []).map((b) => `  - ${b.fact}`);
+  // 콘텐츠 문장의 이름 중 주인공이 모르는 것은 호칭으로 (원칙 4, 플레이 테스트 11: 카드의 "모준기의 빚", "마경수의 천막")
+  const m = (text: string) => maskUnknownNames(state, content, text);
+  const knows = (state.beliefs[npc.id] ?? []).map((b) => `  - ${m(b.fact)}`);
   const relation = state.relations[npc.id]?.[player.id] ?? NEUTRAL_RELATION;
   const attitude = RELATION_AXES.map(
     (axis) => `${RELATION_AXIS_LABELS[axis]} ${signed(relation[axis])}(${relationLabel(relation[axis])})`,
@@ -322,7 +326,7 @@ function describeNpcCard(
     if (!npc.secret) return null;
     if (state.revealedSecrets.includes(npc.id)) return `당신에게 털어놓은 비밀: ${npc.secret.content}`;
     if (relation.trust >= npc.secret.min_trust) {
-      return `이 인물은 이제 당신에게 비밀을 털어놓을 수 있는 관계다. 공개 상황: ${npc.secret.reveal_when}. 상황이 맞으면 reveal_secret`;
+      return `이 인물은 이제 당신에게 비밀을 털어놓을 수 있는 관계다. 공개 상황: ${m(npc.secret.reveal_when)}. 상황이 맞으면 reveal_secret`;
     }
     return null;
   })();
@@ -335,13 +339,13 @@ function describeNpcCard(
     `예시 대사: ${npc.voice.samples.map((s) => `"${s}"`).join(" / ")}`,
     `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다]`,
     `당신에 대한 태도: ${attitude}`,
-    `원하는 것: ${npc.want} / 두려워하는 것: ${npc.fear}`,
+    `원하는 것: ${m(npc.want)} / 두려워하는 것: ${m(npc.fear)}`,
     `트레잇: ${traitLabels(content, character, { acting: true }).join(", ") || "-"} / 가치관: ${values || "-"}`,
     ...(describePersona(content, character) ? [`성격: ${describePersona(content, character)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
     ...[troubleLine(state, content, character)].filter((x): x is string => !!x),
     ...attractionNotes(content, character, player),
     ...nameNotes(state, player.id, npc.id),
-    `행동 규칙:\n${npc.rules.map((r) => `  - ${r}`).join("\n") || "  - 없음"}`,
+    `행동 규칙:\n${npc.rules.map((r) => `  - ${m(r)}`).join("\n") || "  - 없음"}`,
     `이 인물이 아는 것 (물으면 말해 줄 수 있다):\n${knows.join("\n") || "  - 특별히 없음"}`,
     ...rumorLines(state, content, npc.id),
     ...(knownDeeds.length > 0
@@ -442,7 +446,9 @@ function describeKnownPeople(state: GameState, content: Content): string {
     for (const id of named) {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
-      if (detailed.has(id)) lines.push(`${head(id)}: ${npc ? `${npc.look} ${npc.reputation}` : (character.extra?.look ?? "")}`);
+      // 행방을 모르는 사람(붙잡혀 있다)의 지금 모습은 모른다 (플레이 테스트 11: "손목에 끈 자국")
+      const unseen = !!character.captive && state.playerZone !== character.captive.zone;
+      if (detailed.has(id)) lines.push(`${head(id)}: ${npc ? (unseen ? npc.reputation : `${npc.look} ${npc.reputation}`) : unseen ? "" : (character.extra?.look ?? "")}`);
       // 관계가 생겼거나 상태가 있는 사람은 한 줄, 아무 일 없는 사람은 이름만 모은다
       else if (depth(id) > 0 || character.captive || (character.dead && knowsDeath(state, content, id)) || character.away || !npc) lines.push(`${head(id)}${npc ? `: ${shortNote(npc.reputation)}` : ""}`);
       else rest.push(`${headingAs(state, content, viewer, id)}(${id})`);
@@ -453,7 +459,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
     );
   }
   if (faces.length > 0) {
-    const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!, state)}: ${content.npcs[id]!.look}`);
+    const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!, state)}${(state.characters[id]!.captive && state.playerZone !== state.characters[id]!.captive!.zone) ? "" : `: ${content.npcs[id]!.look}`}`);
     blocks.push(`얼굴만 아는 인물 (이름은 모른다. 지금 장면에는 없다):\n${lines.join("\n")}`);
   }
   return blocks.join("\n\n");

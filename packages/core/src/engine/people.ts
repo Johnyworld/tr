@@ -1,3 +1,4 @@
+import { maskUnknownNames } from "./storyletTools.ts";
 import { onLoverDeath } from "./romance.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { isInfected, templateKind } from "../game/kinds.ts";
@@ -270,7 +271,7 @@ export function describeTieLines(state: GameState, content: Content, id: string)
     const fate = other.dead ? " · 죽었다" : other.captive ? " · 붙잡혀 있다" : other.away ? " · 떠났다" : "";
     if (tieKnown(state, t)) lines.push(`관계: ${who}의 ${TIE_LABELS[t.kind]}${where}${fate}`);
     else if (t.secret && trust >= t.secret.min_trust) {
-      lines.push(`털어놓을 수 있는 숨은 관계: ${who}의 ${TIE_LABELS[t.kind]}${where}${fate} (공개 상황: ${t.secret.reveal_when}). 상황이 맞으면 reveal_tie`);
+      lines.push(`털어놓을 수 있는 숨은 관계: ${who}의 ${TIE_LABELS[t.kind]}${where}${fate} (공개 상황: ${maskUnknownNames(state, content, t.secret.reveal_when)}). 상황이 맞으면 reveal_tie`);
     }
   }
   // 복수 다짐 (12-135): GM이 연기하는 그 인물의 속마음. 주인공에게 드러내는지는 장면이 정한다
@@ -345,13 +346,13 @@ export function describeProfileLines(state: GameState, content: Content, c: Char
     : state.revealedSecrets.includes(c.id)
       ? `당신에게 털어놓은 비밀: ${p.secret.content}`
       : trust >= p.secret.min_trust
-        ? `이 인물은 이제 당신에게 비밀을 털어놓을 수 있는 관계다. 공개 상황: ${p.secret.reveal_when}. 상황이 맞으면 reveal_secret`
+        ? `이 인물은 이제 당신에게 비밀을 털어놓을 수 있는 관계다. 공개 상황: ${maskUnknownNames(state, content, p.secret.reveal_when)}. 상황이 맞으면 reveal_secret`
         : null;
   return [
     `말투: ${p.voice.style} / 예시 대사: ${p.voice.samples.map((x) => `"${x}"`).join(" / ")}`,
     `평판: ${p.reputation}`,
-    `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다] 원하는 것: ${p.want} / 두려워하는 것: ${p.fear}`,
-    ...(p.rules.length ? [`행동 규칙: ${p.rules.join(" / ")}`] : []),
+    `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다] 원하는 것: ${maskUnknownNames(state, content, p.want)} / 두려워하는 것: ${maskUnknownNames(state, content, p.fear)}`,
+    ...(p.rules.length ? [`행동 규칙: ${p.rules.map((r) => maskUnknownNames(state, content, r)).join(" / ")}`] : []),
     ...(secret ? [secret] : []),
   ];
 }

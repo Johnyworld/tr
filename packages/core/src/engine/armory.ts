@@ -41,10 +41,13 @@ export function issueArmory(ctx: ToolContext, mission: MissionInstance): string 
   const now = store.getState().characters[me.id]!;
   const held = equippedItem(now, "weapon");
   const gun = Object.keys(items).find((id) => content.items[id]?.weapon?.ammo);
-  if (gun && !(held && content.items[held]?.weapon?.ammo)) store.append({ type: "item_equipped", characterId: me.id, slot: "weapon", itemId: gun });
+  const swapped = !!gun && !(held && content.items[held]?.weapon?.ammo);
+  if (swapped) store.append({ type: "item_equipped", characterId: me.id, slot: "weapon", itemId: gun! });
   else autoEquip(ctx, me.id);
   const list = Object.entries(items).map(([id, q]) => `${nameOf(content, id)} ×${q}`).join(", ");
-  return `무기고에서 ${josa(list, "을/를")} 내줬다 (임무가 끝나면 반납한다).${ammoShort ? " 무리 창고에 탄약이 모자라 탄약은 받지 못했다." : ""}`;
+  // 손의 무기를 바꿨으면 알린다 (플레이 테스트 11: 쥐여 준 총 탓에 근접 판정이 말없이 맨손이 됐다)
+  const hand = swapped ? ` ${josa(nameOf(content, gun!), "을/를")} 손에 들었다${held ? ` (${josa(nameOf(content, held), "은/는")} 소지품에 있다. 근접전에 쓰려면 equip)` : ""}.` : "";
+  return `무기고에서 ${josa(list, "을/를")} 내줬다 (임무가 끝나면 반납한다).${hand}${ammoShort ? " 무리 창고에 탄약이 모자라 탄약은 받지 못했다." : ""}`;
 }
 
 /** 임무가 끝날 때: 빌린 것을 거둬들인다. 잃어버린 무기가 있으면 공적이 깎인다 */

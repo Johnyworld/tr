@@ -12,6 +12,8 @@
   requirements:
     - check: scavenge
       min_outcome: partial
+    - bring: food
+      quantity: 1
 
 - id: c_tower_watch
   title: 공단 감시탑 보초
@@ -54,6 +56,8 @@
       min_outcome: partial
     - check: fight
       min_outcome: partial
+    - bring: fuel
+      quantity: 1
 
 - id: c_field_raid
   title: 남쪽 텃밭 습격
@@ -126,6 +130,7 @@
   giver_rank: squad_leader
   deadline_hours: 10
   requirements:
+    - goal: 탈영병을 살려서 데려온다
     - check: survival
       min_outcome: partial
     - check: sense_danger

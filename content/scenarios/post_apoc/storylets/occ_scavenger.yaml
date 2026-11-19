@@ -102,7 +102,7 @@
   cast:
     mate: { faction: own, ranks: [grunt, staff], known: true }
   setup: >-
-    건물 안쪽에서 바닥이 통째로 꺼지는 소리가 울린다. 먼지가 가라앉자 꺼진 구멍 아래로 같은 무리의 {mate:이/가} 보인다. 따로 이 건물을 뒤지던 참이다. 아래층에 다리가 걸렸다. 무너진 콘크리트 판이 정강이를 누르고 있다.
+    가까운 건물 안에서 바닥이 통째로 꺼지는 소리가 울린다. 무너진 입구 너머, 먼지가 가라앉는 구멍 아래로 같은 무리의 {mate:이/가} 보인다. 혼자 그 건물을 뒤지던 참이었다. 아래층에 다리가 걸렸다. 무너진 콘크리트 판이 정강이를 누르고 있다.
     {mate:이/가} 이를 악물고 올려다본다. 복도 저쪽 어둠에서 무언가 끄는 발소리가 이쪽으로 온다.
   ai_direction: >-
     무너지는 소리를 감염체들이 들었다. 오래 머물면 몰려온다. 콘크리트 판은 혼자 들기엔 무겁다. 지렛대가 있으면 낫다.
@@ -144,7 +144,7 @@
           - npc_hurt: { who: mate, steps: 1 }
           - relation: { who: mate, axis: trust, delta: 2 }
           - deed: { summary: 무너진 바닥에 깔린 동료를 맨손으로 빼냈다, tags: [loyalty, bravery], severity: 2, privacy: public }
-          - belief: { fact: "꺼진 바닥에 깔린 {mate:을/를} 맨손으로 빼냈다. 손바닥이 다 까졌다", source: seen }
+          - belief: { fact: "꺼진 바닥에 깔린 {mate:을/를} 맨손으로 빼냈다. 한참 동안 팔이 후들거렸다", source: seen }
         partial:
           - set_flag: occ_sc_pinned_done
           - zone_noise: 2

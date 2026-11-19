@@ -13,7 +13,7 @@
   want: 수습들이 자기 없이도 사람을 고를 줄 알게 되는 것
   # 부탁 (12-193): 떠돌이도 만나는 사람
   favors:
-    - { id: cloth_for_dressing, ask: "깨끗한 천 두 장만. 붕대를 빨아 쓰는 것도 한계가 있어요", item: { id: cloth, quantity: 2 }, days: 5, reward: { item: { id: bandage, quantity: 1 }, affection: 1 } }
+    - { id: cloth_for_dressing, ask: "깨끗한 천 두 장만. 붕대를 빨아 쓰는 것도 한계가 있어", item: { id: cloth, quantity: 2 }, days: 5, reward: { item: { id: bandage, quantity: 1 }, affection: 1 } }
   fear: 응급실이 무너지던 날처럼, 문 앞에 줄 선 사람들을 다 돌려보내야 하는 날
   values: { discipline: 2, loyalty: 2, mercy: 1, honesty: 2, self_interest: -1 }
   traits: [principled, blunt, weary]
@@ -58,7 +58,7 @@
   want: 하얀매가 무너지는 날에도 혼자 살아남을 밑천
   # 부탁 (12-193): 떠돌이도 만나는 사람
   favors:
-    - { id: moonshine_quiet, ask: "밀주 한 병. 소독용이라고 적어 둘 테니 묻지는 말고", item: { id: moonshine, quantity: 1 }, days: 4, reward: { item: { id: painkiller, quantity: 1 }, affection: 1 } }
+    - { id: moonshine_quiet, ask: "선생님, 밀주 한 병만 부탁드려요. 소독용이라고 적어 둘 테니 묻지는 마시고요", item: { id: moonshine, quantity: 1 }, days: 4, reward: { item: { id: painkiller, quantity: 1 }, affection: 1 } }
   fear: 약이 바닥나 하얀매가 쓸모없어지는 것
   values: { discipline: 1, loyalty: -1, mercy: -1, honesty: -2, self_interest: 3 }
   traits: [calculating, genial, greedy]
@@ -97,7 +97,7 @@
   age: 19
   gender: female
   look: 귀밑에서 자른 단발. 소매가 긴 털 스웨터 위에 큰 가운을 걸쳤다. 손목에 늘 붕대를 감고 다닌다.
-  reputation: 진료소의 수습 간호사. 붕괴 때 열네 살이었고 하얀매에서 자랐다. 손이 빠르고 말이 많다. 수간호사에게 가장 많이 혼나는 사람.
+  reputation: 진료소의 수습 간호사. 붕괴 때 열일곱 살이었고 하얀매에서 자랐다. 손이 빠르고 말이 많다. 수간호사에게 가장 많이 혼나는 사람.
   want: 언젠가 수간호사처럼 혼자 수술을 해 보는 것
   # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
   favors:
@@ -177,7 +177,7 @@
   want: 자기가 죽기 전에 누군가에게 약 다루는 법을 다 넘겨주는 것
   # 부탁 (12-174, *임시*): 물건 부탁. 받으면 약속이 되고, 지키면 보답한다
   favors:
-    - { id: mushrooms_for_medicine, ask: "버섯 두 줌만 따다 주구려. 달여서 약을 만들 거라오", item: { id: mushroom, quantity: 2 }, days: 4, reward: { item: { id: painkiller, quantity: 1 }, affection: 1 } }
+    - { id: mushrooms_for_medicine, ask: "애기야, 버섯 두 줌만 따다 줘. 달여서 약 만들 거야", item: { id: mushroom, quantity: 2 }, days: 4, reward: { item: { id: painkiller, quantity: 1 }, affection: 1 } }
   fear: 장부가 틀렸는데 아무도 모르는 것
   values: { discipline: 1, loyalty: 1, mercy: 2, honesty: 3, self_interest: -1 }
   traits: [meticulous, motherly, patient]

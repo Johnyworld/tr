@@ -22,7 +22,6 @@ import {
   formatReferences,
   formatSlotLine,
   createTakeActionSchema,
-  STORY_ENDED,
   heirSeat,
   parseNewAs,
   gmTools,
@@ -160,7 +159,7 @@ export function createMcpServer(
       syncTools(next.content.scenario);
       const started = sessionStart(next);
       // 끝난 판(튜토리얼에서 죽었다)을 다시 열었으면: 이어 할 것이 없다
-      if (next.storyEnded()) return { ...started, content: [...started.content, { type: "text" as const, text: `\n\n(이 판은 끝났다) ${STORY_ENDED} 연대기는 get_chronicle로 볼 수 있다.` }] };
+      if (next.storyEnded()) return { ...started, content: [...started.content, { type: "text" as const, text: `\n\n(이 판은 끝났다) ${next.storyEndedText()} 연대기는 get_chronicle로 볼 수 있다.` }] };
       return started;
     } catch (err) {
       if (err instanceof WorldLockedError) return text(err.message, true);
@@ -647,7 +646,7 @@ export function createMcpServer(
       const newAs = parseNewAs(args.character_id);
       if (newAs && !args.character && !args.name && world.content.scenario.creation) {
         if (!world.isPlayerDead()) return text("캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다.", true);
-        if (world.storyEnded()) return text(STORY_ENDED, true);
+        if (world.storyEnded()) return text(world.storyEndedText(), true);
         if (!world.successionOptions().some((o) => o.id === args.character_id)) return text(`고를 수 없는 캐릭터: ${args.character_id}`, true);
         const seat = heirSeat(world.content, newAs.faction, newAs.rank, { age: null });
         draft = heirDraft(world.content.scenario.id, args.character_id, seat.role, seat.custom, world.content.scenario.creation?.rank_min_age[newAs.rank]);

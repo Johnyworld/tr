@@ -18,7 +18,7 @@ import { dayOf, formatAgo, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } 
 import { conditionPenalty, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import { editDistance, gauge, gaugeLine, header, signed } from "./format.ts";
-import { factionOutlook, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
+import { factionOutlook, WAR_INTEL_TOPIC, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
 import { formatChronicle, storyEnded, successionOptions } from "../engine/succession.ts";
 import { seasonAt, seasonLabel } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
@@ -304,7 +304,7 @@ const factions: CommandDef = {
       lines.push("");
     }
     for (const f of o.others) lines.push(`${f.name}  [${f.stance}] ${f.size}`, `  ${f.public}`);
-    const news = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.topic === WAR_TOPIC).slice(-5).reverse();
+    const news = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.topic === WAR_TOPIC || b.topic === WAR_INTEL_TOPIC).slice(-5).reverse();
     lines.push("", "최근 전황 (들은 것)");
     lines.push(...(news.length ? news.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)} · ${formatTime(b.learnedAt)} · ${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`) : ["  들은 소식이 없습니다."]));
     return lines.join("\n");
@@ -414,7 +414,7 @@ const chronicle: CommandDef = {
       header("연대기"),
       ...formatChronicle(ctx.state, ctx.content),
       ...(options.length ? ["다음 캐릭터 후보", ...options.map((o) => `  ${o.id}  ${o.label} — ${o.detail}`)] : []),
-      ...(storyEnded(ctx.state, ctx.content) ? ["다음 캐릭터로 이어 갈 수 없습니다. 이야기는 여기서 끝났습니다. 새 게임에서 열린 시나리오를 고를 수 있습니다."] : []),
+      ...(storyEnded(ctx.state, ctx.content) ? [`다음 캐릭터로 이어 갈 수 없습니다 (${ctx.content.roles[ctx.state.scenarioRole]?.scenario?.heirs === false ? "이 시나리오는 다음 캐릭터로 이어 가지 않습니다" : "이어 갈 만한 사람을 만나지 못했습니다"}). 이야기는 여기서 끝났습니다. 새 게임에서 열린 시나리오를 고를 수 있습니다.`] : []),
     ]
       .join("\n")
       .trimEnd();
@@ -547,7 +547,7 @@ const help: CommandDef = {
   run: (ctx) =>
     [
       header("명령어"),
-      ...COMMANDS.map((c) => `${ctx.prefix ?? "!"}${c.name}${c.args ? ` ${c.args}` : ""}`.padEnd(14) + c.description),
+      ...COMMANDS.map((c) => `${ctx.prefix ?? "!"}${c.name}${c.args ? ` ${c.args}` : ""}`.padEnd(14) + " " + c.description),
       "",
       "행동은 명령어가 아니라 자연어로 입력하세요. 명령어는 시간을 쓰지 않습니다.",
     ].join("\n"),

@@ -123,6 +123,11 @@ export function gearModifiers(content: Content, c: Character, move: string, dist
 export type AttackPlan = { weapon: string | null; ammo: string | null; noise: number; wound: string | null };
 
 /** 공격 판정이 이 무기로 가능한지. 안 되면 오류 문장 */
+/** 이 판정에 쓸 수 있는 지닌 무기 (오류 안내의 예시용) */
+function meleeOf(content: Content, c: Character, move: string): string | null {
+  return Object.keys(c.inventory).find((id) => (c.inventory[id] ?? 0) > 0 && !!content.items[id]?.weapon?.moves.includes(move)) ?? null;
+}
+
 export function planAttack(content: Content, c: Character, move: string, harm: "none" | "light" | "heavy"): AttackPlan | string {
   const g = content.scenario.gear;
   if (!g) return { weapon: null, ammo: null, noise: 0, wound: null };
@@ -138,7 +143,7 @@ export function planAttack(content: Content, c: Character, move: string, harm: "
   }
   if (g.unarmed.moves.includes(move)) {
     if (rank(harm) > rank(g.unarmed.max_harm)) {
-      return `맨손${weaponId ? `(손에 든 ${josa(nameOf(content, weaponId), "은/는")} 이 판정에 쓰지 않는다)` : ""}으로는 ${harm} 피해를 노릴 수 없다. 무기를 들려면 equip.`;
+      return `맨손${weaponId ? `(손에 든 ${josa(nameOf(content, weaponId), "은/는")} 이 판정에 쓰지 않는다)` : ""}으로는 ${harm} 피해를 노릴 수 없다. 무기를 들려면 equip (예: equip {item_id: \"${meleeOf(content, c, move) ?? "무기 id"}\"}).`;
     }
     return { weapon: null, ammo: null, noise: 0, wound: g.unarmed.wound?.[move] ?? null };
   }
@@ -215,7 +220,7 @@ export function armorBlocksInfection(ctx: ToolContext): { blocked: boolean; line
     const p = itemOf(ctx.content, id)?.armor?.blocks_infection ?? 0;
     if (!id || p <= 0 || ctx.rng() >= p) continue;
     const broke = wearItem(ctx, me.id, id, 1);
-    return { blocked: true, lines: [`${josa(nameOf(ctx.content, id), "이/가")} 물림을 막아 냈다. 살갗까지 닿지 않았다.`, ...(broke ? [broke] : [])] };
+    return { blocked: true, lines: [`상처는 났지만 ${nameOf(ctx.content, id)} 덕에 감염원의 침과 피가 깊이 들지는 않았다 (감염을 피했다).`, ...(broke ? [broke] : [])] };
   }
   return { blocked: false, lines: [] };
 }
@@ -226,7 +231,7 @@ const equipTool = defineTool({
     "주인공이 무기를 손에 들거나 방어구를 입는다(벗는다). 가진 것만. 공격 판정은 손에 든 무기로 한다 (없으면 맨손). 방어구는 받는 피해를 줄이지만 무겁고 불리한 판정이 있을 수 있다. 시간은 거의 들지 않는다.",
   schema: z.strictObject({
     item_id: z.string().nullable().describe("들거나 입을 아이템 id. 벗으려면 null"),
-    slot: z.enum(["weapon", "body", "head", "arms", "outer"]).nullable().describe("벗을 때만 자리. 들거나 입을 때는 null (아이템이 정한다)"),
+    slot: z.enum(["weapon", "body", "head", "arms", "outer"]).nullable().default(null).describe("벗을 때만 자리. 들거나 입을 때는 null (아이템이 정한다)"),
   }),
   run(input, ctx): ToolOutcome {
     const { store, content } = ctx;

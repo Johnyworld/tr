@@ -25,7 +25,7 @@
 
 - id: occ_mechanic_radio
   title: 무전기 살리기
-  briefing: 초소 무전기가 지직거리기만 한다. 납땜이 떨어진 데를 찾아 붙이고, 해 지기 전에 거점과 한 번 말이 오가게 한다.
+  briefing: 초소 무전기가 지직거리기만 한다. 납땜이 떨어진 데를 찾아 붙이고, 늦지 않게 거점과 한 번 말이 오가게 한다.
   giver_rank: squad_leader
   deadline_hours: 12
   requirements:
@@ -37,7 +37,7 @@
 - id: occ_mechanic_parts_run
   title: 강변 공장 부품 뜯기
   where: riverside
-  briefing: 강변 공장 지대의 멈춘 기계에서 베어링, 전선, 쓸 만한 볼트를 뜯어 온다. 쇠 끊는 소리가 멀리 간다. 해 지기 전에 돌아온다.
+  briefing: 강변 공장 지대의 멈춘 기계에서 베어링, 전선, 쓸 만한 볼트를 뜯어 온다. 쇠 끊는 소리가 멀리 간다. 늦지 않게 돌아온다.
   giver_rank: squad_leader
   deadline_hours: 12
   requirements:

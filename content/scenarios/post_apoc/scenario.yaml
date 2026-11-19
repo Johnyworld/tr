@@ -63,6 +63,8 @@ opposition:
     deceive: sense_danger     # 속이면 상대가 눈치챈다
     persuade: persuade        # 흥정하면 상대도 셈한다
     intimidate: endure        # 겁주면 상대가 버틴다
+  # 대상(target)만 있을 때는 상대로 치지 않는 스킬: 함께하는 설득은 맞서는 일이 아니다. 맞서는 흥정이면 check.opponent로 둔다
+  cooperative: [persuade]
   # 장면에 지켜보는 눈(동행 빼고)이 3·6을 넘을 때마다 -1
   crowd: { moves: [stealth, deceive], at: [3, 6] }
   # 밤이나 새벽이면 숨기 +1, 안개·비처럼 잘 안 보이는 날씨(visibility 0.7 아래)도 +1
@@ -211,7 +213,7 @@ command:
       rewards: { merit: 1 }
       report:
         success: "{member}: 보초 이상 없음. 한 번도 졸지 않았다"
-        partial: "{member}: 보초는 섰는데, 새벽에 잠깐 깜빡했다고 털어놓는다"
+        partial: "{member}: 보초는 섰는데, 도중에 잠깐 깜빡했다고 털어놓는다"
         miss: "{member}: 보초 중에 창고 쪽문이 열려 있었다. 뭐가 없어졌는지는 아직 모른다"
     - id: search
       label: 물자 수색
@@ -703,7 +705,7 @@ symptoms:
   # 의식불명: 스스로 아무것도 하지 못한다 (판정·이동·대화·이야기 없이 시간만 흐르고, 남이 돌볼 수만 있다)
   - { id: unconscious, label: 의식불명, group: consciousness, tone: 3, incapacitates: true }
   - { id: nausea, label: 메스꺼움, penalty: -1, tone: 3 }
-  - { id: distressed, label: 괴로움, group: mind }
+  - { id: distressed, label: 심란함, group: mind }
   - { id: depressed, label: 우울함, group: mind, penalty: -1 }
   - { id: frantic, label: 미칠 것 같음, group: mind, penalty: -2 }
   - { id: breakdown, label: 멘탈붕괴, group: mind, penalty: -3 }
@@ -1491,6 +1493,10 @@ consumables:
   antibiotics: { harm: 1 }
   canned_food: { hunger: 2 }
   dry_ration: { hunger: 1 }
+  # 빠져 있어 먹을 수 없었다 (플레이 테스트 11: 포상으로 받은 전투식량)
+  mil_ration: { hunger: 2 }
+  egg: { hunger: 1 }
+  goat_milk: { hunger: 1, thirst: 1 }
   water_bottle: { thirst: 2 }
   # 골초의 안절부절을 바로 푼다 (12-129)
   cigarettes: { craving: 1 }

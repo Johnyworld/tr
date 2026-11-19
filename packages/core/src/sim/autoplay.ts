@@ -364,7 +364,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       const zone = task.needs_zone && s.playerZone ? pick(rng, [s.playerZone, ...neighbors(content, s.playerZone)]) : null;
       const out = tool("squad_order", { members: [member], task: task.id, zone });
       if (out.ok) stats.squadOrders++;
-      else if (!out.error.includes("장면에 없다")) stats.errors.push(`분대: ${out.error}`);
+      else if (!out.error.includes("장면에 없다") && !out.error.includes("신뢰가 바닥")) stats.errors.push(`분대: ${out.error}`);
       continue;
     }
     if (command?.policies.length && sitsOnCouncil(s, content) && rng() < 0.1) {

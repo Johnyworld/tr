@@ -3,7 +3,7 @@
 - id: es_rest_stop_run
   title: 고속도로 휴게소 짐 부리기 호위
   where: rest_stop
-  briefing: 물통과 통조림을 실은 짐마차를 고속도로 휴게소까지 호위해 주유소 지붕 밑에 짐을 부린다. 칠판지기에게 바깥 소식을 받아 적어 온다. 해 지기 전에 돌아온다.
+  briefing: 물통과 통조림을 실은 짐마차를 고속도로 휴게소까지 호위해 주유소 지붕 밑에 짐을 부린다. 칠판지기에게 바깥 소식을 받아 적어 온다. 늦지 않게 돌아온다.
   giver_rank: squad_leader
   repays_debt: 2
   deadline_hours: 12

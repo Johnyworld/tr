@@ -42,7 +42,7 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
   const index = Math.max(0, track.levels.findIndex((l) => l.id === character.conditions[trackId]));
   // 버팀 (12-109): 나빠지는 단계마다 레벨만큼 피한다. 치트는 그대로
   // 피로는 깨어 있은 시간에서 바로 정해지므로 버티지 않는다 (12-114)
-  if (steps > 0 && by !== "cheat" && by !== "fatigue" && by !== "habit") {
+  if (steps > 0 && by !== "cheat" && by !== "fatigue" && by !== "habit" && by !== "put_down") {
     const kept = resistSteps(ctx.content.scenario, character.level ?? 1, steps, ctx.rng);
     if (kept === 0) {
       const would = track.levels[Math.min(track.levels.length - 1, index + steps)]!;
@@ -150,7 +150,20 @@ export function itemUseProblem(ctx: ToolContext, item: string, targetId?: string
     cure ||
     Object.entries(effects).some(([t, n]) => (n > 0 && (shownIndex(ctx, state, target, t) > 0 || trackSymptomGroups(content, t).some((g) => shown.has(g)))) || (n < 0 && wearOff[t] !== undefined)) ||
     (slow && shownIndex(ctx, state, target, infection!.track) > 0);
-  if (!needed) return `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.`;
+  if (!needed) {
+    // 무엇에 듣는지, 지금 앓는 것에는 무엇이 듣는지 (플레이 테스트 11: 질병에 항생제를 거절당하고 고칠 길을 몰랐다)
+    const label = (t: string) => content.scenario.condition_tracks.find((x) => x.id === t)?.label ?? t;
+    const forWhat = Object.entries(effects).filter(([, n]) => n > 0).map(([t]) => label(t));
+    const ailing = content.scenario.condition_tracks.filter((t) => shownIndex(ctx, state, target, t.id) > 0);
+    const helps = ailing
+      .map((t) => {
+        const items = Object.entries(content.scenario.consumables).filter(([, e]) => (e[t.id] ?? 0) > 0).map(([id]) => content.items[id]?.name ?? id);
+        return items.length ? `${t.label}에는 ${items.join("·")}` : "";
+      })
+      .filter(Boolean);
+    const why = [forWhat.length ? `${josa(name, "은/는")} ${forWhat.join("·")}에 듣는다` : "", helps.length ? `지금 앓는 것: ${helps.join(", ")}` : ""].filter(Boolean);
+    return `지금은 ${josa(name, "을/를")} 쓸 필요가 없다${why.length ? ` (${why.join(". ")})` : ""}.`;
+  }
   return null;
 }
 
@@ -375,7 +388,7 @@ export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
     if (fatigueBlocksRecovery(ctx.content, player)) break;
     const days = Math.max(1, recovery.natural_days + bodyTraits(ctx.content, player).recoveryDays);
     if (state.time - since < days * MINUTES_PER_DAY) break;
-    const c = changeCondition(ctx, player.id, track.id, -1, "rest", "쉬면서 나음");
+    const c = changeCondition(ctx, player.id, track.id, -1, "rest", "시간이 지나 아물었다");
     if (c?.display) displays.push(c.display);
   }
   return displays;
@@ -434,7 +447,18 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     if (hungerTrait !== 0 && level !== war.ration.levels[0]) delta = Math.max(0, delta + hungerTrait);
     const floor = captive && content.scenario.captivity?.hunger_floor ? track.levels.findIndex((l) => l.id === content.scenario.captivity!.hunger_floor) : -1;
     if (floor >= 0 && delta > 0) delta = Math.max(0, Math.min(delta, floor - levelIndex(ctx, state, state.playerId, track.id)));
-    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : !own ? "먹을 것을 구하지 못했다" : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
+    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : !own ? "하루가 지나 배가 고프다" : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
+    // 배가 고프면 지닌 먹을 것을 하나 먹는다 (플레이 테스트 11: 날생선을 지니고 자도 아침에 굶었다). 갇혀 있으면 빼앗긴 셈이다
+    if (!captive && levelIndex(ctx, ctx.store.getState(), state.playerId, track.id) > 0) {
+      const inv = player()!.inventory;
+      const food = Object.entries(content.scenario.consumables)
+        .filter(([id, e]) => (inv[id] ?? 0) > 0 && (e[track.id] ?? 0) > 0 && content.items[id]?.kind === "food" && !content.items[id]?.contaminated)
+        .sort(([, a], [, b]) => (a[track.id] ?? 0) - (b[track.id] ?? 0))[0];
+      if (food) {
+        const ate = useItem(ctx, food[0]);
+        if (ate.ok) displays.push(...ate.displays);
+      }
+    }
     if (levelIndex(ctx, ctx.store.getState(), state.playerId, track.id) === track.levels.length - 1 && body.hunger.starving_harm > 0) {
       if (push(changeCondition(ctx, state.playerId, harm, body.hunger.starving_harm, "daily", "굶주림"))) return displays;
     }
@@ -667,7 +691,7 @@ function dailyHabits(ctx: ToolContext): Change[] {
     } else {
       // 끊기 (12-157): 가장 괴로운 단계를 quit_days 동안 견디면 버릇이 떨어진다
       const quit = quitHabit(ctx, me.id, h);
-      c = quit ?? changeCondition(ctx, me.id, h.track, 1, "habit", `${h.items.map((i) => ctx.content.items[i]?.name ?? i).join("·")}이 떨어졌다 (${h.trait.label})`);
+      c = quit ?? changeCondition(ctx, me.id, h.track, 1, "habit", `${josa(h.items.map((i) => ctx.content.items[i]?.name ?? i).join("·"), "이/가")} 떨어졌다 (${h.trait.label})`);
     }
     if (c) changes.push(c);
   }
@@ -872,7 +896,7 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
     if (index <= 0 || index > maxIndex) continue;
     const since = state.recovery.lastChangeAt[c.id] ?? 0;
     if (state.time - since < recovery.natural_days * MINUTES_PER_DAY) continue;
-    show(changeCondition(ctx, c.id, harm.id, -1, "rest", "쉬면서 나음"), c.id);
+    show(changeCondition(ctx, c.id, harm.id, -1, "rest", "시간이 지나 아물었다"), c.id);
   }
   const care = recovery.faction_care;
   if (!care) return displays;

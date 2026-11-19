@@ -52,7 +52,7 @@ describe("분배 방침", () => {
     expect(feelsLike(content, s, "sleep")!.value).toBeGreaterThanOrEqual(heated);
     s.factions.faction_a!.policy = { fuel: "save" };
     const saved = feelsLike(content, s, "sleep")!;
-    expect(saved.parts).toContain("불 땐 거처");
+    expect(saved.parts.some((p) => p.startsWith("불 땐 거처"))).toBe(true);
     expect(saved.value).toBe(heated - 6);
   });
 });

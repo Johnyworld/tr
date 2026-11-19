@@ -48,7 +48,7 @@ export function findRuin(ctx: ToolContext): string | null {
   ctx.store.append({
     type: "belief_added",
     characterId: state.playerId,
-    belief: { id: `b_${ctx.store.getState().nextBeliefNo}`, fact: `${ctx.content.locations[ruin.zone]?.name ?? ruin.zone}에 ${ruin.label}: ${ruin.hint}`, source: "seen", accuracy: "exact", learnedAt: state.time },
+    belief: { id: `b_${ctx.store.getState().nextBeliefNo}`, fact: `${ctx.content.locations[ruin.zone]?.name ?? ruin.zone}에 숨은 곳이 있다: ${ruin.label}. ${ruin.hint}`, source: "seen", accuracy: "exact", learnedAt: state.time },
   });
   return `뒤지다가 숨은 곳을 찾았다: ${ruin.label} (${ruin.hint}). 들어가려면 explore start.`;
 }
@@ -168,7 +168,7 @@ const explore = defineTool({
         lines.push(`${josa(label(ex.depth + 1), "으로/로")} 내려갔다.`);
         if (check.outcome === "partial") lines.push(...raiseNoise(ctx, 1));
       } else {
-        lines.push(`${josa(label(ex.depth + 1), "으로/로")} 가는 길에서 발을 헛디뎠다. 아직 ${label(ex.depth)}.`);
+        lines.push(`${josa(label(ex.depth + 1), "으로/로")} 가는 길에서 일이 틀어졌다 (${ruin.hazard}). 아직 ${label(ex.depth)}.`);
         const hurt = applyEffect(ctx, { wound: { steps: 1, cause: ruin.hazard } } as StoryletEffect, {}, {}, ruin.hazard);
         if (hurt.line) lines.push(hurt.line);
         if (hurt.display) extra.push(hurt.display);

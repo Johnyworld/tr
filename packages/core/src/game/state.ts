@@ -761,6 +761,8 @@ export function createGameSchemas(s: Scenario) {
       merit: z.number().int(),
     }),
     /** disobedience: 무리의 규율이 이것을 불복종으로 치는지 (기획서 9.9). 이전 세이브는 true */
+    /** 판정·활동이 아닌 결과 조건(goal, bring)을 채웠다 (플레이 테스트 11) */
+    z.strictObject({ type: z.literal("mission_requirement_met"), missionId: z.string(), index: z.number().int().min(0) }),
     z.strictObject({ type: z.literal("mission_abandoned"), missionId: z.string(), merit: z.number().int(), reason: z.string(), disobedience: z.boolean().default(true) }),
     z.strictObject({ type: z.literal("mission_expired"), missionId: z.string(), merit: z.number().int(), disobedience: z.boolean().default(true) }),
     z.strictObject({ type: z.literal("promoted"), characterId: z.string(), from: rank, to: rank }),
@@ -1831,6 +1833,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.nextMissionNo += 1;
       // 받은 임무는 그날 후보에서 빠진다 (같은 임무를 하루에 여러 번 받지 않게)
       if (next.offers) next.offers.templateIds = next.offers.templateIds.filter((id) => id !== m.templateId);
+      break;
+    }
+    case "mission_requirement_met": {
+      const mission = mustGet(next.missions, event.missionId, "임무");
+      if (mission.status !== "active") throw new Error(`이미 끝난 임무: ${mission.id}`);
+      mission.progress[event.index] = 1;
       break;
     }
     case "mission_reported":

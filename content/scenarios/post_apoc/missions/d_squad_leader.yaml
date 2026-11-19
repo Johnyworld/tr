@@ -15,7 +15,7 @@
 - id: d_sl_pharmacy_alley
   title: 약국 골목 수색
   where: old_town
-  briefing: 구시가의 옛 약국 골목을 수비대와 함께 훑는다. 붕대, 소독약, 유효기간이 남은 알약이면 무엇이든. 해 지기 전에 돌아오고, 다친 사람 없이 돌아온다.
+  briefing: 구시가의 옛 약국 골목을 수비대와 함께 훑는다. 붕대, 소독약, 유효기간이 남은 알약이면 무엇이든. 늦지 않게 돌아오고, 다친 사람 없이 돌아온다.
   giver_rank: leader
   supplies: { medicine: 5 }
   deadline_hours: 10
@@ -24,6 +24,8 @@
       min_outcome: partial
     - check: sense_danger
       min_outcome: partial
+    - bring: medicine
+      quantity: 1
 
 - id: d_sl_hospital_shaft
   title: 시립병원 엘리베이터 통로

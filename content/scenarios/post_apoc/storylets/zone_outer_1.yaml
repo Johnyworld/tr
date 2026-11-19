@@ -603,11 +603,11 @@
     flags_none: [zo1_pp_flag_done]
   cast:
     boss: { faction: own, ranks: [squad_leader, officer], enter: false }
-  setup: 발전소 굴뚝 꼭대기에 초록 천 한 자락이 묶여 있다. 청솔형제단 놈들 짓이다. 위원회는 굴뚝에 붉은 깃발이 서 있어야 강변 무리들이 누가 주인인지 안다고 했다. 깃발을 바꿔 다는 조에게는 할당량을 하루 면해 준다는 말이 돈다.
+  setup: 발전소 굴뚝 꼭대기에 초록 천 한 자락이 묶여 있다. 조원들은 청솔형제단 놈들 짓이라고 한다. 위원회는 굴뚝에 붉은 깃발이 서 있어야 강변 무리들이 누가 주인인지 안다고 했다. 깃발을 바꿔 다는 조에게는 할당량을 하루 면해 준다는 말이 돈다.
   ai_direction: 붉은연합에서 굴뚝 깃발은 위원회의 체면이다. 실제로 땅이 바뀌지는 않는다. 간부({boss})는 깃발을 바꾸면 위원회에 보고해 공을 올려 준다. 굴뚝 사다리는 정말 위험하다. 깃발을 바꾸면 청솔형제단은 기억한다.
   choices:
     - id: climb
-      label: 사다리를 올라 초록 천을 끊고 붉은 깃발을 단다
+      label: 사다리를 올라 초록 천을 끊고 붉은 완장을 풀어 대신 묶는다
       check: endure
       outcomes:
         success:
@@ -615,12 +615,12 @@
           - merit: 2
           - relation: { who: boss, axis: respect, delta: 1 }
           - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
-          - deed: { summary: 발전소 굴뚝에 붉은연합 깃발을 다시 달았다, tags: [bravery, loyalty], severity: 1, privacy: public }
+          - deed: { summary: 발전소 굴뚝에 붉은연합의 붉은 천을 다시 묶었다, tags: [bravery, loyalty], severity: 1, privacy: public }
         partial:
           - set_flag: zo1_pp_flag_done
           - merit: 1
           - body: { track: nerves, delta: 1 }
-          - belief: { fact: "초록 천은 끊었지만 붉은 깃발을 반쯤만 묶었다. 바람에 비뚤게 걸렸다", source: seen }
+          - belief: { fact: "초록 천은 끊었지만 붉은 완장을 반쯤만 묶었다. 바람에 비뚤게 걸렸다", source: seen }
         miss:
           - body: { track: nerves, delta: 2 }
           - belief: { fact: "굴뚝 사다리를 반도 못 올라 내려왔다. 위원회에 보고할 것이 없다", source: seen }

@@ -19,7 +19,7 @@ import type { Content, StoryletChoice, StoryletContent } from "../content/schema
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
-import { activeMissionOf, commanderOf } from "../game/missions.ts";
+import { activeMissionOf, atMissionPlace, commanderOf } from "../game/missions.ts";
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
 import { dayOf, MINUTES_PER_DAY, segmentOf, type GameTime } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
@@ -365,6 +365,10 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (at < 0 || levels[at]!.hidden || at < levels.findIndex((l) => l.id === levelId)) return false;
   }
   if (w.mission_active !== undefined && !!activeMissionOf(state.missions, state.playerId) !== w.mission_active) return false;
+  if (w.mission) {
+    const m = activeMissionOf(state.missions, state.playerId);
+    if (!m || !w.mission.includes(m.templateId) || !atMissionPlace(m, state.playerZone, state.zones, state.factions)) return false;
+  }
   if (w.war_news_within_hours !== undefined) {
     const since = at - w.war_news_within_hours * 60;
     if (!(state.beliefs[state.playerId] ?? []).some((b) => b.topic === "war" && b.learnedAt >= since)) return false;
@@ -615,9 +619,12 @@ export function fillStorylet(text: string, vars: Record<string, string>): string
       continue;
     }
     const pair = m[2] as JosaPair | undefined;
-    const placed = dedupeAlias(out, value, text.slice(last));
+    // 같은 글에 호칭 전체가 이미 나왔으면 두 번째부터는 끝 낱말만 (플레이 테스트 11: "계급장 자국만 남은 벌조장"이 한 문단에 세 번)
+    const folded = dedupeAlias(out, value, text.slice(last));
+    const repeated = folded.value === value && folded.before === out && value.includes(" ") && out.includes(value) ? value.split(" ").at(-1)! : value;
+    const placed = repeated === value ? folded : { before: out, value: repeated };
     out = placed.before;
-    out += placed.value ? (pair ? josa(placed.value, pair) : placed.value) : pair ? josa(value, pair).slice(value.length) : "";
+    out += placed.value ? (pair ? josa(placed.value, pair) : placed.value) : pair ? josa(repeated, pair).slice(repeated.length) : "";
   }
   return out + text.slice(last);
 }
@@ -630,8 +637,13 @@ export function fillStorylet(text: string, vars: Record<string, string>): string
  */
 export function dedupeAlias(before: string, value: string, after = ""): { before: string; value: string } {
   const words = value.split(" ").filter(Boolean);
+  const head = words.at(-1) ?? "";
+  // 바로 앞의 직함이 호칭의 끝 낱말과 같은 말로 끝나면 직함을 뺀다 (플레이 테스트 11: "경비조장 경비실 모자를 쓴 반백의 조장", "지도장수 지도통을 멘 소식장수")
+  if (before.endsWith(" ") && head.length >= 2) {
+    const title = before.slice(0, -1).split(/\s/).at(-1) ?? "";
+    if (title.length > 2 && title !== head && title.slice(-2) === head.slice(-2)) return { before: before.slice(0, before.length - title.length - 1), value };
+  }
   if (words.length < 2) return { before, value };
-  const head = words.at(-1)!;
   // 같은 마디 안에서 호칭의 꾸밈말이 앞이나 뒤에 또 나오면 끝 낱말만 ("빨간 털모자 쓴 {x:이/가} …", "{x:이/가} 빨간 털모자를 벗으며")
   const modifiers = words.slice(0, -1).filter((w) => w.length >= 2);
   const nextClause = after.split(/[.,!?"“”']/)[0] ?? "";

@@ -5,7 +5,7 @@
   where: old_town
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
-  briefing: 분대를 이끌고 구시가 상가를 한 줄씩 훑는다. 겨울에 땔 것과 먹을 것을 찾아 온다. 차영만이 들어간 북쪽 골목은 둘 이상이 아니면 들어가지 않는다. 해가 지기 전에 정문으로 돌아온다.
+  briefing: 분대를 이끌고 구시가 상가를 한 줄씩 훑는다. 겨울에 땔 것과 먹을 것을 찾아 온다. 차영만이 들어간 북쪽 골목은 둘 이상이 아니면 들어가지 않는다. 늦지 않게 정문으로 돌아온다.
   giver_rank: officer
   supplies: { food: 12 }
   deadline_hours: 12
@@ -86,6 +86,8 @@
       min_outcome: partial
     - check: sense_danger
       min_outcome: partial
+    - bring: medicine
+      quantity: 1
 
 - id: b_sl_drill
   title: 정찰대 훈련

@@ -291,7 +291,8 @@
     resolve: { kinds: [protect] }
     seasons: [winter]
   cast:
-    ward: { resolve_target: true, here: true }
+    # 정말 앓고 있을 때만 (플레이 테스트 11: 질병이 '이상 없음'인데 사흘째 기침)
+    ward: { resolve_target: true, here: true, condition: { track: disease, at_least: chill } }
   setup: "{ward}의 기침이 사흘째 멎지 않는다. 담요는 얇고, 밤은 길다."
   ai_direction: "{ward:은/는} 괜찮다고 한다. 지켜 줄 수 있는 것은 담요와 불과 약 정도다."
   choices:

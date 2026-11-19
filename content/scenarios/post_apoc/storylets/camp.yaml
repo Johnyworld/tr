@@ -23,28 +23,30 @@
     inf: { extra: infected_crawler, label: 냄새를 맡는 감염체 }
   setup: "어둠 저편에서 젖은 숨소리가 난다. 땅바닥 가까이, 무언가 코를 박고 이쪽으로 기어 온다. 멈췄다가, 고개를 들고 공기를 들이켜고, 다시 온다. 아직 몇십 걸음 밖이다."
   variants:
-    - "무너진 벽 틈으로 그림자 하나가 들어온다. 걷지 않고 기어서. 낮에 먹고 버린 깡통 쪽에서 오래 멈춰 냄새를 맡는다."
-  ai_direction: 감염체 하나가 냄새를 따라 야영지로 오고 있다. 아직 이쪽을 정확히 모른다. 미리 알아챘으니 숨거나, 조용히 처리하거나, 자리를 뜰 틈이 있다. 맞붙으면 감염체 배역을 target으로 판정한다 (감염 위험은 시스템이 붙인다). 소리를 크게 내면 다른 것도 온다.
+    - "무너진 벽 틈으로 그림자 하나가 들어온다. 걷지 않고 기어서. 누가 버리고 간 깡통 쪽에서 오래 멈춰 냄새를 맡는다."
+  ai_direction: 감염체 하나가 냄새를 따라 주인공이 머무는 자리로 오고 있다 (자는 중이든, 보초를 서는 중이든). 아직 이쪽을 정확히 모른다. 미리 알아챘으니 숨거나, 조용히 처리하거나, 자리를 뜰 틈이 있다. 맞붙으면 감염체 배역을 target으로 판정한다 (감염 위험은 시스템이 붙인다). 소리를 크게 내면 다른 것도 온다.
   choices:
     - id: still
-      label: 불씨를 덮고 숨죽여 지나가기를 기다린다
+      label: 몸을 낮추고 숨죽여 지나가기를 기다린다
       check: stealth
       outcomes:
         success:
-          - belief: { fact: "{zone}에서 야영하던 밤, 감염체 하나가 냄새를 맡으며 지나갔다. 숨죽여 보냈다", source: seen }
+          - belief: { fact: "{zone}에서 감염체 하나가 냄새를 맡으며 지나갔다. 숨죽여 보냈다", source: seen }
         partial:
           - body: { track: nerves, delta: 1 }
-          - belief: { fact: "{zone}에서 야영하던 밤, 감염체가 코앞까지 왔다가 돌아갔다", source: seen }
+          - belief: { fact: "{zone}에서 감염체가 코앞까지 왔다가 돌아갔다", source: seen }
         miss:
           - body: { track: nerves, delta: 1 }
-          - belief: { fact: "{zone}에서 야영하던 밤, 숨어 있던 자리를 감염체가 알아챘다", source: seen }
+          - belief: { fact: "{zone}에서 숨어 있던 자리를 감염체가 알아챘다", source: seen }
     - id: quiet_kill
       label: 다가오기를 기다렸다가 조용히 처리한다
       check: fight
       outcomes:
         success:
-          - belief: { fact: "{zone}의 야영지에 기어 온 감염체를 소리 없이 처리했다", source: seen }
+          - put_down: { who: inf }
+          - belief: { fact: "{zone}에서 기어 온 감염체를 소리 없이 처리했다", source: seen }
         partial:
+          - put_down: { who: inf }
           - zone_noise: 1
           - body: { track: nerves, delta: 1 }
         miss:
@@ -55,7 +57,7 @@
       check: survival
       outcomes:
         success:
-          - belief: { fact: "{zone}에서 감염체가 다가와 밤중에 야영 자리를 옮겼다", source: seen }
+          - belief: { fact: "{zone}에서 감염체가 다가와 어둠 속에서 자리를 옮겼다", source: seen }
         partial:
           - body: { track: cold, delta: 1 }
         miss:
@@ -317,6 +319,7 @@
       check: fight
       outcomes:
         success:
+          - put_down: { who: inf }
           - belief: { fact: "{zone}에서 혼자 자다 곁에 온 감염체를 먼저 쳤다", source: seen }
         partial:
           - body: { track: nerves, delta: 1 }
@@ -344,11 +347,13 @@
   cooldown_days: 5
   when:
     camp_watched: false
+    # 털어 갈 먹을 것이 있을 때만 (플레이 테스트 11: 먹을 것이 없는데 "깡통 하나를 쥐고 나온다")
+    has_items_any: [canned_food, dry_ration, mil_ration]
   cast:
     thief: { extra: refugee, label: 짐을 뒤지는 사람 }
-  setup: "부스럭거리는 소리에 깬다. 머리맡의 짐이 열려 있고, 누군가 그 안에 팔을 깊이 넣고 있다. 얼굴은 보이지 않는다. 손이 깡통 하나를 쥐고 나온다."
+  setup: "부스럭거리는 소리에 깬다. 머리맡의 짐이 열려 있고, 누군가 그 안에 팔을 깊이 넣고 있다. 얼굴은 보이지 않는다. 손이 먹을 것을 쥐고 나온다."
   variants:
-    - "새벽, 등 뒤에서 지퍼 내리는 소리가 아주 천천히 난다. 돌아보니 마른 사람 하나가 짐 앞에 엎드려 있다가 그대로 굳는다. 손에 물병이 들려 있다."
+    - "새벽, 등 뒤에서 지퍼 내리는 소리가 아주 천천히 난다. 돌아보니 마른 사람 하나가 짐 앞에 엎드려 있다가 그대로 굳는다. 손에 당신의 먹을 것이 들려 있다."
   ai_direction: 굶주린 피난민이다. 무기는 없고, 들키면 먼저 달아나려 한다. 붙잡으면 울며 빈다 (거짓이 아니다). 놓치면 손에 쥔 것을 잃는다. 해치는 것은 그 사람을 다치게 하는 판정이고, 행적으로 남는다.
   choices:
     - id: grab
@@ -359,7 +364,7 @@
           - belief: { fact: "{zone}에서 혼자 자다 짐을 뒤지던 피난민의 손목을 잡았다", source: seen }
         partial:
           - lose_item: { item: canned_food }
-          - belief: { fact: "{zone}에서 짐을 뒤지던 사람이 깡통 하나를 들고 달아났다", source: seen }
+          - belief: { fact: "{zone}에서 짐을 뒤지던 사람이 먹을 것을 들고 달아났다", source: seen }
         miss:
           - lose_item: { item: canned_food }
           - lose_item: { item: water_bottle }
@@ -393,6 +398,8 @@
   when:
     camp_watched: false
     camp_danger_lte: 1
+    # 갉을 식량이 있을 때만 (플레이 테스트 11: 먹을 것이 없는데 "꾸러미가 갉혀 있다")
+    has_items: [dry_ration]
   setup: "사각, 사각. 갉는 소리에 깨어 보니 짐 귀퉁이가 뚫려 있고, 쥐 몇 마리가 어둠 속으로 흩어진다. 먹을 것을 싼 꾸러미가 갉혀 있다."
   ai_direction: 쥐가 식량을 갉았다. 위험하지 않지만 잃는 것은 진짜다. 매달아 두거나 덮어 두지 않은 탓이다. 짧게 연출한다.
   choices:

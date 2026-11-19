@@ -55,11 +55,12 @@
   cooldown_days: 20
   when:
     own_territory: true
-    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    # 여울섬은 정문이 없다 (플레이 테스트 11)
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
     ranks: [grunt, staff, squad_leader]
     day_gte: 4
     segments: [morning, day, evening]
-  setup: 정문 앞에 피난민 대여섯이 주저앉아 있다. 지도부는 아직 결정을 내리지 않았다. 문틈으로 아이 하나가 이쪽을 본다. 초소의 누군가 "창고도 바닥인데"라고 중얼거린다.
+  setup: 정문 앞에 피난민 대여섯이 주저앉아 있다. 지도부는 아직 결정을 내리지 않았다. 문틈으로 아이 하나가 이쪽을 본다. 초소의 누군가 {scarce}도 모자란데 어쩌자는 거냐고 중얼거린다.
   ai_direction: 받아들이면 무리의 입과 손이 함께 는다 (계산은 시스템). 주인공은 결정할 자리가 아니지만, 지도부에 말을 넣거나 몰래 도울 수 있다. 몰래 돕다 걸리면 곤란해질 수 있다는 분위기를 비춘다.
   choices:
     - id: speak

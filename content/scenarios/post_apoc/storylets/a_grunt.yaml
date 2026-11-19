@@ -197,7 +197,7 @@
       label: 들것을 잡고 돕는다
       effects:
         - relation: { who: medic, axis: trust, delta: 1 }
-        - deed: { summary: 전투 뒤 의무실에서 부상자를 날랐다, tags: [loyalty], severity: 1, privacy: public }
+        - deed: { summary: 의무실에서 부상자를 날랐다, tags: [loyalty], severity: 1, privacy: public }
     - id: pass
       label: 지나친다
       effects: []

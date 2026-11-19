@@ -86,7 +86,7 @@
 - id: e_scrap_salvage
   title: 강변 공장 고철 줍기
   where: riverside
-  briefing: 강변 공장 지대에서 팔 만한 고철과 부품을 찾아 온다. 소리를 내면 감염체가 모인다. 해 지기 전에 돌아온다.
+  briefing: 강변 공장 지대에서 팔 만한 고철과 부품을 찾아 온다. 소리를 내면 감염체가 모인다. 늦지 않게 돌아온다.
   giver_rank: squad_leader
   repays_debt: 2
   deadline_hours: 10

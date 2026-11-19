@@ -46,13 +46,15 @@
   where: old_town
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
-  briefing: 구시가 빈 상가에서 땔감이 될 문짝과 가구, 쓸 만한 물자를 찾아 온다. 해가 지기 전에 돌아온다.
+  briefing: 구시가 빈 상가에서 땔감이 될 문짝과 가구, 쓸 만한 물자를 찾아 온다. 늦지 않게 돌아온다.
   giver_rank: squad_leader
   supplies: { fuel: 8 }
   deadline_hours: 10
   requirements:
     - check: scavenge
       min_outcome: partial
+    - bring: fuel
+      quantity: 1
 - id: b_alliance_errand
   title: 청솔형제단 거점 연락
   where: a_base

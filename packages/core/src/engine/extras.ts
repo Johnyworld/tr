@@ -9,7 +9,7 @@ import type { GameState } from "../game/state.ts";
 import type { Rng } from "../rng.ts";
 import { initialConditions } from "../scenario/scenario.ts";
 import { josa } from "../text.ts";
-import { aliasOf, knowsName } from "../game/acquaintance.ts";
+import { aliasOf, knowsName, playerCalls } from "../game/acquaintance.ts";
 import { firstImpression } from "./charm.ts";
 import { isCreature, KIND_LABELS, templateKind } from "../game/kinds.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
@@ -155,9 +155,11 @@ const learnName = defineTool({
     store.append({ type: "name_learned", characterId: learner, targetId: target });
     if (input.who === "target") {
       addBeliefTo(ctx, c.id, `${aliasOf(state, content, player.id)}의 이름은 ${player.name}`, "report");
+      // 이름을 이미 아는 사람이면 이름으로 부른다 (플레이 테스트 11: 이름을 안 뒤에도 "주근깨 난 앳된 대원이")
+      const called = playerCalls(store.getState(), content, c.id);
       return {
         ok: true,
-        resultText: `${josa(alias, "이/가")} 당신의 이름(${player.name})을 알게 됐다. 이제 이 인물은 당신을 이름으로 부를 수 있다.`,
+        resultText: `${josa(called, "이/가")} 당신의 이름(${player.name})을 알게 됐다. 이제 이 인물은 당신을 이름으로 부를 수 있다.`,
         display: { type: "presence", npcName: knowsName(state, state.playerId, c.id) ? c.name : alias, action: "enter" },
         silent: true,
       };

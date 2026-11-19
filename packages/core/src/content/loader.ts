@@ -339,6 +339,10 @@ function checkReferences(content: Content): string[] {
   for (const item of Object.keys(content.scenario.consumables)) {
     if (!content.items[item]) problems.push(`scenario.consumables: 알 수 없는 아이템 ${item}`);
   }
+  // 먹을 것은 먹을 수 있어야 한다 (플레이 테스트 11: 전투식량·달걀·염소젖이 효과가 없어 먹지 못했다)
+  for (const item of Object.values(content.items)) {
+    if (item.kind === "food" && !content.scenario.consumables[item.id]) problems.push(`items: 먹을 것 ${item.id}의 효과가 scenario.consumables에 없다`);
+  }
   for (const item of [...(content.scenario.body?.infection?.slow ?? []), ...(content.scenario.body?.infection?.cure ?? [])]) {
     if (!content.items[item]) problems.push(`body.infection: 알 수 없는 아이템 ${item}`);
   }
@@ -556,6 +560,7 @@ export function checkStorylets(content: Content): string[] {
         const whos =
           "npc_relation" in e ? [e.npc_relation.from, e.npc_relation.to]
           : "npc_hurt" in e ? [e.npc_hurt.who]
+          : "put_down" in e ? [e.put_down.who]
           : "npc_rank" in e ? [e.npc_rank.who]
           : "end_romance" in e ? [e.end_romance.who]
           : "npc_heal" in e ? [e.npc_heal.who]
@@ -579,6 +584,15 @@ export function checkStorylets(content: Content): string[] {
       }
     }
   }
+  // 결과 조건(goal)이 있는 임무는 그것을 채우는 이야기가 있어야 한다 (플레이 테스트 11)
+  for (const m of Object.values(content.missions)) {
+    if (!m.requirements.some((r) => "goal" in r)) continue;
+    const filled = Object.values(content.storylets).some(
+      (st) => st.when.mission?.includes(m.id) && st.choices.some((c) => [...(c.effects ?? []), ...Object.values(c.outcomes ?? {}).flat()].some((e) => "mission_goal" in e)),
+    );
+    if (!filled) problems.push(`임무 ${m.id}: 결과 조건(goal)을 채우는 이야기(when.mission + mission_goal)가 없다`);
+  }
+  for (const st of Object.values(content.storylets)) for (const id of st.when.mission ?? []) if (!content.missions[id]) problems.push(`이야기 ${st.id}: 알 수 없는 임무 ${id}`);
   return problems;
 }
 

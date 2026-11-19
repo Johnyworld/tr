@@ -203,7 +203,7 @@ export function switchCharacter(
   const { store, content } = ctx;
   const state = store.getState();
   const options = successionOptions(state, content);
-  if (storyEnded(state, content)) return { ok: false, error: STORY_ENDED };
+  if (storyEnded(state, content)) return { ok: false, error: storyEndedText(state, content) };
   if (options.length === 0) return { ok: false, error: "캐릭터가 살아 있다. 다음 캐릭터는 사망한 뒤에만 고른다." };
   if (!options.some((o) => o.id === choice)) {
     return { ok: false, error: `고를 수 없는 캐릭터: ${choice} (가능: ${options.map((o) => o.id).join(", ")})` };
@@ -330,6 +330,12 @@ export function switchCharacter(
 export const STORY_ENDED =
   "이 판은 주인공의 죽음으로 끝났다 (이 시나리오는 다음 캐릭터로 이어 갈 수 없거나, 이어 갈 만한 사람을 만나지 못했다). 플레이어에게 그렇게 알리고, 새 게임에서 열린 시나리오를 고를 수 있다고 안내한 뒤 end_session으로 닫는다.";
 
+/** 이어 갈 수 없는 까닭을 나눠 말한다 (플레이 테스트 11: 튜토리얼인데 "만나지 못했다"고 했다) */
+export function storyEndedText(state: GameState, content: Content): string {
+  const why = content.roles[state.scenarioRole]?.scenario?.heirs === false ? "이 시나리오는 다음 캐릭터로 이어 가지 않는다" : "이어 갈 만한 사람을 만나지 못했다";
+  return `이 판은 주인공의 죽음으로 끝났다 (${why}). 플레이어에게 그렇게 알리고, 새 게임에서 열린 시나리오를 고를 수 있다고 안내한 뒤 end_session으로 닫는다.`;
+}
+
 export const writeEpitaph = defineTool({
   name: "write_epitaph",
   description:
@@ -347,7 +353,7 @@ export const writeEpitaph = defineTool({
     return {
       ok: true,
       resultText: storyEnded(ctx.store.getState(), ctx.content)
-        ? `묘비명을 남겼다. 연대기를 플레이어에게 보여 준다 (get_chronicle). ${STORY_ENDED}`
+        ? `묘비명을 남겼다. 연대기를 플레이어에게 보여 준다 (get_chronicle). ${storyEndedText(ctx.store.getState(), ctx.content)}`
         : "묘비명을 남겼다. 연대기와 다음 캐릭터 후보를 플레이어에게 보여 준다 (get_chronicle).",
       display: { type: "epitaph", name: record.name, text: input.text.trim() },
     };

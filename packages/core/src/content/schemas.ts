@@ -368,6 +368,10 @@ export function createContentSchemas(s: Scenario) {
   const missionRequirement = z.union([
     z.strictObject({ activity: z.enum(ACTIVITIES), minutes: z.number().int().positive() }),
     z.strictObject({ check: idEnum(moveIds(s)), min_outcome: z.enum(["success", "partial"]) }),
+    /** 결과 조건 (플레이 테스트 11): 이야기 효과 mission_goal로 채운다. 데려오기(탈영병, 부상자)처럼 판정만으로는 알 수 없는 결과. label은 보여 줄 말 */
+    z.strictObject({ goal: z.string().min(1).max(60) }),
+    /** 찾아오기 (플레이 테스트 11): 보고할 때 이 무리 자원에 속하는 물건을 이만큼 지니고 있으면 채우고, 그 물건을 상관에게 건넨다 */
+    z.strictObject({ bring: idEnum(s.resources.map((r) => r.id)), quantity: z.number().int().min(1).max(10) }),
   ]);
 
   /** 임무 템플릿 (기획서 15.1: 배정 → 수행 → 보고) */
@@ -576,6 +580,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ infested: z.number().int().min(-2).max(2).refine((n) => n !== 0, "0이 아닌 정수") }),
     /** 배역 NPC가 다친다 (부상 트랙 steps 단계). 죽음 바로 앞에서 멈춘다 (원칙 3: 이야기는 사람을 죽이지 않는다) */
     z.strictObject({ npc_hurt: z.strictObject({ who: z.string().min(1), steps: z.number().int().min(1).max(2) }) }),
+    /** 감염체를 쓰러뜨린다 (플레이 테스트 11). 사람에게는 아무 일도 없다 (원칙 3) */
+    z.strictObject({ put_down: z.strictObject({ who: z.string().min(1) }) }),
     /** 배역 NPC의 계급을 바꾼다 (지도부 교체·강등) */
     z.strictObject({ npc_rank: z.strictObject({ who: z.string().min(1), rank: idEnum(rankIds(s)) }) }),
     z.strictObject({ belief: z.strictObject({ fact: z.string().min(1).max(300), source: beliefSourceSchema.default("seen") }) }),
@@ -659,6 +665,8 @@ export function createContentSchemas(s: Scenario) {
      */
     z.strictObject({ body: z.strictObject({ track: contentIdSchema, delta: z.number().int().min(-2).max(2), chance: z.number().min(0).max(1).default(1) }) }),
     /** 세력 자원을 늘리거나 줄인다 (할당량, 약 재고, 물). own = 플레이어 소속. 양은 콘텐츠가 정한다 */
+    /** 수행 중인 임무의 결과 조건(goal)을 채운다 (플레이 테스트 11) */
+    z.strictObject({ mission_goal: z.literal(true) }),
     z.strictObject({ faction_resource: z.strictObject({ faction: z.string().min(1), resource: contentIdSchema, delta: z.number().int().min(-50).max(50) }) }),
     /** 무리의 사람 수가 바뀐다 (12-133: 피난민을 받아들이거나 사람이 떠난다). 입이 늘면 소모가, 손이 늘면 산출이 는다 (전쟁 틱이 population을 읽는다) */
     z.strictObject({ faction_population: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-10).max(10) }) }),
@@ -932,6 +940,8 @@ export function createContentSchemas(s: Scenario) {
         /** 몸 상태 트랙이 이 단계 이상 (트랙 id → 단계 id. 숨은 단계는 보지 않는다) */
         conditions_at_least: z.record(z.string(), z.string()).optional(),
         mission_active: z.boolean().optional(),
+        /** 수행 중인 임무가 이 템플릿 중 하나이고 그 임무의 장소에 있다 (플레이 테스트 11: 탈영병·부상자를 실제로 마주치는 이야기) */
+        mission: z.array(contentIdSchema).min(1).optional(),
         /** 최근 N시간 안에 전황 소식을 들었는지 */
         war_news_within_hours: z.number().positive().optional(),
       })

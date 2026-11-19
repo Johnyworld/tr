@@ -28,7 +28,7 @@
   where: outside
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
-  briefing: 거점 근처 폐건물에서 쓸 만한 물자를 찾아 온다. 해가 지기 전에 돌아온다.
+  briefing: 거점 근처 폐건물에서 쓸 만한 물자를 찾아 온다. 늦지 않게 돌아온다.
   giver_rank: squad_leader
   supplies: { food: 8 }
   deadline_hours: 10
@@ -86,6 +86,8 @@
       min_outcome: partial
     - check: scavenge
       min_outcome: partial
+    - bring: medicine
+      quantity: 1
 - id: front_recon
   title: 전선 정찰
   where: enemy

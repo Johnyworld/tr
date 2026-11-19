@@ -61,7 +61,7 @@
     flags_none: [pp_scale_done]
   cast:
     farmer: { ids: [pb_yeongja] }
-  setup: 남쪽 텃밭 끝에서 청솔형제단에 넘길 몫을 다는 중이다. {farmer:은/는} 앉은뱅이저울에 자루를 올리며 너스레를 떤다. 그런데 청솔형제단 몫을 달 때마다 저울 밑에 발끝이 슬쩍 들어간다.
+  setup: 남쪽 텃밭 끝에서 버들마을 사람들이 청솔형제단에 넘길 몫을 단다. {farmer:은/는} 앉은뱅이저울에 자루를 올리며 너스레를 떤다. 그런데 청솔형제단 몫을 달 때마다 저울 밑에 발끝이 슬쩍 들어간다.
   ai_direction: "{farmer:은/는} 청솔형제단에 넘기는 몫을 조금씩 덜어 장터에 팔아 마을 빚을 갚는다. 버들마을 살림 간부 맹석규가 알면서 눈감는다. 들키면 처음엔 너스레로 넘기고, 마을 빚 사정을 들어 주는 사람에게만 털어놓는다. 청솔형제단 쪽에 알려지면 연합 안의 말이 험해진다."
   choices:
     - id: call_out
@@ -81,7 +81,7 @@
           - relation: { who: farmer, axis: affection, delta: -1 }
           - belief: { fact: "{farmer:이/가} 크게 웃으며 저울이 낡아서 그렇다고 했다. 주변 일꾼들이 눈치를 본다", source: seen }
     - id: tell_squad
-      label: 텃밭 경비를 서는 1분대장에게 알린다
+      label: 청솔형제단 사람에게 알린다
       effects:
         - set_flag: pp_scale_done
         - relation: { who: farmer, axis: trust, delta: -2 }

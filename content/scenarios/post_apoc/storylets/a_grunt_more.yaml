@@ -20,7 +20,7 @@
       effects:
         - relation: { who: friend, axis: trust, delta: 2 }
         - relation: { who: friend, axis: affection, delta: 1 }
-        - belief: { fact: 오지호의 누나 오미나가 버들마을 거점에서 경비병으로 있다, source: report }
+        - belief: { fact: "{friend}의 누나가 버들마을 거점에서 경비병으로 있다", source: report }
     - id: read
       label: 몰래 뜯어 읽어 본다
       effects:
@@ -255,9 +255,11 @@
       check: fight
       outcomes:
         success:
+          - put_down: { who: biter }
           - merit: 1
           - deed: { summary: 담장을 넘어온 감염체를 소리 없이 처리했다, tags: [bravery], severity: 1, privacy: semi_private }
         partial:
+          - put_down: { who: biter }
           - belief: { fact: 감염체는 처리했지만 담장 틈이 더 벌어졌다, source: seen }
         miss:
           - faction_morale: { faction: own, delta: -1 }

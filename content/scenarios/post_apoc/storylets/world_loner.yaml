@@ -46,6 +46,8 @@
   when:
     factions: [none]
     zone_owner: [none, other]
+    # 약탈조가 길을 막는 바깥 구역만 (플레이 테스트 11: 버들마을 경비병들 앞에서 "버들마을 거점의 길목"을 막았다)
+    zones: [old_town, riverside, hospital_ruins, south_fields]
     segments: [day, evening]
     day_gte: 3
   cast:
@@ -58,6 +60,11 @@
       effects:
         - take_item: { item: canned_food }
         - belief: { fact: 길목에서 붉은연합 약탈조에게 통조림을 내주고 지나갔다, source: seen }
+    - id: pay_ration
+      label: 가진 비상식량을 내놓는다
+      effects:
+        - take_item: { item: dry_ration }
+        - belief: { fact: 길목에서 붉은연합 약탈조에게 비상식량을 내주고 지나갔다, source: seen }
     - id: join_red
       label: 조에 들어가겠다고 한다
       effects:
@@ -73,7 +80,7 @@
           - belief: { fact: 무너진 건물 사이로 빠져 약탈조를 따돌렸다, source: seen }
         partial:
           - take_item: { item: dry_ration }
-          - belief: { fact: 도망치다 배낭 끈이 끊겨 비상식량을 떨어뜨렸다. 몸은 빠져나왔다, source: seen }
+          - belief: { fact: 도망치다 배낭 끈이 끊겨 무언가 떨어졌다. 몸은 빠져나왔다, source: seen }
         miss:
           - relation: { who: boss, axis: affection, delta: -2 }
           - belief: { fact: "막다른 골목에 몰렸다. {boss:이/가} 다음엔 이 정도로 안 끝난다고 했다", source: seen }

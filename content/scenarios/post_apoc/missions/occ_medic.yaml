@@ -33,6 +33,8 @@
       min_outcome: partial
     - check: scavenge
       min_outcome: partial
+    - bring: medicine
+      quantity: 1
 
 - id: occ_medic_field
   title: 작전 따라가기

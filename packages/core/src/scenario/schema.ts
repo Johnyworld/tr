@@ -1501,6 +1501,8 @@ export const scenarioFileSchema = z
     opposition: z
       .strictObject({
         moves: z.record(id, id).default({}),
+        /** 함께하는 말이 될 수 있는 스킬 (플레이 테스트 11): 대상(target)만 있으면 상대로 치지 않는다. 맞서는 흥정이면 GM이 check.opponent로 둔다 */
+        cooperative: z.array(id).default([]),
         crowd: z.strictObject({ moves: z.array(id), at: z.array(z.number().int().positive()) }).optional(),
         dark: z.strictObject({ moves: z.array(id), segments: z.array(z.enum(TIME_SEGMENTS)), value: z.number().int() }).optional(),
         visibility: z.strictObject({ moves: z.array(id), below: z.number(), value: z.number().int() }).optional(),

@@ -49,7 +49,7 @@
         - relation: { who: envoy, axis: respect, delta: 1 }
 
 - id: ws_pine_scout
-  title: 최선희의 공책
+  title: 낯선 손님의 공책
   tags: [world]
   when:
     factions: [faction_b, faction_d, faction_e]
@@ -67,7 +67,7 @@
         - relation: { who: commander, axis: trust, delta: -2 }
         - deed: { summary: 다른 무리의 부름을 받아 청솔형제단으로 옮겼다, tags: [betrayal], severity: 2, privacy: semi_private }
         - join_faction: { faction: faction_a, rank: squad_leader, title: 청솔형제단 분대장 }
-        - belief: { fact: 청솔형제단으로 옮겨 분대 하나를 맡았다. 최선희가 직접 거점 정문까지 데려갔다, source: seen }
+        - belief: { fact: "청솔형제단으로 옮겨 분대 하나를 맡았다. {leader:이/가} 직접 거점 정문까지 데려갔다", source: seen }
     - id: report
       label: 고맙지만 지금 무리에 남겠다고 하고, 상관에게 알린다
       effects:
@@ -79,7 +79,7 @@
       label: 겨울을 넘기고 다시 이야기하자고 한다
       effects:
         - relation: { who: leader, axis: trust, delta: 1 }
-        - belief: { fact: "최선희가 말했다: 마음이 바뀌면 청솔형제단 정문에서 내 이름을 대라고", source: report }
+        - belief: { fact: "{leader:이/가} 말했다: 마음이 바뀌면 청솔형제단 정문에서 자기 이름을 대라고", source: report }
 
 - id: ws_trader_scout
   title: 금니의 셈
@@ -125,8 +125,8 @@
     segments: [morning, day, evening]
   cast:
     courier: { ids: [e_yuri] }
-  setup: "{courier:이/가} 빨간 털모자를 벗으며 접힌 종이를 내민다. 하얀매의 매 그림이 찍혀 있다. \"하얀매 대표가 전해 달래요. 답은 저한테 주면 돼요.\" 편지에는 짧게 적혀 있다: 진료소에 사람이 필요합니다. 우리는 어느 편에도 서지 않습니다. 총 대신 사람을 살리는 일을 해 보지 않겠습니까."
-  ai_direction: 서은영은 무리들 사이를 오가며 이름이 난 사람을 찾고 있다. 하얀매로 가면 전쟁에서 빠지지만, 진료소 규칙과 약값의 무게를 함께 진다. 하얀매에서는 주민이 된다. 하유리는 답만 전한다.
+  setup: "{courier:이/가} 사람 눈을 피해 다가와 빨간 털모자를 벗으며 접힌 종이를 내민다. 하얀매의 매 그림이 찍혀 있다. \"하얀매 대표가 전해 달래요. 답은 저한테 주면 돼요.\" 편지에는 짧게 적혀 있다: 진료소에 사람이 필요합니다. 우리는 어느 편에도 서지 않습니다. 총 대신 사람을 살리는 일을 해 보지 않겠습니까."
+  ai_direction: 서은영은 무리들 사이를 오가며 이름이 난 사람을 찾고 있다. 하얀매로 가면 전쟁에서 빠지지만, 진료소 규칙과 약값의 무게를 함께 진다. 하얀매에서는 주민이 된다. 하유리는 답만 전한다. 편지는 남의 눈을 피해 건네진다 (군율이 엄한 무리에서는 들키면 곤란하다는 것을 하유리도 안다).
   choices:
     - id: go_clinic
       label: 진료소로 가겠다고 답한다
@@ -155,7 +155,7 @@
     segments: [evening, night]
   cast:
     leader: { ids: [b_hyunwoo] }
-  setup: "{leader:이/가} 다림질한 셔츠 차림으로 찾아와 따로 이야기를 청한다. 목소리가 낮다. \"버들마을은 작아요. 지킬 사람이 모자라요. 경비조를 하나 더 만들 생각인데, 그걸 맡아 줄 사람이 필요해요. 청솔 쪽에는 내가 잘 말해 두겠소.\""
+  setup: "{leader:이/가} 다림질한 셔츠 차림으로 찾아와 따로 이야기를 청한다. 목소리가 낮다. \"버들마을은 작습니다. 지킬 사람이 모자랍니다. 경비조를 하나 더 만들 생각인데, 그걸 맡아 줄 사람이 필요합니다. 지금 계신 무리 쪽에는 제가 잘 말해 두지요.\""
   ai_direction: 장현우는 붉은연합과 청솔형제단 사이에서 버티는 중이다. 믿을 만한 바깥 사람을 곁에 두고 싶어 한다. 진심이지만, 그가 붉은연합 사자와 만난다는 소문은 이 자리에서 꺼내지 않는다. 넘어가면 버들마을 경비조 하나를 맡는다.
   choices:
     - id: go_willow

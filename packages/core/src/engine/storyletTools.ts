@@ -1,3 +1,5 @@
+import { isInfected } from "../game/kinds.ts";
+import { activeMissionOf } from "../game/missions.ts";
 import { springEnemyAmbush } from "./ambush.ts";
 import { formSquad, refugeeToSquad } from "./promotion.ts";
 import { soak } from "./climate.ts";
@@ -31,6 +33,7 @@ import { DEED_TAG_LABELS, RELATION_AXIS_LABELS } from "../game/reputation.ts";
 import { CHECK_OUTCOME_LABELS, type CheckOutcome } from "../rules/check.ts";
 import { moveLabel } from "../scenario/scenario.ts";
 import type { InterruptCheck } from "../sim/fastForward.ts";
+import { WAR_INTEL_TOPIC } from "./warTools.ts";
 import {
   choiceAvailable,
   eligibleStorylets,
@@ -71,7 +74,7 @@ export function endActiveStorylet(ctx: ToolContext, reason: string): ToolDisplay
     store.append({ type: "npc_left", npcId: id });
     displays.push({ type: "presence", npcName: playerCalls(store.getState(), content, id), action: "leave" });
   }
-  if (s) displays.push({ type: "storylet", event: "expired", title: s.title, detail: reason });
+  if (s) displays.push({ type: "storylet", event: "expired", title: storyTitle(store.getState(), content, s), detail: reason });
   return displays;
 }
 
@@ -97,7 +100,7 @@ export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean; 
   const storylet = pickStorylet(fixed.length ? fixed : eligible, rng);
   if (!storylet) return displays;
   displays.push(...fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!));
-  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: setupText(store.getState(), content) });
+  displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });
   return displays;
 }
 
@@ -183,7 +186,7 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
   if (!a) return "";
   const vars = storyletVars(state, content, a.cast);
   const lines = [
-    `진행 중인 이야기: ${a.storylet.title}`,
+    `진행 중인 이야기: ${storyTitle(state, content, a.storylet)}`,
     // 배역이 아닌 인물의 이름도 주인공이 모르면 호칭으로 (12-192)
     `  상황: ${maskUnknownNames(state, content, fillStorylet(storySetup(state, a.storylet), vars))}`,
     ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${maskUnknownNames(state, content, fillStorylet(a.storylet.ai_direction, vars))}`] : []),
@@ -249,7 +252,7 @@ export const resolveStorylet = defineTool({
     ctx.store.append({ type: "storylet_resolved", storyletId: a.storylet.id, choiceId: choice.id, outcome });
     const improvised = !!input.improvised_move && input.improvised_move !== choice.check;
     const lines: string[] = [
-      `이야기 "${a.storylet.title}": ${improvised ? `플레이어의 방법으로 즉흥으로 풀었다 (${moveLabel(ctx.content.scenario, input.improvised_move!)} 판정, "${maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}"의 결과를 따른다)` : maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`,
+      `이야기 "${storyTitle(state, ctx.content, a.storylet)}": ${improvised ? `플레이어의 방법으로 즉흥으로 풀었다 (${moveLabel(ctx.content.scenario, input.improvised_move!)} 판정, "${maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}"의 결과를 따른다)` : maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`,
     ];
     const extra: ToolDisplayEvent[] = [];
     for (const effect of effects) {
@@ -285,7 +288,7 @@ export const resolveStorylet = defineTool({
     return {
       ok: true,
       resultText: lines.join("\n"),
-      display: { type: "storylet", event: "resolved", title: a.storylet.title, detail: maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars)) },
+      display: { type: "storylet", event: "resolved", title: storyTitle(state, ctx.content, a.storylet), detail: maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars)) },
       extra,
     };
   },
@@ -295,6 +298,11 @@ export const resolveStorylet = defineTool({
  * 콘텐츠 문장에 적힌 이름 중 주인공이 아직 모르는 것은 호칭으로 바꾼다 (원칙 4, 플레이 테스트 8: "주옥희는…", "피정호 신부는…").
  * 배역은 {자리}로 쓰면 저절로 호칭이 되지만, 배역이 아닌 인물을 이름으로 적은 문장이 많다
  */
+/** 이야기 제목도 이름을 흘리지 않는다 (플레이 테스트 11: 이름 모르는 사람의 "최선희의 공책") */
+export function storyTitle(state: GameState, content: Content, storylet: { title: string }): string {
+  return maskUnknownNames(state, content, storylet.title);
+}
+
 export function maskUnknownNames(state: GameState, content: Content, text: string): string {
   let out = text;
   for (const npc of Object.values(content.npcs)) {
@@ -383,7 +391,7 @@ export function applyEffect(
     store.append({
       type: "belief_added",
       characterId: playerId,
-      belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.overhear.source, accuracy: "approximate", learnedAt: state.time, topic: "war" },
+      belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.overhear.source, accuracy: "approximate", learnedAt: state.time, topic: WAR_INTEL_TOPIC },
     });
     return { line: `엿들은 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.overhear.source] } };
   }
@@ -429,6 +437,18 @@ export function applyEffect(
     if (steps <= 0) return {};
     const change = changeCondition(ctx, id, track.id, steps, "이야기", reason);
     return change?.line && store.getState().scene.present.includes(id) ? { line: change.line, display: change.display ?? undefined } : {};
+  }
+  if ("put_down" in effect) {
+    // 감염체만 이야기로 쓰러뜨린다. 사람은 원칙 3대로 죽지 않는다 (플레이 테스트 11: "소리 없이 처리한다"가 성공했는데 감염체가 경상으로 남았다)
+    const id = whoOf(ctx, effect.put_down.who, cast);
+    const npc = id ? state.characters[id] : undefined;
+    if (!id || !npc || npc.dead || id === playerId || !isInfected(content, npc)) return {};
+    const track = harmTrack(content.scenario);
+    const index = Math.max(0, track.levels.findIndex((l) => l.id === npc.conditions[track.id]));
+    const fatal = track.levels.findIndex((l) => l.fatal);
+    if (fatal <= index) return {};
+    const change = changeCondition(ctx, id, track.id, fatal - index, "put_down", reason);
+    return change?.line ? { line: change.line, display: change.display ?? undefined } : {};
   }
   if ("npc_rank" in effect) {
     const id = whoOf(ctx, effect.npc_rank.who, cast);
@@ -694,6 +714,14 @@ export function applyEffect(
     const change = changeCondition(ctx, playerId, track, steps, "이야기", reason);
     return change && change.line ? { line: change.line, display: change.display ?? undefined } : {};
   }
+  if ("mission_goal" in effect) {
+    const m = activeMissionOf(state.missions, playerId);
+    const index = m ? m.requirements.findIndex((r, i) => "goal" in r && (m.progress[i] ?? 0) < 1) : -1;
+    if (!m || index < 0) return {};
+    store.append({ type: "mission_requirement_met", missionId: m.id, index });
+    const r = m.requirements[index]!;
+    return { line: `임무의 결과 조건을 채웠다: ${"goal" in r ? r.goal : ""}` };
+  }
   if ("faction_resource" in effect) {
     const { resource, delta } = effect.faction_resource;
     const id = factionRef(state, effect.faction_resource.faction);
@@ -928,7 +956,7 @@ export function runRoadEvent(ctx: ToolContext, risk = 1): ToolDisplayEvent[] {
   const storylet = pickStorylet(roadStorylets(state, content, travel.tag), rng);
   if (!storylet) return [];
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
-  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: setupText(store.getState(), content) });
+  displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });
   return displays;
 }
 

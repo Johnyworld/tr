@@ -517,8 +517,8 @@
   cast:
     envoy: { ids: [c_gyeongsu] }
     guard: { ids: [d_dojin], enter: false }
-  setup: 장교 외투를 입은 {envoy:이/가} 장갑 낀 손을 정문 쇠창살에 얹고 기다린다. 대표는 자리에 없다. "수비대원이라. 괜찮아. 말만 전해 주면 돼. 겨울 동안 약은 우리만 산다. 값은 두 배로 쳐 주지. 싫다면, 뭐, 겨울은 길고."
-  ai_direction: 붉은연합은 동쪽 공세를 앞두고 하얀매의 약을 독점하려 한다. 마경수는 협박할수록 상냥해진다. 수비대원의 대답은 대표에게 전해지고 붉은연합도 기억한다. 숫자는 말하지 않는다.
+  setup: 장교 외투를 입은 {envoy:이/가} 장갑 낀 손을 정문 쇠창살에 얹고 기다린다. 대표는 자리에 없다. "대표가 없다고? 괜찮아. 말만 전해 주면 돼. 겨울 동안 약은 우리만 산다. 값은 두 배로 쳐 주지. 싫다면, 뭐, 겨울은 길고."
+  ai_direction: 붉은연합은 동쪽 공세를 앞두고 하얀매의 약을 독점하려 한다. 마경수는 협박할수록 상냥해진다. 주인공의 대답은 대표에게 전해지고 붉은연합도 기억한다. 숫자는 말하지 않는다.
   choices:
     - id: relay
       label: 그대로 대표에게 전하겠다고만 한다
@@ -538,7 +538,7 @@
         partial:
           - clock: { id: d_lean, delta: -1 }
           - relation: { who: envoy, axis: affection, delta: -1 }
-          - belief: { fact: "붉은연합 간부는 수비대원의 대답을 듣고 웃으며 돌아갔다. 웃음이 오래 남았다", source: seen }
+          - belief: { fact: "붉은연합 간부는 내 대답을 듣고 웃으며 돌아갔다. 웃음이 오래 남았다", source: seen }
         miss:
           - clock: { id: d_lean, delta: 1 }
           - relation: { who: envoy, axis: affection, delta: -2 }
@@ -567,7 +567,7 @@
   cast:
     courier: { ids: [e_yuri] }
     nurse: { ids: [a_chaewon], enter: false }
-  setup: "빨간 털모자를 쓴 심부름꾼이 정문 옆에서 손짓한다. 청솔형제단 의무실의 {nurse:이/가} 보낸 쪽지라며 내민다. \"대표님 말고, 진료소 일 거드는 수비대원한테 주랬어요.\" 쪽지에는 항생제 한 줄만 보내 달라고, 아이가 열이 난다고 적혀 있다."
+  setup: "빨간 털모자를 쓴 심부름꾼이 정문 옆에서 손짓한다. 청솔형제단 의무실에서 {nurse:이/가} 보낸 쪽지라며 내민다. \"대표님 말고, 진료소 일 거드는 수비대원한테 주랬어요.\" 쪽지에는 항생제 한 줄만 보내 달라고, 아이가 열이 난다고 적혀 있다."
   ai_direction: 윤채원은 예전에 하얀매 간호사였고, 감염된 아이를 살리려고 약을 들고 나갔다가 쫓겨났다. 하얀매 사람들은 그 일을 함부로 입에 올리지 않는다. 대표 서은영은 그 이름에 민감하다. {courier:은/는} 담배 한 개비를 바란다.
   choices:
     - id: send_own
@@ -681,8 +681,8 @@
   # 되풀이될 때 차례로 쓰는 다른 상황 문장 (12-139)
   variants:
     - "정문 앞이 소란하다. {guard:이/가} 한 여자를 막아섰다. 여자는 붕대 감은 손목을 등 뒤로 숨기며 열이 좀 있을 뿐이라고 한다. 등에 업힌 아이가 기침을 한다."
-    - "새벽 정문, {guard:이/가} 들것을 메고 온 남자 둘을 세운다. 들것 위 사람의 종아리에 피 묻은 천이 감겨 있다. 남자들은 넘어져 찢긴 거라며 진료소 안으로 들여 달라고 매달린다."
-  ai_direction: 사람 이빨인지 개 이빨인지 가까이 보면 가를 수 있다. 정말로 개일 수도 있다. 남자는 진짜로 굶는 아이들이 있다. 백도진은 규칙대로 하려 한다. 진실은 확정하지 말고 판정에 맡긴다.
+    - "정문에서 {guard:이/가} 들것을 메고 온 남자 둘을 세운다. 들것 위 사람의 종아리에 피 묻은 천이 감겨 있다. 남자들은 넘어져 찢긴 거라며 진료소 안으로 들여 달라고 매달린다."
+  ai_direction: 사람 이빨인지 개 이빨인지 가까이 보면 가를 수 있다. 정말로 개일 수도 있다. 막힌 사람에게는 진짜로 굶는 아이들이 있다. 백도진은 규칙대로 하려 한다. 진실은 확정하지 말고 판정에 맡긴다.
   choices:
     - id: inspect
       label: 상처를 가까이 들여다본다
@@ -690,26 +690,26 @@
       outcomes:
         success:
           - relation: { who: guard, axis: respect, delta: 1 }
-          - belief: { fact: "정문의 남자 팔에 난 자국은 송곳니 간격이 넓은 개 이빨 자국이었다. 격리 없이 상처만 씻어 보냈다", source: seen }
+          - belief: { fact: "정문에서 막힌 사람의 상처는 송곳니 간격이 넓은 개 이빨 자국이었다. 사람에게 물린 것이 아니다", source: seen }
         partial:
-          - belief: { fact: "정문의 남자 팔 자국이 개인지 사람인지 끝내 가를 수 없었다. 남자는 격리실로 갔다", source: seen }
+          - belief: { fact: "정문에서 막힌 사람의 상처가 개인지 사람인지 끝내 가를 수 없었다", source: seen }
         miss:
           - relation: { who: guard, axis: trust, delta: -1 }
-          - belief: { fact: "정문의 남자를 개에게 물렸다며 보냈지만, 백도진은 끝까지 고개를 저었다", source: seen }
+          - belief: { fact: "정문에서 막힌 사람의 상처를 들여다봤지만 무엇에 물렸는지 가르지 못했다. 백도진은 끝까지 고개를 저었다", source: seen }
     - id: quarantine
       label: 규칙대로 격리실로 보낸다
       effects:
         - relation: { who: guard, axis: respect, delta: 1 }
-        - deed: { summary: 물린 자국이 있는 남자를 사정을 듣지 않고 격리실로 보냈다, tags: [diligence], severity: 1, privacy: public }
+        - deed: { summary: 물린 자국이 있는 사람을 사정을 듣지 않고 격리실로 보냈다, tags: [diligence], severity: 1, privacy: public }
     - id: let_through
       label: 백도진을 설득해 보내 준다
       check: persuade
       outcomes:
         success:
           - relation: { who: guard, axis: trust, delta: -1 }
-          - deed: { summary: 물린 자국이 있는 남자를 격리 없이 보내 주었다, tags: [mercy, disobedience], severity: 2, privacy: public }
+          - deed: { summary: 물린 자국이 있는 사람을 격리 없이 보내 주었다, tags: [mercy, disobedience], severity: 2, privacy: public }
         partial:
           - relation: { who: guard, axis: trust, delta: -2 }
-          - belief: { fact: "백도진은 남자를 보내 주면서 수간호사에게 보고하겠다고 했다", source: seen }
+          - belief: { fact: "백도진은 그 사람을 보내 주면서 수간호사에게 보고하겠다고 했다", source: seen }
         miss:
           - relation: { who: guard, axis: respect, delta: -1 }

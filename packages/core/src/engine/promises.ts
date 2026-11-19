@@ -165,7 +165,7 @@ function settleKept(ctx: ToolContext, p: PromiseRecord): string[] {
   const who = playerCalls(state, content, p.to);
   store.append({ type: "promise_settled", id: p.id, status: "kept" });
   relate(ctx, p.to, r.kept, "지킨 약속");
-  recordDeed(ctx, { summary: `${who}에게 한 약속을 지켰다: ${p.what}`, tags: ["honesty"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
+  recordDeed(ctx, { summary: `${who}에게 한 약속을 지켰다: ${promiseGist(ctx.content, p)}`, tags: ["honesty"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
   const lines = [`${who}에게 한 약속을 지켰다${p.item ? " (물건을 건넸다)" : ""}. 이 결과대로 서술하라.`];
   const c = askContent(content, p);
   if (!c) return lines;
@@ -211,7 +211,7 @@ export function runBrokenPromises(ctx: ToolContext): string[] {
     if (!target || target.dead) continue;
     relate(ctx, p.to, r.broken, "어긴 약속");
     const who = playerCalls(state, ctx.content, p.to);
-    recordDeed(ctx, { summary: `${who}에게 한 약속을 어겼다: ${p.what}`, tags: ["deceit"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
+    recordDeed(ctx, { summary: `${who}에게 한 약속을 어겼다: ${promiseGist(ctx.content, p)}`, tags: ["deceit"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
     const line = `${who}에게 한 약속(${p.what})의 기한이 지났다. 지키지 못했다`;
     const now = ctx.store.getState();
     ctx.store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact: `${line}.`, source: "seen", accuracy: "exact", learnedAt: now.time } });
@@ -254,4 +254,10 @@ export function runAsksDaily(ctx: ToolContext): void {
   if (!candidates.length) return;
   const pick = candidates[Math.floor(rng() * candidates.length)]!;
   store.append({ type: "promise_asked", id: nextId(state), by: me, to: pick.npc, what: pick.ask.ask, due: today + r.expire_days, item: { id: pick.ask.item.id, quantity: pick.ask.item.quantity }, favor: pick.ask.id });
+}
+
+/** 행적·소문에 남는 약속의 줄거리: 부탁 대사 원문이 아니라 물건으로 (플레이 테스트 11: 비밀 부탁의 대사가 소문으로 퍼졌다) */
+function promiseGist(content: Content, p: { what: string; item?: { id: string; quantity: number } | null }): string {
+  if (!p.item) return p.what;
+  return `${content.items[p.item.id]?.name ?? p.item.id} ${p.item.quantity}개를 구해 주기로 한 약속`;
 }

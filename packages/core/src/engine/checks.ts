@@ -86,8 +86,9 @@ export function rollPlayerCheck(
     gear: gear.penalty,
     opposition: 0,
   };
-  // 상대와 상황 (12-104): 맞서는 상대가 없으면 공격 대상이 상대다
-  const opponent = input.opponent ?? options.target ?? null;
+  // 상대와 상황 (12-104): 맞서는 상대가 없으면 공격 대상이 상대다. 함께하는 말(설득)의 대상은 상대가 아니다 (플레이 테스트 11)
+  const cooperative = scenario.opposition?.cooperative.includes(input.move) ?? false;
+  const opponent = input.opponent ?? (cooperative ? null : options.target) ?? null;
   // 매복·매복당함·혼란 (12-177)도 상황 보정이다
   const against = [...oppositionParts(content, state, input.move, opponent, input.distance), ...ambushParts(content, state, input.move, opponent)];
   modifiers.opposition = against.reduce((n, p) => n + p.value, 0);

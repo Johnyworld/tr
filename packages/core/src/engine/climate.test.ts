@@ -142,8 +142,8 @@ describe("기온", () => {
       store.getState().zones = w.zones;
       return feelsLike(content, store.getState(), "sleep")!;
     };
-    expect(at("b_base").parts).toContain("불 땐 거처"); // 버들마을은 청솔을 좋게 본다
-    expect(at("c_base").parts).not.toContain("불 땐 거처"); // 붉은연합은 적
+    expect(at("b_base").parts.some((p) => p.startsWith("불 땐 거처"))).toBe(true); // 버들마을은 청솔을 좋게 본다
+    expect(at("c_base").parts.some((p) => p.startsWith("불 땐 거처"))).toBe(false); // 붉은연합은 적
   });
 
   it("비 오는 날 바깥에 있으면 옷이 젖는다. 시간으로는 마르지 않고, 불 곁에서 두 시간이면 마른다 (12-121, 12-186)", () => {
@@ -220,9 +220,9 @@ describe("기온", () => {
     const { store } = setup({ zone: "cathedral", hour: SEGMENT_START_HOUR.night + 1 });
     store.getState().weather = { day: dayOf(store.getState().time), id: "cold_snap" };
     const f = feelsLike(content, store.getState(), "sleep")!;
-    expect(f.parts).toContain("피난처의 난로");
+    expect(f.parts.some((p) => p.startsWith("피난처의 난로"))).toBe(true);
     expect(f.value).toBe(content.scenario.body!.cold!.climate!.sanctuary);
     // 바깥에서 보초를 서면 그대로 춥다
-    expect(feelsLike(content, store.getState(), "guard_duty")!.parts).not.toContain("피난처의 난로");
+    expect(feelsLike(content, store.getState(), "guard_duty")!.parts.some((p) => p.startsWith("피난처의 난로"))).toBe(false);
   });
 });

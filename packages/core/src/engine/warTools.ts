@@ -31,6 +31,8 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 export const MAX_CATCH_UP_DAYS = 7;
 export const WAR_TOPIC = "war";
+/** 주인공이 혼자 엿들은 다른 무리의 속사정. 보고하기 전에는 무리의 수군거림에 들어가지 않는다 (플레이 테스트 11) */
+export const WAR_INTEL_TOPIC = "war_intel";
 /** 다른 무리끼리의 교전이 소문으로 들려올 확률 */
 export const RUMOR_CHANCE = 0.4;
 
@@ -116,7 +118,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     // 덫에 걸리고, 날것이 상한다 (12-131)
     displays.push(...runDailyFood(ctx));
     // 기한을 넘긴 약속은 어긴 것이다 (12-160). 꺼내지 못한 부탁은 접고, 새 부탁을 품는다 (12-174)
-    for (const line of runPromisesDaily(ctx)) displays.push({ type: "belief", fact: line, sourceLabel: "약속" });
+    for (const line of runPromisesDaily(ctx)) displays.push({ type: "belief", fact: line, sourceLabel: "약속", note: line });
   }
   return displays;
 }

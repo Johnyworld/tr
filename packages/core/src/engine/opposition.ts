@@ -50,9 +50,10 @@ export function oppositionParts(content: Content, state: GameState, moveId: stri
     if (value) parts.push({ label: `${playerCalls(state, content, opponent.id)}의 ${label}`, value });
   }
   if (r.crowd?.moves.includes(moveId)) {
-    const eyes = watchers(state).length;
+    const eyes = watchers(state, opponent).length;
     const value = -r.crowd.at.filter((n) => eyes >= n).length;
-    if (value) parts.push({ label: `지켜보는 눈 ${eyes}`, value });
+    // 수는 보이지 않는다 (플레이 테스트 11: "지켜보는 눈 3"이 아직 서술되지 않은 감염체 셋을 드러냈다)
+    if (value) parts.push({ label: "지켜보는 눈", value });
   }
   // 수에 밀림 (12-111): 맞서는 감염체가 여럿이면 맞붙기 어렵다
   const outnumbered = r.mindless?.outnumbered;
@@ -84,11 +85,13 @@ export function infectedFoes(content: Content, state: GameState): string[] {
 }
 
 /** 무거운 피해를 낼 수 있는 무기 (든 것 먼저, 아니면 지닌 것). 탄약을 쓰는 무기는 탄약이 있거나 탄약 없이 쓰는 스킬이 있어야 */
-export function heavyWeapon(content: Content, c: Character): string | null {
+export function heavyWeapon(content: Content, c: Character, move?: string): string | null {
   const ids = [c.equipped?.weapon, ...Object.keys(c.inventory)].filter((id): id is string => !!id && (c.inventory[id] ?? 0) > 0);
   for (const id of ids) {
     const w = content.items[id]?.weapon;
     if (!w || w.max_harm !== "heavy") continue;
+    // 무기로 맞서는 판정(근접전·사격)이면 그 판정에 쓰는 무기만 센다: 맞붙는 판정에 상대가 지닌 총은 세지 않는다 (플레이 테스트 11: 막대 대련에 상대의 소총이 피해를 올렸다)
+    if (move && content.scenario.opposition?.harm?.moves.includes(move) && w.moves[0] !== move) continue;
     const loaded = !w.ammo || (c.inventory[w.ammo] ?? 0) > 0 || w.moves.some((m) => !(w.ammo_moves ?? w.moves).includes(m));
     if (loaded) return id;
   }
@@ -96,15 +99,22 @@ export function heavyWeapon(content: Content, c: Character): string | null {
 }
 
 /** 장면에서 주인공을 볼 수 있는 사람: 살아 있고, 함께 다니는 사람이 아니다 */
-export function watchers(state: GameState): string[] {
-  return state.scene.present.filter((id) => id !== state.playerId && !state.characters[id]?.dead && !state.companions.includes(id));
+/**
+ * 숨는 것을 볼 수 있는 사람. 무리 밖의 상대에게서 숨을 때는 우리 무리 사람(아군)은 세지 않는다 (플레이 테스트 11: 적 초소를 상대로 한 은밀에 곁의 조원 셋이 눈으로 셌다)
+ */
+export function watchers(state: GameState, opponent?: Character): string[] {
+  const own = state.characters[state.playerId]?.factionId ?? null;
+  const allyOnly = !!opponent && !!own && opponent.factionId !== own;
+  return state.scene.present.filter(
+    (id) => id !== state.playerId && !state.characters[id]?.dead && !state.companions.includes(id) && !(allyOnly && state.characters[id]?.factionId === own),
+  );
 }
 
 /**
  * 상대의 몫: 판정이 나빠 주인공이 다칠 때 상대의 싸움 실력으로 피해 단계를 고친다.
  * 돌려주는 것: 더하거나 뺄 단계와 한 줄 (상대가 없으면 null)
  */
-export function opponentHarm(content: Content, state: GameState, opponentId: string | null): { delta: number; line: string } | null {
+export function opponentHarm(content: Content, state: GameState, opponentId: string | null, move?: string): { delta: number; line: string } | null {
   const r = rules(content)?.harm;
   const opponent = opponentId ? state.characters[opponentId] : undefined;
   if (!r || !opponent || opponent.dead) return null;
@@ -114,7 +124,7 @@ export function opponentHarm(content: Content, state: GameState, opponentId: str
   if (!best) return null;
   const skill = best.score >= r.strong ? 1 : best.score <= r.weak ? -1 : 0;
   // 무거운 무기를 지녔으면 더 아프다 (12-121). 실력과 합쳐 -1 ~ +1
-  const weapon = r.armed ? heavyWeapon(content, opponent) : null;
+  const weapon = r.armed ? heavyWeapon(content, opponent, move) : null;
   const delta = Math.max(-1, Math.min(1, skill + (weapon ? r.armed : 0)));
   const label = content.scenario.moves.find((m) => m.id === best.m)?.label ?? best.m;
   const who = playerCalls(state, content, opponent.id);

@@ -11,7 +11,7 @@ import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import type { InterruptCheck } from "../sim/fastForward.ts";
 import { fillStorylet, pickCast, pickStorylet, roadStorylets, storyletVars } from "../story/storylets.ts";
 import { welcomedAsGuest } from "./climate.ts";
-import { fireStorylet, storySetup, maskUnknownNames } from "./storyletTools.ts";
+import { fireStorylet, storySetup, storyTitle, maskUnknownNames } from "./storyletTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -129,7 +129,7 @@ export function runCampEvent(ctx: ToolContext, activity: Activity, deep: string 
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
   const now = store.getState();
   const cast = now.activeStorylet?.cast ?? {};
-  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: maskUnknownNames(now, content, fillStorylet(storySetup(now, storylet), storyletVars(now, content, cast))) });
+  displays.push({ type: "storylet", event: "started", title: storyTitle(now, content, storylet), detail: maskUnknownNames(now, content, fillStorylet(storySetup(now, storylet), storyletVars(now, content, cast))) });
   const watchers = campWatchers(content, state).map((id) => playerCalls(store.getState(), content, id));
   const who =
     activity !== "sleep"
@@ -141,7 +141,7 @@ export function runCampEvent(ctx: ToolContext, activity: Activity, deep: string 
           : "아무도 지키지 않고 잠들어 있었다. 이미 가까이 와서야 깼다";
   return {
     displays,
-    line: `야영지에 일이 생겼다: "${storylet.title}". ${who}. 그 장면으로 연출하라 (상태의 '진행 중인 이야기').`,
+    line: `야영지에 일이 생겼다: "${storyTitle(now, content, storylet)}". ${who}. 그 장면으로 연출하라 (상태의 '진행 중인 이야기').`,
   };
 }
 
@@ -157,7 +157,7 @@ export function describeCamp(content: Content, state: GameState): string | null 
   const fire = !!state.playerZone && (state.fires[state.playerZone] ?? 0) > state.time;
   const deep = deepSleepReason(content, state);
   return (
-    `잠자리: 여기서 자면 야영이다 (지켜 주는 지붕이 없다). ` +
+    `잠자리: 여기서 자면 야영이다 (지켜 주는 담과 순찰이 없다). ` +
     (deep ? `${deep} 탓에 지금 자면 깊이 잠든다 (보초가 있어도 다가오는 것을 늦게 안다). ` : "") +
     (watchers.length ? `${josa(watchers.join("·"), "이/가")} 번갈아 보초를 설 수 있다. ` : "혼자 잠들면 아무도 지키지 않는다 (보초를 서려면 activity guard_duty, 그동안 잠은 못 잔다). ") +
     (fire ? "모닥불이 따뜻하지만 불빛과 연기가 멀리서 보인다. " : "") +

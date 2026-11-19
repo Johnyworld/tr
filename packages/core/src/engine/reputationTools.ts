@@ -55,8 +55,14 @@ function noticeMove(ctx: ToolContext) {
 
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
 export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource) {
-  const values = valuesOf(ctx.content, ctx.store.getState(), npcId);
-  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, deed.tags, deed.severity, source));
+  const state = ctx.store.getState();
+  const values = valuesOf(ctx.content, state, npcId);
+  // "적에게 호의"는 우리 편이 보기에만 흠이다. 호의를 받은 쪽(적·포로)에게까지 신뢰를 깎았다 (플레이 테스트 11)
+  const actorFaction = state.characters[deed.actorId]?.factionId;
+  const witness = state.characters[npcId];
+  const ownSide = !!actorFaction && witness?.factionId === actorFaction && !witness.captive;
+  const tags = ownSide ? deed.tags : deed.tags.filter((t) => t !== "enemy_sympathy");
+  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, tags, deed.severity, source));
   ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
 }
 

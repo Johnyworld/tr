@@ -140,20 +140,23 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
       parts.push(`${content.items[cover2.id]!.name} ${signed(cover2.degrees)}`);
     }
   }
-  const trait = traitsOf(content, me).reduce((n, t) => n + (t.effects.cold ?? 0), 0) * c.trait_degrees;
+  const coldTraits = traitsOf(content, me).filter((t) => (t.effects.cold ?? 0) !== 0);
+  const trait = coldTraits.reduce((n, t) => n + (t.effects.cold ?? 0), 0) * c.trait_degrees;
   if (trait) {
     value -= trait;
-    parts.push(`체질 ${signed(-trait)}`);
+    // 어느 트레잇 때문인지 적는다 (플레이 테스트 11: 설명 없는 "체질 -3")
+    parts.push(`체질(${coldTraits.map((t) => t.label).join("·")}) ${signed(-trait)}`);
   }
   // 분배 (12-128): 그 거점 무리의 연료 방침만큼 불 땐 거처가 덜(더) 따뜻하다
   const floor = c.heated + (zone && state.zones[zone]?.owner ? policyEffects(content, state.factions[state.zones[zone]!.owner!]).heated : 0);
   if (indoor && heatedHere(content, state) && value < floor) {
     value = floor;
-    parts.push("불 땐 거처");
+    // 더하는 값이 아니라 최저 체감이다 (플레이 테스트 11: 합이 맞지 않아 보였다)
+    parts.push(`불 땐 거처 (최저 ${floor}°)`);
   } else if (indoor && c.sanctuary !== undefined && zone && content.locations[zone]?.sanctuary && value < c.sanctuary) {
     // 피난처 (12-122): 성당·캠퍼스처럼 누구의 땅도 아닌 곳도 모여 사는 사람들이 불을 땐다. 거점보다는 덜 따뜻하다
     value = c.sanctuary;
-    parts.push("피난처의 난로");
+    parts.push(`피난처의 난로 (최저 ${c.sanctuary}°)`);
   }
   const warm = fireHere || (indoor && (heatedHere(content, state) || (c.sanctuary !== undefined && !!zone && !!content.locations[zone]?.sanctuary)));
   return { outside, value: Math.round(value), indoor, parts, warm };

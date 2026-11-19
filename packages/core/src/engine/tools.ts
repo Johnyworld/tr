@@ -47,7 +47,7 @@ import { MISSION_TOOLS } from "./missionTools.ts";
 import { COMMAND_TOOLS } from "./command.ts";
 import { COMPANION_TOOLS, isAwayCompanion } from "./companionTools.ts";
 import { REPUTATION_TOOLS } from "./reputationTools.ts";
-import { STORYLET_TOOLS } from "./storyletTools.ts";
+import { STORYLET_TOOLS, storyTitle } from "./storyletTools.ts";
 import { SUCCESSION_TOOLS } from "./succession.ts";
 import { createLearnSkillTool } from "./growth.ts";
 import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
@@ -86,6 +86,12 @@ const transferItem = defineTool({
       // 이 구역의 묻히지 않은 유해도 뒤질 수 있다 (12-130)
       const reachable = holder === SCENE_HOLDER || holder === state.playerId || state.scene.present.includes(holder) || remainsHere(state).some((r) => r.holder === holder);
       if (!reachable) return { ok: false, error: `${josa(holderName(state, content, holder), "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
+    }
+    // 진행 중인 이야기의 배역에게, 그 이야기 선택지가 내놓게 하는 물건을 먼저 건네면 선택지가 잠긴다 (플레이 테스트 11: 담요를 덮어 준 뒤 "고를 수 없는 선택지")
+    const story = state.activeStorylet;
+    if (story && input.from === state.playerId && Object.values(story.cast).includes(input.to)) {
+      const choice = content.storylets[story.id]?.choices.find((c) => choiceUsesItem(c, input.item_id));
+      if (choice) return { ok: false, error: `이 물건은 진행 중인 이야기의 선택지로 건넨다: resolve_storylet ${choice.id} ("${choice.label}"). 선택지가 효과를 함께 처리한다.` };
     }
     const fromInv = findHolderInventory(state, input.from);
     if (!fromInv) return { ok: false, error: `알 수 없는 보관 위치: ${input.from}` };
@@ -338,9 +344,18 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   // 이번에 죽은 사람은 그 자리에 유해를 남긴다 (12-130)
   leaveRemainsForNewDeaths(ctx, living);
   // 짐이 한도를 넘으면 창고를 한 번 알린다 (12-149)
-  const hint = outcome.ok ? stashHint(ctx) : null;
+  const hint = outcome.ok ? [stashHint(ctx), storyStillOpen(state, name, ctx)].filter(Boolean).join("\n") : null;
   const hinted = hint && outcome.ok ? { ...outcome, resultText: [outcome.resultText, hint].filter(Boolean).join("\n") } : outcome;
   return withCheckLines(withFear(hinted, fearAfterTool(ctx, before)));
+}
+
+/** 이야기가 열린 채로 다른 일을 마무리하는 tool을 쓰면 알린다 (플레이 테스트 11, 막지는 않는다) */
+const STORY_SIDE_TOOLS = new Set(["report_mission", "assign_mission", "abandon_mission", "barter", "learn_skill", "squad_order"]);
+function storyStillOpen(before: GameState, name: string, ctx: ToolContext): string | null {
+  const active = ctx.store.getState().activeStorylet;
+  if (!STORY_SIDE_TOOLS.has(name) || !active || before.activeStorylet?.id !== active.id) return null;
+  const storylet = ctx.content.storylets[active.id];
+  return storylet ? `(진행 중인 이야기 「${storyTitle(ctx.store.getState(), ctx.content, storylet)}」가 아직 열려 있다. 그 장면을 resolve_storylet으로 매듭짓거나 떠나는 서술을 잊지 않는다)` : null;
 }
 
 /** 이 tool로 무서운 것이 나타났으면(인물·이야기·전투) 공포가 오른 결과를 붙인다 (12-95) */
@@ -386,3 +401,10 @@ function holderName(state: GameState, content: Content, holder: string): string 
 
 
 export type { GameEvent };
+
+/** 선택지가 이 물건을 내놓게 하거나(take_item) 지녔는지 묻는지 */
+function choiceUsesItem(choice: { when?: { has_items?: string[]; has_items_any?: string[] }; effects?: unknown[]; outcomes?: Record<string, unknown[] | undefined> }, item: string): boolean {
+  if (choice.when?.has_items?.includes(item) || choice.when?.has_items_any?.includes(item)) return true;
+  const effects = [...(choice.effects ?? []), ...Object.values(choice.outcomes ?? {}).flatMap((e) => e ?? [])];
+  return effects.some((e) => typeof e === "object" && e !== null && "take_item" in e && (e as { take_item: { item: string } }).take_item.item === item);
+}

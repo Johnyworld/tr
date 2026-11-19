@@ -126,7 +126,7 @@ export function describeAmbush(content: Content, state: GameState): string[] {
   if (ambushedNow(state)) out.push(`매복에 걸렸다: 주인공의 다음 판정 ${r.ambushed} (상대가 먼저 움직였다). 실패하면 혼란`);
   for (const id of state.confused ?? []) {
     if (id === state.playerId) out.push(`주인공이 혼란에 빠졌다: 다음 판정 ${r.confused}`);
-    else if (state.scene.present.includes(id)) out.push(`${playerCalls(state, content, id)}(${id})이(가) 혼란에 빠졌다: 다음 판정 하나 동안 맞서지 못하고, 주인공이 실패해도 그에게 다치지 않는다`);
+    else if (state.scene.present.includes(id)) out.push(`${playerCalls(state, content, id)}(${id}): 혼란에 빠졌다. 다음 판정 하나 동안 맞서지 못하고, 주인공이 실패해도 그에게 다치지 않는다`);
   }
   return out;
 }

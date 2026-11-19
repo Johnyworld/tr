@@ -61,7 +61,7 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
   const hold = Math.min(0.8, Math.max(0, f.resist.per_point * (me.stats[f.resist.ability] ?? 0)));
   if (steps > 0 && ctx.rng() < hold) steps -= 1;
 
-  if (steps <= 0) return { lines: [`${josa(me.name, "은/는")} 두려움을 눌러 참았다 (${cause}). 공포가 오르지 않았다.`], displays: [] };
+  if (steps <= 0) return { lines: [`겁날 일이었다 (${cause}). ${josa(me.name, "은/는")} 두려움을 눌러 참았다. 공포가 오르지 않았다.`], displays: [] };
   const c = changeCondition(ctx, me.id, f.track, steps, "fear", cause);
   if (!c?.display) return EMPTY;
   const out: FearResult = { lines: [c.line], displays: [c.display] };
@@ -142,7 +142,9 @@ export function fearAfterTool(ctx: ToolContext, before: FearWatch): FearResult {
     const steps = scary.length ? Math.max(...scary.map((id) => fearsomeOf(ctx, state, id))) + (scary.length >= 3 ? 1 : 0) : 0;
     const names = arrivals.map((id) => state.characters[id]!.name);
     const tags = [...new Set(arrivals.flatMap(tagsOf))];
-    triggers.push({ tags, steps, cause: `${names.slice(0, 3).join(", ")}${josa(names.length > 3 ? ` 외 ${names.length - 3}` : "", "이/가")} 나타났다` });
+    // 조사는 이름 전체에 붙인다 (빈 문자열에 붙여 "감염체이(가)"가 됐다, 플레이 테스트 8)
+    const who = `${names.slice(0, 3).join(", ")}${names.length > 3 ? ` 외 ${names.length - 3}명` : ""}`;
+    triggers.push({ tags, steps, cause: `${josa(who, "이/가")} 나타났다` });
   }
   const storylet = state.activeStorylet?.id;
   if (storylet && storylet !== before.storylet) {

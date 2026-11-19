@@ -86,6 +86,11 @@ export function recordDeed(
     for (const character of Object.values(state.characters)) {
       if (character.id === state.playerId || character.dead || character.away || character.captive) continue;
       if (state.scene.present.includes(character.id) || !ctx.content.npcs[character.id]) continue;
+      // 숨은 목격자는 그 시각 같은 구역에 있던 사람만 (기획서 8.2 "근처"). 전에는 세계 어디에 있든 굴려,
+      // 다른 무리 거점의 약사가 우리 거점 안의 일을 "직접 봄"으로 알았다 (플레이 테스트 8)
+      // (어디 있는지 모르는 인물이나 구역이 없는 장면은 예전처럼 굴린다)
+      const where = npcZoneAt(ctx.content.npcs[character.id]!, state.time);
+      if (state.playerZone && where && where !== state.playerZone) continue;
       const chance = hiddenWitnessChance({
         privacy: input.privacy,
         time: state.time,
@@ -301,7 +306,7 @@ const spreadRumor = defineTool({
     return {
       ok: true,
       resultText:
-        `거짓 소문 판정 ${check.checkId}: ${check.display.outcomeLabel}${hard ? ` (${who}와 가까운 사람이 듣고 있어 어렵다)` : ""}. ${lines.join(" ")} 이 결과대로 서술하라.` +
+        `거짓 소문 판정 ${check.checkId}: ${check.display.outcomeLabel}${hard ? ` (${josa(who, "과/와")} 가까운 사람이 듣고 있어 어렵다)` : ""}. ${lines.join(" ")} 이 결과대로 서술하라.` +
         (check.growthNote ? `\n${check.growthNote}` : ""),
       display: check.display,
     };

@@ -67,7 +67,8 @@ export const itemContentSchema = z.strictObject({
   /** 메모 (12-75): paper(메모장)와 tool(펜·연필)을 함께 지니면 메모를 적는다. paper만 있으면 읽기만 */
   writing: z.enum(["paper", "tool"]).optional(),
   /** 도구: 지니고 있으면 그 스킬에 보정 (가장 큰 것 하나) */
-  tool: z.strictObject({ bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)) }).optional(),
+  /** forage가 있으면 그 먹을 것 구하기(take_action.forage)에만 보정이 붙는다 (낚시 도구가 사냥을 거들지 않게, 플레이 테스트 8) */
+  tool: z.strictObject({ bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)), forage: z.array(contentIdSchema).optional() }).optional(),
   /** 몇 번 닳으면 망가지는지, 망가지면 남는 것 */
   durability: z.number().int().min(1).max(20).optional(),
   breaks_into: contentIdSchema.optional(),
@@ -882,6 +883,8 @@ export function createContentSchemas(s: Scenario) {
         campfire: z.boolean().optional(),
         /** 곁의 동물이 이 재주를 배웠다 (12-172) */
         companion_trick: contentIdSchema.optional(),
+        /** 함께 다니는 동물이 있다(true) / 없다(false) (플레이 테스트 8: 누렁이가 있는데 누렁이가 또 따라왔다) */
+        animal_companion: z.boolean().optional(),
         /** 지금 구역에 이 시설이 있다 (12-175 가축 등) */
         facility_here: contentIdSchema.optional(),
         /** 직분 사다리의 칸이 이 이상 (0 = 첫 칸) */

@@ -504,12 +504,17 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     displays.push(...fear.displays);
   }
 
+  // 없는 물건은 쓰지 못한다: 시간을 흘리기 전에 막는다 (플레이 테스트 8: 오류 없이 30분이 흘렀다)
+  if (input.use_item && (player.inventory[input.use_item] ?? 0) < 1) {
+    return { ok: false, error: `${josa(content.items[input.use_item]?.name ?? input.use_item, "이/가")} 없다. 가진 물건만 쓴다 (상태의 소지품).` };
+  }
+
   // 1. 판정과 선언한 위험
   if (input.check) {
     const roll = rollPlayerCheck(
       { move: input.check.move, stat: input.check.stat, difficulty: input.ambush ? ambushDifficulty(input.check.difficulty) : input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
       ctx,
-      { target: input.target, forMission, noTools: !!input.train },
+      { target: input.target, forMission, noTools: !!input.train, forage: input.forage },
     );
     if (!roll.ok) {
       // 턴은 이미 시작됐으므로 잠깐의 시간만 흐르게 하고 오류를 알린다
@@ -542,11 +547,16 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const harmless = isConfused(start, input.check.opponent ?? input.target ?? null);
     if (harmless && roll.outcome !== "success" && input.check.harm_on_failure !== "none") lines.push("상대가 허둥대느라 반격하지 못했다. 다치지 않았다.");
     if (!harmless && roll.outcome !== "success" && input.check.harm_on_failure !== "none") {
-      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, input.check.opponent ?? input.target ?? null);
+      // 상대의 몫은 맞서 싸우는 판정에서만 (흥정·설득의 target에 근접전 실력이 붙었다, 플레이 테스트 8)
+      const fightMoves = content.scenario.opposition?.harm?.moves ?? [];
+      const opponent = input.check.opponent ?? (fightMoves.includes(input.check.move) ? input.target : null) ?? null;
+      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, opponent);
       lines.push(harm.text);
       displays.push(harm.display);
+      // 방어구·버팀으로 다치지 않았으면 피도 흉터도 마음의 흔들림도 감염도 없다 (플레이 테스트 8: "다치지 않았다" + 긁힘)
+      const hurt = harm.fatal || harm.display.fromLabel !== harm.display.toLabel;
       // 피가 나는 상처면 출혈 (12-91)
-      if (!harm.fatal) {
+      if (!harm.fatal && hurt) {
         const bleed = bleedFromHarm(ctx, start.playerId, input.check.harm_kind);
         if (bleed?.line) lines.push(`${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.`);
         if (bleed?.display) displays.push(bleed.display);
@@ -558,13 +568,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       // 입은 방어구가 물림·긁힘을 막을 수 있다 (기획서 4.8)
       // 크게 다치면 마음도 흔들린다 (12-48)
       const nerves = ctx.content.scenario.body?.nerves;
-      if (!harm.fatal && nerves && input.check.harm_on_failure === "heavy") {
+      if (!harm.fatal && hurt && nerves && input.check.harm_on_failure === "heavy") {
         const shaken = shakeNerves(ctx, nerves.heavy_harm, `크게 다쳤다 (${input.check.harm_cause || input.intent})`);
         if (shaken?.line) lines.push(shaken.line);
       }
       // 감염은 살갗이 찢긴 상처(피가 나는 종류)일 때만 (12-91). 출혈 규칙이 없는 월드면 그대로
       const broken = !scenario.wounds || !!woundKind(ctx, input.check.harm_kind)?.bleeds;
-      if (!harm.fatal && input.check.infected_source && broken) {
+      if (!harm.fatal && hurt && input.check.infected_source && broken) {
         const guard = armorBlocksInfection(ctx);
         if (guard.blocked) lines.push(...guard.lines);
         else maybeInfect(ctx, input.check.harm_kind ?? null);
@@ -647,7 +657,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       lines.push(...t.lines);
       displays.push(...t.displays);
     } else {
-      lines.push(`${request === input.bury ? "묻지 못했다" : request === input.change_clothes ? "갈아입지 못했다" : "몸을 돌보지 못했다"}: ${t.error}`);
+      lines.push(`${request === input.bury ? "묻지 못했다" : request === input.change_clothes ? "갈아입지 못했다" : request === input.drink ? "물을 마시지 못했다" : request === input.refill ? "물을 채우지 못했다" : "몸을 돌보지 못했다"}: ${t.error}`);
     }
   }
 
@@ -686,7 +696,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item || input.drink || input.refill ? "eat" : input.craft || input.build || input.train || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? "eat" : input.drink || input.refill || input.change_clothes ? "brief" : input.craft || input.build || input.train || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
   // 이동 수단 (12-137): 타고 가면 이동 시간이 줄고, 연료를 쓰고, 도착한 곳에 소리가 난다
   const ride = input.move_to && input.ride ? planRide(ctx, input.ride, !!crossingAttempt || escapeAttempt) : null;
   if (ride && !ride.ok) lines.push(`타지 못하고 걸었다: ${ride.error}`);
@@ -905,6 +915,9 @@ function planRide(ctx: ToolContext, itemId: string, blocked: boolean):
 }
 
 /** 활동만큼 시간을 흘린다. 보초·잠·기다림은 빨리감기로, 도중에 끼어들기가 생기면 멈춘다 */
+/** 잠 한 번의 최대 길이 (분) */
+const MAX_SLEEP_MINUTES = 16 * 60;
+
 export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null, speed = 1) {
   const { store, rng, content } = ctx;
   const state = store.getState();
@@ -917,7 +930,9 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
 
   const extra: ToolDisplayEvent[] = [];
   if (cost.kind === "long") {
-    const target = Math.min(until && cost.allowUntil ? nextSegmentStart(from, until) : from + cost.minutes, from + MAX_FAST_FORWARD_MINUTES);
+    // 잠은 한 번에 16시간까지 (아침에 "새벽까지"면 21시간을 잤다, 플레이 테스트 8). 기다림은 하루까지
+    const cap = activity === "sleep" ? MAX_SLEEP_MINUTES : MAX_FAST_FORWARD_MINUTES;
+    const target = Math.min(until && cost.allowUntil ? nextSegmentStart(from, until) : from + cost.minutes, from + cap);
     // 자정을 넘기면 자정에서 하루 처리(전쟁 틱)를 돌린 뒤 이어 간다. 그래야 새벽 교전에서 멈출 수 있다
     let cursor = from;
     for (;;) {

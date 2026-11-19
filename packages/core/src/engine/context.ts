@@ -394,12 +394,11 @@ function nameNotes(state: GameState, viewer: string, id: string): string[] {
 const RECENT_EXTRAS_IN_PROMPT = 5;
 
 function statusNote(content: Content, character: Character, state?: GameState): string {
-  const initial = initialConditions(content.scenario);
-  const changed = Object.entries(initial).some(([track, level]) => character.conditions[track] !== level);
-  // 붙잡혀 있다는 것은 그 자리에 있어야 안다 (원칙 4). 아니면 행방을 모를 뿐이다
+  // 붙잡혀 있다는 것은 그 자리에 있어야 안다 (원칙 4). 아니면 행방을 모를 뿐이다 (구출 이야기가 그 자리에서 열린다)
   if (character.captive && !character.dead) return state && state.playerZone === character.captive.zone ? " · 여기 붙잡혀 있다" : " · 행방 모름";
   if (character.dead) return !state || knowsDeath(state, content, character.id) ? " · 사망" : "";
-  return character.away ? " · 떠남" : changed ? ` · ${describeConditions(content.scenario, character)}` : "";
+  // 장면에 없는 사람의 지금 몸 상태(허기 등)는 주인공이 모른다 (플레이 테스트 8). 장면에 들어오면 카드에 붙는다
+  return character.away ? " · 떠남" : "";
 }
 
 

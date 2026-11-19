@@ -274,6 +274,11 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
   const displays: ToolDisplayEvent[] = [];
   const state = ctx.store.getState();
   for (const mission of Object.values(state.missions)) {
+    // 앞 주인공의 임무 (계승 뒤): 조용히 끝낸다. 지금 주인공에게 불복종·행적·장비 반납을 묻지 않는다 (플레이 테스트 8)
+    if (mission.status === "active" && mission.assigneeId !== state.playerId) {
+      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false });
+      continue;
+    }
     if (mission.status === "active" && state.time > mission.deadline) {
       const d = disciplineOf(ctx.content, state.characters[mission.assigneeId]?.factionId);
       ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: d.expireMerit, disobedience: d.countsDisobedience });
@@ -319,7 +324,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   } else {
     lines.push("수행 중인 임무 없음");
   }
-  const ended = Object.values(state.missions).filter((m) => m.status !== "active").slice(-3);
+  const ended = Object.values(state.missions).filter((m) => m.status !== "active" && m.assigneeId === state.playerId).slice(-3);
   if (ended.length > 0) {
     lines.push(`최근 임무: ${ended.map((m) => `${m.title}(${MISSION_STATUS_LABELS[m.status]})`).join(", ")}`);
   }

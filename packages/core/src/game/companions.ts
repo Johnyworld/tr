@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import type { Content } from "../content/schemas.ts";
 import { aliasOf } from "./acquaintance.ts";
 import type { Bond, BondKind, GameState } from "./state.ts";
@@ -154,7 +155,7 @@ export function describeCompanions(state: GameState, content: Content): string {
     const b = state.bonds?.[id];
     if (!b?.crossroads) continue;
     lines.push(
-      `갈림길: ${name(id)}와 함께 하기로 한 일이 끝났다. ${b.crossroads.lean === "stay" ? "더 함께 가고 싶어 하는 눈치다" : "자기 길을 가려는 눈치다"}. ` +
+      `갈림길: ${josa(name(id), "과/와")} 함께 하기로 한 일이 끝났다. ${b.crossroads.lean === "stay" ? "더 함께 가고 싶어 하는 눈치다" : "자기 길을 가려는 눈치다"}. ` +
         `플레이어가 정하면 companion_crossroads (let_go 보낸다 / ask_stay 붙잡는다). ${formatTime(b.crossroads.decideBy)}까지 정하지 않으면 그 사람 뜻대로 된다`,
     );
   }

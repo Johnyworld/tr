@@ -94,14 +94,16 @@ export function rangeProblem(content: Content, c: Character, move: string, dista
 }
 
 /** skillLabel: 보정을 준 무기·도구 이름. penaltyParts: 판정 줄에 보일 불리함의 내역 (방어구 이름, 짐, 거리) */
-export function gearModifiers(content: Content, c: Character, move: string, distance?: string | null, state?: GameState): { skill: number; skillLabel: string; penalty: number; penaltyParts: { label: string; value: number }[] } {
+export function gearModifiers(content: Content, c: Character, move: string, distance?: string | null, state?: GameState, forageKind: string | null = null): { skill: number; skillLabel: string; penalty: number; penaltyParts: { label: string; value: number }[] } {
   let skill = 0;
   let skillLabel = "장비";
   const weaponId = equippedItem(c, "weapon");
   const weapon = itemOf(content, weaponId)?.weapon;
   if (weapon?.moves.includes(move) && weapon.bonus > skill) [skill, skillLabel] = [weapon.bonus, nameOf(content, weaponId!)];
   for (const [id, q] of Object.entries(c.inventory)) {
-    const b = q > 0 ? (content.items[id]?.tool?.bonus[move] ?? 0) : 0;
+    const tool = content.items[id]?.tool;
+    const fits = !tool?.forage || (!!forageKind && tool.forage.includes(forageKind));
+    const b = q > 0 && fits ? (tool?.bonus[move] ?? 0) : 0;
     if (b > skill) [skill, skillLabel] = [b, nameOf(content, id)];
   }
   const penaltyParts: { label: string; value: number }[] = [];

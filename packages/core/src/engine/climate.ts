@@ -1,4 +1,5 @@
 import { josa } from "../text.ts";
+import { playerCalls } from "../game/acquaintance.ts";
 import { stoveAt } from "./facilities.ts";
 import type { Content } from "../content/schemas.ts";
 import { isCreature } from "../game/kinds.ts";
@@ -75,7 +76,8 @@ export function outsideTemp(content: Content, state: GameState, time: number = s
   return { value: Math.round(value), segmentLabel: SEGMENT_LABELS[segment], weatherLabel: weather?.label ?? null, weatherDegrees };
 }
 
-export type Feels = { outside: OutsideTemp; value: number; indoor: boolean; parts: string[] };
+/** warm: 불 곁이거나 불 땐 실내(거처·피난처)다. 젖은 옷이 마른다 (12-186, 플레이 테스트 8) */
+export type Feels = { outside: OutsideTemp; value: number; indoor: boolean; parts: string[]; warm: boolean };
 
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
@@ -151,7 +153,8 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
     value = c.sanctuary;
     parts.push("피난처의 난로");
   }
-  return { outside, value: Math.round(value), indoor, parts };
+  const warm = fireHere || (indoor && (heatedHere(content, state) || (c.sanctuary !== undefined && !!zone && !!content.locations[zone]?.sanctuary)));
+  return { outside, value: Math.round(value), indoor, parts, warm };
 }
 
 /** 지금부터 처음 바뀌는 시간대의 시작 */
@@ -211,7 +214,7 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
     if (c.wet) {
       const weather = dayOf(t) === dayOf(state.time) ? weatherNow(ctx.content.scenario, state) : null;
       if (!f.indoor && weather && c.wet.weather.includes(weather.id)) wetLeft = Math.round(c.wet.fire_hours * 60);
-      else if (wetLeft > 0 && f.parts.some((p) => p.startsWith("모닥불") || p.startsWith("난로"))) wetLeft = Math.max(0, wetLeft - (end - t));
+      else if (wetLeft > 0 && f.warm) wetLeft = Math.max(0, wetLeft - (end - t));
     }
     const hours = (end - t) / 60;
     if (f.value < c.comfort) {
@@ -250,10 +253,10 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
   }
   if (load !== before && !ctx.store.getState().characters[me.id]?.dead) ctx.store.append({ type: "cold_load_set", characterId: me.id, load });
   if (wetLeft !== wetBefore && !ctx.store.getState().characters[me.id]?.dead) {
-    const name = ctx.store.getState().characters[me.id]!.name;
+    const name = playerCalls(ctx.store.getState(), ctx.content, me.id);
     if (wetBefore <= 0) displays.push(...soak(ctx, me.id, "비를 맞았다"));
-    else if (wetLeft <= 0) displays.push(dryOff(ctx, me.id, name, "불 곁에서 말렸다"));
-    else ctx.store.append({ type: "wet_set", characterId: me.id, left: wetLeft, cause: "불 곁에서 말리는 중" });
+    else if (wetLeft <= 0) displays.push(dryOff(ctx, me.id, name, "불기 곁에서 말렸다"));
+    else ctx.store.append({ type: "wet_set", characterId: me.id, left: wetLeft, cause: "불기에 말리는 중" });
   }
   return displays;
 }
@@ -266,7 +269,7 @@ export function soak(ctx: ToolContext, who: string, cause: string): ToolDisplayE
   const was = (ctx.store.getState().wet?.[who] ?? 0) > 0;
   ctx.store.append({ type: "wet_set", characterId: who, left: Math.round(wet.fire_hours * 60), cause });
   if (was) return [];
-  return [{ type: "harm", targetName: me.name, trackLabel: "옷", severityLabel: cause, fatal: false, fromLabel: "마름", toLabel: "젖음", cause: `${cause}. 마를 때까지 체감 -${wet.degrees}°. 시간으로는 마르지 않는다: 불 곁에서 ${wet.fire_hours}시간, 또는 갈아입을 옷이 있는 곳(우리 거점·거처·옷이 남은 폐허)에서 갈아입는다` }];
+  return [{ type: "harm", targetName: playerCalls(ctx.store.getState(), ctx.content, who), trackLabel: "옷", severityLabel: cause, fatal: false, fromLabel: "마름", toLabel: "젖음", cause: `${cause}. 마를 때까지 체감 -${wet.degrees}°. 시간으로는 마르지 않는다: 불 곁이나 불 땐 실내에서 ${wet.fire_hours}시간, 또는 갈아입을 옷이 있는 곳(우리 거점·거처·옷이 남은 폐허)에서 갈아입는다` }];
 }
 
 function dryOff(ctx: ToolContext, who: string, name: string, by: string): ToolDisplayEvent {
@@ -292,8 +295,8 @@ export function changeClothes(ctx: ToolContext): { ok: true; lines: string[]; di
   // 끌고 다니는 포로는 빼고 (묶인 사람의 옷까지 갈아입히지 않는다)
   const who = [state.playerId, ...activeCompanions(state).filter((id) => !isCreature(ctx.content, state.characters[id]) && state.bonds?.[id]?.kind !== "prisoner")].filter((id) => (state.wet?.[id] ?? 0) > 0);
   if (!who.length) return { ok: false, error: "젖은 옷을 입은 사람이 없다." };
-  const displays = who.map((id) => dryOff(ctx, id, state.characters[id]!.name, "마른 옷으로 갈아입었다"));
-  return { ok: true, lines: [`${who.map((id) => state.characters[id]!.name).join(", ")}: 마른 옷으로 갈아입었다.`], displays };
+  const displays = who.map((id) => dryOff(ctx, id, playerCalls(state, ctx.content, id), "마른 옷으로 갈아입었다"));
+  return { ok: true, lines: [`${who.map((id) => playerCalls(state, ctx.content, id)).join(", ")}: 마른 옷으로 갈아입었다.`], displays };
 }
 
 /** 모닥불을 피운다 (연료 아이템을 쓴다). 같은 구역에 있으면 따뜻하고, 연기와 불빛은 소음이 된다 */
@@ -336,5 +339,5 @@ function wetNote(content: Content, state: GameState): string {
   const wet = climateOf(content)?.wet;
   const left = state.wet?.[state.playerId] ?? 0;
   if (!wet || left <= 0) return "";
-  return `. 옷이 젖어 있다 (체감 -${wet.degrees}°, 시간으로는 마르지 않는다: 불 곁에서 ${Math.ceil(left / 60)}시간 더, 또는 ${clothesHere(content, state) ? "여기서 갈아입을 수 있다 (take_action.change_clothes)" : "갈아입을 옷이 있는 곳에서 갈아입기"})`;
+  return `. 옷이 젖어 있다 (체감 -${wet.degrees}°, 시간으로는 마르지 않는다: 불 곁이나 불 땐 실내에서 ${Math.ceil(left / 60)}시간 더, 또는 ${clothesHere(content, state) ? "여기서 갈아입을 수 있다 (take_action.change_clothes)" : "갈아입을 옷이 있는 곳에서 갈아입기"})`;
 }

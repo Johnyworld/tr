@@ -40,7 +40,7 @@ export function rollPlayerCheck(
   input: PlayerCheckInput,
   { store, rng, content }: ToolContext,
   /** noTools: 무기·도구의 보정을 붙이지 않는다 (동물 가르치기처럼 물건이 거들 수 없는 일) */
-  options: { target?: string | null; forMission?: string | null; noTools?: boolean } = {},
+  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null } = {},
 ): PlayerCheckResult {
   const scenario = content.scenario;
   const state = store.getState();
@@ -62,7 +62,7 @@ export function rollPlayerCheck(
   const squad = actor.id === state.playerId ? squadFollowBonus(state, content, input.move) : 0;
   const skill = base + traitSkillMod(content, actor, input.move) + Math.max(companion, squad);
   // 손에 든 무기·지닌 도구의 보정은 상한 안에서, 방어구·짐의 불리함은 따로 (기획서 4.8)
-  const rawGear = gearModifiers(content, actor, input.move, input.distance, state);
+  const rawGear = gearModifiers(content, actor, input.move, input.distance, state, options.forage ?? null);
   const gear = options.noTools ? { ...rawGear, skill: 0 } : rawGear;
   const capped = Math.min(scenario.ranges.cap, ability + skill + gear.skill);
   // 판정 줄에 보일 상한 안의 내역: 스킬, 트레잇, 동행·분대, 무기·도구, 상한에 잘린 만큼

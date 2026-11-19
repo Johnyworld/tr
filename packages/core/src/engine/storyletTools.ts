@@ -19,7 +19,7 @@ import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX } from "../story/storylets.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
-import { playerCalls } from "../game/acquaintance.ts";
+import { knowsName, playerCalls } from "../game/acquaintance.ts";
 import { withCharm } from "./charm.ts";
 import { enterScene } from "./extras.ts";
 import { changeStanding, gainMeritXp } from "./growth.ts";
@@ -45,7 +45,7 @@ import { josa, sentence } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { leveragesOn } from "./leverage.ts";
 import { commanderOf } from "../game/missions.ts";
-import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
+import { defineTool, type ToolContext, type ToolDisplayEvent, DEATH_GUIDE } from "./toolkit.ts";
 
 /**
  * 스토리렛 연결 (기획서 10.3).
@@ -247,9 +247,19 @@ export const resolveStorylet = defineTool({
       if (r.line) lines.push(r.line);
       if (r.display) extra.push(r.display);
     }
-    // 시간이 더 걸렸으면 그동안의 세계를 돌린다 (배급, 소문, 전쟁, 몸)
-    if (effects.some((e) => "delay" in e)) extra.push(...runAfterTimeAdvance(ctx));
-    lines.push("이 결과에 맞게 이야기를 마무리하는 장면을 서술하라.");
+    // 시간이 더 걸렸으면 그동안의 세계를 돌린다 (배급, 소문, 전쟁, 몸). 그사이 몸에 생긴 일도 GM에게 문장으로 (플레이 테스트 8)
+    if (effects.some((e) => "delay" in e)) {
+      const after = runAfterTimeAdvance(ctx);
+      extra.push(...after);
+      for (const d of after) {
+        if (d.type === "harm" && d.trackLabel) lines.push(`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.cause}).`);
+        else if (d.type === "heal") lines.push(`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.byLabel}).`);
+        else if ((d.type === "belief" || d.type === "harm") && d.note) lines.push(d.note);
+      }
+    }
+    // 이야기 해결 중에 죽었으면 (쓰러진 사이 붙잡히거나 죽임 등) 다음 행동에서야 알게 하지 않는다
+    if (ctx.store.getState().characters[ctx.store.getState().playerId]?.dead) lines.push(`${DEATH_GUIDE} 장면을 끝내고 더 이상 행동을 제시하지 마라.`);
+    else lines.push("이 결과에 맞게 이야기를 마무리하는 장면을 서술하라.");
     return {
       ok: true,
       resultText: lines.join("\n"),
@@ -258,6 +268,19 @@ export const resolveStorylet = defineTool({
     };
   },
 });
+
+/**
+ * 콘텐츠 문장에 적힌 이름 중 주인공이 아직 모르는 것은 호칭으로 바꾼다 (원칙 4, 플레이 테스트 8: "주옥희는…", "피정호 신부는…").
+ * 배역은 {자리}로 쓰면 저절로 호칭이 되지만, 배역이 아닌 인물을 이름으로 적은 문장이 많다
+ */
+export function maskUnknownNames(state: GameState, content: Content, text: string): string {
+  let out = text;
+  for (const npc of Object.values(content.npcs)) {
+    if (!npc.name || !out.includes(npc.name) || knowsName(state, state.playerId, npc.id)) continue;
+    out = out.split(npc.name).join(playerCalls(state, content, npc.id));
+  }
+  return out;
+}
 
 function whoOf(ctx: ToolContext, who: string, cast: Record<string, string>): string | null {
   if (cast[who]) return cast[who]!;
@@ -375,7 +398,7 @@ export function applyEffect(
     return { line: `${josa(playerCalls(state, content, id), "은/는")} 이제 ${label}다.` };
   }
   if ("belief" in effect) {
-    const fact = sentence(fillStorylet(effect.belief.fact, vars));
+    const fact = maskUnknownNames(state, content, sentence(fillStorylet(effect.belief.fact, vars)));
     // 되풀이되는 이야기가 같은 문장을 또 남기면 쌓지 않는다 (알게 된 것으로는 알린다)
     if (!(state.beliefs[playerId] ?? []).some((b) => b.fact === fact)) store.append({
       type: "belief_added",
@@ -779,6 +802,9 @@ export function applyEffect(
     };
   }
   if ("deed" in effect) {
+    // GM이 이 장면의 판정(take_action)에서 같은 성격의 행적을 이미 남겼으면 겹쳐 남기지 않는다 (플레이 테스트 8: 같은 일이 두 줄)
+    const recent = Object.values(state.deeds).find((d) => d.actorId === playerId && !d.fabricatedBy && state.time - d.at <= 60 && d.tags.some((t) => effect.deed.tags.includes(t)));
+    if (recent) return { line: `행적은 이미 기록됐다: ${sentence(recent.summary)}` };
     const { deed, visible } = recordDeed(ctx, { ...effect.deed, summary: fillStorylet(effect.deed.summary, vars), noisy: false });
     return {
       line: `행적 기록: ${sentence(deed.summary)}${visible.length ? ` 본 사람: ${visible.join(", ")}.` : ""}`,

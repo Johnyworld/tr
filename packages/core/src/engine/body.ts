@@ -47,7 +47,7 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
       const would = track.levels[Math.min(track.levels.length - 1, index + steps)]!;
       // 숨은 단계로 가는 것(잠복)은 버텨도 알리지 않는다
       const visible = shownLevel(track, would.id).id !== shownLevel(track, track.levels[index]!.id).id;
-      return { line: visible ? `${josa(playerCalls(state, ctx.content, characterId), "은/는")} 버텨 냈다 (${track.label}이 나빠지지 않았다).` : "", display: null, died: false };
+      return { line: visible ? `${josa(playerCalls(state, ctx.content, characterId), "은/는")} 버텨 냈다 (${josa(track.label, "이/가")} 나빠지지 않았다).` : "", display: null, died: false };
     }
     steps = kept;
   }
@@ -192,7 +192,12 @@ export function applyTreatment(
   targetId: string | null = null,
   check: { move: string; outcome: CheckOutcome } | null = null,
 ): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
-  if (item) return useItem(ctx, item, targetId);
+  if (item) {
+    // 물건으로 하는 치료는 판정과 상관없이 물건의 효과대로 된다. 판정을 걸었으면 그렇다고 알린다 (플레이 테스트 8: 실패했는데 붕대가 다 들었다)
+    const r = useItem(ctx, item, targetId);
+    if (r.ok && check) r.lines.push("(물건으로 하는 치료는 판정과 상관없이 물건의 효과대로 된다. 판정 결과로 치료를 서술하지 않고, 다음부터는 판정을 걸지 않는다.)");
+    return r;
+  }
   if (targetId && targetId !== ctx.store.getState().playerId) {
     // 남의 피를 맨손으로 멎게 한다 (12-91): 지혈 판정을 걸었으면 그것으로
     const w = ctx.content.scenario.wounds;

@@ -66,7 +66,8 @@ export function stopBleeding(ctx: ToolContext, characterId: string, cause: strin
   if (!w || !c || c.dead) return [];
   const now = levelIndexOf(ctx, c, w.track);
   if (now === 0) return [];
-  const ch = changeCondition(ctx, characterId, w.track, -(steps ?? now), "healer", cause);
+  // 지혈은 치료사의 치료가 아니다: "healer"로 남기면 그날 의무실 치료가 막혔다 (플레이 테스트 8)
+  const ch = changeCondition(ctx, characterId, w.track, -(steps ?? now), "staunch", cause);
   return ch?.display ? [ch.display] : [];
 }
 

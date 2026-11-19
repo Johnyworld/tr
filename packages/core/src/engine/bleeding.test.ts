@@ -78,6 +78,8 @@ describe("상처 종류와 출혈", () => {
     const r = w.executeTool("take_action", act("붕대를 감는다", { treatment: { item: "bandage", target: null } }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(me(w).conditions.bleeding).toBe("none");
+    // 지혈은 치료사의 치료가 아니다: 그날 의무실 치료를 막지 않는다 (플레이 테스트 8)
+    expect(w.state().recovery.lastHealerDay[me(w).id]).toBeUndefined();
     w.close();
   });
 

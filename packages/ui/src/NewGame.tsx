@@ -729,7 +729,6 @@ function PersonaStep({ view, busy, answer }: StepProps) {
                     aria-label={v === 0 ? `${a.low}·${a.high} 보통` : `${v > 0 ? a.high : a.low} ${Math.abs(v)}`}
                     onClick={() => setValues((x) => ({ ...x, [a.id]: v }))}
                   >
-                    {Math.abs(v)}
                   </button>
                 );
               })}

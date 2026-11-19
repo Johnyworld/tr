@@ -123,17 +123,23 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
             </section>
           )}
 
-          {(player.persona?.length ?? 0) > 0 && (
+          {(player.personaScale?.length ?? 0) > 0 && (
             <section className="block persona">
               <h3>성격</h3>
-              <dl className="stats two-col">
-                {player.persona!.map((p) => (
-                  <div key={p.id} title={p.acting}>
-                    <dt>{p.label}</dt>
-                    <dd>{p.level}</dd>
+              {/* 만들 때 고른 모양 그대로: 축마다 2 1 0 1 2 */}
+              <div className="persona-table readonly">
+                {player.personaScale!.map((a) => (
+                  <div key={a.id} className="persona-row" title={a.acting || undefined}>
+                    <span className="persona-side low">{a.low}</span>
+                    <div className="persona-buttons">
+                      {[-2, -1, 0, 1, 2].map((v) => (
+                        <span key={v} className={`persona-btn${a.value === v ? " on" : ""}${v === 0 ? " mid" : ""}`} />
+                      ))}
+                    </div>
+                    <span className="persona-side high">{a.high}</span>
                   </div>
                 ))}
-              </dl>
+              </div>
             </section>
           )}
 

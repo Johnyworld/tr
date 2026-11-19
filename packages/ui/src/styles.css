@@ -3562,35 +3562,59 @@ body {
   text-align: right;
 }
 
+/* 가로선 위 다섯 점: 고른 곳은 파란 점, 나머지는 빈 작은 원 */
 .persona-buttons {
+  position: relative;
   display: flex;
-  gap: 4px;
+}
+
+.persona-buttons::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  /* 1px 선의 가운데를 점의 가운데에 */
+  top: calc(50% - 0.5px);
+  height: 1px;
+  background: var(--border-hover);
 }
 
 .persona-btn {
-  width: 32px;
-  height: 32px;
+  position: relative;
+  width: 40px;
+  height: 40px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  line-height: 1;
+  border: 0;
   border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+  background: transparent;
 }
 
-.persona-btn.mid {
-  color: var(--text);
+.persona-btn::after {
+  content: "";
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--muted);
+  background: var(--bg);
 }
 
-.persona-btn.on {
-  background: var(--accent);
+.persona-btn.on::after {
+  width: 10px;
+  height: 10px;
   border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--accent);
+}
+
+button.persona-btn:not(:disabled) {
+  cursor: pointer;
+}
+
+button.persona-btn:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .persona-note {
@@ -3627,3 +3651,35 @@ body {
 .map-key { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--text); }
 .map-key.here { background: var(--accent); }
 .map-key.seen { background: transparent; border: 1px dashed var(--border-hover); }
+
+/* 캐릭터 시트의 성격 표: 만들 때와 같은 모양, 누를 수 없다 */
+.persona-table.readonly {
+  gap: 6px;
+  margin: 4px 0 0;
+}
+
+.persona-table.readonly .persona-side {
+  font-size: 13px;
+}
+
+.persona-table.readonly .persona-btn {
+  width: 28px;
+  height: 24px;
+}
+
+.persona-table.readonly .persona-buttons::before {
+  left: 14px;
+  right: 14px;
+}
+
+/* 생성 화면의 버튼 공통 모양(테두리·배경·안쪽 여백)을 점 칸에서는 끈다. 클릭 영역 40×40, 올리면 배경만 살짝 밝게 */
+.newgame button.persona-btn {
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.newgame button.persona-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}

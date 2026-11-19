@@ -90,6 +90,17 @@ export function personaChips(content: Content, c: Pick<Character, "id" | "traits
     });
 }
 
+/** 캐릭터 시트의 성격 표: 모든 축과 값(-2~2, 0 포함). 만들 때 고른 모양 그대로 보여 준다 */
+export function personaScale(content: Content, c: Pick<Character, "id" | "traits" | "persona">): { id: string; low: string; high: string; value: number; acting: string }[] {
+  const rules = content.scenario.persona;
+  if (!rules) return [];
+  const p = personaOf(content, c);
+  return rules.axes.map((a) => {
+    const v = p[a.id] ?? 0;
+    return { id: a.id, low: a.low, high: a.high, value: v, acting: v ? ((v > 0 ? a.high_acting : a.low_acting)[Math.abs(v) - 1] ?? "") : "" };
+  });
+}
+
 const DEFAULT_WORDS = ["기본", "default", "없음", "none", "보통", "상관없음", "0", ""];
 
 /**

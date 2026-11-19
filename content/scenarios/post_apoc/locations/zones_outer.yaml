@@ -164,7 +164,7 @@
   cover: 0
   owner: null
   danger: 1
-  adjacent: [old_town, riverside]
+  adjacent: [a_base, old_town, riverside]
   loot:
     chance: 0.45
     items:

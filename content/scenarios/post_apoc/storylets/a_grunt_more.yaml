@@ -238,7 +238,7 @@
   urgent: true
   tags: [grunt]
   repeatable: true
-  cooldown_days: 7  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
+  cooldown_days: 14  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다. 12-195: 2주에 두 번 나와 14일
   weight: 0.6
   when:
     zones: [a_base, south_fields]
@@ -409,7 +409,7 @@
   title: 보초 순번 다툼
   tags: [squad_life]
   repeatable: true
-  cooldown_days: 6  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
+  cooldown_days: 14  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다. 12-195: 2주에 두 번 나와 14일
   when:
     own_territory: true
     day_gte: 2

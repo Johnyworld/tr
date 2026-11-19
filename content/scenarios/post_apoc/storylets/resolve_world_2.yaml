@@ -403,8 +403,7 @@
   repeatable: true
   cooldown_days: 5
   when:
-    zone_owner: [other]
-    resolve: { kinds: [reclaim], stage_gte: 2 }
+    resolve: { kinds: [reclaim], stage_gte: 2, near_target: true }
     segments: [night, dawn]
   setup: "{target}의 담이 멀지 않다. 예전엔 저 담 안에서 밥을 먹고 잠을 잤다. 지금은 남의 보초가 담 위를 오간다."
   ai_direction: "담 안을 들여다보는 것뿐이다. 혼자 땅을 되찾을 수는 없다 (반격, 9.7). 들키면 소리가 나고 보초가 쏜다. 엿본 것은 overhear로."

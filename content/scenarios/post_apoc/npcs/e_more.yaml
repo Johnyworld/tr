@@ -10,6 +10,9 @@
   look: 허리춤에 쇠 저울추를 매단 단단한 체구의 여자. 손등이 밧줄 자국으로 거칠다. 짐 무게를 손으로 들어 보고 맞힌다.
   reputation: 나루상단 짐마차를 이끄는 행상대장. 짐 하나 사람 하나 빠뜨리지 않고 돌아온다는 평. 대신 셈이 틀리면 끝까지 따진다.
   want: 짐마차와 짐꾼을 겨울까지 하나도 잃지 않는 것
+  # 부탁 (12-193): 떠돌이도 만나는 사람
+  favors:
+    - { id: rope_for_cart, ask: "철사 한 타래만 구해 줘요. 짐마차 바퀴 축을 묶어야 하는데 장터에 남은 게 없어", item: { id: wire_roll, quantity: 1 }, days: 5, reward: { item: { id: trade_token, quantity: 2 }, affection: 1 } }
   fear: 길 위에서 짐꾼을 버리고 와야 하는 날
   values: { discipline: 2, loyalty: 2, mercy: 0, honesty: 1, self_interest: 1 }
   traits: [meticulous, blunt, steel_nerves]
@@ -91,6 +94,9 @@
   look: 안경 한쪽 다리를 철사로 감았다. 손끝이 늘 연필 가루로 까맣다. 목도리에 장부를 싸서 품에 안고 다닌다.
   reputation: 장터의 장부꾼. 누가 누구에게 무엇을 얼마나 빚졌는지 다 안다. 빚진 사람들은 그 앞에서 목소리가 작아진다.
   want: 장부가 언젠가 이 도시의 기록이 되는 것
+  # 부탁 (12-193): 떠돌이도 만나는 사람
+  favors:
+    - { id: pencils_for_ledger, ask: "연필 한 자루만 구해 줄 수 있어요? 장부 적을 게 닳아서 손톱만 해졌어", item: { id: pencil, quantity: 1 }, days: 6, reward: { item: { id: trade_token, quantity: 1 }, affection: 2 } }
   fear: 장부가 불타는 것, 그리고 장부 때문에 자기가 죽는 것
   values: { discipline: 2, loyalty: 0, mercy: -1, honesty: 2, self_interest: 1 }
   traits: [meticulous, cold, curious]

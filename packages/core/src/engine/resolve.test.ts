@@ -151,6 +151,14 @@ describe("닿는 다짐 (플레이 테스트에서 고침)", () => {
     expect(currentResolve(w.state())).not.toBeNull();
     w.ctx().store.append({ type: "zone_moved", from: target, to: "old_town" });
     look(w);
+    // 단계가 모자라면 닿아도 아직이다 (12-193, homecoming min_stage 2)
+    w.ctx().store.append({ type: "zone_moved", from: "old_town", to: target });
+    look(w);
+    expect(currentResolve(w.state())).not.toBeNull();
+    w.ctx().store.append({ type: "zone_moved", from: target, to: "old_town" });
+    look(w);
+    w.ctx().store.append({ type: "resolve_stepped", characterId: w.state().playerId, text: "길이 떠올랐다" });
+    w.ctx().store.append({ type: "resolve_stepped", characterId: w.state().playerId, text: "옛 이웃을 만났다" });
     w.ctx().store.append({ type: "zone_moved", from: "old_town", to: target });
     const r = look(w);
     if (r.ok) expect(r.resultText).toContain("다짐을 이뤘다");

@@ -171,8 +171,7 @@
   repeatable: true
   cooldown_days: 4
   when:
-    zone_owner: [other]
-    resolve: { kinds: [reclaim], stage: 0 }
+    resolve: { kinds: [reclaim], stage: 0, near_target: true }
   setup: "무너진 건물 옥상에서 {target:이/가} 내려다보인다. 예전엔 우리 사람들이 저기서 일했다. 지금은 다른 깃발이 걸려 있다."
   ai_direction: "되찾는 것은 무리의 반격(9.7)으로만. 주인공은 정찰로 반격을 앞당길 수 있다 (전선 임무). 이 장면은 그 땅을 다시 보는 순간."
   choices:

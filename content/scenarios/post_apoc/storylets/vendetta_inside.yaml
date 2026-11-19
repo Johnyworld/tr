@@ -53,6 +53,7 @@
   when:
     own_territory: true
     segments: [night]
+    ranks: [grunt, squad_leader]
   cast:
     avenger: { vendetta: true, faction: own }
   setup: 밤 보초 교대. 담 위 초소에는 둘뿐이다. 오늘 교대해 올라온 사람이 {avenger}이다. 발소리가 등 뒤에서 멈춘다. 담 아래로는 한 길이 넘는다.

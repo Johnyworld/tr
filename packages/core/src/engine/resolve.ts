@@ -42,8 +42,14 @@ export function currentResolve(state: GameState): Resolve | null {
   return state.resolves?.[state.playerId] ?? null;
 }
 
-/** 이룬 것인지 (true), 꺾인 것인지 (false), 아직인지 (null) */
+/** 이룬 것인지 (true), 꺾인 것인지 (false), 아직인지 (null). 갈래의 min_stage에 못 미치면 이뤄도 아직이다 (12-193) */
 function evaluate(content: Content, state: GameState, r: Resolve): boolean | null {
+  const result = evaluateCheck(content, state, r);
+  if (result === true && (r.stage ?? 0) < (kindOf(content, r.kind)?.min_stage ?? 0)) return null;
+  return result;
+}
+
+function evaluateCheck(content: Content, state: GameState, r: Resolve): boolean | null {
   const kind = kindOf(content, r.kind);
   if (!kind) return null;
   const me = state.characters[state.playerId]!;

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { isCreature } from "../game/kinds.ts";
 import { romanceShift } from "./persona.ts";
 import type { Content } from "../content/schemas.ts";
-import { playerCalls } from "../game/acquaintance.ts";
+import { hasMet, playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
@@ -90,7 +90,7 @@ export function loversOf(state: GameState, content: Content, id: string): string
 }
 
 /**
- * 이야기 배역 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람(연인이 아닌),
+ * 이야기 배역 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람(연인이 아닌, 주인공이 만난 사람),
  * ex 주인공과 헤어진 사람, jilted 주인공의 연인을 빼앗긴 사람 (그 연인과의 연애가 끝난 사람, 12-185)
  */
 export function romanceCast(state: GameState, content: Content, kind: "lover" | "suitor" | "ex" | "jilted"): string[] {
@@ -100,7 +100,8 @@ export function romanceCast(state: GameState, content: Content, kind: "lover" | 
   if (kind === "lover") return lovers;
   if (kind === "suitor") {
     return Object.keys(state.characters)
-      .filter((id) => id !== me && !lovers.includes(id) && free(id) && hasInterest(state, content, id, me))
+      // 주인공이 만난 사람만 (12-193: 처음 보는 사람이 "마음이 있는 사람"으로 나오지 않게)
+      .filter((id) => id !== me && !lovers.includes(id) && free(id) && hasMet(state, me, id) && hasInterest(state, content, id, me))
       .sort();
   }
   const ended = Object.values(state.romances ?? {}).filter((r) => r.stage === "ended");

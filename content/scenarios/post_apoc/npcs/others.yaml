@@ -237,6 +237,9 @@
   look: 금니가 두 개, 기름때 묻은 가죽 조끼. 손가락에 반지가 여럿이다.
   reputation: 나루상단의 우두머리. 누구에게나 웃으며 판다. 이기는 쪽에 붙을 사람이라는 평. 광주 양동시장에서 장사를 배웠다고 한다.
   want: 전쟁이 끝났을 때 이긴 쪽의 단골이 되는 것
+  # 부탁 (12-193): 떠돌이도 만나는 사람
+  favors:
+    - { id: smokes_for_stock, ask: "담배 두 갑 구해 오면 값은 섭섭지 않게 쳐 주지. 요즘 들어오는 게 없어", item: { id: cigarettes, quantity: 2 }, days: 5, reward: { item: { id: canned_food, quantity: 2 }, affection: 1 } }
   fear: 양쪽에서 동시에 버림받는 것
   values: { discipline: 0, loyalty: -1, mercy: 0, honesty: -2, self_interest: 3 }
   traits: [genial, calculating, flirt, silver_tongue]

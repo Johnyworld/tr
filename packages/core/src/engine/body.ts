@@ -711,7 +711,7 @@ export function shakeNerves(ctx: ToolContext, steps: number, cause: string): Cha
 
 /**
  * 하루마다 마음이 가라앉는다: 굶주리거나 얼지 않으면 확률로, 우리 땅이거나 곁에 사람이 있으면 더 잘 (떠돌이도 천천히 낫는다).
- * 막는 것은 굶주림·오한(보정 -2) 이상만이다. 허기짐·추움(-1)으로는 막지 않는다
+ * 막는 것은 굶주림·오한(보정 -2) 이상만이다. 허기짐·몸살 기운(-1)으로는 막지 않는다
  */
 export function runDailyNerves(ctx: ToolContext): ToolDisplayEvent[] {
   const nerves = ctx.content.scenario.body?.nerves;

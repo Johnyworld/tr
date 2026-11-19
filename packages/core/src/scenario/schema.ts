@@ -325,6 +325,8 @@ export const scenarioFileSchema = z
           tone: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
           /** 이 증상이 있는 동안 이 묶음(group)의 증상은 판정 보정을 주지 않는다 (12-157: 진통제는 고통을, 술은 공포를 가린다). 증상은 그대로 보인다 */
           masks: z.array(id).optional(),
+          /** 이 증상이 무엇이고 어떻게 나아지는지 한 줄 (12-193). ?상태에 증상 아래로 보인다 */
+          hint: z.string().min(1).max(80).optional(),
         }),
       )
       .optional(),
@@ -998,6 +1000,8 @@ export const scenarioFileSchema = z
               check: z.enum(RESOLVE_CHECK_IDS),
               let_go: z.boolean().default(false),
               occupation_only: z.boolean().default(false),
+              /** 단계가 이 이상 오른 뒤에야 이룬 것으로 친다 (12-193: 돌아가기가 이동 한 번에 끝나지 않게). 그 전에 닿으면 지나간다 */
+              min_stage: z.number().int().min(0).default(0),
             }),
           )
           .min(1),

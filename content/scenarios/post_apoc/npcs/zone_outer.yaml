@@ -13,6 +13,9 @@
   look: 허리가 굽었고 목이 가늘다. 검은 수단의 소매 끝이 실밥으로 너덜거린다. 오른손 검지와 중지가 성당 문 빗장에 찧여 굽은 채로 붙었다.
   reputation: 언덕 위 성당의 늙은 신부. 무리를 가리지 않고 장례를 치러 준다. 문 앞에서 누구에게나 총을 두고 들어오라고 하고, 지금까지 그 말이 대체로 지켜졌다.
   want: 자기가 죽은 뒤에도 성당 문 앞의 약속(총을 들고 들어오지 않는다)이 지켜지는 것
+  # 부탁 (12-193): 떠돌이도 만나는 사람
+  favors:
+    - { id: firewood_for_nave, ask: "땔감 두 단만 나눠 주겠소. 겨울밤에 성당으로 드는 사람들을 얼게 둘 수는 없어서", item: { id: firewood, quantity: 2 }, days: 5, reward: { item: { id: blanket, quantity: 1 }, affection: 2 } }
   fear: 종탑 아래 피난민들이 자기 때문에 어느 무리에도 못 가고 굶는 것
   values: { discipline: 1, loyalty: 1, mercy: 3, honesty: 2, self_interest: -2 }
   traits: [patient, principled, weary, frail]
@@ -185,6 +188,9 @@
   look: 볕에 그을린 넓은 얼굴. 털실 목도리를 코까지 올려 감았다. 손가락이 분필 가루로 하얗다. 휴게소 식당의 메뉴 칠판을 떼어 주유소 기둥에 세워 두었다.
   reputation: 휴게소에 혼자 사는 사내. 고속도로로 나가는 사람과 들어오는 사람의 이름, 바깥 소식을 칠판에 적는다. 나루상단은 짐을 부리러 올 때마다 그 칠판부터 읽는다.
   want: 고속도로로 나간 사람 가운데 누구 하나라도 돌아와서 바깥이 어떤지 제 입으로 말해 주는 것
+  # 부탁 (12-193): 떠돌이도 만나는 사람
+  favors:
+    - { id: fuel_for_signal, ask: "연료 한 병만 구해 주게. 밤마다 고속도로 쪽에 불을 켜 둬야 돌아오는 사람이 길을 찾지", item: { id: fuel_bottle, quantity: 1 }, days: 6, reward: { item: { id: binoculars, quantity: 1 }, affection: 1 } }
   fear: 칠판에 적힌 이름이 다 지워질 때까지 아무도 안 돌아오는 것
   values: { discipline: 0, loyalty: 1, mercy: 1, honesty: 2, self_interest: 1 }
   traits: [talkative, genial, curious]

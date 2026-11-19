@@ -17,6 +17,7 @@ import { factionPolicy } from "../sim/war.ts";
 import { disposition } from "../sim/war.ts";
 import type { Content, StoryletChoice, StoryletContent } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
+import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
 import { activeMissionOf, commanderOf } from "../game/missions.ts";
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
@@ -36,6 +37,15 @@ import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
  */
 
 type CastRole = StoryletContent["cast"][string];
+
+/** 배역의 무리 조건 (faction). other: 주인공의 무리가 아닌 사람 (떠돌이에게는 같은 무리가 없으니 누구나) */
+function factionFits(state: GameState, role: CastRole, c: Character): boolean {
+  const player = state.characters[state.playerId]!;
+  if (!role.faction) return true;
+  if (role.faction === "other") return !player.factionId || c.factionId !== player.factionId;
+  const want = role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction === "captor" ? (player.captive?.by ?? "-") : role.faction;
+  return c.factionId === want;
+}
 
 /** 이 배역에 맞는 살아 있는 NPC들 (id 순) */
 export function castCandidates(state: GameState, content: Content, role: CastRole, picked: Record<string, string> = {}): string[] {
@@ -79,9 +89,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     )
     .filter((c) => !role.bereaved || ((dead) => !!dead && closeTo(state, content, dead, c.id))(recentlyDeadComrade(state, content)))
     .filter((c) => !role.commander || c.id === commander)
-    // other: 주인공의 무리가 아닌 사람. 떠돌이에게는 같은 무리가 없으니 누구나
-    .filter((c) => role.faction !== "other" || !player.factionId || c.factionId !== player.factionId)
-    .filter((c) => !role.faction || role.faction === "other" || c.factionId === (role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction === "captor" ? (player.captive?.by ?? "-") : role.faction))
+    .filter((c) => factionFits(state, role, c))
     .filter((c) => !role.ranks || role.ranks.includes(c.rank))
     // 성적 위협을 가진 사람: 수위가 켜져 있고, 그 사람이 주인공에게 끌릴 때만 (12-59)
     .filter((c) => !role.menace || (!!c.menace && role.menace.includes(c.menace) && !!state.options?.mature && attracted(state, content, c.id, state.playerId)))
@@ -157,7 +165,7 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       continue;
     }
     if (role.romance) {
-      const options = romanceCast(state, content, role.romance).filter((id) => !used.has(id) && (!role.condition || bodyMatches(content, state.characters[id]?.conditions[role.condition.track], role.condition)) && (!role.here || state.scene.present.includes(id) || state.companions.includes(id) || (state.characters[id]?.extra?.zone ?? state.playerZone) === state.playerZone));
+      const options = romanceCast(state, content, role.romance).filter((id) => !used.has(id) && factionFits(state, role, state.characters[id]!) && (!role.condition || bodyMatches(content, state.characters[id]?.conditions[role.condition.track], role.condition)) && (!role.here || state.scene.present.includes(id) || state.companions.includes(id) || (state.characters[id]?.extra?.zone ?? state.playerZone) === state.playerZone));
       if (options.length === 0) {
         if (role.optional) continue;
         return null;
@@ -310,6 +318,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (w.resolve.stage !== undefined && stage !== w.resolve.stage) return false;
     if (w.resolve.stage_gte !== undefined && stage < w.resolve.stage_gte) return false;
     if (w.resolve.stage_lte !== undefined && stage > w.resolve.stage_lte) return false;
+    if (w.resolve.near_target !== undefined) {
+      const here = state.playerZone;
+      const near = !!here && !!r.target && (here === r.target || (content.locations[here]?.adjacent ?? []).includes(r.target) || (content.locations[r.target]?.adjacent ?? []).includes(here));
+      if (near !== w.resolve.near_target) return false;
+    }
   }
   if (w.bounty !== undefined && (state.bounties ?? []).length > 0 !== w.bounty) return false;
   if (w.funeral !== undefined && !!recentlyDeadComrade(state, content, at) !== w.funeral) return false;

@@ -11,6 +11,9 @@
   look: 흰머리를 뒤로 바짝 묶었다. 앞치마 주머니에 가위와 볼펜, 접은 종이가 늘 꽂혀 있다. 손톱을 짧게 깎았다.
   reputation: 진료소의 수간호사. 수습들을 맡아 가르친다. 붕괴 전 시립병원 응급실에서 일했다는 말이 있다. 누가 먼저 치료받을지는 이 사람이 정한다.
   want: 수습들이 자기 없이도 사람을 고를 줄 알게 되는 것
+  # 부탁 (12-193): 떠돌이도 만나는 사람
+  favors:
+    - { id: cloth_for_dressing, ask: "깨끗한 천 두 장만. 붕대를 빨아 쓰는 것도 한계가 있어요", item: { id: cloth, quantity: 2 }, days: 5, reward: { item: { id: bandage, quantity: 1 }, affection: 1 } }
   fear: 응급실이 무너지던 날처럼, 문 앞에 줄 선 사람들을 다 돌려보내야 하는 날
   values: { discipline: 2, loyalty: 2, mercy: 1, honesty: 2, self_interest: -1 }
   traits: [principled, blunt, weary]
@@ -53,6 +56,9 @@
   look: 가는 금속테 안경에 손질한 콧수염. 하얀매에서 드물게 가운 대신 조끼를 입는다. 열쇠 꾸러미가 허리에서 짤랑거린다.
   reputation: 약제실과 거래를 맡은 간부. 다른 무리와 약값을 흥정하는 사람이다. 붕괴 전 제약회사 영업사원이었다고 한다. 손해 보는 거래는 하지 않는다는 평.
   want: 하얀매가 무너지는 날에도 혼자 살아남을 밑천
+  # 부탁 (12-193): 떠돌이도 만나는 사람
+  favors:
+    - { id: moonshine_quiet, ask: "밀주 한 병. 소독용이라고 적어 둘 테니 묻지는 말고", item: { id: moonshine, quantity: 1 }, days: 4, reward: { item: { id: painkiller, quantity: 1 }, affection: 1 } }
   fear: 약이 바닥나 하얀매가 쓸모없어지는 것
   values: { discipline: 1, loyalty: -1, mercy: -1, honesty: -2, self_interest: 3 }
   traits: [calculating, genial, greedy]

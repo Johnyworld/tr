@@ -282,7 +282,7 @@
     segments: [morning, day, evening]
     flags_none: [rm_squad_choice_done]
   cast:
-    lover: { romance: lover }
+    lover: { romance: lover, faction: own }
     boss: { commander: true }
   setup: 창고에서 약 상자 하나가 비었다. {boss:이/가} 한 사람씩 불러 묻는다. 어젯밤 {lover:이/가} 창고 쪽에서 돌아오는 것을 본 사람은 당신뿐이다. 연인이 눈으로 묻는다. 말할 거냐고.
   ai_direction: 연인이 가져간 것이 맞다. 아픈 사람(가족이거나, 아직 주인공이 모르는 누군가)에게 주려고 했다. 상관은 범인을 찾을 때까지 배급을 줄이겠다고 한다. 어느 쪽을 골라도 누군가를 저버린다. 플레이어가 연인과 끝내기로 하면 GM이 romance break_up을 쓴다.

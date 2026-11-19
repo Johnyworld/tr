@@ -684,9 +684,10 @@ search_lore: { skill: history, per_level: 0.25 }
 # 같은 group은 크기 차이라 가장 큰 것(아래쪽) 하나만 보인다. 판정 보정: 가장 큰 증상은 그대로, 나머지 합은 반(올림)만 더한다
 # (1+1 → -2, 3+2 → -4). tone: 화면 색 (없으면 보정 크기로). 보정은 작아도 마지막 단계급인 증상은 3 (*임시* 수치)
 symptoms:
-  - { id: chill, label: 추움, group: fever, penalty: -1 }
-  - { id: shiver, label: 오한, group: fever, penalty: -2 }
-  - { id: high_fever, label: 고열, group: fever, penalty: -3 }
+  # 열 묶음은 질병과 감염이 같이 쓴다 (원인을 숨긴다, 12-74). 그래서 hint도 원인을 가리지 않는다 (12-193: 추움 → 몸살 기운, 추위 트랙과 헷갈리지 않게)
+  - { id: chill, label: 몸살 기운, group: fever, penalty: -1, hint: "열 기운이 돈다. 앓는 병이면 잘 먹고 따뜻하게 자면 낫고, 해열제가 듣는다" }
+  - { id: shiver, label: 오한, group: fever, penalty: -2, hint: "열이 오른다. 앓는 병이면 잘 먹고 따뜻하게 자면 낫고, 해열제가 듣는다" }
+  - { id: high_fever, label: 고열, group: fever, penalty: -3, hint: "열이 높다. 더 깊어지면 몸이 상한다" }
   - { id: pain, label: 고통, group: pain, penalty: -1 }
   - { id: severe_pain, label: 심한 고통, group: pain, penalty: -2 }
   - { id: agony, label: 극심한 고통, group: pain, penalty: -3 }
@@ -1225,7 +1226,7 @@ resolve:
     - { id: repay, label: 은혜 갚기, check: promise_kept }
     - { id: rise, label: 자리, check: rank }
     - { id: debt, label: 빚 털기, check: debt_clear }
-    - { id: journey, label: 떠나기, check: reach }
+    - { id: journey, label: 떠나기, check: reach, min_stage: 2 }
     - { id: truth, label: 진실, check: beliefs }
     - { id: atone, label: 속죄, check: trusted }
     - { id: heart, label: 마음, check: relation }
@@ -1237,7 +1238,7 @@ resolve:
     - { id: reclaim, label: 되찾기, check: zone_owned }
     - { id: recognition, label: 인정받기, check: standing, occupation_only: true }
     - { id: explore, label: 알아내기, check: ruins_found }
-    - { id: homecoming, label: 돌아가기, check: reach }
+    - { id: homecoming, label: 돌아가기, check: reach, min_stage: 2 }
 
 # 몸에 남는 상처 (12-156, *임시*): 부상이 치명상 이상인 상처를 입으면 30%로 흔적 트레잇 하나. 상처 종류에 맞는 것 중에서, 한 사람에 셋까지
 scars:

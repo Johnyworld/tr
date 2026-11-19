@@ -111,6 +111,7 @@ const status: CommandDef = {
       return index > 0 ? [gaugeLine(track.label, index, track.levels.length - 1, shown.label)] : [];
     });
     lines.push(...(symptoms.length ? symptoms : ["몸 상태  건강함"]));
+    for (const x of shownSymptoms ?? []) if (x.hint) lines.push(`  ${x.label}: ${x.hint}`);
     const penalty = conditionPenalty(scenario, player);
     if (penalty !== 0) lines.push(`판정 보정 ${signed(penalty)}`);
     lines.push("");

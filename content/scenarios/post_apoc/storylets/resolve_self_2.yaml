@@ -482,7 +482,7 @@
   repeatable: true
   cooldown_days: 5
   when:
-    resolve: { kinds: [homecoming], stage_gte: 2 }
+    resolve: { kinds: [homecoming], stage_gte: 2, near_target: true }
     segments: [dawn, morning]
   setup: "높은 데 올라 {target} 쪽을 내려다본다. 낯익은 지붕선이 무너진 채로 남아 있다. 저 아래 어디쯤이 집이다. 가는 길에 무엇이 있을지는 여기서 다 보이지 않는다."
   variants:

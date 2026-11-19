@@ -255,6 +255,9 @@
   look: 주근깨 많은 흰 얼굴에 짧게 자른 갈색 머리. 커다란 군용 점퍼 소매를 몇 번 접어 입었다. 목에 낡은 휴대용 라디오를 끈으로 매달고 다닌다.
   reputation: 미국에서 온 원어민 영어 선생. 학원이 문을 닫던 날부터 성당에서 신부를 돕는다. 아이들에게 영어 노래를 가르치고, 밤마다 종탑에서 라디오를 돌린다고 한다.
   want: 영어 방송에서 말하는 "구조 지점"이 아직 살아 있는지 알아내는 것
+  # 부탁 (12-193): 떠돌이도 만나는 사람
+  favors:
+    - { id: radio_batteries, ask: "Radio… 라디오 하나만 구해 줄 수 있어요? 방송을 끝까지 들어야 해요", item: { id: radio, quantity: 1 }, days: 10, reward: { item: { id: fever_reducer, quantity: 2 }, affection: 2 } }
   fear: 자기만 알아듣는 방송이 이미 오래전에 녹음된 것일까 봐
   values: { discipline: 0, loyalty: 1, mercy: 2, honesty: 2, self_interest: 0 }
   traits: [curious, eager, talkative]

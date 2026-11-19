@@ -909,9 +909,9 @@ export function createContentSchemas(s: Scenario) {
         zone_overrun: z.boolean().optional(),
         /** 주인공에게 현상금이 걸려 있다 (12-136). 문장의 자리 {bounty_by}는 먼저 건 무리 */
         bounty: z.boolean().optional(),
-        /** 주인공의 다짐 (12-164): 이 갈래 중 하나이고(kinds), 단계가 이 범위. 문장의 자리 {target}은 다짐의 대상, {resolve}는 다짐 한 줄 */
+        /** 주인공의 다짐 (12-164): 이 갈래 중 하나이고(kinds), 단계가 이 범위. near_target: 다짐의 대상 구역이나 맞닿은 구역에 있다 (12-193). 문장의 자리 {target}은 다짐의 대상, {resolve}는 다짐 한 줄 */
         resolve: z
-          .strictObject({ kinds: z.array(contentIdSchema).min(1).optional(), stage: z.number().int().min(0).optional(), stage_gte: z.number().int().min(0).optional(), stage_lte: z.number().int().min(0).optional() })
+          .strictObject({ kinds: z.array(contentIdSchema).min(1).optional(), stage: z.number().int().min(0).optional(), stage_gte: z.number().int().min(0).optional(), stage_lte: z.number().int().min(0).optional(), near_target: z.boolean().optional() })
           .optional(),
         /** 이 구역에 이전 주인공의 유해(remains, 묻히지 않은 것)나 무덤(grave)이 있다 (12-130: 계승의 흔적) */
         predecessor_here: z.enum(["remains", "grave"]).optional(),

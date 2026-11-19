@@ -1,3 +1,4 @@
+import { buildMapView, type MapView } from "./map.ts";
 import { resolveLine } from "../engine/resolve.ts";
 import { pledges } from "../engine/promises.ts";
 import { portraitSections } from "../scenario/scenario.ts";
@@ -192,6 +193,8 @@ export type PlayerView = {
   beliefs: { id: string; fact: string; sourceLabel: string; learnedLabel: string }[];
   /** 메모 (12-75): 메모장과 펜·연필이 있으면 {text}. 없으면 null (메모 탭이 닫힌다) */
   memo: { text: string } | null;
+  /** 지도 (12-201): 가 본 곳과 그 이웃만 */
+  map: MapView | null;
   /** 지난 일 요약 (최근 것부터, 현재 캐릭터의 것만). scene: 장면을 매듭지은 요약. GameWorld.playerView가 채운다 (?일지와 같은 기록) */
   journal: { key: string; timeLabel: string; scene: boolean; text: string }[];
 };
@@ -428,6 +431,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     }),
     symptoms: [...symptomViews(scenario, player), ...wetSymptom(scenario, state, player.id)],
     memo: memoAccess(content, player).write ? { text: state.memos[player.id] ?? "" } : null,
+    map: buildMapView(state, content),
     conditionPenalty: conditionPenalty(scenario, player),
     dead: player.dead,
     stats: scenario.stats.map((s) => ({ id: s.id, label: s.label, value: player.stats[s.id] ?? 0 })),

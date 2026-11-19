@@ -5,6 +5,7 @@ import { MemoPanel } from "./MemoPanel.tsx";
 import { Icon } from "./Icon.tsx";
 import { Portrait } from "./Portrait.tsx";
 import { SheetTabs } from "./SheetTabs.tsx";
+import { MapPanel } from "./MapPanel.tsx";
 import type { GearView, ItemView, PersonProfile, PlayerView, SymptomView } from "./types.ts";
 
 /** 장비 칸 (core views/player.ts의 SLOT_LABELS 순서) */
@@ -332,6 +333,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
           </section>
             </>
           ),
+          map: <MapPanel map={player.map ?? null} />,
           memo: player.memo ? <MemoPanel text={player.memo.text} /> : null,
         }}
       </SheetTabs>

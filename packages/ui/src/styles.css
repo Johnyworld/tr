@@ -3611,3 +3611,19 @@ body {
   font-size: 13px;
   line-height: 1.5;
 }
+
+/* 지도 탭 (12-201) */
+.map-panel svg { display: block; }
+.map-edge { stroke: var(--border-hover); stroke-width: 1.2; }
+.map-edge.faint { stroke: var(--border); stroke-dasharray: 3 3; }
+.map-node circle { fill: var(--text); stroke: var(--bg); stroke-width: 2; }
+.map-node text { fill: var(--text); font-size: 12px; }
+.map-node.base circle { fill: var(--player); }
+.map-node.seen circle { fill: var(--bg); stroke: var(--border-hover); stroke-width: 1; stroke-dasharray: 2 2; }
+.map-node.seen text { fill: var(--muted); }
+.map-node.here circle { fill: var(--accent); stroke: var(--heading); stroke-width: 2; }
+.map-node.here text { fill: var(--heading); font-weight: bold; }
+.map-legend { font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.map-key { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--text); }
+.map-key.here { background: var(--accent); }
+.map-key.seen { background: transparent; border: 1px dashed var(--border-hover); }

@@ -68,6 +68,7 @@ export type PlayerView = {
   journal?: { key: string; timeLabel: string; scene: boolean; text: string }[];
   /** 메모 (12-75). 메모장과 펜·연필이 있을 때만 */
   memo?: { text: string } | null;
+  map?: MapView | null;
 };
 
 export type GearView = { id: string; name: string; slot?: string; slotLabel: string; detail: string; durability?: { left: number; max: number } | null; ammo: string | null; icon?: string };
@@ -137,3 +138,7 @@ export type PersonProfile = {
   attitude: { axis: string; label: string; word: string; value: number }[] | null;
   facts: { source: string; fact: string }[];
 };
+
+/** 지도 (12-201) */
+export type MapNode = { id: string; name: string; label: string; x: number; y: number; state: "here" | "visited" | "seen"; base: boolean; isolated: boolean };
+export type MapView = { nodes: MapNode[]; edges: [string, string][] };

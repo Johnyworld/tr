@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 78;
+export const SAVE_SCHEMA_VERSION = 79;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -406,6 +406,8 @@ export function createGameSchemas(s: Scenario) {
     fires: z.record(z.string(), z.number().int()).default({}),
     /** 구역에 맡겨 둔 물건 (구역 id → 아이템 → 수량). 그 구역을 떠날 때 돌려받는다 (12-54) */
     deposits: z.record(z.string(), z.record(z.string(), z.number().int().positive())).default({}),
+    /** 캐릭터마다 가 본 구역 (12-201: 지도에 가 본 곳만 그린다). 구역 이동에서 모은다 */
+    visited: z.record(z.string(), z.array(z.string())).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
     lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
@@ -1074,6 +1076,7 @@ export const EMPTY_STATE: GameState = {
   romances: {},
   flirtDay: {},
   deposits: {},
+  visited: {},
   background: [],
   companions: [],
   bonds: {},
@@ -1916,6 +1919,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         });
       }
       next.playerZone = event.to;
+      {
+        const seen = next.visited[next.playerId] ?? [];
+        if (!seen.includes(event.to)) next.visited = { ...next.visited, [next.playerId]: [...seen, event.to] };
+      }
       break;
     case "condition_changed": {
       const target = mustGet(next.characters, event.targetId, "캐릭터");

@@ -1,3 +1,4 @@
+import { buildMapView, renderMapAscii, visitedZones } from "../views/map.ts";
 import { resolveLine } from "../engine/resolve.ts";
 import { promiseLines } from "../engine/promises.ts";
 import { rankName } from "../game/ranks.ts";
@@ -196,6 +197,13 @@ const map: CommandDef = {
       "",
       "맞닿은 구역 (이동 30분~1시간)",
       ...z.adjacent.map((a) => `  ${a.name} · ${a.owner}`),
+      "",
+      // 가 본 곳 (12-201). 글자 지도, 그림 지도는 상태 화면의 지도 탭
+      ...(() => {
+        const view = buildMapView(ctx.state, ctx.content);
+        return view ? ["", renderMapAscii(view), ""] : [];
+      })(),
+      `가 본 곳  ${visitedZones(ctx.state).map((id) => ctx.content.locations[id]?.name ?? id).join(", ")}`,
     ].join("\n");
   },
 };

@@ -519,6 +519,8 @@ export function createContentSchemas(s: Scenario) {
     /** 시작 소유 세력. 없으면 누구의 땅도 아니다 */
     owner: contentIdSchema.nullable().default(null),
     adjacent: z.array(contentIdSchema).default([]),
+    /** 지도 위 자리 (12-201, 상태 화면의 지도). 0~100 비율 좌표 (x 왼쪽→오른쪽, y 위→아래), label은 지도에 적는 짧은 이름 (없으면 name). 없으면 지도에 그리지 않는다 */
+    map: z.strictObject({ x: z.number().min(0).max(100), y: z.number().min(0).max(100), label: z.string().min(1).max(6).optional() }).optional(),
     /** 피난처: 어느 무리도 차지하거나 치지 않는다 (성당, 학자들의 캠퍼스, 12-53) */
     sanctuary: z.boolean().optional(),
     /** 갈아입을 옷이 있는 곳 (12-186, 옷가게·마트 폐허 등). 젖은 옷을 갈아입을 수 있다. 우리 무리의 거점과 내 거처는 늘 된다 */

@@ -7,6 +7,7 @@ const TABS = [
   { id: "items", label: "아이템" },
   { id: "people", label: "인물" },
   { id: "journal", label: "일지" },
+  { id: "map", label: "지도" },
   // 메모장과 펜·연필이 있을 때만 (12-75)
   { id: "memo", label: "메모" },
 ] as const;
@@ -21,6 +22,8 @@ function fingerprints(p: PlayerView): Record<TabId, string> {
     items: JSON.stringify([p.gear?.weapon?.id, p.gear?.armor.map((a) => a.id), p.inventory.map((i) => [i.id, i.quantity]), p.sceneItems.map((i) => [i.id, i.quantity])]),
     people: JSON.stringify([p.companions?.map((c) => [c.id, c.note]), p.squad?.map((m) => m.report), p.relations.map((r) => r.id), p.ties?.length]),
     journal: JSON.stringify([p.journal?.length ?? 0, p.deeds.length, p.beliefs.length]),
+    // 지도는 걸어 다니면 늘 바뀌어 배지를 띄우지 않는다
+    map: "",
     // 메모는 플레이어가 쓰는 것이라 배지를 띄우지 않는다
     memo: "",
   };

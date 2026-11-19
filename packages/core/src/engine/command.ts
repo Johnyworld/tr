@@ -56,6 +56,13 @@ export function squadOf(state: GameState, content: Content): { leader: string | 
 export function squadMembers(state: GameState, content: Content): string[] {
   const role = roleOf(content, state);
   const player = state.characters[state.playerId];
+  // 진급해서 꾸린 분대 (12-190)
+  if (state.squad && player?.factionId) {
+    return state.squad.filter((id) => {
+      const c = state.characters[id];
+      return id !== state.playerId && !!c && !c.dead && !c.away && !c.captive && c.factionId === player.factionId;
+    });
+  }
   // 그 자리(계급)에 있는 사람만 분대를 지휘한다. 분대원이 이어받아 플레이하면 분대장이 아니다
   if (!role?.squad?.length || !player?.factionId || player.rank !== role.rank) return [];
   return role.squad.filter((id) => {

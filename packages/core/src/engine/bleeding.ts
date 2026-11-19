@@ -1,6 +1,9 @@
+import { activeCompanions } from "../game/companions.ts";
+import { isCreature } from "../game/kinds.ts";
+import { playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
 import type { CheckOutcome } from "../rules/check.ts";
-import { harmTrack, trackOf } from "../scenario/scenario.ts";
+import { harmTrack, incapacitatingSymptom, trackOf } from "../scenario/scenario.ts";
 import { changeCondition } from "./body.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
@@ -16,6 +19,9 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
  */
 
 const rules = (ctx: ToolContext) => ctx.content.scenario.wounds;
+
+/** 곁의 사람이 주인공의 피를 멎게 하기까지 (분) */
+const HELPER_STAUNCH_MINUTES = 60;
 
 const levelIndexOf = (ctx: ToolContext, c: Pick<Character, "conditions">, trackId: string) => {
   const t = trackOf(ctx.content.scenario, trackId);
@@ -127,6 +133,14 @@ function bleedOne(ctx: ToolContext, id: string): ToolDisplayEvent[] {
   const elapsed = state.time - since;
   const clot = w.clot_hours[level.id];
   if (clot !== undefined && elapsed >= clot * 60) return stopBleeding(ctx, id, "피가 저절로 멎었다");
+  // 곁의 사람 (플레이 테스트 8): 주인공이 피를 흘리면 곁의 동행이나 같은 무리 사람이 한 시간 안에 지혈한다 (임무 짝도)
+  if (id === state.playerId && elapsed >= HELPER_STAUNCH_MINUTES) {
+    const helper = [...activeCompanions(state), ...state.scene.present].find((h) => {
+      const x = state.characters[h];
+      return !!x && h !== id && !x.dead && !x.captive && !isCreature(ctx.content, x) && !incapacitatingSymptom(ctx.content.scenario, x) && (activeCompanions(state).includes(h) || (!!c.factionId && x.factionId === c.factionId));
+    });
+    if (helper) return stopBleeding(ctx, id, `곁에 있던 ${playerCalls(state, ctx.content, helper)}의 지혈`);
+  }
   const every = w.worsen_hours[level.id];
   if (every === undefined) return [];
   const times = Math.floor(elapsed / (every * 60));

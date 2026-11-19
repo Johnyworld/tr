@@ -1376,9 +1376,12 @@ export const scenarioFileSchema = z
                 sanctuary: z.number().optional(),
                 /** 트레잇 효과 cold 1당 체감에서 빼는 도 (추위를 탐 +1, 추위에 강함 -1) */
                 trait_degrees: z.number().min(0).default(3),
-                /** 모닥불: 연료 아이템 → 타는 시간. 같은 구역에 있으면 체감 +warmth, 피우면 그 구역 소음 +noise */
+                /**
+                 * 모닥불: 연료 아이템 → 타는 시간. 같은 구역에 있으면 체감 +warmth, 피우면 그 구역 소음 +noise.
+                 * stove: 난로(시설 effects.fire)가 있는 구역에서 피우면 이만큼 오래 탄다 (12-190: 난로도 땔감을 땐다, 실내만 따뜻하다)
+                 */
                 fire: z
-                  .strictObject({ items: z.record(id, z.number().positive()), warmth: z.number().positive(), noise: z.number().int().min(0).default(0) })
+                  .strictObject({ items: z.record(id, z.number().positive()), warmth: z.number().positive(), noise: z.number().int().min(0).default(0), stove: z.number().min(1).default(3) })
                   .optional(),
                 /**
                  * 젖은 옷 (12-121, 12-186): weather 날씨에 바깥에 있었거나 이야기 효과 soak로 젖으면 마를 때까지 체감 -degrees.

@@ -90,7 +90,7 @@ export const watchedHere = (content: Content, state: GameState) => facilitiesAt(
 export const waterFacilityHere = (content: Content, state: GameState) => facilitiesAt(content, state, state.playerZone).some((f) => f.effects.water);
 /** 시설 효과: 날것이 안 상한다 (훈제 막) */
 export const preservesHere = (content: Content, state: GameState) => facilitiesAt(content, state, state.playerZone).some((f) => f.effects.preserve);
-/** 시설 효과: 실내에 꺼지지 않는 불 (난로) */
+/** 시설 효과: 난로가 있다 (땔감을 넣으면 오래 타고 실내만 따뜻하다, 12-190) */
 export const stoveAt = (content: Content, state: GameState, zone: string | null | undefined) => facilitiesAt(content, state, zone).some((f) => f.effects.fire);
 
 /** 하루가 지나면: 텃밭이 자란다. 거처면 garden.days마다 주인공의 창고에, 거점이면 날마다 무리 자원에 (자라는 계절에만) */

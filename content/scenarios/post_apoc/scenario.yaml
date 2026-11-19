@@ -484,7 +484,8 @@ growth:
     - { from: 6, per: 0.03 }
     - { from: 11, per: 0.02 }
     - { from: 16, per: 0.01 }
-  xp: { success: 1, partial: 1, miss: 2, merit: 2 }
+  # 실패 2 → 1 (12-190): 실패를 거듭할수록 빨리 커서 5일차에 분대장이 됐다 (플레이 테스트 8)
+  xp: { success: 1, partial: 1, miss: 1, merit: 2 }
   daily_check_cap: 6
 # 트레잇 (기획서 4.6, *임시*): 타고난 기질·체질·외모. 플레이어와 NPC가 같이 쓴다
 # kind: positive(cost만큼 쓴다) / negative(cost만큼 얻는다) / personality(0, 연기 위주)
@@ -1197,7 +1198,7 @@ facilities:
     effects: { preserve: true }
   - id: stove
     label: 난로
-    description: 고철로 연통 달린 난로를 짰다. 이곳 실내에는 꺼지지 않는 불이 있다.
+    description: 고철로 연통 달린 난로를 짰다. 땔감을 넣으면 모닥불보다 세 배 오래 타고, 실내가 따뜻해진다.
     where: [home]
     move: improvise
     hours: 5

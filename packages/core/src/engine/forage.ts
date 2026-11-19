@@ -54,8 +54,10 @@ export function forage(ctx: ToolContext, kindId: string, outcome: CheckOutcome |
   const chance = kind.chance * 0.5 ** count * (outcome === null ? 0.5 : 1);
   const total = kind.items.reduce((n, i) => n + i.weight, 0);
   const found = new Map<string, number>();
+  // 판정에 성공했으면(대가 있는 성공 포함) 오늘 처음 뒤지는 곳에서는 적어도 하나는 얻는다 (플레이 테스트 8: 대가 있는 성공인데 빈손이 잦았다)
+  const sure = (outcome === "success" || outcome === "partial") && count === 0;
   for (let r = 0; r < rolls; r++) {
-    if (rng() >= chance) continue;
+    if (!(sure && r === 0) && rng() >= chance) continue;
     let pick = rng() * total;
     const entry = kind.items.find((i) => (pick -= i.weight) < 0) ?? kind.items[kind.items.length - 1]!;
     const qty = entry.qty[0] + Math.floor(rng() * (entry.qty[1] - entry.qty[0] + 1));

@@ -104,12 +104,12 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   } else {
     parts.push(cover > 0 ? "바깥" : "덮을 곳 없는 바깥");
   }
-  // 난로 (12-167): 그 구역의 실내에는 꺼지지 않는 불이 있다
-  const fireHere = !!zone && !!c.fire && ((state.fires[zone] ?? 0) > time || (indoor && stoveAt(content, state, zone)));
+  // 불: 지핀 불이 타는 동안. 난로(12-167)가 있는 구역이면 난로 안의 불이라 실내에서만 따뜻하다 (12-190: 꺼지지 않는 불이 아니다)
+  const stove = !!zone && stoveAt(content, state, zone);
+  const fireHere = !!zone && !!c.fire && (state.fires[zone] ?? 0) > time && (!stove || indoor);
   if (fireHere) {
     value += c.fire!.warmth;
-    // 지핀 모닥불이 없으면 난로의 불이다 (12-167)
-    parts.push(`${(state.fires[zone!] ?? 0) > time ? "모닥불" : "난로"} ${signed(c.fire!.warmth)}`);
+    parts.push(`${stove ? "난로" : "모닥불"} ${signed(c.fire!.warmth)}`);
   }
   // 젖은 옷 (12-121, 12-186): 불 곁이 아니면 체감이 떨어진다
   if (c.wet && !fireHere && (state.wet?.[me.id] ?? 0) > 0) {
@@ -310,14 +310,20 @@ export function lightFire(ctx: ToolContext, item: string): { ok: true; lines: st
   const zone = state.playerZone;
   if (!zone) return { ok: false, error: "불을 피울 곳이 없다." };
   if ((me.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(name, "이/가")} 없다.` };
-  const until = Math.max(state.time, state.fires[zone] ?? 0) + Math.round(hours * 60);
+  // 난로가 있으면 같은 땔감이 오래 탄다 (12-190)
+  const stove = stoveAt(ctx.content, state, zone);
+  const until = Math.max(state.time, state.fires[zone] ?? 0) + Math.round(hours * (stove ? fire.stove : 1) * 60);
   ctx.store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: 1 });
   ctx.store.append({ type: "fire_lit", zone, until, itemId: item });
   if (fire.noise > 0) ctx.store.append({ type: "noise_made", zone, level: fire.noise, day: dayOf(state.time) });
   const hoursLeft = Math.round(((until - state.time) / 60) * 10) / 10;
   return {
     ok: true,
-    lines: [`${josa(name, "으로/로")} 불을 피웠다. 앞으로 ${hoursLeft}시간쯤 탄다 (곁에 있으면 체감 +${fire.warmth}°). 연기와 불빛은 멀리서도 보일 수 있다.`],
+    lines: [
+      stove
+        ? `난로에 ${josa(name, "을/를")} 넣었다. 앞으로 ${hoursLeft}시간쯤 탄다 (실내에 있으면 체감 +${fire.warmth}°). 연통의 연기는 멀리서도 보일 수 있다.`
+        : `${josa(name, "으로/로")} 불을 피웠다. 앞으로 ${hoursLeft}시간쯤 탄다 (곁에 있으면 체감 +${fire.warmth}°). 연기와 불빛은 멀리서도 보일 수 있다.`,
+    ],
   };
 }
 

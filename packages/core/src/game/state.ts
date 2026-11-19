@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 76;
+export const SAVE_SCHEMA_VERSION = 77;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -283,6 +283,10 @@ export function createGameSchemas(s: Scenario) {
     revealedTies: z.array(z.string()).default([]),
     /** 함께 다니는 이유 (NPC id → 이유, 기획서 7.9). 지금 곁에 있는 사람(companions)과 잠시 떨어져 있는 사람 모두 */
     bonds: z.record(z.string(), bondSchema).default({}),
+    /** 주인공이 맡은 분대 (12-190). null이면 역할의 분대(role.squad). 진급해서 꾸린 분대와 새로 배치된 사람 */
+    squad: z.array(z.string()).nullable().default(null),
+    /** 상관이 내놓은 진급 제안 (12-190). 거절해도 열려 있어 나중에 맡겠다고 할 수 있다 */
+    promotionOffer: z.strictObject({ to: z.string(), at: z.number().int(), declined: z.boolean() }).nullable().default(null),
     /** 분대원에게 맡긴 일 (NPC id → 명령, 기획서 9.11). follow는 동행으로 다루고 여기 넣지 않는다 */
     squadOrders: z
       .record(z.string(), z.strictObject({ task: z.string(), zone: z.string(), startedAt: z.number().int(), until: z.number().int() }))
@@ -756,6 +760,11 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("mission_abandoned"), missionId: z.string(), merit: z.number().int(), reason: z.string(), disobedience: z.boolean().default(true) }),
     z.strictObject({ type: z.literal("mission_expired"), missionId: z.string(), merit: z.number().int(), disobedience: z.boolean().default(true) }),
     z.strictObject({ type: z.literal("promoted"), characterId: z.string(), from: rank, to: rank }),
+    // 진급 제안과 분대 (12-190)
+    z.strictObject({ type: z.literal("promotion_offered"), to: rank }),
+    z.strictObject({ type: z.literal("promotion_declined") }),
+    z.strictObject({ type: z.literal("squad_set"), members: z.array(z.string()) }),
+    z.strictObject({ type: z.literal("squad_joined"), characterId: z.string() }),
     z.strictObject({ type: z.literal("deed_recorded"), deed: deedSchema }),
     z.strictObject({
       type: z.literal("deed_learned"),
@@ -994,6 +1003,8 @@ export function createGameSchemas(s: Scenario) {
       interrupt: interruptSchema.optional(),
       /** 이 활동이 수행 중인 임무를 위한 것이면 그 임무 id (임무 진행으로 집계) */
       forMission: z.string().optional(),
+      /** 이동이면 가는 곳 (거점에서 나서는 이동도 "거점 밖" 임무로 센다, 플레이 테스트 8) */
+      dest: z.string().optional(),
     }),
     z.strictObject({
       type: z.literal("item_transferred"),
@@ -1070,6 +1081,8 @@ export const EMPTY_STATE: GameState = {
   zoneNoise: {},
   loans: {},
   restockedDay: {},
+  squad: null,
+  promotionOffer: null,
   squadOrders: {},
   squadReports: {},
   council: {},
@@ -1188,6 +1201,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       // 옛 분대·회의는 옛 무리의 것이다
       next.squadOrders = {};
       next.squadReports = {};
+      next.squad = null;
+      next.promotionOffer = null;
       next.council = {};
       // 무리 사람들과 서로 이름을 안다 (같은 무리 동료, 기획서 6.3)
       for (const id of event.role.known_npcs) {
@@ -1788,7 +1803,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.time = event.to;
       {
         const mission = activeMissionOf(next.missions, state.playerId);
-        if (mission && mission.id === event.forMission && atMissionPlace(mission, next.playerZone, next.zones, next.factions)) mission.requirements.forEach((r, i) => {
+        const placed = (zone: string | null) => !!mission && atMissionPlace(mission, zone, next.zones, next.factions);
+        if (mission && mission.id === event.forMission && (placed(next.playerZone) || (!!event.dest && placed(event.dest)))) mission.requirements.forEach((r, i) => {
           if ("activity" in r && r.activity === event.activity && !isRequirementMet(r, mission.progress[i] ?? 0)) {
             mission.progress[i] = (mission.progress[i] ?? 0) + (event.to - event.from);
           }
@@ -2006,6 +2022,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.bonds = {};
       next.squadOrders = {};
       next.squadReports = {};
+      next.squad = null;
+      next.promotionOffer = null;
       next.council = {};
       next.offers = null;
       next.playerZone = null;
@@ -2184,8 +2202,21 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       const character = mustGet(next.characters, event.characterId, "캐릭터");
       if (character.rank !== event.from) throw new Error(`등급이 어긋납니다: ${character.rank} ≠ ${event.from}`);
       character.rank = event.to;
+      if (event.characterId === state.playerId) next.promotionOffer = null;
       break;
     }
+    case "promotion_offered":
+      next.promotionOffer = { to: event.to, at: state.time, declined: false };
+      break;
+    case "promotion_declined":
+      if (next.promotionOffer) next.promotionOffer = { ...next.promotionOffer, declined: true };
+      break;
+    case "squad_set":
+      next.squad = [...event.members];
+      break;
+    case "squad_joined":
+      next.squad = [...(next.squad ?? []), event.characterId];
+      break;
     case "item_transferred": {
       const from = holderInventory(next, event.from);
       const to = holderInventory(next, event.to);

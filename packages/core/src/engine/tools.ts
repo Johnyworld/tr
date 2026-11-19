@@ -54,6 +54,7 @@ import { createTakeActionSchema, takeAction, type TakeActionInput } from "./acti
 import { stashHint, stashTool } from "./stash.ts";
 import { LEVERAGE_TOOLS } from "./leverage.ts";
 import { keepByGift, PROMISE_TOOLS } from "./promises.ts";
+import { PROMOTION_TOOLS } from "./promotion.ts";
 import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 
@@ -272,6 +273,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...REPUTATION_TOOLS,
       ...LEVERAGE_TOOLS,
       ...PROMISE_TOOLS,
+      ...PROMOTION_TOOLS,
       ...RESOLVE_TOOLS,
       ...INFILTRATION_TOOLS,
       ...EXPLORATION_TOOLS,

@@ -146,7 +146,7 @@ describe("진급", () => {
     expect(checkPromotion({ ...base, merit: 9 }, PROMO, 330 + 4 * day, 330, null).eligible).toBe(true);
   });
 
-  it("조건을 채운 상태로 보고하면 진급한다", () => {
+  it("조건을 채운 상태로 보고하면 상관이 진급을 제안하고, 받으면 진급한다 (12-190)", () => {
     const env = withLeader(setup(sixes));
     // 복무 4일이 지났고 공적 6, 상관 신뢰 1이 쌓인 상태로 만든다
     env.store.getState().characters.player!.merit = 6;
@@ -156,7 +156,13 @@ describe("진급", () => {
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
     executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: true, activity: { kind: "guard_duty", until: null } }, env.ctx);
     const out = executeTool("report_mission", {}, env.ctx);
-    expect(out.ok && out.extra).toMatchObject([{ type: "promotion", toLabel: "분대장" }]);
+    expect(out.ok && out.resultText).toContain("진급 제안");
+    expect(env.store.getState().characters.player?.rank).toBe(PROMO.from);
+    // 거절해도 제안은 열려 있다
+    expect(executeTool("promotion", { action: "decline" }, env.ctx).ok).toBe(true);
+    expect(env.store.getState().promotionOffer?.declined).toBe(true);
+    const yes = executeTool("promotion", { action: "accept" }, env.ctx);
+    expect(yes.ok && yes.display).toMatchObject({ type: "promotion", toLabel: "분대장" });
     expect(env.store.getState().characters.player?.rank).toBe(PROMO.to);
   });
 });

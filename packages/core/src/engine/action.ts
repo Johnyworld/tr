@@ -703,7 +703,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const rideUsed = ride?.ok ? ride : null;
   if (rideUsed?.fuel) store.append({ type: "item_consumed", holder: start.playerId, itemId: rideUsed.fuel, quantity: 1 });
   // 무전 송출은 30분 (대화 ×3, 12-173)
-  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1));
+  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null);
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);
   displays.push(...time.extra);
@@ -918,7 +918,7 @@ function planRide(ctx: ToolContext, itemId: string, blocked: boolean):
 /** 잠 한 번의 최대 길이 (분) */
 const MAX_SLEEP_MINUTES = 16 * 60;
 
-export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null, speed = 1) {
+export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null, speed = 1, dest: string | null = null) {
   const { store, rng, content } = ctx;
   const state = store.getState();
   const cost = ACTIVITY_COSTS[activity];
@@ -946,6 +946,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
         to: result.end,
         ...(result.interrupt ? { interrupt: result.interrupt } : {}),
         ...(forMission ? { forMission } : {}),
+        ...(dest ? { dest } : {}),
       });
       // 그동안의 기온 (12-98): 자정 전에 재야 그날의 날씨로 잰다
       extra.push(...exposeToCold(ctx, activity, cursor, result.end));
@@ -965,6 +966,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       from,
       to,
       ...(forMission ? { forMission } : {}),
+        ...(dest ? { dest } : {}),
     });
     extra.push(...exposeToCold(ctx, activity, from, to));
     extra.push(...exposeToFatigue(ctx, activity, from, to));

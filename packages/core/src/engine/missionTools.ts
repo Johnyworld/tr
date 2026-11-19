@@ -1,4 +1,6 @@
 import { rankName } from "../game/ranks.ts";
+import { describePromotionOffer, offerPromotion } from "./promotion.ts";
+import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { infestationOf, worstOverrun } from "../game/infestation.ts";
 import { occupationOf } from "../game/occupation.ts";
 import { changeStanding } from "./growth.ts";
@@ -18,7 +20,6 @@ import { baseOf } from "./captivity.ts";
 import type { GameState } from "../game/state.ts";
 import {
   activeMissionOf,
-  checkPromotion,
   evaluateMission,
   isRequirementMet,
   MERIT,
@@ -209,15 +210,9 @@ const reportMission = defineTool({
     const extra: ToolDisplayEvent[] = [];
     const commander = commanderOf(after, ctx);
     const commanderTrust = commander ? (after.relations[commander.id]?.[player.id]?.trust ?? 0) : null;
-    const scenario = ctx.content.scenario;
-    const promotion = scenario.promotion;
-    if (checkPromotion(player, promotion, after.time, after.runStartedAt, commanderTrust, disciplineOf(ctx.content, player.factionId).maxDisobedience).eligible) {
-      ctx.store.append({ type: "promoted", characterId: player.id, from: promotion.from, to: promotion.to });
-      const fromLabel = rankName(ctx.content, player.factionId, promotion.from);
-      const toLabel = rankName(ctx.content, player.factionId, promotion.to);
-      lines.push(`진급: ${josa(player.name, "이/가")} ${fromLabel}에서 ${josa(toLabel, "으로/로")} 진급했다. 상관이 이를 알리는 장면을 서술하라.`);
-      extra.push({ type: "promotion", name: player.name, fromLabel, toLabel });
-    }
+    // 진급은 제안으로 (12-190): 받을지는 플레이어가 정한다 (promotion accept·decline)
+    const offered = offerPromotion(ctx, commanderTrust);
+    if (offered) lines.push(offered);
     return {
       ok: true,
       resultText: lines.join("\n"),
@@ -279,6 +274,14 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
       ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false });
       continue;
     }
+    // 쓰러져 있는 동안 기한이 지났으면 불복종이 아니다: 다쳐서 못 마친 것 (플레이 테스트 8)
+    const down = state.characters[mission.assigneeId] ? incapacitatingSymptom(ctx.content.scenario, state.characters[mission.assigneeId]!) : null;
+    if (mission.status === "active" && state.time > mission.deadline && down) {
+      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false });
+      displays.push({ type: "mission", event: "expired", title: mission.title, detail: `다쳐서 못 마침 (${down.label})`, merit: 0 });
+      returnArmory(ctx, mission.id);
+      continue;
+    }
     if (mission.status === "active" && state.time > mission.deadline) {
       const d = disciplineOf(ctx.content, state.characters[mission.assigneeId]?.factionId);
       ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: d.expireMerit, disobedience: d.countsDisobedience });
@@ -311,6 +314,8 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   const active = activeMissionOf(state.missions, player.id);
   // 무소속은 복무·공적·불복종이 없다
   const lines = [player.factionId ? `복무: ${rankName(ctx.content, player.factionId, player.rank)} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
+  const offer = describePromotionOffer(ctx.content, state);
+  if (offer) lines.push(offer);
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
     const loan = state.loans?.[active.id];

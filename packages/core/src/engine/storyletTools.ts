@@ -1,4 +1,5 @@
 import { springEnemyAmbush } from "./ambush.ts";
+import { formSquad, refugeeToSquad } from "./promotion.ts";
 import { soak } from "./climate.ts";
 import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
@@ -226,6 +227,8 @@ export const resolveStorylet = defineTool({
       }
       outcome = check.outcome;
       effects = choice.outcomes![check.outcome];
+      // 그 판정에서 이미 다쳤으면 이야기의 "다친다"는 겹쳐 붙이지 않는다 (플레이 테스트 8: 판정 한 번 실패로 두 단계, 의식불명 → 죽음)
+      if (check.harmApplied) effects = effects.filter((e) => !("wound" in e));
     }
     // 내놓을 물건이 없으면 고를 수 없다 (거래 선택지)
     const player = state.characters[state.playerId]!;
@@ -419,7 +422,9 @@ export function applyEffect(
     store.append({ type: "promoted", characterId: playerId, from: player.rank, to });
     const fromLabel = rankName(content, player.factionId, player.rank);
     const toLabel = rankName(content, player.factionId, to);
-    return { line: `${josa(player.name, "은/는")} 이제 ${toLabel}다 (전에는 ${fromLabel}).`, display: { type: "promotion", name: player.name, fromLabel, toLabel } };
+    // 분대를 맡는 계급이 됐으면 분대를 꾸린다 (12-190)
+    const squad = formSquad(ctx);
+    return { line: [`${josa(player.name, "은/는")} 이제 ${toLabel}다 (전에는 ${fromLabel}).`, ...squad].join(" "), display: { type: "promotion", name: player.name, fromLabel, toLabel } };
   }
   if ("expel" in effect) {
     const player = state.characters[playerId]!;
@@ -659,7 +664,9 @@ export function applyEffect(
     const id = factionRef(state, effect.faction_population.faction);
     if (!state.factions[id]) return {};
     store.append({ type: "faction_population_changed", factionId: id, delta: effect.faction_population.delta });
-    return {}; // 늘어난 입과 손은 배급·산출로 드러난다
+    // 우리 무리에 사람이 들었으면 분대가 모자랄 때 확률로 한 명이 분대에 배치된다 (12-190)
+    const joined = effect.faction_population.delta > 0 && id === state.characters[playerId]?.factionId ? refugeeToSquad(ctx) : null;
+    return joined ? { line: joined } : {}; // 늘어난 입과 손은 배급·산출로 드러난다
   }
   if ("send_to" in effect) {
     const to = effect.send_to;

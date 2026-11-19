@@ -13,7 +13,7 @@
 
 | 클라이언트 | 배포물 | 담는 것 | 사용자가 할 일 |
 |---|---|---|---|
-| Claude Code | 플러그인 (GitHub 마켓플레이스 저장소) | MCP 서버 + `/play`·`/quit` 스킬 + 상태 화면 훅 | `claude plugin marketplace add …` → `claude plugin install …` → 세션 다시 열기 → `/play` |
+| Claude Code | 플러그인 (GitHub 마켓플레이스 저장소) | MCP 서버 + `/play`·`/stop` 스킬 + 상태 화면 훅 | `claude plugin marketplace add …` → `claude plugin install …` → 세션 다시 열기 → `/play` |
 | Claude 데스크톱 | `.mcpb` (GitHub Releases, OS별) | MCP 서버 전체 + 그 OS용 네이티브 모듈 | 파일 더블클릭 → "TRPG 시작해 줘" |
 | 그 밖의 에이전트 | npm 패키지 | MCP 서버 | 설정 JSON에 `npx -y <패키지명>` |
 
@@ -33,7 +33,7 @@ npm 패키지
 플러그인 저장소
 ├─ .claude-plugin/plugin.json
 ├─ .mcp.json               npm 패키지를 버전 고정으로 실행
-├─ skills/play, skills/quit
+├─ skills/play, skills/stop
 └─ hooks/                  턴 문 훅 (Node 스크립트)
 
 .mcpb

@@ -2333,7 +2333,7 @@ MVP에 포함한다. 프로젝트 목표 중 하나다 (0장).
   - 웹: 시작 화면 슬롯 옆 휴지통 버튼 → 확인 창 → `DELETE /api/worlds/:id`
   - MCP: 게임 목록을 보고 있을 때만 (게임 중이나 목록을 보여 주기 전에는 거절). 플레이어가 "2번 지워 줘"처럼 말하면 GM이 `delete_world(slot)`로 지울 것을 받아 보여 주고, 확인받은 뒤 `confirmed: true`로 지운다. 번호는 플레이어가 본 목록 기준
 - MCP: `list_worlds`가 번호 목록(맨 위 0번이 새 게임, 1번부터 저장된 게임)을 돌려주고, GM이 그대로 보여 준다. `start_session`은 `slot`(번호)·`world_id`·`new_world`로 열고, 아무것도 없으면 저장된 게임이 있을 때 목록만 돌려준다. `end_session`으로 닫는다 (잠금 해제)
-- Claude Code 스킬: `/play`(목록 → 고르기 → 진행, `/play 2`처럼 번호를 바로 줄 수 있다), `/quit`(장면을 맺고 요약을 남긴 뒤 `end_session`). 저장소의 `.claude/skills/`. MCP prompt `play`도 같은 흐름
+- Claude Code 스킬: `/play`(목록 → 고르기 → 진행, `/play 2`처럼 번호를 바로 줄 수 있다), `/stop`(장면을 맺고 요약을 남긴 뒤 `end_session`). 저장소의 `.claude/skills/`. MCP prompt `play`도 같은 흐름 (`/quit`은 Claude Code 기본 명령과 겹쳐 `/stop`으로 바꿨다)
 
 ### 11.6 MCP 모드
 

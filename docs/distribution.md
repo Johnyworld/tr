@@ -23,7 +23,7 @@
 - MCP 서버와 core를 JS로 번들해 npm 패키지로 낸다. 시나리오 콘텐츠와 빌드된 상태 화면(`status.html`)도 같이 넣는다.
 - Claude 설정에는 `npx -y <패키지명>` 한 줄만 넣으면 되게 한다.
 - 세이브 위치를 저장소 안이 아니라 사용자 홈 폴더(예: `~/.trpg/saves`)로 바꾼다.
-- Claude Code 플러그인으로 MCP 설정, `/play`·`/quit` 스킬, GM 지침을 한 묶음으로 낸다. Claude Code 사용자는 플러그인 설치만으로 `/play`까지 바로 쓴다. Claude 데스크톱은 MCP만 등록하고 `play` 프롬프트로 시작한다.
+- Claude Code 플러그인으로 MCP 설정, `/play`·`/stop` 스킬, GM 지침을 한 묶음으로 낸다. Claude Code 사용자는 플러그인 설치만으로 `/play`까지 바로 쓴다. Claude 데스크톱은 MCP만 등록하고 `play` 프롬프트로 시작한다.
 
 **걸리는 점**
 - 네이티브 모듈은 OS·CPU별 바이너리가 필요하다. 보통은 미리 빌드된 것을 받지만, 환경에 따라 설치가 실패할 수 있다.

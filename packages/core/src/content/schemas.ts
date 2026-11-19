@@ -583,10 +583,6 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ standing: z.number().int().min(-2).max(3) }),
     /** from이 있으면 그 배역에게서 옮기고(가진 것만), 없으면 새로 생긴다 (콘텐츠가 정한 보상) */
     z.strictObject({ give_item: z.strictObject({ item: contentIdSchema, from: z.string().optional(), quantity: z.number().int().positive().default(1) }) }),
-    /**
-     * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (지금 다짐은 바뀐다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
-     * text는 다짐 한 줄 (문장의 자리를 쓸 수 있다)
-     */
     /** 주인공이 그 배역의 이름을 알게 된다 (얼굴만 알던 원수 등). 이미 알면 아무 일도 없다 */
     z.strictObject({ reveal_name: z.strictObject({ who: z.string().min(1) }) }),
     /** 다가오는 재난에 대비한다 (12-169): 전조 동안에만. 한 번에 피해 25%, 최대 50% 준다 */
@@ -595,6 +591,10 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ agenda: z.strictObject({ who: z.string().min(1), delta: z.number().int().min(-10).max(10).default(0), stop: z.boolean().default(false) }) }),
     /** 다짐의 단계를 한 칸 올린다 (12-164): text는 지금 어디까지 왔는지 한 줄 (상태 화면에 다짐 옆으로 보인다). 다짐이 없으면 아무 일도 없다 */
     z.strictObject({ resolve_step: z.strictObject({ text: z.string().min(1).max(60) }) }),
+    /**
+     * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (지금 다짐은 바뀐다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
+     * text는 다짐 한 줄 (문장의 자리를 쓸 수 있다)
+     */
     z.strictObject({
       resolve: z.strictObject({ kind: contentIdSchema, target: z.string().nullable().default(null), target2: z.string().nullable().default(null), n: z.number().int().nullable().default(null), text: z.string().min(1).max(80) }),
     }),
@@ -664,7 +664,6 @@ export function createContentSchemas(s: Scenario) {
      * 양수 = 나빠짐, 음수 = 나아짐
      */
     z.strictObject({ npc_body: z.strictObject({ who: z.string().min(1), track: contentIdSchema, delta: z.number().int().min(-3).max(3), chance: z.number().min(0).max(1).default(1) }) }),
-    /** 배역이 주인공과 함께 다닌다 (동행, 기획서 7.8) / 동행을 그만둔다 */
     /**
      * 함께 다니기 시작한다 (기획서 7.9). kind가 없으면 동물은 animal, 사람은 purpose.
      * until: 목적 동행이 끝나는 조건 (플래그, 도착 구역, 몇 시간 뒤). 하나라도 차면 갈림길. 사람인데 until이 없으면 48시간
@@ -676,6 +675,7 @@ export function createContentSchemas(s: Scenario) {
         until: z.strictObject({ flag: contentIdSchema.optional(), zone: contentIdSchema.optional(), hours: z.number().int().min(1).max(240).optional() }).optional(),
       }),
     }),
+    /** 배역이 동행을 그만둔다 (기획서 7.8) */
     z.strictObject({ companion_leave: z.strictObject({ who: z.string().min(1) }) }),
     /** 동행이 잠시 떨어진다: hours가 있으면 볼일을 보고 그 뒤 돌아오고, 없으면 지금 구역에 남아 기다린다 */
     z.strictObject({ companion_part: z.strictObject({ who: z.string().min(1), hours: z.number().int().min(1).max(72).optional() }) }),

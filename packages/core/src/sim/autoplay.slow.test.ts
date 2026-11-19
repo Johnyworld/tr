@@ -23,7 +23,7 @@ describe("랜덤 자동 플레이 (실제 콘텐츠)", () => {
     expect(Object.keys(stats.storyletsFired).length).toBeGreaterThanOrEqual(8);
     expect(stats.zonesVisited.size).toBeGreaterThanOrEqual(6);
     expect(stats.successions).toBe(stats.deaths);
-  }, 30_000); // 1500턴: 인물이 늘면 전체 실행 중에는 5초를 넘긴다
+  }, 30_000); // 400턴: 인물이 늘면 전체 실행 중에는 5초를 넘긴다
 
   it("같은 시드면 같은 판이 된다 (시계·세계 id에 기대는 무작위가 없다)", () => {
     const content = loadContent(REAL);

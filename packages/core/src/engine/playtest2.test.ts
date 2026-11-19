@@ -91,6 +91,18 @@ describe("플레이 테스트 2회차 회귀", () => {
     expect(env.store.getState().activeStorylet?.id).toBe("alarm");
   });
 
+  it("지치거나 아픈 채로 잠들면 급한 이야기에 늦게 깼다고 알린다. 이야기는 그대로 열린다 (12-188)", () => {
+    const alarm = { ...chat, id: "alarm", urgent: true, when: { segments: ["night"] } };
+    const c = content([alarm]);
+    c.scenario.camp = { tag: "camp", chance: [0, 0, 0, 0], fire: 1.5, own_land: 0.5, deep_sleep: { harm: "serious" } };
+    const env = setup(c);
+    executeTool("take_action", act({ activity: { kind: "wait", until: "evening" } }), env.ctx);
+    env.store.getState().characters[env.store.getState().playerId]!.conditions.harm = "serious";
+    const out = executeTool("take_action", act({ activity: { kind: "sleep", until: "morning" } }), env.ctx);
+    expect(env.store.getState().activeStorylet?.id).toBe("alarm");
+    expect(out.ok && out.resultText).toContain("늦게 깼다");
+  });
+
   it("P22 (12.4.1에서 바뀜): 다음 캐릭터 후보는 조우한 사람이면 무리가 달라도 되고, 그 무리의 새 캐릭터도 된다. 이름을 모르면 아니다", () => {
     const world = createTestWorld("mcp", () => 0);
     world.executeTool("npc_presence", { npc_id: "npc_stranger", action: "enter" }); // 다른 무리 사람을 보기만 했다

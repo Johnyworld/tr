@@ -1161,6 +1161,11 @@ export const scenarioFileSchema = z
         chance: z.array(z.number().min(0).max(1)).length(4),
         fire: z.number().min(0).default(1.5),
         own_land: z.number().min(0).default(0.5),
+        /**
+         * 깊은 잠 (12-188): 상태 트랙 → 이 단계 이상이면 지쳐서·아파서 깊이 잠든다. 잠든 동안 지켜 주는 사람이 있어도 늦게 안다(camp_watched false),
+         * 급한 이야기에 깨면 "몸이 무거워 늦게 깼다"를 GM에게 붙인다. 이야기는 그대로 열린다 (건너뛰지 않는다)
+         */
+        deep_sleep: z.record(id, id).default({}),
       })
       .optional(),
     /**
@@ -1570,6 +1575,11 @@ export const scenarioFileSchema = z
     if (s.charm && !s.stats.some((x) => x.id === s.charm!.ability)) problem(`charm.ability: 알 수 없는 능력 ${s.charm.ability}`);
     for (const [role, move] of Object.entries(s.move_roles)) {
       if (move && !moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);
+    }
+    for (const [track, level] of Object.entries(s.camp?.deep_sleep ?? {})) {
+      const t = s.condition_tracks.find((x) => x.id === track);
+      if (!t) problem(`camp.deep_sleep: 알 수 없는 상태 트랙 ${track}`);
+      else if (!t.levels.some((l) => l.id === level)) problem(`camp.deep_sleep.${track}: 알 수 없는 단계 ${level}`);
     }
     if (s.search_lore && !moves.has(s.search_lore.skill)) problem(`search_lore: 알 수 없는 스킬 ${s.search_lore.skill}`);
     // 잠입·뇌물·협박의 판정 행동 (12-153, 12-154)

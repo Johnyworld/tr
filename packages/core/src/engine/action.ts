@@ -16,7 +16,7 @@ import { exposeToCold, changeClothes } from "./climate.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { runRoadEvent } from "./storyletTools.ts";
-import { CAMP_INTERRUPT, createCampCheck, runCampEvent } from "./camp.ts";
+import { CAMP_INTERRUPT, createCampCheck, runCampEvent, deepSleepReason } from "./camp.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
 import { scavenge } from "./scavenge.ts";
@@ -912,6 +912,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   const from = state.time;
   let to: number;
   let interrupt: ReturnType<typeof fastForward>["interrupt"] = null;
+  // 깊은 잠 (12-188): 잠들 때의 몸으로 정한다 (자는 사이 피로가 풀려도 이미 깊이 잠들었다)
+  const deep = activity === "sleep" ? deepSleepReason(content, state) : null;
 
   const extra: ToolDisplayEvent[] = [];
   if (cost.kind === "long") {
@@ -921,7 +923,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     for (;;) {
       const midnight = dayOf(cursor) * MINUTES_PER_DAY;
       const segmentEnd = Math.min(target, midnight);
-      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario, [createCampCheck(content, activity), createStoryletCheck(content, { asleep: activity === "sleep" })]) });
+      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario, [createCampCheck(content, activity, deep), createStoryletCheck(content, { asleep: activity === "sleep" })]) });
       store.append({
         type: "time_advanced",
         activity,
@@ -959,12 +961,13 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     lines.push(`시간대가 ${SEGMENT_LABELS[segmentOf(from)]}에서 ${josa(SEGMENT_LABELS[segmentOf(to)], "으로/로")} 바뀌었다. 빛과 소리의 변화를 서술에 반영하라.`);
   }
   // 야영지에 다가온 것 (12-148): 끊긴 시각에 야영의 이야기를 연다
-  const camp = interrupt?.detail === CAMP_INTERRUPT ? runCampEvent(ctx, activity) : null;
+  const camp = interrupt?.detail === CAMP_INTERRUPT ? runCampEvent(ctx, activity, deep) : null;
   if (camp?.line) {
     lines.push(`${josa(label, "이/가")} 끊겼다. ${camp.line}`);
     extra.push(...camp.displays);
   } else if (interrupt?.kind === "storylet") {
-    lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 일이 생겼다.`);
+    // 깊은 잠 (12-188): 지쳐서·아파서 깊이 잠들었으면 늦게 깼다고 알린다 (이야기는 그대로 열린다)
+    lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 일이 생겼다.${deep ? ` ${deep} 탓에 깊이 잠들어 있어 몸이 무거워 늦게 깼다. 이미 일이 가까이 와 있다고 서술하라.` : ""}`);
   } else if (interrupt?.kind === "battle") {
     lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 벌어지고 있다.`);
   } else if (interrupt) {

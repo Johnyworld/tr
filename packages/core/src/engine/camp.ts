@@ -61,10 +61,30 @@ export function campWatchers(content: Content, state: GameState): string[] {
   });
 }
 
-/** 지켜보는 밤인가: 깨어 있는 활동이거나 보초를 설 동행이 있다 */
-export function campWatched(content: Content, state: GameState, activity: Activity | string): boolean {
+/** 지쳐서·아파서 깊이 잠드는가 (12-188, camp.deep_sleep): 어느 트랙이든 정한 단계 이상이면. 화면에 붙일 이유(그 단계 이름)를 돌려준다 */
+export function deepSleepReason(content: Content, state: GameState, id: string = state.playerId): string | null {
+  const rules = content.scenario.camp?.deep_sleep ?? {};
+  const c = state.characters[id];
+  if (!c) return null;
+  for (const [track, from] of Object.entries(rules)) {
+    const t = content.scenario.condition_tracks.find((x) => x.id === track);
+    if (!t) continue;
+    const at = t.levels.findIndex((l) => l.id === c.conditions[track]);
+    const min = t.levels.findIndex((l) => l.id === from);
+    if (at >= 0 && min >= 0 && at >= min) {
+      const level = t.levels[at]!;
+      return level.label ?? content.scenario.symptoms?.find((s) => s.id === level.symptoms?.[0])?.label ?? t.label;
+    }
+  }
+  return null;
+}
+
+/** 지켜보는 밤인가: 깨어 있는 활동이거나 보초를 설 동행이 있다. 깊이 잠들었으면 보초가 있어도 늦게 안다 (12-188) */
+export function campWatched(content: Content, state: GameState, activity: Activity | string, deep: string | null = activity === "sleep" ? deepSleepReason(content, state) : null): boolean {
+  if (activity !== "sleep") return true;
+  if (deep) return false;
   // 거처의 경보줄 (12-167): 잠들어도 다가오는 것을 미리 안다
-  return activity !== "sleep" || campWatchers(content, state).length > 0 || watchedHere(content, state);
+  return campWatchers(content, state).length > 0 || watchedHere(content, state);
 }
 
 /** 시간당 확률 */
@@ -83,7 +103,7 @@ export function campStorylets(content: Content, state: GameState, watched: boole
 }
 
 /** 빨리감기 중 야영지에 무언가 다가오면 멈춘다 */
-export function createCampCheck(content: Content, activity: Activity): InterruptCheck {
+export function createCampCheck(content: Content, activity: Activity, deep: string | null = null): InterruptCheck {
   return ({ state, from, to, rng }) => {
     if (!CAMP_ACTIVITIES.includes(activity) || state.activeStorylet || state.battle) return null;
     const me = state.characters[state.playerId];
@@ -93,16 +113,16 @@ export function createCampCheck(content: Content, activity: Activity): Interrupt
     const chance = campChance(content, state, site, from) * ((to - from) / 60);
     if (chance <= 0 || rng() >= chance) return null;
     const at = from + Math.max(1, Math.ceil(rng() * (to - from)));
-    if (campStorylets(content, state, campWatched(content, state, activity), at).length === 0) return null;
+    if (campStorylets(content, state, campWatched(content, state, activity, deep), at).length === 0) return null;
     return { kind: "storylet", detail: CAMP_INTERRUPT, at };
   };
 }
 
 /** 끊긴 시각에 야영의 이야기 하나를 연다. 연 이야기의 제목과 GM에게 줄 말 */
-export function runCampEvent(ctx: ToolContext, activity: Activity): { displays: ToolDisplayEvent[]; line: string | null } {
+export function runCampEvent(ctx: ToolContext, activity: Activity, deep: string | null = null): { displays: ToolDisplayEvent[]; line: string | null } {
   const { store, content, rng } = ctx;
   const state = store.getState();
-  const watched = campWatched(content, state, activity);
+  const watched = campWatched(content, state, activity, deep);
   const storylet = pickStorylet(campStorylets(content, state, watched, state.time), rng);
   if (!storylet) return { displays: [], line: null };
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
@@ -111,7 +131,13 @@ export function runCampEvent(ctx: ToolContext, activity: Activity): { displays: 
   displays.push({ type: "storylet", event: "started", title: storylet.title, detail: fillStorylet(storySetup(now, storylet), storyletVars(now, content, cast)) });
   const watchers = campWatchers(content, state).map((id) => playerCalls(store.getState(), content, id));
   const who =
-    activity !== "sleep" ? "깨어 있었으니 다가오는 것을 먼저 알아챘다" : watchers.length ? `보초를 서던 ${watchers.join("·")}의 기척에 깼다. 다가오는 것을 먼저 알아챘다` : "아무도 지키지 않고 잠들어 있었다. 이미 가까이 와서야 깼다";
+    activity !== "sleep"
+      ? "깨어 있었으니 다가오는 것을 먼저 알아챘다"
+      : deep
+        ? `${deep} 탓에 깊이 잠들어 있었다. ${watchers.length ? `보초를 서던 ${josa(watchers.join("·"), "이/가")} 흔들어 깨웠지만 몸이 무거워 ` : ""}이미 가까이 와서야 깼다`
+        : watchers.length
+          ? `보초를 서던 ${watchers.join("·")}의 기척에 깼다. 다가오는 것을 먼저 알아챘다`
+          : "아무도 지키지 않고 잠들어 있었다. 이미 가까이 와서야 깼다";
   return {
     displays,
     line: `야영지에 일이 생겼다: "${storylet.title}". ${who}. 그 장면으로 연출하라 (상태의 '진행 중인 이야기').`,
@@ -128,8 +154,10 @@ export function describeCamp(content: Content, state: GameState): string | null 
   if (!site) return null;
   const watchers = campWatchers(content, state).map((id) => playerCalls(state, content, id));
   const fire = !!state.playerZone && (state.fires[state.playerZone] ?? 0) > state.time;
+  const deep = deepSleepReason(content, state);
   return (
     `잠자리: 여기서 자면 야영이다 (지켜 주는 지붕이 없다). ` +
+    (deep ? `${deep} 탓에 지금 자면 깊이 잠든다 (보초가 있어도 다가오는 것을 늦게 안다). ` : "") +
     (watchers.length ? `${josa(watchers.join("·"), "이/가")} 번갈아 보초를 설 수 있다. ` : "혼자 잠들면 아무도 지키지 않는다 (보초를 서려면 activity guard_duty, 그동안 잠은 못 잔다). ") +
     (fire ? "모닥불이 따뜻하지만 불빛과 연기가 멀리서 보인다. " : "") +
     (site.ownLand ? "우리 땅이라 우리 순찰이 돈다." : "무엇이 다가올지는 시스템이 정한다.")

@@ -51,6 +51,19 @@ describe("야영", () => {
     expect(out.ok && out.resultText).toContain("아무도 지키지 않고 잠들어 있었다");
   });
 
+  it("지친 채로 잠들면 보초가 있어도 늦게 안다. 이야기는 그대로 열린다 (12-188)", () => {
+    const w = make(0);
+    go(w, "old_town");
+    // 보초를 설 동행이 있다
+    expect(w.runCheat("~summon a_jiho").ok).toBe(true);
+    w.ctx().store.append({ type: "companion_joined", characterId: "a_jiho", kind: "purpose" });
+    expect(w.runCheat("~set fatigue weary").ok).toBe(true);
+    const out = spend(w, "sleep");
+    expect(w.state().activeStorylet?.id).toBe("camp_asleep_test");
+    expect(out.ok && out.resultText).toContain("흔들어 깨웠지만 몸이 무거워");
+    expect(out.ok && out.resultText, out.ok ? out.resultText : out.error).toContain("깊이 잠들어 있었다");
+  });
+
   it("깨어서 보초를 서면 지켜보는 밤의 이야기가 열린다", () => {
     const w = make(0);
     go(w, "old_town");

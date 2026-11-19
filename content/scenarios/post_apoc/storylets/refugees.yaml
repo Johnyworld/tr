@@ -100,7 +100,7 @@
     flags_all: [rf_taken_in]
     segments: [evening, night]
   setup: 받아들인 피난민 가운데 한 사람이 밤마다 담 쪽 창고 근처를 서성인다. 오늘은 초소 교대 시각을 손가락으로 세는 것 같았다.
-  ai_direction: 그 사람은 다른 무리(가까운 적대 무리)가 들여보낸 귀다. 굶주린 피난민인 것도 사실이다. 붙잡으면 포로가 될 수 있고(take_prisoner는 GM이 장면에 들인 뒤), 놓치면 창고가 털린다. 확정하기 전까지는 의심일 뿐이라는 것을 살린다.
+  ai_direction: 그 사람은 다른 무리(가까운 적대 무리)가 들여보낸 귀다. 굶주린 피난민인 것도 사실이다. 붙잡으면 포로가 될 수 있고(handle_prisoner bind는 GM이 장면에 들인 뒤), 놓치면 창고가 털린다. 확정하기 전까지는 의심일 뿐이라는 것을 살린다.
   choices:
     - id: watch_close
       label: 몰래 뒤를 밟는다

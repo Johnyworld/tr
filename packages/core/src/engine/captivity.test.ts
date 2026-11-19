@@ -57,9 +57,9 @@ describe("포로를 잡고 다룬다", () => {
     w.executeTool("npc_presence", { npc_id: "c_seokjin", action: "enter" });
     // 다른 곳에 있는 인물이면 장면에 넣는다
     if (!w.state().scene.present.includes("c_seokjin")) w.ctx().store.append({ type: "npc_entered", npcId: "c_seokjin" } as never);
-    expect(w.executeTool("take_prisoner", { target: "c_seokjin" }).ok).toBe(false);
+    expect(w.executeTool("handle_prisoner", { target: "c_seokjin", action: "bind" }).ok).toBe(false);
     hurt(w, "c_seokjin", "serious");
-    expect(w.executeTool("take_prisoner", { target: "c_seokjin" }).ok).toBe(true);
+    expect(w.executeTool("handle_prisoner", { target: "c_seokjin", action: "bind" }).ok).toBe(true);
     const back = w.executeTool("take_action", act({ move_to: "a_base" }));
     expect(back.ok && back.resultText).toContain("우리 무리의 포로");
     expect(w.state().characters.c_seokjin!.captive).toMatchObject({ by: "faction_a", zone: "a_base" });
@@ -87,7 +87,7 @@ describe("포로를 잡고 다룬다", () => {
     w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "old_town" });
     if (!w.state().scene.present.includes("c_seokjin")) w.ctx().store.append({ type: "npc_entered", npcId: "c_seokjin" } as never);
     hurt(w, "c_seokjin", "serious");
-    expect(w.executeTool("take_prisoner", { target: "c_seokjin" }).ok).toBe(true);
+    expect(w.executeTool("handle_prisoner", { target: "c_seokjin", action: "bind" }).ok).toBe(true);
     expect(describePlayerState(w.state(), w.content)).toContain("끌고 다니는 포로");
     // 자기 믿음은 비우고, 무리 형편을 어렵게 만든다
     w.ctx().store.getState().beliefs.c_seokjin = [];

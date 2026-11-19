@@ -89,7 +89,7 @@ describe("감염체", () => {
     const { ctx, spawn } = setup();
     const foe = spawn();
     expect(executeTool("barter", { npc_id: foe, give: {}, get: { cloth: 1 }, move: null, stat: null }, ctx).ok).toBe(false);
-    expect(executeTool("take_prisoner", { target: foe }, ctx).ok).toBe(false);
+    expect(executeTool("handle_prisoner", { target: foe, action: "bind" }, ctx).ok).toBe(false);
     expect(executeTool("learn_name", { target: foe, who: "player" }, ctx).ok).toBe(false);
   });
 

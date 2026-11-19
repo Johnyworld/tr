@@ -102,7 +102,7 @@
   cast:
     foe: { resolve_target: true, here: true }
   setup: "{foe:이/가} 바로 앞에 있다. 이번엔 숨을 곳도, 돌아설 시간도 없다. 그가 당신을 본다. 알아보는지는 모르겠다."
-  ai_direction: "결정의 순간. 싸움이면 판정(take_action, target)으로, 붙잡으려면 take_prisoner로, 놓아주거나 내려놓으면 resolve(action let_go). 결과는 코드가 정한다. {foe:은/는} 성격대로 군다 (비웃거나, 잊었거나, 두려워하거나)."
+  ai_direction: "결정의 순간. 싸움이면 판정(take_action, target)으로, 붙잡으려면 handle_prisoner(bind)로, 놓아주거나 내려놓으면 resolve(action let_go). 결과는 코드가 정한다. {foe:은/는} 성격대로 군다 (비웃거나, 잊었거나, 두려워하거나)."
   choices:
     - id: confront
       label: 이름을 부른다

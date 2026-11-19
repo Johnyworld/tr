@@ -8,13 +8,15 @@ import { loadRealContent } from "../testing.ts";
 import { barrierRise, infestationDay } from "../game/infestation.ts";
 import { resolveRound } from "../sim/battle.ts";
 
-/** 전투 준비물 늘리기 (12-176): 모래주머니 엄폐·사격 자리·바리케이드 */
+/** 전투 준비물 늘리기 (12-176): 모래주머니 엄폐·사격 자리. 바리케이드는 12-184부터 거점 시설 */
 const content = { ...loadRealContent(), storylets: {} };
 const make = (roll = 0.99) => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-prep-")), content, rngFactory: () => () => roll }).create("mcp", "role_a_grunt");
 const chk = (move: string, stat: string) => ({ move, stat, difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" });
 const act = (w: GameWorld, input: Record<string, unknown>) =>
   w.executeTool("take_action", { intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });
 const prepare = (w: GameWorld, id: string) => act(w, { prepare: id, check: chk("carpentry", "strength") });
+/** 바리케이드는 거점 시설이다 (12-184) */
+const barricade = (w: GameWorld) => act(w, { build: "barricade", check: chk("carpentry", "intellect") });
 const give = (w: GameWorld, item: string, n: number) => expect(w.runCheat(`~give ${item} ${n}`).ok).toBe(true);
 
 describe("전투 준비물", () => {
@@ -35,23 +37,38 @@ describe("전투 준비물", () => {
     expect(w.state().preparations[zone]).toContain("sandbags");
   });
 
-  it("바리케이드는 지키는 전투에서 막기를 얻고 부서진다. 같은 구역에 둘은 못 깐다", () => {
+  it("바리케이드 시설은 지키는 전투에서 막기를 주고 부서진다. 같은 구역에 둘은 못 짓는다", () => {
     const w = make();
     const zone = w.state().playerZone!;
     give(w, "planks", 6);
     give(w, "scrap_metal", 4);
-    expect(prepare(w, "road_barricade").ok).toBe(true);
-    expect(prepare(w, "road_barricade").ok).toBe(false);
+    const r = barricade(w);
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(barricade(w).ok).toBe(false);
+    const fort = w.state().zones[zone]?.fort ?? 0;
     expect(w.runCheat("~battle").ok).toBe(true);
     expect(w.state().battle?.holds).toBe(2);
-    expect(w.state().preparations[zone] ?? []).not.toContain("road_barricade");
+    expect(w.state().facilities[zone] ?? []).not.toContain("barricade");
+    expect(w.state().zones[zone]?.fort ?? 0).toBe(fort - 1);
+  });
+
+  it("거점 밖 우리 땅에도 바리케이드를 짓는다", () => {
+    const w = make();
+    const post = Object.keys(content.locations).find((z) => z !== w.state().playerZone && w.state().zones[z]?.owner === "faction_a" && content.locations[z]?.kind !== "base")!;
+    expect(w.runCheat(`~goto ${post}`).ok).toBe(true);
+    give(w, "planks", 3);
+    give(w, "scrap_metal", 2);
+    const r = barricade(w);
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().facilities[post]).toContain("barricade");
+    expect(w.state().zones[post]?.fort ?? 0).toBeGreaterThan(0);
   });
 
   it("막기가 남아 있으면 배경 교전에서 밀려도 전세와 사람을 잃지 않는다", () => {
     const w = make();
     give(w, "planks", 3);
     give(w, "scrap_metal", 2);
-    prepare(w, "road_barricade");
+    barricade(w);
     w.runCheat("~battle");
     const b = w.state().battle!;
     const lose = () => 0.999; // 배경 교전에서 늘 진다
@@ -69,7 +86,7 @@ describe("전투 준비물", () => {
     const zone = w.state().playerZone!;
     give(w, "planks", 3);
     give(w, "scrap_metal", 2);
-    prepare(w, "road_barricade");
+    barricade(w);
     expect(barrierRise(content, w.state(), zone)).toBe(0.5);
     const noisy = { ...w.state(), zoneNoise: { [zone]: { day: 1, level: 3 } } };
     expect(infestationDay(content, noisy, 2, [], () => 0.9).some((c) => c.zone === zone)).toBe(false);

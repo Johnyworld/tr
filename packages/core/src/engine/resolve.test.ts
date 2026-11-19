@@ -68,7 +68,7 @@ describe("다짐", () => {
     look(w);
     expect(w.runCheat("~summon c_cheolgu").ok).toBe(true);
     expect(w.runCheat("~harm c_cheolgu serious").ok).toBe(true);
-    const r = w.executeTool("take_prisoner", { target: "c_cheolgu" });
+    const r = w.executeTool("handle_prisoner", { target: "c_cheolgu", action: "bind" });
     expect(r.ok && r.resultText).toContain("거점에 가뒀다");
     expect(w.state().characters.c_cheolgu!.captive?.by).toBe("faction_a");
     look(w);

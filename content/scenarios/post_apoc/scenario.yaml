@@ -1140,12 +1140,13 @@ disasters:
 facilities:
   - id: barricade
     label: 바리케이드
-    description: 판자와 고철로 틈을 막았다. 습격을 받으면 더 버티고, 밤에 다가오는 것이 줄어든다.
-    where: [home, base]
+    description: 판자와 고철로 틈과 길목을 막았다. 습격을 받으면 더 버티고, 밤에 다가오는 것이 줄어든다. 지키는 싸움에서 밀고 오는 적의 발을 두어 번 묶고 무너진다.
+    where: [home, base, own]
     move: carpentry
     hours: 4
     materials: { planks: 3, scrap_metal: 2 }
-    effects: { fort: 1, camp: 0.7 }
+    # holds·infested_rise (12-184): 전투 준비물이던 길목 바리케이드를 합쳤다
+    effects: { fort: 1, camp: 0.7, holds: 2, infested_rise: 0.5 }
   - id: alarm_line
     label: 깡통 경보줄
     description: 드나드는 길목마다 깡통을 매단 줄을 쳤다. 잠들어도 무언가 다가오면 먼저 안다.
@@ -1714,7 +1715,7 @@ battle:
       label: 철사 덫
       description: 길목에 철사와 깡통을 엮어 걸려 넘어지게 하고 소리로 알린다
       requires_item: wire_roll
-    # 12-176 (*임시*): 쓰고도 남는 엄폐·사격 자리, 전투 한 번을 버티고 부서지는 바리케이드
+    # 12-176 (*임시*): 쓰고도 남는 엄폐·사격 자리. 바리케이드는 거점 시설이다 (facilities.barricade, 12-184)
     - id: sandbags
       label: 모래주머니 엄폐
       description: 천 자루에 흙을 채워 전선에 허리 높이로 쌓는다. 몸을 숨기고 버틸 수 있다
@@ -1723,12 +1724,6 @@ battle:
       label: 사격 자리
       description: 판자로 받침과 가림막을 대어 길목이 내려다보이는 자리를 만든다
       materials: { planks: 1 }
-    - id: road_barricade
-      label: 길목 바리케이드
-      description: 판자와 고철로 길목을 막는다. 밀고 들어오는 적의 발을 두어 번 묶고, 감염체도 쉽게 넘어오지 못한다. 한 번의 싸움을 버티면 무너진다
-      materials: { planks: 3, scrap_metal: 2 }
-      holds: 2
-      infested_rise: 0.5
   effects:
     - id: hold
       label: 버티며 싸우기

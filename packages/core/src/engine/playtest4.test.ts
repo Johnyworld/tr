@@ -46,7 +46,7 @@ describe("플레이 테스트 4", () => {
     w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "old_town" });
     expect(w.runCheat("~summon c_cheolgu").ok).toBe(true);
     expect(w.runCheat("~harm c_cheolgu serious").ok).toBe(true);
-    expect(w.executeTool("take_prisoner", { target: "c_cheolgu" }).ok).toBe(true);
+    expect(w.executeTool("handle_prisoner", { target: "c_cheolgu", action: "bind" }).ok).toBe(true);
     expect(w.runCheat("~relation c_cheolgu trust -3").ok).toBe(true);
     look(w);
     expect(w.state().companions).toContain("c_cheolgu");
@@ -73,12 +73,12 @@ describe("플레이 테스트 4", () => {
     expect(r.ok && r.resultText).toContain("짓는 데 1시간이 더 들었다");
   });
 
-  it("지키는 전투의 막기는 월드 팩의 준비물 이름으로 부른다", () => {
+  it("지키는 전투의 막기는 월드 팩의 시설 이름으로 부른다", () => {
     const w = make("role_a_grunt");
     for (const g of ["~give planks 3", "~give scrap_metal 2"]) expect(w.runCheat(g).ok).toBe(true);
-    expect(w.executeTool("take_action", { intent: "막는다", check: chk("carpentry", "strength"), activity: null, deed: null, target: null, narration_summary: null, for_mission: false, prepare: "road_barricade" }).ok).toBe(true);
+    expect(w.executeTool("take_action", { intent: "막는다", check: chk("carpentry", "intellect"), activity: null, deed: null, target: null, narration_summary: null, for_mission: false, build: "barricade" }).ok).toBe(true);
     expect(w.runCheat("~battle").ok).toBe(true);
-    expect(w.sceneForGm()).toContain("길목 바리케이드가 버티는 중");
+    expect(w.sceneForGm()).toContain("바리케이드가 버티는 중");
     const r = w.executeTool("take_action", { intent: "엄폐", check: chk("fight", "strength"), activity: null, deed: null, target: null, narration_summary: null, for_mission: false, battle: { effect: "cover_hold", objective: null } });
     expect(!r.ok && r.error).toContain("모래주머니 엄폐가 없다");
   });

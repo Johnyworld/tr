@@ -460,7 +460,6 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (prep.requires_item && (player.inventory[prep.requires_item] ?? 0) < 1) return { ok: false, error: `${prep.label}에는 ${josa(content.items[prep.requires_item]?.name ?? prep.requires_item, "이/가")} 필요하다.` };
     const short = Object.entries(prep.materials ?? {}).filter(([id, n]) => (player.inventory[id] ?? 0) < n);
     if (short.length) return { ok: false, error: `${prep.label}에는 재료가 모자라다: ${short.map(([id, n]) => `${content.items[id]?.name ?? id} ${n}개`).join(", ")}.` };
-    if ((start.preparations[zone] ?? []).includes(prep.id) && (prep.holds || prep.infested_rise !== undefined)) return { ok: false, error: `이 구역에는 이미 ${josa(prep.label, "이/가")} 있다.` };
     if (!input.check) return { ok: false, error: `${prep.label} 설치에는 판정(check)이 필요하다.` };
   }
 

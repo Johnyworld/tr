@@ -731,10 +731,6 @@ export const scenarioFileSchema = z
               requires_item: id.optional(),
               /** 여러 재료가 들면 (12-176). requires_item과 함께 쓸 수 있다. 판정 결과와 관계없이 쓴다 */
               materials: z.record(id, z.number().int().min(1)).optional(),
-              /** 막기 (12-176): 이 구역을 지킬 때 배경 교전에서 밀리는 것을 이만큼 막고 부서진다 (전투 한 번에 다 쓴다) */
-              holds: z.number().int().min(1).max(5).optional(),
-              /** 이 구역의 감염체 압력이 오를 때 실제로 오를 확률 (12-176, 바리케이드). 없으면 1 */
-              infested_rise: z.number().min(0).max(1).optional(),
             }),
           )
           .default([]),
@@ -958,13 +954,18 @@ export const scenarioFileSchema = z
           id,
           label: z.string().min(1),
           description: z.string().min(1),
-          where: z.array(z.enum(["home", "base"])).min(1),
+          /** home 떠돌이의 거처, base 우리 무리의 거점, own 거점 밖 우리 무리의 땅 (12-184) */
+          where: z.array(z.enum(["home", "base", "own"])).min(1),
           move: id,
           hours: z.number().min(1).max(24),
           materials: z.record(id, z.number().int().min(1)),
           effects: z
             .strictObject({
               fort: z.number().int().min(1).max(2).optional(),
+              /** 막기 (12-176, 12-184에 시설로): 이 구역을 지키는 전투 장면에서 배경 교전에 밀리는 것을 이만큼 막고, 그 전투로 부서진다 */
+              holds: z.number().int().min(1).max(5).optional(),
+              /** 이 구역의 감염체 압력이 오를 때 실제로 오를 확률 (12-176). 없으면 1 */
+              infested_rise: z.number().min(0).max(1).optional(),
               camp: z.number().min(0).max(1).optional(),
               watched: z.boolean().optional(),
               water: z.boolean().optional(),

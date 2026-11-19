@@ -26,7 +26,7 @@ export type InfestationChange = { zone: string; level: number; cause: string };
  * 하루가 바뀔 때의 변화 (day: 새로 시작한 날). 전날의 소음과 그날 새벽 교전의 사상자로 오르고,
  * 오르지 않은 구역은 settle 확률로 기준값 쪽으로 한 단계 돌아간다. 기준값에 있는 구역은 난수를 쓰지 않는다
  */
-export function infestationDay(content: Content, state: Pick<GameState, "infested" | "zoneNoise" | "preparations">, day: number, clashes: readonly Clash[], rng: Rng): InfestationChange[] {
+export function infestationDay(content: Content, state: Pick<GameState, "infested" | "zoneNoise" | "facilities">, day: number, clashes: readonly Clash[], rng: Rng): InfestationChange[] {
   const rules = content.scenario.infestation;
   if (!rules) return [];
   const out: InfestationChange[] = [];
@@ -51,10 +51,10 @@ export function infestationDay(content: Content, state: Pick<GameState, "infeste
   return out;
 }
 
-/** 이 구역의 준비물이 감염체 압력이 오를 확률을 낮추는 배수 (가장 작은 것 하나) */
-export function barrierRise(content: Content, state: Pick<GameState, "preparations">, zone: string): number {
-  const preps = content.scenario.battle?.preparations ?? [];
-  return (state.preparations?.[zone] ?? []).reduce((r, id) => Math.min(r, preps.find((p) => p.id === id)?.infested_rise ?? 1), 1);
+/** 이 구역의 시설(바리케이드)이 감염체 압력이 오를 확률을 낮추는 배수 (가장 작은 것 하나) */
+export function barrierRise(content: Content, state: Pick<GameState, "facilities">, zone: string): number {
+  const all = content.scenario.facilities ?? [];
+  return (state.facilities?.[zone] ?? []).reduce((r, id) => Math.min(r, all.find((f) => f.id === id)?.effects.infested_rise ?? 1), 1);
 }
 
 /** 이 무리 땅 가운데 감염체가 기준값보다 가장 많이 몰려든 구역 (없으면 null) */

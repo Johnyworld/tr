@@ -28,13 +28,14 @@ export function facilitiesAt(content: Content, state: GameState, zone: string | 
   return (state.facilities?.[zone] ?? []).map((id) => facilityOf(content, id)).filter((f): f is Facility => !!f);
 }
 
-/** 지금 이 자리에 시설을 지을 수 있다면 어떤 자리인지: 떠돌이의 거처(home), 우리 무리의 거점(base) */
-export function buildSite(content: Content, state: GameState): "home" | "base" | null {
+/** 지금 이 자리에 시설을 지을 수 있다면 어떤 자리인지: 떠돌이의 거처(home), 우리 무리의 거점(base), 거점 밖 우리 무리의 땅(own, 12-184) */
+export function buildSite(content: Content, state: GameState): "home" | "base" | "own" | null {
   const me = state.characters[state.playerId];
   const zone = state.playerZone;
   if (!me || me.dead || me.captive || !zone) return null;
   if (state.homes[me.id] === zone) return "home";
   if (me.factionId && content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === me.factionId) return "base";
+  if (me.factionId && state.zones[zone]?.owner === me.factionId) return "own";
   return null;
 }
 
@@ -43,8 +44,8 @@ export function planBuild(content: Content, state: GameState, me: Character, id:
   const f = facilityOf(content, id);
   if (!f) return `알 수 없는 시설: ${id} (가능: ${rules(content).map((x) => x.id).join(", ") || "없음"})`;
   const site = buildSite(content, state);
-  if (!site) return "시설은 내 거처(떠돌이)나 우리 무리의 거점에서만 짓는다.";
-  if (!f.where.includes(site)) return `${josa(f.label, "은/는")} ${site === "home" ? "거처" : "거점"}에 짓지 않는다.`;
+  if (!site) return "시설은 내 거처(떠돌이)나 우리 무리의 땅에서만 짓는다.";
+  if (!f.where.includes(site)) return `${josa(f.label, "은/는")} ${site === "home" ? "거처" : site === "base" ? "거점" : "거점 밖"}에 짓지 않는다.`;
   if ((state.facilities?.[state.playerZone!] ?? []).includes(f.id)) return `이 구역에는 이미 ${josa(f.label, "이/가")} 있다.`;
   if (move !== f.move) return `${josa(f.label, "을/를")} 지으려면 check.move가 ${f.move}여야 한다.`;
   const missing = Object.entries(f.materials).filter(([item, n]) => (me.inventory[item] ?? 0) < n);
@@ -70,9 +71,10 @@ export function applyBuild(ctx: ToolContext, id: string, outcome: CheckOutcome):
   for (const [item, n] of Object.entries(f.materials)) store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: n });
   store.append({ type: "facility_built", zone, facility: f.id });
   const lines = [`${content.locations[zone]?.name ?? zone}에 ${josa(f.label, "을/를")} 지었다${outcome === "partial" ? " (생각보다 오래 걸렸다)" : ""}. ${f.description}`];
-  if (site === "base") {
+  // 무리의 땅(거점, 거점 밖 우리 땅 12-184)이면 담이 되고 성실함 행적이 남는다
+  if (site === "base" || site === "own") {
     if (f.effects.fort) store.append({ type: "zone_fortified", zone, delta: f.effects.fort });
-    recordDeed(ctx, { summary: `거점에 ${josa(f.label, "을/를")} 지었다`, tags: ["diligence"], severity: 1, privacy: "public", noisy: true });
+    recordDeed(ctx, { summary: `${site === "base" ? "거점" : `${content.locations[zone]?.name ?? zone}`}에 ${josa(f.label, "을/를")} 지었다`, tags: ["diligence"], severity: 1, privacy: "public", noisy: true });
   }
   const base = Math.max(0, f.hours * 60 - 120);
   return { lines, extraMinutes: outcome === "partial" ? base + Math.round(f.hours * 30) : base };

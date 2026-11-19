@@ -20,14 +20,15 @@ import {
   type BattleEffect,
 } from "../sim/battle.ts";
 import { applyBattleOutcome, neighbors, resolveClash, type ClashSpec } from "../sim/war.ts";
+import { facilitiesAt } from "./facilities.ts";
 import { josa } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
 import { endActiveStorylet } from "./storyletTools.ts";
 
-/** 지키는 전투에서 막아 주는 준비물의 이름 (월드 팩의 holds 준비물) */
-const barrierLabel = (content: Content) => content.scenario.battle?.preparations.find((p) => p.holds)?.label ?? "막아 둔 것";
+/** 지키는 전투에서 막아 주는 시설의 이름 (월드 팩의 holds 시설) */
+const barrierLabel = (content: Content) => content.scenario.facilities?.find((f) => f.effects.holds)?.label ?? "막아 둔 것";
 
 /**
  * 전투 장면 연결 (기획서 9.5).
@@ -68,12 +69,15 @@ export function runPendingClashes(ctx: ToolContext): ToolDisplayEvent[] {
     if (side) {
       // 전투가 벌어지면 진행 중이던 이야기는 끝난다
       displays.push(...endActiveStorylet(ctx, "전투가 벌어졌다"));
-      // 바리케이드 (12-176): 우리 구역을 지킬 때만, 이 전투에서 막기를 다 쓰고 부서진다
-      const preps = battleConfig(ctx.content).preparations;
-      const barriers = side === "defense" ? (state.preparations[due.zone] ?? []).filter((id) => preps.find((p) => p.id === id)?.holds) : [];
-      const holds = barriers.reduce((n, id) => n + (preps.find((p) => p.id === id)?.holds ?? 0), 0);
+      // 바리케이드 (12-176, 12-184에 시설로): 우리 구역을 지킬 때만, 이 전투에서 막기를 다 쓰고 부서진다
+      const barriers = side === "defense" ? facilitiesAt(ctx.content, state, due.zone).filter((f) => f.effects.holds) : [];
+      const holds = barriers.reduce((n, f) => n + (f.effects.holds ?? 0), 0);
       const battle = startBattle(ctx.content, ctx.store.getState(), due, side, { id: due.id, at: state.time, holds });
-      ctx.store.append({ type: "battle_started", pendingId: due.id, battle, barrierUsed: barriers });
+      for (const f of barriers) {
+        ctx.store.append({ type: "facility_broken", zone: due.zone, facility: f.id });
+        if (f.effects.fort) ctx.store.append({ type: "zone_fortified", zone: due.zone, delta: -f.effects.fort });
+      }
+      ctx.store.append({ type: "battle_started", pendingId: due.id, battle, barrierUsed: [] });
       displays.push({ type: "battle", event: "started", title: battleTitle(ctx.content, battle), detail: describeStart(ctx.content, battle) });
       return displays;
     }

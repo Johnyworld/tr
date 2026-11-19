@@ -186,42 +186,40 @@ function confessions(state: GameState, content: Content, meId: string, t: { id: 
   return facts;
 }
 
-const takePrisoner = defineTool({
-  name: "take_prisoner",
-  description:
-    "쓰러뜨린 사람을 묶어 포로로 끌고 간다 (12-55). 장면에 있고 크게 다친(중상 이상) 사람만. 함께 다니며 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다. " +
-    "무소속이면 끌고만 다닌다. 죽이는 도구가 아니다.",
-  schema: z.strictObject({ target: z.string().describe("묶을 사람의 id") }),
-  run(input, ctx): ToolOutcome {
-    const { store, content } = ctx;
-    const state = store.getState();
-    const t = state.characters[input.target];
-    if (!rules(content)) return { ok: false, error: "이 월드에는 포로 규칙이 없다." };
-    if (state.characters[state.playerId]?.captive) return { ok: false, error: "갇혀 있는 몸으로는 누구도 묶을 수 없다." };
-    if (!t || t.dead || t.id === state.playerId || !state.scene.present.includes(t.id)) return { ok: false, error: "그 사람이 장면에 없다." };
-    if (isCreature(content, t)) return { ok: false, error: "사람만 포로로 묶는다." };
-    if (t.captive || state.companions.includes(t.id)) return { ok: false, error: "그 사람은 이미 붙잡혀 있거나 함께 다니는 사람이다." };
-    const track = harmTrack(content.scenario);
-    const at = track.levels.findIndex((l) => l.id === t.conditions[track.id]);
-    if (at < 2) return { ok: false, error: "아직 저항할 힘이 있다. 먼저 쓰러뜨리거나(크게 다치게) 이야기로 붙잡는다." };
-    store.append({ type: "companion_joined", characterId: t.id, kind: "prisoner" });
-    const name = playerCalls(state, content, t.id);
-    // 이미 우리 무리의 거점이면 그 자리에서 가둔다
-    const delivered = deliverPrisoners(ctx);
-    return {
-      ok: true,
-      resultText: `${josa(name, "을/를")} 묶었다. ${delivered.length ? delivered.join(" ") : "끌고 다닌다 (우리 무리의 거점에 닿으면 우리 무리의 포로가 된다)."}`,
-      display: { type: "presence", npcName: name, action: "enter" },
-    };
-  },
-});
+/**
+ * 쓰러뜨린 사람을 묶어 포로로 끌고 간다 (12-55, 12-184부터 handle_prisoner bind). 장면에 있고 크게 다친(중상 이상) 사람만.
+ * 함께 다니며 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다. 무소속이면 끌고만 다닌다
+ */
+function bindPrisoner(input: { target: string }, ctx: ToolContext): ToolOutcome {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const t = state.characters[input.target];
+  if (!rules(content)) return { ok: false, error: "이 월드에는 포로 규칙이 없다." };
+  if (state.characters[state.playerId]?.captive) return { ok: false, error: "갇혀 있는 몸으로는 누구도 묶을 수 없다." };
+  if (!t || t.dead || t.id === state.playerId || !state.scene.present.includes(t.id)) return { ok: false, error: "그 사람이 장면에 없다." };
+  if (isCreature(content, t)) return { ok: false, error: "사람만 포로로 묶는다." };
+  if (t.captive || state.companions.includes(t.id)) return { ok: false, error: "그 사람은 이미 붙잡혀 있거나 함께 다니는 사람이다." };
+  const track = harmTrack(content.scenario);
+  const at = track.levels.findIndex((l) => l.id === t.conditions[track.id]);
+  if (at < 2) return { ok: false, error: "아직 저항할 힘이 있다. 먼저 쓰러뜨리거나(크게 다치게) 이야기로 붙잡는다." };
+  store.append({ type: "companion_joined", characterId: t.id, kind: "prisoner" });
+  const name = playerCalls(state, content, t.id);
+  // 이미 우리 무리의 거점이면 그 자리에서 가둔다
+  const delivered = deliverPrisoners(ctx);
+  return {
+    ok: true,
+    resultText: `${josa(name, "을/를")} 묶었다. ${delivered.length ? delivered.join(" ") : "끌고 다닌다 (우리 무리의 거점에 닿으면 우리 무리의 포로가 된다)."}`,
+    display: { type: "presence", npcName: name, action: "enter" },
+  };
+}
 
-const ACTIONS = ["interrogate", "recruit", "release", "ransom", "labor"] as const;
+const ACTIONS = ["bind", "interrogate", "recruit", "release", "ransom", "labor"] as const;
 
 const handlePrisoner = defineTool({
   name: "handle_prisoner",
   description:
-    "우리 무리가 여기 가둔 포로를 다룬다 (12-55, GM 상태의 '우리 무리가 여기 가둔 포로'). " +
+    "포로를 붙잡고 다룬다 (12-55). bind: 쓰러뜨린 사람(장면에 있고 중상 이상)을 묶어 끌고 간다. 우리 무리의 거점에 닿으면 우리 무리의 포로가 되고, 무소속이면 끌고만 다닌다. 죽이는 길이 아니다. " +
+    "나머지는 우리 무리가 여기 가둔 포로(GM 상태의 '우리 무리가 여기 가둔 포로')나 끌고 다니는 포로에게: " +
     "interrogate 심문 (approach: 위협이나 교섭 스킬, 그 사람이 아는 것에서 시스템이 고른다), recruit 회유 (우리 무리로), release 풀어 준다, " +
     "ransom 몸값·맞교환 (그 무리에 우리 사람이 갇혀 있으면 맞바꾼다), labor 노역에 부린다/그만 부린다. 결과는 시스템이 정한다. 처형하는 길은 없다.",
   schema: z.strictObject({
@@ -237,6 +235,7 @@ const handlePrisoner = defineTool({
     const me = state.characters[state.playerId]!;
     const t = state.characters[input.target];
     if (!c) return { ok: false, error: "이 월드에는 포로 규칙이 없다." };
+    if (input.action === "bind") return bindPrisoner(input, ctx);
     // 끌고 다니는 포로 (12-178): 거점에 닿기 전에도 그 자리에서 캐묻거나 풀어 줄 수 있다
     const towed = !!t && !t.dead && state.companions.includes(t.id) && state.bonds[t.id]?.kind === "prisoner";
     if (!towed && (!t || t.dead || !t.captive || !me.factionId || t.captive.by !== me.factionId || t.captive.zone !== state.playerZone)) {
@@ -353,7 +352,7 @@ const surrender = defineTool({
   },
 });
 
-export const CAPTIVITY_TOOLS = [takePrisoner, handlePrisoner, surrender] as const;
+export const CAPTIVITY_TOOLS = [handlePrisoner, surrender] as const;
 
 /** 끌고 온 포로를 우리 무리의 거점에 넘긴다 (지금 구역이 우리 무리의 거점일 때) */
 export function deliverPrisoners(ctx: ToolContext): string[] {

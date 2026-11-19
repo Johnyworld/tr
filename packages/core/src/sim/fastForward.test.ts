@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createSeededRng } from "../rng.ts";
 import { createTestStore } from "../testing.ts";
-import { createDisturbanceCheck, fastForward, type InterruptCheck } from "./fastForward.ts";
+import { createInterruptChecks, fastForward, type InterruptCheck } from "./fastForward.ts";
 import { TEST_SCENARIO } from "../testing.ts";
-
-const disturbanceCheck = createDisturbanceCheck(TEST_SCENARIO);
 
 const state = createTestStore().getState();
 
@@ -40,27 +37,8 @@ describe("fastForward", () => {
     ]);
   });
 
-  it("이상 징후는 밤에 더 자주 일어난다", () => {
-    const count = (startHour: number) => {
-      const rng = createSeededRng(11);
-      let n = 0;
-      for (let i = 0; i < 5000; i++) {
-        const from = startHour * 60;
-        if (disturbanceCheck({ state, from, to: from + 60, rng })) n++;
-      }
-      return n / 5000;
-    };
-    const night = count(22);
-    const day = count(12);
-    expect(night).toBeGreaterThan(day);
-    expect(night).toBeCloseTo(0.08, 1);
-    expect(day).toBeCloseTo(0.03, 1);
-  });
-
-  it("발생 시각은 틱 안에 있다", () => {
-    const always = () => 0; // 확률 검사를 항상 통과
-    const result = disturbanceCheck({ state, from: 120, to: 180, rng: always });
-    expect(result?.at).toBeGreaterThan(120);
-    expect(result?.at).toBeLessThanOrEqual(180);
+  it("아무 일도 없으면 밤새 깨지 않는다 (이상 징후는 12-187에 뺐다)", () => {
+    const result = fastForward({ state, start: 18 * 60, until: 30 * 60, rng: () => 0, checks: createInterruptChecks(TEST_SCENARIO) });
+    expect(result).toEqual({ end: 30 * 60, interrupt: null });
   });
 });

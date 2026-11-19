@@ -1528,10 +1528,6 @@ export const scenarioFileSchema = z
         first_after_hours: z.number().min(0).default(2),
       })
       .default({ min_gap_hours: 6, expire_hours: 3, first_after_hours: 2 }),
-    threats: z.strictObject({
-      disturbance_chance_per_hour: z.record(z.enum(TIME_SEGMENTS), z.number().min(0).max(1)),
-      disturbance_details: z.array(z.string().min(1)).min(1),
-    }),
   })
   .superRefine((s, ctx) => {
     const problem = (message: string) => ctx.addIssue({ code: "custom", message });

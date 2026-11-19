@@ -17,9 +17,6 @@ const sixes: Rng = () => 0.99;
 /** 스토리렛 몇 개를 넣고, 전쟁·낌새는 끈 콘텐츠 */
 function content(storylets: unknown[]): Content {
   const c = structuredClone(TEST_CONTENT);
-  for (const key of Object.keys(c.scenario.threats.disturbance_chance_per_hour)) {
-    (c.scenario.threats.disturbance_chance_per_hour as Record<string, number>)[key] = 0;
-  }
   for (const f of Object.values(c.factions)) {
     f.aggression = 0;
     f.plans = f.plans.map((p) => ({ ...p, days: 99 }));

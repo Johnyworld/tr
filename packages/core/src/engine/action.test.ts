@@ -147,7 +147,12 @@ describe("take_action: 시간", () => {
   });
 
   it("빨리감기가 끼어들기로 멈추면 그 시각까지만 흐르고 이유를 남긴다", () => {
-    const { store, ctx } = setup(() => 0);
+    // 예정된 교전으로 멈춘다 (정체 없는 이상 징후는 12-187에 뺐다)
+    const { store, ctx } = setup(() => 0, (s) => {
+      const [a, d] = Object.keys(s.factions);
+      const zone = Object.keys(s.zones).find((z) => z !== s.playerZone) ?? s.playerZone!;
+      s.pendingClashes = [{ id: "clash_test", kind: "raid", attacker: a!, defender: d!, zone, at: s.time + 90 }];
+    });
     const result = takeAction(act({ activity: { kind: "guard_duty", until: null } }), ctx);
     expect(result.ok && result.displays).toContainEqual(expect.objectContaining({ type: "time", interruptDetail: expect.any(String) }));
     expect(store.getState().time).toBeLessThan(330 + 240);

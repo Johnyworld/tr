@@ -4,7 +4,7 @@ import { segmentOf, type GameTime } from "../rules/time.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import type { GameState } from "../game/state.ts";
 
-/** 빨리감기를 멈추게 한 사건 */
+/** 빨리감기를 멈추게 한 사건. disturbance(이상 징후)는 12-187에 뺐다 (예전 세이브를 읽으려고 남긴다) */
 export const INTERRUPT_KINDS = ["disturbance", "battle", "storylet"] as const;
 export type InterruptKind = (typeof INTERRUPT_KINDS)[number];
 
@@ -28,32 +28,18 @@ export type InterruptCheck = (input: {
   rng: Rng;
 }) => Interrupt | null;
 
-/**
- * 이상 징후: 무언가가 일어났다는 낌새만 정한다. 정체는 정하지 않는다.
- * 시간대별 확률과 낌새 문구는 시나리오의 환경 위협(threats)에서 온다.
- * 조우 테이블(장소·위협)이 생기면 그쪽으로 바꾼다.
- */
-export function createDisturbanceCheck(s: Scenario): InterruptCheck {
-  const { disturbance_chance_per_hour: chances, disturbance_details: details } = s.threats;
-  return ({ from, to, rng }) => {
-    const hours = (to - from) / 60;
-    const chance = (chances[segmentOf(from)] ?? 0) * hours;
-    if (rng() >= chance) return null;
-    const detail = details[Math.floor(rng() * details.length)]!;
-    const at = from + Math.max(1, Math.ceil(rng() * (to - from)));
-    return { kind: "disturbance", detail, at };
-  };
-}
-
 /** 예정된 교전 시각이 되면 멈춘다 (플레이어가 그 자리에 있으면 전투 장면이 열린다) */
 export const battleCheck: InterruptCheck = ({ state, from, to }) => {
   const due = state.pendingClashes.filter((p) => p.at > from && p.at <= to).sort((a, b) => a.at - b.at)[0];
   return due ? { kind: "battle", detail: "교전", at: due.at } : null;
 };
 
-/** 기본 끼어들기 검사 목록. 교전 → 그 밖의 검사(스토리렛 등) → 이상 징후 순 */
-export function createInterruptChecks(s: Scenario, more: readonly InterruptCheck[] = []): readonly InterruptCheck[] {
-  return [battleCheck, ...more, createDisturbanceCheck(s)];
+/**
+ * 기본 끼어들기 검사 목록. 교전 → 그 밖의 검사(야영 이야기·스토리렛).
+ * 정체 없는 낌새만 정하던 이상 징후는 12-187에 뺐다: 자다가 깨는 일은 실제로 무언가 있을 때만 (야영 12-148, 급한 이야기, 교전)
+ */
+export function createInterruptChecks(_s: Scenario, more: readonly InterruptCheck[] = []): readonly InterruptCheck[] {
+  return [battleCheck, ...more];
 }
 
 export type FastForwardResult = {

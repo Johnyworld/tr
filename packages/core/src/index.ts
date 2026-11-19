@@ -5,7 +5,6 @@ export * from "./rules/check.ts";
 export * from "./rules/time.ts";
 export {
   fastForward,
-  createDisturbanceCheck,
   createInterruptChecks,
   type Interrupt,
   type InterruptCheck,

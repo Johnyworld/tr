@@ -1810,12 +1810,3 @@ battle:
         partial: { momentum: -1 }
         miss: { momentum: -1 }
 
-# 환경 위협: 빨리감기 중 끼어드는 이상 징후 (임시값). 조우 테이블이 생기면 바꾼다
-threats:
-  disturbance_chance_per_hour: { dawn: 0.05, morning: 0.03, day: 0.03, evening: 0.05, night: 0.08 }
-  disturbance_details:
-    - 멀리서 들리는 소리
-    - 가까운 곳의 인기척
-    - 어둠 속의 움직임
-    - 낯선 냄새
-    - 거점 쪽의 소란

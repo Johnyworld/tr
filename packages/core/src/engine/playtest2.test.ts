@@ -16,9 +16,6 @@ const storyletSchema = createContentSchemas(TEST_SCENARIO).storylet;
 
 function content(storylets: unknown[], pacing = { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0 }): Content {
   const c = structuredClone(TEST_CONTENT);
-  for (const key of Object.keys(c.scenario.threats.disturbance_chance_per_hour)) {
-    (c.scenario.threats.disturbance_chance_per_hour as Record<string, number>)[key] = 0;
-  }
   for (const f of Object.values(c.factions)) {
     f.aggression = 0;
     f.plans = [];

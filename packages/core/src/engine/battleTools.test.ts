@@ -14,9 +14,6 @@ const sixes: Rng = () => 0.99;
 /** 낌새(이상 징후) 없이, 원하면 C의 클락이 하루 만에 차게 */
 function content(options: { planDays?: number } = {}): Content {
   const c = structuredClone(TEST_CONTENT);
-  for (const key of Object.keys(c.scenario.threats.disturbance_chance_per_hour)) {
-    (c.scenario.threats.disturbance_chance_per_hour as Record<string, number>)[key] = 0;
-  }
   // 교전은 클락으로만 (평소 공격 끔)
   for (const f of Object.values(c.factions)) f.aggression = 0;
   if (options.planDays) c.factions.faction_c!.plans[0]!.days = options.planDays;

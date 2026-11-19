@@ -67,6 +67,8 @@
   description: 남쪽 대로변의 대형 마트. 첫 주에 다 털렸지만 지붕이 무너진 창고 쪽에는 아직 손이 닿지 않은 선반이 있다. 여러 무리의 수색조가 마주치는 곳이다.
   kind: zone
   cover: 4
+  # 갈아입을 옷 (12-186): 옷 매장 쪽 선반에 헌 옷이 아직 남아 있다
+  clothes: true
   owner: null
   danger: 2
   adjacent: [subway_hub, south_fields, b_base]
@@ -90,6 +92,8 @@
   description: 구시가 언덕 위의 붉은 벽돌 성당. 어느 무리에도 들지 못한 피난민이 종탑 아래 모여 산다. 늙은 신부가 장례를 치러 주고, 누구에게도 총을 들고 들어오지 말라고 한다.
   kind: zone
   cover: 5
+  # 갈아입을 옷 (12-186): 피난민들이 모아 둔 헌 옷 상자가 있다
+  clothes: true
   owner: null
   sanctuary: true
   danger: 0

@@ -127,7 +127,8 @@
   weight: 2.0
   value: 6
   armor: { slot: outer, reduces: 0, blocks_infection: 0.3 }
-  warmth: { degrees: 6, when: worn }
+  # 12-186: +6이면 입기만 해도 겨울이 없어져 +4로 (모닥불·잠자리를 함께 챙겨야 버틴다)
+  warmth: { degrees: 4, when: worn }
 - id: firewood
   name: 땔감
   icon: fire

@@ -208,6 +208,12 @@ function symptomViews(s: Content["scenario"], c: Pick<Character, "conditions">):
   }));
 }
 
+/** 젖은 옷 (12-186): 몸 상태 칩 옆에 보인다. 판정 보정은 없고 체감 기온만 떨어진다 */
+function wetSymptom(s: Content["scenario"], state: GameState, id: string): SymptomView[] {
+  const wet = s.body?.cold?.climate?.wet;
+  return wet && (state.wet?.[id] ?? 0) > 0 ? [{ id: "wet_clothes", label: "젖은 옷", penalty: 0, tone: 2, fatal: false }] : [];
+}
+
 /** 장비 한 줄. durability: 남은 내구도 (내구도가 없는 물건은 null) */
 /** slot: 자리 id (벗을 때 쓴다) */
 export type GearView = { id: string; name: string; slot: string; slotLabel: string; detail: string; durability: { left: number; max: number } | null; ammo: string | null; icon: IconName };
@@ -414,7 +420,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         fatal: !!shown.fatal,
       };
     }),
-    symptoms: symptomViews(scenario, player),
+    symptoms: [...symptomViews(scenario, player), ...wetSymptom(scenario, state, player.id)],
     memo: memoAccess(content, player).write ? { text: state.memos[player.id] ?? "" } : null,
     conditionPenalty: conditionPenalty(scenario, player),
     dead: player.dead,

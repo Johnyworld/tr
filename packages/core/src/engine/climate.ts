@@ -107,8 +107,8 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
     // 지핀 모닥불이 없으면 난로의 불이다 (12-167)
     parts.push(`${(state.fires[zone!] ?? 0) > time ? "모닥불" : "난로"} ${signed(c.fire!.warmth)}`);
   }
-  // 젖은 옷 (12-121): 불 곁이 아니면 체감이 떨어진다
-  if (c.wet && !fireHere && (state.wetUntil?.[me.id] ?? 0) > time) {
+  // 젖은 옷 (12-121, 12-186): 불 곁이 아니면 체감이 떨어진다
+  if (c.wet && !fireHere && (state.wet?.[me.id] ?? 0) > 0) {
     value -= c.wet.degrees;
     parts.push(`젖은 옷 ${signed(-c.wet.degrees)}`);
   }
@@ -195,21 +195,21 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
   if (!c || !track || !me || me.dead || to <= from) return [];
   const before = state.coldLoad[me.id] ?? 0;
   let load = before;
-  // 젖은 옷 (12-121): 젖는 날씨에 바깥에 있으면 젖고, 불 곁에 있으면 마른다
-  let wetUntil = state.wetUntil?.[me.id] ?? 0;
-  const wetBefore = wetUntil;
+  // 젖은 옷 (12-121, 12-186): 젖는 날씨에 바깥에 있으면 젖고, 불 곁에 fire_hours 있어야 마른다 (시간으로는 마르지 않는다)
+  let wetLeft = state.wet?.[me.id] ?? 0;
+  const wetBefore = wetLeft;
   let coldest: Feels | null = null;
   let warmest: Feels | null = null;
   let allIndoor = true;
   for (let t = from; t < to; ) {
     const end = Math.min(to, nextBoundary(t));
-    const f = feelsLike(ctx.content, { ...state, wetUntil: { ...state.wetUntil, [me.id]: wetUntil } }, activity, t, me.id);
+    const f = feelsLike(ctx.content, { ...state, wet: { ...state.wet, [me.id]: wetLeft } }, activity, t, me.id);
     if (!f) break;
     if (!f.indoor) allIndoor = false;
     if (c.wet) {
       const weather = dayOf(t) === dayOf(state.time) ? weatherNow(ctx.content.scenario, state) : null;
-      if (!f.indoor && weather && c.wet.weather.includes(weather.id)) wetUntil = Math.max(wetUntil, end + Math.round(c.wet.hours * 60));
-      else if (wetUntil > t && f.parts.some((p) => p.startsWith("모닥불"))) wetUntil = Math.min(wetUntil, t + 60);
+      if (!f.indoor && weather && c.wet.weather.includes(weather.id)) wetLeft = Math.round(c.wet.fire_hours * 60);
+      else if (wetLeft > 0 && f.parts.some((p) => p.startsWith("모닥불") || p.startsWith("난로"))) wetLeft = Math.max(0, wetLeft - (end - t));
     }
     const hours = (end - t) / 60;
     if (f.value < c.comfort) {
@@ -247,8 +247,50 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
     if (ch?.display) displays.push(ch.display);
   }
   if (load !== before && !ctx.store.getState().characters[me.id]?.dead) ctx.store.append({ type: "cold_load_set", characterId: me.id, load });
-  if (wetUntil !== wetBefore && !ctx.store.getState().characters[me.id]?.dead) ctx.store.append({ type: "soaked", characterId: me.id, until: wetUntil });
+  if (wetLeft !== wetBefore && !ctx.store.getState().characters[me.id]?.dead) {
+    const name = ctx.store.getState().characters[me.id]!.name;
+    if (wetBefore <= 0) displays.push(...soak(ctx, me.id, "비를 맞았다"));
+    else if (wetLeft <= 0) displays.push(dryOff(ctx, me.id, name, "불 곁에서 말렸다"));
+    else ctx.store.append({ type: "wet_set", characterId: me.id, left: wetLeft, cause: "불 곁에서 말리는 중" });
+  }
   return displays;
+}
+
+/** 젖은 옷 (12-186): 마르기까지 체감이 떨어진다. 무엇으로 마르는지 GM·화면에 알린다 */
+export function soak(ctx: ToolContext, who: string, cause: string): ToolDisplayEvent[] {
+  const wet = climateOf(ctx.content)?.wet;
+  const me = ctx.store.getState().characters[who];
+  if (!wet || !me || me.dead) return [];
+  const was = (ctx.store.getState().wet?.[who] ?? 0) > 0;
+  ctx.store.append({ type: "wet_set", characterId: who, left: Math.round(wet.fire_hours * 60), cause });
+  if (was) return [];
+  return [{ type: "harm", targetName: me.name, trackLabel: "옷", severityLabel: cause, fatal: false, fromLabel: "마름", toLabel: "젖음", cause: `${cause}. 마를 때까지 체감 -${wet.degrees}°. 시간으로는 마르지 않는다: 불 곁에서 ${wet.fire_hours}시간, 또는 갈아입을 옷이 있는 곳(우리 거점·거처·옷이 남은 폐허)에서 갈아입는다` }];
+}
+
+function dryOff(ctx: ToolContext, who: string, name: string, by: string): ToolDisplayEvent {
+  ctx.store.append({ type: "wet_set", characterId: who, left: 0, cause: by });
+  return { type: "heal", targetName: name, trackLabel: "옷", fromLabel: "젖음", toLabel: "마름", byLabel: by };
+}
+
+/** 갈아입을 옷이 있는 곳인가 (12-186): 우리 무리의 거점, 내 거처, 옷이 남은 곳(location.clothes) */
+export function clothesHere(content: Content, state: GameState): boolean {
+  const me = state.characters[state.playerId];
+  const zone = state.playerZone;
+  if (!me || !zone) return false;
+  if (content.locations[zone]?.clothes) return true;
+  if (state.homes?.[me.id] === zone) return true;
+  return !!me.factionId && content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === me.factionId;
+}
+
+/** 젖은 옷을 갈아입는다 (take_action.change_clothes): 주인공과 곁의 사람들 */
+export function changeClothes(ctx: ToolContext): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+  const state = ctx.store.getState();
+  if (!climateOf(ctx.content)?.wet) return { ok: false, error: "이 월드에는 젖은 옷 규칙이 없다." };
+  if (!clothesHere(ctx.content, state)) return { ok: false, error: "여기에는 갈아입을 옷이 없다 (우리 무리의 거점, 내 거처, 옷이 남은 곳에서만)." };
+  const who = [state.playerId, ...activeCompanions(state).filter((id) => !isCreature(ctx.content, state.characters[id]))].filter((id) => (state.wet?.[id] ?? 0) > 0);
+  if (!who.length) return { ok: false, error: "젖은 옷을 입은 사람이 없다." };
+  const displays = who.map((id) => dryOff(ctx, id, state.characters[id]!.name, "마른 옷으로 갈아입었다"));
+  return { ok: true, lines: [`${who.map((id) => state.characters[id]!.name).join(", ")}: 마른 옷으로 갈아입었다.`], displays };
 }
 
 /** 모닥불을 피운다 (연료 아이템을 쓴다). 같은 구역에 있으면 따뜻하고, 연기와 불빛은 소음이 된다 */
@@ -281,6 +323,15 @@ export function describeTemperature(content: Content, state: GameState): string 
   return (
     `바깥 ${f.outside.value}° (${f.outside.segmentLabel}${f.outside.weatherLabel ? `·${f.outside.weatherLabel}` : ""}), ` +
     `여기서 쉬면 체감 ${f.value}° (${f.parts.join(", ")})` +
-    (fireLeft > 0 ? `. 모닥불이 ${Math.ceil(fireLeft / 60)}시간쯤 더 탄다` : "")
+    (fireLeft > 0 ? `. 모닥불이 ${Math.ceil(fireLeft / 60)}시간쯤 더 탄다` : "") +
+    wetNote(content, state)
   );
+}
+
+/** 젖은 옷이면 GM 기온 줄에 붙는 말 (12-186) */
+function wetNote(content: Content, state: GameState): string {
+  const wet = climateOf(content)?.wet;
+  const left = state.wet?.[state.playerId] ?? 0;
+  if (!wet || left <= 0) return "";
+  return `. 옷이 젖어 있다 (체감 -${wet.degrees}°, 시간으로는 마르지 않는다: 불 곁에서 ${Math.ceil(left / 60)}시간 더, 또는 ${clothesHere(content, state) ? "여기서 갈아입을 수 있다 (take_action.change_clothes)" : "갈아입을 옷이 있는 곳에서 갈아입기"})`;
 }

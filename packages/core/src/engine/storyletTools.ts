@@ -1,4 +1,5 @@
 import { springEnemyAmbush } from "./ambush.ts";
+import { soak } from "./climate.ts";
 import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
@@ -342,10 +343,9 @@ export function applyEffect(
     return { line: effect.infested < 0 ? "이 구역의 감염체가 줄었다. 한동안 조용할 것이다." : "이 구역에 감염체가 더 몰려든다." };
   }
   if ("soak" in effect) {
-    const wet = content.scenario.body?.cold?.climate?.wet;
-    if (!wet) return {};
-    store.append({ type: "soaked", characterId: playerId, until: Math.max(state.wetUntil?.[playerId] ?? 0, state.time + Math.round(wet.hours * 60)) });
-    return { line: `옷이 흠뻑 젖었다. 불 곁에서 말리지 않으면 ${wet.hours}시간쯤 춥다.` };
+    const shown = soak(ctx, playerId, "온몸이 젖었다");
+    const d = shown[0];
+    return d?.type === "harm" ? { line: `옷이 흠뻑 젖었다. ${d.cause.replace(/^온몸이 젖었다\. /, "")}.`, display: d } : {};
   }
   if ("zone_noise" in effect) {
     if (!state.playerZone) return {};

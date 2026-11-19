@@ -520,6 +520,8 @@ export function createContentSchemas(s: Scenario) {
     adjacent: z.array(contentIdSchema).default([]),
     /** 피난처: 어느 무리도 차지하거나 치지 않는다 (성당, 학자들의 캠퍼스, 12-53) */
     sanctuary: z.boolean().optional(),
+    /** 갈아입을 옷이 있는 곳 (12-186, 옷가게·마트 폐허 등). 젖은 옷을 갈아입을 수 있다. 우리 무리의 거점과 내 거처는 늘 된다 */
+    clothes: z.boolean().optional(),
     /** 실내 (12-98): 들어가 쉬면 바깥보다 따뜻한 도. 0이면 덮을 곳이 없다 (쉬어도 노숙). 폐허 4, 온전한 건물 7 정도 */
     cover: z.number().int().min(0).max(12).optional(),
     /** 위험 (0 안전 ~ 3 아주 위험, 12-53). 오가는 길에서 일이 생길 확률(scenario.travel)을 정한다 */

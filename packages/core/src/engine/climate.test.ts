@@ -56,10 +56,12 @@ describe("기온", () => {
     me().inventory.coat = 1;
     expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value); // 가방에만 있다
     me().equipped.outer = "coat";
-    expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value + 6);
+    const coat = content.items.coat!.warmth!.degrees;
+    const blanket = content.items.blanket!.warmth!.degrees;
+    expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value + coat);
     me().inventory.blanket = 1;
-    expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value + 6);
-    expect(feelsLike(content, store.getState(), "sleep")!.value).toBe(inside.value + 6 + 5);
+    expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value + coat);
+    expect(feelsLike(content, store.getState(), "sleep")!.value).toBe(inside.value + coat + blanket);
   });
 
   it("덮을 곳이 없는 구역은 쉬어도 바깥", () => {
@@ -144,26 +146,41 @@ describe("기온", () => {
     expect(at("c_base").parts).not.toContain("불 땐 거처"); // 붉은연합은 적
   });
 
-  it("비 오는 날 바깥에 있으면 옷이 젖어 몇 시간 춥고, 모닥불 곁에서는 마른다 (12-121)", () => {
+  it("비 오는 날 바깥에 있으면 옷이 젖는다. 시간으로는 마르지 않고, 불 곁에서 두 시간이면 마른다 (12-121, 12-186)", () => {
     const { store, ctx, me } = setup({ hour: SEGMENT_START_HOUR.day + 1 });
     const s = store.getState();
     s.weather = { day: dayOf(s.time), id: "rain" };
     const wet = content.scenario.body!.cold!.climate!.wet!;
-    exposeToCold(ctx, "search", s.time, s.time + 60);
-    const until = store.getState().wetUntil[me().id]!;
-    expect(until).toBe(s.time + 60 + wet.hours * 60);
-    // 비가 그친 뒤에도 젖어 있는 동안은 실내에서도 춥다
+    const shown = exposeToCold(ctx, "search", s.time, s.time + 60);
+    expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60);
+    expect(shown.some((d) => d.type === "harm" && d.trackLabel === "옷" && d.toLabel === "젖음")).toBe(true);
+    // 비가 그치고 하루가 지나도 젖어 있다
     store.getState().weather = null;
-    store.getState().time = s.time + 90;
-    const f = feelsLike(content, store.getState(), "rest")!;
-    expect(f.parts).toContain(`젖은 옷 -${wet.degrees}`);
-    // 모닥불 곁에서는 한 시간이면 마른다
+    exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 24 * 60);
+    store.getState().time += 24 * 60;
+    expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60);
+    expect(feelsLike(content, store.getState(), "rest")!.parts).toContain(`젖은 옷 -${wet.degrees}`);
+    // 불 곁에서 한 시간이면 반쯤, 두 시간이면 마른다
     store.getState().fires[store.getState().playerZone!] = store.getState().time + 240;
     exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 60);
-    expect(store.getState().wetUntil[me().id]).toBeLessThanOrEqual(store.getState().time + 60);
-    store.getState().fires = {};
-    store.getState().time += 120;
-    expect(feelsLike(content, store.getState(), "rest")!.parts.some((p) => p.startsWith("젖은 옷"))).toBe(false);
+    store.getState().time += 60;
+    expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60 - 60);
+    const dried = exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 60);
+    expect(store.getState().wet[me().id]).toBeUndefined();
+    expect(dried.some((d) => d.type === "heal" && d.trackLabel === "옷")).toBe(true);
+  });
+
+  it("갈아입을 옷이 있는 곳에서만 갈아입어 마른다 (12-186)", () => {
+    const { store, ctx, me } = setup({ quiet: true });
+    store.append({ type: "wet_set", characterId: me().id, left: 120, cause: "test" });
+    store.getState().playerZone = "overpass";
+    const no = executeTool("take_action", { intent: "갈아입는다", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, change_clothes: true }, ctx);
+    expect(no.ok && no.resultText).toContain("갈아입지 못했다");
+    expect(store.getState().wet[me().id]).toBe(120);
+    store.getState().playerZone = "mall_ruins";
+    const yes = executeTool("take_action", { intent: "갈아입는다", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, change_clothes: true }, ctx);
+    expect(yes.ok && yes.resultText).toContain("갈아입었다");
+    expect(store.getState().wet[me().id]).toBeUndefined();
   });
 
   it("이야기에서 물에 빠지면 젖는다 (soak)", () => {
@@ -174,7 +191,7 @@ describe("기온", () => {
     fireStorylet(c, story as never, {});
     const out = executeTool("resolve_storylet", { choice_id: "x" }, c);
     expect(out.ok && out.resultText).toContain("젖었다");
-    expect(store.getState().wetUntil[me().id]).toBeGreaterThan(store.getState().time);
+    expect(store.getState().wet[me().id]).toBeGreaterThan(0);
   });
 
   it("함께 다니는 사람도 같은 추위를 겪는다. 옷과 체질은 그 사람의 것 (12-122)", () => {
@@ -193,7 +210,9 @@ describe("기온", () => {
     const after = store.getState();
     const idx = (id: string) => content.scenario.condition_tracks.find((t) => t.id === "cold")!.levels.findIndex((l) => l.id === after.characters[id]!.conditions.cold);
     expect(idx(bare!)).toBeGreaterThan(0);
-    expect(idx(dressed!)).toBeLessThan(idx(bare!));
+    // 단계와 쌓인 냉기를 합쳐 본다 (방한복만큼 덜 춥다)
+    const chill = (id: string) => idx(id) * 100 + (after.coldLoad[id] ?? 0);
+    expect(chill(dressed!)).toBeLessThan(chill(bare!));
     expect(feelsLike(content, after, "guard_duty", after.time, dressed!)!.parts.some((p) => p.includes("방한복"))).toBe(true);
   });
 

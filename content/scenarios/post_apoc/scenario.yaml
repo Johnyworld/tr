@@ -1569,9 +1569,11 @@ body:
       sanctuary: 10
       trait_degrees: 3
       # 모닥불: 연료 → 타는 시간. 곁에 있으면 +10°, 피우면 그 구역 소음 +1 (연기와 불빛)
-      fire: { items: { firewood: 4, planks: 3, fuel_bottle: 2 }, warmth: 10, noise: 1 }
-      # 젖은 옷 (12-121, *임시*): 비 오는 날 바깥에 있었거나 강·하수구에 빠지면 3시간 동안 체감 -5. 모닥불 곁에서는 한 시간이면 마른다
-      wet: { weather: [rain], degrees: 5, hours: 3 }
+      # 땔감 한 단은 하룻밤 (12-186, 4 → 8시간)
+      fire: { items: { firewood: 8, planks: 3, fuel_bottle: 2 }, warmth: 10, noise: 1 }
+      # 젖은 옷 (12-121, 12-186, *임시*): 비 오는 날 바깥에 있었거나 강·하수구에 빠지면 마를 때까지 체감 -10. 시간으로는 마르지 않는다.
+      # 불 곁(모닥불·난로)에서 2시간, 또는 갈아입을 옷이 있는 곳(우리 거점·내 거처·location.clothes)에서 갈아입으면 마른다
+      wet: { weather: [rain], degrees: 10, fire_hours: 2 }
   # 질병: 하루마다 확률. 굶주림·추위·무리의 물 부족마다 더하고, 체력 1당 25% 덜 걸린다
   disease:
     track: disease

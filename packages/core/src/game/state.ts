@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 75;
+export const SAVE_SCHEMA_VERSION = 76;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -392,8 +392,8 @@ export function createGameSchemas(s: Scenario) {
     stashHinted: z.array(z.string()).default([]),
     /** 쌓인 냉기 (12-98, 캐릭터마다). per_step을 넘으면 추위 트랙이 오르고, 음수로 per_step만큼 빠지면 풀린다 */
     coldLoad: z.record(z.string(), z.number()).default({}),
-    /** 옷이 젖어 있는 때까지 (12-121, 게임 시각). 캐릭터마다 */
-    wetUntil: z.record(z.string(), z.number()).default({}),
+    /** 젖은 옷 (12-121, 12-186): 캐릭터 → 불 곁에서 마르기까지 남은 분. 없으면 마른 옷 */
+    wet: z.record(z.string(), z.number()).default({}),
     /** 쌓인 피로 (깨어 있은 시간, 12-114). 캐릭터마다 */
     fatigueLoad: z.record(z.string(), z.number()).default({}),
     /** 피워 둔 모닥불 (12-98): 구역 → 꺼지는 시각 */
@@ -639,6 +639,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("cold_load_set"), characterId: z.string(), load: z.number() }),
     /** 옷이 젖었다 / 말랐다 (until이 지금 이하면 마름, 12-121) */
     z.strictObject({ type: z.literal("soaked"), characterId: z.string(), until: z.number().int() }),
+    // 젖은 옷 (12-186): left는 불 곁에서 마르기까지 남은 분. 0이면 말랐다
+    z.strictObject({ type: z.literal("wet_set"), characterId: z.string(), left: z.number().min(0), cause: z.string() }),
     z.strictObject({ type: z.literal("fatigue_load_set"), characterId: z.string(), load: z.number() }),
     z.strictObject({ type: z.literal("fire_lit"), zone: z.string(), until: z.number().int(), itemId: z.string() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
@@ -1050,7 +1052,7 @@ export const EMPTY_STATE: GameState = {
   blackmails: [],
   exposed: [],
   coldLoad: {},
-  wetUntil: {},
+  wet: {},
   fatigueLoad: {},
   fires: {},
   romances: {},
@@ -1616,8 +1618,18 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.fatigueLoad = { ...next.fatigueLoad, [event.characterId]: event.load };
       return next;
     case "soaked":
-      next.wetUntil = { ...next.wetUntil, [event.characterId]: event.until };
+      // 예전 세이브 (12-121): 시간이 남은 젖음은 불 곁 두 시간으로 옮긴다
+      if (event.until > state.time) next.wet = { ...next.wet, [event.characterId]: 120 };
+      else {
+        const { [event.characterId]: _, ...rest } = next.wet;
+        next.wet = rest;
+      }
       return next;
+    case "wet_set": {
+      const { [event.characterId]: _, ...rest } = next.wet;
+      next.wet = event.left > 0 ? { ...rest, [event.characterId]: event.left } : rest;
+      return next;
+    }
     case "cold_load_set":
       next.coldLoad = { ...next.coldLoad, [event.characterId]: event.load };
       return next;

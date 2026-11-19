@@ -12,7 +12,7 @@ import { exposeToFatigue } from "./fatigue.ts";
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { rollBlowup, rollHear, rollLeak } from "./persona.ts";
-import { exposeToCold } from "./climate.ts";
+import { exposeToCold, changeClothes } from "./climate.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { runRoadEvent } from "./storyletTools.ts";
@@ -231,6 +231,10 @@ export function createTakeActionSchema(s: Scenario) {
       .boolean()
       .default(false)
       .describe("물이 있는 곳(상태의 \"물\" 줄)에서 플레이어가 물을 마시겠다고 하면 true. 얼마나 풀리는지, 거점에서 보급을 받는지는 시스템이 정한다"),
+    change_clothes: z
+      .boolean()
+      .default(false)
+      .describe("젖은 옷을 마른 옷으로 갈아입으면 true (12-186). 갈아입을 옷이 있는 곳(우리 무리의 거점, 내 거처, 옷이 남은 곳)에서만. 곁의 사람도 함께 갈아입는다. 장비 칸을 바꾸는 equip과는 다르다"),
     refill: z
       .boolean()
       .default(false)
@@ -320,7 +324,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {
-    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || !!input.craft || !!input.build || !!input.train || input.broadcast || input.ambush || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || input.change_clothes || !!input.craft || !!input.build || !!input.train || input.broadcast || input.ambush || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
     const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
     if (acts || !passive) {
       return {
@@ -634,6 +638,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     [input.use_item, () => useItem(ctx, input.use_item!)],
     [input.drink || null, () => drinkWater(ctx)],
     [input.refill || null, () => refillWater(ctx)],
+    [input.change_clothes || null, () => changeClothes(ctx)],
     [input.bury, () => buryRemains(ctx, input.bury!.who, input.bury!.words)],
   ] as const) {
     if (!request) continue;
@@ -642,7 +647,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       lines.push(...t.lines);
       displays.push(...t.displays);
     } else {
-      lines.push(`${request === input.bury ? "묻지 못했다" : "몸을 돌보지 못했다"}: ${t.error}`);
+      lines.push(`${request === input.bury ? "묻지 못했다" : request === input.change_clothes ? "갈아입지 못했다" : "몸을 돌보지 못했다"}: ${t.error}`);
     }
   }
 

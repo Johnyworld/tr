@@ -1376,10 +1376,11 @@ export const scenarioFileSchema = z
                   .strictObject({ items: z.record(id, z.number().positive()), warmth: z.number().positive(), noise: z.number().int().min(0).default(0) })
                   .optional(),
                 /**
-                 * 젖은 옷 (12-121): weather 날씨에 바깥에 있었거나 이야기 효과 soak로 젖으면 hours 동안 체감 -degrees.
-                 * 젖을 때마다 다시 센다. 모닥불 곁에서는 마른다 (그 동안 빼지 않고, 불 곁에서 한 시간이면 다 마른다)
+                 * 젖은 옷 (12-121, 12-186): weather 날씨에 바깥에 있었거나 이야기 효과 soak로 젖으면 마를 때까지 체감 -degrees.
+                 * 시간으로는 마르지 않는다. 불 곁(모닥불·난로)에 fire_hours 있거나, 갈아입을 옷이 있는 곳에서 갈아입어야(take_action.change_clothes) 마른다.
+                 * 불 곁에 있는 동안은 빼지 않는다
                  */
-                wet: z.strictObject({ weather: z.array(id).default([]), degrees: z.number().positive(), hours: z.number().positive() }).optional(),
+                wet: z.strictObject({ weather: z.array(id).default([]), degrees: z.number().positive(), fire_hours: z.number().positive() }).optional(),
               })
               .optional(),
           })

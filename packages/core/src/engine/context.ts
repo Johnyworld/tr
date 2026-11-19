@@ -24,7 +24,7 @@ import { describeStash } from "./stash.ts";
 import { infestationSign } from "../game/infestation.ts";
 import { KIND_LABELS, templateKind } from "../game/kinds.ts";
 import { describePersona } from "./persona.ts";
-import { describeTemperature } from "./climate.ts";
+import { describeTemperature, feelsLike } from "./climate.ts";
 import { troubleLine } from "./factionTalk.ts";
 import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
@@ -126,7 +126,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
   const sections: [string, string][] = [
     ["status", [
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
-      ...(describeTemperature(content, state) ? [`기온: ${describeTemperature(content, state)}. 추위는 시스템이 기온으로 정한다 (불 피우기는 take_action.use_item에 땔감·판자·기름)`] : []),
+      ...(describeTemperature(content, state) ? [`기온: ${describeTemperature(content, state)}${coldHint(content, state)}`] : []),
       `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       ...(describeFatigue(content, state) ? [describeFatigue(content, state)!] : []),
       ...(describeCamp(content, state) ? [describeCamp(content, state)!] : []),
@@ -257,6 +257,14 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/** 쉬어도 추운 자리에서만 붙이는 안내 (12-186: 매 장면 되풀이하지 않는다) */
+function coldHint(content: Content, state: GameState): string {
+  const comfort = content.scenario.body?.cold?.climate?.comfort;
+  const f = feelsLike(content, state, "rest");
+  if (comfort === undefined || !f || f.value >= comfort) return "";
+  return ". 여기서는 쉬어도 춥다. 추위는 시스템이 기온으로 정한다 (불 피우기는 take_action.use_item에 땔감·판자·기름)";
 }
 
 /** 팬·안티 (12-127): 주인공을 직접 보지 않고 소문으로만 아는 사람의 마음 */

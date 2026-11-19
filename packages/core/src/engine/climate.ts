@@ -94,9 +94,11 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   const parts: string[] = [];
   let value = outside.value;
   if (indoor) {
-    const sheltering = Math.round(cover - outside.weatherDegrees * (1 - c.indoor_weather));
-    value += sheltering;
-    parts.push(`실내 ${signed(sheltering)}`);
+    // 실내는 날씨를 indoor_weather만큼만 받는다. 막아 준 몫은 따로 적는다 (한파 때 "실내 +10"이 "10도 따뜻하다"로 읽혔다, 12-186)
+    const blocked = Math.round(-outside.weatherDegrees * (1 - c.indoor_weather));
+    value += cover + blocked;
+    parts.push(`실내 ${signed(cover)}`);
+    if (blocked) parts.push(`날씨를 막아 줌 ${signed(blocked)}`);
   } else {
     parts.push(cover > 0 ? "바깥" : "덮을 곳 없는 바깥");
   }

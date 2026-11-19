@@ -11,7 +11,7 @@ import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import type { InterruptCheck } from "../sim/fastForward.ts";
 import { fillStorylet, pickCast, pickStorylet, roadStorylets, storyletVars } from "../story/storylets.ts";
 import { welcomedAsGuest } from "./climate.ts";
-import { fireStorylet, storySetup } from "./storyletTools.ts";
+import { fireStorylet, storySetup, maskUnknownNames } from "./storyletTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -128,7 +128,7 @@ export function runCampEvent(ctx: ToolContext, activity: Activity, deep: string 
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
   const now = store.getState();
   const cast = now.activeStorylet?.cast ?? {};
-  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: fillStorylet(storySetup(now, storylet), storyletVars(now, content, cast)) });
+  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: maskUnknownNames(now, content, fillStorylet(storySetup(now, storylet), storyletVars(now, content, cast))) });
   const watchers = campWatchers(content, state).map((id) => playerCalls(store.getState(), content, id));
   const who =
     activity !== "sleep"

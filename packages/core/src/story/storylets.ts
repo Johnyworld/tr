@@ -434,8 +434,8 @@ export function storyletWindow(state: GameState, content: Content, at: GameTime)
   const fresh = state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt;
   // 이야기가 몰리지 않게 (12-191): 앞 이야기와 가까우면 급한 이야기만 (급한 것은 하루 상한으로 막는다)
   if (!fresh && at - state.lastStoryletAt! < pacing.min_any_gap_hours * 60) return "urgent_only";
-  // 위급하면 급한 이야기만 (12-191)
-  if (inCrisis(state, content)) return "urgent_only";
+  // 위급하면 급한 이야기만 (12-191). 폐허를 탐험하는 중에도 (12-192: 병원 지하에서 "물통 옮기기"가 열렸다)
+  if (inCrisis(state, content) || state.exploration) return "urgent_only";
   if (fresh) return "open";
   return at - state.lastStoryletAt! >= pacing.min_gap_hours * 60 ? "open" : "urgent_only";
 }

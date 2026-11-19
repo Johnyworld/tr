@@ -169,7 +169,7 @@ export function storySetup(state: GameState, storylet: StoryletContent): string 
 function setupText(state: GameState, content: Content): string {
   const a = activeOf(state, content);
   if (!a) return "";
-  return fillStorylet(storySetup(state, a.storylet), storyletVars(state, content, a.cast));
+  return maskUnknownNames(state, content, fillStorylet(storySetup(state, a.storylet), storyletVars(state, content, a.cast)));
 }
 
 /** GM 컨텍스트: 진행 중인 이야기. 조건(클락 등)은 넣지 않는다 */
@@ -179,8 +179,9 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
   const vars = storyletVars(state, content, a.cast);
   const lines = [
     `진행 중인 이야기: ${a.storylet.title}`,
-    `  상황: ${fillStorylet(storySetup(state, a.storylet), vars)}`,
-    ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${fillStorylet(a.storylet.ai_direction, vars)}`] : []),
+    // 배역이 아닌 인물의 이름도 주인공이 모르면 호칭으로 (12-192)
+    `  상황: ${maskUnknownNames(state, content, fillStorylet(storySetup(state, a.storylet), vars))}`,
+    ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${maskUnknownNames(state, content, fillStorylet(a.storylet.ai_direction, vars))}`] : []),
     `  등장: ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
     `  선택지 (resolve_storylet): ${a.storylet.choices
       .filter((c) => choiceAvailable(state, c, a.cast))

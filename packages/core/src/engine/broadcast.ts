@@ -3,7 +3,7 @@ import type { GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
 import { josa } from "../text.ts";
 import { fillStorylet, pickCast, pickStorylet, roadStorylets, storyletVars } from "../story/storylets.ts";
-import { fireStorylet, storySetup } from "./storyletTools.ts";
+import { fireStorylet, storySetup, maskUnknownNames } from "./storyletTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -38,6 +38,6 @@ export function runBroadcast(ctx: ToolContext): { lines: string[]; displays: Too
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
   const now = store.getState();
   const cast = now.activeStorylet?.cast ?? {};
-  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: fillStorylet(storySetup(now, storylet), storyletVars(now, content, cast)) });
+  displays.push({ type: "storylet", event: "started", title: storylet.title, detail: maskUnknownNames(now, content, fillStorylet(storySetup(now, storylet), storyletVars(now, content, cast))) });
   return { lines: [`무전에 누군가 응답했다: "${storylet.title}". 그 장면으로 연출하라 (상태의 '진행 중인 이야기'). 열린 송신은 누구나 듣는다.`], displays };
 }

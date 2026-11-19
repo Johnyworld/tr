@@ -135,6 +135,7 @@
           - relation: { who: avenger, axis: affection, delta: -2 }
           - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty], severity: 2, privacy: semi_private }
         miss:
+          - end_blackmail: { who: avenger }
           - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty, betrayal], severity: 2, privacy: public }
           - belief: { fact: "{avenger:이/가} 내가 협박한 일을 사람들 앞에서 떠들었다", source: seen }
     - id: apologize
@@ -143,14 +144,18 @@
       outcomes:
         success:
           - relation: { who: avenger, axis: trust, delta: 2 }
+          - end_blackmail: { who: avenger, drop: true }
           - belief: { fact: "{avenger}에게 협박한 일을 사과했다. {avenger:은/는} 오래 말이 없다가 고개를 끄덕였다", source: seen }
         partial:
           - relation: { who: avenger, axis: trust, delta: 1 }
+          - end_blackmail: { who: avenger, drop: true }
           - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty], severity: 1, privacy: semi_private }
         miss:
+          - end_blackmail: { who: avenger }
           - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty], severity: 2, privacy: public }
     - id: ignore
       label: 마음대로 하라며 지나간다
       effects:
+        - end_blackmail: { who: avenger }
         - deed: { summary: "{avenger:을/를} 약점으로 협박해 왔다", tags: [cruelty], severity: 2, privacy: public }
         - belief: { fact: "{avenger:이/가} 내가 협박한 일을 퍼뜨리고 다닌다", source: seen }

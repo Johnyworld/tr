@@ -42,6 +42,7 @@ import {
 } from "../story/storylets.ts";
 import { josa, sentence } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
+import { leveragesOn } from "./leverage.ts";
 import { commanderOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -486,6 +487,13 @@ export function applyEffect(
     if (!id || id === playerId || !state.characters[id] || state.characters[id]!.dead) return {};
     const c = changeCondition(ctx, id, harmTrack(content.scenario).id, -effect.npc_heal.steps, "healer", "돌봄");
     return c?.line && store.getState().scene.present.includes(id) ? { line: c.line, display: c.display ?? undefined } : {};
+  }
+  if ("end_blackmail" in effect) {
+    const id = whoOf(ctx, effect.end_blackmail.who, cast);
+    if (!id || !state.blackmails.some((b) => b.npcId === id && b.by === playerId)) return {};
+    const keys = effect.end_blackmail.drop ? leveragesOn(state, content, id).map((l) => l.key) : [];
+    store.append({ type: "blackmail_ended", npcId: id, by: playerId, keys });
+    return keys.length ? { line: `${playerCalls(state, content, id)}의 약점을 내려놓았다 (다시 쓰지 않는다).` } : {};
   }
   if ("clear_bounty" in effect) {
     const f = state.bounties[0];

@@ -85,6 +85,37 @@ describe("협박과 폭로", () => {
     expect(w.executeTool("blackmail", { npc_id: greedy.id, action: "expose", leverage: "bribe:0", demand: null }).ok).toBe(true);
     const deed = Object.values(w.state().deeds).find((d) => d.actorId === greedy.id)!;
     expect(w.state().deedKnowledge[listener.id]?.[deed.id]).toBe("report");
+    // 플레이어가 쓴 부탁 문장이 아니라 그 사람이 한 일로 퍼진다 (플레이 테스트 5)
+    expect(deed.summary).toBe(`뇌물을 받고 부탁을 들어주었다 ("오늘 밤 창고 뒷문을 잠그지 않는다")`);
     expect(leveragesOn(w.state(), content, greedy.id)).toHaveLength(0);
+  });
+
+  it("되갚는 사람에게 사과가 통하면 원한이 풀리고 약점도 내려놓는다 (플레이 테스트 5)", () => {
+    const full = loadRealContent();
+    const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-leverage-")), content: full, rngFactory: () => () => 0.99 }).create("mcp", "role_a_grunt");
+    summon(w, greedy.id);
+    expect(w.runCheat("~give serum 2").ok).toBe(true);
+    expect(bribe(w, greedy.id, { serum: 2 }).ok).toBe(true);
+    w.ctx().store.append({ type: "blackmailed", npcId: greedy.id, by: w.state().playerId, leverage: "bribe:0", grudge: true });
+    const sc = w.runCheat("~storylet lv_payback"); expect(sc.ok, sc.ok ? "" : sc.error).toBe(true);
+    w.executeTool("take_action", { intent: "사과한다", check: { move: "persuade", stat: "charm", difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" }, activity: null, deed: null, target: null, narration_summary: null, for_mission: false });
+    const r = w.executeTool("resolve_storylet", { choice_id: "apologize" });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().blackmails).toEqual([]);
+    expect(leveragesOn(w.state(), full, greedy.id)).toEqual([]);
+    expect(w.runCheat("~storylet lv_payback").ok).toBe(false);
+  });
+});
+
+describe("누명", () => {
+  it("들킨 누명도 같은 사람에 대해 하루 한 번이다 (플레이 테스트 5)", () => {
+    const w = make(0);
+    const listener = npcs.find((n) => n.id !== "a_taeho" && n.faction === "faction_a")!;
+    summon(w, listener.id);
+    const rumor = () => w.executeTool("spread_rumor", { about: "a_taeho", summary: "창고에서 통조림을 빼돌렸다", tags: ["theft"], severity: 2 });
+    const first = rumor();
+    expect(first.ok && first.resultText).toContain("거짓말인 것이 드러났다");
+    const again = rumor();
+    expect(again.ok).toBe(false);
   });
 });

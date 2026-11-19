@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 72;
+export const SAVE_SCHEMA_VERSION = 73;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -632,6 +632,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("blackmailed"), npcId: z.string(), by: z.string(), leverage: z.string(), grudge: z.boolean() }),
     /** 약점을 폭로했다 (12-153) */
     z.strictObject({ type: z.literal("leverage_exposed"), by: z.string(), key: z.string() }),
+    // 협박이 끝났다 (12-182): 원한이 풀리고, keys의 약점은 내려놓는다 (exposed처럼 다시 쓰지 못한다)
+    z.strictObject({ type: z.literal("blackmail_ended"), npcId: z.string(), by: z.string(), keys: z.array(z.string()) }),
     /** 짐이 무거울 때 창고 안내를 했다 (12-149) */
     z.strictObject({ type: z.literal("stash_hinted"), characterId: z.string() }),
     // 유품 (12-158): 죽은 사람의 사물함·거처의 짐이 가까운 사람에게 간다
@@ -1597,6 +1599,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.blackmails = [...rest, { npcId: event.npcId, by: event.by, leverage: event.leverage, at: state.time, grudge: event.grudge || !!was?.grudge }];
       return next;
     }
+    case "blackmail_ended":
+      next.blackmails = next.blackmails.filter((b) => !(b.npcId === event.npcId && b.by === event.by));
+      next.exposed = [...next.exposed, ...event.keys.map((k) => `${event.by}|${event.npcId}:${k}`).filter((k) => !next.exposed.includes(k))];
+      return next;
     case "leverage_exposed":
       if (!next.exposed.includes(`${event.by}|${event.key}`)) next.exposed = [...next.exposed, `${event.by}|${event.key}`];
       return next;

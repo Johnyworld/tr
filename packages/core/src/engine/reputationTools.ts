@@ -184,6 +184,9 @@ const lookForWitnesses = defineTool({
   },
 });
 
+/** 누명이 들켰을 때 주인공의 행적 */
+const caughtSummary = (who: string) => `${who}에 대해 거짓말을 퍼뜨리려다 들켰다`;
+
 const revealSecret = defineTool({
   name: "reveal_secret",
   description:
@@ -252,7 +255,11 @@ const spreadRumor = defineTool({
     });
     if (!listeners.length) return { ok: false, error: "들을 사람이 없다. 장면에 누명을 쓸 사람 말고 다른 사람이 있어야 한다." };
     const today = dayOf(state.time);
-    const again = Object.values(state.deeds).some((d) => d.fabricatedBy === me.id && d.actorId === target.id && today - dayOf(d.at) < RUMOR_EVERY_DAYS);
+    // 지어낸 말이 통했든 들켰든, 같은 사람에 대한 말은 하루 한 번
+    const caught = caughtSummary(playerCalls(state, content, target.id));
+    const again = Object.values(state.deeds).some(
+      (d) => today - dayOf(d.at) < RUMOR_EVERY_DAYS && ((d.fabricatedBy === me.id && d.actorId === target.id) || (d.actorId === me.id && d.summary === caught)),
+    );
     if (again) return { ok: false, error: `${playerCalls(state, content, target.id)}에 대한 말은 오늘 이미 퍼뜨렸다.` };
     // 대상과 이어진 사람(가족·친구·연인)이 듣는 자리면 어렵다
     const close = new Set([...tiesOf(state, content, target.id).filter((t) => t.kind !== "rival").map((t) => t.other), ...loversOf(state, content, target.id)]);
@@ -288,7 +295,7 @@ const spreadRumor = defineTool({
         lines.push(`다만 ${josa(playerCalls(state, content, doubter), "은/는")} 이 말이 어디서 나왔는지 기억한다 (속으로 의심한다. 드러낼지는 성격대로).`);
       }
     } else {
-      recordDeed(ctx, { summary: `${who}에 대해 거짓말을 퍼뜨리려다 들켰다`, tags: ["deceit", "betrayal"], severity: 1, privacy: "semi_private", noisy: false });
+      recordDeed(ctx, { summary: caughtSummary(who), tags: ["deceit", "betrayal"], severity: 1, privacy: "semi_private", noisy: false });
       lines.push(`아무도 믿지 않았다. 거짓말인 것이 드러났다 (그 자리 사람들이 당신을 보는 눈이 바뀐다).`);
     }
     return {

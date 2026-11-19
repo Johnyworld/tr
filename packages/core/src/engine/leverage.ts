@@ -25,7 +25,8 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome }
  * 부탁·요구를 실제로 들어주는 장면은 GM이 연출한다 (코드는 받아들였는지만 정한다)
  */
 
-export type Leverage = { key: string; label: string; tags: DeedTag[] };
+/** label: GM 카드의 줄. deed: 폭로했을 때 그 사람의 행적으로 퍼지는 한 줄 (그 사람이 한 일로) */
+export type Leverage = { key: string; label: string; deed: string; tags: DeedTag[] };
 
 const short = (text: string, n = 80) => (text.length > n ? `${text.slice(0, n)}…` : text);
 
@@ -34,14 +35,15 @@ export function leveragesOn(state: GameState, content: Content, npcId: string): 
   const me = state.playerId;
   const out: Leverage[] = [];
   const secret = profileOf(state, content, npcId)?.secret;
-  if (secret && state.revealedSecrets.includes(npcId)) out.push({ key: "secret", label: `털어놓은 비밀: ${short(secret.content)}`, tags: ["deceit"] });
+  if (secret && state.revealedSecrets.includes(npcId)) out.push({ key: "secret", label: `털어놓은 비밀: ${short(secret.content)}`, deed: `숨겨 온 일이 드러났다: ${short(secret.content)}`, tags: ["deceit"] });
   for (const tie of tiesOf(state, content, npcId)) {
     if (!tie.secret || !(state.revealedTies ?? []).includes(tie.key)) continue;
     const enemySide = state.characters[tie.other]?.factionId !== state.characters[npcId]?.factionId;
-    out.push({ key: `tie:${tie.key}`, label: `숨은 관계: ${playerCalls(state, content, tie.other)}의 ${TIE_LABELS[tie.kind]}${enemySide ? " (다른 무리)" : ""}`, tags: enemySide ? ["enemy_sympathy"] : ["deceit"] });
+    const tieText = `${playerCalls(state, content, tie.other)}의 ${TIE_LABELS[tie.kind]}${enemySide ? " (다른 무리)" : ""}`;
+    out.push({ key: `tie:${tie.key}`, label: `숨은 관계: ${tieText}`, deed: `숨겨 온 관계가 드러났다: ${tieText}`, tags: enemySide ? ["enemy_sympathy"] : ["deceit"] });
   }
   state.bribes.forEach((b, i) => {
-    if (b.npcId === npcId && b.by === me) out.push({ key: `bribe:${i}`, label: `뇌물을 받고 들어준 일: ${short(b.favor, 60)}`, tags: ["selfishness"] });
+    if (b.npcId === npcId && b.by === me) out.push({ key: `bribe:${i}`, label: `뇌물을 받고 들어준 일: ${short(b.favor, 60)}`, deed: `뇌물을 받고 부탁을 들어주었다 ("${short(b.favor, 60)}")`, tags: ["selfishness"] });
   });
   return out.filter((l) => !state.exposed.includes(`${me}|${npcId}:${l.key}`));
 }
@@ -180,7 +182,7 @@ const blackmailTool = defineTool({
       const deed: Deed = {
         id: `d_${state.nextDeedNo}`,
         actorId: input.npc_id,
-        summary: lev.label.replace(/^[^:]+: /, ""),
+        summary: lev.deed,
         tags: lev.tags,
         severity: 2,
         at: state.time,

@@ -288,16 +288,18 @@ export function zoneOutlook(state: GameState, content: Content) {
 /** GM 컨텍스트용 한 덩어리 */
 export function describeFactionsForGm(state: GameState, content: Content): string {
   const o = factionOutlook(state, content);
-  if (!o.own) return "";
   const z = zoneOutlook(state, content);
+  // 구역 줄은 무소속에게도 싣는다 (B4, 플레이 테스트 8·9: move_to에 쓸 id를 몰랐다)
+  const zoneLines = z
+    ? [
+        `현재 구역: ${z.name} (${z.id}, ${z.owner}) · 인접 구역(move_to): ${z.adjacent.map((a) => `${a.id} ${a.name}(${a.owner})`).join(", ")}` +
+          (z.preparations.length ? ` · 설치해 둔 준비물: ${z.preparations.join(", ")}` : ""),
+        ...(z.hostile ? ["  여기는 적대 세력의 땅이다. 들키면 공격받을 수 있다. 위험한 행동은 판정과 몸의 위험을 선언한다."] : []),
+      ]
+    : [];
+  if (!o.own) return [...zoneLines, ...(content.scenario.seasons ? [`계절: ${seasonLabel(seasonAt(content.scenario, state.time))}`] : [])].join("\n");
   return [
-    ...(z
-      ? [
-          `현재 구역: ${z.name} (${z.id}, ${z.owner}) · 인접 구역(move_to): ${z.adjacent.map((a) => `${a.id} ${a.name}(${a.owner})`).join(", ")}` +
-            (z.preparations.length ? ` · 설치해 둔 준비물: ${z.preparations.join(", ")}` : ""),
-          ...(z.hostile ? ["  여기는 적대 세력의 땅이다. 들키면 공격받을 수 있다. 위험한 행동은 판정과 몸의 위험을 선언한다."] : []),
-        ]
-      : []),
+    ...zoneLines,
     `무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`,
     ...(factionTroubles(state, content).length
       ? [

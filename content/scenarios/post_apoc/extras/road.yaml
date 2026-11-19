@@ -22,9 +22,9 @@
   rank: loner
   age: [22, 50]
   looks:
-    - 운동화 끈을 철사로 묶은 마른 남자. 등짐에 냄비를 매달아 걸을 때마다 달그락거린다
-    - 낡은 등산 배낭을 멘 여자. 지팡이 끝에 쇠못을 박았다. 길을 걸으며 계속 하늘을 본다
-    - 오토바이 헬멧을 손에 들고 다니는 남자. 쓰지는 않는다. 오토바이는 오래전에 없어졌다고 한다
+    - { gender: male, text: "운동화 끈을 철사로 묶은 마른 남자. 등짐에 냄비를 매달아 걸을 때마다 달그락거린다" }
+    - { gender: female, text: "낡은 등산 배낭을 멘 여자. 지팡이 끝에 쇠못을 박았다. 길을 걸으며 계속 하늘을 본다" }
+    - { gender: male, text: "오토바이 헬멧을 손에 들고 다니는 남자. 쓰지는 않는다. 오토바이는 오래전에 없어졌다고 한다" }
   stats: { vitality: [0, 1], senses: [0, 1], agility: [0, 1], charm: [0, 1] }
   skills: { survival: 2, sense_danger: 1, stealth: 1 }
   traits: [talkative, cautious, genial, weary, calculating, curious]
@@ -56,8 +56,8 @@
   rank: loner
   age: [16, 45]
   looks:
-    - 맨발에 양말만 신은 젊은 여자. 손목에 끈에 쓸린 자국이 있다
-    - 셔츠가 찢어진 남자. 한쪽 소매로 입을 막고 숨을 죽인다. 눈이 자꾸 뒤를 본다
+    - { gender: female, text: "맨발에 양말만 신은 젊은 여자. 손목에 끈에 쓸린 자국이 있다" }
+    - { gender: male, text: "셔츠가 찢어진 남자. 한쪽 소매로 입을 막고 숨을 죽인다. 눈이 자꾸 뒤를 본다" }
   stats: { agility: [1, 1], vitality: [-1, 0], nerve: [-1, 0] }
   skills: { stealth: 1, survival: 1 }
   traits: [timid, guarded, eager, coward, cautious]

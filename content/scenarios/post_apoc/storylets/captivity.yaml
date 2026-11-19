@@ -957,7 +957,7 @@
     segments: [morning, day]
   cast:
     prisoner: { captive: true }
-    overseer: { faction: own, ranks: [grunt, squad_leader, staff] }
+    overseer: { faction: own, ranks: [grunt, squad_leader] }
   setup: '노역에 끌려 나온 포로들이 판자를 쌓던 자리에서 더미가 무너졌다. {prisoner}의 다리가 깔렸다. {overseer:이/가} 팔짱을 낀다. "포로잖아. 일 끝나고 빼."'
   ai_direction: 판자는 혼자 들기엔 무겁다. 오래 깔려 있으면 다리를 못 쓴다 (부상은 코드가 정한다). 감독은 나쁜 사람이라기보다 할 일이 밀렸다. 약을 쓰면 무리 창고에서 나간다.
   choices:

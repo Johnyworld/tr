@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
-import { playerCalls } from "../game/acquaintance.ts";
+import { knowsName, playerCalls } from "../game/acquaintance.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { templateKind } from "../game/kinds.ts";
 import { checkPromotion, commanderOf } from "../game/missions.ts";
@@ -73,8 +73,13 @@ export function formSquad(ctx: ToolContext): string[] {
   const me = state.characters[state.playerId];
   if (!me?.factionId || me.rank !== content.scenario.promotion.to || squadMembers(state, content).length) return [];
   const vacant = vacantSquad(content, state, me.factionId, me.rank);
+  // 넘겨받는 분대원은 이름과 함께 인사한다 (B8, 플레이 테스트 9)
+  const takeOver = (members: string[]) => {
+    store.append({ type: "squad_set", members });
+    for (const id of members) if (!knowsName(store.getState(), state.playerId, id)) store.append({ type: "name_learned", characterId: state.playerId, targetId: id });
+  };
   if (vacant.length && rng() >= NEW_SQUAD_CHANCE) {
-    store.append({ type: "squad_set", members: vacant });
+    takeOver(vacant);
     return [`비어 있던 분대를 맡았다: ${vacant.map((id) => playerCalls(store.getState(), content, id)).join(", ")}.`];
   }
   const n = 1 + Math.floor(rng() * 3);
@@ -85,7 +90,7 @@ export function formSquad(ctx: ToolContext): string[] {
   }
   if (!recruits.length) {
     if (!vacant.length) return ["아직 맡을 분대가 없다 (분대원이 배치되면 squad_order를 쓸 수 있다)."];
-    store.append({ type: "squad_set", members: vacant });
+    takeOver(vacant);
     return [`비어 있던 분대를 맡았다: ${vacant.map((id) => playerCalls(store.getState(), content, id)).join(", ")}.`];
   }
   store.append({ type: "squad_set", members: recruits });

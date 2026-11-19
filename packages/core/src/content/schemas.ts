@@ -968,7 +968,8 @@ export function createContentSchemas(s: Scenario) {
     /** 성적 위협 (12-59): 이 틀로 만든 사람이 chance 확률로 그런 자다 */
     menace: z.strictObject({ kind: z.enum(["harass", "coerce", "assault"]), chance: z.number().min(0).max(1) }).optional(),
     /** 겉모습 문구 후보 (하나를 고른다) */
-    looks: z.array(z.string().min(1)).min(1),
+    /** 겉모습 후보. 성별이 드러나는 것은 { text, gender }로 적어 그 성별일 때만 고른다 (B12, 플레이 테스트 9: 여자로 적힌 사람이 남자로 생겼다) */
+    looks: z.array(z.union([z.string().min(1), z.strictObject({ text: z.string().min(1), gender: contentIdSchema })])).min(1),
     /** 능력별 [최소, 최대]. 없는 능력은 0 */
     stats: z.partialRecord(idEnum(statIds(s)), z.tuple([z.number().int(), z.number().int()])).default({}),
     skills: z.partialRecord(idEnum(moveIds(s)), z.number().int().min(s.ranges.skill.min).max(s.ranges.skill.max)).default({}),

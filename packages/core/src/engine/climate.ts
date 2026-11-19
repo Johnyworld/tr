@@ -92,7 +92,9 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   if (!c || !outside || !me) return null;
   const zone = state.playerZone;
   const cover = (zone ? content.locations[zone]?.cover : undefined) ?? 0;
-  const indoor = cover > 0 && !c.outdoor.includes(activity);
+  // 내 거처·우리 거점을 뒤지는 것은 지붕 아래 일이다 (B10, 플레이 테스트 9: 거처의 지하 창고를 뒤지다 비에 젖었다)
+  const sheltered = !!zone && (state.homes?.[who] === zone || (content.locations[zone]?.kind === "base" && !!me.factionId && state.zones[zone]?.owner === me.factionId));
+  const indoor = cover > 0 && (!c.outdoor.includes(activity) || (activity === "search" && sheltered));
   const parts: string[] = [];
   let value = outside.value;
   if (indoor) {

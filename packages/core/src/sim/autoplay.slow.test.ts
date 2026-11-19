@@ -47,7 +47,8 @@ describe("시나리오마다 자동 플레이 (실제 콘텐츠)", () => {
       const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(11) });
       const world = m.create("mcp", role.id);
       expect(world.state().playerZone).toBe(role.start_location ?? world.state().playerZone);
-      const stats = autoplay(world, content, createSeededRng(110), 320);
+      // 12-194 버그 고침 뒤 자동 플레이의 길이 바뀌었다 (난수 110이면 붉은연합 약탈조의 시나리오 이야기가 하나만 열렸다. 111~114는 3~5개)
+      const stats = autoplay(world, content, createSeededRng(111), 320);
       world.close();
       expect(stats.errors).toEqual([]);
       // 분대를 맡으면 분대 명령을, 회의에 앉으면 안을 올린다 (기획서 9.11)

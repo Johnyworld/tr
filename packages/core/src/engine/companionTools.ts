@@ -63,6 +63,8 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
     // 임무 짝: 임무가 끝나면 자기 자리로
     if (bond.kind === "buddy" && (!bond.missionId || state.missions[bond.missionId]?.status !== "active")) {
       store.append({ type: "companion_left", characterId: id, reason: "임무가 끝났다" });
+      // 자기 자리로 가니 장면에서도 나간다 (B13, 플레이 테스트 9)
+      if (store.getState().scene.present.includes(id)) store.append({ type: "npc_left", npcId: id });
       out.push(note(name, "leave", `임무가 끝나 짝이던 ${josa(name, "이/가")} 자기 자리로 돌아간다.`));
       continue;
     }
@@ -114,6 +116,7 @@ export function releaseBuddies(ctx: ToolContext, missionId: string): string[] {
   for (const [id, b] of Object.entries(state.bonds ?? {})) {
     if (b.kind !== "buddy" || b.missionId !== missionId) continue;
     ctx.store.append({ type: "companion_left", characterId: id, reason: "임무가 끝났다" });
+    if (ctx.store.getState().scene.present.includes(id)) ctx.store.append({ type: "npc_left", npcId: id });
     lines.push(`짝이던 ${josa(playerCalls(state, ctx.content, id), "은/는")} 자기 자리로 돌아간다.`);
   }
   return lines;

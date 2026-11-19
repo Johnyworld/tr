@@ -9,6 +9,7 @@
   when:
     zones: [cathedral]
     segments: [evening, night]
+    occupations_not: [preacher]
   cast:
     keeper: { extra: cathedral_refugee, label: 종지기 노인 }
   setup: "종탑 아래에서 {keeper:이/가} 굵은 밧줄을 쥐고 있다. \"오늘 간 사람이 있으면 이름을 대요. 한 번씩 쳐 주니까. 믿든 안 믿든.\" 줄 선 사람이 서넛이다."

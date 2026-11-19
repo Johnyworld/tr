@@ -37,7 +37,7 @@ function runDailyWeather(ctx: ToolContext) {
 }
 
 /** urgentOnly: 자다가 급한 이야기에 깼으면 그 이야기만 연다 (깨운 일 대신 다른 이야기가 열리지 않게, 12-187) */
-export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: boolean } = {}): ToolDisplayEvent[] {
+export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: boolean; actionStartedAt?: number } = {}): ToolDisplayEvent[] {
   // 의식불명 등 스스로 아무것도 못 하게 됐으면 진행 중이던 이야기는 거기서 끝난다 (깨어난 뒤에 대화가 이어지지 않게)
   {
     const s = ctx.store.getState();

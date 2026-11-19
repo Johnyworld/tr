@@ -383,8 +383,8 @@ export function itemFlagsMet(state: GameState, w: ItemFlagConditions): boolean {
 }
 
 /**
- * 선택지를 지금 고를 수 있는지: 선택지의 조건, 그리고 내놓을 물건(take_item)을 지녔는지.
- * 판정이 붙은 선택지는 어느 결과에서든 내놓을 물건을 모두 지녀야 한다 (굴린 뒤에 막히지 않게)
+ * 선택지를 지금 고를 수 있는지: 선택지의 조건, 그리고 값으로 내놓을 물건(판정 없는 선택지의 take_item)을 지녔는지.
+ * 판정이 붙은 선택지는 성공의 take_item만 값으로 본다. 대가 있는 성공·실패의 take_item은 빼앗기는 것이라 선택지를 숨기지 않는다: 없으면 있는 만큼만 (B7, 플레이 테스트 9)
  */
 export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: Record<string, string> = {}): boolean {
   if (choice.when && !itemFlagsMet(state, choice.when)) return false;
@@ -394,7 +394,7 @@ export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: 
   if (choice.when?.in_faction !== undefined && !!state.characters[state.playerId]?.factionId !== choice.when.in_faction) return false;
   const player = state.characters[state.playerId];
   if (!player) return false;
-  const effects = choice.outcomes ? [...choice.outcomes.success, ...choice.outcomes.partial, ...choice.outcomes.miss] : choice.effects;
+  const effects = choice.outcomes ? choice.outcomes.success : choice.effects;
   const need: Record<string, number> = {};
   for (const e of effects) if ("take_item" in e) need[e.take_item.item] = Math.max(need[e.take_item.item] ?? 0, e.take_item.quantity);
   return Object.entries(need).every(([item, n]) => (player.inventory[item] ?? 0) >= n);
@@ -456,7 +456,8 @@ export function storyletWindow(state: GameState, content: Content, at: GameTime)
 /** 주인공의 몸이 위급한가 (storylet_pacing.urgent_only_when): 그동안은 급한 이야기만 연다 (12-191) */
 export function inCrisis(state: GameState, content: Content): boolean {
   const me = state.characters[state.playerId];
-  if (!me) return false;
+  // 갇힌 몸은 감옥 이야기가 유일한 길이다: 위급해도 막지 않는다 (B5, 플레이 테스트 9: 치명상인 포로가 51시간 멈췄다)
+  if (!me || me.captive) return false;
   return Object.entries(content.scenario.storylet_pacing.urgent_only_when).some(([track, from]) => {
     const levels = content.scenario.condition_tracks.find((t) => t.id === track)?.levels ?? [];
     const at = levels.findIndex((l) => l.id === me.conditions[track]);

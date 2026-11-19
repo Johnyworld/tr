@@ -210,7 +210,7 @@ command:
       stat: senses
       rewards: { merit: 1 }
       report:
-        success: "{member}: 보초 이상 없음. 밤새 한 번도 졸지 않았다"
+        success: "{member}: 보초 이상 없음. 한 번도 졸지 않았다"
         partial: "{member}: 보초는 섰는데, 새벽에 잠깐 깜빡했다고 털어놓는다"
         miss: "{member}: 보초 중에 창고 쪽문이 열려 있었다. 뭐가 없어졌는지는 아직 모른다"
     - id: search
@@ -684,9 +684,10 @@ search_lore: { skill: history, per_level: 0.25 }
 # 같은 group은 크기 차이라 가장 큰 것(아래쪽) 하나만 보인다. 판정 보정: 가장 큰 증상은 그대로, 나머지 합은 반(올림)만 더한다
 # (1+1 → -2, 3+2 → -4). tone: 화면 색 (없으면 보정 크기로). 보정은 작아도 마지막 단계급인 증상은 3 (*임시* 수치)
 symptoms:
-  # 열 묶음은 질병과 감염이 같이 쓴다 (원인을 숨긴다, 12-74). 그래서 hint도 원인을 가리지 않는다 (12-193: 추움 → 몸살 기운, 추위 트랙과 헷갈리지 않게)
+  # 열 묶음은 질병·감염·추위가 같이 쓴다 (원인을 숨긴다, 12-74). 그래서 hint도 원인을 가리지 않는다. 12-193: 질병·감염의 첫 증상은 몸살 기운, 추위의 첫 증상은 추움 (12-194에 나눔)
+  - { id: cold_chill, label: 추움, group: fever, penalty: -1, hint: "몸이 식었다. 불 곁이나 따뜻한 데서 쉬면 풀린다" }
   - { id: chill, label: 몸살 기운, group: fever, penalty: -1, hint: "열 기운이 돈다. 앓는 병이면 잘 먹고 따뜻하게 자면 낫고, 해열제가 듣는다" }
-  - { id: shiver, label: 오한, group: fever, penalty: -2, hint: "열이 오른다. 앓는 병이면 잘 먹고 따뜻하게 자면 낫고, 해열제가 듣는다" }
+  - { id: shiver, label: 오한, group: fever, penalty: -2, hint: "몸이 떨린다. 추위라면 불 곁에서 녹이고, 앓는 병이면 잘 먹고 따뜻하게 자면 낫는다" }
   - { id: high_fever, label: 고열, group: fever, penalty: -3, hint: "열이 높다. 더 깊어지면 몸이 상한다" }
   - { id: pain, label: 고통, group: pain, penalty: -1 }
   - { id: severe_pain, label: 심한 고통, group: pain, penalty: -2 }
@@ -788,7 +789,7 @@ condition_tracks:
     icon: cold
     levels:
       - { id: warm }
-      - { id: cold, symptoms: [chill] }
+      - { id: cold, symptoms: [cold_chill] }
       - { id: shiver, symptoms: [shiver] }
       - { id: hypothermia, symptoms: [shiver, impaired] }
       - { id: unconscious, symptoms: [unconscious] }

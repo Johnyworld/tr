@@ -13,7 +13,7 @@ import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
 import { bodyTraits, effectiveSkill, habitsOf, traitIdsOf } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
-import { harmTrack, shownLevel, trackOf } from "../scenario/scenario.ts";
+import { harmTrack, shownLevel, trackOf, visibleSymptoms } from "../scenario/scenario.ts";
 import { daysOfStock, rationLevel } from "../sim/war.ts";
 import { seasonAt } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
@@ -107,6 +107,19 @@ export function isIncapacitated(content: Content, c: Character): boolean {
   return track.levels.findIndex((l) => l.id === c.conditions[track.id]) >= track.levels.findIndex((l) => l.id === at);
 }
 
+/** 지금 보이는 증상의 묶음 (같은 증상을 여러 원인이 쓴다, 12-74) */
+function symptomGroupsShown(content: Content, c: Character | undefined): Set<string> {
+  if (!c || !content.scenario.symptoms?.length) return new Set();
+  return new Set(visibleSymptoms(content.scenario, c).map((x) => x.group ?? x.id));
+}
+
+/** 이 트랙이 띄우는 증상의 묶음 */
+function trackSymptomGroups(content: Content, trackId: string): string[] {
+  const byId = new Map((content.scenario.symptoms ?? []).map((x) => [x.id, x]));
+  const ids = content.scenario.condition_tracks.find((t) => t.id === trackId)?.levels.flatMap((l) => l.symptoms ?? []) ?? [];
+  return [...new Set(ids.map((id) => byId.get(id)?.group ?? id))];
+}
+
 /** 소모품을 쓴다 (구급상자, 항생제, 통조림 등). 나아질 데가 없으면 쓰지 않는다 */
 export function useItem(ctx: ToolContext, item: string, targetId?: string | null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const { store, content } = ctx;
@@ -133,9 +146,11 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
   // 혈청은 걸렸는지 몰라도 쓸 수 있다 (안 걸렸으면 버린 셈이다. 쓸 수 있느냐로 잠복이 새지 않게)
   // 기운을 올리는 것(술·진통제·각성제, 12-157)은 나아질 데가 없어도 쓴다
   const wearOff = content.scenario.body?.wear_off ?? {};
+  // 증상이 같은 다른 원인(감염의 몸살 기운에 해열제)이어도 써 본다: 쓸 수 있느냐로 원인이 새지 않게 (B3, 플레이 테스트 9)
+  const shown = symptomGroupsShown(content, state.characters[target]);
   const needed =
     cure ||
-    Object.entries(effects).some(([t, n]) => (n > 0 && shownIndex(ctx, state, target, t) > 0) || (n < 0 && wearOff[t] !== undefined)) ||
+    Object.entries(effects).some(([t, n]) => (n > 0 && (shownIndex(ctx, state, target, t) > 0 || trackSymptomGroups(content, t).some((g) => shown.has(g)))) || (n < 0 && wearOff[t] !== undefined)) ||
     (slow && shownIndex(ctx, state, target, infection!.track) > 0);
   if (!needed) return { ok: false, error: `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.` };
   store.append({ type: "item_consumed", holder: player.id, itemId: item, quantity: 1 });
@@ -147,11 +162,14 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
   const lines = [target === player.id ? `${josa(name, "을/를")} 썼다.` : `${playerCalls(state, content, target)}에게 ${josa(name, "을/를")} 썼다.`];
   if (boiled) lines.push(boiled);
   const displays: ToolDisplayEvent[] = [];
+  let eased = false;
   for (const [t, steps] of Object.entries(effects)) {
     const c = changeCondition(ctx, target, t, -steps, item, name);
+    if (c) eased = true;
     if (c?.line) lines.push(c.line);
     if (c?.display) displays.push(c.display);
   }
+  if (!eased && !cure && !slow && Object.values(effects).some((n) => n > 0)) lines.push("먹었지만 나아지는 것 같지 않다.");
   // 의존 (12-157): 쓸 때마다 버릇이 붙을 수 있다
   const hooked = dependOn(ctx, target, item);
   if (hooked) lines.push(hooked);
@@ -217,7 +235,11 @@ export function applyTreatment(
     return { ok: false, error: "치료해 줄 사람이 장면에 없다. 치료 아이템을 쓰거나 치료사를 찾아간다." };
   }
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
-  if (!needed) return { ok: false, error: "다친 데가 없어 치료할 것이 없다." };
+  if (!needed) {
+    // 증상은 있는데 치료사가 손쓸 것이 아니면 (감염의 열 등): 살펴보고 돌려보낸다. "다친 데가 없다"로 원인이 새지 않게 (B3)
+    if (symptomGroupsShown(ctx.content, player).size) return { ok: true, lines: [`${josa(playerCalls(state, ctx.content, healer), "이/가")} 살펴봤지만 지금 손쓸 데는 없다고 한다. 잘 먹고 따뜻하게 쉬라고 한다.`], displays: [] };
+    return { ok: false, error: "다친 데가 없어 치료할 것이 없다." };
+  }
   if (state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return { ok: false, error: "오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다." };
   const name = playerCalls(state, ctx.content, healer);
   const lines = [`${name}에게 치료를 받았다.`];
@@ -553,8 +575,8 @@ export function refillWater(ctx: ToolContext): WaterResult {
   const limited = w.source.grant === "limited";
   const lines: string[] = [];
   const displays: ToolDisplayEvent[] = [];
-  // 거점에서 보급을 받으면 그 자리에서 마시기까지 한다
-  if (w.source.kind === "supply" && levelIndex(ctx, state, me.id, w.rules.track) > 0) {
+  // 물가에 왔으면 목마를 때 마시기까지 한다 (B11, 플레이 테스트 9: 물병이 차 있어 채우기가 실패하고 마시지도 않아 탈수까지 갔다)
+  if (levelIndex(ctx, state, me.id, w.rules.track) > 0) {
     const d = drinkWater(ctx);
     if (d.ok) {
       lines.push(...d.lines);
@@ -573,7 +595,7 @@ export function refillWater(ctx: ToolContext): WaterResult {
     ctx.store.append({ type: "item_granted", to: me.id, itemId: full, quantity: n });
     lines.push(`${ctx.content.items[empty]?.name ?? empty} ${n}개를 채웠다.`);
   }
-  if (!lines.length) return { ok: false, error: "채울 빈 그릇이 없다." };
+  if (!lines.length) return { ok: false, error: "채울 빈 그릇이 없고, 목도 마르지 않다." };
   if (limited && lines.some((l) => l.includes("채웠다"))) lines.push("물이 모자라 보급 담당이 하나만 채워 줬다.");
   return { ok: true, lines, displays };
 }

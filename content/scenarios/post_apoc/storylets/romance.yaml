@@ -36,7 +36,7 @@
         - set_flag: rm_glanced
         - relation: { who: them, axis: affection, delta: 1 }
     - id: speak
-      label: 줄을 핑계로 말을 건다
+      label: 아무 핑계로나 말을 건다
       check: persuade
       outcomes:
         success:
@@ -50,7 +50,7 @@
           - set_flag: rm_glanced
           - body: { track: nerves, delta: 1, chance: 0.5 }
     - id: away
-      label: 모른 척 물통만 본다
+      label: 모른 척 하던 일을 계속한다
       effects:
         - set_flag: rm_glanced
 

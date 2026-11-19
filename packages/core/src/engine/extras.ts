@@ -59,7 +59,7 @@ export function createExtraCharacter(
     traits,
     conditions: initialConditions(s),
     inventory,
-    extra: { template: template.id, label: input.label, look: pick(rng, template.looks), zone: input.zone, lastSeenAt: input.time },
+    extra: { template: template.id, label: input.label, look: lookFor(template, gender, rng), zone: input.zone, lastSeenAt: input.time },
     // 성적 위협은 틀이 정한 확률로 (12-59). 틀에 없으면 굴리지 않는다
     menace: template.menace && rng() < template.menace.chance ? template.menace.kind : null,
     // 출신과 말씨 (12-142): 사람만
@@ -231,4 +231,11 @@ export function describeExtraTemplates(state: GameState, content: Content): stri
   });
   if (list.length === 0) return "";
   return `엑스트라 틀 (지금 여기서 마주칠 만한 사람·동물·감염체. 이름 없는 인물이 주인공과 엮이면 spawn_extra로 만든다. 이야기에 붙잡을 사람이면 promote_extra. 감염체와 맞서면 하나하나 spawn_extra로 장면에 들인다):\n${list.map((t) => `- ${t.id}: ${t.label}${templateKind(t) === "person" ? "" : ` (${KIND_LABELS[templateKind(t)]})`}`).join("\n")}`;
+}
+
+/** 성별에 맞는 겉모습 하나 (성별이 적힌 겉모습은 그 성별일 때만) */
+function lookFor(template: ExtraContent, gender: string | null, rng: Rng): string {
+  const fits = template.looks.filter((l) => typeof l === "string" || l.gender === gender);
+  const l = pick(rng, fits.length ? fits : template.looks);
+  return typeof l === "string" ? l : l.text;
 }

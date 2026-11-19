@@ -253,7 +253,7 @@
     zone_owner: [none]
     segments: [day, evening]
     flags_none: [w_child_found]
-  setup: 뒤집힌 버스 안에서 무언가 움직인다. 들여다보니 아이다. 일곱 살쯤. 무릎을 끌어안고 소리 없이 운다. 운동화 한 짝이 없다.
+  setup: 뒤집힌 버스 안에서 무언가 움직인다. 깨진 창 너머로 작은 등이 보인다. 아이다. 일곱 살쯤. 무릎을 끌어안고 소리 없이 운다. 운동화 한 짝이 없다.
   ai_direction: 아이는 어제 엄마와 물을 길으러 나왔다가 물결에 흩어졌다. 엄마는 살아서 가까운 거점에 있다. 아이는 겁에 질려 말을 잘 못 하고, 큰 소리를 내면 운다. 해가 지면 이 근처는 위험하다.
   choices:
     - id: take_along
@@ -323,6 +323,14 @@
           - belief: { fact: 나그네에게서 물린 자국은 찾지 못했지만 확신은 없다, source: seen }
         miss:
           - belief: { fact: 다가가자 나그네가 몸을 웅크렸다. 아무것도 확인하지 못했다, source: seen }
+    - id: give_water
+      label: 물병을 건네 한 모금 마시게 한다
+      when: { has_items: [water_bottle] }
+      effects:
+        - take_item: { item: water_bottle, quantity: 1 }
+        - give_item: { item: empty_bottle, quantity: 1 }
+        - deed: { summary: 길에서 앓는 나그네에게 물을 나눠 줬다, tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: 기침하는 나그네에게 물을 나눠 주었다. 그는 강 하류 쪽으로 간다고 했다, source: report }
     - id: give_medicine
       label: 해열제를 나눠 준다
       effects:

@@ -757,7 +757,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문, 전쟁, 예정된 교전)
-  const after = runAfterTimeAdvance(ctx, { urgentOnly: time.wokenByStory });
+  // 이야기 선택지를 판정하는 행동이면 기한을 넘겨 끝나도 이야기를 붙잡아 둔다 (B6)
+  const after = runAfterTimeAdvance(ctx, { urgentOnly: time.wokenByStory, actionStartedAt: input.check ? start.time : undefined });
   lines.push(...bodyLines(after));
   for (const display of after) {
     displays.push(display);

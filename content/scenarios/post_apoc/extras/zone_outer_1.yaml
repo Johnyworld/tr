@@ -5,8 +5,8 @@
   rank: loner
   age: [25, 60]
   looks:
-    - 헤드랜턴 끈 자국이 이마에 하얗게 남은 남자. 햇빛 아래로 나오면 눈을 가늘게 뜬다
-    - 역무원 조끼를 몇 겹 껴입은 여자. 목에 호루라기를 걸었다
+    - { gender: male, text: "헤드랜턴 끈 자국이 이마에 하얗게 남은 남자. 햇빛 아래로 나오면 눈을 가늘게 뜬다" }
+    - { gender: female, text: "역무원 조끼를 몇 겹 껴입은 여자. 목에 호루라기를 걸었다" }
   stats: { senses: [1, 1], vitality: [-1, 0], nerve: [0, 1] }
   skills: { survival: 1, stealth: 2, sense_danger: 1 }
   traits: [cautious, guarded, weary, patient, blunt]
@@ -35,8 +35,8 @@
   rank: loner
   age: [45, 68]
   looks:
-    - 작업복 가슴에 '발전 2팀' 자수가 남은 마른 남자. 손톱 밑이 늘 까맣다
-    - 안전모에 이름 대신 숫자를 써 붙인 여자. 주머니마다 나사가 들었다
+    - { gender: male, text: "작업복 가슴에 '발전 2팀' 자수가 남은 마른 남자. 손톱 밑이 늘 까맣다" }
+    - { gender: female, text: "안전모에 이름 대신 숫자를 써 붙인 여자. 주머니마다 나사가 들었다" }
   stats: { senses: [0, 1], strength: [-1, 0], charm: [0, 1] }
   skills: { mechanics: 2, maintenance: 2, improvise: 1 }
   traits: [curious, talkative, principled, patient, blunt]
@@ -64,8 +64,8 @@
   rank: loner
   age: [30, 58]
   looks:
-    - 수염이 가슴까지 자란 남자. 옛 수형복 위에 교도관 점퍼를 걸쳤다
-    - 머리를 빡빡 민 여자. 손목에 묶였던 자국이 오래돼 하얗다
+    - { gender: male, text: "수염이 가슴까지 자란 남자. 옛 수형복 위에 교도관 점퍼를 걸쳤다" }
+    - { gender: female, text: "머리를 빡빡 민 여자. 손목에 묶였던 자국이 오래돼 하얗다" }
   stats: { vitality: [-1, 0], nerve: [0, 1], senses: [0, 1] }
   skills: { endure: 2, sense_danger: 1, deceive: 1 }
   traits: [calculating, patient, guarded, cold, cynical]

@@ -327,8 +327,11 @@ export function describeSquadForGm(state: GameState, content: Content): string {
   const tasks = content.scenario.command?.squad_tasks ?? [];
   const role = roleOf(content, state);
   const player = state.characters[state.playerId];
-  if (!role?.squad?.length || !player || player.rank !== role.rank || role.squad.includes(player.id)) return "";
-  const lost = role.squad.filter((id) => !squad.includes(id) && state.characters[id]);
+  if (!player) return "";
+  // 진급해서 꾸린 분대 (12-190)가 있으면 그것, 아니면 역할의 분대 (B1, 플레이 테스트 9)
+  const roster = state.squad ?? (role?.squad?.length && player.rank === role.rank && !role.squad.includes(player.id) ? role.squad : null);
+  if (!roster) return "";
+  const lost = roster.filter((id) => !squad.includes(id) && state.characters[id]);
   if (!squad.length && !lost.length) return "";
   const lines = [`분대 (squad_order로 일을 맡긴다. 분대원이 장면에 있거나 거점에 있을 때):`];
   for (const id of squad) {

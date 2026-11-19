@@ -4,6 +4,7 @@ import { rankName } from "../game/ranks.ts";
 import { autoEquip } from "./gear.ts";
 import { z } from "zod";
 import { nameAs } from "../game/acquaintance.ts";
+import { tiesOf } from "../game/ties.ts";
 import { checkCharacterChoice, checkName, fillCharacterChoice } from "../game/creation.ts";
 import type { CharacterChoice } from "../game/state.ts";
 import type { Belief } from "../game/belief.ts";
@@ -233,6 +234,8 @@ export function switchCharacter(
     const comrades = Object.values(state.characters)
       .filter((c) => c.id !== choice && c.id !== previous.id && content.npcs[c.id] && successor.factionId && c.factionId === successor.factionId)
       .map((c) => c.id);
+    // 그 사람과 이어진 사람(가족·친구 등)도 안다 (B14, 플레이 테스트 9: 카드에 친구로 적힌 사람의 이름을 몰랐다)
+    for (const t of tiesOf(state, content, choice)) if (t.other !== previous.id && state.characters[t.other] && !comrades.includes(t.other)) comrades.push(t.other);
     store.append({ type: "character_switched", characterId: choice, known: comrades, roleId: seat.role.id, ...(seat.custom ? { customRole: seat.role } : {}), scenarioRole: "" });
     // 그 사람이 있던 곳에서 이어 간다
     if (zone && content.locations[zone]) store.append({ type: "zone_moved", from: null, to: zone });
@@ -254,7 +257,9 @@ export function switchCharacter(
   };
   const recentDeaths = now.chronicle.filter((r, i) => i === now.chronicle.length - 1 || now.time - r.diedAt <= MINUTES_PER_DAY);
   for (const r of recentDeaths) {
-    add(`${josa(r.name, "이/가")} 죽었다고 한다 (${r.cause})`, heir.factionId === r.factionId ? "report" : "rumor");
+    // 이어받는 사람이 부르는 말로. 같은 무리면 보고로 사인까지, 아니면 소문으로 죽었다는 것만 (B14)
+    const report = !!heir.factionId && heir.factionId === r.factionId;
+    add(`${josa(report ? r.name : nameAs(now, content, heir.id, r.characterId), "이/가")} 죽었다고 한다${report ? ` (${r.cause})` : ""}`, report ? "report" : "rumor");
   }
   // 같은 무리라면 지난 하루 우리 무리가 낀 교전은 보고로 들었다 (이전 캐릭터가 죽은 그 전투 포함)
   for (const { clash, at } of now.recentClashes) {
@@ -282,7 +287,7 @@ export function switchCharacter(
       const legend = Object.values(now.deeds)
         .filter((d) => d.actorId === r.characterId && d.severity >= 2)
         .sort((a, b) => b.severity - a.severity)[0];
-      if (legend) add(`${r.name}에 대해 이런 말이 돈다: ${legend.summary}`, "rumor");
+      if (legend) add(`${heir.factionId && heir.factionId === r.factionId ? r.name : nameAs(now, content, heir.id, r.characterId)}에 대해 이런 말이 돈다: ${legend.summary}`, "rumor");
     }
   }
 

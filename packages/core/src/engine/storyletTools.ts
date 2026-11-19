@@ -26,7 +26,7 @@ import { enterScene } from "./extras.ts";
 import { changeStanding, gainMeritXp } from "./growth.ts";
 import type { Content, StoryletContent, StoryletEffect } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
-import type { GameState } from "../game/state.ts";
+import { roleOf, type GameState } from "../game/state.ts";
 import { DEED_TAG_LABELS, RELATION_AXIS_LABELS } from "../game/reputation.ts";
 import { CHECK_OUTCOME_LABELS, type CheckOutcome } from "../rules/check.ts";
 import { moveLabel } from "../scenario/scenario.ts";
@@ -42,7 +42,7 @@ import {
   storyletVars,
   storyletWindow,
 } from "../story/storylets.ts";
-import { josa, sentence } from "../text.ts";
+import { josa, sentence, type JosaPair } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { leveragesOn } from "./leverage.ts";
 import { commanderOf } from "../game/missions.ts";
@@ -75,11 +75,16 @@ export function endActiveStorylet(ctx: ToolContext, reason: string): ToolDisplay
   return displays;
 }
 
-export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean } = {}): ToolDisplayEvent[] {
+/** 기한 전에 시작한 행동(이야기 선택지의 판정)이 기한을 넘겨 끝나도 이만큼은 이야기를 붙잡아 둔다 (B6, 플레이 테스트 9) */
+const EXPIRE_GRACE_MINUTES = 120;
+
+export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean; actionStartedAt?: number } = {}): ToolDisplayEvent[] {
   const { store, content, rng } = ctx;
   const displays: ToolDisplayEvent[] = [];
   let state = store.getState();
-  if (state.activeStorylet && state.time >= state.activeStorylet.expiresAt) {
+  const active = state.activeStorylet;
+  const heldByAction = !!active && options.actionStartedAt !== undefined && options.actionStartedAt < active.expiresAt && state.time < active.expiresAt + EXPIRE_GRACE_MINUTES;
+  if (active && state.time >= active.expiresAt && !heldByAction) {
     displays.push(...endActiveStorylet(ctx, "지나갔다"));
     state = store.getState();
   }
@@ -233,7 +238,8 @@ export const resolveStorylet = defineTool({
     }
     // 내놓을 물건이 없으면 고를 수 없다 (거래 선택지)
     const player = state.characters[state.playerId]!;
-    for (const e of effects) {
+    // 값으로 내놓는 물건(판정 없는 선택지)만 막는다. 판정 결과로 빼앗기는 것은 가진 만큼만 (B7)
+    for (const e of choice.outcomes && outcome !== "success" ? [] : effects) {
       if ("take_item" in e && (player.inventory[e.take_item.item] ?? 0) < e.take_item.quantity) {
         const name = ctx.content.items[e.take_item.item]?.name ?? e.take_item.item;
         return { ok: false, error: `${josa(`${name} ×${e.take_item.quantity}`, "이/가")} 없어 이 선택지를 고를 수 없다. 다른 선택지를 고르거나 그대로 둔다.` };
@@ -261,6 +267,18 @@ export const resolveStorylet = defineTool({
         else if ((d.type === "belief" || d.type === "harm") && d.note) lines.push(d.note);
       }
     }
+    // 이야기로 들어온 배역은 이야기가 끝나면 장면을 떠난다 (B13, 플레이 테스트 9: 배역이 장면에 쌓였다). 함께 다니게 된 사람은 남는다
+    // 무리에 든 선택지면 그 사람들이 곁에 남는다 (새 상관과 다음 장면이 이어진다)
+    if (!effects.some((e) => "join_faction" in e)) {
+      const now = ctx.store.getState();
+      const left: string[] = [];
+      for (const [key, id] of Object.entries(a.cast)) {
+        if (!a.storylet.cast[key]?.enter || !now.scene.present.includes(id) || now.companions.includes(id) || id === commanderOf(now, ctx.content) || id === roleOf(ctx.content, now)?.commander) continue;
+        ctx.store.append({ type: "npc_left", npcId: id });
+        left.push(playerCalls(now, ctx.content, id));
+      }
+      if (left.length) lines.push(`이야기 배역(${left.join(", ")})은 장면에서 빠졌다. 장면이 이어져 더 마주하면 npc_presence enter.`);
+    }
     // 이야기 해결 중에 죽었으면 (쓰러진 사이 붙잡히거나 죽임 등) 다음 행동에서야 알게 하지 않는다
     if (ctx.store.getState().characters[ctx.store.getState().playerId]?.dead) lines.push(`${DEATH_GUIDE} 장면을 끝내고 더 이상 행동을 제시하지 마라.`);
     else lines.push("이 결과에 맞게 이야기를 마무리하는 장면을 서술하라.");
@@ -281,10 +299,18 @@ export function maskUnknownNames(state: GameState, content: Content, text: strin
   let out = text;
   for (const npc of Object.values(content.npcs)) {
     if (!npc.name || !out.includes(npc.name) || knowsName(state, state.playerId, npc.id)) continue;
-    out = out.split(npc.name).join(playerCalls(state, content, npc.id));
+    const alias = playerCalls(state, content, npc.id);
+    // 이름 뒤에 붙었던 조사는 호칭에 맞춰 다시 붙인다 (B9, 플레이 테스트 9: "경비병가", "탄약 장수은")
+    const escaped = npc.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    out = out.replace(new RegExp(`${escaped}(이었다|였다|이라는|라는|으로|로|이|가|은|는|을|를|과|와)?`, "g"), (_m, particle?: string) => (particle ? josa(alias, PARTICLE_PAIRS[particle]!) : alias));
   }
   return out;
 }
+
+const PARTICLE_PAIRS: Record<string, JosaPair> = {
+  이: "이/가", 가: "이/가", 은: "은/는", 는: "은/는", 을: "을/를", 를: "을/를", 과: "과/와", 와: "과/와",
+  으로: "으로/로", 로: "으로/로", 이라는: "이라는/라는", 라는: "이라는/라는", 이었다: "이었다/였다", 였다: "이었다/였다",
+};
 
 function whoOf(ctx: ToolContext, who: string, cast: Record<string, string>): string | null {
   if (cast[who]) return cast[who]!;
@@ -610,7 +636,10 @@ export function applyEffect(
     return { line: `${josa(`${content.items[item]?.name ?? item} ×${quantity}`, "을/를")} 잃었다.` };
   }
   if ("take_item" in effect) {
-    const { item, quantity } = effect.take_item;
+    const { item } = effect.take_item;
+    // 판정 결과로 빼앗기는 것은 가진 만큼만 (B7)
+    const quantity = Math.min(effect.take_item.quantity, state.characters[playerId]?.inventory[item] ?? 0);
+    if (quantity <= 0) return {};
     store.append({ type: "item_consumed", holder: playerId, itemId: item, quantity });
     return { line: `${josa(`${content.items[item]?.name ?? item} ×${quantity}`, "을/를")} 내주었다.` };
   }

@@ -166,7 +166,7 @@
     flags_any: [os_rookie_drilled, os_rookie_soft]
     flags_none: [os_first_fire_done]
   cast:
-    rookie: { recall: os_rookie }
+    rookie: { recall: os_rookie, here: true }
   setup: 담벼락 너머에서 총소리 두 발. 몇 걸음 앞 골목에서 {rookie:이/가} 선 채로 굳었다. 총을 가슴에 끌어안고 눈만 크게 뜨고 있다. 세 번째 총성이 벽돌을 깨뜨린다.
   ai_direction: 쏘는 쪽은 멀고 겨냥도 서툴다. 하지만 서 있는 사람은 맞을 수 있다. 신병을 끌어내리려면 몸을 드러내야 한다. 앞서 굴렸다면(os_rookie_drilled) 소리를 지르면 몸이 먼저 반응한다. 밥만 같이 먹었다면 소리보다 손이 필요하다. 위험은 판정 전에 선언한다.
   choices:

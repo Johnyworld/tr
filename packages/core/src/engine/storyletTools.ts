@@ -17,7 +17,7 @@ import { harmTrack } from "../scenario/scenario.ts";
 import { changeCondition } from "./body.ts";
 import { disposition } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
-import { EXTRA_CAST_PREFIX } from "../story/storylets.ts";
+import { EXTRA_CAST_PREFIX, storyletAllowed, inCrisis } from "../story/storylets.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
 import { knowsName, playerCalls } from "../game/acquaintance.ts";
@@ -87,7 +87,7 @@ export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean }
   const window = storyletWindow(state, content, state.time);
   if (!player || player.dead || window === "closed") return displays;
   // 고정 이야기(한 번뿐인 것)가 열릴 수 있으면 먼저 연다. 반복되는 템플릿에 밀려 묻히지 않게
-  const eligible = eligibleStorylets(state, content).filter((s) => (!options.urgentOnly && window === "open") || s.urgent);
+  const eligible = eligibleStorylets(state, content).filter((s) => storyletAllowed(state, content, s, window, state.time, options));
   const fixed = eligible.filter((s) => !s.repeatable);
   const storylet = pickStorylet(fixed.length ? fixed : eligible, rng);
   if (!storylet) return displays;
@@ -148,7 +148,7 @@ export function createStoryletCheck(content: Content, options: { asleep?: boolea
     const window = storyletWindow(state, content, to);
     if (window === "closed") return null;
     // 자는 동안·이야기 사이 간격 안에는 급한 일만 (나머지는 그 뒤에 열린다)
-    const eligible = eligibleStorylets(state, content, to).filter((s) => (!options.asleep && window === "open") || s.urgent);
+    const eligible = eligibleStorylets(state, content, to).filter((s) => storyletAllowed(state, content, s, window, to, { urgentOnly: options.asleep }));
     return eligible.length > 0 ? { kind: "storylet", detail: "일이 생겼다", at: to } : null;
   };
 }
@@ -878,6 +878,9 @@ export function runRoadEvent(ctx: ToolContext, risk = 1): ToolDisplayEvent[] {
   const travel = content.scenario.travel;
   const state = store.getState();
   if (!travel || !state.lastRoute || state.activeStorylet || state.battle) return [];
+  // 위급할 때나 앞 이야기가 막 열렸을 때는 길 위의 일도 열지 않는다 (12-191)
+  const gap = content.scenario.storylet_pacing.min_any_gap_hours * 60;
+  if (inCrisis(state, content) || (state.lastStoryletAt !== null && state.lastStoryletAt >= state.runStartedAt && state.time - state.lastStoryletAt < gap)) return [];
   // 탈 것으로 빨리 지나가면 길 위의 일이 덜 생긴다 (12-137)
   const chance = (travel.chance[Math.min(3, routeDanger(content, state))] ?? 0) * risk;
   if (rng() >= chance) return [];

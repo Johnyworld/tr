@@ -237,7 +237,7 @@ export const TEST_SCENARIO: Scenario = {
       },
     ],
   },
-  storylet_pacing: { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0 },
+  storylet_pacing: { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {} },
   consumables: {},
   speech: {
     forms: { casual: "반말", polite: "존댓말" },

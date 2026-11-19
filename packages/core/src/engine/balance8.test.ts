@@ -9,6 +9,7 @@ import { formSquad, refugeeToSquad } from "./promotion.ts";
 import { squadMembers } from "./command.ts";
 import { feelsLike } from "./climate.ts";
 import { createContentSchemas } from "../content/schemas.ts";
+import { inCrisis, storyletWindow, urgentAllowed } from "../story/storylets.ts";
 
 /** 긴 판(플레이 테스트 8)의 균형 손보기 (12-190) */
 const real = loadRealContent();
@@ -93,5 +94,24 @@ describe("몸 (12-190)", () => {
     expect(r.ok && r.resultText).toContain("난로에");
     expect((w.state().fires[zone] ?? 0) - w.state().time).toBeGreaterThan(20 * 60);
     expect(feelsLike(real, w.state(), "rest")!.parts.some((p) => p.startsWith("난로"))).toBe(true);
+  });
+});
+
+describe("이야기 빈도 (12-191)", () => {
+  it("피를 흘리면 급한 이야기만, 급한 이야기는 하루 둘까지, 앞 이야기와 2시간 안이면 급한 것만", () => {
+    const w = make("role_a_grunt", () => 0.5, real);
+    const s = w.state();
+    const later = s.time + 12 * 60;
+    expect(storyletWindow(s, real, later)).toBe("open");
+    w.runCheat("~set bleeding bleeding");
+    expect(inCrisis(w.state(), real)).toBe(true);
+    expect(storyletWindow(w.state(), real, later)).toBe("urgent_only");
+    // 급한 이야기 둘이 오늘 열렸으면 더는 열지 않는다
+    const urgent = Object.values(real.storylets).filter((x) => x.urgent).slice(0, 2);
+    const log = Object.fromEntries(urgent.map((u) => [u.id, { fired: 1, lastFiredAt: s.time }]));
+    expect(urgentAllowed({ ...s, storyletLog: log }, real, s.time + 60)).toBe(false);
+    expect(urgentAllowed({ ...s, storyletLog: {} }, real, s.time + 60)).toBe(true);
+    // 앞 이야기와 2시간 안이면 급한 것만
+    expect(storyletWindow({ ...s, lastStoryletAt: later - 60 }, real, later)).toBe("urgent_only");
   });
 });

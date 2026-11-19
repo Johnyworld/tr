@@ -431,8 +431,41 @@ export function storyletWindow(state: GameState, content: Content, at: GameTime)
   const pacing = content.scenario.storylet_pacing;
   // 지금 캐릭터의 이야기가 막 시작됐으면 조금 기다린다
   if (at - state.runStartedAt < pacing.first_after_hours * 60) return "closed";
-  if (state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt) return "open";
-  return at - state.lastStoryletAt >= pacing.min_gap_hours * 60 ? "open" : "urgent_only";
+  const fresh = state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt;
+  // 이야기가 몰리지 않게 (12-191): 앞 이야기와 가까우면 급한 이야기만 (급한 것은 하루 상한으로 막는다)
+  if (!fresh && at - state.lastStoryletAt! < pacing.min_any_gap_hours * 60) return "urgent_only";
+  // 위급하면 급한 이야기만 (12-191)
+  if (inCrisis(state, content)) return "urgent_only";
+  if (fresh) return "open";
+  return at - state.lastStoryletAt! >= pacing.min_gap_hours * 60 ? "open" : "urgent_only";
+}
+
+/** 주인공의 몸이 위급한가 (storylet_pacing.urgent_only_when): 그동안은 급한 이야기만 연다 (12-191) */
+export function inCrisis(state: GameState, content: Content): boolean {
+  const me = state.characters[state.playerId];
+  if (!me) return false;
+  return Object.entries(content.scenario.storylet_pacing.urgent_only_when).some(([track, from]) => {
+    const levels = content.scenario.condition_tracks.find((t) => t.id === track)?.levels ?? [];
+    const at = levels.findIndex((l) => l.id === me.conditions[track]);
+    const min = levels.findIndex((l) => l.id === from);
+    return at >= 0 && min >= 0 && at >= min;
+  });
+}
+
+/** 오늘 급한 이야기를 더 열 수 있는가 (storylet_pacing.urgent_per_day, 12-191) */
+export function urgentAllowed(state: GameState, content: Content, at: GameTime): boolean {
+  const cap = content.scenario.storylet_pacing.urgent_per_day;
+  if (!cap) return true;
+  const today = dayOf(at);
+  const fired = Object.entries(state.storyletLog).filter(([id, log]) => content.storylets[id]?.urgent && dayOf(log.lastFiredAt) === today).length;
+  return fired < cap;
+}
+
+/** 이 이야기를 지금 열 수 있는가: 급한 이야기는 하루 상한까지, 나머지는 창이 열렸을 때 */
+export function storyletAllowed(state: GameState, content: Content, s: StoryletContent, window: "open" | "urgent_only" | "closed", at: GameTime, options: { urgentOnly?: boolean } = {}): boolean {
+  if (window === "closed") return false;
+  if (s.urgent) return urgentAllowed(state, content, at);
+  return !options.urgentOnly && window === "open";
 }
 
 /** 무게로 하나 고른다 */

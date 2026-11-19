@@ -1271,6 +1271,16 @@ helpless:
 # 길 위의 일 (12-53): 구역을 옮길 때 길의 위험(두 구역의 danger 중 높은 쪽 0~3)별로 태그 road인 이야기가 열릴 확률
 travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 
+# 이야기의 빈도 (12-191, *임시*): 보통 이야기는 10시간에 하나 (6시간이면 하루 4개가 열려 플레이어의 일이 묻혔다).
+# 보통 이야기와 길 위의 일은 앞 이야기와 2시간은 떨어지고, 급한 이야기는 하루 둘까지. 피를 흘리거나 치명상 이상이면 급한 이야기만
+storylet_pacing:
+  min_gap_hours: 10
+  expire_hours: 3
+  first_after_hours: 2
+  min_any_gap_hours: 2
+  urgent_per_day: 2
+  urgent_only_when: { bleeding: bleeding, harm: critical }
+
 # 시세 (12-155, *임시*): 그 땅 주인 무리의 창고가 처음의 25% 이하면 1.5배, 처음과 같으면 그대로, 두 배 이상이면 0.7배.
 # 음식은 식량, 탄약은 탄약 (약·물·땔감은 아이템의 resource). 겨울에는 연료 1.4배, 여름에는 물 1.2배
 market:

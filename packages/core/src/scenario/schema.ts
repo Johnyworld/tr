@@ -1534,8 +1534,14 @@ export const scenarioFileSchema = z
         expire_hours: z.number().positive(),
         /** 캐릭터의 이야기가 시작된 뒤 첫 이야기까지 (시작하자마자 끼어들지 않게) */
         first_after_hours: z.number().min(0).default(2),
+        /** 보통 이야기와 길 위의 일은 앞 이야기(급한 것 포함)와 이만큼은 떨어진다 (12-191: 하루 8개가 몰렸다). 급한 이야기는 urgent_per_day로 막는다 */
+        min_any_gap_hours: z.number().min(0).default(0),
+        /** 급한 이야기는 하루 이만큼까지 (0이면 끝없이). 넘친 것은 그 자리를 놓쳐 사라진다 */
+        urgent_per_day: z.number().int().min(0).default(0),
+        /** 주인공의 몸이 이 단계 이상이면(상태 트랙 → 단계) 급한 이야기만 연다 (위급할 때 보통 이야기·길 위의 일이 끼어들지 않게) */
+        urgent_only_when: z.record(id, id).default({}),
       })
-      .default({ min_gap_hours: 6, expire_hours: 3, first_after_hours: 2 }),
+      .default({ min_gap_hours: 6, expire_hours: 3, first_after_hours: 2, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {} }),
   })
   .superRefine((s, ctx) => {
     const problem = (message: string) => ctx.addIssue({ code: "custom", message });
@@ -1578,6 +1584,11 @@ export const scenarioFileSchema = z
     if (s.charm && !s.stats.some((x) => x.id === s.charm!.ability)) problem(`charm.ability: 알 수 없는 능력 ${s.charm.ability}`);
     for (const [role, move] of Object.entries(s.move_roles)) {
       if (move && !moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);
+    }
+    for (const [track, level] of Object.entries(s.storylet_pacing.urgent_only_when)) {
+      const t = s.condition_tracks.find((x) => x.id === track);
+      if (!t) problem(`storylet_pacing.urgent_only_when: 알 수 없는 상태 트랙 ${track}`);
+      else if (!t.levels.some((l) => l.id === level)) problem(`storylet_pacing.urgent_only_when.${track}: 알 수 없는 단계 ${level}`);
     }
     for (const [track, level] of Object.entries(s.camp?.deep_sleep ?? {})) {
       const t = s.condition_tracks.find((x) => x.id === track);

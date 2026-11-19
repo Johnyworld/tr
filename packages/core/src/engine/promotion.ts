@@ -47,8 +47,9 @@ function newRecruit(ctx: ToolContext, factionId: string): string | null {
   const usedNames = new Set(Object.values(state.characters).map((c) => c.name));
   const character = createExtraCharacter(content, template, { id, label: template.label, zone: baseOf(content, state, factionId), time: state.time, usedNames }, rng);
   store.append({ type: "extra_spawned", character, unseen: true });
-  // 분대장에게는 이름과 함께 소개된다
+  // 분대장에게는 이름과 함께 소개된다. 새 분대원도 분대장의 이름을 안다 (C6, 플레이 테스트 10)
   store.append({ type: "name_learned", characterId: state.playerId, targetId: id });
+  store.append({ type: "name_learned", characterId: id, targetId: state.playerId });
   return id;
 }
 
@@ -76,7 +77,10 @@ export function formSquad(ctx: ToolContext): string[] {
   // 넘겨받는 분대원은 이름과 함께 인사한다 (B8, 플레이 테스트 9)
   const takeOver = (members: string[]) => {
     store.append({ type: "squad_set", members });
-    for (const id of members) if (!knowsName(store.getState(), state.playerId, id)) store.append({ type: "name_learned", characterId: state.playerId, targetId: id });
+    for (const id of members) {
+      if (!knowsName(store.getState(), state.playerId, id)) store.append({ type: "name_learned", characterId: state.playerId, targetId: id });
+      if (!knowsName(store.getState(), id, state.playerId)) store.append({ type: "name_learned", characterId: id, targetId: state.playerId });
+    }
   };
   if (vacant.length && rng() >= NEW_SQUAD_CHANCE) {
     takeOver(vacant);

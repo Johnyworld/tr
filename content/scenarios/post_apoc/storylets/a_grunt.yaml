@@ -30,7 +30,7 @@
           - clock: { id: c_east_offensive, delta: 1 }
           - belief: { fact: 불빛을 보려다 망루 난간을 건드려 소리를 냈다. 불빛은 곧 꺼졌다, source: seen }
     - id: report
-      label: 바로 분대장에게 알린다
+      label: 바로 상관에게 알린다
       effects:
         - relation: { who: commander, axis: respect, delta: 1 }
         - merit: 1
@@ -112,7 +112,7 @@
       effects:
         - belief: { fact: 오지호가 탈영을 생각하고 있다, source: seen }
     - id: report
-      label: 분대장에게 알린다
+      label: 상관에게 알린다
       effects:
         - relation: { who: friend, axis: trust, delta: -3 }
         - relation: { who: commander, axis: trust, delta: 2 }
@@ -131,7 +131,7 @@
   ai_direction: 민서연은 확신이 없으면 말하지 않는 사람이다. 숫자는 말하지 않는다.
   choices:
     - id: report
-      label: 함께 분대장에게 알린다
+      label: 함께 상관에게 알린다
       effects:
         - merit: 1
         - relation: { who: lookout, axis: respect, delta: 1 }

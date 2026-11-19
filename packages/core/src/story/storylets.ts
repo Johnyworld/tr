@@ -25,7 +25,7 @@ import { dayOf, MINUTES_PER_DAY, segmentOf, type GameTime } from "../rules/time.
 import type { Rng } from "../rng.ts";
 import { harmTrack } from "../scenario/scenario.ts";
 import { daysOfStock } from "../sim/war.ts";
-import { fill } from "../text.ts";
+import { fill, josa, type JosaPair } from "../text.ts";
 import { seasonAt } from "../sim/season.ts";
 import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
 
@@ -62,6 +62,8 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
         return (!want.kinds || (bond && want.kinds.includes(bond.kind))) && (!want.templates || (template && want.templates.includes(template)));
       })
       .filter((id) => !role.ids || role.ids.includes(id))
+      // 몸 조건도 동행에게 건다 (C3, 플레이 테스트 10: 감염 없는 누렁이가 "열이 오르는 사람"이 됐다)
+      .filter((id) => !role.condition || bodyMatches(content, state.characters[id]?.conditions[role.condition.track], role.condition))
       .sort();
   }
   return Object.values(state.characters)
@@ -237,6 +239,10 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (here?.isolated && storylet.tags.includes(WORLD_TAG) && !w.zones?.includes(here.id)) return false;
   const own = state.factions[player.factionId];
   if (w.ranks && !w.ranks.includes(player.rank)) return false;
+  if (usesScarce(storylet)) {
+    const scarce = scarcestOf(state, content);
+    if (!scarce || scarce.days > SCARCE_DAYS) return false;
+  }
   if (w.segments && !w.segments.includes(segmentOf(at))) return false;
   if (w.seasons && !w.seasons.includes(seasonAt(content.scenario, at)?.id ?? "")) return false;
   if (w.weather && !w.weather.includes(state.weather?.id ?? "")) return false;
@@ -549,21 +555,81 @@ export function storyletVars(state: GameState, content: Content, cast: Record<st
     vars.from = vars.to = content.locations[state.playerZone]?.name ?? state.playerZone;
   }
   const player = state.characters[state.playerId];
-  const own = player ? state.factions[player.factionId] : undefined;
-  const war = content.scenario.war;
-  if (own && war) {
-    const scarce = content.scenario.resources
-      .filter((r) => (war.upkeep[r.id] ?? 0) > 0)
-      .map((r) => ({ label: r.label, days: daysOfStock(content, own, r.id) }))
-      .sort((a, b) => a.days - b.days)[0];
-    if (scarce) vars.scarce = scarce.label;
-  }
+  const scarce = scarcestOf(state, content);
+  if (scarce) vars.scarce = scarce.label;
   vars.scarce ??= content.scenario.resources[0]?.label ?? "물자";
   return vars;
 }
 
+/** 우리 무리에서 가장 모자란 자원 (며칠 버티는지). 무리가 없으면 null */
+function scarcestOf(state: GameState, content: Content): { label: string; days: number } | null {
+  const player = state.characters[state.playerId];
+  const own = player ? state.factions[player.factionId] : undefined;
+  const war = content.scenario.war;
+  if (!own || !war) return null;
+  return (
+    content.scenario.resources
+      .filter((r) => (war.upkeep[r.id] ?? 0) > 0)
+      .map((r) => ({ label: r.label, days: daysOfStock(content, own, r.id) }))
+      .sort((a, b) => a.days - b.days)[0] ?? null
+  );
+}
+
+/** {scarce}(모자란 자원)를 말하는 이야기는 그 자원이 이 날수 안에 바닥날 때만 연다 (C11, 플레이 테스트 10: 배급이 정량인데 "물이 모자란 건 다들 안다"가 네 번) */
+export const SCARCE_DAYS = 21;
+const mentionsScarce = new WeakMap<object, boolean>();
+function usesScarce(s: StoryletContent): boolean {
+  let v = mentionsScarce.get(s);
+  if (v === undefined) {
+    v = JSON.stringify(s).includes("{scarce");
+    mentionsScarce.set(s, v);
+  }
+  return v;
+}
+
 export function fillStorylet(text: string, vars: Record<string, string>): string {
-  return fill(text, vars);
+  // 호칭(겉모습이 붙은 말)이 앞 문장의 말과 겹치지 않게 (C4, 플레이 테스트 10: "지도통을 멘 지도통을 멘 소식장수", "늙은 신부 신부는")
+  let out = "";
+  let last = 0;
+  for (const m of text.matchAll(/\{([a-z_]+)(?::([^}]+))?\}/g)) {
+    out += text.slice(last, m.index);
+    last = m.index! + m[0].length;
+    const value = vars[m[1]!];
+    if (value === undefined) {
+      out += m[0];
+      continue;
+    }
+    const pair = m[2] as JosaPair | undefined;
+    const placed = dedupeAlias(out, value);
+    out = placed.before;
+    out += placed.value ? (pair ? josa(placed.value, pair) : placed.value) : pair ? josa(value, pair).slice(value.length) : "";
+  }
+  return out + text.slice(last);
+}
+
+/**
+ * 호칭이 바로 앞의 말과 겹치면 접는다 (여러 낱말로 된 호칭만, 이름은 그대로).
+ * - 앞이 호칭의 앞부분으로 끝나면 남은 부분만 ("지도통을 멘 {x}" + "지도통을 멘 소식장수" → "지도통을 멘 소식장수")
+ * - 앞 낱말이 호칭의 끝 낱말(사람을 가리키는 말)이면 호칭을 빼고 그 낱말에 조사 ("규율반원 {x}에게" → "규율반원에게")
+ * - 같은 마디(쉼표·마침표 뒤)에 호칭의 꾸밈말이 이미 있으면 끝 낱말만 ("쇠 저울추를 단 {x}" + "쇠 저울추를 찬 행상대장" → "쇠 저울추를 단 행상대장")
+ */
+export function dedupeAlias(before: string, value: string): { before: string; value: string } {
+  const words = value.split(" ").filter(Boolean);
+  if (words.length < 2 || !before.endsWith(" ")) return { before, value };
+  for (let k = words.length; k >= 1; k--) {
+    const prefix = words.slice(0, k).join(" ");
+    if (before.endsWith(` ${prefix} `) || before === `${prefix} `) {
+      const rest = words.slice(k).join(" ");
+      return rest ? { before, value: rest } : { before: before.slice(0, -1), value: "" };
+    }
+  }
+  const head = words.at(-1)!;
+  const trimmed = before.slice(0, -1);
+  if (trimmed.endsWith(` ${head}`) || trimmed === head) return { before: trimmed, value: "" };
+  const clause = before.split(/[.,!?"“”']/).at(-1) ?? "";
+  const clauseWords = new Set(clause.split(" ").filter((w) => w.length >= 2));
+  if (words.slice(0, -1).some((w) => w.length >= 2 && clauseWords.has(w))) return { before, value: head };
+  return { before, value };
 }
 
 /** 지금 오간 길의 위험: 두 구역 중 높은 쪽 (12-53) */

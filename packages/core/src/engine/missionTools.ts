@@ -115,7 +115,7 @@ const assignMission = defineTool({
       ok: true,
       resultText:
         `임무 배정: ${describeMission(ctx.content.scenario, mission)}${buddyLine}\n` +
-        "상관이 임무를 지시하는 장면을 서술하라. 해야 할 일과 기한(대략적인 표현으로)을 상관의 말투로 전한다.",
+        `상관(${playerCalls(state, ctx.content, commander.id)})이 임무를 지시하는 장면을 서술하라. 해야 할 일과 기한(대략적인 표현으로)을 상관의 말투로 전한다. 보고도 이 사람에게 한다 (C8, 플레이 테스트 10: 진급 뒤 다른 사람이 임무를 준 것으로 서술했다).`,
       display: { type: "mission", event: "assigned", title: mission.title, detail: `기한 ${formatTime(mission.deadline)}` },
     };
   },

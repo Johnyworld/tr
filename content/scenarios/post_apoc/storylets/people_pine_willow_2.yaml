@@ -46,7 +46,7 @@
           - body: { track: cold, delta: 1 }
           - belief: { fact: "배수로 안쪽에 감염체가 고여 있었다. {young:을/를} 끌고 겨우 빠져나왔다. 아무것도 찾지 못했다", source: seen }
     - id: tell_leader
-      label: 혼자 담 밖에 나가려 한다고 분대장에게 알린다
+      label: 혼자 담 밖에 나가려 한다고 상관에게 알린다
       effects:
         - set_flag: pp2_drain_done
         - set_flag: pp2_drain_told
@@ -441,7 +441,7 @@
           - relation: { who: groom, axis: trust, delta: -2 }
           - belief: { fact: "{groom:은/는} 다시는 그 이야기를 꺼내지 않았다. 밤마다 막사를 빠져나가는 일은 그대로다", source: seen }
     - id: report
-      label: 탈영할 생각이라고 분대장에게 알린다
+      label: 탈영할 생각이라고 상관에게 알린다
       effects:
         - set_flag: pp2_desertion_done
         - set_flag: pp2_gibeom_reported

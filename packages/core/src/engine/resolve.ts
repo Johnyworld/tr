@@ -171,6 +171,8 @@ export function checkResolve(ctx: ToolContext): { lines: string[]; displays: Too
     const b = state.battle as { zone?: string; theirs?: { faction?: string } };
     if (b.zone === r.target || b.theirs?.faction === r.target || b.theirs?.faction === r.target2) ctx.store.append({ type: "resolve_involved", characterId: me.id });
   }
+  // 세운 그 순간에는 보지 않는다 (C2, 플레이 테스트 10: 혈청을 구하겠다고 한 자리에서 "이뤘다"가 됐다)
+  if (currentResolve(ctx.store.getState())!.since === ctx.store.getState().time) return { lines: seeded, displays: [] };
   const result = evaluate(ctx.content, ctx.store.getState(), currentResolve(ctx.store.getState())!);
   if (result === null) return { lines: seeded, displays: [] };
   const now = currentResolve(ctx.store.getState())!;

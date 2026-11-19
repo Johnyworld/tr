@@ -435,7 +435,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.move_to) {
     const here = start.playerZone;
     const dest = content.locations[input.move_to];
-    if (!dest) return { ok: false, error: `알 수 없는 구역: ${input.move_to}` };
+    if (!dest) return { ok: false, error: `알 수 없는 구역: ${input.move_to}${here ? ` (인접 구역: ${neighbors(content, here).join(", ")})` : ""}` };
+    if (input.move_to === here) return { ok: false, error: `이미 ${dest.name}에 있다. 이 구역 안에서 자리를 옮기는 것은 move_to 없이 서술한다.` };
     const crossing = dest.crossing && here && dest.crossing.from.includes(here) ? dest.crossing : null;
     if (!here || (!neighbors(content, here).includes(input.move_to) && !crossing)) {
       return { ok: false, error: `${josa(input.move_to, "은/는")} 지금 구역과 맞닿아 있지 않다. 인접 구역: ${here ? neighbors(content, here).join(", ") : "없음"}` };
@@ -696,7 +697,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? "eat" : input.drink || input.refill || input.change_clothes ? "brief" : input.craft || input.build || input.train || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? ((content.scenario.consumables[input.use_item]?.hunger ?? 0) > 0 ? "eat" : "brief") : input.drink || input.refill || input.change_clothes ? "brief" : input.craft || input.build || input.train || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
   // 이동 수단 (12-137): 타고 가면 이동 시간이 줄고, 연료를 쓰고, 도착한 곳에 소리가 난다
   const ride = input.move_to && input.ride ? planRide(ctx, input.ride, !!crossingAttempt || escapeAttempt) : null;
   if (ride && !ride.ok) lines.push(`타지 못하고 걸었다: ${ride.error}`);
@@ -930,10 +931,13 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   const deep = activity === "sleep" ? deepSleepReason(content, state) : null;
 
   const extra: ToolDisplayEvent[] = [];
+  let capped = false;
   if (cost.kind === "long") {
     // 잠은 한 번에 16시간까지 (아침에 "새벽까지"면 21시간을 잤다, 플레이 테스트 8). 기다림은 하루까지
     const cap = activity === "sleep" ? MAX_SLEEP_MINUTES : MAX_FAST_FORWARD_MINUTES;
-    const target = Math.min(until && cost.allowUntil ? nextSegmentStart(from, until) : from + cost.minutes, from + cap);
+    const wanted = until && cost.allowUntil ? nextSegmentStart(from, until) : from + cost.minutes;
+    const target = Math.min(wanted, from + cap);
+    capped = wanted > target;
     // 자정을 넘기면 자정에서 하루 처리(전쟁 틱)를 돌린 뒤 이어 간다. 그래야 새벽 교전에서 멈출 수 있다
     let cursor = from;
     for (;;) {
@@ -955,7 +959,9 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       cursor = result.end;
       interrupt = result.interrupt;
       if (interrupt || cursor >= target) break;
-      extra.push(...runAfterTimeAdvance(ctx));
+      // 자정의 하루 처리. 이야기는 여기서 열지 않는다: 활동이 이어져 보이지 않은 채 만료됐다 (C1, 플레이 테스트 10).
+      // 활동 도중의 이야기는 끼어들기 검사(createStoryletCheck)가 활동을 끊고 연다
+      extra.push(...runAfterTimeAdvance(ctx, { storylets: false }));
       if (store.getState().battle) break;
     }
     to = cursor;
@@ -988,6 +994,9 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 일이 생겼다.${deep ? ` ${deep} 탓에 깊이 잠들어 있어 몸이 무거워 늦게 깼다. 이미 일이 가까이 와 있다고 서술하라.` : ""}`);
   } else if (interrupt?.kind === "battle") {
     lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 벌어지고 있다.`);
+  } else if (!interrupt && capped) {
+    // C12 (플레이 테스트 10): 상한에 걸려 말없이 03시에 깼다
+    lines.push(activity === "sleep" ? "잠은 한 번에 16시간까지다. 정한 시각 전에 깼다." : "한 번에 흘려보낼 수 있는 시간은 하루까지다. 정한 시각 전에 멈췄다.");
   } else if (interrupt) {
     lines.push(
       `${josa(label, "이/가")} 중간에 끊겼다: ${interrupt.detail}. 정체는 아직 모른다. ` +

@@ -248,7 +248,8 @@ export function runAsksDaily(ctx: ToolContext): void {
       if ((state.relations[n.id]?.[me]?.trust ?? 0) < -1) return false;
       return !fromAsks.some((p) => p.to === n.id);
     })
-    .flatMap((n) => (n.favors ?? []).filter((x) => !asked.has(`${n.id}|${x.id}`)).map((x) => ({ npc: n.id, ask: x })))
+    .flatMap((n) => (n.favors ?? []).filter((x) => !asked.has(`${n.id}|${x.id}`) && (state.characters[n.id]?.inventory[x.item.id] ?? 0) < x.item.quantity).map((x) => ({ npc: n.id, ask: x })))
+    // 이미 가진 물건은 부탁하지 않는다 (C10, 플레이 테스트 10: 무전기를 가진 사람이 무전기를 부탁했다)
     .sort((a, b) => `${a.npc}|${a.ask.id}`.localeCompare(`${b.npc}|${b.ask.id}`));
   if (!candidates.length) return;
   const pick = candidates[Math.floor(rng() * candidates.length)]!;

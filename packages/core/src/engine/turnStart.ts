@@ -37,7 +37,7 @@ function runDailyWeather(ctx: ToolContext) {
 }
 
 /** urgentOnly: 자다가 급한 이야기에 깼으면 그 이야기만 연다 (깨운 일 대신 다른 이야기가 열리지 않게, 12-187) */
-export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: boolean; actionStartedAt?: number } = {}): ToolDisplayEvent[] {
+export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: boolean; actionStartedAt?: number; storylets?: boolean } = {}): ToolDisplayEvent[] {
   // 의식불명 등 스스로 아무것도 못 하게 됐으면 진행 중이던 이야기는 거기서 끝난다 (깨어난 뒤에 대화가 이어지지 않게)
   {
     const s = ctx.store.getState();
@@ -64,7 +64,7 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   // 상인은 날마다 물건을 다시 채운다 (기획서 4.8)
   runRestock(ctx);
   // 조건이 맞는 이야기 (간격이 지났고 전투 중이 아닐 때)
-  const storylets = runStorylets(ctx, options);
+  const storylets = options.storylets === false ? [] : runStorylets(ctx, options);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
   const healed = runNaturalRecovery(ctx);
   // 무서운 것이 장면에 없으면 공포가 가라앉는다 (12-95)

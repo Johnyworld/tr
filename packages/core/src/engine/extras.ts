@@ -119,7 +119,7 @@ const spawnExtra = defineTool({
     return {
       ok: true,
       resultText:
-        `${josa(input.label, "이/가")} 장면에 들어왔다 (id: ${id}, ${rankName(content, character.factionId, character.rank)}). 겉모습: ${character.extra!.look}. ` +
+        `${josa(input.label, "이/가")} 장면에 들어왔다 (id: ${id}${templateKind(template) === "person" ? `, ${rankName(content, character.factionId, character.rank)}` : ""}). 겉모습: ${character.extra!.look}. ` +
         (template.kind === "infected"
           ? `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 감염체다: 판정의 상대(target·opponent)가 되고, 말이 통하지 않으며 행적을 보지 않는다. 이것에게 다칠 위험에는 감염 위험이 저절로 붙는다.`
           : `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 이 인물은 이제 판정 대상(target)이 되고 행적을 본다.${templateKind(template) === "person" ? " 이름은 아직 모른다." : ""}`),

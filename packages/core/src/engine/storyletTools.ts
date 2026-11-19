@@ -17,7 +17,7 @@ import { harmTrack } from "../scenario/scenario.ts";
 import { changeCondition } from "./body.ts";
 import { disposition } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
-import { EXTRA_CAST_PREFIX, storyletAllowed, inCrisis } from "../story/storylets.ts";
+import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis } from "../story/storylets.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
 import { knowsName, playerCalls } from "../game/acquaintance.ts";
@@ -190,7 +190,7 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
     `  등장: ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
     `  선택지 (resolve_storylet): ${a.storylet.choices
       .filter((c) => choiceAvailable(state, c, a.cast))
-      .map((c) => `${c.id} ${fillStorylet(c.label, vars)}${c.check ? ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]` : ""}`)
+      .map((c) => `${c.id} ${maskUnknownNames(state, content, fillStorylet(c.label, vars))}${c.check ? ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]` : ""}`)
       .join(" / ")}`,
     "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 외면하면 그대로 둔다 (시간이 지나면 지나간다).",
   ];
@@ -249,7 +249,7 @@ export const resolveStorylet = defineTool({
     ctx.store.append({ type: "storylet_resolved", storyletId: a.storylet.id, choiceId: choice.id, outcome });
     const improvised = !!input.improvised_move && input.improvised_move !== choice.check;
     const lines: string[] = [
-      `이야기 "${a.storylet.title}": ${improvised ? `플레이어의 방법으로 즉흥으로 풀었다 (${moveLabel(ctx.content.scenario, input.improvised_move!)} 판정, "${fillStorylet(choice.label, vars)}"의 결과를 따른다)` : fillStorylet(choice.label, vars)}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`,
+      `이야기 "${a.storylet.title}": ${improvised ? `플레이어의 방법으로 즉흥으로 풀었다 (${moveLabel(ctx.content.scenario, input.improvised_move!)} 판정, "${maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}"의 결과를 따른다)` : maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`,
     ];
     const extra: ToolDisplayEvent[] = [];
     for (const effect of effects) {
@@ -285,7 +285,7 @@ export const resolveStorylet = defineTool({
     return {
       ok: true,
       resultText: lines.join("\n"),
-      display: { type: "storylet", event: "resolved", title: a.storylet.title, detail: fillStorylet(choice.label, vars) },
+      display: { type: "storylet", event: "resolved", title: a.storylet.title, detail: maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars)) },
       extra,
     };
   },
@@ -302,7 +302,18 @@ export function maskUnknownNames(state: GameState, content: Content, text: strin
     const alias = playerCalls(state, content, npc.id);
     // 이름 뒤에 붙었던 조사는 호칭에 맞춰 다시 붙인다 (B9, 플레이 테스트 9: "경비병가", "탄약 장수은")
     const escaped = npc.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    out = out.replace(new RegExp(`${escaped}(이었다|였다|이라는|라는|으로|로|이|가|은|는|을|를|과|와)?`, "g"), (_m, particle?: string) => (particle ? josa(alias, PARTICLE_PAIRS[particle]!) : alias));
+    // 앞말과 겹치는 호칭은 접는다 (C4, "규율반원 석중기에게" → "규율반원에게")
+    let next = "";
+    let last = 0;
+    for (const m of out.matchAll(new RegExp(`${escaped}(이었다|였다|이라는|라는|으로|로|이|가|은|는|을|를|과|와)?`, "g"))) {
+      next += out.slice(last, m.index);
+      last = m.index! + m[0].length;
+      const particle = m[1];
+      const placed = dedupeAlias(next, alias);
+      next = placed.before;
+      next += placed.value ? (particle ? josa(placed.value, PARTICLE_PAIRS[particle]!) : placed.value) : particle ? josa(alias, PARTICLE_PAIRS[particle]!).slice(alias.length) : "";
+    }
+    out = next + out.slice(last);
   }
   return out;
 }

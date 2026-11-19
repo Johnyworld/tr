@@ -44,7 +44,7 @@
   ai_direction: "{deserter:은/는} 붉은연합에서 도망쳤다. 굶었고 겁에 질려 있다. 목숨을 보장받으면 물류창고 이야기를 할 마음이 있다."
   choices:
     - id: capture
-      label: 포로로 잡아 분대장에게 데려간다
+      label: 포로로 잡아 상관에게 데려간다
       effects:
         - merit: 2
         - relation: { who: commander, axis: respect, delta: 1 }
@@ -264,6 +264,7 @@
           - belief: { fact: 감염체를 놓쳐 거점 안에 소란이 났다, source: seen }
     - id: shoot
       label: 쏜다
+      when: { has_items_any: [old_rifle, shotgun, pistol, sawn_shotgun, crossbow] }
       effects:
         - zone_noise: 2
         - faction_morale: { faction: own, delta: -1 }

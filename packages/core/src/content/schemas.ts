@@ -595,7 +595,7 @@ export function createContentSchemas(s: Scenario) {
     /** 다짐의 단계를 한 칸 올린다 (12-164): text는 지금 어디까지 왔는지 한 줄 (상태 화면에 다짐 옆으로 보인다). 다짐이 없으면 아무 일도 없다 */
     z.strictObject({ resolve_step: z.strictObject({ text: z.string().min(1).max(60) }) }),
     /**
-     * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (지금 다짐은 바뀐다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
+     * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (다짐이 없을 때만, 12-199. 이 효과가 있는 이야기는 다짐이 있으면 열리지 않는다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
      * text는 다짐 한 줄 (문장의 자리를 쓸 수 있다)
      */
     z.strictObject({

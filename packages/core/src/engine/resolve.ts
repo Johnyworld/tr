@@ -188,6 +188,8 @@ export function setResolve(ctx: ToolContext, input: { kind: string; target?: str
   const me = state.characters[state.playerId];
   if (!kind || !me || me.dead) return null;
   if (kind.occupation_only && !me.occupation) return null;
+  // 품은 다짐은 덮어쓰지 않는다 (12-199: 곁가지 다짐이 시나리오의 복수 다짐을 지웠다). 이루거나 꺾이면 이야기가 새 다짐을 건넨다
+  if (currentResolve(state)) return null;
   ctx.store.append({
     type: "resolve_set",
     characterId: me.id,

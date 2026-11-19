@@ -239,6 +239,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (here?.isolated && storylet.tags.includes(WORLD_TAG) && !w.zones?.includes(here.id)) return false;
   const own = state.factions[player.factionId];
   if (w.ranks && !w.ranks.includes(player.rank)) return false;
+  // 다짐을 건네는 이야기는 다짐이 없을 때만 (12-199: 품은 다짐은 덮어쓰지 않는다)
+  if (offersResolve(storylet) && currentResolve(state)) return false;
   if (usesScarce(storylet)) {
     const scarce = scarcestOf(state, content);
     if (!scarce || scarce.days > SCARCE_DAYS) return false;
@@ -573,6 +575,17 @@ function scarcestOf(state: GameState, content: Content): { label: string; days: 
       .map((r) => ({ label: r.label, days: daysOfStock(content, own, r.id) }))
       .sort((a, b) => a.days - b.days)[0] ?? null
   );
+}
+
+const offersResolveCache = new WeakMap<object, boolean>();
+/** 선택지 중 하나라도 다짐을 건네는 이야기 */
+function offersResolve(s: StoryletContent): boolean {
+  let v = offersResolveCache.get(s);
+  if (v === undefined) {
+    v = s.choices.some((c) => [...(c.effects ?? []), ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])].some((e) => "resolve" in e));
+    offersResolveCache.set(s, v);
+  }
+  return v;
 }
 
 /** {scarce}(모자란 자원)를 말하는 이야기는 그 자원이 이 날수 안에 바닥날 때만 연다 (C11, 플레이 테스트 10: 배급이 정량인데 "물이 모자란 건 다들 안다"가 네 번) */

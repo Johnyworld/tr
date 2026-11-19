@@ -9,6 +9,7 @@ import { runCommand } from "../commands/commands.ts";
 import { buildPlayerView } from "../views/player.ts";
 import { applyEffect } from "./storyletTools.ts";
 import { currentResolve, resolveChronicle } from "./resolve.ts";
+import { conditionsMet } from "../story/storylets.ts";
 import type { StoryletEffect } from "../content/schemas.ts";
 
 /** 다짐 (12-164) */
@@ -102,10 +103,18 @@ describe("다짐", () => {
     expect(w.state().resolveLog[0]?.outcome).toBe("broken");
   });
 
-  it("이야기 효과가 새 다짐을 건네고, 지금 다짐을 바꾼다", () => {
+  it("품은 다짐은 이야기가 덮어쓰지 않는다. 다짐이 없을 때 건네고, 건네는 이야기도 그때만 열린다 (12-199)", () => {
     const w = make("role_a_grunt");
     look(w);
-    const out = applyEffect(w.ctx(), { resolve: { kind: "journey", target: "yeoul_isle", target2: null, n: null, text: "{zone}을 떠나 섬에 간다" } } as StoryletEffect, {}, { zone: "거점" }, "테스트");
+    const before = currentResolve(w.state())!;
+    const effect = { resolve: { kind: "journey", target: "yeoul_isle", target2: null, n: null, text: "{zone}을 떠나 섬에 간다" } } as StoryletEffect;
+    expect(applyEffect(w.ctx(), effect, {}, { zone: "거점" }, "테스트").line ?? "").not.toContain("새 다짐");
+    expect(currentResolve(w.state())).toMatchObject({ kind: before.kind, target: before.target });
+    const offer = loadRealContent().storylets.rv_bury_comrade!;
+    expect(conditionsMet(w.state(), loadRealContent(), offer, w.state().time)).toBe(false);
+    // 다짐을 내려놓은 뒤에는 건넨다
+    w.ctx().store.append({ type: "resolve_ended", characterId: w.state().playerId, outcome: "let_go", text: "x" });
+    const out = applyEffect(w.ctx(), effect, {}, { zone: "거점" }, "테스트");
     expect(out.line).toContain("새 다짐");
     expect(currentResolve(w.state())).toMatchObject({ kind: "journey", target: "yeoul_isle", source: "story", text: "거점을 떠나 섬에 간다" });
   });

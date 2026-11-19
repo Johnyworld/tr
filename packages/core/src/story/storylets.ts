@@ -297,6 +297,12 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if ((d.gte !== undefined && v < d.gte) || (d.lte !== undefined && v > d.lte)) return false;
   }
   if (w.zones && (!state.playerZone || !w.zones.includes(state.playerZone))) return false;
+  if (w.zones_none && state.playerZone && w.zones_none.includes(state.playerZone)) return false;
+  const doing = state.lastActivity ?? "brief";
+  if (w.activities && !w.activities.includes(doing as never)) return false;
+  if (w.activities_none?.includes(doing as never)) return false;
+  if (w.companions_lte !== undefined && state.companions.length > w.companions_lte) return false;
+  if (w.companions_gte !== undefined && state.companions.length < w.companions_gte) return false;
   if (w.own_territory !== undefined) {
     const mine = !!state.playerZone && state.zones[state.playerZone]?.owner === player.factionId;
     if (mine !== w.own_territory) return false;

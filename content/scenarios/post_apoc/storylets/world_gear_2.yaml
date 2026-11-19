@@ -431,6 +431,7 @@
   repeatable: true
   cooldown_days: 14  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다. 12-195: 2주에 두 번 나와 14일
   when:
+    activities_none: [sleep]
     zone_owner: [none, other]
     day_gte: 2
     equipped: [old_rifle]

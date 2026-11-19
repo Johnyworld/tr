@@ -18,6 +18,8 @@ import { commanderOf, pickDailyOffers } from "../game/missions.ts";
 import { dedupeAlias } from "../story/storylets.ts";
 import { watchers } from "./opposition.ts";
 import { runDailyBody } from "./body.ts";
+import { scarFromHarm } from "./scars.ts";
+import { conditionsMet } from "../story/storylets.ts";
 
 /** 긴 판 열의 원문 보고서에서 다시 모은 버그 (플레이 테스트 11, 12-202) */
 const storyletSchema = createContentSchemas(TEST_SCENARIO).storylet;
@@ -223,5 +225,28 @@ describe("플레이 테스트 11 원문의 버그", () => {
     me().conditions.hunger = "hungry";
     runDailyBody(w.ctx());
     expect(me().inventory.canned_food ?? 0).toBe(0);
+  });
+
+  it("이야기 조건: 하던 일·동행 수·이 구역이 아닐 때", () => {
+    const env = setup([]);
+    const st = (when: Record<string, unknown>) => storyletSchema.parse({ id: "x", title: "x", setup: "x", when, choices: [{ id: "a", label: "a", effects: [] }] });
+    const s = env.store.getState();
+    const asleep = { ...s, lastActivity: "sleep" };
+    expect(conditionsMet(asleep, env.ctx.content, st({ activities_none: ["sleep"] }), s.time)).toBe(false);
+    expect(conditionsMet(s, env.ctx.content, st({ activities_none: ["sleep"] }), s.time)).toBe(true);
+    expect(conditionsMet(asleep, env.ctx.content, st({ activities: ["sleep"] }), s.time)).toBe(true);
+    expect(conditionsMet({ ...s, companions: ["npc_leader"] }, env.ctx.content, st({ companions_lte: 0 }), s.time)).toBe(false);
+    expect(conditionsMet(s, env.ctx.content, st({ zones_none: [s.playerZone!] }), s.time)).toBe(false);
+  });
+
+  it("상처 원인이 부위를 말하면 그 부위에 맞는 흉터만 남는다", () => {
+    for (let i = 0; i < 6; i++) {
+      const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-scar-")), content: loadRealContent(), rngFactory: () => () => (i + 0.5) / 6 * 0.29 }).create("mcp", "role_a_grunt");
+      const me = () => w.state().characters[w.state().playerId]!;
+      me().conditions.harm = "critical";
+      const line = scarFromHarm(w.ctx(), me().id, "blunt", "선반이 무너져 팔과 어깨를 다쳤다");
+      expect(line ?? "").not.toContain("짧은 숨");
+      expect(line ?? "").not.toContain("먹은 귀");
+    }
   });
 });

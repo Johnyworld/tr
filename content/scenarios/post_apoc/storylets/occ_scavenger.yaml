@@ -94,6 +94,7 @@
   tags: [occ_scavenger]
   urgent: true
   when:
+    activities_none: [sleep]
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
     zones: [old_town, hospital_ruins, riverside]
     segments: [morning, day, evening]

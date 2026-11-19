@@ -150,9 +150,11 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
 }
 
 /** 빨리감기 중 스토리렛이 열릴 수 있게 되면 멈춘다 */
-export function createStoryletCheck(content: Content, options: { asleep?: boolean } = {}): InterruptCheck {
-  return ({ state, to }) => {
+export function createStoryletCheck(content: Content, options: { asleep?: boolean; activity?: string } = {}): InterruptCheck {
+  return ({ state: before, to }) => {
     if (Object.keys(content.storylets).length === 0) return null;
+    // 지금 하는 일로 조건을 본다 (when.activities): 활동의 시간은 아직 기록되기 전이다
+    const state = options.activity ? { ...before, lastActivity: options.activity } : before;
     const window = storyletWindow(state, content, to);
     if (window === "closed") return null;
     // 자는 동안·이야기 사이 간격 안에는 급한 일만 (나머지는 그 뒤에 열린다)
@@ -879,7 +881,11 @@ export function applyEffect(
   }
   if ("deed" in effect) {
     // GM이 이 장면의 판정(take_action)에서 같은 성격의 행적을 이미 남겼으면 겹쳐 남기지 않는다 (플레이 테스트 8: 같은 일이 두 줄)
-    const recent = Object.values(state.deeds).find((d) => d.actorId === playerId && !d.fabricatedBy && state.time - d.at <= 60 && d.tags.some((t) => effect.deed.tags.includes(t)));
+    // 이야기가 열린 뒤 GM이 남긴 행적은 성격이 달라도 이 장면의 같은 일이다 (플레이 테스트 11: "들것을 잡고 부상자를 날랐다"가 두 줄)
+    const openedAt = state.activeStorylet?.firedAt ?? Infinity;
+    const recent = Object.values(state.deeds).find(
+      (d) => d.actorId === playerId && !d.fabricatedBy && state.time - d.at <= 60 && (d.tags.some((t) => effect.deed.tags.includes(t)) || d.at >= openedAt),
+    );
     if (recent) return { line: `행적은 이미 기록됐다: ${sentence(recent.summary)}` };
     const { deed, visible } = recordDeed(ctx, { ...effect.deed, summary: fillStorylet(effect.deed.summary, vars), noisy: false });
     return {

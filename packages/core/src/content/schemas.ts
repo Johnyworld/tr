@@ -856,6 +856,14 @@ export function createContentSchemas(s: Scenario) {
         level_gte: z.number().int().optional(),
         /** 플레이어가 있는 구역 */
         zones: z.array(contentIdSchema).optional(),
+        /** 이 구역들에 있지 않을 때만 (플레이 테스트 11: 고향 동네에 와 있는데 "옛 동네 소식") */
+        zones_none: z.array(contentIdSchema).optional(),
+        /** 이야기가 열릴 때 주인공이 하던 일 (플레이 테스트 11: 자는 사람에게 "서 있지 말고", 보초 서는 사람에게 "걸으면 따라온다") */
+        activities: z.array(z.enum(ACTIVITIES)).min(1).optional(),
+        activities_none: z.array(z.enum(ACTIVITIES)).min(1).optional(),
+        /** 곁의 동행 수 (플레이 테스트 11: 동행이 있는데 "혼자 걷기엔 험해") */
+        companions_lte: z.number().int().min(0).optional(),
+        companions_gte: z.number().int().min(1).optional(),
         /** 우리 무리 구역에 있는지 */
         own_territory: z.boolean().optional(),
         /** 지금 구역의 주인: none 누구의 땅도 아님, own 우리, other 다른 무리 */

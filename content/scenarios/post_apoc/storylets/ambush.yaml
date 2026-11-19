@@ -11,6 +11,7 @@
   cooldown_days: 8
   weight: 0.8
   when:
+    companions_lte: 2
     road_danger_gte: 2
     own_territory: false
     # 매복자가 붉은연합 약탈조원이라 붉은연합 사람에게는 열지 않는다 (플레이 테스트 11: 같은 무리 조원이 신입을 털었다)

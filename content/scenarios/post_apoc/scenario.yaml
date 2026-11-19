@@ -1252,11 +1252,11 @@ scars:
   chance: 0.3
   max: 3
   traits:
-    - { trait: limp, wounds: [gunshot, pierce, bite, blunt, cut] }
-    - { trait: stiff_hand, wounds: [cut, bite, claw, gunshot] }
-    - { trait: face_scar, wounds: [cut, claw, other] }
-    - { trait: short_breath, wounds: [gunshot, pierce, blunt] }
-    - { trait: deaf_ear, wounds: [blunt, gunshot, other] }
+    - { trait: limp, wounds: [gunshot, pierce, bite, blunt, cut], parts: [다리, 무릎, 발목, 정강이, 허벅지, 종아리] }
+    - { trait: stiff_hand, wounds: [cut, bite, claw, gunshot], parts: [손, 손가락, 손목, 팔, 손등] }
+    - { trait: face_scar, wounds: [cut, claw, other], parts: [얼굴, 뺨, 이마, 눈가, 턱, 머리] }
+    - { trait: short_breath, wounds: [gunshot, pierce, blunt], parts: [가슴, 갈비, 옆구리, 몸통, 등짝] }
+    - { trait: deaf_ear, wounds: [blunt, gunshot, other], parts: [귀, 머리, 관자놀이] }
     - { trait: aching_wound }
 
 # 의식불명 중 곁의 사람 (12-90, *임시*): 쓰러질 때마다 한 번, 곁에 누가 있느냐로 코드가 정한다

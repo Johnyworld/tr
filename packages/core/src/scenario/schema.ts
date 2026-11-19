@@ -1023,7 +1023,8 @@ export const scenarioFileSchema = z
         chance: z.number().min(0).max(1),
         max: z.number().int().min(1).default(3),
         /** 붙을 수 있는 트레잇. wounds가 비면 어느 상처로든 */
-        traits: z.array(z.strictObject({ trait: id, wounds: z.array(id).default([]) })).min(1),
+        /** parts: 이 흉터가 남는 몸의 부위를 가리키는 말. 상처 원인 글에 어느 흉터의 부위 말이 나오면 그 부위가 맞는 흉터(또는 부위 없는 흉터)만 고른다 (플레이 테스트 11: 팔을 다쳤는데 "가슴을 다친 뒤로") */
+        traits: z.array(z.strictObject({ trait: id, wounds: z.array(id).default([]), parts: z.array(z.string().min(1)).default([]) })).min(1),
       })
       .optional(),
     /**

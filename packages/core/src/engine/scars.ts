@@ -10,7 +10,7 @@ import type { ToolContext } from "./toolkit.ts";
  * 상처 종류에 맞는 것 중 아직 없는 것, 반대 트레잇과 겹치지 않는 것만. 한 사람에 max개까지. 플레이어와 NPC가 같다 (원칙 6)
  * 무엇이 붙는지는 코드가 정하고(원칙 2), GM은 그 흔적을 서술한다
  */
-export function scarFromHarm(ctx: ToolContext, characterId: string, kind: string | null | undefined): string | null {
+export function scarFromHarm(ctx: ToolContext, characterId: string, kind: string | null | undefined, cause = ""): string | null {
   const rules = ctx.content.scenario.scars;
   const state = ctx.store.getState();
   const c = state.characters[characterId];
@@ -25,9 +25,13 @@ export function scarFromHarm(ctx: ToolContext, characterId: string, kind: string
   if (ctx.rng() >= rules.chance) return null;
   const defs = ctx.content.scenario.traits;
   const blocked = new Set(have.flatMap((t) => defs.find((d) => d.id === t)?.opposites ?? []));
-  const pool = rules.traits.filter(
+  const pool: typeof rules.traits = rules.traits.filter(
     (x) => !have.includes(x.trait) && !blocked.has(x.trait) && (x.wounds.length === 0 || (kind != null && x.wounds.includes(kind))),
   );
+  // 원인 글이 부위를 말하면 그 부위에 맞는 흉터만
+  const named = cause ? pool.filter((x) => x.parts.some((p) => cause.includes(p))) : [];
+  const mentions = cause && rules.traits.some((x) => x.parts.some((p) => cause.includes(p)));
+  if (mentions) pool.splice(0, pool.length, ...named, ...pool.filter((x) => x.parts.length === 0));
   if (!pool.length) return null;
   const pick = pool[Math.floor(ctx.rng() * pool.length)]!;
   const def = defs.find((d) => d.id === pick.trait)!;

@@ -230,6 +230,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    companions_lte: 0
     segments: [morning, day, evening]
   cast:
     walker: { extra: road_wanderer, label: 길동무 떠돌이, keep: road_wanderer }

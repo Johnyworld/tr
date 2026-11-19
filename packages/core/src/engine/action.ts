@@ -318,7 +318,8 @@ const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
 };
 
 /** 이야기를 두고 떠날 때 고른 것으로 치는 선택지 (판정 없는 것만) */
-const WALK_AWAY_CHOICES = ["leave", "ignore", "look_away", "pass", "walk_away", "move_on", "let_go", "decline", "refuse"];
+// 플레이 테스트 11: 외면하는 선택지 이름이 여럿이라 많은 이야기가 결과 없이 사라졌다 (무기고의 빈 자리의 say_nothing 등)
+const WALK_AWAY_CHOICES = ["leave", "ignore", "look_away", "pass", "walk_away", "move_on", "let_go", "decline", "refuse", "turn_away", "walk_on", "leave_it", "let_be", "say_nothing", "silent", "nothing", "shrug", "later", "hold_back", "stay_out", "not_now", "stay_silent", "back_off", "away"];
 
 export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
   const { store, content } = ctx;
@@ -608,7 +609,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
         if (bleed?.line) lines.push(bleed.display ? `${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.` : bleed.line);
         if (bleed?.display) displays.push(bleed.display);
         // 크게 다치면 흔적이 남을 수 있다 (12-156)
-        const scar = scarFromHarm(ctx, start.playerId, input.check.harm_kind);
+        const scar = scarFromHarm(ctx, start.playerId, input.check.harm_kind, `${input.check.harm_cause} ${input.intent}`);
         if (scar) lines.push(scar);
       }
       // 감염체에게 입은 상처는 감염될 수 있다 (잠복기는 캐릭터도 GM도 모른다)
@@ -872,7 +873,7 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
     const bleed = bleedFromHarm(ctx, targetId, wound);
     if (bleed?.line) lines.push(bleed.display ? `${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.` : bleed.line);
     if (bleed?.display) displays.push(bleed.display);
-    const scar = change ? scarFromHarm(ctx, targetId, wound) : null;
+    const scar = change ? scarFromHarm(ctx, targetId, wound, cause) : null;
     if (scar) lines.push(scar);
   }
   const after = ctx.store.getState().characters[targetId]!;
@@ -1005,7 +1006,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     for (;;) {
       const midnight = dayOf(cursor) * MINUTES_PER_DAY;
       const segmentEnd = Math.min(target, midnight);
-      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario, [createCampCheck(content, activity, deep), createStoryletCheck(content, { asleep: activity === "sleep" })]) });
+      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario, [createCampCheck(content, activity, deep), createStoryletCheck(content, { asleep: activity === "sleep", activity })]) });
       store.append({
         type: "time_advanced",
         activity,

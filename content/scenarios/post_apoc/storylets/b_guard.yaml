@@ -195,6 +195,7 @@
   title: 두레박이 긁는 소리
   tags: [village_life]
   when:
+    activities_none: [sleep]
     zones: [b_base]
     segments: [dawn, morning]
     day_gte: 2

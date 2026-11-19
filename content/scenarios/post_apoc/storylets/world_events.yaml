@@ -404,6 +404,7 @@
   fright_tags: [dog]
   tags: [world]
   when:
+    activities_none: [sleep, guard_duty]
     own_territory: false
     segments: [morning, day, evening]
     flags_none: [w_dog_fed]
@@ -435,6 +436,7 @@
   urgent: true
   tags: [world]
   when:
+    activities_none: [sleep]
     animal_companion: true
     own_territory: false
     segments: [evening, night]

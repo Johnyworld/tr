@@ -89,6 +89,7 @@
   title: 등 뒤를 맡긴 사람
   tags: [world]
   when:
+    activities_none: [sleep]
     day_gte: 3
     zone_owner: [none, other]
     segments: [morning, day, evening]

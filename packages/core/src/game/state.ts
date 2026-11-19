@@ -494,6 +494,8 @@ export function createGameSchemas(s: Scenario) {
       .nullable()
       .default(null),
     lastStoryletAt: z.number().int().nullable().default(null),
+    /** 주인공이 마지막으로 한 일 (이야기 조건 when.activities, 플레이 테스트 11). 이전 세이브는 null */
+    lastActivity: z.string().nullable().default(null),
     /** 의식불명 중 곁의 사람이 할 일을 정한 때 (12-90). 정신이 들면 비운다. 한 번 쓰러질 때 한 번만 정한다 */
     helplessAt: z.number().int().nullable().default(null),
     /** 회복 기준 시각: 마지막으로 다치거나 나은 때, 마지막으로 치료사에게 치료받은 날 */
@@ -1134,6 +1136,7 @@ export const EMPTY_STATE: GameState = {
   storyletLog: {},
   activeStorylet: null,
   lastStoryletAt: null,
+  lastActivity: null,
   helplessAt: null,
   recovery: { lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} },
   weather: null,
@@ -1811,6 +1814,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.from !== state.time) throw new Error(`시간이 어긋납니다: 현재 ${state.time}, 이벤트 ${event.from}`);
       if (event.to <= event.from) throw new Error("시간은 앞으로만 흐릅니다.");
       next.time = event.to;
+      next.lastActivity = event.activity;
       {
         const mission = activeMissionOf(next.missions, state.playerId);
         const placed = (zone: string | null) => !!mission && atMissionPlace(mission, zone, next.zones, next.factions);

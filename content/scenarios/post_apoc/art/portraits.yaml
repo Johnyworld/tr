@@ -619,3 +619,296 @@ faces:
       Fix her cross-eyed look. In each of her two eyes, place the dark iris exactly in the middle of the eye, with equal white showing on both sides of each iris, so both eyes look straight ahead at the viewer. Change only the irises; keep the eye shapes, eyelids and everything else exactly the same.
     subject: >-
       a young korean teenage girl of about sixteen with a clearly childlike youthful face, chubby round cheeks, small nose and mouth, slim small frame, black hair in two long braided pigtails hanging over her shoulders, freckles across her nose, shy nervous look, wearing a too-big grey t-shirt
+
+  # 10대 여성 머리 모양 다양하게 (긴 생머리, 웨이브, 포니테일, 단발, 똥머리 등. 짧은 머리는 빼고 단발 이상)
+  d_f33:
+    style: D
+    gender: female
+    seed: 2321
+    zoom: 1.14
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, bare head with very long straight glossy black hair parted in the middle flowing down past her chest on both sides, calm quiet eyes, wearing a faded collared school blazer over a white shirt
+  d_f34:
+    style: D
+    gender: female
+    seed: 2251
+    zoom: 1.15
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, long loose wavy light brown hair spilling over her shoulders, gentle hopeful smile, wearing a patched denim jacket
+  # 완성본은 사용자가 직접 손본 그림이다 (2026-11-19). 이 얼굴을 다시 그리면 그 손질이 사라진다
+  d_f35:
+    style: D
+    gender: female
+    seed: 2331
+    zoom: 1.08
+    colorize: true
+    # 정면에서는 포니테일이 거의 안 보인다: 묶은 머리 꼬리를 보이게 그려 넣는다
+    touchup:
+      - >-
+        Her hair is tied up in a high ponytail. Make the ponytail clearly visible: add a long, thick, slightly wavy black ponytail that comes out from the back of her head at the crown and hangs down behind her right shoulder, drawn in the same flat ink style. Keep her face, bangs, clothes and the background exactly the same.
+      # 보는 쪽 왼편 앞머리가 옆으로 넘어가 있다: 오른편처럼 이마 위로 내려오는 일자 뱅으로
+      - >-
+        Fix her bangs on the left side of the image: the hair there is swept aside, leaving the forehead uncovered. Make the bangs on the left side of the image fall straight down over her forehead to just above her eyebrow, matching the bangs on the right side of the image, so she has even full straight-across bangs. Keep her face, ponytail, clothes and background exactly the same.
+      # 머리는 그대로 두고 얼굴만 d_f36·d_f42처럼 어리고 귀엽게. 편집을 거듭하면 얼굴이 지저분해져서 마지막에 두고 깨끗한 피부를 함께 지시한다
+      - >-
+        Keep her hair, ponytail, bangs, clothes and background exactly the same, and change only her face to look younger and cuter, like a girl of about fifteen: rounder softer face with full chubby cheeks, a shorter chin, bigger round sparkling eyes, a small button nose and small soft lips, with a sweet innocent expression. Her skin is smooth, clean and clear, with no freckles, spots, dots, scratches or stray lines anywhere on her face.
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, head turned three-quarters to the side, black hair with soft wispy see-through bangs pulled up into a high ponytail, the long wavy ponytail clearly visible hanging down behind her over her shoulder, bright eyes and a small smile, wearing a worn track jacket zipped to the collar
+  d_f36:
+    style: D
+    gender: female
+    seed: 2343
+    zoom: 1.08
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about fifteen with a clearly childlike youthful face, chubby round cheeks, small nose and mouth, dark brown hair in a soft layered bob that falls just above her shoulders with the ends flicking outward, long wispy curtain bangs parted in the middle framing her eyes, calm curious eyes, wearing a too-big khaki field jacket
+  d_f37:
+    style: D
+    gender: female
+    seed: 2281
+    zoom: 1.17
+    colorize: true
+    # 똥머리가 양쪽 두 개로 나왔다: 정수리 가운데 하나로 합친다
+    touchup: >-
+      She has two hair buns, one on each side of her head. Change this to a single large round hair bun placed at the top center of her head, and fill the places where the two side buns were with her smooth dark brown hair. Keep her face, the loose wisps around her face and everything else exactly the same.
+    subject: >-
+      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, dark brown hair tied up in a messy round bun on top of her head with loose wisps around her face, cheeky grin, wearing a stained oversized sweatshirt
+  d_f38:
+    style: D
+    gender: female
+    seed: 2352
+    zoom: 1.12
+    colorize: true
+    # 땋은 머리가 안 보인다: 한쪽 어깨 앞으로 늘어뜨린 굵은 땋은 머리로 바꿔 그린다
+    touchup: >-
+      Change her loose hair into one thick braided plait: gather her black hair to one side and draw a single thick woven braid that hangs forward over her left shoulder down onto her chest, with the criss-cross braid pattern clearly drawn in the same flat ink style. Keep her face, bangs, clothes and the background exactly the same.
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, black hair neatly gathered into one thick plaited braid that hangs forward over her right shoulder down onto her chest, the woven braid clearly visible, thoughtful sad eyes, wearing a worn wool coat with an open collar
+  d_f39:
+    style: D
+    gender: female
+    seed: 2301
+    zoom: 1.15
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, shoulder-length black hair in a half-up style with the top section tied back, wary sharp eyes, wearing a dusty utility vest over a long-sleeve shirt
+  d_f40:
+    style: D
+    gender: female
+    seed: 2311
+    zoom: 1.4
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about fifteen with a clearly childlike youthful face, chubby round cheeks, small nose and mouth, medium-length layered dark hair tucked behind one ear with a plain hair clip, shy small smile, wearing a faded yellow raincoat
+
+  # 10대 여자 아이돌처럼 예쁜 얼굴
+  d_f41:
+    style: D
+    gender: female
+    seed: 2361
+    zoom: 1.23
+    colorize: true
+    subject: >-
+      a strikingly beautiful young korean teenage girl of about seventeen with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large clear eyes, defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs, soft faint smile, wearing a worn white cardigan over a grey t-shirt
+  d_f42:
+    style: D
+    gender: female
+    seed: 2371
+    zoom: 1.15
+    colorize: true
+    subject: >-
+      a strikingly beautiful young korean teenage girl of about sixteen with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large bright eyes, defined double eyelids, delicate small nose, small full lips, long soft wavy dark brown hair with wispy bangs, cheerful sweet smile, wearing a faded pastel windbreaker
+
+  # 머리 모양 다시 뽑기에서 나온 후보를 그대로 살린 얼굴 (--adopt)
+  # d_f33 후보 2323 (긴 생머리)
+  d_f43:
+    style: D
+    gender: female
+    seed: 2323
+    zoom: 1.08
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, bare head with very long straight glossy black hair parted in the middle flowing down past her chest on both sides, calm quiet eyes, wearing a faded collared school blazer over a white shirt
+  # d_f35 후보 2333 (포니테일 묘사로 나온 긴 웨이브)
+  d_f44:
+    style: D
+    gender: female
+    seed: 2333
+    zoom: 1.29
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, head turned three-quarters to the side, black hair with soft wispy see-through bangs pulled up into a high ponytail, the long wavy ponytail clearly visible hanging down behind her over her shoulder, bright eyes and a small smile, wearing a worn track jacket zipped to the collar
+  # d_f38 후보 2351 (뒤로 묶은 머리)
+  d_f45:
+    style: D
+    gender: female
+    seed: 2351
+    zoom: 1.19
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, black hair neatly gathered into one thick plaited braid that hangs forward over her right shoulder down onto her chest, the woven braid clearly visible, thoughtful sad eyes, wearing a worn wool coat with an open collar
+  # d_f38 후보 2353 (긴 생머리)
+  d_f46:
+    style: D
+    gender: female
+    seed: 2353
+    zoom: 1.08
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, black hair neatly gathered into one thick plaited braid that hangs forward over her right shoulder down onto her chest, the woven braid clearly visible, thoughtful sad eyes, wearing a worn wool coat with an open collar
+
+  # 젊은 남성 (10~30대) 12명: 뚱뚱한 셋, 10대 넷
+  d_m29:
+    style: D
+    gender: male
+    seed: 2401
+    zoom: 1.26
+    colorize: true
+    subject: >-
+      a chubby overweight korean man in his early twenties with a nerdy otaku look, round double-chinned face, thick black-rimmed glasses, shaggy unkempt black hair, awkward shy expression, wearing a stretched anime-print t-shirt under an open checked flannel shirt
+  d_m30:
+    style: D
+    gender: male
+    seed: 2523
+    zoom: 1.18
+    colorize: true
+    subject: >-
+      medium shot showing his head, shoulders and upper body, a big fat heavyset korean man in his early thirties, very large round body with a big belly and thick neck, wide full round face with a double chin, neatly combed short black hair, calm dignified gentle eyes, composed serious expression, wearing a clean but worn dark wool coat stretched over a buttoned shirt
+  d_m31:
+    style: D
+    gender: male
+    seed: 2532
+    zoom: 1.32
+    colorize: true
+    subject: >-
+      medium shot showing his head, shoulders and upper body, a cute chubby fat korean young man of about twenty, plump round body, round baby face with big puffy cheeks and a soft double chin, small crescent eyes squinting from a big happy smile, soft fluffy black hair with bangs, adorable cheerful look, wearing an oversized padded jacket
+  d_m32:
+    style: D
+    gender: male
+    seed: 2431
+    zoom: 1.45
+    colorize: true
+    subject: >-
+      a young korean teenage boy of about fifteen with a clearly boyish childlike youthful face, soft round cheeks, slim small frame, messy black hair with long bangs over his eyes, wary guarded look, wearing a too-big faded hoodie
+  d_m33:
+    style: D
+    gender: male
+    seed: 2441
+    zoom: 1.26
+    colorize: true
+    subject: >-
+      a young korean teenage boy of about sixteen with a clearly boyish youthful face, smooth skin, slim frame, short buzz-cut black hair, a small scrape on his cheek, bold cocky grin, wearing a dirty school uniform jacket over a t-shirt
+  d_m34:
+    style: D
+    gender: male
+    seed: 2451
+    zoom: 1.44
+    colorize: true
+    subject: >-
+      a young korean teenage boy of about seventeen with a clearly boyish youthful face, smooth skin, slim lanky frame, neat side-parted black hair, earnest serious eyes, wearing a worn windbreaker zipped up
+  d_m35:
+    style: D
+    gender: male
+    seed: 2461
+    zoom: 1.11
+    colorize: true
+    subject: >-
+      a young korean teenage boy of about fourteen with a clearly childlike youthful face, chubby round cheeks, small nose, short tousled brown hair, big curious eyes, wearing a patched oversized denim jacket
+  d_m36:
+    style: D
+    gender: male
+    seed: 2471
+    zoom: 1.34
+    colorize: true
+    subject: >-
+      a handsome korean man in his mid twenties, sharp jawline, short textured black hair swept up, confident calm eyes, light stubble, wearing a black tactical jacket
+  d_m37:
+    style: D
+    gender: male
+    seed: 2481
+    zoom: 1.23
+    colorize: true
+    subject: >-
+      a lean korean man in his late twenties, narrow face, shoulder-length black hair tied back in a small low ponytail, tired cynical eyes, wearing a long dusty coat with a scarf
+  d_m38:
+    style: D
+    gender: male
+    seed: 2491
+    zoom: 1.24
+    colorize: true
+    subject: >-
+      a gentle-looking korean man in his early twenties with soft features, wavy dyed light brown hair, round wire glasses, a faint kind smile, wearing a beige cardigan over a hoodie
+  d_m39:
+    style: D
+    gender: male
+    seed: 2501
+    zoom: 1.31
+    colorize: true
+    subject: >-
+      a rugged muscular korean man in his early thirties, square jaw, very short cropped hair, a small scar through one eyebrow, stern hard eyes, wearing a sleeveless work vest over a dark t-shirt
+  d_m40:
+    style: D
+    gender: male
+    seed: 2511
+    zoom: 1.2
+    colorize: true
+    subject: >-
+      a korean man in his mid thirties with a weary but warm face, slightly messy medium-length black hair, short neat beard, thoughtful eyes, wearing a faded military field jacket
+
+  # d_m30·d_m31 다시 뽑기에서 나온 나머지 후보를 그대로 살린 얼굴 (--adopt)
+  # d_m30 후보 2521
+  d_m41:
+    style: D
+    gender: male
+    seed: 2521
+    # 얼굴이 너무 크게 그려졌다: 자르는 영역을 넓혀 기준 얼굴 크기에 맞춘다
+    crop_scale: 1.5
+    colorize: true
+    subject: >-
+      medium shot showing his head, shoulders and upper body, a big fat heavyset korean man in his early thirties, very large round body with a big belly and thick neck, wide full round face with a double chin, neatly combed short black hair, calm dignified gentle eyes, composed serious expression, wearing a clean but worn dark wool coat stretched over a buttoned shirt
+  # d_m30 후보 2522
+  d_m42:
+    style: D
+    gender: male
+    seed: 2522
+    zoom: 1.29
+    colorize: true
+    subject: >-
+      medium shot showing his head, shoulders and upper body, a big fat heavyset korean man in his early thirties, very large round body with a big belly and thick neck, wide full round face with a double chin, neatly combed short black hair, calm dignified gentle eyes, composed serious expression, wearing a clean but worn dark wool coat stretched over a buttoned shirt
+  # d_m31 후보 2531
+  d_m43:
+    style: D
+    gender: male
+    seed: 2531
+    zoom: 1.23
+    colorize: true
+    subject: >-
+      medium shot showing his head, shoulders and upper body, a cute chubby fat korean young man of about twenty, plump round body, round baby face with big puffy cheeks and a soft double chin, small crescent eyes squinting from a big happy smile, soft fluffy black hair with bangs, adorable cheerful look, wearing an oversized padded jacket
+  # d_m31 후보 2533
+  d_m44:
+    style: D
+    gender: male
+    seed: 2533
+    zoom: 1.45
+    colorize: true
+    subject: >-
+      medium shot showing his head, shoulders and upper body, a cute chubby fat korean young man of about twenty, plump round body, round baby face with big puffy cheeks and a soft double chin, small crescent eyes squinting from a big happy smile, soft fluffy black hair with bangs, adorable cheerful look, wearing an oversized padded jacket
+  # d_m30·d_m31을 고치기 전 그림도 그대로 살린다 (완성본은 zoom까지 적용된 그림)
+  d_m45:
+    style: D
+    gender: male
+    seed: 2421
+    zoom: 1.32
+    colorize: true
+    subject: >-
+      a cute chubby korean young man of about twenty with a round baby face, full puffy cheeks, small friendly eyes, soft fluffy black hair with bangs, warm cheerful grin, wearing an oversized padded jacket
+  d_m46:
+    style: D
+    gender: male
+    seed: 2411
+    zoom: 1.29
+    colorize: true
+    subject: >-
+      a big heavyset stout korean man in his early thirties with a calm dignified gentle look, broad round face, neatly combed short black hair, kind steady eyes, composed serious expression, wearing a clean but worn dark wool coat over a buttoned shirt

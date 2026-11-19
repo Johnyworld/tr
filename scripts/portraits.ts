@@ -60,8 +60,11 @@ type Character = {
   zoom?: number;
   /** 화풍의 colorize 지시로 색을 입힌다 (흑백·회색조로 그려진 그림) */
   colorize?: boolean;
-  /** 마지막에 이 지시 하나만으로 Qwen 편집을 한 번 더 한다 (특정 부분만 고칠 때. 다른 지시와 섞으면 잘 안 먹힌다) */
-  touchup?: string;
+  /**
+   * 마지막에 이 지시 하나만으로 Qwen 편집을 한 번 더 한다 (특정 부분만 고칠 때. 다른 지시와 섞으면 잘 안 먹힌다).
+   * 목록이면 하나씩 차례로 편집한다 (머리는 머리대로, 얼굴은 얼굴대로)
+   */
+  touchup?: string | string[];
   /** 자르는 영역 배율 (기본 1). 고개를 돌려 얼굴 너비가 좁게 재지는 얼굴은 1보다 크게 (얼굴이 작아진다) */
   crop_scale?: number;
   /** 여백이 모자라지 않아도 정리(cleanup)를 한다: 원본에 액자·테두리가 그려진 그림. 글이면 정리 지시에 덧붙인다 */
@@ -112,6 +115,11 @@ const { values: opts, positionals } = parseArgs({
     zoom: { type: "string" },
     /** 얼굴 위치 기록이 없는 완성본을 모두 재서 채운다 */
     boxes: { type: "boolean", default: false },
+    /**
+     * 후보 그림을 그대로 완성본으로 삼는다: --adopt d_f45:d_f33 (d_f45의 seed로 candidates/d_f33/<seed>.png를 쓴다).
+     * 새 얼굴의 묘사는 후보를 뽑을 때의 묘사와 같아야 다시 그려도 같은 그림이 나온다
+     */
+    adopt: { type: "string" },
   },
 });
 
@@ -181,6 +189,24 @@ async function measureFinal(id: string): Promise<FinalBox | null> {
   boxes[id] = { x: f.x, y: f.y, w: f.width, h: f.height };
   saveBoxes();
   return boxes[id];
+}
+
+if (opts.adopt) {
+  for (const part of opts.adopt.split(",").map((x) => x.trim()).filter(Boolean)) {
+    const [id, from] = part.split(":");
+    const ch = config.faces[id!];
+    if (!ch || !from) fail(`--adopt는 새id:후보id (예: d_f45:d_f33). 받은 것: ${part}`);
+    const src = join(cacheDir, "candidates", from, `${ch.seed}.png`);
+    if (!existsSync(src)) fail(`후보가 없습니다: ${src}`);
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, `${id}.png`), readFileSync(src));
+    delete boxes[id!];
+    saveBoxes();
+    lock[id!] = hashOf(ch);
+    writeFileSync(lockPath, JSON.stringify(sortKeys(lock), null, 2) + "\n");
+    console.error(`  ${id}: ${from}의 후보 ${ch.seed}를 완성본으로`);
+  }
+  if (!opts.zoom && !opts.boxes) process.exit(0);
 }
 
 if (opts.boxes || opts.zoom) {
@@ -516,9 +542,13 @@ async function finishWorkflow(rawName: string, size: { width: number; height: nu
     image = ["col_rgb", 0];
   }
   if (ch.touchup && cleanup) {
-    // 특정 부분 고치기: 이 지시만으로 한 번 더 편집한다
-    Object.assign(wf, qwenEdit("tu", image, ch.touchup.trim()));
-    image = ["tu_rgb", 0];
+    // 특정 부분 고치기: 지시마다 따로 한 번씩 편집한다
+    const steps = typeof ch.touchup === "string" ? [ch.touchup] : ch.touchup;
+    steps.forEach((t, i) => {
+      const p = i === 0 ? "tu" : `tu${i}`;
+      Object.assign(wf, qwenEdit(p, image, t.trim()));
+      image = [`${p}_rgb`, 0];
+    });
   }
   if (ch.colorize && !colorizeHere) console.error(`  ! ${prefix}: colorize는 화풍의 colorize 지시와 cleanup 모델이 있어야 합니다`);
   const grade = ch.grade ?? style.grade;

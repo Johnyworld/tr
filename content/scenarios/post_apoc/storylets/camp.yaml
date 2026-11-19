@@ -14,7 +14,7 @@
   repeatable: true
   cooldown_days: 4
   fright: 1
-  fright_tags: [infected, dark]
+  fright_tags: [dark]
   when:
     camp_watched: true
     camp_danger_gte: 1
@@ -289,7 +289,7 @@
   repeatable: true
   cooldown_days: 4
   fright: 2
-  fright_tags: [infected, dark]
+  fright_tags: [dark]
   when:
     camp_watched: false
     camp_danger_gte: 1

@@ -1019,7 +1019,6 @@ romance:
   interest_affection: 3
   accept: { affection: 4, trust: 2 }
   flirt_moves: [persuade, deceive]
-  jealousy_chance: 0.2
   grief_nerves: 2
 
 # 포로 (12-55): 진 전투에서 물러나지 않았으면 부상 단계별 확률로 붙잡힌다 (항복하면 반드시). 갇힌 동안은 태그 captivity 이야기만 열린다
@@ -1602,12 +1601,9 @@ body:
     dark: { segments: [night], steps: 1 }
     companion: 1
     resist: { ability: nerve, per_point: 0.15 }
-    desensitize: [10, 30]
     decay_hours: 1
     panic_nerves: 0.3
     nerves_from: frayed
-    # 감염체를 아는 사람은 감염체가 덜 무섭다 (지식 1 이상이면 한 단계 덜)
-    lore: [{ skill: infected_lore, tag: infected, min: 1 }]
 
 # 날씨 (12-3, *임시*). 하루마다 계절별 무게로 고른다. visibility: 숨은 목격자 확률 배수 (작을수록 안 보인다)
 weather:
@@ -1667,17 +1663,10 @@ war:
       - { id: worry, label: 불안해한다, hint: "이러다 어떻게 되냐고 묻고 소문을 확인하려 든다", traits: [timid, cautious, curious, talkative] }
       - { id: reckon, label: 셈한다, hint: "감정 없이 며칠 버틸지, 누가 먼저 빠질지 따진다", traits: [cold, calculating, meticulous, ruthless] }
     default: { label: 조심스럽게 입에 올린다, hint: "지나가듯 한마디 하고 화제를 돌린다" }
-    # 다른 무리의 형편은 말이 모이는 곳에서 소문으로 듣는다. 무리마다 하루 35%, 멀쩡한 무리도 10%로 헛소문 (*임시*)
-    # exaggerate: 그곳에서 들은 무리 형편 소문이 한 단계 부풀려질 확률 (행적 소문은 부풀리지 않는다, 12-181). 상인 장터는 정확하고, 피난민이 모이는 성당은 과장이 심하다
+    # 다른 무리의 형편은 말이 모이는 곳에서 소문으로 듣는다. 무리마다 하루 35% (*임시*). 들은 말은 지금 형편 그대로다 (12-185)
     rumor:
       chance: 0.35
-      false_chance: 0.1
-      zones:
-        e_market: { exaggerate: 0.1 }
-        water_plant: { exaggerate: 0.2 }
-        rest_stop: { exaggerate: 0.3 }
-        old_town: { exaggerate: 0.4 }
-        cathedral: { exaggerate: 0.5 }
+      zones: [e_market, water_plant, rest_stop, old_town, cathedral]
   # 창고 사정 (며칠 치 남았는지)
   stock_labels:
     - { min_days: 20, label: 넉넉하다는 말 }

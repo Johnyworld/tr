@@ -757,8 +757,8 @@ export function createContentSchemas(s: Scenario) {
     background: z.enum(["enemy", "enemy_member", "kin", "sought", "creditor", "deserted", "family"]).optional(),
     /** 성적 위협을 가진 사람만 (12-59, 이 중 하나). 그 사람이 주인공에게 끌릴 때만 */
     menace: z.array(z.enum(["harass", "coerce", "assault"])).optional(),
-    /** 연애 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람, jealous 다른 연인을 알아챈 연인, rival_lover 주인공이 다가간 사람의 다른 연인 */
-    romance: z.enum(["lover", "suitor", "jealous", "rival_lover"]).optional(),
+    /** 연애 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람, ex 주인공과 헤어진 사람, jilted 주인공의 연인을 빼앗긴 사람 (12-185) */
+    romance: z.enum(["lover", "suitor", "ex", "jilted"]).optional(),
     /** 지금 주인공이 있는 구역에 있는 사람만 (찾던 사람을 마주치는 장면). 함께 다니는 사람은 늘 여기 있다 */
     here: z.boolean().default(false),
     /** 앞서 keep으로 기억해 둔 인물. 살아 있고 떠나지 않았고 붙잡히지 않았을 때만 채운다 */

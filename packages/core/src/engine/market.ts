@@ -62,8 +62,8 @@ export function describeMarket(content: Content, state: GameState): string | nul
   const owner = marketOwner(state);
   const zone = state.playerZone;
   if (!m || !owner || !zone) return null;
-  const talk = content.scenario.war?.talk?.rumor?.zones ?? {};
-  if (content.locations[zone]?.kind !== "base" && !talk[zone]) return null;
+  const talk = content.scenario.war?.talk?.rumor?.zones ?? [];
+  if (content.locations[zone]?.kind !== "base" && !talk.includes(zone)) return null;
   const label = (r: string) => content.scenario.resources.find((x) => x.id === r)?.label ?? r;
   const resources = [...new Set([...Object.values(m.kinds), ...Object.values(content.items).flatMap((i) => (i.resource ? [i.resource] : []))])];
   const dear = resources.filter((r) => resourceFactor(content, state, r, owner) >= m.note_above).map(label);

@@ -12,7 +12,6 @@
 - id: occ_carp_wave_eve
   title: 물결 전날 밤
   fright: 1
-  fright_tags: [infected]
   tags: [occ_carpenter]
   when:
     own_territory: true

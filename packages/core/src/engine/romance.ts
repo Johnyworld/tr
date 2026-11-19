@@ -21,7 +21,8 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome }
  * - 끌림은 인물 데이터 (attracted_to). 없으면 월드의 비율로 인물 id에서 정해진다 (판마다 같다). 성별만으로 정하지 않는다
  * - 마음: 끌리고 호감이 interest_affection 이상이면 마음이 있다. GM에게는 낌새(눈길)로만 보인다 (속마음을 말하지 않는다, 원칙 4)
  * - 다가가기(flirt)는 판정, 고백(confess)을 받아들일지는 코드가 정한다 (끌림·호감·신뢰, 이미 마음을 둔 사람이 있는지)
- * - 삼각관계: 연인이 있는 사람에게 다가가면 그 연인이 질투한다 / 연인이 둘이면 먼저 연인이 알아챈다 / 둘이 주인공에게 마음이 있으면 서로 앙금이 생긴다
+ * - 남의 연인: 연인이 있는 사람은 그 연인보다 주인공을 더 좋아할 때만 고백을 받는다. 받으면 그 연인은 버림받고 주인공을 원망한다 (이야기 배역 jilted)
+ *   연인을 둘 둔 데 따른 질투와, 주인공에게 마음 있는 사람들끼리의 앙금은 12-185에 뺐다 (GM의 연기로)
  * - 연인이 죽으면 마음이 무너진다
  */
 
@@ -88,66 +89,25 @@ export function loversOf(state: GameState, content: Content, id: string): string
   return [...out].filter((x) => state.characters[x] && !state.characters[x]!.dead).sort();
 }
 
-/** 이야기 배역 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람(연인이 아닌), jealous 다른 연인을 알아챈 연인, rival_lover 주인공이 마음을 둔 사람의 다른 연인 */
-export function romanceCast(state: GameState, content: Content, kind: "lover" | "suitor" | "jealous" | "rival_lover"): string[] {
+/**
+ * 이야기 배역 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람(연인이 아닌),
+ * ex 주인공과 헤어진 사람, jilted 주인공의 연인을 빼앗긴 사람 (그 연인과의 연애가 끝난 사람, 12-185)
+ */
+export function romanceCast(state: GameState, content: Content, kind: "lover" | "suitor" | "ex" | "jilted"): string[] {
   const me = state.playerId;
   const lovers = loversOf(state, content, me);
+  const free = (id: string) => !!state.characters[id] && !state.characters[id]!.dead && !state.characters[id]!.captive && !state.characters[id]!.away;
   if (kind === "lover") return lovers;
-  if (kind === "jealous") return lovers.filter((id) => state.romances[key(me, id)]?.jealousOf.length);
   if (kind === "suitor") {
     return Object.keys(state.characters)
-      .filter((id) => id !== me && !lovers.includes(id) && !state.characters[id]!.captive && !state.characters[id]!.away && hasInterest(state, content, id, me))
+      .filter((id) => id !== me && !lovers.includes(id) && free(id) && hasInterest(state, content, id, me))
       .sort();
   }
-  // 주인공이 다가간 사람(또는 연인)의 다른 연인
+  const ended = Object.values(state.romances ?? {}).filter((r) => r.stage === "ended");
+  if (kind === "ex") return ended.filter((r) => r.a === me || r.b === me).map((r) => (r.a === me ? r.b : r.a)).filter((id) => free(id) && !lovers.includes(id)).sort();
   const out = new Set<string>();
-  for (const id of new Set([...lovers, ...Object.keys(state.flirtDay ?? {})])) for (const other of loversOf(state, content, id)) if (other !== me) out.add(other);
-  return [...out].filter((id) => !state.characters[id]!.captive && !state.characters[id]!.away).sort();
-}
-
-/** 다른 연인이 생겼을 때: 하루마다 확률로 알아챈다 (함께 장면에 있으면 반드시). 알아채면 마음이 식고, 많이 식으면 떠난다 */
-export function runRomance(ctx: ToolContext): ToolDisplayEvent[] {
-  const r = rules(ctx.content);
-  const state = ctx.store.getState();
-  const me = state.playerId;
-  if (!r) return [];
-  const lovers = loversOf(state, ctx.content, me).filter((id) => state.romances[key(me, id)]?.stage === "lovers");
-  const displays: ToolDisplayEvent[] = [];
-  // 둘이 주인공에게 마음이 있고 한자리에 있으면 서로 앙금이 생긴다 (삼각관계)
-  const suitors = state.scene.present.filter((id) => hasInterest(state, ctx.content, id, me));
-  for (const x of suitors) for (const y of suitors) {
-    if (x < y && ctx.rng() < 0.5) {
-      ctx.store.append({ type: "relation_changed", from: x, to: y, delta: { trust: -1, affection: -1, respect: 0 }, reason: "같은 사람을 본다" });
-      ctx.store.append({ type: "relation_changed", from: y, to: x, delta: { trust: -1, affection: -1, respect: 0 }, reason: "같은 사람을 본다" });
-    }
-  }
-  for (const a of lovers) {
-    const romance = ctx.store.getState().romances[key(me, a)]!;
-    for (const b of lovers) {
-      if (a === b || romance.jealousOf.includes(b)) continue;
-      // 나중에 생긴 연인만 질투의 대상이다
-      if ((ctx.store.getState().romances[key(me, b)]?.since ?? 0) < romance.since) continue;
-      const together = state.scene.present.includes(a) && state.scene.present.includes(b);
-      if (!together && ctx.rng() >= r.jealousy_chance) continue;
-      noticeRival(ctx, a, b);
-    }
-    const rel = ctx.store.getState().relations[a]?.[me] ?? NEUTRAL_RELATION;
-    if (ctx.store.getState().romances[key(me, a)]?.jealousOf.length && rel.affection <= -1) {
-      ctx.store.append({ type: "romance_changed", a: me, b: a, stage: "ended" });
-      const fact = sentence(`${josa(playerCalls(state, ctx.content, a), "이/가")} 떠났다. 다른 사람이 있다는 것을 알았다`);
-      ctx.store.append({ type: "belief_added", characterId: me, belief: { id: `b_${ctx.store.getState().nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time } });
-      displays.push({ type: "belief", fact, sourceLabel: "본 것" });
-    }
-  }
-  return displays;
-}
-
-/** a가 주인공의 다른 연인 b를 알아챈다 */
-function noticeRival(ctx: ToolContext, a: string, b: string) {
-  const me = ctx.store.getState().playerId;
-  ctx.store.append({ type: "romance_jealousy", who: a, about: b });
-  ctx.store.append({ type: "relation_changed", from: a, to: me, delta: { trust: -2, affection: -3, respect: -1 }, reason: "다른 연인" });
-  ctx.store.append({ type: "relation_changed", from: a, to: b, delta: { trust: -2, affection: -2, respect: 0 }, reason: "질투" });
+  for (const l of lovers) for (const r of ended) if ((r.a === l || r.b === l) && r.a !== me && r.b !== me) out.add(r.a === l ? r.b : r.a);
+  return [...out].filter(free).sort();
 }
 
 /** 연인이 죽었다 (people.onPersonDeath에서) */
@@ -168,10 +128,7 @@ export function describeRomanceForGm(state: GameState, content: Content): string
   if (lovers.length) {
     lines.push(
       `연인: ${lovers
-        .map((id) => {
-          const j = state.romances[key(me, id)]!.jealousOf.map((x) => playerCalls(state, content, x));
-          return `${playerCalls(state, content, id)} (${id})${j.length ? ` · ${josa(j.join(", "), "을/를")} 알고 질투한다` : ""}`;
-        })
+        .map((id) => `${playerCalls(state, content, id)} (${id})`)
         .join(", ")}`,
     );
   }
@@ -202,12 +159,9 @@ const romanceTool = defineTool({
     if (!romanceAllowed(state, content, me, t)) return { ok: false, error: "연애는 둘 다 성인이고 살아 있을 때만 다룬다." };
     if (!state.scene.present.includes(t)) return { ok: false, error: "그 사람이 장면에 없다." };
     const name = playerCalls(state, content, t);
-    const lovers = loversOf(state, content, me);
     const romance = state.romances[key(me, t)];
     let display: ToolDisplayEvent = { type: "presence", npcName: name, action: "enter" };
     const lines: string[] = [];
-    // 연인이 보는 앞에서 다른 사람에게 다가가면 그 자리에서 알아챈다 (삼각관계)
-    const watchers = () => lovers.filter((l) => l !== t && state.scene.present.includes(l));
 
     if (input.action === "flirt") {
       const day = dayOf(state.time);
@@ -248,11 +202,6 @@ const romanceTool = defineTool({
       store.append({ type: "romance_changed", a: me, b: t, stage: "ended" });
       store.append({ type: "relation_changed", from: t, to: me, delta: { trust: -1, affection: -2, respect: 0 }, reason: "이별" });
       lines.push(`${josa(name, "과/와")} 헤어졌다.`);
-    }
-    for (const w of watchers()) {
-      if (input.action === "break_up") continue;
-      noticeRival(ctx, w, t);
-      lines.push(`연인 ${josa(playerCalls(state, content, w), "이/가")} 그 모습을 봤다.`);
     }
     lines.push("이 결과에 맞게 장면을 서술한다. 잠자리는 암전으로 넘긴다. 상대의 속마음을 단정해 말하지 않는다.");
     return { ok: true, resultText: lines.join("\n"), display };

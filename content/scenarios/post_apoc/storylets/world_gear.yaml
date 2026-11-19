@@ -8,7 +8,6 @@
     inf_b: { extra: infected_hungry, label: 뒤따라오는 감염체 }
     inf_c: { extra: infected_fresh, label: 빠르게 다가오는 감염체 }
   fright: 2
-  fright_tags: [infected]
   tags: [world]
   urgent: true
   repeatable: true

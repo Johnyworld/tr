@@ -9,7 +9,6 @@ import { endExpiredTruces } from "./diplomacy.ts";
 import { runResidentBodies } from "./residents.ts";
 import { infestationDay } from "../game/infestation.ts";
 import { factionTroubles, spreadTroubleRumors } from "./factionTalk.ts";
-import { runRomance } from "./romance.ts";
 import { runCaptivity, warCaptures } from "./captivity.ts";
 import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
@@ -91,7 +90,6 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     displays.push(...runDisasters(ctx, day));
     runCaptivity(ctx);
     // 연애: 다른 연인을 알아채기, 같은 사람을 보는 두 사람 (12-58)
-    displays.push(...runRomance(ctx));
     // 무리의 태도가 바뀐 소식 (이탈, 편들기): 우리 무리 일이면 전해 듣고, 아니면 소문으로
     for (const shift of result.shifts) {
       const now = ctx.store.getState();

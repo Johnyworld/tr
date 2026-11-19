@@ -554,7 +554,6 @@
     fence_a: { extra: infected_hungry, label: 철망에 붙은 감염체 }
     fence_b: { extra: infected_hungry, label: 철망을 긁는 감염체 }
   fright: 1
-  fright_tags: [infected]
   tags: [b_guard]
   repeatable: true
   urgent: true

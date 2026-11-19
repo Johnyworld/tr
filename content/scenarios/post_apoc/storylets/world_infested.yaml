@@ -7,7 +7,6 @@
     inf_a: { extra: infected_hungry, label: 길모퉁이의 감염체 }
     inf_b: { extra: infected_crawler, label: 차 밑의 감염체 }
   fright: 1
-  fright_tags: [infected]
   tags: [world]
   repeatable: true
   cooldown_days: 4  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
@@ -58,7 +57,6 @@
 - id: wi_infested_wall
   title: 담 밖에 모이는 것들
   fright: 1
-  fright_tags: [infected]
   tags: [world]
   repeatable: true
   cooldown_days: 3

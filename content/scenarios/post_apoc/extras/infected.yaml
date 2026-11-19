@@ -10,7 +10,6 @@
   kind: infected
   wound: bite
   fearsome: 1
-  fright_tags: [infected]
   rank: loner
   age: [16, 70]
   looks:
@@ -32,7 +31,6 @@
   kind: infected
   wound: claw
   fearsome: 1
-  fright_tags: [infected]
   rank: loner
   age: [16, 70]
   looks:
@@ -50,7 +48,6 @@
   kind: infected
   wound: bite
   fearsome: 2
-  fright_tags: [infected]
   rank: loner
   age: [16, 60]
   looks:

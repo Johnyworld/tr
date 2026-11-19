@@ -267,11 +267,11 @@ function stanceLines(state: GameState, content: Content, id: string): string[] {
   return [];
 }
 
-/** 이 인물이 들은 다른 무리 소문 (12-124): 무리마다 가장 최근 것. 틀렸을 수 있고, 이 인물은 들은 대로 믿는다 */
+/** 이 인물이 아는 다른 무리 형편 (12-124): 말이 모이는 곳에 머무는 사람은 오가는 말로 안다 */
 function rumorLines(state: GameState, content: Content, id: string): string[] {
   const heard = heardRumors(state, content, id);
   if (heard.length === 0) return [];
-  return [`이 인물이 들은 다른 무리 소문 (무리마다 가장 최근 것. 물으면 들은 대로 말한다. 맞는지는 이 인물도 모른다):\n${heard.map((h) => `  - ${h}`).join("\n")}`];
+  return [`이 인물이 오가는 말로 아는 다른 무리 형편 (말이 모이는 곳에 있다. 물으면 들은 말로 전한다):\n${heard.map((h) => `  - ${h}`).join("\n")}`];
 }
 
 /** 장면에 있는 NPC의 연기용 카드. secret, doesnt_know는 절대 넣지 않는다 */

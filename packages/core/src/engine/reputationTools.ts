@@ -329,7 +329,7 @@ export function spreadRumors(ctx: ToolContext): void {
       .map((c) => c.id);
     // 명성 (12-127): 무명이면 목격자의 무리 안에서만, 알려지면 말이 모이는 곳을 거쳐 다른 무리로, 이름나면 소문으로 들은 사람도 옮긴다
     const fame = ctx.content.scenario.fame;
-    const talk = ctx.content.scenario.war?.talk?.rumor?.zones ?? {};
+    const talk = ctx.content.scenario.war?.talk?.rumor?.zones ?? [];
     const tierOf = new Map<string, number>();
     const tier = (actor: string) => tierOf.get(actor) ?? (tierOf.set(actor, fameOf(state, ctx.content, actor).tier), tierOf.get(actor)!);
     const zoneOf = (id: string) => (ctx.content.npcs[id] ? npcZoneAt(ctx.content.npcs[id]!, state.time) : undefined);
@@ -348,7 +348,7 @@ export function spreadRumors(ctx: ToolContext): void {
               const a = state.characters[teller]?.factionId;
               if (a && a === state.characters[listener]?.factionId) return true;
               const zone = zoneOf(listener);
-              return tier(deed.actorId) >= fame.cross_from && !!zone && !!talk[zone];
+              return tier(deed.actorId) >= fame.cross_from && !!zone && talk.includes(zone);
             },
             relayRumor: (deed) => tier(deed.actorId) >= fame.relay_from,
           }

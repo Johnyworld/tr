@@ -234,7 +234,6 @@
   cast:
     biter: { extra: infected_hungry, label: 틈으로 들어온 감염체 }
   fright: 1
-  fright_tags: [infected]
   urgent: true
   tags: [grunt]
   repeatable: true

@@ -40,7 +40,6 @@
   ambush: true
   urgent: true
   fright: 2
-  fright_tags: [infected]
   tags: [road]
   repeatable: true
   cooldown_days: 10

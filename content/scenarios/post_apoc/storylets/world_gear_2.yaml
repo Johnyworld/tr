@@ -546,7 +546,6 @@
 - id: wg2_wire_night
   title: 담장 틈의 철사
   fright: 2
-  fright_tags: [infected]
   tags: [world]
   urgent: true
   repeatable: true

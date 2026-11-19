@@ -66,7 +66,7 @@ describe("명성", () => {
     expect(out.length).toBeGreaterThan(0);
     // 다른 무리 사람은 말이 모이는 곳(장터 등)에서 들은 사람이거나, 그 사람의 무리 동료다
     const talk = content.scenario.war!.talk!.rumor!.zones;
-    expect(out.some((n) => talk[npcZoneAt(content.npcs[n]!, known.state().time) ?? ""])).toBe(true);
+    expect(out.some((n) => talk.includes(npcZoneAt(content.npcs[n]!, known.state().time) ?? ""))).toBe(true);
   });
 });
 

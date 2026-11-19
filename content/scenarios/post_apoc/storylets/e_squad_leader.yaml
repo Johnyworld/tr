@@ -497,7 +497,6 @@
 - id: es_underpass
   title: 굴다리 밑의 숨소리
   fright: 1
-  fright_tags: [infected]
   tags: [e_squad_leader]
   when:
     zones: [power_plant, riverside]

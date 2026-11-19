@@ -67,12 +67,11 @@ describe("공포", () => {
     expect(brave.fear()).toBe("calm");
   });
 
-  it("마주할 때마다 노출이 쌓이고, 문턱을 넘으면 덜 오른다", () => {
+  it("여러 번 겪어도 덜 무서워지지 않는다 (둔감해짐은 12-185에 뺐다)", () => {
     const env = setup();
-    for (let i = 0; i < 10; i++) env.store.append({ type: "fear_exposed", characterId: env.me().id });
+    for (let i = 0; i < 30; i++) env.store.append({ type: "fear_exposed", characterId: env.me().id });
     frighten(env.ctx, 2, "감염체 무리");
-    expect(env.fear()).toBe("tense");
-    expect(env.store.getState().fearExposure[env.me().id]).toBe(11);
+    expect(env.fear()).toBe("scared");
   });
 
   it("마음이 무너져 있으면 한 단계 더", () => {
@@ -123,15 +122,6 @@ describe("공포", () => {
     if (out.ok) expect(out.resultText).toContain("공포");
   });
 
-  it("감염체 지식이 있으면 감염체가 부른 공포는 한 단계 덜 오른다 (다른 공포는 그대로)", () => {
-    const env = setup();
-    env.me().skills.infected_lore = 1;
-    frighten(env.ctx, 2, "감염체 무리", ["infected"]);
-    expect(env.fear()).toBe("tense");
-    frighten(env.ctx, 1, "매복");
-    expect(env.fear()).toBe("scared");
-  });
-
   it("공포증: 무서워하는 것이 나오면 한 단계 더, 보통 사람에게 무섭지 않은 장면(fright 0)에도 온다", () => {
     const plain = setup();
     frighten(plain.ctx, 0, "지하 계단", ["enclosed"]);
@@ -140,7 +130,7 @@ describe("공포", () => {
     phobic.me().traits = ["claustrophobia"];
     frighten(phobic.ctx, 0, "지하 계단", ["enclosed"]);
     expect(phobic.fear()).toBe("tense");
-    frighten(phobic.ctx, 1, "지하의 감염체", ["infected", "enclosed"]);
+    frighten(phobic.ctx, 1, "지하의 감염체", ["enclosed"]);
     expect(phobic.fear()).toBe("panic"); // 1 + 공포증 1
   });
 

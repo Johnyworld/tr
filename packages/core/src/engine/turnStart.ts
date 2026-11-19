@@ -1,6 +1,5 @@
 import { disasterWeather } from "./disasters.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
-import { checkRumorsOnSite } from "./factionTalk.ts";
 import { runRestock } from "./gear.ts";
 import { runPromotions } from "./people.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
@@ -67,11 +66,9 @@ export function runAfterTimeAdvance(ctx: ToolContext): ToolDisplayEvent[] {
   const storylets = runStorylets(ctx);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
   const healed = runNaturalRecovery(ctx);
-  // 다른 무리의 땅에 오면 그 무리에 대해 들은 소문을 직접 확인한다 (12-105)
-  const checked = checkRumorsOnSite(ctx);
   // 무서운 것이 장면에 없으면 공포가 가라앉는다 (12-95)
   const calmed = runFearDecay(ctx);
   // 술·진통제·각성제 기운이 빠진다 (12-157)
   const worn = runWearOff(ctx);
-  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed, ...checked, ...calmed, ...worn];
+  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed, ...calmed, ...worn];
 }

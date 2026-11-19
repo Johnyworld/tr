@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { describePlayerState } from "./context.ts";
-import { checkRumorsOnSite, factionTroubles, heardRumors, spreadTroubleRumors, troubleAttitude, troubleLine } from "./factionTalk.ts";
+import { factionTroubles, heardRumors, spreadTroubleRumors, troubleAttitude, troubleLine } from "./factionTalk.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { loadRealContent } from "../testing.ts";
@@ -72,81 +72,29 @@ describe("무리 형편", () => {
     expect(spreadTroubleRumors(ctx).some((d) => d.type === "belief" && d.fact.startsWith(content.factions[me().factionId]!.name))).toBe(false);
   });
 
-  /** 굴림을 차례로 돌려주는 난수 (다 쓰면 마지막 값) */
-  const seq = (...xs: number[]) => () => (xs.length > 1 ? xs.shift()! : xs[0]!);
-  const heardAbout = (state: ReturnType<ReturnType<typeof setup>["state"]>, me: string, f: string) =>
-    (state.beliefs[me] ?? []).filter((b) => b.topic === `faction_trouble:${f}`);
-
-  it("성당에서는 부풀려 듣고 (정확도 approximate), 장터에서는 그대로 듣는다 (exact)", () => {
-    for (const [zone, expected] of [["cathedral", "approximate"], ["e_market", "exact"]] as const) {
-      const { store, state, me } = setup();
-      const other = Object.keys(state().factions).find((f) => f !== me().factionId)!;
-      for (const f of Object.values(state().factions)) for (const r of Object.keys(f.resources)) f.resources[r] = 99999;
-      state().factions[other]!.morale = -1;
-      state().playerZone = zone;
-      // 듣는다(0) → 고른다(0) → 부풀릴지 굴림 0.3 (성당 0.5보다 작고, 장터 0.1보다 크다) → 나머지 무리는 듣지 않는다(0.99)
-      spreadTroubleRumors({ store, rng: seq(0, 0, 0.3, 0.99), content });
-      const b = heardAbout(state(), me().id, other)[0]!;
-      expect(b.accuracy).toBe(expected);
-      expect(b.fact).toContain(expected === "exact" ? "가라앉음" : "흉흉함");
-    }
-  });
-
-  it("그 무리의 땅에 가면 들은 소문을 직접 보고 확인한다 (한 번만, 새 소문이 오면 다시)", () => {
-    const { store, state, me } = setup();
-    const ctx = { store, rng: () => 0, content };
-    const zone = Object.entries(state().zones).find(([, z]) => z.owner && z.owner !== me().factionId)![0];
-    const other = state().zones[zone]!.owner!;
-    for (const r of Object.keys(state().factions[other]!.resources)) state().factions[other]!.resources[r] = 99999;
-    state().factions[other]!.morale = 1;
-    const rumor = (fact: string) =>
-      store.append({ type: "belief_added", characterId: me().id, belief: { id: `b_${state().nextBeliefNo}`, fact, source: "rumor", accuracy: "false", learnedAt: state().time, topic: `faction_trouble:${other}` } });
-    rumor("헛소문");
-    expect(checkRumorsOnSite(ctx)).toEqual([]); // 아직 그 땅이 아니다
-    state().playerZone = zone;
-    const seen = checkRumorsOnSite(ctx);
-    expect(seen[0]?.type === "belief" && seen[0].fact).toContain("들은 소문만큼 어려워 보이지는 않았다");
-    expect(seen[0]?.type === "belief" && seen[0].note).toContain("헛소문");
-    expect(checkRumorsOnSite(ctx)).toEqual([]);
-    state().time += 60;
-    rumor("또 다른 말");
-    expect(checkRumorsOnSite(ctx)).toHaveLength(1);
-  });
-
-  it("멀쩡한 무리도 헛소문이 돈다 (정확도 false, 실제로 겪지 않는 어려움)", () => {
+  it("들은 말은 지금 형편 그대로다. 멀쩡한 무리의 헛소문은 없다 (12-185)", () => {
     const { store, state, me } = setup();
     for (const f of Object.values(state().factions)) {
       f.morale = 1;
       for (const r of Object.keys(f.resources)) f.resources[r] = 99999;
     }
-    state().playerZone = "e_market";
-    spreadTroubleRumors({ store, rng: () => 0, content });
+    state().playerZone = "cathedral";
+    expect(spreadTroubleRumors({ store, rng: () => 0, content })).toEqual([]);
     const other = Object.keys(state().factions).find((f) => f !== me().factionId)!;
-    const b = heardAbout(state(), me().id, other)[0]!;
-    expect(b.accuracy).toBe("false");
-    expect(b.fact.startsWith(content.factions[other]!.name)).toBe(true);
+    state().factions[other]!.morale = -1;
+    spreadTroubleRumors({ store, rng: () => 0, content });
+    const b = (state().beliefs[me().id] ?? []).find((x) => x.topic === `faction_trouble:${other}`)!;
+    expect(b.accuracy).toBe("exact");
+    expect(b.fact).toContain("가라앉음");
   });
 
-  it("말이 모이는 곳에 머무는 사람도 소문을 듣고 지우지 않는다. 카드에는 무리마다 가장 최근 것 (12-124)", () => {
-    const { store, state, me } = setup();
+  it("말이 모이는 곳에 머무는 사람은 기록 없이 지금 형편을 안다 (12-124, 12-185)", () => {
+    const { state, me } = setup();
     const other = Object.keys(state().factions).find((f) => f !== me().factionId)!;
     const merchant = Object.values(content.npcs).find((n) => npcZoneAt(n, state().time) === "e_market" && n.faction !== other && !state().characters[n.id]!.captive)!;
+    expect(heardRumors(state(), content, merchant.id).some((h) => h.startsWith(content.factions[other]!.name))).toBe(false);
     state().factions[other]!.morale = -3;
-    state().playerZone = "south_fields"; // 주인공은 장터에 없어도
-    const ctx = { store, rng: () => 0, content };
-    spreadTroubleRumors(ctx);
-    const first = (state().beliefs[merchant.id] ?? []).filter((b) => b.topic === `faction_trouble:${other}`);
-    expect(first.length).toBe(1);
-    expect(heardRumors(state(), content, merchant.id).some((h) => h.startsWith(content.factions[other]!.name) && h.includes("오늘 들음"))).toBe(true);
-    // 며칠 뒤 다른 소문을 들어도 옛 것은 기억에 남고, 카드에는 최근 것만
-    state().time += 4 * 24 * 60;
-    state().factions[other]!.morale = 0;
-    for (const r of Object.keys(state().factions[other]!.resources)) state().factions[other]!.resources[r] = 0;
-    spreadTroubleRumors(ctx);
-    const all = (state().beliefs[merchant.id] ?? []).filter((b) => b.topic === `faction_trouble:${other}`);
-    expect(all.length).toBeGreaterThanOrEqual(2);
-    const lines = heardRumors(state(), content, merchant.id).filter((h) => h.startsWith(content.factions[other]!.name));
-    expect(lines.length).toBe(1);
-    expect(lines[0]).toContain("오늘 들음");
+    expect(heardRumors(state(), content, merchant.id).some((h) => h.startsWith(content.factions[other]!.name))).toBe(true);
+    expect((state().beliefs[merchant.id] ?? []).filter((b) => b.topic?.startsWith("faction_trouble"))).toEqual([]);
   });
 });

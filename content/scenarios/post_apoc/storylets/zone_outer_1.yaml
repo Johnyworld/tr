@@ -55,7 +55,7 @@
 - id: zo1_sub_shutter
   title: 셔터 너머의 소리
   fright: 1
-  fright_tags: [infected, enclosed]
+  fright_tags: [enclosed]
   tags: [world]
   when:
     zones: [subway_hub]

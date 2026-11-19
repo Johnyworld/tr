@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
 import { describePlayerState } from "./context.ts";
-import { attractionOf, hasInterest, loversOf, romanceCast, runRomance } from "./romance.ts";
+import { attractionOf, hasInterest, loversOf, romanceCast } from "./romance.ts";
 import { loadRealContent } from "../testing.ts";
 
 /** 연애와 삼각관계 (12-58) */
@@ -53,7 +53,7 @@ describe("연애", () => {
     expect(describePlayerState(w.state(), content)).toContain("연인:");
   });
 
-  it("삼각관계: 연인이 보는 앞에서 다른 사람에게 다가가면 질투하고, 많이 식으면 떠난다", () => {
+  it("연인을 둘 둬도 엔진은 질투하지 않는다. 헤어지면 헤어진 사람(ex) 배역이 된다 (12-185)", () => {
     const w = open(false ? false : true, () => 0.01);
     const [a, b] = men(w);
     like(w, a!, "player", 6);
@@ -61,16 +61,12 @@ describe("연애", () => {
     enter(w, a!);
     enter(w, b!);
     w.executeTool("romance", { target: a, action: "confess", approach: null, stat: null });
-    // 둘이 한자리에서 주인공을 보면 서로 앙금
-    runRomance(w.ctx());
-    expect((w.state().relations[a!]?.[b!]?.trust ?? 0) + (w.state().relations[b!]?.[a!]?.trust ?? 0)).toBeLessThan(0);
     const flirt = w.executeTool("romance", { target: b, action: "flirt", approach: "persuade", stat: "charm" });
-    expect(flirt.ok && flirt.resultText).toContain("그 모습을 봤다");
-    expect(romanceCast(w.state(), content, "jealous")).toContain(a);
+    expect(flirt.ok && flirt.resultText).not.toContain("그 모습을 봤다");
     w.executeTool("romance", { target: b, action: "confess", approach: null, stat: null });
-    like(w, a!, "player", -5, 0);
-    runRomance(w.ctx());
-    expect(loversOf(w.state(), content, "player")).not.toContain(a);
+    expect(loversOf(w.state(), content, "player")).toEqual(expect.arrayContaining([a, b]));
+    w.executeTool("romance", { target: a, action: "break_up", approach: null, stat: null });
+    expect(romanceCast(w.state(), content, "ex")).toContain(a);
   });
 
   it("다른 사람의 연인을 빼앗으면 버림받은 쪽이 원망하고, 연인이 죽으면 마음이 무너진다", async () => {
@@ -83,9 +79,11 @@ describe("연애", () => {
     like(w, a!, "player", 6);
     enter(w, a!);
     w.executeTool("romance", { target: a, action: "flirt", approach: "persuade", stat: "charm" });
-    expect(romanceCast(w.state(), content, "rival_lover")).toContain(other);
+    // 다가가기만으로는 연적이 나서지 않는다. 빼앗은 뒤에야 빼앗긴 사람(jilted)이 된다 (12-185)
+    expect(romanceCast(w.state(), content, "jilted")).not.toContain(other);
     const out = w.executeTool("romance", { target: a, action: "confess", approach: null, stat: null });
     expect(out.ok && out.resultText).toContain("원망한다");
+    expect(romanceCast(w.state(), content, "jilted")).toContain(other);
     expect(w.state().relations[other]?.player?.trust).toBeLessThan(0);
     expect(b).toBeTruthy();
     const { onLoverDeath } = await import("./romance.ts");

@@ -333,7 +333,6 @@
 - id: b_sl_gyeongtae_freeze
   title: 총을 내린 손
   fright: 2
-  fright_tags: [infected]
   tags: [b_squad_leader]
   when:
     zones: [old_town, hospital_ruins, riverside, water_plant, south_fields]

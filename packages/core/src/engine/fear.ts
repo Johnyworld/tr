@@ -4,13 +4,13 @@ import type { GameState } from "../game/state.ts";
 import { segmentOf } from "../rules/time.ts";
 import { incapacitatingSymptom, trackOf } from "../scenario/scenario.ts";
 import { changeCondition, shakeNerves } from "./body.ts";
-import { effectiveSkill, traitsOf } from "./traits.ts";
+import { traitsOf } from "./traits.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
  * 공포 (기획서 4.5.1, 12-95): 그 자리에서 오르고 몇 시간 안에 빠지는 단기 상태. 판정 보정만 준다.
- * - 오르는 양은 코드가 정한다: 계기의 단계 + 어둠 - 동행 ± 트레잇 - 둔감해짐 (+ 마음이 무너져 있으면 1), 능력으로 한 단계 버틴다
- * - 공포를 부른 것을 마주할 때마다 노출이 쌓인다 (fear_exposed). 문턱을 넘을 때마다 덜 오른다
+ * - 오르는 양은 코드가 정한다: 계기의 단계 + 어둠 - 동행 ± 트레잇 (+ 마음이 무너져 있으면 1), 능력으로 한 단계 버틴다
+ * - 겪을수록 둔감해지는 것과 아는 것(지식 스킬)이 덜 무서운 것은 12-185에 뺐다
  * - 공포를 부른 것이 장면에 없으면 시간마다 가라앉고, 자고 나면 평정
  * - 주인공만 계산한다 (NPC는 다음 단계)
  */
@@ -26,9 +26,9 @@ function levelIndex(ctx: ToolContext, state: GameState, id: string, trackId: str
   return Math.max(0, track.levels.findIndex((l) => l.id === state.characters[id]?.conditions[trackId]));
 }
 
-/** 공포의 태그 (공포증·지식이 아는 것). GM이 즉흥 장면에 고를 수 있는 값 */
+/** 공포의 태그 (공포증이 무서워하는 것). GM이 즉흥 장면에 고를 수 있는 값 */
 export function fearTagIds(s: import("../scenario/schema.ts").Scenario): string[] {
-  return [...new Set([...s.traits.flatMap((t) => t.effects?.phobia ?? []), ...(s.body?.fear?.lore ?? []).map((l) => l.tag)])].sort();
+  return [...new Set(s.traits.flatMap((t) => t.effects?.phobia ?? []))].sort();
 }
 
 /** GM이 고르는 take_action.fright의 이름 */
@@ -49,14 +49,10 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
   const phobia = [...tags, ...(dark ? ["dark"] : [])].some((t) => fears.has(t));
   if (base <= 0 && !phobia) return EMPTY;
 
-  const exposure = state.fearExposure[me.id] ?? 0;
   let steps = base + (phobia ? 1 : 0);
   if (dark) steps += f.dark.steps;
   if (activeCompanions(state).length > 0) steps -= f.companion;
   steps += traitsOf(ctx.content, me).reduce((n, t) => n + (t.effects.fear ?? 0), 0);
-  steps -= f.desensitize.filter((n) => exposure >= n).length;
-  // 아는 것은 덜 무섭다 (감염체 지식 → 감염체)
-  if (f.lore.some((l) => tags.includes(l.tag) && effectiveSkill(ctx.content, me, l.skill) >= l.min)) steps -= 1;
   const nerves = ctx.content.scenario.body?.nerves;
   if (f.nerves_from && nerves) {
     const from = trackOf(ctx.content.scenario, nerves.track).levels.findIndex((l) => l.id === f.nerves_from);
@@ -64,7 +60,6 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
   }
   const hold = Math.min(0.8, Math.max(0, f.resist.per_point * (me.stats[f.resist.ability] ?? 0)));
   if (steps > 0 && ctx.rng() < hold) steps -= 1;
-  ctx.store.append({ type: "fear_exposed", characterId: me.id });
 
   if (steps <= 0) return { lines: [`${josa(me.name, "은/는")} 두려움을 눌러 참았다 (${cause}). 공포가 오르지 않았다.`], displays: [] };
   const c = changeCondition(ctx, me.id, f.track, steps, "fear", cause);

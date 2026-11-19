@@ -678,13 +678,11 @@ export const scenarioFileSchema = z
           .strictObject({
             attitudes: z.array(z.strictObject({ id, label: z.string().min(1), hint: z.string().min(1), traits: z.array(id).min(1) })).min(1),
             default: z.strictObject({ label: z.string().min(1), hint: z.string().min(1) }),
-            /** 다른 무리의 형편이 소문으로 들리는 곳과 하루 확률 (무리마다) */
-            /** exaggerate: 그곳에서 들은 말이 한 단계 부풀려질 확률 (장터는 정확하고 피난민 사이는 과장이 심하다). false_chance: 멀쩡한 무리의 헛소문 */
+            /** 다른 무리의 형편이 소문으로 들리는 곳(말이 모이는 곳)과 하루 확률 (무리마다). 들은 말은 그 무리의 지금 형편 그대로다 (부풀림·헛소문은 12-185에 뺐다) */
             rumor: z
               .strictObject({
-                zones: z.record(id, z.strictObject({ exaggerate: z.number().min(0).max(1) })),
+                zones: z.array(id).min(1),
                 chance: z.number().min(0).max(1),
-                false_chance: z.number().min(0).max(1).default(0),
               })
               .optional(),
           })
@@ -827,7 +825,6 @@ export const scenarioFileSchema = z
         /** 다가가기에 쓰는 판정 */
         flirt_moves: z.array(id).min(1),
         /** 다른 연인이 생겼을 때 하루에 알아챌 확률 (함께 장면에 있으면 반드시) */
-        jealousy_chance: z.number().min(0).max(1),
         /** 연인이 죽으면 마음 트랙이 오르는 단계 */
         grief_nerves: z.number().int().min(0),
       })
@@ -1441,16 +1438,12 @@ export const scenarioFileSchema = z
             companion: z.number().int().min(0),
             /** 한 단계 버틸 확률: 능력 1당 per_point (최대 0.8) */
             resist: z.strictObject({ ability: id, per_point: z.number().min(0).max(1) }),
-            /** 둔감해짐: 공포를 부른 것을 마주한 횟수가 문턱을 넘을 때마다 오르는 양이 한 단계 준다 */
-            desensitize: z.array(z.number().int().positive()),
             /** 공포를 부른 것이 장면에 없으면 이 시간마다 한 단계 가라앉는다. 자고 나면 첫 단계 */
             decay_hours: z.number().positive(),
             /** 마지막 단계(공황)에 이르면 마음 트랙이 오를 확률 (마음 규칙의 버티기도 거친다) */
             panic_nerves: z.number().min(0).max(1),
             /** 마음 트랙이 이 단계 이상이면 공포가 한 단계 더 오른다 */
             nerves_from: id.optional(),
-            /** 아는 것은 덜 무섭다: 계기의 fright_tags에 tag가 있고 이 스킬이 min 이상이면 한 단계 덜 오른다 (감염체 지식 → 감염체) */
-            lore: z.array(z.strictObject({ skill: id, tag: id, min: z.number().int() })).default([]),
           })
           .optional(),
       })
@@ -1594,7 +1587,6 @@ export const scenarioFileSchema = z
       for (const [season, table] of Object.entries(s.market.seasons)) for (const r of Object.keys(table)) if (!resources.has(r)) problem(`market.seasons.${season}: 알 수 없는 자원 ${r}`);
     }
     if (s.leverage) for (const m of [s.leverage.bribe.move, s.leverage.blackmail.move]) if (!moves.has(m)) problem(`leverage: 알 수 없는 행동 ${m}`);
-    for (const l of s.body?.fear?.lore ?? []) if (!moves.has(l.skill)) problem(`body.fear.lore: 알 수 없는 스킬 ${l.skill}`);
     for (const track of s.condition_tracks) {
       const fatal = track.levels.findIndex((l) => l.fatal);
       if (fatal !== -1 && fatal !== track.levels.length - 1) problem(`condition_tracks.${track.id}: fatal은 마지막 단계여야 한다`);

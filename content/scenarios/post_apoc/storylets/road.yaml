@@ -319,7 +319,6 @@
     inf_b: { extra: infected_hungry, label: 고개를 드는 감염체 }
     inf_c: { extra: infected_crawler, label: 버스 밑의 감염체 }
   fright: 2
-  fright_tags: [infected]
   tags: [road]
   repeatable: true
   cooldown_days: 5  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다

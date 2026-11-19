@@ -7,8 +7,9 @@
 #
 # 1. 연애: 눈길 rm_glance → 불가 rm_fireside, 바깥에서 지켜 준 사람 rm_guarded_outside,
 #    연인과의 새벽 rm_morning_after, 다친 연인 rm_lover_hurt, 떠나보내는 날 rm_lover_sent_away, 연인과 무리 사이 rm_lover_or_squad
-# 2. 질투·삼각관계: 두 사람 rm_two_suitors, 연인 앞의 다른 사람 rm_lover_and_suitor, 추궁 rm_jealous_confront (keep: rm_ex)
-#    → (rm_split) 헤어진 사람 rm_ex_again, 연적 rm_rival_meet
+# 2. 삼각관계: 두 사람 rm_two_suitors, 연인 앞의 다른 사람 rm_lover_and_suitor,
+#    헤어진 사람 rm_ex_again (배역 ex), 연인을 빼앗긴 사람 rm_rival_meet (배역 jilted, 고백으로 남의 연인을 빼앗은 뒤)
+#    연인을 둘 둔 데 따른 질투(추궁 rm_jealous_confront)는 12-185에 뺐다
 # 3. 성적 위협 (keep: rm_menace, 모두 rm_menaced를 세운다)
 #    괴롭힘: 길에서 rm_harass_road, 우리 무리 안에서 rm_harass_camp → (rm_harass_ignored) 어두운 곳 rm_harass_escalate
 #    시도: rm_assault_dark / 거래 조건: rm_coerce_trade → (rm_coerce_owed) rm_coerce_collect
@@ -422,60 +423,14 @@
         - relation: { who: other, axis: affection, delta: -2 }
         - npc_relation: { from: other, to: lover, axis: affection, delta: -2 }
 
-- id: rm_jealous_confront
-  title: 누구야
-  tags: [world]
-  urgent: true
-  when:
-    has_lover: true
-    segments: [evening, night]
-    flags_none: [rm_confronted]
-  cast:
-    lover: { romance: jealous, keep: rm_ex }
-  setup: '{lover:이/가} 막사 뒤에서 기다리고 있었다. 팔짱을 끼고, 벽에 기대지도 않고. "다른 사람 있지. 다 들었어. 아니, 봤어."'
-  ai_direction: 연인은 주인공에게 다른 연인이 있다는 것을 알아챘다(엔진의 질투). 무엇을 알고 있는지 다 말하지 않고 떠본다. 화보다 상처가 먼저 보인다. 거짓말이 들키면 끝이다. 끝내자고 하는 선택지는 이야기가 직접 끝낸다 (end_romance).
-  choices:
-    - id: truth
-      label: 솔직하게 말한다
-      effects:
-        - set_flag: rm_confronted
-        - relation: { who: lover, axis: trust, delta: 1 }
-        - relation: { who: lover, axis: affection, delta: -1 }
-        - deed: { summary: 다른 사람이 있다는 것을 연인에게 숨기지 않았다, tags: [honesty], severity: 1, privacy: private }
-    - id: lie
-      label: 오해라고 한다
-      check: deceive
-      outcomes:
-        success:
-          - set_flag: rm_confronted
-          - relation: { who: lover, axis: affection, delta: 1 }
-        partial:
-          - set_flag: rm_confronted
-          - relation: { who: lover, axis: trust, delta: -1 }
-          - body: { track: nerves, delta: 1 }
-        miss:
-          - set_flag: rm_confronted
-          - relation: { who: lover, axis: trust, delta: -3 }
-          - relation: { who: lover, axis: affection, delta: -2 }
-          - deed: { summary: 연인에게 다른 사람을 숨기려다 들켰다, tags: [deceit], severity: 1, privacy: private }
-    - id: end
-      label: 우리 그만하자고 한다
-      effects:
-        - set_flag: rm_confronted
-        - end_romance: { who: lover }
-        - set_flag: rm_split
-        - relation: { who: lover, axis: affection, delta: -2 }
-        - body: { track: nerves, delta: 1 }
-
 - id: rm_ex_again
   title: 헤어진 사람
   tags: [world]
   when:
-    flags_all: [rm_split]
     flags_none: [rm_ex_met]
     segments: [day, evening]
   cast:
-    ex: { recall: rm_ex }
+    ex: { romance: ex }
   setup: 배급 줄 저쪽 끝에 {ex:이/가} 서 있다. 머리를 잘랐다. 누가 웃기는 말을 했는지 웃다가, 당신을 보고 웃음이 천천히 지워진다.
   ai_direction: 헤어진 뒤 처음 제대로 마주친다. 미련인지 원망인지 GM은 관계 수치로 가늠하되 서술은 표정과 거리로만 한다. 다시 연인이 되려면 GM tool romance(confess)를 거친다. 이야기가 정하지 않는다.
   choices:
@@ -507,24 +462,23 @@
           - body: { track: nerves, delta: 1 }
 
 - id: rm_rival_meet
-  title: 그 사람의 다른 연인
+  title: 빼앗긴 사람
   tags: [world]
   when:
-    day_gte: 3
     segments: [morning, day, evening]
     flags_none: [rm_rival_met]
   cast:
-    rival: { romance: rival_lover }
-  setup: '{rival:이/가} 우물가에서 길을 막고 선다. 물통은 내려놓았다. "네가 요즘 그 사람 곁에 붙어 다닌다며. 그 사람 내 사람이야. 알고는 있어?"'
-  ai_direction: 이 사람은 주인공이 다가간(또는 사귀는) 사람의 연인이다. 주먹보다 말이 먼저지만, 밀리면 주먹도 나온다. 상대가 정말 누구를 더 좋아하는지는 이 장면이 정하지 않는다(엔진의 관계가 정한다).
+    rival: { romance: jilted }
+  setup: '{rival:이/가} 우물가에서 길을 막고 선다. 물통은 내려놓았다. "그 사람, 원래 내 사람이었어. 알고 그랬어?"'
+  ai_direction: 이 사람은 주인공의 지금 연인과 사귀다가, 주인공 때문에 버림받았다 (엔진의 원망이 관계에 이미 있다). 주먹보다 말이 먼저지만, 밀리면 주먹도 나온다. 그 사람이 누구를 더 좋아하는지는 이 장면이 정하지 않는다(엔진의 관계가 정한다).
   choices:
     - id: step_back
-      label: 몰랐다며 물러선다
+      label: 미안하다고 한다
       effects:
         - set_flag: rm_rival_met
         - relation: { who: rival, axis: trust, delta: 1 }
     - id: stand
-      label: 그건 그 사람이 정할 일이라고 맞선다
+      label: 그 사람이 정한 일이라고 맞선다
       check: intimidate
       outcomes:
         success:

@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 74;
+export const SAVE_SCHEMA_VERSION = 75;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -295,9 +295,9 @@ export function createGameSchemas(s: Scenario) {
     keptExtras: z.record(z.string(), z.string()).default({}),
     /** 주인공의 지난 일 중 세계의 사실이 된 것 (배경 부품, 기획서 12.6). 코드가 만든 인물은 characterId */
     background: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })).default([]),
-    /** 연애 (12-58): 두 사람(키 a|b) 사이. lovers 연인, ended 끝남. jealous: 다른 연인을 알아챈 쪽과 그 상대 */
+    /** 연애 (12-58): 두 사람(키 a|b) 사이. lovers 연인, ended 끝남 */
     romances: z
-      .record(z.string(), z.strictObject({ a: z.string(), b: z.string(), stage: z.enum(["lovers", "ended"]), since: z.number().int(), jealousOf: z.array(z.string()).default([]) }))
+      .record(z.string(), z.strictObject({ a: z.string(), b: z.string(), stage: z.enum(["lovers", "ended"]), since: z.number().int() }))
       .default({}),
     /** 오늘 이미 다가간 상대 (사람 id → 날) */
     flirtDay: z.record(z.string(), z.number().int()).default({}),
@@ -390,8 +390,6 @@ export function createGameSchemas(s: Scenario) {
     exposed: z.array(z.string()).default([]),
     /** 짐이 무거울 때 창고를 한 번 알렸다 (12-149, 캐릭터마다) */
     stashHinted: z.array(z.string()).default([]),
-    /** 공포를 부른 것을 마주한 횟수 (12-95, 캐릭터마다). 쌓이면 둔감해진다 */
-    fearExposure: z.record(z.string(), z.number().int()).default({}),
     /** 쌓인 냉기 (12-98, 캐릭터마다). per_step을 넘으면 추위 트랙이 오르고, 음수로 per_step만큼 빠지면 풀린다 */
     coldLoad: z.record(z.string(), z.number()).default({}),
     /** 옷이 젖어 있는 때까지 (12-121, 게임 시각). 캐릭터마다 */
@@ -541,6 +539,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("npc_rank_changed"), npcId: z.string(), rank: z.string() }),
     /** 연애 (12-58): 연인이 되거나 끝난다 / 다른 연인을 알아챘다 / 오늘 다가갔다 */
     z.strictObject({ type: z.literal("romance_changed"), a: z.string(), b: z.string(), stage: z.enum(["lovers", "ended"]) }),
+    // 예전 세이브의 질투 (12-58, 12-185에 뺐다). 읽기만 하고 무시한다
     z.strictObject({ type: z.literal("romance_jealousy"), who: z.string(), about: z.string() }),
     z.strictObject({ type: z.literal("flirted"), target: z.string(), day: z.number().int() }),
     /** 수위를 정한다 (새 게임에서, 또는 플레이어가 바꾸면, 12-57) */
@@ -1050,7 +1049,6 @@ export const EMPTY_STATE: GameState = {
   confused: [],
   blackmails: [],
   exposed: [],
-  fearExposure: {},
   coldLoad: {},
   wetUntil: {},
   fatigueLoad: {},
@@ -1402,16 +1400,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "romance_changed": {
       const key = [event.a, event.b].sort().join("|");
-      const prev = next.romances[key];
-      next.romances[key] = { a: event.a, b: event.b, stage: event.stage, since: state.time, jealousOf: event.stage === "lovers" ? [] : (prev?.jealousOf ?? []) };
+      next.romances[key] = { a: event.a, b: event.b, stage: event.stage, since: state.time };
       return next;
     }
-    case "romance_jealousy": {
-      for (const r of Object.values(next.romances)) {
-        if (r.stage === "lovers" && (r.a === event.who || r.b === event.who) && !r.jealousOf.includes(event.about)) r.jealousOf = [...r.jealousOf, event.about];
-      }
+    case "romance_jealousy":
       return next;
-    }
     case "flirted":
       next.flirtDay[event.target] = event.day;
       return next;
@@ -1617,7 +1610,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!next.stashHinted.includes(event.characterId)) next.stashHinted = [...next.stashHinted, event.characterId];
       return next;
     case "fear_exposed":
-      next.fearExposure = { ...next.fearExposure, [event.characterId]: (next.fearExposure[event.characterId] ?? 0) + 1 };
+      // 예전 세이브의 노출 (12-95, 12-185에 둔감해짐을 뺐다). 읽기만 하고 무시한다
       return next;
     case "fatigue_load_set":
       next.fatigueLoad = { ...next.fatigueLoad, [event.characterId]: event.load };

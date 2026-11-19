@@ -60,6 +60,14 @@ export function checkScenarioProgress(ctx: ToolContext, events: readonly GameEve
       const e: GameEvent = { type: "scenario_cleared", roleId: role.id };
       store.append(e);
       all.push(e);
+      // 다시 만난 가족은 곁에 남고, 주인공의 앎도 바뀐다 (플레이 테스트 11: 재회 뒤에도 "어디 있는지 모른다", 가족은 장면에서 사라졌다)
+      for (const id of state.family) {
+        const now = store.getState();
+        if (!now.scene.present.includes(id) || now.companions.includes(id) || now.characters[id]?.dead) continue;
+        store.append({ type: "companion_joined", characterId: id, kind: "kin" });
+        const after = store.getState();
+        store.append({ type: "belief_added", characterId: after.playerId, belief: { id: `b_${after.nextBeliefNo}`, fact: `${josa(after.characters[id]!.name, "을/를")} 다시 만났다. 이제 곁에 있다.`, source: "seen", accuracy: "exact", learnedAt: after.time } });
+      }
       notices.push({ kind: "cleared", roleId: role.id, title: role.scenario!.title, goal: goal.text, ending: goal.ending });
     }
   }
@@ -68,7 +76,8 @@ export function checkScenarioProgress(ctx: ToolContext, events: readonly GameEve
     const unlock = r.scenario?.unlock;
     if (!unlock || !listedScenario(r)) continue;
     const state = store.getState();
-    if (state.unlocked.includes(r.id)) continue;
+    // 지금 하는 시나리오는 알리지 않는다 (플레이 테스트 11)
+    if (state.unlocked.includes(r.id) || r.id === state.scenarioRole) continue;
     if (!unlock.when.some((c) => met(content, state, all, roleAt, c))) continue;
     store.append({ type: "unlock_earned", id: r.id, inherited: false });
     notices.push({ kind: "unlocked", roleId: r.id, title: r.scenario!.title });

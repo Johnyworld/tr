@@ -62,13 +62,14 @@ describe("치료", () => {
   it("치료사가 장면에 있으면 하루 한 번 받는다", () => {
     const env = setup();
     wound(env);
-    expect(executeTool("take_action", act({ treatment: { item: null } }), env.ctx).ok).toBe(true);
+    // 치료사가 없으면 시간을 쓰기 전에 막는다 (플레이 테스트 11)
+    expect(executeTool("take_action", act({ treatment: { item: null } }), env.ctx).ok).toBe(false);
     expect(harm(env)).toBe("serious"); // 치료사가 없다
     executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, env.ctx);
     executeTool("take_action", act({ treatment: { item: null } }), env.ctx);
     expect(harm(env)).toBe("light");
     const again = executeTool("take_action", act({ treatment: { item: null } }), env.ctx);
-    expect(again.ok && again.resultText).toContain("오늘은 이미 치료를 받았다");
+    expect(again.ok ? again.resultText : again.error).toContain("오늘은 이미 치료를 받았다");
     expect(harm(env)).toBe("light");
   });
 
@@ -76,7 +77,8 @@ describe("치료", () => {
     const env = setup();
     env.store.getState().characters.player!.inventory.radio = 1;
     const out = executeTool("take_action", act({ use_item: "radio" }), env.ctx);
-    expect(out.ok && out.resultText).toContain("쓸 필요가 없다");
+    expect(out.ok).toBe(false);
+    expect(out.ok ? "" : out.error).toContain("시간은 흐르지 않았다");
   });
 });
 

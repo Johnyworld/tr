@@ -69,6 +69,8 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
   return Object.values(state.characters)
     // 이름 없는 인물은 자란 사람만, 다만 위협 배역은 이 구역의 이름 없는 인물도 (12-60)
     .filter((c) => c.id !== state.playerId && !c.dead && !c.away && (content.npcs[c.id] || c.profile || (role.menace && c.extra?.zone === state.playerZone)) && !state.squadOrders?.[c.id] && !isAwayCompanion(state, c.id))
+    // 찾는 가족은 가족 이야기에서만 나온다 (플레이 테스트 11: 연애 이야기가 찾던 남편을 데려와 튜토리얼이 끝났다)
+    .filter((c) => !state.family.includes(c.id) || !!role.ids?.includes(c.id))
     // 그 배역과 이어진 사람 (기획서 7.10: 적의 가족을 만나는 이야기)
     .filter((c) => !role.tie || tiesOf(state, content, picked[role.tie.of] ?? "").some((t) => t.other === c.id && (!role.tie!.kinds || role.tie!.kinds.includes(t.kind))))
     .filter((c) => !role.tie?.cross || c.factionId !== state.characters[picked[role.tie.of] ?? ""]?.factionId)
@@ -613,7 +615,7 @@ export function fillStorylet(text: string, vars: Record<string, string>): string
       continue;
     }
     const pair = m[2] as JosaPair | undefined;
-    const placed = dedupeAlias(out, value);
+    const placed = dedupeAlias(out, value, text.slice(last));
     out = placed.before;
     out += placed.value ? (pair ? josa(placed.value, pair) : placed.value) : pair ? josa(value, pair).slice(value.length) : "";
   }
@@ -626,9 +628,15 @@ export function fillStorylet(text: string, vars: Record<string, string>): string
  * - 앞 낱말이 호칭의 끝 낱말(사람을 가리키는 말)이면 호칭을 빼고 그 낱말에 조사 ("규율반원 {x}에게" → "규율반원에게")
  * - 같은 마디(쉼표·마침표 뒤)에 호칭의 꾸밈말이 이미 있으면 끝 낱말만 ("쇠 저울추를 단 {x}" + "쇠 저울추를 찬 행상대장" → "쇠 저울추를 단 행상대장")
  */
-export function dedupeAlias(before: string, value: string): { before: string; value: string } {
+export function dedupeAlias(before: string, value: string, after = ""): { before: string; value: string } {
   const words = value.split(" ").filter(Boolean);
-  if (words.length < 2 || !before.endsWith(" ")) return { before, value };
+  if (words.length < 2) return { before, value };
+  const head = words.at(-1)!;
+  // 같은 마디 안에서 호칭의 꾸밈말이 앞이나 뒤에 또 나오면 끝 낱말만 ("빨간 털모자 쓴 {x:이/가} …", "{x:이/가} 빨간 털모자를 벗으며")
+  const modifiers = words.slice(0, -1).filter((w) => w.length >= 2);
+  const nextClause = after.split(/[.,!?"“”']/)[0] ?? "";
+  if (modifiers.some((w) => nextClause.includes(w))) return { before, value: head };
+  if (!before.endsWith(" ")) return { before, value };
   for (let k = words.length; k >= 1; k--) {
     const prefix = words.slice(0, k).join(" ");
     if (before.endsWith(` ${prefix} `) || before === `${prefix} `) {
@@ -636,12 +644,10 @@ export function dedupeAlias(before: string, value: string): { before: string; va
       return rest ? { before, value: rest } : { before: before.slice(0, -1), value: "" };
     }
   }
-  const head = words.at(-1)!;
   const trimmed = before.slice(0, -1);
   if (trimmed.endsWith(` ${head}`) || trimmed === head) return { before: trimmed, value: "" };
   const clause = before.split(/[.,!?"“”']/).at(-1) ?? "";
-  const clauseWords = new Set(clause.split(" ").filter((w) => w.length >= 2));
-  if (words.slice(0, -1).some((w) => w.length >= 2 && clauseWords.has(w))) return { before, value: head };
+  if (modifiers.some((w) => clause.includes(w))) return { before, value: head };
   return { before, value };
 }
 

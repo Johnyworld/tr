@@ -70,6 +70,8 @@
 # 정문에서 돌아섰거나 거절당했으면, 하루 지나 다시 찾아갈 수 있다
 - id: tv_gate_again
   title: 다시 정문 앞에서
+  # 급한 이야기로 둔다: 다친 몸(급한 이야기만 열리는 때)이면 다시 들어갈 길이 막혔다 (플레이 테스트 11)
+  urgent: true
   tags: [tutorial_visitor]
   cooldown_days: 1
   repeatable: true

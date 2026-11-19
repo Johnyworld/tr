@@ -225,8 +225,9 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       const item = Object.entries(content.scenario.consumables).find(([i, e]) => e[harmTrack.id] && (player.inventory[i] ?? 0) > 0)?.[0] ?? null;
       const healer = Object.values(content.npcs).find((n) => n.healer && npcZoneAt(n, s.time) === s.playerZone && !s.characters[n.id]?.dead);
       if (!item && healer && !s.scene.present.includes(healer.id)) tool("npc_presence", { npc_id: healer.id, action: "enter" });
-      const out = tool("take_action", item ? { ...base, intent: "치료", use_item: item } : { ...base, intent: "치료", treatment: { item: null } });
-      if (!out.ok) stats.errors.push(`치료: ${out.error}`);
+      const out = item || healer ? tool("take_action", item ? { ...base, intent: "치료", use_item: item } : { ...base, intent: "치료", treatment: { item: null } }) : null;
+      // 미리 막힌 것(시간이 흐르지 않음: 오늘 이미 치료받음 등)은 플레이어도 겪는 일이라 오류로 세지 않는다
+      if (out && !out.ok && !out.error.includes("시간은 흐르지 않았다")) stats.errors.push(`치료: ${out.error}`);
       // 치료할 길이 없으면 쉰다
       if (!item && !healer && hurt >= 2) tool("take_action", { ...base, intent: "쉰다", activity: { kind: "rest", until: null } });
       continue;

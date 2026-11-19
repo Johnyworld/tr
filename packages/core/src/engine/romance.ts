@@ -100,11 +100,12 @@ export function romanceCast(state: GameState, content: Content, kind: "lover" | 
   const me = state.playerId;
   const lovers = loversOf(state, content, me);
   const free = (id: string) => !!state.characters[id] && !state.characters[id]!.dead && !state.characters[id]!.captive && !state.characters[id]!.away;
-  if (kind === "lover") return lovers;
+  // 찾는 가족(행방 모르는 배우자)은 연애 이야기에 나오지 않는다 (플레이 테스트 11)
+  if (kind === "lover") return lovers.filter((id) => !state.family.includes(id));
   if (kind === "suitor") {
     return Object.keys(state.characters)
       // 주인공이 만난 사람만 (12-193: 처음 보는 사람이 "마음이 있는 사람"으로 나오지 않게)
-      .filter((id) => id !== me && !lovers.includes(id) && free(id) && hasMet(state, me, id) && hasInterest(state, content, id, me))
+      .filter((id) => id !== me && !lovers.includes(id) && free(id) && !state.family.includes(id) && hasMet(state, me, id) && hasInterest(state, content, id, me))
       .sort();
   }
   const ended = Object.values(state.romances ?? {}).filter((r) => r.stage === "ended");

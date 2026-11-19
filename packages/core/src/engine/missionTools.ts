@@ -9,6 +9,7 @@ import { playerCalls } from "../game/acquaintance.ts";
 import { assignBuddy, releaseBuddies } from "./companionTools.ts";
 import { disciplineOf, hasAccess } from "../game/culture.ts";
 import { josa } from "../text.ts";
+import { neighbors } from "../sim/war.ts";
 import { gainMeritXp } from "./growth.ts";
 import { z } from "zod";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
@@ -43,7 +44,7 @@ export function describeRequirement(s: Scenario, requirement: MissionRequirement
 
 export function describeMission(s: Scenario, mission: MissionInstance): string {
   const reqs = mission.requirements.map((r, i) => `  - ${describeRequirement(s, r, mission.progress[i] ?? 0)}`).join("\n");
-  const place = mission.place ? `\n  장소: ${mission.place.label} (그 자리에서 한 판정·활동만 임무로 센다)` : "";
+  const place = mission.place ? `\n  장소: ${mission.place.label}${mission.place.zone ? ` (${mission.place.zone})` : ""} (그 자리에서 한 판정·활동만 임무로 센다)` : "";
   return `${mission.title} (id: ${mission.id}, 기한 ${formatTime(mission.deadline)})\n  ${mission.briefing}${place}\n${reqs}`;
 }
 
@@ -110,12 +111,15 @@ const assignMission = defineTool({
     const buddy = template.buddy ? assignBuddy(ctx, mission.id, commander.id) : null;
     // 작전이면 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
     const armoryLine = issueArmory(ctx, mission);
-    const buddyLine = (armoryLine ? `\n${armoryLine}` : "") + (buddy ? `\n짝: ${playerCalls(ctx.store.getState(), ctx.content, buddy)}(${buddy})가 이 임무 동안 함께 다닌다 (2인 1조). 임무가 끝나면 자기 자리로 돌아간다.` : "");
+    const buddyLine = (armoryLine ? `\n${armoryLine}` : "") + (buddy ? `\n짝: ${josa(`${playerCalls(ctx.store.getState(), ctx.content, buddy)}(${buddy})`, "이/가")} 이 임무 동안 함께 다닌다 (2인 1조). 임무가 끝나면 자기 자리로 돌아간다.` : "");
+    // 가는 길 (플레이 테스트 11: "남쪽 텃밭"이 어디로 이어지는지 몰라 반나절을 헤맸다)
+    const route = mission.place?.zone && state.playerZone ? routeBetween(ctx.content, state.playerZone, mission.place.zone) : null;
+    const routeLine = route && route.length > 1 ? `\n가는 길: ${route.map((z) => `${ctx.content.locations[z]?.name ?? z}(${z})`).join(" → ")}` : mission.place?.zone && route === null ? "\n가는 길: 지금 아는 길로는 닿지 않는다" : "";
     return {
       ok: true,
       resultText:
-        `임무 배정: ${describeMission(ctx.content.scenario, mission)}${buddyLine}\n` +
-        `상관(${playerCalls(state, ctx.content, commander.id)})이 임무를 지시하는 장면을 서술하라. 해야 할 일과 기한(대략적인 표현으로)을 상관의 말투로 전한다. 보고도 이 사람에게 한다 (C8, 플레이 테스트 10: 진급 뒤 다른 사람이 임무를 준 것으로 서술했다).`,
+        `임무 배정: ${describeMission(ctx.content.scenario, mission)}${routeLine}${buddyLine}\n` +
+        `상관(${playerCalls(state, ctx.content, commander.id)})이 임무를 지시하는 장면을 서술하라. 해야 할 일과 기한(대략적인 표현으로)을 상관의 말투로 전한다. 보고도 이 사람에게 한다.`,
       display: { type: "mission", event: "assigned", title: mission.title, detail: `기한 ${formatTime(mission.deadline)}` },
     };
   },
@@ -194,7 +198,8 @@ const reportMission = defineTool({
     const lines = [
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
-      ...(supplied.length ? [`구해 온 ${josa(supplied.join("·"), "이/가")} 무리 창고에 들어갔다.`] : []),
+      // 주인공이 실제로 찾은 물건과는 따로 셈한다 (플레이 테스트 11: 약을 못 찾았는데 "구해 온 의약품"이라고 했다)
+      ...(supplied.length ? [`이 일감의 몫으로 무리 창고의 ${josa(supplied.join("·"), "이/가")} 조금 늘었다 (같이 나선 사람들의 몫까지 장부에 셈한 것. 주인공이 찾은 물건은 소지품에 그대로 있고, 내놓을지는 플레이어가 정한다).`] : []),
       ...(cleared ? [`${cleared}에 몰려든 감염체를 쓸어 냈다. 한동안 조용할 것이다.`] : []),
       ...releaseBuddies(ctx, mission.id),
       ...[returnArmory(ctx, mission.id)].filter((l): l is string => !!l),
@@ -334,4 +339,25 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
     lines.push(`최근 임무: ${ended.map((m) => `${m.title}(${MISSION_STATUS_LABELS[m.status]})`).join(", ")}`);
   }
   return lines.join("\n");
+}
+
+/** 두 구역 사이의 가장 짧은 길 (맞닿은 구역으로만). 없으면 null */
+function routeBetween(content: ToolContext["content"], from: string, to: string): string[] | null {
+  if (from === to) return [from];
+  const prev = new Map<string, string>([[from, from]]);
+  const queue = [from];
+  while (queue.length) {
+    const z = queue.shift()!;
+    for (const n of neighbors(content, z)) {
+      if (prev.has(n)) continue;
+      prev.set(n, z);
+      if (n === to) {
+        const path = [to];
+        while (path[0] !== from) path.unshift(prev.get(path[0]!)!);
+        return path;
+      }
+      queue.push(n);
+    }
+  }
+  return null;
 }

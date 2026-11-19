@@ -1,3 +1,4 @@
+import { npcZoneAt } from "../game/whereabouts.ts";
 import { waterFacilityHere } from "./facilities.ts";
 import { drinkDirty, fireHere } from "./forage.ts";
 import { resistSteps } from "./growth.ts";
@@ -120,15 +121,12 @@ function trackSymptomGroups(content: Content, trackId: string): string[] {
   return [...new Set(ids.map((id) => byId.get(id)?.group ?? id))];
 }
 
-/** 소모품을 쓴다 (구급상자, 항생제, 통조림 등). 나아질 데가 없으면 쓰지 않는다 */
-export function useItem(ctx: ToolContext, item: string, targetId?: string | null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+/** 이 물건을 지금 쓸 수 없는 까닭 (판정·시간 전에 본다, 플레이 테스트 11). 모닥불 연료는 보지 않는다. 쓸 수 있으면 null */
+export function itemUseProblem(ctx: ToolContext, item: string, targetId?: string | null): string | null {
   const { store, content } = ctx;
   const state = store.getState();
   const player = state.characters[state.playerId]!;
   const name = content.items[item]?.name ?? item;
-  // 모닥불 연료 (12-98)
-  const fire = lightFire(ctx, item);
-  if (fire) return fire.ok ? { ok: true, lines: fire.lines, displays: [] } : fire;
   // 감염: 늦추는 약(항생제)과 떼는 약(혈청, 잠복에도 듣는다) (12-106)
   const infection = content.scenario.body?.infection;
   const cure = !!infection?.cure?.includes(item);
@@ -136,12 +134,12 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
   const effects = content.scenario.consumables[item] ?? {};
   if (!content.scenario.consumables[item] && !cure && !slow) {
     const usable = [...new Set([...Object.keys(content.scenario.consumables), ...(infection?.slow ?? []), ...(infection?.cure ?? [])])];
-    return { ok: false, error: `${josa(name, "은/는")} 써서 몸이 나아지는 물건이 아니다 (가능: ${usable.join(", ")}).` };
+    return `${josa(name, "은/는")} 써서 몸이 나아지는 물건이 아니다 (가능: ${usable.join(", ")}).`;
   }
-  if ((player.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(name, "이/가")} 없다.` };
+  if ((player.inventory[item] ?? 0) < 1) return `${josa(name, "이/가")} 없다.`;
   // 다른 사람에게 쓴다 (12-52): 장면에 있는 살아 있는 사람만
   const target = targetId && targetId !== player.id ? targetId : player.id;
-  if (target !== player.id && (!state.scene.present.includes(target) || state.characters[target]?.dead)) return { ok: false, error: "그 사람이 장면에 없다." };
+  if (target !== player.id && (!state.scene.present.includes(target) || state.characters[target]?.dead)) return "그 사람이 장면에 없다.";
   // 겉으로 드러난 것만 본다 (숨은 잠복기는 주인공도 모른다)
   // 혈청은 걸렸는지 몰라도 쓸 수 있다 (안 걸렸으면 버린 셈이다. 쓸 수 있느냐로 잠복이 새지 않게)
   // 기운을 올리는 것(술·진통제·각성제, 12-157)은 나아질 데가 없어도 쓴다
@@ -152,7 +150,49 @@ export function useItem(ctx: ToolContext, item: string, targetId?: string | null
     cure ||
     Object.entries(effects).some(([t, n]) => (n > 0 && (shownIndex(ctx, state, target, t) > 0 || trackSymptomGroups(content, t).some((g) => shown.has(g)))) || (n < 0 && wearOff[t] !== undefined)) ||
     (slow && shownIndex(ctx, state, target, infection!.track) > 0);
-  if (!needed) return { ok: false, error: `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.` };
+  if (!needed) return `지금은 ${josa(name, "을/를")} 쓸 필요가 없다.`;
+  return null;
+}
+
+/**
+ * 치료사에게 자기 치료를 받을 수 없는 까닭 (물건 없이, 판정·시간 전에 본다, 플레이 테스트 11). 받을 수 있으면 null.
+ * 피가 나는데 치료사가 없으면 맨손 지혈로 넘어가므로 막지 않는다
+ */
+export function selfTreatmentProblem(ctx: ToolContext): string | null {
+  const recovery = ctx.content.scenario.recovery;
+  if (!recovery) return "이 시나리오에는 치료 규칙이 없다.";
+  const state = ctx.store.getState();
+  const player = state.characters[state.playerId]!;
+  const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer);
+  if (!healer) {
+    const w = ctx.content.scenario.wounds;
+    if (w && levelIndex(ctx, state, player.id, w.track) > 0) return null;
+    // 이 구역의 치료사를 알려 준다 (플레이 테스트 11: 간호조무사·약사에게 청하다 누가 치료사인지 몰랐다)
+    const here = Object.values(ctx.content.npcs).filter((n) => n.healer && !state.characters[n.id]?.dead && !state.characters[n.id]?.captive && npcZoneAt(n, state.time) === state.playerZone);
+    return `치료해 줄 사람이 장면에 없다 (장면의 치료사만 치료한다).${here.length ? ` 이 구역의 치료사: ${here.map((n) => `${playerCalls(state, ctx.content, n.id)} (${n.id})`).join(", ")} (npc_presence로 들인다).` : " 이 구역에는 치료사가 없다."} 치료 아이템을 쓰거나 치료사를 찾아간다.`;
+  }
+  const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
+  if (!needed && !symptomGroupsShown(ctx.content, player).size) return "다친 데가 없어 치료할 것이 없다.";
+  if (needed && state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return "오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다.";
+  return null;
+}
+
+/** 소모품을 쓴다 (구급상자, 항생제, 통조림 등). 나아질 데가 없으면 쓰지 않는다 */
+export function useItem(ctx: ToolContext, item: string, targetId?: string | null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const player = state.characters[state.playerId]!;
+  const name = content.items[item]?.name ?? item;
+  // 모닥불 연료 (12-98)
+  const fire = lightFire(ctx, item);
+  if (fire) return fire.ok ? { ok: true, lines: fire.lines, displays: [] } : fire;
+  const problem = itemUseProblem(ctx, item, targetId);
+  if (problem) return { ok: false, error: problem };
+  const infection = content.scenario.body?.infection;
+  const cure = !!infection?.cure?.includes(item);
+  const slow = !!infection?.slow?.includes(item);
+  const effects = content.scenario.consumables[item] ?? {};
+  const target = targetId && targetId !== player.id ? targetId : player.id;
   store.append({ type: "item_consumed", holder: player.id, itemId: item, quantity: 1 });
   // 끓이지 않은 물 (12-131): 불이 없으면 탈이 날 수 있다 (자기가 마실 때만)
   const dirty = content.items[item]?.contaminated;
@@ -232,15 +272,13 @@ export function applyTreatment(
     // 맨손 지혈 (12-91): 피가 나면 판정으로 멎게 한다
     const w = ctx.content.scenario.wounds;
     if (w && levelIndex(ctx, state, player.id, w.track) > 0) return staunch(ctx, check);
-    return { ok: false, error: "치료해 줄 사람이 장면에 없다. 치료 아이템을 쓰거나 치료사를 찾아간다." };
   }
+  const problem = selfTreatmentProblem(ctx);
+  if (problem) return { ok: false, error: problem };
+  if (!healer) return { ok: false, error: "치료해 줄 사람이 장면에 없다." };
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
-  if (!needed) {
-    // 증상은 있는데 치료사가 손쓸 것이 아니면 (감염의 열 등): 살펴보고 돌려보낸다. "다친 데가 없다"로 원인이 새지 않게 (B3)
-    if (symptomGroupsShown(ctx.content, player).size) return { ok: true, lines: [`${josa(playerCalls(state, ctx.content, healer), "이/가")} 살펴봤지만 지금 손쓸 데는 없다고 한다. 잘 먹고 따뜻하게 쉬라고 한다.`], displays: [] };
-    return { ok: false, error: "다친 데가 없어 치료할 것이 없다." };
-  }
-  if (state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return { ok: false, error: "오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다." };
+  // 증상은 있는데 치료사가 손쓸 것이 아니면 (감염의 열 등): 살펴보고 돌려보낸다. "다친 데가 없다"로 원인이 새지 않게 (B3)
+  if (!needed) return { ok: true, lines: [`${josa(playerCalls(state, ctx.content, healer), "이/가")} 살펴봤지만 지금 손쓸 데는 없다고 한다. 잘 먹고 따뜻하게 쉬라고 한다.`], displays: [] };
   const name = playerCalls(state, ctx.content, healer);
   const lines = [`${name}에게 치료를 받았다.`];
   const displays: ToolDisplayEvent[] = [];

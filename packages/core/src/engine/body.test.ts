@@ -131,7 +131,7 @@ describe("허기", () => {
     const env = setup();
     env.store.getState().characters.player!.inventory.rope = 2;
     const full = executeTool("take_action", act({ use_item: "rope" }), env.ctx);
-    expect(full.ok && full.resultText).toContain("쓸 필요가 없다");
+    expect(full.ok ? full.resultText : full.error).toContain("쓸 필요가 없다");
     env.store.getState().characters.player!.conditions.belly = "weak";
     executeTool("take_action", act({ use_item: "rope" }), env.ctx);
     expect(level(env, "belly")).toBe("full");
@@ -363,7 +363,7 @@ describe("숨은 단계가 새지 않는다", () => {
     const clean = executeTool("take_action", act({ use_item: "rope" }), env.ctx);
     env.store.getState().characters.player!.conditions.rot = "latent";
     const latent = executeTool("take_action", act({ use_item: "rope" }), env.ctx);
-    expect(clean.ok && clean.resultText).toContain("쓸 필요가 없다");
+    expect(clean.ok ? clean.resultText : clean.error).toContain("쓸 필요가 없다");
     const first = (o: typeof clean) => (o.ok ? o.resultText.split("\n")[0] : o.error);
     expect(first(latent)).toBe(first(clean));
     expect(env.store.getState().characters.player!.inventory.rope).toBe(1);

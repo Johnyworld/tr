@@ -98,7 +98,7 @@ describe("임무 수행과 보고", () => {
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
     executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: true, activity: { kind: "guard_duty", until: null } }, env.ctx);
     const out = executeTool("report_mission", {}, env.ctx);
-    expect(out.ok && out.resultText).toContain("무리 창고에 들어갔다");
+    expect(out.ok && out.resultText).toContain("무리 창고의");
     expect(food()).toBe(before + 9);
   });
 

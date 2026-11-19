@@ -4,7 +4,7 @@ import { planBroadcast, runBroadcast } from "./broadcast.ts";
 import { ambushDifficulty, applyAmbush, isConfused, leaveAmbush, planAmbush } from "./ambush.ts";
 import { templateKind } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
-import { forage, handleTrap } from "./forage.ts";
+import { forage, forageProblem, handleTrap } from "./forage.ts";
 import { buryRemains } from "./remains.ts";
 import { resistSteps } from "./growth.ts";
 import { breakTruceIfAny } from "./diplomacy.ts";
@@ -56,10 +56,11 @@ import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
 import { scarFromHarm } from "./scars.ts";
-import { createStoryletCheck, endActiveStorylet } from "./storyletTools.ts";
+import { createStoryletCheck, endActiveStorylet, resolveStorylet } from "./storyletTools.ts";
+import { choiceAvailable } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
-import { applyTreatment, drinkWater, maybeInfect, refillWater, useItem } from "./body.ts";
+import { applyTreatment, drinkWater, itemUseProblem, maybeInfect, refillWater, selfTreatmentProblem, useItem } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -310,6 +311,9 @@ const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
   miss: "실패한다. 상황이 악화된다. 몸의 피해는 시스템이 이미 적용했다(있다면 아래). 새로운 위협이나 손실을 서술하라.",
 };
 
+/** 이야기를 두고 떠날 때 고른 것으로 치는 선택지 (판정 없는 것만) */
+const WALK_AWAY_CHOICES = ["leave", "ignore", "look_away", "pass", "walk_away", "move_on", "let_go", "decline", "refuse"];
+
 export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
   const { store, content } = ctx;
   const scenario = content.scenario;
@@ -317,6 +321,21 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const player = start.characters[start.playerId];
   if (!player) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
   if (player.dead) return { ok: false, error: "캐릭터가 사망했습니다." };
+  // 진행 중인 이야기를 두고 떠나거나 오래 머물면 결과 없이 사라졌다 (플레이 테스트 11: 깔린 동료를 두고 갔는데 아무 일 없었다).
+  // 외면하는 선택지(leave·ignore 등, 판정 없는 것)가 있으면 그것을 고른 것으로 풀고, 없으면 지나갔다고 분명히 알린다
+  // 수색·일·쉬기는 이야기 안에서도 하는 일이라 넣지 않는다 (선택지의 판정을 거기서 굴린다)
+  const long = !!input.move_to || (!!input.activity && ["sleep", "wait", "guard_duty", "travel"].includes(input.activity.kind));
+  const leftLines: string[] = [];
+  if (start.activeStorylet && long && !isIncapacitated(ctx.content, player)) {
+    const s = content.storylets[start.activeStorylet.id];
+    const pick = s?.choices.find((c) => WALK_AWAY_CHOICES.includes(c.id) && !c.check && choiceAvailable(start, c, start.activeStorylet!.cast));
+    const r = pick ? resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx) : null;
+    if (r?.ok) leftLines.push(`(이야기 "${s!.title}"를 두고 자리를 떠, "${pick!.label}"를 고른 것으로 처리했다)`, r.resultText ?? "");
+    else {
+      endActiveStorylet(ctx, "외면하고 떠났다");
+      leftLines.push(`이야기 "${s?.title ?? start.activeStorylet.id}"를 외면하고 자리를 떴다. 그 일은 그대로 지나갔다 (이야기 속 사람들은 그것을 기억할 수 있다).`);
+    }
+  }
   // 잠입 중 (12-154): 옮기거나 오래 머물지 않는다. 잠입은 infiltrate로 (빠지기부터)
   if (start.infiltration && (input.move_to || (input.activity && ["sleep", "rest", "wait", "guard_duty", "search", "work"].includes(input.activity.kind)))) {
     return { ok: false, error: "잠입 중이다. 옮기거나 오래 머물려면 먼저 infiltrate leave로 빠져나온다." };
@@ -478,6 +497,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
   const forMission = input.for_mission ? (activeMissionOf(start.missions, start.playerId)?.id ?? null) : null;
   const lines: string[] = [];
+  lines.push(...leftLines.filter(Boolean));
   // 임무의 장소가 아니면 임무로 치지 않는다 (플레이 테스트 4: 거점 안에서 초소 보초를 마쳤다)
   {
     const m = forMission ? start.missions[forMission] : undefined;
@@ -508,6 +528,16 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 없는 물건은 쓰지 못한다: 시간을 흘리기 전에 막는다 (플레이 테스트 8: 오류 없이 30분이 흘렀다)
   if (input.use_item && (player.inventory[input.use_item] ?? 0) < 1) {
     return { ok: false, error: `${josa(content.items[input.use_item]?.name ?? input.use_item, "이/가")} 없다. 가진 물건만 쓴다 (상태의 소지품).` };
+  }
+  // 할 수 없는 일은 판정·시간 전에 막는다 (플레이 테스트 11: 쓸 필요 없는 붕대, 치료사 아닌 사람의 치료, 거점 안 사냥이 판정과 30분을 쓴 뒤 거절됐다)
+  {
+    const fuel = !!input.use_item && !!scenario.body?.cold?.climate?.fire?.items[input.use_item];
+    const problem =
+      (input.use_item && !fuel ? itemUseProblem(ctx, input.use_item) : null) ??
+      (input.treatment?.item ? itemUseProblem(ctx, input.treatment.item, input.treatment.target) : null) ??
+      (input.treatment && !input.treatment.item && (!input.treatment.target || input.treatment.target === player.id) ? selfTreatmentProblem(ctx) : null) ??
+      (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null);
+    if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
   }
 
   // 1. 판정과 선언한 위험
@@ -738,7 +768,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     if (deposited) lines.push(`맡겨 둔 것을 돌려받고 떠났다: ${Object.entries(deposited).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ")}.`);
     // 끌고 온 포로: 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다 (12-55)
     lines.push(...deliverPrisoners(ctx));
-    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다. 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
+    // 동행은 따라온다. 그 밖의 장면 인물만 남는다 (플레이 테스트 11: 동행이 왔는데 "따라오지 않는다"가 늘 나왔다)
+    const came = activeCompanions(store.getState()).map((id) => playerCalls(store.getState(), content, id));
+    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.${came.length ? ` 동행(${came.join(", ")})은 함께 왔다.` : ""} 그 밖에 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
     if (rideUsed) {
       lines.push(`${josa(rideUsed.name, "을/를")} 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 무언가 몰려들 수 있다." : ""}`);
       if (rideUsed.noise) store.append({ type: "noise_made", zone: input.move_to, level: rideUsed.noise, day: dayOf(store.getState().time) });

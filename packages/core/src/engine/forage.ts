@@ -25,17 +25,28 @@ function watery(ctx: ToolContext, zone: string): boolean {
   return !!resource && (ctx.content.locations[zone]?.yields[resource] ?? 0) > 0;
 }
 
+/** 여기서 이 먹을 것 구하기를 할 수 없는 까닭 (판정·시간 전에 본다, 플레이 테스트 11). 할 수 있으면 null */
+export function forageProblem(ctx: ToolContext, kindId: string): string | null {
+  const { store, content } = ctx;
+  const rules = content.scenario.foraging;
+  const kind = rules?.kinds.find((k) => k.id === kindId);
+  if (!rules || !kind) return `알 수 없는 일: ${kindId} (가능: ${rules?.kinds.map((k) => k.id).join(", ") ?? "없음"})`;
+  const zone = store.getState().playerZone;
+  if (!zone) return "어디에 있는지 모른다.";
+  if (kind.water && !watery(ctx, zone)) return `여기는 물가가 아니라 ${josa(kind.label, "을/를")} 할 수 없다.`;
+  if (!kind.water && content.locations[zone]?.kind === "base") return `거점 안에서는 ${josa(kind.label, "을/를")} 할 수 없다. 담 밖으로 나간다.`;
+  return null;
+}
+
 /** 먹을 것을 구한다 (take_action.forage). 판정 결과만큼 굴린다 */
 export function forage(ctx: ToolContext, kindId: string, outcome: CheckOutcome | null): Result {
   const { store, content, rng } = ctx;
-  const rules = content.scenario.foraging;
-  const kind = rules?.kinds.find((k) => k.id === kindId);
-  if (!rules || !kind) return { ok: false, error: `알 수 없는 일: ${kindId} (가능: ${rules?.kinds.map((k) => k.id).join(", ") ?? "없음"})` };
+  const problem = forageProblem(ctx, kindId);
+  if (problem) return { ok: false, error: problem };
+  const rules = content.scenario.foraging!;
+  const kind = rules.kinds.find((k) => k.id === kindId)!;
   const state = store.getState();
-  const zone = state.playerZone;
-  if (!zone) return { ok: false, error: "어디에 있는지 모른다." };
-  if (kind.water && !watery(ctx, zone)) return { ok: false, error: `여기는 물가가 아니라 ${josa(kind.label, "을/를")} 할 수 없다.` };
-  if (!kind.water && content.locations[zone]?.kind === "base") return { ok: false, error: `거점 안에서는 ${josa(kind.label, "을/를")} 할 수 없다. 담 밖으로 나간다.` };
+  const zone = state.playerZone!;
 
   // 같은 날 같은 곳에서 다시 할수록 덜 잡힌다 (수색과 같은 기록을 일마다 따로 쓴다)
   const key = `${zone}#${kind.id}`;

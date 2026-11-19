@@ -274,7 +274,8 @@ export class WorldManager {
       if (world.state().worldId) this.#inheritUnlocks(world);
       // 이미 있는 세계: 시간이 흐른 뒤의 처리를 한 번 맞춘다. 시간이 그대로라 보통은 아무 일도 없고,
       // 이전 단계의 세이브라면 새로 생긴 상태(세력 등)를 채운다
-      if (world.state().worldId) runAfterTimeAdvance(world.ctx());
+      // 이야기는 열지 않는다: 세계를 열 때 열린 이야기는 결과에 실리지 않아 보이지 않았다 (플레이 테스트 11, 튜토리얼 정문). 다음 행동에서 연다
+      if (world.state().worldId) runAfterTimeAdvance(world.ctx(), { storylets: false });
       return world;
     } catch (err) {
       release();

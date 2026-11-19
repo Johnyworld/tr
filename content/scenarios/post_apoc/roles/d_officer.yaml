@@ -23,7 +23,8 @@ age: 41
 # 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
 # 스킬은 시나리오가 아니라 과거 배경에서 온다 (12-84)
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
-resolve: { kind: truth, target: "혈청|앰플|여울섬", n: 3, text: 항생제보다 귀한 혈청이 어디서 오는지 안다 }
+# 플레이 테스트 11: "여울섬" 같은 흔한 낱말로 너무 일찍 찼다. 진실이 담긴 믿음으로만
+resolve: { kind: truth, target: "피를 뽑|혈청을 만", n: 1, text: 항생제보다 귀한 혈청이 어디서 오는지 안다 }
 start_skills: {}
 start_inventory: [ledger, medkit, fever_reducer, coat, radio]
 start_location: d_clinic

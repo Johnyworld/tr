@@ -309,7 +309,7 @@ export function maskUnknownNames(state: GameState, content: Content, text: strin
       next += out.slice(last, m.index);
       last = m.index! + m[0].length;
       const particle = m[1];
-      const placed = dedupeAlias(next, alias);
+      const placed = dedupeAlias(next, alias, out.slice(last));
       next = placed.before;
       next += placed.value ? (particle ? josa(placed.value, PARTICLE_PAIRS[particle]!) : placed.value) : particle ? josa(alias, PARTICLE_PAIRS[particle]!).slice(alias.length) : "";
     }

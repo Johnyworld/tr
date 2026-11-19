@@ -492,9 +492,11 @@ export function describeZonePeople(state: GameState, content: Content): string {
   // 갇힌 사람·떠도는 사람(오늘만 여기 있다) 먼저, 나머지는 날마다 돌아가며
   const captive = (id: string) => !!state.characters[id]?.captive;
   const day = dayOf(state.time);
-  const ordered = [...strangers].sort((a, b) => Number(captive(b.id)) - Number(captive(a.id)) || Number(!!b.roams) - Number(!!a.roams) || rotate(a.id, day) - rotate(b.id, day));
+  // 장사꾼·치료사는 늘 보이게 먼저 (플레이 테스트 11: 다섯 명씩 도는 목록에 숨어 찾지 못했다)
+  const useful = (n: (typeof strangers)[number]) => Number(!!n.merchant || !!n.healer);
+  const ordered = [...strangers].sort((a, b) => useful(b) - useful(a) || Number(captive(b.id)) - Number(captive(a.id)) || Number(!!b.roams) - Number(!!a.roams) || rotate(a.id, day) - rotate(b.id, day));
   const shown = ordered.slice(0, ZONE_PEOPLE_IN_PROMPT);
-  const lines = shown.map((npc) => `- (${npc.id}) ${npc.alias}${npc.merchant ? " · 물건을 판다 (barter)" : ""}${captive(npc.id) ? " · 이곳에 갇혀 있다 (창살 안, 돌아다니지 않는다)" : ""}: ${shortNote(npc.look)}`);
+  const lines = shown.map((npc) => `- (${npc.id}) ${npc.alias}${npc.merchant ? " · 물건을 판다 (barter)" : ""}${npc.healer ? " · 다친 사람을 치료한다 (treatment)" : ""}${captive(npc.id) ? " · 이곳에 갇혀 있다 (창살 안, 돌아다니지 않는다)" : ""}: ${shortNote(npc.look)}`);
   const more = strangers.length - shown.length;
   return [askLine, `이 구역에서 마주칠 수 있는 낯선 사람 (등장시키려면 npc_presence. 만나도 이름은 모른다${more > 0 ? `. 이 밖에 ${more}명이 더 있다` : ""}):\n${lines.join("\n")}`].filter(Boolean).join("\n");
 }

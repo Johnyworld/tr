@@ -3597,3 +3597,17 @@ body {
   grid-column: 1 / -1;
   text-align: center;
 }
+
+/* 캐릭터 탭 맨 위: 고른 시나리오와 과거 배경 */
+.sheet section.origin h3:not(:first-child) {
+  margin-top: 10px;
+}
+.origin-title {
+  font-weight: 600;
+}
+.origin-text {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}

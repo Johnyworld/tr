@@ -93,6 +93,12 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
         {{
           ability: (
             <>
+          {player.past && (
+            <section className="block origin">
+              <div className="origin-title" title={player.past.summary}>{player.past.label} 출신</div>
+            </section>
+          )}
+
           <section className="block">
             <h3>능력</h3>
             <div className="ability-grid">
@@ -136,6 +142,14 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
             <section className="service">
               <h3>빚</h3>
               <div className="condition-worse small">{player.debts.map((d) => `${d.name} ${d.amount}`).join(", ")}</div>
+            </section>
+          )}
+
+          {player.scenario && (
+            <section className="block origin">
+              <h3>시나리오</h3>
+              <div className="origin-title">{player.scenario.title}</div>
+              <p className="origin-text">{player.scenario.pitch}</p>
             </section>
           )}
 
@@ -325,8 +339,8 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
   );
 }
 
-/** Lv UP을 누르면: 능력 탭으로 가서 스킬 목록을 보여 준다 */
-/** Lv UP: 능력 탭의 스킬 블록으로 가서 잠깐 밝혀 보인다 (올릴 곳을 찾기 쉽게) */
+/** Lv UP을 누르면: 캐릭터 탭으로 가서 스킬 목록을 보여 준다 */
+/** Lv UP: 캐릭터 탭의 스킬 블록으로 가서 잠깐 밝혀 보인다 (올릴 곳을 찾기 쉽게) */
 function showSkills() {
   window.dispatchEvent(new CustomEvent("trpg:tab", { detail: "ability" }));
   requestAnimationFrame(() =>

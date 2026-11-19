@@ -3,7 +3,7 @@ import type { PlayerView } from "./types.ts";
 
 /** 시트 탭 (12-65). HUD 아래를 나눈다 */
 const TABS = [
-  { id: "ability", label: "능력" },
+  { id: "ability", label: "캐릭터" },
   { id: "items", label: "아이템" },
   { id: "people", label: "인물" },
   { id: "journal", label: "일지" },
@@ -38,7 +38,7 @@ function readTab(): TabId {
 /** head: 탭 위에 늘 보이는 HUD. HUD와 탭 줄을 한 덩어리로 위에 고정한다 (높이를 잴 필요가 없다) */
 export function SheetTabs({ player, head, children }: { player: PlayerView; head: ReactNode; children: Record<TabId, ReactNode> }) {
   const [chosen, setTab] = useState<TabId>(readTab);
-  // 메모 탭은 메모장과 펜·연필이 있을 때만 열린다. 없어지면 능력 탭으로
+  // 메모 탭은 메모장과 펜·연필이 있을 때만 열린다. 없어지면 캐릭터 탭으로
   const visible = TABS.filter((t) => t.id !== "memo" || !!player.memo);
   const tab: TabId = visible.some((t) => t.id === chosen) ? chosen : "ability";
   const [fresh, setFresh] = useState<Set<TabId>>(new Set());

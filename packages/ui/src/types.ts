@@ -13,6 +13,8 @@ export type PlayerView = {
   roleLabel: string;
   occupationLabel: string | null;
   motive?: { label: string; summary: string } | null;
+  scenario?: { title: string; pitch: string } | null;
+  past?: { label: string; summary: string } | null;
   timeLabel: string;
   clock?: { time: string; hhmm?: string; minute?: number; segmentLabel?: string; date?: string | null; segment: string; season: string | null; weather: { label: string; icon: string | null; chill: number } | null; temperature?: { outside: number; feels: number; detail: string } | null };
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon?: string | null; step?: number; penalty?: number; fatal?: boolean }[];

@@ -74,7 +74,7 @@ export function endActiveStorylet(ctx: ToolContext, reason: string): ToolDisplay
   return displays;
 }
 
-export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
+export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean } = {}): ToolDisplayEvent[] {
   const { store, content, rng } = ctx;
   const displays: ToolDisplayEvent[] = [];
   let state = store.getState();
@@ -86,7 +86,7 @@ export function runStorylets(ctx: ToolContext): ToolDisplayEvent[] {
   const window = storyletWindow(state, content, state.time);
   if (!player || player.dead || window === "closed") return displays;
   // 고정 이야기(한 번뿐인 것)가 열릴 수 있으면 먼저 연다. 반복되는 템플릿에 밀려 묻히지 않게
-  const eligible = eligibleStorylets(state, content).filter((s) => window === "open" || s.urgent);
+  const eligible = eligibleStorylets(state, content).filter((s) => (!options.urgentOnly && window === "open") || s.urgent);
   const fixed = eligible.filter((s) => !s.repeatable);
   const storylet = pickStorylet(fixed.length ? fixed : eligible, rng);
   if (!storylet) return displays;

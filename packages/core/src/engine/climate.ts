@@ -289,7 +289,8 @@ export function changeClothes(ctx: ToolContext): { ok: true; lines: string[]; di
   const state = ctx.store.getState();
   if (!climateOf(ctx.content)?.wet) return { ok: false, error: "이 월드에는 젖은 옷 규칙이 없다." };
   if (!clothesHere(ctx.content, state)) return { ok: false, error: "여기에는 갈아입을 옷이 없다 (우리 무리의 거점, 내 거처, 옷이 남은 곳에서만)." };
-  const who = [state.playerId, ...activeCompanions(state).filter((id) => !isCreature(ctx.content, state.characters[id]))].filter((id) => (state.wet?.[id] ?? 0) > 0);
+  // 끌고 다니는 포로는 빼고 (묶인 사람의 옷까지 갈아입히지 않는다)
+  const who = [state.playerId, ...activeCompanions(state).filter((id) => !isCreature(ctx.content, state.characters[id]) && state.bonds?.[id]?.kind !== "prisoner")].filter((id) => (state.wet?.[id] ?? 0) > 0);
   if (!who.length) return { ok: false, error: "젖은 옷을 입은 사람이 없다." };
   const displays = who.map((id) => dryOff(ctx, id, state.characters[id]!.name, "마른 옷으로 갈아입었다"));
   return { ok: true, lines: [`${who.map((id) => state.characters[id]!.name).join(", ")}: 마른 옷으로 갈아입었다.`], displays };

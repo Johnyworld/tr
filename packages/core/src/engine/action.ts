@@ -747,7 +747,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문, 전쟁, 예정된 교전)
-  const after = runAfterTimeAdvance(ctx);
+  const after = runAfterTimeAdvance(ctx, { urgentOnly: time.wokenByStory });
   lines.push(...bodyLines(after));
   for (const display of after) {
     displays.push(display);
@@ -977,6 +977,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     text: lines.join("\n"),
     extra,
     interrupted: interrupt !== null,
+    /** 자다가 급한 이야기에 깼다: 깬 뒤에는 급한 이야기만 연다 (12-187) */
+    wokenByStory: activity === "sleep" && interrupt?.kind === "storylet",
     display: {
       type: "time" as const,
       activityLabel: label,

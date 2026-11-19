@@ -82,6 +82,15 @@ describe("플레이 테스트 2회차 회귀", () => {
     expect(urgent.store.getState().time % MINUTES_PER_DAY).not.toBe(6 * 60);
   });
 
+  it("급한 이야기에 깨면 그 이야기가 열린다. 한 번뿐인 다른 이야기가 대신 열리지 않는다 (회귀 테스트 12-187)", () => {
+    const fixed = { ...chat, id: "fixed_night", when: { segments: ["night"] } };
+    const alarm = { ...chat, id: "alarm", urgent: true, repeatable: true, when: { segments: ["night"] } };
+    const env = setup(content([fixed, alarm]));
+    executeTool("take_action", act({ activity: { kind: "wait", until: "evening" } }), env.ctx);
+    executeTool("take_action", act({ activity: { kind: "sleep", until: "morning" } }), env.ctx);
+    expect(env.store.getState().activeStorylet?.id).toBe("alarm");
+  });
+
   it("P22 (12.4.1에서 바뀜): 다음 캐릭터 후보는 조우한 사람이면 무리가 달라도 되고, 그 무리의 새 캐릭터도 된다. 이름을 모르면 아니다", () => {
     const world = createTestWorld("mcp", () => 0);
     world.executeTool("npc_presence", { npc_id: "npc_stranger", action: "enter" }); // 다른 무리 사람을 보기만 했다

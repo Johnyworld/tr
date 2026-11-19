@@ -71,6 +71,12 @@ const transferItem = defineTool({
     to: z.string().describe("받는 쪽: 캐릭터 id 또는 scene"),
     item_id: z.string().describe("아이템 id (상태에 표시된 것)"),
     quantity: z.number().int().min(1).describe("옮길 수량 (1 이상의 정수)"),
+    deposit: z
+      .string()
+      .max(60)
+      .nullable()
+      .optional()
+      .describe("주인공이 물건을 남에게 맡기는 것이면 맡긴 조건 (예: \"나갈 때 돌려준다\"). 검문에서 무기를 받아 가는 것도 맡김이다: 땅에 내려놓기(to=scene)가 아니라 받아 간 사람에게 이것과 함께 넘긴다. 맡긴 물건은 근거 없이 돌려받는다"),
   }),
   run(input, ctx) {
     const { store, content } = ctx;
@@ -86,7 +92,9 @@ const transferItem = defineTool({
     if (!findHolderInventory(state, input.to)) return { ok: false, error: `알 수 없는 보관 위치: ${input.to}` };
     // NPC의 물건은 근거 없이 가져올 수 없다 (원칙 2: AI는 요청만 하고 코드가 검증)
     const fromNpc = input.from !== SCENE_HOLDER && input.from !== state.playerId;
-    if (fromNpc) {
+    // 맡긴 물건은 돌려받을 근거가 있다 (12-196)
+    const deposited = (state.entrusted ?? []).some((d) => d.holder === input.from && d.owner === input.to && d.itemId === input.item_id);
+    if (fromNpc && !deposited) {
       const earned = Object.values(state.checks).some(
         (c) => c.turn === state.turn && c.actorId === state.playerId && c.target === input.from && c.outcome !== "miss",
       );
@@ -124,6 +132,7 @@ const transferItem = defineTool({
       to: input.to,
       itemId: item.id,
       quantity: input.quantity,
+      ...(input.deposit && input.from === state.playerId && input.to !== SCENE_HOLDER ? { deposit: input.deposit } : {}),
     });
     // 약속한 물건을 그 사람에게 건넸으면 약속을 지킨 것이다 (12-174 부탁)
     const kept = input.from === state.playerId ? keepByGift(ctx, input.to, item.id, input.quantity) : [];

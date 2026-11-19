@@ -37,7 +37,7 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  */
-export const SAVE_SCHEMA_VERSION = 77;
+export const SAVE_SCHEMA_VERSION = 78;
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -315,6 +315,8 @@ export function createGameSchemas(s: Scenario) {
       .default({ mature: false, dialogue: "novel" }),
     /** 캐릭터별 메모 (12-75). 플레이어가 적는 기록이라 세계의 사실이 아니다 */
     memos: z.record(z.string(), z.string()).default({}),
+    /** 맡긴 물건 (12-196): 주인공이 남에게 맡긴 것과 그 조건. 맡긴 사람에게서는 근거 없이 돌려받는다 */
+    entrusted: z.array(z.strictObject({ owner: z.string(), holder: z.string(), itemId: z.string(), quantity: z.number().int().positive(), note: z.string(), at: z.number().int() })).default([]),
     /** 내 물건 보관 (12-149): 캐릭터 → 구역 → 맡긴 물건. 무리 거점의 사물함이나 떠돌이의 거처에 둔다 */
     stashes: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.number().int().positive()))).default({}),
     /** 떠돌이의 거처 (12-149): 캐릭터 → 구역 */
@@ -1012,6 +1014,8 @@ export function createGameSchemas(s: Scenario) {
       to: z.string(),
       itemId: z.string(),
       quantity: z.number().int().positive(),
+      /** 주인공이 맡긴 것이면 맡긴 조건 (예: "나갈 때 돌려준다", 12-196) */
+      deposit: z.string().optional(),
     }),
   ]);
 
@@ -1039,6 +1043,7 @@ export const EMPTY_STATE: GameState = {
   options: { mature: false, dialogue: "novel" },
   memos: {},
   stashes: {},
+  entrusted: [],
   homes: {},
   stashHinted: [],
   infiltration: null,
@@ -2225,6 +2230,17 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (remaining === 0) delete from[event.itemId];
       else from[event.itemId] = remaining;
       to[event.itemId] = (to[event.itemId] ?? 0) + event.quantity;
+      // 맡긴 물건 (12-196): 맡기면 적고, 맡은 사람이 그 주인에게 돌려주면 지운다
+      if (event.deposit) next.entrusted = [...(next.entrusted ?? []), { owner: event.from, holder: event.to, itemId: event.itemId, quantity: event.quantity, note: event.deposit, at: state.time }];
+      else if ((next.entrusted ?? []).some((d) => d.holder === event.from && d.owner === event.to && d.itemId === event.itemId)) {
+        let left = event.quantity;
+        next.entrusted = (next.entrusted ?? []).flatMap((d) => {
+          if (left <= 0 || d.holder !== event.from || d.owner !== event.to || d.itemId !== event.itemId) return [d];
+          const take = Math.min(left, d.quantity);
+          left -= take;
+          return d.quantity > take ? [{ ...d, quantity: d.quantity - take }] : [];
+        });
+      }
       break;
     }
   }

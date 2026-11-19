@@ -147,6 +147,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
         : []),
       ...bleedingLine(content, player),
       `소지품: ${describeInventory(content, player.inventory)}`,
+      ...depositLines(state, content),
       ...(describeStash(content, state) ? [describeStash(content, state)!] : []),
       ...(describeGear(content, player) ? [describeGear(content, player, state)] : []),
       ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감·물건으로만 준다`] : []),
@@ -648,4 +649,13 @@ function nameNowKnown(state: GameState, part: HistoryPart): HistoryPart {
   if ((part.kind !== "loss" && part.kind !== "enemy") || part.name_known !== false) return part;
   const who = part.kind === "loss" ? part.by : part.target;
   return who && (state.known[state.playerId] ?? []).includes(who) ? { ...part, name_known: true } : part;
+}
+
+/** 주인공이 맡긴 물건 (12-196): 누구에게, 무엇을, 어떤 조건으로. 돌려받을 때는 transfer_item (맡은 사람 → 주인공) */
+function depositLines(state: GameState, content: Content): string[] {
+  const mine = (state.entrusted ?? []).filter((d) => d.owner === state.playerId);
+  if (!mine.length) return [];
+  return [
+    `맡긴 물건 (돌려받으면 transfer_item 맡은 사람 → 주인공, 판정 없이): ${mine.map((d) => `${content.items[d.itemId]?.name ?? d.itemId}${d.quantity > 1 ? ` ×${d.quantity}` : ""} → ${playerCalls(state, content, d.holder)} (${d.holder}), "${d.note}"`).join(" / ")}`,
+  ];
 }

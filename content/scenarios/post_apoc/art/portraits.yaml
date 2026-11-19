@@ -858,13 +858,12 @@ faces:
       a korean man in his mid thirties with a weary but warm face, slightly messy medium-length black hair, short neat beard, thoughtful eyes, wearing a faded military field jacket
 
   # d_m30·d_m31 다시 뽑기에서 나온 나머지 후보를 그대로 살린 얼굴 (--adopt)
-  # d_m30 후보 2521
+  # d_m30 후보 2521이 얼굴이 너무 커서 같은 묘사로 다시 뽑았다
   d_m41:
     style: D
     gender: male
-    seed: 2521
-    # 얼굴이 너무 크게 그려졌다: 자르는 영역을 넓혀 기준 얼굴 크기에 맞춘다
-    crop_scale: 1.5
+    seed: 2525
+    zoom: 1
     colorize: true
     subject: >-
       medium shot showing his head, shoulders and upper body, a big fat heavyset korean man in his early thirties, very large round body with a big belly and thick neck, wide full round face with a double chin, neatly combed short black hair, calm dignified gentle eyes, composed serious expression, wearing a clean but worn dark wool coat stretched over a buttoned shirt

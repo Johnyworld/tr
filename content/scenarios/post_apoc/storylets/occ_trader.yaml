@@ -57,6 +57,7 @@
   tags: [occ_trader]
   cooldown_days: 1
   when:
+    zones: [e_market]
     segments: [morning, day]
     day_gte: 3
     flags_all: [occ_tr_forger_seen]
@@ -122,6 +123,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle, rest_stop, water_plant]
     zone_owner: [other]
     segments: [morning, day]
   cast:
@@ -160,6 +162,7 @@
   title: 장부에 없는 자루
   tags: [occ_trader]
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
     zone_owner: [own]
     segments: [evening, night]
@@ -207,6 +210,7 @@
   title: 더 달라는 손님
   tags: [occ_trader]
   when:
+    zone_owner: [own]
     segments: [morning, day, evening]
     day_gte: 6
     flags_all: [occ_tr_side_deal]

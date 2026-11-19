@@ -16,6 +16,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [dawn, morning]
     own_food_days_lte: 9
@@ -57,6 +58,7 @@
   title: 냄새나는 고기
   tags: [occ_cook]
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [morning, day]
     day_gte: 3
@@ -109,6 +111,7 @@
   title: 한 국자만 더
   tags: [occ_cook]
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [morning, evening]
     day_gte: 2
@@ -148,6 +151,7 @@
   title: 누가 봤다
   tags: [occ_cook]
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
     flags_all: [occ_cook_ladle_given]
@@ -201,6 +205,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [evening, night]
     day_gte: 3
@@ -253,6 +258,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
     war_news_within_hours: 24
@@ -345,6 +351,7 @@
   title: 줄어드는 자루
   tags: [occ_cook]
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [dawn, morning]
     occupation_step_gte: 1
@@ -386,6 +393,7 @@
   title: 담 밖의 한 줌
   tags: [occ_cook]
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
     occupation_step_gte: 1
@@ -394,7 +402,7 @@
   cast:
     helper: { recall: occ_cook_rat }
     boss: { commander: true, enter: false }
-  setup: "장작을 패던 {helper}에게 다가가 보리 이야기를 꺼낸다. 도끼가 멈춘다. 한참 뒤에 {helper:이/가} 말한다. \"…담 밖 배수로에 애가 하나 있어. 여기 안 받아 준다고 해서. 한 줌이야. 한 줌.\""
+  setup: "장작을 패던 {helper:이/가} 당신을 보자 도끼를 멈춘다. 보리 이야기가 나올 줄 알았다는 얼굴이다. 한참 뒤에 {helper:이/가} 말한다. \"…담 밖 배수로에 애가 하나 있어. 여기 안 받아 준다고 해서. 한 줌이야. 한 줌.\""
   ai_direction: 사실이다. 담 밖에 받아 주지 않은 아이 하나가 숨어 산다. {helper:은/는} 들키면 무리에서 쫓겨날까 두려워한다. 무리의 규칙(남의 몫, 바깥 사람)에 따라 상관이 알게 되면 무게가 다르다. 부엌 반장의 결정이다.
   choices:
     - id: kitchen_share
@@ -445,6 +453,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
     occupation_step_gte: 2
@@ -517,6 +526,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    zones: [c_base]
     factions: [faction_c]
     own_territory: true
     segments: [morning, evening]
@@ -574,6 +584,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    zones: [d_clinic]
     factions: [faction_d]
     own_territory: true
     segments: [morning, evening]
@@ -616,6 +627,7 @@
   title: 같은 몫
   tags: [occ_cook]
   when:
+    zones: [a_base]
     factions: [faction_a]
     own_territory: true
     segments: [evening]

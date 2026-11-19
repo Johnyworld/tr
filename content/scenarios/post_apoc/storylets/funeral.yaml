@@ -8,6 +8,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     funeral: true
     own_territory: true
     segments: [morning, day, evening]
@@ -82,6 +83,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     funeral: true
     own_territory: true
     segments: [morning, evening]

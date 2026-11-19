@@ -9,6 +9,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_morale_lte: -2
     segments: [dawn, morning]
@@ -53,6 +54,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_morale_lte: -1
     segments: [morning, day]
@@ -100,6 +102,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_morale_lte: -1
     segments: [morning, evening]
@@ -140,6 +143,7 @@
   repeatable: true
   cooldown_days: 15
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_morale_lte: -2
     ranks: [grunt, staff, squad_leader]
@@ -177,6 +181,7 @@
   repeatable: true
   weight: 10
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     flags_all: [cf_mutiny_joined]
     segments: [night]

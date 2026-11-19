@@ -186,7 +186,7 @@
   repeatable: true
   cooldown_days: 2
   when:
-    own_territory: true
+    zones: [a_base]
     war_news_within_hours: 24
   cast:
     medic: { ids: [a_chaewon] }

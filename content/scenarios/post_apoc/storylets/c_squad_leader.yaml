@@ -88,6 +88,7 @@
   title: 규율반 천막의 그림자
   tags: [c_squad_leader]
   when:
+    own_territory: true
     segments: [evening]
     day_gte: 2
     flags_none: [c_sl_changsik_seen]
@@ -118,6 +119,7 @@
   title: 담이 듣는다
   tags: [c_squad_leader]
   when:
+    own_territory: true
     segments: [night]
     flags_all: [c_sl_changsik_known]
     flags_none: [c_sl_changsik_done]
@@ -159,6 +161,7 @@
   title: 빠져나갈 길
   tags: [c_squad_leader]
   when:
+    own_territory: true
     segments: [evening, night]
     day_gte: 3
     flags_none: [c_sl_seokjin_done]

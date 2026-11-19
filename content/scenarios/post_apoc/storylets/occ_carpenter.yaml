@@ -69,6 +69,7 @@
   title: 누구 지붕부터
   tags: [occ_carpenter]
   when:
+    weather: [rain]
     own_territory: true
     segments: [morning, day]
     day_gte: 3
@@ -333,6 +334,7 @@
   title: 규율반의 손
   tags: [occ_carpenter]
   when:
+    own_territory: true
     factions: [faction_c]
     segments: [morning, day, evening]
     flags_all: [occ_carp_weak_cage]
@@ -375,6 +377,7 @@
   tags: [occ_carpenter]
   cooldown_days: 5
   when:
+    zones: [b_base]
     factions: [faction_b]
     own_territory: true
     segments: [morning, day]

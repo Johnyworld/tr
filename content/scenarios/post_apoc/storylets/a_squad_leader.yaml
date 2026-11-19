@@ -53,6 +53,7 @@
   title: 바꿔 쥔 소총
   tags: [a_squad_leader]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [morning, day]
     day_gte: 2
@@ -97,6 +98,7 @@
   title: 막사 뒤의 고참
   tags: [a_squad_leader]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [evening, night]
     flags_all: [a_sl_saw_hand]
@@ -176,6 +178,7 @@
   urgent: true
   tags: [a_squad_leader]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [night, dawn]
     day_gte: 4
@@ -239,6 +242,7 @@
   title: 떨어진 상자
   tags: [a_squad_leader]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [morning, day, evening]
     day_gte: 3
@@ -293,6 +297,7 @@
   title: 식당 천막의 목소리
   tags: [a_squad_leader]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [evening]
     day_gte: 5
@@ -339,7 +344,7 @@
     day_gte: 2
   cast:
     comrade: { ids: [a_jiho, a_seoyeon, a_mansu], known: true }
-  setup: '식당 천막, 강태호 분대 자리에서 {comrade:이/가} 손을 든다. "어, 분대장님 오셨네. 이제 우리 같은 거랑은 밥 안 먹는 거야?" 웃음이 반쯤 섞여 있다. 3분대 자리는 천막 반대편이다.'
+  setup: '식당 천막, 옛 분대 자리에서 {comrade:이/가} 손을 든다. "어, 분대장님 오셨네. 이제 우리 같은 거랑은 밥 안 먹는 거야?" 웃음이 반쯤 섞여 있다. 3분대 자리는 천막 반대편이다.'
   ai_direction: 옛 동료는 서운하면서도 시험하고 있다. 진심 반, 농담 반이다. 어느 자리에 앉는지를 3분대도 보고 있다. 강태호는 멀리서 국만 뜬다.
   choices:
     - id: sit_old
@@ -449,7 +454,7 @@
     own_morale_lte: 0
   cast:
     grunt: { faction: own, ranks: [grunt], known: true }
-  setup: '막사 불이 꺼진 뒤에도 아무도 자지 않는다. 어둠 속에서 {grunt:이/가} 중얼거린다. "겨울 못 넘긴다는 말, 위에서도 다 안대." 아무도 대꾸하지 않는다.'
+  setup: '불을 끈 뒤에도 아무도 자지 않는다. 어둠 속에서 {grunt:이/가} 중얼거린다. "겨울 못 넘긴다는 말, 위에서도 다 안대." 아무도 대꾸하지 않는다.'
   ai_direction: 사기가 가라앉아 있다. 분대원들은 분대장이 뭐라고 하는지 기다린다. 거짓 희망은 금방 들통난다.
   choices:
     - id: story
@@ -486,7 +491,7 @@
     mission_active: true
     segments: [day, evening]
   cast:
-    stuck: { faction: own, ranks: [grunt], known: true }
+    stuck: { companion: { kinds: [squad, buddy] } }
   setup: "{zone}에서 돌아오는 길, 무너진 바닥 틈에 {stuck}의 다리가 끼었다. 콘크리트 덩이가 정강이를 누르고 있다. 해가 기울고, 어딘가에서 유리 깨지는 소리가 난다."
   # 되풀이될 때 차례로 쓰는 다른 상황 문장 (12-139)
   variants:

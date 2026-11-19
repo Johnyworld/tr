@@ -66,7 +66,7 @@
     segments: [day, evening]
   cast:
     partner: { companion: { kinds: [purpose], templates: [drifter_young] } }
-  setup: "같이 뒤지던 방에서 {partner:이/가} 서랍을 닫는 소리가 조금 빠르다. 돌아선 그의 점퍼 주머니가 아까보다 불룩하다. 눈이 마주치자 {partner:은/는} 먼저 웃는다."
+  setup: "{partner:이/가} 뒤지던 방에서 서랍을 닫는 소리가 조금 빠르다. 돌아선 그의 점퍼 주머니가 아까보다 불룩하다. 눈이 마주치자 {partner:은/는} 먼저 웃는다."
   ai_direction: 서랍에서 통조림 하나를 먼저 챙겼다. 반씩 나누자던 약속을 어긴 건 맞지만, 들키면 반으로 나누겠다고 넉살을 부린다. 몰아붙이면 화를 낸다.
   choices:
     - id: call_out
@@ -180,8 +180,8 @@
     segments: [day, evening, night]
   cast:
     buddy: { companion: { kinds: [buddy] } }
-  setup: "엄폐물 뒤에서 숨을 고르는 동안 {buddy:이/가} 낮게 묻는다. \"너는 무서울 때 어떻게 해? 나는 손이 안 멈춰.\" 그의 손끝이 총열 위에서 떨린다."
-  ai_direction: 짝은 겁이 많지만 도망칠 사람은 아니다. 어떻게 대답하느냐에 따라 오늘 임무에서 서로를 얼마나 믿을지가 정해진다.
+  setup: "잠깐 숨을 고르는 동안 {buddy:이/가} 낮게 묻는다. \"너는 무서울 때 어떻게 해? 나는 손이 안 멈춰.\" 그의 손끝이 무릎 위에서 떨린다."
+  ai_direction: 짝은 겁이 많지만 도망칠 사람은 아니다. 어떻게 대답하느냐에 따라 위험한 순간에 서로를 얼마나 믿을지가 정해진다.
   choices:
     - id: share
       label: 나도 그렇다고 털어놓는다

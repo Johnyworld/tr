@@ -181,6 +181,7 @@
   title: 막내의 배수로
   tags: [red_life]
   when:
+    zones: [c_base]
     own_territory: true
     segments: [night]
     day_gte: 3
@@ -425,7 +426,7 @@
     flags_none: [c_dongpal_dealt]
   cast:
     mate: { ids: [c_dongpal], known: true }
-  setup: "{mate:이/가} 막사 뒤에서 혼자 담배를 피우고 있다. 당신을 보자 바람 새는 웃음을 짓는다. \"신입, 얼굴이 왜 그래. 한 대 할래?\""
+  setup: "{mate:이/가} 담 그늘에서 혼자 담배를 피우고 있다. 당신을 보자 바람 새는 웃음을 짓는다. \"신입, 얼굴이 왜 그래. 한 대 할래?\""
   ai_direction: "{mate:은/는} 들켰는지 아직 모른다. 몰리면 처음엔 웃어넘기다가, 조장에게 알려지면 끝이라는 걸 깨닫는 순간 비굴해진다. 자기 쪽지 때문에 지난달 조원이 잡혔다는 것도 털어놓을 수 있다."
   choices:
     - id: squeeze
@@ -507,8 +508,8 @@
   when:
     zones: [old_town, riverside, south_fields]
     segments: [morning, day, evening]
-  setup: 털던 집 다락 판자 아래에서 숨소리가 난다. 판자를 들추자 여자 하나와 아이 둘이 몸을 웅크리고 있다. 여자 품에 통조림 몇 개가 안겨 있다.
-  ai_direction: 여자는 어느 무리에도 속하지 않은 떠돌이다. 통조림이 이 식구의 전부다. 같이 온 조원은 아래층에 있어 아직 모른다. 할당량은 모자라다.
+  setup: 털던 집 다락 판자 아래에서 숨소리가 난다. 판자 틈으로 여자 하나와 아이 둘이 몸을 웅크린 것이 보인다. 여자 품에 통조림 몇 개가 안겨 있다.
+  ai_direction: 여자는 어느 무리에도 속하지 않은 떠돌이다. 통조림이 이 식구의 전부다. 같이 온 조원이 있다면 아래층에 있어 아직 모른다. 할당량은 모자라다.
   choices:
     - id: take_all
       label: 통조림을 모두 빼앗는다

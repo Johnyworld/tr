@@ -11,6 +11,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_food_days_lte: 7
     segments: [evening, night]
@@ -50,6 +51,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_food_days_lte: 10
     segments: [morning, evening]
@@ -130,6 +132,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_morale_lte: -1
     segments: [evening]

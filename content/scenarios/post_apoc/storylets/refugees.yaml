@@ -55,6 +55,7 @@
   cooldown_days: 20
   when:
     own_territory: true
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     ranks: [grunt, staff, squad_leader]
     day_gte: 4
     segments: [morning, day, evening]
@@ -97,6 +98,7 @@
   weight: 3
   when:
     own_territory: true
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     flags_all: [rf_taken_in]
     segments: [evening, night]
   setup: 받아들인 피난민 가운데 한 사람이 밤마다 담 쪽 창고 근처를 서성인다. 오늘은 초소 교대 시각을 손가락으로 세는 것 같았다.

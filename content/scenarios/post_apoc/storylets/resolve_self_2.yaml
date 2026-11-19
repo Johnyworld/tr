@@ -104,6 +104,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    zones: [e_market, water_plant, rest_stop]
     resolve: { kinds: [truth], stage_gte: 2 }
     segments: [evening, night]
   setup: "장터 뒤 천막에 나루상단의 선적 장부가 펼쳐진 채 놓여 있다. 장부를 지키던 사람은 술자리에 불려 갔다. 등잔 불빛에 강으로 나가는 짐과 들어오는 짐의 칸이 보인다."
@@ -454,7 +455,7 @@
     segments: [day, evening]
   cast:
     neighbor: { extra: refugee, label: 같은 동네에 살았다는 사람 }
-  setup: "불가에서 {neighbor:이/가} 옛 동네 이름을 댄다. {target}이다. 시장 골목, 문 닫은 목욕탕, 놀이터의 녹슨 미끄럼틀. 둘 다 한동안 말이 없다."
+  setup: "{neighbor:이/가} 옛 동네 이름을 댄다. {target}이다. 시장 골목, 문 닫은 목욕탕, 놀이터의 녹슨 미끄럼틀. 둘 다 한동안 말이 없다."
   ai_direction: "{neighbor:은/는} 무너지기 전 {target}에 살았고 그 뒤로 떠돌았다. 지금 {target:을/를} 누가 쥐고 있는지는 장면 정보에 있는 만큼만 말하고, 모르면 모른다고 한다. 주인공의 집이 남았는지는 모른다."
   choices:
     - id: ask
@@ -485,7 +486,7 @@
     segments: [dawn, morning]
   setup: "높은 데 올라 {target} 쪽을 내려다본다. 낯익은 지붕선이 무너진 채로 남아 있다. 저 아래 어디쯤이 집이다. 가는 길에 무엇이 있을지는 여기서 다 보이지 않는다."
   variants:
-    - "{target}까지 이어진 길이 안개 속에서 끊겼다 이어진다. 저 너머다. 발이 먼저 앞으로 나간다."
+    - "{target}까지 이어진 길이 무너진 건물들 사이로 끊겼다 이어진다. 저 너머다."
   ai_direction: "닿는 것은 코드가 정한다 ({target}에 들어서면). 이 장면은 들어갈 길을 고르는 순간. 집이 어떻게 됐는지, 길에 누가 있는지 지어내지 않는다. 판정 결과만큼만 보인다."
   choices:
     - id: scout

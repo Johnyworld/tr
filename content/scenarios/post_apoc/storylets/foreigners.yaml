@@ -66,6 +66,7 @@
   title: 사격장의 교관
   tags: [world]
   when:
+    has_items_any: [old_rifle, shotgun, sawn_shotgun, pistol]
     zones: [c_base]
     segments: [morning, day]
   cast:

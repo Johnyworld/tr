@@ -15,6 +15,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     weather: [cold_snap]
     segments: [evening, night]
     own_territory: true
@@ -115,6 +116,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     weather: [rain]
     own_territory: true
     segments: [evening, night]
@@ -148,6 +150,7 @@
   repeatable: true
   cooldown_days: 10  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [night]
   setup: 담장 너머로 물결이 지나간다. 철판에 어깨가 스치는 소리, 수십 개의 발 끄는 소리. 담 안의 모두가 숨을 죽였는데, 어디선가 아이 하나가 울기 시작한다.
@@ -186,6 +189,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [morning, day]
     day_gte: 2
@@ -422,6 +426,7 @@
   urgent: true
   tags: [world]
   when:
+    animal_companion: true
     own_territory: false
     segments: [evening, night]
     flags_all: [w_dog_fed]

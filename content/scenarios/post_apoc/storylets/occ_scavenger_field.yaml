@@ -13,13 +13,14 @@
   weight: 2
   cooldown_days: 5
   when:
+    has_items_any: [old_rifle, shotgun, pistol, sawn_shotgun]
     own_territory: true
     segments: [dawn, morning]
     day_gte: 2
   cast:
     boss: { commander: true }
     mate: { faction: own, ranks: [grunt], optional: true }
-  setup: 줄이 섰다. {boss:이/가} 하나씩 총을 받아 노리쇠를 당기고 총구를 햇빛에 비춰 본다. 당신 차례가 세 사람 남았다. 어제 비를 맞고 들어와서 그대로 세워 둔 것이 생각난다.
+  setup: 줄이 섰다. {boss:이/가} 하나씩 총을 받아 노리쇠를 당기고 총구를 햇빛에 비춰 본다. 당신 차례가 세 사람 남았다. 어제 젖은 채로 들어와서 그대로 세워 둔 것이 생각난다.
   ai_direction: 총열 안에 녹이 슬기 시작했다. 상관은 녹을 그냥 넘기지 않는다. 총은 무리의 것이고, 녹슨 총은 바깥에서 사람을 죽인다. 옆 사람은 자기 총을 손질해 두었고, 몰래 바꿔 들자고 하면 들어줄 수도 있다.
   choices:
     - id: quick_fix
@@ -67,6 +68,7 @@
   weight: 2
   cooldown_days: 7
   when:
+    has_items_any: [old_rifle, shotgun, pistol, sawn_shotgun]
     own_territory: true
     segments: [night]
     day_gte: 4
@@ -165,7 +167,7 @@
     flags_none: [os_first_fire_done]
   cast:
     rookie: { recall: os_rookie }
-  setup: 담벼락 너머에서 총소리 두 발. 다들 엎드리는데 {rookie:이/가} 선 채로 굳었다. 총을 가슴에 끌어안고 눈만 크게 뜨고 있다. 세 번째 총성이 벽돌을 깨뜨린다.
+  setup: 담벼락 너머에서 총소리 두 발. 몇 걸음 앞 골목에서 {rookie:이/가} 선 채로 굳었다. 총을 가슴에 끌어안고 눈만 크게 뜨고 있다. 세 번째 총성이 벽돌을 깨뜨린다.
   ai_direction: 쏘는 쪽은 멀고 겨냥도 서툴다. 하지만 서 있는 사람은 맞을 수 있다. 신병을 끌어내리려면 몸을 드러내야 한다. 앞서 굴렸다면(os_rookie_drilled) 소리를 지르면 몸이 먼저 반응한다. 밥만 같이 먹었다면 소리보다 손이 필요하다. 위험은 판정 전에 선언한다.
   choices:
     - id: drag_down
@@ -238,8 +240,8 @@
     segments: [morning, day, evening]
   cast:
     boss: { commander: true, enter: false }
-    young: { faction: own, ranks: [grunt] }
-  setup: 무너진 골목 어귀에서 줄이 멈춘다. 앞은 꺾인 길, 그 너머는 안 보인다. 누가 먼저 고개를 내밀지 다들 눈치를 본다. 고참이 된 뒤로 이럴 때 사람들은 당신을 본다. {young:이/가} 침을 삼키며 말한다. "제가 갈까요?"
+    young: { companion: { kinds: [squad, buddy] } }
+  setup: 무너진 골목 어귀에서 줄이 멈춘다. 앞은 꺾인 길, 그 너머는 안 보인다. 누가 먼저 고개를 내밀지 서로 눈치를 본다. 고참이 된 뒤로 이럴 때 사람들은 당신을 본다. {young:이/가} 침을 삼키며 말한다. "제가 갈까요?"
   ai_direction: 꺾인 길 너머에 무엇이 있는지는 GM이 이 구역의 위험에 맞게 정하되, 결과는 판정으로만 낸다. 맨 앞은 가장 먼저 맞는 자리다. 고참이 젊은 사람을 앞세우면 아무도 말은 안 하지만 다 기억한다. 상관은 그 자리에 없고 나중에 듣는다.
   choices:
     - id: go_first

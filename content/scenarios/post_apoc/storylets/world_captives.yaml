@@ -69,7 +69,7 @@
   cast:
     young: { ids: [a_jeongbin], captive: true }
     chief: { ids: [a_gicheol_scout], captive: true, enter: false }
-  setup: 새벽 경비를 서는데 간수의 열쇠 꾸러미가 탁자 위에 놓여 있다. 간수는 뒤뜰에서 담배를 피우는 중이다. 창살 안에서 {young:이/가} 열쇠 쪽을 보다가 당신과 눈이 마주친다.
+  setup: 수용소 경비실 앞. 간수의 열쇠 꾸러미가 탁자 위에 놓여 있다. 간수는 뒤뜰에서 담배를 피우는 중이다. 창살 안에서 {young:이/가} 열쇠 쪽을 보다가 당신과 눈이 마주친다.
   ai_direction: 아무도 보지 않는 몇 분이다. 문을 열어 주면 둘은 배수구로 빠져나간다. 들키면 규율반이 당신을 찾는다. 오정빈은 부탁하지 않는다. 그냥 본다.
   choices:
     - id: open

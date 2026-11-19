@@ -162,7 +162,7 @@
     resolve: { kinds: [cure], stage: 1 }
   cast:
     orderly: { extra: d_orderly, label: 진료소 뒷문에서 담배를 피우는 간호조무사 }
-  setup: "{orderly:이/가} 진료소 뒷문에 기대 담배를 피운다. 앞문 줄은 아침부터 끝이 없다. 혈청 얘기를 꺼내자 그가 주위를 한 번 둘러본다."
+  setup: "{orderly:이/가} 벽에 기대 담배를 피운다. 하얀매 진료소에서 일한다고 한다. 진료소 앞문 줄은 아침부터 끝이 없다고 투덜댄다. 혈청 얘기를 꺼내자 그가 주위를 한 번 둘러본다."
   ai_direction: "하얀매는 혈청을 아무에게나 쓰지 않는다. 조무사는 줄을 세우는 사람이지 혈청을 주는 사람이 아니다. 누구에게 말을 넣어야 하는지까지만 안다. 혈청을 건네지 않는다."
   choices:
     - id: plead
@@ -415,7 +415,7 @@
     segments: [evening, night]
   cast:
     dear: { resolve_target: true, here: true }
-  setup: "불가에 앉을 자리가 하나뿐이다. {dear:이/가} 옆으로 조금 비켜 앉는다. 어깨가 닿을 듯 말 듯하다. 밤이 춥다."
+  setup: "앉을 자리가 좁다. {dear:이/가} 옆으로 조금 비켜 앉는다. 어깨가 닿을 듯 말 듯하다. 밤이 춥다."
   ai_direction: "작은 다정함의 장면. {dear}도 무언가 느끼지만 먼저 말하지 않는다. 연애의 진전은 코드가 정한다."
   choices:
     - id: share
@@ -494,7 +494,7 @@
   when:
     resolve: { kinds: [bury], stage_gte: 1 }
     segments: [evening, night]
-  setup: "밤이 길다. 손이 심심해서인지 마음이 무거워서인지, 칼을 꺼내 나뭇조각을 만지작거린다. 묻어 줄 때 꽂아 둘 것이 있어야 할 것 같다."
+  setup: "밤이 길다. 손이 심심해서인지 마음이 무거워서인지, 손에 잡힌 나뭇조각을 만지작거린다. 묻어 줄 때 꽂아 둘 것이 있어야 할 것 같다."
   ai_direction: "{target:을/를} 떠올리는 조용한 장면이다. 슬픔을 과장하지 않는다. 묻는 것은 유해가 있는 곳에서 take_action.bury로 한다."
   choices:
     - id: carve

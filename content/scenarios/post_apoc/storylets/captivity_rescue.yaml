@@ -13,7 +13,7 @@
   cast:
     lost: { captive_anywhere: true, faction: own, known: true, enter: false, keep: cp_hunt }
     boss: { commander: true, optional: true }
-  setup: 식당 천막의 긴 의자에 한 자리가 비어 있다. 누가 그 자리에 숟가락 하나를 놓아 두었다. {lost}의 자리다. 옆자리 사람들이 그 숟가락을 보지 않으려고 한다.
+  setup: 저녁 먹는 자리에 한 자리가 비어 있다. 누가 그 자리에 숟가락 하나를 놓아 두었다. {lost}의 자리다. 옆자리 사람들이 그 숟가락을 보지 않으려고 한다.
   ai_direction: "{lost:은/는} 다른 무리에 붙잡혀 있다. 어디인지는 아직 주인공이 모른다 (알게 되는 것은 아래 효과뿐). 무리는 구하러 가자는 사람과, 사람 하나 때문에 더 잃을 수 없다는 사람으로 갈린다. 상관이 있으면 상관도 그 자리를 본다. 구출을 정하는 것은 플레이어다. 지어낸 장소를 말하지 않는다."
   choices:
     - id: ask_boss

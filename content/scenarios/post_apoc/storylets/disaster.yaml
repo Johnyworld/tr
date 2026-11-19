@@ -9,7 +9,8 @@
   cooldown_days: 20
   when:
     disaster: { phase: omen, kinds: [fire] }
-  setup: "바람이 세다. 공기가 바삭할 만큼 말랐다. 창고 뒤에 쌓인 기름통과 땔감 더미가 자꾸 눈에 밟힌다."
+    weather: [clear, overcast, cold_snap]
+  setup: "바람이 세다. 공기가 바삭할 만큼 말랐다. 곳곳에 쌓인 기름통과 땔감 더미가 자꾸 눈에 밟힌다."
   ai_direction: "불이 날지는 아무도 모른다. 주인공만 이상하다고 느낀다. 대비하면 피해가 준다 (얼마나인지는 시스템이 정한다)."
   choices:
     - id: move
@@ -71,7 +72,7 @@
   cooldown_days: 20
   when:
     disaster: { phase: omen, kinds: [flood] }
-  setup: "비가 사흘째 그치지 않는다. 강물이 다리 밑을 핥고, 하수구에서 물이 거꾸로 솟는다."
+  setup: "요 며칠 비가 잦았다. 불어난 강물이 다리 밑을 핥고, 하수구에서 물이 거꾸로 솟는다."
   ai_direction: "물이 어디까지 오를지는 모른다. 낮은 곳의 짐과 사람을 높은 곳으로 옮기면 피해가 준다."
   choices:
     - id: sandbags
@@ -210,7 +211,7 @@
   when:
     disaster: { phase: struck, kinds: [cold] }
     segments: [morning]
-  setup: "아침 점호에서 대답 없는 이름이 둘 있다. 담요를 들추자 얼굴이 하얗다. 사람들이 말없이 땔감 더미를 본다."
+  setup: "간밤에 깨어나지 못한 사람이 있다. 담요 밖으로 나온 얼굴이 하얗다. 살아남은 사람들이 말없이 땔감 더미를 본다."
   ai_direction: "한파가 이어진다 (날씨는 시스템대로). 땔감을 두고 다툼이 생기기 쉽다. 누가 더 가져가는지 다들 본다."
   choices:
     - id: share

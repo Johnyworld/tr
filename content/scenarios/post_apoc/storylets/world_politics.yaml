@@ -176,6 +176,7 @@
   when:
     factions: [faction_a]
     own_territory: true
+    zones: [a_base]
     segments: [morning, day]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -214,6 +215,7 @@
   tags: [world]
   when:
     factions: [faction_a]
+    own_territory: true
     segments: [evening, night, dawn]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -292,7 +294,7 @@
   cooldown_days: 7
   when:
     factions: [faction_b]
-    own_territory: true
+    zones: [b_base]
     segments: [morning, day]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -342,14 +344,15 @@
   tags: [world]
   when:
     factions: [faction_c]
+    own_territory: true
     segments: [morning, day]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
     boss: { commander: true }
     guard: { extra: b_guard, label: 버들마을 정문의 경비병 }
   setup: >-
-    버들마을 정문이 처음으로 낮에 열린다. {boss:이/가} 짐수레 두 대를 앞세우고 당신을 맨 앞에 세운다.
-    "오늘부터 이 길로 남쪽 텃밭까지 간다. 청솔 놈들 등 뒤로." 정문의 {guard:이/가} 말없이 수레 바퀴만 내려다본다.
+    {boss:이/가} 짐수레 두 대를 세워 놓고 당신을 부른다. "버들마을 정문이 낮에 열린다. 오늘부터 그 길로 남쪽 텃밭까지 간다. 청솔 놈들 등 뒤로."
+    길잡이로 따라온 버들마을 정문의 {guard:이/가} 말없이 수레 바퀴만 내려다본다.
   ai_direction: 버들마을을 지나는 길은 청솔형제단의 남쪽 텃밭으로 이어진다. 버들마을 사람들은 길을 열어 주었지만 반기지 않는다. {boss:은/는} 통행세로 뭔가를 더 받아 내고 싶어 한다. 첫날의 태도가 이 길의 분위기를 정한다.
   choices:
     - id: polite
@@ -386,7 +389,7 @@
     boss: { ids: [e_bongsu] }
     captain: { ids: [e_okhee] }
   setup: >-
-    장터 창고 뒤, 등잔 하나를 두고 {boss:이/가} 주판을 튕기고 있다. {captain:이/가} 팔짱을 낀 채 말한다.
+    창고 뒤, 등잔 하나를 두고 {boss:이/가} 주판을 튕기고 있다. {captain:이/가} 팔짱을 낀 채 말한다.
     "어느 한쪽 물만 길어 주는 순간 우리 정수장은 표적이야." {boss:이/가} 웃는다. "겨울엔 이기는 쪽이 값을 정하지." 둘이 동시에 당신을 본다. "넌 길에서 뭘 봤냐."
   ai_direction: "{boss:은/는} 가장 큰 무리 쪽에 붙을 셈을 이미 반쯤 끝냈다. {captain:은/는} 휴전과 정수장의 중립이 상단을 살린다고 믿는다. 짐꾼이 길에서 본 것(어느 무리가 더 굶는지, 누가 더 총이 많은지)은 셈에 얹히는 작은 돌이다. 둘 다 숫자를 말하지 않는다."
   choices:
@@ -429,7 +432,7 @@
   cast:
     porter: { extra: e_porter, label: 물값을 받는 짐꾼 }
   setup: >-
-    정수장 앞 줄이 둘로 갈려 있다. 붉은 완장들이 선 줄은 짧고 빨리 줄어든다. {porter:이/가} 당신 물통을 보고 손가락 두 개를 편다.
+    물 받는 줄이 둘로 갈려 있다. 붉은 완장들이 선 줄은 짧고 빨리 줄어든다. {porter:이/가} 당신을 보고 손가락 두 개를 편다.
     "그쪽 무리는 이제 두 배야. 위에서 정한 거라 나도 어쩔 수 없어."
   ai_direction: 나루상단은 붉은연합 쪽에 붙었다. 물값이 무리마다 다르고, 붉은연합 사람은 먼저 받는다. {porter:은/는} 이 일이 마음에 들지 않지만 위의 지시를 어기면 자기 자리가 위태롭다. 상단 안에는 밤에 몰래 물을 파는 사람도 있다 (짐꾼이 흘릴 수도 있다).
   choices:

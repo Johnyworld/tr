@@ -35,6 +35,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [evening]
   cast:
@@ -70,7 +71,7 @@
     segments: [dawn, morning]
   cast:
     giver: { faction: own, here: true, known: true }
-  setup: "나서려는 당신을 {giver:이/가} 불러 세운다. 주먹을 펴니 손때 묻은 나무 묵주 알 하나, 아니면 그냥 매끈한 돌이다. \"이거 가지고 가. 우리 엄마가 준 거야. 돌아와서 돌려줘.\""
+  setup: "{giver:이/가} 당신을 불러 세운다. 주먹을 펴니 손때 묻은 나무 묵주 알 하나, 아니면 그냥 매끈한 돌이다. \"이거 가지고 가. 우리 엄마가 준 거야. 돌아와서 돌려줘.\""
   ai_direction: "{giver:은/는} 이것이 진짜로 지켜 준다고 믿는지 스스로도 모른다. 돌려달라는 말이 진짜 뜻이다 (돌아오라는). 판정에 아무 보정도 없다. 받든 안 받든 서술로만."
   choices:
     - id: take
@@ -128,7 +129,7 @@
     segments: [day, evening]
   cast:
     preacher: { extra: refugee, label: 흰 띠를 두른 사람 }
-  setup: "장바닥 한쪽에 사람들이 모였다. 이마에 흰 띠를 두른 {preacher:이/가} 상자 위에 서 있다. \"물린 자들은 벌을 받은 겁니다. 죄 없는 사람은 변하지 않아요. 우리한테 오면 깨끗해집니다.\" 듣는 사람 중에 감염으로 가족을 잃은 얼굴들이 보인다."
+  setup: "길 한쪽에 사람들이 모였다. 이마에 흰 띠를 두른 {preacher:이/가} 상자 위에 서 있다. \"물린 자들은 벌을 받은 겁니다. 죄 없는 사람은 변하지 않아요. 우리한테 오면 깨끗해집니다.\" 듣는 사람 중에 감염으로 가족을 잃은 얼굴들이 보인다."
   ai_direction: "흰 띠 무리는 아직 작다. 감염이 무엇인지 아무것도 확정하지 않는다 (감염의 근원 떡밥과 엮지 않는다). {preacher:은/는} 반박에 화내지 않고 웃으며 더 크게 말한다. 듣는 사람 일부는 고개를 끄덕인다. 싸움으로 번지지 않는다."
   choices:
     - id: argue

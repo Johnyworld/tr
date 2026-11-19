@@ -10,6 +10,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    zone_owner: [own, other]
     resolve: { kinds: [revenge], stage: 0 }
     segments: [evening, night]
   cast:
@@ -207,7 +208,7 @@
   cooldown_days: 3
   when:
     resolve: { kinds: [cure], stage: 0 }
-  setup: "장터 뒷골목에서 누군가 낮게 말한다. 하얀매 말고도 혈청이 나오는 곳이 있다고. 다만 값은 사람 목숨만큼이라고."
+  setup: "{zone}에서 마주친 행상 하나가 낮게 말한다. 하얀매 말고도 혈청이 나오는 곳이 있다고. 다만 값은 사람 목숨만큼이라고."
   ai_direction: "혈청은 아주 귀하다. 나루상단 사람이 섬에서 들여온다는 말, 옛 연구동 지하에 남았다는 말 (탐험 12-162). 지어낸 위치를 덧붙이지 않는다."
   choices:
     - id: dig
@@ -234,7 +235,7 @@
     resolve: { kinds: [cure] }
     segments: [night]
   cast:
-    sick: { resolve_target: true, enter: false, condition: { track: infection, at_least: fever } }
+    sick: { resolve_target: true, here: true, condition: { track: infection, at_least: fever } }
   setup: "{sick}의 숨이 거칠다. 밤새 열에 들떠 누군가의 이름을 부른다. 시간이 많지 않다는 것을 둘 다 안다."
   ai_direction: "감염이 깊어지고 있다 (코드의 상태대로). 무엇을 해도 오늘 밤 낫지는 않는다. 곁을 지키는 장면이다."
   choices:

@@ -13,7 +13,7 @@
     segments: [morning, evening]
   cast:
     avenger: { vendetta: true, faction: own }
-  setup: 배식 줄 건너편에서 {avenger:이/가} 숟가락을 든 채 이쪽을 본다. 눈을 돌리지 않는다. 옆 사람이 팔꿈치로 찌른다. "저 사람, 요즘 너만 보던데."
+  setup: 멀찍이서 {avenger:이/가} 이쪽을 본다. 눈을 돌리지 않는다. 옆 사람이 팔꿈치로 찌른다. "저 사람, 요즘 너만 보던데."
   ai_direction: "{avenger:은/는} 주인공이 죽인 {victim}의 가족이나 친구다 (카드의 원한 줄). 같은 무리라 대놓고 덤비지 못한다. 대신 지켜본다. 무리 사람들은 둘 사이에 무언가 있다는 걸 눈치채기 시작한다."
   choices:
     - id: meet_eyes
@@ -55,7 +55,7 @@
     segments: [night]
   cast:
     avenger: { vendetta: true, faction: own }
-  setup: 새벽 보초 교대. 담 위 초소에는 둘뿐이다. 오늘 교대해 올라온 사람이 {avenger}이다. 발소리가 등 뒤에서 멈춘다. 담 아래로는 한 길이 넘는다.
+  setup: 밤 보초 교대. 담 위 초소에는 둘뿐이다. 오늘 교대해 올라온 사람이 {avenger}이다. 발소리가 등 뒤에서 멈춘다. 담 아래로는 한 길이 넘는다.
   ai_direction: "{avenger:은/는} 오늘 밤 결판을 내려고 교대를 바꿔 들었다 (사고로 보이게, 담 아래로). 무리 안이라 들키면 그쪽도 끝이다. 주인공이 먼저 알아채는지는 판정. 밀거나 다치게 하는 것은 코드가 정한다."
   choices:
     - id: turn

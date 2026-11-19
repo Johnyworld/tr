@@ -62,6 +62,7 @@
   title: 맞지 않는 자루
   tags: [a_officer]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [day, evening]
     day_gte: 2
@@ -143,6 +144,7 @@
   title: 장부 두 권
   tags: [a_officer]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [morning, day, evening]
     flags_all: [a_of_saw_sacks]
@@ -256,6 +258,7 @@
   urgent: true
   tags: [a_officer]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [evening, night]
     day_gte: 3
@@ -305,6 +308,7 @@
   title: 초록 띠를 뗀 사람들
   tags: [a_officer, council]
   when:
+    zones: [a_base]
     factions: [faction_a]
     own_territory: true
     segments: [morning, day, evening]
@@ -349,6 +353,7 @@
   title: 목도리 속의 말
   tags: [a_officer]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [evening, night]
     day_gte: 3
@@ -395,6 +400,7 @@
   urgent: true
   tags: [a_officer]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [night, dawn]
     day_gte: 5
@@ -402,7 +408,7 @@
     flags_none: [a_of_jaeseok_settled]
   cast:
     elder: { ids: [a_jaeseok] }
-  setup: 새벽, 교무실 옆 작은 방에 불이 켜져 있다. {elder:이/가} 목도리를 두르고 배낭을 꾸린다. 문 옆에는 취사 천막 사람 둘이 보따리를 들고 서 있다. 당신을 보고도 손을 멈추지 않는다.
+  setup: 교무실 옆 작은 방에 불이 켜져 있다. {elder:이/가} 목도리를 두르고 배낭을 꾸린다. 문 옆에는 취사 천막 사람 둘이 보따리를 들고 서 있다. 당신을 보고도 손을 멈추지 않는다.
   ai_direction: 봉재석은 장터를 거쳐 붉은연합으로 넘어가려 한다. 따르는 두 사람은 배고파서 따라나선 이들이다. 지금 붙잡으면 소란이 나고, 보내면 그가 아는 회의 내용이 붉은연합으로 간다. 그는 참모를 해치지 않는다. 말로 붙잡을 수 있는 마지막 순간이다.
   choices:
     - id: persuade_stay
@@ -454,7 +460,7 @@
   cast:
     runner: { ids: [a_hangyeol] }
     hawk: { ids: [a_jeonghun], enter: false }
-  setup: '{runner:이/가} 젖은 쪽지를 내민다. 동쪽 초소 분대장의 글씨다. "고가도로 아래 불빛 여럿. 밤마다 늘어남. 탄 부족. 사람 부족." 쪽지 뒷면에 누군가 연필로 덧썼다. "며칠 안 남음."'
+  setup: '{runner:이/가} 구겨진 쪽지를 내민다. 동쪽 초소 분대장의 글씨다. "고가도로 아래 불빛 여럿. 밤마다 늘어남. 탄 부족. 사람 부족." 쪽지 뒷면에 누군가 연필로 덧썼다. "며칠 안 남음."'
   ai_direction: 붉은연합의 동쪽 공세가 가깝다. 정확한 날짜는 아무도 모른다. 초소를 채우면 반격 준비는 늦어지고, 반격 쪽에 두면 초소가 버틸지 모른다. 육정훈은 초소를 버리고 그 탄으로 물류창고를 치자고 할 것이다. 숫자는 지어내지 않는다.
   choices:
     - id: reinforce
@@ -545,6 +551,7 @@
   title: 막사 구석의 기침
   tags: [a_officer]
   when:
+    zones: [a_base]
     own_territory: true
     segments: [evening, night]
     day_gte: 2
@@ -592,6 +599,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    zones: [a_base]
     factions: [faction_a]
     own_territory: true
     segments: [morning, day]

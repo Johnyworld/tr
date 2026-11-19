@@ -30,7 +30,7 @@
     own_territory: true
   cast:
     held: { faction: own, captive_anywhere: true, enter: false }
-  setup: "저녁 점호에서 {held}의 이름이 불리고, 대답이 없다. 다들 그가 어디 붙잡혀 있는지 짐작만 한다."
+  setup: "{held}의 자리는 오늘도 비어 있다. 다들 그가 어디 붙잡혀 있는지 짐작만 한다."
   ai_direction: "위에서는 몸값이나 교환을 기다리자는 말이 나온다. 직접 빼 오는 것은 무모한 일이다. 받든 안 받든 주인공의 몫이다."
   choices:
     - id: vow
@@ -87,7 +87,7 @@
     segments: [evening, night]
   cast:
     dear: { romance: suitor, here: true }
-  setup: "{dear:이/가} 무심한 척 당신 몫의 국에 건더기를 더 얹는다. 눈이 마주치자 먼저 고개를 돌린다."
+  setup: "{dear:이/가} 무심한 척 곁에 앉아 먹을 것을 조금 덜어 건넨다. 눈이 마주치자 먼저 고개를 돌린다."
   ai_direction: "{dear}의 마음은 코드가 정한 그대로다. 이 세상에 내일이 있는지 모른다는 것이 두 사람 다 걸린다."
   choices:
     - id: vow
@@ -107,7 +107,7 @@
   when:
     own_territory: true
     own_distrust_gte: 2
-  setup: "배식 줄에서 당신 앞뒤로 한 칸씩 비어 있다. 수군거림이 등 뒤에서 멎었다가 다시 시작된다."
+  setup: "당신이 다가가면 사람들 사이에 한 칸씩 틈이 벌어진다. 수군거림이 등 뒤에서 멎었다가 다시 시작된다."
   ai_direction: "무리 사람들이 주인공을 믿지 않는다 (그럴 만한 일이 있었다). 씻는 데는 오래 걸린다. 말이 아니라 행동으로만."
   choices:
     - id: vow

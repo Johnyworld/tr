@@ -171,6 +171,8 @@ export const deedSchema = z.strictObject({
    * 듣는 사람은 진짜로 믿고 똑같이 퍼뜨린다. 지어낸 사람과 누명을 쓴 사람만 거짓인 줄 안다
    */
   fabricatedBy: z.string().optional(),
+  /** GM이 take_action.deed로 남긴 행적 (이야기의 같은 행적을 겹쳐 남기지 않을 때 이것만 본다, 플레이 테스트 12) */
+  byGm: z.boolean().optional(),
 });
 export type Deed = z.infer<typeof deedSchema>;
 

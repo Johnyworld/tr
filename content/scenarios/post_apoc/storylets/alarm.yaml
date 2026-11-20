@@ -24,7 +24,7 @@
           - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
           - belief: { fact: "{zone}에서 청솔형제단 보초에게 들켰지만 담 그늘로 달아났다", source: seen }
         partial:
-          - wound: { steps: 1, cause: 달아나다 철조망에 걸렸다 }
+          - wound: { steps: 1, cause: 달아나다 철조망에 걸렸다, kind: cut }
           - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
           - belief: { fact: "{zone}에서 청솔형제단 보초를 따돌렸지만 철조망에 살이 찢겼다", source: seen }
         miss:
@@ -127,7 +127,7 @@
           - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
           - belief: { fact: "{zone}에서 붉은연합 보초에게 들켰지만 컨테이너 사이로 빠져나왔다", source: seen }
         partial:
-          - wound: { steps: 1, cause: 등 뒤에서 날아온 붉은연합 보초의 총알이 스쳤다 }
+          - wound: { steps: 1, cause: 등 뒤에서 날아온 붉은연합 보초의 총알이 스쳤다, kind: gunshot }
           - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
           - belief: { fact: "{zone}에서 붉은연합 보초의 총알이 스쳤다. 그래도 빠져나왔다", source: seen }
         miss:
@@ -180,7 +180,7 @@
           - faction_relation: { from: faction_d, to: own, delta: -1, mutual: false }
           - belief: { fact: "하얀매 진료소에 숨어들다 들켰지만 창문으로 빠져나왔다", source: seen }
         partial:
-          - wound: { steps: 1, cause: 진료소 창문 유리에 베였다 }
+          - wound: { steps: 1, cause: 진료소 창문 유리에 베였다, kind: cut }
           - faction_relation: { from: faction_d, to: own, delta: -1, mutual: false }
           - belief: { fact: "하얀매 진료소 창문으로 빠져나오다 유리에 베였다", source: seen }
         miss:

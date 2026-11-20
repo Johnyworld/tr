@@ -233,6 +233,14 @@ function describePresentNpcs(state: GameState, content: Content, player: Charact
   return [`함께 있는 인물:\n${cards.join("\n\n")}`, ...menace].join("\n");
 }
 
+/**
+ * 남의 짐 줄의 머리: 동행·이름을 아는 사람은 그냥, 낯선 사람은 [GM 전용] (플레이 테스트 12: 처음 본 약장수의 짐이 다 보였다).
+ * 꺼내 보이거나 흥정·뒤지기로 드러날 때까지 주인공은 모른다
+ */
+function carriedLabel(state: GameState, player: Character, id: string): string {
+  return state.companions.includes(id) || knowsName(state, player.id, id) ? "지닌 것" : "[GM 전용] 지닌 것 (주인공은 모른다. 꺼내 보이거나 흥정·뒤지기로 드러날 때까지 말하지 않는다)";
+}
+
 /** 엑스트라의 연기용 카드: 호칭, 겉모습, 상태, 지닌 것, 트레잇, 이름을 아는지 */
 function describeExtraCard(state: GameState, content: Content, c: Character, player: Character): string {
   const ex = c.extra!;
@@ -246,7 +254,7 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
       ? `### ${headingAs(state, content, player.id, c.id)} (${c.id})`
       : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}${occupationTitle(content, c) ? ` · ${occupationTitle(content, c)}` : ""}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
     `겉모습: ${ex.look}`,
-    `상태: ${describeConditions(content.scenario, c)} / 지닌 것: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
+    `상태: ${describeConditions(content.scenario, c)} / ${carriedLabel(state, player, c.id)}: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
     template?.kind === "infected"
       ? `[GM 전용] 감염체 (틀: ${template.label}). 말이 통하지 않고 산 사람을 보면 덤빈다. 맞서는 판정의 opponent·target으로 둔다 (다칠 위험에 감염이 저절로 붙는다)`
       : `[GM 전용: 연기에만 쓴다] ${animal ? KIND_LABELS[templateKind(template)] : c.profile ? "자란 인물" : "이름 없는 인물"} (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
@@ -349,7 +357,7 @@ function describeNpcCard(
   return [
     `### ${headingAs(state, content, player.id, npc.id)} (${npc.id}) · ${rankName(content, character.factionId, character.rank)}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
     `외모: ${npc.look}`,
-    `상태: ${describeConditions(content.scenario, character)} / 소지품: ${describeInventory(content, character.inventory)}`,
+    `상태: ${describeConditions(content.scenario, character)} / ${carriedLabel(state, player, character.id)}: ${describeInventory(content, character.inventory)}`,
     `화법: 이 인물의 말투 — ${npc.voice.style} (말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer})`,
     `예시 대사: ${npc.voice.samples.map((s) => `"${s}"`).join(" / ")}`,
     ...rankTitleNote(content, npc, player),
@@ -556,6 +564,8 @@ function describeBeliefs(state: GameState, content: Content): string {
   // 알게 된 때를 붙인다 (12-178): 사흘 전에 본 병력은 지금과 다를 수 있다
   const lines = shown.map((b) => `- [${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}] ${b.fact}`);
   const rest = all.length - shown.length;
+  // 실을 것이 없으면 머리줄 없이 한 줄로 (플레이 테스트 12: 항목 없는 머리줄이 남았다)
+  if (lines.length === 0) return `(당신이 알고 있다고 믿는 것 ${rest}개는 지금 장면과 멀다. 필요하면 recall로 찾는다)`;
   return `당신이 알고 있다고 믿는 것 (틀렸거나 오래된 정보일 수 있다. 며칠 묵은 병력·형편·행방은 지금과 다를 수 있으니 인물이 단정하지 않게 한다):\n${lines.join("\n")}${rest > 0 ? `\n(이 밖에 더 오래된 것 ${rest}개. 필요하면 recall로 찾는다)` : ""}`;
 }
 

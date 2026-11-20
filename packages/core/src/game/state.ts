@@ -299,6 +299,8 @@ export function createGameSchemas(s: Scenario) {
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 소리를 듣고 몰려오는 감염체 (infestation.swarm_hours): 구역 → 그날 소리(day)에 몰려드는 시각(at), 이미 왔는지(done) */
     swarms: z.record(z.string(), z.strictObject({ day: z.number().int(), at: z.number().int(), done: z.boolean() })).default({}),
+    /** 주인공이 마지막으로 그 구역에 갔을 때 본 주인 (플레이 테스트 12: 점령 변화가 소문 없이 인접 목록에 바로 보였다) */
+    zoneSeen: z.record(z.string(), z.string().nullable()).default({}),
     /** 상인이 마지막으로 물건을 채운 날 */
     restockedDay: z.record(z.string(), z.number().int()).default({}),
     /** 이 세계에서 열린 해금: 시나리오(역할) id (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 12.4.1, 9.12) */
@@ -1153,6 +1155,7 @@ export const EMPTY_STATE: GameState = {
   family: [],
   zoneNoise: {},
   swarms: {},
+  zoneSeen: {},
   loans: {},
   restockedDay: {},
   squad: null,
@@ -2027,6 +2030,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "zone_moved":
       for (const b of Object.values(next.bonds)) if (b.apart?.zone && b.apart.zone === event.from) b.apart.left = true;
+      next.zoneSeen = { ...next.zoneSeen, [event.to]: next.zones[event.to]?.owner ?? null };
       // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)
       next.infiltration = null;
       next.exploration = null;

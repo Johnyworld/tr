@@ -777,7 +777,7 @@
         miss:
           - set_flag: rm_assault_met
           - set_flag: rm_menaced
-          - wound: { steps: 1, cause: 뒷문으로 달아나다 유리 조각에 베였다 }
+          - wound: { steps: 1, cause: 뒷문으로 달아나다 유리 조각에 베였다, kind: cut }
           - lose_item: { item: dry_ration }
           - body: { track: nerves, delta: 2 }
     - id: bluff

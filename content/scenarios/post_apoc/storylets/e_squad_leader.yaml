@@ -252,7 +252,7 @@
           - faction_resource: { faction: own, resource: water, delta: -2 }
           - belief: { fact: "흥정은 반만 됐다. 물통 둘을 외상으로 넘겼다. 갚을지는 모르겠다", source: seen }
         miss:
-          - wound: { steps: 1, cause: 흥정 중에 날아든 쇠파이프 }
+          - wound: { steps: 1, cause: 흥정 중에 날아든 쇠파이프, kind: blunt }
           - relation: { who: bandit, axis: affection, delta: -2 }
 
 - id: es_eunchae_gate

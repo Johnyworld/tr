@@ -135,7 +135,8 @@ export const ACTIVITY_COSTS = {
   treat: { kind: "fixed", minutes: 30 },
   search: { kind: "range", min: 60, max: 120 },
   work: { kind: "fixed", minutes: 120 },
-  rest: { kind: "fixed", minutes: 60 },
+  // 휴식도 until을 받는다 (플레이 테스트 12: "오후 내내 쉰다"가 늘 1시간이었다). 정하지 않으면 1시간
+  rest: { kind: "long", minutes: 60, allowUntil: true },
   guard_duty: { kind: "long", minutes: 240, allowUntil: false },
   sleep: { kind: "long", minutes: 360, allowUntil: true },
   wait: { kind: "long", minutes: 60, allowUntil: true },

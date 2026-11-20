@@ -37,6 +37,7 @@ export type DeedInput = {
   severity: number;
   privacy: Privacy;
   noisy: boolean;
+  byGm?: boolean;
 };
 
 /** 이번 턴 플레이어의 은밀 행동 판정 중 가장 좋은 결과 (은밀 행동은 시나리오의 move_roles.stealth) */
@@ -133,6 +134,7 @@ export function recordDeed(
     at: state.time,
     witnesses,
     searched: false,
+    ...(input.byGm ? { byGm: true } : {}),
   };
   ctx.store.append({ type: "deed_recorded", deed });
   for (const w of witnesses) learn(ctx, deed, w.npcId, official?.source ?? "seen", official?.only);

@@ -357,5 +357,9 @@ function wetNote(content: Content, state: GameState): string {
   const wet = climateOf(content)?.wet;
   const left = state.wet?.[state.playerId] ?? 0;
   if (!wet || left <= 0) return "";
+  // 불 곁이면 체감에서 빼고 마르는 중이라고 (플레이 테스트 12: 체감 합에 젖은 옷이 빠졌는데 이 줄은 -10°라고 했다)
+  const zone = state.playerZone;
+  const byFire = !!zone && (state.fires?.[zone] ?? 0) > state.time;
+  if (byFire) return `. 옷이 젖어 있다 (불 곁이라 체감에는 들지 않고 마르는 중: ${Math.ceil(left / 60)}시간 더)`;
   return `. 옷이 젖어 있다 (체감 -${wet.degrees}°, 시간으로는 마르지 않는다: 불 곁이나 불 땐 실내에서 ${Math.ceil(left / 60)}시간 더, 또는 ${clothesHere(content, state) ? "여기서 갈아입을 수 있다 (take_action.change_clothes)" : "갈아입을 옷이 있는 곳에서 갈아입기"})`;
 }

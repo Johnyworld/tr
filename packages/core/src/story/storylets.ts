@@ -16,7 +16,7 @@ import { isAwayCompanion } from "../engine/companionTools.ts";
 import { factionPolicy } from "../sim/war.ts";
 import { disposition } from "../sim/war.ts";
 import type { Content, StoryletChoice, StoryletContent } from "../content/schemas.ts";
-import { playerCalls } from "../game/acquaintance.ts";
+import { hasMet, playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
 import { activeMissionOf, atMissionPlace, commanderOf, idleDays } from "../game/missions.ts";
@@ -597,7 +597,8 @@ export function pickStorylet(candidates: readonly StoryletContent[], rng: Rng, b
 export function storyletVars(state: GameState, content: Content, cast: Record<string, string>): Record<string, string> {
   const vars: Record<string, string> = {};
   // 배역은 주인공이 부르는 말로 (이름을 모르면 호칭, 기획서 6.3)
-  for (const [key, id] of Object.entries(cast)) vars[key] = playerCalls(state, content, id);
+  // 만난 적 없고 장면에도 없는 사람은 겉모습·직업이 드러나는 호칭 대신 "누군가" (플레이 테스트 12: 본 적 없는 "금니 박힌 상인", "펌프지기"를 아는 것처럼 썼다)
+  for (const [key, id] of Object.entries(cast)) vars[key] = hasMet(state, state.playerId, id) || state.scene.present.includes(id) || state.companions.includes(id) ? playerCalls(state, content, id) : "누군가";
   vars.zone = (state.playerZone && content.locations[state.playerZone]?.name) || "거점";
   // 현상금을 건 무리 (12-136)
   const bountyBy = (state.bounties ?? [])[0];

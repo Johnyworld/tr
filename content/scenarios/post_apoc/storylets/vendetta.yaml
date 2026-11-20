@@ -55,10 +55,10 @@
           - belief: { fact: "{avenger:이/가} 복수하러 왔다. 맞서서 쓰러뜨렸다", source: seen }
         partial:
           - npc_hurt: { who: avenger, steps: 1 }
-          - wound: { steps: 1, cause: 복수하러 온 사람의 칼 }
+          - wound: { steps: 1, cause: 복수하러 온 사람의 칼, kind: cut }
           - belief: { fact: "{avenger:과/와} 맞붙었다. 둘 다 피를 흘렸고 그 사람은 달아났다. 끝나지 않았다", source: seen }
         miss:
-          - wound: { steps: 2, cause: 복수하러 온 사람의 칼 }
+          - wound: { steps: 2, cause: 복수하러 온 사람의 칼, kind: cut }
           - belief: { fact: "{avenger}의 칼에 깊이 찔렸다. 그 사람은 끝까지 지켜보다 돌아섰다", source: seen }
     - id: talk
       label: 무기를 내리고 그날 일을 털어놓는다
@@ -71,7 +71,7 @@
         partial:
           - belief: { fact: "{avenger:은/는} 끝까지 들었지만 칼을 거두지는 않았다. 다음에는 들어 주지 않을 것이다", source: seen }
         miss:
-          - wound: { steps: 1, cause: 복수하러 온 사람의 칼 }
+          - wound: { steps: 1, cause: 복수하러 온 사람의 칼, kind: cut }
           - belief: { fact: "{avenger:은/는} 변명은 듣기 싫다며 달려들었다", source: seen }
     - id: pay
       label: 대가를 치르겠다며 피하지 않고 맞는다
@@ -98,4 +98,4 @@
         partial:
           - wound: { steps: 1, cause: 등 뒤에서 날아온 것 }
         miss:
-          - wound: { steps: 2, cause: 따라잡은 복수자의 칼 }
+          - wound: { steps: 2, cause: 따라잡은 복수자의 칼, kind: cut }

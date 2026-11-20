@@ -197,7 +197,7 @@
           - relation: { who: cook, axis: affection, delta: 1 }
           - body: { track: hunger, delta: -1 }
         miss:
-          - wound: { steps: 1, cause: 부엌칼에 손을 베었다 }
+          - wound: { steps: 1, cause: 부엌칼에 손을 베었다, kind: cut }
           - relation: { who: cook, axis: affection, delta: 1 }
     - id: gossip
       label: 일손을 거들며 요즘 섬 소식을 묻는다
@@ -289,7 +289,7 @@
           - give_item: { item: faded_photo }
           - belief: { fact: "섬 북쪽 자갈밭에 떠밀려 온 꾸러미에는 젖은 가족사진 몇 장뿐이었다. 뭍의 누군가가 품고 있던 것이다", source: seen }
         miss:
-          - wound: { steps: 1, cause: 꾸러미 속 깨진 유리에 손을 베었다 }
+          - wound: { steps: 1, cause: 꾸러미 속 깨진 유리에 손을 베었다, kind: cut }
     - id: report
       label: 손대지 않고 경비조장에게 알린다
       effects:

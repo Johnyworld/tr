@@ -360,7 +360,8 @@ ${this.sceneForGm()}` };
     const gone = [...sent.sections.keys()].filter((k) => !sections.some((s) => s.key === k));
     for (const s of changed) sent.sections.set(s.key, s.text);
     for (const k of gone) sent.sections.delete(k);
-    const same = sections.filter((s) => !changed.includes(s)).map((s) => SCENE_SECTION_LABELS[s.key] ?? s.key);
+    // 비어 있는 덩어리는 목록에 넣지 않는다 (플레이 테스트 12: 내용 없는 "재난"이 목록에 나왔다)
+    const same = sections.filter((s) => !changed.includes(s) && s.text.trim() !== "").map((s) => SCENE_SECTION_LABELS[s.key] ?? s.key);
     return [
       ...changed.map((s) => s.text),
       ...(gone.length ? [`(이제 없음: ${gone.map((k) => SCENE_SECTION_LABELS[k] ?? k).join(", ")})`] : []),

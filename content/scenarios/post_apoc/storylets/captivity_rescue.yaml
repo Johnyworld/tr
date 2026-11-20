@@ -64,7 +64,7 @@
           - belief: { fact: "창살이 빠졌다. 맨손으로 담을 넘었다. 빼앗긴 것은 두고 왔다", source: seen }
         partial:
           - set_flag: cp_watched
-          - wound: { steps: 1, cause: 비튼 창살에 손이 찢겼다 }
+          - wound: { steps: 1, cause: 비튼 창살에 손이 찢겼다, kind: cut }
           - belief: { fact: "창살은 반쯤 빠졌지만 당번이 소리를 들었다. 창살 자리에 쇠사슬이 감겼다", source: seen }
         miss:
           - set_flag: cp_watched

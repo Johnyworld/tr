@@ -48,10 +48,10 @@
           - belief: { fact: "{bounty_by}의 현상금을 노린 사냥꾼을 쓰러뜨렸다. 또 올 것이다", source: seen }
         partial:
           - npc_hurt: { who: hunter, steps: 1 }
-          - wound: { steps: 1, cause: 현상금 사냥꾼의 칼 }
+          - wound: { steps: 1, cause: 현상금 사냥꾼의 칼, kind: cut }
           - belief: { fact: 현상금 사냥꾼과 엉겨 붙었다가 둘 다 피를 보고 떨어졌다, source: seen }
         miss:
-          - wound: { steps: 1, cause: 현상금 사냥꾼의 칼 }
+          - wound: { steps: 1, cause: 현상금 사냥꾼의 칼, kind: cut }
           - capture_player: { by: bounty }
     - id: outbid
       label: 내가 더 줄 테니 못 본 걸로 하라고 한다
@@ -71,7 +71,7 @@
         success:
           - belief: { fact: 현상금 사냥꾼을 골목에서 따돌렸다, source: seen }
         partial:
-          - wound: { steps: 1, cause: 등 뒤에서 날아온 돌 }
+          - wound: { steps: 1, cause: 등 뒤에서 날아온 돌, kind: blunt }
         miss:
           - capture_player: { by: bounty }
 

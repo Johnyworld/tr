@@ -138,7 +138,7 @@
     - id: decline
       label: 지금 무리를 떠날 수 없다고 답한다
       effects:
-        - belief: { fact: 하얀매 대표 서은영이 진료소로 오라는 편지를 보냈다. 거절했다, source: seen }
+        - belief: { fact: 하얀매 대표가 진료소로 오라는 편지를 보냈다. 거절했다, source: seen }
     - id: report
       label: 편지를 상관에게 보여 준다
       effects:

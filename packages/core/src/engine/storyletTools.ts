@@ -1,3 +1,5 @@
+import { bleedFromHarm } from "./bleeding.ts";
+import { equippedItem, wearItem } from "./gear.ts";
 import { carriedCount, itemCarriers } from "../game/companions.ts";
 import { isInfected } from "../game/kinds.ts";
 import { activeMissionOf, atMissionPlace } from "../game/missions.ts";
@@ -345,6 +347,15 @@ export function maskUnknownNames(state: GameState, content: Content, text: strin
         next += "어떤 사람의";
         continue;
       }
+      // 앞말이 직함(조사 없이 끝나는 낱말, "하얀매 대표 ○○")이면 호칭을 빼고 직함에 조사를 붙인다 (플레이 테스트 12: "하얀매 대표 흰 가운의 안경 쓴 여자가")
+      // 직함: 그 사람의 계급 이름이나 직분 이름일 때만
+      const title = next.endsWith(" ") ? (next.slice(0, -1).split(/\s/).at(-1) ?? "") : "";
+      const titles = [rankName(content, npc.faction ?? null, npc.rank), ...(npc.occupation ? [content.scenario.occupations.find((o) => o.id === npc.occupation)?.label ?? ""] : [])].filter(Boolean);
+      if (title.length >= 2 && titles.includes(title)) {
+        next = next.slice(0, -1);
+        next += particle ? josa(title, PARTICLE_PAIRS[particle]!).slice(title.length) : "";
+        continue;
+      }
       // 이름 뒤의 직함이 호칭의 끝 낱말과 같으면 직함을 뺀다 (플레이 테스트 12: "류경환 교수와는" → "교수 교수와는")
       const head = alias.split(" ").at(-1) ?? "";
       if (!particle && head && out.slice(last).startsWith(` ${head}`)) last += head.length + 1;
@@ -629,7 +640,9 @@ export function applyEffect(
     const steps = Math.min(effect.wound.steps, Math.max(0, (fatal >= 0 ? fatal : track.levels.length) - 1 - index));
     if (steps <= 0) return {};
     const c = changeCondition(ctx, playerId, track.id, steps, "story", effect.wound.cause);
-    return c?.line ? { line: c.line, display: c.display ?? undefined } : {};
+    const bleed = c?.display && effect.wound.kind ? bleedFromHarm(ctx, playerId, effect.wound.kind, steps === 1) : null;
+    const line = [c?.line, bleed?.line].filter(Boolean).join(" ");
+    return line ? { line, display: c?.display ?? undefined } : {};
   }
   if ("locate" in effect) {
     const id = whoOf(ctx, effect.locate.who, cast);
@@ -699,6 +712,13 @@ export function applyEffect(
     if (quantity <= 0) return {};
     store.append({ type: "item_consumed", holder: playerId, itemId: item, quantity });
     return { line: `${josa(`${content.items[item]?.name ?? item} ×${quantity}`, "을/를")} 잃었다.` };
+  }
+  if ("wear_weapon" in effect) {
+    const me = state.characters[playerId];
+    const weapon = me ? equippedItem(me, "weapon") : null;
+    if (!weapon) return {};
+    const broke = wearItem(ctx, playerId, weapon, effect.wear_weapon.amount);
+    return { line: broke ?? `${josa(content.items[weapon]?.name ?? weapon, "이/가")} 상했다 (내구도가 줄었다).` };
   }
   if ("take_item" in effect) {
     const { item } = effect.take_item;
@@ -927,9 +947,10 @@ export function applyEffect(
     // GM이 이 장면의 판정(take_action)에서 같은 성격의 행적을 이미 남겼으면 겹쳐 남기지 않는다 (플레이 테스트 8: 같은 일이 두 줄)
     // 이야기가 열린 뒤 GM이 남긴 행적은 성격이 달라도 이 장면의 같은 일이다 (플레이 테스트 11: "들것을 잡고 부상자를 날랐다"가 두 줄)
     const openedAt = state.activeStorylet?.firedAt ?? Infinity;
-    const recent = Object.values(state.deeds).find(
-      (d) => d.actorId === playerId && !d.fabricatedBy && state.time - d.at <= 60 && (d.tags.some((t) => effect.deed.tags.includes(t)) || d.at >= openedAt),
-    );
+    // GM이 남긴 행적만 본다 (플레이 테스트 12: 그 사이 시스템이 남긴 "점호 결석"을 같은 일로 집었다)
+    const recent = Object.values(state.deeds)
+      .filter((d) => d.actorId === playerId && !d.fabricatedBy && !!d.byGm && state.time - d.at <= 60 && (d.tags.some((t) => effect.deed.tags.includes(t)) || d.at >= openedAt))
+      .at(-1);
     if (recent) return { line: `행적은 이미 기록됐다: ${sentence(recent.summary)}` };
     const { deed, visible } = recordDeed(ctx, { ...effect.deed, summary: fillStorylet(effect.deed.summary, vars), noisy: false });
     return {

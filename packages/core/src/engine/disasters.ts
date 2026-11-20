@@ -135,7 +135,8 @@ function strike(ctx: ToolContext, d: Disaster, day: number): ToolDisplayEvent[] 
   const fact = sentence(`${fill(k.news, { zone: place, faction: who ?? "" })}${collapsed && who ? `. ${josa(who, "은/는")} 거점을 잃었다` : ""}`);
   const near = disasterNear(content, now, d);
   store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: near ? "seen" : "rumor", accuracy: near ? "exact" : "approximate", learnedAt: now.time } });
-  displays.push({ type: "belief", fact, sourceLabel: near ? "직접 봄" : "소문" });
+  // 결과에도 한 줄 (플레이 테스트 12: 재난이 알림 없이 생겼다)
+  displays.push({ type: "belief", fact, sourceLabel: near ? "직접 봄" : "소문", note: `재난 소식 (${near ? "직접 겪음" : "소문"}): ${fact} ${near ? "그 자리의 장면으로 서술한다." : "누군가 전하는 말로 짧게 서술한다."}` });
   return displays;
 }
 

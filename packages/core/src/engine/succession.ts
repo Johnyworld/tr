@@ -316,7 +316,8 @@ export function switchCharacter(
   const place = zoneNow ? (content.locations[zoneNow]?.name ?? zoneNow) : null;
   const seatRole = content.roles[store.getState().roleId];
   const opening = newAs
-    ? (seatRole?.opening_scene ?? `${place ? `${place}. ` : ""}${josa(heir.name, "이/가")} 이 무리에 들어와 맞는 첫날이다.`)
+    // 무소속이면 무리 문구가 아니다 (플레이 테스트 12: 떠돌이로 이어 갔는데 "이 무리에 들어와 맞는 첫날")
+    ? (seatRole?.opening_scene ?? (heir.factionId ? `${place ? `${place}. ` : ""}${josa(heir.name, "이/가")} 이 무리에 들어와 맞는 첫날이다.` : `${place ? `${place}. ` : ""}떠돌이로 오늘을 시작한다.`))
     : `${place ? `${place}. ` : ""}${heir.name}의 하루가 시작된다. ${josa(previous.name, "이/가")} 죽은 뒤다.`;
   return {
     ok: true,

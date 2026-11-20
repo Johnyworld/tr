@@ -456,6 +456,8 @@
         partial:
           - belief: { fact: "{zone}에서 걸린 탄은 빼냈지만 그사이 그것이 코앞까지 왔다", source: seen }
         miss:
+          # 플레이 테스트 12: 걸린 총이 상태에 남지 않았다
+          - wear_weapon: { amount: 2 }
           - belief: { fact: "{zone}에서 걸린 탄이 빠지지 않는다. 이번 싸움에서 총은 몽둥이다", source: seen }
     - id: club
       label: 총을 거꾸로 쥐고 개머리판으로 맞선다

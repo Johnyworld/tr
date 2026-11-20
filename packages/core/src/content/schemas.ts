@@ -642,7 +642,8 @@ export function createContentSchemas(s: Scenario) {
      * 주인공이 다친다 (12-56): 판정이 붙은 선택지의 대가 있는 성공·실패에서만 (콘텐츠 검증이 막는다).
      * 부상 트랙 steps 단계, 죽음 바로 앞에서 멈춘다 (이야기는 사람을 죽이지 않는다, 원칙 3)
      */
-    z.strictObject({ wound: z.strictObject({ steps: z.number().int().min(1).max(2), cause: z.string().min(1).max(60) }) }),
+    /** kind: 상처 종류 (wounds.kinds). 피가 나는 종류면 출혈도 붙는다 (플레이 테스트 12: "살이 찢겼다"에 출혈이 없었다) */
+    z.strictObject({ wound: z.strictObject({ steps: z.number().int().min(1).max(2), cause: z.string().min(1).max(60), kind: contentIdSchema.optional() }) }),
     /** 주인공과 이 배역의 연애가 끝난다 (12-60: "그만하자") */
     z.strictObject({ end_romance: z.strictObject({ who: z.string().min(1) }) }),
     /** 배역 NPC의 상처를 돌본다 (부상 트랙 steps 단계 낫는다, 12-60) */
@@ -676,6 +677,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ lose_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
     /** 플레이어가 내놓는다 (거래). 가진 것이 없으면 이 선택지를 고를 수 없다 */
     z.strictObject({ take_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
+    /** 주인공이 손에 든 무기를 닳게 한다 (플레이 테스트 12: "걸린 탄이 빠지지 않는다"인데 총은 멀쩡했다) */
+    z.strictObject({ wear_weapon: z.strictObject({ amount: z.number().int().min(1).max(10).default(1) }) }),
     /** 세력 클락을 당기거나 늦춘다 (플레이어 행동이 전황에 닿는 길) */
     z.strictObject({ clock: z.strictObject({ id: contentIdSchema, delta: z.number().int().min(-5).max(5) }) }),
     /** 주인공을 다른 구역으로 보낸다 (쫓겨남, 끌려감, 배에 실려 감. 기획서 9.12) */

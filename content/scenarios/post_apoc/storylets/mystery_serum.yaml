@@ -135,7 +135,7 @@
           - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
           - belief: { fact: 혈청 앰플 하나를 쥐고 달아났다. 등 뒤에서 상단 사람이 고함을 질렀다. 얼굴을 봤을지도 모른다, source: seen }
         miss:
-          - wound: { steps: 1, cause: 상단 경비의 칼 }
+          - wound: { steps: 1, cause: 상단 경비의 칼, kind: cut }
           - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
           - belief: { fact: 냉장 상자에 손을 대다 상단 경비에게 들켰다. 빈손으로 칼을 피해 달아났다, source: seen }
     - id: buy

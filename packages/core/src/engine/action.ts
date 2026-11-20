@@ -148,7 +148,7 @@ export function createTakeActionSchema(s: Scenario) {
         kind: activitySchema.exclude(["travel", "combat"]).describe(
           "brief 잠깐의 행동, talk 대화, eat 식사, treat 응급처치, search 수색, work 작업·정비, rest 휴식, guard_duty 보초, sleep 잠, wait 기다림",
         ),
-        until: timeSegmentSchema.nullable().default(null).describe("sleep·wait 전용: 이 시간대가 시작될 때까지. 다른 활동은 null"),
+        until: timeSegmentSchema.nullable().default(null).describe("sleep·wait·rest 전용: 이 시간대가 시작될 때까지. 다른 활동은 null"),
       })
       .nullable()
       .default(null)
@@ -388,7 +388,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.activity) {
     const cost = ACTIVITY_COSTS[input.activity.kind];
     // 이미 그 시간대인데 기다리면 다음 날 그 시간대까지 간다 (플레이 테스트 12: 낮에 "낮까지" 기다려 12시간을 보냈다)
-    if (input.activity.kind === "wait" && input.activity.until && segmentOf(start.time) === input.activity.until) {
+    if (["wait", "rest"].includes(input.activity.kind) && input.activity.until && segmentOf(start.time) === input.activity.until) {
       return { ok: false, error: `이미 ${SEGMENT_LABELS[input.activity.until]}이다. 기다림은 다음 시간대까지로 정한다 (지금 그대로 두면 하루를 넘긴다).` };
     }
     if (input.activity.until && !(cost.kind === "long" && cost.allowUntil)) {
@@ -816,7 +816,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.deed) {
     const happened = input.deed.condition === "always" || outcome === null || outcome !== "miss";
     if (happened) {
-      const { deed, visible } = recordDeed(ctx, input.deed);
+      const { deed, visible } = recordDeed(ctx, { ...input.deed, byGm: true });
       lines.push(
         `행적 ${deed.id} 기록: ${sentence(deed.summary)} ` +
           (visible.length > 0 ? `장면에 있던 ${josa(visible.join(", "), "이/가")} 보았다. 그들의 반응을 서술에 반영하라.` : "장면에 아무도 없었다.") +
@@ -873,6 +873,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     }
   }
   lines.push(time.text);
+  // 판정의 대가·빗나감으로 더 쓴 시간까지 합쳐 알린다 (플레이 테스트 12: "5분 경과"인데 35분이 지났다)
+  {
+    const total = store.getState().time - start.time;
+    const spent = store.getState().time - timeBefore;
+    if (total > spent) lines.push(`(대가로 더 쓴 시간까지 모두 ${formatDuration(total)}이 지났다. 지금 ${formatTime(store.getState().time)})`);
+  }
   if (input.activity || input.move_to) displays.push(time.display);
   // 가르침 (4.2.1): 흐른 시간만큼 배운다
   if (input.lesson && !inBattle) lines.push(...applyLesson(ctx, input.lesson, store.getState().time - timeBefore));

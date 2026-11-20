@@ -266,8 +266,15 @@ export function zoneOutlook(state: GameState, content: Content) {
   const zoneId = state.playerZone;
   const loc = zoneId ? content.locations[zoneId] : undefined;
   if (!zoneId || !loc) return null;
+  // 땅 주인은 주인공이 아는 대로: 우리 무리가 낀 것은 보고로 알고, 나머지는 마지막으로 가서 본 주인(가 본 적 없으면 원래 주인)
+  const mine = state.characters[state.playerId]?.factionId ?? null;
+  const known = (id: string) => {
+    const now = state.zones[id]?.owner ?? null;
+    const seen = id in (state.zoneSeen ?? {}) ? state.zoneSeen[id]! : (content.locations[id]?.owner ?? null);
+    return id === state.playerZone || (!!mine && (now === mine || seen === mine)) ? now : seen;
+  };
   const owner = (id: string) => {
-    const o = state.zones[id]?.owner ?? null;
+    const o = known(id);
     return o ? (content.factions[o]?.name ?? o) : "빈 땅";
   };
   const prepLabel = (id: string) => content.scenario.battle?.preparations.find((p) => p.id === id)?.label ?? id;

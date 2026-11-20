@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { activeMissionOf, atMissionPlace, pickDailyOffers } from "../game/missions.ts";
 import { createSeededRng } from "../rng.ts";
 import { segmentOf } from "../rules/time.ts";
-import { castCandidates, conditionsMet, itemFlagsMet, pacingBlocks, storyletAllowed, storyletGapMinutes } from "../story/storylets.ts";
+import { castCandidates, conditionsMet, itemFlagsMet, pacingBlocks, storyletAllowed, storyletGapMinutes, storyletVars } from "../story/storylets.ts";
 import { infestationOf } from "../game/infestation.ts";
 import { personaOf } from "./persona.ts";
 import { makeFamily } from "../game/startGroup.ts";
@@ -18,7 +18,7 @@ import { pickFee } from "./body.ts";
 import { runCompanions } from "./companionTools.ts";
 import { handleTrap } from "./forage.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
-import { hostileHere, maskUnknownNames, runAlarm, runSwarms } from "./storyletTools.ts";
+import { applyEffect, hostileHere, maskUnknownNames, runAlarm, runSwarms } from "./storyletTools.ts";
 
 /** 긴 판 열 (플레이 테스트 12, docs/playtests/2026-11-20-mcp-12-long.md)의 확실한 버그 */
 const content = loadRealContent();
@@ -394,5 +394,56 @@ describe("플레이 테스트 12: 설계 정한 것", () => {
     w.ctx().store.append({ type: "character_switched", characterId: heir, known: [], scenarioRole: "" });
     w.executeTool("take_action", act({ activity: { kind: "wait", until: null } }));
     expect(w.state().resolves?.[heir]?.kind).toBe("debt");
+  });
+});
+
+describe("플레이 테스트 12: 누설과 작은 버그 (셋째)", () => {
+  it("만난 적 없고 장면에도 없는 배역은 이야기 글에서 '누군가'다", () => {
+    const w = world("role_l_wanderer");
+    const stranger = Object.keys(content.npcs).find((id) => !w.state().scene.present.includes(id) && !(w.state().met[w.state().playerId] ?? []).includes(id) && !(w.state().known[w.state().playerId] ?? []).includes(id))!;
+    expect(storyletVars(w.state(), content, { x: stranger }).x).toBe("누군가");
+  });
+
+  it("낯선 사람의 짐은 [GM 전용]으로 실린다", () => {
+    const w = world("role_l_wanderer");
+    const zone = w.state().playerZone!;
+    const npc = Object.values(content.npcs).find((n) => !(w.state().known[w.state().playerId] ?? []).includes(n.id))!;
+    w.executeTool("npc_presence", { npc_id: npc.id, action: "enter" });
+    expect(w.sceneForGm()).toContain("[GM 전용] 지닌 것");
+    expect(zone).toBeTruthy();
+  });
+
+  it("인접 구역의 주인은 주인공이 본 대로: 가 본 뒤 바뀐 남의 땅은 바뀐 줄 모른다", () => {
+    const w = world("role_l_wanderer");
+    const ctx = w.ctx();
+    const here = w.state().playerZone!;
+    const next = content.locations[here]!.adjacent[0]!;
+    ctx.store.append({ type: "zone_moved", from: here, to: next });
+    ctx.store.append({ type: "zone_moved", from: next, to: here });
+    const before = w.state().zones[next]?.owner ?? null;
+    const other = Object.keys(content.factions).find((f) => f !== before)!;
+    w.state().zones[next] = { ...w.state().zones[next]!, owner: other };
+    expect(w.sceneForGm()).not.toContain(`${next} ${content.locations[next]!.name}(${content.factions[other]!.name})`);
+  });
+
+  it("이야기의 베인 상처는 피가 나고, 걸린 총은 내구도가 준다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const me = w.state().playerId;
+    applyEffect(ctx, { wound: { steps: 1, cause: "유리에 베였다", kind: "cut" } } as never, {}, {}, "테스트");
+    expect(w.state().characters[me]!.conditions.bleeding).not.toBe("none");
+    ctx.store.append({ type: "item_granted", to: me, itemId: "old_rifle", quantity: 1 });
+    expect(w.executeTool("equip", { item_id: "old_rifle", slot: null }).ok).toBe(true);
+    applyEffect(ctx, { wear_weapon: { amount: 1 } } as never, {}, {}, "테스트");
+    expect(w.state().characters[me]!.wear.old_rifle ?? 0).toBeGreaterThan(0);
+  });
+
+  it("쉬기도 until을 받는다", () => {
+    const w = world("role_a_grunt");
+    const before = w.state().time;
+    const next = ["dawn", "morning", "day", "evening", "night"][(["dawn", "morning", "day", "evening", "night"].indexOf(segmentOf(before)) + 1) % 5]!;
+    const r = w.executeTool("take_action", act({ activity: { kind: "rest", until: next } }));
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(segmentOf(w.state().time)).toBe(next);
   });
 });

@@ -1250,6 +1250,8 @@ resolve:
   xp: 12
   relief_track: nerves
   from_history: { enemy: revenge, family: find, debt: debt }
+  # 이미 있던 사람으로 이어 가면 (플레이 테스트 12): 가까운 사람을 이레 지키거나, 빚이 있으면 빚 털기. 새로 만든 캐릭터는 받지 않는다
+  heir: { close: protect, days: 7 }
   kinds:
     - { id: revenge, label: 갚기, check: gone, let_go: true }
     - { id: find, label: 찾기, check: meet }

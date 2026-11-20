@@ -603,7 +603,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       { target: input.target, forMission, noTools: !!input.train, forage: input.forage, unlearnedAs: input.treatment && input.check.move === scenario.wounds?.staunch_move ? -1 : undefined, dest: escapeAttempt ? null : input.move_to,
         // 치료 판정은 쓰는 물건의 보정만 (플레이 테스트 12: 붕대를 썼는데 "+1(구급상자)", 물건 없이도 붙었다)
         ...(input.treatment ? { toolItem: input.treatment.item ?? null } : {}),
-        activity: input.activity?.kind ?? null },
+        activity: input.activity?.kind ?? null,
+        // 걸린 것: 몸의 위험, 상대, 임무, 진행 중인 이야기, 전투, 치료, 옮겨 가기, 적 땅, 시간을 들이는 일 (5분짜리 맨 판정만 빠진다)
+        stakes: input.check.harm_on_failure !== "none" || !!input.target || !!input.check.opponent || !!forMission || !!start.activeStorylet || inBattle || !!input.treatment || !!input.move_to || exposed || !!input.forage || !!input.trap || (!!input.activity && input.activity.kind !== "brief") },
     );
     if (!roll.ok) {
       // 턴은 이미 시작됐으므로 잠깐의 시간만 흐르게 하고 오류를 알린다
@@ -1059,8 +1061,9 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   const against = found && found.delta > 0 && check.outcome !== "miss" ? null : found;
   const base = harmSteps(check.outcome, severity);
   if (base === 0) {
-    // 가벼운 위험의 대가 있는 성공: 다치지 않고 시간을 잃는다
+    // 가벼운 위험의 대가 있는 성공: 다치지 않고 시간을 잃는다. 이 판정을 이어받는 이야기는 대가를 또 매기지 않는다 (플레이 테스트 12: 30분 + 경상)
     store.append({ type: "time_advanced", activity: "brief", from: state.time, to: state.time + PARTIAL_TIME_COST });
+    store.append({ type: "check_cost_paid", checkId });
     const label = levelOf(track, target.conditions[track.id] ?? track.levels[0]!.id).label;
     return {
       fatal: false,
@@ -1078,7 +1081,8 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   if (steps < absorbed.steps) absorbed.lines.push(`${josa(target.name, "은/는")} ${absorbed.steps - steps}단계를 버텨 냈다.`);
   const from = target.conditions[track.id] ?? track.levels[0]!.id;
   if (steps <= 0) {
-    // 방어구가 다 막았다 (기획서 4.8)
+    // 방어구가 다 막았다 (기획서 4.8). 이야기가 "다친다"를 다시 붙이지 않는다
+    store.append({ type: "check_cost_paid", checkId });
     const label = levelOf(track, from).label;
     return {
       fatal: false,

@@ -184,6 +184,9 @@ export const resolveSchema = z.strictObject({
   /** 단계 (이야기가 올린다)와 지금 어디까지 왔는지 한 줄 */
   stage: z.number().int().min(0).default(0),
   step: z.string().nullable().default(null),
+  /** 코드가 단계를 올린 마지막 날, 빚 다짐이 마지막으로 본 빚 (플레이 테스트 12: 이야기가 열리지 않으면 며칠이 지나도 0단계) */
+  autoDay: z.number().int().optional(),
+  mark: z.number().int().optional(),
 });
 
 export const runRecordSchema = z.strictObject({
@@ -625,6 +628,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("resolve_ended"), characterId: z.string(), outcome: z.enum(["achieved", "let_go", "broken", "by_others"]), text: z.string().optional() }),
     z.strictObject({ type: z.literal("resolve_involved"), characterId: z.string() }),
     z.strictObject({ type: z.literal("resolve_stepped"), characterId: z.string(), text: z.string() }),
+    /** 다짐을 코드가 지켜본 것 (자동 단계의 날, 빚의 기준) */
+    z.strictObject({ type: z.literal("resolve_tracked"), characterId: z.string(), day: z.number().int().optional(), mark: z.number().int().optional() }),
     z.strictObject({ type: z.literal("resolve_note"), characterId: z.string(), note: z.string() }),
     z.strictObject({ type: z.literal("resolve_seeded"), characterId: z.string() }),
     // 탐험할 곳 (12-162)
@@ -726,6 +731,8 @@ export function createGameSchemas(s: Scenario) {
     /** 소리를 듣고 감염체가 몰려온다 (at에 닿는다) / 닿았다 (done) */
     /** 갇힌 주인공의 탈출이 실패해 감시가 심해졌다 */
     z.strictObject({ type: z.literal("captive_watch_raised") }),
+    /** 판정의 대가를 다치는 대신 다른 것(시간)으로 치렀다: 그 판정을 이어받는 이야기는 "다친다"를 겹쳐 붙이지 않는다 (플레이 테스트 12) */
+    z.strictObject({ type: z.literal("check_cost_paid"), checkId: z.string() }),
     z.strictObject({ type: z.literal("swarm_set"), zone: z.string(), day: z.number().int(), at: z.number().int(), done: z.boolean() }),
     /** 구역의 감염체 압력이 바뀌었다 (12-112): 소음·시체로 오르고, 소탕으로 내리고, 날이 가며 기준값으로 돌아간다 */
     z.strictObject({ type: z.literal("infestation_changed"), zone: z.string(), level: z.number().int().min(0).max(3), cause: z.string() }),
@@ -1355,6 +1362,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) if (c.equipped[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
       return next;
     }
+    case "check_cost_paid":
+      mustGet(next.checks, event.checkId, "판정").harmApplied = true;
+      return next;
     case "captive_watch_raised": {
       const me = mustGet(next.characters, next.playerId, "캐릭터");
       if (me.captive) me.captive = { ...me.captive, watch: (me.captive.watch ?? 0) + 1 };
@@ -1608,6 +1618,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "resolve_stepped": {
       const r = next.resolves?.[event.characterId];
       if (r) next.resolves = { ...next.resolves, [event.characterId]: { ...r, stage: (r.stage ?? 0) + 1, step: event.text } };
+      return next;
+    }
+    case "resolve_tracked": {
+      const r = next.resolves?.[event.characterId];
+      if (r) next.resolves = { ...next.resolves, [event.characterId]: { ...r, ...(event.day !== undefined ? { autoDay: event.day } : {}), ...(event.mark !== undefined ? { mark: event.mark } : {}) } };
       return next;
     }
     case "resolve_note":

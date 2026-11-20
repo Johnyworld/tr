@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { activeMissionOf, atMissionPlace } from "../game/missions.ts";
+import { activeMissionOf, atMissionPlace, pickDailyOffers } from "../game/missions.ts";
 import { createSeededRng } from "../rng.ts";
 import { segmentOf } from "../rules/time.ts";
 import { castCandidates, conditionsMet, itemFlagsMet, pacingBlocks, storyletAllowed, storyletGapMinutes } from "../story/storylets.ts";
@@ -359,5 +359,40 @@ describe("플레이 테스트 12: 이야기와 배역 (코드)", () => {
     const w = world("role_a_grunt");
     w.executeTool("npc_presence", { npc_id: "a_dongwook", action: "enter" });
     expect(w.sceneForGm()).toContain("그 자리의 사람에게 하는 말이다");
+  });
+});
+
+describe("플레이 테스트 12: 설계 정한 것", () => {
+  it("못 하는 전문 기술을 요구하는 일감은 오늘의 후보에 오르지 않는다", () => {
+    const expertMissions = Object.values(content.missions).filter((m) => m.requirements.some((r) => "check" in r && content.scenario.moves.find((x) => x.id === r.check)?.kind === "expert"));
+    expect(expertMissions.length).toBeGreaterThan(0);
+    const roleId = Object.values(content.roles).find((r) => r.missions.some((id) => expertMissions.some((m) => m.id === id)))!.id;
+    for (let seed = 1; seed <= 20; seed++) {
+      const offers = pickDailyOffers(content, roleId, 1440 * seed, null, createSeededRng(seed), [], false, undefined, undefined, (move) => content.scenario.moves.find((x) => x.id === move)?.kind !== "expert");
+      for (const id of offers?.templateIds ?? []) expect(expertMissions.map((m) => m.id)).not.toContain(id);
+    }
+  });
+
+  it("빚 다짐은 빚을 갚을 때마다 한 단계 오른다", () => {
+    const w = world("role_e_porter");
+    const ctx = w.ctx();
+    const me = w.state().playerId;
+    w.executeTool("take_action", act({ activity: { kind: "wait", until: null } }));
+    const r = w.state().resolves?.[me];
+    expect(r?.kind).toBe("debt");
+    ctx.store.append({ type: "debt_changed", characterId: me, factionId: r!.target!, delta: -1 });
+    w.executeTool("take_action", act({ activity: { kind: "wait", until: null } }));
+    expect(w.state().resolves?.[me]?.stage).toBeGreaterThan(0);
+  });
+
+  it("이미 있던 사람으로 이어 가면 그 사람의 처지에서 다짐을 받는다", () => {
+    const w = world("role_a_grunt");
+    const s = w.state();
+    const heir = Object.values(s.characters).find((c) => c.id !== s.playerId && !c.dead && c.factionId === s.characters[s.playerId]!.factionId && content.npcs[c.id])!.id;
+    w.ctx().store.append({ type: "debt_changed", characterId: heir, factionId: "faction_e", delta: 4 });
+    w.state().characters[w.state().playerId]!.dead = true;
+    w.ctx().store.append({ type: "character_switched", characterId: heir, known: [], scenarioRole: "" });
+    w.executeTool("take_action", act({ activity: { kind: "wait", until: null } }));
+    expect(w.state().resolves?.[heir]?.kind).toBe("debt");
   });
 });

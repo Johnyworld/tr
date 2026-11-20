@@ -211,7 +211,12 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
     `  등장: ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
     `  선택지 (resolve_storylet): ${a.storylet.choices
       .filter((c) => choiceAvailable(state, c, a.cast))
-      .map((c) => `${c.id} ${maskUnknownNames(state, content, fillStorylet(c.label, vars))}${c.check ? ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]` : ""}`)
+      // 배우지 않은 전문 기술의 선택지는 미리 "못 함"으로 (플레이 테스트 12: 고르면 거절돼 남는 길이 하나뿐인 줄 몰랐다)
+      .map((c) => {
+        const unable = !!c.check && learnedSkill(content.scenario, state.characters[state.playerId]?.skills ?? {}, c.check) === null;
+        const tag = !c.check ? "" : unable ? ` [못 함: ${moveLabel(content.scenario, c.check)}을(를) 배우지 않았다]` : ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]`;
+        return `${c.id} ${maskUnknownNames(state, content, fillStorylet(c.label, vars))}${tag}`;
+      })
       .join(" / ")}`,
     "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 외면하면 그대로 둔다 (시간이 지나면 지나간다).",
   ];

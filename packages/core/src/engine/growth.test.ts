@@ -29,6 +29,8 @@ const act = (input: Record<string, unknown> = {}) => ({
   intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input,
 });
 const check = (move = "fight", stat = "strength", difficulty = "normal") => act({ check: { move, stat, difficulty, harm_on_failure: "none", harm_cause: "" } });
+// 경험치는 걸린 것이 있는 판정에만 (플레이 테스트 12): 시간을 들이는 일과 함께 건다
+const xpCheck = () => act({ activity: { kind: "wait", until: null }, check: { move: "fight", stat: "strength", difficulty: "normal", harm_on_failure: "none", harm_cause: "" } });
 const player = (env: ReturnType<typeof setup>) => env.store.getState().characters.player!;
 
 describe("능력과 스킬", () => {
@@ -98,20 +100,26 @@ describe("경험치와 레벨업", () => {
     expect([1, 2, 3].map((l) => resilienceOf(s, l))).toEqual([0, 0.04, 0.07]);
   });
 
+  it("걸린 것이 없는 5분짜리 판정은 경험치가 없다 (플레이 테스트 12)", () => {
+    const env = setup(content(), () => 0);
+    executeTool("take_action", check(), env.ctx);
+    expect(player(env).xp).toBe(0);
+  });
+
   it("실패는 2, 성공은 1. 판정 경험치는 하루 6까지", () => {
     const env = setup(content(), () => 0); // 1+1 → 실패
-    for (let i = 0; i < 5; i++) executeTool("take_action", check(), env.ctx);
+    for (let i = 0; i < 5; i++) executeTool("take_action", xpCheck(), env.ctx);
     expect(player(env).xp).toBe(6);
     const s = env.store.getState();
     env.store.append({ type: "time_advanced", activity: "wait", from: s.time, to: s.time + MINUTES_PER_DAY });
-    executeTool("take_action", check(), env.ctx);
+    executeTool("take_action", xpCheck(), env.ctx);
     expect(player(env).xp).toBe(8);
   });
 
   it("레벨이 오르면 GM에게 알리고, learn_skill로 스킬 하나를 올린다 (최고 단계까지)", () => {
     const env = setup(content(), () => 0);
     player(env).xp = 8;
-    const out = executeTool("take_action", check(), env.ctx);
+    const out = executeTool("take_action", xpCheck(), env.ctx);
     expect(out.ok && out.resultText).toContain("레벨이 올랐다");
     expect(player(env)).toMatchObject({ level: 2, skillPoints: 1 });
     const learned = executeTool("learn_skill", { skill: "stealth" }, env.ctx);

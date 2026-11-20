@@ -210,6 +210,8 @@ export function pickDailyOffers(
   lost?: { factionId: string | null; owners: Record<string, { owner: string | null } | undefined> },
   /** 받을 사람의 계급 (min_rank가 있는 일감을 거른다) */
   rank?: string,
+  /** 받을 사람이 할 수 있는 판정인지 (플레이 테스트 12: 배우지 않은 전문 기술의 임무가 나와 일부 완수가 쌓였다) */
+  canDo?: (move: string) => boolean,
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
@@ -221,6 +223,7 @@ export function pickDailyOffers(
       const level = (r: string) => content.scenario.rank_ladder.find((x) => x.id === r)?.level ?? 0;
       return level(rank) >= level(min);
     })
+    .filter((id) => !canDo || content.missions[id]!.requirements.every((r) => !("check" in r) || canDo(r.check)))
     .filter((id) => {
       const where = content.missions[id]!.where;
       if (!lost?.factionId || !where || where === "outside" || where === "enemy") return true;

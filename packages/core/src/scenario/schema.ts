@@ -1033,6 +1033,8 @@ export const scenarioFileSchema = z
         xp: z.number().int().min(0),
         relief_track: id,
         from_history: z.strictObject({ enemy: id.optional(), family: id.optional(), debt: id.optional() }).default({}),
+        /** 이미 있던 사람으로 이어 갈 때의 다짐 (플레이 테스트 12: 계승한 주인공에게 다짐이 없었다). close: 가까운 사람(피붙이·친구·연인)을 days일 지키는 갈래. 빚은 from_history.debt */
+        heir: z.strictObject({ close: id.optional(), days: z.number().int().min(1).default(7) }).optional(),
         kinds: z
           .array(
             z.strictObject({

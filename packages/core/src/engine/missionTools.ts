@@ -1,7 +1,7 @@
 import { maskUnknownNames } from "./storyletTools.ts";
 import { rankName } from "../game/ranks.ts";
 import { describePromotionOffer, offerPromotion } from "./promotion.ts";
-import { harmTrack, incapacitatingSymptom } from "../scenario/scenario.ts";
+import { harmTrack, incapacitatingSymptom, learnedSkill } from "../scenario/scenario.ts";
 import { infestationOf, worstOverrun } from "../game/infestation.ts";
 import { occupationOf } from "../game/occupation.ts";
 import { changeStanding } from "./growth.ts";
@@ -240,7 +240,9 @@ const reportMission = defineTool({
     // 수색·채집 일감은 구해 온 몫이 그 무리 창고로 들어간다. 일부 완수는 절반
     const supplied: string[] = [];
     const supplies = ctx.content.missions[mission.templateId]?.supplies;
-    if (supplies && result.outcome !== "failed" && ctx.store.getState().factions[lender]) {
+    // 같이 나선 사람(임무 짝)이 있거나 구해 온 것을 건넸을 때만 (플레이 테스트 12: 혼자 빈손으로 왔는데 창고가 늘었다)
+    const party = Object.values(ctx.store.getState().bonds ?? {}).some((b) => b.kind === "buddy" && b.missionId === mission.id) || mission.requirements.some((r) => "bring" in r);
+    if (supplies && party && result.outcome !== "failed" && ctx.store.getState().factions[lender]) {
       for (const [resource, amount] of Object.entries(supplies)) {
         const delta = result.outcome === "success" ? amount! : Math.trunc(amount! / 2);
         if (delta <= 0) continue;
@@ -266,6 +268,7 @@ const reportMission = defineTool({
       ...(handed.length ? [`구해 온 것을 상관에게 건넸다: ${handed.join(", ")}`] : []),
       ...(wages.length ? [`품삯을 받았다: ${wages.join(", ")}`] : []),
       ...unmetLines(ctx.content.scenario, reported),
+      ...(supplies && !party && result.outcome !== "failed" ? ["혼자 나간 일이라 무리 창고에 따로 든 것은 없다. 찾은 것은 소지품에 그대로 있다."] : []),
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
       // 주인공이 실제로 찾은 물건과는 따로 셈한다 (플레이 테스트 11: 약을 못 찾았는데 "구해 온 의약품"이라고 했다)
       ...(supplied.length
@@ -417,7 +420,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const startRank = ctx.content.roles[state.roleId]?.rank;
     const rankRole = me && me.rank !== startRank ? Object.values(ctx.content.roles).find((r) => r.faction === me.factionId && r.rank === me.rank) : undefined;
     const extra = [...(occ?.missions ?? []), ...(rankRole?.missions ?? [])];
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank);
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learnedSkill(ctx.content.scenario, me.skills, move) !== null);
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;

@@ -70,7 +70,8 @@ describe("트레잇 효과", () => {
   it("스킬 보정은 판정에, 경험치 배수는 성장에 들어간다", () => {
     const w = world(content(), { traits: ["eagle", "quick", "coward", "ugly"] }, () => 0); // 긍정 3 ≤ 부정 3
     const base = { intent: "살핀다", activity: null, deed: null, target: null, narration_summary: null, for_mission: false };
-    const out = w.executeTool("take_action", { ...base, check: { move: "sense_danger", stat: "sense", difficulty: "normal", harm_on_failure: "none", harm_cause: "" } });
+    // 경험치는 걸린 것이 있는 판정에만 (플레이 테스트 12): 기다리며 살핀다
+    const out = w.executeTool("take_action", { ...base, activity: { kind: "wait", until: null }, check: { move: "sense_danger", stat: "sense", difficulty: "normal", harm_on_failure: "none", harm_cause: "" } });
     // 적히지 않은 공통 스킬 -1(4.2.1) + 매의 눈 +1
     expect(out.ok && out.display.type === "check" && out.display.modifiers.skill).toBe(0);
     expect(player(w).xp).toBe(3); // 실패 2 × 1.5

@@ -1,3 +1,5 @@
+import { tiesOf } from "../game/ties.ts";
+import { josa } from "../text.ts";
 import { fill } from "../text.ts";
 import { z } from "zod";
 import { RESOLVE_CHECK_IDS, RESOLVE_TARGET } from "../scenario/schema.ts";
@@ -160,8 +162,10 @@ export function checkResolve(ctx: ToolContext): { lines: string[]; displays: Too
   const seeded: string[] = [];
   if (!(state.resolveSeeded ?? []).includes(me.id)) {
     ctx.store.append({ type: "resolve_seeded", characterId: me.id });
-    if (state.scenarioRole && !currentResolve(state)) {
-      const line = scenarioResolve(ctx, state.scenarioRole);
+    if (!currentResolve(state)) {
+      // 이미 있던 사람으로 이어 가면 그 사람의 처지에서 (플레이 테스트 12). 새로 만든 캐릭터는 시나리오가 없으면 다짐 없이
+      const existing = !!ctx.content.npcs[me.id] || !!me.extra;
+      const line = state.scenarioRole ? scenarioResolve(ctx, state.scenarioRole) : existing ? heirResolve(ctx) : null;
       if (line) seeded.push(`(${line}. 이것이 이 주인공의 큰 줄기다. 서두르게 하지도 말리지도 않는다)`);
     }
     state = ctx.store.getState();
@@ -174,6 +178,7 @@ export function checkResolve(ctx: ToolContext): { lines: string[]; displays: Too
     const b = state.battle as { zone?: string; theirs?: { faction?: string } };
     if (b.zone === r.target || b.theirs?.faction === r.target || b.theirs?.faction === r.target2) ctx.store.append({ type: "resolve_involved", characterId: me.id });
   }
+  autoStep(ctx);
   // 세운 그 순간에는 보지 않는다 (C2, 플레이 테스트 10: 혈청을 구하겠다고 한 자리에서 "이뤘다"가 됐다)
   if (currentResolve(ctx.store.getState())!.since === ctx.store.getState().time) return { lines: seeded, displays: [] };
   const result = evaluate(ctx.content, ctx.store.getState(), currentResolve(ctx.store.getState())!);
@@ -182,6 +187,36 @@ export function checkResolve(ctx: ToolContext): { lines: string[]; displays: Too
   const outcome: ResolveOutcome = !result ? "broken" : kind && BY_OTHERS.has(kind.check) && !now.involved ? "by_others" : "achieved";
   const done = finish(ctx, now, outcome);
   return { lines: [...seeded, done.line], displays: done.displays };
+}
+
+/**
+ * 코드가 올리는 단계 (플레이 테스트 12): 다짐의 대상과 함께한 날마다 한 단계(사람이면 곁에, 곳이면 그곳에. 하루 한 번),
+ * 빚 다짐은 빚을 갚을 때마다 한 단계. 이야기의 resolve_step은 그대로 따로 오른다
+ */
+function autoStep(ctx: ToolContext): void {
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId]!;
+  const r = currentResolve(state);
+  if (!r?.target) return;
+  const kind = kindOf(ctx.content, r.kind);
+  const name = resolveTargetName(state, ctx.content) ?? r.target;
+  if (kind?.check === "debt_clear") {
+    const debt = me.debts[r.target] ?? 0;
+    if (r.mark === undefined || debt > r.mark) ctx.store.append({ type: "resolve_tracked", characterId: me.id, mark: debt });
+    else if (debt < r.mark) {
+      ctx.store.append({ type: "resolve_stepped", characterId: me.id, text: `${name}에 진 빚을 조금 갚았다` });
+      ctx.store.append({ type: "resolve_tracked", characterId: me.id, mark: debt });
+    }
+    return;
+  }
+  const today = dayOf(state.time);
+  if (r.autoDay === today || state.time === r.since) return;
+  const person = state.characters[r.target];
+  const together = person ? !person.dead && (state.scene.present.includes(r.target) || state.companions.includes(r.target)) : state.playerZone === r.target;
+  if (!together) return;
+  const text = !person ? `${name}에 닿았다` : kind?.check === "gone" ? `${josa(name, "을/를")} 마주쳤다` : `${josa(name, "과/와")} 하루를 함께했다`;
+  ctx.store.append({ type: "resolve_stepped", characterId: me.id, text });
+  ctx.store.append({ type: "resolve_tracked", characterId: me.id, day: today });
 }
 
 /** 다짐을 세운다 (시나리오 시작, 이야기 효과). 대상은 캐릭터·구역·무리·등급 id */
@@ -221,6 +256,20 @@ export function scenarioResolve(ctx: ToolContext, roleId: string): string | null
     return setResolve(ctx, { kind: rule.from_history.debt, target: debt[0], text: `${ctx.content.factions[debt[0]]?.name ?? debt[0]}에 진 빚을 턴다` }, "scenario");
   }
   return null;
+}
+
+/** 이어받은 사람의 다짐: 빚이 있으면 빚 털기, 아니면 살아 있는 가까운 사람(피붙이·연인·친구)을 지키기 */
+function heirResolve(ctx: ToolContext): string | null {
+  const rule = rules(ctx.content);
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!rule || !me) return null;
+  const debt = Object.entries(me.debts ?? {}).find(([, n]) => n > 0);
+  if (debt && rule.from_history.debt) return setResolve(ctx, { kind: rule.from_history.debt, target: debt[0], text: `${ctx.content.factions[debt[0]]?.name ?? debt[0]}에 진 빚을 턴다` }, "scenario");
+  if (!rule.heir?.close) return null;
+  const close = tiesOf(state, ctx.content, me.id).find((t) => ["parent", "child", "sibling", "spouse", "lover", "friend"].includes(t.kind) && !t.secret && state.characters[t.other] && !state.characters[t.other]!.dead);
+  if (!close) return null;
+  return setResolve(ctx, { kind: rule.heir.close, target: close.other, n: rule.heir.days, text: "{target}을(를) 지킨다" }, "scenario");
 }
 
 /** 다짐 한 줄 (대상 자리 {target}을 주인공이 지금 부르는 말로 채운다) */
@@ -268,7 +317,7 @@ export function describeResolve(state: GameState, content: Content): string[] {
   const name = r.target && state.characters[r.target] ? playerCalls(state, content, r.target) : null;
   const who = name && !text.includes(name) ? ` (대상: ${name})` : "";
   return [
-    `주인공의 다짐: ${text}${who} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
+    `주인공의 다짐: ${text}${who} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}${kind?.min_stage ? ` (이루려면 ${kind.min_stage}단계 이상)` : ""}. 단계는 ${kind?.check === "debt_clear" ? "빚을 갚을 때마다" : "대상과 함께한(곳이면 그곳에 닿은) 날마다"}, 그리고 이야기로 오른다. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
   ];
 }
 

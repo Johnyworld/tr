@@ -42,7 +42,7 @@ export function rollPlayerCheck(
   { store, rng, content }: ToolContext,
   /** noTools: 무기·도구의 보정을 붙이지 않는다 (동물 가르치기처럼 물건이 거들 수 없는 일) */
   /** unlearnedAs: 배우지 않은 전문 기술도 이 값으로 굴린다 (맨손 지혈은 누구나, 플레이 테스트 12) */
-  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null; unlearnedAs?: number; dest?: string | null; toolItem?: string | null; activity?: string | null } = {},
+  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null; unlearnedAs?: number; dest?: string | null; toolItem?: string | null; activity?: string | null; stakes?: boolean } = {},
 ): PlayerCheckResult {
   const scenario = content.scenario;
   const state = store.getState();
@@ -126,7 +126,8 @@ export function rollPlayerCheck(
     ...(options.dest ? { dest: options.dest } : {}),
   });
 
-  const growthNote = gainCheckXp({ store, rng, content }, actor.id, roll.outcome);
+  // 걸린 것이 없는 판정은 경험치가 없다 (플레이 테스트 12: 5분짜리 판정을 되풀이해 레벨을 올렸다)
+  const growthNote = options.stakes === false ? null : gainCheckXp({ store, rng, content }, actor.id, roll.outcome);
   const ambushNotes = afterCheckAmbush({ store, rng, content }, input.move, opponent, roll.outcome, state);
 
   return {

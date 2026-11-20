@@ -53,5 +53,16 @@ export function roll2d6(
 ): CheckRoll {
   const dice: [number, number] = [rollDie(rng, 6), rollDie(rng, 6)];
   const total = dice[0] + dice[1] + modifier;
-  return { dice, modifier, total, outcome: table(total) };
+  return { dice, modifier, total, outcome: naturalLimit(dice[0] + dice[1], table(total)) };
+}
+
+/**
+ * 주사위 눈의 한계 (플레이 테스트 11, A2): 어떤 판정도 확정되지 않는다.
+ * 2는 보정이 아무리 높아도 실패, 3은 대가 있는 성공까지, 12는 보정이 아무리 낮아도 대가 있는 성공 이상
+ */
+export function naturalLimit(sum: number, outcome: CheckOutcome): CheckOutcome {
+  if (sum === 2) return "miss";
+  if (sum === 3 && outcome === "success") return "partial";
+  if (sum === 12 && outcome === "miss") return "partial";
+  return outcome;
 }

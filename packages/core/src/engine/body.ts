@@ -1,3 +1,6 @@
+import { baseOf } from "./captivity.ts";
+import { itemResource } from "./market.ts";
+import { DEFAULT_VALUE } from "./gear.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { waterFacilityHere } from "./facilities.ts";
 import { drinkDirty, fireHere } from "./forage.ts";
@@ -137,6 +140,8 @@ export function itemUseProblem(ctx: ToolContext, item: string, targetId?: string
     return `${josa(name, "은/는")} 써서 몸이 나아지는 물건이 아니다 (가능: ${usable.join(", ")}).`;
   }
   if ((player.inventory[item] ?? 0) < 1) return `${josa(name, "이/가")} 없다.`;
+  // 구급상자·붕대는 응급처치 판정으로 쓴다 (플레이 테스트 11, A9)
+  if (isFirstAidItem(content, item)) return `${josa(name, "은/는")} 응급처치로 쓴다: treatment {item: "${item}"}와 check(move: ${content.scenario.wounds!.staunch_move})를 함께 선언한다.`;
   // 다른 사람에게 쓴다 (12-52): 장면에 있는 살아 있는 사람만
   const target = targetId && targetId !== player.id ? targetId : player.id;
   if (target !== player.id && (!state.scene.present.includes(target) || state.characters[target]?.dead)) return "그 사람이 장면에 없다.";
@@ -187,6 +192,10 @@ export function selfTreatmentProblem(ctx: ToolContext): string | null {
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
   if (!needed && !symptomGroupsShown(ctx.content, player).size) return "다친 데가 없어 치료할 것이 없다.";
   if (needed && state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return "오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다.";
+  if (needed) {
+    const planned = planHealerPay(ctx, healer);
+    if (!planned.ok) return planned.error;
+  }
   return null;
 }
 
@@ -263,29 +272,15 @@ export function applyTreatment(
   targetId: string | null = null,
   check: { move: string; outcome: CheckOutcome } | null = null,
 ): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
-  if (item) {
-    // 물건으로 하는 치료는 판정과 상관없이 물건의 효과대로 된다. 판정을 걸었으면 그렇다고 알린다 (플레이 테스트 8: 실패했는데 붕대가 다 들었다)
-    const r = useItem(ctx, item, targetId);
-    if (r.ok && check) r.lines.push("(물건으로 하는 치료는 판정과 상관없이 물건의 효과대로 된다. 판정 결과로 치료를 서술하지 않고, 다음부터는 판정을 걸지 않는다.)");
-    return r;
-  }
-  if (targetId && targetId !== ctx.store.getState().playerId) {
-    // 남의 피를 맨손으로 멎게 한다 (12-91): 지혈 판정을 걸었으면 그것으로
-    const w = ctx.content.scenario.wounds;
-    const s = ctx.store.getState();
-    if (w && check?.move === w.staunch_move && s.scene.present.includes(targetId) && levelIndex(ctx, s, targetId, w.track) > 0) return staunch(ctx, check, targetId);
-    return firstAid(ctx, targetId, check);
-  }
+  // 응급처치 (플레이 테스트 11, A9): 물건으로든 맨손으로든, 자기든 남이든 판정 하나로 정한다. 장면의 치료사에게 받는 치료만 따로
+  const me0 = ctx.store.getState();
+  const healerHere = me0.scene.present.some((id) => ctx.content.npcs[id]?.healer);
+  if (item || (targetId && targetId !== me0.playerId) || !healerHere) return firstAidCheck(ctx, item, targetId && targetId !== me0.playerId ? targetId : me0.playerId, check);
   const recovery = ctx.content.scenario.recovery;
   if (!recovery) return { ok: false, error: "이 시나리오에는 치료 규칙이 없다." };
   const state = ctx.store.getState();
   const player = state.characters[state.playerId]!;
   const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer);
-  if (!healer) {
-    // 맨손 지혈 (12-91): 피가 나면 판정으로 멎게 한다
-    const w = ctx.content.scenario.wounds;
-    if (w && levelIndex(ctx, state, player.id, w.track) > 0) return staunch(ctx, check);
-  }
   const problem = selfTreatmentProblem(ctx);
   if (problem) return { ok: false, error: problem };
   if (!healer) return { ok: false, error: "치료해 줄 사람이 장면에 없다." };
@@ -293,12 +288,18 @@ export function applyTreatment(
   // 증상은 있는데 치료사가 손쓸 것이 아니면 (감염의 열 등): 살펴보고 돌려보낸다. "다친 데가 없다"로 원인이 새지 않게 (B3)
   if (!needed) return { ok: true, lines: [`${josa(playerCalls(state, ctx.content, healer), "이/가")} 살펴봤지만 지금 손쓸 데는 없다고 한다. 잘 먹고 따뜻하게 쉬라고 한다.`], displays: [] };
   const name = playerCalls(state, ctx.content, healer);
-  const lines = [`${name}에게 치료를 받았다.`];
+  const paid = payHealer(ctx, healer);
+  if (!paid.ok) return paid;
+  const lines = [`${name}에게 치료를 받았다.`, ...paid.lines];
   const displays: ToolDisplayEvent[] = [];
-  // 수술 (12-159): 치명상 이상이면 치료사의 솜씨와 장소로 코드가 굴린다
-  const surgery = needsSurgery(ctx, player.id) ? surgeonRoll(ctx, healer) : null;
+  // 수술 (12-159): 치명상 이상이면 치료사의 솜씨와 장소로 코드가 굴린다. 수술을 배우지 않은 치료사는 상처는 손대지 못한다 (피·병만 본다)
+  const cutting = needsSurgery(ctx, player.id);
+  const canCut = cutting && canOperate(ctx, healer);
+  const surgery = canCut ? surgeonRoll(ctx, healer) : null;
   if (surgery) lines.push(surgery.line);
+  if (cutting && !canCut) lines.push(`${josa(name, "은/는")} 수술을 할 줄 몰라 상처는 손대지 못했다. 수술할 줄 아는 사람을 찾아야 한다.`);
   for (const [t, steps] of Object.entries(recovery.healer)) {
+    if (cutting && !canCut && t === ctx.content.scenario.harm_track) continue;
     if (surgery && t === ctx.content.scenario.harm_track) {
       const r = operate(ctx, player.id, surgery.outcome, name);
       lines.push(...r.lines);
@@ -312,6 +313,76 @@ export function applyTreatment(
   return { ok: true, lines, displays };
 }
 
+type HealerPay = { carried: { holder: string; item: string } | null; fromStock: string | null; pay: Map<string, number> };
+
+/** 치료의 재료와 값을 정한다 (아직 쓰지 않는다). 못 하면 error */
+function planHealerPay(ctx: ToolContext, healerId: string): { ok: true; plan: HealerPay | null } | { ok: false; error: string } {
+  const cost = ctx.content.scenario.recovery?.healer_cost;
+  if (!cost) return { ok: true, plan: null };
+  const state = ctx.store.getState();
+  const player = state.characters[state.playerId]!;
+  const healer = state.characters[healerId]!;
+  const name = playerCalls(state, ctx.content, healerId);
+  const faction = healer.factionId ? state.factions[healer.factionId] : undefined;
+  const label = ctx.content.scenario.resources.find((r) => r.id === cost.resource)?.label ?? cost.resource;
+  // 거점 밖에서는 창고가 아니라 지닌 약을 쓴다: 치료사 본인 먼저, 그다음 곁의 같은 무리 사람 (값싼 것부터)
+  const atBase = !!healer.factionId && state.playerZone === baseOf(ctx.content, healer.factionId);
+  let carried: HealerPay["carried"] = null;
+  if (!atBase) {
+    const holders = [healerId, ...state.scene.present.filter((id) => id !== healerId && id !== player.id && !!healer.factionId && state.characters[id]?.factionId === healer.factionId && !state.characters[id]?.dead)];
+    for (const holder of holders) {
+      const inv = state.characters[holder]?.inventory ?? {};
+      const item = Object.keys(inv)
+        .filter((id) => (inv[id] ?? 0) > 0 && itemResource(ctx.content, id) === cost.resource)
+        .sort((a, b) => (ctx.content.items[a]?.value ?? DEFAULT_VALUE) - (ctx.content.items[b]?.value ?? DEFAULT_VALUE))[0];
+      if (item) {
+        carried = { holder, item };
+        break;
+      }
+    }
+    if (!carried) return { ok: false, error: `${josa(name, "은/는")} 거점 밖에서 쓸 ${josa(label, "이/가")} 없어 치료하지 못한다 (치료사와 곁의 동료가 지닌 것을 쓴다).` };
+  } else if (faction && (faction.resources[cost.resource] ?? 0) < 1) return { ok: false, error: `${name}의 무리 창고에 ${josa(label, "이/가")} 바닥나 치료하지 못한다.` };
+  const pay = new Map<string, number>();
+  const trust = state.relations[healerId]?.[player.id]?.trust ?? 0;
+  if (cost.fee > 0 && player.factionId !== healer.factionId && trust < cost.free_trust) {
+    const worn = new Set(Object.values(player.equipped ?? {}).filter(Boolean));
+    const goods = Object.entries(player.inventory)
+      .filter(([id, q]) => q > 0 && !worn.has(id))
+      .flatMap(([id, q]) => Array.from({ length: q }, () => id))
+      .sort((a, b) => (ctx.content.items[a]?.value ?? DEFAULT_VALUE) - (ctx.content.items[b]?.value ?? DEFAULT_VALUE));
+    let sum = 0;
+    for (const id of goods) {
+      if (sum >= cost.fee) break;
+      pay.set(id, (pay.get(id) ?? 0) + 1);
+      sum += ctx.content.items[id]?.value ?? DEFAULT_VALUE;
+    }
+    if (sum < cost.fee) return { ok: false, error: `${josa(name, "은/는")} 다른 무리 사람에게는 값(${cost.fee}어치)을 받는다. 낼 만한 물건이 모자란다 (신뢰가 ${cost.free_trust} 이상이면 받지 않는다).` };
+  }
+  return { ok: true, plan: { carried, fromStock: atBase && faction ? healer.factionId : null, pay } };
+}
+
+/**
+ * 치료사의 재료와 값 (플레이 테스트 11, recovery.healer_cost): 거점에서는 치료사 무리의 창고에서, 거점 밖에서는 치료사·곁의 동료가 지닌 약에서 1을 쓰고,
+ * 다른 무리·무소속이면 (치료사의 신뢰가 모자라면) 지닌 물건에서 값을 받는다. 무엇을 내는지는 코드가 고른다 (값싼 것부터, 손에 든 것·입은 것은 빼고)
+ */
+function payHealer(ctx: ToolContext, healerId: string): { ok: true; lines: string[] } | { ok: false; error: string } {
+  const planned = planHealerPay(ctx, healerId);
+  if (!planned.ok) return planned;
+  const plan = planned.plan;
+  if (!plan) return { ok: true, lines: [] };
+  const state = ctx.store.getState();
+  const player = state.characters[state.playerId]!;
+  const lines: string[] = [];
+  for (const [id, q] of plan.pay) ctx.store.append({ type: "item_transferred", from: player.id, to: healerId, itemId: id, quantity: q });
+  if (plan.pay.size) lines.push(`치료 값으로 ${[...plan.pay].map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")}을 냈다.`);
+  const resource = ctx.content.scenario.recovery!.healer_cost!.resource;
+  if (plan.carried) {
+    ctx.store.append({ type: "item_consumed", holder: plan.carried.holder, itemId: plan.carried.item, quantity: 1 });
+    lines.push(`${playerCalls(state, ctx.content, plan.carried.holder)}의 ${josa(ctx.content.items[plan.carried.item]?.name ?? plan.carried.item, "을/를")} 썼다.`);
+  } else if (plan.fromStock) ctx.store.append({ type: "faction_resource_changed", factionId: plan.fromStock, resource, delta: -1 });
+  return { ok: true, lines };
+}
+
 /** 이 사람의 부상이 수술이 필요한 단계인가 (12-159) */
 export function needsSurgery(ctx: ToolContext, characterId: string): boolean {
   const surgery = ctx.content.scenario.recovery?.surgery;
@@ -319,6 +390,13 @@ export function needsSurgery(ctx: ToolContext, characterId: string): boolean {
   const track = harmTrack(ctx.content.scenario);
   const from = track.levels.findIndex((l) => l.id === surgery.from);
   return from >= 0 && levelIndex(ctx, ctx.store.getState(), characterId, track.id) >= from;
+}
+
+/** 이 사람이 수술을 할 줄 아는가 (recovery.surgery.min_skill, 배우지 않았으면 못 한다) */
+export function canOperate(ctx: ToolContext, characterId: string): boolean {
+  const surgery = ctx.content.scenario.recovery?.surgery;
+  const c = ctx.store.getState().characters[characterId];
+  return !!surgery && !!c && effectiveSkill(ctx.content, c, surgery.move) >= surgery.min_skill;
 }
 
 /** 치료사(NPC)의 수술 굴림: 2d6 + 능력·스킬(상한) + 장소 */
@@ -384,6 +462,8 @@ export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
       break;
     }
     if (index <= 0 || index > maxIndex) break;
+    // 푹 잔 밤에 낫는 규칙이 있으면 그것으로만 (healFromSleep)
+    if (recovery.sleep_heal) break;
     // 지친 동안은 저절로 낫지 않는다 (12-115). 자고 나면 밀린 만큼 낫는다
     if (fatigueBlocksRecovery(ctx.content, player)) break;
     const days = Math.max(1, recovery.natural_days + bodyTraits(ctx.content, player).recoveryDays);
@@ -392,6 +472,28 @@ export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
     if (c?.display) displays.push(c.display);
   }
   return displays;
+}
+
+/**
+ * 푹 잔 밤에 낫는다 (플레이 테스트 11, A1, recovery.sleep_heal): from~to 동안 잤으면 부른다.
+ * min_hours 이상 잤고, 피가 멎어 있고, 자는 사이 새로 다치지 않았으면 max_level까지 한 단계. slow 단계는 마지막 변화에서 그만큼 지나야
+ */
+export function healFromSleep(ctx: ToolContext, from: number, to: number): ToolDisplayEvent[] {
+  const rule = ctx.content.scenario.recovery?.sleep_heal;
+  if (!rule || to - from < rule.min_hours * 60) return [];
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me || me.dead || bleedingBlocksRecovery(ctx, me)) return [];
+  const track = harmTrack(ctx.content.scenario);
+  const index = levelIndex(ctx, state, me.id, track.id);
+  const max = track.levels.findIndex((l) => l.id === rule.max_level);
+  if (index <= 0 || index > max) return [];
+  const since = state.recovery.lastChangeAt[me.id] ?? state.runStartedAt;
+  if (since > from) return []; // 자는 사이 다쳤다
+  const slow = rule.slow[track.levels[index]!.id];
+  if (slow !== undefined && to - since < slow * MINUTES_PER_DAY) return [];
+  const c = changeCondition(ctx, me.id, track.id, -1, "rest", "푹 자고 나니 상처가 조금 아물었다");
+  return c?.display ? [c.display] : [];
 }
 
 /** 감염체에게 다쳤을 때 감염되는지 (상처 종류별 확률, 12-106). kind가 없으면 가장 위험한 종류(물려 뜯김 같은)로 본다 */
@@ -837,37 +939,112 @@ export function sleepNerves(ctx: ToolContext, slept: number): Change | null {
   return changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 푹 잤다" : company ? "곁에 사람을 두고 푹 잤다" : "모처럼 푹 잤다");
 }
 
+/** 응급처치에 쓰는 물건: 피를 멎게 하는 소모품 (구급상자·붕대) */
+export function isFirstAidItem(content: ToolContext["content"], item: string): boolean {
+  const w = content.scenario.wounds;
+  return !!w && (content.scenario.consumables[item]?.[w.track] ?? 0) > 0;
+}
+
 /**
- * 주인공이 아이템 없이 다른 사람을 돌본다 (12-52): 의무병이거나 응급처치를 익힌 사람만. 한 사람에게 하루 한 번, 부상 한 단계
+ * 응급처치 (플레이 테스트 11, A9). 판정(wounds.staunch_move)이 결과를 정한다:
+ * 성공 = 피가 멎고 부상이 한 단계 낫는다, 대가 있는 성공 = 피만 멎는다, 실패 = 시간만 가고 아무 일 없다 (다시 할 수 있다).
+ * 물건(구급상자·붕대)은 성공·대가 있는 성공에 하나 쓴다. 부상을 낫게 하려면 물건이 있거나 응급처치를 익혔어야 한다 (맨손의 서툰 사람은 피만 멎게 한다).
+ * 부상이 낫는 것은 한 사람에게 하루 한 번 (치료사의 치료와 같이 센다)
  */
-function firstAid(ctx: ToolContext, targetId: string, check: { move: string; outcome: CheckOutcome } | null = null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+/** 치료 요청을 시간 쓰기 전에 본다 (치료사에게 받기 또는 응급처치). 할 수 있으면 null */
+export function treatmentProblem(ctx: ToolContext, item: string | null, targetId: string | null, checkMove: string | null): string | null {
+  const state = ctx.store.getState();
+  const self = !targetId || targetId === state.playerId;
+  if (!item && self && state.scene.present.some((id) => ctx.content.npcs[id]?.healer)) return selfTreatmentProblem(ctx);
+  return firstAidProblem(ctx, item, self ? state.playerId : targetId!, checkMove).error;
+}
+
+function firstAidProblem(ctx: ToolContext, item: string | null, targetId: string, checkMove: string | null): { error: string | null; bleeding: boolean; canHeal: boolean } {
   const { store, content } = ctx;
+  const w = content.scenario.wounds;
   const rule = content.scenario.recovery?.first_aid;
+  const no = (error: string) => ({ error, bleeding: false, canHeal: false });
+  if (!w) return no("이 월드에는 응급처치 규칙이 없다.");
   const state = store.getState();
   const me = state.characters[state.playerId]!;
   const target = state.characters[targetId];
-  if (!rule) return { ok: false, error: "이 월드에서는 아이템 없이 남을 치료할 수 없다." };
-  if (!target || target.dead || !state.scene.present.includes(targetId)) return { ok: false, error: "그 사람이 장면에 없다." };
-  const skilled = (!!me.occupation && rule.occupations.includes(me.occupation.id)) || effectiveSkill(ctx.content, me, rule.skill) >= rule.min;
-  if (!skilled) return { ok: false, error: "아이템 없이 남을 꿰매고 돌볼 줄 모른다. 치료 아이템을 쓰거나 치료사를 데려온다." };
+  const self = targetId === me.id;
+  if (!target || target.dead || (!self && !state.scene.present.includes(targetId))) return no("그 사람이 장면에 없다.");
+  if (item) {
+    if (!isFirstAidItem(content, item)) return no(`${josa(content.items[item]?.name ?? item, "은/는")} 응급처치에 쓰는 물건이 아니다. 약은 use_item으로 쓴다.`);
+    if ((me.inventory[item] ?? 0) < 1) return no(`${josa(content.items[item]?.name ?? item, "이/가")} 없다.`);
+  }
   const harm = harmTrack(content.scenario);
-  // 치료할 줄 알면 피부터 멎게 한다 (12-91)
-  const staunched = stopBleeding(ctx, targetId, `${me.name}의 지혈`);
-  if (shownIndex(ctx, state, targetId, harm.id) <= 0 || state.recovery.lastHealerDay[targetId] === dayOf(state.time)) {
-    if (staunched.length) return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 피를 멎게 했다.`], displays: staunched };
-    return { ok: false, error: shownIndex(ctx, state, targetId, harm.id) <= 0 ? "그 사람은 다친 데가 없다." : "그 사람은 오늘 이미 치료를 받았다." };
+  const bleeding = levelIndex(ctx, state, targetId, w.track) > 0;
+  const skilled = !!rule && ((!!me.occupation && rule.occupations.includes(me.occupation.id)) || effectiveSkill(content, me, rule.skill) >= rule.min);
+  // 치명상 이상은 수술이다: 수술을 배운 사람만 손댄다 (못 하면 피만 멎게 한다)
+  const cutting = needsSurgery(ctx, targetId);
+  const canHeal = (!!item || skilled) && (!cutting || canOperate(ctx, me.id)) && shownIndex(ctx, state, targetId, harm.id) > 0 && state.recovery.lastHealerDay[targetId] !== dayOf(state.time);
+  if (!bleeding && !canHeal) {
+    if (cutting && !canOperate(ctx, me.id) && shownIndex(ctx, state, targetId, harm.id) > 0) return no(`${self ? "이" : `${playerCalls(state, content, targetId)}의`} 상처는 꿰매고 파내야 한다. 수술을 배우지 않아 손댈 수 없다. 수술할 줄 아는 치료사를 찾는다.`);
+    if (shownIndex(ctx, state, targetId, harm.id) <= 0) return no(`${self ? "" : `${playerCalls(state, content, targetId)}에게는 `}피도 상처도 없다. 응급처치할 것이 없다.`);
+    if (state.recovery.lastHealerDay[targetId] === dayOf(state.time)) return no("오늘은 이미 상처를 돌봤다. 내일 다시 할 수 있다.");
+    return no("피는 멎어 있다. 상처를 돌보려면 구급상자 같은 물건이 있거나 응급처치를 익혀야 한다 (treatment.item). 장면의 치료사에게 받을 수도 있다.");
   }
-  // 수술 (12-159): 치명상 이상이면 판정 결과대로
-  if (needsSurgery(ctx, targetId)) {
-    const surgery = content.scenario.recovery!.surgery!;
-    if (!check || check.move !== surgery.move) {
-      return { ok: false, error: `${playerCalls(state, content, targetId)}의 상처는 꿰매고 파내야 한다. check(move: ${surgery.move})를 걸고 treatment {target}으로 한다. 실패하면 상처가 더 깊어진다.` };
+  const surgery = content.scenario.recovery?.surgery;
+  if (cutting && canHeal && surgery) {
+    if (checkMove !== surgery.move) return no(`${self ? "이" : `${playerCalls(state, content, targetId)}의`} 상처는 수술이다: check(move: ${surgery.move})를 함께 선언한다. 성공이면 한 단계 낫고, 대가 있는 성공이면 낫되 흔적이 남을 수 있고, 실패하면 상처가 더 깊어진다.`);
+    return { error: null, bleeding, canHeal };
+  }
+  if (checkMove !== w.staunch_move) {
+    return no(`응급처치는 판정으로 한다: check(move: ${w.staunch_move})를 함께 선언한다. 성공하면 피가 멎고 상처가 한 단계 낫고, 대가 있는 성공이면 피만 멎고, 실패하면 시간만 간다.`);
+  }
+  return { error: null, bleeding, canHeal };
+}
+
+function firstAidCheck(
+  ctx: ToolContext,
+  item: string | null,
+  targetId: string,
+  check: { move: string; outcome: CheckOutcome } | null,
+): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+  const { store, content } = ctx;
+  const p = firstAidProblem(ctx, item, targetId, check?.move ?? null);
+  if (p.error || !check) return { ok: false, error: p.error ?? "판정이 없다." };
+  const { bleeding, canHeal } = p;
+  const state = store.getState();
+  const me = state.characters[state.playerId]!;
+  const self = targetId === me.id;
+  const harm = harmTrack(content.scenario);
+  const who = self ? "" : `${playerCalls(state, content, targetId)}의 `;
+  // 수술 (치명상 이상, 수술을 배운 사람): 실패하면 상처가 깊어진다. 성공·대가 있는 성공이면 피도 멎는다
+  if (canHeal && needsSurgery(ctx, targetId)) {
+    const lines: string[] = [];
+    const displays: ToolDisplayEvent[] = [];
+    if (check.outcome !== "miss") {
+      if (item) {
+        store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: 1 });
+        lines.push(`${josa(content.items[item]?.name ?? item, "을/를")} 썼다.`);
+      }
+      if (bleeding) displays.push(...stopBleeding(ctx, targetId, "수술"));
     }
-    const r = operate(ctx, targetId, check.outcome, me.name);
-    return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 상처를 수술했다.`, ...r.lines], displays: [...staunched, ...r.displays] };
+    const r = operate(ctx, targetId, check.outcome, self ? "스스로 한" : me.name);
+    return { ok: true, lines: [`${who}상처를 수술했다.`, ...lines, ...r.lines], displays: [...displays, ...r.displays] };
   }
-  const c = changeCondition(ctx, targetId, harm.id, -1, "healer", `${me.name}의 치료`);
-  return { ok: true, lines: [`${playerCalls(state, content, targetId)}의 상처를 돌봤다.`, ...(c?.line ? [c.line] : [])], displays: [...staunched, ...(c?.display ? [c.display] : [])] };
+  if (check.outcome === "miss") return { ok: true, lines: [`${who}응급처치가 잘 되지 않았다. 시간만 갔다 (물건은 쓰지 않았다. 다시 할 수 있다).`], displays: [] };
+  const lines: string[] = [];
+  const displays: ToolDisplayEvent[] = [];
+  if (item) {
+    store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: 1 });
+    lines.push(`${josa(content.items[item]?.name ?? item, "을/를")} 썼다.`);
+  }
+  if (bleeding) {
+    displays.push(...stopBleeding(ctx, targetId, item ? (content.items[item]?.name ?? item) : "맨손 지혈"));
+    lines.push(`${who}피를 멎게 했다.`);
+  }
+  if (check.outcome === "success" && canHeal) {
+    const c = changeCondition(ctx, targetId, harm.id, -1, "healer", self ? "응급처치" : `${me.name}의 응급처치`);
+    if (c?.line) lines.push(c.line);
+    if (c?.display) displays.push(c.display);
+  } else if (canHeal) {
+    lines.push(`${who}상처는 그대로다 (대가 있는 성공: 피만 멎었다).`);
+  }
+  return { ok: true, lines, displays };
 }
 
 /**

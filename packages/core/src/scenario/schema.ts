@@ -781,10 +781,20 @@ export const scenarioFileSchema = z
         natural_days: z.number().positive(),
         /** 이 단계까지만 저절로 낫는다 (더 나쁘면 치료가 필요하다) */
         natural_max_level: id,
+        /**
+         * 푹 잔 밤에 낫기 (플레이 테스트 11, A1). 있으면 주인공은 natural_days 대신 이것으로 낫는다:
+         * min_hours 이상 자고 나면, 피가 멎어 있고 자는 사이 새로 다치지 않았으면 max_level까지 한 단계. slow: 이 단계는 마지막 변화에서 며칠이 지나야 낫는다
+         */
+        sleep_heal: z.strictObject({ min_hours: z.number().positive(), max_level: id, slow: z.record(id, z.number().positive()).default({}) }).optional(),
         /** 스스로 아무것도 못 하는 증상(의식불명)의 단계에 이만큼(시간) 머물면 한 단계 나아져 정신이 든다. 없으면 치료로만 */
         wake_hours: z.number().positive().optional(),
         /** 치료사(장면에 있는 healer NPC)에게 받으면 트랙별로 낫는 단계 수. 하루에 한 번 */
         healer: z.record(id, z.number().int().min(0)),
+        /**
+         * 치료사의 재료와 값 (플레이 테스트 11: 치료가 공짜이고 무한했다). resource: 치료할 때마다 이 자원 1을 쓴다. 치료사 무리의 거점에서는 창고에서, 거점 밖에서는 치료사 본인과 곁의 같은 무리 사람이 지닌 물건에서 (없으면 치료하지 못한다).
+         * fee: 다른 무리·무소속에게 받는 값(물건의 흥정 값 합). free_trust: 치료사의 신뢰가 이 이상이면 받지 않는다
+         */
+        healer_cost: z.strictObject({ resource: id, fee: z.number().int().min(0), free_trust: z.number().int() }).optional(),
         /**
          * 무리의 돌봄 (12-52): 무리에 이 직분(occupation)의 인물이 있으면, 하루마다 무리 자원(resource)을 써서 다친 사람을 돌본다.
          * 한 사람이 per_medic명까지. 부상 한 단계에 자원 1. 감염은 떼지 못한다 (혈청뿐, body.infection.cure)
@@ -805,6 +815,8 @@ export const scenarioFileSchema = z
             move: id,
             stat: id,
             clinics: z.array(id).default([]),
+            /** 이 스킬(move)이 이 이상이어야 수술할 수 있다 (배우지 않았으면 못 한다, 플레이 테스트 11). 치료사도 주인공도 같다 */
+            min_skill: z.number().int().default(0),
             clinic_bonus: z.number().int().default(1),
             field_penalty: z.number().int().default(-1),
           })
@@ -872,7 +884,8 @@ export const scenarioFileSchema = z
      */
     wounds: z
       .strictObject({
-        kinds: z.array(z.strictObject({ id, label: z.string().min(1), bleeds: z.boolean() })).min(1),
+        /** attack: 누가 낸 상처(총상·할큄·물림)라 맞서는 상대가 없어도 방어구가 막는다. 아니면 상대가 있을 때만 막는다 (플레이 테스트 11) */
+        kinds: z.array(z.strictObject({ id, label: z.string().min(1), bleeds: z.boolean(), attack: z.boolean().default(false) })).min(1),
         /** 출혈 트랙 */
         track: id,
         /** 피가 나는 종류로 다쳐 부상이 이 단계가 되면 출혈이 이 단계까지 오른다 (부상 단계 id → 출혈 단계 id) */

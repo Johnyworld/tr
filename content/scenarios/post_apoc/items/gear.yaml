@@ -291,11 +291,12 @@
   value: 1
 - id: bandage
   name: 붕대
-  description: 끓여 말린 천을 감아 둔 붕대. 피를 멎게 한다. 상처 자체를 낫게 하지는 못한다 (구급상자·치료사·시간).
+  description: 끓여 말린 천을 감아 둔 붕대. 응급처치에 쓴다 (지니면 응급처치 +1, 성공하거나 대가 있는 성공이면 하나 쓴다).
   kind: consumable
   resource: medicine
   weight: 0.1
   value: 3
+  tool: { bonus: { first_aid: 1 } }
 
 # ── 급조 물건 (기획서 4.8, 급조 스킬로 만든다) ──
 - id: fuel_bottle

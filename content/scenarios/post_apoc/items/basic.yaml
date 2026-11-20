@@ -46,7 +46,7 @@
   tool: { bonus: { sense_danger: 1 } }
 - id: medkit
   name: 구급상자
-  description: 붕대와 소독약이 조금 남은 구급상자. 지니고 있으면 응급처치가 수월하다 (쓰면 부상 1단계).
+  description: 붕대와 소독약이 조금 남은 구급상자. 응급처치에 쓴다 (지니면 응급처치 +1, 성공하거나 대가 있는 성공이면 하나 쓴다).
   kind: consumable
   resource: medicine
   weight: 1.0

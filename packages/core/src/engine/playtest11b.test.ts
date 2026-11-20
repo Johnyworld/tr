@@ -19,6 +19,8 @@ import { dedupeAlias } from "../story/storylets.ts";
 import { watchers } from "./opposition.ts";
 import { runDailyBody } from "./body.ts";
 import { scarFromHarm } from "./scars.ts";
+import { harmSteps } from "./action.ts";
+import { naturalLimit } from "../rules/check.ts";
 import { conditionsMet } from "../story/storylets.ts";
 
 /** 긴 판 열의 원문 보고서에서 다시 모은 버그 (플레이 테스트 11, 12-202) */
@@ -248,5 +250,45 @@ describe("플레이 테스트 11 원문의 버그", () => {
       expect(line ?? "").not.toContain("짧은 숨");
       expect(line ?? "").not.toContain("먹은 귀");
     }
+  });
+
+  it("대가 있는 성공은 실패보다 피해가 한 단계 덜하다 (가벼운 위험이면 다치지 않는다)", () => {
+    expect([harmSteps("partial", "light"), harmSteps("partial", "heavy"), harmSteps("miss", "light"), harmSteps("miss", "heavy")]).toEqual([0, 1, 1, 2]);
+  });
+
+  it("다른 무리 치료사는 값을 받는다. 거점에서는 무리 창고의 의약품을, 거점 밖에서는 치료사·곁의 동료가 지닌 약을 쓴다", () => {
+    const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-heal-")), content: loadRealContent(), rngFactory: () => () => 0.5 }).create("mcp", "role_l_wanderer");
+    const me = () => w.state().characters[w.state().playerId]!;
+    const healer = () => w.state().characters.a_chaewon!;
+    const stock = () => w.state().factions[healer().factionId!]!.resources.medicine ?? 0;
+    const treat = () => w.executeTool("take_action", { intent: "치료를 받는다", treatment: { item: null, target: null } });
+    // 거점 밖: 치료사가 지닌 약이 없으면 못 한다, 있으면 그것을 쓴다
+    w.state().scene.present.push("a_chaewon");
+    me().conditions.harm = "light";
+    me().inventory = { canned_food: 6 };
+    healer().inventory = {};
+    expect(treat().ok).toBe(false);
+    healer().inventory = { bandage: 1 };
+    const before = stock();
+    const out = treat();
+    expect(out.ok && out.resultText).toContain("치료 값으로");
+    expect(me().conditions.harm).toBe("none");
+    expect(healer().inventory.bandage ?? 0).toBe(0);
+    expect(stock()).toBe(before);
+    // 거점: 무리 창고에서
+    w.state().playerZone = "a_base";
+    w.state().recovery.lastHealerDay = {};
+    me().conditions.harm = "light";
+    const out2 = treat();
+    expect(out2.ok, out2.ok ? "" : out2.error).toBe(true);
+    expect(stock()).toBe(before - 1);
+  });
+
+  it("주사위 눈의 한계: 2는 늘 실패, 3은 대가 있는 성공까지, 12는 적어도 대가 있는 성공", () => {
+    expect(naturalLimit(2, "success")).toBe("miss");
+    expect(naturalLimit(3, "success")).toBe("partial");
+    expect(naturalLimit(12, "miss")).toBe("partial");
+    expect(naturalLimit(12, "success")).toBe("success");
+    expect(naturalLimit(7, "miss")).toBe("miss");
   });
 });

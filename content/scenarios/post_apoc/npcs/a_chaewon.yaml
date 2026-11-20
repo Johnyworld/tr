@@ -36,7 +36,7 @@ secret:
   reveal_when: 신뢰 5
   min_trust: 5
 stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
-skills: { first_aid: 2, infected_lore: 1, persuade: 1 }
+skills: { first_aid: 2, infected_lore: 1, persuade: 1, surgery: 0 }
 start_inventory: [medkit]
 playable: true
 zone: a_base

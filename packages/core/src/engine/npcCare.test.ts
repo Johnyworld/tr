@@ -43,23 +43,27 @@ describe("NPC의 회복", () => {
 
 describe("주인공이 남을 치료한다", () => {
   const medic = { faction: "faction_a", rank: "staff", occupation: "medic", title: "의무병", location: "a_base", kit: "trader", skills: {}, age: 30, opening: "x", background: [] };
-  it("의무병은 아이템 없이 장면의 다친 사람을 하루 한 번 돌보고, 아니면 아이템이 있어야 한다", () => {
-    const w = manager().create("mcp", undefined, undefined, undefined, { role: buildCustomRole(content, medic), background: [] });
+  it("응급처치: 의무병은 아이템 없이, 아니면 아이템이 있어야 상처를 돌본다. 판정 성공이면 한 단계, 하루 한 번", () => {
+    const six = () => () => 0.99;
+    const mk = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-care-")), content, rngFactory: six });
+    const w = mk().create("mcp", undefined, undefined, undefined, { role: buildCustomRole(content, medic), background: [] });
     w.executeTool("npc_presence", { npc_id: "a_jiho", action: "enter" });
     hurt(w, "a_jiho", "serious");
-    const treat = (item: string | null) => w.executeTool("take_action", { intent: "치료", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, treatment: { item, target: "a_jiho" } });
-    expect(treat(null).ok).toBe(true);
+    const aid = { move: "first_aid", stat: "intellect", difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, opponent: null, distance: null, infected_source: false, target_harm: "none" };
+    const treat = (wm: typeof w, item: string | null) => wm.executeTool("take_action", { intent: "치료", check: aid, treatment: { item, target: "a_jiho" } });
+    const first = treat(w, null);
+    expect(first.ok, first.ok ? "" : first.error).toBe(true);
     expect(w.state().characters.a_jiho!.conditions.harm).toBe("light");
-    const again = treat(null);
-    expect(again.ok && again.resultText).toContain("오늘 이미");
-    const grunt = manager().create("mcp", "role_a_grunt");
+    const again = treat(w, null);
+    expect(!again.ok && again.error).toContain("오늘은 이미");
+    const grunt = mk().create("mcp", "role_a_grunt");
     grunt.executeTool("npc_presence", { npc_id: "a_jiho", action: "enter" });
     hurt(grunt, "a_jiho", "light");
-    const no = grunt.executeTool("take_action", { intent: "치료", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, treatment: { item: null, target: "a_jiho" } });
-    expect(no.ok && no.resultText).toContain("돌볼 줄 모른다");
+    const no = treat(grunt, null);
+    expect(!no.ok && no.error).toContain("구급상자");
     grunt.ctx().store.append({ type: "item_granted", to: "player", itemId: "medkit", quantity: 1 });
-    const yes = grunt.executeTool("take_action", { intent: "치료", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, treatment: { item: "medkit", target: "a_jiho" } });
-    expect(yes.ok).toBe(true);
+    const yes = treat(grunt, "medkit");
+    expect(yes.ok, yes.ok ? "" : yes.error).toBe(true);
     expect(grunt.state().characters.a_jiho!.conditions.harm).toBe("none");
   });
 });

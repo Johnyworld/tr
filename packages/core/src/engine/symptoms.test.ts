@@ -19,7 +19,7 @@ describe("증상", () => {
     expect(labels({ ...base, infection: "fever", disease: "sick" })).toEqual(["고열"]);
     expect(labels({ ...base, infection: "grave", cold: "cold" })).toEqual(["고열", "메스꺼움"]);
     expect(labels({ ...base, infection: "incubating", disease: "incubating" })).toEqual([]);
-    expect(labels({ ...base, harm: "impaired", hunger: "unconscious" })).toEqual(["극심한 고통", "의식불명"]);
+    expect(labels({ ...base, harm: "impaired", hunger: "unconscious" })).toEqual(["치명상", "의식불명"]);
     expect(labels({ ...base, nerves: "low" })).toEqual(["우울함"]);
   });
 

@@ -53,17 +53,19 @@ describe("수술", () => {
     expect(me(w).conditions.harm).toBe("light");
   });
 
-  it("주인공이 치명상인 사람을 돌보려면 응급처치 판정이 있어야 한다", () => {
+  it("주인공이 치명상인 사람을 돌보려면 수술을 배웠어야 하고, 수술 판정이 있어야 한다", () => {
     const { w } = world();
     expect(w.runCheat("~skill first_aid 2").ok).toBe(true);
     expect(w.runCheat("~summon a_chaewon").ok).toBe(true);
     expect(w.runCheat("~harm a_chaewon critical").ok).toBe(true);
     expect(w.runCheat("~set bleeding none a_chaewon").ok).toBe(true);
+    const untrained = w.executeTool("take_action", act("상처를 꿰맨다", { treatment: { item: null, target: "a_chaewon" }, check: chk("first_aid", "intellect") }));
+    expect(!untrained.ok && untrained.error).toContain("수술을 배우지 않아");
+    expect(w.runCheat("~skill surgery 1").ok).toBe(true);
     const no = w.executeTool("take_action", act("상처를 꿰맨다", { treatment: { item: null, target: "a_chaewon" } }));
-    // 치료 실패는 결과 줄로 알린다 (시간은 흐른다)
-    if (no.ok) expect(no.resultText).toContain("check(move: first_aid)");
+    expect(!no.ok && no.error).toContain("check(move: surgery)");
     expect(w.state().characters.a_chaewon!.conditions.harm).toBe("critical");
-    const r = w.executeTool("take_action", act("상처를 꿰맨다", { treatment: { item: null, target: "a_chaewon" }, check: chk("first_aid", "intellect") }));
+    const r = w.executeTool("take_action", act("상처를 꿰맨다", { treatment: { item: null, target: "a_chaewon" }, check: chk("surgery", "intellect") }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().characters.a_chaewon!.conditions.harm).toBe("serious");
   });

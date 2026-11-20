@@ -43,6 +43,7 @@ moves:
   - { id: intimidate, label: 위협, category: 사람, stats: [strength, nerve], description: "겁주고 압박할 때. 싸우지 않고 물러서게 한다" }
   - { id: survival, label: 생존, category: 생존, stats: [vitality, senses], description: "밖에서 살아남을 때. 추적, 불 피우기, 먹을 것·물 구하기" }
   - { id: first_aid, label: 응급처치, category: 생존, stats: [intellect, senses], default: -1, description: "상처를 돌볼 때. 피를 멈추고 덧나지 않게 한다" }
+  - { id: surgery, label: 수술, category: 지식, stats: [intellect, agility], default: -1, description: "치명상을 꿰매고 파낼 때. 배우지 않으면 손댈 수 없다. 실패하면 상처가 더 깊어진다" }
   - { id: infected_lore, label: 감염체, category: 지식, stats: [intellect], default: -1, description: "감염체를 다룰 때. 습성·약점을 알고 감염 징후를 알아본다" }
   - { id: history, label: 역사, category: 지식, stats: [intellect], default: -1, description: "옛일을 떠올릴 때. 붕괴 전후의 일과 지역·무리의 내력을 안다" }
   - { id: mechanics, label: 차량정비, category: 지식, stats: [intellect, agility], default: -1, description: "기계를 고칠 때. 차량·발전기·펌프를 살린다" }
@@ -111,7 +112,7 @@ creation:
     - { id: firefighter, label: 소방관, summary: 불길과 무너지는 건물 속으로 들어가던 사람, stats: { strength: 2, vitality: 1, nerve: 1, intellect: -1 }, skills: { endure: 1, fight: 1 }, items: [crowbar], min_age: 24 }
     - { id: police, label: 경찰, summary: 순찰을 돌고 사건 현장을 보던 사람. 총을 쏴 본 적이 있다, stats: { senses: 2, nerve: 1, agility: 1, charm: -1 }, skills: { shoot: 1, sense_danger: 1 }, items: [flashlight], min_age: 24 }
     - { id: soldier, label: 군인, summary: 붕괴 때 부대에 있었다. 명령과 사격을 몸이 기억한다, stats: { agility: 2, vitality: 1, nerve: 1, charm: -1 }, skills: { shoot: 1, tactics: 1 }, items: [binoculars], min_age: 21 }
-    - { id: doctor, label: 의사, summary: 병원에서 일했다. 약이 없어도 무엇이 사람을 죽이는지 안다, stats: { intellect: 2, senses: 1, nerve: 1, strength: -1 }, skills: { first_aid: 1, infected_lore: 1 }, items: [medkit], min_age: 30 }
+    - { id: doctor, label: 의사, summary: 병원에서 일했다. 약이 없어도 무엇이 사람을 죽이는지 안다, stats: { intellect: 2, senses: 1, nerve: 1, strength: -1 }, skills: { first_aid: 1, surgery: 1 }, items: [medkit], min_age: 30 }
     - { id: nurse, label: 간호사, summary: 병동을 지켰다. 상처를 꿰매고 밤새 환자 곁에 있던 손, stats: { senses: 2, intellect: 1, vitality: 1, strength: -1 }, skills: { first_aid: 1, endure: 1 }, items: [bandage, cloth], min_age: 24 }
     - { id: thief, label: 도둑, summary: 남의 문을 열고 들키지 않게 나오던 사람, stats: { agility: 2, senses: 1, nerve: 1, vitality: -1 }, skills: { stealth: 1, deceive: 1 }, items: [flashlight], min_age: 16 }
     - { id: gangster, label: 조폭, summary: 주먹과 겁으로 먹고살았다. 사람이 언제 물러서는지 안다, stats: { strength: 2, nerve: 1, vitality: 1, intellect: -1 }, skills: { intimidate: 1, fight: 1 }, items: [arm_guards], min_age: 19 }
@@ -692,9 +693,9 @@ symptoms:
   - { id: chill, label: 몸살 기운, group: fever, penalty: -1, hint: "열 기운이 돈다. 앓는 병이면 잘 먹고 따뜻하게 자면 낫고, 해열제가 듣는다" }
   - { id: shiver, label: 오한, group: fever, penalty: -2, hint: "몸이 떨린다. 추위라면 불 곁에서 녹이고, 앓는 병이면 잘 먹고 따뜻하게 자면 낫는다" }
   - { id: high_fever, label: 고열, group: fever, penalty: -3, hint: "열이 높다. 더 깊어지면 몸이 상한다" }
-  - { id: pain, label: 고통, group: pain, penalty: -1 }
-  - { id: severe_pain, label: 심한 고통, group: pain, penalty: -2 }
-  - { id: agony, label: 극심한 고통, group: pain, penalty: -3 }
+  - { id: pain, label: 경상, group: pain, penalty: -1 }
+  - { id: severe_pain, label: 중상, group: pain, penalty: -2 }
+  - { id: agony, label: 치명상, group: pain, penalty: -3 }
   - { id: hungry, label: 허기짐, group: hunger, penalty: -1 }
   - { id: starving, label: 굶주림, group: hunger, penalty: -2 }
   - { id: starvation, label: 기아, group: hunger, penalty: -3 }
@@ -1000,20 +1001,25 @@ intro: prompts/intro.md
 # 부상 회복 (*임시*). 치료사에게 받거나, 새 부상 없이 며칠 지나면 조금씩 낫는다
 recovery:
   natural_days: 2
-  # 중상까지는 저절로 낫는다. 치명상은 치료가 필요하다
+  # 중상까지는 저절로 낫는다. 치명상은 치료가 필요하다 (NPC의 하루 단위 회복)
+  # 주인공은 푹 잔 밤에 낫는다 (플레이 테스트 11, A1): 6시간 이상 자면 피가 멎어 있고 자는 사이 새로 다치지 않았을 때 한 단계. 치명상은 이틀에 한 번
+  sleep_heal: { min_hours: 6, max_level: critical, slow: { critical: 2 } }
   natural_max_level: serious
   # 의식불명에 이만큼(시간) 머물면 정신이 든다 (의식장애로 한 단계). 그사이 더 다치면 다시 센다 (*임시*)
   wake_hours: 6
   # 치료사에게 받으면 (하루 한 번) 트랙별로 낫는 단계
   # 감염은 치료사도 떼지 못한다 (혈청뿐, body.infection.cure)
   healer: { harm: 1, disease: 1, bleeding: 3 }
+  # 치료사의 재료와 값 (플레이 테스트 11): 치료마다 치료사 무리의 의약품 1. 다른 무리·무소속은 물건으로 값 3 (치료사의 신뢰 2 이상이면 공짜)
+  healer_cost: { resource: medicine, fee: 3, free_trust: 2 }
   # 무리의 돌봄 (12-52): 의무병 한 사람이 하루 두 명까지, 무리의 의약품으로 부상 한 단계에 1. 감염은 떼지 못한다
   faction_care: { occupations: [medic, nurse, doctor], resource: medicine, per_medic: 2 }
   # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
   first_aid: { occupations: [medic, nurse, doctor], skill: first_aid, min: 1 }
   # 수술 (12-159, *임시*): 치명상 이상을 돌보는 것은 판정이다. 치료사는 2d6 + 지능·응급처치 + 장소(하얀매 진료소 +1, 거점 밖 -1)로 코드가 굴리고,
   # 주인공이 남을 돌보면 응급처치 판정이 있어야 한다. 실패하면 한 단계 나빠지고, 대가 있는 성공은 흔적(scars)을 굴린다
-  surgery: { from: critical, move: first_aid, stat: intellect, clinics: [d_clinic], clinic_bonus: 1, field_penalty: -1 }
+  # 수술은 스킬 "수술"을 배워야 한다 (플레이 테스트 11): 치료사도 주인공도 배우지 않았으면 치명상을 손대지 못한다 (피만 멎게 한다)
+  surgery: { from: critical, move: surgery, stat: intellect, min_skill: 0, clinics: [d_clinic], clinic_bonus: 1, field_penalty: -1 }
 
 # 수위 (12-57): 성인 주제(연애·성적 위협) 이야기의 태그와 나이 하한. 세계의 수위가 꺼져 있으면 이 태그 이야기는 열리지 않고,
 # 켜져 있어도 주인공과 배역이 모두 이 나이 이상이어야 열린다
@@ -1047,12 +1053,13 @@ captivity:
 
 # 상처 종류와 출혈 (12-91, *임시*): 몸의 위험을 걸 때 GM이 상처 종류(harm_kind)를 고른다
 wounds:
+  # attack: 누가 낸 상처라 상대를 두지 않아도 방어구가 막는다. 나머지(베임·찔림·타박)는 맞서는 상대가 있을 때만 막는다 (덫·유리·추락은 막지 않는다)
   kinds:
     - { id: cut, label: 베임 (칼·날붙이·유리), bleeds: true }
     - { id: pierce, label: 찔림 (창·꼬챙이·화살), bleeds: true }
-    - { id: gunshot, label: 총상, bleeds: true }
-    - { id: claw, label: 할큄 (손톱), bleeds: true }
-    - { id: bite, label: 물림 (이빨), bleeds: true }
+    - { id: gunshot, label: 총상, bleeds: true, attack: true }
+    - { id: claw, label: 할큄 (손톱), bleeds: true, attack: true }
+    - { id: bite, label: 물림 (이빨), bleeds: true, attack: true }
     - { id: blunt, label: 둔기·타박 (몽둥이·주먹·추락), bleeds: false }
     - { id: other, label: 그 밖 (화상·삠·탈진 등), bleeds: false }
   track: bleeding
@@ -1486,8 +1493,8 @@ foraging:
   trap: { item: wire_roll, chance: 0.4, catch: { item: raw_meat, qty: [1, 1] } }
 
 consumables:
+  # 구급상자·붕대는 응급처치 물건이다 (출혈 효과가 있으면 응급처치 물건으로 본다, 플레이 테스트 11 A9). 효과는 판정이 정한다: 성공 = 피가 멎고 부상 한 단계, 대가 있는 성공 = 피만, 실패 = 아무 일 없음
   medkit: { harm: 1, bleeding: 3 }
-  # 붕대는 피만 멎게 한다 (12-195: 붕대 한 개로 총상까지 바로 나았다). 상처를 낫게 하는 것은 구급상자·치료사·시간
   bandage: { bleeding: 3 }
   # 항생제는 감염을 떼지 못하고 늦추기만 한다 (body.infection.slow)
   antibiotics: { harm: 1 }

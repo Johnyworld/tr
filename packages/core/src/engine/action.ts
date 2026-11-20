@@ -61,7 +61,7 @@ import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle } f
 import { choiceAvailable } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
-import { applyTreatment, drinkWater, itemUseProblem, maybeInfect, refillWater, selfTreatmentProblem, useItem } from "./body.ts";
+import { applyTreatment, drinkWater, healFromSleep, itemUseProblem, maybeInfect, refillWater, treatmentProblem, useItem } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -72,10 +72,14 @@ import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./
  */
 
 /** 대가 있는 성공은 최대 1단계, 실패는 선언한 위험에 따라 1~2단계 악화 (임시값) */
+/** 판정 결과별 피해 단계. 대가 있는 성공은 실패보다 한 단계 덜 (플레이 테스트 11: 수색 두 번에 고통이 두 단계 쌓였다). 가벼운 위험의 대가 있는 성공은 0 (시간을 잃는다) */
 export function harmSteps(outcome: CheckOutcome, severity: HarmSeverity): number {
-  if (outcome === "partial") return 1;
-  return severity === "heavy" ? 2 : 1;
+  const miss = severity === "heavy" ? 2 : 1;
+  return outcome === "partial" ? miss - 1 : miss;
 }
+
+/** 가벼운 위험의 대가 있는 성공에서 다치는 대신 잃는 시간 (분) */
+export const PARTIAL_TIME_COST = 30;
 
 export function createTakeActionSchema(s: Scenario) {
   return z.strictObject({
@@ -548,8 +552,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const fuel = !!input.use_item && !!scenario.body?.cold?.climate?.fire?.items[input.use_item];
     const problem =
       (input.use_item && !fuel ? itemUseProblem(ctx, input.use_item) : null) ??
-      (input.treatment?.item ? itemUseProblem(ctx, input.treatment.item, input.treatment.target) : null) ??
-      (input.treatment && !input.treatment.item && (!input.treatment.target || input.treatment.target === player.id) ? selfTreatmentProblem(ctx) : null) ??
+      (input.treatment ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null) : null) ??
       (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null);
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
   }
@@ -598,14 +601,14 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       // 상대의 몫은 맞서 싸우는 판정에서만 (흥정·설득의 target에 근접전 실력이 붙었다, 플레이 테스트 8)
       const fightMoves = content.scenario.opposition?.harm?.moves ?? [];
       const opponent = input.check.opponent ?? (fightMoves.includes(input.check.move) ? input.target : null) ?? null;
-      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, opponent);
+      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, opponent, input.check.harm_kind ?? null);
       lines.push(harm.text);
       displays.push(harm.display);
       // 방어구·버팀으로 다치지 않았으면 피도 흉터도 마음의 흔들림도 감염도 없다 (플레이 테스트 8: "다치지 않았다" + 긁힘)
       const hurt = harm.fatal || harm.display.fromLabel !== harm.display.toLabel;
       // 피가 나는 상처면 출혈 (12-91)
       if (!harm.fatal && hurt) {
-        const bleed = bleedFromHarm(ctx, start.playerId, input.check.harm_kind);
+        const bleed = bleedFromHarm(ctx, start.playerId, input.check.harm_kind, input.check.harm_on_failure === "light");
         if (bleed?.line) lines.push(bleed.display ? `${bleed.line} 지혈하지 않으면 시간이 흐르며 상처가 깊어진다.` : bleed.line);
         if (bleed?.display) displays.push(bleed.display);
         // 크게 다치면 흔적이 남을 수 있다 (12-156)
@@ -894,17 +897,31 @@ function lastCheckId(ctx: ToolContext): string {
 }
 
 /** 판정 결과에 따른 피해 (원칙 3: 사망은 부상 트랙과 판정 결과로만) */
-function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, cause: string, opponentId: string | null = null) {
+function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, cause: string, opponentId: string | null = null, kind: string | null = null) {
   const { store, content } = ctx;
   const state = store.getState();
   const track = harmTrack(content.scenario);
   const target = state.characters[state.playerId]!;
   const check = state.checks[checkId]!;
   // 상대의 몫 (12-104): 솜씨 좋은 상대는 한 단계 더, 서툰 상대는 한 단계 덜 (적어도 1단계)
-  const against = opponentHarm(content, state, opponentId, check.move);
-  const raw = Math.max(1, harmSteps(check.outcome, severity) + (against?.delta ?? 0));
-  // 입은 방어구가 피해를 줄인다 (기획서 4.8)
-  const absorbed = armorAbsorb(ctx, raw);
+  // 상대의 몫 +1은 실패에만 붙는다 (플레이 테스트 11: 대가 있는 성공에서 두 단계 올랐다). 서툰 상대의 -1은 늘 붙는다
+  const found = opponentHarm(content, state, opponentId, check.move);
+  const against = found && found.delta > 0 && check.outcome !== "miss" ? null : found;
+  const base = harmSteps(check.outcome, severity);
+  if (base === 0) {
+    // 가벼운 위험의 대가 있는 성공: 다치지 않고 시간을 잃는다
+    store.append({ type: "time_advanced", activity: "brief", from: state.time, to: state.time + PARTIAL_TIME_COST });
+    const label = levelOf(track, target.conditions[track.id] ?? track.levels[0]!.id).label;
+    return {
+      fatal: false,
+      text: `다치지는 않았지만 일이 꼬여 ${PARTIAL_TIME_COST}분을 더 썼다. 대가를 치른 모습을 서술한다.`,
+      display: { type: "harm" as const, targetName: target.name, trackLabel: track.label, severityLabel: HARM_LABELS[severity], fatal: false, fromLabel: label, toLabel: label, cause },
+    };
+  }
+  const raw = Math.max(1, base + (against?.delta ?? 0));
+  // 입은 방어구가 피해를 줄인다 (기획서 4.8). 맞서는 상대(사람·짐승·감염체)가 낸 상처만: 삐끗·덫·무너진 선반은 막지 않는다 (플레이 테스트 11: 덧댄 갑옷이 허리 삐끗을 막다 4시간 만에 부서졌다)
+  const attack = !!content.scenario.wounds?.kinds.find((k) => k.id === kind)?.attack;
+  const absorbed = (opponentId && kind !== "other") || attack ? armorAbsorb(ctx, raw) : { steps: raw, lines: [] };
   if (against) absorbed.lines.unshift(`${against.line}.`);
   // 버팀 (12-109): 레벨만큼 단계를 피한다
   const steps = resistSteps(content.scenario, target.level ?? 1, absorbed.steps, ctx.rng);
@@ -1028,6 +1045,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       if (store.getState().battle) break;
     }
     to = cursor;
+    // 푹 잔 밤에 상처가 아문다 (플레이 테스트 11, A1)
+    if (activity === "sleep") extra.push(...healFromSleep(ctx, from, to));
   } else {
     to = from + (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round(rollActivityMinutes(cost, rng) * speed)));
     store.append({

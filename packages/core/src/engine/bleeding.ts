@@ -34,13 +34,14 @@ export function woundKind(ctx: ToolContext, id: string | null | undefined) {
 }
 
 /** 다친 직후: 피가 나는 상처면 부상 단계만큼 출혈이 오른다. 화면에 알릴 줄 */
-export function bleedFromHarm(ctx: ToolContext, characterId: string, kind: string | null | undefined): { line: string; display: ToolDisplayEvent | null } | null {
+export function bleedFromHarm(ctx: ToolContext, characterId: string, kind: string | null | undefined, light = false): { line: string; display: ToolDisplayEvent | null } | null {
   if (!rules(ctx) || !woundKind(ctx, kind)?.bleeds) return null;
-  return raiseBleeding(ctx, characterId, "상처에서 피가 난다");
+  // 가볍게 선언한 위험이면 출혈은 가장 낮은 단계까지만 (플레이 테스트 11: 가벼운 위험에 "심한 출혈")
+  return raiseBleeding(ctx, characterId, "상처에서 피가 난다", light ? 1 : undefined);
 }
 
 /** 지금 부상 단계에 맞춰 출혈을 올린다 (내리지는 않는다) */
-function raiseBleeding(ctx: ToolContext, characterId: string, cause: string): { line: string; display: ToolDisplayEvent | null } | null {
+function raiseBleeding(ctx: ToolContext, characterId: string, cause: string, cap?: number): { line: string; display: ToolDisplayEvent | null } | null {
   const w = rules(ctx);
   if (!w) return null;
   const c = ctx.store.getState().characters[characterId];
@@ -49,7 +50,7 @@ function raiseBleeding(ctx: ToolContext, characterId: string, cause: string): { 
   const target = w.from_harm[c.conditions[harm.id] ?? ""];
   if (!target) return null;
   const track = trackOf(ctx.content.scenario, w.track);
-  const want = track.levels.findIndex((l) => l.id === target);
+  const want = Math.min(track.levels.findIndex((l) => l.id === target), cap ?? Infinity);
   const now = levelIndexOf(ctx, c, w.track);
   if (want <= now) return null;
   const ch = changeCondition(ctx, characterId, w.track, want - now, "wound", cause);

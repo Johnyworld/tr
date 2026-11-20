@@ -70,16 +70,19 @@ describe("상처 종류와 출혈", () => {
     s.w.close();
   });
 
-  it("붕대로 멎는다", () => {
-    const { w } = world();
+  it("붕대로 하는 응급처치: 판정 없이는 안 되고, 성공하면 피가 멎고 상처가 한 단계 낫고 붕대를 쓴다", () => {
+    const { w, roll } = world();
     w.runCheat("~harm me serious");
     w.runCheat("~set bleeding heavy");
     expect(w.runCheat("~give bandage").ok).toBe(true);
-    const r = w.executeTool("take_action", act("붕대를 감는다", { treatment: { item: "bandage", target: null } }));
+    const bare = w.executeTool("take_action", act("붕대를 감는다", { treatment: { item: "bandage", target: null } }));
+    expect(bare.ok).toBe(false);
+    roll.value = 0.99;
+    const r = w.executeTool("take_action", act("붕대를 감는다", { treatment: { item: "bandage", target: null }, check: chk("first_aid", "intellect") }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(me(w).conditions.bleeding).toBe("none");
-    // 지혈은 치료사의 치료가 아니다: 그날 의무실 치료를 막지 않는다 (플레이 테스트 8)
-    expect(w.state().recovery.lastHealerDay[me(w).id]).toBeUndefined();
+    expect(me(w).inventory.bandage ?? 0).toBe(0);
+    expect(me(w).conditions.harm).toBe("light");
     w.close();
   });
 
@@ -87,8 +90,8 @@ describe("상처 종류와 출혈", () => {
     const { w, roll } = world();
     w.runCheat("~set bleeding heavy");
     const none = w.executeTool("take_action", act("옷을 찢어 누른다", { treatment: { item: null, target: null } }));
-    expect(none.ok).toBe(true);
-    if (none.ok) expect(none.resultText).toContain("first_aid");
+    expect(none.ok).toBe(false);
+    if (!none.ok) expect(none.error).toContain("first_aid");
     roll.value = 0.99;
     const r = w.executeTool("take_action", act("옷을 찢어 누른다", { treatment: { item: null, target: null }, check: chk("first_aid", "intellect") }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);

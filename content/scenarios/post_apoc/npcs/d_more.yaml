@@ -39,7 +39,7 @@
     reveal_when: 격리실 일로 함께 밤을 새운 수습에게, 그 수습이 같은 결정을 내려야 할 때
     min_trust: 4
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 1 }
-  skills: { first_aid: 2, infected_lore: 2, endure: 1, intimidate: 1 }
+  skills: { first_aid: 2, infected_lore: 2, endure: 1, intimidate: 1, surgery: 1 }
   start_inventory: [medkit, fever_reducer]
   playable: true
   healer: true

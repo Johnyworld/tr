@@ -109,7 +109,7 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터 → 수위 → 서�
     expect(done.roleId).toBe("role_a_squad_leader");
     const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-role-")), content: real, rngFactory: () => createSeededRng(2) }).create("mcp", done.roleId, done.choice, done.packId);
     const me = w.state().characters[w.state().playerId]!;
-    expect(me.skills).toMatchObject({ first_aid: 1, infected_lore: 1, shoot: -1, tactics: 1 }); // 과거 배경(의사) + 분대장 계급 기본 훈련(전략)
+    expect(me.skills).toMatchObject({ first_aid: 1, surgery: 1, shoot: -1, tactics: 1 }); // 과거 배경(의사) + 분대장 계급 기본 훈련(전략)
     expect(me.past).toMatchObject({ id: "doctor", label: "의사" });
     expect(w.state().beliefs[me.id]!.map((b) => b.fact).join()).toContain("붕괴 전에 나는 의사였다");
     w.close();

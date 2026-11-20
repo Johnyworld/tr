@@ -263,7 +263,7 @@
   doesnt_know:
     - 동료 곽윤호도 같은 의심을 품고 있다는 것
   stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
-  skills: { first_aid: 2, sense_danger: 1, persuade: 1 }
+  skills: { first_aid: 2, sense_danger: 1, persuade: 1, surgery: 0 }
   start_inventory: [c_armband, bandage, bandage, water_bottle]
   playable: true
   healer: true

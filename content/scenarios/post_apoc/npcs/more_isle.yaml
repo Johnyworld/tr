@@ -198,7 +198,7 @@
     reveal_when: 의회 저장고의 진실을 아는 사람이 약방에서 그 약병을 집어 들었을 때
     min_trust: 3
   stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
-  skills: { first_aid: 2, history: 1, persuade: 1, deceive: 1 }
+  skills: { first_aid: 2, history: 1, persuade: 1, deceive: 1, surgery: 1 }
   start_inventory: [medkit, fever_reducer, antibiotics]
   playable: true
   healer: true

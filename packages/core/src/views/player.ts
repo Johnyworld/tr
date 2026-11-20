@@ -98,8 +98,8 @@ export type PlayerView = {
   persona: { id: string; label: string; level: number; acting: string }[];
   /** 성격 표: 모든 축, 0 포함 (만들 때와 같은 모양) */
   personaScale: { id: string; low: string; high: string; value: number; acting: string }[];
-  /** 할 줄 아는 스킬 (아마추어 이상) */
-  skills: { id: string; label: string; category: string; value: number }[];
+  /** 모든 스킬. 0 미만은 익히지 않은 것 */
+  skills: { id: string; label: string; category: string; value: number; stats: string[] }[];
   /** 레벨·경험치 (성장 규칙이 없으면 null). next: 다음 레벨까지 필요한 누적 경험치 */
   /** skillMax: 스킬을 올릴 수 있는 최고 단계 (상태 화면의 스킬 올리기, 12-139) */
   growth: { level: number; xp: number; next: number; skillPoints: number; prev: number; skillMax: number } | null;
@@ -442,8 +442,8 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     persona: personaChips(content, player),
     personaScale: personaScale(content, player),
     skills: scenario.moves
-      .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: effectiveSkill(content, player, m.id) }))
-      .filter((m) => m.value >= 0),
+      // 익히지 않은 스킬(-1)도 보인다 (사격이 시트에 없어 보였다). 화면이 흐리게 그린다
+      .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: effectiveSkill(content, player, m.id), stats: m.stats.map((id) => scenario.stats.find((x) => x.id === id)?.label ?? id) })),
     growth: scenario.growth
       ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, atMaxLevel(scenario, player.level) ? player.level : player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level), skillMax: scenario.ranges.skill.max }
       : null,

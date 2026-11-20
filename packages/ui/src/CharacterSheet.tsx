@@ -689,6 +689,7 @@ function AbilityRow({ label, value, range }: { label: string; value: number; ran
           <i key={i} className={i < filled ? "on" : ""} />
         ))}
       </span>
+      <span className="ability-value">{signed(value)}</span>
     </div>
   );
 }
@@ -1129,12 +1130,13 @@ function SkillBlock({ player, onStatus }: { player: PlayerView; onStatus?: (stat
           const plus = pending[s.id] ?? 0;
           const value = s.value + plus;
           return (
-            <div key={s.id}>
+            <div key={s.id} className={value < 0 ? "skill-untrained" : undefined}>
               <dt>
-                {s.label} <span className="muted small">{s.category}</span>
+                {s.label} <span className="muted small">{s.category} · {s.stats.join("·")}</span>
               </dt>
               <dd>
                 <span className={plus ? "skill-pending" : undefined}>{signed(value)}</span>
+                {value < 0 && <span className="muted small"> 익히지 않음</span>}
                 {points > 0 && max !== undefined && (
                   <button
                     type="button"

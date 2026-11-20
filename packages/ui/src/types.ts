@@ -29,7 +29,7 @@ export type PlayerView = {
   persona?: { id: string; label: string; level: number; acting: string }[];
   /** 성격 표: 모든 축, 0 포함 */
   personaScale?: { id: string; low: string; high: string; value: number; acting: string }[];
-  skills: { id: string; label: string; category: string; value: number }[];
+  skills: { id: string; label: string; category: string; value: number; stats: string[] }[];
   growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number; skillMax?: number } | null;
   inventory: ItemView[];
   sceneItems: ItemView[];

@@ -1545,6 +1545,13 @@ body {
 .ability .cells {
   display: flex;
   gap: 3px;
+  margin-left: auto;
+}
+
+.ability-value {
+  width: 2.2em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .ability .cells i {
@@ -1832,6 +1839,11 @@ body {
 }
 
 /* 저장 전에 고른 값 */
+.skill-untrained dt,
+.skill-untrained dd > span:first-child {
+  opacity: 0.55;
+}
+
 .skill-pending {
   color: var(--accent);
   font-weight: 600;

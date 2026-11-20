@@ -302,7 +302,8 @@ export const resolveStorylet = defineTool({
       const now = ctx.store.getState();
       const left: string[] = [];
       for (const [key, id] of Object.entries(a.cast)) {
-        if (!a.storylet.cast[key]?.enter || !now.scene.present.includes(id) || now.companions.includes(id) || id === commanderOf(now, ctx.content) || id === roleOf(ctx.content, now)?.commander) continue;
+        // 치료사는 곁에 남는다: 이야기가 끝난 뒤 치료를 받을 수 있게 (플레이 테스트 13: 침상 곁의 의사가 빠져 치료가 거절됐다)
+        if (!a.storylet.cast[key]?.enter || !now.scene.present.includes(id) || now.companions.includes(id) || id === commanderOf(now, ctx.content) || id === roleOf(ctx.content, now)?.commander || !!ctx.content.npcs[id]?.healer) continue;
         ctx.store.append({ type: "npc_left", npcId: id });
         left.push(playerCalls(now, ctx.content, id));
       }

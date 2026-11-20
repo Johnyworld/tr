@@ -887,7 +887,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const m = forMission && !input.move_to && activity !== "brief" ? start.missions[forMission] : undefined;
     return !!m && !!content.missions[m.templateId]?.wets && atMissionPlace(m, start.playerZone, start.zones, start.factions);
   })();
-  const exposure: Activity = wetWork && !["travel", "combat"].includes(activity) ? "guard_duty" : (input.forage || input.trap === "set") && !["travel", "guard_duty", "combat"].includes(activity) ? "search" : activity;
+  // 판정을 걸고 지켜보는 기다림(잠복)은 바깥에서 하는 일이다 (플레이 테스트 13: 빗속 돌담에 엎드려 11시간을 지붕 아래로 셌다)
+  const lurking = !!input.check && ["wait", "rest"].includes(activity) && !input.treatment;
+  const exposure: Activity = (wetWork || lurking) && !["travel", "combat"].includes(activity) ? "guard_duty" : (input.forage || input.trap === "set") && !["travel", "guard_duty", "combat"].includes(activity) ? "search" : activity;
   const timeBefore = store.getState().time;
   const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure);
   // 배달 (F5): 임무 자리에서 임무 일을 하면 지닌 짐을 넘긴다
@@ -949,7 +951,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const watch = store.getState().characters[start.playerId]?.captive?.watch ?? 1;
     lines.push(`빠져나가지 못했다. 다시 붙잡혀 갇힌 곳으로 끌려왔다. 감시가 더 심해졌다 (다음 탈출 판정 -${watch}).`);
   }
-  if (sweptBack) lines.push(`${content.locations[input.move_to!]?.name ?? input.move_to}에 닿지 못하고 되돌아왔다. 되돌아온 장면을 서술한다.`);
+  if (sweptBack) {
+    lines.push(`${content.locations[input.move_to!]?.name ?? input.move_to}에 닿지 못하고 되돌아왔다. 되돌아온 장면을 서술한다.`);
+    // 물에 빠졌다 (플레이 테스트 13: 배가 뒤집혀 바다에 빠졌는데 옷이 마른 채였다)
+    displays.push(...soak(ctx, start.playerId, "물살에 휩쓸려 물에 빠졌다"));
+  }
   if (input.move_to && !time.interrupted && !sweptBack && !escapeFailed) {
     if (escapeAttempt) {
       const captor = start.characters[start.playerId]?.captive?.by;

@@ -475,12 +475,16 @@
       label: 짐을 머리에 이고 물을 건넌다
       check: endure
       outcomes:
+        # 허리까지 물에 들어가면 옷이 젖는다 (플레이 테스트 13)
         success:
+          - soak: true
           - body: { track: cold, delta: 1 }
         partial:
+          - soak: true
           - body: { track: cold, delta: 1 }
           - body: { track: disease, delta: 1, chance: 0.3 }
         miss:
+          - soak: true
           - body: { track: cold, delta: 2 }
           - body: { track: disease, delta: 1, chance: 0.5 }
           - body: { track: nerves, delta: 1 }
@@ -647,6 +651,7 @@
           - relation: { who: porter, axis: affection, delta: 1 }
           - body: { track: cold, delta: 1 }
         miss:
+          - soak: true
           - body: { track: cold, delta: 1 }
           - relation: { who: porter, axis: trust, delta: 1 }
           - belief: { fact: "놓친 물통을 건지려다 물에 빠졌다. 통은 떠내려갔다", source: seen }

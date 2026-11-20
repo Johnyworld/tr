@@ -754,7 +754,7 @@
   ai_direction: 감염체는 바다를 못 건넌다는 것이 섬의 믿음이다. 이것은 오래 물에 잠겨 거의 움직이지 못하지만 아직 살아 있다. 섬 사람들이 보면 큰 소동이 난다. 의회는 이 일을 조용히 덮고 싶어 한다.
   choices:
     - id: kill
-      label: 작살이나 막대로 끝낸다
+      label: 막대나 칼로 다가가 끝낸다
       check: fight
       outcomes:
         success:
@@ -770,6 +770,23 @@
           - set_flag: yl_washed_done
           - wound: { steps: 1, cause: 떠밀려 온 감염체와 엉켜 바위에 넘어졌다 }
           - belief: { fact: "떠밀려 온 감염체를 놓쳤다. 물살에 다시 휩쓸려 갔다", source: seen }
+    # 섬 경비는 작살총을 멘다 (플레이 테스트 13: 근접전만 있어 작살총을 든 경비가 맨손이 됐다)
+    - id: shoot
+      label: 바위 위에서 작살을 쏜다
+      check: shoot
+      outcomes:
+        success:
+          - put_down: { who: thing }
+          - set_flag: yl_washed_done
+          - merit: 1
+          - belief: { fact: "섬 자갈밭에 감염체 하나가 떠밀려 왔다. 감염체는 바다를 못 건넌다는 말은 다 맞지는 않다", source: seen }
+        partial:
+          - put_down: { who: thing }
+          - set_flag: yl_washed_done
+          - belief: { fact: "작살이 갯바위 사이로 빠져 다시 찾지 못했다. 그래도 그것은 더 움직이지 않는다", source: seen }
+        miss:
+          - set_flag: yl_washed_done
+          - belief: { fact: "작살이 빗나갔고 떠밀려 온 감염체는 물살에 다시 휩쓸려 갔다", source: seen }
     - id: report
       label: 경비조장에게 달려가 알린다
       effects:
@@ -912,7 +929,7 @@
   ai_direction: 빈철호는 정성껏 치료한다. 그의 기록은 의회가 쓸모를 재는 데 쓴다. 그는 중상인 사람의 기록을 되도록 늦게 올린다 (말하지 않는다). 치료는 진짜로 도움이 된다.
   choices:
     - id: thank
-      label: 고맙다고 하고 치료를 받는다
+      label: 고맙다고 하고 몸을 맡긴다
       effects:
         - body: { track: nerves, delta: -1 }
         - relation: { who: doctor, axis: affection, delta: 1 }
@@ -941,7 +958,7 @@
     factions: [faction_y]
   cast:
     chief: { ids: [y_gangho] }
-  setup: "{chief:이/가} 문틀을 꽉 채우고 서 있다가 들어와 침상 곁에 말린 생선 한 줄을 둔다. \"네 당번은 내가 섰다.\" 잠깐 말을 고르다 덧붙인다. \"의회에서 물으면 곧 일어난다고 해. 알았지? 곧.\""
+  setup: "{chief:이/가} 문틀을 꽉 채우고 서 있다가 들어와 침상 곁에 말린 생선 한 마리를 둔다. \"네 당번은 내가 섰다.\" 잠깐 말을 고르다 덧붙인다. \"의회에서 물으면 곧 일어난다고 해. 알았지? 곧.\""
   ai_direction: 진강호는 무뚝뚝하지만 자기 조원을 아낀다. 오래 누워 있는 사람이 어떻게 되는지 그는 정확히 모른다. 다만 오래 누운 사람이 섬에 남지 않았다는 것은 안다.
   choices:
     - id: promise
@@ -972,7 +989,7 @@
   ai_direction: 윤해솔은 순수하게 걱정한다. 어른들은 아픈 사람 근처에 가지 말라고 했다 (병이 옮을까 봐라고 했다). 해솔은 섬 소식을 조잘조잘 전한다 (오늘 그물, 식당 메뉴, 잔치 준비).
   choices:
     - id: thank
-      label: 목걸이를 받고 섬 소식을 듣는다
+      label: 고맙다고 웃어 주고 섬 소식을 듣는다
       effects:
         - body: { track: nerves, delta: -1 }
         - relation: { who: girl, axis: affection, delta: 2 }

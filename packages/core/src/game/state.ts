@@ -19,7 +19,7 @@ import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
 import { idEnum, type Scenario } from "../scenario/schema.ts";
 import { initialConditions, moveIds, rankIds, statIds, trackIds } from "../scenario/scenario.ts";
 import { beliefSchema, beliefSourceSchema, type Belief } from "./belief.ts";
-import { activeMissionOf, atMissionPlace, isRequirementMet, missionInstanceSchema, outcomeAtLeast } from "./missions.ts";
+import { activeMissionOf, atMissionPlace, isRequirementClosed, isRequirementMet, missionInstanceSchema, outcomeAtLeast } from "./missions.ts";
 import {
   applyRelationDelta,
   deedSchema,
@@ -496,6 +496,14 @@ export function createGameSchemas(s: Scenario) {
     lastStoryletAt: z.number().int().nullable().default(null),
     /** 주인공이 마지막으로 한 일 (이야기 조건 when.activities, 플레이 테스트 11). 이전 세이브는 null */
     lastActivity: z.string().nullable().default(null),
+    /** 불복종이 마지막으로 늘거나 지워진 때 (C8: 7일마다 하나씩 지워진다) */
+    disobedienceAt: z.record(z.string(), z.number().int()).default({}),
+    /** 이 사람이 주인공을 덜 믿게 된 마지막 때 (플레이 테스트 11, C5: 의심받은 직후 진급 제안이 왔다) */
+    trustDroppedAt: z.record(z.string(), z.number().int()).default({}),
+    /** 오늘 행적으로 오른 관계 (플레이 테스트 11, C6): 한 사람이 한 사람을 보는 축마다 하루 +1까지. day가 바뀌면 다시 센다 */
+    regardGained: z
+      .strictObject({ day: z.number().int(), by: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.number()))) })
+      .default({ day: -1, by: {} }),
     /** 의식불명 중 곁의 사람이 할 일을 정한 때 (12-90). 정신이 들면 비운다. 한 번 쓰러질 때 한 번만 정한다 */
     helplessAt: z.number().int().nullable().default(null),
     /** 회복 기준 시각: 마지막으로 다치거나 나은 때, 마지막으로 치료사에게 치료받은 날 */
@@ -767,6 +775,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("mission_requirement_met"), missionId: z.string(), index: z.number().int().min(0) }),
     z.strictObject({ type: z.literal("mission_abandoned"), missionId: z.string(), merit: z.number().int(), reason: z.string(), disobedience: z.boolean().default(true) }),
     z.strictObject({ type: z.literal("mission_expired"), missionId: z.string(), merit: z.number().int(), disobedience: z.boolean().default(true) }),
+    /** 오래된 불복종 하나가 지워졌다 (C8) */
+    z.strictObject({ type: z.literal("disobedience_forgiven"), characterId: z.string() }),
     z.strictObject({ type: z.literal("promoted"), characterId: z.string(), from: rank, to: rank }),
     // 진급 제안과 분대 (12-190)
     z.strictObject({ type: z.literal("promotion_offered"), to: rank }),
@@ -1137,6 +1147,9 @@ export const EMPTY_STATE: GameState = {
   activeStorylet: null,
   lastStoryletAt: null,
   lastActivity: null,
+  regardGained: { day: -1, by: {} },
+  trustDroppedAt: {},
+  disobedienceAt: {},
   helplessAt: null,
   recovery: { lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} },
   weather: null,
@@ -1785,8 +1798,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       // 임무를 위한 판정만 임무 진행으로 센다 (거점 안의 사적인 행동이 정찰 조건을 채우지 않게)
       const mission = activeMissionOf(next.missions, event.actorId);
       if (mission && mission.id === event.forMission && atMissionPlace(mission, next.playerZone, next.zones, next.factions)) mission.requirements.forEach((r, i) => {
-        if ("check" in r && r.check === event.move && outcomeAtLeast(event.outcome, r.min_outcome)) {
-          mission.progress[i] = 1;
+        if (!("check" in r) || r.check !== event.move || (mission.progress[i] ?? 0) >= 1 || isRequirementClosed(mission, i)) return;
+        if (outcomeAtLeast(event.outcome, r.min_outcome)) mission.progress[i] = 1;
+        else {
+          // 빗나간 시도를 센다 (C2): 세 번이면 닫힌다
+          const fails = [...(mission.fails ?? [])];
+          fails[i] = (fails[i] ?? 0) + 1;
+          mission.fails = fails;
         }
       });
       next.checks[event.checkId] = {
@@ -1839,6 +1857,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (next.offers) next.offers.templateIds = next.offers.templateIds.filter((id) => id !== m.templateId);
       break;
     }
+    case "disobedience_forgiven": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      c.disobedience = Math.max(0, c.disobedience - 1);
+      next.disobedienceAt = { ...next.disobedienceAt, [c.id]: state.time };
+      break;
+    }
     case "mission_requirement_met": {
       const mission = mustGet(next.missions, event.missionId, "임무");
       if (mission.status !== "active") throw new Error(`이미 끝난 임무: ${mission.id}`);
@@ -1856,7 +1880,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         mission.status = event.outcome === "success" ? "completed" : event.outcome;
       } else {
         mission.status = event.type === "mission_abandoned" ? "abandoned" : "expired";
-        if (event.disobedience) assignee.disobedience += 1;
+        if (event.disobedience) {
+          assignee.disobedience += 1;
+          next.disobedienceAt = { ...next.disobedienceAt, [assignee.id]: state.time };
+        }
       }
       break;
     }
@@ -1876,6 +1903,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       known[deed.id] = event.source;
       const toward = (next.relations[event.npcId] ??= {});
       toward[deed.actorId] = applyRelationDelta(toward[deed.actorId] ?? NEUTRAL_RELATION, event.delta);
+      if (deed.actorId === state.playerId && (event.delta.trust ?? 0) < 0) next.trustDroppedAt = { ...next.trustDroppedAt, [event.npcId]: state.time };
+      {
+        const day = dayOf(state.time);
+        if (next.regardGained.day !== day) next.regardGained = { day, by: {} };
+        const g = ((next.regardGained.by[event.npcId] ??= {})[deed.actorId] ??= {});
+        for (const [axis, v] of Object.entries(event.delta)) if (v > 0) g[axis] = (g[axis] ?? 0) + v;
+      }
       if (next.scene.present.includes(event.npcId)) perceive(next, event.npcId);
       break;
     }
@@ -2079,6 +2113,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "relation_changed": {
       mustGet(next.characters, event.from, "캐릭터");
+      if (event.to === state.playerId && (event.delta.trust ?? 0) < 0) next.trustDroppedAt = { ...next.trustDroppedAt, [event.from]: state.time };
       const toward = (next.relations[event.from] ??= {});
       toward[event.to] = applyRelationDelta(toward[event.to] ?? NEUTRAL_RELATION, event.delta);
       if (event.to === state.playerId && (event.known || next.scene.present.includes(event.from))) perceive(next, event.from);

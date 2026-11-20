@@ -1437,9 +1437,10 @@ radio_call: { item: radio, tag: radio_call, chance: 0.6 }
 fame:
   tiers:
     - { min: 0, label: 무명 }
-    - { min: 6, label: 아는 사람은 아는 이름 }
-    - { min: 15, label: 이름난 사람 }
-    - { min: 30, label: 모두가 아는 이름 }
+    # 플레이 테스트 11 (C7): 2~3일차에 "아는 사람은 아는 이름", 4~6일차에 "이름난 사람"이 됐다 (6·15·30 → 10·25·45)
+    - { min: 10, label: 아는 사람은 아는 이름 }
+    - { min: 25, label: 이름난 사람 }
+    - { min: 45, label: 모두가 아는 이름 }
   cross_from: 1
   relay_from: 2
   fan_at: 3

@@ -1,7 +1,7 @@
 import { maskUnknownNames } from "./storyletTools.ts";
 import { rankName } from "../game/ranks.ts";
 import { describePromotionOffer, offerPromotion } from "./promotion.ts";
-import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { harmTrack, incapacitatingSymptom } from "../scenario/scenario.ts";
 import { infestationOf, worstOverrun } from "../game/infestation.ts";
 import { occupationOf } from "../game/occupation.ts";
 import { changeStanding } from "./growth.ts";
@@ -16,7 +16,7 @@ import { z } from "zod";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
 import { moveLabel } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
-import { ACTIVITY_LABELS, dayOf, formatDuration, formatTime } from "../rules/time.ts";
+import { ACTIVITY_LABELS, dayOf, formatDuration, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { Content, MissionRequirement } from "../content/schemas.ts";
 import { baseOf } from "./captivity.ts";
 import type { GameState } from "../game/state.ts";
@@ -26,6 +26,8 @@ import {
   isRequirementMet,
   MERIT,
   MISSION_STATUS_LABELS,
+  MISSION_CHECK_TRIES,
+  MISSIONS_PER_DAY,
   pickDailyOffers,
   type MissionInstance,
   commanderOf as commanderIdOf,
@@ -38,12 +40,14 @@ import { itemResource } from "./market.ts";
 const resourceLabel = (s: Scenario, id: string) => s.resources.find((r) => r.id === id)?.label ?? id;
 
 /** 요구 조건 한 줄 설명 */
-export function describeRequirement(s: Scenario, requirement: MissionRequirement, progress: number): string {
+export function describeRequirement(s: Scenario, requirement: MissionRequirement, progress: number, fails = 0): string {
   const done = isRequirementMet(requirement, progress) ? "충족" : "미충족";
   if ("activity" in requirement) {
     return `${ACTIVITY_LABELS[requirement.activity]} ${formatDuration(requirement.minutes)} (지금까지 ${formatDuration(progress)}, ${done})`;
   }
   if ("goal" in requirement) return `${requirement.goal} (${done})`;
+  if ("check" in requirement && fails >= MISSION_CHECK_TRIES && progress < 1) return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (${MISSION_CHECK_TRIES}번 빗나가 닫힘)`;
+  if ("check" in requirement && fails > 0 && progress < 1) return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (미충족, 빗나감 ${fails}/${MISSION_CHECK_TRIES})`;
   if ("bring" in requirement) return `${resourceLabel(s, requirement.bring)} ${requirement.quantity}개를 구해 와 건네기 (보고할 때 소지품에서 센다)`;
   return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (${done})`;
 }
@@ -57,7 +61,7 @@ function requirementLabel(s: Scenario, requirement: MissionRequirement): string 
 }
 
 export function describeMission(s: Scenario, mission: MissionInstance): string {
-  const reqs = mission.requirements.map((r, i) => `  - ${describeRequirement(s, r, mission.progress[i] ?? 0)}`).join("\n");
+  const reqs = mission.requirements.map((r, i) => `  - ${describeRequirement(s, r, mission.progress[i] ?? 0, mission.fails?.[i] ?? 0)}`).join("\n");
   const place = mission.place ? `\n  장소: ${mission.place.label}${mission.place.zone ? ` (${mission.place.zone})` : ""} (그 자리에서 한 판정·활동만 임무로 센다)` : "";
   return `${mission.title} (id: ${mission.id}, 기한 ${formatTime(mission.deadline)})\n  ${mission.briefing}${place}\n${reqs}`;
 }
@@ -105,6 +109,9 @@ const assignMission = defineTool({
     }
     const template = ctx.content.missions[input.template_id];
     if (!template) return { ok: false, error: `알 수 없는 임무: ${input.template_id}` };
+    // 하루에 받을 수 있는 임무 수 (플레이 테스트 11, C3: 하루 셋)
+    const today = Object.values(state.missions).filter((m) => m.assigneeId === player.id && dayOf(m.assignedAt) === dayOf(state.time)).length;
+    if (today >= MISSIONS_PER_DAY) return { ok: false, error: `오늘은 이미 임무를 ${today}개 받았다 (하루 ${MISSIONS_PER_DAY}개까지). 내일 받는다.` };
 
     const mission: MissionInstance = {
       id: `m_${state.nextMissionNo}`,
@@ -119,6 +126,7 @@ const assignMission = defineTool({
       requirements: structuredClone(template.requirements),
       place: missionPlace(ctx.content, template.where, player.factionId),
       progress: template.requirements.map(() => 0),
+      fails: template.requirements.map(() => 0),
       status: "active",
     };
     ctx.store.append({ type: "mission_assigned", mission });
@@ -187,7 +195,8 @@ const reportMission = defineTool({
       recordDeed(
         ctx,
         { summary: `임무 완수: ${mission.title}`, tags: ["diligence"], severity: 1, privacy: "public", noisy: false },
-        { npcId: giver.id, source: "report" },
+        // 일을 잘하는 것은 존중이지 믿음이 아니다 (플레이 테스트 11, C6: 임무 완수 넷으로 상관 신뢰가 +4가 됐다)
+        { npcId: giver.id, source: "report", only: ["respect"] },
       );
     }
     // 빚 갚는 일감: 임무를 준 무리에 진 빚이 준다 (기획서 9.10)
@@ -327,8 +336,13 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
       ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false });
       continue;
     }
-    // 쓰러져 있는 동안 기한이 지났으면 불복종이 아니다: 다쳐서 못 마친 것 (플레이 테스트 8)
-    const down = state.characters[mission.assigneeId] ? incapacitatingSymptom(ctx.content.scenario, state.characters[mission.assigneeId]!) : null;
+    // 쓰러져 있는 동안 기한이 지났으면 불복종이 아니다: 다쳐서 못 마친 것 (플레이 테스트 8).
+    // 치명상 이상(의식장애 포함)도 몸을 못 쓴 것으로 본다 (플레이 테스트 11, C8: 의식장애로 누워 있다 기한을 넘겨 진급이 막혔다)
+    const who = state.characters[mission.assigneeId];
+    const harm = harmTrack(ctx.content.scenario);
+    const badFrom = harm.levels.findIndex((l) => l.id === ctx.content.scenario.recovery?.surgery?.from);
+    const badly = !!who && badFrom >= 0 && harm.levels.findIndex((l) => l.id === who.conditions[harm.id]) >= badFrom;
+    const down = who ? (incapacitatingSymptom(ctx.content.scenario, who) ?? (badly ? { label: harm.label } : null)) : null;
     if (mission.status === "active" && state.time > mission.deadline && down) {
       ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false });
       displays.push({ type: "mission", event: "expired", title: mission.title, detail: `다쳐서 못 마침 (${down.label})`, merit: 0 });
@@ -350,15 +364,23 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
       returnArmory(ctx, mission.id);
     }
   }
+  // 오래된 불복종은 하나씩 지워진다 (C8): 마지막 불복종(또는 지운 때)에서 FORGIVE_DAYS가 지나면 하나
+  const me0 = ctx.store.getState().characters[state.playerId];
+  if (me0 && me0.disobedience > 0 && state.time - (ctx.store.getState().disobedienceAt[me0.id] ?? state.runStartedAt) >= DISOBEDIENCE_FORGIVE_DAYS * MINUTES_PER_DAY) {
+    ctx.store.append({ type: "disobedience_forgiven", characterId: me0.id });
+  }
   if (commanderOf(state, ctx) && hasAccess(ctx.content, state, "mission_board")) {
     const occ = occupationOf(ctx.content, state.characters[state.playerId]);
     const me = state.characters[state.playerId];
     const overrun = !!me?.factionId && !!worstOverrun(ctx.content, state, me.factionId);
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, occ?.missions ?? [], overrun, { factionId: me?.factionId ?? null, owners: state.zones });
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, occ?.missions ?? [], overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank);
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;
 }
+
+/** 불복종 하나가 지워지는 날 수 (C8) */
+export const DISOBEDIENCE_FORGIVE_DAYS = 7;
 
 /** GM에게 보여 줄 임무 상황 */
 export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "content">): string {

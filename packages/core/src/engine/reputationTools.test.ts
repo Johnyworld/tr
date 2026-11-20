@@ -100,7 +100,7 @@ describe("소문 전파", () => {
 });
 
 describe("임무와 평판", () => {
-  it("임무 완수는 상관의 신뢰를, 포기는 불신을 남긴다", () => {
+  it("임무 완수는 상관의 존중을(신뢰가 아니라, C6), 포기는 불신을 남긴다", () => {
     const { store, ctx } = setup(() => 0.999);
     spreadRumors(ctx);
     store.append({ type: "missions_offered", day: 1, templateIds: ["m_guard", "m_scout"] });
@@ -108,11 +108,12 @@ describe("임무와 평판", () => {
     executeTool("assign_mission", { template_id: "m_guard" }, ctx);
     executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: true, activity: { kind: "guard_duty", until: null } }, ctx);
     executeTool("report_mission", {}, ctx);
-    expect(store.getState().relations.npc_leader?.player?.trust).toBe(1);
+    expect(store.getState().relations.npc_leader?.player?.trust ?? 0).toBe(0);
+    expect(store.getState().relations.npc_leader?.player?.respect ?? 0).toBeGreaterThan(0);
 
     store.append({ type: "missions_offered", day: 1, templateIds: ["m_scout"] });
     executeTool("assign_mission", { template_id: "m_scout" }, ctx);
     executeTool("abandon_mission", { reason: "겁이 났다" }, ctx);
-    expect(store.getState().relations.npc_leader?.player?.trust).toBe(-1);
+    expect(store.getState().relations.npc_leader?.player?.trust).toBeLessThan(0);
   });
 });

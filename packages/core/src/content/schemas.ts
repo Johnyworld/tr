@@ -380,6 +380,8 @@ export function createContentSchemas(s: Scenario) {
     title: z.string().min(1),
     briefing: z.string().min(1),
     giver_rank: idEnum(rankIds(s)),
+    /** 이 계급 이상만 받는 일감 (플레이 테스트 11, C9: 신입이 신병 훈련을 맡았다) */
+    min_rank: idEnum(rankIds(s)).optional(),
     deadline_hours: z.number().int().positive().max(72),
     requirements: z.array(missionRequirement).min(1),
     /**

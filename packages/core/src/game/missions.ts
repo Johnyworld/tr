@@ -52,13 +52,24 @@ export const missionInstanceSchema = z.strictObject({
     .default(null),
   /** 요구 조건별 진행도: 활동은 누적 분, 판정은 충족 시 1 */
   progress: z.array(z.number().int().nonnegative()),
+  /** 판정 조건별 실패 수 (플레이 테스트 11, C2): MISSION_CHECK_TRIES번 실패하면 그 조건은 이 임무에서 닫힌다 */
+  fails: z.array(z.number().int().nonnegative()).default([]),
   status: z.enum(MISSION_STATUSES),
 });
 export type MissionInstance = z.infer<typeof missionInstanceSchema>;
 
+/** 임무의 판정 조건은 이만큼 실패하면 닫힌다 (C2: 5분마다 다시 굴려 채웠다) */
+export const MISSION_CHECK_TRIES = 3;
+/** 임무 판정이 빗나가면 드는 시간 (분, C2) */
+export const MISSION_FAIL_MINUTES = 30;
+/** 하루에 받을 수 있는 임무 수 (C3) */
+export const MISSIONS_PER_DAY = 2;
+
 /** 결과별 공적 (임시값, 기획서 18장 미정) */
 export const MERIT = {
   success: 3,
+  /** 시간만 채우면 되는 임무(판정 조건 없음)의 완수 (C4) */
+  success_time_only: 2,
   partial: 1,
   failed: 0,
   late: -1,
@@ -68,15 +79,38 @@ export const MERIT = {
 
 /** 진급 조건 (임시값). 어느 등급에서 어느 등급으로 오르는지는 시나리오(promotion)가 정한다 */
 export const PROMOTION = {
-  minMerit: 9,
-  minDaysServed: 4,
+  // 플레이 테스트 11 (C5): 공적은 2일차, 신뢰는 3일차에 채워져 복무일만 막고 있었다 (9·4·2 → 15·7·3)
+  minMerit: 15,
+  minDaysServed: 7,
   maxDisobedience: 1,
   /** 직속 상관의 신뢰 */
-  minCommanderTrust: 2,
+  minCommanderTrust: 3,
+  /** 최근 이만큼(일) 안의 흠을 본다: 실패·일부 완수가 setbacks 이상이거나 상관이 덜 믿게 된 일이 있으면 미룬다 */
+  recentDays: 3,
+  setbacks: 2,
 } as const;
+
+/** 진급을 미루게 하는 최근의 흠 (C5). 없으면 null */
+export function recentSetback(
+  state: { time: GameTime; missions: Record<string, MissionInstance>; trustDroppedAt?: Record<string, number> },
+  characterId: string,
+  commanderId: string | null,
+): string | null {
+  const since = state.time - PROMOTION.recentDays * MINUTES_PER_DAY;
+  const bad = Object.values(state.missions).filter((m) => m.assigneeId === characterId && m.assignedAt >= since && ["partial", "failed", "expired", "abandoned"].includes(m.status)).length;
+  if (bad >= PROMOTION.setbacks) return `최근 ${PROMOTION.recentDays}일 사이 임무 ${bad}번이 뜻대로 되지 않았다`;
+  if (commanderId && (state.trustDroppedAt?.[commanderId] ?? -Infinity) >= since) return `최근 ${PROMOTION.recentDays}일 사이 상관의 믿음을 잃은 일이 있다`;
+  return null;
+}
 
 /** 하루에 상관이 내놓는 임무 수 */
 export const OFFERS_PER_DAY = 2;
+
+/** 판정 조건이 실패로 닫혔는가 (C2) */
+export function isRequirementClosed(mission: Pick<MissionInstance, "requirements" | "progress" | "fails">, i: number): boolean {
+  const r = mission.requirements[i];
+  return !!r && "check" in r && (mission.progress[i] ?? 0) < 1 && (mission.fails?.[i] ?? 0) >= MISSION_CHECK_TRIES;
+}
 
 export function isRequirementMet(requirement: MissionRequirement, progress: number): boolean {
   return "activity" in requirement ? progress >= requirement.minutes : progress >= 1;
@@ -89,7 +123,9 @@ export function evaluateMission(mission: MissionInstance, now: GameTime): Missio
   const met = mission.requirements.filter((r, i) => isRequirementMet(r, mission.progress[i] ?? 0)).length;
   const outcome = met === mission.requirements.length ? "success" : met > 0 ? "partial" : "failed";
   const late = now > mission.deadline;
-  return { outcome, late, merit: MERIT[outcome] + (late ? MERIT.late : 0) };
+  const timeOnly = mission.requirements.every((r) => "activity" in r);
+  const base = outcome === "success" && timeOnly ? MERIT.success_time_only : MERIT[outcome];
+  return { outcome, late, merit: base + (late ? MERIT.late : 0) };
 }
 
 const OUTCOME_RANK: Record<CheckOutcome, number> = Object.fromEntries(
@@ -139,8 +175,11 @@ export function checkPromotion(
   commanderTrust: number | null,
   /** 무리의 규율이 허용하는 불복종 수 (기획서 9.9). 없으면 기본 */
   maxDisobedience: number = PROMOTION.maxDisobedience,
+  /** 최근의 흠 (recentSetback) */
+  setback: string | null = null,
 ): PromotionCheck {
   const missing: string[] = [];
+  if (setback) missing.push(setback);
   if (character.rank !== promotion.from) return { eligible: false, missing: ["진급 대상 등급이 아님"] };
   if (character.merit < PROMOTION.minMerit) missing.push(`공적 ${character.merit}/${PROMOTION.minMerit}`);
   const days = daysServed(now, runStartedAt);
@@ -167,11 +206,19 @@ export function pickDailyOffers(
   overrun = false,
   /** 임무를 받을 사람의 무리와 지금 땅 주인 (플레이 테스트 11): 우리 땅이던 곳을 빼앗겼으면 그곳으로 가는 임무(증원, 시찰)는 내지 않는다 */
   lost?: { factionId: string | null; owners: Record<string, { owner: string | null } | undefined> },
+  /** 받을 사람의 계급 (min_rank가 있는 일감을 거른다) */
+  rank?: string,
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
   const clearing = overrun ? Object.values(content.missions).filter((m) => m.clears).map((m) => m.id) : [];
   const pool = [...new Set([...(content.roles[roleId]?.missions ?? []), ...extra, ...clearing])].filter((id) => content.missions[id] && (overrun || !content.missions[id]!.clears))
+    .filter((id) => {
+      const min = content.missions[id]!.min_rank;
+      if (!min || !rank) return true;
+      const level = (r: string) => content.scenario.rank_ladder.find((x) => x.id === r)?.level ?? 0;
+      return level(rank) >= level(min);
+    })
     .filter((id) => {
       const where = content.missions[id]!.where;
       if (!lost?.factionId || !where || where === "outside" || where === "enemy") return true;

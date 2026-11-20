@@ -46,6 +46,7 @@ describe("명성", () => {
     expect(fameOf(state(), content).tier).toBe(0);
     deed(3);
     deed(3);
+    deed(3);
     expect(fameOf(state(), content).tier).toBe(1);
     expect(fameOf(state(), content).label).toBe(content.scenario.fame!.tiers[1]!.label);
   });
@@ -58,6 +59,7 @@ describe("명성", () => {
     expect(outsiders(quiet, small)).toEqual([]);
 
     const known = setup();
+    known.deed(3);
     known.deed(3);
     known.deed(3);
     const big = known.deed(1);

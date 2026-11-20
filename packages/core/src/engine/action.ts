@@ -52,7 +52,7 @@ import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { SQUAD_REPORT_PREFIX } from "./command.ts";
-import { activeMissionOf, atMissionPlace } from "../game/missions.ts";
+import { activeMissionOf, atMissionPlace, MISSION_CHECK_TRIES, MISSION_FAIL_MINUTES } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
@@ -434,6 +434,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     }
   }
   let woundAfterRoll = false;
+  let missionNote: string | null = null;
   // 동물·감염체가 상대면 (12-111): 말로 하는 스킬은 통하지 않고, 다칠 위험에는 그것의 상처 종류와 감염 위험이 저절로 붙는다
   if (input.check) {
     const foeId = input.check.opponent ?? input.target ?? null;
@@ -584,12 +585,25 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       }
     }
     displays.push(roll.display);
+    // 임무 판정이 빗나가면 30분을 더 쓴다 (플레이 테스트 11, C2: 5분마다 다시 굴려 채웠다). 같은 조건은 세 번 빗나가면 닫힌다
+    {
+      const m = forMission ? store.getState().missions[forMission] : undefined;
+      const i = m ? m.requirements.findIndex((r) => "check" in r && r.check === input.check!.move) : -1;
+      const before = forMission ? start.missions[forMission] : undefined;
+      if (m && before && i >= 0 && (m.fails?.[i] ?? 0) > (before.fails?.[i] ?? 0)) {
+        const now = store.getState().time;
+        store.append({ type: "time_advanced", activity: "brief", from: now, to: now + MISSION_FAIL_MINUTES });
+        const closed = (m.fails?.[i] ?? 0) >= MISSION_CHECK_TRIES;
+        missionNote = `임무 판정이 빗나가 ${MISSION_FAIL_MINUTES}분을 더 썼다 (${closed ? `${MISSION_CHECK_TRIES}번 빗나가 이 조건은 이번 임무에서 닫혔다` : `빗나감 ${m.fails?.[i] ?? 0}/${MISSION_CHECK_TRIES}`}).`;
+      }
+    }
     lines.push(
       `판정 ${roll.checkId}: ${CHECK_OUTCOME_LABELS[roll.outcome]} (${roll.outcome}). ` +
         `주사위 ${roll.dice[0]}+${roll.dice[1]}, 보정 ${signed(roll.modifier)}, 합계 ${roll.total}.`,
       OUTCOME_GUIDE[roll.outcome],
     );
     if (roll.growthNote) lines.push(roll.growthNote);
+    if (missionNote) lines.push(missionNote);
     lines.push(...roll.ambushNotes);
     // 매복을 놓는다 (12-177)
     if (input.ambush) lines.push(...applyAmbush(ctx, roll.outcome));

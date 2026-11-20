@@ -59,8 +59,9 @@ describe("임무 수행과 보고", () => {
     expect(env.store.getState().missions.m_1?.progress).toEqual([240]);
 
     const out = executeTool("report_mission", {}, env.ctx);
-    expect(out.ok && out.display).toMatchObject({ type: "mission", event: "reported", detail: "완수", merit: 3 });
-    expect(env.store.getState().characters.player?.merit).toBe(3);
+    // 시간만 채우는 임무의 완수는 공적 2 (C4)
+    expect(out.ok && out.display).toMatchObject({ type: "mission", event: "reported", detail: "완수", merit: 2 });
+    expect(env.store.getState().characters.player?.merit).toBe(2);
     expect(env.store.getState().missions.m_1?.status).toBe("completed");
   });
 
@@ -138,21 +139,23 @@ describe("진급", () => {
 
   it("공적·복무 기간·불복종·상관 신뢰 조건을 모두 채워야 한다", () => {
     const day = 24 * 60;
-    expect(checkPromotion({ ...base, merit: 9 }, PROMO, 330 + 4 * day, 330, 2).eligible).toBe(true);
-    expect(checkPromotion({ ...base, merit: 8 }, PROMO, 330 + 4 * day, 330, 2).missing).toEqual(["공적 8/9"]);
-    expect(checkPromotion({ ...base, merit: 9 }, PROMO, 330 + 3 * day, 330, 2).missing).toEqual(["복무 3/4일"]);
-    expect(checkPromotion({ ...base, merit: 9, disobedience: 2 }, PROMO, 330 + 4 * day, 330, 2).eligible).toBe(false);
-    expect(checkPromotion({ ...base, merit: 9 }, PROMO, 330 + 4 * day, 330, 1).missing).toEqual(["상관 신뢰 1/2"]);
-    expect(checkPromotion({ ...base, merit: 9 }, PROMO, 330 + 4 * day, 330, null).eligible).toBe(true);
+    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 3).eligible).toBe(true);
+    expect(checkPromotion({ ...base, merit: 14 }, PROMO, 330 + 7 * day, 330, 3).missing).toEqual(["공적 14/15"]);
+    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 6 * day, 330, 3).missing).toEqual(["복무 6/7일"]);
+    expect(checkPromotion({ ...base, merit: 15, disobedience: 2 }, PROMO, 330 + 7 * day, 330, 3).eligible).toBe(false);
+    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 2).missing).toEqual(["상관 신뢰 2/3"]);
+    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, null).eligible).toBe(true);
+    // 최근의 흠이 있으면 미룬다 (C5)
+    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 3, 1, "최근의 흠").eligible).toBe(false);
   });
 
   it("조건을 채운 상태로 보고하면 상관이 진급을 제안하고, 받으면 진급한다 (12-190)", () => {
     const env = withLeader(setup(sixes));
-    // 복무 4일이 지났고 공적 6, 상관 신뢰 1이 쌓인 상태로 만든다
-    env.store.getState().characters.player!.merit = 6;
-    env.store.getState().relations.npc_leader = { player: { trust: 1, affection: 0, respect: 0 } };
-    env.store.append({ type: "time_advanced", activity: "wait", from: 330, to: 330 + 4 * 24 * 60 });
-    env.store.append({ type: "missions_offered", day: 5, templateIds: ["m_guard"] });
+    // 복무 7일이 지났고 공적 13, 상관 신뢰 3이 쌓인 상태로 만든다
+    env.store.getState().characters.player!.merit = 13;
+    env.store.getState().relations.npc_leader = { player: { trust: 3, affection: 0, respect: 0 } };
+    env.store.append({ type: "time_advanced", activity: "wait", from: 330, to: 330 + 7 * 24 * 60 });
+    env.store.append({ type: "missions_offered", day: 8, templateIds: ["m_guard"] });
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
     executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: true, activity: { kind: "guard_duty", until: null } }, env.ctx);
     const out = executeTool("report_mission", {}, env.ctx);

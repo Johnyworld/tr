@@ -54,7 +54,10 @@ function noticeMove(ctx: ToolContext) {
 }
 
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
-export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource) {
+/** 행적으로 오르는 관계는 축마다 하루 +1까지 (플레이 테스트 11, C6). 떨어지는 쪽은 자르지 않는다 */
+export const DAILY_REGARD_GAIN = 1;
+
+export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, only?: readonly ("trust" | "affection" | "respect")[]) {
   const state = ctx.store.getState();
   const values = valuesOf(ctx.content, state, npcId);
   // "적에게 호의"는 우리 편이 보기에만 흠이다. 호의를 받은 쪽(적·포로)에게까지 신뢰를 깎았다 (플레이 테스트 11)
@@ -62,7 +65,13 @@ export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: Belie
   const witness = state.characters[npcId];
   const ownSide = !!actorFaction && witness?.factionId === actorFaction && !witness.captive;
   const tags = ownSide ? deed.tags : deed.tags.filter((t) => t !== "enemy_sympathy");
-  const delta = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, tags, deed.severity, source));
+  const raw = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, tags, deed.severity, source));
+  const today = state.regardGained.day === dayOf(state.time) ? (state.regardGained.by[npcId]?.[deed.actorId] ?? {}) : {};
+  const delta = { ...raw };
+  for (const axis of ["trust", "affection", "respect"] as const) {
+    if (only && !only.includes(axis)) delta[axis] = Math.min(0, delta[axis]);
+    if (delta[axis] > 0) delta[axis] = Math.min(delta[axis], Math.max(0, DAILY_REGARD_GAIN - (today[axis] ?? 0)));
+  }
   ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
 }
 
@@ -75,7 +84,7 @@ export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: Belie
 export function recordDeed(
   ctx: ToolContext,
   input: DeedInput,
-  official?: { npcId: string; source: BeliefSource },
+  official?: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] },
 ): { deed: Deed; visible: string[] } {
   const state = ctx.store.getState();
   const id = `d_${state.nextDeedNo}`;
@@ -126,7 +135,7 @@ export function recordDeed(
     searched: false,
   };
   ctx.store.append({ type: "deed_recorded", deed });
-  for (const w of witnesses) learn(ctx, deed, w.npcId, official?.source ?? "seen");
+  for (const w of witnesses) learn(ctx, deed, w.npcId, official?.source ?? "seen", official?.only);
 
   const visible = witnesses.filter((w) => !w.hidden).map((w) => playerCalls(state, ctx.content, w.npcId));
   return { deed, visible };

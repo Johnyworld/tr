@@ -1006,8 +1006,19 @@ export function createContentSchemas(s: Scenario) {
      * 감염체가 맞서는 판정에서 다치면 감염 위험이 저절로 붙는다 (scenario.opposition.mindless)
      */
     kind: z.enum(["person", "animal", "infected"]).default("person"),
-    /** 이것에게 다칠 때의 상처 종류 (wounds.kinds). 감염체·동물의 물림·할큄. GM이 상처 종류를 비우면 이것을 쓴다 */
-    wound: contentIdSchema.optional(),
+    /**
+     * 이것에게 다칠 때의 상처 종류 (wounds.kinds). 감염체·동물의 물림·할큄. GM이 상처 종류를 비우면 이것을 쓴다.
+     * 위험의 무게와 판정 결과로 나눌 수도 있다 (플레이 테스트 11): { light: { miss: cut }, heavy: { miss: bite, partial: claw } }
+     */
+    wound: z
+      .union([
+        contentIdSchema,
+        z.strictObject({
+          light: z.partialRecord(z.enum(["partial", "miss"]), contentIdSchema).default({}),
+          heavy: z.partialRecord(z.enum(["partial", "miss"]), contentIdSchema).default({}),
+        }),
+      ])
+      .optional(),
     /**
      * 자랄 때(이름 없는 인물 → 이름 있는 인물, 기획서 7.10) 코드가 하나씩 고르는 재료. 없으면 자라지 않는다
      */

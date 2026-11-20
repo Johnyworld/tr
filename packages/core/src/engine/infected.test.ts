@@ -62,6 +62,18 @@ describe("감염체", () => {
     expect(me.conditions.bleeding).not.toBe("none");
   });
 
+  it("무는 감염체: 가벼운 위험에 지면 찢김(25%), 무거운 위험에 지면 물림(반드시 감염)", () => {
+    for (const [risk, infected] of [["light", false], ["heavy", true]] as const) {
+      const { ctx, roll, store, spawn } = setup();
+      const foe = spawn();
+      roll.value = 0.3; // 주사위 2+2 (실패), 감염 굴림 0.3 (찢김 25%는 피하고 물림은 못 피한다)
+      const out = executeTool("take_action", act({ move: "fight", harm_on_failure: risk, harm_cause: "덮쳐 온다", opponent: foe }), ctx);
+      expect(out.ok).toBe(true);
+      const me = store.getState().characters[store.getState().playerId]!;
+      expect(me.conditions.infection !== infectionStart, risk).toBe(infected);
+    }
+  });
+
   it("말로 하는 스킬은 감염체에게 쓸 수 없다", () => {
     const { ctx, spawn } = setup();
     const foe = spawn();

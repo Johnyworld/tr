@@ -1,6 +1,7 @@
 # 감염체 틀 (12-111, *임시*): 이야기와 GM 서술 안에만 있던 감염체에게 몸을 준다
 # kind: infected — 이름이 없고 말이 통하지 않는다. 대화·흥정·포로·관계·목격·소문·자라기에서 빠진다
 # 맞서는 판정(opponent·target)에서 다치면 감염 위험과 이 틀의 상처 종류(wound)가 저절로 붙는다
+# 무는 감염체 (플레이 테스트 11): 가벼운 위험에 지면 찢김(베임), 무거운 위험에 지면 물림, 무거운 위험의 대가 있는 성공은 할큄. 물리면 끝이다 (막는 것은 방어구뿐)
 # 수에 밀림: 장면에 덤빌 수 있는 감염체가 둘·넷을 넘으면 근접전 -1씩 (scenario.opposition.mindless)
 # 등장은 구역의 감염체 압력(12-112)을 본다: 총소리·시체로 몰려들면 안전하던 곳에도 나온다
 # 소지품 표는 생전의 짐이다. 쓰러뜨리면 transfer_item으로 뒤질 수 있다
@@ -8,7 +9,7 @@
 - id: infected_hungry
   label: 굶주린 감염체
   kind: infected
-  wound: bite
+  wound: { light: { miss: cut }, heavy: { miss: bite, partial: claw } }
   fearsome: 1
   rank: loner
   age: [16, 70]
@@ -46,7 +47,7 @@
 - id: infected_fresh
   label: 막 변한 감염체
   kind: infected
-  wound: bite
+  wound: { light: { miss: cut }, heavy: { miss: bite, partial: claw } }
   fearsome: 2
   rank: loner
   age: [16, 60]

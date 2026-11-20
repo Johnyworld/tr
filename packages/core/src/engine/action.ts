@@ -433,6 +433,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       return { ok: false, error: `${effect.label}에는 몸의 위험을 ${effect.min_harm} 이상으로 선언한다 (harm_on_failure).` };
     }
   }
+  let woundAfterRoll = false;
   // 동물·감염체가 상대면 (12-111): 말로 하는 스킬은 통하지 않고, 다칠 위험에는 그것의 상처 종류와 감염 위험이 저절로 붙는다
   if (input.check) {
     const foeId = input.check.opponent ?? input.target ?? null;
@@ -446,10 +447,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       if (input.check.harm_on_failure !== "none") input.check.infected_source = true;
     }
     const template = foe?.extra ? content.extras[foe.extra.template] : undefined;
-    if (template?.wound && input.check.harm_on_failure !== "none" && !input.check.harm_kind) input.check.harm_kind = template.wound;
+    if (typeof template?.wound === "string" && input.check.harm_on_failure !== "none" && !input.check.harm_kind) input.check.harm_kind = template.wound;
+    // 결과로 나뉘는 상처 종류면 판정 뒤에 정한다
+    woundAfterRoll = !!template?.wound && typeof template.wound !== "string" && !input.check.harm_kind;
   }
   // 상처 종류 (12-91): 몸의 위험을 걸면 고른다
-  if (input.check && scenario.wounds) {
+  if (input.check && scenario.wounds && !woundAfterRoll) {
     // 감염체에게 다칠 위험인데 종류를 비웠으면 기본 종류(물림·할큄)로 본다
     if (!input.check.harm_kind && input.check.infected_source && scenario.wounds.infected_default) input.check.harm_kind = scenario.wounds.infected_default;
     const kind = input.check.harm_kind;
@@ -570,6 +573,16 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       return { ok: false, error: roll.error };
     }
     outcome = roll.outcome;
+    // 위험의 무게와 결과로 나뉜 상처 종류 (플레이 테스트 11: 가벼운 위험은 찢김, 무거운 위험에 지면 물림, 대가 있는 성공이면 할큄). GM이 고른 종류가 먼저다
+    {
+      const foeId = input.check.opponent ?? input.target ?? null;
+      const foe = foeId ? start.characters[foeId] : undefined;
+      const table = foe?.extra ? content.extras[foe.extra.template]?.wound : undefined;
+      if (woundAfterRoll && table && typeof table !== "string" && input.check.harm_on_failure !== "none" && roll.outcome !== "success") {
+        const kind = table[input.check.harm_on_failure][roll.outcome] ?? scenario.wounds?.infected_default ?? null;
+        if (kind) input.check.harm_kind = kind;
+      }
+    }
     displays.push(roll.display);
     lines.push(
       `판정 ${roll.checkId}: ${CHECK_OUTCOME_LABELS[roll.outcome]} (${roll.outcome}). ` +

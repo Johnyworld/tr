@@ -1565,7 +1565,8 @@ body:
   infection:
     track: infection
     # 감염체에게 입은 상처 종류별 감염 확률 (*임시*). 둔기·그 밖(살갗이 안 찢김)은 감염되지 않는다
-    chance: { claw: 0.2, cut: 0.35, pierce: 0.35, bite: 0.6 }
+    # 플레이 테스트 11: 할큄·베임은 낮추고, 물리면 끝 (막는 것은 방어구뿐)
+    chance: { claw: 0.1, cut: 0.25, pierce: 0.25, bite: 1 }
     # 하나 먹으면 하루 동안 감염이 절반 속도로 퍼진다
     slow: [antibiotics]
     # 감염을 떼는 유일한 약. 잠복에도 듣는다

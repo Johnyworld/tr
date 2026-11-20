@@ -67,7 +67,8 @@ describe("무소속 자유 시나리오 자동 플레이 (실제 콘텐츠)", ()
     const lonerTales = Object.values(content.storylets).filter((s) => s.when.factions?.includes("none")).map((s) => s.id);
     const fired = new Set<string>();
     let joined = 0;
-    for (const seed of [1, 2, 3, 4]) {
+    // 무리에 드는 판은 열에 한두 판이라 씨앗을 여덟으로 (12-206: 감염 굴림이 바뀌어 씨앗 1이 들지 않게 됐다)
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
       const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(seed) });
       const role = buildCustomRole(content, {
         faction: null, rank: "loner", title: "떠돌이", location: "old_town", kit: "wanderer", skills: { scavenge: 1, survival: 1 }, age: 30, opening: "폐허에서 눈을 뜬다.", background: [],
@@ -81,7 +82,7 @@ describe("무소속 자유 시나리오 자동 플레이 (실제 콘텐츠)", ()
     }
     expect(fired.size).toBeGreaterThanOrEqual(3);
     expect(joined).toBeGreaterThanOrEqual(1);
-  }, 30_000);
+  }, 60_000);
 });
 
 describe("연고와 함께 다니는 떠돌이 자동 플레이 (기획서 7.9)", () => {

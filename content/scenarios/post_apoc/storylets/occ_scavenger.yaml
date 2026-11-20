@@ -103,7 +103,8 @@
     day_gte: 3
     flags_none: [occ_sc_pinned_done]
   cast:
-    mate: { faction: own, ranks: [grunt, staff], known: true, not_companion: true }
+    # 플레이 테스트 13: 깔린 사람이 여섯 판 모두 멀쩡했다
+    mate: { faction: own, ranks: [grunt, staff], known: true, not_companion: true, starts: { harm: light } }
   setup: >-
     가까운 건물 안에서 바닥이 통째로 꺼지는 소리가 울린다. 무너진 입구 너머, 먼지가 가라앉는 구멍 아래로 같은 무리의 {mate:이/가} 보인다. 혼자 그 건물을 뒤지던 참이었다. 아래층에 다리가 걸렸다. 무너진 콘크리트 판이 정강이를 누르고 있다.
     {mate:이/가} 이를 악물고 올려다본다. 복도 저쪽 어둠에서 무언가 끄는 발소리가 이쪽으로 온다.

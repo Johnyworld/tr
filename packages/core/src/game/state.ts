@@ -19,7 +19,7 @@ import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
 import { idEnum, type Scenario } from "../scenario/schema.ts";
 import { initialConditions, moveIds, rankIds, statIds, trackIds } from "../scenario/scenario.ts";
 import { beliefSchema, beliefSourceSchema, type Belief } from "./belief.ts";
-import { activeMissionOf, atMissionPlace, isRequirementClosed, isRequirementMet, missionInstanceSchema, outcomeAtLeast } from "./missions.ts";
+import { activeMissionOf, atMissionPlace, markMissionMet, isRequirementClosed, isRequirementMet, missionInstanceSchema, outcomeAtLeast } from "./missions.ts";
 import {
   applyRelationDelta,
   deedSchema,
@@ -301,6 +301,8 @@ export function createGameSchemas(s: Scenario) {
     swarms: z.record(z.string(), z.strictObject({ day: z.number().int(), at: z.number().int(), done: z.boolean() })).default({}),
     /** 주인공이 마지막으로 그 구역에 갔을 때 본 주인 (플레이 테스트 12: 점령 변화가 소문 없이 인접 목록에 바로 보였다) */
     zoneSeen: z.record(z.string(), z.string().nullable()).default({}),
+    /** 구역마다 바닥에 놓인 물건 (장면을 떠나면 그 구역에 남는다, 플레이 테스트 13: 내려놓은 고철이 구역을 옮겨도 따라왔다) */
+    groundItems: z.record(z.string(), inventorySchema).default({}),
     /** 상인이 마지막으로 물건을 채운 날 */
     restockedDay: z.record(z.string(), z.number().int()).default({}),
     /** 이 세계에서 열린 해금: 시나리오(역할) id (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 12.4.1, 9.12) */
@@ -533,6 +535,8 @@ export function createGameSchemas(s: Scenario) {
     lastStoryletAt: z.number().int().nullable().default(null),
     /** 주인공이 마지막으로 한 일 (이야기 조건 when.activities, 플레이 테스트 11). 이전 세이브는 null */
     lastActivity: z.string().nullable().default(null),
+    /** 마지막으로 잠에서 깬 시각 (플레이 테스트 13: "한밤에 막 깬 때"가 깬 뒤 행동 하나로 풀렸다) */
+    lastWokeAt: z.number().int().nullable().default(null),
     /** 불복종이 마지막으로 늘거나 지워진 때 (C8: 7일마다 하나씩 지워진다) */
     disobedienceAt: z.record(z.string(), z.number().int()).default({}),
     /** 이 사람이 주인공을 덜 믿게 된 마지막 때 (플레이 테스트 11, C5: 의심받은 직후 진급 제안이 왔다) */
@@ -1156,6 +1160,7 @@ export const EMPTY_STATE: GameState = {
   zoneNoise: {},
   swarms: {},
   zoneSeen: {},
+  groundItems: {},
   loans: {},
   restockedDay: {},
   squad: null,
@@ -1203,6 +1208,7 @@ export const EMPTY_STATE: GameState = {
   activeStorylet: null,
   lastStoryletAt: null,
   lastActivity: null,
+  lastWokeAt: null,
   regardGained: { day: -1, by: {} },
   trustDroppedAt: {},
   disobedienceAt: {},
@@ -1883,9 +1889,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       // 임무를 위한 판정만 임무 진행으로 센다 (거점 안의 사적인 행동이 정찰 조건을 채우지 않게)
       const mission = activeMissionOf(next.missions, event.actorId);
       const at = (zone: string | null | undefined) => !!mission && atMissionPlace(mission, zone ?? null, next.zones, next.factions);
-      if (mission && mission.id === event.forMission && (at(next.playerZone) || (!!event.dest && at(event.dest)))) mission.requirements.forEach((r, i) => {
+      // 갇혀 있는 동안의 판정은 임무로 세지 않는다 (플레이 테스트 13: 감방 창틈으로 본 것이 정찰 완수가 됐다)
+      const held = !!next.characters[event.actorId]?.captive;
+      if (!held && mission && mission.id === event.forMission && (at(next.playerZone) || (!!event.dest && at(event.dest)))) mission.requirements.forEach((r, i) => {
         if (!("check" in r) || r.check !== event.move || (mission.progress[i] ?? 0) >= 1 || isRequirementClosed(mission, i)) return;
-        if (outcomeAtLeast(event.outcome, r.min_outcome)) mission.progress[i] = 1;
+        if (outcomeAtLeast(event.outcome, r.min_outcome)) {
+          mission.progress[i] = 1;
+          markMissionMet(mission, state.time);
+        }
         else {
           // 빗나간 시도를 센다 (C2): 세 번이면 닫힌다
           const fails = [...(mission.fails ?? [])];
@@ -1919,12 +1930,16 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.to <= event.from) throw new Error("시간은 앞으로만 흐릅니다.");
       next.time = event.to;
       next.lastActivity = event.activity;
+      if (event.activity === "sleep") next.lastWokeAt = event.to;
       {
         const mission = activeMissionOf(next.missions, state.playerId);
         const placed = (zone: string | null) => !!mission && atMissionPlace(mission, zone, next.zones, next.factions);
-        if (mission && mission.id === event.forMission && (placed(next.playerZone) || (!!event.dest && placed(event.dest)))) mission.requirements.forEach((r, i) => {
+        if (!next.characters[state.playerId]?.captive && mission && mission.id === event.forMission && (placed(next.playerZone) || (!!event.dest && placed(event.dest)))) mission.requirements.forEach((r, i) => {
           if ("activity" in r && r.activity === event.activity && !isRequirementMet(r, mission.progress[i] ?? 0)) {
-            mission.progress[i] = (mission.progress[i] ?? 0) + (event.to - event.from);
+            const before = mission.progress[i] ?? 0;
+            mission.progress[i] = before + (event.to - event.from);
+            // 활동 도중 조건이 찬 그 시각 (4시간 보초 중 3시간째)
+            if (isRequirementMet(r, mission.progress[i]!)) markMissionMet(mission, event.from + Math.max(0, r.minutes - before));
           }
         });
       }
@@ -1953,6 +1968,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       const mission = mustGet(next.missions, event.missionId, "임무");
       if (mission.status !== "active") throw new Error(`이미 끝난 임무: ${mission.id}`);
       mission.progress[event.index] = 1;
+      markMissionMet(mission, state.time);
       break;
     }
     case "mission_reported":
@@ -2031,6 +2047,15 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "zone_moved":
       for (const b of Object.values(next.bonds)) if (b.apart?.zone && b.apart.zone === event.from) b.apart.left = true;
       next.zoneSeen = { ...next.zoneSeen, [event.to]: next.zones[event.to]?.owner ?? null };
+      // 바닥의 물건은 그 구역에 남기고, 가는 구역에 남아 있던 것을 장면에 둔다
+      if (event.from !== event.to) {
+        const ground = { ...next.groundItems };
+        if (event.from !== null && Object.keys(next.scene.items).length) ground[event.from] = { ...next.scene.items };
+        else if (event.from !== null) delete ground[event.from];
+        next.scene = { ...next.scene, items: { ...(ground[event.to] ?? {}) } };
+        delete ground[event.to];
+        next.groundItems = ground;
+      }
       // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)
       next.infiltration = null;
       next.exploration = null;

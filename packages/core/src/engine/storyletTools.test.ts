@@ -87,7 +87,8 @@ const act = (input: Record<string, unknown> = {}) => ({
 });
 
 function toNight(env: ReturnType<typeof setup>) {
-  return executeTool("take_action", act({ activity: { kind: "wait", until: "night" } }), env.ctx);
+  // 이미 열린 이야기(세계를 열자마자 열린 잡담 등)는 모른 척하고 기다린다 (플레이 테스트 13)
+  return executeTool("take_action", act({ activity: { kind: "wait", until: "night" }, ignore_story: true }), env.ctx);
 }
 
 describe("조건과 배역", () => {
@@ -130,9 +131,10 @@ describe("발동", () => {
     const env = setup([favor, chatter]);
     toNight(env);
     expect(env.store.getState().activeStorylet?.id).toBe("leader_favor");
-    executeTool("take_action", act({ activity: { kind: "rest", until: null } }), env.ctx);
+    // 이야기를 둔 채 쉬려 하면 거절된다 (플레이 테스트 13). 짧은 일로 시간이 흐르면 지나간다
+    expect(executeTool("take_action", act({ activity: { kind: "rest", until: null } }), env.ctx).ok).toBe(false);
     expect(env.store.getState().activeStorylet?.id).toBe("leader_favor");
-    for (let i = 0; i < 3; i++) executeTool("take_action", act({ activity: { kind: "rest", until: null } }), env.ctx);
+    for (let i = 0; i < 40 && env.store.getState().activeStorylet?.id === "leader_favor"; i++) executeTool("take_action", act({ activity: { kind: "talk", until: null } }), env.ctx);
     expect(env.store.events().some((e) => e.type === "storylet_expired")).toBe(true);
   });
 

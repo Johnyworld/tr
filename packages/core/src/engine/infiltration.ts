@@ -11,7 +11,7 @@ import { advanceTime } from "./action.ts";
 import { capturePlayer } from "./captivity.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
-import { applyEffect, runTagEvent } from "./storyletTools.ts";
+import { applyEffect, hostileZone, runTagEvent } from "./storyletTools.ts";
 import { roadStorylets } from "../story/storylets.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
@@ -231,7 +231,8 @@ export function describeInfiltration(content: Content, state: GameState): string
   if (!inf) {
     const owner = ownerHere(state);
     // 갇혀 있으면 잠입할 수 없다 (플레이 테스트 12: 갇힌 상태 화면에 잠입 목표가 떴다)
-    if (!owner || state.battle || state.characters[state.playerId]?.captive) return [];
+    // 적대하는 땅에서만 보인다 (플레이 테스트 13: 연합·중립 거점에도 잠입 목표가 떴다). 그 밖에서도 플레이어가 먼저 숨어들겠다고 하면 할 수는 있다
+    if (!owner || state.battle || state.characters[state.playerId]?.captive || !hostileZone(state, content)) return [];
     const goals = r.goals.filter((g) => !g.release || captiveHere(state, state.playerZone!, owner));
     return [`잠입할 수 있는 목표 (infiltrate start, 플레이어가 몰래 들어가겠다고 할 때만): ${goals.map((g) => `${g.id} ${g.label}`).join(" / ")}`];
   }

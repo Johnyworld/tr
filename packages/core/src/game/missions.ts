@@ -55,6 +55,8 @@ export const missionInstanceSchema = z.strictObject({
   progress: z.array(z.number().int().nonnegative()),
   /** 판정 조건별 실패 수 (플레이 테스트 11, C2): MISSION_CHECK_TRIES번 실패하면 그 조건은 이 임무에서 닫힌다 */
   fails: z.array(z.number().int().nonnegative()).default([]),
+  /** 조건을 모두 채운 시각 (플레이 테스트 13: 기한은 보고·활동이 끝난 때가 아니라 이때로 본다) */
+  metAt: z.number().int().optional(),
   status: z.enum(MISSION_STATUSES),
 });
 export type MissionInstance = z.infer<typeof missionInstanceSchema>;
@@ -113,6 +115,11 @@ export function isRequirementClosed(mission: Pick<MissionInstance, "requirements
   return !!r && "check" in r && (mission.progress[i] ?? 0) < 1 && (mission.fails?.[i] ?? 0) >= MISSION_CHECK_TRIES;
 }
 
+/** 조건을 이제 막 다 채웠으면 그 시각을 적는다 (이미 적었으면 그대로) */
+export function markMissionMet(mission: MissionInstance, at: number): void {
+  if (mission.metAt === undefined && mission.requirements.every((r, i) => isRequirementMet(r, mission.progress[i] ?? 0))) mission.metAt = at;
+}
+
 export function isRequirementMet(requirement: MissionRequirement, progress: number): boolean {
   return "activity" in requirement ? progress >= requirement.minutes : progress >= 1;
 }
@@ -123,7 +130,8 @@ export type MissionEvaluation = { outcome: "success" | "partial" | "failed"; lat
 export function evaluateMission(mission: MissionInstance, now: GameTime): MissionEvaluation {
   const met = mission.requirements.filter((r, i) => isRequirementMet(r, mission.progress[i] ?? 0)).length;
   const outcome = met === mission.requirements.length ? "success" : met > 0 ? "partial" : "failed";
-  const late = now > mission.deadline;
+  // 조건을 기한 안에 다 채웠으면 보고가 늦어도 기한 초과가 아니다 (플레이 테스트 13)
+  const late = (mission.metAt ?? now) > mission.deadline;
   const timeOnly = mission.requirements.every((r) => "activity" in r);
   const base = outcome === "success" && timeOnly ? MERIT.success_time_only : MERIT[outcome];
   return { outcome, late, merit: base + (late ? MERIT.late : 0) };

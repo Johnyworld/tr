@@ -25,7 +25,7 @@ import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis } from "../story/storylets.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
-import { knowsName, playerCalls } from "../game/acquaintance.ts";
+import { knowsName, playerCalls, hasMet } from "../game/acquaintance.ts";
 import { withCharm } from "./charm.ts";
 import { enterScene } from "./extras.ts";
 import { changeStanding, gainMeritXp } from "./growth.ts";
@@ -208,19 +208,19 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
   const lines = [
     `진행 중인 이야기: ${storyTitle(state, content, a.storylet)}`,
     // 배역이 아닌 인물의 이름도 주인공이 모르면 호칭으로 (12-192)
-    `  상황: ${maskUnknownNames(state, content, fillStorylet(storySetup(state, a.storylet), vars))}`,
-    ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${maskUnknownNames(state, content, fillStorylet(a.storylet.ai_direction, vars))}`] : []),
+    `  상황: ${maskUnknownNames(state, content, fillStorylet(storySetup(state, a.storylet), vars), { story: true })}`,
+    ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${maskUnknownNames(state, content, fillStorylet(a.storylet.ai_direction, vars), { story: true })}`] : []),
     `  등장: ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
     `  선택지 (resolve_storylet): ${a.storylet.choices
       .filter((c) => choiceAvailable(state, c, a.cast))
       // 배우지 않은 전문 기술의 선택지는 미리 "못 함"으로 (플레이 테스트 12: 고르면 거절돼 남는 길이 하나뿐인 줄 몰랐다)
       .map((c) => {
         const unable = !!c.check && learnedSkill(content.scenario, state.characters[state.playerId]?.skills ?? {}, c.check) === null;
-        const tag = !c.check ? "" : unable ? ` [못 함: ${moveLabel(content.scenario, c.check)}을(를) 배우지 않았다]` : ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]`;
-        return `${c.id} ${maskUnknownNames(state, content, fillStorylet(c.label, vars))}${tag}`;
+        const tag = !c.check ? "" : unable ? ` [못 함: ${josa(moveLabel(content.scenario, c.check), "을/를")} 배우지 않았다]` : ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]`;
+        return `${c.id} ${maskUnknownNames(state, content, fillStorylet(c.label, vars), { story: true })}${tag}`;
       })
       .join(" / ")}`,
-    "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 외면하면 그대로 둔다 (시간이 지나면 지나간다).",
+    "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 모른 척하기로 하면 다음 take_action에 ignore_story: true (효과 없이 지나간다). 이야기를 둔 채 같은 자리에서 오래 걸리는 일(잠·기다림·보초·수색·일)은 거절된다. 자리를 옮기면 외면하는 선택지로 풀린다.",
   ];
   return lines.join("\n");
 }
@@ -329,11 +329,13 @@ export function storyTitle(state: GameState, content: Content, storylet: { title
   return maskUnknownNames(state, content, storylet.title);
 }
 
-export function maskUnknownNames(state: GameState, content: Content, text: string): string {
+/** story: 이야기 글이면 만난 적도 장면에도 없는 사람은 "누군가"로 (겉모습·직업의 호칭이 정체를 알려 준다, 플레이 테스트 13) */
+export function maskUnknownNames(state: GameState, content: Content, text: string, options: { story?: boolean } = {}): string {
   let out = text;
   for (const npc of Object.values(content.npcs)) {
     if (!npc.name || !out.includes(npc.name) || knowsName(state, state.playerId, npc.id)) continue;
-    const alias = playerCalls(state, content, npc.id);
+    const stranger = !!options.story && !hasMet(state, state.playerId, npc.id) && !state.scene.present.includes(npc.id);
+    const alias = stranger ? "누군가" : playerCalls(state, content, npc.id);
     // 이름 뒤에 붙었던 조사는 호칭에 맞춰 다시 붙인다 (B9, 플레이 테스트 9: "경비병가", "탄약 장수은")
     const escaped = npc.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     // 앞말과 겹치는 호칭은 접는다 (C4, "규율반원 석중기에게" → "규율반원에게")
@@ -1099,14 +1101,19 @@ export function runAlarm(ctx: ToolContext, move: string): ToolDisplayEvent[] {
   return runTagEvent(ctx, rule.tag);
 }
 
-/** 지금 구역이 주인공을 적대하는 무리의 땅인가 (무소속은 남의 거점) */
+/** 지금 구역이 주인공을 적대하는 무리의 땅인가 (무소속은 낯선 사람을 잡아가는 무리·현상금을 건 무리의 땅) */
 export function hostileHere(ctx: ToolContext): boolean {
-  const state = ctx.store.getState();
+  return hostileZone(ctx.store.getState(), ctx.content);
+}
+
+export function hostileZone(state: GameState, content: Content): boolean {
   const zone = state.playerZone;
   const owner = zone ? state.zones[zone]?.owner : null;
   const mine = state.characters[state.playerId]?.factionId ?? null;
   if (!owner || owner === mine) return false;
-  return mine ? (state.factions[owner]?.disposition?.[mine] ?? 0) < 0 : ctx.content.locations[zone!]?.kind === "base";
+  if (mine) return (state.factions[owner]?.disposition?.[mine] ?? 0) < 0;
+  // 무소속: 낯선 사람을 잡아가는 무리(helpless.prey_on_strangers)나 현상금을 건 무리의 땅만 (플레이 테스트 13: 중립 장터·마을에서 말 걸기에도 숨기 판정을 요구하고, 붉은연합 창고는 안전했다)
+  return !!content.scenario.helpless?.prey_on_strangers.includes(owner) || (state.bounties ?? []).includes(owner);
 }
 
 

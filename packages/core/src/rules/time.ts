@@ -150,7 +150,8 @@ export const ACTIVITY_LABELS: Record<Activity, string> = {
   brief: "잠깐의 행동",
   talk: "대화",
   eat: "식사",
-  treat: "응급처치",
+  // 응급처치·치료사의 치료·수술 모두 (플레이 테스트 13: 수술 결과의 시간 줄이 "응급처치")
+  treat: "치료",
   search: "수색",
   work: "작업",
   rest: "휴식",

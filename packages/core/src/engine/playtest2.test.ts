@@ -63,8 +63,8 @@ describe("플레이 테스트 2회차 회귀", () => {
 
   it("P10: 시간이 지나 이야기가 끝나면 이야기 때문에 들어온 배역은 떠난다", () => {
     const env = setup(content([chat]));
-    executeTool("take_action", act({ activity: { kind: "work", until: null } }), env.ctx);
-    executeTool("take_action", act({ activity: { kind: "work", until: null } }), env.ctx);
+    // 이야기를 둔 채 오래 걸리는 일은 모른 척해야 한다 (플레이 테스트 13)
+    executeTool("take_action", act({ activity: { kind: "work", until: null }, ignore_story: true }), env.ctx);
     const s = env.store.getState();
     expect(s.activeStorylet).toBeNull();
     expect(s.scene.present).not.toContain("npc_leader");

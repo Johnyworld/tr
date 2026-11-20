@@ -207,19 +207,21 @@ export class GameWorld {
    * MCP 모드에서는 플레이어 의도도 기록에 남긴다 (웹 앱 모드는 GM 루프가 원래 입력을 남긴다).
    */
   executeTool(name: string, input: unknown): ToolOutcome {
-    if (name === "take_action" && input && typeof input === "object") {
+    const before = { turn: this.state().turn, time: this.state().time };
+    const tracked = this.#tracked(() => executeTool(name, input, this.ctx()));
+    let outcome = tracked.value;
+    // 거절된 행동의 요약·의도는 남기지 않는다 (플레이 테스트 13: 오류로 막힌 탈출이 일지에 "빠져나왔다"로 남았다)
+    if (outcome.ok && name === "take_action" && input && typeof input === "object") {
       const { intent, narration_summary } = input as { intent?: unknown; narration_summary?: unknown };
       // 웹 앱 모드는 GM 루프가 서술을 직접 저장하므로 narration_summary는 MCP 모드에서만 쓴다
       if (this.mode === "mcp" && typeof narration_summary === "string" && narration_summary.trim()) {
         this.appendTranscript([{ kind: "note", text: narration_summary.trim() }]);
-        this.recordSummary("turn", narration_summary.trim());
+        this.recordSummary("turn", narration_summary.trim(), before);
       }
       if (this.mode === "mcp" && typeof intent === "string" && intent.trim()) {
         this.appendTranscript([{ kind: "player", text: intent.trim() }]);
       }
     }
-    const tracked = this.#tracked(() => executeTool(name, input, this.ctx()));
-    let outcome = tracked.value;
     // 시나리오 해금·클리어는 tool 결과 뒤에 GM에게 알린다. 다짐(12-164)도 tool이 끝날 때마다 본다
     const resolved = outcome.ok ? checkResolve(this.ctx()) : { lines: [], displays: [] };
     const progress = [...describeProgressNotices(tracked.notices), ...resolved.lines];
@@ -258,13 +260,13 @@ export class GameWorld {
     this.#repo.appendTranscript(entries);
   }
 
-  recordSummary(kind: TurnSummary["kind"], text: string): void {
+  recordSummary(kind: TurnSummary["kind"], text: string, at?: { turn: number; time: number }): void {
     const state = this.state();
     this.#repo.appendSummary({
       kind,
       text: text.trim(),
-      turn: state.turn,
-      time: state.time,
+      turn: at?.turn ?? state.turn,
+      time: at?.time ?? state.time,
       mode: this.mode,
       characterId: state.playerId,
     });

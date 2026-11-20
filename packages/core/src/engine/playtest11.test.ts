@@ -52,8 +52,21 @@ describe("플레이 테스트 11 버그", () => {
 
   it("외면하는 선택지가 없으면 지나갔다고 분명히 알린다", () => {
     const env = setup([{ ...story, choices: [story.choices[0]] }]);
-    const r = executeTool("take_action", act({ activity: { kind: "wait", until: null } }), env.ctx);
+    const r = executeTool("take_action", act({ move_to: "a_post" }), env.ctx);
     expect(r.ok && r.resultText).toContain("외면하고 자리를 떴다");
+  });
+
+  it("이야기를 둔 채 같은 자리에서 오래 걸리는 일은 거절하고, 모른 척하면 효과 없이 지나간다 (플레이 테스트 13)", () => {
+    const env = setup([story]);
+    const before = env.store.getState().time;
+    const refused = executeTool("take_action", act({ activity: { kind: "wait", until: null } }), env.ctx);
+    expect(!refused.ok && refused.error).toContain("ignore_story");
+    expect(env.store.getState().time).toBe(before);
+    const r = executeTool("take_action", act({ activity: { kind: "wait", until: null }, ignore_story: true }), env.ctx);
+    expect(r.ok && r.resultText).toContain("모른 척했다");
+    const s = env.store.getState();
+    expect(s.activeStorylet).toBeNull();
+    expect(s.flags[s.playerId] ?? []).not.toContain("left_them");
   });
 
   it("쓸 수 없는 물건은 판정·시간 전에 막는다", () => {

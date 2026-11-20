@@ -92,7 +92,7 @@ describe("자유 시나리오: 세계", () => {
     const loner = { ...base, faction: null, rank: "loner", location: "riverside", title: "떠돌이 약초꾼", kit: "wanderer" };
     const w = m.create("mcp", undefined, choice, undefined, { role: buildCustomRole(content, loner), background: [] });
     for (let i = 0; i < 4; i++) {
-      const r = w.executeTool("take_action", { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false });
+      const r = w.executeTool("take_action", { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true });
       expect(r.ok, r.ok ? "" : r.error).toBe(true);
     }
     expect(w.state().characters.player!.factionId).toBe("");

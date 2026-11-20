@@ -468,7 +468,7 @@
     segments: [morning, day, evening]
     day_gte: 2
   cast:
-    patient: { faction: faction_c, ranks: [grunt] }
+    patient: { faction: faction_c, ranks: [grunt], starts: { harm: serious, bleeding: bleeding } }
     guard: { ids: [d_dojin] }
   setup: 치료대 위에 붉은 완장을 찬 {patient:이/가} 허벅지에 파편이 박힌 채 누워 있다. 정문에서 {guard:이/가} 들어와 낮게 말한다. "밖에 청솔형제단 사람 둘이 와 있어. 저 사람 넘기라는데. 지난주에 자기 동료 쏜 놈이래."
   ai_direction: 하얀매의 원칙은 소속을 가리지 않고 치료하는 것이다. 청솔형제단 사람들은 무장했지만 진료소 담 안에서 총을 쏠 생각은 없다. 넘기면 붉은연합이 이 일을 기억한다. 수간호사는 지금 다른 환자를 꿰매느라 손이 없다.

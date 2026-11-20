@@ -35,9 +35,11 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
   const me = state.characters[state.playerId];
   const where = zone ?? baseOf(content, by);
   if (!c || !me || me.dead || me.captive || !where || !content.factions[by] || by === me.factionId) return null;
-  // 동행은 그 자리에 남는다 (끌고 가던 포로는 풀려난다)
+  // 동행은 그 자리에 남는다 (끌고 가던 포로는 풀려난다). 임무 짝은 자기 자리로 돌아가 알린다 (플레이 테스트 13: 적 거점에서 이틀을 기다리다 다시 합류했다)
+  const left = state.companions.length > 0;
   for (const id of state.companions) {
-    if (state.bonds[id]?.kind === "prisoner") store.append({ type: "companion_left", characterId: id });
+    const kind = state.bonds[id]?.kind;
+    if (kind === "prisoner" || kind === "buddy") store.append({ type: "companion_left", characterId: id, reason: kind === "buddy" ? "짝이 붙잡혀 혼자 돌아갔다" : "풀려났다" });
     else if (state.playerZone) store.append({ type: "companion_parted", characterId: id, zone: state.playerZone, until: null });
   }
   const held = Object.fromEntries(Object.entries(me.inventory).filter(([id, n]) => n > 0 && c.confiscate.includes(content.items[id]?.kind ?? "")));
@@ -46,7 +48,7 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
   const fact = sentence(`${cause}. ${name}에 붙잡혀 ${content.locations[where]?.name ?? where}에 갇혔다`);
   store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${store.getState().nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time } });
   return (
-    `${fact} 무기와 탄은 빼앗겼다. 함께 있던 사람은 따라오지 못했다. ` +
+    `${fact} 무기와 탄은 빼앗겼다.${left ? " 함께 있던 사람은 따라오지 못했다." : ""} ` +
     `갇힌 동안에는 갇힌 곳의 이야기만 열린다. 빠져나가려면 맞닿은 구역으로 옮겨 가는 행동에 ${c.escape_moves.join("/")} 판정과 무거운 위험(heavy)을 건다.`
   );
 }

@@ -8,7 +8,7 @@ import { WorldManager } from "../world/manager.ts";
 import { loadRealContent } from "../testing.ts";
 
 const content = loadRealContent();
-const sleep = { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false };
+const sleep = { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true };
 
 function medicWorld() {
   const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-npcbody-")), content, rngFactory: () => createSeededRng(6) });

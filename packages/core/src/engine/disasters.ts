@@ -134,9 +134,13 @@ function strike(ctx: ToolContext, d: Disaster, day: number): ToolDisplayEvent[] 
   const who = d.faction ? (content.factions[d.faction]?.name ?? d.faction) : null;
   const fact = sentence(`${fill(k.news, { zone: place, faction: who ?? "" })}${collapsed && who ? `. ${josa(who, "은/는")} 거점을 잃었다` : ""}`);
   const near = disasterNear(content, now, d);
-  store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: near ? "seen" : "rumor", accuracy: near ? "exact" : "approximate", learnedAt: now.time } });
+  // 직접 겪은 것은 그 구역에 있을 때만 (도시 전체의 재난은 누구나). 가까우면 들은 소식 (플레이 테스트 13: 30분 전에 떠난 장터의 큰불을 "직접 겪음")
+  const direct = !d.zone || now.playerZone === d.zone;
+  const source = direct ? "seen" : near ? "report" : "rumor";
+  const how = direct ? "직접 겪음" : near ? "가까이서 들음" : "소문";
+  store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source, accuracy: near ? "exact" : "approximate", learnedAt: now.time } });
   // 결과에도 한 줄 (플레이 테스트 12: 재난이 알림 없이 생겼다)
-  displays.push({ type: "belief", fact, sourceLabel: near ? "직접 봄" : "소문", note: `재난 소식 (${near ? "직접 겪음" : "소문"}): ${fact} ${near ? "그 자리의 장면으로 서술한다." : "누군가 전하는 말로 짧게 서술한다."}` });
+  displays.push({ type: "belief", fact, sourceLabel: direct ? "직접 봄" : near ? "전해 들음" : "소문", note: `재난 소식 (${how}): ${fact} ${direct ? "그 자리의 장면으로 서술한다." : "누군가 전하는 말이나 멀리 보이는 연기로 짧게 서술한다."}` });
   return displays;
 }
 

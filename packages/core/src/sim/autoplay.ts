@@ -58,7 +58,9 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
   const base = { check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false };
   const moves = content.scenario.moves;
   const tool = (name: string, input: unknown) => {
-    const out = world.executeTool(name, input);
+    let out = world.executeTool(name, input);
+    // 이야기를 둔 채 같은 자리에서 오래 걸리는 일은 거절된다 (플레이 테스트 13): GM처럼 모른 척하고 다시 한다
+    if (!out.ok && name === "take_action" && out.error.includes("ignore_story")) out = world.executeTool(name, { ...(input as object), ignore_story: true });
     // 적대하는 땅에서 시간을 들이는 일은 판정을 건다 (플레이 테스트 12): GM처럼 숨기 판정을 붙여 다시 한다
     const alarm = world.content.scenario.alarm;
     if (!out.ok && name === "take_action" && alarm && out.error.includes("적대하는 땅에서 시간을 들이는 일")) {

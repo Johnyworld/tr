@@ -37,7 +37,8 @@ describe("포로 (붙잡힌 인물)", () => {
     const s = w.state();
     const evening = s.time - (s.time % 1440) + 18 * 60;
     expect(eligibleStorylets(s, w.content, evening).map((x) => x.id)).toContain("wc_rescue_raid");
-    expect(w.sceneForGm()).toMatch(/오정빈[^\n]*여기 붙잡혀 있다|창살에 얼굴을 붙인 젊은 정찰병/);
+    // 담 밖에 막 들어선 것만으로는 감옥 안이 보이지 않는다 (플레이 테스트 13)
+    expect(w.sceneForGm()).not.toMatch(/오정빈[^\n]*여기 붙잡혀 있다/);
     expect(w.executeTool("npc_presence", { npc_id: "a_jeongbin", action: "enter" }).ok).toBe(true);
     store.append({ type: "npc_released", npcId: "a_jeongbin" });
     expect(w.state().characters.a_jeongbin?.captive).toBeNull();

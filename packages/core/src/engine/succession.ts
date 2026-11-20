@@ -244,7 +244,9 @@ export function switchCharacter(
   } else {
     const successor = state.characters[choice]!;
     // 이어받는 사람의 무리·계급 자리 (무리가 없으면 떠돌이)
-    const zone = content.npcs[choice] ? npcZoneAt(content.npcs[choice]!, state.time) : (successor.extra?.zone ?? null);
+    // 죽는 자리에 함께 있었으면(장면·동행) 그 자리에서 이어 간다 (플레이 테스트 13: 곁에서 본 동행이 거점에서 시작해 "전해 들음"으로 알았다)
+    const there = state.scene.present.includes(choice) || state.companions.includes(choice);
+    const zone = there && state.playerZone ? state.playerZone : content.npcs[choice] ? npcZoneAt(content.npcs[choice]!, state.time) : (successor.extra?.zone ?? null);
     const seat = heirSeat(content, successor.factionId, successor.rank, { age: successor.age, occupation: successor.occupation?.id ?? null, zone });
     // 같은 무리 사람들은 서로 안다
     const comrades = Object.values(state.characters)
@@ -277,7 +279,10 @@ export function switchCharacter(
     // 사인은 그 자리를 본 사람(이어받는 사람이나 같은 무리)이 있을 때만 (플레이 테스트 12: 병원 지하에서 혼자 죽은 사인을 거점 사람이 바로 알았다)
     const report = !!heir.factionId && heir.factionId === r.factionId;
     const seen = r.characterId === previous.id && state.scene.present.some((id) => id !== previous.id && !state.characters[id]?.dead && (id === heir.id || (!!heir.factionId && state.characters[id]?.factionId === heir.factionId)));
-    add(`${josa(report ? r.name : nameAs(now, content, heir.id, r.characterId), "이/가")} ${report && seen ? `죽었다고 한다 (${r.cause})` : report ? "돌아오지 않았다. 죽었다고 한다 (어떻게 죽었는지 본 사람이 없다)" : "죽었다고 한다"}`, report ? "report" : "rumor");
+    // 이어받는 사람이 그 자리에 있었으면 직접 본 일이다
+    const witnessed = r.characterId === previous.id && (state.scene.present.includes(heir.id) || state.companions.includes(heir.id));
+    if (witnessed) add(`${josa(r.name, "이/가")} 눈앞에서 죽었다 (${r.cause})`, "seen");
+    else add(`${josa(report ? r.name : nameAs(now, content, heir.id, r.characterId), "이/가")} ${report && seen ? `죽었다고 한다 (${r.cause})` : report ? "돌아오지 않았다. 죽었다고 한다 (어떻게 죽었는지 본 사람이 없다)" : "죽었다고 한다"}`, report ? "report" : "rumor");
   }
   // 같은 무리라면 지난 하루 우리 무리가 낀 교전은 보고로 들었다 (이전 캐릭터가 죽은 그 전투 포함)
   for (const { clash, at } of now.recentClashes) {

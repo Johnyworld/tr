@@ -170,6 +170,10 @@ export function createTakeActionSchema(s: Scenario) {
       .default(null)
       .describe("남들이 알면 평판이 달라질 행동일 때만. 이미 기록된 행적은 다시 넣지 않는다"),
     target: z.string().nullable().default(null).describe("행동의 상대 인물 id (장면에 있어야 한다). 없으면 null"),
+    ignore_story: z
+      .boolean()
+      .default(false)
+      .describe("진행 중인 이야기를 고르지 않고 외면할 때 true (플레이어가 그 일을 모른 척하기로 했을 때만). 효과 없이 지나간다. 대부분 false"),
     provoked: z
       .boolean()
       .default(false)
@@ -335,6 +339,7 @@ const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
 const WALK_AWAY_CHOICES = ["leave", "ignore", "look_away", "pass", "walk_away", "move_on", "let_go", "turn_away", "walk_on", "leave_it", "let_be", "say_nothing", "silent", "nothing", "shrug", "later", "hold_back", "stay_out", "not_now", "stay_silent", "back_off", "away"];
 
 export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
+  let ignoredLine: string | null = null;
   const { store, content } = ctx;
   const scenario = content.scenario;
   const start = store.getState();
@@ -347,19 +352,42 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 외면하는 선택지(leave·ignore 등, 판정 없는 것)가 있으면 그것을 고른 것으로 풀고, 없으면 지나갔다고 분명히 알린다
   // 수색·일·쉬기는 이야기 안에서도 하는 일이라 넣지 않는다 (선택지의 판정을 거기서 굴린다)
   const long = !!input.move_to || (!!input.activity && ["sleep", "wait", "guard_duty", "travel"].includes(input.activity.kind));
+  // 같은 자리에서 오래 걸리는 일은 이야기를 두고 하지 않는다: 시간이 흐르기 전에 먼저 고르거나 외면하라고 돌려보낸다 (플레이 테스트 13: 망을 봤는데 "혼자 빠져나온다"를 고른 것이 됐다)
+  if (start.activeStorylet && !input.move_to && !input.check && !input.ignore_story && !!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work"].includes(input.activity.kind) && !isIncapacitated(ctx.content, player) && !player.captive) {
+    const s0 = content.storylets[start.activeStorylet.id];
+    const roadStory = !!scenario.travel?.tag && !!s0?.tags.includes(scenario.travel.tag);
+    if (!roadStory) {
+      return { ok: false, error: `이야기 "${s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id}"가 열려 있다. 시간을 들이기 전에 resolve_storylet으로 고르거나, 모른 척하기로 했으면 ignore_story: true를 함께 넣는다 (시간은 흐르지 않았다).` };
+    }
+  }
+  // 외면 (플레이 테스트 13): 효과 없이 지나간다
+  if (start.activeStorylet && input.ignore_story) {
+    const s0 = content.storylets[start.activeStorylet.id];
+    endActiveStorylet(ctx, "외면했다");
+    const title = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
+    // 아래 leftLines보다 먼저 정해지므로 따로 담아 둔다
+    ignoredLine = `이야기 "${title}"${josa(title, "을/를").slice(title.length)} 모른 척했다. 그 일은 그대로 지나갔다 (이야기 속 사람들은 그것을 기억할 수 있다).`;
+  }
   // 길 위의 일은 도착하기 전의 장면이다: 판정 없이 다른 일을 하면 길에서 두고 온 것으로 친다 (플레이 테스트 11: 붉은연합 순찰조원이 우리 거점 장면에 남아 목격자가 됐다)
   const roadTag = scenario.travel?.tag;
   // 판정을 걸어도 길 위 장면과 상관없는 긴 일(수색·일 등)이면 두고 온 것이다 (플레이 테스트 12: 매복자가 장면에 남은 채 역 안을 두 시간 뒤졌다)
   const onRoad = !!roadTag && !!start.activeStorylet && !!content.storylets[start.activeStorylet.id]?.tags.includes(roadTag) && ((!input.check && !!input.deed) || (!!input.activity && !["talk", "brief"].includes(input.activity.kind)));
   const leftLines: string[] = [];
-  if (start.activeStorylet && (long || onRoad) && !isIncapacitated(ctx.content, player)) {
-    const s = content.storylets[start.activeStorylet.id];
+  // 갇힌 채 옮겨 가기(탈출)는 자리를 뜨는 것이 아니다: 실패하면 그대로, 성공하면 옮겨 갈 때 닫힌다 (플레이 테스트 13: 실패한 탈출이 포섭 이야기를 닫았다)
+  const escaping = !!input.move_to && !!player.captive;
+  if (ignoredLine) leftLines.push(ignoredLine);
+  // 자리를 뜨는 것(옮겨 가기)과 길 위 장면을 두고 하는 일만 외면 선택지로 푼다
+  if (store.getState().activeStorylet && (!!input.move_to || onRoad) && !escaping && !isIncapacitated(ctx.content, player)) {
+    const s = content.storylets[start.activeStorylet!.id];
     const pick = s?.choices.find((c) => WALK_AWAY_CHOICES.includes(c.id) && !c.check && choiceAvailable(start, c, start.activeStorylet!.cast));
     const r = pick ? resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx) : null;
-    if (r?.ok) leftLines.push(`(이야기 "${storyTitle(start, ctx.content, s!)}"를 두고 자리를 떠, "${pick!.label}"를 고른 것으로 처리했다)`, r.resultText ?? "");
+    // 따옴표 안 말에 맞춰 조사 (플레이 테스트 13: "낯선 손님의 공책"를)
+    const quoted = (t: string) => `"${t}"${josa(t, "을/를").slice(t.length)}`;
+    if (r?.ok) leftLines.push(`(이야기 ${quoted(storyTitle(start, ctx.content, s!))} 두고 자리를 떠, ${quoted(pick!.label)} 고른 것으로 처리했다)`, r.resultText ?? "");
     else {
       endActiveStorylet(ctx, "외면하고 떠났다");
-      leftLines.push(`이야기 "${s ? storyTitle(start, ctx.content, s) : start.activeStorylet.id}"를 외면하고 자리를 떴다. 그 일은 그대로 지나갔다 (이야기 속 사람들은 그것을 기억할 수 있다).`);
+      const title = s ? storyTitle(start, ctx.content, s) : start.activeStorylet!.id;
+      leftLines.push(`이야기 "${title}"${josa(title, "을/를").slice(title.length)} 외면하고 자리를 떴다. 그 일은 그대로 지나갔다 (이야기 속 사람들은 그것을 기억할 수 있다).`);
     }
   }
   // 혼란은 그 자리의 일이다: 자리를 옮기거나 오래 쉬면 가신다 (플레이 테스트 11: 매복의 혼란이 14시간 잠 뒤 판정에 붙었다)
@@ -603,8 +631,10 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       // 수색·먹을 것 구하기의 상황 보정 (12-220): 곳의 넉넉함, 다시 뒤짐. 들킬까 숨는 판정(exposed)에는 붙이지 않는다
       { target: input.target, forMission, noTools: !!input.train, forage: input.forage, unlearnedAs: input.treatment && input.check.move === scenario.wounds?.staunch_move ? -1 : undefined, dest: escapeAttempt ? null : input.move_to,
         // 치료 판정은 쓰는 물건의 보정만 (플레이 테스트 12: 붕대를 썼는데 "+1(구급상자)", 물건 없이도 붙었다)
-        ...(input.treatment ? { toolItem: input.treatment.item ?? null } : {}),
+        // 치료 없이 건 응급처치 판정도 도구 없이 (플레이 테스트 13: treatment 없는 응급처치에 "+1(붕대)")
+        ...(input.treatment ? { toolItem: input.treatment.item ?? null } : input.check.move === scenario.wounds?.staunch_move ? { toolItem: null } : {}),
         activity: input.activity?.kind ?? null,
+        escape: escapeAttempt,
         // 걸린 것: 몸의 위험, 상대, 임무, 진행 중인 이야기, 전투, 치료, 옮겨 가기, 적 땅, 시간을 들이는 일 (5분짜리 맨 판정만 빠진다)
         stakes: input.check.harm_on_failure !== "none" || !!input.target || !!input.check.opponent || !!forMission || !!start.activeStorylet || inBattle || !!input.treatment || !!input.move_to || exposed || !!input.forage || !!input.trap || (!!input.activity && input.activity.kind !== "brief"),
         situation: exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? scavengeParts(ctx) : input.forage ? forageParts(ctx, input.forage) : [],
@@ -632,7 +662,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const wait = escapeAttempt ? scenario.captivity?.escape_hours : undefined;
     if (wait) {
       const now = store.getState().time;
-      const minutes = Math.round((wait[0] + ctx.rng() * Math.max(0, wait[1] - wait[0])) * 60);
+      // 5분 단위 (플레이 테스트 13: 그 뒤 시각이 :01·:31로 어긋났다)
+      const minutes = Math.round(((wait[0] + ctx.rng() * Math.max(0, wait[1] - wait[0])) * 60) / 5) * 5;
       if (minutes > 0) {
         store.append({ type: "time_advanced", activity: "wait", from: now, to: now + minutes });
         lines.push(`빈틈을 기다리느라 ${formatDuration(minutes)}이 걸렸다.`);
@@ -877,12 +908,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       displays.push(...soak(ctx, start.playerId, "물일을 하다 옷이 젖었다", true));
     }
   }
-  lines.push(time.text);
-  // 판정의 대가·빗나감으로 더 쓴 시간까지 합쳐 알린다 (플레이 테스트 12: "5분 경과"인데 35분이 지났다)
+  // 판정의 대가·빗나감·탈출의 기다림으로 더 쓴 시간까지 첫 줄에 합쳐 알린다 (플레이 테스트 12·13: "5분 경과. 현재 11:25"인데 35분이 지났다)
   {
     const total = store.getState().time - start.time;
     const spent = store.getState().time - timeBefore;
-    if (total > spent) lines.push(`(대가로 더 쓴 시간까지 모두 ${formatDuration(total)}이 지났다. 지금 ${formatTime(store.getState().time)})`);
+    const [first, ...rest] = time.text.split("\n");
+    lines.push(total > spent ? [first!.replace(/ 경과\. 현재/, ` + 앞서 쓴 ${formatDuration(total - spent)} = 모두 ${formatDuration(total)} 경과. 현재`), ...rest].join("\n") : time.text);
   }
   if (input.activity || input.move_to) displays.push(time.display);
   // 가르침 (4.2.1): 흐른 시간만큼 배운다
@@ -981,6 +1012,10 @@ function worldLines(displays: readonly ToolDisplayEvent[]): string[] {
     } else if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);
     if (display.type === "storylet" && display.event === "started") {
       lines.push(`새 이야기가 시작됐다: "${display.title}". 상태의 '진행 중인 이야기'를 보고 장면으로 연출하라.`);
+    }
+    // 시간이 흘러 지나간 이야기도 알린다 (플레이 테스트 13: 잠·휴식 사이에 이야기가 말없이 사라졌다)
+    if (display.type === "storylet" && display.event === "expired") {
+      lines.push(`이야기 "${display.title}"${josa(display.title, "은/는").slice(display.title.length)} 그대로 지나갔다${display.detail && display.detail !== "지나갔다" ? ` (${display.detail})` : ""}. 이야기 속 사람들은 그것을 기억할 수 있다.`);
     }
     if (display.type === "battle" && display.event === "started") {
       lines.push(`전투가 시작됐다: ${display.detail} 상태의 '전투 중' 정보를 보고 첫 장면을 서술한 뒤 플레이어의 행동을 기다려라.`);
@@ -1177,6 +1212,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
 
   const extra: ToolDisplayEvent[] = [];
   let capped = false;
+  /** 활동이 끝나기로 한 시각 (끝나는 그 시각에 열린 이야기는 "끊겼다"가 아니다) */
+  let plannedEnd = Infinity;
   let restedCap = false;
   if (cost.kind === "long") {
     // 잠은 한 번에 16시간까지 (아침에 "새벽까지"면 21시간을 잤다, 플레이 테스트 8). 기다림은 하루까지
@@ -1190,6 +1227,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     const cap = activity === "sleep" ? (rested ? fatigue!.rested_sleep_hours! * 60 : MAX_SLEEP_MINUTES) : MAX_FAST_FORWARD_MINUTES;
     const wanted = until && cost.allowUntil ? nextSegmentStart(from, until) : from + cost.minutes;
     const target = Math.min(wanted, from + cap);
+    plannedEnd = target;
     capped = wanted > target;
     restedCap = capped && activity === "sleep" && rested;
     // 자정을 넘기면 자정에서 하루 처리(전쟁 틱)를 돌린 뒤 이어 간다. 그래야 새벽 교전에서 멈출 수 있다
@@ -1249,6 +1287,9 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   if (camp?.line) {
     lines.push(`${josa(label, "이/가")} 끊겼다. ${camp.line}`);
     extra.push(...camp.displays);
+  } else if (interrupt?.kind === "storylet" && to >= plannedEnd && !deep) {
+    // 정한 시각에 끝났고 그때 이야기가 열렸다 (플레이 테스트 13: 정한 시각에 끝났는데 "끊겼다")
+    lines.push(`${josa(label, "이/가")} 끝날 무렵 일이 생겼다.`);
   } else if (interrupt?.kind === "storylet") {
     // 깊은 잠 (12-188): 지쳐서·아파서 깊이 잠들었으면 늦게 깼다고 알린다 (이야기는 그대로 열린다)
     lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 일이 생겼다.${deep ? ` ${deep} 탓에 깊이 잠들어 있어 몸이 무거워 늦게 깼다. 이미 일이 가까이 와 있다고 서술하라.` : ""}`);

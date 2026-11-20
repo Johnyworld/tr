@@ -56,7 +56,7 @@ export function rollPlayerCheck(
   /** unlearnedAs: 배우지 않은 전문 기술도 이 값으로 굴린다 (맨손 지혈은 누구나, 플레이 테스트 12) */
   /** reaction: 주인공이 하는 일이 아니라 닥친 일에 버티는 판정 (마음 다잡기, 12-220). 매복·혼란을 쓰지 않고 경험도 주지 않는다 */
   /** situation: 그 일의 상황 보정 (수색할 곳의 넉넉함, 다시 뒤짐 같은 것, 12-220) */
-  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null; unlearnedAs?: number; dest?: string | null; toolItem?: string | null; activity?: string | null; stakes?: boolean; reaction?: boolean; situation?: { label: string; value: number }[] } = {},
+  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null; unlearnedAs?: number; dest?: string | null; toolItem?: string | null; activity?: string | null; stakes?: boolean; escape?: boolean; reaction?: boolean; situation?: { label: string; value: number }[] } = {},
 ): PlayerCheckResult {
   const scenario = content.scenario;
   const state = store.getState();
@@ -120,7 +120,8 @@ export function rollPlayerCheck(
     ...(options.situation ?? []),
   ];
   // 갇힌 곳의 감시 (플레이 테스트 12): 탈출에 실패한 만큼 탈출 판정이 어렵다
-  if (actor.captive?.watch && scenario.captivity?.escape_moves.includes(input.move)) against.push({ label: "감시", value: -actor.captive.watch });
+  // 탈출 판정(갇힌 채 옮겨 가기)에만 (플레이 테스트 13: 광장 이야기의 버티기에도 -3이 붙었다)
+  if (actor.captive?.watch && options.escape) against.push({ label: "감시", value: -actor.captive.watch });
   modifiers.opposition = against.reduce((n, p) => n + p.value, 0);
   const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition + modifiers.trait + modifiers.gear + modifiers.opposition);
   const checkId = `chk_${state.nextCheckNo}`;

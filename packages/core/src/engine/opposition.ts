@@ -119,7 +119,11 @@ export function opponentHarm(content: Content, state: GameState, opponentId: str
   const r = rules(content)?.harm;
   const opponent = opponentId ? state.characters[opponentId] : undefined;
   if (!r || !opponent || opponent.dead) return null;
+  // 그 스킬을 쓸 수 있는 것만: 맨손으로 되는 것이거나 그 스킬의 무기를 지녔을 때 (플레이 테스트 13: 들개가 "사격 +1"로 더 아프게 했다)
+  const unarmed = content.scenario.gear?.unarmed.moves ?? [];
+  const usable = (m: string) => unarmed.includes(m) || Object.entries(opponent.inventory).some(([id, q]) => q > 0 && !!content.items[id]?.weapon?.moves.includes(m));
   const best = r.moves
+    .filter((m) => !content.scenario.gear || usable(m))
     .map((m) => ({ m, score: skillScore(content, opponent, m) }))
     .sort((a, b) => b.score - a.score)[0];
   if (!best) return null;

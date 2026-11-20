@@ -198,10 +198,13 @@ describe("플레이 테스트 12 뒤 정한 것", () => {
     const calm = Object.values(content.storylets).find((x) => !x.urgent && !x.bedside && !x.when.activities)!;
     const night = s.time - (s.time % 1440) + 1440 + 60; // 다음 날 01:00
     const morning = night + 7 * 60; // 08:00
-    s.lastActivity = "sleep";
+    s.lastWokeAt = night - 10;
     expect(storyletAllowed(s, content, calm, "open", night)).toBe(false);
-    expect(storyletAllowed(s, content, calm, "open", morning)).toBe(true);
+    // 깬 뒤 다른 일을 해도 그 밤 동안은 (플레이 테스트 13)
     s.lastActivity = "wait";
+    expect(storyletAllowed(s, content, calm, "open", night + 60)).toBe(false);
+    expect(storyletAllowed(s, content, calm, "open", morning)).toBe(true);
+    s.lastWokeAt = night - 9 * 60;
     expect(storyletAllowed(s, content, calm, "open", night)).toBe(true);
   });
 

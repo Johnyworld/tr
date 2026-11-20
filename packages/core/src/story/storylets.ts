@@ -436,7 +436,8 @@ export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: 
   const effects = choice.outcomes ? choice.outcomes.success : choice.effects;
   const need: Record<string, number> = {};
   for (const e of effects) if ("take_item" in e) need[e.take_item.item] = Math.max(need[e.take_item.item] ?? 0, e.take_item.quantity);
-  return Object.entries(need).every(([item, n]) => (player.inventory[item] ?? 0) >= n);
+  // 곁의 사람 동행이 가진 것까지 (플레이 테스트 13: 분대원이 가진 비상식량으로 "먹이 주기"가 열리지 않았다)
+  return Object.entries(need).every(([item, n]) => carriedCount(state, item) >= n);
 }
 
 /** 어느 시나리오(역할)에서나 발동하는 스토리렛 태그 */
@@ -563,11 +564,15 @@ export function storyletAllowed(state: GameState, content: Content, s: StoryletC
   if (window === "closed") return false;
   // 한밤에 막 잠에서 깬 때는 급한 이야기, 누워 있는 동안의 이야기, 깨어나는 장면(activities에 sleep)만 (플레이 테스트 12: 00~03시에 막 깬 사람에게 "모닥불 곁에 앉아", "당신 차례가 온다").
   // 아침에 깬 것은 하루의 시작이라 막지 않는다 (새벽 솥 같은 아침 일). 야영·길 위의 일은 태그로 따로 열려 여기를 거치지 않는다
-  if (state.lastActivity === "sleep" && segmentOf(at) === "night" && !s.urgent && !s.bedside && !s.when.activities?.includes("sleep")) return false;
+  // 깬 뒤 다른 일을 했어도 그 밤이 끝날 때까지 (플레이 테스트 13: 깬 뒤 물 한 모금에 풀렸다)
+  const wokeThisNight = state.lastWokeAt !== null && segmentOf(at) === "night" && segmentOf(state.lastWokeAt) === "night" && at - state.lastWokeAt < 8 * 60;
+  if (wokeThisNight && !s.urgent && !s.bedside && !s.when.activities?.includes("sleep")) return false;
   // 누워 있는 동안의 이야기는 위급할 때도 연다 (D4). 다만 이야기 사이 간격은 지킨다
   if (s.bedside && !options.urgentOnly && inCrisis(state, content)) {
     return state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt || at - state.lastStoryletAt >= storyletGapMinutes(content, state.lastStoryletAt);
   }
+  // 꼭 열려야 하는 이야기는 급한 이야기의 하루 상한에도 막히지 않는다 (플레이 테스트 13: 튜토리얼 재회가 17시간 막혔다)
+  if (s.essential) return true;
   if (s.urgent) return urgentAllowed(state, content, at);
   return !options.urgentOnly && window === "open";
 }

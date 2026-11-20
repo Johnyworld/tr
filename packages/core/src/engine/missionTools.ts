@@ -197,14 +197,16 @@ const reportMission = defineTool({
     const reported = ctx.store.getState().missions[mission.id]!;
     const result = evaluateMission(reported, state.time);
     ctx.store.append({ type: "mission_reported", missionId: mission.id, ...result });
-    // 완수는 상관이 보고로 확인한 성실함으로 남는다 (관계 변화는 상관의 가치관으로 계산)
-    if (result.outcome === "success") {
+    // 완수는 상관이 보고로 확인한 성실함으로 남는다 (관계 변화는 상관의 가치관으로 계산).
+    // 판정이 걸린 임무(위험한 일)를 다 해냈을 때만 상관의 믿음과 존중이 오른다. 시간만 채우는 보초·일부 완수는 오르지 않는다 (플레이 테스트 13: 신뢰가 13일 내내 0이라 진급이 막혔다)
+    const risky = reported.requirements.some((r) => "check" in r);
+    if (result.outcome === "success" && risky) {
       // 상관은 그 자리에 없었다. 보고로 듣는다 (플레이 테스트 11: 다른 구역에서 한 일이 "직접 봄"으로 남았다)
       recordDeed(
         ctx,
         { summary: `임무 완수: ${mission.title}`, tags: ["diligence"], severity: 1, privacy: "public", noisy: false },
-        // 일을 잘하는 것은 존중이지 믿음이 아니다 (플레이 테스트 11, C6: 임무 완수 넷으로 상관 신뢰가 +4가 됐다)
-        { npcId: giver.id, source: "report", only: ["respect"] },
+        // 하루 한 사람 축마다 +1까지라 빠르게 쌓이지는 않는다 (플레이 테스트 11, C6에서 존중만으로 줄였던 것을 13에서 되돌림)
+        { npcId: giver.id, source: "report", only: ["trust", "respect"] },
       );
     }
     // 빚 갚는 일감: 임무를 준 무리에 진 빚이 준다 (기획서 9.10)
@@ -355,7 +357,8 @@ function travelAllowance(ctx: ToolContext, where: string | null | undefined, fac
   let frontier = [start];
   for (let hops = 0; hops <= Object.keys(ctx.content.locations).length; hops++) {
     if (frontier.some((z) => atMissionPlace(probe, z, state.zones, state.factions))) return hops * 2 * ACTIVITY_COSTS.travel.max;
-    frontier = frontier.flatMap((z) => ctx.content.locations[z]?.adjacent ?? []).filter((z) => !seen.has(z) && seen.add(z));
+    // 맞닿음은 한쪽에만 적혀 있을 수 있어 neighbors로 (플레이 테스트 13: 진료소에서 강변까지 오가는 시간이 0이었다)
+    frontier = frontier.flatMap((z) => neighbors(ctx.content, z)).filter((z) => !seen.has(z) && seen.add(z));
     if (!frontier.length) return 0;
   }
   return 0;
@@ -377,6 +380,8 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
       ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false });
       continue;
     }
+    // 조건을 기한 안에 다 채운 임무는 기한이 지나도 끝내지 않는다: 보고하면 된다 (플레이 테스트 13: 3시간 보초를 기한 안에 채웠는데 4시간 활동이 끝난 뒤라 기한 초과)
+    if (mission.status === "active" && mission.metAt !== undefined && mission.metAt <= mission.deadline) continue;
     // 쓰러져 있는 동안 기한이 지났으면 불복종이 아니다: 다쳐서 못 마친 것 (플레이 테스트 8).
     // 치명상 이상(의식장애 포함)도 몸을 못 쓴 것으로 본다 (플레이 테스트 11, C8: 의식장애로 누워 있다 기한을 넘겨 진급이 막혔다)
     const who = state.characters[mission.assigneeId];

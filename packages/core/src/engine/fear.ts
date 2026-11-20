@@ -1,3 +1,4 @@
+import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import { josa } from "../text.ts";
 import { activeCompanions } from "../game/companions.ts";
 import type { GameState } from "../game/state.ts";
@@ -99,6 +100,9 @@ export function runFearDecay(ctx: ToolContext): ToolDisplayEvent[] {
   const me = state.characters[state.playerId];
   if (!f || !me || me.dead) return [];
   if (levelIndex(ctx, state, me.id, f.track) <= 0 || fearSourcePresent(ctx, state)) return [];
+  // 감염체가 몰려든 구역에서는 가라앉지 않는다 (플레이 테스트 13: 몰려든 강변에 들어서며 "숨을 골랐다")
+  const zone = state.playerZone;
+  if (zone && infestationOf(ctx.content, state, zone) > baseInfestation(ctx.content, zone)) return [];
   const since = state.recovery.trackAt[`${me.id}:${f.track}`] ?? state.time;
   const times = Math.floor((state.time - since) / (f.decay_hours * 60));
   if (times <= 0) return [];

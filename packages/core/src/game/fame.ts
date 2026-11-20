@@ -1,3 +1,4 @@
+import { hasMet } from "./acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
 import { NEUTRAL_RELATION } from "./reputation.ts";
 import type { GameState } from "./state.ts";
@@ -29,7 +30,8 @@ export function stanceOf(state: GameState, content: Content, npcId: string): "fa
   const rules = content.scenario.fame;
   if (!rules) return null;
   const known = Object.entries(state.deedKnowledge[npcId] ?? {}).filter(([deedId]) => state.deeds[deedId]?.actorId === state.playerId);
-  if (known.length === 0 || known.some(([, source]) => source === "seen")) return null;
+  // 얼굴을 맞댄 사이면 소문으로만 아는 팬·안티가 아니다 (플레이 테스트 13: 매일 임무를 주는 상관, 두 해 지기가 "팬"이었다)
+  if (known.length === 0 || known.some(([, source]) => source === "seen") || hasMet(state, state.playerId, npcId)) return null;
   const r = state.relations[npcId]?.[state.playerId] ?? NEUTRAL_RELATION;
   if (r.affection >= rules.fan_at || r.respect >= rules.fan_at) return "fan";
   if (r.affection <= rules.anti_at || r.respect <= rules.anti_at) return "anti";

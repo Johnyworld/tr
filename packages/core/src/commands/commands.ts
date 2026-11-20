@@ -120,6 +120,8 @@ const status: CommandDef = {
     const commanderId = commanderOf(state, content);
     const commander = commanderId ? state.characters[commanderId] : undefined;
     lines.push(`소속  ${player.factionId ? roleLabelOf(ctx) : `무소속 · ${roleLabelOf(ctx)}`}${commander ? ` (상관 ${commander.name})` : ""}`);
+    // 갇혀 있으면 그렇다고 (플레이 테스트 13: ?상태에 갇힌 것이 나오지 않았다)
+    if (player.captive) lines.push(`갇힘  ${ctx.content.factions[player.captive.by]?.name ?? player.captive.by} · ${ctx.content.locations[player.captive.zone]?.name ?? player.captive.zone}`);
     const trust = commander ? (state.perceived[commander.id]?.trust ?? 0) : null;
     if (player.factionId) {
       lines.push(

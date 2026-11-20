@@ -50,6 +50,11 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
 
     // 떨어져 있던 사람이 돌아온다. 주인공이 갇혀 있으면 기다린다 (플레이 테스트 12: 같은 구역에 갇히자 감방 안으로 다시 합류했다)
     if (bond.apart) {
+      // 떨어져 있던 임무 짝도 임무가 끝나면 풀린다 (플레이 테스트 13)
+      if (bond.kind === "buddy" && (!bond.missionId || state.missions[bond.missionId]?.status !== "active")) {
+        store.append({ type: "companion_left", characterId: id, reason: "임무가 끝났다" });
+        continue;
+      }
       if (state.characters[state.playerId]?.captive) continue;
       if (bond.apart.zone && bond.apart.zone === state.playerZone && state.bonds[id]?.apart?.left !== false) {
         store.append({ type: "companion_rejoined", characterId: id });

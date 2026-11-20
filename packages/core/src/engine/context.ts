@@ -425,7 +425,12 @@ const RECENT_EXTRAS_IN_PROMPT = 5;
 
 function statusNote(content: Content, character: Character, state?: GameState): string {
   // 붙잡혀 있다는 것은 그 자리에 있어야 안다 (원칙 4). 아니면 행방을 모를 뿐이다 (구출 이야기가 그 자리에서 열린다)
-  if (character.captive && !character.dead) return state && state.playerZone === character.captive.zone ? " · 여기 붙잡혀 있다" : " · 행방 모름";
+  // 같은 구역이라도 감옥 안은 담 밖에서 보이지 않는다: 같이 갇혔거나, 우리 땅이거나, 장면에서 마주쳤을 때만 (플레이 테스트 13: 물류창고에 들어서자 실종자가 "여기 붙잡혀 있다")
+  if (character.captive && !character.dead) {
+    const me = state?.characters[state.playerId];
+    const sees = !!state && state.playerZone === character.captive.zone && (!!me?.captive || state.scene.present.includes(character.id) || (!!me?.factionId && state.zones[state.playerZone]?.owner === me.factionId));
+    return sees ? " · 여기 붙잡혀 있다" : " · 행방 모름";
+  }
   if (character.dead) return !state || knowsDeath(state, content, character.id) ? " · 사망" : "";
   // 장면에 없는 사람의 지금 몸 상태(허기 등)는 주인공이 모른다 (플레이 테스트 8). 장면에 들어오면 카드에 붙는다
   return character.away ? " · 떠남" : "";

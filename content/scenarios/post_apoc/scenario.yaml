@@ -1534,8 +1534,7 @@ consumables:
   # 구급상자·붕대는 응급처치 물건이다 (출혈 효과가 있으면 응급처치 물건으로 본다, 플레이 테스트 11 A9). 효과는 판정이 정한다: 성공 = 피가 멎고 부상 한 단계, 대가 있는 성공 = 피만, 실패 = 아무 일 없음
   medkit: { harm: 1, bleeding: 3 }
   bandage: { bleeding: 3 }
-  # 항생제는 감염을 떼지 못하고 늦추기만 한다 (body.infection.slow)
-  antibiotics: { harm: 1 }
+  # 항생제는 감염을 떼지 못하고 늦추기만 한다 (body.infection.slow). 상처는 낫게 하지 않는다 (플레이 테스트 13: 하루 한 번 치료를 넘는 상처약이 됐다)
   canned_food: { hunger: 2 }
   dry_ration: { hunger: 1 }
   # 빠져 있어 먹을 수 없었다 (플레이 테스트 11: 포상으로 받은 전투식량)
@@ -1584,7 +1583,7 @@ body:
   # 16시간 깨어 있으면 졸림(보정 없음), 24시간이면 지침 -1, 32시간이면 탈진 -2
   # 지침 이상이면 부상이 저절로 낫지 않고 질병도 낫지 않는다 (12-115, 자야 낫는다)
   # 플레이 테스트 11 (E4): 3시간보다 짧은 잠은 피로를 풀지 못하고, 피곤하지 않으면 8시간 자고 깬다
-  fatigue: { track: fatigue, grace: 16, per_step: 8, rates: { sleep: -3, rest: 0, travel: 1.5, search: 1.5, work: 1.5, combat: 3 }, blocks_recovery_from: weary, min_sleep_hours: 3, rested_sleep_hours: 8 }
+  fatigue: { track: fatigue, grace: 16, per_step: 8, rates: { sleep: -3, rest: 0, travel: 1.5, search: 1.5, work: 1.5, combat: 3 }, blocks_recovery_from: weary, min_sleep_hours: 3, rested_sleep_hours: 12 }
   # 굶주림은 부상을 주지 않고 허기 트랙 끝에서 죽는다 (12-74)
   hunger: { track: hunger }
   # 갈증 (12-97, *임시*): 하루마다 한 단계 마른다. 물이 넉넉한 곳(물이 나는 구역, 물이 하루치 넘게 남은 우리 거점)에서

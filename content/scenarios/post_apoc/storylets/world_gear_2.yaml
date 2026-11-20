@@ -250,7 +250,7 @@
     flags_none: [wg2_burst_done]
   cast:
     seller: { ids: [lone_eunsuk] }
-    victim: { extra: e_porter, label: 손이 그을린 짐꾼 }
+    victim: { extra: e_porter, label: 손이 그을린 짐꾼, starts: { harm: light, bleeding: scratch } }
   setup: "길목에 사람들이 모여 있다. 가운데서 {victim:이/가} 걸레로 감은 손을 쳐들고 소리친다. 다른 손에는 약실이 꽃처럼 벌어진 엽총. \"이 여자 재생탄이야! 열 발에 한 발 불발이라며, 이건 터졌잖아!\" 천 위의 탄알 앞에서 {seller:은/는} 팔짱을 낀 채 말이 없다. 누가 천을 걷어차려 한다."
   ai_direction: 터진 탄은 강은숙의 것이 아니다. 붉은연합 보초들이 몰래 모아 판 탄피를 누군가 화약을 과하게 채워 강은숙의 것인 양 싸게 팔았다. 탄피 밑동의 줄 자국이 다르다 (강은숙은 자기 탄피에 줄칼로 짧은 금을 긋는다). 짐꾼의 손은 그을리고 찢어졌지만 손가락은 붙어 있다. 강은숙은 변명하지 않는 사람이라 아무도 편들지 않으면 장사를 접고 이 길목을 떠난다.
   choices:

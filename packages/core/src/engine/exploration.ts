@@ -1,3 +1,4 @@
+import { isInfected } from "../game/kinds.ts";
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
@@ -106,7 +107,7 @@ const explore = defineTool({
   name: "explore",
   description:
     "숨은 곳 탐험 (잠입 장면과 같은 틀). 수색하다 찾은 숨은 곳(상태의 '아는 숨은 곳')에 들어가 칸마다 내려가고 뒤진다. 결과는 시스템이 정한다. " +
-    "start(ruin): 들어간다. deeper: 한 칸 더 내려간다 (판정, 실패하면 다친다). search: 지금 칸을 뒤진다 (칸마다 한 번, 깊을수록 좋은 것). leave: 나온다. " +
+    "start(ruin): 들어간다. deeper: 한 칸 더 내려간다 (판정, 실패하면 다친다). search: 지금 칸을 뒤진다 (칸마다 한 번, 깊을수록 좋은 것). leave: 나온다 (소리가 났으면 판정, 실패하면 깨어난 것이 출구까지 따라붙는다). " +
     "걸음마다 시간이 흐르고 소리가 난다. 소음 숫자는 GM도 모른다: 상태의 '탐험 중'에 나온 낌새로만 연출한다. 소리가 쌓이면 감염체가 깨어난다.",
   schema: z.strictObject({
     action: z.enum(["start", "deeper", "search", "leave"]),
@@ -188,30 +189,37 @@ const explore = defineTool({
       const now = store.getState().exploration!;
       store.append({ type: "exploration_changed", depth: now.depth, noise: now.noise, searched: [...now.searched, now.depth] });
       const rolls = check.outcome === "success" ? 2 : check.outcome === "partial" ? 1 : 0;
-      const names: string[] = [];
+      // 같은 물건은 합쳐 적는다 (플레이 테스트 13: "붕대 ×1, 붕대 ×2를 찾았다")
+      const found = new Map<string, number>();
       for (const effect of rollLoot(ctx, ruin, ex.depth, rolls)) {
         const out = applyEffect(ctx, effect, {}, {}, `탐험: ${ruin.label}`);
         if (out.display) extra.push(out.display);
-        if ("give_item" in effect) names.push(`${content.items[effect.give_item.item]?.name ?? effect.give_item.item} ×${effect.give_item.quantity}`);
+        if ("give_item" in effect) found.set(effect.give_item.item, (found.get(effect.give_item.item) ?? 0) + effect.give_item.quantity);
       }
+      const names = [...found].map(([id, q]) => `${content.items[id]?.name ?? id} ×${q}`);
       const lines = [names.length ? `${label(ex.depth)}에서 ${josa(names.join(", "), "을/를")} 찾았다 (소지품에 들어왔다). 찾은 것만 서술한다.` : `${label(ex.depth)}에서 쓸 만한 것을 찾지 못했다.`];
       if (check.outcome !== "success") lines.push(...raiseNoise(ctx, 1));
       return finish(lines, extra, check.display);
     }
 
-    // leave: 조용하면 판정 없이, 소리가 났으면 깊이만큼 어렵다 (실패하면 나오다 다친다)
+    // leave: 조용하면 판정 없이, 소리가 났으면 깊이만큼 어렵다.
+    // 실패하면 다치는 대신 깨어난 것이 출구까지 따라붙는다 (플레이 테스트 13: 선언하지 않은 피해로 치명상까지 갔다). 다치는지는 그다음 맞서기·달아나기의 판정이 정한다
     const extra = step(ctx);
-    store.append({ type: "exploration_ended" });
-    if (ex.noise < 2) return { ok: true, resultText: `${ruin.label}에서 나왔다. 탐험은 끝났다.`, display, extra };
+    if (ex.noise < 2) {
+      store.append({ type: "exploration_ended" });
+      return { ok: true, resultText: `${ruin.label}에서 나왔다. 탐험은 끝났다.`, display, extra };
+    }
     const m = moveOf(content.scenario, r.move)!;
     const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: ex.depth >= last ? "hard" : "normal", intent: "서둘러 빠져나온다" }, ctx);
     if (!check.ok) return check;
     const lines = [`${ruin.label}에서 빠져나왔다. 탐험은 끝났다.`];
     if (check.outcome === "miss") {
-      const hurt = applyEffect(ctx, { wound: { steps: 1, cause: `${ruin.label}에서 서둘러 나오다` } } as StoryletEffect, {}, {}, ruin.label);
-      if (hurt.line) lines.push(hurt.line);
-      if (hurt.display) extra.push(hurt.display);
+      // 아직 깨어난 것이 없으면 이제 깨어난다 (탐험이 끝나기 전에)
+      const awakeNow = store.getState().scene.present.some((id) => isInfected(content, store.getState().characters[id]));
+      const woke = awakeNow ? [] : raiseNoise(ctx, NOISE_MAX);
+      lines.splice(0, 1, `${ruin.label}의 출구까지 깨어난 것이 따라붙었다.`, ...woke, "출구 앞에서 마주친 장면으로 연출하고, 맞서거나 달아나는 판정(take_action, 몸의 위험을 선언)으로 이어 간다.");
     }
+    store.append({ type: "exploration_ended" });
     return { ok: true, resultText: [...lines, "이 결과대로 서술하라."].join("\n"), display: check.display, extra };
   },
 });

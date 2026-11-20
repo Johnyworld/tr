@@ -116,7 +116,7 @@ creation:
   # 쓰지 않은 점수는 레벨업 점수와 함께 쓴다
   skills: { points: 12 }
   # 과거 배경 (12-84): 붕괴 전에 무엇을 했는지. 능력 배치(ability_array와 같은 값: +2 하나, +1 둘, -1 하나)와 스킬 배치(4.2.1: +2 하나, +1 하나, 0 셋), 물건.
-  # 배치의 전문 기술은 과거가 가르쳐 준 것이다. 0 셋은 직분에 맞춘 배치에서 가장 뒤의 것이 직분 스킬로 바뀐다
+  # 배치의 전문 기술은 과거가 가르쳐 준 것이다
   # 플레이어는 같은 포인트 안에서 고칠 수 있다. 무리원·떠돌이 모두 고른다 (떠돌이의 재주를 합쳤다)
   pasts:
     - { id: firefighter, label: 소방관, summary: 불길과 무너지는 건물 속으로 들어가던 사람, stats: { strength: 2, vitality: 1, nerve: 1, intellect: -1 }, skills: { endure: 2, athletics: 1, first_aid: 0, sense_danger: 0, fight: 0 }, items: [crowbar], min_age: 24 }

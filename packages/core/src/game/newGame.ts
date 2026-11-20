@@ -57,7 +57,7 @@ export function heirDraft(packId: string, option: string, role: RoleContent, cus
 function pickRole(content: Content, draft: NewGameDraft, roleId: string): NewGameDraft {
   const role = content.roles[roleId];
   const minAge = content.scenario.creation?.rank_min_age[role?.rank ?? ""];
-  // 자리가 주는 전문 기술과 직분에 맞춘 배치 (4.2.1)
+  // 자리가 주는 전문 기술 (4.2.1)
   const seat = role ? { rank: role.rank, occupation: role.occupation ?? null } : undefined;
   return { ...draft, roleId, character: { ...draft.character, minAge, seat } };
 }

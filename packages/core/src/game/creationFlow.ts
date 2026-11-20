@@ -14,7 +14,6 @@ import {
   checkName,
   checkSkills,
   grantedExperts,
-  occupationLayout,
   teachableExperts,
   type CreationSeat,
   pastOf,
@@ -40,7 +39,7 @@ export type CreationAnswer =
   | { step: "age"; value: number }
   | { step: "abilities"; value: "manual" | "random" | "past"; rolled?: Record<string, number> }
   | { step: "ability_set"; values: Record<string, number> }
-  | { step: "skills"; value: "manual" | "past" | "occupation"; values?: Record<string, number> }
+  | { step: "skills"; value: "manual" | "past"; values?: Record<string, number> }
   | { step: "skill_set"; values: Record<string, number> }
   | { step: "traits"; value: "manual" | "random" | "none"; rolled?: string[] }
   | { step: "traits_pick" | "traits_personality"; value: string[] }
@@ -58,7 +57,7 @@ export type CreationDraft = {
   presetGender?: string;
   /** 얼굴(초상화) 단계를 묻는다: 그림을 보여 줄 수 있는 상태 화면에서 만들 때만 (채팅으로만 만들면 실루엣) */
   withPortrait?: boolean;
-  /** 시작하는 자리 (계급·직분, 4.2.1): 배운 상태로 받는 전문 기술과 직분에 맞춘 배치 */
+  /** 시작하는 자리 (계급·직분, 4.2.1): 배운 상태로 받는 전문 기술 */
   seat?: CreationSeat;
 };
 
@@ -101,7 +100,7 @@ export function collectDraft(draft: CreationDraft) {
   let abilityMethod: "manual" | "random" | "past" | undefined;
   let abilitiesSet = false;
   const abilities: Record<string, number> = {};
-  let skillMethod: "manual" | "past" | "occupation" | undefined;
+  let skillMethod: "manual" | "past" | undefined;
   let skillsSet = false;
   let skills: Record<string, number> = {};
   let traitMethod: "manual" | "random" | "none" | undefined;
@@ -324,10 +323,8 @@ export function stepOptions(s: Scenario, draft: CreationDraft, step: CreationSte
     return (s.creation?.pasts ?? []).map((p) => ({ value: p.id, label: p.label, description: `${p.summary}. ${pastGains(s, p, itemName)}${p.min_age ? ` (${p.min_age}세부터)` : ""}` }));
   const past = pastOf(s, collectDraft(draft).past);
   if (step === "skills") {
-    const fit = past ? occupationLayout(s, past.skills, draft.seat) : null;
     return [
       { value: "past", label: "배경대로", description: past ? describeSkills(s, past.skills) : "스킬 없이" },
-      ...(fit ? [{ value: "occupation", label: "직분에 맞춰", description: describeSkills(s, fit) }] : []),
       { value: "manual", label: "고치기", description: `과거 배경의 배치에서 시작해 ${s.creation?.skills?.points ?? 0}점을 다시 나눈다 (-1→0 1점, 0→+1 2점, +1→+2 3점)` },
     ];
   }
@@ -420,14 +417,8 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     const v = fromOptions();
     const past = pastOf(s, collectDraft(draft).past);
     if (v === "past") return add({ step: "skills", value: "past", values: { ...(past?.skills ?? {}) } });
-    // 운에 맡기면 직분에 맞춘 것 (4.2.1)
-    const fit = past ? occupationLayout(s, past.skills, draft.seat) : null;
-    if (v === "occupation" || (fit && RANDOM_WORDS.includes(text.trim().toLowerCase()))) {
-      if (!fit) return { ok: false, error: "직분에 맞춘 배치가 없다. 배경대로(past) 할지 고칠지(manual) 고른다." };
-      return add({ step: "skills", value: "occupation", values: fit });
-    }
     if (v === "manual") return add({ step: "skills", value: "manual" });
-    return { ok: false, error: `배경대로(past)${fit ? ", 직분에 맞춰(occupation)" : ""}, 고치기(manual) 중에 고른다.` };
+    return { ok: false, error: "배경대로(past) 할지 고칠지(manual) 고른다." };
   }
   if (step === "skill_set") {
     const parsed = parseSkills(s, text);
@@ -592,7 +583,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
     const sk = s.creation?.skills;
     const granted = grantedExperts(s, draft.seat).map((m) => moveLabel(s, m));
     lines.push(
-      `물을 것: 스킬을 과거 배경대로 둘지${options.some((o) => o.value === "occupation") ? ", 직분에 맞춘 배치로 할지" : ""}, 고칠지. 고치면 ${sk?.points ?? 0}점을 다시 나눈다 (-1→0 1점, 0→+1 2점, +1→+2 3점).`,
+      `물을 것: 스킬을 과거 배경대로 둘지 고칠지. 고치면 ${sk?.points ?? 0}점을 다시 나눈다 (-1→0 1점, 0→+1 2점, +1→+2 3점).`,
       "스킬은 누구나 하는 일(찍지 않으면 -1로 시도)과 전문 기술(배우기 전엔 못 함)로 나뉜다. 배치의 전문 기술은 과거가 가르쳐 준 것이다. 남긴 점수는 레벨업 점수와 함께 나중에 쓴다.",
       ...(granted.length ? [`자리가 요구하는 전문 기술(${granted.join(", ")})은 점수 없이 배운 상태(-1)로 받는다.`] : []),
     );

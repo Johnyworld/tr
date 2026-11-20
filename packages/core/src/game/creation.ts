@@ -95,10 +95,10 @@ export function pastOf(s: Scenario, id: string | null | undefined) {
   return id ? s.creation?.pasts.find((p) => p.id === id) : undefined;
 }
 
-/** 캐릭터 만들기에서 정해진 자리 (계급·직분): 점수 없이 배운 상태로 받는 전문 기술과 권하는 배치에 쓴다 (4.2.1) */
+/** 캐릭터 만들기에서 정해진 자리 (계급·직분): 점수 없이 배운 상태로 받는 전문 기술에 쓴다 (4.2.1) */
 export type CreationSeat = { rank: string; occupation: string | null };
 
-/** 직분 스킬 (4.2.1): 스킬을 주지는 않고, 전문 기술이면 배운 상태로, 만들 때 권하는 배치에 쓴다 */
+/** 직분 스킬 (4.2.1): 스킬을 주지는 않고, 전문 기술이면 배운 상태로 준다 */
 export function occupationSkills(s: Scenario, occupation: string | null | undefined): string[] {
   return (occupation ? s.occupations.find((o) => o.id === occupation)?.skills : undefined) ?? [];
 }
@@ -113,18 +113,6 @@ export function grantedExperts(s: Scenario, seat: CreationSeat | null | undefine
 /** 배치에 드는 점수 (스킬마다 최저값에서 그 단계까지) */
 export function layoutCost(s: Scenario, layout: Record<string, number>): number {
   return Object.values(layout).reduce((n, v) => n + costToReach(s, v), 0);
-}
-
-/**
- * 직분에 맞춘 배치 (4.2.1): 과거의 기본 배치에 직분 스킬이 없으면, 기본 배치의 0 하나(가장 뒤의 것)를 직분 스킬 0으로 바꾼다 (점수는 같다).
- * 바꿀 것이 없으면 null
- */
-export function occupationLayout(s: Scenario, layout: Record<string, number>, seat: CreationSeat | null | undefined): Record<string, number> | null {
-  const occ = occupationSkills(s, seat?.occupation);
-  if (!occ.length || occ.some((m) => layout[m] !== undefined)) return null;
-  const zero = Object.keys(layout).filter((m) => layout[m] === 0).at(-1);
-  if (!zero) return null;
-  return Object.fromEntries(Object.entries(layout).map(([m, v]) => (m === zero ? [occ[0]!, 0] : [m, v])));
 }
 
 /** 고쳐 쓸 때 점수를 둘 수 있는 전문 기술: 과거가 가르쳐 준 것과 자리가 주는 것 (4.2.1) */

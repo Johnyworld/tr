@@ -384,7 +384,7 @@ export const scenarioFileSchema = z
           id,
           label: z.string().min(1),
           summary: z.string().min(1),
-          /** 직분 스킬 (4.2.1): 스킬을 주지는 않는다. 전문 기술이면 배운 상태(스킬 최저값)로 주고, 만들 때 이 스킬에 점수를 두는 배치를 권한다 */
+          /** 직분 스킬 (4.2.1): 스킬을 주지는 않는다. 전문 기술이면 배운 상태(스킬 최저값)로 주고, 고쳐 쓸 때 그 전문 기술에 점수를 둘 수 있다 */
           skills: z.array(id).default([]),
           /** 시작 소지품에 더해지는 직분 도구 */
           kit: z.array(id).default([]),

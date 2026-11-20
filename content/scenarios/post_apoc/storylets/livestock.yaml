@@ -41,7 +41,7 @@
   choices:
     - id: calm
       label: 우리로 가서 염소를 달랜다
-      check: survival
+      check: taming
       outcomes:
         success:
           - belief: { fact: "밤새 울던 염소를 달래 재웠다", source: seen }

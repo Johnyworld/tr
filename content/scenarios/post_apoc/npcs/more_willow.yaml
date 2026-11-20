@@ -80,7 +80,7 @@
     reveal_when: 저울 앞에서 덜어 내는 것을 들킨 뒤, 상대가 마을 빚 사정을 들어 줄 때
     min_trust: 2
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 2, intellect: 1 }
-  skills: { persuade: 2, deceive: 1, survival: 1, scavenge: 1 }
+  skills: { persuade: 2, deceive: 1, survival: 1, scavenge: 1, taming: 1 }
   start_inventory: [trade_token, ledger, dry_ration]
   playable: true
   zone: south_fields

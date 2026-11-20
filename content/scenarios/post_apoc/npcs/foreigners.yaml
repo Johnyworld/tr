@@ -198,7 +198,7 @@
     reveal_when: 도시 밖 이야기를 하며 떠나고 싶은 마음을 함께 확인했을 때
     min_trust: 4
   stats: { strength: 1, agility: 1, vitality: 1, senses: 2, nerve: 1, charm: 0, intellect: 0 }
-  skills: { shoot: 2, survival: 2, sense_danger: 1, mechanics: 1, hunt: 1 }
+  skills: { shoot: 2, survival: 2, sense_danger: 1, mechanics: 1, hunt: 1, taming: 2 }
   start_inventory: [recurve_bow, arrows, water_bottle]
   playable: true
   zone: e_market

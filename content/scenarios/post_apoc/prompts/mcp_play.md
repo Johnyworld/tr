@@ -22,6 +22,7 @@
 - barter `{ npc_id, give: { 아이템id: 수량 }, get: { 아이템id: 수량 }, move, stat }` (값이 모자라 흥정하지 않으면 move·stat은 null)
 - take_action의 check `{ move, stat, difficulty, harm_on_failure: "none" | "light" | "heavy", harm_cause }` (상대가 있으면 target 또는 opponent, distance). activity는 `{ kind, until }`
 - 이야기가 열려 있으면: resolve_storylet `{ choice_id }`, 두고 가면 take_action에 `ignore_story: true`
+- 즉흥 이야기 자리가 열려 있으면 (12-247): improvise_storylet `{ title, setup, cast: [{ key, character_id }], choices: [{ id, label, check, reward: "none"|"small"|"medium", reward_kind: "item"|"relation"|"merit"|null, reward_item, reward_who, reward_axis, cost: "none"|"relation"|"noise"|"time"|"body"|"give", cost_who, cost_item }] }`. 연 뒤는 보통 이야기처럼 resolve_storylet
 - 임무: 요건과 맞는 행동(그 판정·그 활동·이동)을 임무 장소에서 하면 저절로 임무로 센다. 임무와 상관없는 일이면 신경 쓰지 않아도 된다
 - 잠입(infiltrate)·탐험(explore)은 도구가 판정을 굴린다. take_action으로 따로 판정하지 않는다
 - 장소 (12-244): 구역 안에는 장소가 있다 (상태의 '이 구역의 장소'). 플레이어가 구역 안 다른 곳으로 가면 take_action `place_to: "장소 id"` (5분). 목록에 없는 곳(누구의 집·방, 화장실, 뒷골목)은 spawn_place `{ name, indoor, owner }`로 만들고 그 id로 옮긴다. 실내외는 장소가 정한다 (추위·젖음·이야기). 장소를 정하지 않았으면 구역에 막 들어선 자리다

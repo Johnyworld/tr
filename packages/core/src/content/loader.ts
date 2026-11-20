@@ -360,6 +360,10 @@ function checkReferences(content: Content): string[] {
   ];
   for (const item of refs) if (!content.items[item]) problems.push(`scenario: 알 수 없는 아이템 ${item} (foraging·thirst.dirty)`);
   for (const k of f?.kinds ?? []) for (const t of k.companions) if (!content.extras[t]) problems.push(`scenario.foraging.${k.id}: 알 수 없는 엑스트라 틀 ${t}`);
+  // 즉흥 이야기의 보상 물건 (12-247)
+  for (const tier of ["small", "medium"] as const) {
+    for (const { item } of Object.values(content.scenario.improv?.rewards[tier].items ?? {}).flat()) if (!content.items[item]) problems.push(`scenario.improv.rewards.${tier}: 알 수 없는 아이템 ${item}`);
+  }
   for (const item of Object.keys(content.scenario.consumables)) {
     if (!content.items[item]) problems.push(`scenario.consumables: 알 수 없는 아이템 ${item}`);
   }

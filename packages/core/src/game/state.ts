@@ -548,10 +548,21 @@ export function createGameSchemas(s: Scenario) {
     storyletLog: z.record(z.string(), z.strictObject({ fired: z.number().int().min(0), lastFiredAt: z.number().int() })).default({}),
     /** 진행 중인 스토리렛 */
     activeStorylet: z
-      .strictObject({ id: z.string(), cast: z.record(z.string(), z.string()), firedAt: z.number().int(), expiresAt: z.number().int() })
+      .strictObject({
+        id: z.string(),
+        cast: z.record(z.string(), z.string()),
+        firedAt: z.number().int(),
+        expiresAt: z.number().int(),
+        /** GM이 지은 즉흥 이야기 (12-247): 코드가 만든 스토리렛 정의. 콘텐츠에 없고 끝나면 남지 않는다 */
+        improvised: z.record(z.string(), z.unknown()).optional(),
+      })
       .nullable()
       .default(null),
     lastStoryletAt: z.number().int().nullable().default(null),
+    /** 열려 있는 즉흥 이야기 자리 (12-247): 이때까지 GM이 improvise_storylet로 채울 수 있다 */
+    improvSlot: z.strictObject({ openedAt: z.number().int(), expiresAt: z.number().int() }).nullable().default(null),
+    /** 마지막으로 즉흥 이야기 자리가 열린 때 (하루 상한) */
+    lastImprovSlotAt: z.number().int().nullable().default(null),
     /** 주인공이 마지막으로 한 일 (이야기 조건 when.activities, 플레이 테스트 11). 이전 세이브는 null */
     lastActivity: z.string().nullable().default(null),
     /** 마지막으로 잠에서 깬 시각 (플레이 테스트 13: "한밤에 막 깬 때"가 깬 뒤 행동 하나로 풀렸다) */
@@ -994,7 +1005,12 @@ export function createGameSchemas(s: Scenario) {
       storyletId: z.string(),
       cast: z.record(z.string(), z.string()),
       expiresAt: z.number().int(),
+      /** 즉흥 이야기 (12-247): 코드가 GM의 글과 보상 등급으로 만든 스토리렛 정의 */
+      improvised: z.record(z.string(), z.unknown()).optional(),
     }),
+    /** 즉흥 이야기 자리가 열렸다·닫혔다 (12-247) */
+    z.strictObject({ type: z.literal("improv_slot_opened"), expiresAt: z.number().int() }),
+    z.strictObject({ type: z.literal("improv_slot_closed") }),
     z.strictObject({
       type: z.literal("storylet_resolved"),
       storyletId: z.string(),
@@ -1276,6 +1292,8 @@ export const EMPTY_STATE: GameState = {
   storyletLog: {},
   activeStorylet: null,
   lastStoryletAt: null,
+  improvSlot: null,
+  lastImprovSlotAt: null,
   lastActivity: null,
   lastWokeAt: null,
   lastSleptFrom: null,
@@ -2392,11 +2410,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.playerZone = null;
       next.battle = null;
       next.activeStorylet = null;
+      next.improvSlot = null;
       break;
     }
     case "storylet_fired": {
       if (state.activeStorylet) throw new Error("이미 진행 중인 스토리렛이 있습니다.");
-      next.activeStorylet = { id: event.storyletId, cast: { ...event.cast }, firedAt: state.time, expiresAt: event.expiresAt };
+      next.activeStorylet = { id: event.storyletId, cast: { ...event.cast }, firedAt: state.time, expiresAt: event.expiresAt, ...(event.improvised ? { improvised: event.improvised } : {}) };
+      // 이야기가 열리면 즉흥 자리는 닫힌다 (GM이 채웠거나, 급한 이야기가 먼저 왔다)
+      next.improvSlot = null;
       const log = (next.storyletLog[event.storyletId] ??= { fired: 0, lastFiredAt: state.time });
       log.fired += 1;
       log.lastFiredAt = state.time;
@@ -2405,6 +2426,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       for (const id of Object.values(event.cast)) next.castUsedAt[id] = state.time;
       break;
     }
+    case "improv_slot_opened":
+      next.improvSlot = { openedAt: state.time, expiresAt: event.expiresAt };
+      next.lastImprovSlotAt = state.time;
+      next.lastStoryletAt = state.time;
+      break;
+    case "improv_slot_closed":
+      next.improvSlot = null;
+      break;
     case "storylet_resolved":
     case "storylet_expired":
       if (state.activeStorylet?.id !== event.storyletId) throw new Error(`진행 중인 스토리렛이 아닙니다: ${event.storyletId}`);

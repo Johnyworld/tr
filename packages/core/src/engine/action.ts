@@ -68,7 +68,7 @@ import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
 import { scarFromHarm } from "./scars.ts";
 import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle } from "./storyletTools.ts";
-import { choiceAvailable } from "../story/storylets.ts";
+import { choiceAvailable, storyletOf } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { sleepChainStart } from "../game/state.ts";
@@ -375,7 +375,7 @@ export const PLACE_MOVE_MINUTES = 5;
 export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
   // 연습 대련 이야기의 판정이면 방어구·무기가 닳지 않는다 (플레이 테스트 13)
   const a = ctx.store.getState().activeStorylet;
-  const s = a ? ctx.content.storylets[a.id] : undefined;
+  const s = a ? storyletOf(ctx.store.getState(), ctx.content, a.id) : undefined;
   const practice = !!s?.practice && !!input.check && s.choices.some((c) => c.check === input.check!.move);
   return withoutWear(practice, () => takeActionInner(input, ctx));
 }
@@ -398,7 +398,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 스스로 못 움직이면(부상·열병으로 의식을 잃음) 시간만 흐른다: 막지 않는다 (12-245: 의식불명인 채 기다리기가 막혔다)
   // 자리를 옮기는 것도 같다 (12-240, A1: 이야기가 열린 결과 뒤 같은 턴에 묶어 보낸 이동이 이야기를 외면한 것으로 처리됐다). 판정을 건 행동(맞서기·달아나기)은 이야기 안의 일이다
   if (start.activeStorylet && !input.check && !input.ignore_story && (!!input.move_to || !!input.place_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !isIncapacitated(ctx.content, player) && !incapacitatingSymptom(scenario, player) && !heldOf(player)) {
-    const s0 = content.storylets[start.activeStorylet.id];
+    const s0 = storyletOf(start, content, start.activeStorylet.id);
     const openTitle = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
     return { ok: false, error: `이야기 "${openTitle}"${josa(openTitle, "이/가").slice(openTitle.length)} 열려 있다. 먼저 장면으로 연출하고 플레이어의 선택을 받는다: resolve_storylet으로 고르거나, 플레이어가 두고 다른 일(자리 옮기기 포함)을 하기로 했으면 ignore_story: true를 함께 넣는다 (시간은 흐르지 않았다).` };
   }
@@ -409,12 +409,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     return { ok: false, error: `곁에 위협이 있다: ${near}. 오래 걸리는 일(${input.activity.kind})을 하기 전에 먼저 맞서거나(target) 피한다(move_to + 판정) (시간은 흐르지 않았다).` };
   }
   // 몸이 붙들린 매복은 걸어서 벗어날 수 없다 (플레이 테스트 13: "차 밑의 손"이 이동 한 번으로 대가 없이 닫혔다)
-  if (start.activeStorylet && ((input.move_to && !input.check) || input.ignore_story) && !heldOf(player) && content.storylets[start.activeStorylet.id]?.ambush && !isIncapacitated(ctx.content, player)) {
+  if (start.activeStorylet && ((input.move_to && !input.check) || input.ignore_story) && !heldOf(player) && storyletOf(start, content, start.activeStorylet.id)?.ambush && !isIncapacitated(ctx.content, player)) {
     return { ok: false, error: "매복에 걸려 붙들려 있다. 그냥 걸어 나갈 수 없다: resolve_storylet으로 고르거나, 뿌리치고 달아나려면 move_to와 함께 check(달아나기·맞서기 판정과 위험)를 건다 (시간은 흐르지 않았다)." };
   }
   // 외면 (플레이 테스트 13): 효과 없이 지나간다. 자리를 옮기며 외면하면 아래에서 떠나는 선택지로 푼다
   if (start.activeStorylet && input.ignore_story && !input.move_to) {
-    const s0 = content.storylets[start.activeStorylet.id];
+    const s0 = storyletOf(start, content, start.activeStorylet.id);
     endActiveStorylet(ctx, "외면했다");
     const title = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
     // 아래 leftLines보다 먼저 정해지므로 따로 담아 둔다
@@ -423,14 +423,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 길 위의 일은 도착하기 전의 장면이다: 판정 없이 다른 일을 하면 길에서 두고 온 것으로 친다 (플레이 테스트 11: 붉은연합 순찰조원이 우리 거점 장면에 남아 목격자가 됐다)
   const roadTag = scenario.travel?.tag;
   // 판정을 걸어도 길 위 장면과 상관없는 긴 일(수색·일 등)이면 두고 온 것이다 (플레이 테스트 12: 매복자가 장면에 남은 채 역 안을 두 시간 뒤졌다)
-  const onRoad = !!roadTag && !!start.activeStorylet && !!content.storylets[start.activeStorylet.id]?.tags.includes(roadTag) && ((!input.check && !!input.deed) || (!!input.activity && !["talk", "brief"].includes(input.activity.kind)));
+  const onRoad = !!roadTag && !!start.activeStorylet && !!storyletOf(start, content, start.activeStorylet.id)?.tags.includes(roadTag) && ((!input.check && !!input.deed) || (!!input.activity && !["talk", "brief"].includes(input.activity.kind)));
   const leftLines: string[] = [];
   // 갇힌 채 옮겨 가기(탈출)는 자리를 뜨는 것이 아니다: 실패하면 그대로, 성공하면 옮겨 갈 때 닫힌다 (플레이 테스트 13: 실패한 탈출이 포섭 이야기를 닫았다)
   const escaping = !!input.move_to && !!heldOf(player);
   if (ignoredLine) leftLines.push(ignoredLine);
   // 자리를 뜨는 것(옮겨 가기)과 길 위 장면을 두고 하는 일만 외면 선택지로 푼다
   if (store.getState().activeStorylet && (!!input.move_to || onRoad) && !escaping && !isIncapacitated(ctx.content, player)) {
-    const s = content.storylets[start.activeStorylet!.id];
+    const s = storyletOf(start, content, start.activeStorylet!.id);
     const pick = s?.choices.find((c) => WALK_AWAY_CHOICES.includes(c.id) && !c.check && choiceAvailable(start, c, start.activeStorylet!.cast));
     const r = pick ? withoutBlame("walked_away", () => resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx)) : null;
     // 따옴표 안 말에 맞춰 조사 (플레이 테스트 13: "낯선 손님의 공책"를)
@@ -709,7 +709,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 열린 이야기가 요구하는 판정일 때만 이야기가 걸린 판정이다 (플레이 테스트 13: 길 위 이야기가 열린 사이 위험 없는 5분 경계로 레벨이 올랐다)
-  const storyCheck = !!start.activeStorylet && !!input.check && !!content.storylets[start.activeStorylet.id]?.choices.some((c) => c.check === input.check!.move);
+  const storyCheck = !!start.activeStorylet && !!input.check && !!storyletOf(start, content, start.activeStorylet.id)?.choices.some((c) => c.check === input.check!.move);
   // 1. 판정과 선언한 위험
   if (input.check) {
     const roll = rollPlayerCheck(
@@ -1189,6 +1189,9 @@ export function worldLines(displays: readonly ToolDisplayEvent[]): string[] {
     // 시간이 흘러 지나간 이야기도 알린다 (플레이 테스트 13: 잠·휴식 사이에 이야기가 말없이 사라졌다)
     if (display.type === "storylet" && display.event === "expired") {
       lines.push(`이야기 "${display.title}"${josa(display.title, "은/는").slice(display.title.length)} 그대로 지나갔다${display.detail && display.detail !== "지나갔다" ? ` (${display.detail})` : ""}. 이야기 속 사람들은 그것을 기억할 수 있다.`);
+    }
+    if (display.type === "storylet" && display.event === "improv") {
+      lines.push("즉흥 이야기 자리가 열렸다: 상태의 '즉흥 이야기 자리'를 보고, 지금 장면에 맞는 작은 일을 improvise_storylet로 지어 열 수 있다 (반복되던 이야기 대신).");
     }
     if (display.type === "battle" && display.event === "started") {
       lines.push(`전투가 시작됐다: ${display.detail} 상태의 '전투 중' 정보를 보고 첫 장면을 서술한 뒤 플레이어의 행동을 기다려라.`);

@@ -1481,6 +1481,40 @@ ambush: { move: stealth, hours: 12, attack_moves: [fight, shoot], bonus: 2, part
 # 무전 송출 (12-173, *임시*): 무전기로 하루 한 번 열린 주파수에 부르면 이 확률로 응답 이야기(storylets/radio_call.yaml)가 열린다
 radio_call: { item: radio, tag: radio_call, chance: 0.6 }
 
+# 즉흥 이야기 (12-247, *임시*): 반복 이야기(템플릿)가 골리면 그 자리를 GM이 지은 이야기로 바꾼다. seen_times는 그 이야기를 이미 본 횟수의 하한 (0이면 처음이어도).
+# 줄거리 몫이 있는 이야기(다짐·플래그·장례·세계를 움직이는 효과)는 바꾸지 않는다: 바뀔 수 있는 것은 채우기용 138개.
+# 앞 자리와 20시간 떨어진다. 자동 플레이 80일 안팎: 이야기의 10% 안팎이 즉흥 (이야기가 892개라 같은 이야기가 다시 골리는 일은 드물어 seen_times는 0)
+# GM은 보상 등급(작음·보통)과 종류(물건·관계·공적), 대가 종류만 고른다. 물건은 등급 목록에서 코드가 고른다
+improv:
+  seen_times: 0
+  gap_hours: 20
+  # 보상 물건의 갈래: GM이 이야기에 맞는 갈래를 고르고, 물건은 그 갈래의 등급 목록에서 고른다
+  item_kinds: { food: 먹을 것, medicine: 약·붕대, ammo: 탄약, material: 재료·연료, trade: 담배 (맞바꿀 것) }
+  rewards:
+    small:
+      relation: 1
+      merit: 1
+      items:
+        food: [{ item: canned_food }, { item: dry_ration }, { item: water_bottle }]
+        medicine: [{ item: bandage }]
+        ammo: [{ item: pistol_rounds }, { item: rifle_rounds }]
+        material: [{ item: cloth }, { item: duct_tape }, { item: scrap_metal }]
+        trade: [{ item: cigarettes, quantity: 2 }]
+    medium:
+      relation: 2
+      merit: 2
+      items:
+        food: [{ item: canned_food, quantity: 2 }, { item: dry_ration, quantity: 2 }]
+        medicine: [{ item: antibiotics }, { item: fever_reducer }, { item: medkit }]
+        ammo: [{ item: pistol_rounds, quantity: 2 }, { item: rifle_rounds, quantity: 2 }]
+        material: [{ item: fuel_bottle }, { item: blanket }]
+        trade: [{ item: cigarettes, quantity: 4 }]
+  costs:
+    relation: -1
+    noise: 1
+    time: 90
+    body: { track: fatigue, delta: 1 }
+
 # 명성 (12-127, *임시*): 남에게 보인 행적의 크기 합. 한두 번으로는 무명이다
 # 알려지면(1단계) 행적이 말이 모이는 곳을 거쳐 다른 무리로 넘어간다. 이름나면(2단계) 소문으로 들은 사람도 다시 옮긴다
 # 소문으로만 아는 사람의 호감·존중이 3 이상이면 팬, -3 이하면 안티

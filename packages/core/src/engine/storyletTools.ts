@@ -25,7 +25,8 @@ import { harmTrack} from "../scenario/scenario.ts";
 import { changeCondition, shakeNerves } from "./body.ts";
 import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
-import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis } from "../story/storylets.ts";
+import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, storyletOf } from "../story/storylets.ts";
+import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
 import { knowsName, playerCalls, hasMet } from "../game/acquaintance.ts";
@@ -79,7 +80,7 @@ export function endActiveStorylet(ctx: ToolContext, reason: string): ToolDisplay
   const { store, content } = ctx;
   const active = store.getState().activeStorylet;
   if (!active) return [];
-  const s = content.storylets[active.id];
+  const s = storyletOf(store.getState(), content, active.id);
   store.append({ type: "storylet_expired", storyletId: active.id });
   const displays: ToolDisplayEvent[] = [];
   for (const [key, id] of Object.entries(active.cast)) {
@@ -104,6 +105,9 @@ export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean; 
     displays.push(...endActiveStorylet(ctx, "지나갔다"));
     state = store.getState();
   }
+  // 쓰지 않은 즉흥 이야기 자리는 지나간다 (12-247)
+  lapseImprovSlot(ctx);
+  state = store.getState();
   const player = state.characters[state.playerId];
   const window = storyletWindow(state, content, state.time);
   if (!player || player.dead || window === "closed") return displays;
@@ -116,6 +120,8 @@ export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean; 
   const boost = (s: StoryletContent) => (atPlace && s.when.zones?.includes(state.playerZone!) ? MISSION_PLACE_STORY_BOOST : 1);
   const storylet = pickStorylet(fixed.length ? fixed : eligible, rng, boost);
   if (!storylet) return displays;
+  // 반복 이야기(템플릿)가 골리면 그 자리를 GM이 지은 이야기로 (12-247, scenario.improv)
+  if (shouldImprovise(state, content, storylet, state.time)) return [...displays, ...openImprovSlot(ctx)];
   displays.push(...fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!));
   displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });
   return displays;
@@ -192,7 +198,7 @@ export function createStoryletCheck(content: Content, options: { asleep?: boolea
 
 function activeOf(state: GameState, content: Content): { storylet: StoryletContent; cast: Record<string, string> } | null {
   const active = state.activeStorylet;
-  const storylet = active ? content.storylets[active.id] : undefined;
+  const storylet = active ? storyletOf(state, content, active.id) : undefined;
   return active && storylet ? { storylet, cast: active.cast } : null;
 }
 
@@ -904,7 +910,7 @@ export function applyEffect(
         ? { ...(u?.flag ? { flag: u.flag } : {}), ...(u?.zone ? { zone: u.zone } : {}), ...(u?.hours || !(u?.flag || u?.zone) ? { at: state.time + (u?.hours ?? 48) * 60 } : {}) }
         : undefined;
     // 임무 이야기로 데려가는 사람은 임무가 끝나면 거점에 넘긴다 (플레이 테스트 13: 데려온 탈영병이 보고 뒤에도 따라다녔다)
-    const story = state.activeStorylet ? content.storylets[state.activeStorylet.id] : undefined;
+    const story = state.activeStorylet ? storyletOf(state, content, state.activeStorylet.id) : undefined;
     const forMission = story?.when?.mission?.length ? activeMissionOf(state.missions, playerId)?.id : undefined;
     store.append({ type: "companion_joined", characterId: id, kind, ...(until ? { until } : {}), ...(forMission ? { missionId: forMission } : {}) });
     const name = playerCalls(store.getState(), content, id);
@@ -1060,7 +1066,7 @@ export const setContentOptions = defineTool({
   },
 });
 
-export const STORYLET_TOOLS = [resolveStorylet, setContentOptions] as const;
+export const STORYLET_TOOLS = [resolveStorylet, improviseStorylet, setContentOptions] as const;
 
 /**
  * 길 위의 일 (12-53): 구역을 옮긴 뒤 길의 위험별 확률로 길 위의 이야기 하나를 연다 (이야기 사이 간격과 상관없다).

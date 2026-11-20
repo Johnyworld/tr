@@ -8,7 +8,8 @@ import { canUseSkill } from "../engine/traits.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
 import { neighbors } from "./war.ts";
-import { choiceAvailable } from "../story/storylets.ts";
+import { choiceAvailable, storyletOf } from "../story/storylets.ts";
+import { autoplayImprovInput, describeImprovSlotForGm } from "../engine/improvStory.ts";
 import { sitsOnCouncil, squadMembers } from "../engine/command.ts";
 import { battleConfig, effectBlocker } from "./battle.ts";
 import type { GameWorld } from "../world/world.ts";
@@ -98,7 +99,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       out = world.executeTool(name, { ...rest, move_to: (rest.move_to as string | undefined) ?? null, check: { move: move.id, stat: move.stats[0], difficulty: "normal", harm_on_failure: "light", harm_cause: "매복을 뿌리쳤다", harm_kind: "other", infected_source: false, target_harm: "none", distance: "close" } });
       if (!out.ok && !(rest.move_to)) {
         const s = world.state().activeStorylet;
-        const pick = s ? world.content.storylets[s.id]?.choices.find((c) => !c.check) : undefined;
+        const pick = s ? storyletOf(world.state(), world.content, s.id)?.choices.find((c) => !c.check) : undefined;
         if (pick) world.executeTool("resolve_storylet", { choice_id: pick.id, improvised_move: null });
         out = world.executeTool(name, rest);
       }
@@ -114,7 +115,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
 
   for (let i = 0; i < turns; i++) {
     stats.turns++;
-    const s = world.state();
+    let s = world.state();
     if (s.playerZone) stats.zonesVisited.add(s.playerZone);
     if (world.isPlayerDead()) {
       stats.deaths++;
@@ -196,9 +197,16 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
 
     // 진행 중인 이야기: 무작위 선택지 (판정이 붙었으면 먼저 판정)
     // GM처럼 지금 고를 수 있는 선택지 중에서
-    const openChoices = s.activeStorylet ? content.storylets[s.activeStorylet.id]!.choices.filter((c) => choiceAvailable(s, c, s.activeStorylet!.cast) && can(c.check ?? undefined)) : [];
+    // 즉흥 이야기 자리 (12-247): LLM 대신 대역 이야기로 채우고, 같은 턴에 바로 고른다 (GM도 열고 같은 턴에 플레이어의 대응을 받는다.
+    // 따로 턴을 쓰면 400턴 판의 날수가 줄었다). GM에게 보이는 자리만 (누워 있으면 숨겨져 있다)
+    if (describeImprovSlotForGm(s, content)) {
+      const out = tool("improvise_storylet", autoplayImprovInput(s, content));
+      if (!out.ok) stats.errors.push(`즉흥 이야기: ${out.error}`);
+      s = world.state();
+    }
+    const openChoices = s.activeStorylet ? storyletOf(s, content, s.activeStorylet.id)!.choices.filter((c) => choiceAvailable(s, c, s.activeStorylet!.cast) && can(c.check ?? undefined)) : [];
     if (s.activeStorylet && openChoices.length && rng() < 0.7) {
-      const storylet = content.storylets[s.activeStorylet.id]!;
+      const storylet = storyletOf(s, content, s.activeStorylet.id)!;
       const choice = pick(rng, openChoices);
       if (choice.check) {
         const move = moves.find((m) => m.id === choice.check)!;
@@ -498,7 +506,11 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     } else if (!out.ok) stats.errors.push(`행동: ${out.error}`);
   }
   for (const e of world.ctx().store.events()) {
-    if (e.type === "storylet_fired") stats.storyletsFired[e.storyletId] = (stats.storyletsFired[e.storyletId] ?? 0) + 1;
+    if (e.type === "storylet_fired") {
+      // 즉흥 이야기는 하나로 센다 (id가 매번 다르다)
+      const key = e.improvised ? "(즉흥)" : e.storyletId;
+      stats.storyletsFired[key] = (stats.storyletsFired[key] ?? 0) + 1;
+    }
     if (e.type === "battle_started") stats.battles++;
     if (e.type === "battle_ended" && e.won) stats.battlesWon++;
   }

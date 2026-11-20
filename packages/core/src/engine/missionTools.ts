@@ -1,3 +1,4 @@
+import { storyletOf } from "../story/storylets.ts";
 import { restDays } from "../rules/rest.ts";
 import { capturedDuringMission, missionExcuse } from "../rules/blame.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
@@ -101,7 +102,7 @@ export function missionPlace(content: Content, where: string | undefined, factio
 function storyOpenError(ctx: ToolContext): string | null {
   const active = ctx.store.getState().activeStorylet;
   if (!active) return null;
-  const s = ctx.content.storylets[active.id];
+  const s = storyletOf(ctx.store.getState(), ctx.content, active.id);
   const title = s ? storyTitle(ctx.store.getState(), ctx.content, s) : active.id;
   return `이야기 "${title}"${josa(title, "이/가").slice(title.length)} 열려 있다. 먼저 장면으로 연출하고 resolve_storylet으로 고르거나, 플레이어가 두고 가기로 했으면 take_action에 ignore_story: true를 넣은 뒤 다시 (시간은 흐르지 않았다).`;
 }

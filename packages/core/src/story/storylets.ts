@@ -808,3 +808,8 @@ export function roadStorylets(state: GameState, content: Content, tag: string, a
     .filter((s) => options.pacing === false || !pacingBlocks(state, content, s, at))
     .filter((s) => pickCast(state, content, s, null) !== null);
 }
+
+/** 이 id의 이야기: 콘텐츠의 것, 아니면 진행 중인 즉흥 이야기 (12-247, GM이 지었고 상태에만 있다) */
+export function storyletOf(state: GameState, content: Content, id: string): StoryletContent | undefined {
+  return content.storylets[id] ?? (state.activeStorylet?.id === id ? (state.activeStorylet.improvised as StoryletContent | undefined) : undefined);
+}

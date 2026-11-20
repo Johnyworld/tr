@@ -983,6 +983,29 @@ export const scenarioFileSchema = z
      * 무전 송출 (12-173): item을 가진 주인공이 하루 한 번 송출하면 chance로 tag 이야기 하나가 열린다
      */
     radio_call: z.strictObject({ item: id, tag: id, chance: z.number().min(0).max(1) }).optional(),
+    /**
+     * 즉흥 이야기 (12-247, 기획서 10.5.5): 반복 템플릿(이미 seen_times번 이상 열린 것, 0이면 처음이어도)이 골리면 그 자리를 GM이 지은 이야기로 바꾼다 (앞 자리와 gap_hours 떨어진다: 하루 하나쯤).
+     * GM은 보상 등급·종류만 고르고 숫자는 여기서 정한다 (원칙 2)
+     */
+    improv: z
+      .strictObject({
+        seen_times: z.number().int().min(0),
+        gap_hours: z.number().min(0),
+        /** 보상 물건의 갈래 (id → 이름). GM은 이야기에 맞는 갈래를 고르고, 물건은 그 갈래의 등급 목록에서 코드가 고른다 */
+        item_kinds: z.record(id, z.string().min(1)),
+        rewards: z.strictObject({
+          small: z.strictObject({ items: z.record(id, z.array(z.strictObject({ item: id, quantity: z.number().int().positive().default(1) })).min(1)), relation: z.number().int().min(1).max(3), merit: z.number().int().min(0).max(3) }),
+          medium: z.strictObject({ items: z.record(id, z.array(z.strictObject({ item: id, quantity: z.number().int().positive().default(1) })).min(1)), relation: z.number().int().min(1).max(3), merit: z.number().int().min(0).max(3) }),
+        }),
+        costs: z.strictObject({
+          relation: z.number().int().min(-3).max(-1),
+          noise: z.number().int().min(1).max(3),
+          time: z.number().int().min(30).max(480),
+          /** 몸 상태 한 칸 (부상 트랙은 안 된다, 원칙 3) */
+          body: z.strictObject({ track: id, delta: z.number().int().min(1).max(2) }),
+        }),
+      })
+      .optional(),
     /** 들킨 침입 (플레이 테스트 11, D6): 적대하는 무리의 땅에서 moves 판정이 실패하면 tag 이야기(경보·추격) 하나가 열린다 */
     alarm: z
       .strictObject({
@@ -1745,6 +1768,16 @@ export const scenarioFileSchema = z
       const t = s.condition_tracks.find((x) => x.id === track);
       if (!t) problem(`camp.deep_sleep: 알 수 없는 상태 트랙 ${track}`);
       else if (!t.levels.some((l) => l.id === level)) problem(`camp.deep_sleep.${track}: 알 수 없는 단계 ${level}`);
+    }
+    if (s.improv) {
+      const t = s.condition_tracks.find((x) => x.id === s.improv!.costs.body.track);
+      if (!t) problem(`improv.costs.body: 알 수 없는 상태 트랙 ${s.improv.costs.body.track}`);
+      if (s.improv.costs.body.track === s.harm_track) problem("improv.costs.body: 부상 트랙은 대가로 쓸 수 없다 (원칙 3)");
+      // 등급마다 모든 갈래의 물건이 있어야 한다 (GM이 고른 갈래가 비지 않게)
+      for (const tier of ["small", "medium"] as const) {
+        for (const kind of Object.keys(s.improv.item_kinds)) if (!s.improv.rewards[tier].items[kind]) problem(`improv.rewards.${tier}.items: 갈래 ${kind}의 물건이 없다`);
+        for (const kind of Object.keys(s.improv.rewards[tier].items)) if (!s.improv.item_kinds[kind]) problem(`improv.rewards.${tier}.items: item_kinds에 없는 갈래 ${kind}`);
+      }
     }
     if (s.search_lore && !moves.has(s.search_lore.skill)) problem(`search_lore: 알 수 없는 스킬 ${s.search_lore.skill}`);
     // 마음 다잡기 (12-220): 마음·공포 규칙이 있으면 있어야 하고, 능력은 그 행동이 쓰는 것이어야 한다

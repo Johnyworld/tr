@@ -21,6 +21,8 @@ describe("랜덤 자동 플레이 (실제 콘텐츠)", () => {
     expect(stats.errors).toEqual([]);
     expect(stats.days).toBeGreaterThanOrEqual(10); // 인물이 늘면 무작위 순서가 바뀌어 하루쯤 오간다 (12-236: 치료사 둘을 더하자 11 → 10)
     expect(Object.keys(stats.storyletsFired).length).toBeGreaterThanOrEqual(8);
+    // 반복 이야기 자리를 즉흥 이야기가 채운다 (12-247). 대역 이야기로 오류 없이 풀린다
+    expect(stats.storyletsFired["(즉흥)"] ?? 0).toBeGreaterThan(0);
     expect(stats.zonesVisited.size).toBeGreaterThanOrEqual(6);
     expect(stats.successions).toBe(stats.deaths);
   }, 30_000); // 400턴: 인물이 늘면 전체 실행 중에는 5초를 넘긴다

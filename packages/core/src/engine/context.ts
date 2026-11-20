@@ -64,6 +64,7 @@ import { describeMissionsForGm } from "./missionTools.ts";
 import { describeFactionsForGm } from "./warTools.ts";
 import { describeBattleForGm } from "./battleTools.ts";
 import { describeStoryletForGm } from "./storyletTools.ts";
+import { describeImprovSlotForGm } from "./improvStory.ts";
 import { BELIEF_SOURCE_LABELS as SOURCE_LABELS } from "../game/belief.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } from "../game/reputation.ts";
 import { ownedBy } from "../rules/home.ts";
@@ -198,7 +199,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     // 다짐·시설·재난은 자주 바뀌지 않아 따로 둔다 (시각이 바뀔 때마다 다시 싣지 않게)
     ["resolve", describeResolve(state, content).join("\n")],
     ["disaster", describeDisaster(content, state).join("\n")],
-    ["storylet", describeStoryletForGm(state, content)],
+    ["storylet", [describeStoryletForGm(state, content), describeImprovSlotForGm(state, content)].filter(Boolean).join("\n")],
     ["missions", [describeMissionsForGm(state, { content }), describePolicyForGm(state, content)].filter(Boolean).join("\n")],
     ["squad", describeSquadForGm(state, content)],
     ["diplomacy", describeDiplomacyForGm(state, content)],

@@ -23,6 +23,7 @@ function tempContent(files: Record<string, string>) {
   delete scenario.consumables;
   // 먹을 것 구하기·끓이지 않은 물도 실제 아이템을 참조한다 (12-131)
   delete scenario.foraging;
+  delete scenario.improv;
   delete ((scenario.body as Record<string, Record<string, unknown>>).thirst ?? {}).dirty;
   delete scenario.custom_start;
   delete scenario.command;

@@ -1,4 +1,5 @@
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
+import { storyletOf } from "../story/storylets.ts";
 import { josa } from "../text.ts";
 import { activeCompanions } from "../game/companions.ts";
 import type { GameState } from "../game/state.ts";
@@ -91,7 +92,7 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
 /** 공포를 부르는 것이 지금 장면에 있는가: 전투 중, 공포를 부른 이야기가 진행 중, 무서운 것이 장면에 있음 */
 export function fearSourcePresent(ctx: ToolContext, state: GameState = ctx.store.getState()): boolean {
   if (state.battle) return true;
-  if (state.activeStorylet && (ctx.content.storylets[state.activeStorylet.id]?.fright ?? 0) > 0) return true;
+  if (state.activeStorylet && (storyletOf(state, ctx.content, state.activeStorylet.id)?.fright ?? 0) > 0) return true;
   return state.scene.present.some((id) => fearsomeOf(ctx, state, id) > 0);
 }
 

@@ -1,4 +1,5 @@
 import { heldOf } from "../rules/held.ts";
+import { storyletOf } from "../story/storylets.ts";
 import { marketValue } from "./market.ts";
 import { RESOLVE_TOOLS } from "./resolve.ts";
 import { EXPLORATION_TOOLS } from "./exploration.ts";
@@ -102,7 +103,7 @@ const transferItem = defineTool({
     // 진행 중인 이야기의 배역에게, 그 이야기 선택지가 내놓게 하는 물건을 먼저 건네면 선택지가 잠긴다 (플레이 테스트 11: 담요를 덮어 준 뒤 "고를 수 없는 선택지")
     const story = state.activeStorylet;
     if (story && input.from === state.playerId && Object.values(story.cast).includes(input.to)) {
-      const choice = content.storylets[story.id]?.choices.find((c) => choiceUsesItem(c, input.item_id));
+      const choice = storyletOf(state, content, story.id)?.choices.find((c) => choiceUsesItem(c, input.item_id));
       if (choice) return { ok: false, error: `이 물건은 진행 중인 이야기의 선택지로 건넨다: resolve_storylet ${choice.id} ("${choice.label}"). 선택지가 효과를 함께 처리한다.` };
     }
     const fromInv = findHolderInventory(state, input.from);
@@ -407,7 +408,7 @@ const STORY_SIDE_TOOLS = new Set(["report_mission", "assign_mission", "abandon_m
 function storyStillOpen(before: GameState, name: string, ctx: ToolContext): string | null {
   const active = ctx.store.getState().activeStorylet;
   if (!STORY_SIDE_TOOLS.has(name) || !active || before.activeStorylet?.id !== active.id) return null;
-  const storylet = ctx.content.storylets[active.id];
+  const storylet = storyletOf(ctx.store.getState(), ctx.content, active.id);
   return storylet ? `(진행 중인 이야기 「${storyTitle(ctx.store.getState(), ctx.content, storylet)}」가 아직 열려 있다. 그 장면을 resolve_storylet으로 매듭짓거나 떠나는 서술을 잊지 않는다)` : null;
 }
 

@@ -432,7 +432,10 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       // 다친 몸으로는 위험한 일을 하지 않는다
       out = tool("take_action", { ...base, intent: "판정", check: check(pick(rng, usableMoves), hurt > 0 ? "none" : pick(rng, ["none", "none", "light"])) });
     } else if (roll < 0.75) {
-      out = tool("take_action", { ...base, intent: "활동", activity: { kind: pick(rng, ["talk", "rest", "work", "search", "eat"]), until: null } });
+      // 뒤질 때는 GM처럼 수색 판정을 건다 (12-220: 판정 없이는 찾지 못한다)
+      const kind = pick(rng, ["talk", "rest", "work", "search", "eat"]);
+      const scavengeMove = content.scenario.moves.find((m) => m.id === (content.scenario.exploration?.search_move ?? "scavenge"));
+      out = tool("take_action", { ...base, intent: "활동", activity: { kind, until: null }, ...(kind === "search" && scavengeMove ? { check: check(scavengeMove, "none") } : {}) });
     } else {
       out = tool("take_action", { ...base, intent: "기다림", activity: { kind: pick(rng, ["sleep", "wait", "guard_duty"]), until: null } });
     }

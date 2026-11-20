@@ -156,7 +156,7 @@
     reveal_when: 버들마을을 함께 지켜 본 사람에게, 또는 버들마을을 치자는 이야기가 나왔을 때
     min_trust: 3
   stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 0 }
-  skills: { survival: 2, stealth: 1, shoot: 1, carpentry: 1 }
+  skills: { survival: 2, stealth: 1, shoot: 1, carpentry: 1, hunt: 1 }
   start_inventory: [old_rifle, blanket]
   playable: true
   zone: a_base

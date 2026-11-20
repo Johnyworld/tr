@@ -40,7 +40,7 @@
     reveal_when: 같은 불가에서 밤을 함께 넘긴 뒤, 무리 이야기가 나왔을 때
     min_trust: 3
   stats: { strength: 1, agility: 0, vitality: 2, senses: 1, nerve: 1, charm: -1, intellect: 0 }
-  skills: { survival: 2, scavenge: 2, stealth: 1, endure: 1, fight: 1, improvise: 2 }
+  skills: { survival: 2, scavenge: 2, stealth: 1, endure: 1, fight: 1, improvise: 2, hunt: 1 }
   start_inventory: [blanket, kitchen_knife, dry_ration]
   playable: true
   roams: [old_town, riverside, hospital_ruins]

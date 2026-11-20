@@ -12,6 +12,7 @@ import {
   describeNewGameStep,
   newGameStep,
   newGameView,
+  withPortraitStep,
   heirDraft,
   newGameDraft,
   worldInfo,
@@ -46,12 +47,11 @@ const text = (body: string, isError = false): TextResult => ({
   ...(isError ? { isError: true } : {}),
 });
 
-const NO_WORLD = "열린 세계가 없습니다. 먼저 start_session(또는 load_world)을 호출하세요.";
+const NO_WORLD = "열린 세계가 없습니다 (플레이어가 상태 화면에서 게임을 끝냈을 수 있다: 그렇다면 짧게 마무리 인사를 하고, 다시 하려면 /play라고 알린다). 새로 열려면 start_session(또는 load_world)을 호출하세요.";
 /** 세션을 시작할 때 GM이 할 일 (MCP prompt `play`, Claude Code 스킬 /play 가 같은 흐름) */
 export const PLAY_START =
-  "지금 list_worlds를 호출해 저장된 게임 목록(0번 새 게임, 1번부터 저장된 게임)을 플레이어에게 그대로 보여 주고, 어느 것을 할지 묻는다. " +
-  "플레이어가 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 월드 → 시나리오 → 캐릭터 → 수위 → 서술 방식을 고른다 (마지막 것을 고르면 세계가 열린다). 고르기 전에는 세계를 열지 않는다. " +
-  "상태 화면이 있으면 먼저 어디서 고를지 묻는다: 상태 화면에서 고르기(start_session(new_world: true, in_browser: true), 다 고를 때까지 기다린다) / 채팅으로(start_session(new_world: true), create_character로 한 단계씩). " +
+  "지금 list_worlds를 호출한다. 상태 화면 주소가 있으면 먼저 어디서 고를지 묻는다: 상태 화면에서(start_session(in_browser: true): 메인 메뉴에서 이어 할 게임이나 새 게임을 고르고 만들 때까지 기다린다) / 채팅으로. " +
+  "채팅이면 목록(0번 새 게임, 1번부터 저장된 게임)을 그대로 보여 주고 어느 것을 할지 묻는다. 번호를 고르면 start_session(slot)으로 연다. 새 게임이면 월드 → 시나리오 → 캐릭터 → 수위 → 서술 방식을 create_character로 한 단계씩 고른다 (마지막 것을 고르면 세계가 열린다). 고르기 전에는 세계를 열지 않는다. " +
   "플레이어가 그만하자고 하면 end_session으로 닫는다.";
 
 const HELP_HINT = "플레이어에게 한 줄 안내 (존댓말): \"?도움말로 정보 명령어를 볼 수 있습니다.\" (이 모드에서는 \"!\" 대신 \"?\"를 쓴다. Claude 앱은 줄 맨 앞의 !를 셸 명령으로 바꾼다)";
@@ -59,8 +59,8 @@ const HELP_HINT = "플레이어에게 한 줄 안내 (존댓말): \"?도움말�
 /** 주인공이 죽은 뒤 GM이 서술할 동안 상태 화면에 사망을 미루는 최대 시간 */
 const DEATH_HOLD_MS = 120 * 1000;
 
-/** 상태 화면에서 만드는 동안 tool이 기다리는 최대 시간. 넘으면 "다 했어"를 기다렸다가 create_character(wait)로 이어 간다 */
-const CREATION_WAIT_MS = Number(process.env.TRPG_CREATE_WAIT_MS ?? 10 * 60 * 1000);
+/** 상태 화면을 기다리는 tool이 기다리는 최대 시간. 넘으면 "다 했어"를 기다렸다가 create_character(wait)로 이어 간다 */
+const SCREEN_WAIT_MS = Number(process.env.TRPG_CREATE_WAIT_MS ?? 10 * 60 * 1000);
 /** 기다리는 동안 연결을 잇는 진행 알림 간격 */
 const KEEP_ALIVE_MS = 15 * 1000;
 
@@ -71,8 +71,11 @@ type WaitExtra = {
   sendNotification: (n: { method: "notifications/progress"; params: { progressToken: string | number; progress: number; message?: string } }) => Promise<void>;
 };
 
-/** 상태 화면이 보내는 만들기 답 */
-export type ScreenCreationInput = { answer?: string | string[]; back?: boolean; chat?: boolean };
+/** 상태 화면이 보내는 만들기 답. version: 화면이 보고 있던 초안의 판 (어긋나면 거절), menu: 첫 단계에서 메인 메뉴로 */
+export type ScreenCreationInput = { answer?: string | string[]; back?: boolean; menu?: boolean; version?: number };
+/** 상태 화면 메인 메뉴에서 고른 것 (12-214) */
+export type MenuInput = { action: "new" | "open" | "delete"; id?: string };
+type Done = { ok: true } | { ok: false; error: string };
 
 export type CharacterChoiceInput = z.infer<ReturnType<typeof characterChoiceSchema>>;
 
@@ -82,7 +85,7 @@ export function createMcpServer(
     statusUrl?: () => string | null;
     /** 치트(개발 모드)를 연다 */ debug?: boolean;
     /** 캐릭터 생성의 무작위 (테스트에서 고정) */ rng?: Rng;
-    /** 상태 화면에서 만들 때 기다리는 최대 시간 (테스트용) */ creationWaitMs?: number;
+    /** 상태 화면을 한 번에 기다리는 시간 (테스트용) */ creationWaitMs?: number;
   } = {},
 ) {
   const packs = manager.packs;
@@ -143,7 +146,41 @@ export function createMcpServer(
    * new_world: 새 게임 / heir: 사망 뒤 같은 세계의 새 캐릭터
    */
   let draft: NewGameDraft | null = null;
+  /** 초안의 판: 바뀔 때마다 1씩. 화면이 옛 단계에 답하지 않게 (12-214) */
+  let draftVersion = 0;
+  const setDraft = (d: NewGameDraft | null) => {
+    draft = d;
+    draftVersion++;
+  };
+  /**
+   * 지금 만들기를 어디서 하는지 (12-214). 한 번 정하면 끝까지 그곳에서 한다 (도중에 화면 ↔ 채팅으로 넘기지 않는다).
+   * 화면이면 얼굴 단계가 있다. 채팅이면 화면은 진행을 보여 주기만 한다
+   */
+  let driver: "screen" | "chat" = "chat";
+  /** 메인 메뉴의 새로운 게임으로 연 만들기 (첫 단계에서 메인 메뉴로 돌아갈 수 있다) */
+  let fromMenu = false;
+  const resetCreation = () => {
+    setDraft(null);
+    driver = "chat";
+    fromMenu = false;
+  };
   const creationStep = (d: NewGameDraft) => text(describeNewGameStep(packs, d));
+
+  /**
+   * 상태 화면을 기다리는 GM의 tool 호출들 (12-67, 12-214). MCP 서버는 세션에 먼저 말을 걸 수 없어서 기다리는 tool 호출이 그 자리를 대신한다.
+   * 화면은 GM이 기다리고 있을 때만 쓰는 리모컨이다: 게임을 열거나 새로 시작하는 것은 기다리는 GM이 있을 때만 된다.
+   * 예외: 기다림이 시간을 넘긴 뒤 화면에서 만들기를 마치면 결과를 finished에 두고, GM의 다음 기다림(create_character(wait))이 받는다
+   */
+  const waiters = new Set<(r: TextResult) => void>();
+  let finished: TextResult | null = null;
+  const deliver = (r: TextResult) => {
+    if (waiters.size) {
+      for (const w of waiters) w(r);
+      waiters.clear();
+      return;
+    }
+    finished = r;
+  };
   const anyCreationRules = () => [...packs.values()].some((c) => creationRules(c, firstRole(c)) !== null);
 
   /** 플레이어가 지금 보고 있는 게임 목록 (번호 → 세이브 id). 세계를 열면 닫힌다. 삭제는 목록이 열려 있을 때만 */
@@ -155,7 +192,8 @@ export function createMcpServer(
       world?.close();
       world = next;
       menu = null;
-      draft = null;
+      finished = null;
+      resetCreation();
       syncTools(next.content.scenario);
       const started = sessionStart(next);
       // 끝난 판(튜토리얼에서 죽었다)을 다시 열었으면: 이어 할 것이 없다
@@ -234,25 +272,30 @@ export function createMcpServer(
       description:
         "플레이 세션을 시작한다. slot(list_worlds의 번호, 1부터)이나 world_id를 주면 그 세계를 연다. " +
         "새 게임은 new_world: true (slot 0도 새 게임). 세계를 바로 만들지 않고 새 게임 고르기를 시작한다: 월드 → 시나리오 → 캐릭터를 create_character로 한 단계씩 고른다. " +
-        "상태 화면이 있으면 먼저 플레이어에게 어디서 고를지 묻고, 상태 화면이면 in_browser: true: 화면에 고르기를 띄우고 플레이어가 다 고를 때까지 기다렸다가 세계를 연다 (그러면 바로 첫 장면). " +
+        "상태 화면이 있으면 먼저 플레이어에게 어디서 고를지 묻고, 상태 화면이면 in_browser: true만: 화면의 메인 메뉴에서 이어 할 게임을 열거나 새 게임을 다 만들 때까지 기다렸다가 돌려준다 (그러면 바로 이어서 서술). new_world와 in_browser를 함께 주면 메인 메뉴 없이 바로 만들기 화면. " +
         "아무것도 주지 않으면 세계를 열지 않고 게임 목록(0번 새 게임)을 돌려준다. " +
         "세계를 열면 GM 지침, 지난 이야기 요약, 현재 장면을 돌려준다.",
       inputSchema: z.strictObject({
         slot: z.number().int().min(0).nullable().optional().describe("list_worlds의 번호 (0은 새 게임)"),
         world_id: z.string().nullable().optional(),
         new_world: z.boolean().optional(),
-        in_browser: z.boolean().optional().describe("새 게임을 상태 화면에서 고른다 (플레이어가 골랐을 때). 다 고를 때까지 기다린다"),
+        in_browser: z.boolean().optional().describe("상태 화면에서 고른다 (플레이어가 골랐을 때). 메인 메뉴(또는 new_world면 만들기)에서 다 고를 때까지 기다린다"),
         character: characterChoiceSchema().nullable().optional().describe("이미 다 정해진 캐릭터로 기본 월드·시나리오에서 바로 만든다 (자동 진행·테스트용). 플레이어와 함께라면 쓰지 않고 create_character로 한 단계씩"),
       }),
     },
     async (args, extra) => {
-      draft = null;
-      screen = null;
+      if (args.in_browser && !args.new_world && args.slot == null && !args.world_id) {
+        // 메인 메뉴에서 고를 때까지 (화면에서 이미 만들기를 시작했으면 그것을 이어 기다린다)
+        if (world) return text(`이 세션에 이미 열린 게임이 있다 (${world.id}). 그대로 이어 간다: get_scene으로 현재 장면을 본다.`, true);
+        return waitForScreen(extra as WaitExtra);
+      }
+      resetCreation();
       if (args.new_world || args.slot === 0) {
         if (!args.character && anyCreationRules()) {
-          draft = newGameDraft(manager.unlocks());
+          const fresh = newGameDraft(manager.unlocks());
+          setDraft(fresh);
           if (args.in_browser) return waitForScreen(extra as WaitExtra);
-          return creationStep(draft);
+          return creationStep(fresh);
         }
         const choice = args.character ? { ...args.character, portrait: args.character.portrait ?? null } : undefined;
         return openWorld(() => manager.create("mcp", undefined, choice));
@@ -271,14 +314,14 @@ export function createMcpServer(
   const advanceCreation = (args: { answer?: string | string[] | null; back?: boolean }): CreationAdvance => {
     if (!draft) return { kind: "error", error: "만들고 있는 캐릭터가 없다." };
     if (args.back) {
-      draft = backNewGame(draft);
+      setDraft(backNewGame(draft));
       return { kind: "step" };
     }
     if (args.answer == null) return { kind: "step" };
     const r = answerNewGame(packs, draft, args.answer, rng);
     if (!r.ok) return { kind: "error", error: r.error };
     if (!r.done) {
-      draft = r.draft;
+      setDraft(r.draft);
       return { kind: "step" };
     }
     const choice = r.choice;
@@ -288,7 +331,7 @@ export function createMcpServer(
         return next.ok ? text(`캐릭터를 만들었다. 세계 소개는 하지 않고 바로 새 캐릭터의 첫 장면을 서술한다.\n\n${next.text}`) : text(next.error, true);
       });
       if (result.isError) return { kind: "error", error: result.content[0]?.text ?? "" };
-      draft = null;
+      resetCreation();
       return { kind: "done", result };
     }
     const result = openWorld(() => manager.create("mcp", r.roleId, choice, r.packId, undefined, r.options));
@@ -299,43 +342,28 @@ export function createMcpServer(
     };
   };
 
-  /**
-   * 상태 화면에서 만들기 (12-67): 초안은 같고, 플레이어가 화면에서 고른다. GM의 tool은 다 고를 때까지 기다렸다가 돌아간다.
-   * MCP 서버는 세션에 먼저 말을 걸 수 없어서, 기다리는 tool 호출이 그 자리를 대신한다 (진행 알림으로 연결을 잇는다)
-   */
-  let screen: { waiters: Set<(r: TextResult) => void>; finished: TextResult | null } | null = null;
-  const wakeWaiters = (r: TextResult): boolean => {
-    if (!screen || screen.waiters.size === 0) return false;
-    for (const w of screen.waiters) w(r);
-    screen.waiters.clear();
-    return true;
-  };
   /** 화면에서 끝났을 때 GM에게 줄 말 */
-  const fromScreen = (result: TextResult): TextResult => ({
-    ...result,
-    content: [
-      {
-        type: "text",
-        text: `플레이어가 상태 화면에서 골랐다.\n\n${result.content[0]?.text ?? ""}`,
-      },
-    ],
-  });
+  const fromScreen = (result: TextResult): TextResult => text(`플레이어가 상태 화면에서 골랐다.\n\n${result.content[0]?.text ?? ""}`, result.isError);
+
+  /** 상태 화면을 기다린다 (메인 메뉴 또는 만들기). 넘으면 "다 했어"를 기다리라고 돌려준다 */
   async function waitForScreen(extra: WaitExtra): Promise<TextResult> {
-    const url = options.statusUrl?.();
-    if (screen?.finished) {
-      const done = screen.finished;
-      screen = null;
+    if (finished) {
+      const done = finished;
+      finished = null;
       return done;
     }
-    if (!draft) return text("만들고 있는 캐릭터가 없다. 새 게임은 start_session(new_world: true, in_browser: true)로 시작한다.", true);
+    const url = options.statusUrl?.();
     if (!url) {
-      screen = null;
-      return text(`상태 화면이 없어 채팅으로 만든다.\n\n${describeNewGameStep(packs, draft)}`);
+      driver = "chat";
+      if (draft) return text(`상태 화면이 없어 채팅으로 만든다.\n\n${describeNewGameStep(packs, draft)}`);
+      return text(`상태 화면이 없어 채팅으로 고른다.\n\n${slotMenu()}`);
     }
-    screen ??= { waiters: new Set(), finished: null };
-    // 화면에서 만들면 얼굴도 고른다
-    if (!draft.character.withPortrait && draft.character.answers.length === 0) draft = { ...draft, character: { ...draft.character, withPortrait: true } };
-    const current = screen;
+    if (draft) {
+      // 화면에서 만든다 (끝까지). 화면에서 시작하면 얼굴도 고른다
+      driver = "screen";
+      const withFace = withPortraitStep(draft);
+      if (withFace !== draft) setDraft(withFace);
+    }
     const token = extra._meta?.progressToken;
     let tick = 0;
     const keepAlive =
@@ -349,50 +377,90 @@ export function createMcpServer(
     try {
       const result = await new Promise<TextResult | null>((resolve) => {
         const timer = setTimeout(() => {
-          current.waiters.delete(done);
+          waiters.delete(done);
           resolve(null);
-        }, options.creationWaitMs ?? CREATION_WAIT_MS);
+        }, options.creationWaitMs ?? SCREEN_WAIT_MS);
         function done(r: TextResult) {
           clearTimeout(timer);
           resolve(r);
         }
-        current.waiters.add(done);
+        waiters.add(done);
         extra.signal.addEventListener("abort", () => {
           clearTimeout(timer);
-          current.waiters.delete(done);
+          waiters.delete(done);
           resolve(null);
         });
       });
       if (result) return result;
       return text(
-        `아직 상태 화면에서 고르는 중이다 (${url}). 플레이어에게 "다 고르고 시작을 누른 뒤 여기에 '다 했어'라고 입력해 달라"고 짧게 안내하고, 그러면 create_character(wait: true)를 다시 부른다. 채팅으로 하고 싶다고 하면 create_character()로 지금 단계를 받아 이어 간다.`,
+        `아직 상태 화면에서 고르는 중이다 (${url}). 플레이어에게 "상태 화면에서 다 고른 뒤 여기에 '다 했어'라고 입력해 주세요"라고 짧게 안내하고 기다린다. 그러면 create_character(wait: true)를 다시 부른다. 고르는 것은 끝까지 상태 화면에서 한다 (채팅으로 넘기지 않는다).`,
       );
     } finally {
       if (keepAlive) clearInterval(keepAlive);
     }
   }
 
-  /** 상태 화면이 보낸 답 (POST /api/creation). 규칙은 채팅과 같다 */
-  const submitFromScreen = (input: ScreenCreationInput): { ok: true } | { ok: false; error: string } => {
-    if (!draft || !screen) return { ok: false, error: "Claude 세션에서 새 게임(또는 새 캐릭터)을 고른 뒤에 만들 수 있습니다." };
-    if (input.chat) {
-      // 채팅으로는 얼굴을 고를 수 없다 (그 단계는 건너뛴다)
-      draft = { ...draft, character: { ...draft.character, withPortrait: false } };
-      // 기다리던 GM이 채팅으로 이어 간다
-      wakeWaiters(text(`플레이어가 상태 화면 대신 채팅으로 이어 하겠다고 했다. 지금 단계부터 묻는다.\n\n${describeNewGameStep(packs, draft)}`));
-      screen = null;
+  /** 상태 화면이 보낸 만들기 답 (POST /api/creation). 규칙은 채팅과 같다. 기다리는 GM이 없어도 진행한다 (12-214) */
+  const submitFromScreen = (input: ScreenCreationInput): Done => {
+    if (!draft) return { ok: false, error: "만들고 있는 캐릭터가 없습니다." };
+    // 채팅에서 만드는 중이면 화면은 보여 주기만 한다 (12-214)
+    if (driver === "chat") return { ok: false, error: "채팅에서 만드는 중입니다. 채팅에서 이어 가 주세요." };
+    if (input.version !== undefined && input.version !== draftVersion) return { ok: false, error: "그사이 단계가 바뀌었습니다. 지금 단계를 확인해 주세요." };
+    if (input.menu) {
+      if (!fromMenu || draft.mode !== "new_world" || newGameStep(draft) !== "world") return { ok: false, error: "지금은 메인 메뉴로 돌아갈 수 없습니다." };
+      resetCreation();
       return { ok: true };
     }
     const r = advanceCreation({ answer: input.answer ?? null, back: input.back });
     if (r.kind === "error") return { ok: false, error: r.error };
-    if (r.kind === "done") {
-      const result = fromScreen(r.result);
-      if (!wakeWaiters(result) && screen) screen.finished = result;
-      else screen = null;
-      return { ok: true };
-    }
+    if (r.kind === "done") deliver(fromScreen(r.result));
     return { ok: true };
   };
+
+  /** 상태 화면 메인 메뉴 (12-214): 새로운 게임, 이어서 하기(열기·삭제) */
+  const menuAction = (input: MenuInput): Done => {
+    if (world) return { ok: false, error: "게임이 열려 있습니다." };
+    if (input.action === "delete") {
+      if (!input.id) return { ok: false, error: "id가 필요합니다." };
+      try {
+        manager.deleteWorld(input.id);
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+      console.error(`[status] 세이브 삭제: ${input.id}`);
+      return { ok: true };
+    }
+    if (draft) return { ok: false, error: "만들고 있는 캐릭터가 있습니다." };
+    // 게임을 열거나 새로 시작하는 것은 GM이 기다리고 있을 때만 (이어 갈 GM이 없으면 채팅이 따라오지 못한다)
+    if (!waiters.size) return { ok: false, error: "Claude 채팅에 /play를 입력한 뒤에 고를 수 있습니다." };
+    if (input.action === "new") {
+      if (!anyCreationRules()) return { ok: false, error: "이 월드는 화면에서 캐릭터를 만들 수 없습니다." };
+      setDraft(withPortraitStep(newGameDraft(manager.unlocks())));
+      driver = "screen";
+      fromMenu = true;
+      return { ok: true };
+    }
+    if (!input.id) return { ok: false, error: "id가 필요합니다." };
+    const id = input.id;
+    const result = openWorld(() => manager.open(id, "mcp"));
+    if (result.isError) return { ok: false, error: result.content[0]?.text ?? "열지 못했습니다." };
+    deliver(text(`플레이어가 상태 화면의 이어서 하기에서 저장된 게임을 열었다. 지난 이야기와 현재 장면을 읽고 바로 이어서 서술한다.\n\n${result.content.map((c) => c.text).join("\n")}`));
+    return { ok: true };
+  };
+
+  /** 시트의 게임 종료 (12-214): 세계를 닫는다 (end_session과 같다) */
+  const exitFromScreen = (): Done => {
+    if (!world) return { ok: false, error: "열린 게임이 없습니다." };
+    const id = world.id;
+    world.close();
+    world = null;
+    frozen = null;
+    resetCreation();
+    console.error(`[status] 게임 종료: ${id}`);
+    // GM에게는 따로 알리지 않는다: 다음 tool 호출이 "열린 세계가 없다"를 받는다
+    return { ok: true };
+  };
+
   server.registerTool(
     "create_character",
     {
@@ -400,27 +468,34 @@ export function createMcpServer(
         "새 게임(월드 → 시나리오 → 캐릭터 → 수위 → 서술 방식)이나 새 캐릭터 만들기를 한 단계 진행한다 (start_session(new_world) 또는 choose_next_character(new)로 시작한 뒤). " +
         "플레이어가 이번 단계에 답한 것을 answer로 넘긴다 (보기가 있으면 그 값, 트레잇은 이름이나 id 목록, 없으면 \"없음\"). " +
         "back: true면 한 단계 뒤로, 아무것도 없으면 지금 단계를 다시 돌려준다. 캐릭터 확인에서 \"start\"를 넘기고, 새 게임이면 수위·서술 방식까지 고르면 세계(또는 새 캐릭터)가 만들어진다. 대신 답하지 않는다. " +
-        "wait: true는 상태 화면에서 만드는 중일 때: 플레이어가 화면에서 다 고를 때까지 기다린다.",
+        "상태 화면에서 만드는 중이면 답을 받지 않는다 (끝까지 화면에서 한다): wait: true로 기다린다. " +
+        "wait: true는 상태 화면을 기다릴 때: 플레이어가 화면에서 고를 때까지 기다린다 (메인 메뉴든 만들기든).",
       inputSchema: z.strictObject({
         answer: z.union([z.string().max(1500), z.array(z.string().max(40)).max(10)]).nullable().optional(),
         back: z.boolean().optional(),
-        wait: z.boolean().optional().describe("상태 화면에서 만드는 중이면 true: 다 고를 때까지 기다린다"),
+        wait: z.boolean().optional().describe("상태 화면을 기다릴 때 true: 플레이어가 화면에서 고를 때까지 기다린다"),
       }),
     },
     async (args, extra) => {
-      if (args.wait) return waitForScreen(extra as WaitExtra);
+      if (args.wait) {
+        if (world && !draft && !finished) return text("상태 화면에서 고를 것이 없다 (게임이 열려 있다). get_scene으로 현재 장면을 보고 이어 간다.", true);
+        return waitForScreen(extra as WaitExtra);
+      }
       if (!draft) {
-        if (screen?.finished) return waitForScreen(extra as WaitExtra);
         return text("만들고 있는 캐릭터가 없다. 새 게임은 start_session(new_world: true), 사망 뒤 새 캐릭터는 choose_next_character(new:<세력>:<계급>)로 시작한다.", true);
+      }
+      if (driver === "screen") {
+        // 한 번 화면에서 시작한 만들기는 끝까지 화면에서 한다 (12-214)
+        return text(
+          `이 캐릭터는 상태 화면에서 만드는 중이다 (${options.statusUrl?.() ?? "상태 화면"}). 채팅으로 넘기지 않는다: 플레이어에게 화면에서 이어 가 달라고 짧게 알리고 create_character(wait: true)로 기다린다.`,
+          true,
+        );
       }
       const r = advanceCreation(args);
       if (r.kind === "error") {
         return text(`${r.error} 플레이어에게 알리고 이 단계를 다시 묻는다.\n\n${describeNewGameStep(packs, draft)}`, true);
       }
-      if (r.kind === "done") {
-        screen = null;
-        return r.result;
-      }
+      if (r.kind === "done") return r.result;
       return creationStep(draft);
     },
   );
@@ -449,8 +524,7 @@ export function createMcpServer(
       const id = world.id;
       world.close();
       world = null;
-      draft = null;
-      screen = null;
+      resetCreation();
       return text(`세계 ${id}를 닫았다 (${name}의 이야기는 저장돼 있다). 플레이어에게 짧게 마무리 인사를 하고, 다시 하려면 /play 로 이어 할 수 있다고 알려 준다.\n\n${slotMenu()}`);
     },
   );
@@ -649,10 +723,11 @@ export function createMcpServer(
         if (world.storyEnded()) return text(world.storyEndedText(), true);
         if (!world.successionOptions().some((o) => o.id === args.character_id)) return text(`고를 수 없는 캐릭터: ${args.character_id}`, true);
         const seat = heirSeat(world.content, newAs.faction, newAs.rank, { age: null });
-        draft = heirDraft(world.content.scenario.id, args.character_id, seat.role, seat.custom, world.content.scenario.creation?.rank_min_age[newAs.rank]);
-        screen = null;
+        resetCreation();
+        const heir = heirDraft(world.content.scenario.id, args.character_id, seat.role, seat.custom, world.content.scenario.creation?.rank_min_age[newAs.rank]);
+        setDraft(heir);
         if (args.in_browser) return waitForScreen(extra as WaitExtra);
-        return creationStep(draft);
+        return creationStep(heir);
       }
       return withWorld((w) => {
         const picked = args.character ? { ...args.character, portrait: args.character.portrait ?? null } : undefined;
@@ -704,13 +779,26 @@ export function createMcpServer(
     get creating() {
       return draft !== null;
     },
-    /** 상태 화면에서 만드는 중이면 그 단계 (화면이 그린다), 아니면 null */
+    /**
+     * 만드는 중이면 그 단계 (화면이 그린다), 아니면 null. 채팅으로 만들어도 화면이 따라 그린다 (12-214).
+     * driver: 누가 진행하는지, version: 초안의 판 (화면이 답과 함께 돌려보낸다)
+     */
     get creation() {
-      if (!draft || !screen) return null;
-      return { view: newGameView(packs, draft) };
+      if (!draft) return null;
+      return { view: newGameView(packs, draft), driver, fromMenu, version: draftVersion };
+    },
+    /** 상태 화면을 기다리는 GM이 있는지 (메인 메뉴·안내 띠) */
+    get gm() {
+      return { waiting: waiters.size > 0 };
     },
     /** 상태 화면이 보낸 답 */
     submitCreation: (input: ScreenCreationInput) => submitFromScreen(input),
+    /** 메인 메뉴에서 고른 것 */
+    menuAction: (input: MenuInput) => menuAction(input),
+    /** 메인 메뉴의 이어서 하기 목록 */
+    slots: () => manager.listSlots(),
+    /** 시트의 게임 종료 */
+    exitGame: () => exitFromScreen(),
     /** 아직 닫지 않은 시나리오 해금 알림 (상태 화면의 토스트) */
     unlockNotices: () => manager.unlockNotices(),
     /** 해금 알림을 닫는다 (토스트의 ×) */

@@ -3724,3 +3724,241 @@ button.persona-btn:not(:disabled):hover {
 .newgame button.persona-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.06);
 }
+
+/* ── 메인 메뉴 (12-214): 새로운 게임 / 이어서 하기 ── */
+.mainmenu {
+  padding-top: 8px;
+}
+
+.mainmenu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 24px auto 0;
+  width: 100%;
+  max-width: 320px;
+}
+
+.newgame .mainmenu-button {
+  padding: 14px 16px;
+  font-size: 16px;
+  white-space: normal;
+}
+
+.mainmenu-hint {
+  margin: 16px auto 0;
+  max-width: 320px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* 만들기 단계를 감싸는 fieldset: 모양 없이 (보기 전용일 때 안의 단추를 막는 데만 쓴다, 12-214) */
+.newgame-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* 채팅에서 만드는 중: 단추는 흐리지 않고 누를 수만 없게 (진행을 읽기 좋게) */
+.newgame.read-only button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.continue-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.continue-top .newgame-title {
+  margin: 0;
+}
+
+.newgame .newgame-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.save-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.save-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.save-row.locked {
+  opacity: 0.6;
+}
+
+.save-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.save-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.save-name strong {
+  font-size: 15px;
+  color: var(--heading);
+}
+
+.save-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.save-line {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.save-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.newgame .save-actions button {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.newgame .save-actions .save-delete {
+  display: inline-flex;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.newgame .save-actions .save-delete:hover:not(:disabled) {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+/* 확인 창 (세이브 삭제, 게임 종료) */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.confirm-box {
+  width: 100%;
+  max-width: 340px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  white-space: normal;
+}
+
+.confirm-box h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: var(--heading);
+}
+
+.confirm-box p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.confirm-actions button {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.confirm-actions button:hover:not(:disabled) {
+  border-color: var(--border-hover);
+}
+
+.confirm-actions button.danger {
+  color: #fff;
+  background: var(--error);
+  border-color: var(--error);
+  font-weight: 700;
+}
+
+.confirm-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* 머리 아래 안내 띠 (12-214) */
+.gm-banner {
+  /* 시트·만들기와 같은 가운데 칸 (--gutter) */
+  margin: 8px var(--gutter, 8px) 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(46, 116, 214, 0.55);
+  border-radius: 8px;
+  background: rgba(46, 116, 214, 0.1);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* 설정 창 아래의 게임 종료 (12-214) */
+.settings-exit {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-exit-button {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 12px;
+  color: var(--error);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.settings-exit-button:hover {
+  border-color: var(--error);
+}

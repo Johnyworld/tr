@@ -11,6 +11,8 @@ import type { WorldInfo } from "./manager.ts";
  */
 export type SaveSlot = {
   id: string;
+  /** 월드 팩 id (상태 화면이 초상화 그림을 찾는다) */
+  packId: string;
   /** 월드 이름 (월드 팩의 world.title) */
   worldTitle: string;
   /** 주인공. 읽을 수 없는 세이브면 null */
@@ -78,6 +80,7 @@ export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): Sav
     : null;
   return {
     id: info.id,
+    packId: content.scenario.id,
     worldTitle: content.scenario.world?.title ?? s.name,
     hero,
     timeLabel: typeof state.time === "number" ? formatTime(state.time) : null,

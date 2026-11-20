@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CharacterSheet } from "./CharacterSheet.tsx";
 import { SettingsButton } from "./Settings.tsx";
 import { Icon } from "./Icon.tsx";
-import { canGoBack, CreatedToast, NewGame, newGameTitle, postCreation } from "./NewGame.tsx";
-import type { CreationStatus, PlayerView } from "./types.ts";
+import { canGoBack, canGoMenu, CreatedToast, NewGame, newGameTitle, postCreation } from "./NewGame.tsx";
+import { MainMenu } from "./MainMenu.tsx";
+import type { CreationStatus, GmLink, PlayerView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
 /** 아직 닫지 않은 시나리오 해금 알림 (기획서 12.4.1) */
@@ -12,11 +13,11 @@ type UnlockNotice = { pack: string; roleId: string; title: string; particle?: st
 type StatusView = (
   | { open: false; scenarioName: string; creating?: boolean; creation?: CreationStatus | null }
   | { open: true; scenarioName: string; worldId: string; player: PlayerView }
-) & { unlockNotices?: UnlockNotice[] };
+) & { unlockNotices?: UnlockNotice[]; gm?: GmLink };
 
 /**
- * MCP 모드의 상태 화면: Claude 앱 옆(브라우저 패널)에 띄워 두는 캐릭터 시트. 바꿀 수 있는 것은 설정(톱니바퀴)과,
- * Claude 세션이 화면 고르기를 열었을 때의 새 게임 고르기(12-67)뿐이다.
+ * MCP 모드의 상태 화면: Claude 앱 옆(브라우저 패널)에 띄워 두는 화면. 세 화면으로 나뉜다 (12-214):
+ * 메인 메뉴(열린 게임도 만드는 캐릭터도 없을 때) / 캐릭터 만들기(12-67, 채팅으로 만들어도 따라 그린다) / 캐릭터 시트.
  * 이야기(서술)는 Claude 세션의 채팅에 있다.
  * SSE로 바뀔 때마다 받고, SSE가 없는 서버면 1.5초 폴링으로 읽는다
  */
@@ -95,12 +96,22 @@ export function StatusApp() {
     };
   }, []);
 
-  // 상태 화면에서 새 게임·새 캐릭터를 고르는 중
+  // 메인 메뉴의 쪽 (메뉴 / 이어서 하기). 메뉴를 떠나면 처음으로
+  const [menuPage, setMenuPage] = useState<"home" | "continue">("home");
+  // 새 게임·새 캐릭터를 만드는 중 (화면에서든 채팅에서든)
   const creating = !!status && !status.open && !!status.creation;
+  const inMenu = !!status && !status.open && !status.creation;
+  useEffect(() => {
+    if (!inMenu) setMenuPage("home");
+  }, [inMenu]);
+  const gm = status?.gm;
+  const driver = creating ? (status.creation!.driver ?? "screen") : null;
   return (
     <div className="status-page">
       <header className="header status-header">
-        {creating && canGoBack(status.creation!.view) && <BackButton onStatus={applyStatus} />}
+        {creating && driver === "screen" && (canGoBack(status.creation!.view) || canGoMenu(status.creation!)) && (
+          <BackButton toMenu={!canGoBack(status.creation!.view)} version={status.creation!.version} onStatus={applyStatus} />
+        )}
         <div className="hdr-left">
           {!creating && status?.open && status.player.zone ? (
             // 게임 중에는 주인공이 있는 곳. 그 구역의 주인과 월드 이름은 툴팁에 (제목은 긴 이름을 줄여 자르므로 툴팁은 바깥에서 감싼다)
@@ -114,7 +125,7 @@ export function StatusApp() {
               </span>
             </div>
           ) : (
-            <h1 className="hdr-title">{creating ? newGameTitle(status.creation!.view) : (status?.scenarioName ?? "TRPG")}</h1>
+            <h1 className="hdr-title">{creating ? newGameTitle(status.creation!.view) : inMenu ? "TRPG" : (status?.scenarioName ?? "TRPG")}</h1>
           )}
           {status?.open && <HeaderDate player={status.player} />}
         </div>
@@ -129,25 +140,22 @@ export function StatusApp() {
             <span className="live-dot" aria-hidden="true" />
             {connected ? "연결됨" : "연결 끊김"}
           </span>
-          {/* 고르는 동안은 설정 대신 "채팅으로" (이 단계부터 채팅에서 GM과 이어 고른다) */}
-          {creating ? <ChatHandoffButton onStatus={applyStatus} /> : <SettingsButton enabled={connected && status?.open === true} />}
+          {/* 설정은 게임 중에만 (만들기는 한 번 고른 곳에서 끝까지 한다: 화면 ↔ 채팅으로 넘기는 단추는 없다, 12-214) */}
+          {status?.open ? <SettingsButton enabled={connected} onStatus={applyStatus} /> : null}
         </div>
       </header>
       {!creating && status?.unlockNotices?.length ? <UnlockToasts notices={status.unlockNotices} onStatus={applyStatus} /> : null}
+      {status && <GmBanner status={status} />}
       {!status ? (
         <p className="muted status-empty">불러오는 중…</p>
       ) : !status.open && status.creation ? (
         <div key="newgame" className="status-sheet">
-          <NewGame creation={status.creation} onStatus={applyStatus} />
-        </div>
-      ) : !status.open && status.creating ? (
-        // Claude 세션에서 대화로 캐릭터를 만드는 중. 다 만들면 첫 장면과 함께 시트가 열린다
-        <div key="creating" className="status-created">
-          <h2>캐릭터를 만드는 중</h2>
-          <p>Claude 세션에서 한 단계씩 정하고 있습니다. 다 만들면 이곳에 캐릭터 시트가 열립니다.</p>
+          <NewGame creation={status.creation} readOnly={driver === "chat"} onStatus={applyStatus} />
         </div>
       ) : !status.open ? (
-        <p className="muted status-empty">열린 게임이 없습니다. Claude 세션에서 /play로 게임을 열면 여기에 캐릭터 시트가 나옵니다.</p>
+        <div key="menu" className="status-sheet">
+          <MainMenu gm={gm} page={menuPage} onPage={setMenuPage} onStatus={applyStatus} />
+        </div>
       ) : (
         <div key="sheet" className="status-sheet">
           {created && <CreatedToast onClose={closeToast} />}
@@ -268,41 +276,37 @@ function UnlockToasts({ notices, onStatus }: { notices: UnlockNotice[]; onStatus
   );
 }
 
-/** 새 게임 고르기 중 머리 오른쪽: 이 단계부터 채팅에서 GM과 이어 고른다 */
-function ChatHandoffButton({ onStatus }: { onStatus: (status: unknown) => void }) {
-  const [busy, setBusy] = useState(false);
+/**
+ * 만드는 중의 안내 띠 (12-214): 채팅으로 만드는 중이거나, 화면에서 만드는데 GM의 기다림이 끝났을 때.
+ * MCP 서버는 채팅을 깨울 수 없어서 기다리는 GM이 없으면 플레이어가 채팅에 한 번 써야 이어진다
+ */
+function GmBanner({ status }: { status: StatusView }) {
+  const gm = status.gm;
+  if (!gm || status.open || !status.creation) return null;
+  let message: string | null = null;
+  if (status.creation.driver === "chat") message = "채팅에서 만드는 중입니다. 이 화면은 진행을 보여 주기만 합니다.";
+  else if (!gm.waiting) message = "다 만든 뒤 채팅에 '다 했어'라고 입력하면 GM이 시작합니다.";
+  if (!message) return null;
   return (
-    <button
-      type="button"
-      className="hdr-chat"
-      disabled={busy}
-      title="이 단계부터 채팅에서 GM과 이어서 고릅니다"
-      onClick={() => {
-        setBusy(true);
-        void postCreation({ chat: true }).then((out) => {
-          setBusy(false);
-          if (out.status) onStatus(out.status);
-        });
-      }}
-    >
-      채팅으로
-    </button>
+    <div className="gm-banner" role="status">
+      {message}
+    </div>
   );
 }
 
-/** 새 게임 고르기 중 머리 왼쪽: 한 단계 뒤로 */
-function BackButton({ onStatus }: { onStatus: (status: unknown) => void }) {
+/** 새 게임 고르기 중 머리 왼쪽: 한 단계 뒤로. 메인 메뉴에서 연 만들기의 첫 단계면 메인 메뉴로 */
+function BackButton({ toMenu, version, onStatus }: { toMenu: boolean; version?: number; onStatus: (status: unknown) => void }) {
   const [busy, setBusy] = useState(false);
   return (
     <button
       type="button"
       className="hdr-back"
-      aria-label="뒤로"
-      title="한 단계 뒤로"
+      aria-label={toMenu ? "메인 메뉴로" : "뒤로"}
+      title={toMenu ? "메인 메뉴로" : "한 단계 뒤로"}
       disabled={busy}
       onClick={() => {
         setBusy(true);
-        void postCreation({ back: true }).then((out) => {
+        void postCreation(toMenu ? { menu: true, version } : { back: true, version }).then((out) => {
           setBusy(false);
           if (out.status) onStatus(out.status);
         });

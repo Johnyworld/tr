@@ -12,7 +12,8 @@ import type { CreationStatus, NewGameView } from "./types.ts";
  * 화면이 보낸 답 (POST /api/creation). 응답에 바뀐 화면(status)이 실려 온다.
  * 부르는 쪽은 busy 풀기와 status 적용을 한 번에 한다: SSE를 기다리면 앞 단계가, 따로 하면 흐린 새 단계가 잠깐 보인다
  */
-export async function postCreation(body: { answer?: string | string[]; back?: boolean; chat?: boolean }): Promise<{ ok: boolean; error?: string; status?: unknown }> {
+export type CreationBody = { answer?: string | string[]; back?: boolean; menu?: boolean; version?: number };
+export async function postCreation(body: CreationBody): Promise<{ ok: boolean; error?: string; status?: unknown }> {
   try {
     const res = await fetch("/api/creation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const out = (await res.json()) as { ok?: boolean; error?: string; status?: unknown };
@@ -22,8 +23,9 @@ export async function postCreation(body: { answer?: string | string[]; back?: bo
   }
 }
 
-export function NewGame({ creation, onStatus }: { creation: CreationStatus; onStatus: (status: unknown) => void }) {
-  const { view } = creation;
+/** readOnly: 채팅에서 만드는 중 (12-214). 화면은 진행을 보여 주기만 하고 누를 수 없다 */
+export function NewGame({ creation, readOnly = false, onStatus }: { creation: CreationStatus; readOnly?: boolean; onStatus: (status: unknown) => void }) {
+  const { view, version } = creation;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 단계가 바뀌면 오류를 지운다
@@ -36,10 +38,11 @@ export function NewGame({ creation, onStatus }: { creation: CreationStatus; onSt
     if (scroller) scroller.scrollTop = 0;
   }, [stepKey]);
 
-  const send = async (body: { answer?: string | string[]; back?: boolean; chat?: boolean }) => {
+  const send = async (body: CreationBody) => {
     setBusy(true);
     setError(null);
-    const out = await postCreation(body);
+    // 보고 있던 판을 함께 보낸다: 그 사이 채팅에서 먼저 진행했으면 서버가 거절한다 (12-214)
+    const out = await postCreation({ ...body, version });
     setBusy(false);
     if (out.status) onStatus(out.status);
     if (!out.ok) setError(out.error ?? "보내지 못했습니다.");
@@ -47,8 +50,11 @@ export function NewGame({ creation, onStatus }: { creation: CreationStatus; onSt
   const answer = (a: string | string[]) => void send({ answer: a });
 
   return (
-    <div className={busy ? "newgame busy" : "newgame"} ref={rootRef}>
-      <Step view={view} busy={busy} answer={answer} />
+    <div className={busy ? "newgame busy" : readOnly ? "newgame read-only" : "newgame"} ref={rootRef}>
+      {/* 보기 전용이면 fieldset으로 안의 단추·입력을 모두 막는다 */}
+      <fieldset className="newgame-fields" disabled={readOnly}>
+        <Step view={view} busy={busy} answer={answer} />
+      </fieldset>
       {error && (
         <p className="newgame-error" role="alert">
           {error}
@@ -72,6 +78,11 @@ export function newGameTitle(view: NewGameView): string {
 /** 한 단계 뒤로 갈 수 있는지 (처음 단계에서는 못 간다. 새 캐릭터는 캐릭터 만들기의 첫 단계가 처음이다: 과거 배경이 있으면 그것, 없으면 이름) */
 export function canGoBack(view: NewGameView): boolean {
   return !(view.step === "world" || (view.mode === "heir" && (view.character?.index.at ?? 1) === 1));
+}
+
+/** 메인 메뉴의 새로운 게임으로 연 만들기는 첫 단계(월드)에서 메인 메뉴로 돌아간다 (12-214) */
+export function canGoMenu(creation: CreationStatus): boolean {
+  return creation.fromMenu === true && creation.driver === "screen" && creation.view.mode === "new_world" && creation.view.step === "world";
 }
 
 type StepProps = { view: NewGameView; busy: boolean; answer: (a: string | string[]) => void };

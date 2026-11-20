@@ -11,12 +11,15 @@ import type { GameWorld } from "@trpg/core";
  * - GET·POST /api/options: 세계 설정(수위, 대화 형식, 12-63). 바꾸는 규칙은 core(GameWorld.setOptions)에 있다
  * - POST /api/stash: 소지품을 창고로 넣고 꺼낸다 (12-149). 규칙은 core(GameWorld.moveStash)
  * - POST /api/memo: 메모 탭에서 적은 메모 (12-75). 메모장과 펜·연필이 있을 때만. 규칙은 core(GameWorld.setMemo)
- * - POST /api/creation: 상태 화면에서 새 게임·새 캐릭터 고르기 (12-67). Claude 세션이 화면 만들기를 열었을 때만. 규칙은 core(answerNewGame)
+ * - POST /api/creation: 상태 화면에서 새 게임·새 캐릭터 고르기 (12-67). 화면에서 만드는 중일 때만 (채팅으로 만들면 화면은 보여 주기만 한다, 12-214). 규칙은 core(answerNewGame)
+ * - GET /api/worlds: 메인 메뉴의 이어서 하기 목록 (12-214, 슬롯 요약)
+ * - POST /api/menu: 메인 메뉴 (12-214): {action: new | open | delete, id?}
+ * - POST /api/exit: 시트의 게임 종료 (12-214). GM이 턴을 진행하는 중(턴 문이 멈춰 있다)이면 거절
  * - POST /api/skill: 스킬 올리기 (12-139). 규칙은 core(GameWorld.learnSkill, GM의 learn_skill tool과 같다)
  * - POST /api/equip: 장비 착용·해제 (12-139). 규칙은 core(GameWorld.equip, GM의 equip tool과 같다)
  * - POST /api/portrait: 얼굴 없는 주인공이 얼굴을 한 번 고른다 (12-139). 규칙은 core(GameWorld.choosePortrait)
  * - GET /portraits/<팩>/<id>.png: 주인공 초상화 그림 (12-139, 월드 팩의 art/portraits/)
- * 서술은 채팅(Claude 세션)에 있다. 이 화면은 시트와 새 게임 고르기를 보여 준다
+ * 서술은 채팅(Claude 세션)에 있다. 이 화면은 메인 메뉴·캐릭터 만들기·시트 셋으로 나뉜다 (12-214)
  * - 나머지: React로 된 status.html (packages/ui). Vite 미들웨어로 바로 띄운다
  * stdout은 MCP 프로토콜 전용이라 로그는 모두 stderr로 보낸다 (원칙 12). 게임 상태는 설정과 새 게임 고르기 말고는 바꾸지 않는다
  */
@@ -33,13 +36,24 @@ export type StatusSource = {
   /** 상태 화면에서 만드는 중이면 그 단계 (core newGameView). 채팅으로 만들면 null */
   readonly creation?: unknown;
   /** 화면이 보낸 만들기 답 */
-  submitCreation?(input: { answer?: string | string[]; back?: boolean; chat?: boolean }): { ok: true } | { ok: false; error: string };
+  submitCreation?(input: CreationInput): Done;
+  /** 상태 화면을 기다리는 GM이 있는지 */
+  readonly gm?: { waiting: boolean };
+  /** 메인 메뉴에서 고른 것 */
+  menuAction?(input: { action: "new" | "open" | "delete"; id?: string }): Done;
+  /** 이어서 하기 목록 */
+  slots?(): unknown[];
+  /** 시트의 게임 종료 */
+  exitGame?(): Done;
   /** 주인공이 죽은 직후 GM이 서술하는 동안 보여 줄 죽기 직전 모습 */
   readonly frozenStatus?: unknown;
   /** 아직 닫지 않은 시나리오 해금 알림 (기획서 12.4.1). ×를 누를 때까지 화면 위에 남는다 */
   unlockNotices?(): { pack: string; roleId: string; title: string; particle?: string }[];
   dismissUnlockNotice?(pack: string, roleId: string): boolean;
 };
+
+type Done = { ok: true } | { ok: false; error: string };
+type CreationInput = { answer?: string | string[]; back?: boolean; menu?: boolean; version?: number };
 
 export function statusPayload(source: StatusSource, gate?: TurnGate): unknown {
   // 해금 알림은 어느 화면에서든 함께 (토스트). 시트가 멈춰 있으면(GM이 서술하는 중) 멈춘 때의 알림 중 아직 닫지 않은 것만:
@@ -51,12 +65,12 @@ export function statusPayload(source: StatusSource, gate?: TurnGate): unknown {
     const { unlockNotices: _, ...rest } = held;
     return shown.length ? { ...rest, unlockNotices: shown } : rest;
   }
-  const body = baseStatus(source) as Record<string, unknown>;
+  const body = { ...(baseStatus(source) as Record<string, unknown>), ...(source.gm ? { gm: source.gm } : {}) };
   return pending.length ? { ...body, unlockNotices: pending } : body;
 }
 
 function baseStatus(source: StatusSource): unknown {
-  // 캐릭터를 만드는 중이면 안내 (만들어지면 첫 장면과 함께 시트가 열린다)
+  // 캐릭터를 만드는 중이면 그 단계 (만들어지면 첫 장면과 함께 시트가 열린다). 열린 세계가 없으면 메인 메뉴
   if (source.creating) return { open: false, creating: true, scenarioName: source.scenarioName, creation: source.creation ?? null };
   const w = source.world;
   if (!w) return { open: false, scenarioName: source.scenarioName };
@@ -269,10 +283,61 @@ export async function handleUnlockNotice(source: StatusSource, req: IncomingMess
   return json(res, 200, { ok: true, status: statusPayload(source, gate) });
 }
 
+/** JSON 본문 읽기 (POST, JSON만. 다른 사이트의 폼이 몰래 보내지 못하게) */
+async function readJson(req: IncomingMessage, res: ServerResponse, limit: number): Promise<{ ok: true; body: unknown } | { ok: false }> {
+  if (req.method !== "POST") {
+    json(res, 405, { error: "POST" });
+    return { ok: false };
+  }
+  if (!(req.headers["content-type"] ?? "").startsWith("application/json")) {
+    json(res, 415, { error: "JSON으로 보낸다" });
+    return { ok: false };
+  }
+  let body = "";
+  for await (const chunk of req) {
+    body += String(chunk);
+    if (body.length > limit) {
+      json(res, 413, { error: "너무 크다" });
+      return { ok: false };
+    }
+  }
+  try {
+    return { ok: true, body: body ? JSON.parse(body) : {} };
+  } catch {
+    json(res, 400, { error: "JSON이 아니다" });
+    return { ok: false };
+  }
+}
+
+/** 메인 메뉴 (12-214): {action: new | open | delete, id?} */
+export async function handleMenu(source: StatusSource, req: IncomingMessage, res: ServerResponse, gate?: TurnGate): Promise<void> {
+  const read = await readJson(req, res, 1024);
+  if (!read.ok) return;
+  if (!source.menuAction) return json(res, 404, { error: "메인 메뉴가 없다" });
+  const input = read.body as { action?: unknown; id?: unknown };
+  const actions = ["new", "open", "delete"] as const;
+  const action = actions.find((a) => a === input?.action);
+  if (!action || (input.id !== undefined && (typeof input.id !== "string" || input.id.length > 200))) return json(res, 400, { error: "action(new, open, delete), id" });
+  const result = source.menuAction({ action, ...(typeof input.id === "string" ? { id: input.id } : {}) });
+  if (!result.ok) return json(res, 400, { error: result.error });
+  return json(res, 200, { ok: true, status: statusPayload(source, gate) });
+}
+
+/** 시트의 게임 종료 (12-214). GM이 턴을 진행하는 중이면 거절 */
+export async function handleExit(source: StatusSource, req: IncomingMessage, res: ServerResponse, gate?: TurnGate): Promise<void> {
+  const read = await readJson(req, res, 256);
+  if (!read.ok) return;
+  if (!source.exitGame) return json(res, 404, { error: "게임 종료가 없다" });
+  if (gate?.held(source)) return json(res, 409, { error: "GM이 이야기를 쓰는 중입니다. 답이 끝난 뒤에 다시 눌러 주세요." });
+  const result = source.exitGame();
+  if (!result.ok) return json(res, 400, { error: result.error });
+  return json(res, 200, { ok: true, status: statusPayload(source, gate) });
+}
+
 export async function handleCreation(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== "POST") return json(res, 405, { error: "POST" });
   if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
-  if (!source.submitCreation || !source.creation) return json(res, 409, { error: "지금은 화면에서 고를 수 없습니다. Claude 세션에서 새 게임을 고르면 열립니다." });
+  if (!source.submitCreation || !source.creation) return json(res, 409, { error: "만들고 있는 캐릭터가 없습니다." });
   let body = "";
   for await (const chunk of req) {
     body += String(chunk);
@@ -284,15 +349,16 @@ export async function handleCreation(source: StatusSource, req: IncomingMessage,
   } catch {
     return json(res, 400, { error: "JSON이 아니다" });
   }
-  const ok = (x: unknown): x is { answer?: string | string[]; back?: boolean; chat?: boolean } => {
+  const ok = (x: unknown): x is CreationInput => {
     if (!x || typeof x !== "object" || Array.isArray(x)) return false;
     const o = x as Record<string, unknown>;
     const answerOk =
       o.answer === undefined || (typeof o.answer === "string" && o.answer.length <= 1500) || // 목록: 트레잇 이름들, 또는 [동기, 이야기] (12-77)
       (Array.isArray(o.answer) && o.answer.length <= 20 && o.answer.every((a) => typeof a === "string" && a.length <= 1500) && o.answer.join("").length <= 1600);
-    return answerOk && (o.back === undefined || typeof o.back === "boolean") && (o.chat === undefined || typeof o.chat === "boolean");
+    const flag = (v: unknown) => v === undefined || typeof v === "boolean";
+    return answerOk && flag(o.back) && flag(o.menu) && (o.version === undefined || Number.isInteger(o.version));
   };
-  if (!ok(input)) return json(res, 400, { error: "answer(글 또는 목록), back, chat 중 하나" });
+  if (!ok(input)) return json(res, 400, { error: "answer(글 또는 목록), back, menu 중 하나와 version" });
   const result = source.submitCreation(input);
   if (!result.ok) return json(res, 400, { error: result.error });
   // 바뀐 화면을 응답에 함께 싣는다: SSE를 기다리는 사이 앞 단계가 다시 보이며 깜빡이지 않게
@@ -387,6 +453,22 @@ export async function startStatusServer(
     }
     if (url === "/api/creation") {
       void handleCreation(source, req, res);
+      return;
+    }
+    if (url === "/api/menu") {
+      void handleMenu(source, req, res, gate);
+      return;
+    }
+    if (url === "/api/exit") {
+      void handleExit(source, req, res, gate);
+      return;
+    }
+    if (url === "/api/worlds" && req.method === "GET") {
+      try {
+        json(res, 200, { slots: source.slots?.() ?? [] });
+      } catch (err) {
+        json(res, 500, { error: String(err) });
+      }
       return;
     }
     if (url.startsWith("/api/status/stream")) {

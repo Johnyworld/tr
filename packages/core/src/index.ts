@@ -51,6 +51,7 @@ export {
   heirDraft,
   newGameDraft,
   newGameStep,
+  withPortraitStep,
   type NewGameDraft,
 } from "./game/newGame.ts";
 export { newGameView, type NewGameView, type CharacterStepView } from "./game/newGameView.ts";

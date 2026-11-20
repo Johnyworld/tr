@@ -591,16 +591,89 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(later.text).toContain("상태 화면에서 골랐다");
   });
 
-  it("화면에서 고르다가 채팅으로 넘길 수 있다", async () => {
-    const { app, call } = await connectWithScreen();
-    const waiting = call("start_session", { new_world: true, in_browser: true });
-    await settle();
+  it("화면에서 시작한 만들기는 끝까지 화면에서: GM이 wait 없이 답을 넘겨도 받지 않는다 (12-214)", async () => {
+    const { app, call } = await connectWithScreen(30);
+    await call("start_session", { new_world: true, in_browser: true });
     for (const a of ["post_apoc", "role_t_visitor"]) expect(app.submitCreation({ answer: a })).toEqual({ ok: true });
-    expect(app.creation).toMatchObject({ view: { step: "past" } });
-    expect(app.submitCreation({ chat: true })).toEqual({ ok: true });
-    const handed = await waiting;
-    expect(handed.text).toContain("채팅으로 이어 하겠다");
+    const r = await call("create_character", { answer: "police" });
+    expect(r.isError).toBe(true);
+    expect(r.text).toContain("상태 화면에서 만드는 중");
+    expect(app.creation).toMatchObject({ driver: "screen", view: { step: "past" } });
+  });
+
+  it("메인 메뉴: in_browser만 주면 화면에서 고를 때까지 기다리고, 새로운 게임은 만들기로 이어진다 (12-214)", async () => {
+    const { app, call } = await connectWithScreen();
+    const waiting = call("start_session", { in_browser: true });
+    await settle();
     expect(app.creation).toBeNull();
-    expect(app.creating).toBe(true);
+    expect(app.gm).toEqual({ waiting: true });
+    expect(app.menuAction({ action: "new" })).toEqual({ ok: true });
+    expect(app.creation).toMatchObject({ driver: "screen", fromMenu: true, view: { step: "world" } });
+    // 첫 단계에서 메인 메뉴로 돌아갈 수 있다
+    expect(app.submitCreation({ menu: true })).toEqual({ ok: true });
+    expect(app.creation).toBeNull();
+    expect(app.menuAction({ action: "new" })).toEqual({ ok: true });
+    for (const answer of ["post_apoc", "role_t_visitor", "police", "서진", "male", "none", "기본", "random", "past", "none", "기본", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    const done = await waiting;
+    expect(done.text).toContain("상태 화면에서 골랐다");
+    expect(app.world).not.toBeNull();
+  });
+
+  it("메인 메뉴: 이어서 하기에서 열면 기다리던 GM에게 가고, 삭제는 열려 있지 않은 세이브만 (12-214)", async () => {
+    const { app, call } = await connectWithScreen();
+    await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: null, portrait: null } });
+    const id = app.world!.id;
+    await call("end_session");
+    expect(app.slots().map((s) => s.id)).toContain(id);
+    const waiting = call("start_session", { in_browser: true });
+    await settle();
+    expect(app.menuAction({ action: "open", id })).toEqual({ ok: true });
+    const opened = await waiting;
+    expect(opened.text).toContain("이어서 하기에서 저장된 게임을 열었다");
+    expect(opened.text).toContain("# GM 지침");
+    // 게임 중에는 메뉴를 쓸 수 없다
+    expect(app.menuAction({ action: "delete", id })).toMatchObject({ ok: false });
+    expect(app.exitGame()).toEqual({ ok: true });
+    expect(app.world).toBeNull();
+    // GM에게는 따로 알리지 않는다: 다음 게임 tool이 "열린 세계가 없다"를 받는다
+    const next = await call("get_scene");
+    expect(next.isError).toBe(true);
+    expect(next.text).toContain("상태 화면에서 게임을 끝냈을 수 있다");
+    expect(app.menuAction({ action: "delete", id })).toEqual({ ok: true });
+    expect(app.slots().map((s) => s.id)).not.toContain(id);
+  });
+
+  it("기다리는 GM이 없으면 메인 메뉴에서 게임을 열거나 시작할 수 없고, 삭제만 된다 (12-214)", async () => {
+    const { app, call } = await connectWithScreen();
+    await call("start_session", { new_world: true, character: { name: "윤하", gender: "female", abilities: null, portrait: null } });
+    const id = app.world!.id;
+    await call("end_session");
+    expect(app.gm).toEqual({ waiting: false });
+    expect(app.menuAction({ action: "open", id })).toMatchObject({ ok: false, error: expect.stringContaining("/play") });
+    expect(app.menuAction({ action: "new" })).toMatchObject({ ok: false });
+    expect(app.world).toBeNull();
+    expect(app.menuAction({ action: "delete", id })).toEqual({ ok: true });
+  });
+
+  it("채팅에서 시작한 만들기는 끝까지 채팅에서: 화면은 따라 그리기만 하고 답을 받지 않는다 (12-214)", async () => {
+    const { app, call } = await connectWithScreen();
+    await call("start_session", { new_world: true });
+    for (const answer of ["post_apoc", "role_t_visitor", "police"]) await call("create_character", { answer });
+    expect(app.creation).toMatchObject({ driver: "chat", view: { step: "name" } });
+    expect(app.submitCreation({ answer: "서진", version: app.creation!.version })).toMatchObject({ ok: false });
+    expect(app.submitCreation({ back: true })).toMatchObject({ ok: false });
+    await call("create_character", { answer: "서진" });
+    await call("create_character", { answer: "male" });
+    // 채팅에서는 얼굴 단계가 없다
+    expect(app.creation!.view.step).not.toBe("portrait");
+  });
+
+  it("화면에서 만들 때 옛 판으로 보낸 답은 거절한다 (12-214)", async () => {
+    const { app, call } = await connectWithScreen(30);
+    await call("start_session", { new_world: true, in_browser: true });
+    const version = app.creation!.version;
+    expect(app.submitCreation({ answer: "post_apoc", version })).toEqual({ ok: true });
+    expect(app.submitCreation({ answer: "role_t_visitor", version })).toMatchObject({ ok: false });
+    expect(app.submitCreation({ answer: "role_t_visitor", version: app.creation!.version })).toEqual({ ok: true });
   });
 });

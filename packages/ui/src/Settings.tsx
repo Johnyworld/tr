@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ConfirmExit } from "./MainMenu.tsx";
 
 /** 세계 설정 (packages/core GameState.options, statusServer의 /api/options 와 맞춘다) */
 export type GameOptions = { mature: boolean; dialogue: "novel" | "script" };
@@ -32,9 +33,31 @@ const ROWS: [Row<"mature">, Row<"dialogue">] = [
 
 /**
  * 설정 버튼과 창 (12-63). 게임이 열려 있을 때만 바꿀 수 있다.
- * 바꾸면 다음 서술부터 GM이 따른다 (GM은 다음 장면 정보에서 바뀐 설정을 받는다)
+ * 바꾸면 다음 서술부터 GM이 따른다 (GM은 다음 장면 정보에서 바뀐 설정을 받는다).
+ * 창 아래의 "게임 종료"(12-214)는 확인 창을 거쳐 세계를 닫고 메인 메뉴로 돌아간다
  */
-export function SettingsButton({ enabled }: { enabled: boolean }) {
+export function SettingsButton({ enabled, onStatus }: { enabled: boolean; onStatus?: (status: unknown) => void }) {
+  const [exiting, setExiting] = useState(false);
+  const [exitBusy, setExitBusy] = useState(false);
+  const [exitError, setExitError] = useState<string | null>(null);
+  const exitGame = async () => {
+    setExitBusy(true);
+    setExitError(null);
+    try {
+      const res = await fetch("/api/exit", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+      const out = (await res.json()) as { ok?: boolean; error?: string; status?: unknown };
+      if (!res.ok || !out.ok) setExitError(out.error ?? "끝내지 못했습니다.");
+      else {
+        setExiting(false);
+        setOpen(false);
+        if (out.status) onStatus?.(out.status);
+      }
+    } catch {
+      setExitError("끝내지 못했습니다 (연결 끊김).");
+    } finally {
+      setExitBusy(false);
+    }
+  };
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<GameOptions | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +96,8 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
       .then((b) => setOptions(b.open ? (b.options ?? null) : null))
       .catch(() => setError("설정을 읽지 못했습니다."));
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    const onClick = (e: MouseEvent) => boxRef.current && !boxRef.current.contains(e.target as Node) && setOpen(false);
+    // 확인 창(게임 종료)은 설정 창 바깥에 그려지니 그 안을 누른 것은 닫지 않는다
+    const onClick = (e: MouseEvent) => boxRef.current && !boxRef.current.contains(e.target as Node) && !(e.target as Element).closest?.(".confirm-backdrop") && setOpen(false);
     window.addEventListener("keydown", onKey);
     window.addEventListener("mousedown", onClick);
     return () => {
@@ -146,8 +170,21 @@ export function SettingsButton({ enabled }: { enabled: boolean }) {
             ))}
           {error && <p className="settings-error">{error}</p>}
           <p className="settings-note">바꾸면 다음 서술부터 적용됩니다.</p>
+          <div className="settings-exit">
+            <button
+              type="button"
+              className="settings-exit-button"
+              onClick={() => {
+                setExitError(null);
+                setExiting(true);
+              }}
+            >
+              게임 종료
+            </button>
+          </div>
         </div>
       )}
+      {exiting && <ConfirmExit busy={exitBusy} error={exitError} onCancel={() => setExiting(false)} onConfirm={() => void exitGame()} />}
     </div>
   );
 }

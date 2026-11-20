@@ -132,7 +132,40 @@ export type NewGameView = {
   };
 };
 
-export type CreationStatus = { view: NewGameView };
+/**
+ * 만드는 중인 단계 (12-214). driver: 지금 누가 진행하는지 (화면 / 채팅), fromMenu: 메인 메뉴의 새로운 게임으로 열었다,
+ * version: 초안의 판 (답과 함께 돌려보내 어긋남을 막는다)
+ */
+export type CreationStatus = { view: NewGameView; driver?: "screen" | "chat"; fromMenu?: boolean; version?: number };
+
+/** 상태 화면을 기다리는 GM이 있는지 (12-214). 화면은 GM이 기다릴 때만 쓰는 리모컨이다 */
+export type GmLink = { waiting: boolean };
+
+/** 이어서 하기의 세이브 한 줄 (core world/slots.ts SaveSlot과 맞춘다) */
+export type SaveSlot = {
+  id: string;
+  packId?: string;
+  worldTitle: string;
+  hero: {
+    name: string;
+    age: number | null;
+    genderLabel: string | null;
+    portrait: string | null;
+    rankLabel: string;
+    factionName: string;
+    level: number;
+    conditions: string[];
+    zoneName: string | null;
+    daysServed: number;
+    generation: number;
+    dead: boolean;
+    ended: boolean;
+  } | null;
+  timeLabel: string | null;
+  updatedAt: string;
+  cheated: boolean;
+  lockedBy: "web" | "mcp" | null;
+};
 
 /** 한 인물에 대해 플레이어가 아는 것 (?인물 이름과 같다) */
 export type PersonProfile = {

@@ -230,3 +230,9 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
 }
 
 export { currentStep };
+
+/** 화면에서 시작한 만들기는 얼굴도 고른다 (아직 캐릭터 단계에 답한 것이 없을 때만 켤 수 있다) */
+export function withPortraitStep(draft: NewGameDraft): NewGameDraft {
+  if (draft.character.withPortrait || draft.character.answers.length > 0) return draft;
+  return { ...draft, character: { ...draft.character, withPortrait: true } };
+}

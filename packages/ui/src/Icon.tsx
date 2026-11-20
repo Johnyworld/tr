@@ -40,6 +40,8 @@ const PATHS: Record<string, string[]> = {
   // Lucide download·upload (ISC 라이선스, lucide.dev): 창고로 넣기·꺼내기 (12-149)
   "stash-in": ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "m7 10 5 5 5-5", "M12 15V3"],
   "stash-out": ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "m17 8-5-5-5 5", "M12 3v12"],
+  // Lucide trash-2 (ISC 라이선스, lucide.dev): 세이브 삭제 (12-214)
+  trash: ["M3 6h18", "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", "M10 11v6", "M14 11v6"],
   // Lucide lock (ISC 라이선스, lucide.dev)
   lock: ["M5 11h14v10H5z", "M7 11V7a5 5 0 0 1 10 0v4"],
   moon: ["M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"],

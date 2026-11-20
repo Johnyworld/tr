@@ -74,6 +74,12 @@ if (process.env.TRPG_STATUS !== "off") {
       return app.creation;
     },
     submitCreation: (input: Parameters<typeof app.submitCreation>[0]) => app.submitCreation(input),
+    get gm() {
+      return app.gm;
+    },
+    menuAction: (input: Parameters<typeof app.menuAction>[0]) => app.menuAction(input),
+    slots: () => app.slots(),
+    exitGame: () => app.exitGame(),
     unlockNotices: () => app.unlockNotices(),
     dismissUnlockNotice: (pack: string, roleId: string) => app.dismissUnlockNotice(pack, roleId),
     get frozenStatus() {

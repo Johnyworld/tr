@@ -2494,6 +2494,35 @@ body {
   background: rgba(46, 116, 214, 0.12);
 }
 
+/* 스킬 배치 (4.2.1): 카드마다 − 단계 + */
+.newgame div.skill-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.newgame .skill-card.locked {
+  opacity: 0.5;
+}
+
+.skill-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.skill-level > span:not(.muted) {
+  min-width: 7em;
+  text-align: center;
+}
+
+.newgame .skill-step {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
 /* 트레잇: 반대되는 것끼리 한 줄에 두 칸 */
 .trait-pair-head {
   display: grid;

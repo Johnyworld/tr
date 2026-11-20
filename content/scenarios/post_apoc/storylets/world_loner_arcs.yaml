@@ -144,7 +144,7 @@
         - belief: { fact: 해열제를 먹은 떠돌이 아이의 열이 낮이 되자 내렸다. 우두머리가 처음으로 이름을 불러 고맙다고 했다, source: seen }
     - id: carry_clinic
       label: 아이를 업고 하얀매 진료소까지 달린다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: wa_band_sick_done
@@ -625,7 +625,7 @@
   choices:
     - id: carry_down
       label: 노인을 업고 사다리를 내려가 진료소로 데려간다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: wa_radio_rescued

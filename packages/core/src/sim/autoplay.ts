@@ -1,7 +1,8 @@
 import { remainsHere } from "../engine/remains.ts";
 import { waterHere } from "../engine/body.ts";
 import { isCreature } from "../game/kinds.ts";
-import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { incapacitatingSymptom, learnedSkill, raiseCost } from "../scenario/scenario.ts";
+import { canUseSkill } from "../engine/traits.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
@@ -89,11 +90,18 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     for (const track of content.scenario.condition_tracks) {
       if ((track.levels.find((l) => l.id === me.conditions[track.id])?.penalty ?? 0) < 0) stats.sufferingTurns[track.id] = (stats.sufferingTurns[track.id] ?? 0) + 1;
     }
-    // 레벨업이 쌓였으면 아무 스킬이나 올린다
-    if (me.skillPoints > 0) {
-      const out = tool("learn_skill", { skill: pick(rng, moves).id });
+    // GM처럼 배운 스킬로만 판정한다 (4.2.1: 못 하는 전문 기술은 거절된다)
+    const can = (id: string | undefined) => !id || canUseSkill(content, me, id);
+    const usableMoves = moves.filter((m) => can(m.id));
+    // 스킬 포인트가 쌓였으면 할 수 있는 스킬 중 아무거나 올린다 (점수가 모자라면 모아 둔다)
+    const raisable = usableMoves.filter((m) => {
+      const v = learnedSkill(content.scenario, me.skills, m.id);
+      return v !== null && v < content.scenario.ranges.skill.max && raiseCost(content.scenario, v) <= me.skillPoints;
+    });
+    if (raisable.length && rng() < 0.8) {
+      const out = tool("learn_skill", { skill: pick(rng, raisable).id });
       if (out.ok) stats.levelUps++;
-      else if (!out.error.includes("최고 단계")) stats.errors.push(`learn_skill: ${out.error}`);
+      else stats.errors.push(`learn_skill: ${out.error}`);
       continue;
     }
     const check = (move: (typeof moves)[number], harm: string) => {
@@ -138,7 +146,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
 
     // 진행 중인 이야기: 무작위 선택지 (판정이 붙었으면 먼저 판정)
     // GM처럼 지금 고를 수 있는 선택지 중에서
-    const openChoices = s.activeStorylet ? content.storylets[s.activeStorylet.id]!.choices.filter((c) => choiceAvailable(s, c, s.activeStorylet!.cast)) : [];
+    const openChoices = s.activeStorylet ? content.storylets[s.activeStorylet.id]!.choices.filter((c) => choiceAvailable(s, c, s.activeStorylet!.cast) && can(c.check ?? undefined)) : [];
     if (s.activeStorylet && openChoices.length && rng() < 0.7) {
       const storylet = content.storylets[s.activeStorylet.id]!;
       const choice = pick(rng, openChoices);
@@ -284,8 +292,13 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       else if (cold && shown(cold) > 0 && fuelHere && !fireLit && rng() < 0.6) act = { intent: "불을 피운다", use_item: fuelHere };
       else if (remainsHere(s).length && rng() < 0.3) act = { intent: "묻어 준다", bury: { who: remainsHere(s)[0]!.holder, words: null } };
       else if (trapReady && rng() < 0.6) act = { intent: "덫을 거둔다", trap: "check" };
-      else if (trapItem && has(trapItem) && !atBase && !trapHere && rng() < 0.06) act = { intent: "덫을 놓는다", trap: "set" };
-      else if (survival && content.scenario.foraging && !atBase && rng() < 0.06) act = { intent: wet ? "낚시" : "사냥", forage: wet ? "fish" : "hunt", check: check(survival, "none") };
+      else if (trapItem && has(trapItem) && can(content.scenario.foraging?.trap?.move) && !atBase && !trapHere && rng() < 0.06) act = { intent: "덫을 놓는다", trap: "set" };
+      else if (content.scenario.foraging && !atBase && rng() < 0.06) {
+        // 낚시·사냥은 그 일의 스킬로 (전문 기술이면 배웠을 때만)
+        const kind = content.scenario.foraging.kinds.find((k) => k.id === (wet ? "fish" : "hunt"));
+        const fm = moves.find((m) => m.id === (kind?.move ?? survival?.id));
+        if (kind && fm && can(fm.id)) act = { intent: kind.label, forage: kind.id, check: check(fm, "none") };
+      }
       if (act) {
         const out = tool("take_action", { ...base, ...act });
         if (!out.ok) stats.errors.push(`생존(${String(act.intent)}): ${out.error}`);
@@ -331,7 +344,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       if (!out.ok) stats.errors.push(`장비: ${out.error}`);
       continue;
     }
-    const doable = (content.scenario.crafting?.recipes ?? []).filter((r) => Object.entries(r.materials).every(([i, q]) => (me.inventory[i] ?? 0) >= q) && r.tools.every((t) => (typeof t === "string" ? [t] : t).some((x) => (me.inventory[x] ?? 0) > 0)));
+    const doable = (content.scenario.crafting?.recipes ?? []).filter((r) => can(r.move) && Object.entries(r.materials).every(([i, q]) => (me.inventory[i] ?? 0) >= q) && r.tools.every((t) => (typeof t === "string" ? [t] : t).some((x) => (me.inventory[x] ?? 0) > 0)));
     if (doable.length && rng() < 0.1) {
       {
         const r = pick(rng, doable);
@@ -371,7 +384,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       const chair = content.roles[s.roleId]?.commander ?? s.customRole?.commander;
       if (chair && !s.characters[chair]?.dead && !s.scene.present.includes(chair)) tool("npc_presence", { npc_id: chair, action: "enter" });
       const topic = pick(rng, command.policies);
-      const approach = pick(rng, command.council_moves);
+      const approach = pick(rng, command.council_moves.filter((m) => can(m)).length ? command.council_moves.filter((m) => can(m)) : command.council_moves);
       const move = content.scenario.moves.find((m) => m.id === approach)!;
       const out = tool("council_propose", { topic: topic.id, option: pick(rng, topic.options).id, approach, stat: pick(rng, move.stats), intent: "안을 올린다" });
       if (out.ok) stats.councilProposals++;
@@ -411,7 +424,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       out = tool("take_action", { ...base, intent: "이동", move_to: homeward ?? pick(rng, neighbors(content, s.playerZone)), ride: vehicle && rng() < 0.5 ? vehicle : null });
     } else if (roll < 0.45) {
       // 다친 몸으로는 위험한 일을 하지 않는다
-      out = tool("take_action", { ...base, intent: "판정", check: check(pick(rng, moves), hurt > 0 ? "none" : pick(rng, ["none", "none", "light"])) });
+      out = tool("take_action", { ...base, intent: "판정", check: check(pick(rng, usableMoves), hurt > 0 ? "none" : pick(rng, ["none", "none", "light"])) });
     } else if (roll < 0.75) {
       out = tool("take_action", { ...base, intent: "활동", activity: { kind: pick(rng, ["talk", "rest", "work", "search", "eat"]), until: null } });
     } else {

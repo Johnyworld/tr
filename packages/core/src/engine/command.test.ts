@@ -7,7 +7,7 @@ import { createSeededRng, type Rng } from "../rng.ts";
 import { initialWarWorld, rationLevel, simulateWarDay } from "../sim/war.ts";
 import { WorldManager } from "../world/manager.ts";
 import { squadFollowBonus, squadMembers } from "./command.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, teachSkills } from "../testing.ts";
 
 const content = loadRealContent();
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
@@ -143,6 +143,7 @@ describe("지도부 회의 (기획서 9.11)", () => {
 
   it("기각되면 사흘 동안 같은 주제를 다시 올리지 못한다. 분대원은 회의에 앉지 않는다 (주사위가 늘 1)", () => {
     const w = open("role_a_officer", () => () => 0);
+    teachSkills(w, ["tactics"]); // 전략은 전문 기술 (4.2.1)
     w.executeTool("npc_presence", { npc_id: "a_seonghee", action: "enter" });
     const r = w.executeTool("council_propose", { topic: "stance", option: "attack", approach: "tactics", stat: "intellect", intent: "먼저 친다" });
     expect(r.ok && r.resultText).toContain("받아들이지 않았다");

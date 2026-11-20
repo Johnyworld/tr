@@ -36,7 +36,7 @@
   requirements:
     - check: stealth
       min_outcome: partial
-    - check: endure
+    - check: athletics
       min_outcome: partial
 
 - id: d_sl_house_call_escort

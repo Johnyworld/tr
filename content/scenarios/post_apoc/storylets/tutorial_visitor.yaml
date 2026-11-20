@@ -187,7 +187,7 @@
   choices:
     - id: ask
       label: 가족의 이름을 대며 아는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: tv_family_where
@@ -201,7 +201,7 @@
           - belief: { fact: "버들마을 사람은 낯선 사람에게 단지 사람 일을 말해 주지 않았다. 다른 날 다시 물어볼 수 있다", source: seen }
     - id: look
       label: 말없이 단지를 둘러보며 얼굴들을 살핀다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - set_flag: tv_family_where

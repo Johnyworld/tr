@@ -75,7 +75,7 @@
     reveal_when: 쪽문 일로 몰렸을 때 둘만 있다면, 또는 손녀 이야기를 진심으로 물어 준 사람에게
     min_trust: 2
   stats: { strength: 1, agility: -1, vitality: 1, senses: 1, nerve: -1, charm: 1, intellect: 0 }
-  skills: { survival: 1, first_aid: 1, endure: 2, history: 1 }
+  skills: { survival: 1, first_aid: 1, endure: 2, history: 1, athletics: 1 }
   start_inventory: [cigarettes, water_bottle]
   playable: true
   zone: d_clinic

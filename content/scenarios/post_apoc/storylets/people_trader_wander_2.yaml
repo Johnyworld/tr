@@ -20,7 +20,7 @@
   choices:
     - id: search_tents
       label: 천막을 같이 돌며 사람들에게 물어 준다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pw2_photo_done
@@ -37,7 +37,7 @@
           - belief: { fact: "모준기와 천막을 돌았지만 아무도 사진 속 얼굴을 몰랐다. 그는 '내일 강변 쪽을 돌아 보면 돼요'라고 했다", source: seen }
     - id: why_hurry
       label: 왜 그렇게 서두르느냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pw2_photo_done
@@ -107,7 +107,7 @@
           - belief: { fact: "변상철이 키를 놓지 않았다. 배는 물때에 맞춰 섬으로 갔다. 감태식은 돌아오는 내내 개머리판에 칼끝을 대고 있었다", source: seen }
     - id: talk_boatman
       label: 키를 잡은 변상철에게 섬의 딸 이야기를 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pw2_turn_done
@@ -159,7 +159,7 @@
   choices:
     - id: ask_quiet
       label: 탁봉수한테 뭘 일러 주는 거냐고 조용히 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pw2_cans_done
@@ -226,7 +226,7 @@
   choices:
     - id: bring_together
       label: 박만수를 불러 세워 둘이 마주 보게 한다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - set_flag: pw2_gate_done
@@ -331,7 +331,7 @@
   choices:
     - id: ask
       label: 그 지도를 누가 사 갔느냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pw2_map_done

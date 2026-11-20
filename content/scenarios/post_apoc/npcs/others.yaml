@@ -32,7 +32,7 @@
     reveal_when: 버들마을의 앞날을 진심으로 걱정해 주는 사람에게, 둘만 있을 때
     min_trust: 4
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: 2, intellect: 1 }
-  skills: { persuade: 2, tactics: 1, shoot: 0 }
+  skills: { persuade: 2, tactics: 1, shoot: 0, leadership: 1 }
   start_inventory: [radio]
   playable: false
   zone: b_base
@@ -185,7 +185,7 @@
     reveal_when: 윤채원의 안부를 진심으로 묻는 사람에게
     min_trust: 3
   stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 2, charm: 1, intellect: 2 }
-  skills: { first_aid: 2, infected_lore: 2, persuade: 1 }
+  skills: { first_aid: 2, infected_lore: 2, persuade: 1, leadership: 1, surgery: 1 }
   start_inventory: [medkit, antibiotics]
   playable: false
   healer: true

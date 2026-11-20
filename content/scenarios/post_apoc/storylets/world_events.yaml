@@ -232,7 +232,7 @@
   choices:
     - id: ask_more
       label: 물통 하나를 들어 주며 더 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: 하류 다리 밑의 배는 강 건너에서 온다는 말이 있다. 배에서 내린 사람들이 소금과 약을 바꿔 간다고 한다, source: rumor }
@@ -265,7 +265,7 @@
         - belief: { fact: 뒤집힌 버스에서 아이를 찾아 데려왔다. 엄마와 물을 길으러 나왔다가 흩어졌다고 한다, source: report }
     - id: calm_ask
       label: 쪼그려 앉아 이름과 엄마를 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: w_child_found

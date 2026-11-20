@@ -6,7 +6,7 @@ import type { Rng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
 import { armorBlocksInfection } from "./gear.ts";
 import type { GameWorld } from "../world/world.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, teachSkills } from "../testing.ts";
 
 /** 상처 종류와 출혈 (12-91) */
 const content = loadRealContent();
@@ -19,7 +19,10 @@ function world(): { w: GameWorld; roll: { value: number } } {
   const roll = { value: 0.5 };
   const rng: Rng = () => roll.value;
   const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-bleed-")), content, rngFactory: () => rng });
-  return { w: m.create("mcp", "role_b_guard", choice), roll };
+  const w = m.create("mcp", "role_b_guard", choice);
+  // 응급처치는 전문 기술이라 배워 둔다 (4.2.1)
+  teachSkills(w, ["first_aid"]);
+  return { w, roll };
 }
 const me = (w: GameWorld) => w.state().characters[w.state().playerId]!;
 

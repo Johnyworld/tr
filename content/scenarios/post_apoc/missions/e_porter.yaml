@@ -10,7 +10,7 @@
   requirements:
     - activity: work
       minutes: 120
-    - check: endure
+    - check: athletics
       min_outcome: partial
 
 - id: e_pump_watch

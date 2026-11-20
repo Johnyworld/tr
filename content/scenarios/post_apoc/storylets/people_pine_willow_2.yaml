@@ -87,7 +87,7 @@
   choices:
     - id: ask_straight
       label: 배수로에서 본 것을 말하고, 그날 무슨 일이 있었는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pp2_smoke_done
@@ -238,7 +238,7 @@
           - belief: { fact: "엿듣다 {brother:과/와} 눈이 마주쳤다. 사내가 웃으며 손을 흔들었고, {keeper:은/는} 하얗게 질렸다", source: seen }
     - id: sit_down
       label: 다가가 담배를 하나 얻어 피우며 끼어 앉는다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - set_flag: pp2_market_done
@@ -284,7 +284,7 @@
   choices:
     - id: ask
       label: 문을 닫고, 그 기름이 어디로 가는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pp2_generator_done
@@ -349,7 +349,7 @@
         - belief: { fact: "{groom:과/와} {bride:은/는} 부부다. 봄에 버들마을 지하 교실에서 몰래 혼례를 올렸다. 청솔형제단 분대에는 알리지 않았다", source: report }
     - id: notice
       label: 망을 봐 주다가, 배를 감싸는 손을 보고 조용히 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pp2_gate_done
@@ -476,7 +476,7 @@
         - belief: { fact: "{son:은/는} {digger}의 아들이다. 첫 겨울 열병 난 누이를 살리려고 버들마을 약 상자를 들고 하얀매로 갔다. 누이는 죽었고, 마을은 그를 죽은 약 도둑으로 안다", source: report }
     - id: ask_part
       label: 우물 부품을 찾는다더니 여기서 뭐 하냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pp2_hospital_done

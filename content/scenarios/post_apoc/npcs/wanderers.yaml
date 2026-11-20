@@ -84,7 +84,7 @@
     reveal_when: 붉은연합 수용소나 포로 이야기가 나왔을 때, 둘만 있으면
     min_trust: 3
   stats: { strength: 0, agility: 2, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 0 }
-  skills: { stealth: 2, fight: 1, shoot: 1, sense_danger: 1, survival: 1, improvise: 1 }
+  skills: { stealth: 2, fight: 1, shoot: 1, sense_danger: 1, survival: 1, improvise: 1, hunt: 1 }
   start_inventory: [kitchen_knife, wire_roll, water_bottle]
   playable: true
   roams: [riverside, old_town, hospital_ruins]

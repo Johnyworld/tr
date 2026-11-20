@@ -13,7 +13,7 @@
     - 무릎을 덧댄 작업복 차림의 수색대원. 공업고 실습복 주머니에 분필로 그린 지도를 넣고 다닌다
     - 낡은 소총을 등에 비껴 멘 수색대원. 장갑 한쪽만 끼고, 맨손으로 담벼락의 표시를 더듬는다
   stats: { agility: [0, 1], senses: [0, 1], vitality: [0, 1], nerve: [-1, 1] }
-  skills: { shoot: 1, scavenge: 1, sense_danger: 1 }
+  skills: { shoot: 1, scavenge: 1, sense_danger: 1, fight: 0 }
   traits: [eagle_eye, principled, protective, weary, eager, cautious]
   trait_count: 2
   inventory:
@@ -109,7 +109,7 @@
     - 흰 천을 팔에 감은 수비대원. 진료소 정문 옆에서 들어오는 사람의 손과 목을 먼저 살핀다
     - 마스크를 턱에 걸친 수비대원. 소총보다 손전등을 먼저 든다
   stats: { senses: [0, 1], nerve: [0, 1], strength: [0, 1] }
-  skills: { sense_danger: 1, shoot: 1, infected_lore: 1 }
+  skills: { sense_danger: 1, shoot: 1, infected_lore: 1, fight: 0 }
   traits: [guarded, principled, formal, cold, meticulous, eagle_eye]
   trait_count: 2
   inventory:
@@ -264,7 +264,7 @@
     - 짐마차 옆을 걷는 호위대원. 엽총을 무릎 높이로 늘어뜨리고 길 양쪽 창문을 번갈아 본다
     - 동전 통행패를 열 개도 넘게 꿰어 찬 호위대원. 계약서를 접어 모자 안에 넣었다
   stats: { strength: [0, 1], nerve: [0, 1], senses: [0, 1] }
-  skills: { shoot: 1, intimidate: 1, sense_danger: 1 }
+  skills: { shoot: 1, intimidate: 1, sense_danger: 1, fight: 0 }
   traits: [calculating, cold, blunt, greedy, steel_nerves, marksman]
   trait_count: 2
   inventory:
@@ -326,7 +326,7 @@
     - 소금기에 하얗게 바랜 우비를 입은 뱃사공. 노를 쥔 손바닥이 가죽처럼 두껍다
     - 섬 쪽으로만 고개를 돌리는 뱃사공. 뭍 사람과 눈을 오래 맞추지 않는다
   stats: { strength: [1, 2], vitality: [0, 1], senses: [0, 1] }
-  skills: { survival: 1, sense_danger: 1, fight: 0 }
+  skills: { survival: 1, sense_danger: 1, fight: 0, swim: 1 }
   traits: [guarded, blunt, formal, cold_hardy, patient, cynical]
   trait_count: 2
   inventory:
@@ -388,7 +388,7 @@
     - 완장 위에 검은 줄을 하나 더 두른 규율반원. 명부 수첩을 가슴 주머니에 꽂았다
     - 말없이 막사 사이를 걷는 규율반원. 사람들이 그가 지나가면 대화를 멈춘다
   stats: { senses: [1, 1], nerve: [1, 2], intellect: [0, 1] }
-  skills: { sense_danger: 1, intimidate: 1, deceive: 1 }
+  skills: { sense_danger: 1, intimidate: 1, deceive: 1, fight: 0, insight: 1 }
   traits: [cold, meticulous, ruthless, calculating, formal, eagle_eye]
   trait_count: 2
   inventory:
@@ -512,7 +512,7 @@
     - 늘 웃는 얼굴로 새로 온 사람 곁에 붙어 다니는 주민. 묻지 않아도 섬 자랑을 늘어놓는다
     - 의회 회관 계단에 기대 선 사람. 손에 든 장부에 오가는 사람 이름을 적는다
   stats: { charm: [1, 1], senses: [0, 1], nerve: [0, 1] }
-  skills: { deceive: 1, persuade: 1, sense_danger: 1 }
+  skills: { deceive: 1, persuade: 1, sense_danger: 1, insight: 1 }
   traits: [genial, calculating, cold, formal, silver_tongue, guarded]
   trait_count: 2
   inventory:

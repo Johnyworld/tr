@@ -41,7 +41,7 @@
     reveal_when: 짐꾼이 탁봉수의 거래를 캐묻고, 상단이 위험해질 수 있다는 걸 이해할 때
     min_trust: 3
   stats: { strength: 1, agility: 0, vitality: 2, senses: 1, nerve: 2, charm: 0, intellect: 1 }
-  skills: { persuade: 1, survival: 2, sense_danger: 1, endure: 1, mechanics: 1, fight: 1 }
+  skills: { persuade: 1, survival: 2, sense_danger: 1, endure: 1, mechanics: 1, fight: 1, leadership: 1 }
   start_inventory: [trade_token, ledger, crowbar]
   playable: true
   zone: e_market
@@ -80,7 +80,7 @@
     reveal_when: 함께 밀수를 하자고 할 때, 또는 들킬 지경이 되었을 때
     min_trust: 2
   stats: { strength: 2, agility: 0, vitality: 1, senses: 0, nerve: 1, charm: 1, intellect: -1 }
-  skills: { fight: 1, endure: 2, deceive: 1, persuade: 1, survival: 1 }
+  skills: { fight: 1, endure: 1, deceive: 1, persuade: 1, survival: 1, athletics: 2 }
   start_inventory: [water_bottle, cigarettes, kitchen_knife]
   playable: true
   zone: e_market
@@ -203,7 +203,7 @@
     reveal_when: 습격이 내부에서 샜다는 걸 누군가 알아채고, 그 사람이 오빠 이야기를 들어 줄 것 같을 때
     min_trust: 2
   stats: { strength: 0, agility: 2, vitality: 0, senses: 1, nerve: -1, charm: 1, intellect: 0 }
-  skills: { stealth: 1, survival: 1, sense_danger: 1 }
+  skills: { stealth: 1, survival: 1, sense_danger: 1, fight: 0 }
   start_inventory: [water_bottle, dry_ration]
   playable: true
   zone: e_market

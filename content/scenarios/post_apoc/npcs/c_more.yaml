@@ -76,7 +76,7 @@
     reveal_when: 위원장이 그 사람을 버들마을 일에 쓸 만큼 믿을 때
     min_trust: 5
   stats: { strength: 0, agility: -1, vitality: 1, senses: 1, nerve: 2, charm: 1, intellect: 2 }
-  skills: { persuade: 2, intimidate: 1, tactics: 2, history: 1, mechanics: 1 }
+  skills: { persuade: 2, intimidate: 1, tactics: 2, history: 1, mechanics: 1, leadership: 2 }
   start_inventory: [ledger, radio]
   playable: false
   zone: c_base
@@ -114,7 +114,7 @@
     reveal_when: 그 사람이 규율반의 밀고자로 오래 일해 서기가 믿게 되었을 때
     min_trust: 4
   stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: 1, charm: 0, intellect: 2 }
-  skills: { sense_danger: 2, deceive: 1, intimidate: 1, history: 1 }
+  skills: { sense_danger: 2, deceive: 1, intimidate: 1, history: 1, insight: 2 }
   start_inventory: [ledger]
   playable: false
   zone: c_base

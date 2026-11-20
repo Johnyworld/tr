@@ -42,7 +42,7 @@
     reveal_when: 고해소에서, 혹은 문을 지키느라 누군가를 돌려보낸 뒤 둘만 남았을 때
     min_trust: 4
   stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 2, charm: 2, intellect: 1 }
-  skills: { persuade: 2, first_aid: 1, history: 2, endure: 1 }
+  skills: { persuade: 2, first_aid: 1, history: 2, endure: 1, leadership: 1 }
   start_inventory: [blanket, bandage, cloth]
   playable: true
   zone: cathedral

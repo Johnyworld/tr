@@ -160,7 +160,7 @@
   choices:
     - id: calm
       label: 진정시킨다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - relation: { who: grunt, axis: affection, delta: 1 }

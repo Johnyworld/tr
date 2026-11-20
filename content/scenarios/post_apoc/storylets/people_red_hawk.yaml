@@ -113,7 +113,7 @@
         - belief: { fact: "하얀매 수습 은솔은 붉은연합 취사반장 옥금자의 딸이다. 반년 전 쓰레기 수레에 숨어 거점을 빠져나왔다", source: report }
     - id: ask_first
       label: 먼저 이 수습이 누구인지 떠본다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pr_bundle_delivered

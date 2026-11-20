@@ -26,7 +26,7 @@
   choices:
     - id: press
       label: 누가 봤는지, 언제였는지 캐묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "나루상단 짐꾼이 말했다: 버들마을 북쪽 쪽문으로 붉은 완장 단 사람이 밤에 드나든다. 경비조장이 직접 문을 연다는 말도 있다", source: report }
@@ -194,7 +194,7 @@
         - belief: { fact: "버들마을 경비병이 약조 때 빌린 소총을 돌려주고 갔다. 고개를 숙이고 돌아갔다", source: seen }
     - id: ask
       label: 붉은연합이 뭘 주기로 했는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "버들마을 경비병이 털어놓았다: 붉은연합은 버들마을을 건드리지 않고 물길을 열어 주겠다고 했다. 그 대가가 무엇인지는 대표만 안다", source: report }
@@ -326,7 +326,7 @@
           - belief: { fact: "붉은 완장은 비웃으며 네 통을 다 채웠다. 가면서 한편이 뭔지 위에 물어보라고 했다", source: seen }
     - id: ask_terms
       label: 물을 떠 주며 그쪽 위에서는 버들마을을 어떻게 보는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - faction_resource: { faction: own, resource: water, delta: -15 }

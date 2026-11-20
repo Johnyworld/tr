@@ -28,6 +28,7 @@ import {
   relationSchema,
 } from "./reputation.ts";
 import { createCharacterSchema, inventorySchema, type Character, type Inventory } from "./character.ts";
+import { startingSkills } from "./creation.ts";
 
 /**
  * 세이브 형식 버전. GameState나 GameEvent를 호환되지 않게 바꾸면 올리고,
@@ -36,8 +37,34 @@ import { createCharacterSchema, inventorySchema, type Character, type Inventory 
  * - 2: 시나리오 팩 분리. 능력치 ID 변경, injury → conditions, scenarioId
  * - 7: 인물을 아는 것을 만남(met)과 이름(known)으로 나눴다 (기획서 6.3). 엑스트라는 처음부터 이름이 있고 사라지지 않는다.
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
+ * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 79;
+export const SAVE_SCHEMA_VERSION = 80;
+/** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
+export const SKILL_REWORK_VERSION = 80;
+
+/**
+ * 스킬 개편 이전 세이브 옮기기 (4.2.1): 스킬 값의 뜻이 바뀌었다.
+ * - 전문 기술이 최저값(-1)이고 시작 스킬(과거 배경의 배치)에 없던 것은 "못 함"으로 (지우기)
+ * - 누구나 하는 일의 값과 나머지 값은 그대로 (이미 쓴 점수로 본다)
+ * - 쌓인 레벨업은 새 곡선으로 다시 센다: 레벨이 달라진 만큼 스킬 포인트를 더하거나 뺀다 (0 아래로는 가지 않는다)
+ */
+export function upgradeSkills(state: GameState, s: Scenario, levelForXp: (xp: number) => number): GameState {
+  const next = structuredClone(state);
+  const min = s.ranges.skill.min;
+  for (const c of Object.values(next.characters)) {
+    const pastSkills = c.past ? (s.creation?.pasts.find((p) => p.id === c.past!.id)?.skills ?? {}) : {};
+    for (const m of s.moves) {
+      if (m.kind === "expert" && (c.skills[m.id] ?? min) <= min && pastSkills[m.id] === undefined) delete c.skills[m.id];
+    }
+    const level = levelForXp(c.xp);
+    if (level !== c.level) {
+      c.skillPoints = Math.max(0, c.skillPoints + level - c.level);
+      c.level = level;
+    }
+  }
+  return next;
+}
 /** 이 버전부터의 세이브는 이벤트를 스키마 기본값으로 올려 읽는다 */
 export const MIN_READABLE_SAVE_VERSION = 7;
 
@@ -440,6 +467,8 @@ export function createGameSchemas(s: Scenario) {
     nextExtraNo: z.number().int().positive().default(1),
     /** 오늘 판정으로 얻은 경험치 (하루 상한, 기획서 4.2) */
     xpToday: z.strictObject({ day: z.number().int(), amount: z.number().int() }).default({ day: 0, amount: 0 }),
+    /** 가르침 (4.2.1): 주인공이 배우는 중인 전문 기술 → 채운 시간 */
+    lessons: z.record(z.string(), z.number().int()).default({}),
     /** 캐릭터별 Belief State */
     beliefs: z.record(z.string(), z.array(beliefSchema)),
     /** 캐릭터별로 이름까지 아는 인물 id (기획서 6.3). 방향이 있다: known[A]에 B가 있으면 A가 B의 이름을 안다 */
@@ -922,7 +951,10 @@ export function createGameSchemas(s: Scenario) {
     /** characterId가 targetId의 이름을 알게 됐다 (기획서 6.3) */
     z.strictObject({ type: z.literal("name_learned"), characterId: z.string(), targetId: z.string() }),
     /** 레벨업으로 스킬 하나를 올렸다 */
-    z.strictObject({ type: z.literal("skill_learned"), characterId: z.string(), skill: z.string(), from: z.number().int(), to: z.number().int() }),
+    /** 스킬 포인트로 한 단계 올렸다. cost: 쓴 점수 (4.2.1, 이전 이벤트는 1) */
+    z.strictObject({ type: z.literal("skill_learned"), characterId: z.string(), skill: z.string(), from: z.number().int(), to: z.number().int(), cost: z.number().int().min(1).default(1) }),
+    /** 가르침 (4.2.1): 전문 기술을 배우는 시간을 채웠다. 다 채우면 skill_trained가 따른다 */
+    z.strictObject({ type: z.literal("skill_lesson"), characterId: z.string(), skill: z.string(), teacherId: z.string(), hours: z.number().int().positive() }),
     z.strictObject({ type: z.literal("item_granted"), to: z.string(), itemId: z.string(), quantity: z.number().int().positive() }),
     z.strictObject({ type: z.literal("clock_adjusted"), clockId: z.string(), delta: z.number().int() }),
     z.strictObject({ type: z.literal("faction_morale_changed"), factionId: z.string(), delta: z.number().int() }),
@@ -1118,6 +1150,7 @@ export const EMPTY_STATE: GameState = {
   nextExtraNo: 1,
   cheated: false,
   xpToday: { day: 0, amount: 0 },
+  lessons: {},
   beliefs: {},
   known: {},
   met: {},
@@ -1735,6 +1768,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "skill_trained":
       mustGet(next.characters, event.characterId, "캐릭터").skills[event.skill] = event.to;
+      if (next.lessons[event.skill] !== undefined) {
+        next.lessons = { ...next.lessons };
+        delete next.lessons[event.skill];
+      }
+      return next;
+    case "skill_lesson":
+      next.lessons = { ...next.lessons, [event.skill]: (state.lessons[event.skill] ?? 0) + event.hours };
       return next;
     case "zone_fortified": {
       const z = next.zones[event.zone];
@@ -2173,9 +2213,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "skill_learned": {
       const c = mustGet(next.characters, event.characterId, "캐릭터");
-      if (c.skillPoints < 1) throw new Error("올릴 수 있는 레벨업이 없습니다.");
+      if (c.skillPoints < event.cost) throw new Error("스킬 포인트가 모자랍니다.");
       if ((c.skills[event.skill] ?? event.from) !== event.from) throw new Error(`스킬 값이 어긋납니다: ${event.skill}`);
-      c.skillPoints -= 1;
+      c.skillPoints -= event.cost;
       c.skills[event.skill] = event.to;
       break;
     }
@@ -2376,11 +2416,9 @@ export type CharacterChoice = {
 
 export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player", rng?: Rng, choice?: CharacterChoice): Character {
   const past = choice?.past ? s.creation?.pasts.find((p) => p.id === choice.past) : undefined;
-  // 스킬은 시나리오의 것(이제 비어 있다)에 고른 스킬(없으면 과거 배경의 것)을 더한다. 스킬 하나의 상한은 지킨다
-  const skills: Record<string, number> = Object.fromEntries(Object.entries(role.start_skills).filter((e): e is [string, number] => !!e[1]));
-  for (const [m, v] of Object.entries(choice?.skills ?? past?.skills ?? {})) skills[m] = Math.min(s.ranges.skill.max, (skills[m] ?? 0) + v);
-  // 계급 기본 훈련 (12-87): 그 자리에 꼭 필요한 솜씨는 과거 배경과 따로 더한다
-  for (const [m, v] of Object.entries(s.creation?.rank_skills[role.rank] ?? {})) skills[m] = Math.min(s.ranges.skill.max, (skills[m] ?? 0) + v);
+  // 스킬 (4.2.1): 시나리오의 것 위에 계급·직분이 주는 전문 기술(배운 상태)과 고른 배치(없으면 과거 배경의 것)를 얹는다. 남긴 점수는 스킬 포인트로
+  const layout = choice?.skills ?? past?.skills ?? null;
+  const { skills, unspent } = startingSkills(s, { rank: role.rank, occupation: role.occupation ?? null }, role.start_skills, layout);
   return createCharacterSchema(s).parse({
     id,
     name: choice?.name.trim() || role.default_name,
@@ -2394,6 +2432,7 @@ export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "pl
     age: choice?.age ?? role.age,
     stats: choice?.abilities ?? role.start_stats ?? rollAbilities(s, rng),
     skills,
+    skillPoints: unspent,
     past: past ? { id: past.id, label: past.label, summary: past.summary } : null,
     conditions: initialConditions(s),
     // 과거 배경의 물건 중 시나리오가 이미 주는 것은 겹쳐 주지 않는다

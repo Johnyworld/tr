@@ -58,7 +58,7 @@
   choices:
     - id: carry
       label: 짐을 대신 지고 {to}까지 함께 간다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - relation: { who: elder, axis: affection, delta: 2 }
@@ -153,7 +153,7 @@
         - deed: { summary: 길에서 만난 피난민 행렬에 먹을 것을 나눠 주었다, tags: [mercy], severity: 1, privacy: public }
     - id: ask_news
       label: 어디서 오는 길인지, 무엇을 봤는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - overhear: { faction: other, source: report }
@@ -244,7 +244,7 @@
         - belief: { fact: "{to:으로/로} 오는 길에 만난 떠돌이와 하루만 같이 다니기로 했다", source: seen }
     - id: trade_info
       label: 같이 다니진 않지만 이 앞 길 사정을 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - relation: { who: walker, axis: affection, delta: 1 }
@@ -507,7 +507,7 @@
   choices:
     - id: cross
       label: 숨을 고르고 판자를 건넌다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - belief: { fact: "{from:과/와} {to} 사이 끊어진 다리에 판자가 이어져 있다. 건널 만하다", source: seen }
@@ -702,7 +702,7 @@
   choices:
     - id: talk
       label: 이름은 대지 않고, 안에 몇이나 있는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: rd_prison_answered
@@ -763,7 +763,7 @@
           - belief: { fact: "{to:으로/로} 오는 밤길에 뒤따르던 것이 바로 곁에서 멈췄다", source: seen }
     - id: run
       label: "{to}까지 뛴다"
-      check: endure
+      check: athletics
       outcomes:
         success: []
         partial:
@@ -843,7 +843,7 @@
         - deed: { summary: 눈 속에 쓰러진 사람에게 담요를 덮어 주었다, tags: [mercy], severity: 1, privacy: semi_private }
     - id: carry
       label: 부축해 {to}까지 함께 간다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - npc_body: { who: fallen, track: cold, delta: -1 }
@@ -875,7 +875,7 @@
   choices:
     - id: push
       label: 이를 악물고 끝까지 진다
-      check: endure
+      check: athletics
       outcomes:
         success: []
         partial:
@@ -971,7 +971,7 @@
           - zone_noise: 1
     - id: rope
       label: 위에서 손을 뻗어 끌어올린다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - relation: { who: mate, axis: trust, delta: 2 }

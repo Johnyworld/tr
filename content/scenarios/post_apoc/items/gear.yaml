@@ -212,7 +212,7 @@
   kind: tool
   weight: 0.5
   value: 4
-  tool: { bonus: { survival: 1 }, forage: [fish] }
+  tool: { bonus: { fishing: 1 }, forage: [fish] }
 - id: carpentry_kit
   name: 목수 연장
   description: 톱과 망치, 끌 몇 자루를 천에 말아 둔 것. 나무를 다룰 때 있어야 한다.

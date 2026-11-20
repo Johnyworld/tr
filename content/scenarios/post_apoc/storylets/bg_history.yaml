@@ -193,7 +193,7 @@
   choices:
     - id: ask
       label: 그 이름을 어떻게 아느냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - reveal_tie: { who: kin, other: enemy }
@@ -447,7 +447,7 @@
   choices:
     - id: press
       label: 다가가 더 자세히 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: bg_seek_heard
@@ -487,7 +487,7 @@
         - belief: { fact: "피난민 {witness:이/가} {sought:과/와} 같은 곳에서 잔 적이 있다. 몸은 성했고, 누군가를 기다리는 사람처럼 굴었다고 한다", source: report }
     - id: ask_plain
       label: 그 사람이 어땠는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: bg_seek_witnessed
@@ -777,7 +777,7 @@
         - deed: { summary: 불가의 피난민에게 먹을 것을 나눴다, tags: [mercy], severity: 1, privacy: semi_private }
     - id: ask_who
       label: 누가 그랬는지 아느냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: bg_loss_same_met

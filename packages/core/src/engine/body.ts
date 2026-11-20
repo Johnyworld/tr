@@ -15,7 +15,7 @@ import type { GameState } from "../game/state.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
-import { bodyTraits, effectiveSkill, habitsOf, traitIdsOf } from "./traits.ts";
+import { bodyTraits, canUseSkill, effectiveSkill, habitsOf, traitIdsOf } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { harmTrack, shownLevel, trackOf, visibleSymptoms } from "../scenario/scenario.ts";
 import { daysOfStock, rationLevel } from "../sim/war.ts";
@@ -342,23 +342,33 @@ function planHealerPay(ctx: ToolContext, healerId: string): { ok: true; plan: He
     }
     if (!carried) return { ok: false, error: `${josa(name, "은/는")} 거점 밖에서 쓸 ${josa(label, "이/가")} 없어 치료하지 못한다 (치료사와 곁의 동료가 지닌 것을 쓴다).` };
   } else if (faction && (faction.resources[cost.resource] ?? 0) < 1) return { ok: false, error: `${name}의 무리 창고에 ${josa(label, "이/가")} 바닥나 치료하지 못한다.` };
-  const pay = new Map<string, number>();
+  let pay = new Map<string, number>();
   const trust = state.relations[healerId]?.[player.id]?.trust ?? 0;
   if (cost.fee > 0 && player.factionId !== healer.factionId && trust < cost.free_trust) {
-    const worn = new Set(Object.values(player.equipped ?? {}).filter(Boolean));
-    const goods = Object.entries(player.inventory)
-      .filter(([id, q]) => q > 0 && !worn.has(id))
-      .flatMap(([id, q]) => Array.from({ length: q }, () => id))
-      .sort((a, b) => (ctx.content.items[a]?.value ?? DEFAULT_VALUE) - (ctx.content.items[b]?.value ?? DEFAULT_VALUE));
-    let sum = 0;
-    for (const id of goods) {
-      if (sum >= cost.fee) break;
-      pay.set(id, (pay.get(id) ?? 0) + 1);
-      sum += ctx.content.items[id]?.value ?? DEFAULT_VALUE;
-    }
-    if (sum < cost.fee) return { ok: false, error: `${josa(name, "은/는")} 다른 무리 사람에게는 값(${cost.fee}어치)을 받는다. 낼 만한 물건이 모자란다 (신뢰가 ${cost.free_trust} 이상이면 받지 않는다).` };
+    const picked = pickFee(ctx, player, cost.fee);
+    if (!picked) return { ok: false, error: `${josa(name, "은/는")} 다른 무리 사람에게는 값(${cost.fee}어치)을 받는다. 낼 만한 물건이 모자란다 (신뢰가 ${cost.free_trust} 이상이면 받지 않는다).` };
+    pay = picked;
   }
   return { ok: true, plan: { carried, fromStock: atBase && faction ? healer.factionId : null, pay } };
+}
+
+/**
+ * 물건으로 내는 값 (치료사·가르침): 지닌 물건 중 값싼 것부터 fee어치까지 (손에 든 것·입은 것은 빼고). 모자라면 null
+ */
+export function pickFee(ctx: ToolContext, payer: Character, fee: number): Map<string, number> | null {
+  const pay = new Map<string, number>();
+  const worn = new Set(Object.values(payer.equipped ?? {}).filter(Boolean));
+  const goods = Object.entries(payer.inventory)
+    .filter(([id, q]) => q > 0 && !worn.has(id))
+    .flatMap(([id, q]) => Array.from({ length: q }, () => id))
+    .sort((a, b) => (ctx.content.items[a]?.value ?? DEFAULT_VALUE) - (ctx.content.items[b]?.value ?? DEFAULT_VALUE));
+  let sum = 0;
+  for (const id of goods) {
+    if (sum >= fee) break;
+    pay.set(id, (pay.get(id) ?? 0) + 1);
+    sum += ctx.content.items[id]?.value ?? DEFAULT_VALUE;
+  }
+  return sum >= fee ? pay : null;
 }
 
 /**
@@ -396,7 +406,7 @@ export function needsSurgery(ctx: ToolContext, characterId: string): boolean {
 export function canOperate(ctx: ToolContext, characterId: string): boolean {
   const surgery = ctx.content.scenario.recovery?.surgery;
   const c = ctx.store.getState().characters[characterId];
-  return !!surgery && !!c && effectiveSkill(ctx.content, c, surgery.move) >= surgery.min_skill;
+  return !!surgery && !!c && canUseSkill(ctx.content, c, surgery.move) && effectiveSkill(ctx.content, c, surgery.move) >= surgery.min_skill;
 }
 
 /** 치료사(NPC)의 수술 굴림: 2d6 + 능력·스킬(상한) + 장소 */

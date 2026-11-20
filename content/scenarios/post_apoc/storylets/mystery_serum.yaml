@@ -40,7 +40,7 @@
   choices:
     - id: ask
       label: 혈청이 어디서 오는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: ms_theory

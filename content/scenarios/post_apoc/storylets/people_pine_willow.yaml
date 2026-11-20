@@ -19,7 +19,7 @@
   choices:
     - id: ask_why
       label: 소리 내지 않고 이유를 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pp_back_door_done
@@ -66,7 +66,7 @@
   choices:
     - id: call_out
       label: 저울 밑의 발을 가리키며 조용히 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pp_scale_done
@@ -181,7 +181,7 @@
         - deed: { summary: 옥상에 올라간 아이를 경비조장에게 데려갔다, tags: [diligence], severity: 1, privacy: public }
     - id: what_you_see
       label: 여기서 뭐가 보이냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pp_rooftop_done

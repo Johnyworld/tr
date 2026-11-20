@@ -20,7 +20,7 @@
   requirements:
     - activity: work
       minutes: 180
-    - check: endure
+    - check: athletics
       min_outcome: partial
 
 - id: y_ammo_shop

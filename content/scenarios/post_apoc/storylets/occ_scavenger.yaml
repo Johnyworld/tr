@@ -112,7 +112,7 @@
     - id: lever
       label: 쇠지렛대를 판 밑에 끼우고 들어 올린다
       when: { has_items: [crowbar] }
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: occ_sc_pinned_done
@@ -137,7 +137,7 @@
           - belief: { fact: "지렛대가 부러질 듯 휘었고 판은 꿈쩍하지 않았다. 감염체가 몰려와 {mate:이/가} 스스로 다리를 빼냈다. 다리가 엉망이다", source: seen }
     - id: lift
       label: 맨손으로 판을 들어 본다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: occ_sc_pinned_done

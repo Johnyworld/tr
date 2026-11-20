@@ -130,7 +130,7 @@
         - resolve_step: { text: "물건으로 빚을 한 덩이 덜었다" }
     - id: labor
       label: 내놓을 게 없으니 밤새 짐을 나르겠다고 한다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - body: { track: fatigue, delta: 1 }
@@ -184,7 +184,7 @@
   choices:
     - id: talk
       label: 옆 사람에게 그쪽 사정을 슬쩍 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - overhear: { faction: other, source: rumor }
@@ -346,7 +346,7 @@
   choices:
     - id: ask
       label: 담과 골목을 하나하나 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "{target}에 살던 사람에게 옛 골목과 낮은 담을 들었다. 지금도 맞는지는 모른다", source: report }
@@ -470,7 +470,7 @@
   choices:
     - id: teach
       label: 시간을 내서 차근차근 가르친다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - standing: 1

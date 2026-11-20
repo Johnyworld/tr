@@ -198,7 +198,7 @@
     reveal_when: 도시 밖 이야기를 하며 떠나고 싶은 마음을 함께 확인했을 때
     min_trust: 4
   stats: { strength: 1, agility: 1, vitality: 1, senses: 2, nerve: 1, charm: 0, intellect: 0 }
-  skills: { shoot: 2, survival: 2, sense_danger: 1, mechanics: 1 }
+  skills: { shoot: 2, survival: 2, sense_danger: 1, mechanics: 1, hunt: 1 }
   start_inventory: [recurve_bow, arrows, water_bottle]
   playable: true
   zone: e_market
@@ -239,7 +239,7 @@
     reveal_when: 섬의 밤배나 사라진 사람들 이야기를 조심스럽게 꺼냈을 때
     min_trust: 3
   stats: { strength: 0, agility: 1, vitality: 1, senses: 2, nerve: 0, charm: 1, intellect: 0 }
-  skills: { survival: 2, improvise: 1, sense_danger: 1, stealth: 1 }
+  skills: { survival: 2, improvise: 1, sense_danger: 1, stealth: 1, fishing: 1 }
   start_inventory: [fishing_kit, cloth, dried_fish]
   playable: true
   zone: yeoul_isle
@@ -281,7 +281,7 @@
     reveal_when: 구시가의 학원 건물 이야기가 나왔을 때
     min_trust: 3
   stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 0, charm: 2, intellect: 1 }
-  skills: { persuade: 2, first_aid: 1, history: 1, stealth: 1 }
+  skills: { persuade: 2, first_aid: 1, history: 1, stealth: 1, leadership: 1 }
   start_inventory: [radio, notebook, pen]
   playable: true
   zone: cathedral

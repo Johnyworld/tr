@@ -224,7 +224,7 @@
         - belief: { fact: "물값 판에 붉은연합 칸이 따로 생겼다. 염덕수는 장갑을 다시 끼고 아무 말 없이 정수장으로 돌아갔다", source: seen }
     - id: ask_why
       label: 영감님이 왜 지금 이 말을 꺼내는지 따로 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: eo_water_trade_done
@@ -306,7 +306,7 @@
   choices:
     - id: ask
       label: 일손이 누구였는지 조용히 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: eo_isle_lines_seen
@@ -373,7 +373,7 @@
         - belief: { fact: "일손 줄을 지웠다. 배는 통조림만 싣고 떠났다. 감순덕과 탁봉수도 곧 알게 될 것이다", source: seen }
     - id: ask_thumb
       label: 엄지 밑의 줄 이야기를 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: eo_manifest_done

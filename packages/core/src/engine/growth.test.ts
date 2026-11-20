@@ -11,7 +11,7 @@ import { runAfterTimeAdvance } from "./turnStart.ts";
 
 function content(): Content {
   const c = structuredClone(TEST_CONTENT);
-  c.scenario.growth = { first: 10, step: 5, ratio: 1, resilience: [], xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6 };
+  c.scenario.growth = { first: 10, step: 5, ratio: 1, resilience: [], xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6, raise_costs: [] };
   c.scenario.ability_array = [2, 1, 0, 0, -1];
   c.scenario.charm = { ability: "persuasion", first_impression_per: 2, bonus_at: 2 };
   for (const f of Object.values(c.factions)) f.aggression = 0;
@@ -41,12 +41,13 @@ describe("능력과 스킬", () => {
     expect(Object.values(made.stats).sort()).toEqual([-1, 0, 0, 1, 2]);
   });
 
-  it("스킬이 없으면 기본값, 역할의 시작 훈련은 그 값", () => {
+  it("누구나 하는 일은 없으면 -1, 전문 기술은 없으면 못 함, 역할의 시작 훈련은 그 값 (4.2.1)", () => {
     const c = content();
-    c.scenario.moves[0]!.default = -1;
+    c.scenario.moves[0]!.kind = "expert";
     c.roles.role_test!.start_skills = { stealth: 2 };
     const made = createCharacterFromRole(c.scenario, c.roles.role_test!);
-    expect(made.skills).toMatchObject({ fight: -1, stealth: 2, search: 0 });
+    expect(made.skills).toMatchObject({ stealth: 2, search: -1 });
+    expect(made.skills.fight).toBeUndefined();
   });
 
   it("판정 보정은 능력 + 스킬 (상한까지) + 난이도 + 몸 상태", () => {
@@ -114,10 +115,11 @@ describe("경험치와 레벨업", () => {
     expect(out.ok && out.resultText).toContain("레벨이 올랐다");
     expect(player(env)).toMatchObject({ level: 2, skillPoints: 1 });
     const learned = executeTool("learn_skill", { skill: "stealth" }, env.ctx);
-    expect(learned.ok && learned.resultText).toContain("아마추어 +0 → 숙련 +1");
-    expect(player(env)).toMatchObject({ skillPoints: 0, skills: { stealth: 1 } });
+    // 적히지 않은 공통 스킬은 -1에서 시작하고, -1→0은 1점이다 (4.2.1)
+    expect(learned.ok && learned.resultText).toContain("미숙 -1 → 할 수 있음 +0 (1점)");
+    expect(player(env)).toMatchObject({ skillPoints: 0, skills: { stealth: 0 } });
     expect(executeTool("learn_skill", { skill: "stealth" }, env.ctx).ok).toBe(false);
-    player(env).skillPoints = 1;
+    player(env).skillPoints = 9;
     player(env).skills.stealth = 2;
     expect(executeTool("learn_skill", { skill: "stealth" }, env.ctx).ok).toBe(false);
   });
@@ -167,7 +169,7 @@ describe("이전 세이브", () => {
     const parsed = createGameSchemas(c.scenario).event.parse({ ...old, player: bare }) as { player: { stats: Record<string, number>; skills: Record<string, number>; xp: number } };
     expect(parsed.player.stats).toMatchObject({ charm: -1, vitality: 0, strength: 1 });
     expect(parsed.player.stats).not.toHaveProperty("persuasion");
-    expect(parsed.player.skills.fight).toBe(0);
+    expect(parsed.player.skills.fight).toBe(-1); // 4.2.1: 적히지 않은 공통 스킬은 최저값(미숙)
     expect(parsed.player.xp).toBe(0);
   });
 });

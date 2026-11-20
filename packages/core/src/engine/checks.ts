@@ -6,7 +6,8 @@ import { squadFollowBonus } from "./command.ts";
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
 import { personaCheckParts } from "./persona.ts";
 import { attractionCheckBonus, traitSkillMod, traitsOf } from "./traits.ts";
-import { conditionPenalty, moveOf, shownLevel, statLabel, penaltySymptoms } from "../scenario/scenario.ts";
+import { conditionPenalty, learnedSkill, moveOf, shownLevel, statLabel, penaltySymptoms } from "../scenario/scenario.ts";
+import { josa } from "../text.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import type { Character } from "../game/character.ts";
 import { gainCheckXp } from "./growth.ts";
@@ -56,8 +57,16 @@ export function rollPlayerCheck(
 
   // 능력 + 스킬은 상한까지만 (기획서 4.2). 몸 상태 보정은 그 뒤에 따로 뺀다
   // 트레잇의 스킬 보정도 상한 안에서 더한다. 끌림(상대가 이성에게 끌린다)은 상황 보정이라 따로 (기획서 4.6)
+  // 전문 기술은 배우기 전엔 판정할 수 없다 (4.2.1)
+  const learned = learnedSkill(scenario, actor.skills, input.move);
+  if (learned === null) {
+    return {
+      ok: false,
+      error: `${josa(move.label, "은/는")} 배우지 않아 할 수 없는 전문 기술이다. 판정하지 않는다: 배운 사람에게 맡기거나, 그 스킬을 익힌 사람에게 배운다(take_action.lesson). 할 수 없는 일로 서술한다.`,
+    };
+  }
   const ability = actor.stats[input.stat] ?? 0;
-  const base = actor.skills[input.move] ?? move.default;
+  const base = learned;
   const companion = actor.id === state.playerId ? companionSkillMod(state, content, input.move) : 0;
   const squad = actor.id === state.playerId ? squadFollowBonus(state, content, input.move) : 0;
   const skill = base + traitSkillMod(content, actor, input.move) + Math.max(companion, squad);

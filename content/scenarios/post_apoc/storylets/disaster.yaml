@@ -77,7 +77,7 @@
   choices:
     - id: sandbags
       label: 모래주머니를 쌓는 일을 거든다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - disaster_prepare: true

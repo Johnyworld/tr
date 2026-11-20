@@ -29,8 +29,9 @@ export type PlayerView = {
   persona?: { id: string; label: string; level: number; acting: string }[];
   /** 성격 표: 모든 축, 0 포함 */
   personaScale?: { id: string; low: string; high: string; value: number; acting: string }[];
-  skills: { id: string; label: string; category: string; value: number; stats: string[] }[];
-  growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number; skillMax?: number } | null;
+  /** 스킬 (4.2.1): usable false = 못 하는 전문 기술, tier 단계 이름, raiseCost 한 단계 올리는 점수 (못 함·최고 단계면 null) */
+  skills: { id: string; label: string; category: string; kind: "common" | "expert"; value: number; usable: boolean; learned: number | null; tier: string; raiseCost: number | null; stats: string[] }[];
+  growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number; skillMax?: number; skillMin?: number; skillCosts?: number[] } | null;
   inventory: ItemView[];
   sceneItems: ItemView[];
   /** 창고 (12-149). label: 지금 넣을 수 있는 자리(사물함·거처)의 이름, canPut: 지금 넣을 수 있다, items: 이 구역에 맡겨 둔 것, home: 떠돌이의 거처(다른 구역일 때) */
@@ -106,10 +107,14 @@ export type NewGameView = {
     };
     /** 과거 배경 (12-84) */
     pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge?: number | null }[];
-    rankSkills?: string;
+    /** 자리(계급·직분)가 점수 없이 배운 상태로 주는 전문 기술 (4.2.1) */
+    grantedSkills?: string;
+    /** 고치기에서 점수를 둘 수 있는 전문 기술 id */
+    teachable?: string[];
     pastDefaults: { stats: Record<string, number>; skills: Record<string, number> } | null;
-    moves: { id: string; label: string; category: string; description: string; stats?: string }[];
-    skillRule: { points: number; max: number } | null;
+    moves: { id: string; label: string; category: string; description: string; stats?: string; kind?: "common" | "expert" }[];
+    /** 시작 스킬 점수와 단계마다 올리는 값 (costs[i]: min+i → +1) */
+    skillRule: { points: number; min: number; max: number; costs: number[] } | null;
     options: { value: string; label: string; description?: string }[];
     /** 얼굴 고르기 (12-139): 고른 성별의 얼굴을 화풍 섹션으로. 비었으면 기본 실루엣 */
     /** numbered: 얼굴마다 번호를 보인다 */

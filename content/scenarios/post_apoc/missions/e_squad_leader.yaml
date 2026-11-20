@@ -80,7 +80,7 @@
   giver_rank: squad_leader
   deadline_hours: 10
   requirements:
-    - check: tactics
+    - check: leadership
       min_outcome: partial
     - activity: work
       minutes: 120

@@ -38,7 +38,7 @@
         - belief: { fact: "구만석은 지난봄 붉은연합 광장에서 규율반원 석중기에게 맞고 담 밖에 버려졌다. 그날 밤 보초였을 뿐 탈영한 적이 없다고 한다. 왜 자기 이름이 명단에 올랐는지 모른다", source: report }
     - id: ask_message
       label: 그때 자기를 친 사람에게 전할 말이 있느냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pr2_bench_done
@@ -167,7 +167,7 @@
         - belief: { fact: "감시탑 아래 배수로에 방소라가 배급을 숨겨 두었다. 석유나도 그 시간에 누군가를 기다리고 있었다", source: seen }
     - id: ask
       label: 누구를 기다리느냐고 둘에게 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pr2_drain_seen
@@ -349,7 +349,7 @@
         - belief: { fact: "선전꾼 편종호가 버들마을 관리사무소 지하 교실 문 앞에 해열제를 두고 오라고 부탁했다. 위원회 몫이 아니라 자기 것이라 했다", source: seen }
     - id: ask_why
       label: 왜 버들마을 아이들이냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pr2_fever_given

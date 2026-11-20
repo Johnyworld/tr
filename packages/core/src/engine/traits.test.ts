@@ -18,12 +18,12 @@ function content(): Content {
     cost: { "-1": -1, "0": 0, "1": 1, "2": 3 },
     max_low: 2,
     pasts: [],
-    rank_skills: {},
+    rank_experts: {},
     rank_min_age: {},
     genders: [{ id: "male", label: "남성" }, { id: "female", label: "여성" }],
     traits: { max_positive: 3, max_negative: 3, max_personality: 2 },
   };
-  c.scenario.growth = { first: 10, step: 5, ratio: 1, resilience: [], xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6 };
+  c.scenario.growth = { first: 10, step: 5, ratio: 1, resilience: [], xp: { success: 1, partial: 1, miss: 2, merit: 2 }, daily_check_cap: 6, raise_costs: [] };
   for (const f of Object.values(c.factions)) f.aggression = 0;
   return c;
 }
@@ -71,7 +71,8 @@ describe("트레잇 효과", () => {
     const w = world(content(), { traits: ["eagle", "quick", "coward", "ugly"] }, () => 0); // 긍정 3 ≤ 부정 3
     const base = { intent: "살핀다", activity: null, deed: null, target: null, narration_summary: null, for_mission: false };
     const out = w.executeTool("take_action", { ...base, check: { move: "sense_danger", stat: "sense", difficulty: "normal", harm_on_failure: "none", harm_cause: "" } });
-    expect(out.ok && out.display.type === "check" && out.display.modifiers.skill).toBe(1);
+    // 적히지 않은 공통 스킬 -1(4.2.1) + 매의 눈 +1
+    expect(out.ok && out.display.type === "check" && out.display.modifiers.skill).toBe(0);
     expect(player(w).xp).toBe(3); // 실패 2 × 1.5
     expect(xpMultiplier(w.content, player(w))).toBe(1.5);
   });

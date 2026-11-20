@@ -54,7 +54,7 @@
   choices:
     - id: listen
       label: 옆에 쪼그려 앉아 천천히 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - relation: { who: kid, axis: trust, delta: 2 }

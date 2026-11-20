@@ -134,7 +134,7 @@
   choices:
     - id: ask
       label: 줄을 같이 잡아 주며 언제까지 버티겠냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: bo_well_seen
@@ -372,7 +372,7 @@
         - relation: { who: farmer, axis: affection, delta: -1 }
     - id: ask_ledger
       label: 장터 셈에 다른 것이 섞여 있지 않냐고 넌지시 묻는다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - set_flag: bo_trade_done

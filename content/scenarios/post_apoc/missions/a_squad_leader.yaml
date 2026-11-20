@@ -71,7 +71,7 @@
   requirements:
     - activity: work
       minutes: 120
-    - check: tactics
+    - check: leadership
       min_outcome: partial
 - id: a_sl_find_straggler
   title: 돌아오지 않은 짐꾼 찾기

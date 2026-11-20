@@ -30,7 +30,7 @@
   giver_rank: squad_leader
   deadline_hours: 10
   requirements:
-    - check: persuade
+    - check: leadership
       min_outcome: partial
 
 - id: occ_preacher_quarantine_rite

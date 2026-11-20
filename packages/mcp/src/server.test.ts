@@ -218,7 +218,7 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     expect(ok.text).toContain("# GM 지침");
     expect(app.creating).toBe(false);
     const p = app.world!.state().characters[app.world!.state().playerId]!;
-    expect(p).toMatchObject({ name: "윤하", gender: "female", age: 27, stats: { intellect: 2, charm: 1, strength: 0 }, skills: { history: 1, persuade: 1 }, past: { id: "teacher" }, traits: [] });
+    expect(p).toMatchObject({ name: "윤하", gender: "female", age: 27, stats: { intellect: 2, charm: 1, strength: 0 }, skills: { leadership: 2, history: 1, persuade: 0 }, past: { id: "teacher" }, traits: [] });
     expect(app.world!.state().options).toEqual({ mature: false, dialogue: "script" }); // 새 게임에서 고른 서술 방식 (12-85)
     // 튜토리얼: 찾는 가족이 버들마을에 있다 (주인공은 어디 있는지 모른다)
     const st = app.world!.state();
@@ -559,7 +559,9 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(app.submitCreation({ answer: "intellect / charm, senses / strength" })).toEqual({ ok: true });
     expect(app.creation!.view.step).toBe("skills");
     expect(app.submitCreation({ answer: "manual" })).toEqual({ ok: true });
-    expect(app.submitCreation({ answer: ["사격", "응급처치"] })).toEqual({ ok: true });
+    // 4.2.1: 과거 배경(경찰)이 가르치지 않은 전문 기술에는 점수를 둘 수 없다
+    expect(app.submitCreation({ answer: ["사격 +2", "응급처치"] })).toMatchObject({ ok: false });
+    expect(app.submitCreation({ answer: ["사격 +2", "눈치 +1", "경계"] })).toEqual({ ok: true });
     expect(app.submitCreation({ answer: "manual" })).toEqual({ ok: true });
     expect(app.creation!.view.character!.traits.length).toBeGreaterThan(0);
     expect(app.submitCreation({ answer: [] })).toEqual({ ok: true });
@@ -575,7 +577,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(done.isError).toBe(false);
     expect(done.text).toContain("상태 화면에서 골랐다");
     expect(done.text).toContain("# GM 지침");
-    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", age: 31, portrait: "d_f1", stats: { intellect: 2, charm: 1, senses: 1, strength: -1 }, skills: { shoot: 1, first_aid: 1 } }); // 방문자는 무소속이라 계급 기본 훈련이 없다
+    expect(app.world!.state().characters[app.world!.state().playerId]).toMatchObject({ name: "윤하", age: 31, portrait: "d_f1", stats: { intellect: 2, charm: 1, senses: 1, strength: -1 }, skills: { shoot: 2, insight: 1, sense_danger: 0 } }); // 방문자는 무소속이라 계급 기본 훈련이 없다
     expect(app.creation).toBeNull();
   });
 

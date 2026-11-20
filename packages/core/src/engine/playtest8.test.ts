@@ -63,9 +63,11 @@ describe("플레이 테스트 8", () => {
     const w = make("role_l_wanderer");
     const me = w.state().characters[w.state().playerId]!;
     expect(me.inventory.fishing_kit).toBeGreaterThan(0);
-    expect(gearModifiers(real, me, "survival", null, w.state(), "fish").skill).toBe(1);
-    expect(gearModifiers(real, me, "survival", null, w.state(), "hunt").skill).toBe(0);
-    expect(gearModifiers(real, me, "survival", null, w.state(), null).skill).toBe(0);
+    // 4.2.1: 낚시는 따로 된 전문 기술(fishing)이 됐고, 낚시 도구의 보정도 그 스킬에 붙는다
+    expect(gearModifiers(real, me, "fishing", null, w.state(), "fish").skill).toBe(1);
+    expect(gearModifiers(real, me, "fishing", null, w.state(), "hunt").skill).toBe(0);
+    expect(gearModifiers(real, me, "fishing", null, w.state(), null).skill).toBe(0);
+    expect(gearModifiers(real, me, "survival", null, w.state(), "fish").skill).toBe(0);
   });
 
   it("B10: 없는 물건을 쓰려 하면 시간을 흘리지 않고 막는다", () => {

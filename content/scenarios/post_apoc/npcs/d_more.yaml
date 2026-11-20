@@ -83,7 +83,7 @@
     reveal_when: 빼돌리는 현장을 들켜 대표에게 알려질 처지가 되었을 때, 입막음 값을 흥정하려고
     min_trust: 2
   stats: { strength: 0, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 2, intellect: 1 }
-  skills: { persuade: 2, deceive: 2, first_aid: 0, history: 1 }
+  skills: { persuade: 2, deceive: 2, first_aid: 0, history: 1, insight: 1 }
   start_inventory: [ledger, antibiotics, cigarettes]
   playable: false
   zone: d_clinic

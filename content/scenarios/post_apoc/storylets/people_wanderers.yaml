@@ -21,7 +21,7 @@
         - belief: { fact: "떠돌이 반석구가 다리를 저는 수염 난 청솔 고참을 찾는다. 그런 사람이 있다고 알려 주었다. 그는 고맙다는 말 대신 불을 오래 들여다봤다", source: seen }
     - id: ask_why
       label: 왜 찾느냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - relation: { who: drifter, axis: trust, delta: 2 }
@@ -62,7 +62,7 @@
         - belief: { fact: "강가에서 떠밀려 온 여자 독고지원을 만났다. 바다 건너 섬에서 왔다는 것 말고는 말하지 않는다. 물가에서는 자지 않으려 한다", source: seen }
     - id: ask_island
       label: 섬에서 왜 나왔느냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - reveal_tie: { who: stray, other: friend }
@@ -146,7 +146,7 @@
         - belief: { fact: "재생탄 장수 강은숙이 청솔 분대장 강태호의 안부를 물었다. 근황을 듣는 동안 탄피를 한 번도 굴리지 않았다", source: seen }
     - id: why_ask
       label: 그 분대장과 무슨 사이냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - reveal_tie: { who: seller, other: brother }

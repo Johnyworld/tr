@@ -153,7 +153,7 @@
         - deed: { summary: 수비대원과 병원에서 찾은 약을 진료소 몰래 나눠 가졌다, tags: [theft, selfishness], severity: 2, privacy: private }
     - id: ask_jaemun
       label: 하재문이 그날 왜 긁혔는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: d_sl_stash_done
@@ -182,7 +182,7 @@
   choices:
     - id: ask_who
       label: 빗장을 지르고 누가 풀라고 했는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: d_sl_side_gate_done
@@ -352,7 +352,7 @@
           - belief: { fact: "골목으로 총알이 날아들었다. 의사가 팔을 다쳤고, 정찰병은 혼자 기어서 달아났다", source: seen }
     - id: carry
       label: 정찰병을 둘러메고 진료소까지 데려간다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: d_sl_escort_stop_done

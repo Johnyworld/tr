@@ -108,7 +108,7 @@
     reveal_when: 장부와 창고가 맞지 않는다는 이야기를 먼저 꺼낸 사람이 그녀를 지켜 주겠다고 할 때
     min_trust: 3
   stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: -1, charm: 0, intellect: 2 }
-  skills: { history: 1, scavenge: 1, sense_danger: 1 }
+  skills: { history: 1, scavenge: 1, sense_danger: 1, insight: 1 }
   start_inventory: [ledger]
   playable: true
   zone: a_base

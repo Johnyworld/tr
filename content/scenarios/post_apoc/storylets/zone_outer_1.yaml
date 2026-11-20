@@ -30,7 +30,7 @@
         - belief: { fact: "환승역 2호선 승강장에 사람들이 숨어 산다. 불은 하나만 켜고, 쇠를 두 번 두드리면 사람이라는 뜻이다", source: seen }
     - id: ask_tunnel
       label: 터널로 다른 곳에 갈 수 있는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: zo1_sub_met
@@ -68,7 +68,7 @@
     - id: pry
       label: 쇠지렛대를 셔터 밑에 넣고 들어 올린다
       when: { has_items_any: [crowbar] }
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: zo1_sub_rescued
@@ -124,7 +124,7 @@
   choices:
     - id: pry_again
       label: 이번에는 끝까지 셔터를 들어 올린다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: zo1_sub_rescued
@@ -439,7 +439,7 @@
   choices:
     - id: help_carry
       label: 맨 뒤 사람의 포대를 받아 트럭까지 진다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - relation: { who: worker, axis: trust, delta: 2 }
@@ -553,7 +553,7 @@
   choices:
     - id: climb
       label: 사다리를 올라 붉은 천을 끌어내리고 초록 천을 묶는다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: zo1_pp_flag_done
@@ -608,7 +608,7 @@
   choices:
     - id: climb
       label: 사다리를 올라 초록 천을 끊고 붉은 완장을 풀어 대신 묶는다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: zo1_pp_flag_done
@@ -659,7 +659,7 @@
           - belief: { fact: "배수구 안쪽 철창이 막혀 있었다. 뒤에서 무언가 기어 오는 소리에 되돌아 나왔다", source: seen }
     - id: tower
       label: 무너진 감시탑 잔해를 타고 담을 넘는다
-      check: survival
+      check: athletics
       outcomes:
         success:
           - set_flag: zo1_pr_inside
@@ -768,7 +768,7 @@
     - id: water
       label: 배식구로 물을 넣어 주고, 왜 혼자 갇혀 있는지 묻는다
       when: { has_items: [water_bottle] }
-      check: persuade
+      check: insight
       outcomes:
         success:
           - take_item: { item: water_bottle }
@@ -1108,7 +1108,7 @@
         - belief: { fact: "대형 마트에 아이들이 숨어 산다. 하나가 기침을 한다. 통조림을 굴려 주었더니 돌멩이를 내려놓았다", source: seen }
     - id: talk
       label: 무릎을 꿇고 눈높이를 맞춰 기침하는 애가 누구냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: zo1_ml_kid_met

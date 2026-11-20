@@ -116,7 +116,7 @@
         - belief: { fact: "{eager}에게 다음에 밖으로 나가는 일을 맡기겠다고 약속했다", source: seen }
     - id: why
       label: 왜 그렇게 나가고 싶은지 묻는다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - relation: { who: eager, axis: trust, delta: 1 }

@@ -36,7 +36,7 @@
     reveal_when: 저녁에 잠긴 수술실 문 앞에서 기다렸을 때, 또는 수술 중 손이 떨리는 것을 본 사람이 둘만 있을 때 물었을 때
     min_trust: 3
   stats: { strength: -1, agility: 1, vitality: -1, senses: 2, nerve: 1, charm: 0, intellect: 2 }
-  skills: { first_aid: 2, infected_lore: 1, endure: 1 }
+  skills: { first_aid: 2, infected_lore: 1, endure: 1, surgery: 1 }
   start_inventory: [medkit, kitchen_knife]
   playable: true
   healer: true

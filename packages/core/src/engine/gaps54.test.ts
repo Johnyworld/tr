@@ -48,9 +48,13 @@ describe("12-54 빈틈", () => {
 
   it("배우면 스킬이 max까지 한 단계 오르고, 시간을 쓰면 시계가 간다", () => {
     const w = open();
-    const before = w.state().characters[w.state().playerId]!.skills.history ?? -1;
+    // 못 하던 전문 기술은 먼저 배운 상태(최저값)가 되고, 그다음부터 한 단계씩 오른다 (4.2.1)
+    const min = w.content.scenario.ranges.skill.min;
+    expect(w.state().characters[w.state().playerId]!.skills.history).toBeUndefined();
     resolveWith(w, [{ train: { skill: "history", max: 1 } }]);
-    expect(w.state().characters[w.state().playerId]!.skills.history).toBe(before + 1);
+    expect(w.state().characters[w.state().playerId]!.skills.history).toBe(min);
+    resolveWith(w, [{ train: { skill: "history", max: 1 } }]);
+    expect(w.state().characters[w.state().playerId]!.skills.history).toBe(min + 1);
     const t = w.state().time;
     resolveWith(w, [{ delay: 120 }]);
     expect(w.state().time).toBeGreaterThanOrEqual(t + 120);

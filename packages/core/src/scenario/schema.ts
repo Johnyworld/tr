@@ -55,7 +55,10 @@ export const scenarioFileSchema = z
     name: z.string().min(1),
     resources: z.array(labeled).min(1),
     stats: z.array(labeled).min(1),
-    /** 스킬 (기본 행동). 판정은 능력 하나 + 이 스킬. stats: 쓸 수 있는 능력, default: 배우지 않았을 때의 수준 */
+    /**
+     * 스킬 (기본 행동, 기획서 4.2.1). 판정은 능력 하나 + 이 스킬. stats: 쓸 수 있는 능력.
+     * kind: common(누구나 하는 일, 찍지 않으면 스킬 최저값으로 시도한다) / expert(전문 기술, 배우기 전엔 판정할 수 없다)
+     */
     moves: z
       .array(
         z.strictObject({
@@ -63,7 +66,7 @@ export const scenarioFileSchema = z
           label: z.string().min(1),
           stats: z.array(id).min(1),
           description: z.string().optional(),
-          default: z.number().int().default(0),
+          kind: z.enum(["common", "expert"]).default("common"),
           category: z.string().optional(),
         }),
       )
@@ -98,6 +101,15 @@ export const scenarioFileSchema = z
         xp: z.strictObject({ success: z.number().int().min(0), partial: z.number().int().min(0), miss: z.number().int().min(0), merit: z.number().int().min(0) }),
         /** 판정으로 하루에 얻을 수 있는 경험치 상한 */
         daily_check_cap: z.number().int().positive(),
+        /** 스킬 한 단계를 올리는 데 드는 점수 (4.2.1): 스킬 최저값에서부터 단계마다. 없거나 모자라면 1 */
+        raise_costs: z.array(z.number().int().min(1)).default([]),
+        /**
+         * 가르침 (4.2.1): 그 스킬이 min_skill 이상인 사람(신뢰 min_trust 이상) 곁에서 hours시간을 채우면 전문 기술을 배운다.
+         * 다른 무리면 물건으로 값 fee (신뢰 free_trust 이상이면 공짜). 없으면 가르침이 없다
+         */
+        teaching: z
+          .strictObject({ hours: z.number().int().positive(), min_skill: z.number().int(), min_trust: z.number().int(), fee: z.number().int().min(0), free_trust: z.number().int() })
+          .optional(),
       })
       .optional(),
     /** 시스템이 특정 역할로 쓰는 행동 */
@@ -143,19 +155,20 @@ export const scenarioFileSchema = z
               label: z.string().min(1),
               summary: z.string().min(1),
               stats: z.record(id, z.number().int()),
-              skills: z.record(id, z.number().int().min(1).max(2)).default({}),
+              /** 시작 스킬 배치 (4.2.1): 스킬 → 단계 (-1이면 전문 기술을 배운 상태로만). creation.skills.points를 다 쓴 배치 */
+              skills: z.record(id, z.number().int().min(-1).max(2)).default({}),
               items: z.array(id).default([]),
               /** 이 일을 했을 수 있는 최소 나이 (12-87) */
               min_age: z.number().int().min(0).optional(),
             }),
           )
           .default([]),
-        /** 계급 기본 훈련 (12-87): 그 계급으로 시작하면 과거 배경과 따로 더해지는 스킬 (계급 id → 스킬 id → 수준). 그 자리에 꼭 필요한 솜씨 */
-        rank_skills: z.record(id, z.record(id, z.number().int().min(1).max(2))).default({}),
+        /** 계급이 요구하는 전문 기술 (4.2.1): 그 계급으로 시작하면 점수 없이 배운 상태(스킬 최저값)로 준다 (계급 id → 스킬 id들) */
+        rank_experts: z.record(id, z.array(id)).default({}),
         /** 계급의 최소 나이 (12-87, 계급 id → 나이) */
         rank_min_age: z.record(id, z.number().int().min(0)).default({}),
-        /** 시작 스킬 (12-84): 포인트(points)를 스킬마다 max까지 나눈다. 과거 배경이 기본 배치를 준다 */
-        skills: z.strictObject({ points: z.number().int().min(0), max: z.number().int().min(1) }).optional(),
+        /** 시작 스킬 (4.2.1): 포인트(points)를 growth.raise_costs의 값으로 나눈다. 과거 배경이 기본 배치를 준다. 남긴 점수는 레벨업 점수와 함께 쓴다 */
+        skills: z.strictObject({ points: z.number().int().min(0) }).optional(),
         /** 대화로 만들 때(MCP) 단계별로 GM에게 주는 서술 힌트 */
         narration: z
           .strictObject({
@@ -371,8 +384,8 @@ export const scenarioFileSchema = z
           id,
           label: z.string().min(1),
           summary: z.string().min(1),
-          /** 시작 훈련에 더해지는 직분 훈련 (스킬 id → 수준) */
-          skills: z.record(id, z.number().int().min(1).max(2)).default({}),
+          /** 직분 스킬 (4.2.1): 스킬을 주지는 않는다. 전문 기술이면 배운 상태(스킬 최저값)로 주고, 만들 때 이 스킬에 점수를 두는 배치를 권한다 */
+          skills: z.array(id).default([]),
           /** 시작 소지품에 더해지는 직분 도구 */
           kit: z.array(id).default([]),
           /** 직분의 일감 (임무 템플릿 id). 무리를 가리지 않는다 */
@@ -1282,10 +1295,12 @@ export const scenarioFileSchema = z
               chance: z.number().min(0).max(1),
               items: z.array(z.strictObject({ item: id, weight: z.number().positive(), qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) })).min(1),
               companions: z.array(id).default([]),
+              /** 이 일의 판정 스킬 (없으면 foraging.move) */
+              move: id.optional(),
             }),
           )
           .min(1),
-        trap: z.strictObject({ item: id, chance: z.number().min(0).max(1), catch: z.strictObject({ item: id, qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }) }).optional(),
+        trap: z.strictObject({ /** 덫을 놓으려면 배워야 하는 스킬 (전문 기술, 4.2.1) */ move: id.optional(), item: id, chance: z.number().min(0).max(1), catch: z.strictObject({ item: id, qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }) }).optional(),
       })
       .optional(),
     /** 몸 상태 (12-1): 허기와 감염. 없으면 그 규칙을 쓰지 않는다 */
@@ -1584,7 +1599,6 @@ export const scenarioFileSchema = z
     const stats = new Set(s.stats.map((x) => x.id));
     for (const move of s.moves) {
       for (const stat of move.stats) if (!stats.has(stat)) problem(`moves.${move.id}: 알 수 없는 능력치 ${stat}`);
-      if (move.default < s.ranges.skill.min || move.default > s.ranges.skill.max) problem(`moves.${move.id}: 기본값이 스킬 범위 밖이다`);
     }
     for (const [from, to] of Object.entries(s.renamed.abilities)) {
       if (!stats.has(to)) problem(`renamed.abilities.${from}: 알 수 없는 능력 ${to}`);

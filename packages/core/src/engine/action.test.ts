@@ -49,6 +49,7 @@ describe("take_action: 한 턴", () => {
   it("능력치·난이도·상태 보정을 더해 판정한다", () => {
     const { store, ctx } = setup(diceRng(4, 3), (s) => {
       s.characters.player!.conditions.harm = "light"; // -1
+      s.characters.player!.skills.search = 0; // 적히지 않은 공통 스킬은 -1이라 0으로 둔다 (4.2.1)
     });
     takeAction(act({ check: { ...search(), difficulty: "hard" } }), ctx);
     // 4 + 3 + 감각(+1) + 어려움(-1) + 경상(-1) = 6 → 실패

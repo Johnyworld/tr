@@ -5,12 +5,15 @@ import Database from "better-sqlite3";
 import { asc, desc, eq, gt, lt } from "drizzle-orm";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { levelForXp } from "../engine/growth.ts";
 import {
   applyEvent,
   createGameSchemas,
   EMPTY_STATE,
   MIN_READABLE_SAVE_VERSION,
   SAVE_SCHEMA_VERSION,
+  SKILL_REWORK_VERSION,
+  upgradeSkills,
   type GameEvent,
   type GameState,
 } from "../game/state.ts";
@@ -54,6 +57,7 @@ export class SqliteRepository implements GameRepository {
       // 이전 형식: 스냅숏은 믿지 않고 이벤트를 처음부터 다시 읽는다 (새 필드는 스키마 기본값으로 채워진다)
       try {
         ({ state: this.#state, lastSeq: this.#lastSeq } = this.#loadState(false));
+        if (upgradeFrom < SKILL_REWORK_VERSION) this.#state = upgradeSkills(this.#state, scenario, (xp) => levelForXp(scenario, xp));
       } catch (err) {
         throw new SaveFormatError(`이전 형식(${upgradeFrom})의 세이브를 읽지 못했습니다: ${err instanceof Error ? err.message : String(err)}`);
       }

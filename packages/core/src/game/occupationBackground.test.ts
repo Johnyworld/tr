@@ -33,10 +33,11 @@ const open = (input: CustomStartInput) => {
 };
 
 describe("직분", () => {
-  it("직분 훈련·도구가 더해지고, 무리의 시나리오에서 임무를 빌린다", () => {
+  it("직분 도구가 더해지고 (직분은 스킬을 주지 않는다), 무리의 시나리오에서 임무를 빌린다", () => {
     const role = buildCustomRole(content, cook);
     expect(role.occupation).toBe("cook");
-    expect(role.start_skills).toMatchObject({ persuade: 1, survival: 1 });
+    // 4.2.1: 직분은 스킬을 주지 않는다 (전문 기술이면 최저값으로 배운 상태만, 요리사의 스킬은 누구나 하는 일)
+    expect(role.start_skills).toEqual({ persuade: 1 });
     expect(role.start_inventory).toContain("kitchen_knife");
     expect(role.missions.length).toBeGreaterThan(0);
   });

@@ -18,7 +18,7 @@
   requirements:
     - check: first_aid
       min_outcome: partial
-    - check: persuade
+    - check: leadership
       min_outcome: partial
 
 - id: d_quarantine_watch

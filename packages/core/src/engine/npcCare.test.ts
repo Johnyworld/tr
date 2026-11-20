@@ -8,7 +8,7 @@ import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
 import { runNpcRecovery } from "./body.ts";
 import { executeTool } from "./tools.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, teachSkills } from "../testing.ts";
 
 /** NPC도 낫는다 (12-52) */
 const content = loadRealContent();
@@ -47,6 +47,8 @@ describe("주인공이 남을 치료한다", () => {
     const six = () => () => 0.99;
     const mk = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-care-")), content, rngFactory: six });
     const w = mk().create("mcp", undefined, undefined, undefined, { role: buildCustomRole(content, medic), background: [] });
+    // 응급처치는 전문 기술이라 둘 다 배워 둔다 (4.2.1). 의무병과 아닌 사람의 차이는 아이템이다
+    teachSkills(w, ["first_aid"]);
     w.executeTool("npc_presence", { npc_id: "a_jiho", action: "enter" });
     hurt(w, "a_jiho", "serious");
     const aid = { move: "first_aid", stat: "intellect", difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, opponent: null, distance: null, infected_source: false, target_harm: "none" };
@@ -57,6 +59,7 @@ describe("주인공이 남을 치료한다", () => {
     const again = treat(w, null);
     expect(!again.ok && again.error).toContain("오늘은 이미");
     const grunt = mk().create("mcp", "role_a_grunt");
+    teachSkills(grunt, ["first_aid"]);
     grunt.executeTool("npc_presence", { npc_id: "a_jiho", action: "enter" });
     hurt(grunt, "a_jiho", "light");
     const no = treat(grunt, null);

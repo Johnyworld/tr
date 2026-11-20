@@ -109,7 +109,8 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터 → 수위 → 서�
     expect(done.roleId).toBe("role_a_squad_leader");
     const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-role-")), content: real, rngFactory: () => createSeededRng(2) }).create("mcp", done.roleId, done.choice, done.packId);
     const me = w.state().characters[w.state().playerId]!;
-    expect(me.skills).toMatchObject({ first_aid: 1, surgery: 1, shoot: -1, tactics: 1 }); // 과거 배경(의사) + 분대장 계급 기본 훈련(전략)
+    // 과거 배경(의사)의 절대값 배치 + 분대장 계급이 가르친 전문 기술(전략, 점수 없이 최저값) (4.2.1)
+    expect(me.skills).toMatchObject({ first_aid: 2, surgery: 1, shoot: -1, tactics: -1 });
     expect(me.past).toMatchObject({ id: "doctor", label: "의사" });
     expect(w.state().beliefs[me.id]!.map((b) => b.fact).join()).toContain("붕괴 전에 나는 의사였다");
     w.close();
@@ -135,7 +136,7 @@ describe("채팅과 상태 화면이 같은 것을 보여 준다", () => {
     expect(set?.step === "ability_set" && Object.fromEntries(Object.entries(set.values).filter(([, v]) => v !== 0))).toEqual(view.character!.pastDefaults!.stats);
     // 스킬 고치기도 지금 고른 것부터
     const skills = run(["manual"], next.draft);
-    expect(describeNewGameStep(packs, skills.draft)).toContain("지금 고른 것 (과거 배경 군인): 사격 +1, 전략 +1");
+    expect(describeNewGameStep(packs, skills.draft)).toContain("지금 고른 것 (과거 배경 군인): 사격 +2, 전략 +1, 근접전 0, 운동 0, 경계 0");
   });
 });
 

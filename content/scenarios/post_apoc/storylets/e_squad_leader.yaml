@@ -483,7 +483,7 @@
         - belief: { fact: "다음 물때 섬 거래선 호위에 직접 서기로 했다. 감태식이 '짐 목록에 사람 칸이 있어'라고 중얼거렸다", source: seen }
     - id: ask
       label: 배에 누가 타느냐고 묻는다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - set_flag: es_boat_done

@@ -48,7 +48,7 @@
   choices:
     - id: ask
       label: 혹시 아는 사람이 있냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - reveal_tie: { who: stranger, other: known }

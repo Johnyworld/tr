@@ -37,7 +37,7 @@
     reveal_when: 거래선에 실린 사람들 이야기를 꺼내고, 딸이 정말 잘 지내는지 알려 줄 수 있는 사람일 때
     min_trust: 3
   stats: { strength: 1, agility: 0, vitality: 1, senses: 2, nerve: 1, charm: -1, intellect: 0 }
-  skills: { survival: 2, mechanics: 1, sense_danger: 1, endure: 1 }
+  skills: { survival: 2, mechanics: 1, sense_danger: 1, endure: 1, swim: 1, fishing: 1 }
   start_inventory: [coat, water_bottle, binoculars]
   playable: true
   zone: water_plant
@@ -77,7 +77,7 @@
     reveal_when: 빚 이야기가 나오거나, 거래선에 사람이 실린다는 것을 함께 알았을 때
     min_trust: 2
   stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: 0, charm: 1, intellect: 0 }
-  skills: { endure: 1, survival: 1, persuade: 1, scavenge: 1 }
+  skills: { endure: 1, survival: 1, persuade: 1, scavenge: 1, athletics: 1 }
   start_inventory: [water_bottle, dry_ration]
   playable: true
   zone: e_market
@@ -117,7 +117,7 @@
     reveal_when: 빚에 몰린 사람이 거래선에 실려 가는 것을 누군가 알아채고 따지러 왔을 때
     min_trust: 4
   stats: { strength: -1, agility: -1, vitality: 0, senses: 2, nerve: 2, charm: 1, intellect: 2 }
-  skills: { persuade: 2, deceive: 2, history: 1, intimidate: 1 }
+  skills: { persuade: 2, deceive: 2, history: 1, intimidate: 1, insight: 1 }
   start_inventory: [ledger, trade_token, cigarettes, leather_jacket, kevlar_vest, pistol, pistol_rounds, pistol_rounds, machete]
   # 전당포: 맡겨진 것들. 값을 후하게 쳐주지 않는다
   merchant: { restock: { leather_jacket: 1, machete: 1, combat_knife: 1, carpentry_kit: 1, scrap_metal: 4, cloth: 4, antibiotics: 2 }, markup: 1.4, rare: { serum: 0.04 } }

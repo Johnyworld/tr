@@ -170,7 +170,7 @@
   choices:
     - id: haul
       label: 짐을 지고 장터까지 간다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - give_item: { item: canned_food, quantity: 2 }

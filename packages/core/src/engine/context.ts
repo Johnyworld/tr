@@ -46,7 +46,7 @@ import { weatherNow } from "../sim/weather.ts";
 import { describeExtraTemplates } from "./extras.ts";
 import { aliasOf, hasMet, headingAs, knowsName } from "../game/acquaintance.ts";
 import { isIncapacitated, waterHere } from "./body.ts";
-import { attractionOf, effectiveSkill, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
+import { attractionOf, canUseSkill, effectiveSkill, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
 import {
   conditionPenalty,
@@ -148,7 +148,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
       ...describeRemains(state, content),
       ...(describeCompanions(state, content) ? [describeCompanions(state, content)] : []),
-      ...(player.skillPoints > 0 ? [`레벨업 대기: 올릴 스킬 ${player.skillPoints}개. 적당한 때 플레이어에게 무엇을 올릴지 묻고 learn_skill로 올린다`] : []),
+      ...(player.skillPoints > 0 ? [`스킬 포인트 ${player.skillPoints}점 (올리기: -1→0 1점, 0→+1 2점, +1→+2 3점). 적당한 때 플레이어에게 무엇을 올릴지(모아 둘지) 묻고 learn_skill로 올린다`] : []),
     ].join("\n")],
     ["sheet", [
       // 명성·무리 안의 눈·현상금은 자주 바뀌지 않아 시트에 둔다 (플레이 테스트 11: 상태 덩어리에 있어 매 턴 되풀이됐다)
@@ -178,7 +178,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
           ]
         : []),
       `능력: ${stats}`,
-      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${signed(effectiveSkill(content, player, m.id))}`).join(", ")}`,
+      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}. "못 함"은 배우지 않은 전문 기술: 판정할 수 없다): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${canUseSkill(content, player, m.id) ? signed(effectiveSkill(content, player, m.id)) : "못 함"}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n")],
     ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content), ...describeAmbush(content, state)].filter(Boolean).join("\n")],

@@ -50,7 +50,7 @@
   choices:
     - id: ask
       label: 그곳에서 무엇을 보고 사람을 받는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - resolve_step: { text: "{target:이/가} 무엇을 보고 사람을 들이는지 안다" }
@@ -348,7 +348,7 @@
   choices:
     - id: ask
       label: 땅 밑으로 내려가는 길을 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "지하철 환승역 승강장 끝 철망 너머로 비상 사다리가 아래로 이어진다고 한다. 아래는 물이 찬 대피 통로다", source: report }
@@ -460,7 +460,7 @@
   choices:
     - id: ask
       label: 옛 동네 안쪽 사정이 요즘 어떤지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - resolve_step: { text: "{target} 안쪽의 요즘 사정을 들었다" }

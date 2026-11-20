@@ -71,7 +71,7 @@
   choices:
     - id: run
       label: 먼저 닿으려고 지붕 쪽으로 내달린다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - give_item: { item: mil_ration, quantity: 3 }
@@ -103,7 +103,7 @@
     - id: for_faction
       label: 우리 무리를 위해 상자를 통째로 거점에 가져간다
       when: { in_faction: true }
-      check: endure
+      check: athletics
       outcomes:
         success:
           - faction_resource: { faction: own, resource: food, delta: 10 }
@@ -192,7 +192,7 @@
   choices:
     - id: ask
       label: 행렬과 반나절 걸으며 남쪽 이야기를 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "남쪽으로 가는 피난민 행렬에게 들었다: 집결지 철조망 앞에서 손가락을 찔러 피 한 방울을 받는다. 그다음 줄이 둘로 갈린다고 한다", source: report }
@@ -235,7 +235,7 @@
   choices:
     - id: ask
       label: 곁에 앉아 남쪽 이야기를 천천히 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: ow_south_truth

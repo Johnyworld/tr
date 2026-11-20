@@ -97,7 +97,7 @@
   choices:
     - id: hold
       label: 같이 버티자고 말한다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - faction_morale: { faction: own, delta: 1 }
@@ -220,7 +220,7 @@
         - deed: { summary: 남쪽 담 밑 발자국을 윗사람에게 알렸다, tags: [diligence], severity: 1, privacy: semi_private }
     - id: calm
       label: 수군거리는 사람들을 진정시킨다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - faction_morale: { faction: own, delta: 1 }

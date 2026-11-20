@@ -80,7 +80,7 @@
           - belief: { fact: 손을 빤히 보다가 임동욱과 눈이 마주쳤다. 그는 뭘 보냐며 자리를 떴다, source: seen }
     - id: ask
       label: 손이 왜 그러냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: a_sl_saw_hand
@@ -149,7 +149,7 @@
   choices:
     - id: ask_him
       label: 무슨 쪽지냐고 노병철에게 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: a_sl_letter_seen
@@ -256,7 +256,7 @@
   choices:
     - id: take_aside
       label: 따로 불러 다독인다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - set_flag: a_sl_haneul_noticed
@@ -361,7 +361,7 @@
         - relation: { who: comrade, axis: respect, delta: 1 }
     - id: join_tables
       label: 다 같이 앉자며 두 분대 자리를 붙인다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - relation: { who: comrade, axis: affection, delta: 1 }
@@ -461,7 +461,7 @@
   choices:
     - id: story
       label: 붕괴 전 이야기를 꺼내 분위기를 돌린다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - faction_morale: { faction: own, delta: 1 }

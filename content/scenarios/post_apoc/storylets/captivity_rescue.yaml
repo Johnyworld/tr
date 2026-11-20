@@ -25,7 +25,7 @@
         - relation: { who: boss, axis: respect, delta: 1 }
     - id: ask_around
       label: 돌아온 사람들, 장터 짐꾼들에게 물어 다닌다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: cp_hunt_on
@@ -57,7 +57,7 @@
   choices:
     - id: loose_bar
       label: 밤마다 흔들어 온 창살 하나를 마저 비튼다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - release_player: { returned: false }

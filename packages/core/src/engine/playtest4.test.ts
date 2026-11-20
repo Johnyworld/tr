@@ -4,14 +4,19 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
 import type { GameWorld } from "../world/world.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, teachSkills } from "../testing.ts";
 import { runCommand } from "../commands/commands.ts";
 import { commanderOf } from "../game/missions.ts";
 
 /** 플레이 테스트 4 (docs/playtests/2026-11-18-mcp-4.md)에서 고친 것 */
 const real = loadRealContent();
 const content = { ...real, storylets: {} };
-const make = (role: string, roll = 0.99, c = content) => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-pt4-")), content: c, rngFactory: () => () => roll }).create("mcp", role);
+/** 목공은 전문 기술이라 배워 둔다 (4.2.1) */
+const make = (role: string, roll = 0.99, c = content) => {
+  const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-pt4-")), content: c, rngFactory: () => () => roll }).create("mcp", role);
+  teachSkills(w, ["carpentry"]);
+  return w;
+};
 const look = (w: GameWorld) => w.executeTool("take_action", { intent: "둘러본다", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false });
 const chk = (move: string, stat: string) => ({ move, stat, difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" });
 

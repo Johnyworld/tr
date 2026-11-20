@@ -221,7 +221,7 @@
         - belief: { fact: "전당포 감순덕은 고철도 받는다. 무게를 손으로 가늠하고 값을 박하게 친다", source: seen }
     - id: who_buys
       label: 조끼 찾는 손님이 누구냐고 슬쩍 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: wg2_sundeok_client
@@ -324,7 +324,7 @@
         - belief: { fact: "구시가 끝의 옛 지구대에 순경들이 잠가 두고 간 철제 보관함이 있다. 나창주의 지도에 길이 있다", source: report }
     - id: who_else
       label: 이 지도를 누구에게 또 팔았는지부터 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: wg2_map_done

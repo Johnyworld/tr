@@ -111,7 +111,7 @@
         - belief: { fact: "남쪽으로 가는 순례자들 말로는, 고속도로 남쪽 터널이 무너져 큰길로는 못 가고 강을 따라 돌아야 한다", source: report }
     - id: ask
       label: 물은 못 주지만 지나온 길을 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "남쪽으로 가는 순례자들 말로는, 고속도로 남쪽 터널이 무너져 큰길로는 못 가고 강을 따라 돌아야 한다", source: report }

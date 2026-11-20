@@ -214,7 +214,7 @@ export function switchCharacter(
   if (newAs) {
     const id = `pc_${state.chronicle.length + 1}`;
     if (character) {
-      const problems = checkCharacterChoice(content.scenario, character);
+      const problems = checkCharacterChoice(content.scenario, character, { rank: newAs.rank, occupation: null });
       if (problems.length) return { ok: false, error: `캐릭터 설정이 규칙에 맞지 않는다: ${problems.join(" ")}` };
     }
     const seat = heirSeat(content, newAs.faction, newAs.rank, { age: character?.age ?? null });

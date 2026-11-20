@@ -35,12 +35,12 @@ export const TEST_SCENARIO: Scenario = {
     { id: "persuasion", label: "교섭" },
   ],
   moves: [
-    { id: "fight", label: "싸우기", stats: ["strength", "agility"], default: 0 },
-    { id: "search", label: "수색하기", stats: ["sense"], default: 0 },
-    { id: "sense_danger", label: "위험 감지", stats: ["sense"], default: 0 },
-    { id: "stealth", label: "은밀 행동", stats: ["agility"], default: 0 },
-    { id: "endure", label: "버티기", stats: ["cool"], default: 0 },
-    { id: "persuade", label: "설득·압박", stats: ["persuasion"], default: 0 },
+    { id: "fight", label: "싸우기", stats: ["strength", "agility"], kind: "common" },
+    { id: "search", label: "수색하기", stats: ["sense"], kind: "common" },
+    { id: "sense_danger", label: "위험 감지", stats: ["sense"], kind: "common" },
+    { id: "stealth", label: "은밀 행동", stats: ["agility"], kind: "common" },
+    { id: "endure", label: "버티기", stats: ["cool"], kind: "common" },
+    { id: "persuade", label: "설득·압박", stats: ["persuasion"], kind: "common" },
   ],
   origins: [],
   move_roles: { notice: "sense_danger", stealth: "stealth" },
@@ -468,4 +468,18 @@ export function loadRealContent(): Content {
   const cache = process.env.TRPG_TEST_CONTENT;
   if (cache && existsSync(cache)) return JSON.parse(readFileSync(cache, "utf8")) as Content;
   return loadContent(REAL_CONTENT_DIR);
+}
+
+/**
+ * 테스트 주인공(또는 who)에게 스킬을 가르친다 (4.2.1: 적히지 않은 전문 기술은 판정할 수 없다).
+ * 값을 주지 않으면 월드 팩의 스킬 최솟값(-1)으로 배운 상태가 된다. 이미 그보다 높으면 그대로 둔다
+ */
+export function teachSkills(world: GameWorld, skills: string[] | Record<string, number>, who = world.state().playerId) {
+  const min = world.ctx().content.scenario.ranges.skill.min;
+  const entries = Array.isArray(skills) ? skills.map((s) => [s, min] as const) : Object.entries(skills);
+  const have = world.state().characters[who]!.skills;
+  for (const [skill, to] of entries) {
+    if (Array.isArray(skills) && have[skill] !== undefined && have[skill]! >= to) continue;
+    world.ctx().store.append({ type: "skill_trained", characterId: who, skill, to });
+  }
 }

@@ -29,11 +29,11 @@ function createAbilitiesSchema(s: Scenario) {
   }, createStatsSchema(s));
 }
 
-/** 캐릭터의 스킬: 없는 스킬은 그 스킬의 기본값 (이전 세이브 포함) */
+/** 캐릭터의 스킬 (4.2.1): 없는 누구나 하는 일은 스킬 최저값(미숙). 없는 전문 기술은 적지 않는다(못 함) */
 function createSkillsSchema(s: Scenario) {
   return z.preprocess(
-    (value) => ({ ...Object.fromEntries(s.moves.map((m) => [m.id, m.default])), ...(value as object) }),
-    z.record(idEnum(moveIds(s)), z.number().int().min(s.ranges.skill.min).max(s.ranges.skill.max)),
+    (value) => ({ ...Object.fromEntries(s.moves.filter((m) => m.kind !== "expert").map((m) => [m.id, s.ranges.skill.min])), ...(value as object) }),
+    z.partialRecord(idEnum(moveIds(s)), z.number().int().min(s.ranges.skill.min).max(s.ranges.skill.max)),
   );
 }
 

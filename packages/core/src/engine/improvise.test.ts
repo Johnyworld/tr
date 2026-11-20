@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createContentSchemas } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, teachSkills } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { fireStorylet } from "./storyletTools.ts";
 import { executeTool } from "./tools.ts";
@@ -20,6 +20,7 @@ const story = parse({
 });
 const open = () => {
   const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-imp-")), content, rngFactory: () => createSeededRng(5) }).create("mcp", "role_a_grunt");
+  teachSkills(w, ["improvise"]); // 급조는 전문 기술 (4.2.1)
   const ctx = { ...w.ctx(), content: { ...w.content, storylets: { ...w.content.storylets, t145: story } } };
   fireStorylet(ctx, story, {});
   const check = (move: string) =>

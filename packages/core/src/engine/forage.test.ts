@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, teachSkills } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { drinkWater, refillWater, useItem } from "./body.ts";
 import { forage, handleTrap, runDailyFood } from "./forage.ts";
@@ -17,6 +17,8 @@ const base = zones.find((l) => l.kind === "base")!.id;
 
 function open(rng = 0) {
   const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-food-")), content, rngFactory: () => () => rng }).create("mcp", "role_a_grunt");
+  // 낚시·사냥은 전문 기술이라 배워 둔다 (4.2.1)
+  teachSkills(w, ["fishing", "hunt"]);
   const me = () => w.state().characters[w.state().playerId]!;
   return { w, me, s: () => w.state() };
 }

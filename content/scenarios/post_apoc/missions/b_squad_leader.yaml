@@ -97,5 +97,5 @@
   requirements:
     - activity: work
       minutes: 120
-    - check: tactics
+    - check: leadership
       min_outcome: partial

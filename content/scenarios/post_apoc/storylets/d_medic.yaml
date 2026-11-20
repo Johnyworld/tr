@@ -494,7 +494,7 @@
         - deed: { summary: 치료대 위의 붉은연합 부상병을 청솔형제단에 넘겼다, tags: [betrayal], severity: 2, privacy: public }
     - id: go_talk
       label: 정문으로 나가 청솔형제단 사람들을 달랜다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - relation: { who: commander, axis: respect, delta: 1 }
@@ -584,7 +584,7 @@
         - belief: { fact: "윤채원의 쪽지를 본 대표 서은영이 오래 말이 없었다. 그러고는 값을 받고 보내라고만 했다", source: seen }
     - id: ask_courier
       label: 심부름꾼에게 윤채원이 어떤 사람인지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "심부름꾼 말로는 윤채원은 청솔형제단 의무실을 혼자 꾸리고, 약이 없어 밤마다 손으로 상처를 꿰맨다고 한다", source: report }

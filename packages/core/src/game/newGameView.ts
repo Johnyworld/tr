@@ -1,8 +1,8 @@
 import type { Content } from "../content/schemas.ts";
 import { personaSummary } from "../engine/persona.ts";
 import { worldInfo } from "../content/packs.ts";
-import { portraitSections } from "../scenario/scenario.ts";
-import { abilitySpend, creationRules, MAX_NAME_WIDTH, pastOf } from "./creation.ts";
+import { moveLabel, portraitSections, raiseCost } from "../scenario/scenario.ts";
+import { abilitySpend, creationRules, grantedExperts, MAX_NAME_WIDTH, pastOf, teachableExperts } from "./creation.ts";
 import {
   abilityTiers,
   ageFloor,
@@ -56,14 +56,17 @@ export type CharacterStepView = {
   };
   /** 과거 배경 고르기 (12-84): 배경마다 스킬·능력·물건 */
   pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge: number | null }[];
-  /** 계급 기본 훈련 (12-87): 과거 배경의 스킬과 따로 더해진다. 없으면 빈 글 */
-  rankSkills: string;
+  /** 자리(계급·직분)가 점수 없이 배운 상태로 주는 전문 기술 (4.2.1). 없으면 빈 글 */
+  grantedSkills: string;
+  /** 고치기에서 점수를 둘 수 있는 전문 기술 id (과거가 가르쳐 준 것과 자리가 주는 것) */
+  teachable: string[];
   /** 고친 능력·스킬의 처음 값: 고른 과거 배경의 것 */
   pastDefaults: { stats: Record<string, number>; skills: Record<string, number> } | null;
   /** 스킬 고치기: 고를 수 있는 스킬과 규칙 */
   /** stats: 이 스킬과 함께 쓰는 능력 (예: 근력·민첩) */
-  moves: { id: string; label: string; category: string; description: string; stats: string }[];
-  skillRule: { points: number; max: number } | null;
+  moves: { id: string; label: string; category: string; description: string; stats: string; kind: "common" | "expert" }[];
+  /** 시작 스킬 점수와 단계마다 올리는 값 (4.2.1). costs[i]: 최저값+i → +1 */
+  skillRule: { points: number; min: number; max: number; costs: number[] } | null;
   options: StepOption[];
   /** 얼굴 고르기 (12-139): 고른 성별의 얼굴을 화풍 섹션으로. 초상화 목록이 없는 월드는 빈 목록 (화면이 기본 실루엣을 보인다) */
   portraits: { style: string; label: string; numbered: boolean; faces: string[] }[];
@@ -135,7 +138,8 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
         items: p.items.map((i) => content.items[i]?.name ?? i).join(" · "),
         minAge: p.min_age ?? null,
       })),
-      rankSkills: describeSkills(s, s.creation?.rank_skills[role?.rank ?? ""] ?? {}).replace(/^없음$/, ""),
+      grantedSkills: grantedExperts(s, draft.character.seat).map((m) => moveLabel(s, m)).join(", "),
+      teachable: teachableExperts(s, d.past, draft.character.seat),
       pastDefaults: pastOf(s, d.past) ? { stats: { ...pastOf(s, d.past)!.stats }, skills: { ...pastOf(s, d.past)!.skills } } : null,
       moves: s.moves.map((m) => ({
         id: m.id,
@@ -143,8 +147,16 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
         category: m.category ?? "",
         description: m.description ?? "",
         stats: (m.stats ?? []).map((id) => s.stats.find((x) => x.id === id)?.label ?? id).join("·"),
+        kind: m.kind,
       })),
-      skillRule: s.creation?.skills ?? null,
+      skillRule: s.creation?.skills
+        ? {
+            points: s.creation.skills.points,
+            min: s.ranges.skill.min,
+            max: s.ranges.skill.max,
+            costs: Array.from({ length: s.ranges.skill.max - s.ranges.skill.min }, (_, i) => raiseCost(s, s.ranges.skill.min + i)),
+          }
+        : null,
       nameMax: MAX_NAME_WIDTH,
       age: s.creation?.age ? { min: ageFloor(s, draft.character), max: s.creation.age.max, default: Math.max(role?.age ?? s.creation.age.min, ageFloor(s, draft.character)) } : null,
       stats: s.stats.map((x) => ({ id: x.id, label: x.label, description: x.description ?? "" })),
@@ -173,6 +185,5 @@ function chosenSkills(s: Content["scenario"], d: ReturnType<typeof collectDraft>
   const base = skillsSet ? d.skills : {};
   return s.moves
     .filter((m) => base[m.id] !== undefined || bonus[m.id] !== undefined)
-    .map((m) => ({ label: m.label, value: (base[m.id] ?? m.default) + (bonus[m.id] ?? 0) }))
-    .filter((x) => x.value !== 0);
+    .map((m) => ({ label: m.label, value: (base[m.id] ?? s.ranges.skill.min) + (bonus[m.id] ?? 0) }));
 }

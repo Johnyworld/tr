@@ -78,7 +78,8 @@ describe("대화로 하는 캐릭터 생성", () => {
       persona: {},
       age: 30,
       past: "police",
-      skills: { shoot: 1, sense_danger: 1 },
+      // 과거 배경(경찰)의 절대값 배치 (4.2.1)
+      skills: { shoot: 2, insight: 1, sense_danger: 0, intimidate: 0, fight: 0 },
     });
   });
 
@@ -100,10 +101,12 @@ describe("대화로 하는 캐릭터 생성", () => {
     expect(draftChoice(d).abilities).toMatchObject({ strength: 2, vitality: 1, nerve: 1, intellect: -1 });
     expect(currentStep(s, d)).toBe("skills");
     step("manual");
-    expect(answerCreation(s, d, "사격, 경계, 은밀", rng).ok).toBe(false); // 2포인트
-    expect(answerCreation(s, d, "사격 +2", rng).ok).toBe(false); // 스킬 하나에 +1까지
-    step("사격, 경계");
-    expect(draftChoice(d)).toMatchObject({ past: "firefighter", skills: { shoot: 1, sense_danger: 1 } });
+    // 4.2.1: 절대값 배치, 12점 (-1→0 1점, 0→+1 2점, +1→+2 3점)
+    expect(answerCreation(s, d, "사격 +2, 경계 +2, 은밀 +2", rng).ok).toBe(false); // 18점
+    expect(answerCreation(s, d, "사격 +3", rng).ok).toBe(false); // 스킬 하나에 +2까지
+    expect(answerCreation(s, d, "수술 0", rng).ok).toBe(false); // 과거가 가르쳐 주지 않은 전문 기술
+    step("사격 +2, 경계 +1, 근접전 0");
+    expect(draftChoice(d)).toMatchObject({ past: "firefighter", skills: { shoot: 2, sense_danger: 1, fight: 0 } });
     expect(currentStep(s, d)).toBe("traits");
   });
 

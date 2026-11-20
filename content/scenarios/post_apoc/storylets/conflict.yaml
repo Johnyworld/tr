@@ -36,7 +36,7 @@
         - belief: { fact: 밤사이 넷이 무리를 떠났다. 쫓지 않았다, source: seen }
     - id: rally
       label: 남은 사람들을 마당에 모아 말한다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - faction_population: { faction: own, delta: -4 }

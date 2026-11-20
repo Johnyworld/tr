@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
 import type { Scenario } from "../scenario/schema.ts";
+import { costToReach, isExpertMove } from "../scenario/scenario.ts";
 import { PORTRAIT_ID } from "./character.ts";
 import type { CharacterChoice } from "./state.ts";
 
@@ -60,7 +61,8 @@ export function abilitySpend(s: Scenario, abilities: Record<string, number>): { 
 }
 
 /** 고른 것이 규칙에 맞는지. 문제 목록 (비면 통과) */
-export function checkCharacterChoice(s: Scenario, choice: CharacterChoice): string[] {
+/** seat: 시작하는 자리 (배운 상태로 받는 전문 기술에 점수를 둘 수 있다, 4.2.1) */
+export function checkCharacterChoice(s: Scenario, choice: CharacterChoice, seat?: CreationSeat | null): string[] {
   const problems: string[] = [];
   const c = s.creation;
   if (!c) return ["이 시나리오에는 캐릭터 생성 규칙이 없다."];
@@ -76,7 +78,7 @@ export function checkCharacterChoice(s: Scenario, choice: CharacterChoice): stri
   if (choice.past != null && !pastOf(s, choice.past)) problems.push(`과거 배경은 ${(c.pasts ?? []).map((p) => `${p.label}(${p.id})`).join(", ")} 중 하나다.`);
   const pastMin = pastOf(s, choice.past)?.min_age;
   if (pastMin !== undefined && choice.age != null && choice.age < pastMin) problems.push(`${josa(pastOf(s, choice.past)!.label, "은/는")} ${pastMin}세 이상이어야 한다.`);
-  if (choice.skills) problems.push(...checkSkills(s, choice.skills));
+  if (choice.skills) problems.push(...checkSkills(s, choice.skills, teachableExperts(s, choice.past, seat)));
   if (choice.persona) {
     for (const [axis, v] of Object.entries(choice.persona)) {
       if (!s.persona?.axes.some((a) => a.id === axis)) problems.push(`알 수 없는 성격 축: ${axis}`);
@@ -93,19 +95,76 @@ export function pastOf(s: Scenario, id: string | null | undefined) {
   return id ? s.creation?.pasts.find((p) => p.id === id) : undefined;
 }
 
-/** 고른 스킬이 규칙에 맞는지 (모르는 스킬, 스킬 하나의 상한, 포인트 합) */
-export function checkSkills(s: Scenario, skills: Record<string, number>): string[] {
+/** 캐릭터 만들기에서 정해진 자리 (계급·직분): 점수 없이 배운 상태로 받는 전문 기술과 권하는 배치에 쓴다 (4.2.1) */
+export type CreationSeat = { rank: string; occupation: string | null };
+
+/** 직분 스킬 (4.2.1): 스킬을 주지는 않고, 전문 기술이면 배운 상태로, 만들 때 권하는 배치에 쓴다 */
+export function occupationSkills(s: Scenario, occupation: string | null | undefined): string[] {
+  return (occupation ? s.occupations.find((o) => o.id === occupation)?.skills : undefined) ?? [];
+}
+
+/** 점수 없이 배운 상태(스킬 최저값)로 받는 전문 기술: 계급이 요구하는 것 + 직분의 전문 기술 (4.2.1) */
+export function grantedExperts(s: Scenario, seat: CreationSeat | null | undefined): string[] {
+  if (!seat) return [];
+  const ids = [...(s.creation?.rank_experts[seat.rank] ?? []), ...occupationSkills(s, seat.occupation).filter((m) => isExpertMove(s, m))];
+  return [...new Set(ids)];
+}
+
+/** 배치에 드는 점수 (스킬마다 최저값에서 그 단계까지) */
+export function layoutCost(s: Scenario, layout: Record<string, number>): number {
+  return Object.values(layout).reduce((n, v) => n + costToReach(s, v), 0);
+}
+
+/**
+ * 직분에 맞춘 배치 (4.2.1): 과거의 기본 배치에 직분 스킬이 없으면, 기본 배치의 0 하나(가장 뒤의 것)를 직분 스킬 0으로 바꾼다 (점수는 같다).
+ * 바꿀 것이 없으면 null
+ */
+export function occupationLayout(s: Scenario, layout: Record<string, number>, seat: CreationSeat | null | undefined): Record<string, number> | null {
+  const occ = occupationSkills(s, seat?.occupation);
+  if (!occ.length || occ.some((m) => layout[m] !== undefined)) return null;
+  const zero = Object.keys(layout).filter((m) => layout[m] === 0).at(-1);
+  if (!zero) return null;
+  return Object.fromEntries(Object.entries(layout).map(([m, v]) => (m === zero ? [occ[0]!, 0] : [m, v])));
+}
+
+/** 고쳐 쓸 때 점수를 둘 수 있는 전문 기술: 과거가 가르쳐 준 것과 자리가 주는 것 (4.2.1) */
+export function teachableExperts(s: Scenario, pastId: string | null | undefined, seat: CreationSeat | null | undefined): string[] {
+  const past = pastOf(s, pastId);
+  return [...new Set([...Object.keys(past?.skills ?? {}), ...grantedExperts(s, seat), ...occupationSkills(s, seat?.occupation)])].filter((m) => isExpertMove(s, m));
+}
+
+/**
+ * 고른 스킬 배치가 규칙에 맞는지 (4.2.1): 모르는 스킬, 단계 범위, 배우지 않은 전문 기술, 점수 합.
+ * experts: 점수를 둘 수 있는 전문 기술 (teachableExperts)
+ */
+export function checkSkills(s: Scenario, skills: Record<string, number>, experts: readonly string[] = []): string[] {
   const rule = s.creation?.skills;
   if (!rule) return Object.keys(skills).length ? ["이 월드에서는 시작 스킬을 고르지 않는다."] : [];
   const problems: string[] = [];
+  const { min, max } = s.ranges.skill;
   for (const [id, v] of Object.entries(skills)) {
     const move = s.moves.find((m) => m.id === id);
     if (!move) problems.push(`알 수 없는 스킬: ${id}`);
-    else if (!Number.isInteger(v) || v < 1 || v > rule.max) problems.push(`${josa(move.label, "은/는")} +1~+${rule.max}까지 올린다.`);
+    else if (!Number.isInteger(v) || v < min || v > max) problems.push(`${josa(move.label, "은/는")} ${min}~+${max} 사이다.`);
+    else if (move.kind === "expert" && !experts.includes(id)) problems.push(`${josa(move.label, "은/는")} 배우지 않은 전문 기술이라 점수를 둘 수 없다 (과거 배경이 가르쳐 준 것: ${experts.map((m) => s.moves.find((x) => x.id === m)?.label ?? m).join(", ") || "없음"}).`);
   }
-  const spent = Object.values(skills).reduce((a, b) => a + b, 0);
+  const spent = layoutCost(s, skills);
   if (spent > rule.points) problems.push(`스킬 포인트를 ${spent - rule.points}만큼 넘게 썼다 (${spent}/${rule.points}).`);
   return problems;
+}
+
+/** 만든 캐릭터의 시작 스킬과 남은 점수 (4.2.1): 자리가 주는 전문 기술(최저값) 위에 배치를 얹는다 */
+export function startingSkills(
+  s: Scenario,
+  seat: CreationSeat,
+  base: Partial<Record<string, number>>,
+  layout: Record<string, number> | null,
+): { skills: Record<string, number>; unspent: number } {
+  const skills: Record<string, number> = Object.fromEntries(Object.entries(base).filter((e): e is [string, number] => e[1] !== undefined));
+  const min = s.ranges.skill.min;
+  for (const m of grantedExperts(s, seat)) skills[m] = Math.max(skills[m] ?? min, min);
+  for (const [m, v] of Object.entries(layout ?? {})) skills[m] = Math.min(s.ranges.skill.max, Math.max(skills[m] ?? min, v));
+  return { skills, unspent: layout && s.creation?.skills ? Math.max(0, s.creation.skills.points - layoutCost(s, layout)) : 0 };
 }
 
 /** 고를 수 있는 나이인지 (월드의 creation.age) */

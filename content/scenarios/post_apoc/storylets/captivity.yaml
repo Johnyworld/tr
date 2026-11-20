@@ -242,7 +242,7 @@
         - body: { track: hunger, delta: -1 }
     - id: ask_why
       label: 왜 적을 먹이느냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: cp_a_respect
@@ -433,7 +433,7 @@
         - release_player: { returned: true }
     - id: work
       label: 짐을 져서 갚는다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - delay: 480
@@ -519,7 +519,7 @@
         - set_flag: cp_mate_close
     - id: wary
       label: 빵은 받되 말을 아끼며 살핀다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - body: { track: hunger, delta: -1 }
@@ -963,7 +963,7 @@
   choices:
     - id: lift
       label: 판자를 혼자 들어 올린다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - relation: { who: prisoner, axis: trust, delta: 2 }

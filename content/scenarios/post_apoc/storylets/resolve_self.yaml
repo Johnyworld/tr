@@ -15,7 +15,7 @@
   choices:
     - id: ask
       label: 물길과 배를 구할 곳을 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - resolve_step: { text: "{target:으로/로} 가는 물길을 안다" }
@@ -88,7 +88,7 @@
   choices:
     - id: coax
       label: 술을 더 따르며 말을 잇게 한다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "여울섬이 물리고도 버틴 사람을 데려가 피를 뽑는다는 말을 들었다", source: rumor }

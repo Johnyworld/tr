@@ -223,7 +223,7 @@
         - deed: { summary: 수용소 포로에게 몰래 먹을 것을 넣었다, tags: [mercy, disobedience], severity: 2, privacy: private }
     - id: ask
       label: 누구 때문이냐고 묻는다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - set_flag: c_sl_muyeol_done

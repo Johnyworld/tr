@@ -304,7 +304,7 @@
   choices:
     - id: roll_away
       label: 몸을 굴려 빠져나간다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - body: { track: nerves, delta: 1 }

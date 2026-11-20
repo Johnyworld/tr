@@ -439,7 +439,7 @@
   choices:
     - id: honest
       label: 내일이 나을 거란 말은 하지 않고, 오늘 서로 지킨 것을 하나씩 짚는다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - faction_morale: { faction: own, delta: 1 }
@@ -503,7 +503,7 @@
         - deed: { summary: 출정하는 사람들에게 하늘이 우리 편이라고 축복했다, tags: [loyalty], severity: 1, privacy: public }
     - id: bless_return
       label: 이기라는 말 대신, 살아 돌아오라고만 기도한다
-      check: persuade
+      check: leadership
       outcomes:
         success:
           - relation: { who: young, axis: trust, delta: 2 }

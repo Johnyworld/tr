@@ -15,7 +15,7 @@ import { exposeToCold } from "./climate.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { dayOf, formatTime } from "../rules/time.ts";
-import { harmTrack } from "../scenario/scenario.ts";
+import { harmTrack, learnedSkill } from "../scenario/scenario.ts";
 import { changeCondition } from "./body.ts";
 import { disposition } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
@@ -646,11 +646,14 @@ export function applyEffect(
     const { skill } = effect.train;
     const move = content.scenario.moves.find((m) => m.id === skill);
     if (!move) return {};
-    const now = me.skills[skill] ?? move.default;
+    // 못 하던 전문 기술은 배운 상태(최저값)가 된다 (4.2.1)
+    const now = learnedSkill(content.scenario, me.skills, skill);
     const max = Math.min(effect.train.max, content.scenario.ranges.skill.max);
-    if (now >= max) return {};
-    store.append({ type: "skill_trained", characterId: playerId, skill, to: now + 1 });
-    return { line: `배웠다: ${move.label} ${now >= 0 ? "+" : ""}${now} → +${now + 1}.` };
+    if (now !== null && now >= max) return {};
+    const to = now === null ? content.scenario.ranges.skill.min : now + 1;
+    store.append({ type: "skill_trained", characterId: playerId, skill, to });
+    const sign = (v: number) => `${v >= 0 ? "+" : ""}${v}`;
+    return { line: `배웠다: ${move.label} ${now === null ? "못 함" : sign(now)} → ${sign(to)}.` };
   }
   if ("delay" in effect) {
     store.append({ type: "time_advanced", activity: "wait", from: state.time, to: state.time + effect.delay });

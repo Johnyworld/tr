@@ -73,6 +73,38 @@ export const trackIds = (s: Scenario) => s.condition_tracks.map((x) => x.id);
 export const statLabel = (s: Scenario, id: string) => s.stats.find((x) => x.id === id)?.label ?? id;
 export const moveOf = (s: Scenario, id: string) => s.moves.find((x) => x.id === id);
 export const moveLabel = (s: Scenario, id: string) => moveOf(s, id)?.label ?? id;
+
+/** 전문 기술인지 (4.2.1): 배우기 전엔 판정할 수 없다 */
+export const isExpertMove = (s: Scenario, id: string) => moveOf(s, id)?.kind === "expert";
+
+/**
+ * 배운 스킬 값 (4.2.1). 누구나 하는 일은 적혀 있지 않으면 스킬 최저값(미숙),
+ * 전문 기술은 적혀 있지 않으면 null(못 함)
+ */
+export function learnedSkill(s: Scenario, skills: Partial<Record<string, number>>, id: string): number | null {
+  const v = skills[id];
+  if (v !== undefined) return v;
+  return isExpertMove(s, id) ? null : s.ranges.skill.min;
+}
+
+/** 스킬을 from에서 from+1로 올리는 점수 (4.2.1, growth.raise_costs) */
+export function raiseCost(s: Scenario, from: number): number {
+  return s.growth?.raise_costs[from - s.ranges.skill.min] ?? 1;
+}
+
+/** 최저값에서 value까지 올리는 데 드는 점수 합 */
+export function costToReach(s: Scenario, value: number): number {
+  let n = 0;
+  for (let v = s.ranges.skill.min; v < value; v++) n += raiseCost(s, v);
+  return n;
+}
+
+/** 스킬 단계 이름 (4.2.1): 못 함 / 배움·미숙 / 할 수 있음 / 숙련 / 마스터 */
+export function skillTierLabel(s: Scenario, id: string, value: number | null): string {
+  if (value === null) return "못 함";
+  if (value <= s.ranges.skill.min) return isExpertMove(s, id) ? "배움" : "미숙";
+  return ({ 0: "할 수 있음", 1: "숙련", 2: "마스터" } as Record<number, string>)[value] ?? String(value);
+}
 export const rankOf = (s: Scenario, id: string) => s.rank_ladder.find((x) => x.id === id);
 /** 계급 이름. labels: 무리마다 부르는 이름 (factions.rank_labels, 12-84) */
 export const rankLabel = (s: Scenario, id: string, labels?: Record<string, string>) => labels?.[id] ?? rankOf(s, id)?.label ?? id;

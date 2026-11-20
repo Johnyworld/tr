@@ -138,7 +138,8 @@ export class WorldManager {
     const role = custom ? custom.role.id : (roleId ?? Object.keys(content.roles)[0]);
     if (!custom && (!role || !content.roles[role])) throw new Error(`알 수 없는 시작 역할: ${role}`);
     if (choice) {
-      const problems = checkCharacterChoice(content.scenario, choice);
+      const r = custom ? custom.role : content.roles[role!];
+      const problems = checkCharacterChoice(content.scenario, choice, r ? { rank: r.rank, occupation: r.occupation ?? null } : null);
       if (problems.length) throw new CharacterChoiceError(problems);
     }
     const worldId = newWorldId();

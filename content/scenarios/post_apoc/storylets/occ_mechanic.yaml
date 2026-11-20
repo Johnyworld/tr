@@ -440,7 +440,7 @@
           - belief: { fact: "벨트가 끊기기 전에 팔이 감겼다. 견습생은 실려 갔다", source: seen }
     - id: switch
       label: 작업장 반대편 스위치로 뛴다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - set_flag: occ_mech_apprentice_done

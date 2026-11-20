@@ -64,7 +64,7 @@ describe("포로를 잡고 다룬다", () => {
     expect(back.ok && back.resultText).toContain("우리 무리의 포로");
     expect(w.state().characters.c_seokjin!.captive).toMatchObject({ by: "faction_a", zone: "a_base" });
     expect(describePlayerState(w.state(), w.content)).toContain("우리 무리가 여기 가둔 포로");
-    const ask = w.executeTool("handle_prisoner", { target: "c_seokjin", action: "interrogate", approach: "persuade", stat: "charm" });
+    const ask = w.executeTool("handle_prisoner", { target: "c_seokjin", action: "interrogate", approach: "insight", stat: "senses" });
     expect(ask.ok && ask.resultText).toContain("심문");
     expect(w.executeTool("handle_prisoner", { target: "c_seokjin", action: "labor", approach: null, stat: null }).ok).toBe(true);
     const food = () => w.state().factions.faction_a!.resources.food ?? 0;
@@ -93,7 +93,7 @@ describe("포로를 잡고 다룬다", () => {
     w.ctx().store.getState().beliefs.c_seokjin = [];
     w.ctx().store.append({ type: "faction_morale_changed", factionId: "faction_c", delta: -2 - w.state().factions.faction_c!.morale });
     expect(w.executeTool("handle_prisoner", { target: "c_seokjin", action: "labor", approach: null, stat: null }).ok).toBe(false);
-    const ask = w.executeTool("handle_prisoner", { target: "c_seokjin", action: "interrogate", approach: "persuade", stat: "charm" });
+    const ask = w.executeTool("handle_prisoner", { target: "c_seokjin", action: "interrogate", approach: "insight", stat: "senses" });
     expect(ask.ok && ask.resultText).toContain("포로의 말로는");
     const heard = w.state().beliefs[w.state().playerId]!.at(-1)!;
     expect(heard.fact).toContain("분위기");

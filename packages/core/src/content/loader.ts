@@ -2,7 +2,7 @@ import { RESOLVE_TARGET } from "../scenario/schema.ts";
 import { checkHistory } from "../game/background.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { occupationById } from "../game/occupation.ts";
-import { checkSkills } from "../game/creation.ts";
+import { checkSkills, layoutCost } from "../game/creation.ts";
 import { join, relative } from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
@@ -101,14 +101,14 @@ function checkReferences(content: Content): string[] {
   const occIds = new Set(content.scenario.occupations.map((o) => o.id));
   for (const o of content.scenario.occupations) {
     const at = `scenario.occupations.${o.id}`;
-    for (const m of Object.keys(o.skills)) if (!content.scenario.moves.some((x) => x.id === m)) problems.push(`${at}: 알 수 없는 스킬 ${m}`);
+    for (const m of o.skills) if (!content.scenario.moves.some((x) => x.id === m)) problems.push(`${at}: 알 수 없는 스킬 ${m}`);
     for (const i of o.kit) if (!content.items[i]) problems.push(`${at}: 알 수 없는 아이템 ${i}`);
     for (const m of o.missions) if (!content.missions[m]) problems.push(`${at}: 알 수 없는 임무 ${m}`);
   }
-  // 계급 기본 훈련과 최소 나이 (12-87)
-  for (const [rank, skills] of Object.entries(content.scenario.creation?.rank_skills ?? {})) {
-    if (!content.scenario.rank_ladder.some((r) => r.id === rank)) problems.push(`scenario.creation.rank_skills: 알 수 없는 계급 ${rank}`);
-    for (const m of Object.keys(skills)) if (!content.scenario.moves.some((x) => x.id === m)) problems.push(`scenario.creation.rank_skills.${rank}: 알 수 없는 스킬 ${m}`);
+  // 계급이 요구하는 전문 기술 (4.2.1)과 최소 나이 (12-87)
+  for (const [rank, skills] of Object.entries(content.scenario.creation?.rank_experts ?? {})) {
+    if (!content.scenario.rank_ladder.some((r) => r.id === rank)) problems.push(`scenario.creation.rank_experts: 알 수 없는 계급 ${rank}`);
+    for (const m of skills) if (content.scenario.moves.find((x) => x.id === m)?.kind !== "expert") problems.push(`scenario.creation.rank_experts.${rank}: 전문 기술이 아니다 ${m}`);
   }
   for (const rank of Object.keys(content.scenario.creation?.rank_min_age ?? {})) if (!content.scenario.rank_ladder.some((r) => r.id === rank)) problems.push(`scenario.creation.rank_min_age: 알 수 없는 계급 ${rank}`);
   // 과거 배경 (12-84): 능력 배치는 능력 배열과 같은 값들, 스킬은 스킬 포인트 규칙 안, 물건은 있는 것
@@ -122,7 +122,10 @@ function checkReferences(content: Content): string[] {
       const given = content.scenario.stats.map((x) => p.stats[x.id] ?? 0).sort((a, b) => a - b).join(",");
       if (given !== [...arr].sort((a, b) => a - b).join(",")) problems.push(`${at}: 능력 배치가 능력 배열(${arr.join(", ")})과 다르다`);
     }
-    for (const q of checkSkills(content.scenario, p.skills)) problems.push(`${at}: ${q}`);
+    // 과거의 배치는 점수를 다 쓴다 (4.2.1). 배치의 전문 기술은 과거가 가르쳐 준 것이다
+    for (const q of checkSkills(content.scenario, p.skills, Object.keys(p.skills))) problems.push(`${at}: ${q}`);
+    const rule = content.scenario.creation?.skills;
+    if (rule && layoutCost(content.scenario, p.skills) !== rule.points) problems.push(`${at}: 스킬 배치가 ${rule.points}점을 다 쓰지 않는다 (${layoutCost(content.scenario, p.skills)}점)`);
   }
   // 역할·인물의 직분
   for (const [at, x] of [...Object.values(content.roles).map((r) => [`roles.${r.id}`, r] as const), ...Object.values(content.npcs).map((n) => [`npcs.${n.id}`, n] as const)]) {

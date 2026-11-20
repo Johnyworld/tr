@@ -39,7 +39,7 @@
     reveal_when: 주인공과 단둘이, 동료 하나가 크게 다치거나 죽을 뻔한 날 밤
     min_trust: 4
   stats: { strength: 2, agility: 1, vitality: 1, senses: 0, nerve: 2, charm: 1, intellect: 0 }
-  skills: { fight: 2, tactics: 1, intimidate: 1, endure: 1 }
+  skills: { fight: 2, tactics: 1, intimidate: 1, endure: 1, leadership: 1 }
   start_inventory: [c_armband, sawn_shotgun, shells, shells, padded_armor]
   playable: true
   zone: c_warehouse
@@ -152,7 +152,7 @@
     reveal_when: 주인공이 수용소 이야기를 먼저 꺼내고, 둘만 있을 때
     min_trust: 3
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 2 }
-  skills: { sense_danger: 1, persuade: 1, history: 1 }
+  skills: { sense_danger: 1, persuade: 1, history: 1, insight: 1, fight: 0 }
   start_inventory: [c_armband, kitchen_knife]
   playable: true
   zone: c_warehouse

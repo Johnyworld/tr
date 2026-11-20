@@ -20,7 +20,7 @@
   choices:
     - id: press
       label: 그 사람을 뭐라고 부르는지 캐묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - reveal_name: { who: foe }
@@ -156,7 +156,7 @@
   choices:
     - id: ask
       label: 어디서 봤는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - resolve_step: { text: "{seen:이/가} 있던 곳을 안다" }
@@ -189,7 +189,7 @@
   choices:
     - id: ask
       label: 경비가 몇이고 어디가 허술한지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - resolve_step: { text: "{held:이/가} 갇힌 곳과 경비를 안다" }
@@ -213,7 +213,7 @@
   choices:
     - id: dig
       label: 어디서 나오는지 캐낸다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - resolve_step: { text: "혈청이 나오는 곳을 짐작한다" }

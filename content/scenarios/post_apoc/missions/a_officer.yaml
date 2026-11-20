@@ -84,7 +84,7 @@
   requirements:
     - activity: talk
       minutes: 60
-    - check: tactics
+    - check: leadership
       min_outcome: partial
 
 - id: a_of_prisoner

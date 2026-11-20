@@ -10,7 +10,7 @@
     - 왼팔에 붉은 완장을 찬 마른 보초. 엽총을 어깨에 걸쳤다
     - 눈 밑이 검은 보초. 엽총 개머리판을 땅에 짚고 졸음을 참고 있다
   stats: { strength: [0, 1], agility: [0, 1], vitality: [0, 1], senses: [-1, 1], nerve: [-1, 1] }
-  skills: { shoot: 1, fight: 0 }
+  skills: { shoot: 1, fight: 0, sense_danger: 0 }
   traits: [coward, dull_senses, cynical, timid, lazy, blunt]
   trait_count: 2
   inventory:
@@ -77,7 +77,7 @@
   looks:
     - 얼굴에 검댕을 칠한 약탈조원. 쇠지렛대를 들었다
   stats: { strength: [1, 2], agility: [0, 1], nerve: [0, 1] }
-  skills: { fight: 1, intimidate: 1 }
+  skills: { fight: 1, intimidate: 1, sense_danger: 0 }
   traits: [hot_tempered, ruthless, greedy, ugly]
   trait_count: 2
   inventory:
@@ -141,7 +141,7 @@
     - 큰 배낭을 진 짐꾼. 무릎에 천을 감았다
     - 구멍 난 동전 통행패를 목에 건 짐꾼
   stats: { strength: [1, 2], vitality: [0, 1] }
-  skills: { persuade: 1, survival: 1 }
+  skills: { persuade: 1, survival: 1, athletics: 1 }
   traits: [genial, talkative, calculating, big_eater, attractive]
   trait_count: 2
   inventory:
@@ -170,7 +170,7 @@
   looks:
     - 아파트 단지 정문을 지키는 경비병. 낡은 방한복을 입었다
   stats: { strength: [0, 1], senses: [0, 1], nerve: [0, 1] }
-  skills: { shoot: 0, sense_danger: 1 }
+  skills: { shoot: 0, sense_danger: 1, fight: 0 }
   traits: [guarded, weary, protective, cautious]
   trait_count: 2
   inventory:
@@ -199,7 +199,7 @@
     - 볕에 그을린 얼굴에 살이 오른 주민. 바깥 사람을 보면 웃으며 먼저 인사한다
     - 고무장화에 그물 바늘을 든 주민. 의회 회관 쪽을 지날 때면 목소리를 낮춘다
   stats: { vitality: [0, 1], senses: [0, 1] }
-  skills: { survival: 1 }
+  skills: { survival: 1, fishing: 1, swim: 0 }
   traits: [genial, guarded, eager, timid]
   trait_count: 1
   inventory:

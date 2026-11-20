@@ -3,6 +3,7 @@ import type { CheckOutcome } from "../rules/check.ts";
 import { dayOf } from "../rules/time.ts";
 import { seasonAt } from "../sim/season.ts";
 import { josa } from "../text.ts";
+import { learnedSkill, moveLabel } from "../scenario/scenario.ts";
 import { changeCondition } from "./body.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
@@ -35,7 +36,20 @@ export function forageProblem(ctx: ToolContext, kindId: string): string | null {
   if (!zone) return "어디에 있는지 모른다.";
   if (kind.water && !watery(ctx, zone)) return `여기는 물가가 아니라 ${josa(kind.label, "을/를")} 할 수 없다.`;
   if (!kind.water && content.locations[zone]?.kind === "base") return `거점 안에서는 ${josa(kind.label, "을/를")} 할 수 없다. 담 밖으로 나간다.`;
-  return null;
+  return unlearned(ctx, kind.move ?? rules.move);
+}
+
+/** 그 일의 전문 기술을 배우지 않았으면 까닭 (4.2.1) */
+function unlearned(ctx: ToolContext, move: string | undefined): string | null {
+  if (!move) return null;
+  const state = ctx.store.getState();
+  if (learnedSkill(ctx.content.scenario, state.characters[state.playerId]!.skills, move) !== null) return null;
+  return `${josa(moveLabel(ctx.content.scenario, move), "은/는")} 배우지 않아 할 수 없는 전문 기술이다. 익힌 사람에게 배운다 (take_action.lesson).`;
+}
+
+/** 덫을 놓을 수 없는 까닭 (판정·시간 전에 막는다) */
+export function trapProblem(ctx: ToolContext, action: "set" | "check"): string | null {
+  return action === "set" ? unlearned(ctx, ctx.content.scenario.foraging?.trap?.move) : null;
 }
 
 /** 먹을 것을 구한다 (take_action.forage). 판정 결과만큼 굴린다 */

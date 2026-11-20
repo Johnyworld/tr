@@ -114,10 +114,9 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
     .filter((n) => rankLevel(content, n.rank) > level && !n.start_captive && !n.roams?.length)
     .sort((a, b) => rankLevel(content, a.rank) - rankLevel(content, b.rank) || a.id.localeCompare(b.id));
   const commander = (same?.rank === input.rank && same.commander ? content.npcs[same.commander] : undefined) ?? above[0];
-  // 직분의 훈련은 시작 훈련에 더한다 (포인트와 따로, 스킬 하나의 상한은 지킨다)
+  // 직분은 스킬을 주지 않는다. 직분의 전문 기술은 캐릭터를 만들 때 배운 상태로 받는다 (4.2.1)
   const occ = occupationById(content, input.occupation);
   const skills: Record<string, number> = Object.fromEntries(Object.entries(input.skills).filter(([, v]) => v > 0));
-  for (const [m, v] of Object.entries(occ?.skills ?? {})) skills[m] = Math.min(content.scenario.ranges.skill.max, (skills[m] ?? 0) + v);
   return {
     id: CUSTOM_ROLE_ID,
     label: input.title,

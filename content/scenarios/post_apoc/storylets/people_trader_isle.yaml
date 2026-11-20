@@ -128,7 +128,7 @@
   choices:
     - id: ask_why
       label: 왜 나만 감자냐고 조용히 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pt_bowl_done
@@ -174,7 +174,7 @@
   choices:
     - id: hold_bottle
       label: 병을 집어 들고 무슨 약이냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: pt_draught_done

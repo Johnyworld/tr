@@ -168,7 +168,7 @@
         - belief: { fact: 버들마을로 옮겨 새 경비조를 맡았다. 대표 장현우가 직접 열쇠를 건넸다, source: seen }
     - id: ask_why
       label: 왜 하필 지금이냐고 묻는다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - belief: { fact: "장현우는 대답하기 전에 쪽문 쪽을 한 번 보았다. 버들마을 안에 그가 믿지 못하는 사람이 있는 것 같다", source: seen }

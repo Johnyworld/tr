@@ -14,7 +14,7 @@
   choices:
     - id: ask
       label: 무슨 일이 있느냐고 조용히 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - relation: { who: them, axis: trust, delta: 1 }

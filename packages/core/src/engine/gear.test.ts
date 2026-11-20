@@ -6,7 +6,7 @@ import { createSeededRng, type Rng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem, gearModifiers } from "./gear.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, teachSkills } from "../testing.ts";
 
 /** 물건 (기획서 4.8) */
 const content = loadRealContent();
@@ -18,6 +18,8 @@ function open(roleId = "role_a_grunt", rng: () => Rng = () => createSeededRng(3)
   const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-gear-")), content, rngFactory: rng });
   const w = m.create("mcp", roleId, choice);
   w.runCheat("~time +8h");
+  // 4.2.1: 전문 기술은 배워야 판정한다. 여기서는 스킬이 아니라 재료·도구·고칠 스킬 종류를 본다
+  teachSkills(w, ["mechanics", "maintenance", "improvise", "carpentry"]);
   return w;
 }
 type World = ReturnType<typeof open>;

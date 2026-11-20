@@ -1079,7 +1079,11 @@ function SkillBlock({ player, onStatus }: { player: PlayerView; onStatus?: (stat
   const [pending, setPending] = useState<Record<string, number>>({});
   const points = player.growth?.skillPoints ?? 0;
   const max = player.growth?.skillMax;
-  const used = Object.values(pending).reduce((a, b) => a + b, 0);
+  const min = player.growth?.skillMin ?? -1;
+  // 단계마다 올리는 점수가 다르다 (4.2.1: -1→0 1점, 0→+1 2점, +1→+2 3점)
+  const stepCost = (from: number) => player.growth?.skillCosts?.[from - min] ?? 1;
+  const pendingCost = (from: number, n: number) => Array.from({ length: n }, (_, i) => stepCost(from + i)).reduce((a, b) => a + b, 0);
+  const used = player.skills.reduce((n, s) => n + (s.learned === null ? 0 : pendingCost(s.learned, pending[s.id] ?? 0)), 0);
   const left = points - used;
   const add = (skill: string) => setPending((p) => ({ ...p, [skill]: (p[skill] ?? 0) + 1 }));
   const save = async () => {
@@ -1111,7 +1115,7 @@ function SkillBlock({ player, onStatus }: { player: PlayerView; onStatus?: (stat
       <div className="block-head">
         <h3>
           스킬
-          {points > 0 && <span className="skill-points">올릴 수 있는 스킬 {left}</span>}
+          {points > 0 && <span className="skill-points">스킬 포인트 {left}</span>}
         </h3>
         {used > 0 && (
           <div className="skill-actions">
@@ -1129,20 +1133,24 @@ function SkillBlock({ player, onStatus }: { player: PlayerView; onStatus?: (stat
         {player.skills.map((s) => {
           const plus = pending[s.id] ?? 0;
           const value = s.value + plus;
+          const level = s.learned === null ? null : s.learned + plus;
+          const next = level === null || max === undefined || level >= max ? null : stepCost(level);
+          // 단계 (4.2.1): 못 함 / 배움·미숙(-1) / 0 / 숙련 / 마스터. -1 이하와 못 함은 흐리게
+          const tier = plus ? (level === null ? s.tier : ({ 0: "할 수 있음", 1: "숙련", 2: "마스터" } as Record<number, string>)[level] ?? s.tier) : s.tier;
           return (
-            <div key={s.id} className={value < 0 ? "skill-untrained" : undefined}>
+            <div key={s.id} className={!s.usable || (level ?? min) <= min ? "skill-untrained" : undefined}>
               <dt>
-                {s.label} <span className="muted small">{s.category} · {s.stats.join("·")}</span>
+                {s.label} <span className="muted small">{s.category}{s.kind === "expert" ? " 전문" : ""} · {s.stats.join("·")}</span>
               </dt>
               <dd>
-                <span className={plus ? "skill-pending" : undefined}>{signed(value)}</span>
-                {value < 0 && <span className="muted small"> 익히지 않음</span>}
-                {points > 0 && max !== undefined && (
+                {s.usable ? <span className={plus ? "skill-pending" : undefined}>{signed(value)}</span> : null}
+                <span className="muted small"> {tier}</span>
+                {points > 0 && max !== undefined && s.usable && (
                   <button
                     type="button"
                     className="skill-up"
-                    disabled={busy || left < 1 || value >= max}
-                    title={`${s.label} 한 단계 올리기 (저장해야 적용)`}
+                    disabled={busy || next === null || left < next}
+                    title={next === null ? `${s.label}: 최고 단계` : `${s.label} 한 단계 올리기: ${next}점 (저장해야 적용)`}
                     aria-label={`${s.label} 올리기`}
                     onClick={() => add(s.id)}
                   >

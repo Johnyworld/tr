@@ -137,7 +137,7 @@
   choices:
     - id: listen
       label: 값 이야기를 받아 주며 누가 무엇을 사재는지 떠본다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - standing: 1

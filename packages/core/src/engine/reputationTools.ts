@@ -5,7 +5,7 @@ import { isCreature } from "../game/kinds.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { valuesOf } from "./extras.ts";
-import { alertnessFactor, noticedFactor, rumorFactor, traitSkillMod } from "./traits.ts";
+import { alertnessFactor, effectiveSkill, noticedFactor, rumorFactor, traitSkillMod } from "./traits.ts";
 import { withCharm } from "./charm.ts";
 import { josa, sentence } from "../text.ts";
 import { z } from "zod";
@@ -113,7 +113,7 @@ export function recordDeed(
         // 그 인물의 주의력: 감각 능력 + 경계 스킬 (상한까지)
         senseStat: Math.min(
           scenario.ranges.cap,
-          (character.stats[notice.stats[0]!] ?? 0) + (character.skills[notice.id] ?? notice.default) + traitSkillMod(ctx.content, character, notice.id),
+          (character.stats[notice.stats[0]!] ?? 0) + effectiveSkill(ctx.content, character, notice.id),
         ),
         // 트레잇: 목격하는 쪽의 주의력, 하는 쪽이 눈에 띄는지
         traitFactor: alertnessFactor(ctx.content, character) * noticedFactor(ctx.content, state.characters[state.playerId]!),

@@ -34,7 +34,7 @@ import { memoAccess } from "../game/memo.ts";
 import type { Content } from "../content/schemas.ts";
 import { calendarDate, formatAgo, formatClock, formatTime, minuteOfDay, MINUTES_PER_DAY, SEGMENT_LABELS, segmentOf, type TimeSegment } from "../rules/time.ts";
 import { itemIcon, type IconName } from "../content/icons.ts";
-import { conditionPenalty, initialConditions, rankLabel, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
+import { conditionPenalty, initialConditions, learnedSkill, raiseCost, rankLabel, shownLevel, skillTierLabel, visibleSymptoms } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import type { TranscriptEntry } from "../engine/log.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
@@ -100,10 +100,12 @@ export type PlayerView = {
   /** 성격 표: 모든 축, 0 포함 (만들 때와 같은 모양) */
   personaScale: { id: string; low: string; high: string; value: number; acting: string }[];
   /** 모든 스킬. 0 미만은 익히지 않은 것 */
-  skills: { id: string; label: string; category: string; value: number; stats: string[] }[];
+  /** 스킬 (4.2.1): kind 누구나 하는 일/전문 기술, usable 판정할 수 있는지(못 하는 전문 기술이면 false), tier 단계 이름, raiseCost 한 단계 올리는 점수 */
+  skills: { id: string; label: string; category: string; kind: "common" | "expert"; value: number; usable: boolean; learned: number | null; tier: string; raiseCost: number | null; stats: string[] }[];
   /** 레벨·경험치 (성장 규칙이 없으면 null). next: 다음 레벨까지 필요한 누적 경험치 */
   /** skillMax: 스킬을 올릴 수 있는 최고 단계 (상태 화면의 스킬 올리기, 12-139) */
-  growth: { level: number; xp: number; next: number; skillPoints: number; prev: number; skillMax: number } | null;
+  /** skillMin·skillCosts: 단계마다 올리는 점수 (skillCosts[i]: skillMin+i → +1, 4.2.1) */
+  growth: { level: number; xp: number; next: number; skillPoints: number; prev: number; skillMax: number; skillMin: number; skillCosts: number[] } | null;
   /** 지닌 물건 (장비로 걸친 것은 뺀다. 장비는 gear) */
   inventory: ItemView[];
   sceneItems: ItemView[];
@@ -443,10 +445,27 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     persona: personaChips(content, player),
     personaScale: personaScale(content, player),
     skills: scenario.moves
-      // 익히지 않은 스킬(-1)도 보인다 (사격이 시트에 없어 보였다). 화면이 흐리게 그린다
-      .map((m) => ({ id: m.id, label: m.label, category: m.category ?? "", value: effectiveSkill(content, player, m.id), stats: m.stats.map((id) => scenario.stats.find((x) => x.id === id)?.label ?? id) })),
+      // 익히지 않은 스킬(-1)과 못 하는 전문 기술도 보인다 (사격이 시트에 없어 보였다). 화면이 흐리게 그린다 (4.2.1)
+      .map((m) => {
+        const learned = learnedSkill(scenario, player.skills, m.id);
+        return {
+          id: m.id,
+          label: m.label,
+          category: m.category ?? "",
+          kind: m.kind,
+          value: effectiveSkill(content, player, m.id),
+          /** 못 하는 전문 기술이면 false */
+          usable: learned !== null,
+          /** 배운 값 (트레잇 보정 없이, 못 함이면 null). 올리는 점수는 이 값으로 센다 */
+          learned,
+          tier: skillTierLabel(scenario, m.id, learned),
+          /** 한 단계 올리는 점수 (못 함·최고 단계면 null) */
+          raiseCost: learned === null || learned >= scenario.ranges.skill.max ? null : raiseCost(scenario, learned),
+          stats: m.stats.map((id) => scenario.stats.find((x) => x.id === id)?.label ?? id),
+        };
+      }),
     growth: scenario.growth
-      ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, atMaxLevel(scenario, player.level) ? player.level : player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level), skillMax: scenario.ranges.skill.max }
+      ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, atMaxLevel(scenario, player.level) ? player.level : player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level), skillMax: scenario.ranges.skill.max, skillMin: scenario.ranges.skill.min, skillCosts: Array.from({ length: scenario.ranges.skill.max - scenario.ranges.skill.min }, (_, i) => raiseCost(scenario, scenario.ranges.skill.min + i)) }
       : null,
     // 소지품은 들거나 입을 수 있는 물건에 그 자리를 붙인다 (상태 화면의 착용 단추, 12-139)
     inventory: items(carried).map((it) => {

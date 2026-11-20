@@ -124,7 +124,7 @@
   choices:
     - id: drill_hard
       label: 엎드리고 일어나고 장전하는 것부터 혹독하게 시킨다
-      check: tactics
+      check: leadership
       outcomes:
         success:
           - set_flag: os_rookie_drilled

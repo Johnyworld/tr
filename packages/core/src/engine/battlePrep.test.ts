@@ -4,13 +4,18 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
 import type { GameWorld } from "../world/world.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, teachSkills } from "../testing.ts";
 import { barrierRise, infestationDay } from "../game/infestation.ts";
 import { resolveRound } from "../sim/battle.ts";
 
 /** 전투 준비물 늘리기 (12-176): 모래주머니 엄폐·사격 자리. 바리케이드는 12-184부터 거점 시설 */
 const content = { ...loadRealContent(), storylets: {} };
-const make = (roll = 0.99) => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-prep-")), content, rngFactory: () => () => roll }).create("mcp", "role_a_grunt");
+/** 목공은 전문 기술이라 배워 둔다 (4.2.1) */
+const make = (roll = 0.99) => {
+  const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-prep-")), content, rngFactory: () => () => roll }).create("mcp", "role_a_grunt");
+  teachSkills(w, ["carpentry"]);
+  return w;
+};
 const chk = (move: string, stat: string) => ({ move, stat, difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" });
 const act = (w: GameWorld, input: Record<string, unknown>) =>
   w.executeTool("take_action", { intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });

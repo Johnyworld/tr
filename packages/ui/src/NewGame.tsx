@@ -437,19 +437,40 @@ function PastStep({ view, busy, answer }: StepProps) {
   );
 }
 
-/** 스킬 고치기 (12-84): 포인트 안에서 스킬마다 +max까지. 과거 배경의 스킬에서 시작한다. 남은 포인트는 위의 현황 카드에 */
+/**
+ * 스킬 고치기 (4.2.1): 과거 배경의 배치(12점)에서 시작해 스킬마다 − / +로 단계를 정한다.
+ * 올리는 값은 단계마다 다르다 (-1→0 1점, 0→+1 2점, +1→+2 3점). 전문 기술은 과거가 가르쳐 준 것과 자리가 주는 것만. 남은 점수는 위의 현황 카드에
+ */
 function SkillStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: string) => void }) {
   const c = view.character!;
-  const rule = c.skillRule ?? { points: 0, max: 1 };
-  const [picked, setPicked] = useState<string[]>(() => Object.keys(c.pastDefaults?.skills ?? {}));
-  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < rule.points ? [...p, id] : p));
+  const rule = c.skillRule ?? { points: 0, min: -1, max: 2, costs: [] };
+  const teachable = c.teachable ?? [];
+  const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...(c.pastDefaults?.skills ?? {}) }));
+  const costTo = (v: number) => Array.from({ length: Math.max(0, v - rule.min) }, (_, i) => rule.costs[i] ?? 1).reduce((a, b) => a + b, 0);
+  const spent = Object.values(layout).reduce((n, v) => n + costTo(v), 0);
+  const left = rule.points - spent;
+  const valueOf = (id: string) => layout[id] ?? rule.min;
+  const step = (id: string, d: number) =>
+    setLayout((p) => {
+      const v = (p[id] ?? rule.min) + d;
+      const next = { ...p, [id]: v };
+      if (v <= rule.min && !teachable.includes(id)) delete next[id];
+      return next;
+    });
   const categories = [...new Set(c.moves.map((m) => m.category))];
-  const left = rule.points - picked.length;
   useEffect(() => onLive(`남은 스킬 포인트 ${left}`), [left, onLive]);
+  const tierLabel = (kind: string, v: number) => (v <= rule.min ? (kind === "expert" ? "배움" : "미숙") : ({ 0: "할 수 있음", 1: "숙련", 2: "마스터" } as Record<number, string>)[v] ?? "");
+  const submit = () => {
+    const parts = c.moves.filter((m) => layout[m.id] !== undefined && (layout[m.id]! > rule.min || m.kind === "expert")).map((m) => `${m.label} ${signed(layout[m.id]!)}`);
+    answer(parts.length ? parts.join(", ") : "없음");
+  };
   return (
     <>
-      <h2 className="newgame-title">스킬을 골라 주세요</h2>
-      <p className="newgame-note">고른 스킬은 +{rule.max}입니다.{c.rankSkills ? ` 계급 기본 훈련(${c.rankSkills})은 따로 더해집니다.` : ""}</p>
+      <h2 className="newgame-title">스킬을 정해 주세요</h2>
+      <p className="newgame-note">
+        {rule.points}점을 나눕니다. 0은 1점, +1 숙련은 3점, +2 마스터는 6점입니다. 누구나 하는 일은 찍지 않아도 -1로 할 수 있고, 전문 기술은 배운 것만 할 수 있습니다.
+        {c.grantedSkills ? ` 자리가 요구하는 ${c.grantedSkills}은 점수 없이 배운 상태로 받습니다.` : ""} 남긴 점수는 레벨업 점수와 함께 나중에 씁니다.
+      </p>
       {categories.map((cat) => (
         <div key={cat}>
           <h3 className="newgame-sub">{cat || "그 밖"}</h3>
@@ -457,30 +478,49 @@ function SkillStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
             {c.moves
               .filter((m) => m.category === cat)
               .map((m) => {
-                const on = picked.includes(m.id);
+                const locked = m.kind === "expert" && !teachable.includes(m.id);
+                const v = valueOf(m.id);
+                const up = v < rule.max ? (rule.costs[v - rule.min] ?? 1) : null;
                 return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className={on ? "skill-card on" : "skill-card"}
-                    aria-pressed={on}
-                    disabled={busy || (!on && left <= 0)}
-                    onClick={() => toggle(m.id)}
-                  >
+                  <div key={m.id} className={v > rule.min ? "skill-card on" : locked ? "skill-card locked" : "skill-card"}>
                     <span className="past-head">
                       <strong>{m.label}</strong>
-                      {m.stats && <span className="past-age">{m.stats}</span>}
+                      {m.stats && <span className="past-age">{m.kind === "expert" ? "전문 · " : ""}{m.stats}</span>}
                     </span>
                     {m.description && <span className="skill-desc">{m.description}</span>}
-                  </button>
+                    <span className="skill-level">
+                      {locked ? (
+                        <span className="muted small">못 함 (배워야 한다)</span>
+                      ) : (
+                        <>
+                          <button type="button" className="skill-step" disabled={busy || v <= rule.min} aria-label={`${m.label} 내리기`} onClick={() => step(m.id, -1)}>
+                            −
+                          </button>
+                          <span>
+                            {signed(v)} <span className="muted small">{tierLabel(m.kind ?? "common", v)}</span>
+                          </span>
+                          <button
+                            type="button"
+                            className="skill-step"
+                            disabled={busy || up === null || left < up}
+                            title={up === null ? "최고 단계" : `${up}점`}
+                            aria-label={`${m.label} 올리기`}
+                            onClick={() => step(m.id, 1)}
+                          >
+                            +
+                          </button>
+                        </>
+                      )}
+                    </span>
+                  </div>
                 );
               })}
           </div>
         </div>
       ))}
       <div className="newgame-actions">
-        <button type="button" className="primary" disabled={busy} onClick={() => answer(picked.length ? picked.map((id) => c.moves.find((m) => m.id === id)!.label) : "없음")}>
-          {left > 0 ? `${left}포인트 남기고 다음` : "다음"}
+        <button type="button" className="primary" disabled={busy || left < 0} onClick={submit}>
+          {left > 0 ? `${left}점 남기고 다음` : "다음"}
         </button>
       </div>
     </>

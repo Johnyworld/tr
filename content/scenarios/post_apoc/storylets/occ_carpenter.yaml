@@ -197,7 +197,7 @@
         - belief: { fact: "판자를 빼돌린 동료가 불려 갔다. 판자 더미 옆에 자물쇠가 생겼다", source: seen }
     - id: talk
       label: 끈을 붙잡고 어디로 가져가는지 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: occ_carp_thief_seen

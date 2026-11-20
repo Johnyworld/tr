@@ -86,7 +86,7 @@
   requirements:
     - activity: work
       minutes: 120
-    - check: endure
+    - check: athletics
       min_outcome: partial
   advances: { clock: c_east_offensive, delta: 2 }
 

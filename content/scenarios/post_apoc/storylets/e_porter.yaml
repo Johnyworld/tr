@@ -23,7 +23,7 @@
   choices:
     - id: carry
       label: 말없이 지고 일어선다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - merit: 1
@@ -83,7 +83,7 @@
           - belief: { fact: "흥정은 먹히지 않았다. 약탈자들은 상단의 짐을 다 가져갔다", source: seen }
     - id: study
       label: 흥정하는 동안 그들을 뜯어본다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - set_flag: e_route_leak_suspected
@@ -636,7 +636,7 @@
         - relation: { who: commander, axis: trust, delta: -1 }
     - id: ask_news
       label: 값 대신 그쪽 무리 사정을 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "좌판 손님 말로는 요즘 붉은연합이 물과 탄약을 넉넉히 사 모은다. 겨울 전에 크게 움직일 거라는 말이 돈다", source: rumor }

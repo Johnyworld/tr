@@ -30,7 +30,7 @@
         - belief: { fact: "선생 모은별의 오빠 모준기는 뭍의 나루상단 짐꾼이다. 부두에서 편지를 받은 경비가 겉봉을 손가락으로 한 번 쓸어 보고 심사관 막사 쪽으로 가져갔다", source: seen }
     - id: ask_night
       label: 어머니가 떠나던 밤 배웅은 했느냐고 묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - set_flag: y2_chalk_done

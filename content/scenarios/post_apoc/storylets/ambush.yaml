@@ -56,7 +56,7 @@
   choices:
     - id: kick
       label: 발을 빼며 걷어찬다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - belief: { fact: "길가 승합차 밑에 숨어 있던 감염체의 손을 걷어차고 빠져나왔다", source: seen }

@@ -18,7 +18,7 @@
   choices:
     - id: ask_more
       label: 어떻게 생긴 사람이었는지 캐묻는다
-      check: persuade
+      check: insight
       outcomes:
         success:
           - belief: { fact: "{avenger:이/가} 나를 찾고 다닌다. 내가 죽인 사람 때문이다", source: report }

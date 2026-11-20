@@ -69,16 +69,18 @@ describe("화면에서 장비 착용·해제", () => {
 describe("화면에서 스킬 올리기", () => {
   it("레벨업이 있으면 스킬을 한 단계 올리고, 없으면 못 올린다", () => {
     const w = open(null);
-    expect(w.learnSkill({ skill: "first_aid" }).ok).toBe(false); // 레벨업 없음
+    // 누구나 하는 일(생존)로 본다. 전문 기술은 배우기 전엔 올릴 수 없다 (4.2.1)
+    w.ctx().store.append({ type: "skill_trained", characterId: w.state().playerId, skill: "survival", to: -1 });
+    expect(w.learnSkill({ skill: "survival" }).ok).toBe(false); // 레벨업 없음
     w.runCheat("~xp 1000");
     const before = w.playerView();
     expect(before.growth!.skillPoints).toBeGreaterThan(0);
     expect(before.growth!.skillMax).toBeGreaterThan(0);
-    const from = before.skills.find((s) => s.id === "first_aid")?.value ?? -1;
-    expect(w.learnSkill({ skill: "first_aid" }).ok).toBe(true);
+    expect(before.skills.find((s) => s.id === "survival")?.value).toBe(-1);
+    expect(w.learnSkill({ skill: "survival" }).ok).toBe(true);
     const after = w.playerView();
-    expect(after.skills.find((s) => s.id === "first_aid")?.value).toBe(from + 1);
-    expect(after.growth!.skillPoints).toBe(before.growth!.skillPoints - 1);
+    expect(after.skills.find((s) => s.id === "survival")?.value).toBe(0);
+    expect(after.growth!.skillPoints).toBe(before.growth!.skillPoints - 1); // -1→0은 1점
     expect(w.learnSkill({ skill: "no_such_skill" }).ok).toBe(false);
     expect(w.learnSkill({}).ok).toBe(false);
     w.close();

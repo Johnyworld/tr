@@ -1,10 +1,11 @@
 import { applyBuild, planBuild } from "./facilities.ts";
 import { applyTrain, planTrain } from "./training.ts";
+import { applyLesson, planLesson } from "./teaching.ts";
 import { planBroadcast, runBroadcast } from "./broadcast.ts";
 import { ambushDifficulty, applyAmbush, isConfused, leaveAmbush, planAmbush } from "./ambush.ts";
 import { templateKind } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
-import { forage, forageProblem, handleTrap } from "./forage.ts";
+import { forage, forageProblem, handleTrap, trapProblem } from "./forage.ts";
 import { buryRemains } from "./remains.ts";
 import { resistSteps } from "./growth.ts";
 import { breakTruceIfAny } from "./diplomacy.ts";
@@ -221,7 +222,7 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe(
-        `먹을 것을 구하면 그 일의 id: ${(s.foraging?.kinds ?? []).map((k) => `${k.id} ${k.label}${k.water ? "(물가에서)" : "(거점 밖에서)"}`).join(", ") || "없음"}. 판정(check: ${s.foraging?.move ?? "생존"})을 걸면 결과만큼 잡힌다 (판정 없으면 덜). 무엇을 얼마나 얻는지는 시스템이 정한다. 아니면 null`,
+        `먹을 것을 구하면 그 일의 id: ${(s.foraging?.kinds ?? []).map((k) => `${k.id} ${k.label}${k.water ? "(물가에서)" : "(거점 밖에서)"} 판정 ${k.move ?? s.foraging?.move ?? "생존"}`).join(", ") || "없음"}. 그 판정을 걸면 결과만큼 잡힌다 (판정 없으면 덜). 무엇을 얼마나 얻는지는 시스템이 정한다. 아니면 null`,
       ),
     trap: z
       .enum(["set", "check"])
@@ -286,6 +287,13 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("곁의 동물에게 재주를 가르치면 (12-172). 판정(check: 그 재주의 move)이 필요하고, 결과는 시스템이 정한다. 동물마다 하루 한 번. 아니면 null"),
+    lesson: z
+      .strictObject({ teacher: z.string().describe("가르치는 사람 id (장면에 있어야 한다)"), skill: z.string().describe("배울 전문 기술 id") })
+      .nullable()
+      .default(null)
+      .describe(
+        "전문 기술을 사람에게 배우면 (4.2.1, 플레이어가 배우겠다고 할 때만). 판정 없이 시간(작업)이 들고, 채운 시간과 값은 시스템이 센다. 다 채우면 배운다. 아니면 null",
+      ),
     battle: z
       .strictObject({
         effect: z.string().describe("상태의 '지금 쓸 수 있는 전투 효과' 중 하나의 id"),
@@ -361,7 +369,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {
-    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || input.change_clothes || !!input.craft || !!input.build || !!input.train || input.broadcast || input.ambush || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || input.change_clothes || !!input.craft || !!input.build || !!input.train || !!input.lesson || input.broadcast || input.ambush || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
     const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
     if (acts || !passive) {
       return {
@@ -410,6 +418,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (input.train) {
     if (!input.check) return { ok: false, error: "재주를 가르치려면 판정(check)이 필요하다." };
     const why = planTrain(content, store.getState(), input.train, input.check.move);
+    if (why) return { ok: false, error: why };
+  }
+  if (input.lesson) {
+    if (input.check) return { ok: false, error: "배우기에는 판정이 없다. check는 null로 둔다." };
+    const why = planLesson(ctx, input.lesson);
     if (why) return { ok: false, error: why };
   }
   if (input.craft) {
@@ -557,7 +570,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const problem =
       (input.use_item && !fuel ? itemUseProblem(ctx, input.use_item) : null) ??
       (input.treatment ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null) : null) ??
-      (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null);
+      (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null) ??
+      (input.trap ? trapProblem(ctx, input.trap) : null);
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
   }
 
@@ -774,7 +788,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? ((content.scenario.consumables[input.use_item]?.hunger ?? 0) > 0 ? "eat" : "brief") : input.drink || input.refill || input.change_clothes ? "brief" : input.craft || input.build || input.train || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? ((content.scenario.consumables[input.use_item]?.hunger ?? 0) > 0 ? "eat" : "brief") : input.drink || input.refill || input.change_clothes ? "brief" : input.craft || input.build || input.train || input.lesson || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
   // 이동 수단 (12-137): 타고 가면 이동 시간이 줄고, 연료를 쓰고, 도착한 곳에 소리가 난다
   const ride = input.move_to && input.ride ? planRide(ctx, input.ride, !!crossingAttempt || escapeAttempt) : null;
   if (ride && !ride.ok) lines.push(`타지 못하고 걸었다: ${ride.error}`);
@@ -783,9 +797,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 무전 송출은 30분 (대화 ×3, 12-173)
   // 사냥·낚시·채집은 바깥 일이다 (플레이 테스트 11: activity work로 낚시해 실내로 쳐져 비 오는 날 옷이 말랐다)
   const exposure: Activity = input.forage && !["travel", "guard_duty", "combat"].includes(activity) ? "search" : activity;
+  const timeBefore = store.getState().time;
   const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure);
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);
+  // 가르침 (4.2.1): 흐른 시간만큼 배운다
+  if (input.lesson && !inBattle) lines.push(...applyLesson(ctx, input.lesson, store.getState().time - timeBefore));
   displays.push(...time.extra);
   lines.push(...bodyLines(time.extra));
   // 긴 활동이 자정을 넘으며 생긴 일(분대 보고, 동행이 떠남, 임무 기한, 어긴 약속)도 글로 알린다 (플레이 테스트 11: 잠든 사이의 분대 보고가 빠졌다)

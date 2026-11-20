@@ -1,5 +1,5 @@
 import { josa } from "../text.ts";
-import { effectiveSkill } from "./traits.ts";
+import { canUseSkill, effectiveSkill } from "./traits.ts";
 import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
@@ -45,7 +45,8 @@ export function oppositionParts(content: Content, state: GameState, moveId: stri
   const opponent = opponentId ? state.characters[opponentId] : undefined;
   // 혼란에 빠진 상대는 맞서지 못한다 (12-177)
   if (opposing && opponent && !opponent.dead && !isConfused(state, opponent.id)) {
-    const value = opposeModifier(skillScore(content, opponent, opposing));
+    // 상대가 그 전문 기술을 못 하면 서툰 상대와 같다 (4.2.1)
+    const value = canUseSkill(content, opponent, opposing) ? opposeModifier(skillScore(content, opponent, opposing)) : 1;
     const label = content.scenario.moves.find((m) => m.id === opposing)?.label ?? opposing;
     if (value) parts.push({ label: `${playerCalls(state, content, opponent.id)}의 ${label}`, value });
   }

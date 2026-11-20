@@ -74,7 +74,7 @@
   choices:
     - id: dig
       label: 삽을 받아 구덩이를 끝까지 판다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - relation: { who: father, axis: trust, delta: 1 }
@@ -668,7 +668,7 @@
         - belief: { fact: "명서진이 연구 노트를 들고 하얀매 진료소로 갔다. 약대 지하 계단의 사슬은 하얀매 사람이 새로 감았다", source: seen }
     - id: ask_cage
       label: 지하의 것은 어떻게 할 거냐고 하얀매에게 대놓고 묻는다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - set_flag: zo2_cp_recruit_done
@@ -764,7 +764,7 @@
         - belief: { fact: "고속도로로 걸어 들어온 사람이 남쪽에서 왔다고 했다. 길 위의 마을은 다 비었다고 했다가, 한 군데는 담이 높아 들어가지 못했다고 말을 바꿨다", source: rumor }
     - id: question
       label: 물은 이야기를 듣고 주겠다고, 어디서 무엇을 봤는지부터 묻는다
-      check: sense_danger
+      check: insight
       outcomes:
         success:
           - set_flag: zo2_rs_stranger_met
@@ -851,7 +851,7 @@
   choices:
     - id: work
       label: 상자를 함께 나른다
-      check: endure
+      check: athletics
       outcomes:
         success:
           - give_item: { item: trade_token }

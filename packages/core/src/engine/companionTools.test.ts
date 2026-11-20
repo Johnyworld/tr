@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { buildCustomRole, checkCustomStart, type CustomStartInput } from "../game/customStart.ts";
 import { createSeededRng, type Rng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, teachSkills } from "../testing.ts";
 
 const content = loadRealContent();
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
@@ -130,6 +130,7 @@ describe("목적 동행과 갈림길", () => {
     const partner = joinBy(w, "wc_salvage_partner", "team");
     cheat(w, "~time +25h");
     cheat(w, "~set hunger fed"); // 허기짐도 판정 -1이라 (12-74) 배를 채워 둔다
+    teachSkills(w, { persuade: 0 }); // 적히지 않은 공통 스킬은 -1이라 (4.2.1) 0으로 둔다
     const r = w.executeTool("companion_crossroads", { target: partner, choice: "ask_stay", move: "persuade", stat: "charm" });
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().bonds[partner]).toMatchObject({ kind: "purpose" });

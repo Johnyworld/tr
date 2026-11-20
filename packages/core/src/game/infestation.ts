@@ -35,7 +35,8 @@ export function infestationDay(content: Content, state: Pick<GameState, "infeste
     const base = baseInfestation(content, zone);
     const causes: string[] = [];
     const noise = state.zoneNoise[zone];
-    if (noise && noise.day === day - 1 && noise.level >= rules.noise_at) causes.push("소음");
+    // 몰려드는 시간이 정해져 있으면 소음은 그때 따로 (runSwarms)
+    if (!rules.swarm_hours && noise && noise.day === day - 1 && noise.level >= rules.noise_at) causes.push("소음");
     const dead = clashes.filter((c) => c.zone === zone).reduce((n, c) => n + c.attackerLosses + c.defenderLosses, 0);
     if (dead >= rules.corpses_at) causes.push("시체");
     if (causes.length) {

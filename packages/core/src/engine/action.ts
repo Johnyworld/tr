@@ -16,7 +16,7 @@ import { rollBlowup, rollHear, rollLeak } from "./persona.ts";
 import { exposeToCold, changeClothes, soak } from "./climate.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
-import { runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
+import { hostileHere, runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
 import { CAMP_INTERRUPT, createCampCheck, runCampEvent, deepSleepReason } from "./camp.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
@@ -331,7 +331,8 @@ const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
 
 /** 이야기를 두고 떠날 때 고른 것으로 치는 선택지 (판정 없는 것만) */
 // 플레이 테스트 11: 외면하는 선택지 이름이 여럿이라 많은 이야기가 결과 없이 사라졌다 (무기고의 빈 자리의 say_nothing 등)
-const WALK_AWAY_CHOICES = ["leave", "ignore", "look_away", "pass", "walk_away", "move_on", "let_go", "decline", "refuse", "turn_away", "walk_on", "leave_it", "let_be", "say_nothing", "silent", "nothing", "shrug", "later", "hold_back", "stay_out", "not_now", "stay_silent", "back_off", "away"];
+// 플레이 테스트 12: 말로 거절하는 것(refuse·decline)은 외면이 아니라 태도라 뺀다 (파이프를 내려놓는 선택지를 대신 골라 관계가 바뀌었다)
+const WALK_AWAY_CHOICES = ["leave", "ignore", "look_away", "pass", "walk_away", "move_on", "let_go", "turn_away", "walk_on", "leave_it", "let_be", "say_nothing", "silent", "nothing", "shrug", "later", "hold_back", "stay_out", "not_now", "stay_silent", "back_off", "away"];
 
 export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
   const { store, content } = ctx;
@@ -487,6 +488,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   let crossingAttempt = false;
   // 갇혀 있으면 옮겨 가는 것은 탈출 시도다 (12-55)
   let escapeAttempt = false;
+  let alarmOnArrival: string | null = null;
   if (input.move_to && start.characters[start.playerId]?.captive) {
     const blocked = escapeRule(start, content, input.check);
     if (blocked) return { ok: false, error: blocked };
@@ -580,6 +582,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       (input.trap ? trapProblem(ctx, input.trap) : null);
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
   }
+  // 적대하는 땅에서 시간을 들이는 일 (플레이 테스트 12): 숨은 확률 대신 주인공이 한 번 굴린다. 판정이 없으면 숨기 판정을 건다
+  const exposed = !input.move_to && !inBattle && !start.infiltration && !start.characters[start.playerId]?.captive && !isIncapacitated(content, player) && !incapacitatingSymptom(scenario, player) && !!scenario.alarm && hostileHere(ctx)
+    && ((!!input.activity && input.activity.kind !== "brief") || !!input.forage || input.trap === "set" || !!input.craft || !!input.build);
+  if (exposed && !input.check) {
+    const base = start.playerZone && content.locations[start.playerZone]?.kind === "base";
+    return { ok: false, error: `적대하는 땅에서 시간을 들이는 일은 들킬 수 있다. check로 ${scenario.alarm!.moves.join("/")} 판정을 함께 건다 (난이도 ${base ? "hard: 거점 안" : "normal"}). 실패하면 경보가 열린다 (시간은 흐르지 않았다).` };
+  }
 
   // 1. 판정과 선언한 위험
   if (input.check) {
@@ -606,6 +615,16 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       }
     }
     displays.push(roll.display);
+    // 탈출은 빈틈을 기다리는 데 시간이 든다 (플레이 테스트 12)
+    const wait = escapeAttempt ? scenario.captivity?.escape_hours : undefined;
+    if (wait) {
+      const now = store.getState().time;
+      const minutes = Math.round((wait[0] + ctx.rng() * Math.max(0, wait[1] - wait[0])) * 60);
+      if (minutes > 0) {
+        store.append({ type: "time_advanced", activity: "wait", from: now, to: now + minutes });
+        lines.push(`빈틈을 기다리느라 ${formatDuration(minutes)}이 걸렸다.`);
+      }
+    }
     // 임무 판정이 빗나가면 30분을 더 쓴다 (플레이 테스트 11, C2: 5분마다 다시 굴려 채웠다). 같은 조건은 세 번 빗나가면 닫힌다
     {
       const m = forMission ? store.getState().missions[forMission] : undefined;
@@ -625,9 +644,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     );
     if (roll.growthNote) lines.push(roll.growthNote);
     if (missionNote) lines.push(missionNote);
-    // 적대하는 땅에서 숨기가 실패하면 들킨다 (플레이 테스트 11, D6)
-    if (roll.outcome === "miss") {
-      for (const d of runAlarm(ctx, input.check.move)) {
+    // 적대하는 땅에서 숨기가 실패하면 들킨다 (플레이 테스트 11, D6). 옮겨 가며 건 숨기는 도착한 땅에서 (플레이 테스트 12: 출발한 우리 땅에서 굴려 경보가 없었다)
+    if (roll.outcome === "miss" && input.move_to && !escapeAttempt) alarmOnArrival = input.check.move;
+    else if (roll.outcome === "miss") {
+      // 적대하는 땅에서 시간을 들인 일의 판정이 실패하면 무엇을 하던 중이든 들킨다 (한 행동에 판정은 하나)
+      for (const d of runAlarm(ctx, exposed ? scenario.alarm!.moves[0]! : input.check.move)) {
         displays.push(d);
         if (d.type === "storylet" && d.event === "started") lines.push(`들켰다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);
       }
@@ -864,12 +885,19 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 건너기 시도가 실패하면 물살에 밀려 되돌아온다 (시간과 위험은 이미 치렀다)
   const sweptBack = crossingAttempt && outcome === "miss";
   const escapeFailed = escapeAttempt && outcome === "miss";
-  if (escapeFailed) lines.push("빠져나가지 못했다. 다시 붙잡혀 갇힌 곳으로 끌려왔다. 감시가 더 심해졌다.");
+  if (escapeFailed) {
+    store.append({ type: "captive_watch_raised" });
+    const watch = store.getState().characters[start.playerId]?.captive?.watch ?? 1;
+    lines.push(`빠져나가지 못했다. 다시 붙잡혀 갇힌 곳으로 끌려왔다. 감시가 더 심해졌다 (다음 탈출 판정 -${watch}).`);
+  }
   if (sweptBack) lines.push(`${content.locations[input.move_to!]?.name ?? input.move_to}에 닿지 못하고 되돌아왔다. 되돌아온 장면을 서술한다.`);
   if (input.move_to && !time.interrupted && !sweptBack && !escapeFailed) {
     if (escapeAttempt) {
+      const captor = start.characters[start.playerId]?.captive?.by;
       const freed = releasePlayer(ctx, false);
       if (freed) lines.push(freed);
+      // 달아난 일은 붙잡았던 무리에 남는다 (플레이 테스트 12)
+      if (captor) recordDeed(ctx, { summary: `${content.factions[captor]?.name ?? captor}에 갇혀 있다 달아났다`, tags: ["bravery"], severity: 1, privacy: "semi_private", noisy: true });
     }
     // 자리를 뜨면 그 자리의 이야기는 끝난다 (장면의 인물도 따라오지 않는다)
     displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
@@ -883,11 +911,15 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const came = activeCompanions(store.getState()).map((id) => playerCalls(store.getState(), content, id));
     lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.${came.length ? ` 동행(${came.join(", ")})은 함께 왔다.` : ""} 그 밖에 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
     if (rideUsed) {
-      lines.push(`${josa(rideUsed.name, "을/를")} 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 무언가 몰려들 수 있다." : ""}`);
+      lines.push(`${josa(rideUsed.name, "을/를")} 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 몇 시간 안에 무언가 몰려들 수 있다." : ""}`);
       if (rideUsed.noise) store.append({ type: "noise_made", zone: input.move_to, level: rideUsed.noise, day: dayOf(store.getState().time) });
     }
     // 감염체가 몰려든 구역에 들어섰다 (플레이 테스트 11, D5: 다섯 번 들어가도 마주치지 않았다).
     // 길 위의 일보다 먼저 굴린다 (플레이 테스트 12: 길 위의 일이 먼저 열려 몰려든 구역의 마주침을 네 번에 한 번꼴로 막았다)
+    if (alarmOnArrival) for (const d of runAlarm(ctx, alarmOnArrival)) {
+      displays.push(d);
+      if (d.type === "storylet" && d.event === "started") lines.push(`들어서다 들켰다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);
+    }
     const arrival = runInfestedArrival(ctx, input.move_to);
     for (const d of arrival) {
       displays.push(d);

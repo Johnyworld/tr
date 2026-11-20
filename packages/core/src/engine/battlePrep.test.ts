@@ -9,7 +9,9 @@ import { barrierRise, infestationDay } from "../game/infestation.ts";
 import { resolveRound } from "../sim/battle.ts";
 
 /** 전투 준비물 늘리기 (12-176): 모래주머니 엄폐·사격 자리. 바리케이드는 12-184부터 거점 시설 */
-const content = { ...loadRealContent(), storylets: {} };
+// 소음이 다음 날에 오르는 하루 틱을 본다 (몰려드는 시간 swarm_hours는 플레이 테스트 12의 테스트에서)
+const real0 = loadRealContent();
+const content = { ...real0, storylets: {}, scenario: { ...real0.scenario, infestation: { ...real0.scenario.infestation!, swarm_hours: undefined } } };
 /** 목공은 전문 기술이라 배워 둔다 (4.2.1) */
 const make = (roll = 0.99) => {
   const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-prep-")), content, rngFactory: () => () => roll }).create("mcp", "role_a_grunt");

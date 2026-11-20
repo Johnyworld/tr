@@ -509,7 +509,19 @@ export function storyletWindow(state: GameState, content: Content, at: GameTime)
   // 위급하면 급한 이야기만 (12-191). 폐허를 탐험하는 중에도 (12-192: 병원 지하에서 "물통 옮기기"가 열렸다)
   if (inCrisis(state, content) || state.exploration) return "urgent_only";
   if (fresh) return "open";
-  return at - state.lastStoryletAt! >= pacing.min_gap_hours * 60 ? "open" : "urgent_only";
+  return at - state.lastStoryletAt! >= storyletGapMinutes(content, state.lastStoryletAt!) ? "open" : "urgent_only";
+}
+
+/**
+ * 앞 이야기 뒤 다음 이야기까지의 간격 (분). max_gap_hours가 있으면 min~max 사이에서 앞 이야기의 시각으로 정한다
+ * (난수를 쓰지 않아 같은 세이브는 늘 같은 간격이다)
+ */
+export function storyletGapMinutes(content: Content, lastAt: GameTime): number {
+  const p = content.scenario.storylet_pacing;
+  const min = p.min_gap_hours * 60;
+  if (p.max_gap_hours === undefined || p.max_gap_hours <= p.min_gap_hours) return min;
+  const h = (Math.imul(lastAt + 0x9e37, 2654435761) >>> 0) / 2 ** 32;
+  return Math.round(min + h * (p.max_gap_hours * 60 - min));
 }
 
 /** 주인공의 몸이 위급한가 (storylet_pacing.urgent_only_when): 그동안은 급한 이야기만 연다 (12-191) */
@@ -537,10 +549,12 @@ export function urgentAllowed(state: GameState, content: Content, at: GameTime):
 /** 이 이야기를 지금 열 수 있는가: 급한 이야기는 하루 상한까지, 나머지는 창이 열렸을 때 */
 export function storyletAllowed(state: GameState, content: Content, s: StoryletContent, window: "open" | "urgent_only" | "closed", at: GameTime, options: { urgentOnly?: boolean } = {}): boolean {
   if (window === "closed") return false;
+  // 한밤에 막 잠에서 깬 때는 급한 이야기, 누워 있는 동안의 이야기, 깨어나는 장면(activities에 sleep)만 (플레이 테스트 12: 00~03시에 막 깬 사람에게 "모닥불 곁에 앉아", "당신 차례가 온다").
+  // 아침에 깬 것은 하루의 시작이라 막지 않는다 (새벽 솥 같은 아침 일). 야영·길 위의 일은 태그로 따로 열려 여기를 거치지 않는다
+  if (state.lastActivity === "sleep" && segmentOf(at) === "night" && !s.urgent && !s.bedside && !s.when.activities?.includes("sleep")) return false;
   // 누워 있는 동안의 이야기는 위급할 때도 연다 (D4). 다만 이야기 사이 간격은 지킨다
   if (s.bedside && !options.urgentOnly && inCrisis(state, content)) {
-    const gap = content.scenario.storylet_pacing.min_gap_hours * 60;
-    return state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt || at - state.lastStoryletAt >= gap;
+    return state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt || at - state.lastStoryletAt >= storyletGapMinutes(content, state.lastStoryletAt);
   }
   if (s.urgent) return urgentAllowed(state, content, at);
   return !options.urgentOnly && window === "open";

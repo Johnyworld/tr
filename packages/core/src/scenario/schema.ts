@@ -875,6 +875,8 @@ export const scenarioFileSchema = z
         confiscate: z.array(z.string()).default(["weapon", "ammo"]),
         /** 탈출: 갇힌 구역에서 옮겨 가려면 이 판정 중 하나를 무거운 위험으로 */
         escape_moves: z.array(id).min(1),
+        /** 탈출의 빈틈을 기다리는 시간 (시간, [최소, 최대]). 실패할 때마다 감시가 심해져 다음 탈출 판정 -1 (플레이 테스트 12: 탈옥에 시간도 대가도 없었다) */
+        escape_hours: z.tuple([z.number().min(0), z.number().min(0)]).optional(),
         /** 갇힌 동안 허기가 이 단계보다 더 나빠지지 않는다 (붙잡은 쪽이 겨우 먹인다) */
         hunger_floor: id.optional(),
         /** 포로 하나를 하루 먹이는 데 드는 붙잡은 무리의 자원 */
@@ -956,7 +958,12 @@ export const scenarioFileSchema = z
      */
     radio_call: z.strictObject({ item: id, tag: id, chance: z.number().min(0).max(1) }).optional(),
     /** 들킨 침입 (플레이 테스트 11, D6): 적대하는 무리의 땅에서 moves 판정이 실패하면 tag 이야기(경보·추격) 하나가 열린다 */
-    alarm: z.strictObject({ tag: id, moves: z.array(id).min(1) }).optional(),
+    alarm: z
+      .strictObject({
+        tag: id,
+        moves: z.array(id).min(1),
+      })
+      .optional(),
     /**
      * 매복 (12-177). 내 매복: move 판정(어려움으로 굴린다)이 성공하면 hours 동안, 이 구역에 나타난 상대에게 하는 첫 attack_moves 판정에 bonus,
      * 그리고 confuse_chance로 상대가 혼란 (다음 판정 하나 동안 맞서지 못한다). 대가 있는 성공은 partial_bonus만.
@@ -1257,6 +1264,8 @@ export const scenarioFileSchema = z
     infestation: z
       .strictObject({
         noise_at: z.number().int().min(1),
+        /** 소리가 noise_at에 닿은 뒤 감염체가 몰려드는 시간 (시간, [최소, 최대]에서 굴린다). 없으면 다음 날 자정에 (플레이 테스트 12) */
+        swarm_hours: z.tuple([z.number().min(0), z.number().min(0)]).optional(),
         corpses_at: z.number().int().min(1),
         settle: z.number().min(0).max(1),
         yields_cut: z.number().min(0).max(1).default(0),
@@ -1584,6 +1593,8 @@ export const scenarioFileSchema = z
     storylet_pacing: z
       .strictObject({
         min_gap_hours: z.number().min(0),
+        /** 있으면 이야기 사이 간격을 min_gap_hours~이 값 사이로 정한다 (앞 이야기마다 다르게, 플레이 테스트 12: 하루 상한 대신 간격으로) */
+        max_gap_hours: z.number().min(0).optional(),
         expire_hours: z.number().positive(),
         /** 캐릭터의 이야기가 시작된 뒤 첫 이야기까지 (시작하자마자 끼어들지 않게) */
         first_after_hours: z.number().min(0).default(2),

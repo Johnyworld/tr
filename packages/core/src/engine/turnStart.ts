@@ -8,7 +8,7 @@ import { runCompanions } from "./companionTools.ts";
 import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
-import { runStorylets } from "./storyletTools.ts";
+import { runStorylets, runSwarms } from "./storyletTools.ts";
 import { runNaturalRecovery, runWearOff } from "./body.ts";
 import { runHelpless } from "./helpless.ts";
 import { runBleeding } from "./bleeding.ts";
@@ -67,6 +67,8 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   const grown = runPromotions(ctx);
   // 상인은 날마다 물건을 다시 채운다 (기획서 4.8)
   runRestock(ctx);
+  // 소리를 듣고 몰려온 감염체 (플레이 테스트 12): 그 자리에 있으면 마주친다
+  const swarms = runSwarms(ctx);
   // 조건이 맞는 이야기 (간격이 지났고 전투 중이 아닐 때)
   const storylets = options.storylets === false ? [] : runStorylets(ctx, options);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
@@ -75,5 +77,5 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   const calmed = runFearDecay(ctx);
   // 술·진통제·각성제 기운이 빠진다 (12-157)
   const worn = runWearOff(ctx);
-  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...storylets, ...healed, ...calmed, ...worn];
+  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...swarms, ...storylets, ...healed, ...calmed, ...worn];
 }

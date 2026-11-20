@@ -234,7 +234,8 @@
     segments: [morning, day, evening]
   cast:
     walker: { extra: road_wanderer, label: 길동무 떠돌이, keep: road_wanderer }
-  setup: "{from}부터 줄곧 앞서 걷던 {walker:이/가} {to:을/를} 앞두고 걸음을 늦춰 나란히 선다. \"그쪽도 이 길이지? 이 앞은 나 혼자 걷기엔 험해. 하루만 같이 다니자. 먹을 건 각자.\""
+  # 플레이 테스트 12: 처음 나오는 사람을 "줄곧 앞서 걷던" 사람으로 썼다 (GM 규칙 3)
+  setup: "{to:을/를} 앞둔 길에서 마주친 {walker:이/가} 걸음을 늦춰 나란히 선다. \"그쪽도 이 길이지? 이 앞은 나 혼자 걷기엔 험해. 하루만 같이 다니자. 먹을 건 각자.\""
   ai_direction: 떠돌이는 진짜로 혼자 걷기가 무서울 뿐이다. 길은 잘 안다. 함께 가면 하루 동안 동행이 되고, 하루 뒤 갈림길에서 더 함께 갈지는 그동안의 관계가 정한다. 무리 이야기를 꺼내면 말을 돌린다 (숨은 사정이 있다. 털어놓을 때까지 드러내지 않는다).
   choices:
     - id: together
@@ -280,7 +281,8 @@
         partial:
           - take_item: { item: cigarettes }
           - relation: { who: patrol, axis: respect, delta: -1 }
-          - belief: { fact: "{to} 앞에서 붉은연합 순찰조에게 담배를 뺏기고서야 지나왔다", source: seen }
+          # 플레이 테스트 12: 담배가 없는데 "담배를 뺏기고". 빼앗는 물건은 있는 만큼만 가져가니 문구는 물건을 말하지 않는다
+          - belief: { fact: "{to} 앞에서 붉은연합 순찰조에게 몸을 샅샅이 뒤지게 내주고서야 지나왔다", source: seen }
         miss:
           - relation: { who: patrol, axis: trust, delta: -2 }
           - zone_noise: 1

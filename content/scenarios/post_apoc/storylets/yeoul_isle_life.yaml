@@ -136,6 +136,8 @@
     zones: [yeoul_isle]
     factions: [faction_y]
     segments: [morning, day]
+    # 플레이 테스트 12: 망루·검역 막사 보초 중에 "거기 파 봐". 보초를 서는 동안에는 열지 않는다
+    activities_none: [guard_duty]
   cast:
     kid: { extra: y_villager, label: 갯벌의 섬 사람 }
   setup: "물이 멀리 빠졌다. 갯벌 위로 섬 사람들이 호미와 바구니를 들고 흩어진다. {kid:이/가} 진흙 묻은 손으로 구멍 하나를 가리킨다. \"거기 파 봐. 큰 놈 있다.\""
@@ -173,6 +175,8 @@
     zones: [yeoul_isle]
     factions: [faction_y]
     segments: [morning, day]
+    # 플레이 테스트 12: 망루·검역 막사 보초 중에 "손 놀면 감자 좀 깎아 줘요". 보초를 서는 동안에는 열지 않는다
+    activities_none: [guard_duty]
   cast:
     cook: { ids: [py_narae] }
   setup: "식당 뒤 부엌에서 {cook:이/가} 김 속에서 소리친다. \"거기! 손 놀면 감자 좀 깎아 줘요. 오늘 백 그릇은 나가야 돼.\" 큰 솥 셋이 한꺼번에 끓고 있다."
@@ -544,6 +548,8 @@
     zones: [yeoul_isle]
     factions: [faction_y]
     segments: [morning]
+    # 플레이 테스트 12: 부두에서 상자를 맞추는 중에 "식당 문에 새 종이가 붙었다". 보초·일하는 중에는 열지 않는다
+    activities_none: [guard_duty, work]
     day_gte: 2
     flags_none: [yl_notice_done]
   setup: "식당 문에 새 종이가 붙었다. 단정한 글씨다. '섬 식구 여러분께. 겨울을 앞두고 모든 식구의 쓸모를 다시 살핍니다. 아픈 데가 있으면 숨기지 말고 진료소에 알려 주세요. 의회는 여러분 모두를 아낍니다.' 사람들이 읽고 고개를 끄덕이며 지나간다."
@@ -575,6 +581,8 @@
     zones: [yeoul_isle]
     factions: [faction_y]
     segments: [day, evening]
+    # 플레이 테스트 12: 갯골 바위틈을 뒤지는 중에 "당신이 지나가자". 보초·뒤지는 중에는 열지 않는다
+    activities_none: [guard_duty, search]
     day_gte: 3
     flags_none: [yl_quarantine_done]
   cast:
@@ -648,6 +656,8 @@
     zones: [yeoul_isle]
     factions: [faction_y]
     segments: [morning, day]
+    # 플레이 테스트 12: 망루·검역 막사 보초 중에 "청진기를 당신 가슴에 댄다". 보초를 서는 동안에는 열지 않는다
+    activities_none: [guard_duty]
     day_gte: 4
     flags_none: [yl_doctor_done]
   cast:
@@ -891,6 +901,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 플레이 테스트 12: 정문 보초를 서는 중에 "상관의 문병". 누워 있는 동안의 이야기는 서서 하는 일 중에는 열지 않는다
+    activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     zones: [yeoul_isle]
     factions: [faction_y]
@@ -923,6 +935,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     zones: [yeoul_isle]
     factions: [faction_y]
@@ -949,6 +962,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     zones: [yeoul_isle]
     factions: [faction_y]
@@ -974,6 +988,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     zones: [yeoul_isle]
     factions: [faction_y]

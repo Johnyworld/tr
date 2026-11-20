@@ -61,7 +61,8 @@
           - belief: { fact: "거점의 아이가 어젯밤 창고 뒤로 누군가 자루를 들고 나가는 걸 봤다고 했다. 어른이었고, 우리 사람 옷차림이었다고", source: report }
         partial:
           - relation: { who: kid, axis: trust, delta: 1 }
-          - belief: { fact: "거점의 아이가 밤에 담 쪽에서 무언가 움직이는 걸 봤다고 했다. 사람인지 아닌지는 모르겠다고", source: report }
+          # 플레이 테스트 12: 담이 없는 섬에서도 "담 쪽"
+          - belief: { fact: "거점의 아이가 밤에 어둠 저편에서 무언가 움직이는 걸 봤다고 했다. 사람인지 아닌지는 모르겠다고", source: report }
         miss:
           - relation: { who: kid, axis: trust, delta: -1 }
     - id: later

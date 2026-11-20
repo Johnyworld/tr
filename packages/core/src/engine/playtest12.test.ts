@@ -5,14 +5,16 @@ import { describe, expect, it } from "vitest";
 import { activeMissionOf, atMissionPlace } from "../game/missions.ts";
 import { createSeededRng } from "../rng.ts";
 import { segmentOf } from "../rules/time.ts";
-import { conditionsMet, pacingBlocks } from "../story/storylets.ts";
+import { conditionsMet, pacingBlocks, storyletAllowed, storyletGapMinutes } from "../story/storylets.ts";
+import { infestationOf } from "../game/infestation.ts";
+import { personaOf } from "./persona.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { pickFee } from "./body.ts";
 import { runCompanions } from "./companionTools.ts";
 import { handleTrap } from "./forage.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
-import { maskUnknownNames, runAlarm } from "./storyletTools.ts";
+import { hostileHere, maskUnknownNames, runAlarm, runSwarms } from "./storyletTools.ts";
 
 /** 긴 판 열 (플레이 테스트 12, docs/playtests/2026-11-20-mcp-12-long.md)의 확실한 버그 */
 const content = loadRealContent();
@@ -65,10 +67,11 @@ describe("플레이 테스트 12: 임무 자리의 이야기", () => {
   it("꼭 열려야 하는 이야기(튜토리얼 엔딩)는 하루 상한에 막히지 않는다", () => {
     const w = world("role_t_visitor");
     const state = structuredClone(w.state());
+    const capped = { ...content, scenario: { ...content.scenario, storylet_pacing: { ...content.scenario.storylet_pacing, per_day: 3 } } };
     const others = Object.keys(content.storylets).filter((id) => !content.storylets[id]!.when.mission).slice(0, 10);
     for (const id of others) state.storyletLog[id] = { fired: 1, lastFiredAt: state.time };
-    expect(pacingBlocks(state, content, content.storylets[others[0]!]!, state.time)).toBe(true);
-    expect(pacingBlocks(state, content, content.storylets.tv_reunion ?? Object.values(content.storylets).find((s) => s.title === "다시 만난 사람들")!, state.time)).toBe(false);
+    expect(pacingBlocks(state, capped, content.storylets[others[0]!]!, state.time)).toBe(true);
+    expect(pacingBlocks(state, capped, Object.values(content.storylets).find((s) => s.title === "다시 만난 사람들")!, state.time)).toBe(false);
   });
 });
 
@@ -174,5 +177,81 @@ describe("플레이 테스트 12: 동행·덫·문구", () => {
     const r = w.executeTool("take_action", act({ activity: { kind: "wait", until: segmentOf(w.state().time) } }));
     expect(r.ok).toBe(false);
     expect(!r.ok && r.error).toContain("이미");
+  });
+});
+
+describe("플레이 테스트 12 뒤 정한 것", () => {
+  it("이야기 사이 간격은 앞 이야기마다 6~12시간 사이로 정해진다", () => {
+    const gaps = Array.from({ length: 50 }, (_, i) => storyletGapMinutes(content, 1000 + i * 137));
+    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(6 * 60);
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(12 * 60);
+    expect(new Set(gaps).size).toBeGreaterThan(5);
+  });
+
+  it("한밤에 막 잠에서 깬 때는 급하지 않은 이야기가 열리지 않는다. 아침에 깬 것은 막지 않는다", () => {
+    const w = world("role_a_grunt");
+    const s = structuredClone(w.state());
+    const calm = Object.values(content.storylets).find((x) => !x.urgent && !x.bedside && !x.when.activities)!;
+    const night = s.time - (s.time % 1440) + 1440 + 60; // 다음 날 01:00
+    const morning = night + 7 * 60; // 08:00
+    s.lastActivity = "sleep";
+    expect(storyletAllowed(s, content, calm, "open", night)).toBe(false);
+    expect(storyletAllowed(s, content, calm, "open", morning)).toBe(true);
+    s.lastActivity = "wait";
+    expect(storyletAllowed(s, content, calm, "open", night)).toBe(true);
+  });
+
+  it("소리가 나면 1~5시간 뒤 몰려들고, 그때 그 구역에 있으면 마주침을 굴린다", () => {
+    const w = world("role_l_wanderer");
+    const ctx = w.ctx();
+    const zone = w.state().playerZone!;
+    const before = infestationOf(content, w.state(), zone);
+    ctx.store.append({ type: "noise_made", zone, level: 3, day: Math.floor(w.state().time / 1440) + 1 });
+    runSwarms(ctx);
+    const swarm = w.state().swarms[zone]!;
+    expect(swarm.at - w.state().time).toBeGreaterThanOrEqual(60);
+    expect(swarm.at - w.state().time).toBeLessThanOrEqual(300);
+    ctx.store.append({ type: "time_advanced", activity: "wait", from: w.state().time, to: swarm.at });
+    runSwarms({ ...ctx, rng: () => 0 });
+    expect(w.state().swarms[zone]!.done).toBe(true);
+    expect(infestationOf(content, w.state(), zone)).toBe(Math.min(3, before + 1));
+  });
+
+  it("임무 기한에 오가는 시간이 얹힌다", () => {
+    const { w, mission } = withMission("role_a_grunt", "front_recon");
+    const hours = (mission.deadline - mission.assignedAt) / 60;
+    expect(hours).toBeGreaterThan(content.missions.front_recon!.deadline_hours);
+    expect(w).toBeTruthy();
+  });
+
+  it("적대하는 땅에서 시간을 들이는 일은 판정을 건다. 판정 없이는 거절, 실패하면 경보", () => {
+    const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-pt12-")), content, rngFactory: () => () => 0 });
+    const w = m.create("mcp", "role_a_grunt", choice);
+    const ctx = w.ctx();
+    const enemy = Object.keys(content.locations).find((z) => {
+      ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: z });
+      return hostileHere(ctx) && content.locations[z]!.kind === "base";
+    });
+    expect(enemy).toBeTruthy();
+    const refused = w.executeTool("take_action", act({ activity: { kind: "search", until: null } }));
+    expect(!refused.ok && refused.error).toContain("판정을 함께 건다");
+    const r = w.executeTool("take_action", act({ activity: { kind: "search", until: null }, check: { move: "scavenge", stat: "senses", difficulty: "hard", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" } }));
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(content.storylets[w.state().activeStorylet?.id ?? ""]?.tags).toContain("alarm");
+  });
+
+  it("탈출에 실패하면 감시가 심해져 다음 탈출 판정이 어려워진다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const zone = w.state().playerZone!;
+    ctx.store.append({ type: "player_captured", by: "faction_c", zone, held: {} });
+    ctx.store.append({ type: "captive_watch_raised" });
+    ctx.store.append({ type: "captive_watch_raised" });
+    expect(w.state().characters[w.state().playerId]!.captive!.watch).toBe(2);
+  });
+
+  it("성격을 고르지 않은 주인공의 성격 축은 모두 0이다 (id로 뽑지 않는다)", () => {
+    const w = world("role_a_grunt");
+    expect(personaOf(content, w.state().characters[w.state().playerId]!)).toEqual({});
   });
 });

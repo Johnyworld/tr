@@ -9,6 +9,8 @@
   when:
     zones: [yeoul_isle]
     segments: [evening]
+    # 플레이 테스트 12: 보초·잠복 중에 "식당에 고기 국이 나온다". 보초를 서는 동안에는 열지 않는다
+    activities_none: [guard_duty]
     flags_none: [y_soup_done]
   cast:
     old: { ids: [y_bokman] }
@@ -244,7 +246,8 @@
     flags_none: [y_summons_done, y_feasted]
   cast:
     guard: { ids: [y_gangho] }
-  setup: "자정, 막사 문이 열린다. {guard:이/가} 등불을 들고 서 있다. 뒤에 경비 둘. \"의회가 부른다. 지금.\" 그의 눈이 당신을 피한다."
+  # 플레이 테스트 12: 01:50에 "자정". 밤 내내 열리니 시각을 말하지 않는다
+  setup: "한밤, 막사 문이 열린다. {guard:이/가} 등불을 들고 서 있다. 뒤에 경비 둘. \"의회가 부른다. 지금.\" 그의 눈이 당신을 피한다."
   ai_direction: 의회는 의심 가는 사람을 저장고로 부른다. 따라가면 심사관 앞에 선다 (거기서의 일은 판정으로). 진강호는 이 일이 싫지만 거역하지 못한다. 도망치려면 판정이 필요하고, 위험은 판정 전에 선언한다.
   choices:
     - id: go

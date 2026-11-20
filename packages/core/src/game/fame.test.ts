@@ -16,16 +16,17 @@ function setup() {
   const store = new InMemoryGameStore([createWorldEvent(content, "role_a_grunt", "world_fame", () => 0.5)]);
   const ctx = { store, rng: () => 0, content };
   const s = store.getState();
-  const witness = (s.known[s.playerId] ?? []).find((id) => s.characters[id]?.factionId === "faction_a")!;
+  const [witness, witness2] = (s.known[s.playerId] ?? []).filter((id) => s.characters[id]?.factionId === "faction_a") as [string, string];
   /** 주인공의 행적 하나 (목격자: 청솔 동료) */
   let no = 0;
   const deed = (severity: number) => {
     const id = `d_t${++no}`;
     store.append({
       type: "deed_recorded",
-      deed: { id, actorId: s.playerId, summary: `큰일 ${no}`, tags: ["bravery"], severity, privacy: "public", turn: 0, time: s.time, witnesses: [{ npcId: witness, hidden: false }], searched: false },
+      deed: { id, actorId: s.playerId, summary: `큰일 ${no}`, tags: ["bravery"], severity, privacy: "public", turn: 0, time: s.time, witnesses: [{ npcId: witness!, hidden: false }, { npcId: witness2!, hidden: false }], searched: false },
     } as never);
-    store.append({ type: "deed_learned", deedId: id, npcId: witness, source: "seen", delta: NO_DELTA });
+    store.append({ type: "deed_learned", deedId: id, npcId: witness!, source: "seen", delta: NO_DELTA });
+    store.append({ type: "deed_learned", deedId: id, npcId: witness2!, source: "seen", delta: NO_DELTA });
     return id;
   };
   const days = (n: number) => {
@@ -40,6 +41,15 @@ function setup() {
 }
 
 describe("명성", () => {
+  it("본 사람이 한 명뿐인 일은 명성이 되지 않는다 (플레이 테스트 12)", () => {
+    const { store, state } = setup();
+    const s = state();
+    for (let i = 0; i < 6; i++) {
+      store.append({ type: "deed_recorded", deed: { id: `d_one${i}`, actorId: s.playerId, summary: "임무 완수", tags: ["diligence"], severity: 3, privacy: "public", turn: 0, time: s.time, witnesses: [{ npcId: (s.known[s.playerId] ?? [])[0]!, hidden: false }], searched: false } } as never);
+    }
+    expect(fameOf(state(), content).points).toBe(0);
+  });
+
   it("남에게 보인 행적의 크기가 쌓여 단계가 오른다. 한두 번으로는 무명", () => {
     const { deed, state } = setup();
     deed(2);

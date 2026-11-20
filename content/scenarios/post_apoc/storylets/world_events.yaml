@@ -84,6 +84,8 @@
   when:
     weather: [fog]
     own_territory: false
+    # 플레이 테스트 12: 진료소 간이침상에서, 버들마을 거점 정문 앞에서 "물결"이 지나갔다. 담 안(거점)에서는 열지 않는다
+    zones_none: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     segments: [day, evening, night]
   setup: 안개 속, 멀지 않은 곳에서 발 끄는 소리가 겹겹이 들린다. 열은 넘는다. 수십일 수도 있다. 물결이다. 어느 쪽에서 오는지 가늠이 안 된다.
   ai_direction: 물결은 가까운 큰길을 따라 지나간다. 가만히 있으면 비켜 가고, 소리를 내면 끝자락이 방향을 튼다. 실제 조우와 피해는 판정과 이후 행동으로만 정한다.
@@ -97,7 +99,8 @@
         partial:
           - belief: { fact: 물결은 지나갔지만 끝자락 몇이 한참을 주위에서 맴돌았다, source: seen }
         miss:
-          - belief: { fact: 자갈을 밟았다. 물결 끝자락 몇이 방향을 틀어 이쪽으로 온다, source: seen }
+          # 플레이 테스트 12: 실내에서도 "자갈을 밟았다". 자리를 가리지 않는 말로
+          - belief: { fact: 숨죽인 사이 작은 소리 하나가 났다. 물결 끝자락 몇이 방향을 틀어 이쪽으로 온다, source: seen }
     - id: climb
       label: 가까운 건물 2층으로 올라가 피한다
       check: sense_danger
@@ -315,6 +318,8 @@
   tags: [world]
   when:
     own_territory: false
+    # 플레이 테스트 12: 하얀매 진료소 대기실에서 "무너진 담 그늘에". 거점 안에서는 열지 않는다
+    zones_none: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     segments: [day, evening]
     day_gte: 2
   setup: '무너진 담 그늘에 배낭을 멘 남자가 기대앉아 있다. 얼굴이 붉고 기침이 깊다. "물... 한 모금만." 소매 끝에 마른 피가 묻어 있다.'

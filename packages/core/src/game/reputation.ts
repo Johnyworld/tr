@@ -44,7 +44,8 @@ export function relationLabel(value: number): string {
   if (value <= -3) return "적대";
   if (value <= -1) return "냉담";
   if (value === 0) return "보통";
-  if (value <= 2) return "호의";
+  // 각별은 가장 높은 값에서만 (플레이 테스트 12: 첫 만남에 +3으로 각별이 됐다)
+  if (value < RELATION_MAX) return "호의";
   return "각별";
 }
 

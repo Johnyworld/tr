@@ -144,6 +144,8 @@ describe("발동", () => {
     expect(env.store.getState().activeStorylet).toBeNull(); // 쿨다운(하루)
     for (let i = 0; i < 4 && !env.store.getState().activeStorylet; i++) {
       executeTool("take_action", act({ activity: { kind: "sleep", until: null } }), env.ctx);
+      // 막 깬 순간에는 급하지 않은 이야기가 열리지 않는다 (플레이 테스트 12): 일어나 움직인다
+      if (!env.store.getState().activeStorylet) executeTool("take_action", act({ activity: { kind: "rest", until: null } }), env.ctx);
     }
     expect(env.store.getState().storyletLog.chatter?.fired).toBe(2);
   });

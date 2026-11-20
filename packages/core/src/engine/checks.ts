@@ -101,6 +101,8 @@ export function rollPlayerCheck(
   const opponent = input.opponent ?? (cooperative ? null : options.target) ?? null;
   // 매복·매복당함·혼란 (12-177)도 상황 보정이다
   const against = [...oppositionParts(content, state, input.move, opponent, input.distance), ...ambushParts(content, state, input.move, opponent)];
+  // 갇힌 곳의 감시 (플레이 테스트 12): 탈출에 실패한 만큼 탈출 판정이 어렵다
+  if (actor.captive?.watch && scenario.captivity?.escape_moves.includes(input.move)) against.push({ label: "감시", value: -actor.captive.watch });
   modifiers.opposition = against.reduce((n, p) => n + p.value, 0);
   const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition + modifiers.trait + modifiers.gear + modifiers.opposition);
   const checkId = `chk_${state.nextCheckNo}`;

@@ -10,7 +10,7 @@ import { setResolve, stepResolve } from "./resolve.ts";
 import { capturePlayer, releasePlayer } from "./captivity.ts";
 import { rankName } from "../game/ranks.ts";
 import { exposeToFatigue } from "./fatigue.ts";
-import { baseInfestation, infestationOf } from "../game/infestation.ts";
+import { barrierRise, baseInfestation, infestationOf } from "../game/infestation.ts";
 import { exposeToCold } from "./climate.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
@@ -437,7 +437,7 @@ export function applyEffect(
   if ("zone_noise" in effect) {
     if (!state.playerZone) return {};
     store.append({ type: "noise_made", zone: state.playerZone, level: effect.zone_noise, day: dayOf(state.time) });
-    return { line: "소리가 났다. 이 구역에 무언가 몰려들 수 있다." };
+    return { line: "소리가 났다. 몇 시간 안에 이 구역에 무언가 몰려들 수 있다." };
   }
   if ("npc_hurt" in effect) {
     const id = whoOf(ctx, effect.npc_hurt.who, cast);
@@ -995,6 +995,35 @@ export function runTagEvent(ctx: ToolContext, tag: string): ToolDisplayEvent[] {
   return displays;
 }
 
+/**
+ * 소리를 듣고 감염체가 몰려온다 (플레이 테스트 12): 그날 소리가 noise_at에 닿으면 swarm_hours 뒤에 그 구역이 한 단계 오른다.
+ * 그때 주인공이 그 구역에 있으면 들어설 때처럼 마주침을 굴린다 (머물러도 아무 일이 없었다)
+ */
+export function runSwarms(ctx: ToolContext): ToolDisplayEvent[] {
+  const rules = ctx.content.scenario.infestation;
+  if (!rules?.swarm_hours) return [];
+  const [lo, hi] = rules.swarm_hours;
+  const out: ToolDisplayEvent[] = [];
+  for (const [zone, noise] of Object.entries(ctx.store.getState().zoneNoise)) {
+    const state = ctx.store.getState();
+    const swarm = state.swarms[zone];
+    if (noise.level >= rules.noise_at && (!swarm || swarm.day !== noise.day)) {
+      const at = state.time + Math.round((lo + ctx.rng() * Math.max(0, hi - lo)) * 60);
+      ctx.store.append({ type: "swarm_set", zone, day: noise.day, at, done: false });
+      continue;
+    }
+    if (!swarm || swarm.done || state.time < swarm.at) continue;
+    ctx.store.append({ type: "swarm_set", zone, day: swarm.day, at: swarm.at, done: true });
+    // 바리케이드 (12-176): 막힌 길로는 덜 들어온다
+    const rise = barrierRise(ctx.content, state, zone);
+    if (rise < 1 && ctx.rng() >= rise) continue;
+    const now = infestationOf(ctx.content, state, zone);
+    if (now < 3) ctx.store.append({ type: "infestation_changed", zone, level: now + 1, cause: "소음" });
+    if (state.playerZone === zone && !state.characters[state.playerId]?.captive) out.push(...runInfestedArrival(ctx, zone));
+  }
+  return out;
+}
+
 /** 몰려든 구역에 들어섰을 때 (D5): 기준값보다 높은 단계 하나당 arrival.per_level 확률 */
 export function runInfestedArrival(ctx: ToolContext, zone: string): ToolDisplayEvent[] {
   const rule = ctx.content.scenario.infestation?.arrival;
@@ -1011,14 +1040,20 @@ export function runAlarm(ctx: ToolContext, move: string): ToolDisplayEvent[] {
   const state = ctx.store.getState();
   // 갇혀 있으면 경보 대신 다시 끌려온다 (플레이 테스트 12: 탈출 실패에 "다시 끌려왔다"와 경보 이야기가 함께 열렸다)
   if (state.characters[state.playerId]?.captive) return [];
+  if (!hostileHere(ctx)) return [];
+  return runTagEvent(ctx, rule.tag);
+}
+
+/** 지금 구역이 주인공을 적대하는 무리의 땅인가 (무소속은 남의 거점) */
+export function hostileHere(ctx: ToolContext): boolean {
+  const state = ctx.store.getState();
   const zone = state.playerZone;
   const owner = zone ? state.zones[zone]?.owner : null;
   const mine = state.characters[state.playerId]?.factionId ?? null;
-  if (!owner || owner === mine) return [];
-  const hostile = mine ? (state.factions[owner]?.disposition?.[mine] ?? 0) < 0 : ctx.content.locations[zone!]?.kind === "base";
-  if (!hostile) return [];
-  return runTagEvent(ctx, rule.tag);
+  if (!owner || owner === mine) return false;
+  return mine ? (state.factions[owner]?.disposition?.[mine] ?? 0) < 0 : ctx.content.locations[zone!]?.kind === "base";
 }
+
 
 /**
  * 효과의 무리 자리: own = 주인공의 무리, zone_owner = 지금 구역의 주인 (다투는 땅, 12-54), 그 밖은 세력 id.

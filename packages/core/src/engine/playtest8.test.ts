@@ -61,6 +61,8 @@ describe("플레이 테스트 8", () => {
 
   it("B9: 낚시 도구는 낚시에만 보정을 준다", () => {
     const w = make("role_l_wanderer");
+    // 떠돌이는 낚시 도구 없이 시작한다 (플레이 테스트 12: 낚시를 못 하는데 들고 있었다). 쥐여 주고 본다
+    w.ctx().store.append({ type: "item_granted", to: w.state().playerId, itemId: "fishing_kit", quantity: 1 });
     const me = w.state().characters[w.state().playerId]!;
     expect(me.inventory.fishing_kit).toBeGreaterThan(0);
     // 4.2.1: 낚시는 따로 된 전문 기술(fishing)이 됐고, 낚시 도구의 보정도 그 스킬에 붙는다

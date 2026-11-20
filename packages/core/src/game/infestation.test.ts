@@ -8,7 +8,9 @@ import { dayOf } from "../rules/time.ts";
 import { loadRealContent } from "../testing.ts";
 
 /** 구역의 감염체 압력 (12-112) */
-const content = { ...loadRealContent(), storylets: {} };
+// 소음이 다음 날에 오르는 하루 틱을 본다 (몰려드는 시간 swarm_hours는 플레이 테스트 12의 테스트에서)
+const real0 = loadRealContent();
+const content = { ...real0, storylets: {}, scenario: { ...real0.scenario, infestation: { ...real0.scenario.infestation!, swarm_hours: undefined } } };
 const zones = Object.values(content.locations);
 const calm = zones.find((l) => l.danger === 0 && !l.isolated)!;
 const wild = zones.find((l) => l.danger === 2 && !l.isolated)!;

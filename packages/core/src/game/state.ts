@@ -294,6 +294,8 @@ export function createGameSchemas(s: Scenario) {
     loans: z.record(z.string(), z.record(z.string(), z.number().int().min(1))).default({}),
     /** 구역마다 오늘의 소음 (기획서 4.8) */
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
+    /** 소리를 듣고 몰려오는 감염체 (infestation.swarm_hours): 구역 → 그날 소리(day)에 몰려드는 시각(at), 이미 왔는지(done) */
+    swarms: z.record(z.string(), z.strictObject({ day: z.number().int(), at: z.number().int(), done: z.boolean() })).default({}),
     /** 상인이 마지막으로 물건을 채운 날 */
     restockedDay: z.record(z.string(), z.number().int()).default({}),
     /** 이 세계에서 열린 해금: 시나리오(역할) id (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 12.4.1, 9.12) */
@@ -721,6 +723,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("item_broken"), characterId: z.string(), itemId: z.string(), into: z.string().nullable() }),
     /** 소리가 났다 (총소리 등): 그 구역의 오늘 소음 */
     z.strictObject({ type: z.literal("noise_made"), zone: z.string(), level: z.number().int().min(1), day: z.number().int() }),
+    /** 소리를 듣고 감염체가 몰려온다 (at에 닿는다) / 닿았다 (done) */
+    /** 갇힌 주인공의 탈출이 실패해 감시가 심해졌다 */
+    z.strictObject({ type: z.literal("captive_watch_raised") }),
+    z.strictObject({ type: z.literal("swarm_set"), zone: z.string(), day: z.number().int(), at: z.number().int(), done: z.boolean() }),
     /** 구역의 감염체 압력이 바뀌었다 (12-112): 소음·시체로 오르고, 소탕으로 내리고, 날이 가며 기준값으로 돌아간다 */
     z.strictObject({ type: z.literal("infestation_changed"), zone: z.string(), level: z.number().int().min(0).max(3), cause: z.string() }),
     /** 무기고가 작전 장비를 빌려줬다 (무리 창고의 탄약 resource가 cost만큼 준다) */
@@ -1139,6 +1145,7 @@ export const EMPTY_STATE: GameState = {
   cleared: [],
   family: [],
   zoneNoise: {},
+  swarms: {},
   loans: {},
   restockedDay: {},
   squad: null,
@@ -1348,6 +1355,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) if (c.equipped[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
       return next;
     }
+    case "captive_watch_raised": {
+      const me = mustGet(next.characters, next.playerId, "캐릭터");
+      if (me.captive) me.captive = { ...me.captive, watch: (me.captive.watch ?? 0) + 1 };
+      return next;
+    }
+    case "swarm_set":
+      next.swarms = { ...next.swarms, [event.zone]: { day: event.day, at: event.at, done: event.done } };
+      return next;
     case "noise_made": {
       const prev = next.zoneNoise[event.zone];
       next.zoneNoise[event.zone] = { day: event.day, level: (prev && prev.day === event.day ? prev.level : 0) + event.level };
@@ -2433,6 +2448,13 @@ export type CharacterChoice = {
   persona?: Record<string, number> | null;
 };
 
+/** 고른 트레잇의 성격 축 합 (-2~2로 자른다, 0인 축은 뺀다) */
+function traitPersona(s: Scenario, traits: readonly string[]): Record<string, number> {
+  const sum: Record<string, number> = {};
+  for (const t of s.traits.filter((x) => traits.includes(x.id))) for (const [axis, v] of Object.entries(t.persona ?? {})) sum[axis] = (sum[axis] ?? 0) + v;
+  return Object.fromEntries(Object.entries(sum).map(([k, v]) => [k, Math.max(-2, Math.min(2, v))]).filter(([, v]) => v !== 0));
+}
+
 export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "player", rng?: Rng, choice?: CharacterChoice): Character {
   const past = choice?.past ? s.creation?.pasts.find((p) => p.id === choice.past) : undefined;
   // 스킬 (4.2.1): 시나리오의 것 위에 계급·직분이 주는 전문 기술(배운 상태)과 고른 배치(없으면 과거 배경의 것)를 얹는다. 남긴 점수는 스킬 포인트로
@@ -2443,7 +2465,9 @@ export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "pl
     name: choice?.name.trim() || role.default_name,
     gender: choice?.gender ?? null,
     traits: choice?.traits ?? [],
-    persona: choice?.persona ?? null,
+    // 주인공의 성격 축은 고른 것과 고른 성격 트레잇에서만 (플레이 테스트 12: 비워 두면 id "player"로 뽑혀 모든 판의 첫 주인공이 같은 숨은 성격이었다).
+    // 성격 규칙이 없는 월드는 그대로 null
+    persona: choice?.persona ?? (s.persona ? traitPersona(s, choice?.traits ?? []) : null),
     portrait: choice?.portrait ?? null,
     factionId: role.faction,
     rank: role.rank,

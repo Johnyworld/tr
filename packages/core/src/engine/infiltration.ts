@@ -11,7 +11,8 @@ import { advanceTime } from "./action.ts";
 import { capturePlayer } from "./captivity.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
-import { applyEffect } from "./storyletTools.ts";
+import { applyEffect, runTagEvent } from "./storyletTools.ts";
+import { roadStorylets } from "../story/storylets.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
@@ -73,6 +74,14 @@ function raiseAlarm(ctx: ToolContext, by: number): string[] {
   if (alarm < ALARM_MAX || inf.alarm >= ALARM_MAX) return [];
   applyEffect(ctx, { faction_relation: { from: "zone_owner", to: "own", delta: -1, mutual: false } } as StoryletEffect, {}, {}, "잠입하다 들켰다");
   recordDeed(ctx, { summary: `${ctx.content.factions[inf.owner]?.name ?? inf.owner}의 땅에 몰래 들어갔다 들켰다`, tags: ["deceit"], severity: 1, privacy: "semi_private", noisy: true });
+  // 들킨 순간은 경보 이야기로 넘긴다: 달아날지 둘러댈지 항복할지 고른다 (플레이 테스트 12: 들키면 빠지기 판정 하나로 곧바로 포로가 됐다)
+  // 열 경보 이야기가 없으면 잠입 안에서 빠지기만 남는다
+  const rule = ctx.content.scenario.alarm;
+  const now = ctx.store.getState();
+  if (rule && !now.activeStorylet && roadStorylets({ ...now, infiltration: null }, ctx.content, rule.tag, now.time, { pacing: false }).length) {
+    ctx.store.append({ type: "infiltration_ended", how: "caught" });
+    for (const d of runTagEvent(ctx, rule.tag)) if (d.type === "storylet" && d.event === "started") return [`들켰다: "${d.title}". 잠입은 끝났다. 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`];
+  }
   return ["들켰다. 이제 빠지기(leave)만 할 수 있다."];
 }
 

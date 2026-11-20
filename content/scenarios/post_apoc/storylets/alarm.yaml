@@ -140,9 +140,10 @@
         success:
           - belief: { fact: "{zone}에서 붉은연합 보초에게 위원회 전령이라 둘러댔다. 보초가 망설이는 사이 빠져나왔다", source: seen }
         partial:
+          # 플레이 테스트 12: 담배가 없는데 "담배를 받고". 빼앗는 물건은 있는 만큼만 가져가니 문구는 물건을 말하지 않는다
           - take_item: { item: cigarettes }
           - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
-          - belief: { fact: "붉은연합 보초는 담배를 받고 못 본 걸로 했다. 장부에 적지 않는 값이었다", source: seen }
+          - belief: { fact: "붉은연합 보초는 주머니를 다 뒤지고 나서야 못 본 걸로 했다. 장부에 적지 않는 대신 얼굴을 외워 두었다", source: seen }
         miss:
           - capture_player: { by: faction_c }
           - belief: { fact: "위원회 전령이라는 거짓말은 바로 들통났다. 붉은연합 보초가 개머리판으로 엎드리게 했다", source: seen }
@@ -326,7 +327,8 @@
     zone_owner: [other]
   cast:
     patrol: { faction: zone_owner, ranks: [grunt, squad_leader] }
-  setup: "발밑에서 유리 조각이 깨진다. 소리가 채 가라앉기도 전에 \"멈춰!\" 하는 외침과 함께 무기를 든 사람들이 골목 양쪽을 막는다. {patrol:이/가} 이끄는 이 땅의 순찰조다."
+  # 플레이 테스트 12: 밭에서도 "골목 양쪽". 땅의 생김을 가리지 않는 말로
+  setup: "발밑에서 유리 조각이 깨진다. 소리가 채 가라앉기도 전에 \"멈춰!\" 하는 외침과 함께 무기를 든 사람들이 앞뒤를 막아선다. {patrol:이/가} 이끄는 이 땅의 순찰조다."
   ai_direction: "{patrol}의 무리가 이 땅의 주인이다. 순찰조는 무장했고 여럿이다. 곧장 쏘지는 않지만 누구인지, 왜 숨어 있었는지 따진다. 달아나기·둘러대기는 판정, 붙잡히면 이 무리에 넘겨진다 (코드가 정한다). 맞서면 {patrol:을/를} opponent로 둔다."
   choices:
     - id: flee

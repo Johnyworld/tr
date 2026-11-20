@@ -19,6 +19,9 @@
   tags: [captivity]
   when:
     captors: [faction_c]
+    # 플레이 테스트 12: 붉은연합과 중립인 하얀매 진료소 경비에게 "너희 쪽이 다음에 어디로 오는지". 붉은연합이 주인공의 무리를 적으로 볼 때만 연다
+    dispositions:
+      - { from: captor, to: own, lte: -1 }
   cast:
     officer: { faction: captor, ranks: [squad_leader, officer] }
   setup: '창 없는 방, 쇠 책상, 펼친 장부. {officer:이/가} 펜 끝으로 빈칸을 두드린다. "이름. 소속. 분대. 그리고 너희 쪽이 다음에 어디로 오는지. 말로 하지 말고 숫자로."'
@@ -137,8 +140,9 @@
   cast:
     officer: { faction: captor, ranks: [squad_leader, officer] }
     bound: { extra: refugee, label: 기둥에 묶인 포로 }
-  setup: '아침 점호. 포로들을 광장에 세웠다. 기둥에 {bound:이/가} 묶여 있다. 어젯밤 담을 넘다 잡혔다고 한다. {officer:이/가} 말한다. "오늘 하루 저기 서 있는다. 물도 없다. 다들 잘 봐 둬."'
-  ai_direction: 처형이 아니다. 하루 종일 묶어 세워 두고 굶긴다. 붉은연합은 이것으로 숫자를 지킨다. 잔혹함은 담담하게, 늘어놓지 않는다. 다들 보는 동안 경비의 시선도 광장에 쏠린다.
+  # 플레이 테스트 12: 치명상으로 누운 주인공을 "광장에 세웠다"로 썼고, 그 밤 담을 넘다 잡힌 사람은 주인공인데 묶인 포로가 "어젯밤 담을 넘다 잡혔다"
+  setup: '아침 점호. 포로들을 광장으로 끌어냈다. 서지 못하는 사람은 담 밑에 부려 놓았다. 기둥에 {bound:이/가} 묶여 있다. 무슨 일로 묶였는지는 아무도 말하지 않는다. {officer:이/가} 말한다. "오늘 하루 저기 서 있는다. 물도 없다. 다들 잘 봐 둬."'
+  ai_direction: 처형이 아니다. 하루 종일 묶어 세워 두고 굶긴다. 붉은연합은 이것으로 숫자를 지킨다. 주인공이 다쳐 서지 못하면 담 밑에 누운 채로 본다 (서 있다고 쓰지 않는다). 최근에 달아나다 잡힌 사람이 주인공이면, {officer:은/는} 말끝에 주인공을 본다. 다음은 너라는 뜻이다. 잔혹함은 담담하게, 늘어놓지 않는다. 다들 보는 동안 경비의 시선도 광장에 쏠린다.
   choices:
     - id: watch
       label: 똑바로 보며 경비의 움직임을 센다
@@ -176,9 +180,10 @@
   when:
     captors: [faction_c]
     segments: [day, evening]
+  # 플레이 테스트 12: 신뢰 -2인 벌조장이 진심으로 영입을 제안했고, 노역을 한 적 없는 사람에게 "계속 고철이나 나르든가"
   cast:
-    officer: { faction: captor, ranks: [officer, squad_leader] }
-  setup: '{officer:이/가} 붉은 완장 하나를 책상에 올려놓는다. "센 쪽에 서. 오늘 밤부터 막사에서 자고, 빼앗은 것도 돌려주지. 할당량은 네 몫이 된다. 아니면 계속 고철이나 나르든가."'
+    officer: { faction: captor, ranks: [officer, squad_leader], trust_gte: -1 }
+  setup: '{officer:이/가} 붉은 완장 하나를 책상에 올려놓는다. "센 쪽에 서. 오늘 밤부터 막사에서 자고, 빼앗은 것도 돌려주지. 할당량은 네 몫이 된다. 아니면 노역장에서 고철이나 나르든가."'
   ai_direction: 진심인 제안이다. 붉은연합은 쓸 만한 사람을 숫자로 산다. 들어가면 규율반은 한동안 이 사람을 지켜본다. 예전 무리에서는 배신자가 된다.
   choices:
     - id: join

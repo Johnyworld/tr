@@ -16,12 +16,13 @@ import { z } from "zod";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
 import { moveLabel } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
-import { ACTIVITY_LABELS, dayOf, formatDuration, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
+import { ACTIVITY_COSTS, ACTIVITY_LABELS, dayOf, formatDuration, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { Content, MissionRequirement } from "../content/schemas.ts";
 import { baseOf } from "./captivity.ts";
 import type { GameState } from "../game/state.ts";
 import {
   activeMissionOf,
+  atMissionPlace,
   evaluateMission,
   isRequirementMet,
   MERIT,
@@ -124,7 +125,7 @@ const assignMission = defineTool({
       assigneeId: player.id,
       giverId: commander.id,
       assignedAt: state.time,
-      deadline: state.time + template.deadline_hours * 60,
+      deadline: state.time + template.deadline_hours * 60 + travelAllowance(ctx, template.where, player.factionId),
       requirements: structuredClone(template.requirements),
       place: missionPlace(ctx.content, template.where, player.factionId),
       progress: template.requirements.map(() => 0),
@@ -335,6 +336,26 @@ const abandonMission = defineTool({
     };
   },
 });
+
+/**
+ * 기한에 얹는 오가는 시간 (플레이 테스트 12: 첫 임무가 이동 + 4시간 보초 + 빗나감으로 기한을 넘겨 진급이 막혔다).
+ * 지금 구역에서 임무 자리까지 가장 짧은 길의 구역 수 × 이동 한 번의 가장 긴 시간, 오가는 것으로 두 배
+ */
+function travelAllowance(ctx: ToolContext, where: string | null | undefined, factionId: string | null): number {
+  const state = ctx.store.getState();
+  const start = state.playerZone;
+  const place = missionPlace(ctx.content, where ?? undefined, factionId);
+  if (!start || !place) return 0;
+  const probe = { place } as MissionInstance;
+  const seen = new Set([start]);
+  let frontier = [start];
+  for (let hops = 0; hops <= Object.keys(ctx.content.locations).length; hops++) {
+    if (frontier.some((z) => atMissionPlace(probe, z, state.zones, state.factions))) return hops * 2 * ACTIVITY_COSTS.travel.max;
+    frontier = frontier.flatMap((z) => ctx.content.locations[z]?.adjacent ?? []).filter((z) => !seen.has(z) && seen.add(z));
+    if (!frontier.length) return 0;
+  }
+  return 0;
+}
 
 export const MISSION_TOOLS = [assignMission, reportMission, abandonMission] as const;
 

@@ -183,6 +183,8 @@
     zones: [a_base]
     own_territory: true
     segments: [night, dawn]
+    # 플레이 테스트 12: 노병철이 곁의 동행인데 "침상이 비어 있다". 분대원을 데리고 있지 않을 때만 연다
+    companions_lte: 0
     day_gte: 4
     flags_all: [a_sl_letter_seen]
     flags_none: [a_sl_byungchul_settled]

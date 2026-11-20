@@ -29,7 +29,7 @@ age: 32
 resolve: { kind: homecoming, target: "b_base", text: 무너지기 전 살던 아파트 단지의 우리 집에 가 본다 }
 start_skills: {}
 # 땔감 한 단 (12-186): 일주일 뒤 겨울이 온다. 불로 밤을 넘기는 법을 처음부터 쥐여 준다
-start_inventory: [pipe_spear, leather_jacket, blanket, water_bottle, dry_ration, fishing_kit, firewood]
+start_inventory: [pipe_spear, leather_jacket, blanket, water_bottle, dry_ration, firewood]
 start_location: old_town
 access: []
 known_npcs: []

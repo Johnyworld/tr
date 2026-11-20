@@ -13,7 +13,8 @@ export type Fame = { points: number; tier: number; label: string };
 export function fameOf(state: GameState, content: Content, actorId: string = state.playerId): Fame {
   const rules = content.scenario.fame;
   const points = Object.values(state.deeds)
-    .filter((d) => d.actorId === actorId && d.witnesses.length > 0)
+    // 본 사람이 둘 이상인 일만 이름이 된다 (플레이 테스트 12: 상관 한 사람만 본 임무 완수·점호 결석까지 세어 5일차에 이름난 사람)
+    .filter((d) => d.actorId === actorId && d.witnesses.length >= 2)
     .reduce((n, d) => n + d.severity, 0);
   if (!rules) return { points, tier: 0, label: "" };
   let tier = 0;

@@ -59,6 +59,12 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
   const moves = content.scenario.moves;
   const tool = (name: string, input: unknown) => {
     const out = world.executeTool(name, input);
+    // 적대하는 땅에서 시간을 들이는 일은 판정을 건다 (플레이 테스트 12): GM처럼 숨기 판정을 붙여 다시 한다
+    const alarm = world.content.scenario.alarm;
+    if (!out.ok && name === "take_action" && alarm && out.error.includes("적대하는 땅에서 시간을 들이는 일")) {
+      const move = world.content.scenario.moves.find((m) => m.id === alarm.moves[0])!;
+      return world.executeTool(name, { ...(input as object), check: { move: move.id, stat: move.stats[0], difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" } });
+    }
     return out;
   };
 

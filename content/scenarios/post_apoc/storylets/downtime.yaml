@@ -137,8 +137,9 @@
   when:
     own_territory: true
     segments: [night]
+  # 플레이 테스트 12: 밀고가 들켜 신뢰가 떨어진 바로 그날 밤 그 사람이 술판을 열었다. 주인공을 믿지 않는 사람은 술을 돌리지 않는다
   cast:
-    host: { faction: own, here: true }
+    host: { faction: own, here: true, trust_gte: 0 }
   setup: "불을 끈 뒤 {host:이/가} 담요 밑에서 병을 꺼낸다. \"쉿. 한 모금씩만.\" 몇 사람이 숨죽여 웃는다."
   ai_direction: "규율로는 안 되는 일이다. 들키면 곤란하지만 오늘 밤은 아무도 말하지 않는다. 술이 돌면 평소 말이 없던 사람이 한마디씩 한다."
   choices:

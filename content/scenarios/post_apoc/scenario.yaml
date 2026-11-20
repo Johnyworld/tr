@@ -1060,6 +1060,8 @@ captivity:
   on_defeat: { light: 0.15, serious: 0.5, critical: 0.8, impaired: 0.9, unconscious: 1 }
   confiscate: [weapon, ammo]
   escape_moves: [stealth, endure]
+  # 탈출의 빈틈을 기다리는 시간 (플레이 테스트 12, *임시*). 실패할 때마다 다음 탈출 판정 -1
+  escape_hours: [1, 4]
   # 갇힌 동안 허기는 굶주림까지만 (붙잡은 쪽이 겨우 먹인다)
   hunger_floor: starving
   upkeep: { resource: food, amount: 1 }
@@ -1306,14 +1308,16 @@ travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 # 이야기의 빈도 (12-191, *임시*): 보통 이야기는 6시간에 하나. 12-191에 10시간으로 늘렸지만 실제 플레이는 하루 1.5~1.7개라 (잠자는 동안은 급한 것만) 12-195에 6시간으로 되돌렸다.
 # 보통 이야기와 길 위의 일은 앞 이야기와 2시간은 떨어지고, 급한 이야기는 하루 둘까지. 피를 흘리거나 치명상 이상이면 급한 이야기만
 storylet_pacing:
+  # 이야기 사이 간격: 앞 이야기마다 6~12시간 사이로 (플레이 테스트 12: 하루 상한이 자정에 풀려 00시대에 몰렸다 → 하루 상한 대신 간격)
   min_gap_hours: 6
+  max_gap_hours: 12
   expire_hours: 3
   first_after_hours: 2
   min_any_gap_hours: 2
   urgent_per_day: 2
   urgent_only_when: { bleeding: bleeding, harm: critical }
   # 플레이 테스트 11 (D1~D3): 하루 2~5개, 대부분 위협이라 페널티가 겹쳤다. 이동마다 길 위의 일, 감염체 무리가 사흘에 세 번
-  per_day: 3
+  per_day: 0
   threat_per_day: 1
   road_per_day: 1
   same_threat_gap_days: 2
@@ -1487,6 +1491,8 @@ diplomacy:
 # 기준값보다 한 단계 높을 때마다 산출 -25% (12-118), 자기 거점이 기준값보다 높으면 하루 30%로 사기 -1 (12-120)
 infestation:
   noise_at: 2
+  # 소리가 noise_at에 닿으면 1~5시간 뒤에 몰려든다 (플레이 테스트 12: 다음 날 자정이라 "몰려들 수 있다" 뒤에 아무것도 오지 않았다). 그때 그 구역에 있으면 마주침을 굴린다
+  swarm_hours: [1, 5]
   corpses_at: 2
   settle: 0.3
   yields_cut: 0.25
@@ -1500,6 +1506,7 @@ infestation:
   arrival: { tag: infested, per_level: 0.2 }
 
 # 들킨 침입 (플레이 테스트 11, D6): 적대하는 무리의 땅에서 숨기가 실패하면 alarm 이야기(경보·추격) 하나가 열린다
+# 적대하는 땅에서 시간을 들이는 일(수색·기다림·잠 등)은 판정을 함께 건다. 판정이 없으면 숨기 판정을 건다. 실패하면 경보 (플레이 테스트 12: 적 창고를 1시간 반 뒤져도 아무 일이 없었다)
 alarm: { tag: alarm, moves: [stealth] }
 
 # 쓰면 몸이 나아지는 물건 (take_action.use_item): 아이템 → 트랙 → 나아지는 단계 (*임시*)

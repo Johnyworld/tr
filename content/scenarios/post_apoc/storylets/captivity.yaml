@@ -678,7 +678,7 @@
     flags_all: [cp_word_sent]
   cast:
     rescuer: { faction: own, ranks: [grunt, squad_leader] }
-  setup: 자정이 넘어 벽 바깥에서 돌을 두 번 두드리는 소리. 낮은 휘파람. 익숙한 목소리가 이름을 부른다. {rescuer}다. 소식이 닿았다.
+  setup: 자정이 넘어 벽 바깥에서 돌을 두 번 두드리는 소리. 낮은 휘파람. 익숙한 목소리가 이름을 부른다. {rescuer:이다/다}. 소식이 닿았다.
   ai_direction: 구하러 온 사람은 많지 않다. 경비가 돌아오기 전 몇 분뿐이다. 실패하면 구하러 온 사람이 붙잡힐 수 있다. 판정과 결과로만 정한다.
   choices:
     - id: go
@@ -801,7 +801,7 @@
     segments: [night]
   cast:
     prisoner: { captive: true }
-  setup: '밤 보초를 서는데 창고 쪽 창살에서 낮은 목소리가 난다. {prisoner}다. "물 좀. 아니, 그보다 말 좀 해. 하루 종일 벽만 봤어."'
+  setup: '밤 보초를 서는데 창고 쪽 창살에서 낮은 목소리가 난다. {prisoner:이다/다}. "물 좀. 아니, 그보다 말 좀 해. 하루 종일 벽만 봤어."'
   ai_direction: 사람 대 사람의 장면이다. 붙잡혀 온 사람은 집 걱정, 남은 사람 걱정을 한다. 이 사람이 아는 비밀은 여기서 나오지 않는다 (심문은 handle_prisoner). 다만 여기서 쌓은 신뢰는 다음 심문과 회유를 쉽게 만든다. 포로와 오래 말하는 것을 동료가 보면 말이 돈다.
   choices:
     - id: talk
@@ -1002,7 +1002,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market]
   cast:
     ours: { captive: true, faction: own, keep: cp_ours }
-  setup: 창고 뒤편 창살 안에서 누가 우리 무리의 암구호를 속삭인다. {ours}다. 싸움에서 끌려간 뒤로 소식이 끊겼던. 얼굴이 반쪽이 됐다.
+  setup: 창고 뒤편 창살 안에서 누가 우리 무리의 암구호를 속삭인다. {ours:이다/다}. 싸움에서 끌려간 뒤로 소식이 끊겼던. 얼굴이 반쪽이 됐다.
   ai_direction: 여기는 남의 거점 한가운데다. 경비가 가깝다. 지금 꺼내려 들면 판정 하나에 둘 다 걸린다. 실패하면 주인공도 붙잡힐 수 있다 (코드가 정한다). 물러나 다시 오면 준비할 시간이 생긴다.
   choices:
     - id: now

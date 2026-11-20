@@ -159,10 +159,10 @@ describe("take_action: 시간", () => {
     expect(store.getState().time).toBeLessThan(330 + 240);
   });
 
-  it("until은 sleep·wait에서만 쓸 수 있다", () => {
+  it("until은 sleep·wait·rest·보초에서만 쓸 수 있다 (보초는 플레이 테스트 13부터)", () => {
     const { ctx } = setup(diceRng(6));
     expect(takeAction(act({ activity: { kind: "search", until: "night" } }), ctx).ok).toBe(false);
-    expect(takeAction(act({ activity: { kind: "guard_duty", until: "night" } }), ctx).ok).toBe(false);
+    expect(takeAction(act({ activity: { kind: "guard_duty", until: "night" } }), ctx).ok).toBe(true);
   });
 
   it("시간이 흐른 뒤 세계 처리(오늘의 임무 후보)가 끝나 있다", () => {

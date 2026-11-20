@@ -12,7 +12,7 @@ import { createCharacterFromRole, type GameState, type RunRecord } from "../game
 import type { Content, RoleContent } from "../content/schemas.ts";
 import { buildCustomRole, joinRole } from "../game/customStart.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
-import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
+import { formatTime, MINUTES_PER_DAY, START_TIME } from "../rules/time.ts";
 import { josa, sentence } from "../text.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
@@ -239,7 +239,7 @@ export function switchCharacter(
     }
     if (made.past) {
       const s = store.getState();
-      store.append({ type: "belief_added", characterId: id, belief: { id: `b_${s.nextBeliefNo}`, fact: `붕괴 전에 나는 ${josa(made.past.label, "이었다/였다")}. ${made.past.summary}.`, source: "seen", accuracy: "exact", learnedAt: s.time } });
+      store.append({ type: "belief_added", characterId: id, belief: { id: `b_${s.nextBeliefNo}`, fact: `붕괴 전에 나는 ${josa(made.past.label, "이었다/였다")}. ${made.past.summary}.`, source: "seen", accuracy: "exact", learnedAt: START_TIME - 1 } });
     }
   } else {
     const successor = state.characters[choice]!;

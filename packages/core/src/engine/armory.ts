@@ -51,7 +51,7 @@ export function issueArmory(ctx: ToolContext, mission: MissionInstance): string 
 }
 
 /** 임무가 끝날 때: 빌린 것을 거둬들인다. 잃어버린 무기가 있으면 공적이 깎인다 */
-export function returnArmory(ctx: ToolContext, missionId: string): string | null {
+export function returnArmory(ctx: ToolContext, missionId: string, options: { excused?: boolean } = {}): string | null {
   const { store, content } = ctx;
   const state = store.getState();
   const loan = state.loans?.[missionId];
@@ -68,8 +68,11 @@ export function returnArmory(ctx: ToolContext, missionId: string): string | null
   }
   store.append({ type: "armory_returned", missionId, returned });
   autoEquip(ctx, me.id);
-  const parts = [`빌린 장비를 무기고에 반납했다${Object.keys(returned).length ? ` (${Object.entries(returned).map(([id, q]) => `${nameOf(content, id)} ×${q}`).join(", ")})` : ""}.`];
-  if (lost.length) {
+  const spent = Object.entries(loan).filter(([id, q]) => content.items[id]?.kind === "ammo" && (returned[id] ?? 0) < q);
+  const parts = [`빌린 장비를 무기고에 반납했다${Object.keys(returned).length ? ` (${Object.entries(returned).map(([id, q]) => `${nameOf(content, id)} ×${q}`).join(", ")})` : ""}.${spent.length ? ` 쓴 ${spent.map(([id]) => nameOf(content, id)).join(", ")}은 따지지 않는다.` : ""}`];
+  if (lost.length && options.excused) {
+    parts.push(`${josa(lost.join(", "), "은/는")} 붙잡혔을 때 빼앗겼다. 탓하지 않는다.`);
+  } else if (lost.length) {
     store.append({ type: "merit_awarded", characterId: me.id, delta: -1, reason: `빌린 장비를 잃어버렸다: ${lost.join(", ")}` });
     parts.push(`${josa(lost.join(", "), "을/를")} 돌려주지 못했다. 공적 -1.`);
   }

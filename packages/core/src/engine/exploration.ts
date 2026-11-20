@@ -1,4 +1,5 @@
 import { isInfected } from "../game/kinds.ts";
+import { activeMissionOf } from "../game/missions.ts";
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
@@ -62,8 +63,15 @@ function noiseCue(noise: number): string | null {
   return null;
 }
 
-function step(ctx: ToolContext): ToolDisplayEvent[] {
+function step(ctx: ToolContext, search = false): ToolDisplayEvent[] {
   const minutes = rules(ctx.content)?.step_minutes ?? 15;
+  if (search) {
+    // 뒤지기는 수색이다: 수색 시간을 채우는 임무면 그 시간으로 센다 (플레이 테스트 13)
+    const state = ctx.store.getState();
+    const m = activeMissionOf(state.missions, state.playerId);
+    const forMission = m?.requirements.some((r) => "activity" in r && r.activity === "search") ? m.id : null;
+    return advanceTime(ctx, "search", null, forMission, 1, null, "search", minutes).extra;
+  }
   return advanceTime(ctx, "brief", null, null, minutes / 5).extra;
 }
 
@@ -185,7 +193,7 @@ const explore = defineTool({
       const m = moveOf(content.scenario, r.search_move)!;
       const check = rollPlayerCheck({ move: r.search_move, stat: m.stats[0]!, difficulty: "normal", intent: `${josa(label(ex.depth), "을/를")} 뒤진다` }, ctx);
       if (!check.ok) return check;
-      const extra = step(ctx);
+      const extra = step(ctx, true);
       const now = store.getState().exploration!;
       store.append({ type: "exploration_changed", depth: now.depth, noise: now.noise, searched: [...now.searched, now.depth] });
       const rolls = check.outcome === "success" ? 2 : check.outcome === "partial" ? 1 : 0;

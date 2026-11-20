@@ -200,7 +200,7 @@ export function selfTreatmentProblem(ctx: ToolContext, patientId?: string): stri
   // 오늘 이미 치료받았어도 새로 난 피는 멎게 한다 (플레이 테스트 12: 하루 한 번 제한이 새 출혈까지 막았다)
   const bleedTrack = ctx.content.scenario.wounds?.track;
   const freshBleed = !!bleedTrack && shownIndex(ctx, state, player.id, bleedTrack) > 0;
-  if (needed && !freshBleed && state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return `${other ? `${playerCalls(state, ctx.content, player.id)}은(는) ` : ""}오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다.`;
+  if (needed && !freshBleed && state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return `${other ? `${josa(playerCalls(state, ctx.content, player.id), "은/는")} ` : ""}오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다.`;
   if (needed) {
     const planned = planHealerPay(ctx, healer);
     if (!planned.ok) return planned.error;
@@ -301,7 +301,7 @@ export function applyTreatment(
   const name = playerCalls(state, ctx.content, healer);
   const paid = payHealer(ctx, healer);
   if (!paid.ok) return paid;
-  const lines = [patient === state.playerId ? `${name}에게 치료를 받았다.` : `${josa(name, "이/가")} ${playerCalls(state, ctx.content, patient)}을(를) 치료했다.`, ...paid.lines];
+  const lines = [patient === state.playerId ? `${name}에게 치료를 받았다.` : `${josa(name, "이/가")} ${josa(playerCalls(state, ctx.content, patient), "을/를")} 치료했다.`, ...paid.lines];
   const displays: ToolDisplayEvent[] = [];
   // 수술 (12-159): 치명상 이상이면 치료사의 솜씨와 장소로 코드가 굴린다. 수술을 배우지 않은 치료사는 상처는 손대지 못한다 (피·병만 본다)
   // 오늘 이미 치료받았으면 피만 멎게 한다 (수술·상처는 내일)
@@ -376,7 +376,11 @@ export function pickFee(ctx: ToolContext, payer: Character, fee: number): Map<st
   const worn = new Set(Object.values(payer.equipped ?? {}).filter(Boolean));
   // 먹고 마시고 쓰는 소모품(consumables)은 마지막 하나를 남긴다: 값 때문에 굶거나 목마르지 않게
   const survival = (id: string) => Object.values(ctx.content.scenario.consumables[id] ?? {}).some((n) => n > 0);
+  // 무기고에서 빌린 것은 내 것이 아니다 (플레이 테스트 13: 빌린 탄이 치료 값으로 나갔다)
+  const loaned: Record<string, number> = {};
+  for (const loan of Object.values(ctx.store.getState().loans ?? {})) for (const [id, q] of Object.entries(loan)) loaned[id] = (loaned[id] ?? 0) + q;
   const goods = Object.entries(payer.inventory)
+    .map(([id, q]) => [id, payer.id === ctx.store.getState().playerId ? q - (loaned[id] ?? 0) : q] as const)
     .filter(([id, q]) => q > 0 && !worn.has(id) && !ctx.content.items[id]?.keepsake)
     .flatMap(([id, q]) => Array.from({ length: survival(id) ? q - 1 : q }, () => id))
     .sort((a, b) => (ctx.content.items[a]?.value ?? DEFAULT_VALUE) - (ctx.content.items[b]?.value ?? DEFAULT_VALUE));
@@ -506,6 +510,27 @@ export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
  * 푹 잔 밤에 낫는다 (플레이 테스트 11, A1, recovery.sleep_heal): from~to 동안 잤으면 부른다.
  * min_hours 이상 잤고, 피가 멎어 있고, 자는 사이 새로 다치지 않았으면 max_level까지 한 단계. slow 단계는 마지막 변화에서 그만큼 지나야
  */
+/** 푹 잤는데 상처가 아물지 않은 까닭 (플레이 테스트 13: 갇힌 동안 잠을 자도 그대로인데 까닭이 보이지 않았다). 아물었거나 다치지 않았으면 null */
+export function sleepHealBlocker(ctx: ToolContext, from: number, to: number): string | null {
+  const rule = ctx.content.scenario.recovery?.sleep_heal;
+  if (!rule) return null;
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me || me.dead) return null;
+  const track = harmTrack(ctx.content.scenario);
+  const index = levelIndex(ctx, state, me.id, track.id);
+  if (index <= 0) return null;
+  if (to - from < rule.min_hours * 60) return `${rule.min_hours}시간 넘게 자지 못해 상처가 아물지 않았다.`;
+  if (bleedingBlocksRecovery(ctx, me)) return "피가 멎지 않아 상처가 아물지 않았다.";
+  const max = track.levels.findIndex((l) => l.id === rule.max_level);
+  if (index > max) return "이만한 상처는 잠만으로 아물지 않는다. 치료사의 치료나 수술이 있어야 한다.";
+  const since = state.recovery.lastChangeAt[me.id] ?? state.runStartedAt;
+  if (since > from) return "자는 사이 상처가 바뀌어 아물지 않았다.";
+  const slow = rule.slow[track.levels[index]!.id];
+  if (slow !== undefined && to - since < slow * MINUTES_PER_DAY) return `깊은 상처라 마지막으로 다친 뒤 ${slow}일은 지나야 자고 나서 아물기 시작한다.`;
+  return null;
+}
+
 export function healFromSleep(ctx: ToolContext, from: number, to: number): ToolDisplayEvent[] {
   const rule = ctx.content.scenario.recovery?.sleep_heal;
   if (!rule || to - from < rule.min_hours * 60) return [];
@@ -536,6 +561,30 @@ export function maybeInfect(ctx: ToolContext, kind: string | null): Change | nul
   const factor = me ? bodyTraits(ctx.content, me).infection : 1;
   if (ctx.rng() >= Math.min(1, chance * factor)) return null;
   return changeCondition(ctx, state.playerId, infection.track, 1, "infection", "감염체에게 입은 상처");
+}
+
+/** 갇혀서 못 받은 그날 배급을 우리 거점에 닿으면 받는다 (플레이 테스트 13) */
+export function runLateRation(ctx: ToolContext): ToolDisplayEvent[] {
+  const { content } = ctx;
+  const state = ctx.store.getState();
+  const body = content.scenario.body;
+  const war = content.scenario.war;
+  if (state.missedRationDay === null || !body?.hunger || !war) return [];
+  const me = state.characters[state.playerId];
+  if (!me || me.dead) return [];
+  if (state.missedRationDay !== dayOf(state.time)) {
+    ctx.store.append({ type: "ration_missed", day: null });
+    return [];
+  }
+  if (me.captive || !me.factionId || !hasAccess(content, state, "ration")) return [];
+  if (!state.playerZone || state.zones[state.playerZone]?.owner !== me.factionId || content.locations[state.playerZone]?.kind !== "base") return [];
+  ctx.store.append({ type: "ration_missed", day: null });
+  const own = state.factions[me.factionId];
+  const level = own ? rationLevel(content, own) : undefined;
+  const delta = level?.hunger ?? 0;
+  if (delta >= 0) return [];
+  const c = changeCondition(ctx, me.id, body.hunger.track, delta, "daily", `늦게 받은 그날 배급 (${level?.label ?? ""})`);
+  return c?.display ? [c.display] : [];
 }
 
 /**
@@ -582,6 +631,7 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     if (hungerTrait !== 0 && level !== war.ration.levels[0]) delta = Math.max(0, delta + hungerTrait);
     const floor = captive && content.scenario.captivity?.hunger_floor ? track.levels.findIndex((l) => l.id === content.scenario.captivity!.hunger_floor) : -1;
     if (floor >= 0 && delta > 0) delta = Math.max(0, Math.min(delta, floor - levelIndex(ctx, state, state.playerId, track.id)));
+    if (captive && hasAccess(content, state, "ration")) ctx.store.append({ type: "ration_missed", day });
     if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : !own ? "하루가 지나 배가 고프다" : lower ? `일하지 않아 배급이 줄었다 (${lower.label})` : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
     // 배가 고프면 지닌 먹을 것을 하나 먹는다 (플레이 테스트 11: 날생선을 지니고 자도 아침에 굶었다). 갇혀 있으면 빼앗긴 셈이다
     if (!captive && levelIndex(ctx, ctx.store.getState(), state.playerId, track.id) > 0) {
@@ -786,7 +836,7 @@ export function refillWater(ctx: ToolContext): WaterResult {
   const dirtyRefill = w.source.kind === "spring" && w.rules.dirty && !fireHere(state) ? w.rules.dirty.refill : {};
   for (const [empty, clean] of Object.entries(w.rules.refill)) {
     const full = dirtyRefill[empty] ?? clean;
-    const n = Math.min(left, me.inventory[empty] ?? 0);
+    const n = Math.min(left, ctx.store.getState().characters[me.id]!.inventory[empty] ?? 0);
     if (n <= 0) continue;
     left -= n;
     ctx.store.append({ type: "item_consumed", holder: me.id, itemId: empty, quantity: n });
@@ -794,10 +844,10 @@ export function refillWater(ctx: ToolContext): WaterResult {
     lines.push(`${ctx.content.items[empty]?.name ?? empty} ${n}개를 채웠다.`);
   }
   // 마시기와 함께 오면 앞에서 마신 것과 어긋나지 않게 (플레이 테스트 12: "물 보급" 다음 줄에 "목도 마르지 않다")
-  if (!lines.length) {
-    const fullOne = Object.values(w.rules.refill).find((full) => (me.inventory[full] ?? 0) > 0);
-    return { ok: false, error: fullOne ? `채울 빈 그릇이 없다 (${josa(ctx.content.items[fullOne]?.name ?? fullOne, "은/는")} 이미 차 있다).` : "채울 빈 그릇이 없다." };
-  }
+  // 차 있는 물병은 거절이 아니라 한 줄로 (플레이 테스트 13: 마시기까지 함께 막혔다)
+  const fullOne = Object.values(w.rules.refill).find((full) => (ctx.store.getState().characters[me.id]!.inventory[full] ?? 0) > 0);
+  if (!lines.some((l) => l.includes("채웠다")) && fullOne) lines.push(`${josa(ctx.content.items[fullOne]?.name ?? fullOne, "은/는")} 이미 차 있다.`);
+  if (!lines.length) return { ok: false, error: "채울 빈 그릇이 없다." };
   if (limited && lines.some((l) => l.includes("채웠다"))) lines.push("물이 모자라 보급 담당이 하나만 채워 줬다.");
   return { ok: true, lines, displays };
 }
@@ -1058,7 +1108,9 @@ function firstAidProblem(ctx: ToolContext, item: string | null, targetId: string
     if (cutting && !canOperate(ctx, me.id) && shownIndex(ctx, state, targetId, harm.id) > 0) return no(`${self ? "이" : `${playerCalls(state, content, targetId)}의`} 상처는 꿰매고 파내야 한다. 수술을 배우지 않아 손댈 수 없다. 수술할 줄 아는 치료사를 찾는다.`);
     if (shownIndex(ctx, state, targetId, harm.id) <= 0) return no(`${self ? "" : `${playerCalls(state, content, targetId)}에게는 `}피도 상처도 없다. 응급처치할 것이 없다.`);
     if (state.recovery.lastHealerDay[targetId] === dayOf(state.time)) return no(`${self ? "" : `${playerCalls(state, content, targetId)}의 `}상처는 오늘 이미 돌봤다. 내일 다시 할 수 있다.`);
-    return no("피는 멎어 있다. 상처를 돌보려면 구급상자 같은 물건이 있거나 응급처치를 익혀야 한다 (treatment.item). 장면의 치료사에게 받을 수도 있다.");
+    return no(skilled
+      ? "피는 멎어 있다. 맨손으로는 피만 멎게 할 수 있다. 상처를 돌보려면 붕대·구급상자 같은 물건이 있어야 한다 (treatment.item). 장면의 치료사에게 받을 수도 있다."
+      : "피는 멎어 있다. 상처를 돌보려면 붕대·구급상자 같은 물건이 있거나 응급처치를 익혀야 한다 (treatment.item). 장면의 치료사에게 받을 수도 있다.");
   }
   const surgery = content.scenario.recovery?.surgery;
   if (cutting && canHeal && surgery) {
@@ -1103,6 +1155,8 @@ function firstAidCheck(
   if (check.outcome === "miss") return { ok: true, lines: [`${who}응급처치가 잘 되지 않았다. 시간만 갔다 (물건은 쓰지 않았다. 다시 할 수 있다).`], displays: [] };
   const lines: string[] = [];
   const displays: ToolDisplayEvent[] = [];
+  // 피가 안 나는 상처에 대가 있는 성공이면 물건을 쓰지 않는다 (플레이 테스트 13: 구급상자만 사라졌다)
+  if (!bleeding && check.outcome !== "success") return { ok: true, lines: [`${who}상처를 제대로 돌보지 못했다 (대가 있는 성공: 손이 서툴러 시간만 더 들었다. 물건은 쓰지 않았다. 다시 할 수 있다).`], displays };
   if (item) {
     store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: 1 });
     lines.push(`${josa(content.items[item]?.name ?? item, "을/를")} 썼다.`);

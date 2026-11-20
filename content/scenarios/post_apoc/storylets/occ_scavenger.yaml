@@ -191,7 +191,8 @@
         - relation: { who: mate, axis: trust, delta: -3 }
         - relation: { who: mate, axis: affection, delta: -3 }
         - deed: { summary: 무너진 바닥에 깔린 동료를 두고 혼자 빠져나왔다, tags: [cowardice, selfishness], severity: 3, privacy: semi_private }
-        - belief: { fact: "꺼진 바닥에 깔린 {mate:을/를} 두고 나왔다. 그는 다음 날 혼자 기어서 돌아왔다고 한다. 다리를 절며", source: report }
+        # 지금 아는 것까지만 (플레이 테스트 13: 결과가 다음 날 일을 미리 알려 줬다). 돌아오는 것은 그 사람이 장면에 나타날 때
+        - belief: { fact: "꺼진 바닥에 깔린 {mate:을/를} 두고 혼자 빠져나왔다. 등 뒤로 끄는 발소리가 가까워지고 있었다", source: seen }
 
 # ── 찾은 것을 낼지 숨길지 ───────────────────────────────
 
@@ -457,21 +458,21 @@
           - faction_resource: { faction: own, resource: medicine, delta: 6 }
           - relation: { who: green, axis: respect, delta: 2 }
           - deed: { summary: 신참을 데리고 시립병원 약제실까지 내려가 약을 건져 왔다, tags: [diligence], severity: 2, privacy: public }
-          - belief: { fact: "{green}이 무너진 선반 뒤의 상자를 먼저 찾았다. 눈이 밝다. 둘 다 무사히 올라왔다", source: seen }
+          - belief: { fact: "{green:이/가} 무너진 선반 뒤의 상자를 먼저 찾았다. 눈이 밝다. 둘 다 무사히 올라왔다", source: seen }
         partial:
           - set_flag: occ_sc_run_done
           - standing: 1
           - zone_noise: 1
           - faction_resource: { faction: own, resource: medicine, delta: 3 }
           - npc_hurt: { who: green, steps: 1 }
-          - belief: { fact: "{green}이 깡통을 걷어차 감염체가 깼다. 조금만 건지고 올라왔다. 그는 팔을 긁혔다", source: seen }
+          - belief: { fact: "{green:이/가} 깡통을 걷어차 감염체가 깼다. 조금만 건지고 올라왔다. 그는 팔을 긁혔다", source: seen }
         miss:
           - set_flag: occ_sc_run_done
           - standing: -2
           - zone_noise: 2
           - npc_hurt: { who: green, steps: 2 }
           - npc_body: { who: green, track: infection, delta: 1, chance: 0.5 }
-          - belief: { fact: "신참 {green}이 계단에서 넘어져 소리를 냈다. 감염체에 붙잡혀 크게 다쳤다. 빈손으로 그를 업고 올라왔다", source: seen }
+          - belief: { fact: "신참 {green:이/가} 계단에서 넘어져 소리를 냈다. 감염체에 붙잡혀 크게 다쳤다. 빈손으로 그를 업고 올라왔다", source: seen }
     - id: solo
       label: 혼자 숨을 죽이고 내려간다
       check: stealth

@@ -27,6 +27,7 @@ import {
   isRequirementMet,
   MERIT,
   MISSION_STATUS_LABELS,
+  missionStatusLabel,
   MISSION_CHECK_TRIES,
   MISSIONS_PER_DAY,
   pickDailyOffers,
@@ -188,7 +189,8 @@ const reportMission = defineTool({
       for (const [id, q] of matching) {
         if (left <= 0) break;
         const take = Math.min(q, left);
-        ctx.store.append({ type: "item_transferred", from: state.playerId, to: giver.id, itemId: id, quantity: take });
+        // 상관 개인 소지품이 아니라 무리 창고 몫이다 (플레이 테스트 13: 조장 주머니에 붕대가 쌓였다). 창고의 셈은 아래 supplies가 한다
+        ctx.store.append({ type: "item_consumed", holder: state.playerId, itemId: id, quantity: take });
         handed.push(`${ctx.content.items[id]?.name ?? id} ×${take}`);
         left -= take;
       }
@@ -243,7 +245,8 @@ const reportMission = defineTool({
     const supplied: string[] = [];
     const supplies = ctx.content.missions[mission.templateId]?.supplies;
     // 같이 나선 사람(임무 짝)이 있거나 구해 온 것을 건넸을 때만 (플레이 테스트 12: 혼자 빈손으로 왔는데 창고가 늘었다)
-    const party = Object.values(ctx.store.getState().bonds ?? {}).some((b) => b.kind === "buddy" && b.missionId === mission.id) || mission.requirements.some((r) => "bring" in r);
+    // 건네기 조건이 있는 일감도 실제로 건넨 것이 있어야 한다 (플레이 테스트 13: 빈손 일부 완수에 창고가 늘었다)
+    const party = Object.values(ctx.store.getState().bonds ?? {}).some((b) => b.kind === "buddy" && b.missionId === mission.id) || handed.length > 0;
     if (supplies && party && result.outcome !== "failed" && ctx.store.getState().factions[lender]) {
       for (const [resource, amount] of Object.entries(supplies)) {
         const delta = result.outcome === "success" ? amount! : Math.trunc(amount! / 2);
@@ -282,7 +285,7 @@ const reportMission = defineTool({
         : []),
       ...(cleared ? [`${cleared}에 몰려든 감염체를 쓸어 냈다. 한동안 조용할 것이다.`] : []),
       ...releaseBuddies(ctx, mission.id),
-      ...[returnArmory(ctx, mission.id)].filter((l): l is string => !!l),
+      ...[returnArmory(ctx, mission.id, { excused: (ctx.store.getState().lastFreedAt ?? -1) > mission.assignedAt })].filter((l): l is string => !!l),
       ...(occNote ? [occNote] : []),
     ];
     const growthNote = gainMeritXp(ctx, mission.assigneeId, result.merit);
@@ -337,7 +340,7 @@ const abandonMission = defineTool({
         `공적 ${signed(d.abandonMerit)}. ` +
         (d.deedSeverity > 0 ? "이 일은 상관과 동료의 시선에 영향을 줄 수 있다." : "이 무리에서는 크게 문제 삼지 않는다.") +
         releaseBuddies(ctx, mission.id).map((l) => ` ${l}`).join("") +
-        ((r) => (r ? ` ${r}` : ""))(returnArmory(ctx, mission.id)),
+        ((r) => (r ? ` ${r}` : ""))(returnArmory(ctx, mission.id, { excused: !!state.characters[state.playerId]?.captive || (state.lastFreedAt ?? -1) > mission.assignedAt })),
       display: { type: "mission", event: "abandoned", title: mission.title, detail: `포기 (${label})`, merit: d.abandonMerit },
     };
   },
@@ -363,6 +366,9 @@ function travelAllowance(ctx: ToolContext, where: string | null | undefined, fac
   }
   return 0;
 }
+
+/** 기한 이만큼(분) 앞까지 갇혀 있었으면 기한 초과를 탓하지 않는다 (빠져나와 돌아오는 길) */
+const FREED_GRACE_MINUTES = 6 * 60;
 
 export const MISSION_TOOLS = [assignMission, reportMission, abandonMission] as const;
 
@@ -390,11 +396,19 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const badly = !!who && badFrom >= 0 && harm.levels.findIndex((l) => l.id === who.conditions[harm.id]) >= badFrom;
     const down = who ? (incapacitatingSymptom(ctx.content.scenario, who) ?? (badly ? { label: harm.label } : null)) : null;
     // 갇혀 있는 동안 기한이 지나도 불복종이 아니다 (플레이 테스트 12)
-    const held = who?.captive ? (ctx.content.factions[who.captive.by]?.name ?? who.captive.by) : null;
+    // 기한 무렵에 갇혀 있다 막 빠져나와 돌아오는 길이어도 같다 (플레이 테스트 13: 탈출해 걷는 사이 기한이 지나 불복종)
+    const held = who?.captive
+      ? (ctx.content.factions[who.captive.by]?.name ?? who.captive.by)
+      : state.lastFreedAt !== null && state.lastFreedAt > mission.assignedAt && state.lastFreedAt >= mission.deadline - FREED_GRACE_MINUTES
+        ? "붙잡혔다 빠져나온 길"
+        : null;
     if (mission.status === "active" && state.time > mission.deadline && (down || held)) {
-      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false });
-      displays.push({ type: "mission", event: "expired", title: mission.title, detail: down ? `다쳐서 못 마침 (${down.label})` : `붙잡혀 못 마침 (${held})`, merit: 0 });
-      returnArmory(ctx, mission.id);
+      const excused = down ? `다쳐서 못 마침 (${down.label})` : `붙잡혀 못 마침 (${held})`;
+      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false, excused });
+      displays.push({ type: "mission", event: "expired", title: mission.title, detail: excused, merit: 0 });
+      // 붙잡혀 빼앗긴 장비는 잃어버린 것으로 치지 않는다
+      returnArmory(ctx, mission.id, { excused: !!held });
+      releaseBuddies(ctx, mission.id);
       continue;
     }
     if (mission.status === "active" && state.time > mission.deadline) {
@@ -410,6 +424,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
       displays.push({ type: "mission", event: "expired", title: mission.title, detail: `기한 초과${d.countsDisobedience ? " (불복종)" : ""}`, merit: d.expireMerit });
       // 기한이 지나도 빌린 장비는 거둬들인다
       returnArmory(ctx, mission.id);
+      releaseBuddies(ctx, mission.id);
     }
   }
   // 오래된 불복종은 하나씩 지워진다 (C8): 마지막 불복종(또는 지운 때)에서 FORGIVE_DAYS가 지나면 하나
@@ -442,13 +457,15 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   // 무소속은 복무·공적·불복종이 없다
   // 무리에 들 때 맡은 일 (플레이 테스트 11: "버들마을 경비병"으로 들었는데 복무 줄은 "정찰대원"뿐이었다)
   const joinedAs = state.customRole && player.factionId && state.customRole.rank === player.rank && !state.customRole.label.includes(rankName(ctx.content, player.factionId, player.rank)) ? ` (맡은 일: ${state.customRole.label})` : "";
-  const lines = [player.factionId ? `복무: ${rankName(ctx.content, player.factionId, player.rank)}${joinedAs} · 공적 ${player.merit} · 명령 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
+  const lines = [player.factionId ? `복무: ${rankName(ctx.content, player.factionId, player.rank)}${joinedAs} · 공적 ${player.merit} · 임무 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
   const offer = describePromotionOffer(ctx.content, state);
   if (offer) lines.push(offer);
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
     const loan = state.loans?.[active.id];
-    if (loan) lines.push(`무기고에서 빌린 것 (임무가 끝나면 반납): ${Object.entries(loan).map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")}`);
+    // 지금 지닌 것만 (플레이 테스트 13: 붙잡혀 다 빼앗겼는데 빌린 것 줄이 그대로 남았다)
+    const held = loan ? Object.entries(loan).map(([id, q]) => [id, Math.min(q, player.inventory[id] ?? 0)] as const).filter(([, q]) => q > 0) : [];
+    if (held.length) lines.push(`무기고에서 빌린 것 (임무가 끝나면 반납): ${held.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")}`);
   } else if (player.captive) {
     // 갇혀 있으면 임무를 받을 수 없다 (플레이 테스트 12: 갇힌 상태 화면에 오늘의 임무가 그대로 보였다)
     lines.push("갇혀 있어 임무를 받을 수 없다");
@@ -463,7 +480,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   }
   const ended = Object.values(state.missions).filter((m) => m.status !== "active" && m.assigneeId === state.playerId).slice(-3);
   if (ended.length > 0) {
-    lines.push(`최근 임무: ${ended.map((m) => `${m.title}(${MISSION_STATUS_LABELS[m.status]})`).join(", ")}`);
+    lines.push(`최근 임무: ${ended.map((m) => `${m.title}(${missionStatusLabel(m)})`).join(", ")}`);
   }
   return lines.join("\n");
 }

@@ -61,6 +61,18 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     let out = world.executeTool(name, input);
     // 이야기를 둔 채 같은 자리에서 오래 걸리는 일은 거절된다 (플레이 테스트 13): GM처럼 모른 척하고 다시 한다
     if (!out.ok && name === "take_action" && out.error.includes("ignore_story")) out = world.executeTool(name, { ...(input as object), ignore_story: true });
+    // 매복에 붙들리면 걸어 나갈 수 없다 (플레이 테스트 13): GM처럼 뿌리치는 판정을 걸고 옮겨 간다
+    if (!out.ok && name === "take_action" && out.error.includes("매복에 걸려")) {
+      const move = world.content.scenario.moves[0]!;
+      const { ignore_story: _ignored, ...rest } = input as Record<string, unknown>;
+      out = world.executeTool(name, { ...rest, move_to: (rest.move_to as string | undefined) ?? null, check: { move: move.id, stat: move.stats[0], difficulty: "normal", harm_on_failure: "light", harm_cause: "매복을 뿌리쳤다", harm_kind: "other", infected_source: false, target_harm: "none", distance: "close" } });
+      if (!out.ok && !(rest.move_to)) {
+        const s = world.state().activeStorylet;
+        const pick = s ? world.content.storylets[s.id]?.choices.find((c) => !c.check) : undefined;
+        if (pick) world.executeTool("resolve_storylet", { choice_id: pick.id, improvised_move: null });
+        out = world.executeTool(name, rest);
+      }
+    }
     // 적대하는 땅에서 시간을 들이는 일은 판정을 건다 (플레이 테스트 12): GM처럼 숨기 판정을 붙여 다시 한다
     const alarm = world.content.scenario.alarm;
     if (!out.ok && name === "take_action" && alarm && out.error.includes("적대하는 땅에서 시간을 들이는 일")) {

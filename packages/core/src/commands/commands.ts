@@ -13,7 +13,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
-import { activeMissionOf, commanderOf, daysServed, MISSION_CHECK_TRIES, MISSION_STATUS_LABELS } from "../game/missions.ts";
+import { activeMissionOf, commanderOf, daysServed, MISSION_CHECK_TRIES, MISSION_STATUS_LABELS, missionStatusLabel } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatAgo, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
 import { conditionPenalty, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
@@ -125,7 +125,7 @@ const status: CommandDef = {
     const trust = commander ? (state.perceived[commander.id]?.trust ?? 0) : null;
     if (player.factionId) {
       lines.push(
-        `평판  공적 ${player.merit} · 불복종 ${player.disobedience}회` +
+        `평판  공적 ${player.merit} · 임무 불복종 ${player.disobedience}회` +
           (trust !== null && commander ? ` · ${commander.name}의 신뢰 ${relationLabel(trust)}` : ""),
       );
       if (view.service.promotionMissing?.length) lines.push(`진급까지  ${view.service.promotionMissing.join(", ")}`);
@@ -344,7 +344,7 @@ const mission: CommandDef = {
     // 진급까지 남은 것 (플레이 테스트 12: 진급이 막힌 까닭이 보이지 않았다)
     const missing = buildPlayerView(state, content).service.promotionMissing;
     if (missing) lines.push("", missing.length ? `진급까지  ${missing.join(" · ")}` : "진급 조건을 채웠다 (상관의 제안을 기다린다)");
-    if (ended.length) lines.push("", "최근 임무", ...ended.map((m) => `  ${m.title} — ${MISSION_STATUS_LABELS[m.status]}`));
+    if (ended.length) lines.push("", "최근 임무", ...ended.map((m) => `  ${m.title} — ${missionStatusLabel(m)}`));
     // 약속 (12-160)·받아 준 부탁 (12-174)
     const promises = promiseLines(state, content);
     if (promises.length) lines.push("", "지킬 약속·부탁", ...promises.map((l) => `  ${l}`));

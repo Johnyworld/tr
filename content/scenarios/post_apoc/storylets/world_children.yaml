@@ -44,7 +44,7 @@
   repeatable: true
   cooldown_days: 9
   when:
-    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
     own_territory: true
     segments: [morning, day]
   cast:
@@ -107,7 +107,7 @@
   repeatable: true
   cooldown_days: 10
   when:
-    zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    zones: [a_base, b_base, c_base, d_clinic, e_market]
     own_territory: true
     segments: [day, evening]
   cast:

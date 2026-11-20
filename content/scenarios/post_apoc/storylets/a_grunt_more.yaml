@@ -543,7 +543,7 @@
     segments: [morning, day]
   cast:
     clerk: { ids: [a_doyun] }
-  setup: "{clerk}이 창고 앞에 헌 옷가지를 쌓아 놓고 장부에 이름을 적는다. 방한복은 몇 벌 없고 줄은 길다."
+  setup: "{clerk:이/가} 창고 앞에 헌 옷가지를 쌓아 놓고 장부에 이름을 적는다. 방한복은 몇 벌 없고 줄은 길다."
   ai_direction: 방한복은 모자라다. 원칙대로라면 고참 순이다. 담요는 넉넉한 편이다.
   choices:
     - id: ask_coat

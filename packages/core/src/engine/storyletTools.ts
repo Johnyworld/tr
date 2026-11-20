@@ -438,7 +438,7 @@ export function applyEffect(
       characterId: playerId,
       belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.overhear.source, accuracy: "approximate", learnedAt: state.time, topic: WAR_INTEL_TOPIC },
     });
-    return { line: `엿들은 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.overhear.source] } };
+    return { line: `들은 소식: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.overhear.source] } };
   }
   if ("fortify" in effect) {
     const zone = state.playerZone;
@@ -657,7 +657,8 @@ export function applyEffect(
   }
   if ("capture_player" in effect) {
     const by = factionRef(state, effect.capture_player.by);
-    const line = by ? capturePlayer(ctx, by, effect.capture_player.zone, reason) : null;
+    // 믿음에 이야기 제목을 붙이지 않는다 (플레이 테스트 13: "초소의 호루라기. 청솔형제단에 붙잡혀 …")
+    const line = by ? capturePlayer(ctx, by, effect.capture_player.zone, "붙잡혔다") : null;
     return line ? { line } : {};
   }
   if ("release_player" in effect) {
@@ -870,7 +871,10 @@ export function applyEffect(
       kind === "purpose"
         ? { ...(u?.flag ? { flag: u.flag } : {}), ...(u?.zone ? { zone: u.zone } : {}), ...(u?.hours || !(u?.flag || u?.zone) ? { at: state.time + (u?.hours ?? 48) * 60 } : {}) }
         : undefined;
-    store.append({ type: "companion_joined", characterId: id, kind, ...(until ? { until } : {}) });
+    // 임무 이야기로 데려가는 사람은 임무가 끝나면 거점에 넘긴다 (플레이 테스트 13: 데려온 탈영병이 보고 뒤에도 따라다녔다)
+    const story = state.activeStorylet ? content.storylets[state.activeStorylet.id] : undefined;
+    const forMission = story?.when?.mission?.length ? activeMissionOf(state.missions, playerId)?.id : undefined;
+    store.append({ type: "companion_joined", characterId: id, kind, ...(until ? { until } : {}), ...(forMission ? { missionId: forMission } : {}) });
     const name = playerCalls(store.getState(), content, id);
     return { line: `${josa(name, "이/가")} 이제 함께 다닌다 (구역을 옮겨도 따라온다).`, display: { type: "presence", npcName: name, action: "enter" } };
   }

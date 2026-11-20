@@ -82,6 +82,8 @@ export function formatTime(time: GameTime): string {
  * 믿음 옆에 붙여 GM·플레이어가 정보가 얼마나 묵었는지 보게 한다 (정확도는 여전히 보이지 않는다)
  */
 export function formatAgo(now: GameTime, then: GameTime): string {
+  // 세계가 시작되기 전부터 알던 것 (출신·가족·지난 삶): "어제"가 아니다 (플레이 테스트 13)
+  if (then < START_TIME) return "오래전부터";
   const days = dayOf(now) - dayOf(then);
   if (days <= 0) return "오늘";
   if (days === 1) return "어제";
@@ -137,7 +139,8 @@ export const ACTIVITY_COSTS = {
   work: { kind: "fixed", minutes: 120 },
   // 휴식도 until을 받는다 (플레이 테스트 12: "오후 내내 쉰다"가 늘 1시간이었다). 정하지 않으면 1시간
   rest: { kind: "long", minutes: 60, allowUntil: true },
-  guard_duty: { kind: "long", minutes: 240, allowUntil: false },
+  // 보초도 until을 받고, 임무 보초는 남은 시간만큼만 선다 (플레이 테스트 13: 늘 4시간이라 3시간 요건이 기한을 넘겼다)
+  guard_duty: { kind: "long", minutes: 240, allowUntil: true },
   sleep: { kind: "long", minutes: 360, allowUntil: true },
   wait: { kind: "long", minutes: 60, allowUntil: true },
   /** 인접 구역으로 이동 (move_to) */

@@ -407,7 +407,7 @@
       outcomes:
         success:
           - set_flag: c_dongpal_exposed
-          - belief: { fact: "{mate:이/가} 규율반 사무실 뒤 상자에 쪽지를 넣었다. 약탈 삼조의 귀는 {mate}다", source: seen }
+          - belief: { fact: "{mate:이/가} 규율반 사무실 뒤 상자에 쪽지를 넣었다. 약탈 삼조의 귀는 {mate:이다/다}", source: seen }
         partial:
           - set_flag: c_dongpal_exposed
           - belief: { fact: "{mate:이/가} 규율반 사무실 뒤편에서 무언가를 하고 나왔다. 쪽지 같았다", source: seen }

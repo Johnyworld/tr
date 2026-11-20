@@ -9,7 +9,7 @@ import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import { runStorylets, runSwarms } from "./storyletTools.ts";
-import { runNaturalRecovery, runWearOff } from "./body.ts";
+import { runLateRation, runNaturalRecovery, runWearOff } from "./body.ts";
 import { runHelpless } from "./helpless.ts";
 import { runBleeding } from "./bleeding.ts";
 import { runFearDecay } from "./fear.ts";
@@ -51,7 +51,7 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   // 의식불명 중 곁의 사람이 할 일 (12-90): 돌봄·옮김·붙잡힘·죽임·감염체
   // 곁의 사람이 먼저 (쓰러진 그 자리에 있던 사람이 지혈부터 한다), 그다음 피를 흘린 만큼 부상이 커진다. 긁힘은 저절로 멎는다 (12-91)
   const helpless = runHelpless(ctx);
-  const bled = runBleeding(ctx);
+  const bled = [...runBleeding(ctx), ...runLateRation(ctx)];
   runDailyWeather(ctx);
   spreadRumors(ctx);
   // 세력 단위 전쟁 (하루 단위). 자기 무리가 낀 교전 소식은 화면에 보인다

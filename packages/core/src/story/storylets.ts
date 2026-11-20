@@ -3,7 +3,7 @@ import { agendaOf, agendaShowing } from "../engine/agenda.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { currentResolve, resolveTargetName, resolveText } from "../engine/resolve.ts";
 import { closeTo, mournedBy, recentlyDeadComrade } from "../engine/legacy.ts";
-import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { incapacitatingSymptom, learnedSkill } from "../scenario/scenario.ts";
 import { standingInFaction } from "../game/politics.ts";
 import { fameOf, stanceOf } from "../game/fame.ts";
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
@@ -472,7 +472,23 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
     .filter((s) => conditionsMet(state, content, s, at))
     .filter((s) => !pacingBlocks(state, content, s, at))
     .filter((s) => pickCast(state, content, s, null) !== null)
+    .filter((s) => s.essential || hasRealChoice(state, content, s))
     .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * 주인공이 실제로 고를 수 있는 길이 있는 이야기만 연다 (플레이 테스트 13: 유일한 선택지가 "못 함"이거나, 남은 것이 미루기 하나뿐인 이야기).
+ * 배우지 않은 기술 때문에 막힌 선택지가 있으면, 남은 것이 둘 이상이거나 해 볼 수 있는 판정 선택지가 있어야 한다
+ */
+function hasRealChoice(state: GameState, content: Content, s: StoryletContent): boolean {
+  if (!s.choices.length) return true;
+  const cast = pickCast(state, content, s, null) ?? {};
+  const skills = state.characters[state.playerId]?.skills ?? {};
+  const open = s.choices.filter((c) => choiceAvailable(state, c, cast));
+  const doable = open.filter((c) => !c.check || learnedSkill(content.scenario, skills, c.check) !== null);
+  if (!doable.length) return false;
+  if (doable.length === open.length) return true;
+  return doable.length >= 2 || doable.some((c) => !!c.check);
 }
 
 /** 이 이야기가 주는 위협 (공포 태그와, 감염체 배역이면 infected). 같은 위협끼리 간격을 둔다 (D3) */

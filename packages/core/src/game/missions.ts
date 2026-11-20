@@ -57,6 +57,8 @@ export const missionInstanceSchema = z.strictObject({
   fails: z.array(z.number().int().nonnegative()).default([]),
   /** 조건을 모두 채운 시각 (플레이 테스트 13: 기한은 보고·활동이 끝난 때가 아니라 이때로 본다) */
   metAt: z.number().int().optional(),
+  /** 탓할 수 없이 못 마쳤다 (붙잡혀·다쳐서): 공적·불복종·진급 셈에서 뺀다. 보여 줄 말 (플레이 테스트 13) */
+  excused: z.string().optional(),
   status: z.enum(MISSION_STATUSES),
 });
 export type MissionInstance = z.infer<typeof missionInstanceSchema>;
@@ -100,7 +102,7 @@ export function recentSetback(
   commanderId: string | null,
 ): string | null {
   const since = state.time - PROMOTION.recentDays * MINUTES_PER_DAY;
-  const bad = Object.values(state.missions).filter((m) => m.assigneeId === characterId && m.assignedAt >= since && ["partial", "failed", "expired", "abandoned"].includes(m.status)).length;
+  const bad = Object.values(state.missions).filter((m) => m.assigneeId === characterId && m.assignedAt >= since && ["partial", "failed", "expired", "abandoned"].includes(m.status) && !m.excused).length;
   if (bad >= PROMOTION.setbacks) return `최근 ${PROMOTION.recentDays}일 사이 임무 ${bad}번이 뜻대로 되지 않았다`;
   if (commanderId && (state.trustDroppedAt?.[commanderId] ?? -Infinity) >= since) return `최근 ${PROMOTION.recentDays}일 사이 상관의 믿음을 잃은 일이 있다`;
   return null;
@@ -118,6 +120,11 @@ export function isRequirementClosed(mission: Pick<MissionInstance, "requirements
 /** 조건을 이제 막 다 채웠으면 그 시각을 적는다 (이미 적었으면 그대로) */
 export function markMissionMet(mission: MissionInstance, at: number): void {
   if (mission.metAt === undefined && mission.requirements.every((r, i) => isRequirementMet(r, mission.progress[i] ?? 0))) mission.metAt = at;
+}
+
+/** 끝난 임무의 결과 표시 (탓할 수 없이 못 마친 것은 그 까닭으로) */
+export function missionStatusLabel(m: Pick<MissionInstance, "status" | "excused">): string {
+  return m.excused ?? MISSION_STATUS_LABELS[m.status];
 }
 
 export function isRequirementMet(requirement: MissionRequirement, progress: number): boolean {
@@ -195,7 +202,7 @@ export function checkPromotion(
   // 다 채운 날 수다. 시계의 "복무 N일째"는 오늘을 함께 센다 (플레이 테스트 12: 두 숫자가 어긋나 보였다)
   if (days < PROMOTION.minDaysServed) missing.push(`복무 ${days}/${PROMOTION.minDaysServed}일 (다 채운 날)`);
   if (character.disobedience > maxDisobedience) {
-    missing.push(`불복종 ${character.disobedience}회 (최대 ${maxDisobedience}회)`);
+    missing.push(`임무 불복종 ${character.disobedience}회 (최대 ${maxDisobedience}회)`);
   }
   if (commanderTrust !== null && commanderTrust < PROMOTION.minCommanderTrust) {
     missing.push(`상관 신뢰 ${commanderTrust}/${PROMOTION.minCommanderTrust}`);

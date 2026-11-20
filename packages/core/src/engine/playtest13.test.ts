@@ -10,8 +10,10 @@ import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { maybeInfect } from "./body.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
-import { hostileHere, maskUnknownNames } from "./storyletTools.ts";
+import { hostileHere, hostileZone, maskUnknownNames } from "./storyletTools.ts";
 import { recordDeed } from "./reputationTools.ts";
+import { pickFee } from "./body.ts";
+import { formatAgo, START_TIME } from "../rules/time.ts";
 
 /** 긴 판 열 (플레이 테스트 13, docs/playtests/2026-11-20-mcp-13-long.md)의 확실한 버그 */
 const content = loadRealContent();
@@ -126,5 +128,103 @@ describe("플레이 테스트 13 뒤 정한 것", () => {
     expect(w.state().missions[m.id]!.status).toBe("active");
     const r = w.executeTool("report_mission", {});
     expect(r.ok && r.resultText).not.toContain("기한을 넘겨");
+  });
+});
+
+describe("플레이 테스트 13의 남은 버그", () => {
+  const enemyOf = (w: ReturnType<typeof world>) => {
+    const me = w.state().characters[w.state().playerId]!;
+    return Object.keys(content.factions).find((f) => f !== me.factionId && Object.values(content.locations).some((l) => l.kind === "base" && l.owner === f))!;
+  };
+
+  it("임무 보초는 남은 시간만큼만 선다", () => {
+    const w = world("role_a_grunt");
+    const commander = content.roles.role_a_grunt!.commander!;
+    w.executeTool("npc_presence", { npc_id: commander, action: "enter" });
+    const guard = Object.values(content.missions).find((m) => m.requirements.length === 1 && m.requirements.every((r) => "activity" in r && r.activity === "guard_duty") && !m.where)!;
+    w.ctx().store.append({ type: "missions_offered", day: Math.floor(w.state().time / 1440) + 1, templateIds: [guard.id] });
+    expect(w.executeTool("assign_mission", { template_id: guard.id }).ok).toBe(true);
+    const m = activeMissionOf(w.state().missions, w.state().playerId)!;
+    const need = (m.requirements[0] as { minutes: number }).minutes;
+    const before = w.state().time;
+    const r = w.executeTool("take_action", act({ activity: { kind: "guard_duty", until: null }, for_mission: true, ignore_story: true }));
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    const spent = w.state().time - before;
+    // 이야기에 끊기지 않았으면 요건만큼 (끊겼으면 그보다 짧다)
+    expect(spent).toBeLessThanOrEqual(Math.max(need, 30) + 60);
+  });
+
+  it("붙잡혀 못 마친 임무는 공적·불복종·진급 셈에 들지 않고, 빼앗긴 빌린 장비도 탓하지 않는다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const commander = content.roles.role_a_grunt!.commander!;
+    w.executeTool("npc_presence", { npc_id: commander, action: "enter" });
+    const tid = w.state().offers!.templateIds[0]!;
+    expect(w.executeTool("assign_mission", { template_id: tid }).ok).toBe(true);
+    const m = activeMissionOf(w.state().missions, w.state().playerId)!;
+    const merit = w.state().characters[w.state().playerId]!.merit;
+    const enemy = enemyOf(w);
+    const zone = Object.values(content.locations).find((l) => l.kind === "base" && l.owner === enemy)!.id;
+    ctx.store.append({ type: "player_captured", by: enemy, zone, held: {} });
+    ctx.store.append({ type: "time_advanced", activity: "wait", from: w.state().time, to: m.deadline + 30 });
+    runMissionStartOfTurn(ctx);
+    const after = w.state().missions[m.id]!;
+    expect(after.status).toBe("expired");
+    expect(after.excused).toContain("붙잡혀");
+    expect(w.state().characters[w.state().playerId]!.merit).toBe(merit);
+    expect(w.state().characters[w.state().playerId]!.disobedience).toBe(0);
+  });
+
+  it("갇혀 못 받은 그날 배급은 우리 거점에 닿으면 받는다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const home = w.state().playerZone!;
+    const hunger = content.scenario.body!.hunger!.track;
+    const levels = content.scenario.condition_tracks.find((t) => t.id === hunger)!.levels;
+    const me = w.state().playerId;
+    ctx.store.append({ type: "condition_changed", targetId: me, track: hunger, from: levels[0]!.id, to: levels[2]!.id, fatal: false, by: "daily", cause: "테스트", day: 1, harmTrack: false });
+    ctx.store.append({ type: "ration_missed", day: Math.floor(w.state().time / 1440) + 1 });
+    expect(w.state().playerZone).toBe(home);
+    const r = w.executeTool("take_action", act());
+    expect(r.ok).toBe(true);
+    expect(w.state().missedRationDay).toBeNull();
+    expect(w.state().characters[me]!.conditions[hunger]).not.toBe(levels[2]!.id);
+  });
+
+  it("치료 값으로 무기고에서 빌린 것은 내지 않는다", () => {
+    const w = world("role_l_wanderer");
+    const ctx = w.ctx();
+    const me = w.state().characters[w.state().playerId]!;
+    const inv = Object.keys(me.inventory);
+    ctx.store.append({ type: "armory_issued", missionId: "m_x", factionId: "x", items: Object.fromEntries(inv.map((i) => [i, me.inventory[i]!])), resource: "", cost: 0 });
+    const now = w.state().characters[me.id]!;
+    const pay = pickFee(ctx, now, 3) ?? new Map<string, number>();
+    for (const [id, q] of pay) expect(q).toBeLessThanOrEqual((now.inventory[id] ?? 0) - (me.inventory[id] ?? 0));
+  });
+
+  it("긴 잠 뒤에는 동행이 아닌 사람이 장면에서 빠진다", () => {
+    const w = world("role_a_grunt");
+    const commander = content.roles.role_a_grunt!.commander!;
+    w.executeTool("npc_presence", { npc_id: commander, action: "enter" });
+    const r = w.executeTool("take_action", act({ activity: { kind: "sleep", until: "night" }, ignore_story: true }));
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    if (w.state().time - 0 > 0 && !(r.ok && r.resultText.includes("끊겼다"))) expect(w.state().scene.present).not.toContain(commander);
+  });
+
+  it("적대하는 땅에서 드러내 놓고 말을 거는 것은 숨기 판정을 요구하지 않는다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const zone = Object.values(content.locations).find((l) => l.kind === "base" && hostileZone({ ...w.state(), playerZone: l.id }, content))!.id;
+    ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: zone });
+    expect(hostileHere(ctx)).toBe(true);
+    const r = w.executeTool("take_action", act({ activity: { kind: "talk", until: null } }));
+    expect(r.ok ? "" : r.error).not.toContain("적대하는 땅");
+    const r2 = w.executeTool("take_action", act({ activity: { kind: "rest", until: null } }));
+    expect(r2.ok).toBe(false);
+  });
+
+  it("세계가 시작되기 전의 기억(지난 삶)은 '어제'가 아니라 '오래전부터'다", () => {
+    expect(formatAgo(START_TIME + 2 * 1440, START_TIME - 1)).toBe("오래전부터");
+    expect(formatAgo(START_TIME + 1440, START_TIME)).toBe("어제");
   });
 });

@@ -246,6 +246,8 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
       const merit = half ? Math.floor(task.rewards.merit / 2) : task.rewards.merit;
       if (merit > 0) {
         store.append({ type: "merit_awarded", characterId: state.playerId, delta: merit, reason: `분대: ${task.label}` });
+        // 공적이 바뀌면 까닭과 함께 알린다 (플레이 테스트 13: 공적이 말없이 올랐다)
+        lines.push(`분대가 해낸 일로 공적 +${merit}`);
         const levelUp = gainMeritXp(ctx, state.playerId, merit);
         if (levelUp) lines.push(levelUp);
       }

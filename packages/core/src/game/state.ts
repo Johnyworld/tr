@@ -537,6 +537,10 @@ export function createGameSchemas(s: Scenario) {
     lastActivity: z.string().nullable().default(null),
     /** 마지막으로 잠에서 깬 시각 (플레이 테스트 13: "한밤에 막 깬 때"가 깬 뒤 행동 하나로 풀렸다) */
     lastWokeAt: z.number().int().nullable().default(null),
+    /** 갇혀서 그날 배급을 못 받은 날 (플레이 테스트 13: 풀려나 거점에 왔는데 그날 내내 굶주렸다). 그날 우리 거점에 닿으면 늦게라도 받는다 */
+    missedRationDay: z.number().int().nullable().default(null),
+    /** 주인공이 마지막으로 풀려난(빠져나온) 시각 (플레이 테스트 13: 갇혔다 나와 거점까지 걷는 사이 기한이 지나 불복종) */
+    lastFreedAt: z.number().int().nullable().default(null),
     /** 불복종이 마지막으로 늘거나 지워진 때 (C8: 7일마다 하나씩 지워진다) */
     disobedienceAt: z.record(z.string(), z.number().int()).default({}),
     /** 이 사람이 주인공을 덜 믿게 된 마지막 때 (플레이 테스트 11, C5: 의심받은 직후 진급 제안이 왔다) */
@@ -737,6 +741,8 @@ export function createGameSchemas(s: Scenario) {
     /** 소리를 듣고 감염체가 몰려온다 (at에 닿는다) / 닿았다 (done) */
     /** 갇힌 주인공의 탈출이 실패해 감시가 심해졌다 */
     z.strictObject({ type: z.literal("captive_watch_raised") }),
+    /** 그날 배급을 못 받았다 (day) / 늦게 받았다 (null) */
+    z.strictObject({ type: z.literal("ration_missed"), day: z.number().int().nullable() }),
     /** 판정의 대가를 다치는 대신 다른 것(시간)으로 치렀다: 그 판정을 이어받는 이야기는 "다친다"를 겹쳐 붙이지 않는다 (플레이 테스트 12) */
     z.strictObject({ type: z.literal("check_cost_paid"), checkId: z.string() }),
     z.strictObject({ type: z.literal("swarm_set"), zone: z.string(), day: z.number().int(), at: z.number().int(), done: z.boolean() }),
@@ -825,7 +831,7 @@ export function createGameSchemas(s: Scenario) {
     /** 판정·활동이 아닌 결과 조건(goal, bring)을 채웠다 (플레이 테스트 11) */
     z.strictObject({ type: z.literal("mission_requirement_met"), missionId: z.string(), index: z.number().int().min(0) }),
     z.strictObject({ type: z.literal("mission_abandoned"), missionId: z.string(), merit: z.number().int(), reason: z.string(), disobedience: z.boolean().default(true) }),
-    z.strictObject({ type: z.literal("mission_expired"), missionId: z.string(), merit: z.number().int(), disobedience: z.boolean().default(true) }),
+    z.strictObject({ type: z.literal("mission_expired"), missionId: z.string(), merit: z.number().int(), disobedience: z.boolean().default(true), excused: z.string().optional() }),
     /** 오래된 불복종 하나가 지워졌다 (C8) */
     z.strictObject({ type: z.literal("disobedience_forgiven"), characterId: z.string() }),
     z.strictObject({ type: z.literal("promoted"), characterId: z.string(), from: rank, to: rank }),
@@ -1209,6 +1215,8 @@ export const EMPTY_STATE: GameState = {
   lastStoryletAt: null,
   lastActivity: null,
   lastWokeAt: null,
+  missedRationDay: null,
+  lastFreedAt: null,
   regardGained: { day: -1, by: {} },
   trustDroppedAt: {},
   disobedienceAt: {},
@@ -1373,6 +1381,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "check_cost_paid":
       mustGet(next.checks, event.checkId, "판정").harmApplied = true;
+      return next;
+    case "ration_missed":
+      next.missedRationDay = event.day;
       return next;
     case "captive_watch_raised": {
       const me = mustGet(next.characters, next.playerId, "캐릭터");
@@ -1792,6 +1803,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       }
       if (key) delete next.deposits[key];
       me.captive = null;
+      next.lastFreedAt = state.time;
+      // 갇혀 있는 동안 같은 구역에서 기다리던 동행은 풀려나면 바로 합류한다 (플레이 테스트 13)
+      for (const b of Object.values(next.bonds ?? {})) if (b.apart && b.apart.left === false) b.apart = { ...b.apart, left: true };
       return next;
     }
     case "prisoner_labor": {
@@ -1982,6 +1996,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         mission.status = event.outcome === "success" ? "completed" : event.outcome;
       } else {
         mission.status = event.type === "mission_abandoned" ? "abandoned" : "expired";
+        if (event.type === "mission_expired" && event.excused) mission.excused = event.excused;
         if (event.disobedience) {
           assignee.disobedience += 1;
           next.disobedienceAt = { ...next.disobedienceAt, [assignee.id]: state.time };
@@ -2196,6 +2211,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       // 동행은 죽은 사람을 따라다녔다. 다음 캐릭터는 새로 사귄다 (기획서 7.8)
       next.companions = [];
       next.bonds = {};
+      // 앞 주인공이 놓은 덫은 다음 주인공이 모른다 (플레이 테스트 13)
+      next.traps = [];
       next.squadOrders = {};
       next.squadReports = {};
       next.squad = null;
@@ -2580,22 +2597,24 @@ export function createWorldEvent(
   const npcs = Object.values(content.npcs).map((npc) => createCharacterFromNpc(content.scenario, npc));
 
   let no = 0;
-  const belief = (fact: string, source: Belief["source"], accuracy: Belief["accuracy"]): Belief => ({
+  const belief = (fact: string, source: Belief["source"], accuracy: Belief["accuracy"], learnedAt: number = START_TIME): Belief => ({
     id: `b_${++no}`,
     fact,
     source,
     accuracy,
-    learnedAt: START_TIME,
+    learnedAt,
   });
+  // 자기 자신에 대한 기억(지난 삶·동기·출신)은 세계가 시작되기 전의 일이다: "어제"로 보이지 않게 (플레이 테스트 13)
+  const LONG_AGO = START_TIME - 1;
   const beliefs: Record<string, Belief[]> = {};
   const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
   beliefs[player.id] = (preset?.beliefs ?? []).map((b) => belief(b.fact, b.source, b.accuracy));
   // 자유 시나리오에서 플레이어가 쓴 지난 삶: 캐릭터 자신의 기억이다 (세계의 사실로 확정되지 않는다)
-  for (const fact of background ?? []) beliefs[player.id]!.push(belief(fact, "seen", "approximate"));
+  for (const fact of background ?? []) beliefs[player.id]!.push(belief(fact, "seen", "approximate", LONG_AGO));
   // 고른 동기도 자기 자신에 대한 기억으로 (12-77)
-  if (motive) beliefs[player.id]!.push(belief(`내가 버티는 이유: ${motive.label}. ${motive.summary}`, "seen", "exact"));
+  if (motive) beliefs[player.id]!.push(belief(`내가 버티는 이유: ${motive.label}. ${motive.summary}`, "seen", "exact", LONG_AGO));
   // 과거 배경도 자기 자신에 대한 기억으로 (12-84)
-  if (player.past) beliefs[player.id]!.push(belief(`붕괴 전에 나는 ${josa(player.past.label, "이었다/였다")}. ${player.past.summary}.`, "seen", "exact"));
+  if (player.past) beliefs[player.id]!.push(belief(`붕괴 전에 나는 ${josa(player.past.label, "이었다/였다")}. ${player.past.summary}.`, "seen", "exact", LONG_AGO));
   for (const npc of Object.values(content.npcs)) {
     beliefs[npc.id] = [...npc.knows, ...npc.keeps].map((fact) => belief(fact, "seen", "exact"));
   }

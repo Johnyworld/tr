@@ -525,7 +525,8 @@ export function describeZonePeople(state: GameState, content: Content): string {
   // 남의 감옥 안의 낯선 포로는 담 밖에서 보이지 않는다 (플레이 테스트 12: 막 도착했는데 갇힌 사람 목록이 보였다). 같이 갇혔거나 우리 땅이면 보인다
   const me = state.characters[state.playerId];
   const seesCells = !!me?.captive || (!!me?.factionId && state.zones[zone]?.owner === me.factionId);
-  const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id) && (seesCells || !state.characters[npc.id]?.captive));
+  // 갇혀 있으면 마주칠 사람은 같이 갇힌 사람과 치료사뿐이다 (플레이 테스트 13: 감방에서 거점 사람 열일곱과 장사꾼이 보였다)
+  const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id) && (seesCells || !state.characters[npc.id]?.captive) && (!me?.captive || !!state.characters[npc.id]?.captive || !!npc.healer));
   if (strangers.length === 0) return askLine;
   // 갇힌 사람은 이 구역에 와 있으니 갇혀 있다는 것까지 보인다 (돌아다니지 않는다). 사람이 많으면 몇 명만 (토큰, 12-42):
   // 갇힌 사람·떠도는 사람(오늘만 여기 있다) 먼저, 나머지는 날마다 돌아가며

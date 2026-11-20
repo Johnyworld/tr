@@ -33,7 +33,7 @@ export function fill(template: string, vars: Record<string, string | number>): s
   });
 }
 
-export type JosaPair = "이/가" | "은/는" | "을/를" | "과/와" | "으로/로" | "이라는/라는" | "이었다/였다";
+export type JosaPair = "이/가" | "은/는" | "을/를" | "과/와" | "으로/로" | "이라는/라는" | "이었다/였다" | "이다/다";
 
 /**
  * 받침에 맞는 조사를 붙인다. josa("강태호", "이/가") → "강태호가"

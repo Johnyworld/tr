@@ -224,7 +224,7 @@ export function armorBlocksInfection(ctx: ToolContext): { blocked: boolean; line
     const p = itemOf(ctx.content, id)?.armor?.blocks_infection ?? 0;
     if (!id || p <= 0 || ctx.rng() >= p) continue;
     const broke = wearItem(ctx, me.id, id, 1);
-    return { blocked: true, lines: [`상처는 났지만 ${nameOf(ctx.content, id)} 덕에 감염원의 침과 피가 깊이 들지는 않았다 (감염을 피했다).`, ...(broke ? [broke] : [])] };
+    return { blocked: true, lines: [`[GM 전용] ${nameOf(ctx.content, id)} 덕에 감염을 피했다. 캐릭터는 감염됐는지 아직 모른다: "${nameOf(ctx.content, id)}에 이빨 자국이 났다" 정도로만 서술한다 (플레이 테스트 13).`, ...(broke ? [broke] : [])] };
   }
   return { blocked: false, lines: [] };
 }

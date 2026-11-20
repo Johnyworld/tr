@@ -120,10 +120,10 @@ export function releaseBuddies(ctx: ToolContext, missionId: string): string[] {
   const state = ctx.store.getState();
   const lines: string[] = [];
   for (const [id, b] of Object.entries(state.bonds ?? {})) {
-    if (b.kind !== "buddy" || b.missionId !== missionId) continue;
+    if (b.missionId !== missionId || !state.companions.includes(id)) continue;
     ctx.store.append({ type: "companion_left", characterId: id, reason: "임무가 끝났다" });
     if (ctx.store.getState().scene.present.includes(id)) ctx.store.append({ type: "npc_left", npcId: id });
-    lines.push(`짝이던 ${josa(playerCalls(state, ctx.content, id), "은/는")} 자기 자리로 돌아간다.`);
+    lines.push(b.kind === "buddy" ? `짝이던 ${josa(playerCalls(state, ctx.content, id), "은/는")} 자기 자리로 돌아간다.` : `임무로 데려온 ${josa(playerCalls(state, ctx.content, id), "은/는")} 무리에 넘겼다. 더는 따라다니지 않는다.`);
   }
   return lines;
 }

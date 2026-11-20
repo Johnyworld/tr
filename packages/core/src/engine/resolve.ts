@@ -269,7 +269,7 @@ function heirResolve(ctx: ToolContext): string | null {
   if (!rule.heir?.close) return null;
   const close = tiesOf(state, ctx.content, me.id).find((t) => ["parent", "child", "sibling", "spouse", "lover", "friend"].includes(t.kind) && !t.secret && state.characters[t.other] && !state.characters[t.other]!.dead);
   if (!close) return null;
-  return setResolve(ctx, { kind: rule.heir.close, target: close.other, n: rule.heir.days, text: "{target}을(를) 지킨다" }, "scenario");
+  return setResolve(ctx, { kind: rule.heir.close, target: close.other, n: rule.heir.days, text: "{target:을/를} 지킨다" }, "scenario");
 }
 
 /** 다짐 한 줄 (대상 자리 {target}을 주인공이 지금 부르는 말로 채운다) */

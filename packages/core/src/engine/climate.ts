@@ -47,6 +47,8 @@ export function welcomedAsGuest(content: Content, state: GameState): boolean {
   const owner = zone ? state.zones[zone]?.owner : null;
   if (!shelter || shelter.guests === undefined || !me || me.captive || !zone || !owner || owner === me.factionId) return false;
   if (content.locations[zone]?.kind !== "base") return false;
+  // 몰래 숨어든 사람은 손님이 아니다 (플레이 테스트 13)
+  if (state.infiltration) return false;
   const regard = me.factionId ? disposition(content, owner, me.factionId, state) : content.scenario.helpless?.prey_on_strangers.includes(owner) ? -3 : 0;
   return regard >= shelter.guests;
 }

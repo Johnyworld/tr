@@ -156,7 +156,8 @@ describe("외딴곳", () => {
     const w = m.create("mcp", "role_y_islander", choice);
     w.runCheat("~time +2d");
     const open = eligibleStorylets(w.state(), w.content);
-    expect(open.filter((s) => s.tags.includes("world"))).toEqual([]);
+    // 공통 이야기는 섬을 직접 적은 것만 (여울섬의 나날)
+    expect(open.filter((s) => s.tags.includes("world") && !s.when.zones?.includes("yeoul_isle"))).toEqual([]);
     const scene = w.sceneForGm();
     expect(scene).toContain("y_villager");
     expect(scene).not.toContain("refugee");

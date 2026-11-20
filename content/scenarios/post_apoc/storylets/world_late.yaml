@@ -1,0 +1,501 @@
+# 오래 버틴 사람의 이야기 (중후반). 7일이 넘으면 처음 며칠의 이야기가 다 지나가 되풀이되는 이야기만 남았다
+# 시간이 흐른 것이 보이는 장면들: 계절(1일은 늦가을 14일째라 7일께 겨울, 27일께 봄), 바뀐 얼굴, 몸에 쌓인 것, 남이 알아보는 나
+# 한 번씩만 열린다. 날짜(day_gte)를 흩어 두어 중반 내내 하나씩 닿게 한다
+
+- id: lt_first_snow
+  title: 첫눈
+  tags: [world]
+  when:
+    day_gte: 7
+    seasons: [winter]
+    segments: [dawn, morning, day]
+    activities_none: [sleep, combat]
+    flags_none: [lt_first_snow_done]
+  setup: "하늘에서 하얀 것이 내린다. 재인가 싶어 손바닥을 펴 보니 녹는다. 첫눈이다. 무너진 지붕들, 녹슨 차, 깨진 간판 위로 소리 없이 쌓인다. 잠깐 동안 도시가 깨끗해 보인다."
+  ai_direction: 눈은 아름답고 동시에 무섭다. 이제 진짜 겨울이다 (땔감, 발자국, 언 손). 붕괴 뒤 몇 번째 겨울인지 주인공은 센다. 곁에 누가 있으면 그 사람도 잠깐 말이 없다.
+  choices:
+    - id: watch
+      label: 한참 서서 눈을 맞는다
+      effects:
+        - set_flag: lt_first_snow_done
+        - body: { track: nerves, delta: -1 }
+    - id: prepare
+      label: 땔감과 덮을 것부터 셈한다
+      effects:
+        - set_flag: lt_first_snow_done
+        - belief: { fact: "첫눈이 내렸다. 이제 진짜 겨울이다. 땔감과 덮을 것이 모자라면 밤을 못 넘긴다", source: seen }
+    - id: tracks
+      label: 눈 위에 남을 발자국부터 걱정한다
+      effects:
+        - set_flag: lt_first_snow_done
+        - belief: { fact: "눈이 쌓이면 발자국이 남는다. 나를 쫓는 사람도, 내가 쫓는 사람도 흔적을 남긴다", source: seen }
+
+- id: lt_tally_marks
+  title: 벽의 금
+  tags: [world]
+  when:
+    day_gte: 8
+    segments: [evening, night]
+    activities_none: [combat]
+    flags_none: [lt_tally_done]
+  setup: "자리를 잡고 앉은 벽에 누군가 날짜를 센 금이 빼곡하다. 다섯 개씩 묶은 금이 줄줄이 이어지다, 어느 날 뚝 끊겼다. 끊긴 자리 옆에 작은 글씨로 '내일은 남쪽으로'라고 적혀 있다."
+  ai_direction: 이름 모를 사람이 이 벽 아래서 날을 셌다. 그 사람이 남쪽에 닿았는지는 알 수 없다. 주인공도 이 도시에서 며칠째인지 떠올리게 하는 장면이다. 금을 보태도, 그냥 둬도 된다.
+  choices:
+    - id: add
+      label: 끊긴 금 옆에 내 날짜를 새긴다
+      effects:
+        - set_flag: lt_tally_done
+        - body: { track: nerves, delta: -1 }
+    - id: count
+      label: 금을 세어 본다
+      effects:
+        - set_flag: lt_tally_done
+        - belief: { fact: "어느 벽 아래 누군가 날짜를 센 금이 백 개가 넘었다. 마지막에 '내일은 남쪽으로'라고 적고 끊겼다", source: seen }
+
+- id: lt_familiar_stranger
+  title: 야윈 얼굴
+  tags: [world]
+  when:
+    day_gte: 9
+    zone_owner: [none, other]
+    segments: [morning, day, evening]
+    flags_none: [lt_familiar_done]
+  cast:
+    face: { extra: refugee, label: 어디서 본 얼굴 }
+  setup: "길가에 주저앉은 {face:을/를} 지나치다 걸음이 멈춘다. 어디서 본 얼굴이다. 처음 이 도시를 헤맬 때 물을 나눠 마셨던 사람. 그때보다 볼이 움푹 꺼졌고, 같이 다니던 아이가 보이지 않는다."
+  ai_direction: 주인공이 처음 며칠 사이 스쳐 지나간 수많은 피난민 중 하나다. 그사이 이 사람은 많은 것을 잃었다 (아이는 죽지 않았을 수도 있다. 어딘가 맡겼거나 잃어버렸다). 주인공을 알아보고 희미하게 웃는다. 시간이 흘렀다는 것을 얼굴로 보여 주는 장면이다.
+  choices:
+    - id: share
+      label: 먹을 것을 나눈다
+      when: { has_items_any: [canned_food, dry_ration, dried_fish, potato] }
+      effects:
+        - set_flag: lt_familiar_done
+        - relation: { who: face, axis: trust, delta: 2 }
+        - deed: { summary: 굶주린 피난민에게 먹을 것을 나눴다, tags: [mercy], severity: 1, privacy: semi_private }
+    - id: ask
+      label: 아이는 어디 갔느냐고 묻는다
+      effects:
+        - set_flag: lt_familiar_done
+        - belief: { fact: "처음 이 도시에서 만났던 피난민을 다시 봤다. 많이 야위었고, 같이 다니던 아이는 진료소에 맡겼다고 했다. 데리러 갈 값이 없다고 했다", source: report }
+    - id: walk
+      label: 못 알아본 척 지나간다
+      effects:
+        - set_flag: lt_familiar_done
+
+- id: lt_old_ache
+  title: 오래된 통증
+  tags: [world]
+  when:
+    day_gte: 10
+    segments: [dawn, morning]
+    flags_none: [lt_ache_done]
+  setup: "아침에 몸을 일으키는데 어딘가 뻐근하다. 다친 적도 없는 데가 쑤신다. 무릎, 허리, 어깨. 매일 걷고, 들고, 웅크려 자고, 추위에 떤 날들이 몸 어딘가에 쌓였다."
+  ai_direction: 극적인 부상이 아니라 버틴 날들의 무게다. 흉터나 지난 상처가 있으면 그 자리가 먼저 쑤신다 (캐릭터 시트에 맞게). 몸을 돌보는 시간을 내는지, 그냥 일어나는지는 주인공이 정한다.
+  choices:
+    - id: stretch
+      label: 한참 몸을 풀고 일어난다
+      effects:
+        - set_flag: lt_ache_done
+        - body: { track: fatigue, delta: -1 }
+        - delay: 30
+    - id: push
+      label: 그냥 일어나 할 일을 한다
+      effects:
+        - set_flag: lt_ache_done
+
+- id: lt_house_emptied
+  title: 비어 버린 집
+  tags: [world]
+  when:
+    day_gte: 11
+    zone_owner: [none]
+    segments: [morning, day]
+    flags_none: [lt_house_done]
+  setup: "처음 지날 때만 해도 창에 천을 걸고 굴뚝에 연기가 오르던 집이다. 오늘은 문이 활짝 열려 있다. 안에는 엎어진 냄비, 반쯤 싼 짐, 벽에 걸린 아이 키 눈금. 사람은 없다."
+  ai_direction: 이 집 사람들은 떠났거나, 끌려갔거나, 무언가를 피해 달아났다 (흔적으로만 비춘다. 서두른 짐, 피는 없음). 무엇이 남았는지는 수색 판정대로. 주인공이 처음 이 도시에 왔을 때와 지금이 다르다는 것을 보여 준다.
+  choices:
+    - id: search
+      label: 남은 것을 뒤진다
+      check: scavenge
+      outcomes:
+        success:
+          - set_flag: lt_house_done
+          - give_item: { item: blanket }
+          - give_item: { item: canned_food }
+        partial:
+          - set_flag: lt_house_done
+          - give_item: { item: cloth, quantity: 2 }
+        miss:
+          - set_flag: lt_house_done
+    - id: read
+      label: 흔적을 읽는다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: lt_house_done
+          - belief: { fact: "구역 변두리의 빈집 사람들은 서둘러 떠났다. 짐을 반쯤 싸다 말았고, 바퀴 자국이 남쪽 길로 났다. 싸운 흔적은 없다", source: seen }
+        partial:
+          - set_flag: lt_house_done
+          - belief: { fact: "구역 변두리의 빈집 사람들은 서둘러 떠났다. 어디로 갔는지는 모르겠다", source: seen }
+        miss:
+          - set_flag: lt_house_done
+    - id: leave
+      label: 문을 닫아 주고 간다
+      effects:
+        - set_flag: lt_house_done
+
+- id: lt_newborn
+  title: 겨울에 태어난 아이
+  tags: [world]
+  when:
+    day_gte: 12
+    own_territory: true
+    segments: [morning, day, evening]
+    flags_none: [lt_newborn_done]
+  cast:
+    parent: { faction: own, here: true, adult: true }
+  setup: "밤새 누가 소리를 지르더니, 아침에는 가는 울음소리가 들린다. 아이가 태어났다. {parent:이/가} 지친 얼굴로 나와 사람들 손을 하나씩 잡는다. \"이름을 아직 못 지었어. 같이 생각해 줄래?\""
+  ai_direction: 무너진 세상에서도 아이는 태어난다. 무리 전체가 들뜬다. 입이 하나 는다는 걱정을 소리 내 하는 사람은 없다. 이름 짓기에 끼면 그 아이는 평생 주인공을 기억하는 사람으로 자랄 것이다.
+  choices:
+    - id: name
+      label: 이름 하나를 지어 건넨다
+      effects:
+        - set_flag: lt_newborn_done
+        - relation: { who: parent, axis: affection, delta: 2 }
+        - body: { track: nerves, delta: -1 }
+    - id: gift
+      label: 담요를 내놓는다
+      effects:
+        - set_flag: lt_newborn_done
+        - take_item: { item: blanket }
+        - relation: { who: parent, axis: trust, delta: 2 }
+        - deed: { summary: 무리에서 태어난 아이에게 담요를 내주었다, tags: [mercy], severity: 1, privacy: public }
+    - id: congrats
+      label: 축하한다고만 한다
+      effects:
+        - set_flag: lt_newborn_done
+        - relation: { who: parent, axis: affection, delta: 1 }
+
+- id: lt_newcomer_asks
+  title: 신참의 물음
+  tags: [world]
+  when:
+    day_gte: 13
+    own_territory: true
+    segments: [day, evening]
+    flags_none: [lt_newcomer_done]
+  cast:
+    rookie: { extra: refugee, label: 갓 들어온 신참 }
+  setup: "{rookie:이/가} 쭈뼛거리며 다가온다. 들어온 지 사흘째라고 한다. \"여기 오래 있으셨죠? 어떻게… 어떻게 버텨요? 밤마다 잠이 안 와요.\" 당신이 처음 왔을 때와 같은 눈이다."
+  ai_direction: 주인공은 이제 누군가에게 '오래 버틴 사람'이다. 신참은 진짜 조언을 원한다. 주인공이 배운 것 (몸으로, 사람으로, 규칙으로)을 말할 기회다. 대답은 주인공이 정한다.
+  choices:
+    - id: advise
+      label: 내가 배운 것을 솔직히 말해 준다
+      effects:
+        - set_flag: lt_newcomer_done
+        - relation: { who: rookie, axis: trust, delta: 2 }
+        - relation: { who: rookie, axis: respect, delta: 1 }
+    - id: tough
+      label: 버티는 법 같은 건 없다고, 그냥 버티는 거라고 한다
+      effects:
+        - set_flag: lt_newcomer_done
+        - relation: { who: rookie, axis: respect, delta: 1 }
+    - id: shift
+      label: 오늘 밤 보초를 같이 서 주겠다고 한다
+      effects:
+        - set_flag: lt_newcomer_done
+        - relation: { who: rookie, axis: affection, delta: 2 }
+        - body: { track: fatigue, delta: 1 }
+
+- id: lt_deep_winter
+  title: 한겨울 밤
+  tags: [world]
+  when:
+    day_gte: 15
+    seasons: [winter]
+    segments: [night]
+    activities_none: [combat]
+    flags_none: [lt_deep_winter_done]
+  setup: "가장 추운 밤이다. 숨을 쉬면 콧속이 언다. 멀리서 무언가 갈라지는 소리가 난다. 얼어붙은 수도관이 터지는 소리다. 이 도시 어딘가에서는 오늘 밤 불을 못 피운 사람들이 잠든 채 깨어나지 못할 것이다."
+  ai_direction: 겨울 한복판이다. 이 밤은 버티는 것 자체가 일이다. 곁에 사람이 있으면 체온을 나눈다. 아침이 되면 도시 어딘가에서 언 사람이 발견된다는 소문이 돈다 (주인공이 직접 보지는 않는다).
+  choices:
+    - id: huddle
+      label: 가진 것을 다 껴입고 몸을 웅크린다
+      check: endure
+      outcomes:
+        success:
+          - set_flag: lt_deep_winter_done
+        partial:
+          - set_flag: lt_deep_winter_done
+          - body: { track: cold, delta: 1 }
+        miss:
+          - set_flag: lt_deep_winter_done
+          - body: { track: cold, delta: 2 }
+    - id: burn
+      label: 땔감을 아끼지 않고 태운다
+      effects:
+        - set_flag: lt_deep_winter_done
+        - take_item: { item: firewood }
+        - body: { track: cold, delta: -1 }
+
+- id: lt_known_name
+  title: 나를 아는 사람
+  tags: [world]
+  when:
+    day_gte: 16
+    segments: [day, evening]
+    flags_none: [lt_known_name_done]
+  cast:
+    talker: { extra: highway_traveler, label: 처음 보는 사람 }
+  setup: "처음 보는 {talker:이/가} 당신을 한참 보더니 묻는다. \"혹시… 그 사람 아니에요? 얘기 들었어요.\" 당신 이름을 댄다. 정확하지는 않지만 거의 맞다."
+  ai_direction: 오래 버티면 소문이 돈다. 이 사람이 들은 소문은 주인공의 실제 행적에서 하나를 고른다 (공개된 행적 위주, 과장되거나 조금 틀리게). 좋은 소문일 수도, 나쁜 소문일 수도 있다. 행적이 거의 없으면 '오래 살아남은 사람'이라는 소문이다.
+  choices:
+    - id: confirm
+      label: 맞다고 한다
+      effects:
+        - set_flag: lt_known_name_done
+        - relation: { who: talker, axis: respect, delta: 1 }
+    - id: correct
+      label: 소문이 틀린 데를 고쳐 준다
+      effects:
+        - set_flag: lt_known_name_done
+        - relation: { who: talker, axis: trust, delta: 1 }
+    - id: deny
+      label: 사람 잘못 봤다고 한다
+      effects:
+        - set_flag: lt_known_name_done
+
+- id: lt_market_prices
+  title: 오른 값
+  tags: [world]
+  when:
+    day_gte: 17
+    zones: [e_market, rest_stop, water_plant]
+    segments: [morning, day]
+    flags_none: [lt_prices_done]
+  cast:
+    seller: { extra: e_water_seller, label: 장터 장사꾼 }
+  setup: "{seller:이/가} 칠판의 숫자를 지우고 새로 쓴다. 지난번보다 다 올랐다. 땔감은 두 배다. 장사꾼이 어깨를 으쓱한다. \"나도 어쩔 수 없어. 겨울이잖아. 길이 막혀서 물건이 안 들어와.\""
+  ai_direction: 겨울과 전쟁이 장터 값을 올린다. 장사꾼은 사실을 말한다. 어느 길이 막혔는지, 어느 무리가 무엇을 사재기하는지 조금 안다. 실제 값은 코드가 정한다 (이 장면은 분위기와 소식이다).
+  choices:
+    - id: why
+      label: 어느 길이 막혔느냐고 묻는다
+      effects:
+        - set_flag: lt_prices_done
+        - overhear: { faction: other, source: rumor }
+    - id: grumble
+      label: 투덜대고 돌아선다
+      effects:
+        - set_flag: lt_prices_done
+
+- id: lt_dog_pack
+  title: 커진 들개 무리
+  tags: [world]
+  fright: 1
+  fright_tags: [dog]
+  when:
+    day_gte: 18
+    zone_owner: [none]
+    segments: [dawn, evening, night]
+    activities_none: [sleep]
+    flags_none: [lt_dog_pack_done]
+  cast:
+    dogs: { extra: road_dog, label: 들개 무리 }
+  setup: "처음 이 도시에 왔을 때는 들개가 서너 마리였다. 지금 무너진 담 위에 선 것만 열이 넘는다. 겨울이 그것들을 굶겼다. {dogs:이/가} 머리를 낮추고 이쪽을 본다. 앞장선 놈이 이빨을 드러낸다."
+  ai_direction: 들개들은 굶주렸지만 겁도 많다. 큰 소리, 불, 단호한 태도에 물러난다. 등을 보이고 달리면 쫓아온다. 싸우면 이길 수는 있어도 물린다.
+  choices:
+    - id: stand
+      label: 몸을 크게 하고 소리치며 버틴다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: lt_dog_pack_done
+        partial:
+          - set_flag: lt_dog_pack_done
+          - body: { track: fear, delta: 1 }
+        miss:
+          - set_flag: lt_dog_pack_done
+          - wound: { steps: 1, cause: 굶주린 들개 무리에게 물렸다 }
+    - id: back
+      label: 눈을 떼지 않고 천천히 물러난다
+      check: sense_danger
+      outcomes:
+        success:
+          - set_flag: lt_dog_pack_done
+        partial:
+          - set_flag: lt_dog_pack_done
+          - delay: 60
+        miss:
+          - set_flag: lt_dog_pack_done
+          - wound: { steps: 1, cause: 물러나다 들개에게 다리를 물렸다 }
+    - id: throw
+      label: 말린 생선을 멀리 던지고 빠진다
+      when: { has_items: [dried_fish] }
+      effects:
+        - set_flag: lt_dog_pack_done
+        - lose_item: { item: dried_fish }
+
+- id: lt_old_letter
+  title: 부치지 못한 편지
+  tags: [world]
+  when:
+    day_gte: 20
+    zone_owner: [none]
+    activities: [search, brief, wait]
+    flags_none: [lt_letter_done]
+  setup: "무너진 우체국 분류함 속에 봉투 한 묶음이 끈에 묶여 있다. 붕괴 직전 날짜 도장이다. 맨 위 봉투에 삐뚤빼뚤한 아이 글씨. '할머니께. 우리 곧 갈게요.'"
+  ai_direction: 붕괴 때 부치지 못한 편지들이다. 읽는다면 평범한 일상 이야기들 (시험, 강아지, 이사, 다음 달 만나자는 약속). 그 약속들은 지켜지지 못했다. 담담하게 쓴다.
+  choices:
+    - id: read
+      label: 한 통을 열어 읽는다
+      effects:
+        - set_flag: lt_letter_done
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "무너진 우체국에서 붕괴 직전에 부치지 못한 편지 묶음을 찾았다. 다음 달에 만나자는 약속들이 적혀 있었다", source: seen }
+    - id: keep
+      label: 편지 사이에 끼워진 사진 한 장을 품에 넣는다
+      effects:
+        - set_flag: lt_letter_done
+        - give_item: { item: faded_photo }
+    - id: leave
+      label: 그대로 둔다
+      effects:
+        - set_flag: lt_letter_done
+
+- id: lt_wall_of_names
+  title: 이름의 벽
+  tags: [world]
+  when:
+    day_gte: 22
+    own_territory: true
+    segments: [evening]
+    flags_none: [lt_names_done]
+  cast:
+    carver: { faction: own, here: true }
+  setup: "{carver:이/가} 담 안쪽 벽에 못으로 이름을 새기고 있다. 벽에는 벌써 이름이 많다. 이 무리에서 죽은 사람들이다. 새기던 손이 멈춘다. \"이번 겨울만 벌써 이만큼이야.\" 아래쪽에 빈자리가 넓다."
+  ai_direction: 무리의 추모 벽이다. 주인공이 아는 이름이 있다면 그 이름을 짚는다 (죽은 동료, 장례를 치른 사람). 없다면 처음 보는 이름들뿐이다. 빈자리를 보며 다들 같은 생각을 한다.
+  choices:
+    - id: carve
+      label: 못을 받아 이름 하나를 같이 새긴다
+      effects:
+        - set_flag: lt_names_done
+        - relation: { who: carver, axis: affection, delta: 1 }
+        - relation: { who: carver, axis: trust, delta: 1 }
+    - id: read
+      label: 이름을 하나씩 읽는다
+      effects:
+        - set_flag: lt_names_done
+        - body: { track: nerves, delta: 1 }
+    - id: walk
+      label: 빈자리를 보다 돌아선다
+      effects:
+        - set_flag: lt_names_done
+
+- id: lt_thaw
+  title: 처마의 물방울
+  tags: [world]
+  when:
+    day_gte: 25
+    segments: [day]
+    weather: [clear]
+    activities_none: [sleep, combat]
+    flags_none: [lt_thaw_done]
+  setup: "처마 끝 고드름에서 물방울이 떨어진다. 똑, 똑. 볕이 조금 길어졌다. 얼었던 웅덩이 가장자리가 녹아 물이 흐른다. 겨울을 넘기고 있다."
+  ai_direction: 아직 춥지만 겨울의 끝이 보인다. 겨울을 넘긴 사람들의 얼굴이 조금 풀린다. 녹는 땅 아래서 겨우내 덮였던 것들이 드러나기 시작한다 (시체, 잃어버린 물건, 감염체의 흔적). 희망과 불안이 같이 온다.
+  choices:
+    - id: sun
+      label: 볕에 얼굴을 내민다
+      effects:
+        - set_flag: lt_thaw_done
+        - body: { track: nerves, delta: -1 }
+        - body: { track: cold, delta: -1 }
+    - id: think
+      label: 녹은 땅에서 드러날 것들을 생각한다
+      effects:
+        - set_flag: lt_thaw_done
+        - belief: { fact: "눈이 녹기 시작했다. 겨우내 덮였던 것들이 드러날 것이다. 감염체도 다시 움직일 것이다", source: seen }
+
+- id: lt_spring_seed
+  title: 봄의 씨앗
+  tags: [world]
+  when:
+    day_gte: 28
+    seasons: [spring]
+    segments: [morning, day]
+    flags_none: [lt_seed_done]
+  setup: "무너진 보도블록 틈에서 초록색이 올라왔다. 이름 모를 풀이다. 겨울 내내 아무것도 없던 땅이다. 그 옆에 누군가 돌멩이로 작은 테두리를 둘러 놓았다."
+  ai_direction: 봄이다. 사람들은 씨앗과 텃밭 이야기를 시작한다. 겨울을 넘긴 것만으로 주인공은 많은 사람보다 강하다. 앞으로 무엇을 할지, 무엇을 심을지 생각하는 장면이다.
+  choices:
+    - id: guard
+      label: 돌멩이 테두리를 하나 더 보탠다
+      effects:
+        - set_flag: lt_seed_done
+        - body: { track: nerves, delta: -1 }
+    - id: forage
+      label: 먹을 수 있는 풀을 찾아본다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: lt_seed_done
+          - give_item: { item: wild_greens, quantity: 2 }
+        partial:
+          - set_flag: lt_seed_done
+          - give_item: { item: wild_greens }
+        miss:
+          - set_flag: lt_seed_done
+
+# ── 무소속으로 오래 버틴 사람 ──
+
+- id: lt_loner_count
+  title: 혼자 센 날들
+  tags: [world]
+  when:
+    day_gte: 10
+    factions: [none]
+    companions_lte: 0
+    segments: [evening, night]
+    activities_none: [combat]
+    flags_none: [lt_loner_count_done]
+  setup: "오늘 하루 아무와도 말하지 않았다. 생각해 보니 어제도 그랬다. 목소리를 내 보려다 낯선 쉰 소리에 놀란다. 혼자 지낸 날을 손가락으로 세다가 그만둔다."
+  ai_direction: 떠돌이의 외로움이다. 혼자인 것은 자유이고 동시에 위험이다 (아무도 등을 봐 주지 않는다). 소리 내 혼잣말을 하든, 노래를 하든, 침묵하든 주인공이 정한다.
+  choices:
+    - id: hum
+      label: 기억나는 노래를 낮게 흥얼거린다
+      effects:
+        - set_flag: lt_loner_count_done
+        - body: { track: nerves, delta: -1 }
+    - id: plan
+      label: 어느 무리에 기대 볼지 따져 본다
+      effects:
+        - set_flag: lt_loner_count_done
+        - belief: { fact: "혼자 버틴 지 열흘이 넘었다. 겨울을 혼자 나기는 어렵다. 어느 무리든 기댈 데를 생각해 볼 때다", source: seen }
+    - id: silence
+      label: 아무 소리도 내지 않는다
+      effects:
+        - set_flag: lt_loner_count_done
+        - body: { track: nerves, delta: 1 }
+
+- id: lt_guest_regular
+  title: 이제 아는 얼굴
+  tags: [world]
+  when:
+    day_gte: 12
+    factions: [none]
+    zone_owner: [other]
+    segments: [morning, day, evening]
+    flags_none: [lt_regular_done]
+  cast:
+    local: { faction: zone_owner, here: true }
+  setup: "담 문을 지나는데 보초가 총을 내리지 않고 고개만 까딱한다. {local:이/가} 멀리서 손을 든다. \"또 왔네. 오늘은 뭐 들고 왔어?\" 처음엔 낯선 떠돌이였는데, 이제 이 땅 사람들이 당신 얼굴을 안다."
+  ai_direction: 오래 오가면 떠돌이도 단골 손님이 된다. 이 땅 사람들은 주인공을 '자주 오는 그 사람'으로 부른다. 무리에 들지 않았어도 조금은 그 안에 있다. 주인공이 이 무리와 어떤 일을 겪었는지 (관계, 행적)에 따라 반가움의 결이 다르다.
+  choices:
+    - id: chat
+      label: 반갑게 인사를 받고 안부를 묻는다
+      effects:
+        - set_flag: lt_regular_done
+        - relation: { who: local, axis: affection, delta: 1 }
+        - overhear: { faction: zone_owner, source: rumor }
+    - id: nod
+      label: 고개만 까딱하고 볼일을 본다
+      effects:
+        - set_flag: lt_regular_done

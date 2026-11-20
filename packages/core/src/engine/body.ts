@@ -1,3 +1,4 @@
+import { idleDays } from "../game/missions.ts";
 import { baseOf } from "./captivity.ts";
 import { itemResource } from "./market.ts";
 import { DEFAULT_VALUE } from "./gear.ts";
@@ -546,7 +547,12 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     // 갇혀 있으면 우리 무리의 배급을 못 받는다 (붙잡은 쪽이 겨우 먹인다, 12-55)
     const captive = !!player()!.captive;
     const own = !captive && hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
-    const level = own ? rationLevel(content, own) : undefined;
+    // 쓸모 (G1): 무리의 문화가 일하지 않는 입을 줄이면, 임무를 끝내지 않은 날이 쌓인 사람의 배급이 한 단계 내려간다
+    const idleRule = own ? content.factions[player()!.factionId!]?.culture?.idle_ration_days : undefined;
+    const idle = !!idleRule && idleDays(state, state.playerId) >= idleRule;
+    const fair = own ? rationLevel(content, own) : undefined;
+    const lower = fair && idle ? war.ration.levels[war.ration.levels.indexOf(fair) + 1] : undefined;
+    const level = lower ?? fair;
     const track = trackOf(content.scenario, body.hunger.track);
     let delta = level?.hunger ?? 1; // 배급을 받지 못하면 배가 고파진다
     if (delta > 0 && level?.hunger_max) {
@@ -559,7 +565,7 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     if (hungerTrait !== 0 && level !== war.ration.levels[0]) delta = Math.max(0, delta + hungerTrait);
     const floor = captive && content.scenario.captivity?.hunger_floor ? track.levels.findIndex((l) => l.id === content.scenario.captivity!.hunger_floor) : -1;
     if (floor >= 0 && delta > 0) delta = Math.max(0, Math.min(delta, floor - levelIndex(ctx, state, state.playerId, track.id)));
-    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : !own ? "하루가 지나 배가 고프다" : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
+    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : !own ? "하루가 지나 배가 고프다" : lower ? `일하지 않아 배급이 줄었다 (${lower.label})` : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
     // 배가 고프면 지닌 먹을 것을 하나 먹는다 (플레이 테스트 11: 날생선을 지니고 자도 아침에 굶었다). 갇혀 있으면 빼앗긴 셈이다
     if (!captive && levelIndex(ctx, ctx.store.getState(), state.playerId, track.id) > 0) {
       const inv = player()!.inventory;

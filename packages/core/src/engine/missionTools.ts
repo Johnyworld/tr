@@ -389,7 +389,11 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const occ = occupationOf(ctx.content, state.characters[state.playerId]);
     const me = state.characters[state.playerId];
     const overrun = !!me?.factionId && !!worstOverrun(ctx.content, state, me.factionId);
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, occ?.missions ?? [], overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank);
+    // 진급하면 같은 무리에서 그 계급으로 시작하는 역할의 일감도 받는다 (플레이 테스트 11, G3: 나루상단 분대장에게 "신병 훈련·총기 손질"만 나왔다)
+    const startRank = ctx.content.roles[state.roleId]?.rank;
+    const rankRole = me && me.rank !== startRank ? Object.values(ctx.content.roles).find((r) => r.faction === me.factionId && r.rank === me.rank) : undefined;
+    const extra = [...(occ?.missions ?? []), ...(rankRole?.missions ?? [])];
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank);
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;

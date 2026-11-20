@@ -19,7 +19,7 @@ import type { Content, StoryletChoice, StoryletContent } from "../content/schema
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
-import { activeMissionOf, atMissionPlace, commanderOf } from "../game/missions.ts";
+import { activeMissionOf, atMissionPlace, commanderOf, idleDays } from "../game/missions.ts";
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
 import { dayOf, MINUTES_PER_DAY, segmentOf, type GameTime } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
@@ -375,6 +375,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (at < 0 || levels[at]!.hidden || at < levels.findIndex((l) => l.id === levelId)) return false;
   }
   if (w.mission_active !== undefined && !!activeMissionOf(state.missions, state.playerId) !== w.mission_active) return false;
+  if (w.idle_days_gte !== undefined && idleDays(state, state.playerId) < w.idle_days_gte) return false;
   if (w.mission) {
     const m = activeMissionOf(state.missions, state.playerId);
     if (!m || !w.mission.includes(m.templateId) || !atMissionPlace(m, state.playerZone, state.zones, state.factions)) return false;
@@ -543,14 +544,17 @@ export function storyletAllowed(state: GameState, content: Content, s: StoryletC
   return !options.urgentOnly && window === "open";
 }
 
+/** 임무를 하는 동안 그 자리에 묶인 이야기는 이만큼 자주 고른다 (플레이 테스트 11, G4: 수용소 경비 4시간에 아무 일도 없었다) */
+export const MISSION_PLACE_STORY_BOOST = 3;
+
 /** 무게로 하나 고른다 */
 /** 시나리오에 묶인 이야기는 도시 공통 이야기(world)보다 이만큼 자주 고른다 (공통 이야기가 늘어도 시나리오 이야기가 묻히지 않게) */
 export const ROLE_STORY_BOOST = 3;
 /** 다짐의 단계 이야기(when.resolve, 다짐이 있을 때만 열린다)도 이만큼 자주 고른다 (12-195: 두 판 모두 열흘 넘게 0단계였다) */
 export const RESOLVE_STORY_BOOST = 3;
 
-export function pickStorylet(candidates: readonly StoryletContent[], rng: Rng): StoryletContent | null {
-  const weightOf = (s: StoryletContent) => s.weight * (s.tags.includes(WORLD_TAG) ? 1 : ROLE_STORY_BOOST) * (s.when.resolve ? RESOLVE_STORY_BOOST : 1);
+export function pickStorylet(candidates: readonly StoryletContent[], rng: Rng, boost: (s: StoryletContent) => number = () => 1): StoryletContent | null {
+  const weightOf = (s: StoryletContent) => s.weight * (s.tags.includes(WORLD_TAG) ? 1 : ROLE_STORY_BOOST) * (s.when.resolve ? RESOLVE_STORY_BOOST : 1) * boost(s);
   const total = candidates.reduce((n, s) => n + weightOf(s), 0);
   if (total <= 0) return null;
   let r = rng() * total;

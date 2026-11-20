@@ -267,3 +267,11 @@ export function commanderOf(
   }
   return id;
 }
+
+/** 임무를 하나도 끝내지 않은 날 수 (G1): 마지막으로 끝낸(완수·일부 완수) 임무를 받은 때, 없으면 이야기를 시작한 때부터 */
+export function idleDays(state: { time: GameTime; runStartedAt: GameTime; missions: Record<string, MissionInstance> }, characterId: string): number {
+  const last = Object.values(state.missions)
+    .filter((m) => m.assigneeId === characterId && (m.status === "completed" || m.status === "partial"))
+    .reduce((t, m) => Math.max(t, m.assignedAt), state.runStartedAt);
+  return Math.floor((state.time - last) / MINUTES_PER_DAY);
+}

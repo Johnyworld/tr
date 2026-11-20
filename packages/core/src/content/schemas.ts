@@ -518,6 +518,10 @@ export function createContentSchemas(s: Scenario) {
         address: z.string().optional(),
         /** 규칙을 어기면 어떻게 되는지 */
         punishment: z.string().optional(),
+        /** 쓸모 (플레이 테스트 11, G1): 이만큼(일) 임무를 하나도 끝내지 않으면 그 사람의 배급이 한 단계 준다 */
+        idle_ration_days: z.number().int().min(1).optional(),
+        /** 점호 (G2): 이 시간대가 시작될 때 잠들어 있으면 작은 불복종 행적이 남는다 */
+        roll_call: z.array(z.enum(TIME_SEGMENTS)).optional(),
       })
       .optional(),
   });
@@ -966,6 +970,8 @@ export function createContentSchemas(s: Scenario) {
         /** 몸 상태 트랙이 이 단계 이상 (트랙 id → 단계 id. 숨은 단계는 보지 않는다) */
         conditions_at_least: z.record(z.string(), z.string()).optional(),
         mission_active: z.boolean().optional(),
+        /** 임무를 하나도 끝내지 않은 날이 이만큼 이상 (G1: 쓸모를 재는 이야기) */
+        idle_days_gte: z.number().int().min(1).optional(),
         /** 수행 중인 임무가 이 템플릿 중 하나이고 그 임무의 장소에 있다 (플레이 테스트 11: 탈영병·부상자를 실제로 마주치는 이야기) */
         mission: z.array(contentIdSchema).min(1).optional(),
         /** 최근 N시간 안에 전황 소식을 들었는지 */

@@ -1,5 +1,5 @@
 import { isInfected } from "../game/kinds.ts";
-import { activeMissionOf } from "../game/missions.ts";
+import { activeMissionOf, atMissionPlace } from "../game/missions.ts";
 import { springEnemyAmbush } from "./ambush.ts";
 import { formSquad, refugeeToSquad } from "./promotion.ts";
 import { soak } from "./climate.ts";
@@ -38,6 +38,7 @@ import {
   choiceAvailable,
   eligibleStorylets,
   fillStorylet,
+  MISSION_PLACE_STORY_BOOST,
   pickCast,
   pickStorylet,
   roadStorylets,
@@ -97,7 +98,11 @@ export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean; 
   // 고정 이야기(한 번뿐인 것)가 열릴 수 있으면 먼저 연다. 반복되는 템플릿에 밀려 묻히지 않게
   const eligible = eligibleStorylets(state, content).filter((s) => storyletAllowed(state, content, s, window, state.time, options));
   const fixed = eligible.filter((s) => !s.repeatable);
-  const storylet = pickStorylet(fixed.length ? fixed : eligible, rng);
+  // 임무 자리에 있으면 그 자리에 묶인 이야기를 더 자주 (G4)
+  const mission = activeMissionOf(state.missions, state.playerId);
+  const atPlace = !!mission && !!state.playerZone && atMissionPlace(mission, state.playerZone, state.zones, state.factions);
+  const boost = (s: StoryletContent) => (atPlace && s.when.zones?.includes(state.playerZone!) ? MISSION_PLACE_STORY_BOOST : 1);
+  const storylet = pickStorylet(fixed.length ? fixed : eligible, rng, boost);
   if (!storylet) return displays;
   displays.push(...fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!));
   displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });

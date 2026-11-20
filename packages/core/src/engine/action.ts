@@ -53,7 +53,7 @@ import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { SQUAD_REPORT_PREFIX } from "./command.ts";
-import { activeMissionOf, atMissionPlace, MISSION_CHECK_TRIES, MISSION_FAIL_MINUTES } from "../game/missions.ts";
+import { activeMissionOf, atMissionPlace, commanderOf as commanderIdOf, MISSION_CHECK_TRIES, MISSION_FAIL_MINUTES } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
@@ -976,6 +976,22 @@ function lastCheckId(ctx: ToolContext): string {
   return checks[checks.length - 1]!.checkId;
 }
 
+/** 점호를 자면서 넘겼는가 (G2, 무리 문화 roll_call). 넘겼으면 상관에게 알려지는 작은 불복종 행적 */
+function missedRollCall(ctx: ToolContext, from: number, to: number) {
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  const segments = me?.factionId ? ctx.content.factions[me.factionId]?.culture?.roll_call : undefined;
+  if (!me || !segments?.length || me.captive || state.zones[state.playerZone ?? ""]?.owner !== me.factionId) return;
+  const missed = segments.filter((seg) => nextSegmentStart(from, seg) <= to);
+  if (!missed.length) return;
+  const commander = commanderIdOf(state, ctx.content);
+  recordDeed(
+    ctx,
+    { summary: `${missed.map((m) => SEGMENT_LABELS[m]).join("·")} 점호에 자느라 나오지 않았다`, tags: ["disobedience"], severity: 1, privacy: "public", noisy: false },
+    commander ? { npcId: commander, source: "report" } : undefined,
+  );
+}
+
 /** 판정 결과에 따른 피해 (원칙 3: 사망은 부상 트랙과 판정 결과로만) */
 function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, cause: string, opponentId: string | null = null, kind: string | null = null) {
   const { store, content } = ctx;
@@ -1136,6 +1152,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     if (activity === "sleep" && to - from >= (content.scenario.body?.fatigue?.min_sleep_hours ?? 0) * 60) extra.push(...exposeToFatigue(ctx, "sleep", from, to));
     // 푹 잔 밤에 상처가 아문다 (플레이 테스트 11, A1)
     if (activity === "sleep") extra.push(...healFromSleep(ctx, from, to));
+    // 점호 (G2): 무리의 점호 시각을 자면서 넘기면 작은 불복종 행적이 남는다 (한 번 잠에 한 번)
+    if (activity === "sleep") missedRollCall(ctx, from, to);
   } else {
     to = from + (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round(rollActivityMinutes(cost, rng) * speed)));
     store.append({

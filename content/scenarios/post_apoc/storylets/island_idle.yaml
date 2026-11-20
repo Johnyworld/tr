@@ -1,0 +1,45 @@
+# 쓸모 재기 (플레이 테스트 11, G1): 여울섬은 일하지 않는 입을 오래 두지 않는다 (factions.yaml 여울섬 culture.idle_ration_days).
+# 사흘 넘게 임무를 하나도 끝내지 않으면 배급이 한 단계 줄고, 심사관이 장부를 들고 찾아온다
+
+- id: y_idle_ledger
+  title: 장부의 빈칸
+  tags: [y_islander]
+  repeatable: true
+  cooldown_days: 4
+  weight: 3
+  when:
+    factions: [faction_y]
+    zones: [yeoul_isle]
+    idle_days_gte: 3
+  cast:
+    examiner: { ids: [y_cheonsu] }
+  setup: "{examiner:이/가} 하얀 장갑 낀 손으로 장부를 펼쳐 든다. 당신 이름 옆 칸이 며칠째 비어 있다. \"그물도, 망루도, 공방도 아니고. 요즘 무엇으로 섬에 보탬이 되고 있나.\""
+  ai_direction: "심사관은 화내지 않는다. 장부에 적을 뿐이다. 섬에서 쓸모가 줄어든 사람은 '내보내는 배'의 명단과 가까워진다는 것을 섬 사람이면 누구나 안다 (명단이 무엇인지는 말하지 않는다). 배급은 이미 한 단계 줄었다 (코드가 했다)."
+  choices:
+    - id: promise_work
+      label: 내일부터 일을 받겠다고 한다
+      effects:
+        - relation: { who: examiner, axis: trust, delta: 1 }
+        - belief: { fact: "심사관이 장부의 빈칸을 짚었다. 일을 받겠다고 약속했다", source: seen }
+    - id: excuse
+      label: 몸이 성하지 않았다고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "심사관은 몸이 성하지 않았다는 말을 장부에 적고 돌아갔다", source: seen }
+        partial:
+          - relation: { who: examiner, axis: trust, delta: -1 }
+          - belief: { fact: "심사관은 고개를 끄덕였지만 장부의 그 줄에 작은 표시를 했다", source: seen }
+        miss:
+          - relation: { who: examiner, axis: trust, delta: -2 }
+          - deed: { summary: 쓸모를 묻는 심사관에게 핑계를 대다 들켰다, tags: [deceit], severity: 1, privacy: semi_private }
+    - id: ask_list
+      label: 장부에 무엇이 적히는지 묻는다
+      check: insight
+      outcomes:
+        success:
+          - belief: { fact: "심사관의 장부에는 사람마다 쓸모가 숫자로 적힌다. 빈칸이 이어진 이름에는 따로 표시가 붙는다", source: seen }
+        partial:
+          - belief: { fact: "심사관은 '섬이 모두를 먹이려면 셈이 필요하다'고만 했다", source: seen }
+        miss:
+          - relation: { who: examiner, axis: trust, delta: -1 }

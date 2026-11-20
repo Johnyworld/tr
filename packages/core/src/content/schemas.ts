@@ -72,7 +72,14 @@ export const itemContentSchema = z.strictObject({
   writing: z.enum(["paper", "tool"]).optional(),
   /** 도구: 지니고 있으면 그 스킬에 보정 (가장 큰 것 하나) */
   /** forage가 있으면 그 먹을 것 구하기(take_action.forage)에만 보정이 붙는다 (낚시 도구가 사냥을 거들지 않게, 플레이 테스트 8) */
-  tool: z.strictObject({ bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)), forage: z.array(contentIdSchema).optional() }).optional(),
+  /** only: 이 거리(check.distance)나 활동일 때만 보정 (플레이 테스트 12: 쌍안경이 총구를 피해 뛰는 판정에도 +1) */
+  tool: z
+    .strictObject({
+      bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)),
+      forage: z.array(contentIdSchema).optional(),
+      only: z.strictObject({ distances: z.array(z.string()).optional(), activities: z.array(z.string()).optional() }).optional(),
+    })
+    .optional(),
   /** 몇 번 닳으면 망가지는지, 망가지면 남는 것 */
   durability: z.number().int().min(1).max(20).optional(),
   breaks_into: contentIdSchema.optional(),
@@ -264,6 +271,8 @@ export function createContentSchemas(s: Scenario) {
     rules: z.array(z.string().min(1)),
     /** 이 인물이 아는 것. 시작 Belief가 된다 */
     knows: z.array(z.string().min(1)).default([]),
+    /** 알지만 지키는 것 (플레이 테스트 12: 밀고자의 이름이 "물으면 말해 줄 수 있다"에 실렸다). 시작 Belief가 되고, 카드에는 따로 "먼저 말하지 않는 것"으로 */
+    keeps: z.array(z.string().min(1)).default([]),
     /** 이 인물이 모르는 것 (세계의 진실). 작성자 메모이며 GM 프롬프트에 절대 넣지 않는다 */
     doesnt_know: z.array(z.string().min(1)).default([]),
     /**

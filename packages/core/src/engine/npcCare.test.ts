@@ -57,7 +57,7 @@ describe("주인공이 남을 치료한다", () => {
     expect(first.ok, first.ok ? "" : first.error).toBe(true);
     expect(w.state().characters.a_jiho!.conditions.harm).toBe("light");
     const again = treat(w, null);
-    expect(!again.ok && again.error).toContain("오늘은 이미");
+    expect(!again.ok && again.error).toContain("오늘 이미 돌봤다");
     const grunt = mk().create("mcp", "role_a_grunt");
     teachSkills(grunt, ["first_aid"]);
     grunt.executeTool("npc_presence", { npc_id: "a_jiho", action: "enter" });

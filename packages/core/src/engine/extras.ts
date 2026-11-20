@@ -28,7 +28,7 @@ const between = (rng: Rng, [lo, hi]: readonly [number, number]) => lo + Math.flo
 export function createExtraCharacter(
   content: Content,
   template: ExtraContent,
-  input: { id: string; label: string; zone: string | null; time: number; usedNames: ReadonlySet<string>; name?: string; age?: number; gender?: string },
+  input: { id: string; label: string; zone: string | null; time: number; usedNames: ReadonlySet<string>; name?: string; age?: number; gender?: string; usedLooks?: ReadonlySet<string> },
   rng: Rng,
 ): Character {
   const s = content.scenario;
@@ -59,7 +59,7 @@ export function createExtraCharacter(
     traits,
     conditions: initialConditions(s),
     inventory,
-    extra: { template: template.id, label: input.label, look: lookFor(template, gender, rng), zone: input.zone, lastSeenAt: input.time },
+    extra: { template: template.id, label: input.label, look: lookFor(template, gender, rng, input.usedLooks), zone: input.zone, lastSeenAt: input.time },
     // 성적 위협은 틀이 정한 확률로 (12-59). 틀에 없으면 굴리지 않는다
     menace: template.menace && rng() < template.menace.chance ? template.menace.kind : null,
     // 출신과 말씨 (12-142): 사람만
@@ -236,8 +236,12 @@ export function describeExtraTemplates(state: GameState, content: Content): stri
 }
 
 /** 성별에 맞는 겉모습 하나 (성별이 적힌 겉모습은 그 성별일 때만) */
-function lookFor(template: ExtraContent, gender: string | null, rng: Rng): string {
-  const fits = template.looks.filter((l) => typeof l === "string" || l.gender === gender);
+/** used: 이미 쓴 겉모습은 피한다 (플레이 테스트 12: 한 가족의 두 어머니가 같은 문장이었다) */
+function lookFor(template: ExtraContent, gender: string | null, rng: Rng, used?: ReadonlySet<string>): string {
+  const text = (l: (typeof template.looks)[number]) => (typeof l === "string" ? l : l.text);
+  const all = template.looks.filter((l) => typeof l === "string" || l.gender === gender);
+  const fresh = all.filter((l) => !used?.has(text(l)));
+  const fits = fresh.length ? fresh : all;
   const l = pick(rng, fits.length ? fits : template.looks);
   return typeof l === "string" ? l : l.text;
 }

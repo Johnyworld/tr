@@ -100,6 +100,7 @@ const assignMission = defineTool({
     const state = ctx.store.getState();
     const player = state.characters[state.playerId];
     if (!player || player.dead) return { ok: false, error: "사망한 캐릭터는 임무를 받을 수 없습니다." };
+    if (player.captive) return { ok: false, error: "갇혀 있어 임무를 받을 수 없다." };
     const commander = commanderOf(state, ctx);
     if (!commander) return { ok: false, error: "임무를 내릴 상관이 없습니다." };
     if (!state.scene.present.includes(commander.id)) {
@@ -440,6 +441,9 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
     const loan = state.loans?.[active.id];
     if (loan) lines.push(`무기고에서 빌린 것 (임무가 끝나면 반납): ${Object.entries(loan).map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")}`);
+  } else if (player.captive) {
+    // 갇혀 있으면 임무를 받을 수 없다 (플레이 테스트 12: 갇힌 상태 화면에 오늘의 임무가 그대로 보였다)
+    lines.push("갇혀 있어 임무를 받을 수 없다");
   } else if (state.offers?.day === dayOf(state.time) && state.offers.templateIds.length > 0) {
     const offers = state.offers.templateIds
       .map((id) => ctx.content.missions[id])

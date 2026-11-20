@@ -795,9 +795,11 @@ export function applyEffect(
     const beliefs = (preset?.beliefs ?? []).map((b) => ({ id: `b_${no++}`, fact: b.fact, source: b.source === "seen" ? ("report" as const) : b.source, accuracy: b.accuracy, learnedAt: state.time }));
     store.append({ type: "player_joined_faction", factionId: faction, rank: role.rank, role, beliefs });
     const commander = role.commander ? state.characters[role.commander]?.name : undefined;
+    // 들어가며 처음 알게 된 이름이면 그렇다고 (플레이 테스트 12: 이름 모르던 분대장이 바로 "상관은 강태호"로 나왔다)
+    const newName = !!role.commander && !knowsName(state, state.playerId, role.commander);
     return {
       line:
-        `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}.` : ""} 이제 이 무리의 배급과 임무를 받는다.` +
+        `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}${newName ? " (이제 이름을 안다)" : ""}.` : ""} 이제 이 무리의 배급과 임무를 받는다.` +
         (player.factionId ? ` 전에 있던 무리(${content.factions[player.factionId]?.name ?? player.factionId})의 사람들은 이제 남이다.` : "") +
         (beliefs.length ? ` 이 무리 사정을 ${beliefs.length}가지 들었다 (상태의 믿음).` : ""),
       display: { type: "promotion", name: player.name, fromLabel: from, toLabel: role.label },

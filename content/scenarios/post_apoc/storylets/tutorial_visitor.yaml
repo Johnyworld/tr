@@ -30,12 +30,12 @@
           - join_faction: { faction: faction_a }
           - relation: { who: guard, axis: trust, delta: 1 }
           - set_flag: tv_accepted
-          - belief: { fact: "청솔형제단이 나를 받아 주었다. 강태호가 몸을 뒤지고 몇 가지를 물은 뒤, 대표의 허락을 받아 왔다", source: seen }
+          - belief: { fact: "청솔형제단이 나를 받아 주었다. {guard:이/가} 몸을 뒤지고 몇 가지를 물은 뒤, 대표의 허락을 받아 왔다", source: seen }
         partial:
           - set_flag: tv_gate_met
           - join_faction: { faction: faction_a }
           - set_flag: tv_accepted
-          - belief: { fact: "청솔형제단이 나를 받아 주었지만, 강태호는 당분간 지켜보겠다고 했다", source: seen }
+          - belief: { fact: "청솔형제단이 나를 받아 주었지만, {guard:은/는} 당분간 지켜보겠다고 했다", source: seen }
         miss:
           - set_flag: tv_gate_met
           - set_flag: tv_gate_refused
@@ -50,7 +50,7 @@
           - join_faction: { faction: faction_a }
           - relation: { who: guard, axis: respect, delta: 1 }
           - set_flag: tv_accepted
-          - belief: { fact: "담 밖에서 2년을 버틴 솜씨를 보여 주자 강태호가 고개를 끄덕였다. 청솔형제단이 나를 받아 주었다", source: seen }
+          - belief: { fact: "담 밖에서 2년을 버틴 솜씨를 보여 주자 {guard:이/가} 고개를 끄덕였다. 청솔형제단이 나를 받아 주었다", source: seen }
         partial:
           - set_flag: tv_gate_met
           - join_faction: { faction: faction_a }

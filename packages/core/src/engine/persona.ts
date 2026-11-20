@@ -233,7 +233,9 @@ export function rollHear(ctx: ToolContext, targetId: string | null): { line: str
   const v = personaOf(ctx.content, me)[rule.axis] ?? 0;
   if (v <= 0 || ctx.rng() >= rule.chance[v - 1]!) return null;
   const mine = new Set((state.beliefs[me.id] ?? []).map((b) => b.fact));
-  const theirs = (state.beliefs[target.id] ?? []).filter((b) => !mine.has(b.fact));
+  // 지키는 것(keeps)은 수다에 흘리지 않는다 (플레이 테스트 12)
+  const kept = new Set(ctx.content.npcs[target.id]?.keeps ?? []);
+  const theirs = (state.beliefs[target.id] ?? []).filter((b) => !mine.has(b.fact) && !kept.has(b.fact));
   if (!theirs.length) return null;
   const fact = theirs[Math.floor(ctx.rng() * theirs.length)]!;
   ctx.store.append({

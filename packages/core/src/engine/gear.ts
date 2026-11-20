@@ -94,7 +94,8 @@ export function rangeProblem(content: Content, c: Character, move: string, dista
 }
 
 /** skillLabel: 보정을 준 무기·도구 이름. penaltyParts: 판정 줄에 보일 불리함의 내역 (방어구 이름, 짐, 거리) */
-export function gearModifiers(content: Content, c: Character, move: string, distance?: string | null, state?: GameState, forageKind: string | null = null): { skill: number; skillLabel: string; penalty: number; penaltyParts: { label: string; value: number }[] } {
+/** tools.item: 이 물건만 보정한다 (치료는 쓰는 물건만, null이면 도구 없이). tools.activity: 지금 하는 활동 (도구의 only) */
+export function gearModifiers(content: Content, c: Character, move: string, distance?: string | null, state?: GameState, forageKind: string | null = null, tools: { item?: string | null; activity?: string | null } = {}): { skill: number; skillLabel: string; penalty: number; penaltyParts: { label: string; value: number }[] } {
   let skill = 0;
   let skillLabel = "장비";
   const weaponId = equippedItem(c, "weapon");
@@ -102,7 +103,10 @@ export function gearModifiers(content: Content, c: Character, move: string, dist
   if (weapon?.moves.includes(move) && weapon.bonus > skill) [skill, skillLabel] = [weapon.bonus, nameOf(content, weaponId!)];
   for (const [id, q] of Object.entries(c.inventory)) {
     const tool = content.items[id]?.tool;
-    const fits = !tool?.forage || (!!forageKind && tool.forage.includes(forageKind));
+    const only = tool?.only;
+    const situated = !only || (!!distance && !!only.distances?.includes(distance)) || (!!tools.activity && !!only.activities?.includes(tools.activity));
+    const chosen = tools.item === undefined || tools.item === id;
+    const fits = (!tool?.forage || (!!forageKind && tool.forage.includes(forageKind))) && situated && chosen;
     const b = q > 0 && fits ? (tool?.bonus[move] ?? 0) : 0;
     if (b > skill) [skill, skillLabel] = [b, nameOf(content, id)];
   }

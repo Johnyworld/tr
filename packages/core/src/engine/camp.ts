@@ -156,11 +156,19 @@ export function describeCamp(content: Content, state: GameState): string | null 
   const watchers = campWatchers(content, state).map((id) => playerCalls(state, content, id));
   const fire = !!state.playerZone && (state.fires[state.playerZone] ?? 0) > state.time;
   const deep = deepSleepReason(content, state);
+  // 남의 거점 안이면 담도 순찰도 있다: 그 무리의 것이다. 우리 땅이면 담은 없어도 우리 순찰이 돈다 (플레이 테스트 12: 적 거점에서 "담과 순찰이 없다", 우리 땅에서 두 말이 한 줄에)
+  const loc = state.playerZone ? content.locations[state.playerZone] : undefined;
+  const head =
+    loc?.kind === "base" && !site.ownLand
+      ? "잠자리: 남의 무리 거점 안이다. 담과 순찰은 그 무리의 것이라 자는 사이 들킬 수 있다. "
+      : site.ownLand
+        ? "잠자리: 여기서 자면 바깥잠이다 (지켜 주는 담은 없지만 우리 땅이라 우리 순찰이 돈다). "
+        : "잠자리: 여기서 자면 야영이다 (지켜 주는 담과 순찰이 없다). ";
   return (
-    `잠자리: 여기서 자면 야영이다 (지켜 주는 담과 순찰이 없다). ` +
+    head +
     (deep ? `${deep} 탓에 지금 자면 깊이 잠든다 (보초가 있어도 다가오는 것을 늦게 안다). ` : "") +
     (watchers.length ? `${josa(watchers.join("·"), "이/가")} 번갈아 보초를 설 수 있다. ` : "혼자 잠들면 아무도 지키지 않는다 (보초를 서려면 activity guard_duty, 그동안 잠은 못 잔다). ") +
     (fire ? "모닥불이 따뜻하지만 불빛과 연기가 멀리서 보인다. " : "") +
-    (site.ownLand ? "우리 땅이라 우리 순찰이 돈다." : "무엇이 다가올지는 시스템이 정한다.")
+    (site.ownLand ? "" : "무엇이 다가올지는 시스템이 정한다.")
   );
 }

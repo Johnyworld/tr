@@ -116,7 +116,10 @@
   choices:
     - id: give_water
       label: 물병을 창살 사이로 건넨다
+      # 물병의 물을 다 마시고 빈 병을 돌려준다 (플레이 테스트 12: 건넸는데 물병이 그대로 남았다)
       effects:
+        - take_item: { item: water_bottle }
+        - give_item: { item: empty_bottle }
         - relation: { who: prisoner, axis: trust, delta: 2 }
         - deed: { summary: 수용소 포로에게 몰래 물을 주었다, tags: [mercy], severity: 1, privacy: semi_private }
     - id: pass

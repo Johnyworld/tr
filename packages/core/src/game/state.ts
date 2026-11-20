@@ -2553,7 +2553,7 @@ export function createWorldEvent(
   // 과거 배경도 자기 자신에 대한 기억으로 (12-84)
   if (player.past) beliefs[player.id]!.push(belief(`붕괴 전에 나는 ${josa(player.past.label, "이었다/였다")}. ${player.past.summary}.`, "seen", "exact"));
   for (const npc of Object.values(content.npcs)) {
-    beliefs[npc.id] = npc.knows.map((fact) => belief(fact, "seen", "exact"));
+    beliefs[npc.id] = [...npc.knows, ...npc.keeps].map((fact) => belief(fact, "seen", "exact"));
   }
 
   return {

@@ -43,7 +43,8 @@
   kind: tool
   weight: 0.6
   value: 7
-  tool: { bonus: { sense_danger: 1 } }
+  # 멀리 살필 때만: 먼 거리이거나 보초·기다림 (플레이 테스트 12: 총구를 피해 뛰는 판정에도 +1)
+  tool: { bonus: { sense_danger: 1 }, only: { distances: [far], activities: [guard_duty, wait] } }
 - id: medkit
   name: 구급상자
   description: 붕대와 소독약이 조금 남은 구급상자. 응급처치에 쓴다 (지니면 응급처치 +1, 성공하거나 대가 있는 성공이면 하나 쓴다).

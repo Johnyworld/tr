@@ -91,7 +91,8 @@ export function describeProgressNotices(notices: readonly ProgressNotice[]): str
   for (const n of notices) {
     if (n.kind === "cleared") {
       lines.push(
-        `(시나리오 클리어: ${n.title} — ${n.goal}. 이번 장면을 이 시나리오의 엔딩으로 연출한다: ${n.ending} ` +
+        // 이야기가 막 열렸으면 선택이 먼저다 (플레이 테스트 12: 재회 이야기의 선택 전에 엔딩을 연출하라고 했다)
+        `(시나리오 클리어: ${n.title} — ${n.goal}. 지금 열린 이야기가 있으면 플레이어의 선택을 먼저 받고, 그 결과까지 서술한 뒤 이 장면을 시나리오의 엔딩으로 연출한다: ${n.ending} ` +
           "엔딩을 다 서술한 뒤 게임 밖의 말로 플레이어에게 묻는다: 여기서 끝낼지(end_session으로 저장하고 닫는다), 이 세계에서 계속 살아갈지. 계속하면 주인공이 죽을 때까지 이어진다)",
       );
     }

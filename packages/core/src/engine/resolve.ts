@@ -56,9 +56,12 @@ function evaluateCheck(content: Content, state: GameState, r: Resolve): boolean 
   const t = r.target ? state.characters[r.target] : undefined;
   if (BROKEN_BY_DEATH.has(kind.check) && t?.dead) return false;
   switch (kind.check) {
-    case "meet":
-      // 살아서 주인공 앞에 나타났다 (같은 장면)
-      return t && !t.dead && state.scene.present.includes(r.target!) ? true : null;
+    case "meet": {
+      // 살아서 주인공 앞에 나타났다 (같은 장면). 찾는 가족이면 가족 누구를 만나도 (플레이 테스트 12: 재회 이야기는 언니를 데려왔는데 다짐 대상은 어머니라 0단계로 남았다)
+      const family = state.family ?? [];
+      const who = r.target && family.includes(r.target) ? family : r.target ? [r.target] : [];
+      return who.some((id) => !state.characters[id]?.dead && state.scene.present.includes(id)) ? true : null;
+    }
     case "gone":
       // 주인공이 알 때만: 유해가 있는 자리에 있거나(눈앞에서 죽었거나 시신을 찾았다), 우리 무리가 가뒀다 (원칙 4)
       if (t?.dead) return state.remains.some((x) => x.of === r.target && x.zone === state.playerZone) ? true : null;

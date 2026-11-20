@@ -144,6 +144,8 @@ function bleedOne(ctx: ToolContext, id: string): ToolDisplayEvent[] {
       return !!x && h !== id && !x.dead && !x.captive && !isCreature(ctx.content, x) && !incapacitatingSymptom(ctx.content.scenario, x) && (activeCompanions(state).includes(h) || (!!c.factionId && x.factionId === c.factionId));
     });
     if (helper) return stopBleeding(ctx, id, `곁에 있던 ${playerCalls(state, ctx.content, helper)}의 지혈`);
+    // 갇힌 주인공은 붙잡은 쪽이 묶어 준다: 노역에 쓰거나 몸값을 받을 포로다 (플레이 테스트 12: 감방에서 세 시간 동안 피를 흘리다 죽었다)
+    if (c.captive) return stopBleeding(ctx, id, "붙잡은 쪽이 상처를 묶었다");
   }
   const every = w.worsen_hours[level.id];
   if (every === undefined) return [];

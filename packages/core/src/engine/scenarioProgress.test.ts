@@ -61,9 +61,12 @@ describe("튜토리얼: 방문자", () => {
     const text = r.ok ? r.text : "";
     expect(w.state().scene.present.some((id) => w.state().family.includes(id))).toBe(true);
     expect(text).toContain("시나리오 클리어: 튜토리얼: 방문자");
-    expect(text).toContain("end_session");
+    // 엔딩은 이야기의 선택을 받은 뒤에 연출한다 (플레이 테스트 12)
+    expect(text).toContain("선택을 먼저 받고");
+    const after = text;
+    expect(after).toContain("end_session");
     // 튜토리얼이 끝나 "담 밖의 사람"도, 버들마을에 처음 들어갔을 때 "문을 지키는 사람"도 열렸다
-    expect(text).toContain("시나리오 「비극의 고리」, 「담 밖의 사람」을 플레이할 수 있습니다");
+    expect(after).toContain("시나리오 「비극의 고리」, 「담 밖의 사람」을 플레이할 수 있습니다");
     expect(w.state().cleared).toEqual(["role_t_visitor"]);
     expect(w.state().unlocked).toEqual(expect.arrayContaining(["role_a_grunt", "role_b_guard", "role_l_wanderer"]));
     expect(w.guide()).toContain("이미 이뤘다");

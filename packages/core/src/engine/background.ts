@@ -104,13 +104,15 @@ export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined):
   const owner = content.locations[family.zone]?.owner ?? null;
   const ids: string[] = [];
   const labels: string[] = [];
+  const usedLooks = new Set<string>();
   for (const m of members) {
     const t = content.extras[memberTemplate(content, m)];
     if (!t) continue;
     const s = store.getState();
     const id = `ex_${s.nextExtraNo}`;
     const label = memberLabel(content, { me: { age: me.age ?? role!.age, gender: me.gender ?? "" } }, m);
-    const character = createExtraCharacter(content, t, { id, label, zone: family.zone, time: s.time, usedNames, name: m.name, age: m.age, gender: m.gender }, rng);
+    const character = createExtraCharacter(content, t, { id, label, zone: family.zone, time: s.time, usedNames, name: m.name, age: m.age, gender: m.gender, usedLooks }, rng);
+    if (character.extra?.look) usedLooks.add(character.extra.look);
     // 그 구역 무리에 받아들여져 산다 (그 무리 사람들이 안다)
     store.append({ type: "extra_spawned", character: owner && content.factions[owner] ? { ...character, factionId: owner } : character });
     if (family.zone !== s.playerZone && store.getState().scene.present.includes(id)) store.append({ type: "npc_left", npcId: id });

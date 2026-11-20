@@ -1,3 +1,4 @@
+import { maskUnknownNames } from "../engine/storyletTools.ts";
 import { buildMapView, renderMapAscii, visitedZones } from "../views/map.ts";
 import { resolveLine } from "../engine/resolve.ts";
 import { promiseLines } from "../engine/promises.ts";
@@ -12,7 +13,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
-import { activeMissionOf, commanderOf, daysServed, MISSION_STATUS_LABELS } from "../game/missions.ts";
+import { activeMissionOf, commanderOf, daysServed, MISSION_CHECK_TRIES, MISSION_STATUS_LABELS } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatAgo, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
 import { conditionPenalty, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
@@ -325,12 +326,22 @@ const mission: CommandDef = {
     const lines = [header("임무")];
     if (active) {
       lines.push(active.title, active.briefing, `기한 ${formatTime(active.deadline)}${active.place ? ` · 장소 ${active.place.label}` : ""}`, "");
-      active.requirements.forEach((r, i) => lines.push(`  - ${describeRequirement(content.scenario, r, active.progress[i] ?? 0)}`));
+      // 빗나간 횟수도 (플레이 테스트 12: ?임무에 빗나감 횟수가 안 나왔다)
+      active.requirements.forEach((r, i) => {
+        const fails = active.fails?.[i] ?? 0;
+        lines.push(`  - ${describeRequirement(content.scenario, r, active.progress[i] ?? 0)}${fails > 0 && (active.progress[i] ?? 0) < 1 ? ` (빗나감 ${fails}/${MISSION_CHECK_TRIES}${fails >= MISSION_CHECK_TRIES ? ", 닫힘" : ""})` : ""}`);
+      });
       const loan = buildPlayerView(state, content).loan;
       if (loan.length) lines.push("", `빌린 장비 (반납): ${loan.join(", ")}`);
     } else {
       lines.push(state.characters[state.playerId]?.factionId && commanderOf(state, content) ? "수행 중인 임무가 없습니다. 상관에게 물어보세요." : "수행 중인 임무가 없습니다. 임무를 내릴 상관이 없습니다.");
+      // 오늘 받을 수 있는 일감 (플레이 테스트 12)
+      const offers = state.offers?.day === dayOf(state.time) && !state.characters[state.playerId]?.captive ? state.offers.templateIds.map((id) => content.missions[id]).filter((m) => !!m) : [];
+      if (offers.length) lines.push("", "오늘 받을 수 있는 임무", ...offers.map((m) => `  ${maskUnknownNames(state, content, m!.title)}`));
     }
+    // 진급까지 남은 것 (플레이 테스트 12: 진급이 막힌 까닭이 보이지 않았다)
+    const missing = buildPlayerView(state, content).service.promotionMissing;
+    if (missing) lines.push("", missing.length ? `진급까지  ${missing.join(" · ")}` : "진급 조건을 채웠다 (상관의 제안을 기다린다)");
     if (ended.length) lines.push("", "최근 임무", ...ended.map((m) => `  ${m.title} — ${MISSION_STATUS_LABELS[m.status]}`));
     // 약속 (12-160)·받아 준 부탁 (12-174)
     const promises = promiseLines(state, content);

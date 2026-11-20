@@ -131,8 +131,9 @@ describe("다음 캐릭터", () => {
     expect(world.isPlayerDead()).toBe(true);
     expect(world.chooseNextCharacter("npc_leader").ok).toBe(true);
     const beliefs = (world.state().beliefs.npc_leader ?? []).map((b) => `${b.source}:${b.fact}`);
-    expect(beliefs).toContain("report:신병이 죽었다고 한다 (총상).");
-    expect(beliefs).toContain("report:두번째가 죽었다고 한다 (총상).");
+    // 바로 앞이 아닌 죽음은 본 사람을 모른다 (플레이 테스트 12: 사인은 본 사람이 있을 때만)
+    expect(beliefs).toContain("report:신병이 돌아오지 않았다. 죽었다고 한다 (어떻게 죽었는지 본 사람이 없다).");
+    expect(beliefs.some((b) => b.startsWith("report:두번째가 "))).toBe(true);
     expect(beliefs).toContain("seen:신병: 총격 속에서 분대장을 감쌌다.");
     expect(new Set(beliefs).size).toBe(beliefs.length);
   });

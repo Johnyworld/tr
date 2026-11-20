@@ -544,7 +544,10 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 임무의 장소가 아니면 임무로 치지 않는다 (플레이 테스트 4: 거점 안에서 초소 보초를 마쳤다)
   {
     const m = forMission ? start.missions[forMission] : undefined;
-    if (m?.place && !input.move_to && !atMissionPlace(m, start.playerZone, start.zones, start.factions)) lines.push(`(여기는 임무의 장소(${m.place.label})가 아니라 이번 행동은 임무로 치지 않는다.)`);
+    // 시간을 쓰기 전에 알린다 (플레이 테스트 12: 탄약 운반 짐을 두 시간 꾸린 뒤에야 "임무로 치지 않는다"가 나왔다)
+    if (m?.place && !input.move_to && !atMissionPlace(m, start.playerZone, start.zones, start.factions)) {
+      return { ok: false, error: `여기는 임무의 장소(${m.place.label})가 아니라 임무로 치지 않는다. 임무 장소로 옮겨 가서 하거나, 임무와 상관없는 일이면 for_mission: false로 한다 (시간은 흐르지 않았다).` };
+    }
   }
   const displays: ToolDisplayEvent[] = [];
   let outcome: CheckOutcome | null = null;
@@ -596,7 +599,10 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       { move: input.check.move, stat: input.check.stat, difficulty: input.ambush ? ambushDifficulty(input.check.difficulty) : input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
       ctx,
       // 응급처치로 피를 멎게 하는 것은 누구나 한다 (배우지 않았으면 미숙 -1, 플레이 테스트 12: 붕대로도 지혈하지 못했다)
-      { target: input.target, forMission, noTools: !!input.train, forage: input.forage, unlearnedAs: input.treatment && input.check.move === scenario.wounds?.staunch_move ? -1 : undefined, dest: escapeAttempt ? null : input.move_to },
+      { target: input.target, forMission, noTools: !!input.train, forage: input.forage, unlearnedAs: input.treatment && input.check.move === scenario.wounds?.staunch_move ? -1 : undefined, dest: escapeAttempt ? null : input.move_to,
+        // 치료 판정은 쓰는 물건의 보정만 (플레이 테스트 12: 붕대를 썼는데 "+1(구급상자)", 물건 없이도 붙었다)
+        ...(input.treatment ? { toolItem: input.treatment.item ?? null } : {}),
+        activity: input.activity?.kind ?? null },
     );
     if (!roll.ok) {
       // 턴은 이미 시작됐으므로 잠깐의 시간만 흐르게 하고 오류를 알린다

@@ -96,8 +96,9 @@ describe("플레이 테스트 4", () => {
     const a = w.executeTool("assign_mission", { template_id: "guard_east_post" });
     expect(a.ok && a.resultText).toContain("장소: 동쪽 초소");
     const guard = () => w.executeTool("take_action", { intent: "보초", check: null, activity: { kind: "guard_duty", until: null }, deed: null, target: null, narration_summary: null, for_mission: true });
+    // 시간을 쓰기 전에 거절한다 (플레이 테스트 12)
     const here = guard();
-    expect(here.ok && here.resultText).toContain("임무로 치지 않는다");
+    expect(!here.ok && here.error).toContain("임무로 치지 않는다");
     const m = () => Object.values(w.state().missions)[0]!;
     expect(m().progress[0]).toBe(0);
     look(w);

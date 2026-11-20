@@ -300,12 +300,23 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
       ]
     : [];
   if (!o.own) return [...zoneLines, ...(content.scenario.seasons ? [`계절: ${seasonLabel(seasonAt(content.scenario, state.time))}`] : [])].join("\n");
+  // 갇혀 있으면 우리 무리의 사정·수군거림·계획을 모른다 (플레이 테스트 12: 적 감옥에서 우리 공세 결과와 사상자 수가 보였다)
+  if (state.characters[state.playerId]?.captive) {
+    return [
+      ...zoneLines,
+      `무리 사정: 갇혀 있어 ${o.own.name}의 요즘 사정은 모른다 (붙잡히기 전에 들은 것과 감옥에서 들리는 말뿐).`,
+      `세력 관계: ${o.others.map((f) => `${f.name} ${f.stance}`).join(", ")}`,
+      ...(content.scenario.seasons ? [`계절: ${seasonLabel(seasonAt(content.scenario, state.time))}`] : []),
+      "전황은 캐릭터가 들은 보고·소문(믿음)으로만 안다. 교전 결과·사상자·점령을 지어내지 않는다.",
+    ].join("\n");
+  }
   return [
     ...zoneLines,
     `무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`,
-    ...(factionTroubles(state, content).length
+    // 우리 땅에 있을 때만 수군거림으로 드러낸다 (플레이 테스트 12: 다른 무리 거점에서도 "우리 땅의 장면이면"이 실렸다)
+    ...(factionTroubles(state, content).length && !!state.playerZone && state.zones[state.playerZone]?.owner === state.characters[state.playerId]?.factionId
       ? [
-          `무리 사람들 사이에 도는 말: ${sentence(factionTroubles(state, content).join(" · "))} 우리 땅의 장면이면 배경의 수군거림, 끼니·당번 자리의 불평이나 다독임으로 한두 마디 드러낸다 (매 턴 같은 말을 되풀이하지 않는다). 인물마다의 태도는 인물 카드의 "무리 형편에 대해". 숫자·사상자를 지어내지 않는다.`,
+          `무리 사람들 사이에 도는 말: ${sentence(factionTroubles(state, content).join(" · "))} 배경의 수군거림, 끼니·당번 자리의 불평이나 다독임으로 한두 마디 드러낸다 (매 턴 같은 말을 되풀이하지 않는다). 인물마다의 태도는 인물 카드의 "무리 형편에 대해". 숫자·사상자를 지어내지 않는다.`,
         ]
       : []),
     `세력 관계: ${o.others.map((f) => `${f.name} ${f.stance}`).join(", ")}`,

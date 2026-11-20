@@ -55,12 +55,18 @@ export function randomMember(
   if (!open.length) return null;
   const rel = pick(rng, open);
   const [lo, hi] = ageRange(rules, rel, group.me)!;
-  const gender = rel.kind === "spouse" ? pick(rng, spouseGenders(content, group.me)) : pick(rng, genderIds(content));
+  // 두 번째 부모는 첫 부모와 다른 성별로 (플레이 테스트 12: 어머니가 둘이었다)
+  const otherParent = rel.kind === "parent" ? group.members.find((m) => rules.relations.find((r) => r.id === m.relation)?.kind === "parent") : undefined;
+  const parentGenders = otherParent ? genderIds(content).filter((g) => g !== otherParent.gender) : [];
+  const gender = rel.kind === "spouse" ? pick(rng, spouseGenders(content, group.me)) : parentGenders.length ? pick(rng, parentGenders) : pick(rng, genderIds(content));
   // 배우자는 주인공 나이 근처, 형제자매도 비슷한 또래로 (범위 안에서)
   const near = rel.kind === "spouse" || rel.kind === "sibling";
   const age = near ? Math.min(hi, Math.max(lo, group.me.age + between(rng, -8, 8))) : between(rng, lo, hi);
   const taken = new Set([...used, ...group.members.map((m) => m.name)]);
-  const name = generateName(rng, content.scenario.names, gender, taken) ?? rel.label;
+  // 한 가족 안에서 이름(성 뺀)이 겹치지 않게 (플레이 테스트 12: 언니 한소영, 어머니 서소영)
+  const given = new Set(group.members.map((m) => m.name.slice(1)));
+  let name = generateName(rng, content.scenario.names, gender, taken) ?? rel.label;
+  for (let i = 0; i < 8 && given.has(name.slice(1)); i++) name = generateName(rng, content.scenario.names, gender, new Set([...taken, name])) ?? name;
   return { relation: rel.id, name, age, gender };
 }
 

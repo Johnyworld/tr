@@ -8,6 +8,10 @@ import { segmentOf } from "../rules/time.ts";
 import { conditionsMet, pacingBlocks, storyletAllowed, storyletGapMinutes } from "../story/storylets.ts";
 import { infestationOf } from "../game/infestation.ts";
 import { personaOf } from "./persona.ts";
+import { makeFamily } from "../game/startGroup.ts";
+import { romanceAllowed } from "./romance.ts";
+import { gearModifiers } from "./gear.ts";
+import { runCommand } from "../commands/commands.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { pickFee } from "./body.ts";
@@ -253,5 +257,75 @@ describe("플레이 테스트 12 뒤 정한 것", () => {
   it("성격을 고르지 않은 주인공의 성격 축은 모두 0이다 (id로 뽑지 않는다)", () => {
     const w = world("role_a_grunt");
     expect(personaOf(content, w.state().characters[w.state().playerId]!)).toEqual({});
+  });
+});
+
+describe("플레이 테스트 12의 확실한 버그 (둘째)", () => {
+  it("알지만 지키는 것(keeps)은 카드에 따로 실리고 '물으면 말해 줄 수 있다'에 없다", () => {
+    const w = world("role_c_raider");
+    w.executeTool("npc_presence", { npc_id: "c_sangok", action: "enter" });
+    const scene = w.sceneForGm();
+    const knowsBlock = scene.split("이 인물이 아는 것 (물으면 말해 줄 수 있다)")[1]?.split("\n\n")[0] ?? "";
+    expect(scene).toContain("알지만 지키는 것");
+    expect(knowsBlock.split("알지만 지키는 것")[0]).not.toContain("밀고자다");
+  });
+
+  it("갇혀 있으면 우리 무리 소식·오늘의 임무가 보이지 않고 임무를 받을 수 없다", () => {
+    const w = world("role_a_grunt");
+    w.ctx().store.append({ type: "player_captured", by: "faction_c", zone: "c_base", held: {} });
+    const scene = w.sceneForGm();
+    expect(scene).not.toContain("무리 사람들 사이에 도는 말");
+    expect(scene).not.toContain("오늘 받을 수 있는 임무");
+    expect(scene).not.toContain("잠입할 수 있는 목표");
+  });
+
+  it("갇힌 주인공의 피는 붙잡은 쪽이 묶어 준다", () => {
+    const w = world("role_a_grunt");
+    w.ctx().store.append({ type: "player_captured", by: "faction_c", zone: "c_base", held: {} });
+    expect(w.runCheat("~set bleeding bleeding").ok).toBe(true);
+    w.executeTool("take_action", act({ activity: { kind: "wait", until: null } }));
+    w.executeTool("take_action", act({ activity: { kind: "wait", until: null } }));
+    expect(w.state().characters[w.state().playerId]!.conditions.bleeding).toBe("none");
+  });
+
+  it("임무 장소 밖에서 for_mission이면 시간을 쓰기 전에 거절한다", () => {
+    const { w } = withMission("role_a_grunt", "front_recon");
+    const before = w.state().time;
+    const r = w.executeTool("take_action", act({ activity: { kind: "guard_duty", until: null }, for_mission: true }));
+    expect(!r.ok && r.error).toContain("임무로 치지 않는다");
+    expect(w.state().time).toBe(before);
+  });
+
+  it("?임무에 진급까지 남은 것이 보인다", () => {
+    const w = world("role_a_grunt");
+    const out = runCommand("?임무", { state: w.state(), content, summaries: [] });
+    expect(out).toContain("진급까지");
+  });
+
+  it("가족끼리는 연애 대상이 아니다", () => {
+    const w = world("role_t_visitor");
+    const kin = w.state().family[0]!;
+    expect(romanceAllowed(w.state(), content, kin, w.state().playerId)).toBe(false);
+  });
+
+  it("가족을 만들 때 두 부모는 다른 성별이고 이름(성 뺀)이 겹치지 않는다", () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const fam = makeFamily(content, { age: 30, gender: "female" }, 3, createSeededRng(seed), "한");
+      const parents = fam.filter((m) => m.relation === "parent");
+      if (parents.length === 2) expect(parents[0]!.gender).not.toBe(parents[1]!.gender);
+      const given = fam.map((m) => m.name.slice(1));
+      expect(new Set(given).size).toBe(given.length);
+    }
+  });
+
+  it("쌍안경은 멀리 살필 때만, 치료 판정은 쓰는 물건만 보정한다", () => {
+    const w = world("role_a_grunt");
+    const me = structuredClone(w.state().characters[w.state().playerId]!);
+    me.inventory = { binoculars: 1, medkit: 1, bandage: 1 };
+    expect(gearModifiers(content, me, "sense_danger", "close").skill).toBe(0);
+    expect(gearModifiers(content, me, "sense_danger", "far").skill).toBe(1);
+    expect(gearModifiers(content, me, "sense_danger", null, undefined, null, { activity: "guard_duty" }).skill).toBe(1);
+    expect(gearModifiers(content, me, "first_aid", null, undefined, null, { item: null }).skill).toBe(0);
+    expect(gearModifiers(content, me, "first_aid", null, undefined, null, { item: "bandage" }).skillLabel).toBe(content.items.bandage!.name);
   });
 });

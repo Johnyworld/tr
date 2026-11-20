@@ -177,12 +177,15 @@ export function itemUseProblem(ctx: ToolContext, item: string, targetId?: string
  * 치료사에게 자기 치료를 받을 수 없는 까닭 (물건 없이, 판정·시간 전에 본다, 플레이 테스트 11). 받을 수 있으면 null.
  * 피가 나는데 치료사가 없으면 맨손 지혈로 넘어가므로 막지 않는다
  */
-export function selfTreatmentProblem(ctx: ToolContext): string | null {
+export function selfTreatmentProblem(ctx: ToolContext, patientId?: string): string | null {
   const recovery = ctx.content.scenario.recovery;
   if (!recovery) return "이 시나리오에는 치료 규칙이 없다.";
   const state = ctx.store.getState();
-  const player = state.characters[state.playerId]!;
-  const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer);
+  // 치료사가 돌보는 사람: 주인공, 또는 장면의 다른 사람 (플레이 테스트 12: 분대원·동행을 치료사에게 보일 수 없었다)
+  const player = state.characters[patientId ?? state.playerId]!;
+  const other = player.id !== state.playerId;
+  const who = other ? `${playerCalls(state, ctx.content, player.id)}의 ` : "";
+  const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer && id !== player.id);
   if (!healer) {
     const w = ctx.content.scenario.wounds;
     if (w && levelIndex(ctx, state, player.id, w.track) > 0) return null;
@@ -191,8 +194,11 @@ export function selfTreatmentProblem(ctx: ToolContext): string | null {
     return `치료해 줄 사람이 장면에 없다 (장면의 치료사만 치료한다).${here.length ? ` 이 구역의 치료사: ${here.map((n) => `${playerCalls(state, ctx.content, n.id)} (${n.id})`).join(", ")} (npc_presence로 들인다).` : " 이 구역에는 치료사가 없다."} 치료 아이템을 쓰거나 치료사를 찾아간다.`;
   }
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
-  if (!needed && !symptomGroupsShown(ctx.content, player).size) return "다친 데가 없어 치료할 것이 없다.";
-  if (needed && state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return "오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다.";
+  if (!needed && !symptomGroupsShown(ctx.content, player).size) return `${who}다친 데가 없어 치료할 것이 없다.`;
+  // 오늘 이미 치료받았어도 새로 난 피는 멎게 한다 (플레이 테스트 12: 하루 한 번 제한이 새 출혈까지 막았다)
+  const bleedTrack = ctx.content.scenario.wounds?.track;
+  const freshBleed = !!bleedTrack && shownIndex(ctx, state, player.id, bleedTrack) > 0;
+  if (needed && !freshBleed && state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return `${other ? `${playerCalls(state, ctx.content, player.id)}은(는) ` : ""}오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다.`;
   if (needed) {
     const planned = planHealerPay(ctx, healer);
     if (!planned.ok) return planned.error;
@@ -275,14 +281,16 @@ export function applyTreatment(
 ): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   // 응급처치 (플레이 테스트 11, A9): 물건으로든 맨손으로든, 자기든 남이든 판정 하나로 정한다. 장면의 치료사에게 받는 치료만 따로
   const me0 = ctx.store.getState();
-  const healerHere = me0.scene.present.some((id) => ctx.content.npcs[id]?.healer);
-  if (item || (targetId && targetId !== me0.playerId) || !healerHere) return firstAidCheck(ctx, item, targetId && targetId !== me0.playerId ? targetId : me0.playerId, check);
+  const patient = targetId && targetId !== me0.playerId ? targetId : me0.playerId;
+  const healerHere = me0.scene.present.some((id) => ctx.content.npcs[id]?.healer && id !== patient);
+  // 치료사가 장면에 있고 판정을 걸지 않았으면 치료사가 돌본다 (남이면 그 사람을). 물건을 쓰거나 판정을 걸면 주인공의 응급처치
+  if (item || !healerHere || (patient !== me0.playerId && check)) return firstAidCheck(ctx, item, patient, check);
   const recovery = ctx.content.scenario.recovery;
   if (!recovery) return { ok: false, error: "이 시나리오에는 치료 규칙이 없다." };
   const state = ctx.store.getState();
-  const player = state.characters[state.playerId]!;
-  const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer);
-  const problem = selfTreatmentProblem(ctx);
+  const player = state.characters[patient]!;
+  const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer && id !== patient);
+  const problem = selfTreatmentProblem(ctx, patient);
   if (problem) return { ok: false, error: problem };
   if (!healer) return { ok: false, error: "치료해 줄 사람이 장면에 없다." };
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
@@ -291,15 +299,18 @@ export function applyTreatment(
   const name = playerCalls(state, ctx.content, healer);
   const paid = payHealer(ctx, healer);
   if (!paid.ok) return paid;
-  const lines = [`${name}에게 치료를 받았다.`, ...paid.lines];
+  const lines = [patient === state.playerId ? `${name}에게 치료를 받았다.` : `${josa(name, "이/가")} ${playerCalls(state, ctx.content, patient)}을(를) 치료했다.`, ...paid.lines];
   const displays: ToolDisplayEvent[] = [];
   // 수술 (12-159): 치명상 이상이면 치료사의 솜씨와 장소로 코드가 굴린다. 수술을 배우지 않은 치료사는 상처는 손대지 못한다 (피·병만 본다)
-  const cutting = needsSurgery(ctx, player.id);
+  // 오늘 이미 치료받았으면 피만 멎게 한다 (수술·상처는 내일)
+  const again = state.recovery.lastHealerDay[player.id] === dayOf(state.time);
+  const cutting = !again && needsSurgery(ctx, player.id);
   const canCut = cutting && canOperate(ctx, healer);
   const surgery = canCut ? surgeonRoll(ctx, healer) : null;
   if (surgery) lines.push(surgery.line);
   if (cutting && !canCut) lines.push(`${josa(name, "은/는")} 수술을 할 줄 몰라 상처는 손대지 못했다. 수술할 줄 아는 사람을 찾아야 한다.`);
   for (const [t, steps] of Object.entries(recovery.healer)) {
+    if (again && t !== ctx.content.scenario.wounds?.track) continue;
     if (cutting && !canCut && t === ctx.content.scenario.harm_track) continue;
     if (surgery && t === ctx.content.scenario.harm_track) {
       const r = operate(ctx, player.id, surgery.outcome, name);
@@ -780,7 +791,11 @@ export function refillWater(ctx: ToolContext): WaterResult {
     ctx.store.append({ type: "item_granted", to: me.id, itemId: full, quantity: n });
     lines.push(`${ctx.content.items[empty]?.name ?? empty} ${n}개를 채웠다.`);
   }
-  if (!lines.length) return { ok: false, error: "채울 빈 그릇이 없고, 목도 마르지 않다." };
+  // 마시기와 함께 오면 앞에서 마신 것과 어긋나지 않게 (플레이 테스트 12: "물 보급" 다음 줄에 "목도 마르지 않다")
+  if (!lines.length) {
+    const fullOne = Object.values(w.rules.refill).find((full) => (me.inventory[full] ?? 0) > 0);
+    return { ok: false, error: fullOne ? `채울 빈 그릇이 없다 (${josa(ctx.content.items[fullOne]?.name ?? fullOne, "은/는")} 이미 차 있다).` : "채울 빈 그릇이 없다." };
+  }
   if (limited && lines.some((l) => l.includes("채웠다"))) lines.push("물이 모자라 보급 담당이 하나만 채워 줬다.");
   return { ok: true, lines, displays };
 }
@@ -976,7 +991,8 @@ export function isFirstAidItem(content: ToolContext["content"], item: string): b
 export function treatmentProblem(ctx: ToolContext, item: string | null, targetId: string | null, checkMove: string | null): string | null {
   const state = ctx.store.getState();
   const self = !targetId || targetId === state.playerId;
-  if (!item && self && state.scene.present.some((id) => ctx.content.npcs[id]?.healer)) return selfTreatmentProblem(ctx);
+  const patient = self ? state.playerId : targetId!;
+  if (!item && (self || !checkMove) && state.scene.present.some((id) => ctx.content.npcs[id]?.healer && id !== patient)) return selfTreatmentProblem(ctx, patient);
   return firstAidProblem(ctx, item, self ? state.playerId : targetId!, checkMove).error;
 }
 
@@ -1004,7 +1020,7 @@ function firstAidProblem(ctx: ToolContext, item: string | null, targetId: string
   if (!bleeding && !canHeal) {
     if (cutting && !canOperate(ctx, me.id) && shownIndex(ctx, state, targetId, harm.id) > 0) return no(`${self ? "이" : `${playerCalls(state, content, targetId)}의`} 상처는 꿰매고 파내야 한다. 수술을 배우지 않아 손댈 수 없다. 수술할 줄 아는 치료사를 찾는다.`);
     if (shownIndex(ctx, state, targetId, harm.id) <= 0) return no(`${self ? "" : `${playerCalls(state, content, targetId)}에게는 `}피도 상처도 없다. 응급처치할 것이 없다.`);
-    if (state.recovery.lastHealerDay[targetId] === dayOf(state.time)) return no("오늘은 이미 상처를 돌봤다. 내일 다시 할 수 있다.");
+    if (state.recovery.lastHealerDay[targetId] === dayOf(state.time)) return no(`${self ? "" : `${playerCalls(state, content, targetId)}의 `}상처는 오늘 이미 돌봤다. 내일 다시 할 수 있다.`);
     return no("피는 멎어 있다. 상처를 돌보려면 구급상자 같은 물건이 있거나 응급처치를 익혀야 한다 (treatment.item). 장면의 치료사에게 받을 수도 있다.");
   }
   const surgery = content.scenario.recovery?.surgery;

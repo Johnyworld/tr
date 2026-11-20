@@ -1,7 +1,7 @@
 import { josa } from "../text.ts";
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
-import { playerCalls } from "../game/acquaintance.ts";
+import { hasMet, playerCalls } from "../game/acquaintance.ts";
 import type { GameState } from "../game/state.ts";
 import type { Difficulty } from "../rules/check.ts";
 import { segmentOf } from "../rules/time.ts";
@@ -46,7 +46,8 @@ function ownerHere(state: GameState): string | null {
 /** 그 구역에 그 무리가 가둔 사람 (우리 무리 사람이 먼저) */
 function captiveHere(state: GameState, zone: string, owner: string): string | null {
   const me = state.characters[state.playerId]!;
-  const list = Object.values(state.characters).filter((c) => !c.dead && c.captive && c.captive.by === owner && c.captive.zone === zone && c.id !== me.id);
+  // 캐릭터가 아는 포로만: 만난 적이 있거나 우리 무리 사람 (플레이 테스트 12: 담 밖에서 "갇힌 사람 풀어 주기"가 바로 떴다)
+  const list = Object.values(state.characters).filter((c) => !c.dead && c.captive && c.captive.by === owner && c.captive.zone === zone && c.id !== me.id && (hasMet(state, me.id, c.id) || (!!me.factionId && c.factionId === me.factionId)));
   list.sort((a, b) => Number(b.factionId === me.factionId) - Number(a.factionId === me.factionId) || a.id.localeCompare(b.id));
   return list[0]?.id ?? null;
 }
@@ -229,7 +230,8 @@ export function describeInfiltration(content: Content, state: GameState): string
   const inf = state.infiltration;
   if (!inf) {
     const owner = ownerHere(state);
-    if (!owner || state.battle) return [];
+    // 갇혀 있으면 잠입할 수 없다 (플레이 테스트 12: 갇힌 상태 화면에 잠입 목표가 떴다)
+    if (!owner || state.battle || state.characters[state.playerId]?.captive) return [];
     const goals = r.goals.filter((g) => !g.release || captiveHere(state, state.playerZone!, owner));
     return [`잠입할 수 있는 목표 (infiltrate start, 플레이어가 몰래 들어가겠다고 할 때만): ${goals.map((g) => `${g.id} ${g.label}`).join(" / ")}`];
   }

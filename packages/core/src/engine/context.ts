@@ -302,7 +302,10 @@ function describeNpcCard(
     .join(", ");
   // 콘텐츠 문장의 이름 중 주인공이 모르는 것은 호칭으로 (원칙 4, 플레이 테스트 11: 카드의 "모준기의 빚", "마경수의 천막")
   const m = (text: string) => maskUnknownNames(state, content, text);
-  const knows = (state.beliefs[npc.id] ?? []).map((b) => `  - ${m(b.fact)}`);
+  // 지키는 것(keeps)은 따로: 물어도 쉽게 말하지 않는다 (플레이 테스트 12)
+  const kept = new Set(npc.keeps);
+  const knows = (state.beliefs[npc.id] ?? []).filter((b) => !kept.has(b.fact)).map((b) => `  - ${m(b.fact)}`);
+  const keeps = (state.beliefs[npc.id] ?? []).filter((b) => kept.has(b.fact)).map((b) => `  - ${m(b.fact)}`);
   const relation = state.relations[npc.id]?.[player.id] ?? NEUTRAL_RELATION;
   const attitude = RELATION_AXES.map(
     (axis) => `${RELATION_AXIS_LABELS[axis]} ${signed(relation[axis])}(${relationLabel(relation[axis])})`,
@@ -349,6 +352,7 @@ function describeNpcCard(
     ...nameNotes(state, player.id, npc.id),
     `행동 규칙:\n${npc.rules.map((r) => `  - ${m(r)}`).join("\n") || "  - 없음"}`,
     `이 인물이 아는 것 (물으면 말해 줄 수 있다):\n${knows.join("\n") || "  - 특별히 없음"}`,
+    ...(keeps.length ? [`이 인물이 알지만 지키는 것 (먼저 말하지 않고, 물어도 둘러댄다. 행동 규칙을 어길 만큼 몰리거나 깊이 믿을 때만 입을 연다. 판정·이야기 없이 털어놓지 않는다):\n${keeps.join("\n")}`] : []),
     ...rumorLines(state, content, npc.id),
     ...(knownDeeds.length > 0
       ? [`이 인물이 아는 당신의 행적 (당신은 이 인물이 안다는 걸 모를 수 있다. 바로 밝히지 말고 태도에 반영):\n${knownDeeds.join("\n")}`]
@@ -494,7 +498,10 @@ export function describeZonePeople(state: GameState, content: Content): string {
   const askLine = askers.length
     ? `부탁할 것이 있는 사람이 이 구역에 있다: ${askers.map((id) => `${playerCalls(state, content, id)} (${id})`).join(", ")}. 장면에 들이면(npc_presence) 그 사람이 부탁을 꺼낸다`
     : "";
-  const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id));
+  // 남의 감옥 안의 낯선 포로는 담 밖에서 보이지 않는다 (플레이 테스트 12: 막 도착했는데 갇힌 사람 목록이 보였다). 같이 갇혔거나 우리 땅이면 보인다
+  const me = state.characters[state.playerId];
+  const seesCells = !!me?.captive || (!!me?.factionId && state.zones[zone]?.owner === me.factionId);
+  const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id) && (seesCells || !state.characters[npc.id]?.captive));
   if (strangers.length === 0) return askLine;
   // 갇힌 사람은 이 구역에 와 있으니 갇혀 있다는 것까지 보인다 (돌아다니지 않는다). 사람이 많으면 몇 명만 (토큰, 12-42):
   // 갇힌 사람·떠도는 사람(오늘만 여기 있다) 먼저, 나머지는 날마다 돌아가며

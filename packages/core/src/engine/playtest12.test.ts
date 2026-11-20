@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { activeMissionOf, atMissionPlace } from "../game/missions.ts";
 import { createSeededRng } from "../rng.ts";
 import { segmentOf } from "../rules/time.ts";
-import { conditionsMet, pacingBlocks, storyletAllowed, storyletGapMinutes } from "../story/storylets.ts";
+import { castCandidates, conditionsMet, itemFlagsMet, pacingBlocks, storyletAllowed, storyletGapMinutes } from "../story/storylets.ts";
 import { infestationOf } from "../game/infestation.ts";
 import { personaOf } from "./persona.ts";
 import { makeFamily } from "../game/startGroup.ts";
@@ -327,5 +327,37 @@ describe("플레이 테스트 12의 확실한 버그 (둘째)", () => {
     expect(gearModifiers(content, me, "sense_danger", null, undefined, null, { activity: "guard_duty" }).skill).toBe(1);
     expect(gearModifiers(content, me, "first_aid", null, undefined, null, { item: null }).skill).toBe(0);
     expect(gearModifiers(content, me, "first_aid", null, undefined, null, { item: "bandage" }).skillLabel).toBe(content.items.bandage!.name);
+  });
+});
+
+describe("플레이 테스트 12: 이야기와 배역 (코드)", () => {
+  it("배역 필터: not_companion은 곁의 동행을, affection_lte는 주인공을 아끼는 사람을 뺀다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const mates = castCandidates(w.state(), content, { faction: "own", enter: false } as never);
+    const buddy = mates[0]!;
+    ctx.store.append({ type: "companion_joined", characterId: buddy, kind: "purpose" });
+    expect(castCandidates(w.state(), content, { faction: "own", enter: false, not_companion: true } as never)).not.toContain(buddy);
+    ctx.store.append({ type: "relation_changed", from: mates[1]!, to: w.state().playerId, delta: { trust: 0, affection: 3, respect: 0 }, reason: "테스트" });
+    expect(castCandidates(w.state(), content, { faction: "own", enter: false, affection_lte: 0 } as never)).not.toContain(mates[1]);
+  });
+
+  it("곁의 동행이 가진 물건으로도 선택지가 열리고, 내주면 그 사람 것에서 나간다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const me = w.state().playerId;
+    const had = w.state().characters[me]!.inventory.dry_ration ?? 0;
+    if (had > 0) ctx.store.append({ type: "item_consumed", holder: me, itemId: "dry_ration", quantity: had });
+    expect(itemFlagsMet(w.state(), { has_items: ["dry_ration"] } as never)).toBe(false);
+    const buddy = castCandidates(w.state(), content, { faction: "own", enter: false } as never)[0]!;
+    ctx.store.append({ type: "companion_joined", characterId: buddy, kind: "purpose" });
+    ctx.store.append({ type: "item_granted", to: buddy, itemId: "dry_ration", quantity: 1 });
+    expect(itemFlagsMet(w.state(), { has_items: ["dry_ration"] } as never)).toBe(true);
+  });
+
+  it("말투 예시가 다른 계급을 부르면 카드에 알린다", () => {
+    const w = world("role_a_grunt");
+    w.executeTool("npc_presence", { npc_id: "a_dongwook", action: "enter" });
+    expect(w.sceneForGm()).toContain("그 자리의 사람에게 하는 말이다");
   });
 });

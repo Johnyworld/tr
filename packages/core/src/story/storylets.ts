@@ -10,7 +10,7 @@ import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import { roleOf } from "../game/state.ts";
 import { attracted, loversOf, romanceCast } from "../engine/romance.ts";
 import { tiesOf } from "../game/ties.ts";
-import { activeCompanions, bondOf, companionKnows } from "../game/companions.ts";
+import { activeCompanions, bondOf, carriedCount, companionKnows } from "../game/companions.ts";
 import { kindOf } from "../game/kinds.ts";
 import { isAwayCompanion } from "../engine/companionTools.ts";
 import { factionPolicy } from "../sim/war.ts";
@@ -48,6 +48,15 @@ function factionFits(state: GameState, role: CastRole, c: Character): boolean {
 }
 
 /** 이 배역에 맞는 살아 있는 NPC들 (id 순) */
+/** 이 사람이 지금 있을 곳 (엑스트라는 머무는 구역, 이름 있는 인물은 일과, 갇힌 사람은 감옥). 플레이 테스트 12: 연애 배역의 here가 이름 있는 인물을 늘 여기 있다고 봤다 */
+function zoneNow(state: GameState, content: Content, id: string): string | null {
+  const c = state.characters[id];
+  if (!c) return null;
+  if (c.captive) return c.captive.zone;
+  if (c.extra) return c.extra.zone;
+  return content.npcs[id] ? (npcZoneAt(content.npcs[id]!, state.time) ?? null) : null;
+}
+
 export function castCandidates(state: GameState, content: Content, role: CastRole, picked: Record<string, string> = {}): string[] {
   const player = state.characters[state.playerId];
   if (!player) return [];
@@ -100,6 +109,9 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.occupations || role.occupations.some((o) => (o === "same" ? player.occupation?.id : o) === c.occupation?.id && !!c.occupation))
     .filter((c) => !role.known || known.has(c.id))
     .filter((c) => role.trust_gte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).trust >= role.trust_gte)
+    .filter((c) => role.trust_lte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).trust <= role.trust_lte)
+    .filter((c) => role.affection_lte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).affection <= role.affection_lte)
+    .filter((c) => !role.not_companion || !state.companions.includes(c.id))
     .filter((c) => !role.adult || isAdult(content, c))
     .filter((c) => !role.blackmailed || (state.blackmails ?? []).some((b) => b.npcId === c.id && b.by === state.playerId && b.grudge))
     .filter((c) => role.distrusted_gte === undefined || standingInFaction(state, content, c.id).distrust >= role.distrusted_gte)
@@ -169,7 +181,7 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       continue;
     }
     if (role.romance) {
-      const options = romanceCast(state, content, role.romance).filter((id) => !used.has(id) && factionFits(state, role, state.characters[id]!) && (!role.condition || bodyMatches(content, state.characters[id]?.conditions[role.condition.track], role.condition)) && (!role.here || state.scene.present.includes(id) || state.companions.includes(id) || (state.characters[id]?.extra?.zone ?? state.playerZone) === state.playerZone));
+      const options = romanceCast(state, content, role.romance).filter((id) => !used.has(id) && factionFits(state, role, state.characters[id]!) && (!role.condition || bodyMatches(content, state.characters[id]?.conditions[role.condition.track], role.condition)) && (!role.here || state.scene.present.includes(id) || state.companions.includes(id) || zoneNow(state, content, id) === state.playerZone));
       if (options.length === 0) {
         if (role.optional) continue;
         return null;
@@ -396,7 +408,7 @@ export function itemFlagsMet(state: GameState, w: ItemFlagConditions): boolean {
   const player = state.characters[state.playerId];
   if (!player) return false;
   const flags = new Set(state.flags[state.playerId] ?? []);
-  const has = (i: string) => (player.inventory[i] ?? 0) > 0;
+  const has = (i: string) => carriedCount(state, i) > 0;
   if (w.flags_all && !w.flags_all.every((f) => flags.has(f))) return false;
   if (w.flags_any && !w.flags_any.some((f) => flags.has(f))) return false;
   if (w.flags_none && w.flags_none.some((f) => flags.has(f))) return false;

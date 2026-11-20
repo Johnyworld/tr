@@ -16,7 +16,8 @@
   values: { discipline: 1, loyalty: 2, mercy: 0, honesty: 0, self_interest: 1 }
   traits: [hot_tempered, cynical, cold_hardy]
   voice:
-    style: 퉁명스러운 반말. 새 분대장에게는 일부러 "분대장님"을 비꼬듯 붙인다
+    # 플레이 테스트 12: 분대장이 아닌 주인공에게도 "새 분대장"을 전제했다
+    style: 퉁명스러운 반말. 3분대를 새로 맡은 분대장에게는 일부러 "분대장님"을 비꼬듯 붙인다 (주인공이 그 분대장일 때만. 아니면 그냥 고참의 퉁명스러움)
     samples:
       - "예, 분대장님. 시키는 대로 하겠습니다. 언제는 안 그랬나."
       - "서 분대장이었으면 이 시간에 안 나갔어."

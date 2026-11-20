@@ -757,6 +757,10 @@ export function createContentSchemas(s: Scenario) {
     /** 플레이어가 아는 인물만 */
     known: z.boolean().default(false),
     /** 이 인물의 플레이어에 대한 신뢰 하한 */
+    /** 플레이 테스트 12: 곁에 함께 다니는 사람은 빼고 ("빈 침상"이 곁의 분대원을 없다고 썼다), 주인공을 덜 믿거나 덜 아끼는 사람만 ("누운 사람의 몫"의 날 선 사람이 다정한 사람으로 뽑혔다) */
+    not_companion: z.boolean().optional(),
+    trust_lte: z.number().int().optional(),
+    affection_lte: z.number().int().optional(),
     trust_gte: z.number().int().optional(),
     /** 어른만 (월드의 성인 나이 이상. 부모·보호자 자리에 아이가 들지 않게) */
     adult: z.boolean().optional(),
@@ -780,6 +784,8 @@ export function createContentSchemas(s: Scenario) {
     enter: z.boolean().default(true),
     /** 이 인물의 몸 상태 (기획서 7.7): track의 단계가 at_least 이상, at_most 이하 (단계 id). 진짜 상태로 본다 (연출은 GM 전용) */
     condition: z.strictObject({ track: contentIdSchema, at_least: contentIdSchema.optional(), at_most: contentIdSchema.optional() }).optional(),
+    /** 발동할 때 이 인물의 몸 상태를 적어도 이 단계로 (트랙 → 단계). 이야기가 "다쳤다·굶었다"라고 하면 진짜 상태도 그렇게 (플레이 테스트 12) */
+    starts: z.record(contentIdSchema, contentIdSchema).optional(),
     /** 어디에 붙잡혀 있든 붙잡힌 사람 (그 자리에 없어도 이름만 부를 때, 12-56). enter는 false로 둔다 */
     captive_anywhere: z.boolean().optional(),
     /** 붙잡혀 있는 인물만 (true) / 붙잡히지 않은 인물만 (기본). 포로를 배역으로 쓸 때 true */

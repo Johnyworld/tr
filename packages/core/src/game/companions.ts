@@ -161,3 +161,16 @@ export function describeCompanions(state: GameState, content: Content): string {
   }
   return lines.join("\n");
 }
+
+/**
+ * 이야기가 내놓게 하는 물건을 함께 낼 수 있는 사람: 주인공, 그리고 곁의 사람 동행 (짐승·끌고 가는 포로는 빼고).
+ * 플레이 테스트 12: 곁의 분대원이 비상식량을 가졌는데 누렁이에게 먹이 주는 선택지가 열리지 않았다
+ */
+export function itemCarriers(state: GameState): string[] {
+  return [state.playerId, ...activeCompanions(state).filter((id) => !["animal", "prisoner"].includes(state.bonds[id]?.kind ?? ""))];
+}
+
+/** 주인공과 곁의 사람 동행이 함께 가진 수 */
+export function carriedCount(state: GameState, item: string): number {
+  return itemCarriers(state).reduce((n, id) => n + (state.characters[id]?.inventory[item] ?? 0), 0);
+}

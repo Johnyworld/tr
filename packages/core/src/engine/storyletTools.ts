@@ -1,3 +1,4 @@
+import { carriedCount, itemCarriers } from "../game/companions.ts";
 import { isInfected } from "../game/kinds.ts";
 import { activeMissionOf, atMissionPlace } from "../game/missions.ts";
 import { springEnemyAmbush } from "./ambush.ts";
@@ -129,6 +130,16 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     store.append({ type: "extra_spawned", character: createExtraCharacter(content, template, { id: extraId, label, zone: now.playerZone, time: now.time, usedNames }, rng) });
     cast[key] = extraId;
   }
+  // 이야기가 말하는 몸 상태를 진짜로 (플레이 테스트 12: "다리가 깔렸다", "굶었다"인데 상태는 멀쩡했다). 이미 더 나쁘면 그대로
+  for (const [key, id] of Object.entries(cast)) {
+    for (const [track, level] of Object.entries(storylet.cast[key]?.starts ?? {})) {
+      const levels = content.scenario.condition_tracks.find((t) => t.id === track)?.levels ?? [];
+      const now = store.getState().characters[id];
+      const want = levels.findIndex((l) => l.id === level);
+      const have = Math.max(0, levels.findIndex((l) => l.id === now?.conditions[track]));
+      if (now && !now.dead && want > have) changeCondition(ctx, id, track, want - have, "cheat", storyTitle(store.getState(), content, storylet));
+    }
+  }
   // 이름표로 기억해 둔다 (다음 이야기에서 recall로 다시 부른다)
   for (const [key, id] of Object.entries(cast)) {
     const keep = storylet.cast[key]?.keep;
@@ -250,7 +261,7 @@ export const resolveStorylet = defineTool({
     const player = state.characters[state.playerId]!;
     // 값으로 내놓는 물건(판정 없는 선택지)만 막는다. 판정 결과로 빼앗기는 것은 가진 만큼만 (B7)
     for (const e of choice.outcomes && outcome !== "success" ? [] : effects) {
-      if ("take_item" in e && (player.inventory[e.take_item.item] ?? 0) < e.take_item.quantity) {
+      if ("take_item" in e && carriedCount(state, e.take_item.item) < e.take_item.quantity) {
         const name = ctx.content.items[e.take_item.item]?.name ?? e.take_item.item;
         return { ok: false, error: `${josa(`${name} ×${e.take_item.quantity}`, "이/가")} 없어 이 선택지를 고를 수 없다. 다른 선택지를 고르거나 그대로 둔다.` };
       }
@@ -687,10 +698,20 @@ export function applyEffect(
   if ("take_item" in effect) {
     const { item } = effect.take_item;
     // 판정 결과로 빼앗기는 것은 가진 만큼만 (B7)
-    const quantity = Math.min(effect.take_item.quantity, state.characters[playerId]?.inventory[item] ?? 0);
+    // 주인공 것부터, 모자라면 곁의 동행 것 (플레이 테스트 12)
+    let left = effect.take_item.quantity;
+    const from: string[] = [];
+    for (const holder of playerId === state.playerId ? itemCarriers(state) : [playerId]) {
+      const q = Math.min(left, state.characters[holder]?.inventory[item] ?? 0);
+      if (q <= 0) continue;
+      store.append({ type: "item_consumed", holder, itemId: item, quantity: q });
+      if (holder !== state.playerId) from.push(playerCalls(state, content, holder));
+      left -= q;
+      if (left <= 0) break;
+    }
+    const quantity = effect.take_item.quantity - left;
     if (quantity <= 0) return {};
-    store.append({ type: "item_consumed", holder: playerId, itemId: item, quantity });
-    return { line: `${josa(`${content.items[item]?.name ?? item} ×${quantity}`, "을/를")} 내주었다.` };
+    return { line: `${josa(`${content.items[item]?.name ?? item} ×${quantity}`, "을/를")} 내주었다${from.length ? ` (${from.join(", ")}의 것)` : ""}.` };
   }
   if ("clock" in effect) {
     if (!state.clocks[effect.clock.id]) return {};

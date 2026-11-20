@@ -39,7 +39,7 @@
     segments: [night, dawn]
     day_gte: 3
   cast:
-    deserter: { ids: [c_seokjin] }
+    deserter: { ids: [c_seokjin], starts: { hunger: hungry } }
   setup: 어둠 속에서 두 손을 든 남자가 비틀거리며 나온다. 왼팔에 붉은 완장. "쏘지 마. 나 혼자야."
   ai_direction: "{deserter:은/는} 붉은연합에서 도망쳤다. 굶었고 겁에 질려 있다. 목숨을 보장받으면 물류창고 이야기를 할 마음이 있다."
   choices:

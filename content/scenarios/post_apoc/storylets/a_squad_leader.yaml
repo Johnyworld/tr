@@ -183,13 +183,12 @@
     zones: [a_base]
     own_territory: true
     segments: [night, dawn]
-    # 플레이 테스트 12: 노병철이 곁의 동행인데 "침상이 비어 있다". 분대원을 데리고 있지 않을 때만 연다
-    companions_lte: 0
     day_gte: 4
     flags_all: [a_sl_letter_seen]
     flags_none: [a_sl_byungchul_settled]
   cast:
-    byungchul: { ids: [a_byungchul], enter: false }
+    # 플레이 테스트 12: 노병철이 곁의 동행인데 "침상이 비어 있다". 곁에 데리고 다니면 열리지 않는다
+    byungchul: { ids: [a_byungchul], enter: false, not_companion: true }
   setup: 점호 전, {byungchul}의 침상이 비어 있다. 무릎에 감던 청테이프 뭉치와 물병도 없다. 정문 보초는 아직 아무것도 모른다.
   ai_direction: 노병철은 붉은연합 거점에 있는 딸을 데리러 혼자 나갔다. 무릎 때문에 아직 멀리 못 갔고, 구시가 쪽 샛길을 탄다. 점호까지 한 시간쯤 남았다. 분대원이 이탈하면 분대장도 책임을 진다.
   choices:
@@ -495,7 +494,7 @@
     mission_active: true
     segments: [day, evening]
   cast:
-    stuck: { companion: { kinds: [squad, buddy] } }
+    stuck: { companion: { kinds: [squad, buddy] }, starts: { harm: light } }
   setup: "{zone}에서 돌아오는 길, 무너진 바닥 틈에 {stuck}의 다리가 끼었다. 콘크리트 덩이가 정강이를 누르고 있다. 해가 기울고, 어딘가에서 유리 깨지는 소리가 난다."
   # 되풀이될 때 차례로 쓰는 다른 상황 문장 (12-139)
   variants:

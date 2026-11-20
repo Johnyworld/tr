@@ -287,6 +287,16 @@ function rumorLines(state: GameState, content: Content, id: string): string[] {
   return [`이 인물이 오가는 말로 아는 다른 무리 형편 (말이 모이는 곳에 있다. 물으면 들은 말로 전한다):\n${heard.map((h) => `  - ${h}`).join("\n")}`];
 }
 
+/**
+ * 말투·예시 대사가 부르는 계급(분대장님 등)이 주인공의 자리와 다르면 알린다 (플레이 테스트 12: 분대장이 아닌 주인공에게 "새 분대장" 말투가 그대로 나왔다)
+ */
+function rankTitleNote(content: Content, npc: NpcContent, player: Character): string[] {
+  const text = [npc.voice.style, ...npc.voice.samples].join(" ");
+  const mine = rankName(content, player.factionId, player.rank);
+  const titled = [...new Set(content.scenario.rank_ladder.map((r) => r.label).filter((l) => l !== mine && text.includes(`${l}님`)))];
+  return titled.length ? [`  (예시 대사의 "${titled.map((t) => `${t}님`).join("·")}"은 그 자리의 사람에게 하는 말이다. 주인공은 ${mine}이라 그렇게 부르지 않는다)`] : [];
+}
+
 /** 장면에 있는 NPC의 연기용 카드. secret, doesnt_know는 절대 넣지 않는다 */
 function describeNpcCard(
   state: GameState,
@@ -342,6 +352,7 @@ function describeNpcCard(
     `상태: ${describeConditions(content.scenario, character)} / 소지품: ${describeInventory(content, character.inventory)}`,
     `화법: 이 인물의 말투 — ${npc.voice.style} (말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer})`,
     `예시 대사: ${npc.voice.samples.map((s) => `"${s}"`).join(" / ")}`,
+    ...rankTitleNote(content, npc, player),
     `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다]`,
     `당신에 대한 태도: ${attitude}`,
     `원하는 것: ${m(npc.want)} / 두려워하는 것: ${m(npc.fear)}`,

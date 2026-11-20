@@ -139,7 +139,8 @@
     harm_at_least: critical
     own_territory: true
   cast:
-    sharp: { faction: own, adult: true }
+    # 플레이 테스트 12: 다정하고 주인공을 아끼는 사람이 날 선 쪽으로 뽑혔다
+    sharp: { faction: own, adult: true, affection_lte: 0 }
     soft: { faction: own, adult: true }
   setup: "벽 너머에서 목소리가 높아진다. {sharp:이/가} 말한다. \"누워만 있는 사람한테 똑같이 퍼 주는 게 말이 돼? 일하는 사람도 모자라.\" {soft:이/가} 받아친다. \"너도 다치면 그 소리 할 거야?\" 당신 이야기다."
   ai_direction: "두 사람은 당신이 깨어 있는 줄 모른다. {sharp:은/는} 미워서가 아니라 배급이 정말 모자라서 하는 말이다. 끼어들면 둘 다 머쓱해한다. 배급 양은 바뀌지 않는다 (코드의 배급 규칙대로)."
@@ -478,7 +479,7 @@
     companions_lte: 0
     has_items_any: [canned_food, dry_ration]
   cast:
-    thief: { extra: drifter_young, label: 배낭을 뒤지는 젊은이, enter: true }
+    thief: { extra: drifter_young, label: 배낭을 뒤지는 젊은이, enter: true, starts: { hunger: hungry } }
   setup: "지퍼 여는 소리에 눈을 뜬다. {thief:이/가} 당신 배낭 앞에 쪼그려 앉아 먹을 것을 꺼내고 있다. 눈이 마주친다. 손은 멈추지 않는다. 당신이 일어나지 못한다는 것을 안다."
   ai_direction: "{thief:은/는} 굶었다. 당신을 해칠 생각은 없다 (해칠 힘도 없어 보인다). 먹을 것만 노린다. 위협하면 망설이고, 말을 걸면 대꾸한다. 쫓아갈 수는 없다 (몸 상태대로). 가져가는 것은 효과대로만."
   choices:

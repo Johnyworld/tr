@@ -349,7 +349,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const long = !!input.move_to || (!!input.activity && ["sleep", "wait", "guard_duty", "travel"].includes(input.activity.kind));
   // 길 위의 일은 도착하기 전의 장면이다: 판정 없이 다른 일을 하면 길에서 두고 온 것으로 친다 (플레이 테스트 11: 붉은연합 순찰조원이 우리 거점 장면에 남아 목격자가 됐다)
   const roadTag = scenario.travel?.tag;
-  const onRoad = !!roadTag && !!start.activeStorylet && !!content.storylets[start.activeStorylet.id]?.tags.includes(roadTag) && !input.check && (!!input.deed || (!!input.activity && input.activity.kind !== "talk"));
+  // 판정을 걸어도 길 위 장면과 상관없는 긴 일(수색·일 등)이면 두고 온 것이다 (플레이 테스트 12: 매복자가 장면에 남은 채 역 안을 두 시간 뒤졌다)
+  const onRoad = !!roadTag && !!start.activeStorylet && !!content.storylets[start.activeStorylet.id]?.tags.includes(roadTag) && ((!input.check && !!input.deed) || (!!input.activity && !["talk", "brief"].includes(input.activity.kind)));
   const leftLines: string[] = [];
   if (start.activeStorylet && (long || onRoad) && !isIncapacitated(ctx.content, player)) {
     const s = content.storylets[start.activeStorylet.id];

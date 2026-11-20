@@ -1,3 +1,4 @@
+import { npcZoneAt } from "../game/whereabouts.ts";
 import { marketValue } from "./market.ts";
 import { RESOLVE_TOOLS } from "./resolve.ts";
 import { EXPLORATION_TOOLS } from "./exploration.ts";
@@ -212,11 +213,16 @@ const npcPresence = defineTool({
       store.append({ type: "npc_left", npcId: character.id });
     }
     const look = npc ? `${npc.look} 말투: ${npc.voice.style}` : extra!.look;
+    // 보통 다른 구역에 있는 사람이면 알린다 (플레이 테스트 13: 거점의 상관이 강변 장면에 들어왔다). 동행·이야기 배역·갇힌 사람은 빼고
+    const s1 = store.getState();
+    const home = npc && input.action === "enter" ? npcZoneAt(npc, s1.time) : undefined;
+    const away = !!home && home !== s1.playerZone && !s1.companions.includes(character.id) && !character.captive && !Object.values(s1.activeStorylet?.cast ?? {}).includes(character.id);
+    const where = away ? ` 이 사람은 보통 지금 ${content.locations[home!]?.name ?? home}에 있다: 여기 와 있는 까닭을 서술하라 (상관이 장면에 들어온 것이 아니라 주인공이 찾아갔다면 그 구역으로 옮겨 가야 한다).` : "";
     return {
       ok: true,
       resultText:
         input.action === "enter"
-          ? `${josa(name, "이/가")} 장면에 들어왔다. 이 인물의 프로필은 다음 턴 상태에 나타난다. 지금은 외모와 말투만 반영해 서술하라: ${look}`
+          ? `${josa(name, "이/가")} 장면에 들어왔다. 이 인물의 프로필은 다음 턴 상태에 나타난다. 지금은 외모와 말투만 반영해 서술하라: ${look}${where}`
           : `${josa(name, "이/가")} 장면을 떠났다.`,
       display: { type: "presence", npcName: name, action: input.action },
     };

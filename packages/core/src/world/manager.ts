@@ -1,3 +1,4 @@
+import { bindOwnLovers } from "../engine/romance.ts";
 import { objectParticle } from "../engine/scenarioProgress.ts";
 import { addStartFamily, applyBackground, applyStartBonds } from "../engine/background.ts";
 import type { HistoryPart } from "../game/background.ts";
@@ -166,6 +167,8 @@ export class WorldManager {
       addStartFamily(world.ctx(), roleOf(world.content, world.state()));
       // 판마다 다른 인물 사이의 관계 (기획서 7.10)
       generateDynamicTies(world.ctx());
+      // 주인공 카드의 연인·배우자는 진짜 연인이다 (플레이 테스트 13)
+      bindOwnLovers(world.ctx());
       // 가진 무기를 손에 든다 (기획서 4.8)
       autoEquip(world.ctx(), world.state().playerId);
       runAfterTimeAdvance(world.ctx());

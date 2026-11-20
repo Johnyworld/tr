@@ -67,7 +67,8 @@ function requirementLabel(s: Scenario, requirement: MissionRequirement): string 
 export function describeMission(s: Scenario, mission: MissionInstance): string {
   const reqs = mission.requirements.map((r, i) => `  - ${describeRequirement(s, r, mission.progress[i] ?? 0, mission.fails?.[i] ?? 0)}`).join("\n");
   const place = mission.place ? `\n  장소: ${mission.place.label}${mission.place.zone ? ` (${mission.place.zone})` : ""} (그 자리에서 한 판정·활동만 임무로 센다)` : "";
-  return `${mission.title} (id: ${mission.id}, 기한 ${formatTime(mission.deadline)})\n  ${mission.briefing}${place}\n${reqs}`;
+  const unseen = mission.unseen ? `\n  - 들키지 않기 (${mission.spotted ? "깨짐: 들켰다. 다른 조건을 채워도 일부 완수까지" : "지키는 중"})` : "";
+  return `${mission.title} (id: ${mission.id}, 기한 ${formatTime(mission.deadline)})\n  ${mission.briefing}${place}\n${reqs}${unseen}`;
 }
 
 /** 임무 템플릿의 where를 이 판의 장소로 (배정할 때 정해 둔다) */
@@ -132,6 +133,7 @@ const assignMission = defineTool({
       place: missionPlace(ctx.content, template.where, player.factionId),
       progress: template.requirements.map(() => 0),
       fails: template.requirements.map(() => 0),
+      ...(template.unseen ? { unseen: true } : {}),
       status: "active",
     };
     ctx.store.append({ type: "mission_assigned", mission });

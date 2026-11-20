@@ -10,7 +10,7 @@ import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
 import { setResolve, stepResolve } from "./resolve.ts";
-import { capturePlayer, releasePlayer } from "./captivity.ts";
+import { capturePlayer, markMissionSpotted, releasePlayer } from "./captivity.ts";
 import { rankName } from "../game/ranks.ts";
 import { exposeToFatigue } from "./fatigue.ts";
 import { barrierRise, baseInfestation, infestationOf } from "../game/infestation.ts";
@@ -1102,7 +1102,10 @@ export function runAlarm(ctx: ToolContext, move: string): ToolDisplayEvent[] {
   // 갇혀 있으면 경보 대신 다시 끌려온다 (플레이 테스트 12: 탈출 실패에 "다시 끌려왔다"와 경보 이야기가 함께 열렸다)
   if (state.characters[state.playerId]?.captive) return [];
   if (!hostileHere(ctx)) return [];
-  return runTagEvent(ctx, rule.tag);
+  const out = runTagEvent(ctx, rule.tag);
+  const spotted = out.length ? markMissionSpotted(ctx) : null;
+  if (spotted) out.push({ type: "belief", fact: "들켰다. 들키지 않아야 하는 임무였다", sourceLabel: BELIEF_SOURCE_LABELS.seen, note: spotted });
+  return out;
 }
 
 /** 지금 구역이 주인공을 적대하는 무리의 땅인가 (무소속은 낯선 사람을 잡아가는 무리·현상금을 건 무리의 땅) */

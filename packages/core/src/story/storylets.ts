@@ -181,7 +181,8 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       continue;
     }
     if (role.romance) {
-      const options = romanceCast(state, content, role.romance).filter((id) => !used.has(id) && factionFits(state, role, state.characters[id]!) && (!role.condition || bodyMatches(content, state.characters[id]?.conditions[role.condition.track], role.condition)) && (!role.here || state.scene.present.includes(id) || state.companions.includes(id) || zoneNow(state, content, id) === state.playerZone));
+      // 연애 배역은 늘 지금 곁에 있을 사람만 (플레이 테스트 13: "눈이 마주친 순간"이 두 구역 떨어진 진료소에 친구를 데려왔다)
+      const options = romanceCast(state, content, role.romance).filter((id) => !used.has(id) && factionFits(state, role, state.characters[id]!) && (!role.condition || bodyMatches(content, state.characters[id]?.conditions[role.condition.track], role.condition)) && (state.scene.present.includes(id) || state.companions.includes(id) || zoneNow(state, content, id) === state.playerZone));
       if (options.length === 0) {
         if (role.optional) continue;
         return null;

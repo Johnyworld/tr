@@ -1,3 +1,4 @@
+import { bindOwnLovers } from "./romance.ts";
 import { resolveChronicle } from "./resolve.ts";
 import { inheritStashes } from "./legacy.ts";
 import { rankName } from "../game/ranks.ts";
@@ -258,6 +259,9 @@ export function switchCharacter(
     // 그 사람이 있던 곳에서 이어 간다
     if (zone && content.locations[zone]) store.append({ type: "zone_moved", from: null, to: zone });
   }
+
+  // 이어받은 사람의 연인·배우자는 진짜 연인이다 (플레이 테스트 13)
+  bindOwnLovers(ctx);
 
   // 이전 캐릭터들의 죽음과 큰 행적은 소문으로 남는다 (기억은 넘어가지 않는다).
   // 바로 앞 캐릭터만이 아니라 최근 하루 안에 죽은 플레이어 캐릭터 모두. 그 사이에 여러 명이 죽었을 수 있다

@@ -59,6 +59,9 @@ export const missionInstanceSchema = z.strictObject({
   metAt: z.number().int().optional(),
   /** 탓할 수 없이 못 마쳤다 (붙잡혀·다쳐서): 공적·불복종·진급 셈에서 뺀다. 보여 줄 말 (플레이 테스트 13) */
   excused: z.string().optional(),
+  /** 들키지 않기가 조건인 일 (템플릿의 unseen 사본)과, 들켰는지 */
+  unseen: z.boolean().optional(),
+  spotted: z.boolean().optional(),
   status: z.enum(MISSION_STATUSES),
 });
 export type MissionInstance = z.infer<typeof missionInstanceSchema>;
@@ -136,7 +139,9 @@ export type MissionEvaluation = { outcome: "success" | "partial" | "failed"; lat
 /** 보고 시점의 결과와 공적 */
 export function evaluateMission(mission: MissionInstance, now: GameTime): MissionEvaluation {
   const met = mission.requirements.filter((r, i) => isRequirementMet(r, mission.progress[i] ?? 0)).length;
-  const outcome = met === mission.requirements.length ? "success" : met > 0 ? "partial" : "failed";
+  const full = met === mission.requirements.length ? "success" : met > 0 ? "partial" : "failed";
+  // 들키지 않기가 조건인 일에서 들켰으면 일부 완수까지 (플레이 테스트 13)
+  const outcome = full === "success" && mission.unseen && mission.spotted ? "partial" : full;
   // 조건을 기한 안에 다 채웠으면 보고가 늦어도 기한 초과가 아니다 (플레이 테스트 13)
   const late = (mission.metAt ?? now) > mission.deadline;
   const timeOnly = mission.requirements.every((r) => "activity" in r);

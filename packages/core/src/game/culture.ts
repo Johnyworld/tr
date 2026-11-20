@@ -1,3 +1,4 @@
+import { SEGMENT_LABELS } from "../rules/time.ts";
 import type { Content } from "../content/schemas.ts";
 import { PROMOTION } from "./missions.ts";
 
@@ -73,6 +74,8 @@ export function describeCultureForGm(content: Content, factionId: string): strin
     ...(c.rules.length ? [`규칙: ${c.rules.join(" / ")}`] : []),
     ...(c.address ? [`호칭: ${c.address}`] : []),
     ...(c.punishment ? [`어기면: ${c.punishment}`] : []),
+    // 점호 (플레이 테스트 13: 언제 세는지 보이지 않았다)
+    ...(c.roll_call?.length ? [`점호: ${c.roll_call.map((x) => SEGMENT_LABELS[x]).join("·")}가 시작될 때. 우리 거점에서 자다가 놓치면 작은 불복종 행적이 남는다 (임무·외출로 거점 밖에 있으면 세지 않는다)`] : []),
     `임무는 이 무리에서 "${d.orderWord}"이다. ${d.countsDisobedience ? `버리거나 기한을 넘기면 불복종으로 기록된다` : "버려도 불복종으로 치지 않는다"}. NPC는 이 문화대로 말하고 반응한다.`,
   ].join("\n");
 }

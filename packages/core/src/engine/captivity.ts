@@ -13,6 +13,7 @@ import { endBattle } from "./battleTools.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { TROUBLE_TOPIC, troublesOf } from "./factionTalk.ts";
+import { activeMissionOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
@@ -43,14 +44,24 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
     else if (state.playerZone) store.append({ type: "companion_parted", characterId: id, zone: state.playerZone, until: null });
   }
   const held = Object.fromEntries(Object.entries(me.inventory).filter(([id, n]) => n > 0 && c.confiscate.includes(content.items[id]?.kind ?? "")));
+  const spotted = markMissionSpotted(ctx);
   store.append({ type: "player_captured", by, zone: where, held });
   const name = content.factions[by]!.name;
   const fact = sentence(`${cause}. ${name}에 붙잡혀 ${content.locations[where]?.name ?? where}에 갇혔다`);
   store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${store.getState().nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time } });
   return (
-    `${fact} 무기와 탄은 빼앗겼다.${left ? " 함께 있던 사람은 따라오지 못했다." : ""} ` +
+    `${fact} 무기와 탄은 빼앗겼다.${left ? " 함께 있던 사람은 따라오지 못했다." : ""} ${spotted ? `${spotted} ` : ""}` +
     `갇힌 동안에는 갇힌 곳의 이야기만 열린다. 빠져나가려면 맞닿은 구역으로 옮겨 가는 행동에 ${c.escape_moves.join("/")} 판정과 무거운 위험(heavy)을 건다.`
   );
+}
+
+/** 들키지 않기가 조건인 임무 중에 들켰다 (경보, 붙잡힘) */
+export function markMissionSpotted(ctx: ToolContext): string | null {
+  const state = ctx.store.getState();
+  const m = activeMissionOf(state.missions, state.playerId);
+  if (!m?.unseen || m.spotted) return null;
+  ctx.store.append({ type: "mission_spotted", missionId: m.id });
+  return `임무 "${m.title}"의 들키지 않기가 깨졌다: 다른 조건을 채워도 일부 완수까지다.`;
 }
 
 /** 주인공이 풀려난다 (빼앗긴 것을 돌려받는지는 어떻게 풀려나는지에 따라) */

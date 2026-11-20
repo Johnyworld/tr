@@ -80,6 +80,7 @@
   title: 강변 길 살피기
   where: riverside
   briefing: 짐마차보다 먼저 강변 길을 걸으며 매복 흔적과 감염체 무리를 살핀다. 들키지 않게 돌아와 길이 깨끗한지 알린다.
+  unseen: true
   giver_rank: squad_leader
   deadline_hours: 10
   requirements:

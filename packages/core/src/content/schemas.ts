@@ -410,6 +410,8 @@ export function createContentSchemas(s: Scenario) {
      * 구역 id, outside(우리 거점 밖 어디든), enemy(적대하는 무리의 땅)
      */
     where: z.union([z.literal("outside"), z.literal("enemy"), contentIdSchema]).optional(),
+    /** 들키지 않기가 조건인 일 (플레이 테스트 13): 임무 중에 경보가 울리거나 붙잡히면 조건을 채웠어도 일부 완수까지 */
+    unseen: z.boolean().optional(),
     /** 무장이 필요한 작전: 받으면 무리의 무기고가 무기·탄약을 빌려주고, 끝나면 반납한다 (기획서 4.8) */
     armed: z.boolean().optional(),
     /** 2인 1조: 받으면 같은 무리 동료 하나가 짝으로 붙고, 임무가 끝나면 돌아간다 (기획서 7.9) */
@@ -810,7 +812,7 @@ export function createContentSchemas(s: Scenario) {
     menace: z.array(z.enum(["harass", "coerce", "assault"])).optional(),
     /** 연애 (12-58): lover 주인공의 연인, suitor 주인공에게 마음이 있는 사람, ex 주인공과 헤어진 사람, jilted 주인공의 연인을 빼앗긴 사람 (12-185) */
     romance: z.enum(["lover", "suitor", "ex", "jilted"]).optional(),
-    /** 지금 주인공이 있는 구역에 있는 사람만 (찾던 사람을 마주치는 장면). 함께 다니는 사람은 늘 여기 있다 */
+    /** 지금 주인공이 있는 구역에 있는 사람만 (찾던 사람을 마주치는 장면). 함께 다니는 사람은 늘 여기 있다. 연애 배역(romance)은 적지 않아도 늘 그렇다 */
     here: z.boolean().default(false),
     /** 앞서 keep으로 기억해 둔 인물. 살아 있고 떠나지 않았고 붙잡히지 않았을 때만 채운다 */
     recall: contentIdSchema.optional(),

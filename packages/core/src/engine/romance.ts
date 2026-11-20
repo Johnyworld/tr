@@ -130,6 +130,36 @@ export function onLoverDeath(ctx: ToolContext, id: string): void {
   if (nerves && r.grief_nerves > 0) changeCondition(ctx, state.playerId, nerves, r.grief_nerves, "grief", `${josa(playerCalls(state, ctx.content, id), "을/를")} 잃었다`);
 }
 
+/** 주인공 카드의 연인·배우자 관계에 맞춘 처음 마음 (플레이 테스트 13) */
+const BOUND_LOVER = { affection: 3, trust: 2 };
+
+/**
+ * 주인공이 된 사람의 연인·배우자 관계 (카드의 ties)를 진짜 연인으로 맞춘다 (플레이 테스트 13, 시작할 때와 이어받을 때):
+ * 이야기 배역은 카드의 연인을 연인으로 부르는데, 연애 단계·관계값·GM 상태는 남남이었다 (계승한 임동욱의 숨은 연인 민서연).
+ * 숨은 관계여도 자기 일이라 주인공은 안다. 남들에게 숨기는 사이인 것은 그대로다
+ */
+export function bindOwnLovers(ctx: ToolContext): void {
+  const { store, content } = ctx;
+  const me = store.getState().playerId;
+  for (const t of tiesOf(store.getState(), content, me)) {
+    if (t.kind !== "lover" && t.kind !== "spouse") continue;
+    const state = store.getState();
+    const other = state.characters[t.other];
+    if (!other || other.dead || state.romances?.[key(me, t.other)]?.stage === "ended") continue;
+    if (state.romances?.[key(me, t.other)]?.stage !== "lovers") store.append({ type: "romance_changed", a: me, b: t.other, stage: "lovers" });
+    if (t.secret && !state.revealedTies.includes(t.key)) store.append({ type: "tie_revealed", key: t.key });
+    for (const [from, to] of [[t.other, me], [me, t.other]] as const) {
+      const rel = store.getState().relations[from]?.[to] ?? NEUTRAL_RELATION;
+      const delta = { trust: Math.max(0, BOUND_LOVER.trust - rel.trust), affection: Math.max(0, BOUND_LOVER.affection - rel.affection), respect: 0 };
+      if (delta.trust || delta.affection) store.append({ type: "relation_changed", from, to, delta, reason: t.kind === "spouse" ? "배우자" : "연인" });
+    }
+    const name = playerCalls(store.getState(), content, t.other);
+    const fact = sentence(t.kind === "spouse" ? `${josa(name, "은/는")} 내 배우자다` : `${josa(name, "과/와")} 나는 연인이다${t.secret ? ". 남들에게는 숨기는 사이다" : ""}`);
+    const s = store.getState();
+    if (!(s.beliefs[me] ?? []).some((b) => b.fact === fact)) store.append({ type: "belief_added", characterId: me, belief: { id: `b_${s.nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: s.time } });
+  }
+}
+
 /** GM 상태: 연인, 그리고 장면에서 보이는 낌새 (속마음 대신 겉으로 보이는 것) */
 export function describeRomanceForGm(state: GameState, content: Content): string {
   if (!rules(content)) return "";

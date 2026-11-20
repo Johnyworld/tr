@@ -1083,7 +1083,7 @@ export function treatmentProblem(ctx: ToolContext, item: string | null, targetId
   return firstAidProblem(ctx, item, self ? state.playerId : targetId!, checkMove).error;
 }
 
-function firstAidProblem(ctx: ToolContext, item: string | null, targetId: string, checkMove: string | null): { error: string | null; bleeding: boolean; canHeal: boolean } {
+function firstAidProblem(ctx: ToolContext, item: string | null, targetId: string, checkMove: string | null): { error: string | null; bleeding: boolean; canHeal: boolean; nursing?: boolean } {
   const { store, content } = ctx;
   const w = content.scenario.wounds;
   const rule = content.scenario.recovery?.first_aid;
@@ -1104,6 +1104,13 @@ function firstAidProblem(ctx: ToolContext, item: string | null, targetId: string
   // 치명상 이상은 수술이다: 수술을 배운 사람만 손댄다 (못 하면 피만 멎게 한다)
   const cutting = needsSurgery(ctx, targetId);
   const canHeal = (!!item || skilled) && (!cutting || canOperate(ctx, me.id)) && shownIndex(ctx, state, targetId, harm.id) > 0 && state.recovery.lastHealerDay[targetId] !== dayOf(state.time);
+  // 간호 (플레이 테스트 13): 상처도 피도 없이 앓는 사람은 응급처치 판정으로 돌본다. 하루 한 번
+  const disease = content.scenario.body?.disease?.track;
+  if (!bleeding && shownIndex(ctx, state, targetId, harm.id) <= 0 && disease && shownIndex(ctx, state, targetId, disease) > 0) {
+    if (state.recovery.lastHealerDay[targetId] === dayOf(state.time)) return no(`${self ? "" : `${josa(playerCalls(state, content, targetId), "은/는")} `}오늘 이미 돌봤다. 내일 다시 할 수 있다.`);
+    if (checkMove !== w.staunch_move) return no(`앓는 사람은 간호로 돌본다: check(move: ${w.staunch_move})를 함께 선언한다. 성공하면 병이 한 단계 가라앉고(하루 한 번), 대가 있는 성공·실패면 시간만 간다.`);
+    return { error: null, bleeding: false, canHeal: false, nursing: true };
+  }
   if (!bleeding && !canHeal) {
     if (cutting && !canOperate(ctx, me.id) && shownIndex(ctx, state, targetId, harm.id) > 0) return no(`${self ? "이" : `${playerCalls(state, content, targetId)}의`} 상처는 꿰매고 파내야 한다. 수술을 배우지 않아 손댈 수 없다. 수술할 줄 아는 치료사를 찾는다.`);
     if (shownIndex(ctx, state, targetId, harm.id) <= 0) return no(`${self ? "" : `${playerCalls(state, content, targetId)}에게는 `}피도 상처도 없다. 응급처치할 것이 없다.`);
@@ -1123,6 +1130,18 @@ function firstAidProblem(ctx: ToolContext, item: string | null, targetId: string
   return { error: null, bleeding, canHeal };
 }
 
+/** 간호: 앓는 사람을 돌본다 (플레이 테스트 13). 성공이면 병이 한 단계 가라앉는다 (치료사보다 약하게 하루 한 번) */
+function nurse(ctx: ToolContext, targetId: string, outcome: CheckOutcome): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const track = content.scenario.body!.disease!.track;
+  const who = targetId === state.playerId ? "" : `${playerCalls(state, content, targetId)}의 `;
+  if (outcome === "miss") return { ok: true, lines: [`${who}열을 내리려 애썼지만 잘 되지 않았다. 시간만 갔다 (다시 할 수 있다).`], displays: [] };
+  if (outcome === "partial") return { ok: true, lines: [`${who}곁을 지키며 물을 먹이고 이마를 식혔다. 잠깐 편해 보였지만 병은 그대로다 (대가 있는 성공: 시간이 더 들었다. 다시 할 수 있다).`], displays: [] };
+  const c = changeCondition(ctx, targetId, track, -1, "healer", targetId === state.playerId ? "간호" : `${state.characters[state.playerId]!.name}의 간호`);
+  return { ok: true, lines: [`${who}곁을 지키며 열을 내렸다.`, ...(c?.line ? [c.line] : [])], displays: c?.display ? [c.display] : [] };
+}
+
 function firstAidCheck(
   ctx: ToolContext,
   item: string | null,
@@ -1133,6 +1152,7 @@ function firstAidCheck(
   const p = firstAidProblem(ctx, item, targetId, check?.move ?? null);
   if (p.error || !check) return { ok: false, error: p.error ?? "판정이 없다." };
   const { bleeding, canHeal } = p;
+  if (p.nursing) return nurse(ctx, targetId, check.outcome);
   const state = store.getState();
   const me = state.characters[state.playerId]!;
   const self = targetId === me.id;

@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { activeMissionOf } from "../game/missions.ts";
+import { activeMissionOf, evaluateMission } from "../game/missions.ts";
 import { stanceOf } from "../game/fame.ts";
 import { createSeededRng } from "../rng.ts";
 import { storyletAllowed } from "../story/storylets.ts";
@@ -226,5 +226,49 @@ describe("플레이 테스트 13의 남은 버그", () => {
   it("세계가 시작되기 전의 기억(지난 삶)은 '어제'가 아니라 '오래전부터'다", () => {
     expect(formatAgo(START_TIME + 2 * 1440, START_TIME - 1)).toBe("오래전부터");
     expect(formatAgo(START_TIME + 1440, START_TIME)).toBe("어제");
+  });
+});
+
+describe("플레이 테스트 13 뒤 정한 것 (둘째)", () => {
+  it("앓는 사람은 응급처치 판정으로 간호한다: 성공하면 병이 한 단계 가라앉는다", () => {
+    const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-pt13-")), content, rngFactory: () => () => 0.99 });
+    const w = m.create("mcp", "role_d_medic", choice);
+    const ctx = w.ctx();
+    const me = w.state().playerId;
+    const disease = content.scenario.body!.disease!.track;
+    const levels = content.scenario.condition_tracks.find((t) => t.id === disease)!.levels;
+    const shown = levels.findIndex((l) => !l.hidden && levels.indexOf(l) > 0);
+    ctx.store.append({ type: "condition_changed", targetId: me, track: disease, from: levels[0]!.id, to: levels[Math.max(1, shown)]!.id, fatal: false, by: "daily", cause: "테스트", day: 1, harmTrack: false });
+    const move = content.scenario.wounds!.staunch_move;
+    const stat = content.scenario.moves.find((m) => m.id === move)!.stats[0]!;
+    const before = w.state().characters[me]!.conditions[disease];
+    const r = w.executeTool("take_action", act({ treatment: { item: null, target: null }, check: { move, stat, difficulty: "easy", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" } }));
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(r.ok && r.resultText).toContain("열을 내렸다");
+    expect(w.state().characters[me]!.conditions[disease]).not.toBe(before);
+  });
+
+  it("들키지 않기가 조건인 임무는 들키면 조건을 다 채워도 일부 완수다", () => {
+    const m = { requirements: [{ check: "stealth", min: "partial" }], progress: [1], deadline: 100, unseen: true, spotted: true } as never;
+    expect(evaluateMission(m, 50).outcome).toBe("partial");
+    const ok = { requirements: [{ check: "stealth", min: "partial" }], progress: [1], deadline: 100, unseen: true } as never;
+    expect(evaluateMission(ok, 50).outcome).toBe("success");
+  });
+});
+
+describe("연인 관계 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("카드에 숨은 연인이 있는 사람을 이어받으면 진짜 연인이 되고, 주인공이 그것을 안다", () => {
+    const w = world("role_a_squad_leader");
+    const ctx = w.ctx();
+    const lover = content.npcs.a_seoyeon!.ties!.find((t) => t.kind === "lover")!.to;
+    // 주인공이 그 사람으로 바뀐 셈 (계승)
+    ctx.store.append({ type: "condition_changed", targetId: w.state().playerId, track: content.scenario.harm_track, from: w.state().characters[w.state().playerId]!.conditions[content.scenario.harm_track]!, to: content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)!.levels.at(-1)!.id, fatal: true, by: "enemy", cause: "테스트", day: 1, harmTrack: true });
+    const r = w.chooseNextCharacter(lover, null);
+    expect(r.ok, r.ok ? "" : (r as { error: string }).error).toBe(true);
+    const s = w.state();
+    expect(s.playerId).toBe(lover);
+    expect(s.romances[[lover, "a_seoyeon"].sort().join("|")]?.stage).toBe("lovers");
+    expect(s.relations.a_seoyeon?.[lover]?.affection).toBeGreaterThanOrEqual(3);
+    expect((s.beliefs[lover] ?? []).some((b) => b.fact.includes("연인"))).toBe(true);
   });
 });

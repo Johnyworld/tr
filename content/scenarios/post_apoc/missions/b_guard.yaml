@@ -70,6 +70,7 @@
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   briefing: 북쪽 쪽문 밖 진흙에 낯선 발자국이 찍혔다. 어디서 왔는지 따라가 보고, 들키지 않게 돌아온다.
+  unseen: true
   giver_rank: squad_leader
   deadline_hours: 12
   requirements:

@@ -742,6 +742,8 @@ export function createGameSchemas(s: Scenario) {
     /** 갇힌 주인공의 탈출이 실패해 감시가 심해졌다 */
     z.strictObject({ type: z.literal("captive_watch_raised") }),
     /** 그날 배급을 못 받았다 (day) / 늦게 받았다 (null) */
+    /** 들키지 않기가 조건인 임무 중에 들켰다 */
+    z.strictObject({ type: z.literal("mission_spotted"), missionId: z.string() }),
     z.strictObject({ type: z.literal("ration_missed"), day: z.number().int().nullable() }),
     /** 판정의 대가를 다치는 대신 다른 것(시간)으로 치렀다: 그 판정을 이어받는 이야기는 "다친다"를 겹쳐 붙이지 않는다 (플레이 테스트 12) */
     z.strictObject({ type: z.literal("check_cost_paid"), checkId: z.string() }),
@@ -1382,6 +1384,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "check_cost_paid":
       mustGet(next.checks, event.checkId, "판정").harmApplied = true;
       return next;
+    case "mission_spotted": {
+      const m = next.missions[event.missionId];
+      if (m) m.spotted = true;
+      return next;
+    }
     case "ration_missed":
       next.missedRationDay = event.day;
       return next;

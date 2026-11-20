@@ -388,6 +388,8 @@ function checkReferences(content: Content): string[] {
       }
       if ("body" in e) {
         if (e.body.track === content.scenario.harm_track) problems.push(`storylets.${st.id}: body로 부상 트랙을 바꿀 수 없다 (원칙 3)`);
+        // 마음이 흔들리는 일은 주인공이 마음 다잡기를 굴린다 (12-220): 숨은 확률을 적지 않는다
+        if (e.body.track === content.scenario.body?.nerves?.track && e.body.delta > 0 && e.body.chance < 1) problems.push(`storylets.${st.id}: 마음이 오르는 body에는 chance를 적지 않는다 (마음 다잡기 판정이 정한다)`);
         else if (!content.scenario.condition_tracks.some((t) => t.id === e.body.track)) problems.push(`storylets.${st.id}: 알 수 없는 상태 트랙 ${e.body.track}`);
       }
       if ("send_to" in e && !content.locations[e.send_to]) problems.push(`storylets.${st.id}: 알 수 없는 구역 ${e.send_to}`);

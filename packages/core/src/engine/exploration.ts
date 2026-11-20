@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
-import type { Difficulty } from "../rules/check.ts";
+import type { CheckOutcome, Difficulty } from "../rules/check.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { josa } from "../text.ts";
 import { advanceTime } from "./action.ts";
@@ -14,7 +14,7 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome }
 
 /**
  * 탐험할 곳 (기획서 4.7.1, 12-162). 잠입 장면(9.5.1)과 같은 틀: 상태와 판정은 코드, 연출은 GM.
- * - 구역마다 숨은 곳(exploration.ruins)이 있다. 그 구역을 뒤지다(수색 성공) find_chance로 찾는다. 찾은 것은 그 캐릭터만 안다 (원칙 4)
+ * - 구역마다 숨은 곳(exploration.ruins)이 있다. 그 구역을 뒤지다 수색이 성공하면 찾는다 (대가 있는 성공은 낌새만, 12-220). 찾은 것은 그 캐릭터만 안다 (원칙 4)
  * - 깊이 칸을 판정(move)으로 한 칸씩 내려가고, 칸마다 한 번 뒤진다(search_move). 깊을수록 좋은 것이 나온다 (칸마다 찾을 거리 표)
  * - 소음(0~3)은 세계의 진짜 상태다. 숫자는 GM도 모르고 낌새로만 안다. 3에 닿으면 깊이만큼 감염체가 깨어나 장면에 들어온다
  * - 실패하면 무너진 바닥·녹슨 철근에 다친다 (판정의 대가)
@@ -35,15 +35,16 @@ export function knownRuinsHere(content: Content, state: GameState): Ruin[] {
   return (rules(content)?.ruins ?? []).filter((r) => r.zone === state.playerZone && known.has(r.id));
 }
 
-/** 수색에 성공하면: 이 구역에 아직 모르는 숨은 곳이 있으면 find_chance로 찾는다. 찾으면 알릴 줄 */
-export function findRuin(ctx: ToolContext): string | null {
+/** 수색 판정 뒤 (12-220): 이 구역에 아직 모르는 숨은 곳이 있으면 성공이면 찾고, 대가 있는 성공이면 낌새만 준다. 알릴 줄 */
+export function findRuin(ctx: ToolContext, outcome: CheckOutcome | null): string | null {
   const r = rules(ctx.content);
   const state = ctx.store.getState();
   if (!r || !state.playerZone) return null;
   const known = new Set(state.ruinsFound?.[state.playerId] ?? []);
   const hidden = r.ruins.filter((x) => x.zone === state.playerZone && !known.has(x.id));
-  if (!hidden.length || ctx.rng() >= r.find_chance) return null;
-  const ruin = hidden[0]!;
+  const ruin = hidden[0];
+  if (!ruin || (outcome !== "success" && outcome !== "partial")) return null;
+  if (outcome === "partial") return "이 근처에 아직 찾지 못한 곳이 있는 것 같다. 제대로 뒤지면(수색 성공) 찾을 수 있다. 낌새만 서술한다.";
   ctx.store.append({ type: "ruin_found", characterId: state.playerId, ruin: ruin.id });
   ctx.store.append({
     type: "belief_added",

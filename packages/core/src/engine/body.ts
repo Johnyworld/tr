@@ -18,7 +18,7 @@ import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
 import { bodyTraits, canUseSkill, effectiveSkill, habitsOf, traitIdsOf } from "./traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
-import { harmTrack, shownLevel, trackOf, visibleSymptoms } from "../scenario/scenario.ts";
+import { harmTrack, incapacitatingSymptom, shownLevel, trackOf, visibleSymptoms } from "../scenario/scenario.ts";
 import { daysOfStock, rationLevel } from "../sim/war.ts";
 import { seasonAt } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
@@ -27,6 +27,7 @@ import { recordDeath } from "./succession.ts";
 import { bleedingBlocksRecovery, staunch, stopBleeding } from "./bleeding.ts";
 import { CHECK_OUTCOME_LABELS, roll2d6, type CheckOutcome } from "../rules/check.ts";
 import { scarFromHarm } from "./scars.ts";
+import { rollPlayerCheck } from "./checks.ts";
 import { DEATH_GUIDE, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
 /**
@@ -917,18 +918,47 @@ export function dailyCold(ctx: ToolContext, state: GameState): { steps: number; 
   return { steps, cause: [season && cold.season[season.id] ? season.label : null, weather && cold.weather[weather.id] ? weather.label : null].filter(Boolean).join(", ") + "의 추위" };
 }
 
+export type Steady = { steps: number; outcome: CheckOutcome | null; displays: ToolDisplayEvent[] };
+
 /**
- * 마음이 흔들린다 (12-48): 크게 다쳤거나 곁의 사람이 죽는 것을 봤을 때. 냉정이 높으면 확률로 버틴다.
- * 바뀐 한 줄을 돌려준다 (GM이 서술에 반영한다)
+ * 마음 다잡기 (12-220): 마음·공포가 steps단계 오를 때 주인공이 굴린다 (body.steady).
+ * 성공이면 0, 대가 있는 성공이면 한 단계 덜 (적어도 한 단계), 실패면 그대로. 판정 줄(🎲)은 displays로 돌려준다
  */
-export function shakeNerves(ctx: ToolContext, steps: number, cause: string): Change | null {
+export function steadyRoll(ctx: ToolContext, steps: number, cause: string): Steady {
+  const rule = ctx.content.scenario.body?.steady;
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  // 정신을 잃었으면 다잡을 수 없다 (굴리지 않는다)
+  if (!rule || !me || me.dead || steps <= 0 || incapacitatingSymptom(ctx.content.scenario, me)) return { steps, outcome: null, displays: [] };
+  const roll = rollPlayerCheck({ move: rule.move, stat: rule.stat, difficulty: "normal", intent: `마음을 다잡는다 (${cause})` }, ctx, { reaction: true, unlearnedAs: 0 });
+  if (!roll.ok) return { steps, outcome: null, displays: [] };
+  const left = roll.outcome === "success" ? 0 : roll.outcome === "partial" ? Math.max(1, steps - 1) : steps;
+  return { steps: left, outcome: roll.outcome, displays: [roll.display] };
+}
+
+export type Shaken = { lines: string[]; displays: ToolDisplayEvent[] };
+
+/**
+ * 마음이 흔들린다 (12-48): 크게 다쳤거나 곁의 사람이 죽는 것을 봤을 때. 마음 다잡기 판정으로 버틴다 (12-220).
+ * 판정 줄과 바뀐 한 줄을 돌려준다 (GM이 서술에 반영한다). roll: false면 굴리지 않고 그대로 오른다 (공포 판정이 이미 실패했을 때)
+ */
+export function shakeNerves(ctx: ToolContext, steps: number, cause: string, roll = true): Shaken {
   const nerves = ctx.content.scenario.body?.nerves;
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
-  if (!nerves || !me || me.dead || steps <= 0) return null;
-  const hold = Math.min(0.8, Math.max(0, nerves.resist.per_point * (me.stats[nerves.resist.ability] ?? 0)));
-  if (ctx.rng() < hold) return null; // 버텼다
-  return changeCondition(ctx, me.id, nerves.track, steps, "nerves", cause);
+  if (!nerves || !me || me.dead || steps <= 0) return { lines: [], displays: [] };
+  // 이미 끝 단계면 더 흔들릴 데가 없다 (굴리지 않는다)
+  if (levelIndex(ctx, state, me.id, nerves.track) >= trackOf(ctx.content.scenario, nerves.track).levels.length - 1) return { lines: [], displays: [] };
+  const held = roll ? steadyRoll(ctx, steps, cause) : { steps, outcome: null, displays: [] };
+  const out: Shaken = { lines: [], displays: [...held.displays] };
+  if (held.steps <= 0) {
+    out.lines.push(`${josa(me.name, "은/는")} 마음을 다잡았다 (${cause}). 마음이 흔들리지 않았다.`);
+    return out;
+  }
+  const c = changeCondition(ctx, me.id, nerves.track, held.steps, "nerves", cause);
+  if (c?.line) out.lines.push(c.line);
+  if (c?.display) out.displays.push(c.display);
+  return out;
 }
 
 /**
@@ -943,10 +973,16 @@ export function runDailyNerves(ctx: ToolContext): ToolDisplayEvent[] {
   if (levelIndex(ctx, state, me.id, nerves.track) <= 0) return [];
   if (severe(ctx, me, ctx.content.scenario.body?.hunger?.track) || severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return [];
   const { mine, company } = safety(state, me);
-  const chance = nerves.recover.chance + nerves.recover.per_point * (me.stats[nerves.resist.ability] ?? 0) + (mine || company ? nerves.recover.safe : 0);
+  const chance = nerves.recover.chance + nerves.recover.per_point * steadyStat(ctx, me) + (mine || company ? nerves.recover.safe : 0);
   if (ctx.rng() >= chance) return [];
   const c = changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 하루를 보냈다" : company ? "곁에 사람이 있었다" : "하루를 버텨 냈다");
   return c?.display ? [c.display] : [];
+}
+
+/** 마음 다잡기 능력의 값 (냉정). 마음이 가라앉는 확률에 더한다 */
+function steadyStat(ctx: ToolContext, me: Character): number {
+  const stat = ctx.content.scenario.body?.steady?.stat;
+  return stat ? (me.stats[stat] ?? 0) : 0;
 }
 
 /** 마음이 쉬는 곳: 우리 땅이거나 곁에 동행이 있다 */
@@ -970,7 +1006,7 @@ export function sleepNerves(ctx: ToolContext, slept: number): Change | null {
   if (levelIndex(ctx, state, me.id, nerves.track) <= 0) return null;
   if (severe(ctx, me, ctx.content.scenario.body?.hunger?.track) || severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return null;
   const { mine, company } = safety(state, me);
-  const chance = (mine || company ? rule.safe : rule.unsafe) + nerves.recover.per_point * (me.stats[nerves.resist.ability] ?? 0);
+  const chance = (mine || company ? rule.safe : rule.unsafe) + nerves.recover.per_point * steadyStat(ctx, me);
   if (ctx.rng() >= chance) return null;
   return changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 푹 잤다" : company ? "곁에 사람을 두고 푹 잤다" : "모처럼 푹 잤다");
 }

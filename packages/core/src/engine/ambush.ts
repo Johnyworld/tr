@@ -10,7 +10,7 @@ import type { ToolContext } from "./toolkit.ts";
 
 /**
  * 매복 (기획서 9.5.2 B, 12-177). 수치는 월드의 ambush.
- * - 내 매복: take_action.ambush + 판정(move, 어려움으로 굴린다). 성공 = hours 동안 매복 (첫 공격 bonus, 확률로 상대 혼란),
+ * - 내 매복: take_action.ambush + 판정(move, 어려움으로 굴린다). 성공 = hours 동안 매복 (첫 공격 bonus, 그 공격이 성공하면 상대 혼란),
  *   대가 있는 성공 = partial_bonus만, 실패 = 자리가 드러나 서지 않는다. 구역을 떠나거나 한 번 치면 끝난다
  * - 적의 매복: 이야기의 ambush: true로 열리면 다음 판정 하나에 ambushed. 그 판정이 실패하면 주인공이 혼란
  * - 혼란: 주인공은 다음 판정 하나 confused, 상대는 다음 판정 하나 동안 맞서지 못한다 (맞서는 상대 보정 0, 실패해도 다치지 않는다)
@@ -75,12 +75,13 @@ export function ambushParts(content: Content, state: GameState, move: string, op
 export function afterCheckAmbush(ctx: ToolContext, move: string, opponent: string | null, outcome: CheckOutcome, before: GameState): string[] {
   const r = rules(ctx.content);
   if (!r) return [];
-  const { store, content, rng } = ctx;
+  const { store, content } = ctx;
   const lines: string[] = [];
   const mine = activeAmbush(before);
   if (mine && opponent && r.attack_moves.includes(move)) {
     store.append({ type: "ambush_changed", ambush: null });
-    if (mine.confuse && outcome !== "miss" && !store.getState().characters[opponent]?.dead && rng() < r.confuse_chance) {
+    // 매복한 공격이 성공하면 상대가 혼란에 빠진다 (12-220, 숨은 확률 대신 판정 결과)
+    if (mine.confuse && outcome === "success" && !store.getState().characters[opponent]?.dead) {
       store.append({ type: "confusion_changed", characterId: opponent, on: true });
       lines.push(`매복에 걸린 ${josa(playerCalls(store.getState(), content, opponent), "이/가")} 허둥댄다 (혼란: 다음 판정 하나 동안 맞서지 못한다).`);
     } else lines.push("매복을 썼다. 이제부터는 맞붙는 싸움이다.");

@@ -2,7 +2,7 @@
 # base: 거점 (습격은 받지만 빼앗기지 않는다, MVP). yields: 소유 세력이 하루에 얻는 자원 (*임시*)
 # 거점 산출은 텃밭·우물·채집·교역을 뭉뚱그린 값. 무리마다 소모보다 조금 모자라게 둬서 바깥 구역을 두고 다투게 한다
 # 인접은 한쪽에만 적어도 양쪽으로 본다
-# loot: 수색하면 나올 수 있는 것 (기획서 4.7). chance는 한 번 굴릴 때 무언가 나올 확률, weight로 고른다 (*임시*)
+# loot: 수색하면 나올 수 있는 것 (기획서 4.7). modifier는 수색 판정 보정 (털린 곳 -1, 넉넉한 곳 +1, 12-220), weight로 고른다 (*임시*)
 - id: a_base
   name: 청솔형제단 거점
   map: { x: 64.7, y: 51.9, label: 청솔형제단 }
@@ -15,7 +15,7 @@
   # 연료 16·물 85 (*임시*, 12-138): 겨울(연료 ×2) 적자를 비축분으로 버티고 평소에 다시 채운다. 연료 12면 첫 겨울 끝에 바닥나 거점 실내에서 얼어 죽었다. 물 75면 여름(×1.15)마다 적자였다
   yields: { food: 58, water: 85, fuel: 16, ammo: 3 }
   loot:
-    chance: 0.3
+    modifier: -1
     items:
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: salted_meat, weight: 1, qty: [1, 1] }
@@ -35,7 +35,7 @@
   owner: faction_a
   adjacent: [c_warehouse]
   loot:
-    chance: 0.3
+    modifier: -1
     items:
       - { item: wire_roll, weight: 3, qty: [1, 1] }
       - { item: dry_ration, weight: 2, qty: [1, 1] }
@@ -56,7 +56,7 @@
   # 취사 천막과 물탱크가 있다: 붉은연합 사람은 여기서도 물 보급을 받는다 (플레이 테스트 11, E5)
   water_supply: true
   loot:
-    chance: 0.6
+    modifier: 1
     items:
       - { item: canned_food, weight: 4, qty: [1, 2] }
       - { item: dry_ration, weight: 3, qty: [1, 2] }
@@ -81,7 +81,7 @@
   adjacent: [old_town]
   yields: { food: 150, water: 185, fuel: 20 }
   loot:
-    chance: 0.25
+    modifier: -1
     items:
       - { item: salted_meat, weight: 2, qty: [1, 1] }
       - { item: canned_food, weight: 2, qty: [1, 1] }
@@ -103,7 +103,7 @@
     attempt: { moves: [stealth, survival], label: "섬 경비를 피해 밤배를 훔쳐 타는 판정" }
   yields: { water: 45, fuel: 10 }
   loot:
-    chance: 0.55
+    modifier: 1
     items:
       - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: dried_fish, weight: 1, qty: [1, 1] }
@@ -129,7 +129,7 @@
   adjacent: [b_base, d_clinic]
   yields: { food: 15, ammo: 3, medicine: 1 }
   loot:
-    chance: 0.5
+    modifier: 1
     items:
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: mushroom, weight: 1, qty: [1, 1] }
@@ -159,7 +159,7 @@
   # 식량 44·연료 9·물 50 (*임시*, 12-138·147): 40명이 사계절을 버틴다. 식량 36·연료 6이면 첫 겨울에 연료가, 60일에 식량이 바닥났다. 물 42면 여름(×1.15)·겨울(산출 ×0.8)마다 적자였다
   yields: { food: 44, water: 50, fuel: 9, ammo: 1 }
   loot:
-    chance: 0.3
+    modifier: -1
     items:
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: canned_food, weight: 2, qty: [1, 1] }
@@ -180,7 +180,7 @@
   # 식량 36·연료 7·물 38 (*임시*, 12-138·147): 30명이 사계절을 버틴다. 식량 30·연료 5면 첫 겨울에 연료가, 120일에 식량이 바닥났다. 물 33이면 여름마다 적자였다
   yields: { food: 36, water: 38, fuel: 7, medicine: 4 }
   loot:
-    chance: 0.25
+    modifier: -1
     items:
       - { item: fever_reducer, weight: 2, qty: [1, 1] }
       - { item: medkit, weight: 1, qty: [1, 1] }
@@ -200,7 +200,7 @@
 
 # ── 12단계 추가: 분쟁 지대 ──
   loot:
-    chance: 0.3
+    modifier: -1
     items:
       - { item: water_bottle, weight: 1, qty: [1, 1] }
       - { item: dried_fish, weight: 1, qty: [1, 1] }
@@ -223,7 +223,7 @@
   adjacent: [old_town, d_clinic]
   yields: { medicine: 2 }
   loot:
-    chance: 0.5
+    modifier: 1
     items:
       - { item: firewood, weight: 1, qty: [1, 2] }
       - { item: fever_reducer, weight: 3, qty: [1, 2] }
@@ -248,7 +248,7 @@
   adjacent: [riverside, e_market]
   yields: { water: 30 }
   loot:
-    chance: 0.25
+    modifier: -1
     items:
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: wire_roll, weight: 1, qty: [1, 1] }
@@ -265,7 +265,7 @@
   adjacent: [a_base, b_base]
   yields: { food: 12 }
   loot:
-    chance: 0.35
+    modifier: 0
     items:
       - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: potato, weight: 2, qty: [1, 2] }
@@ -298,7 +298,7 @@
   # 연료 30 (*임시*, 12-138): 22면 150명의 겨울 소모를 못 대 두 번째 겨울에 바닥났다
   yields: { food: 150, water: 150, fuel: 30, ammo: 12, medicine: 2 }
   loot:
-    chance: 0.25
+    modifier: -1
     items:
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: dried_fish, weight: 3, qty: [1, 2] }

@@ -70,18 +70,34 @@ describe("take_action으로", () => {
 });
 
 describe("덫", () => {
-  it("철사로 덫을 놓고, 하루가 지나면 걸리고, 거두면 걸린 것과 철사가 돌아온다", () => {
+  it("철사로 덫을 놓고, 놓는 판정이 성공이면 다음 날 걸리고, 거두면 걸린 것과 철사가 돌아온다", () => {
     const { w, me, s } = open(0);
     s().playerZone = dryOutside;
     me().inventory.wire_roll = 1;
-    expect(handleTrap(w.ctx(), "set").ok).toBe(true);
+    expect(handleTrap(w.ctx(), "set", "success").ok).toBe(true);
     expect(me().inventory.wire_roll ?? 0).toBe(0);
     expect(handleTrap(w.ctx(), "set").ok).toBe(false); // 한 구역에 하나
+    runDailyFood(w.ctx());
+    expect(s().traps[0]!.caught).toBeNull(); // 같은 날은 아직
+    s().time += 24 * 60;
     runDailyFood(w.ctx());
     expect(handleTrap(w.ctx(), "check").ok).toBe(true);
     expect(me().inventory.wire_roll).toBe(1);
     expect(me().inventory.raw_meat).toBe(1);
     expect(s().traps).toHaveLength(0);
+  });
+
+  it("대가 있는 성공으로 놓은 덫은 이틀 뒤에 걸린다 (12-220)", () => {
+    const { w, me, s } = open(0);
+    s().playerZone = dryOutside;
+    me().inventory.wire_roll = 1;
+    handleTrap(w.ctx(), "set", "partial");
+    s().time += 24 * 60;
+    runDailyFood(w.ctx());
+    expect(s().traps[0]!.caught).toBeNull();
+    s().time += 24 * 60;
+    runDailyFood(w.ctx());
+    expect(s().traps[0]!.caught).toBe("raw_meat");
   });
 
   it("철사가 없으면 놓을 수 없고, 걸리지 않았으면 빈 덫이다", () => {

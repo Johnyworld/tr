@@ -155,7 +155,7 @@
       label: 이번엔 끊는다고 소리 내어 말한다
       effects:
         - resolve_step: { text: "끊겠다고 입 밖에 냈다" }
-        - body: { track: nerves, delta: 1, chance: 0.3 }
+        - body: { track: nerves, delta: 1 }
     - id: later
       label: 오늘만, 하고 미룬다
       effects: []
@@ -439,7 +439,7 @@
       label: 꿈을 놓치지 않으려 눈을 감고 다시 떠올린다
       effects:
         - resolve_step: { text: "{target}의 집을 다시 보기로 마음먹었다" }
-        - body: { track: nerves, delta: 1, chance: 0.3 }
+        - body: { track: nerves, delta: 1 }
     - id: shake
       label: 고개를 털고 일어난다
       effects:

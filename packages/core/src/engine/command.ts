@@ -228,7 +228,8 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
       }
       if (task.rewards.loot) {
         const loot = content.locations[order.zone]?.loot;
-        if (loot?.items.length && rng() < loot.chance * (half ? 0.5 : 1)) {
+        // 전리품은 성공일 때만 (12-220, 숨은 확률 대신 판정 결과)
+        if (loot?.items.length && !half) {
           const total = loot.items.reduce((n, i) => n + i.weight, 0);
           let pick = rng() * total;
           const entry = loot.items.find((i) => (pick -= i.weight) < 0) ?? loot.items.at(-1)!;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
-import { scavenge } from "./scavenge.ts";
+import { scavenge, scavengeParts } from "./scavenge.ts";
 import { runDailyBody } from "./body.ts";
 import { loadRealContent } from "../testing.ts";
 
@@ -14,22 +14,34 @@ function world(rng: () => number, c = content) {
   return { ctx: { store, rng, content: c }, me, store };
 }
 
-describe("역사: 옛 지도를 아는 사람은 더 잘 찾는다", () => {
-  it("같은 굴림이라도 역사 2면 찾고, 역사가 없으면 못 찾는다", () => {
-    const zone = Object.values(content.locations).find((l) => l.loot && l.loot.chance < 0.66)!;
-    // 오늘 한 번 뒤진 곳이라 확률이 반으로 준다 (처음 뒤지는 곳에서 성공하면 하나는 얻는다, 12-190)
-    const roll = zone.loot!.chance * 0.6; // 반으로 준 기본 확률은 넘고, 역사 2(+50%)면 들어온다
-    const day = (w: ReturnType<typeof world>) => Math.floor(w.store.getState().time / 1440) + 1;
-    const plain = world(() => roll);
-    plain.store.getState().playerZone = zone.id;
-    plain.store.append({ type: "zone_searched", zone: zone.id, day: day(plain) });
-    plain.me().skills.history = -1;
-    expect(scavenge(plain.ctx, "partial").displays).toEqual([]);
-    const learned = world(() => roll);
-    learned.store.getState().playerZone = zone.id;
-    learned.store.append({ type: "zone_searched", zone: zone.id, day: day(learned) });
-    learned.me().skills.history = 2;
-    expect(scavenge(learned.ctx, "partial").displays.length).toBe(1);
+describe("수색 판정의 상황 보정 (12-220)", () => {
+  it("넉넉함·다시 뒤짐·역사가 판정 보정으로 붙는다", () => {
+    const poor = Object.values(content.locations).find((l) => l.loot && l.loot.modifier < 0)!;
+    const w = world(() => 0.5);
+    w.store.getState().playerZone = poor.id;
+    w.me().skills.history = -1;
+    expect(scavengeParts(w.ctx)).toEqual([{ label: "털린 곳", value: poor.loot!.modifier }]);
+    const day = Math.floor(w.store.getState().time / 1440) + 1;
+    w.store.append({ type: "zone_searched", zone: poor.id, day });
+    w.me().skills.history = 1;
+    expect(scavengeParts(w.ctx)).toEqual([
+      { label: "털린 곳", value: poor.loot!.modifier },
+      { label: "다시 뒤짐", value: -1 },
+      { label: "역사", value: 1 },
+    ]);
+  });
+
+  it("판정 결과만큼 찾는다: 성공 2, 대가 있는 성공 1, 실패·판정 없음 0", () => {
+    const zone = Object.values(content.locations).find((l) => l.loot?.items.length)!;
+    const found = (outcome: "success" | "partial" | "miss" | null) => {
+      const w = world(() => 0.99); // 굴림이 높아도 숨은 확률로 빠지지 않는다
+      w.store.getState().playerZone = zone.id;
+      return scavenge(w.ctx, outcome).displays.length;
+    };
+    expect(found("success")).toBeGreaterThanOrEqual(1); // 같은 물건이 둘이면 한 줄로 합친다
+    expect(found("partial")).toBe(1);
+    expect(found("miss")).toBe(0);
+    expect(found(null)).toBe(0);
   });
 });
 

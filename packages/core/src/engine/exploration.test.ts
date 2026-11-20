@@ -25,14 +25,16 @@ describe("탐험할 곳", () => {
     expect(w.runCheat("~goto hospital_ruins").ok).toBe(true);
     expect(explore(w, "start", "hospital_basement").ok).toBe(false); // 아직 모른다
     expect(w.sceneForGm()).not.toContain("hospital_basement");
-    // 찾기 굴림이 find_chance를 넘으면 못 찾는다
-    expect(findRuin({ ...w.ctx(), rng: () => 0.99 })).toBeNull();
-    const line = findRuin({ ...w.ctx(), rng: () => 0 });
+    // 수색 판정의 결과로 정한다 (12-220): 실패면 없고, 대가 있는 성공이면 낌새만, 성공이면 찾는다
+    expect(findRuin(w.ctx(), "miss")).toBeNull();
+    expect(findRuin(w.ctx(), "partial")).toContain("낌새");
+    expect(w.state().ruinsFound[w.state().playerId] ?? []).toEqual([]);
+    const line = findRuin(w.ctx(), "success");
     expect(line).toContain("옛 병원 지하 약제실");
     expect(w.state().ruinsFound[w.state().playerId]).toEqual(["hospital_basement"]);
     expect(w.sceneForGm()).toContain("hospital_basement");
     // 이미 찾은 곳은 다시 찾지 않는다
-    expect(findRuin({ ...w.ctx(), rng: () => 0 })).toBeNull();
+    expect(findRuin(w.ctx(), "success")).toBeNull();
   });
 
   it("내려가고 뒤지고 나온다. 깊을수록 다른 표에서 나온다", () => {

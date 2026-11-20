@@ -119,8 +119,8 @@ export const scenarioFileSchema = z
       /** 거짓 소문을 퍼뜨릴 때의 판정 (12-151). 없으면 소문 조작을 쓸 수 없다 */
       deceive: id.optional(),
     }),
-    /** 수색을 돕는 지식 (옛 지도·건물 용도를 안다): 이 스킬 1당 찾을 확률 ×(1 + per_level). 0 이하면 보정 없음 */
-    search_lore: z.strictObject({ skill: id, per_level: z.number().min(0).max(1) }).optional(),
+    /** 수색을 돕는 지식 (옛 지도·건물 용도를 안다): 이 스킬을 1 이상 익혔으면 수색 판정에 bonus (상한 밖의 상황 보정, 12-220) */
+    search_lore: z.strictObject({ skill: id, bonus: z.number().int().min(0).max(2) }).optional(),
     /**
      * 캐릭터 생성 (12-6): 능력은 포인트 구매. 모두 0에서 시작해 points를 나눠 쓴다.
      * cost: 능력 값 → 드는 포인트 (음수면 돌려받는다), max_low: 기본값보다 낮출 수 있는 능력 수. genders: 고를 수 있는 성별
@@ -869,8 +869,11 @@ export const scenarioFileSchema = z
       .strictObject({
         /** 주인공이 갇혀 있는 동안 열리는 이야기의 태그 (이때는 이것만 열린다) */
         tag: id,
-        /** 진 전투에서 물러나지 않았을 때 붙잡힐 확률 (부상 단계 id → 확률). 없는 단계면 붙잡히지 않는다 */
-        on_defeat: z.record(id, z.number().min(0).max(1)),
+        /**
+         * 진 전투에서 물러나지 않았을 때 빠져나가는 판정 (12-220). 주인공에게 가장 나은 것으로 굴린다.
+         * 성공이면 빠져나가고, 대가 있는 성공이면 빼앗길 물건(confiscate)을 버리고 빠져나가고, 실패하면 붙잡힌다. 정신을 잃었으면 굴리지 않고 붙잡힌다
+         */
+        flee_moves: z.array(id).min(1),
         /** 갇혔을 때 빼앗기는 물건 종류 (돌려받으면 돌아온다) */
         confiscate: z.array(z.string()).default(["weapon", "ammo"]),
         /** 탈출: 갇힌 구역에서 옮겨 가려면 이 판정 중 하나를 무거운 위험으로 */
@@ -966,7 +969,7 @@ export const scenarioFileSchema = z
       .optional(),
     /**
      * 매복 (12-177). 내 매복: move 판정(어려움으로 굴린다)이 성공하면 hours 동안, 이 구역에 나타난 상대에게 하는 첫 attack_moves 판정에 bonus,
-     * 그리고 confuse_chance로 상대가 혼란 (다음 판정 하나 동안 맞서지 못한다). 대가 있는 성공은 partial_bonus만.
+     * 그 판정이 성공이면 상대가 혼란 (다음 판정 하나 동안 맞서지 못한다, 12-220). 대가 있는 성공은 partial_bonus만.
      * 적의 매복: 이야기의 ambush: true로 열리면 다음 판정 하나에 ambushed, 실패하면 주인공이 혼란 (다음 판정 confused).
      * forewarn_trick을 곁의 동물이 알면 적의 매복을 미리 안다
      */
@@ -977,7 +980,6 @@ export const scenarioFileSchema = z
         attack_moves: z.array(id).min(1),
         bonus: z.number().int().min(1).max(3),
         partial_bonus: z.number().int().min(0).max(3),
-        confuse_chance: z.number().min(0).max(1),
         ambushed: z.number().int().min(-3).max(0),
         confused: z.number().int().min(-3).max(0),
         forewarn_trick: id.optional(),
@@ -1116,7 +1118,7 @@ export const scenarioFileSchema = z
      * 대가 있는 성공은 items·resource 절반, morale 없음
      */
     /**
-     * 탐험할 곳 (12-162): 구역의 숨은 곳. 그 구역을 뒤지다(수색 성공) find_chance로 찾는다.
+     * 탐험할 곳 (12-162): 구역의 숨은 곳. 그 구역을 뒤지다 수색이 성공하면 찾는다 (대가 있는 성공은 낌새만, 12-220).
      * 깊이 칸을 move 판정으로 내려가고, 칸마다 한 번 search_move로 뒤진다 (loot는 칸마다의 찾을 거리 표).
      * 소음이 3에 닿으면 wake[깊이]의 감염체가 깊이+1만큼 깨어난다. hazard: 실패해 다칠 때의 원인
      */
@@ -1125,7 +1127,6 @@ export const scenarioFileSchema = z
         move: id,
         search_move: id,
         step_minutes: z.number().int().min(5).max(60).default(15),
-        find_chance: z.number().min(0).max(1),
         wake: z.array(id).min(1),
         ruins: z
           .array(
@@ -1294,9 +1295,10 @@ export const scenarioFileSchema = z
     /** 음식이 상하는 빠르기의 계절 배수 (12-131, 아이템 perishable에 곱한다). 없는 계절은 1 */
     spoilage: z.strictObject({ season: z.record(id, z.number().min(0)).default({}) }).optional(),
     /**
-     * 먹을 것 구하기 (12-131): take_action.forage. 판정 결과만큼 굴린다 (수색과 같다: 성공 2, 대가 1, 실패 0, 판정 없으면 1번을 절반 확률로).
-     * 같은 날 같은 구역에서 같은 일을 다시 할수록 절반. water: 물이 나는 구역에서만 (아니면 거점이 아닌 구역). companions: 이 엑스트라 틀이 동행이면 한 번 더 굴린다
-     * trap: 덫 (take_action.trap). item을 놓고 하루가 지날 때마다 chance로 catch가 걸린다. 확인하면 걸린 것과 덫을 거둔다
+     * 먹을 것 구하기 (12-131, 12-220): take_action.forage. 판정 결과만큼 얻는다 (수색과 같다: 성공 2, 대가 1, 실패 0, 판정 없으면 0).
+     * modifier: 그 일의 판정 보정 (낚시는 쉽고 사냥은 어렵다). 같은 날 같은 구역에서 같은 일을 다시 할 때마다 판정 -1.
+     * water: 물이 나는 구역에서만 (아니면 거점이 아닌 구역). companions: 이 엑스트라 틀이 동행이면 하나 더
+     * trap: 덫 (take_action.trap). item을 놓는 판정이 성공이면 다음 날, 대가 있는 성공이면 이틀 뒤에 catch가 걸린다. 확인하면 걸린 것과 덫을 거둔다
      */
     foraging: z
       .strictObject({
@@ -1307,7 +1309,7 @@ export const scenarioFileSchema = z
               id,
               label: z.string().min(1),
               water: z.boolean().default(false),
-              chance: z.number().min(0).max(1),
+              modifier: z.number().int().min(-2).max(2).default(0),
               items: z.array(z.strictObject({ item: id, weight: z.number().positive(), qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) })).min(1),
               companions: z.array(id).default([]),
               /** 이 일의 판정 스킬 (없으면 foraging.move) */
@@ -1315,12 +1317,17 @@ export const scenarioFileSchema = z
             }),
           )
           .min(1),
-        trap: z.strictObject({ /** 덫을 놓으려면 배워야 하는 스킬 (전문 기술, 4.2.1) */ move: id.optional(), item: id, chance: z.number().min(0).max(1), catch: z.strictObject({ item: id, qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }) }).optional(),
+        trap: z.strictObject({ /** 덫을 놓으려면 배워야 하는 스킬 (전문 기술, 4.2.1) */ move: id.optional(), item: id, catch: z.strictObject({ item: id, qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }) }).optional(),
       })
       .optional(),
     /** 몸 상태 (12-1): 허기와 감염. 없으면 그 규칙을 쓰지 않는다 */
     body: z
       .strictObject({
+        /**
+         * 마음 다잡기 (12-220): 마음·공포가 오를 때 주인공이 굴리는 판정. 성공이면 오르지 않고, 대가 있는 성공이면 한 단계 덜 (적어도 한 단계), 실패면 그대로.
+         * 공포 판정이 실패해 공황에 이르면 마음도 한 단계 오른다. stat은 마음이 하루마다·자고 나서 가라앉는 확률에도 더한다 (recover.per_point)
+         */
+        steady: z.strictObject({ move: id, stat: id }).optional(),
         /**
          * 기운 (12-157): 술·진통제·각성제처럼 쓰면 오르고 시간이 지나면 빠지는 트랙. 트랙 id → 한 단계 빠지는 데 걸리는 시간.
          * 이 트랙을 올리는 소모품(consumables에 음수)은 나아질 데가 없어도 쓸 수 있다
@@ -1468,7 +1475,7 @@ export const scenarioFileSchema = z
           })
           .optional(),
         /**
-         * 마음 (12-48): 크게 다치거나 곁의 사람이 죽는 것을 보면 흔들린다. 능력(resist.ability, 냉정)이 높으면 덜 흔들린다.
+         * 마음 (12-48): 크게 다치거나 곁의 사람이 죽는 것을 보면 흔들린다. 마음 다잡기(steady) 판정으로 버틴다.
          * 굶주리거나 얼지 않으면 하루마다 확률로 가라앉고, 우리 땅이나 곁에 사람이 있으면 더 잘 가라앉는다 (recover.safe). 부상은 주지 않는다 (판정 보정만)
          */
         nerves: z
@@ -1476,7 +1483,6 @@ export const scenarioFileSchema = z
             track: id,
             heavy_harm: z.number().int().min(0),
             witness_death: z.number().int().min(0),
-            resist: z.strictObject({ ability: id, per_point: z.number().min(0).max(1) }),
             recover: z.strictObject({ chance: z.number().min(0).max(1), per_point: z.number().min(0).max(1), safe: z.number().min(0).max(1).default(0) }),
             /**
              * 푹 자면 가라앉는다: 끊기지 않고 min_hours 이상 자고 나면 한 단계 가라앉을 확률 (안전한 곳 safe, 아니면 unsafe, 능력 1당 recover.per_point 더).
@@ -1488,7 +1494,7 @@ export const scenarioFileSchema = z
         /**
          * 공포 (12-95): 그 자리에서 오르고 몇 시간 안에 빠지는 단기 상태. 판정 보정만 준다 (행동을 막지 않는다).
          * 계기(이야기 fright, 엑스트라 fearsome, 전투, 목격한 죽음, GM의 take_action.fright)가 주는 단계에
-         * 어둠·동행·트레잇·둔감해짐을 더하고 빼며, 능력(resist.ability)으로 한 단계 버틸 수 있다
+         * 어둠·동행·트레잇을 더하고 빼며, 마음 다잡기(steady) 판정으로 버틴다
          */
         fear: z
           .strictObject({
@@ -1503,12 +1509,8 @@ export const scenarioFileSchema = z
             dark: z.strictObject({ segments: z.array(z.enum(TIME_SEGMENTS)), steps: z.number().int().min(0) }),
             /** 동행이 곁에 있으면 뺀다 */
             companion: z.number().int().min(0),
-            /** 한 단계 버틸 확률: 능력 1당 per_point (최대 0.8) */
-            resist: z.strictObject({ ability: id, per_point: z.number().min(0).max(1) }),
             /** 공포를 부른 것이 장면에 없으면 이 시간마다 한 단계 가라앉는다. 자고 나면 첫 단계 */
             decay_hours: z.number().positive(),
-            /** 마지막 단계(공황)에 이르면 마음 트랙이 오를 확률 (마음 규칙의 버티기도 거친다) */
-            panic_nerves: z.number().min(0).max(1),
             /** 마음 트랙이 이 단계 이상이면 공포가 한 단계 더 오른다 */
             nerves_from: id.optional(),
             /** 계기 하나로 오르는 공포의 상한 (플레이 테스트 11, D7: 평온에서 한 번에 공황). 없으면 끝없이 */
@@ -1669,6 +1671,14 @@ export const scenarioFileSchema = z
       else if (!t.levels.some((l) => l.id === level)) problem(`camp.deep_sleep.${track}: 알 수 없는 단계 ${level}`);
     }
     if (s.search_lore && !moves.has(s.search_lore.skill)) problem(`search_lore: 알 수 없는 스킬 ${s.search_lore.skill}`);
+    // 마음 다잡기 (12-220): 마음·공포 규칙이 있으면 있어야 하고, 능력은 그 행동이 쓰는 것이어야 한다
+    if ((s.body?.nerves || s.body?.fear) && !s.body?.steady) problem("body.steady: 마음·공포 규칙에는 마음 다잡기 판정이 있어야 한다");
+    if (s.body?.steady) {
+      const m = s.moves.find((x) => x.id === s.body!.steady!.move);
+      if (!m) problem(`body.steady: 알 수 없는 행동 ${s.body.steady.move}`);
+      else if (!m.stats.includes(s.body.steady.stat)) problem(`body.steady: ${m.id}에는 ${s.body.steady.stat} 능력을 쓸 수 없다`);
+    }
+    for (const m of s.captivity?.flee_moves ?? []) if (!moves.has(m)) problem(`captivity.flee_moves: 알 수 없는 행동 ${m}`);
     // 잠입·뇌물·협박의 판정 행동 (12-153, 12-154)
     if (s.infiltration) {
       for (const m of [s.infiltration.move, s.infiltration.listen, ...s.infiltration.goals.map((g) => g.move)]) if (!moves.has(m)) problem(`infiltration: 알 수 없는 행동 ${m}`);

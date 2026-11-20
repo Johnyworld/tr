@@ -4,6 +4,7 @@ import { EXPLORATION_TOOLS } from "./exploration.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { DIPLOMACY_TOOLS } from "./diplomacy.ts";
 import { fearAfterTool, watchFear, type FearResult } from "./fear.ts";
+import { takeReactionChecks } from "./checks.ts";
 import { ROMANCE_TOOLS } from "./romance.ts";
 import { CAPTIVITY_TOOLS } from "./captivity.ts";
 import { carriedWeight, carryCapacity, DEFAULT_WEIGHT, GEAR_TOOLS } from "./gear.ts";
@@ -41,7 +42,7 @@ import {
 import { createInterruptChecks, fastForward } from "../sim/fastForward.ts";
 import { BELIEF_SOURCE_LABELS, beliefSourceSchema } from "../game/belief.ts";
 import { findHolderInventory, SCENE_HOLDER, type GameEvent, type GameState } from "../game/state.ts";
-import { defineTool, signed, STRICT_UNSUPPORTED_KEYS, type ToolContext, type ToolOutcome, type ToolSpec } from "./toolkit.ts";
+import { defineTool, signed, STRICT_UNSUPPORTED_KEYS, type ToolContext, type ToolDisplayEvent, type ToolOutcome, type ToolSpec } from "./toolkit.ts";
 
 export { STRICT_UNSUPPORTED_KEYS } from "./toolkit.ts";
 import { MISSION_TOOLS } from "./missionTools.ts";
@@ -353,13 +354,14 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   // 각 tool의 run은 자기 스키마로 파싱된 입력만 받는다
   const before = watchFear(state);
   const living = livingIds(state);
+  takeReactionChecks(ctx.store);
   const outcome = (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
   // 이번에 죽은 사람은 그 자리에 유해를 남긴다 (12-130)
   leaveRemainsForNewDeaths(ctx, living);
   // 짐이 한도를 넘으면 창고를 한 번 알린다 (12-149)
   const hint = outcome.ok ? [stashHint(ctx), storyStillOpen(state, name, ctx)].filter(Boolean).join("\n") : null;
   const hinted = hint && outcome.ok ? { ...outcome, resultText: [outcome.resultText, hint].filter(Boolean).join("\n") } : outcome;
-  return withCheckLines(withFear(hinted, fearAfterTool(ctx, before)));
+  return withCheckLines(withFear(hinted, fearAfterTool(ctx, before)), takeReactionChecks(ctx.store));
 }
 
 /** 이야기가 열린 채로 다른 일을 마무리하는 tool을 쓰면 알린다 (플레이 테스트 11, 막지는 않는다) */
@@ -378,8 +380,12 @@ function withFear(outcome: ToolOutcome, fear: FearResult): ToolOutcome {
 }
 
 /** 이번 tool에서 굴린 판정의 한 줄(🎲)을 결과 끝에 붙인다. GM은 이 줄을 고치지 않고 서술 끝에 옮겨 적는다 */
-function withCheckLines(outcome: ToolOutcome): ToolOutcome {
+/** reactions: 어디서든 굴린 버티는 판정 (마음 다잡기, 12-220). 결과에 없는 것만 붙인다 */
+function withCheckLines(outcome: ToolOutcome, reactions: ToolDisplayEvent[] = []): ToolOutcome {
   if (!outcome.ok) return outcome;
+  const shown = new Set([outcome.display, ...(outcome.extra ?? [])].flatMap((d) => (d?.type === "check" ? [d.checkId] : [])));
+  const missing = reactions.filter((d) => d.type === "check" && !shown.has(d.checkId));
+  if (missing.length) outcome = { ...outcome, extra: [...(outcome.extra ?? []), ...missing] };
   const lines = [outcome.display, ...(outcome.extra ?? [])].flatMap((d) => (d?.type === "check" && d.line ? [d.line] : []));
   if (!lines.length) return outcome;
   return { ...outcome, resultText: [outcome.resultText, `판정 줄 (서술 끝에 그대로 옮겨 적는다):`, ...lines.map((l) => `\`${l}\``)].filter(Boolean).join("\n") };

@@ -4,7 +4,8 @@ import { playerCalls } from "../game/acquaintance.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { Clash, GameState } from "../game/state.ts";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
-import { harmTrack } from "../scenario/scenario.ts";
+import { harmTrack, incapacitatingSymptom, learnedSkill, moveOf } from "../scenario/scenario.ts";
+import type { Character } from "../game/character.ts";
 import { disposition } from "../sim/war.ts";
 import { josa, sentence } from "../text.ts";
 import type { Content } from "../content/schemas.ts";
@@ -16,7 +17,7 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome }
 
 /**
  * 포로 (기획서 7.6, 12-55).
- * - 주인공도 붙잡힌다: 진 전투에서 물러나지 않았으면 부상 단계별 확률로, 항복하면 반드시, 이야기 효과로. 죽음 대신 갇힌다 (원칙 3: 코드가 정한다)
+ * - 주인공도 붙잡힌다: 진 전투에서 물러나지 않았으면 빠져나가기 판정에 실패해서(12-220), 항복하면 반드시, 이야기 효과로. 죽음 대신 갇힌다 (원칙 3: 코드가 정한다)
  *   갇힌 동안: 무기·탄은 빼앗기고(풀려나면 돌려받는다), 갇힌 구역에 묶이고, 갇힌 동안의 이야기(captivity.tag)만 열린다. 탈출은 무거운 위험을 건 판정
  * - 주인공이 포로를 잡는다: 크게 다친 사람을 묶어 끌고 가고(동행 prisoner), 우리 거점에 닿으면 우리 무리의 포로가 된다
  * - 포로를 다룬다: 심문(그 사람이 아는 것에서 코드가 고른다), 회유, 석방, 몸값·맞교환, 노역. 포로는 붙잡은 무리의 먹을 것을 먹는다
@@ -59,16 +60,53 @@ export function releasePlayer(ctx: ToolContext, returned: boolean): string | nul
   return returned ? "풀려났다. 빼앗겼던 것을 돌려받았다." : "빠져나왔다. 빼앗긴 것은 그곳에 두고 왔다.";
 }
 
-/** 진 전투 뒤: 물러나지 않았고 살아 있으면 부상 단계별 확률로 붙잡힌다 */
-export function maybeCaptureAfterDefeat(ctx: ToolContext, enemy: string): string | null {
+/** 빠져나가기에 가장 나은 판정: flee_moves 중 능력 + 스킬이 가장 높은 것 (배우지 않은 전문 기술은 빼고) */
+function bestFlee(content: Content, me: Character, moves: string[]): { move: string; stat: string } | null {
+  let best: { move: string; stat: string; value: number } | null = null;
+  for (const id of moves) {
+    const m = moveOf(content.scenario, id);
+    const skill = learnedSkill(content.scenario, me.skills, id);
+    if (!m || skill === null) continue;
+    for (const stat of m.stats) {
+      const value = (me.stats[stat] ?? 0) + skill;
+      if (!best || value > best.value) best = { move: id, stat, value };
+    }
+  }
+  return best;
+}
+
+/**
+ * 진 전투 뒤 (12-220): 물러나지 않았고 살아 있으면 빠져나가기를 굴린다 (flee_moves 중 가장 나은 것). 정신을 잃었으면 굴리지 않고 붙잡힌다.
+ * 성공 = 빠져나간다, 대가 있는 성공 = 빼앗길 물건(무기·탄)을 버리고 빠져나간다, 실패 = 붙잡힌다. 부상은 몸 상태 보정으로 판정에 든다
+ */
+export function maybeCaptureAfterDefeat(ctx: ToolContext, enemy: string): { lines: string[]; displays: ToolDisplayEvent[] } {
   const c = rules(ctx.content);
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
-  if (!c || !me || me.dead) return null;
-  const track = harmTrack(ctx.content.scenario);
-  const chance = c.on_defeat[me.conditions[track.id] ?? ""] ?? 0;
-  if (ctx.rng() >= chance) return null;
-  return capturePlayer(ctx, enemy, undefined, "싸움에 지고 쓰러진 채로 끌려갔다");
+  const none = { lines: [], displays: [] };
+  if (!c || !me || me.dead || me.captive) return none;
+  const down = !!incapacitatingSymptom(ctx.content.scenario, me);
+  const flee = down ? null : bestFlee(ctx.content, me, c.flee_moves);
+  if (!flee) {
+    const caught = capturePlayer(ctx, enemy, undefined, "싸움에 지고 쓰러진 채로 끌려갔다");
+    return { lines: caught ? [caught] : [], displays: [] };
+  }
+  const roll = rollPlayerCheck({ move: flee.move, stat: flee.stat, difficulty: "normal", intent: "진 싸움터에서 빠져나간다" }, ctx);
+  if (!roll.ok) return none;
+  const displays: ToolDisplayEvent[] = [roll.display];
+  if (roll.outcome === "miss") {
+    const caught = capturePlayer(ctx, enemy, undefined, "싸움에 지고 빠져나가지 못해 붙잡혔다");
+    return { lines: caught ? [caught] : [], displays };
+  }
+  if (roll.outcome === "success") return { lines: ["진 싸움터에서 붙잡히지 않고 빠져나왔다. 빠져나오는 장면을 서술한다."], displays };
+  // 대가 있는 성공: 무거운 것을 버리고 달아난다
+  const dropped = Object.entries(me.inventory).filter(([id, n]) => n > 0 && c.confiscate.includes(ctx.content.items[id]?.kind ?? ""));
+  for (const [itemId, quantity] of dropped) ctx.store.append({ type: "item_consumed", holder: me.id, itemId, quantity });
+  const names = dropped.map(([id, n]) => `${ctx.content.items[id]?.name ?? id} ×${n}`);
+  return {
+    lines: [names.length ? `빠져나오긴 했지만 ${josa(names.join(", "), "을/를")} 버리고 왔다 (소지품에서 빠졌다). 버리고 달아나는 장면을 서술한다.` : "간신히 빠져나왔다. 쫓기며 달아나는 장면을 서술한다."],
+    displays,
+  };
 }
 
 /** 포로를 하루 먹이고 부린다: 붙잡은 무리의 먹을 것이 줄고, 노역이면 자원이 는다 */

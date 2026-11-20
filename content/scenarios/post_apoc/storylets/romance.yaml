@@ -48,7 +48,7 @@
           - relation: { who: them, axis: trust, delta: 1 }
         miss:
           - set_flag: rm_glanced
-          - body: { track: nerves, delta: 1, chance: 0.5 }
+          - body: { track: nerves, delta: 1 }
     - id: away
       label: 모른 척 하던 일을 계속한다
       effects:
@@ -191,7 +191,7 @@
         - npc_hurt: { who: lover, steps: 1 }
         - relation: { who: lover, axis: affection, delta: 2 }
         - delay: 240
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
     - id: bandage
       label: 아껴 둔 붕대를 꺼낸다
       effects:
@@ -534,7 +534,7 @@
         - set_flag: rm_harass_met
         - set_flag: rm_harass_ignored
         - set_flag: rm_menaced
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
     - id: retort
       label: 일행 앞에서 맞받아친다
       check: persuade
@@ -817,7 +817,7 @@
         - set_flag: rm_coerce_met
         - set_flag: rm_menaced
         - relation: { who: broker, axis: trust, delta: -1 }
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
     - id: rounds
       label: 탄을 내밀며 이걸로 하자고 한다
       effects:
@@ -1101,7 +1101,7 @@
       effects:
         - set_flag: rm_confided
         - relation: { who: friend, axis: affection, delta: 1 }
-        - body: { track: nerves, delta: 1, chance: 0.3 }
+        - body: { track: nerves, delta: 1 }
 
 - id: rm_revenge
   title: 갚을 차례

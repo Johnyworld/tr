@@ -12,7 +12,7 @@
   danger: 3
   adjacent: [old_town, riverside, mall_ruins]
   loot:
-    chance: 0.6
+    modifier: 1
     items:
       - { item: firewood, weight: 1, qty: [1, 2] }
       - { item: canned_food, weight: 2, qty: [1, 2] }
@@ -35,7 +35,7 @@
   adjacent: [riverside, c_warehouse, rest_stop, prison]
   yields: { fuel: 18 }
   loot:
-    chance: 0.4
+    modifier: 0
     items:
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: fuel_bottle, weight: 3, qty: [1, 2] }
@@ -54,7 +54,7 @@
   danger: 3
   adjacent: [c_base, power_plant]
   loot:
-    chance: 0.45
+    modifier: 0
     items:
       - { item: rifle_rounds, weight: 2, qty: [1, 2] }
       - { item: pistol_rounds, weight: 1, qty: [1, 1] }
@@ -78,7 +78,7 @@
   adjacent: [subway_hub, south_fields, b_base]
   yields: { food: 10 }
   loot:
-    chance: 0.55
+    modifier: 1
     items:
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: canned_food, weight: 3, qty: [1, 2] }
@@ -104,7 +104,7 @@
   danger: 0
   adjacent: [old_town, b_base, campus]
   loot:
-    chance: 0.2
+    modifier: -1
     items:
       - { item: wild_greens, weight: 1, qty: [1, 2] }
       - { item: cloth, weight: 2, qty: [1, 2] }
@@ -123,7 +123,7 @@
   adjacent: [cathedral, d_clinic, hospital_ruins]
   yields: { medicine: 1, food: 6 }
   loot:
-    chance: 0.35
+    modifier: 0
     items:
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: wild_greens, weight: 2, qty: [1, 2] }
@@ -151,7 +151,7 @@
   adjacent: [e_market, power_plant]
   yields: { food: 8, fuel: 4 }
   loot:
-    chance: 0.3
+    modifier: -1
     items:
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: fuel_bottle, weight: 2, qty: [1, 1] }
@@ -174,7 +174,7 @@
   danger: 1
   adjacent: [a_base, old_town, riverside]
   loot:
-    chance: 0.45
+    modifier: 0
     items:
       - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: water_bottle, weight: 2, qty: [1, 1] }

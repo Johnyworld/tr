@@ -195,10 +195,11 @@ export function endBattle(ctx: ToolContext, withdrew: boolean): BattleTurn {
   const fallen = down ? helplessAfterBattle(ctx, won, battle.ours.faction, battle.theirs.faction) : null;
   const afterFall: ToolDisplayEvent[] = fallen ?? [];
   for (const d of afterFall) if ((d.type === "belief" || d.type === "presence" || d.type === "harm") && d.note) lines.push(d.note);
-  // 지고도 물러나지 않았으면 쓰러진 채 끌려갈 수 있다 (12-55, 코드가 굴린다)
+  // 지고도 물러나지 않았으면 빠져나가기를 굴린다. 실패하면 끌려간다 (12-55, 12-220)
   if (!fallen && !won && !withdrew && !player.dead) {
-    const caught = maybeCaptureAfterDefeat(ctx, battle.theirs.faction);
-    if (caught) lines.push(caught);
+    const fled = maybeCaptureAfterDefeat(ctx, battle.theirs.faction);
+    lines.push(...fled.lines);
+    afterFall.push(...fled.displays);
   }
   const displays: ToolDisplayEvent[] = [
     { type: "battle", event: "ended", title: battleTitle(ctx.content, battle), detail: lines[0]! },

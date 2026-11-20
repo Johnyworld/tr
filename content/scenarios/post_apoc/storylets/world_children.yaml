@@ -99,7 +99,7 @@
     - id: shake
       label: 걸음을 빨리해 떼어 낸다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
 
 - id: ch_war_game
   title: 전쟁놀이

@@ -3,12 +3,45 @@ import { effectiveSkill } from "./traits.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import { dayOf } from "../rules/time.ts";
 import { josa } from "../text.ts";
+import { moveLabel } from "../scenario/scenario.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
+type Part = { label: string; value: number };
+
+/** 오늘 이 곳(구역, 또는 구역#먹을 것 구하기)을 뒤진 횟수 */
+export function searchedToday(state: ReturnType<ToolContext["store"]["getState"]>, key: string): number {
+  const before = state.zoneSearches[key];
+  return before && before.day === dayOf(state.time) ? before.count : 0;
+}
+
 /**
- * 수색으로 물건 찾기 (기획서 4.7): 수색(search) 활동을 하면 그 구역의 찾을 거리 표(locations의 loot)에서 코드가 굴린다.
- * - 판정 결과만큼 굴린다: 성공 2번, 대가 있는 성공 1번, 실패 0번. 판정 없이 뒤지면 1번을 절반 확률로
- * - 같은 날 같은 구역을 다시 뒤질수록 덜 나온다 (한 번 뒤질 때마다 절반)
+ * 수색 판정의 상황 보정 (12-220). 판정 줄에 보인다:
+ * 구역의 넉넉함(loot.modifier: 털린 곳 -, 넉넉한 곳 +), 오늘 이미 뒤진 횟수만큼 -, 옛 지도·건물 용도를 아는 사람(search_lore) +
+ */
+export function scavengeParts(ctx: ToolContext): Part[] {
+  const { content } = ctx;
+  const state = ctx.store.getState();
+  const zone = state.playerZone;
+  const loot = zone ? content.locations[zone]?.loot : undefined;
+  if (!zone || !loot) return [];
+  const lore = content.scenario.search_lore;
+  const known = lore && effectiveSkill(content, state.characters[state.playerId]!, lore.skill) >= 1;
+  return [
+    { label: loot.modifier > 0 ? "넉넉한 곳" : "털린 곳", value: loot.modifier },
+    { label: "다시 뒤짐", value: -searchedToday(state, zone) },
+    ...(lore && known ? [{ label: moveLabel(content.scenario, lore.skill), value: lore.bonus }] : []),
+  ].filter((p) => p.value !== 0);
+}
+
+/** 판정 결과만큼 찾는다: 성공 2, 대가 있는 성공 1, 실패·판정 없음 0 */
+export function foundCount(outcome: CheckOutcome | null): number {
+  return outcome === "success" ? 2 : outcome === "partial" ? 1 : 0;
+}
+
+/**
+ * 수색으로 물건 찾기 (기획서 4.7): 수색(search) 활동을 하면 그 구역의 찾을 거리 표(locations의 loot)에서 코드가 고른다.
+ * - 판정 결과만큼 찾는다 (12-220): 성공 2개, 대가 있는 성공 1개, 실패 0개. 판정 없이는 찾지 못한다 (숨은 확률을 굴리지 않는다)
+ * - 구역의 넉넉함과 같은 날 다시 뒤지는 것은 판정 보정이다 (scavengeParts)
  * - 찾은 것은 바로 주인공의 소지품에 들어간다. 무엇을 얼마나 찾는지는 코드가 정한다 (원칙 2)
  */
 export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null): { lines: string[]; displays: ToolDisplayEvent[] } {
@@ -18,22 +51,12 @@ export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null): { line
   const loot = zone ? content.locations[zone]?.loot : undefined;
   if (!zone || !loot || loot.items.length === 0) return { lines: ["이 구역에는 뒤져서 나올 만한 것이 없다."], displays: [] };
 
-  const day = dayOf(state.time);
-  const before = state.zoneSearches[zone];
-  const count = before && before.day === day ? before.count : 0;
-  store.append({ type: "zone_searched", zone, day });
+  const count = searchedToday(state, zone);
+  store.append({ type: "zone_searched", zone, day: dayOf(state.time) });
 
-  const rolls = outcome === "success" ? 2 : outcome === "partial" ? 1 : outcome === "miss" ? 0 : 1;
-  // 옛 지도·건물 용도를 아는 사람은 어디를 뒤질지 안다 (search_lore, 역사)
-  const lore = content.scenario.search_lore;
-  const known = lore ? Math.max(0, effectiveSkill(content, state.characters[state.playerId]!, lore.skill)) : 0;
-  const chance = Math.min(1, loot.chance * 0.5 ** count * (outcome === null ? 0.5 : 1) * (1 + (lore?.per_level ?? 0) * known));
   const total = loot.items.reduce((n, i) => n + i.weight, 0);
   const found = new Map<string, number>();
-  // 판정에 성공했으면(대가 있는 성공 포함) 오늘 처음 뒤지는 곳에서는 적어도 하나는 얻는다 (플레이 테스트 8: 대가 있는 성공인데 빈손이 잦았다)
-  const sure = (outcome === "success" || outcome === "partial") && count === 0;
-  for (let r = 0; r < rolls; r++) {
-    if (!(sure && r === 0) && rng() >= chance) continue;
+  for (let r = 0; r < foundCount(outcome); r++) {
     let pick = rng() * total;
     const entry = loot.items.find((i) => (pick -= i.weight) < 0) ?? loot.items[loot.items.length - 1]!;
     const [min, max] = entry.qty;
@@ -50,12 +73,14 @@ export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null): { line
     names.push(`${itemName} ×${quantity}`);
     displays.push({ type: "item", fromName: "", toName: player.name, itemName, quantity });
   }
-  // 숨은 곳 (12-162): 제대로 뒤지면 찾을 수 있다
-  const ruin = outcome === "success" || outcome === "partial" ? findRuin(ctx) : null;
+  // 숨은 곳 (12-162): 제대로 뒤지면(성공) 찾고, 대가 있는 성공이면 낌새만
+  const ruin = findRuin(ctx, outcome);
   const tired = count > 0 ? " 오늘 이미 뒤진 곳이라 남은 것이 적다." : "";
   const lines = names.length
     ? [`수색으로 ${josa(names.join(", "), "을/를")} 찾아 챙겼다 (소지품에 들어왔다). 찾은 것만 서술하고 다른 물건을 지어내지 않는다.${tired}`]
-    : [`쓸 만한 것을 찾지 못했다.${tired} 빈손인 것을 서술한다.`];
+    : outcome === null
+      ? ["판정 없이 둘러봐서는 쓸 만한 것을 찾지 못했다. 제대로 뒤지려면 수색 판정을 건다."]
+      : [`쓸 만한 것을 찾지 못했다.${tired} 빈손인 것을 서술한다.`];
   if (ruin) lines.push(ruin);
   return { lines, displays };
 }

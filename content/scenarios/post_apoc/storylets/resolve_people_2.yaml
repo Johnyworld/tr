@@ -63,7 +63,7 @@
       label: 돌아올지 모르니 하룻밤 기다려 본다
       effects:
         - delay: 240
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
         - belief: { fact: "{sought:이/가} 머물던 자리에서 밤새 기다렸지만 오지 않았다", source: seen }
 
 # ── 구해 내기 (rescue) ───────────────────────────────────────
@@ -393,7 +393,7 @@
         partial:
           - relation: { who: dear, axis: affection, delta: 1 }
         miss:
-          - body: { track: nerves, delta: 1, chance: 0.5 }
+          - body: { track: nerves, delta: 1 }
     - id: help_fix
       label: 말없이 손을 보태 같이 고친다
       check: improvise
@@ -510,7 +510,7 @@
     - id: remember
       label: 아무것도 만들지 못하고 그 얼굴만 떠올린다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
         - belief: { fact: "{target}의 얼굴이 자꾸 떠오른다. 아직 거두지 못했다", source: seen }
 
 - id: rp2_bury_route

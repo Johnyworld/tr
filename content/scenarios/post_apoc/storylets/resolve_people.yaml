@@ -70,7 +70,7 @@
       label: 얼굴을 눈에 새기고 돌아선다
       effects:
         - resolve_step: { text: "{foe}의 얼굴을 다시 봤다" }
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
 
 - id: rp_revenge_other_side
   title: 원수의 하루
@@ -247,7 +247,7 @@
     - id: go
       label: 지금 당장 혈청을 찾으러 나간다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
 
 # ── 지키기 (protect) ─────────────────────────────────────────
 
@@ -311,7 +311,7 @@
     - id: nothing
       label: 해 줄 것이 없다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.3 }
+        - body: { track: nerves, delta: 1 }
 
 # ── 은혜 갚기 (repay) ────────────────────────────────────────
 

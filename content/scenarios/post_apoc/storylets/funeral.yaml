@@ -98,4 +98,4 @@
     - id: quiet
       label: 아무 말 없이 줄을 선다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.3 }
+        - body: { track: nerves, delta: 1 }

@@ -72,7 +72,7 @@
     - id: ignore
       label: 못 들은 걸로 한다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.3 }
+        - body: { track: nerves, delta: 1 }
 
 - id: rd_numbers
   title: 숫자를 읽는 남자

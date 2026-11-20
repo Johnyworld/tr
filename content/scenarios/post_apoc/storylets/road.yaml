@@ -861,7 +861,7 @@
     - id: leave
       label: 내 몸 하나도 버겁다. 지나간다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
 
 # ── 몸과 짐, 동행, 배경 ────────────────────────────────
 

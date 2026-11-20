@@ -577,10 +577,10 @@ export function createContentSchemas(s: Scenario) {
     yields: resourceAmounts.default({}),
     /** 거점처럼 물 보급을 받는 곳 (플레이 테스트 11, E5: 취사 천막까지 있는 물류창고에 물이 없었다). 주인이 우리 무리일 때만 */
     water_supply: z.boolean().optional(),
-    /** 수색하면 나올 수 있는 것 (기획서 4.7). chance: 한 번 굴릴 때 무언가 나올 확률, items: 무게로 고른다 */
+    /** 수색하면 나올 수 있는 것 (기획서 4.7). modifier: 수색 판정 보정 (털린 곳 -1, 넉넉한 곳 +1, 12-220), items: 무게로 고른다 */
     loot: z
       .strictObject({
-        chance: z.number().min(0).max(1),
+        modifier: z.number().int().min(-2).max(2).default(0),
         items: z.array(z.strictObject({ item: contentIdSchema, weight: z.number().positive(), qty: z.tuple([z.number().int().positive(), z.number().int().positive()]) })),
       })
       .optional(),

@@ -174,7 +174,7 @@
     - id: hide
       label: 며칠은 나가지 않는다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.3 }
+        - body: { track: nerves, delta: 1 }
 
 # ── 혹한 ──
 - id: ds_cold_omen
@@ -224,7 +224,7 @@
     - id: keep
       label: 내 몫은 지킨다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.3 }
+        - body: { track: nerves, delta: 1 }
 
 # ── 돌림병 ──
 - id: ds_plague_omen

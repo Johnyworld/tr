@@ -1,6 +1,7 @@
 import { preservesHere } from "./facilities.ts";
 import type { CheckOutcome } from "../rules/check.ts";
-import { dayOf } from "../rules/time.ts";
+import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
+import { foundCount, searchedToday } from "./scavenge.ts";
 import { seasonAt } from "../sim/season.ts";
 import { josa } from "../text.ts";
 import { learnedSkill, moveLabel } from "../scenario/scenario.ts";
@@ -52,7 +53,18 @@ export function trapProblem(ctx: ToolContext, action: "set" | "check"): string |
   return action === "set" ? unlearned(ctx, ctx.content.scenario.foraging?.trap?.move) : null;
 }
 
-/** 먹을 것을 구한다 (take_action.forage). 판정 결과만큼 굴린다 */
+/** 먹을 것 구하기 판정의 상황 보정 (12-220): 그 일의 쉽고 어려움(kind.modifier), 오늘 같은 곳에서 다시 하는 만큼 - */
+export function forageParts(ctx: ToolContext, kindId: string): { label: string; value: number }[] {
+  const kind = ctx.content.scenario.foraging?.kinds.find((k) => k.id === kindId);
+  const state = ctx.store.getState();
+  if (!kind || !state.playerZone) return [];
+  return [
+    { label: kind.label, value: kind.modifier },
+    { label: "다시 함", value: -searchedToday(state, `${state.playerZone}#${kind.id}`) },
+  ].filter((p) => p.value !== 0);
+}
+
+/** 먹을 것을 구한다 (take_action.forage). 판정 결과만큼 얻는다 (성공 2, 대가 있는 성공 1, 실패·판정 없음 0, 12-220) */
 export function forage(ctx: ToolContext, kindId: string, outcome: CheckOutcome | null): Result {
   const { store, content, rng } = ctx;
   const problem = forageProblem(ctx, kindId);
@@ -62,27 +74,21 @@ export function forage(ctx: ToolContext, kindId: string, outcome: CheckOutcome |
   const state = store.getState();
   const zone = state.playerZone!;
 
-  // 같은 날 같은 곳에서 다시 할수록 덜 잡힌다 (수색과 같은 기록을 일마다 따로 쓴다)
+  // 같은 날 같은 곳에서 다시 할수록 판정이 어렵다 (forageParts. 수색과 같은 기록을 일마다 따로 쓴다)
   const key = `${zone}#${kind.id}`;
-  const day = dayOf(state.time);
-  const before = state.zoneSearches[key];
-  const count = before && before.day === day ? before.count : 0;
-  store.append({ type: "zone_searched", zone: key, day });
+  const count = searchedToday(state, key);
+  store.append({ type: "zone_searched", zone: key, day: dayOf(state.time) });
 
-  // 함께 다니는 개가 몰이를 돕는다: 한 번 더 굴린다
+  // 함께 다니는 개가 몰이를 돕는다: 하나 더
   const helper = state.companions.find((id) => {
     const c = state.characters[id];
     return c && !c.dead && !!c.extra && kind.companions.includes(c.extra.template);
   });
-  let rolls = outcome === "success" ? 2 : outcome === "partial" ? 1 : outcome === "miss" ? 0 : 1;
-  if (helper && outcome !== "miss") rolls += 1;
-  const chance = kind.chance * 0.5 ** count * (outcome === null ? 0.5 : 1);
+  let rolls = foundCount(outcome);
+  if (helper && rolls > 0) rolls += 1;
   const total = kind.items.reduce((n, i) => n + i.weight, 0);
   const found = new Map<string, number>();
-  // 판정에 성공했으면(대가 있는 성공 포함) 오늘 처음 뒤지는 곳에서는 적어도 하나는 얻는다 (플레이 테스트 8: 대가 있는 성공인데 빈손이 잦았다)
-  const sure = (outcome === "success" || outcome === "partial") && count === 0;
   for (let r = 0; r < rolls; r++) {
-    if (!(sure && r === 0) && rng() >= chance) continue;
     let pick = rng() * total;
     const entry = kind.items.find((i) => (pick -= i.weight) < 0) ?? kind.items[kind.items.length - 1]!;
     const qty = entry.qty[0] + Math.floor(rng() * (entry.qty[1] - entry.qty[0] + 1));
@@ -103,7 +109,9 @@ export function forage(ctx: ToolContext, kindId: string, outcome: CheckOutcome |
   lines.push(
     names.length
       ? `${kind.label}: ${josa(names.join(", "), "을/를")} 얻었다 (소지품에 들어왔다). 얻은 것만 서술한다.${dog}${tired}`
-      : `${kind.label}: 아무것도 얻지 못했다.${tired} 빈손인 것을 서술한다.`,
+      : outcome === null
+        ? `${kind.label}: 판정 없이는 아무것도 얻지 못했다. ${moveLabel(content.scenario, kind.move ?? rules.move)} 판정을 건다.`
+        : `${kind.label}: 아무것도 얻지 못했다.${tired} 빈손인 것을 서술한다.`,
   );
   const perishable = [...found.keys()].filter((i) => content.items[i]?.perishable);
   if (perishable.length) lines.push("날것은 며칠 안에 상한다. 먹거나 말리거나 훈연한다 (craft).");
@@ -128,8 +136,14 @@ export function handleTrap(ctx: ToolContext, action: "set" | "check", outcome: C
     // 판정을 걸고 실패하면 놓지 못한다 (플레이 테스트 12: 실패해도 성공과 같이 놓였다). 재료는 남는다
     if (outcome === "miss") return { ok: true, lines: [`덫을 제대로 놓지 못했다. 시간만 들었다 (${josa(trapName, "은/는")} 그대로 남았다). 실패한 것을 서술한다.`], displays: [] };
     store.append({ type: "item_consumed", holder: me.id, itemId: trap.item, quantity: 1 });
-    store.append({ type: "trap_set", zone, at: state.time });
-    return { ok: true, lines: [`${josa(trapName, "을/를")} 감아 덫을 놓았다. 하루가 지나면 무언가 걸려 있을 수 있다. 다시 와서 거둔다.`], displays: [] };
+    // 놓는 판정이 걸리는 날을 정한다 (12-220): 성공이면 다음 날, 대가 있는 성공·판정 없음이면 이틀 뒤. 하루 더 늦는 덫은 놓은 때를 하루 뒤로 적는다
+    const sloppy = outcome !== "success";
+    store.append({ type: "trap_set", zone, at: state.time + (sloppy ? MINUTES_PER_DAY : 0) });
+    return {
+      ok: true,
+      lines: [`${josa(trapName, "을/를")} 감아 덫을 놓았다. ${sloppy ? "자리가 썩 좋지는 않다. 짐승이 들려면 이틀은 지나야 한다." : "자리가 좋다. 하루가 지나면 걸려 있을 것이다."} 다시 와서 거둔다.`],
+      displays: [],
+    };
   }
   if (!here) return { ok: false, error: "이 구역에 놓아 둔 덫이 없다." };
   store.append({ type: "trap_collected", zone });
@@ -145,13 +159,14 @@ export function handleTrap(ctx: ToolContext, action: "set" | "check", outcome: C
   return { ok: true, lines, displays };
 }
 
-/** 하루가 지날 때: 빈 덫에 무언가 걸리고, 날것이 상한다 */
+/** 하루가 지날 때: 놓은 지 하루가 지난 빈 덫에 걸리고 (12-220, 놓는 판정이 정한 날), 날것이 상한다 */
 export function runDailyFood(ctx: ToolContext): ToolDisplayEvent[] {
   const { store, content, rng } = ctx;
   const trap = content.scenario.foraging?.trap;
   if (trap) {
+    const today = dayOf(store.getState().time);
     for (const t of store.getState().traps) {
-      if (t.caught || rng() >= trap.chance) continue;
+      if (t.caught || today - dayOf(t.setAt) < 1) continue;
       const qty = trap.catch.qty[0] + Math.floor(rng() * (trap.catch.qty[1] - trap.catch.qty[0] + 1));
       store.append({ type: "trap_caught", zone: t.zone, item: trap.catch.item, qty });
     }

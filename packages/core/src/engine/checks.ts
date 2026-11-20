@@ -33,6 +33,18 @@ export type PlayerCheckResult =
     }
   | { ok: false; error: string };
 
+type CheckDisplay = Extract<ToolDisplayEvent, { type: "check" }>;
+
+/** 버티는 판정(reaction)의 판정 줄을 tool이 끝날 때까지 모은다. 어디서 굴렸든 executeTool이 결과에 붙인다 (사람이 죽는 것을 본 마음 다잡기처럼 결과를 돌려주지 않는 곳) */
+const reactionChecks = new WeakMap<object, CheckDisplay[]>();
+
+/** 모아 둔 버티는 판정을 꺼낸다 (꺼내면 비운다) */
+export function takeReactionChecks(store: ToolContext["store"]): CheckDisplay[] {
+  const list = reactionChecks.get(store) ?? [];
+  reactionChecks.delete(store);
+  return list;
+}
+
 /**
  * 플레이어 캐릭터의 2d6 판정을 굴리고 check_rolled 이벤트로 기록한다.
  * 행동과 능력치는 시나리오에서 오고, 보정은 능력치 + 난이도 + 상태 트랙 보정이다.
@@ -42,7 +54,9 @@ export function rollPlayerCheck(
   { store, rng, content }: ToolContext,
   /** noTools: 무기·도구의 보정을 붙이지 않는다 (동물 가르치기처럼 물건이 거들 수 없는 일) */
   /** unlearnedAs: 배우지 않은 전문 기술도 이 값으로 굴린다 (맨손 지혈은 누구나, 플레이 테스트 12) */
-  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null; unlearnedAs?: number; dest?: string | null; toolItem?: string | null; activity?: string | null; stakes?: boolean } = {},
+  /** reaction: 주인공이 하는 일이 아니라 닥친 일에 버티는 판정 (마음 다잡기, 12-220). 매복·혼란을 쓰지 않고 경험도 주지 않는다 */
+  /** situation: 그 일의 상황 보정 (수색할 곳의 넉넉함, 다시 뒤짐 같은 것, 12-220) */
+  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null; unlearnedAs?: number; dest?: string | null; toolItem?: string | null; activity?: string | null; stakes?: boolean; reaction?: boolean; situation?: { label: string; value: number }[] } = {},
 ): PlayerCheckResult {
   const scenario = content.scenario;
   const state = store.getState();
@@ -100,7 +114,11 @@ export function rollPlayerCheck(
   const cooperative = scenario.opposition?.cooperative.includes(input.move) ?? false;
   const opponent = input.opponent ?? (cooperative ? null : options.target) ?? null;
   // 매복·매복당함·혼란 (12-177)도 상황 보정이다
-  const against = [...oppositionParts(content, state, input.move, opponent, input.distance), ...ambushParts(content, state, input.move, opponent)];
+  const against = [
+    ...oppositionParts(content, state, input.move, opponent, input.distance),
+    ...(options.reaction ? [] : ambushParts(content, state, input.move, opponent)),
+    ...(options.situation ?? []),
+  ];
   // 갇힌 곳의 감시 (플레이 테스트 12): 탈출에 실패한 만큼 탈출 판정이 어렵다
   if (actor.captive?.watch && scenario.captivity?.escape_moves.includes(input.move)) against.push({ label: "감시", value: -actor.captive.watch });
   modifiers.opposition = against.reduce((n, p) => n + p.value, 0);
@@ -127,8 +145,33 @@ export function rollPlayerCheck(
   });
 
   // 걸린 것이 없는 판정은 경험치가 없다 (플레이 테스트 12: 5분짜리 판정을 되풀이해 레벨을 올렸다)
-  const growthNote = options.stakes === false ? null : gainCheckXp({ store, rng, content }, actor.id, roll.outcome);
-  const ambushNotes = afterCheckAmbush({ store, rng, content }, input.move, opponent, roll.outcome, state);
+  const growthNote = options.reaction || options.stakes === false ? null : gainCheckXp({ store, rng, content }, actor.id, roll.outcome);
+  const ambushNotes = options.reaction ? [] : afterCheckAmbush({ store, rng, content }, input.move, opponent, roll.outcome, state);
+
+  const display: CheckDisplay = {
+    type: "check",
+    checkId,
+    actorName: actor.name,
+    intent: input.intent,
+    moveLabel: move.label,
+    statLabel: statLabel(scenario, input.stat),
+    difficultyLabel: DIFFICULTY_LABELS[input.difficulty],
+    dice: roll.dice,
+    modifiers,
+    total: roll.total,
+    outcome: roll.outcome,
+    outcomeLabel: CHECK_OUTCOME_LABELS[roll.outcome],
+    line: checkLine(move.label, [
+      ...cappedParts,
+      { label: DIFFICULTY_LABELS[input.difficulty], value: modifiers.difficulty },
+      { label: conditionLabel(scenario, actor), value: modifiers.condition },
+      { label: "끌림", value: modifiers.trait - temperament.reduce((n, p) => n + p.value, 0) },
+      ...temperament,
+      ...gear.penaltyParts,
+      ...against,
+    ], roll.dice, roll.total, CHECK_OUTCOME_LABELS[roll.outcome]),
+  };
+  if (options.reaction) reactionChecks.set(store, [...(reactionChecks.get(store) ?? []), display]);
 
   return {
     ok: true,
@@ -139,29 +182,7 @@ export function rollPlayerCheck(
     dice: roll.dice,
     modifier: roll.modifier,
     total: roll.total,
-    display: {
-      type: "check",
-      checkId,
-      actorName: actor.name,
-      intent: input.intent,
-      moveLabel: move.label,
-      statLabel: statLabel(scenario, input.stat),
-      difficultyLabel: DIFFICULTY_LABELS[input.difficulty],
-      dice: roll.dice,
-      modifiers,
-      total: roll.total,
-      outcome: roll.outcome,
-      outcomeLabel: CHECK_OUTCOME_LABELS[roll.outcome],
-      line: checkLine(move.label, [
-        ...cappedParts,
-        { label: DIFFICULTY_LABELS[input.difficulty], value: modifiers.difficulty },
-        { label: conditionLabel(scenario, actor), value: modifiers.condition },
-        { label: "끌림", value: modifiers.trait - temperament.reduce((n, p) => n + p.value, 0) },
-        ...temperament,
-        ...gear.penaltyParts,
-        ...against,
-      ], roll.dice, roll.total, CHECK_OUTCOME_LABELS[roll.outcome]),
-    },
+    display,
   };
 }
 

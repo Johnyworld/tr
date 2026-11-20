@@ -19,7 +19,7 @@ import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { dayOf, formatTime } from "../rules/time.ts";
 import { harmTrack, learnedSkill } from "../scenario/scenario.ts";
-import { changeCondition } from "./body.ts";
+import { changeCondition, shakeNerves } from "./body.ts";
 import { disposition } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis } from "../story/storylets.ts";
@@ -284,6 +284,7 @@ export const resolveStorylet = defineTool({
       const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title);
       if (r.line) lines.push(r.line);
       if (r.display) extra.push(r.display);
+      if (r.displays) extra.push(...r.displays);
     }
     // 시간이 더 걸렸으면 그동안의 세계를 돌린다 (배급, 소문, 전쟁, 몸). 그사이 몸에 생긴 일도 GM에게 문장으로 (플레이 테스트 8)
     if (effects.some((e) => "delay" in e)) {
@@ -386,7 +387,7 @@ export function applyEffect(
   cast: Record<string, string>,
   vars: Record<string, string>,
   reason: string,
-): { line?: string; display?: ToolDisplayEvent } {
+): { line?: string; display?: ToolDisplayEvent; displays?: ToolDisplayEvent[] } {
   const { store, content } = ctx;
   const state = store.getState();
   const playerId = state.playerId;
@@ -766,6 +767,11 @@ export function applyEffect(
   if ("body" in effect) {
     const { track, delta } = effect.body;
     if (track === content.scenario.harm_track) return {};
+    // 마음이 흔들리는 일은 주인공이 마음 다잡기를 굴린다 (12-220, chance를 쓰지 않는다)
+    if (delta > 0 && track === content.scenario.body?.nerves?.track) {
+      const shaken = shakeNerves(ctx, delta, reason);
+      return { ...(shaken.lines.length ? { line: shaken.lines.join(" ") } : {}), displays: shaken.displays };
+    }
     if (effect.body.chance < 1 && ctx.rng() >= effect.body.chance) return {}; // 이번엔 아무 일도 없었다 (아무도 모른다)
     const t = content.scenario.condition_tracks.find((x) => x.id === track);
     const player = state.characters[playerId]!;

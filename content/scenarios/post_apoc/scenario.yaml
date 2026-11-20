@@ -698,8 +698,8 @@ move_roles:
   stealth: stealth
   deceive: deceive
 
-# 수색을 돕는 지식: 역사 1당 찾을 확률 +25% (옛 지도·건물 용도를 안다, *임시*)
-search_lore: { skill: history, per_level: 0.25 }
+# 수색을 돕는 지식: 역사를 익혔으면 수색 판정 +1 (옛 지도·건물 용도를 안다, 12-220, *임시*)
+search_lore: { skill: history, bonus: 1 }
 
 # 증상 (12-74): 플레이어에게 보이는 몸 상태. 상태 트랙의 단계가 증상을 가리키고, 화면·?상태에는 증상만 보인다 (원인은 숨긴다).
 # 같은 group은 크기 차이라 가장 큰 것(아래쪽) 하나만 보인다. 판정 보정: 가장 큰 증상은 그대로, 나머지 합은 반(올림)만 더한다
@@ -1053,11 +1053,12 @@ romance:
   flirt_moves: [persuade, deceive]
   grief_nerves: 2
 
-# 포로 (12-55): 진 전투에서 물러나지 않았으면 부상 단계별 확률로 붙잡힌다 (항복하면 반드시). 갇힌 동안은 태그 captivity 이야기만 열린다
+# 포로 (12-55): 진 전투에서 물러나지 않았으면 빠져나가기를 굴려 실패하면 붙잡힌다 (항복하면 반드시). 갇힌 동안은 태그 captivity 이야기만 열린다
 captivity:
   tag: captivity
-  # 의식불명은 helpless 규칙(적의 손에 떨어짐)이 먼저 맡는다. 여기 값은 그 규칙이 없을 때
-  on_defeat: { light: 0.15, serious: 0.5, critical: 0.8, impaired: 0.9, unconscious: 1 }
+  # 빠져나가기 (12-220): 운동(달려서)·은밀(숨어서) 중 주인공에게 나은 것. 대가 있는 성공은 무기·탄을 버리고 빠져나간다.
+  # 의식불명은 helpless 규칙(적의 손에 떨어짐)이 먼저 맡는다
+  flee_moves: [athletics, stealth]
   confiscate: [weapon, ammo]
   escape_moves: [stealth, endure]
   # 탈출의 빈틈을 기다리는 시간 (플레이 테스트 12, *임시*). 실패할 때마다 다음 탈출 판정 -1
@@ -1359,13 +1360,12 @@ promises:
   folded: { trust: -1 }
   broken: { trust: -2, affection: -1 }
 
-# 탐험할 곳 (12-162, *임시*): 구역의 숨은 곳. 그 구역을 뒤지다(수색 성공·대가 있는 성공) 40%로 찾는다. 찾은 것은 그 캐릭터만 안다.
+# 탐험할 곳 (12-162, *임시*): 구역의 숨은 곳. 그 구역을 뒤지다 수색이 성공하면 찾는다 (대가 있는 성공은 낌새만, 12-220). 찾은 것은 그 캐릭터만 안다.
 # 칸을 경계 판정으로 내려가고(마지막 칸은 어렵다), 칸마다 한 번 수색 판정으로 뒤진다. 소음이 3이면 깊이+1만큼 감염체가 깨어난다
 exploration:
   move: sense_danger
   search_move: scavenge
   step_minutes: 15
-  find_chance: 0.4
   wake: [infected_fresh, infected_hungry, infected_crawler]
   ruins:
     - id: subway_tracks
@@ -1455,7 +1455,7 @@ camp: { tag: camp, chance: [0.01, 0.03, 0.06, 0.1], fire: 1.5, own_land: 0.5, de
 
 # 매복 (12-177, *임시*): 은밀 판정(어려움)으로 자리를 잡으면 12시간, 첫 근접전·사격 +2와 50%로 상대 혼란.
 # 적의 매복 이야기(ambush: true)가 열리면 다음 판정 -2, 실패하면 혼란(다음 판정 -1). 냄새 맡기를 배운 개가 곁에 있으면 미리 안다
-ambush: { move: stealth, hours: 12, attack_moves: [fight, shoot], bonus: 2, partial_bonus: 1, confuse_chance: 0.5, ambushed: -2, confused: -1, forewarn_trick: sniff }
+ambush: { move: stealth, hours: 12, attack_moves: [fight, shoot], bonus: 2, partial_bonus: 1, ambushed: -2, confused: -1, forewarn_trick: sniff }
 
 # 무전 송출 (12-173, *임시*): 무전기로 하루 한 번 열린 주파수에 부르면 이 확률로 응답 이야기(storylets/radio_call.yaml)가 열린다
 radio_call: { item: radio, tag: radio_call, chance: 0.6 }
@@ -1516,20 +1516,19 @@ alarm: { tag: alarm, moves: [stealth] }
 spoilage:
   season: { summer: 1.5, winter: 0.4 }
 
-# 먹을 것 구하기 (12-131, *임시*): take_action.forage. 수색처럼 판정 결과만큼 굴리고, 같은 날 같은 곳에서 다시 할수록 절반.
+# 먹을 것 구하기 (12-131, *임시*): take_action.forage. 수색처럼 판정 결과만큼 얻고 (성공 2, 대가 있는 성공 1), 같은 날 같은 곳에서 다시 할 때마다 판정 -1 (12-220).
 # 낚시는 물이 나는 구역에서, 사냥은 거점이 아닌 구역에서. 개가 동행하면 사냥에서 한 번 더 굴린다
 foraging:
   move: survival
   kinds:
-    - { id: fish, label: 낚시, move: fishing, water: true, chance: 0.55, items: [{ item: raw_fish, weight: 1, qty: [1, 2] }] }
+    - { id: fish, label: 낚시, move: fishing, water: true, modifier: 1, items: [{ item: raw_fish, weight: 1, qty: [1, 2] }] }
     - id: hunt
       label: 사냥
       move: hunt
-      chance: 0.35
       items: [{ item: raw_meat, weight: 3, qty: [1, 1] }, { item: raw_meat, weight: 1, qty: [2, 3] }]
       companions: [stray_dog, road_dog]
-  # 덫: 철사 한 뭉치를 놓고 하루가 지날 때마다 40%로 날고기가 걸린다. 거두면 철사가 돌아온다
-  trap: { move: hunt, item: wire_roll, chance: 0.4, catch: { item: raw_meat, qty: [1, 1] } }
+  # 덫: 철사 한 뭉치를 놓는다. 놓는 판정이 성공이면 다음 날, 대가 있는 성공이면 이틀 뒤에 날고기가 걸린다 (12-220). 거두면 철사가 돌아온다
+  trap: { move: hunt, item: wire_roll, catch: { item: raw_meat, qty: [1, 1] } }
 
 consumables:
   # 구급상자·붕대는 응급처치 물건이다 (출혈 효과가 있으면 응급처치 물건으로 본다, 플레이 테스트 11 A9). 효과는 판정이 정한다: 성공 = 피가 멎고 부상 한 단계, 대가 있는 성공 = 피만, 실패 = 아무 일 없음
@@ -1657,18 +1656,20 @@ body:
     # 배부르고 따뜻하면 하루마다 낫는 확률 (체력 1당 +10%), 아니면 깊어지는 확률
     recover: { chance: 0.35, per_point: 0.1 }
     worsen: 0.3
-  # 마음 (12-48): 크게 다치면 1, 곁의 사람이 죽는 것을 보면 1. 냉정 1당 15% 버틴다.
+  # 마음 다잡기 (12-220): 마음·공포가 오를 때 주인공이 버티기(냉정)를 굴린다. 성공 = 오르지 않음, 대가 있는 성공 = 한 단계 덜(적어도 한 단계), 실패 = 그대로.
+  # 공포 판정이 실패해 공황에 이르면 마음도 한 단계 오른다
+  steady: { move: endure, stat: nerve }
+  # 마음 (12-48): 크게 다치면 1, 곁의 사람이 죽는 것을 보면 1. 마음 다잡기로 버틴다.
   # 굶주림·오한 이상이 아니면 하루마다 15% (냉정 1당 +10%), 우리 땅이거나 곁에 사람이 있으면 +20% 가라앉는다 (*임시*)
   nerves:
     track: nerves
     heavy_harm: 1
     witness_death: 1
-    resist: { ability: nerve, per_point: 0.15 }
     recover: { chance: 0.15, per_point: 0.1, safe: 0.2 }
     # 끊기지 않고 6시간 넘게 푹 자면 한 번 더: 우리 땅이나 동행 곁이면 50%, 아니면 25% (냉정 1당 +10%, *임시*)
     sleep: { min_hours: 6, safe: 0.5, unsafe: 0.25 }
-  # 공포 (12-95, *임시*): 계기의 단계 + 어둠 1 - 동행 1 ± 트레잇 - 둔감해짐. 냉정 1당 15% 한 단계 버틴다.
-  # 위협이 없으면 1시간마다 한 단계 가라앉고, 자고 나면 평정. 공황이면 30%로 마음 +1, 마음이 미칠 것 같음 이상이면 한 단계 더
+  # 공포 (12-95, *임시*): 계기의 단계 + 어둠 1 - 동행 1 ± 트레잇. 마음 다잡기로 버틴다 (12-220).
+  # 위협이 없으면 1시간마다 한 단계 가라앉고, 자고 나면 평정. 다잡지 못하고 공황에 이르면 마음 +1, 마음이 미칠 것 같음 이상이면 한 단계 더
   fear:
     track: fear
     gm: { startle: 1, dread: 2 }
@@ -1676,9 +1677,7 @@ body:
     witness_death: 1
     dark: { segments: [night], steps: 1 }
     companion: 1
-    resist: { ability: nerve, per_point: 0.15 }
     decay_hours: 1
-    panic_nerves: 0.3
     # 계기 하나로는 두 단계까지 (플레이 테스트 11, D7: 밤의 철사 이야기 하나로 평온에서 공황)
     max_steps: 2
     nerves_from: frayed

@@ -21,7 +21,7 @@ describe("마음", () => {
     const w = open("role_a_grunt", () => 0.99);
     const me = () => w.state().characters[w.state().playerId]!;
     expect(me().conditions.nerves).toBe("steady");
-    shakeNerves(w.ctx(), 2, "test");
+    shakeNerves(w.ctx(), 2, "test", false);
     expect(me().conditions.nerves).toBe("low"); // 괴로움 → 우울함 (12-74)
     // 냉정으로 버티지 못하면(0.99) 오르고, 가라앉는 굴림은 낮아야 성공
     const calm = { ...w.ctx(), rng: () => 0.01 };
@@ -34,7 +34,7 @@ describe("마음", () => {
     const me = () => w.state().characters[w.state().playerId]!;
     me().stats.nerve = 0;
     w.state().companions = [];
-    shakeNerves(w.ctx(), 1, "test");
+    shakeNerves(w.ctx(), 1, "test", false);
     expect(me().conditions.nerves).toBe("shaken");
     // 혼자면 15%: 0.2를 굴리면 가라앉지 않는다
     runDailyNerves({ ...w.ctx(), rng: () => 0.2 });
@@ -48,7 +48,7 @@ describe("마음", () => {
     const me = () => w.state().characters[w.state().playerId]!;
     me().stats.nerve = 0;
     w.state().companions = [];
-    shakeNerves(w.ctx(), 2, "test");
+    shakeNerves(w.ctx(), 2, "test", false);
     expect(me().conditions.nerves).toBe("low");
     expect(sleepNerves({ ...w.ctx(), rng: () => 0.2 }, 3 * 60)).toBeNull(); // 3시간은 푹 잔 게 아니다
     expect(sleepNerves({ ...w.ctx(), rng: () => 0.3 }, 7 * 60)).toBeNull(); // 25%를 넘었다
@@ -59,12 +59,12 @@ describe("마음", () => {
   it("허기짐·추움으로는 막히지 않고, 굶주림·오한이면 가라앉지 않는다", () => {
     const w = open("role_l_wanderer", () => 0.99);
     const me = () => w.state().characters[w.state().playerId]!;
-    shakeNerves(w.ctx(), 1, "test");
+    shakeNerves(w.ctx(), 1, "test", false);
     me().conditions.hunger = "hungry";
     me().conditions.cold = "cold";
     runDailyNerves({ ...w.ctx(), rng: () => 0.05 });
     expect(me().conditions.nerves).toBe("steady");
-    shakeNerves(w.ctx(), 1, "test");
+    shakeNerves(w.ctx(), 1, "test", false);
     me().conditions.hunger = "starving";
     runDailyNerves({ ...w.ctx(), rng: () => 0.05 });
     expect(me().conditions.nerves).toBe("shaken");

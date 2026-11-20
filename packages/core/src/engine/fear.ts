@@ -3,13 +3,13 @@ import { activeCompanions } from "../game/companions.ts";
 import type { GameState } from "../game/state.ts";
 import { segmentOf } from "../rules/time.ts";
 import { incapacitatingSymptom, trackOf } from "../scenario/scenario.ts";
-import { changeCondition, shakeNerves } from "./body.ts";
+import { changeCondition, shakeNerves, steadyRoll } from "./body.ts";
 import { traitsOf } from "./traits.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
  * 공포 (기획서 4.5.1, 12-95): 그 자리에서 오르고 몇 시간 안에 빠지는 단기 상태. 판정 보정만 준다.
- * - 오르는 양은 코드가 정한다: 계기의 단계 + 어둠 - 동행 ± 트레잇 (+ 마음이 무너져 있으면 1), 능력으로 한 단계 버틴다
+ * - 오르는 양은 코드가 정한다: 계기의 단계 + 어둠 - 동행 ± 트레잇 (+ 마음이 무너져 있으면 1). 주인공이 마음 다잡기를 굴려 버틴다 (12-220)
  * - 겪을수록 둔감해지는 것과 아는 것(지식 스킬)이 덜 무서운 것은 12-185에 뺐다
  * - 공포를 부른 것이 장면에 없으면 시간마다 가라앉고, 자고 나면 평정
  * - 주인공만 계산한다 (NPC는 다음 단계)
@@ -58,22 +58,21 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
     const from = trackOf(ctx.content.scenario, nerves.track).levels.findIndex((l) => l.id === f.nerves_from);
     if (from >= 0 && levelIndex(ctx, state, me.id, nerves.track) >= from) steps += 1;
   }
-  const hold = Math.min(0.8, Math.max(0, f.resist.per_point * (me.stats[f.resist.ability] ?? 0)));
-  if (steps > 0 && ctx.rng() < hold) steps -= 1;
-
   if (f.max_steps) steps = Math.min(steps, f.max_steps);
-  if (steps <= 0) return { lines: [`겁날 일이었다 (${cause}). ${josa(me.name, "은/는")} 두려움을 눌러 참았다. 공포가 오르지 않았다.`], displays: [] };
-  const c = changeCondition(ctx, me.id, f.track, steps, "fear", cause);
-  if (!c?.display) return EMPTY;
-  const out: FearResult = { lines: [c.line], displays: [c.display] };
-  // 공황에 이르면 마음에 상처가 남을 수 있다
+  // 이미 공황이면 더 오를 데가 없다 (굴리지 않는다)
   const track = trackOf(ctx.content.scenario, f.track);
-  if (levelIndex(ctx, ctx.store.getState(), me.id, f.track) === track.levels.length - 1 && ctx.rng() < f.panic_nerves) {
-    const shaken = shakeNerves(ctx, 1, "공황에 빠졌다");
-    if (shaken?.display) {
-      out.lines.push(shaken.line);
-      out.displays.push(shaken.display);
-    }
+  if (steps <= 0 || levelIndex(ctx, state, me.id, f.track) >= track.levels.length - 1) return EMPTY;
+  // 마음 다잡기 (12-220): 성공이면 오르지 않고, 대가 있는 성공이면 한 단계 덜
+  const held = steadyRoll(ctx, steps, cause);
+  if (held.steps <= 0) return { lines: [`겁날 일이었다 (${cause}). ${josa(me.name, "은/는")} 두려움을 눌러 참았다. 공포가 오르지 않았다.`], displays: held.displays };
+  const c = changeCondition(ctx, me.id, f.track, held.steps, "fear", cause);
+  if (!c?.display) return { lines: [], displays: held.displays };
+  const out: FearResult = { lines: [c.line], displays: [...held.displays, c.display] };
+  // 다잡지 못하고 공황에 이르면 마음에 상처가 남는다 (굴리지 않는다)
+  if (held.outcome !== "partial" && levelIndex(ctx, ctx.store.getState(), me.id, f.track) === track.levels.length - 1) {
+    const shaken = shakeNerves(ctx, 1, "공황에 빠졌다", false);
+    out.lines.push(...shaken.lines);
+    out.displays.push(...shaken.displays);
   }
   out.lines.push("떨리는 손, 좁아지는 시야로 연출한다. 플레이어 대신 도망치거나 얼어붙게 하지 않는다 (판정만 어려워진다).");
   return out;

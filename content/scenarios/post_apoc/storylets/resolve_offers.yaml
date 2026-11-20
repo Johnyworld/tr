@@ -58,7 +58,7 @@
     - id: silent
       label: 아무 말도 하지 못한다
       effects:
-        - body: { track: nerves, delta: 1, chance: 0.5 }
+        - body: { track: nerves, delta: 1 }
 
 - id: rv_island
   title: 남쪽의 목소리

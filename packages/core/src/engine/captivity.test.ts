@@ -6,7 +6,7 @@ import { createContentSchemas } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
-import { capturePlayer, runCaptivity, warCaptures } from "./captivity.ts";
+import { capturePlayer, maybeCaptureAfterDefeat, runCaptivity, warCaptures } from "./captivity.ts";
 import { describePlayerState } from "./context.ts";
 import { loadRealContent } from "../testing.ts";
 
@@ -19,6 +19,24 @@ const hurt = (w: ReturnType<typeof open>, id: string, to: string) =>
   w.ctx().store.append({ type: "condition_changed", targetId: id, track: "harm", from: w.state().characters[id]!.conditions.harm!, to, fatal: false, by: "test", cause: "test", day: 1, harmTrack: true });
 
 describe("주인공이 붙잡힌다", () => {
+  it("진 싸움 뒤에는 빠져나가기를 굴린다: 성공 = 빠져나감, 대가 있는 성공 = 무기를 버리고, 실패 = 붙잡힘 (12-220)", () => {
+    const flee = (roll: number) => {
+      const w = open(() => roll);
+      const out = maybeCaptureAfterDefeat({ ...w.ctx(), rng: () => roll }, "faction_c");
+      return { w, out, me: w.state().characters[w.state().playerId]! };
+    };
+    const ok = flee(0.99);
+    expect(ok.me.captive).toBeFalsy();
+    expect(ok.out.displays[0]?.type).toBe("check");
+    expect(ok.me.inventory.kitchen_knife).toBeGreaterThan(0);
+    const partial = flee(0.5);
+    expect(partial.me.captive).toBeFalsy();
+    expect(partial.me.inventory.kitchen_knife).toBeUndefined();
+    expect(partial.out.lines.join()).toContain("버리고");
+    const caught = flee(0.01);
+    expect(caught.me.captive).toMatchObject({ by: "faction_c" });
+  });
+
   it("붙잡히면 무기를 빼앗기고 붙잡은 무리의 거점에 갇히고, 갇힌 동안의 이야기만 열린다", () => {
     const w = open();
     const me = () => w.state().characters[w.state().playerId]!;

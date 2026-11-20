@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
 import { buildCustomRole } from "../game/customStart.ts";
-import { scavenge } from "./scavenge.ts";
+import { scavenge, scavengeParts } from "./scavenge.ts";
 import { loadRealContent } from "../testing.ts";
 
 const content = loadRealContent();
@@ -19,16 +19,16 @@ function worldAt(location: string) {
 }
 
 describe("수색으로 물건 찾기", () => {
-  it("성공이면 구역의 표에서 찾아 소지품에 넣고, 같은 날 다시 뒤지면 덜 나온다", () => {
+  it("성공이면 구역의 표에서 찾아 소지품에 넣고, 같은 날 다시 뒤지면 판정이 어려워진다 (12-220)", () => {
     const w = worldAt("old_town");
     const count = () => Object.values(w.state().characters.player!.inventory).reduce((n, q) => n + q, 0);
     const before = count();
-    const first = scavenge({ ...w.ctx(), rng: () => 0.4 }, "success"); // 0.4 < 0.5 → 찾는다
+    expect(scavengeParts(w.ctx()).some((p) => p.label === "다시 뒤짐")).toBe(false);
+    const first = scavenge({ ...w.ctx(), rng: () => 0.4 }, "success");
     expect(count()).toBeGreaterThan(before);
     expect(first.lines[0]).toContain("찾아 챙겼다");
-    const after = count();
-    const second = scavenge({ ...w.ctx(), rng: () => 0.4 }, "success"); // 0.4 ≥ 0.25 → 못 찾는다
-    expect(count()).toBe(after);
+    expect(scavengeParts(w.ctx())).toContainEqual({ label: "다시 뒤짐", value: -1 });
+    const second = scavenge({ ...w.ctx(), rng: () => 0.4 }, "partial");
     expect(second.lines[0]).toContain("이미 뒤진 곳");
     w.close();
   });

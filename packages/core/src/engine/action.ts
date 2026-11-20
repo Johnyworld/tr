@@ -5,7 +5,7 @@ import { planBroadcast, runBroadcast } from "./broadcast.ts";
 import { ambushDifficulty, applyAmbush, isConfused, leaveAmbush, planAmbush } from "./ambush.ts";
 import { templateKind } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
-import { forage, forageProblem, handleTrap, trapProblem } from "./forage.ts";
+import { forage, forageParts, forageProblem, handleTrap, trapProblem } from "./forage.ts";
 import { buryRemains } from "./remains.ts";
 import { resistSteps } from "./growth.ts";
 import { breakTruceIfAny } from "./diplomacy.ts";
@@ -20,7 +20,7 @@ import { hostileHere, runAlarm, runInfestedArrival, runRoadEvent } from "./story
 import { CAMP_INTERRUPT, createCampCheck, runCampEvent, deepSleepReason } from "./camp.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
-import { scavenge } from "./scavenge.ts";
+import { scavenge, scavengeParts } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
 import { isInfected } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -600,12 +600,15 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       { move: input.check.move, stat: input.check.stat, difficulty: input.ambush ? ambushDifficulty(input.check.difficulty) : input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
       ctx,
       // 응급처치로 피를 멎게 하는 것은 누구나 한다 (배우지 않았으면 미숙 -1, 플레이 테스트 12: 붕대로도 지혈하지 못했다)
+      // 수색·먹을 것 구하기의 상황 보정 (12-220): 곳의 넉넉함, 다시 뒤짐. 들킬까 숨는 판정(exposed)에는 붙이지 않는다
       { target: input.target, forMission, noTools: !!input.train, forage: input.forage, unlearnedAs: input.treatment && input.check.move === scenario.wounds?.staunch_move ? -1 : undefined, dest: escapeAttempt ? null : input.move_to,
         // 치료 판정은 쓰는 물건의 보정만 (플레이 테스트 12: 붕대를 썼는데 "+1(구급상자)", 물건 없이도 붙었다)
         ...(input.treatment ? { toolItem: input.treatment.item ?? null } : {}),
         activity: input.activity?.kind ?? null,
         // 걸린 것: 몸의 위험, 상대, 임무, 진행 중인 이야기, 전투, 치료, 옮겨 가기, 적 땅, 시간을 들이는 일 (5분짜리 맨 판정만 빠진다)
-        stakes: input.check.harm_on_failure !== "none" || !!input.target || !!input.check.opponent || !!forMission || !!start.activeStorylet || inBattle || !!input.treatment || !!input.move_to || exposed || !!input.forage || !!input.trap || (!!input.activity && input.activity.kind !== "brief") },
+        stakes: input.check.harm_on_failure !== "none" || !!input.target || !!input.check.opponent || !!forMission || !!start.activeStorylet || inBattle || !!input.treatment || !!input.move_to || exposed || !!input.forage || !!input.trap || (!!input.activity && input.activity.kind !== "brief"),
+        situation: exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? scavengeParts(ctx) : input.forage ? forageParts(ctx, input.forage) : [],
+      },
     );
     if (!roll.ok) {
       // 턴은 이미 시작됐으므로 잠깐의 시간만 흐르게 하고 오류를 알린다
@@ -623,7 +626,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
         if (kind) input.check.harm_kind = kind;
       }
     }
-    displays.push(roll.display);
+    // 이 행동의 판정이 결과의 첫 줄이다 (앞서 굴린 마음 다잡기보다 앞에, 12-220)
+    displays.unshift(roll.display);
     // 탈출은 빈틈을 기다리는 데 시간이 든다 (플레이 테스트 12)
     const wait = escapeAttempt ? scenario.captivity?.escape_hours : undefined;
     if (wait) {
@@ -706,7 +710,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       const nerves = ctx.content.scenario.body?.nerves;
       if (!harm.fatal && hurt && nerves && input.check.harm_on_failure === "heavy") {
         const shaken = shakeNerves(ctx, nerves.heavy_harm, `크게 다쳤다 (${input.check.harm_cause || input.intent})`);
-        if (shaken?.line) lines.push(shaken.line);
+        lines.push(...shaken.lines);
+        displays.push(...shaken.displays);
       }
       // 감염은 살갗이 찢긴 상처(피가 나는 종류)일 때만 (12-91). 출혈 규칙이 없는 월드면 그대로
       const broken = !scenario.wounds || !!woundKind(ctx, input.check.harm_kind)?.bleeds;

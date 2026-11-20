@@ -17,7 +17,8 @@ function content(): Content {
 }
 
 function setup(c = content()) {
-  const roll = { value: 0.99 };
+  // 마음 다잡기 (12-220): 0.01이면 주사위 1+1이라 다잡지 못한다
+  const roll = { value: 0.01 };
   const store = new InMemoryGameStore([createWorldEvent(c, "role_b_guard", "world_fear", () => 0.5)]);
   const ctx = { store, rng: () => roll.value, content: c };
   const me = () => store.getState().characters[store.getState().playerId]!;
@@ -47,13 +48,27 @@ describe("공포", () => {
     expect(env.fear()).toBe("scared");
   });
 
-  it("냉정으로 한 단계 버티고, 버티면 그렇다고 알린다", () => {
+  it("마음 다잡기를 굴려 성공하면 오르지 않고, 대가 있는 성공이면 한 단계 덜 (적어도 한 단계)", () => {
     const env = setup();
-    env.me().stats.nerve = 3; // 45%
-    env.roll.value = 0.1;
-    const r = frighten(env.ctx, 1, "기습");
+    env.roll.value = 0.99; // 6+6
+    const r = frighten(env.ctx, 2, "기습");
     expect(env.fear()).toBe("calm");
     expect(r.lines.join()).toContain("눌러 참았다");
+    expect(r.displays.some((d) => d.type === "check" && d.line?.includes("버티기"))).toBe(true);
+    env.roll.value = 0.5; // 4+4 = 8 → 대가 있는 성공
+    frighten(env.ctx, 2, "감염체 무리");
+    expect(env.fear()).toBe("tense");
+    frighten(env.ctx, 1, "또 기습");
+    expect(env.fear()).toBe("scared");
+  });
+
+  it("다잡지 못하고 공황에 이르면 마음도 한 단계 오른다 (굴리지 않는다)", () => {
+    const env = setup();
+    env.me().conditions.fear = "scared";
+    const r = frighten(env.ctx, 1, "기습");
+    expect(env.fear()).toBe("panic");
+    expect(env.me().conditions.nerves).toBe("shaken");
+    expect(r.displays.filter((d) => d.type === "check")).toHaveLength(1);
   });
 
   it("겁쟁이는 더, 강철 신경은 덜 오른다", () => {

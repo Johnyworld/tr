@@ -32,15 +32,17 @@ describe("수술", () => {
     expect(me(w).conditions.harm).toBe("serious");
   });
 
-  it("수술이 잘못되면 상처가 깊어진다", () => {
+  it("거점 의무실의 수술은 잘못돼도 상처가 깊어지지 않고, 그날 치료는 받은 것으로 친다 (플레이 테스트 13)", () => {
     const { w, roll } = world();
     expect(w.runCheat("~harm me critical").ok).toBe(true);
     expect(w.runCheat("~summon a_chaewon").ok).toBe(true);
     roll.value = 0;
     const r = treat(w);
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
-    if (r.ok) expect(r.resultText).toContain("잘못됐다");
-    expect(me(w).conditions.harm).toBe("impaired");
+    if (r.ok) expect(r.resultText).toContain("뜻대로 되지 않았다");
+    expect(me(w).conditions.harm).toBe("critical");
+    const again = treat(w);
+    expect(again.ok && again.resultText).not.toContain("🩺");
   });
 
   it("중상까지는 굴리지 않는다", () => {

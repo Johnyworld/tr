@@ -28,21 +28,27 @@ export function planLesson(ctx: ToolContext, input: LessonInput): string | null 
   const level = learnedSkill(s, teacher.skills, input.skill);
   if (level === null || level < rule.min_skill) return `${josa(name, "은/는")} ${josa(move.label, "을/를")} 가르칠 만큼 익히지 않았다 (${rule.min_skill >= 0 ? "+" : ""}${rule.min_skill} 이상이어야 가르친다).`;
   const trust = state.relations[input.teacher]?.[me.id]?.trust ?? 0;
-  if (trust < rule.min_trust) return `${josa(name, "은/는")} 아직 가르쳐 줄 만큼 믿지 않는다 (신뢰 ${rule.min_trust} 이상).`;
+  // 같은 무리 사람은 믿음이 모자라도 값을 받고 가르친다 (플레이 테스트 13: 같은 무리 치료사의 신뢰가 오르지 않아 응급처치를 끝내 배우지 못했다)
+  const sameFaction = !!me.factionId && me.factionId === teacher.factionId;
+  if (trust < rule.min_trust && !sameFaction) return `${josa(name, "은/는")} 아직 가르쳐 줄 만큼 믿지 않는다 (신뢰 ${rule.min_trust} 이상).`;
   if (state.lessons[input.skill] === undefined && lessonFee(ctx, input.teacher) > 0 && !pickFee(ctx, me, rule.fee)) {
-    return `${josa(name, "은/는")} 다른 무리 사람에게는 값(${rule.fee}어치)을 받는다. 낼 만한 물건이 모자란다 (신뢰가 ${rule.free_trust} 이상이면 받지 않는다).`;
+    return sameFaction
+      ? `${josa(name, "은/는")} 아직 믿음이 두텁지 않아 값(${rule.fee}어치)을 받고 가르친다. 낼 만한 물건이 모자란다 (신뢰가 ${rule.min_trust} 이상이면 받지 않는다).`
+      : `${josa(name, "은/는")} 다른 무리 사람에게는 값(${rule.fee}어치)을 받는다. 낼 만한 물건이 모자란다 (신뢰가 ${rule.free_trust} 이상이면 받지 않는다).`;
   }
   return null;
 }
 
-/** 가르치는 사람이 받는 값 (같은 무리이거나 신뢰가 높으면 0) */
+/** 가르치는 사람이 받는 값 (신뢰가 높거나, 같은 무리이고 믿을 만하면 0) */
 function lessonFee(ctx: ToolContext, teacherId: string): number {
   const rule = ctx.content.scenario.growth?.teaching;
   const state = ctx.store.getState();
   const me = state.characters[state.playerId]!;
   const teacher = state.characters[teacherId]!;
   const trust = state.relations[teacherId]?.[me.id]?.trust ?? 0;
-  if (!rule || rule.fee <= 0 || (!!me.factionId && me.factionId === teacher.factionId) || trust >= rule.free_trust) return 0;
+  if (!rule || rule.fee <= 0 || trust >= rule.free_trust) return 0;
+  // 같은 무리는 믿으면 공짜, 아직 믿지 않으면 값을 받는다
+  if (!!me.factionId && me.factionId === teacher.factionId && trust >= rule.min_trust) return 0;
   return rule.fee;
 }
 

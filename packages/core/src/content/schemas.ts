@@ -666,7 +666,8 @@ export function createContentSchemas(s: Scenario) {
     /** 주인공이 붙잡힌다 (12-55): by 무리(own 외에 zone_owner 등 별칭), zone이 없으면 그 무리의 거점에 갇힌다 */
     z.strictObject({ capture_player: z.strictObject({ by: z.string().min(1), zone: contentIdSchema.optional() }) }),
     /** 갇힌 주인공이 풀려난다: returned면 빼앗긴 것을 돌려받는다, home이면 우리 무리의 거점으로 돌아간다 */
-    z.strictObject({ release_player: z.strictObject({ returned: z.boolean().default(true), home: z.boolean().default(false) }) }),
+    /** 풀려난다. home: 우리 거점으로, out: 붙잡은 무리 땅이 아닌 맞닿은 구역으로 빠져나간다 (플레이 테스트 13: 탈출 기회) */
+    z.strictObject({ release_player: z.strictObject({ returned: z.boolean().default(true), home: z.boolean().default(false), out: z.boolean().default(false) }) }),
     /** 지니고 있던 무기를 이 구역에 맡긴다 (성당 문 앞 등, 12-54). 이 구역을 떠날 때 저절로 돌려받는다 */
     z.strictObject({ deposit_weapons: z.literal(true) }),
     /** 우리 땅의 산출을 늘린다 (씨앗을 심었다, 우물을 팠다, 12-54). where: here 지금 구역(우리 땅일 때만), base 우리 무리 거점. 빼앗기면 사라진다 */

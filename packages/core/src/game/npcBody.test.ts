@@ -8,7 +8,8 @@ import { WorldManager } from "../world/manager.ts";
 import { loadRealContent } from "../testing.ts";
 
 const content = loadRealContent();
-const sleep = { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true };
+// 날을 넘기는 데 쓴다: 잇달아 자면 이어진 잠이라 피곤하지 않으면 깨어 있게 된다 (플레이 테스트 13), 그래서 기다린다
+const sleep = { intent: "기다린다", check: null, activity: { kind: "wait", until: null }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true };
 
 function medicWorld() {
   const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-npcbody-")), content, rngFactory: () => createSeededRng(6) });
@@ -26,7 +27,7 @@ describe("NPC의 몸 (기획서 7.7)", () => {
     w.ctx().store.append({ type: "condition_changed", targetId: "d_sori", track: "infection", from: "clean", to: "incubating", fatal: false, by: "test", cause: "긁힘", day: 1, harmTrack: false });
     const day0 = Math.floor(w.state().time / 1440) + 1;
     // 잠복 이틀 → 추움 (하루에 한 단계, 첫 증상부터 열이 오르는 이야기가 열린다, 12-74·12-109)
-    for (let i = 0; i < 20 && Math.floor(w.state().time / 1440) + 1 < day0 + 2; i++) w.executeTool("take_action", sleep);
+    for (let i = 0; i < 20 && Math.floor(w.state().time / 1440) + 1 < day0 + 2; i++) w.executeTool("take_action", { ...sleep, activity: { kind: "wait", until: i % 2 ? "morning" : "night" } });
     expect(w.state().characters.d_sori!.conditions.infection).toBe("chill");
     expect(ids(w, dawnOf(w, 5))).toContain("d_sori_fever");
     expect(ids(w, morningOf(7))).not.toContain("d_sori_clear");

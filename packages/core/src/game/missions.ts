@@ -26,7 +26,8 @@ export const MISSION_STATUS_LABELS: Record<MissionStatus, string> = {
 /** 세이브 안의 요구 조건. 콘텐츠에서 검증된 것을 복사하므로 행동 ID는 문자열로 둔다 */
 const missionRequirementSchema = z.union([
   z.strictObject({ activity: z.enum(ACTIVITIES), minutes: z.number().int().positive() }),
-  z.strictObject({ check: z.string(), min_outcome: z.enum(["success", "partial"]) }),
+  /** alts: 이 판정 대신 써도 되는 판정 (배정할 때 시나리오의 mission_move_groups에서 복사) */
+  z.strictObject({ check: z.string(), min_outcome: z.enum(["success", "partial"]), alts: z.array(z.string()).optional() }),
   z.strictObject({ goal: z.string() }),
   z.strictObject({ bring: z.string(), quantity: z.number().int().positive() }),
   z.strictObject({ deliver: z.string(), quantity: z.number().int().positive() }),
@@ -74,6 +75,9 @@ export const MISSION_FAIL_MINUTES = 30;
 export const MISSIONS_PER_DAY = 2;
 
 /** 결과별 공적 (임시값, 기획서 18장 미정) */
+/** 이만큼(분) 이하의 시간 조건에 판정 하나뿐인 일감은 짧은 일감이다 (완수 공적 +2) */
+export const SHORT_MISSION_MINUTES = 60;
+
 export const MERIT = {
   success: 3,
   /** 시간만 채우면 되는 임무(판정 조건 없음)의 완수 (C4) */
@@ -93,7 +97,7 @@ export const PROMOTION = {
   maxDisobedience: 1,
   /** 직속 상관의 신뢰 */
   minCommanderTrust: 3,
-  /** 최근 이만큼(일) 안의 흠을 본다: 실패·일부 완수가 setbacks 이상이거나 상관이 덜 믿게 된 일이 있으면 미룬다 */
+  /** 최근 이만큼(일) 안의 흠을 본다: 실패·기한 초과·포기가 setbacks 이상이거나 상관이 덜 믿게 된 일이 있으면 미룬다 (일부 완수는 세지 않는다, 플레이 테스트 13) */
   recentDays: 3,
   setbacks: 2,
 } as const;
@@ -105,7 +109,7 @@ export function recentSetback(
   commanderId: string | null,
 ): string | null {
   const since = state.time - PROMOTION.recentDays * MINUTES_PER_DAY;
-  const bad = Object.values(state.missions).filter((m) => m.assigneeId === characterId && m.assignedAt >= since && ["partial", "failed", "expired", "abandoned"].includes(m.status) && !m.excused).length;
+  const bad = Object.values(state.missions).filter((m) => m.assigneeId === characterId && m.assignedAt >= since && ["failed", "expired", "abandoned"].includes(m.status) && !m.excused).length;
   if (bad >= PROMOTION.setbacks) return `최근 ${PROMOTION.recentDays}일 사이 임무 ${bad}번이 뜻대로 되지 않았다`;
   if (commanderId && (state.trustDroppedAt?.[commanderId] ?? -Infinity) >= since) return `최근 ${PROMOTION.recentDays}일 사이 상관의 믿음을 잃은 일이 있다`;
   return null;
@@ -145,7 +149,11 @@ export function evaluateMission(mission: MissionInstance, now: GameTime): Missio
   // 조건을 기한 안에 다 채웠으면 보고가 늦어도 기한 초과가 아니다 (플레이 테스트 13)
   const late = (mission.metAt ?? now) > mission.deadline;
   const timeOnly = mission.requirements.every((r) => "activity" in r);
-  const base = outcome === "success" && timeOnly ? MERIT.success_time_only : MERIT[outcome];
+  // 짧은 일감 (플레이 테스트 13: 판정 하나와 1시간으로 +3, 3일차에 공적 15): 판정 조건 하나에 시간 조건이 1시간 이하면 시간만 채우는 일감과 같게
+  const checks = mission.requirements.filter((r) => "check" in r).length;
+  const minutes = mission.requirements.reduce((n, r) => n + ("activity" in r ? r.minutes : 0), 0);
+  const short = checks === 1 && minutes <= SHORT_MISSION_MINUTES && mission.requirements.every((r) => "check" in r || "activity" in r);
+  const base = outcome === "success" && (timeOnly || short) ? MERIT.success_time_only : MERIT[outcome];
   return { outcome, late, merit: base + (late ? MERIT.late : 0) };
 }
 
@@ -232,6 +240,8 @@ export function pickDailyOffers(
   rank?: string,
   /** 받을 사람이 할 수 있는 판정인지 (플레이 테스트 12: 배우지 않은 전문 기술의 임무가 나와 일부 완수가 쌓였다) */
   canDo?: (move: string) => boolean,
+  /** 최근에 받은 일감 (플레이 테스트 13: "약 찾아오기"가 1·3·4·7일차). 다른 후보가 모자랄 때만 다시 낸다 */
+  recent: readonly string[] = [],
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
@@ -252,8 +262,11 @@ export function pickDailyOffers(
   if (pool.length === 0) return null;
   const picked: string[] = [];
   const count = Math.min(OFFERS_PER_DAY, pool.length);
+  const fresh = pool.filter((id) => !recent.includes(id));
+  const stale = pool.filter((id) => recent.includes(id));
   while (picked.length < count) {
-    const [id] = pool.splice(Math.floor(rng() * pool.length), 1);
+    const from = fresh.length ? fresh : stale;
+    const [id] = from.splice(Math.floor(rng() * from.length), 1);
     picked.push(id!);
   }
   return { day, templateIds: picked };

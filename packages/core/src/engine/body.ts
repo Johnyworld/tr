@@ -179,7 +179,7 @@ export function itemUseProblem(ctx: ToolContext, item: string, targetId?: string
  * 치료사에게 자기 치료를 받을 수 없는 까닭 (물건 없이, 판정·시간 전에 본다, 플레이 테스트 11). 받을 수 있으면 null.
  * 피가 나는데 치료사가 없으면 맨손 지혈로 넘어가므로 막지 않는다
  */
-export function selfTreatmentProblem(ctx: ToolContext, patientId?: string): string | null {
+export function selfTreatmentProblem(ctx: ToolContext, patientId?: string, pay: FeeChoice = "default"): string | null {
   const recovery = ctx.content.scenario.recovery;
   if (!recovery) return "이 시나리오에는 치료 규칙이 없다.";
   const state = ctx.store.getState();
@@ -202,7 +202,7 @@ export function selfTreatmentProblem(ctx: ToolContext, patientId?: string): stri
   const freshBleed = !!bleedTrack && shownIndex(ctx, state, player.id, bleedTrack) > 0;
   if (needed && !freshBleed && state.recovery.lastHealerDay[player.id] === dayOf(state.time)) return `${other ? `${josa(playerCalls(state, ctx.content, player.id), "은/는")} ` : ""}오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다.`;
   if (needed) {
-    const planned = planHealerPay(ctx, healer);
+    const planned = planHealerPay(ctx, healer, pay);
     if (!planned.ok) return planned.error;
   }
   return null;
@@ -280,6 +280,7 @@ export function applyTreatment(
   item: string | null,
   targetId: string | null = null,
   check: { move: string; outcome: CheckOutcome } | null = null,
+  pay: FeeChoice = "default",
 ): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   // 응급처치 (플레이 테스트 11, A9): 물건으로든 맨손으로든, 자기든 남이든 판정 하나로 정한다. 장면의 치료사에게 받는 치료만 따로
   const me0 = ctx.store.getState();
@@ -299,7 +300,7 @@ export function applyTreatment(
   // 증상은 있는데 치료사가 손쓸 것이 아니면 (감염의 열 등): 살펴보고 돌려보낸다. "다친 데가 없다"로 원인이 새지 않게 (B3)
   if (!needed) return { ok: true, lines: [`${josa(playerCalls(state, ctx.content, healer), "이/가")} 살펴봤지만 지금 손쓸 데는 없다고 한다. 잘 먹고 따뜻하게 쉬라고 한다.`], displays: [] };
   const name = playerCalls(state, ctx.content, healer);
-  const paid = payHealer(ctx, healer);
+  const paid = payHealer(ctx, healer, pay);
   if (!paid.ok) return paid;
   const lines = [patient === state.playerId ? `${name}에게 치료를 받았다.` : `${josa(name, "이/가")} ${josa(playerCalls(state, ctx.content, patient), "을/를")} 치료했다.`, ...paid.lines];
   const displays: ToolDisplayEvent[] = [];
@@ -315,7 +316,9 @@ export function applyTreatment(
     if (again && t !== ctx.content.scenario.wounds?.track) continue;
     if (cutting && !canCut && t === ctx.content.scenario.harm_track) continue;
     if (surgery && t === ctx.content.scenario.harm_track) {
-      const r = operate(ctx, player.id, surgery.outcome, name);
+      // 치료사 무리의 땅(거점·진료소)에서 받는 수술은 실패해도 덧나지 않는다
+      const homeGround = !!state.characters[healer]?.factionId && !!state.playerZone && state.zones[state.playerZone]?.owner === state.characters[healer]!.factionId;
+      const r = operate(ctx, player.id, surgery.outcome, name, homeGround);
       lines.push(...r.lines);
       displays.push(...r.displays);
       continue;
@@ -327,10 +330,13 @@ export function applyTreatment(
   return { ok: true, lines, displays };
 }
 
+/** 치료 값을 무엇으로 낼지 (플레이 테스트 13): null이면 미리 보여 주고 묻는다, default면 코드가 고른 것, 아니면 고른 물건 */
+export type FeeChoice = "default" | Record<string, number> | null;
+
 type HealerPay = { carried: { holder: string; item: string } | null; fromStock: string | null; pay: Map<string, number> };
 
 /** 치료의 재료와 값을 정한다 (아직 쓰지 않는다). 못 하면 error */
-function planHealerPay(ctx: ToolContext, healerId: string): { ok: true; plan: HealerPay | null } | { ok: false; error: string } {
+function planHealerPay(ctx: ToolContext, healerId: string, choice: FeeChoice = "default"): { ok: true; plan: HealerPay | null } | { ok: false; error: string } {
   const cost = ctx.content.scenario.recovery?.healer_cost;
   if (!cost) return { ok: true, plan: null };
   const state = ctx.store.getState();
@@ -361,10 +367,41 @@ function planHealerPay(ctx: ToolContext, healerId: string): { ok: true; plan: He
   // 갇힌 포로는 값을 낼 처지가 아니다: 붙잡은 쪽이 거둬 치료한다 (플레이 테스트 12: 포로의 마지막 물병까지 가져갔다)
   if (cost.fee > 0 && !player.captive && player.factionId !== healer.factionId && trust < cost.free_trust) {
     const picked = pickFee(ctx, player, cost.fee);
-    if (!picked) return { ok: false, error: `${josa(name, "은/는")} 다른 무리 사람에게는 값(${cost.fee}어치)을 받는다. 낼 만한 물건이 모자란다 (신뢰가 ${cost.free_trust} 이상이면 받지 않는다).` };
-    pay = picked;
+    const list = (m: Map<string, number>) => [...m].map(([id, q]) => `${ctx.content.items[id]?.name ?? id}(${id}) ×${q}`).join(", ");
+    if (choice && choice !== "default") {
+      // 플레이어가 고른 물건 (플레이 테스트 13: 담요·물병을 묻지도 않고 가져갔다)
+      const chosen = new Map(Object.entries(choice).filter(([, q]) => q > 0));
+      const bad = [...chosen].find(([id, q]) => q > payableCount(ctx, player, id));
+      if (bad) return { ok: false, error: `${ctx.content.items[bad[0]]?.name ?? bad[0]} ×${bad[1]}은 낼 수 없다 (지니지 않았거나, 손에 들었거나 입었거나, 빌린 것이다). 시간은 흐르지 않았다.` };
+      const sum = [...chosen].reduce((n, [id, q]) => n + (ctx.content.items[id]?.value ?? DEFAULT_VALUE) * q, 0);
+      if (sum < cost.fee) return { ok: false, error: `고른 물건의 값이 ${sum}이라 모자란다 (${cost.fee}어치를 받는다). 시간은 흐르지 않았다.` };
+      pay = chosen;
+    } else {
+      if (!picked) return { ok: false, error: `${josa(name, "은/는")} 다른 무리 사람에게는 값(${cost.fee}어치)을 받는다. 낼 만한 물건이 모자란다 (신뢰가 ${cost.free_trust} 이상이면 받지 않는다).` };
+      // 미리 보여 주고 묻는다: 그대로 내거나 바꾼다
+      if (choice === null) return { ok: false, error: `${josa(name, "은/는")} 값 ${cost.fee}어치를 받는다. 정해 둔 것: ${list(picked)}. 이대로 내려면 treatment.pay: "auto", 다른 것으로 내려면 treatment.pay: [{item, quantity}] (값의 합이 ${cost.fee} 이상, 손에 든 것·입은 것·빌린 것은 못 낸다). 플레이어에게 무엇을 낼지 물어본다 (시간은 흐르지 않았다).` };
+      pay = picked;
+    }
   }
   return { ok: true, plan: { carried, fromStock: atBase && faction ? healer.factionId : null, pay } };
+}
+
+/** 값으로 고르지 않는 살림 (플레이 테스트 13): 쉴 때 덮는 것, 물그릇, 손에 든 무기의 탄약 */
+function keptForLiving(ctx: ToolContext, payer: Character, id: string): boolean {
+  const item = ctx.content.items[id];
+  if (item?.warmth?.when === "resting") return true;
+  const refill = ctx.content.scenario.body?.thirst?.refill ?? {};
+  if (id in refill || Object.values(refill).includes(id)) return true;
+  const held = Object.values(payer.equipped ?? {}).map((x) => (x ? ctx.content.items[x]?.weapon?.ammo : undefined));
+  return held.includes(id);
+}
+
+/** 이 물건을 값으로 낼 수 있는 수 (플레이어가 고를 때): 지닌 것에서 손에 든 것·입은 것·빌린 것을 뺀다 */
+function payableCount(ctx: ToolContext, payer: Character, id: string): number {
+  if (Object.values(payer.equipped ?? {}).includes(id)) return 0;
+  let loaned = 0;
+  for (const loan of Object.values(ctx.store.getState().loans ?? {})) loaned += loan[id] ?? 0;
+  return Math.max(0, (payer.inventory[id] ?? 0) - loaned);
 }
 
 /**
@@ -381,7 +418,7 @@ export function pickFee(ctx: ToolContext, payer: Character, fee: number): Map<st
   for (const loan of Object.values(ctx.store.getState().loans ?? {})) for (const [id, q] of Object.entries(loan)) loaned[id] = (loaned[id] ?? 0) + q;
   const goods = Object.entries(payer.inventory)
     .map(([id, q]) => [id, payer.id === ctx.store.getState().playerId ? q - (loaned[id] ?? 0) : q] as const)
-    .filter(([id, q]) => q > 0 && !worn.has(id) && !ctx.content.items[id]?.keepsake)
+    .filter(([id, q]) => q > 0 && !worn.has(id) && !ctx.content.items[id]?.keepsake && !keptForLiving(ctx, payer, id))
     .flatMap(([id, q]) => Array.from({ length: survival(id) ? q - 1 : q }, () => id))
     .sort((a, b) => (ctx.content.items[a]?.value ?? DEFAULT_VALUE) - (ctx.content.items[b]?.value ?? DEFAULT_VALUE));
   let sum = 0;
@@ -397,8 +434,8 @@ export function pickFee(ctx: ToolContext, payer: Character, fee: number): Map<st
  * 치료사의 재료와 값 (플레이 테스트 11, recovery.healer_cost): 거점에서는 치료사 무리의 창고에서, 거점 밖에서는 치료사·곁의 동료가 지닌 약에서 1을 쓰고,
  * 다른 무리·무소속이면 (치료사의 신뢰가 모자라면) 지닌 물건에서 값을 받는다. 무엇을 내는지는 코드가 고른다 (값싼 것부터, 손에 든 것·입은 것은 빼고)
  */
-function payHealer(ctx: ToolContext, healerId: string): { ok: true; lines: string[] } | { ok: false; error: string } {
-  const planned = planHealerPay(ctx, healerId);
+function payHealer(ctx: ToolContext, healerId: string, choice: FeeChoice = "default"): { ok: true; lines: string[] } | { ok: false; error: string } {
+  const planned = planHealerPay(ctx, healerId, choice);
   if (!planned.ok) return planned;
   const plan = planned.plan;
   if (!plan) return { ok: true, lines: [] };
@@ -449,7 +486,7 @@ function surgeonRoll(ctx: ToolContext, healerId: string): { outcome: CheckOutcom
 }
 
 /** 수술 결과: 성공 = 한 단계 낫는다, 대가 있는 성공 = 낫되 흔적이 남을 수 있다, 실패 = 한 단계 나빠진다 */
-export function operate(ctx: ToolContext, targetId: string, outcome: CheckOutcome, by: string): { lines: string[]; displays: ToolDisplayEvent[] } {
+export function operate(ctx: ToolContext, targetId: string, outcome: CheckOutcome, by: string, safe = false): { lines: string[]; displays: ToolDisplayEvent[] } {
   const lines: string[] = [];
   const displays: ToolDisplayEvent[] = [];
   const harm = ctx.content.scenario.harm_track;
@@ -457,6 +494,15 @@ export function operate(ctx: ToolContext, targetId: string, outcome: CheckOutcom
     if (c?.line) lines.push(c.line);
     if (c?.display) displays.push(c.display);
   };
+  // 거점 의무실의 수술은 실패해도 상처를 덧내지 않는다: 낫지 않을 뿐이다 (플레이 테스트 13: 치료받으러 갔다가 의식장애가 됐다)
+  if (outcome === "miss" && safe) {
+    const state = ctx.store.getState();
+    const now = state.characters[targetId]?.conditions[harm];
+    // 오늘 치료는 받은 것으로 친다 (하루 한 번)
+    if (now) ctx.store.append({ type: "condition_changed", targetId, track: harm, from: now, to: now, fatal: false, by: "healer", cause: `${by}의 수술`, day: dayOf(state.time), harmTrack: false });
+    lines.push("수술이 뜻대로 되지 않았다. 상처는 그대로다 (더 깊어지지는 않았다). 내일 다시 받을 수 있다.");
+    return { lines, displays };
+  }
   if (outcome === "miss") {
     lines.push("수술이 잘못됐다. 상처가 더 깊어졌다.");
     push(changeCondition(ctx, targetId, harm, 1, "healer", `${by}의 서툰 수술`));
@@ -1075,11 +1121,11 @@ export function isFirstAidItem(content: ToolContext["content"], item: string): b
  * 부상이 낫는 것은 한 사람에게 하루 한 번 (치료사의 치료와 같이 센다)
  */
 /** 치료 요청을 시간 쓰기 전에 본다 (치료사에게 받기 또는 응급처치). 할 수 있으면 null */
-export function treatmentProblem(ctx: ToolContext, item: string | null, targetId: string | null, checkMove: string | null): string | null {
+export function treatmentProblem(ctx: ToolContext, item: string | null, targetId: string | null, checkMove: string | null, pay: FeeChoice = "default"): string | null {
   const state = ctx.store.getState();
   const self = !targetId || targetId === state.playerId;
   const patient = self ? state.playerId : targetId!;
-  if (!item && (self || !checkMove) && state.scene.present.some((id) => ctx.content.npcs[id]?.healer && id !== patient)) return selfTreatmentProblem(ctx, patient);
+  if (!item && (self || !checkMove) && state.scene.present.some((id) => ctx.content.npcs[id]?.healer && id !== patient)) return selfTreatmentProblem(ctx, patient, pay);
   return firstAidProblem(ctx, item, self ? state.playerId : targetId!, checkMove).error;
 }
 

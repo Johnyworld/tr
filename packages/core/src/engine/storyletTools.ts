@@ -20,7 +20,7 @@ import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { dayOf, formatTime } from "../rules/time.ts";
 import { harmTrack, learnedSkill } from "../scenario/scenario.ts";
 import { changeCondition, shakeNerves } from "./body.ts";
-import { disposition } from "../sim/war.ts";
+import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis } from "../story/storylets.ts";
 import { joinRole } from "../game/customStart.ts";
@@ -665,8 +665,16 @@ export function applyEffect(
   if ("release_player" in effect) {
     const me = state.characters[playerId]!;
     if (!me.captive) return {};
+    const captor = me.captive.by;
     const line = releasePlayer(ctx, effect.release_player.returned);
-    const home = effect.release_player.home ? Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id : undefined;
+    const here = store.getState().playerZone;
+    // 빠져나간다: 붙잡은 무리 땅이 아닌 맞닿은 구역 (우리 땅 먼저)
+    const out = effect.release_player.out && here
+      ? neighbors(content, here)
+          .filter((z) => store.getState().zones[z]?.owner !== captor)
+          .sort((a, b) => Number(store.getState().zones[b]?.owner === me.factionId) - Number(store.getState().zones[a]?.owner === me.factionId) || a.localeCompare(b))[0]
+      : undefined;
+    const home = effect.release_player.home ? Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id : out;
     if (home && home !== store.getState().playerZone) store.append({ type: "zone_moved", from: store.getState().playerZone, to: home });
     return { line: `${line ?? "풀려났다."}${home ? ` ${josa(content.locations[home]?.name ?? home, "으로/로")} 돌아왔다.` : ""}` };
   }

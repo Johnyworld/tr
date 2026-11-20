@@ -1594,6 +1594,8 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /** 스토리렛 발동 간격 (기획서 10.3). 마지막 스토리렛 뒤 이만큼 지나야 다음 것이 열리고, 열린 것은 이만큼 지나면 지나간다 */
+    /** 임무의 판정 조건에서 서로 바꿔 쓸 수 있는 판정 묶음 (플레이 테스트 13: 교섭 조건을 매력 낮은 사람이 넘기지 못했다. 으름장으로 끝낸 흥정도 흥정이다) */
+    mission_move_groups: z.array(z.array(id).min(2)).default([]),
     storylet_pacing: z
       .strictObject({
         min_gap_hours: z.number().min(0),

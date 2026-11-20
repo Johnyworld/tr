@@ -159,9 +159,9 @@ describe("값과 흥정", () => {
   it("조금 모자라면 흥정 판정을 해야 한다 (주사위가 늘 6)", () => {
     const w = atMerchant(() => () => 0.999);
     give(w, "cigarettes", 6);
-    // 같은 무리(나루상단)끼리는 상인 이윤이 없다 (F3): 통조림 셋(9)에 담배 넷(8)이면 조금 모자란다
-    expect(w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 4 }, get: { canned_food: 3 }, move: null, stat: null }).ok).toBe(false);
-    const r = w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 4 }, get: { canned_food: 3 }, move: "persuade", stat: "charm" });
+    // 같은 무리(나루상단)끼리는 상인 이윤이 없다 (F3): 통조림 셋(9)에 담배 둘(6)이면 조금 모자란다 (담배 값 3, 문턱 60%: 플레이 테스트 13)
+    expect(w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 2 }, get: { canned_food: 3 }, move: null, stat: null }).ok).toBe(false);
+    const r = w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 2 }, get: { canned_food: 3 }, move: "persuade", stat: "charm" });
     expect(r.ok && r.resultText).toContain("바꿨다");
   });
 

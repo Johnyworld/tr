@@ -52,7 +52,9 @@ export function describeRequirement(s: Scenario, requirement: MissionRequirement
   if ("check" in requirement && fails > 0 && progress < 1) return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (미충족, 빗나감 ${fails}/${MISSION_CHECK_TRIES})`;
   if ("bring" in requirement) return `${resourceLabel(s, requirement.bring)} ${requirement.quantity}개를 구해 와 건네기 (보고할 때 소지품에서 센다)`;
   if ("deliver" in requirement) return `짐 ${requirement.quantity}개를 임무 자리에 넘기기 (${done})`;
-  return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (${done})`;
+  const altIds = (requirement as { alts?: string[] }).alts ?? [];
+  const alts = altIds.length ? `(또는 ${altIds.map((m) => moveLabel(s, m)).join("·")})` : "";
+  return `${moveLabel(s, requirement.check)}${alts} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (${done})`;
 }
 
 /** 받기 전의 요구 조건 (진행 없이). 플레이 테스트 11: 버티기 판정이 필요한 줄 모르고 받았다 */
@@ -129,7 +131,12 @@ const assignMission = defineTool({
       giverId: commander.id,
       assignedAt: state.time,
       deadline: state.time + template.deadline_hours * 60 + travelAllowance(ctx, template.where, player.factionId),
-      requirements: structuredClone(template.requirements),
+      // 서로 바꿔 쓸 수 있는 판정을 적어 둔다 (교섭 ↔ 위협·거짓말)
+      requirements: structuredClone(template.requirements).map((r) => {
+        if (!("check" in r)) return r;
+        const group = ctx.content.scenario.mission_move_groups.find((g) => g.includes(r.check));
+        return group ? { ...r, alts: group.filter((m) => m !== r.check) } : r;
+      }),
       place: missionPlace(ctx.content, template.where, player.factionId),
       progress: template.requirements.map(() => 0),
       fails: template.requirements.map(() => 0),
@@ -372,6 +379,13 @@ function travelAllowance(ctx: ToolContext, where: string | null | undefined, fac
 /** 기한 이만큼(분) 앞까지 갇혀 있었으면 기한 초과를 탓하지 않는다 (빠져나와 돌아오는 길) */
 const FREED_GRACE_MINUTES = 6 * 60;
 
+/** 최근 사흘 안에 주인공이 받은 일감 (같은 일감이 되풀이되지 않게, 플레이 테스트 13) */
+function recentTemplates(state: GameState): string[] {
+  const since = state.time - RECENT_OFFER_DAYS * MINUTES_PER_DAY;
+  return Object.values(state.missions).filter((m) => m.assigneeId === state.playerId && m.assignedAt >= since).map((m) => m.templateId);
+}
+const RECENT_OFFER_DAYS = 3;
+
 export const MISSION_TOOLS = [assignMission, reportMission, abandonMission] as const;
 
 /**
@@ -442,7 +456,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const startRank = ctx.content.roles[state.roleId]?.rank;
     const rankRole = me && me.rank !== startRank ? Object.values(ctx.content.roles).find((r) => r.faction === me.factionId && r.rank === me.rank) : undefined;
     const extra = [...(occ?.missions ?? []), ...(rankRole?.missions ?? [])];
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learnedSkill(ctx.content.scenario, me.skills, move) !== null);
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learnedSkill(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state));
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;

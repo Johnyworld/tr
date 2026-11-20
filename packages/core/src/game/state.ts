@@ -537,6 +537,8 @@ export function createGameSchemas(s: Scenario) {
     lastActivity: z.string().nullable().default(null),
     /** 마지막으로 잠에서 깬 시각 (플레이 테스트 13: "한밤에 막 깬 때"가 깬 뒤 행동 하나로 풀렸다) */
     lastWokeAt: z.number().int().nullable().default(null),
+    /** 지난 잠(이어진 잠 전체)이 시작된 시각 */
+    lastSleptFrom: z.number().int().nullable().default(null),
     /** 갇혀서 그날 배급을 못 받은 날 (플레이 테스트 13: 풀려나 거점에 왔는데 그날 내내 굶주렸다). 그날 우리 거점에 닿으면 늦게라도 받는다 */
     missedRationDay: z.number().int().nullable().default(null),
     /** 주인공이 마지막으로 풀려난(빠져나온) 시각 (플레이 테스트 13: 갇혔다 나와 거점까지 걷는 사이 기한이 지나 불복종) */
@@ -1217,6 +1219,7 @@ export const EMPTY_STATE: GameState = {
   lastStoryletAt: null,
   lastActivity: null,
   lastWokeAt: null,
+  lastSleptFrom: null,
   missedRationDay: null,
   lastFreedAt: null,
   regardGained: { day: -1, by: {} },
@@ -1394,7 +1397,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "captive_watch_raised": {
       const me = mustGet(next.characters, next.playerId, "캐릭터");
-      if (me.captive) me.captive = { ...me.captive, watch: (me.captive.watch ?? 0) + 1 };
+      // 감시는 -3까지 (플레이 테스트 13 뒤 정한 것). 대신 갇힌 동안 이야기로 빠져나갈 틈이 온다 (cp_gap)
+      if (me.captive) me.captive = { ...me.captive, watch: Math.min(3, (me.captive.watch ?? 0) + 1) };
       return next;
     }
     case "swarm_set":
@@ -1913,7 +1917,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       // 갇혀 있는 동안의 판정은 임무로 세지 않는다 (플레이 테스트 13: 감방 창틈으로 본 것이 정찰 완수가 됐다)
       const held = !!next.characters[event.actorId]?.captive;
       if (!held && mission && mission.id === event.forMission && (at(next.playerZone) || (!!event.dest && at(event.dest)))) mission.requirements.forEach((r, i) => {
-        if (!("check" in r) || r.check !== event.move || (mission.progress[i] ?? 0) >= 1 || isRequirementClosed(mission, i)) return;
+        if (!("check" in r) || (r.check !== event.move && !r.alts?.includes(event.move)) || (mission.progress[i] ?? 0) >= 1 || isRequirementClosed(mission, i)) return;
         if (outcomeAtLeast(event.outcome, r.min_outcome)) {
           mission.progress[i] = 1;
           markMissionMet(mission, state.time);
@@ -1951,7 +1955,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.to <= event.from) throw new Error("시간은 앞으로만 흐릅니다.");
       next.time = event.to;
       next.lastActivity = event.activity;
-      if (event.activity === "sleep") next.lastWokeAt = event.to;
+      if (event.activity === "sleep") {
+        // 깬 지 얼마 안 돼 다시 자면 앞의 잠에 이어진다 (플레이 테스트 13: 끊긴 잠 두 조각이 각각 6시간이 안 돼 상처가 아물지 않았다)
+        next.lastSleptFrom = sleepChainStart(state, event.from);
+        next.lastWokeAt = event.to;
+      }
       {
         const mission = activeMissionOf(next.missions, state.playerId);
         const placed = (zone: string | null) => !!mission && atMissionPlace(mission, zone, next.zones, next.factions);
@@ -2639,4 +2647,12 @@ export function createWorldEvent(
     beliefs,
     known: { [player.id]: [...role.known_npcs] },
   };
+}
+
+/** 이만큼(분) 안에 다시 잠들면 앞의 잠과 이어진 한 밤의 잠이다 (플레이 테스트 13) */
+export const SLEEP_CHAIN_MINUTES = 60;
+
+/** from에 시작하는 잠이 이어지는 잠의 시작 시각 (이어지지 않으면 from) */
+export function sleepChainStart(state: { lastWokeAt: number | null; lastSleptFrom: number | null }, from: number): number {
+  return state.lastWokeAt !== null && state.lastSleptFrom !== null && from >= state.lastWokeAt && from - state.lastWokeAt < SLEEP_CHAIN_MINUTES ? state.lastSleptFrom : from;
 }

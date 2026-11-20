@@ -15,7 +15,7 @@
     modifier: 1
     items:
       - { item: firewood, weight: 1, qty: [1, 2] }
-      - { item: canned_food, weight: 2, qty: [1, 2] }
+      - { item: canned_food, weight: 3, qty: [1, 2] }
       - { item: flashlight, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 2, qty: [1, 1] }
       - { item: medkit, weight: 1, qty: [1, 1] }
@@ -63,7 +63,7 @@
       - { item: moto_helmet, weight: 1, qty: [1, 1] }
       - { item: pipe_spear, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }
-      - { item: dry_ration, weight: 1, qty: [1, 1] }
+      - { item: dry_ration, weight: 2, qty: [1, 1] }
 
 - id: mall_ruins
   name: 대형 마트 폐허
@@ -106,6 +106,7 @@
   loot:
     modifier: -1
     items:
+      - { item: canned_food, weight: 1, qty: [1, 1] }  # 플레이 테스트 13: 빈 땅에서 먹을 것이 한 번도 안 나왔다
       - { item: wild_greens, weight: 1, qty: [1, 2] }
       - { item: cloth, weight: 2, qty: [1, 2] }
       - { item: blanket, weight: 1, qty: [1, 1] }
@@ -125,6 +126,7 @@
   loot:
     modifier: 0
     items:
+      - { item: canned_food, weight: 1, qty: [1, 1] }  # 플레이 테스트 13: 빈 땅에서 먹을 것이 한 번도 안 나왔다
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: wild_greens, weight: 2, qty: [1, 2] }
       - { item: mushroom, weight: 1, qty: [1, 2] }
@@ -178,7 +180,7 @@
     items:
       - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: water_bottle, weight: 2, qty: [1, 1] }
-      - { item: dry_ration, weight: 2, qty: [1, 1] }
+      - { item: dry_ration, weight: 3, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }
       - { item: duct_tape, weight: 2, qty: [1, 1] }
       - { item: scrap_metal, weight: 2, qty: [1, 1] }

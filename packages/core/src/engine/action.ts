@@ -62,7 +62,8 @@ import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle } f
 import { choiceAvailable } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
-import { applyTreatment, drinkWater, healFromSleep, sleepHealBlocker, itemUseProblem, maybeInfect, refillWater, treatmentProblem, useItem } from "./body.ts";
+import { sleepChainStart } from "../game/state.ts";
+import { applyTreatment, type FeeChoice, drinkWater, healFromSleep, sleepHealBlocker, itemUseProblem, maybeInfect, refillWater, treatmentProblem, useItem } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 
@@ -261,6 +262,11 @@ export function createTakeActionSchema(s: Scenario) {
           .nullable()
           .default(null)
           .describe("다른 사람을 치료하면 그 사람 id (장면에 있어야 한다. 아이템 없이는 의무병이나 응급처치를 익힌 사람만. 피만 멎게 하는 맨손 지혈은 누구나: check move를 응급처치로 함께). 주인공 자신이면 null"),
+        pay: z
+          .union([z.literal("auto"), z.array(z.strictObject({ item: z.string(), quantity: z.number().int() }))])
+          .nullable()
+          .default(null)
+          .describe("치료사가 값을 받을 때 낼 물건: null이면 정해 둔 것을 보여 주고 거절된다(시간은 흐르지 않는다), \"auto\"면 그대로 내고, [{item, quantity}]면 플레이어가 고른 것을 낸다"),
       })
       .nullable()
       .default(null)
@@ -614,7 +620,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const fuel = !!input.use_item && !!scenario.body?.cold?.climate?.fire?.items[input.use_item];
     const problem =
       (input.use_item && !fuel ? itemUseProblem(ctx, input.use_item) : null) ??
-      (input.treatment ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null) : null) ??
+      (input.treatment ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay)) : null) ??
       (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null) ??
       (input.trap ? trapProblem(ctx, input.trap) : null);
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
@@ -628,6 +634,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     return { ok: false, error: `적대하는 땅에서 시간을 들이는 일은 들킬 수 있다. check로 ${scenario.alarm!.moves.join("/")} 판정을 함께 건다 (난이도 ${base ? "hard: 거점 안" : "normal"}). 실패하면 경보가 열린다 (시간은 흐르지 않았다).` };
   }
 
+  // 열린 이야기가 요구하는 판정일 때만 이야기가 걸린 판정이다 (플레이 테스트 13: 길 위 이야기가 열린 사이 위험 없는 5분 경계로 레벨이 올랐다)
+  const storyCheck = !!start.activeStorylet && !!input.check && !!content.storylets[start.activeStorylet.id]?.choices.some((c) => c.check === input.check!.move);
   // 1. 판정과 선언한 위험
   if (input.check) {
     const roll = rollPlayerCheck(
@@ -642,7 +650,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
         activity: input.activity?.kind ?? null,
         escape: escapeAttempt,
         // 걸린 것: 몸의 위험, 상대, 임무, 진행 중인 이야기, 전투, 치료, 옮겨 가기, 적 땅, 시간을 들이는 일 (5분짜리 맨 판정만 빠진다)
-        stakes: input.check.harm_on_failure !== "none" || !!input.target || !!input.check.opponent || !!forMission || !!start.activeStorylet || inBattle || !!input.treatment || !!input.move_to || exposed || !!input.forage || !!input.trap || (!!input.activity && input.activity.kind !== "brief"),
+        stakes: input.check.harm_on_failure !== "none" || !!input.target || !!input.check.opponent || !!forMission || storyCheck || inBattle || !!input.treatment || !!input.move_to || exposed || !!input.forage || !!input.trap || (!!input.activity && input.activity.kind !== "brief"),
         situation: exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? scavengeParts(ctx) : input.forage ? forageParts(ctx, input.forage) : [],
       },
     );
@@ -678,7 +686,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     // 임무 판정이 빗나가면 30분을 더 쓴다 (플레이 테스트 11, C2: 5분마다 다시 굴려 채웠다). 같은 조건은 세 번 빗나가면 닫힌다
     {
       const m = forMission ? store.getState().missions[forMission] : undefined;
-      const i = m ? m.requirements.findIndex((r) => "check" in r && r.check === input.check!.move) : -1;
+      const i = m ? m.requirements.findIndex((r) => "check" in r && (r.check === input.check!.move || !!r.alts?.includes(input.check!.move))) : -1;
       const before = forMission ? start.missions[forMission] : undefined;
       if (m && before && i >= 0 && (m.fails?.[i] ?? 0) > (before.fails?.[i] ?? 0)) {
         const now = store.getState().time;
@@ -752,7 +760,9 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       }
       // 감염은 살갗이 찢긴 상처(피가 나는 종류)일 때만 (12-91). 출혈 규칙이 없는 월드면 그대로
       const broken = !scenario.wounds || !!woundKind(ctx, input.check.harm_kind)?.bleeds;
-      if (!harm.fatal && hurt && input.check.infected_source && broken) {
+      // 방어구가 피해를 다 받아 내도 물림·할큄이 닿았으면 감염은 굴린다 (플레이 테스트 13: 갑옷만 입으면 기어다니는 감염체가 아무 걱정이 없었다). 방어구의 감염 막음이 먼저
+      const reached = hurt || ("armored" in harm && !!harm.armored);
+      if (!harm.fatal && reached && input.check.infected_source && broken) {
         const guard = armorBlocksInfection(ctx);
         if (guard.blocked) lines.push(...guard.lines);
         else maybeInfect(ctx, input.check.harm_kind ?? null);
@@ -790,7 +800,10 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
 
   // 1-0. 수색: 그 구역에서 찾을 거리를 코드가 굴린다 (기획서 4.7)
   if (input.activity?.kind === "search" && !inBattle) {
-    const found = scavenge(ctx, outcome);
+    // 임무로 찾는 자원 (구해 와 건네기, 아니면 일감의 창고 몫)
+    const m = forMission ? store.getState().missions[forMission] : undefined;
+    const want = m ? ((m.requirements.find((r) => "bring" in r) as { bring: string } | undefined)?.bring ?? Object.keys(content.missions[m.templateId]?.supplies ?? {})[0] ?? null) : null;
+    const found = scavenge(ctx, outcome, want);
     lines.push(...found.lines);
     displays.push(...found.displays);
   }
@@ -822,7 +835,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
 
   // 1-1-1. 치료 (낫는 정도는 시스템이 정한다)
   for (const [request, run] of [
-    [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null)],
+    [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null, feeChoice(input.treatment!.pay) ?? "default")],
     [input.use_item, () => useItem(ctx, input.use_item!)],
     [input.drink || null, () => drinkWater(ctx)],
     [input.refill || null, () => refillWater(ctx)],
@@ -949,7 +962,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (escapeFailed) {
     store.append({ type: "captive_watch_raised" });
     const watch = store.getState().characters[start.playerId]?.captive?.watch ?? 1;
-    lines.push(`빠져나가지 못했다. 다시 붙잡혀 갇힌 곳으로 끌려왔다. 감시가 더 심해졌다 (다음 탈출 판정 -${watch}).`);
+    lines.push(`빠져나가지 못했다. 다시 붙잡혀 갇힌 곳으로 끌려왔다. 감시가 더 심해졌다 (다음 탈출 판정 -${watch}${watch >= 3 ? ", 더 심해지지는 않는다" : ""}).`);
   }
   if (sweptBack) {
     lines.push(`${content.locations[input.move_to!]?.name ?? input.move_to}에 닿지 못하고 되돌아왔다. 되돌아온 장면을 서술한다.`);
@@ -1112,6 +1125,18 @@ function missedRollCall(ctx: ToolContext, from: number, to: number) {
   );
 }
 
+/** take_action의 treatment.pay를 치료 값 고르기로 */
+function feeChoice(pay: "auto" | { item: string; quantity: number }[] | null | undefined): FeeChoice {
+  if (!pay) return null;
+  if (pay === "auto") return "default";
+  const out: Record<string, number> = {};
+  for (const p of pay) if (p.quantity > 0) out[p.item] = (out[p.item] ?? 0) + p.quantity;
+  return out;
+}
+
+/** 판정 하나로 오르는 부상의 최대 단계 */
+const MAX_HARM_STEPS = 2;
+
 /** 이만큼(분) 넘게 자면 동행이 아닌 사람은 장면에서 빠진다 */
 const SCENE_CLEAR_SLEEP_MINUTES = 4 * 60;
 
@@ -1139,7 +1164,8 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
       display: { type: "harm" as const, targetName: target.name, trackLabel: track.label, severityLabel: HARM_LABELS[severity], fatal: false, fromLabel: label, toLabel: label, cause },
     };
   }
-  const raw = Math.max(1, base + (against?.delta ?? 0));
+  // 한 판정으로 오르는 부상은 2단계까지 (플레이 테스트 13: 무거운 위험 + 상대의 몫으로 한 번에 경상 → 치명상)
+  const raw = Math.min(MAX_HARM_STEPS, Math.max(1, base + (against?.delta ?? 0)));
   // 입은 방어구가 피해를 줄인다 (기획서 4.8). 맞서는 상대(사람·짐승·감염체)가 낸 상처만: 삐끗·덫·무너진 선반은 막지 않는다 (플레이 테스트 11: 덧댄 갑옷이 허리 삐끗을 막다 4시간 만에 부서졌다)
   const attack = !!content.scenario.wounds?.kinds.find((k) => k.id === kind)?.attack;
   const absorbed = (opponentId && kind !== "other") || attack ? armorAbsorb(ctx, raw) : { steps: raw, lines: [] };
@@ -1154,6 +1180,8 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
     const label = levelOf(track, from).label;
     return {
       fatal: false,
+      /** 방어구가 다 받아 냈다 (몸에 닿았다): 물림·할큄이면 감염은 굴린다 */
+      armored: absorbed.steps <= 0,
       text: `${absorbed.lines.join(" ")} ${josa(target.name, "은/는")} 다치지 않았다. 막아 낸 순간을 서술한다.`.trim(),
       display: { type: "harm" as const, targetName: target.name, trackLabel: track.label, severityLabel: HARM_LABELS[severity], fatal: false, fromLabel: label, toLabel: label, cause },
     };
@@ -1257,7 +1285,9 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       return left.length ? Math.max(30, Math.ceil(Math.max(...left) / 5) * 5) : null;
     })();
     const wanted = until && cost.allowUntil ? nextSegmentStart(from, until) : from + (missionLeft ?? cost.minutes);
-    const target = Math.min(wanted, from + cap);
+    // 피곤하지 않은 잠의 상한은 이어진 잠 전체로 센다 (깬 지 얼마 안 돼 다시 잤으면 앞의 잠부터)
+    const chainFrom = activity === "sleep" ? sleepChainStart(state, from) : from;
+    const target = Math.min(wanted, Math.max(from + 30, chainFrom + cap));
     plannedEnd = target;
     capped = wanted > target;
     restedCap = capped && activity === "sleep" && rested;
@@ -1292,9 +1322,11 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     if (activity === "sleep" && to - from >= (content.scenario.body?.fatigue?.min_sleep_hours ?? 0) * 60) extra.push(...exposeToFatigue(ctx, "sleep", from, to));
     // 푹 잔 밤에 상처가 아문다 (플레이 테스트 11, A1)
     if (activity === "sleep") {
-      const healed = healFromSleep(ctx, from, to);
+      // 이어진 잠은 한 밤으로 친다 (플레이 테스트 13: 21:45~00:00, 00:15~06:00으로 끊겨 상처가 아물지 않았다)
+      const nightFrom = sleepChainStart(state, from);
+      const healed = healFromSleep(ctx, nightFrom, to);
       extra.push(...healed);
-      if (!healed.length) sleepNote = sleepHealBlocker(ctx, from, to);
+      if (!healed.length) sleepNote = sleepHealBlocker(ctx, nightFrom, to);
     }
     // 점호 (G2): 무리의 점호 시각을 자면서 넘기면 작은 불복종 행적이 남는다 (한 번 잠에 한 번)
     if (activity === "sleep") missedRollCall(ctx, from, to);

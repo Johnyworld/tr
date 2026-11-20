@@ -177,7 +177,7 @@ gear:
   # 들 수 있는 무게 = 12kg + 근력 1당 4kg. 넘으면 은밀·근접 -1, 1.5배를 넘으면 옮겨 가지 못한다
   carry: { base: 12, per_strength: 4, encumbered_moves: [stealth, fight], penalty: -1, hard_limit: 1.5 }
   # 값의 70% 이상이면 흥정 판정으로 깎을 수 있다
-  haggle_floor: 0.7
+  haggle_floor: 0.6
   haggle_moves: [persuade, deceive]
   # 손질 0·1·2일 때 물건이 닳는 것을 피할 확률
   maintenance: { move: maintenance, save_chance: [0.15, 0.35, 0.55] }
@@ -1310,6 +1310,10 @@ travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 
 # 이야기의 빈도 (12-191, *임시*): 보통 이야기는 6시간에 하나. 12-191에 10시간으로 늘렸지만 실제 플레이는 하루 1.5~1.7개라 (잠자는 동안은 급한 것만) 12-195에 6시간으로 되돌렸다.
 # 보통 이야기와 길 위의 일은 앞 이야기와 2시간은 떨어지고, 급한 이야기는 하루 둘까지. 피를 흘리거나 치명상 이상이면 급한 이야기만
+# 임무의 판정 조건에서 서로 바꿔 쓸 수 있는 판정 (플레이 테스트 13: 교섭 조건을 매력 낮은 호위대원이 넘기지 못했다)
+mission_move_groups:
+  - [persuade, intimidate, deceive]
+
 storylet_pacing:
   # 이야기 사이 간격: 앞 이야기마다 6~12시간 사이로 (플레이 테스트 12: 하루 상한이 자정에 풀려 00시대에 몰렸다 → 하루 상한 대신 간격)
   min_gap_hours: 6
@@ -1631,8 +1635,8 @@ body:
       jitter: 2
       comfort: 8
       warm: 15
-      # 70 → 45 (플레이 테스트 11, E1: 영하 12°에 방한복 없이 2시간이 "이상 없음")
-      per_step: 45
+      # 70 → 45 (플레이 테스트 11, E1: 영하 12°에 방한복 없이 2시간이 "이상 없음") → 30 (플레이 테스트 13: 체감 3°·젖은 옷으로 밤새도 "이상 없음")
+      per_step: 30
       mild_rate: 20
       warm_rate: 50
       indoor_weather: 0.5

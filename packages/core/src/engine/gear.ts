@@ -169,8 +169,15 @@ export function afterAttack(ctx: ToolContext, plan: AttackPlan, outcome: CheckOu
     store.append({ type: "noise_made", zone: state.playerZone, level: plan.noise, day: dayOf(state.time) });
     if (plan.noise >= 2) lines.push("총소리가 멀리 퍼졌다. 근처의 감염체와 사람들이 들었을 수 있다 (서술에 반영하되 무엇이 오는지는 정하지 않는다).");
   }
+  // 빗맞으면 무기가 상한다. 까닭을 한 줄로 (플레이 테스트 13: "다치지 않았다"뿐인데 내구도가 줄었다)
+  const wearBefore = plan.weapon ? (store.getState().characters[me.id]?.wear[plan.weapon] ?? 0) : 0;
   const broke = plan.weapon && outcome === "miss" ? wearItem(ctx, me.id, plan.weapon, 1) : null;
   if (broke) lines.push(broke);
+  else if (plan.weapon && (store.getState().characters[me.id]?.wear[plan.weapon] ?? 0) > wearBefore) {
+    const item = content.items[plan.weapon]!;
+    const left = (item.durability ?? 0) - (store.getState().characters[me.id]!.wear[plan.weapon] ?? 0);
+    lines.push(`빗맞아 ${josa(item.name, "이/가")} 엉뚱한 데를 쳤다. 날이 상했다 (내구도 ${left}/${item.durability}).`);
+  }
   return { lines, displays: [] };
 }
 

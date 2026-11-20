@@ -2,17 +2,21 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { activeMissionOf, evaluateMission } from "../game/missions.ts";
+import { activeMissionOf, evaluateMission, pickDailyOffers, recentSetback } from "../game/missions.ts";
 import { stanceOf } from "../game/fame.ts";
 import { createSeededRng } from "../rng.ts";
 import { storyletAllowed } from "../story/storylets.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { maybeInfect } from "./body.ts";
+import { runHelpless } from "./helpless.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
-import { hostileHere, hostileZone, maskUnknownNames } from "./storyletTools.ts";
+import { applyEffect, hostileHere, hostileZone, maskUnknownNames } from "./storyletTools.ts";
 import { recordDeed } from "./reputationTools.ts";
-import { pickFee } from "./body.ts";
+import { healFromSleep, pickFee } from "./body.ts";
+import { sleepChainStart } from "../game/state.ts";
+import { itemResource } from "./market.ts";
+import { scavenge } from "./scavenge.ts";
 import { formatAgo, START_TIME } from "../rules/time.ts";
 
 /** 긴 판 열 (플레이 테스트 13, docs/playtests/2026-11-20-mcp-13-long.md)의 확실한 버그 */
@@ -270,5 +274,141 @@ describe("연인 관계 (플레이 테스트 13 뒤 정한 것)", () => {
     expect(s.romances[[lover, "a_seoyeon"].sort().join("|")]?.stage).toBe("lovers");
     expect(s.relations.a_seoyeon?.[lover]?.affection).toBeGreaterThanOrEqual(3);
     expect((s.beliefs[lover] ?? []).some((b) => b.fact.includes("연인"))).toBe(true);
+  });
+});
+
+describe("균형: 다침·죽음 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("이 행동에서 막 쓰러졌으면 쓰러진 동안의 일은 다음에 시간이 흐를 때 정한다", () => {
+    const w = world("role_l_wanderer");
+    const ctx = w.ctx();
+    const me = w.state().playerId;
+    const start = w.state().time;
+    const harm = content.scenario.harm_track;
+    ctx.store.append({ type: "condition_changed", targetId: me, track: harm, from: "none", to: "unconscious", fatal: false, by: "enemy", cause: "테스트", day: 1, harmTrack: true });
+    expect(runHelpless(ctx, start)).toEqual([]);
+    expect(w.state().helplessAt).toBeNull();
+  });
+});
+
+describe("균형: 갇힘 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("감시 벌점은 -3까지 쌓인다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const enemy = Object.keys(content.factions).find((f) => f !== w.state().characters[w.state().playerId]!.factionId && Object.values(content.locations).some((l) => l.kind === "base" && l.owner === f))!;
+    const zone = Object.values(content.locations).find((l) => l.kind === "base" && l.owner === enemy)!.id;
+    ctx.store.append({ type: "player_captured", by: enemy, zone, held: {} });
+    for (let i = 0; i < 5; i++) ctx.store.append({ type: "captive_watch_raised" });
+    expect(w.state().characters[w.state().playerId]!.captive!.watch).toBe(3);
+  });
+
+  it("빠져나갈 틈 이야기로 풀려나면 붙잡은 무리 땅이 아닌 맞닿은 구역으로 나간다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const enemy = Object.keys(content.factions).find((f) => f !== w.state().characters[w.state().playerId]!.factionId && Object.values(content.locations).some((l) => l.kind === "base" && l.owner === f))!;
+    const zone = Object.values(content.locations).find((l) => l.kind === "base" && l.owner === enemy)!.id;
+    ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: zone });
+    ctx.store.append({ type: "player_captured", by: enemy, zone, held: {} });
+    applyEffect(ctx, { release_player: { returned: false, home: false, out: true } } as never, {}, {}, "테스트");
+    const s = w.state();
+    expect(s.characters[s.playerId]!.captive).toBeFalsy();
+    expect(s.playerZone).not.toBe(zone);
+    expect(s.zones[s.playerZone!]?.owner).not.toBe(enemy);
+  });
+});
+
+describe("균형: 치료 값 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("치료 값은 먼저 보여 주고, 담요·물그릇은 고르지 않으며, 플레이어가 고른 것으로 낼 수 있다", () => {
+    const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-pt13-")), content, rngFactory: () => () => 0.5 }).create("mcp", "role_l_wanderer", choice);
+    const me = () => w.state().characters[w.state().playerId]!;
+    w.state().scene.present.push("a_chaewon");
+    w.state().characters.a_chaewon!.inventory = { bandage: 2 };
+    me().conditions.harm = "light";
+    const blanket = Object.values(content.items).find((i) => i.warmth?.when === "resting")!.id;
+    me().inventory = { canned_food: 6, [blanket]: 1 };
+    const treat = (pay: unknown) => w.executeTool("take_action", { intent: "치료를 받는다", treatment: { item: null, target: null, pay } });
+    const preview = treat(null);
+    expect(preview.ok).toBe(false);
+    expect(preview.ok ? "" : preview.error).toContain("정해 둔 것");
+    expect(preview.ok ? "" : preview.error).not.toContain(content.items[blanket]!.name);
+    const chosen = treat([{ item: "canned_food", quantity: 5 }]);
+    expect(chosen.ok, chosen.ok ? "" : chosen.error).toBe(true);
+    expect(me().inventory.canned_food).toBe(1);
+    expect(me().inventory[blanket]).toBe(1);
+  });
+});
+
+describe("균형: 진급·공적·레벨 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("판정 하나에 1시간 이하인 짧은 일감의 완수는 공적 +2, 판정이 둘이면 +3", () => {
+    const short = { requirements: [{ check: "first_aid", min: "partial" }, { activity: "treat", minutes: 60 }], progress: [1, 60], deadline: 100 } as never;
+    expect(evaluateMission(short, 50).merit).toBe(2);
+    const two = { requirements: [{ check: "first_aid", min: "partial" }, { check: "sense_danger", min: "partial" }], progress: [1, 1], deadline: 100 } as never;
+    expect(evaluateMission(two, 50).merit).toBe(3);
+  });
+
+  it("일부 완수는 진급을 미루는 흠으로 세지 않는다", () => {
+    const m = (id: string, status: string) => ({ id, assigneeId: "p", assignedAt: 1000, status }) as never;
+    expect(recentSetback({ time: 1100, missions: { a: m("a", "partial"), b: m("b", "partial") } }, "p", null)).toBeNull();
+    expect(recentSetback({ time: 1100, missions: { a: m("a", "failed"), b: m("b", "expired") } }, "p", null)).not.toBeNull();
+  });
+});
+
+describe("균형: 같은 일감 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("최근에 받은 일감은 다른 후보가 있으면 내지 않는다", () => {
+    const pool = content.roles.role_a_squad_leader!.missions;
+    const recent = pool.slice(0, pool.length - 2);
+    for (let i = 0; i < 10; i++) {
+      const offers = pickDailyOffers(content, "role_a_squad_leader", 1440 * 5 + 360, null, createSeededRng(i), [], false, undefined, undefined, undefined, recent)!;
+      expect(offers.templateIds.every((id) => !recent.includes(id))).toBe(true);
+    }
+  });
+});
+
+describe("균형: 자원·흥정·직분 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("말로 하는 판정 조건은 교섭·위협·거짓말 무엇으로든 채운다", () => {
+    const w = world("role_e_porter");
+    const commander = content.roles.role_e_porter!.commander!;
+    w.executeTool("npc_presence", { npc_id: commander, action: "enter" });
+    const t = Object.values(content.missions).find((m) => m.requirements.some((r) => "check" in r && r.check === "persuade"))!;
+    w.ctx().store.append({ type: "missions_offered", day: Math.floor(w.state().time / 1440) + 1, templateIds: [t.id] });
+    expect(w.executeTool("assign_mission", { template_id: t.id }).ok).toBe(true);
+    const m = activeMissionOf(w.state().missions, w.state().playerId)!;
+    const r = m.requirements.find((x) => "check" in x && x.check === "persuade") as { alts?: string[] };
+    expect(r.alts).toEqual(expect.arrayContaining(["intimidate", "deceive"]));
+  });
+
+  it("임무로 찾는 자원은 대가 있는 성공 이상이면 하나는 나온다", () => {
+    const w = world("role_b_guard");
+    const ctx = w.ctx();
+    const zone = Object.values(content.locations).find((l) => l.loot && !l.loot.items.some((i) => itemResource(content, i.item) === "medicine"))!.id;
+    ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: zone });
+    const meds = () => Object.entries(w.state().characters[w.state().playerId]!.inventory).filter(([id]) => itemResource(content, id) === "medicine").reduce((n, [, q]) => n + q, 0);
+    const before = meds();
+    scavenge(ctx, "partial", "medicine");
+    expect(meds()).toBeGreaterThan(before);
+  });
+});
+
+describe("균형: 몸·잠 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("깬 지 1시간 안에 다시 자면 앞의 잠과 이어진 한 밤이다", () => {
+    expect(sleepChainStart({ lastWokeAt: 600, lastSleptFrom: 400 }, 630)).toBe(400);
+    expect(sleepChainStart({ lastWokeAt: 600, lastSleptFrom: 400 }, 700)).toBe(700);
+    expect(sleepChainStart({ lastWokeAt: null, lastSleptFrom: null }, 700)).toBe(700);
+  });
+
+  it("끊긴 잠 두 조각을 합쳐 푹 잔 밤이면 상처가 아문다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const me = w.state().playerId;
+    const harm = content.scenario.harm_track;
+    ctx.store.append({ type: "condition_changed", targetId: me, track: harm, from: "none", to: "light", fatal: false, by: "enemy", cause: "테스트", day: 1, harmTrack: true });
+    const t0 = w.state().time + 60;
+    ctx.store.append({ type: "time_advanced", activity: "wait", from: w.state().time, to: t0 });
+    ctx.store.append({ type: "time_advanced", activity: "sleep", from: t0, to: t0 + 135 });
+    const s = w.state();
+    expect(s.lastSleptFrom).toBe(t0);
+    const second = t0 + 150;
+    ctx.store.append({ type: "time_advanced", activity: "wait", from: s.time, to: second });
+    expect(sleepChainStart(w.state(), second)).toBe(t0);
+    expect(healFromSleep(ctx, sleepChainStart(w.state(), second), second + 345).length).toBeGreaterThan(0);
   });
 });

@@ -64,7 +64,7 @@ const mercyOf = (ctx: ToolContext, c: Character) =>
   ctx.content.npcs[c.id]?.values.mercy ?? (c.extra?.template ? ctx.content.extras[c.extra.template]?.values.mercy : undefined) ?? 0;
 
 /** 시간이 흐른 뒤마다 부른다 (runAfterTimeAdvance). 화면·GM에 알릴 것을 돌려준다 */
-export function runHelpless(ctx: ToolContext): ToolDisplayEvent[] {
+export function runHelpless(ctx: ToolContext, actionStartedAt?: number): ToolDisplayEvent[] {
   const { store, content } = ctx;
   const rules = content.scenario.helpless;
   if (!rules) return [];
@@ -77,6 +77,8 @@ export function runHelpless(ctx: ToolContext): ToolDisplayEvent[] {
     return [];
   }
   if (state.helplessAt !== null || state.battle || me.captive || !state.playerZone) return [];
+  // 이 행동에서 막 쓰러졌으면 무슨 일이 생길지는 다음에 시간이 흐를 때 정한다: 쓰러진 그 5분 안에 죽지 않게 (플레이 테스트 13)
+  if (actionStartedAt !== undefined && (state.recovery.lastChangeAt[me.id] ?? -Infinity) >= actionStartedAt) return [];
 
   const zone = state.playerZone;
   const people = state.scene.present

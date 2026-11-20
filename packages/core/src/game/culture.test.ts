@@ -67,7 +67,7 @@ describe("역할의 권한 (access)", () => {
     // 잠이 끊길 수 있으니 이틀이 지날 때까지 잔다
     const day0 = Math.floor(w.state().time / 1440);
     for (let i = 0; i < 10 && Math.floor(w.state().time / 1440) < day0 + 2; i++) {
-      w.executeTool("take_action", { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true });
+      w.executeTool("take_action", { intent: "기다린다", check: null, activity: { kind: "wait", until: i % 2 ? "morning" : "night" }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true });
     }
     expect(hunger()).not.toBe(start);
     w.close();

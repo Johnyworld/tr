@@ -261,7 +261,7 @@ describe("플레이 테스트 11 원문의 버그", () => {
     const me = () => w.state().characters[w.state().playerId]!;
     const healer = () => w.state().characters.a_chaewon!;
     const stock = () => w.state().factions[healer().factionId!]!.resources.medicine ?? 0;
-    const treat = () => w.executeTool("take_action", { intent: "치료를 받는다", treatment: { item: null, target: null } });
+    const treat = () => w.executeTool("take_action", { intent: "치료를 받는다", treatment: { item: null, target: null, pay: "auto" } });
     // 거점 밖: 치료사가 지닌 약이 없으면 못 한다, 있으면 그것을 쓴다
     w.state().scene.present.push("a_chaewon");
     me().conditions.harm = "light";

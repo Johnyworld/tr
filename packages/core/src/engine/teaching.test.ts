@@ -53,8 +53,9 @@ describe("가르침", () => {
   it("신뢰가 모자라거나, 선생이 익히지 않았거나, 누구나 하는 일이면 거절한다", () => {
     const w = open();
     teacher(w, "a_jiho", rule.min_trust - 1);
+    // 같은 무리는 믿음이 모자라도 값을 받고 가르친다 (플레이 테스트 13). 낼 물건이 없으면 거절
     const r = lesson(w, "a_jiho");
-    expect(r.ok ? "" : r.error).toContain("믿지 않는다");
+    expect(r.ok ? "" : r.error).toContain("값(");
     expect(w.state().lessons.carpentry).toBeUndefined();
     expect(lesson(w, "a_jiho", "surgery").ok).toBe(false); // 선생이 익히지 않은 기술
     expect(lesson(w, "a_jiho", "fight").ok).toBe(false); // 누구나 하는 일

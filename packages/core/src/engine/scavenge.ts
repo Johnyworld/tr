@@ -1,3 +1,4 @@
+import { itemResource } from "./market.ts";
 import { findRuin } from "./exploration.ts";
 import { effectiveSkill } from "./traits.ts";
 import type { CheckOutcome } from "../rules/check.ts";
@@ -44,7 +45,7 @@ export function foundCount(outcome: CheckOutcome | null): number {
  * - 구역의 넉넉함과 같은 날 다시 뒤지는 것은 판정 보정이다 (scavengeParts)
  * - 찾은 것은 바로 주인공의 소지품에 들어간다. 무엇을 얼마나 찾는지는 코드가 정한다 (원칙 2)
  */
-export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null): { lines: string[]; displays: ToolDisplayEvent[] } {
+export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null, want: string | null = null): { lines: string[]; displays: ToolDisplayEvent[] } {
   const { store, content, rng } = ctx;
   const state = store.getState();
   const zone = state.playerZone;
@@ -62,6 +63,18 @@ export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null): { line
     const [min, max] = entry.qty;
     const qty = min + Math.floor(rng() * (max - min + 1));
     found.set(entry.item, (found.get(entry.item) ?? 0) + qty);
+  }
+
+  // 임무로 찾는 자원이 있으면 (찾아오기·땔감 수색) 대가 있는 성공 이상에서 그 자원 물건 하나는 나온다 (플레이 테스트 13: 6일 동안 약을 한 번도 못 찾았다)
+  if (want && outcome && outcome !== "miss" && ![...found.keys()].some((id) => itemResource(content, id) === want)) {
+    const here = loot.items.filter((i) => itemResource(content, i.item) === want).map((i) => i.item);
+    const any = Object.values(content.items).filter((i) => itemResource(content, i.id) === want).sort((a, b) => (a.value ?? 0) - (b.value ?? 0)).map((i) => i.id);
+    const pick = here[0] ?? any[0];
+    if (pick) {
+      const first = [...found.keys()][0];
+      if (first && found.size >= foundCount(outcome)) found.delete(first);
+      found.set(pick, (found.get(pick) ?? 0) + 1);
+    }
   }
 
   const player = state.characters[state.playerId]!;

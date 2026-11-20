@@ -150,7 +150,9 @@ const transferItem = defineTool({
       const lender = state.characters[input.to]?.factionId;
       const owed = lender ? (state.characters[state.playerId]?.debts[lender] ?? 0) : 0;
       if (lender && owed > 0) {
-        const paid = Math.min(owed, marketValue(content, state, { [item.id]: input.quantity }));
+        // 물건으로 갚으면 시세의 75%로 쳐준다 (플레이 테스트 13: 시작 소지품만으로 사흘 만에 빚이 끝났다)
+        const worth = marketValue(content, state, { [item.id]: input.quantity });
+        const paid = Math.min(owed, worth > 0 ? Math.max(1, Math.floor(worth * DEBT_ITEM_RATE)) : 0);
         if (paid > 0) {
           store.append({ type: "debt_changed", characterId: state.playerId, factionId: lender, delta: -paid });
           kept.push(`물건 값으로 빚을 갚았다: ${paid} 줄어 ${owed - paid} 남았다.`);
@@ -170,6 +172,9 @@ const transferItem = defineTool({
     };
   },
 });
+
+/** 빚을 물건으로 갚을 때 시세에서 쳐주는 몫 */
+const DEBT_ITEM_RATE = 0.75;
 
 const npcPresence = defineTool({
   name: "npc_presence",

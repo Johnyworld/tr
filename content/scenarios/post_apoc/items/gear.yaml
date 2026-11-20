@@ -134,7 +134,7 @@
   kind: weapon
   weight: 2.2
   value: 15
-  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, wound: { shoot: gunshot }, range: { shoot: { close: 1, near: -1 } } }
+  weapon: { moves: [shoot], max_harm: heavy, noise: 2, ammo: shells, wound: { shoot: gunshot }, range: { shoot: { close: 1, near: 0 } } }
   durability: 4
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1, duct_tape: 1 }, tools: [toolkit] }

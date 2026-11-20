@@ -109,7 +109,7 @@
       - { item: dried_fish, weight: 1, qty: [1, 1] }
       - { item: mushroom, weight: 1, qty: [1, 2] }
       - { item: wire_roll, weight: 3, qty: [1, 2] }
-      - { item: canned_food, weight: 2, qty: [1, 1] }
+      - { item: canned_food, weight: 3, qty: [1, 1] }
       - { item: water_bottle, weight: 1, qty: [1, 1] }
       - { item: crowbar, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 1, qty: [1, 1] }

@@ -1575,7 +1575,8 @@ body:
   # 몸을 쓰는 일은 더 지친다 (12-119): 이동·수색·작업 1.5, 전투 3 (보초·기다림·대화는 1)
   # 16시간 깨어 있으면 졸림(보정 없음), 24시간이면 지침 -1, 32시간이면 탈진 -2
   # 지침 이상이면 부상이 저절로 낫지 않고 질병도 낫지 않는다 (12-115, 자야 낫는다)
-  fatigue: { track: fatigue, grace: 16, per_step: 8, rates: { sleep: -3, rest: 0, travel: 1.5, search: 1.5, work: 1.5, combat: 3 }, blocks_recovery_from: weary }
+  # 플레이 테스트 11 (E4): 3시간보다 짧은 잠은 피로를 풀지 못하고, 피곤하지 않으면 8시간 자고 깬다
+  fatigue: { track: fatigue, grace: 16, per_step: 8, rates: { sleep: -3, rest: 0, travel: 1.5, search: 1.5, work: 1.5, combat: 3 }, blocks_recovery_from: weary, min_sleep_hours: 3, rested_sleep_hours: 8 }
   # 굶주림은 부상을 주지 않고 허기 트랙 끝에서 죽는다 (12-74)
   hunger: { track: hunger }
   # 갈증 (12-97, *임시*): 하루마다 한 단계 마른다. 물이 넉넉한 곳(물이 나는 구역, 물이 하루치 넘게 남은 우리 거점)에서
@@ -1614,15 +1615,17 @@ body:
     shelter: { resource: fuel, min_days: 1, warm: -2, guests: 0 }
     # 기온 (12-98, *임시*). 있으면 위의 하루 단위 추위(season·weather·gear) 대신 시간대마다 기온을 재고 냉기를 쌓는다.
     # 바깥 = 계절 평균 + 시간대 + 날씨 + 그날 ±2. 체감 = 바깥 + 실내(구역 cover) + 모닥불 + 방한복(입으면) + 담요(자거나 쉴 때) ± 체질 3
-    # 체감이 8°보다 낮으면 (모자란 도 × 시간)만큼 냉기, 70마다 추위 한 단계 (12-195: 100이면 외투 없이 -16°에서도 한참 버텼다). 8° 이상이면 시간당 20, 15° 이상이면 50씩 빠지고 100마다 풀린다
+    # 체감이 8°보다 낮으면 (모자란 도 × 시간)만큼 냉기, 45마다 추위 한 단계 (12-195: 100 → 70, 플레이 테스트 11: 70 → 45). 8° 이상이면 시간당 20, 15° 이상이면 50씩 빠지고 100마다 풀린다
     climate:
       season: { winter: -3, spring: 9, summer: 24, autumn: 8 }
       segments: { dawn: -5, morning: -2, day: 3, evening: 0, night: -4 }
-      weather: { fog: -1, rain: -2, snow: -3, cold_snap: -10 }
+      # 한파 -10 → -7 (플레이 테스트 11, E2: 하루에 14° 떨어졌다)
+      weather: { fog: -1, rain: -2, snow: -3, cold_snap: -7 }
       jitter: 2
       comfort: 8
       warm: 15
-      per_step: 70
+      # 70 → 45 (플레이 테스트 11, E1: 영하 12°에 방한복 없이 2시간이 "이상 없음")
+      per_step: 45
       mild_rate: 20
       warm_rate: 50
       indoor_weather: 0.5
@@ -1678,8 +1681,8 @@ weather:
     - { id: overcast, label: 흐림, description: 하늘이 낮게 깔려 빛이 흐리다, visibility: 0.9, icon: cloud }
     - { id: rain, label: 비, description: 빗소리가 발소리를 덮고 길이 미끄럽다, visibility: 0.6, icon: rain }
     - { id: fog, label: 안개, description: 몇 걸음 앞도 잘 보이지 않는다. 숨어 움직이기 좋다, visibility: 0.4, icon: fog }
-    - { id: snow, label: 눈, description: 소리는 묻히지만 발자국이 남는다, visibility: 1.1, icon: snow }
-    - { id: cold_snap, label: 한파, description: 바깥에 오래 있으면 손발이 얼어붙는다, visibility: 0.9, icon: cold }
+    - { id: snow, label: 눈, description: 소리는 묻히지만 발자국이 남는다, visibility: 1.1, icon: snow, omen: "하늘이 낮고 누렇다. 내일은 눈이 올 것 같다" }
+    - { id: cold_snap, label: 한파, description: 바깥에 오래 있으면 손발이 얼어붙는다, visibility: 0.9, icon: cold, omen: "바람이 북쪽으로 돌고 하늘이 시리게 맑다. 내일은 몹시 추울 것 같다 (방한복·담요·땔감을 챙길 때)" }
   by_season:
     winter: { clear: 3, overcast: 3, snow: 3, fog: 1, cold_snap: 2 }
     spring: { clear: 4, overcast: 3, rain: 3, fog: 2 }

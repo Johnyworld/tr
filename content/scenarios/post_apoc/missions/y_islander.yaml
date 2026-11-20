@@ -13,6 +13,8 @@
 
 - id: y_net_haul
   title: 양식장 그물 걷기
+  # 물일 (E3): 방수복을 입지 않으면 옷이 젖는다
+  wets: true
   briefing: 새벽 물때에 양식장 그물을 걷는다. 섬에서 쓸모를 보이는 가장 쉬운 길이다.
   giver_rank: squad_leader
   supplies: { food: 30 }

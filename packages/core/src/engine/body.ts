@@ -700,7 +700,8 @@ export function waterHere(content: Content, state: GameState): WaterSource | nul
   if (!rules || !me || me.dead || me.captive || !zone) return null;
   // 빗물받이 (12-167): 그 구역이 물이 나는 곳이 된다
   if (waterFacilityHere(content, state)) return { kind: "spring", grant: "full" };
-  const base = content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === me.factionId;
+  const loc = content.locations[zone];
+  const base = (loc?.kind === "base" || !!loc?.water_supply) && state.zones[zone]?.owner === me.factionId;
   if (base) {
     const own = state.factions[me.factionId];
     if (!own || !hasAccess(content, state, "ration")) return { kind: "supply", grant: "refused" };

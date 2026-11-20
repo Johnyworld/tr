@@ -550,6 +550,8 @@ export function createGameSchemas(s: Scenario) {
       .default({ lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} }),
     /** 오늘의 날씨 (12-3) */
     weather: z.strictObject({ day: z.number().int(), id: z.string() }).nullable().default(null),
+    /** 내일의 날씨 (E2: 하루 전에 정해 낌새로 알린다) */
+    forecast: z.strictObject({ day: z.number().int(), id: z.string() }).nullable().default(null),
     /** 최근 교전 (오래된 것부터, 최대 RECENT_CLASHES). 계승한 캐릭터가 직전 전황을 듣는 데 쓴다 */
     recentClashes: z.array(z.strictObject({ clash: clashSchema, at: z.number().int() })).default([]),
     /** 죽은 캐릭터들의 기록 (오래된 것부터) */
@@ -845,6 +847,7 @@ export function createGameSchemas(s: Scenario) {
     }),
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
     z.strictObject({ type: z.literal("weather_set"), day: z.number().int(), weatherId: z.string() }),
+    z.strictObject({ type: z.literal("weather_forecast"), day: z.number().int(), weatherId: z.string() }),
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
     /** 죽은 사람의 유해가 그 구역에 남았다 (12-130) */
     z.strictObject({ type: z.literal("remains_left"), remains: remainsSchema }),
@@ -1186,6 +1189,7 @@ export const EMPTY_STATE: GameState = {
   helplessAt: null,
   recovery: { lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} },
   weather: null,
+  forecast: null,
   recentClashes: [],
   remains: [],
   traps: [],
@@ -1978,6 +1982,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "weather_set":
       next.weather = { day: event.day, id: event.weatherId };
+      break;
+    case "weather_forecast":
+      next.forecast = { day: event.day, id: event.weatherId };
       break;
     case "zone_moved":
       // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)

@@ -129,6 +129,15 @@
   armor: { slot: outer, reduces: 0, blocks_infection: 0.3 }
   # 12-186: +6이면 입기만 해도 겨울이 없어져 +4로 (모닥불·잠자리를 함께 챙겨야 버틴다)
   warmth: { degrees: 4, when: worn }
+# 방수복 (플레이 테스트 11, E3): 가슴까지 올라오는 고무 장화가 달린 어부의 방수 작업복. 외투 칸이라 방한복과 함께 입지 못한다
+- id: oilskin
+  name: 고무 방수복
+  icon: cloth
+  description: 가슴까지 올라오는 고무 장화가 달린 어부의 방수 작업복. 입으면 비와 물일에 옷이 젖지 않는다 (물에 빠지면 소용없다). 외투 칸이라 방한복과 함께 입지 못하고, 따뜻하지는 않다.
+  kind: armor
+  weight: 2.5
+  value: 7
+  armor: { slot: outer, reduces: 0, waterproof: true, penalty: { stealth: -1 } }
 - id: firewood
   name: 땔감
   icon: fire

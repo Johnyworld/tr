@@ -52,7 +52,9 @@ describe("분대 명령 (기획서 9.11)", () => {
     expect(w.state().squadOrders.a_byungchul).toBeUndefined();
     expect(w.state().squadReports.a_byungchul?.text).toContain("보초");
     expect(w.sceneForGm()).toContain("마지막 보고");
-    expect(w.executeTool("npc_presence", { npc_id: "a_byungchul", action: "enter" }).ok).toBe(true);
+    // 일을 마쳤으니 다시 장면에 들일 수 있다 (그 사이 이야기가 먼저 들였으면 이미 장면에 있다)
+    w.executeTool("npc_presence", { npc_id: "a_byungchul", action: "enter" });
+    expect(w.state().scene.present).toContain("a_byungchul");
     w.close();
   });
 

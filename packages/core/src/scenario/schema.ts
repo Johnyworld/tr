@@ -1335,6 +1335,10 @@ export const scenarioFileSchema = z
             per_step: z.number().positive(),
             rates: z.record(z.string(), z.number()).default({}),
             blocks_recovery_from: id.optional(),
+            /** 이보다 짧은 잠은 피로를 풀지 못한다 (시간, 플레이 테스트 11 E4: 졸림이 한 시간 잠에 풀렸다) */
+            min_sleep_hours: z.number().min(0).default(0),
+            /** 피곤하지 않으면(첫 단계) 이만큼 자고 깬다 (시간, E4: 낮부터 15시간을 잤다) */
+            rested_sleep_hours: z.number().positive().optional(),
           })
           .optional(),
         /**
@@ -1516,6 +1520,8 @@ export const scenarioFileSchema = z
               visibility: z.number().min(0).max(2),
               /** 상태 화면 아이콘 (12-66) */
               icon: iconNameSchema.optional(),
+              /** 전날의 낌새 (플레이 테스트 11, E2): 내일이 이 날씨면 오늘 상태에 이 한 줄이 보인다 (한파·눈처럼 대비해야 하는 날씨만) */
+              omen: z.string().min(1).optional(),
             }),
           )
           .min(1),

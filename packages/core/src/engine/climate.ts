@@ -218,7 +218,7 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
     if (!f.indoor) allIndoor = false;
     if (c.wet) {
       const weather = dayOf(t) === dayOf(state.time) ? weatherNow(ctx.content.scenario, state) : null;
-      if (!f.indoor && weather && c.wet.weather.includes(weather.id)) wetLeft = Math.round(c.wet.fire_hours * 60);
+      if (!f.indoor && weather && c.wet.weather.includes(weather.id) && !wearsWaterproof(ctx, me.id)) wetLeft = Math.round(c.wet.fire_hours * 60);
       else if (wetLeft > 0 && f.warm) wetLeft = Math.max(0, wetLeft - (end - t));
     }
     const hours = (end - t) / 60;
@@ -266,11 +266,18 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
   return displays;
 }
 
-/** 젖은 옷 (12-186): 마르기까지 체감이 떨어진다. 무엇으로 마르는지 GM·화면에 알린다 */
-export function soak(ctx: ToolContext, who: string, cause: string): ToolDisplayEvent[] {
+/** 방수복을 입고 있는가 (E3) */
+export function wearsWaterproof(ctx: ToolContext, who: string): boolean {
+  const me = ctx.store.getState().characters[who];
+  return !!me && Object.values(me.equipped ?? {}).some((id) => !!id && (me.inventory[id] ?? 0) > 0 && !!ctx.content.items[id]?.armor?.waterproof);
+}
+
+/** 젖은 옷 (12-186): 마르기까지 체감이 떨어진다. 무엇으로 마르는지 GM·화면에 알린다. splash: 물이 튀는 정도라 방수복이 막는다 (물에 빠지면 막지 못한다) */
+export function soak(ctx: ToolContext, who: string, cause: string, splash = false): ToolDisplayEvent[] {
   const wet = climateOf(ctx.content)?.wet;
   const me = ctx.store.getState().characters[who];
   if (!wet || !me || me.dead) return [];
+  if (splash && wearsWaterproof(ctx, who)) return [];
   const was = (ctx.store.getState().wet?.[who] ?? 0) > 0;
   ctx.store.append({ type: "wet_set", characterId: who, left: Math.round(wet.fire_hours * 60), cause });
   if (was) return [];

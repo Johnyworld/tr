@@ -53,6 +53,8 @@
   owner: faction_c
   adjacent: [c_base, riverside]
   yields: { food: 30, fuel: 5 }
+  # 취사 천막과 물탱크가 있다: 붉은연합 사람은 여기서도 물 보급을 받는다 (플레이 테스트 11, E5)
+  water_supply: true
   loot:
     chance: 0.6
     items:
@@ -300,6 +302,7 @@
     items:
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: dried_fish, weight: 3, qty: [1, 2] }
+      - { item: oilskin, weight: 1, qty: [1, 1] }
       - { item: apple, weight: 1, qty: [1, 2] }
       - { item: tomato, weight: 1, qty: [1, 1] }
       - { item: canned_food, weight: 2, qty: [1, 2] }

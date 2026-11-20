@@ -13,7 +13,7 @@ import { exposeToFatigue } from "./fatigue.ts";
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { rollBlowup, rollHear, rollLeak } from "./persona.ts";
-import { exposeToCold, changeClothes } from "./climate.ts";
+import { exposeToCold, changeClothes, soak } from "./climate.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
@@ -806,6 +806,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const exposure: Activity = input.forage && !["travel", "guard_duty", "combat"].includes(activity) ? "search" : activity;
   const timeBefore = store.getState().time;
   const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure);
+  // 물일 임무 (E3): 임무 자리에서 그 일을 하면 옷이 젖는다. 방수복을 입으면 젖지 않는다
+  if (forMission && !input.move_to && activity !== "brief") {
+    const m = store.getState().missions[forMission];
+    if (m && content.missions[m.templateId]?.wets && atMissionPlace(m, store.getState().playerZone, store.getState().zones, store.getState().factions)) {
+      displays.push(...soak(ctx, start.playerId, "물일을 하다 옷이 젖었다", true));
+    }
+  }
   lines.push(time.text);
   if (input.activity || input.move_to) displays.push(time.display);
   // 가르침 (4.2.1): 흐른 시간만큼 배운다
@@ -1070,7 +1077,14 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   let capped = false;
   if (cost.kind === "long") {
     // 잠은 한 번에 16시간까지 (아침에 "새벽까지"면 21시간을 잤다, 플레이 테스트 8). 기다림은 하루까지
-    const cap = activity === "sleep" ? MAX_SLEEP_MINUTES : MAX_FAST_FORWARD_MINUTES;
+    // 피곤하지 않으면 덜 잔다 (E4)
+    const fatigue = content.scenario.body?.fatigue;
+    const rested = !!fatigue?.rested_sleep_hours && (() => {
+      const me = state.characters[state.playerId];
+      const levels = content.scenario.condition_tracks.find((t) => t.id === fatigue.track)?.levels ?? [];
+      return levels.findIndex((l) => l.id === me?.conditions[fatigue.track]) <= 0;
+    })();
+    const cap = activity === "sleep" ? (rested ? fatigue!.rested_sleep_hours! * 60 : MAX_SLEEP_MINUTES) : MAX_FAST_FORWARD_MINUTES;
     const wanted = until && cost.allowUntil ? nextSegmentStart(from, until) : from + cost.minutes;
     const target = Math.min(wanted, from + cap);
     capped = wanted > target;
@@ -1091,7 +1105,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       });
       // 그동안의 기온 (12-98): 자정 전에 재야 그날의 날씨로 잰다
       extra.push(...exposeToCold(ctx, exposure, cursor, result.end));
-      extra.push(...exposeToFatigue(ctx, activity, cursor, result.end));
+      // 잠은 다 잔 뒤에 한꺼번에 셈한다: 선잠(min_sleep_hours보다 짧은 잠)은 피로를 풀지 못한다 (E4)
+      extra.push(...exposeToFatigue(ctx, activity === "sleep" ? "rest" : activity, cursor, result.end));
       cursor = result.end;
       interrupt = result.interrupt;
       if (interrupt || cursor >= target) break;
@@ -1101,6 +1116,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       if (store.getState().battle) break;
     }
     to = cursor;
+    if (activity === "sleep" && to - from >= (content.scenario.body?.fatigue?.min_sleep_hours ?? 0) * 60) extra.push(...exposeToFatigue(ctx, "sleep", from, to));
     // 푹 잔 밤에 상처가 아문다 (플레이 테스트 11, A1)
     if (activity === "sleep") extra.push(...healFromSleep(ctx, from, to));
   } else {

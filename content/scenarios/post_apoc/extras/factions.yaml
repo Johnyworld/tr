@@ -333,6 +333,7 @@
     - { item: harpoon_gun, chance: 0.4 }
     - { item: harpoons, quantity: 2, chance: 0.4 }
     - { item: fishing_kit, chance: 0.5 }
+    - { item: oilskin, chance: 0.6 }
     - { item: dried_fish, chance: 0.6 }
     - { item: canned_food, chance: 0.4 }
   values: { discipline: 2, loyalty: 1, mercy: -1 }

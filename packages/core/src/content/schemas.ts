@@ -56,6 +56,8 @@ export const itemContentSchema = z.strictObject({
       reduces: z.number().int().min(0).max(2),
       penalty: z.record(contentIdSchema, z.number().int().min(-2).max(0)).default({}),
       blocks_infection: z.number().min(0).max(1).default(0),
+      /** 방수 (플레이 테스트 11, E3): 입고 있으면 비와 물일에 옷이 젖지 않는다 (물에 빠지면 젖는다) */
+      waterproof: z.boolean().default(false),
     })
     .optional(),
   /**
@@ -380,6 +382,8 @@ export function createContentSchemas(s: Scenario) {
     title: z.string().min(1),
     briefing: z.string().min(1),
     giver_rank: idEnum(rankIds(s)),
+    /** 물일 (플레이 테스트 11, E3): 임무 자리에서 이 임무의 활동을 하면 옷이 젖는다 (방수복을 입으면 젖지 않는다) */
+    wets: z.boolean().optional(),
     /** 이 계급 이상만 받는 일감 (플레이 테스트 11, C9: 신입이 신병 훈련을 맡았다) */
     min_rank: idEnum(rankIds(s)).optional(),
     deadline_hours: z.number().int().positive().max(72),
@@ -550,6 +554,8 @@ export function createContentSchemas(s: Scenario) {
     isolated: z.boolean().optional(),
     /** 소유 세력이 하루에 얻는 자원 */
     yields: resourceAmounts.default({}),
+    /** 거점처럼 물 보급을 받는 곳 (플레이 테스트 11, E5: 취사 천막까지 있는 물류창고에 물이 없었다). 주인이 우리 무리일 때만 */
+    water_supply: z.boolean().optional(),
     /** 수색하면 나올 수 있는 것 (기획서 4.7). chance: 한 번 굴릴 때 무언가 나올 확률, items: 무게로 고른다 */
     loot: z
       .strictObject({

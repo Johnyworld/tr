@@ -32,8 +32,12 @@ function runDailyWeather(ctx: ToolContext) {
   const today = dayOf(state.time);
   if (!s.weather || state.weather?.day === today) return;
   // 큰 재난(혹한)이 덮친 동안은 그 날씨 (12-169)
-  const id = disasterWeather(ctx.content, state, today) ?? rollWeather(s, today, ctx.rng);
+  // 어제 정해 둔 내일의 날씨가 오늘이다 (E2: 하루 전에 낌새로 알린다)
+  const planned = state.forecast?.day === today ? state.forecast.id : null;
+  const id = disasterWeather(ctx.content, state, today) ?? planned ?? rollWeather(s, today, ctx.rng);
   if (id) ctx.store.append({ type: "weather_set", day: today, weatherId: id });
+  const next = rollWeather(s, today + 1, ctx.rng);
+  if (next) ctx.store.append({ type: "weather_forecast", day: today + 1, weatherId: next });
 }
 
 /** urgentOnly: 자다가 급한 이야기에 깼으면 그 이야기만 연다 (깨운 일 대신 다른 이야기가 열리지 않게, 12-187) */

@@ -97,7 +97,9 @@ const VALUE_LABELS: Record<string, string> = {
 
 function weatherLine(state: GameState, content: Content): string {
   const w = weatherNow(content.scenario, state);
-  return w ? ` · 날씨: ${w.label} (${w.description})` : "";
+  // 내일 한파·눈이면 오늘 낌새가 보인다 (E2)
+  const f = state.forecast?.day === dayOf(state.time) + 1 ? content.scenario.weather?.kinds.find((k) => k.id === state.forecast!.id) : undefined;
+  return (w ? ` · 날씨: ${w.label} (${w.description})` : "") + (f?.omen ? ` · 낌새: ${f.omen}` : "");
 }
 
 const genderOf = (s: { creation?: { genders: { id: string; label: string }[] } }, id: string | null) => {

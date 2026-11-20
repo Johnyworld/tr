@@ -77,6 +77,9 @@
 - id: w_fog_wave
   title: 안개 속의 발소리
   urgent: true
+  # 안개 속의 물결, 수십 (D7)
+  fright: 2
+  fright_tags: [infected]
   tags: [world]
   when:
     weather: [fog]
@@ -147,6 +150,9 @@
 - id: w_wave_night_wall
   title: 담장 너머의 물결
   tags: [world]
+  # 담 너머로 지나가는 물결 (D7). 담 안이라 한 단계
+  fright: 1
+  fright_tags: [infected]
   repeatable: true
   cooldown_days: 10  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   when:

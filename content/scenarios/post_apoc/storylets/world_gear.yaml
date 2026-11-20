@@ -57,6 +57,9 @@
   title: 소리를 쫓아온 순찰
   tags: [world]
   urgent: true
+  # 총구를 든 순찰조, 뒤에서 모여드는 감염체 (D7)
+  fright: 1
+  fright_tags: [infected]
   repeatable: true
   cooldown_days: 2
   weight: 2

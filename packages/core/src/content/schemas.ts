@@ -839,6 +839,8 @@ export function createContentSchemas(s: Scenario) {
     repeatable: z.boolean().default(false),
     /** 잠을 깨울 만큼 급한 일인지. 아니면 자는 동안에는 열리지 않는다 */
     urgent: z.boolean().default(false),
+    /** 누워 있는 동안의 이야기 (플레이 테스트 11, D4): 몸이 위급해 급한 이야기만 열릴 때도 열린다 (문병, 간호, 침상의 소식) */
+    bedside: z.boolean().optional(),
     /** 적의 매복 (12-177): 열리면 주인공은 매복당한 것이다 (다음 판정 하나가 불리하다, 실패하면 혼란) */
     ambush: z.boolean().optional(),
     cooldown_days: z.number().min(0).default(0),
@@ -870,6 +872,8 @@ export function createContentSchemas(s: Scenario) {
         own_territory: z.boolean().optional(),
         /** 지금 구역의 주인: none 누구의 땅도 아님, own 우리, other 다른 무리 */
         zone_owner: z.array(z.enum(["none", "own", "other"])).optional(),
+        /** 지금 구역의 주인이 이 무리 중 하나 (플레이 테스트 11, D6: 처음 땅이 전쟁으로 넘어가도 그 땅 주인의 보초가 나오게) */
+        owners: z.array(contentIdSchema).min(1).optional(),
         /** 플레이어의 소속 세력 (none = 무소속) */
         factions: z.array(z.string().min(1)).optional(),
         /** 주인공에게 연인이 있다/없다 (12-58) */

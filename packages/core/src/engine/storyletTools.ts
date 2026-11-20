@@ -10,7 +10,7 @@ import { setResolve, stepResolve } from "./resolve.ts";
 import { capturePlayer, releasePlayer } from "./captivity.ts";
 import { rankName } from "../game/ranks.ts";
 import { exposeToFatigue } from "./fatigue.ts";
-import { infestationOf } from "../game/infestation.ts";
+import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import { exposeToCold } from "./climate.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
@@ -967,6 +967,42 @@ export function runRoadEvent(ctx: ToolContext, risk = 1): ToolDisplayEvent[] {
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
   displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });
   return displays;
+}
+
+/** 정해진 태그의 이야기 하나를 바로 연다 (D5 몰려든 구역, D6 들킨 침입). 진행 중인 이야기·전투가 있으면 열지 않는다 */
+export function runTagEvent(ctx: ToolContext, tag: string): ToolDisplayEvent[] {
+  const { store, content, rng } = ctx;
+  const state = store.getState();
+  if (state.activeStorylet || state.battle) return [];
+  // 한 일의 결과라 하루 상한·위협 간격에 걸리지 않는다
+  const storylet = pickStorylet(roadStorylets(state, content, tag, state.time, { pacing: false }), rng);
+  if (!storylet) return [];
+  const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
+  displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });
+  return displays;
+}
+
+/** 몰려든 구역에 들어섰을 때 (D5): 기준값보다 높은 단계 하나당 arrival.per_level 확률 */
+export function runInfestedArrival(ctx: ToolContext, zone: string): ToolDisplayEvent[] {
+  const rule = ctx.content.scenario.infestation?.arrival;
+  if (!rule) return [];
+  const excess = infestationOf(ctx.content, ctx.store.getState(), zone) - baseInfestation(ctx.content, zone);
+  if (excess <= 0 || ctx.rng() >= excess * rule.per_level) return [];
+  return runTagEvent(ctx, rule.tag);
+}
+
+/** 적대하는 무리의 땅에서 숨기·몰래 하기가 실패했을 때 (D6) */
+export function runAlarm(ctx: ToolContext, move: string): ToolDisplayEvent[] {
+  const rule = ctx.content.scenario.alarm;
+  if (!rule || !rule.moves.includes(move)) return [];
+  const state = ctx.store.getState();
+  const zone = state.playerZone;
+  const owner = zone ? state.zones[zone]?.owner : null;
+  const mine = state.characters[state.playerId]?.factionId ?? null;
+  if (!owner || owner === mine) return [];
+  const hostile = mine ? (state.factions[owner]?.disposition?.[mine] ?? 0) < 0 : ctx.content.locations[zone!]?.kind === "base";
+  if (!hostile) return [];
+  return runTagEvent(ctx, rule.tag);
 }
 
 /**

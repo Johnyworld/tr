@@ -1020,7 +1020,8 @@ recovery:
   natural_days: 2
   # 중상까지는 저절로 낫는다. 치명상은 치료가 필요하다 (NPC의 하루 단위 회복)
   # 주인공은 푹 잔 밤에 낫는다 (플레이 테스트 11, A1): 6시간 이상 자면 피가 멎어 있고 자는 사이 새로 다치지 않았을 때 한 단계. 치명상은 이틀에 한 번
-  sleep_heal: { min_hours: 6, max_level: critical, slow: { critical: 2 } }
+  # 치명상·의식장애(impaired)도 이틀에 한 번 (플레이 테스트 11: 약탈조 판이 닷새 동안 의식장애에 묶여 급한 이야기만 열렸다)
+  sleep_heal: { min_hours: 6, max_level: impaired, slow: { critical: 2, impaired: 2 } }
   natural_max_level: serious
   # 의식불명에 이만큼(시간) 머물면 정신이 든다 (의식장애로 한 단계). 그사이 더 다치면 다시 센다 (*임시*)
   wake_hours: 6
@@ -1311,6 +1312,11 @@ storylet_pacing:
   min_any_gap_hours: 2
   urgent_per_day: 2
   urgent_only_when: { bleeding: bleeding, harm: critical }
+  # 플레이 테스트 11 (D1~D3): 하루 2~5개, 대부분 위협이라 페널티가 겹쳤다. 이동마다 길 위의 일, 감염체 무리가 사흘에 세 번
+  per_day: 3
+  threat_per_day: 1
+  road_per_day: 1
+  same_threat_gap_days: 2
 
 # 시세 (12-155, *임시*): 그 땅 주인 무리의 창고가 처음의 25% 이하면 1.5배, 처음과 같으면 그대로, 두 배 이상이면 0.7배.
 # 음식은 식량, 탄약은 탄약 (약·물·땔감은 아이템의 resource). 겨울에는 연료 1.4배, 여름에는 물 1.2배
@@ -1490,6 +1496,11 @@ infestation:
   war_share_floor: 0.4
   # 무리 형편(9.13)에 오르는 말: 그 무리 땅의 압력이 기준값보다 1·2·3 높을 때 (12-120)
   trouble_labels: [땅에 감염체가 몰려들었다, 감염체에 시달린다, 감염체에 둘러싸였다]
+  # 몰려든 구역에 들어서면 (플레이 테스트 11, D5): 기준값보다 높은 단계 하나당 20%로 infested 이야기 하나 (13일 동안 다섯 번 들어가도 마주치지 않았다)
+  arrival: { tag: infested, per_level: 0.2 }
+
+# 들킨 침입 (플레이 테스트 11, D6): 적대하는 무리의 땅에서 숨기가 실패하면 alarm 이야기(경보·추격) 하나가 열린다
+alarm: { tag: alarm, moves: [stealth] }
 
 # 쓰면 몸이 나아지는 물건 (take_action.use_item): 아이템 → 트랙 → 나아지는 단계 (*임시*)
 # 음식이 상하는 빠르기의 계절 배수 (12-131, *임시*): 아이템 perishable × 이 값
@@ -1656,6 +1667,8 @@ body:
     resist: { ability: nerve, per_point: 0.15 }
     decay_hours: 1
     panic_nerves: 0.3
+    # 계기 하나로는 두 단계까지 (플레이 테스트 11, D7: 밤의 철사 이야기 하나로 평온에서 공황)
+    max_steps: 2
     nerves_from: frayed
 
 # 날씨 (12-3, *임시*). 하루마다 계절별 무게로 고른다. visibility: 숨은 목격자 확률 배수 (작을수록 안 보인다)

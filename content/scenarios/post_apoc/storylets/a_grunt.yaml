@@ -230,6 +230,8 @@
 - id: post_noise
   title: 초소 아래의 소리
   urgent: true
+  # 어둠 속의 사람 하나 (D7). 밤이라 어둠 공포는 코드가 더한다
+  fright: 1
   tags: [grunt]
   repeatable: true
   cooldown_days: 4  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다

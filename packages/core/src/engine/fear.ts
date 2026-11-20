@@ -61,6 +61,7 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
   const hold = Math.min(0.8, Math.max(0, f.resist.per_point * (me.stats[f.resist.ability] ?? 0)));
   if (steps > 0 && ctx.rng() < hold) steps -= 1;
 
+  if (f.max_steps) steps = Math.min(steps, f.max_steps);
   if (steps <= 0) return { lines: [`겁날 일이었다 (${cause}). ${josa(me.name, "은/는")} 두려움을 눌러 참았다. 공포가 오르지 않았다.`], displays: [] };
   const c = changeCondition(ctx, me.id, f.track, steps, "fear", cause);
   if (!c?.display) return EMPTY;

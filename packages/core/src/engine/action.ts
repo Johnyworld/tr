@@ -16,7 +16,7 @@ import { rollBlowup, rollHear, rollLeak } from "./persona.ts";
 import { exposeToCold, changeClothes } from "./climate.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
-import { runRoadEvent } from "./storyletTools.ts";
+import { runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
 import { CAMP_INTERRUPT, createCampCheck, runCampEvent, deepSleepReason } from "./camp.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
@@ -618,6 +618,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     );
     if (roll.growthNote) lines.push(roll.growthNote);
     if (missionNote) lines.push(missionNote);
+    // 적대하는 땅에서 숨기가 실패하면 들킨다 (플레이 테스트 11, D6)
+    if (roll.outcome === "miss") {
+      for (const d of runAlarm(ctx, input.check.move)) {
+        displays.push(d);
+        if (d.type === "storylet" && d.event === "started") lines.push(`들켰다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);
+      }
+    }
     lines.push(...roll.ambushNotes);
     // 매복을 놓는다 (12-177)
     if (input.ambush) lines.push(...applyAmbush(ctx, roll.outcome));
@@ -847,6 +854,11 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     for (const d of runRoadEvent(ctx, rideUsed?.roadRisk ?? 1)) {
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`오는 길에 일이 생겼다: "${d.title}". 도착하기 전, 길 위의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
+    }
+    // 감염체가 몰려든 구역에 들어섰다 (플레이 테스트 11, D5: 다섯 번 들어가도 마주치지 않았다)
+    for (const d of runInfestedArrival(ctx, input.move_to)) {
+      displays.push(d);
+      if (d.type === "storylet" && d.event === "started") lines.push(`들어서자마자 일이 생겼다: "${d.title}". 도착한 자리의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
     }
   }
 

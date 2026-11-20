@@ -84,6 +84,7 @@ describe("공포", () => {
   it("공황에 이르면 확률로 마음이 흔들린다", () => {
     const env = setup();
     env.roll.value = 0; // 버티지 못하고(냉정 0), 마음으로 번진다
+    frighten(env.ctx, 1, "발소리"); // 계기 하나로는 두 단계까지 (D7): 먼저 긴장
     const r = frighten(env.ctx, 3, "떼");
     expect(env.fear()).toBe("panic");
     expect(env.me().conditions.nerves).toBe("shaken");
@@ -92,6 +93,7 @@ describe("공포", () => {
 
   it("무서운 것이 없으면 시간마다 가라앉고, 자고 나면 평정", () => {
     const env = setup();
+    frighten(env.ctx, 1, "발소리");
     frighten(env.ctx, 3, "떼");
     expect(env.fear()).toBe("panic");
     expect(runFearDecay(env.ctx)).toEqual([]); // 아직 시간이 안 지났다
@@ -120,6 +122,12 @@ describe("공포", () => {
     expect(out.ok).toBe(true);
     expect(env.fear()).toBe("tense");
     if (out.ok) expect(out.resultText).toContain("공포");
+  });
+
+  it("계기 하나로 오르는 공포는 두 단계까지 (D7: 평온에서 한 번에 공황은 없다)", () => {
+    const env = setup();
+    frighten(env.ctx, 3, "떼");
+    expect(env.fear()).toBe("scared");
   });
 
   it("공포증: 무서워하는 것이 나오면 한 단계 더, 보통 사람에게 무섭지 않은 장면(fright 0)에도 온다", () => {

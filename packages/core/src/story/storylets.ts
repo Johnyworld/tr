@@ -281,6 +281,10 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const occ = occupationOf(content, player);
     if (!occ || careerStep(content, player) < w.occupation_step_gte) return false;
   }
+  if (w.owners) {
+    const owner = state.playerZone ? state.zones[state.playerZone]?.owner : null;
+    if (!owner || !w.owners.includes(owner)) return false;
+  }
   if (w.zone_owner) {
     const owner = state.playerZone ? (state.zones[state.playerZone]?.owner ?? null) : null;
     const kind = owner === null ? "none" : owner === player.factionId ? "own" : "other";
@@ -450,8 +454,40 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
       return at - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY;
     })
     .filter((s) => conditionsMet(state, content, s, at))
+    .filter((s) => !pacingBlocks(state, content, s, at))
     .filter((s) => pickCast(state, content, s, null) !== null)
     .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** 이 이야기가 주는 위협 (공포 태그와, 감염체 배역이면 infected). 같은 위협끼리 간격을 둔다 (D3) */
+export function threatTags(content: Content, s: StoryletContent): string[] {
+  const infected = Object.values(s.cast).some((r) => "extra" in r && !!r.extra && content.extras[r.extra]?.kind === "infected");
+  return [...new Set([...(s.fright_tags ?? []), ...(infected ? ["infected"] : [])])];
+}
+
+/** 다치게 하는 이야기인가 (D1): 공포가 오르거나, 매복이거나, 감염체가 나온다 */
+export function isThreat(content: Content, s: StoryletContent): boolean {
+  return (s.fright ?? 0) > 0 || !!s.ambush || threatTags(content, s).includes("infected");
+}
+
+/**
+ * 하루 상한과 같은 위협의 간격 (플레이 테스트 11, D1~D3: 하루 2~5개, 대부분 위협, 감염체 무리가 사흘에 세 번).
+ * 임무 자리의 이야기(when.mission)는 임무를 마치는 길이라 막지 않는다
+ */
+export function pacingBlocks(state: GameState, content: Content, s: StoryletContent, at: GameTime): boolean {
+  const p = content.scenario.storylet_pacing;
+  if (s.when.mission) return false;
+  const today = dayOf(at);
+  const fired = Object.entries(state.storyletLog).filter(([id, log]) => dayOf(log.lastFiredAt) === today && !content.storylets[id]?.when.mission);
+  if (p.per_day && fired.length >= p.per_day) return true;
+  if (p.threat_per_day && isThreat(content, s) && fired.filter(([id]) => content.storylets[id] && isThreat(content, content.storylets[id]!)).length >= p.threat_per_day) return true;
+  const road = content.scenario.travel?.tag;
+  if (p.road_per_day && road && s.tags.includes(road) && fired.filter(([id]) => content.storylets[id]?.tags.includes(road)).length >= p.road_per_day) return true;
+  if (p.same_threat_gap_days) {
+    const mine = threatTags(content, s);
+    if (mine.length && Object.entries(state.storyletLog).some(([id, log]) => id !== s.id && at - log.lastFiredAt < p.same_threat_gap_days * MINUTES_PER_DAY && content.storylets[id] && threatTags(content, content.storylets[id]!).some((t) => mine.includes(t)))) return true;
+  }
+  return false;
 }
 
 /**
@@ -498,6 +534,11 @@ export function urgentAllowed(state: GameState, content: Content, at: GameTime):
 /** 이 이야기를 지금 열 수 있는가: 급한 이야기는 하루 상한까지, 나머지는 창이 열렸을 때 */
 export function storyletAllowed(state: GameState, content: Content, s: StoryletContent, window: "open" | "urgent_only" | "closed", at: GameTime, options: { urgentOnly?: boolean } = {}): boolean {
   if (window === "closed") return false;
+  // 누워 있는 동안의 이야기는 위급할 때도 연다 (D4). 다만 이야기 사이 간격은 지킨다
+  if (s.bedside && !options.urgentOnly && inCrisis(state, content)) {
+    const gap = content.scenario.storylet_pacing.min_gap_hours * 60;
+    return state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt || at - state.lastStoryletAt >= gap;
+  }
   if (s.urgent) return urgentAllowed(state, content, at);
   return !options.urgentOnly && window === "open";
 }
@@ -678,7 +719,7 @@ export function routeDanger(content: Content, state: GameState): number {
 }
 
 /** 길 위의 이야기 후보: 태그가 맞고, 아직 안 열렸거나 쿨다운이 지났고, 조건과 배역이 맞는 것 */
-export function roadStorylets(state: GameState, content: Content, tag: string, at: GameTime = state.time): StoryletContent[] {
+export function roadStorylets(state: GameState, content: Content, tag: string, at: GameTime = state.time, options: { pacing?: boolean } = {}): StoryletContent[] {
   return Object.values(content.storylets)
     .filter((s) => s.tags.includes(tag))
     .filter((s) => {
@@ -686,5 +727,6 @@ export function roadStorylets(state: GameState, content: Content, tag: string, a
       return !log || (s.repeatable && at - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY);
     })
     .filter((s) => conditionsMet(state, content, s, at))
+    .filter((s) => options.pacing === false || !pacingBlocks(state, content, s, at))
     .filter((s) => pickCast(state, content, s, null) !== null);
 }

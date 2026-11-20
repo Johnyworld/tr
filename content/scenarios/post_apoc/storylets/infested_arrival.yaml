@@ -1,0 +1,173 @@
+# 몰려든 구역에 들어서면 (플레이 테스트 11, D5): 감염체 압력이 기준값보다 높은 구역에 들어설 때 코드가 이 태그(infested)의 이야기 하나를 연다
+# (scenario.infestation.arrival, 높은 단계 하나당 20%). world 태그가 없어 무작위로는 열리지 않는다
+# 선택지: 물러서기 / 몰래 지나가기 / 맞서기. 쓰러뜨리면 put_down, 쓸어 내면 압력이 내려간다(infested: -1)
+
+- id: ia_street_crowd
+  title: 길목을 막은 것들
+  urgent: true
+  fright: 1
+  fright_tags: [infected]
+  tags: [infested]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zone_overrun: true
+    zone_owner: [none, other]
+  cast:
+    inf_a: { extra: infected_hungry, label: 길 한가운데의 감염체, enter: true }
+    inf_b: { extra: infected_fresh, label: 막 변한 감염체, enter: true }
+  setup: "{zone}에 들어서자마자 발이 멈춘다. 길 한가운데에 {inf_a:이/가} 서서 고개를 까딱거리고, 그 옆에서 아직 옷이 멀쩡한 {inf_b:이/가} 무언가를 뜯고 있다. 둘 너머 골목에서도 발 끄는 소리가 난다. 아직 이쪽을 보지 못했다."
+  variants:
+    - "{zone}의 첫 모퉁이를 돌자 썩은 냄새가 벽처럼 막아선다. {inf_a:이/가} 뒤집힌 차에 기대 서 있고, {inf_b:이/가} 그 발치를 기어 다닌다. 며칠 사이 이 구역에 무언가 몰려들었다."
+  ai_direction: "이 구역의 감염체 압력이 평소보다 높다 (총소리나 싸움 뒤의 시체가 불렀다). 눈앞의 둘은 장면의 감염체 배역이고 안쪽에 더 있다. 아직 들키지 않았다 (주인공이 먼저 봤다). 맞붙으면 배역을 target·opponent로 두고 물릴 위험을 먼저 선언한다. 총을 쏘면 더 모인다."
+  choices:
+    - id: back_off
+      label: 소리 없이 왔던 길로 물러선다
+      effects:
+        - belief: { fact: "{zone}에 감염체가 몰려 있다. 들어서자마자 물러났다", source: seen }
+    - id: slip_past
+      label: 담벼락에 붙어 둘 뒤로 지나간다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에 몰린 감염체 뒤로 소리 없이 지나갔다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}의 감염체 뒤를 지나다 하나가 고개를 돌렸다. 숨을 참고 버텨 겨우 지나갔다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 몰려든 감염체 사이를 지나다 붙잡혔다 }
+          - zone_noise: 1
+          - belief: { fact: "{zone}의 감염체 뒤를 지나다 들켰다. 뿌리치고 빠져나왔지만 안쪽 것들까지 깼다", source: seen }
+    - id: put_down
+      label: 들키기 전에 하나씩 조용히 처리한다
+      check: fight
+      outcomes:
+        success:
+          - put_down: { who: inf_a }
+          - put_down: { who: inf_b }
+          - infested: -1
+          - belief: { fact: "{zone}에 들어서자마자 길목의 감염체 둘을 조용히 처리했다", source: seen }
+        partial:
+          - put_down: { who: inf_a }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}의 감염체 하나는 처리했지만 다른 하나가 달려들었다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 길목의 감염체에게 덮쳐졌다 }
+          - zone_noise: 1
+          - belief: { fact: "{zone}의 감염체를 처리하려다 둘에게 한꺼번에 덮쳐졌다", source: seen }
+
+- id: ia_horde_pass
+  title: 길을 메운 물결
+  urgent: true
+  fright: 2
+  fright_tags: [infected]
+  tags: [infested]
+  repeatable: true
+  cooldown_days: 5
+  weight: 0.6
+  when:
+    zone_overrun: true
+    zone_infested_gte: 2
+    zone_owner: [none, other]
+  cast:
+    inf_a: { extra: infected_hungry, label: 물결 맨 앞의 감염체, enter: true }
+    inf_b: { extra: infected_crawler, label: 물결 끝에서 기는 감염체, enter: true }
+  setup: "{zone}의 큰길 끝에서 웅성임이 밀려온다. 하나가 아니다. 수십이 어깨를 부딪치며 이쪽으로 흘러온다. 맨 앞의 {inf_a:이/가} 고개를 쳐들고 냄새를 맡는다. 물결 끝자락에서는 {inf_b:이/가} 바닥을 긁으며 따라온다."
+  ai_direction: "감염체가 몰려든 구역을 물결이 지나간다. 맞서서 이길 수 있는 수가 아니다 (맞서기를 고르면 맨 앞과 끝자락만 상대하는 것이고, 실패하면 물결이 방향을 튼다). 숨거나 비켜서면 지나간다. 물릴 위험은 먼저 선언한다."
+  choices:
+    - id: back_off
+      label: 왔던 길로 되돌아 뛴다
+      check: athletics
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에 감염체 물결이 흐르고 있었다. 되돌아 뛰어 피했다", source: seen }
+        partial:
+          - body: { track: fatigue, delta: 1 }
+          - belief: { fact: "{zone}의 물결을 피해 한참을 뛰었다. 숨이 턱까지 찼다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 감염체 물결을 피해 뛰다 넘어졌다 }
+          - belief: { fact: "{zone}의 물결을 피해 뛰다 넘어졌다. 물결 끝자락에 거의 따라잡혔다", source: seen }
+    - id: hide
+      label: 가까운 건물 위로 올라가 지나가길 기다린다
+      check: sense_danger
+      outcomes:
+        success:
+          - delay: 60
+          - belief: { fact: "{zone}의 감염체 물결이 발밑으로 지나갈 때까지 숨어 기다렸다", source: seen }
+        partial:
+          - delay: 120
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에서 물결을 피해 숨었지만 몇이 한참을 아래에서 맴돌았다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 무너진 계단으로 올라가다 미끄러졌다 }
+          - zone_noise: 1
+          - belief: { fact: "{zone}에서 숨으려다 계단이 무너졌다. 물결 끝자락이 소리를 듣고 돌아섰다", source: seen }
+    - id: cut_edge
+      label: 물결 끝자락을 쳐내며 옆 골목으로 빠진다
+      check: fight
+      outcomes:
+        success:
+          - put_down: { who: inf_b }
+          - belief: { fact: "{zone}의 물결 끝자락에서 기어 오던 감염체를 쳐내고 옆 골목으로 빠졌다", source: seen }
+        partial:
+          - put_down: { who: inf_b }
+          - wound: { steps: 1, cause: 물결 끝자락의 감염체 }
+          - belief: { fact: "{zone}의 물결 끝자락을 쳐내고 빠졌지만 다쳤다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 물결 맨 앞의 감염체 }
+          - zone_noise: 1
+          - belief: { fact: "{zone}에서 물결 끝자락에 막혔다. 맨 앞의 것까지 돌아섰다", source: seen }
+
+- id: ia_home_approach
+  title: 돌아오는 길목
+  urgent: true
+  fright: 1
+  fright_tags: [infected]
+  tags: [infested]
+  repeatable: true
+  cooldown_days: 3
+  when:
+    zone_overrun: true
+    zone_owner: [own]
+  cast:
+    inf_a: { extra: infected_hungry, label: 어귀의 감염체, enter: true }
+    inf_b: { extra: infected_crawler, label: 배수로의 감염체, enter: true }
+  setup: "우리 땅으로 들어서는 어귀에 {inf_a:이/가} 서성인다. 배수로에서는 {inf_b:이/가} 반쯤 몸을 내밀었다. 안쪽에서 망을 보던 누군가 당신을 알아보고 손짓한다. 돌아서 오라고, 아니면 빨리 오라고."
+  ai_direction: "우리 땅 둘레에 감염체가 몰려들었다. 안쪽까지 들어오지는 못했다. 망을 보던 사람들은 주인공을 봤고, 도울 수 있지만 오래 나와 있지는 못한다. 맞붙으면 배역을 target·opponent로 두고 물릴 위험을 먼저 선언한다. 어귀를 쓸어 내면 무리가 안다."
+  choices:
+    - id: detour
+      label: 멀찍이 돌아 다른 길로 들어간다
+      effects:
+        - delay: 60
+        - belief: { fact: "{zone}의 어귀에 감염체가 몰려 있어 멀찍이 돌아 들어왔다", source: seen }
+    - id: dash
+      label: 안쪽 사람들이 손짓하는 쪽으로 단숨에 뛰어든다
+      check: athletics
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 어귀에 몰린 감염체를 지나 단숨에 안으로 뛰어들었다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+          - faction_morale: { faction: own, delta: -1 }
+          - belief: { fact: "안으로 뛰어드는 사이 감염체가 안쪽까지 따라붙었다. 다들 놀랐다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 어귀에서 감염체에게 붙잡혔다 }
+          - belief: { fact: "{zone}의 어귀에서 감염체에게 붙잡혔다. 안쪽 사람들이 뛰어나와 끌어냈다", source: seen }
+    - id: clear
+      label: 안쪽 사람들과 함께 어귀를 쓸어 낸다
+      check: fight
+      outcomes:
+        success:
+          - put_down: { who: inf_a }
+          - put_down: { who: inf_b }
+          - infested: -1
+          - merit: 1
+          - deed: { summary: "돌아오는 길에 {zone}의 어귀에 몰린 감염체를 쓸어 냈다", tags: [bravery], severity: 1, privacy: public }
+          - belief: { fact: "{zone}의 어귀에 몰린 감염체를 안쪽 사람들과 함께 쓸어 냈다", source: seen }
+        partial:
+          - put_down: { who: inf_a }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}의 어귀에서 하나는 처리했지만 하나는 배수로로 숨어들었다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 어귀에 몰린 감염체 }
+          - belief: { fact: "{zone}의 어귀를 쓸어 내려다 다쳤다. 안쪽 사람들이 끌어냈다", source: seen }

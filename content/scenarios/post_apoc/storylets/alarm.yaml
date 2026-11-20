@@ -1,0 +1,367 @@
+# 들킨 침입 (플레이 테스트 11, D6): 적대하는 무리의 땅에서 숨기 판정이 실패하면 코드가 이 태그(alarm)의 이야기 하나를 연다 (scenario.alarm).
+# 무작위로는 열리지 않는다 (world 태그가 없다). 주인공은 막 들켰다: 달아나기·둘러대기·손들기·맞서기
+# 땅 주인을 고르는 조건이 따로 없어 처음 그 무리의 땅(zones)으로 가른다. 전쟁으로 주인이 바뀐 땅·새로 얻은 땅은 마지막 이야기(al_patrol_any)가 받는다
+
+- id: al_pine_sentry
+  title: 초소의 호루라기
+  urgent: true
+  tags: [alarm]
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zone_owner: [other]
+    owners: [faction_a]
+  cast:
+    guard: { extra: a_scout, label: 초록 완장의 보초, enter: true }
+  setup: "\"거기 누구야!\" 담 모퉁이에서 초록 완장을 찬 {guard:이/가} 튀어나와 무기를 겨눈 채 호루라기를 문다. 짧게 두 번. 담 안쪽에서 대답하는 호루라기가 울린다."
+  ai_direction: "{guard:은/는} 청솔형제단 보초다. 떠돌이를 함부로 쏘지 않는 것이 이 무리의 원칙이라 먼저 쏘지는 않는다. 하지만 곧 분대가 온다 (몇 사람인지 모른다). 달아나기·둘러대기는 판정, 붙잡히면 이 무리에 넘겨진다 (코드가 정한다). 맞서면 {guard:을/를} opponent로 두고 위험을 먼저 선언한다."
+  choices:
+    - id: flee
+      label: 담 그늘로 몸을 날려 달아난다
+      check: athletics
+      outcomes:
+        success:
+          - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}에서 청솔형제단 보초에게 들켰지만 담 그늘로 달아났다", source: seen }
+        partial:
+          - wound: { steps: 1, cause: 달아나다 철조망에 걸렸다 }
+          - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}에서 청솔형제단 보초를 따돌렸지만 철조망에 살이 찢겼다", source: seen }
+        miss:
+          - capture_player: { by: faction_a }
+          - belief: { fact: "{zone}에서 달아나다 청솔형제단 분대에 붙잡혔다", source: seen }
+    - id: bluff
+      label: 길을 잃었다고, 쏘지 말라고 손을 펴 보인다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 청솔형제단 보초에게 길 잃은 떠돌이라고 둘러대고 돌려보내졌다", source: seen }
+        partial:
+          - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+          - belief: { fact: "청솔형제단 보초는 보내 주며 얼굴을 기억하겠다고 했다", source: seen }
+        miss:
+          - capture_player: { by: faction_a }
+          - belief: { fact: "길을 잃었다는 말은 통하지 않았다. 청솔형제단 분대가 거점으로 데려갔다", source: seen }
+    - id: surrender
+      label: 무기를 내려놓고 무릎을 꿇는다
+      effects:
+        - capture_player: { by: faction_a }
+        - belief: { fact: "{zone}에서 청솔형제단 보초에게 들켜 순순히 손을 들었다", source: seen }
+    - id: fight
+      label: 호루라기를 문 보초에게 달려든다
+      effects:
+        - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
+        - deed: { summary: "{zone}에 숨어들었다가 들키자 청솔형제단 보초에게 달려들었다", tags: [bravery], severity: 1, privacy: semi_private }
+        - belief: { fact: "{zone}에서 들키자 청솔형제단 보초와 맞붙었다", source: seen }
+
+- id: al_willow_bell
+  title: 울리는 종
+  urgent: true
+  tags: [alarm]
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zone_owner: [other]
+    owners: [faction_b]
+  cast:
+    guard: { extra: b_guard, label: 당번 경비병, enter: true }
+  setup: "울타리 안쪽에서 깡통이 굴러간다. 당번을 서던 {guard:이/가} 몸을 돌리더니, 당신을 보자 소리 대신 종 줄부터 잡아당긴다. 마을 한가운데서 종이 울리고, 집집마다 문 열리는 소리가 난다."
+  ai_direction: "{guard:은/는} 버들마을의 당번 경비병이다. 군인이 아니라 이웃이라 겁을 먹었고, 그래서 더 크게 소리친다. 곧 마을 사람들이 몽둥이와 쇠스랑을 들고 모인다. 마을은 말이 통하는 곳이다: 사정을 들으면 들어 준다. 붙잡히면 마을 회의에 넘겨진다 (코드가 정한다). 맞서면 {guard:을/를} opponent로 둔다."
+  choices:
+    - id: flee
+      label: 울타리를 넘어 밭 사이로 달아난다
+      check: athletics
+      outcomes:
+        success:
+          - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+          - belief: { fact: "버들마을에 숨어들다 종이 울렸다. 울타리를 넘어 달아났다", source: seen }
+        partial:
+          - wound: { steps: 1, cause: 울타리를 넘다 떨어졌다 }
+          - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+          - belief: { fact: "버들마을 울타리를 넘어 달아나다 떨어져 다쳤다", source: seen }
+        miss:
+          - capture_player: { by: faction_b }
+          - belief: { fact: "버들마을에서 달아나다 마을 사람들에게 둘러싸여 붙잡혔다", source: seen }
+    - id: plead
+      label: 먹을 것을 찾으러 왔다고, 사정을 말한다
+      check: persuade
+      outcomes:
+        success:
+          - belief: { fact: "버들마을 경비병에게 사정을 말했다. 마을 사람들은 마을 밖까지 데려다주고 다시는 몰래 오지 말라고 했다", source: seen }
+        partial:
+          - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+          - belief: { fact: "버들마을 사람들은 보내 줬지만 수군거렸다. 얼굴이 알려졌다", source: seen }
+        miss:
+          - capture_player: { by: faction_b }
+          - belief: { fact: "버들마을 사람들은 사정을 믿지 않았다. 마을 회의가 정할 때까지 가둬 둔다고 했다", source: seen }
+    - id: surrender
+      label: 두 손을 들고 그 자리에 선다
+      effects:
+        - capture_player: { by: faction_b }
+        - belief: { fact: "버들마을에서 종이 울리자 그 자리에서 손을 들었다", source: seen }
+    - id: fight
+      label: 종 줄을 잡은 경비병을 밀쳐 쓰러뜨린다
+      effects:
+        - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
+        - belief: { fact: "버들마을에서 들키자 당번 경비병과 맞붙었다", source: seen }
+
+- id: al_red_searchlight
+  title: 망루의 확성기
+  urgent: true
+  tags: [alarm]
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zone_owner: [other]
+    owners: [faction_c]
+  cast:
+    guard: { extra: c_sentry_rifle, label: 망루의 붉은 완장, enter: true }
+  setup: "망루 위에서 확성기가 지직거린다. \"침입자. 엎드려. 셋 셀 동안.\" 망루 계단으로 {guard:이/가} 소총을 견착한 채 내려온다. 총구가 당신에게서 떨어지지 않는다. \"하나.\""
+  ai_direction: "{guard:은/는} 붉은연합 보초다. 셋을 세면 정말 쏜다 (위험은 판정 전에 선언한다). 붉은연합은 붙잡은 자를 노역에 쓴다 (코드가 정한다). 둘러대려면 연합의 말투와 숫자를 알아야 한다. 맞서면 {guard:을/를} opponent로 둔다. 망루에는 다른 보초도 있다."
+  choices:
+    - id: flee
+      label: 총구를 피해 컨테이너 사이로 뛴다
+      check: sense_danger
+      outcomes:
+        success:
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}에서 붉은연합 보초에게 들켰지만 컨테이너 사이로 빠져나왔다", source: seen }
+        partial:
+          - wound: { steps: 1, cause: 등 뒤에서 날아온 붉은연합 보초의 총알이 스쳤다 }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}에서 붉은연합 보초의 총알이 스쳤다. 그래도 빠져나왔다", source: seen }
+        miss:
+          - capture_player: { by: faction_c }
+          - belief: { fact: "{zone}에서 붉은연합 보초의 총구를 벗어나지 못하고 붙잡혔다", source: seen }
+    - id: bluff
+      label: 위원회 전령이라고, 암구호를 잊었다고 소리친다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 붉은연합 보초에게 위원회 전령이라 둘러댔다. 보초가 망설이는 사이 빠져나왔다", source: seen }
+        partial:
+          - take_item: { item: cigarettes }
+          - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+          - belief: { fact: "붉은연합 보초는 담배를 받고 못 본 걸로 했다. 장부에 적지 않는 값이었다", source: seen }
+        miss:
+          - capture_player: { by: faction_c }
+          - belief: { fact: "위원회 전령이라는 거짓말은 바로 들통났다. 붉은연합 보초가 개머리판으로 엎드리게 했다", source: seen }
+    - id: surrender
+      label: 셋을 세기 전에 엎드린다
+      effects:
+        - capture_player: { by: faction_c }
+        - belief: { fact: "{zone}에서 붉은연합 보초에게 들켜 엎드렸다", source: seen }
+    - id: fight
+      label: 셋을 세기 전에 보초에게 달려든다
+      effects:
+        - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
+        - belief: { fact: "{zone}에서 들키자 붉은연합 보초에게 달려들었다", source: seen }
+
+- id: al_hawk_ledger
+  title: 장부에 없는 얼굴
+  urgent: true
+  tags: [alarm]
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zone_owner: [other]
+    owners: [faction_d]
+  cast:
+    guard: { extra: d_guard, label: 진료소 수비대원, enter: true }
+  setup: "약품 창고 문고리에 손을 대는 순간 등 뒤에서 철컥, 장전 소리. 팔에 흰 천을 감은 {guard:이/가} 무기를 겨누고 있다. \"이름. 장부에 있는 얼굴이 아니야. 여기서 뭘 가져가려고 했지?\""
+  ai_direction: "{guard:은/는} 하얀매 수비대원이다. 하얀매는 중립이지만 규칙에는 예외가 없다: 약품 창고에 숨어든 자는 붙잡아 장부에 적는다. 다친 사람이라 몰래 약을 찾으러 왔다는 말은 여기서 자주 듣는 거짓말이다. 맞서면 {guard:을/를} opponent로 둔다. 진료소 안에서 총을 쏘면 하얀매 모두가 적이 된다."
+  choices:
+    - id: flee
+      label: 복도 끝 창문으로 몸을 던진다
+      check: athletics
+      outcomes:
+        success:
+          - faction_relation: { from: faction_d, to: own, delta: -1, mutual: false }
+          - belief: { fact: "하얀매 진료소에 숨어들다 들켰지만 창문으로 빠져나왔다", source: seen }
+        partial:
+          - wound: { steps: 1, cause: 진료소 창문 유리에 베였다 }
+          - faction_relation: { from: faction_d, to: own, delta: -1, mutual: false }
+          - belief: { fact: "하얀매 진료소 창문으로 빠져나오다 유리에 베였다", source: seen }
+        miss:
+          - capture_player: { by: faction_d }
+          - belief: { fact: "하얀매 진료소에서 달아나다 수비대에 붙잡혔다", source: seen }
+    - id: bluff
+      label: 의사를 찾아 헤매다 길을 잘못 들었다고 한다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "하얀매 수비대원에게 의사를 찾다 길을 잃었다고 둘러대 진료소 문밖으로 안내받았다", source: seen }
+        partial:
+          - faction_relation: { from: faction_d, to: own, delta: -1, mutual: false }
+          - belief: { fact: "하얀매 수비대원은 진료소 밖으로 내보내며 장부에 인상착의를 적었다", source: seen }
+        miss:
+          - capture_player: { by: faction_d }
+          - belief: { fact: "하얀매 수비대원은 그 거짓말을 이미 여러 번 들었다고 했다", source: seen }
+    - id: surrender
+      label: 빈손을 들어 보이고 벽에 붙는다
+      effects:
+        - capture_player: { by: faction_d }
+        - belief: { fact: "하얀매 진료소에서 들켜 순순히 손을 들었다", source: seen }
+    - id: fight
+      label: 겨눈 무기를 붙잡고 늘어진다
+      effects:
+        - faction_relation: { from: faction_d, to: own, delta: -1, mutual: false }
+        - belief: { fact: "하얀매 진료소에서 들키자 수비대원의 무기를 붙잡고 맞붙었다", source: seen }
+
+- id: al_naru_guards
+  title: 장부 밖의 손님
+  urgent: true
+  tags: [alarm]
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zone_owner: [other]
+    owners: [faction_e]
+  cast:
+    guard: { extra: e_escort, label: 나루상단 호위대원, enter: true }
+  setup: "천막 그늘에서 {guard:이/가} 일어선다. 무기보다 먼저 호루라기를 문다. \"어이, 거기. 셈 안 하고 들어온 손님은 처음 보는데.\" 장터 저편에서 호위대원 둘이 이쪽으로 걷기 시작한다."
+  ai_direction: "{guard:은/는} 나루상단 호위대원이다. 상단은 셈이 먼저다: 몰래 들어온 값을 치르면 일을 크게 만들지 않는다. 값을 못 치르거나 물건에 손을 댔으면 붙잡아 빚으로 일을 시킨다 (붙잡히는 것은 코드가 정한다). 맞서면 {guard:을/를} opponent로 둔다. 장터에서 총을 쏘면 장사꾼 모두가 적이 된다."
+  choices:
+    - id: flee
+      label: 천막과 수레 사이로 빠져 달아난다
+      check: sense_danger
+      outcomes:
+        success:
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}에서 나루상단 호위대에 들켰지만 수레 사이로 빠져나왔다", source: seen }
+        partial:
+          - wound: { steps: 1, cause: 쫓아온 나루상단 호위대원에게 얻어맞았다 }
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}에서 달아나다 나루상단 호위대원에게 얻어맞았다", source: seen }
+        miss:
+          - capture_player: { by: faction_e }
+          - belief: { fact: "{zone}에서 달아나다 나루상단 호위대에 붙잡혔다", source: seen }
+    - id: pay
+      label: 들어온 값을 치르겠다고 담배를 내민다
+      effects:
+        - take_item: { item: cigarettes, quantity: 2 }
+        - belief: { fact: "{zone}에 몰래 들어왔다가 나루상단 호위대원에게 담배 두 갑을 치르고 나왔다", source: seen }
+    - id: bluff
+      label: 상단 누구와 거래하러 온 손님이라고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "{zone}에서 나루상단 호위대원에게 거래하러 온 손님이라 둘러댔다", source: seen }
+        partial:
+          - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+          - belief: { fact: "나루상단 호위대원은 보내 주며 다음엔 정문으로 오라고, 얼굴을 기억하겠다고 했다", source: seen }
+        miss:
+          - capture_player: { by: faction_e }
+          - belief: { fact: "나루상단 호위대원은 그런 거래가 장부에 없다고 했다", source: seen }
+    - id: surrender
+      label: 손을 들고 셈을 하자고 한다
+      effects:
+        - capture_player: { by: faction_e }
+        - belief: { fact: "{zone}에서 나루상단 호위대에 들켜 손을 들었다", source: seen }
+    - id: fight
+      label: 호루라기를 문 호위대원에게 달려든다
+      effects:
+        - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
+        - belief: { fact: "{zone}에서 들키자 나루상단 호위대원과 맞붙었다", source: seen }
+
+- id: al_isle_watcher
+  title: 의회의 눈
+  urgent: true
+  tags: [alarm]
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zone_owner: [other]
+    owners: [faction_y]
+  cast:
+    guard: { extra: y_watcher, label: 의회의 눈, enter: true }
+  setup: "{guard:이/가} 웃는 얼굴로 길을 막는다. 손에는 아무것도 들지 않았다. \"처음 보는 분이네. 의회에서 들은 적이 없는데.\" 말이 끝나기 전에 뒤쪽 창문 몇 개에 불이 켜진다. 다들 보고 있다."
+  ai_direction: "{guard:은/는} 여울섬 의회의 눈이다. 끝까지 다정하게 말하고, 그동안 다른 사람들이 모인다. 섬은 좁아 숨을 곳이 적고 뭍으로 가는 배는 의회가 쥐고 있다. 붙잡히면 의회가 정한다 (코드가 정한다: 섬에 갇힌다). 맞서면 {guard:을/를} opponent로 둔다."
+  choices:
+    - id: flee
+      label: 골목을 돌아 물가 쪽으로 숨어든다
+      check: stealth
+      outcomes:
+        success:
+          - faction_relation: { from: faction_y, to: own, delta: -1, mutual: false }
+          - belief: { fact: "여울섬에서 의회의 눈에 들켰지만 물가의 그늘로 숨어들었다. 섬 사람들이 찾고 있다", source: seen }
+        partial:
+          - wound: { steps: 1, cause: 젖은 바위에서 미끄러졌다 }
+          - faction_relation: { from: faction_y, to: own, delta: -1, mutual: false }
+          - belief: { fact: "여울섬 물가로 숨어들다 바위에서 미끄러졌다", source: seen }
+        miss:
+          - capture_player: { by: faction_y }
+          - belief: { fact: "여울섬에서 숨을 곳을 찾지 못하고 섬 사람들에게 둘러싸였다", source: seen }
+    - id: bluff
+      label: 새로 온 사람이라고, 아직 의회에 인사를 못 했다고 한다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "여울섬 의회의 눈에게 새로 온 사람이라 둘러댔다. 내일 의회에 인사하러 오라고 했다", source: seen }
+        partial:
+          - faction_relation: { from: faction_y, to: own, delta: -1, mutual: false }
+          - belief: { fact: "의회의 눈은 웃으며 보내 줬지만 내 얼굴을 오래 봤다", source: seen }
+        miss:
+          - capture_player: { by: faction_y }
+          - belief: { fact: "의회의 눈은 섬의 새 사람은 모두 안다고 했다. 의회로 데려갔다", source: seen }
+    - id: surrender
+      label: 순순히 의회로 가겠다고 한다
+      effects:
+        - capture_player: { by: faction_y }
+        - belief: { fact: "여울섬에서 들켜 의회로 끌려갔다", source: seen }
+    - id: fight
+      label: 사람들이 모이기 전에 덮친다
+      effects:
+        - faction_relation: { from: faction_y, to: own, delta: -1, mutual: false }
+        - belief: { fact: "여울섬에서 들키자 의회의 눈을 덮쳤다", source: seen }
+
+# 어느 무리든: 처음의 땅이 아닌 곳 (전쟁으로 얻은 땅, 주인이 바뀐 땅). 그 땅 주인 무리의 이름 있는 사람이 이끄는 순찰조
+- id: al_patrol_any
+  title: 들킨 발소리
+  urgent: true
+  tags: [alarm]
+  repeatable: true
+  cooldown_days: 1
+  when:
+    zone_owner: [other]
+  cast:
+    patrol: { faction: zone_owner, ranks: [grunt, squad_leader] }
+  setup: "발밑에서 유리 조각이 깨진다. 소리가 채 가라앉기도 전에 \"멈춰!\" 하는 외침과 함께 무기를 든 사람들이 골목 양쪽을 막는다. {patrol:이/가} 이끄는 이 땅의 순찰조다."
+  ai_direction: "{patrol}의 무리가 이 땅의 주인이다. 순찰조는 무장했고 여럿이다. 곧장 쏘지는 않지만 누구인지, 왜 숨어 있었는지 따진다. 달아나기·둘러대기는 판정, 붙잡히면 이 무리에 넘겨진다 (코드가 정한다). 맞서면 {patrol:을/를} opponent로 둔다."
+  choices:
+    - id: flee
+      label: 왔던 길로 몸을 돌려 뛴다
+      check: athletics
+      outcomes:
+        success:
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}에서 순찰조에 들켰지만 왔던 길로 달아났다", source: seen }
+        partial:
+          - wound: { steps: 1, cause: 순찰조를 피해 달아나다 무너진 벽에 부딪혔다 }
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}에서 순찰조를 따돌렸지만 달아나다 다쳤다", source: seen }
+        miss:
+          - capture_player: { by: zone_owner }
+          - belief: { fact: "{zone}에서 달아나다 순찰조에 붙잡혔다", source: seen }
+    - id: bluff
+      label: 이 무리 사람에게 심부름 가는 길이라고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 순찰조에게 심부름꾼이라 둘러대고 넘겼다", source: seen }
+        partial:
+          - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+          - belief: { fact: "{zone}의 순찰조는 보내 주며 얼굴을 기억하겠다고 했다", source: seen }
+        miss:
+          - capture_player: { by: zone_owner }
+          - belief: { fact: "{zone}의 순찰조는 둘러대는 말을 믿지 않았다", source: seen }
+    - id: surrender
+      label: 손을 들고 나선다
+      effects:
+        - capture_player: { by: zone_owner }
+        - belief: { fact: "{zone}에서 순찰조에 들켜 손을 들었다", source: seen }
+    - id: fight
+      label: 앞장선 쪽으로 먼저 덤빈다
+      effects:
+        - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
+        - belief: { fact: "{zone}에서 들키자 순찰조와 맞붙었다", source: seen }

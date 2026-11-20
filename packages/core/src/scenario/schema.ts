@@ -955,6 +955,8 @@ export const scenarioFileSchema = z
      * 무전 송출 (12-173): item을 가진 주인공이 하루 한 번 송출하면 chance로 tag 이야기 하나가 열린다
      */
     radio_call: z.strictObject({ item: id, tag: id, chance: z.number().min(0).max(1) }).optional(),
+    /** 들킨 침입 (플레이 테스트 11, D6): 적대하는 무리의 땅에서 moves 판정이 실패하면 tag 이야기(경보·추격) 하나가 열린다 */
+    alarm: z.strictObject({ tag: id, moves: z.array(id).min(1) }).optional(),
     /**
      * 매복 (12-177). 내 매복: move 판정(어려움으로 굴린다)이 성공하면 hours 동안, 이 구역에 나타난 상대에게 하는 첫 attack_moves 판정에 bonus,
      * 그리고 confuse_chance로 상대가 혼란 (다음 판정 하나 동안 맞서지 못한다). 대가 있는 성공은 partial_bonus만.
@@ -1266,6 +1268,8 @@ export const scenarioFileSchema = z
          */
         war_share_cut: z.number().min(0).max(1).optional(),
         war_share_floor: z.number().min(0).max(1).optional(),
+        /** 몰려든 구역에 들어서면 (플레이 테스트 11, D5): 기준값보다 높은 단계 하나당 per_level 확률로 tag 이야기 하나가 열린다 */
+        arrival: z.strictObject({ tag: id, per_level: z.number().min(0).max(1) }).optional(),
         /**
          * 무리 형편(9.13)에 오르는 말 (12-120): 그 무리 땅의 압력이 기준값보다 1·2·3 높을 때. "{무리} 쪽 {말}는 말이 돈다"로 소문이 된다.
          * 없으면 형편에 오르지 않는다
@@ -1492,6 +1496,8 @@ export const scenarioFileSchema = z
             panic_nerves: z.number().min(0).max(1),
             /** 마음 트랙이 이 단계 이상이면 공포가 한 단계 더 오른다 */
             nerves_from: id.optional(),
+            /** 계기 하나로 오르는 공포의 상한 (플레이 테스트 11, D7: 평온에서 한 번에 공황). 없으면 끝없이 */
+            max_steps: z.number().int().min(1).optional(),
           })
           .optional(),
       })
@@ -1581,8 +1587,16 @@ export const scenarioFileSchema = z
         urgent_per_day: z.number().int().min(0).default(0),
         /** 주인공의 몸이 이 단계 이상이면(상태 트랙 → 단계) 급한 이야기만 연다 (위급할 때 보통 이야기·길 위의 일이 끼어들지 않게) */
         urgent_only_when: z.record(id, id).default({}),
+        /**
+         * 하루 상한 (플레이 테스트 11, D1~D3. 0이면 없음): 모든 이야기(급한 것 포함) per_day, 다치게 하는 이야기(공포·매복·감염체 배역) threat_per_day,
+         * 길 위의 일 road_per_day. 같은 위협(공포 태그·감염체)을 가진 이야기끼리는 same_threat_gap_days 떨어진다. 임무 자리의 이야기(when.mission)는 세지 않는다
+         */
+        per_day: z.number().int().min(0).default(0),
+        threat_per_day: z.number().int().min(0).default(0),
+        road_per_day: z.number().int().min(0).default(0),
+        same_threat_gap_days: z.number().min(0).default(0),
       })
-      .default({ min_gap_hours: 6, expire_hours: 3, first_after_hours: 2, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {} }),
+      .default({ min_gap_hours: 6, expire_hours: 3, first_after_hours: 2, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {}, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 }),
   })
   .superRefine((s, ctx) => {
     const problem = (message: string) => ctx.addIssue({ code: "custom", message });

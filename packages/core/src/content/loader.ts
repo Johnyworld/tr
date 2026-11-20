@@ -597,6 +597,12 @@ export function checkStorylets(content: Content): string[] {
     if (!filled) problems.push(`임무 ${m.id}: 결과 조건(goal)을 채우는 이야기(when.mission + mission_goal)가 없다`);
   }
   for (const st of Object.values(content.storylets)) for (const id of st.when.mission ?? []) if (!content.missions[id]) problems.push(`이야기 ${st.id}: 알 수 없는 임무 ${id}`);
+  // 태그로 여는 이야기 (D5·D6): 그 태그의 이야기가 하나는 있어야 한다
+  const hasStories = Object.keys(content.storylets).length > 0;
+  for (const [what, tag] of [["infestation.arrival", content.scenario.infestation?.arrival?.tag], ["alarm", content.scenario.alarm?.tag]] as const) {
+    if (hasStories && tag && !Object.values(content.storylets).some((st) => st.tags.includes(tag))) problems.push(`${what}: 태그 ${tag}인 이야기가 없다`);
+  }
+  for (const st of Object.values(content.storylets)) for (const f of st.when.owners ?? []) if (!content.factions[f]) problems.push(`이야기 ${st.id}: 알 수 없는 세력 ${f}`);
   return problems;
 }
 

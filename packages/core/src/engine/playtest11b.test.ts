@@ -32,7 +32,7 @@ function setup(storylets: unknown[], edit?: (c: Content) => void) {
     f.aggression = 0;
     f.plans = [];
   }
-  c.scenario.storylet_pacing = { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {} };
+  c.scenario.storylet_pacing = { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {}, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 };
   c.storylets = Object.fromEntries(storylets.map((s) => storyletSchema.parse(s)).map((s) => [s.id, s]));
   edit?.(c);
   const store = new InMemoryGameStore([createWorldEvent(c, "role_test", "world_test")]);

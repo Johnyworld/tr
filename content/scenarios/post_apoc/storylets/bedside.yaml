@@ -1,0 +1,547 @@
+# 누워 있는 동안의 이야기 (플레이 테스트 11, D4): 치명상 이상이거나 피를 흘리는 동안에는 급한 이야기만 열려 며칠씩 아무 일도 없었다.
+# bedside: true라 위급할 때도 열린다. 위협이 아니다 (공포·매복·감염체 없음). 효과는 가볍게: 관계, 믿음, 작은 물건, 신경이 가라앉음
+# 갈래: 우리 땅(동료·상관·의무병·배급 다툼·대신 나간 사람·붉은연합 규율반·여울섬 이웃) / 어디서나(꿈, 곁의 동행, 곁의 개) / 누구의 땅도 아닌 곳(떠돌이 아이, 짐 도둑, 혼자 누운 폐허)
+
+# ── 우리 땅 ─────────────────────────────────────────
+
+- id: bs_comrade_visit
+  title: 침상 곁의 동료
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    harm_at_least: critical
+    own_territory: true
+  cast:
+    mate: { faction: own, known: true, adult: true }
+  setup: "{mate:이/가} 찾아와 자리 옆에 쪼그려 앉는다. 손에 든 것은 없다. 한참 당신 얼굴을 보다가 \"꼴이 말이 아니네\" 하고 웃는데, 웃음이 끝까지 가지 않는다."
+  variants:
+    - "누가 깔개 끝에 앉는 기척에 눈을 뜬다. {mate:이/가} 무릎을 세우고 앉아 있다. \"깼어? 그냥, 지나가다가.\" 지나가다 들를 자리가 아니다."
+  ai_direction: "{mate:은/는} 걱정돼서 왔지만 그 말을 바로 하지 못한다. 바깥 소식을 묻거나, 다친 이야기를 하거나, 그냥 같이 있어 달라고 할 수 있다. 오래 있지는 못한다 (할 일이 있다). 당신의 상처가 어떤지는 상태대로만 말한다."
+  choices:
+    - id: stay_a_while
+      label: 조금만 더 있다 가라고 한다
+      effects:
+        - relation: { who: mate, axis: affection, delta: 1 }
+        - body: { track: nerves, delta: -1 }
+        - belief: { fact: "누워 있는 동안 {mate:이/가} 찾아와 한참 곁에 있다 갔다", source: seen }
+    - id: ask_news
+      label: 밖에 무슨 일이 있는지 묻는다
+      effects:
+        - relation: { who: mate, axis: trust, delta: 1 }
+        - overhear: { faction: other, source: report }
+        - belief: { fact: "누워 있는 동안 {mate}에게서 바깥 소식을 들었다", source: report }
+    - id: send_off
+      label: 할 일 하러 가라고 등을 떠민다
+      effects:
+        - relation: { who: mate, axis: respect, delta: 1 }
+        - belief: { fact: "찾아온 {mate:을/를} 일하러 돌려보냈다. 문을 나서며 한 번 돌아봤다", source: seen }
+
+- id: bs_commander_visit
+  title: 상관의 문병
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    harm_at_least: critical
+    own_territory: true
+  cast:
+    boss: { commander: true }
+  setup: "{boss:이/가} 자리 곁에 선다. 앉지 않는다. 상처 자리를 한 번, 얼굴을 한 번 보고 묻는다. \"어쩌다 이렇게 됐나.\""
+  ai_direction: "{boss:은/는} 걱정과 셈을 함께 한다: 이 사람이 언제 다시 설 수 있는지, 그동안 누가 그 자리를 메울지. 다그치러 온 것은 아니다. 무리의 성격대로 말한다 (청솔형제단은 \"버리지 않는다\", 붉은연합은 숫자, 하얀매는 의술의 순서, 나루상단은 셈). 다친 경위는 플레이어가 말하는 대로 듣되, 거짓이면 판정이 가른다."
+  choices:
+    - id: report
+      label: 있었던 일을 그대로 보고한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - relation: { who: boss, axis: trust, delta: 1 }
+          - belief: { fact: "누운 채로 {boss}에게 다친 경위를 보고했다. 끝까지 듣고 고개를 끄덕였다", source: seen }
+        partial:
+          - relation: { who: boss, axis: trust, delta: 1 }
+          - belief: { fact: "{boss}에게 다친 경위를 말했지만 숨이 차서 반은 뭉개졌다", source: seen }
+        miss:
+          - relation: { who: boss, axis: respect, delta: -1 }
+          - belief: { fact: "{boss}에게 다친 경위를 말하다 횡설수설했다. 표정이 굳었다", source: seen }
+    - id: back_soon
+      label: 곧 다시 일어나겠다고 한다
+      effects:
+        - relation: { who: boss, axis: respect, delta: 1 }
+        - belief: { fact: "{boss}에게 곧 일어나겠다고 했다. 서두르지 말라는 대답이 돌아왔다", source: seen }
+    - id: sorry
+      label: 짐이 돼서 미안하다고 한다
+      effects:
+        - relation: { who: boss, axis: affection, delta: 1 }
+        - belief: { fact: "{boss}에게 짐이 돼 미안하다고 했다", source: seen }
+
+- id: bs_dressing
+  title: 붕대를 감는 손
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    conditions_at_least: { bleeding: bleeding }
+    own_territory: true
+  cast:
+    medic: { faction: own, occupations: [medic, nurse, doctor], adult: true }
+  setup: "{medic:이/가} 대야와 마른 천을 들고 와 앉는다. \"보자. 아플 거야.\" 피가 배어 나오는 자리를 들추는 손이 빠르다. 대답을 기다리지 않는다."
+  ai_direction: "{medic:은/는} 이 일을 하루에도 여러 번 한다. 피가 아직 멎지 않았다는 것을 안다. 손은 거칠지 않지만 멈추지도 않는다. 판정은 참는 쪽(버티기) 또는 묻는 쪽(통찰)이다. 피가 멎는지는 효과대로만."
+  choices:
+    - id: grit
+      label: 이를 악물고 소리 없이 참는다
+      check: endure
+      outcomes:
+        success:
+          - body: { track: bleeding, delta: -1 }
+          - relation: { who: medic, axis: respect, delta: 1 }
+          - belief: { fact: "{medic:이/가} 붕대를 감는 동안 소리 한 번 안 냈다. 새 붕대는 단단히 감겼다", source: seen }
+        partial:
+          - body: { track: bleeding, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "붕대를 감는 동안 참다가 끝에 가서 소리를 질렀다", source: seen }
+        miss:
+          - relation: { who: medic, axis: affection, delta: -1 }
+          - belief: { fact: "붕대를 감다 몸을 비트는 바람에 {medic:이/가} 처음부터 다시 감아야 했다", source: seen }
+    - id: ask_how_bad
+      label: 얼마나 나쁜지 솔직히 말해 달라고 한다
+      check: insight
+      outcomes:
+        success:
+          - relation: { who: medic, axis: trust, delta: 1 }
+          - belief: { fact: "{medic}에게서 상처가 어떤지 솔직한 말을 들었다", source: report }
+        partial:
+          - belief: { fact: "{medic:은/는} 괜찮다고만 했다. 눈은 다른 말을 했다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "상처를 묻자 {medic:이/가} 대답 대신 붕대만 더 세게 감았다", source: seen }
+    - id: talk_through
+      label: 아무 얘기나 하며 아픔을 넘긴다
+      effects:
+        - relation: { who: medic, axis: affection, delta: 1 }
+        - belief: { fact: "{medic:이/가} 붕대를 감는 동안 실없는 얘기를 주고받았다", source: seen }
+
+- id: bs_ration_quarrel
+  title: 누운 사람의 몫
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    harm_at_least: critical
+    own_territory: true
+  cast:
+    sharp: { faction: own, adult: true }
+    soft: { faction: own, adult: true }
+  setup: "벽 너머에서 목소리가 높아진다. {sharp:이/가} 말한다. \"누워만 있는 사람한테 똑같이 퍼 주는 게 말이 돼? 일하는 사람도 모자라.\" {soft:이/가} 받아친다. \"너도 다치면 그 소리 할 거야?\" 당신 이야기다."
+  ai_direction: "두 사람은 당신이 깨어 있는 줄 모른다. {sharp:은/는} 미워서가 아니라 배급이 정말 모자라서 하는 말이다. 끼어들면 둘 다 머쓱해한다. 배급 양은 바뀌지 않는다 (코드의 배급 규칙대로)."
+  choices:
+    - id: speak_up
+      label: 들린다고, 다 나으면 몫만큼 하겠다고 벽 너머로 말한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: sharp, axis: respect, delta: 1 }
+          - relation: { who: soft, axis: affection, delta: 1 }
+          - belief: { fact: "배급을 두고 다투던 {sharp:이/가} 당신 말을 듣고 머쓱해하며 사과했다", source: seen }
+        partial:
+          - relation: { who: soft, axis: affection, delta: 1 }
+          - belief: { fact: "벽 너머 다툼은 그쳤지만 {sharp:은/는} 대꾸 없이 나갔다", source: seen }
+        miss:
+          - relation: { who: sharp, axis: affection, delta: -1 }
+          - belief: { fact: "벽 너머로 말을 걸었다가 {sharp:와/과} 언성만 높아졌다", source: seen }
+    - id: pretend_sleep
+      label: 자는 척 듣기만 한다
+      effects:
+        - npc_relation: { from: sharp, to: soft, axis: affection, delta: -1 }
+        - belief: { fact: "누운 사람의 배급을 두고 {sharp:와/과} {soft:이/가} 다퉜다. {soft:이/가} 당신 편을 들었다", source: seen }
+    - id: give_back
+      label: 나중에 {soft}에게, 몫을 덜어도 된다고 전한다
+      effects:
+        - relation: { who: soft, axis: respect, delta: 1 }
+        - relation: { who: sharp, axis: respect, delta: 1 }
+        - deed: { summary: 누워 있으면서 자기 배급을 덜어도 된다고 했다, tags: [loyalty], severity: 1, privacy: semi_private }
+        - belief: { fact: "누워 있는 동안 내 배급을 덜어도 된다고 전했다", source: seen }
+
+- id: bs_duty_taken
+  title: 대신 나간 사람
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    harm_at_least: critical
+    own_territory: true
+  cast:
+    mate: { faction: own, ranks: [grunt, squad_leader], known: true, adult: true }
+  setup: "{mate:이/가} 흙투성이 신발로 들어와 물을 한 바가지 들이켠다. 당신 쪽을 보며 어깨를 으쓱한다. \"네 몫까지 하고 왔다. 갚아.\""
+  ai_direction: "당신이 누운 동안 무리의 일은 멈추지 않았고, 당신 자리는 {mate:이/가} 메웠다. 무슨 일이었는지는 {mate:이/가} 말하는 만큼만 (구체적인 임무를 지어내지 않는다: 순찰, 짐, 보초 정도). {mate:은/는} 생색을 내지만 원망하지는 않는다."
+  choices:
+    - id: thank
+      label: 고맙다고, 꼭 갚겠다고 한다
+      effects:
+        - relation: { who: mate, axis: affection, delta: 1 }
+        - relation: { who: mate, axis: trust, delta: 1 }
+        - belief: { fact: "누워 있는 동안 {mate:이/가} 내 몫의 일을 대신 했다. 갚아야 한다", source: seen }
+    - id: ask_outside
+      label: 나가서 뭘 봤는지 묻는다
+      effects:
+        - relation: { who: mate, axis: trust, delta: 1 }
+        - overhear: { faction: enemy, source: report }
+        - belief: { fact: "내 몫의 일을 대신 나갔던 {mate}에게서 바깥에서 본 것을 들었다", source: report }
+    - id: joke
+      label: 덕분에 푹 쉰다고 놀린다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: mate, axis: affection, delta: 1 }
+          - belief: { fact: "{mate:와/과} 누운 채로 실없이 웃었다", source: seen }
+        partial:
+          - belief: { fact: "{mate:은/는} 웃었지만 피곤해 보였다", source: seen }
+        miss:
+          - relation: { who: mate, axis: affection, delta: -1 }
+          - belief: { fact: "농담이 지나쳤다. {mate:이/가} 말없이 나갔다", source: seen }
+
+- id: bs_red_questioning
+  title: 침상의 심문
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    harm_at_least: critical
+    own_territory: true
+    factions: [faction_c]
+  cast:
+    officer: { extra: c_discipline, label: 장부를 든 규율반원, enter: true }
+  setup: "{officer:이/가} 걸상을 끌어다 자리 곁에 앉고 장부를 편다. \"몸은 몸이고, 기록은 기록이다. 어디서, 누구와 있다가, 왜 다쳤나. 잃어버린 장비는.\" 연필 끝을 혀에 댄다."
+  ai_direction: "규율반은 다친 사람도 묻는다: 부주의였는지, 장비를 버렸는지, 누가 함께 있었는지. 고문이 아니라 장부다. 하지만 적힌 것은 위원회까지 간다. 대답이 맞는지는 판정으로만. 다른 사람 탓을 하면 그 이름도 적는다."
+  choices:
+    - id: straight
+      label: 있었던 그대로 말한다
+      check: persuade
+      outcomes:
+        success:
+          - deed: { summary: 다친 경위를 규율반에 숨김없이 말했다, tags: [honesty], severity: 1, privacy: semi_private }
+          - belief: { fact: "규율반원이 다친 경위를 적어 갔다. 문제 삼을 것은 없다고 했다", source: seen }
+        partial:
+          - belief: { fact: "규율반원이 다친 경위를 적으며 '부주의'라는 말에 밑줄을 그었다", source: seen }
+        miss:
+          - merit: -1
+          - belief: { fact: "규율반 장부에 다친 경위가 '부주의로 인한 전력 손실'로 적혔다", source: seen }
+    - id: blame_enemy
+      label: 적의 비열한 수에 당했다고 크게 말한다
+      check: deceive
+      outcomes:
+        success:
+          - deed: { summary: 다친 경위를 적의 탓으로 꾸며 말했다, tags: [deceit], severity: 1, privacy: private }
+          - belief: { fact: "규율반원은 적의 비열함을 받아 적었다. 고개를 끄덕였다", source: seen }
+        partial:
+          - belief: { fact: "규율반원은 받아 적었지만 날짜와 장소를 두 번 되물었다", source: seen }
+        miss:
+          - merit: -1
+          - deed: { summary: 다친 경위를 꾸며 말하다 규율반에 들켰다, tags: [deceit], severity: 1, privacy: semi_private }
+          - belief: { fact: "규율반원이 말이 앞뒤가 안 맞는다고 장부에 적었다", source: seen }
+    - id: too_weak
+      label: 숨이 차서 말을 못 하겠다고 버틴다
+      check: endure
+      outcomes:
+        success:
+          - belief: { fact: "규율반원은 다음에 다시 오겠다며 장부를 덮었다", source: seen }
+        partial:
+          - belief: { fact: "규율반원은 '비협조'라고만 적고 갔다", source: seen }
+        miss:
+          - merit: -1
+          - belief: { fact: "규율반원은 꾀병이라 적고 갔다", source: seen }
+
+- id: bs_yeoul_porridge
+  title: 이웃이 쑨 미음
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    harm_at_least: critical
+    zones: [yeoul_isle]
+    factions: [faction_y]
+  cast:
+    neighbor: { extra: y_villager, label: 미음을 쑤어 온 이웃, enter: true }
+  setup: "{neighbor:이/가} 김이 나는 그릇을 들고 와 숟가락을 쥐여 준다. \"천천히 먹어.\" 다정한 목소리로 묻는다. \"며칠이면 일어나? 의회에서 물어보더라고. 걱정돼서.\""
+  ai_direction: "{neighbor:은/는} 진심으로 친절하다. 그리고 진심으로 의회에 전한다. 섬에서는 쓸모를 증명한 사람만 남는다는 것을 둘 다 안다. 며칠이면 일어날지는 플레이어가 말하는 대로 전해진다 (거짓이면 판정이 가른다)."
+  choices:
+    - id: eat_thank
+      label: 고맙게 먹고, 곧 일어난다고 한다
+      effects:
+        - body: { track: hunger, delta: -1 }
+        - relation: { who: neighbor, axis: affection, delta: 1 }
+        - belief: { fact: "누워 있는 동안 섬 이웃이 미음을 쑤어 왔다. 의회가 내가 언제 일어나는지 묻는다고 했다", source: report }
+    - id: talk_up
+      label: 상처를 별것 아닌 듯 말한다
+      check: deceive
+      outcomes:
+        success:
+          - body: { track: hunger, delta: -1 }
+          - belief: { fact: "섬 이웃에게 금방 일어난다고 둘러댔다. 그대로 의회에 전해질 것이다", source: seen }
+        partial:
+          - body: { track: hunger, delta: -1 }
+          - belief: { fact: "섬 이웃은 내 말을 믿는 눈치였지만 그릇을 치우며 한숨을 쉬었다", source: seen }
+        miss:
+          - relation: { who: neighbor, axis: trust, delta: -1 }
+          - belief: { fact: "괜찮다고 했지만 섬 이웃은 붕대를 보고 고개를 저었다. 의회에 그대로 전해질 것이다", source: seen }
+    - id: ask_council
+      label: 의회가 다친 사람을 어떻게 하는지 조용히 묻는다
+      check: insight
+      outcomes:
+        success:
+          - relation: { who: neighbor, axis: trust, delta: 1 }
+          - belief: { fact: "섬 이웃이 귓속말을 했다. 오래 누워 있는 사람은 어느 날 배에 실려 뭍으로 간다고", source: report }
+        partial:
+          - belief: { fact: "의회 얘기를 꺼내자 섬 이웃은 웃으며 화제를 돌렸다", source: seen }
+        miss:
+          - relation: { who: neighbor, axis: trust, delta: -1 }
+          - belief: { fact: "의회 얘기를 묻자 섬 이웃의 얼굴이 굳었다. 그 말도 전해질지 모른다", source: seen }
+
+# ── 어디서나 ─────────────────────────────────────────
+
+- id: bs_dream_before
+  title: 무너지기 전의 꿈
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    harm_at_least: critical
+  setup: "통증 사이로 잠깐 정신이 가라앉는다. 꿈속은 무너지기 전이다. 불 켜진 부엌, 라디오 소리, 누군가 당신 이름을 부른다. 대답하려는데 목소리가 나오지 않는다."
+  variants:
+    - "눈을 감았다 뜬 것 같은데 다른 곳이다. 비 오는 버스 정류장, 우산을 같이 쓰자던 사람. 얼굴이 생각나지 않는다. 다시 눈을 뜨면 천장의 금이 보인다."
+  ai_direction: "꿈은 주인공의 배경(상태의 배경·믿음)에서만 끌어온다. 모르는 사람의 이름을 지어내지 않는다 (얼굴 없는 사람으로 둔다). 꿈은 아무것도 바꾸지 않는다. 깨어난 뒤의 마음만."
+  choices:
+    - id: hold_on
+      label: 꿈에 조금 더 머문다
+      effects:
+        - body: { track: nerves, delta: -1 }
+        - belief: { fact: "누워 있던 날, 무너지기 전의 꿈을 꿨다. 깨고 나서도 한동안 그 부엌 냄새가 남았다", source: seen }
+    - id: wake_up
+      label: 억지로 눈을 뜨고 지금 있는 곳을 센다
+      check: endure
+      outcomes:
+        success:
+          - body: { track: nerves, delta: -1 }
+          - belief: { fact: "꿈에서 억지로 깨어나 지금 있는 곳을 하나하나 셌다. 마음이 가라앉았다", source: seen }
+        partial:
+          - belief: { fact: "꿈에서 깨어났지만 한동안 어디인지 몰랐다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "꿈에서 깨어나니 더 외로웠다", source: seen }
+    - id: let_go
+      label: 그 사람에게 작별 인사를 하고 꿈을 놓는다
+      effects:
+        - belief: { fact: "꿈속에서, 무너지기 전의 누군가에게 작별 인사를 했다", source: seen }
+
+- id: bs_companion_watch
+  title: 밤새 곁에 있던 사람
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    harm_at_least: critical
+  cast:
+    mate: { companion: { kinds: [buddy, squad, purpose, kin] } }
+  setup: "눈을 뜨니 {mate:이/가} 벽에 기대 앉아 있다. 눈 밑이 검다. 당신이 깬 것을 보고 몸을 일으킨다. \"물 줄까?\""
+  ai_direction: "{mate:은/는} 당신이 누운 동안 곁을 지켰다 (얼마나 오래였는지는 상태의 시간대로). 지쳤지만 티를 내지 않으려 한다. 떠나고 싶은 마음이 있다면 그것도 이 장면에서 비칠 수 있다 (관계와 동행 상태대로)."
+  choices:
+    - id: thank
+      label: 고맙다고 말한다
+      effects:
+        - relation: { who: mate, axis: affection, delta: 1 }
+        - body: { track: nerves, delta: -1 }
+        - belief: { fact: "누워 있는 동안 {mate:이/가} 곁을 지켰다", source: seen }
+    - id: make_rest
+      label: 이제 눈 좀 붙이라고 한다
+      effects:
+        - relation: { who: mate, axis: trust, delta: 1 }
+        - npc_body: { who: mate, track: fatigue, delta: -1 }
+        - belief: { fact: "곁을 지키던 {mate:을/를} 재웠다", source: seen }
+    - id: ask_why
+      label: 왜 아직 안 갔느냐고 묻는다
+      check: insight
+      outcomes:
+        success:
+          - relation: { who: mate, axis: trust, delta: 1 }
+          - belief: { fact: "{mate:이/가} 왜 곁에 남았는지 처음으로 속을 털어놓았다", source: seen }
+        partial:
+          - belief: { fact: "{mate:은/는} 갈 데가 없어서라고 웃어넘겼다", source: seen }
+        miss:
+          - relation: { who: mate, axis: affection, delta: -1 }
+          - belief: { fact: "왜 안 갔느냐는 말에 {mate:이/가} 상처받은 얼굴을 했다", source: seen }
+
+- id: bs_dog_by_bed
+  title: 손등을 핥는 개
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    harm_at_least: critical
+  cast:
+    dog: { companion: { kinds: [animal] }, enter: false }
+  setup: "축축하고 따뜻한 것이 손등을 핥는다. {dog:이/가} 당신 옆구리에 몸을 붙이고 엎드려 있다. 당신이 움직이자 꼬리가 바닥을 두 번 친다."
+  ai_direction: "{dog:은/는} 당신이 누운 뒤로 곁을 떠나지 않았다. 다른 사람이 다가오면 낮게 으르렁거린다. 개는 말을 하지 않는다."
+  choices:
+    - id: pet
+      label: 머리를 쓰다듬는다
+      effects:
+        - body: { track: nerves, delta: -1 }
+        - belief: { fact: "누워 있는 동안 {dog:이/가} 옆구리에 붙어 떠나지 않았다", source: seen }
+    - id: share
+      label: 남은 먹을 것을 나눠 준다
+      when: { has_items_any: [canned_food, dry_ration, dried_fish, smoked_meat] }
+      effects:
+        - body: { track: nerves, delta: -1 }
+        - npc_body: { who: dog, track: hunger, delta: -1 }
+        - belief: { fact: "누운 채로 {dog}에게 먹을 것을 나눠 줬다", source: seen }
+    - id: sleep
+      label: 개의 온기에 기대 다시 잠든다
+      effects:
+        - belief: { fact: "{dog}의 온기에 기대 잠들었다", source: seen }
+
+# ── 누구의 땅도 아닌 곳 ──────────────────────────────
+
+- id: bs_child_water
+  title: 물 한 컵
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    harm_at_least: critical
+    zone_owner: [none]
+  cast:
+    kid: { extra: drifter_child, label: 찌그러진 컵을 든 아이, enter: true }
+  setup: "누군가 당신 손 옆에 찌그러진 컵을 내려놓는다. 물이 반쯤 찼다. 고개를 돌리면 {kid:이/가} 몇 걸음 떨어진 곳에 쪼그려 앉아 당신을 지켜본다. 다가오지도, 가지도 않는다."
+  ai_direction: "{kid:은/는} 근처에 숨어 사는 떠돌이 아이다. 다친 사람을 여러 번 봤다. 말을 많이 하지 않는다. 겁을 주면 달아난다. 물이 깨끗한지는 아이도 모른다 (끓인 물이라고 말하지 않는다)."
+  choices:
+    - id: drink
+      label: 마시고 고맙다고 한다
+      effects:
+        - body: { track: thirst, delta: -1 }
+        - relation: { who: kid, axis: affection, delta: 1 }
+        - belief: { fact: "누워 있을 때 떠돌이 아이가 물 한 컵을 놓고 갔다", source: seen }
+    - id: ask
+      label: 어디서 왔느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - body: { track: thirst, delta: -1 }
+          - relation: { who: kid, axis: trust, delta: 1 }
+          - belief: { fact: "물을 가져다준 떠돌이 아이가 이 근처에 숨어 사는 사람들이 있다고 했다", source: report }
+        partial:
+          - body: { track: thirst, delta: -1 }
+          - belief: { fact: "물을 가져다준 아이는 대답 대신 손가락으로 어딘가를 가리켰다", source: seen }
+        miss:
+          - belief: { fact: "말을 걸자 아이가 달아났다. 컵은 남았다", source: seen }
+    - id: give_back
+      label: 가진 통조림 하나를 굴려 준다
+      when: { has_items: [canned_food] }
+      effects:
+        - take_item: { item: canned_food }
+        - body: { track: thirst, delta: -1 }
+        - relation: { who: kid, axis: affection, delta: 2 }
+        - deed: { summary: 누워 있으면서 물을 가져다준 떠돌이 아이에게 통조림을 줬다, tags: [mercy], severity: 1, privacy: private }
+
+- id: bs_pack_thief
+  title: 배낭을 뒤지는 손
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 12
+  when:
+    harm_at_least: critical
+    zone_owner: [none]
+    companions_lte: 0
+    has_items_any: [canned_food, dry_ration]
+  cast:
+    thief: { extra: drifter_young, label: 배낭을 뒤지는 젊은이, enter: true }
+  setup: "지퍼 여는 소리에 눈을 뜬다. {thief:이/가} 당신 배낭 앞에 쪼그려 앉아 먹을 것을 꺼내고 있다. 눈이 마주친다. 손은 멈추지 않는다. 당신이 일어나지 못한다는 것을 안다."
+  ai_direction: "{thief:은/는} 굶었다. 당신을 해칠 생각은 없다 (해칠 힘도 없어 보인다). 먹을 것만 노린다. 위협하면 망설이고, 말을 걸면 대꾸한다. 쫓아갈 수는 없다 (몸 상태대로). 가져가는 것은 효과대로만."
+  choices:
+    - id: warn
+      label: 낮은 목소리로 내려놓으라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - belief: { fact: "누워 있을 때 배낭을 뒤지던 떠돌이를 말로 물렸다", source: seen }
+        partial:
+          - lose_item: { item: dry_ration }
+          - belief: { fact: "배낭을 뒤지던 떠돌이가 비상식량 하나만 쥐고 달아났다", source: seen }
+        miss:
+          - lose_item: { item: canned_food }
+          - lose_item: { item: dry_ration }
+          - belief: { fact: "누워 있을 때 떠돌이가 배낭에서 먹을 것을 털어 갔다. 아무것도 못 했다", source: seen }
+    - id: bargain
+      label: 하나만 가져가고 나머지는 두라고 한다
+      check: persuade
+      outcomes:
+        success:
+          - lose_item: { item: canned_food }
+          - relation: { who: thief, axis: trust, delta: 1 }
+          - deed: { summary: 배낭을 뒤지던 굶은 떠돌이에게 먹을 것 하나를 내줬다, tags: [mercy], severity: 1, privacy: private }
+          - belief: { fact: "배낭을 뒤지던 떠돌이는 통조림 하나만 들고 고개를 숙이고 갔다", source: seen }
+        partial:
+          - lose_item: { item: canned_food }
+          - lose_item: { item: dry_ration }
+          - belief: { fact: "떠돌이는 하나만 가져가겠다더니 둘을 들고 갔다", source: seen }
+        miss:
+          - lose_item: { item: canned_food }
+          - lose_item: { item: dry_ration }
+          - belief: { fact: "떠돌이는 대꾸도 없이 먹을 것을 챙겨 달아났다", source: seen }
+    - id: close_eyes
+      label: 눈을 감고 못 본 척한다
+      effects:
+        - lose_item: { item: canned_food }
+        - lose_item: { item: dry_ration }
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "누워 있을 때 떠돌이가 배낭에서 먹을 것을 가져갔다. 눈을 감고 있었다", source: seen }
+
+- id: bs_alone_ruin
+  title: 혼자 누운 폐허
+  bedside: true
+  tags: [world]
+  repeatable: true
+  cooldown_days: 10
+  when:
+    harm_at_least: critical
+    factions: [none]
+    zone_owner: [none]
+    companions_lte: 0
+  setup: "무너진 벽 아래, 당신 혼자다. 숨을 쉴 때마다 상처가 당긴다. 멀리서 무언가 쓰러지는 소리, 바람 소리, 자기 숨소리. 당신이 여기 누워 있는 것을 아는 사람은 아무도 없다."
+  variants:
+    - "깨어나 보니 빛의 각도가 달라져 있다. 얼마나 잤는지 모른다. 배낭은 그대로다. 아무도 오지 않았고, 아무도 오지 않을 것이다."
+  ai_direction: "주인공은 무리가 없는 떠돌이다. 찾으러 올 사람이 없다. 이 장면은 외로움과 버티는 마음이다. 위협은 없다 (아무것도 다가오지 않는다). 몸을 조금 옮기거나, 소리 내어 말하거나, 앞으로를 셈할 수 있다."
+  choices:
+    - id: crawl
+      label: 바람이 덜 드는 구석으로 몸을 끌어 옮긴다
+      check: survival
+      outcomes:
+        success:
+          - body: { track: nerves, delta: -1 }
+          - belief: { fact: "혼자 누운 폐허에서 바람이 덜 드는 구석을 찾아 몸을 옮겼다", source: seen }
+        partial:
+          - body: { track: fatigue, delta: 1 }
+          - belief: { fact: "구석까지 몸을 끌었지만 그것만으로 기운이 다 빠졌다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "몸을 옮기려다 포기했다. 그 자리에 그대로 누웠다", source: seen }
+    - id: talk_aloud
+      label: 소리 내어 혼잣말을 한다. 아무 얘기나
+      effects:
+        - body: { track: nerves, delta: -1 }
+        - belief: { fact: "혼자 누운 폐허에서 정신을 붙들려고 소리 내어 혼잣말을 했다", source: seen }
+    - id: count
+      label: 남은 것을 하나하나 셈한다
+      effects:
+        - belief: { fact: "혼자 누운 채로 가진 것과 갈 곳을 셈했다. 일어나면 할 일이 정해졌다", source: seen }

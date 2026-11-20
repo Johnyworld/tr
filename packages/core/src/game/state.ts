@@ -118,7 +118,8 @@ export const bondSchema = z.strictObject({
   /** 목적을 이뤄 갈림길에 섰다 (lean: 남고 싶어 하는지, decideBy: 정하지 않으면 이 시각에 기울기대로) */
   crossroads: z.strictObject({ lean: z.enum(["stay", "leave"]), decideBy: z.number().int() }).optional(),
   /** 잠시 떨어져 있다: zone에서 기다리거나(until null), 볼일을 보고 until에 돌아온다(zone null) */
-  apart: z.strictObject({ zone: z.string().nullable(), until: z.number().int().nullable(), since: z.number().int() }).optional(),
+  /** left: 주인공이 남겨 둔 구역을 한 번 떠났나. false면 아직 그 자리라 합류하지 않는다 (플레이 테스트 12: 남겨 두자마자 다시 따라왔다). 이전 세이브는 없음 = 떠난 것으로 */
+  apart: z.strictObject({ zone: z.string().nullable(), until: z.number().int().nullable(), since: z.number().int(), left: z.boolean().optional() }).optional(),
 });
 export type Bond = z.infer<typeof bondSchema>;
 
@@ -1033,6 +1034,8 @@ export function createGameSchemas(s: Scenario) {
       target: z.string().optional(),
       /** 이 판정이 수행 중인 임무를 위한 것이면 그 임무 id (임무 진행으로 집계) */
       forMission: z.string().optional(),
+      /** 옮겨 가며 건 판정이면 가는 곳 (플레이 테스트 12: 잠입하며 건 은밀이 출발 구역 기준이라 임무로 세지 않았다) */
+      dest: z.string().optional(),
     }),
     z.strictObject({
       type: z.literal("harm_applied"),
@@ -1411,13 +1414,18 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "companion_left": {
       next.companions = next.companions.filter((id) => id !== event.characterId);
       delete next.bonds[event.characterId];
+      // 자기 자리로 돌아가 옷을 갈아입는다 (플레이 테스트 12: 동행이던 사람의 젖은 옷이 이틀 넘게 마르지 않았다)
+      if (next.wet?.[event.characterId]) {
+        next.wet = { ...next.wet };
+        delete next.wet[event.characterId];
+      }
       return next;
     }
     case "companion_parted": {
       next.companions = next.companions.filter((id) => id !== event.characterId);
       next.scene.present = next.scene.present.filter((id) => id !== event.characterId);
       const bond = next.bonds[event.characterId];
-      if (bond) bond.apart = { zone: event.zone, until: event.until, since: state.time };
+      if (bond) bond.apart = { zone: event.zone, until: event.until, since: state.time, left: false };
       return next;
     }
     case "companion_rejoined": {
@@ -1841,7 +1849,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "check_rolled": {
       // 임무를 위한 판정만 임무 진행으로 센다 (거점 안의 사적인 행동이 정찰 조건을 채우지 않게)
       const mission = activeMissionOf(next.missions, event.actorId);
-      if (mission && mission.id === event.forMission && atMissionPlace(mission, next.playerZone, next.zones, next.factions)) mission.requirements.forEach((r, i) => {
+      const at = (zone: string | null | undefined) => !!mission && atMissionPlace(mission, zone ?? null, next.zones, next.factions);
+      if (mission && mission.id === event.forMission && (at(next.playerZone) || (!!event.dest && at(event.dest)))) mission.requirements.forEach((r, i) => {
         if (!("check" in r) || r.check !== event.move || (mission.progress[i] ?? 0) >= 1 || isRequirementClosed(mission, i)) return;
         if (outcomeAtLeast(event.outcome, r.min_outcome)) mission.progress[i] = 1;
         else {
@@ -1987,6 +1996,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.forecast = { day: event.day, id: event.weatherId };
       break;
     case "zone_moved":
+      for (const b of Object.values(next.bonds)) if (b.apart?.zone && b.apart.zone === event.from) b.apart.left = true;
       // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)
       next.infiltration = null;
       next.exploration = null;
@@ -2108,6 +2118,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (successor.dead) throw new Error(`사망한 인물: ${successor.id}`);
       next.playerId = successor.id;
       next.runStartedAt = state.time;
+      // 앞 주인공이 잃은 상관의 믿음은 물려받지 않는다 (플레이 테스트 12: 계승한 주인공의 진급이 막혔다)
+      next.trustDroppedAt = {};
       if (event.roleId) {
         next.roleId = event.roleId;
         next.customRole = event.customRole ? structuredClone(event.customRole) : null;

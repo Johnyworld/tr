@@ -379,10 +379,16 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     }
   }
   if (input.target && !start.scene.present.includes(input.target)) {
-    return { ok: false, error: `${josa(input.target, "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
+    // 호칭으로 (플레이 테스트 12: 오류 문구에 id가 나왔다). id는 괄호로 함께 둬 GM이 고칠 수 있게
+    const who = start.characters[input.target] ? `${playerCalls(start, content, input.target)}(${input.target})` : input.target;
+    return { ok: false, error: `${josa(who, "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
   }
   if (input.activity) {
     const cost = ACTIVITY_COSTS[input.activity.kind];
+    // 이미 그 시간대인데 기다리면 다음 날 그 시간대까지 간다 (플레이 테스트 12: 낮에 "낮까지" 기다려 12시간을 보냈다)
+    if (input.activity.kind === "wait" && input.activity.until && segmentOf(start.time) === input.activity.until) {
+      return { ok: false, error: `이미 ${SEGMENT_LABELS[input.activity.until]}이다. 기다림은 다음 시간대까지로 정한다 (지금 그대로 두면 하루를 넘긴다).` };
+    }
     if (input.activity.until && !(cost.kind === "long" && cost.allowUntil)) {
       return { ok: false, error: `${input.activity.kind}에는 until을 쓸 수 없습니다. null을 넣으세요.` };
     }
@@ -580,7 +586,8 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
     const roll = rollPlayerCheck(
       { move: input.check.move, stat: input.check.stat, difficulty: input.ambush ? ambushDifficulty(input.check.difficulty) : input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
       ctx,
-      { target: input.target, forMission, noTools: !!input.train, forage: input.forage },
+      // 응급처치로 피를 멎게 하는 것은 누구나 한다 (배우지 않았으면 미숙 -1, 플레이 테스트 12: 붕대로도 지혈하지 못했다)
+      { target: input.target, forMission, noTools: !!input.train, forage: input.forage, unlearnedAs: input.treatment && input.check.move === scenario.wounds?.staunch_move ? -1 : undefined, dest: escapeAttempt ? null : input.move_to },
     );
     if (!roll.ok) {
       // 턴은 이미 시작됐으므로 잠깐의 시간만 흐르게 하고 오류를 알린다
@@ -719,7 +726,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   // 1-0-1. 먹을 것 구하기와 덫 (12-131)
   for (const [request, run] of [
     [input.forage, () => forage(ctx, input.forage!, outcome)],
-    [input.trap, () => handleTrap(ctx, input.trap!)],
+    [input.trap, () => handleTrap(ctx, input.trap!, outcome)],
   ] as const) {
     if (!request || inBattle) continue;
     const r = run();
@@ -802,8 +809,13 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const rideUsed = ride?.ok ? ride : null;
   if (rideUsed?.fuel) store.append({ type: "item_consumed", holder: start.playerId, itemId: rideUsed.fuel, quantity: 1 });
   // 무전 송출은 30분 (대화 ×3, 12-173)
-  // 사냥·낚시·채집은 바깥 일이다 (플레이 테스트 11: activity work로 낚시해 실내로 쳐져 비 오는 날 옷이 말랐다)
-  const exposure: Activity = input.forage && !["travel", "guard_duty", "combat"].includes(activity) ? "search" : activity;
+  // 사냥·낚시·채집·덫 놓기는 바깥 일이다 (플레이 테스트 11: activity work로 낚시해 실내로 쳐져 비 오는 날 옷이 말랐다. 12: 빗속에 덫을 놓다 옷이 말랐다)
+  // 물일 임무(wets)도 바깥 일이다 (플레이 테스트 12: 그물 걷기가 실내로 쳐져 "불기 곁에서 말렸다" 뒤에 다시 젖었다)
+  const wetWork = (() => {
+    const m = forMission && !input.move_to && activity !== "brief" ? start.missions[forMission] : undefined;
+    return !!m && !!content.missions[m.templateId]?.wets && atMissionPlace(m, start.playerZone, start.zones, start.factions);
+  })();
+  const exposure: Activity = wetWork && !["travel", "combat"].includes(activity) ? "guard_duty" : (input.forage || input.trap === "set") && !["travel", "guard_duty", "combat"].includes(activity) ? "search" : activity;
   const timeBefore = store.getState().time;
   const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure);
   // 배달 (F5): 임무 자리에서 임무 일을 하면 지닌 짐을 넘긴다
@@ -874,15 +886,17 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       lines.push(`${josa(rideUsed.name, "을/를")} 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 무언가 몰려들 수 있다." : ""}`);
       if (rideUsed.noise) store.append({ type: "noise_made", zone: input.move_to, level: rideUsed.noise, day: dayOf(store.getState().time) });
     }
-    // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
-    for (const d of runRoadEvent(ctx, rideUsed?.roadRisk ?? 1)) {
-      displays.push(d);
-      if (d.type === "storylet" && d.event === "started") lines.push(`오는 길에 일이 생겼다: "${d.title}". 도착하기 전, 길 위의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
-    }
-    // 감염체가 몰려든 구역에 들어섰다 (플레이 테스트 11, D5: 다섯 번 들어가도 마주치지 않았다)
-    for (const d of runInfestedArrival(ctx, input.move_to)) {
+    // 감염체가 몰려든 구역에 들어섰다 (플레이 테스트 11, D5: 다섯 번 들어가도 마주치지 않았다).
+    // 길 위의 일보다 먼저 굴린다 (플레이 테스트 12: 길 위의 일이 먼저 열려 몰려든 구역의 마주침을 네 번에 한 번꼴로 막았다)
+    const arrival = runInfestedArrival(ctx, input.move_to);
+    for (const d of arrival) {
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`들어서자마자 일이 생겼다: "${d.title}". 도착한 자리의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
+    }
+    // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
+    if (!arrival.length) for (const d of runRoadEvent(ctx, rideUsed?.roadRisk ?? 1)) {
+      displays.push(d);
+      if (d.type === "storylet" && d.event === "started") lines.push(`오는 길에 일이 생겼다: "${d.title}". 도착하기 전, 길 위의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
     }
   }
 
@@ -982,7 +996,8 @@ function missedRollCall(ctx: ToolContext, from: number, to: number) {
   const me = state.characters[state.playerId];
   const segments = me?.factionId ? ctx.content.factions[me.factionId]?.culture?.roll_call : undefined;
   if (!me || !segments?.length || me.captive || state.zones[state.playerZone ?? ""]?.owner !== me.factionId) return;
-  const missed = segments.filter((seg) => nextSegmentStart(from, seg) <= to);
+  // 점호 시각에 딱 깨면 나간 것으로 친다 (플레이 테스트 12: 04:00에 깼는데 놓친 것으로 셌다)
+  const missed = segments.filter((seg) => nextSegmentStart(from, seg) < to);
   if (!missed.length) return;
   const commander = commanderIdOf(state, ctx.content);
   recordDeed(
@@ -1108,6 +1123,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
 
   const extra: ToolDisplayEvent[] = [];
   let capped = false;
+  let restedCap = false;
   if (cost.kind === "long") {
     // 잠은 한 번에 16시간까지 (아침에 "새벽까지"면 21시간을 잤다, 플레이 테스트 8). 기다림은 하루까지
     // 피곤하지 않으면 덜 잔다 (E4)
@@ -1121,6 +1137,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     const wanted = until && cost.allowUntil ? nextSegmentStart(from, until) : from + cost.minutes;
     const target = Math.min(wanted, from + cap);
     capped = wanted > target;
+    restedCap = capped && activity === "sleep" && rested;
     // 자정을 넘기면 자정에서 하루 처리(전쟁 틱)를 돌린 뒤 이어 간다. 그래야 새벽 교전에서 멈출 수 있다
     let cursor = from;
     for (;;) {
@@ -1185,7 +1202,15 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     lines.push(`${josa(label, "이/가")} 끊겼다: 무언가 벌어지고 있다.`);
   } else if (!interrupt && capped) {
     // C12 (플레이 테스트 10): 상한에 걸려 말없이 03시에 깼다
-    lines.push(activity === "sleep" ? "잠은 한 번에 16시간까지다. 정한 시각 전에 깼다." : "한 번에 흘려보낼 수 있는 시간은 하루까지다. 정한 시각 전에 멈췄다.");
+    // 피곤하지 않아 일찍 깬 잠은 그렇다고 알린다 (플레이 테스트 12: 8시간에 깼는데 "16시간까지다")
+    const restedHours = content.scenario.body?.fatigue?.rested_sleep_hours;
+    lines.push(
+      activity === "sleep"
+        ? restedCap
+          ? `피곤하지 않아 ${restedHours}시간 자고 저절로 깼다. 더 자려면 지친 뒤에.`
+          : "잠은 한 번에 16시간까지다. 정한 시각 전에 깼다."
+        : "한 번에 흘려보낼 수 있는 시간은 하루까지다. 정한 시각 전에 멈췄다.",
+    );
   } else if (interrupt) {
     lines.push(
       `${josa(label, "이/가")} 중간에 끊겼다: ${interrupt.detail}. 정체는 아직 모른다. ` +

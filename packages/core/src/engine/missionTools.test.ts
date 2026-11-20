@@ -141,7 +141,7 @@ describe("진급", () => {
     const day = 24 * 60;
     expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 3).eligible).toBe(true);
     expect(checkPromotion({ ...base, merit: 14 }, PROMO, 330 + 7 * day, 330, 3).missing).toEqual(["공적 14/15"]);
-    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 6 * day, 330, 3).missing).toEqual(["복무 6/7일"]);
+    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 6 * day, 330, 3).missing).toEqual(["복무 6/7일 (다 채운 날)"]);
     expect(checkPromotion({ ...base, merit: 15, disobedience: 2 }, PROMO, 330 + 7 * day, 330, 3).eligible).toBe(false);
     expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 2).missing).toEqual(["상관 신뢰 2/3"]);
     expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, null).eligible).toBe(true);

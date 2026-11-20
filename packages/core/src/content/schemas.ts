@@ -28,6 +28,8 @@ export const itemContentSchema = z.strictObject({
   /** 흥정 값. 없으면 1 */
   value: z.number().int().min(0).max(500).optional(),
   kind: z.enum(["weapon", "armor", "tool", "ammo", "material", "consumable", "food", "misc"]).optional(),
+  /** 신표 (플레이 테스트 12): 무리 완장·통행패처럼 몸을 증명하는 물건. 치료 값 같은 자동 지불에서 빠진다 */
+  keepsake: z.boolean().optional(),
   /** 시세가 따르는 무리 자원 (12-155). 없으면 월드의 market.kinds로 종류에서 정한다 */
   resource: contentIdSchema.optional(),
   /** 상태 화면 아이콘 (12-64). 없으면 무기·방어구·종류로 고른다 (content/icons.ts) */
@@ -855,6 +857,8 @@ export function createContentSchemas(s: Scenario) {
     repeatable: z.boolean().default(false),
     /** 잠을 깨울 만큼 급한 일인지. 아니면 자는 동안에는 열리지 않는다 */
     urgent: z.boolean().default(false),
+    /** 꼭 열려야 하는 이야기 (플레이 테스트 12: 튜토리얼 엔딩이 하루 상한에 막혔다). 하루 상한·위협 상한에 막히지 않는다 */
+    essential: z.boolean().default(false),
     /** 누워 있는 동안의 이야기 (플레이 테스트 11, D4): 몸이 위급해 급한 이야기만 열릴 때도 열린다 (문병, 간호, 침상의 소식) */
     bedside: z.boolean().optional(),
     /** 적의 매복 (12-177): 열리면 주인공은 매복당한 것이다 (다음 판정 하나가 불리하다, 실패하면 혼란) */

@@ -184,7 +184,8 @@ export function checkPromotion(
   if (character.rank !== promotion.from) return { eligible: false, missing: ["진급 대상 등급이 아님"] };
   if (character.merit < PROMOTION.minMerit) missing.push(`공적 ${character.merit}/${PROMOTION.minMerit}`);
   const days = daysServed(now, runStartedAt);
-  if (days < PROMOTION.minDaysServed) missing.push(`복무 ${days}/${PROMOTION.minDaysServed}일`);
+  // 다 채운 날 수다. 시계의 "복무 N일째"는 오늘을 함께 센다 (플레이 테스트 12: 두 숫자가 어긋나 보였다)
+  if (days < PROMOTION.minDaysServed) missing.push(`복무 ${days}/${PROMOTION.minDaysServed}일 (다 채운 날)`);
   if (character.disobedience > maxDisobedience) {
     missing.push(`불복종 ${character.disobedience}회 (최대 ${maxDisobedience}회)`);
   }

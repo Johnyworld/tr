@@ -152,12 +152,12 @@
           - belief: { fact: "벽 너머 다툼은 그쳤지만 {sharp:은/는} 대꾸 없이 나갔다", source: seen }
         miss:
           - relation: { who: sharp, axis: affection, delta: -1 }
-          - belief: { fact: "벽 너머로 말을 걸었다가 {sharp:와/과} 언성만 높아졌다", source: seen }
+          - belief: { fact: "벽 너머로 말을 걸었다가 {sharp:과/와} 언성만 높아졌다", source: seen }
     - id: pretend_sleep
       label: 자는 척 듣기만 한다
       effects:
         - npc_relation: { from: sharp, to: soft, axis: affection, delta: -1 }
-        - belief: { fact: "누운 사람의 배급을 두고 {sharp:와/과} {soft:이/가} 다퉜다. {soft:이/가} 당신 편을 들었다", source: seen }
+        - belief: { fact: "누운 사람의 배급을 두고 {sharp:과/와} {soft:이/가} 다퉜다. {soft:이/가} 당신 편을 들었다", source: seen }
     - id: give_back
       label: 나중에 {soft}에게, 몫을 덜어도 된다고 전한다
       effects:
@@ -198,7 +198,7 @@
       outcomes:
         success:
           - relation: { who: mate, axis: affection, delta: 1 }
-          - belief: { fact: "{mate:와/과} 누운 채로 실없이 웃었다", source: seen }
+          - belief: { fact: "{mate:과/와} 누운 채로 실없이 웃었다", source: seen }
         partial:
           - belief: { fact: "{mate:은/는} 웃었지만 피곤해 보였다", source: seen }
         miss:

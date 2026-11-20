@@ -96,6 +96,7 @@
   icon: paper
   description: 붉은 천에 검은 줄을 그은 완장. 붉은연합 병사들이 왼팔에 찬다.
   kind: misc
+  keepsake: true
   weight: 0.05
   value: 1
 - id: trade_token
@@ -103,6 +104,7 @@
   icon: paper
   description: 구멍 뚫린 동전에 끈을 꿴 것. 나루상단의 장터에서 신원 보증으로 쓴다.
   kind: misc
+  keepsake: true
   weight: 0.05
   value: 3
 - id: canned_food

@@ -111,7 +111,7 @@ export function forage(ctx: ToolContext, kindId: string, outcome: CheckOutcome |
 }
 
 /** 덫을 놓거나(set) 거둔다(check) (take_action.trap) */
-export function handleTrap(ctx: ToolContext, action: "set" | "check"): Result {
+export function handleTrap(ctx: ToolContext, action: "set" | "check", outcome: CheckOutcome | null = null): Result {
   const { store, content } = ctx;
   const trap = content.scenario.foraging?.trap;
   if (!trap) return { ok: false, error: "이 월드에는 덫 규칙이 없다." };
@@ -125,6 +125,8 @@ export function handleTrap(ctx: ToolContext, action: "set" | "check"): Result {
     if (here) return { ok: false, error: "이 구역에는 이미 덫을 놓았다. 먼저 거둔다 (trap: check)." };
     if (content.locations[zone]?.kind === "base") return { ok: false, error: "거점 안에는 덫을 놓을 데가 없다." };
     if ((me.inventory[trap.item] ?? 0) < 1) return { ok: false, error: `${josa(trapName, "이/가")} 없다.` };
+    // 판정을 걸고 실패하면 놓지 못한다 (플레이 테스트 12: 실패해도 성공과 같이 놓였다). 재료는 남는다
+    if (outcome === "miss") return { ok: true, lines: [`덫을 제대로 놓지 못했다. 시간만 들었다 (${josa(trapName, "은/는")} 그대로 남았다). 실패한 것을 서술한다.`], displays: [] };
     store.append({ type: "item_consumed", holder: me.id, itemId: trap.item, quantity: 1 });
     store.append({ type: "trap_set", zone, at: state.time });
     return { ok: true, lines: [`${josa(trapName, "을/를")} 감아 덫을 놓았다. 하루가 지나면 무언가 걸려 있을 수 있다. 다시 와서 거둔다.`], displays: [] };

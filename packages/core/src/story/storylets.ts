@@ -379,6 +379,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.mission) {
     const m = activeMissionOf(state.missions, state.playerId);
     if (!m || !w.mission.includes(m.templateId) || !atMissionPlace(m, state.playerZone, state.zones, state.factions)) return false;
+    // 결과 조건(goal)을 이미 채웠으면 그 자리의 이야기는 다시 열리지 않는다 (플레이 테스트 12: 조건을 채운 뒤에도 세 번 열렸다)
+    if (m.requirements.some((r, i) => "goal" in r && (m.progress[i] ?? 0) >= 1)) return false;
   }
   if (w.war_news_within_hours !== undefined) {
     const since = at - w.war_news_within_hours * 60;
@@ -473,11 +475,11 @@ export function isThreat(content: Content, s: StoryletContent): boolean {
 
 /**
  * 하루 상한과 같은 위협의 간격 (플레이 테스트 11, D1~D3: 하루 2~5개, 대부분 위협, 감염체 무리가 사흘에 세 번).
- * 임무 자리의 이야기(when.mission)는 임무를 마치는 길이라 막지 않는다
+ * 임무 자리의 이야기(when.mission)는 임무를 마치는 길이라, 꼭 열려야 하는 이야기(essential)는 엔딩 같은 것이라 막지 않는다
  */
 export function pacingBlocks(state: GameState, content: Content, s: StoryletContent, at: GameTime): boolean {
   const p = content.scenario.storylet_pacing;
-  if (s.when.mission) return false;
+  if (s.when.mission || s.essential) return false;
   const today = dayOf(at);
   const fired = Object.entries(state.storyletLog).filter(([id, log]) => dayOf(log.lastFiredAt) === today && !content.storylets[id]?.when.mission);
   if (p.per_day && fired.length >= p.per_day) return true;

@@ -359,9 +359,11 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const badFrom = harm.levels.findIndex((l) => l.id === ctx.content.scenario.recovery?.surgery?.from);
     const badly = !!who && badFrom >= 0 && harm.levels.findIndex((l) => l.id === who.conditions[harm.id]) >= badFrom;
     const down = who ? (incapacitatingSymptom(ctx.content.scenario, who) ?? (badly ? { label: harm.label } : null)) : null;
-    if (mission.status === "active" && state.time > mission.deadline && down) {
+    // 갇혀 있는 동안 기한이 지나도 불복종이 아니다 (플레이 테스트 12)
+    const held = who?.captive ? (ctx.content.factions[who.captive.by]?.name ?? who.captive.by) : null;
+    if (mission.status === "active" && state.time > mission.deadline && (down || held)) {
       ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false });
-      displays.push({ type: "mission", event: "expired", title: mission.title, detail: `다쳐서 못 마침 (${down.label})`, merit: 0 });
+      displays.push({ type: "mission", event: "expired", title: mission.title, detail: down ? `다쳐서 못 마침 (${down.label})` : `붙잡혀 못 마침 (${held})`, merit: 0 });
       returnArmory(ctx, mission.id);
       continue;
     }

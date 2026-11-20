@@ -219,6 +219,8 @@
 - id: tv_reunion
   title: 다시 만난 사람들
   urgent: true
+  # 튜토리얼 엔딩이라 하루 상한에 막히지 않는다 (플레이 테스트 12)
+  essential: true
   tags: [tutorial_visitor]
   when:
     zones: [b_base]

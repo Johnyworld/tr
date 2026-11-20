@@ -48,9 +48,10 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
     const bond = bondOf(state, content, id);
     if (!bond) continue;
 
-    // 떨어져 있던 사람이 돌아온다
+    // 떨어져 있던 사람이 돌아온다. 주인공이 갇혀 있으면 기다린다 (플레이 테스트 12: 같은 구역에 갇히자 감방 안으로 다시 합류했다)
     if (bond.apart) {
-      if (bond.apart.zone && bond.apart.zone === state.playerZone) {
+      if (state.characters[state.playerId]?.captive) continue;
+      if (bond.apart.zone && bond.apart.zone === state.playerZone && state.bonds[id]?.apart?.left !== false) {
         store.append({ type: "companion_rejoined", characterId: id });
         out.push(note(name, "enter", `${josa(name, "이/가")} 기다리던 ${content.locations[bond.apart.zone]?.name ?? bond.apart.zone}에서 다시 합류했다. 다시 만나는 장면을 짧게 서술한다.`));
       } else if (bond.apart.until !== null && state.time >= bond.apart.until) {

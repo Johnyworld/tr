@@ -270,7 +270,9 @@ function priceFactor(content: Content, state: GameState, npcId: string): number 
 function priceReason(state: GameState, npcId: string, name: string): string | null {
   const r = state.relations[npcId]?.[state.playerId] ?? NEUTRAL_RELATION;
   if (r.trust <= -1) return `${josa(name, "은/는")} 당신을 믿지 않아 값을 더 부른다.`;
-  if (r.trust >= 2 || r.affection >= 2) return `${josa(name, "은/는")} 믿는 사이라 값을 깎아 준다.`;
+  // 깎아 주는 까닭을 관계대로 (플레이 테스트 12: 처음 만난 사람이 호감만으로 깎아 주는데 "믿는 사이"라고 했다)
+  if (r.trust >= 2) return `${josa(name, "은/는")} 믿는 사이라 값을 깎아 준다.`;
+  if (r.affection >= 2) return `${josa(name, "은/는")} 당신이 마음에 들어 값을 깎아 준다.`;
   return null;
 }
 

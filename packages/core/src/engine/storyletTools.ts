@@ -324,6 +324,14 @@ export function maskUnknownNames(state: GameState, content: Content, text: strin
       next += out.slice(last, m.index);
       last = m.index! + m[0].length;
       const particle = m[1];
+      // 이름 자체가 내용이면 호칭으로 바꾸지 않고 가린다 (플레이 테스트 12: "윤채원이라는 이름" → "의무실 여자라는 이름")
+      if ((particle === "이라는" || particle === "라는") && out.slice(last).startsWith(" 이름")) {
+        next += "어떤 사람의";
+        continue;
+      }
+      // 이름 뒤의 직함이 호칭의 끝 낱말과 같으면 직함을 뺀다 (플레이 테스트 12: "류경환 교수와는" → "교수 교수와는")
+      const head = alias.split(" ").at(-1) ?? "";
+      if (!particle && head && out.slice(last).startsWith(` ${head}`)) last += head.length + 1;
       const placed = dedupeAlias(next, alias, out.slice(last));
       next = placed.before;
       next += placed.value ? (particle ? josa(placed.value, PARTICLE_PAIRS[particle]!) : placed.value) : particle ? josa(alias, PARTICLE_PAIRS[particle]!).slice(alias.length) : "";
@@ -1001,6 +1009,8 @@ export function runAlarm(ctx: ToolContext, move: string): ToolDisplayEvent[] {
   const rule = ctx.content.scenario.alarm;
   if (!rule || !rule.moves.includes(move)) return [];
   const state = ctx.store.getState();
+  // 갇혀 있으면 경보 대신 다시 끌려온다 (플레이 테스트 12: 탈출 실패에 "다시 끌려왔다"와 경보 이야기가 함께 열렸다)
+  if (state.characters[state.playerId]?.captive) return [];
   const zone = state.playerZone;
   const owner = zone ? state.zones[zone]?.owner : null;
   const mine = state.characters[state.playerId]?.factionId ?? null;

@@ -345,7 +345,8 @@ function planHealerPay(ctx: ToolContext, healerId: string): { ok: true; plan: He
   } else if (faction && (faction.resources[cost.resource] ?? 0) < 1) return { ok: false, error: `${name}의 무리 창고에 ${josa(label, "이/가")} 바닥나 치료하지 못한다.` };
   let pay = new Map<string, number>();
   const trust = state.relations[healerId]?.[player.id]?.trust ?? 0;
-  if (cost.fee > 0 && player.factionId !== healer.factionId && trust < cost.free_trust) {
+  // 갇힌 포로는 값을 낼 처지가 아니다: 붙잡은 쪽이 거둬 치료한다 (플레이 테스트 12: 포로의 마지막 물병까지 가져갔다)
+  if (cost.fee > 0 && !player.captive && player.factionId !== healer.factionId && trust < cost.free_trust) {
     const picked = pickFee(ctx, player, cost.fee);
     if (!picked) return { ok: false, error: `${josa(name, "은/는")} 다른 무리 사람에게는 값(${cost.fee}어치)을 받는다. 낼 만한 물건이 모자란다 (신뢰가 ${cost.free_trust} 이상이면 받지 않는다).` };
     pay = picked;
@@ -354,14 +355,17 @@ function planHealerPay(ctx: ToolContext, healerId: string): { ok: true; plan: He
 }
 
 /**
- * 물건으로 내는 값 (치료사·가르침): 지닌 물건 중 값싼 것부터 fee어치까지 (손에 든 것·입은 것은 빼고). 모자라면 null
+ * 물건으로 내는 값 (치료사·가르침): 지닌 물건 중 값싼 것부터 fee어치까지. 모자라면 null
+ * 손에 든 것·입은 것, 신표(keepsake: 완장·통행패)는 내지 않고, 먹고 마시는 소모품은 하나씩 남긴다 (플레이 테스트 12)
  */
 export function pickFee(ctx: ToolContext, payer: Character, fee: number): Map<string, number> | null {
   const pay = new Map<string, number>();
   const worn = new Set(Object.values(payer.equipped ?? {}).filter(Boolean));
+  // 먹고 마시고 쓰는 소모품(consumables)은 마지막 하나를 남긴다: 값 때문에 굶거나 목마르지 않게
+  const survival = (id: string) => Object.values(ctx.content.scenario.consumables[id] ?? {}).some((n) => n > 0);
   const goods = Object.entries(payer.inventory)
-    .filter(([id, q]) => q > 0 && !worn.has(id))
-    .flatMap(([id, q]) => Array.from({ length: q }, () => id))
+    .filter(([id, q]) => q > 0 && !worn.has(id) && !ctx.content.items[id]?.keepsake)
+    .flatMap(([id, q]) => Array.from({ length: survival(id) ? q - 1 : q }, () => id))
     .sort((a, b) => (ctx.content.items[a]?.value ?? DEFAULT_VALUE) - (ctx.content.items[b]?.value ?? DEFAULT_VALUE));
   let sum = 0;
   for (const id of goods) {

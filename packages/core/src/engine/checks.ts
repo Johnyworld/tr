@@ -41,7 +41,8 @@ export function rollPlayerCheck(
   input: PlayerCheckInput,
   { store, rng, content }: ToolContext,
   /** noTools: 무기·도구의 보정을 붙이지 않는다 (동물 가르치기처럼 물건이 거들 수 없는 일) */
-  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null } = {},
+  /** unlearnedAs: 배우지 않은 전문 기술도 이 값으로 굴린다 (맨손 지혈은 누구나, 플레이 테스트 12) */
+  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null; unlearnedAs?: number; dest?: string | null } = {},
 ): PlayerCheckResult {
   const scenario = content.scenario;
   const state = store.getState();
@@ -58,7 +59,7 @@ export function rollPlayerCheck(
   // 능력 + 스킬은 상한까지만 (기획서 4.2). 몸 상태 보정은 그 뒤에 따로 뺀다
   // 트레잇의 스킬 보정도 상한 안에서 더한다. 끌림(상대가 이성에게 끌린다)은 상황 보정이라 따로 (기획서 4.6)
   // 전문 기술은 배우기 전엔 판정할 수 없다 (4.2.1)
-  const learned = learnedSkill(scenario, actor.skills, input.move);
+  const learned = learnedSkill(scenario, actor.skills, input.move) ?? options.unlearnedAs ?? null;
   if (learned === null) {
     return {
       ok: false,
@@ -120,6 +121,7 @@ export function rollPlayerCheck(
     ...(options.target ? { target: options.target } : {}),
     ...(opponent ? { opponent } : {}),
     ...(options.forMission ? { forMission: options.forMission } : {}),
+    ...(options.dest ? { dest: options.dest } : {}),
   });
 
   const growthNote = gainCheckXp({ store, rng, content }, actor.id, roll.outcome);

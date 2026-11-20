@@ -258,10 +258,20 @@ const equipTool = defineTool({
 
 /** 상인이 흥정에서 받으려는 값 배수 (상인 이윤 × 관계) */
 function priceFactor(content: Content, state: GameState, npcId: string): number {
-  const markup = content.npcs[npcId]?.merchant?.markup ?? 1;
+  // 같은 무리끼리는 상인 이윤을 붙이지 않는다 (플레이 테스트 11, F3: 신뢰 +2인 상관의 생선이 비쌌다)
+  const sameFaction = !!state.characters[npcId]?.factionId && state.characters[npcId]?.factionId === state.characters[state.playerId]?.factionId;
+  const markup = sameFaction ? 1 : (content.npcs[npcId]?.merchant?.markup ?? 1);
   const r = state.relations[npcId]?.[state.playerId] ?? NEUTRAL_RELATION;
   const rel = r.trust >= 2 || r.affection >= 2 ? 0.85 : r.trust <= -1 ? 1.25 : 1;
   return markup * rel;
+}
+
+/** 값이 왜 그런지 한 줄 (F2: 흥정이 틀어진 뒤 값이 오른 까닭이 보이지 않았다) */
+function priceReason(state: GameState, npcId: string, name: string): string | null {
+  const r = state.relations[npcId]?.[state.playerId] ?? NEUTRAL_RELATION;
+  if (r.trust <= -1) return `${josa(name, "은/는")} 당신을 믿지 않아 값을 더 부른다.`;
+  if (r.trust >= 2 || r.affection >= 2) return `${josa(name, "은/는")} 믿는 사이라 값을 깎아 준다.`;
+  return null;
 }
 
 const barterTool = defineTool({
@@ -292,6 +302,8 @@ const barterTool = defineTool({
     const asking = Math.ceil(marketValue(content, state, input.get) * priceFactor(content, state, input.npc_id));
     const floor = content.scenario.gear?.haggle_floor ?? 0.7;
     const lines = [`값: 내주는 것 ${giving} · 상대가 바라는 것 ${asking}`];
+    const why = priceReason(state, input.npc_id, name);
+    if (why) lines.push(why);
     let accepted = giving >= asking;
     let display: ToolDisplayEvent = { type: "item", fromName: me.name, toName: name, itemName: "흥정", quantity: 0 };
     if (!accepted) {
@@ -318,11 +330,15 @@ const barterTool = defineTool({
     for (const [id, q] of Object.entries(input.get)) store.append({ type: "item_transferred", from: input.npc_id, to: me.id, itemId: id, quantity: q });
     const list = (b: Record<string, number>) => Object.entries(b).map(([id, q]) => `${nameOf(content, id)} ×${q}`).join(", ") || "없음";
     lines.push(`바꿨다: 내준 것 ${list(input.give)} / 받은 것 ${list(input.get)}. 흥정 장면을 서술한다.`);
+    // 더 내준 흥정 (F1): 거스름은 없다
+    if (!isEmpty(input.get) && giving - asking >= OVERPAY_NOTE) lines.push(`바라는 것보다 ${giving - asking}만큼 더 내줬다 (거스름은 없다).`);
     return { ok: true, resultText: lines.join("\n"), display };
   },
 });
 
 const isEmpty = (b: Record<string, number>) => Object.keys(b).length === 0;
+/** 이만큼 더 내주면 결과에 알린다 (F1) */
+const OVERPAY_NOTE = 3;
 
 export const GEAR_TOOLS = [equipTool, barterTool] as const;
 

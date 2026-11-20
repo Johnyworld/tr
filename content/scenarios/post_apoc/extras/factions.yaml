@@ -177,6 +177,9 @@
   inventory:
     - { item: sealed_med_case, chance: 0.4 }
     - { item: bandage, chance: 0.4 }
+    # 약을 나르는 사람이 약이 없었다 (플레이 테스트 11, F4: 항생제를 13일 동안 구할 곳이 없었다)
+    - { item: antibiotics, chance: 0.4 }
+    - { item: fever_reducer, chance: 0.5 }
     - { item: water_bottle, chance: 0.6 }
     - { item: ledger, chance: 0.3 }
   values: { honesty: 1, self_interest: 1, mercy: 1 }

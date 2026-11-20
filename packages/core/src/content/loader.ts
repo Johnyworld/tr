@@ -597,6 +597,11 @@ export function checkStorylets(content: Content): string[] {
     if (!filled) problems.push(`임무 ${m.id}: 결과 조건(goal)을 채우는 이야기(when.mission + mission_goal)가 없다`);
   }
   for (const st of Object.values(content.storylets)) for (const id of st.when.mission ?? []) if (!content.missions[id]) problems.push(`이야기 ${st.id}: 알 수 없는 임무 ${id}`);
+  // 배달 일감의 짐·품삯 (F5)
+  for (const m of Object.values(content.missions)) {
+    const ids = [...Object.keys(m.carries ?? {}), ...Object.keys(m.pay ?? {}), ...m.requirements.flatMap((r) => ("deliver" in r ? [r.deliver] : []))];
+    for (const id of ids) if (!content.items[id]) problems.push(`임무 ${m.id}: 알 수 없는 아이템 ${id}`);
+  }
   // 태그로 여는 이야기 (D5·D6): 그 태그의 이야기가 하나는 있어야 한다
   const hasStories = Object.keys(content.storylets).length > 0;
   for (const [what, tag] of [["infestation.arrival", content.scenario.infestation?.arrival?.tag], ["alarm", content.scenario.alarm?.tag]] as const) {

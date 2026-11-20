@@ -21,7 +21,12 @@
   deadline_hours: 14
   # 붉은연합에 짐을 실어 줄수록 상단이 이기는 쪽에 붙는 날이 당겨진다
   advances: { clock: e_side, delta: 1 }
+  # 배달 (플레이 테스트 11, F5): 받을 때 짐을 받고, 임무 자리에서 넘긴다
+  carries: { water_bottle: 3 }
+  pay: { rifle_rounds: 2 }
   requirements:
+    - deliver: water_bottle
+      quantity: 3
     - activity: travel
       minutes: 90
     - check: intimidate

@@ -1,3 +1,4 @@
+import { marketValue } from "./market.ts";
 import { RESOLVE_TOOLS } from "./resolve.ts";
 import { EXPLORATION_TOOLS } from "./exploration.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -142,6 +143,18 @@ const transferItem = defineTool({
     });
     // 약속한 물건을 그 사람에게 건넸으면 약속을 지킨 것이다 (12-174 부탁)
     const kept = input.from === state.playerId ? keepByGift(ctx, input.to, item.id, input.quantity) : [];
+    // 빚진 무리 사람에게 물건을 건네면 그 값만큼 빚이 준다 (플레이 테스트 11, F6: 고철을 건네도 빚이 그대로였다). 맡긴 것은 갚은 것이 아니다
+    if (input.from === state.playerId && !input.deposit && input.to !== SCENE_HOLDER) {
+      const lender = state.characters[input.to]?.factionId;
+      const owed = lender ? (state.characters[state.playerId]?.debts[lender] ?? 0) : 0;
+      if (lender && owed > 0) {
+        const paid = Math.min(owed, marketValue(content, state, { [item.id]: input.quantity }));
+        if (paid > 0) {
+          store.append({ type: "debt_changed", characterId: state.playerId, factionId: lender, delta: -paid });
+          kept.push(`물건 값으로 빚을 갚았다: ${paid} 줄어 ${owed - paid} 남았다.`);
+        }
+      }
+    }
     return {
       ok: true,
       resultText: [`${item.name} ${input.quantity}개: ${holderName(state, content, input.from)} → ${holderName(state, content, input.to)}.`, ...kept].join("\n"),

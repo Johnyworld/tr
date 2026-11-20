@@ -149,7 +149,7 @@ describe("값과 흥정", () => {
   it("넉넉하면 그냥 바꾸고, 턱없이 모자라면 거절한다. 상인은 값을 더 받는다", () => {
     const w = atMerchant();
     give(w, "cigarettes", 6);
-    // 통조림 하나(3) × 상인 1.25 = 4 → 담배 둘(4)이면 된다
+    // 통조림 하나(3) → 담배 둘(4)이면 된다 (같은 무리라 상인 이윤은 붙지 않는다, F3)
     const ok = w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 2 }, get: { canned_food: 1 }, move: null, stat: null });
     expect(ok.ok && ok.resultText).toContain("바꿨다");
     const no = w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 1 }, get: { canned_food: 2 }, move: null, stat: null });
@@ -159,8 +159,9 @@ describe("값과 흥정", () => {
   it("조금 모자라면 흥정 판정을 해야 한다 (주사위가 늘 6)", () => {
     const w = atMerchant(() => () => 0.999);
     give(w, "cigarettes", 6);
-    expect(w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 3 }, get: { canned_food: 2 }, move: null, stat: null }).ok).toBe(false);
-    const r = w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 3 }, get: { canned_food: 2 }, move: "persuade", stat: "charm" });
+    // 같은 무리(나루상단)끼리는 상인 이윤이 없다 (F3): 통조림 셋(9)에 담배 넷(8)이면 조금 모자란다
+    expect(w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 4 }, get: { canned_food: 3 }, move: null, stat: null }).ok).toBe(false);
+    const r = w.executeTool("barter", { npc_id: "e_bongsu", give: { cigarettes: 4 }, get: { canned_food: 3 }, move: "persuade", stat: "charm" });
     expect(r.ok && r.resultText).toContain("바꿨다");
   });
 

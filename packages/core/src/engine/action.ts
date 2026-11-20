@@ -806,6 +806,23 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const exposure: Activity = input.forage && !["travel", "guard_duty", "combat"].includes(activity) ? "search" : activity;
   const timeBefore = store.getState().time;
   const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure);
+  // 배달 (F5): 임무 자리에서 임무 일을 하면 지닌 짐을 넘긴다
+  if (forMission && !input.move_to) {
+    const m = store.getState().missions[forMission];
+    if (m && atMissionPlace(m, store.getState().playerZone, store.getState().zones, store.getState().factions)) {
+      m.requirements.forEach((r, i) => {
+        if (!("deliver" in r) || (m.progress[i] ?? 0) >= 1) return;
+        const have = store.getState().characters[start.playerId]!.inventory[r.deliver] ?? 0;
+        if (have < r.quantity) {
+          lines.push(`넘길 짐이 모자란다: ${content.items[r.deliver]?.name ?? r.deliver} ${have}/${r.quantity}.`);
+          return;
+        }
+        store.append({ type: "item_consumed", holder: start.playerId, itemId: r.deliver, quantity: r.quantity });
+        store.append({ type: "mission_requirement_met", missionId: m.id, index: i });
+        lines.push(`짐을 넘겼다: ${content.items[r.deliver]?.name ?? r.deliver} ×${r.quantity}.`);
+      });
+    }
+  }
   // 물일 임무 (E3): 임무 자리에서 그 일을 하면 옷이 젖는다. 방수복을 입으면 젖지 않는다
   if (forMission && !input.move_to && activity !== "brief") {
     const m = store.getState().missions[forMission];

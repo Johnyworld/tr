@@ -374,6 +374,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ goal: z.string().min(1).max(60) }),
     /** 찾아오기 (플레이 테스트 11): 보고할 때 이 무리 자원에 속하는 물건을 이만큼 지니고 있으면 채우고, 그 물건을 상관에게 건넨다 */
     z.strictObject({ bring: idEnum(s.resources.map((r) => r.id)), quantity: z.number().int().min(1).max(10) }),
+    /** 배달 (플레이 테스트 11, F5): 임무 자리에서 임무 일을 할 때 이 물건을 지니고 있으면 넘기고 채운다 (받을 때 carries로 받은 짐) */
+    z.strictObject({ deliver: contentIdSchema, quantity: z.number().int().min(1).max(10) }),
   ]);
 
   /** 임무 템플릿 (기획서 15.1: 배정 → 수행 → 보고) */
@@ -382,6 +384,10 @@ export function createContentSchemas(s: Scenario) {
     title: z.string().min(1),
     briefing: z.string().min(1),
     giver_rank: idEnum(rankIds(s)),
+    /** 배달 일감의 짐 (F5): 받을 때 상관이 이것을 건넨다 */
+    carries: z.record(contentIdSchema, z.number().int().min(1).max(10)).optional(),
+    /** 품삯 (F5): 완수하면 이것을 받는다 (일부 완수는 절반, 내림) */
+    pay: z.record(contentIdSchema, z.number().int().min(1).max(20)).optional(),
     /** 물일 (플레이 테스트 11, E3): 임무 자리에서 이 임무의 활동을 하면 옷이 젖는다 (방수복을 입으면 젖지 않는다) */
     wets: z.boolean().optional(),
     /** 이 계급 이상만 받는 일감 (플레이 테스트 11, C9: 신입이 신병 훈련을 맡았다) */

@@ -29,6 +29,7 @@ const missionRequirementSchema = z.union([
   z.strictObject({ check: z.string(), min_outcome: z.enum(["success", "partial"]) }),
   z.strictObject({ goal: z.string() }),
   z.strictObject({ bring: z.string(), quantity: z.number().int().positive() }),
+  z.strictObject({ deliver: z.string(), quantity: z.number().int().positive() }),
 ]);
 
 export const missionInstanceSchema = z.strictObject({

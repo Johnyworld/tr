@@ -58,7 +58,11 @@
   briefing: 연합 약속대로 버들마을 거점에 연료 몇 통을 전하고 받았다는 표시를 받아 온다. 저쪽이 더 달라고 하면 정중히 거절한다. 장부에 적힌 것만 준다.
   giver_rank: officer
   deadline_hours: 12
+  # 배달 (플레이 테스트 11, F5): 받을 때 짐을 받고, 임무 자리에서 넘긴다
+  carries: { fuel_bottle: 2 }
   requirements:
+    - deliver: fuel_bottle
+      quantity: 2
     - activity: travel
       minutes: 60
     - check: persuade

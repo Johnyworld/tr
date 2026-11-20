@@ -49,6 +49,7 @@ export function describeRequirement(s: Scenario, requirement: MissionRequirement
   if ("check" in requirement && fails >= MISSION_CHECK_TRIES && progress < 1) return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (${MISSION_CHECK_TRIES}번 빗나가 닫힘)`;
   if ("check" in requirement && fails > 0 && progress < 1) return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (미충족, 빗나감 ${fails}/${MISSION_CHECK_TRIES})`;
   if ("bring" in requirement) return `${resourceLabel(s, requirement.bring)} ${requirement.quantity}개를 구해 와 건네기 (보고할 때 소지품에서 센다)`;
+  if ("deliver" in requirement) return `짐 ${requirement.quantity}개를 임무 자리에 넘기기 (${done})`;
   return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상 (${done})`;
 }
 
@@ -57,6 +58,7 @@ function requirementLabel(s: Scenario, requirement: MissionRequirement): string 
   if ("activity" in requirement) return `${ACTIVITY_LABELS[requirement.activity]} ${formatDuration(requirement.minutes)}`;
   if ("goal" in requirement) return requirement.goal;
   if ("bring" in requirement) return `${resourceLabel(s, requirement.bring)} ${requirement.quantity}개 구해 오기`;
+  if ("deliver" in requirement) return `짐 ${requirement.quantity}개 넘기기`;
   return `${moveLabel(s, requirement.check)} 판정 ${CHECK_OUTCOME_LABELS[requirement.min_outcome]} 이상`;
 }
 
@@ -130,6 +132,10 @@ const assignMission = defineTool({
       status: "active",
     };
     ctx.store.append({ type: "mission_assigned", mission });
+    // 배달 일감의 짐 (F5): 상관이 건넨다
+    const cargo = Object.entries(template.carries ?? {});
+    for (const [id, q] of cargo) ctx.store.append({ type: "item_granted", to: player.id, itemId: id, quantity: q });
+    const cargoLine = cargo.length ? `\n짐을 받았다: ${cargo.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")} (임무 자리에서 일을 하면 넘긴다)` : "";
     // 2인 1조: 같은 무리 동료 하나가 짝으로 붙는다 (기획서 7.9)
     const buddy = template.buddy ? assignBuddy(ctx, mission.id, commander.id) : null;
     // 작전이면 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
@@ -141,7 +147,7 @@ const assignMission = defineTool({
     return {
       ok: true,
       resultText:
-        `임무 배정: ${describeMission(ctx.content.scenario, mission)}${routeLine}${buddyLine}\n` +
+        `임무 배정: ${describeMission(ctx.content.scenario, mission)}${routeLine}${buddyLine}${cargoLine}\n` +
         `상관(${playerCalls(state, ctx.content, commander.id)})이 임무를 지시하는 장면을 서술하라. 해야 할 일과 기한(대략적인 표현으로)을 상관의 말투로 전한다. 보고도 이 사람에게 한다.`,
       display: { type: "mission", event: "assigned", title: mission.title, detail: `기한 ${formatTime(mission.deadline)}` },
     };
@@ -240,6 +246,15 @@ const reportMission = defineTool({
         supplied.push(ctx.content.scenario.resources.find((r) => r.id === resource)?.label ?? resource);
       }
     }
+    // 품삯 (F5): 완수면 전부, 일부 완수면 절반 (내림)
+    const wages: string[] = [];
+    for (const [id, q] of Object.entries(ctx.content.missions[mission.templateId]?.pay ?? {})) {
+      const n = result.outcome === "success" ? q : result.outcome === "partial" ? Math.floor(q / 2) : 0;
+      if (n > 0) {
+        ctx.store.append({ type: "item_granted", to: mission.assigneeId, itemId: id, quantity: n });
+        wages.push(`${ctx.content.items[id]?.name ?? id} ×${n}`);
+      }
+    }
     // 직분의 일감을 해내면 직분의 평판이 오른다 (기획서 12.6)
     const occ = occupationOf(ctx.content, ctx.store.getState().characters[mission.assigneeId]);
     const occNote = occ?.missions.includes(mission.templateId) && result.outcome === "success" ? changeStanding(ctx, mission.assigneeId, 1, `일감: ${mission.title}`) : null;
@@ -247,6 +262,7 @@ const reportMission = defineTool({
     const lines = [
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       ...(handed.length ? [`구해 온 것을 상관에게 건넸다: ${handed.join(", ")}`] : []),
+      ...(wages.length ? [`품삯을 받았다: ${wages.join(", ")}`] : []),
       ...unmetLines(ctx.content.scenario, reported),
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
       // 주인공이 실제로 찾은 물건과는 따로 셈한다 (플레이 테스트 11: 약을 못 찾았는데 "구해 온 의약품"이라고 했다)

@@ -6,6 +6,7 @@ import type { GameState } from "../game/state.ts";
 import { josa } from "../text.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem } from "./gear.ts";
 import { defineTool, type ToolContext, type ToolOutcome } from "./toolkit.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 내 물건 보관 (기획서 4.8.1, 12-149). 무게 제한 때문에 다 들고 다닐 수 없는 물건을 맡겨 둔다. 용량 제한은 없다.
@@ -24,7 +25,7 @@ export function stashPlace(content: Content, state: GameState): StashPlace | nul
   const zone = state.playerZone;
   if (!me || me.dead || heldOf(me) || !zone) return null;
   if (me.factionId) {
-    const own = content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === me.factionId;
+    const own = content.locations[zone]?.kind === "base" && ownedBy(state, zone, me.factionId);
     return own ? { kind: "locker", zone, label: `${zoneName(content, zone)}의 내 사물함` } : null;
   }
   return state.homes[me.id] === zone ? { kind: "home", zone, label: `${zoneName(content, zone)}의 내 거처` } : null;

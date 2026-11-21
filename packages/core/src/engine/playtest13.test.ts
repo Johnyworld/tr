@@ -28,6 +28,10 @@ import { wearItem, withoutWear } from "./gear.ts";
 import { sleepChainStart } from "../game/state.ts";
 import { itemResource } from "./market.ts";
 import { scavenge } from "./scavenge.ts";
+import { ownedBy, myPeopleLiveHere } from "../rules/home.ts";
+import { runDailyBody } from "./body.ts";
+import { clothesHere } from "./climate.ts";
+import { runQuarantine } from "./care/quarantine.ts";
 import { formatAgo, START_TIME } from "../rules/time.ts";
 
 /** 긴 판 열 (플레이 테스트 13, docs/playtests/2026-11-20-mcp-13-long.md)의 확실한 버그 */
@@ -407,6 +411,75 @@ describe("상단·임무 (12-237)", () => {
     expect(out.ok, out.ok ? "" : out.error).toBe(true);
     expect(out.ok && out.resultText).toContain("찾은 물건은 없다");
     expect(inv()).toBe(before);
+  });
+});
+
+describe("무리 생활 (12-238)", () => {
+  it("우리 땅(공통 규칙 11): 무소속은 주인 없는 땅을 우리 땅으로 치지 않는다", () => {
+    expect(ownedBy({ zones: { x: { owner: null } } }, "x", null)).toBe(false);
+    expect(ownedBy({ zones: { x: { owner: "f" } } }, "x", "f")).toBe(true);
+  });
+
+  it("떠나기 전에 예정 시각이 지난 교전은 지금 자리로 판정한다: 맞닿은 우리 구역에 있으면 공세에 낀다", () => {
+    const w = world("role_c_comrades");
+    const ctx = w.ctx();
+    ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: "c_warehouse" });
+    w.state().pendingClashes.push({ id: "battle_t", kind: "assault", attacker: "faction_c", defender: "faction_a", zone: "a_east_post", at: w.state().time - 5 });
+    const out = w.executeTool("take_action", act({ intent: "거점으로 간다", move_to: "c_base", activity: null }));
+    expect(out.ok, out.ok ? "" : out.error).toBe(true);
+    expect(out.ok && out.resultText).toContain("떠나기 전에 교전이 벌어졌다");
+    expect(w.state().battle).not.toBeNull();
+    expect(w.state().playerZone).toBe("c_warehouse");
+  });
+
+  it("우리 무리 사람이 떠나면 소식으로 듣고, ?소문에 소식도 나온다", async () => {
+    const w = world("role_c_raider");
+    const mate = Object.values(content.npcs).find((n) => n.faction === "faction_c" && w.state().characters[n.id] && n.id !== content.roles.role_c_raider!.commander)!.id;
+    applyEffect(w.ctx(), { npc_depart: { who: "mate" } } as never, { mate }, {}, "테스트");
+    const fact = (w.state().beliefs[w.state().playerId] ?? []).find((b) => b.fact.includes("무리에서 사라졌다"));
+    expect(w.state().characters[mate]!.away).toBe(true);
+    expect(fact?.source).toBe("report");
+    expect(await w.runCommand("?소문")).toContain("무리에서 사라졌다");
+  });
+
+  it("자정에 우리 땅 밖이면 배급을 미루고, 그날 거점에 닿으면 받는다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const outside = Object.values(content.locations).find((l) => !l.owner && l.kind === "zone")!.id;
+    ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: outside });
+    runDailyBody(ctx);
+    expect(w.state().missedRationDay).not.toBeNull();
+  });
+
+  it("옷은 우리 무리 사람이 사는 우리 땅에서도 갈아입는다", () => {
+    const w = world("role_c_comrades");
+    const lived = Object.values(content.npcs).find((n) => n.faction === "faction_c" && n.zone && content.locations[n.zone]?.kind !== "base" && content.locations[n.zone]?.owner === "faction_c");
+    if (!lived) return;
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: lived.zone! });
+    expect(myPeopleLiveHere(w.state(), content)).toBe(true);
+    expect(clothesHere(content, w.state())).toBe(true);
+  });
+
+  it("감염체에게 다친 뒤 하얀매 치료사에게 치료받으면 누구든 격리실에 사흘 갇히고, 열이 없으면 풀려난다", () => {
+    const w = world("role_l_wanderer");
+    const ctx = w.ctx();
+    const healer = Object.values(content.npcs).find((n) => n.healer && n.faction === "faction_d" && n.zone === "d_clinic")!.id;
+    ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: "d_clinic" });
+    ctx.store.append({ type: "infection_exposed", characterId: w.state().playerId });
+    w.state().characters[w.state().playerId]!.conditions.harm = "light";
+    w.state().characters[w.state().playerId]!.inventory = { canned_food: 6 };
+    w.state().scene.present.push(healer);
+    const out = w.executeTool("take_action", act({ intent: "치료를 받는다", treatment: { item: null, target: null, pay: [{ item: "canned_food", quantity: 5 }] } }));
+    expect(out.ok, out.ok ? "" : out.error).toBe(true);
+    expect(out.ok && out.resultText).toContain("격리실");
+    const held = w.state().characters[w.state().playerId]!.captive;
+    expect(held?.quarantine).toBe(true);
+    expect(held?.by).toBe("faction_d");
+    expect(runQuarantine(ctx)).toEqual([]);
+    w.state().time += 3 * 1440;
+    expect(runQuarantine(ctx).join("")).toContain("격리가 끝났다");
+    expect(w.state().characters[w.state().playerId]!.captive).toBeNull();
+    expect(w.state().exposedAt[w.state().playerId]).toBeUndefined();
   });
 });
 

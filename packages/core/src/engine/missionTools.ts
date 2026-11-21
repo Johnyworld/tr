@@ -42,6 +42,7 @@ import { recordDeed } from "./reputationTools.ts";
 import { grantRewards } from "./rewards.ts";
 import { itemResource } from "./market.ts";
 import { cargoOf, entrustedHeld } from "../rules/entrusted.ts";
+import { ownedBy } from "../rules/home.ts";
 
 const resourceLabel = (s: Scenario, id: string) => s.resources.find((r) => r.id === id)?.label ?? id;
 
@@ -265,7 +266,7 @@ const reportMission = defineTool({
     const fortifies = ctx.content.missions[mission.templateId]?.fortifies;
     const base = Object.values(ctx.content.locations).find((l) => l.owner === lender && l.kind === "base")?.id;
     const fortSteps = fortifies ? (result.outcome === "success" ? fortifies : result.outcome === "partial" ? Math.trunc(fortifies / 2) : 0) : 0;
-    if (fortSteps > 0 && base && ctx.store.getState().zones[base]?.owner === lender) ctx.store.append({ type: "zone_fortified", zone: base, delta: fortSteps });
+    if (fortSteps > 0 && base && ownedBy(ctx.store.getState(), base, lender)) ctx.store.append({ type: "zone_fortified", zone: base, delta: fortSteps });
     // 소탕 일감은 그 무리 땅에서 감염체가 가장 많이 몰려든 곳을 쓸어 낸다 (12-120). 일부 완수는 절반
     const clears = ctx.content.missions[mission.templateId]?.clears;
     const clearSteps = clears ? (result.outcome === "success" ? clears : result.outcome === "partial" ? Math.trunc(clears / 2) : 0) : 0;

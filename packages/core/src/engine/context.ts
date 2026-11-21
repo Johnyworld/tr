@@ -66,6 +66,7 @@ import { describeBattleForGm } from "./battleTools.ts";
 import { describeStoryletForGm } from "./storyletTools.ts";
 import { BELIEF_SOURCE_LABELS as SOURCE_LABELS } from "../game/belief.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } from "../game/reputation.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 정보 필터 (기획서 6.2).
@@ -429,7 +430,7 @@ function statusNote(content: Content, character: Character, state?: GameState): 
   // 같은 구역이라도 감옥 안은 담 밖에서 보이지 않는다: 같이 갇혔거나, 우리 땅이거나, 장면에서 마주쳤을 때만 (플레이 테스트 13: 물류창고에 들어서자 실종자가 "여기 붙잡혀 있다")
   if (heldOf(character) && !character.dead) {
     const me = state?.characters[state.playerId];
-    const sees = !!state && state.playerZone === heldOf(character)!.zone && (!!heldOf(me) || state.scene.present.includes(character.id) || (!!me?.factionId && state.zones[state.playerZone]?.owner === me.factionId));
+    const sees = !!state && state.playerZone === heldOf(character)!.zone && (!!heldOf(me) || state.scene.present.includes(character.id) || (!!me?.factionId && ownedBy(state, state.playerZone, me.factionId)));
     return sees ? " · 여기 붙잡혀 있다" : " · 행방 모름";
   }
   if (character.dead) return !state || knowsDeath(state, content, character.id) ? " · 사망" : "";
@@ -525,7 +526,7 @@ export function describeZonePeople(state: GameState, content: Content): string {
     : "";
   // 남의 감옥 안의 낯선 포로는 담 밖에서 보이지 않는다 (플레이 테스트 12: 막 도착했는데 갇힌 사람 목록이 보였다). 같이 갇혔거나 우리 땅이면 보인다
   const me = state.characters[state.playerId];
-  const seesCells = !!heldOf(me) || (!!me?.factionId && state.zones[zone]?.owner === me.factionId);
+  const seesCells = !!heldOf(me) || (!!me?.factionId && ownedBy(state, zone, me.factionId));
   // 갇혀 있으면 마주칠 사람은 같이 갇힌 사람과 치료사뿐이다 (플레이 테스트 13: 감방에서 거점 사람 열일곱과 장사꾼이 보였다)
   const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id) && (seesCells || !heldOf(state.characters[npc.id])) && (!pausedWhileHeld(state, "strangers") || !!heldOf(state.characters[npc.id]) || !!npc.healer));
   if (strangers.length === 0) return askLine;
@@ -617,7 +618,7 @@ function describeFort(state: GameState, content: Content): string {
   const zone = state.playerZone;
   const me = state.characters[state.playerId];
   const fort = zone ? (state.zones[zone]?.fort ?? 0) : 0;
-  if (!zone || !me?.factionId || state.zones[zone]?.owner !== me.factionId || fort <= 0) return "";
+  if (!zone || !me?.factionId || !ownedBy(state, zone, me.factionId) || fort <= 0) return "";
   return `${content.locations[zone]?.name ?? zone}의 담: ${["", "메워 둠", "단단히 보강함", "망루와 이중 담"][fort]} (습격을 받으면 지키는 쪽이 더 버틴다)`;
 }
 

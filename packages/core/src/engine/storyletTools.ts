@@ -57,6 +57,7 @@ import { recordDeed } from "./reputationTools.ts";
 import { leveragesOn } from "./leverage.ts";
 import { commanderOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, DEATH_GUIDE } from "./toolkit.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 스토리렛 연결 (기획서 10.3).
@@ -455,7 +456,7 @@ export function applyEffect(
   if ("fortify" in effect) {
     const zone = state.playerZone;
     const me = state.characters[playerId]!;
-    if (!zone || !me.factionId || state.zones[zone]?.owner !== me.factionId) return {};
+    if (!zone || !me.factionId || !ownedBy(state, zone, me.factionId)) return {};
     const before = state.zones[zone]?.fort ?? 0;
     store.append({ type: "zone_fortified", zone, delta: effect.fortify });
     const after = store.getState().zones[zone]?.fort ?? 0;
@@ -682,8 +683,8 @@ export function applyEffect(
     // 빠져나간다: 붙잡은 무리 땅이 아닌 맞닿은 구역 (우리 땅 먼저)
     const out = effect.release_player.out && here
       ? neighbors(content, here)
-          .filter((z) => store.getState().zones[z]?.owner !== captor)
-          .sort((a, b) => Number(store.getState().zones[b]?.owner === me.factionId) - Number(store.getState().zones[a]?.owner === me.factionId) || a.localeCompare(b))[0]
+          .filter((z) => !ownedBy(store.getState(), z, captor))
+          .sort((a, b) => Number(ownedBy(store.getState(), b, me.factionId)) - Number(ownedBy(store.getState(), a, me.factionId)) || a.localeCompare(b))[0]
       : undefined;
     const home = effect.release_player.home ? Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id : out;
     if (home && home !== store.getState().playerZone) store.append({ type: "zone_moved", from: store.getState().playerZone, to: home });
@@ -703,7 +704,7 @@ export function applyEffect(
     const me = state.characters[playerId]!;
     const zone =
       effect.cultivate.where === "base" ? Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id : state.playerZone;
-    if (!zone || !me.factionId || state.zones[zone]?.owner !== me.factionId) return {};
+    if (!zone || !me.factionId || !ownedBy(state, zone, me.factionId)) return {};
     store.append({ type: "zone_boosted", zone, resource: effect.cultivate.resource, delta: effect.cultivate.delta });
     return { line: `${content.locations[zone]?.name ?? zone}에서 나는 것이 늘 것이다 (빼앗기면 사라진다).` };
   }
@@ -970,6 +971,13 @@ export function applyEffect(
     if (effect.npc_depart.to_faction === "own" && !to) return {};
     store.append({ type: "npc_departed", npcId: id, toFaction: to });
     const name = playerCalls(state, content, id);
+    // 우리 무리 사람이 떠나면 무리 안에 소식으로 돈다 (12-238, 플레이 테스트 13: 동료가 탈영해도 점호·소문에 아무 일이 없었다). 갇혀 있으면 모른다
+    const mine = state.characters[playerId]?.factionId;
+    if (mine && npc.factionId === mine && to !== mine && !heldOf(state.characters[playerId])) {
+      const now = store.getState();
+      const fact = to ? `${josa(name, "이/가")} ${content.factions[to]?.name ?? to} 쪽으로 넘어갔다는 말이 무리 안에 돈다.` : `${josa(name, "이/가")} 무리에서 사라졌다. 탈영이라는 말이 무리 안에 돈다.`;
+      store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: now.time } });
+    }
     return {
       line: to ? `${josa(name, "은/는")} ${content.factions[to]?.name ?? to} 쪽으로 넘어갔다.` : `${josa(name, "은/는")} 도시를 떠났다. 다시 장면에 나오지 않는다.`,
       display: { type: "presence", npcName: name, action: "leave" },

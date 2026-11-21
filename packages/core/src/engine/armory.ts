@@ -5,6 +5,7 @@ import { autoEquip, equippedItem } from "./gear.ts";
 import { lastFreedAt, playerHeld } from "../rules/held.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { loanOf } from "../rules/entrusted.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 무기고 (기획서 4.8): 무장이 필요한 작전에 무리가 무기·탄약을 빌려주고, 임무가 끝나면 거둬들인다.
@@ -92,7 +93,7 @@ export function issueSpare(ctx: ToolContext): ToolDisplayEvent[] {
   if (!me || me.dead || !me.factionId || playerHeld(state)) return [];
   const spare = content.factions[me.factionId]?.armory?.spare;
   const zone = state.playerZone;
-  if (!spare || !zone || content.locations[zone]?.kind !== "base" || state.zones[zone]?.owner !== me.factionId) return [];
+  if (!spare || !zone || content.locations[zone]?.kind !== "base" || !ownedBy(state, zone, me.factionId)) return [];
   const freed = lastFreedAt(state);
   if (freed === null || (state.spareIssuedAt !== null && state.spareIssuedAt >= freed)) return [];
   if (Object.entries(me.inventory).some(([id, n]) => n > 0 && !!content.items[id]?.weapon)) return [];

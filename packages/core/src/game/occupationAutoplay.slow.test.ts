@@ -36,10 +36,11 @@ describe("직분 자동 플레이", () => {
   ] as const) {
     it(`${occupation}: 오류 없이 돌고, 직분 이야기가 열린다`, () => {
       const location = faction ? Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")!.id : "old_town";
-      // 직분 이야기는 첫 주인공이 살아 있는 동안만 열린다. 시드에 따라 일찍 죽으면 못 볼 수 있어 두 판 중 하나에서 본다 (이야기 간격 6~12시간, 플레이 테스트 12)
+      // 직분 이야기는 첫 주인공이 살아 있는 동안만 열린다. 시드에 따라 일찍 죽거나 거점 밖을 떠돌면 못 볼 수 있어 네 판 중 하나에서 본다 (이야기 간격 6~12시간, 플레이 테스트 12.
+      // 12-238: 배급을 우리 땅에서만 받게 하자 동선이 바뀌어 두 판 모두에서 빠졌다. 바뀌기 전에도 두 판 중 한 판에 하나뿐이었다)
       const tag = `occ_${occupation}`;
       let seen = false;
-      for (const seed of [3, 9]) {
+      for (const seed of [3, 9, 15, 21]) {
         const w = open({ ...cook, faction, rank, occupation, location });
         const stats = autoplay(w, w.content, createSeededRng(seed), 500);
         w.close();

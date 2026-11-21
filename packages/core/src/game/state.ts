@@ -297,6 +297,8 @@ export function createGameSchemas(s: Scenario) {
     loans: z.record(z.string(), z.record(z.string(), z.number().int().min(1))).default({}),
     /** 임무로 맡은 짐과 받아 온 대금 (임무 id → 아이템 → 수량, 공통 규칙 10 rules/entrusted.ts). 임무 자리에서 넘기고 보고 때 상관에게 넘긴다 */
     cargo: z.record(z.string(), z.record(z.string(), z.number().int().min(1))).default({}),
+    /** 감염체에게 마지막으로 다친 시각 (인물 id → 시각, 격리의 근거, 12-238) */
+    exposedAt: z.record(z.string(), z.number().int()).default({}),
     /** 구역마다 오늘의 소음 (기획서 4.8) */
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 소리를 듣고 몰려오는 감염체 (infestation.swarm_hours): 구역 → 그날 소리(day)에 몰려드는 시각(at), 이미 왔는지(done) */
@@ -732,7 +734,9 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("fatigue_load_set"), characterId: z.string(), load: z.number() }),
     z.strictObject({ type: z.literal("fire_lit"), zone: z.string(), until: z.number().int(), itemId: z.string() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
-    z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()) }),
+    z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()), quarantine: z.boolean().optional() }),
+    /** 감염체에게 다쳤다 (격리의 근거, 12-238). 감염이 됐는지와 따로 */
+    z.strictObject({ type: z.literal("infection_exposed"), characterId: z.string() }),
     z.strictObject({ type: z.literal("player_released"), returned: z.boolean() }),
     z.strictObject({ type: z.literal("prisoner_labor"), npcId: z.string(), labor: z.boolean() }),
     /** 맡긴다 / 구역의 산출이 는다 / 이야기로 배운다 (12-54) */
@@ -1198,6 +1202,7 @@ export const EMPTY_STATE: GameState = {
   groundItems: {},
   loans: {},
   cargo: {},
+  exposedAt: {},
   restockedDay: {},
   squad: null,
   promotionOffer: null,
@@ -1838,7 +1843,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "player_captured": {
       const me = mustGet(next.characters, next.playerId, "캐릭터");
-      me.captive = { by: event.by, zone: event.zone, since: state.time };
+      me.captive = { by: event.by, zone: event.zone, since: state.time, ...(event.quarantine ? { quarantine: true } : {}) };
       for (const [item, n] of Object.entries(event.held)) {
         const left = (me.inventory[item] ?? 0) - n;
         if (left < 0) throw new Error(`빼앗을 것이 모자란다: ${item}`);
@@ -1852,6 +1857,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.scene.present = [];
       return next;
     }
+    case "infection_exposed":
+      next.exposedAt = { ...(next.exposedAt ?? {}), [event.characterId]: state.time };
+      return next;
     case "player_released": {
       const me = mustGet(next.characters, next.playerId, "캐릭터");
       const key = me.captive ? `held:${me.captive.by}` : null;
@@ -1859,6 +1867,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         for (const [item, n] of Object.entries(next.deposits[key]!)) me.inventory[item] = (me.inventory[item] ?? 0) + n;
       }
       if (key) delete next.deposits[key];
+      // 격리가 끝나면 그 상처로 다시 격리하지 않는다 (12-238)
+      if (me.captive?.quarantine && next.exposedAt?.[me.id] !== undefined) {
+        const exposed = { ...next.exposedAt };
+        delete exposed[me.id];
+        next.exposedAt = exposed;
+      }
       me.captive = null;
       next.lastFreedAt = state.time;
       // 갇혀 있는 동안 같은 구역에서 기다리던 동행은 풀려나면 바로 합류한다 (플레이 테스트 13)

@@ -7,6 +7,7 @@ import { seasonAt } from "../sim/season.ts";
 import { josa } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 거점 손보기 (기획서 4.8.3, 12-167). 시설은 구역에 붙는다. 떠돌이의 거처(4.8.1)와 무리의 거점에 짓는다.
@@ -35,8 +36,8 @@ export function buildSite(content: Content, state: GameState): "home" | "base" |
   const zone = state.playerZone;
   if (!me || me.dead || heldOf(me) || !zone) return null;
   if (state.homes[me.id] === zone) return "home";
-  if (me.factionId && content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === me.factionId) return "base";
-  if (me.factionId && state.zones[zone]?.owner === me.factionId) return "own";
+  if (me.factionId && content.locations[zone]?.kind === "base" && ownedBy(state, zone, me.factionId)) return "base";
+  if (me.factionId && ownedBy(state, zone, me.factionId)) return "own";
   return null;
 }
 

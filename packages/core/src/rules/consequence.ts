@@ -16,6 +16,7 @@ import { disposition } from "../sim/war.ts";
 import { recordDeed } from "../engine/reputationTools.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { dayOf } from "./time.ts";
+import { ownedBy } from "./home.ts";
 
 /** 들키지 않기가 조건인 임무가 깨졌다. 알릴 줄 (이미 깨졌거나 그런 임무가 아니면 null) */
 function spoilUnseenMission(ctx: ToolContext): string | null {
@@ -62,7 +63,7 @@ export function onReturnedHome(ctx: ToolContext): string[] {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   const left = state.leftHomeAt;
-  if (!me?.factionId || left === null || !state.playerZone || state.zones[state.playerZone]?.owner !== me.factionId) return [];
+  if (!me?.factionId || left === null || !state.playerZone || !ownedBy(state, state.playerZone, me.factionId)) return [];
   ctx.store.append({ type: "returned_home" });
   const hours = ctx.content.factions[me.factionId]?.culture?.absence_hours;
   if (!hours || state.time - left < hours * 60 || absenceExcused(state, left)) return [];
@@ -76,7 +77,7 @@ export function onReturnedHome(ctx: ToolContext): string[] {
 export function onSpottedAtHome(ctx: ToolContext): string[] {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
-  if (!me?.factionId || !state.playerZone || state.zones[state.playerZone]?.owner !== me.factionId) return [];
+  if (!me?.factionId || !state.playerZone || !ownedBy(state, state.playerZone, me.factionId)) return [];
   recordDeed(ctx, { summary: "우리 땅에서 수상한 짓을 하다 들켰다", tags: ["disobedience"], severity: 1, privacy: "semi_private", noisy: true });
   return ["누군가 수상한 낌새를 보았다 (명령 불복종으로 남았다)."];
 }

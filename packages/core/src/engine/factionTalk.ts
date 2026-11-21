@@ -10,6 +10,7 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { traitsOf } from "./traits.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { moraleLabel, WAR_TOPIC } from "./warTools.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 무리 형편 (기획서 9.13, 12-105): 거점 사람들이 입에 올리는 우리 무리의 어려움.
@@ -67,7 +68,7 @@ export function troublesOf(state: GameState, content: Content, factionId: string
   const labels = content.scenario.infestation?.trouble_labels;
   if (labels) {
     const over = Object.values(content.locations)
-      .filter((l) => state.zones[l.id]?.owner === factionId)
+      .filter((l) => ownedBy(state, l.id, factionId))
       .map((l) => ({ name: l.name, by: infestationOf(content, state, l.id) - baseInfestation(content, l.id) }))
       .filter((z) => z.by > 0);
     const worst = Math.max(0, ...over.map((z) => z.by));

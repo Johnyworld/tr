@@ -348,10 +348,13 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       }
     }
     const parched = !!thirst && idx(thirst) >= 2;
-    if (((cold && idx(cold) >= 2) || parched) && home && s.playerZone && s.playerZone !== home && rng() < 0.8) {
+    // 배가 고프면 배급을 받으러 거점으로 (12-238: 배급은 우리 땅에서 받는다)
+    const hungerTrack = content.scenario.body?.hunger?.track;
+    const starving = !!hungerTrack && idx(hungerTrack) >= 2 && !!me.factionId;
+    if (((cold && idx(cold) >= 2) || parched || starving) && home && s.playerZone && s.playerZone !== home && rng() < 0.8) {
       const step = nextStep(content, s.playerZone, home);
       if (step) {
-        tool("take_action", { ...base, intent: parched ? "목이 말라 거점으로 돌아간다" : "추워서 거점으로 돌아간다", move_to: step });
+        tool("take_action", { ...base, intent: parched ? "목이 말라 거점으로 돌아간다" : starving ? "배가 고파 거점으로 돌아간다" : "추워서 거점으로 돌아간다", move_to: step });
         continue;
       }
     }

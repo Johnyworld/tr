@@ -11,6 +11,7 @@ import { harmTrack } from "../../scenario/scenario.ts";
 import { bleedingBlocksRecovery } from "../bleeding.ts";
 import { type ToolContext, type ToolDisplayEvent } from "../toolkit.ts";
 import { changeCondition, isIncapacitated, type Change, levelIndex } from "../body.ts";
+import { quarantineAfterCare } from "./quarantine.ts";
 /** 저절로 낫기 (부상 트랙). 시간이 흐른 뒤마다 부른다 */
 export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
   const recovery = ctx.content.scenario.recovery;
@@ -135,6 +136,8 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
         store.append({ type: "faction_resource_changed", factionId, resource: care.resource, delta: -1 });
         show(changeCondition(ctx, c.id, harm.id, -1, "healer", "무리 의무실의 치료"), c.id);
         treated = true;
+        // 감염체에게 다친 상처를 무리 의무실이 보면 격리한다 (12-238)
+        if (c.id === store.getState().playerId) quarantineAfterCare(ctx, factionId);
       }
       if (treated) slots--;
     }

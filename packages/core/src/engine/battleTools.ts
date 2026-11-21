@@ -27,6 +27,7 @@ import { recordDeed } from "./reputationTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
 import { endActiveStorylet } from "./storyletTools.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /** 지키는 전투에서 막아 주는 시설의 이름 (월드 팩의 holds 시설) */
 const barrierLabel = (content: Content) => content.scenario.facilities?.find((f) => f.effects.holds)?.label ?? "막아 둔 것";
@@ -53,7 +54,7 @@ export function playerInvolvement(state: GameState, content: Content, spec: Clas
   // 갇혀 있으면 싸움에 끼지 않는다 (12-55)
   if (!player || player.dead || heldOf(player) || !zone || state.battle) return null;
   if (spec.defender === player.factionId && zone === spec.zone) return "defense";
-  if (spec.attacker === player.factionId && state.zones[zone]?.owner === player.factionId && neighbors(content, spec.zone).includes(zone)) {
+  if (spec.attacker === player.factionId && ownedBy(state, zone, player.factionId) && neighbors(content, spec.zone).includes(zone)) {
     return "attack";
   }
   return null;

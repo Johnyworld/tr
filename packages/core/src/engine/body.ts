@@ -32,6 +32,7 @@ import { needsSurgery, canOperate, surgeonRoll, operate } from "./care/surgery.t
 export { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery } from "./care/recovery.ts";
 import { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery } from "./care/recovery.ts";
 import { ownCount } from "../rules/entrusted.ts";
+import { onOwnLand, ownedBy } from "../rules/home.ts";
 
 /**
  * 몸 상태 (기획서 4.4, 4.5): 부상 회복, 소모품, 허기, 감염. 수치는 시나리오(recovery, consumables, body)에서 온다.
@@ -250,6 +251,8 @@ export function maybeInfect(ctx: ToolContext, kind: string | null): Change | nul
   if (!infection) return null;
   const chance = kind ? (infection.chance[kind] ?? 0) : Math.max(0, ...Object.values(infection.chance));
   if (chance <= 0) return null;
+  // 다친 것 자체가 격리의 근거다 (감염이 됐는지와 따로, 12-238)
+  ctx.store.append({ type: "infection_exposed", characterId: ctx.store.getState().playerId });
   const state = ctx.store.getState();
   if (levelIndex(ctx, state, state.playerId, infection.track) > 0) return null;
   const me = state.characters[state.playerId];
@@ -272,7 +275,7 @@ export function runLateRation(ctx: ToolContext): ToolDisplayEvent[] {
     return [];
   }
   if (pausedWhileHeld(state, "ration") || !me.factionId || !hasAccess(content, state, "ration")) return [];
-  if (!state.playerZone || state.zones[state.playerZone]?.owner !== me.factionId || content.locations[state.playerZone]?.kind !== "base") return [];
+  if (!state.playerZone || !ownedBy(state, state.playerZone, me.factionId) || content.locations[state.playerZone]?.kind !== "base") return [];
   ctx.store.append({ type: "ration_missed", day: null });
   const own = state.factions[me.factionId];
   const level = own ? rationLevel(content, own) : undefined;
@@ -306,8 +309,11 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     const state = ctx.store.getState();
     // 배급 권한이 있어야 무리의 배급을 받는다 (역할의 access, 기획서 9.9)
     // 갇혀 있으면 우리 무리의 배급을 못 받는다 (붙잡은 쪽이 겨우 먹인다, 12-55)
-    const captive = !!heldOf(player()!);
-    const own = !captive && hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
+    // 격리는 먹이는 쪽이 끼니를 제대로 준다 (12-238): 붙잡힌 것으로 치지 않는다
+    const captive = !!heldOf(player()!) && !heldOf(player()!)!.quarantine;
+    // 배급은 우리 땅에서 받는다: 자정에 우리 땅 밖이면 미루고, 그날 거점에 닿으면 받는다 (공통 규칙 11, 12-238: 성당 지하에서 밤을 보내도 배급을 먹은 셈이었다)
+    const away = !captive && hasAccess(content, state, "ration") && !!player()!.factionId && !onOwnLand(state);
+    const own = !captive && !away && hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
     // 쓸모 (G1): 무리의 문화가 일하지 않는 입을 줄이면, 임무를 끝내지 않은 날이 쌓인 사람의 배급이 한 단계 내려간다
     const idleRule = own ? content.factions[player()!.factionId!]?.culture?.idle_ration_days : undefined;
     const idle = !!idleRule && idleDays(state, state.playerId) >= idleRule;
@@ -326,8 +332,8 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     if (hungerTrait !== 0 && level !== war.ration.levels[0]) delta = Math.max(0, delta + hungerTrait);
     const floor = captive && content.scenario.captivity?.hunger_floor ? track.levels.findIndex((l) => l.id === content.scenario.captivity!.hunger_floor) : -1;
     if (floor >= 0 && delta > 0) delta = Math.max(0, Math.min(delta, floor - levelIndex(ctx, state, state.playerId, track.id)));
-    if (captive && hasAccess(content, state, "ration")) ctx.store.append({ type: "ration_missed", day });
-    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : !own ? "하루가 지나 배가 고프다" : lower ? `일하지 않아 배급이 줄었다 (${lower.label})` : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
+    if ((captive || away) && hasAccess(content, state, "ration")) ctx.store.append({ type: "ration_missed", day });
+    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : away ? "우리 땅 밖에서 밤을 보내 배급을 못 받았다 (오늘 거점에 닿으면 받는다)" : !own ? "하루가 지나 배가 고프다" : lower ? `일하지 않아 배급이 줄었다 (${lower.label})` : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
     // 배가 고프면 지닌 먹을 것을 하나 먹는다 (플레이 테스트 11: 날생선을 지니고 자도 아침에 굶었다). 갇혀 있으면 빼앗긴 셈이다
     if (!captive && levelIndex(ctx, ctx.store.getState(), state.playerId, track.id) > 0) {
       const inv = player()!.inventory;
@@ -469,7 +475,7 @@ export function waterHere(content: Content, state: GameState): WaterSource | nul
   // 빗물받이 (12-167): 그 구역이 물이 나는 곳이 된다
   if (waterFacilityHere(content, state)) return { kind: "spring", grant: "full" };
   const loc = content.locations[zone];
-  const base = (loc?.kind === "base" || !!loc?.water_supply) && state.zones[zone]?.owner === me.factionId;
+  const base = (loc?.kind === "base" || !!loc?.water_supply) && ownedBy(state, zone, me.factionId);
   if (base) {
     const own = state.factions[me.factionId];
     if (!own || !hasAccess(content, state, "ration")) return { kind: "supply", grant: "refused" };
@@ -644,7 +650,7 @@ export function sheltered(ctx: ToolContext, state: GameState): boolean {
   const cold = ctx.content.scenario.body?.cold;
   const me = state.characters[state.playerId];
   if (!cold || !me || !state.playerZone) return false;
-  if (state.zones[state.playerZone]?.owner !== me.factionId) return false;
+  if (!ownedBy(state, state.playerZone, me.factionId)) return false;
   const own = state.factions[me.factionId];
   return !!own && daysOfStock(ctx.content, own, cold.shelter.resource) >= cold.shelter.min_days;
 }
@@ -735,7 +741,7 @@ function steadyStat(ctx: ToolContext, me: Character): number {
 /** 마음이 쉬는 곳: 우리 땅이거나 곁에 동행이 있다 */
 function safety(state: GameState, me: Character): { mine: boolean; company: boolean } {
   return {
-    mine: !!state.playerZone && !!me.factionId && state.zones[state.playerZone]?.owner === me.factionId,
+    mine: !!state.playerZone && !!me.factionId && ownedBy(state, state.playerZone, me.factionId),
     company: state.companions.length > 0,
   };
 }

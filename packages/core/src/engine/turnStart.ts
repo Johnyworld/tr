@@ -18,6 +18,7 @@ import { runFearDecay } from "./fear.ts";
 import { rollWeather } from "../sim/weather.ts";
 import { dayOf } from "../rules/time.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { runQuarantine } from "./care/quarantine.ts";
 
 /**
  * 시간이 흐른 뒤 세계 처리. take_action이 시간을 흘린 직후와 세계를 처음 열 때 부른다.
@@ -54,6 +55,8 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   // 곁의 사람이 먼저 (쓰러진 그 자리에 있던 사람이 지혈부터 한다), 그다음 피를 흘린 만큼 부상이 커진다. 긁힘은 저절로 멎는다 (12-91)
   const helpless = runHelpless(ctx, options.actionStartedAt);
   const bled = [...runBleeding(ctx), ...runLateRation(ctx), ...issueSpare(ctx)];
+  // 격리가 끝났으면 풀려난다 (12-238)
+  for (const line of runQuarantine(ctx)) bled.push({ type: "belief", fact: line, sourceLabel: "", note: line });
   // 자리 비움 (공통 규칙 3)
   for (const line of onReturnedHome(ctx)) bled.push({ type: "belief", fact: line, sourceLabel: "", note: line });
   runDailyWeather(ctx);

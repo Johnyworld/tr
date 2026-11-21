@@ -31,6 +31,7 @@ import { daysOfStock } from "../sim/war.ts";
 import { fill, josa, type JosaPair } from "../text.ts";
 import { seasonAt } from "../sim/season.ts";
 import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 스토리렛 엔진 (기획서 10.3). 조건과 배역은 코드가 판정한다.
@@ -326,7 +327,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.companions_lte !== undefined && state.companions.length > w.companions_lte) return false;
   if (w.companions_gte !== undefined && state.companions.length < w.companions_gte) return false;
   if (w.own_territory !== undefined) {
-    const mine = !!state.playerZone && state.zones[state.playerZone]?.owner === player.factionId;
+    const mine = !!state.playerZone && ownedBy(state, state.playerZone, player.factionId);
     if (mine !== w.own_territory) return false;
   }
   if (!itemFlagsMet(state, w)) return false;

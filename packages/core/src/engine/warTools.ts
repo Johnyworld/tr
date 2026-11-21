@@ -22,6 +22,7 @@ import { runDailyBody, runDailyNpcBody, runNpcRecovery } from "./body.ts";
 import { seasonAt, seasonLabel, seasonOfDay } from "../sim/season.ts";
 import { fill, josa, sentence } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 하루 단위 전쟁 틱 (기획서 9.2). 시간이 흐른 뒤 날이 바뀌었으면 지난 날만큼(최대 MAX_CATCH_UP_DAYS일) 돌린다.
@@ -318,7 +319,7 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
     ...zoneLines,
     `무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`,
     // 우리 땅에 있을 때만 수군거림으로 드러낸다 (플레이 테스트 12: 다른 무리 거점에서도 "우리 땅의 장면이면"이 실렸다)
-    ...(factionTroubles(state, content).length && !!state.playerZone && state.zones[state.playerZone]?.owner === state.characters[state.playerId]?.factionId
+    ...(factionTroubles(state, content).length && !!state.playerZone && ownedBy(state, state.playerZone, state.characters[state.playerId]?.factionId)
       ? [
           `무리 사람들 사이에 도는 말: ${sentence(factionTroubles(state, content).join(" · "))} 배경의 수군거림, 끼니·당번 자리의 불평이나 다독임으로 한두 마디 드러낸다 (매 턴 같은 말을 되풀이하지 않는다). 인물마다의 태도는 인물 카드의 "무리 형편에 대해". 숫자·사상자를 지어내지 않는다.`,
         ]

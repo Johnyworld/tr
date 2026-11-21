@@ -538,6 +538,8 @@ export function createContentSchemas(s: Scenario) {
         idle_ration_days: z.number().int().min(1).optional(),
         /** 자리 비움 (공통 규칙 3): 임무 없이 이만큼(시간) 넘게 우리 땅 밖에 있다 돌아오면 상관이 안다 (플레이 테스트 13: 섬을 무단으로 떠났다 와도 아무도 몰랐다) */
         absence_hours: z.number().min(1).optional(),
+        /** 격리 (12-238): 감염체에게 다친 뒤 이만큼(일) 안에 우리 무리 치료사가 상처를 보면 거점에 이만큼 갇힌다. 그사이 열이 드러나면 열이 내릴 때까지 (공통 규칙 1) */
+        quarantine_days: z.number().int().min(1).optional(),
         /** 점호 (G2): 이 시간대가 시작될 때 잠들어 있으면 작은 불복종 행적이 남는다 */
         roll_call: z.array(z.enum(TIME_SEGMENTS)).optional(),
       })

@@ -11,6 +11,7 @@ import { josa } from "../text.ts";
 import { squadMembers } from "./command.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 진급 제안과 분대 (12-190, 플레이 테스트 8).
@@ -34,7 +35,7 @@ function recruitTemplates(content: Content, factionId: string) {
 
 /** 이 무리의 거점 (새 사람이 있는 곳) */
 function baseOf(content: Content, state: GameState, factionId: string): string | null {
-  return Object.values(content.locations).find((l) => l.kind === "base" && state.zones[l.id]?.owner === factionId)?.id ?? null;
+  return Object.values(content.locations).find((l) => l.kind === "base" && ownedBy(state, l.id, factionId))?.id ?? null;
 }
 
 /** 새 사람 하나를 그 무리의 분대원 틀로 만든다 (장면에는 들이지 않는다). id */

@@ -45,7 +45,12 @@ export function situationOf(state: GameState, content: Content): Situation {
 export function storyFits(s: StoryletContent, state: GameState, content: Content, situation: Situation = situationOf(state, content)): boolean {
   const captivityTag = content.scenario.captivity?.tag;
   const captivityStory = !!captivityTag && s.tags.includes(captivityTag);
-  if (situation === "captive" || captivityStory) return situation === "captive" && captivityStory;
+  if (situation === "captive" || captivityStory) {
+    if (situation !== "captive" || !captivityStory) return false;
+    // 격리(12-238)에서는 그 무리를 붙잡은 쪽으로 적은 이야기만 (몸값·탈출을 돕는 "어디서든" 이야기는 열지 않는다)
+    const held = state.characters ? playerHeld(state) : null;
+    return !held?.quarantine || !!s.when.captors?.includes(held.by);
+  }
   if (s.situations?.length) return s.situations.includes(situation);
   switch (situation) {
     case "lying":

@@ -17,6 +17,7 @@ import { recordDeed } from "./reputationTools.ts";
 import { TROUBLE_TOPIC, troublesOf } from "./factionTalk.ts";
 import { activeMissionOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 포로 (기획서 7.6, 12-55).
@@ -409,7 +410,7 @@ export function deliverPrisoners(ctx: ToolContext): string[] {
   const state = store.getState();
   const me = state.characters[state.playerId];
   const zone = state.playerZone;
-  if (!me?.factionId || !zone || content.locations[zone]?.kind !== "base" || state.zones[zone]?.owner !== me.factionId) return [];
+  if (!me?.factionId || !zone || content.locations[zone]?.kind !== "base" || !ownedBy(state, zone, me.factionId)) return [];
   const lines: string[] = [];
   for (const id of state.companions) {
     if (state.bonds[id]?.kind !== "prisoner") continue;

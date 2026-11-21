@@ -14,6 +14,7 @@ import { weatherNow } from "../sim/weather.ts";
 import { changeCondition } from "./body.ts";
 import { traitsOf } from "./traits.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { atOwnBase, myPeopleLiveHere, ownedBy } from "../rules/home.ts";
 
 /**
  * 기온 (기획서 4.5.2, 12-98): 시간대마다 바깥 기온을 정하고, 주인공이 있는 곳의 체감 기온으로 냉기를 쌓는다.
@@ -96,7 +97,7 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   const zone = state.playerZone;
   const cover = (zone ? content.locations[zone]?.cover : undefined) ?? 0;
   // 내 거처·우리 거점을 뒤지는 것은 지붕 아래 일이다 (B10, 플레이 테스트 9: 거처의 지하 창고를 뒤지다 비에 젖었다)
-  const sheltered = !!zone && (state.homes?.[who] === zone || (content.locations[zone]?.kind === "base" && !!me.factionId && state.zones[zone]?.owner === me.factionId));
+  const sheltered = !!zone && (state.homes?.[who] === zone || (content.locations[zone]?.kind === "base" && !!me.factionId && ownedBy(state, zone, me.factionId)));
   const indoor = cover > 0 && (!c.outdoor.includes(activity) || (activity === "search" && sheltered));
   const parts: string[] = [];
   let value = outside.value;
@@ -182,12 +183,6 @@ function residentsColdCap(ctx: ToolContext, factionId: string, levels: readonly 
   return i >= 0 ? i : null;
 }
 
-/** 지금 구역이 그 무리의 거점인가 (주인공이 있는 곳: 동행도 함께 있다) */
-function atOwnBase(ctx: ToolContext, factionId: string): boolean {
-  const state = ctx.store.getState();
-  const zone = state.playerZone;
-  return !!zone && !!factionId && ctx.content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === factionId;
-}
 
 export function exposeToCold(ctx: ToolContext, activity: Activity | string, from: number, to: number): ToolDisplayEvent[] {
   const state = ctx.store.getState();
@@ -243,7 +238,7 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
   // 우리 거점 실내에서는 거점 사람들과 같은 한도에서 멈춘다 (12-138, 4.5.4): 불을 못 때도 모여서 버틴다.
   // 같은 방의 거점 사람은 오한에서 멈추는데 이어받은 주인공만 얼어 죽어 계승이 연달아 끊겼다. 바깥은 그대로 위험하다
   const cap = residentsColdCap(ctx, me.factionId, levels);
-  const capped = steps > 0 && allIndoor && cap !== null && atOwnBase(ctx, me.factionId) && index + steps > cap;
+  const capped = steps > 0 && allIndoor && cap !== null && atOwnBase(ctx.store.getState(), ctx.content, undefined, me.id) && index + steps > cap;
   if (capped) steps = Math.max(0, cap! - index);
   load -= steps * c.per_step;
   // 한도에 걸렸으면 남은 냉기를 쌓아 두지 않는다 (밖에 나가자마자 여러 단계가 한꺼번에 떨어지지 않게)
@@ -299,14 +294,15 @@ export function clothesHere(content: Content, state: GameState): boolean {
   if (!me || !zone) return false;
   if (content.locations[zone]?.clothes) return true;
   if (state.homes?.[me.id] === zone) return true;
-  return !!me.factionId && content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === me.factionId;
+  // 우리 거점, 그리고 내 사람이 사는 곳 (공통 규칙 11, 12-238: 우리 무리가 상주하는 물류창고, 부모님 집)
+  return atOwnBase(state, content, zone) || myPeopleLiveHere(state, content, zone);
 }
 
 /** 젖은 옷을 갈아입는다 (take_action.change_clothes): 주인공과 곁의 사람들 */
 export function changeClothes(ctx: ToolContext): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const state = ctx.store.getState();
   if (!climateOf(ctx.content)?.wet) return { ok: false, error: "이 월드에는 젖은 옷 규칙이 없다." };
-  if (!clothesHere(ctx.content, state)) return { ok: false, error: "여기에는 갈아입을 옷이 없다 (우리 무리의 거점, 내 거처, 옷이 남은 곳에서만)." };
+  if (!clothesHere(ctx.content, state)) return { ok: false, error: "여기에는 갈아입을 옷이 없다 (우리 무리의 거점, 내 거처, 우리 무리나 가족이 사는 곳, 옷이 남은 곳에서만)." };
   // 끌고 다니는 포로는 빼고 (묶인 사람의 옷까지 갈아입히지 않는다)
   const who = [state.playerId, ...activeCompanions(state).filter((id) => !isCreature(ctx.content, state.characters[id]) && state.bonds?.[id]?.kind !== "prisoner")].filter((id) => (state.wet?.[id] ?? 0) > 0);
   if (!who.length) return { ok: false, error: "젖은 옷을 입은 사람이 없다." };

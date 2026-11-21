@@ -11,6 +11,7 @@ import { isIncapacitated } from "./body.ts";
 import { equippedItem } from "./gear.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 약속 (기획서 8.11, 12-160·12-181). 주인공이 장면의 인물과 맺은 약속을 코드가 기억한다. 수치는 월드의 promises.
@@ -244,7 +245,7 @@ export function runAsksDaily(ctx: ToolContext): void {
       if (!c || c.dead || heldOf(c) || n.id === me || !(hasMet(state, me, n.id) || knowsName(state, me, n.id))) return false;
       // 주인공이 다시 마주칠 만한 사람만: 지금 구역, 내 거처, 우리 거점에 있는 사람 (12-195)
       const where = npcZoneAt(n, state.time);
-      const myBase = Object.values(content.locations).find((l) => l.kind === "base" && !!state.characters[me]?.factionId && state.zones[l.id]?.owner === state.characters[me]?.factionId)?.id;
+      const myBase = Object.values(content.locations).find((l) => l.kind === "base" && !!state.characters[me]?.factionId && ownedBy(state, l.id, state.characters[me]?.factionId))?.id;
       if (!where || ![state.playerZone, state.homes?.[me], myBase].includes(where)) return false;
       if ((state.relations[n.id]?.[me]?.trust ?? 0) < -1) return false;
       return !fromAsks.some((p) => p.to === n.id);

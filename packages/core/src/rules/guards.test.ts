@@ -43,6 +43,10 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
     expect(offenders(/\b(state|getState\(\)|next|s)\??\.(loans|cargo)\b/, ["game/state.ts", "rules/entrusted.ts"])).toEqual([]);
   });
 
+  it("규칙 11 (우리 땅): 땅 주인이 그 무리인지는 rules/home.ts로만 묻는다", () => {
+    expect(offenders(/\.zones\[[^\]]*\]\??\.owner\s*(===|!==)/, ["game/state.ts", "rules/home.ts", "sim/war.ts"])).toEqual([]);
+  });
+
   it("규칙 7 (본 대로): 주인공이 본 땅 주인은 rules/knowledge.ts로만 읽는다", () => {
     expect(offenders(/\bzoneSeen\b/, ["game/state.ts", "rules/knowledge.ts"])).toEqual([]);
   });

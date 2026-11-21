@@ -16,6 +16,8 @@ import { type ToolContext, type ToolDisplayEvent } from "../toolkit.ts";
 import { changeCondition, useItem, levelIndex, shownIndex, symptomGroupsShown } from "../body.ts";
 import { type FeeChoice, planHealerPay, payHealer } from "./fee.ts";
 import { needsSurgery, canOperate, surgeonRoll, operate } from "./surgery.ts";
+import { ownedBy } from "../../rules/home.ts";
+import { quarantineAfterCare } from "./quarantine.ts";
 /**
  * 치료사에게 자기 치료를 받을 수 없는 까닭 (물건 없이, 판정·시간 전에 본다, 플레이 테스트 11). 받을 수 있으면 null.
  * 피가 나는데 치료사가 없으면 맨손 지혈로 넘어가므로 막지 않는다
@@ -92,7 +94,7 @@ export function applyTreatment(
     if (cutting && !canCut && t === ctx.content.scenario.harm_track) continue;
     if (surgery && t === ctx.content.scenario.harm_track) {
       // 치료사 무리의 땅(거점·진료소)에서 받는 수술은 실패해도 덧나지 않는다
-      const homeGround = !!state.characters[healer]?.factionId && !!state.playerZone && state.zones[state.playerZone]?.owner === state.characters[healer]!.factionId;
+      const homeGround = !!state.characters[healer]?.factionId && !!state.playerZone && ownedBy(state, state.playerZone, state.characters[healer]!.factionId);
       const r = operate(ctx, player.id, surgery.outcome, name, homeGround);
       lines.push(...r.lines);
       displays.push(...r.displays);
@@ -102,6 +104,9 @@ export function applyTreatment(
     if (c?.line) lines.push(c.line);
     if (c?.display) displays.push(c.display);
   }
+  // 감염체에게 다친 상처를 그 무리의 치료사가 보면 격리한다 (12-238)
+  const isolated = quarantineAfterCare(ctx, state.characters[healer]?.factionId);
+  if (isolated) lines.push(isolated);
   return { ok: true, lines, displays };
 }
 

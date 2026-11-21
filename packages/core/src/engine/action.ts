@@ -75,6 +75,8 @@ import { applyTreatment, type FeeChoice, drinkWater, healFromSleep, sleepHealBlo
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 import { cargoOf } from "../rules/entrusted.ts";
+import { ownedBy } from "../rules/home.ts";
+import { runPendingClashes } from "./battleTools.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -586,7 +588,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (input.prepare) {
     if (!prep) return { ok: false, error: `알 수 없는 준비물: ${input.prepare}` };
     const zone = start.playerZone;
-    if (!zone || start.zones[zone]?.owner !== player.factionId) return { ok: false, error: "준비물은 우리 무리의 구역에만 설치할 수 있다." };
+    if (!zone || !ownedBy(start, zone, player.factionId)) return { ok: false, error: "준비물은 우리 무리의 구역에만 설치할 수 있다." };
     if (prep.requires_item && (player.inventory[prep.requires_item] ?? 0) < 1) return { ok: false, error: `${prep.label}에는 ${josa(content.items[prep.requires_item]?.name ?? prep.requires_item, "이/가")} 필요하다.` };
     const short = Object.entries(prep.materials ?? {}).filter(([id, n]) => (player.inventory[id] ?? 0) < n);
     if (short.length) return { ok: false, error: `${prep.label}에는 재료가 모자라다: ${short.map(([id, n]) => `${content.items[id]?.name ?? id} ${n}개`).join(", ")}.` };
@@ -946,6 +948,18 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     }
   }
 
+  // 3-0. 떠나기 전에 예정 시각이 지난 교전은 지금 자리로 판정한다 (12-238, 플레이 테스트 13: 판정의 대가로 흐른 시간에 새벽 공세 시각이 지났는데,
+  // 이동까지 마친 뒤 판정해 맞닿은 우리 구역에 있던 주인공이 공세에 끼지 못했다)
+  if (input.move_to && !inBattle && store.getState().pendingClashes.some((p) => p.at <= store.getState().time)) {
+    const clash = runPendingClashes(ctx);
+    displays.push(...clash);
+    if (store.getState().battle) {
+      lines.push("떠나기 전에 교전이 벌어졌다: 이동하지 않았다. 상태의 전투를 보고 전투 장면을 연출하라.");
+      return { ok: true, resultText: lines.join("\n"), displays, outcome, dead: false };
+    }
+    lines.push(...worldLines(clash));
+  }
+
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
   const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? ((content.scenario.consumables[input.use_item]?.hunger ?? 0) > 0 ? "eat" : "brief") : input.drink || input.refill || input.change_clothes ? "brief" : input.craft || input.build || input.train || input.lesson || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
   // 이동 수단 (12-137): 타고 가면 이동 시간이 줄고, 연료를 쓰고, 도착한 곳에 소리가 난다
@@ -1192,7 +1206,7 @@ function missedRollCall(ctx: ToolContext, from: number, to: number) {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   const segments = me?.factionId ? ctx.content.factions[me.factionId]?.culture?.roll_call : undefined;
-  if (!me || !segments?.length || heldOf(me) || state.zones[state.playerZone ?? ""]?.owner !== me.factionId) return;
+  if (!me || !segments?.length || heldOf(me) || !ownedBy(state, state.playerZone ?? "", me.factionId)) return;
   // 점호 시각에 딱 깨면 나간 것으로 친다 (플레이 테스트 12: 04:00에 깼는데 놓친 것으로 셌다)
   const missed = segments.filter((seg) => nextSegmentStart(from, seg) < to);
   if (!missed.length) return;

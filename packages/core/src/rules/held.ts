@@ -6,8 +6,8 @@
  * 쓰는 곳은 세이브의 기록(game/state.ts의 리듀서)만 직접 고친다.
  */
 
-/** 갇힌 사람의 기록 (붙잡은 무리, 갇힌 구역, 노역, 갇힌 시각, 탈출 실패로 쌓인 감시) */
-export type Held = { by: string; zone: string; labor?: boolean | undefined; since?: number | undefined; watch?: number | undefined };
+/** 갇힌 사람의 기록 (붙잡은 무리, 갇힌 구역, 노역, 갇힌 시각, 탈출 실패로 쌓인 감시, 우리 무리의 격리) */
+export type Held = { by: string; zone: string; labor?: boolean | undefined; since?: number | undefined; watch?: number | undefined; quarantine?: boolean | undefined };
 
 /** 이 사람이 갇혀 있으면 그 기록, 아니면 null */
 export function heldOf(c: { captive?: Held | null } | null | undefined): Held | null {

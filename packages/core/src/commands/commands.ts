@@ -383,10 +383,11 @@ const rumors: CommandDef = {
   id: "rumors",
   name: "소문",
   aliases: ["rumors"],
-  description: "최근 들은 소문",
+  description: "최근 들은 소식과 소문",
   run(ctx) {
-    const heard = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.source === "rumor").slice(-10).reverse();
-    return [header("소문"), ...(heard.length ? heard.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)}] ${b.fact}`) : ["  들은 소문이 없습니다."])].join("\n");
+    // 소식(무리 안에서 전해 들은 것)과 소문을 함께 (12-238, 플레이 테스트 13: 우리 공세 결과가 소식이라 ?소문에 없었다)
+    const heard = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.source === "rumor" || b.source === "report").slice(-12).reverse();
+    return [header("소문"), ...(heard.length ? heard.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)}] (${BELIEF_SOURCE_LABELS[b.source]}) ${b.fact}`) : ["  들은 소식·소문이 없습니다."])].join("\n");
   },
 };
 

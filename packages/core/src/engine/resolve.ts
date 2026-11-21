@@ -20,6 +20,7 @@ import { gainResolveXp } from "./growth.ts";
 import { loversOf } from "./romance.ts";
 import { traitIdsOf } from "./traits.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 다짐 (기획서 3.5, 12-164). 주인공의 큰 줄기 (메인 임무에 가까운 것). 한 번에 하나.
@@ -125,7 +126,7 @@ function evaluateCheck(content: Content, state: GameState, r: Resolve): boolean 
       return bases.length === 0 ? true : null;
     }
     case "zone_owned":
-      return !!me.factionId && state.zones[r.target ?? ""]?.owner === me.factionId ? true : null;
+      return !!me.factionId && ownedBy(state, r.target ?? "", me.factionId) ? true : null;
     case "standing":
       return (me.occupation?.standing ?? -1) >= (r.n ?? 1) ? true : null;
     case "trusted": {

@@ -1,6 +1,7 @@
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
 import type { Clash, GameState } from "./state.ts";
+import { ownedBy } from "../rules/home.ts";
 
 /**
  * 구역의 감염체 압력 (기획서 7.5.2, 12-112). 0~3, 기준값은 구역의 위험(danger).
@@ -62,7 +63,7 @@ export function barrierRise(content: Content, state: Pick<GameState, "facilities
 export function worstOverrun(content: Content, state: Pick<GameState, "infested" | "zones">, factionId: string): { zone: string; by: number } | null {
   let worst: { zone: string; by: number } | null = null;
   for (const l of Object.values(content.locations)) {
-    if (state.zones[l.id]?.owner !== factionId) continue;
+    if (!ownedBy(state, l.id, factionId)) continue;
     const by = infestationOf(content, state, l.id) - baseInfestation(content, l.id);
     if (by > 0 && (!worst || by > worst.by)) worst = { zone: l.id, by };
   }

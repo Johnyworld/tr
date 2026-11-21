@@ -8,7 +8,7 @@ import type { Content } from "../content/schemas.ts";
 import type { MissionInstance } from "../game/missions.ts";
 import type { GameState } from "../game/state.ts";
 import { harmTrack, incapacitatingSymptom } from "../scenario/scenario.ts";
-import { heldOf } from "./held.ts";
+import { heldOf, lastFreedAt } from "./held.ts";
 
 /** 기한 이만큼(분) 앞까지 갇혀 있었으면 기한 초과를 탓하지 않는다 (빠져나와 돌아오는 길) */
 export const FREED_GRACE_MINUTES = 6 * 60;
@@ -31,7 +31,8 @@ export function missionExcuse(state: GameState, content: Content, mission: Missi
   if (down) return { cause: "incapacitated", label: `다쳐서 못 마침 (${down.label})` };
   const held = heldOf(who);
   if (held) return { cause: "captured", label: `붙잡혀 못 마침 (${content.factions[held.by]?.name ?? held.by})` };
-  if (state.lastFreedAt !== null && state.lastFreedAt > mission.assignedAt && state.lastFreedAt >= mission.deadline - FREED_GRACE_MINUTES) {
+  const freed = lastFreedAt(state);
+  if (freed !== null && freed > mission.assignedAt && freed >= mission.deadline - FREED_GRACE_MINUTES) {
     return { cause: "captured", label: "붙잡혀 못 마침 (붙잡혔다 빠져나온 길)" };
   }
   return null;
@@ -39,7 +40,7 @@ export function missionExcuse(state: GameState, content: Content, mission: Missi
 
 /** 이 임무 중에 붙잡힌 일이 있는가: 빼앗긴 빌린 장비를 잃어버린 것으로 치지 않는다 */
 export function capturedDuringMission(state: GameState, mission: MissionInstance): boolean {
-  return !!heldOf(state.characters[mission.assigneeId]) || (state.lastFreedAt ?? -1) > mission.assignedAt;
+  return !!heldOf(state.characters[mission.assigneeId]) || (lastFreedAt(state) ?? -1) > mission.assignedAt;
 }
 
 /** 지금 탓하지 않는 중인가 (자리를 떠 외면으로 처리하는 동안: 그 선택지의 행적은 남기지 않는다) */

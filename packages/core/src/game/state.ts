@@ -543,6 +543,8 @@ export function createGameSchemas(s: Scenario) {
     lastSleptFrom: z.number().int().nullable().default(null),
     /** 사람이 마지막으로 이야기 배역으로 나온 시각 (같은 사람이 이야기마다 나오지 않게) */
     castUsedAt: z.record(z.string(), z.number().int()).default({}),
+    /** 무기고가 맨손인 주인공에게 근접 무기를 마지막으로 내준 시각 */
+    spareIssuedAt: z.number().int().nullable().default(null),
     /** 갇혀서 그날 배급을 못 받은 날 (플레이 테스트 13: 풀려나 거점에 왔는데 그날 내내 굶주렸다). 그날 우리 거점에 닿으면 늦게라도 받는다 */
     missedRationDay: z.number().int().nullable().default(null),
     /** 주인공이 마지막으로 풀려난(빠져나온) 시각 (플레이 테스트 13: 갇혔다 나와 거점까지 걷는 사이 기한이 지나 불복종) */
@@ -751,6 +753,7 @@ export function createGameSchemas(s: Scenario) {
     /** 그날 배급을 못 받았다 (day) / 늦게 받았다 (null) */
     /** 들키지 않기가 조건인 임무 중에 들켰다 */
     z.strictObject({ type: z.literal("mission_spotted"), missionId: z.string() }),
+    z.strictObject({ type: z.literal("armory_spare_issued") }),
     z.strictObject({ type: z.literal("ration_missed"), day: z.number().int().nullable() }),
     /** 판정의 대가를 다치는 대신 다른 것(시간)으로 치렀다: 그 판정을 이어받는 이야기는 "다친다"를 겹쳐 붙이지 않는다 (플레이 테스트 12) */
     z.strictObject({ type: z.literal("check_cost_paid"), checkId: z.string() }),
@@ -1227,6 +1230,7 @@ export const EMPTY_STATE: GameState = {
   lastWokeAt: null,
   lastSleptFrom: null,
   castUsedAt: {},
+  spareIssuedAt: null,
   missedRationDay: null,
   lastFreedAt: null,
   regardGained: { day: -1, by: {} },
@@ -1399,6 +1403,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (m) m.spotted = true;
       return next;
     }
+    case "armory_spare_issued":
+      next.spareIssuedAt = state.time;
+      return next;
     case "ration_missed":
       next.missedRationDay = event.day;
       return next;
@@ -1827,6 +1834,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.lastFreedAt = state.time;
       // 갇혀 있는 동안 같은 구역에서 기다리던 동행은 풀려나면 바로 합류한다 (플레이 테스트 13)
       for (const b of Object.values(next.bonds ?? {})) if (b.apart && b.apart.left === false) b.apart = { ...b.apart, left: true };
+      // 동물 동행은 주인공이 빠져나가면 반나절 안에 스스로 찾아온다 (플레이 테스트 13: 개를 데리러 같은 적 땅을 세 번 드나들었다)
+      if (!event.returned) for (const b of Object.values(next.bonds ?? {})) if (b.apart && b.kind === "animal") b.apart = { ...b.apart, until: state.time + ANIMAL_FIND_MINUTES };
       return next;
     }
     case "prisoner_labor": {
@@ -2668,3 +2677,6 @@ export const SLEEP_CHAIN_MINUTES = 60;
 export function sleepChainStart(state: { lastWokeAt: number | null; lastSleptFrom: number | null }, from: number): number {
   return state.lastWokeAt !== null && state.lastSleptFrom !== null && from >= state.lastWokeAt && from - state.lastWokeAt < SLEEP_CHAIN_MINUTES ? state.lastSleptFrom : from;
 }
+
+/** 빠져나간 주인공을 동물 동행이 찾아오기까지 (분) */
+export const ANIMAL_FIND_MINUTES = 12 * 60;

@@ -1,3 +1,4 @@
+import { restDays } from "../rules/rest.ts";
 import { capturedDuringMission, missionExcuse } from "../rules/blame.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
@@ -379,11 +380,10 @@ function travelAllowance(ctx: ToolContext, where: string | null | undefined, fac
 }
 
 /** 최근 사흘 안에 주인공이 받은 일감 (같은 일감이 되풀이되지 않게, 플레이 테스트 13) */
-function recentTemplates(state: GameState): string[] {
-  const since = state.time - RECENT_OFFER_DAYS * MINUTES_PER_DAY;
+function recentTemplates(state: GameState, content: Content): string[] {
+  const since = state.time - restDays(content, "mission") * MINUTES_PER_DAY;
   return Object.values(state.missions).filter((m) => m.assigneeId === state.playerId && m.assignedAt >= since).map((m) => m.templateId);
 }
-const RECENT_OFFER_DAYS = 3;
 
 export const MISSION_TOOLS = [assignMission, reportMission, abandonMission] as const;
 
@@ -442,7 +442,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const startRank = ctx.content.roles[state.roleId]?.rank;
     const rankRole = me && me.rank !== startRank ? Object.values(ctx.content.roles).find((r) => r.faction === me.factionId && r.rank === me.rank) : undefined;
     const extra = [...(occ?.missions ?? []), ...(rankRole?.missions ?? [])];
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learnedSkill(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state));
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learnedSkill(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content));
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;

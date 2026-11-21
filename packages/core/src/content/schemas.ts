@@ -453,7 +453,8 @@ export function createContentSchemas(s: Scenario) {
      * 무기고 (기획서 4.8): 무장이 필요한 작전(armed)에 빌려주는 것. 이미 가진 만큼은 빼고 모자란 것만.
      * ammo_cost: 한 번 빌려줄 때마다 무리 창고에서 줄어드는 탄약 (모자라면 탄약 없이 무기만)
      */
-    armory: z.strictObject({ items: z.record(contentIdSchema, z.number().int().min(1)), ammo_cost: z.number().int().min(0).default(0) }).optional(),
+    /** spare: 무기를 다 잃고 우리 거점에 오면 하루 한 번 내주는 근접 무기 (플레이 테스트 13: 붙잡혀 빼앗긴 뒤 끝까지 맨손) */
+    armory: z.strictObject({ items: z.record(contentIdSchema, z.number().int().min(1)), ammo_cost: z.number().int().min(0).default(0), spare: contentIdSchema.optional() }).optional(),
     /**
      * 포상 (12-171): 임무 보고로 공적이 every의 배수를 새로 넘을 때마다 items에서 하나.
      * 무리 식량이 hungry_days일치 아래면 말뿐인 포상 (상관의 존중 +1)

@@ -36,14 +36,14 @@ moves:
   - { id: fight, label: 근접전, category: 전투, kind: common, stats: [strength, agility], description: "칼·몽둥이·맨손으로 싸울 때. 높을수록 덜 다치고 더 세게 친다" }
   - { id: shoot, label: 사격, category: 전투, kind: common, stats: [agility, senses], description: "총이나 활을 쏠 때. 탄 한 발을 헛되이 쓰지 않는다" }
   - { id: maintenance, label: 손질, category: 전투, kind: expert, stats: [intellect, senses], description: "무기를 손질할 때. 총·칼이 덜 닳고 덜 망가진다" }
-  - { id: stealth, label: 은밀, category: 몸, kind: common, stats: [agility], description: "들키지 않고 움직이고 숨을 때. 몰래 들어가기, 따돌리기" }
+  - { id: stealth, label: 은밀, category: 몸, kind: common, stats: [agility, nerve], description: "들키지 않고 움직이고 숨을 때. 몰래 들어가기, 따돌리기. 숨죽이고 버티기는 냉정으로" }
   - { id: endure, label: 버티기, category: 몸, kind: common, stats: [vitality, nerve], description: "고통·공포·추위 속에서 버틸 때. 다친 몸으로 계속 움직이기" }
   - { id: athletics, label: 운동, category: 몸, kind: common, stats: [strength, agility, vitality], description: "몸을 쓸 때. 오르기, 들어 올리기, 나르기, 달리기, 뛰어넘기" }
   - { id: swim, label: 수영, category: 몸, kind: expert, stats: [vitality, agility], description: "물에 들 때. 헤엄, 물에 빠진 사람 건지기, 물살 건너기. 못 하면 깊은 물에 들어갈 수 없다" }
   - { id: sense_danger, label: 경계, category: 감각, kind: common, stats: [senses], description: "낌새를 알아챌 때. 매복·함정·숨은 목격자를 먼저 본다" }
   - { id: scavenge, label: 수색, category: 감각, kind: common, stats: [senses, intellect], description: "폐허를 뒤질 때. 물자와 단서를 더 많이, 더 빨리 찾는다" }
   - { id: insight, label: 눈치, category: 감각, kind: common, stats: [senses, intellect], description: "사람을 읽을 때. 거짓말 알아채기, 속마음 읽기, 캐물어 알아내기" }
-  - { id: persuade, label: 교섭, category: 사람, kind: common, stats: [charm], description: "말로 설득하고 흥정할 때. 값을 깎고 마음을 돌린다" }
+  - { id: persuade, label: 교섭, category: 사람, kind: common, stats: [charm, intellect], description: "말로 설득하고 흥정할 때. 값을 깎고 마음을 돌린다. 사실과 조리로 설득하면 지능으로" }
   - { id: deceive, label: 거짓말, category: 사람, kind: common, stats: [charm, nerve], description: "속일 때. 거짓말, 둘러대기, 신분 숨기기" }
   - { id: intimidate, label: 위협, category: 사람, kind: common, stats: [strength, nerve], description: "겁주고 압박할 때. 싸우지 않고 물러서게 한다" }
   - { id: leadership, label: 통솔, category: 사람, kind: common, stats: [charm, nerve], description: "사람을 이끌 때. 다툼 중재, 사기 북돋우기, 무리 이끌기, 가르치기" }
@@ -1059,7 +1059,9 @@ captivity:
   # 빠져나가기 (12-220): 운동(달려서)·은밀(숨어서) 중 주인공에게 나은 것. 대가 있는 성공은 무기·탄을 버리고 빠져나간다.
   # 의식불명은 helpless 규칙(적의 손에 떨어짐)이 먼저 맡는다
   flee_moves: [athletics, stealth]
+  # 공구·정찰 도구도 빼앗는다 (플레이 테스트 13: 쌍안경으로 감옥 경계 +1, 철사로 빗장을 땄다). 먹을 것·물·완장은 남긴다
   confiscate: [weapon, ammo]
+  confiscate_items: [binoculars, toolkit, carpentry_kit, flashlight, radio, wire_roll]
   escape_moves: [stealth, endure]
   # 탈출의 빈틈을 기다리는 시간 (플레이 테스트 12, *임시*). 실패할 때마다 다음 탈출 판정 -1
   escape_hours: [1, 4]
@@ -1311,6 +1313,9 @@ travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 # 이야기의 빈도 (12-191, *임시*): 보통 이야기는 6시간에 하나. 12-191에 10시간으로 늘렸지만 실제 플레이는 하루 1.5~1.7개라 (잠자는 동안은 급한 것만) 12-195에 6시간으로 되돌렸다.
 # 보통 이야기와 길 위의 일은 앞 이야기와 2시간은 떨어지고, 급한 이야기는 하루 둘까지. 피를 흘리거나 치명상 이상이면 급한 이야기만
 # 임무의 판정 조건에서 서로 바꿔 쓸 수 있는 판정 (플레이 테스트 13: 교섭 조건을 매력 낮은 호위대원이 넘기지 못했다)
+
+# 공통 규칙 5 (같은 것은 쉰다, design.md 1.1): 최근에 나온 배역·받은 일감·무리마다의 경보 이야기가 다시 나오기 전에 쉬는 날수
+rest: { cast: 2, mission: 3, alarm: 3 }
 mission_move_groups:
   - [persuade, intimidate, deceive]
 

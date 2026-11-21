@@ -1,3 +1,4 @@
+import { onCaptured } from "../rules/consequence.ts";
 import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import { isCreature } from "../game/kinds.ts";
@@ -44,8 +45,9 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
     if (kind === "prisoner" || kind === "buddy") store.append({ type: "companion_left", characterId: id, reason: kind === "buddy" ? "짝이 붙잡혀 혼자 돌아갔다" : "풀려났다" });
     else if (state.playerZone) store.append({ type: "companion_parted", characterId: id, zone: state.playerZone, until: null });
   }
-  const held = Object.fromEntries(Object.entries(me.inventory).filter(([id, n]) => n > 0 && c.confiscate.includes(content.items[id]?.kind ?? "")));
-  const spotted = markMissionSpotted(ctx);
+  const held = Object.fromEntries(Object.entries(me.inventory).filter(([id, n]) => n > 0 && (c.confiscate.includes(content.items[id]?.kind ?? "") || c.confiscate_items.includes(id))));
+  // 붙잡힌 결과는 공통 규칙 3 (rules/consequence.ts): 들키지 않기 임무, 침입 행적, 그 무리의 태도
+  const spotted = onCaptured(ctx, by).join(" ");
   store.append({ type: "player_captured", by, zone: where, held });
   const name = content.factions[by]!.name;
   const fact = sentence(`${cause}. ${name}에 붙잡혀 ${content.locations[where]?.name ?? where}에 갇혔다`);
@@ -56,22 +58,17 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
   );
 }
 
-/** 들키지 않기가 조건인 임무 중에 들켰다 (경보, 붙잡힘) */
-export function markMissionSpotted(ctx: ToolContext): string | null {
-  const state = ctx.store.getState();
-  const m = activeMissionOf(state.missions, state.playerId);
-  if (!m?.unseen || m.spotted) return null;
-  ctx.store.append({ type: "mission_spotted", missionId: m.id });
-  return `임무 "${m.title}"의 들키지 않기가 깨졌다: 다른 조건을 채워도 일부 완수까지다.`;
-}
-
 /** 주인공이 풀려난다 (빼앗긴 것을 돌려받는지는 어떻게 풀려나는지에 따라) */
 export function releasePlayer(ctx: ToolContext, returned: boolean): string | null {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
-  if (!heldOf(me)) return null;
+  const held = heldOf(me);
+  if (!held) return null;
+  // 빼앗긴 것을 적는다 (플레이 테스트 13: "그곳에 두고 왔다" 한 줄이라 무엇을 잃었는지 몰랐다)
+  const taken = Object.entries(state.deposits[`held:${held.by}`] ?? {}).filter(([, n]) => n > 0).map(([id, n]) => `${ctx.content.items[id]?.name ?? id} ×${n}`);
   ctx.store.append({ type: "player_released", returned });
-  return returned ? "풀려났다. 빼앗겼던 것을 돌려받았다." : "빠져나왔다. 빼앗긴 것은 그곳에 두고 왔다.";
+  if (returned) return `풀려났다. 빼앗겼던 것을 돌려받았다${taken.length ? ` (${taken.join(", ")})` : ""}.`;
+  return `빠져나왔다. 빼앗긴 것은 그곳에 두고 왔다${taken.length ? `: ${taken.join(", ")}` : ""}.${taken.length ? " 맨손이면 우리 거점의 무기고가 근접 무기 하나를 내준다." : ""}`;
 }
 
 /** 빠져나가기에 가장 나은 판정: flee_moves 중 능력 + 스킬이 가장 높은 것 (배우지 않은 전문 기술은 빼고) */

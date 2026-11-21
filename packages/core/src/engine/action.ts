@@ -828,7 +828,24 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const m = forMission ? store.getState().missions[forMission] : undefined;
     const want = m ? ((m.requirements.find((r) => "bring" in r) as { bring: string } | undefined)?.bring ?? Object.keys(content.missions[m.templateId]?.supplies ?? {})[0] ?? null) : null;
     const found = scavenge(ctx, outcome, want);
+    // 적 땅에서는 숨는 판정 하나로 찾는 양까지 정한다 (한 행동에 판정은 하나, 플레이 테스트 13: 수색을 굴리지 않았는데 물건이 나왔다)
+    if (exposed && input.check) lines.push(`숨어서 뒤졌다: ${moveLabel(scenario, input.check.move)} 판정 결과로 찾는 양도 정했다.`);
     lines.push(...found.lines);
+    // 남의 무리 거점(적대하지 않는 곳)에서 뒤져 챙기면 도둑질이다: 그 무리 사람이 곁에 있거나 운이 나쁘면 행적이 남는다 (공통 규칙 3, 플레이 테스트 13: 장터 상인 앞에서 뒤져도 뒤끝이 없었다)
+    {
+      const s1 = store.getState();
+      const zone = s1.playerZone;
+      const owner = zone ? s1.zones[zone]?.owner : null;
+      const mine = s1.characters[s1.playerId]?.factionId;
+      const tookSomething = found.displays.length > 0;
+      if (!exposed && tookSomething && zone && content.locations[zone]?.kind === "base" && owner && owner !== mine) {
+        const watcher = s1.scene.present.some((id) => s1.characters[id]?.factionId === owner);
+        if (watcher || ctx.rng() < THEFT_NOTICE_CHANCE) {
+          recordDeed(ctx, { summary: `${content.factions[owner]?.name ?? owner}의 거점에서 남의 것을 뒤져 챙겼다`, tags: ["theft"], severity: 1, privacy: "semi_private", noisy: false });
+          lines.push("남의 거점에서 뒤져 챙긴 것을 누군가 본 것 같다 (도둑질로 남았다).");
+        }
+      }
+    }
     displays.push(...found.displays);
   }
 
@@ -1157,6 +1174,9 @@ function feeChoice(pay: "auto" | { item: string; quantity: number }[] | null | u
   for (const p of pay) if (p.quantity > 0) out[p.item] = (out[p.item] ?? 0) + p.quantity;
   return out;
 }
+
+/** 남의 거점에서 뒤져 챙길 때 그 무리 사람이 곁에 없어도 들키는 확률 */
+const THEFT_NOTICE_CHANCE = 0.3;
 
 /** 판정 하나로 오르는 부상의 최대 단계 */
 const MAX_HARM_STEPS = 2;

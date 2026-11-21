@@ -1,4 +1,5 @@
-import { heldOf } from "../rules/held.ts";
+import { preferRested, resting } from "../rules/rest.ts";
+import { heldOf, playerHeld } from "../rules/held.ts";
 import { disasterNear } from "../engine/disasters.ts";
 import { agendaOf, agendaShowing } from "../engine/agenda.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
@@ -159,9 +160,6 @@ function backgroundCast(state: GameState, content: Content, kind: "enemy" | "ene
 export const EXTRA_CAST_PREFIX = "@extra:";
 
 /** 배역을 고른다. 한 사람이 두 배역을 맡지 않는다. 채울 수 없으면 null */
-/** 배역으로 나온 사람이 다음 이야기에 다시 나오기 전에 쉬는 시간 (분) */
-const CAST_REST_MINUTES = 2 * 24 * 60;
-
 export function pickCast(state: GameState, content: Content, storylet: StoryletContent, rng: Rng | null): Record<string, string> | null {
   const cast: Record<string, string> = {};
   // 성인 주제 이야기는 배역도 모두 성인이어야 한다 (12-57)
@@ -224,9 +222,8 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       if (role.optional) continue; // 있으면 쓰는 배역: 비워 둔다
       return null;
     }
-    // 최근 이틀 안에 배역으로 나온 사람은 다른 후보가 있으면 쉰다 (플레이 테스트 13: 윤해솔이 사흘에 네 이야기)
-    const rested = all.filter((id) => (state.castUsedAt?.[id] ?? -Infinity) < state.time - CAST_REST_MINUTES);
-    const options = rested.length ? rested : all;
+    // 최근에 배역으로 나온 사람은 다른 후보가 있으면 쉰다 (공통 규칙 5, 플레이 테스트 13: 윤해솔이 사흘에 네 이야기)
+    const options = preferRested(all, (id) => resting(content, "cast", state.castUsedAt?.[id], state.time));
     const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;
     cast[key] = id;
     used.add(id);
@@ -475,6 +472,8 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
       const log = state.storyletLog[s.id];
       if (!log) return true;
       if (!s.repeatable) return false;
+      // 무리마다의 경보 이야기(땅 주인을 정한 것)는 시나리오의 쉬는 날수도 지킨다 (공통 규칙 5). 어느 땅에서나 받는 일반 경보는 쉬지 않는다
+      if (content.scenario.alarm && s.tags.includes(content.scenario.alarm.tag) && !!s.when.owners?.length && resting(content, "alarm", log.lastFiredAt, at)) return false;
       return at - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY;
     })
     .filter((s) => conditionsMet(state, content, s, at))
@@ -541,6 +540,14 @@ export function storyletWindow(state: GameState, content: Content, at: GameTime)
   // 지금 캐릭터의 이야기가 막 시작됐으면 조금 기다린다
   if (at - state.runStartedAt < pacing.first_after_hours * 60) return "closed";
   const fresh = state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt;
+  const held = playerHeld(state);
+  if (held && !fresh) {
+    // 갇힌 동안 (플레이 테스트 13: 갇혀 열 시간 넘게 아무 일도 없었다): 갇힌 뒤 첫 이야기는 1시간이 지나면, 그다음은 간격의 절반
+    const last = state.lastStoryletAt!;
+    const since = held.since ?? last;
+    if (last < since) return at - since >= HELD_FIRST_STORY_MINUTES ? "open" : "urgent_only";
+    return at - last >= storyletGapMinutes(content, last) / 2 ? "open" : "urgent_only";
+  }
   // 이야기가 몰리지 않게 (12-191): 앞 이야기와 가까우면 급한 이야기만 (급한 것은 하루 상한으로 막는다)
   if (!fresh && at - state.lastStoryletAt! < pacing.min_any_gap_hours * 60) return "urgent_only";
   // 위급하면 급한 이야기만 (12-191). 폐허를 탐험하는 중에도 (12-192: 병원 지하에서 "물통 옮기기"가 열렸다)
@@ -553,6 +560,9 @@ export function storyletWindow(state: GameState, content: Content, at: GameTime)
  * 앞 이야기 뒤 다음 이야기까지의 간격 (분). max_gap_hours가 있으면 min~max 사이에서 앞 이야기의 시각으로 정한다
  * (난수를 쓰지 않아 같은 세이브는 늘 같은 간격이다)
  */
+/** 갇힌 뒤 첫 이야기까지 (분) */
+const HELD_FIRST_STORY_MINUTES = 60;
+
 export function storyletGapMinutes(content: Content, lastAt: GameTime): number {
   const p = content.scenario.storylet_pacing;
   const min = p.min_gap_hours * 60;

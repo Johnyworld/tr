@@ -1,3 +1,4 @@
+import { onSpotted } from "../rules/consequence.ts";
 import { heldOf } from "../rules/held.ts";
 import { josa } from "../text.ts";
 import { z } from "zod";
@@ -75,7 +76,8 @@ function raiseAlarm(ctx: ToolContext, by: number): string[] {
   ctx.store.append({ type: "infiltration_changed", depth: inf.depth, alarm, done: inf.done });
   if (alarm < ALARM_MAX || inf.alarm >= ALARM_MAX) return [];
   applyEffect(ctx, { faction_relation: { from: "zone_owner", to: "own", delta: -1, mutual: false } } as StoryletEffect, {}, {}, "잠입하다 들켰다");
-  recordDeed(ctx, { summary: `${ctx.content.factions[inf.owner]?.name ?? inf.owner}의 땅에 몰래 들어갔다 들켰다`, tags: ["deceit"], severity: 1, privacy: "semi_private", noisy: true });
+  // 들킨 결과는 공통 규칙 3 (침입 행적, 들키지 않기 임무)
+  onSpotted(ctx, inf.owner);
   // 들킨 순간은 경보 이야기로 넘긴다: 달아날지 둘러댈지 항복할지 고른다 (플레이 테스트 12: 들키면 빠지기 판정 하나로 곧바로 포로가 됐다)
   // 열 경보 이야기가 없으면 잠입 안에서 빠지기만 남는다
   const rule = ctx.content.scenario.alarm;
@@ -149,7 +151,11 @@ const infiltrate = defineTool({
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
-      if (check.outcome !== "miss") {
+      // 낌새가 쌓인 데서 대가 있는 성공이면 들키지 않고 한 걸음 물러난다: 대가 있는 성공이 곧 들킴이 되지 않게 (플레이 테스트 13)
+      const wouldBeCaught = check.outcome === "partial" && inf.alarm + 1 >= ALARM_MAX;
+      if (wouldBeCaught) {
+        lines.push(`${josa(depthLabel(inf.depth + 1), "으로/로")} 가려다 발소리가 가까워 한 걸음 물러나 숨었다. 들키지는 않았다. 아직 ${depthLabel(inf.depth)} (낌새가 짙다: 한 번 더 어긋나면 들킨다).`);
+      } else if (check.outcome !== "miss") {
         store.append({ type: "infiltration_changed", depth: inf.depth + 1, alarm: inf.alarm, done: inf.done });
         lines.push(`${josa(depthLabel(inf.depth + 1), "으로/로")} 들어갔다.`);
         if (check.outcome === "partial") lines.push(...raiseAlarm(ctx, 1));
@@ -192,7 +198,9 @@ const infiltrate = defineTool({
         const now = store.getState().infiltration!;
         store.append({ type: "infiltration_changed", depth: now.depth, alarm: now.alarm, done: true });
         lines.unshift(`${goal.label}: 해냈다${check.outcome === "partial" ? " (다 하지는 못했다)" : ""}.${captive && goal.release ? ` ${josa(playerCalls(store.getState(), content, captive), "을/를")} 풀어 냈다.` : ""}`);
-        if (check.outcome === "partial") lines.push(...raiseAlarm(ctx, 1));
+        // 대가 있는 성공은 들킴이 아니다: 낌새가 짙어도 들키기 직전에서 멈춘다 (플레이 테스트 13)
+        if (check.outcome === "partial" && now.alarm + 1 >= ALARM_MAX) lines.push("들킬 뻔했다. 숨을 죽여 넘겼다 (낌새가 짙다: 한 번 더 어긋나면 들킨다).");
+        else if (check.outcome === "partial") lines.push(...raiseAlarm(ctx, 1));
       } else {
         lines.push(`${goal.label}: 하지 못했다.`);
         lines.push(...raiseAlarm(ctx, 2));

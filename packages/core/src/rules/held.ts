@@ -37,3 +37,8 @@ export type HeldPause = (typeof HELD_PAUSES)[number];
 export function pausedWhileHeld(state: Parameters<typeof playerHeld>[0], _what: HeldPause): boolean {
   return playerHeld(state) !== null;
 }
+
+/** 주인공이 마지막으로 풀려난(빠져나온) 시각. 한 번도 없으면 null */
+export function lastFreedAt(state: { lastFreedAt?: number | null }): number | null {
+  return state.lastFreedAt ?? null;
+}

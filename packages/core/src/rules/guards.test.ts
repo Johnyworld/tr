@@ -31,8 +31,8 @@ function offenders(pattern: RegExp, allowed: string[]): string[] {
 }
 
 describe("공통 규칙을 건너뛰지 않는다", () => {
-  it("규칙 2 (탓할 수 없는 일): 풀려난 시각은 rules/blame.ts로만 읽는다", () => {
-    expect(offenders(/\blastFreedAt\b/, ["game/state.ts", "rules/blame.ts"])).toEqual([]);
+  it("규칙 1·2 (갇힘·탓할 수 없는 일): 풀려난 시각은 rules/held.ts·rules/blame.ts로만 읽는다", () => {
+    expect(offenders(/\.lastFreedAt\b/, ["game/state.ts", "rules/blame.ts", "rules/held.ts"])).toEqual([]);
   });
 
   it("규칙 7 (본 대로): 주인공이 본 땅 주인은 rules/knowledge.ts로만 읽는다", () => {

@@ -1,3 +1,4 @@
+import { preferRested } from "../rules/rest.ts";
 import { heldOf, type Held } from "../rules/held.ts";
 import { z } from "zod";
 import type { Rng } from "../rng.ts";
@@ -263,8 +264,9 @@ export function pickDailyOffers(
   if (pool.length === 0) return null;
   const picked: string[] = [];
   const count = Math.min(OFFERS_PER_DAY, pool.length);
-  const fresh = pool.filter((id) => !recent.includes(id));
-  const stale = pool.filter((id) => recent.includes(id));
+  // 최근에 받은 일감은 다른 후보가 있으면 쉰다 (공통 규칙 5)
+  const fresh = preferRested(pool, (id) => recent.includes(id));
+  const stale = pool.filter((id) => !fresh.includes(id));
   while (picked.length < count) {
     const from = fresh.length ? fresh : stale;
     const [id] = from.splice(Math.floor(rng() * from.length), 1);

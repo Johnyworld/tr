@@ -876,6 +876,8 @@ export const scenarioFileSchema = z
         flee_moves: z.array(id).min(1),
         /** 갇혔을 때 빼앗기는 물건 종류 (돌려받으면 돌아온다) */
         confiscate: z.array(z.string()).default(["weapon", "ammo"]),
+        /** 종류와 상관없이 빼앗는 물건 (빗장을 딸 수 있는 철사 등, 플레이 테스트 13) */
+        confiscate_items: z.array(z.string()).default([]),
         /** 탈출: 갇힌 구역에서 옮겨 가려면 이 판정 중 하나를 무거운 위험으로 */
         escape_moves: z.array(id).min(1),
         /** 탈출의 빈틈을 기다리는 시간 (시간, [최소, 최대]). 실패할 때마다 감시가 심해져 다음 탈출 판정 -1 (플레이 테스트 12: 탈옥에 시간도 대가도 없었다) */
@@ -1596,6 +1598,8 @@ export const scenarioFileSchema = z
     /** 스토리렛 발동 간격 (기획서 10.3). 마지막 스토리렛 뒤 이만큼 지나야 다음 것이 열리고, 열린 것은 이만큼 지나면 지나간다 */
     /** 임무의 판정 조건에서 서로 바꿔 쓸 수 있는 판정 묶음 (플레이 테스트 13: 교섭 조건을 매력 낮은 사람이 넘기지 못했다. 으름장으로 끝낸 흥정도 흥정이다) */
     mission_move_groups: z.array(z.array(id).min(2)).default([]),
+    /** 공통 규칙 5 (rules/rest.ts): 최근에 나온 것이 쉬는 날수. cast 이야기 배역, mission 받은 일감, alarm 무리마다의 경보 이야기 */
+    rest: z.strictObject({ cast: z.number().min(0).optional(), mission: z.number().min(0).optional(), alarm: z.number().min(0).optional() }).default({}),
     storylet_pacing: z
       .strictObject({
         min_gap_hours: z.number().min(0),

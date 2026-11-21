@@ -12,7 +12,8 @@ import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
 import { setResolve, stepResolve } from "./resolve.ts";
-import { capturePlayer, markMissionSpotted, releasePlayer } from "./captivity.ts";
+import { capturePlayer, releasePlayer } from "./captivity.ts";
+import { onSpotted, threatStaysOnMiss } from "../rules/consequence.ts";
 import { rankName } from "../game/ranks.ts";
 import { exposeToFatigue } from "./fatigue.ts";
 import { barrierRise, baseInfestation, infestationOf } from "../game/infestation.ts";
@@ -304,7 +305,7 @@ export const resolveStorylet = defineTool({
       const now = ctx.store.getState();
       const left: string[] = [];
       // 위협 이야기(겁을 주는 이야기·매복)를 실패하면 위협은 장면에 남는다: 이어서 맞서거나 달아난다 (플레이 테스트 13: 들켰는데 배역이 빠지고 아무 일도 없었다)
-      const threatStays = outcome === "miss" && ((a.storylet.fright ?? 0) > 0 || !!a.storylet.ambush);
+      const threatStays = threatStaysOnMiss(ctx.content, a.storylet.id, outcome);
       const stayed: string[] = [];
       for (const [key, id] of Object.entries(a.cast)) {
         if (threatStays && now.scene.present.includes(id) && !now.companions.includes(id) && !now.characters[id]?.dead) {
@@ -1124,7 +1125,7 @@ export function runAlarm(ctx: ToolContext, move: string): ToolDisplayEvent[] {
   if (pausedWhileHeld(state, "alarm")) return [];
   if (!hostileHere(ctx)) return [];
   const out = runTagEvent(ctx, rule.tag);
-  const spotted = out.length ? markMissionSpotted(ctx) : null;
+  const spotted = out.length ? onSpotted(ctx, state.zones[state.playerZone ?? ""]?.owner ?? null).join(" ") || null : null;
   if (spotted) out.push({ type: "belief", fact: "들켰다. 들키지 않아야 하는 임무였다", sourceLabel: BELIEF_SOURCE_LABELS.seen, note: spotted });
   return out;
 }

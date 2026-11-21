@@ -7,8 +7,8 @@
   urgent: true
   tags: [alarm]
   repeatable: true
-  # 같은 경보가 글자까지 같게 되풀이되지 않게 사흘 쉰다. 그사이 들키면 al_patrol_any가 받는다 (플레이 테스트 13)
-  cooldown_days: 3
+  # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
+  cooldown_days: 1
   when:
     zone_owner: [other]
     owners: [faction_a]
@@ -60,8 +60,8 @@
   urgent: true
   tags: [alarm]
   repeatable: true
-  # 같은 경보가 글자까지 같게 되풀이되지 않게 사흘 쉰다. 그사이 들키면 al_patrol_any가 받는다 (플레이 테스트 13)
-  cooldown_days: 3
+  # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
+  cooldown_days: 1
   when:
     zone_owner: [other]
     owners: [faction_b]
@@ -112,8 +112,8 @@
   urgent: true
   tags: [alarm]
   repeatable: true
-  # 같은 경보가 글자까지 같게 되풀이되지 않게 사흘 쉰다. 그사이 들키면 al_patrol_any가 받는다 (플레이 테스트 13)
-  cooldown_days: 3
+  # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
+  cooldown_days: 1
   when:
     zone_owner: [other]
     owners: [faction_c]
@@ -166,8 +166,8 @@
   urgent: true
   tags: [alarm]
   repeatable: true
-  # 같은 경보가 글자까지 같게 되풀이되지 않게 사흘 쉰다. 그사이 들키면 al_patrol_any가 받는다 (플레이 테스트 13)
-  cooldown_days: 3
+  # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
+  cooldown_days: 1
   when:
     zone_owner: [other]
     owners: [faction_d]
@@ -218,8 +218,8 @@
   urgent: true
   tags: [alarm]
   repeatable: true
-  # 같은 경보가 글자까지 같게 되풀이되지 않게 사흘 쉰다. 그사이 들키면 al_patrol_any가 받는다 (플레이 테스트 13)
-  cooldown_days: 3
+  # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
+  cooldown_days: 1
   when:
     zone_owner: [other]
     owners: [faction_e]
@@ -275,8 +275,8 @@
   urgent: true
   tags: [alarm]
   repeatable: true
-  # 같은 경보가 글자까지 같게 되풀이되지 않게 사흘 쉰다. 그사이 들키면 al_patrol_any가 받는다 (플레이 테스트 13)
-  cooldown_days: 3
+  # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
+  cooldown_days: 1
   when:
     zone_owner: [other]
     owners: [faction_y]

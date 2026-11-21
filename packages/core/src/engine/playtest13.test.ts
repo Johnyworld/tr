@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 import { activeMissionOf, evaluateMission, pickDailyOffers, recentSetback } from "../game/missions.ts";
 import { stanceOf } from "../game/fame.ts";
 import { createSeededRng } from "../rng.ts";
-import { pickCast, storyletAllowed } from "../story/storylets.ts";
+import { pickCast, storyletAllowed, storyletWindow } from "../story/storylets.ts";
+import { disposition } from "../sim/war.ts";
+import { capturePlayer, releasePlayer } from "./captivity.ts";
+import { issueSpare } from "./armory.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { maybeInfect } from "./body.ts";
@@ -466,5 +469,53 @@ describe("설계: 다짐 (플레이 테스트 13 뒤 정한 것)", () => {
     if (!r0) return;
     w.executeTool("take_action", act());
     expect(currentResolve(w.state())!.stage ?? 0).toBe(0);
+  });
+});
+
+describe("공통 규칙 2단계 (플레이 테스트 13 뒤 정한 것)", () => {
+  const enemyBase = (w: ReturnType<typeof world>) => {
+    const mine = w.state().characters[w.state().playerId]!.factionId;
+    return Object.values(content.locations).find((l) => l.kind === "base" && l.owner && l.owner !== mine && w.state().factions[l.owner])!;
+  };
+
+  it("붙잡히면 그 무리가 우리 무리를 보는 태도가 한 단계 내려가고, 들킨 일은 침입 행적으로 남는다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const base = enemyBase(w);
+    const own = w.state().characters[w.state().playerId]!.factionId!;
+    const before = disposition(content, base.owner!, own, w.state());
+    capturePlayer(ctx, base.owner!, base.id);
+    expect(disposition(content, base.owner!, own, w.state())).toBe(Math.max(-3, before - 1));
+    expect(Object.values(w.state().deeds).some((d) => d.tags.includes("trespass"))).toBe(true);
+  });
+
+  it("붙잡혀 빼앗기고 빠져나온 뒤 맨손으로 우리 거점에 오면 무기고가 근접 무기를 내준다 (한 번)", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const home = w.state().playerZone!;
+    const base = enemyBase(w);
+    ctx.store.append({ type: "zone_moved", from: home, to: base.id });
+    capturePlayer(ctx, base.owner!, base.id);
+    releasePlayer(ctx, false);
+    ctx.store.append({ type: "zone_moved", from: base.id, to: home });
+    const me = () => w.state().characters[w.state().playerId]!;
+    for (const [id, n] of Object.entries(me().inventory)) if (content.items[id]?.weapon) ctx.store.append({ type: "item_consumed", holder: me().id, itemId: id, quantity: n });
+    expect(issueSpare(ctx).length).toBe(1);
+    expect(Object.keys(me().inventory).some((id) => !!content.items[id]?.weapon)).toBe(true);
+    expect(issueSpare(ctx).length).toBe(0);
+  });
+
+  it("갇힌 뒤 1시간이 지나면 이야기 창이 열린다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const base = enemyBase(w);
+    ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: base.id });
+    const s0 = structuredClone(w.state());
+    s0.lastStoryletAt = s0.time - 10;
+    s0.runStartedAt = s0.time - 10000;
+    capturePlayer(ctx, base.owner!, base.id);
+    const s = { ...structuredClone(w.state()), lastStoryletAt: s0.lastStoryletAt, runStartedAt: s0.runStartedAt };
+    expect(storyletWindow(s, content, s.time + 30)).not.toBe("open");
+    expect(storyletWindow(s, content, s.time + 70)).toBe("open");
   });
 });

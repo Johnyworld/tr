@@ -65,6 +65,8 @@ export const DEED_TAGS = [
   "betrayal",
   "selfishness",
   "enemy_sympathy",
+  /** 남의 땅에 몰래 들어갔다 들켰다 (플레이 테스트 13: [거짓말]로 남았다). 듣는 사람의 마음은 움직이지 않고 기록만 남는다. 그 무리와의 사이는 공통 규칙 3이 바꾼다 */
+  "trespass",
 ] as const;
 export type DeedTag = (typeof DEED_TAGS)[number];
 export const deedTagSchema = z.enum(DEED_TAGS);
@@ -83,6 +85,7 @@ export const DEED_TAG_LABELS: Record<DeedTag, string> = {
   betrayal: "배신",
   selfishness: "제 몫 챙기기",
   enemy_sympathy: "적에게 호의",
+  trespass: "침입",
 };
 
 /**
@@ -107,6 +110,7 @@ export const TAG_RULES: Record<DeedTag, TagRule> = {
   betrayal: { dim: "loyalty", sign: -1, base: 1, axes: ["trust", "affection"] },
   selfishness: { dim: "self_interest", sign: 1, axes: ["respect"] },
   enemy_sympathy: { dim: "loyalty", sign: -1, axes: ["trust"] },
+  trespass: { sign: -1, axes: [] },
 };
 
 /** 정보 출처별 영향력 (기획서 8.4: 직접 목격 > 전해 들음 > 소문) */

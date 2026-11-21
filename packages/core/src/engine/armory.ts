@@ -2,7 +2,8 @@ import { josa } from "../text.ts";
 import type { Content } from "../content/schemas.ts";
 import type { MissionInstance } from "../game/missions.ts";
 import { autoEquip, equippedItem } from "./gear.ts";
-import type { ToolContext } from "./toolkit.ts";
+import { lastFreedAt, playerHeld } from "../rules/held.ts";
+import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 /**
  * 무기고 (기획서 4.8): 무장이 필요한 작전에 무리가 무기·탄약을 빌려주고, 임무가 끝나면 거둬들인다.
@@ -77,4 +78,26 @@ export function returnArmory(ctx: ToolContext, missionId: string, options: { exc
     parts.push(`${josa(lost.join(", "), "을/를")} 돌려주지 못했다. 공적 -1.`);
   }
   return parts.join(" ");
+}
+
+/**
+ * 붙잡혀 무기를 다 빼앗기고 풀려난 뒤 우리 거점에 오면 무기고가 근접 무기 하나를 내준다 (풀려날 때마다 한 번, 플레이 테스트 13: 붙잡혀 빼앗긴 뒤 끝까지 맨손).
+ * 시간이 흐른 뒤마다 (runAfterTimeAdvance)
+ */
+export function issueSpare(ctx: ToolContext): ToolDisplayEvent[] {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const me = state.characters[state.playerId];
+  if (!me || me.dead || !me.factionId || playerHeld(state)) return [];
+  const spare = content.factions[me.factionId]?.armory?.spare;
+  const zone = state.playerZone;
+  if (!spare || !zone || content.locations[zone]?.kind !== "base" || state.zones[zone]?.owner !== me.factionId) return [];
+  const freed = lastFreedAt(state);
+  if (freed === null || (state.spareIssuedAt !== null && state.spareIssuedAt >= freed)) return [];
+  if (Object.entries(me.inventory).some(([id, n]) => n > 0 && !!content.items[id]?.weapon)) return [];
+  store.append({ type: "item_granted", to: me.id, itemId: spare, quantity: 1 });
+  store.append({ type: "armory_spare_issued" });
+  autoEquip(ctx, me.id);
+  const fact = `맨손으로 돌아오자 무기고에서 ${josa(nameOf(content, spare), "을/를")} 내줬다`;
+  return [{ type: "belief", fact, sourceLabel: "", note: `${fact} (붙잡혀 빼앗긴 뒤 처음 돌아왔을 때 한 번).` }];
 }

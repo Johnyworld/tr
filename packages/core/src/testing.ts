@@ -238,6 +238,7 @@ export const TEST_SCENARIO: Scenario = {
     ],
   },
   mission_move_groups: [],
+  rest: {},
   storylet_pacing: { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {}, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 },
   consumables: {},
   speech: {

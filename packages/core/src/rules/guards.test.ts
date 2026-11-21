@@ -35,6 +35,10 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
     expect(offenders(/\.lastFreedAt\b/, ["game/state.ts", "rules/blame.ts", "rules/held.ts"])).toEqual([]);
   });
 
+  it("치료 (engine/care/slots.ts): 오늘 돌봄을 받았는지는 care/slots.ts로만 읽는다", () => {
+    expect(offenders(/\b(lastHealerDay|lastAidDay|healerSnap|aidSnap)\b/, ["game/state.ts", "engine/care/slots.ts"])).toEqual([]);
+  });
+
   it("규칙 7 (본 대로): 주인공이 본 땅 주인은 rules/knowledge.ts로만 읽는다", () => {
     expect(offenders(/\bzoneSeen\b/, ["game/state.ts", "rules/knowledge.ts"])).toEqual([]);
   });

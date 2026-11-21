@@ -348,6 +348,22 @@ describe("균형: 치료 값 (플레이 테스트 13 뒤 정한 것)", () => {
   });
 });
 
+describe("치료 (12-236)", () => {
+  it("값을 받지 않으면 까닭을 한 줄 알린다", () => {
+    const w = world("role_a_grunt");
+    const me = () => w.state().characters[w.state().playerId]!;
+    w.state().scene.present.push("a_chaewon");
+    me().conditions.harm = "light";
+    const out = w.executeTool("take_action", { intent: "치료를 받는다", treatment: { item: null, target: null, pay: null } });
+    expect(out.ok, out.ok ? "" : out.error).toBe(true);
+    expect(out.ok ? out.resultText : "").toMatch(/값을 받지 않았다/);
+  });
+
+  it("버들마을과 나루상단에도 치료사가 있다", () => {
+    for (const f of ["faction_b", "faction_e"]) expect(Object.values(content.npcs).some((n) => n.healer && n.faction === f)).toBe(true);
+  });
+});
+
 describe("균형: 진급·공적·레벨 (플레이 테스트 13 뒤 정한 것)", () => {
   it("판정 하나에 1시간 이하인 짧은 일감의 완수는 공적 +2, 판정이 둘이면 +3", () => {
     const short = { requirements: [{ check: "first_aid", min: "partial" }, { activity: "treat", minutes: 60 }], progress: [1, 60], deadline: 100 } as never;

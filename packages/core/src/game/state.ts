@@ -569,6 +569,11 @@ export function createGameSchemas(s: Scenario) {
       .strictObject({
         lastChangeAt: z.record(z.string(), z.number().int()),
         lastHealerDay: z.record(z.string(), z.number().int()),
+        /** 주인공의 응급처치·간호를 마지막으로 한 날 (치료사 칸과 따로, engine/care/slots.ts) */
+        lastAidDay: z.record(z.string(), z.number().int()).default({}),
+        /** 그 돌봄 직후의 몸 상태 (그 뒤로 상처가 깊어졌으면 같은 날 다시 받는다) */
+        healerSnap: z.record(z.string(), z.record(z.string(), z.string())).default({}),
+        aidSnap: z.record(z.string(), z.record(z.string(), z.string())).default({}),
         /** 트랙별로 마지막으로 바뀐(또는 출혈이 부상을 키운) 때: "인물:트랙" → 시각 (12-91) */
         trackAt: z.record(z.string(), z.number().int()).default({}),
         /** 감염을 늦추는 약(항생제)이 듣는 하루: 인물 → 날 (그날로 넘어가는 하루치 진행에 듣는다) (12-106) */
@@ -576,7 +581,7 @@ export function createGameSchemas(s: Scenario) {
         /** 약 덕분에 감염이 멈춘 마지막 날: 인물 → 날. 멈춘 다음 날은 진행한다 (절반 속도) */
         heldDay: z.record(z.string(), z.number().int()).default({}),
       })
-      .default({ lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} }),
+      .default({ lastChangeAt: {}, lastHealerDay: {}, lastAidDay: {}, healerSnap: {}, aidSnap: {}, trackAt: {}, slowDay: {}, heldDay: {} }),
     /** 오늘의 날씨 (12-3) */
     weather: z.strictObject({ day: z.number().int(), id: z.string() }).nullable().default(null),
     /** 내일의 날씨 (E2: 하루 전에 정해 낌새로 알린다) */
@@ -1246,7 +1251,7 @@ export const EMPTY_STATE: GameState = {
   trustDroppedWhy: {},
   disobedienceAt: {},
   helplessAt: null,
-  recovery: { lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} },
+  recovery: { lastChangeAt: {}, lastHealerDay: {}, lastAidDay: {}, healerSnap: {}, aidSnap: {}, trackAt: {}, slowDay: {}, heldDay: {} },
   weather: null,
   forecast: null,
   recentClashes: [],
@@ -2162,7 +2167,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.fatal) target.dead = true;
       if (event.harmTrack) next.recovery.lastChangeAt[event.targetId] = state.time;
       next.recovery.trackAt = { ...next.recovery.trackAt, [`${event.targetId}:${event.track}`]: state.time };
-      if (event.by === "healer") next.recovery.lastHealerDay[event.targetId] = event.day;
+      if (event.by === "healer") {
+        next.recovery.lastHealerDay[event.targetId] = event.day;
+        next.recovery.healerSnap = { ...next.recovery.healerSnap, [event.targetId]: { ...target.conditions } };
+      }
+      if (event.by === "aid") {
+        next.recovery.lastAidDay = { ...next.recovery.lastAidDay, [event.targetId]: event.day };
+        next.recovery.aidSnap = { ...next.recovery.aidSnap, [event.targetId]: { ...target.conditions } };
+      }
       break;
     }
     case "infection_slowed":
@@ -2178,7 +2190,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (target.dead) throw new Error("사망한 캐릭터는 낫지 않습니다.");
       target.conditions[event.track] = event.to;
       next.recovery.lastChangeAt[event.targetId] = state.time;
-      if (event.by === "healer") next.recovery.lastHealerDay[event.targetId] = event.day;
+      if (event.by === "healer") {
+        next.recovery.lastHealerDay[event.targetId] = event.day;
+        next.recovery.healerSnap = { ...next.recovery.healerSnap, [event.targetId]: { ...target.conditions } };
+      }
+      if (event.by === "aid") {
+        next.recovery.lastAidDay = { ...next.recovery.lastAidDay, [event.targetId]: event.day };
+        next.recovery.aidSnap = { ...next.recovery.aidSnap, [event.targetId]: { ...target.conditions } };
+      }
       break;
     }
     case "character_died":

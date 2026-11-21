@@ -707,9 +707,9 @@ search_lore: { skill: history, bonus: 1 }
 symptoms:
   # 열 묶음은 질병·감염·추위가 같이 쓴다 (원인을 숨긴다, 12-74). 그래서 hint도 원인을 가리지 않는다. 12-193: 질병·감염의 첫 증상은 몸살 기운, 추위의 첫 증상은 추움 (12-194에 나눔)
   - { id: cold_chill, label: 추움, group: fever, penalty: -1, hint: "몸이 식었다. 불 곁이나 따뜻한 데서 쉬면 풀린다" }
-  - { id: chill, label: 몸살 기운, group: fever, penalty: -1, hint: "열 기운이 돈다. 앓는 병이면 잘 먹고 따뜻하게 자면 낫고, 해열제가 듣는다" }
-  - { id: shiver, label: 오한, group: fever, penalty: -2, hint: "몸이 떨린다. 추위라면 불 곁에서 녹이고, 앓는 병이면 잘 먹고 따뜻하게 자면 낫는다" }
-  - { id: high_fever, label: 고열, group: fever, penalty: -3, hint: "열이 높다. 더 깊어지면 몸이 상한다" }
+  - { id: chill, label: 몸살 기운, group: fever, penalty: -1, hint: "열 기운이 돈다. 앓는 병이면 잘 먹고 따뜻하게 자면 낫고, 해열제가 듣는다. 감염체에게 다친 적이 있다면 혈청만 듣는다" }
+  - { id: shiver, label: 오한, group: fever, penalty: -2, hint: "몸이 떨린다. 추위라면 불 곁에서 녹이고, 앓는 병이면 잘 먹고 따뜻하게 자면 낫는다. 감염체에게 다친 적이 있다면 혈청만 듣는다" }
+  - { id: high_fever, label: 고열, group: fever, penalty: -3, hint: "열이 높다. 더 깊어지면 몸이 상한다. 감염체에게 다친 적이 있다면 혈청만 듣는다" }
   - { id: pain, label: 경상, group: pain, penalty: -1 }
   - { id: severe_pain, label: 중상, group: pain, penalty: -2 }
   - { id: agony, label: 치명상, group: pain, penalty: -3 }

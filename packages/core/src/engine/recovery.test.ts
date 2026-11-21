@@ -6,6 +6,8 @@ import type { Rng } from "../rng.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { TEST_CONTENT } from "../testing.ts";
 import { describeZonePeople } from "./context.ts";
+import { changeCondition } from "./body.ts";
+import { CARE_BY, careUsedToday } from "./care/slots.ts";
 import { executeTool } from "./tools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 
@@ -71,6 +73,31 @@ describe("치료", () => {
     const again = executeTool("take_action", act({ treatment: { item: null } }), env.ctx);
     expect(again.ok ? again.resultText : again.error).toContain("오늘은 이미 치료를 받았다");
     expect(harm(env)).toBe("light");
+  });
+
+  it("같은 날이라도 치료 뒤 더 다치면 치료사에게 다시 받는다 (플레이 테스트 13, 12-236)", () => {
+    const env = setup();
+    wound(env);
+    executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, env.ctx);
+    executeTool("take_action", act({ treatment: { item: null } }), env.ctx);
+    expect(harm(env)).toBe("light");
+    expect(careUsedToday(env.store.getState(), env.content, "player", "healer")).toBe(true);
+    changeCondition(env.ctx, "player", "harm", 2, "test", "새 상처");
+    expect(careUsedToday(env.store.getState(), env.content, "player", "healer")).toBe(false);
+    const again = executeTool("take_action", act({ treatment: { item: null } }), env.ctx);
+    expect(again.ok).toBe(true);
+    expect(harm(env)).toBe("serious");
+  });
+
+  it("주인공이 한 응급처치는 그날 치료사의 치료를 막지 않는다 (12-236)", () => {
+    const env = setup();
+    wound(env);
+    changeCondition(env.ctx, "player", "harm", -1, CARE_BY.aid, "붕대");
+    expect(careUsedToday(env.store.getState(), env.content, "player", "aid")).toBe(true);
+    expect(careUsedToday(env.store.getState(), env.content, "player", "healer")).toBe(false);
+    executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, env.ctx);
+    executeTool("take_action", act({ treatment: { item: null } }), env.ctx);
+    expect(harm(env)).toBe("none");
   });
 
   it("다친 데가 없거나 치료에 못 쓰는 아이템이면 낫지 않는다", () => {

@@ -200,3 +200,36 @@
   start_inventory: [radio, ledger]
   playable: false
   zone: b_base
+
+# 버들마을의 치료사 (플레이 테스트 13: 버들마을에 치료사가 없어 중상을 고치러 하얀매 진료소까지 가야 했다). 수술은 못 한다
+- id: b_herbalist
+  name: 오말순
+  alias: 약초 바구니를 든 허리 굽은 할머니
+  faction: faction_b
+  rank: staff
+  occupation: nurse
+  age: 66
+  gender: female
+  look: 허리가 굽었는데 걸음이 빠르다. 손톱 밑이 늘 풀물로 푸르고, 앞치마 주머니마다 말린 약초 다발이 꽂혀 있다.
+  reputation: 버들마을이 생길 때부터 마을의 상처를 봐 온 약초꾼. 칼은 못 대지만 피를 멎게 하고 덧나지 않게 하는 데는 누구보다 낫다. 하얀매 사람들과도 말이 통한다.
+  want: 마을 아이들 가운데 약초를 물려받을 사람 하나
+  fear: 겨울 전에 약초가 바닥나는 것
+  values: { discipline: 0, loyalty: 2, mercy: 3, honesty: 1, self_interest: -1 }
+  traits: [motherly, blunt]
+  voice:
+    style: 느리고 구수한 반말. 다친 사람에게는 더 느려진다. 낯선 사람에게도 "아가"라고 부른다
+    samples:
+      - "아가, 손 치워 봐. 이 정도면 안 죽어. 겁먹는 게 더 탈이야."
+      - "칼 대는 건 진료소 가서 해. 나는 덧나지만 않게 해 줄게."
+  routine: { dawn: 텃밭, morning: 약초 창고, day: 약초 창고, evening: 마을 회관, night: 집 }
+  rules:
+    - 다친 사람이면 어느 무리든 먼저 본다
+    - 칼을 대야 하는 상처는 손대지 않고 진료소로 보낸다
+  knows:
+    - 하얀매 진료소의 수간호사와 오래 알고 지냈다는 것
+    - 남쪽 밭 너머에 해열 약초가 자라는 곳
+  stats: { strength: -1, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: 1, intellect: 1 }
+  skills: { first_aid: 2, survival: 1 }
+  start_inventory: [bandage, bandage]
+  healer: true
+  zone: b_base

@@ -207,3 +207,35 @@
   start_inventory: [water_bottle, dry_ration]
   playable: true
   zone: e_market
+
+# 나루상단의 치료사 (플레이 테스트 13: 장터에 치료사가 없어 구한 짐꾼이 중상 그대로였다). 수술은 못 한다
+- id: e_bonesetter
+  name: 탁기순
+  alias: 장터 끝 천막의 접골사
+  faction: faction_e
+  rank: staff
+  occupation: nurse
+  age: 48
+  gender: male
+  look: 팔뚝이 굵고 손바닥이 넓다. 천막 기둥에 부목과 헝겊이 주렁주렁 걸려 있고, 목에 늘 셈 장부를 걸고 다닌다.
+  reputation: 짐꾼들의 삔 발목과 부러진 팔을 맞춰 주는 접골사. 값은 장부에 꼬박꼬박 적는다. 상단 사람에게는 외상을 준다.
+  want: 장터에 제대로 된 의무실 천막 하나
+  fear: 짐꾼이 다쳐도 일을 쉬지 못하는 것
+  values: { discipline: 1, loyalty: 1, mercy: 1, honesty: 2, self_interest: 2 }
+  traits: [meticulous, calculating]
+  voice:
+    style: 짧고 셈이 분명한 존댓말. 값을 말할 때만 또박또박 끊는다
+    samples:
+      - "뼈는 제자리로 돌아갑니다. 값은 장부로 돌아오고요."
+      - "칼 댈 상처는 저 말고 진료소입니다. 저는 맞추고 묶는 사람이에요."
+  routine: { dawn: 천막, morning: 천막, day: 장터, evening: 천막, night: 천막 }
+  rules:
+    - 값은 장부에 적는다. 상단 사람은 외상, 바깥 사람은 그 자리에서
+    - 칼을 대야 하는 상처는 진료소로 보낸다
+  knows:
+    - 짐꾼들이 어느 길에서 자주 다치는지
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 0, nerve: 1, charm: 0, intellect: 1 }
+  skills: { first_aid: 2, persuade: 1 }
+  start_inventory: [bandage, bandage]
+  healer: true
+  zone: e_market

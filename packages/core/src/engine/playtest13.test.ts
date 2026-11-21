@@ -36,6 +36,10 @@ import { runDailyBody } from "./body.ts";
 import { clothesHere } from "./climate.ts";
 import { runQuarantine } from "./care/quarantine.ts";
 import { afterTimeCaughtUp } from "./turnStart.ts";
+import { resist } from "../rules/damage.ts";
+import { changeCondition } from "./body.ts";
+import { frighten } from "./fear.ts";
+import { pastGiven, unlearnedNote } from "../rules/skill.ts";
 import { formatAgo, START_TIME } from "../rules/time.ts";
 
 /** 긴 판 열 (플레이 테스트 13, docs/playtests/2026-11-20-mcp-13-long.md)의 확실한 버그 */
@@ -574,6 +578,53 @@ describe("GM 부담 A (12-240)", () => {
     const w = world("role_d_medic");
     const out = w.executeTool("take_action", act({ intent: "치료실 당번", activity: { kind: "treat", until: "evening" } }));
     expect(out.ok ? "" : out.error).not.toContain("until을 쓸 수 없습니다");
+  });
+});
+
+describe("GM 부담 B (12-241)", () => {
+  it("B1: 버팀으로 피하면 까닭(레벨)을 적는다", () => {
+    const w = world("role_a_grunt");
+    w.state().characters[w.state().playerId]!.level = 99;
+    const r = resist({ ...w.ctx(), rng: () => 0 }, w.state().playerId, 2);
+    if (r.steps < 2) expect(r.line).toMatch(/몸에 밴 버팀\(레벨 99\)으로 \d단계를 피했다/);
+  });
+
+  it("B2: 같은 순간에는 공포가 한 번만 오른다", () => {
+    const w = world("role_a_grunt");
+    const first = frighten(w.ctx(), 1, "감염체가 나타났다");
+    const second = frighten(w.ctx(), 1, "깜짝 놀람");
+    if (first.lines.length && w.state().characters[w.state().playerId]!.conditions.fear !== "calm") expect(second.lines.join("")).toContain("이미 올랐다");
+  });
+
+  it("B3: 상태의 스킬 줄은 지혈의 예외를 말한다", () => {
+    expect(unlearnedNote(content.scenario)).toContain("못 함이어도");
+  });
+
+  it("B6: 상인을 들이면 결과에 파는 물건이 바로 나온다", () => {
+    const w = world("role_e_porter");
+    const merchant = Object.values(content.npcs).find((n) => n.merchant && n.zone === w.state().playerZone)!;
+    const out = w.executeTool("npc_presence", { npc_id: merchant.id, action: "enter" });
+    expect(out.ok && out.resultText).toContain("파는 물건");
+  });
+
+  it("B7: 분대가 있는 역할은 시작 장면에 분대원이 있다", () => {
+    const w = world("role_a_squad_leader");
+    const squad = content.roles.role_a_squad_leader!.squad ?? [];
+    expect(squad.some((id) => w.state().scene.present.includes(id))).toBe(true);
+  });
+
+  it("B5: 장면 갱신은 바뀐 사람의 카드만 다시 싣는다", () => {
+    const w = world("role_a_squad_leader");
+    w.sceneForGm();
+    const mate = content.roles.role_a_squad_leader!.squad![0]!;
+    changeCondition(w.ctx(), mate, "harm", 1, "test", "긁힘");
+    const update = w.sceneUpdate();
+    expect(update).toContain("그대로인 ");
+  });
+
+  it("B9: 과거 배경이 준 것을 보인다", () => {
+    const past = content.scenario.creation!.pasts.find((p) => p.id === "farmer")!;
+    expect(pastGiven(content, past.id)).toContain("사냥 +1");
   });
 });
 

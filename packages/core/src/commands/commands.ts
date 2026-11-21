@@ -289,6 +289,7 @@ const people: CommandDef = {
             ...p.attitude.map((x) => gaugeLine(x.label, x.value - RELATION_MIN, RELATION_MAX - RELATION_MIN, `${x.word} ${signed(x.value)}`)),
           ]
         : ["아직 직접 만나 본 적이 없습니다. 태도는 만나 봐야 압니다."]),
+      ...(p.offers.length ? ["", ...p.offers] : []),
       ...(p.facts.length ? ["", "이 인물에 대해 아는 것", ...p.facts.map((b) => `  [${b.source}] ${b.fact}`)] : []),
     ].join("\n");
   },

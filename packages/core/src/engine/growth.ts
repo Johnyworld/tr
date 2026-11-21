@@ -3,12 +3,13 @@ import { occupationOf } from "../game/occupation.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import { xpMultiplier } from "./traits.ts";
 import { dayOf } from "../rules/time.ts";
-import { learnedSkill, moveOf, raiseCost, skillTierLabel } from "../scenario/scenario.ts";
+import { moveOf, raiseCost, skillTierLabel } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import { z } from "zod";
 import { idEnum } from "../scenario/schema.ts";
 import { moveIds } from "../scenario/scenario.ts";
 import type { ToolContext, ToolOutcome } from "./toolkit.ts";
+import { learned } from "../rules/skill.ts";
 
 /**
  * 경험치와 레벨업 (기획서 4.2). 수치는 시나리오 `growth`. 없으면 성장하지 않는다.
@@ -103,7 +104,7 @@ export function learnSkill(input: { skill: string }, ctx: ToolContext): ToolOutc
   if (!player || player.dead) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
   const move = moveOf(s, input.skill);
   if (!move) return { ok: false, error: `알 수 없는 스킬: ${input.skill}` };
-  const from = learnedSkill(s, player.skills, input.skill);
+  const from = learned(s, player.skills, input.skill);
   if (from === null) return { ok: false, error: `${josa(move.label, "은/는")} 전문 기술이라 먼저 배워야 한다. 그 스킬을 익힌 사람(+1 이상)에게 배운다 (take_action.lesson).` };
   if (from >= s.ranges.skill.max) return { ok: false, error: `${josa(move.label, "은/는")} 이미 최고 단계다.` };
   const cost = raiseCost(s, from);
@@ -138,7 +139,7 @@ export function skillLines(s: Scenario, skills: Partial<Record<string, number>>)
   const groups = new Map<string, string[]>();
   for (const m of s.moves) {
     const key = m.category ?? "스킬";
-    const value = learnedSkill(s, skills, m.id);
+    const value = learned(s, skills, m.id);
     const list = groups.get(key) ?? [];
     list.push(`${m.label} ${value === null ? "못 함" : signed(value)}`);
     groups.set(key, list);

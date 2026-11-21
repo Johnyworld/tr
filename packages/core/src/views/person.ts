@@ -6,6 +6,7 @@ import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } 
 import type { GameState } from "../game/state.ts";
 import { rankName } from "../game/ranks.ts";
 import { formatAgo } from "../rules/time.ts";
+import { personFactLines, personFacts } from "../engine/personFacts.ts";
 
 /**
  * 한 인물에 대해 플레이어가 아는 것 (?인물 이름, 시트의 이름 툴팁이 같이 쓴다).
@@ -22,6 +23,8 @@ export type PersonProfile = {
   /** 마지막으로 만났을 때의 태도. 직접 만나기 전이면 null */
   attitude: { axis: string; label: string; word: string; value: number }[] | null;
   facts: { source: string; fact: string }[];
+  /** 만나 본 사람의 파는 물건·가르칠 수 있는 것 (사람 정보, 12-241). 꺼내지 않은 부탁은 보이지 않는다 */
+  offers: string[];
 };
 
 export function personProfile(state: GameState, content: Content, id: string): PersonProfile {
@@ -46,5 +49,6 @@ export function personProfile(state: GameState, content: Content, id: string): P
       .filter((b) => (named && b.fact.includes(c.name)) || b.fact.includes(alias))
       .slice(-5)
       .map((b) => ({ source: `${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}`, fact: b.fact })),
+    offers: met ? personFactLines(personFacts(state, content, id, false)).map((l) => l.replace(" (take_action.lesson)", "")) : [],
   };
 }

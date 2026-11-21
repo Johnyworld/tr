@@ -79,6 +79,7 @@ import { cargoOf } from "../rules/entrusted.ts";
 import { ownedBy } from "../rules/home.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
+import { reduceHarm } from "../rules/damage.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -201,7 +202,7 @@ export function createTakeActionSchema(s: Scenario) {
       .default("none")
       .describe(
         s.body?.fear
-          ? "이번 턴에 플레이어 캐릭터가 겁먹을 일이 드러났는데 이야기·인물 데이터로 잡히지 않는 순간일 때만: startle 깜짝 놀람(기습, 갑자기 튀어나옴), dread 압도됨(떼, 끔찍한 광경). 오를지·얼마나는 시스템이 정한다. 대부분 none"
+          ? "이번 턴에 플레이어 캐릭터가 겁먹을 일이 드러났는데 이야기·인물 데이터로 잡히지 않는 순간일 때만: startle 깜짝 놀람(기습, 갑자기 튀어나옴), dread 압도됨(떼, 끔찍한 광경). 오를지·얼마나는 시스템이 정한다. 무서운 것을 장면에 들여(spawn_extra·npc_presence) 이미 공포가 올랐으면 고르지 않는다 (같은 순간에는 다시 오르지 않는다). 대부분 none"
           : "이 월드에서는 쓰지 않는다. none",
       ),
     fright_tags: z
@@ -672,7 +673,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       ctx,
       // 응급처치로 피를 멎게 하는 것은 누구나 한다 (배우지 않았으면 미숙 -1, 플레이 테스트 12: 붕대로도 지혈하지 못했다)
       // 수색·먹을 것 구하기의 상황 보정 (12-220): 곳의 넉넉함, 다시 뒤짐. 들킬까 숨는 판정(exposed)에는 붙이지 않는다
-      { target: input.target, forMission, noTools: !!input.train, forage: input.forage, unlearnedAs: input.treatment && input.check.move === scenario.wounds?.staunch_move ? -1 : undefined, dest: escapeAttempt ? null : input.move_to,
+      { target: input.target, forMission, noTools: !!input.train, forage: input.forage, purpose: input.treatment ? "staunch" : null, dest: escapeAttempt ? null : input.move_to,
         // 치료 판정은 쓰는 물건의 보정만 (플레이 테스트 12: 붕대를 썼는데 "+1(구급상자)", 물건 없이도 붙었다)
         // 치료 없이 건 응급처치 판정도 도구 없이 (플레이 테스트 13: treatment 없는 응급처치에 "+1(붕대)")
         ...(input.treatment ? { toolItem: input.treatment.item ?? null } : input.check.move === scenario.wounds?.staunch_move ? { toolItem: null } : {}),
@@ -1295,22 +1296,20 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   }
   // 한 판정으로 오르는 부상은 2단계까지 (플레이 테스트 13: 무거운 위험 + 상대의 몫으로 한 번에 경상 → 치명상)
   const raw = Math.min(MAX_HARM_STEPS, Math.max(1, base + (against?.delta ?? 0)));
-  // 입은 방어구가 피해를 줄인다 (기획서 4.8). 맞서는 상대(사람·짐승·감염체)가 낸 상처만: 삐끗·덫·무너진 선반은 막지 않는다 (플레이 테스트 11: 덧댄 갑옷이 허리 삐끗을 막다 4시간 만에 부서졌다)
+  // 방어구·버팀·곁의 사람은 공통 규칙 13 (rules/damage.ts). 방어구는 맞서는 상대(사람·짐승·감염체)가 낸 상처만: 삐끗·덫·무너진 선반은 막지 않는다 (플레이 테스트 11)
   const attack = !!content.scenario.wounds?.kinds.find((k) => k.id === kind)?.attack;
-  const absorbed = (opponentId && kind !== "other") || attack ? armorAbsorb(ctx, raw) : { steps: raw, lines: [] };
+  const reduced = reduceHarm(ctx, {
+    who: target.id,
+    raw,
+    attack: (!!opponentId && kind !== "other") || attack,
+    shareable: !!opponentId || fightLike,
+    cause,
+    track: track.id,
+    hurt: (who, n, why) => changeCondition(ctx, who, track.id, n, "enemy", why)?.line ?? null,
+  });
+  const absorbed = { steps: reduced.armored ? 0 : raw, lines: reduced.lines };
   if (against) absorbed.lines.unshift(`${against.line}.`);
-  // 버팀 (12-109): 레벨만큼 단계를 피한다
-  let steps = resistSteps(content.scenario, target.level ?? 1, absorbed.steps, ctx.rng);
-  if (steps < absorbed.steps) absorbed.lines.push(`${josa(target.name, "은/는")} ${absorbed.steps - steps}단계를 버텨 냈다.`);
-  // 곁의 사람이 위험을 나눈다 (공통 규칙 8): 상대가 있는 판정에서 2단계를 다치게 되면 곁의 사람 하나가 1단계를 대신 받는다
-  if (steps >= 2 && (opponentId || fightLike)) {
-    const mate = shareHarmWith(state, content);
-    if (mate) {
-      steps -= 1;
-      const hurt = changeCondition(ctx, mate, track.id, 1, "enemy", `${cause} (막아서다)`);
-      absorbed.lines.push(`${josa(playerCalls(state, content, mate), "이/가")} 막아서다 대신 다쳤다.${hurt?.line ? ` ${hurt.line}` : ""}`);
-    }
-  }
+  const steps = reduced.steps;
   const from = target.conditions[track.id] ?? track.levels[0]!.id;
   if (steps <= 0) {
     // 방어구가 다 막았다 (기획서 4.8). 이야기가 "다친다"를 다시 붙이지 않는다

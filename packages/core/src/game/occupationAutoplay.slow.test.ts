@@ -48,6 +48,6 @@ describe("직분 자동 플레이", () => {
         seen ||= Object.keys(stats.storyletsFired).some((id) => content.storylets[id]?.tags.includes(tag));
       }
       expect(seen).toBe(true);
-    }, 60_000);
+    }, 120_000); // 판 넷 (12-238)이라 다른 느린 테스트와 함께 돌면 60초를 넘긴다 (12-241)
   }
 });

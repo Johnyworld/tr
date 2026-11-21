@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Content } from "../content/schemas.ts";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
-import { calmAfterSleep, frighten, runFearDecay } from "./fear.ts";
+import { calmAfterSleep, FEAR_SAME_MOMENT, frighten as frightenNow, runFearDecay } from "./fear.ts";
 import { executeTool } from "./tools.ts";
 import { loadRealContent } from "../testing.ts";
 
@@ -14,6 +14,13 @@ function content(): Content {
   const c = structuredClone(loaded);
   c.scenario.body!.fear!.dark.segments = [];
   return c;
+}
+
+/** 계기마다 다른 순간으로 (같은 순간에는 공포가 한 번만 오른다, 12-241) */
+function frighten(ctx: Parameters<typeof frightenNow>[0], ...rest: [number, string, (readonly string[])?]) {
+  const t = ctx.store.getState().time;
+  ctx.store.append({ type: "time_advanced", activity: "wait", from: t, to: t + FEAR_SAME_MOMENT + 1 });
+  return frightenNow(ctx, ...rest);
 }
 
 function setup(c = content()) {

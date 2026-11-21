@@ -38,6 +38,9 @@ export const FRIGHT_CAUSES = { startle: "깜짝 놀랐다", dread: "두려움에
 /**
  * 주인공의 공포가 오른다. base: 계기가 주는 단계. 버텼으면 그렇다고 알린다 (GM이 서술에 쓴다)
  */
+/** 같은 순간으로 치는 시간 (분): 이 안에 오른 공포는 같은 위협의 것이다 */
+export const FEAR_SAME_MOMENT = 10;
+
 export function frighten(ctx: ToolContext, base: number, cause: string, tags: readonly string[] = []): FearResult {
   const f = rules(ctx);
   const state = ctx.store.getState();
@@ -49,6 +52,12 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
   const fears = new Set(traitsOf(ctx.content, me).flatMap((t) => t.effects.phobia ?? []));
   const phobia = [...tags, ...(dark ? ["dark"] : [])].some((t) => fears.has(t));
   if (base <= 0 && !phobia) return EMPTY;
+  // 공포는 한 위협에 한 번 (12-241, 플레이 테스트 13: 감염체를 들여 오른 공포에 같은 턴 GM의 fright가 한 단계를 더 얹었다):
+  // 같은 순간(FEAR_SAME_MOMENT분 안)에 이미 올랐으면 더 오르지 않는다. 무서운 것이 들어올 때·GM이 고를 때·인물 쪽 일 모두 여기를 거친다
+  const raisedAt = state.recovery.trackAt?.[`${me.id}:${trackOf(ctx.content.scenario, f.track).id}`];
+  if (raisedAt !== undefined && state.time - raisedAt <= FEAR_SAME_MOMENT && levelIndex(ctx, state, me.id, f.track) > 0) {
+    return { lines: [`공포는 이 위협으로 이미 올랐다 (${cause}: 같은 순간에 다시 오르지 않는다).`], displays: [] };
+  }
 
   let steps = base + (phobia ? 1 : 0);
   if (dark) steps += f.dark.steps;

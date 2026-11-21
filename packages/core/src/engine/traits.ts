@@ -1,7 +1,7 @@
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
 import type { Scenario } from "../scenario/schema.ts";
-import { learnedSkill } from "../scenario/scenario.ts";
+import { learned } from "../rules/skill.ts";
 
 /**
  * 트레잇 효과 (기획서 4.6). 어떤 트레잇이 무엇을 하는지는 시나리오 `traits` 데이터, 여기는 효과 종류만 안다.
@@ -34,12 +34,12 @@ export function traitSkillMod(content: Content, c: Character, move: string): num
  * 못 하는 전문 기술(4.2.1)은 스킬 최저값으로 셈한다 (할 수 있는지는 canUseSkill)
  */
 export function effectiveSkill(content: Content, c: Pick<Character, "id" | "skills" | "traits">, move: string): number {
-  return (learnedSkill(content.scenario, c.skills, move) ?? content.scenario.ranges.skill.min) + traitSkillMod(content, c as Character, move);
+  return (learned(content.scenario, c.skills, move) ?? content.scenario.ranges.skill.min) + traitSkillMod(content, c as Character, move);
 }
 
 /** 그 스킬로 판정할 수 있는지 (4.2.1): 누구나 하는 일은 늘, 전문 기술은 배웠을 때만 */
 export function canUseSkill(content: Content, c: Pick<Character, "skills">, move: string): boolean {
-  return learnedSkill(content.scenario, c.skills, move) !== null;
+  return learned(content.scenario, c.skills, move) !== null;
 }
 
 export function xpMultiplier(content: Content, c: Character): number {

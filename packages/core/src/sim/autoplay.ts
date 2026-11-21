@@ -3,7 +3,7 @@ import { heldOf } from "../rules/held.ts";
 import { remainsHere } from "../engine/remains.ts";
 import { waterHere } from "../engine/body.ts";
 import { isCreature } from "../game/kinds.ts";
-import { incapacitatingSymptom, learnedSkill, raiseCost } from "../scenario/scenario.ts";
+import { incapacitatingSymptom, raiseCost } from "../scenario/scenario.ts";
 import { canUseSkill } from "../engine/traits.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import type { Content } from "../content/schemas.ts";
@@ -13,6 +13,7 @@ import { choiceAvailable } from "../story/storylets.ts";
 import { sitsOnCouncil, squadMembers } from "../engine/command.ts";
 import { battleConfig, effectBlocker } from "./battle.ts";
 import type { GameWorld } from "../world/world.ts";
+import { learned } from "../rules/skill.ts";
 
 /**
  * 랜덤 자동 플레이 (기획서 17: 막힘과 밸런스 점검). LLM 없이 tool만 무작위로 부른다.
@@ -144,7 +145,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     const usableMoves = moves.filter((m) => can(m.id));
     // 스킬 포인트가 쌓였으면 할 수 있는 스킬 중 아무거나 올린다 (점수가 모자라면 모아 둔다)
     const raisable = usableMoves.filter((m) => {
-      const v = learnedSkill(content.scenario, me.skills, m.id);
+      const v = learned(content.scenario, me.skills, m.id);
       return v !== null && v < content.scenario.ranges.skill.max && raiseCost(content.scenario, v) <= me.skillPoints;
     });
     if (raisable.length && rng() < 0.8) {

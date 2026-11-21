@@ -23,6 +23,7 @@ import { seasonAt, seasonLabel, seasonOfDay } from "../sim/season.ts";
 import { fill, josa, sentence } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { ownedBy } from "../rules/home.ts";
+import { onOwnLand } from "../rules/home.ts";
 
 /**
  * 하루 단위 전쟁 틱 (기획서 9.2). 시간이 흐른 뒤 날이 바뀌었으면 지난 날만큼(최대 MAX_CATCH_UP_DAYS일) 돌린다.
@@ -317,7 +318,8 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
   }
   return [
     ...zoneLines,
-    `무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`,
+    // 무리 사정은 우리 땅에서만 느낀다 (공통 규칙 11, 12-241: 구시가·진료소에서도 결과마다 실렸다)
+    ...(onOwnLand(state) ? [`무리 사정 (캐릭터가 거점에서 느끼는 것): ${o.own.name} · 분위기 ${o.own.moraleLabel} · 배급 ${o.own.rationLabel}`] : []),
     // 우리 땅에 있을 때만 수군거림으로 드러낸다 (플레이 테스트 12: 다른 무리 거점에서도 "우리 땅의 장면이면"이 실렸다)
     ...(factionTroubles(state, content).length && !!state.playerZone && ownedBy(state, state.playerZone, state.characters[state.playerId]?.factionId)
       ? [

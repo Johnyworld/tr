@@ -1,7 +1,7 @@
 import { checkResolve } from "../engine/resolve.ts";
 import { bindOwnLovers } from "../engine/romance.ts";
 import { objectParticle } from "../engine/scenarioProgress.ts";
-import { addStartFamily, applyBackground, applyStartBonds } from "../engine/background.ts";
+import { addStartFamily, seatStartSquad, applyBackground, applyStartBonds } from "../engine/background.ts";
 import type { HistoryPart } from "../game/background.ts";
 import { autoEquip } from "../engine/gear.ts";
 import { addUnlockNotices, addUnlocks, dismissUnlockNotice, readUnlockNotices, readUnlocks, type UnlockRecord } from "../persistence/unlocks.ts";
@@ -175,6 +175,8 @@ export class WorldManager {
       // 가진 무기를 손에 든다 (기획서 4.8)
       autoEquip(world.ctx(), world.state().playerId);
       runAfterTimeAdvance(world.ctx());
+      // 시작 장면의 분대 (12-241). 첫 시간 처리에서 주인공의 구역이 정해진 뒤에
+      seatStartSquad(world.ctx(), roleOf(world.content, world.state()));
       world.saveSnapshot();
       return world;
     } catch (err) {

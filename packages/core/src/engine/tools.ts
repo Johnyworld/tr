@@ -62,6 +62,7 @@ import { keepByGift, PROMISE_TOOLS } from "./promises.ts";
 import { PROMOTION_TOOLS } from "./promotion.ts";
 import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
+import { personFactLines, personFacts } from "./personFacts.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
 
@@ -234,7 +235,9 @@ const npcPresence = defineTool({
       ok: true,
       resultText:
         input.action === "enter"
-          ? `${josa(name, "이/가")} 장면에 들어왔다. 이 인물의 프로필은 다음 턴 상태에 나타난다. 지금은 외모와 말투만 반영해 서술하라: ${look}${where}`
+          ? `${josa(name, "이/가")} 장면에 들어왔다. 이 인물의 프로필은 다음 턴 상태에 나타난다. 지금은 외모와 말투만 반영해 서술하라: ${look}${where}` +
+            // 같은 턴에 흥정·부탁·배우기를 할 수 있게 요약을 바로 (사람 정보, 12-241)
+            personFactLines(personFacts(store.getState(), content, character.id, true)).map((l) => `\n${l}`).join("")
           : `${josa(name, "이/가")} 장면을 떠났다.`,
       display: { type: "presence", npcName: name, action: input.action },
     };

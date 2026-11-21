@@ -4,7 +4,7 @@ import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
 import { rankName } from "../game/ranks.ts";
 import { describePromotionOffer, offerPromotion } from "./promotion.ts";
-import { harmTrack, incapacitatingSymptom, learnedSkill } from "../scenario/scenario.ts";
+import { harmTrack, incapacitatingSymptom} from "../scenario/scenario.ts";
 import { infestationOf, worstOverrun } from "../game/infestation.ts";
 import { occupationOf } from "../game/occupation.ts";
 import { changeStanding } from "./growth.ts";
@@ -44,6 +44,7 @@ import { itemResource } from "./market.ts";
 import { cargoOf, entrustedHeld } from "../rules/entrusted.ts";
 import { ownedBy } from "../rules/home.ts";
 import { storyTitle } from "./storyletTools.ts";
+import { learned } from "../rules/skill.ts";
 
 const resourceLabel = (s: Scenario, id: string) => s.resources.find((r) => r.id === id)?.label ?? id;
 
@@ -497,7 +498,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const at = (lv: string | undefined) => harm.levels.findIndex((l) => l.id === lv);
     const unfit = !!me && !!unfitFrom && at(me.conditions[harm.id]) >= at(unfitFrom) && at(unfitFrom) >= 0;
     const safeOnly = (state.missionGraceUntil ?? 0) > state.time || unfit;
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learnedSkill(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content), safeOnly);
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learned(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content), safeOnly);
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;

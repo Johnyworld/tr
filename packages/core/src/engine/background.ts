@@ -5,6 +5,8 @@ import { createExtraCharacter } from "./extras.ts";
 import type { ToolContext } from "./toolkit.ts";
 import type { RoleContent } from "../content/schemas.ts";
 import { groupRules, makeFamily, memberLabel, memberTemplate } from "../game/startGroup.ts";
+import { heldOf } from "../rules/held.ts";
+import { npcZoneAt } from "../game/whereabouts.ts";
 
 /**
  * 배경 부품을 세이브의 역사로 남긴다 (기획서 12.6). 새 세계를 만들 때 한 번.
@@ -87,6 +89,20 @@ export function applyBackground(ctx: ToolContext, parts: readonly HistoryPart[])
  * 코드가 주인공 나이에 맞춰 가족 몇 사람을 만들어 그 구역에 둔다. 그 구역 무리의 사람이 되고, 그 무리 사람들은 이름을 안다.
  * 주인공은 가족의 이름을 알지만 어디 있는지는 모른다 (믿음에는 "어디 있는지 모른다"만). 만나면 클리어 목표(reunite)가 찬다
  */
+/**
+ * 시작 장면의 분대 (12-241, 플레이 테스트 13: 시작 장면 글에는 분대원 넷이 앉아 있는데 장면에는 아무도 없어 npc_presence를 네 번 불렀다):
+ * 분대가 있는 역할이면 같은 구역의 분대원을 장면에 둔다
+ */
+export function seatStartSquad(ctx: ToolContext, role: RoleContent | undefined): void {
+  const state = ctx.store.getState();
+  for (const id of role?.squad ?? []) {
+    const c = state.characters[id];
+    const home = ctx.content.npcs[id] ? npcZoneAt(ctx.content.npcs[id]!, state.time) : c?.extra?.zone;
+    if (!c || c.dead || heldOf(c) || home !== state.playerZone || ctx.store.getState().scene.present.includes(id)) continue;
+    ctx.store.append({ type: "npc_entered", npcId: id });
+  }
+}
+
 export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined): void {
   const { store, content, rng } = ctx;
   const family = role?.family;

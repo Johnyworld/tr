@@ -33,6 +33,7 @@ export { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery } f
 import { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery } from "./care/recovery.ts";
 import { ownCount } from "../rules/entrusted.ts";
 import { onOwnLand, ownedBy } from "../rules/home.ts";
+import { resist } from "../rules/damage.ts";
 
 /**
  * 몸 상태 (기획서 4.4, 4.5): 부상 회복, 소모품, 허기, 감염. 수치는 시나리오(recovery, consumables, body)에서 온다.
@@ -52,15 +53,16 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
   // 버팀 (12-109): 나빠지는 단계마다 레벨만큼 피한다. 치트는 그대로
   // 피로는 깨어 있은 시간에서 바로 정해지므로 버티지 않는다 (12-114)
   // 감염은 버티지 못한다 (플레이 테스트 13: 레벨의 버팀이 물림 감염을 소리 없이 막았다. 잠복은 숨은 단계라 알림도 없었다)
-  if (steps > 0 && by !== "cheat" && by !== "fatigue" && by !== "habit" && by !== "put_down" && by !== "infection") {
-    const kept = resistSteps(ctx.content.scenario, character.level ?? 1, steps, ctx.rng);
-    if (kept === 0) {
+  // harm: 공통 규칙 13(rules/damage.ts)으로 이미 셈한 피해라 다시 버티지 않는다
+  if (steps > 0 && by !== "cheat" && by !== "fatigue" && by !== "habit" && by !== "put_down" && by !== "infection" && by !== "harm") {
+    const r = resist(ctx, characterId, steps);
+    if (r.steps === 0) {
       const would = track.levels[Math.min(track.levels.length - 1, index + steps)]!;
       // 숨은 단계로 가는 것(잠복)은 버텨도 알리지 않는다
       const visible = shownLevel(track, would.id).id !== shownLevel(track, track.levels[index]!.id).id;
-      return { line: visible ? `${josa(playerCalls(state, ctx.content, characterId), "은/는")} 버텨 냈다 (${josa(track.label, "이/가")} 나빠지지 않았다).` : "", display: null, died: false };
+      return { line: visible ? `${r.line} (${josa(track.label, "이/가")} 나빠지지 않았다)` : "", display: null, died: false };
     }
-    steps = kept;
+    steps = r.steps;
   }
   const nextIndex = Math.max(0, Math.min(track.levels.length - 1, index + steps));
   if (nextIndex === index) return null;
@@ -683,7 +685,7 @@ export function steadyRoll(ctx: ToolContext, steps: number, cause: string): Stea
   const me = state.characters[state.playerId];
   // 정신을 잃었으면 다잡을 수 없다 (굴리지 않는다)
   if (!rule || !me || me.dead || steps <= 0 || incapacitatingSymptom(ctx.content.scenario, me)) return { steps, outcome: null, displays: [] };
-  const roll = rollPlayerCheck({ move: rule.move, stat: rule.stat, difficulty: "normal", intent: `마음을 다잡는다 (${cause})` }, ctx, { reaction: true, unlearnedAs: 0 });
+  const roll = rollPlayerCheck({ move: rule.move, stat: rule.stat, difficulty: "normal", intent: `마음을 다잡는다 (${cause})` }, ctx, { reaction: true, purpose: "reaction" });
   if (!roll.ok) return { steps, outcome: null, displays: [] };
   const left = roll.outcome === "success" ? 0 : roll.outcome === "partial" ? Math.max(1, steps - 1) : steps;
   return { steps: left, outcome: roll.outcome, displays: [roll.display] };

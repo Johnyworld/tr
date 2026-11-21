@@ -4,9 +4,10 @@ import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { foundCount, searchedToday } from "./scavenge.ts";
 import { seasonAt } from "../sim/season.ts";
 import { josa } from "../text.ts";
-import { learnedSkill, moveLabel } from "../scenario/scenario.ts";
+import { moveLabel } from "../scenario/scenario.ts";
 import { changeCondition } from "./body.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { learned } from "../rules/skill.ts";
 
 /**
  * 먹고 마시기 (기획서 4.5.5, 12-131): 사냥·낚시, 덫, 음식이 상하는 것, 끓이지 않은 물.
@@ -44,7 +45,7 @@ export function forageProblem(ctx: ToolContext, kindId: string): string | null {
 function unlearned(ctx: ToolContext, move: string | undefined): string | null {
   if (!move) return null;
   const state = ctx.store.getState();
-  if (learnedSkill(ctx.content.scenario, state.characters[state.playerId]!.skills, move) !== null) return null;
+  if (learned(ctx.content.scenario, state.characters[state.playerId]!.skills, move) !== null) return null;
   return `${josa(moveLabel(ctx.content.scenario, move), "은/는")} 배우지 않아 할 수 없는 전문 기술이다. 익힌 사람에게 배운다 (take_action.lesson).`;
 }
 

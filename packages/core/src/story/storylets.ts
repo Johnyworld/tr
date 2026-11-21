@@ -6,7 +6,7 @@ import { agendaOf, agendaShowing } from "../engine/agenda.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { currentResolve, resolveTargetName, resolveText } from "../engine/resolve.ts";
 import { closeTo, mournedBy, recentlyDeadComrade } from "../engine/legacy.ts";
-import { incapacitatingSymptom, learnedSkill } from "../scenario/scenario.ts";
+import { incapacitatingSymptom} from "../scenario/scenario.ts";
 import { standingInFaction } from "../game/politics.ts";
 import { fameOf, stanceOf } from "../game/fame.ts";
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
@@ -32,6 +32,7 @@ import { fill, josa, type JosaPair } from "../text.ts";
 import { seasonAt } from "../sim/season.ts";
 import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
 import { ownedBy } from "../rules/home.ts";
+import { learned } from "../rules/skill.ts";
 
 /**
  * 스토리렛 엔진 (기획서 10.3). 조건과 배역은 코드가 판정한다.
@@ -495,7 +496,7 @@ function hasRealChoice(state: GameState, content: Content, s: StoryletContent): 
   const cast = pickCast(state, content, s, null) ?? {};
   const skills = state.characters[state.playerId]?.skills ?? {};
   const open = s.choices.filter((c) => choiceAvailable(state, c, cast));
-  const doable = open.filter((c) => !c.check || learnedSkill(content.scenario, skills, c.check) !== null);
+  const doable = open.filter((c) => !c.check || learned(content.scenario, skills, c.check) !== null);
   if (!doable.length) return false;
   if (doable.length === open.length) return true;
   return doable.length >= 2 || doable.some((c) => !!c.check);

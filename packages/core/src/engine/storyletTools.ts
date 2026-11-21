@@ -21,7 +21,7 @@ import { exposeToCold } from "./climate.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { dayOf, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
-import { harmTrack, learnedSkill } from "../scenario/scenario.ts";
+import { harmTrack} from "../scenario/scenario.ts";
 import { changeCondition, shakeNerves } from "./body.ts";
 import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
@@ -59,6 +59,8 @@ import { leveragesOn } from "./leverage.ts";
 import { commanderOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, DEATH_GUIDE } from "./toolkit.ts";
 import { onOwnLand, ownedBy } from "../rules/home.ts";
+import { reduceHarm } from "../rules/damage.ts";
+import { learned } from "../rules/skill.ts";
 
 /**
  * 스토리렛 연결 (기획서 10.3).
@@ -220,7 +222,7 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
       .filter((c) => choiceAvailable(state, c, a.cast))
       // 배우지 않은 전문 기술의 선택지는 미리 "못 함"으로 (플레이 테스트 12: 고르면 거절돼 남는 길이 하나뿐인 줄 몰랐다)
       .map((c) => {
-        const unable = !!c.check && learnedSkill(content.scenario, state.characters[state.playerId]?.skills ?? {}, c.check) === null;
+        const unable = !!c.check && learned(content.scenario, state.characters[state.playerId]?.skills ?? {}, c.check) === null;
         const tag = !c.check ? "" : unable ? ` [못 함: ${josa(moveLabel(content.scenario, c.check), "을/를")} 배우지 않았다]` : ` [먼저 take_action에서 ${moveLabel(content.scenario, c.check)}(${c.check}) 판정]`;
         return `${c.id} ${maskUnknownNames(state, content, fillStorylet(c.label, vars), { story: true })}${tag}`;
       })
@@ -656,7 +658,12 @@ export function applyEffect(
     const fatal = track.levels.findIndex((l) => l.fatal);
     const steps = Math.min(effect.wound.steps, Math.max(0, (fatal >= 0 ? fatal : track.levels.length) - 1 - index));
     if (steps <= 0) return {};
-    const c = changeCondition(ctx, playerId, track.id, steps, "story", effect.wound.cause);
+    // 피해의 셈은 공통 규칙 13: 맞서는 것이 낸 상처(공격 종류)면 방어구가 막고, 버팀으로 피한다 (12-241: 이야기의 물림은 방어구가 막지 않았다)
+    const attack = !!effect.wound.kind && !!content.scenario.wounds?.kinds.find((k) => k.id === effect.wound.kind)?.attack;
+    const reduced = reduceHarm(ctx, { who: playerId, raw: steps, attack, shareable: false, cause: effect.wound.cause, track: track.id });
+    if (reduced.steps <= 0) return { line: [...reduced.lines, "다치지 않았다."].join(" ") };
+    const c = changeCondition(ctx, playerId, track.id, reduced.steps, "harm", effect.wound.cause);
+    if (c && reduced.lines.length) c.line = [...reduced.lines, c.line].filter(Boolean).join(" ");
     const bleed = c?.display && effect.wound.kind ? bleedFromHarm(ctx, playerId, effect.wound.kind, steps === 1) : null;
     const line = [c?.line, bleed?.line].filter(Boolean).join(" ");
     return line ? { line, display: c?.display ?? undefined } : {};
@@ -715,7 +722,7 @@ export function applyEffect(
     const move = content.scenario.moves.find((m) => m.id === skill);
     if (!move) return {};
     // 못 하던 전문 기술은 배운 상태(최저값)가 된다 (4.2.1)
-    const now = learnedSkill(content.scenario, me.skills, skill);
+    const now = learned(content.scenario, me.skills, skill);
     const max = Math.min(effect.train.max, content.scenario.ranges.skill.max);
     if (now !== null && now >= max) return {};
     const to = now === null ? content.scenario.ranges.skill.min : now + 1;

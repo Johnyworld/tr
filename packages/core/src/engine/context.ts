@@ -67,6 +67,8 @@ import { describeStoryletForGm } from "./storyletTools.ts";
 import { BELIEF_SOURCE_LABELS as SOURCE_LABELS } from "../game/belief.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } from "../game/reputation.ts";
 import { ownedBy } from "../rules/home.ts";
+import { pastGiven, unlearnedNote } from "../rules/skill.ts";
+import { personFactLines, personFacts } from "./personFacts.ts";
 
 /**
  * 정보 필터 (기획서 6.2).
@@ -169,7 +171,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...(occupationOf(content, player)
         ? [`직분: ${occupationTitle(content, player)} (${occupationOf(content, player)!.summary}). 이 일로 평판을 쌓으면 직분 안에서 오른다 (이야기·일감의 결과로만)`]
         : []),
-      ...(player.past ? [`과거 배경: ${player.past.label} — ${player.past.summary} (붕괴 전에 하던 일. 몸에 밴 솜씨와 버릇, 아는 사람과 기억에 묻어난다)`] : []),
+      ...(player.past ? [`과거 배경: ${player.past.label} — ${player.past.summary}${pastGiven(content, player.past.id) ? ` (${pastGiven(content, player.past.id)})` : ""} (붕괴 전에 하던 일. 몸에 밴 솜씨와 버릇, 아는 사람과 기억에 묻어난다)`] : []),
       ...(player.motive ? [`동기: ${player.motive.label} — ${player.motive.summary} (이 사람을 움직이는 것. 장면과 선택, 독백에 묻어나게. 대신 행동을 정하지는 않는다)`] : []),
       ...(state.background.length && state.playerId === "player"
         ? [`지난 일 (세계의 사실, 주인공이 아는 대로): ${state.background.map((e) => describeHistoryPart(content, nameNowKnown(state, e.part))).join(" / ")}`]
@@ -184,7 +186,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
           ]
         : []),
       `능력: ${stats}`,
-      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}. "못 함"은 배우지 않은 전문 기술: 판정할 수 없다): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${canUseSkill(content, player, m.id) ? signed(effectiveSkill(content, player, m.id)) : "못 함"}`).join(", ")}`,
+      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}. ${unlearnedNote(scenario)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${canUseSkill(content, player, m.id) ? signed(effectiveSkill(content, player, m.id)) : "못 함"}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n")],
     ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content), ...describeAmbush(content, state)].filter(Boolean).join("\n")],
@@ -383,6 +385,8 @@ function describeNpcCard(
     ...leverageLines(state, content, npc.id),
     ...[agendaCue(content, state, npc.id)].filter((x): x is string => !!x),
     ...promiseLines(state, content, npc.id),
+    // 가르칠 수 있는 것 (사람 정보, 12-241). 파는 물건은 위의 지닌 것, 부탁은 바로 위 줄
+    ...personFactLines({ ...personFacts(state, content, npc.id, true), sells: [], asks: [] }),
     ...(othersDeeds.length > 0 ? [`이 인물이 들은 남의 일 (이 인물은 사실로 믿는다. 그 사람을 대하는 태도에 반영):\n${othersDeeds.join("\n")}`] : []),
     ...(secretLine ? [secretLine] : []),
     ...stanceLines(state, content, npc.id),
@@ -674,7 +678,7 @@ function bleedingLine(content: Content, player: Character): string[] {
   const every = w.worsen_hours[level.id];
   return [
     `피를 흘리고 있다 (${track.label}): ${every ? `멎지 않으면 ${every}시간마다 부상이 한 단계 나빠지고, 정신이 들거나 저절로 낫지 않는다` : "곧 저절로 멎는다"}. ` +
-      `지혈은 붕대·구급상자(treatment.item), 장면의 치료사(treatment {item: null}), 맨손(treatment {item: null} + check move ${w.staunch_move}, 옷을 찢어 누르기 등)`,
+      `지혈은 붕대·구급상자(treatment.item + check move ${w.staunch_move}), 장면의 치료사(treatment {item: null}), 맨손(treatment {item: null} + check move ${w.staunch_move}, 옷을 찢어 누르기 등). ${w.staunch_move} 판정은 못 함이어도 굴린다 (공통 규칙 12)`,
   ];
 }
 

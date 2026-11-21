@@ -35,7 +35,7 @@ import { memoAccess } from "../game/memo.ts";
 import type { Content } from "../content/schemas.ts";
 import { calendarDate, formatAgo, formatClock, formatTime, minuteOfDay, MINUTES_PER_DAY, SEGMENT_LABELS, segmentOf, type TimeSegment } from "../rules/time.ts";
 import { itemIcon, type IconName } from "../content/icons.ts";
-import { conditionPenalty, initialConditions, learnedSkill, raiseCost, rankLabel, shownLevel, skillTierLabel, visibleSymptoms } from "../scenario/scenario.ts";
+import { conditionPenalty, initialConditions, raiseCost, rankLabel, shownLevel, skillTierLabel, visibleSymptoms } from "../scenario/scenario.ts";
 import { describeRequirement } from "../engine/missionTools.ts";
 import type { TranscriptEntry } from "../engine/log.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
@@ -44,6 +44,7 @@ import { seasonAt, seasonLabel } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { alarmLabel, battleTitle, momentumLabel } from "../engine/battleTools.ts";
 import { entrustedHeld, loanOf } from "../rules/entrusted.ts";
+import { learned } from "../rules/skill.ts";
 
 /**
  * 웹 앱 화면용 조회 결과. 정보 필터를 거친다 (원칙 4, 9: 필터는 어댑터가 아니라 core에서).
@@ -450,7 +451,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     skills: scenario.moves
       // 익히지 않은 스킬(-1)과 못 하는 전문 기술도 보인다 (사격이 시트에 없어 보였다). 화면이 흐리게 그린다 (4.2.1)
       .map((m) => {
-        const learned = learnedSkill(scenario, player.skills, m.id);
+        const learnedValue = learned(scenario, player.skills, m.id);
         return {
           id: m.id,
           label: m.label,
@@ -458,12 +459,12 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
           kind: m.kind,
           value: effectiveSkill(content, player, m.id),
           /** 못 하는 전문 기술이면 false */
-          usable: learned !== null,
+          usable: learnedValue !== null,
           /** 배운 값 (트레잇 보정 없이, 못 함이면 null). 올리는 점수는 이 값으로 센다 */
-          learned,
-          tier: skillTierLabel(scenario, m.id, learned),
+          learned: learnedValue,
+          tier: skillTierLabel(scenario, m.id, learnedValue),
           /** 한 단계 올리는 점수 (못 함·최고 단계면 null) */
-          raiseCost: learned === null || learned >= scenario.ranges.skill.max ? null : raiseCost(scenario, learned),
+          raiseCost: learnedValue === null || learnedValue >= scenario.ranges.skill.max ? null : raiseCost(scenario, learnedValue),
           stats: m.stats.map((id) => scenario.stats.find((x) => x.id === id)?.label ?? id),
         };
       }),

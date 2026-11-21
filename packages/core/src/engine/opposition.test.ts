@@ -51,7 +51,7 @@ describe("상대와 상황", () => {
     const { ctx, place } = setup();
     const [foe] = place(1, { fight: 2 }, { strength: 2 });
     const line = lineOf(executeTool("take_action", act({ move: "fight", stat: "strength", opponent: foe }), ctx));
-    expect(line).toMatch(/-2\([^)]*근접전\)/);
+    expect(line).toMatch(/-2\(상대가 근접전에 능함: [^)]+\)/);
   });
 
   it("지켜보는 눈이 많으면 숨기 어렵고, 밤이면 숨기 쉽다", () => {

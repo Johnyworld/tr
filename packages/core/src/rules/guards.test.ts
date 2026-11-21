@@ -47,6 +47,14 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
     expect(offenders(/\.zones\[[^\]]*\]\??\.owner\s*(===|!==)/, ["game/state.ts", "rules/home.ts", "sim/war.ts"])).toEqual([]);
   });
 
+  it("규칙 12 (판정과 스킬): 배운 값은 rules/skill.ts로만 읽는다", () => {
+    expect(offenders(/\blearnedSkill\(/, ["scenario/scenario.ts", "rules/skill.ts"])).toEqual([]);
+  });
+
+  it("규칙 13 (피해의 셈): 버팀과 방어구는 rules/damage.ts로만 셈한다", () => {
+    expect(offenders(/\b(resistSteps|armorAbsorb)\(/, ["engine/growth.ts", "engine/gear.ts", "rules/damage.ts"])).toEqual([]);
+  });
+
   it("규칙 7 (본 대로): 주인공이 본 땅 주인은 rules/knowledge.ts로만 읽는다", () => {
     expect(offenders(/\bzoneSeen\b/, ["game/state.ts", "rules/knowledge.ts"])).toEqual([]);
   });

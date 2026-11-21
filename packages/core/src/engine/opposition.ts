@@ -9,6 +9,7 @@ import { weatherNow } from "../sim/weather.ts";
 import { isInfected } from "../game/kinds.ts";
 import { isIncapacitated } from "./body.ts";
 import { isConfused } from "./ambush.ts";
+import { opposedLabel } from "../rules/skill.ts";
 
 /**
  * 상대와 상황 (기획서 4.1.1, 12-104): 주사위는 주인공만 굴린다. 상대의 실력·지켜보는 눈·어둠은 코드가 판정 보정으로 바꾼다.
@@ -48,7 +49,8 @@ export function oppositionParts(content: Content, state: GameState, moveId: stri
     // 상대가 그 전문 기술을 못 하면 서툰 상대와 같다 (4.2.1)
     const value = canUseSkill(content, opponent, opposing) ? opposeModifier(skillScore(content, opponent, opposing)) : 1;
     const label = content.scenario.moves.find((m) => m.id === opposing)?.label ?? opposing;
-    if (value) parts.push({ label: `${playerCalls(state, content, opponent.id)}의 ${label}`, value });
+    // 방향과 누구인지, 0이어도 보인다 (공통 규칙 12, 12-241: "+1(○○의 교섭)"이 거든 것처럼 보였고 0이면 줄이 없었다)
+    parts.push({ label: opposedLabel(value, label, playerCalls(state, content, opponent.id)), value });
   }
   if (r.crowd?.moves.includes(moveId)) {
     const eyes = watchers(state, opponent).length;

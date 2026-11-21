@@ -365,6 +365,7 @@ ${this.sceneForGm()}` };
     const anchor = this.#sceneAnchor();
     if (!sent || sent.anchor !== anchor || state.turn - sent.turn >= SCENE_FULL_EVERY) return this.sceneForGm();
     const sections = describePlayerSections(state, this.content);
+    const prev = new Map(sent.sections);
     const changed = sections.filter((s) => s.key === "status" || sent.sections.get(s.key) !== s.text);
     const gone = [...sent.sections.keys()].filter((k) => !sections.some((s) => s.key === k));
     for (const s of changed) sent.sections.set(s.key, s.text);
@@ -372,7 +373,7 @@ ${this.sceneForGm()}` };
     // 비어 있는 덩어리는 목록에 넣지 않는다 (플레이 테스트 12: 내용 없는 "재난"이 목록에 나왔다)
     const same = sections.filter((s) => !changed.includes(s) && s.text.trim() !== "").map((s) => SCENE_SECTION_LABELS[s.key] ?? s.key);
     return [
-      ...changed.map((s) => s.text),
+      ...changed.map((s) => personDiff(s.key, prev.get(s.key), s.text)),
       ...(gone.length ? [`(이제 없음: ${gone.map((k) => SCENE_SECTION_LABELS[k] ?? k).join(", ")})`] : []),
       ...(same.length ? [`(그대로라 다시 싣지 않음: ${same.join(", ")}. 전체가 필요하면 get_scene)`] : []),
     ].join("\n\n");
@@ -582,4 +583,18 @@ ${this.sceneForGm()}` };
       this.#release();
     }
   }
+}
+
+/**
+ * 장면 인물·아는 인물 덩어리는 사람 단위로 비교해 바뀐 사람만 싣는다 (12-241, 플레이 테스트 13: 분대원 한 명이 바뀌어도
+ * 넷의 카드 전체가, 구역을 옮기면 아는 인물 스무 명이 결과마다 되풀이됐다). 장면 인물은 카드(빈 줄로 나뉨), 아는 인물은 줄 단위
+ */
+function personDiff(key: string, before: string | undefined, now: string): string {
+  if (!before || (key !== "present" && key !== "known")) return now;
+  const split = (t: string) => (key === "present" ? t.split("\n\n") : t.split("\n"));
+  const old = new Set(split(before));
+  const units = split(now);
+  const fresh = units.filter((u, i) => i === 0 || !old.has(u));
+  const same = units.length - fresh.length;
+  return same > 0 ? [...fresh, `(그대로인 ${same}${key === "present" ? "명의 카드" : "줄"}은 다시 싣지 않음. 전체가 필요하면 get_scene)`].join(key === "present" ? "\n\n" : "\n") : now;
 }

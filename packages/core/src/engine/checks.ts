@@ -16,6 +16,7 @@ import type { Scenario } from "../scenario/schema.ts";
 import type { Character } from "../game/character.ts";
 import { gainCheckXp } from "./growth.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { attemptValue, cannotAttempt, type AttemptPurpose } from "../rules/skill.ts";
 
 /** distance: 장면의 인물을 칠 때 상대와의 거리 (12-93). 무기의 거리 보정이 붙는다 */
 /** opponent: 맞서는 상대 (12-104). 상대의 실력이 판정 보정이 된다 */
@@ -66,10 +67,10 @@ export function rollPlayerCheck(
   input: PlayerCheckInput,
   { store, rng, content }: ToolContext,
   /** noTools: 무기·도구의 보정을 붙이지 않는다 (동물 가르치기처럼 물건이 거들 수 없는 일) */
-  /** unlearnedAs: 배우지 않은 전문 기술도 이 값으로 굴린다 (맨손 지혈은 누구나, 플레이 테스트 12) */
+  /** purpose: 못 함이어도 굴리는 까닭 (지혈·버티는 판정, 공통 규칙 12) */
   /** reaction: 주인공이 하는 일이 아니라 닥친 일에 버티는 판정 (마음 다잡기, 12-220). 매복·혼란을 쓰지 않고 경험도 주지 않는다 */
   /** situation: 그 일의 상황 보정 (수색할 곳의 넉넉함, 다시 뒤짐 같은 것, 12-220) */
-  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null; unlearnedAs?: number; dest?: string | null; toolItem?: string | null; activity?: string | null; stakes?: boolean; escape?: boolean; reaction?: boolean; situation?: { label: string; value: number }[] } = {},
+  options: { target?: string | null; forMission?: string | null; noTools?: boolean; forage?: string | null; purpose?: AttemptPurpose | null; dest?: string | null; toolItem?: string | null; activity?: string | null; stakes?: boolean; escape?: boolean; reaction?: boolean; situation?: { label: string; value: number }[] } = {},
 ): PlayerCheckResult {
   const scenario = content.scenario;
   const state = store.getState();
@@ -86,13 +87,9 @@ export function rollPlayerCheck(
   // 능력 + 스킬은 상한까지만 (기획서 4.2). 몸 상태 보정은 그 뒤에 따로 뺀다
   // 트레잇의 스킬 보정도 상한 안에서 더한다. 끌림(상대가 이성에게 끌린다)은 상황 보정이라 따로 (기획서 4.6)
   // 전문 기술은 배우기 전엔 판정할 수 없다 (4.2.1)
-  const learned = learnedSkill(scenario, actor.skills, input.move) ?? options.unlearnedAs ?? null;
-  if (learned === null) {
-    return {
-      ok: false,
-      error: `${josa(move.label, "은/는")} 배우지 않아 할 수 없는 전문 기술이다. 판정하지 않는다: 배운 사람에게 맡기거나, 그 스킬을 익힌 사람에게 배운다(take_action.lesson). 할 수 없는 일로 서술한다.`,
-    };
-  }
+  // 할 수 있는지와 못 함의 예외는 공통 규칙 12 (rules/skill.ts)
+  const learned = attemptValue(scenario, actor.skills, input.move, options.purpose);
+  if (learned === null) return { ok: false, error: cannotAttempt(move.label) };
   const ability = actor.stats[input.stat] ?? 0;
   const base = learned;
   const companion = actor.id === state.playerId ? companionSkillMod(state, content, input.move) : 0;

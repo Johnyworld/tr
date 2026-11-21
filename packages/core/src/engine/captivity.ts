@@ -6,7 +6,7 @@ import { playerCalls } from "../game/acquaintance.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { Clash, GameState } from "../game/state.ts";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
-import { harmTrack, incapacitatingSymptom, learnedSkill, moveOf } from "../scenario/scenario.ts";
+import { harmTrack, incapacitatingSymptom, moveOf } from "../scenario/scenario.ts";
 import type { Character } from "../game/character.ts";
 import { disposition } from "../sim/war.ts";
 import { josa, sentence } from "../text.ts";
@@ -18,6 +18,7 @@ import { TROUBLE_TOPIC, troublesOf } from "./factionTalk.ts";
 import { activeMissionOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 import { ownedBy } from "../rules/home.ts";
+import { learned } from "../rules/skill.ts";
 
 /**
  * 포로 (기획서 7.6, 12-55).
@@ -77,7 +78,7 @@ function bestFlee(content: Content, me: Character, moves: string[]): { move: str
   let best: { move: string; stat: string; value: number } | null = null;
   for (const id of moves) {
     const m = moveOf(content.scenario, id);
-    const skill = learnedSkill(content.scenario, me.skills, id);
+    const skill = learned(content.scenario, me.skills, id);
     if (!m || skill === null) continue;
     for (const stat of m.stats) {
       const value = (me.stats[stat] ?? 0) + skill;

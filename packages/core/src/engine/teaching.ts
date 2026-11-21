@@ -1,8 +1,9 @@
 import { playerCalls } from "../game/acquaintance.ts";
-import { isExpertMove, learnedSkill, moveOf } from "../scenario/scenario.ts";
+import { isExpertMove, moveOf } from "../scenario/scenario.ts";
 import { josa } from "../text.ts";
 import { pickFee } from "./body.ts";
 import type { ToolContext } from "./toolkit.ts";
+import { learned } from "../rules/skill.ts";
 
 /**
  * 가르침 (기획서 4.2.1): 전문 기술은 판정이 아니라 배워서 얻는다.
@@ -21,11 +22,11 @@ export function planLesson(ctx: ToolContext, input: LessonInput): string | null 
   const move = moveOf(s, input.skill);
   if (!move) return `알 수 없는 스킬: ${input.skill}`;
   if (!isExpertMove(s, input.skill)) return `${josa(move.label, "은/는")} 누구나 하는 일이다. 배우지 않아도 할 수 있고, 잘하려면 스킬 포인트로 올린다 (learn_skill).`;
-  if (learnedSkill(s, me.skills, input.skill) !== null) return `${josa(move.label, "은/는")} 이미 배웠다. 더 잘하려면 스킬 포인트로 올린다 (learn_skill).`;
+  if (learned(s, me.skills, input.skill) !== null) return `${josa(move.label, "은/는")} 이미 배웠다. 더 잘하려면 스킬 포인트로 올린다 (learn_skill).`;
   const teacher = state.characters[input.teacher];
   if (!teacher || teacher.dead || !state.scene.present.includes(input.teacher)) return "가르칠 사람이 장면에 없다.";
   const name = playerCalls(state, ctx.content, input.teacher);
-  const level = learnedSkill(s, teacher.skills, input.skill);
+  const level = learned(s, teacher.skills, input.skill);
   if (level === null || level < rule.min_skill) return `${josa(name, "은/는")} ${josa(move.label, "을/를")} 가르칠 만큼 익히지 않았다 (${rule.min_skill >= 0 ? "+" : ""}${rule.min_skill} 이상이어야 가르친다).`;
   const trust = state.relations[input.teacher]?.[me.id]?.trust ?? 0;
   // 같은 무리 사람은 믿음이 모자라도 값을 받고 가르친다 (플레이 테스트 13: 같은 무리 치료사의 신뢰가 오르지 않아 응급처치를 끝내 배우지 못했다)

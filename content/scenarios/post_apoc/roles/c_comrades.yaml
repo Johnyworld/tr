@@ -47,6 +47,6 @@ start_bonds:
   affection: [1, 3]
   respect: [0, 2]
   best: c_cm_jaeho
-missions: [c_quota_old_town, c_tower_watch, c_willow_shakedown, c_riverside_fuel, c_field_raid, c_overpass_haul, c_east_probe, c_prison_guard, c_deserter_hunt]
+missions: [c_quota_old_town, c_tower_watch, c_willow_shakedown, c_riverside_fuel, c_field_raid, c_overpass_haul, c_east_probe, c_prison_guard, c_deserter_hunt, occ_soldier_cleaning, occ_soldier_drill]
 # c_comrades: 여덟 동료의 이야기, red_life: 붉은연합의 일상, world: 도시의 일
 storylet_tags: [c_comrades, red_life, world]

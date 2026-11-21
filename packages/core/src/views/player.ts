@@ -43,6 +43,7 @@ import { factionOutlook, zoneOutlook } from "../engine/warTools.ts";
 import { seasonAt, seasonLabel } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { alarmLabel, battleTitle, momentumLabel } from "../engine/battleTools.ts";
+import { entrustedHeld, loanOf } from "../rules/entrusted.ts";
 
 /**
  * 웹 앱 화면용 조회 결과. 정보 필터를 거친다 (원칙 4, 9: 필터는 어댑터가 아니라 core에서).
@@ -329,7 +330,8 @@ function todoViews(state: GameState, content: Content): TodoView[] {
   const m = activeMissionOf(state.missions, me.id);
   if (m) {
     const left = m.deadline - state.time;
-    const loan = state.loans?.[m.id];
+    const loan = loanOf(state, m.id);
+    const cargo = entrustedHeld(state, m.id).cargo;
     out.push({
       key: m.id,
       kind: "임무",
@@ -339,7 +341,7 @@ function todoViews(state: GameState, content: Content): TodoView[] {
       dueLabel: left <= 0 ? "기한 지남" : `기한까지 ${timeLeftLabel(left)}`,
       urgent: left < MINUTES_PER_DAY / 2,
       steps: m.requirements.map((r, i) => ({ text: describeRequirement(content.scenario, r, m.progress[i] ?? 0), met: isRequirementMet(r, m.progress[i] ?? 0) })),
-      note: loan ? `빌린 장비 (반납): ${Object.entries(loan).map(([id, q]) => `${content.items[id]?.name ?? id}${q > 1 ? ` ×${q}` : ""}`).join(", ")}` : null,
+      note: [loan ? `빌린 장비 (반납): ${Object.entries(loan).map(([id, q]) => `${content.items[id]?.name ?? id}${q > 1 ? ` ×${q}` : ""}`).join(", ")}` : null, cargo.length ? `맡은 짐: ${cargo.map(([id, q]) => `${content.items[id]?.name ?? id}${q > 1 ? ` ×${q}` : ""}`).join(", ")}` : null].filter(Boolean).join(" · ") || null,
     });
   }
   const ps = pledges(state, content);
@@ -549,8 +551,9 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     todos: todoViews(state, content),
     loan: (() => {
       const m = activeMissionOf(state.missions, player.id);
-      const loan = m ? state.loans?.[m.id] : undefined;
-      return loan ? Object.entries(loan).map(([id, q]) => `${content.items[id]?.name ?? id}${q > 1 ? ` ×${q}` : ""}`) : [];
+      if (!m) return [];
+      const held = entrustedHeld(state, m.id);
+      return [...held.loan.map(([id, q]) => `${content.items[id]?.name ?? id}${q > 1 ? ` ×${q}` : ""}`), ...held.cargo.map(([id, q]) => `${content.items[id]?.name ?? id}${q > 1 ? ` ×${q}` : ""} (맡은 짐)`)];
     })(),
     squad: (() => {
       const members = squadMembers(state, content);

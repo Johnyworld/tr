@@ -74,6 +74,7 @@ import { sleepChainStart } from "../game/state.ts";
 import { applyTreatment, type FeeChoice, drinkWater, healFromSleep, sleepHealBlocker, itemUseProblem, maybeInfect, refillWater, treatmentProblem, useItem } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
+import { cargoOf } from "../rules/entrusted.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -836,7 +837,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (input.train && outcome) lines.push(...applyTrain(ctx, input.train, outcome));
 
   // 1-0. 수색: 그 구역에서 찾을 거리를 코드가 굴린다 (기획서 4.7)
-  if (input.activity?.kind === "search" && !inBattle) {
+  // 수색표는 수색 판정이거나 판정 없이 뒤질 때, 적 땅에서 숨어서 뒤질 때만 굴린다. 다른 판정(추적·살피기)은 시간만 수색으로 센다
+  // (12-237, 플레이 테스트 13: 발자국을 쫓는 생존 판정에 권총탄이 나왔다. 한 행동에 판정은 하나)
+  const searchMove = scenario.exploration?.search_move;
+  const lootRoll = !input.check || !searchMove || input.check.move === searchMove || exposed;
+  if (input.activity?.kind === "search" && !inBattle && !lootRoll) lines.push(`${moveLabel(scenario, input.check!.move)} 판정이라 뒤져서 찾은 물건은 없다 (찾을 거리는 ${moveLabel(scenario, searchMove!)} 판정으로 뒤질 때 나온다).`);
+  if (input.activity?.kind === "search" && !inBattle && lootRoll) {
     // 임무로 찾는 자원 (구해 와 건네기, 아니면 일감의 창고 몫)
     const m = forMission ? store.getState().missions[forMission] : undefined;
     const want = m ? ((m.requirements.find((r) => "bring" in r) as { bring: string } | undefined)?.bring ?? Object.keys(content.missions[m.templateId]?.supplies ?? {})[0] ?? null) : null;
@@ -973,6 +979,18 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
         store.append({ type: "item_consumed", holder: start.playerId, itemId: r.deliver, quantity: r.quantity });
         store.append({ type: "mission_requirement_met", missionId: m.id, index: i });
         lines.push(`짐을 넘겼다: ${content.items[r.deliver]?.name ?? r.deliver} ×${r.quantity}.`);
+        // 맡은 짐 기록을 줄이고, 받아 올 값을 상대가 건넨다 (공통 규칙 10, 12-237: 대금이 현장에서 오가지 않았다)
+        const cargo = { ...cargoOf(store.getState(), m.id) };
+        const left = (cargo[r.deliver] ?? 0) - r.quantity;
+        if (left > 0) cargo[r.deliver] = left;
+        else delete cargo[r.deliver];
+        const collects = Object.entries(content.missions[m.templateId]?.collects ?? {});
+        for (const [id, q] of collects) {
+          store.append({ type: "item_granted", to: start.playerId, itemId: id, quantity: q });
+          cargo[id] = (cargo[id] ?? 0) + q;
+        }
+        store.append({ type: "cargo_set", missionId: m.id, items: cargo });
+        if (collects.length) lines.push(`값을 받았다: ${collects.map(([id, q]) => `${content.items[id]?.name ?? id} ×${q}`).join(", ")} (상관에게 넘길 것이다. 보고 때 모자라면 일부 완수까지).`);
       });
     }
   }

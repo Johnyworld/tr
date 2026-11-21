@@ -66,10 +66,13 @@
       min_outcome: partial
 - id: b_footprints
   title: 쪽문 밖 발자국 쫓기
-  where: outside
+  # 거점과 맞닿은 곳 (12-237: 브리핑은 쪽문 앞에서 시작하는데 거점 밖만 셌다)
+  where: near
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   briefing: 북쪽 쪽문 밖 진흙에 낯선 발자국이 찍혔다. 어디서 왔는지 따라가 보고, 들키지 않게 돌아온다.
+  # 완수하면 알게 되는 것 (12-237: 다 채워도 발자국이 어디서 왔는지 GM이 지어내야 했다)
+  learns: 쪽문 발자국은 남쪽 밭 둑길을 따라 강변 쪽에서 왔다. 둘이었고, 한 사람은 짐을 끌었다. 밤에 쪽문 틈으로 마을 안을 살피고 돌아간 자국이다
   unseen: true
   giver_rank: squad_leader
   deadline_hours: 12

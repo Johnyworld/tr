@@ -295,6 +295,8 @@ export function createGameSchemas(s: Scenario) {
     dynamicTies: z.array(tieRecordSchema).default([]),
     /** 작전에 빌린 장비 (임무 id → 아이템 → 수량, 기획서 4.8). 임무가 끝나면 반납한다 */
     loans: z.record(z.string(), z.record(z.string(), z.number().int().min(1))).default({}),
+    /** 임무로 맡은 짐과 받아 온 대금 (임무 id → 아이템 → 수량, 공통 규칙 10 rules/entrusted.ts). 임무 자리에서 넘기고 보고 때 상관에게 넘긴다 */
+    cargo: z.record(z.string(), z.record(z.string(), z.number().int().min(1))).default({}),
     /** 구역마다 오늘의 소음 (기획서 4.8) */
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 소리를 듣고 몰려오는 감염체 (infestation.swarm_hours): 구역 → 그날 소리(day)에 몰려드는 시각(at), 이미 왔는지(done) */
@@ -773,6 +775,8 @@ export function createGameSchemas(s: Scenario) {
     /** 구역의 감염체 압력이 바뀌었다 (12-112): 소음·시체로 오르고, 소탕으로 내리고, 날이 가며 기준값으로 돌아간다 */
     z.strictObject({ type: z.literal("infestation_changed"), zone: z.string(), level: z.number().int().min(0).max(3), cause: z.string() }),
     /** 무기고가 작전 장비를 빌려줬다 (무리 창고의 탄약 resource가 cost만큼 준다) */
+    /** 임무로 맡은 짐·대금의 기록을 바꾼다 (지닌 물건은 item_granted·item_consumed가 바꾼다, 공통 규칙 10) */
+    z.strictObject({ type: z.literal("cargo_set"), missionId: z.string(), items: z.record(z.string(), z.number().int().min(1)) }),
     z.strictObject({ type: z.literal("armory_issued"), missionId: z.string(), factionId: z.string(), items: z.record(z.string(), z.number().int().min(1)), resource: z.string(), cost: z.number().int().min(0) }),
     /** 빌린 장비를 반납했다 (returned: 돌려준 것. 모자란 것은 잃어버린 것) */
     z.strictObject({ type: z.literal("armory_returned"), missionId: z.string(), returned: z.record(z.string(), z.number().int().min(1)) }),
@@ -1193,6 +1197,7 @@ export const EMPTY_STATE: GameState = {
   zoneSeen: {},
   groundItems: {},
   loans: {},
+  cargo: {},
   restockedDay: {},
   squad: null,
   promotionOffer: null,
@@ -1438,6 +1443,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "noise_made": {
       const prev = next.zoneNoise[event.zone];
       next.zoneNoise[event.zone] = { day: event.day, level: (prev && prev.day === event.day ? prev.level : 0) + event.level };
+      return next;
+    }
+    case "cargo_set": {
+      const cargo = { ...(next.cargo ?? {}) };
+      if (Object.keys(event.items).length) cargo[event.missionId] = { ...event.items };
+      else delete cargo[event.missionId];
+      next.cargo = cargo;
       return next;
     }
     case "armory_issued": {

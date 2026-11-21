@@ -54,5 +54,5 @@ commander: a_taeho
 # 같은 분대 (분대장은 commander). 시트의 "분대" 칸에 보인다
 squad_mates: [a_jiho, a_seoyeon, a_mansu]
 # 이 역할에 내려오는 임무 (content/missions/)
-missions: [guard_east_post, wall_repair, search_nearby_ruins, scout_north_overpass, fields_watch, market_errand, hospital_supply_run, front_recon, supply_raid]
+missions: [guard_east_post, wall_repair, search_nearby_ruins, scout_north_overpass, fields_watch, market_errand, hospital_supply_run, front_recon, supply_raid, occ_soldier_cleaning, occ_soldier_drill]
 storylet_tags: [grunt, squad_life]

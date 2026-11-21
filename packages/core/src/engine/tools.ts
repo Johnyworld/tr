@@ -81,6 +81,10 @@ const transferItem = defineTool({
       .nullable()
       .optional()
       .describe("주인공이 물건을 남에게 맡기는 것이면 맡긴 조건 (예: \"나갈 때 돌려준다\"). 검문에서 무기를 받아 가는 것도 맡김이다: 땅에 내려놓기(to=scene)가 아니라 받아 간 사람에게 이것과 함께 넘긴다. 맡긴 물건은 근거 없이 돌려받는다"),
+    repay: z
+      .boolean()
+      .optional()
+      .describe("플레이어가 빚을 갚으려고 건네는 것이면 true: 받는 사람의 무리에 진 빚이 물건 값만큼 준다. 없으면 선물이다 (빚은 그대로)"),
   }),
   run(input, ctx) {
     const { store, content } = ctx;
@@ -146,8 +150,9 @@ const transferItem = defineTool({
     });
     // 약속한 물건을 그 사람에게 건넸으면 약속을 지킨 것이다 (12-174 부탁)
     const kept = input.from === state.playerId ? keepByGift(ctx, input.to, item.id, input.quantity) : [];
-    // 빚진 무리 사람에게 물건을 건네면 그 값만큼 빚이 준다 (플레이 테스트 11, F6: 고철을 건네도 빚이 그대로였다). 맡긴 것은 갚은 것이 아니다
-    if (input.from === state.playerId && !input.deposit && input.to !== SCENE_HOLDER) {
+    // 빚진 무리 사람에게 갚는다고 건네면 그 값만큼 빚이 준다 (플레이 테스트 11, F6: 고철을 건네도 빚이 그대로였다).
+    // 갚는다고 하지 않으면 선물이다 (12-237, 플레이 테스트 13: 건네기만 해도 빚이 줄어 이틀에 끝났다). 맡긴 것은 갚은 것이 아니다
+    if (input.repay && input.from === state.playerId && !input.deposit && input.to !== SCENE_HOLDER) {
       const lender = state.characters[input.to]?.factionId;
       const owed = lender ? (state.characters[state.playerId]?.debts[lender] ?? 0) : 0;
       if (lender && owed > 0) {

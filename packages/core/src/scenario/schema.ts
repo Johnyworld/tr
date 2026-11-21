@@ -1598,6 +1598,11 @@ export const scenarioFileSchema = z
     /** 스토리렛 발동 간격 (기획서 10.3). 마지막 스토리렛 뒤 이만큼 지나야 다음 것이 열리고, 열린 것은 이만큼 지나면 지나간다 */
     /** 임무의 판정 조건에서 서로 바꿔 쓸 수 있는 판정 묶음 (플레이 테스트 13: 교섭 조건을 매력 낮은 사람이 넘기지 못했다. 으름장으로 끝낸 흥정도 흥정이다) */
     mission_move_groups: z.array(z.array(id).min(2)).default([]),
+    /**
+     * 임무 브리핑의 낌새 (content:check, 12-237): 브리핑이 이 말(정규식)을 쓰면 그 필드가 있어야 한다.
+     * buddy: 짝을 말하는 브리핑 (분대장 이상만 받는 임무는 분대가 있어 뺀다), learns: 알아 오는 브리핑
+     */
+    mission_hints: z.strictObject({ buddy: z.array(z.string()).default([]), learns: z.array(z.string()).default([]) }).default({ buddy: [], learns: [] }),
     /** 공통 규칙 5 (rules/rest.ts): 최근에 나온 것이 쉬는 날수. cast 이야기 배역, mission 받은 일감, alarm 무리마다의 경보 이야기 */
     rest: z.strictObject({ cast: z.number().min(0).optional(), mission: z.number().min(0).optional(), alarm: z.number().min(0).optional() }).default({}),
     storylet_pacing: z

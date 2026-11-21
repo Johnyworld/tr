@@ -17,6 +17,7 @@
   title: 남의 장터 값 알아 오기
   where: outside
   briefing: 요즘 다른 무리 장터에서 탄약 한 줌, 약 한 줄이 얼마에 도는지 알아 온다. 사지 말고 듣기만 한다. 누가 무엇을 사재는지가 값보다 중요하다.
+  learns: 남의 장터에서는 약값이 탄약값보다 빨리 오른다. 장사꾼들 말로는 누군가 항생제와 붕대를 한꺼번에 사 간다
   giver_rank: officer
   deadline_hours: 20
   requirements:

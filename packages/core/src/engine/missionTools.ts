@@ -41,6 +41,7 @@ import { defineTool, signed, type ToolContext, type ToolDisplayEvent } from "./t
 import { recordDeed } from "./reputationTools.ts";
 import { grantRewards } from "./rewards.ts";
 import { itemResource } from "./market.ts";
+import { cargoOf, entrustedHeld } from "../rules/entrusted.ts";
 
 const resourceLabel = (s: Scenario, id: string) => s.resources.find((r) => r.id === id)?.label ?? id;
 
@@ -83,6 +84,11 @@ export function missionPlace(content: Content, where: string | undefined, factio
   if (where === "outside") {
     const base = factionId ? baseOf(content, factionId) : undefined;
     return base ? { zone: null, notZone: base, enemyOf: null, label: `${zoneName(base)} 밖` } : null;
+  }
+  // 거점과 맞닿은 곳 (12-237: 쪽문 밖 발자국을 쫓는데 쪽문 앞에서 한 일은 세지 않았다)
+  if (where === "near") {
+    const base = factionId ? baseOf(content, factionId) : undefined;
+    return base ? { zone: null, notZone: null, enemyOf: null, zones: [base, ...neighbors(content, base)], label: `${josa(zoneName(base), "과/와")} 맞닿은 곳` } : null;
   }
   if (where === "enemy") return factionId ? { zone: null, notZone: null, enemyOf: factionId, label: "적대하는 무리의 땅" } : null;
   return { zone: where, notZone: null, enemyOf: null, label: zoneName(where) };
@@ -150,7 +156,11 @@ const assignMission = defineTool({
     // 배달 일감의 짐 (F5): 상관이 건넨다
     const cargo = Object.entries(template.carries ?? {});
     for (const [id, q] of cargo) ctx.store.append({ type: "item_granted", to: player.id, itemId: id, quantity: q });
-    const cargoLine = cargo.length ? `\n짐을 받았다: ${cargo.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")} (임무 자리에서 일을 하면 넘긴다)` : "";
+    if (cargo.length) ctx.store.append({ type: "cargo_set", missionId: mission.id, items: Object.fromEntries(cargo) });
+    const collects = Object.entries(template.collects ?? {});
+    const cargoLine =
+      (cargo.length ? `\n짐을 받았다: ${cargo.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")} (맡은 짐이다. 임무 자리에서 일을 하면 넘긴다)` : "") +
+      (collects.length ? `\n받아 올 값: ${collects.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")} (짐을 넘기면 상대가 건넨다. 보고 때 상관에게 넘긴다)` : "");
     // 2인 1조: 같은 무리 동료 하나가 짝으로 붙는다 (기획서 7.9)
     const buddy = template.buddy ? assignBuddy(ctx, mission.id, commander.id) : null;
     // 작전이면 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
@@ -208,8 +218,21 @@ const reportMission = defineTool({
       }
       ctx.store.append({ type: "mission_requirement_met", missionId: mission.id, index: i });
     });
+    // 맡은 짐·받아 온 값은 상관에게 넘긴다 (공통 규칙 10). 받아 올 값이 모자라면 일부 완수까지 (12-237)
+    const returned: string[] = [];
+    const toCollect = ctx.content.missions[mission.templateId]?.collects ?? {};
+    let short = false;
+    for (const [id, q] of Object.entries(cargoOf(ctx.store.getState(), mission.id))) {
+      const give = Math.min(q, ctx.store.getState().characters[state.playerId]!.inventory[id] ?? 0);
+      if (give > 0) {
+        ctx.store.append({ type: "item_consumed", holder: state.playerId, itemId: id, quantity: give });
+        returned.push(`${ctx.content.items[id]?.name ?? id} ×${give}`);
+      }
+      if (toCollect[id] && give < q) short = true;
+    }
+    ctx.store.append({ type: "cargo_set", missionId: mission.id, items: {} });
     const reported = ctx.store.getState().missions[mission.id]!;
-    const result = evaluateMission(reported, state.time);
+    const result = evaluateMission(reported, state.time, short);
     ctx.store.append({ type: "mission_reported", missionId: mission.id, ...result });
     // 완수는 상관이 보고로 확인한 성실함으로 남는다 (관계 변화는 상관의 가치관으로 계산).
     // 판정이 걸린 임무(위험한 일)를 다 해냈을 때만 상관의 믿음과 존중이 오른다. 시간만 채우는 보초·일부 완수는 오르지 않는다 (플레이 테스트 13: 신뢰가 13일 내내 0이라 진급이 막혔다)
@@ -267,23 +290,22 @@ const reportMission = defineTool({
         supplied.push(ctx.content.scenario.resources.find((r) => r.id === resource)?.label ?? resource);
       }
     }
-    // 품삯 (F5): 완수면 전부, 일부 완수면 절반 (내림)
-    const wages: string[] = [];
-    for (const [id, q] of Object.entries(ctx.content.missions[mission.templateId]?.pay ?? {})) {
-      const n = result.outcome === "success" ? q : result.outcome === "partial" ? Math.floor(q / 2) : 0;
-      if (n > 0) {
-        ctx.store.append({ type: "item_granted", to: mission.assigneeId, itemId: id, quantity: n });
-        wages.push(`${ctx.content.items[id]?.name ?? id} ×${n}`);
-      }
-    }
     // 직분의 일감을 해내면 직분의 평판이 오른다 (기획서 12.6)
     const occ = occupationOf(ctx.content, ctx.store.getState().characters[mission.assigneeId]);
     const occNote = occ?.missions.includes(mission.templateId) && result.outcome === "success" ? changeStanding(ctx, mission.assigneeId, 1, `일감: ${mission.title}`) : null;
+    // 완수하면 알게 되는 것 (12-237)
+    const learns = result.outcome === "success" ? ctx.content.missions[mission.templateId]?.learns : undefined;
+    if (learns) {
+      const now = ctx.store.getState();
+      ctx.store.append({ type: "belief_added", characterId: mission.assigneeId, belief: { id: `b_${now.nextBeliefNo}`, fact: learns, source: "seen", accuracy: "exact", learnedAt: now.time } });
+    }
     const label = MISSION_STATUS_LABELS[result.outcome === "success" ? "completed" : result.outcome];
     const lines = [
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       ...(handed.length ? [`구해 온 것을 상관에게 건넸다: ${handed.join(", ")}`] : []),
-      ...(wages.length ? [`품삯을 받았다: ${wages.join(", ")}`] : []),
+      ...(returned.length ? [`맡은 짐·받아 온 값을 상관에게 넘겼다: ${returned.join(", ")}`] : []),
+      ...(learns ? [`알게 된 것 (임무로 확인했다, 상관에게도 보고했다): ${learns}`] : []),
+      ...(short ? ["받아 올 값이 모자라 일부 완수까지다."] : []),
       ...unmetLines(ctx.content.scenario, reported),
       ...(supplies && !party && result.outcome !== "failed" ? ["혼자 나간 일이라 무리 창고에 따로 든 것은 없다. 찾은 것은 소지품에 그대로 있다."] : []),
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
@@ -464,10 +486,11 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   if (offer) lines.push(offer);
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
-    const loan = state.loans?.[active.id];
-    // 지금 지닌 것만 (플레이 테스트 13: 붙잡혀 다 빼앗겼는데 빌린 것 줄이 그대로 남았다)
-    const held = loan ? Object.entries(loan).map(([id, q]) => [id, Math.min(q, player.inventory[id] ?? 0)] as const).filter(([, q]) => q > 0) : [];
-    if (held.length) lines.push(`무기고에서 빌린 것 (임무가 끝나면 반납): ${held.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")}`);
+    // 지금 지닌 것만 (플레이 테스트 13: 붙잡혀 다 빼앗겼는데 빌린 것 줄이 그대로 남았다). 남의 물건은 공통 규칙 10
+    const held = entrustedHeld(state, active.id);
+    const list = (xs: [string, number][]) => xs.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ");
+    if (held.loan.length) lines.push(`무기고에서 빌린 것 (임무가 끝나면 반납): ${list(held.loan)}`);
+    if (held.cargo.length) lines.push(`맡은 짐 (내 것이 아니다. 임무 자리에서 넘기거나 보고 때 상관에게 넘긴다): ${list(held.cargo)}`);
   } else if (heldOf(player)) {
     // 갇혀 있으면 임무를 받을 수 없다 (플레이 테스트 12: 갇힌 상태 화면에 오늘의 임무가 그대로 보였다)
     lines.push("갇혀 있어 임무를 받을 수 없다");

@@ -4,6 +4,7 @@ import type { MissionInstance } from "../game/missions.ts";
 import { autoEquip, equippedItem } from "./gear.ts";
 import { lastFreedAt, playerHeld } from "../rules/held.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { loanOf } from "../rules/entrusted.ts";
 
 /**
  * 무기고 (기획서 4.8): 무장이 필요한 작전에 무리가 무기·탄약을 빌려주고, 임무가 끝나면 거둬들인다.
@@ -55,7 +56,7 @@ export function issueArmory(ctx: ToolContext, mission: MissionInstance): string 
 export function returnArmory(ctx: ToolContext, missionId: string, options: { excused?: boolean } = {}): string | null {
   const { store, content } = ctx;
   const state = store.getState();
-  const loan = state.loans?.[missionId];
+  const loan = loanOf(state, missionId);
   const me = state.characters[state.playerId];
   if (!loan || !me) return null;
   const returned: Record<string, number> = {};

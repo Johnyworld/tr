@@ -9,6 +9,7 @@ import type { Content } from "../../content/schemas.ts";
 import type { Character } from "../../game/character.ts";
 import { josa } from "../../text.ts";
 import { type ToolContext } from "../toolkit.ts";
+import { entrusted, ownCount } from "../../rules/entrusted.ts";
 /** 치료 값을 무엇으로 낼지 (플레이 테스트 13): null이면 미리 보여 주고 묻는다, default면 코드가 고른 것, 아니면 고른 물건 */
 export type FeeChoice = "default" | Record<string, number> | null;
 
@@ -81,9 +82,7 @@ export function keptForLiving(ctx: ToolContext, payer: Character, id: string): b
 /** 이 물건을 값으로 낼 수 있는 수 (플레이어가 고를 때): 지닌 것에서 손에 든 것·입은 것·빌린 것을 뺀다 */
 export function payableCount(ctx: ToolContext, payer: Character, id: string): number {
   if (Object.values(payer.equipped ?? {}).includes(id)) return 0;
-  let loaned = 0;
-  for (const loan of Object.values(ctx.store.getState().loans ?? {})) loaned += loan[id] ?? 0;
-  return Math.max(0, (payer.inventory[id] ?? 0) - loaned);
+  return payer.id === ctx.store.getState().playerId ? ownCount(ctx.store.getState(), payer.id, id) : (payer.inventory[id] ?? 0);
 }
 
 /**
@@ -95,9 +94,8 @@ export function pickFee(ctx: ToolContext, payer: Character, fee: number): Map<st
   const worn = new Set(Object.values(payer.equipped ?? {}).filter(Boolean));
   // 먹고 마시고 쓰는 소모품(consumables)은 마지막 하나를 남긴다: 값 때문에 굶거나 목마르지 않게
   const survival = (id: string) => Object.values(ctx.content.scenario.consumables[id] ?? {}).some((n) => n > 0);
-  // 무기고에서 빌린 것은 내 것이 아니다 (플레이 테스트 13: 빌린 탄이 치료 값으로 나갔다)
-  const loaned: Record<string, number> = {};
-  for (const loan of Object.values(ctx.store.getState().loans ?? {})) for (const [id, q] of Object.entries(loan)) loaned[id] = (loaned[id] ?? 0) + q;
+  // 남의 물건(빌린 장비·맡은 짐)은 내 것이 아니다 (공통 규칙 10, 플레이 테스트 13: 빌린 탄이 치료 값으로 나갔다)
+  const loaned = entrusted(ctx.store.getState());
   const goods = Object.entries(payer.inventory)
     .map(([id, q]) => [id, payer.id === ctx.store.getState().playerId ? q - (loaned[id] ?? 0) : q] as const)
     .filter(([id, q]) => q > 0 && !worn.has(id) && !ctx.content.items[id]?.keepsake && !keptForLiving(ctx, payer, id))

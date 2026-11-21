@@ -395,10 +395,10 @@ export function createContentSchemas(s: Scenario) {
     title: z.string().min(1),
     briefing: z.string().min(1),
     giver_rank: idEnum(rankIds(s)),
-    /** 배달 일감의 짐 (F5): 받을 때 상관이 이것을 건넨다 */
+    /** 배달 일감의 짐 (F5): 받을 때 상관이 이것을 건넨다. 남의 물건이다 (공통 규칙 10) */
     carries: z.record(contentIdSchema, z.number().int().min(1).max(10)).optional(),
-    /** 품삯 (F5): 완수하면 이것을 받는다 (일부 완수는 절반, 내림) */
-    pay: z.record(contentIdSchema, z.number().int().min(1).max(20)).optional(),
+    /** 받아 올 값 (12-237): 짐을 넘기면 상대가 이것을 건네고, 보고 때 상관에게 넘긴다. 모자라면 일부 완수까지 (남의 물건, 공통 규칙 10) */
+    collects: z.record(contentIdSchema, z.number().int().min(1).max(20)).optional(),
     /** 물일 (플레이 테스트 11, E3): 임무 자리에서 이 임무의 활동을 하면 옷이 젖는다 (방수복을 입으면 젖지 않는다) */
     wets: z.boolean().optional(),
     /** 이 계급 이상만 받는 일감 (플레이 테스트 11, C9: 신입이 신병 훈련을 맡았다) */
@@ -409,7 +409,9 @@ export function createContentSchemas(s: Scenario) {
      * 임무를 해야 하는 곳 (플레이 테스트 4). 그 자리에서 한 판정·활동만 진행으로 센다. 없으면 어디서든 (거점 안의 일).
      * 구역 id, outside(우리 거점 밖 어디든), enemy(적대하는 무리의 땅)
      */
-    where: z.union([z.literal("outside"), z.literal("enemy"), contentIdSchema]).optional(),
+    where: z.union([z.literal("outside"), z.literal("near"), z.literal("enemy"), contentIdSchema]).optional(),
+    /** 완수하면 알게 되는 것 (12-237: 따라가 보기·알아 오기 임무의 결과를 GM이 지어내야 했다). 주인공의 믿음으로 남는다 */
+    learns: z.string().min(1).max(200).optional(),
     /** 들키지 않기가 조건인 일 (플레이 테스트 13): 임무 중에 경보가 울리거나 붙잡히면 조건을 채웠어도 일부 완수까지 */
     unseen: z.boolean().optional(),
     /** 무장이 필요한 작전: 받으면 무리의 무기고가 무기·탄약을 빌려주고, 끝나면 반납한다 (기획서 4.8) */

@@ -48,10 +48,10 @@ export const missionInstanceSchema = z.strictObject({
   requirements: z.array(missionRequirementSchema),
   /**
    * 임무를 해야 하는 곳 (플레이 테스트 4). 그 자리에서 한 판정·활동만 진행으로 센다. null이면 어디서든.
-   * zone: 그 구역, notZone: 그 구역(우리 거점)만 아니면 담 밖 어디든, enemyOf: 이 무리와 적대하는 무리의 땅. label은 보여 줄 말
+   * zones: 이 구역들 가운데 (near: 거점과 맞닿은 곳), zone: 그 구역, notZone: 그 구역(우리 거점)만 아니면 담 밖 어디든, enemyOf: 이 무리와 적대하는 무리의 땅. label은 보여 줄 말
    */
   place: z
-    .strictObject({ zone: z.string().nullable(), notZone: z.string().nullable(), enemyOf: z.string().nullable(), label: z.string() })
+    .strictObject({ zone: z.string().nullable(), notZone: z.string().nullable(), enemyOf: z.string().nullable(), label: z.string(), zones: z.array(z.string()).optional() })
     .nullable()
     .default(null),
   /** 요구 조건별 진행도: 활동은 누적 분, 판정은 충족 시 1 */
@@ -147,11 +147,12 @@ export function isRequirementMet(requirement: MissionRequirement, progress: numb
 export type MissionEvaluation = { outcome: "success" | "partial" | "failed"; late: boolean; merit: number };
 
 /** 보고 시점의 결과와 공적 */
-export function evaluateMission(mission: MissionInstance, now: GameTime): MissionEvaluation {
+export function evaluateMission(mission: MissionInstance, now: GameTime, collectShort = false): MissionEvaluation {
   const met = mission.requirements.filter((r, i) => isRequirementMet(r, mission.progress[i] ?? 0)).length;
   const full = met === mission.requirements.length ? "success" : met > 0 ? "partial" : "failed";
   // 들키지 않기가 조건인 일에서 들켰으면 일부 완수까지 (플레이 테스트 13)
-  const outcome = full === "success" && mission.unseen && mission.spotted ? "partial" : full;
+  // 받아 올 값이 모자라도 일부 완수까지 (collectShort, 12-237)
+  const outcome = full === "success" && ((mission.unseen && mission.spotted) || collectShort) ? "partial" : full;
   // 조건을 기한 안에 다 채웠으면 보고가 늦어도 기한 초과가 아니다 (플레이 테스트 13)
   const late = (mission.metAt ?? now) > mission.deadline;
   const timeOnly = mission.requirements.every((r) => "activity" in r);
@@ -182,6 +183,7 @@ export function atMissionPlace(
   const p = mission.place;
   if (!p) return true;
   if (!zone) return false;
+  if (p.zones) return p.zones.includes(zone);
   if (p.zone) return zone === p.zone;
   if (p.notZone) return zone !== p.notZone;
   if (p.enemyOf) {
@@ -263,7 +265,7 @@ export function pickDailyOffers(
     .filter((id) => !canDo || content.missions[id]!.requirements.every((r) => !("check" in r) || canDo(r.check)))
     .filter((id) => {
       const where = content.missions[id]!.where;
-      if (!lost?.factionId || !where || where === "outside" || where === "enemy") return true;
+      if (!lost?.factionId || !where || where === "outside" || where === "near" || where === "enemy") return true;
       return content.locations[where]?.owner !== lost.factionId || lost.owners[where]?.owner === lost.factionId;
     });
   if (pool.length === 0) return null;
@@ -272,10 +274,16 @@ export function pickDailyOffers(
   // 최근에 받은 일감은 다른 후보가 있으면 쉰다 (공통 규칙 5)
   const fresh = preferRested(pool, (id) => recent.includes(id));
   const stale = pool.filter((id) => !fresh.includes(id));
+  // 하나는 늘 역할 일감에서, 직분 일감은 하루 하나까지 (플레이 테스트 13: 한 통에서 뽑아 상단 일감 8종 중 3종만 나왔다)
+  const own = new Set(content.roles[roleId]?.missions ?? []);
+  const isExtra = (id: string) => !own.has(id) && extra.includes(id);
+  const allowed = (id: string) => (picked.length === 0 && pool.some((x) => !isExtra(x)) ? !isExtra(id) : !isExtra(id) || !picked.some(isExtra));
   while (picked.length < count) {
-    const from = fresh.length ? fresh : stale;
-    const [id] = from.splice(Math.floor(rng() * from.length), 1);
-    picked.push(id!);
+    // 역할·직분 몫이 쉬기보다 먼저다: 쉬는 일감밖에 없으면 쉬는 역할 일감을 다시 낸다
+    const choice = [fresh.filter(allowed), stale.filter(allowed), fresh, stale].find((c) => c.length)!;
+    const id = choice[Math.floor(rng() * choice.length)]!;
+    for (const list of [fresh, stale]) if (list.includes(id)) list.splice(list.indexOf(id), 1);
+    picked.push(id);
   }
   return { day, templateIds: picked };
 }

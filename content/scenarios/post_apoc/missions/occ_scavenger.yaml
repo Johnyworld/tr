@@ -31,6 +31,8 @@
   where: outside
   briefing: 창고에 약이 모자란다. 아직 안 털린 약국이나 병원 안쪽을 뒤져 붕대든 알약이든 찾아온다. 소리 내지 말고, 혼자 깊이 들어가지 마라.
   giver_rank: squad_leader
+  # 2인 1조 (기획서 7.9, 12-237: 브리핑은 "혼자 깊이 들어가지 마라"인데 짝이 없었다)
+  buddy: true
   supplies: { medicine: 3 }
   deadline_hours: 18
   requirements:
@@ -55,7 +57,7 @@
     - activity: work
       minutes: 120
 
-# 총기 손질과 신병 훈련 (12-81: 전투원을 수색대원에 합쳤다)
+# 총기 손질과 신병 훈련 (12-81: 전투원을 수색대원에 합쳤다. 12-237: 군대 무리의 역할 일감으로 옮겼다 — 상단·마을의 수색대원에게도 나왔다)
 - id: occ_soldier_cleaning
   title: 총기 손질
   briefing: 조의 총을 모두 모아 분해하고 닦는다. 녹 슨 데, 금 간 데, 헐거운 데를 찾아 적어 낸다. 내일 아침 검열이 있다.

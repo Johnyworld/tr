@@ -985,7 +985,7 @@ occupations:
     summary: 담 밖으로 나가는 사람. 폐허를 뒤지고, 길을 살피고, 싸움이 나면 총을 든다. 무리의 시나리오 임무와 이야기를 그대로 받는다
     skills: [shoot, scavenge]
     kit: [flashlight, crowbar]
-    missions: [occ_scavenger_sweep, occ_scavenger_mark_route, occ_scavenger_medicine, occ_scavenger_haul, occ_soldier_cleaning, occ_soldier_drill]
+    missions: [occ_scavenger_sweep, occ_scavenger_mark_route, occ_scavenger_medicine, occ_scavenger_haul]
   - id: guard
     label: 수비대원
     skills: [sense_danger]
@@ -1318,6 +1318,10 @@ travel: { tag: road, chance: [0.05, 0.12, 0.25, 0.4] }
 rest: { cast: 2, mission: 3, alarm: 3 }
 mission_move_groups:
   - [persuade, intimidate, deceive]
+# 임무 브리핑의 낌새 (content:check, 12-237): 짝을 말하면 buddy, 알아 오라면 learns가 있어야 한다 (플레이 테스트 13: "혼자 깊이 들어가지 마라"에 짝이 없었고, 발자국을 쫓아도 알게 된 것이 없었다)
+mission_hints:
+  buddy: ["혼자 (깊이 )?(들어가지|다니지|나가지) 마", "혼자 두지", "둘이서", "2인 1조"]
+  learns: ["어디서 왔는지", "어디로 가는지", "알아 온다", "알아 와", "알아내(?![^.]*아닙)"]
 
 storylet_pacing:
   # 이야기 사이 간격: 앞 이야기마다 6~12시간 사이로 (플레이 테스트 12: 하루 상한이 자정에 풀려 00시대에 몰렸다 → 하루 상한 대신 간격)

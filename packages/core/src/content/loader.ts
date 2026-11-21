@@ -487,7 +487,7 @@ function checkReferences(content: Content): string[] {
   const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));
   for (const m of Object.values(content.missions)) {
     if (m.advances && !plans.includes(m.advances.clock)) problems.push(`missions.${m.id}.advances: 알 수 없는 세력 클락 ${m.advances.clock}`);
-    if (m.where && m.where !== "outside" && m.where !== "enemy" && !content.locations[m.where]) problems.push(`missions.${m.id}.where: 알 수 없는 구역 ${m.where}`);
+    if (m.where && m.where !== "outside" && m.where !== "near" && m.where !== "enemy" && !content.locations[m.where]) problems.push(`missions.${m.id}.where: 알 수 없는 구역 ${m.where}`);
   }
   if (new Set(plans).size !== plans.length) problems.push("factions: 세력 클락(plans) id가 겹친다");
   const turns = content.scenario.body?.infection?.turns_into;
@@ -623,10 +623,23 @@ export function checkStorylets(content: Content): string[] {
     if (!filled) problems.push(`임무 ${m.id}: 결과 조건(goal)을 채우는 이야기(when.mission + mission_goal)가 없다`);
   }
   for (const st of Object.values(content.storylets)) for (const id of st.when.mission ?? []) if (!content.missions[id]) problems.push(`이야기 ${st.id}: 알 수 없는 임무 ${id}`);
-  // 배달 일감의 짐·품삯 (F5)
+  // 배달 일감의 짐·받아 올 값 (F5, 12-237)
   for (const m of Object.values(content.missions)) {
-    const ids = [...Object.keys(m.carries ?? {}), ...Object.keys(m.pay ?? {}), ...m.requirements.flatMap((r) => ("deliver" in r ? [r.deliver] : []))];
+    const ids = [...Object.keys(m.carries ?? {}), ...Object.keys(m.collects ?? {}), ...m.requirements.flatMap((r) => ("deliver" in r ? [r.deliver] : []))];
     for (const id of ids) if (!content.items[id]) problems.push(`임무 ${m.id}: 알 수 없는 아이템 ${id}`);
+  }
+  // 임무 브리핑의 낌새 (12-237): 짝을 말하면 buddy, 알아 오라면 learns가 있어야 한다. 말은 시나리오 팩의 mission_hints
+  {
+    const hints = content.scenario.mission_hints;
+    const buddyRe = hints.buddy.map((h) => new RegExp(h));
+    const learnsRe = hints.learns.map((h) => new RegExp(h));
+    for (const m of Object.values(content.missions)) {
+      // 분대가 있는 역할만 받는 임무는 분대가 곁에 있다
+      const roles = Object.values(content.roles).filter((r) => r.missions.includes(m.id));
+      const squadOnly = roles.length > 0 && roles.every((r) => (r.squad?.length ?? 0) > 0);
+      if (!m.buddy && !squadOnly && buddyRe.some((re) => re.test(m.briefing))) problems.push(`임무 ${m.id}: 브리핑이 짝을 말하는데 buddy가 없다`);
+      if (!m.learns && learnsRe.some((re) => re.test(m.briefing))) problems.push(`임무 ${m.id}: 브리핑이 알아 오라는데 완수 때 알게 되는 것(learns)이 없다`);
+    }
   }
   // 태그로 여는 이야기 (D5·D6): 그 태그의 이야기가 하나는 있어야 한다
   const hasStories = Object.keys(content.storylets).length > 0;

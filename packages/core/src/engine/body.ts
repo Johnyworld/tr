@@ -31,6 +31,7 @@ export { needsSurgery, canOperate, surgeonRoll, operate } from "./care/surgery.t
 import { needsSurgery, canOperate, surgeonRoll, operate } from "./care/surgery.ts";
 export { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery } from "./care/recovery.ts";
 import { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery } from "./care/recovery.ts";
+import { ownCount } from "../rules/entrusted.ts";
 
 /**
  * 몸 상태 (기획서 4.4, 4.5): 부상 회복, 소모품, 허기, 감염. 수치는 시나리오(recovery, consumables, body)에서 온다.
@@ -331,7 +332,7 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     if (!captive && levelIndex(ctx, ctx.store.getState(), state.playerId, track.id) > 0) {
       const inv = player()!.inventory;
       const food = Object.entries(content.scenario.consumables)
-        .filter(([id, e]) => (inv[id] ?? 0) > 0 && (e[track.id] ?? 0) > 0 && content.items[id]?.kind === "food" && !content.items[id]?.contaminated)
+        .filter(([id, e]) => ownCount(ctx.store.getState(), state.playerId, id) > 0 && (e[track.id] ?? 0) > 0 && content.items[id]?.kind === "food" && !content.items[id]?.contaminated)
         .sort(([, a], [, b]) => (a[track.id] ?? 0) - (b[track.id] ?? 0))[0];
       if (food) {
         const ate = useItem(ctx, food[0]);
@@ -567,7 +568,8 @@ function dailyHabits(ctx: ToolContext): Change[] {
   if (!me || me.dead) return changes;
   for (const h of habitsOf(ctx.content, me)) {
     const now = ctx.store.getState().characters[me.id]!;
-    const item = h.items.find((i) => (now.inventory[i] ?? 0) > 0);
+    // 남의 물건(맡은 담배)은 저절로 피우지 않는다 (공통 규칙 10)
+    const item = h.items.find((i) => (now.inventory[i] ?? 0) > 0 && ownCount(ctx.store.getState(), me.id, i) > 0);
     let c: Change | null;
     if (item) {
       ctx.store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: 1 });

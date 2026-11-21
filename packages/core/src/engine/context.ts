@@ -147,7 +147,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...depositLines(state, content),
       ...(describeStash(content, state) ? [describeStash(content, state)!] : []),
       ...(describeGear(content, player) ? [describeGear(content, player, state)] : []),
-      ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감·물건으로만 준다`] : []),
+      ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감이나, 그 무리 사람에게 갚는다고 건넨 물건(transfer_item repay)으로만 준다`] : []),
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
       ...describeRemains(state, content),
       ...(describeCompanions(state, content) ? [describeCompanions(state, content)] : []),

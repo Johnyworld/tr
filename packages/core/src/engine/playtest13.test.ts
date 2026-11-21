@@ -364,6 +364,52 @@ describe("치료 (12-236)", () => {
   });
 });
 
+describe("상단·임무 (12-237)", () => {
+  it("오늘의 일감 둘 가운데 하나는 늘 역할 일감이고, 직분 일감은 하루 하나까지다", () => {
+    const own = content.roles.role_e_porter!.missions;
+    const extra = ["occ_scavenger_sweep", "occ_scavenger_mark_route", "occ_scavenger_medicine", "occ_scavenger_haul"];
+    for (let i = 0; i < 30; i++) {
+      const offers = pickDailyOffers(content, "role_e_porter", 1440 * 5 + 360, null, createSeededRng(i), extra)!;
+      expect(offers.templateIds.some((id) => own.includes(id))).toBe(true);
+      expect(offers.templateIds.filter((id) => !own.includes(id)).length).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("상단·마을의 수색대원에게 군대 일감(총기 손질·신병 훈련)이 나오지 않는다", () => {
+    const scav = content.scenario.occupations.find((o) => o.id === "scavenger")!;
+    expect(scav.missions).not.toContain("occ_soldier_cleaning");
+    expect(content.roles.role_a_grunt!.missions).toContain("occ_soldier_cleaning");
+  });
+
+  it("거점과 맞닿은 곳(near) 임무는 거점 구역에서 한 일도 세고, 완수하면 알게 되는 것을 믿음으로 남긴다", () => {
+    const w = world("role_b_guard");
+    const commander = content.roles.role_b_guard!.commander!;
+    w.executeTool("npc_presence", { npc_id: commander, action: "enter" });
+    w.ctx().store.append({ type: "missions_offered", day: Math.floor(w.state().time / 1440) + 1, templateIds: ["b_footprints"] });
+    const out = w.executeTool("assign_mission", { template_id: "b_footprints" });
+    expect(out.ok, out.ok ? "" : out.error).toBe(true);
+    const m = activeMissionOf(w.state().missions, w.state().playerId)!;
+    expect(m.place?.zones).toContain("b_base");
+    expect(m.place?.label).toContain("맞닿은 곳");
+    for (let i = 0; i < m.requirements.length; i++) w.ctx().store.append({ type: "mission_requirement_met", missionId: m.id, index: i });
+    const r = w.executeTool("report_mission", {});
+    expect(r.ok && r.resultText).toContain("알게 된 것");
+    expect(JSON.stringify(w.state().beliefs[w.state().playerId])).toContain("남쪽 밭 둑길");
+  });
+
+  it("수색 활동이라도 수색 판정이 아니면 수색표를 굴리지 않는다", () => {
+    const w = world("role_c_comrades");
+    const zone = Object.values(content.locations).find((l) => l.loot?.items.length && !l.owner)!.id;
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: zone });
+    const inv = () => JSON.stringify(w.state().characters[w.state().playerId]!.inventory);
+    const before = inv();
+    const out = w.executeTool("take_action", act({ intent: "발자국을 읽으며 따라간다", activity: { kind: "search", until: null }, check: { move: "survival", stat: "senses", difficulty: "easy", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" } }));
+    expect(out.ok, out.ok ? "" : out.error).toBe(true);
+    expect(out.ok && out.resultText).toContain("찾은 물건은 없다");
+    expect(inv()).toBe(before);
+  });
+});
+
 describe("균형: 진급·공적·레벨 (플레이 테스트 13 뒤 정한 것)", () => {
   it("판정 하나에 1시간 이하인 짧은 일감의 완수는 공적 +2, 판정이 둘이면 +3", () => {
     const short = { requirements: [{ check: "first_aid", min: "partial" }, { activity: "treat", minutes: 60 }], progress: [1, 60], deadline: 100 } as never;

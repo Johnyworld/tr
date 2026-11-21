@@ -32,7 +32,7 @@
   deadline_hours: 14
   # 배달 (플레이 테스트 11, F5): 받을 때 짐을 받고, 임무 자리에서 넘긴다
   carries: { water_bottle: 2 }
-  pay: { cigarettes: 2, scrap_metal: 1 }
+  collects: { cigarettes: 2, scrap_metal: 1 }
   requirements:
     - deliver: water_bottle
       quantity: 2

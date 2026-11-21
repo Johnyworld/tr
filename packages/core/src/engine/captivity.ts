@@ -21,6 +21,7 @@ import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
 import { hearNews } from "../rules/news.ts";
 import { protectedFromWorld } from "../rules/company.ts";
+import { currentPlace, jailFor, jailIn } from "../rules/place.ts";
 
 /**
  * 포로 (기획서 7.6, 12-55).
@@ -34,30 +35,45 @@ import { protectedFromWorld } from "../rules/company.ts";
 const rules = (content: Content) => content.scenario.captivity;
 export const baseOf = (content: Content, faction: string) => Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")?.id;
 
-/** 주인공이 붙잡힌다. 갇히는 곳은 zone이 없으면 붙잡은 무리의 거점. 돌려줄 한 줄 */
+/**
+ * 주인공이 붙잡힌다. 갇히는 곳은 zone이 있으면 그 구역(가두는 장소가 있으면 그 장소),
+ * 없으면 공통 규칙 15의 jailFor: 붙잡힌 구역에 그 무리의 가두는 장소가 있으면 그곳, 아니면 가두는 장소가 있는 그 무리 땅(거점 먼저). 돌려줄 한 줄
+ */
 export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause = "붙잡혔다"): string | null {
   const { store, content } = ctx;
   const c = rules(content);
   const state = store.getState();
   const me = state.characters[state.playerId];
-  const where = zone ?? baseOf(content, by);
-  if (!c || !me || me.dead || heldOf(me) || !where || !content.factions[by] || by === me.factionId) return null;
+  const jail = zone ? { zone, place: jailIn(content, zone)?.id ?? null } : jailFor(state, content, by, state.playerZone);
+  const where = jail?.zone;
+  if (!c || !me || me.dead || heldOf(me) || !jail || !where || !content.factions[by] || by === me.factionId) return null;
   // 동행은 그 자리에 남는다 (끌고 가던 포로는 풀려난다). 임무 짝은 자기 자리로 돌아가 알린다 (플레이 테스트 13: 적 거점에서 이틀을 기다리다 다시 합류했다)
-  const left = state.companions.length > 0;
+  // 누가 어떻게 됐는지 적는다 (PT14 경비: "함께 있던 사람은 따라오지 못했다"뿐이라 짝의 행방을 끝내 몰랐다)
+  const fates: string[] = [];
+  const spot = currentPlace(state, content);
   for (const id of state.companions) {
     const kind = state.bonds[id]?.kind;
-    if (kind === "prisoner" || kind === "buddy") store.append({ type: "companion_left", characterId: id, reason: kind === "buddy" ? "짝이 붙잡혀 혼자 돌아갔다" : "풀려났다" });
-    else if (state.playerZone) store.append({ type: "companion_parted", characterId: id, zone: state.playerZone, until: null });
+    const who = playerCalls(state, content, id);
+    if (kind === "prisoner" || kind === "buddy") {
+      store.append({ type: "companion_left", characterId: id, reason: kind === "buddy" ? "짝이 붙잡혀 혼자 돌아갔다" : "풀려났다" });
+      fates.push(kind === "buddy" ? `짝 ${josa(who, "은/는")} 붙잡히지 않고 혼자 돌아가 알린다` : `끌고 가던 ${josa(who, "은/는")} 풀려났다`);
+    } else if (state.playerZone) {
+      store.append({ type: "companion_parted", characterId: id, zone: state.playerZone, until: null, place: spot?.id ?? null });
+      fates.push(`${josa(who, "은/는")} 붙잡힌 자리에 남았다 (풀려나 그곳에 가면 다시 합류한다)`);
+    }
   }
   const held = Object.fromEntries(Object.entries(me.inventory).filter(([id, n]) => n > 0 && (c.confiscate.includes(content.items[id]?.kind ?? "") || c.confiscate_items.includes(id))));
+  const taken = Object.entries(held).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`);
   // 붙잡힌 결과는 공통 규칙 3 (rules/consequence.ts): 들키지 않기 임무, 침입 행적, 그 무리의 태도
   const spotted = onCaptured(ctx, by).join(" ");
-  store.append({ type: "player_captured", by, zone: where, held });
+  store.append({ type: "player_captured", by, zone: where, held, place: jail.place });
   const name = content.factions[by]!.name;
-  const fact = sentence(`${cause}. ${name}에 붙잡혀 ${content.locations[where]?.name ?? where}에 갇혔다`);
+  const cell = jail.place ? jailIn(content, where)?.name : null;
+  const fact = sentence(`${cause}. ${name}에 붙잡혀 ${content.locations[where]?.name ?? where}${cell ? `의 ${cell}` : ""}에 갇혔다`);
   store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${store.getState().nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time } });
   return (
-    `${fact} 무기와 탄은 빼앗겼다.${left ? " 함께 있던 사람은 따라오지 못했다." : ""} ${spotted ? `${spotted} ` : ""}` +
+    // 빼앗긴 것을 하나하나 적는다 (PT14 경비: "무기와 탄"이라 했는데 쌍안경·손전등도 사라졌다)
+    `${fact} ${taken.length ? `빼앗긴 것: ${taken.join(", ")} (풀려나는 길에 따라 돌려받는다).` : "빼앗긴 것은 없다."}${fates.length ? ` ${fates.join(". ")}.` : ""} ${spotted ? `${spotted} ` : ""}` +
     `갇힌 동안에는 갇힌 곳의 이야기만 열린다. 빠져나가려면 맞닿은 구역으로 옮겨 가는 행동에 ${c.escape_moves.join("/")} 판정과 무거운 위험(heavy)을 건다.`
   );
 }

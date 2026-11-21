@@ -28,9 +28,10 @@ export function scavengeParts(ctx: ToolContext): Part[] {
   const lore = content.scenario.search_lore;
   const known = lore && effectiveSkill(content, state.characters[state.playerId]!, lore.skill) >= 1;
   return [
-    { label: loot.modifier > 0 ? "넉넉한 곳" : "털린 곳", value: loot.modifier },
-    { label: "다시 뒤짐", value: -searchedToday(state, zone) },
-    ...(lore && known ? [{ label: moveLabel(content.scenario, lore.skill), value: lore.bonus }] : []),
+    // 판정 줄만 보고 까닭을 알게 (플레이 테스트 14: "+1(넉넉한 곳) +1(역사)"가 무슨 뜻인지 몰랐다)
+    { label: loot.modifier > 0 ? "뒤질 거리가 많은 구역" : "털린 구역", value: loot.modifier },
+    { label: "오늘 다시 뒤짐", value: -searchedToday(state, zone) },
+    ...(lore && known ? [{ label: `${moveLabel(content.scenario, lore.skill)}: 옛 건물 쓰임을 앎`, value: lore.bonus }] : []),
   ].filter((p) => p.value !== 0);
 }
 

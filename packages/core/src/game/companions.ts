@@ -1,4 +1,5 @@
 import { heldOf } from "../rules/held.ts";
+import { placeById } from "../rules/place.ts";
 import { josa } from "../text.ts";
 import type { Content } from "../content/schemas.ts";
 import { aliasOf } from "./acquaintance.ts";
@@ -148,7 +149,7 @@ export function describeCompanions(state: GameState, content: Content): string {
   for (const id of apartCompanions(state)) {
     const b = state.bonds[id]!;
     const where = b.apart!.zone
-      ? `${content.locations[b.apart!.zone]?.name ?? b.apart!.zone}에서 기다린다 (그 구역에 가면 다시 합류한다)`
+      ? `${content.locations[b.apart!.zone]?.name ?? b.apart!.zone}${b.apart!.place ? `의 ${placeById(state, content, b.apart!.place, b.apart!.zone)?.name ?? b.apart!.place}` : ""}에서 기다린다 (그 자리를 떠났다 돌아오거나 구역에 다시 들어서면 합류한다. 그 전에 데려가려면 npc_presence enter)`
       : `볼일을 보러 갔다 (${formatTime(b.apart!.until ?? state.time)}쯤 돌아온다)`;
     lines.push(`떨어져 있는 동행: ${name(id)} (${id}) · ${BOND_LABELS[b.kind]} · ${where}`);
   }

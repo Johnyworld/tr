@@ -925,6 +925,11 @@ condition_tracks:
       - { id: satisfied }
       - { id: restless, symptoms: [restless, drowsy] }
       - { id: withdrawal, symptoms: [withdrawal, weary] }
+# 인물 카드(alias·look)가 이 낱말로 다쳤거나 앓는다고 쓰면 npcs의 starts에 그 트랙의 시작 상태가 있어야 한다 (content:check, 플레이 테스트 14)
+# 붕대·오래된 흉터처럼 다 나은 것은 넣지 않는다
+card_body_words:
+  harm: "다친|다쳤|부러진|부러졌|절뚝|판자로 묶"
+  disease: "열에 들뜬|고열|앓는|앓고"
 # apply_harm이 쓰는 트랙
 harm_track: harm
 

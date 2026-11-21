@@ -224,6 +224,8 @@ const npcPresence = defineTool({
         return { ok: false, error: `${josa(name, "은/는")} 지금 장면에 들일 수 없다 (캐릭터는 이 사람의 행방을 모른다).` };
       }
       enterScene(ctx, character.id);
+      // 기다리던 구역에서 남겨 둔 동행을 들이면 다시 곁에 선다 (PT14 떠돌이: 들였는데도 기다림이 그대로라 구역을 옮기자 개를 잃었다)
+      if (state.bonds?.[character.id]?.apart) store.append({ type: "companion_rejoined", characterId: character.id });
     } else {
       if (!present) return { ok: false, error: `${josa(name, "은/는")} 장면에 없습니다.` };
       store.append({ type: "npc_left", npcId: character.id });

@@ -16,6 +16,7 @@ import type { Character } from "../game/character.ts";
 import { FAMILY_KINDS, TIE_INVERSE, TIE_LABELS, tieKey, tieKnown, tiesOf, type TieKind, type TieRecord } from "../game/ties.ts";
 import type { Rng } from "../rng.ts";
 import { josa } from "../text.ts";
+import { personaOf } from "./persona.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
@@ -88,6 +89,21 @@ export function generateDynamicTies(ctx: ToolContext): void {
 }
 
 /** 이름 없는 인물을 자라게 한다: 틀의 재료로 프로필, 틀의 확률로 이름 있는 인물과의 관계 */
+/**
+ * 자랄 때의 말투: 그 사람이 이미 가진 성격(축)·말씨와 어긋나지 않는 것 중에서 고른다 (PT14: 수다쟁이·수다스러움 2에게 "말을 아끼는 존댓말",
+ * 경상도 사투리를 쓰던 사람에게 표준어 말투). 맞는 것이 없으면 아무것이나. 저장하는 모양은 style·samples만
+ */
+function pickVoice(content: Content, c: Character, voices: NonNullable<Content["extras"][string]["profile"]>["voices"], rng: Rng): { style: string; samples: string[] } {
+  const persona = personaOf(content, c);
+  const fits = voices.filter(
+    (v) =>
+      !Object.entries(v.persona ?? {}).some(([axis, want]) => (want ?? 0) * (persona[axis] ?? 0) < 0) &&
+      !(v.dialect && c.origin && !c.origin.dialect),
+  );
+  const v = pickFrom(rng, fits.length ? fits : voices);
+  return { style: v.style, samples: [...v.samples] };
+}
+
 export function promoteExtra(ctx: ToolContext, id: string): boolean {
   const { store, content, rng } = ctx;
   const state = store.getState();
@@ -100,7 +116,7 @@ export function promoteExtra(ctx: ToolContext, id: string): boolean {
     want: pickFrom(rng, p.wants),
     fear: pickFrom(rng, p.fears),
     reputation: pickFrom(rng, p.reputations),
-    voice: pickFrom(rng, p.voices),
+    voice: pickVoice(content, c, p.voices, rng),
     rules: p.rules.length ? [pickFrom(rng, p.rules)] : [],
     secret: secret ? { ...secret } : null,
     promotedAt: state.time,
@@ -305,7 +321,7 @@ const promoteTool = defineTool({
     const name = playerCalls(store.getState(), content, input.target);
     return {
       ok: true,
-      resultText: `${josa(name, "은/는")} 이제 이야기 속 인물이다. 원하는 것: ${p.want} / 두려워하는 것: ${p.fear} / 말투: ${p.voice.style}. 카드에 붙은 대로 연기한다 (서술로 직접 밝히지 않는다).`,
+      resultText: `${josa(name, "은/는")} 이제 이야기 속 인물이다. 원하는 것: ${p.want} / 두려워하는 것: ${p.fear} / 말투: ${p.voice.style}. 카드에 붙은 대로 연기한다 (서술로 직접 밝히지 않는다). 자라기 전 장면에서 이미 쓰던 반말·존댓말과 말씨, 성격은 그대로 이어 간다 (말투는 그 위의 결).`,
       display: { type: "presence", npcName: name, action: "enter" },
     };
   },
@@ -353,7 +369,8 @@ export function describeProfileLines(state: GameState, content: Content, c: Char
         ? `이 인물은 이제 당신에게 비밀을 털어놓을 수 있는 관계다. 공개 상황: ${maskUnknownNames(state, content, p.secret.reveal_when)}. 상황이 맞으면 reveal_secret`
         : null;
   return [
-    `말투: ${p.voice.style} / 예시 대사: ${p.voice.samples.map((x) => `"${x}"`).join(" / ")}`,
+    // 사투리를 쓰는 사람이면 말투에 말씨를 얹는다 (PT14: 경상도 사투리를 쓰던 사람이 자라자 표준어 존댓말로 바뀐 줄 알았다)
+    `말투: ${p.voice.style}${c.origin?.dialect ? " (말씨 줄의 사투리를 그대로 얹는다)" : ""} / 예시 대사: ${p.voice.samples.map((x) => `"${x}"`).join(" / ")}`,
     `평판: ${p.reputation}`,
     `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다] 원하는 것: ${maskUnknownNames(state, content, p.want)} / 두려워하는 것: ${maskUnknownNames(state, content, p.fear)}`,
     ...(p.rules.length ? [`행동 규칙: ${p.rules.map((r) => maskUnknownNames(state, content, r)).join(" / ")}`] : []),

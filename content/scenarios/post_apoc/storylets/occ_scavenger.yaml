@@ -105,6 +105,8 @@
   cast:
     # 플레이 테스트 13: 깔린 사람이 여섯 판 모두 멀쩡했다
     mate: { faction: own, ranks: [grunt, staff], known: true, not_companion: true, starts: { harm: light } }
+  # 플레이 테스트 14: 깔린 상처(starts)에 npc_hurt가 더해져 구했는데 경상 → 치명상. 성공은 깔린 상처 그대로, 대가 있는 성공은 한 단계 더(중상),
+  # 실패와 두고 가기는 두 단계(치명상, "크게 다친다"). 구하러 간 쪽이 두고 간 쪽보다 나쁘지 않게 (content:check)
   setup: >-
     가까운 건물 안에서 바닥이 통째로 꺼지는 소리가 울린다. 무너진 입구 너머, 먼지가 가라앉는 구멍 아래로 같은 무리의 {mate:이/가} 보인다. 혼자 그 건물을 뒤지던 참이었다. 아래층에 다리가 걸렸다. 무너진 콘크리트 판이 정강이를 누르고 있다.
     {mate:이/가} 이를 악물고 올려다본다. 복도 저쪽 어둠에서 무언가 끄는 발소리가 이쪽으로 온다.
@@ -120,7 +122,6 @@
         success:
           - set_flag: occ_sc_pinned_done
           - standing: 1
-          - npc_hurt: { who: mate, steps: 1 }
           - relation: { who: mate, axis: trust, delta: 2 }
           - relation: { who: mate, axis: affection, delta: 1 }
           - deed: { summary: 무너진 바닥에 깔린 동료를 지렛대로 빼내 업고 나왔다, tags: [loyalty, bravery], severity: 2, privacy: public }
@@ -128,7 +129,7 @@
         partial:
           - set_flag: occ_sc_pinned_done
           - zone_noise: 2
-          - npc_hurt: { who: mate, steps: 2 }
+          - npc_hurt: { who: mate, steps: 1 }
           - relation: { who: mate, axis: trust, delta: 2 }
           - deed: { summary: 무너진 바닥에 깔린 동료를 빼내 왔다, tags: [loyalty], severity: 2, privacy: public }
           - belief: { fact: "판을 들어 올리다 미끄러져 한 번 더 내려앉았다. {mate}의 다리가 크게 상했다. 소리에 쫓기며 겨우 빠져나왔다", source: seen }
@@ -145,14 +146,13 @@
         success:
           - set_flag: occ_sc_pinned_done
           - standing: 1
-          - npc_hurt: { who: mate, steps: 1 }
           - relation: { who: mate, axis: trust, delta: 2 }
           - deed: { summary: 무너진 바닥에 깔린 동료를 맨손으로 빼냈다, tags: [loyalty, bravery], severity: 2, privacy: public }
           - belief: { fact: "꺼진 바닥에 깔린 {mate:을/를} 맨손으로 빼냈다. 한참 동안 팔이 후들거렸다", source: seen }
         partial:
           - set_flag: occ_sc_pinned_done
           - zone_noise: 2
-          - npc_hurt: { who: mate, steps: 2 }
+          - npc_hurt: { who: mate, steps: 1 }
           - relation: { who: mate, axis: trust, delta: 1 }
           - belief: { fact: "판을 반쯤 들었고 {mate:이/가} 다리를 끌어냈다. 소리가 너무 컸다", source: seen }
         miss:
@@ -166,12 +166,11 @@
       outcomes:
         success:
           - set_flag: occ_sc_pinned_done
-          - npc_hurt: { who: mate, steps: 1 }
           - relation: { who: mate, axis: respect, delta: 1 }
           - belief: { fact: "깡통을 멀리 던져 소리를 끌고 사람을 불러왔다. {mate:은/는} 숨을 죽이고 기다렸다. 둘 다 살아서 돌아왔다", source: seen }
         partial:
           - set_flag: occ_sc_pinned_done
-          - npc_hurt: { who: mate, steps: 2 }
+          - npc_hurt: { who: mate, steps: 1 }
           - relation: { who: mate, axis: trust, delta: -1 }
           - belief: { fact: "사람을 데리고 돌아갔을 때 {mate:은/는} 혼자 빠져나와 있었다. 다리를 질질 끌며 나를 보지 않았다", source: seen }
         miss:

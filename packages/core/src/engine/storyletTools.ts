@@ -1,4 +1,5 @@
 import { blameSuspended } from "../rules/blame.ts";
+import { leaveMissionsBehind } from "./missionTools.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { bleedFromHarm } from "./bleeding.ts";
 import { equippedItem, wearItem } from "./gear.ts";
@@ -296,7 +297,7 @@ export const resolveStorylet = defineTool({
     ];
     const extra: ToolDisplayEvent[] = [];
     for (const effect of effects) {
-      const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title);
+      const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title, { judged: outcome !== null });
       if (r.line) lines.push(r.line);
       if (r.display) extra.push(r.display);
       if (r.displays) extra.push(...r.displays);
@@ -413,6 +414,8 @@ export function applyEffect(
   cast: Record<string, string>,
   vars: Record<string, string>,
   reason: string,
+  /** judged: 판정 결과(성공·대가 있는 성공·실패)가 고른 효과다. 그 대가를 다른 판정으로 다시 굴리지 않는다 (플레이 테스트 14) */
+  options: { judged?: boolean } = {},
 ): { line?: string; display?: ToolDisplayEvent; displays?: ToolDisplayEvent[] } {
   const { store, content } = ctx;
   const state = store.getState();
@@ -560,9 +563,11 @@ export function applyEffect(
     const fromLabel = rankName(content, player.factionId, player.rank);
     const rank = content.scenario.custom_start?.free_rank ?? content.scenario.rank_ladder[0]!.id;
     const role = joinRole(content, "", rank, { age: player.age, title: "떠돌이", occupation: player.occupation?.id ?? null });
+    // 쫓겨난 무리의 임무는 거기서 끝난다 (플레이 테스트 14)
+    const left = leaveMissionsBehind(ctx);
     store.append({ type: "player_joined_faction", factionId: "", rank: role.rank, role, beliefs: [] });
     return {
-      line: `${from}에서 쫓겨났다. 이제 무소속이다: 배급·임무·분대·회의가 끊겼고, 거점의 사물함은 쓸 수 없다 (맡긴 물건은 거기 남아 있다). 그 무리 사람들이 당신을 어떻게 볼지는 저마다 다르다.`,
+      line: `${from}에서 쫓겨났다. 이제 무소속이다: 배급·임무·분대·회의가 끊겼고, 거점의 사물함은 쓸 수 없다 (맡긴 물건은 거기 남아 있다). 그 무리 사람들이 당신을 어떻게 볼지는 저마다 다르다.${left.lines.map((l) => ` ${l}`).join("")}`,
       display: { type: "promotion", name: player.name, fromLabel: `${from} ${fromLabel}`, toLabel: "무소속" },
     };
   }
@@ -807,9 +812,10 @@ export function applyEffect(
   if ("body" in effect) {
     const { track, delta } = effect.body;
     if (track === content.scenario.harm_track) return {};
-    // 마음이 흔들리는 일은 주인공이 마음 다잡기를 굴린다 (12-220, chance를 쓰지 않는다)
+    // 마음이 흔들리는 일은 주인공이 마음 다잡기를 굴린다 (12-220, chance를 쓰지 않는다).
+    // 다만 판정 결과가 이미 정한 대가면 다시 굴리지 않는다 (플레이 테스트 14: 다리 건너기 대가 있는 성공의 "마음 +1"을 버티기 판정이 또 지워 한 행동에 판정이 둘이었다)
     if (delta > 0 && track === content.scenario.body?.nerves?.track) {
-      const shaken = shakeNerves(ctx, delta, reason);
+      const shaken = shakeNerves(ctx, delta, reason, !options.judged);
       return { ...(shaken.lines.length ? { line: shaken.lines.join(" ") } : {}), displays: shaken.displays };
     }
     if (effect.body.chance < 1 && ctx.rng() >= effect.body.chance) return {}; // 이번엔 아무 일도 없었다 (아무도 모른다)
@@ -881,9 +887,11 @@ export function applyEffect(
     // 붙잡은 무리에 들면 더는 포로가 아니다 (빼앗긴 것도 돌려받는다, 12-55)
     if (heldOf(player)) releasePlayer(ctx, heldOf(player)!.by === faction);
     const role = joinRole(content, faction, rank, { age: player.age, title, occupation: player.occupation?.id ?? null });
+    // 예전 무리의 임무는 거기서 끝난다: 새 무리 임무를 막거나 새 무리 규율로 벌하지 않게 (플레이 테스트 14, 방문자 T51~T63)
+    const left = leaveMissionsBehind(ctx);
     // 그 무리에서 처음 듣는 사정: 같은 계급 시나리오의 시작 지식 (다른 계급의 지식은 주지 않는다)
     const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
-    let no = state.nextBeliefNo;
+    let no = store.getState().nextBeliefNo;
     const beliefs = (preset?.beliefs ?? []).map((b) => ({ id: `b_${no++}`, fact: b.fact, source: b.source === "seen" ? ("report" as const) : b.source, accuracy: b.accuracy, learnedAt: state.time }));
     const grace = effect.join_faction.grace_days;
     store.append({ type: "player_joined_faction", factionId: faction, rank: role.rank, role, beliefs, ...(grace ? { graceUntil: state.time + grace * MINUTES_PER_DAY } : {}) });
@@ -894,7 +902,8 @@ export function applyEffect(
       line:
         `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}${newName ? " (이제 이름을 안다)" : ""}.` : ""} 이제 이 무리의 배급과 임무를 받는다.` +
         (player.factionId ? ` 전에 있던 무리(${content.factions[player.factionId]?.name ?? player.factionId})의 사람들은 이제 남이다.` : "") +
-        (beliefs.length ? ` 이 무리 사정을 ${beliefs.length}가지 들었다 (상태의 믿음).` : ""),
+        (beliefs.length ? ` 이 무리 사정을 ${beliefs.length}가지 들었다 (상태의 믿음).` : "") +
+        left.lines.map((l) => ` ${l}`).join(""),
       display: { type: "promotion", name: player.name, fromLabel: from, toLabel: role.label },
     };
   }

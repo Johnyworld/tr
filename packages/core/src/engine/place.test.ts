@@ -5,7 +5,8 @@ import { describe, expect, it } from "vitest";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { createSeededRng } from "../rng.ts";
-import { currentPlace, guardedHere, nearby, npcPlaceAt, placeIndoor, placesIn, shelterAt, storyPlaceFits, whereIs } from "../rules/place.ts";
+import { currentPlace, ENTRY_PLACE, guardedHere, jailFor, nearby, npcPlaceAt, placeIndoor, placesIn, shelterAt, storyPlaceFits, whereIs } from "../rules/place.ts";
+import { capturePlayer } from "./captivity.ts";
 import { campSite } from "./camp.ts";
 import { feelsLike } from "./climate.ts";
 
@@ -93,5 +94,116 @@ describe("구역 안의 장소 (12-244, 공통 규칙 15)", () => {
     w.executeTool("take_action", act({ place_to: "barracks" }));
     const at = whereIs(w.state(), content, npc.id);
     if (at?.place && at.place !== "barracks") expect(nearby(w.state(), content, npc.id)).toBe(false);
+  });
+});
+
+describe("장소·동행·물건·붙잡힘 (PT14)", () => {
+  it("동무조 T1: 들인 사람을 target으로 둔 place_to는 그 사람과 함께 옮긴다 (다음 호출이 오류가 되지 않는다)", () => {
+    const w = world("role_c_comrades");
+    expect(w.executeTool("npc_presence", { npc_id: "c_cm_jaeho", action: "enter" }).ok).toBe(true);
+    const out = w.executeTool("take_action", act({ place_to: "yard", target: "c_cm_jaeho" }));
+    expect(out.ok, out.ok ? "" : out.error).toBe(true);
+    expect(w.state().scene.present).toContain("c_cm_jaeho");
+    const again = w.executeTool("take_action", act({ target: "c_cm_jaeho" }));
+    expect(again.ok, again.ok ? "" : again.error).toBe(true);
+  });
+
+  it("거절되는 행동의 place_to는 옮기지도 시간을 쓰지도 않는다", () => {
+    const w = world("role_c_comrades");
+    const t = w.state().time;
+    const out = w.executeTool("take_action", act({ place_to: "yard", use_item: "no_such_item" }));
+    expect(out.ok).toBe(false);
+    expect(currentPlace(w.state(), content)).toBeNull();
+    expect(w.state().time).toBe(t);
+    const stray = w.executeTool("take_action", act({ place_to: "yard", place_with: ["c_cm_jaeho"] }));
+    expect(stray.ok ? "" : stray.error).toContain("장면에 없다");
+    expect(currentPlace(w.state(), content)).toBeNull();
+  });
+
+  it("짐꾼 T1: 옮겨 가는 장소가 제자리인 사람과 place_with로 데려간 사람은 남고, 나머지는 원래 자리에 남는다", () => {
+    const w = world("role_c_comrades");
+    const s = w.state();
+    // 창고 마당이 지금 제자리인 사람과 아닌 사람
+    const ids = Object.values(content.npcs).filter((n) => n.zone === "c_warehouse" && !s.characters[n.id]?.dead).map((n) => n.id);
+    const home = ids.find((id) => npcPlaceAt(s, content, id) === "yard");
+    const others = ids.filter((id) => npcPlaceAt(s, content, id) !== "yard").slice(0, 2);
+    expect(home && others.length === 2).toBeTruthy();
+    for (const id of [home!, ...others]) expect(w.executeTool("npc_presence", { npc_id: id, action: "enter" }).ok).toBe(true);
+    const out = w.executeTool("take_action", act({ place_to: "yard", place_with: [others[0]] }));
+    expect(out.ok, out.ok ? "" : out.error).toBe(true);
+    expect(w.state().scene.present).toEqual(expect.arrayContaining([home!, others[0]!]));
+    expect(w.state().scene.present).not.toContain(others[1]);
+    expect(out.ok && out.resultText).toContain("원래 자리에 남았다");
+  });
+
+  it("떠돌이 T52: 같은 구역의 한 장소에 기다리게 한 동행은 그 장소를 떠났다 돌아오면 합류하고, npc_presence로 들여도 합류한다", () => {
+    const w = world("role_l_wanderer");
+    const dog = w.state().companions[0];
+    expect(dog).toBeTruthy();
+    const zone = w.state().playerZone!;
+    const [p1, p2] = placesIn(w.state(), content, zone);
+    expect(p1 && p2).toBeTruthy();
+    w.executeTool("take_action", act({ place_to: p1!.id, ignore_story: true }));
+    expect(w.executeTool("companion_part", { target: dog, how: "wait", hours: null }).ok).toBe(true);
+    expect(w.state().companions).not.toContain(dog);
+    w.executeTool("take_action", act({ place_to: p2!.id, ignore_story: true }));
+    expect(w.state().companions).not.toContain(dog);
+    w.executeTool("take_action", act({ place_to: p1!.id, ignore_story: true }));
+    expect(w.state().companions).toContain(dog);
+    expect(w.state().bonds[dog!]?.apart).toBeUndefined();
+    // 다시 남겨 두고, 다른 장소에서 들이면 기다림이 풀린다
+    w.executeTool("companion_part", { target: dog, how: "wait", hours: null });
+    w.executeTool("take_action", act({ place_to: p2!.id, ignore_story: true }));
+    expect(w.executeTool("npc_presence", { npc_id: dog, action: "enter" }).ok).toBe(true);
+    expect(w.state().companions).toContain(dog);
+    expect(w.state().bonds[dog!]?.apart).toBeUndefined();
+  });
+
+  it("방문자: 장소를 정하기 전에 내려놓은 물건은 막 들어선 자리에 남고, place_to entry로 돌아가 찾는다", () => {
+    const w = world("role_a_grunt");
+    const me = w.state().playerId;
+    const item = Object.keys(w.state().characters[me]!.inventory)[0]!;
+    w.executeTool("transfer_item", { from: me, to: "scene", item_id: item, quantity: 1 });
+    const moved = w.executeTool("take_action", act({ place_to: "barracks" }));
+    expect(moved.ok && moved.resultText).toContain(ENTRY_PLACE);
+    expect(w.state().scene.items[item]).toBeUndefined();
+    const back = w.executeTool("take_action", act({ place_to: ENTRY_PLACE }));
+    expect(back.ok, back.ok ? "" : back.error).toBe(true);
+    expect(currentPlace(w.state(), content)).toBeNull();
+    expect(w.state().scene.items[item]).toBe(1);
+  });
+
+  it("방문자·경비: 붙잡히면 그 무리의 가두는 장소에 갇히고, 붙잡힌 자리의 바닥 물건은 따라오지 않고, 빼앗긴 것과 동행의 행방을 적는다", () => {
+    const w = world("role_t_visitor");
+    const me = w.state().playerId;
+    // 수용소가 있는 물류창고에서 붙잡히면 그 자리의 수용소에
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "c_warehouse" });
+    w.executeTool("take_action", act({ place_to: "yard", ignore_story: true }));
+    const item = Object.keys(w.state().characters[me]!.inventory)[0]!;
+    w.executeTool("transfer_item", { from: me, to: "scene", item_id: item, quantity: 1 });
+    const line = capturePlayer(w.ctx(), "faction_c");
+    expect(line).toBeTruthy();
+    expect(w.state().playerZone).toBe("c_warehouse");
+    expect(currentPlace(w.state(), content)?.id).toBe("stockade");
+    expect(w.state().scene.items[item]).toBeUndefined();
+    expect(line).toContain("수용소");
+    expect(line).not.toContain("무기와 탄은 빼앗겼다");
+  });
+
+  it("붙잡힌 곳에 가두는 장소가 없으면 그 무리 거점의 감방에", () => {
+    const w = world("role_t_visitor");
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "old_town" });
+    expect(jailFor(w.state(), content, "faction_c", "old_town")).toEqual({ zone: "c_base", place: "cells" });
+    w.ctx().store.append({ type: "item_granted", to: w.state().playerId, itemId: "binoculars", quantity: 1 });
+    const line = capturePlayer(w.ctx(), "faction_c");
+    expect(line).toContain(`빼앗긴 것: `);
+    expect(line).toContain(content.items.binoculars!.name);
+    expect(line).toContain("철망 감방");
+    expect(w.state().playerZone).toBe("c_base");
+    expect(currentPlace(w.state(), content)?.id).toBe("cells");
+    // 갇힌 사람은 갇힌 구역의 가두는 장소에 있다
+    const npc = Object.values(content.npcs).find((n) => n.zone === "a_base")!;
+    w.state().characters[npc.id]!.captive = { by: "faction_c", zone: "c_warehouse" };
+    expect(whereIs(w.state(), content, npc.id)).toEqual({ zone: "c_warehouse", place: "stockade" });
   });
 });

@@ -134,19 +134,6 @@ export const createLearnSkillTool = (s: Scenario) => ({
   run: learnSkill,
 });
 
-/** 스킬을 분류별 한 줄씩: "전투  근접전 +1 · 사격 -1 · 손질 못 함" (보여 줄 때 쓴다) */
-export function skillLines(s: Scenario, skills: Partial<Record<string, number>>): string[] {
-  const groups = new Map<string, string[]>();
-  for (const m of s.moves) {
-    const key = m.category ?? "스킬";
-    const value = learned(s, skills, m.id);
-    const list = groups.get(key) ?? [];
-    list.push(`${m.label} ${value === null ? "못 함" : signed(value)}`);
-    groups.set(key, list);
-  }
-  return [...groups].map(([k, list]) => `${k}  ${list.join(" · ")}`);
-}
-
 /** 레벨·경험치 한 줄 (성장 규칙이 없으면 null) */
 export function growthLine(s: Scenario, c: { level: number; xp: number; skillPoints: number }): string | null {
   if (!s.growth) return null;

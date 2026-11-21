@@ -12,7 +12,7 @@
 import type { Content, StoryletContent } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { isInfected } from "../game/kinds.ts";
-import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.ts";
 import { playerHeld } from "./held.ts";
 
 export const SITUATIONS = ["captive", "lying", "exploring", "infiltrating", "battle", "threatened", "awake"] as const;
@@ -21,13 +21,14 @@ export type Situation = (typeof SITUATIONS)[number];
 /** 쉬는 중으로 치는 활동 (누워 있는 동안의 이야기가 열린다) */
 const RESTING = ["sleep", "rest", "wait", "treat"];
 
-/** 적대하는 감염체가 장면에 있다 (스스로 못 움직이는 것은 빼고) */
+/** 적대하는 감염체가 장면에 있다 (스스로 못 움직이는 것과 무력화된 것은 빼고) */
 export function threatInScene(state: GameState, content: Content): string[] {
   return state.scene.present.filter((id) => {
     const c = state.characters[id];
-    return !!c && !c.dead && !state.companions.includes(id) && isInfected(content, c) && !incapacitatingSymptom(content.scenario, c);
+    return !!c && !c.dead && !state.companions.includes(id) && isInfected(content, c) && !incapacitatingSymptom(content.scenario, c) && !harmIncapacitates(content.scenario, c);
   });
 }
+
 
 /** 주인공의 지금 처지 (하나로 정한다) */
 export function situationOf(state: GameState, content: Content): Situation {

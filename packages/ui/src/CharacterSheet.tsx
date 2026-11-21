@@ -777,7 +777,7 @@ function GearBox({ gear, canUnequip }: { gear: GearView; canUnequip?: boolean })
         // 팝오버 안을 누른 것은 상자 클릭(열고 닫기)으로 번지지 않게 막는다
         <div className="gear-pop" role="dialog" aria-label={`${gear.name} ${verb}`} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           <p className="gear-pop-q">
-            {gear.name}을(를) {verb}?
+            {objectJosa(gear.name)} {verb}?
           </p>
           <div className="portrait-pop-actions">
             <button
@@ -1183,4 +1183,12 @@ function SkillBlock({ player, onStatus }: { player: PlayerView; onStatus?: (stat
       </dl>
     </section>
   );
+}
+
+/** 받침에 맞는 목적격 조사 (core의 josa와 같은 셈, 한글이 아니면 "를") */
+function objectJosa(word: string): string {
+  const base = word.trim().replace(/(\s*\([^()]*\))+$/, "");
+  const code = base.charCodeAt(base.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) return `${word}를`;
+  return `${word}${(code - 0xac00) % 28 ? "을" : "를"}`;
 }

@@ -15,7 +15,7 @@ export function loadScenario(dir: string): Scenario {
     try {
       return readFileSync(join(dir, file), "utf8");
     } catch {
-      throw new ScenarioError(`${file}을(를) 읽을 수 없다 (${dir})`);
+      throw new ScenarioError(`읽을 수 없다: ${file} (${dir})`);
     }
   };
   const file = scenarioFileSchema.safeParse(parse(read("scenario.yaml")));
@@ -44,7 +44,7 @@ function loadPortraits(dir: string, genders: string[]): PortraitCatalog | undefi
   const problems: string[] = [];
   const faces = Object.entries(parsed.data.faces).map(([id, f]) => {
     if (!parsed.data.styles[f.style]) problems.push(`${id}: 없는 화풍 ${f.style}`);
-    if (!genders.includes(f.gender)) problems.push(`${id}: 성별 ${f.gender}은(는) creation.genders에 없다`);
+    if (!genders.includes(f.gender)) problems.push(`${id}: creation.genders에 없는 성별: ${f.gender}`);
     if (!existsSync(join(dir, "art", "portraits", `${id}.png`))) problems.push(`${id}: 그림 파일 art/portraits/${id}.png가 없다 (pnpm portraits로 만든다)`);
     return { id, style: f.style, gender: f.gender };
   });
@@ -158,6 +158,17 @@ export function visibleSymptoms(s: Scenario, character: Pick<Character, "conditi
 }
 
 /** 스스로 아무것도 하지 못하게 하는 증상 (의식불명 등). 없으면 undefined */
+/**
+ * 부상이 무력화 단계(scenario.combat.incapacitated_at) 이상인가. 위협 판단(공통 규칙 4)과 engine/body.ts의 isIncapacitated가 함께 쓴다
+ * (같은 셈을 두 곳에 두었던 것을 한 곳으로, PT14)
+ */
+export function harmIncapacitates(s: Scenario, c: { conditions: Record<string, string> }): boolean {
+  const at = s.combat?.incapacitated_at;
+  if (!at) return false;
+  const track = harmTrack(s);
+  return track.levels.findIndex((l) => l.id === c.conditions[track.id]) >= track.levels.findIndex((l) => l.id === at);
+}
+
 export function incapacitatingSymptom(s: Scenario, character: Pick<Character, "conditions">): Symptom | undefined {
   return visibleSymptoms(s, character).find((x) => x.incapacitates);
 }

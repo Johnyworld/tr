@@ -156,7 +156,7 @@ export function fearAfterTool(ctx: ToolContext, before: FearWatch): FearResult {
     const steps = scary.length ? Math.max(...scary.map((id) => fearsomeOf(ctx, state, id))) + (scary.length >= 3 ? 1 : 0) : 0;
     const names = arrivals.map((id) => state.characters[id]!.name);
     const tags = [...new Set(arrivals.flatMap(tagsOf))];
-    // 조사는 이름 전체에 붙인다 (빈 문자열에 붙여 "감염체이(가)"가 됐다, 플레이 테스트 8)
+    // 조사는 이름 전체에 붙인다 (빈 문자열에 붙여 "감염체" 뒤에 둘 다 적은 조사가 붙었다, 플레이 테스트 8)
     const who = `${names.slice(0, 3).join(", ")}${names.length > 3 ? ` 외 ${names.length - 3}명` : ""}`;
     triggers.push({ tags, steps, cause: `${josa(who, "이/가")} 나타났다` });
   }

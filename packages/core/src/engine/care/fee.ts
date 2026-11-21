@@ -52,21 +52,37 @@ export function planHealerPay(ctx: ToolContext, healerId: string, choice: FeeCho
     if (choice && choice !== "default") {
       // 플레이어가 고른 물건 (플레이 테스트 13: 담요·물병을 묻지도 않고 가져갔다)
       const chosen = new Map(Object.entries(choice).filter(([, q]) => q > 0));
+      // 소중한 것(신표)은 값으로 내지 않는다: 코드가 고를 때와 같은 규칙 (플레이 테스트 14, 동무조: 각인된 라이터가 값 0으로 보였다)
+      const keepsake = [...chosen].find(([id]) => ctx.content.items[id]?.keepsake);
+      if (keepsake) return { ok: false, error: `${josa(itemName(ctx, keepsake[0]), "은/는")} 소중한 것이라 값으로 내지 않는다. 다른 물건을 고른다. 시간은 흐르지 않았다.` };
       const bad = [...chosen].find(([id, q]) => q > payableCount(ctx, player, id));
-      if (bad) return { ok: false, error: `${ctx.content.items[bad[0]]?.name ?? bad[0]} ×${bad[1]}은 낼 수 없다 (지니지 않았거나, 손에 들었거나 입었거나, 빌린 것이다). 시간은 흐르지 않았다.` };
-      const sum = [...chosen].reduce((n, [id, q]) => n + (ctx.content.items[id]?.value ?? DEFAULT_VALUE) * q, 0);
-      if (sum < cost.fee) return { ok: false, error: `고른 물건의 값이 ${sum}이라 모자란다 (${cost.fee}어치를 받는다). 시간은 흐르지 않았다.` };
+      if (bad) return { ok: false, error: `${itemName(ctx, bad[0])} ×${bad[1]}은 낼 수 없다 (지니지 않았거나, 손에 들었거나 입었거나, 빌린 것이다). 시간은 흐르지 않았다.` };
+      const sum = feeWorth(ctx, chosen);
+      // 무엇이 얼마나 모자란지 (플레이 테스트 14, 동무조 T27·T28: 낸 물건이 몇 어치인지 몰랐다)
+      if (sum < cost.fee) return { ok: false, error: `고른 물건의 값이 모자란다: ${worthList(ctx, chosen)} = ${sum}어치, ${cost.fee}어치를 받으니 ${cost.fee - sum} 모자란다. 더 고르거나 다른 물건으로 (시간은 흐르지 않았다).` };
       pay = chosen;
     } else {
       if (!picked) return { ok: false, error: `${josa(name, "은/는")} 다른 무리 사람에게는 값(${cost.fee}어치)을 받는다. 낼 만한 물건이 모자란다 (신뢰가 ${cost.free_trust} 이상이면 받지 않는다).` };
       // 미리 보여 주고 묻는다: 그대로 내거나 바꾼다
-      if (choice === null) return { ok: false, error: `${josa(name, "은/는")} 값 ${cost.fee}어치를 받는다. 정해 둔 것: ${list(picked)}. 이대로 내려면 treatment.pay: "auto", 다른 것으로 내려면 treatment.pay: [{item, quantity}] (값의 합이 ${cost.fee} 이상, 손에 든 것·입은 것·빌린 것은 못 낸다). 플레이어에게 무엇을 낼지 물어본다 (시간은 흐르지 않았다).` };
+      if (choice === null) return { ok: false, error: `${josa(name, "은/는")} 값 ${cost.fee}어치를 받는다. 정해 둔 것: ${list(picked)} (${feeWorth(ctx, picked)}어치). 이대로 내려면 treatment.pay: "auto", 다른 것으로 내려면 treatment.pay: [{item, quantity}] (값의 합이 ${cost.fee} 이상, 손에 든 것·입은 것·빌린 것·소중한 것은 못 낸다). 플레이어에게 무엇을 낼지 물어본다 (시간은 흐르지 않았다).` };
       pay = picked;
     }
   }
   // 값을 받지 않은 까닭
   const waived = cost.fee <= 0 || pay.size ? null : heldOf(player) ? "붙잡힌 몸이라 값을 받지 않았다" : player.factionId && player.factionId === healer.factionId ? "같은 무리라 값을 받지 않았다" : "믿는 사이라 값을 받지 않았다";
   return { ok: true, plan: { carried, fromStock: atBase && faction ? healer.factionId : null, pay, waived } };
+}
+
+const itemName = (ctx: ToolContext, id: string) => ctx.content.items[id]?.name ?? id;
+
+/** 물건들의 값 합 */
+function feeWorth(ctx: ToolContext, items: Map<string, number>): number {
+  return [...items].reduce((n, [id, q]) => n + (ctx.content.items[id]?.value ?? DEFAULT_VALUE) * q, 0);
+}
+
+/** 물건마다 몇 어치인지: "감자 ×1(1), 담배 ×1(3)" */
+function worthList(ctx: ToolContext, items: Map<string, number>): string {
+  return [...items].map(([id, q]) => `${itemName(ctx, id)} ×${q}${items.size > 1 ? `(${(ctx.content.items[id]?.value ?? DEFAULT_VALUE) * q})` : ""}`).join(", ");
 }
 
 /** 값으로 고르지 않는 살림 (플레이 테스트 13): 쉴 때 덮는 것, 물그릇, 손에 든 무기의 탄약 */
@@ -123,7 +139,7 @@ export function payHealer(ctx: ToolContext, healerId: string, choice: FeeChoice 
   const player = state.characters[state.playerId]!;
   const lines: string[] = [];
   for (const [id, q] of plan.pay) ctx.store.append({ type: "item_transferred", from: player.id, to: healerId, itemId: id, quantity: q });
-  if (plan.pay.size) lines.push(`치료 값으로 ${[...plan.pay].map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")}을 냈다.`);
+  if (plan.pay.size) lines.push(`치료 값으로 ${[...plan.pay].map(([id, q]) => `${itemName(ctx, id)} ×${q}`).join(", ")}을 냈다 (${feeWorth(ctx, plan.pay)}어치${plan.pay.size > 1 ? `: ${worthList(ctx, plan.pay)}` : ""}).`);
   else if (plan.waived) lines.push(`${plan.waived}.`);
   const resource = ctx.content.scenario.recovery!.healer_cost!.resource;
   if (plan.carried) {

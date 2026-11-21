@@ -42,16 +42,24 @@ export const WAR_INTEL_TOPIC = "war_intel";
 /** 다른 무리끼리의 교전이 소문으로 들려올 확률 */
 export const RUMOR_CHANCE = 0.4;
 
+/**
+ * 무리·땅 주인을 콘텐츠의 시작값으로 채운다 (새 세계, 또는 9단계 이전 세이브). 채웠으면 true.
+ * 새 세계를 만들 때 배경·설정의 뒷받침(다른 무리, 우리 거점)이 땅 주인을 보기 전에도 부른다 (PT14: 뒷받침이 모두 빠졌다)
+ */
+export function initFactions(ctx: ToolContext): boolean {
+  const { content, store } = ctx;
+  if (!content.scenario.war || Object.keys(content.factions).length === 0) return false;
+  if (Object.keys(store.getState().factions).length > 0) return false;
+  store.append({ type: "factions_initialized", day: dayOf(store.getState().time), ...initialWarWorld(content) });
+  return true;
+}
+
 export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
   const { content, store } = ctx;
   if (!content.scenario.war || Object.keys(content.factions).length === 0) return [];
   ensurePlayerZone(ctx);
   const today = dayOf(store.getState().time);
-  if (Object.keys(store.getState().factions).length === 0) {
-    // 새 세계, 또는 9단계 이전 세이브: 콘텐츠의 시작값으로 채우고 오늘부터 센다
-    store.append({ type: "factions_initialized", day: today, ...initialWarWorld(content) });
-    return [];
-  }
+  if (initFactions(ctx)) return [];
   const last = store.getState().lastWarDay ?? today;
   const displays: ToolDisplayEvent[] = [];
   for (let day = Math.max(last + 1, today - MAX_CATCH_UP_DAYS + 1); day <= today; day++) {

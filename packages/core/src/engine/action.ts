@@ -80,7 +80,7 @@ import { ownedBy } from "../rules/home.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { reduceHarm } from "../rules/damage.ts";
-import { currentPlace, npcPlaceAt, placeById, placesIn } from "../rules/place.ts";
+import { comesAlong, currentPlace, ENTRY_PLACE, peopleAt, placeTarget, placesIn, type Place } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -148,7 +148,7 @@ export function createTakeActionSchema(s: Scenario) {
           .nullable()
           .default(null)
           .describe(
-            "맞서는 상대 인물 id (장면에 있어야 한다): 숨는 나를 찾는 사람, 덤벼드는 사람, 속이려는 상대. 공격이면 비워도 target이 상대다 (설득처럼 함께하는 말은 target만으로 상대가 되지 않는다. 맞서는 흥정이면 여기에 둔다). " +
+            "맞서는 상대 인물 id (장면에 있어야 한다): 숨는 나를 찾는 사람, 덤벼드는 사람, 속이려는 상대. 공격이면 비워도 target이 상대다 (설득처럼 함께하는 말은 target만으로 상대가 되지 않는다. 맞서는 흥정이면 여기에 둔다. 동행·분대 같은 내 편은 target이어도 상대가 아니다: 함께 숨은 동료·구해 줄 사람이 아니라 맞서는 쪽을 여기에). " +
               "상대의 실력, 지켜보는 눈의 수, 어둠은 시스템이 판정 보정으로 바꾸므로 난이도에 넣지 않는다. 판정이 나빠 다치면 이 상대의 솜씨가 피해에 붙는다. 없으면 null",
           ),
         infected_source: z
@@ -229,7 +229,11 @@ export function createTakeActionSchema(s: Scenario) {
       .string()
       .nullable()
       .default(null)
-      .describe("이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 5분이 든다. 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null"),
+      .describe(`이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 구역에 막 들어선 자리로 돌아가면 "${ENTRY_PLACE}". 5분이 든다. 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null`),
+    place_with: z
+      .array(z.string())
+      .default([])
+      .describe("place_to와 함께: 동행 말고 같이 옮겨 가는 장면의 인물 id (업거나 부축해 데려가는 사람, 같이 걷는 사람, 쫓아오는 것). 이번 행동의 상대(target·check.opponent·치료 대상)와 그 장소가 제자리인 사람은 넣지 않아도 남는다. 나머지 장면의 인물은 원래 자리에 남는다"),
     prepare: z
       .string()
       .nullable()
@@ -371,6 +375,32 @@ const WALK_AWAY_CHOICES = ["leave", "ignore", "look_away", "pass", "walk_away", 
 
 /** 같은 구역 안의 장소를 옮기는 데 드는 시간 (분, 12-244) */
 export const PLACE_MOVE_MINUTES = 5;
+
+/**
+ * 같은 구역 안의 장소로 옮긴다 (공통 규칙 15). along: 동행 말고 함께 가는 장면의 인물 (comesAlong).
+ * 바닥의 물건은 장소마다 남는다. 돌려줄 한 줄
+ */
+function movePlace(ctx: ToolContext, to: Place | null, along: string[]): string {
+  const { store, content } = ctx;
+  const s0 = store.getState();
+  const from = currentPlace(s0, content)?.id ?? null;
+  const ground = Object.keys(s0.scene.items).length > 0;
+  const left = s0.scene.present.filter((id) => !along.includes(id) && !s0.companions.includes(id));
+  store.append({ type: "place_moved", from, to: to?.id ?? null, ...(along.length ? { with: along } : {}) });
+  store.append({ type: "time_advanced", activity: "brief", from: store.getState().time, to: store.getState().time + PLACE_MOVE_MINUTES });
+  const s = store.getState();
+  const calls = (ids: string[]) => ids.map((id) => `${playerCalls(s, content, id)}(${id})`).join(", ");
+  const people = to ? peopleAt(s, content, s.playerZone, to.id) : [];
+  const where = to ? `${josa(to.name, "으로/로")} 옮겼다 (${to.indoor ? "실내" : "바깥"}, ${PLACE_MOVE_MINUTES}분).` : `구역에 막 들어선 자리로 돌아왔다 (${PLACE_MOVE_MINUTES}분).`;
+  return [
+    where,
+    along.length ? `함께 왔다: ${calls(along)}.` : "",
+    left.length ? `원래 자리에 남았다: ${calls(left)} (함께 데려가려면 place_with).` : "",
+    // 막 들어선 자리에 둔 물건은 그 자리에 남는다 (돌아갈 수 있게 알린다)
+    from === null && ground ? `막 들어선 자리에 둔 물건은 그 자리에 남았다 (다시 가려면 place_to: ${ENTRY_PLACE}).` : "",
+    people.length ? `지금 이곳에 있을 사람: ${calls(people)} (장면에 들이려면 npc_presence).` : "",
+  ].filter(Boolean).join(" ");
+}
 
 export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
   // 연습 대련 이야기의 판정이면 방어구·무기가 닳지 않는다 (플레이 테스트 13)
@@ -619,24 +649,27 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 장소 옮기기 (12-244, 공통 규칙 15): 같은 구역 안에서 5분. 길 위의 일은 없다. 옮긴 장소에서 이번 행동을 한다
+  // 검증은 모두 상태를 바꾸기 전에 한다 (PT14 동무조: 들인 사람을 target으로 둔 place_to가 그 사람을 장면에서 빼 다음 호출이 오류가 됐다)
+  let placeMove: { to: Place | null; along: string[] } | null = null;
   if (input.place_to !== null) {
     if (input.move_to) return { ok: false, error: "구역을 옮기는 move_to와 장소를 옮기는 place_to는 함께 쓰지 않는다. 구역을 옮긴 뒤 다음 행동에서 장소를 고른다 (시간은 흐르지 않았다)." };
     if (start.battle || start.infiltration || heldOf(player)) return { ok: false, error: "지금은 장소를 옮길 수 없다 (전투·잠입 중이거나 갇혀 있다). 시간은 흐르지 않았다." };
-    const to = placeById(start, content, input.place_to);
-    if (!to) {
+    const to = placeTarget(start, content, input.place_to);
+    if (to === undefined) {
       const here = placesIn(start, content, start.playerZone).map((p) => `${p.id}(${p.name})`).join(", ");
-      return { ok: false, error: `이 구역에 그런 장소가 없다: ${input.place_to}. 이 구역의 장소: ${here || "없음"}. 콘텐츠에 없는 곳이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
+      return { ok: false, error: `이 구역에 그런 장소가 없다: ${input.place_to}. 이 구역의 장소: ${here || "없음"}, ${ENTRY_PLACE}(구역에 막 들어선 자리). 콘텐츠에 없는 곳이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
     }
+    const stray = input.place_with.find((id) => !start.scene.present.includes(id));
+    if (stray) return { ok: false, error: `place_with의 ${josa(start.characters[stray] ? `${playerCalls(start, content, stray)}(${stray})` : stray, "은/는")} 장면에 없다. 함께 옮겨 가는 사람은 장면에 있는 인물이다 (시간은 흐르지 않았다).` };
+    // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)
+    const involved = [input.target, input.check?.opponent, input.treatment?.target, ...input.place_with].filter((id): id is string => !!id);
+    if ((to?.id ?? null) !== (currentPlace(start, content)?.id ?? null)) placeMove = { to, along: comesAlong(start, content, to?.id ?? null, involved) };
+  } else if (input.place_with.length) {
+    return { ok: false, error: "place_with는 place_to와 함께만 쓴다 (시간은 흐르지 않았다)." };
   }
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
   const settingDisplays: ToolDisplayEvent[] = [];
-  if (input.place_to !== null && input.place_to !== (currentPlace(start, content)?.id ?? null)) {
-    const to = placeById(start, content, input.place_to)!;
-    store.append({ type: "place_moved", from: currentPlace(start, content)?.id ?? null, to: to.id });
-    store.append({ type: "time_advanced", activity: "brief", from: store.getState().time, to: store.getState().time + PLACE_MOVE_MINUTES });
-    const people = Object.keys(content.npcs).filter((id) => id !== start.playerId && !store.getState().characters[id]?.dead && npcPlaceAt(store.getState(), content, id) === to.id);
-    leftLines.push(`${josa(to.name, "으로/로")} 옮겼다 (${to.indoor ? "실내" : "바깥"}, ${PLACE_MOVE_MINUTES}분). 함께 있던 인물은 따라오지 않는다 (동행은 따라온다).${people.length ? ` 지금 이곳에 있을 사람: ${people.map((id) => `${playerCalls(store.getState(), content, id)}(${id})`).join(", ")} (장면에 들이려면 npc_presence).` : ""}`);
-  }  // 설정 거스르기 (공통 규칙 16): 굴려서 해내지 못하면 이 행동은 일어나지 않는다
+  // 설정 거스르기 (공통 규칙 16): 굴려서 해내지 못하면 이 행동은 일어나지 않는다 (장소 옮기기도, PT14)
   if (input.against_setting) {
     const r = againstSetting(ctx, input.against_setting);
     if (!r.ok) return { ok: false, error: `${r.error} (시간은 흐르지 않았다)` };
@@ -647,7 +680,6 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     }
     settingDisplays.push(...r.displays);
   }
-
   // 임무로 세기 (12-240, A3: for_mission을 빠뜨리면 임무 자리의 이동·판정·보초가 조용히 0으로 세졌다):
   // 진행 중인 임무의 요건과 맞는 행동(그 판정, 그 활동, 이동 요건이면 이동)을 임무 장소에서 하면 저절로 임무로 센다
   const autoMission = !input.for_mission ? missionMatch(start, input) : null;
@@ -708,6 +740,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     return { ok: false, error: `적대하는 땅에서 시간을 들이는 일은 들킬 수 있다. check로 ${scenario.alarm!.moves.join("/")} 판정을 함께 건다 (난이도 ${base ? "hard: 거점 안" : "normal"}). 실패하면 경보가 열린다 (시간은 흐르지 않았다).` };
   }
 
+  // 장소 옮기기: 거절할 일을 모두 거른 뒤에 옮긴다 (막힌 행동의 이동·시간이 남지 않게)
+  if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along));
+
   // 열린 이야기가 요구하는 판정일 때만 이야기가 걸린 판정이다 (플레이 테스트 13: 길 위 이야기가 열린 사이 위험 없는 5분 경계로 레벨이 올랐다)
   const storyCheck = !!start.activeStorylet && !!input.check && !!storyletOf(start, content, start.activeStorylet.id)?.choices.some((c) => c.check === input.check!.move);
   // 1. 판정과 선언한 위험
@@ -737,7 +772,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
           gathering: !!input.forage || !!input.trap,
           activity: !!input.activity && input.activity.kind !== "brief",
         }).stake,
-        situation: exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? scavengeParts(ctx) : input.forage ? forageParts(ctx, input.forage) : [],
+        // 수색할 곳의 보정은 찾을 거리를 정하는 수색 판정에만 (플레이 테스트 14: 뒤지며 굴린 생존 판정에 "+1(넉넉한 곳) +1(역사)")
+        situation: exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? (!scenario.exploration?.search_move || input.check.move === scenario.exploration.search_move ? scavengeParts(ctx) : []) : input.forage ? forageParts(ctx, input.forage) : [],
       },
     );
     if (!roll.ok) {
@@ -982,11 +1018,17 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (input.deed) {
     const happened = input.deed.condition === "always" || outcome === null || outcome !== "miss";
     if (happened) {
-      const { deed, visible } = recordDeed(ctx, { ...input.deed, byGm: true });
+      // 속이기가 먹혔으면(거짓말 판정의 성공·대가 있는 성공) 장면의 사람은 속아 넘어가 행적을 알지 못한다. 함께 다니는 사람(동행)은 참을 안다 (PT14)
+      const deceived = !!input.check && input.check.move === scenario.move_roles.deceive && (outcome === "success" || outcome === "partial");
+      const companionsNow = new Set(activeCompanions(store.getState()));
+      const fooled = deceived ? store.getState().scene.present.filter((id) => !companionsNow.has(id)) : undefined;
+      const { deed, visible } = recordDeed(ctx, { ...input.deed, byGm: true }, undefined, fooled);
+      const fooledNames = (fooled ?? []).map((id) => playerCalls(store.getState(), content, id));
       lines.push(
         `행적 ${deed.id} 기록: ${sentence(deed.summary)} ` +
-          (visible.length > 0 ? `장면에 있던 ${josa(visible.join(", "), "이/가")} 보았다. 그들의 반응을 서술에 반영하라.` : "장면에 아무도 없었다.") +
-          " 숨은 목격자가 있었는지는 아무도 모른다.",
+          (fooledNames.length > 0 ? `${josa(fooledNames.join(", "), "은/는")} 속아 넘어가 거짓인 줄 모른다 (이 행적을 알지 못한다). ` : "") +
+          (visible.length > 0 ? `장면에 있던 ${josa(visible.join(", "), "이/가")} 보았다. 그들의 반응을 서술에 반영하라.` : fooledNames.length > 0 ? "" : "장면에 아무도 없었다.") +
+          (deceived ? "" : " 숨은 목격자가 있었는지는 아무도 모른다."),
       );
       displays.push({
         type: "deed",
@@ -1032,16 +1074,26 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (forMission && !input.move_to) {
     const m = store.getState().missions[forMission];
     if (m && atMissionPlace(m, store.getState().playerZone, store.getState().zones, store.getState().factions)) {
+      // 판정이 빗나간 행동으로는 짐을 넘기지 않는다: 흥정이 틀어졌는데 짐만 건너가지 않게 (플레이 테스트 14, 방문자 T37: 교섭 실패에 "짐을 넘겼다")
+      const missed = outcome === "miss";
+      // 받는 사람: 이 행동의 상대가 장면에 있으면 그 사람이 짐을 받는다 (방문자 T37: 넘긴 담배가 행상대장 소지품에 없었다)
+      const s0 = store.getState();
+      const receiver = input.target && input.target !== start.playerId && s0.scene.present.includes(input.target) && !s0.characters[input.target]?.dead ? input.target : null;
       m.requirements.forEach((r, i) => {
         if (!("deliver" in r) || (m.progress[i] ?? 0) >= 1) return;
+        if (missed) {
+          lines.push(`판정이 빗나가 짐은 넘기지 못했다: ${content.items[r.deliver]?.name ?? r.deliver} ×${r.quantity}는 아직 맡은 짐으로 지니고 있다.`);
+          return;
+        }
         const have = store.getState().characters[start.playerId]!.inventory[r.deliver] ?? 0;
         if (have < r.quantity) {
           lines.push(`넘길 짐이 모자란다: ${content.items[r.deliver]?.name ?? r.deliver} ${have}/${r.quantity}.`);
           return;
         }
-        store.append({ type: "item_consumed", holder: start.playerId, itemId: r.deliver, quantity: r.quantity });
+        if (receiver) store.append({ type: "item_transferred", from: start.playerId, to: receiver, itemId: r.deliver, quantity: r.quantity });
+        else store.append({ type: "item_consumed", holder: start.playerId, itemId: r.deliver, quantity: r.quantity });
         store.append({ type: "mission_requirement_met", missionId: m.id, index: i });
-        lines.push(`짐을 넘겼다: ${content.items[r.deliver]?.name ?? r.deliver} ×${r.quantity}.`);
+        lines.push(`짐을 넘겼다: ${content.items[r.deliver]?.name ?? r.deliver} ×${r.quantity}${receiver ? ` (${josa(playerCalls(s0, content, receiver), "이/가")} 받았다)` : ""}.`);
         // 맡은 짐 기록을 줄이고, 받아 올 값을 상대가 건넨다 (공통 규칙 10, 12-237: 대금이 현장에서 오가지 않았다)
         const cargo = { ...cargoOf(store.getState(), m.id) };
         const left = (cargo[r.deliver] ?? 0) - r.quantity;
@@ -1449,6 +1501,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   /** 활동이 끝나기로 한 시각 (끝나는 그 시각에 열린 이야기는 "끊겼다"가 아니다) */
   let plannedEnd = Infinity;
   let restedCap = false;
+  /** 이어진 잠의 시작 (상한은 이어진 잠 전체로 센다) */
+  let sleepFrom = from;
   let sleepNote: string | null = null;
   if (cost.kind === "long") {
     // 잠은 한 번에 16시간까지 (아침에 "새벽까지"면 21시간을 잤다, 플레이 테스트 8). 기다림은 하루까지
@@ -1471,6 +1525,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     const wanted = until && cost.allowUntil ? nextSegmentStart(from, until) : from + (missionLeft ?? cost.minutes);
     // 피곤하지 않은 잠의 상한은 이어진 잠 전체로 센다 (깬 지 얼마 안 돼 다시 잤으면 앞의 잠부터)
     const chainFrom = activity === "sleep" ? sleepChainStart(state, from) : from;
+    sleepFrom = chainFrom;
     const target = Math.min(wanted, Math.max(from + 30, chainFrom + cap));
     plannedEnd = target;
     capped = wanted > target;
@@ -1562,12 +1617,13 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   } else if (!interrupt && capped) {
     // C12 (플레이 테스트 10): 상한에 걸려 말없이 03시에 깼다
     // 피곤하지 않아 일찍 깬 잠은 그렇다고 알린다 (플레이 테스트 12: 8시간에 깼는데 "16시간까지다")
-    const restedHours = content.scenario.body?.fatigue?.rested_sleep_hours;
+    // 숫자는 이번에 실제로 잔 시간으로. 깬 지 얼마 안 돼 다시 잤으면 앞의 잠과 합친 시간도 (PT14: 3시간 50분·30분 잔 잠에 "12시간 자고")
+    const chained = sleepFrom < from ? ` (조금 전에 깬 잠과 이어져 모두 ${formatDuration(to - sleepFrom)})` : "";
     lines.push(
       activity === "sleep"
         ? restedCap
-          ? `피곤하지 않아 ${restedHours}시간 자고 저절로 깼다. 더 자려면 지친 뒤에.`
-          : "잠은 한 번에 16시간까지다. 정한 시각 전에 깼다."
+          ? `피곤하지 않아 ${formatDuration(to - from)} 자고 저절로 깼다${chained}. 더 자려면 지친 뒤에.`
+          : `잠은 한 번에 ${MAX_SLEEP_MINUTES / 60}시간까지다. ${formatDuration(to - from)} 자고 정한 시각 전에 깼다${chained}.`
         : "한 번에 흘려보낼 수 있는 시간은 하루까지다. 정한 시각 전에 멈췄다.",
     );
   } else if (interrupt) {

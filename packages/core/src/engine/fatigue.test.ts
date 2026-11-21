@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
 import { exposeToFatigue, describeFatigue } from "./fatigue.ts";
-import { healFromSleep, runNaturalRecovery } from "./body.ts";
+import { changeCondition, healFromSleep, runNaturalRecovery } from "./body.ts";
 import { executeTool } from "./tools.ts";
 import { loadRealContent } from "../testing.ts";
 
@@ -19,6 +19,16 @@ function setup() {
 }
 
 describe("피로", () => {
+  it("이야기의 대가로 졸림이 붙으면 5분 걷기로 풀리지 않고, 자야 풀린다 (PT14)", () => {
+    const { ctx, me, store } = setup();
+    changeCondition(ctx, store.getState().playerId, "fatigue", 1, "fatigue", "이야기의 대가");
+    expect(me().conditions.fatigue).toBe("drowsy");
+    exposeToFatigue(ctx, "walk", 0, 5);
+    expect(me().conditions.fatigue).toBe("drowsy");
+    exposeToFatigue(ctx, "sleep", 5, 5 + 4 * H);
+    expect(me().conditions.fatigue).toBe("rested");
+  });
+
   it("깨어 있으면 쌓여 16시간에 졸림, 24시간에 지침(-1), 32시간에 탈진(-2). 그 뒤로는 탈진에 머문다", () => {
     const { ctx, me, load } = setup();
     exposeToFatigue(ctx, "wait", 0, 15 * H);

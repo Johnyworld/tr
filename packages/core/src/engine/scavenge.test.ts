@@ -23,11 +23,11 @@ describe("수색으로 물건 찾기", () => {
     const w = worldAt("old_town");
     const count = () => Object.values(w.state().characters.player!.inventory).reduce((n, q) => n + q, 0);
     const before = count();
-    expect(scavengeParts(w.ctx()).some((p) => p.label === "다시 뒤짐")).toBe(false);
+    expect(scavengeParts(w.ctx()).some((p) => p.label === "오늘 다시 뒤짐")).toBe(false);
     const first = scavenge({ ...w.ctx(), rng: () => 0.4 }, "success");
     expect(count()).toBeGreaterThan(before);
     expect(first.lines[0]).toContain("찾아 챙겼다");
-    expect(scavengeParts(w.ctx())).toContainEqual({ label: "다시 뒤짐", value: -1 });
+    expect(scavengeParts(w.ctx())).toContainEqual({ label: "오늘 다시 뒤짐", value: -1 });
     const second = scavenge({ ...w.ctx(), rng: () => 0.4 }, "partial");
     expect(second.lines[0]).toContain("이미 뒤진 곳");
     w.close();

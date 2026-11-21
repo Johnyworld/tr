@@ -54,7 +54,7 @@
   description: 붉은연합 거점 북쪽의 옛 교도소. 담이 가장 높은 곳이라 첫 해에 여러 무리가 차지하려다 안에서 무너졌다. 무기고가 아직 다 털리지 않았다는 말과, 감방 안에 아직 누가 갇혀 있다는 말이 같이 돈다.
   kind: zone
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: cellblock, name: "감방동", indoor: true, aliases: ["감방"] }, { id: admin, name: "행정동·무기고", indoor: true, aliases: ["행정동", "무기고"] }, { id: yard, name: "운동장·담", indoor: false, aliases: ["운동장", "담"] }]
+  places: [{ id: cellblock, name: "감방동", indoor: true, aliases: ["감방"], jail: true }, { id: admin, name: "행정동·무기고", indoor: true, aliases: ["행정동", "무기고"] }, { id: yard, name: "운동장·담", indoor: false, aliases: ["운동장", "담"] }]
   cover: 6
   owner: null
   danger: 3

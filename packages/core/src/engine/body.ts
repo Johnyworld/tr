@@ -14,7 +14,7 @@ import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
 import { bodyTraits, habitsOf, traitIdsOf } from "./traits.ts";
 import { dayOf } from "../rules/time.ts";
-import { harmTrack, incapacitatingSymptom, shownLevel, trackOf, visibleSymptoms } from "../scenario/scenario.ts";
+import { harmIncapacitates, incapacitatingSymptom, shownLevel, trackOf, visibleSymptoms } from "../scenario/scenario.ts";
 import { daysOfStock, rationLevel } from "../sim/war.ts";
 import { seasonAt } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
@@ -114,10 +114,7 @@ export function shownIndex(ctx: ToolContext, state: GameState, characterId: stri
 /** 무력화됐는지 (부상이 scenario.combat.incapacitated_at 이상이거나 사망). 규칙이 없으면 사망만 */
 export function isIncapacitated(content: Content, c: Character): boolean {
   if (c.dead) return true;
-  const at = content.scenario.combat?.incapacitated_at;
-  if (!at) return false;
-  const track = harmTrack(content.scenario);
-  return track.levels.findIndex((l) => l.id === c.conditions[track.id]) >= track.levels.findIndex((l) => l.id === at);
+  return harmIncapacitates(content.scenario, c);
 }
 
 /** 지금 보이는 증상의 묶음 (같은 증상을 여러 원인이 쓴다, 12-74) */

@@ -35,19 +35,22 @@ export function exposeToFatigue(ctx: ToolContext, activity: string, from: number
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   if (!r || !me || me.dead || to <= from) return [];
-  const before = state.fatigueLoad[me.id] ?? 0;
+  const levels = trackOf(ctx.content.scenario, r.track).levels;
+  const now = Math.max(0, levels.findIndex((l) => l.id === me.conditions[r.track]));
+  // 다른 일(이야기·즉흥 이야기의 대가)이 단계를 직접 올렸으면 쌓인 피로도 그 단계만큼으로 본다.
+  // 전에는 5분 걷기에 쌓인 값으로 다시 셈해 "잠을 자서 피로가 풀렸다"로 내려갔다 (PT14)
+  const floor = now > 0 ? r.grace + (now - 1) * r.per_step : 0;
+  const before = Math.max(state.fatigueLoad[me.id] ?? 0, floor);
   const hours = (to - from) / 60;
   const load = Math.max(0, Math.round((before + (r.rates[activity] ?? 1) * hours) * 10) / 10);
   const displays: ToolDisplayEvent[] = [];
-  const levels = trackOf(ctx.content.scenario, r.track).levels;
-  const now = Math.max(0, levels.findIndex((l) => l.id === me.conditions[r.track]));
   const target = fatigueLevel(ctx.content, load);
   if (target !== now) {
     const cause = target > now ? "오래 깨어 있었거나 몸을 많이 썼다" : "잠을 자서 피로가 풀렸다";
     const ch = changeCondition(ctx, me.id, r.track, target - now, "fatigue", cause);
     if (ch?.display) displays.push(ch.display);
   }
-  if (load !== before) ctx.store.append({ type: "fatigue_load_set", characterId: me.id, load });
+  if (load !== (state.fatigueLoad[me.id] ?? 0)) ctx.store.append({ type: "fatigue_load_set", characterId: me.id, load });
   return displays;
 }
 

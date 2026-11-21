@@ -1,6 +1,7 @@
 import { checkResolve } from "../engine/resolve.ts";
 import { bindOwnLovers } from "../engine/romance.ts";
 import { objectParticle } from "../engine/scenarioProgress.ts";
+import { initFactions } from "../engine/warTools.ts";
 import { addStartFamily, seatStartSquad, applyBackground, applyStartBonds, applySettingBacking, settingBackingParts } from "../engine/background.ts";
 import type { HistoryPart } from "../game/background.ts";
 import { autoEquip } from "../engine/gear.ts";
@@ -159,6 +160,8 @@ export class WorldManager {
       // 서술 방식 (12-85). 기본은 소설식
       if (options?.dialogue === "script") ctx.store.append({ type: "content_options_set", dialogue: "script" });
       // 배경 부품: 플레이어가 쓴 지난 일 중 세계의 사실이 되는 것 (기획서 12.6)
+      // 무리·땅 주인부터 (배경과 설정의 뒷받침이 다른 무리·우리 거점을 찾는다)
+      initFactions(world.ctx());
       applyBackground(world.ctx(), [...(told?.history ?? []), ...settingBackingParts(world.ctx())]);
       // 설정의 뒷받침: 사물함에 숨긴 것, 소중한 것 (4.6.4)
       applySettingBacking(world.ctx());

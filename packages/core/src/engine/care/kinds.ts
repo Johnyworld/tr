@@ -70,7 +70,8 @@ export function applyTreatment(
   const state = ctx.store.getState();
   const player = state.characters[patient]!;
   const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer && id !== patient);
-  const problem = selfTreatmentProblem(ctx, patient);
+  // 고른 값(pay)을 그대로 넘긴다: 빠뜨리면 미리 보기는 통과하고 여기서 코드가 고른 값으로 다시 따져 시간만 흐른 뒤 거절됐다 (플레이 테스트 14, 동무조 T27·T28)
+  const problem = selfTreatmentProblem(ctx, patient, pay);
   if (problem) return { ok: false, error: problem };
   if (!healer) return { ok: false, error: "치료해 줄 사람이 장면에 없다." };
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
@@ -160,7 +161,8 @@ export function firstAidProblem(ctx: ToolContext, item: string | null, targetId:
     return { error: null, bleeding: false, canHeal: false, nursing: true };
   }
   if (!bleeding && !canHeal) {
-    if (cutting && !canOperate(ctx, me.id) && shownIndex(ctx, state, targetId, harm.id) > 0) return no(`${self ? "이" : `${playerCalls(state, content, targetId)}의`} 상처는 꿰매고 파내야 한다. 수술을 배우지 않아 손댈 수 없다. 수술할 줄 아는 치료사를 찾는다.`);
+    // 플레이 테스트 14: 피가 안 나는 치명상에 "손댈 수 없다"만 나와 지혈도 못 하는 줄 알았다. 지혈할 피가 없다는 것과 지혈은 누구나 한다는 것을 함께 알린다
+    if (cutting && !canOperate(ctx, me.id) && shownIndex(ctx, state, targetId, harm.id) > 0) return no(`${self ? "" : `${playerCalls(state, content, targetId)}에게는 `}멎게 할 피가 흐르지 않는다 (출혈 이상 없음: 지혈할 것이 없다). 상처는 꿰매고 파내야 하는 수술감이라, 수술을 배우지 않아 손댈 수 없다. 수술할 줄 아는 치료사를 찾는다. 피가 흐르면 지혈(check move ${w.staunch_move})은 수술을 몰라도 할 수 있다.`);
     if (shownIndex(ctx, state, targetId, harm.id) <= 0) return no(`${self ? "" : `${playerCalls(state, content, targetId)}에게는 `}피도 상처도 없다. 응급처치할 것이 없다.`);
     if (careUsedToday(state, content, targetId, "aid")) return no(`${self ? "" : `${playerCalls(state, content, targetId)}의 `}상처는 오늘 이미 돌봤다. 내일 다시 할 수 있다.`);
     return no(skilled
@@ -239,6 +241,9 @@ export function firstAidCheck(
     if (c?.display) displays.push(c.display);
   } else if (canHeal) {
     lines.push(`${who}상처는 그대로다 (대가 있는 성공: 피만 멎었다).`);
+  } else if (bleeding && needsSurgery(ctx, targetId) && !canOperate(ctx, me.id)) {
+    // 수술을 몰라도 피는 멎게 한다 (GM 지침 "배우지 않았으면 피만 멎게 한다"). 상처는 수술할 줄 아는 사람 몫
+    lines.push(`${who}상처는 꿰매고 파내야 하는 수술감이라 그대로다. 수술할 줄 아는 치료사를 찾는다.`);
   }
   return { ok: true, lines, displays };
 }

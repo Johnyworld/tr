@@ -65,11 +65,13 @@
 - id: market_errand
   title: 나루상단 장터 심부름
   where: e_market
-  briefing: 나루상단의 장터에 가서 담배를 소금과 바꿔 오는 흥정을 한다. 강변을 지날 때 조심한다.
+  briefing: 나루상단의 장터에 가서 담배를 말린 생선과 바꿔 오는 흥정을 한다. 강변을 지날 때 조심한다.
   giver_rank: squad_leader
   deadline_hours: 12
   # 배달 (플레이 테스트 11, F5): 받을 때 짐을 받고, 임무 자리에서 넘긴다
   carries: { cigarettes: 2 }
+  # 바꿔 오는 것 (플레이 테스트 14, 방문자: 장터 누구도 팔지 않는 소금을 바꿔 오라고 했다). 장터 행상대장이 파는 말린 생선, 담배 두 갑 값어치
+  collects: { dried_fish: 2 }
   requirements:
     - deliver: cigarettes
       quantity: 2

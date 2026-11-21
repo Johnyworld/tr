@@ -242,6 +242,8 @@ export function createContentSchemas(s: Scenario) {
     faction: contentIdSchema.nullable().optional(),
     /** 세계가 시작될 때 이미 붙잡혀 있다 (포로, 기획서 7.6) */
     start_captive: z.strictObject({ by: contentIdSchema, zone: contentIdSchema }).optional(),
+    /** 세계가 시작될 때의 몸 상태 (트랙 → 단계). 카드 글이 "다리를 다쳤다·열에 들떴다"면 진짜 상태도 그렇게 (플레이 테스트 14: 실종 정찰조장이 "부상 이상 없음") */
+    starts: z.record(contentIdSchema, contentIdSchema).optional(),
     rank: idEnum(rankIds(s)),
     /** 직분 (기획서 12.6). 플레이어와 같은 스키마 (원칙 6) */
     occupation: contentIdSchema.optional(),
@@ -574,7 +576,16 @@ export function createContentSchemas(s: Scenario) {
      * 개인 거처·화장실 같은 곳은 GM이 즉흥으로 만든다(spawn_place)
      */
     places: z
-      .array(z.strictObject({ id: contentIdSchema, name: z.string().min(1), indoor: z.boolean(), aliases: z.array(z.string().min(1)).default([]) }))
+      .array(
+        z.strictObject({
+          id: contentIdSchema,
+          name: z.string().min(1),
+          indoor: z.boolean(),
+          aliases: z.array(z.string().min(1)).default([]),
+          /** 붙잡은 사람을 가두는 곳 (PT14: 붙잡히면 그 무리의 가두는 장소가 있는 구역, 그 장소에 갇힌다) */
+          jail: z.boolean().default(false),
+        }),
+      )
       .default([]),
     /** 위험 (0 안전 ~ 3 아주 위험, 12-53). 오가는 길에서 일이 생길 확률(scenario.travel)을 정한다 */
     danger: z.number().int().min(0).max(3).default(1),
@@ -1100,7 +1111,21 @@ export function createContentSchemas(s: Scenario) {
       .strictObject({
         wants: z.array(z.string().min(1)).min(1),
         fears: z.array(z.string().min(1)).min(1),
-        voices: z.array(z.strictObject({ style: z.string().min(1), samples: z.array(z.string().min(1)).min(1) })).min(1),
+        /**
+         * 말투 후보. 자랄 때 그 사람의 성격·말씨와 어긋나지 않는 것을 고른다 (PT14: 수다쟁이에게 "말을 아끼는 존댓말")
+         * persona: 이 말투가 기우는 성격 축 (예: { talk: -2 } 말을 아낀다). 그 사람의 축과 반대쪽이면 고르지 않는다
+         * dialect: 사투리 말투. 표준어를 쓰는 사람에게는 고르지 않는다
+         */
+        voices: z
+          .array(
+            z.strictObject({
+              style: z.string().min(1),
+              samples: z.array(z.string().min(1)).min(1),
+              persona: z.partialRecord(idEnum((s.persona?.axes ?? []).map((a) => a.id)), z.number().int().min(-2).max(2)).optional(),
+              dialect: z.boolean().optional(),
+            }),
+          )
+          .min(1),
         rules: z.array(z.string().min(1)).default([]),
         reputations: z.array(z.string().min(1)).min(1),
         secrets: z.array(z.strictObject({ content: z.string().min(1), reveal_when: z.string().min(1), min_trust: z.number().int().min(1).max(5) })).default([]),

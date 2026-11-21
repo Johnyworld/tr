@@ -273,7 +273,7 @@ function UnlockToasts({ notices, onStatus }: { notices: UnlockNotice[]; onStatus
           <Icon name="key" size={16} />
           <span>
             시나리오 <strong>{n.title}</strong>
-            {n.particle ?? "을(를)"} 플레이할 수 있습니다.
+            {n.particle ?? "를"} 플레이할 수 있습니다.
           </span>
           <button type="button" aria-label="닫기" disabled={closing === `${n.pack}/${n.roleId}`} onClick={() => close(n)}>
             ×

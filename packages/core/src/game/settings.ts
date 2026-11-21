@@ -3,6 +3,7 @@
  * 성격 조건(requires: 성격 축 한쪽 이름 → 단계)은 만들 때만 본다. 정면으로 모순되는 설정·트레잇, 시나리오의 정해진 사연과 맞지 않는 것은 고를 수 없다.
  * 시나리오와 자주 부딪히는 것은 고를 수 있지만 알린다 (clash)
  */
+import { josa } from "../text.ts";
 import type { Scenario } from "../scenario/schema.ts";
 
 export type SettingItem = NonNullable<Scenario["settings"]>["items"][number];
@@ -60,7 +61,7 @@ export function checkSettings(s: Scenario, ids: readonly string[], ctx: SettingC
   if (new Set(ids).size !== ids.length) problems.push("같은 설정을 두 번 골랐다.");
   for (const slot of settingSlots(s)) {
     const n = ids.filter((id) => settingOf(s, id)?.slot === slot.id).length;
-    if (n > slot.max) problems.push(`${slot.label}은(는) ${slot.max}개까지다.`);
+    if (n > slot.max) problems.push(`${josa(slot.label, "은/는")} ${slot.max}개까지다.`);
   }
   return problems;
 }

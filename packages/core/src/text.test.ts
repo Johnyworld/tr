@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fill, josa, sentence } from "./text.ts";
 
@@ -44,5 +46,39 @@ describe("조사", () => {
   it("마침표를 하나로 맞춘다", () => {
     expect(sentence("통조림을 챙겼다.")).toBe("통조림을 챙겼다.");
     expect(sentence("통조림을 챙겼다")).toBe("통조림을 챙겼다.");
+  });
+});
+
+describe("날것 조사 막기 (PT14)", () => {
+  it("끝에 붙은 괄호 풀이(id)는 건너뛰고 읽는다: 강태호(a_taeho)가", () => {
+    expect(josa("강태호(a_taeho)", "이/가")).toBe("강태호(a_taeho)가");
+    expect(josa("윤채원 (a_chaewon)", "은/는")).toBe("윤채원 (a_chaewon)은");
+    expect(josa("하얀매", "이/가")).toBe("하얀매가");
+  });
+
+  it("코드·콘텐츠에 \"이(가)\", \"을(를)\", \"은(는)\" 같은 날것 조사를 쓰지 않는다 (josa로 고른다)", () => {
+    const root = join(import.meta.dirname, "..", "..", "..");
+    const walk = (dir: string, ext: RegExp): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        if (name === "node_modules" || name === "dist") return [];
+        const p = join(dir, name);
+        return statSync(p).isDirectory() ? walk(p, ext) : ext.test(name) && !name.includes(".test.") ? [p] : [];
+      });
+    const files = [
+      ...walk(join(root, "packages/core/src"), /\.ts$/),
+      ...walk(join(root, "packages/mcp/src"), /\.ts$/),
+      ...walk(join(root, "packages/ui/src"), /\.tsx?$/),
+      ...walk(join(root, "content/scenarios"), /\.(ya?ml|md)$/),
+    ];
+    const raw = /(이\(가\)|가\(이\)|을\(를\)|를\(을\)|은\(는\)|는\(은\)|과\(와\)|와\(과\))/;
+    const out: string[] = [];
+    for (const f of files) {
+      // text.ts는 읽는 법을 모르는 글자(id)에 둘 다 적는 josa 자신이다
+      if (f.endsWith("packages/core/src/text.ts")) continue;
+      readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+        if (raw.test(line)) out.push(`${relative(root, f)}:${i + 1}`);
+      });
+    }
+    expect(out).toEqual([]);
   });
 });

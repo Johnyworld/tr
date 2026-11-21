@@ -30,6 +30,14 @@ export function peopleHere(state: GameState, content: Content): string[] {
   });
 }
 
+/**
+ * 내 편: 함께 다니는 동행, 주인공의 분대, 같은 분대 동료 (플레이 테스트 14: 구해 주는 분대원을 target으로 두자 맞서는 상대로 셌다).
+ * target으로 들어와도 판정의 상대가 아니다. 내 편과 맞서려면 check.opponent로 분명히 한다
+ */
+export function onMySide(state: GameState, content: Content, id: string): boolean {
+  return activeCompanions(state).includes(id) || squadMembers(state, content).includes(id) || (roleOf(content, state)?.squad_mates ?? []).includes(id);
+}
+
 /** 이 판정을 도울 사람: 그 스킬이 1 이상인 곁의 사람 가운데 가장 잘하는 사람. 없으면 null */
 export function helperFor(state: GameState, content: Content, move: string): { id: string; bonus: number } | null {
   let best: { id: string; skill: number } | null = null;

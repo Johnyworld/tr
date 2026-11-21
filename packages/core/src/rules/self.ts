@@ -36,20 +36,22 @@ export function againstSetting(ctx: ToolContext, settingId: string): SettingRoll
   const before = state.settingRolls?.[settingId];
   const sameScene = !!before && before.spot === spot && state.time - before.at <= SCENE_MINUTES;
   if (sameScene && before.won) return { ok: true, proceed: true, lines: [`(${item.name}: 이 장면에서 이미 이겨 냈다. 다시 굴리지 않는다)`], displays: [] };
-  if (sameScene && !before.won) return { ok: true, proceed: false, lines: [`${item.confirm ?? item.name} ${me.name}은(는) 이 장면에서 이미 꺾였다: 그 행동을 하지 못한다. 다른 행동으로 바꿔 서술하라 (다시 굴리지 않는다).`], displays: [] };
+  if (sameScene && !before.won) return { ok: true, proceed: false, lines: [`${josa(`${item.confirm ?? item.name} ${me.name}`, "은/는")} 이 장면에서 이미 꺾였다: 그 행동을 하지 못한다. 다른 행동으로 바꿔 서술하라 (다시 굴리지 않는다).`], displays: [] };
   const rule = s.body?.steady;
   if (!rule) return { ok: true, proceed: true, lines: [], displays: [] };
-  const roll = rollPlayerCheck({ move: rule.move, stat: rule.stat, difficulty: "normal", intent: `${item.name}을(를) 거스른다` }, ctx, { reaction: true, purpose: "reaction" });
+  const roll = rollPlayerCheck({ move: rule.move, stat: rule.stat, difficulty: "normal", intent: `${josa(item.name, "을/를")} 거스른다` }, ctx, { reaction: true, purpose: "reaction" });
   if (!roll.ok) return roll;
   const won = roll.outcome !== "miss";
   ctx.store.append({ type: "setting_rolled", setting: settingId, spot, won });
   const who = `${item.confirm ?? item.name} ${me.name}`;
-  if (roll.outcome === "success") return { ok: true, proceed: true, lines: [`${josa(who, "은/는")} 마음에 걸리는 것을 누르고 해낸다.`], displays: [roll.display] };
+  // 판정 줄에는 스킬 이름(버티기)만 나와 무슨 굴림인지 몰랐다 (PT14): 설정을 거스르는 마음의 굴림임을 먼저 밝힌다
+  const head = `(${josa(item.name, "을/를")} 거스르는 마음의 굴림)`;
+  if (roll.outcome === "success") return { ok: true, proceed: true, lines: [head, `${josa(who, "은/는")} 마음에 걸리는 것을 누르고 해낸다.`], displays: [roll.display] };
   if (roll.outcome === "partial") {
-    const shaken = shakeNerves(ctx, 1, `${item.name}을(를) 거슬렀다`, false);
-    return { ok: true, proceed: true, lines: [`${josa(who, "은/는")} 뜻대로 하지만 마음이 흔들린다.`, ...shaken.lines], displays: [roll.display, ...shaken.displays] };
+    const shaken = shakeNerves(ctx, 1, `${josa(item.name, "을/를")} 거슬렀다`, false);
+    return { ok: true, proceed: true, lines: [head, `${josa(who, "은/는")} 뜻대로 하지만 마음이 흔들린다.`, ...shaken.lines], displays: [roll.display, ...shaken.displays] };
   }
-  return { ok: true, proceed: false, lines: [`${josa(who, "은/는")} 끝내 하지 못한다: 그 행동은 일어나지 않았다. GM은 행동을 바꿔 서술하고 까닭(${item.name})을 짧게 알린다.`], displays: [roll.display] };
+  return { ok: true, proceed: false, lines: [head, `${josa(who, "은/는")} 끝내 하지 못한다: 그 행동은 일어나지 않았다. GM은 행동을 바꿔 서술하고 까닭(${item.name})을 짧게 알린다.`], displays: [roll.display] };
 }
 
 /** 설정의 주인 쪽 카드 줄 (연기 카드, 주인공·NPC 공통). 주인공이면 비밀의 사실과 아는 사람, 거스를 때의 안내까지 */

@@ -11,7 +11,8 @@ import { memoAccess } from "../game/memo.ts";
 import { josa } from "../text.ts";
 import { headingAs, knowsDeath, playerCalls } from "../game/acquaintance.ts";
 import { traitLabels } from "../engine/traits.ts";
-import { growthLine, skillLines } from "../engine/growth.ts";
+import { growthLine } from "../engine/growth.ts";
+import { skillLines } from "../rules/skill.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
@@ -104,7 +105,7 @@ const status: CommandDef = {
     const traits = traitLabels(content, player);
     // 없어도 줄을 보인다 (12-239, 플레이 테스트 13: 트레잇 없이 만든 주인공에게 줄이 없어 성격이 빠진 줄 알았다)
     lines.push(`트레잇  ${traits.length ? traits.join(" · ") : "없음"}`);
-    lines.push(...skillLines(scenario, player.skills));
+    lines.push(...skillLines(content, player));
     const growth = growthLine(scenario, player);
     if (growth) lines.push(growth);
     lines.push("");

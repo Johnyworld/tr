@@ -210,7 +210,7 @@ export const improviseStorylet = defineTool({
       ids.add(c.id);
       if (c.check) {
         if (!content.scenario.moves.some((m) => m.id === c.check)) return { ok: false, error: `${where}: 알 수 없는 스킬 ${c.check}` };
-        if (learned(content.scenario, player.skills, c.check) === null) return { ok: false, error: `${where}: 주인공이 배우지 않은 ${moveLabel(content.scenario, c.check)}은(는) 판정으로 쓸 수 없다.` };
+        if (learned(content.scenario, player.skills, c.check) === null) return { ok: false, error: `${where}: 주인공이 배우지 않은 ${josa(moveLabel(content.scenario, c.check), "은/는")} 판정으로 쓸 수 없다.` };
       }
       if (c.reward !== "none" && !c.reward_kind) return { ok: false, error: `${where}: 보상 종류(reward_kind)를 고른다.` };
       if (c.reward === "none" && c.reward_kind) return { ok: false, error: `${where}: 보상이 none이면 reward_kind는 null.` };

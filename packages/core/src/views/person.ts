@@ -1,6 +1,6 @@
 import type { Content } from "../content/schemas.ts";
 import { traitLabels } from "../engine/traits.ts";
-import { aliasOf, headingAs, knowsName } from "../game/acquaintance.ts";
+import { aliasOf, headingAs, isAcquaintanceMemory, knowsName, knowsReputation } from "../game/acquaintance.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
@@ -40,13 +40,14 @@ export function personProfile(state: GameState, content: Content, id: string): P
     rankLabel: rankName(content, c.factionId, c.rank),
     age: named ? c.age : null,
     look: npc?.look ?? c.extra?.look ?? null,
-    // 평판은 그 인물을 아는(이름을 아는) 사람이 아는 모습이다
-    reputation: npc && named ? npc.reputation : null,
+    // 평판은 그 인물을 아는 사람이 아는 모습이다: 이름만 막 들은 사이면 아직 모른다 (PT14)
+    reputation: npc && knowsReputation(state, content, id) ? npc.reputation : null,
     // 겉으로 보이는 트레잇만 (외모, 드러나는 성격). 처음 만나기 전엔 소문으로 아는 외모만
     traits: met ? shown : [],
     attitude: met ? RELATION_AXES.map((axis) => ({ axis, label: RELATION_AXIS_LABELS[axis], word: relationLabel(r[axis]), value: r[axis] })) : null,
     facts: (state.beliefs[state.playerId] ?? [])
-      .filter((b) => (named && b.fact.includes(c.name)) || b.fact.includes(alias))
+      // 만남·이름 기억은 머리(이름·호칭)와 겉모습이 이미 보여 준다: "이름은 모른다"가 이름을 안 뒤에도 남았다 (PT14)
+      .filter((b) => !isAcquaintanceMemory(b.fact) && ((named && b.fact.includes(c.name)) || b.fact.includes(alias)))
       .slice(-5)
       .map((b) => ({ source: `${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}`, fact: b.fact })),
     offers: met ? personFactLines(personFacts(state, content, id, false)).map((l) => l.replace(" (take_action.lesson)", "")) : [],

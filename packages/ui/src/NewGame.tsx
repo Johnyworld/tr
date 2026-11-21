@@ -270,7 +270,7 @@ function CharacterStep({ view, busy, answer }: StepProps) {
       {step === "confirm" && (
         <>
           <h2 className="newgame-title">이 사람으로 시작할까요?</h2>
-          {c.unusedPoints > 0 && <p className="newgame-warn">능력 포인트 {c.unusedPoints}을(를) 쓰지 않았습니다. 이대로 시작하면 사라집니다.</p>}
+          {c.unusedPoints > 0 && <p className="newgame-warn">능력 포인트 {c.unusedPoints}점을 쓰지 않았습니다. 이대로 시작하면 사라집니다.</p>}
           <div className="newgame-actions">
             {options.map((o) => (
               <button key={o.value} type="button" className={o.value === "start" ? "primary" : ""} disabled={busy} onClick={() => answer(o.value)}>

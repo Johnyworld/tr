@@ -9,7 +9,7 @@
   description: 옛 공업고등학교. 운동장 담을 모래주머니와 철판으로 보강했다.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: staff_room, name: "교무실", indoor: true, aliases: ["교무실", "지도부 회의"] }, { id: infirmary, name: "의무실", indoor: true, aliases: ["의무실"] }, { id: barracks, name: "막사", indoor: true, aliases: ["막사", "간부 숙소", "침상"] }, { id: mess, name: "식당 천막", indoor: false, aliases: ["식당 천막", "배식", "불 피우기"] }, { id: storehouse, name: "보급 창고·무기고", indoor: true, aliases: ["보급 창고", "창고", "무기고", "발전기실", "공작실", "총기 손질"] }, { id: yard_gate, name: "운동장·정문·담장", indoor: false, aliases: ["정문", "운동장", "담장", "망루", "거점 순회", "모닥불"] }, { id: stockade, name: "수용소", indoor: true, aliases: ["수용소"] }]
+  places: [{ id: staff_room, name: "교무실", indoor: true, aliases: ["교무실", "지도부 회의"] }, { id: infirmary, name: "의무실", indoor: true, aliases: ["의무실"] }, { id: barracks, name: "막사", indoor: true, aliases: ["막사", "간부 숙소", "침상"] }, { id: mess, name: "식당 천막", indoor: false, aliases: ["식당 천막", "배식", "불 피우기"] }, { id: storehouse, name: "보급 창고·무기고", indoor: true, aliases: ["보급 창고", "창고", "무기고", "발전기실", "공작실", "총기 손질"] }, { id: yard_gate, name: "운동장·정문·담장", indoor: false, aliases: ["정문", "운동장", "담장", "망루", "거점 순회", "모닥불"] }, { id: stockade, name: "수용소", indoor: true, aliases: ["수용소"], jail: true }]
   cover: 7
   danger: 0
   owner: faction_a
@@ -53,7 +53,7 @@
   description: 북쪽 고가도로 너머의 옛 물류창고 단지. 붉은연합이 차지하고 있다.
   kind: zone
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: yard, name: "창고 마당", indoor: false, aliases: ["물류창고 마당", "마당", "불가", "점호", "약탈조 출발", "광장"] }, { id: barracks, name: "막사·취사 천막", indoor: true, aliases: ["막사", "취사 천막", "식당 천막", "배급 줄"] }, { id: stockade, name: "수용소", indoor: true, aliases: ["수용소", "노역조"] }, { id: command, name: "지휘소·정비소", indoor: true, aliases: ["지휘소", "정비소", "치료실"] }, { id: wall, name: "감시탑·담", indoor: false, aliases: ["감시탑", "담 보초", "경비 초소"] }]
+  places: [{ id: yard, name: "창고 마당", indoor: false, aliases: ["물류창고 마당", "마당", "불가", "점호", "약탈조 출발", "광장"] }, { id: barracks, name: "막사·취사 천막", indoor: true, aliases: ["막사", "취사 천막", "식당 천막", "배급 줄"] }, { id: stockade, name: "수용소", indoor: true, aliases: ["수용소", "노역조"], jail: true }, { id: command, name: "지휘소·정비소", indoor: true, aliases: ["지휘소", "정비소", "치료실"] }, { id: wall, name: "감시탑·담", indoor: false, aliases: ["감시탑", "담 보초", "경비 초소"] }]
   cover: 5
   danger: 2
   owner: faction_c
@@ -82,7 +82,7 @@
   description: 도시 동쪽의 옛 공단. 높은 담과 감시탑이 있다.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: barracks, name: "막사", indoor: true, aliases: ["막사", "점호", "화투판"] }, { id: office_block, name: "사무동·규율반", indoor: true, aliases: ["사무동", "위원회", "규율반", "명부"] }, { id: kitchen, name: "부엌·배급 줄", indoor: true, aliases: ["부엌", "배급 줄", "배식"] }, { id: yard, name: "광장·창고 앞", indoor: false, aliases: ["광장", "검수", "쓰레기 수레", "약탈조 출발"] }, { id: wall, name: "담·감시탑·사격장", indoor: false, aliases: ["담벼락", "담 그늘", "사격장", "감시탑"] }, { id: armory, name: "무기고", indoor: true, aliases: ["무기고"] }]
+  places: [{ id: barracks, name: "막사", indoor: true, aliases: ["막사", "점호", "화투판"] }, { id: office_block, name: "사무동·규율반", indoor: true, aliases: ["사무동", "위원회", "규율반", "명부"] }, { id: kitchen, name: "부엌·배급 줄", indoor: true, aliases: ["부엌", "배급 줄", "배식"] }, { id: yard, name: "광장·창고 앞", indoor: false, aliases: ["광장", "검수", "쓰레기 수레", "약탈조 출발"] }, { id: wall, name: "담·감시탑·사격장", indoor: false, aliases: ["담벼락", "담 그늘", "사격장", "감시탑"] }, { id: armory, name: "무기고", indoor: true, aliases: ["무기고"] }, { id: cells, name: "철망 감방", indoor: true, aliases: ["감방", "철망 감방"], jail: true }]
   cover: 7
   danger: 1
   owner: faction_c

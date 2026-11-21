@@ -13,6 +13,8 @@ import type { GameState } from "../game/state.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { ToolContext, ToolDisplayEvent } from "../engine/toolkit.ts";
 import { playerHeld } from "./held.ts";
+import { isAcquaintanceMemory } from "../game/acquaintance.ts";
+import { START_TIME } from "./time.ts";
 
 export type News = {
   fact: string;
@@ -65,3 +67,17 @@ export function hearNews(ctx: ToolContext, news: News): ToolDisplayEvent[] {
 }
 
 const met = (state: GameState, id: string) => (state.met[state.playerId] ?? []).includes(id) || (state.known[state.playerId] ?? []).includes(id);
+
+/**
+ * 수다로 옮길 만한 말인가 (성격의 새어 나감·얻어들음, engine/persona.ts). 소식이 사람 사이로 옮겨 가는 길이라 여기서 정한다.
+ * - 만남·이름 기억("○○와 마주쳤다. 겉모습: …", "○○의 이름은 …")은 시스템이 남긴 기억이라 옮기지 않는다 (PT14: 대사로 옮기기 어려운 문장이 새었다)
+ * - 주인공 자신의 지난 삶(세계가 열리기 전의 기억)은 성격의 새어 나감으로 흘리지 않는다 (털어놓기는 GM이 장면으로)
+ * - 주인공이 듣는 쪽이면 주인공 자신에 대한 말은 얻어듣지 않는다 (PT14: 주인공 이름이 "[전해 들음] 약탈조원의 이름은 한동구"로 들어왔다)
+ */
+export function worthPassing(state: GameState, belief: Pick<Belief, "fact" | "learnedAt">, to: "player" | "npc"): boolean {
+  if (isAcquaintanceMemory(belief.fact)) return false;
+  if (belief.learnedAt < START_TIME) return false;
+  const me = state.characters[state.playerId];
+  if (to === "player" && me && belief.fact.includes(me.name)) return false;
+  return true;
+}

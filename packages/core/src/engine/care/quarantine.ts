@@ -7,6 +7,7 @@
  * 빼앗는 것이 없고, 먹이는 쪽이 끼니를 제대로 준다. 날수가 지나면 풀려나고, 그사이 감염 열이 드러났으면 내릴 때까지 갇혀 있다
  * (플레이 테스트 13: 물린 것을 털어놓아도, 감염된 채 수술을 받아도 그대로 임무를 받고 다녔다).
  */
+import { josa } from "../../text.ts";
 import { heldOf } from "../../rules/held.ts";
 import { ownedBy } from "../../rules/home.ts";
 import { MINUTES_PER_DAY } from "../../rules/time.ts";
@@ -29,7 +30,7 @@ export function quarantineAfterCare(ctx: ToolContext, factionId: string | null |
   if (at === undefined || state.time - at > days * MINUTES_PER_DAY) return null;
   ctx.store.append({ type: "player_captured", by: factionId, zone, held: {}, quarantine: true });
   const name = ctx.content.factions[factionId]?.name ?? factionId;
-  const fact = `감염체에게 다친 상처를 보고 ${name}이(가) 격리실에 들였다. ${days}일 동안 나가지 못한다 (그사이 열이 오르면 내릴 때까지)`;
+  const fact = `감염체에게 다친 상처를 보고 ${josa(name, "이/가")} 격리실에 들였다. ${days}일 동안 나가지 못한다 (그사이 열이 오르면 내릴 때까지)`;
   ctx.store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${ctx.store.getState().nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time } });
   return `${fact}. 갇힌 동안의 임무는 탓하지 않는다. 끼니는 그쪽이 준다.`;
 }

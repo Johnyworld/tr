@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 82;
+export const SAVE_SCHEMA_VERSION = 83;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -119,7 +119,8 @@ export const bondSchema = z.strictObject({
   crossroads: z.strictObject({ lean: z.enum(["stay", "leave"]), decideBy: z.number().int() }).optional(),
   /** 잠시 떨어져 있다: zone에서 기다리거나(until null), 볼일을 보고 until에 돌아온다(zone null) */
   /** left: 주인공이 남겨 둔 구역을 한 번 떠났나. false면 아직 그 자리라 합류하지 않는다 (플레이 테스트 12: 남겨 두자마자 다시 따라왔다). 이전 세이브는 없음 = 떠난 것으로 */
-  apart: z.strictObject({ zone: z.string().nullable(), until: z.number().int().nullable(), since: z.number().int(), left: z.boolean().optional() }).optional(),
+  /** place: 기다리는 장소 (null·없음 = 구역에 막 들어선 자리). 같은 구역 안에서 그 장소를 떠났다 돌아오면 합류한다 (PT14 떠돌이: 같은 구역에서 다시 합류하지 않아 개를 잃었다) */
+  apart: z.strictObject({ zone: z.string().nullable(), until: z.number().int().nullable(), since: z.number().int(), left: z.boolean().optional(), place: z.string().nullable().optional() }).optional(),
 });
 export type Bond = z.infer<typeof bondSchema>;
 
@@ -757,7 +758,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("fatigue_load_set"), characterId: z.string(), load: z.number() }),
     z.strictObject({ type: z.literal("fire_lit"), zone: z.string(), until: z.number().int(), itemId: z.string() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
-    z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()), quarantine: z.boolean().optional() }),
+    // place: 갇히는 장소 (없으면 같은 구역이면 지금 자리, 다른 구역이면 막 들어선 자리)
+    z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()), quarantine: z.boolean().optional(), place: z.string().nullable().optional() }),
     /** 감염체에게 다쳤다 (격리의 근거, 12-238). 감염이 됐는지와 따로 */
     z.strictObject({ type: z.literal("infection_exposed"), characterId: z.string() }),
     /** 공들인 관계의 첫 죽음을 봐줬다 (12-242) */
@@ -833,7 +835,7 @@ export function createGameSchemas(s: Scenario) {
     /** 헤어졌다 (함께 다니는 이유가 끝났다) */
     z.strictObject({ type: z.literal("companion_left"), characterId: z.string(), reason: z.string().optional() }),
     /** 잠시 떨어진다: zone에서 기다리거나, until에 돌아온다 */
-    z.strictObject({ type: z.literal("companion_parted"), characterId: z.string(), zone: z.string().nullable(), until: z.number().int().nullable() }),
+    z.strictObject({ type: z.literal("companion_parted"), characterId: z.string(), zone: z.string().nullable(), until: z.number().int().nullable(), place: z.string().nullable().optional() }),
     /** 떨어져 있던 동행이 다시 곁에 왔다 */
     z.strictObject({ type: z.literal("companion_rejoined"), characterId: z.string() }),
     /** 목적을 이뤄 갈림길에 섰다 */
@@ -934,7 +936,8 @@ export function createGameSchemas(s: Scenario) {
     }),
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
     /** 같은 구역 안에서 장소를 옮겼다 (12-244). null이면 구역의 장소를 정하지 않은 곳 */
-    z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable() }),
+    // with: 동행 말고 함께 옮겨 가는 장면의 인물 (공통 규칙 15 comesAlong)
+    z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable(), with: z.array(z.string()).optional() }),
     /** GM이 즉흥 장소를 만들었다 (12-244) */
     z.strictObject({ type: z.literal("place_spawned"), id: z.string(), zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable() }),
     z.strictObject({ type: z.literal("weather_set"), day: z.number().int(), weatherId: z.string() }),
@@ -1591,7 +1594,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.companions = next.companions.filter((id) => id !== event.characterId);
       next.scene.present = next.scene.present.filter((id) => id !== event.characterId);
       const bond = next.bonds[event.characterId];
-      if (bond) bond.apart = { zone: event.zone, until: event.until, since: state.time, left: false };
+      if (bond) bond.apart = { zone: event.zone, until: event.until, since: state.time, left: false, ...(event.place !== undefined ? { place: event.place } : {}) };
       return next;
     }
     case "companion_rejoined": {
@@ -1915,7 +1918,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       }
       next.deposits[`held:${event.by}`] = { ...(next.deposits[`held:${event.by}`] ?? {}), ...event.held };
       // 갇힌 곳으로 끌려간다. 동행은 따라오지 못한다 (그 자리에서 기다린다)
+      // 바닥의 물건은 붙잡힌 자리에 남는다 (PT14 방문자: 물류창고에 던진 쇠지렛대가 거점 감방까지 "장면에 놓인 물건"으로 따라왔다)
+      const place = event.place !== undefined ? event.place : event.zone === state.playerZone ? state.playerPlace : null;
+      if (state.playerZone) swapGround(next, spotKey(state.playerZone, state.playerPlace), spotKey(event.zone, place));
       next.playerZone = event.zone;
+      next.playerPlace = place;
       next.scene.present = [];
       return next;
     }
@@ -2172,7 +2179,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       toward[deed.actorId] = applyRelationDelta(toward[deed.actorId] ?? NEUTRAL_RELATION, event.delta);
       if (deed.actorId === state.playerId && (event.delta.trust ?? 0) < 0) {
         next.trustDroppedAt = { ...next.trustDroppedAt, [event.npcId]: state.time };
-        next.trustDroppedWhy = { ...next.trustDroppedWhy, [event.npcId]: deed.summary };
+        // 행적이 있던 날과 알게 된 날이 다르면 둘 다 (PT14: 1일차 거짓말이 "2일차: …"로 보였다)
+        const why = dayOf(deed.at) === dayOf(state.time) ? deed.summary : `${dayOf(deed.at)}일차의 일 — ${deed.summary}`;
+        next.trustDroppedWhy = { ...next.trustDroppedWhy, [event.npcId]: why };
       }
       {
         const day = dayOf(state.time);
@@ -2213,13 +2222,16 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.forecast = { day: event.day, id: event.weatherId };
       break;
     case "place_moved": {
-      // 바닥의 물건은 장소마다 (12-244). 장면의 인물은 따라오지 않는다 (동행은 따라온다)
+      // 바닥의 물건은 장소마다 (12-244). 장면의 인물은 동행과 함께 가는 사람(with)만 따라온다
       const zone = next.playerZone;
       if (!zone) return next;
       swapGround(next, spotKey(zone, event.from), spotKey(zone, event.to));
       next.playerPlace = event.to;
       for (const id of next.scene.present) perceive(next, id);
-      next.scene = { ...next.scene, present: next.scene.present.filter((id) => next.companions.includes(id)) };
+      const along = event.with ?? [];
+      next.scene = { ...next.scene, present: next.scene.present.filter((id) => next.companions.includes(id) || along.includes(id)) };
+      // 같은 구역의 한 장소에 남겨 둔 동행: 그 장소를 떠나면 돌아왔을 때 합류한다
+      for (const b of Object.values(next.bonds)) if (b.apart?.zone === zone && (b.apart.place ?? null) === event.from) b.apart.left = true;
       return next;
     }
     case "place_spawned":
@@ -2780,7 +2792,8 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
     gender: npc.gender ?? null,
     traits: npc.traits,
     settings: npc.settings ?? [],
-    conditions: initialConditions(s),
+    // 콘텐츠가 정한 시작 몸 상태 (npc.starts, 플레이 테스트 14)
+    conditions: { ...initialConditions(s), ...(npc.starts ?? {}) },
     inventory: toInventory(npc.start_inventory),
     captive: npc.start_captive ?? null,
   });
@@ -2839,7 +2852,9 @@ export function createWorldEvent(
     player,
     npcs,
     beliefs,
-    known: { [player.id]: [...role.known_npcs] },
+    // 같은 무리 동료는 처음부터 서로 이름을 안다 (기획서 6.3, 계승과 같은 셈). 역할의 known_npcs(다른 무리의 아는 사람 포함)에 더한다
+    // (PT14: 같은 무리 의무실 보조·대원이 known_npcs에 없어 끝까지 "이름 모름")
+    known: { [player.id]: [...new Set([...role.known_npcs, ...npcs.filter((n) => !!player.factionId && n.factionId === player.factionId).map((n) => n.id)])] },
   };
 }
 

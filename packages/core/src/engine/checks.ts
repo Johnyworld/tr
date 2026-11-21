@@ -6,7 +6,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { afterCheckAmbush, ambushParts } from "./ambush.ts";
 import { companionSkillMod } from "../game/companions.ts";
-import { helperFor } from "../rules/company.ts";
+import { helperFor, onMySide } from "../rules/company.ts";
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
 import { personaCheckParts } from "./persona.ts";
 import { attractionCheckBonus, traitSkillMod, traitsOf } from "./traits.ts";
@@ -124,7 +124,8 @@ export function rollPlayerCheck(
   };
   // 상대와 상황 (12-104): 맞서는 상대가 없으면 공격 대상이 상대다. 함께하는 말(설득)의 대상은 상대가 아니다 (플레이 테스트 11)
   const cooperative = scenario.opposition?.cooperative.includes(input.move) ?? false;
-  const opponent = input.opponent ?? (cooperative ? null : options.target) ?? null;
+  // 내 편(동행·분대)은 target이어도 맞서는 상대가 아니다 (공통 규칙 8, 플레이 테스트 14: 끌어내려 구하는 분대원에게 "상대가 근접전에 서툶" +1)
+  const opponent = input.opponent ?? (cooperative || (options.target && onMySide(state, content, options.target)) ? null : options.target) ?? null;
   // 매복·매복당함·혼란 (12-177)도 상황 보정이다
   const against = [
     ...oppositionParts(content, state, input.move, opponent, input.distance),

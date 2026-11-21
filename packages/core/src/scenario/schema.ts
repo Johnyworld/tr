@@ -371,6 +371,11 @@ export const scenarioFileSchema = z
         }),
       )
       .min(1),
+    /**
+     * 카드 글(alias·look)의 몸 낱말 (콘텐츠 검사용, 플레이 테스트 14): 트랙 → 정규식. 인물 카드가 이 낱말로 다쳤거나 앓는다고 쓰면
+     * 그 트랙의 시작 상태(npc.starts)가 있어야 한다 ("다리를 다쳤다"인데 부상 이상 없음을 막는다)
+     */
+    card_body_words: z.record(id, z.string().min(1)).optional(),
     harm_track: id,
     rank_ladder: z.array(z.strictObject({ id, label: z.string().min(1), level: z.number().int() })).min(1),
     promotion: z.strictObject({ from: id, to: id }),
@@ -1804,6 +1809,7 @@ export const scenarioFileSchema = z
       const fatal = track.levels.findIndex((l) => l.fatal);
       if (fatal !== -1 && fatal !== track.levels.length - 1) problem(`condition_tracks.${track.id}: fatal은 마지막 단계여야 한다`);
     }
+    for (const t of Object.keys(s.card_body_words ?? {})) if (!s.condition_tracks.some((x) => x.id === t)) problem(`card_body_words: 알 수 없는 상태 트랙 ${t}`);
     const harm = s.condition_tracks.find((t) => t.id === s.harm_track);
     if (!harm) problem(`harm_track: 알 수 없는 상태 트랙 ${s.harm_track}`);
     else if (!harm.levels.at(-1)?.fatal) problem(`harm_track ${s.harm_track}의 마지막 단계는 fatal이어야 한다`);
@@ -1850,7 +1856,7 @@ export const scenarioFileSchema = z
     for (const [item, d] of Object.entries(s.body?.dependence ?? {})) {
       const t = s.traits.find((x) => x.id === d.trait);
       if (!t) problem(`body.dependence.${item}: 알 수 없는 트레잇 ${d.trait}`);
-      else if (!t.effects.habit) problem(`body.dependence.${item}: ${d.trait}은(는) 버릇(habit) 트레잇이 아니다`);
+      else if (!t.effects.habit) problem(`body.dependence.${item}: 버릇(habit) 트레잇이 아니다: ${d.trait}`);
     }
     for (const x of s.symptoms ?? []) for (const g of x.masks ?? []) if (!(s.symptoms ?? []).some((y) => y.group === g)) problem(`symptoms.${x.id}.masks: 알 수 없는 증상 묶음 ${g}`);
     const surgery = s.recovery?.surgery;

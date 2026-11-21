@@ -20,14 +20,14 @@ describe("수색 판정의 상황 보정 (12-220)", () => {
     const w = world(() => 0.5);
     w.store.getState().playerZone = poor.id;
     w.me().skills.history = -1;
-    expect(scavengeParts(w.ctx)).toEqual([{ label: "털린 곳", value: poor.loot!.modifier }]);
+    expect(scavengeParts(w.ctx)).toEqual([{ label: "털린 구역", value: poor.loot!.modifier }]);
     const day = Math.floor(w.store.getState().time / 1440) + 1;
     w.store.append({ type: "zone_searched", zone: poor.id, day });
     w.me().skills.history = 1;
     expect(scavengeParts(w.ctx)).toEqual([
-      { label: "털린 곳", value: poor.loot!.modifier },
-      { label: "다시 뒤짐", value: -1 },
-      { label: "역사", value: 1 },
+      { label: "털린 구역", value: poor.loot!.modifier },
+      { label: "오늘 다시 뒤짐", value: -1 },
+      { label: "역사: 옛 건물 쓰임을 앎", value: 1 },
     ]);
   });
 

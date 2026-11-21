@@ -438,6 +438,45 @@ function recentTemplates(state: GameState, content: Content): string[] {
 
 export const MISSION_TOOLS = [assignMission, reportMission, abandonMission] as const;
 
+/** 임무를 준 사람의 무리가 맡은 사람의 무리와 달라졌는가 (주인공이 무리를 옮겼거나, 상관이 옮겼다) */
+function leftBehind(state: GameState, mission: MissionInstance): boolean {
+  const giver = state.characters[mission.giverId];
+  const assignee = state.characters[mission.assigneeId];
+  return !!giver && !!assignee && (giver.factionId ?? "") !== (assignee.factionId ?? "");
+}
+
+/**
+ * 무리를 떠나면 예전 무리의 임무는 거기서 끝난다 (플레이 테스트 14, 방문자 T51~T63: 청솔 심부름이 붉은연합에 든 뒤에도 남아 새 임무를 막았고,
+ * 보고는 적이 된 상관에게만 할 수 있었고, 조건을 다 채운 임무라 기한이 지나도 끝나지 않았고, 포기하자 붉은연합 군율의 불복종·공적 -3이 됐다).
+ * 지금 무리의 공적·불복종에는 넣지 않는다 (공적 0, 불복종 아님). 준 무리의 규율이 문제 삼으면 준 상관에게 행적으로만 남는다
+ * (조건을 다 채운 임무, 턴 시작에 찾은 임무는 행적을 남기지 않는다). 빌린 장비는 거둬들이되 잃은 것을 탓하지 않는다.
+ * 무리를 옮기기 직전(join_faction·expel)에 부르면 지금 수행 중인 임무를 모두, 턴 시작에는 무리가 달라진 임무만 끝낸다.
+ */
+export function leaveMissionsBehind(ctx: ToolContext, onlyLeftBehind = false): { lines: string[]; displays: ToolDisplayEvent[] } {
+  const state = ctx.store.getState();
+  const lines: string[] = [];
+  const displays: ToolDisplayEvent[] = [];
+  const list = Object.values(state.missions).filter((m) => m.status === "active" && m.assigneeId === state.playerId && (!onlyLeftBehind || leftBehind(state, m)));
+  for (const mission of list) {
+    const from = state.characters[mission.giverId]?.factionId || null;
+    const name = from ? (ctx.content.factions[from]?.name ?? from) : "예전 무리";
+    ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false, excused: `무리를 떠나 끝남 (${name})` });
+    const d = disciplineOf(ctx.content, from);
+    // 턴 시작에 찾은 것은 누가 옮겼는지 모르니(상관이 옮겼을 수도) 행적을 남기지 않는다
+    if (!onlyLeftBehind && d.deedSeverity > 0 && mission.metAt === undefined) {
+      recordDeed(
+        ctx,
+        { summary: `${name}의 임무를 마치지 않고 무리를 떠났다: ${mission.title}`, tags: ["disobedience"], severity: d.deedSeverity, privacy: "semi_private", noisy: false },
+        { npcId: mission.giverId, source: "report" },
+      );
+    }
+    const tail = [returnArmory(ctx, mission.id, { excused: true }), ...releaseBuddies(ctx, mission.id)].filter((l): l is string => !!l);
+    lines.push(`${name}에서 받은 임무 "${mission.title}"는 거기서 끝났다 (예전 무리의 기록으로만 남고, 지금 무리의 공적·불복종에는 들지 않는다).${tail.map((l) => ` ${l}`).join("")}`);
+    displays.push({ type: "mission", event: "expired", title: mission.title, detail: "무리를 떠나 끝남", merit: 0 });
+  }
+  return { lines, displays };
+}
+
 /**
  * 임무의 턴 시작 처리 (코드가 하는 일, AI 요청 없음).
  * - 기한이 지난 임무는 기한 초과(명령 불이행)로 끝낸다
@@ -445,6 +484,8 @@ export const MISSION_TOOLS = [assignMission, reportMission, abandonMission] as c
  */
 export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
   const displays: ToolDisplayEvent[] = [];
+  // 무리가 달라진 채 남은 임무 (예전 세이브, 상관이 무리를 옮김): 벌 없이 끝낸다 (플레이 테스트 14)
+  displays.push(...leaveMissionsBehind(ctx, true).displays);
   const state = ctx.store.getState();
   for (const mission of Object.values(state.missions)) {
     // 앞 주인공의 임무 (계승 뒤): 조용히 끝낸다. 지금 주인공에게 불복종·행적·장비 반납을 묻지 않는다 (플레이 테스트 8)

@@ -5,6 +5,11 @@ import { executeTool } from "../engine/tools.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
 import { applySettingBacking, settingBackingParts } from "../engine/background.ts";
 import { loadRealContent } from "../testing.ts";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { WorldManager } from "../world/manager.ts";
+import { createSeededRng } from "../rng.ts";
 import { againstSetting, knowsPlayerSecretLine, secretKnownBy, settingLines, tellPlayerSecret } from "./self.ts";
 
 /** 공통 규칙 16: 자기다움 (설정 거스르기, 주인공의 비밀, 뒷받침) */
@@ -125,4 +130,27 @@ describe("뒷받침", () => {
     expect(made.traits).toContain("pill_habit");
     expect(made.settings).toEqual(["secret_addiction"]);
   });
+});
+
+describe("뒷받침: 새 게임 흐름 그대로 (PT14: 땅 주인이 정해지기 전에 돌아 모두 빠졌다)", () => {
+  it("탈영·큰 빚·적 무리의 가족·사물함이 세계에 진짜 있다", () => {
+    const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-backing-")), content, rngFactory: () => createSeededRng(7) });
+    const make = (role: string, settings: string[]) =>
+      m.create("mcp", role, { name: "한별", gender: "female", abilities: null, portrait: null, traits: [], settings } as never);
+    const a = make("role_b_guard", ["secret_deserter"]);
+    const s = a.state();
+    expect(s.background.some((e) => e.part.kind === "deserter" && e.part.faction !== s.characters[s.playerId]!.factionId)).toBe(true);
+    a.close();
+    const b = make("role_b_guard", ["secret_debt_owed"]);
+    expect(b.state().background.some((e) => e.part.kind === "debt" && e.part.size === "large")).toBe(true);
+    b.close();
+    const c = make("role_a_squad_leader", ["secret_family_enemy"]);
+    const kin = c.state().background.find((e) => e.part.kind === "kin_alive");
+    expect(kin?.characterId && c.state().characters[kin.characterId]).toBeTruthy();
+    c.close();
+    const d = make("role_e_porter", ["secret_stolen_stash"]);
+    const me = d.state().playerId;
+    expect(Object.values(d.state().stashes[me] ?? {}).some((box) => (box.canned_food ?? 0) >= 3)).toBe(true);
+    d.close();
+  }, 60000);
 });

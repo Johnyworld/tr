@@ -17,12 +17,18 @@ import { ownedBy } from "./home.ts";
 import { heldOf, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
 
-export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[] };
+export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean };
+
+/**
+ * 구역에 막 들어선 자리(장소를 정하지 않은 자리)로 돌아가는 place_to 값.
+ * 그 자리에 내려놓은 물건은 그 자리에 남는다 (PT14 방문자: 장소를 정하기 전에 계단 앞에 던진 창을 다시 찾을 길이 없었다)
+ */
+export const ENTRY_PLACE = "entry";
 
 /** 이 구역의 장소들 (콘텐츠 + 즉흥) */
 export function placesIn(state: GameState, content: Content, zone: string | null | undefined): Place[] {
   if (!zone) return [];
-  const fixed = (content.locations[zone]?.places ?? []).map((p) => ({ id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases }));
+  const fixed = (content.locations[zone]?.places ?? []).map((p) => ({ id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, jail: p.jail }));
   const spawned = Object.entries(state.spawnedPlaces ?? {})
     .filter(([, p]) => p.zone === zone)
     .map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[] }));
@@ -32,6 +38,13 @@ export function placesIn(state: GameState, content: Content, zone: string | null
 /** 장소 하나 (지금 구역에서) */
 export function placeById(state: GameState, content: Content, id: string | null | undefined, zone: string | null | undefined = state.playerZone): Place | null {
   return id ? (placesIn(state, content, zone).find((p) => p.id === id) ?? null) : null;
+}
+
+/** place_to 값이 가리키는 곳: 장소, 구역에 막 들어선 자리(null, ENTRY_PLACE), 이 구역에 없으면 undefined */
+export function placeTarget(state: GameState, content: Content, id: string): Place | null | undefined {
+  const place = placeById(state, content, id);
+  if (place) return place;
+  return id === ENTRY_PLACE ? null : undefined;
 }
 
 /** 주인공이 지금 있는 장소 (정하지 않았으면 null) */
@@ -85,8 +98,9 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   const c = state.characters[id];
   if (!c) return null;
   if (id === state.playerId) return { zone: state.playerZone, place: state.playerPlace };
+  // 갇힌 사람은 그 구역의 가두는 장소에 (없으면 구역 어딘가)
   const held = heldOf(c);
-  if (held) return { zone: held.zone, place: null };
+  if (held) return { zone: held.zone, place: jailIn(content, held.zone)?.id ?? null };
   if (c.dead || c.away) return null;
   if (state.scene.present.includes(id) || (state.companions.includes(id) && !state.bonds[id]?.apart)) return { zone: state.playerZone, place: state.playerPlace };
   if (c.extra) return { zone: c.extra.zone, place: null };
@@ -107,6 +121,58 @@ export function nearby(state: GameState, content: Content, id: string): boolean 
   const w = whereIs(state, content, id);
   if (!w || !w.zone || w.zone !== state.playerZone) return false;
   return !state.playerPlace || !w.place || w.place === state.playerPlace;
+}
+
+/**
+ * 이 구역의 이 장소에 있을 이름 있는 인물 (장면의 사람은 뺀다). 장소 id는 구역마다 겹친다(막사·마당·정문)
+ * 그래서 반드시 구역까지 맞춘다. 죽은 사람·떠난 사람은 whereIs가 거르고, 갇힌 사람은 갇힌 구역의 가두는 장소에만 있다
+ * (PT14: 다른 무리 거점 사람과 갇힌 실종자가 우리 막사·수용소에 나왔다)
+ */
+export function peopleAt(state: GameState, content: Content, zone: string | null, placeId: string): string[] {
+  if (!zone) return [];
+  return Object.keys(content.npcs).filter((id) => {
+    if (id === state.playerId || state.scene.present.includes(id)) return false;
+    const w = whereIs(state, content, id);
+    return !!w && w.zone === zone && w.place === placeId;
+  });
+}
+
+/**
+ * 장소를 옮길 때 함께 가는 장면의 인물 (PT14: 데려가던 다친 동료, 같이 걷던 사람, 그 장소가 제자리인 사람이 매번 장면에서 빠졌다).
+ * 곁의 동행은 늘 따라온다(리듀서). 그 밖에는 이번 행동이 겨누는 사람과 GM이 함께 간다고 넣은 사람(with: 업거나 부축하는 사람, 같이 걷는 사람, 쫓아오는 것),
+ * 그리고 옮겨 가는 장소가 일과상 제자리인 사람만 남는다. 나머지는 원래 자리에 남는다
+ */
+export function comesAlong(state: GameState, content: Content, to: string | null, involved: readonly string[]): string[] {
+  return state.scene.present.filter((id) => involved.includes(id) || (to !== null && npcPlaceAt(state, content, id) === to));
+}
+
+/**
+ * 남겨 둔 동행이 기다리는 자리에 왔는가: 같은 구역이고, 그 장소(장소 없음 = 막 들어선 자리)이거나 구역에 막 들어섰다.
+ * 남겨 둔 자리를 한 번 떠났는지(left)는 따로 본다 (PT14 떠돌이: 같은 구역 다른 장소에서 돌아와도 합류하지 않았다)
+ */
+export function atWaitingSpot(state: GameState, apart: { zone: string | null; place?: string | null }): boolean {
+  if (!apart.zone || apart.zone !== state.playerZone) return false;
+  return state.playerPlace === null || (apart.place ?? null) === state.playerPlace;
+}
+
+/** 이 구역의 가두는 장소 (콘텐츠 places의 jail) */
+export function jailIn(content: Content, zone: string | null | undefined): { id: string; name: string } | null {
+  const p = zone ? content.locations[zone]?.places.find((x) => x.jail) : undefined;
+  return p ? { id: p.id, name: p.name } : null;
+}
+
+/**
+ * 붙잡히면 갇힐 곳 (PT14: 수용소가 있는 물류창고에서 붙잡혔는데 감옥 장소가 없는 거점으로 0분에 옮겨져 "구역에 막 들어선 자리"에 갇혔다):
+ * 붙잡힌 구역이 그 무리 땅이고 가두는 장소가 있으면 그곳, 아니면 그 무리 땅 가운데 가두는 장소가 있는 곳(거점 먼저),
+ * 그것도 없으면 그 무리의 거점(장소 없음). 갇히는 장소도 함께 정한다
+ */
+export function jailFor(state: GameState, content: Content, faction: string, caughtZone: string | null): { zone: string; place: string | null } | null {
+  const own = (z: string) => ownedBy(state, z, faction);
+  if (caughtZone && own(caughtZone) && jailIn(content, caughtZone)) return { zone: caughtZone, place: jailIn(content, caughtZone)!.id };
+  const base = Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")?.id;
+  const lands = Object.keys(content.locations).filter((z) => own(z) && jailIn(content, z)).sort((a, b) => (a === base ? -1 : b === base ? 1 : a.localeCompare(b)));
+  if (lands[0]) return { zone: lands[0], place: jailIn(content, lands[0])!.id };
+  return base ? { zone: base, place: null } : null;
 }
 
 /** 이 인물이 주인공과 같은 구역에 있는가 (장소는 보지 않는다) */

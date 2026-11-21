@@ -47,7 +47,7 @@ import { weatherNow } from "../sim/weather.ts";
 import { describeExtraTemplates } from "./extras.ts";
 import { aliasOf, hasMet, headingAs, knowsName } from "../game/acquaintance.ts";
 import { isIncapacitated, waterHere } from "./body.ts";
-import { attractionOf, canUseSkill, effectiveSkill, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
+import { attractionOf, looksOf, oppositeSex, sameSex, traitLabels } from "./traits.ts";
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
 import {
   conditionPenalty,
@@ -68,10 +68,10 @@ import { describeImprovSlotForGm } from "./improvStory.ts";
 import { BELIEF_SOURCE_LABELS as SOURCE_LABELS } from "../game/belief.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } from "../game/reputation.ts";
 import { ownedBy } from "../rules/home.ts";
-import { pastGiven, unlearnedNote } from "../rules/skill.ts";
+import { pastGiven, shownSkill, unlearnedNote } from "../rules/skill.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { tracesHere } from "./felt.ts";
-import { currentPlace, npcPlaceAt, placesIn, sharesPlace } from "../rules/place.ts";
+import { currentPlace, peopleAt, placesIn, sharesPlace } from "../rules/place.ts";
 import { inZone, nearby, whereIs } from "../rules/place.ts";
 
 /**
@@ -191,7 +191,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
         : []),
       ...settingLines(content, state, player, { player: true, name: (id) => headingAs(state, content, player.id, id) }),
       `능력: ${stats}`,
-      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}. ${unlearnedNote(scenario)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${canUseSkill(content, player, m.id) ? signed(effectiveSkill(content, player, m.id)) : "못 함"}`).join(", ")}`,
+      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}. ${unlearnedNote(scenario)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${shownSkill(content, player, m.id) === null ? "못 함" : signed(shownSkill(content, player, m.id)!)}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n")],
     ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content), ...describeAmbush(content, state)].filter(Boolean).join("\n")],
@@ -535,7 +535,7 @@ function describePlaces(state: GameState, content: Content): string {
   const here = currentPlace(state, content);
   const known = new Set([...(state.known[state.playerId] ?? []), ...(state.met[state.playerId] ?? [])]);
   const line = (p: (typeof places)[number]) => {
-    const people = Object.keys(content.npcs).filter((id) => known.has(id) && !state.characters[id]?.dead && !state.scene.present.includes(id) && npcPlaceAt(state, content, id) === p.id);
+    const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id));
     return `- ${p.id} ${p.name} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""})${p.id === here?.id ? " ← 지금 여기" : ""}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
   };
   return [

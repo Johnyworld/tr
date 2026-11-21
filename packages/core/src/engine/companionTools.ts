@@ -1,4 +1,5 @@
 import { heldOf } from "../rules/held.ts";
+import { atWaitingSpot, currentPlace } from "../rules/place.ts";
 import { z } from "zod";
 import { templateKind } from "../game/kinds.ts";
 import type { RoleContent } from "../content/schemas.ts";
@@ -57,9 +58,10 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
         continue;
       }
       if (heldOf(state.characters[state.playerId])) continue;
-      if (bond.apart.zone && bond.apart.zone === state.playerZone && state.bonds[id]?.apart?.left !== false) {
+      // 기다리던 자리로 돌아오면 (같은 구역의 그 장소, 또는 구역에 다시 들어섰을 때)
+      if (atWaitingSpot(state, bond.apart) && state.bonds[id]?.apart?.left !== false) {
         store.append({ type: "companion_rejoined", characterId: id });
-        out.push(note(name, "enter", `${josa(name, "이/가")} 기다리던 ${content.locations[bond.apart.zone]?.name ?? bond.apart.zone}에서 다시 합류했다. 다시 만나는 장면을 짧게 서술한다.`));
+        out.push(note(name, "enter", `${josa(name, "이/가")} 기다리던 ${content.locations[bond.apart.zone ?? ""]?.name ?? bond.apart.zone}에서 다시 합류했다. 다시 만나는 장면을 짧게 서술한다.`));
       } else if (bond.apart.until !== null && state.time >= bond.apart.until) {
         store.append({ type: "companion_rejoined", characterId: id });
         out.push(note(name, "enter", `${josa(name, "이/가")} 볼일을 마치고 돌아와 다시 곁에 섰다. 무엇을 하고 왔는지는 지어내지 않는다 (물어보면 그 사람이 아는 만큼만).`));
@@ -202,10 +204,13 @@ const companionPart = defineTool({
     }
     if (input.how === "wait") {
       if (!state.playerZone) return { ok: false, error: "기다릴 구역이 없다." };
-      store.append({ type: "companion_parted", characterId: input.target, zone: state.playerZone, until: null });
+      // 기다리는 장소도 적는다: 같은 구역 안에서 떠났다 돌아오면 합류한다 (PT14 떠돌이)
+      const spot = currentPlace(state, content);
+      store.append({ type: "companion_parted", characterId: input.target, zone: state.playerZone, until: null, place: spot?.id ?? null });
+      const at = spot ? `${content.locations[state.playerZone]?.name ?? state.playerZone}의 ${spot.name}` : (content.locations[state.playerZone]?.name ?? state.playerZone);
       return {
         ok: true,
-        resultText: `${josa(name, "은/는")} ${content.locations[state.playerZone]?.name ?? state.playerZone}에 남아 기다린다. 이 구역에 다시 오면 합류한다. 남겨 두는 장면을 서술한다.`,
+        resultText: `${josa(name, "은/는")} ${at}에 남아 기다린다. 이 자리를 떠났다가 다시 오면(다른 구역에 갔다 이 구역에 돌아와도) 합류한다. 그 전에 다시 데려가려면 npc_presence enter. 남겨 두는 장면을 서술한다.`,
         display: { type: "presence", npcName: `${name} · 기다림`, action: "leave" },
       };
     }

@@ -291,7 +291,10 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       const item = Object.entries(content.scenario.consumables).find(([i, e]) => e[harmTrack.id] && (player.inventory[i] ?? 0) > 0)?.[0] ?? null;
       const healer = Object.values(content.npcs).find((n) => n.healer && nearby(s, content, n.id));
       if (!item && healer && !s.scene.present.includes(healer.id)) tool("npc_presence", { npc_id: healer.id, action: "enter" });
-      const out = item || healer ? tool("take_action", item ? { ...base, intent: "치료", use_item: item } : { ...base, intent: "치료", treatment: { item: null } }) : null;
+      let out = item || healer ? tool("take_action", item ? { ...base, intent: "치료", use_item: item } : { ...base, intent: "치료", treatment: { item: null } }) : null;
+      // 값을 받는 치료사는 무엇을 낼지 되묻는다: GM처럼 플레이어에게 물은 셈 치고 정해 둔 것으로 낸다
+      // (그냥 두면 같은 치료사 앞에서 시간이 흐르지 않는 턴을 수백 번 쓴다)
+      if (out && !out.ok && out.error.includes('treatment.pay: "auto"')) out = tool("take_action", { ...base, intent: "치료", treatment: { item: null, pay: "auto" } });
       // 미리 막힌 것(시간이 흐르지 않음: 오늘 이미 치료받음 등)은 플레이어도 겪는 일이라 오류로 세지 않는다
       if (out && !out.ok && !out.error.includes("시간은 흐르지 않았다")) stats.errors.push(`치료: ${out.error}`);
       // 치료할 길이 없으면 쉰다

@@ -31,7 +31,7 @@ import { isIncapacitated } from "./body.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { tellPlayerSecret } from "../rules/self.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
-import { whereIs, zoneOf } from "../rules/place.ts";
+import { sharesPlace, whereIs, zoneOf } from "../rules/place.ts";
 
 export type DeedInput = {
   summary: string;
@@ -83,11 +83,14 @@ export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: Belie
  * - 장면에 있는 NPC는 모두 본다 (보이는 목격자)
  * - 장면에 없는 NPC는 노출도·시간대·소음·주의력·은밀 행동으로 굴린다 (숨은 목격자)
  * official을 주면 그 NPC만 알고 숨은 목격자를 굴리지 않는다 (임무 보고처럼 공식적인 일)
+ * fooled를 주면 속이기가 먹힌 것이다: 그 사람들은 속아 넘어가 행적(거짓말했다)을 알지 못하고, 숨은 목격자도 굴리지 않는다
+ * (PT14: 거짓말 판정이 성공해도 속은 상대가 "직접 봄"으로 거짓말을 알았고, 상관의 믿음을 잃은 일로 보였다)
  */
 export function recordDeed(
   ctx: ToolContext,
   input: DeedInput,
   official?: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] },
+  fooled?: readonly string[],
 ): { deed: Deed; visible: string[] } {
   const state = ctx.store.getState();
   const id = `d_${state.nextDeedNo}`;
@@ -97,11 +100,11 @@ export function recordDeed(
     witnesses.push({ npcId: official.npcId, hidden: !state.scene.present.includes(official.npcId) });
   } else {
     // 동물·감염체는 행적을 보고 옮기지 않는다 (12-111)
-    for (const npcId of state.scene.present) if (!isCreature(ctx.content, state.characters[npcId])) witnesses.push({ npcId, hidden: false });
+    for (const npcId of state.scene.present) if (!isCreature(ctx.content, state.characters[npcId]) && !fooled?.includes(npcId)) witnesses.push({ npcId, hidden: false });
     const scenario = ctx.content.scenario;
     const stealth = stealthThisTurn(state, scenario.move_roles.stealth);
     const notice = noticeMove(ctx);
-    for (const character of Object.values(state.characters)) {
+    for (const character of fooled ? [] : Object.values(state.characters)) {
       if (character.id === state.playerId || character.dead || character.away || heldOf(character)) continue;
       if (state.scene.present.includes(character.id) || !ctx.content.npcs[character.id]) continue;
       // 숨은 목격자는 그 시각 같은 구역에 있던 사람만 (기획서 8.2 "근처"). 전에는 세계 어디에 있든 굴려,
@@ -109,6 +112,8 @@ export function recordDeed(
       // (어디 있는지 모르는 인물이나 구역이 없는 장면은 예전처럼 굴린다)
       const where = zoneOf(state, ctx.content, character.id);
       if (state.playerZone && where && where !== state.playerZone) continue;
+      // 같은 구역이어도 다른 장소에 있을 사람은 보지 못한다 (공통 규칙 15, PT14: 장터 반대편·다른 장소의 사람이 "직접 봄")
+      if (!sharesPlace(state, ctx.content, character.id)) continue;
       const chance = hiddenWitnessChance({
         privacy: input.privacy,
         time: state.time,
@@ -226,7 +231,7 @@ const revealSecret = defineTool({
       const names = told.told.map((id) => playerCalls(state, ctx.content, id));
       return {
         ok: true,
-        resultText: `당신의 비밀을 ${names.join(", ")}${names.length > 1 ? "이(가) 함께" : "에게"} 털어놓았다: ${told.fact}\n이제 ${josa(names.join(", "), "은/는")} 안다. 각자의 성격·관계대로 반응을 서술하라 (호감·신뢰는 바뀌지 않는다, 바뀌면 이후 행동으로).`,
+        resultText: `당신의 비밀을 ${names.length > 1 ? `${josa(names.join(", "), "과/와")} 함께 있는 자리에서` : `${names.join(", ")}에게`} 털어놓았다: ${told.fact}\n이제 ${josa(names.join(", "), "은/는")} 안다. 각자의 성격·관계대로 반응을 서술하라 (호감·신뢰는 바뀌지 않는다, 바뀌면 이후 행동으로).`,
         display: { type: "belief", fact: `털어놓은 비밀: ${told.fact}`, sourceLabel: "고백" },
         silent: true,
       };

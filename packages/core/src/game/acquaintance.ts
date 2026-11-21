@@ -70,3 +70,26 @@ export function knowsDeath(state: GameState, content: Content, id: string): bool
   const names = [c.name, playerCalls(state, content, id)];
   return (state.beliefs[state.playerId] ?? []).some((b) => names.some((n) => b.fact.includes(n)) && /죽|숨졌|숨을 거|시신|유해/.test(b.fact));
 }
+
+/**
+ * 만남·이름 기억인가: "○○와 마주쳤다. 이름은 모른다. 겉모습: …", "○○의 이름은 김철수" (기획서 6.3).
+ * 호칭과 이름을 잇는 시스템 기억이라, 아는 사실 목록(?인물)·남에게 옮기는 말(수다)에는 쓰지 않는다 (PT14)
+ */
+export function isAcquaintanceMemory(fact: string): boolean {
+  return /마주쳤다\.( 이름은 모른다\.)?( 겉모습: .*)?$/.test(fact) || /^.+의 이름은 [^.]+\.?$/.test(fact);
+}
+
+/**
+ * 주인공이 그 인물의 평판(소개)을 아는가: 이름을 알고, 원래 알던 사이(같은 무리, 놀이 중에 이름을 들은 기억이 없음)이거나
+ * 사이가 가까워졌을 때(신뢰·호감 2 이상, *임시*). 만난 지 한 시간 된 사람의 지난 삶까지 보이지 않게 (PT14, 원칙 4)
+ */
+export function knowsReputation(state: GameState, content: Content, id: string): boolean {
+  const c = state.characters[id];
+  if (!c || !knowsName(state, state.playerId, id)) return false;
+  const me = state.characters[state.playerId];
+  if (me?.factionId && c.factionId === me.factionId) return true;
+  const r = state.perceived[id];
+  if (r && (r.trust >= 2 || r.affection >= 2)) return true;
+  const heardName = (state.beliefs[state.playerId] ?? []).some((b) => b.fact.includes(`의 이름은 ${c.name}`));
+  return !heardName;
+}

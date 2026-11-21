@@ -6,7 +6,7 @@ import { checkSkills, layoutCost } from "../game/creation.ts";
 import { join, relative } from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
-import { createContentSchemas, type Content } from "./schemas.ts";
+import { createContentSchemas, type Content, type StoryletEffect } from "./schemas.ts";
 import { loadScenario, ScenarioError } from "../scenario/scenario.ts";
 import { readLoreDocs } from "../rag/lore.ts";
 import { LoreFormatError } from "../rag/chunk.ts";
@@ -317,7 +317,7 @@ function checkReferences(content: Content): string[] {
       type === "rank" ? content.scenario.rank_ladder.some((r) => r.id === target) :
       type === "trait" ? content.scenario.traits.some((t) => t.id === target) :
       type === "season" ? (content.scenario.seasons?.list ?? []).some((x) => x.id === target) : true;
-    return ok ? null : `다짐 ${kindId}의 대상 ${target}을(를) 모른다`;
+    return ok ? null : `다짐 ${kindId}의 대상을 모른다: ${target}`;
   };
   for (const role of Object.values(content.roles)) {
     if (!role.resolve) continue;
@@ -455,7 +455,7 @@ function checkReferences(content: Content): string[] {
   {
     const kept = new Set(Object.values(content.storylets).flatMap((st) => Object.values(st.cast).flatMap((r) => (r.keep ? [r.keep] : []))));
     for (const st of Object.values(content.storylets)) {
-      for (const [key, r] of Object.entries(st.cast)) if (r.recall && !kept.has(r.recall)) problems.push(`storylets.${st.id}.cast.${key}: recall ${r.recall}을(를) keep하는 이야기가 없다`);
+      for (const [key, r] of Object.entries(st.cast)) if (r.recall && !kept.has(r.recall)) problems.push(`storylets.${st.id}.cast.${key}: recall을 keep하는 이야기가 없다: ${r.recall}`);
     }
   }
   for (const f of Object.values(content.factions)) {
@@ -492,6 +492,7 @@ function checkReferences(content: Content): string[] {
     }
   }
   problems.push(...checkStorylets(content));
+  problems.push(...checkNpcBodies(content));
   const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));
   for (const m of Object.values(content.missions)) {
     if (m.advances && !plans.includes(m.advances.clock)) problems.push(`missions.${m.id}.advances: 알 수 없는 세력 클락 ${m.advances.clock}`);
@@ -521,6 +522,26 @@ function checkReferences(content: Content): string[] {
 }
 
 /** 스토리렛이 가리키는 인물·아이템·구역·클락·배역이 있는지 */
+/**
+ * 인물의 시작 몸 상태 (플레이 테스트 14: 카드는 "정강이를 판자로 묶었다·열에 들뜬 눈"인데 부상 이상 없음).
+ * starts의 트랙과 단계가 있어야 하고, 카드 글(alias·look)이 scenario.card_body_words의 낱말로 다쳤다·앓는다면 그 트랙의 시작 상태가 있어야 한다
+ */
+export function checkNpcBodies(content: Content): string[] {
+  const problems: string[] = [];
+  for (const n of Object.values(content.npcs)) {
+    for (const [t, level] of Object.entries(n.starts ?? {})) {
+      const track = content.scenario.condition_tracks.find((x) => x.id === t);
+      if (!track) problems.push(`npcs.${n.id}.starts: 알 수 없는 상태 트랙 ${t}`);
+      else if (!track.levels.some((l) => l.id === level && !l.fatal)) problems.push(`npcs.${n.id}.starts.${t}: 알 수 없거나 죽음인 단계 ${level}`);
+    }
+    for (const [t, words] of Object.entries(content.scenario.card_body_words ?? {})) {
+      const hit = `${n.alias} ${n.look}`.match(new RegExp(words));
+      if (hit && !n.starts?.[t]) problems.push(`npcs.${n.id}: 카드 글에 "${hit[0]}"인데 시작 상태(starts.${t})가 없다`);
+    }
+  }
+  return problems;
+}
+
 export function checkStorylets(content: Content): string[] {
   const problems: string[] = [];
   const clocks = new Set(Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id)));
@@ -542,12 +563,12 @@ export function checkStorylets(content: Content): string[] {
     const optional = Object.entries(s.cast).filter(([, r]) => r.optional).map(([k]) => k);
     if (optional.length) {
       const refs = (text: string) => [...text.matchAll(/\{([a-z_]+)(?::[^}]+)?\}/g)].map((m) => m[1]!);
-      for (const k of optional) if (refs(`${s.setup} ${s.ai_direction ?? ""}`).includes(k)) problems.push(`${where}: 있으면 쓰는 배역 {${k}}은(는) 상황·연출에 쓸 수 없다`);
+      for (const k of optional) if (refs(`${s.setup} ${s.ai_direction ?? ""}`).includes(k)) problems.push(`${where}: 있으면 쓰는 배역은 상황·연출에 쓸 수 없다: {${k}}`);
       for (const c of s.choices) {
         const effects = [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])];
         const used = new Set([...refs(c.label), ...refs(JSON.stringify(effects).replace(/\\"/g, ""))]);
         for (const e of effects) for (const v of Object.values(e as Record<string, unknown>)) if (v && typeof v === "object") for (const f of ["who", "from", "to", "other"]) { const x = (v as Record<string, unknown>)[f]; if (typeof x === "string") used.add(x); }
-        for (const k of optional) if (used.has(k) && !c.when?.cast?.includes(k)) problems.push(`${where}.choices.${c.id}: 있으면 쓰는 배역 ${k}을(를) 쓰면 when.cast에 적는다`);
+        for (const k of optional) if (used.has(k) && !c.when?.cast?.includes(k)) problems.push(`${where}.choices.${c.id}: 있으면 쓰는 배역을 쓰면 when.cast에 적는다: ${k}`);
       }
     }
     for (const [key, role] of Object.entries(s.cast)) {
@@ -589,6 +610,22 @@ export function checkStorylets(content: Content): string[] {
     for (const c of s.choices) {
       // 이야기가 주인공을 다치게 하는 것은 판정의 대가로만 (원칙 3)
       for (const e of [...c.effects, ...(c.outcomes?.success ?? [])]) if ("wound" in e) problems.push(`${where}.choices.${c.id}: wound는 판정의 partial·miss 결과에만 쓴다`);
+    }
+    // 구하러 간 쪽이 두고 간 쪽만큼 나쁘면 안 된다 (플레이 테스트 14: '꺼진 바닥'에서 구했는데 대가 있는 성공이 두고 가기와 같은 경상 → 치명상).
+    // 판정 없는 갈래(두고 가기 등)가 배역을 다치게 하면: 판정 갈래의 성공은 그보다 덜, 대가 있는 성공은 그것을 넘지 않고 한 단계까지 (다친 만큼 - 나은 만큼)
+    {
+      const net = (effects: readonly StoryletEffect[], who: string) =>
+        effects.reduce((n, e) => ("npc_hurt" in e && e.npc_hurt.who === who ? n + e.npc_hurt.steps : "npc_heal" in e && e.npc_heal.who === who ? n - e.npc_heal.steps : n), 0);
+      for (const who of castKeys) {
+        const leave = Math.max(0, ...s.choices.filter((c) => !c.check).map((c) => net(c.effects, who)));
+        if (leave <= 0) continue;
+        for (const c of s.choices) {
+          if (!c.check || !c.outcomes) continue;
+          if (net(c.outcomes.success, who) >= leave) problems.push(`${where}.choices.${c.id}.success: ${who}를 판정 없는 갈래(${leave}단계)만큼 다치게 한다. 구하러 간 판정이 이기면 덜 다쳐야 한다`);
+          const partial = net(c.outcomes.partial, who);
+          if (partial > Math.min(leave, 1)) problems.push(`${where}.choices.${c.id}.partial: ${who}를 ${partial}단계 다치게 한다. 대가 있는 성공은 판정 없는 갈래(${leave}단계)를 넘지 않고 한 단계까지`);
+        }
+      }
     }
     for (const c of s.choices) {
       const effects = [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])];
@@ -643,7 +680,7 @@ export function checkStorylets(content: Content): string[] {
   }
   // 부탁 물건은 세계 어딘가에서 구할 수 있어야 한다: 장사꾼이 들여오거나 뒤져서 나온다 (12-239)
   for (const n of Object.values(content.npcs)) {
-    for (const f of n.favors ?? []) if (content.items[f.item.id] && itemSources(content, f.item.id).length === 0) problems.push(`npcs.${n.id}.favors.${f.id}: ${f.item.id}을(를) 구할 곳이 없다 (장사꾼 restock·구역 loot)`);
+    for (const f of n.favors ?? []) if (content.items[f.item.id] && itemSources(content, f.item.id).length === 0) problems.push(`npcs.${n.id}.favors.${f.id}: 구할 곳이 없다: ${f.item.id} (장사꾼 restock·구역 loot)`);
   }
   // 임무 브리핑의 낌새 (12-237): 짝을 말하면 buddy, 알아 오라면 learns가 있어야 한다. 말은 시나리오 팩의 mission_hints
   {

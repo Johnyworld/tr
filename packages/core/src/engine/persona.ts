@@ -3,7 +3,10 @@ import { isCreature } from "../game/kinds.ts";
 import type { Character } from "../game/character.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import { josa } from "../text.ts";
+// 성격 줄은 GM이 그대로 옮긴다: 주인공이 이름을 모르는 인물은 호칭으로 (원칙 4, PT14)
+import { playerCalls } from "../game/acquaintance.ts";
 import { traitsOf } from "./traits.ts";
+import { worthPassing } from "../rules/news.ts";
 import type { ToolContext } from "./toolkit.ts";
 
 /**
@@ -189,7 +192,7 @@ export function rollBlowup(ctx: ToolContext, targetId: string | null): string | 
   if (target && !target.dead && !isCreature(ctx.content, target) && state.scene.present.includes(target.id)) {
     ctx.store.append({ type: "relation_changed", from: target.id, to: me.id, delta: rule.delta, reason: `${josa(me.name, "이/가")} 발끈했다` });
     const parts = [rule.delta.trust && `신뢰 ${rule.delta.trust > 0 ? "+" : ""}${rule.delta.trust}`, rule.delta.affection && `호감 ${rule.delta.affection > 0 ? "+" : ""}${rule.delta.affection}`, rule.delta.respect && `존중 ${rule.delta.respect > 0 ? "+" : ""}${rule.delta.respect}`].filter(Boolean);
-    return persona(axis, v, `발끈했다 · ${target.name}의 ${parts.join(", ")}`);
+    return persona(axis, v, `발끈했다 · ${playerCalls(state, ctx.content, target.id)}의 ${parts.join(", ")}`);
   }
   return persona(axis, v, "발끈했다");
 }
@@ -208,7 +211,8 @@ export function rollLeak(ctx: ToolContext, targetId: string | null): string | nu
   const v = personaOf(ctx.content, me)[rule.axis] ?? 0;
   if (v <= 0 || ctx.rng() >= rule.chance[v - 1]!) return null;
   const theirs = new Set((state.beliefs[target.id] ?? []).map((b) => b.fact));
-  const mine = (state.beliefs[me.id] ?? []).filter((b) => !theirs.has(b.fact));
+  // 옮길 만한 사실만 (만남·이름 기억, 지난 삶은 빼고, 공통 규칙 14)
+  const mine = (state.beliefs[me.id] ?? []).filter((b) => !theirs.has(b.fact) && worthPassing(state, b, "npc"));
   if (!mine.length) return null;
   const fact = mine[Math.floor(ctx.rng() * mine.length)]!;
   ctx.store.append({
@@ -216,7 +220,7 @@ export function rollLeak(ctx: ToolContext, targetId: string | null): string | nu
     characterId: target.id,
     belief: { id: `b_${state.nextBeliefNo}`, fact: fact.fact, source: "report", accuracy: fact.accuracy, learnedAt: state.time, ...(fact.topic ? { topic: fact.topic } : {}) },
   });
-  return persona(axis, v, `무심코 말해 버렸다 · ${josa(target.name, "이/가")} 알게 됐다: "${fact.fact}"`);
+  return persona(axis, v, `무심코 말해 버렸다 · ${josa(playerCalls(state, ctx.content, target.id), "이/가")} 알게 됐다: "${fact.fact}"`);
 }
 
 /**
@@ -235,7 +239,8 @@ export function rollHear(ctx: ToolContext, targetId: string | null): { line: str
   const mine = new Set((state.beliefs[me.id] ?? []).map((b) => b.fact));
   // 지키는 것(keeps)은 수다에 흘리지 않는다 (플레이 테스트 12)
   const kept = new Set(ctx.content.npcs[target.id]?.keeps ?? []);
-  const theirs = (state.beliefs[target.id] ?? []).filter((b) => !mine.has(b.fact) && !kept.has(b.fact));
+  // 옮길 만한 사실만: 주인공 자신에 대한 말, 만남·이름 기억은 얻어듣지 않는다 (공통 규칙 14, PT14)
+  const theirs = (state.beliefs[target.id] ?? []).filter((b) => !mine.has(b.fact) && !kept.has(b.fact) && worthPassing(state, b, "player"));
   if (!theirs.length) return null;
   const fact = theirs[Math.floor(ctx.rng() * theirs.length)]!;
   ctx.store.append({
@@ -243,5 +248,5 @@ export function rollHear(ctx: ToolContext, targetId: string | null): { line: str
     characterId: me.id,
     belief: { id: `b_${state.nextBeliefNo}`, fact: fact.fact, source: "report", accuracy: fact.accuracy, learnedAt: state.time, ...(fact.topic ? { topic: fact.topic } : {}) },
   });
-  return { line: persona(axis, v, `말이 오가다 ${josa(target.name, "이/가")} 묻지 않은 말까지 했다: "${fact.fact}"`), fact: fact.fact };
+  return { line: persona(axis, v, `말이 오가다 ${josa(playerCalls(state, ctx.content, target.id), "이/가")} 묻지 않은 말까지 했다: "${fact.fact}"`), fact: fact.fact };
 }

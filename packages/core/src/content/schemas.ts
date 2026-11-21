@@ -567,6 +567,13 @@ export function createContentSchemas(s: Scenario) {
     clothes: z.boolean().optional(),
     /** 실내 (12-98): 들어가 쉬면 바깥보다 따뜻한 도. 0이면 덮을 곳이 없다 (쉬어도 노숙). 폐허 4, 온전한 건물 7 정도 */
     cover: z.number().int().min(0).max(12).optional(),
+    /**
+     * 구역 안의 장소 (12-244, 공통 규칙 15): 모두가 쓰는 곳만. indoor면 지붕 아래(추위·젖음·날씨). aliases: 인물 일과(routine)에서 이 장소를 가리키는 말.
+     * 개인 거처·화장실 같은 곳은 GM이 즉흥으로 만든다(spawn_place)
+     */
+    places: z
+      .array(z.strictObject({ id: contentIdSchema, name: z.string().min(1), indoor: z.boolean(), aliases: z.array(z.string().min(1)).default([]) }))
+      .default([]),
     /** 위험 (0 안전 ~ 3 아주 위험, 12-53). 오가는 길에서 일이 생길 확률(scenario.travel)을 정한다 */
     danger: z.number().int().min(0).max(3).default(1),
     /**
@@ -920,6 +927,8 @@ export function createContentSchemas(s: Scenario) {
         /** 이야기가 열릴 때 주인공이 하던 일 (플레이 테스트 11: 자는 사람에게 "서 있지 말고", 보초 서는 사람에게 "걸으면 따라온다") */
         activities: z.array(z.enum(ACTIVITIES)).min(1).optional(),
         activities_none: z.array(z.enum(ACTIVITIES)).min(1).optional(),
+        /** 지붕 아래(true)·바깥(false)에서만 (12-244, 공통 규칙 15). 장소가 없으면 구역의 cover로 */
+        indoor: z.boolean().optional(),
         /** 곁의 동행 수 (플레이 테스트 11: 동행이 있는데 "혼자 걷기엔 험해") */
         companions_lte: z.number().int().min(0).optional(),
         companions_gte: z.number().int().min(1).optional(),

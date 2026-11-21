@@ -407,6 +407,8 @@
   tags: [occ_scavenger]
   urgent: true
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [hospital_ruins]
     segments: [morning, day]
     flags_all: [occ_sc_run_planned]

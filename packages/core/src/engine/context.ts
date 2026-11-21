@@ -37,7 +37,6 @@ import { describeHistoryPart, type HistoryPart } from "../game/background.ts";
 import { occupationOf, occupationTitle } from "../game/occupation.ts";
 import { dayOf, formatAgo } from "../rules/time.ts";
 import { describeGear } from "./gear.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
 import { describeProfileLines, describeTieLines } from "./people.ts";
 import { describePolicyForGm, describeSquadForGm } from "./command.ts";
 import { describeAccess, describeCultureForGm } from "../game/culture.ts";
@@ -70,6 +69,8 @@ import { ownedBy } from "../rules/home.ts";
 import { pastGiven, unlearnedNote } from "../rules/skill.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { tracesHere } from "./felt.ts";
+import { currentPlace, npcPlaceAt, placesIn, sharesPlace } from "../rules/place.ts";
+import { inZone, nearby, whereIs } from "../rules/place.ts";
 
 /**
  * 정보 필터 (기획서 6.2).
@@ -205,7 +206,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["present", describePresentNpcs(state, content, player)],
     ["known", describeKnownPeople(state, content)],
     ["facilities", describeFacilities(content, state).join("\n")],
-    ["zone_people", [tracesHere(state, content), describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeTrap(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
+    ["zone_people", [describePlaces(state, content), tracesHere(state, content), describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeTrap(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
     ["zone_extras", describeZoneExtras(state, content)],
     ["templates", describeExtraTemplates(state, content)],
     ["beliefs", describeBeliefs(state, content)],
@@ -461,7 +462,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
     // 이 구역 사람, 진행 중인 이야기의 배역, 상관은 겉모습·평판까지. 나머지는 한 줄 (토큰, 기획서 11.6). 장면에 들어오면 카드 전체가 붙는다
     const commander = commanderOf(state, content);
     const cast = new Set(Object.values(state.activeStorylet?.cast ?? {}));
-    const near = (id: string) => id === commander || cast.has(id) || (content.npcs[id] ? npcZoneAt(content.npcs[id]!, state.time) === state.playerZone : false) || state.characters[id]?.extra?.zone === state.playerZone;
+    const near = (id: string) => id === commander || cast.has(id) || inZone(state, content, id);
     // 겉모습·평판까지 싣는 사람은 몇 명만 (12-61, 토큰): 상관·이야기 배역·배경의 사람·연인은 늘, 이 구역의 나머지는 관계가 깊은 순으로 KNOWN_DETAILED까지
     const always = new Set<string>([...(commander ? [commander] : []), ...cast, ...state.background.flatMap((e) => [e.characterId, e.part.kind === "enemy" ? e.part.target : e.part.kind === "loss" ? e.part.by : null].filter((x): x is string => !!x))]);
     for (const r of Object.values(state.romances ?? {})) if (r.stage === "lovers" && (r.a === viewer || r.b === viewer)) always.add(r.a === viewer ? r.b : r.a);
@@ -520,11 +521,29 @@ function rotate(id: string, day: number): number {
   return h;
 }
 
+/** 이 구역의 장소 (공통 규칙 15): 지금 있는 곳과 옮겨 갈 수 있는 곳, 그곳에 있을 아는 사람 */
+function describePlaces(state: GameState, content: Content): string {
+  const places = placesIn(state, content, state.playerZone);
+  if (!places.length) return "";
+  const here = currentPlace(state, content);
+  const known = new Set([...(state.known[state.playerId] ?? []), ...(state.met[state.playerId] ?? [])]);
+  const line = (p: (typeof places)[number]) => {
+    const people = Object.keys(content.npcs).filter((id) => known.has(id) && !state.characters[id]?.dead && !state.scene.present.includes(id) && npcPlaceAt(state, content, id) === p.id);
+    return `- ${p.id} ${p.name} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""})${p.id === here?.id ? " ← 지금 여기" : ""}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
+  };
+  return [
+    `지금 있는 곳: ${here ? `${here.name} (${here.indoor ? "실내" : "바깥"})` : "구역에 막 들어선 자리 (장소를 정하지 않았다)"}. 같은 구역 안의 다른 장소로는 take_action place_to (5분). 목록에 없는 곳은 spawn_place로 만든다`,
+    "이 구역의 장소 (그곳에 있을 아는 사람):",
+    ...places.map(line),
+  ].join("\n");
+}
+
 export function describeZonePeople(state: GameState, content: Content): string {
   const zone = state.playerZone;
   if (!zone) return "";
   const people = Object.values(content.npcs).filter(
-    (npc) => (heldOf(state.characters[npc.id]) ? heldOf(state.characters[npc.id]!)!.zone === zone : npcZoneAt(npc, state.time) === zone) && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
+    // 장소를 정했으면 그 장소에 있을 사람(과 장소가 정해지지 않은 사람)만 (공통 규칙 15)
+    (npc) => (heldOf(state.characters[npc.id]) ? whereIs(state, content, npc.id)?.zone === zone : nearby(state, content, npc.id)) && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
   );
   // 부탁을 품은 아는 사람이 이 구역에 있으면 GM에게 알린다 (12-195: 다시 만나지 못해 부탁이 조용히 접혔다)
   const askers = [...new Set(askedPromises(state).map((p) => p.to))].filter((id) => people.some((n) => n.id === id));

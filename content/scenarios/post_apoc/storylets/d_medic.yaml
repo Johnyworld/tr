@@ -10,6 +10,8 @@
   title: 비는 숫자
   tags: [clinic_life]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     segments: [morning, day, evening]
     day_gte: 2
@@ -106,6 +108,8 @@
   title: 대표의 방
   tags: [clinic_life]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     segments: [morning, day, evening]
     flags_all: [d_theft_exposed]
@@ -199,6 +203,8 @@
   title: 소리의 붕대
   tags: [clinic_life]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [d_clinic]
     segments: [evening, night]
     day_gte: 2
@@ -256,6 +262,8 @@
   urgent: true
   tags: [clinic_life]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     segments: [night, dawn]
     day_gte: 4
@@ -305,6 +313,8 @@
   title: 아물어 가는 손목
   tags: [clinic_life]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [d_clinic]
     segments: [morning, day]
     day_gte: 6
@@ -332,6 +342,8 @@
   title: 격리실 문 너머
   tags: [clinic_life]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     segments: [night]
     flags_all: [d_sori_quarantined]
@@ -378,6 +390,8 @@
   title: 할머니의 약도
   tags: [d_medic]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     segments: [evening]
     flags_none: [d_pharmacy_map]
@@ -409,6 +423,8 @@
   fright_tags: [enclosed, water]
   tags: [d_medic]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [hospital_ruins]
     segments: [morning, day]
     flags_all: [d_pharmacy_map]
@@ -464,6 +480,8 @@
   title: 치료대 위의 붉은 완장
   tags: [d_medic]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     segments: [morning, day, evening]
     day_gte: 2
@@ -511,6 +529,8 @@
   title: 정문의 장교
   tags: [d_medic]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [d_clinic]
     segments: [day, evening]
     day_gte: 3
@@ -562,6 +582,8 @@
   title: 옛 간호사의 편지
   tags: [d_medic]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [d_clinic]
     segments: [day, evening]
     day_gte: 3
@@ -605,6 +627,8 @@
   repeatable: true
   cooldown_days: 2
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     segments: [morning, day]
   cast:
@@ -675,6 +699,8 @@
   repeatable: true
   cooldown_days: 7  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [d_clinic]
   cast:
     guard: { ids: [d_dojin] }

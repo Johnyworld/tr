@@ -11,6 +11,8 @@
   title: 응급실 접수대의 명부
   tags: [world]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [hospital_ruins]
     segments: [morning, day, evening]
     flags_none: [og_ships]
@@ -38,6 +40,8 @@
   title: 감방 문의 글씨
   tags: [world]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [prison]
     flags_all: [zo1_pr_inside]
     flags_none: [og_quarantine]
@@ -66,6 +70,8 @@
   title: 행정동의 이송 장부
   tags: [world]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [prison]
     flags_all: [zo1_pr_inside]
     flags_any: [og_ships, og_quarantine]

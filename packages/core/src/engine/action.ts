@@ -80,6 +80,7 @@ import { ownedBy } from "../rules/home.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { reduceHarm } from "../rules/damage.ts";
+import { currentPlace, npcPlaceAt, placeById, placesIn } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -219,6 +220,11 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("이번 턴에 인접한 다른 구역으로 옮겨 가면 그 구역 id (상태의 인접 구역 목록). 이동에 30~60분이 든다. 전투 중에는 쓸 수 없다. 아니면 null"),
+    place_to: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 5분이 든다. 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null"),
     prepare: z
       .string()
       .nullable()
@@ -358,6 +364,9 @@ const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
 // 플레이 테스트 12: 말로 거절하는 것(refuse·decline)은 외면이 아니라 태도라 뺀다 (파이프를 내려놓는 선택지를 대신 골라 관계가 바뀌었다)
 const WALK_AWAY_CHOICES = ["leave", "ignore", "look_away", "pass", "walk_away", "move_on", "let_go", "turn_away", "walk_on", "leave_it", "let_be", "say_nothing", "silent", "nothing", "shrug", "later", "hold_back", "stay_out", "not_now", "stay_silent", "back_off", "away"];
 
+/** 같은 구역 안의 장소를 옮기는 데 드는 시간 (분, 12-244) */
+export const PLACE_MOVE_MINUTES = 5;
+
 export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
   // 연습 대련 이야기의 판정이면 방어구·무기가 닳지 않는다 (플레이 테스트 13)
   const a = ctx.store.getState().activeStorylet;
@@ -381,8 +390,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 수색·일·쉬기는 이야기 안에서도 하는 일이라 넣지 않는다 (선택지의 판정을 거기서 굴린다)
   const long = !!input.move_to || (!!input.activity && ["sleep", "wait", "guard_duty", "travel"].includes(input.activity.kind));
   // 같은 자리에서 오래 걸리는 일은 이야기를 두고 하지 않는다: 시간이 흐르기 전에 먼저 고르거나 외면하라고 돌려보낸다 (플레이 테스트 13: 망을 봤는데 "혼자 빠져나온다"를 고른 것이 됐다)
+  // 스스로 못 움직이면(부상·열병으로 의식을 잃음) 시간만 흐른다: 막지 않는다 (12-245: 의식불명인 채 기다리기가 막혔다)
   // 자리를 옮기는 것도 같다 (12-240, A1: 이야기가 열린 결과 뒤 같은 턴에 묶어 보낸 이동이 이야기를 외면한 것으로 처리됐다). 판정을 건 행동(맞서기·달아나기)은 이야기 안의 일이다
-  if (start.activeStorylet && !input.check && !input.ignore_story && (!!input.move_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !isIncapacitated(ctx.content, player) && !heldOf(player)) {
+  if (start.activeStorylet && !input.check && !input.ignore_story && (!!input.move_to || !!input.place_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !isIncapacitated(ctx.content, player) && !incapacitatingSymptom(scenario, player) && !heldOf(player)) {
     const s0 = content.storylets[start.activeStorylet.id];
     const openTitle = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
     return { ok: false, error: `이야기 "${openTitle}"${josa(openTitle, "이/가").slice(openTitle.length)} 열려 있다. 먼저 장면으로 연출하고 플레이어의 선택을 받는다: resolve_storylet으로 고르거나, 플레이어가 두고 다른 일(자리 옮기기 포함)을 하기로 했으면 ignore_story: true를 함께 넣는다 (시간은 흐르지 않았다).` };
@@ -603,7 +613,24 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (!o || o.dead || !start.scene.present.includes(input.check.opponent)) return { ok: false, error: `맞서는 상대 ${josa(input.check.opponent, "은/는")} 장면에 없다. check.opponent는 장면에 있는 인물 id다.` };
   }
 
+  // 장소 옮기기 (12-244, 공통 규칙 15): 같은 구역 안에서 5분. 길 위의 일은 없다. 옮긴 장소에서 이번 행동을 한다
+  if (input.place_to !== null) {
+    if (input.move_to) return { ok: false, error: "구역을 옮기는 move_to와 장소를 옮기는 place_to는 함께 쓰지 않는다. 구역을 옮긴 뒤 다음 행동에서 장소를 고른다 (시간은 흐르지 않았다)." };
+    if (start.battle || start.infiltration || heldOf(player)) return { ok: false, error: "지금은 장소를 옮길 수 없다 (전투·잠입 중이거나 갇혀 있다). 시간은 흐르지 않았다." };
+    const to = placeById(start, content, input.place_to);
+    if (!to) {
+      const here = placesIn(start, content, start.playerZone).map((p) => `${p.id}(${p.name})`).join(", ");
+      return { ok: false, error: `이 구역에 그런 장소가 없다: ${input.place_to}. 이 구역의 장소: ${here || "없음"}. 콘텐츠에 없는 곳이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
+    }
+  }
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
+  if (input.place_to !== null && input.place_to !== (currentPlace(start, content)?.id ?? null)) {
+    const to = placeById(start, content, input.place_to)!;
+    store.append({ type: "place_moved", from: currentPlace(start, content)?.id ?? null, to: to.id });
+    store.append({ type: "time_advanced", activity: "brief", from: store.getState().time, to: store.getState().time + PLACE_MOVE_MINUTES });
+    const people = Object.keys(content.npcs).filter((id) => id !== start.playerId && !store.getState().characters[id]?.dead && npcPlaceAt(store.getState(), content, id) === to.id);
+    leftLines.push(`${josa(to.name, "으로/로")} 옮겼다 (${to.indoor ? "실내" : "바깥"}, ${PLACE_MOVE_MINUTES}분). 함께 있던 인물은 따라오지 않는다 (동행은 따라온다).${people.length ? ` 지금 이곳에 있을 사람: ${people.map((id) => `${playerCalls(store.getState(), content, id)}(${id})`).join(", ")} (장면에 들이려면 npc_presence).` : ""}`);
+  }
   // 임무로 세기 (12-240, A3: for_mission을 빠뜨리면 임무 자리의 이동·판정·보초가 조용히 0으로 세졌다):
   // 진행 중인 임무의 요건과 맞는 행동(그 판정, 그 활동, 이동 요건이면 이동)을 임무 장소에서 하면 저절로 임무로 센다
   const autoMission = !input.for_mission ? missionMatch(start, input) : null;

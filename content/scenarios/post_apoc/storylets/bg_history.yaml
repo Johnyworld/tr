@@ -594,6 +594,8 @@
   title: 기둥에 붙은 종이
   tags: [world]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     flags_any: [bg_deserter]
     flags_none: [bg_deserter_noticed]
     day_gte: 3
@@ -716,6 +718,8 @@
   title: 비슷한 자리
   tags: [world]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     flags_all: [bg_loss]
     flags_none: [bg_loss_ruin_seen]
     day_gte: 4

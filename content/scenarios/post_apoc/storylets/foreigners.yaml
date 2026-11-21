@@ -38,6 +38,8 @@
   title: 종탑의 영어 방송
   tags: [world]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [cathedral]
     segments: [night]
   cast:

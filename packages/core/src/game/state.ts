@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 80;
+export const SAVE_SCHEMA_VERSION = 81;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -312,6 +312,10 @@ export function createGameSchemas(s: Scenario) {
     zoneSeen: z.record(z.string(), z.string().nullable()).default({}),
     /** 구역마다 바닥에 놓인 물건 (장면을 떠나면 그 구역에 남는다, 플레이 테스트 13: 내려놓은 고철이 구역을 옮겨도 따라왔다) */
     groundItems: z.record(z.string(), inventorySchema).default({}),
+    /** 구역 안에서 지금 있는 장소 (12-244, 공통 규칙 15). null이면 구역의 장소를 정하지 않은 곳 (들어선 자리) */
+    playerPlace: z.string().nullable().default(null),
+    /** GM이 즉흥으로 만든 장소 (장소 id → 구역·이름·실내·주인). 세이브에 남아 다시 쓴다 */
+    spawnedPlaces: z.record(z.string(), z.strictObject({ zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable() })).default({}),
     /** 상인이 마지막으로 물건을 채운 날 */
     restockedDay: z.record(z.string(), z.number().int()).default({}),
     /** 이 세계에서 열린 해금: 시나리오(역할) id (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 12.4.1, 9.12) */
@@ -910,6 +914,10 @@ export function createGameSchemas(s: Scenario) {
       scheduled: z.array(pendingClashSchema).default([]),
     }),
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
+    /** 같은 구역 안에서 장소를 옮겼다 (12-244). null이면 구역의 장소를 정하지 않은 곳 */
+    z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable() }),
+    /** GM이 즉흥 장소를 만들었다 (12-244) */
+    z.strictObject({ type: z.literal("place_spawned"), id: z.string(), zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable() }),
     z.strictObject({ type: z.literal("weather_set"), day: z.number().int(), weatherId: z.string() }),
     z.strictObject({ type: z.literal("weather_forecast"), day: z.number().int(), weatherId: z.string() }),
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
@@ -1206,6 +1214,8 @@ export const EMPTY_STATE: GameState = {
   swarms: {},
   zoneSeen: {},
   groundItems: {},
+  playerPlace: null,
+  spawnedPlaces: {},
   loans: {},
   cargo: {},
   exposedAt: {},
@@ -1283,6 +1293,21 @@ export const EMPTY_STATE: GameState = {
 
 /** 최근 교전 기록에 남길 수 */
 export const RECENT_CLASHES = 12;
+
+/** 바닥 물건을 두는 자리: 구역, 장소가 있으면 구역#장소 (12-244) */
+export function spotKey(zone: string, place: string | null): string {
+  return place ? `${zone}#${place}` : zone;
+}
+
+/** 떠나는 자리에 바닥 물건을 두고, 가는 자리에 있던 것을 장면에 둔다 */
+function swapGround(next: GameState, from: string | null, to: string) {
+  const ground = { ...next.groundItems };
+  if (from !== null && Object.keys(next.scene.items).length) ground[from] = { ...next.scene.items };
+  else if (from !== null) delete ground[from];
+  next.scene = { ...next.scene, items: { ...(ground[to] ?? {}) } };
+  delete ground[to];
+  next.groundItems = ground;
+}
 
 function rememberClashes(next: GameState, clashes: readonly Clash[], at: number) {
   next.recentClashes.push(...clashes.map((clash) => ({ clash: structuredClone(clash), at })));
@@ -2151,6 +2176,19 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "weather_forecast":
       next.forecast = { day: event.day, id: event.weatherId };
       break;
+    case "place_moved": {
+      // 바닥의 물건은 장소마다 (12-244). 장면의 인물은 따라오지 않는다 (동행은 따라온다)
+      const zone = next.playerZone;
+      if (!zone) return next;
+      swapGround(next, spotKey(zone, event.from), spotKey(zone, event.to));
+      next.playerPlace = event.to;
+      for (const id of next.scene.present) perceive(next, id);
+      next.scene = { ...next.scene, present: next.scene.present.filter((id) => next.companions.includes(id)) };
+      return next;
+    }
+    case "place_spawned":
+      next.spawnedPlaces = { ...next.spawnedPlaces, [event.id]: { zone: event.zone, name: event.name, indoor: event.indoor, owner: event.owner } };
+      return next;
     case "zone_moved": {
       for (const b of Object.values(next.bonds)) if (b.apart?.zone && b.apart.zone === event.from) b.apart.left = true;
       // 우리 땅을 떠난 시각 (공통 규칙 3의 자리 비움)
@@ -2159,12 +2197,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.zoneSeen = { ...next.zoneSeen, [event.to]: next.zones[event.to]?.owner ?? null };
       // 바닥의 물건은 그 구역에 남기고, 가는 구역에 남아 있던 것을 장면에 둔다
       if (event.from !== event.to) {
-        const ground = { ...next.groundItems };
-        if (event.from !== null && Object.keys(next.scene.items).length) ground[event.from] = { ...next.scene.items };
-        else if (event.from !== null) delete ground[event.from];
-        next.scene = { ...next.scene, items: { ...(ground[event.to] ?? {}) } };
-        delete ground[event.to];
-        next.groundItems = ground;
+        swapGround(next, event.from === null ? null : spotKey(event.from, state.playerPlace), spotKey(event.to, null));
+        next.playerPlace = null;
       }
       // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)
       next.infiltration = null;

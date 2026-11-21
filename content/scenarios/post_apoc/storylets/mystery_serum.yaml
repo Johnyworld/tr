@@ -29,6 +29,8 @@
   title: 버티는 사람
   tags: [world]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [campus]
     segments: [day, evening]
     flags_all: [zo2_cp_lab_done]
@@ -61,6 +63,8 @@
   title: 장터의 밤배
   tags: [world]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [e_market]
     segments: [night]
     flags_any: [ms_lot, ms_theory]
@@ -114,6 +118,8 @@
   repeatable: true
   cooldown_days: 12
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [e_market]
     segments: [night]
     flags_all: [ms_island]

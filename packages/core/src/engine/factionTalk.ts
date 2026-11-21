@@ -1,6 +1,5 @@
 import { heldOf } from "../rules/held.ts";
 import type { Content } from "../content/schemas.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
 import { isCreature } from "../game/kinds.ts";
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import type { Character } from "../game/character.ts";
@@ -11,6 +10,7 @@ import { traitsOf } from "./traits.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { moraleLabel, WAR_TOPIC } from "./warTools.ts";
 import { ownedBy } from "../rules/home.ts";
+import { whereIs } from "../rules/place.ts";
 
 /**
  * 무리 형편 (기획서 9.13, 12-105): 거점 사람들이 입에 올리는 우리 무리의 어려움.
@@ -126,7 +126,7 @@ export function heardRumors(state: GameState, content: Content, id: string): str
   const rule = content.scenario.war?.talk?.rumor;
   const c = state.characters[id];
   if (!rule || !c || c.dead || heldOf(c) || isCreature(content, c)) return [];
-  const zone = content.npcs[id] ? npcZoneAt(content.npcs[id]!, state.time) : c.extra?.zone;
+  const zone = whereIs(state, content, id)?.zone;
   if (!zone || !rule.zones.includes(zone)) return [];
   return Object.values(content.factions)
     .filter((f) => f.id !== c.factionId && state.factions[f.id])

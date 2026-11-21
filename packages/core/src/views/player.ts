@@ -45,6 +45,7 @@ import { weatherNow } from "../sim/weather.ts";
 import { alarmLabel, battleTitle, momentumLabel } from "../engine/battleTools.ts";
 import { entrustedHeld, loanOf } from "../rules/entrusted.ts";
 import { learned } from "../rules/skill.ts";
+import { currentPlace } from "../rules/place.ts";
 
 /**
  * 웹 앱 화면용 조회 결과. 정보 필터를 거친다 (원칙 4, 9: 필터는 어댑터가 아니라 core에서).
@@ -159,6 +160,8 @@ export type PlayerView = {
   faction: { name: string; about: string; moraleLabel: string; rationLabel: string } | null;
   /** 지금 있는 구역 */
   zone: { name: string; owner: string } | null;
+  /** 구역 안의 지금 장소 (12-244, 공통 규칙 15). 정하지 않았으면 null (헤더는 구역 이름) */
+  place: { name: string; indoor: boolean; spawned: boolean } | null;
   /** 진행 중인 전투 (대략적인 말로만) */
   battle: { title: string; sideLabel: string; round: string; momentum: number; momentumMax: number; momentumLabel: string; alarmLabel: string; positionLabel: string } | null;
   /** 손에 든 무기·입은 방어구·짐 (기획서 4.8). 물건 규칙이 없으면 null */
@@ -393,6 +396,10 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
   const bc = content.scenario.battle;
   const view: Omit<PlayerView, "profiles"> = {
     zone: zone ? { name: zone.name, owner: zone.owner } : null,
+    place: (() => {
+      const p = currentPlace(state, content);
+      return p ? { name: p.name, indoor: p.indoor, spawned: p.spawned } : null;
+    })(),
     battle:
       b && bc
         ? {

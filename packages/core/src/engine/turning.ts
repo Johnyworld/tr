@@ -1,10 +1,10 @@
 import { heldOf } from "../rules/held.ts";
 import type { Character } from "../game/character.ts";
 import { aliasOf, knowsName } from "../game/acquaintance.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
 import { josa } from "../text.ts";
 import { createExtraCharacter, enterScene } from "./extras.ts";
 import type { ToolContext } from "./toolkit.ts";
+import { zoneOf } from "../rules/place.ts";
 
 /**
  * 변이 (기획서 7.5.3, 12-117): 감염으로 죽은 사람은 그 자리에 감염체로 남는다.
@@ -15,11 +15,8 @@ import type { ToolContext } from "./toolkit.ts";
 /** 그 사람이 죽은 곳: 주인공은 지금 구역, 갇힌 사람은 갇힌 곳, 콘텐츠 인물은 지금 있을 곳, 엑스트라는 마지막으로 본 곳 */
 function placeOf(ctx: ToolContext, c: Character): string | null {
   const state = ctx.store.getState();
-  if (c.id === state.playerId) return state.playerZone;
-  if (heldOf(c)) return heldOf(c)!.zone;
-  const npc = ctx.content.npcs[c.id];
-  if (npc) return npcZoneAt(npc, state.time) ?? null;
-  return c.extra?.zone ?? null;
+  // 인물은 어디에 (공통 규칙 15)
+  return zoneOf(state, ctx.content, c.id);
 }
 
 /** 감염으로 죽은 사람을 감염체로 남긴다. 만든 감염체 id (규칙·틀·자리가 없으면 null) */

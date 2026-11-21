@@ -7,6 +7,8 @@
   map: { x: 47.1, y: 68.3, label: 환승역 }
   description: 세 노선이 만나던 지하 환승역. 첫 겨울에 피난민이 몰려들었다가 그 안에서 물결이 일었다. 터널로 구시가와 강변, 마트 밑까지 이어지지만 아무도 오래 머물지 않는다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: concourse, name: "개찰구·지하상가", indoor: true, aliases: ["개찰구", "지하상가", "매대"] }, { id: platform, name: "승강장·터널", indoor: true, aliases: ["승강장", "터널"] }]
   cover: 6
   owner: null
   danger: 3
@@ -29,6 +31,8 @@
   map: { x: 82.4, y: 5.8, label: 발전소 }
   description: 강 상류의 꺼진 화력발전소. 저탄장에 석탄과 기름이 아직 남아 있다. 굴뚝이 도시 어디서나 보여서, 누가 거기 깃발을 세우는지 다들 안다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: coal_yard, name: "저탄장", indoor: false, aliases: ["저탄장"] }, { id: turbine_hall, name: "발전동·사무동", indoor: true, aliases: ["발전동", "사무동", "발전기"] }]
   cover: 4
   owner: null
   danger: 2
@@ -49,6 +53,8 @@
   map: { x: 48.5, y: 5.8, label: 교도소 }
   description: 붉은연합 거점 북쪽의 옛 교도소. 담이 가장 높은 곳이라 첫 해에 여러 무리가 차지하려다 안에서 무너졌다. 무기고가 아직 다 털리지 않았다는 말과, 감방 안에 아직 누가 갇혀 있다는 말이 같이 돈다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: cellblock, name: "감방동", indoor: true, aliases: ["감방"] }, { id: admin, name: "행정동·무기고", indoor: true, aliases: ["행정동", "무기고"] }, { id: yard, name: "운동장·담", indoor: false, aliases: ["운동장", "담"] }]
   cover: 6
   owner: null
   danger: 3
@@ -70,6 +76,8 @@
   map: { x: 32.4, y: 82.7, label: 대형 마트 }
   description: 남쪽 대로변의 대형 마트. 첫 주에 다 털렸지만 지붕이 무너진 창고 쪽에는 아직 손이 닿지 않은 선반이 있다. 여러 무리의 수색조가 마주치는 곳이다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: sales_floor, name: "매장", indoor: true, aliases: ["매장", "매대"] }, { id: stockroom, name: "무너진 창고·하역장", indoor: true, aliases: ["창고", "하역장"] }, { id: parking, name: "주차장", indoor: false, aliases: ["주차장"] }]
   cover: 4
   # 갈아입을 옷 (12-186): 옷 매장 쪽 선반에 헌 옷이 아직 남아 있다
   clothes: true
@@ -96,6 +104,8 @@
   map: { x: 29.4, y: 21.2, label: 성당 }
   description: 구시가 언덕 위의 붉은 벽돌 성당. 어느 무리에도 들지 못한 피난민이 종탑 아래 모여 산다. 늙은 신부가 장례를 치러 주고, 누구에게도 총을 들고 들어오지 말라고 한다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: nave, name: "성당 안", indoor: true, aliases: ["제대", "기도", "고해소", "아이들 방", "성당 부엌", "피난민 거처"] }, { id: bell_tower, name: "종탑", indoor: true, aliases: ["종탑"] }, { id: churchyard, name: "뒤뜰·묘지", indoor: false, aliases: ["뒤뜰", "묘지"] }]
   cover: 5
   # 갈아입을 옷 (12-186): 피난민들이 모아 둔 헌 옷 상자가 있다
   clothes: true
@@ -117,6 +127,8 @@
   map: { x: 10.3, y: 21.2, label: 캠퍼스 }
   description: 언덕 너머의 대학 캠퍼스. 도서관에 몇 사람이 틀어박혀 책을 지키며 산다. 약대 실험실과 농대 온실이 있다는 말에 무리마다 사람을 보내 보지만, 학자들은 아무 무리에도 들지 않는다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: library, name: "도서관", indoor: true, aliases: ["서고", "열람실", "도서관"] }, { id: lab, name: "약대 실험실", indoor: true, aliases: ["실험실"] }, { id: greenhouse, name: "농대 온실", indoor: true, aliases: ["온실"] }]
   cover: 6
   owner: null
   sanctuary: true
@@ -147,6 +159,8 @@
   map: { x: 91.9, y: 21.2, label: 휴게소 }
   description: 도시 밖으로 나가는 고속도로의 마지막 휴게소. 나루상단이 주유소 지붕 밑에 짐을 부리는 곳이고, 바깥에서 들어오는 떠돌이와 소문이 가장 먼저 닿는 곳이다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: canopy, name: "주유소 지붕 밑", indoor: false, aliases: ["주유소", "휴게소 지붕", "칠판"] }, { id: diner, name: "휴게소 식당 안", indoor: true, aliases: ["식당"] }, { id: tollgate, name: "톨게이트", indoor: false, aliases: ["톨게이트"] }]
   cover: 4
   owner: faction_e
   danger: 1
@@ -171,6 +185,8 @@
   map: { x: 50.0, y: 40.4, label: 고가도로 }
   description: 도시 서쪽 들머리의 끊어진 고가도로. 버려진 차들이 줄지어 서 있고, 난간 너머로 멀리 운동장에 철판 담을 두른 학교가 보인다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: deck, name: "고가 위", indoor: false, aliases: ["고가 위", "차량 행렬"] }, { id: underpass, name: "고가 밑", indoor: false, aliases: ["고가 밑", "굴다리"] }]
   cover: 0
   owner: null
   danger: 1

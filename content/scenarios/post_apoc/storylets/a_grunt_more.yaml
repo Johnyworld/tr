@@ -76,6 +76,8 @@
   title: 버들마을 정문의 경비병
   tags: [grunt]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [b_base]
   cast:
     guard: { ids: [b_mina] }
@@ -208,6 +210,8 @@
   repeatable: true
   cooldown_days: 2
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [a_east_post]
     segments: [night]
   cast:
@@ -241,6 +245,8 @@
   cooldown_days: 14  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다. 12-195: 2주에 두 번 나와 14일
   weight: 0.6
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [a_base, south_fields]
     segments: [night, dawn]
   setup: 무너진 담장 틈으로 감염체 하나가 비집고 들어온다. 총을 쏘면 근처의 무리가 다 몰려온다.
@@ -283,6 +289,8 @@
   cooldown_days: 3
   weight: 0.6
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [a_base]
     segments: [morning, day]
     ranks: [grunt]

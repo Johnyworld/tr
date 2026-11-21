@@ -55,6 +55,8 @@
   title: 바꿔 쥔 소총
   tags: [a_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [a_base]
     own_territory: true
     segments: [morning, day]
@@ -137,6 +139,8 @@
   title: 정문 옆의 쪽지
   tags: [a_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [a_base]
     segments: [day, evening]
     day_gte: 2

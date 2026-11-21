@@ -3,7 +3,6 @@ import { preferRested, resting } from "../rules/rest.ts";
 import { heldOf, playerHeld } from "../rules/held.ts";
 import { disasterNear } from "../engine/disasters.ts";
 import { agendaOf, agendaShowing } from "../engine/agenda.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
 import { currentResolve, resolveTargetName, resolveText } from "../engine/resolve.ts";
 import { closeTo, mournedBy, recentlyDeadComrade } from "../engine/legacy.ts";
 import { incapacitatingSymptom} from "../scenario/scenario.ts";
@@ -33,6 +32,8 @@ import { seasonAt } from "../sim/season.ts";
 import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
 import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
+import { storyPlaceFits } from "../rules/place.ts";
+import { nearby, whereIs } from "../rules/place.ts";
 
 /**
  * 스토리렛 엔진 (기획서 10.3). 조건과 배역은 코드가 판정한다.
@@ -55,11 +56,8 @@ function factionFits(state: GameState, role: CastRole, c: Character): boolean {
 /** 이 배역에 맞는 살아 있는 NPC들 (id 순) */
 /** 이 사람이 지금 있을 곳 (엑스트라는 머무는 구역, 이름 있는 인물은 일과, 갇힌 사람은 감옥). 플레이 테스트 12: 연애 배역의 here가 이름 있는 인물을 늘 여기 있다고 봤다 */
 function zoneNow(state: GameState, content: Content, id: string): string | null {
-  const c = state.characters[id];
-  if (!c) return null;
-  if (heldOf(c)) return heldOf(c)!.zone;
-  if (c.extra) return c.extra.zone;
-  return content.npcs[id] ? (npcZoneAt(content.npcs[id]!, state.time) ?? null) : null;
+  // 인물은 어디에 (공통 규칙 15)
+  return whereIs(state, content, id)?.zone ?? null;
 }
 
 export function castCandidates(state: GameState, content: Content, role: CastRole, picked: Record<string, string> = {}): string[] {
@@ -103,7 +101,8 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
         !role.here ||
         state.scene.present.includes(c.id) ||
         state.companions.includes(c.id) ||
-        (c.extra ? c.extra.zone === state.playerZone : content.npcs[c.id] ? npcZoneAt(content.npcs[c.id]!, state.time) === state.playerZone : false),
+        // 같은 구역이고 같은 장소일 만한 사람 (공통 규칙 15: 교무실에 있을 사람이 막사의 이야기에 뽑히지 않게)
+        nearby(state, content, c.id),
     )
     .filter((c) => !role.bereaved || ((dead) => !!dead && closeTo(state, content, dead, c.id))(recentlyDeadComrade(state, content)))
     .filter((c) => !role.commander || c.id === commander)
@@ -325,6 +324,9 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   const doing = state.lastActivity ?? "brief";
   if (w.activities && !w.activities.includes(doing as never)) return false;
   if (w.activities_none?.includes(doing as never)) return false;
+  // 지붕 아래·바깥 (공통 규칙 15): 실내 거처에서 모닥불 이야기가, 정문 밖에서 약제실 이야기가 열리지 않게.
+  // 장소를 정하지 않았으면(구역에 막 들어선 자리) 거르지 않는다: 이야기가 그 자리로 데려간다
+  if (w.indoor !== undefined && !storyPlaceFits(state, content, w.indoor)) return false;
   if (w.companions_lte !== undefined && state.companions.length > w.companions_lte) return false;
   if (w.companions_gte !== undefined && state.companions.length < w.companions_gte) return false;
   if (w.own_territory !== undefined) {

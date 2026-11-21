@@ -14,6 +14,8 @@
   title: 겨울 약장의 몫
   tags: [d_officer]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     factions: [faction_d]
     zones: [d_clinic]
     segments: [morning, day]
@@ -70,6 +72,8 @@
   title: 장터와 맺는 줄
   tags: [d_officer]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     factions: [faction_d]
     zones: [d_clinic]
     segments: [morning, day]
@@ -180,6 +184,8 @@
   title: 선반과 장부 사이
   tags: [d_officer]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     factions: [faction_d]
     zones: [d_clinic]
     segments: [morning, day, evening]
@@ -282,6 +288,8 @@
   title: 열쇠를 거두는 날
   tags: [d_officer]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     factions: [faction_d]
     zones: [d_clinic]
     segments: [morning, day, evening]

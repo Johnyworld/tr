@@ -9,6 +9,8 @@
   title: 불가의 옛이야기
   tags: [c_comrades]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [c_warehouse]
     segments: [evening, night]
   cast:
@@ -38,6 +40,8 @@
   practice: true
   tags: [c_comrades]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [c_warehouse, c_base]
     segments: [dawn, morning, evening]
   cast:

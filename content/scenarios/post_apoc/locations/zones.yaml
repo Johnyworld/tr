@@ -8,6 +8,8 @@
   map: { x: 64.7, y: 51.9, label: 청솔형제단 }
   description: 옛 공업고등학교. 운동장 담을 모래주머니와 철판으로 보강했다.
   kind: base
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: staff_room, name: "교무실", indoor: true, aliases: ["교무실", "지도부 회의"] }, { id: infirmary, name: "의무실", indoor: true, aliases: ["의무실"] }, { id: barracks, name: "막사", indoor: true, aliases: ["막사", "간부 숙소", "침상"] }, { id: mess, name: "식당 천막", indoor: false, aliases: ["식당 천막", "배식", "불 피우기"] }, { id: storehouse, name: "보급 창고·무기고", indoor: true, aliases: ["보급 창고", "창고", "무기고", "발전기실", "공작실", "총기 손질"] }, { id: yard_gate, name: "운동장·정문·담장", indoor: false, aliases: ["정문", "운동장", "담장", "망루", "거점 순회", "모닥불"] }, { id: stockade, name: "수용소", indoor: true, aliases: ["수용소"] }]
   cover: 7
   danger: 0
   owner: faction_a
@@ -30,6 +32,8 @@
   map: { x: 69.1, y: 36.5, label: 동쪽 초소 }
   description: 청솔형제단 거점 동쪽의 초소와 망루. 고가도로 쪽을 내려다본다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: watchtower, name: "망루", indoor: false, aliases: ["망루"] }, { id: bunker, name: "초소 안·창고", indoor: true, aliases: ["동쪽 초소", "초소", "창고"] }]
   cover: 3
   danger: 2
   owner: faction_a
@@ -48,6 +52,8 @@
   map: { x: 69.1, y: 21.2, label: 물류창고 }
   description: 북쪽 고가도로 너머의 옛 물류창고 단지. 붉은연합이 차지하고 있다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: yard, name: "창고 마당", indoor: false, aliases: ["물류창고 마당", "마당", "불가", "점호", "약탈조 출발", "광장"] }, { id: barracks, name: "막사·취사 천막", indoor: true, aliases: ["막사", "취사 천막", "식당 천막", "배급 줄"] }, { id: stockade, name: "수용소", indoor: true, aliases: ["수용소", "노역조"] }, { id: command, name: "지휘소·정비소", indoor: true, aliases: ["지휘소", "정비소", "치료실"] }, { id: wall, name: "감시탑·담", indoor: false, aliases: ["감시탑", "담 보초", "경비 초소"] }]
   cover: 5
   danger: 2
   owner: faction_c
@@ -75,6 +81,8 @@
   map: { x: 48.5, y: 21.2, label: 붉은연합 }
   description: 도시 동쪽의 옛 공단. 높은 담과 감시탑이 있다.
   kind: base
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: barracks, name: "막사", indoor: true, aliases: ["막사", "점호", "화투판"] }, { id: office_block, name: "사무동·규율반", indoor: true, aliases: ["사무동", "위원회", "규율반", "명부"] }, { id: kitchen, name: "부엌·배급 줄", indoor: true, aliases: ["부엌", "배급 줄", "배식"] }, { id: yard, name: "광장·창고 앞", indoor: false, aliases: ["광장", "검수", "쓰레기 수레", "약탈조 출발"] }, { id: wall, name: "담·감시탑·사격장", indoor: false, aliases: ["담벼락", "담 그늘", "사격장", "감시탑"] }, { id: armory, name: "무기고", indoor: true, aliases: ["무기고"] }]
   cover: 7
   danger: 1
   owner: faction_c
@@ -92,6 +100,8 @@
   map: { x: 86.8, y: 51.9, label: 강변 공장 }
   description: 물과 연료를 얻을 수 있어 무리들이 자주 부딪치는 곳. 밤에는 물결이 잦다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: factory, name: "공장 건물 안", indoor: true, aliases: ["공장"] }, { id: bank, name: "강가", indoor: false, aliases: ["강가", "강변 수풀", "갈대밭", "나루"] }, { id: pumphouse_cellar, name: "옛 양수장 지하", indoor: true, aliases: ["양수장"] }]
   cover: 4
   danger: 2
   owner: null
@@ -123,6 +133,8 @@
   map: { x: 35.3, y: 51.9, label: 구시가 }
   description: 첫 해에 거의 다 털린 옛 시장과 상가. 아직도 남은 것을 찾아 들어가는 사람이 있다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: alleys, name: "시장 골목", indoor: false, aliases: ["골목", "시장"] }, { id: shops, name: "상가·약국 안", indoor: true, aliases: ["상가", "약국"] }, { id: boiler_room, name: "목욕탕 보일러실", indoor: true, aliases: ["보일러실", "목욕탕"] }, { id: basement, name: "상가 지하", indoor: true, aliases: ["지하"] }]
   cover: 4
   danger: 1
   owner: null
@@ -153,6 +165,8 @@
   map: { x: 16.2, y: 82.7, label: 버들마을 }
   description: 청솔형제단 거점 서쪽의 옛 아파트 단지.
   kind: base
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: office, name: "관리사무소", indoor: true, aliases: ["관리사무소", "지하 교실", "회의", "배급", "대표실", "사무실", "마을 회관", "약초 창고"] }, { id: blocks, name: "101~103동 집·계단", indoor: true, aliases: ["101동", "102동", "103동", "계단", "집", "숙소", "단지 부엌", "귀가"] }, { id: rooftop_watch, name: "102동 옥상 망루", indoor: false, aliases: ["옥상"] }, { id: gate, name: "정문·경비실·쪽문", indoor: false, aliases: ["정문", "경비실", "쪽문", "단지 순찰", "거점 순찰"] }, { id: yard, name: "단지 텃밭·우물", indoor: false, aliases: ["텃밭", "우물"] }]
   cover: 7
   danger: 0
   owner: faction_b
@@ -174,6 +188,8 @@
   map: { x: 10.3, y: 67.3, label: 하얀매 }
   description: 옛 보건소 건물. 약을 구하려는 사람들이 찾아온다.
   kind: base
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: ward, name: "치료실·수술실", indoor: true, aliases: ["치료실", "수술실", "진료", "문진"] }, { id: pharmacy, name: "약제실", indoor: true, aliases: ["약제실", "장부", "약 나누기"] }, { id: quarantine, name: "격리실", indoor: true, aliases: ["격리실"] }, { id: lodging, name: "숙소·부엌", indoor: true, aliases: ["숙소", "자기 방", "진료소 부엌", "뒷방"] }, { id: director_room, name: "대표의 방", indoor: true, aliases: ["대표의 방"] }, { id: gate, name: "정문·접수대·마당", indoor: false, aliases: ["정문", "접수대", "문진 줄", "거래 손님", "마당", "벤치", "빨래", "들것"] }, { id: back_wall, name: "뒷담·쪽문", indoor: false, aliases: ["담장 순찰", "쪽문", "뒷담"] }]
   cover: 7
   danger: 0
   owner: faction_d
@@ -193,6 +209,8 @@
   map: { x: 88.2, y: 82.7, label: 나루상단 }
   description: 강 하류의 옛 휴게소. 정해진 날에 상인들이 모인다.
   kind: base
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: stalls, name: "장터 좌판·천막", indoor: false, aliases: ["장터", "천막", "망루", "뒷골목"] }, { id: pawnshop, name: "전당포·장부석", indoor: true, aliases: ["전당포", "장부석", "장부 맞추기", "빚 걷기", "다락", "매점"] }, { id: bunkhouse, name: "호위·짐꾼 막사", indoor: true, aliases: ["호위 막사", "짐꾼 막사"] }, { id: wagon_yard, name: "짐마차 마당", indoor: false, aliases: ["짐 싣기", "짐마차", "출발 준비", "호위조 점검", "마구간", "화살 손질"] }, { id: landing, name: "선착장", indoor: false, aliases: ["선착장", "나루"] }]
   cover: 6
   danger: 0
   owner: faction_e
@@ -217,6 +235,8 @@
   map: { x: 10.3, y: 51.9, label: 시립병원 }
   description: 첫 해에 가장 먼저 무너진 병원. 지하 약제실은 아직 다 털리지 않았다는 말이 있다. 감염체가 많다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: lobby, name: "입구·응급실", indoor: true, aliases: ["병원 입구", "응급실", "접수대"] }, { id: stairs_basement, name: "비상계단·지하 약제실", indoor: true, aliases: ["비상계단", "지하", "약제실"] }, { id: yard, name: "병원 마당", indoor: false, aliases: ["병원 마당", "무덤"] }]
   cover: 4
   danger: 3
   owner: null
@@ -242,6 +262,8 @@
   map: { x: 73.5, y: 67.3, label: 정수장 }
   description: 강 하류의 옛 정수장. 펌프 하나가 아직 손으로 돌아간다. 나루상단의 상인들이 물을 길어 간다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: pump_room, name: "펌프실", indoor: true, aliases: ["펌프", "정비", "정수장 창고"] }, { id: waterside, name: "물가·나루", indoor: false, aliases: ["물 나눠 주기", "나루", "배 손질", "배 위", "물가"] }]
   cover: 4
   danger: 1
   owner: faction_e
@@ -259,6 +281,8 @@
   map: { x: 48.5, y: 82.7, label: 남쪽 텃밭 }
   description: 청솔형제단과 버들마을 거점 사이의 운동장과 공터를 갈아엎은 밭. 무너진 남쪽 담장 너머라 늘 불안하다.
   kind: zone
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: field, name: "밭고랑", indoor: false, aliases: ["남쪽 텃밭", "밭고랑", "약초 캐기", "울타리"] }, { id: hut, name: "움막", indoor: true, aliases: ["움막"] }, { id: south_wall, name: "무너진 남쪽 담장", indoor: false, aliases: ["남쪽 담장"] }]
   cover: 2
   danger: 1
   owner: faction_a
@@ -286,6 +310,8 @@
   map: { x: 88.2, y: 96.2, label: 여울섬 }
   description: 강 하구에서 배로 반나절 건너는 섬. 돌담과 망루, 텃밭과 양식장, 탄약 공방이 있다. 부두에는 늘 무장한 경비가 선다.
   kind: base
+  # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
+  places: [{ id: council_hall, name: "의회 회관·식당", indoor: true, aliases: ["의회", "식당", "부엌", "저장고", "학당", "약방"] }, { id: quarters, name: "관사·숙소", indoor: true, aliases: ["관사", "숙소", "경비 막사", "침상"] }, { id: dock, name: "부두·검역 막사", indoor: false, aliases: ["부두", "검역", "등대"] }, { id: farm_shore, name: "양식장·텃밭·바닷가", indoor: false, aliases: ["양식장", "텃밭", "바닷가", "해안 순찰", "그물 창고", "움막"] }]
   cover: 7
   danger: 1
   owner: faction_y

@@ -629,6 +629,11 @@ export function checkStorylets(content: Content): string[] {
     const ids = [...Object.keys(m.carries ?? {}), ...Object.keys(m.collects ?? {}), ...m.requirements.flatMap((r) => ("deliver" in r ? [r.deliver] : []))];
     for (const id of ids) if (!content.items[id]) problems.push(`임무 ${m.id}: 알 수 없는 아이템 ${id}`);
   }
+  // 구역 안의 장소 id는 구역 안에서 하나씩 (12-244)
+  for (const l of Object.values(content.locations)) {
+    const ids = l.places.map((p) => p.id);
+    for (const id of new Set(ids)) if (ids.filter((x) => x === id).length > 1) problems.push(`locations.${l.id}.places: 장소 id ${id}가 겹친다`);
+  }
   // 부탁 물건은 세계 어딘가에서 구할 수 있어야 한다: 장사꾼이 들여오거나 뒤져서 나온다 (12-239)
   for (const n of Object.values(content.npcs)) {
     for (const f of n.favors ?? []) if (content.items[f.item.id] && itemSources(content, f.item.id).length === 0) problems.push(`npcs.${n.id}.favors.${f.id}: ${f.item.id}을(를) 구할 곳이 없다 (장사꾼 restock·구역 loot)`);

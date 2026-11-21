@@ -1,5 +1,4 @@
 import { heldOf } from "../rules/held.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { hasMet, knowsName, playerCalls } from "../game/acquaintance.ts";
@@ -13,6 +12,7 @@ import { recordDeed } from "./reputationTools.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 import { ownedBy } from "../rules/home.ts";
 import { itemSources } from "../content/sources.ts";
+import { inZone, whereIs } from "../rules/place.ts";
 
 /**
  * 약속 (기획서 8.11, 12-160·12-181). 주인공이 장면의 인물과 맺은 약속을 코드가 기억한다. 수치는 월드의 promises.
@@ -131,7 +131,7 @@ const promiseTool = defineTool({
       if (!p) return { ok: false, error: `답할 수 있는 부탁이 아니다: ${input.promise_id ?? "(없음)"} (지금 꺼낼 부탁: ${askedPromises(state).map((x) => x.id).join(", ") || "없음"})` };
       // 같은 구역에 있으면 장면에서 막 나갔어도 받는다 (12-240, A7: 내보낸 직후 수락이 막혔다)
       const npc = content.npcs[p.to];
-      const nearby = !!npc && !state.characters[p.to]?.dead && npcZoneAt(npc, state.time) === state.playerZone;
+      const nearby = !!npc && inZone(state, content, p.to);
       const bad = nearby ? null : present(state, content, p.to);
       if (bad) return { ok: false, error: `부탁한 사람이 장면에 있어야 한다: ${bad} npc_presence로 다시 들인 뒤 답한다.` };
       const c = askContent(content, p);
@@ -255,7 +255,7 @@ export function runAsksDaily(ctx: ToolContext): void {
       const c = state.characters[n.id];
       if (!c || c.dead || heldOf(c) || n.id === me || !(hasMet(state, me, n.id) || knowsName(state, me, n.id))) return false;
       // 주인공이 다시 마주칠 만한 사람만: 지금 구역, 내 거처, 우리 거점에 있는 사람 (12-195)
-      const where = npcZoneAt(n, state.time);
+      const where = whereIs(state, content, n.id)?.zone;
       const myBase = Object.values(content.locations).find((l) => l.kind === "base" && !!state.characters[me]?.factionId && ownedBy(state, l.id, state.characters[me]?.factionId))?.id;
       if (!where || ![state.playerZone, state.homes?.[me], myBase].includes(where)) return false;
       if ((state.relations[n.id]?.[me]?.trust ?? 0) < -1) return false;

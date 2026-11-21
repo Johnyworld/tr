@@ -56,6 +56,8 @@
   title: 총을 내려놓지 않는 손님
   tags: [d_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [d_clinic]
     segments: [morning, day, evening]
     day_gte: 2
@@ -114,6 +116,8 @@
   fright_tags: [enclosed, water]
   tags: [d_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [hospital_ruins]
     segments: [morning, day, evening]
     flags_none: [d_sl_stash_done]
@@ -171,6 +175,8 @@
   title: 풀려 있는 빗장
   tags: [d_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [d_clinic]
     segments: [night, dawn]
     day_gte: 3
@@ -273,6 +279,8 @@
   title: 철문 앞의 빈 의자
   tags: [d_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     segments: [night]
     day_gte: 3
@@ -374,6 +382,8 @@
   title: 담 너머의 담배
   tags: [d_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [d_clinic]
     segments: [evening, night]
     day_gte: 4
@@ -424,6 +434,8 @@
   title: 여섯 명의 담
   tags: [d_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     segments: [morning, day]
     day_gte: 5

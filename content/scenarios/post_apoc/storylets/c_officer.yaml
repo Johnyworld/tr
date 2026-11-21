@@ -79,6 +79,8 @@
   title: 안쪽 문의 명단
   tags: [c_officer, council]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     factions: [faction_c]
     zones: [c_base, c_warehouse]
     segments: [morning, day, evening]
@@ -299,6 +301,8 @@
   title: 공세 다음 날의 탁자
   tags: [c_officer]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     factions: [faction_c]
     zones: [c_base, c_warehouse]
     segments: [evening, night]

@@ -50,6 +50,8 @@
   title: 계약서의 마지막 줄
   tags: [e_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [e_market]
     segments: [morning, day]
     day_gte: 2
@@ -102,6 +104,8 @@
   title: 톨게이트 기둥의 물통
   tags: [e_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [rest_stop, power_plant]
     segments: [morning, day, evening]
     day_gte: 2
@@ -192,6 +196,8 @@
   urgent: true
   tags: [e_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [rest_stop, power_plant]
     segments: [morning, day, evening]
     day_gte: 3
@@ -499,6 +505,8 @@
   fright: 1
   tags: [e_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [power_plant, riverside]
     segments: [morning, day, evening]
     day_gte: 2

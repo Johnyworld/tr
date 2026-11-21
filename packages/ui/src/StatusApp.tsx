@@ -115,11 +115,19 @@ export function StatusApp() {
         <div className="hdr-left">
           {!creating && status?.open && status.player.zone ? (
             // 게임 중에는 주인공이 있는 곳. 그 구역의 주인과 월드 이름은 툴팁에 (제목은 긴 이름을 줄여 자르므로 툴팁은 바깥에서 감싼다)
+            // 장소가 있으면 장소 이름, hover로 구역·주인·실내외·함께 있는 사람 (12-244)
             <div className="info-tip hdr-title-tip" tabIndex={0}>
-              <h1 className="hdr-title">{status.player.zone.name}</h1>
+              <h1 className="hdr-title">{status.player.place?.name ?? status.player.zone.name}</h1>
               <span className="info-tip-box" role="tooltip">
-                {status.player.zone.name}
+                {status.player.place ? `${status.player.place.name} · ${status.player.zone.name}` : status.player.zone.name}
                 <div className="muted">{status.player.zone.owner}</div>
+                {status.player.place && (
+                  <div className="muted">
+                    {status.player.place.indoor ? "실내" : "바깥"}
+                    {status.player.place.spawned ? " · 즉흥 장소" : ""}
+                  </div>
+                )}
+                {status.player.present.length > 0 && <div className="muted">함께 있는 사람: {status.player.present.map((p) => p.name).join(", ")}</div>}
                 <div className="info-tip-sep" />
                 <div className="muted">{status.scenarioName}</div>
               </span>

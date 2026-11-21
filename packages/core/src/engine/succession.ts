@@ -14,12 +14,12 @@ import type { Belief } from "../game/belief.ts";
 import { createCharacterFromRole, type GameState, type RunRecord } from "../game/state.ts";
 import type { Content, RoleContent } from "../content/schemas.ts";
 import { buildCustomRole, joinRole } from "../game/customStart.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
 import { formatTime, MINUTES_PER_DAY, START_TIME } from "../rules/time.ts";
 import { josa, sentence } from "../text.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
 import { hearNews } from "../rules/news.ts";
+import { zoneOf } from "../rules/place.ts";
 
 /**
  * 사망과 계승 (기획서 3.1, 3.2).
@@ -258,7 +258,7 @@ export function switchCharacter(
     // 이어받는 사람의 무리·계급 자리 (무리가 없으면 떠돌이)
     // 죽는 자리에 함께 있었으면(장면·동행) 그 자리에서 이어 간다 (플레이 테스트 13: 곁에서 본 동행이 거점에서 시작해 "전해 들음"으로 알았다)
     const there = state.scene.present.includes(choice) || state.companions.includes(choice);
-    const zone = there && state.playerZone ? state.playerZone : content.npcs[choice] ? npcZoneAt(content.npcs[choice]!, state.time) : (successor.extra?.zone ?? null);
+    const zone = there && state.playerZone ? state.playerZone : zoneOf(state, content, choice);
     const seat = heirSeat(content, successor.factionId, successor.rank, { age: successor.age, occupation: successor.occupation?.id ?? null, zone });
     // 같은 무리 사람들은 서로 안다
     const comrades = Object.values(state.characters)

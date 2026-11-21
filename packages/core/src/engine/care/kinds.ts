@@ -1,7 +1,6 @@
 import { CARE_BY, careUsedToday } from "./slots.ts";
 /** 치료 (kinds): engine/body.ts에서 떼어 냈다 (docs/design.md 12-236) */
 import { heldOf } from "../../rules/held.ts";
-import { npcZoneAt } from "../../game/whereabouts.ts";
 import type { GameState } from "../../game/state.ts";
 import { playerCalls } from "../../game/acquaintance.ts";
 import type { Content } from "../../content/schemas.ts";
@@ -18,6 +17,7 @@ import { type FeeChoice, planHealerPay, payHealer } from "./fee.ts";
 import { needsSurgery, canOperate, surgeonRoll, operate } from "./surgery.ts";
 import { ownedBy } from "../../rules/home.ts";
 import { quarantineAfterCare } from "./quarantine.ts";
+import { nearby } from "../../rules/place.ts";
 /**
  * 치료사에게 자기 치료를 받을 수 없는 까닭 (물건 없이, 판정·시간 전에 본다, 플레이 테스트 11). 받을 수 있으면 null.
  * 피가 나는데 치료사가 없으면 맨손 지혈로 넘어가므로 막지 않는다
@@ -35,7 +35,7 @@ export function selfTreatmentProblem(ctx: ToolContext, patientId?: string, pay: 
     const w = ctx.content.scenario.wounds;
     if (w && levelIndex(ctx, state, player.id, w.track) > 0) return null;
     // 이 구역의 치료사를 알려 준다 (플레이 테스트 11: 간호조무사·약사에게 청하다 누가 치료사인지 몰랐다)
-    const here = Object.values(ctx.content.npcs).filter((n) => n.healer && !state.characters[n.id]?.dead && !heldOf(state.characters[n.id]) && npcZoneAt(n, state.time) === state.playerZone);
+    const here = Object.values(ctx.content.npcs).filter((n) => n.healer && !heldOf(state.characters[n.id]) && nearby(state, ctx.content, n.id));
     return `치료해 줄 사람이 장면에 없다 (장면의 치료사만 치료한다).${here.length ? ` 이 구역의 치료사: ${here.map((n) => `${playerCalls(state, ctx.content, n.id)} (${n.id})`).join(", ")} (npc_presence로 들인다).` : " 이 구역에는 치료사가 없다."} 치료 아이템을 쓰거나 치료사를 찾아간다.`;
   }
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);

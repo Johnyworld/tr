@@ -11,9 +11,9 @@ import { segmentOf, type Activity, type GameTime } from "../rules/time.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import type { InterruptCheck } from "../sim/fastForward.ts";
 import { fillStorylet, pickCast, pickStorylet, roadStorylets, storyletVars } from "../story/storylets.ts";
-import { welcomedAsGuest } from "./climate.ts";
 import { fireStorylet, storySetup, storyTitle, maskUnknownNames } from "./storyletTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { guardedHere } from "../rules/place.ts";
 
 /**
  * 야영과 불침번 (기획서 4.5.6, 12-148).
@@ -48,8 +48,8 @@ export function campSite(content: Content, state: GameState): CampSite | null {
   const owner = state.zones[zone]?.owner ?? null;
   // 내 거처도 우리 땅처럼 덜 위험하다 (12-195: 거처로 정한 마트도 밤마다 들개·매복이 왔다). 시설(바리케이드·경보줄)은 그 위에 더한다
   const ownLand = (!!me.factionId && owner === me.factionId) || state.homes?.[me.id] === zone;
-  if (location.sanctuary) return null;
-  if (location.kind === "base" && (ownLand || welcomedAsGuest(content, state))) return null;
+  // 담과 순찰이 지켜 주는 곳이면 야영이 아니다 (공통 규칙 15의 guardedHere)
+  if (guardedHere(content, state)) return null;
   return { danger: Math.min(3, Math.max(location.danger ?? 0, infestationOf(content, state, zone))), ownLand };
 }
 

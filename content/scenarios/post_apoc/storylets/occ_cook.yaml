@@ -584,6 +584,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [d_clinic]
     factions: [faction_d]
     own_territory: true

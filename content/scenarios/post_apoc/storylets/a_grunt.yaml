@@ -10,6 +10,8 @@
   title: 물류창고의 불빛
   tags: [grunt]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [a_east_post]
     segments: [night, dawn]
     day_gte: 2

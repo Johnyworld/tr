@@ -1,6 +1,5 @@
 import { heldOf } from "../rules/held.ts";
 import { profileOf } from "./people.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
 import { fameOf } from "../game/fame.ts";
 import { isCreature } from "../game/kinds.ts";
 import { weatherNow } from "../sim/weather.ts";
@@ -31,6 +30,7 @@ import { loversOf } from "./romance.ts";
 import { isIncapacitated } from "./body.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
+import { whereIs, zoneOf } from "../rules/place.ts";
 
 export type DeedInput = {
   summary: string;
@@ -106,7 +106,7 @@ export function recordDeed(
       // 숨은 목격자는 그 시각 같은 구역에 있던 사람만 (기획서 8.2 "근처"). 전에는 세계 어디에 있든 굴려,
       // 다른 무리 거점의 약사가 우리 거점 안의 일을 "직접 봄"으로 알았다 (플레이 테스트 8)
       // (어디 있는지 모르는 인물이나 구역이 없는 장면은 예전처럼 굴린다)
-      const where = npcZoneAt(ctx.content.npcs[character.id]!, state.time);
+      const where = zoneOf(state, ctx.content, character.id);
       if (state.playerZone && where && where !== state.playerZone) continue;
       const chance = hiddenWitnessChance({
         privacy: input.privacy,
@@ -355,7 +355,7 @@ export function spreadRumors(ctx: ToolContext): void {
     const talk = ctx.content.scenario.war?.talk?.rumor?.zones ?? [];
     const tierOf = new Map<string, number>();
     const tier = (actor: string) => tierOf.get(actor) ?? (tierOf.set(actor, fameOf(state, ctx.content, actor).tier), tierOf.get(actor)!);
-    const zoneOf = (id: string) => (ctx.content.npcs[id] ? npcZoneAt(ctx.content.npcs[id]!, state.time) : undefined);
+    const zoneAt = (id: string) => (ctx.content.npcs[id] ? (whereIs(state, ctx.content, id)?.zone ?? undefined) : undefined);
     const learned = spreadOneDay({
       deeds: Object.values(state.deeds),
       knowledge: state.deedKnowledge,
@@ -370,7 +370,7 @@ export function spreadRumors(ctx: ToolContext): void {
             canPass: (deed, teller, listener) => {
               const a = state.characters[teller]?.factionId;
               if (a && a === state.characters[listener]?.factionId) return true;
-              const zone = zoneOf(listener);
+              const zone = zoneAt(listener);
               return tier(deed.actorId) >= fame.cross_from && !!zone && talk.includes(zone);
             },
             relayRumor: (deed) => tier(deed.actorId) >= fame.relay_from,

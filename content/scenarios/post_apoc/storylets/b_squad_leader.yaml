@@ -90,6 +90,8 @@
   title: 두 갈래 명령
   tags: [b_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [b_base]
     segments: [evening]
     day_gte: 3
@@ -192,6 +194,8 @@
   title: 103동 계단
   tags: [b_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [b_base]
     segments: [evening, night]
     flags_all: [b_sl_scarf_known]
@@ -393,6 +397,8 @@
   title: 초록 띠
   tags: [b_squad_leader]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [b_base]
     segments: [night]
     flags_all: [b_sl_freeze_seen]

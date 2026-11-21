@@ -6,7 +6,7 @@ import type { ToolContext } from "./toolkit.ts";
 import type { RoleContent } from "../content/schemas.ts";
 import { groupRules, makeFamily, memberLabel, memberTemplate } from "../game/startGroup.ts";
 import { heldOf } from "../rules/held.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
+import { zoneOf } from "../rules/place.ts";
 
 /**
  * 배경 부품을 세이브의 역사로 남긴다 (기획서 12.6). 새 세계를 만들 때 한 번.
@@ -97,7 +97,7 @@ export function seatStartSquad(ctx: ToolContext, role: RoleContent | undefined):
   const state = ctx.store.getState();
   for (const id of role?.squad ?? []) {
     const c = state.characters[id];
-    const home = ctx.content.npcs[id] ? npcZoneAt(ctx.content.npcs[id]!, state.time) : c?.extra?.zone;
+    const home = zoneOf(state, ctx.content, id);
     if (!c || c.dead || heldOf(c) || home !== state.playerZone || ctx.store.getState().scene.present.includes(id)) continue;
     ctx.store.append({ type: "npc_entered", npcId: id });
   }

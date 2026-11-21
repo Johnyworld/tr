@@ -15,6 +15,8 @@ import { changeCondition } from "./body.ts";
 import { traitsOf } from "./traits.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { atOwnBase, myPeopleLiveHere, ownedBy } from "../rules/home.ts";
+import { shelterAt, welcomedAsGuest } from "../rules/place.ts";
+export { welcomedAsGuest } from "../rules/place.ts";
 
 /**
  * 기온 (기획서 4.5.2, 12-98): 시간대마다 바깥 기온을 정하고, 주인공이 있는 곳의 체감 기온으로 냉기를 쌓는다.
@@ -36,23 +38,6 @@ function heatedHere(content: Content, state: GameState): boolean {
   if (owner !== me.factionId && !welcomedAsGuest(content, state)) return false;
   const host = state.factions[owner];
   return !!host && daysOfStock(content, host, shelter.resource) >= shelter.min_days;
-}
-
-/**
- * 다른 무리의 거점에 손님으로 묵을 수 있다 (12-121): 그 무리가 우리를 나쁘게 보지 않으면. 갇힌 몸은 손님이 아니다.
- * 무소속은 0으로 보되, 떠돌이를 먹잇감으로 보는 무리(helpless.prey_on_strangers)는 재워 주지 않는다
- */
-export function welcomedAsGuest(content: Content, state: GameState): boolean {
-  const shelter = content.scenario.body?.cold?.shelter;
-  const me = state.characters[state.playerId];
-  const zone = state.playerZone;
-  const owner = zone ? state.zones[zone]?.owner : null;
-  if (!shelter || shelter.guests === undefined || !me || pausedWhileHeld(state, "guest") || !zone || !owner || owner === me.factionId) return false;
-  if (content.locations[zone]?.kind !== "base") return false;
-  // 몰래 숨어든 사람은 손님이 아니다 (플레이 테스트 13)
-  if (state.infiltration) return false;
-  const regard = me.factionId ? disposition(content, owner, me.factionId, state) : content.scenario.helpless?.prey_on_strangers.includes(owner) ? -3 : 0;
-  return regard >= shelter.guests;
 }
 
 /** 활동이 없을 때(상태 화면·GM 상태)의 기준: 그 구역에서 쉬고 있다 */
@@ -97,6 +82,9 @@ export type Feels = { outside: OutsideTemp; value: number; indoor: boolean; part
 
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
+/** 덮을 곳이 없는 구역 안의 실내 장소가 막아 주는 도 (폐허 정도, 12-244) */
+const PLACE_COVER = 4;
+
 /**
  * 지금 주인공이 있는 곳의 체감 기온. activity: 이 시간 동안 하는 일 (실내인지, 덮고 있는지를 정한다).
  * who: 그 자리의 다른 사람(동행, 12-122). 옷차림·체질·젖은 옷은 그 사람의 것, 자리와 불 땐 거처는 주인공과 같다
@@ -107,10 +95,8 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   const me = state.characters[who];
   if (!c || !outside || !me) return null;
   const zone = state.playerZone;
-  const cover = (zone ? content.locations[zone]?.cover : undefined) ?? 0;
-  // 내 거처·우리 거점을 뒤지는 것은 지붕 아래 일이다 (B10, 플레이 테스트 9: 거처의 지하 창고를 뒤지다 비에 젖었다)
-  const sheltered = !!zone && (state.homes?.[who] === zone || (content.locations[zone]?.kind === "base" && !!me.factionId && ownedBy(state, zone, me.factionId)));
-  const indoor = cover > 0 && (!c.outdoor.includes(activity) || (activity === "search" && sheltered));
+  // 지붕 아래인지와 막아 주는 도는 공통 규칙 15 (rules/place.ts의 shelterAt)
+  const { indoor, cover } = shelterAt(content, state, activity, who);
   const parts: string[] = [];
   let value = outside.value;
   if (indoor) {

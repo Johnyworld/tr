@@ -51,6 +51,8 @@ export type PlayerView = {
   mission: { title: string; briefing: string; deadlineLabel: string; deadlineLeftLabel?: string; urgent?: boolean; requirements: string[] } | null;
   faction: { name: string; about?: string; moraleLabel: string; rationLabel: string } | null;
   zone: { name: string; owner: string } | null;
+  /** 구역 안의 지금 장소 (12-244). 없으면 헤더는 구역 이름 */
+  place?: { name: string; indoor: boolean; spawned: boolean } | null;
   battle: { title: string; sideLabel: string; round: string; momentum: number; momentumMax: number; momentumLabel: string; alarmLabel: string; positionLabel: string } | null;
   gear?: { weapon: GearView | null; armor: GearView[]; weight: number; capacity: number; burden: 0 | 1 | 2 } | null;
   companions?: { id: string; name: string; bondLabel: string; note: string | null; apart: boolean; states?: SymptomView[] }[];

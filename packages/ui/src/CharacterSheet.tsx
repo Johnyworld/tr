@@ -422,7 +422,8 @@ function SubLine({ player }: { player: PlayerView }) {
       {player.policy && player.policy.length > 0 && <div className="muted">방침: {player.policy.map((p) => `${p.label} ${p.option}`).join(" · ")}</div>}
       {player.zone && (
         <div className="muted">
-          있는 곳: {player.zone.name} ({player.zone.owner})
+          있는 곳: {player.place ? `${player.place.name} · ` : ""}
+          {player.zone.name} ({player.zone.owner})
         </div>
       )}
     </>

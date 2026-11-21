@@ -50,6 +50,8 @@
   urgent: true
   tags: [e_porter]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [riverside]
     segments: [morning, day, evening]
     day_gte: 2
@@ -166,6 +168,8 @@
   title: 빈 짐마차
   tags: [e_porter]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [riverside]
     day_gte: 4
     flags_all: [e_false_route]
@@ -250,6 +254,8 @@
   title: 펌프지기의 부탁
   tags: [caravan_life]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [water_plant]
     segments: [evening, night]
     flags_all: [e_pump_failing]
@@ -289,6 +295,8 @@
   fright_tags: [enclosed, water]
   tags: [caravan_life]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: true
     zones: [riverside]
     segments: [morning, day]
     flags_all: [e_bearing_quest]

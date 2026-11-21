@@ -79,6 +79,8 @@
   repeatable: true
   cooldown_days: 10
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     camp_danger_gte: 2
     campfire: true
   cast:

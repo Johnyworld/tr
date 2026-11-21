@@ -1,5 +1,4 @@
 import { heldOf } from "../rules/held.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
 import { marketValue } from "./market.ts";
 import { RESOLVE_TOOLS } from "./resolve.ts";
 import { EXPLORATION_TOOLS } from "./exploration.ts";
@@ -63,6 +62,9 @@ import { PROMOTION_TOOLS } from "./promotion.ts";
 import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
+import { PLACE_TOOLS } from "./placeTools.ts";
+import { npcPlaceAt, placeById, sharesPlace } from "../rules/place.ts";
+import { zoneOf } from "../rules/place.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
 
@@ -228,9 +230,15 @@ const npcPresence = defineTool({
     const look = npc ? `${npc.look} 말투: ${npc.voice.style}` : extra!.look;
     // 보통 다른 구역에 있는 사람이면 알린다 (플레이 테스트 13: 거점의 상관이 강변 장면에 들어왔다). 동행·이야기 배역·갇힌 사람은 빼고
     const s1 = store.getState();
-    const home = npc && input.action === "enter" ? npcZoneAt(npc, s1.time) : undefined;
+    const home = npc && input.action === "enter" ? (zoneOf(s1, content, character.id) ?? undefined) : undefined;
     const away = !!home && home !== s1.playerZone && !s1.companions.includes(character.id) && !heldOf(character) && !Object.values(s1.activeStorylet?.cast ?? {}).includes(character.id);
-    const where = away ? ` 이 사람은 보통 지금 ${content.locations[home!]?.name ?? home}에 있다: 여기 와 있는 까닭을 서술하라 (상관이 장면에 들어온 것이 아니라 주인공이 찾아갔다면 그 구역으로 옮겨 가야 한다).` : "";
+    // 같은 구역이어도 다른 장소에 있을 사람이면 알린다 (공통 규칙 15)
+    const elsewhere = !away && npc && input.action === "enter" && !s1.companions.includes(character.id) && !sharesPlace(s1, content, character.id) ? placeById(s1, content, npcPlaceAt(s1, content, character.id)) : null;
+    const where = away
+      ? ` 이 사람은 보통 지금 ${content.locations[home!]?.name ?? home}에 있다: 여기 와 있는 까닭을 서술하라 (상관이 장면에 들어온 것이 아니라 주인공이 찾아갔다면 그 구역으로 옮겨 가야 한다).`
+      : elsewhere
+        ? ` 이 사람은 보통 지금 ${elsewhere.name}(${elsewhere.id})에 있다: 이리로 온 까닭을 서술하거나, 주인공이 찾아갔다면 place_to로 그곳에 옮겨 간다.`
+        : "";
     return {
       ok: true,
       resultText:
@@ -327,6 +335,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...RESOLVE_TOOLS,
       ...INFILTRATION_TOOLS,
       ...EXPLORATION_TOOLS,
+      ...PLACE_TOOLS,
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,
       ...EXTRA_TOOLS,

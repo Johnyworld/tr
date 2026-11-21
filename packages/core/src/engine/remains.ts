@@ -2,9 +2,9 @@ import { heldOf } from "../rules/held.ts";
 import type { Character } from "../game/character.ts";
 import { aliasOf, knowsName } from "../game/acquaintance.ts";
 import type { GameState, Remains } from "../game/state.ts";
-import { npcZoneAt } from "../game/whereabouts.ts";
 import { josa } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { zoneOf } from "../rules/place.ts";
 
 /**
  * 유해와 무덤 (기획서 3.4, 12-130).
@@ -28,13 +28,9 @@ function leavesRemains(ctx: ToolContext, state: GameState, c: Character): boolea
 
 /** 그 사람이 죽은 곳 */
 function placeOf(ctx: ToolContext, state: GameState, c: Character): string | null {
-  if (c.id === state.playerId) return state.playerZone;
-  if (heldOf(c)) return heldOf(c)!.zone;
-  // 주인공 앞(장면·곁의 동행)에서 죽었으면 여기다. 평소 있던 자리가 아니라
+  // 주인공 앞(장면·곁의 동행)에서 죽었으면 여기다. 평소 있던 자리가 아니라 (인물은 어디에, 공통 규칙 15)
   if (state.scene.present.includes(c.id) || (state.companions.includes(c.id) && !state.bonds[c.id]?.apart)) return state.playerZone;
-  const npc = ctx.content.npcs[c.id];
-  if (npc) return npcZoneAt(npc, state.time) ?? null;
-  return c.extra?.zone ?? null;
+  return zoneOf(state, ctx.content, c.id);
 }
 
 /** 감염으로 죽었는가 (변이한다) */

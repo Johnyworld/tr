@@ -16,6 +16,8 @@
   fright: 1
   fright_tags: [dark]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     camp_watched: true
     camp_danger_gte: 1
     segments: [evening, night, dawn]
@@ -71,6 +73,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     camp_watched: true
     campfire: true
     segments: [evening, night]
@@ -119,6 +123,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     campfire: true
     zone_owner: [other]
     segments: [evening, night, dawn]
@@ -170,6 +176,8 @@
   repeatable: true
   cooldown_days: 8
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     camp_watched: true
     segments: [night, dawn]
   cast:
@@ -209,6 +217,8 @@
   fright: 1
   fright_tags: [dog, dark]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     camp_danger_gte: 1
     segments: [night, dawn]
   cast:
@@ -248,6 +258,8 @@
   repeatable: true
   cooldown_days: 10
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     camp_watched: true
     camp_danger_gte: 2
     segments: [night]
@@ -293,6 +305,8 @@
   fright: 2
   fright_tags: [dark]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     camp_watched: false
     camp_danger_gte: 1
   cast:
@@ -347,6 +361,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     camp_watched: false
     # 털어 갈 먹을 것이 있을 때만 (플레이 테스트 11: 먹을 것이 없는데 "깡통 하나를 쥐고 나온다")
     has_items_any: [canned_food, dry_ration, mil_ration]
@@ -397,6 +413,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     camp_watched: false
     camp_danger_lte: 1
     # 갉을 식량이 있을 때만 (플레이 테스트 11: 먹을 것이 없는데 "꾸러미가 갉혀 있다")
@@ -425,6 +443,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     weather: [rain]
     campfire: false
   setup: "등이 차가워서 깬다. 빗물이 바닥을 타고 흘러들어 깔고 누운 것이 흠뻑 젖었다. 지붕인 줄 알았던 것이 반쯤은 하늘이었다."

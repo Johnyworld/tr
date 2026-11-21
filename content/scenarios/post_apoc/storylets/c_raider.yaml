@@ -97,6 +97,8 @@
   title: 망루 아래 돌무더기
   tags: [c_raider]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [c_warehouse, a_east_post]
     segments: [night, dawn]
     flags_all: [c_prisoner_message]
@@ -136,6 +138,8 @@
   tags: [c_raider]
   urgent: true
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [c_warehouse]
     segments: [morning, day]
     flags_all: [c_prisoners_seen]
@@ -183,6 +187,8 @@
   title: 막내의 배수로
   tags: [red_life]
   when:
+    # 지붕 아래·바깥 (12-244, 공통 규칙 15)
+    indoor: false
     zones: [c_base]
     own_territory: true
     segments: [night]

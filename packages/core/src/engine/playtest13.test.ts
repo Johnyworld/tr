@@ -12,6 +12,10 @@ import { issueSpare } from "./armory.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { maybeInfect } from "./body.ts";
+import { helperFor, shareHarmWith } from "../rules/company.ts";
+import { changeNotices, visibleOf } from "../rules/notice.ts";
+import { onReturnedHome } from "../rules/consequence.ts";
+import { neighbors } from "../sim/war.ts";
 import { currentResolve, resolveLine, resolveProgress } from "./resolve.ts";
 import { runHelpless } from "./helpless.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
@@ -543,5 +547,38 @@ describe("공통 규칙 3단계: 처지·감염체 (플레이 테스트 13 뒤 �
     const out = runInfestedArrival({ ...ctx, rng: () => 0.99 }, zone);
     expect(out.some((d) => d.type === "storylet")).toBe(true);
     expect(w.state().swarms[zone]!.met).toBe(true);
+  });
+});
+
+describe("공통 규칙 8·9와 자리 비움 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("곁의 분대원 가운데 그 판정을 잘하는 사람이 돕고, 상대가 있는 큰 피해는 하나가 나눠 받는다", () => {
+    const w = world("role_a_squad_leader");
+    const mate = content.roles.role_a_squad_leader!.squad![0]!;
+    w.ctx().store.append({ type: "companion_joined", characterId: mate, kind: "squad" } as never);
+    w.state().characters[mate]!.skills = { ...w.state().characters[mate]!.skills, scavenge: 2 };
+    expect(helperFor(w.state(), content, "scavenge")?.id).toBe(mate);
+    expect(shareHarmWith(w.state(), content)).not.toBeNull();
+  });
+
+  it("바뀐 것이 결과 글에 없으면 까닭과 함께 알린다", () => {
+    const w = world("role_a_grunt");
+    const before = visibleOf(w.state(), content);
+    w.ctx().store.append({ type: "merit_awarded", characterId: w.state().playerId, delta: 2, reason: "테스트" });
+    expect(changeNotices(before, visibleOf(w.state(), content), w.state(), content, "")).toContainEqual(expect.stringContaining("공적 +2"));
+    expect(changeNotices(before, visibleOf(w.state(), content), w.state(), content, "공적 +2.")).toEqual([]);
+  });
+
+  it("섬을 임무 없이 6시간 넘게 비웠다 돌아오면 상관이 아는 불복종 행적이 남는다", () => {
+    const w = world("role_y_islander");
+    const ctx = w.ctx();
+    const home = w.state().playerZone!;
+    const out = content.locations[home]!.crossing ? Object.keys(content.locations).find((z) => w.state().zones[z]?.owner !== "faction_y")! : neighbors(content, home)[0]!;
+    ctx.store.append({ type: "zone_moved", from: home, to: out });
+    expect(w.state().leftHomeAt).not.toBeNull();
+    ctx.store.append({ type: "time_advanced", activity: "wait", from: w.state().time, to: w.state().time + 7 * 60 });
+    ctx.store.append({ type: "zone_moved", from: out, to: home });
+    expect(onReturnedHome(ctx).length).toBe(1);
+    expect(Object.values(w.state().deeds).some((d) => d.summary.includes("자리를 비웠다"))).toBe(true);
+    expect(w.state().leftHomeAt).toBeNull();
   });
 });

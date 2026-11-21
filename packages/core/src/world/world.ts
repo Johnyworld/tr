@@ -1,3 +1,4 @@
+import { changeNotices, visibleOf } from "../rules/notice.ts";
 import { checkResolve } from "../engine/resolve.ts";
 import { choosePortrait } from "../game/portrait.ts";
 import { dayOf } from "../rules/time.ts";
@@ -208,6 +209,7 @@ export class GameWorld {
    */
   executeTool(name: string, input: unknown): ToolOutcome {
     const before = { turn: this.state().turn, time: this.state().time };
+    const seenBefore = visibleOf(this.state(), this.content);
     const tracked = this.#tracked(() => executeTool(name, input, this.ctx()));
     let outcome = tracked.value;
     // 거절된 행동의 요약·의도는 남기지 않는다 (플레이 테스트 13: 오류로 막힌 탈출이 일지에 "빠져나왔다"로 남았다)
@@ -224,7 +226,9 @@ export class GameWorld {
     }
     // 시나리오 해금·클리어는 tool 결과 뒤에 GM에게 알린다. 다짐(12-164)도 tool이 끝날 때마다 본다
     const resolved = outcome.ok ? checkResolve(this.ctx()) : { lines: [], displays: [] };
-    const progress = [...describeProgressNotices(tracked.notices), ...resolved.lines];
+    // 바뀐 것은 까닭과 함께 알린다 (공통 규칙 9): 결과 글에 없는 변화만
+    const changed = outcome.ok ? changeNotices(seenBefore, visibleOf(this.state(), this.content), this.state(), this.content, outcome.resultText) : [];
+    const progress = [...describeProgressNotices(tracked.notices), ...resolved.lines, ...changed];
     if (outcome.ok && resolved.displays.length) outcome = { ...outcome, extra: [...(outcome.extra ?? []), ...resolved.displays] };
     if (outcome.ok && progress.length) outcome = { ...outcome, resultText: [outcome.resultText, ...progress].filter(Boolean).join("\n") };
     if (outcome.ok && !outcome.silent) {
@@ -311,6 +315,7 @@ export class GameWorld {
     character?: CharacterChoice,
   ): { ok: true; text: string } | { ok: false; error: string } {
     const ctx = this.ctx();
+    const seenBefore = visibleOf(this.state(), this.content);
     const result = switchCharacter(ctx, choice, name, character);
     if (!result.ok) return result;
     const heir = this.state().characters[this.state().playerId]!;
@@ -318,7 +323,9 @@ export class GameWorld {
     runAfterTimeAdvance(ctx); // 구역, 오늘의 임무, 이야기
     this.#repo.saveSnapshot();
     this.#syncMemory();
-    return { ok: true, text: `${result.text}
+    // 앞 주인공의 임무·동행·상관이 어떻게 됐는지 (공통 규칙 9, 플레이 테스트 13: 분대장이 죽은 뒤 분대와 임무가 어디로 갔는지 몰랐다)
+    const changed = changeNotices(seenBefore, visibleOf(this.state(), this.content), this.state(), this.content, result.text);
+    return { ok: true, text: `${result.text}${changed.length ? `\n${changed.join("\n")}` : ""}
 
 ## 현재 장면
 ${this.sceneForGm()}` };

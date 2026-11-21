@@ -1,3 +1,4 @@
+import { playerCalls } from "../game/acquaintance.ts";
 import { heldOf } from "../rules/held.ts";
 import { gearModifiers } from "./gear.ts";
 import { oppositionParts, type Part } from "./opposition.ts";
@@ -5,7 +6,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { afterCheckAmbush, ambushParts } from "./ambush.ts";
 import { companionSkillMod } from "../game/companions.ts";
-import { squadFollowBonus } from "./command.ts";
+import { helperFor } from "../rules/company.ts";
 import { CHECK_OUTCOME_LABELS, DIFFICULTY_LABELS, DIFFICULTY_MODIFIER, roll2d6, type CheckOutcome, type Difficulty } from "../rules/check.ts";
 import { personaCheckParts } from "./persona.ts";
 import { attractionCheckBonus, traitSkillMod, traitsOf } from "./traits.ts";
@@ -95,7 +96,9 @@ export function rollPlayerCheck(
   const ability = actor.stats[input.stat] ?? 0;
   const base = learned;
   const companion = actor.id === state.playerId ? companionSkillMod(state, content, input.move) : 0;
-  const squad = actor.id === state.playerId ? squadFollowBonus(state, content, input.move) : 0;
+  // 곁의 사람이 돕는다 (공통 규칙 8, rules/company.ts)
+  const helper = actor.id === state.playerId ? helperFor(state, content, input.move) : null;
+  const squad = helper?.bonus ?? 0;
   const skill = base + traitSkillMod(content, actor, input.move) + Math.max(companion, squad);
   // 손에 든 무기·지닌 도구의 보정은 상한 안에서, 방어구·짐의 불리함은 따로 (기획서 4.8)
   const rawGear = gearModifiers(content, actor, input.move, input.distance, state, options.forage ?? null, { ...(options.toolItem !== undefined ? { item: options.toolItem } : {}), activity: options.activity ?? null });
@@ -106,7 +109,7 @@ export function rollPlayerCheck(
     { label: statLabel(scenario, input.stat), value: ability },
     { label: move.label, value: base },
     ...traitsOf(content, actor).map((t) => ({ label: t.label, value: t.effects.skills?.[input.move] ?? 0 })),
-    { label: companion >= squad ? "동행" : "분대", value: Math.max(companion, squad) },
+    { label: companion >= squad ? "동행" : `${josa(playerCalls(state, content, helper!.id), "이/가")} 도움`, value: Math.max(companion, squad) },
     { label: gear.skillLabel, value: gear.skill },
     { label: "상한", value: capped - (ability + skill + gear.skill) },
   ];

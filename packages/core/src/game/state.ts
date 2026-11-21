@@ -542,6 +542,8 @@ export function createGameSchemas(s: Scenario) {
     lastWokeAt: z.number().int().nullable().default(null),
     /** 지난 잠(이어진 잠 전체)이 시작된 시각 */
     lastSleptFrom: z.number().int().nullable().default(null),
+    /** 주인공이 우리 땅을 떠난 시각 (돌아오면 지운다) */
+    leftHomeAt: z.number().int().nullable().default(null),
     /** 사람이 마지막으로 이야기 배역으로 나온 시각 (같은 사람이 이야기마다 나오지 않게) */
     castUsedAt: z.record(z.string(), z.number().int()).default({}),
     /** 무기고가 맨손인 주인공에게 근접 무기를 마지막으로 내준 시각 */
@@ -554,6 +556,8 @@ export function createGameSchemas(s: Scenario) {
     disobedienceAt: z.record(z.string(), z.number().int()).default({}),
     /** 이 사람이 주인공을 덜 믿게 된 마지막 때 (플레이 테스트 11, C5: 의심받은 직후 진급 제안이 왔다) */
     trustDroppedAt: z.record(z.string(), z.number().int()).default({}),
+    /** 그 까닭 (공통 규칙 9, 플레이 테스트 13: 무엇 때문에 진급이 막혔는지 몰랐다) */
+    trustDroppedWhy: z.record(z.string(), z.string()).default({}),
     /** 오늘 행적으로 오른 관계 (플레이 테스트 11, C6): 한 사람이 한 사람을 보는 축마다 하루 +1까지. day가 바뀌면 다시 센다 */
     regardGained: z
       .strictObject({ day: z.number().int(), by: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.number()))) })
@@ -755,6 +759,8 @@ export function createGameSchemas(s: Scenario) {
     /** 들키지 않기가 조건인 임무 중에 들켰다 */
     z.strictObject({ type: z.literal("mission_spotted"), missionId: z.string() }),
     z.strictObject({ type: z.literal("armory_spare_issued") }),
+    /** 우리 땅에 돌아왔다: 자리 비움을 셈하고 지운다 */
+    z.strictObject({ type: z.literal("returned_home") }),
     z.strictObject({ type: z.literal("ration_missed"), day: z.number().int().nullable() }),
     /** 판정의 대가를 다치는 대신 다른 것(시간)으로 치렀다: 그 판정을 이어받는 이야기는 "다친다"를 겹쳐 붙이지 않는다 (플레이 테스트 12) */
     z.strictObject({ type: z.literal("check_cost_paid"), checkId: z.string() }),
@@ -1230,12 +1236,14 @@ export const EMPTY_STATE: GameState = {
   lastActivity: null,
   lastWokeAt: null,
   lastSleptFrom: null,
+  leftHomeAt: null,
   castUsedAt: {},
   spareIssuedAt: null,
   missedRationDay: null,
   lastFreedAt: null,
   regardGained: { day: -1, by: {} },
   trustDroppedAt: {},
+  trustDroppedWhy: {},
   disobedienceAt: {},
   helplessAt: null,
   recovery: { lastChangeAt: {}, lastHealerDay: {}, trackAt: {}, slowDay: {}, heldDay: {} },
@@ -1404,6 +1412,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (m) m.spotted = true;
       return next;
     }
+    case "returned_home":
+      next.leftHomeAt = null;
+      return next;
     case "armory_spare_issued":
       next.spareIssuedAt = state.time;
       return next;
@@ -2055,7 +2066,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       known[deed.id] = event.source;
       const toward = (next.relations[event.npcId] ??= {});
       toward[deed.actorId] = applyRelationDelta(toward[deed.actorId] ?? NEUTRAL_RELATION, event.delta);
-      if (deed.actorId === state.playerId && (event.delta.trust ?? 0) < 0) next.trustDroppedAt = { ...next.trustDroppedAt, [event.npcId]: state.time };
+      if (deed.actorId === state.playerId && (event.delta.trust ?? 0) < 0) {
+        next.trustDroppedAt = { ...next.trustDroppedAt, [event.npcId]: state.time };
+        next.trustDroppedWhy = { ...next.trustDroppedWhy, [event.npcId]: deed.summary };
+      }
       {
         const day = dayOf(state.time);
         if (next.regardGained.day !== day) next.regardGained = { day, by: {} };
@@ -2094,8 +2108,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "weather_forecast":
       next.forecast = { day: event.day, id: event.weatherId };
       break;
-    case "zone_moved":
+    case "zone_moved": {
       for (const b of Object.values(next.bonds)) if (b.apart?.zone && b.apart.zone === event.from) b.apart.left = true;
+      // 우리 땅을 떠난 시각 (공통 규칙 3의 자리 비움)
+      const mine = next.characters[next.playerId]?.factionId;
+      if (mine && next.leftHomeAt === null && next.zones[event.to]?.owner !== mine) next.leftHomeAt = state.time;
       next.zoneSeen = { ...next.zoneSeen, [event.to]: next.zones[event.to]?.owner ?? null };
       // 바닥의 물건은 그 구역에 남기고, 가는 구역에 남아 있던 것을 장면에 둔다
       if (event.from !== event.to) {
@@ -2136,6 +2153,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         if (!seen.includes(event.to)) next.visited = { ...next.visited, [next.playerId]: [...seen, event.to] };
       }
       break;
+    }
+
     case "condition_changed": {
       const target = mustGet(next.characters, event.targetId, "캐릭터");
       if (target.dead) throw new Error("사망한 캐릭터의 상태는 바뀌지 않습니다.");
@@ -2229,6 +2248,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.runStartedAt = state.time;
       // 앞 주인공이 잃은 상관의 믿음은 물려받지 않는다 (플레이 테스트 12: 계승한 주인공의 진급이 막혔다)
       next.trustDroppedAt = {};
+      next.trustDroppedWhy = {};
       if (event.roleId) {
         next.roleId = event.roleId;
         next.customRole = event.customRole ? structuredClone(event.customRole) : null;
@@ -2248,6 +2268,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.bonds = {};
       // 앞 주인공이 놓은 덫은 다음 주인공이 모른다 (플레이 테스트 13)
       next.traps = [];
+      next.leftHomeAt = null;
       next.squadOrders = {};
       next.squadReports = {};
       next.squad = null;
@@ -2285,7 +2306,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "relation_changed": {
       mustGet(next.characters, event.from, "캐릭터");
-      if (event.to === state.playerId && (event.delta.trust ?? 0) < 0) next.trustDroppedAt = { ...next.trustDroppedAt, [event.from]: state.time };
+      if (event.to === state.playerId && (event.delta.trust ?? 0) < 0) {
+        next.trustDroppedAt = { ...next.trustDroppedAt, [event.from]: state.time };
+        next.trustDroppedWhy = { ...next.trustDroppedWhy, [event.from]: event.reason };
+      }
       const toward = (next.relations[event.from] ??= {});
       toward[event.to] = applyRelationDelta(toward[event.to] ?? NEUTRAL_RELATION, event.delta);
       if (event.to === state.playerId && (event.known || next.scene.present.includes(event.from))) perceive(next, event.from);

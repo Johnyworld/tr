@@ -19,6 +19,8 @@ import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { hostileHere, hostileZone, runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
 import { atStake } from "../rules/stakes.ts";
+import { shareHarmWith } from "../rules/company.ts";
+import { onSpottedAtHome } from "../rules/consequence.ts";
 import { situationOf, threatInScene } from "../rules/situation.ts";
 import { playerHeld } from "../rules/held.ts";
 import { withoutBlame } from "../rules/blame.ts";
@@ -736,7 +738,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (missionNote) lines.push(missionNote);
     // 적대하는 땅에서 숨기가 실패하면 들킨다 (플레이 테스트 11, D6). 옮겨 가며 건 숨기는 도착한 땅에서 (플레이 테스트 12: 출발한 우리 땅에서 굴려 경보가 없었다)
     if (roll.outcome === "miss" && input.move_to && !escapeAttempt) alarmOnArrival = input.check.move;
-    else if (roll.outcome === "miss") {
+    else if (roll.outcome === "miss" && !hostileHere(ctx) && !!scenario.alarm?.moves.includes(input.check.move) && !heldOf(player) && !input.check.opponent && !input.target && !start.activeStorylet) {
+      // 우리 땅에서 숨기가 실패하면 수상한 짓으로 들킨다 (공통 규칙 3)
+      lines.push(...onSpottedAtHome(ctx));
+    } else if (roll.outcome === "miss") {
       // 적대하는 땅에서 시간을 들인 일의 판정이 실패하면 무엇을 하던 중이든 들킨다 (한 행동에 판정은 하나)
       for (const d of runAlarm(ctx, exposed ? scenario.alarm!.moves[0]! : input.check.move)) {
         displays.push(d);
@@ -1244,8 +1249,17 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   const absorbed = (opponentId && kind !== "other") || attack ? armorAbsorb(ctx, raw) : { steps: raw, lines: [] };
   if (against) absorbed.lines.unshift(`${against.line}.`);
   // 버팀 (12-109): 레벨만큼 단계를 피한다
-  const steps = resistSteps(content.scenario, target.level ?? 1, absorbed.steps, ctx.rng);
+  let steps = resistSteps(content.scenario, target.level ?? 1, absorbed.steps, ctx.rng);
   if (steps < absorbed.steps) absorbed.lines.push(`${josa(target.name, "은/는")} ${absorbed.steps - steps}단계를 버텨 냈다.`);
+  // 곁의 사람이 위험을 나눈다 (공통 규칙 8): 상대가 있는 판정에서 2단계를 다치게 되면 곁의 사람 하나가 1단계를 대신 받는다
+  if (steps >= 2 && (opponentId || fightLike)) {
+    const mate = shareHarmWith(state, content);
+    if (mate) {
+      steps -= 1;
+      const hurt = changeCondition(ctx, mate, track.id, 1, "enemy", `${cause} (막아서다)`);
+      absorbed.lines.push(`${josa(playerCalls(state, content, mate), "이/가")} 막아서다 대신 다쳤다.${hurt?.line ? ` ${hurt.line}` : ""}`);
+    }
+  }
   const from = target.conditions[track.id] ?? track.levels[0]!.id;
   if (steps <= 0) {
     // 방어구가 다 막았다 (기획서 4.8). 이야기가 "다친다"를 다시 붙이지 않는다

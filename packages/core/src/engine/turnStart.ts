@@ -1,3 +1,4 @@
+import { onReturnedHome } from "../rules/consequence.ts";
 import { issueSpare } from "./armory.ts";
 import { disasterWeather } from "./disasters.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -53,6 +54,8 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   // 곁의 사람이 먼저 (쓰러진 그 자리에 있던 사람이 지혈부터 한다), 그다음 피를 흘린 만큼 부상이 커진다. 긁힘은 저절로 멎는다 (12-91)
   const helpless = runHelpless(ctx, options.actionStartedAt);
   const bled = [...runBleeding(ctx), ...runLateRation(ctx), ...issueSpare(ctx)];
+  // 자리 비움 (공통 규칙 3)
+  for (const line of onReturnedHome(ctx)) bled.push({ type: "belief", fact: line, sourceLabel: "", note: line });
   runDailyWeather(ctx);
   spreadRumors(ctx);
   // 세력 단위 전쟁 (하루 단위). 자기 무리가 낀 교전 소식은 화면에 보인다

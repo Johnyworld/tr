@@ -106,14 +106,18 @@ export const PROMOTION = {
 
 /** 진급을 미루게 하는 최근의 흠 (C5). 없으면 null */
 export function recentSetback(
-  state: { time: GameTime; missions: Record<string, MissionInstance>; trustDroppedAt?: Record<string, number> },
+  state: { time: GameTime; missions: Record<string, MissionInstance>; trustDroppedAt?: Record<string, number>; trustDroppedWhy?: Record<string, string> },
   characterId: string,
   commanderId: string | null,
 ): string | null {
   const since = state.time - PROMOTION.recentDays * MINUTES_PER_DAY;
   const bad = Object.values(state.missions).filter((m) => m.assigneeId === characterId && m.assignedAt >= since && ["failed", "expired", "abandoned"].includes(m.status) && !m.excused).length;
   if (bad >= PROMOTION.setbacks) return `최근 ${PROMOTION.recentDays}일 사이 임무 ${bad}번이 뜻대로 되지 않았다`;
-  if (commanderId && (state.trustDroppedAt?.[commanderId] ?? -Infinity) >= since) return `최근 ${PROMOTION.recentDays}일 사이 상관의 믿음을 잃은 일이 있다`;
+  if (commanderId && (state.trustDroppedAt?.[commanderId] ?? -Infinity) >= since) {
+    const at = state.trustDroppedAt![commanderId]!;
+    const why = state.trustDroppedWhy?.[commanderId];
+    return `최근 ${PROMOTION.recentDays}일 사이 상관의 믿음을 잃은 일이 있다 (${Math.floor(at / MINUTES_PER_DAY) + 1}일차${why ? `: ${why}` : ""})`;
+  }
   return null;
 }
 
@@ -220,7 +224,8 @@ export function checkPromotion(
     missing.push(`임무 불복종 ${character.disobedience}회 (최대 ${maxDisobedience}회)`);
   }
   if (commanderTrust !== null && commanderTrust < PROMOTION.minCommanderTrust) {
-    missing.push(`상관 신뢰 ${commanderTrust}/${PROMOTION.minCommanderTrust}`);
+    // 신뢰를 올리는 길을 함께 (12-221: 판정이 걸린 임무를 완전히 해내면 하루 +1까지)
+    missing.push(`상관 신뢰 ${commanderTrust}/${PROMOTION.minCommanderTrust} (판정이 걸린 임무를 완전히 해내면 하루에 1씩 오른다)`);
   }
   return { eligible: missing.length === 0, missing };
 }

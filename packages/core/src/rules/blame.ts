@@ -60,3 +60,10 @@ export function withoutBlame<T>(cause: "walked_away", fn: () => T): T {
     suspended = before;
   }
 }
+
+/** 자리를 비운 동안(since부터)을 탓할 수 없는가: 그동안 임무가 있었거나, 붙잡혔다 풀려났다 */
+export function absenceExcused(state: GameState, since: number): boolean {
+  const onMission = Object.values(state.missions).some((m) => m.assigneeId === state.playerId && (m.status === "active" || m.assignedAt >= since));
+  const freed = lastFreedAt(state);
+  return onMission || (freed !== null && freed >= since);
+}

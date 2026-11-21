@@ -7,7 +7,10 @@
  * - 위협 이야기의 실패는 위협 배역이 장면에 남는다 (threatStaysOnMiss, storyletTools가 묻는다)
  */
 import type { Content } from "../content/schemas.ts";
-import { activeMissionOf } from "../game/missions.ts";
+import { activeMissionOf, commanderOf } from "../game/missions.ts";
+import { playerCalls } from "../game/acquaintance.ts";
+import { josa } from "../text.ts";
+import { absenceExcused } from "./blame.ts";
 import type { GameState } from "../game/state.ts";
 import { disposition } from "../sim/war.ts";
 import { recordDeed } from "../engine/reputationTools.ts";
@@ -49,6 +52,33 @@ export function onCaptured(ctx: ToolContext, by: string): string[] {
     if (value !== now) ctx.store.append({ type: "faction_disposition_changed", from: by, to: own, value });
   }
   return lines;
+}
+
+/**
+ * 자리 비움: 임무 없이 무리 문화의 absence_hours보다 오래 우리 땅 밖에 있다 돌아오면 상관이 안다 (플레이 테스트 13: 섬을 무단으로 떠났다 와도 아무도 몰랐다).
+ * 붙잡혔다 풀려났거나 그동안 임무가 있었으면 탓하지 않는다 (공통 규칙 2). 시간이 흐른 뒤마다
+ */
+export function onReturnedHome(ctx: ToolContext): string[] {
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  const left = state.leftHomeAt;
+  if (!me?.factionId || left === null || !state.playerZone || state.zones[state.playerZone]?.owner !== me.factionId) return [];
+  ctx.store.append({ type: "returned_home" });
+  const hours = ctx.content.factions[me.factionId]?.culture?.absence_hours;
+  if (!hours || state.time - left < hours * 60 || absenceExcused(state, left)) return [];
+  const commander = commanderOf(state, ctx.content);
+  const away = Math.round((state.time - left) / 60);
+  recordDeed(ctx, { summary: `허락 없이 ${away}시간 자리를 비웠다`, tags: ["disobedience"], severity: 1, privacy: "public", noisy: false }, commander ? { npcId: commander, source: "report" } : undefined);
+  return [`허락 없이 ${away}시간 자리를 비운 것을 ${commander ? josa(playerCalls(state, ctx.content, commander), "이/가") : "무리가"} 알았다 (명령 불복종으로 남았다).`];
+}
+
+/** 우리 땅에서 몰래 하다 들켰다 (숨기 판정 실패): 장면의 사람이 본다 (플레이 테스트 13: 의회 저장고를 엿보다 실패해도 아무 일이 없었다) */
+export function onSpottedAtHome(ctx: ToolContext): string[] {
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me?.factionId || !state.playerZone || state.zones[state.playerZone]?.owner !== me.factionId) return [];
+  recordDeed(ctx, { summary: "우리 땅에서 수상한 짓을 하다 들켰다", tags: ["disobedience"], severity: 1, privacy: "semi_private", noisy: true });
+  return ["누군가 수상한 낌새를 보았다 (명령 불복종으로 남았다)."];
 }
 
 /** 위협 이야기(겁을 주는 이야기·매복)를 실패하면 위협 배역이 장면에 남는다 */

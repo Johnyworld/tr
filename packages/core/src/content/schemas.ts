@@ -788,6 +788,8 @@ export function createContentSchemas(s: Scenario) {
     stance: z.enum(["fan", "anti"]).optional(),
     /** 발동할 때 장면에 들어온다 */
     enter: z.boolean().default(true),
+    /** 이 배역이 무리의 대표다: 몇 명인지 (2 이상이면 이 배역과 맞서는 판정에 -1, 플레이 테스트 13) */
+    crowd: z.number().int().min(2).max(20).optional(),
     /** 이 인물의 몸 상태 (기획서 7.7): track의 단계가 at_least 이상, at_most 이하 (단계 id). 진짜 상태로 본다 (연출은 GM 전용) */
     condition: z.strictObject({ track: contentIdSchema, at_least: contentIdSchema.optional(), at_most: contentIdSchema.optional() }).optional(),
     /** 발동할 때 이 인물의 몸 상태를 적어도 이 단계로 (트랙 → 단계). 이야기가 "다쳤다·굶었다"라고 하면 진짜 상태도 그렇게 (플레이 테스트 12) */
@@ -884,6 +886,8 @@ export function createContentSchemas(s: Scenario) {
     bedside: z.boolean().optional(),
     /** 적의 매복 (12-177): 열리면 주인공은 매복당한 것이다 (다음 판정 하나가 불리하다, 실패하면 혼란) */
     ambush: z.boolean().optional(),
+    /** 연습 (대련): 이 이야기의 판정으로는 방어구·무기가 닳지 않는다 (플레이 테스트 13: 친구와의 대련에 갑옷이 망가졌다) */
+    practice: z.boolean().optional(),
     cooldown_days: z.number().min(0).default(0),
     weight: z.number().positive().default(1),
     when: z

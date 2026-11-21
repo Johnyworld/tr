@@ -158,6 +158,9 @@ function backgroundCast(state: GameState, content: Content, kind: "enemy" | "ene
 export const EXTRA_CAST_PREFIX = "@extra:";
 
 /** 배역을 고른다. 한 사람이 두 배역을 맡지 않는다. 채울 수 없으면 null */
+/** 배역으로 나온 사람이 다음 이야기에 다시 나오기 전에 쉬는 시간 (분) */
+const CAST_REST_MINUTES = 2 * 24 * 60;
+
 export function pickCast(state: GameState, content: Content, storylet: StoryletContent, rng: Rng | null): Record<string, string> | null {
   const cast: Record<string, string> = {};
   // 성인 주제 이야기는 배역도 모두 성인이어야 한다 (12-57)
@@ -215,11 +218,14 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       cast[key] = `${EXTRA_CAST_PREFIX}${role.extra}`;
       continue;
     }
-    const options = castCandidates(state, content, role, cast).filter((id) => !used.has(id));
-    if (options.length === 0) {
+    const all = castCandidates(state, content, role, cast).filter((id) => !used.has(id));
+    if (all.length === 0) {
       if (role.optional) continue; // 있으면 쓰는 배역: 비워 둔다
       return null;
     }
+    // 최근 이틀 안에 배역으로 나온 사람은 다른 후보가 있으면 쉰다 (플레이 테스트 13: 윤해솔이 사흘에 네 이야기)
+    const rested = all.filter((id) => (state.castUsedAt?.[id] ?? -Infinity) < state.time - CAST_REST_MINUTES);
+    const options = rested.length ? rested : all;
     const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;
     cast[key] = id;
     used.add(id);
@@ -579,6 +585,12 @@ export function urgentAllowed(state: GameState, content: Content, at: GameTime):
 /** 이 이야기를 지금 열 수 있는가: 급한 이야기는 하루 상한까지, 나머지는 창이 열렸을 때 */
 export function storyletAllowed(state: GameState, content: Content, s: StoryletContent, window: "open" | "urgent_only" | "closed", at: GameTime, options: { urgentOnly?: boolean } = {}): boolean {
   if (window === "closed") return false;
+  // 누워 있는 동안의 이야기는 정말 누워 있을 때만: 막 한 일이 잠·휴식·기다림·치료이거나 스스로 못 움직일 때 (플레이 테스트 13: 보초 8시간을 막 마친 사람에게 "당신이 누운 동안")
+  if (s.bedside) {
+    const me = state.characters[state.playerId];
+    const lying = ["sleep", "rest", "wait", "treat"].includes(state.lastActivity ?? "") || (!!me && !!incapacitatingSymptom(content.scenario, me));
+    if (!lying) return false;
+  }
   // 한밤에 막 잠에서 깬 때는 급한 이야기, 누워 있는 동안의 이야기, 깨어나는 장면(activities에 sleep)만 (플레이 테스트 12: 00~03시에 막 깬 사람에게 "모닥불 곁에 앉아", "당신 차례가 온다").
   // 아침에 깬 것은 하루의 시작이라 막지 않는다 (새벽 솥 같은 아침 일). 야영·길 위의 일은 태그로 따로 열려 여기를 거치지 않는다
   // 깬 뒤 다른 일을 했어도 그 밤이 끝날 때까지 (플레이 테스트 13: 깬 뒤 물 한 모금에 풀렸다)

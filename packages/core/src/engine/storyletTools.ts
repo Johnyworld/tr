@@ -301,13 +301,21 @@ export const resolveStorylet = defineTool({
     if (!effects.some((e) => "join_faction" in e)) {
       const now = ctx.store.getState();
       const left: string[] = [];
+      // 위협 이야기(겁을 주는 이야기·매복)를 실패하면 위협은 장면에 남는다: 이어서 맞서거나 달아난다 (플레이 테스트 13: 들켰는데 배역이 빠지고 아무 일도 없었다)
+      const threatStays = outcome === "miss" && ((a.storylet.fright ?? 0) > 0 || !!a.storylet.ambush);
+      const stayed: string[] = [];
       for (const [key, id] of Object.entries(a.cast)) {
+        if (threatStays && now.scene.present.includes(id) && !now.companions.includes(id) && !now.characters[id]?.dead) {
+          stayed.push(playerCalls(now, ctx.content, id));
+          continue;
+        }
         // 치료사는 곁에 남는다: 이야기가 끝난 뒤 치료를 받을 수 있게 (플레이 테스트 13: 침상 곁의 의사가 빠져 치료가 거절됐다)
         if (!a.storylet.cast[key]?.enter || !now.scene.present.includes(id) || now.companions.includes(id) || id === commanderOf(now, ctx.content) || id === roleOf(ctx.content, now)?.commander || !!ctx.content.npcs[id]?.healer) continue;
         ctx.store.append({ type: "npc_left", npcId: id });
         left.push(playerCalls(now, ctx.content, id));
       }
       if (left.length) lines.push(`이야기 배역(${left.join(", ")})은 장면에서 빠졌다. 장면이 이어져 더 마주하면 npc_presence enter.`);
+      if (stayed.length) lines.push(`위협은 그대로 장면에 남았다: ${stayed.join(", ")}. 다음 행동에서 맞서거나(target) 달아나는(move_to + 판정) 장면으로 잇는다.`);
     }
     // 이야기 해결 중에 죽었으면 (쓰러진 사이 붙잡히거나 죽임 등) 다음 행동에서야 알게 하지 않는다
     if (ctx.store.getState().characters[ctx.store.getState().playerId]?.dead) lines.push(`${DEATH_GUIDE} 장면을 끝내고 더 이상 행동을 제시하지 마라.`);
@@ -370,6 +378,18 @@ export function maskUnknownNames(state: GameState, content: Content, text: strin
     out = next + out.slice(last);
   }
   return out;
+}
+
+/** 외면 처리 중인가 (행적을 남기지 않는다) */
+let walkingAway = false;
+/** 자리를 떠 외면으로 처리할 때 부른다: 그 선택지의 행적은 남기지 않는다 */
+export function whileWalkingAway<T>(fn: () => T): T {
+  walkingAway = true;
+  try {
+    return fn();
+  } finally {
+    walkingAway = false;
+  }
 }
 
 const PARTICLE_PAIRS: Record<string, JosaPair> = {
@@ -964,6 +984,8 @@ export function applyEffect(
       display: { type: "presence", npcName: name, action: "leave" },
     };
   }
+  // 자리를 떠서 외면으로 처리된 선택지는 행적을 남기지 않는다 (플레이 테스트 13: 지나쳤을 뿐인데 "[자비·적에게 호의] 탈영병을 보내 주었다")
+  if ("deed" in effect && walkingAway) return {};
   if ("deed" in effect) {
     // GM이 이 장면의 판정(take_action)에서 같은 성격의 행적을 이미 남겼으면 겹쳐 남기지 않는다 (플레이 테스트 8: 같은 일이 두 줄)
     // 이야기가 열린 뒤 GM이 남긴 행적은 성격이 달라도 이 장면의 같은 일이다 (플레이 테스트 11: "들것을 잡고 부상자를 날랐다"가 두 줄)

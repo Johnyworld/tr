@@ -24,6 +24,8 @@ export function activeAmbush(state: GameState): NonNullable<GameState["ambush"]>
   return a && a.zone === state.playerZone && a.until > state.time ? a : null;
 }
 
+/** 싸움의 대가로 자세가 무너져 있다 (다음 판정 -1) */
+export const offBalance = (state: GameState) => state.offBalanceUntil !== null && (state.offBalanceUntil ?? 0) > state.time;
 const ambushedNow = (state: GameState) => !!state.ambushed && state.ambushed.until > state.time;
 export const isConfused = (state: GameState, id: string | null | undefined) => !!id && (state.confused ?? []).includes(id);
 
@@ -62,19 +64,23 @@ export function applyAmbush(ctx: ToolContext, outcome: CheckOutcome): string[] {
 /** 판정 줄에 붙는 매복·혼란 보정 (주인공의 판정만) */
 export function ambushParts(content: Content, state: GameState, move: string, opponent: string | null): Part[] {
   const r = rules(content);
-  if (!r) return [];
+  if (!r) return offBalance(state) ? [{ label: "자세가 무너짐", value: -1 }] : [];
   const parts: Part[] = [];
   const mine = activeAmbush(state);
   if (mine && opponent && r.attack_moves.includes(move)) parts.push({ label: "매복", value: mine.bonus });
   if (ambushedNow(state)) parts.push({ label: "매복당함", value: r.ambushed });
   if (isConfused(state, state.playerId)) parts.push({ label: "혼란", value: r.confused });
+  if (offBalance(state)) parts.push({ label: "자세가 무너짐", value: -1 });
   return parts.filter((p) => p.value !== 0);
 }
 
 /** 판정이 끝난 뒤: 쓴 매복·혼란을 치우고, 매복이 상대를 흔들거나 매복당해 흔들린다. 알릴 줄 */
 export function afterCheckAmbush(ctx: ToolContext, move: string, opponent: string | null, outcome: CheckOutcome, before: GameState): string[] {
   const r = rules(ctx.content);
-  if (!r) return [];
+  if (!r) {
+    if (offBalance(before)) ctx.store.append({ type: "off_balance_changed", until: null });
+    return [];
+  }
   const { store, content } = ctx;
   const lines: string[] = [];
   const mine = activeAmbush(before);
@@ -88,6 +94,7 @@ export function afterCheckAmbush(ctx: ToolContext, move: string, opponent: strin
   }
   if (isConfused(before, opponent) && opponent) store.append({ type: "confusion_changed", characterId: opponent, on: false });
   if (isConfused(before, before.playerId)) store.append({ type: "confusion_changed", characterId: before.playerId, on: false });
+  if (offBalance(before)) store.append({ type: "off_balance_changed", until: null });
   if (ambushedNow(before)) {
     store.append({ type: "ambushed_changed", until: null });
     if (outcome === "miss") {

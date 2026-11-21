@@ -1,5 +1,7 @@
 import { gearModifiers } from "./gear.ts";
-import { oppositionParts } from "./opposition.ts";
+import { oppositionParts, type Part } from "./opposition.ts";
+import type { Content } from "../content/schemas.ts";
+import type { GameState } from "../game/state.ts";
 import { afterCheckAmbush, ambushParts } from "./ambush.ts";
 import { companionSkillMod } from "../game/companions.ts";
 import { squadFollowBonus } from "./command.ts";
@@ -49,6 +51,15 @@ export function takeReactionChecks(store: ToolContext["store"]): CheckDisplay[] 
  * 플레이어 캐릭터의 2d6 판정을 굴리고 check_rolled 이벤트로 기록한다.
  * 행동과 능력치는 시나리오에서 오고, 보정은 능력치 + 난이도 + 상태 트랙 보정이다.
  */
+/** 이야기 배역이 무리(crowd 2 이상)면 그 상대와 맞서는 판정에 -1 */
+function crowdParts(content: Content, state: GameState, opponent: string | null): Part[] {
+  const a = state.activeStorylet;
+  if (!a || !opponent) return [];
+  const key = Object.entries(a.cast).find(([, id]) => id === opponent)?.[0];
+  const n = key ? content.storylets[a.id]?.cast[key]?.crowd : undefined;
+  return n && n >= 2 ? [{ label: `상대가 여럿 (${n}명)`, value: -1 }] : [];
+}
+
 export function rollPlayerCheck(
   input: PlayerCheckInput,
   { store, rng, content }: ToolContext,
@@ -118,6 +129,8 @@ export function rollPlayerCheck(
     ...oppositionParts(content, state, input.move, opponent, input.distance),
     ...(options.reaction ? [] : ambushParts(content, state, input.move, opponent)),
     ...(options.situation ?? []),
+    // 여럿이 막아섰다 (플레이 테스트 13: 넷이 막아섰는데 한 사람과만 맞섰다): 이야기 배역의 crowd
+    ...crowdParts(content, state, opponent),
   ];
   // 갇힌 곳의 감시 (플레이 테스트 12): 탈출에 실패한 만큼 탈출 판정이 어렵다
   // 탈출 판정(갇힌 채 옮겨 가기)에만 (플레이 테스트 13: 광장 이야기의 버티기에도 -3이 붙었다)

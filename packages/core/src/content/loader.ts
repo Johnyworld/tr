@@ -95,8 +95,25 @@ export function loadContent(contentDir: string): Content {
 }
 
 /** 콘텐츠끼리의 참조를 검사한다. 참조 대상 종류가 생기면 여기에 검사를 더한다 */
+/** 배역 자리 바로 뒤에 직접 적은 조사 (받침에 맞춰야 하는 것만) */
+const HARDCODED_PARTICLE = /\{([a-z_]+)\}(이다|이|가|을|를|은|는|과|와|다)(?=[\s.,!?"'…)\]]|$)/g;
+const PAIR_HINT: Record<string, string> = { 이: "이/가", 가: "이/가", 을: "을/를", 를: "을/를", 은: "은/는", 는: "은/는", 과: "과/와", 와: "과/와", 다: "이다/다", 이다: "이다/다" };
+
 function checkReferences(content: Content): string[] {
   const problems: string[] = [];
+  // 눈에 띄는 겉모습 표지는 인물마다 하나: 같은 문장이 두 사람에게 붙지 않는다 (플레이 테스트 13: "안경 한쪽 다리를 철사로 감았다"가 셋)
+  {
+    const seen = new Map<string, string>();
+    for (const npc of Object.values(content.npcs)) {
+      for (const raw of npc.look.split(/[.。]/)) {
+        const line = raw.trim();
+        if (line.length < 8) continue;
+        const other = seen.get(line);
+        if (other && other !== npc.id) problems.push(`npcs.${npc.id}.look: "${line}"이 ${other}와 같다. 인물마다 다른 표지를 쓴다`);
+        else seen.set(line, npc.id);
+      }
+    }
+  }
   // 직분 (기획서 12.6)
   const occIds = new Set(content.scenario.occupations.map((o) => o.id));
   for (const o of content.scenario.occupations) {
@@ -503,6 +520,13 @@ export function checkStorylets(content: Content): string[] {
   for (const s of Object.values(content.storylets)) {
     const where = `storylets.${s.id}`;
     const castKeys = new Set(Object.keys(s.cast));
+    // 배역 자리 뒤에 조사를 직접 적지 않는다: 받침에 따라 틀린다 (플레이 테스트 13: "늙은 그물꾼다", "{green}이"). {key:이/가}로 쓴다
+    {
+      const texts = [s.setup, ...(s.variants ?? []), s.ai_direction ?? "", ...s.choices.map((c) => c.label), JSON.stringify(s.choices)];
+      for (const t of texts) {
+        for (const m of t.matchAll(HARDCODED_PARTICLE)) problems.push(`${where}: {${m[1]}} 뒤에 조사 "${m[2]}"를 직접 적었다. {${m[1]}:${PAIR_HINT[m[2]!] ?? "이/가"}}로 쓴다`);
+      }
+    }
     // 성적 위협 배역을 쓰는 이야기는 성인 주제 태그가 있어야 한다 (12-59). 연애 자체는 성인 콘텐츠가 아니다
     const matureTag = content.scenario.content_rating?.tag;
     if (Object.values(s.cast).some((r) => r.menace) && (!matureTag || !s.tags.includes(matureTag))) problems.push(`${where}: 위협 배역(menace)을 쓰면 tags에 ${matureTag ?? "성인 주제 태그"}가 있어야 한다`);

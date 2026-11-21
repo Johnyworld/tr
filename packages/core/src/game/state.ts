@@ -425,6 +425,8 @@ export function createGameSchemas(s: Scenario) {
     ambush: z.strictObject({ zone: z.string(), until: z.number().int(), bonus: z.number().int().min(1), confuse: z.boolean() }).nullable().default(null),
     /** 매복당함 (12-177): 다음 판정 하나에 붙는 불리함, until이 지나면 사라진다 */
     ambushed: z.strictObject({ until: z.number().int() }).nullable().default(null),
+    /** 자세가 무너졌다 (싸움의 대가 있는 성공, 플레이 테스트 13): 이 시각까지 다음 판정 하나에 -1 */
+    offBalanceUntil: z.number().int().nullable().default(null),
     /** 혼란 (12-177): 다음 판정 하나 동안 흔들린 사람 (주인공은 -1, 상대는 맞서지 못한다) */
     confused: z.array(z.string()).default([]),
     /** 협박당한 사람 (12-153). grudge: 되갚을 마음을 품었다 */
@@ -539,6 +541,8 @@ export function createGameSchemas(s: Scenario) {
     lastWokeAt: z.number().int().nullable().default(null),
     /** 지난 잠(이어진 잠 전체)이 시작된 시각 */
     lastSleptFrom: z.number().int().nullable().default(null),
+    /** 사람이 마지막으로 이야기 배역으로 나온 시각 (같은 사람이 이야기마다 나오지 않게) */
+    castUsedAt: z.record(z.string(), z.number().int()).default({}),
     /** 갇혀서 그날 배급을 못 받은 날 (플레이 테스트 13: 풀려나 거점에 왔는데 그날 내내 굶주렸다). 그날 우리 거점에 닿으면 늦게라도 받는다 */
     missedRationDay: z.number().int().nullable().default(null),
     /** 주인공이 마지막으로 풀려난(빠져나온) 시각 (플레이 테스트 13: 갇혔다 나와 거점까지 걷는 사이 기한이 지나 불복종) */
@@ -692,6 +696,7 @@ export function createGameSchemas(s: Scenario) {
     // 매복 (12-177)
     z.strictObject({ type: z.literal("ambush_changed"), ambush: z.strictObject({ zone: z.string(), until: z.number().int(), bonus: z.number().int().min(1), confuse: z.boolean() }).nullable() }),
     z.strictObject({ type: z.literal("ambushed_changed"), until: z.number().int().nullable() }),
+    z.strictObject({ type: z.literal("off_balance_changed"), until: z.number().int().nullable() }),
     z.strictObject({ type: z.literal("confusion_changed"), characterId: z.string(), on: z.boolean() }),
     z.strictObject({ type: z.literal("promise_settled"), id: z.string(), status: z.enum(["kept", "broken", "folded", "declined", "lapsed"]) }),
     /** 약점을 쥐고 협박했다 (12-153) */
@@ -1147,6 +1152,7 @@ export const EMPTY_STATE: GameState = {
   lastBroadcastDay: null,
   ambush: null,
   ambushed: null,
+  offBalanceUntil: null,
   confused: [],
   blackmails: [],
   exposed: [],
@@ -1220,6 +1226,7 @@ export const EMPTY_STATE: GameState = {
   lastActivity: null,
   lastWokeAt: null,
   lastSleptFrom: null,
+  castUsedAt: {},
   missedRationDay: null,
   lastFreedAt: null,
   regardGained: { day: -1, by: {} },
@@ -1714,6 +1721,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "ambush_changed":
       next.ambush = event.ambush ? { ...event.ambush } : null;
+      return next;
+    case "off_balance_changed":
+      next.offBalanceUntil = event.until;
       return next;
     case "ambushed_changed":
       next.ambushed = event.until === null ? null : { until: event.until };
@@ -2246,6 +2256,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       log.fired += 1;
       log.lastFiredAt = state.time;
       next.lastStoryletAt = state.time;
+      next.castUsedAt = { ...(next.castUsedAt ?? {}) };
+      for (const id of Object.values(event.cast)) next.castUsedAt[id] = state.time;
       break;
     }
     case "storylet_resolved":

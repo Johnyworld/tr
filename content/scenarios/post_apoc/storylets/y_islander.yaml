@@ -137,11 +137,16 @@
         success:
           - set_flag: y_storehouse_tried
           - set_flag: y_feast_seen
+          # 끔찍한 것을 보았다: 몸과 마음에 남는다 (플레이 테스트 13)
+          - body: { track: nerves, delta: 2 }
+          - body: { track: fear, delta: 1 }
           - belief: { fact: "의회 저장고에서 보았다. 내보낸다던 사람들은 섬을 떠나지 않았다. 의회가 그들을 먹는다", source: seen }
         partial:
           - set_flag: y_storehouse_tried
           - set_flag: y_feast_seen
           - set_flag: y_suspected
+          - body: { track: nerves, delta: 2 }
+          - body: { track: fear, delta: 1 }
           - belief: { fact: "의회 저장고에서 보았다. 의회가 사람을 먹는다. 나오다 그림자를 들킨 것 같다", source: seen }
         miss:
           - set_flag: y_storehouse_tried
@@ -154,10 +159,12 @@
 
 - id: y_feast_invite
   title: 겨울 잔치
+  # 시나리오의 매듭이라 꼭 열린다: 간격·하루 상한에 막히지 않는다 (플레이 테스트 13: 13일 동안 한 번도 열리지 않았다)
+  essential: true
   tags: [y_islander]
   when:
     zones: [yeoul_isle]
-    segments: [evening]
+    segments: [evening, night]
     day_gte: 6
     flags_none: [y_invite_done]
   cast:

@@ -50,7 +50,7 @@
     segments: [morning, day, evening]
   cast:
     foe: { resolve_target: true, enter: false }
-  setup: "길 건너 폐허 사이로 낯익은 걸음걸이가 지나간다. {foe}이다. 혼자가 아니다. 이쪽은 아직 들키지 않았다."
+  setup: "길 건너 폐허 사이로 낯익은 걸음걸이가 지나간다. {foe:이다/다}. 혼자가 아니다. 이쪽은 아직 들키지 않았다."
   ai_direction: "{foe:은/는} 주인공을 보지 못했다. 거리는 멀고 그의 곁에는 사람이 있다. 지금 덤비는 것은 무모하다는 것이 보인다. 주인공의 몸이 먼저 반응하게 그린다 (손이 떨리거나, 숨이 멎거나)."
   choices:
     - id: follow

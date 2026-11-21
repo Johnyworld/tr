@@ -53,6 +53,9 @@ describe("균형 D: 이야기 상한", () => {
     const s = store.getState();
     s.characters[s.playerId]!.conditions[c.scenario.harm_track] = c.scenario.condition_tracks.find((t) => t.id === c.scenario.harm_track)!.levels[1]!.id;
     expect(inCrisis(s, c)).toBe(true);
+    // 정말 누워 있을 때만 (플레이 테스트 13)
+    expect(storyletAllowed({ ...s, lastActivity: "guard_duty" }, c, c.storylets.bed!, "urgent_only", s.time)).toBe(false);
+    s.lastActivity = "rest";
     expect(storyletAllowed(s, c, c.storylets.bed!, "urgent_only", s.time)).toBe(true);
     expect(storyletAllowed(s, c, c.storylets.plain!, "urgent_only", s.time)).toBe(false);
   });

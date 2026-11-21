@@ -56,7 +56,7 @@
     ranks: [grunt, squad_leader]
   cast:
     avenger: { vendetta: true, faction: own }
-  setup: 밤 보초 교대. 담 위 초소에는 둘뿐이다. 오늘 교대해 올라온 사람이 {avenger}이다. 발소리가 등 뒤에서 멈춘다. 담 아래로는 한 길이 넘는다.
+  setup: 밤 보초 교대. 담 위 초소에는 둘뿐이다. 오늘 교대해 올라온 사람이 {avenger:이다/다}. 발소리가 등 뒤에서 멈춘다. 담 아래로는 한 길이 넘는다.
   ai_direction: "{avenger:은/는} 오늘 밤 결판을 내려고 교대를 바꿔 들었다 (사고로 보이게, 담 아래로). 무리 안이라 들키면 그쪽도 끝이다. 주인공이 먼저 알아채는지는 판정. 밀거나 다치게 하는 것은 코드가 정한다."
   choices:
     - id: turn

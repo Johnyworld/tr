@@ -137,6 +137,7 @@ export function opponentHarm(content: Content, state: GameState, opponentId: str
   const why = [skill > 0 ? "솜씨가 좋다" : skill < 0 ? "서툴다" : "", weapon ? `${josa(content.items[weapon]?.name ?? weapon, "을/를")} 들었다` : ""].filter(Boolean).join(", ");
   return {
     delta,
-    line: `상대의 몫: ${who} (${label} ${signed}${weapon ? `, ${content.items[weapon]?.name ?? weapon}` : ""})${why ? ` → ${why}` : ""}${delta > 0 ? ". 한 단계 더" : delta < 0 ? ". 한 단계 덜" : ""}`,
+    // 판정 줄의 상대 보정과 다른 숫자다: 이것은 피해를 정하는 상대의 솜씨 (플레이 테스트 13: "+2"와 판정 줄 "-1"이 어긋나 보였다)
+    line: `피해에 붙는 상대의 몫: ${who} (${label} 솜씨 ${signed}${weapon ? `, ${content.items[weapon]?.name ?? weapon}` : ""})${why ? ` → ${why}` : ""}${delta > 0 ? ". 한 단계 더" : delta < 0 ? ". 한 단계 덜" : ""}`,
   };
 }

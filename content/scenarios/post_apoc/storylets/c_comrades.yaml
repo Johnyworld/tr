@@ -35,6 +35,7 @@
 
 - id: cm_strength_test
   title: 강한 놈만 살아남아
+  practice: true
   tags: [c_comrades]
   when:
     zones: [c_warehouse, c_base]

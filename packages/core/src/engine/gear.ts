@@ -182,10 +182,23 @@ export function afterAttack(ctx: ToolContext, plan: AttackPlan, outcome: CheckOu
 }
 
 /** 물건을 닳게 한다. 망가지면 문장 */
+/** 연습 대련 중에는 물건이 닳지 않는다 */
+let wearPaused = false;
+export function withoutWear<T>(paused: boolean, fn: () => T): T {
+  if (!paused) return fn();
+  wearPaused = true;
+  try {
+    return fn();
+  } finally {
+    wearPaused = false;
+  }
+}
+
 export function wearItem(ctx: ToolContext, holder: string, itemId: string, delta: number): string | null {
   const { store, content } = ctx;
   const item = content.items[itemId];
   if (!item?.durability) return null;
+  if (wearPaused && delta > 0) return null;
   // 손질: 물건을 잘 다루는 사람은 덜 닳게 쓴다 (기획서 4.8)
   const m = content.scenario.gear?.maintenance;
   const who = store.getState().characters[holder];

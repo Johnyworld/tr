@@ -14,7 +14,7 @@
   cast:
     avenger: { vendetta: true, faction: other, enter: false }
   setup: 아는 얼굴이 지나가며 낮게 말한다. "누가 당신을 찾고 다니던데. 어디서 자는지, 언제 혼자 다니는지를 묻더라고."
-  ai_direction: "찾고 다니는 사람은 {avenger}이다 (주인공이 죽인 사람의 가족이나 친구). 말을 전하는 사람은 생김새를 대충만 안다. 주인공이 {avenger:을/를} 알면 짐작이 가게, 모르면 낯선 사람으로."
+  ai_direction: "찾고 다니는 사람은 {avenger:이다/다} (주인공이 죽인 사람의 가족이나 친구). 말을 전하는 사람은 생김새를 대충만 안다. 주인공이 {avenger:을/를} 알면 짐작이 가게, 모르면 낯선 사람으로."
   choices:
     - id: ask_more
       label: 어떻게 생긴 사람이었는지 캐묻는다

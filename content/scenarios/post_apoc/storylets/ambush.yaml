@@ -82,7 +82,7 @@
     camp_danger_gte: 2
     campfire: true
   cast:
-    raider: { extra: c_raider, label: 어둠 속의 약탈자, enter: true }
+    raider: { extra: c_raider, label: 어둠 속의 약탈자, enter: true, crowd: 3 }
   setup: "모닥불이 사그라들 무렵, 등 뒤에서 자갈 밟는 소리가 한 번에 여러 곳에서 난다. 불빛을 보고 오래 기다린 자들이다. 누군가 낮게 웃는다."
   ai_direction: "불빛을 보고 둘러싼 약탈자들이다. 하나가 앞에 나섰고 나머지는 어둠 속에 있다 (몇인지 모른다). 먼저 움직인 쪽은 저쪽이다. 맞서는 판정은 {raider:을/를} opponent로 둔다."
   choices:

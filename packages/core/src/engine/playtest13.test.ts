@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { activeMissionOf, evaluateMission, pickDailyOffers, recentSetback } from "../game/missions.ts";
 import { stanceOf } from "../game/fame.ts";
 import { createSeededRng } from "../rng.ts";
-import { storyletAllowed } from "../story/storylets.ts";
+import { pickCast, storyletAllowed } from "../story/storylets.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { maybeInfect } from "./body.ts";
@@ -14,6 +14,8 @@ import { runMissionStartOfTurn } from "./missionTools.ts";
 import { applyEffect, hostileHere, hostileZone, maskUnknownNames } from "./storyletTools.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { healFromSleep, pickFee } from "./body.ts";
+import { ambushParts } from "./ambush.ts";
+import { wearItem, withoutWear } from "./gear.ts";
 import { sleepChainStart } from "../game/state.ts";
 import { itemResource } from "./market.ts";
 import { scavenge } from "./scavenge.ts";
@@ -410,5 +412,39 @@ describe("균형: 몸·잠 (플레이 테스트 13 뒤 정한 것)", () => {
     ctx.store.append({ type: "time_advanced", activity: "wait", from: s.time, to: second });
     expect(sleepChainStart(w.state(), second)).toBe(t0);
     expect(healFromSleep(ctx, sleepChainStart(w.state(), second), second + 345).length).toBeGreaterThan(0);
+  });
+});
+
+describe("설계: 이야기·전투 장면 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("자세가 무너지면 다음 판정 하나에 -1이 붙고, 판정 뒤 풀린다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    ctx.store.append({ type: "off_balance_changed", until: w.state().time + 60 });
+    expect(ambushParts(content, w.state(), "fight", null)).toContainEqual({ label: "자세가 무너짐", value: -1 });
+    const r = w.executeTool("take_action", act({ check: { move: "fight", stat: "strength", difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" } }));
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().offBalanceUntil).toBeNull();
+  });
+
+  it("연습 중에는 물건이 닳지 않는다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const me = w.state().playerId;
+    const item = Object.keys(w.state().characters[me]!.inventory).find((id) => content.items[id]?.durability)!;
+    withoutWear(true, () => wearItem(ctx, me, item, 1));
+    expect(w.state().characters[me]!.wear[item] ?? 0).toBe(0);
+  });
+});
+
+describe("규칙: 이야기 배역 쉬기 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("최근 이틀 안에 배역으로 나온 사람은 다른 후보가 있으면 고르지 않는다", () => {
+    const w = world("role_a_grunt");
+    const s = structuredClone(w.state());
+    const story = Object.values(content.storylets).find((x) => Object.values(x.cast).length === 1 && Object.values(x.cast).every((r) => r.faction === "own" && !r.ids && !r.extra && !r.romance && !r.recall) && pickCast(s, content, x, null))!;
+    const first = pickCast(s, content, story, () => 0)!;
+    const key = Object.keys(first)[0]!;
+    s.castUsedAt = { [first[key]!]: s.time };
+    const again = pickCast(s, content, story, () => 0)!;
+    expect(again[key]).not.toBe(first[key]);
   });
 });

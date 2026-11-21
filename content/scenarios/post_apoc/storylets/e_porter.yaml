@@ -55,7 +55,7 @@
     day_gte: 2
     flags_none: [e_route_leak_suspected]
   cast:
-    raider: { extra: c_raider, label: 검댕을 칠한 사내 }
+    raider: { extra: c_raider, label: 검댕을 칠한 사내, crowd: 4 }
   setup: >-
     강변 공장 담장 그늘에서 얼굴에 검댕을 칠한 사내 넷이 길을 막는다. 쇠지렛대 셋에 엽총 하나.
     "짐 내려놓고 가. 사람은 안 건드려. 상단 사람 죽이면 우리도 물 못 사 먹으니까."

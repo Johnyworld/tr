@@ -19,6 +19,7 @@ import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { hostileHere, runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
 import { CAMP_INTERRUPT, createCampCheck, runCampEvent, deepSleepReason } from "./camp.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
+import { withoutWear } from "./gear.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
 import { scavenge, scavengeParts } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
@@ -58,7 +59,7 @@ import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
 import { scarFromHarm } from "./scars.ts";
-import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle } from "./storyletTools.ts";
+import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle, whileWalkingAway } from "./storyletTools.ts";
 import { choiceAvailable } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -345,6 +346,14 @@ const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
 const WALK_AWAY_CHOICES = ["leave", "ignore", "look_away", "pass", "walk_away", "move_on", "let_go", "turn_away", "walk_on", "leave_it", "let_be", "say_nothing", "silent", "nothing", "shrug", "later", "hold_back", "stay_out", "not_now", "stay_silent", "back_off", "away"];
 
 export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
+  // 연습 대련 이야기의 판정이면 방어구·무기가 닳지 않는다 (플레이 테스트 13)
+  const a = ctx.store.getState().activeStorylet;
+  const s = a ? ctx.content.storylets[a.id] : undefined;
+  const practice = !!s?.practice && !!input.check && s.choices.some((c) => c.check === input.check!.move);
+  return withoutWear(practice, () => takeActionInner(input, ctx));
+}
+
+function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
   let ignoredLine: string | null = null;
   const { store, content } = ctx;
   const scenario = content.scenario;
@@ -391,7 +400,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   if (store.getState().activeStorylet && (!!input.move_to || onRoad) && !escaping && !isIncapacitated(ctx.content, player)) {
     const s = content.storylets[start.activeStorylet!.id];
     const pick = s?.choices.find((c) => WALK_AWAY_CHOICES.includes(c.id) && !c.check && choiceAvailable(start, c, start.activeStorylet!.cast));
-    const r = pick ? resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx) : null;
+    const r = pick ? whileWalkingAway(() => resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx)) : null;
     // 따옴표 안 말에 맞춰 조사 (플레이 테스트 13: "낯선 손님의 공책"를)
     const quoted = (t: string) => `"${t}"${josa(t, "을/를").slice(t.length)}`;
     if (r?.ok) leftLines.push(`(이야기 ${quoted(storyTitle(start, ctx.content, s!))} 두고 자리를 떠, ${quoted(pick!.label)} 고른 것으로 처리했다)`, r.resultText ?? "");
@@ -735,7 +744,7 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
       // 상대의 몫은 맞서 싸우는 판정에서만 (흥정·설득의 target에 근접전 실력이 붙었다, 플레이 테스트 8)
       const fightMoves = content.scenario.opposition?.harm?.moves ?? [];
       const opponent = input.check.opponent ?? (fightMoves.includes(input.check.move) ? input.target : null) ?? null;
-      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, opponent, input.check.harm_kind ?? null, input.activity && ["search", "work", "guard_duty", "rest", "wait"].includes(input.activity.kind) ? { activity: input.activity.kind as Activity, forMission } : null);
+      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, opponent, input.check.harm_kind ?? null, input.activity && ["search", "work", "guard_duty", "rest", "wait"].includes(input.activity.kind) ? { activity: input.activity.kind as Activity, forMission } : null, !!opponent || !!input.target || inBattle || (!!start.activeStorylet && !!content.storylets[start.activeStorylet.id]?.urgent));
       lines.push(harm.text);
       displays.push(harm.display);
       // 방어구·버팀으로 다치지 않았으면 피도 흉터도 마음의 흔들림도 감염도 없다 (플레이 테스트 8: "다치지 않았다" + 긁힘)
@@ -1141,7 +1150,7 @@ const MAX_HARM_STEPS = 2;
 const SCENE_CLEAR_SLEEP_MINUTES = 4 * 60;
 
 /** 판정 결과에 따른 피해 (원칙 3: 사망은 부상 트랙과 판정 결과로만) */
-function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, cause: string, opponentId: string | null = null, kind: string | null = null, spend: { activity: Activity; forMission: string | null } | null = null) {
+function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, cause: string, opponentId: string | null = null, kind: string | null = null, spend: { activity: Activity; forMission: string | null } | null = null, fightLike = false) {
   const { store, content } = ctx;
   const state = store.getState();
   const track = harmTrack(content.scenario);
@@ -1152,6 +1161,17 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
   const found = opponentHarm(content, state, opponentId, check.move);
   const against = found && found.delta > 0 && check.outcome !== "miss" ? null : found;
   const base = harmSteps(check.outcome, severity);
+  if (base === 0 && fightLike) {
+    // 맞선 상대가 있거나 급한 장면이면 시간 대신 자세를 잃는다: 다음 판정 -1 (플레이 테스트 13: 감염체와 맞붙은 채 "일이 꼬여 30분")
+    store.append({ type: "off_balance_changed", until: state.time + 60 });
+    store.append({ type: "check_cost_paid", checkId });
+    const label = levelOf(track, target.conditions[track.id] ?? track.levels[0]!.id).label;
+    return {
+      fatal: false,
+      text: "다치지는 않았지만 자세가 무너졌다: 다음 판정 -1. 대가를 치른 모습을 서술한다.",
+      display: { type: "harm" as const, targetName: target.name, trackLabel: track.label, severityLabel: HARM_LABELS[severity], fatal: false, fromLabel: label, toLabel: label, cause },
+    };
+  }
   if (base === 0) {
     // 가벼운 위험의 대가 있는 성공: 다치지 않고 시간을 잃는다. 이 판정을 이어받는 이야기는 대가를 또 매기지 않는다 (플레이 테스트 12: 30분 + 경상)
     // 대가로 더 쓴 시간도 그 활동의 시간이다: 임무 수색이면 수색 시간으로 센다 (플레이 테스트 13)

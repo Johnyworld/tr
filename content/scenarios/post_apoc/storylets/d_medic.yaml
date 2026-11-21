@@ -388,7 +388,7 @@
   choices:
     - id: learn
       label: 약도를 받아 꼼꼼히 묻는다
-      check: history
+      check: insight
       outcomes:
         success:
           - set_flag: d_pharmacy_map

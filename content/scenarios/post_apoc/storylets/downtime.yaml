@@ -100,6 +100,7 @@
 
 - id: dt_sparring
   title: 해 질 녘 대련
+  practice: true
   tags: [world]
   repeatable: true
   cooldown_days: 5

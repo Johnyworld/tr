@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
@@ -240,7 +241,7 @@ export function runAsksDaily(ctx: ToolContext): void {
     .filter((n) => (n.favors ?? []).length > 0)
     .filter((n) => {
       const c = state.characters[n.id];
-      if (!c || c.dead || c.captive || n.id === me || !(hasMet(state, me, n.id) || knowsName(state, me, n.id))) return false;
+      if (!c || c.dead || heldOf(c) || n.id === me || !(hasMet(state, me, n.id) || knowsName(state, me, n.id))) return false;
       // 주인공이 다시 마주칠 만한 사람만: 지금 구역, 내 거처, 우리 거점에 있는 사람 (12-195)
       const where = npcZoneAt(n, state.time);
       const myBase = Object.values(content.locations).find((l) => l.kind === "base" && !!state.characters[me]?.factionId && state.zones[l.id]?.owner === state.characters[me]?.factionId)?.id;

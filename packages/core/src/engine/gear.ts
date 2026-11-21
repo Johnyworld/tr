@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { animalCarry } from "../game/companions.ts";
 import { effectiveSkill } from "./traits.ts";
 import { marketValue } from "./market.ts";
@@ -376,7 +377,7 @@ export function runRestock(ctx: ToolContext): void {
   for (const npc of Object.values(content.npcs)) {
     if (!npc.merchant) continue;
     const c = state.characters[npc.id];
-    if (!c || c.dead || c.away || c.captive || state.restockedDay[npc.id] === day) continue;
+    if (!c || c.dead || c.away || heldOf(c) || state.restockedDay[npc.id] === day) continue;
     const items: Record<string, number> = {};
     for (const [id, want] of Object.entries(npc.merchant.restock)) {
       const short = want - (c.inventory[id] ?? 0);

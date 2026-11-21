@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { josa } from "../text.ts";
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
@@ -47,7 +48,7 @@ function ownerHere(state: GameState): string | null {
 function captiveHere(state: GameState, zone: string, owner: string): string | null {
   const me = state.characters[state.playerId]!;
   // 캐릭터가 아는 포로만: 만난 적이 있거나 우리 무리 사람 (플레이 테스트 12: 담 밖에서 "갇힌 사람 풀어 주기"가 바로 떴다)
-  const list = Object.values(state.characters).filter((c) => !c.dead && c.captive && c.captive.by === owner && c.captive.zone === zone && c.id !== me.id && (hasMet(state, me.id, c.id) || (!!me.factionId && c.factionId === me.factionId)));
+  const list = Object.values(state.characters).filter((c) => !c.dead && heldOf(c) && heldOf(c)!.by === owner && heldOf(c)!.zone === zone && c.id !== me.id && (hasMet(state, me.id, c.id) || (!!me.factionId && c.factionId === me.factionId)));
   list.sort((a, b) => Number(b.factionId === me.factionId) - Number(a.factionId === me.factionId) || a.id.localeCompare(b.id));
   return list[0]?.id ?? null;
 }
@@ -116,7 +117,7 @@ const infiltrate = defineTool({
     if (!r) return { ok: false, error: "이 월드에는 잠입 규칙이 없다." };
     const state = store.getState();
     const me = state.characters[state.playerId]!;
-    if (me.captive) return { ok: false, error: "갇힌 몸이다." };
+    if (heldOf(me)) return { ok: false, error: "갇힌 몸이다." };
     if (state.battle) return { ok: false, error: "전투 중이다." };
     const display: ToolDisplayEvent = { type: "time", activityLabel: "잠입", durationLabel: `${r.step_minutes}분`, fromLabel: "", toLabel: "" };
     const inf = state.infiltration;
@@ -232,7 +233,7 @@ export function describeInfiltration(content: Content, state: GameState): string
     const owner = ownerHere(state);
     // 갇혀 있으면 잠입할 수 없다 (플레이 테스트 12: 갇힌 상태 화면에 잠입 목표가 떴다)
     // 적대하는 땅에서만 보인다 (플레이 테스트 13: 연합·중립 거점에도 잠입 목표가 떴다). 그 밖에서도 플레이어가 먼저 숨어들겠다고 하면 할 수는 있다
-    if (!owner || state.battle || state.characters[state.playerId]?.captive || !hostileZone(state, content)) return [];
+    if (!owner || state.battle || heldOf(state.characters[state.playerId]) || !hostileZone(state, content)) return [];
     const goals = r.goals.filter((g) => !g.release || captiveHere(state, state.playerZone!, owner));
     return [`잠입할 수 있는 목표 (infiltrate start, 플레이어가 몰래 들어가겠다고 할 때만): ${goals.map((g) => `${g.id} ${g.label}`).join(" / ")}`];
   }

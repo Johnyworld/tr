@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import type { Content, ScenarioCondition } from "../content/schemas.ts";
 import { listedScenario } from "../game/startChoice.ts";
 import type { GameEvent, GameState } from "../game/state.ts";
@@ -24,7 +25,7 @@ function met(content: Content, state: GameState, events: readonly GameEvent[], r
     // 찾던 가족 중 누구든 살아서 주인공 앞에 나타났다 (같은 장면). 같은 구역에 들어가기만 해서는 아니다
     return state.family.some((id) => {
       const k = state.characters[id];
-      return !!k && !k.dead && !k.captive && state.scene.present.includes(id);
+      return !!k && !k.dead && !heldOf(k) && state.scene.present.includes(id);
     });
   }
   const attack = new Set(content.scenario.gear?.attack_moves ?? []);

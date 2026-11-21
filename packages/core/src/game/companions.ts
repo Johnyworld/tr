@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { josa } from "../text.ts";
 import type { Content } from "../content/schemas.ts";
 import { aliasOf } from "./acquaintance.ts";
@@ -11,7 +12,7 @@ import { formatTime } from "../rules/time.ts";
 export function activeCompanions(state: GameState): string[] {
   return state.companions.filter((id) => {
     const c = state.characters[id];
-    return c && !c.dead && !c.away && !c.captive;
+    return c && !c.dead && !c.away && !heldOf(c);
   });
 }
 

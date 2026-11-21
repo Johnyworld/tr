@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import type { Content } from "../content/schemas.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { isCreature } from "../game/kinds.ts";
@@ -123,7 +124,7 @@ export function spreadTroubleRumors(ctx: ToolContext): ToolDisplayEvent[] {
 export function heardRumors(state: GameState, content: Content, id: string): string[] {
   const rule = content.scenario.war?.talk?.rumor;
   const c = state.characters[id];
-  if (!rule || !c || c.dead || c.captive || isCreature(content, c)) return [];
+  if (!rule || !c || c.dead || heldOf(c) || isCreature(content, c)) return [];
   const zone = content.npcs[id] ? npcZoneAt(content.npcs[id]!, state.time) : c.extra?.zone;
   if (!zone || !rule.zones.includes(zone)) return [];
   return Object.values(content.factions)

@@ -1,3 +1,4 @@
+import { checkResolve } from "../engine/resolve.ts";
 import { bindOwnLovers } from "../engine/romance.ts";
 import { objectParticle } from "../engine/scenarioProgress.ts";
 import { addStartFamily, applyBackground, applyStartBonds } from "../engine/background.ts";
@@ -169,6 +170,8 @@ export class WorldManager {
       generateDynamicTies(world.ctx());
       // 주인공 카드의 연인·배우자는 진짜 연인이다 (플레이 테스트 13)
       bindOwnLovers(world.ctx());
+      // 다짐은 세계를 열 때 세워 첫 장면에 보인다 (플레이 테스트 13: 첫 행동 결과에서야 "새 다짐"이 나왔다)
+      checkResolve(world.ctx());
       // 가진 무기를 손에 든다 (기획서 4.8)
       autoEquip(world.ctx(), world.state().playerId);
       runAfterTimeAdvance(world.ctx());

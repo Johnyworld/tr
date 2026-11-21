@@ -1,3 +1,4 @@
+import { heldOf, type Held } from "../rules/held.ts";
 import { z } from "zod";
 import type { Rng } from "../rng.ts";
 import { CHECK_OUTCOMES, type CheckOutcome } from "../rules/check.ts";
@@ -279,12 +280,12 @@ export function commanderOf(
   state: {
     playerId: string;
     roleId: string;
-    characters: Record<string, { dead: boolean; away?: unknown; captive?: unknown; rank?: string; factionId?: string | null }>;
+    characters: Record<string, { dead: boolean; away?: unknown; captive?: Held | null; rank?: string; factionId?: string | null }>;
   },
   content: { roles: Record<string, { commander?: string | undefined; faction?: string | null | undefined; rank?: string | undefined }>; scenario?: { rank_ladder: readonly { id: string; level: number }[] }; npcs?: Record<string, unknown> },
 ): string | null {
   const id = content.roles[state.roleId]?.commander;
-  const usable = (cid: string) => cid !== state.playerId && !!state.characters[cid] && !state.characters[cid]!.dead && !state.characters[cid]!.away && !state.characters[cid]!.captive;
+  const usable = (cid: string) => cid !== state.playerId && !!state.characters[cid] && !state.characters[cid]!.dead && !state.characters[cid]!.away && !heldOf(state.characters[cid]!);
   if (!id || !usable(id)) return null;
   // 진급해서 상관과 같은 계급이 되면, 같은 무리에서 바로 위 계급인 사람이 상관이다 (플레이 테스트 4)
   const ladder = content.scenario?.rank_ladder;

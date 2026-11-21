@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { remainsHere } from "../engine/remains.ts";
 import { waterHere } from "../engine/body.ts";
 import { isCreature } from "../game/kinds.ts";
@@ -231,7 +232,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       }
     }
     // 갇혀 있으면 (12-55): 가끔 탈출을 시도하고, 아니면 버틴다
-    if (me.captive && s.playerZone) {
+    if (heldOf(me) && s.playerZone) {
       const c = content.scenario.captivity;
       // 크게 다친 몸으로는 무거운 위험을 건 탈출을 하지 않는다 (사람이라면 낫기를 기다린다. 시드 11에서 연달아 시도하다 피를 흘려 죽었다)
       const hurtNow = harmTrack.levels.findIndex((l) => l.id === me.conditions[harmTrack.id]);

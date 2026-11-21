@@ -1,3 +1,5 @@
+import { knowsTieBetween } from "../rules/knowledge.ts";
+import { heldOf } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
 import { onLoverDeath } from "./romance.ts";
 import { createExtraCharacter } from "./extras.ts";
@@ -268,9 +270,9 @@ export function describeTieLines(state: GameState, content: Content, id: string)
     if (!other) continue;
     const who = t.other === state.playerId ? "당신" : `${playerCalls(state, content, t.other)}(${t.other})`;
     const where = other.factionId && other.factionId !== state.characters[id]?.factionId ? ` · ${content.factions[other.factionId]?.name ?? other.factionId}` : "";
-    const fate = other.dead ? " · 죽었다" : other.captive ? " · 붙잡혀 있다" : other.away ? " · 떠났다" : "";
+    const fate = other.dead ? " · 죽었다" : heldOf(other) ? " · 붙잡혀 있다" : other.away ? " · 떠났다" : "";
     // 처음 보는 사람의 인간관계는 주인공이 모른다 (플레이 테스트 13: 이름 모르는 막내의 친구·앙숙, 모르는 아버지가 그대로 실렸다)
-    const strangerTie = t.other !== state.playerId && (!hasMet(state, state.playerId, id) || !hasMet(state, state.playerId, t.other));
+    const strangerTie = !knowsTieBetween(state, id, t.other);
     if (tieKnown(state, t)) lines.push(`${strangerTie ? "[GM 전용: 주인공은 아직 모른다] " : ""}관계: ${who}의 ${TIE_LABELS[t.kind]}${where}${fate}`);
     else if (t.secret && trust >= t.secret.min_trust) {
       lines.push(`털어놓을 수 있는 숨은 관계: ${who}의 ${TIE_LABELS[t.kind]}${where}${fate} (공개 상황: ${maskUnknownNames(state, content, t.secret.reveal_when)}). 상황이 맞으면 reveal_tie`);

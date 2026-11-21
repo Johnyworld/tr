@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { seasonAt } from "../sim/season.ts";
 import { stockOutlook } from "../sim/war.ts";
 import { effectiveSkill } from "./traits.ts";
@@ -48,7 +49,7 @@ export function squadOf(state: GameState, content: Content): { leader: string | 
   if (!role?.squad_mates?.length || !player?.factionId || player.rank !== role.rank || player.factionId !== role.faction) return null;
   const here = (id: string) => {
     const c = state.characters[id];
-    return !!c && id !== state.playerId && !c.dead && !c.away && !c.captive && c.factionId === player.factionId;
+    return !!c && id !== state.playerId && !c.dead && !c.away && !heldOf(c) && c.factionId === player.factionId;
   };
   const leader = role.commander && here(role.commander) ? role.commander : null;
   const mates = role.squad_mates.filter(here);
@@ -62,7 +63,7 @@ export function squadMembers(state: GameState, content: Content): string[] {
   if (state.squad && player?.factionId) {
     return state.squad.filter((id) => {
       const c = state.characters[id];
-      return id !== state.playerId && !!c && !c.dead && !c.away && !c.captive && c.factionId === player.factionId;
+      return id !== state.playerId && !!c && !c.dead && !c.away && !heldOf(c) && c.factionId === player.factionId;
     });
   }
   // 그 자리(계급)에 있는 사람만 분대를 지휘한다. 분대원이 이어받아 플레이하면 분대장이 아니다
@@ -70,7 +71,7 @@ export function squadMembers(state: GameState, content: Content): string[] {
   return role.squad.filter((id) => {
     if (id === state.playerId) return false;
     const c = state.characters[id];
-    return c && !c.dead && !c.away && !c.captive && c.factionId === player.factionId;
+    return c && !c.dead && !c.away && !heldOf(c) && c.factionId === player.factionId;
   });
 }
 
@@ -194,7 +195,7 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
     const zone = zoneName(content, order.zone);
     const fill = (t: string) => fillText(t, { member: name, zone });
 
-    if (npc.dead || npc.captive || npc.away) {
+    if (npc.dead || heldOf(npc) || npc.away) {
       // 그사이 다른 일로 돌아오지 못했다. 주인공은 돌아오지 않았다는 것만 안다
       store.append({ type: "squad_order_done", npcId: id, task: task.id, outcome: null, report: `${josa(name, "이/가")} ${task.label}에서 돌아오지 않았다.` });
       displays.push({ type: "mission", event: "expired", title: `${SQUAD_REPORT_PREFIX}${name} · ${task.label}`, detail: "돌아오지 않음" });

@@ -1,4 +1,8 @@
+import { knownOwner } from "../rules/knowledge.ts";
+import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { tiesOf } from "../game/ties.ts";
+import { checkPromotion, commanderOf, recentSetback } from "../game/missions.ts";
+import { disciplineOf } from "../game/culture.ts";
 import { josa } from "../text.ts";
 import { fill } from "../text.ts";
 import { z } from "zod";
@@ -67,9 +71,9 @@ function evaluateCheck(content: Content, state: GameState, r: Resolve): boolean 
     case "gone":
       // 주인공이 알 때만: 유해가 있는 자리에 있거나(눈앞에서 죽었거나 시신을 찾았다), 우리 무리가 가뒀다 (원칙 4)
       if (t?.dead) return state.remains.some((x) => x.of === r.target && x.zone === state.playerZone) ? true : null;
-      return t?.captive && me.factionId && t.captive.by === me.factionId ? true : null;
+      return heldOf(t) && me.factionId && heldOf(t)!.by === me.factionId ? true : null;
     case "released":
-      return t && !t.dead && !t.captive ? true : null;
+      return t && !t.dead && !heldOf(t) ? true : null;
     case "cured": {
       const track = content.scenario.body?.infection?.track;
       return t && track && (t.conditions[track] ?? "") === content.scenario.condition_tracks.find((x) => x.id === track)?.levels[0]?.id ? true : null;
@@ -88,7 +92,8 @@ function evaluateCheck(content: Content, state: GameState, r: Resolve): boolean 
       return (me.debts[r.target ?? ""] ?? 0) <= 0 ? true : null;
     case "reach":
       // 그곳을 떠나 있다가 닿아야 한다 (처음부터 그곳에 있으면 이룬 것이 아니다)
-      return r.involved && state.playerZone === r.target ? true : null;
+      // 갇혀 있으면 닿은 것이 아니다 (플레이 테스트 13: 그 구역 감옥에서 자다 "우리 집에 가 봤다"). 그 자리에서 풀려나면 닿은 것
+      return r.involved && state.playerZone === r.target && !pausedWhileHeld(state, "resolve_reach") ? true : null;
     case "beliefs": {
       const words = (r.target ?? "").split("|").filter(Boolean);
       const n = (state.beliefs[state.playerId] ?? []).filter((b) => words.some((w) => b.fact.includes(w))).length;
@@ -210,9 +215,10 @@ function autoStep(ctx: ToolContext): void {
     return;
   }
   const today = dayOf(state.time);
-  if (r.autoDay === today || state.time === r.since) return;
+  // 첫 단계는 다짐이 생긴 날이 지난 뒤부터 (플레이 테스트 13: 생긴 지 5분 만에 "하루를 함께했다")
+  if (r.autoDay === today || dayOf(r.since) === today) return;
   const person = state.characters[r.target];
-  const together = person ? !person.dead && (state.scene.present.includes(r.target) || state.companions.includes(r.target)) : state.playerZone === r.target;
+  const together = person ? !person.dead && (state.scene.present.includes(r.target) || state.companions.includes(r.target)) : state.playerZone === r.target && !pausedWhileHeld(state, "resolve_reach");
   if (!together) return;
   const text = !person ? `${name}에 닿았다` : kind?.check === "gone" ? `${josa(name, "을/를")} 마주쳤다` : `${josa(name, "과/와")} 하루를 함께했다`;
   ctx.store.append({ type: "resolve_stepped", characterId: me.id, text });
@@ -282,7 +288,19 @@ export function resolveText(state: GameState, content: Content, r: Resolve | nul
 /** 다짐 한 줄 (상태 화면·?임무): 다짐과 지금 어디까지 왔는지 */
 export function resolveLine(state: GameState, content: Content): string | null {
   const r = currentResolve(state);
-  return r ? `${resolveText(state, content, r)}${r.step ? ` — ${r.step}` : ""}` : null;
+  if (!r) return null;
+  const progress = resolveProgress(state, content, r);
+  return `${resolveText(state, content, r)}${resolvePlace(state, content, r)}${progress ? ` — ${progress}` : r.step ? ` — ${r.step}` : ""}`;
+}
+
+/** 대상이 구역이면 그곳이 지금 어디인지 (플레이 테스트 13: "옛 아파트 단지"가 어디인지 몰랐다). 주인공이 본 대로의 땅 주인 */
+function resolvePlace(state: GameState, content: Content, r: NonNullable<ReturnType<typeof currentResolve>>): string {
+  const zone = r.target ? content.locations[r.target] : undefined;
+  if (!zone) return "";
+  // 주인공이 아는 대로 (공통 규칙 7)
+  const seen = knownOwner(state, content, zone.id);
+  const owner = seen ? content.factions[seen]?.name : null;
+  return ` (그곳: ${zone.name}${owner ? `, ${owner}의 땅` : ""})`;
 }
 
 function resolveTargetNameOf(state: GameState, content: Content, t: string | null): string | null {
@@ -307,6 +325,32 @@ export function stepResolve(ctx: ToolContext, text: string): string | null {
   return `다짐에 한 걸음 다가갔다: ${text}`;
 }
 
+/**
+ * 날마다 오르는 단계가 없는 다짐(자리·진실·인정받기)은 실제로 채운 정도를 보인다 (플레이 테스트 13: 단서를 여덟 개 풀어도 "진실, 0단계")
+ * 없으면 null (단계를 쓴다)
+ */
+export function resolveProgress(state: GameState, content: Content, r = currentResolve(state)): string | null {
+  if (!r) return null;
+  const kind = kindOf(content, r.kind);
+  const me = state.characters[state.playerId];
+  if (!kind || !me) return null;
+  if (kind.check === "beliefs") {
+    const words = (r.target ?? "").split("|").filter(Boolean);
+    const n = (state.beliefs[state.playerId] ?? []).filter((b) => words.some((w) => b.fact.includes(w))).length;
+    return `알아낸 것 ${Math.min(n, r.n ?? 1)}/${r.n ?? 1}`;
+  }
+  if (kind.check === "standing") return `평판 ${Math.max(0, me.occupation?.standing ?? 0)}/${r.n ?? 1}`;
+  if (kind.check === "rank") {
+    const promotion = content.scenario.promotion;
+    if (!promotion || me.rank !== promotion.from) return null;
+    const commanderId = commanderOf(state, content);
+    const trust = commanderId ? (state.relations[commanderId]?.[me.id]?.trust ?? 0) : null;
+    const missing = checkPromotion(me, promotion, state.time, state.runStartedAt, trust, disciplineOf(content, me.factionId).maxDisobedience, recentSetback(state, me.id, commanderId)).missing;
+    return missing.length ? `진급까지 남은 것: ${missing.join(", ")}` : "진급 조건을 다 채웠다";
+  }
+  return null;
+}
+
 /** GM 상태의 줄 */
 export function describeResolve(state: GameState, content: Content): string[] {
   const r = currentResolve(state);
@@ -316,8 +360,13 @@ export function describeResolve(state: GameState, content: Content): string[] {
   // 다짐 문구에 이미 대상이 나오면 다시 적지 않는다
   const name = r.target && state.characters[r.target] ? playerCalls(state, content, r.target) : null;
   const who = name && !text.includes(name) ? ` (대상: ${name})` : "";
+  const progress = resolveProgress(state, content, r);
+  const place = resolvePlace(state, content, r);
   return [
-    `주인공의 다짐: ${text}${who} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}${kind?.min_stage ? ` (이루려면 ${kind.min_stage}단계 이상)` : ""}. 단계는 ${kind?.check === "debt_clear" ? "빚을 갚을 때마다" : "대상과 함께한(곳이면 그곳에 닿은) 날마다"}, 그리고 이야기로 오른다. 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
+    (progress
+      ? `주인공의 다짐: ${text}${who}${place} — ${kind?.label ?? r.kind}, ${progress}${r.step ? ` (${r.step})` : ""}.`
+      : `주인공의 다짐: ${text}${who}${place} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}${kind?.min_stage ? ` (이루려면 ${kind.min_stage}단계 이상)` : ""}. 단계는 ${kind?.check === "debt_clear" ? "빚을 갚을 때마다" : "대상과 한 장면에 있었던(곳이면 그곳에 닿은) 날마다"}, 그리고 이야기로 오른다.`) +
+      ` 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
   ];
 }
 

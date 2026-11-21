@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -86,8 +87,8 @@ const negotiate = defineTool({
     if (pact.kind === "truce" && disposition(content, theirs, mine, state) > HOSTILE && disposition(content, mine, theirs, state) > HOSTILE) {
       return { ok: false, error: "서로 싸우는 사이가 아니다. 휴전할 일이 없다." };
     }
-    const ourPeople = Object.values(state.characters).filter((c) => !c.dead && c.captive?.by === theirs && c.factionId === mine);
-    const theirPeople = Object.values(state.characters).filter((c) => !c.dead && c.captive?.by === mine && c.factionId === theirs);
+    const ourPeople = Object.values(state.characters).filter((c) => !c.dead && heldOf(c)?.by === theirs && c.factionId === mine);
+    const theirPeople = Object.values(state.characters).filter((c) => !c.dead && heldOf(c)?.by === mine && c.factionId === theirs);
     if (pact.kind === "exchange" && ourPeople.length === 0) return { ok: false, error: `${factionName(content, theirs)}에 붙잡힌 우리 사람이 없다.` };
 
     const factors = negotiationFactors(state, content, mine, theirs, envoy.id);

@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { maskUnknownNames } from "../engine/storyletTools.ts";
 import { buildMapView, renderMapAscii, visitedZones } from "../views/map.ts";
 import { resolveLine } from "../engine/resolve.ts";
@@ -121,7 +122,7 @@ const status: CommandDef = {
     const commander = commanderId ? state.characters[commanderId] : undefined;
     lines.push(`소속  ${player.factionId ? roleLabelOf(ctx) : `무소속 · ${roleLabelOf(ctx)}`}${commander ? ` (상관 ${commander.name})` : ""}`);
     // 갇혀 있으면 그렇다고 (플레이 테스트 13: ?상태에 갇힌 것이 나오지 않았다)
-    if (player.captive) lines.push(`갇힘  ${ctx.content.factions[player.captive.by]?.name ?? player.captive.by} · ${ctx.content.locations[player.captive.zone]?.name ?? player.captive.zone}`);
+    if (heldOf(player)) lines.push(`갇힘  ${ctx.content.factions[heldOf(player)!.by]?.name ?? heldOf(player)!.by} · ${ctx.content.locations[heldOf(player)!.zone]?.name ?? heldOf(player)!.zone}`);
     const trust = commander ? (state.perceived[commander.id]?.trust ?? 0) : null;
     if (player.factionId) {
       lines.push(
@@ -129,6 +130,11 @@ const status: CommandDef = {
           (trust !== null && commander ? ` · ${commander.name}의 신뢰 ${relationLabel(trust)}` : ""),
       );
       if (view.service.promotionMissing?.length) lines.push(`진급까지  ${view.service.promotionMissing.join(", ")}`);
+    }
+    // 다짐 (플레이 테스트 13: ?상태에 다짐이 없었다)
+    {
+      const vow = resolveLine(state, content);
+      if (vow) lines.push(`다짐  ${vow}`);
     }
     if (view.companions.length) {
       lines.push(`동행  ${view.companions.map((c) => `${c.name} (${c.bondLabel}${c.note ? ` · ${c.note}` : ""}${c.apart && !c.note ? " · 떨어져 있음" : ""})`).join(", ")}`);
@@ -256,7 +262,7 @@ const people: CommandDef = {
           const shown = present.get(id);
           const here = state.scene.present.includes(id) ? ` · 함께 있음${shown?.conditionLabel ? ` (${shown.conditionLabel})` : ""}` : "";
           const attitude = state.perceived[id] ? `신뢰 ${relationLabel(r.trust)} · 호감 ${relationLabel(r.affection)} · 존중 ${relationLabel(r.respect)}` : "아직 만나 보지 않음";
-          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead && knowsDeath(state, content, id) ? " · 사망" : c.away ? " · 떠남" : c.captive ? (state.playerZone === c.captive.zone ? " · 여기 붙잡혀 있음" : " · 행방 모름") : ""}${here}  (${attitude})`;
+          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead && knowsDeath(state, content, id) ? " · 사망" : c.away ? " · 떠남" : heldOf(c) ? (state.playerZone === heldOf(c)!.zone ? " · 여기 붙잡혀 있음" : " · 행방 모름") : ""}${here}  (${attitude})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,
@@ -338,7 +344,7 @@ const mission: CommandDef = {
     } else {
       lines.push(state.characters[state.playerId]?.factionId && commanderOf(state, content) ? "수행 중인 임무가 없습니다. 상관에게 물어보세요." : "수행 중인 임무가 없습니다. 임무를 내릴 상관이 없습니다.");
       // 오늘 받을 수 있는 일감 (플레이 테스트 12)
-      const offers = state.offers?.day === dayOf(state.time) && !state.characters[state.playerId]?.captive ? state.offers.templateIds.map((id) => content.missions[id]).filter((m) => !!m) : [];
+      const offers = state.offers?.day === dayOf(state.time) && !heldOf(state.characters[state.playerId]) ? state.offers.templateIds.map((id) => content.missions[id]).filter((m) => !!m) : [];
       if (offers.length) lines.push("", "오늘 받을 수 있는 임무", ...offers.map((m) => `  ${maskUnknownNames(state, content, m!.title)}`));
     }
     // 진급까지 남은 것 (플레이 테스트 12: 진급이 막힌 까닭이 보이지 않았다)

@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import type { Character } from "../game/character.ts";
 import { aliasOf, knowsName } from "../game/acquaintance.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
@@ -15,7 +16,7 @@ import type { ToolContext } from "./toolkit.ts";
 function placeOf(ctx: ToolContext, c: Character): string | null {
   const state = ctx.store.getState();
   if (c.id === state.playerId) return state.playerZone;
-  if (c.captive) return c.captive.zone;
+  if (heldOf(c)) return heldOf(c)!.zone;
   const npc = ctx.content.npcs[c.id];
   if (npc) return npcZoneAt(npc, state.time) ?? null;
   return c.extra?.zone ?? null;

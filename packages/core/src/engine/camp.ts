@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { josa } from "../text.ts";
 import { campFactor, watchedHere } from "./facilities.ts";
 import type { Content, StoryletContent } from "../content/schemas.ts";
@@ -41,7 +42,7 @@ export type CampSite = {
 export function campSite(content: Content, state: GameState): CampSite | null {
   const me = state.characters[state.playerId];
   const zone = state.playerZone;
-  if (!content.scenario.camp || !me || me.dead || me.captive || !zone) return null;
+  if (!content.scenario.camp || !me || me.dead || heldOf(me) || !zone) return null;
   const location = content.locations[zone];
   if (!location) return null;
   const owner = state.zones[zone]?.owner ?? null;

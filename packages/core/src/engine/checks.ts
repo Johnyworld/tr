@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { gearModifiers } from "./gear.ts";
 import { oppositionParts, type Part } from "./opposition.ts";
 import type { Content } from "../content/schemas.ts";
@@ -134,7 +135,7 @@ export function rollPlayerCheck(
   ];
   // 갇힌 곳의 감시 (플레이 테스트 12): 탈출에 실패한 만큼 탈출 판정이 어렵다
   // 탈출 판정(갇힌 채 옮겨 가기)에만 (플레이 테스트 13: 광장 이야기의 버티기에도 -3이 붙었다)
-  if (actor.captive?.watch && options.escape) against.push({ label: "감시", value: -actor.captive.watch });
+  if (heldOf(actor)?.watch && options.escape) against.push({ label: "감시", value: -(heldOf(actor)!.watch ?? 0) });
   modifiers.opposition = against.reduce((n, p) => n + p.value, 0);
   const roll = roll2d6(rng, modifiers.stat + modifiers.skill + modifiers.difficulty + modifiers.condition + modifiers.trait + modifiers.gear + modifiers.opposition);
   const checkId = `chk_${state.nextCheckNo}`;

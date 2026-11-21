@@ -1,3 +1,5 @@
+import { capturedDuringMission, missionExcuse } from "../rules/blame.ts";
+import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
 import { rankName } from "../game/ranks.ts";
 import { describePromotionOffer, offerPromotion } from "./promotion.ts";
@@ -89,7 +91,7 @@ export function missionPlace(content: Content, where: string | undefined, factio
 function commanderOf(state: GameState, ctx: ToolContext) {
   const id = commanderIdOf(state, ctx.content);
   const commander = id ? state.characters[id] : undefined;
-  return commander && !commander.dead && !commander.away && !commander.captive ? commander : undefined;
+  return commander && !commander.dead && !commander.away && !heldOf(commander) ? commander : undefined;
 }
 
 const assignMission = defineTool({
@@ -104,7 +106,7 @@ const assignMission = defineTool({
     const state = ctx.store.getState();
     const player = state.characters[state.playerId];
     if (!player || player.dead) return { ok: false, error: "사망한 캐릭터는 임무를 받을 수 없습니다." };
-    if (player.captive) return { ok: false, error: "갇혀 있어 임무를 받을 수 없다." };
+    if (pausedWhileHeld(state, "assign")) return { ok: false, error: "갇혀 있어 임무를 받을 수 없다." };
     const commander = commanderOf(state, ctx);
     if (!commander) return { ok: false, error: "임무를 내릴 상관이 없습니다." };
     if (!state.scene.present.includes(commander.id)) {
@@ -294,7 +296,7 @@ const reportMission = defineTool({
         : []),
       ...(cleared ? [`${cleared}에 몰려든 감염체를 쓸어 냈다. 한동안 조용할 것이다.`] : []),
       ...releaseBuddies(ctx, mission.id),
-      ...[returnArmory(ctx, mission.id, { excused: (ctx.store.getState().lastFreedAt ?? -1) > mission.assignedAt })].filter((l): l is string => !!l),
+      ...[returnArmory(ctx, mission.id, { excused: capturedDuringMission(ctx.store.getState(), mission) })].filter((l): l is string => !!l),
       ...(occNote ? [occNote] : []),
     ];
     const growthNote = gainMeritXp(ctx, mission.assigneeId, result.merit);
@@ -349,7 +351,7 @@ const abandonMission = defineTool({
         `공적 ${signed(d.abandonMerit)}. ` +
         (d.deedSeverity > 0 ? "이 일은 상관과 동료의 시선에 영향을 줄 수 있다." : "이 무리에서는 크게 문제 삼지 않는다.") +
         releaseBuddies(ctx, mission.id).map((l) => ` ${l}`).join("") +
-        ((r) => (r ? ` ${r}` : ""))(returnArmory(ctx, mission.id, { excused: !!state.characters[state.playerId]?.captive || (state.lastFreedAt ?? -1) > mission.assignedAt })),
+        ((r) => (r ? ` ${r}` : ""))(returnArmory(ctx, mission.id, { excused: capturedDuringMission(state, mission) })),
       display: { type: "mission", event: "abandoned", title: mission.title, detail: `포기 (${label})`, merit: d.abandonMerit },
     };
   },
@@ -376,9 +378,6 @@ function travelAllowance(ctx: ToolContext, where: string | null | undefined, fac
   return 0;
 }
 
-/** 기한 이만큼(분) 앞까지 갇혀 있었으면 기한 초과를 탓하지 않는다 (빠져나와 돌아오는 길) */
-const FREED_GRACE_MINUTES = 6 * 60;
-
 /** 최근 사흘 안에 주인공이 받은 일감 (같은 일감이 되풀이되지 않게, 플레이 테스트 13) */
 function recentTemplates(state: GameState): string[] {
   const since = state.time - RECENT_OFFER_DAYS * MINUTES_PER_DAY;
@@ -404,26 +403,13 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     }
     // 조건을 기한 안에 다 채운 임무는 기한이 지나도 끝내지 않는다: 보고하면 된다 (플레이 테스트 13: 3시간 보초를 기한 안에 채웠는데 4시간 활동이 끝난 뒤라 기한 초과)
     if (mission.status === "active" && mission.metAt !== undefined && mission.metAt <= mission.deadline) continue;
-    // 쓰러져 있는 동안 기한이 지났으면 불복종이 아니다: 다쳐서 못 마친 것 (플레이 테스트 8).
-    // 치명상 이상(의식장애 포함)도 몸을 못 쓴 것으로 본다 (플레이 테스트 11, C8: 의식장애로 누워 있다 기한을 넘겨 진급이 막혔다)
-    const who = state.characters[mission.assigneeId];
-    const harm = harmTrack(ctx.content.scenario);
-    const badFrom = harm.levels.findIndex((l) => l.id === ctx.content.scenario.recovery?.surgery?.from);
-    const badly = !!who && badFrom >= 0 && harm.levels.findIndex((l) => l.id === who.conditions[harm.id]) >= badFrom;
-    const down = who ? (incapacitatingSymptom(ctx.content.scenario, who) ?? (badly ? { label: harm.label } : null)) : null;
-    // 갇혀 있는 동안 기한이 지나도 불복종이 아니다 (플레이 테스트 12)
-    // 기한 무렵에 갇혀 있다 막 빠져나와 돌아오는 길이어도 같다 (플레이 테스트 13: 탈출해 걷는 사이 기한이 지나 불복종)
-    const held = who?.captive
-      ? (ctx.content.factions[who.captive.by]?.name ?? who.captive.by)
-      : state.lastFreedAt !== null && state.lastFreedAt > mission.assignedAt && state.lastFreedAt >= mission.deadline - FREED_GRACE_MINUTES
-        ? "붙잡혔다 빠져나온 길"
-        : null;
-    if (mission.status === "active" && state.time > mission.deadline && (down || held)) {
-      const excused = down ? `다쳐서 못 마침 (${down.label})` : `붙잡혀 못 마침 (${held})`;
-      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false, excused });
-      displays.push({ type: "mission", event: "expired", title: mission.title, detail: excused, merit: 0 });
+    // 탓할 수 없는 까닭이 있으면 불복종이 아니다 (공통 규칙 2, rules/blame.ts)
+    const excuse = mission.status === "active" && state.time > mission.deadline ? missionExcuse(state, ctx.content, mission) : null;
+    if (excuse) {
+      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false, excused: excuse.label });
+      displays.push({ type: "mission", event: "expired", title: mission.title, detail: excuse.label, merit: 0 });
       // 붙잡혀 빼앗긴 장비는 잃어버린 것으로 치지 않는다
-      returnArmory(ctx, mission.id, { excused: !!held });
+      returnArmory(ctx, mission.id, { excused: excuse.cause === "captured" });
       releaseBuddies(ctx, mission.id);
       continue;
     }
@@ -482,7 +468,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
     // 지금 지닌 것만 (플레이 테스트 13: 붙잡혀 다 빼앗겼는데 빌린 것 줄이 그대로 남았다)
     const held = loan ? Object.entries(loan).map(([id, q]) => [id, Math.min(q, player.inventory[id] ?? 0)] as const).filter(([, q]) => q > 0) : [];
     if (held.length) lines.push(`무기고에서 빌린 것 (임무가 끝나면 반납): ${held.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")}`);
-  } else if (player.captive) {
+  } else if (heldOf(player)) {
     // 갇혀 있으면 임무를 받을 수 없다 (플레이 테스트 12: 갇힌 상태 화면에 오늘의 임무가 그대로 보였다)
     lines.push("갇혀 있어 임무를 받을 수 없다");
   } else if (state.offers?.day === dayOf(state.time) && state.offers.templateIds.length > 0) {

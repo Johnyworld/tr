@@ -19,11 +19,12 @@ const look = (w: GameWorld) => w.executeTool("take_action", { intent: "둘러본
 const me = (w: GameWorld) => w.state().characters[w.state().playerId]!;
 
 describe("다짐", () => {
-  it("시나리오의 배경(원수)이 첫 판정 때 다짐이 되고, 상태 화면·?임무·GM 상태에 보인다", () => {
+  it("시나리오의 배경(원수)이 세계를 열 때 다짐이 되고(첫 장면에 보인다, 플레이 테스트 13), 상태 화면·?임무·?상태·GM 상태에 보인다", () => {
     const w = make("role_a_grunt");
+    expect(w.sceneForGm()).toContain("주인공의 다짐");
     const r = look(w);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.resultText).toContain("새 다짐");
+    expect(runCommand("?상태", { state: w.state(), content, summaries: [] })).toContain("다짐");
     const v = currentResolve(w.state())!;
     expect(v.kind).toBe("revenge");
     expect(v.target).toBe("c_cheolgu");

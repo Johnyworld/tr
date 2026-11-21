@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import type { Content, NpcContent } from "../content/schemas.ts";
 import { hasMet, playerCalls } from "../game/acquaintance.ts";
 import type { GameState } from "../game/state.ts";
@@ -91,7 +92,7 @@ export function runAgendas(ctx: ToolContext, day: number): ToolDisplayEvent[] {
     if (!npc.agenda?.length) continue;
     const state = store.getState();
     const c = state.characters[npcId];
-    if (!c || c.dead || c.away || c.captive || npcId === state.playerId) continue;
+    if (!c || c.dead || c.away || heldOf(c) || npcId === state.playerId) continue;
     // 주인공과 조우한 뒤에 시작한다. 한 번 시작한 일은 주인공이 바뀌어도 이어진다
     if (!state.agendas?.[npcId]) {
       if (!hasMet(state, state.playerId, npcId)) continue;

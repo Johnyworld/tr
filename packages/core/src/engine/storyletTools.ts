@@ -1,3 +1,5 @@
+import { blameSuspended } from "../rules/blame.ts";
+import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { bleedFromHarm } from "./bleeding.ts";
 import { equippedItem, wearItem } from "./gear.ts";
 import { carriedCount, itemCarriers } from "../game/companions.ts";
@@ -160,7 +162,7 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     if (!storylet.cast[key]?.enter) continue;
     const now = store.getState();
     if (now.scene.present.includes(id) || now.characters[id]?.dead || now.characters[id]?.away) continue;
-    if (now.characters[id]?.captive && now.characters[id]!.captive!.zone !== now.playerZone) continue;
+    if (heldOf(now.characters[id]) && heldOf(now.characters[id]!)!.zone !== now.playerZone) continue;
     enterScene(ctx, id);
     displays.push({ type: "presence", npcName: playerCalls(store.getState(), content, id), action: "enter" });
   }
@@ -378,18 +380,6 @@ export function maskUnknownNames(state: GameState, content: Content, text: strin
     out = next + out.slice(last);
   }
   return out;
-}
-
-/** 외면 처리 중인가 (행적을 남기지 않는다) */
-let walkingAway = false;
-/** 자리를 떠 외면으로 처리할 때 부른다: 그 선택지의 행적은 남기지 않는다 */
-export function whileWalkingAway<T>(fn: () => T): T {
-  walkingAway = true;
-  try {
-    return fn();
-  } finally {
-    walkingAway = false;
-  }
 }
 
 const PARTICLE_PAIRS: Record<string, JosaPair> = {
@@ -671,8 +661,8 @@ export function applyEffect(
   if ("locate" in effect) {
     const id = whoOf(ctx, effect.locate.who, cast);
     const c = id ? state.characters[id] : undefined;
-    if (!id || !c?.captive) return {};
-    const fact = sentence(`${josa(playerCalls(state, content, id), "은/는")} ${content.factions[c.captive.by]?.name ?? c.captive.by}의 ${content.locations[c.captive.zone]?.name ?? c.captive.zone}에 갇혀 있다고 한다`);
+    if (!id || !heldOf(c)) return {};
+    const fact = sentence(`${josa(playerCalls(state, content, id), "은/는")} ${content.factions[heldOf(c)!.by]?.name ?? heldOf(c)!.by}의 ${content.locations[heldOf(c)!.zone]?.name ?? heldOf(c)!.zone}에 갇혀 있다고 한다`);
     store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.locate.source, accuracy: "approximate", learnedAt: state.time } });
     return { line: `알게 된 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.locate.source] } };
   }
@@ -684,8 +674,8 @@ export function applyEffect(
   }
   if ("release_player" in effect) {
     const me = state.characters[playerId]!;
-    if (!me.captive) return {};
-    const captor = me.captive.by;
+    if (!heldOf(me)) return {};
+    const captor = heldOf(me)!.by;
     const line = releasePlayer(ctx, effect.release_player.returned);
     const here = store.getState().playerZone;
     // 빠져나간다: 붙잡은 무리 땅이 아닌 맞닿은 구역 (우리 땅 먼저)
@@ -842,7 +832,7 @@ export function applyEffect(
   if ("send_to" in effect) {
     const to = effect.send_to;
     // 갇힌 곳에서 다른 곳으로 옮겨지면 빠져나온 것이다 (빼앗긴 것은 두고 온다, 12-55)
-    if (state.characters[playerId]?.captive && content.locations[to] && state.playerZone !== to) releasePlayer(ctx, false);
+    if (heldOf(state.characters[playerId]) && content.locations[to] && state.playerZone !== to) releasePlayer(ctx, false);
     if (!content.locations[to] || state.playerZone === to) return {};
     store.append({ type: "zone_moved", from: state.playerZone, to });
     return { line: `${josa(content.locations[to]!.name, "으로/로")} 옮겨졌다. 함께 있던 인물은 따라오지 않는다.` };
@@ -871,7 +861,7 @@ export function applyEffect(
     if (!content.factions[faction] || player.factionId === faction) return {};
     const from = player.factionId ? (content.roles[state.roleId]?.label ?? content.factions[player.factionId]?.name ?? "") : "무소속";
     // 붙잡은 무리에 들면 더는 포로가 아니다 (빼앗긴 것도 돌려받는다, 12-55)
-    if (player.captive) releasePlayer(ctx, player.captive.by === faction);
+    if (heldOf(player)) releasePlayer(ctx, heldOf(player)!.by === faction);
     const role = joinRole(content, faction, rank, { age: player.age, title, occupation: player.occupation?.id ?? null });
     // 그 무리에서 처음 듣는 사정: 같은 계급 시나리오의 시작 지식 (다른 계급의 지식은 주지 않는다)
     const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
@@ -892,7 +882,7 @@ export function applyEffect(
   if ("companion_join" in effect) {
     const id = whoOf(ctx, effect.companion_join.who, cast);
     const c = id ? state.characters[id] : undefined;
-    if (!id || !c || id === playerId || c.dead || c.away || c.captive || state.companions.includes(id)) return {};
+    if (!id || !c || id === playerId || c.dead || c.away || heldOf(c) || state.companions.includes(id)) return {};
     const template = c.extra?.template ? content.extras[c.extra.template] : undefined;
     const kind = effect.companion_join.kind ?? (template?.kind === "animal" ? "animal" : "purpose");
     const u = effect.companion_join.until;
@@ -953,7 +943,7 @@ export function applyEffect(
   if ("npc_capture" in effect) {
     const id = whoOf(ctx, effect.npc_capture.who, cast);
     const npc = id ? state.characters[id] : undefined;
-    if (!id || !npc || npc.dead || npc.away || npc.captive || id === playerId) return {};
+    if (!id || !npc || npc.dead || npc.away || heldOf(npc) || id === playerId) return {};
     const by = factionRef(state, effect.npc_capture.by);
     if (!content.factions[by]) return {};
     const zone = effect.npc_capture.zone ?? Object.values(content.locations).find((l) => l.owner === by && l.kind === "base")?.id;
@@ -965,7 +955,7 @@ export function applyEffect(
   if ("npc_release" in effect) {
     const id = whoOf(ctx, effect.npc_release.who, cast);
     const npc = id ? state.characters[id] : undefined;
-    if (!id || !npc?.captive) return {};
+    if (!id || !npc || !heldOf(npc)) return {};
     store.append({ type: "npc_released", npcId: id });
     const name = playerCalls(state, content, id);
     return { line: `${josa(name, "은/는")} 풀려나 ${content.factions[npc.factionId]?.name ?? "제 갈 길"} 쪽으로 돌아간다.`, display: { type: "presence", npcName: name, action: "leave" } };
@@ -985,7 +975,7 @@ export function applyEffect(
     };
   }
   // 자리를 떠서 외면으로 처리된 선택지는 행적을 남기지 않는다 (플레이 테스트 13: 지나쳤을 뿐인데 "[자비·적에게 호의] 탈영병을 보내 주었다")
-  if ("deed" in effect && walkingAway) return {};
+  if ("deed" in effect && blameSuspended()) return {};
   if ("deed" in effect) {
     // GM이 이 장면의 판정(take_action)에서 같은 성격의 행적을 이미 남겼으면 겹쳐 남기지 않는다 (플레이 테스트 8: 같은 일이 두 줄)
     // 이야기가 열린 뒤 GM이 남긴 행적은 성격이 달라도 이 장면의 같은 일이다 (플레이 테스트 11: "들것을 잡고 부상자를 날랐다"가 두 줄)
@@ -1111,7 +1101,7 @@ export function runSwarms(ctx: ToolContext): ToolDisplayEvent[] {
     if (rise < 1 && ctx.rng() >= rise) continue;
     const now = infestationOf(ctx.content, state, zone);
     if (now < 3) ctx.store.append({ type: "infestation_changed", zone, level: now + 1, cause: "소음" });
-    if (state.playerZone === zone && !state.characters[state.playerId]?.captive) out.push(...runInfestedArrival(ctx, zone));
+    if (state.playerZone === zone && !heldOf(state.characters[state.playerId])) out.push(...runInfestedArrival(ctx, zone));
   }
   return out;
 }
@@ -1131,7 +1121,7 @@ export function runAlarm(ctx: ToolContext, move: string): ToolDisplayEvent[] {
   if (!rule || !rule.moves.includes(move)) return [];
   const state = ctx.store.getState();
   // 갇혀 있으면 경보 대신 다시 끌려온다 (플레이 테스트 12: 탈출 실패에 "다시 끌려왔다"와 경보 이야기가 함께 열렸다)
-  if (state.characters[state.playerId]?.captive) return [];
+  if (pausedWhileHeld(state, "alarm")) return [];
   if (!hostileHere(ctx)) return [];
   const out = runTagEvent(ctx, rule.tag);
   const spotted = out.length ? markMissionSpotted(ctx) : null;
@@ -1162,7 +1152,7 @@ export function hostileZone(state: GameState, content: Content): boolean {
 function factionRef(state: GameState, x: string): string {
   if (x === "own") return state.characters[state.playerId]?.factionId ?? "";
   if (x === "zone_owner") return (state.playerZone && state.zones[state.playerZone]?.owner) || "";
-  if (x === "captor") return state.characters[state.playerId]?.captive?.by ?? "";
+  if (x === "captor") return heldOf(state.characters[state.playerId])?.by ?? "";
   if (x === "bounty") return state.bounties[0] ?? "";
   return x;
 }

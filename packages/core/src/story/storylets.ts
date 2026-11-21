@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { disasterNear } from "../engine/disasters.ts";
 import { agendaOf, agendaShowing } from "../engine/agenda.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
@@ -43,7 +44,7 @@ function factionFits(state: GameState, role: CastRole, c: Character): boolean {
   const player = state.characters[state.playerId]!;
   if (!role.faction) return true;
   if (role.faction === "other") return !player.factionId || c.factionId !== player.factionId;
-  const want = role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction === "captor" ? (player.captive?.by ?? "-") : role.faction;
+  const want = role.faction === "own" ? player.factionId : role.faction === "zone_owner" ? (state.playerZone && state.zones[state.playerZone]?.owner) || "-" : role.faction === "captor" ? (heldOf(player)?.by ?? "-") : role.faction;
   return c.factionId === want;
 }
 
@@ -52,7 +53,7 @@ function factionFits(state: GameState, role: CastRole, c: Character): boolean {
 function zoneNow(state: GameState, content: Content, id: string): string | null {
   const c = state.characters[id];
   if (!c) return null;
-  if (c.captive) return c.captive.zone;
+  if (heldOf(c)) return heldOf(c)!.zone;
   if (c.extra) return c.extra.zone;
   return content.npcs[id] ? (npcZoneAt(content.npcs[id]!, state.time) ?? null) : null;
 }
@@ -84,7 +85,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.tie || tiesOf(state, content, picked[role.tie.of] ?? "").some((t) => t.other === c.id && (!role.tie!.kinds || role.tie!.kinds.includes(t.kind))))
     .filter((c) => !role.tie?.cross || c.factionId !== state.characters[picked[role.tie.of] ?? ""]?.factionId)
     // 포로는 captive: true인 배역만, 그리고 그 구역에서만 (갇힌 곳에서 마주친다)
-    .filter((c) => (role.captive_anywhere ? !!c.captive : role.captive ? !!c.captive && c.captive.zone === state.playerZone : !c.captive))
+    .filter((c) => (role.captive_anywhere ? !!heldOf(c) : role.captive ? !!heldOf(c) && heldOf(c)!.zone === state.playerZone : !heldOf(c)))
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.stance || stanceOf(state, content, c.id) === role.stance)
@@ -172,7 +173,7 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       const options = backgroundCast(state, content, role.background).filter((id) => {
         const c = state.characters[id];
         const here = state.companions.includes(id) || state.scene.present.includes(id) || (c?.extra ? c.extra.zone === state.playerZone : true);
-        return c && !c.dead && !c.away && !c.captive && !used.has(id) && (!role.here || here);
+        return c && !c.dead && !c.away && !heldOf(c) && !used.has(id) && (!role.here || here);
       });
       if (options.length === 0) {
         if (role.optional) continue;
@@ -200,7 +201,7 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       const c = id ? state.characters[id] : undefined;
       // here: 지금 이 구역에 있는 사람만 (그 자리에 남겨 둔 사람, 12-54)
       const away = !!c?.extra && role.here && c.extra.zone !== state.playerZone && !state.companions.includes(id ?? "");
-      if (!id || !c || c.dead || c.away || c.captive || used.has(id) || away) {
+      if (!id || !c || c.dead || c.away || heldOf(c) || used.has(id) || away) {
         if (role.optional) continue;
         return null;
       }
@@ -275,10 +276,10 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.level_gte !== undefined && player.level < w.level_gte) return false;
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
   if (w.has_lover !== undefined && (loversOf(state, content, player.id).length > 0) !== w.has_lover) return false;
-  if (w.captors && (!player.captive || !w.captors.includes(player.captive.by))) return false;
-  if (w.captive_days_gte !== undefined && (!player.captive || at - (player.captive.since ?? at) < w.captive_days_gte * MINUTES_PER_DAY)) return false;
+  if (w.captors && (!heldOf(player) || !w.captors.includes(heldOf(player)!.by))) return false;
+  if (w.captive_days_gte !== undefined && (!heldOf(player) || at - (heldOf(player)!.since ?? at) < w.captive_days_gte * MINUTES_PER_DAY)) return false;
   if (w.own_people_captive !== undefined) {
-    const any = !!player.factionId && Object.values(state.characters).some((c) => c.id !== player.id && !c.dead && c.factionId === player.factionId && c.captive && c.captive.by !== player.factionId);
+    const any = !!player.factionId && Object.values(state.characters).some((c) => c.id !== player.id && !c.dead && c.factionId === player.factionId && heldOf(c) && heldOf(c)!.by !== player.factionId);
     if (any !== w.own_people_captive) return false;
   }
   if (w.occupations && !w.occupations.includes(player.occupation?.id ?? "none")) return false;
@@ -314,7 +315,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   for (const [f, n] of Object.entries(w.debt_lte ?? {})) if (debtOf(f) > n) return false;
   for (const d of w.dispositions ?? []) {
     const id = (x: string) =>
-      x === "own" ? player.factionId : x === "captor" ? (player.captive?.by ?? "") : x === "zone_owner" ? ((state.playerZone && state.zones[state.playerZone]?.owner) || "") : x;
+      x === "own" ? player.factionId : x === "captor" ? (heldOf(player)?.by ?? "") : x === "zone_owner" ? ((state.playerZone && state.zones[state.playerZone]?.owner) || "") : x;
     if (!id(d.from) || !id(d.to)) return false;
     const v = disposition(content, id(d.from), id(d.to), state);
     if ((d.gte !== undefined && v < d.gte) || (d.lte !== undefined && v > d.lte)) return false;
@@ -462,7 +463,7 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
   const roleTags = new Set([...(roleOf(content, state)?.storylet_tags ?? []), ...(keepsScenario ? playing.storylet_tags : [])]);
   // 갇혀 있으면 갇힌 동안의 이야기만, 아니면 그 이야기는 열리지 않는다 (12-55)
   const captivityTag = content.scenario.captivity?.tag;
-  const captive = !!state.characters[state.playerId]?.captive;
+  const captive = !!heldOf(state.characters[state.playerId]);
   // 직분의 이야기 (기획서 12.6)
   const occ = occupationOf(content, state.characters[state.playerId]);
   if (occ) roleTags.add(occupationTag(occ));
@@ -564,7 +565,7 @@ export function storyletGapMinutes(content: Content, lastAt: GameTime): number {
 export function inCrisis(state: GameState, content: Content): boolean {
   const me = state.characters[state.playerId];
   // 갇힌 몸은 감옥 이야기가 유일한 길이다: 위급해도 막지 않는다 (B5, 플레이 테스트 9: 치명상인 포로가 51시간 멈췄다)
-  if (!me || me.captive) return false;
+  if (!me || heldOf(me)) return false;
   return Object.entries(content.scenario.storylet_pacing.urgent_only_when).some(([track, from]) => {
     const levels = content.scenario.condition_tracks.find((t) => t.id === track)?.levels ?? [];
     const at = levels.findIndex((l) => l.id === me.conditions[track]);

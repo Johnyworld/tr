@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import { templateKind } from "../game/kinds.ts";
 import type { RoleContent } from "../content/schemas.ts";
@@ -41,7 +42,7 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
     const c = state.characters[id];
     if (!c) continue;
     const name = playerCalls(state, content, id);
-    if (c.dead || c.away || c.captive) {
+    if (c.dead || c.away || heldOf(c)) {
       if (state.bonds[id] || state.companions.includes(id)) store.append({ type: "companion_left", characterId: id, reason: "함께 다닐 수 없게 됐다" });
       continue;
     }
@@ -55,7 +56,7 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
         store.append({ type: "companion_left", characterId: id, reason: "임무가 끝났다" });
         continue;
       }
-      if (state.characters[state.playerId]?.captive) continue;
+      if (heldOf(state.characters[state.playerId])) continue;
       if (bond.apart.zone && bond.apart.zone === state.playerZone && state.bonds[id]?.apart?.left !== false) {
         store.append({ type: "companion_rejoined", characterId: id });
         out.push(note(name, "enter", `${josa(name, "이/가")} 기다리던 ${content.locations[bond.apart.zone]?.name ?? bond.apart.zone}에서 다시 합류했다. 다시 만나는 장면을 짧게 서술한다.`));
@@ -137,7 +138,7 @@ export function assignBuddy(ctx: ToolContext, missionId: string, commander: stri
   const known = new Set(state.known[state.playerId] ?? []);
   const pool = Object.values(state.characters)
     .filter((c) => content.npcs[c.id] && c.id !== state.playerId && c.id !== commander && c.factionId === player.factionId)
-    .filter((c) => !c.dead && !c.away && !c.captive && !state.squadOrders?.[c.id] && !state.companions.includes(c.id) && !state.bonds?.[c.id])
+    .filter((c) => !c.dead && !c.away && !heldOf(c) && !state.squadOrders?.[c.id] && !state.companions.includes(c.id) && !state.bonds?.[c.id])
     .filter((c) => known.has(c.id) && c.rank === player.rank)
     .map((c) => c.id)
     .sort();

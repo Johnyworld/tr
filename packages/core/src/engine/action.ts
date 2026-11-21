@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { applyBuild, planBuild } from "./facilities.ts";
 import { applyTrain, planTrain } from "./training.ts";
 import { applyLesson, planLesson } from "./teaching.ts";
@@ -16,7 +17,9 @@ import { rollBlowup, rollHear, rollLeak } from "./persona.ts";
 import { exposeToCold, changeClothes, soak } from "./climate.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
-import { hostileHere, runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
+import { hostileHere, hostileZone, runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
+import { atStake } from "../rules/stakes.ts";
+import { withoutBlame } from "../rules/blame.ts";
 import { CAMP_INTERRUPT, createCampCheck, runCampEvent, deepSleepReason } from "./camp.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
 import { withoutWear } from "./gear.ts";
@@ -59,7 +62,7 @@ import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
 import { scarFromHarm } from "./scars.ts";
-import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle, whileWalkingAway } from "./storyletTools.ts";
+import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle } from "./storyletTools.ts";
 import { choiceAvailable } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -368,7 +371,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 수색·일·쉬기는 이야기 안에서도 하는 일이라 넣지 않는다 (선택지의 판정을 거기서 굴린다)
   const long = !!input.move_to || (!!input.activity && ["sleep", "wait", "guard_duty", "travel"].includes(input.activity.kind));
   // 같은 자리에서 오래 걸리는 일은 이야기를 두고 하지 않는다: 시간이 흐르기 전에 먼저 고르거나 외면하라고 돌려보낸다 (플레이 테스트 13: 망을 봤는데 "혼자 빠져나온다"를 고른 것이 됐다)
-  if (start.activeStorylet && !input.move_to && !input.check && !input.ignore_story && !!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work"].includes(input.activity.kind) && !isIncapacitated(ctx.content, player) && !player.captive) {
+  if (start.activeStorylet && !input.move_to && !input.check && !input.ignore_story && !!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work"].includes(input.activity.kind) && !isIncapacitated(ctx.content, player) && !heldOf(player)) {
     const s0 = content.storylets[start.activeStorylet.id];
     const roadStory = !!scenario.travel?.tag && !!s0?.tags.includes(scenario.travel.tag);
     if (!roadStory) {
@@ -377,7 +380,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     }
   }
   // 몸이 붙들린 매복은 걸어서 벗어날 수 없다 (플레이 테스트 13: "차 밑의 손"이 이동 한 번으로 대가 없이 닫혔다)
-  if (start.activeStorylet && ((input.move_to && !input.check) || input.ignore_story) && !player.captive && content.storylets[start.activeStorylet.id]?.ambush && !isIncapacitated(ctx.content, player)) {
+  if (start.activeStorylet && ((input.move_to && !input.check) || input.ignore_story) && !heldOf(player) && content.storylets[start.activeStorylet.id]?.ambush && !isIncapacitated(ctx.content, player)) {
     return { ok: false, error: "매복에 걸려 붙들려 있다. 그냥 걸어 나갈 수 없다: resolve_storylet으로 고르거나, 뿌리치고 달아나려면 move_to와 함께 check(달아나기·맞서기 판정과 위험)를 건다 (시간은 흐르지 않았다)." };
   }
   // 외면 (플레이 테스트 13): 효과 없이 지나간다
@@ -394,13 +397,13 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const onRoad = !!roadTag && !!start.activeStorylet && !!content.storylets[start.activeStorylet.id]?.tags.includes(roadTag) && ((!input.check && !!input.deed) || (!!input.activity && !["talk", "brief"].includes(input.activity.kind)));
   const leftLines: string[] = [];
   // 갇힌 채 옮겨 가기(탈출)는 자리를 뜨는 것이 아니다: 실패하면 그대로, 성공하면 옮겨 갈 때 닫힌다 (플레이 테스트 13: 실패한 탈출이 포섭 이야기를 닫았다)
-  const escaping = !!input.move_to && !!player.captive;
+  const escaping = !!input.move_to && !!heldOf(player);
   if (ignoredLine) leftLines.push(ignoredLine);
   // 자리를 뜨는 것(옮겨 가기)과 길 위 장면을 두고 하는 일만 외면 선택지로 푼다
   if (store.getState().activeStorylet && (!!input.move_to || onRoad) && !escaping && !isIncapacitated(ctx.content, player)) {
     const s = content.storylets[start.activeStorylet!.id];
     const pick = s?.choices.find((c) => WALK_AWAY_CHOICES.includes(c.id) && !c.check && choiceAvailable(start, c, start.activeStorylet!.cast));
-    const r = pick ? whileWalkingAway(() => resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx)) : null;
+    const r = pick ? withoutBlame("walked_away", () => resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx)) : null;
     // 따옴표 안 말에 맞춰 조사 (플레이 테스트 13: "낯선 손님의 공책"를)
     const quoted = (t: string) => `"${t}"${josa(t, "을/를").slice(t.length)}`;
     if (r?.ok) leftLines.push(`(이야기 ${quoted(storyTitle(start, ctx.content, s!))} 두고 자리를 떠, ${quoted(pick!.label)} 고른 것으로 처리했다)`, r.resultText ?? "");
@@ -538,7 +541,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 갇혀 있으면 옮겨 가는 것은 탈출 시도다 (12-55)
   let escapeAttempt = false;
   let alarmOnArrival: string | null = null;
-  if (input.move_to && start.characters[start.playerId]?.captive) {
+  if (input.move_to && heldOf(start.characters[start.playerId])) {
     const blocked = escapeRule(start, content, input.check);
     if (blocked) return { ok: false, error: blocked };
     escapeAttempt = true;
@@ -635,7 +638,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
   }
   // 적대하는 땅에서 시간을 들이는 일 (플레이 테스트 12): 숨은 확률 대신 주인공이 한 번 굴린다. 판정이 없으면 숨기 판정을 건다
-  const exposed = !input.move_to && !inBattle && !start.infiltration && !start.characters[start.playerId]?.captive && !isIncapacitated(content, player) && !incapacitatingSymptom(scenario, player) && !!scenario.alarm && hostileHere(ctx)
+  const exposed = !input.move_to && !inBattle && !start.infiltration && !heldOf(start.characters[start.playerId]) && !isIncapacitated(content, player) && !incapacitatingSymptom(scenario, player) && !!scenario.alarm && hostileHere(ctx)
     // 드러내 놓고 말을 거는 일(talk)은 숨을 일이 아니다: 실패해도 "몰래 들어왔다 들켰다"가 아니다 (플레이 테스트 13). 치료·배움은 시간을 들이는 일이다
     && ((!!input.activity && !["brief", "talk"].includes(input.activity.kind)) || !!input.forage || input.trap === "set" || !!input.craft || !!input.build || !!input.treatment || !!input.lesson);
   if (exposed && !input.check) {
@@ -659,7 +662,19 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
         activity: input.activity?.kind ?? null,
         escape: escapeAttempt,
         // 걸린 것: 몸의 위험, 상대, 임무, 진행 중인 이야기, 전투, 치료, 옮겨 가기, 적 땅, 시간을 들이는 일 (5분짜리 맨 판정만 빠진다)
-        stakes: input.check.harm_on_failure !== "none" || !!input.target || !!input.check.opponent || !!forMission || storyCheck || inBattle || !!input.treatment || !!input.move_to || exposed || !!input.forage || !!input.trap || (!!input.activity && input.activity.kind !== "brief"),
+        stakes: atStake({
+          harm: input.check.harm_on_failure !== "none",
+          opponent: !!input.target || !!input.check.opponent,
+          mission: !!forMission,
+          storyChoice: storyCheck,
+          battle: inBattle,
+          treatment: !!input.treatment,
+          // 갇혀서 옮겨 가는 것(탈출)은 늘 적 땅을 떠나는 것이다
+          travel: !input.move_to ? "none" : escapeAttempt || hostileHere(ctx) || hostileZone({ ...start, playerZone: input.move_to }, content) ? "hostile" : "safe",
+          exposed,
+          gathering: !!input.forage || !!input.trap,
+          activity: !!input.activity && input.activity.kind !== "brief",
+        }).stake,
         situation: exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? scavengeParts(ctx) : input.forage ? forageParts(ctx, input.forage) : [],
       },
     );
@@ -970,7 +985,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const escapeFailed = escapeAttempt && outcome === "miss";
   if (escapeFailed) {
     store.append({ type: "captive_watch_raised" });
-    const watch = store.getState().characters[start.playerId]?.captive?.watch ?? 1;
+    const watch = heldOf(store.getState().characters[start.playerId])?.watch ?? 1;
     lines.push(`빠져나가지 못했다. 다시 붙잡혀 갇힌 곳으로 끌려왔다. 감시가 더 심해졌다 (다음 탈출 판정 -${watch}${watch >= 3 ? ", 더 심해지지는 않는다" : ""}).`);
   }
   if (sweptBack) {
@@ -980,7 +995,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
   if (input.move_to && !time.interrupted && !sweptBack && !escapeFailed) {
     if (escapeAttempt) {
-      const captor = start.characters[start.playerId]?.captive?.by;
+      const captor = heldOf(start.characters[start.playerId])?.by;
       const freed = releasePlayer(ctx, false);
       if (freed) lines.push(freed);
       // 달아난 일은 붙잡았던 무리에 남는다 (플레이 테스트 12)
@@ -1122,7 +1137,7 @@ function missedRollCall(ctx: ToolContext, from: number, to: number) {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   const segments = me?.factionId ? ctx.content.factions[me.factionId]?.culture?.roll_call : undefined;
-  if (!me || !segments?.length || me.captive || state.zones[state.playerZone ?? ""]?.owner !== me.factionId) return;
+  if (!me || !segments?.length || heldOf(me) || state.zones[state.playerZone ?? ""]?.owner !== me.factionId) return;
   // 점호 시각에 딱 깨면 나간 것으로 친다 (플레이 테스트 12: 04:00에 깼는데 놓친 것으로 셌다)
   const missed = segments.filter((seg) => nextSegmentStart(from, seg) < to);
   if (!missed.length) return;
@@ -1351,10 +1366,10 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     // 점호 (G2): 무리의 점호 시각을 자면서 넘기면 작은 불복종 행적이 남는다 (한 번 잠에 한 번)
     if (activity === "sleep") missedRollCall(ctx, from, to);
     // 긴 잠 뒤에는 동행이 아닌 사람은 제 할 일로 흩어진다 (플레이 테스트 13: 밤새 자고 나도 어제 들인 의무병이 장면에 남았다)
-    if (activity === "sleep" && to - from >= SCENE_CLEAR_SLEEP_MINUTES && !store.getState().characters[state.playerId]?.captive) {
+    if (activity === "sleep" && to - from >= SCENE_CLEAR_SLEEP_MINUTES && !heldOf(store.getState().characters[state.playerId])) {
       const s2 = store.getState();
       const keep = new Set(activeCompanions(s2));
-      const gone = s2.scene.present.filter((id) => !keep.has(id) && !s2.characters[id]?.captive && !s2.characters[id]?.dead && !(s2.activeStorylet && Object.values(s2.activeStorylet.cast ?? {}).includes(id)));
+      const gone = s2.scene.present.filter((id) => !keep.has(id) && !heldOf(s2.characters[id]) && !s2.characters[id]?.dead && !(s2.activeStorylet && Object.values(s2.activeStorylet.cast ?? {}).includes(id)));
       for (const id of gone) store.append({ type: "npc_left", npcId: id });
       const named = gone.filter((id) => !!content.npcs[id]).map((id) => playerCalls(s2, content, id));
       if (named.length) sleepNote = [sleepNote, `자는 사이 ${named.join(", ")}${josa(named.at(-1)!, "은/는").slice(named.at(-1)!.length)} 제 할 일로 자리를 떴다 (장면에서 빠졌다).`].filter(Boolean).join("\n");

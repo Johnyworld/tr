@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import { isCreature } from "../game/kinds.ts";
 import { romanceShift } from "./persona.ts";
@@ -105,7 +106,7 @@ export function loversOf(state: GameState, content: Content, id: string): string
 export function romanceCast(state: GameState, content: Content, kind: "lover" | "suitor" | "ex" | "jilted"): string[] {
   const me = state.playerId;
   const lovers = loversOf(state, content, me);
-  const free = (id: string) => !!state.characters[id] && !state.characters[id]!.dead && !state.characters[id]!.captive && !state.characters[id]!.away;
+  const free = (id: string) => !!state.characters[id] && !state.characters[id]!.dead && !heldOf(state.characters[id]!) && !state.characters[id]!.away;
   // 찾는 가족(행방 모르는 배우자)은 연애 이야기에 나오지 않는다 (플레이 테스트 11)
   if (kind === "lover") return lovers.filter((id) => !state.family.includes(id));
   if (kind === "suitor") {

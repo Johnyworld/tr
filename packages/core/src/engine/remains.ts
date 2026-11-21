@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import type { Character } from "../game/character.ts";
 import { aliasOf, knowsName } from "../game/acquaintance.ts";
 import type { GameState, Remains } from "../game/state.ts";
@@ -28,7 +29,7 @@ function leavesRemains(ctx: ToolContext, state: GameState, c: Character): boolea
 /** 그 사람이 죽은 곳 */
 function placeOf(ctx: ToolContext, state: GameState, c: Character): string | null {
   if (c.id === state.playerId) return state.playerZone;
-  if (c.captive) return c.captive.zone;
+  if (heldOf(c)) return heldOf(c)!.zone;
   // 주인공 앞(장면·곁의 동행)에서 죽었으면 여기다. 평소 있던 자리가 아니라
   if (state.scene.present.includes(c.id) || (state.companions.includes(c.id) && !state.bonds[c.id]?.apart)) return state.playerZone;
   const npc = ctx.content.npcs[c.id];

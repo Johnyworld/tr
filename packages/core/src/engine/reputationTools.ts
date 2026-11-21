@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { profileOf } from "./people.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { fameOf } from "../game/fame.ts";
@@ -64,7 +65,7 @@ export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: Belie
   // "적에게 호의"는 우리 편이 보기에만 흠이다. 호의를 받은 쪽(적·포로)에게까지 신뢰를 깎았다 (플레이 테스트 11)
   const actorFaction = state.characters[deed.actorId]?.factionId;
   const witness = state.characters[npcId];
-  const ownSide = !!actorFaction && witness?.factionId === actorFaction && !witness.captive;
+  const ownSide = !!actorFaction && witness?.factionId === actorFaction && !heldOf(witness);
   const tags = ownSide ? deed.tags : deed.tags.filter((t) => t !== "enemy_sympathy");
   const raw = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, tags, deed.severity, source));
   const today = state.regardGained.day === dayOf(state.time) ? (state.regardGained.by[npcId]?.[deed.actorId] ?? {}) : {};
@@ -100,7 +101,7 @@ export function recordDeed(
     const stealth = stealthThisTurn(state, scenario.move_roles.stealth);
     const notice = noticeMove(ctx);
     for (const character of Object.values(state.characters)) {
-      if (character.id === state.playerId || character.dead || character.away || character.captive) continue;
+      if (character.id === state.playerId || character.dead || character.away || heldOf(character)) continue;
       if (state.scene.present.includes(character.id) || !ctx.content.npcs[character.id]) continue;
       // 숨은 목격자는 그 시각 같은 구역에 있던 사람만 (기획서 8.2 "근처"). 전에는 세계 어디에 있든 굴려,
       // 다른 무리 거점의 약사가 우리 거점 안의 일을 "직접 봄"으로 알았다 (플레이 테스트 8)
@@ -347,7 +348,7 @@ export function spreadRumors(ctx: ToolContext): void {
   for (let d = last + 1; d <= Math.min(day, last + 3); d++) {
     const state = ctx.store.getState();
     const npcIds = Object.values(state.characters)
-      .filter((c) => c.id !== state.playerId && !c.dead && !c.away && !c.captive && ctx.content.npcs[c.id])
+      .filter((c) => c.id !== state.playerId && !c.dead && !c.away && !heldOf(c) && ctx.content.npcs[c.id])
       .map((c) => c.id);
     // 명성 (12-127): 무명이면 목격자의 무리 안에서만, 알려지면 말이 모이는 곳을 거쳐 다른 무리로, 이름나면 소문으로 들은 사람도 옮긴다
     const fame = ctx.content.scenario.fame;

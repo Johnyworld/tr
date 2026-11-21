@@ -1,3 +1,4 @@
+import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
 import { josa } from "../text.ts";
 import { describeDisaster } from "./disasters.ts";
@@ -426,9 +427,9 @@ const RECENT_EXTRAS_IN_PROMPT = 5;
 function statusNote(content: Content, character: Character, state?: GameState): string {
   // 붙잡혀 있다는 것은 그 자리에 있어야 안다 (원칙 4). 아니면 행방을 모를 뿐이다 (구출 이야기가 그 자리에서 열린다)
   // 같은 구역이라도 감옥 안은 담 밖에서 보이지 않는다: 같이 갇혔거나, 우리 땅이거나, 장면에서 마주쳤을 때만 (플레이 테스트 13: 물류창고에 들어서자 실종자가 "여기 붙잡혀 있다")
-  if (character.captive && !character.dead) {
+  if (heldOf(character) && !character.dead) {
     const me = state?.characters[state.playerId];
-    const sees = !!state && state.playerZone === character.captive.zone && (!!me?.captive || state.scene.present.includes(character.id) || (!!me?.factionId && state.zones[state.playerZone]?.owner === me.factionId));
+    const sees = !!state && state.playerZone === heldOf(character)!.zone && (!!heldOf(me) || state.scene.present.includes(character.id) || (!!me?.factionId && state.zones[state.playerZone]?.owner === me.factionId));
     return sees ? " · 여기 붙잡혀 있다" : " · 행방 모름";
   }
   if (character.dead) return !state || knowsDeath(state, content, character.id) ? " · 사망" : "";
@@ -477,10 +478,10 @@ function describeKnownPeople(state: GameState, content: Content): string {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
       // 행방을 모르는 사람(붙잡혀 있다)의 지금 모습은 모른다 (플레이 테스트 11: "손목에 끈 자국")
-      const unseen = !!character.captive && state.playerZone !== character.captive.zone;
+      const unseen = !!heldOf(character) && state.playerZone !== heldOf(character)!.zone;
       if (detailed.has(id)) lines.push(`${head(id)}: ${npc ? (unseen ? npc.reputation : `${npc.look} ${npc.reputation}`) : unseen ? "" : (character.extra?.look ?? "")}`);
       // 관계가 생겼거나 상태가 있는 사람은 한 줄, 아무 일 없는 사람은 이름만 모은다
-      else if (depth(id) > 0 || character.captive || (character.dead && knowsDeath(state, content, id)) || character.away || !npc) lines.push(`${head(id)}${npc ? `: ${shortNote(npc.reputation)}` : ""}`);
+      else if (depth(id) > 0 || heldOf(character) || (character.dead && knowsDeath(state, content, id)) || character.away || !npc) lines.push(`${head(id)}${npc ? `: ${shortNote(npc.reputation)}` : ""}`);
       else rest.push(`${headingAs(state, content, viewer, id)}(${id})`);
     }
     blocks.push(
@@ -489,7 +490,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
     );
   }
   if (faces.length > 0) {
-    const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!, state)}${(state.characters[id]!.captive && state.playerZone !== state.characters[id]!.captive!.zone) ? "" : `: ${content.npcs[id]!.look}`}`);
+    const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!, state)}${(heldOf(state.characters[id]!) && state.playerZone !== heldOf(state.characters[id]!)!.zone) ? "" : `: ${content.npcs[id]!.look}`}`);
     blocks.push(`얼굴만 아는 인물 (이름은 모른다. 지금 장면에는 없다):\n${lines.join("\n")}`);
   }
   return blocks.join("\n\n");
@@ -515,7 +516,7 @@ export function describeZonePeople(state: GameState, content: Content): string {
   const zone = state.playerZone;
   if (!zone) return "";
   const people = Object.values(content.npcs).filter(
-    (npc) => (state.characters[npc.id]?.captive ? state.characters[npc.id]!.captive!.zone === zone : npcZoneAt(npc, state.time) === zone) && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
+    (npc) => (heldOf(state.characters[npc.id]) ? heldOf(state.characters[npc.id]!)!.zone === zone : npcZoneAt(npc, state.time) === zone) && npc.id !== state.playerId && !state.scene.present.includes(npc.id) && !state.characters[npc.id]?.dead && !state.characters[npc.id]?.away,
   );
   // 부탁을 품은 아는 사람이 이 구역에 있으면 GM에게 알린다 (12-195: 다시 만나지 못해 부탁이 조용히 접혔다)
   const askers = [...new Set(askedPromises(state).map((p) => p.to))].filter((id) => people.some((n) => n.id === id));
@@ -524,13 +525,13 @@ export function describeZonePeople(state: GameState, content: Content): string {
     : "";
   // 남의 감옥 안의 낯선 포로는 담 밖에서 보이지 않는다 (플레이 테스트 12: 막 도착했는데 갇힌 사람 목록이 보였다). 같이 갇혔거나 우리 땅이면 보인다
   const me = state.characters[state.playerId];
-  const seesCells = !!me?.captive || (!!me?.factionId && state.zones[zone]?.owner === me.factionId);
+  const seesCells = !!heldOf(me) || (!!me?.factionId && state.zones[zone]?.owner === me.factionId);
   // 갇혀 있으면 마주칠 사람은 같이 갇힌 사람과 치료사뿐이다 (플레이 테스트 13: 감방에서 거점 사람 열일곱과 장사꾼이 보였다)
-  const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id) && (seesCells || !state.characters[npc.id]?.captive) && (!me?.captive || !!state.characters[npc.id]?.captive || !!npc.healer));
+  const strangers = people.filter((npc) => !hasMet(state, state.playerId, npc.id) && (seesCells || !heldOf(state.characters[npc.id])) && (!pausedWhileHeld(state, "strangers") || !!heldOf(state.characters[npc.id]) || !!npc.healer));
   if (strangers.length === 0) return askLine;
   // 갇힌 사람은 이 구역에 와 있으니 갇혀 있다는 것까지 보인다 (돌아다니지 않는다). 사람이 많으면 몇 명만 (토큰, 12-42):
   // 갇힌 사람·떠도는 사람(오늘만 여기 있다) 먼저, 나머지는 날마다 돌아가며
-  const captive = (id: string) => !!state.characters[id]?.captive;
+  const captive = (id: string) => !!heldOf(state.characters[id]);
   const day = dayOf(state.time);
   // 장사꾼·치료사는 늘 보이게 먼저 (플레이 테스트 11: 다섯 명씩 도는 목록에 숨어 찾지 못했다)
   const useful = (n: (typeof strangers)[number]) => Number(!!n.merchant || !!n.healer);

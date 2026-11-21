@@ -9,6 +9,7 @@ import { pickCast, storyletAllowed } from "../story/storylets.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { maybeInfect } from "./body.ts";
+import { currentResolve, resolveLine, resolveProgress } from "./resolve.ts";
 import { runHelpless } from "./helpless.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
 import { applyEffect, hostileHere, hostileZone, maskUnknownNames } from "./storyletTools.ts";
@@ -446,5 +447,24 @@ describe("규칙: 이야기 배역 쉬기 (플레이 테스트 13 뒤 정한 것
     s.castUsedAt = { [first[key]!]: s.time };
     const again = pickCast(s, content, story, () => 0)!;
     expect(again[key]).not.toBe(first[key]);
+  });
+});
+
+describe("설계: 다짐 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("인정받기·자리 다짐은 단계 대신 채운 정도를 보인다", () => {
+    const medic = world("role_d_medic");
+    expect(resolveLine(medic.state(), content)).toContain("평판 0/5");
+    const grunt = world("role_a_grunt");
+    const g = grunt.state();
+    const rise = { ...currentResolve(g)!, kind: "rise", target: content.scenario.promotion!.to };
+    expect(resolveProgress(g, content, rise)).toContain("진급까지 남은 것");
+  });
+
+  it("다짐의 첫 단계는 다짐이 생긴 날이 지난 뒤부터 오른다", () => {
+    const w = world("role_a_squad_leader");
+    const r0 = currentResolve(w.state());
+    if (!r0) return;
+    w.executeTool("take_action", act());
+    expect(currentResolve(w.state())!.stage ?? 0).toBe(0);
   });
 });

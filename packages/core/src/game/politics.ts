@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import type { Content } from "../content/schemas.ts";
 import { NEUTRAL_RELATION } from "./reputation.ts";
 import type { GameState } from "./state.ts";
@@ -14,7 +15,7 @@ export function factionPeers(state: GameState, content: Content, who: string): s
   const faction = state.characters[who]?.factionId;
   if (!faction) return [];
   return Object.values(state.characters)
-    .filter((c) => c.id !== who && c.factionId === faction && !c.dead && !c.away && !c.captive && (content.npcs[c.id] || c.profile))
+    .filter((c) => c.id !== who && c.factionId === faction && !c.dead && !c.away && !heldOf(c) && (content.npcs[c.id] || c.profile))
     .map((c) => c.id);
 }
 

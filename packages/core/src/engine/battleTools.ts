@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { maybeCaptureAfterDefeat } from "./captivity.ts";
 import { helplessAfterBattle } from "./helpless.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -50,7 +51,7 @@ export function playerInvolvement(state: GameState, content: Content, spec: Clas
   const player = state.characters[state.playerId];
   const zone = state.playerZone;
   // 갇혀 있으면 싸움에 끼지 않는다 (12-55)
-  if (!player || player.dead || player.captive || !zone || state.battle) return null;
+  if (!player || player.dead || heldOf(player) || !zone || state.battle) return null;
   if (spec.defender === player.factionId && zone === spec.zone) return "defense";
   if (spec.attacker === player.factionId && state.zones[zone]?.owner === player.factionId && neighbors(content, spec.zone).includes(zone)) {
     return "attack";

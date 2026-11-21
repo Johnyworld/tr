@@ -1,3 +1,5 @@
+import { heldOf } from "../rules/held.ts";
+import { checkResolve } from "./resolve.ts";
 import { bindOwnLovers } from "./romance.ts";
 import { resolveChronicle } from "./resolve.ts";
 import { inheritStashes } from "./legacy.ts";
@@ -175,7 +177,7 @@ function heirCandidates(state: GameState, content: Content): SuccessionOption[] 
   // 조우한 사람: 이름을 아는, 살아 있고 플레이할 수 있는 인물. 무리의 우두머리(사다리 맨 위)는 맡을 자리가 없어 뺀다
   const top = content.scenario.rank_ladder.reduce((a, b) => (b.level > a.level ? b : a)).id;
   const met = encountered(state);
-  const free = (c: GameState["characters"][string]) => !c.dead && !c.away && !c.captive && c.rank !== top && met.has(c.id);
+  const free = (c: GameState["characters"][string]) => !c.dead && !c.away && !heldOf(c) && c.rank !== top && met.has(c.id);
   const who = (c: GameState["characters"][string]) => `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}`;
   for (const npc of Object.values(content.npcs)) {
     const c = state.characters[npc.id];
@@ -262,6 +264,8 @@ export function switchCharacter(
 
   // 이어받은 사람의 연인·배우자는 진짜 연인이다 (플레이 테스트 13)
   bindOwnLovers(ctx);
+  // 이어받은 사람의 다짐도 바로 세운다 (첫 장면에 보이게)
+  checkResolve(ctx);
 
   // 이전 캐릭터들의 죽음과 큰 행적은 소문으로 남는다 (기억은 넘어가지 않는다).
   // 바로 앞 캐릭터만이 아니라 최근 하루 안에 죽은 플레이어 캐릭터 모두. 그 사이에 여러 명이 죽었을 수 있다

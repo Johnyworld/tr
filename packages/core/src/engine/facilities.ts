@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
 import type { Clash, GameState } from "../game/state.ts";
@@ -32,7 +33,7 @@ export function facilitiesAt(content: Content, state: GameState, zone: string | 
 export function buildSite(content: Content, state: GameState): "home" | "base" | "own" | null {
   const me = state.characters[state.playerId];
   const zone = state.playerZone;
-  if (!me || me.dead || me.captive || !zone) return null;
+  if (!me || me.dead || heldOf(me) || !zone) return null;
   if (state.homes[me.id] === zone) return "home";
   if (me.factionId && content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === me.factionId) return "base";
   if (me.factionId && state.zones[zone]?.owner === me.factionId) return "own";

@@ -1,3 +1,4 @@
+import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { idleDays } from "../game/missions.ts";
 import { baseOf } from "./captivity.ts";
 import { itemResource } from "./market.ts";
@@ -192,7 +193,7 @@ export function selfTreatmentProblem(ctx: ToolContext, patientId?: string, pay: 
     const w = ctx.content.scenario.wounds;
     if (w && levelIndex(ctx, state, player.id, w.track) > 0) return null;
     // 이 구역의 치료사를 알려 준다 (플레이 테스트 11: 간호조무사·약사에게 청하다 누가 치료사인지 몰랐다)
-    const here = Object.values(ctx.content.npcs).filter((n) => n.healer && !state.characters[n.id]?.dead && !state.characters[n.id]?.captive && npcZoneAt(n, state.time) === state.playerZone);
+    const here = Object.values(ctx.content.npcs).filter((n) => n.healer && !state.characters[n.id]?.dead && !heldOf(state.characters[n.id]) && npcZoneAt(n, state.time) === state.playerZone);
     return `치료해 줄 사람이 장면에 없다 (장면의 치료사만 치료한다).${here.length ? ` 이 구역의 치료사: ${here.map((n) => `${playerCalls(state, ctx.content, n.id)} (${n.id})`).join(", ")} (npc_presence로 들인다).` : " 이 구역에는 치료사가 없다."} 치료 아이템을 쓰거나 치료사를 찾아간다.`;
   }
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
@@ -365,7 +366,7 @@ function planHealerPay(ctx: ToolContext, healerId: string, choice: FeeChoice = "
   let pay = new Map<string, number>();
   const trust = state.relations[healerId]?.[player.id]?.trust ?? 0;
   // 갇힌 포로는 값을 낼 처지가 아니다: 붙잡은 쪽이 거둬 치료한다 (플레이 테스트 12: 포로의 마지막 물병까지 가져갔다)
-  if (cost.fee > 0 && !player.captive && player.factionId !== healer.factionId && trust < cost.free_trust) {
+  if (cost.fee > 0 && !heldOf(player) && player.factionId !== healer.factionId && trust < cost.free_trust) {
     const picked = pickFee(ctx, player, cost.fee);
     const list = (m: Map<string, number>) => [...m].map(([id, q]) => `${ctx.content.items[id]?.name ?? id}(${id}) ×${q}`).join(", ");
     if (choice && choice !== "default") {
@@ -622,7 +623,7 @@ export function runLateRation(ctx: ToolContext): ToolDisplayEvent[] {
     ctx.store.append({ type: "ration_missed", day: null });
     return [];
   }
-  if (me.captive || !me.factionId || !hasAccess(content, state, "ration")) return [];
+  if (pausedWhileHeld(state, "ration") || !me.factionId || !hasAccess(content, state, "ration")) return [];
   if (!state.playerZone || state.zones[state.playerZone]?.owner !== me.factionId || content.locations[state.playerZone]?.kind !== "base") return [];
   ctx.store.append({ type: "ration_missed", day: null });
   const own = state.factions[me.factionId];
@@ -657,7 +658,7 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     const state = ctx.store.getState();
     // 배급 권한이 있어야 무리의 배급을 받는다 (역할의 access, 기획서 9.9)
     // 갇혀 있으면 우리 무리의 배급을 못 받는다 (붙잡은 쪽이 겨우 먹인다, 12-55)
-    const captive = !!player()!.captive;
+    const captive = !!heldOf(player()!);
     const own = !captive && hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
     // 쓸모 (G1): 무리의 문화가 일하지 않는 입을 줄이면, 임무를 끝내지 않은 날이 쌓인 사람의 배급이 한 단계 내려간다
     const idleRule = own ? content.factions[player()!.factionId!]?.culture?.idle_ration_days : undefined;
@@ -816,7 +817,7 @@ export function waterHere(content: Content, state: GameState): WaterSource | nul
   const rules = content.scenario.body?.thirst;
   const me = state.characters[state.playerId];
   const zone = state.playerZone;
-  if (!rules || !me || me.dead || me.captive || !zone) return null;
+  if (!rules || !me || me.dead || heldOf(me) || !zone) return null;
   // 빗물받이 (12-167): 그 구역이 물이 나는 곳이 된다
   if (waterFacilityHere(content, state)) return { kind: "spring", grant: "full" };
   const loc = content.locations[zone];
@@ -904,8 +905,8 @@ function dailyThirst(ctx: ToolContext, rules: ThirstRules): Change | null {
   const me = state.characters[state.playerId]!;
   const track = trackOf(ctx.content.scenario, rules.track);
   let delta = rules.daily;
-  if (me.captive && rules.captive_max) delta = Math.max(0, Math.min(delta, track.levels.findIndex((l) => l.id === rules.captive_max) - levelIndex(ctx, state, me.id, track.id)));
-  return changeCondition(ctx, me.id, track.id, delta, "daily", me.captive ? "갇힌 곳의 물" : "하루가 지나 목이 마르다");
+  if (heldOf(me) && rules.captive_max) delta = Math.max(0, Math.min(delta, track.levels.findIndex((l) => l.id === rules.captive_max) - levelIndex(ctx, state, me.id, track.id)));
+  return changeCondition(ctx, me.id, track.id, delta, "daily", heldOf(me) ? "갇힌 곳의 물" : "하루가 지나 목이 마르다");
 }
 
 /**
@@ -1259,7 +1260,7 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
   const maxIndex = harm.levels.findIndex((l) => l.id === recovery.natural_max_level);
   const npcs = () => Object.values(store.getState().characters).filter((c) => c.id !== store.getState().playerId && !c.dead && !c.away);
   for (const c of npcs()) {
-    if (c.captive) continue;
+    if (heldOf(c)) continue;
     // 피가 멎지 않으면 저절로 낫지 않는다 (12-91)
     if (bleedingBlocksRecovery(ctx, c)) continue;
     const state = store.getState();
@@ -1272,7 +1273,7 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
   const care = recovery.faction_care;
   if (!care) return displays;
   for (const factionId of Object.keys(store.getState().factions)) {
-    const members = npcs().filter((c) => c.factionId === factionId && !c.captive);
+    const members = npcs().filter((c) => c.factionId === factionId && !heldOf(c));
     const medics = members.filter((c) => !!c.occupation && care.occupations.includes(c.occupation.id) && !isIncapacitated(content, c)).length;
     // 분배 (12-128): 의약품을 아끼면 덜, 아낌없이 쓰면 더 돌본다
     let slots = Math.round(medics * care.per_medic * policyEffects(content, store.getState().factions[factionId]).care);

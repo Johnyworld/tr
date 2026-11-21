@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
@@ -21,7 +22,7 @@ const zoneName = (content: Content, zone: string) => content.locations[zone]?.na
 export function stashPlace(content: Content, state: GameState): StashPlace | null {
   const me = state.characters[state.playerId];
   const zone = state.playerZone;
-  if (!me || me.dead || me.captive || !zone) return null;
+  if (!me || me.dead || heldOf(me) || !zone) return null;
   if (me.factionId) {
     const own = content.locations[zone]?.kind === "base" && state.zones[zone]?.owner === me.factionId;
     return own ? { kind: "locker", zone, label: `${zoneName(content, zone)}의 내 사물함` } : null;
@@ -40,7 +41,7 @@ export function canSettle(content: Content, state: GameState): { ok: true } | { 
   const me = state.characters[state.playerId];
   const zone = state.playerZone;
   if (!me || me.dead || !zone) return { ok: false, error: "지금은 거처를 정할 수 없다." };
-  if (me.captive) return { ok: false, error: "갇힌 몸이다." };
+  if (heldOf(me)) return { ok: false, error: "갇힌 몸이다." };
   if (me.factionId) return { ok: false, error: "무리에 든 사람은 거점의 사물함에 맡긴다. 거처는 떠돌이만 정한다." };
   const location = content.locations[zone];
   const owner = state.zones[zone]?.owner ?? null;
@@ -68,7 +69,7 @@ export function moveStash(ctx: ToolContext, direction: "put" | "take", moves: re
   const me = state.characters[state.playerId];
   const zone = state.playerZone;
   if (!me || me.dead || !zone) return { ok: false, error: "지금은 창고를 쓸 수 없다." };
-  if (me.captive) return { ok: false, error: "갇힌 몸이다." };
+  if (heldOf(me)) return { ok: false, error: "갇힌 몸이다." };
   if (!moves.length) return { ok: false, error: "옮길 물건이 없다." };
   const place = stashPlace(content, state);
   const box = stashHere(state);

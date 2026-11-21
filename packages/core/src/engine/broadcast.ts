@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
@@ -19,7 +20,7 @@ export function planBroadcast(content: Content, state: GameState): string | null
   if (!r) return "이 월드에는 무전 송출이 없다.";
   const me = state.characters[state.playerId];
   if (!me || (me.inventory[r.item] ?? 0) <= 0) return `${josa(content.items[r.item]?.name ?? r.item, "이/가")} 있어야 송출한다.`;
-  if (me.captive) return "갇힌 동안에는 송출할 수 없다.";
+  if (heldOf(me)) return "갇힌 동안에는 송출할 수 없다.";
   if (state.battle) return "전투 중에는 송출할 수 없다.";
   if (state.activeStorylet) return "진행 중인 이야기를 먼저 끝낸다.";
   if (state.lastBroadcastDay === dayOf(state.time)) return "오늘은 이미 송출했다. 배터리를 아낀다.";

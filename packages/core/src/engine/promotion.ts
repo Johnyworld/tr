@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { knowsName, playerCalls } from "../game/acquaintance.ts";
@@ -60,7 +61,7 @@ function vacantSquad(content: Content, state: GameState, factionId: string, rank
     if (role.id === mine?.id || role.faction !== factionId || role.rank !== rank || !role.squad?.length) continue;
     const members = role.squad.filter((id) => {
       const c = state.characters[id];
-      return id !== state.playerId && !!c && !c.dead && !c.away && !c.captive && c.factionId === factionId && !(mine?.squad_mates ?? []).includes(id);
+      return id !== state.playerId && !!c && !c.dead && !c.away && !heldOf(c) && c.factionId === factionId && !(mine?.squad_mates ?? []).includes(id);
     });
     if (members.length) return members;
   }

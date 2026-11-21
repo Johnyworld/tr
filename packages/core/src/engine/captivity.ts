@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import { isCreature } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -35,7 +36,7 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
   const state = store.getState();
   const me = state.characters[state.playerId];
   const where = zone ?? baseOf(content, by);
-  if (!c || !me || me.dead || me.captive || !where || !content.factions[by] || by === me.factionId) return null;
+  if (!c || !me || me.dead || heldOf(me) || !where || !content.factions[by] || by === me.factionId) return null;
   // 동행은 그 자리에 남는다 (끌고 가던 포로는 풀려난다). 임무 짝은 자기 자리로 돌아가 알린다 (플레이 테스트 13: 적 거점에서 이틀을 기다리다 다시 합류했다)
   const left = state.companions.length > 0;
   for (const id of state.companions) {
@@ -68,7 +69,7 @@ export function markMissionSpotted(ctx: ToolContext): string | null {
 export function releasePlayer(ctx: ToolContext, returned: boolean): string | null {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
-  if (!me?.captive) return null;
+  if (!heldOf(me)) return null;
   ctx.store.append({ type: "player_released", returned });
   return returned ? "풀려났다. 빼앗겼던 것을 돌려받았다." : "빠져나왔다. 빼앗긴 것은 그곳에 두고 왔다.";
 }
@@ -97,7 +98,7 @@ export function maybeCaptureAfterDefeat(ctx: ToolContext, enemy: string): { line
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   const none = { lines: [], displays: [] };
-  if (!c || !me || me.dead || me.captive) return none;
+  if (!c || !me || me.dead || heldOf(me)) return none;
   const down = !!incapacitatingSymptom(ctx.content.scenario, me);
   const flee = down ? null : bestFlee(ctx.content, me, c.flee_moves);
   if (!flee) {
@@ -130,9 +131,9 @@ export function runCaptivity(ctx: ToolContext): void {
   const cost: Record<string, number> = {};
   const gain: Record<string, number> = {};
   for (const ch of Object.values(state.characters)) {
-    if (!ch.captive || ch.dead) continue;
-    cost[ch.captive.by] = (cost[ch.captive.by] ?? 0) + c.upkeep.amount;
-    if (ch.captive.labor) gain[ch.captive.by] = (gain[ch.captive.by] ?? 0) + c.labor.amount;
+    if (!heldOf(ch) || ch.dead) continue;
+    cost[heldOf(ch)!.by] = (cost[heldOf(ch)!.by] ?? 0) + c.upkeep.amount;
+    if (heldOf(ch)!.labor) gain[heldOf(ch)!.by] = (gain[heldOf(ch)!.by] ?? 0) + c.labor.amount;
   }
   for (const [f, n] of Object.entries(cost)) {
     const amount = Math.round(n);
@@ -156,7 +157,7 @@ export function warCaptures(ctx: ToolContext, clashes: readonly Clash[]): ToolDi
     if (lost <= 0 || ctx.rng() >= c.war_capture_chance) continue;
     const state = ctx.store.getState();
     const pool = Object.values(state.characters)
-      .filter((ch) => ch.factionId === loser && ch.id !== state.playerId && !ch.dead && !ch.away && !ch.captive && ctx.content.npcs[ch.id])
+      .filter((ch) => ch.factionId === loser && ch.id !== state.playerId && !ch.dead && !ch.away && !heldOf(ch) && ctx.content.npcs[ch.id])
       .filter((ch) => ["grunt", "squad_leader"].includes(ch.rank) && !state.companions.includes(ch.id))
       .sort((a, b) => a.id.localeCompare(b.id));
     const taken = pool[Math.floor(ctx.rng() * pool.length)];
@@ -177,9 +178,9 @@ export function warCaptures(ctx: ToolContext, clashes: readonly Clash[]): ToolDi
 export function escapeRule(state: GameState, content: Content, check: { move: string; harm_on_failure: string } | null): string | null {
   const c = rules(content);
   const me = state.characters[state.playerId];
-  if (!c || !me?.captive) return null;
+  if (!c || !heldOf(me)) return null;
   if (!check || !c.escape_moves.includes(check.move) || check.harm_on_failure !== "heavy") {
-    return `갇혀 있다 (${content.factions[me.captive.by]?.name ?? me.captive.by}). 빠져나가려면 check.move를 ${c.escape_moves.join("/")} 중 하나로, harm_on_failure를 heavy로 위험을 먼저 선언한다 (실패하면 다치고 그대로 갇혀 있다). 아니면 이야기로 풀려나는 길을 찾는다.`;
+    return `갇혀 있다 (${content.factions[heldOf(me)!.by]?.name ?? heldOf(me)!.by}). 빠져나가려면 check.move를 ${c.escape_moves.join("/")} 중 하나로, harm_on_failure를 heavy로 위험을 먼저 선언한다 (실패하면 다치고 그대로 갇혀 있다). 아니면 이야기로 풀려나는 길을 찾는다.`;
   }
   return null;
 }
@@ -189,18 +190,18 @@ export function describeCaptivityForGm(state: GameState, content: Content): stri
   const me = state.characters[state.playerId];
   if (!me) return "";
   const lines: string[] = [];
-  if (me.captive) {
+  if (heldOf(me)) {
     const c = rules(content);
     lines.push(
-      `주인공은 갇혀 있다: ${content.factions[me.captive.by]?.name ?? me.captive.by}의 ${content.locations[me.captive.zone]?.name ?? me.captive.zone}. ` +
+      `주인공은 갇혀 있다: ${content.factions[heldOf(me)!.by]?.name ?? heldOf(me)!.by}의 ${content.locations[heldOf(me)!.zone]?.name ?? heldOf(me)!.zone}. ` +
         `무기와 탄은 빼앗겼다. 갇힌 동안의 이야기만 열린다. 탈출은 이동에 ${c?.escape_moves.join("/") ?? "?"} 판정 + 무거운 위험`,
     );
   }
-  const here = Object.values(state.characters).filter((ch) => ch.captive && ch.captive.by === me.factionId && ch.captive.zone === state.playerZone && !ch.dead && ch.id !== me.id);
+  const here = Object.values(state.characters).filter((ch) => heldOf(ch) && heldOf(ch)!.by === me.factionId && heldOf(ch)!.zone === state.playerZone && !ch.dead && ch.id !== me.id);
   if (here.length && me.factionId) {
     lines.push(
       `우리 무리가 여기 가둔 포로 (handle_prisoner로 다룬다): ${here
-        .map((ch) => `${playerCalls(state, content, ch.id)} (${ch.id}, ${content.factions[ch.factionId]?.name ?? "무리 없음"}${ch.captive!.labor ? ", 노역 중" : ""})`)
+        .map((ch) => `${playerCalls(state, content, ch.id)} (${ch.id}, ${content.factions[ch.factionId]?.name ?? "무리 없음"}${heldOf(ch)!.labor ? ", 노역 중" : ""})`)
         .join(", ")}`,
     );
   }
@@ -246,10 +247,10 @@ function bindPrisoner(input: { target: string }, ctx: ToolContext): ToolOutcome 
   const state = store.getState();
   const t = state.characters[input.target];
   if (!rules(content)) return { ok: false, error: "이 월드에는 포로 규칙이 없다." };
-  if (state.characters[state.playerId]?.captive) return { ok: false, error: "갇혀 있는 몸으로는 누구도 묶을 수 없다." };
+  if (heldOf(state.characters[state.playerId])) return { ok: false, error: "갇혀 있는 몸으로는 누구도 묶을 수 없다." };
   if (!t || t.dead || t.id === state.playerId || !state.scene.present.includes(t.id)) return { ok: false, error: "그 사람이 장면에 없다." };
   if (isCreature(content, t)) return { ok: false, error: "사람만 포로로 묶는다." };
-  if (t.captive || state.companions.includes(t.id)) return { ok: false, error: "그 사람은 이미 붙잡혀 있거나 함께 다니는 사람이다." };
+  if (heldOf(t) || state.companions.includes(t.id)) return { ok: false, error: "그 사람은 이미 붙잡혀 있거나 함께 다니는 사람이다." };
   const track = harmTrack(content.scenario);
   const at = track.levels.findIndex((l) => l.id === t.conditions[track.id]);
   if (at < 2) return { ok: false, error: "아직 저항할 힘이 있다. 먼저 쓰러뜨리거나(크게 다치게) 이야기로 붙잡는다." };
@@ -289,7 +290,7 @@ const handlePrisoner = defineTool({
     if (input.action === "bind") return bindPrisoner(input, ctx);
     // 끌고 다니는 포로 (12-178): 거점에 닿기 전에도 그 자리에서 캐묻거나 풀어 줄 수 있다
     const towed = !!t && !t.dead && state.companions.includes(t.id) && state.bonds[t.id]?.kind === "prisoner";
-    if (!towed && (!t || t.dead || !t.captive || !me.factionId || t.captive.by !== me.factionId || t.captive.zone !== state.playerZone)) {
+    if (!towed && (!t || t.dead || !heldOf(t) || !me.factionId || heldOf(t)!.by !== me.factionId || heldOf(t)!.zone !== state.playerZone)) {
       return { ok: false, error: "여기 우리 무리가 가둔 포로도, 끌고 다니는 포로도 아니다." };
     }
     if (!t) return { ok: false, error: "없는 사람이다." };
@@ -357,7 +358,7 @@ const handlePrisoner = defineTool({
       if (!theirs || !state.factions[theirs] || theirs === me.factionId) return { ok: false, error: "몸값을 낼 무리가 없다." };
       if (disposition(content, theirs, me.factionId, state) <= -3) return { ok: false, error: "그 무리는 우리와 말도 섞지 않는다. 몸값도 맞교환도 없다." };
       // 그 무리에 갇힌 우리 사람이 있으면 맞바꾼다
-      const ours = Object.values(state.characters).find((ch) => ch.captive?.by === theirs && ch.factionId === me.factionId && !ch.dead && ch.id !== me.id);
+      const ours = Object.values(state.characters).find((ch) => heldOf(ch)?.by === theirs && ch.factionId === me.factionId && !ch.dead && ch.id !== me.id);
       store.append({ type: "npc_released", npcId: t.id });
       if (ours) {
         store.append({ type: "npc_released", npcId: ours.id });
@@ -371,7 +372,7 @@ const handlePrisoner = defineTool({
         lines.push(`몸값을 받고 ${josa(name, "을/를")} 돌려보냈다${pay > 0 ? "" : " (그 무리는 낼 것이 없었다)"}.`);
       }
     } else {
-      const labor = !t.captive?.labor;
+      const labor = !heldOf(t)?.labor;
       store.append({ type: "prisoner_labor", npcId: t.id, labor });
       if (labor) store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: -1, affection: -1, respect: 0 }, reason: "노역" });
       lines.push(labor ? `${josa(name, "을/를")} 노역에 부린다. 무리가 날마다 조금 얻는다.` : `${name}의 노역을 멈췄다.`);

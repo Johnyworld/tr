@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
 import { activeCompanions } from "../game/companions.ts";
@@ -24,7 +25,7 @@ function residents(ctx: ToolContext): Character[] {
   const state = ctx.store.getState();
   const companions = new Set(activeCompanions(state));
   return Object.values(state.characters).filter(
-    (c) => c.id !== state.playerId && !c.dead && !c.away && !c.captive && !!c.factionId && !!state.factions[c.factionId] && !companions.has(c.id) && !isCreature(ctx.content, c),
+    (c) => c.id !== state.playerId && !c.dead && !c.away && !heldOf(c) && !!c.factionId && !!state.factions[c.factionId] && !companions.has(c.id) && !isCreature(ctx.content, c),
   );
 }
 

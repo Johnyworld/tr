@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { isInfected } from "../game/kinds.ts";
 import { activeMissionOf } from "../game/missions.ts";
 import { z } from "zod";
@@ -127,7 +128,7 @@ const explore = defineTool({
     if (!r) return { ok: false, error: "이 월드에는 탐험 규칙이 없다." };
     const state = store.getState();
     const me = state.characters[state.playerId]!;
-    if (me.captive) return { ok: false, error: "갇힌 몸이다." };
+    if (heldOf(me)) return { ok: false, error: "갇힌 몸이다." };
     if (state.infiltration) return { ok: false, error: "잠입 중이다." };
     const display: ToolDisplayEvent = { type: "time", activityLabel: "탐험", durationLabel: `${r.step_minutes}분`, fromLabel: "", toLabel: "" };
     const ex = state.exploration;

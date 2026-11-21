@@ -1,3 +1,4 @@
+import { heldOf } from "../rules/held.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { marketValue } from "./market.ts";
 import { RESOLVE_TOOLS } from "./resolve.ts";
@@ -209,7 +210,7 @@ const npcPresence = defineTool({
       if (state.squadOrders?.[character.id]) {
         return { ok: false, error: `${josa(name, "은/는")} 분대 명령으로 나가 있다 (${formatTime(state.squadOrders[character.id]!.until)}쯤 끝난다).` };
       }
-      if (character.captive && character.captive.zone !== state.playerZone) {
+      if (heldOf(character) && heldOf(character)!.zone !== state.playerZone) {
         return { ok: false, error: `${josa(name, "은/는")} 지금 장면에 들일 수 없다 (캐릭터는 이 사람의 행방을 모른다).` };
       }
       enterScene(ctx, character.id);
@@ -221,7 +222,7 @@ const npcPresence = defineTool({
     // 보통 다른 구역에 있는 사람이면 알린다 (플레이 테스트 13: 거점의 상관이 강변 장면에 들어왔다). 동행·이야기 배역·갇힌 사람은 빼고
     const s1 = store.getState();
     const home = npc && input.action === "enter" ? npcZoneAt(npc, s1.time) : undefined;
-    const away = !!home && home !== s1.playerZone && !s1.companions.includes(character.id) && !character.captive && !Object.values(s1.activeStorylet?.cast ?? {}).includes(character.id);
+    const away = !!home && home !== s1.playerZone && !s1.companions.includes(character.id) && !heldOf(character) && !Object.values(s1.activeStorylet?.cast ?? {}).includes(character.id);
     const where = away ? ` 이 사람은 보통 지금 ${content.locations[home!]?.name ?? home}에 있다: 여기 와 있는 까닭을 서술하라 (상관이 장면에 들어온 것이 아니라 주인공이 찾아갔다면 그 구역으로 옮겨 가야 한다).` : "";
     return {
       ok: true,

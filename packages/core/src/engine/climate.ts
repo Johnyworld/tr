@@ -1,3 +1,4 @@
+import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { josa } from "../text.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { stoveAt } from "./facilities.ts";
@@ -45,7 +46,7 @@ export function welcomedAsGuest(content: Content, state: GameState): boolean {
   const me = state.characters[state.playerId];
   const zone = state.playerZone;
   const owner = zone ? state.zones[zone]?.owner : null;
-  if (!shelter || shelter.guests === undefined || !me || me.captive || !zone || !owner || owner === me.factionId) return false;
+  if (!shelter || shelter.guests === undefined || !me || pausedWhileHeld(state, "guest") || !zone || !owner || owner === me.factionId) return false;
   if (content.locations[zone]?.kind !== "base") return false;
   // 몰래 숨어든 사람은 손님이 아니다 (플레이 테스트 13)
   if (state.infiltration) return false;

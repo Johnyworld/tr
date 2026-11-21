@@ -1,3 +1,4 @@
+import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { infestationOf } from "../game/infestation.ts";
 import { isCreature } from "../game/kinds.ts";
@@ -76,14 +77,14 @@ export function runHelpless(ctx: ToolContext, actionStartedAt?: number): ToolDis
     if (state.helplessAt !== null) store.append({ type: "helpless_cleared" });
     return [];
   }
-  if (state.helplessAt !== null || state.battle || me.captive || !state.playerZone) return [];
+  if (state.helplessAt !== null || state.battle || pausedWhileHeld(state, "helpless") || !state.playerZone) return [];
   // 이 행동에서 막 쓰러졌으면 무슨 일이 생길지는 다음에 시간이 흐를 때 정한다: 쓰러진 그 5분 안에 죽지 않게 (플레이 테스트 13)
   if (actionStartedAt !== undefined && (state.recovery.lastChangeAt[me.id] ?? -Infinity) >= actionStartedAt) return [];
 
   const zone = state.playerZone;
   const people = state.scene.present
     .map((id) => state.characters[id])
-    .filter((c): c is Character => !!c && !c.dead && !c.away && !c.captive && c.id !== me.id && !isAnimal(ctx, c));
+    .filter((c): c is Character => !!c && !c.dead && !c.away && !heldOf(c) && c.id !== me.id && !isAnimal(ctx, c));
   const allies = people.filter((c) => sideOf(ctx, c) === "ally");
   const hostiles = people.filter((c) => sideOf(ctx, c) === "hostile");
 
@@ -130,7 +131,7 @@ export function helplessAfterBattle(ctx: ToolContext, won: boolean, ours: string
   if (!ctx.content.scenario.helpless) return null;
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
-  if (!me || me.dead || me.captive || !incapacitatingSymptom(ctx.content.scenario, me)) return null;
+  if (!me || me.dead || heldOf(me) || !incapacitatingSymptom(ctx.content.scenario, me)) return null;
   return won ? byFaction(ctx, ours) : byEnemies(ctx, [], theirs);
 }
 

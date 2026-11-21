@@ -113,3 +113,26 @@ export function tellPlayerSecret(ctx: ToolContext, listenerId: string): { ok: tr
   ctx.store.append({ type: "secret_told", owner: state.playerId, to: told });
   return { ok: true, fact: secret.fact, told };
 }
+
+/** 캐릭터 시트의 설정 (자기 것이라 비밀의 사실과 아는 사람까지 보인다) */
+export type SettingSheetRow = { id: string; slot: string; slotLabel: string; name: string; description: string; rolls: boolean; secret: { fact: string; knownBy: string[] } | null };
+export function settingSheet(content: { scenario: ToolContext["content"]["scenario"] }, state: ReturnType<ToolContext["store"]["getState"]>, c: { id: string; settings: readonly string[] }, name: (id: string) => string): SettingSheetRow[] {
+  const s = content.scenario;
+  const order = (s.settings?.slots ?? []).map((x) => x.id);
+  return c.settings
+    .map((id) => settingOf(s, id))
+    .filter((x) => !!x)
+    .sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot))
+    .map((x) => {
+      const slot = s.settings?.slots.find((y) => y.id === x.slot);
+      return {
+        id: x.id,
+        slot: x.slot,
+        slotLabel: slot?.label ?? x.slot,
+        name: x.name,
+        description: x.description,
+        rolls: !!slot?.rolls,
+        secret: x.fact ? { fact: x.fact, knownBy: secretKnownBy(state, c.id).map(name) } : null,
+      };
+    });
+}

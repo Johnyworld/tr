@@ -26,6 +26,7 @@ import {
 } from "../game/missions.ts";
 import { effectiveSkill, traitsOf } from "../engine/traits.ts";
 import { personaChips, personaScale } from "../engine/persona.ts";
+import { settingSheet, type SettingSheetRow } from "../rules/self.ts";
 import { atMaxLevel, xpForLevel } from "../engine/growth.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { DEED_TAG_LABELS, NEUTRAL_RELATION } from "../game/reputation.ts";
@@ -103,6 +104,8 @@ export type PlayerView = {
   persona: { id: string; label: string; level: number; acting: string }[];
   /** 성격 표: 모든 축, 0 포함 (만들 때와 같은 모양) */
   personaScale: { id: string; low: string; high: string; value: number; acting: string }[];
+  /** 설정 (4.6.4): 칸 순서, 비밀은 사실과 아는 사람까지 (자기 것) */
+  settings: SettingSheetRow[];
   /** 모든 스킬. 0 미만은 익히지 않은 것 */
   /** 스킬 (4.2.1): kind 누구나 하는 일/전문 기술, usable 판정할 수 있는지(못 하는 전문 기술이면 false), tier 단계 이름, raiseCost 한 단계 올리는 점수 */
   skills: { id: string; label: string; category: string; kind: "common" | "expert"; value: number; usable: boolean; learned: number | null; tier: string; raiseCost: number | null; stats: string[] }[];
@@ -455,6 +458,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     traits: traitsOf(content, player).map((t) => ({ id: t.id, label: t.label, kind: t.kind, description: t.description })),
     persona: personaChips(content, player),
     personaScale: personaScale(content, player),
+    settings: settingSheet(content, state, player, (id) => playerCalls(state, content, id)),
     skills: scenario.moves
       // 익히지 않은 스킬(-1)과 못 하는 전문 기술도 보인다 (사격이 시트에 없어 보였다). 화면이 흐리게 그린다 (4.2.1)
       .map((m) => {

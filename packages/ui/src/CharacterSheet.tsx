@@ -143,6 +143,24 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
             </section>
           )}
 
+          {(player.settings?.length ?? 0) > 0 && (
+            <section className="block settings-sheet">
+              <h3>설정</h3>
+              <dl className="stats">
+                {player.settings!.map((x) => (
+                  <div key={x.id} title={x.rolls ? "거스르면 정신력으로 굴린다" : undefined}>
+                    <dt>
+                      <span className="muted small">{x.slotLabel}</span> {x.name}
+                    </dt>
+                    <dd className="muted small">
+                      {x.secret ? `${x.secret.fact} · 아는 사람: ${x.secret.knownBy.length ? x.secret.knownBy.join(", ") : "없음"}` : x.description}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
           <SkillBlock player={player} onStatus={onStatus} />
 
           {player.debts && player.debts.length > 0 && (

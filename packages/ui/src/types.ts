@@ -29,6 +29,8 @@ export type PlayerView = {
   persona?: { id: string; label: string; level: number; acting: string }[];
   /** 성격 표: 모든 축, 0 포함 */
   personaScale?: { id: string; low: string; high: string; value: number; acting: string }[];
+  /** 설정 (4.6.4): 비밀은 사실과 아는 사람까지 */
+  settings?: { id: string; slot: string; slotLabel: string; name: string; description: string; rolls: boolean; secret: { fact: string; knownBy: string[] } | null }[];
   /** 스킬 (4.2.1): usable false = 못 하는 전문 기술, tier 단계 이름, raiseCost 한 단계 올리는 점수 (못 함·최고 단계면 null) */
   skills: { id: string; label: string; category: string; kind: "common" | "expert"; value: number; usable: boolean; learned: number | null; tier: string; raiseCost: number | null; stats: string[] }[];
   growth: { level: number; xp: number; next: number; skillPoints: number; prev?: number; skillMax?: number; skillMin?: number; skillCosts?: number[] } | null;

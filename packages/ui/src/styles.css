@@ -3962,3 +3962,12 @@ button.persona-btn:not(:disabled):hover {
 .settings-exit-button:hover {
   border-color: var(--error);
 }
+
+/* 시트의 설정 (4.6.4): 칸·이름 한 줄, 설명은 그 아래 */
+.settings-sheet .stats div {
+  display: block;
+}
+.settings-sheet .stats dd {
+  margin-top: 1px;
+  line-height: 1.4;
+}

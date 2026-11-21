@@ -23,7 +23,7 @@ describe("출신과 말씨", () => {
     expect(order[1]).toBe("gyeongsang");
     expect(count.jeju!).toBeLessThan(count.gangwon!);
     expect(count.hamgyeong!).toBeLessThan(count.gangwon!);
-  });
+  }, 30000); // 1200명을 만든다: 전체 실행의 부하에서 5초를 넘긴 적이 있다
 
   it("지방 출신이어도 표준어를 쓸 수 있고, 수도권은 늘 표준어. 동물은 출신이 없다", () => {
     const rng = createSeededRng(3);

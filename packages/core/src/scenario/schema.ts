@@ -694,6 +694,21 @@ export const scenarioFileSchema = z
         /** 사기 -3 ~ +3을 부르는 말 (7개) */
         morale_labels: z.array(z.string().min(1)).length(7),
         /**
+         * 세계가 움직인 느낌 (12-242). traces: 교전이 있던 구역에 trace_days일 동안 남는 흔적 (교전 종류 → GM이 볼 한 줄).
+         * named: 사상자 한 명마다 chance로 이름 있는 대원 하나에게 내려온다. 그중 death로 죽고 나머지는 다친다 (중상·경상 반반).
+         * invested_from: 그 인물이 주인공에게 품은 신뢰나 호감이 이 값 이상이면 공들인 관계 (첫 죽음을 크게 다침으로 바꾼다)
+         */
+        felt: z
+          .strictObject({
+            traces: z.record(z.string(), z.string().min(1)).default({}),
+            trace_days: z.number().int().min(1).default(2),
+            named: z.strictObject({ chance: z.number().min(0).max(1), death: z.number().min(0).max(1) }).optional(),
+            invested_from: z.number().int().default(4),
+            /** 남의 일이 소문으로 닿을 확률 (공통 규칙 14) */
+            rumor_chance: z.number().min(0).max(1).default(0.4),
+          })
+          .optional(),
+        /**
          * 무리 형편을 대하는 말투 (12-105): 장면의 같은 무리 사람이 어려움(분위기·배급·창고·전황)을 어떻게 입에 올리는지.
          * 인물의 트레잇이 가장 많이 겹치는 태도를 고르고, 없으면 default. hint: GM의 연기 힌트
          */
@@ -899,6 +914,8 @@ export const scenarioFileSchema = z
         recruit_move: id,
         /** 무리 사이 싸움에서 이긴 쪽이 이름 있는 사람 하나를 붙잡아 갈 확률 */
         war_capture_chance: z.number().min(0).max(1).default(0),
+        /** 무리 사이 싸움에서 붙잡혀 갈 수 있는 계급 (비우면 아무나, 12-243: 코드에 박혀 있던 것을 옮겼다) */
+        war_capture_ranks: z.array(id).default([]),
       })
       .optional(),
     /**

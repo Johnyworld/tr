@@ -1077,6 +1077,8 @@ captivity:
   interrogate_moves: [intimidate, insight]
   recruit_move: persuade
   war_capture_chance: 0.12
+  # 무리 사이 싸움에서 붙잡혀 갈 수 있는 계급 (12-243)
+  war_capture_ranks: [grunt, squad_leader]
 
 # 상처 종류와 출혈 (12-91, *임시*): 몸의 위험을 걸 때 GM이 상처 종류(harm_kind)를 고른다
 wounds:
@@ -1729,6 +1731,16 @@ seasons:
 
 # 세력 단위 전쟁 (9단계, 기획서 9장). 규칙은 core, 여기는 수치와 문구 (*임시*)
 war:
+  # 세계가 움직인 느낌 (12-242): 교전의 흔적, 사상자 가운데 이름 있는 대원, 공들인 관계
+  felt:
+    trace_days: 2
+    traces:
+      assault: "며칠 전 총공격의 흔적: 바리케이드가 부서지고 벽에 총알 자국, 바닥에 탄피와 핏자국, 덮지 못한 시체 냄새가 남아 있다"
+      raid: "얼마 전 습격의 흔적: 문이 비틀려 열려 있고, 흩어진 짐과 탄피, 끌고 간 자국이 남아 있다"
+      skirmish: "얼마 전 총격전의 흔적: 엄폐물 뒤로 탄피가 흩어져 있고, 벽에 새 총알 자국이 있다"
+      occupy: "얼마 전 주인이 바뀐 흔적: 새 깃발과 표식, 치우다 만 옛 무리의 짐이 남아 있다"
+    named: { chance: 0.2, death: 0.15 }
+    invested_from: 4
   # 1인당 하루 소모량
   upkeep: { food: 1, water: 1, fuel: 0.15 }
   # 모자라면 사기가 떨어지고 사람이 죽는 자원

@@ -301,6 +301,8 @@ export function createGameSchemas(s: Scenario) {
     exposedAt: z.record(z.string(), z.number().int()).default({}),
     /** 이 시각까지는 위험 임무를 내지 않는다 (무리에 막 들어온 유예, 12-239) */
     missionGraceUntil: z.number().int().nullable().default(null),
+    /** 세계의 일이 죽게 할 뻔했으나 한 번 봐준 공들인 관계 (12-242). 두 번째는 죽을 수 있다 */
+    sparedOnce: z.array(z.string()).default([]),
     /** 구역마다 오늘의 소음 (기획서 4.8) */
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 소리를 듣고 몰려오는 감염체 (infestation.swarm_hours): 구역 → 그날 소리(day)에 몰려드는 시각(at), 이미 왔는지(done) */
@@ -739,6 +741,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()), quarantine: z.boolean().optional() }),
     /** 감염체에게 다쳤다 (격리의 근거, 12-238). 감염이 됐는지와 따로 */
     z.strictObject({ type: z.literal("infection_exposed"), characterId: z.string() }),
+    /** 공들인 관계의 첫 죽음을 봐줬다 (12-242) */
+    z.strictObject({ type: z.literal("npc_spared"), npcId: z.string() }),
     z.strictObject({ type: z.literal("player_released"), returned: z.boolean() }),
     z.strictObject({ type: z.literal("prisoner_labor"), npcId: z.string(), labor: z.boolean() }),
     /** 맡긴다 / 구역의 산출이 는다 / 이야기로 배운다 (12-54) */
@@ -1206,6 +1210,7 @@ export const EMPTY_STATE: GameState = {
   cargo: {},
   exposedAt: {},
   missionGraceUntil: null,
+  sparedOnce: [],
   restockedDay: {},
   squad: null,
   promotionOffer: null,
@@ -1861,6 +1866,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.scene.present = [];
       return next;
     }
+    case "npc_spared":
+      next.sparedOnce = [...(next.sparedOnce ?? []), event.npcId];
+      return next;
     case "infection_exposed":
       next.exposedAt = { ...(next.exposedAt ?? {}), [event.characterId]: state.time };
       return next;

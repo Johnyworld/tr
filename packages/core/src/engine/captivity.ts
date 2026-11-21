@@ -19,6 +19,8 @@ import { activeMissionOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
+import { hearNews } from "../rules/news.ts";
+import { protectedFromWorld } from "../rules/company.ts";
 
 /**
  * 포로 (기획서 7.6, 12-55).
@@ -156,18 +158,18 @@ export function warCaptures(ctx: ToolContext, clashes: readonly Clash[]): ToolDi
     if (lost <= 0 || ctx.rng() >= c.war_capture_chance) continue;
     const state = ctx.store.getState();
     const pool = Object.values(state.characters)
-      .filter((ch) => ch.factionId === loser && ch.id !== state.playerId && !ch.dead && !ch.away && !heldOf(ch) && ctx.content.npcs[ch.id])
-      .filter((ch) => ["grunt", "squad_leader"].includes(ch.rank) && !state.companions.includes(ch.id))
+      // 세계가 건드리지 않는 사람은 빼고, 붙잡혀 갈 수 있는 계급만 (공통 규칙 8, 12-243)
+      .filter((ch) => ch.factionId === loser && !!ctx.content.npcs[ch.id] && !protectedFromWorld(state, ctx.content, ch.id))
+      .filter((ch) => !c.war_capture_ranks.length || c.war_capture_ranks.includes(ch.rank))
       .sort((a, b) => a.id.localeCompare(b.id));
     const taken = pool[Math.floor(ctx.rng() * pool.length)];
     const zone = baseOf(ctx.content, winner);
     if (!taken || !zone) continue;
     ctx.store.append({ type: "npc_captured", npcId: taken.id, by: winner, zone });
-    const me = state.characters[state.playerId];
-    if (me && !me.dead && me.factionId === loser && (state.known[state.playerId] ?? []).includes(taken.id)) {
+    // 우리 무리 사람이 끌려갔으면 소식으로, 남의 무리면 만난 사람만 소문으로 (공통 규칙 14). 이름을 아는 사람만
+    if ((state.known[state.playerId] ?? []).includes(taken.id)) {
       const fact = sentence(`${josa(playerCalls(state, ctx.content, taken.id), "이/가")} ${josa(ctx.content.factions[winner]?.name ?? winner, "과/와")}의 싸움에서 붙잡혀 갔다고 한다`);
-      ctx.store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${ctx.store.getState().nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: state.time, topic: "war" } });
-      displays.push({ type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS.report });
+      displays.push(...hearNews(ctx, { fact, factions: [loser], person: taken.id, topic: "war", showOursOnly: true }));
     }
   }
   return displays;

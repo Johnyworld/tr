@@ -69,6 +69,7 @@ import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } 
 import { ownedBy } from "../rules/home.ts";
 import { pastGiven, unlearnedNote } from "../rules/skill.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
+import { tracesHere } from "./felt.ts";
 
 /**
  * 정보 필터 (기획서 6.2).
@@ -204,7 +205,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["present", describePresentNpcs(state, content, player)],
     ["known", describeKnownPeople(state, content)],
     ["facilities", describeFacilities(content, state).join("\n")],
-    ["zone_people", [describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeTrap(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
+    ["zone_people", [tracesHere(state, content), describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeTrap(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
     ["zone_extras", describeZoneExtras(state, content)],
     ["templates", describeExtraTemplates(state, content)],
     ["beliefs", describeBeliefs(state, content)],

@@ -61,6 +61,8 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, DEATH_GUIDE } from
 import { onOwnLand, ownedBy } from "../rules/home.ts";
 import { reduceHarm } from "../rules/damage.ts";
 import { learned } from "../rules/skill.ts";
+import { routeCause } from "./felt.ts";
+import { hearNews } from "../rules/news.ts";
 
 /**
  * 스토리렛 연결 (기획서 10.3).
@@ -981,11 +983,11 @@ export function applyEffect(
     store.append({ type: "npc_departed", npcId: id, toFaction: to });
     const name = playerCalls(state, content, id);
     // 우리 무리 사람이 떠나면 무리 안에 소식으로 돈다 (12-238, 플레이 테스트 13: 동료가 탈영해도 점호·소문에 아무 일이 없었다). 갇혀 있으면 모른다
+    // 우리 무리 사람이 떠나면 무리 안의 소식으로 (공통 규칙 14). 남의 무리 일은 여기서 알리지 않는다
     const mine = state.characters[playerId]?.factionId;
-    if (mine && npc.factionId === mine && to !== mine && !heldOf(state.characters[playerId])) {
-      const now = store.getState();
+    if (mine && npc.factionId === mine && to !== mine) {
       const fact = to ? `${josa(name, "이/가")} ${content.factions[to]?.name ?? to} 쪽으로 넘어갔다는 말이 무리 안에 돈다.` : `${josa(name, "이/가")} 무리에서 사라졌다. 탈영이라는 말이 무리 안에 돈다.`;
-      store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: now.time } });
+      hearNews(ctx, { fact, factions: [mine] });
     }
     return {
       line: to ? `${josa(name, "은/는")} ${content.factions[to]?.name ?? to} 쪽으로 넘어갔다.` : `${josa(name, "은/는")} 도시를 떠났다. 다시 장면에 나오지 않는다.`,
@@ -1073,7 +1075,9 @@ export function runRoadEvent(ctx: ToolContext, risk = 1): ToolDisplayEvent[] {
   const gap = content.scenario.storylet_pacing.min_any_gap_hours * 60;
   if (inCrisis(state, content) || (state.lastStoryletAt !== null && state.lastStoryletAt >= state.runStartedAt && state.time - state.lastStoryletAt < gap)) return [];
   // 탈 것으로 빨리 지나가면 길 위의 일이 덜 생긴다 (12-137)
-  const chance = (travel.chance[Math.min(3, routeDanger(content, state))] ?? 0) * risk;
+  // 원인 있는 만남 (12-242): 그 길 끝의 최근 교전·들킨 일로 한 단계 오른다
+  const cause = routeCause(state, content);
+  const chance = (travel.chance[Math.min(3, routeDanger(content, state) + (cause ? 1 : 0))] ?? 0) * risk;
   if (rng() >= chance) return [];
   // 우리 땅끼리 오가는 길에서는 위협 이야기를 고르지 않는다 (공통 규칙 11, 12-240: 우리 땅 두 구역 사이 30분 길에서 밤길의 발소리)
   const ownRoad = onOwnLand(state, state.lastRoute.from) && onOwnLand(state, state.lastRoute.to);
@@ -1081,6 +1085,8 @@ export function runRoadEvent(ctx: ToolContext, risk = 1): ToolDisplayEvent[] {
   if (!storylet) return [];
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
   displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });
+  // 왜 이 길에서 마주쳤는지 (플레이어가 원인을 알아챌 수 있게)
+  if (cause) displays.push({ type: "belief", fact: cause, sourceLabel: "", note: `(길 위의 일이 잦은 까닭: ${cause}. 서술에 녹인다)` });
   return displays;
 }
 

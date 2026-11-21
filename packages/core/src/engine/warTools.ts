@@ -24,6 +24,8 @@ import { fill, josa, sentence } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { ownedBy } from "../rules/home.ts";
 import { onOwnLand } from "../rules/home.ts";
+import { casualtiesToPeople } from "./felt.ts";
+import { hearNews } from "../rules/news.ts";
 
 /**
  * 하루 단위 전쟁 틱 (기획서 9.2). 시간이 흐른 뒤 날이 바뀌었으면 지난 날만큼(최대 MAX_CATCH_UP_DAYS일) 돌린다.
@@ -78,6 +80,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     // 감염체 압력: 전날의 소음, 오늘 새벽 교전의 시체 (12-112)
     for (const change of infestationDay(content, store.getState(), day, result.clashes, ctx.rng)) store.append({ type: "infestation_changed", ...change });
     displays.push(...deliverNews(ctx, result.clashes));
+    // 사상자 가운데 이름 있는 대원 (세계가 움직인 느낌, 12-242)
+    displays.push(...casualtiesToPeople(ctx, result.clashes));
     // 다른 무리의 형편이 소문으로 (12-105)
     displays.push(...spreadTroubleRumors(ctx));
     // 무리 사이 싸움의 포로, 포로를 먹이고 부리기 (12-55)
@@ -97,19 +101,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     runCaptivity(ctx);
     // 연애: 다른 연인을 알아채기, 같은 사람을 보는 두 사람 (12-58)
     // 무리의 태도가 바뀐 소식 (이탈, 편들기): 우리 무리 일이면 전해 듣고, 아니면 소문으로
-    for (const shift of result.shifts) {
-      const now = ctx.store.getState();
-      const player = now.characters[now.playerId];
-      if (!player || player.dead) break;
-      const ours = shift.factionId === player.factionId || shift.to === player.factionId;
-      const source: Belief["source"] = ours ? "report" : "rumor";
-      ctx.store.append({
-        type: "belief_added",
-        characterId: now.playerId,
-        belief: { id: `b_${now.nextBeliefNo}`, fact: sentence(shift.news), source, accuracy: "approximate", learnedAt: now.time, topic: WAR_TOPIC },
-      });
-      displays.push({ type: "belief", fact: sentence(shift.news), sourceLabel: BELIEF_SOURCE_LABELS[source] });
-    }
+    // 크게 도는 말이라 남의 일도 늘 소문으로 닿는다 (공통 규칙 14)
+    for (const shift of result.shifts) displays.push(...hearNews(ctx, { fact: sentence(shift.news), factions: [shift.factionId, shift.to], always: true, topic: WAR_TOPIC }));
     // 하루가 지난 몸: 배급에 따른 허기, 감염 진행
     displays.push(...runDailyBody(ctx, day));
     // NPC도 낫는다: 저절로, 그리고 무리 의무실의 돌봄 (12-52). 병이 진행되기 전에 돌보므로, 오늘 드러난 열은 하루를 넘긴 뒤에야 의무실이 손쓴다
@@ -141,25 +134,9 @@ function ensurePlayerZone(ctx: ToolContext) {
   if (zone) ctx.store.append({ type: "zone_moved", from: null, to: zone });
 }
 
-/** 교전 소식을 플레이어의 믿음으로 남긴다 */
+/** 교전 소식을 플레이어의 믿음으로 남긴다 (공통 규칙 14) */
 function deliverNews(ctx: ToolContext, clashes: readonly Clash[]): ToolDisplayEvent[] {
-  const displays: ToolDisplayEvent[] = [];
-  for (const clash of clashes) {
-    const state = ctx.store.getState();
-    const player = state.characters[state.playerId];
-    if (!player || player.dead) return displays;
-    const ours = clash.attacker === player.factionId || clash.defender === player.factionId;
-    if (!ours && ctx.rng() >= RUMOR_CHANCE) continue;
-    const source: Belief["source"] = ours ? "report" : "rumor";
-    const fact = describeClash(ctx.content, clash);
-    ctx.store.append({
-      type: "belief_added",
-      characterId: state.playerId,
-      belief: { id: `b_${state.nextBeliefNo}`, fact, source, accuracy: "approximate", learnedAt: state.time, topic: WAR_TOPIC },
-    });
-    if (ours) displays.push({ type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[source] });
-  }
-  return displays;
+  return clashes.flatMap((clash) => hearNews(ctx, { fact: describeClash(ctx.content, clash), factions: [clash.attacker, clash.defender], topic: WAR_TOPIC, showOursOnly: true }));
 }
 
 /** 사상자 수를 대략적인 말로 (정확한 수는 간부나 알 일이다) */

@@ -28,6 +28,7 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
 import { endActiveStorylet } from "./storyletTools.ts";
 import { ownedBy } from "../rules/home.ts";
+import { casualtiesToPeople } from "./felt.ts";
 
 /** 지키는 전투에서 막아 주는 시설의 이름 (월드 팩의 holds 시설) */
 const barrierLabel = (content: Content) => content.scenario.facilities?.find((f) => f.effects.holds)?.label ?? "막아 둔 것";
@@ -86,6 +87,7 @@ export function runPendingClashes(ctx: ToolContext): ToolDisplayEvent[] {
     const { world, clash } = resolveClash(state, ctx.content, ctx.rng, due);
     ctx.store.append({ type: "clash_resolved", pendingId: due.id, clash, factions: world.factions, zones: world.zones });
     displays.push(...reportClash(ctx, clash));
+    displays.push(...casualtiesToPeople(ctx, [clash]));
   }
 }
 

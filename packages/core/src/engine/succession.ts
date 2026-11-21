@@ -19,6 +19,7 @@ import { formatTime, MINUTES_PER_DAY, START_TIME } from "../rules/time.ts";
 import { josa, sentence } from "../text.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
+import { hearNews } from "../rules/news.ts";
 
 /**
  * 사망과 계승 (기획서 3.1, 3.2).
@@ -297,8 +298,11 @@ export function switchCharacter(
     const seen = r.characterId === previous.id && state.scene.present.some((id) => id !== previous.id && !state.characters[id]?.dead && (id === heir.id || (!!heir.factionId && state.characters[id]?.factionId === heir.factionId)));
     // 이어받는 사람이 그 자리에 있었으면 직접 본 일이다
     const witnessed = r.characterId === previous.id && (state.scene.present.includes(heir.id) || state.companions.includes(heir.id));
-    if (witnessed) add(`${josa(r.name, "이/가")} 눈앞에서 죽었다 (${r.cause})`, "seen");
-    else add(`${josa(report ? r.name : nameAs(now, content, heir.id, r.characterId), "이/가")} ${report && seen ? `죽었다고 한다 (${r.cause})` : report ? "돌아오지 않았다. 죽었다고 한다 (어떻게 죽었는지 본 사람이 없다)" : "죽었다고 한다"}`, report ? "report" : "rumor");
+    // 공통 규칙 14: 그 자리에서 봤으면 직접, 같은 무리면 소식, 아니면 소문으로 (계승한 사람은 늘 듣는다)
+    const fact = witnessed
+      ? `${josa(r.name, "이/가")} 눈앞에서 죽었다 (${r.cause})`
+      : `${josa(report ? r.name : nameAs(now, content, heir.id, r.characterId), "이/가")} ${report && seen ? `죽었다고 한다 (${r.cause})` : report ? "돌아오지 않았다. 죽었다고 한다 (어떻게 죽었는지 본 사람이 없다)" : "죽었다고 한다"}`;
+    hearNews(ctx, { fact: sentence(fact), factions: [r.factionId], seen: witnessed, always: true, once: true });
   }
   // 같은 무리라면 지난 하루 우리 무리가 낀 교전은 보고로 들었다 (이전 캐릭터가 죽은 그 전투 포함)
   for (const { clash, at } of now.recentClashes) {

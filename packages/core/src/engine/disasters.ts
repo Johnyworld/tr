@@ -5,6 +5,7 @@ import { seasonOfDay } from "../sim/season.ts";
 import { fill, josa, sentence } from "../text.ts";
 import { changeCondition } from "./body.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { hearNews } from "../rules/news.ts";
 
 /**
  * 큰 재난 (기획서 9.18, 12-169). 한 해에 두어 번, 도시 전체가 흔들리는 일. 일어나는 날·곳·크기는 코드가 정한다 (원칙 2).
@@ -136,11 +137,9 @@ function strike(ctx: ToolContext, d: Disaster, day: number): ToolDisplayEvent[] 
   const near = disasterNear(content, now, d);
   // 직접 겪은 것은 그 구역에 있을 때만 (도시 전체의 재난은 누구나). 가까우면 들은 소식 (플레이 테스트 13: 30분 전에 떠난 장터의 큰불을 "직접 겪음")
   const direct = !d.zone || now.playerZone === d.zone;
-  const source = direct ? "seen" : near ? "report" : "rumor";
   const how = direct ? "직접 겪음" : near ? "가까이서 들음" : "소문";
-  store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source, accuracy: near ? "exact" : "approximate", learnedAt: now.time } });
-  // 결과에도 한 줄 (플레이 테스트 12: 재난이 알림 없이 생겼다)
-  displays.push({ type: "belief", fact, sourceLabel: direct ? "직접 봄" : near ? "전해 들음" : "소문", note: `재난 소식 (${how}): ${fact} ${direct ? "그 자리의 장면으로 서술한다." : "누군가 전하는 말이나 멀리 보이는 연기로 짧게 서술한다."}` });
+  // 도시 전체가 듣는다 (공통 규칙 14: 직접 겪음 → 가까이서 들은 소식 → 소문). 결과에도 한 줄 (플레이 테스트 12: 재난이 알림 없이 생겼다)
+  displays.push(...hearNews(ctx, { fact, factions: [], seen: direct, near, always: true, accuracy: near ? "exact" : "approximate", note: `재난 소식 (${how}): ${fact} ${direct ? "그 자리의 장면으로 서술한다." : "누군가 전하는 말이나 멀리 보이는 연기로 짧게 서술한다."}` }));
   return displays;
 }
 

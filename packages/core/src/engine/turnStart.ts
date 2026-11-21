@@ -43,6 +43,17 @@ function runDailyWeather(ctx: ToolContext) {
   if (next) ctx.store.append({ type: "weather_forecast", day: today + 1, weatherId: next });
 }
 
+/**
+ * 시간이 흐른 뒤 처리를 마지막으로 돌린 시각 (store마다). 시간을 쓴 도구가 이 처리를 건너뛰면 executeTool이 한 번 돌린다 (12-240, A11:
+ * 탐험·잠입이 시간을 쓰고도 예정된 교전·임무 기한·격리 해제를 다음 행동까지 미뤘다)
+ */
+const caughtUp = new WeakMap<object, number>();
+
+/** 지금 시각까지 시간이 흐른 뒤 처리가 돌았는가 */
+export function afterTimeCaughtUp(ctx: ToolContext): boolean {
+  return (caughtUp.get(ctx.store) ?? -1) >= ctx.store.getState().time;
+}
+
 /** urgentOnly: 자다가 급한 이야기에 깼으면 그 이야기만 연다 (깨운 일 대신 다른 이야기가 열리지 않게, 12-187) */
 export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: boolean; actionStartedAt?: number; storylets?: boolean } = {}): ToolDisplayEvent[] {
   // 의식불명 등 스스로 아무것도 못 하게 됐으면 진행 중이던 이야기는 거기서 끝난다 (깨어난 뒤에 대화가 이어지지 않게)
@@ -84,5 +95,6 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   const calmed = runFearDecay(ctx);
   // 술·진통제·각성제 기운이 빠진다 (12-157)
   const worn = runWearOff(ctx);
+  caughtUp.set(ctx.store, ctx.store.getState().time);
   return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...swarms, ...storylets, ...healed, ...calmed, ...worn];
 }

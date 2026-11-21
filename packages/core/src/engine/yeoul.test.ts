@@ -96,13 +96,13 @@ describe("건너가기", () => {
   it("건너는 표가 있으면 위험 없이 건너고, 섬에서 나오는 길도 같다", () => {
     const { w } = atRiverside(mkdtempSync(join(tmpdir(), "trpg-y-")));
     w.ctx().store.append({ type: "flag_set", characterId: "player", flag: "y_passage" });
-    expect(w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle" })).ok).toBe(true);
+    expect(w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle", ignore_story: true })).ok).toBe(true);
     expect(w.state().playerZone).toBe("yeoul_isle");
     // 섬의 허락 없이 나가려면 다시 위험한 시도 (y_passage는 들어가는 표다)
     w.ctx().store.append({ type: "flag_cleared", characterId: "player", flag: "y_passage" });
-    expect(w.executeTool("take_action", act("강변으로 돌아간다", { move_to: "riverside" })).ok).toBe(false);
+    expect(w.executeTool("take_action", act("강변으로 돌아간다", { move_to: "riverside", ignore_story: true })).ok).toBe(false);
     w.ctx().store.append({ type: "flag_set", characterId: "player", flag: "y_leave_pass" });
-    expect(w.executeTool("take_action", act("강변으로 돌아간다", { move_to: "riverside" })).ok).toBe(true);
+    expect(w.executeTool("take_action", act("강변으로 돌아간다", { move_to: "riverside", ignore_story: true })).ok).toBe(true);
     expect(w.state().playerZone).toBe("riverside");
     w.close();
   });
@@ -113,7 +113,7 @@ describe("해금은 모든 판에 남는다", () => {
     const dir = mkdtempSync(join(tmpdir(), "trpg-y-"));
     const { w } = atRiverside(dir);
     w.ctx().store.append({ type: "flag_set", characterId: "player", flag: "y_passage" });
-    w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle" }));
+    w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle", ignore_story: true }));
     w.close();
     const m = new WorldManager({ savesDir: dir, content, rngFactory: () => createSeededRng(4) });
     expect(m.unlocks()).toEqual({ post_apoc: ["role_y_islander"] });
@@ -134,7 +134,7 @@ describe("해금은 모든 판에 남는다", () => {
     const dir = mkdtempSync(join(tmpdir(), "trpg-y-"));
     const { w } = atRiverside(dir);
     w.ctx().store.append({ type: "flag_set", characterId: "player", flag: "y_passage" });
-    w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle" }));
+    w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle", ignore_story: true }));
     w.ctx().store.append({ type: "name_learned", characterId: "player", targetId: "y_gangho" });
     w.runCheat("~kill me");
     expect(w.successionOptions().map((o) => o.id)).toContain("new:faction_y:grunt");

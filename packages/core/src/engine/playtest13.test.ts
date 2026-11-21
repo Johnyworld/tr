@@ -35,6 +35,7 @@ import { ownedBy, myPeopleLiveHere } from "../rules/home.ts";
 import { runDailyBody } from "./body.ts";
 import { clothesHere } from "./climate.ts";
 import { runQuarantine } from "./care/quarantine.ts";
+import { afterTimeCaughtUp } from "./turnStart.ts";
 import { formatAgo, START_TIME } from "../rules/time.ts";
 
 /** 긴 판 열 (플레이 테스트 13, docs/playtests/2026-11-20-mcp-13-long.md)의 확실한 버그 */
@@ -516,6 +517,63 @@ describe("튜토리얼과 그 밖 (12-239)", () => {
     const w = world("role_y_islander");
     w.state().characters[w.state().playerId]!.traits = [];
     expect(await w.runCommand("?상태")).toContain("트레잇  없음");
+  });
+});
+
+describe("GM 부담 A (12-240)", () => {
+  const ruinWorld = () => {
+    const w = world("role_l_wanderer");
+    const ruin = content.scenario.exploration!.ruins[0]!;
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: ruin.zone });
+    w.ctx().store.append({ type: "ruin_found", characterId: w.state().playerId, ruin: ruin.id });
+    return { w, ruin };
+  };
+
+  it("A11: 시간을 쓴 도구(탐험)도 끝에 시간이 흐른 뒤 처리를 거친다", () => {
+    const { w } = ruinWorld();
+    expect(w.executeTool("explore", { action: "start", ruin: null }).ok).toBe(true);
+    const before = w.state().time;
+    w.executeTool("explore", { action: "deeper", ruin: null });
+    expect(w.state().time).toBeGreaterThan(before);
+    expect(afterTimeCaughtUp(w.ctx())).toBe(true);
+  });
+
+  it("A6: 아는 숨은 곳이 하나면 null로 들어가고, 할 수 있는 것을 알린다", () => {
+    const { w } = ruinWorld();
+    const out = w.executeTool("explore", { action: "start", ruin: null });
+    expect(out.ok && out.resultText).toContain("할 수 있는 것");
+  });
+
+  it("A1: 이야기가 열려 있으면 이동·보고는 ignore_story 없이 거절된다", () => {
+    const w = world("role_a_grunt");
+    const s = Object.values(content.storylets).find((x) => !x.ambush && x.choices.some((c) => !c.check))!;
+    w.ctx().store.append({ type: "storylet_fired", storyletId: s.id, cast: {}, expiresAt: w.state().time + 600 });
+    const to = neighbors(content, w.state().playerZone!)[0]!;
+    const move = w.executeTool("take_action", act({ intent: "간다", move_to: to, activity: null }));
+    expect(move.ok).toBe(false);
+    expect(move.ok ? "" : move.error).toContain("ignore_story");
+    expect(w.state().playerZone).not.toBe(to);
+    const go = w.executeTool("take_action", act({ intent: "두고 간다", move_to: to, activity: null, ignore_story: true }));
+    expect(go.ok, go.ok ? "" : go.error).toBe(true);
+    expect(w.state().activeStorylet).toBeNull();
+  });
+
+  it("A4: 다시 해 볼 수 있는 판정이 남았으면 보고를 되묻고, final이면 보고한다", () => {
+    const w = world("role_a_grunt");
+    const commander = content.roles.role_a_grunt!.commander!;
+    w.executeTool("npc_presence", { npc_id: commander, action: "enter" });
+    const t = Object.values(content.missions).find((m) => content.roles.role_a_grunt!.missions.includes(m.id) && !m.where && m.requirements.some((r) => "check" in r))!;
+    w.ctx().store.append({ type: "missions_offered", day: Math.floor(w.state().time / 1440) + 1, templateIds: [t.id] });
+    expect(w.executeTool("assign_mission", { template_id: t.id }).ok).toBe(true);
+    const ask = w.executeTool("report_mission", {});
+    expect(ask.ok ? "" : ask.error).toContain("아직 다시 해 볼 수 있다");
+    expect(w.executeTool("report_mission", { final: true }).ok).toBe(true);
+  });
+
+  it("A9: 치료도 until을 받는다", () => {
+    const w = world("role_d_medic");
+    const out = w.executeTool("take_action", act({ intent: "치료실 당번", activity: { kind: "treat", until: "evening" } }));
+    expect(out.ok ? "" : out.error).not.toContain("until을 쓸 수 없습니다");
   });
 });
 

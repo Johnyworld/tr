@@ -134,7 +134,8 @@ export const ACTIVITY_COSTS = {
   brief: { kind: "fixed", minutes: 5 },
   talk: { kind: "fixed", minutes: 10 },
   eat: { kind: "fixed", minutes: 30 },
-  treat: { kind: "fixed", minutes: 30 },
+  // 치료도 until을 받는다: 치료실 당번처럼 오래 돌보는 일 (12-240, A9: 2시간 당번에 처치를 네 번 불렀다). 낫게 하는 효과는 한 번
+  treat: { kind: "long", minutes: 30, allowUntil: true },
   search: { kind: "range", min: 60, max: 120 },
   work: { kind: "fixed", minutes: 120 },
   // 휴식도 until을 받는다 (플레이 테스트 12: "오후 내내 쉰다"가 늘 1시간이었다). 정하지 않으면 1시간

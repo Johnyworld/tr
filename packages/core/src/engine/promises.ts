@@ -129,8 +129,11 @@ const promiseTool = defineTool({
     if (input.action === "accept" || input.action === "decline") {
       const p = askedPromises(state).find((x) => x.id === input.promise_id);
       if (!p) return { ok: false, error: `답할 수 있는 부탁이 아니다: ${input.promise_id ?? "(없음)"} (지금 꺼낼 부탁: ${askedPromises(state).map((x) => x.id).join(", ") || "없음"})` };
-      const bad = present(state, content, p.to);
-      if (bad) return { ok: false, error: `부탁한 사람이 장면에 있어야 한다: ${bad}` };
+      // 같은 구역에 있으면 장면에서 막 나갔어도 받는다 (12-240, A7: 내보낸 직후 수락이 막혔다)
+      const npc = content.npcs[p.to];
+      const nearby = !!npc && !state.characters[p.to]?.dead && npcZoneAt(npc, state.time) === state.playerZone;
+      const bad = nearby ? null : present(state, content, p.to);
+      if (bad) return { ok: false, error: `부탁한 사람이 장면에 있어야 한다: ${bad} npc_presence로 다시 들인 뒤 답한다.` };
       const c = askContent(content, p);
       if (!c) return { ok: false, error: "알 수 없는 부탁이다." };
       const who = playerCalls(state, content, p.to);

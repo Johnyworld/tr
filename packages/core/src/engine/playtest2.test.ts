@@ -55,7 +55,7 @@ describe("플레이 테스트 2회차 회귀", () => {
   it("P14·P13: 다른 구역으로 가면 장면의 인물은 따라오지 않고, 그 자리의 이야기도 끝난다", () => {
     const env = setup(content([chat]));
     expect(env.store.getState().scene.present).toContain("npc_leader");
-    executeTool("take_action", act({ move_to: "a_post" }), env.ctx);
+    executeTool("take_action", act({ move_to: "a_post", ignore_story: true }), env.ctx);
     const s = env.store.getState();
     expect(s.scene.present).toEqual([]);
     expect(s.activeStorylet).toBeNull();

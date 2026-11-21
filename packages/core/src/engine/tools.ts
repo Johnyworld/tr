@@ -54,7 +54,8 @@ import { REPUTATION_TOOLS } from "./reputationTools.ts";
 import { STORYLET_TOOLS, storyTitle } from "./storyletTools.ts";
 import { SUCCESSION_TOOLS } from "./succession.ts";
 import { createLearnSkillTool } from "./growth.ts";
-import { createTakeActionSchema, takeAction, type TakeActionInput } from "./action.ts";
+import { bodyLines, createTakeActionSchema, takeAction, worldLines, type TakeActionInput } from "./action.ts";
+import { afterTimeCaughtUp, runAfterTimeAdvance } from "./turnStart.ts";
 import { stashHint, stashTool } from "./stash.ts";
 import { LEVERAGE_TOOLS } from "./leverage.ts";
 import { keepByGift, PROMISE_TOOLS } from "./promises.ts";
@@ -372,7 +373,15 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   const before = watchFear(state);
   const living = livingIds(state);
   takeReactionChecks(ctx.store);
-  const outcome = (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
+  let outcome = (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
+  // 시간을 쓴 도구는 끝에 "시간이 흐른 뒤" 처리를 한 번 거친다 (12-240, A11). 이미 돌았으면 다시 돌리지 않는다
+  if (ctx.store.getState().time > state.time && !afterTimeCaughtUp(ctx)) {
+    const after = runAfterTimeAdvance(ctx);
+    if (outcome.ok && after.length) {
+      const lines = [...bodyLines(after), ...worldLines(after)];
+      outcome = { ...outcome, resultText: [outcome.resultText, ...lines].filter(Boolean).join("\n"), extra: [...(outcome.extra ?? []), ...after] };
+    }
+  }
   // 이번에 죽은 사람은 그 자리에 유해를 남긴다 (12-130)
   leaveRemainsForNewDeaths(ctx, living);
   // 짐이 한도를 넘으면 창고를 한 번 알린다 (12-149)

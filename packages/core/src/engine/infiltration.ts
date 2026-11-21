@@ -108,7 +108,8 @@ const infiltrate = defineTool({
     "잠입 장면 (전투 장면과 같은 틀). 다른 무리의 땅에서 몰래 들어가 목표를 하고 나온다. 결과는 시스템이 정한다. " +
     "start(goal): 시작한다. advance: 한 칸 더 깊이 들어간다 (은밀 판정). " +
     "act: 가장 깊은 곳에서 목표를 한다. listen: 멈춰서 낌새를 살핀다 (들켰는지 대략 안다). leave: 빠져나온다. " +
-    "한 번에 한 걸음, 걸음마다 시간이 흐른다. 경보 숫자는 GM도 모른다: 상태의 '잠입 중'에 나온 낌새로만 연출한다. 들키면 빠지기만 된다.",
+    "한 번에 한 걸음, 걸음마다 시간이 흐른다. 경보 숫자는 GM도 모른다: 상태의 '잠입 중'에 나온 낌새로만 연출한다. 들키면 빠지기만 된다. " +
+    "판정은 이 도구가 굴린다: take_action으로 따로 판정하지 않는다 (12-240: 따로 굴린 은밀 판정이 헛것이 됐다).",
   schema: z.strictObject({
     action: z.enum(["start", "advance", "act", "listen", "leave"]),
     goal: z.string().nullable().default(null).describe("start일 때 목표 id (상태의 '잠입할 수 있는 목표'). 아니면 null"),

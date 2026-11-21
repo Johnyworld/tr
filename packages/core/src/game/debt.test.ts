@@ -43,7 +43,9 @@ describe("빚 (기획서 9.10)", () => {
       w.executeTool("take_action", act("물통을 진다", { check: { move: "endure", stat: "vitality", difficulty: "very_easy", harm_on_failure: "none", harm_cause: "" }, for_mission: true }));
     }
     if (!w.state().scene.present.includes(boss)) w.executeTool("npc_presence", { npc_id: boss, action: "enter" });
-    const out = w.executeTool("report_mission", {});
+    // 그사이 열린 이야기는 두고 간다 (12-240: 이야기가 열려 있으면 보고 전에 먼저 받는다)
+    if (w.state().activeStorylet) w.executeTool("take_action", act("이야기를 두고 보고하러 간다", { ignore_story: true }));
+    const out = w.executeTool("report_mission", { final: true });
     expect(out.ok).toBe(true);
     expect(w.state().characters.player!.debts.faction_e ?? 0).toBeLessThan(12);
     if (out.ok) expect(out.resultText).toContain("빚을 갚았다");

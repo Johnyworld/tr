@@ -43,7 +43,7 @@ describe("플레이 테스트 11 버그", () => {
   it("열린 이야기를 두고 떠나면 외면하는 선택지를 고른 것으로 푼다", () => {
     const env = setup([story]);
     expect(env.store.getState().activeStorylet?.id).toBe("fallen");
-    const r = executeTool("take_action", act({ move_to: "a_post" }), env.ctx);
+    const r = executeTool("take_action", act({ move_to: "a_post", ignore_story: true }), env.ctx);
     expect(r.ok && r.resultText).toContain("두고 간다");
     const s = env.store.getState();
     expect(s.activeStorylet).toBeNull();
@@ -52,7 +52,7 @@ describe("플레이 테스트 11 버그", () => {
 
   it("외면하는 선택지가 없으면 지나갔다고 분명히 알린다", () => {
     const env = setup([{ ...story, choices: [story.choices[0]] }]);
-    const r = executeTool("take_action", act({ move_to: "a_post" }), env.ctx);
+    const r = executeTool("take_action", act({ move_to: "a_post", ignore_story: true }), env.ctx);
     expect(r.ok && r.resultText).toContain("외면하고 자리를 떴다");
   });
 

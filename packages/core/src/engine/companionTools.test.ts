@@ -190,7 +190,7 @@ describe("임무 짝 (2인 1조)", () => {
     const [buddy] = w.state().companions;
     expect(w.state().bonds[buddy!]).toMatchObject({ kind: "buddy" });
     expect(w.state().characters[buddy!]!.rank).toBe("grunt");
-    const report = w.executeTool("report_mission", {});
+    const report = w.executeTool("report_mission", { final: true });
     expect(report.ok && report.resultText).toContain("자기 자리로 돌아간다");
     expect(w.state().companions).not.toContain(buddy);
     w.close();

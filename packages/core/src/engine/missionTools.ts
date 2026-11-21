@@ -43,6 +43,7 @@ import { grantRewards } from "./rewards.ts";
 import { itemResource } from "./market.ts";
 import { cargoOf, entrustedHeld } from "../rules/entrusted.ts";
 import { ownedBy } from "../rules/home.ts";
+import { storyTitle } from "./storyletTools.ts";
 
 const resourceLabel = (s: Scenario, id: string) => s.resources.find((r) => r.id === id)?.label ?? id;
 
@@ -95,6 +96,15 @@ export function missionPlace(content: Content, where: string | undefined, factio
   return { zone: where, notZone: null, enemyOf: null, label: zoneName(where) };
 }
 
+/** 이야기가 열려 있으면 임무를 받거나 보고하기 전에 먼저 받는다 (12-240, A1: 같은 묶음의 보고가 이야기보다 먼저 끝났다) */
+function storyOpenError(ctx: ToolContext): string | null {
+  const active = ctx.store.getState().activeStorylet;
+  if (!active) return null;
+  const s = ctx.content.storylets[active.id];
+  const title = s ? storyTitle(ctx.store.getState(), ctx.content, s) : active.id;
+  return `이야기 "${title}"${josa(title, "이/가").slice(title.length)} 열려 있다. 먼저 장면으로 연출하고 resolve_storylet으로 고르거나, 플레이어가 두고 가기로 했으면 take_action에 ignore_story: true를 넣은 뒤 다시 (시간은 흐르지 않았다).`;
+}
+
 /** 플레이어의 직속 상관. 살아 있지 않으면 undefined */
 function commanderOf(state: GameState, ctx: ToolContext) {
   const id = commanderIdOf(state, ctx.content);
@@ -115,6 +125,7 @@ const assignMission = defineTool({
     const player = state.characters[state.playerId];
     if (!player || player.dead) return { ok: false, error: "사망한 캐릭터는 임무를 받을 수 없습니다." };
     if (pausedWhileHeld(state, "assign")) return { ok: false, error: "갇혀 있어 임무를 받을 수 없다." };
+    { const open = storyOpenError(ctx); if (open) return { ok: false, error: open }; }
     const commander = commanderOf(state, ctx);
     if (!commander) return { ok: false, error: "임무를 내릴 상관이 없습니다." };
     if (!state.scene.present.includes(commander.id)) {
@@ -190,12 +201,27 @@ const reportMission = defineTool({
   name: "report_mission",
   description:
     "플레이어 캐릭터가 수행 중인 임무를 상관에게 보고한다. 상관이 장면에 있어야 한다. " +
-    "결과(완수·일부 완수·실패)와 공적은 지금까지 실제로 한 일(시간 소비·판정)로 시스템이 판정한다. 플레이어의 말로 결과가 바뀌지 않는다.",
-  schema: z.strictObject({}),
-  run(_input, ctx) {
+    "결과(완수·일부 완수·실패)와 공적은 지금까지 실제로 한 일(시간 소비·판정)로 시스템이 판정한다. 플레이어의 말로 결과가 바뀌지 않는다. " +
+    "다시 해 볼 수 있는 판정 조건이 남았으면 한 번 되묻는다: 그래도 보고하면 final: true.",
+  schema: z.strictObject({
+    final: z.boolean().default(false).describe("다시 해 볼 수 있는 조건이 남았는데도 지금 보고하면 true (플레이어가 그만두기로 했을 때)"),
+  }),
+  run(input, ctx) {
     const state = ctx.store.getState();
     const mission = activeMissionOf(state.missions, state.playerId);
     if (!mission) return { ok: false, error: "수행 중인 임무가 없습니다." };
+    { const open = storyOpenError(ctx); if (open) return { ok: false, error: open }; }
+    // 다시 해 볼 수 있는 판정이 남았으면 한 번 되묻는다 (12-240, A4: 빗나감 1/3에서 바로 보고해 일부 완수가 쌓이고 진급이 막혔다)
+    if (!input.final && state.time < mission.deadline) {
+      const retry = mission.requirements
+        .map((r, i) => ({ r, i }))
+        .filter(({ r, i }) => "check" in r && !isRequirementMet(r, mission.progress[i] ?? 0) && (mission.fails?.[i] ?? 0) < MISSION_CHECK_TRIES)
+        .map(({ r, i }) => `${requirementLabel(ctx.content.scenario, r)} (빗나감 ${mission.fails?.[i] ?? 0}/${MISSION_CHECK_TRIES})`);
+      if (retry.length) {
+        const left = Math.round((mission.deadline - state.time) / 60);
+        return { ok: false, error: `아직 다시 해 볼 수 있다: ${retry.join(" · ")}, 기한까지 약 ${left}시간. 플레이어가 그만두고 보고하기로 했으면 final: true로 다시 (시간은 흐르지 않았다).` };
+      }
+    }
     const giver = state.characters[mission.giverId];
     if (!giver || !state.scene.present.includes(giver.id)) {
       return { ok: false, error: `보고는 임무를 준 ${giver?.name ?? "상관"}에게 직접 한다. 먼저 npc_presence로 등장시키세요.` };

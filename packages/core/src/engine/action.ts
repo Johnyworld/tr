@@ -78,6 +78,7 @@ import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./
 import { cargoOf } from "../rules/entrusted.ts";
 import { ownedBy } from "../rules/home.ts";
 import { runPendingClashes } from "./battleTools.ts";
+import type { GameState } from "../game/state.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -186,7 +187,7 @@ export function createTakeActionSchema(s: Scenario) {
     ignore_story: z
       .boolean()
       .default(false)
-      .describe("진행 중인 이야기를 고르지 않고 외면할 때 true (플레이어가 그 일을 모른 척하기로 했을 때만). 효과 없이 지나간다. 대부분 false"),
+      .describe("진행 중인 이야기를 고르지 않고 외면할 때 true (플레이어가 그 일을 모른 척하기로 했을 때만). 효과 없이 지나간다. 이야기가 열려 있으면 자리를 옮기거나 시간을 들이는 일에 이것이 있어야 한다 (옮기면 떠나는 선택지로 푼다). 대부분 false"),
     provoked: z
       .boolean()
       .default(false)
@@ -327,7 +328,7 @@ export function createTakeActionSchema(s: Scenario) {
     for_mission: z
       .boolean()
       .default(false)
-      .describe("수행 중인 임무를 위한 행동이면 true. true일 때만 판정과 활동이 임무 진행으로 집계된다 (임무 장소·목적과 맞는 행동만)"),
+      .describe("수행 중인 임무를 위한 행동이면 true. 임무의 요건과 맞는 행동(그 판정·그 활동·이동)을 임무 장소에서 하면 넣지 않아도 저절로 센다. 임무 장소 밖이면 true일 때 거절된다"),
     narration_summary: z
       .string()
       .max(1000)
@@ -379,13 +380,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 수색·일·쉬기는 이야기 안에서도 하는 일이라 넣지 않는다 (선택지의 판정을 거기서 굴린다)
   const long = !!input.move_to || (!!input.activity && ["sleep", "wait", "guard_duty", "travel"].includes(input.activity.kind));
   // 같은 자리에서 오래 걸리는 일은 이야기를 두고 하지 않는다: 시간이 흐르기 전에 먼저 고르거나 외면하라고 돌려보낸다 (플레이 테스트 13: 망을 봤는데 "혼자 빠져나온다"를 고른 것이 됐다)
-  if (start.activeStorylet && !input.move_to && !input.check && !input.ignore_story && !!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work"].includes(input.activity.kind) && !isIncapacitated(ctx.content, player) && !heldOf(player)) {
+  // 자리를 옮기는 것도 같다 (12-240, A1: 이야기가 열린 결과 뒤 같은 턴에 묶어 보낸 이동이 이야기를 외면한 것으로 처리됐다). 판정을 건 행동(맞서기·달아나기)은 이야기 안의 일이다
+  if (start.activeStorylet && !input.check && !input.ignore_story && (!!input.move_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !isIncapacitated(ctx.content, player) && !heldOf(player)) {
     const s0 = content.storylets[start.activeStorylet.id];
-    const roadStory = !!scenario.travel?.tag && !!s0?.tags.includes(scenario.travel.tag);
-    if (!roadStory) {
-      const openTitle = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
-      return { ok: false, error: `이야기 "${openTitle}"${josa(openTitle, "이/가").slice(openTitle.length)} 열려 있다. 시간을 들이기 전에 resolve_storylet으로 고르거나, 모른 척하기로 했으면 ignore_story: true를 함께 넣는다 (시간은 흐르지 않았다).` };
-    }
+    const openTitle = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
+    return { ok: false, error: `이야기 "${openTitle}"${josa(openTitle, "이/가").slice(openTitle.length)} 열려 있다. 먼저 장면으로 연출하고 플레이어의 선택을 받는다: resolve_storylet으로 고르거나, 플레이어가 두고 다른 일(자리 옮기기 포함)을 하기로 했으면 ignore_story: true를 함께 넣는다 (시간은 흐르지 않았다).` };
   }
   // 위협 앞에서는 오래 걸리는 일을 하지 않는다 (공통 규칙 4, 플레이 테스트 13: 감염체가 곁에 남은 채 두 시간을 뒤졌다)
   // 스스로 못 움직이면 (쓰러져 있으면) 시간만 흐른다: 막지 않는다
@@ -397,8 +396,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (start.activeStorylet && ((input.move_to && !input.check) || input.ignore_story) && !heldOf(player) && content.storylets[start.activeStorylet.id]?.ambush && !isIncapacitated(ctx.content, player)) {
     return { ok: false, error: "매복에 걸려 붙들려 있다. 그냥 걸어 나갈 수 없다: resolve_storylet으로 고르거나, 뿌리치고 달아나려면 move_to와 함께 check(달아나기·맞서기 판정과 위험)를 건다 (시간은 흐르지 않았다)." };
   }
-  // 외면 (플레이 테스트 13): 효과 없이 지나간다
-  if (start.activeStorylet && input.ignore_story) {
+  // 외면 (플레이 테스트 13): 효과 없이 지나간다. 자리를 옮기며 외면하면 아래에서 떠나는 선택지로 푼다
+  if (start.activeStorylet && input.ignore_story && !input.move_to) {
     const s0 = content.storylets[start.activeStorylet.id];
     endActiveStorylet(ctx, "외면했다");
     const title = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
@@ -604,9 +603,13 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
-  const forMission = input.for_mission ? (activeMissionOf(start.missions, start.playerId)?.id ?? null) : null;
+  // 임무로 세기 (12-240, A3: for_mission을 빠뜨리면 임무 자리의 이동·판정·보초가 조용히 0으로 세졌다):
+  // 진행 중인 임무의 요건과 맞는 행동(그 판정, 그 활동, 이동 요건이면 이동)을 임무 장소에서 하면 저절로 임무로 센다
+  const autoMission = !input.for_mission ? missionMatch(start, input) : null;
+  const forMission = input.for_mission ? (activeMissionOf(start.missions, start.playerId)?.id ?? null) : autoMission;
   const lines: string[] = [];
   lines.push(...leftLines.filter(Boolean));
+  if (autoMission) lines.push(`(임무 "${start.missions[autoMission]!.title}"의 요건과 맞는 행동이라 임무로 셌다)`);
   // 임무의 장소가 아니면 임무로 치지 않는다 (플레이 테스트 4: 거점 안에서 초소 보초를 마쳤다)
   {
     const m = forMission ? start.missions[forMission] : undefined;
@@ -1128,7 +1131,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 }
 
 /** 시간이 흐르며 세계에 생긴 일을 GM에게 알린다 (몸의 변화는 bodyLines) */
-function worldLines(displays: readonly ToolDisplayEvent[]): string[] {
+export function worldLines(displays: readonly ToolDisplayEvent[]): string[] {
   const lines: string[] = [];
   for (const display of displays) {
     if ((display.type === "presence" || display.type === "belief") && display.note) lines.push(display.note);
@@ -1150,7 +1153,7 @@ function worldLines(displays: readonly ToolDisplayEvent[]): string[] {
 }
 
 /** 시간이 흐르며 바뀐 몸 상태(허기, 감염, 저절로 낫기)를 GM에게 알린다 */
-function bodyLines(displays: readonly ToolDisplayEvent[]): string[] {
+export function bodyLines(displays: readonly ToolDisplayEvent[]): string[] {
   return displays.flatMap((d) =>
     d.type === "heal"
       ? [`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.byLabel}).`]
@@ -1217,6 +1220,21 @@ function missedRollCall(ctx: ToolContext, from: number, to: number) {
     { summary: `${missed.map((m) => SEGMENT_LABELS[m]).join("·")} 점호에 자느라 나오지 않았다`, tags: ["disobedience"], severity: 1, privacy: "public", noisy: false },
     commander ? { npcId: commander, source: "report" } : undefined,
   );
+}
+
+/** 이 행동이 진행 중인 임무의 요건과 맞는가 (맞으면 그 임무 id). 이동 요건은 어디서든, 나머지는 임무 장소에서 */
+function missionMatch(state: GameState, input: TakeActionInput): string | null {
+  const m = activeMissionOf(state.missions, state.playerId);
+  if (!m || heldOf(state.characters[state.playerId])) return null;
+  const kind = input.move_to ? "travel" : (input.activity?.kind ?? null);
+  const move = input.check?.move ?? null;
+  const here = atMissionPlace(m, state.playerZone, state.zones, state.factions);
+  const hit = m.requirements.some((r) => {
+    if ("activity" in r) return !!kind && r.activity === kind && (kind === "travel" || here);
+    if ("check" in r) return !!move && (r.check === move || !!r.alts?.includes(move)) && here;
+    return false;
+  });
+  return hit ? m.id : null;
 }
 
 /** take_action의 treatment.pay를 치료 값 고르기로 */

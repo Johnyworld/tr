@@ -121,10 +121,11 @@ export function releaseBuddies(ctx: ToolContext, missionId: string): string[] {
   const state = ctx.store.getState();
   const lines: string[] = [];
   for (const [id, b] of Object.entries(state.bonds ?? {})) {
-    if (b.missionId !== missionId || !state.companions.includes(id)) continue;
+    if (b.missionId !== missionId || (!state.companions.includes(id) && !b.apart)) continue;
     ctx.store.append({ type: "companion_left", characterId: id, reason: "임무가 끝났다" });
     if (ctx.store.getState().scene.present.includes(id)) ctx.store.append({ type: "npc_left", npcId: id });
-    lines.push(b.kind === "buddy" ? `짝이던 ${josa(playerCalls(state, ctx.content, id), "은/는")} 자기 자리로 돌아간다.` : `임무로 데려온 ${josa(playerCalls(state, ctx.content, id), "은/는")} 무리에 넘겼다. 더는 따라다니지 않는다.`);
+    // 남겨 둔 짝이면 그 자리에서 돌아간다 (12-240, A8: 망루 아래 남긴 짝이 사라지는지 기다리는지 알 수 없었다)
+    lines.push(b.kind === "buddy" ? `짝이던 ${josa(playerCalls(state, ctx.content, id), "은/는")} ${b.apart ? "남겨 둔 자리에서 " : ""}자기 자리로 돌아간다.` : `임무로 데려온 ${josa(playerCalls(state, ctx.content, id), "은/는")} 무리에 넘겼다. 더는 따라다니지 않는다.`);
   }
   return lines;
 }

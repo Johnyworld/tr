@@ -193,13 +193,12 @@ describe("임무 진행 집계 (플레이 테스트 1회차 버그)", () => {
     for_mission: forMission,
   });
 
-  it("임무를 위한 행동(for_mission)만 진행으로 센다", () => {
+  it("임무 요건과 맞는 판정은 for_mission 없이도 임무로 센다 (12-240)", () => {
     const env = withLeader(setup(sixes));
     executeTool("assign_mission", { template_id: "m_scout" }, env.ctx);
-    executeTool("take_action", scoutCheck(false), env.ctx);
-    expect(env.store.getState().missions.m_1?.progress).toEqual([0, 0]);
-    executeTool("take_action", scoutCheck(true), env.ctx);
+    const out = executeTool("take_action", scoutCheck(false), env.ctx);
     expect(env.store.getState().missions.m_1?.progress).toEqual([1, 0]);
+    expect(out.ok && out.resultText).toContain("임무로 셌다");
   });
 
   it("목격자 살피기 판정은 임무 진행으로 세지 않는다", () => {

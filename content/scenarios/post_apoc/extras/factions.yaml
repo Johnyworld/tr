@@ -224,7 +224,8 @@
     secrets:
       - { content: "붉은연합 쪽 사람이 넘긴 쌀 한 자루를 받았다. 회유에 넘어간 건 아니라고 스스로 다짐한다", reveal_when: "붉은연합의 회유 이야기가 나왔을 때", min_trust: 3 }
   ties: { chance: 0.4, kinds: [parent, child, spouse, sibling, friend] }
-  appears: { zones: [b_base] }
+  # 물 긷거나 채집하러 구시가·남쪽 밭에도 나온다 (12-240, A10: 구시가 통행세 대상을 피난민 틀로 들여 소속이 떠돌이로 나왔다)
+  appears: { zones: [b_base, old_town, south_fields] }
 
 - id: b_scout
   label: 버들마을 정찰대원

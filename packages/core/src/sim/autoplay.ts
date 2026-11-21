@@ -63,6 +63,13 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     let out = world.executeTool(name, input);
     // 이야기를 둔 채 같은 자리에서 오래 걸리는 일은 거절된다 (플레이 테스트 13): GM처럼 모른 척하고 다시 한다
     if (!out.ok && name === "take_action" && out.error.includes("ignore_story")) out = world.executeTool(name, { ...(input as object), ignore_story: true });
+    // 이야기가 열려 있으면 임무를 받거나 보고하기 전에 먼저 받는다 (12-240): GM처럼 모른 척하고 다시 한다
+    if (!out.ok && name !== "take_action" && out.error.includes("ignore_story")) {
+      world.executeTool("take_action", { ...base, intent: "이야기를 두고 간다", ignore_story: true });
+      out = world.executeTool(name, input);
+    }
+    // 다시 해 볼 수 있는 판정이 남아 되물으면 (12-240) 그대로 보고한다
+    if (!out.ok && name === "report_mission" && out.error.includes("final: true")) out = world.executeTool(name, { ...(input as object), final: true });
     // 위협 앞에서는 오래 걸리는 일을 못 한다 (공통 규칙 4): GM처럼 먼저 맞선다
     if (!out.ok && name === "take_action" && out.error.includes("곁에 위협이 있다")) {
       const fight = world.content.scenario.moves.find((m) => m.id === "fight") ?? world.content.scenario.moves[0]!;
@@ -399,7 +406,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
         continue;
       }
     }
-    const merchant = s.scene.present.find((id) => content.npcs[id]?.merchant);
+    // 지금 장면으로 본다: 같은 턴에 이야기를 두고 가면 배역이 나간다 (12-240)
+    const merchant = world.state().scene.present.find((id) => content.npcs[id]?.merchant);
     if (merchant && rng() < 0.3) {
       const goods = Object.entries(s.characters[merchant]!.inventory).filter(([, q]) => q > 0);
       const mine = Object.entries(me.inventory).filter(([i, q]) => q > 0 && !content.items[i]?.weapon);

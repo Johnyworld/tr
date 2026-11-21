@@ -14,6 +14,7 @@ import { kindOf } from "../game/kinds.ts";
 import { isIncapacitated } from "./body.ts";
 import { applyEffect } from "./storyletTools.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { formatTime } from "../rules/time.ts";
 
 /**
  * 탐험할 곳 (기획서 4.7.1, 12-162). 잠입 장면(9.5.1)과 같은 틀: 상태와 판정은 코드, 연출은 GM.
@@ -117,7 +118,8 @@ const explore = defineTool({
   description:
     "숨은 곳 탐험 (잠입 장면과 같은 틀). 수색하다 찾은 숨은 곳(상태의 '아는 숨은 곳')에 들어가 칸마다 내려가고 뒤진다. 결과는 시스템이 정한다. " +
     "start(ruin): 들어간다. deeper: 한 칸 더 내려간다 (판정, 실패하면 다친다). search: 지금 칸을 뒤진다 (칸마다 한 번, 깊을수록 좋은 것). leave: 나온다 (소리가 났으면 판정, 실패하면 깨어난 것이 출구까지 따라붙는다). " +
-    "걸음마다 시간이 흐르고 소리가 난다. 소음 숫자는 GM도 모른다: 상태의 '탐험 중'에 나온 낌새로만 연출한다. 소리가 쌓이면 감염체가 깨어난다.",
+    "걸음마다 시간이 흐르고 소리가 난다. 소음 숫자는 GM도 모른다: 상태의 '탐험 중'에 나온 낌새로만 연출한다. 소리가 쌓이면 감염체가 깨어난다. " +
+    "판정은 이 도구가 굴린다: take_action으로 따로 판정하지 않는다. 이 구역에 아는 숨은 곳이 하나면 start의 ruin은 null이어도 된다.",
   schema: z.strictObject({
     action: z.enum(["start", "deeper", "search", "leave"]),
     ruin: z.string().nullable().default(null).describe("start일 때 숨은 곳 id. 아니면 null"),
@@ -136,13 +138,16 @@ const explore = defineTool({
     if (input.action === "start") {
       if (ex) return { ok: false, error: "이미 탐험 중이다." };
       if (state.battle) return { ok: false, error: "전투 중이다." };
-      const ruin = knownRuinsHere(content, state).find((x) => x.id === input.ruin);
+      // 아는 숨은 곳이 하나면 null로도 그곳에 들어간다 (12-240, A6)
+      const known = knownRuinsHere(content, state);
+      const ruin = known.find((x) => x.id === input.ruin) ?? (input.ruin === null && known.length === 1 ? known[0] : undefined);
       if (!ruin) {
         const here = knownRuinsHere(content, state);
         return { ok: false, error: here.length ? `이 구역의 아는 숨은 곳: ${here.map((x) => `${x.id}(${x.label})`).join(", ")}` : "이 구역에서 아는 숨은 곳이 없다. 먼저 수색한다." };
       }
       store.append({ type: "exploration_started", ruin: ruin.id });
-      return { ok: true, resultText: `${ruin.label}에 들어간다. 지금은 ${ruin.depths[0]}. 한 칸씩 연출하라.`, display };
+      // 들어간 결과에 할 수 있는 것을 함께 (12-240, A6: 할 수 있는 것을 보려고 get_scene을 따로 불렀다)
+      return { ok: true, resultText: `${ruin.label}에 들어간다. 지금은 ${ruin.depths[0]}. 한 칸씩 연출하라.\n할 수 있는 것: deeper(한 칸 더 내려간다, 판정) · search(지금 칸을 뒤진다, 칸마다 한 번) · leave(나온다). 걸음마다 ${r.step_minutes}분쯤 흐른다.`, display };
     }
     if (!ex) return { ok: false, error: "탐험 중이 아니다. start로 들어간다." };
     const ruin = ruinOf(content, ex.ruin)!;
@@ -154,7 +159,9 @@ const explore = defineTool({
     const label = (d: number) => ruin.depths[Math.min(d, last)]!;
     const finish = (lines: string[], extra: ToolDisplayEvent[], shown: ToolDisplayEvent) => {
       const cue = noiseCue(store.getState().exploration?.noise ?? 0);
-      return { ok: true as const, resultText: [...lines, ...(cue ? [`낌새: ${cue}`] : []), "이 결과대로 서술하라."].join("\n"), display: shown, extra };
+      // 흐른 시간을 함께 (12-240, A6: 탐험에 든 시간이 보이지 않았다)
+      const clock = `(지금 ${formatTime(store.getState().time)}, ${josa(label(store.getState().exploration?.depth ?? 0), "이다/다")})`;
+      return { ok: true as const, resultText: [...lines, ...(cue ? [`낌새: ${cue}`] : []), clock, "이 결과대로 서술하라."].join("\n"), display: shown, extra };
     };
 
     // 깨어난 감염체가 장면에 있으면 더 들어가거나 뒤지지 못한다: 싸우거나(take_action) 빠져나온다(leave)

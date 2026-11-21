@@ -31,7 +31,7 @@ describe("무기고 (기획서 4.8)", () => {
     expect(p.inventory.rifle_rounds).toBe(2);
     expect(equippedItem(p, "weapon")).toBe("old_rifle");
     expect(w.sceneForGm()).toContain("무기고에서 빌린 것");
-    const report = w.executeTool("report_mission", {});
+    const report = w.executeTool("report_mission", { final: true });
     expect(report.ok && report.resultText).toContain("반납했다");
     const after = w.state().characters.player!;
     expect(after.inventory.old_rifle ?? 0).toBe(0);

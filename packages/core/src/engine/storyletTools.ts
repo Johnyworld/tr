@@ -48,6 +48,7 @@ import {
   pickCast,
   pickStorylet,
   roadStorylets,
+  isThreat,
   routeDanger,
   storyletVars,
   storyletWindow,
@@ -57,7 +58,7 @@ import { recordDeed } from "./reputationTools.ts";
 import { leveragesOn } from "./leverage.ts";
 import { commanderOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, DEATH_GUIDE } from "./toolkit.ts";
-import { ownedBy } from "../rules/home.ts";
+import { onOwnLand, ownedBy } from "../rules/home.ts";
 
 /**
  * 스토리렛 연결 (기획서 10.3).
@@ -224,7 +225,7 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
         return `${c.id} ${maskUnknownNames(state, content, fillStorylet(c.label, vars), { story: true })}${tag}`;
       })
       .join(" / ")}`,
-    "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 모른 척하기로 하면 다음 take_action에 ignore_story: true (효과 없이 지나간다). 이야기를 둔 채 같은 자리에서 오래 걸리는 일(잠·기다림·보초·수색·일)은 거절된다. 자리를 옮기면 외면하는 선택지로 풀린다.",
+    "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 모른 척하기로 하면 다음 take_action에 ignore_story: true (효과 없이 지나간다). 이야기를 둔 채 자리를 옮기거나 시간을 들이는 일(잠·기다림·보초·수색·일·치료)과 임무 받기·보고는 거절된다. 플레이어가 두고 가기로 했으면 ignore_story: true를 넣는다 (옮기면 외면하는 선택지로 풀린다).",
   ];
   return lines.join("\n");
 }
@@ -1067,7 +1068,9 @@ export function runRoadEvent(ctx: ToolContext, risk = 1): ToolDisplayEvent[] {
   // 탈 것으로 빨리 지나가면 길 위의 일이 덜 생긴다 (12-137)
   const chance = (travel.chance[Math.min(3, routeDanger(content, state))] ?? 0) * risk;
   if (rng() >= chance) return [];
-  const storylet = pickStorylet(roadStorylets(state, content, travel.tag), rng);
+  // 우리 땅끼리 오가는 길에서는 위협 이야기를 고르지 않는다 (공통 규칙 11, 12-240: 우리 땅 두 구역 사이 30분 길에서 밤길의 발소리)
+  const ownRoad = onOwnLand(state, state.lastRoute.from) && onOwnLand(state, state.lastRoute.to);
+  const storylet = pickStorylet(roadStorylets(state, content, travel.tag).filter((s) => !ownRoad || !isThreat(content, s)), rng);
   if (!storylet) return [];
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
   displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });

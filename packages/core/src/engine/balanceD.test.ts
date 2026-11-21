@@ -1,3 +1,4 @@
+import { storyFits } from "../rules/situation.ts";
 import { describe, expect, it } from "vitest";
 import { createContentSchemas, type Content } from "../content/schemas.ts";
 import { createTestStore, TEST_CONTENT, TEST_SCENARIO } from "../testing.ts";
@@ -53,9 +54,10 @@ describe("균형 D: 이야기 상한", () => {
     const s = store.getState();
     s.characters[s.playerId]!.conditions[c.scenario.harm_track] = c.scenario.condition_tracks.find((t) => t.id === c.scenario.harm_track)!.levels[1]!.id;
     expect(inCrisis(s, c)).toBe(true);
-    // 정말 누워 있을 때만 (플레이 테스트 13)
-    expect(storyletAllowed({ ...s, lastActivity: "guard_duty" }, c, c.storylets.bed!, "urgent_only", s.time)).toBe(false);
+    // 정말 누워 있을 때만 (플레이 테스트 13): 처지 규칙 (rules/situation.ts)
+    expect(storyFits(c.storylets.bed!, { ...s, lastActivity: "guard_duty" }, c)).toBe(false);
     s.lastActivity = "rest";
+    expect(storyFits(c.storylets.bed!, s, c)).toBe(true);
     expect(storyletAllowed(s, c, c.storylets.bed!, "urgent_only", s.time)).toBe(true);
     expect(storyletAllowed(s, c, c.storylets.plain!, "urgent_only", s.time)).toBe(false);
   });

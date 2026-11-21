@@ -1,3 +1,4 @@
+import { situationOf, storyFits } from "../rules/situation.ts";
 import { preferRested, resting } from "../rules/rest.ts";
 import { heldOf, playerHeld } from "../rules/held.ts";
 import { disasterNear } from "../engine/disasters.ts";
@@ -460,13 +461,14 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
   const roleTags = new Set([...(roleOf(content, state)?.storylet_tags ?? []), ...(keepsScenario ? playing.storylet_tags : [])]);
   // 갇혀 있으면 갇힌 동안의 이야기만, 아니면 그 이야기는 열리지 않는다 (12-55)
   const captivityTag = content.scenario.captivity?.tag;
-  const captive = !!heldOf(state.characters[state.playerId]);
+  const situation = situationOf(state, content);
   // 직분의 이야기 (기획서 12.6)
   const occ = occupationOf(content, state.characters[state.playerId]);
   if (occ) roleTags.add(occupationTag(occ));
   return Object.values(content.storylets)
     // 태그가 없거나 world면 어느 시나리오에서나, 아니면 역할의 태그와 겹칠 때만
-    .filter((s) => (captivityTag && s.tags.includes(captivityTag) ? captive : !captive))
+    // 지금 처지에 맞는 이야기만 (공통 규칙 4, rules/situation.ts): 갇힘·누움·탐험·위협 앞 등
+    .filter((s) => storyFits(s, state, content, situation))
     .filter((s) => (captivityTag && s.tags.includes(captivityTag)) || s.tags.length === 0 || s.tags.some((t) => t === WORLD_TAG || roleTags.has(t)))
     .filter((s) => {
       const log = state.storyletLog[s.id];
@@ -550,8 +552,8 @@ export function storyletWindow(state: GameState, content: Content, at: GameTime)
   }
   // 이야기가 몰리지 않게 (12-191): 앞 이야기와 가까우면 급한 이야기만 (급한 것은 하루 상한으로 막는다)
   if (!fresh && at - state.lastStoryletAt! < pacing.min_any_gap_hours * 60) return "urgent_only";
-  // 위급하면 급한 이야기만 (12-191). 폐허를 탐험하는 중에도 (12-192: 병원 지하에서 "물통 옮기기"가 열렸다)
-  if (inCrisis(state, content) || state.exploration) return "urgent_only";
+  // 위급하면 급한 이야기만 (12-191). 탐험 중에 무엇이 열리는지는 처지 규칙이 정한다 (공통 규칙 4)
+  if (inCrisis(state, content)) return "urgent_only";
   if (fresh) return "open";
   return at - state.lastStoryletAt! >= storyletGapMinutes(content, state.lastStoryletAt!) ? "open" : "urgent_only";
 }
@@ -596,12 +598,6 @@ export function urgentAllowed(state: GameState, content: Content, at: GameTime):
 /** 이 이야기를 지금 열 수 있는가: 급한 이야기는 하루 상한까지, 나머지는 창이 열렸을 때 */
 export function storyletAllowed(state: GameState, content: Content, s: StoryletContent, window: "open" | "urgent_only" | "closed", at: GameTime, options: { urgentOnly?: boolean } = {}): boolean {
   if (window === "closed") return false;
-  // 누워 있는 동안의 이야기는 정말 누워 있을 때만: 막 한 일이 잠·휴식·기다림·치료이거나 스스로 못 움직일 때 (플레이 테스트 13: 보초 8시간을 막 마친 사람에게 "당신이 누운 동안")
-  if (s.bedside) {
-    const me = state.characters[state.playerId];
-    const lying = ["sleep", "rest", "wait", "treat"].includes(state.lastActivity ?? "") || (!!me && !!incapacitatingSymptom(content.scenario, me));
-    if (!lying) return false;
-  }
   // 한밤에 막 잠에서 깬 때는 급한 이야기, 누워 있는 동안의 이야기, 깨어나는 장면(activities에 sleep)만 (플레이 테스트 12: 00~03시에 막 깬 사람에게 "모닥불 곁에 앉아", "당신 차례가 온다").
   // 아침에 깬 것은 하루의 시작이라 막지 않는다 (새벽 솥 같은 아침 일). 야영·길 위의 일은 태그로 따로 열려 여기를 거치지 않는다
   // 깬 뒤 다른 일을 했어도 그 밤이 끝날 때까지 (플레이 테스트 13: 깬 뒤 물 한 모금에 풀렸다)

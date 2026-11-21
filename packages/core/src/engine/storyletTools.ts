@@ -1102,16 +1102,30 @@ export function runSwarms(ctx: ToolContext): ToolDisplayEvent[] {
     if (rise < 1 && ctx.rng() >= rise) continue;
     const now = infestationOf(ctx.content, state, zone);
     if (now < 3) ctx.store.append({ type: "infestation_changed", zone, level: now + 1, cause: "소음" });
-    if (state.playerZone === zone && !heldOf(state.characters[state.playerId])) out.push(...runInfestedArrival(ctx, zone));
+    // 그 자리에 있으면 몰려온 것과 마주친다. 이미 가장 많은 곳이라 단계가 오르지 않았어도 한 번은 굴린다 (플레이 테스트 13: 병원에서는 어떤 소리에도 결과가 없었다)
+    if (state.playerZone === zone && !heldOf(state.characters[state.playerId])) {
+      ctx.store.append({ type: "swarm_set", zone, day: swarm.day, at: swarm.at, done: true, met: true });
+      out.push(...runInfestedArrival(ctx, zone, { atLeast: now >= 3 ? 1 : 0 }));
+    }
   }
   return out;
 }
 
 /** 몰려든 구역에 들어섰을 때 (D5): 기준값보다 높은 단계 하나당 arrival.per_level 확률 */
-export function runInfestedArrival(ctx: ToolContext, zone: string): ToolDisplayEvent[] {
+export function runInfestedArrival(ctx: ToolContext, zone: string, options: { atLeast?: number } = {}): ToolDisplayEvent[] {
   const rule = ctx.content.scenario.infestation?.arrival;
   if (!rule) return [];
-  const excess = infestationOf(ctx.content, ctx.store.getState(), zone) - baseInfestation(ctx.content, zone);
+  const state = ctx.store.getState();
+  // 몰려든 뒤 처음 들어서면 반드시 한 번 마주친다 (플레이 테스트 13: 몰려든 순간 다른 곳에 있었다가 들어서면 아무 일도 없었다)
+  const swarm = state.swarms[zone];
+  const raised = infestationOf(ctx.content, state, zone) - baseInfestation(ctx.content, zone);
+  if (swarm?.done && !swarm.met && raised > 0) {
+    ctx.store.append({ type: "swarm_set", zone, day: swarm.day, at: swarm.at, done: true, met: true });
+    const met = runTagEvent(ctx, rule.tag);
+    if (met.length) return met;
+  }
+  // atLeast: 이미 가장 많은 구역에서 소리를 낸 때처럼 단계가 더 오르지 않아도 굴린다
+  const excess = Math.max(options.atLeast ?? 0, raised);
   if (excess <= 0 || ctx.rng() >= excess * rule.per_level) return [];
   return runTagEvent(ctx, rule.tag);
 }

@@ -92,7 +92,13 @@ describe("자유 시나리오: 세계", () => {
     const loner = { ...base, faction: null, rank: "loner", location: "riverside", title: "떠돌이 약초꾼", kit: "wanderer" };
     const w = m.create("mcp", undefined, choice, undefined, { role: buildCustomRole(content, loner), background: [] });
     for (let i = 0; i < 4; i++) {
-      const r = w.executeTool("take_action", { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true });
+      const sleep = () => w.executeTool("take_action", { intent: "잔다", check: null, activity: { kind: "sleep", until: "morning" }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true });
+      let r = sleep();
+      // 곁에 위협이 남았으면 (공통 규칙 4) GM처럼 물리친 셈으로 내보내고 잔다
+      if (!r.ok && r.error.includes("곁에 위협이 있다")) {
+        for (const id of [...w.state().scene.present]) w.executeTool("npc_presence", { npc_id: id, action: "leave" });
+        r = sleep();
+      }
       expect(r.ok, r.ok ? "" : r.error).toBe(true);
     }
     expect(w.state().characters.player!.factionId).toBe("");

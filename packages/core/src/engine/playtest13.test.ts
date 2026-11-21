@@ -15,7 +15,8 @@ import { maybeInfect } from "./body.ts";
 import { currentResolve, resolveLine, resolveProgress } from "./resolve.ts";
 import { runHelpless } from "./helpless.ts";
 import { runMissionStartOfTurn } from "./missionTools.ts";
-import { applyEffect, hostileHere, hostileZone, maskUnknownNames } from "./storyletTools.ts";
+import { applyEffect, hostileHere, hostileZone, maskUnknownNames, runInfestedArrival } from "./storyletTools.ts";
+import { baseInfestation } from "../game/infestation.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { healFromSleep, pickFee } from "./body.ts";
 import { ambushParts } from "./ambush.ts";
@@ -517,5 +518,30 @@ describe("공통 규칙 2단계 (플레이 테스트 13 뒤 정한 것)", () => 
     const s = { ...structuredClone(w.state()), lastStoryletAt: s0.lastStoryletAt, runStartedAt: s0.runStartedAt };
     expect(storyletWindow(s, content, s.time + 30)).not.toBe("open");
     expect(storyletWindow(s, content, s.time + 70)).toBe("open");
+  });
+});
+
+const baseInfestationOf = (zone: string) => baseInfestation(content, zone);
+
+describe("공통 규칙 3단계: 처지·감염체 (플레이 테스트 13 뒤 정한 것)", () => {
+  it("감염체가 곁에 있으면 오래 걸리는 일을 거절한다", () => {
+    const w = world("role_a_grunt");
+    const tpl = Object.entries(content.extras).find(([, t]) => t.kind === "infected")![0];
+    const r0 = w.executeTool("spawn_extra", { template: tpl, label: "기어 온 감염체" });
+    expect(r0.ok, r0.ok ? "" : r0.error).toBe(true);
+    const r = w.executeTool("take_action", act({ activity: { kind: "search", until: null } }));
+    expect(r.ok ? "" : r.error).toContain("곁에 위협이 있다");
+  });
+
+  it("몰려든 구역에 몰려든 뒤 처음 들어서면 반드시 한 번 마주친다", () => {
+    const w = world("role_a_grunt");
+    const ctx = w.ctx();
+    const zone = Object.values(content.locations).find((l) => !l.owner && baseInfestationOf(l.id) < 3)!.id;
+    ctx.store.append({ type: "infestation_changed", zone, level: baseInfestationOf(zone) + 1, cause: "소음" });
+    ctx.store.append({ type: "swarm_set", zone, day: 1, at: w.state().time, done: true });
+    ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: zone });
+    const out = runInfestedArrival({ ...ctx, rng: () => 0.99 }, zone);
+    expect(out.some((d) => d.type === "storylet")).toBe(true);
+    expect(w.state().swarms[zone]!.met).toBe(true);
   });
 });

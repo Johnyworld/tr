@@ -887,6 +887,8 @@ export function createContentSchemas(s: Scenario) {
     bedside: z.boolean().optional(),
     /** 적의 매복 (12-177): 열리면 주인공은 매복당한 것이다 (다음 판정 하나가 불리하다, 실패하면 혼란) */
     ambush: z.boolean().optional(),
+    /** 이 이야기가 맞는 주인공의 처지 (공통 규칙 4, rules/situation.ts). 적지 않으면 태그·bedside·urgent로 짐작한다 */
+    situations: z.array(z.enum(["captive", "lying", "exploring", "infiltrating", "battle", "threatened", "awake"])).optional(),
     /** 연습 (대련): 이 이야기의 판정으로는 방어구·무기가 닳지 않는다 (플레이 테스트 13: 친구와의 대련에 갑옷이 망가졌다) */
     practice: z.boolean().optional(),
     cooldown_days: z.number().min(0).default(0),

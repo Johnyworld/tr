@@ -67,7 +67,9 @@ describe("역할의 권한 (access)", () => {
     // 잠이 끊길 수 있으니 이틀이 지날 때까지 잔다
     const day0 = Math.floor(w.state().time / 1440);
     for (let i = 0; i < 10 && Math.floor(w.state().time / 1440) < day0 + 2; i++) {
-      w.executeTool("take_action", { intent: "기다린다", check: null, activity: { kind: "wait", until: i % 2 ? "morning" : "night" }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true });
+      const r = w.executeTool("take_action", { intent: "기다린다", check: null, activity: { kind: "wait", until: i % 2 ? "morning" : "night" }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true });
+      // 곁에 위협이 남았으면 (공통 규칙 4) 내보내고 이어 간다
+      if (!r.ok && r.error.includes("곁에 위협이 있다")) for (const id of [...w.state().scene.present]) w.executeTool("npc_presence", { npc_id: id, action: "leave" });
     }
     expect(hunger()).not.toBe(start);
     w.close();

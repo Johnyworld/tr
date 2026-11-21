@@ -214,9 +214,17 @@ const explore = defineTool({
     // leave: 조용하면 판정 없이, 소리가 났으면 깊이만큼 어렵다.
     // 실패하면 다치는 대신 깨어난 것이 출구까지 따라붙는다 (플레이 테스트 13: 선언하지 않은 피해로 치명상까지 갔다). 다치는지는 그다음 맞서기·달아나기의 판정이 정한다
     const extra = step(ctx);
+    // 따라붙지 않은 감염체는 안에 두고 나온다 (플레이 테스트 13: 탐험에서 깨어난 것들이 나온 뒤에도 장면에 남았다)
+    const leaveBehind = (): string[] => {
+      const s = store.getState();
+      const inside = s.scene.present.filter((id) => isInfected(content, s.characters[id]) && !s.companions.includes(id));
+      for (const id of inside) store.append({ type: "npc_left", npcId: id });
+      return inside.length ? ["깨어났던 것들은 안에 두고 나왔다."] : [];
+    };
     if (ex.noise < 2) {
+      const left = leaveBehind();
       store.append({ type: "exploration_ended" });
-      return { ok: true, resultText: `${ruin.label}에서 나왔다. 탐험은 끝났다.`, display, extra };
+      return { ok: true, resultText: [`${ruin.label}에서 나왔다. 탐험은 끝났다.`, ...left].join("\n"), display, extra };
     }
     const m = moveOf(content.scenario, r.move)!;
     const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: ex.depth >= last ? "hard" : "normal", intent: "서둘러 빠져나온다" }, ctx);
@@ -227,7 +235,7 @@ const explore = defineTool({
       const awakeNow = store.getState().scene.present.some((id) => isInfected(content, store.getState().characters[id]));
       const woke = awakeNow ? [] : raiseNoise(ctx, NOISE_MAX);
       lines.splice(0, 1, `${ruin.label}의 출구까지 깨어난 것이 따라붙었다.`, ...woke, "출구 앞에서 마주친 장면으로 연출하고, 맞서거나 달아나는 판정(take_action, 몸의 위험을 선언)으로 이어 간다.");
-    }
+    } else lines.push(...leaveBehind());
     store.append({ type: "exploration_ended" });
     return { ok: true, resultText: [...lines, "이 결과대로 서술하라."].join("\n"), display: check.display, extra };
   },

@@ -19,6 +19,8 @@ import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { hostileHere, hostileZone, runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
 import { atStake } from "../rules/stakes.ts";
+import { situationOf, threatInScene } from "../rules/situation.ts";
+import { playerHeld } from "../rules/held.ts";
 import { withoutBlame } from "../rules/blame.ts";
 import { CAMP_INTERRUPT, createCampCheck, runCampEvent, deepSleepReason } from "./camp.ts";
 import { shakeNerves, sleepNerves } from "./body.ts";
@@ -378,6 +380,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       const openTitle = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
       return { ok: false, error: `이야기 "${openTitle}"${josa(openTitle, "이/가").slice(openTitle.length)} 열려 있다. 시간을 들이기 전에 resolve_storylet으로 고르거나, 모른 척하기로 했으면 ignore_story: true를 함께 넣는다 (시간은 흐르지 않았다).` };
     }
+  }
+  // 위협 앞에서는 오래 걸리는 일을 하지 않는다 (공통 규칙 4, 플레이 테스트 13: 감염체가 곁에 남은 채 두 시간을 뒤졌다)
+  // 스스로 못 움직이면 (쓰러져 있으면) 시간만 흐른다: 막지 않는다
+  if (!input.move_to && !!input.activity && LONG_IN_THREAT.includes(input.activity.kind) && !isIncapacitated(content, player) && !incapacitatingSymptom(scenario, player) && situationOf(start, content) === "threatened") {
+    const near = threatInScene(start, content).map((id) => `${playerCalls(start, content, id)}(${id})`).join(", ");
+    return { ok: false, error: `곁에 위협이 있다: ${near}. 오래 걸리는 일(${input.activity.kind})을 하기 전에 먼저 맞서거나(target) 피한다(move_to + 판정) (시간은 흐르지 않았다).` };
   }
   // 몸이 붙들린 매복은 걸어서 벗어날 수 없다 (플레이 테스트 13: "차 밑의 손"이 이동 한 번으로 대가 없이 닫혔다)
   if (start.activeStorylet && ((input.move_to && !input.check) || input.ignore_story) && !heldOf(player) && content.storylets[start.activeStorylet.id]?.ambush && !isIncapacitated(ctx.content, player)) {
@@ -997,6 +1005,13 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       displays.push(rested.display);
     }
   }
+  // 감염체가 몰려든 구역에서 오래 머물면 마주칠 수 있다: 들어설 때와 같은 확률로 한 번 (플레이 테스트 13: 몰려든 강변에서 4시간 보초·8시간 야영에 아무 일도 없었다)
+  if (!input.move_to && !!input.activity && LONG_IN_THREAT.includes(input.activity.kind) && !store.getState().activeStorylet && !store.getState().battle && store.getState().playerZone && !playerHeld(store.getState())) {
+    for (const d of runInfestedArrival(ctx, store.getState().playerZone!)) {
+      displays.push(d);
+      if (d.type === "storylet" && d.event === "started") lines.push(`머무는 사이 일이 생겼다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);
+    }
+  }
   // 건너기 시도가 실패하면 물살에 밀려 되돌아온다 (시간과 위험은 이미 치렀다)
   const sweptBack = crossingAttempt && outcome === "miss";
   const escapeFailed = escapeAttempt && outcome === "miss";
@@ -1177,6 +1192,9 @@ function feeChoice(pay: "auto" | { item: string; quantity: number }[] | null | u
 
 /** 남의 거점에서 뒤져 챙길 때 그 무리 사람이 곁에 없어도 들키는 확률 */
 const THEFT_NOTICE_CHANCE = 0.3;
+
+/** 위협 앞에서 거절하는 오래 걸리는 일 */
+const LONG_IN_THREAT = ["sleep", "wait", "guard_duty", "rest", "search", "work"];
 
 /** 판정 하나로 오르는 부상의 최대 단계 */
 const MAX_HARM_STEPS = 2;

@@ -1,3 +1,4 @@
+import { isIncapacitated } from "../engine/body.ts";
 import { heldOf } from "../rules/held.ts";
 import { remainsHere } from "../engine/remains.ts";
 import { waterHere } from "../engine/body.ts";
@@ -62,6 +63,26 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     let out = world.executeTool(name, input);
     // 이야기를 둔 채 같은 자리에서 오래 걸리는 일은 거절된다 (플레이 테스트 13): GM처럼 모른 척하고 다시 한다
     if (!out.ok && name === "take_action" && out.error.includes("ignore_story")) out = world.executeTool(name, { ...(input as object), ignore_story: true });
+    // 위협 앞에서는 오래 걸리는 일을 못 한다 (공통 규칙 4): GM처럼 먼저 맞선다
+    if (!out.ok && name === "take_action" && out.error.includes("곁에 위협이 있다")) {
+      const fight = world.content.scenario.moves.find((m) => m.id === "fight") ?? world.content.scenario.moves[0]!;
+      const threats = () => world.state().scene.present.filter((id) => !world.state().characters[id]?.dead && (out.ok ? false : out.error.includes(`(${id})`)));
+      let last: ReturnType<typeof world.executeTool> = out;
+      const down = () => {
+        const me = world.state().characters[world.state().playerId];
+        return !me || me.dead || isIncapacitated(world.content, me);
+      };
+      for (let i = 0; i < 3 && threats().length && !down(); i++) {
+        last = world.executeTool(name, { intent: "곁의 위협에 맞선다", target: threats()[0], check: { move: fight.id, stat: fight.stats[0], difficulty: "normal", harm_on_failure: "light", harm_cause: "맞붙었다", harm_kind: "other", infected_source: true, target_harm: "light", distance: "close" }, activity: null, deed: null, narration_summary: null, for_mission: false });
+      }
+      // 그래도 남았으면 물리친 셈으로 내보낸다 (자동 플레이가 멈추지 않게)
+      for (const id of threats()) world.executeTool("npc_presence", { npc_id: id, action: "leave" });
+      // 맞서다 쓰러졌거나 죽었으면 하려던 일은 접는다
+      if (down()) return last;
+      out = world.executeTool(name, input);
+      // 맞서는 사이 새 이야기가 열렸으면 모른 척하고 다시 한다
+      if (!out.ok && out.error.includes("ignore_story")) out = world.executeTool(name, { ...(input as object), ignore_story: true });
+    }
     // 매복에 붙들리면 걸어 나갈 수 없다 (플레이 테스트 13): GM처럼 뿌리치는 판정을 걸고 옮겨 간다
     if (!out.ok && name === "take_action" && out.error.includes("매복에 걸려")) {
       const move = world.content.scenario.moves[0]!;

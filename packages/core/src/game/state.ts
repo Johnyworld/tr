@@ -298,7 +298,8 @@ export function createGameSchemas(s: Scenario) {
     /** 구역마다 오늘의 소음 (기획서 4.8) */
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 소리를 듣고 몰려오는 감염체 (infestation.swarm_hours): 구역 → 그날 소리(day)에 몰려드는 시각(at), 이미 왔는지(done) */
-    swarms: z.record(z.string(), z.strictObject({ day: z.number().int(), at: z.number().int(), done: z.boolean() })).default({}),
+    /** met: 몰려든 뒤 주인공이 그 구역에서 마주쳤다 (처음 들어서면 반드시 한 번, 플레이 테스트 13) */
+    swarms: z.record(z.string(), z.strictObject({ day: z.number().int(), at: z.number().int(), done: z.boolean(), met: z.boolean().optional() })).default({}),
     /** 주인공이 마지막으로 그 구역에 갔을 때 본 주인 (플레이 테스트 12: 점령 변화가 소문 없이 인접 목록에 바로 보였다) */
     zoneSeen: z.record(z.string(), z.string().nullable()).default({}),
     /** 구역마다 바닥에 놓인 물건 (장면을 떠나면 그 구역에 남는다, 플레이 테스트 13: 내려놓은 고철이 구역을 옮겨도 따라왔다) */
@@ -757,7 +758,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("ration_missed"), day: z.number().int().nullable() }),
     /** 판정의 대가를 다치는 대신 다른 것(시간)으로 치렀다: 그 판정을 이어받는 이야기는 "다친다"를 겹쳐 붙이지 않는다 (플레이 테스트 12) */
     z.strictObject({ type: z.literal("check_cost_paid"), checkId: z.string() }),
-    z.strictObject({ type: z.literal("swarm_set"), zone: z.string(), day: z.number().int(), at: z.number().int(), done: z.boolean() }),
+    z.strictObject({ type: z.literal("swarm_set"), zone: z.string(), day: z.number().int(), at: z.number().int(), done: z.boolean(), met: z.boolean().optional() }),
     /** 구역의 감염체 압력이 바뀌었다 (12-112): 소음·시체로 오르고, 소탕으로 내리고, 날이 가며 기준값으로 돌아간다 */
     z.strictObject({ type: z.literal("infestation_changed"), zone: z.string(), level: z.number().int().min(0).max(3), cause: z.string() }),
     /** 무기고가 작전 장비를 빌려줬다 (무리 창고의 탄약 resource가 cost만큼 준다) */
@@ -1416,7 +1417,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     }
     case "swarm_set":
-      next.swarms = { ...next.swarms, [event.zone]: { day: event.day, at: event.at, done: event.done } };
+      next.swarms = { ...next.swarms, [event.zone]: { day: event.day, at: event.at, done: event.done, ...(event.met ? { met: true } : {}) } };
       return next;
     case "noise_made": {
       const prev = next.zoneNoise[event.zone];

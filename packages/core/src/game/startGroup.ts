@@ -28,6 +28,9 @@ function ageRange(rules: GroupRules, rel: Relation, me: StartGroup["me"]): [numb
   let [lo, hi] = rel.age;
   if (rel.kind === "parent") lo = Math.max(lo, me.age + rules.parent_gap);
   if (rel.kind === "child") hi = Math.min(hi, me.age - rules.parent_gap);
+  if (rel.kind === "parent" && rules.parent_max_gap) hi = Math.min(hi, me.age + rules.parent_max_gap);
+  if (rel.kind === "child" && rules.parent_max_gap) lo = Math.max(lo, me.age - rules.parent_max_gap);
+  if (lo > hi) return null;
   return lo <= hi ? [lo, hi] : null;
 }
 

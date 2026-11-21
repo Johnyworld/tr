@@ -26,7 +26,7 @@ import { describeStash } from "./stash.ts";
 import { infestationSign } from "../game/infestation.ts";
 import { KIND_LABELS, templateKind } from "../game/kinds.ts";
 import { describePersona } from "./persona.ts";
-import { describeTemperature, feelsLike } from "./climate.ts";
+import { describeTemperature, feelsLike, frostOmen } from "./climate.ts";
 import { troubleLine } from "./factionTalk.ts";
 import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
@@ -101,7 +101,9 @@ function weatherLine(state: GameState, content: Content): string {
   const w = weatherNow(content.scenario, state);
   // 내일 한파·눈이면 오늘 낌새가 보인다 (E2)
   const f = state.forecast?.day === dayOf(state.time) + 1 ? content.scenario.weather?.kinds.find((k) => k.id === state.forecast!.id) : undefined;
-  return (w ? ` · 날씨: ${w.label} (${w.description})` : "") + (f?.omen ? ` · 낌새: ${f.omen}` : "");
+  // 날씨 낌새가 없어도 내일 새벽이 처음 영하면 낌새 (12-239)
+  const frost = f?.omen ? null : frostOmen(content, state);
+  return (w ? ` · 날씨: ${w.label} (${w.description})` : "") + (f?.omen ? ` · 낌새: ${f.omen}` : frost ? ` · 낌새: ${frost}` : "");
 }
 
 const genderOf = (s: { creation?: { genders: { id: string; label: string }[] } }, id: string | null) => {

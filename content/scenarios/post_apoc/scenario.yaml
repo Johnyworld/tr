@@ -132,7 +132,8 @@ creation:
     - { id: salesman, label: 영업사원, summary: 말로 물건을 팔았다. 웃는 얼굴 뒤의 셈을 읽는다, stats: { charm: 2, intellect: 1, nerve: 1, strength: -1 }, skills: { persuade: 2, deceive: 1, insight: 0, leadership: 0, intimidate: 0 }, items: [cigarettes, trade_token], min_age: 23 }
     - { id: courier, label: 배달원, summary: 오토바이로 도시 골목을 누볐다. 길과 지름길을 안다, stats: { agility: 2, senses: 1, vitality: 1, intellect: -1 }, skills: { athletics: 2, sense_danger: 1, scavenge: 0, stealth: 0, survival: 0 }, items: [moto_helmet], min_age: 19 }
     - { id: teacher, label: 교사, summary: 아이들을 가르쳤다. 사람을 모으고 말을 듣게 하는 법을 안다, stats: { intellect: 2, charm: 1, nerve: 1, strength: -1 }, skills: { leadership: 2, history: 1, persuade: 0, insight: 0, improvise: 0 }, items: [notebook, pencil], min_age: 26 }
-    - { id: farmer, label: 농부, summary: 도시 끝에서 밭을 갈았다. 덫을 놓고 날씨를 읽는다, stats: { vitality: 2, strength: 1, senses: 1, charm: -1 }, skills: { survival: 2, endure: 1, taming: 0, hunt: 0, athletics: 0 }, items: [wire_roll, seed_packet], min_age: 18 }
+    # 덫을 놓는다는 설명대로 사냥(덫 판정) 1 (12-239, 플레이 테스트 13: 철사를 주고 사냥 0이라 덫이 늘 실패했다)
+    - { id: farmer, label: 농부, summary: 도시 끝에서 밭을 갈았다. 덫을 놓고 날씨를 읽는다, stats: { vitality: 2, strength: 1, senses: 1, charm: -1 }, skills: { survival: 2, hunt: 1, taming: 0, endure: 0, athletics: 0 }, items: [wire_roll, seed_packet], min_age: 18 }
     - { id: student, label: 학생, summary: 붕괴 때 학교에 있었다. 아무거나 엮어 쓸 것을 만드는 손재주가 있다, stats: { agility: 2, intellect: 1, senses: 1, nerve: -1 }, skills: { scavenge: 2, improvise: 1, swim: 0, history: 0, stealth: 0 }, items: [duct_tape, scrap_metal] }
   # 트레잇 고르기: 긍정 비용 합 ≤ 부정 보상 합. 종류별 최대
   # 성격은 개수 제한 없이 (연기 힌트). 반대되는 것끼리만 막는다
@@ -465,6 +466,9 @@ custom_start:
     start: 3
     max: 5
     parent_gap: 18
+    # 부모·자식은 많아야 38살 차이, 무리에 사는 가족은 그 무리의 주민 (12-239)
+    parent_max_gap: 38
+    settled_rank: staff
     relations:
       # 결혼·자식 (12-195): 배우자는 주인공 24세부터, 자식은 28세부터(18살 이상 차이). 찾는 가족에서는 나이가 돼도 확률로만 (부모·형제가 기본)
       - { id: spouse, label: 배우자, kind: spouse, max: 1, age: [18, 75], labels: { male: 남편, female: 아내 }, min_me_age: 24, chance: 0.5 }
@@ -1319,6 +1323,8 @@ rest: { cast: 2, mission: 3, alarm: 3 }
 mission_move_groups:
   - [persuade, intimidate, deceive]
 # 임무 브리핑의 낌새 (content:check, 12-237): 짝을 말하면 buddy, 알아 오라면 learns가 있어야 한다 (플레이 테스트 13: "혼자 깊이 들어가지 마라"에 짝이 없었고, 발자국을 쫓아도 알게 된 것이 없었다)
+# 이 부상 단계부터는 위험 임무를 내지 않는다 (12-239)
+mission_unfit_from: serious
 mission_hints:
   buddy: ["혼자 (깊이 )?(들어가지|다니지|나가지) 마", "혼자 두지", "둘이서", "2인 1조"]
   learns: ["어디서 왔는지", "어디로 가는지", "알아 온다", "알아 와", "알아내(?![^.]*아닙)"]
@@ -1642,6 +1648,8 @@ body:
       # 한파 -10 → -7 (플레이 테스트 11, E2: 하루에 14° 떨어졌다)
       weather: { fog: -1, rain: -2, snow: -3, cold_snap: -7 }
       jitter: 2
+      # 내일 새벽이 처음 영하면 오늘 보이는 낌새 (12-239)
+      frost_omen: "저녁 바람이 매섭게 식는다. 밤사이 물통이 얼겠다 (방한복·담요·땔감을 챙길 때)"
       comfort: 8
       warm: 15
       # 70 → 45 (플레이 테스트 11, E1: 영하 12°에 방한복 없이 2시간이 "이상 없음") → 30 (플레이 테스트 13: 체감 3°·젖은 옷으로 밤새도 "이상 없음")

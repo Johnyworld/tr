@@ -2,7 +2,10 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { activeMissionOf, evaluateMission, pickDailyOffers, recentSetback } from "../game/missions.ts";
+import { activeMissionOf, evaluateMission, pickDailyOffers, recentSetback, riskyMission } from "../game/missions.ts";
+import { makeFamily } from "../game/startGroup.ts";
+import { routeMinutes } from "../rules/time.ts";
+import { itemSources } from "../content/sources.ts";
 import { stanceOf } from "../game/fame.ts";
 import { createSeededRng } from "../rng.ts";
 import { pickCast, storyletAllowed, storyletWindow } from "../story/storylets.ts";
@@ -480,6 +483,39 @@ describe("무리 생활 (12-238)", () => {
     expect(runQuarantine(ctx).join("")).toContain("격리가 끝났다");
     expect(w.state().characters[w.state().playerId]!.captive).toBeNull();
     expect(w.state().exposedAt[w.state().playerId]).toBeUndefined();
+  });
+});
+
+describe("튜토리얼과 그 밖 (12-239)", () => {
+  it("유예 동안이나 중상 이상이면 위험 임무(작전·적 땅)를 오늘의 일감에 내지 않는다", () => {
+    for (let i = 0; i < 20; i++) {
+      const offers = pickDailyOffers(content, "role_a_grunt", 1440 * 5 + 360, null, createSeededRng(i), [], false, undefined, undefined, undefined, [], true);
+      for (const id of offers?.templateIds ?? []) expect(riskyMission(content.missions[id]!)).toBe(false);
+    }
+  });
+
+  it("부모는 주인공보다 많아야 38살 위다", () => {
+    for (let i = 0; i < 30; i++) {
+      const fam = makeFamily(content, { age: 25, gender: "female" }, 3, createSeededRng(i), null);
+      const rel = content.scenario.custom_start!.group!.relations;
+      for (const m of fam) if (rel.find((r) => r.id === m.relation)?.kind === "parent") expect(m.age).toBeLessThanOrEqual(63);
+    }
+  });
+
+  it("이동 시간은 길마다 정해져 있고 오가는 방향이 같다", () => {
+    expect(routeMinutes("e_market", "riverside")).toBe(routeMinutes("riverside", "e_market"));
+    expect(routeMinutes("e_market", "riverside")).toBe(routeMinutes("e_market", "riverside"));
+  });
+
+  it("부탁 물건을 구할 만한 곳을 콘텐츠에서 찾는다", () => {
+    expect(itemSources(content, "notebook").length).toBeGreaterThan(0);
+    expect(itemSources(content, "seed_packet").length).toBeGreaterThan(0);
+  });
+
+  it("?상태의 트레잇 줄은 없어도 보인다", async () => {
+    const w = world("role_y_islander");
+    w.state().characters[w.state().playerId]!.traits = [];
+    expect(await w.runCommand("?상태")).toContain("트레잇  없음");
   });
 });
 

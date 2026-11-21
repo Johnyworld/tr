@@ -117,6 +117,12 @@ export function encounteredFactions(state: GameState, content: Content): string[
 /** 개인 사연이 있는 시나리오 역할 (지난 일·가까운 동료·찾는 가족): 그 주인공의 것이라 다음 주인공의 자리로 쓰지 않는다 */
 export const personalRole = (r: RoleContent): boolean => (r.history?.length ?? 0) > 0 || (r.background?.length ?? 0) > 0 || !!r.start_bonds || !!r.family;
 
+/** 이 자리가 지고 들어오는 빚 한 줄 (없으면 null) */
+function debtLine(content: Content, role: RoleContent | undefined): string | null {
+  const debt = Object.entries(role?.start_debt ?? {});
+  return debt.length ? `이 자리는 빚을 지고 들어온다: ${debt.map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")} (갚는 일감이나 갚는다고 건넨 물건으로 준다).` : null;
+}
+
 /**
  * 다음 주인공이 받는 자리: 그 무리·계급의 콘텐츠 역할(개인 사연이 없는 것), 없으면 코드가 만든 자리.
  * 무리가 없으면 떠돌이 자리. 첫 장면·사연·시나리오는 없다
@@ -166,7 +172,9 @@ function heirCandidates(state: GameState, content: Content): SuccessionOption[] 
   for (const f of encounteredFactions(state, content)) {
     const ranks = content.scenario.custom_start?.ranks ?? [...new Set(Object.values(content.roles).filter((r) => r.faction === f).map((r) => r.rank))];
     for (const rank of ranks) {
-      options.push({ id: `${NEW_AS_PREFIX}${f}:${rank}`, label: `새 캐릭터 (${content.factions[f]!.name} ${rankName(content, f, rank)})`, detail: content.factions[f]!.public });
+      // 그 자리가 빚을 지고 들어오는 자리면 미리 알린다 (12-239, 플레이 테스트 13: 새 호위대원에게 까닭 모를 빚 12)
+      const debt = debtLine(content, heirSeat(content, f, rank, { age: null }).role);
+      options.push({ id: `${NEW_AS_PREFIX}${f}:${rank}`, label: `새 캐릭터 (${content.factions[f]!.name} ${rankName(content, f, rank)})`, detail: `${content.factions[f]!.public}${debt ? ` ${debt}` : ""}` });
     }
   }
   // 떠돌이였던 주인공이 있으면 새 떠돌이로도 이어 갈 수 있다 (12-195)
@@ -337,6 +345,7 @@ export function switchCharacter(
     text: [
       `이제 ${josa(heir.name, "으로/로")} 이어 간다. 새 캐릭터는 이전 캐릭터의 기억을 모른다. 이전 이야기를 이 캐릭터가 아는 것처럼 서술하지 마라.`,
       `시작 장면: ${opening}`,
+      ...(newAs && debtLine(content, seatRole) ? [debtLine(content, seatRole)!] : []),
       ...inherited,
     ].join("\n"),
   };

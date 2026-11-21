@@ -436,6 +436,10 @@ export const scenarioFileSchema = z
             start: z.number().int().min(0),
             max: z.number().int().min(1),
             parent_gap: z.number().int().min(0).default(18),
+            /** 부모·자식의 나이 차 상한 (12-239, 플레이 테스트 13: 25살 주인공의 아버지가 79살) */
+            parent_max_gap: z.number().int().min(1).optional(),
+            /** 무리에 사는 가족의 계급 (12-239: 버들마을에 사는 부모가 "버들마을 떠돌이"로 보였다) */
+            settled_rank: id.optional(),
             relations: z
               .array(
                 z.strictObject({
@@ -1428,6 +1432,8 @@ export const scenarioFileSchema = z
                 segments: z.strictObject({ dawn: z.number(), morning: z.number(), day: z.number(), evening: z.number(), night: z.number() }),
                 weather: z.record(id, z.number()).default({}),
                 jitter: z.number().min(0).default(0),
+                /** 오늘 새벽은 영상인데 내일 새벽이 영하면 오늘 보이는 낌새 (12-239, 플레이 테스트 13: 하룻밤에 -5°로 떨어졌는데 낌새가 없었다) */
+                frost_omen: z.string().optional(),
                 comfort: z.number(),
                 warm: z.number(),
                 per_step: z.number().positive(),
@@ -1602,6 +1608,8 @@ export const scenarioFileSchema = z
      * 임무 브리핑의 낌새 (content:check, 12-237): 브리핑이 이 말(정규식)을 쓰면 그 필드가 있어야 한다.
      * buddy: 짝을 말하는 브리핑 (분대장 이상만 받는 임무는 분대가 있어 뺀다), learns: 알아 오는 브리핑
      */
+    /** 이 부상 단계부터는 위험 임무(작전·적 땅)를 오늘의 일감에 내지 않는다 (12-239, 플레이 테스트 13: 중상인 부하에게 보급 털기) */
+    mission_unfit_from: id.optional(),
     mission_hints: z.strictObject({ buddy: z.array(z.string()).default([]), learns: z.array(z.string()).default([]) }).default({ buddy: [], learns: [] }),
     /** 공통 규칙 5 (rules/rest.ts): 최근에 나온 것이 쉬는 날수. cast 이야기 배역, mission 받은 일감, alarm 무리마다의 경보 이야기 */
     rest: z.strictObject({ cast: z.number().min(0).optional(), mission: z.number().min(0).optional(), alarm: z.number().min(0).optional() }).default({}),

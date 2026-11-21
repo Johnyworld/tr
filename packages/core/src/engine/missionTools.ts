@@ -465,7 +465,13 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const startRank = ctx.content.roles[state.roleId]?.rank;
     const rankRole = me && me.rank !== startRank ? Object.values(ctx.content.roles).find((r) => r.faction === me.factionId && r.rank === me.rank) : undefined;
     const extra = [...(occ?.missions ?? []), ...(rankRole?.missions ?? [])];
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learnedSkill(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content));
+    // 막 들어온 유예 동안이나 중상 이상이면 위험 임무를 내지 않는다 (12-239, 플레이 테스트 13: 입단 첫날 적 땅 털기, 중상인 부하에게 보급 털기)
+    const harm = harmTrack(ctx.content.scenario);
+    const unfitFrom = ctx.content.scenario.mission_unfit_from;
+    const at = (lv: string | undefined) => harm.levels.findIndex((l) => l.id === lv);
+    const unfit = !!me && !!unfitFrom && at(me.conditions[harm.id]) >= at(unfitFrom) && at(unfitFrom) >= 0;
+    const safeOnly = (state.missionGraceUntil ?? 0) > state.time || unfit;
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learnedSkill(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content), safeOnly);
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;

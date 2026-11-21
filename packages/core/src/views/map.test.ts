@@ -43,13 +43,16 @@ describe("지도 (12-201)", () => {
     expect(text).toContain(content.locations[w.state().playerZone!]!.name);
   });
 
-  it("?지도에 글자 지도가 함께 나온다: 지금 여기는 @, 가 보지 않은 곳은 이름 없이 ?", () => {
+  it("글자 지도: 지금 여기는 @, 가 보지 않은 곳은 이름 없이 ?", () => {
     const w = make();
     const view = buildMapView(w.state(), content)!;
     const art = renderMapAscii(view);
     expect(art).toContain("@");
     expect(art).toContain("?");
     for (const n of view.nodes) if (n.state === "seen") expect(art).not.toContain(content.locations[n.id]!.map!.label ?? content.locations[n.id]!.name);
-    expect(runCommand("?지도", { state: w.state(), content, summaries: [] })).toContain(art);
+    // 채팅 ?지도에는 글자 그림 대신 가 본 곳 목록이 나온다 (12-239)
+    const text = runCommand("?지도", { state: w.state(), content, summaries: [] });
+    expect(text).not.toContain(art);
+    expect(text).toContain("가 본 곳 (주인은 본 대로 · 맞닿은 곳)");
   });
 });

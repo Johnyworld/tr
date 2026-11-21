@@ -90,9 +90,11 @@ export function describeRemains(state: GameState, content: ToolContext["content"
       const inv = Object.entries(state.characters[r.holder]?.inventory ?? {})
         .filter(([, n]) => n > 0)
         .map(([i, n]) => `${content.items[i]?.name ?? i}${n > 1 ? ` ×${n}` : ""}`);
-      return `${callOf({ content }, state, r.of)}의 유해 (보관 위치 ${r.holder}, 짐: ${inv.join(", ") || "없음"})`;
+      // 앞 주인공이면 그렇다고 (12-239, 플레이 테스트 13: "보관 위치 player"가 무엇인지 알 수 없었다)
+      const former = state.chronicle.some((c) => c.characterId === r.of) ? "앞 주인공 " : "";
+      return `${former}${callOf({ content }, state, r.of)}의 유해 (뒤질 때 from=${r.holder}, 짐: ${inv.join(", ") || "없음"})`;
     });
-    lines.push(`이 구역의 묻히지 않은 유해: ${list.join(" / ")}. 짐은 transfer_item(from=보관 위치)으로 뒤진다. 묻어 주면 take_action.bury`);
+    lines.push(`이 구역의 묻히지 않은 유해: ${list.join(" / ")}. 짐은 transfer_item(from=그 id)으로 뒤진다. 묻어 주면 take_action.bury(who=그 id)`);
   }
   const graves = gravesHere(state);
   if (graves.length) {
@@ -101,13 +103,13 @@ export function describeRemains(state: GameState, content: ToolContext["content"
   return lines;
 }
 
-/** 묻는다 (take_action.bury). who: 유해의 보관 위치 또는 그 사람 id */
+/** 묻는다 (take_action.bury). who: 유해 줄의 from= 뒤 id 또는 그 사람 id */
 export function buryRemains(ctx: ToolContext, who: string, words: string | null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const { store, content } = ctx;
   const state = store.getState();
   const me = state.characters[state.playerId]!;
   const target = remainsHere(state).find((r) => r.holder === who || r.of === who);
-  if (!target) return { ok: false, error: "이 구역에 묻을 유해가 없다 (상태의 '묻히지 않은 유해' 줄의 보관 위치를 쓴다)." };
+  if (!target) return { ok: false, error: "이 구역에 묻을 유해가 없다 (상태의 '묻히지 않은 유해' 줄의 from= 뒤 id를 쓴다)." };
   const dead = state.characters[target.of];
   const call = callOf(ctx, state, target.of);
   // 묘비: 이름을 알면 이름, 아니면 호칭. 주인공이었던 사람이면 연대기의 묘비명을 함께 새긴다

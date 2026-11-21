@@ -61,13 +61,13 @@ export function checkScenarioProgress(ctx: ToolContext, events: readonly GameEve
       const e: GameEvent = { type: "scenario_cleared", roleId: role.id };
       store.append(e);
       all.push(e);
-      // 다시 만난 가족은 곁에 남고, 주인공의 앎도 바뀐다 (플레이 테스트 11: 재회 뒤에도 "어디 있는지 모른다", 가족은 장면에서 사라졌다)
+      // 다시 만난 가족: 주인공의 앎이 바뀐다 (플레이 테스트 11: 재회 뒤에도 "어디 있는지 모른다").
+      // 함께 다니는 것은 데려가겠다고 할 때만 (12-239, 플레이 테스트 13: 79살 노인이 저절로 동행이 되어 전선을 따라다녔다)
       for (const id of state.family) {
         const now = store.getState();
-        if (!now.scene.present.includes(id) || now.companions.includes(id) || now.characters[id]?.dead) continue;
-        store.append({ type: "companion_joined", characterId: id, kind: "kin" });
-        const after = store.getState();
-        store.append({ type: "belief_added", characterId: after.playerId, belief: { id: `b_${after.nextBeliefNo}`, fact: `${josa(after.characters[id]!.name, "을/를")} 다시 만났다. 이제 곁에 있다.`, source: "seen", accuracy: "exact", learnedAt: after.time } });
+        if (!now.scene.present.includes(id) || now.characters[id]?.dead) continue;
+        const where = now.playerZone ? (content.locations[now.playerZone]?.name ?? now.playerZone) : "이곳";
+        store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact: `${josa(now.characters[id]!.name, "을/를")} 다시 만났다. ${where}에 산다.`, source: "seen", accuracy: "exact", learnedAt: now.time } });
       }
       notices.push({ kind: "cleared", roleId: role.id, title: role.scenario!.title, goal: goal.text, ending: goal.ending });
     }

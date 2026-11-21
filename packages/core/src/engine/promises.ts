@@ -12,6 +12,7 @@ import { equippedItem } from "./gear.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 import { ownedBy } from "../rules/home.ts";
+import { itemSources } from "../content/sources.ts";
 
 /**
  * 약속 (기획서 8.11, 12-160·12-181). 주인공이 장면의 인물과 맺은 약속을 코드가 기억한다. 수치는 월드의 promises.
@@ -43,6 +44,12 @@ export const askedPromises = (state: GameState, to?: string): PromiseRecord[] =>
 const describe = (content: Content, p: Pick<PromiseRecord, "what" | "item">) =>
   p.item ? `${p.what} (${content.items[p.item.id]?.name ?? p.item.id} ×${p.item.quantity})` : p.what;
 
+/** 부탁 물건을 구할 만한 곳 한 토막 (12-239) */
+const sourcesNote = (content: Content, item: { id: string } | null | undefined) => {
+  const where = item ? itemSources(content, item.id) : [];
+  return where.length ? ` · 구할 만한 곳: ${where.slice(0, 3).join(", ")}` : "";
+};
+
 /** 상태 화면·명령어의 한 줄 (12-174): 내가 한 약속인지, 받아 준 부탁인지 */
 export type Pledge = { id: string; kind: "약속" | "부탁"; who: string; text: string; leftLabel: string; urgent: boolean };
 
@@ -58,13 +65,14 @@ export function pledges(state: GameState, content: Content, to?: string): Pledge
 export function promiseLines(state: GameState, content: Content, to?: string): string[] {
   const open = pledges(state, content, to).map((p) => {
     const head = p.kind === "부탁" ? `${to ? "이 인물의 " : `${p.who}의 `}부탁 ${p.id} (들어주기로 했다)` : `${to ? "당신이 이 인물에게 한 " : `${p.who}에게 한 `}약속 ${p.id}`;
-    return `${head}: ${p.text} — ${p.leftLabel}`;
+    const record = (state.promises ?? []).find((x) => x.id === p.id);
+    return `${head}: ${p.text} — ${p.leftLabel}${record?.favor ? sourcesNote(content, record.item) : ""}`;
   });
   if (!to) return open;
   const asked = askedPromises(state, to).flatMap((p) => {
     const c = askContent(content, p);
     if (!c) return [];
-    return [`이 인물이 꺼낼 부탁 ${p.id} (장면에서 자연스럽게 꺼낸다. 플레이어가 받으면 promise accept, 거절하면 decline): "${c.ask}" — ${describe(content, { what: "", item: c.item }).trim()}, ${c.days}일 안에`];
+    return [`이 인물이 꺼낼 부탁 ${p.id} (장면에서 자연스럽게 꺼낸다. 플레이어가 받으면 promise accept, 거절하면 decline): "${c.ask}" — ${describe(content, { what: "", item: c.item }).trim()}, ${c.days}일 안에${sourcesNote(content, c.item)}`];
   });
   return [...open, ...asked];
 }

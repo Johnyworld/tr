@@ -114,7 +114,8 @@ export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined):
     const character = createExtraCharacter(content, t, { id, label, zone: family.zone, time: s.time, usedNames, name: m.name, age: m.age, gender: m.gender, usedLooks }, rng);
     if (character.extra?.look) usedLooks.add(character.extra.look);
     // 그 구역 무리에 받아들여져 산다 (그 무리 사람들이 안다)
-    store.append({ type: "extra_spawned", character: owner && content.factions[owner] ? { ...character, factionId: owner } : character });
+    const settled = groupRules(content)?.settled_rank;
+    store.append({ type: "extra_spawned", character: owner && content.factions[owner] ? { ...character, factionId: owner, ...(settled ? { rank: settled } : {}) } : character });
     if (family.zone !== s.playerZone && store.getState().scene.present.includes(id)) store.append({ type: "npc_left", npcId: id });
     // 가족은 서로 이름을 알고, 서로 아낀다 (거의 가장 깊은 사이)
     store.append({ type: "name_learned", characterId: s.playerId, targetId: id });

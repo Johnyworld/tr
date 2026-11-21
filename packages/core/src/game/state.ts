@@ -299,6 +299,8 @@ export function createGameSchemas(s: Scenario) {
     cargo: z.record(z.string(), z.record(z.string(), z.number().int().min(1))).default({}),
     /** 감염체에게 마지막으로 다친 시각 (인물 id → 시각, 격리의 근거, 12-238) */
     exposedAt: z.record(z.string(), z.number().int()).default({}),
+    /** 이 시각까지는 위험 임무를 내지 않는다 (무리에 막 들어온 유예, 12-239) */
+    missionGraceUntil: z.number().int().nullable().default(null),
     /** 구역마다 오늘의 소음 (기획서 4.8) */
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 소리를 듣고 몰려오는 감염체 (infestation.swarm_hours): 구역 → 그날 소리(day)에 몰려드는 시각(at), 이미 왔는지(done) */
@@ -847,7 +849,7 @@ export function createGameSchemas(s: Scenario) {
      * 주인공이 무리에 들어간다 (무소속이면 가입, 무리에 있으면 옮김). 역할은 코드가 만든다 (game/customStart.ts joinRole, 기획서 12.5).
      * beliefs: 그 무리에서 처음 듣는 사정 (같은 계급 시나리오의 시작 지식)
      */
-    z.strictObject({ type: z.literal("player_joined_faction"), factionId: z.string(), rank: z.string(), role: customRoleSchema, beliefs: z.array(beliefSchema).default([]) }),
+    z.strictObject({ type: z.literal("player_joined_faction"), factionId: z.string(), rank: z.string(), role: customRoleSchema, beliefs: z.array(beliefSchema).default([]), graceUntil: z.number().int().optional() }),
     z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
     z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
     z.strictObject({ type: z.literal("missions_offered"), day: z.number().int(), templateIds: z.array(z.string()) }),
@@ -1203,6 +1205,7 @@ export const EMPTY_STATE: GameState = {
   loans: {},
   cargo: {},
   exposedAt: {},
+  missionGraceUntil: null,
   restockedDay: {},
   squad: null,
   promotionOffer: null,
@@ -1333,6 +1336,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (player.factionId === event.factionId) throw new Error("이미 그 무리에 속해 있습니다.");
       player.factionId = event.factionId;
       player.rank = event.rank;
+      next.missionGraceUntil = event.graceUntil ?? null;
       next.roleId = event.role.id;
       next.customRole = structuredClone(event.role);
       // 옛 분대·회의는 옛 무리의 것이다
@@ -2308,7 +2312,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       // 장면과 플레이어 기준 상태를 새로 시작한다 (새 캐릭터는 다른 곳에서 하루를 시작한다)
       next.scene.present = [];
       next.perceived = {};
-      // 동행은 죽은 사람을 따라다녔다. 다음 캐릭터는 새로 사귄다 (기획서 7.8)
+      // 동행은 죽은 사람을 따라다녔다. 다음 캐릭터는 새로 사귄다 (기획서 7.8).
+      // 이름 없는 동행(동물·연고)은 죽은 그 자리에 남아, 다음 주인공이 그곳에서 만날 수 있다 (12-239, 플레이 테스트 13: 누렁이가 주인이 죽은 뒤 어디에도 없었다)
+      for (const id of state.companions) {
+        const c = next.characters[id];
+        if (c?.extra && !c.dead && state.playerZone) c.extra = { ...c.extra, zone: state.playerZone };
+      }
       next.companions = [];
       next.bonds = {};
       // 앞 주인공이 놓은 덫은 다음 주인공이 모른다 (플레이 테스트 13)

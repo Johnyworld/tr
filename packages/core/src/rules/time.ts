@@ -171,6 +171,19 @@ export const MAX_FAST_FORWARD_MINUTES = MINUTES_PER_DAY;
 /** 턴이 시간을 쓰지 않고 끝나면 이만큼 흐른다 */
 export const MIN_TURN_MINUTES = 5;
 
+/**
+ * 길마다 정해진 이동 시간 (12-239, 플레이 테스트 13: 장터 → 강변이 30분·45분·1시간으로 매번 달랐다).
+ * 두 구역 짝에서 정해지는 travel 범위 안의 15분 단위. 오가는 방향이 같다
+ */
+export function routeMinutes(from: string, to: string): number {
+  const cost = ACTIVITY_COSTS.travel as { kind: "range"; min: number; max: number };
+  const key = [from, to].sort().join("|");
+  let h = 2166136261;
+  for (const ch of key) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  const steps = (cost.max - cost.min) / 15;
+  return cost.min + ((h >>> 0) % (steps + 1)) * 15;
+}
+
 /** 짧은 활동의 소요 시간 (분) */
 export function rollActivityMinutes(cost: Exclude<ActivityCost, { kind: "long" }>, rng: Rng): number {
   if (cost.kind === "fixed") return cost.minutes;

@@ -47,6 +47,7 @@ import {
   MIN_TURN_MINUTES,
   nextSegmentStart,
   rollActivityMinutes,
+  routeMinutes,
   SEGMENT_LABELS,
   segmentOf,
   timeSegmentSchema,
@@ -247,7 +248,7 @@ export function createTakeActionSchema(s: Scenario) {
       .describe("덫을 놓으면 set (철사 같은 덫 재료가 있어야 한다), 이 구역에 놓아 둔 덫을 거두면 check. 걸리는 것은 하루가 지날 때 시스템이 정한다. 아니면 null"),
     bury: z
       .strictObject({
-        who: z.string().describe("상태의 '묻히지 않은 유해' 줄의 보관 위치"),
+        who: z.string().describe("상태의 '묻히지 않은 유해' 줄의 from= 뒤 id"),
         words: z.string().max(60).nullable().describe("묘비에 새길 짧은 말 (플레이어가 정했으면 그대로, 아니면 null). 주인공이었던 사람은 연대기의 묘비명을 쓴다"),
       })
       .nullable()
@@ -1459,7 +1460,10 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       if (named.length) sleepNote = [sleepNote, `자는 사이 ${named.join(", ")}${josa(named.at(-1)!, "은/는").slice(named.at(-1)!.length)} 제 할 일로 자리를 떴다 (장면에서 빠졌다).`].filter(Boolean).join("\n");
     }
   } else {
-    to = from + (fixedMinutes ?? (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round(rollActivityMinutes(cost, rng) * speed))));
+    // 이동은 길마다 정해진 시간, 짐이 무거우면 15분 더 (12-239)
+    const me = state.characters[state.playerId];
+    const base = activity === "travel" && dest && state.playerZone ? routeMinutes(state.playerZone, dest) + (me && encumbrance(content, me, state) > 0 ? 15 : 0) : null;
+    to = from + (fixedMinutes ?? (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round((base ?? rollActivityMinutes(cost, rng)) * speed))));
     store.append({
       type: "time_advanced",
       activity,

@@ -233,6 +233,11 @@ export function checkPromotion(
 }
 
 /** 오늘의 임무 후보를 고른다. 이미 오늘 골랐으면 null */
+/** 위험 임무: 무기고가 무기를 빌려주는 작전이거나 적 땅에서 하는 일 (12-239) */
+export function riskyMission(m: { armed?: boolean | undefined; where?: string | undefined }): boolean {
+  return !!m.armed || m.where === "enemy";
+}
+
 export function pickDailyOffers(
   content: Content,
   roleId: string,
@@ -251,6 +256,8 @@ export function pickDailyOffers(
   canDo?: (move: string) => boolean,
   /** 최근에 받은 일감 (플레이 테스트 13: "약 찾아오기"가 1·3·4·7일차). 다른 후보가 모자랄 때만 다시 낸다 */
   recent: readonly string[] = [],
+  /** 위험 임무(작전·적 땅)를 내지 않는다: 막 들어온 유예, 중상 이상 (12-239) */
+  safeOnly = false,
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
@@ -263,6 +270,7 @@ export function pickDailyOffers(
       return level(rank) >= level(min);
     })
     .filter((id) => !canDo || content.missions[id]!.requirements.every((r) => !("check" in r) || canDo(r.check)))
+    .filter((id) => !safeOnly || !riskyMission(content.missions[id]!))
     .filter((id) => {
       const where = content.missions[id]!.where;
       if (!lost?.factionId || !where || where === "outside" || where === "near" || where === "enemy") return true;

@@ -20,7 +20,7 @@ import { barrierRise, baseInfestation, infestationOf } from "../game/infestation
 import { exposeToCold } from "./climate.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
-import { dayOf, formatTime } from "../rules/time.ts";
+import { dayOf, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import { harmTrack, learnedSkill } from "../scenario/scenario.ts";
 import { changeCondition, shakeNerves } from "./body.ts";
 import { disposition, neighbors } from "../sim/war.ts";
@@ -869,7 +869,8 @@ export function applyEffect(
     const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
     let no = state.nextBeliefNo;
     const beliefs = (preset?.beliefs ?? []).map((b) => ({ id: `b_${no++}`, fact: b.fact, source: b.source === "seen" ? ("report" as const) : b.source, accuracy: b.accuracy, learnedAt: state.time }));
-    store.append({ type: "player_joined_faction", factionId: faction, rank: role.rank, role, beliefs });
+    const grace = effect.join_faction.grace_days;
+    store.append({ type: "player_joined_faction", factionId: faction, rank: role.rank, role, beliefs, ...(grace ? { graceUntil: state.time + grace * MINUTES_PER_DAY } : {}) });
     const commander = role.commander ? state.characters[role.commander]?.name : undefined;
     // 들어가며 처음 알게 된 이름이면 그렇다고 (플레이 테스트 12: 이름 모르던 분대장이 바로 "상관은 강태호"로 나왔다)
     const newName = !!role.commander && !knowsName(state, state.playerId, role.commander);

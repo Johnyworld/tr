@@ -7,7 +7,7 @@ import { isCreature } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
 import type { GameState } from "../game/state.ts";
 import { daysOfStock, disposition, policyEffects } from "../sim/war.ts";
-import { dayOf, nextSegmentStart, SEGMENT_LABELS, segmentOf, TIME_SEGMENTS, type Activity } from "../rules/time.ts";
+import { dayOf, MINUTES_PER_DAY, nextSegmentStart, SEGMENT_LABELS, SEGMENT_START_HOUR, segmentOf, TIME_SEGMENTS, type Activity } from "../rules/time.ts";
 import { trackOf } from "../scenario/scenario.ts";
 import { seasonAt } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
@@ -78,6 +78,18 @@ export function outsideTemp(content: Content, state: GameState, time: number = s
   const segment = segmentOf(time);
   const value = (season ? (c.season[season.id] ?? 0) : 0) + c.segments[segment] + weatherDegrees + c.jitter * dayNoise(state.worldSeed ?? state.worldId, dayOf(time));
   return { value: Math.round(value), segmentLabel: SEGMENT_LABELS[segment], weatherLabel: weather?.label ?? null, weatherDegrees };
+}
+
+/** 내일 새벽이 처음 영하로 떨어지면 오늘 보이는 낌새 (12-239). 내일 날씨는 예보로 셈한다 */
+export function frostOmen(content: Content, state: GameState): string | null {
+  const c = climateOf(content);
+  if (!c?.frost_omen) return null;
+  const today = dayOf(state.time);
+  const dawn = (day: number) => (day - 1) * MINUTES_PER_DAY + SEGMENT_START_HOUR.dawn * 60;
+  const todayDawn = outsideTemp(content, state, dawn(today))?.value ?? 0;
+  const forecast = state.forecast?.day === today + 1 ? state.forecast.id : null;
+  const tomorrowDawn = (outsideTemp(content, state, dawn(today + 1))?.value ?? 0) + (forecast ? (c.weather[forecast] ?? 0) : 0);
+  return todayDawn >= 0 && tomorrowDawn < 0 ? c.frost_omen : null;
 }
 
 /** warm: 불 곁이거나 불 땐 실내(거처·피난처)다. 젖은 옷이 마른다 (12-186, 플레이 테스트 8) */

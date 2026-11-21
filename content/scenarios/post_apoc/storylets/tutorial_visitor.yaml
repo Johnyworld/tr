@@ -27,13 +27,13 @@
       outcomes:
         success:
           - set_flag: tv_gate_met
-          - join_faction: { faction: faction_a }
+          - join_faction: { faction: faction_a, grace_days: 7 }
           - relation: { who: guard, axis: trust, delta: 1 }
           - set_flag: tv_accepted
           - belief: { fact: "청솔형제단이 나를 받아 주었다. {guard:이/가} 몸을 뒤지고 몇 가지를 물은 뒤, 대표의 허락을 받아 왔다", source: seen }
         partial:
           - set_flag: tv_gate_met
-          - join_faction: { faction: faction_a }
+          - join_faction: { faction: faction_a, grace_days: 7 }
           - set_flag: tv_accepted
           - belief: { fact: "청솔형제단이 나를 받아 주었지만, {guard:은/는} 당분간 지켜보겠다고 했다", source: seen }
         miss:
@@ -47,13 +47,13 @@
       outcomes:
         success:
           - set_flag: tv_gate_met
-          - join_faction: { faction: faction_a }
+          - join_faction: { faction: faction_a, grace_days: 7 }
           - relation: { who: guard, axis: respect, delta: 1 }
           - set_flag: tv_accepted
           - belief: { fact: "담 밖에서 2년을 버틴 솜씨를 보여 주자 {guard:이/가} 고개를 끄덕였다. 청솔형제단이 나를 받아 주었다", source: seen }
         partial:
           - set_flag: tv_gate_met
-          - join_faction: { faction: faction_a }
+          - join_faction: { faction: faction_a, grace_days: 7 }
           - set_flag: tv_accepted
           - belief: { fact: "청솔형제단이 나를 받아 주었다. 쓸모는 두고 보겠다고 했다", source: seen }
         miss:
@@ -90,12 +90,12 @@
       outcomes:
         success:
           - clear_flag: tv_gate_refused
-          - join_faction: { faction: faction_a }
+          - join_faction: { faction: faction_a, grace_days: 7 }
           - set_flag: tv_accepted
           - belief: { fact: "두 번째로 찾아간 날, 청솔형제단이 나를 받아 주었다", source: seen }
         partial:
           - clear_flag: tv_gate_refused
-          - join_faction: { faction: faction_a }
+          - join_faction: { faction: faction_a, grace_days: 7 }
           - set_flag: tv_accepted
           - belief: { fact: "청솔형제단이 마지못해 나를 받아 주었다. 일주일 동안 지켜보겠다고 했다", source: seen }
         miss:
@@ -244,3 +244,10 @@
       effects:
         - set_flag: tv_reunited
         - relation: { who: kin, axis: affection, delta: 1 }
+    # 함께 다니는 것은 데려가겠다고 할 때만 (12-239, 플레이 테스트 13: 재회하자마자 저절로 동행이 됐다)
+    - id: take_along
+      label: 이제 곁에 있겠다고, 함께 가자고 한다
+      effects:
+        - set_flag: tv_reunited
+        - relation: { who: kin, axis: affection, delta: 1 }
+        - companion_join: { who: kin, kind: kin }

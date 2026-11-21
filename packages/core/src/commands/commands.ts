@@ -1,6 +1,8 @@
 import { heldOf } from "../rules/held.ts";
 import { maskUnknownNames } from "../engine/storyletTools.ts";
-import { buildMapView, renderMapAscii, visitedZones } from "../views/map.ts";
+import { visitedZones } from "../views/map.ts";
+import { knownOwner } from "../rules/knowledge.ts";
+import { neighbors } from "../sim/war.ts";
 import { resolveLine } from "../engine/resolve.ts";
 import { promiseLines } from "../engine/promises.ts";
 import { rankName } from "../game/ranks.ts";
@@ -100,7 +102,8 @@ const status: CommandDef = {
     lines.push("");
     lines.push(scenario.stats.map((s) => `${s.label} ${signed(player.stats[s.id] ?? 0)}`).join("   "), "");
     const traits = traitLabels(content, player);
-    if (traits.length) lines.push(`트레잇  ${traits.join(" · ")}`);
+    // 없어도 줄을 보인다 (12-239, 플레이 테스트 13: 트레잇 없이 만든 주인공에게 줄이 없어 성격이 빠진 줄 알았다)
+    lines.push(`트레잇  ${traits.length ? traits.join(" · ") : "없음"}`);
     lines.push(...skillLines(scenario, player.skills));
     const growth = growthLine(scenario, player);
     if (growth) lines.push(growth);
@@ -207,12 +210,14 @@ const map: CommandDef = {
       "맞닿은 구역 (이동 30분~1시간)",
       ...z.adjacent.map((a) => `  ${a.name} · ${a.owner}`),
       "",
-      // 가 본 곳 (12-201). 글자 지도, 그림 지도는 상태 화면의 지도 탭
-      ...(() => {
-        const view = buildMapView(ctx.state, ctx.content);
-        return view ? ["", renderMapAscii(view), ""] : [];
-      })(),
-      `가 본 곳  ${visitedZones(ctx.state).map((id) => ctx.content.locations[id]?.name ?? id).join(", ")}`,
+      // 가 본 곳 (12-201). 채팅에서는 글자 그림 대신 목록 (12-239, 플레이 테스트 13: 글자 그림이 읽히지 않았다). 그림 지도는 상태 화면의 지도 탭
+      "가 본 곳 (주인은 본 대로 · 맞닿은 곳)",
+      ...visitedZones(ctx.state).map((id) => {
+        const owner = knownOwner(ctx.state, ctx.content, id);
+        const ownerName = owner ? (ctx.content.factions[owner]?.name ?? owner) : "주인 없음";
+        const adj = neighbors(ctx.content, id).map((n) => ctx.content.locations[n]?.name ?? n).join(", ");
+        return `  ${ctx.content.locations[id]?.name ?? id} · ${ownerName} · ${adj}`;
+      }),
     ].join("\n");
   },
 };

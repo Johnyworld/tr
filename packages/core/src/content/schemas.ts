@@ -713,7 +713,8 @@ export function createContentSchemas(s: Scenario) {
     /** 무리의 사람 수가 바뀐다 (12-133: 피난민을 받아들이거나 사람이 떠난다). 입이 늘면 소모가, 손이 늘면 산출이 는다 (전쟁 틱이 population을 읽는다) */
     z.strictObject({ faction_population: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-10).max(10) }) }),
     /** 주인공이 그 무리에 들어간다: 무소속이면 가입, 다른 무리에 있으면 옮긴다 (rank가 없으면 가장 낮은 계급). 이미 그 무리면 아무 일도 없다 */
-    z.strictObject({ join_faction: z.strictObject({ faction: contentIdSchema, rank: idEnum(rankIds(s)).optional(), title: z.string().min(1).max(24).optional() }) }),
+    /** grace_days: 들어온 뒤 이 날수 동안은 위험 임무(작전·적 땅)를 오늘의 일감에 내지 않는다 (12-239, 튜토리얼 "일주일은 적응 삼아") */
+    z.strictObject({ join_faction: z.strictObject({ faction: contentIdSchema, rank: idEnum(rankIds(s)).optional(), title: z.string().min(1).max(24).optional(), grace_days: z.number().int().min(1).max(30).optional() }) }),
     /**
      * 배역 NPC의 몸 상태 ± (기획서 7.7). chance면 그 확률로만 (긁혔는데 정말 감염됐나는 코드가 굴린다). 부상 트랙은 안 된다.
      * 양수 = 나빠짐, 음수 = 나아짐

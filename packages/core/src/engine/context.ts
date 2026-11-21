@@ -26,6 +26,7 @@ import { describeStash } from "./stash.ts";
 import { infestationSign } from "../game/infestation.ts";
 import { KIND_LABELS, templateKind } from "../game/kinds.ts";
 import { describePersona } from "./persona.ts";
+import { knowsPlayerSecretLine, settingLines } from "../rules/self.ts";
 import { describeTemperature, feelsLike, frostOmen } from "./climate.ts";
 import { troubleLine } from "./factionTalk.ts";
 import { rankName } from "../game/ranks.ts";
@@ -187,6 +188,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
               "말투·태도·말의 양은 이 성격대로 연기한다 (1은 가끔, 2는 자주). 플레이어가 말하지 않은 행동·말을 성격 때문에 넣었으면 문장 끝에 (다혈질)처럼 꼬리표를 붙인다 (한 턴에 한두 번까지). 결과가 남는 일(공격, 거래, 약속, 비밀 털어놓기)은 성격으로 끼워 넣지 않는다. 도발당하면 take_action.provoked",
           ]
         : []),
+      ...settingLines(content, state, player, { player: true, name: (id) => headingAs(state, content, player.id, id) }),
       `능력: ${stats}`,
       `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}. ${unlearnedNote(scenario)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${canUseSkill(content, player, m.id) ? signed(effectiveSkill(content, player, m.id)) : "못 함"}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,
@@ -270,6 +272,8 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
     ...describeTieLines(state, content, c.id),
     `트레잇: ${traitLabels(content, c, { acting: true }).join(", ") || "-"}`,
     ...(!animal && describePersona(content, c) ? [`성격: ${describePersona(content, c)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
+    ...(animal ? [] : settingLines(content, state, c)),
+    ...[knowsPlayerSecretLine(content, state, c.id)].filter((x): x is string => !!x),
     ...(animal ? [] : [originLine(content, c)].filter((x): x is string => !!x)),
     ...(animal ? [] : [troubleLine(state, content, c)].filter((x): x is string => !!x)),
     ...attractionNotes(content, c, player),
@@ -374,6 +378,8 @@ function describeNpcCard(
     `원하는 것: ${m(npc.want)} / 두려워하는 것: ${m(npc.fear)}`,
     `트레잇: ${traitLabels(content, character, { acting: true }).join(", ") || "-"} / 가치관: ${values || "-"}`,
     ...(describePersona(content, character) ? [`성격: ${describePersona(content, character)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
+    ...settingLines(content, state, character),
+    ...[knowsPlayerSecretLine(content, state, npc.id)].filter((x): x is string => !!x),
     ...[troubleLine(state, content, character)].filter((x): x is string => !!x),
     ...attractionNotes(content, character, player),
     ...nameNotes(state, player.id, npc.id),

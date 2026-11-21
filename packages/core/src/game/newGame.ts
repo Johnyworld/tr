@@ -50,7 +50,7 @@ export function newGameDraft(unlocked: Record<string, string[]> = {}): NewGameDr
 
 /** 사망 뒤 같은 세계의 새 캐릭터 (기획서 12.4.1): 고른 무리·계급의 자리(역할)는 정해져 있고 캐릭터 만들기부터 */
 export function heirDraft(packId: string, option: string, role: RoleContent, custom: boolean, minAge?: number): NewGameDraft {
-  return { mode: "heir", packId, roleId: role.id, customRole: custom ? role : null, heirOption: option, character: { ...newCreationDraft("heir"), minAge, seat: { rank: role.rank, occupation: role.occupation ?? null } } };
+  return { mode: "heir", packId, roleId: role.id, customRole: custom ? role : null, heirOption: option, character: { ...newCreationDraft("heir"), minAge, seat: { rank: role.rank, occupation: role.occupation ?? null, roleId: role.id, faction: role.faction || null } } };
 }
 
 /** 시나리오를 골랐다: 계급의 최소 나이를 캐릭터 만들기에 건다 */
@@ -58,7 +58,7 @@ function pickRole(content: Content, draft: NewGameDraft, roleId: string): NewGam
   const role = content.roles[roleId];
   const minAge = content.scenario.creation?.rank_min_age[role?.rank ?? ""];
   // 자리가 주는 전문 기술 (4.2.1)
-  const seat = role ? { rank: role.rank, occupation: role.occupation ?? null } : undefined;
+  const seat = role ? { rank: role.rank, occupation: role.occupation ?? null, roleId: role.id, faction: role.faction || null } : undefined;
   return { ...draft, roleId, character: { ...draft.character, minAge, seat } };
 }
 

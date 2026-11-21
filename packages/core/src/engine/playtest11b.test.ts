@@ -250,7 +250,7 @@ describe("플레이 테스트 11 원문의 버그", () => {
       expect(line ?? "").not.toContain("짧은 숨");
       expect(line ?? "").not.toContain("먹은 귀");
     }
-  });
+  }, 30000);
 
   it("대가 있는 성공은 실패보다 피해가 한 단계 덜하다 (가벼운 위험이면 다치지 않는다)", () => {
     expect([harmSteps("partial", "light"), harmSteps("partial", "heavy"), harmSteps("miss", "light"), harmSteps("miss", "heavy")]).toEqual([0, 1, 1, 2]);

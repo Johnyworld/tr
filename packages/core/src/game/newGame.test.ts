@@ -44,7 +44,7 @@ function run(answers: string[], draft: NewGameDraft = newGameDraft()) {
 }
 
 /** 캐릭터 만들기 끝까지 (과거 배경 경찰, 이름, 성별, 나이, 능력, 스킬, 트레잇, 시작) */
-const CHARACTER = ["police", "서진", "female", "30", "random", "past", "none", "기본", "start"];
+const CHARACTER = ["police", "서진", "female", "30", "random", "past", "none", "기본", "없음", "start"];
 
 describe("새 게임: 월드 → 시나리오 → 캐릭터 → 수위 → 서술 방식 (기획서 4.2)", () => {
   it("월드 고르기는 이름·한 줄 소개·짧은 설명만, 고르면 그 월드의 시나리오 목록", () => {
@@ -104,7 +104,7 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터 → 수위 → 서�
   it("계급 기본 훈련과 최소 나이: 분대장은 20세부터, 시나리오는 스킬을 주지 않고 과거 배경이 준다 (12-84, 12-87)", () => {
     const leader = run(["post_apoc", "첫 번째 명령", "doctor", "윤하", "female"], newGameDraft({ post_apoc: ["role_a_squad_leader"] })).draft;
     expect(answerNewGame(packs, leader, "27", createSeededRng(1)).ok).toBe(false); // 의사는 30세부터
-    const done = run(["30", "past", "past", "none", "기본", "start", "off", "novel"], leader);
+    const done = run(["30", "past", "past", "none", "기본", "없음", "start", "off", "novel"], leader);
     if (!done.done) throw new Error("not done");
     expect(done.roleId).toBe("role_a_squad_leader");
     const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-role-")), content: real, rngFactory: () => createSeededRng(2) }).create("mcp", done.roleId, done.choice, done.packId);

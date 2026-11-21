@@ -67,6 +67,14 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
     expect(offenders(/\bnpcZoneAt\(/, ["game/whereabouts.ts", "rules/place.ts"])).toEqual([]);
   });
 
+  it("규칙 16 (자기다움): 설정 굴림과 비밀을 아는 사람은 rules/self.ts로만 읽는다", () => {
+    expect(offenders(/\.(settingRolls|secretKnownBy)\b/, ["game/state.ts", "rules/self.ts"])).toEqual([]);
+  });
+
+  it("규칙 16 (자기다움): 성격 굴림은 rules/self.ts를 거친다", () => {
+    expect(offenders(/from "\.\/persona\.ts".*roll(Blowup|Hear|Leak)|roll(Blowup|Hear|Leak).*from "\.\/persona\.ts"/, ["rules/self.ts"])).toEqual([]);
+  });
+
   it("규칙 7 (본 대로): 주인공이 본 땅 주인은 rules/knowledge.ts로만 읽는다", () => {
     expect(offenders(/\bzoneSeen\b/, ["game/state.ts", "rules/knowledge.ts"])).toEqual([]);
   });

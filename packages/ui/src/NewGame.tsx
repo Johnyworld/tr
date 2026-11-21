@@ -266,6 +266,7 @@ function CharacterStep({ view, busy, answer }: StepProps) {
       {step === "ability_set" && (c.tiers ? <TierStep view={view} busy={busy} answer={answer} onLive={onLive} /> : <PointStep view={view} busy={busy} answer={answer} />)}
       {(step === "traits_pick" || step === "traits_personality") && <TraitStep key={step} view={view} busy={busy} answer={answer} onLive={onLive} />}
       {step === "persona" && <PersonaStep view={view} busy={busy} answer={answer} />}
+      {step === "settings" && <SettingsStep view={view} busy={busy} answer={answer} />}
       {step === "confirm" && (
         <>
           <h2 className="newgame-title">이 사람으로 시작할까요?</h2>
@@ -306,6 +307,7 @@ function Chosen({ view, live }: { view: NewGameView; live: { text: string; bad?:
         {ch.skills && <div className="muted small">스킬: {ch.skills.length ? ch.skills.map((x) => `${x.label} ${signed(x.value)}`).join(", ") : "없음"}</div>}
         {ch.traits && <div className="muted small">트레잇: {ch.traits.length ? ch.traits.join(", ") : "없음"}</div>}
         {ch.persona && <div className="muted small">성격: {ch.persona}</div>}
+        {ch.settings && ch.settings.length > 0 && <div className="muted small">설정: {ch.settings.join(", ")}</div>}
         {live && <div className={live.bad ? "chosen-live bad" : "chosen-live"}>{live.text}</div>}
       </div>
     </div>
@@ -790,6 +792,69 @@ function PersonaStep({ view, busy, answer }: StepProps) {
       </div>
       <div className="newgame-actions">
         <button type="button" className="primary" disabled={busy} onClick={submit}>
+          다음
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
+ * 캐릭터 설정 (4.6.4): 칸마다 고르거나 건너뛴다. 못 고르는 것은 흐리게 까닭과 함께("다혈질 2 필요", "함께 고를 수 없음: ○○").
+ * 답은 채팅과 같은 말 (이름을 쉼표로, 없으면 "없음")
+ */
+function SettingsStep({ view, busy, answer }: StepProps) {
+  const data = view.character!.settings;
+  const [picked, setPicked] = useState<string[]>([]);
+  if (!data) return null;
+  const nameOf = (id: string) => data.items.find((x) => x.id === id)?.name ?? id;
+  const toggle = (id: string, slot: string, max: number) =>
+    setPicked((p) => {
+      if (p.includes(id)) return p.filter((x) => x !== id);
+      const inSlot = p.filter((x) => data.items.find((i) => i.id === x)?.slot === slot);
+      // 칸이 차면 가장 먼저 고른 것을 바꾼다 (하나짜리 칸은 바꿔 고르기)
+      const kept = inSlot.length >= max ? p.filter((x) => x !== inSlot[0]) : p;
+      return [...kept, id];
+    });
+  const blockedBy = (item: (typeof data.items)[number]) => picked.filter((x) => item.opposites.includes(x) || (data.items.find((i) => i.id === x)?.opposites ?? []).includes(item.id));
+  return (
+    <>
+      <h2 className="newgame-title">설정을 골라 주세요</h2>
+      <p className="newgame-note">
+        성격이 어떻게 말하고 대하는지라면, 설정은 무엇을 믿고, 하지 않고, 몸에 배었는지입니다. 모두 건너뛰어도 됩니다. 보상은 없고, 이상·금기·결점을 거스르는 행동은 그때 정신력으로 굴립니다.
+      </p>
+      {data.slots.map((slot) => (
+        <div key={slot.id}>
+          <h3 className="newgame-sub">
+            {slot.label} <span className="muted small">({slot.hint}, {slot.max}개까지)</span>
+          </h3>
+          <div className="choice-list">
+            {data.items
+              .filter((x) => x.slot === slot.id)
+              .map((item) => {
+                const on = picked.includes(item.id);
+                const against = blockedBy(item);
+                const reasons = [...item.reasons, ...(against.length ? [`함께 고를 수 없음: ${against.map(nameOf).join(", ")}`] : [])];
+                const disabled = busy || (!on && reasons.length > 0);
+                return (
+                  <button key={item.id} type="button" className={`choice-card${on ? " featured" : ""}${disabled && !on ? " locked" : ""}`} disabled={disabled} aria-pressed={on} onClick={() => toggle(item.id, slot.id, slot.max)}>
+                    <strong>{item.name}</strong>
+                    <span className="choice-desc">
+                      {item.description}
+                      {reasons.length > 0 && <span className="muted"> · {reasons.join(", ")}</span>}
+                      {item.clash && <span className="muted"> · 이 시나리오와 자주 부딪힘</span>}
+                    </span>
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      ))}
+      <div className="newgame-actions">
+        <button type="button" disabled={busy} onClick={() => answer("없음")}>
+          모두 건너뛰기
+        </button>
+        <button type="button" className="primary" disabled={busy} onClick={() => answer(picked.length ? picked.map(nameOf).join(", ") : "없음")}>
           다음
         </button>
       </div>

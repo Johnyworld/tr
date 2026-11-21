@@ -1625,6 +1625,46 @@ export const scenarioFileSchema = z
      * 임무 브리핑의 낌새 (content:check, 12-237): 브리핑이 이 말(정규식)을 쓰면 그 필드가 있어야 한다.
      * buddy: 짝을 말하는 브리핑 (분대장 이상만 받는 임무는 분대가 있어 뺀다), learns: 알아 오는 브리핑
      */
+    /**
+     * 캐릭터 설정 (RP, 4.6.4, 12-246): 칸(slots)과 목록(items). core는 칸 종류만 안다 (원칙 7).
+     * rolls: 거스를 때 굴리는 칸 (이상·금기·결점). confirm: 거스를 때 GM이 먼저 묻는 확인 말. fact: 비밀의 사실 (GM만 봄).
+     * requires: 성격 축 한쪽 이름 → 단계(1 가끔, 2 자주). opposites: 함께 못 고르는 설정, trait_opposites: 함께 못 고르는 트레잇.
+     * roles_none: 고를 수 없는 시나리오, factions_none: 그 무리 시나리오에서 고를 수 없음, needs_faction: 무소속은 고를 수 없음, clashes_roles: 고를 수는 있지만 자주 부딪히는 시나리오.
+     * backing: 지금 세계에 무언가가 있다고 말하는 설정을 엔진 상태로 뒷받침한다 (원칙 2): deserter·debt·kin_enemy 지난 일, trait, stash(우리 거점 사물함), keepsake(소중한 물건)
+     */
+    settings: z
+      .strictObject({
+        slots: z.array(z.strictObject({ id, label: z.string().min(1), max: z.number().int().min(1).max(3), rolls: z.boolean().default(false), hint: z.string().min(1) })).min(1),
+        items: z.array(
+          z.strictObject({
+            id,
+            slot: id,
+            name: z.string().min(1),
+            description: z.string().min(1),
+            acting: z.string().min(1),
+            confirm: z.string().optional(),
+            fact: z.string().optional(),
+            requires: z.record(z.string(), z.number().int().min(1).max(2)).default({}),
+            opposites: z.array(id).default([]),
+            trait_opposites: z.array(id).default([]),
+            roles_none: z.array(id).default([]),
+            factions_none: z.array(id).default([]),
+            needs_faction: z.boolean().default(false),
+            clashes_roles: z.array(id).default([]),
+            backing: z
+              .strictObject({
+                deserter: z.boolean().optional(),
+                debt: z.enum(["small", "large"]).optional(),
+                kin_enemy: z.boolean().optional(),
+                trait: id.optional(),
+                stash: z.strictObject({ item: id, quantity: z.number().int().min(1) }).optional(),
+                keepsake: id.optional(),
+              })
+              .optional(),
+          }),
+        ),
+      })
+      .optional(),
     /** 이 부상 단계부터는 위험 임무(작전·적 땅)를 오늘의 일감에 내지 않는다 (12-239, 플레이 테스트 13: 중상인 부하에게 보급 털기) */
     mission_unfit_from: id.optional(),
     mission_hints: z.strictObject({ buddy: z.array(z.string()).default([]), learns: z.array(z.string()).default([]) }).default({ buddy: [], learns: [] }),

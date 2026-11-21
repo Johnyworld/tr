@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 81;
+export const SAVE_SCHEMA_VERSION = 82;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -303,6 +303,10 @@ export function createGameSchemas(s: Scenario) {
     missionGraceUntil: z.number().int().nullable().default(null),
     /** 세계의 일이 죽게 할 뻔했으나 한 번 봐준 공들인 관계 (12-242). 두 번째는 죽을 수 있다 */
     sparedOnce: z.array(z.string()).default([]),
+    /** 설정을 거스른 굴림 (설정 id → 자리·시각·이겨 냈나, 공통 규칙 16). 같은 장면에서 같은 설정은 한 번 */
+    /** 주인공·인물의 비밀(설정)을 아는 사람 (주인 id → 아는 사람들, 공통 규칙 16) */
+    secretKnownBy: z.record(z.string(), z.array(z.string())).default({}),
+    settingRolls: z.record(z.string(), z.strictObject({ spot: z.string(), at: z.number().int(), won: z.boolean() })).default({}),
     /** 구역마다 오늘의 소음 (기획서 4.8) */
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 소리를 듣고 몰려오는 감염체 (infestation.swarm_hours): 구역 → 그날 소리(day)에 몰려드는 시각(at), 이미 왔는지(done) */
@@ -747,6 +751,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("infection_exposed"), characterId: z.string() }),
     /** 공들인 관계의 첫 죽음을 봐줬다 (12-242) */
     z.strictObject({ type: z.literal("npc_spared"), npcId: z.string() }),
+    /** 설정을 거슬러 굴렸다 (공통 규칙 16) */
+    /** 비밀(설정)을 털어놓았다: 그 자리에 있던 사람이 안다 */
+    z.strictObject({ type: z.literal("secret_told"), owner: z.string(), to: z.array(z.string()) }),
+    z.strictObject({ type: z.literal("setting_rolled"), setting: z.string(), spot: z.string(), won: z.boolean() }),
     z.strictObject({ type: z.literal("player_released"), returned: z.boolean() }),
     z.strictObject({ type: z.literal("prisoner_labor"), npcId: z.string(), labor: z.boolean() }),
     /** 맡긴다 / 구역의 산출이 는다 / 이야기로 배운다 (12-54) */
@@ -1221,6 +1229,8 @@ export const EMPTY_STATE: GameState = {
   exposedAt: {},
   missionGraceUntil: null,
   sparedOnce: [],
+  settingRolls: {},
+  secretKnownBy: {},
   restockedDay: {},
   squad: null,
   promotionOffer: null,
@@ -1891,6 +1901,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.scene.present = [];
       return next;
     }
+    case "secret_told": {
+      const known = next.secretKnownBy?.[event.owner] ?? [];
+      next.secretKnownBy = { ...(next.secretKnownBy ?? {}), [event.owner]: [...known, ...event.to.filter((id) => !known.includes(id))] };
+      return next;
+    }
+    case "setting_rolled":
+      next.settingRolls = { ...(next.settingRolls ?? {}), [event.setting]: { spot: event.spot, at: state.time, won: event.won } };
+      return next;
     case "npc_spared":
       next.sparedOnce = [...(next.sparedOnce ?? []), event.npcId];
       return next;
@@ -2664,6 +2682,8 @@ export type CharacterChoice = {
   skills?: Record<string, number> | null;
   /** 성격 축 값 (12-99). 없으면 성격 트레잇에서 계산한다 */
   persona?: Record<string, number> | null;
+  /** 캐릭터 설정 (4.6.4, 12-246). 없으면 없이 */
+  settings?: string[] | null;
 };
 
 /** 고른 트레잇의 성격 축 합 (-2~2로 자른다, 0인 축은 뺀다) */
@@ -2682,10 +2702,12 @@ export function createCharacterFromRole(s: Scenario, role: RoleContent, id = "pl
     id,
     name: choice?.name.trim() || role.default_name,
     gender: choice?.gender ?? null,
-    traits: choice?.traits ?? [],
+    // 설정이 함께 주는 트레잇 (약에 기대는 비밀 → 진통제 의존, 4.6.4 뒷받침)
+    traits: [...new Set([...(choice?.traits ?? []), ...(choice?.settings ?? []).flatMap((id) => s.settings?.items.find((x) => x.id === id)?.backing?.trait ?? [])])],
     // 주인공의 성격 축은 고른 것과 고른 성격 트레잇에서만 (플레이 테스트 12: 비워 두면 id "player"로 뽑혀 모든 판의 첫 주인공이 같은 숨은 성격이었다).
     // 성격 규칙이 없는 월드는 그대로 null
     persona: choice?.persona ?? (s.persona ? traitPersona(s, choice?.traits ?? []) : null),
+    settings: choice?.settings ?? [],
     portrait: choice?.portrait ?? null,
     factionId: role.faction,
     rank: role.rank,
@@ -2728,6 +2750,7 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
     skills: npc.skills,
     gender: npc.gender ?? null,
     traits: npc.traits,
+    settings: npc.settings ?? [],
     conditions: initialConditions(s),
     inventory: toInventory(npc.start_inventory),
     captive: npc.start_captive ?? null,

@@ -1917,3 +1917,117 @@ battle:
         partial: { momentum: -1 }
         miss: { momentum: -1 }
 
+
+# 캐릭터 설정 (RP, design.md 4.6.4, 12-246). 목록 근거: docs/settings-draft.md
+settings:
+  slots:
+    - { id: ideal, label: 이상, max: 1, rolls: true, hint: "무엇을 위해 사나" }
+    - { id: taboo, label: 금기, max: 2, rolls: true, hint: "무엇을 하지 않나" }
+    - { id: flaw, label: 결점, max: 2, rolls: true, hint: "알면서도 못 고치는 것" }
+    - { id: habit, label: 버릇, max: 2, rolls: false, hint: "몸에 밴 것" }
+    - { id: speech, label: 말투, max: 1, rolls: false, hint: "입에 붙은 말" }
+    - { id: secret, label: 비밀, max: 1, rolls: false, hint: "처음엔 아무도 모른다" }
+    - { id: keepsake, label: 소중한 것, max: 1, rolls: false, hint: "시작할 때 지니고 있다" }
+  items:
+    - { id: "ideal_obedience", slot: "ideal", name: "복종", description: "명령 체계가 무너지면 모두 죽는다", acting: "윗사람의 명령을 먼저 따르고, 따지는 것은 그다음", confirm: "복종을 신념으로 가진", opposites: ["ideal_freedom"], needs_faction: true }
+    - { id: "ideal_freedom", slot: "ideal", name: "자유", description: "누구의 개도 되지 않는다", acting: "시키는 일보다 스스로 정한 일을 앞세운다", confirm: "자유를 신념으로 가진", opposites: ["ideal_obedience"] }
+    - { id: "ideal_protect", slot: "ideal", name: "지킴", description: "약한 사람을 지키는 것이 살아남은 이유다", acting: "아이·노인·다친 사람이 있으면 먼저 몸이 간다", confirm: "약한 사람을 지키기로 한", opposites: ["ideal_survival"] }
+    - { id: "ideal_survival", slot: "ideal", name: "살아남기", description: "오늘 살아남는 것 말고는 다 사치다", acting: "위험과 몫을 먼저 셈하고, 남을 위한 모험을 꺼린다", confirm: "살아남는 것을 먼저 둔", opposites: ["ideal_protect"] }
+    - { id: "ideal_truth", slot: "ideal", name: "진실", description: "거짓 위에 세운 것은 무너진다", acting: "숨긴 것을 캐묻고, 덮자는 말에 불편해한다", confirm: "진실을 신념으로 가진" }
+    - { id: "ideal_loyalty", slot: "ideal", name: "의리", description: "같이 버틴 사람을 버리지 않는다", acting: "함께한 사람의 편을 먼저 든다, 무리보다 사람", confirm: "의리를 신념으로 가진" }
+    - { id: "ideal_rebuild", slot: "ideal", name: "다시 세우기", description: "언젠가 이 도시를 다시 사람 사는 곳으로", acting: "부서진 것을 고치고, 씨앗과 책과 기술을 아낀다", confirm: "다시 세우는 꿈을 가진" }
+    - { id: "ideal_fairness", slot: "ideal", name: "공평", description: "몫은 똑같이 나눠야 한다", acting: "배급·전리품을 셈하고, 한쪽으로 쏠리면 말을 꺼낸다", confirm: "공평을 신념으로 가진" }
+    - { id: "ideal_faith", slot: "ideal", name: "믿음", description: "이 모든 데에는 뜻이 있다", acting: "기도하고, 죽은 이를 묻고, 절망하는 사람에게 말을 건넨다", confirm: "믿음을 지키는" }
+    - { id: "ideal_family", slot: "ideal", name: "핏줄", description: "가족이 전부다", acting: "가족 소식과 안전을 무엇보다 먼저 챙긴다", confirm: "가족을 전부로 여기는" }
+    - { id: "ideal_revenge", slot: "ideal", name: "앙갚음", description: "빼앗아 간 자에게 반드시 돌려준다", acting: "원수의 이름에 표정이 굳고, 기회를 노린다", confirm: "앙갚음을 다짐한", opposites: ["ideal_mercy"] }
+    - { id: "ideal_mercy", slot: "ideal", name: "자비", description: "죽이지 않을 수 있으면 죽이지 않는다", acting: "항복한 자·적의 부상자에게도 손을 내민다", confirm: "자비를 신념으로 가진", opposites: ["ideal_revenge"] }
+    - { id: "ideal_knowledge", slot: "ideal", name: "앎", description: "무너지기 전의 것을 잊지 않게", acting: "글·기록·옛 물건을 모으고, 배울 기회를 놓치지 않는다", confirm: "앎을 지키려는" }
+    - { id: "ideal_strength", slot: "ideal", name: "힘", description: "강한 자만이 정할 수 있다", acting: "약한 모습을 보이지 않고, 힘으로 결론을 내려 한다", confirm: "힘을 믿는", opposites: ["ideal_mercy"] }
+
+    - { id: "taboo_no_child_harm", slot: "taboo", name: "아이를 해치지 않는다", description: "어떤 까닭이 있어도", acting: "아이가 끼면 손이 멈춘다", confirm: "아이만은 해치지 않기로 한" }
+    - { id: "taboo_no_unarmed", slot: "taboo", name: "맨손인 자는 죽이지 않는다", description: "무기를 놓은 사람은 끝난 사람이다", acting: "항복한 자 앞에서 총구를 내린다", opposites: ["ideal_revenge"], confirm: "맨손인 자는 죽이지 않기로 한" }
+    - { id: "taboo_no_theft", slot: "taboo", name: "훔치지 않는다", description: "굶어도 남의 것에는 손대지 않는다", acting: "주인 있는 물건 앞에서 머뭇거린다", clashes_roles: ["role_c_raider", "role_c_comrades"], confirm: "남의 것은 훔치지 않기로 한" }
+    - { id: "taboo_no_lie_friend", slot: "taboo", name: "동료에게 거짓말하지 않는다", description: "바깥사람은 몰라도 우리끼리는", acting: "같은 편에게 둘러대지 못한다", confirm: "동료에게는 거짓말하지 않기로 한" }
+    - { id: "taboo_no_abandon", slot: "taboo", name: "다친 동료를 두고 가지 않는다", description: "끌고 가다 같이 죽더라도", acting: "쓰러진 사람을 업으려 한다", opposites: ["ideal_survival"], confirm: "다친 동료를 두고 가지 않기로 한" }
+    - { id: "taboo_no_infected_meat", slot: "taboo", name: "감염체 근처의 고기는 먹지 않는다", description: "굶는 게 낫다", acting: "출처 모를 고기를 밀어낸다", confirm: "수상한 고기는 먹지 않기로 한" }
+    - { id: "taboo_no_drink", slot: "taboo", name: "술에 손대지 않는다", description: "한 번 무너진 적이 있다", acting: "술잔을 사양하고, 술 냄새에 표정이 굳는다", trait_opposites: ["drinker"], confirm: "술을 끊은" }
+    - { id: "taboo_no_betray", slot: "taboo", name: "무리를 팔지 않는다", description: "붙잡혀도, 매를 맞아도", acting: "심문에 입을 다문다", needs_faction: true, confirm: "무리를 팔지 않기로 한" }
+    - { id: "taboo_no_kill_human", slot: "taboo", name: "사람은 죽이지 않는다", description: "감염체는 몰라도 사람은", acting: "사람을 겨눌 때 손이 떨린다", opposites: ["ideal_strength"], clashes_roles: ["role_c_raider", "role_c_comrades", "role_a_squad_leader", "role_b_squad_leader", "role_c_squad_leader", "role_d_squad_leader", "role_e_squad_leader"], confirm: "사람만은 죽이지 않기로 한" }
+    - { id: "taboo_no_debt", slot: "taboo", name: "빚지지 않는다", description: "빚은 목줄이다", acting: "공짜 호의도 값을 치르려 한다", confirm: "빚지지 않기로 한" }
+    - { id: "taboo_no_grave_rob", slot: "taboo", name: "죽은 이의 것을 뒤지지 않는다", description: "묻어 주는 게 먼저다", acting: "유해의 짐에 손대기 전에 묻어 주자고 한다", confirm: "죽은 이의 것은 뒤지지 않기로 한" }
+    - { id: "taboo_no_cage", slot: "taboo", name: "사람을 가두지 않는다", description: "갇혀 본 적이 있다", acting: "포로를 묶는 일·감옥 당번을 꺼린다", clashes_roles: ["role_c_raider", "role_c_comrades"], confirm: "사람을 가두지 않기로 한" }
+    - { id: "taboo_no_back", slot: "taboo", name: "등 뒤를 치지 않는다", description: "싸우려면 마주 보고", acting: "기습·암살을 거절한다", confirm: "등 뒤는 치지 않기로 한" }
+    - { id: "taboo_no_dog", slot: "taboo", name: "개를 해치지 않는다", description: "개만은 끝까지 사람 편이었다", acting: "들개에게도 먼저 먹을 것을 던진다", confirm: "개는 해치지 않기로 한" }
+    - { id: "flaw_insult", slot: "flaw", name: "모욕을 못 참는다", description: "가족·무리를 욕하면 앞뒤를 안 본다", acting: "그 말이 나오면 목소리가 낮아지고 한 발 다가선다", confirm: "모욕을 못 참는", requires: { 다혈질: 1 } }
+    - { id: "flaw_grudge", slot: "flaw", name: "뒤끝이 길다", description: "당한 것은 꼭 기억해 둔다", acting: "지난 일을 다시 꺼내고, 쉽게 풀어 주지 않는다", confirm: "뒤끝이 긴", requires: { 다혈질: 1 } }
+    - { id: "flaw_rush_to_save", slot: "flaw", name: "구하러 뛰어든다", description: "누가 위험하면 계획을 버리고", acting: "비명이 들리면 엄호도 기다리지 않고 달려간다", confirm: "구하러 먼저 뛰어드는", requires: { 충동적: 1 } }
+    - { id: "flaw_gambler", slot: "flaw", name: "내기를 못 끊는다", description: "판이 벌어지면 손이 간다", acting: "화투판·내기에 끼고, 잃은 것을 되찾으려 한다", confirm: "내기를 못 끊는", requires: { 충동적: 1 } }
+    - { id: "flaw_greedy", slot: "flaw", name: "손이 먼저 간다", description: "값진 것을 보면 몫을 따지기 전에 챙긴다", acting: "전리품 앞에서 눈이 빠르다", confirm: "욕심 많은", requires: { 실리적: 1 } }
+    - { id: "flaw_secretive", slot: "flaw", name: "속을 털어놓지 못한다", description: "아파도, 무서워도 혼자 삼킨다", acting: "괜찮냐는 물음에 늘 괜찮다고 한다", confirm: "속을 털어놓지 못하는" }
+    - { id: "flaw_soft", slot: "flaw", name: "모질지 못하다", description: "해야 할 일인데 마음이 약해진다", acting: "벌을 주거나 거절해야 할 때 망설인다", confirm: "모질지 못한", requires: { 다정함: 1 } }
+    - { id: "flaw_no_retreat", slot: "flaw", name: "물러서지 못한다", description: "싸움에서 등을 보이는 게 죽기보다 싫다", acting: "후퇴 명령에도 한 발 늦게 뺀다", confirm: "물러서지 못하는", requires: { 원칙적: 1 } }
+    - { id: "flaw_loose_lips", slot: "flaw", name: "입이 가볍다", description: "비밀이 오래 머물지 않는다", acting: "들은 말을 옮기고 싶어 안달한다", confirm: "입이 가벼운", requires: { 수다스러움: 1 } }
+    - { id: "flaw_pride", slot: "flaw", name: "자존심이 세다", description: "도움을 청하느니 혼자 한다", acting: "남의 도움·동정을 거절한다", confirm: "자존심이 센" }
+    - { id: "flaw_distrust", slot: "flaw", name: "아무도 믿지 않는다", description: "등을 맡기지 않는다", acting: "남이 준 음식·지도를 먼저 의심한다", opposites: ["flaw_naive"], confirm: "아무도 믿지 않는" }
+    - { id: "flaw_naive", slot: "flaw", name: "사람을 잘 믿는다", description: "웃으며 다가오는 사람을 의심하지 못한다", acting: "낯선 이의 말을 그대로 받아들인다", opposites: ["flaw_distrust"], trait_opposites: ["cynical"], confirm: "사람을 잘 믿는" }
+    - { id: "flaw_squeamish", slot: "flaw", name: "피를 못 본다", description: "붕괴 뒤에도 익숙해지지 않았다", acting: "상처를 보면 얼굴이 하얘지고 고개를 돌린다", confirm: "피를 못 보는" }
+    - { id: "flaw_hoarder", slot: "flaw", name: "버리지 못한다", description: "언젠가 쓸 데가 있다", acting: "짐이 무거워도 잡동사니를 놓지 않는다", confirm: "버리지 못하는" }
+    - { id: "flaw_lazy", slot: "flaw", name: "몸을 아낀다", description: "할 수 있으면 미룬다", acting: "당번·궂은일을 은근히 피한다", confirm: "몸을 아끼는" }
+    - { id: "flaw_jealous", slot: "flaw", name: "시샘이 많다", description: "남이 칭찬받으면 속이 쓰리다", acting: "남의 공을 깎아내리는 말을 흘린다", confirm: "시샘 많은" }
+    - { id: "habit_count_ammo", slot: "habit", name: "탄을 센다", description: "틈만 나면 남은 탄을 센다", acting: "쉴 때 탄창을 빼 손가락으로 세어 본다" }
+    - { id: "habit_check_exits", slot: "habit", name: "출구부터 본다", description: "어디 들어가든", acting: "방에 들어서면 문과 창부터 눈으로 짚는다" }
+    - { id: "habit_hum", slot: "habit", name: "흥얼거린다", description: "붕괴 전 노래를", acting: "손이 바쁠 때 옛 노래를 흥얼거린다" }
+    - { id: "habit_knife_whittle", slot: "habit", name: "칼로 깎는다", description: "나무토막을", acting: "기다릴 때 작은 칼로 무언가를 깎는다" }
+    - { id: "habit_journal", slot: "habit", name: "적어 둔다", description: "하루 일을", acting: "밤마다 낡은 수첩에 몇 줄 적는다" }
+    - { id: "habit_pray", slot: "habit", name: "짧게 빈다", description: "나서기 전에", acting: "위험한 일 앞에서 입속으로 무언가 왼다" }
+    - { id: "habit_smell_food", slot: "habit", name: "냄새부터 맡는다", description: "먹기 전에", acting: "받은 음식을 코에 대 보고 먹는다" }
+    - { id: "habit_sleep_light", slot: "habit", name: "얕게 잔다", description: "등을 벽에 대고", acting: "작은 소리에도 눈을 뜬다" }
+    - { id: "habit_clean_gun", slot: "habit", name: "총을 닦는다", description: "쓰지 않아도", acting: "저녁마다 총을 분해해 닦는다" }
+    - { id: "habit_names", slot: "habit", name: "이름을 묻는다", description: "처음 보는 사람에게", acting: "누굴 만나든 이름부터 묻고 기억해 둔다" }
+    - { id: "habit_weather", slot: "habit", name: "하늘을 본다", description: "나가기 전에", acting: "문을 나서며 하늘과 바람을 살핀다" }
+    - { id: "habit_coin", slot: "habit", name: "동전을 굴린다", description: "손가락 사이로", acting: "생각할 때 쓸모없어진 동전을 굴린다" }
+    - { id: "habit_feed_strays", slot: "habit", name: "짐승을 먹인다", description: "길고양이·들개를", acting: "남은 음식을 짐승 몫으로 떼어 둔다", trait_opposites: ["cynophobia"] }
+    - { id: "habit_mutter", slot: "habit", name: "혼잣말을 한다", description: "일하면서", acting: "손을 움직이며 순서를 중얼거린다" }
+    - { id: "habit_boots", slot: "habit", name: "신발을 챙긴다", description: "잘 때도 곁에", acting: "신발 끈을 늘 다시 묶고, 머리맡에 둔다" }
+    - { id: "habit_scar_touch", slot: "habit", name: "흉터를 만진다", description: "긴장하면", acting: "불안할 때 옛 상처를 손끝으로 쓸어 본다" }
+    - { id: "speech_military", slot: "speech", name: "군대 말투", description: "\"~입니다\", \"확인했습니다\"", acting: "끝을 끊어 말하고 보고하듯 말한다" }
+    - { id: "speech_dialect_strong", slot: "speech", name: "진한 사투리", description: "고향 말을 버리지 않았다", acting: "급하거나 화나면 사투리가 더 진해진다" }
+    - { id: "speech_proverb", slot: "speech", name: "속담을 쓴다", description: "옛말을 끌어온다", acting: "말끝에 속담·옛말을 붙인다" }
+    - { id: "speech_curse", slot: "speech", name: "욕이 섞인다", description: "습관처럼", acting: "감탄사 대신 짧은 욕이 튀어나온다", requires: { 다혈질: 1 } }
+    - { id: "speech_polite_all", slot: "speech", name: "누구에게나 존댓말", description: "적에게도", acting: "상대가 누구든 말을 높인다", requires: { 온화함: 1 } }
+    - { id: "speech_third_person", slot: "speech", name: "자기를 이름으로 부른다", description: "\"나\" 대신", acting: "\"혁진이는 그렇게 안 해\"" }
+    - { id: "speech_scripture", slot: "speech", name: "경전 구절", description: "외워 둔 구절을", acting: "힘든 순간에 경전·기도문 한 줄을 읊는다" }
+    - { id: "speech_numbers", slot: "speech", name: "숫자로 말한다", description: "셈이 입에 붙었다", acting: "\"셋 중 둘\", \"이틀 치\" 하고 수로 말한다", requires: { 실리적: 1 } }
+    - { id: "speech_old_words", slot: "speech", name: "예스러운 말", description: "책으로 배운 말", acting: "요즘 안 쓰는 단어를 섞는다" }
+    - { id: "speech_nickname", slot: "speech", name: "별명으로 부른다", description: "이름 대신", acting: "처음 보는 사람에게도 별명을 붙인다" }
+    - { id: "speech_question", slot: "speech", name: "되묻는다", description: "대답 대신 질문", acting: "\"그래서?\", \"왜 그렇게 생각해?\"" }
+    - { id: "speech_whisper", slot: "speech", name: "낮게 말한다", description: "늘 누가 듣는 것처럼", acting: "목소리를 낮추고 주위를 본다", requires: { 신중함: 1 } }
+    - { id: "speech_joke", slot: "speech", name: "농담으로 넘긴다", description: "무거울수록", acting: "심각한 순간에 실없는 말을 던진다" }
+    - { id: "speech_foreign_words", slot: "speech", name: "외래어를 섞는다", description: "붕괴 전 직장 말버릇", acting: "\"체크\", \"오케이\", \"플랜\"" }
+    - { id: "secret_deserter", slot: "secret", name: "탈영한 적이 있다", description: "그 무리 이야기가 나오면 말을 돌린다", acting: "그 무리 이야기가 나오면 말을 돌린다", fact: "다른 무리에서 몰래 도망쳐 왔다", backing: { deserter: true } }
+    - { id: "secret_debt_owed", slot: "secret", name: "갚지 못한 빚이 있다", description: "그 무리 사람을 피한다", acting: "그 무리 사람을 피한다", fact: "다른 무리에 큰 빚을 지고 달아났다", backing: { debt: "large" } }
+    - { id: "secret_family_enemy", slot: "secret", name: "가족이 적 무리에 있다", description: "그 무리와의 싸움 이야기에 굳는다", acting: "그 무리와의 싸움 이야기에 굳는다", fact: "피붙이 하나가 적대하는 무리에 산다", backing: { kin_enemy: true }, roles_none: ["role_a_grunt", "role_t_visitor"] }
+    - { id: "secret_stolen_stash", slot: "secret", name: "숨겨 둔 것이 있다", description: "창고 이야기에 눈치를 본다", acting: "창고 이야기에 눈치를 본다", fact: "무리 몰래 비상 식량을 빼돌려 두었다", backing: { stash: { item: "canned_food", quantity: 3 } }, needs_faction: true }
+    - { id: "secret_addiction", slot: "secret", name: "약에 기대고 있다", description: "약 상자 앞에서 손이 머문다", acting: "약 상자 앞에서 손이 머문다", fact: "진통제 없이는 하루를 못 버틴다", backing: { trait: "pill_habit" } }
+    - { id: "secret_former_raider", slot: "secret", name: "약탈자였다", description: "약탈 이야기에 아는 티가 난다", acting: "약탈 이야기에 아는 티가 난다", fact: "붉은 완장을 차고 마을을 털었다", factions_none: ["faction_c"] }
+    - { id: "secret_left_someone", slot: "secret", name: "사람을 두고 왔다", description: "문 두드리는 소리에 몸이 굳는다", acting: "문 두드리는 소리에 몸이 굳는다", fact: "붕괴의 밤, 문을 닫아 누군가를 밖에 두었다" }
+    - { id: "secret_killed_friend", slot: "secret", name: "물린 친구를 쐈다", description: "감염된 사람 이야기에 말이 없어진다", acting: "감염된 사람 이야기에 말이 없어진다", fact: "변하기 전에, 아무도 모르게" }
+    - { id: "secret_bitten_once", slot: "secret", name: "긁힌 적이 있다", description: "격리·검사 이야기에 예민해진다", acting: "격리·검사 이야기에 예민해진다", fact: "긁혔지만 감염되지 않았고, 숨겼다" }
+    - { id: "secret_real_name", slot: "secret", name: "이름이 가짜다", description: "이름을 불려도 한 박자 늦게 돌아본다", acting: "이름을 불려도 한 박자 늦게 돌아본다", fact: "본래 이름을 버렸다" }
+    - { id: "secret_sold_info", slot: "secret", name: "정보를 판 적이 있다", description: "배신 이야기에 말을 아낀다", acting: "배신 이야기에 말을 아낀다", fact: "목숨을 건지려고 동료의 위치를 불었다" }
+    - { id: "secret_coward_once", slot: "secret", name: "한 번 도망쳤다", description: "용기를 칭찬받으면 불편해한다", acting: "용기를 칭찬받으면 불편해한다", fact: "동료가 죽는 동안 숨어 있었다" }
+    - { id: "secret_mercy_kill", slot: "secret", name: "부탁받고 숨을 끊어 줬다", description: "안락사 이야기에 말을 아낀다", acting: "안락사 이야기에 말을 아낀다", fact: "다친 사람의 부탁으로" }
+    - { id: "keep_photo", slot: "keepsake", name: "가족사진", description: "비닐에 싼 사진 한 장", acting: "쉴 때 꺼내 보고 다시 넣는다", backing: { keepsake: "ks_photo" } }
+    - { id: "keep_ring", slot: "keepsake", name: "결혼반지", description: "줄에 꿰어 목에 건", acting: "긴장하면 손이 목으로 간다", backing: { keepsake: "ks_ring" } }
+    - { id: "keep_watch", slot: "keepsake", name: "아버지의 손목시계", description: "멈췄지만 차고 다닌다", acting: "시간을 볼 때 습관처럼 들여다본다", backing: { keepsake: "ks_watch" } }
+    - { id: "keep_letter", slot: "keepsake", name: "부치지 못한 편지", description: "접은 자국이 닳았다", acting: "받을 사람 이야기에 표정이 흔들린다", backing: { keepsake: "ks_letter" } }
+    - { id: "keep_toy", slot: "keepsake", name: "아이의 장난감", description: "작은 인형", acting: "아이를 보면 만지작거린다", backing: { keepsake: "ks_toy" } }
+    - { id: "keep_dogtag", slot: "keepsake", name: "전우의 인식표", description: "죽은 사람의 것", acting: "그 이름을 입속으로 부른다", backing: { keepsake: "ks_dogtag" } }
+    - { id: "keep_book", slot: "keepsake", name: "낡은 책", description: "같은 쪽을 몇 번이고", acting: "밤에 몇 줄씩 다시 읽는다", backing: { keepsake: "ks_book" } }
+    - { id: "keep_key", slot: "keepsake", name: "옛집 열쇠", description: "그 집은 이제 없다", acting: "열쇠를 쥐고 잠든다", backing: { keepsake: "ks_key" } }
+    - { id: "keep_harmonica", slot: "keepsake", name: "하모니카", description: "몇 곡만 분다", acting: "불가에서 한 곡 분다", backing: { keepsake: "ks_harmonica" } }
+    - { id: "keep_drawing", slot: "keepsake", name: "아이가 그린 그림", description: "접어 지갑에", acting: "보고는 아무 말도 하지 않는다", backing: { keepsake: "ks_drawing" } }
+    - { id: "keep_medal", slot: "keepsake", name: "붕괴 전 메달", description: "운동회·대회의", acting: "옛날의 자기 이야기를 할 때 꺼낸다", backing: { keepsake: "ks_medal" } }
+    - { id: "keep_lighter", slot: "keepsake", name: "각인된 라이터", description: "이름이 새겨진", acting: "불을 붙일 때마다 각인을 엄지로 쓴다", backing: { keepsake: "ks_lighter" } }
+    - { id: "keep_scarf", slot: "keepsake", name: "누군가의 목도리", description: "그 사람 냄새는 이제 없다", acting: "추운 날 꼭 두른다", backing: { keepsake: "ks_scarf" } }
+    - { id: "keep_seeds", slot: "keepsake", name: "씨앗 봉지", description: "언젠가 심으려고", acting: "흙을 보면 봉지를 만져 본다", backing: { keepsake: "ks_seeds" } }

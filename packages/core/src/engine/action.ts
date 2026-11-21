@@ -13,7 +13,7 @@ import { breakTruceIfAny } from "./diplomacy.ts";
 import { exposeToFatigue } from "./fatigue.ts";
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
-import { rollBlowup, rollHear, rollLeak } from "./persona.ts";
+import { againstSetting, rollBlowup, rollHear, rollLeak } from "../rules/self.ts";
 import { exposeToCold, changeClothes, soak } from "./climate.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
@@ -220,6 +220,11 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe("이번 턴에 인접한 다른 구역으로 옮겨 가면 그 구역 id (상태의 인접 구역 목록). 이동에 30~60분이 든다. 전투 중에는 쓸 수 없다. 아니면 null"),
+    against_setting: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("이 행동이 주인공의 설정(이상·금기·결점)을 거스르면 그 설정 id. 먼저 서술로 확인하고(\"복종을 신념으로 가진 ○○은 이 선택이 마음에 걸린다. 정말 이렇게 해야 할까?\") 플레이어가 그래도 하겠다고 할 때만 넣는다. 시스템이 정신력으로 굴린다. 아니면 null"),
     place_to: z
       .string()
       .nullable()
@@ -624,13 +629,25 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     }
   }
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
+  const settingDisplays: ToolDisplayEvent[] = [];
   if (input.place_to !== null && input.place_to !== (currentPlace(start, content)?.id ?? null)) {
     const to = placeById(start, content, input.place_to)!;
     store.append({ type: "place_moved", from: currentPlace(start, content)?.id ?? null, to: to.id });
     store.append({ type: "time_advanced", activity: "brief", from: store.getState().time, to: store.getState().time + PLACE_MOVE_MINUTES });
     const people = Object.keys(content.npcs).filter((id) => id !== start.playerId && !store.getState().characters[id]?.dead && npcPlaceAt(store.getState(), content, id) === to.id);
     leftLines.push(`${josa(to.name, "으로/로")} 옮겼다 (${to.indoor ? "실내" : "바깥"}, ${PLACE_MOVE_MINUTES}분). 함께 있던 인물은 따라오지 않는다 (동행은 따라온다).${people.length ? ` 지금 이곳에 있을 사람: ${people.map((id) => `${playerCalls(store.getState(), content, id)}(${id})`).join(", ")} (장면에 들이려면 npc_presence).` : ""}`);
+  }  // 설정 거스르기 (공통 규칙 16): 굴려서 해내지 못하면 이 행동은 일어나지 않는다
+  if (input.against_setting) {
+    const r = againstSetting(ctx, input.against_setting);
+    if (!r.ok) return { ok: false, error: `${r.error} (시간은 흐르지 않았다)` };
+    leftLines.push(...r.lines);
+    if (!r.proceed) {
+      advanceTime(ctx, "brief", null);
+      return { ok: true, resultText: leftLines.filter(Boolean).join("\n"), displays: r.displays, outcome: null, dead: false };
+    }
+    settingDisplays.push(...r.displays);
   }
+
   // 임무로 세기 (12-240, A3: for_mission을 빠뜨리면 임무 자리의 이동·판정·보초가 조용히 0으로 세졌다):
   // 진행 중인 임무의 요건과 맞는 행동(그 판정, 그 활동, 이동 요건이면 이동)을 임무 장소에서 하면 저절로 임무로 센다
   const autoMission = !input.for_mission ? missionMatch(start, input) : null;
@@ -646,7 +663,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       return { ok: false, error: `여기는 임무의 장소(${m.place.label})가 아니라 임무로 치지 않는다. 임무 장소로 옮겨 가서 하거나, 임무와 상관없는 일이면 for_mission: false로 한다 (시간은 흐르지 않았다).` };
     }
   }
-  const displays: ToolDisplayEvent[] = [];
+  const displays: ToolDisplayEvent[] = [...settingDisplays];
   let outcome: CheckOutcome | null = null;
 
   // 0. 성격이 결과를 남기는 순간 (12-99): 도발당하면 발끈, 장면의 인물과 이야기하면 말이 새어 나갈 수 있다. 줄은 GM이 그대로 옮긴다

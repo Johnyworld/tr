@@ -19,6 +19,8 @@ import {
 } from "./creationFlow.ts";
 import { draftContent, newGameStep, type NewGameDraft } from "./newGame.ts";
 import { scenarioChoices, type ScenarioChoice } from "./startChoice.ts";
+import { settingChoices } from "./creationFlow.ts";
+import { settingOf } from "./settings.ts";
 
 /**
  * 상태 화면의 새 게임·새 캐릭터 만들기 (12-67). GM 안내(describeNewGameStep)와 같은 초안을 화면이 그릴 수 있게 나눈 모습.
@@ -53,7 +55,14 @@ export type CharacterStepView = {
     traits: string[] | null;
     /** 성격 축 요약 ("다혈질 2, 과묵함 1" / "보통"). 아직 안 정했으면 null */
     persona: string | null;
+    /** 고른 캐릭터 설정 이름 (4.6.4). 아직 안 정했으면 null */
+    settings: string[] | null;
   };
+  /** 캐릭터 설정 고르기 (4.6.4): 칸과 항목. ok: 고를 수 있나, reasons: 못 고르는 까닭("다혈질 2 필요"), clash: 이 시나리오와 자주 부딪힘 */
+  settings: {
+    slots: { id: string; label: string; max: number; hint: string; rolls: boolean }[];
+    items: { id: string; slot: string; name: string; description: string; ok: boolean; reasons: string[]; clash: boolean; opposites: string[] }[];
+  } | null;
   /** 과거 배경 고르기 (12-84): 배경마다 스킬·능력·물건 */
   pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge: number | null }[];
   /** 자리(계급·직분)가 점수 없이 배운 상태로 주는 전문 기술 (4.2.1). 없으면 빈 글 */
@@ -126,7 +135,14 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
             ? d.traits.map((id) => s.traits.find((t) => t.id === id)?.label ?? id)
             : null,
         persona: d.persona !== undefined ? personaSummary(s, d.persona) : null,
+        settings: d.settings !== undefined ? d.settings.map((id) => settingOf(s, id)?.name ?? id) : null,
       },
+      settings: s.settings
+        ? {
+            slots: s.settings.slots.map((x) => ({ id: x.id, label: x.label, max: x.max, hint: x.hint, rolls: x.rolls })),
+            items: settingChoices(s, draft.character).map((x) => ({ id: x.item.id, slot: x.item.slot, name: x.item.name, description: x.item.description, ok: x.ok, reasons: x.reasons, clash: x.clash, opposites: x.item.opposites })),
+          }
+        : null,
       options: stepOptions(s, draft.character, cstep, (id) => content.items[id]?.name ?? id),
       portraits: cstep === "portrait" ? portraitSections(s, d.gender) : [],
       pasts: (s.creation?.pasts ?? []).map((p) => ({

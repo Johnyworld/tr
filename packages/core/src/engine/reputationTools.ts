@@ -29,6 +29,7 @@ import { tiesOf } from "../game/ties.ts";
 import { loversOf } from "./romance.ts";
 import { isIncapacitated } from "./body.ts";
 import { moveOf } from "../scenario/scenario.ts";
+import { tellPlayerSecret } from "../rules/self.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 import { whereIs, zoneOf } from "../rules/place.ts";
 
@@ -214,10 +215,22 @@ const revealSecret = defineTool({
   name: "reveal_secret",
   description:
     "장면에 있는 인물이 플레이어에게 비밀을 털어놓는다. <상태>에 그 인물이 '비밀을 털어놓을 수 있는 관계'라고 표시되고, " +
-    "공개 상황이 맞을 때만 쓴다. 비밀의 내용은 시스템이 결과로 알려 준다.",
-  schema: z.strictObject({ npc_id: z.string() }),
+    "공개 상황이 맞을 때만 쓴다. 비밀의 내용은 시스템이 결과로 알려 준다. " +
+    "own: true면 거꾸로 주인공이 자기 비밀(설정)을 npc_id에게 털어놓는다: 그 인물과 그 자리에 있던 사람이 알게 된다 (플레이어가 털어놓겠다고 할 때만).",
+  schema: z.strictObject({ npc_id: z.string(), own: z.boolean().default(false) }),
   run(input, ctx) {
     const state = ctx.store.getState();
+    if (input.own) {
+      const told = tellPlayerSecret(ctx, input.npc_id);
+      if (!told.ok) return told;
+      const names = told.told.map((id) => playerCalls(state, ctx.content, id));
+      return {
+        ok: true,
+        resultText: `당신의 비밀을 ${names.join(", ")}${names.length > 1 ? "이(가) 함께" : "에게"} 털어놓았다: ${told.fact}\n이제 ${josa(names.join(", "), "은/는")} 안다. 각자의 성격·관계대로 반응을 서술하라 (호감·신뢰는 바뀌지 않는다, 바뀌면 이후 행동으로).`,
+        display: { type: "belief", fact: `털어놓은 비밀: ${told.fact}`, sourceLabel: "고백" },
+        silent: true,
+      };
+    }
     // 콘텐츠 인물이든 자란 인물이든 (기획서 7.10)
     const profile = profileOf(state, ctx.content, input.npc_id);
     if (!profile || !state.scene.present.includes(input.npc_id)) return { ok: false, error: "장면에 없는 인물입니다." };

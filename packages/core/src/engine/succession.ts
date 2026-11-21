@@ -11,6 +11,7 @@ import { tiesOf } from "../game/ties.ts";
 import { checkCharacterChoice, checkName, fillCharacterChoice } from "../game/creation.ts";
 import type { CharacterChoice } from "../game/state.ts";
 import type { Belief } from "../game/belief.ts";
+import { applySettingBacking } from "./background.ts";
 import { createCharacterFromRole, type GameState, type RunRecord } from "../game/state.ts";
 import type { Content, RoleContent } from "../content/schemas.ts";
 import { buildCustomRole, joinRole } from "../game/customStart.ts";
@@ -226,7 +227,7 @@ export function switchCharacter(
   if (newAs) {
     const id = `pc_${state.chronicle.length + 1}`;
     if (character) {
-      const problems = checkCharacterChoice(content.scenario, character, { rank: newAs.rank, occupation: null });
+      const problems = checkCharacterChoice(content.scenario, character, { rank: newAs.rank, occupation: null, faction: newAs.faction || null });
       if (problems.length) return { ok: false, error: `캐릭터 설정이 규칙에 맞지 않는다: ${problems.join(" ")}` };
     }
     const seat = heirSeat(content, newAs.faction, newAs.rank, { age: character?.age ?? null });
@@ -249,6 +250,8 @@ export function switchCharacter(
         belief: { id: `b_${s.nextBeliefNo}`, fact: b.fact, source: b.source, accuracy: b.accuracy, learnedAt: s.time },
       });
     }
+    // 설정의 뒷받침 (4.6.4): 지난 일·사물함·소중한 것
+    applySettingBacking(ctx, { parts: true });
     if (made.past) {
       const s = store.getState();
       store.append({ type: "belief_added", characterId: id, belief: { id: `b_${s.nextBeliefNo}`, fact: `붕괴 전에 나는 ${josa(made.past.label, "이었다/였다")}. ${made.past.summary}.`, source: "seen", accuracy: "exact", learnedAt: START_TIME - 1 } });

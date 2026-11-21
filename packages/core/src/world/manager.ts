@@ -1,7 +1,7 @@
 import { checkResolve } from "../engine/resolve.ts";
 import { bindOwnLovers } from "../engine/romance.ts";
 import { objectParticle } from "../engine/scenarioProgress.ts";
-import { addStartFamily, seatStartSquad, applyBackground, applyStartBonds } from "../engine/background.ts";
+import { addStartFamily, seatStartSquad, applyBackground, applyStartBonds, applySettingBacking, settingBackingParts } from "../engine/background.ts";
 import type { HistoryPart } from "../game/background.ts";
 import { autoEquip } from "../engine/gear.ts";
 import { addUnlockNotices, addUnlocks, dismissUnlockNotice, readUnlockNotices, readUnlocks, type UnlockRecord } from "../persistence/unlocks.ts";
@@ -159,7 +159,9 @@ export class WorldManager {
       // 서술 방식 (12-85). 기본은 소설식
       if (options?.dialogue === "script") ctx.store.append({ type: "content_options_set", dialogue: "script" });
       // 배경 부품: 플레이어가 쓴 지난 일 중 세계의 사실이 되는 것 (기획서 12.6)
-      applyBackground(world.ctx(), told?.history ?? []);
+      applyBackground(world.ctx(), [...(told?.history ?? []), ...settingBackingParts(world.ctx())]);
+      // 설정의 뒷받침: 사물함에 숨긴 것, 소중한 것 (4.6.4)
+      applySettingBacking(world.ctx());
       // 처음부터 함께 다니는 사람·동물 (떠돌이의 가족 등, 기획서 7.9)
       addStartCompanions(world.ctx(), roleOf(world.content, world.state()));
       // 시작할 때 가까운 사람들 (오래 함께 버틴 동료)

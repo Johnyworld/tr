@@ -6,6 +6,7 @@ import type { Scenario } from "../scenario/schema.ts";
 import { costToReach, isExpertMove } from "../scenario/scenario.ts";
 import { PORTRAIT_ID } from "./character.ts";
 import type { CharacterChoice } from "./state.ts";
+import { checkSettings } from "./settings.ts";
 
 /**
  * 캐릭터 생성 (기획서 4.2, 12-6): 이름, 성별, 능력(포인트 구매), 초상화.
@@ -44,6 +45,7 @@ export function characterChoiceSchema() {
     traits: z.array(z.string()).max(10).nullable().optional().describe("트레잇 id 목록. null이면 무작위, 생략하면 없음"),
     age: z.number().int().positive().nullable().optional().describe("나이. 생략하면 시나리오의 나이"),
     persona: z.record(z.string(), z.number().int().min(-2).max(2)).nullable().optional().describe("성격 축 id → -2~2 (12-99). 생략하면 모두 0"),
+    settings: z.array(z.string()).max(12).nullable().optional().describe("캐릭터 설정 id 목록 (4.6.4). 생략하면 없음"),
   });
 }
 
@@ -79,6 +81,8 @@ export function checkCharacterChoice(s: Scenario, choice: CharacterChoice, seat?
   const pastMin = pastOf(s, choice.past)?.min_age;
   if (pastMin !== undefined && choice.age != null && choice.age < pastMin) problems.push(`${josa(pastOf(s, choice.past)!.label, "은/는")} ${pastMin}세 이상이어야 한다.`);
   if (choice.skills) problems.push(...checkSkills(s, choice.skills, teachableExperts(s, choice.past, seat)));
+  // 캐릭터 설정 (4.6.4): 고른 성격·트레잇·시나리오에 맞는가
+  if (choice.settings?.length) problems.push(...checkSettings(s, choice.settings, { persona: choice.persona ?? null, traits: choice.traits ?? [], roleId: seat?.roleId ?? null, faction: seat?.faction ?? null }));
   if (choice.persona) {
     for (const [axis, v] of Object.entries(choice.persona)) {
       if (!s.persona?.axes.some((a) => a.id === axis)) problems.push(`알 수 없는 성격 축: ${axis}`);
@@ -96,7 +100,8 @@ export function pastOf(s: Scenario, id: string | null | undefined) {
 }
 
 /** 캐릭터 만들기에서 정해진 자리 (계급·직분): 점수 없이 배운 상태로 받는 전문 기술에 쓴다 (4.2.1) */
-export type CreationSeat = { rank: string; occupation: string | null };
+/** roleId·faction: 설정의 시나리오 제한을 볼 때 (4.6.4) */
+export type CreationSeat = { rank: string; occupation: string | null; roleId?: string; faction?: string | null };
 
 /** 직분 스킬 (4.2.1): 스킬을 주지는 않고, 전문 기술이면 배운 상태로 준다 */
 export function occupationSkills(s: Scenario, occupation: string | null | undefined): string[] {

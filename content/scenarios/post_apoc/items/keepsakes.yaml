@@ -1,0 +1,113 @@
+# 소중한 것 (캐릭터 설정, 12-246): 효과 없는 가벼운 물건. 값으로 나가지 않는다 (keepsake)
+- id: ks_photo
+  name: 가족사진
+  icon: paper
+  description: "비닐에 싼 사진 한 장"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_ring
+  name: 결혼반지
+  icon: paper
+  description: "줄에 꿰어 목에 건"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_watch
+  name: 아버지의 손목시계
+  icon: paper
+  description: "멈췄지만 차고 다닌다"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_letter
+  name: 부치지 못한 편지
+  icon: paper
+  description: "접은 자국이 닳았다"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_toy
+  name: 아이의 장난감
+  icon: paper
+  description: "작은 인형"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_dogtag
+  name: 전우의 인식표
+  icon: paper
+  description: "죽은 사람의 것"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_book
+  name: 낡은 책
+  icon: paper
+  description: "같은 쪽을 몇 번이고"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_key
+  name: 옛집 열쇠
+  icon: paper
+  description: "그 집은 이제 없다"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_harmonica
+  name: 하모니카
+  icon: paper
+  description: "몇 곡만 분다"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_drawing
+  name: 아이가 그린 그림
+  icon: paper
+  description: "접어 지갑에"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_medal
+  name: 붕괴 전 메달
+  icon: paper
+  description: "운동회·대회의"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_lighter
+  name: 각인된 라이터
+  icon: paper
+  description: "이름이 새겨진"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_scarf
+  name: 누군가의 목도리
+  icon: paper
+  description: "그 사람 냄새는 이제 없다"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true
+- id: ks_seeds
+  name: 씨앗 봉지
+  icon: paper
+  description: "언젠가 심으려고"
+  kind: misc
+  weight: 0.1
+  value: 0
+  keepsake: true

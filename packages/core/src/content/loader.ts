@@ -11,6 +11,8 @@ import { loadScenario, ScenarioError } from "../scenario/scenario.ts";
 import { readLoreDocs } from "../rag/lore.ts";
 import { LoreFormatError } from "../rag/chunk.ts";
 import { itemSources } from "./sources.ts";
+import { settingOf, unmetRequires } from "../game/settings.ts";
+import { personaOf } from "../engine/persona.ts";
 
 export class ContentError extends Error {
   override name = "ContentError";
@@ -123,6 +125,7 @@ function checkReferences(content: Content): string[] {
     for (const i of o.kit) if (!content.items[i]) problems.push(`${at}: 알 수 없는 아이템 ${i}`);
     for (const m of o.missions) if (!content.missions[m]) problems.push(`${at}: 알 수 없는 임무 ${m}`);
   }
+  problems.push(...checkSettingsContent(content));
   // 계급이 요구하는 전문 기술 (4.2.1)과 최소 나이 (12-87)
   for (const [rank, skills] of Object.entries(content.scenario.creation?.rank_experts ?? {})) {
     if (!content.scenario.rank_ladder.some((r) => r.id === rank)) problems.push(`scenario.creation.rank_experts: 알 수 없는 계급 ${rank}`);
@@ -677,4 +680,42 @@ function listYamlFiles(dir: string): string[] {
 /** 효과·배역의 무리 자리에 쓸 수 있는 별칭: own(주인공의 무리), zone_owner(지금 구역의 주인, 12-54) */
 function isFactionAlias(x: string): boolean {
   return x === "own" || x === "zone_owner" || x === "captor" || x === "bounty";
+}
+
+/** 캐릭터 설정 (4.6.4): 칸·짝·트레잇·시나리오·무리·뒷받침의 참조, 성격 조건의 이름, NPC 설정의 조건 충족 */
+function checkSettingsContent(content: Content): string[] {
+  const problems: string[] = [];
+  const s = content.scenario;
+  const set = s.settings;
+  const poles = new Set((s.persona?.axes ?? []).flatMap((a) => [a.high, a.low]));
+  if (set) {
+    const slots = new Set(set.slots.map((x) => x.id));
+    const ids = new Set<string>();
+    for (const x of set.items) {
+      const at = `scenario.settings.${x.id}`;
+      if (ids.has(x.id)) problems.push(`${at}: id 중복`);
+      ids.add(x.id);
+      if (!slots.has(x.slot)) problems.push(`${at}: 알 수 없는 칸 ${x.slot}`);
+      for (const pole of Object.keys(x.requires)) if (!poles.has(pole)) problems.push(`${at}.requires: 성격 축에 없는 이름 ${pole}`);
+      for (const t of x.trait_opposites) if (!s.traits.some((y) => y.id === t)) problems.push(`${at}.trait_opposites: 알 수 없는 트레잇 ${t}`);
+      for (const r of [...x.roles_none, ...x.clashes_roles]) if (!content.roles[r]) problems.push(`${at}: 알 수 없는 시나리오 ${r}`);
+      for (const f of x.factions_none) if (!content.factions[f]) problems.push(`${at}.factions_none: 알 수 없는 무리 ${f}`);
+      const b = x.backing;
+      if (b?.trait && !s.traits.some((y) => y.id === b.trait)) problems.push(`${at}.backing.trait: 알 수 없는 트레잇 ${b.trait}`);
+      for (const item of [b?.stash?.item, b?.keepsake]) if (item && !content.items[item]) problems.push(`${at}.backing: 알 수 없는 아이템 ${item}`);
+      if (b?.kin_enemy && !(s.custom_start?.kin ?? []).length) problems.push(`${at}.backing.kin_enemy: custom_start.kin(연고 틀)이 없다`);
+    }
+    for (const x of set.items) for (const o of x.opposites) if (!ids.has(o)) problems.push(`scenario.settings.${x.id}.opposites: 알 수 없는 설정 ${o}`);
+  }
+  for (const npc of Object.values(content.npcs)) {
+    if (!npc.settings?.length) continue;
+    const at = `npcs.${npc.id}.settings`;
+    const persona = personaOf(content, { id: npc.id, traits: npc.traits ?? [], persona: null });
+    for (const id of npc.settings) {
+      const x = settingOf(s, id);
+      if (!x) problems.push(`${at}: 알 수 없는 설정 ${id}`);
+      else for (const q of unmetRequires(s, persona, x.requires)) problems.push(`${at}.${id}: 성격 조건을 채우지 못한다 (${q})`);
+    }
+  }
+  return problems;
 }

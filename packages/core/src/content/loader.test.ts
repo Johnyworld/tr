@@ -29,6 +29,8 @@ function tempContent(files: Record<string, string>) {
   delete scenario.gear;
   delete scenario.crafting;
   delete scenario.occupations;
+  // 캐릭터 설정(4.6.4)도 실제 시나리오·트레잇·아이템을 참조한다
+  delete scenario.settings;
   // 과거 배경도 실제 아이템을 참조한다
   delete (scenario.creation as Record<string, unknown>).pasts;
   // 버릇 트레잇(골초, 12-129)도 실제 아이템(담배)을 참조한다

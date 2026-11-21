@@ -23,6 +23,7 @@ import {
 } from "./creation.ts";
 import type { CharacterChoice } from "./state.ts";
 import { PORTRAIT_ID } from "./character.ts";
+import { checkSettings, settingOf, settingSlots, settingStatus, type SettingContext } from "./settings.ts";
 
 /**
  * 대화로 하는 캐릭터 생성 (기획서 4.2, 11.6): 한 번에 하나씩, 정해진 순서로 묻는다.
@@ -43,7 +44,8 @@ export type CreationAnswer =
   | { step: "skill_set"; values: Record<string, number> }
   | { step: "traits"; value: "manual" | "random" | "none"; rolled?: string[] }
   | { step: "traits_pick" | "traits_personality"; value: string[] }
-  | { step: "persona"; values: Record<string, number> };
+  | { step: "persona"; values: Record<string, number> }
+  | { step: "settings"; value: string[] };
 
 export type CreationDraft = {
   /** new_world: 새 게임 (세계 소개부터) / heir: 사망 뒤 같은 세계의 새 캐릭터 */
@@ -75,6 +77,7 @@ export type CreationStepId =
   | "traits_pick"
   | "traits_personality"
   | "persona"
+  | "settings"
   | "confirm";
 
 export type StepOption = { value: string; label: string; description?: string };
@@ -107,6 +110,7 @@ export function collectDraft(draft: CreationDraft) {
   const traits: string[] = [];
   const traitSteps = new Set<string>();
   let persona: Record<string, number> | undefined;
+  let settings: string[] | undefined;
   for (const a of draft.answers) {
     if (a.step === "past") past = a.value;
     else if (a.step === "skills") {
@@ -127,6 +131,7 @@ export function collectDraft(draft: CreationDraft) {
       Object.assign(abilities, a.values);
     }
     else if (a.step === "persona") persona = { ...a.values };
+    else if (a.step === "settings") settings = [...a.value];
     else if (a.step === "traits") {
       traitMethod = a.value;
       if (a.rolled) traits.push(...a.rolled);
@@ -135,7 +140,7 @@ export function collectDraft(draft: CreationDraft) {
       traits.push(...a.value);
     }
   }
-  return { past, name, gender, portrait, age, abilityMethod, abilitiesSet, abilities, skillMethod, skillsSet, skills, traitMethod, traits, traitSteps, persona };
+  return { past, name, gender, portrait, age, abilityMethod, abilitiesSet, abilities, skillMethod, skillsSet, skills, traitMethod, traits, traitSteps, persona, settings };
 }
 
 /** 다음에 물을 단계 */
@@ -159,6 +164,8 @@ export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
     }
   }
   if (s.persona && d.persona === undefined) return "persona";
+  // 캐릭터 설정 (4.6.4): 성격 다음. 칸마다 고르거나 건너뛴다
+  if (s.settings && d.settings === undefined) return "settings";
   return "confirm";
 }
 
@@ -174,6 +181,7 @@ export function draftChoice(draft: CreationDraft): CharacterChoice {
     age: d.age ?? null,
     ...(d.past !== undefined ? { past: d.past } : {}),
     ...(d.persona !== undefined ? { persona: d.persona } : {}),
+    ...(d.settings !== undefined ? { settings: d.settings } : {}),
     ...(d.skillMethod !== undefined ? { skills: d.skills } : {}),
   };
 }
@@ -481,6 +489,13 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     if (v === "manual" || v === "none") return add({ step: "traits", value: v });
     return { ok: false, error: "직접 고를지(manual), 운에 맡길지(random), 없이 갈지(none) 고른다." };
   }
+  if (step === "settings") {
+    const parsed = parseSettings(s, draft, answer);
+    if (!parsed.ok) return parsed;
+    const problems = checkSettings(s, parsed.ids, settingContext(draft));
+    if (problems.length) return { ok: false, error: problems.join(" ") };
+    return add({ step: "settings", value: parsed.ids });
+  }
   if (step === "persona") {
     const parsed = parsePersona(s, text);
     if (!parsed.ok) return parsed;
@@ -501,6 +516,41 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
   const choice = draftChoice(draft);
   const problems = checkCharacterChoice(s, choice, draft.seat);
   return problems.length ? { ok: false, error: problems.join(" ") } : { ok: true, draft, done: true, choice };
+}
+
+/** 설정을 고르는 자리 (성격·트레잇·시나리오) */
+export function settingContext(draft: CreationDraft): SettingContext {
+  const d = collectDraft(draft);
+  return { persona: d.persona ?? null, traits: d.traits, roleId: draft.seat?.roleId ?? null, faction: draft.seat?.faction ?? null };
+}
+
+/** 설정 표 (칸 순서, 번호는 이 순서). 고를 수 있는지와 까닭 */
+export function settingChoices(s: Scenario, draft: CreationDraft) {
+  const ctx = settingContext(draft);
+  const slots = settingSlots(s);
+  return slots.flatMap((slot) =>
+    (s.settings?.items ?? []).filter((x) => x.slot === slot.id).map((item) => ({ item, slotLabel: slot.label, ...settingStatus(s, item, ctx, []) })),
+  );
+}
+
+/** 설정 번호·이름·id 목록 → id. "없음"·"모두 건너뛰기"면 빈 목록 */
+function parseSettings(s: Scenario, draft: CreationDraft, answer: string | string[]): { ok: true; ids: string[] } | { ok: false; error: string } {
+  const raw = (Array.isArray(answer) ? answer : answer.split(/[,，、\n]/)).map((x) => x.trim().replace(/\.$/, "")).filter(Boolean);
+  if (!raw.length || (raw.length === 1 && [...NONE_WORDS, "모두 건너뛰기", "건너뛰기"].includes(raw[0]!.toLowerCase()))) return { ok: true, ids: [] };
+  const list = settingChoices(s, draft);
+  const ids: string[] = [];
+  for (const r of raw) {
+    if (/^\d+$/.test(r)) {
+      const n = list[Number(r) - 1];
+      if (!n) return { ok: false, error: `${r}번은 목록에 없다 (1~${list.length}).` };
+      ids.push(n.item.id);
+      continue;
+    }
+    const item = s.settings?.items.find((x) => x.id === r || x.name === r);
+    if (!item) return { ok: false, error: `"${r}"라는 설정은 없다.` };
+    ids.push(item.id);
+  }
+  return { ok: true, ids };
 }
 
 /** 한 단계 뒤로 */
@@ -524,6 +574,7 @@ function summary(s: Scenario, draft: CreationDraft): string[] {
     lines.push(`트레잇: ${d.traits.length ? d.traits.map((id) => s.traits.find((t) => t.id === id)?.label ?? id).join(", ") : "없음"}`);
   }
   if (d.persona !== undefined) lines.push(`성격: ${personaSummary(s, d.persona)}`);
+  if (d.settings !== undefined) lines.push(`설정: ${d.settings.length ? d.settings.map((id) => settingOf(s, id)?.name ?? id).join(", ") : "없음"}`);
   return lines;
 }
 
@@ -541,6 +592,7 @@ const STEP_TITLE: Record<string, string> = {
   traits_pick: "트레잇: 약점·강점",
   traits_personality: "트레잇: 성격",
   persona: "성격",
+  settings: "설정",
   confirm: "확인",
 };
 
@@ -685,6 +737,18 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
       "",
       `답 형식: 기운 쪽 이름과 단계를 쉼표로 (예: ${axes[0]!.high} 2, ${axes[1]?.low ?? axes[0]!.low} 1). 적지 않은 축은 0. 상관없다고 하면 "기본". 받은 답은 그대로 넘긴다.`,
     );
+  } else if (step === "settings") {
+    const list = settingChoices(s, draft);
+    lines.push(
+      "물을 것: 캐릭터 설정 (RP). 성격이 \"어떻게 말하고 대하나\"라면 설정은 \"무엇을 믿고, 하지 않고, 몸에 배었나\"다. 모두 골라도 되고, 칸마다 건너뛰어도, 모두 건너뛰어도(\"없음\") 된다. 보상은 없고, 이상·금기·결점을 거스르는 행동은 그때 정신력으로 굴린다.",
+      `칸: ${settingSlots(s).map((x) => `${x.label} ${x.max}개까지(${x.hint})`).join(", ")}`,
+      "아래 표를 번호 그대로 보여 주고 글로 답하게 한다. 번호나 이름으로, 여러 개면 쉼표로. \"고를 수 없음\"인 것은 흐리게 보여 주고 까닭을 알린다. 답은 받은 그대로 넘긴다.",
+      "",
+      "| 번호 | 칸 | 이름 | 설명 | 고를 수 있나 |",
+      "|---|---|---|---|---|",
+      ...list.map((x, i) => `| ${i + 1} | ${x.slotLabel} | ${x.item.name} | ${x.item.description} | ${x.ok ? (x.clash ? "가능 (이 시나리오와 자주 부딪힘)" : "가능") : `고를 수 없음: ${x.reasons.join(", ")}`} |`),
+      "",
+    );
   } else {
     lines.push("물을 것: 이대로 시작할지. 정한 것을 한 사람의 모습으로 그려 보여 준 뒤 묻는다.");
     const { spent } = abilitySpend(s, collectDraft(draft).abilities);
@@ -714,7 +778,7 @@ export function stepIndex(s: Scenario, draft: CreationDraft): { at: number; tota
   const pastStep = s.creation?.pasts.length ? 1 : 0;
   const skillSteps = s.creation?.skills ? (d.skillMethod === "manual" ? 2 : 1) : 0;
   const traitSteps = d.traitMethod === "manual" ? (s.persona ? 1 : 2) : 0;
-  const personaStep = s.persona ? 1 : 0;
+  const personaStep = (s.persona ? 1 : 0) + (s.settings ? 1 : 0);
   const ageStep = s.creation?.age && draft.presetAge === undefined ? 1 : 0;
   const portraitStep = draft.withPortrait ? 1 : 0;
   const genderStep = draft.presetGender === undefined ? 1 : 0;

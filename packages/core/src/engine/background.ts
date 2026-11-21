@@ -7,6 +7,9 @@ import type { RoleContent } from "../content/schemas.ts";
 import { groupRules, makeFamily, memberLabel, memberTemplate } from "../game/startGroup.ts";
 import { heldOf } from "../rules/held.ts";
 import { zoneOf } from "../rules/place.ts";
+import { settingOf } from "../game/settings.ts";
+import { ownedBy } from "../rules/home.ts";
+import { templateKind } from "../game/kinds.ts";
 
 /**
  * 배경 부품을 세이브의 역사로 남긴다 (기획서 12.6). 새 세계를 만들 때 한 번.
@@ -17,8 +20,13 @@ import { zoneOf } from "../rules/place.ts";
  * - 빚은 월드가 정한 크기로
  */
 export function applyBackground(ctx: ToolContext, parts: readonly HistoryPart[]): void {
-  const { store, content, rng } = ctx;
   if (parts.length === 0) return;
+  ctx.store.append({ type: "background_set", entries: applyHistoryParts(ctx, parts) });
+}
+
+/** 배경 부품을 세계에 남긴다 (플래그·기억·사람·빚). 세이브의 배경 목록은 부르는 쪽이 정한다 */
+function applyHistoryParts(ctx: ToolContext, parts: readonly HistoryPart[]): { part: HistoryPart; characterId?: string }[] {
+  const { store, content, rng } = ctx;
   const entries: { part: HistoryPart; characterId?: string }[] = [];
   const spawn = (template: string, label: string, zone: string): string | null => {
     const t = content.extras[template];
@@ -81,7 +89,65 @@ export function applyBackground(ctx: ToolContext, parts: readonly HistoryPart[])
     }
     entries.push({ part });
   }
-  store.append({ type: "background_set", entries });
+  return entries;
+}
+
+/**
+ * 설정의 뒷받침 (4.6.4, 12-246): 지금 세계에 무언가가 있다고 말하는 비밀은 엔진 상태로 진짜로 만든다 (원칙 2).
+ * - 지난 일 부품으로: 탈영(다른 무리), 큰 빚(다른 무리), 적 무리의 가족(적대하는 무리의 거점에 사는 연고)
+ * - 그 밖: 트레잇, 우리 거점 사물함의 물건, 소중한 것(시작 소지품)
+ * 새 게임에서는 부품을 배경 목록에 함께 넣고(partsOnly), 계승한 새 캐릭터는 여기서 바로 남긴다
+ */
+export function settingBackingParts(ctx: ToolContext): HistoryPart[] {
+  const { content, rng } = ctx;
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me) return [];
+  const mine = me.factionId || null;
+  const parts: HistoryPart[] = [];
+  const pick = <T>(xs: readonly T[]): T | null => (xs.length ? xs[Math.floor(rng() * xs.length)]! : null);
+  const others = Object.keys(content.factions).filter((f) => f !== mine && Object.keys(state.zones).some((z) => ownedBy(state, z, f)));
+  for (const id of me.settings) {
+    const b = settingOf(content.scenario, id)?.backing;
+    if (!b) continue;
+    if (b.deserter) {
+      const f = pick(others);
+      if (f) parts.push({ kind: "deserter", faction: f });
+    }
+    if (b.debt) {
+      const f = pick(others);
+      if (f) parts.push({ kind: "debt", faction: f, size: b.debt });
+    }
+    if (b.kin_enemy) {
+      const hostile = others.filter((f) => (mine ? (state.factions[f]?.disposition?.[mine] ?? 0) < 0 : !!content.scenario.helpless?.prey_on_strangers.includes(f)));
+      const f = pick(hostile.length ? hostile : others);
+      const base = f ? pick(Object.values(content.locations).filter((l) => !l.isolated && ownedBy(state, l.id, f) && l.kind === "base").map((l) => l.id)) : null;
+      const template = pick((content.scenario.custom_start?.kin ?? []).filter((t) => content.extras[t] && templateKind(content.extras[t]) === "person"));
+      if (base && template) parts.push({ kind: "kin_alive", template, label: content.extras[template]!.label, zone: base });
+    }
+  }
+  return parts;
+}
+
+/** 부품이 아닌 뒷받침 (사물함·소중한 것), 계승한 새 캐릭터면 부품도. 트레잇은 캐릭터를 만들 때 붙는다 (createCharacterFromRole) */
+export function applySettingBacking(ctx: ToolContext, options: { parts?: boolean } = {}): void {
+  const { store, content } = ctx;
+  if (options.parts) applyHistoryParts(ctx, settingBackingParts(ctx));
+  const state = store.getState();
+  const me = state.characters[state.playerId];
+  if (!me) return;
+  for (const id of me.settings) {
+    const b = settingOf(content.scenario, id)?.backing;
+    if (!b) continue;
+    if (b.keepsake && content.items[b.keepsake]) store.append({ type: "item_granted", to: me.id, itemId: b.keepsake, quantity: 1 });
+    if (b.stash && content.items[b.stash.item]) {
+      const home = Object.values(content.locations).find((l) => l.kind === "base" && ownedBy(state, l.id, me.factionId))?.id;
+      if (home) {
+        store.append({ type: "item_granted", to: me.id, itemId: b.stash.item, quantity: b.stash.quantity });
+        store.append({ type: "item_stashed", characterId: me.id, zone: home, itemId: b.stash.item, quantity: b.stash.quantity, direction: "put" });
+      }
+    }
+  }
 }
 
 /**

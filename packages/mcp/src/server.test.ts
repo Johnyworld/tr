@@ -201,7 +201,10 @@ describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
     await call("create_character", { answer: "past" });
     // 성격 축 (12-99): 한 번에 한 줄로
     expect((await call("create_character", { answer: "none" })).text).toContain("다혈질");
-    const confirm = await call("create_character", { answer: "다혈질 2, 과묵함 1" });
+    // 캐릭터 설정 (4.6.4): 성격 다음. 다혈질 2라 "모욕을 못 참는다"를 고를 수 있다
+    const settings = await call("create_character", { answer: "다혈질 2, 과묵함 1" });
+    expect(settings.text).toContain("설정");
+    const confirm = await call("create_character", { answer: "모욕을 못 참는다" });
     expect(confirm.text).toContain("확인");
     expect(confirm.text).toContain("매력 +1");
     expect(confirm.text).toContain("성격: 다혈질 2, 과묵함 1");
@@ -460,7 +463,7 @@ describe("사망 뒤 새 캐릭터 만들기", () => {
     expect(first.text).not.toContain("월드 고르기");
     const source = { get world() { return app.world; }, scenarioName: "x", get creating() { return app.creating; } };
     expect(statusPayload(source)).toMatchObject({ creating: true });
-    for (const a of ["police", "서진", "여성", "기본", "random", "past", "manual", ["허약 체질", "아름다운 외모"], "없음"]) {
+    for (const a of ["police", "서진", "여성", "기본", "random", "past", "manual", ["허약 체질", "아름다운 외모"], "없음", "없음"]) {
       const r = await call("create_character", { answer: a });
       expect(r.isError, r.text).toBe(false);
     }
@@ -566,6 +569,8 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(app.creation!.view.character!.traits.length).toBeGreaterThan(0);
     expect(app.submitCreation({ answer: [] })).toEqual({ ok: true });
     expect(app.submitCreation({ answer: [] })).toEqual({ ok: true });
+    expect(app.creation!.view.step).toBe("settings");
+    expect(app.submitCreation({ answer: [] })).toEqual({ ok: true });
     expect(app.creation!.view.step).toBe("confirm");
     expect(app.submitCreation({ answer: "start" })).toEqual({ ok: true });
     // 캐릭터 다음에 수위, 서술 방식
@@ -585,7 +590,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     const { app, call } = await connectWithScreen(30);
     const first = await call("start_session", { new_world: true, in_browser: true });
     expect(first.text).toContain("다 했어");
-    for (const answer of ["post_apoc", "role_t_visitor", "police", "서진", "male", "none", "기본", "random", "past", "none", "기본", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    for (const answer of ["post_apoc", "role_t_visitor", "police", "서진", "male", "none", "기본", "random", "past", "none", "기본", "없음", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     expect(app.world).not.toBeNull();
     const later = await call("create_character", { wait: true });
     expect(later.text).toContain("상태 화면에서 골랐다");
@@ -613,7 +618,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(app.submitCreation({ menu: true })).toEqual({ ok: true });
     expect(app.creation).toBeNull();
     expect(app.menuAction({ action: "new" })).toEqual({ ok: true });
-    for (const answer of ["post_apoc", "role_t_visitor", "police", "서진", "male", "none", "기본", "random", "past", "none", "기본", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    for (const answer of ["post_apoc", "role_t_visitor", "police", "서진", "male", "none", "기본", "random", "past", "none", "기본", "없음", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     const done = await waiting;
     expect(done.text).toContain("상태 화면에서 골랐다");
     expect(app.world).not.toBeNull();

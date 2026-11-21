@@ -106,7 +106,13 @@ export type NewGameView = {
       skills?: { label: string; value: number }[] | null;
       traits: string[] | null;
       persona?: string | null;
+      settings?: string[] | null;
     };
+    /** 캐릭터 설정 고르기 (4.6.4) */
+    settings?: {
+      slots: { id: string; label: string; max: number; hint: string; rolls: boolean }[];
+      items: { id: string; slot: string; name: string; description: string; ok: boolean; reasons: string[]; clash: boolean; opposites: string[] }[];
+    } | null;
     /** 과거 배경 (12-84) */
     pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge?: number | null }[];
     /** 자리(계급·직분)가 점수 없이 배운 상태로 주는 전문 기술 (4.2.1) */

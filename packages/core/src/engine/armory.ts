@@ -28,12 +28,20 @@ export function issueArmory(ctx: ToolContext, mission: MissionInstance): string 
   const stock = war ? (state.factions[me.factionId]?.resources[war.ammo] ?? 0) : Infinity;
   const ammoShort = armory.ammo_cost > 0 && stock < armory.ammo_cost;
   const items: Record<string, number> = {};
+  // 지닌 총이 쓰는 탄 (12-258, PT15 섬: 작살총을 "쏠 수 있는 총"으로 쳐 소총은 안 주고 소총탄만 줬다)
+  const carriedAmmo = new Set(Object.keys(me.inventory).filter((i) => (me.inventory[i] ?? 0) > 0).map((i) => content.items[i]?.weapon?.ammo).filter((a): a is string => !!a));
+  // 총은 그 탄을 쓰는 총을 지니지 않았을 때만 빌려준다
   for (const [id, want] of Object.entries(armory.items)) {
-    if (ammoShort && content.items[id]?.kind === "ammo") continue;
-    // 쏠 수 있는 총이 이미 있으면 총은 빌려주지 않는다 (탄약만 채운다)
-    const isGun = !!content.items[id]?.weapon?.ammo;
-    const hasGun = Object.keys(me.inventory).some((i) => (me.inventory[i] ?? 0) > 0 && content.items[i]?.weapon?.ammo);
-    if (isGun && hasGun) continue;
+    const ammo = content.items[id]?.weapon?.ammo;
+    if (!ammo || carriedAmmo.has(ammo)) continue;
+    const short = want - (me.inventory[id] ?? 0);
+    if (short > 0) items[id] = short;
+  }
+  // 탄은 지닌 총이나 함께 빌려주는 총에 맞는 것만
+  const usable = new Set([...carriedAmmo, ...Object.keys(items).map((id) => content.items[id]?.weapon?.ammo).filter((a): a is string => !!a)]);
+  for (const [id, want] of Object.entries(armory.items)) {
+    if (content.items[id]?.weapon?.ammo) continue;
+    if (content.items[id]?.kind === "ammo" && (ammoShort || !usable.has(id))) continue;
     const short = want - (me.inventory[id] ?? 0);
     if (short > 0) items[id] = short;
   }

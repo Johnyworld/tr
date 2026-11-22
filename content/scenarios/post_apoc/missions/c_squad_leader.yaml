@@ -4,7 +4,7 @@
   where: outside
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
-  briefing: 사조를 데리고 고가도로 아래 길목을 하룻밤 지킨다. 청솔 쪽 정찰이 넘어오면 잡든지 쫓든지 한다. 자리를 비우면 조 전체가 책임진다.
+  briefing: 사조를 데리고 고가도로 아래 길목을 반나절 지킨다. 청솔 쪽 정찰이 넘어오면 잡든지 쫓든지 한다. 자리를 비우면 조 전체가 책임진다.
   giver_rank: officer
   deadline_hours: 14
   requirements:

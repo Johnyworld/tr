@@ -1,6 +1,6 @@
 import { storyletOf } from "../story/storylets.ts";
 import { restDays } from "../rules/rest.ts";
-import { capturedDuringMission, missionExcuse } from "../rules/blame.ts";
+import { capturedDuringMission, graceExcuse, missionExcuse } from "../rules/blame.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
 import { rankName } from "../game/ranks.ts";
@@ -386,7 +386,10 @@ const abandonMission = defineTool({
     const state = ctx.store.getState();
     const mission = activeMissionOf(state.missions, state.playerId);
     if (!mission) return { ok: false, error: "수행 중인 임무가 없습니다." };
-    const d = disciplineOf(ctx.content, state.characters[state.playerId]?.factionId);
+    // 적응 기간에 받은 임무는 버려도 탓하지 않는다 (공통 규칙 2, 12-258)
+    const grace = graceExcuse(state, mission);
+    const d0 = disciplineOf(ctx.content, state.characters[state.playerId]?.factionId);
+    const d = grace ? { ...d0, abandonMerit: 0, countsDisobedience: false, deedSeverity: 0 } : d0;
     ctx.store.append({ type: "mission_abandoned", missionId: mission.id, merit: d.abandonMerit, reason: input.reason, disobedience: d.countsDisobedience });
     if (d.deedSeverity > 0) {
       recordDeed(
@@ -395,7 +398,7 @@ const abandonMission = defineTool({
         { npcId: mission.giverId, source: state.scene.present.includes(mission.giverId) ? "seen" : "report" },
       );
     }
-    const label = d.countsDisobedience ? "불복종" : "포기";
+    const label = grace ? "포기 (적응 기간)" : d.countsDisobedience ? "불복종" : "포기";
     return {
       ok: true,
       resultText:
@@ -565,6 +568,10 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   const boss = player.factionId ? commanderIdOf(state, ctx.content) : null;
   const bossAt = boss ? whereLabel(state, ctx.content, boss) : null;
   if (boss && bossAt) lines.push(`상관 ${playerCalls(state, ctx.content, boss)}(${boss}): 지금 ${bossAt}`);
+  // 적응 기간 (12-258): 임무는 원하면 받고, 받은 임무를 버리거나 놓쳐도 탓하지 않는다
+  if (player.factionId && state.missionGraceUntil !== null && state.missionGraceUntil > state.time) {
+    lines.push(`적응 기간 (${Math.ceil((state.missionGraceUntil - state.time) / MINUTES_PER_DAY)}일 남음): 임무는 원하면 받는다. 이 기간에 받은 임무는 버리거나 놓쳐도 불복종이 아니다`);
+  }
   const offer = describePromotionOffer(ctx.content, state);
   if (offer) lines.push(offer);
   if (active) {

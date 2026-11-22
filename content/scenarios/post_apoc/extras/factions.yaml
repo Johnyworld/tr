@@ -289,6 +289,35 @@
   ties: { chance: 0.2, kinds: [sibling, friend, rival] }
   appears: { zones: [e_market, water_plant, rest_stop, riverside, old_town] }
 
+# 나루상단 뱃사람 (12-258, PT15 섬: 거래선 호위 임무에 상단 사람이 섬에 없어 교섭을 대상 없이 굴렸다)
+- id: e_boatman
+  label: 나루상단 뱃사람
+  faction: faction_e
+  rank: grunt
+  age: [18, 50]
+  looks:
+    - 물에 젖은 장부 주머니를 목에 건 뱃사람. 짐 상자 숫자를 손가락으로 두 번씩 센다
+    - 그을린 얼굴에 상단 표식을 수놓은 조끼를 입은 뱃사람. 부두 쪽 사람들을 곁눈질로 살핀다
+  stats: { strength: [0, 2], senses: [0, 1], charm: [0, 1] }
+  skills: { persuade: 1, swim: 1, sense_danger: 1, fight: 0 }
+  traits: [calculating, greedy, genial, patient, guarded, cold_hardy]
+  trait_count: 2
+  inventory:
+    - { item: trade_token, chance: 0.7 }
+    - { item: dried_fish, chance: 0.5 }
+    - { item: cigarettes, chance: 0.4 }
+    - { item: oilskin, chance: 0.5 }
+  values: { self_interest: 2, honesty: 1, loyalty: 0 }
+  profile:
+    wants: [물때를 놓치지 않고 짐을 넘기는 것, 섬 사람과 따로 셈을 트는 것, 장부에 손해가 적히지 않는 것]
+    fears: [섬에 오래 붙잡히는 것, 짐이 비는 것, 섬 의회의 눈 밖에 나는 것]
+    voices:
+      - { style: 셈이 빠른 반말 섞인 존댓말. 값부터 말한다, samples: ["상자는 셋, 통조림은 열둘. 맞죠?", "물때 놓치면 손해는 누가 봅니까."] }
+    rules: [짐을 넘기기 전에는 배에서 내리지 않는다, 섬 안 일은 묻지도 듣지도 않는 척한다]
+    reputations: [섬을 오가는 몇 안 되는 상단 뱃사람, 셈이 틀린 적이 없다는 사람]
+  ties: { chance: 0.1, kinds: [sibling, friend] }
+  appears: { zones: [yeoul_isle, riverside, e_market] }
+
 - id: e_water_seller
   label: 정수장 물장수
   faction: faction_e

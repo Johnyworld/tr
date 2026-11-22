@@ -1,3 +1,4 @@
+import { searchSpot } from "../rules/place.ts";
 import { itemResource } from "./market.ts";
 import { findRuin } from "./exploration.ts";
 import { effectiveSkill } from "./traits.ts";
@@ -30,7 +31,7 @@ export function scavengeParts(ctx: ToolContext): Part[] {
   return [
     // 판정 줄만 보고 까닭을 알게 (플레이 테스트 14: "+1(넉넉한 곳) +1(역사)"가 무슨 뜻인지 몰랐다)
     { label: loot.modifier > 0 ? "뒤질 거리가 많은 구역" : "털린 구역", value: loot.modifier },
-    { label: "오늘 다시 뒤짐", value: -searchedToday(state, zone) },
+    { label: "오늘 다시 뒤짐", value: -searchedToday(state, searchSpot(state) ?? zone) },
     ...(lore && known ? [{ label: `${moveLabel(content.scenario, lore.skill)}: 옛 건물 쓰임을 앎`, value: lore.bonus }] : []),
   ].filter((p) => p.value !== 0);
 }
@@ -53,8 +54,10 @@ export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null, want: s
   const loot = zone ? content.locations[zone]?.loot : undefined;
   if (!zone || !loot || loot.items.length === 0) return { lines: ["이 구역에는 뒤져서 나올 만한 것이 없다."], displays: [] };
 
-  const count = searchedToday(state, zone);
-  store.append({ type: "zone_searched", zone, day: dayOf(state.time) });
+  // 장소마다 센다 (12-258)
+  const spot = searchSpot(state) ?? zone;
+  const count = searchedToday(state, spot);
+  store.append({ type: "zone_searched", zone: spot, day: dayOf(state.time) });
 
   const total = loot.items.reduce((n, i) => n + i.weight, 0);
   const found = new Map<string, number>();

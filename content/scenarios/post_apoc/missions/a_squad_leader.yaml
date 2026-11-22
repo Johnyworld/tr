@@ -96,7 +96,7 @@
   where: a_east_post
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
-  briefing: 동쪽 초소에 사람이 모자란다. 분대를 이끌고 가서 하룻밤 초소를 맡고, 고가도로 너머 움직임을 기록해 넘긴다. 반격 준비에 쓰인다.
+  briefing: 동쪽 초소에 사람이 모자란다. 분대를 이끌고 가서 반나절 초소를 맡고, 고가도로 너머 움직임을 기록해 넘긴다. 반격 준비에 쓰인다.
   giver_rank: officer
   deadline_hours: 16
   requirements:

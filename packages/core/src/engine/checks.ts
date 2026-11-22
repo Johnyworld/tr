@@ -70,7 +70,7 @@ export function rollPlayerCheck(
   /** purpose: 못 함이어도 굴리는 까닭 (지혈·버티는 판정, 공통 규칙 12) */
   /** reaction: 주인공이 하는 일이 아니라 닥친 일에 버티는 판정 (마음 다잡기, 12-220). 매복·혼란을 쓰지 않고 경험도 주지 않는다 */
   /** situation: 그 일의 상황 보정 (수색할 곳의 넉넉함, 다시 뒤짐 같은 것, 12-220) */
-  options: { target?: string | null; allies?: readonly string[]; forMission?: string | null; noTools?: boolean; forage?: string | null; purpose?: AttemptPurpose | null; dest?: string | null; toolItem?: string | null; activity?: string | null; unarmed?: boolean; stakes?: boolean; escape?: boolean; reaction?: boolean; situation?: { label: string; value: number }[] } = {},
+  options: { target?: string | null; allies?: readonly string[]; forMission?: string | null; noTools?: boolean; forage?: string | null; purpose?: AttemptPurpose | null; dest?: string | null; toolItem?: string | null; activity?: string | null; unarmed?: boolean; story?: boolean; stakes?: boolean; escape?: boolean; reaction?: boolean; situation?: { label: string; value: number }[] } = {},
 ): PlayerCheckResult {
   const scenario = content.scenario;
   const state = store.getState();
@@ -160,6 +160,7 @@ export function rollPlayerCheck(
     ...(options.target ? { target: options.target } : {}),
     ...(opponent ? { opponent } : {}),
     ...(options.forMission ? { forMission: options.forMission } : {}),
+    ...(options.story ? { story: true } : {}),
     ...(options.dest ? { dest: options.dest } : {}),
   });
 

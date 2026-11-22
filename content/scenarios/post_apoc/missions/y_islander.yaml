@@ -52,7 +52,7 @@
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
   buddy: true
-  briefing: 강 하구에서 나루상단의 배를 맞아 탄약 상자를 넘기고 통조림을 받는다. 상단 사람과 사적인 말을 하지 않는다.
+  briefing: 나루상단의 배가 섬 부두에 닿으면 맞아서 탄약 상자를 넘기고 통조림을 받는다. 상단 뱃사람과 사적인 말을 하지 않는다.
   giver_rank: squad_leader
   deadline_hours: 12
   requirements:

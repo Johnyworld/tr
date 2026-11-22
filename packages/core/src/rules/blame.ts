@@ -14,7 +14,14 @@ import { heldOf, lastFreedAt } from "./held.ts";
 export const FREED_GRACE_MINUTES = 6 * 60;
 
 /** 탓할 수 없는 까닭 */
-export type Excuse = { cause: "incapacitated" | "captured"; label: string };
+export type Excuse = { cause: "incapacitated" | "captured" | "grace"; label: string };
+
+/**
+ * 적응 기간에 받은 임무 (12-258, PT15 튜토리얼: 대표는 "일주일은 자유롭게"라 했는데 상태는 "버리면 불복종"): 버리거나 놓쳐도 탓하지 않는다
+ */
+export function graceExcuse(state: GameState, mission: MissionInstance): Excuse | null {
+  return state.missionGraceUntil !== null && mission.assignedAt < state.missionGraceUntil ? { cause: "grace", label: "적응 기간이라 탓하지 않음" } : null;
+}
 
 /**
  * 기한을 넘긴 임무를 탓할 수 없는 까닭 (없으면 null):
@@ -35,7 +42,7 @@ export function missionExcuse(state: GameState, content: Content, mission: Missi
   if (freed !== null && freed > mission.assignedAt && freed >= mission.deadline - FREED_GRACE_MINUTES) {
     return { cause: "captured", label: "붙잡혀 못 마침 (붙잡혔다 빠져나온 길)" };
   }
-  return null;
+  return graceExcuse(state, mission);
 }
 
 /** 이 임무 중에 붙잡힌 일이 있는가: 빼앗긴 빌린 장비를 잃어버린 것으로 치지 않는다 */

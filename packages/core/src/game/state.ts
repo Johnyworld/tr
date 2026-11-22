@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 89;
+export const SAVE_SCHEMA_VERSION = 90;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -283,6 +283,8 @@ export function createGameSchemas(s: Scenario) {
     harmApplied: z.boolean(),
     /** 이 판정으로 남에게 입힌 피해 (인물 id → 단계). 같은 판정으로 푼 이야기가 같은 사람을 또 다치게 하면 더하지 않고 큰 쪽만 (사용자 결정, PT14 신병 T75) */
     dealt: z.record(z.string(), z.number().int().positive()).optional(),
+    /** 굴린 시각 (12-258: 방금 빗나간 상대에게 다시 하는 임무 판정) */
+    at: z.number().int().optional(),
   });
 
   /** 세계의 진짜 상태 (World State). 콘텐츠(아이템 정의 등)는 넣지 않고 id로만 참조한다 */
@@ -332,6 +334,8 @@ export function createGameSchemas(s: Scenario) {
     npcStays: z.record(z.string(), z.strictObject({ zone: z.string(), place: z.string().nullable(), until: z.number().int() })).default({}),
     /** 원하던 선물을 마지막으로 받은 날 (12-257, 인물 id → 일차) */
     giftWelcomedDay: z.record(z.string(), z.number().int()).default({}),
+    /** 대가 있는 성공의 대가를 시간("일이 꼬여 30분")으로 치른 마지막 날 (12-258) */
+    timeCostDay: z.number().int().nullable().default(null),
     /** 상인이 마지막으로 물건을 채운 날 */
     restockedDay: z.record(z.string(), z.number().int()).default({}),
     /** 이 세계에서 열린 해금: 시나리오(역할) id (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 12.4.1, 9.12) */
@@ -820,7 +824,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("returned_home") }),
     z.strictObject({ type: z.literal("ration_missed"), day: z.number().int().nullable() }),
     /** 판정의 대가를 다치는 대신 다른 것(시간)으로 치렀다: 그 판정을 이어받는 이야기는 "다친다"를 겹쳐 붙이지 않는다 (플레이 테스트 12) */
-    z.strictObject({ type: z.literal("check_cost_paid"), checkId: z.string() }),
+    /** timeDay: 시간으로 대가를 치른 날 (12-258: 같은 날 두 번째부터는 소리) */
+    z.strictObject({ type: z.literal("check_cost_paid"), checkId: z.string(), timeDay: z.number().int().optional() }),
     /** 판정으로 상대에게 피해를 입혔다 (이야기의 같은 피해를 겹치지 않게) */
     z.strictObject({ type: z.literal("check_harm_dealt"), checkId: z.string(), targetId: z.string(), steps: z.number().int().positive() }),
     z.strictObject({ type: z.literal("swarm_set"), zone: z.string(), day: z.number().int(), at: z.number().int(), done: z.boolean(), met: z.boolean().optional() }),
@@ -1155,6 +1160,8 @@ export function createGameSchemas(s: Scenario) {
       forMission: z.string().optional(),
       /** 옮겨 가며 건 판정이면 가는 곳 (플레이 테스트 12: 잠입하며 건 은밀이 출발 구역 기준이라 임무로 세지 않았다) */
       dest: z.string().optional(),
+      /** 이야기 선택지 판정: 성공하면 임무로 세고, 빗나가도 임무 빗나감으로 세지 않는다 (12-258) */
+      story: z.boolean().optional(),
     }),
     z.strictObject({
       type: z.literal("harm_applied"),
@@ -1266,6 +1273,7 @@ export const EMPTY_STATE: GameState = {
   spawnedPlaces: {},
   npcStays: {},
   giftWelcomedDay: {},
+  timeCostDay: null,
   loans: {},
   cargo: {},
   exposedAt: {},
@@ -1522,6 +1530,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "check_cost_paid":
       mustGet(next.checks, event.checkId, "판정").harmApplied = true;
+      if (event.timeDay !== undefined) next.timeCostDay = event.timeDay;
       return next;
     case "check_harm_dealt": {
       const check = mustGet(next.checks, event.checkId, "판정");
@@ -2117,7 +2126,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
           markMissionMet(mission, state.time);
         }
         else {
-          // 빗나간 시도를 센다 (C2): 세 번이면 닫힌다
+          // 빗나간 시도를 센다 (C2): 세 번이면 닫힌다. 이야기 선택지 판정은 세지 않는다 (12-258, PT15 분대장: 이야기 실패에 임무 빗나감 30분까지 붙었다)
+          if (event.story) return;
           const fails = [...(mission.fails ?? [])];
           fails[i] = (fails[i] ?? 0) + 1;
           mission.fails = fails;
@@ -2132,6 +2142,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         ...(event.opponent ? { opponent: event.opponent } : {}),
         outcome: event.outcome,
         harmApplied: false,
+        at: state.time,
       };
       next.nextCheckNo += 1;
       break;

@@ -3,7 +3,7 @@
 
 - id: d_sl_gate_watch
   title: 정문 밤 경비
-  briefing: 수비대를 나눠 정문과 약제실 창고를 하룻밤 지킨다. 담 밖을 기웃거리는 사람이 있으면 누구인지 보고, 쏘지 말고 쫓는다. 총소리는 감염체도 부른다.
+  briefing: 수비대를 나눠 정문과 약제실 창고를 반나절 지킨다. 담 밖을 기웃거리는 사람이 있으면 누구인지 보고, 쏘지 말고 쫓는다. 총소리는 감염체도 부른다.
   giver_rank: leader
   deadline_hours: 14
   requirements:

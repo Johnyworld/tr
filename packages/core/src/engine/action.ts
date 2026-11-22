@@ -799,7 +799,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
           activity: !!input.activity && input.activity.kind !== "brief",
         }).stake,
         // 수색할 곳의 보정은 찾을 거리를 정하는 수색 판정에만 (플레이 테스트 14: 뒤지며 굴린 생존 판정에 "+1(넉넉한 곳) +1(역사)")
-        situation: exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? (!scenario.exploration?.search_move || input.check.move === scenario.exploration.search_move ? scavengeParts(ctx) : []) : input.forage ? forageParts(ctx, input.forage) : [],
+        situation: [
+          ...(exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? (!scenario.exploration?.search_move || input.check.move === scenario.exploration.search_move ? scavengeParts(ctx) : []) : input.forage ? forageParts(ctx, input.forage) : []),
+          // 방금 빗나간 상대에게 같은 스킬로 다시 하는 임무 판정은 한 단계 어렵다 (12-258, PT15 섬: 위협 실패 5분 뒤 같은 상대에게 다시 위협해 성공)
+          ...(forMission && !storyCheck && justMissedAgainst(start, input.check.move, input.check.opponent ?? input.target) ? [{ label: "방금 빗나간 상대", value: -1 }] : []),
+        ],
+        story: storyCheck,
       },
     );
     if (!roll.ok) {
@@ -1358,6 +1363,13 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
   return { lines, displays };
 }
 
+/** 이 상대에게 이 스킬로 한 시간 안에 빗나간 판정이 있는가 (12-258) */
+function justMissedAgainst(state: GameState, move: string, who: string | null | undefined): boolean {
+  if (!who) return false;
+  return Object.values(state.checks).some((c) => c.actorId === state.playerId && c.move === move && c.outcome === "miss" && (c.opponent ?? c.target) === who && c.at !== undefined && state.time - c.at <= RETRY_WINDOW_MINUTES);
+}
+const RETRY_WINDOW_MINUTES = 60;
+
 function lastCheckId(ctx: ToolContext): string {
   const checks = Object.values(ctx.store.getState().checks);
   return checks[checks.length - 1]!.checkId;
@@ -1453,11 +1465,22 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
       display: { type: "harm" as const, targetName: target.name, trackLabel: track.label, severityLabel: HARM_LABELS[severity], fatal: false, fromLabel: label, toLabel: label, cause },
     };
   }
+  if (base === 0 && state.timeCostDay === dayOf(state.time) && state.playerZone) {
+    // 같은 날 두 번째부터는 시간 대신 소리가 난다 (12-258, PT15 튜토리얼: 대가가 거듭 "일이 꼬여 30분")
+    store.append({ type: "noise_made", zone: state.playerZone, level: 1, day: dayOf(state.time) });
+    store.append({ type: "check_cost_paid", checkId });
+    const label = levelOf(track, target.conditions[track.id] ?? track.levels[0]!.id).label;
+    return {
+      fatal: false,
+      text: "다치지는 않았지만 소리를 냈다. 몇 시간 안에 이 구역에 무언가 몰려들 수 있다. 대가를 치른 모습을 서술한다.",
+      display: { type: "harm" as const, targetName: target.name, trackLabel: track.label, severityLabel: HARM_LABELS[severity], fatal: false, fromLabel: label, toLabel: label, cause },
+    };
+  }
   if (base === 0) {
     // 가벼운 위험의 대가 있는 성공: 다치지 않고 시간을 잃는다. 이 판정을 이어받는 이야기는 대가를 또 매기지 않는다 (플레이 테스트 12: 30분 + 경상)
     // 대가로 더 쓴 시간도 그 활동의 시간이다: 임무 수색이면 수색 시간으로 센다 (플레이 테스트 13)
     store.append({ type: "time_advanced", activity: spend?.activity ?? "brief", from: state.time, to: state.time + PARTIAL_TIME_COST, ...(spend?.forMission ? { forMission: spend.forMission } : {}) });
-    store.append({ type: "check_cost_paid", checkId });
+    store.append({ type: "check_cost_paid", checkId, timeDay: dayOf(state.time) });
     const label = levelOf(track, target.conditions[track.id] ?? track.levels[0]!.id).label;
     return {
       fatal: false,

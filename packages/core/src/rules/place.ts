@@ -89,6 +89,12 @@ export function storyPlaces(state: GameState, content: Content, places: readonly
   return places ? [...places] : placesIn(state, content, state.playerZone).filter((p) => !p.spawned && [p.name, ...p.aliases].some((a) => text.includes(a))).map((p) => p.id);
 }
 
+/** 수색 횟수를 세는 자리: 장소가 있으면 구역@장소, 없으면 구역 (12-258, PT15 튜토리얼: 매장을 뒤진 뒤 창고에서 "오늘 다시 뒤짐") */
+export function searchSpot(state: GameState): string | null {
+  if (!state.playerZone) return null;
+  return state.playerPlace ? `${state.playerZone}@${state.playerPlace}` : state.playerZone;
+}
+
 /** 지금 있는 곳의 이름 (장소, 없으면 구역) */
 export function hereName(state: GameState, content: Content): string {
   const zone = state.playerZone ? (content.locations[state.playerZone]?.name ?? state.playerZone) : "";

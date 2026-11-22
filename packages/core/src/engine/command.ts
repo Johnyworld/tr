@@ -1,3 +1,4 @@
+import { foundCount } from "./scavenge.ts";
 import { heldOf } from "../rules/held.ts";
 import { seasonAt } from "../sim/season.ts";
 import { stockOutlook } from "../sim/war.ts";
@@ -229,13 +230,17 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
       }
       if (task.rewards.loot) {
         const loot = content.locations[order.zone]?.loot;
-        // 전리품은 성공일 때만 (12-220, 숨은 확률 대신 판정 결과)
-        if (loot?.items.length && !half) {
+        // 전리품은 주인공의 수색과 같은 셈: 성공 둘, 대가 있는 성공 하나 (12-258, PT15 분대장: 대가 있는 성공인데 건진 것이 상태에 없었다)
+        if (loot?.items.length) {
           const total = loot.items.reduce((n, i) => n + i.weight, 0);
-          let pick = rng() * total;
-          const entry = loot.items.find((i) => (pick -= i.weight) < 0) ?? loot.items.at(-1)!;
-          store.append({ type: "item_granted", to: state.playerId, itemId: entry.item, quantity: entry.qty[0] });
-          lines.push(`${content.items[entry.item]?.name ?? entry.item} ×${josa(String(entry.qty[0]), "을/를")} 가져왔다`);
+          const got: string[] = [];
+          for (let k = 0; k < foundCount(outcome); k++) {
+            let pick = rng() * total;
+            const entry = loot.items.find((i) => (pick -= i.weight) < 0) ?? loot.items.at(-1)!;
+            store.append({ type: "item_granted", to: state.playerId, itemId: entry.item, quantity: entry.qty[0] });
+            got.push(`${content.items[entry.item]?.name ?? entry.item} ×${entry.qty[0]}`);
+          }
+          if (got.length) lines.push(`${josa(got.join(", "), "을/를")} 가져와 분대장에게 건넸다`);
         }
       }
       // 데려온 사람 (12-140): 무리의 입과 손이 함께 는다

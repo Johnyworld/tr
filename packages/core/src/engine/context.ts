@@ -1,3 +1,4 @@
+import { staunchHelper } from "../rules/company.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
 import { josa } from "../text.ts";
@@ -151,7 +152,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
             `${incapacitatingSymptom(scenario, player)!.label}: 주인공은 스스로 아무것도 하지 못한다. 말하지도 움직이지도 판정하지도 않는다. 흐릿한 감각(소리, 냄새, 몸의 고통)의 조각만 짧게 서술하고, take_action의 activity(wait 또는 sleep, 전투 중이면 null)로 시간이 흐르게 한다. 이야기는 열리지 않는다. 곁의 사람(우리 편·적)이 주인공에게 무엇을 하는지는 코드가 정하고 take_action 결과로 알린다: 옮기거나 붙잡거나 해치는 일을 서술로 지어내지 않는다. 장면의 치료사가 돌보면 treatment {item: null}`,
           ]
         : []),
-      ...bleedingLine(content, player),
+      ...bleedingLine(content, player, state),
       `소지품: ${describeInventory(content, player.inventory)}`,
       ...depositLines(state, content),
       ...(describeStash(content, state) ? [describeStash(content, state)!] : []),
@@ -697,7 +698,7 @@ const MENACE_LABELS = {
 } as const;
 
 /** 피를 흘리는 중이면 GM에게 지혈하는 길을 알린다 (12-91) */
-function bleedingLine(content: Content, player: Character): string[] {
+function bleedingLine(content: Content, player: Character, state: GameState): string[] {
   const w = content.scenario.wounds;
   if (!w || player.dead) return [];
   const track = content.scenario.condition_tracks.find((t) => t.id === w.track);
@@ -708,6 +709,13 @@ function bleedingLine(content: Content, player: Character): string[] {
   return [
     `피를 흘리고 있다 (${track.label}): ${every ? `멎지 않으면 ${every}시간마다 부상이 한 단계 나빠지고, 정신이 들거나 저절로 낫지 않는다` : "곧 저절로 멎는다"}. ` +
       `지혈은 붕대·구급상자(treatment.item + check move ${w.staunch_move}), 장면의 치료사(treatment {item: null}), 맨손(treatment {item: null} + check move ${w.staunch_move}, 옷을 찢어 누르기 등). ${w.staunch_move} 판정은 못 함이어도 굴린다 (공통 규칙 12)`,
+    // 곁의 사람이 언제 묶어 주는지 (12-256, 공통 규칙 8)
+    ...(() => {
+      const h = player.id === state.playerId ? staunchHelper(state, content, player.id) : null;
+      if (!h) return [];
+      const name = playerCalls(state, content, h.id);
+      return [h.blocked ? `곁의 ${josa(name, "은/는")} 위협이 가시면 지혈한다.` : `곁의 ${josa(name, "이/가")} 이번 행동이 끝날 때 지혈한다.`];
+    })(),
   ];
 }
 

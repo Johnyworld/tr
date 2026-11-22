@@ -70,7 +70,7 @@ export function rollPlayerCheck(
   /** purpose: 못 함이어도 굴리는 까닭 (지혈·버티는 판정, 공통 규칙 12) */
   /** reaction: 주인공이 하는 일이 아니라 닥친 일에 버티는 판정 (마음 다잡기, 12-220). 매복·혼란을 쓰지 않고 경험도 주지 않는다 */
   /** situation: 그 일의 상황 보정 (수색할 곳의 넉넉함, 다시 뒤짐 같은 것, 12-220) */
-  options: { target?: string | null; allies?: readonly string[]; forMission?: string | null; noTools?: boolean; forage?: string | null; purpose?: AttemptPurpose | null; dest?: string | null; toolItem?: string | null; activity?: string | null; stakes?: boolean; escape?: boolean; reaction?: boolean; situation?: { label: string; value: number }[] } = {},
+  options: { target?: string | null; allies?: readonly string[]; forMission?: string | null; noTools?: boolean; forage?: string | null; purpose?: AttemptPurpose | null; dest?: string | null; toolItem?: string | null; activity?: string | null; unarmed?: boolean; stakes?: boolean; escape?: boolean; reaction?: boolean; situation?: { label: string; value: number }[] } = {},
 ): PlayerCheckResult {
   const scenario = content.scenario;
   const state = store.getState();
@@ -99,7 +99,9 @@ export function rollPlayerCheck(
   const squad = helper?.bonus ?? 0;
   const skill = base + traitSkillMod(content, actor, input.move) + Math.max(companion, squad);
   // 손에 든 무기·지닌 도구의 보정은 상한 안에서, 방어구·짐의 불리함은 따로 (기획서 4.8)
-  const rawGear = gearModifiers(content, actor, input.move, input.distance, state, options.forage ?? null, { ...(options.toolItem !== undefined ? { item: options.toolItem } : {}), activity: options.activity ?? null });
+  // 맨손 (12-256): 손에 든 무기는 이 판정에 쓰지 않는다
+  const gearActor = options.unarmed ? { ...actor, equipped: { ...actor.equipped, weapon: null } } : actor;
+  const rawGear = gearModifiers(content, gearActor, input.move, input.distance, state, options.forage ?? null, { ...(options.toolItem !== undefined ? { item: options.toolItem } : {}), activity: options.activity ?? null });
   const gear = options.noTools ? { ...rawGear, skill: 0 } : rawGear;
   const capped = Math.min(scenario.ranges.cap, ability + skill + gear.skill);
   // 판정 줄에 보일 상한 안의 내역: 스킬, 트레잇, 동행·분대, 무기·도구, 상한에 잘린 만큼

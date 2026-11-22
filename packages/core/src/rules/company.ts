@@ -2,7 +2,9 @@
  * 공통 규칙 8: 곁의 사람 (docs/design.md "공통 규칙").
  *
  * 누가 곁에 있는지는 여기서 정하고, 곁의 사람이 하는 일도 여기서 정한다:
- * - 돕는다 (helperFor): 곁의 사람 동행 가운데 그 판정을 잘하는 사람(스킬 1 이상)이 있으면 +1 (플레이 테스트 13: 분대원 보정이 근접전·사격에만 붙었다)
+ * - 돕는다 (helperFor): 곁의 사람 동행 가운데 그 판정을 잘하는 사람(스킬 1 이상)이 있으면 +1 (플레이 테스트 13: 분대원 보정이 근접전·사격에만 붙었다).
+ *   맞서 싸우는 판정은 with로 함께 싸우는 사람이 스킬이 없어도 +1 (12-256)
+ * - 지혈한다 (staunchHelper): 피 흘리는 주인공을 곁의 사람이 묶는다. 위협이 없으면 그 행동이 끝날 때 (12-256)
  * - 위험을 나눈다 (shareHarmWith): 상대가 있는 판정이 실패해 2단계를 다치게 되면 곁의 사람 하나가 1단계를 대신 받는다 (플레이 테스트 13: 분대원 넷 곁에서 혼자 싸우다 죽었다)
  * 동물 동행의 재주(companion_bonus, 가르친 재주)는 그대로 동물의 몫이다.
  */
@@ -14,6 +16,7 @@ import { effectiveSkill } from "../engine/traits.ts";
 import { harmTrack, incapacitatingSymptom } from "../scenario/scenario.ts";
 import { tiesOf } from "../game/ties.ts";
 import { heldOf } from "./held.ts";
+import { threatInScene } from "./situation.ts";
 import { roleOf } from "../game/state.ts";
 import { squadMembers } from "../engine/command.ts";
 
@@ -50,7 +53,26 @@ export function helperFor(state: GameState, content: Content, move: string, alli
     const skill = effectiveSkill(content, state.characters[id]!, move);
     if (skill >= 1 && (!best || skill > best.skill)) best = { id, skill };
   }
-  return best ? { id: best.id, bonus: 1 } : null;
+  if (best) return { id: best.id, bonus: 1 };
+  // 맞서 싸우는 판정(시나리오의 attack_moves)은 with로 함께 싸우는 사람이 스킬이 없어도 숫자로 돕는다 (12-256, PT15 분대장: 분대원 셋을 with에 넣었는데 감염체 하나에 치명상)
+  const fighting = content.scenario.gear?.attack_moves.includes(move) ?? false;
+  return fighting && withHere[0] ? { id: withHere[0], bonus: 1 } : null;
+}
+
+/**
+ * 피 흘리는 주인공을 묶어 줄 곁의 사람 (12-256, 공통 규칙 8): 곁의 동행이나 같은 무리의 장면 사람, 움직일 수 있고 갇히지 않은 사람.
+ * 적대하는 위협이 장면에 있으면 아직 못 한다 (blocked). 사람이 없으면 null
+ * (PT15 분대장: 분대원 넷 곁에서 45분을 피 흘리다 의무실로 옮긴 뒤에야 지혈됐다. 언제 도는지 알 수 없었다)
+ */
+export function staunchHelper(state: GameState, content: Content, bleeder: string): { id: string; blocked: boolean } | null {
+  const me = state.characters[bleeder];
+  if (!me) return null;
+  const id = [...activeCompanions(state), ...state.scene.present].find((h) => {
+    const x = state.characters[h];
+    return !!x && h !== bleeder && !x.dead && !heldOf(x) && !isCreature(content, x) && !incapacitatingSymptom(content.scenario, x) && (activeCompanions(state).includes(h) || (!!me.factionId && x.factionId === me.factionId));
+  });
+  if (!id) return null;
+  return { id, blocked: !!state.battle || threatInScene(state, content).length > 0 };
 }
 
 /** 피해 1단계를 대신 받을 곁의 사람: 치명상 아래인 사람 동행 (먼저 들어온 사람부터). 없으면 null */

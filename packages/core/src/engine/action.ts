@@ -138,6 +138,7 @@ export function createTakeActionSchema(s: Scenario) {
             "target(장면의 인물)을 다치게 하려는 공격이면 판정 전에 선언하는 상대의 피해. 성공이면 선언한 만큼, 대가 있는 성공이면 1단계, 실패면 없음. " +
               "상대가 중상 이상이면 무력화되어 소지품을 뒤질 수 있다. 공격이 아니면 none",
           ),
+        unarmed: z.boolean().default(false).describe("손에 든 무기를 쓰지 않고 맨손으로 치면 true (주먹·멱살·밀치기). 무기 보정·탄·내구도를 쓰지 않는다 (12-256)"),
         distance: z
           .string()
           .nullable()
@@ -295,6 +296,7 @@ export function createTakeActionSchema(s: Scenario) {
     treatment: z
       .strictObject({
         item: z.string().nullable().describe("치료에 쓸 아이템 id (구급상자 등). 장면에 있는 치료사에게 받거나, 다른 사람을 아이템 없이 돌보면 null"),
+        healer: z.string().nullable().default(null).describe("치료사를 고를 때 그 치료사 id (장면에 있어야 한다). null이면 코드가 고른다: 수술감이면 수술할 줄 아는 사람, 아니면 솜씨 좋은 사람"),
         target: z
           .string()
           .nullable()
@@ -529,12 +531,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 물건 (기획서 4.8): 공격은 손에 든 무기로, 탄약이 있어야 쏜다. 제작·수리는 재료와 판정. 너무 무거우면 옮겨 가지 못한다
   const gearRules = content.scenario.gear;
   const attacking = !!input.check && !!gearRules && ((!!input.target && input.check.target_harm !== "none") || (inBattle && gearRules.attack_moves.includes(input.check.move)));
-  const attack = attacking ? planAttack(content, player, input.check!.move, input.check!.target_harm) : null;
+  // 맨손으로 치면 손에 든 무기는 이 판정에 쓰지 않는다 (12-256, PT15 졸병: 주먹을 날렸는데 "+1(야구방망이)")
+  const fighter = input.check?.unarmed ? { ...player, equipped: { ...player.equipped, weapon: null } } : player;
+  const attack = attacking ? planAttack(content, fighter, input.check!.move, input.check!.target_harm) : null;
   if (typeof attack === "string") return { ok: false, error: attack };
   // 사거리 (12-93): 장면의 인물을 치면 거리를 고르고, 무기가 닿는 거리여야 한다. 전투 라운드의 공격은 거리를 고르면 보정만
   const strikes = !!input.check && !!input.target && input.check.target_harm !== "none";
   if (input.check && (strikes || input.check.distance)) {
-    const far = rangeProblem(content, player, input.check.move, input.check.distance);
+    const far = rangeProblem(content, fighter, input.check.move, input.check.distance);
     if (far) return { ok: false, error: far };
   }
   if (input.build) {
@@ -748,7 +752,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const fuel = !!input.use_item && !!scenario.body?.cold?.climate?.fire?.items[input.use_item];
     const problem =
       (input.use_item && !fuel ? itemUseProblem(ctx, input.use_item) : null) ??
-      (input.treatment ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay)) : null) ??
+      (input.treatment ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay), input.treatment.healer) : null) ??
       (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null) ??
       (input.trap ? trapProblem(ctx, input.trap) : null);
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
@@ -774,7 +778,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       ctx,
       // 응급처치로 피를 멎게 하는 것은 누구나 한다 (배우지 않았으면 미숙 -1, 플레이 테스트 12: 붕대로도 지혈하지 못했다)
       // 수색·먹을 것 구하기의 상황 보정 (12-220): 곳의 넉넉함, 다시 뒤짐. 들킬까 숨는 판정(exposed)에는 붙이지 않는다
-      { target: input.target, allies: input.with, forMission, noTools: !!input.train, forage: input.forage, purpose: input.treatment ? "staunch" : null, dest: escapeAttempt ? null : input.move_to,
+      { target: input.target, allies: input.with, forMission, noTools: !!input.train, unarmed: input.check.unarmed, forage: input.forage, purpose: input.treatment ? "staunch" : null, dest: escapeAttempt ? null : input.move_to,
         // 치료 판정은 쓰는 물건의 보정만 (플레이 테스트 12: 붕대를 썼는데 "+1(구급상자)", 물건 없이도 붙었다)
         // 치료 없이 건 응급처치 판정도 도구 없이 (플레이 테스트 13: treatment 없는 응급처치에 "+1(붕대)")
         ...(input.treatment ? { toolItem: input.treatment.item ?? null } : input.check.move === scenario.wounds?.staunch_move ? { toolItem: null } : {}),
@@ -1010,7 +1014,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 
   // 1-1-1. 치료 (낫는 정도는 시스템이 정한다)
   for (const [request, run] of [
-    [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null, feeChoice(input.treatment!.pay) ?? "default")],
+    [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null, feeChoice(input.treatment!.pay) ?? "default", input.treatment!.healer)],
     [input.use_item, () => useItem(ctx, input.use_item!)],
     [input.drink || null, () => drinkWater(ctx)],
     [input.refill || null, () => refillWater(ctx)],

@@ -422,7 +422,7 @@ function mentionedIds(input: unknown): string[] {
   for (const k of ["with", "place_with"]) if (Array.isArray(o[k])) ids.push(...(o[k] as unknown[]).filter((x): x is string => typeof x === "string"));
   for (const k of ["check", "treatment"]) {
     const sub = o[k] as Record<string, unknown> | null | undefined;
-    if (sub && typeof sub === "object") for (const kk of ["opponent", "target"]) if (typeof sub[kk] === "string") ids.push(sub[kk] as string);
+    if (sub && typeof sub === "object") for (const kk of ["opponent", "target", "healer"]) if (typeof sub[kk] === "string") ids.push(sub[kk] as string);
   }
   return [...new Set(ids)];
 }

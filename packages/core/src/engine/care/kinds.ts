@@ -17,12 +17,37 @@ import { type FeeChoice, planHealerPay, payHealer } from "./fee.ts";
 import { needsSurgery, canOperate, surgeonRoll, operate } from "./surgery.ts";
 import { ownedBy } from "../../rules/home.ts";
 import { quarantineAfterCare } from "./quarantine.ts";
-import { nearby } from "../../rules/place.ts";
+import { nearby, whereIs } from "../../rules/place.ts";
+/**
+ * 이 환자를 돌볼 장면의 치료사 (12-256): GM이 고른 사람(treatment.healer)이 있으면 그 사람, 아니면 수술감이면 수술할 줄 아는 사람,
+ * 그 밖에는 지혈 솜씨가 가장 좋은 사람 (PT15 분대장: 수술할 줄 아는 윤채원이 곁에 있는데 장면의 첫 치료사를 골라 "수술을 할 줄 몰라")
+ */
+export function healerFor(ctx: ToolContext, patient: string, chosen: string | null = null): string | null {
+  const state = ctx.store.getState();
+  const all = state.scene.present.filter((id) => ctx.content.npcs[id]?.healer && id !== patient);
+  if (chosen) return all.includes(chosen) ? chosen : null;
+  if (needsSurgery(ctx, patient)) {
+    const cut = all.find((id) => canOperate(ctx, id));
+    if (cut) return cut;
+  }
+  const move = ctx.content.scenario.wounds?.staunch_move;
+  const skill = (id: string) => (move ? effectiveSkill(ctx.content, state.characters[id]!, move) : 0);
+  return [...all].sort((a, b) => skill(b) - skill(a) || all.indexOf(a) - all.indexOf(b))[0] ?? null;
+}
+
+/** 이 구역에서 수술할 줄 아는 치료사 (장면에 없는 사람도. 알려 주기용) */
+function surgeonsNearby(ctx: ToolContext): string[] {
+  const state = ctx.store.getState();
+  return Object.values(ctx.content.npcs)
+    .filter((n) => n.healer && !heldOf(state.characters[n.id]) && !state.characters[n.id]?.dead && whereIs(state, ctx.content, n.id)?.zone === state.playerZone && canOperate(ctx, n.id))
+    .map((n) => `${playerCalls(state, ctx.content, n.id)} (${n.id})`);
+}
+
 /**
  * 치료사에게 자기 치료를 받을 수 없는 까닭 (물건 없이, 판정·시간 전에 본다, 플레이 테스트 11). 받을 수 있으면 null.
  * 피가 나는데 치료사가 없으면 맨손 지혈로 넘어가므로 막지 않는다
  */
-export function selfTreatmentProblem(ctx: ToolContext, patientId?: string, pay: FeeChoice = "default"): string | null {
+export function selfTreatmentProblem(ctx: ToolContext, patientId?: string, pay: FeeChoice = "default", chosen: string | null = null): string | null {
   const recovery = ctx.content.scenario.recovery;
   if (!recovery) return "이 시나리오에는 치료 규칙이 없다.";
   const state = ctx.store.getState();
@@ -30,7 +55,8 @@ export function selfTreatmentProblem(ctx: ToolContext, patientId?: string, pay: 
   const player = state.characters[patientId ?? state.playerId]!;
   const other = player.id !== state.playerId;
   const who = other ? `${playerCalls(state, ctx.content, player.id)}의 ` : "";
-  const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer && id !== player.id);
+  const healer = healerFor(ctx, player.id, chosen);
+  if (chosen && !healer) return `${playerCalls(state, ctx.content, chosen)}(${chosen})은 장면의 치료사가 아니다. treatment.healer는 장면에 있는 치료사 id다.`;
   if (!healer) {
     const w = ctx.content.scenario.wounds;
     if (w && levelIndex(ctx, state, player.id, w.track) > 0) return null;
@@ -58,6 +84,7 @@ export function applyTreatment(
   targetId: string | null = null,
   check: { move: string; outcome: CheckOutcome } | null = null,
   pay: FeeChoice = "default",
+  chosen: string | null = null,
 ): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   // 응급처치 (플레이 테스트 11, A9): 물건으로든 맨손으로든, 자기든 남이든 판정 하나로 정한다. 장면의 치료사에게 받는 치료만 따로
   const me0 = ctx.store.getState();
@@ -69,9 +96,9 @@ export function applyTreatment(
   if (!recovery) return { ok: false, error: "이 시나리오에는 치료 규칙이 없다." };
   const state = ctx.store.getState();
   const player = state.characters[patient]!;
-  const healer = state.scene.present.find((id) => ctx.content.npcs[id]?.healer && id !== patient);
+  const healer = healerFor(ctx, patient, chosen);
   // 고른 값(pay)을 그대로 넘긴다: 빠뜨리면 미리 보기는 통과하고 여기서 코드가 고른 값으로 다시 따져 시간만 흐른 뒤 거절됐다 (플레이 테스트 14, 동무조 T27·T28)
-  const problem = selfTreatmentProblem(ctx, patient, pay);
+  const problem = selfTreatmentProblem(ctx, patient, pay, chosen);
   if (problem) return { ok: false, error: problem };
   if (!healer) return { ok: false, error: "치료해 줄 사람이 장면에 없다." };
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
@@ -89,7 +116,10 @@ export function applyTreatment(
   const canCut = cutting && canOperate(ctx, healer);
   const surgery = canCut ? surgeonRoll(ctx, healer) : null;
   if (surgery) lines.push(surgery.line);
-  if (cutting && !canCut) lines.push(`${josa(name, "은/는")} 수술을 할 줄 몰라 상처는 손대지 못했다. 수술할 줄 아는 사람을 찾아야 한다.`);
+  if (cutting && !canCut) {
+    const surgeons = surgeonsNearby(ctx);
+    lines.push(`${josa(name, "은/는")} 수술을 할 줄 몰라 상처는 손대지 못했다. ${surgeons.length ? `이 구역에서 수술할 줄 아는 사람: ${surgeons.join(", ")}.` : "이 구역에는 수술할 줄 아는 사람이 없다. 다른 곳의 치료사를 찾아야 한다."}`);
+  }
   for (const [t, steps] of Object.entries(recovery.healer)) {
     if (again && t !== ctx.content.scenario.wounds?.track) continue;
     if (cutting && !canCut && t === ctx.content.scenario.harm_track) continue;
@@ -124,11 +154,11 @@ export function isFirstAidItem(content: ToolContext["content"], item: string): b
  * 부상이 낫는 것은 한 사람에게 하루 한 번 (치료사의 치료와 같이 센다)
  */
 /** 치료 요청을 시간 쓰기 전에 본다 (치료사에게 받기 또는 응급처치). 할 수 있으면 null */
-export function treatmentProblem(ctx: ToolContext, item: string | null, targetId: string | null, checkMove: string | null, pay: FeeChoice = "default"): string | null {
+export function treatmentProblem(ctx: ToolContext, item: string | null, targetId: string | null, checkMove: string | null, pay: FeeChoice = "default", chosen: string | null = null): string | null {
   const state = ctx.store.getState();
   const self = !targetId || targetId === state.playerId;
   const patient = self ? state.playerId : targetId!;
-  if (!item && (self || !checkMove) && state.scene.present.some((id) => ctx.content.npcs[id]?.healer && id !== patient)) return selfTreatmentProblem(ctx, patient, pay);
+  if (!item && (self || !checkMove) && state.scene.present.some((id) => ctx.content.npcs[id]?.healer && id !== patient)) return selfTreatmentProblem(ctx, patient, pay, chosen);
   return firstAidProblem(ctx, item, self ? state.playerId : targetId!, checkMove).error;
 }
 

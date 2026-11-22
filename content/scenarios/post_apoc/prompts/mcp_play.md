@@ -20,7 +20,7 @@
 - transfer_item `{ from, to, item_id, quantity }` (빚을 갚으려고 건네면 `repay: true`, 맡기면 `deposit: "조건"`)
 - run_command `{ input: "?상태" }` · record_turn_summary `{ text }`
 - barter `{ npc_id, give: { 아이템id: 수량 }, get: { 아이템id: 수량 }, move, stat }` (값이 모자라 흥정하지 않으면 move·stat은 null)
-- take_action의 check `{ move, stat, difficulty, harm_on_failure: "none" | "light" | "heavy", harm_cause }` (상대가 있으면 target 또는 opponent, distance). activity는 `{ kind, until, hours }` (until은 시간대 이름, hours는 0.5 단위 시간 수, 둘 중 하나. eat·talk·brief·search는 둘 다 null). 물가에서 물에 들어가면 `wade: true`
+- take_action의 check `{ move, stat, difficulty, harm_on_failure: "none" | "light" | "heavy", harm_cause }` (상대가 있으면 target 또는 opponent, distance. 손에 든 무기를 두고 맨손으로 치면 unarmed: true. 함께 싸우는 사람은 with에 넣으면 스킬이 없어도 돕는다). activity는 `{ kind, until, hours }` (until은 시간대 이름, hours는 0.5 단위 시간 수, 둘 중 하나. eat·talk·brief·search는 둘 다 null). 물가에서 물에 들어가면 `wade: true`
 - 이야기가 열려 있으면: resolve_storylet `{ choice_id }`, 두고 가면 take_action에 `ignore_story: true`
 - 즉흥 이야기 자리가 열려 있으면 (12-247): improvise_storylet `{ title, setup, cast: [{ key, character_id }], choices: [{ id, label, check, reward: "none"|"small"|"medium", reward_kind: "item"|"relation"|"merit"|null, reward_item, reward_who, reward_axis, cost: "none"|"relation"|"noise"|"time"|"body"|"give", cost_who, cost_item }] }`. 연 뒤는 보통 이야기처럼 resolve_storylet
 - 임무: 요건과 맞는 행동(그 판정·그 활동·이동)을 임무 장소에서 하면 저절로 임무로 센다. 임무와 상관없는 일이면 신경 쓰지 않아도 된다

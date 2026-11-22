@@ -1,4 +1,5 @@
 import { heldOf } from "../rules/held.ts";
+import { staunchHelper } from "../rules/company.ts";
 import { activeCompanions } from "../game/companions.ts";
 import { isCreature } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -22,6 +23,7 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 const rules = (ctx: ToolContext) => ctx.content.scenario.wounds;
 
 /** 곁의 사람이 주인공의 피를 멎게 하기까지 (분) */
+/** 갇힌 주인공의 상처를 붙잡은 쪽이 묶어 주기까지 (분) */
 const HELPER_STAUNCH_MINUTES = 60;
 
 const levelIndexOf = (ctx: ToolContext, c: Pick<Character, "conditions">, trackId: string) => {
@@ -138,15 +140,12 @@ function bleedOne(ctx: ToolContext, id: string): ToolDisplayEvent[] {
   const elapsed = state.time - since;
   const clot = w.clot_hours[level.id];
   if (clot !== undefined && elapsed >= clot * 60) return stopBleeding(ctx, id, "피가 저절로 멎었다");
-  // 곁의 사람 (플레이 테스트 8): 주인공이 피를 흘리면 곁의 동행이나 같은 무리 사람이 한 시간 안에 지혈한다 (임무 짝도)
-  if (id === state.playerId && elapsed >= HELPER_STAUNCH_MINUTES) {
-    const helper = [...activeCompanions(state), ...state.scene.present].find((h) => {
-      const x = state.characters[h];
-      return !!x && h !== id && !x.dead && !heldOf(x) && !isCreature(ctx.content, x) && !incapacitatingSymptom(ctx.content.scenario, x) && (activeCompanions(state).includes(h) || (!!c.factionId && x.factionId === c.factionId));
-    });
-    if (helper) return stopBleeding(ctx, id, `곁에 있던 ${playerCalls(state, ctx.content, helper)}의 지혈`);
+  // 곁의 사람 (플레이 테스트 8, 12-256 공통 규칙 8): 위협이 장면에 없으면 그 행동이 끝날 때 곁의 동행이나 같은 무리 사람이 지혈한다
+  if (id === state.playerId) {
+    const helper = staunchHelper(state, ctx.content, id);
+    if (helper && !helper.blocked) return stopBleeding(ctx, id, `곁에 있던 ${playerCalls(state, ctx.content, helper.id)}의 지혈`);
     // 갇힌 주인공은 붙잡은 쪽이 묶어 준다: 노역에 쓰거나 몸값을 받을 포로다 (플레이 테스트 12: 감방에서 세 시간 동안 피를 흘리다 죽었다)
-    if (heldOf(c)) return stopBleeding(ctx, id, "붙잡은 쪽이 상처를 묶었다");
+    if (heldOf(c) && elapsed >= HELPER_STAUNCH_MINUTES) return stopBleeding(ctx, id, "붙잡은 쪽이 상처를 묶었다");
   }
   const every = w.worsen_hours[level.id];
   if (every === undefined) return [];

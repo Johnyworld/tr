@@ -35,9 +35,10 @@ export function missionExcuse(state: GameState, content: Content, mission: Missi
   const badFrom = harm.levels.findIndex((l) => l.id === content.scenario.recovery?.surgery?.from);
   const badly = badFrom >= 0 && harm.levels.findIndex((l) => l.id === who.conditions[harm.id]) >= badFrom;
   const down = incapacitatingSymptom(content.scenario, who) ?? (badly ? { label: harm.label } : null);
-  if (down) return { cause: "incapacitated", label: `다쳐서 못 마침 (${down.label})` };
+  // 붙잡힌 것이 먼저다: 갇힌 채 다쳤어도 까닭은 붙잡힘 (12-262, PT17 졸병: "다쳐서 못 마침 (부상)")
   const held = heldOf(who);
   if (held) return { cause: "captured", label: `붙잡혀 못 마침 (${content.factions[held.by]?.name ?? held.by})` };
+  if (down) return { cause: "incapacitated", label: `다쳐서 못 마침 (${down.label})` };
   const freed = lastFreedAt(state);
   if (freed !== null && freed > mission.assignedAt && freed >= mission.deadline - FREED_GRACE_MINUTES) {
     return { cause: "captured", label: "붙잡혀 못 마침 (붙잡혔다 빠져나온 길)" };

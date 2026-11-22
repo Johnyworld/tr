@@ -910,6 +910,10 @@ export function createContentSchemas(s: Scenario) {
        * 같은 구역에 있을 때 그 장소로 가서(장소를 모르면 찾아가) 장면에 들이고, 다른 구역이면 고를 수 없다
        */
       meets: contentIdSchema.optional(),
+      /** 이 선택지로 주인공이 옮겨 가는 지금 구역의 장소 (따라 나가기 등, 12-262). 장면의 배역은 함께 간다 */
+      goes_to: contentIdSchema.optional(),
+      /** 이 선택지 뒤 장면을 떠나는 배역 (어디론가 들어갔다·떠났다, 12-262. PT17 섬: 저장고로 들어간 사람이 장면에 남아 짝이 됐다) */
+      leaves: z.array(contentIdSchema).optional(),
       /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */
       check: idEnum(moveIds(s)).optional(),
       effects: z.array(storyletEffect).default([]),

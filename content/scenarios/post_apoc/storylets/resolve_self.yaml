@@ -9,6 +9,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     resolve: { kinds: [journey], stage: 0 }
   setup: "길가에서 그물을 깁던 노인이 남쪽 물길을 안다고 한다. 섬까지 노를 저어 간 사람이 있었다고. 돌아온 사람은 못 봤다고."
   ai_direction: "{target}까지 가는 길은 쉽지 않다 (배, 물살, 섬의 감시). 이 장면은 길이 있다는 것을 아는 순간."

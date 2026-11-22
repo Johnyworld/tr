@@ -515,7 +515,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const w = whereIs(start, content, id);
     return !!w && w.zone === start.playerZone && w.place === input.place_to;
   };
-  const arriving = [input.target, input.check?.opponent].filter((id): id is string => !!id && !start.scene.present.includes(id) && atDest(id));
+  // 옮겨 가는 장소의 치료사도 (12-262, PT17 분대장·졸병: place_to와 치료를 한 턴에 하면 치료사를 못 찾았다)
+  const destHealers = input.treatment && !input.treatment.item && input.place_to && input.place_to !== ENTRY_PLACE ? Object.values(content.npcs).filter((n) => n.healer && !start.scene.present.includes(n.id) && atDest(n.id)).map((n) => n.id) : [];
+  const arriving = [input.target, input.check?.opponent, ...destHealers].filter((id): id is string => !!id && !start.scene.present.includes(id) && atDest(id));
   if (input.target && !start.scene.present.includes(input.target) && !arriving.includes(input.target)) {
     // 호칭으로 (플레이 테스트 12: 오류 문구에 id가 나왔다). id는 괄호로 함께 둬 GM이 고칠 수 있게
     const who = start.characters[input.target] ? `${playerCalls(start, content, input.target)}(${input.target})` : input.target;
@@ -694,7 +696,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)
     // 따돌리려는 은밀의 상대는 함께 가지 않는다: 실패하면 쫓아온다 (PT15 분대장: 따돌리려던 감염체가 판정 전에 "함께 왔다")
     const evading = !!input.check?.opponent && input.check.move === scenario.move_roles.stealth;
-    const involved = [input.target, evading ? null : input.check?.opponent, input.treatment?.target, ...input.with].filter((id): id is string => !!id);
+    // 이야기가 열린 채 옮기면(판정이 붙은 이동) 장면의 이야기 배역도 따라온다 (12-262, PT17 분대장: 감염체 배역이 원래 자리에 남았다)
+    const storyCast = start.activeStorylet && !input.ignore_story && !evading ? Object.values(start.activeStorylet.cast ?? {}).filter((id) => start.scene.present.includes(id)) : [];
+    const involved = [input.target, evading ? null : input.check?.opponent, input.treatment?.target, ...input.with, ...storyCast].filter((id): id is string => !!id);
     if ((to?.id ?? null) !== (currentPlace(start, content)?.id ?? null)) placeMove = { to, along: comesAlong(start, content, to?.id ?? null, involved), involved };
   }
   // 함께하는 사람은 장면에 있어야 한다 (공통 규칙 8의 내 편, 사용자 결정 PT14: target 말고 with)
@@ -758,13 +762,15 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     return { ok: false, error: `${josa(content.items[input.use_item]?.name ?? input.use_item, "이/가")} 없다. 가진 물건만 쓴다 (상태의 소지품).` };
   }
   // 물건 없이 치료를 부르면 같은 장소의 치료사를 장면에 들인다 (12-261, 공통 규칙 15)
-  if (input.treatment && !input.treatment.item) for (const id of healersHere(ctx)) enterScene(ctx, id);
+  const healersIn = input.treatment && !input.treatment.item && !input.place_to ? healersHere(ctx) : [];
+  for (const id of healersIn) enterScene(ctx, id);
+  if (healersIn.length) lines.push(`(같은 장소에 있던 ${healersIn.map((id) => playerCalls(store.getState(), content, id)).join(", ")}${josa(playerCalls(store.getState(), content, healersIn.at(-1)!), "을/를").slice(playerCalls(store.getState(), content, healersIn.at(-1)!).length)} 장면에 들였다)`);
   // 할 수 없는 일은 판정·시간 전에 막는다 (플레이 테스트 11: 쓸 필요 없는 붕대, 치료사 아닌 사람의 치료, 거점 안 사냥이 판정과 30분을 쓴 뒤 거절됐다)
   {
     const fuel = !!input.use_item && !!scenario.body?.cold?.climate?.fire?.items[input.use_item];
     const problem =
       (input.use_item && !fuel ? itemUseProblem(ctx, input.use_item) : null) ??
-      (input.treatment ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay), input.treatment.healer) : null) ??
+      (input.treatment && !destHealers.length ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay), input.treatment.healer) : null) ??
       (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null) ??
       (input.trap ? trapProblem(ctx, input.trap) : null);
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
@@ -1077,7 +1083,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       const deceived = !!input.check && input.check.move === scenario.move_roles.deceive && (outcome === "success" || outcome === "partial");
       const companionsNow = new Set(activeCompanions(store.getState()));
       const fooled = deceived ? store.getState().scene.present.filter((id) => !companionsNow.has(id)) : undefined;
-      const { deed, visible } = recordDeed(ctx, { ...input.deed, byGm: true }, undefined, fooled);
+      // 당한 사람은 가치관으로 마음이 오르지 않는다 (12-262, PT17 분대장: 원망 -2에 가치관 +1이 섞여 -1)
+      const offenseTags = scenario.offense?.tags ?? [];
+      const victim = input.target && input.deed.tags.some((t) => offenseTags.includes(t as never)) ? input.target : null;
+      const { deed, visible } = recordDeed(ctx, { ...input.deed, byGm: true, victim }, undefined, fooled);
       const fooledNames = (fooled ?? []).map((id) => playerCalls(store.getState(), content, id));
       const wronged = wrongedResentment(ctx, input.target, deed.tags, deed.witnesses.some((w) => w.npcId === input.target));
       lines.push(
@@ -1144,7 +1153,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       m.requirements.forEach((r, i) => {
         if (!("deliver" in r) || (m.progress[i] ?? 0) >= 1) return;
         if (missed) {
-          lines.push(`판정이 빗나가 짐은 넘기지 못했다: ${content.items[r.deliver]?.name ?? r.deliver} ×${r.quantity}는 아직 맡은 짐으로 지니고 있다.`);
+          // 실제로 지닌 수로 말한다 (12-262, PT17 분대장: 이미 건넸는데 "아직 지니고 있다")
+          const held = store.getState().characters[start.playerId]!.inventory[r.deliver] ?? 0;
+          lines.push(`판정이 빗나가 짐은 넘기지 못했다: ${content.items[r.deliver]?.name ?? r.deliver} ${held ? `×${held}는 아직 맡은 짐으로 지니고 있다` : "은 지금 지니고 있지 않다"}.`);
           return;
         }
         const have = store.getState().characters[start.playerId]!.inventory[r.deliver] ?? 0;
@@ -1319,8 +1330,9 @@ export function worldLines(displays: readonly ToolDisplayEvent[]): string[] {
       lines.push(`${display.title}: ${display.detail}. 보고 내용은 상태의 '분대' 섹션에 있다. 분대원이 돌아와(또는 전령으로) 보고하는 장면을 짧게 서술한다. 보고에 없는 것을 지어내지 않는다.`);
     } else if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);
     if (display.type === "storylet" && display.event === "started") {
-      lines.push(`새 이야기가 시작됐다: "${display.title}".${display.note ? ` ${display.note}` : ""} 상태의 '진행 중인 이야기'를 보고 장면으로 연출하라.`);
+      lines.push(`새 이야기가 시작됐다: "${display.title}". 상태의 '진행 중인 이야기'를 보고 장면으로 연출하라.`);
     }
+    if (display.type === "storylet" && display.event === "moved" && display.note) lines.push(display.note);
     // 시간이 흘러 지나간 이야기도 알린다 (플레이 테스트 13: 잠·휴식 사이에 이야기가 말없이 사라졌다)
     if (display.type === "storylet" && display.event === "expired") {
       lines.push(`이야기 "${display.title}"${josa(display.title, "은/는").slice(display.title.length)} 그대로 지나갔다${display.detail && display.detail !== "지나갔다" ? ` (${display.detail})` : ""}. 이야기 속 사람들은 그것을 기억할 수 있다.`);

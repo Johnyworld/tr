@@ -241,13 +241,15 @@ export function rollHear(ctx: ToolContext, targetId: string | null): { line: str
   const kept = new Set(ctx.content.npcs[target.id]?.keeps ?? []);
   // 옮길 만한 사실만: 주인공 자신에 대한 말, 만남·이름 기억은 얻어듣지 않는다 (공통 규칙 14, PT14)
   // 남이 아는 것은 "~라고 들었다"로 옮긴다 (12-259, 공통 규칙 14 hearsay)
-  const theirs = (state.beliefs[target.id] ?? []).filter((b) => !mine.has(b.fact) && !mine.has(hearsay(b.fact)) && !kept.has(b.fact) && worthPassing(state, b, "player"));
+  const theirs = (state.beliefs[target.id] ?? []).filter((b) => !mine.has(b.fact) && !mine.has(hearsay(b.fact)) && !mine.has(hearsay(b.fact, playerCalls(state, ctx.content, target.id))) && !kept.has(b.fact) && worthPassing(state, b, "player"));
   if (!theirs.length) return null;
   const fact = theirs[Math.floor(ctx.rng() * theirs.length)]!;
+  // 눈앞에서 들은 말이다: 누구에게서인지 적고 직접 들은 것으로 (12-262, PT16 분대장·PT17 튜토리얼)
+  const heard = hearsay(fact.fact, playerCalls(state, ctx.content, target.id));
   ctx.store.append({
     type: "belief_added",
     characterId: me.id,
-    belief: { id: `b_${state.nextBeliefNo}`, fact: hearsay(fact.fact), source: "report", accuracy: fact.accuracy, learnedAt: state.time, ...(fact.topic ? { topic: fact.topic } : {}) },
+    belief: { id: `b_${state.nextBeliefNo}`, fact: heard, source: "seen", accuracy: fact.accuracy, learnedAt: state.time, ...(fact.topic ? { topic: fact.topic } : {}) },
   });
-  return { line: persona(axis, v, `말이 오가다 ${josa(playerCalls(state, ctx.content, target.id), "이/가")} 묻지 않은 말까지 했다 · 알게 된 것: "${hearsay(fact.fact)}"`), fact: hearsay(fact.fact) };
+  return { line: persona(axis, v, `말이 오가다 ${josa(playerCalls(state, ctx.content, target.id), "이/가")} 묻지 않은 말까지 했다 · 알게 된 것: "${heard}"`), fact: heard };
 }

@@ -8,7 +8,6 @@ import { runDailyFood } from "./forage.ts";
 import { lootRemainsDaily } from "./remains.ts";
 import { roleOf } from "../game/state.ts";
 import { storyPlaceOnEntry } from "../rules/place.ts";
-import { stowStartingLoad } from "./stash.ts";
 import { endExpiredTruces } from "./diplomacy.ts";
 import { runResidentBodies } from "./residents.ts";
 import { infestationDay } from "../game/infestation.ts";
@@ -61,11 +60,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
   if (!content.scenario.war || Object.keys(content.factions).length === 0) return [];
   ensurePlayerZone(ctx);
   const today = dayOf(store.getState().time);
-  if (initFactions(ctx)) {
-    // 시작 짐이 한도를 넘으면 무거운 것부터 사물함에 (12-259)
-    stowStartingLoad(ctx);
-    return [];
-  }
+  if (initFactions(ctx)) return [];
   const last = store.getState().lastWarDay ?? today;
   const displays: ToolDisplayEvent[] = [];
   for (let day = Math.max(last + 1, today - MAX_CATCH_UP_DAYS + 1); day <= today; day++) {

@@ -210,6 +210,8 @@
   title: 더 달라는 손님
   tags: [occ_trader]
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     zone_owner: [own]
     segments: [morning, day, evening]
     day_gte: 6
@@ -534,6 +536,8 @@
   title: 길가의 늙은 행상
   tags: [occ_trader]
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     factions: [none]
     zone_owner: [none]
     segments: [day, evening]

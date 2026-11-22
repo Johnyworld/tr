@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 92;
+export const SAVE_SCHEMA_VERSION = 93;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -565,7 +565,8 @@ export function createGameSchemas(s: Scenario) {
     /** 캐릭터별 시나리오 플래그 (스토리렛이 세운다. 비밀 lore의 secret:<flag>도 이것을 본다) */
     flags: z.record(z.string(), z.array(z.string())).default({}),
     /** 스토리렛 발동 기록 */
-    storyletLog: z.record(z.string(), z.strictObject({ fired: z.number().int().min(0), lastFiredAt: z.number().int() })).default({}),
+    /** lastEnd: 마지막으로 어떻게 끝났는지 (miss·expired면 꼭 열리는 이야기는 하루 뒤 다시 열린다, 12-262) */
+    storyletLog: z.record(z.string(), z.strictObject({ fired: z.number().int().min(0), lastFiredAt: z.number().int(), lastEnd: z.string().optional() })).default({}),
     /** 진행 중인 스토리렛 */
     activeStorylet: z
       .strictObject({
@@ -2534,10 +2535,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.improvSlot = null;
       break;
     case "storylet_resolved":
-    case "storylet_expired":
+    case "storylet_expired": {
       if (state.activeStorylet?.id !== event.storyletId) throw new Error(`진행 중인 스토리렛이 아닙니다: ${event.storyletId}`);
       next.activeStorylet = null;
+      const log = next.storyletLog[event.storyletId];
+      if (log) next.storyletLog = { ...next.storyletLog, [event.storyletId]: { ...log, lastEnd: event.type === "storylet_expired" ? "expired" : (event.outcome ?? "chosen") } };
       break;
+    }
     case "flag_set": {
       const flags = (next.flags[event.characterId] ??= []);
       if (!flags.includes(event.flag)) flags.push(event.flag);

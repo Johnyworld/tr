@@ -53,6 +53,15 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
   // 누가 어떻게 됐는지 적는다 (PT14 경비: "함께 있던 사람은 따라오지 못했다"뿐이라 짝의 행방을 끝내 몰랐다)
   const fates: string[] = [];
   const spot = currentPlace(state, content);
+  // 곁에서 본 사람은 붙잡힌 것을 직접 안다: 계승하면 그 사람이 구하러 갈 실마리 (12-262, PT17 졸병: 짝이 본 붙잡힘이 믿음에 없었다)
+  const captor = content.factions[by]?.name ?? by;
+  const placeName = content.locations[where]?.name ?? where;
+  for (const id of state.scene.present) {
+    const c0 = state.characters[id];
+    if (!c0 || c0.dead || !content.npcs[id] && !c0.extra) continue;
+    const s1 = store.getState();
+    store.append({ type: "belief_added", characterId: id, belief: { id: `b_${s1.nextBeliefNo}`, fact: `${josa(me.name, "이/가")} ${captor}에게 붙잡혀 ${josa(placeName, "으로/로")} 끌려갔다`, source: "seen", accuracy: "exact", learnedAt: s1.time } });
+  }
   for (const id of state.companions) {
     const kind = state.bonds[id]?.kind;
     const who = playerCalls(state, content, id);

@@ -149,7 +149,9 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     const extraId = `ex_${now.nextExtraNo}`;
     const usedNames = new Set(Object.values(now.characters).map((c) => c.name));
     const label = storylet.cast[key]?.label ?? template.label;
-    store.append({ type: "extra_spawned", character: createExtraCharacter(content, template, { id: extraId, label, zone: now.playerZone, time: now.time, usedNames }, rng) });
+    // 같은 틀의 다른 사람과 겉모습이 겹치지 않게 (12-262, PT17: 이야기 배역 감염체 둘이 같은 겉모습)
+    const usedLooks = new Set(Object.values(now.characters).flatMap((c) => (c.extra ? [c.extra.look] : [])));
+    store.append({ type: "extra_spawned", character: createExtraCharacter(content, template, { id: extraId, label, zone: now.playerZone, time: now.time, usedNames, usedLooks }, rng) });
     cast[key] = extraId;
   }
   // 이야기가 말하는 몸 상태를 진짜로 (플레이 테스트 12: "다리가 깔렸다", "굶었다"인데 상태는 멀쩡했다). 이미 더 나쁘면 그대로
@@ -184,11 +186,11 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     const left = before ? store.getState().scene.present.filter((id) => !store.getState().companions.includes(id)) : [];
     store.append({ type: "place_moved", from: before, to: spot, with: before ? [] : [...store.getState().scene.present] });
     // 불려 간 것을 결과 글에 알린다 (12-261, PT16 분대장·졸병: 장소가 바뀐 것을 상태로만 알았다)
+    // (12-261 고침이 돌지 않았다: started 표시는 부르는 쪽이 나중에 넣는다. 그래서 따로 "moved" 표시로, PT17)
     if (before) {
-      const started = displays.find((d) => d.type === "storylet" && d.event === "started");
       const place = placeById(store.getState(), content, spot)?.name ?? spot;
       const names = left.map((id) => playerCalls(store.getState(), content, id));
-      if (started?.type === "storylet") started.note = `${josa(place, "으로/로")} 불려 갔다${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다, 동행은 함께)` : ""}.`;
+      displays.push({ type: "storylet", event: "moved", title: storyTitle(store.getState(), content, storylet), detail: place, note: `${josa(place, "으로/로")} 불려 갔다${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다, 동행은 함께)` : ""}.` });
     }
   }
   // 배역은 장면에 들어온다
@@ -292,7 +294,8 @@ export const resolveStorylet = defineTool({
     if (!choice || !open.includes(choice)) return { ok: false, error: `고를 수 없는 선택지: ${input.choice_id} (가능: ${open.map((c) => c.id).join(", ")})` };
     // 이번 턴 설정 거스르기에 꺾였으면 그 행동은 일어나지 않았다 (12-261, 공통 규칙 16. PT16 분대장: 꺾였는데 "대든다"가 풀렸다)
     if (settingBrokeThisTurn(state)) {
-      return { ok: false, error: "이번 턴의 행동은 설정 거스르기에 꺾여 일어나지 않았다. 그 선택지로 풀 수 없다: 다른 선택지를 고르거나 다른 행동으로 잇는다." };
+      // 무엇으로 바꿨는지 먼저 행동으로 한다 (12-262, PT17 분대장: "다른 선택지를 고르거나"라 했는데 다른 선택지도 막혔다)
+      return { ok: false, error: "이번 턴의 행동은 설정 거스르기에 꺾여 일어나지 않았다. 대신 한 행동(물러서기·사과 등)을 먼저 take_action으로 하고(짧은 행동도 된다), 그다음 그 행동에 맞는 선택지를 고른다." };
     }
     // 얼굴을 보고 하는 선택지 (12-259, 공통 규칙 15): 상대가 같은 장소에 있으면 장면에 들이고, 같은 구역의 다른 장소에 있으면
     // 그 장소로 가서 만난다. 다른 구역이거나 어디 있는지 모르면 고를 수 없다
@@ -363,6 +366,16 @@ export const resolveStorylet = defineTool({
       `이야기 "${storyTitle(state, ctx.content, a.storylet)}": ${improvised ? `플레이어의 방법으로 즉흥으로 풀었다 (${moveLabel(ctx.content.scenario, input.improvised_move!)} 판정, "${maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}"의 결과를 따른다)` : maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`,
     ];
     if (met) lines.push(met);
+    // 따라 나가기 (12-262): 그 장소로 옮긴다. 장면의 이야기 배역은 함께 간다
+    if (choice.goes_to) {
+      const now = ctx.store.getState();
+      const to = placeById(now, ctx.content, choice.goes_to);
+      const from = whereIs(now, ctx.content, now.playerId)?.place ?? null;
+      if (to && to.id !== from) {
+        ctx.store.append({ type: "place_moved", from, to: to.id, with: Object.values(a.cast).filter((id) => now.scene.present.includes(id)) });
+        lines.push(`${josa(to.name, "으로/로")} 옮겼다.`);
+      }
+    }
     const extra: ToolDisplayEvent[] = [];
     for (const effect of effects) {
       const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title, { judged: outcome !== null });
@@ -378,6 +391,14 @@ export const resolveStorylet = defineTool({
         if (d.type === "harm" && d.trackLabel) lines.push(`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.cause}).`);
         else if (d.type === "heal") lines.push(`${d.targetName}의 ${d.trackLabel}: ${d.fromLabel} → ${d.toLabel} (${d.byLabel}).`);
         else if ((d.type === "belief" || d.type === "harm") && d.note) lines.push(d.note);
+      }
+    }
+    // 선택지가 떠나보내는 배역 (12-262)
+    for (const key of choice.leaves ?? []) {
+      const id = a.cast[key];
+      if (id && ctx.store.getState().scene.present.includes(id)) {
+        ctx.store.append({ type: "npc_left", npcId: id });
+        lines.push(`${josa(playerCalls(ctx.store.getState(), ctx.content, id), "은/는")} 장면을 떠났다.`);
       }
     }
     // 이야기가 끝나도 배역은 장면에 남는다 (12-253, PT15 튜토리얼: 안내·재회 뒤 바로 그 사람과 이어지는 장면에서 매번 다시 들였다).

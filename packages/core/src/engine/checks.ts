@@ -121,7 +121,8 @@ export function rollPlayerCheck(
     skill: capped - ability,
     difficulty: DIFFICULTY_MODIFIER[input.difficulty],
     condition: conditionPenalty(scenario, actor),
-    trait: attractionCheckBonus(content, actor, target, input.move) + temperament.reduce((n, p) => n + p.value, 0),
+    // 끌림은 맞서는 상대(opponent)에게도 (12-262, PT17 섬: 속이려는 상대를 opponent로 넣자 끌림이 사라졌다)
+    trait: attractionCheckBonus(content, actor, target ?? (input.opponent ? state.characters[input.opponent] : undefined), input.move) + temperament.reduce((n, p) => n + p.value, 0),
     gear: gear.penalty,
     opposition: 0,
   };

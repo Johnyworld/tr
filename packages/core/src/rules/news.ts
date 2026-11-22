@@ -86,10 +86,12 @@ export function worthPassing(state: GameState, belief: Pick<Belief, "fact" | "le
  * 남이 아는 것(인물 카드의 "아는 것" 조각 글)이 주인공의 믿음으로 옮겨질 때의 문장 (12-259, PT15 튜토리얼:
  * "…다섯 발이 안 된다는 것"이 조각 그대로 믿음이 됐다). "~다는 것"·"~라는 것"·"~다"는 "~고 들었다"로, 그 밖은 "들은 말: …"
  */
-export function hearsay(fact: string): string {
+export function hearsay(fact: string, from?: string): string {
   const t = fact.trim().replace(/[.。]+$/, "");
-  if (/(다|라)는 것$/.test(t)) return t.replace(/(다|라)는 것$/, "$1고 들었다");
-  if (/(다|라)$/.test(t) && !/들었다$/.test(t)) return `${t}고 들었다`;
+  // 누구에게서 들었는지 앞에 둔다 (12-262, PT17 튜토리얼: 눈앞의 상관에게 들은 말이 출처 없이 "들은 말: …")
+  const who = from ? `${from}에게서 ` : "";
+  if (/(다|라)는 것$/.test(t)) return `${who}${t.replace(/(다|라)는 것$/, "$1고 들었다")}`;
+  if (/(다|라)$/.test(t) && !/들었다$/.test(t)) return `${who}${t}고 들었다`;
   if (/들었다$/.test(t)) return t;
-  return `들은 말: ${t}`;
+  return from ? `${from}에게서 들은 것: ${t}` : `들은 말: ${t}`;
 }

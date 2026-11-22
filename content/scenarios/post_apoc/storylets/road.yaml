@@ -49,6 +49,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     road_danger_lte: 1
     segments: [morning, day, evening]
   cast:
@@ -380,6 +382,8 @@
   repeatable: true
   cooldown_days: 6  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     road_danger_gte: 1
   setup: "{to:으로/로} 가는 풀숲길, 발을 내딛는 순간 무언가 발목에 걸린다. 내려다보니 풀 사이로 철사가 팽팽하게 당겨져 있고, 그 끝이 길가 나무 위 어딘가로 이어져 있다. 아직 아무 일도 일어나지 않았다."
   # 되풀이될 때 차례로 쓰는 다른 상황 문장 (12-139)
@@ -419,6 +423,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     road_danger_gte: 2
     factions: [none, faction_a, faction_b, faction_d, faction_e, faction_y]
   cast:
@@ -837,6 +843,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     weather: [snow]
   cast:
     fallen: { extra: refugee, label: 눈 속에 쓰러진 사람 }
@@ -919,6 +927,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     harm_at_least: light
   setup: "걸을수록 상처가 욱신거린다. {to:이/가} 보이기 시작할 즈음 상처 자리가 따뜻하게 젖는 게 느껴진다. 손을 대 보니 피다. 길가 어딘가에서 무언가 킁킁거리는 소리가 들린 것 같다."
   ai_direction: 다친 채 오래 걸어 상처가 벌어졌다. 피 냄새는 감염체와 굶은 개를 부른다 (위험이 높은 길일수록). 위험은 판정 전에 선언한다. 여기서 부상이 더 나빠지는 일은 이야기의 효과로 정하지 않는다. 덧나는 것(감염 확률)은 코드가 굴린다.

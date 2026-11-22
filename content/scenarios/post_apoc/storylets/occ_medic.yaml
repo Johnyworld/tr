@@ -446,6 +446,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     factions: [none]
     zone_owner: [none]
     segments: [morning, day, evening]

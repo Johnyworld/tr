@@ -1,4 +1,6 @@
 import { isCreature } from "../game/kinds.ts";
+import { cargoOf } from "../rules/entrusted.ts";
+import { activeMissionOf } from "../game/missions.ts";
 import { traitsOf } from "./traits.ts";
 import { dayOf } from "../rules/time.ts";
 import { isFirstAidItem } from "./care/kinds.ts";
@@ -109,6 +111,13 @@ const transferItem = defineTool({
     if (story && input.from === state.playerId && Object.values(story.cast).includes(input.to)) {
       const choice = storyletOf(state, content, story.id)?.choices.find((c) => choiceUsesItem(c, input.item_id));
       if (choice) return { ok: false, error: `이 물건은 진행 중인 이야기의 선택지로 건넨다: resolve_storylet ${choice.id} ("${choice.label}"). 선택지가 효과를 함께 처리한다.` };
+    }
+    // 임무로 맡은 짐은 임무 판정으로 넘긴다 (12-262, PT17 분대장: transfer_item으로 건넨 뒤 짐 요건을 채울 길이 없었다)
+    if (input.from === state.playerId && input.to !== SCENE_HOLDER) {
+      const m = activeMissionOf(state.missions, state.playerId);
+      if (m && (cargoOf(state, m.id)[input.item_id] ?? 0) > 0 && m.requirements.some((r, i) => "deliver" in r && r.deliver === input.item_id && (m.progress[i] ?? 0) < 1)) {
+        return { ok: false, error: `${josa(content.items[input.item_id]?.name ?? input.item_id, "은/는")} 임무로 맡은 짐이다. 넘기는 것은 임무 자리에서 그 사람을 target으로 한 판정(take_action)으로 한다: 판정이 맞으면 짐이 그 사람에게 넘어간다.` };
+      }
     }
     const fromInv = findHolderInventory(state, input.from);
     if (!fromInv) return { ok: false, error: `알 수 없는 보관 위치: ${input.from}` };

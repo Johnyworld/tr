@@ -361,6 +361,8 @@
   title: 승합차의 편지
   tags: [world]
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     zone_owner: [none]
     segments: [morning, day]
   setup: '길가에 선 승합차 운전석에 남자가 엎드려 죽어 있다. 오래되지 않았다. 가슴 주머니에 접힌 편지가 삐죽 나와 있고, 겉봉에 "소희에게"라고 적혀 있다.'

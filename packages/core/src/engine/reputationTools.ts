@@ -40,6 +40,8 @@ export type DeedInput = {
   privacy: Privacy;
   noisy: boolean;
   byGm?: boolean;
+  /** 당한 사람 (12-262): 가치관으로 마음이 오르지 않는다 (원망은 공통 규칙 13 wrongedResentment) */
+  victim?: string | null;
 };
 
 /** 이번 턴 플레이어의 은밀 행동 판정 중 가장 좋은 결과 (은밀 행동은 시나리오의 move_roles.stealth) */
@@ -174,7 +176,7 @@ function recordDeedIf(
     ...(input.byGm ? { byGm: true } : {}),
   };
   ctx.store.append({ type: "deed_recorded", deed });
-  for (const w of witnesses) learn(ctx, deed, w.npcId, official?.source ?? "seen", official?.only);
+  for (const w of witnesses) learn(ctx, deed, w.npcId, official?.source ?? "seen", w.npcId === input.victim ? [] : official?.only);
 
   const visible = witnesses.filter((w) => !w.hidden).map((w) => playerCalls(state, ctx.content, w.npcId));
   return { deed, visible };

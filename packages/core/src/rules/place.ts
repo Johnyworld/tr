@@ -154,7 +154,8 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   const stay = state.npcStays?.[id];
   if (stay && stay.until > time) return { zone: stay.zone, place: stay.place };
   // 떨어져 기다리는 동행은 그 자리에 (12-261, PT16 분대장: 막사에 남긴 동행이 보급 창고의 "있을 사람"에 떴다)
-  const apart = state.companions.includes(id) ? state.bonds[id]?.apart : undefined;
+  // (PT17: companions일 때만 봐서 돌지 않았다. companion_parted가 companions에서 뺀다)
+  const apart = state.bonds[id]?.apart;
   if (apart) return { zone: apart.zone, place: apart.place ?? null };
   // 분대 일을 나간 사람은 그 구역 어딘가 (일과 자리에 두지 않는다)
   const order = state.squadOrders?.[id];
@@ -186,7 +187,9 @@ export function nearby(state: GameState, content: Content, id: string): boolean 
  */
 export function peopleAt(state: GameState, content: Content, zone: string | null, placeId: string): string[] {
   if (!zone) return [];
-  return Object.keys(content.npcs).filter((id) => {
+  // 머무는 장소가 있는 엑스트라(가족의 집)도 (12-262, PT17 튜토리얼: 집에 있는 부모가 목록에 없었다)
+  const ids = [...Object.keys(content.npcs), ...Object.values(state.characters).filter((c) => !!c.extra?.place).map((c) => c.id)];
+  return ids.filter((id) => {
     if (id === state.playerId || state.scene.present.includes(id)) return false;
     const w = whereIs(state, content, id);
     return !!w && w.zone === zone && w.place === placeId;

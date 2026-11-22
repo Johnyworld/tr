@@ -27,6 +27,8 @@
         - body: { track: hunger, delta: -1 }
     - id: follow
       label: 노인을 따라 나간다
+      # 국을 바다에 쏟는 자리로 (12-262)
+      goes_to: dock
       effects:
         - set_flag: y_soup_done
         # 가장 캐묻는 선택이 진실 줄기를 열어야 한다 (12-261, PT16 섬: follow만 y_looking을 안 줘 장부가 늦게 열렸다)

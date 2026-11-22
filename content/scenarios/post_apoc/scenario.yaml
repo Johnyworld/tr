@@ -158,7 +158,7 @@ offense: { tags: [theft, cruelty, betrayal], min_severity: 2, within_days: 3, no
 
 # 이야기 글 검사 (content:check, 12-261): 바깥을 말하는 글은 바깥에서만, 잠에서 깨는 글은 잠·쉬는 중에만
 story_lint:
-  outdoor: [자갈밭, 갈대밭, 안개 속, 빗속, 갯바위]
+  outdoor: [자갈밭, 갈대밭, 안개 속, 빗속, 갯바위, 길가]
   waking: [소리에 눈을 뜬다, 냄새에 눈을 뜬다, 소리에 깬다, 차가워서 깬다, 잠결에]
 
 # 무리의 규율 단계 (기획서 9.9). 무리마다 factions의 culture.discipline으로 고른다 (*임시* 수치)

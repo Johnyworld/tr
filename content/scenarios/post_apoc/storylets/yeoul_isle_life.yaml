@@ -726,6 +726,8 @@
         - belief: { fact: "검은 고무 앞치마를 두른 단호성은 저장고 일을 한다. 부두 계단에서 바닷물에 오래 손을 씻는다. 무슨 일이냐고 묻자 '창고 정리'라고만 했다", source: seen }
     - id: watch
       label: 그가 어디로 가는지 멀찍이 지켜본다
+      # 저장고 뒷문으로 들어간다 (12-262)
+      leaves: [keeper]
       check: stealth
       outcomes:
         success:

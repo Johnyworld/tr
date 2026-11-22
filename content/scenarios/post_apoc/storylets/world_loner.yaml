@@ -160,6 +160,8 @@
   title: 짐마차의 하루 품
   tags: [world]
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     factions: [none]
     zones: [riverside, old_town]
     segments: [dawn, morning]

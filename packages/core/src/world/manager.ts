@@ -1,4 +1,5 @@
 import { checkResolve } from "../engine/resolve.ts";
+import { stowStartingLoad } from "../engine/stash.ts";
 import { bindOwnLovers } from "../engine/romance.ts";
 import { objectParticle } from "../engine/scenarioProgress.ts";
 import { initFactions } from "../engine/warTools.ts";
@@ -183,6 +184,8 @@ export class WorldManager {
       checkResolve(world.ctx());
       // 가진 무기를 손에 든다 (기획서 4.8)
       autoEquip(world.ctx(), world.state().playerId);
+      // 시작 짐이 한도를 넘으면 무거운 것부터 사물함·거처, 없으면 시작 자리에 (12-259·12-261. PT17: runWarDays에 두어 한 번도 돌지 않았다)
+      stowStartingLoad(world.ctx());
       runAfterTimeAdvance(world.ctx());
       // 시작 장면의 분대 (12-241). 첫 시간 처리에서 주인공의 구역이 정해진 뒤에
       seatStartSquad(world.ctx(), roleOf(world.content, world.state()));

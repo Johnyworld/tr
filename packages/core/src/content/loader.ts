@@ -648,6 +648,8 @@ export function checkStorylets(content: Content): string[] {
     if (s.when.after_storylet && !content.storylets[s.when.after_storylet.id]) problems.push(`${where}.when.after_storylet: 없는 이야기 ${s.when.after_storylet.id}`);
     const castKeys = new Set(Object.keys(s.cast));
     for (const c of s.choices) if (c.meets && !castKeys.has(c.meets)) problems.push(`${where}.choices.${c.id}.meets: 없는 배역 ${c.meets}`);
+    for (const c of s.choices) for (const k of c.leaves ?? []) if (!castKeys.has(k)) problems.push(`${where}.choices.${c.id}.leaves: 없는 배역 ${k}`);
+    for (const c of s.choices) if (c.goes_to && !(s.when.zones ?? []).some((z) => content.locations[z]?.places.some((p) => p.id === c.goes_to))) problems.push(`${where}.choices.${c.id}.goes_to: when.zones의 장소가 아니다 (${c.goes_to})`);
     // 배역 자리 뒤에 조사를 직접 적지 않는다: 받침에 따라 틀린다 (플레이 테스트 13: "늙은 그물꾼다", "{green}이"). {key:이/가}로 쓴다
     {
       const texts = [s.setup, ...(s.variants ?? []), s.ai_direction ?? "", ...s.choices.map((c) => c.label), JSON.stringify(s.choices)];

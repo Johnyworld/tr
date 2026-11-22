@@ -541,7 +541,8 @@ function describePlaces(state: GameState, content: Content): string {
   const here = currentPlace(state, content);
   const known = new Set([...(state.known[state.playerId] ?? []), ...(state.met[state.playerId] ?? [])]);
   const line = (p: (typeof places)[number]) => {
-    const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id));
+    // 갇힌 사람은 그 자리에 있는 것을 주인공이 알 때만 (12-262, PT16·PT17 졸병: 적 거점에 막 들어서자 행방 모를 실종자의 자리가 보였다)
+    const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
     return `- ${p.id} ${p.name} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : ""}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
   };
   return [

@@ -32,7 +32,16 @@ function meetHere(ctx: ToolContext, id: string): boolean {
   if (state.scene.present.includes(id)) return true;
   if (!hereWithMe(state, ctx.content, id)) return false;
   enterScene(ctx, id);
+  entered.set(ctx.store, id);
   return true;
+}
+
+/** 이번 도구에서 들인 상관 (결과 글에 한 줄, 12-262 PT17 분대장·섬) */
+const entered = new WeakMap<object, string>();
+function enteredLine(ctx: ToolContext): string[] {
+  const id = entered.get(ctx.store);
+  entered.delete(ctx.store);
+  return id ? [`(같은 장소에 있던 ${josa(playerCalls(ctx.store.getState(), ctx.content, id), "을/를")} 장면에 들였다)`] : [];
 }
 import type { GameState } from "../game/state.ts";
 import {
@@ -198,6 +207,7 @@ const assignMission = defineTool({
     return {
       ok: true,
       resultText:
+        enteredLine(ctx).map((l) => `${l}\n`).join("") +
         `임무 배정: ${describeMission(ctx.content.scenario, mission)}${routeLine}${buddyLine}${cargoLine}\n` +
         `상관(${playerCalls(state, ctx.content, commander.id)})이 임무를 지시하는 장면을 서술하라. 해야 할 일과 기한(대략적인 표현으로)을 상관의 말투로 전한다. 보고도 이 사람에게 한다.`,
       display: { type: "mission", event: "assigned", title: mission.title, detail: `기한 ${formatTime(mission.deadline)}` },
@@ -383,7 +393,7 @@ const reportMission = defineTool({
     if (offered) lines.push(offered);
     return {
       ok: true,
-      resultText: lines.join("\n"),
+      resultText: [...enteredLine(ctx), ...lines].join("\n"),
       display: { type: "mission", event: "reported", title: mission.title, detail: label, merit: result.merit },
       extra,
     };

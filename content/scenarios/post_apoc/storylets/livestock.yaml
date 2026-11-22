@@ -93,6 +93,8 @@
   cooldown_days: 20
   weight: 0.5
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     road_danger_lte: 1
     segments: [morning, day]
   setup: "{from:을/를} 벗어나 얼마 안 가 길가 덤불에서 매에 하는 소리가 난다. 끈이 끊긴 염소 한 마리가 풀을 뜯다가 당신을 빤히 본다. 주인은 보이지 않는다."

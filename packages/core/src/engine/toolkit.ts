@@ -48,7 +48,7 @@ export type ToolDisplayEvent =
     }
   | { type: "promotion"; name: string; fromLabel: string; toLabel: string }
   | { type: "battle"; event: "started" | "round" | "ended"; title: string; detail: string }
-  | { type: "storylet"; event: "started" | "resolved" | "expired" | "improv"; title: string; detail: string; note?: string }
+  | { type: "storylet"; event: "started" | "resolved" | "expired" | "improv" | "moved"; title: string; detail: string; note?: string }
   | { type: "epitaph"; name: string; text: string }
   | { type: "growth"; name: string; skill: string; from: string; to: string }
   | { type: "heal"; targetName: string; trackLabel: string; fromLabel: string; toLabel: string; byLabel: string }

@@ -12,6 +12,8 @@
   cooldown_days: 4  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   weight: 1
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     zone_infested_gte: 3
     zone_owner: [none, other]
   setup: "{zone:이/가} 며칠 사이 달라졌다. 길마다 새 발자국이 겹치고, 뜯긴 시체가 치워지지 않은 채 널려 있다. 길모퉁이에 하나, 뒤집힌 차 밑에서 또 하나가 고개를 든다. 더 안쪽에서도 발 끄는 소리가 이어진다."

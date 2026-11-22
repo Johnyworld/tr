@@ -56,6 +56,8 @@
   title: 야윈 얼굴
   tags: [world]
   when:
+    # 글에 맞춘 자리 (12-262, content:check story_lint)
+    indoor: false
     day_gte: 9
     zone_owner: [none, other]
     segments: [morning, day, evening]

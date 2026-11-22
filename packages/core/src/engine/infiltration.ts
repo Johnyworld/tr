@@ -186,16 +186,27 @@ const infiltrate = defineTool({
       if (inf.done) return { ok: false, error: "목표는 이미 했다. 빠져나온다." };
       const goal = r.goals.find((g) => g.id === inf.goal)!;
       const m = moveOf(content.scenario, goal.move)!;
-      const check = rollPlayerCheck({ move: goal.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: goal.label }, ctx, { forMission: missionForCheck(ctx.store.getState(), goal.move) });
+      const goalMission = missionForCheck(ctx.store.getState(), goal.move);
+      const check = rollPlayerCheck({ move: goal.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: goal.label }, ctx, { forMission: goalMission });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
+      if (goalMission) lines.push(`(임무 "${ctx.store.getState().missions[goalMission]?.title ?? goalMission}"의 요건과 맞는 판정이라 임무로 셌다)`);
       if (check.outcome !== "miss") {
         const captive = captiveHere(store.getState(), inf.zone, inf.owner);
         for (const effect of goalEffects(content, goal.id, captive, check.outcome === "partial")) {
           const out = applyEffect(ctx, effect, captive ? { captive } : {}, {}, `잠입: ${goal.label}`);
           if (out.line) lines.push(out.line);
           if (out.display) extra.push(out.display);
+        }
+        // 풀어 준 사람과는 얼굴을 마주했다: 만난 사이가 되고 고마워한다 (12-262, PT16·PT17 졸병: "아직 직접 만나 본 적이 없다")
+        if (captive && goal.release) {
+          const s1 = store.getState();
+          if (!(s1.met[s1.playerId] ?? []).includes(captive) && !s1.scene.present.includes(captive) && !s1.characters[captive]?.dead) {
+            store.append({ type: "npc_entered", npcId: captive });
+            store.append({ type: "npc_left", npcId: captive });
+          }
+          store.append({ type: "relation_changed", from: captive, to: s1.playerId, delta: { trust: 2, affection: 2, respect: 0 }, reason: "갇힌 곳에서 꺼내 줬다" });
         }
         const now = store.getState().infiltration!;
         store.append({ type: "infiltration_changed", depth: now.depth, alarm: now.alarm, done: true });

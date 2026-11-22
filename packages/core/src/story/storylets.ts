@@ -493,7 +493,9 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
     .filter((s) => {
       const log = state.storyletLog[s.id];
       if (!log) return true;
-      if (!s.repeatable) return false;
+      // 꼭 열리는 이야기(줄기)가 실패·흘러감으로 끝났으면 하루 뒤 다시 열린다 (12-262, PT17 섬: 장부 판정 한 번 실패로 진실 줄기가 닫혔다).
+      // 다음 고리를 주는 결과면 그 이야기의 조건(flags_none 등)이 다시 막는다
+      if (!s.repeatable) return s.essential === true && (log.lastEnd === "miss" || log.lastEnd === "expired") && at - log.lastFiredAt >= MINUTES_PER_DAY;
       // 무리마다의 경보 이야기(땅 주인을 정한 것)는 시나리오의 쉬는 날수도 지킨다 (공통 규칙 5). 어느 땅에서나 받는 일반 경보는 쉬지 않는다
       if (content.scenario.alarm && s.tags.includes(content.scenario.alarm.tag) && !!s.when.owners?.length && resting(content, "alarm", log.lastFiredAt, at)) return false;
       return at - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY;

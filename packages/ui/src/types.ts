@@ -187,6 +187,8 @@ export type PersonProfile = {
   traits: string[];
   attitude: { axis: string; label: string; word: string; value: number }[] | null;
   facts: { source: string; fact: string }[];
+  /** 이 사람이 아는 내 비밀의 이름 (12-260) */
+  knowsMySecret?: string | null;
 };
 
 /** 지도 (12-201) */

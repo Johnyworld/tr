@@ -1,4 +1,5 @@
 import { changeNotices, visibleOf } from "../rules/notice.ts";
+import { renameContent, type NameSwaps } from "../game/names.ts";
 import { checkResolve } from "../engine/resolve.ts";
 import { choosePortrait } from "../game/portrait.ts";
 import { dayOf } from "../rules/time.ts";
@@ -76,7 +77,8 @@ export class GameWorld {
   readonly mode: PlayMode;
   #content: Content;
   /** 자유 시나리오의 역할을 넣은 콘텐츠 (역할이 바뀔 때만 다시 만든다) */
-  #withRole: { role: unknown; content: Content } | null = null;
+  #withRole: { role: unknown; base: Content; content: Content } | null = null;
+  #renamedCache: { key: string; content: Content } | null = null;
   readonly path: string | null;
   #repo: GameRepository;
   #rng: Rng;
@@ -156,12 +158,22 @@ export class GameWorld {
    * content.roles[state.roleId]를 쓰는 곳이 모두 그대로 동작한다 (기획서 12.5)
    */
   get content(): Content {
-    const role = this.#repo.getState().customRole;
-    if (!role) return this.#content;
+    const state = this.#repo.getState();
+    const base = this.#renamed(state.nameSwaps ?? {});
+    const role = state.customRole;
+    if (!role) return base;
     // 상태는 이벤트마다 새로 복제되므로 역할은 내용으로 비교한다 (무소속이 무리에 들어가면 역할이 바뀐다)
     const key = `${role.id}|${role.faction}|${role.rank}|${role.label}`;
-    if (this.#withRole?.role !== key) this.#withRole = { role: key, content: { ...this.#content, roles: { ...this.#content.roles, [role.id]: role } } };
+    if (this.#withRole?.role !== key || this.#withRole.base !== base) this.#withRole = { role: key, base, content: { ...base, roles: { ...base.roles, [role.id]: role } } };
     return this.#withRole.content;
+  }
+
+  /** 주인공 이름과 겹쳐 바꾼 인물 이름을 반영한 월드 콘텐츠 (12-260). 바꾼 것이 없으면 그대로 */
+  #renamed(swaps: NameSwaps): Content {
+    if (!Object.keys(swaps).length) return this.#content;
+    const key = JSON.stringify(swaps);
+    if (this.#renamedCache?.key !== key) this.#renamedCache = { key, content: renameContent(this.#content, swaps) };
+    return this.#renamedCache.content;
   }
 
   get id(): string {
@@ -431,7 +443,10 @@ ${this.sceneForGm()}` };
       const state = this.state();
       this.#repo.appendRetrieval({ turn: state.turn, time: state.time, mode: this.mode, collection: "lore", purpose, trace: result.trace });
     }
-    return result;
+    // 바꾼 인물 이름은 lore 글에도 (색인은 월드 공용이라 꺼낼 때 바꾼다, 12-260)
+    const swaps = Object.values(this.state().nameSwaps ?? {});
+    if (!swaps.length) return result;
+    return { ...result, hits: result.hits.map((h) => ({ ...h, text: swaps.reduce((t, s) => t.split(s.from).join(s.to), h.text) })) };
   }
 
   retrievals(limit?: number): RetrievalRecord[] {

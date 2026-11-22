@@ -1,3 +1,4 @@
+import { josa } from "../text.ts";
 import { DEED_TAGS } from "../game/reputation.ts";
 import { RESOLVE_TARGET } from "../scenario/schema.ts";
 import { checkHistory } from "../game/background.ts";
@@ -320,6 +321,11 @@ function checkReferences(content: Content): string[] {
       type === "season" ? (content.scenario.seasons?.list ?? []).some((x) => x.id === target) : true;
     return ok ? null : `다짐 ${kindId}의 대상을 모른다: ${target}`;
   };
+  // 대체 이름은 월드의 어느 인물 이름에도 들어 있지 않아야 한다 (12-260: 바꾼 이름이 다시 겹치지 않게)
+  for (const g of Object.values(content.scenario.names?.stand_ins ?? {}).flat()) {
+    const hit = Object.values(content.npcs).find((n) => n.name.includes(g));
+    if (hit) problems.push(`names.stand_ins: 대체 이름 ${josa(g, "이/가")} 인물 이름 ${hit.name}(${hit.id})에 있다`);
+  }
   // 성을 물려주는 부모의 성별은 시나리오의 성별이어야 한다 (12-259)
   {
     const from = content.scenario.custom_start?.group?.surname_from;

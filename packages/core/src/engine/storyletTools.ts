@@ -176,8 +176,10 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
   });
   // 막 들어선 자리에서 열린 이야기가 이 구역의 장소 하나를 말하면 그 장소로 옮겨 둔다 (12-254, 공통 규칙 15 storyPlaceOnEntry).
   // 장면의 사람은 함께 간다 (PT15 튜토리얼: "동의 계단 앞"으로 열린 재회 이야기 뒤 place_to가 열린 이야기 때문에 거절됐다)
-  const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet));
-  if (spot) store.append({ type: "place_moved", from: null, to: spot, with: [...store.getState().scene.present] });
+  // 부르는 이야기(12-260)는 다른 장소에 있어도 불려 간다. 그때 장면의 사람은 그 자리에 남는다 (동행은 함께)
+  const before = whereIs(store.getState(), content, store.getState().playerId)?.place ?? null;
+  const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons);
+  if (spot) store.append({ type: "place_moved", from: before, to: spot, with: before ? [] : [...store.getState().scene.present] });
   // 배역은 장면에 들어온다
   for (const [key, id] of Object.entries(cast)) {
     if (!storylet.cast[key]?.enter) continue;

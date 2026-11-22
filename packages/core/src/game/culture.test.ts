@@ -61,7 +61,7 @@ describe("역할의 권한 (access)", () => {
     const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-access-")), content: c, rngFactory: () => createSeededRng(3) });
     const w = m.create("mcp", "role_a_grunt");
     expect(w.state().offers?.templateIds ?? []).toEqual([]);
-    expect(w.sceneForGm()).toContain("권한: 치료실 출입");
+    expect(w.sceneForGm()).toContain("특권: 치료실 출입");
     const hunger = () => w.state().characters.player!.conditions.hunger;
     const start = hunger();
     // 잠이 끊길 수 있으니 이틀이 지날 때까지 잔다

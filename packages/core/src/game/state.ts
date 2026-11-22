@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 90;
+export const SAVE_SCHEMA_VERSION = 91;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -529,6 +529,8 @@ export function createGameSchemas(s: Scenario) {
     runStartedAt: z.number().int(),
     /** 지금 캐릭터가 시작한 구역 (시작 장면 대기는 이 구역에서만, 공통 규칙 17, 12-254) */
     runStartZone: z.string().nullable().default(null),
+    /** 주인공 이름과 겹쳐 이 세계에서만 바꾼 월드 인물의 이름 (인물 id → 원래·바꾼 이름, 12-260). 콘텐츠의 글에도 반영한다 */
+    nameSwaps: z.record(z.string(), z.strictObject({ from: z.string(), to: z.string() })).default({}),
     /** 행적. 숨은 목격자가 들어 있으므로 UI·프롬프트로 그대로 보내지 않는다 */
     deeds: z.record(z.string(), deedSchema),
     /** NPC가 어떤 행적을 어떤 출처로 알고 있는지: npcId → deedId → source */
@@ -661,6 +663,8 @@ export function createGameSchemas(s: Scenario) {
       known: z.record(z.string(), z.array(z.string())),
       /** 처음부터 태도를 아는 사람: 직속 상관과 같은 분대 (PT15 졸병: 같은 분대 분대장을 "만나 본 적이 없다") */
       perceived: z.array(z.string()).optional(),
+      /** 주인공 이름과 겹쳐 바꾼 월드 인물의 이름 (12-260). 캐릭터와 믿음에는 이미 바꾼 이름이 들어 있다 */
+      renames: z.record(z.string(), z.strictObject({ from: z.string(), to: z.string() })).optional(),
     }),
     z.strictObject({ type: z.literal("npc_entered"), npcId: z.string() }),
     z.strictObject({ type: z.literal("zone_searched"), zone: z.string(), day: z.number().int() }),
@@ -1307,6 +1311,7 @@ export const EMPTY_STATE: GameState = {
   nextMissionNo: 1,
   runStartedAt: START_TIME,
   runStartZone: null,
+  nameSwaps: {},
   deeds: {},
   deedKnowledge: {},
   relations: {},
@@ -1421,6 +1426,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         known: structuredClone(event.known),
         met: structuredClone(event.known),
         nextBeliefNo: beliefCount + 1,
+        nameSwaps: structuredClone(event.renames ?? {}),
       };
       // 처음부터 아는 사람들(같은 무리 동료)은 주인공도 이름까지 안다
       for (const id of event.known[event.player.id] ?? []) acquaint(created, id, event.player.id, true);

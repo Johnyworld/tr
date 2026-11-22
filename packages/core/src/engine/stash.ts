@@ -10,7 +10,7 @@ import { ownedBy } from "../rules/home.ts";
 
 /**
  * 내 물건 보관 (기획서 4.8.1, 12-149). 무게 제한 때문에 다 들고 다닐 수 없는 물건을 맡겨 둔다. 용량 제한은 없다.
- * - 무리에 들었으면 우리 무리 거점의 사물함 (숙소·막사), 떠돌이면 스스로 정한 거처 (한 곳)
+ * - 무리에 들었으면 우리 무리 거점의 사물함 (거점 안이면 어디서나 넣고 꺼낸다, 12-260), 떠돌이면 스스로 정한 거처 (한 곳)
  * - 맡긴 물건은 그 구역에 남는다. 거처를 옮기거나 무리를 옮겨도 예전 자리의 물건은 거기 있고, 가서 꺼낼 수 있다 (넣기는 지금 자리에만)
  * - 게임 시간을 쓰지 않는다 (줍고 내려놓기와 같다)
  */
@@ -77,7 +77,7 @@ export function moveStash(ctx: ToolContext, direction: "put" | "take", moves: re
   if (direction === "put" && !place) {
     return {
       ok: false,
-      error: me.factionId ? "물건은 우리 무리 거점의 사물함에 맡긴다. 거점에 가야 한다." : state.homes[me.id] ? `물건은 거처(${zoneName(content, state.homes[me.id]!)})에 맡긴다.` : "아직 거처가 없다. 머물 곳을 정하면(stash settle) 거기에 맡길 수 있다.",
+      error: me.factionId ? "물건은 우리 무리 거점의 사물함에 맡긴다. 거점 안이면 어디서든 된다. 거점에 가야 한다." : state.homes[me.id] ? `물건은 거처(${zoneName(content, state.homes[me.id]!)})에 맡긴다.` : "아직 거처가 없다. 머물 곳을 정하면(stash settle) 거기에 맡길 수 있다.",
     };
   }
   if (direction === "take" && !Object.keys(box).length) return { ok: false, error: "이 구역에 맡겨 둔 물건이 없다." };
@@ -194,7 +194,7 @@ export function stashHint(ctx: ToolContext): string | null {
   if (!me || me.dead || state.stashHinted.includes(me.id) || encumbrance(content, me, state) === 0) return null;
   store.append({ type: "stash_hinted", characterId: me.id });
   const where = me.factionId
-    ? "우리 무리 거점의 사물함(숙소·막사)에 물건을 맡겨 둘 수 있다"
+    ? "우리 무리 거점 안이면 어디서나 사물함에 물건을 맡겨 둘 수 있다"
     : state.homes[me.id]
       ? `거처(${zoneName(content, state.homes[me.id]!)})에 물건을 맡겨 둘 수 있다`
       : "머물 곳을 거처로 정하면(stash settle) 거기에 물건을 맡겨 둘 수 있다";

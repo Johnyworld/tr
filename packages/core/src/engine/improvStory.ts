@@ -103,10 +103,12 @@ export function describeImprovSlotForGm(state: GameState, content: Content): str
   const rule = content.scenario.improv;
   if (!slot || !rule || state.activeStorylet || !slotUsable(state, content)) return "";
   const people = castable(state).map((id) => `${playerCalls(state, content, id)}(${id})`);
+  // 곁에 사람이 없으면 한 줄만 (12-260, PT15 섬: 혼자 자는 동안 보상·대가 설명이 9시간 실렸다). 사람이 생기면 전체를 싣는다
+  if (!people.length) return `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 곁에 사람이 없다. 사람을 만나면(장면에 들이거나 spawn_extra) 쓸 수 있다.`;
   const track = content.scenario.condition_tracks.find((t) => t.id === rule.costs.body.track)?.label ?? rule.costs.body.track;
   return [
     `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 반복되는 이야기 대신 장면에 맞는 작은 이야기를 improvise_storylet로 지어 열 수 있다. 지금 장면이 맞지 않으면(할 일이 뚜렷하다, 막 이야기가 끝났다, 혼자 쉬는 중) 맞는 순간까지 기다렸다 써도 된다. 쓰지 않으면 지나간다.`,
-    `  배역으로 쓸 수 있는 사람: ${people.join(", ") || "지금은 없음"} (이름 없는 사람이 필요하면 먼저 spawn_extra)`,
+    `  배역으로 쓸 수 있는 사람: ${people.join(", ")} (이름 없는 사람이 필요하면 먼저 spawn_extra)`,
     `  보상 (등급 small·medium, 숫자와 물건은 시스템이 정한다): item 물건(reward_item에 갈래: ${Object.entries(rule.item_kinds).map(([k, v]) => `${k} ${v}`).join("·")}), relation 배역의 마음(${RELATION_AXES.map((a) => `${a} ${RELATION_AXIS_LABELS[a]}`).join("·")}), merit 공적`,
     `  대가: relation 배역의 신뢰가 떨어짐, noise 이 구역에 소리, time 시간이 더 걸림, body ${track}, give 주인공이 가진 물건 하나를 내준다 (cost_item에 소지품 id: 맞바꾸기·나눠 주기·건네기. 판정 없는 선택지면 그 물건이 있어야 고를 수 있다)`,
     "  판정이 붙은 선택지는 성공=보상, 대가 있는 성공=한 등급 낮은 보상+대가, 실패=대가. 판정이 없는 선택지는 보상 small까지이고 보상이 있으면 대가도 있어야 한다.",

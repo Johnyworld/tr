@@ -6,6 +6,7 @@ import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } 
 import type { GameState } from "../game/state.ts";
 import { rankName } from "../game/ranks.ts";
 import { formatAgo } from "../rules/time.ts";
+import { playerSecretName, secretKnownBy } from "../rules/self.ts";
 import { personFactLines, personFacts } from "../engine/personFacts.ts";
 
 /**
@@ -25,6 +26,8 @@ export type PersonProfile = {
   facts: { source: string; fact: string }[];
   /** 만나 본 사람의 파는 물건·가르칠 수 있는 것 (사람 정보, 12-241). 꺼내지 않은 부탁은 보이지 않는다 */
   offers: string[];
+  /** 이 사람이 아는 내 비밀의 이름 (털어놓은 상대·그 자리에 있던 사람, 12-260). 모르면 null */
+  knowsMySecret: string | null;
 };
 
 export function personProfile(state: GameState, content: Content, id: string): PersonProfile {
@@ -50,6 +53,7 @@ export function personProfile(state: GameState, content: Content, id: string): P
       .filter((b) => !isAcquaintanceMemory(b.fact) && ((named && b.fact.includes(c.name)) || b.fact.includes(alias)))
       .slice(-5)
       .map((b) => ({ source: `${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}`, fact: withKnownNames(state, content, b.fact) })),
+    knowsMySecret: secretKnownBy(state, state.playerId).includes(id) ? (playerSecretName(content, state) ?? null) : null,
     offers: met ? personFactLines(personFacts(state, content, id, false)).map((l) => l.replace(" (take_action.lesson)", "")) : [],
   };
 }

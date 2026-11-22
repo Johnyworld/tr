@@ -68,20 +68,22 @@ export function storyPlaceFits(state: GameState, content: Content, indoor: boole
  * places를 적었으면 그 장소, 아니면 이야기 글에 나오는 지금 구역의 장소 이름·aliases. 글이 장소를 말하지 않거나
  * 장소를 정하지 않은 자리(막 들어선 자리)·즉흥 장소에 있으면 거르지 않는다 (이야기가 그 자리로 데려간다)
  */
-export function storyPlacesFit(state: GameState, content: Content, places: readonly string[] | undefined, text: string): boolean {
+export function storyPlacesFit(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false): boolean {
   const here = currentPlace(state, content);
-  if (!here || here.spawned) return true;
+  // 부르는 이야기는 어디서든 연다: 그 장소로 데려간다 (12-260)
+  if (!here || here.spawned || summons) return true;
   const named = storyPlaces(state, content, places, text);
   return !named.length || named.includes(here.id);
 }
 
 /**
- * 막 들어선 자리(장소 없음)에서 열린 이야기가 지금 구역의 장소 하나를 말하면 그 장소 (12-254). 갇혔거나 이미 장소에 있거나 여럿·없으면 null
+ * 막 들어선 자리(장소 없음)에서 열린 이야기가 지금 구역의 장소 하나를 말하면 그 장소 (12-254). 갇혔거나 이미 장소에 있거나 여럿·없으면 null.
+ * 부르는 이야기(summons, 12-260)는 다른 장소에 있어도 그 장소로 (이미 거기 있으면 null)
  */
-export function storyPlaceOnEntry(state: GameState, content: Content, places: readonly string[] | undefined, text: string): string | null {
-  if (state.playerPlace || heldOf(state.characters[state.playerId])) return null;
+export function storyPlaceOnEntry(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false): string | null {
+  if ((state.playerPlace && !summons) || heldOf(state.characters[state.playerId])) return null;
   const named = storyPlaces(state, content, places, text);
-  return named.length === 1 ? named[0]! : null;
+  return named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
 }
 
 /** 이야기가 말하는 지금 구역의 장소 (places를 적었으면 그것, 아니면 글에 나오는 장소 이름·aliases) */
@@ -278,6 +280,9 @@ export function shelterAt(content: Content, state: GameState, activity: string, 
   if (activity === "travel") return { indoor: false, cover: 0 };
   const atPlace = placeIndoor(state, content);
   if (atPlace !== null) return { indoor: atPlace, cover: atPlace && zoneCover <= 0 ? PLACE_COVER : zoneCover };
+  // 다른 무리 거점에 막 들어선 자리는 담 밖 문 앞이다 (12-260, PT15 튜토리얼: 정문 이야기 전인데 "실내 +7")
+  const owner = zone ? state.zones[zone]?.owner : null;
+  if (zone && content.locations[zone]?.kind === "base" && owner && owner !== me?.factionId) return { indoor: false, cover: 0 };
   const sheltered = !!zone && (state.homes?.[who] === zone || (content.locations[zone]?.kind === "base" && !!me?.factionId && ownedBy(state, zone, me.factionId)));
   const outdoorWork = !!c?.outdoor.includes(activity as never);
   return { indoor: zoneCover > 0 && (!outdoorWork || (activity === "search" && sheltered)), cover: zoneCover };

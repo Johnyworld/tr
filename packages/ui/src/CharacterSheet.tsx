@@ -555,6 +555,7 @@ function PersonCard({ profile: p }: { profile: PersonProfile }) {
       ) : (
         <span className="person-tip-line muted">아직 직접 만나 본 적이 없습니다.</span>
       )}
+      {p.knowsMySecret && <span className="person-tip-line">이 사람은 내 비밀({p.knowsMySecret})을 안다.</span>}
       {p.facts.length > 0 && (
         <>
           <span className="info-tip-sep" />

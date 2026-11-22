@@ -972,6 +972,11 @@ export function createContentSchemas(s: Scenario) {
         after_storylet: z.strictObject({ id: contentIdSchema, hours: z.number().positive() }).optional(),
         /** 우리 무리 사람이 본 무거운 짓(시나리오 offense)이 있고 아직 다뤄지지 않았을 때만: 규율 회의 (12-257, 공통 규칙 3) */
         own_offense: z.boolean().optional(),
+        /**
+         * 부르는 이야기 (12-260): 상관이 주인공을 불러 가는 장면이라 어느 장소에서든 열리고, 글이 말하는 장소 하나로 주인공을 옮긴다
+         * (PT15 파트 7: 규율 회의가 "광장"·"교무실"에서만 열려 사흘 안에 열리지 못할 수 있었다)
+         */
+        summons: z.boolean().optional(),
         /** 곁의 동행 수 (플레이 테스트 11: 동행이 있는데 "혼자 걷기엔 험해") */
         companions_lte: z.number().int().min(0).optional(),
         companions_gte: z.number().int().min(1).optional(),

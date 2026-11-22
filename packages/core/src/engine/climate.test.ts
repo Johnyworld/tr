@@ -140,6 +140,8 @@ describe("기온", () => {
       const w = initialWarWorld(content);
       store.getState().factions = w.factions;
       store.getState().zones = w.zones;
+      // 손님은 안에 들어가 잔다: 남의 거점에 막 들어선 자리는 담 밖 문 앞이다 (12-260)
+      store.getState().playerPlace = content.locations[zone]!.places.find((p) => p.indoor && !p.jail)!.id;
       return feelsLike(content, store.getState(), "sleep")!;
     };
     expect(at("b_base").parts.some((p) => p.startsWith("불 땐 거처"))).toBe(true); // 버들마을은 청솔을 좋게 본다

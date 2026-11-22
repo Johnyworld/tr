@@ -52,15 +52,20 @@ export function hasAccess(content: Content, state: { roleId: string; playerId: s
   const player = state.characters[state.playerId];
   if (!player?.factionId) return false;
   const access = content.roles[state.roleId]?.access ?? [];
-  if (access.length === 0) return key === "ration" || key === "mission_board";
+  if (access.length === 0) return (CORE_ACCESS as readonly string[]).includes(key);
   return access.includes(key);
 }
 
-/** GM에게 보여 줄 권한 줄 */
+/** core가 스스로 다루는 권한 (배급·임무). GM 상태에는 보이지 않는다 */
+const CORE_ACCESS = ["ration", "mission_board"] as const;
+
+/**
+ * GM에게 보여 줄 특권 줄: GM이 판단에 쓰는 것만 (12-260, PT15 졸병: "권한: 배급 · 임무 게시판"은 코드가 알아서 하는 일이라 GM이 할 것이 없었다)
+ */
 export function describeAccess(content: Content, roleId: string): string {
-  const access = content.roles[roleId]?.access ?? [];
+  const access = (content.roles[roleId]?.access ?? []).filter((a) => !(CORE_ACCESS as readonly string[]).includes(a));
   if (!access.length) return "";
-  return `권한: ${access.map((a) => content.scenario.access_labels[a] ?? a).join(" · ")}`;
+  return `특권: ${access.map((a) => content.scenario.access_labels[a] ?? a).join(" · ")}`;
 }
 
 /** GM에게 줄 소속 무리의 문화 (연기와 판단에 쓴다) */

@@ -181,7 +181,8 @@ export function rollPlayerCheck(
     total: roll.total,
     outcome: roll.outcome,
     outcomeLabel: CHECK_OUTCOME_LABELS[roll.outcome],
-    line: checkLine(move.label, [
+    // 닥친 일에 버티는 판정은 무엇의 굴림인지 줄에 붙인다 (12-260, PT15 졸병: 은밀 다음 "버티기"가 무엇인지 몰랐다)
+    line: checkLine(options.reaction ? `${move.label} · ${input.intent}` : move.label, [
       ...cappedParts,
       { label: DIFFICULTY_LABELS[input.difficulty], value: modifiers.difficulty },
       { label: conditionLabel(scenario, actor), value: modifiers.condition },

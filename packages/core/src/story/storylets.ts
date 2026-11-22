@@ -340,7 +340,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (last === undefined || at - last < w.after_storylet.hours * 60) return false;
   }
   // 이야기가 말하는 장소와 지금 장소가 다르면 열지 않는다 (12-251)
-  if (!storyPlacesFit(state, content, w.places, storyText(storylet))) return false;
+  if (!storyPlacesFit(state, content, w.places, storyText(storylet), !!w.summons)) return false;
   if (w.companions_lte !== undefined && state.companions.length > w.companions_lte) return false;
   if (w.companions_gte !== undefined && state.companions.length < w.companions_gte) return false;
   if (w.own_territory !== undefined) {

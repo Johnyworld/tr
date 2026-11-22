@@ -16,6 +16,7 @@ import Database from "better-sqlite3";
 import { createSeededRng, type Rng } from "../rng.ts";
 import type { Content, RoleContent } from "../content/schemas.ts";
 import { createWorldEvent, type CharacterChoice } from "../game/state.ts";
+import { nameSwapsFor, renameContent } from "../game/names.ts";
 import { checkCharacterChoice, fillCharacterChoice } from "../game/creation.ts";
 
 /** 캐릭터 생성에서 고른 것이 규칙에 맞지 않는다 */
@@ -151,7 +152,10 @@ export class WorldManager {
       const ctx = world.ctx();
       // 능력을 고르지 않았으면(null) 포인트를 무작위로 배분한다
       const filled = choice ? fillCharacterChoice(content.scenario, choice, ctx.rng) : choice;
-      ctx.store.append(createWorldEvent(content, role!, worldId, ctx.rng, filled, custom?.role, told?.background, told?.motive));
+      // 주인공 이름과 겹치는 월드 인물은 이 세계에서만 대체 이름으로 (12-260). 세계의 콘텐츠도 그 이름으로 읽는다
+      const renames = nameSwapsFor(content, filled?.name ?? "");
+      const created = createWorldEvent(renameContent(content, renames), role!, worldId, ctx.rng, filled, custom?.role, told?.background, told?.motive);
+      ctx.store.append(Object.keys(renames).length && created.type === "world_created" ? { ...created, renames } : created);
       // 첫날의 임무 후보, 소문 기준일, 시작 구역. 자유 시나리오의 역할은 이벤트를 넣은 뒤에야 콘텐츠에 보이므로 새로 받는다
       // 다른 판에서 얻은 해금을 이 세계에도 (기획서 9.12)
       this.#inheritUnlocks(world);

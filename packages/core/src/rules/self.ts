@@ -5,7 +5,7 @@
  * - 성격 (12-99, 12-107): 도발에 발끈(rollBlowup), 말이 새어 나감(rollLeak), 얻어들음(rollHear) — engine/persona.ts의 것을 여기로 모은다
  * - 설정 거스르기: 이상·금기·결점(rolls 칸)을 거스르는 행동이면 GM이 먼저 서술로 확인하고, 그래도 하면 take_action.against_setting으로 굴린다.
  *   판정은 마음 다잡기(body.steady)와 같은 정신력, 못 함의 예외는 공통 규칙 12 (reaction).
- *   성공: 뜻대로 / 대가 있는 성공: 뜻대로 하되 마음이 한 단계 흔들린다 / 실패: 하지 못한다 (GM이 행동을 바꾸고 까닭을 짧게)
+ *   성공: 설정을 누르고 해낸다 / 대가 있는 성공: 설정을 꺾고 하되 마음이 한 단계 흔들린다 / 실패: 하지 못한다 (GM이 행동을 바꾸고 까닭을 짧게)
  * - 같은 장면(같은 자리, SCENE_MINUTES 안)에서 같은 설정은 한 번만 굴린다: 이겨 냈으면 다시 막지 않고, 꺾였으면 다시 굴리지 않는다
  * 설정 굴림의 기록은 이 모듈로만 읽는다 (rules/guards.test.ts).
  */
@@ -46,10 +46,11 @@ export function againstSetting(ctx: ToolContext, settingId: string): SettingRoll
   const who = `${item.confirm ?? item.name} ${me.name}`;
   // 판정 줄에는 스킬 이름(버티기)만 나와 무슨 굴림인지 몰랐다 (PT14): 설정을 거스르는 마음의 굴림임을 먼저 밝힌다
   const head = `(${josa(item.name, "을/를")} 거스르는 마음의 굴림)`;
-  if (roll.outcome === "success") return { ok: true, proceed: true, lines: [head, `${josa(who, "은/는")} 마음에 걸리는 것을 누르고 해낸다.`], displays: [roll.display] };
+  // 무엇을 했는지 동사로 (12-260, PT15 졸병·섬: "뜻대로 하지만"이 설정을 지킨 건지 꺾은 건지 읽히지 않았다)
+  if (roll.outcome === "success") return { ok: true, proceed: true, lines: [head, `${josa(who, "은/는")} ${josa(item.name, "을/를")} 누르고 그 행동을 해낸다.`], displays: [roll.display] };
   if (roll.outcome === "partial") {
     const shaken = shakeNerves(ctx, 1, `${josa(item.name, "을/를")} 거슬렀다`, false);
-    return { ok: true, proceed: true, lines: [head, `${josa(who, "은/는")} 뜻대로 하지만 마음이 흔들린다.`, ...shaken.lines], displays: [roll.display, ...shaken.displays] };
+    return { ok: true, proceed: true, lines: [head, `${josa(who, "은/는")} ${josa(item.name, "을/를")} 꺾고 그 행동을 한다. 마음이 흔들린다.`, ...shaken.lines], displays: [roll.display, ...shaken.displays] };
   }
   return { ok: true, proceed: false, lines: [head, `${josa(who, "은/는")} 끝내 하지 못한다: 그 행동은 일어나지 않았다. GM은 행동을 바꿔 서술하고 까닭(${item.name})을 짧게 알린다.`], displays: [roll.display] };
 }
@@ -86,6 +87,12 @@ export function settingLines(content: { scenario: ToolContext["content"]["scenar
 /** 이 사람의 비밀을 아는 사람들 (털어놓은 상대와 그 자리에 있던 사람) */
 export function secretKnownBy(state: ReturnType<ToolContext["store"]["getState"]>, ownerId: string): string[] {
   return state.secretKnownBy?.[ownerId] ?? [];
+}
+
+/** 주인공의 비밀(설정)의 이름 (없으면 null) */
+export function playerSecretName(content: { scenario: ToolContext["content"]["scenario"] }, state: ReturnType<ToolContext["store"]["getState"]>): string | null {
+  const me = state.characters[state.playerId];
+  return me?.settings.map((id) => settingOf(content.scenario, id)).find((x) => x?.fact)?.name ?? null;
 }
 
 /** 인물 카드: 이 인물이 주인공의 비밀을 아나 (아는 사람의 카드에만 실린다, 원칙 4) */

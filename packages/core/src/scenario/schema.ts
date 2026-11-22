@@ -276,6 +276,8 @@ export const scenarioFileSchema = z
         surnames: z.array(z.string().min(1)).min(1),
         /** 성별 id → 이름 목록. 성별이 없으면 모두 섞는다 */
         given: z.record(id, z.array(z.string().min(1)).min(1)),
+        /** 주인공 이름과 겹치는 월드 인물에게 줄 대체 이름 (성별 id → 성을 뺀 이름, 앞의 것부터, 12-260) */
+        stand_ins: z.record(id, z.array(z.string().min(1)).min(1)).optional(),
       })
       .optional(),
     /** 매력의 수동 효과 (기획서 4.2): 처음 만난 NPC의 호감 + (능력 ÷ first_impression_per, 내림), 능력이 bonus_at 이상이면 호감이 오를 때 +1 */

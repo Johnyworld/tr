@@ -380,6 +380,46 @@ export function gmToolSpecs(s: Scenario): ToolSpec[] {
 /** 의식불명 등 스스로 아무것도 못 하는 동안에도 쓰는 tool: 시간 흐르기·돌봄(take_action이 가린다), 누가 오고 가는 것, 묘비명, 설정 */
 const WHILE_INCAPACITATED = new Set(["take_action", "npc_presence", "spawn_extra", "write_epitaph", "set_content_options"]);
 
+/** 도구 인자의 모양을 한 줄로 (칸 이름, 빼도 되는 칸은 ?, 고를 수 있는 값). 너무 길면 한 단계만 */
+export function argsHint(schema: z.ZodType, focus?: PropertyKey): string {
+  const full = describeArg(schema, 0, 3);
+  if (full.length <= 1600) return full;
+  // 길면 한 단계만 보이고, 틀린 칸은 끝까지 보인다 (take_action의 check·activity)
+  const field = typeof focus === "string" ? defOf(schema).shape?.[focus] : undefined;
+  return `${describeArg(schema, 0, 1)}${field ? `\n${String(focus)}: ${describeArg(field, 0, 3)}` : ""}`;
+}
+
+type ZodDefLike = { type: string; innerType?: z.ZodType; entries?: Record<string, unknown>; values?: unknown[]; shape?: Record<string, z.ZodType>; element?: z.ZodType; options?: z.ZodType[] };
+const defOf = (s: z.ZodType) => (s as unknown as { _zod: { def: ZodDefLike } })._zod.def;
+const optionalArg = (s: z.ZodType): boolean => ["optional", "default", "nullable"].includes(defOf(s).type);
+
+function describeArg(s: z.ZodType, depth: number, max: number): string {
+  const d = defOf(s);
+  switch (d.type) {
+    case "optional":
+    case "nullable":
+    case "default":
+    case "readonly":
+    case "pipe":
+      return d.innerType ? describeArg(d.innerType, depth, max) : d.type;
+    case "enum":
+      return Object.values(d.entries ?? {}).map((v) => JSON.stringify(v)).join("|");
+    case "literal":
+      return (d.values ?? []).map((v) => JSON.stringify(v)).join("|");
+    case "object":
+      if (depth >= max) return "{…}";
+      return `{ ${Object.entries(d.shape ?? {}).map(([k, v]) => `${k}${optionalArg(v) ? "?" : ""}: ${describeArg(v, depth + 1, max)}`).join(", ")} }`;
+    case "array":
+      return d.element ? `[${describeArg(d.element, depth, max)}]` : "[]";
+    case "union":
+      return (d.options ?? []).map((o) => describeArg(o, depth, max)).join(" | ");
+    case "record":
+      return "{ id: 값 }";
+    default:
+      return d.type;
+  }
+}
+
 /** 장면에 있는 갇힌 사람을 본 기억을 남긴다 (12-259): 그 구역에서 그 사람을 처음 볼 때 한 번 */
 function noteHeldSeen(ctx: ToolContext): void {
   const state = ctx.store.getState();
@@ -412,7 +452,8 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   }
   const parsed = tool.schema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: `입력이 올바르지 않습니다: ${z.prettifyError(parsed.error)}` };
+    // 인자 이름을 오류로 하나씩 배우지 않게 이 도구의 인자를 함께 알린다 (12-260, PT15 섬: 34회 중 6회를 인자 오류로 버렸다)
+    return { ok: false, error: `입력이 올바르지 않습니다: ${z.prettifyError(parsed.error)}\n이 도구(${name})의 인자: ${argsHint(tool.schema, parsed.error.issues[0]?.path[0])}` };
   }
   // 같은 장소에 있는 사람을 부르면 장면에 들인다 (12-253): 들이는 것은 도구가 실패해도 그대로다 (그 사람은 거기 있었다)
   const entered = name === "npc_presence" || name === "spawn_extra" ? [] : enterIfHere(ctx, mentionedIds(parsed.data));

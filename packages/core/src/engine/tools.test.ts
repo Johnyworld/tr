@@ -82,13 +82,15 @@ describe("npc_presence", () => {
     expect(store.getState().scene.present).toEqual([]);
   });
 
-  it("없는 인물, 플레이어, 중복 등장, 없는 인물 퇴장은 거부한다", () => {
+  it("없는 인물, 플레이어, 없는 인물 퇴장은 거부하고 중복 등장은 그대로 둔다 (12-253)", () => {
     const { ctx } = setup();
     expect(executeTool("npc_presence", { npc_id: "made_up", action: "enter" }, ctx).ok).toBe(false);
     expect(executeTool("npc_presence", { npc_id: "player", action: "enter" }, ctx).ok).toBe(false);
     expect(executeTool("npc_presence", { npc_id: "npc_leader", action: "leave" }, ctx).ok).toBe(false);
     executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
-    expect(executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx).ok).toBe(false);
+    const again = executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
+    expect(again.ok && again.resultText).toContain("이미 장면에 있다");
+    expect(ctx.store.getState().scene.present.filter((id) => id === "npc_leader")).toHaveLength(1);
   });
 });
 

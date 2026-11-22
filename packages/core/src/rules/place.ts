@@ -12,7 +12,7 @@
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
-import { segmentOf } from "./time.ts";
+import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
 import { ownedBy } from "./home.ts";
 import { heldOf, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
@@ -100,10 +100,22 @@ export function npcPlaceAt(state: GameState, content: Content, id: string, time:
     const home = places.find((p) => p.owner === id);
     if (home) return home.id;
   }
-  const said = npc.routine?.[segment];
+  // 그 시간대 칸이 비면 바로 앞 시간대의 자리에 그대로 있다 (12-253, PT15 분대장: 아침 칸이 빈 분대원이 어느 장소에도 없었다)
+  const said = routineSaid(npc.routine, segment);
   if (!said) return null;
   const hit = places.find((p) => said.includes(p.name) || p.aliases.some((a) => said.includes(a)));
   return hit?.id ?? null;
+}
+
+/** 일과의 그 시간대 말. 칸이 비면 앞 시간대로 거슬러 올라간다 (하루를 한 바퀴까지) */
+function routineSaid(routine: Partial<Record<TimeSegment, string>> | undefined, segment: TimeSegment): string | undefined {
+  if (!routine) return undefined;
+  const at = TIME_SEGMENTS.indexOf(segment);
+  for (let back = 0; back < TIME_SEGMENTS.length; back++) {
+    const said = routine[TIME_SEGMENTS[(at - back + TIME_SEGMENTS.length) % TIME_SEGMENTS.length]!];
+    if (said) return said;
+  }
+  return undefined;
 }
 
 /**
@@ -120,6 +132,9 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   if (held) return { zone: held.zone, place: jailIn(content, held.zone)?.id ?? null };
   if (c.dead || c.away) return null;
   if (state.scene.present.includes(id) || (state.companions.includes(id) && !state.bonds[id]?.apart)) return { zone: state.playerZone, place: state.playerPlace };
+  // 두고 온 자리에 머무는 사람 (12-253): 그 시간대가 끝날 때까지
+  const stay = state.npcStays?.[id];
+  if (stay && stay.until > time) return { zone: stay.zone, place: stay.place };
   if (c.extra) return { zone: c.extra.zone, place: null };
   const npc = content.npcs[id];
   return npc ? { zone: npcZoneAt(npc, time) ?? null, place: npcPlaceAt(state, content, id, time) } : null;
@@ -190,6 +205,27 @@ export function jailFor(state: GameState, content: Content, faction: string, cau
   const lands = Object.keys(content.locations).filter((z) => own(z) && jailIn(content, z)).sort((a, b) => (a === base ? -1 : b === base ? 1 : a.localeCompare(b)));
   if (lands[0]) return { zone: lands[0], place: jailIn(content, lands[0])!.id };
   return base ? { zone: base, place: null } : null;
+}
+
+/**
+ * 이 인물이 지금 주인공과 같은 장소에 있는가 (장면에 들이지 않았어도). 주인공이 장소를 정했고 그 인물의 자리도 그 장소일 때만
+ * (12-253, PT15: 장소 목록에 "지금 여기"로 보이는 사람을 target·with로 부르자 "장면에 없다" 오류로 실행이 버려졌다)
+ */
+export function hereWithMe(state: GameState, content: Content, id: string): boolean {
+  if (!state.playerPlace || state.scene.present.includes(id)) return false;
+  const w = whereIs(state, content, id);
+  return !!w && w.zone === state.playerZone && w.place === state.playerPlace;
+}
+
+/** 이 인물이 지금 있을 곳의 이름: 장소, 장소를 모르면 "구역 어딘가", 장면에 있으면 "곁에" (GM 상태의 상관 줄, 12-253) */
+export function whereLabel(state: GameState, content: Content, id: string): string | null {
+  if (state.scene.present.includes(id)) return "곁에 (장면에 있다)";
+  const w = whereIs(state, content, id);
+  if (!w || !w.zone) return null;
+  const zoneName = content.locations[w.zone]?.name ?? w.zone;
+  const place = placeById(state, content, w.place, w.zone);
+  const sameZone = w.zone === state.playerZone;
+  return place ? (sameZone ? place.name : `${zoneName}의 ${place.name}`) : `${zoneName} 어딘가`;
 }
 
 /** 이 인물이 주인공과 같은 구역에 있는가 (장소는 보지 않는다) */

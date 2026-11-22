@@ -56,6 +56,11 @@ export function nextSegmentStart(time: GameTime, segment: TimeSegment): GameTime
   return startOfToday > time ? startOfToday : startOfToday + MINUTES_PER_DAY;
 }
 
+/** 지금 시간대가 끝나는 시각 (다음 시간대가 시작되는 시각) */
+export function segmentEnd(time: GameTime): GameTime {
+  return Math.min(...TIME_SEGMENTS.map((s) => nextSegmentStart(time, s)));
+}
+
 /** 1일차가 start(YYYY-MM-DD)인 달력의 날짜: "2032. 11. 8." */
 export function calendarDate(start: string, time: GameTime): string {
   const d = new Date(`${start}T00:00:00Z`);

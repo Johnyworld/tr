@@ -60,7 +60,7 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
   });
 
   it("규칙 15 (장소): 지금 장소와 즉흥 장소는 rules/place.ts로만 읽는다", () => {
-    expect(offenders(/\.(playerPlace|spawnedPlaces)\b/, ["game/state.ts", "rules/place.ts"])).toEqual([]);
+    expect(offenders(/\.(playerPlace|spawnedPlaces|npcStays)\b/, ["game/state.ts", "rules/place.ts"])).toEqual([]);
   });
 
   it("규칙 15 (장소): 인물의 구역은 rules/place.ts의 whereIs로만 묻는다", () => {

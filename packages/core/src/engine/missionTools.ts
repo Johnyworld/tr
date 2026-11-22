@@ -23,6 +23,7 @@ import type { Scenario } from "../scenario/schema.ts";
 import { ACTIVITY_COSTS, ACTIVITY_LABELS, dayOf, formatDuration, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { Content, MissionRequirement } from "../content/schemas.ts";
 import { baseOf } from "./captivity.ts";
+import { whereLabel } from "../rules/place.ts";
 import type { GameState } from "../game/state.ts";
 import {
   activeMissionOf,
@@ -560,6 +561,10 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   // 무리에 들 때 맡은 일 (플레이 테스트 11: "버들마을 경비병"으로 들었는데 복무 줄은 "정찰대원"뿐이었다)
   const joinedAs = state.customRole && player.factionId && state.customRole.rank === player.rank && !state.customRole.label.includes(rankName(ctx.content, player.factionId, player.rank)) ? ` (맡은 일: ${state.customRole.label})` : "";
   const lines = [player.factionId ? `복무: ${rankName(ctx.content, player.factionId, player.rank)}${joinedAs} · 공적 ${player.merit} · 임무 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
+  // 상관이 지금 어디 있는지 (12-253, PT15 분대장: 보급 창고에 있을 상관을 교무실에 불러 임무를 받았다)
+  const boss = player.factionId ? commanderIdOf(state, ctx.content) : null;
+  const bossAt = boss ? whereLabel(state, ctx.content, boss) : null;
+  if (boss && bossAt) lines.push(`상관 ${playerCalls(state, ctx.content, boss)}(${boss}): 지금 ${bossAt}`);
   const offer = describePromotionOffer(ctx.content, state);
   if (offer) lines.push(offer);
   if (active) {

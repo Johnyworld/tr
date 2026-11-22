@@ -226,7 +226,8 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
     // 배역이 아닌 인물의 이름도 주인공이 모르면 호칭으로 (12-192)
     `  상황: ${maskUnknownNames(state, content, fillStorylet(storySetup(state, a.storylet), vars), { story: true })}`,
     ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${maskUnknownNames(state, content, fillStorylet(a.storylet.ai_direction, vars), { story: true })}`] : []),
-    `  등장: ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
+    // 등장 인물은 이미 장면에 있다 (12-253, PT15 튜토리얼: 다시 npc_presence enter를 불러 오류). 이야기가 끝나도 남는다
+    `  등장 (이미 장면에 있다. 이야기가 끝나도 남는다): ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
     `  선택지 (resolve_storylet): ${a.storylet.choices
       .filter((c) => choiceAvailable(state, c, a.cast))
       // 배우지 않은 전문 기술의 선택지는 미리 "못 함"으로 (플레이 테스트 12: 고르면 거절돼 남는 길이 하나뿐인 줄 몰랐다)
@@ -329,25 +330,12 @@ export const resolveStorylet = defineTool({
         else if ((d.type === "belief" || d.type === "harm") && d.note) lines.push(d.note);
       }
     }
-    // 이야기로 들어온 배역은 이야기가 끝나면 장면을 떠난다 (B13, 플레이 테스트 9: 배역이 장면에 쌓였다). 함께 다니게 된 사람은 남는다
-    // 무리에 든 선택지면 그 사람들이 곁에 남는다 (새 상관과 다음 장면이 이어진다)
-    if (!effects.some((e) => "join_faction" in e)) {
+    // 이야기가 끝나도 배역은 장면에 남는다 (12-253, PT15 튜토리얼: 안내·재회 뒤 바로 그 사람과 이어지는 장면에서 매번 다시 들였다).
+    // 장소를 옮기면 함께 가지 않는 사람은 그 자리에 머물고(공통 규칙 15), 자면 제 할 일로 떠나 장면이 쌓이지 않는다
+    // 위협 이야기(겁을 주는 이야기·매복)를 실패하면 위협이 남았음을 알린다 (플레이 테스트 13: 들켰는데 아무 일도 없었다)
+    if (!effects.some((e) => "join_faction" in e) && threatStaysOnMiss(ctx.content, a.storylet.id, outcome)) {
       const now = ctx.store.getState();
-      const left: string[] = [];
-      // 위협 이야기(겁을 주는 이야기·매복)를 실패하면 위협은 장면에 남는다: 이어서 맞서거나 달아난다 (플레이 테스트 13: 들켰는데 배역이 빠지고 아무 일도 없었다)
-      const threatStays = threatStaysOnMiss(ctx.content, a.storylet.id, outcome);
-      const stayed: string[] = [];
-      for (const [key, id] of Object.entries(a.cast)) {
-        if (threatStays && now.scene.present.includes(id) && !now.companions.includes(id) && !now.characters[id]?.dead) {
-          stayed.push(playerCalls(now, ctx.content, id));
-          continue;
-        }
-        // 치료사는 곁에 남는다: 이야기가 끝난 뒤 치료를 받을 수 있게 (플레이 테스트 13: 침상 곁의 의사가 빠져 치료가 거절됐다)
-        if (!a.storylet.cast[key]?.enter || !now.scene.present.includes(id) || now.companions.includes(id) || id === commanderOf(now, ctx.content) || id === roleOf(ctx.content, now)?.commander || !!ctx.content.npcs[id]?.healer) continue;
-        ctx.store.append({ type: "npc_left", npcId: id });
-        left.push(playerCalls(now, ctx.content, id));
-      }
-      if (left.length) lines.push(`이야기 배역(${left.join(", ")})은 장면에서 빠졌다. 장면이 이어져 더 마주하면 npc_presence enter.`);
+      const stayed = Object.values(a.cast).filter((id) => now.scene.present.includes(id) && !now.companions.includes(id) && !now.characters[id]?.dead).map((id) => playerCalls(now, ctx.content, id));
       if (stayed.length) lines.push(`위협은 그대로 장면에 남았다: ${stayed.join(", ")}. 다음 행동에서 맞서거나(target) 달아나는(move_to + 판정) 장면으로 잇는다.`);
     }
     // 이야기 해결 중에 죽었으면 (쓰러진 사이 붙잡히거나 죽임 등) 다음 행동에서야 알게 하지 않는다

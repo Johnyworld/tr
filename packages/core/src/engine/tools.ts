@@ -64,7 +64,7 @@ import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { PLACE_TOOLS } from "./placeTools.ts";
-import { npcPlaceAt, placeById, sharesPlace } from "../rules/place.ts";
+import { hereWithMe, npcPlaceAt, placeById, sharesPlace } from "../rules/place.ts";
 import { zoneOf } from "../rules/place.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
@@ -211,7 +211,8 @@ const npcPresence = defineTool({
     const name = playerCalls(state, content, character.id);
     const present = state.scene.present.includes(character.id);
     if (input.action === "enter") {
-      if (present) return { ok: false, error: `${josa(name, "은/는")} 이미 장면에 있습니다.` };
+      // 이야기가 열리면 배역은 이미 들어와 있다: 오류 대신 그대로 (PT15 튜토리얼)
+      if (present) return { ok: true, resultText: `${josa(name, "은/는")} 이미 장면에 있다 (그대로).`, display: { type: "presence", npcName: name, action: "enter" }, silent: true };
       if (character.dead) return { ok: false, error: `${josa(name, "은/는")} 사망했습니다.` };
       if (character.away) return { ok: false, error: `${josa(name, "은/는")} 도시를 떠났습니다.` };
       if (isAwayCompanion(state, character.id)) {
@@ -384,11 +385,17 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   if (!parsed.success) {
     return { ok: false, error: `입력이 올바르지 않습니다: ${z.prettifyError(parsed.error)}` };
   }
+  // 같은 장소에 있는 사람을 부르면 장면에 들인다 (12-253): 들이는 것은 도구가 실패해도 그대로다 (그 사람은 거기 있었다)
+  const entered = name === "npc_presence" || name === "spawn_extra" ? [] : enterIfHere(ctx, mentionedIds(parsed.data));
   // 각 tool의 run은 자기 스키마로 파싱된 입력만 받는다
-  const before = watchFear(state);
-  const living = livingIds(state);
+  const before = watchFear(ctx.store.getState());
+  const living = livingIds(ctx.store.getState());
   takeReactionChecks(ctx.store);
   let outcome = (tool.run as (input: unknown, ctx: ToolContext) => ToolOutcome)(parsed.data, ctx);
+  if (entered.length) {
+    const note = `(같은 장소에 있던 ${entered.join(", ")}${josa(entered.at(-1)!, "을/를").slice(entered.at(-1)!.length)} 장면에 들였다)`;
+    outcome = outcome.ok ? { ...outcome, resultText: [note, outcome.resultText].filter(Boolean).join("\n") } : { ...outcome, error: `${outcome.error} ${note}` };
+  }
   // 시간을 쓴 도구는 끝에 "시간이 흐른 뒤" 처리를 한 번 거친다 (12-240, A11). 이미 돌았으면 다시 돌리지 않는다
   if (ctx.store.getState().time > state.time && !afterTimeCaughtUp(ctx)) {
     const after = runAfterTimeAdvance(ctx);
@@ -403,6 +410,35 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   const hint = outcome.ok ? [stashHint(ctx), storyStillOpen(state, name, ctx)].filter(Boolean).join("\n") : null;
   const hinted = hint && outcome.ok ? { ...outcome, resultText: [outcome.resultText, hint].filter(Boolean).join("\n") } : outcome;
   return withCheckLines(withFear(hinted, fearAfterTool(ctx, before)), takeReactionChecks(ctx.store));
+}
+
+/** 입력에서 인물 id가 들어가는 칸 (target·with·npc_id·envoy·to·from, check.opponent·treatment.target) */
+const ID_KEYS = ["target", "npc_id", "envoy", "to", "from", "teacher"] as const;
+function mentionedIds(input: unknown): string[] {
+  if (!input || typeof input !== "object") return [];
+  const o = input as Record<string, unknown>;
+  const ids: string[] = [];
+  for (const k of ID_KEYS) if (typeof o[k] === "string") ids.push(o[k] as string);
+  for (const k of ["with", "place_with"]) if (Array.isArray(o[k])) ids.push(...(o[k] as unknown[]).filter((x): x is string => typeof x === "string"));
+  for (const k of ["check", "treatment"]) {
+    const sub = o[k] as Record<string, unknown> | null | undefined;
+    if (sub && typeof sub === "object") for (const kk of ["opponent", "target"]) if (typeof sub[kk] === "string") ids.push(sub[kk] as string);
+  }
+  return [...new Set(ids)];
+}
+
+/** 같은 장소에 있는 사람이면 장면에 들인다 (공통 규칙 15 hereWithMe). 들인 사람의 호칭 */
+function enterIfHere(ctx: ToolContext, ids: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const id of ids) {
+    const state = ctx.store.getState();
+    const c = state.characters[id];
+    if (!c || c.dead || c.away || id === state.playerId || state.squadOrders?.[id] || isAwayCompanion(state, id)) continue;
+    if (!hereWithMe(state, ctx.content, id)) continue;
+    enterScene(ctx, id);
+    out.push(playerCalls(ctx.store.getState(), ctx.content, id));
+  }
+  return out;
 }
 
 /** 이야기가 열린 채로 다른 일을 마무리하는 tool을 쓰면 알린다 (플레이 테스트 11, 막지는 않는다) */

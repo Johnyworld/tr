@@ -13,7 +13,7 @@ import { josa } from "../text.ts";
 import type { Rng } from "../rng.ts";
 import { CHECK_OUTCOMES, difficultySchema } from "../rules/check.ts";
 import { harmSeveritySchema } from "../rules/harm.ts";
-import { activitySchema, dayOf, START_TIME } from "../rules/time.ts";
+import { activitySchema, dayOf, segmentEnd, START_TIME } from "../rules/time.ts";
 import { interruptSchema } from "../sim/fastForward.ts";
 import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
 import { idEnum, type Scenario } from "../scenario/schema.ts";
@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 86;
+export const SAVE_SCHEMA_VERSION = 87;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -325,6 +325,11 @@ export function createGameSchemas(s: Scenario) {
     playerPlace: z.string().nullable().default(null),
     /** GM이 즉흥으로 만든 장소 (장소 id → 구역·이름·실내·주인). 세이브에 남아 다시 쓴다 */
     spawnedPlaces: z.record(z.string(), z.strictObject({ zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable() })).default({}),
+    /**
+     * 머무는 자리 (12-253, 공통 규칙 15): 장면에 있다가 주인공이 두고 떠난 인물은 그 시간대가 끝날 때(until)까지 그 자리에 있다.
+     * 그 뒤엔 일과로 돌아간다 (PT15: 교무실에 부른 상관이 주인공이 나가자마자 일과의 보급 창고로 순간이동했다). 읽기는 rules/place.ts로만
+     */
+    npcStays: z.record(z.string(), z.strictObject({ zone: z.string(), place: z.string().nullable(), until: z.number().int() })).default({}),
     /** 상인이 마지막으로 물건을 채운 날 */
     restockedDay: z.record(z.string(), z.number().int()).default({}),
     /** 이 세계에서 열린 해금: 시나리오(역할) id (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 12.4.1, 9.12) */
@@ -1253,6 +1258,7 @@ export const EMPTY_STATE: GameState = {
   groundItems: {},
   playerPlace: null,
   spawnedPlaces: {},
+  npcStays: {},
   loans: {},
   cargo: {},
   exposedAt: {},
@@ -1341,6 +1347,17 @@ export function spotKey(zone: string, place: string | null): string {
 }
 
 /** 떠나는 자리에 바닥 물건을 두고, 가는 자리에 있던 것을 장면에 둔다 */
+/** 두고 떠난 인물은 그 시간대가 끝날 때까지 그 자리에 머문다 (12-253, 공통 규칙 15). 끝난 머묾은 이때 치운다 */
+function leaveBehind(next: GameState, ids: readonly string[], zone: string, place: string | null, now: number) {
+  for (const [id, stay] of Object.entries(next.npcStays)) if (stay.until <= now) delete next.npcStays[id];
+  const until = segmentEnd(now);
+  for (const id of ids) {
+    const c = next.characters[id];
+    if (!c || c.dead || c.away || c.captive) continue;
+    next.npcStays[id] = { zone, place, until };
+  }
+}
+
 function swapGround(next: GameState, from: string | null, to: string) {
   const ground = { ...next.groundItems };
   if (from !== null && Object.keys(next.scene.items).length) ground[from] = { ...next.scene.items };
@@ -2044,6 +2061,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (npc.dead) throw new Error(`사망한 인물: ${npc.id}`);
       if (next.scene.present.includes(npc.id)) throw new Error(`이미 장면에 있음: ${npc.id}`);
       next.scene.present.push(npc.id);
+      delete next.npcStays[npc.id];
       perceive(next, npc.id);
       if (npc.extra) npc.extra.lastSeenAt = state.time;
       // 만나면 서로 얼굴을 안다. 이름은 밝히거나 불려야 안다 (name_learned)
@@ -2055,6 +2073,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!next.scene.present.includes(event.npcId)) throw new Error(`장면에 없음: ${event.npcId}`);
       perceive(next, event.npcId);
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      // 스스로 자리를 뜬 사람은 일과로 돌아간다 (머무는 자리 없음)
+      delete next.npcStays[event.npcId];
       {
         const c = next.characters[event.npcId];
         if (c?.extra) c.extra.lastSeenAt = state.time;
@@ -2251,7 +2271,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.to !== state.playerPlace) next.offBalanceUntil = null;
       for (const id of next.scene.present) perceive(next, id);
       const along = event.with ?? [];
-      next.scene = { ...next.scene, present: next.scene.present.filter((id) => next.companions.includes(id) || along.includes(id)) };
+      const keep = (id: string) => next.companions.includes(id) || along.includes(id);
+      // 두고 온 사람은 그 시간대가 끝날 때까지 그 자리에 머문다 (12-253)
+      leaveBehind(next, next.scene.present.filter((id) => !keep(id)), zone, event.from, state.time);
+      next.scene = { ...next.scene, present: next.scene.present.filter(keep) };
       // 같은 구역의 한 장소에 남겨 둔 동행: 그 장소를 떠나면 돌아왔을 때 합류한다
       for (const b of Object.values(next.bonds)) if (b.apart?.zone === zone && (b.apart.place ?? null) === event.from) b.apart.left = true;
       return next;
@@ -2295,6 +2318,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
           if (c?.captive) c.captive = null;
         }
         const along = (event.with ?? []).filter((id) => !next.companions.includes(id));
+        // 두고 온 사람은 떠난 구역의 그 자리에 머문다 (12-253)
+        leaveBehind(next, next.scene.present.filter((id) => !next.companions.includes(id) && !along.includes(id)), event.from, state.playerPlace, state.time);
         next.scene.present = [...next.companions, ...along].filter((id) => {
           const c = next.characters[id];
           return c && !c.dead && !c.away && !c.captive;

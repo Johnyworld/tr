@@ -225,8 +225,10 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       if (role.optional) continue; // 있으면 쓰는 배역: 비워 둔다
       return null;
     }
+    // 지금 장소에 있는(있을) 사람이 후보에 있으면 그중에서 (12-253, PT15 섬: 그물 창고의 사람이 부두 이야기에 끌려왔다)
+    const near = all.filter((id) => state.scene.present.includes(id) || state.companions.includes(id) || nearby(state, content, id));
     // 최근에 배역으로 나온 사람은 다른 후보가 있으면 쉰다 (공통 규칙 5, 플레이 테스트 13: 윤해솔이 사흘에 네 이야기)
-    const options = preferRested(all, (id) => resting(content, "cast", state.castUsedAt?.[id], state.time));
+    const options = preferRested(near.length ? near : all, (id) => resting(content, "cast", state.castUsedAt?.[id], state.time));
     const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;
     cast[key] = id;
     used.add(id);

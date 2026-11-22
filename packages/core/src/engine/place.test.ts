@@ -1,4 +1,6 @@
-import { routeMinutes } from "../rules/time.ts";
+import { routeMinutes, segmentEnd } from "../rules/time.ts";
+import { commanderOf } from "../game/missions.ts";
+import { describeMissionsForGm } from "./missionTools.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -6,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { createSeededRng } from "../rng.ts";
-import { currentPlace, ENTRY_PLACE, guardedHere, jailFor, nearby, npcPlaceAt, placeIndoor, placesIn, shelterAt, storyPlaceFits, whereIs } from "../rules/place.ts";
+import { currentPlace, ENTRY_PLACE, guardedHere, hereWithMe, jailFor, nearby, npcPlaceAt, placeIndoor, placesIn, shelterAt, storyPlaceFits, whereIs } from "../rules/place.ts";
 import { capturePlayer } from "./captivity.ts";
 import { campSite } from "./camp.ts";
 import { feelsLike } from "./climate.ts";
@@ -210,5 +212,57 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
     const npc = Object.values(content.npcs).find((n) => n.zone === "a_base")!;
     w.state().characters[npc.id]!.captive = { by: "faction_c", zone: "c_warehouse" };
     expect(whereIs(w.state(), content, npc.id)).toEqual({ zone: "c_warehouse", place: "stockade" });
+  });
+});
+
+describe("머무는 자리 (12-253, 공통 규칙 15)", () => {
+  it("두고 온 사람은 그 시간대가 끝날 때까지 그 자리에 있고, 그 뒤엔 일과로 돌아간다", () => {
+    const w = world("role_c_comrades");
+    w.executeTool("take_action", act({ place_to: "yard" }));
+    const s = w.state();
+    const id = Object.values(content.npcs).find((n) => n.zone === "c_warehouse" && !s.characters[n.id]?.dead && npcPlaceAt(s, content, n.id) && npcPlaceAt(s, content, n.id) !== "yard")!.id;
+    const routine = npcPlaceAt(s, content, id);
+    expect(w.executeTool("npc_presence", { npc_id: id, action: "enter" }).ok).toBe(true);
+    const other = placesIn(s, content, "c_warehouse").find((p) => p.id !== "yard" && p.id !== routine)!.id;
+    expect(w.executeTool("take_action", act({ place_to: other })).ok).toBe(true);
+    expect(w.state().scene.present).not.toContain(id);
+    expect(whereIs(w.state(), content, id)).toEqual({ zone: "c_warehouse", place: "yard" });
+    const later = segmentEnd(w.state().time) + 1;
+    expect(whereIs(w.state(), content, id, later)?.place).toBe(npcPlaceAt(w.state(), content, id, later));
+  });
+
+  it("같은 장소에 있는 사람을 target으로 부르면 장면에 들이고 행동한다", () => {
+    const w = world("role_c_comrades");
+    w.executeTool("take_action", act({ place_to: "yard" }));
+    const s = w.state();
+    const id = Object.values(content.npcs).find((n) => n.zone === "c_warehouse" && !s.characters[n.id]?.dead && !s.scene.present.includes(n.id) && whereIs(s, content, n.id)?.place === "yard")!.id;
+    expect(hereWithMe(s, content, id)).toBe(true);
+    const out = w.executeTool("take_action", act({ intent: "말을 건다", target: id }));
+    expect(out.ok, out.ok ? "" : out.error).toBe(true);
+    expect(out.ok && out.resultText).toContain("장면에 들였다");
+    expect(w.state().scene.present).toContain(id);
+  });
+
+  it("다른 장소에 있는 사람은 지금처럼 장면에 없다고 거절한다", () => {
+    const w = world("role_c_comrades");
+    w.executeTool("take_action", act({ place_to: "yard" }));
+    const s = w.state();
+    const id = Object.values(content.npcs).find((n) => n.zone === "c_warehouse" && !s.characters[n.id]?.dead && !s.scene.present.includes(n.id) && whereIs(s, content, n.id)?.place && whereIs(s, content, n.id)?.place !== "yard")!.id;
+    const out = w.executeTool("take_action", act({ intent: "말을 건다", target: id }));
+    expect(out.ok ? "" : out.error).toContain("장면에 없습니다");
+  });
+
+  it("일과 칸이 빈 시간대는 앞 시간대의 자리에 있다 (임동욱: 아침 칸이 비고 새벽은 창고 앞 보초)", () => {
+    const w = world("role_a_grunt");
+    const day = Math.floor(w.state().time / 1440);
+    const dawn = npcPlaceAt(w.state(), content, "a_dongwook", day * 1440 + 5 * 60);
+    expect(dawn).not.toBeNull();
+    expect(npcPlaceAt(w.state(), content, "a_dongwook", day * 1440 + 8 * 60)).toBe(dawn);
+  });
+
+  it("GM 상태의 복무 줄에 상관이 지금 어디 있는지 적는다", () => {
+    const w = world("role_a_grunt");
+    const boss = commanderOf(w.state(), content)!;
+    expect(describeMissionsForGm(w.state(), { content })).toMatch(new RegExp(`상관 .*\\(${boss}\\): 지금 `));
   });
 });

@@ -1408,6 +1408,8 @@ export const scenarioFileSchema = z
             min_sleep_hours: z.number().min(0).default(0),
             /** 피곤하지 않으면(첫 단계) 이만큼 자고 깬다 (시간, E4: 낮부터 15시간을 잤다) */
             rested_sleep_hours: z.number().positive().optional(),
+            /** 이 부상 단계부터는 피곤과 상관없이 오래 잔다 (12-255: 누운 몸). 없으면 늘 피로로 */
+            hurt_sleep_from: z.string().optional(),
           })
           .optional(),
         /**

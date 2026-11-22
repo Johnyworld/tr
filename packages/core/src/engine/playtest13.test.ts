@@ -233,6 +233,8 @@ describe("플레이 테스트 13의 남은 버그", () => {
     const w = world("role_a_grunt");
     const commander = content.roles.role_a_grunt!.commander!;
     w.executeTool("npc_presence", { npc_id: commander, action: "enter" });
+    // 피곤해야 긴 잠이다 (12-255: 피곤하지 않은데 저녁 전에 누우면 낮잠)
+    w.ctx().store.append({ type: "condition_changed", targetId: w.state().playerId, track: "fatigue", from: "rested", to: "drowsy", fatal: false, by: "daily", cause: "테스트", day: 1, harmTrack: false });
     const r = w.executeTool("take_action", act({ activity: { kind: "sleep", until: "night" }, ignore_story: true }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     if (w.state().time - 0 > 0 && !(r.ok && r.resultText.includes("끊겼다"))) expect(w.state().scene.present).not.toContain(commander);

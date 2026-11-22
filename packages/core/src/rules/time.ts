@@ -190,6 +190,31 @@ export function routeMinutes(from: string, to: string): number {
   return cost.min + ((h >>> 0) % (steps + 1)) * 15;
 }
 
+/** hours를 받는 활동 (12-255): 오래 하는 활동과 일. 식사·대화·잠깐의 행동·수색은 정해진 길이다 */
+export const HOURS_ACTIVITIES: readonly Activity[] = ["sleep", "wait", "rest", "guard_duty", "treat", "work"];
+
+/**
+ * 오래 하는 활동이 끝나기로 한 시각 (12-255): 시간 수(hours) > 그 시간대가 시작될 때(until) > 임무에 남은 시간 > 기본 길이
+ * (PT15 섬: 30분 더 서려는데 "다음 시간대까지"만 골라져 7시간을 섰다)
+ */
+export function activityTarget(o: { from: GameTime; until: TimeSegment | null; hours: number | null; missionLeft: number | null; defaultMinutes: number }): GameTime {
+  if (o.hours) return o.from + Math.round(o.hours * 60);
+  if (o.until) return nextSegmentStart(o.from, o.until);
+  return o.from + (o.missionLeft ?? o.defaultMinutes);
+}
+
+/**
+ * 잠의 상한 (분, 이어진 잠 전체로 센다, 12-255). 피곤하면 maxMinutes. 피곤하지 않으면 restedHours,
+ * 다만 저녁 전에 누우면 낮잠(napHours). 중상 이상으로 누운 몸은 피곤과 상관없이 maxMinutes
+ * (PT15 분대장: 치명상인데 30분 만에 깼다. 튜토리얼: 13시에 "아침까지" 자자 한밤 01시에 깼다)
+ */
+export function sleepCapMinutes(o: { rested: boolean; hurt: boolean; lyingDownAt: GameTime; maxMinutes: number; restedHours: number; napHours: number }): { minutes: number; nap: boolean } {
+  if (!o.rested || o.hurt) return { minutes: o.maxMinutes, nap: false };
+  const seg = segmentOf(o.lyingDownAt);
+  if (seg === "dawn" || seg === "morning" || seg === "day") return { minutes: Math.round(o.napHours * 60), nap: true };
+  return { minutes: Math.round(o.restedHours * 60), nap: false };
+}
+
 /** 짧은 활동의 소요 시간 (분) */
 export function rollActivityMinutes(cost: Exclude<ActivityCost, { kind: "long" }>, rng: Rng): number {
   if (cost.kind === "fixed") return cost.minutes;

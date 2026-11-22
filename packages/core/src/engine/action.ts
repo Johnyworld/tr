@@ -46,6 +46,9 @@ import {
   MAX_FAST_FORWARD_MINUTES,
   MIN_TURN_MINUTES,
   nextSegmentStart,
+  activityTarget,
+  HOURS_ACTIVITIES,
+  sleepCapMinutes,
   rollActivityMinutes,
   routeMinutes,
   SEGMENT_LABELS,
@@ -73,7 +76,7 @@ import { choiceAvailable, storyletOf } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { sleepChainStart } from "../game/state.ts";
-import { applyTreatment, type FeeChoice, drinkWater, healFromSleep, sleepHealBlocker, itemUseProblem, maybeInfect, refillWater, treatmentProblem, useItem } from "./body.ts";
+import { applyTreatment, type FeeChoice, drinkWater, healFromSleep, sleepHealBlocker, itemUseProblem, maybeInfect, refillWater, treatmentProblem, useItem, wadeIn } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 import { cargoOf } from "../rules/entrusted.ts";
@@ -165,7 +168,8 @@ export function createTakeActionSchema(s: Scenario) {
         kind: activitySchema.exclude(["travel", "combat"]).describe(
           "brief 잠깐의 행동, talk 대화, eat 식사, treat 응급처치, search 수색, work 작업·정비, rest 휴식, guard_duty 보초, sleep 잠, wait 기다림",
         ),
-        until: timeSegmentSchema.nullable().default(null).describe("sleep·wait·rest·guard_duty 전용: 이 시간대가 시작될 때까지. 다른 활동은 null. 임무 보초는 until 없이 걸면 임무에 남은 시간만큼 선다"),
+        until: timeSegmentSchema.nullable().default(null).describe("sleep·wait·rest·guard_duty·treat 전용: 이 시간대가 시작될 때까지. 다른 활동은 null. 임무 보초는 until·hours 없이 걸면 임무에 남은 시간만큼 선다"),
+        hours: z.number().min(0.5).max(12).multipleOf(0.5).nullable().default(null).describe("sleep·wait·rest·guard_duty·treat·work: 몇 시간 할지 (0.5 단위, until 대신). 없으면 null"),
       })
       .nullable()
       .default(null)
@@ -276,6 +280,10 @@ export function createTakeActionSchema(s: Scenario) {
       .boolean()
       .default(false)
       .describe("물이 있는 곳(상태의 \"물\" 줄)에서 플레이어가 물을 마시겠다고 하면 true. 얼마나 풀리는지, 거점에서 보급을 받는지는 시스템이 정한다"),
+    wade: z
+      .boolean()
+      .default(false)
+      .describe("개천·강가처럼 물이 나는 바깥 물가에서 물에 들어가면(헤엄, 옷 입은 채 뛰어듦) true. 옷이 흠뻑 젖는다 (12-255)"),
     change_clothes: z
       .boolean()
       .default(false)
@@ -487,7 +495,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {
-    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || input.change_clothes || !!input.craft || !!input.build || !!input.train || !!input.lesson || input.broadcast || input.ambush || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || input.wade || input.change_clothes || !!input.craft || !!input.build || !!input.train || !!input.lesson || input.broadcast || input.ambush || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
     const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
     if (acts || !passive) {
       return {
@@ -505,11 +513,15 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const cost = ACTIVITY_COSTS[input.activity.kind];
     // 이미 그 시간대인데 기다리면 다음 날 그 시간대까지 간다 (플레이 테스트 12: 낮에 "낮까지" 기다려 12시간을 보냈다)
     if (["wait", "rest", "guard_duty"].includes(input.activity.kind) && input.activity.until && segmentOf(start.time) === input.activity.until) {
-      return { ok: false, error: `이미 ${SEGMENT_LABELS[input.activity.until]}이다. 기다림은 다음 시간대까지로 정한다 (지금 그대로 두면 하루를 넘긴다).` };
+      return { ok: false, error: `이미 ${SEGMENT_LABELS[input.activity.until]}이다. 기다림은 다음 시간대까지로 정한다 (지금 그대로 두면 하루를 넘긴다). 몇 시간만 하려면 until 대신 hours.` };
     }
     if (input.activity.until && !(cost.kind === "long" && cost.allowUntil)) {
-      return { ok: false, error: `${input.activity.kind}에는 until을 쓸 수 없습니다. null을 넣으세요.` };
+      return { ok: false, error: `${input.activity.kind}에는 until을 쓸 수 없습니다. null을 넣으세요.${HOURS_ACTIVITIES.includes(input.activity.kind) ? " 길이를 정하려면 hours." : ""}` };
     }
+    if (input.activity.hours && !HOURS_ACTIVITIES.includes(input.activity.kind)) {
+      return { ok: false, error: `${input.activity.kind}에는 hours를 쓸 수 없습니다 (정해진 길이다). null을 넣으세요.` };
+    }
+    if (input.activity.hours && input.activity.until) return { ok: false, error: "until과 hours는 하나만 쓴다." };
   }
 
   // 전투·이동·준비 검사 (기획서 9.5)
@@ -1003,6 +1015,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     [input.drink || null, () => drinkWater(ctx)],
     [input.refill || null, () => refillWater(ctx)],
     [input.change_clothes || null, () => changeClothes(ctx)],
+    [input.wade || null, () => wadeIn(ctx)],
     [input.bury, () => buryRemains(ctx, input.bury!.who, input.bury!.words)],
   ] as const) {
     if (!request) continue;
@@ -1011,7 +1024,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       lines.push(...t.lines);
       displays.push(...t.displays);
     } else {
-      lines.push(`${request === input.bury ? "묻지 못했다" : request === input.change_clothes ? "갈아입지 못했다" : request === input.drink ? "물을 마시지 못했다" : request === input.refill ? "물을 채우지 못했다" : "몸을 돌보지 못했다"}: ${t.error}`);
+      lines.push(`${request === input.bury ? "묻지 못했다" : request === input.change_clothes ? "갈아입지 못했다" : request === input.wade ? "물에 들어가지 못했다" : request === input.drink ? "물을 마시지 못했다" : request === input.refill ? "물을 채우지 못했다" : "몸을 돌보지 못했다"}: ${t.error}`);
     }
   }
 
@@ -1068,7 +1081,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 3. 시간 경과 (빨리감기와 끼어들기 포함)
-  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? ((content.scenario.consumables[input.use_item]?.hunger ?? 0) > 0 ? "eat" : "brief") : input.drink || input.refill || input.change_clothes ? "brief" : input.craft || input.build || input.train || input.lesson || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
+  const activity: Activity = inBattle ? "combat" : input.move_to ? "travel" : (input.activity?.kind ?? (input.treatment ? "treat" : input.use_item ? ((content.scenario.consumables[input.use_item]?.hunger ?? 0) > 0 ? "eat" : "brief") : input.drink || input.refill || input.wade || input.change_clothes ? "brief" : input.craft || input.build || input.train || input.lesson || input.bury || input.trap === "set" ? "work" : input.forage ? "search" : input.broadcast ? "talk" : "brief"));
   // 이동 수단 (12-137): 타고 가면 이동 시간이 줄고, 연료를 쓰고, 도착한 곳에 소리가 난다
   const ride = input.move_to && input.ride ? planRide(ctx, input.ride, !!crossingAttempt || escapeAttempt) : null;
   if (ride && !ride.ok) lines.push(`타지 못하고 걸었다: ${ride.error}`);
@@ -1085,7 +1098,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const lurking = !!input.check && ["wait", "rest"].includes(activity) && !input.treatment;
   const exposure: Activity = (wetWork || lurking) && !["travel", "combat"].includes(activity) ? "guard_duty" : (input.forage || input.trap === "set") && !["travel", "guard_duty", "combat"].includes(activity) ? "search" : activity;
   const timeBefore = store.getState().time;
-  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure);
+  const hours = input.activity?.hours ?? null;
+  // 장소를 옮긴 턴의 잠깐 행동(판정 없는 것)은 옮기는 5분에 들어간다 (12-255, PT15 섬: 옮겨 가 한마디에 10분)
+  const inMove = !!placeMove && activity === "brief" && !input.check && !inBattle;
+  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure, inMove ? 0 : activity === "work" && hours ? hours * 60 : null, hours);
   // 배달 (F5): 임무 자리에서 임무 일을 하면 지닌 짐을 넘긴다
   if (forMission && !input.move_to) {
     const m = store.getState().missions[forMission];
@@ -1154,7 +1170,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const [first0, ...rest] = time.text.split("\n");
     // 실패한 탈출은 이동이 아니다 (플레이 테스트 13: "이동: 45분 경과 … 빠져나가지 못했다")
     const first = escapeAttempt && outcome === "miss" ? first0!.replace(/^이동:/, "달아나다 붙잡혀 끌려옴:") : first0;
-    lines.push(total > spent ? [first!.replace(/ 경과\. 현재/, ` + 앞서 쓴 ${formatDuration(total - spent)} = 모두 ${formatDuration(total)} 경과. 현재`), ...rest].join("\n") : time.text);
+    if (inMove && spent === 0) lines.push(`${ACTIVITY_LABELS.brief}: 장소를 옮기는 ${PLACE_MOVE_MINUTES}분에 들어갔다. 현재 ${formatTime(store.getState().time)}.`);
+    else lines.push(total > spent ? [first!.replace(/ 경과\. 현재/, ` + 앞서 쓴 ${formatDuration(total - spent)} = 모두 ${formatDuration(total)} 경과. 현재`), ...rest].join("\n") : time.text);
   }
   if (input.activity || input.move_to) displays.push(time.display);
   // 가르침 (4.2.1): 흐른 시간만큼 배운다
@@ -1534,7 +1551,7 @@ function planRide(ctx: ToolContext, itemId: string, blocked: boolean):
 const MAX_SLEEP_MINUTES = 16 * 60;
 
 /** exposure: 추위·젖음을 따질 때의 활동 (사냥·낚시는 activity가 무엇이든 바깥 일이다) */
-export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null, speed = 1, dest: string | null = null, exposure: Activity = activity, fixedMinutes: number | null = null) {
+export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null, speed = 1, dest: string | null = null, exposure: Activity = activity, fixedMinutes: number | null = null, hours: number | null = null) {
   const { store, rng, content } = ctx;
   const state = store.getState();
   const cost = ACTIVITY_COSTS[activity];
@@ -1549,6 +1566,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   /** 활동이 끝나기로 한 시각 (끝나는 그 시각에 열린 이야기는 "끊겼다"가 아니다) */
   let plannedEnd = Infinity;
   let restedCap = false;
+  let napped = false;
   /** 이어진 잠의 시작 (상한은 이어진 잠 전체로 센다) */
   let sleepFrom = from;
   let sleepNote: string | null = null;
@@ -1561,7 +1579,13 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       const levels = content.scenario.condition_tracks.find((t) => t.id === fatigue.track)?.levels ?? [];
       return levels.findIndex((l) => l.id === me?.conditions[fatigue.track]) <= 0;
     })();
-    const cap = activity === "sleep" ? (rested ? fatigue!.rested_sleep_hours! * 60 : MAX_SLEEP_MINUTES) : MAX_FAST_FORWARD_MINUTES;
+    // 중상 이상으로 누운 몸은 피곤과 상관없이 오래 잔다, 피곤하지 않은데 저녁 전에 누우면 낮잠 (12-255)
+    const hurtLevels = harmTrack(content.scenario)?.levels ?? [];
+    const hurtFrom = fatigue?.hurt_sleep_from ? hurtLevels.findIndex((l) => l.id === fatigue.hurt_sleep_from) : -1;
+    const hurt = hurtFrom > 0 && hurtLevels.findIndex((l) => l.id === state.characters[state.playerId]?.conditions[content.scenario.harm_track]) >= hurtFrom;
+    const sleepCap = activity === "sleep" ? sleepCapMinutes({ rested, hurt, lyingDownAt: from, maxMinutes: MAX_SLEEP_MINUTES, restedHours: fatigue?.rested_sleep_hours ?? 12, napHours: fatigue?.min_sleep_hours ?? 3 }) : null;
+    napped = !!sleepCap?.nap;
+    const cap = sleepCap ? sleepCap.minutes : MAX_FAST_FORWARD_MINUTES;
     // 임무 보초는 요건을 채우면 끝난다 (until을 걸지 않았으면)
     const missionLeft = (() => {
       if (until || !forMission || !["guard_duty", "wait", "rest", "work"].includes(activity)) return null;
@@ -1570,7 +1594,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       const left = m.requirements.flatMap((r, i) => ("activity" in r && r.activity === activity ? [r.minutes - (m.progress[i] ?? 0)] : [])).filter((n) => n > 0);
       return left.length ? Math.max(30, Math.ceil(Math.max(...left) / 5) * 5) : null;
     })();
-    const wanted = until && cost.allowUntil ? nextSegmentStart(from, until) : from + (missionLeft ?? cost.minutes);
+    const wanted = activityTarget({ from, until: cost.allowUntil ? until : null, hours, missionLeft: hours ? null : missionLeft, defaultMinutes: cost.minutes });
     // 피곤하지 않은 잠의 상한은 이어진 잠 전체로 센다 (깬 지 얼마 안 돼 다시 잤으면 앞의 잠부터)
     const chainFrom = activity === "sleep" ? sleepChainStart(state, from) : from;
     sleepFrom = chainFrom;
@@ -1638,16 +1662,19 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     const me = state.characters[state.playerId];
     const base = activity === "travel" && dest && state.playerZone ? routeMinutes(state.playerZone, dest) + (me && encumbrance(content, me, state) > 0 ? 15 : 0) : null;
     to = from + (fixedMinutes ?? (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round((base ?? rollActivityMinutes(cost, rng)) * speed))));
-    store.append({
-      type: "time_advanced",
-      activity,
-      from,
-      to,
-      ...(forMission ? { forMission } : {}),
+    // 0분이면 시간이 흐르지 않는다 (장소 옮기기에 들어간 잠깐 행동)
+    if (to > from) {
+      store.append({
+        type: "time_advanced",
+        activity,
+        from,
+        to,
+        ...(forMission ? { forMission } : {}),
         ...(dest ? { dest } : {}),
-    });
-    extra.push(...exposeToCold(ctx, exposure, from, to));
-    extra.push(...exposeToFatigue(ctx, activity, from, to));
+      });
+      extra.push(...exposeToCold(ctx, exposure, from, to));
+      extra.push(...exposeToFatigue(ctx, activity, from, to));
+    }
   }
 
   const label = ACTIVITY_LABELS[activity];
@@ -1677,7 +1704,9 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     lines.push(
       activity === "sleep"
         ? restedCap
-          ? `피곤하지 않아 ${formatDuration(to - from)} 자고 저절로 깼다${chained}. 더 자려면 지친 뒤에.`
+          ? napped
+            ? `피곤하지 않아 낮잠으로 끝났다 (${formatDuration(to - from)})${chained}. 밤잠은 저녁 뒤에.`
+            : `피곤하지 않아 ${formatDuration(to - from)} 자고 저절로 깼다${chained}. 더 자려면 지친 뒤에.`
           : `잠은 한 번에 ${MAX_SLEEP_MINUTES / 60}시간까지다. ${formatDuration(to - from)} 자고 정한 시각 전에 깼다${chained}.`
         : "한 번에 흘려보낼 수 있는 시간은 하루까지다. 정한 시각 전에 멈췄다.",
     );

@@ -1645,8 +1645,9 @@ body:
   # 몸을 쓰는 일은 더 지친다 (12-119): 이동·수색·작업 1.5, 전투 3 (보초·기다림·대화는 1)
   # 16시간 깨어 있으면 졸림(보정 없음), 24시간이면 지침 -1, 32시간이면 탈진 -2
   # 지침 이상이면 부상이 저절로 낫지 않고 질병도 낫지 않는다 (12-115, 자야 낫는다)
-  # 플레이 테스트 11 (E4): 3시간보다 짧은 잠은 피로를 풀지 못하고, 피곤하지 않으면 8시간 자고 깬다
-  fatigue: { track: fatigue, grace: 16, per_step: 8, rates: { sleep: -3, rest: 0, travel: 1.5, search: 1.5, work: 1.5, combat: 3 }, blocks_recovery_from: weary, min_sleep_hours: 3, rested_sleep_hours: 12 }
+  # 플레이 테스트 11 (E4): 3시간보다 짧은 잠은 피로를 풀지 못하고, 피곤하지 않으면 12시간 자고 깬다
+  # 12-255: 피곤하지 않은데 저녁 전에 누우면 낮잠(min_sleep_hours), 중상부터는 피곤과 상관없이 오래 잔다(hurt_sleep_from)
+  fatigue: { track: fatigue, grace: 16, per_step: 8, rates: { sleep: -3, rest: 0, travel: 1.5, search: 1.5, work: 1.5, combat: 3 }, blocks_recovery_from: weary, min_sleep_hours: 3, rested_sleep_hours: 12, hurt_sleep_from: serious }
   # 굶주림은 부상을 주지 않고 허기 트랙 끝에서 죽는다 (12-74)
   hunger: { track: hunger }
   # 갈증 (12-97, *임시*): 하루마다 한 단계 마른다. 물이 넉넉한 곳(물이 나는 구역, 물이 하루치 넘게 남은 우리 거점)에서
@@ -1698,8 +1699,9 @@ body:
       warm: 15
       # 70 → 45 (플레이 테스트 11, E1: 영하 12°에 방한복 없이 2시간이 "이상 없음") → 30 (플레이 테스트 13: 체감 3°·젖은 옷으로 밤새도 "이상 없음")
       per_step: 30
-      mild_rate: 20
-      warm_rate: 50
+      # 녹는 속도 반으로 (12-255, PT15 섬: 의식장애가 실내 2시간 15분에 이상 없음까지 풀렸다): 20 → 10, 50 → 25
+      mild_rate: 10
+      warm_rate: 25
       indoor_weather: 0.5
       heated: 16
       # 피난처(성당·캠퍼스) 실내의 최저 체감 (12-122): 모여 사는 사람들이 불을 때지만 거점보다는 춥다

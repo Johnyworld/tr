@@ -1,3 +1,5 @@
+import { soak } from "./climate.ts";
+import { placeIndoor } from "../rules/place.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { idleDays } from "../game/missions.ts";
 import { waterFacilityHere } from "./facilities.ts";
@@ -514,6 +516,20 @@ export function drinkWater(ctx: ToolContext): WaterResult {
   }
   if (limited) lines.push("물이 모자라 보급 담당이 한 모금만 나눠 줬다. 아끼는 기색으로 서술한다.");
   return { ok: true, lines, displays: c?.display ? [c.display] : [] };
+}
+
+/**
+ * 물에 들어간다 (take_action.wade, 12-255): 개천·강가처럼 물이 나는 바깥 물가에서만. 옷이 흠뻑 젖는다 (방수복도 막지 못한다)
+ * (PT15 튜토리얼: "개천에 뛰어든다"를 처리할 칸이 없었다)
+ */
+export function wadeIn(ctx: ToolContext): WaterResult {
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  const source = waterHere(ctx.content, state);
+  if (!me || !source || source.kind !== "spring" || waterFacilityHere(ctx.content, state)) return { ok: false, error: "여기에는 들어갈 물이 없다. 개천·강가처럼 물이 나는 바깥에서만 들어간다." };
+  if (placeIndoor(state, ctx.content) === true) return { ok: false, error: "지붕 아래에서는 물에 들어갈 수 없다. 물가(바깥 장소)로 옮긴다." };
+  const displays = soak(ctx, me.id, "물에 들어가 옷이 흠뻑 젖었다");
+  return { ok: true, lines: [`${me.name}의 옷: 물에 들어가 흠뻑 젖었다${source.where ? ` (${source.where})` : ""}.`], displays };
 }
 
 /** 빈 물병을 채운다 (take_action.refill). 거점에서는 보급을 받으며 마시기까지 한다. 물이 모자라면 하나만 */

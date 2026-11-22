@@ -569,6 +569,9 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   if (offer) lines.push(offer);
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
+    // 남은 시간만 서는 길 (12-255, PT15 섬: 30분 더 서려다 다음 시간대까지 7시간을 섰다)
+    const left = active.requirements.flatMap((r, i) => ("activity" in r && r.minutes > (active.progress[i] ?? 0) ? [`${ACTIVITY_LABELS[r.activity]} ${formatDuration(r.minutes - (active.progress[i] ?? 0))}`] : []));
+    if (left.length) lines.push(`남은 시간: ${left.join(", ")}. for_mission으로 그 활동을 until·hours 없이 걸면 남은 만큼만 한다`);
     // 지금 지닌 것만 (플레이 테스트 13: 붙잡혀 다 빼앗겼는데 빌린 것 줄이 그대로 남았다). 남의 물건은 공통 규칙 10
     const held = entrustedHeld(state, active.id);
     const list = (xs: [string, number][]) => xs.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ");

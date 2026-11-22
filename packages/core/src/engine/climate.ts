@@ -241,6 +241,8 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
   const capped = steps > 0 && allIndoor && cap !== null && atOwnBase(ctx.store.getState(), ctx.content, undefined, me.id) && index + steps > cap;
   if (capped) steps = Math.max(0, cap! - index);
   load -= steps * c.per_step;
+  // 한 단계 오르면 남은 냉기는 버린다: 다음 단계는 다시 다 쌓여야 오른다 (12-255, PT15 섬: 오한이 된 직후 5분 대화에 의식장애까지)
+  if (steps > 0) load = 0;
   // 한도에 걸렸으면 남은 냉기를 쌓아 두지 않는다 (밖에 나가자마자 여러 단계가 한꺼번에 떨어지지 않게)
   if (capped) load = Math.min(load, c.per_step - 1);
   // 멀쩡할 때는 따뜻함을 쌓아 두지 않는다

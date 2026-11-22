@@ -153,6 +153,9 @@ access_labels:
   mission_board: 임무 게시판
   treatment_room: 치료실 출입 (치료 도구와 약제실 앞까지)
 
+# 우리 무리 안의 무거운 짓 (12-257, 공통 규칙 3): 우리 무리 사람이 본 도둑질·잔혹·배신(무게 2 이상)은 사흘 안에 규율 회의 이야기를 연다 (storylets/discipline.yaml)
+offense: { tags: [theft, cruelty, betrayal], min_severity: 2, within_days: 3 }
+
 # 무리의 규율 단계 (기획서 9.9). 무리마다 factions의 culture.discipline으로 고른다 (*임시* 수치)
 # abandon/expire_merit: 임무를 버리거나 놓쳤을 때의 공적, counts_disobedience: 불복종으로 치는지,
 # max_disobedience: 진급에 허용되는 불복종 수, deed_severity: 불복종 행적의 무게(0이면 남기지 않는다)

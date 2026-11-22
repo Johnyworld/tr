@@ -98,7 +98,8 @@ export const PROMOTION = {
   minDaysServed: 7,
   maxDisobedience: 1,
   /** 직속 상관의 신뢰 */
-  minCommanderTrust: 3,
+  // 관계 범위 ±10에 맞춰 두 배 (12-251에서 빠졌던 것, 12-257)
+  minCommanderTrust: 6,
   /** 최근 이만큼(일) 안의 흠을 본다: 실패·기한 초과·포기가 setbacks 이상이거나 상관이 덜 믿게 된 일이 있으면 미룬다 (일부 완수는 세지 않는다, 플레이 테스트 13) */
   recentDays: 3,
   setbacks: 2,

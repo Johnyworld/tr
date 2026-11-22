@@ -1,3 +1,4 @@
+import { confineByOwn } from "./care/quarantine.ts";
 import { blameSuspended } from "../rules/blame.ts";
 import { leaveMissionsBehind } from "./missionTools.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
@@ -707,6 +708,11 @@ export function applyEffect(
   }
   if ("capture_player" in effect) {
     const by = factionRef(state, effect.capture_player.by);
+    // 우리 무리의 벌 (12-257): 며칠 가두고 저절로 풀어 준다
+    if (by && effect.capture_player.days && by === state.characters[playerId]?.factionId) {
+      const confined = confineByOwn(ctx, by, effect.capture_player.days);
+      return confined ? { line: confined } : {};
+    }
     // 믿음에 이야기 제목을 붙이지 않는다 (플레이 테스트 13: "초소의 호루라기. 청솔형제단에 붙잡혀 …")
     const line = by ? capturePlayer(ctx, by, effect.capture_player.zone, "붙잡혔다") : null;
     return line ? { line } : {};

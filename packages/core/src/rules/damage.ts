@@ -5,8 +5,10 @@
  * 이야기의 물림은 방어구가 막지 않았고, "○단계를 버텨 냈다"에 까닭이 없었다):
  *   기본 단계(+상대의 몫) → 방어구(맞서는 것이 낸 상처일 때) → 버팀(레벨) → 곁의 사람이 나눔(상대가 있는 판정에서 2단계일 때)
  * 단계마다 까닭 줄을 함께 돌려준다. 버팀과 방어구는 이 모듈로만 셈한다 (rules/guards.test.ts).
+ * 주인공이 남을 다치게 하면 맞은 사람의 마음도 여기서 셈한다 (hurtResentment, 12-257).
  */
 import { josa } from "../text.ts";
+import { isCreature } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { armorAbsorb } from "../engine/gear.ts";
 import { resistSteps } from "../engine/growth.ts";
@@ -60,4 +62,20 @@ export function reduceHarm(ctx: ToolContext, input: HarmInput): { steps: number;
     }
   }
   return { steps, armored: absorbed.steps <= 0, lines };
+}
+
+/** 다치게 한 한 단계마다 맞은 사람이 주인공을 보는 마음 (12-257) */
+export const HURT_RESENTMENT = { affection: -2, trust: -1 } as const;
+
+/**
+ * 주인공이 사람을 다치게 하면 맞은 사람의 호감·신뢰가 내려간다 (12-257, PT15 졸병: 방망이로 친 동료의 마음이 그대로라 편지 한 통에 상쇄됐다).
+ * 동물·감염체는 마음을 셈하지 않는다. 알릴 줄 (바뀌지 않았으면 null)
+ */
+export function hurtResentment(ctx: ToolContext, targetId: string, steps: number): string | null {
+  const state = ctx.store.getState();
+  const target = state.characters[targetId];
+  if (!target || target.dead || steps <= 0 || targetId === state.playerId || isCreature(ctx.content, target)) return null;
+  const delta = { trust: HURT_RESENTMENT.trust * steps, affection: HURT_RESENTMENT.affection * steps, respect: 0 };
+  ctx.store.append({ type: "relation_changed", from: targetId, to: state.playerId, delta, reason: "다치게 했다" });
+  return `${josa(playerCalls(state, ctx.content, targetId), "은/는")} 다친 만큼 주인공을 원망한다 (호감 ${delta.affection}, 신뢰 ${delta.trust}).`;
 }

@@ -475,6 +475,11 @@ export const scenarioFileSchema = z
      * 무리의 규율 단계 (기획서 9.9): 무리마다 culture.discipline으로 고른다. 임무를 버리거나 놓쳤을 때의 공적,
      * 불복종으로 치는지, 진급에 허용되는 불복종 수, 불복종 행적의 무게. 없으면 모든 무리가 질서(기본값)
      */
+    /**
+     * 우리 무리 안의 무거운 짓 (12-257, 공통 규칙 3): 이 태그 가운데 하나를 단 무게 min_severity 이상의 행적을 우리 무리 사람이 보았으면,
+     * within_days 안에 when.own_offense 이야기(규율 회의)가 열린다. 없으면 무리 안의 벌이 없다
+     */
+    offense: z.strictObject({ tags: z.array(id).min(1), min_severity: z.number().int().min(1).max(3), within_days: z.number().int().min(1) }).optional(),
     discipline: z
       .record(
         id,

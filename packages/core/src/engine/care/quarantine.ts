@@ -10,6 +10,7 @@
 import { josa } from "../../text.ts";
 import { heldOf } from "../../rules/held.ts";
 import { ownedBy } from "../../rules/home.ts";
+import { jailFor } from "../../rules/place.ts";
 import { MINUTES_PER_DAY } from "../../rules/time.ts";
 import type { ToolContext } from "../toolkit.ts";
 import { shownIndex } from "../body.ts";
@@ -35,12 +36,35 @@ export function quarantineAfterCare(ctx: ToolContext, factionId: string | null |
   return `${fact}. 갇힌 동안의 임무는 탓하지 않는다. 끼니는 그쪽이 준다.`;
 }
 
-/** 격리가 끝났으면 풀어 준다. 시간이 흐른 뒤마다 */
+/**
+ * 우리 무리가 벌로 가둔다 (12-257, 규율 회의): 그 무리의 가두는 장소에 days일. 격리처럼 빼앗는 것도 무리 사이가 나빠지는 것도 없고,
+ * 날수가 지나면 저절로 풀린다 (공통 규칙 1: 갇힌 동안의 임무는 탓하지 않는다). 알릴 줄
+ */
+export function confineByOwn(ctx: ToolContext, factionId: string, days: number): string | null {
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me || me.dead || heldOf(me) || me.factionId !== factionId) return null;
+  const jail = jailFor(state, ctx.content, factionId, state.playerZone);
+  if (!jail) return null;
+  ctx.store.append({ type: "player_captured", by: factionId, zone: jail.zone, place: jail.place, held: {}, releaseAt: state.time + days * MINUTES_PER_DAY });
+  const name = ctx.content.factions[factionId]?.name ?? factionId;
+  const fact = `${josa(name, "이/가")} 벌로 ${days}일 동안 가뒀다`;
+  ctx.store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${ctx.store.getState().nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time } });
+  return `${fact}. 날수가 지나면 풀려난다. 갇힌 동안의 임무는 탓하지 않는다. 끼니는 그쪽이 준다.`;
+}
+
+/** 격리·벌이 끝났으면 풀어 준다. 시간이 흐른 뒤마다 */
 export function runQuarantine(ctx: ToolContext): string[] {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   const held = heldOf(me);
-  if (!me || me.dead || !held?.quarantine) return [];
+  if (!me || me.dead) return [];
+  if (held?.releaseAt !== undefined) {
+    if (state.time < held.releaseAt) return [];
+    const line = releasePlayer(ctx, true);
+    return line ? [`갇힌 날수가 다 찼다: ${line}`] : [];
+  }
+  if (!held?.quarantine) return [];
   const days = daysOf(ctx, held.by) ?? 0;
   if (state.time - (held.since ?? state.time) < days * MINUTES_PER_DAY) return [];
   const infection = ctx.content.scenario.body?.infection;

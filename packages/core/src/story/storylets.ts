@@ -34,6 +34,7 @@ import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
 import { storyPlaceFits, storyPlaces, storyPlacesFit } from "../rules/place.ts";
 import { nearby, whereIs } from "../rules/place.ts";
+import { ownOffense } from "../rules/consequence.ts";
 import { bedsideGapPassed, inCrisis, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 export { inCrisis, isThreat, pacingBlocks, storyletGapMinutes, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 
@@ -332,6 +333,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   // 지붕 아래·바깥 (공통 규칙 15): 실내 거처에서 모닥불 이야기가, 정문 밖에서 약제실 이야기가 열리지 않게.
   // 장소를 정하지 않았으면(구역에 막 들어선 자리) 거르지 않는다: 이야기가 그 자리로 데려간다
   if (w.indoor !== undefined && !storyPlaceFits(state, content, w.indoor)) return false;
+  // 규율 회의 (12-257, 공통 규칙 3)
+  if (w.own_offense && !ownOffense(state, content, at)) return false;
   if (w.after_storylet) {
     const last = state.storyletLog[w.after_storylet.id]?.lastFiredAt;
     if (last === undefined || at - last < w.after_storylet.hours * 60) return false;

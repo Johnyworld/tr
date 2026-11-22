@@ -221,7 +221,8 @@ function autoStep(ctx: ToolContext): void {
   const person = state.characters[r.target];
   const together = person ? !person.dead && (state.scene.present.includes(r.target) || state.companions.includes(r.target)) : state.playerZone === r.target && !pausedWhileHeld(state, "resolve_reach");
   if (!together) return;
-  const text = !person ? `${name}에 닿았다` : kind?.check === "gone" ? `${josa(name, "을/를")} 마주쳤다` : `${josa(name, "과/와")} 하루를 함께했다`;
+  // 오른 날을 함께 적는다 (12-257, PT15 분대장: 언제 오른 단계인지 몰라 "둘째 날에 안 올랐다"로 읽혔다)
+  const text = `${!person ? `${name}에 닿았다` : kind?.check === "gone" ? `${josa(name, "을/를")} 마주쳤다` : `${josa(name, "과/와")} 하루를 함께했다`} (${today}일차)`;
   ctx.store.append({ type: "resolve_stepped", characterId: me.id, text });
   ctx.store.append({ type: "resolve_tracked", characterId: me.id, day: today });
 }
@@ -353,6 +354,13 @@ export function resolveProgress(state: GameState, content: Content, r = currentR
 }
 
 /** GM 상태의 줄 */
+/** 함께하면 단계가 오를 수 있는 다음 날 (오늘 이미 올랐거나 세운 날이면 내일) */
+function nextAutoDay(state: GameState, r: NonNullable<ReturnType<typeof currentResolve>>): number | null {
+  if (!r.target) return null;
+  const today = dayOf(state.time);
+  return r.autoDay === today || dayOf(r.since) === today ? today + 1 : today;
+}
+
 export function describeResolve(state: GameState, content: Content): string[] {
   const r = currentResolve(state);
   if (!r) return [];
@@ -366,7 +374,7 @@ export function describeResolve(state: GameState, content: Content): string[] {
   return [
     (progress
       ? `주인공의 다짐: ${text}${who}${place} — ${kind?.label ?? r.kind}, ${progress}${r.step ? ` (${r.step})` : ""}.`
-      : `주인공의 다짐: ${text}${who}${place} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}${kind?.min_stage ? ` (이루려면 ${kind.min_stage}단계 이상)` : ""}. 단계는 ${kind?.check === "debt_clear" ? "빚을 갚을 때마다" : "대상과 한 장면에 있었던(곳이면 그곳에 닿은) 날마다"}, 그리고 이야기로 오른다.`) +
+      : `주인공의 다짐: ${text}${who}${place} — ${kind?.label ?? r.kind}, ${r.stage ?? 0}단계${r.step ? ` (${r.step})` : ""}${kind?.min_stage ? ` (이루려면 ${kind.min_stage}단계 이상)` : ""}. 단계는 ${kind?.check === "debt_clear" ? "빚을 갚을 때마다" : `대상과 한 장면에 있었던(곳이면 그곳에 닿은) 날마다 하루 한 번 (다짐을 세운 날은 빼고${nextAutoDay(state, r) ? `, 다음은 ${nextAutoDay(state, r)}일차에` : ""})`}, 그리고 이야기로 오른다.`) +
       ` 이뤘는지는 시스템이 정한다. 서두르게 하지도 말리지도 않는다${kind?.let_go ? ". 플레이어가 분명히 내려놓으면 resolve {action: let_go}" : ""}`,
   ];
 }

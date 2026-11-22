@@ -83,7 +83,7 @@ import { cargoOf } from "../rules/entrusted.ts";
 import { ownedBy } from "../rules/home.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
-import { reduceHarm } from "../rules/damage.ts";
+import { hurtResentment, reduceHarm } from "../rules/damage.ts";
 import { comesAlong, currentPlace, ENTRY_PLACE, peopleAt, placeTarget, placesIn, type Place } from "../rules/place.ts";
 
 /**
@@ -1335,6 +1335,9 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
   if (change) ctx.store.append({ type: "check_harm_dealt", checkId: lastCheckId(ctx), targetId, steps });
   if (change?.line) lines.push(change.line);
   if (change?.display) displays.push(change.display);
+  // 맞은 사람의 마음 (공통 규칙 13, 12-257)
+  const grudge = change && !change.died ? hurtResentment(ctx, targetId, steps) : null;
+  if (grudge) lines.push(grudge);
   // 무기가 낸 상처에서 피가 난다 (12-91)
   if (!change?.died) {
     const bleed = bleedFromHarm(ctx, targetId, wound);

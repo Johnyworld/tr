@@ -1,3 +1,7 @@
+import { isCreature } from "../game/kinds.ts";
+import { traitsOf } from "./traits.ts";
+import { dayOf } from "../rules/time.ts";
+import { isFirstAidItem } from "./care/kinds.ts";
 import { heldOf } from "../rules/held.ts";
 import { storyletOf } from "../story/storylets.ts";
 import { marketValue } from "./market.ts";
@@ -155,6 +159,11 @@ const transferItem = defineTool({
     });
     // 약속한 물건을 그 사람에게 건넸으면 약속을 지킨 것이다 (12-174 부탁)
     const kept = input.from === state.playerId ? keepByGift(ctx, input.to, item.id, input.quantity) : [];
+    // 원하던 것을 선물하면 호감 +1, 같은 사람에게 하루 한 번 (12-257, PT15 분대장: 담배를 건네도 마음이 그대로였다)
+    if (input.from === state.playerId && !input.repay && !input.deposit && input.to !== SCENE_HOLDER) {
+      const welcomed = welcomeGift(ctx, input.to, item.id);
+      if (welcomed) kept.push(welcomed);
+    }
     // 빚진 무리 사람에게 갚는다고 건네면 그 값만큼 빚이 준다 (플레이 테스트 11, F6: 고철을 건네도 빚이 그대로였다).
     // 갚는다고 하지 않으면 선물이다 (12-237, 플레이 테스트 13: 건네기만 해도 빚이 줄어 이틀에 끝났다). 맡긴 것은 갚은 것이 아니다
     if (input.repay && input.from === state.playerId && !input.deposit && input.to !== SCENE_HOLDER) {
@@ -410,6 +419,32 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   const hint = outcome.ok ? [stashHint(ctx), storyStillOpen(state, name, ctx)].filter(Boolean).join("\n") : null;
   const hinted = hint && outcome.ok ? { ...outcome, resultText: [outcome.resultText, hint].filter(Boolean).join("\n") } : outcome;
   return withCheckLines(withFear(hinted, fearAfterTool(ctx, before)), takeReactionChecks(ctx.store));
+}
+
+/**
+ * 받는 사람이 지금 원하는 것인가 (12-257): 버릇의 물건(트레잇 habit.items), 지금 모자란 몸 상태를 채우는 것(consumables가 그 트랙을 낮추고 그 사람이 그 트랙에 걸려 있다),
+ * 다쳤을 때 응급처치 물건. 원하던 것이면 호감 +1 (같은 사람에게 하루 한 번). 알릴 줄
+ */
+function welcomeGift(ctx: ToolContext, to: string, itemId: string): string | null {
+  const state = ctx.store.getState();
+  const c = state.characters[to];
+  if (!c || c.dead || to === state.playerId || isCreature(ctx.content, c)) return null;
+  const today = dayOf(state.time);
+  if (state.giftWelcomedDay?.[to] === today) return null;
+  const s = ctx.content.scenario;
+  const habit = traitsOf(ctx.content, c).some((t) => t.effects.habit?.items.includes(itemId));
+  const needs = Object.entries(s.consumables[itemId] ?? {}).some(([track, delta]) => {
+    // consumables의 값은 그 트랙을 얼마나 풀어 주는지 (양수)
+    if (delta <= 0) return false;
+    const levels = s.condition_tracks.find((t) => t.id === track)?.levels ?? [];
+    return levels.findIndex((l) => l.id === c.conditions[track]) > 0;
+  });
+  const harmLevels = s.condition_tracks.find((t) => t.id === s.harm_track)?.levels ?? [];
+  const hurt = isFirstAidItem(ctx.content, itemId) && harmLevels.findIndex((l) => l.id === c.conditions[s.harm_track]) > 0;
+  if (!habit && !needs && !hurt) return null;
+  ctx.store.append({ type: "relation_changed", from: to, to: state.playerId, delta: { trust: 0, affection: 1, respect: 0 }, reason: "원하던 것을 받았다" });
+  ctx.store.append({ type: "gift_welcomed", npcId: to, day: today });
+  return `${josa(playerCalls(state, ctx.content, to), "은/는")} 마침 원하던 것이라 반긴다 (호감 +1).`;
 }
 
 /** 입력에서 인물 id가 들어가는 칸 (target·with·npc_id·envoy·to·from, check.opponent·treatment.target) */

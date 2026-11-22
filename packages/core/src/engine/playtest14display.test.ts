@@ -52,7 +52,7 @@ describe("1. ?상태와 GM 상태의 스킬 값은 같다 (공통 규칙 12)", (
 
   it("진급 조건의 복무 날짜는 시계와 같은 셈이다 (1일째 → '복무 1일째')", () => {
     const base = { rank: s.promotion.from, merit: 99, disobedience: 0 } as Parameters<typeof checkPromotion>[0];
-    const out = checkPromotion(base, s.promotion, 330, 330, 5).missing;
+    const out = checkPromotion(base, s.promotion, 330, 330, 6).missing;
     expect(out).toEqual([`복무 1일째 (${PROMOTION.minDaysServed}일을 다 채운 ${PROMOTION.minDaysServed + 1}일째부터)`]);
   });
 

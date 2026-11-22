@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 88;
+export const SAVE_SCHEMA_VERSION = 89;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -330,6 +330,8 @@ export function createGameSchemas(s: Scenario) {
      * 그 뒤엔 일과로 돌아간다 (PT15: 교무실에 부른 상관이 주인공이 나가자마자 일과의 보급 창고로 순간이동했다). 읽기는 rules/place.ts로만
      */
     npcStays: z.record(z.string(), z.strictObject({ zone: z.string(), place: z.string().nullable(), until: z.number().int() })).default({}),
+    /** 원하던 선물을 마지막으로 받은 날 (12-257, 인물 id → 일차) */
+    giftWelcomedDay: z.record(z.string(), z.number().int()).default({}),
     /** 상인이 마지막으로 물건을 채운 날 */
     restockedDay: z.record(z.string(), z.number().int()).default({}),
     /** 이 세계에서 열린 해금: 시나리오(역할) id (여기서 얻었거나, 다른 판에서 얻어 세계를 열 때 옮겨 온 것, 기획서 12.4.1, 9.12) */
@@ -772,7 +774,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("fire_lit"), zone: z.string(), until: z.number().int(), itemId: z.string() }),
     /** 주인공이 붙잡혔다 / 풀려났다, 포로를 노역에 부린다 (12-55). held: 빼앗긴 물건 (풀려나면 돌려받는다) */
     // place: 갇히는 장소 (없으면 같은 구역이면 지금 자리, 다른 구역이면 막 들어선 자리)
-    z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()), quarantine: z.boolean().optional(), place: z.string().nullable().optional() }),
+    z.strictObject({ type: z.literal("player_captured"), by: z.string(), zone: z.string(), held: z.record(z.string(), z.number().int().positive()), quarantine: z.boolean().optional(), place: z.string().nullable().optional(), releaseAt: z.number().int().optional() }),
     /** 감염체에게 다쳤다 (격리의 근거, 12-238). 감염이 됐는지와 따로 */
     z.strictObject({ type: z.literal("infection_exposed"), characterId: z.string() }),
     /** 공들인 관계의 첫 죽음을 봐줬다 (12-242) */
@@ -864,6 +866,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("squad_order_refused"), npcId: z.string(), task: z.string() }),
     /** 맡긴 일이 끝났다 (결과는 코드가 굴렸다). report: 주인공이 듣는 보고 */
     z.strictObject({ type: z.literal("squad_order_done"), npcId: z.string(), task: z.string(), outcome: checkOutcomeSchema.nullable(), report: z.string() }),
+    /** 원하던 선물을 받았다 (12-257): 같은 사람에게 하루 한 번만 마음이 움직인다 */
+    z.strictObject({ type: z.literal("gift_welcomed"), npcId: z.string(), day: z.number().int() }),
     /** 지도부 회의에 안을 올렸다 */
     z.strictObject({ type: z.literal("council_proposed"), topic: z.string(), option: z.string(), outcome: checkOutcomeSchema, day: z.number().int(), blockedUntil: z.number().int() }),
     /** 무리 방침이 바뀌었다 */
@@ -1261,6 +1265,7 @@ export const EMPTY_STATE: GameState = {
   playerPlace: null,
   spawnedPlaces: {},
   npcStays: {},
+  giftWelcomedDay: {},
   loans: {},
   cargo: {},
   exposedAt: {},
@@ -1666,8 +1671,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "squad_order_done": {
       delete next.squadOrders[event.npcId];
       next.squadReports[event.npcId] = { text: event.report, at: state.time };
+      // 돌아와 보고하는 것은 얼굴을 보는 일이다: 보고로 바뀐 마음이 ?인물에도 보인다 (12-257, PT15 분대장)
+      if (event.outcome !== null && next.characters[event.npcId] && !next.characters[event.npcId]!.dead) perceive(next, event.npcId);
       return next;
     }
+    case "gift_welcomed":
+      next.giftWelcomedDay = { ...next.giftWelcomedDay, [event.npcId]: event.day };
+      return next;
     case "council_proposed": {
       next.council[event.topic] = { day: event.day, blockedUntil: event.blockedUntil };
       return next;
@@ -1944,7 +1954,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "player_captured": {
       const me = mustGet(next.characters, next.playerId, "캐릭터");
-      me.captive = { by: event.by, zone: event.zone, since: state.time, ...(event.quarantine ? { quarantine: true } : {}) };
+      me.captive = { by: event.by, zone: event.zone, since: state.time, ...(event.quarantine ? { quarantine: true } : {}), ...(event.releaseAt !== undefined ? { releaseAt: event.releaseAt } : {}) };
       for (const [item, n] of Object.entries(event.held)) {
         const left = (me.inventory[item] ?? 0) - n;
         if (left < 0) throw new Error(`빼앗을 것이 모자란다: ${item}`);

@@ -140,11 +140,11 @@ describe("진급", () => {
 
   it("공적·복무 기간·불복종·상관 신뢰 조건을 모두 채워야 한다", () => {
     const day = 24 * 60;
-    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 3).eligible).toBe(true);
-    expect(checkPromotion({ ...base, merit: 14 }, PROMO, 330 + 7 * day, 330, 3).missing).toEqual(["공적 14/15"]);
-    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 6 * day, 330, 3).missing).toEqual(["복무 7일째 (7일을 다 채운 8일째부터)"]);
-    expect(checkPromotion({ ...base, merit: 15, disobedience: 2 }, PROMO, 330 + 7 * day, 330, 3).eligible).toBe(false);
-    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 2).missing).toEqual(["상관 신뢰 2/3 (판정이 걸린 임무를 완전히 해내면 하루에 1씩 오른다)"]);
+    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 6).eligible).toBe(true);
+    expect(checkPromotion({ ...base, merit: 14 }, PROMO, 330 + 7 * day, 330, 6).missing).toEqual(["공적 14/15"]);
+    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 6 * day, 330, 6).missing).toEqual(["복무 7일째 (7일을 다 채운 8일째부터)"]);
+    expect(checkPromotion({ ...base, merit: 15, disobedience: 2 }, PROMO, 330 + 7 * day, 330, 6).eligible).toBe(false);
+    expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 5).missing).toEqual(["상관 신뢰 5/6 (판정이 걸린 임무를 완전히 해내면 하루에 1씩 오른다)"]);
     expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, null).eligible).toBe(true);
     // 최근의 흠이 있으면 미룬다 (C5)
     expect(checkPromotion({ ...base, merit: 15 }, PROMO, 330 + 7 * day, 330, 3, 1, "최근의 흠").eligible).toBe(false);
@@ -154,7 +154,7 @@ describe("진급", () => {
     const env = withLeader(setup(sixes));
     // 복무 7일이 지났고 공적 13, 상관 신뢰 3이 쌓인 상태로 만든다
     env.store.getState().characters.player!.merit = 13;
-    env.store.getState().relations.npc_leader = { player: { trust: 3, affection: 0, respect: 0 } };
+    env.store.getState().relations.npc_leader = { player: { trust: 6, affection: 0, respect: 0 } };
     env.store.append({ type: "time_advanced", activity: "wait", from: 330, to: 330 + 7 * 24 * 60 });
     env.store.append({ type: "missions_offered", day: 8, templateIds: ["m_guard"] });
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);

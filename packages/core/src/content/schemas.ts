@@ -697,7 +697,8 @@ export function createContentSchemas(s: Scenario) {
     /** 붙잡힌 배역이 어디 갇혔는지 주인공이 알게 된다 (진짜 상태에서 코드가 채운다, 12-56) */
     z.strictObject({ locate: z.strictObject({ who: z.string().min(1), source: z.enum(["seen", "report", "rumor"]).default("report") }) }),
     /** 주인공이 붙잡힌다 (12-55): by 무리(own 외에 zone_owner 등 별칭), zone이 없으면 그 무리의 거점에 갇힌다 */
-    z.strictObject({ capture_player: z.strictObject({ by: z.string().min(1), zone: contentIdSchema.optional() }) }),
+    /** days: 우리 무리가 벌로 가둘 때(by: own) 며칠 뒤 저절로 풀린다 (12-257). 빼앗는 것도 무리 사이가 나빠지는 것도 없다 */
+    z.strictObject({ capture_player: z.strictObject({ by: z.string().min(1), zone: contentIdSchema.optional(), days: z.number().int().min(1).max(7).optional() }) }),
     /** 갇힌 주인공이 풀려난다: returned면 빼앗긴 것을 돌려받는다, home이면 우리 무리의 거점으로 돌아간다 */
     /** 풀려난다. home: 우리 거점으로, out: 붙잡은 무리 땅이 아닌 맞닿은 구역으로 빠져나간다 (플레이 테스트 13: 탈출 기회) */
     z.strictObject({ release_player: z.strictObject({ returned: z.boolean().default(true), home: z.boolean().default(false), out: z.boolean().default(false) }) }),
@@ -959,6 +960,8 @@ export function createContentSchemas(s: Scenario) {
         places: z.array(contentIdSchema).min(1).optional(),
         /** 이 이야기가 열린 지 이만큼 지난 뒤에만 (12-251, 플레이 테스트 14: "하룻밤 담 밖에서" 2시간 뒤 다시 정문 이야기) */
         after_storylet: z.strictObject({ id: contentIdSchema, hours: z.number().positive() }).optional(),
+        /** 우리 무리 사람이 본 무거운 짓(시나리오 offense)이 있고 아직 다뤄지지 않았을 때만: 규율 회의 (12-257, 공통 규칙 3) */
+        own_offense: z.boolean().optional(),
         /** 곁의 동행 수 (플레이 테스트 11: 동행이 있는데 "혼자 걷기엔 험해") */
         companions_lte: z.number().int().min(0).optional(),
         companions_gte: z.number().int().min(1).optional(),

@@ -94,7 +94,8 @@ export function rollPlayerCheck(
   const base = learned;
   const companion = actor.id === state.playerId ? companionSkillMod(state, content, input.move) : 0;
   // 곁의 사람이 돕는다 (공통 규칙 8, rules/company.ts)
-  const helper = actor.id === state.playerId ? helperFor(state, content, input.move, options.allies ?? []) : null;
+  // 마음의 굴림(마음 다잡기·설정 거스르기)은 혼자 한다 (PT15 분대장: 자존심을 거스르는 굴림에 맞선 사람이 "도움 +1"을 줬다)
+  const helper = actor.id === state.playerId && !options.reaction ? helperFor(state, content, input.move, options.allies ?? []) : null;
   const squad = helper?.bonus ?? 0;
   const skill = base + traitSkillMod(content, actor, input.move) + Math.max(companion, squad);
   // 손에 든 무기·지닌 도구의 보정은 상한 안에서, 방어구·짐의 불리함은 따로 (기획서 4.8)

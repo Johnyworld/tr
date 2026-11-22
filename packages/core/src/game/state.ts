@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 85;
+export const SAVE_SCHEMA_VERSION = 86;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -276,6 +276,8 @@ export function createGameSchemas(s: Scenario) {
     move: move.optional(),
     /** 판정의 상대 인물 (그 인물의 물건을 옮길 근거가 된다) */
     target: z.string().optional(),
+    /** 맞선 상대 (은밀이 대가 있는 성공이면 이 사람만 본다, PT15) */
+    opponent: z.string().optional(),
     outcome: checkOutcomeSchema,
     /** 이 판정의 대가로 이미 피해를 적용했는지 */
     harmApplied: z.boolean(),
@@ -644,6 +646,8 @@ export function createGameSchemas(s: Scenario) {
       npcs: z.array(character),
       beliefs: z.record(z.string(), z.array(beliefSchema)),
       known: z.record(z.string(), z.array(z.string())),
+      /** 처음부터 태도를 아는 사람: 직속 상관과 같은 분대 (PT15 졸병: 같은 분대 분대장을 "만나 본 적이 없다") */
+      perceived: z.array(z.string()).optional(),
     }),
     z.strictObject({ type: z.literal("npc_entered"), npcId: z.string() }),
     z.strictObject({ type: z.literal("zone_searched"), zone: z.string(), day: z.number().int() }),
@@ -885,6 +889,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("player_joined_faction"), factionId: z.string(), rank: z.string(), role: customRoleSchema, beliefs: z.array(beliefSchema).default([]), graceUntil: z.number().int().optional() }),
     z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
     z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
+    /** 낡은 믿음을 지운다 (PT15 튜토리얼: 가족을 다시 만났는데 "어디 있는지 모른다"가 남았다) */
+    z.strictObject({ type: z.literal("belief_dropped"), characterId: z.string(), beliefId: z.string() }),
     z.strictObject({ type: z.literal("missions_offered"), day: z.number().int(), templateIds: z.array(z.string()) }),
     z.strictObject({ type: z.literal("mission_assigned"), mission: missionInstanceSchema }),
     z.strictObject({
@@ -938,7 +944,7 @@ export function createGameSchemas(s: Scenario) {
       /** 플레이어가 낄 수 있어 미뤄 둔 교전 */
       scheduled: z.array(pendingClashSchema).default([]),
     }),
-    z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string() }),
+    z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string(), with: z.array(z.string()).optional() }),
     /** 같은 구역 안에서 장소를 옮겼다 (12-244). null이면 구역의 장소를 정하지 않은 곳 */
     // with: 동행 말고 함께 옮겨 가는 장면의 인물 (공통 규칙 15 comesAlong)
     z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable(), with: z.array(z.string()).optional() }),
@@ -1385,6 +1391,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       };
       // 처음부터 아는 사람들(같은 무리 동료)은 주인공도 이름까지 안다
       for (const id of event.known[event.player.id] ?? []) acquaint(created, id, event.player.id, true);
+      for (const id of event.perceived ?? []) if (created.characters[id]) perceive(created, id);
       return created;
     }
     case "npc_departed": {
@@ -2058,6 +2065,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       (next.beliefs[event.characterId] ??= []).push(structuredClone(event.belief));
       next.nextBeliefNo += 1;
       break;
+    case "belief_dropped":
+      next.beliefs[event.characterId] = (next.beliefs[event.characterId] ?? []).filter((b) => b.id !== event.beliefId);
+      break;
     case "turn_started":
       next.turn = event.turn;
       break;
@@ -2086,6 +2096,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         actorId: event.actorId,
         move: event.move,
         ...(event.target ? { target: event.target } : {}),
+        ...(event.opponent ? { opponent: event.opponent } : {}),
         outcome: event.outcome,
         harmApplied: false,
       };
@@ -2277,8 +2288,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
           const c = next.characters[id];
           if (c?.extra) c.extra.lastSeenAt = state.time;
         }
-        // 동행은 따라온다 (살아 있고 붙잡히지 않았을 때)
-        next.scene.present = next.companions.filter((id) => {
+        // 동행은 따라온다 (살아 있고 붙잡히지 않았을 때). 함께 가는 사람(with)도 이번 이동만 따라온다 (PT15: 업고 나온 동료·데려가던 가족이 남았다)
+        // 함께 달아난 사람은 풀려난다 (탈출에 함께 갇혀 있던 사람을 데려갔다)
+        for (const id of event.with ?? []) {
+          const c = next.characters[id];
+          if (c?.captive) c.captive = null;
+        }
+        const along = (event.with ?? []).filter((id) => !next.companions.includes(id));
+        next.scene.present = [...next.companions, ...along].filter((id) => {
           const c = next.characters[id];
           return c && !c.dead && !c.away && !c.captive;
         });
@@ -2867,6 +2884,7 @@ export function createWorldEvent(
     // 같은 무리 동료는 처음부터 서로 이름을 안다 (기획서 6.3, 계승과 같은 셈). 역할의 known_npcs(다른 무리의 아는 사람 포함)에 더한다
     // (PT14: 같은 무리 의무실 보조·대원이 known_npcs에 없어 끝까지 "이름 모름")
     known: { [player.id]: [...new Set([...role.known_npcs, ...npcs.filter((n) => !!player.factionId && n.factionId === player.factionId).map((n) => n.id)])] },
+    perceived: [...new Set([role.commander, ...(role.squad ?? []), ...(role.squad_mates ?? [])].filter((id): id is string => !!id && npcs.some((n) => n.id === id)))],
   };
 }
 

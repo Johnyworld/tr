@@ -1,3 +1,4 @@
+import { LOST_FAMILY_FACT } from "./background.ts";
 import { heldOf } from "../rules/held.ts";
 import type { Content, ScenarioCondition } from "../content/schemas.ts";
 import { listedScenario } from "../game/startChoice.ts";
@@ -61,15 +62,24 @@ export function checkScenarioProgress(ctx: ToolContext, events: readonly GameEve
       const e: GameEvent = { type: "scenario_cleared", roleId: role.id };
       store.append(e);
       all.push(e);
-      // 다시 만난 가족: 주인공의 앎이 바뀐다 (플레이 테스트 11: 재회 뒤에도 "어디 있는지 모른다").
-      // 함께 다니는 것은 데려가겠다고 할 때만 (12-239, 플레이 테스트 13: 79살 노인이 저절로 동행이 되어 전선을 따라다녔다)
-      for (const id of state.family) {
-        const now = store.getState();
-        if (!now.scene.present.includes(id) || now.characters[id]?.dead) continue;
-        const where = now.playerZone ? (content.locations[now.playerZone]?.name ?? now.playerZone) : "이곳";
-        store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact: `${josa(now.characters[id]!.name, "을/를")} 다시 만났다. ${where}에 산다.`, source: "seen", accuracy: "exact", learnedAt: now.time } });
-      }
       notices.push({ kind: "cleared", roleId: role.id, title: role.scenario!.title, goal: goal.text, ending: goal.ending });
+    }
+  }
+  // 다시 만난 가족: 주인공의 앎이 바뀐다 (플레이 테스트 11: 재회 뒤에도 "어디 있는지 모른다").
+  // 재회 때 장면에 없던 가족도 나중에 만나면 (PT15 튜토리얼: 어머니·아버지는 "다시 만났다"가 없었다). 처음 만나면 "헤어졌다" 믿음을 지운다
+  // 함께 다니는 것은 데려가겠다고 할 때만 (12-239, 플레이 테스트 13: 79살 노인이 저절로 동행이 되어 전선을 따라다녔다)
+  if (role?.scenario?.goal && store.getState().cleared.includes(role.id)) {
+    for (const id of store.getState().family) {
+      const now = store.getState();
+      const name = now.characters[id]?.name;
+      if (!name || !now.scene.present.includes(id) || now.characters[id]?.dead) continue;
+      const mine = now.beliefs[now.playerId] ?? [];
+      const metFact = `${josa(name, "을/를")} 다시 만났다.`;
+      if (mine.some((b) => b.fact.startsWith(metFact))) continue;
+      for (const b of mine) if (b.fact.endsWith(LOST_FAMILY_FACT)) store.append({ type: "belief_dropped", characterId: now.playerId, beliefId: b.id });
+      const where = now.playerZone ? (content.locations[now.playerZone]?.name ?? now.playerZone) : "이곳";
+      const s2 = store.getState();
+      store.append({ type: "belief_added", characterId: s2.playerId, belief: { id: `b_${s2.nextBeliefNo}`, fact: `${metFact} ${where}에 산다.`, source: "seen", accuracy: "exact", learnedAt: s2.time } });
     }
   }
   // 2. 잠긴 시나리오의 해금

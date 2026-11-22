@@ -225,9 +225,12 @@ export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined):
   store.append({
     type: "belief_added",
     characterId: s.playerId,
-    belief: { id: `b_${s.nextBeliefNo}`, fact: `가족(${labels.join(", ")})과 헤어졌다. 살아 있다고 믿지만 어디 있는지 모른다.`, source: "seen", accuracy: "exact", learnedAt: s.time },
+    belief: { id: `b_${s.nextBeliefNo}`, fact: `가족(${labels.join(", ")})${LOST_FAMILY_FACT}`, source: "seen", accuracy: "exact", learnedAt: s.time },
   });
 }
+
+/** 헤어진 가족의 믿음 꼬리 (다시 만나면 지운다, engine/scenarioProgress.ts) */
+export const LOST_FAMILY_FACT = "과 헤어졌다. 살아 있다고 믿지만 어디 있는지 모른다.";
 
 /** 시작할 때 가까운 사람들 (역할의 start_bonds): 그 사람들이 주인공을 보는 관계를 범위 안에서 무작위로 올린다 */
 export function applyStartBonds(ctx: ToolContext, role: RoleContent | undefined): void {

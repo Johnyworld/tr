@@ -62,8 +62,10 @@ describe("정보 명령어", () => {
     expect(all).not.toContain("목격");
     for (const x of hidden) expect(all).not.toContain(w.state().characters[x.npcId]?.name ?? x.npcId);
     if (hidden.length > 0) expect(w.state().relations.npc_leader?.player).toBeDefined();
-    // 만나기 전이므로 태도를 모른다 (진짜 관계가 바뀌었어도 드러나지 않는다)
-    expect(await w.runCommand("!인물 강분대")).toContain("아직 직접 만나 본 적이 없습니다");
+    // 직속 상관은 처음부터 태도를 알지만(PT15), 진짜 관계가 바뀌었어도 다시 만나기 전까지는 처음 본 태도 그대로다
+    const leader = await w.runCommand("!인물 강분대");
+    expect(leader).toContain("신뢰  ████░░░░  보통 0");
+    expect(leader).not.toContain("아직 직접 만나 본 적이 없습니다");
   });
 
   it("비밀과 세계의 진실은 어떤 명령어에도 나오지 않는다", async () => {

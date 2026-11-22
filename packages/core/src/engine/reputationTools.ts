@@ -50,6 +50,17 @@ function stealthThisTurn(state: GameState, stealthMove: string): "success" | "pa
   return outcomes.includes("success") ? "success" : outcomes.includes("partial") ? "partial" : outcomes[0] ?? null;
 }
 
+/**
+ * 장면에 있는 사람 가운데 이 일을 보는 사람 (PT15 졸병: 은밀 13으로 성공한 도둑질을 장면의 모두가 "보았다").
+ * 이번 턴 은밀이 성공했으면 아무도 못 보고, 대가 있는 성공이면 그 은밀에 맞선 상대·대상만 본다. 실패했거나 은밀이 없으면 모두 본다
+ */
+function sceneSees(state: GameState, stealthMove: string, npcId: string): boolean {
+  const stealth = stealthThisTurn(state, stealthMove);
+  if (stealth === "success") return false;
+  if (stealth !== "partial") return true;
+  return Object.values(state.checks).some((c) => c.turn === state.turn && c.actorId === state.playerId && c.move === stealthMove && (c.opponent === npcId || c.target === npcId));
+}
+
 /** 낌새를 알아차리는 행동 (시나리오의 move_roles.notice). 첫 번째 능력치를 쓴다 */
 function noticeMove(ctx: ToolContext) {
   const s = ctx.content.scenario;
@@ -92,6 +103,24 @@ export function recordDeed(
   official?: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] },
   fooled?: readonly string[],
 ): { deed: Deed; visible: string[] } {
+  return recordDeedIf(ctx, input, official, fooled, false) as { deed: Deed; visible: string[] };
+}
+
+/**
+ * 본 사람이 있을 때만 행적을 남긴다 (PT15 졸병: 장면에 아무도 없고 숨은 목격자도 없는데 "들켰다" 불복종이 남았다).
+ * 아무도 못 봤으면 deed는 null
+ */
+export function recordDeedIfSeen(ctx: ToolContext, input: DeedInput): { deed: Deed | null; visible: string[] } {
+  return recordDeedIf(ctx, input, undefined, undefined, true);
+}
+
+function recordDeedIf(
+  ctx: ToolContext,
+  input: DeedInput,
+  official: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] } | undefined,
+  fooled: readonly string[] | undefined,
+  onlyIfSeen: boolean,
+): { deed: Deed | null; visible: string[] } {
   const state = ctx.store.getState();
   const id = `d_${state.nextDeedNo}`;
   const witnesses: Deed["witnesses"] = [];
@@ -100,8 +129,8 @@ export function recordDeed(
     witnesses.push({ npcId: official.npcId, hidden: !state.scene.present.includes(official.npcId) });
   } else {
     // 동물·감염체는 행적을 보고 옮기지 않는다 (12-111)
-    for (const npcId of state.scene.present) if (!isCreature(ctx.content, state.characters[npcId]) && !fooled?.includes(npcId)) witnesses.push({ npcId, hidden: false });
     const scenario = ctx.content.scenario;
+    for (const npcId of state.scene.present) if (!isCreature(ctx.content, state.characters[npcId]) && !fooled?.includes(npcId) && sceneSees(state, scenario.move_roles.stealth, npcId)) witnesses.push({ npcId, hidden: false });
     const stealth = stealthThisTurn(state, scenario.move_roles.stealth);
     const notice = noticeMove(ctx);
     for (const character of fooled ? [] : Object.values(state.characters)) {
@@ -132,6 +161,7 @@ export function recordDeed(
     }
   }
 
+  if (onlyIfSeen && witnesses.length === 0) return { deed: null, visible: [] };
   const deed: Deed = {
     id,
     actorId: state.playerId,

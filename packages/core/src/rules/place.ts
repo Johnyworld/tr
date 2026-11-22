@@ -223,6 +223,8 @@ export function shelterAt(content: Content, state: GameState, activity: string, 
   const me = state.characters[who];
   const c = content.scenario.body?.cold?.climate;
   const zoneCover = (zone ? content.locations[zone]?.cover : undefined) ?? 0;
+  // 구역을 옮기는 길은 바깥이다 (PT15 졸병: 출발한 실내 장소로 셈해 빗속 45분을 걸어도 옷이 마른 채였다)
+  if (activity === "travel") return { indoor: false, cover: 0 };
   const atPlace = placeIndoor(state, content);
   if (atPlace !== null) return { indoor: atPlace, cover: atPlace && zoneCover <= 0 ? PLACE_COVER : zoneCover };
   const sheltered = !!zone && (state.homes?.[who] === zone || (content.locations[zone]?.kind === "base" && !!me?.factionId && ownedBy(state, zone, me.factionId)));

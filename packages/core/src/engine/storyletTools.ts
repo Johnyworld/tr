@@ -13,7 +13,7 @@ import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
 import { setResolve, stepResolve } from "./resolve.ts";
-import { capturePlayer, releasePlayer } from "./captivity.ts";
+import { captureNpc, capturePlayer, releasePlayer } from "./captivity.ts";
 import { onSpotted, threatStaysOnMiss } from "../rules/consequence.ts";
 import { rankName } from "../game/ranks.ts";
 import { exposeToFatigue } from "./fatigue.ts";
@@ -449,9 +449,14 @@ export function applyEffect(
     const from = whoOf(ctx, effect.relation.who, cast);
     if (!from || !state.characters[from]) return {};
     const delta = withCharm(ctx, from, playerId, { trust: 0, affection: 0, respect: 0, [effect.relation.axis]: effect.relation.delta });
+    const axis = effect.relation.axis;
+    const before = state.relations[from]?.[playerId]?.[axis] ?? 0;
     store.append({ type: "relation_changed", from, to: playerId, delta, reason });
+    const after = store.getState().relations[from]?.[playerId]?.[axis] ?? 0;
     const name = playerCalls(state, content, from);
-    return { line: `${name}의 ${josa(RELATION_AXIS_LABELS[effect.relation.axis], "이/가")} ${effect.relation.delta > 0 ? "올랐다" : "떨어졌다"}. 그 인물의 태도에 반영하라.` };
+    // 끝에 닿아 바뀌지 않았으면 그렇다고 (PT15 튜토리얼: 이미 각별 +10인데 "호감이 올랐다")
+    if (after === before) return { line: `${name}의 ${josa(RELATION_AXIS_LABELS[axis], "은/는")} 이미 ${effect.relation.delta > 0 ? "더 오를 데가 없다" : "더 떨어질 데가 없다"}.` };
+    return { line: `${name}의 ${josa(RELATION_AXIS_LABELS[axis], "이/가")} ${after > before ? "올랐다" : "떨어졌다"}. 그 인물의 태도에 반영하라.` };
   }
   if ("npc_relation" in effect) {
     const { axis, delta, mutual } = effect.npc_relation;
@@ -993,7 +998,7 @@ export function applyEffect(
     if (!content.factions[by]) return {};
     const zone = effect.npc_capture.zone ?? Object.values(content.locations).find((l) => l.owner === by && l.kind === "base")?.id;
     if (!zone) return {};
-    store.append({ type: "npc_captured", npcId: id, by, zone });
+    captureNpc(ctx, id, by, zone);
     const name = playerCalls(state, content, id);
     return { line: `${josa(name, "은/는")} ${content.factions[by]!.name}에 붙잡혀 ${content.locations[zone]?.name ?? zone}에 갇혔다.`, display: { type: "presence", npcName: name, action: "leave" } };
   }

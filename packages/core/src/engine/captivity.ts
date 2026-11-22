@@ -188,7 +188,7 @@ export function warCaptures(ctx: ToolContext, clashes: readonly Clash[]): ToolDi
     const taken = pool[Math.floor(ctx.rng() * pool.length)];
     const zone = baseOf(ctx.content, winner);
     if (!taken || !zone) continue;
-    ctx.store.append({ type: "npc_captured", npcId: taken.id, by: winner, zone });
+    captureNpc(ctx, taken.id, winner, zone);
     // 우리 무리 사람이 끌려갔으면 소식으로, 남의 무리면 만난 사람만 소문으로 (공통 규칙 14). 이름을 아는 사람만
     if ((state.known[state.playerId] ?? []).includes(taken.id)) {
       const fact = sentence(`${josa(playerCalls(state, ctx.content, taken.id), "이/가")} ${josa(ctx.content.factions[winner]?.name ?? winner, "과/와")}의 싸움에서 붙잡혀 갔다고 한다`);
@@ -440,8 +440,19 @@ export function deliverPrisoners(ctx: ToolContext): string[] {
   const lines: string[] = [];
   for (const id of state.companions) {
     if (state.bonds[id]?.kind !== "prisoner") continue;
-    store.append({ type: "npc_captured", npcId: id, by: me.factionId, zone });
+    captureNpc(ctx, id, me.factionId, zone);
     lines.push(`끌고 온 ${josa(playerCalls(state, content, id), "을/를")} 거점에 가뒀다. 이제 우리 무리의 포로다 (handle_prisoner).`);
   }
   return lines;
+}
+
+/**
+ * 인물을 가둔다: 무기는 빼앗는다 (PT15 튜토리얼: 수용소의 포로가 쇠지렛대를 지닌 채였다). 주인공이 갇힐 때와 같다
+ */
+export function captureNpc(ctx: ToolContext, npcId: string, by: string, zone: string): void {
+  const c = ctx.store.getState().characters[npcId];
+  for (const [itemId, qty] of Object.entries(c?.inventory ?? {})) {
+    if (qty > 0 && ctx.content.items[itemId]?.weapon) ctx.store.append({ type: "item_consumed", holder: npcId, itemId, quantity: qty });
+  }
+  ctx.store.append({ type: "npc_captured", npcId, by, zone });
 }

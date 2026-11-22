@@ -303,6 +303,7 @@ export function changeClothes(ctx: ToolContext): { ok: true; lines: string[]; di
   const state = ctx.store.getState();
   if (!climateOf(ctx.content)?.wet) return { ok: false, error: "이 월드에는 젖은 옷 규칙이 없다." };
   if (!clothesHere(ctx.content, state)) return { ok: false, error: "여기에는 갈아입을 옷이 없다 (우리 무리의 거점, 내 거처, 우리 무리나 가족이 사는 곳, 옷이 남은 곳에서만)." };
+  if (rainingOnMe(ctx.content, state) && !wearsWaterproof(ctx, state.playerId)) return { ok: false, error: "비를 맞는 바깥이라 갈아입어도 곧 젖는다. 지붕 아래 장소(place_to)로 옮겨 갈아입는다." };
   // 끌고 다니는 포로는 빼고 (묶인 사람의 옷까지 갈아입히지 않는다)
   const who = [state.playerId, ...activeCompanions(state).filter((id) => !isCreature(ctx.content, state.characters[id]) && state.bonds?.[id]?.kind !== "prisoner")].filter((id) => (state.wet?.[id] ?? 0) > 0);
   if (!who.length) return { ok: false, error: "젖은 옷을 입은 사람이 없다." };
@@ -357,7 +358,21 @@ export function wetDegrees(c: NonNullable<ReturnType<typeof climateOf>>, before:
   return before < c.comfort ? d.cold : before < c.warm ? d.cool : d.mild;
 }
 
-/** 젖은 옷이면 GM 기온 줄에 붙는 말 (12-186) */
+/** 분을 "N시간 M분"으로 (PT15 섬: 1시간 25분 남았는데 "2시간", 지붕 아래 쪽만 줄어든 것처럼 보였다) */
+function hoursText(minutes: number): string {
+  const m = Math.max(1, Math.round(minutes / 5) * 5);
+  const h = Math.floor(m / 60);
+  return h && m % 60 ? `${h}시간 ${m % 60}분` : h ? `${h}시간` : `${m}분`;
+}
+
+/** 지금 자리에 비·눈이 들이치는가 (바깥이고 젖는 날씨, 방수복 없이) */
+function rainingOnMe(content: Content, state: GameState): boolean {
+  const wet = climateOf(content)?.wet;
+  const weather = weatherNow(content.scenario, state);
+  return !!wet && !!weather && wet.weather.includes(weather.id) && !shelterAt(content, state, "rest").indoor;
+}
+
+/** 젖은 옷이면 GM 기온 줄에 붙는 말 (12-186). 지금 자리에 맞는 마르는 길만 적는다 (PT15 졸병: 불 땐 거처 안인데 불 곁·지붕 아래가 함께 나왔다) */
 function wetNote(content: Content, state: GameState): string {
   const wet = climateOf(content)?.wet;
   const left = state.wet?.[state.playerId] ?? 0;
@@ -365,9 +380,13 @@ function wetNote(content: Content, state: GameState): string {
   // 불 곁이면 체감에서 빼고 마르는 중이라고 (플레이 테스트 12: 체감 합에 젖은 옷이 빠졌는데 이 줄은 -10°라고 했다)
   const zone = state.playerZone;
   const byFire = !!zone && (state.fires?.[zone] ?? 0) > state.time;
-  if (byFire) return `. 옷이 젖어 있다 (불 곁이라 체감에는 들지 않고 마르는 중: ${Math.ceil(left / 60)}시간 더)`;
+  if (byFire) return `. 옷이 젖어 있다 (불 곁이라 체감에는 들지 않고 마르는 중: ${hoursText(left)} 더)`;
   const f = feelsLike(content, state, "rest");
   const d = f?.parts.find((p) => p.startsWith("젖은 옷"))?.replace("젖은 옷 ", "") ?? "";
-  const roof = Math.ceil((left / 60) * (wet.roof_hours / wet.fire_hours));
-  return `. 옷이 젖어 있다 (체감 ${d}°, 바깥에서는 마르지 않는다: 불 곁이나 불 땐 실내에서 ${Math.ceil(left / 60)}시간, 지붕 아래에서 ${roof}시간 더, 또는 ${clothesHere(content, state) ? "여기서 갈아입을 수 있다 (take_action.change_clothes)" : "갈아입을 옷이 있는 곳에서 갈아입기"})`;
+  const roof = left * (wet.roof_hours / wet.fire_hours);
+  // 비가 들이치는 바깥에서는 갈아입어도 곧 젖는다 (PT15 섬: 비 오는 부두에서 갈아입기를 권하고, 갈아입자마자 다시 젖었다)
+  const change = clothesHere(content, state) ? (rainingOnMe(content, state) ? "지붕 아래 장소로 옮겨 갈아입기 (take_action.change_clothes)" : "여기서 갈아입을 수 있다 (take_action.change_clothes)") : "갈아입을 옷이 있는 곳에서 갈아입기";
+  if (f?.warm) return `. 옷이 젖어 있다 (체감 ${d}°, 불 땐 실내라 마르는 중: ${hoursText(left)} 더, 또는 ${change})`;
+  if (shelterAt(content, state, "rest").indoor) return `. 옷이 젖어 있다 (체감 ${d}°, 지붕 아래라 마르는 중: ${hoursText(roof)} 더, 불 곁이면 ${hoursText(left)}, 또는 ${change})`;
+  return `. 옷이 젖어 있다 (체감 ${d}°, 바깥에서는 마르지 않는다: 불 곁이나 불 땐 실내에서 ${hoursText(left)}, 지붕 아래에서 ${hoursText(roof)}, 또는 ${change})`;
 }

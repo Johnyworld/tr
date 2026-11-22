@@ -117,7 +117,7 @@ export function createTakeActionSchema(s: Scenario) {
             "판정 전에 선언하는 몸의 위험. 실패·대가 있는 성공이면 시스템이 적용한다. none은 몸을 다칠 위험이 없는 행동. " +
               "플레이어가 고른 행동이 부르는 위험만 선언한다: 이번 턴에 처음 드러나는 상대의 피해는 걸지 않는다 (드러난 위협에 대한 대응은 플레이어가 고른 뒤 판정한다)",
           ),
-        harm_cause: z.string().max(120).describe("다친다면 그 원인 한 문장 (위험이 none이면 빈 문자열)"),
+        harm_cause: z.string().max(120).default("").describe("다친다면 그 원인 한 문장 (위험이 none이면 생략, PT15: none인데도 빠뜨리면 오류였다)"),
         harm_kind: z
           .string()
           .nullable()
@@ -380,12 +380,15 @@ export const PLACE_MOVE_MINUTES = 5;
  * 같은 구역 안의 장소로 옮긴다 (공통 규칙 15). along: 동행 말고 함께 가는 장면의 인물 (comesAlong).
  * 바닥의 물건은 장소마다 남는다. 돌려줄 한 줄
  */
-function movePlace(ctx: ToolContext, to: Place | null, along: string[]): string {
+function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved: readonly string[] = []): string {
   const { store, content } = ctx;
   const s0 = store.getState();
   const from = currentPlace(s0, content)?.id ?? null;
   const ground = Object.keys(s0.scene.items).length > 0;
   const left = s0.scene.present.filter((id) => !along.includes(id) && !s0.companions.includes(id));
+  const mates = s0.scene.present.filter((id) => s0.companions.includes(id) && !along.includes(id));
+  // 그곳에 있을 사람이라 같이 온 사람과 이번 행동으로 데려온 사람을 나눠 적는다 (PT15 졸병: target이 없는데 "함께 왔다: 강태호")
+  const bound = along.filter((id) => !involved.includes(id));
   store.append({ type: "place_moved", from, to: to?.id ?? null, ...(along.length ? { with: along } : {}) });
   store.append({ type: "time_advanced", activity: "brief", from: store.getState().time, to: store.getState().time + PLACE_MOVE_MINUTES });
   const s = store.getState();
@@ -394,7 +397,9 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[]): string 
   const where = to ? `${josa(to.name, "으로/로")} 옮겼다 (${to.indoor ? "실내" : "바깥"}, ${PLACE_MOVE_MINUTES}분).` : `구역에 막 들어선 자리로 돌아왔다 (${PLACE_MOVE_MINUTES}분).`;
   return [
     where,
-    along.length ? `함께 왔다: ${calls(along)}.` : "",
+    mates.length ? `동행도 함께 왔다: ${calls(mates)}.` : "",
+    along.length > bound.length ? `함께 왔다: ${calls(along.filter((id) => !bound.includes(id)))}.` : "",
+    bound.length ? `${calls(bound)}도 그곳으로 가던 참이라 같이 왔다.` : "",
     left.length ? `원래 자리에 남았다: ${calls(left)} (함께 데려가려면 with).` : "",
     // 막 들어선 자리에 둔 물건은 그 자리에 남는다 (돌아갈 수 있게 알린다)
     from === null && ground ? `막 들어선 자리에 둔 물건은 그 자리에 남았다 (다시 가려면 place_to: ${ENTRY_PLACE}).` : "",
@@ -650,7 +655,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 
   // 장소 옮기기 (12-244, 공통 규칙 15): 같은 구역 안에서 5분. 길 위의 일은 없다. 옮긴 장소에서 이번 행동을 한다
   // 검증은 모두 상태를 바꾸기 전에 한다 (PT14 동무조: 들인 사람을 target으로 둔 place_to가 그 사람을 장면에서 빼 다음 호출이 오류가 됐다)
-  let placeMove: { to: Place | null; along: string[] } | null = null;
+  let placeMove: { to: Place | null; along: string[]; involved: string[] } | null = null;
   if (input.place_to !== null) {
     if (input.move_to) return { ok: false, error: "구역을 옮기는 move_to와 장소를 옮기는 place_to는 함께 쓰지 않는다. 구역을 옮긴 뒤 다음 행동에서 장소를 고른다 (시간은 흐르지 않았다)." };
     if (start.battle || start.infiltration || heldOf(player)) return { ok: false, error: "지금은 장소를 옮길 수 없다 (전투·잠입 중이거나 갇혀 있다). 시간은 흐르지 않았다." };
@@ -660,12 +665,17 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       return { ok: false, error: `이 구역에 그런 장소가 없다: ${input.place_to}. 이 구역의 장소: ${here || "없음"}, ${ENTRY_PLACE}(구역에 막 들어선 자리). 콘텐츠에 없는 곳이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
     }
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)
-    const involved = [input.target, input.check?.opponent, input.treatment?.target, ...input.with].filter((id): id is string => !!id);
-    if ((to?.id ?? null) !== (currentPlace(start, content)?.id ?? null)) placeMove = { to, along: comesAlong(start, content, to?.id ?? null, involved) };
+    // 따돌리려는 은밀의 상대는 함께 가지 않는다: 실패하면 쫓아온다 (PT15 분대장: 따돌리려던 감염체가 판정 전에 "함께 왔다")
+    const evading = !!input.check?.opponent && input.check.move === scenario.move_roles.stealth;
+    const involved = [input.target, evading ? null : input.check?.opponent, input.treatment?.target, ...input.with].filter((id): id is string => !!id);
+    if ((to?.id ?? null) !== (currentPlace(start, content)?.id ?? null)) placeMove = { to, along: comesAlong(start, content, to?.id ?? null, involved), involved };
   }
   // 함께하는 사람은 장면에 있어야 한다 (공통 규칙 8의 내 편, 사용자 결정 PT14: target 말고 with)
   const strayWith = input.with.find((id) => !start.scene.present.includes(id) || id === start.playerId);
   if (strayWith) return { ok: false, error: `with의 ${josa(start.characters[strayWith] ? `${playerCalls(start, content, strayWith)}(${strayWith})` : strayWith, "은/는")} 장면에 없다. 함께하는 사람은 장면에 있는 인물이다 (시간은 흐르지 않았다).` };
+  // 구역을 옮길 때 with의 사람은 함께 간다 (PT15). 갇힌 사람은 내가 함께 갇혀 달아날 때만 데려간다
+  const lockedWith = input.move_to && !heldOf(player) ? input.with.find((id) => !!heldOf(start.characters[id])) : undefined;
+  if (lockedWith) return { ok: false, error: `${josa(playerCalls(start, content, lockedWith), "은/는")} 갇혀 있어 데려갈 수 없다. 먼저 풀어 줄 방법을 찾는다 (시간은 흐르지 않았다).` };
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
   const settingDisplays: ToolDisplayEvent[] = [];
   // 설정 거스르기 (공통 규칙 16): 굴려서 해내지 못하면 이 행동은 일어나지 않는다 (장소 옮기기도, PT14)
@@ -740,7 +750,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 장소 옮기기: 거절할 일을 모두 거른 뒤에 옮긴다 (막힌 행동의 이동·시간이 남지 않게)
-  if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along));
+  if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along, placeMove.involved));
 
   // 열린 이야기가 요구하는 판정일 때만 이야기가 걸린 판정이다 (플레이 테스트 13: 길 위 이야기가 열린 사이 위험 없는 5분 경계로 레벨이 올랐다)
   const storyCheck = !!start.activeStorylet && !!input.check && !!storyletOf(start, content, start.activeStorylet.id)?.choices.some((c) => c.check === input.check!.move);
@@ -791,8 +801,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
         if (kind) input.check.harm_kind = kind;
       }
     }
-    // 이 행동의 판정이 결과의 첫 줄이다 (앞서 굴린 마음 다잡기보다 앞에, 12-220)
-    displays.unshift(roll.display);
+    // 이 행동의 판정이 결과의 첫 줄이다 (앞서 굴린 마음 다잡기보다 앞에, 12-220).
+    // 설정을 거스르는 굴림만은 그 앞에: 굴려서 해내야 이 행동을 한다 (PT15 섬: 본문은 거스르기가 먼저인데 판정 줄은 위협 → 버티기)
+    displays.splice(settingDisplays.length, 0, roll.display);
     // 탈출은 빈틈을 기다리는 데 시간이 든다 (플레이 테스트 12)
     const wait = escapeAttempt ? scenario.captivity?.escape_hours : undefined;
     if (wait) {
@@ -823,10 +834,15 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     );
     if (roll.growthNote) lines.push(roll.growthNote);
     if (missionNote) lines.push(missionNote);
+    // 따돌리기에 실패하면 상대가 옮긴 자리까지 쫓아온다
+    if (placeMove && roll.outcome === "miss" && input.check.opponent && input.check.move === scenario.move_roles.stealth && !store.getState().scene.present.includes(input.check.opponent)) {
+      store.append({ type: "npc_entered", npcId: input.check.opponent });
+      lines.push(`${josa(playerCalls(store.getState(), content, input.check.opponent), "이/가")} 따돌리지 못하고 쫓아왔다.`);
+    }
     // 적대하는 땅에서 숨기가 실패하면 들킨다 (플레이 테스트 11, D6). 옮겨 가며 건 숨기는 도착한 땅에서 (플레이 테스트 12: 출발한 우리 땅에서 굴려 경보가 없었다)
     if (roll.outcome === "miss" && input.move_to && !escapeAttempt) alarmOnArrival = input.check.move;
-    else if (roll.outcome === "miss" && !hostileHere(ctx) && !!scenario.alarm?.moves.includes(input.check.move) && !heldOf(player) && !input.check.opponent && !input.target && !start.activeStorylet) {
-      // 우리 땅에서 숨기가 실패하면 수상한 짓으로 들킨다 (공통 규칙 3)
+    else if (roll.outcome === "miss" && !hostileHere(ctx) && !!scenario.alarm?.moves.includes(input.check.move) && !heldOf(player) && !input.check.opponent && !input.target && !start.activeStorylet && !input.deed) {
+      // 우리 땅에서 숨기가 실패하면 수상한 짓으로 들킨다 (공통 규칙 3). 하려던 일(deed)이 있으면 그 일이 본 사람에게 남는다 (PT15 졸병: 도둑질과 "수상한 짓"이 둘 다 남았다)
       lines.push(...onSpottedAtHome(ctx));
     } else if (roll.outcome === "miss") {
       // 적대하는 땅에서 시간을 들인 일의 판정이 실패하면 무엇을 하던 중이든 들킨다 (한 행동에 판정은 하나)
@@ -1191,13 +1207,16 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
     const deposited = start.playerZone ? store.getState().deposits?.[start.playerZone] : undefined;
     leaveAmbush(ctx);
-    store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to });
+    const alongZone = comesAlong(start, content, null, input.with);
+    store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to, ...(alongZone.length ? { with: alongZone } : {}) });
     if (deposited) lines.push(`맡겨 둔 것을 돌려받고 떠났다: ${Object.entries(deposited).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ")}.`);
     // 끌고 온 포로: 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다 (12-55)
     lines.push(...deliverPrisoners(ctx));
     // 동행은 따라온다. 그 밖의 장면 인물만 남는다 (플레이 테스트 11: 동행이 왔는데 "따라오지 않는다"가 늘 나왔다)
     const came = activeCompanions(store.getState()).map((id) => playerCalls(store.getState(), content, id));
-    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.${came.length ? ` 동행(${came.join(", ")})은 함께 왔다.` : ""} 그 밖에 함께 있던 인물은 따라오지 않는다 (같이 왔다면 npc_presence로 다시 등장시킨다).`);
+    const brought = alongZone.filter((id) => store.getState().scene.present.includes(id) && !store.getState().companions.includes(id)).map((id) => playerCalls(store.getState(), content, id));
+    const leftBehind = start.scene.present.filter((id) => !alongZone.includes(id) && !start.companions.includes(id)).length > 0;
+    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.${came.length ? ` 동행(${came.join(", ")})은 함께 왔다.` : ""}${brought.length ? ` 함께 데려왔다: ${brought.join(", ")}${escapeAttempt ? " (함께 달아났다)" : ""}.` : ""}${leftBehind ? " 그 밖에 함께 있던 인물은 따라오지 않는다 (데려가려면 with, 같이 왔다면 npc_presence로 다시 등장시킨다)." : ""}`);
     if (rideUsed) {
       lines.push(`${josa(rideUsed.name, "을/를")} 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 몇 시간 안에 무언가 몰려들 수 있다." : ""}`);
       if (rideUsed.noise) store.append({ type: "noise_made", zone: input.move_to, level: rideUsed.noise, day: dayOf(store.getState().time) });

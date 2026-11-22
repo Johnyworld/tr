@@ -22,7 +22,7 @@
       - { style: 오래 함께한 사람의 편한 반말, samples: ["밥은 먹었어?", "오늘은 어디까지 가?"] }
       - { style: 걱정이 많은 말투. 같은 말을 두 번 한다, samples: ["조심해. 진짜 조심해.", "늦지 마. 늦으면 찾으러 갈 거야."] }
     rules: [당신이 다치면 하던 일을 멈춘다]
-    reputations: [당신과 함께 다니는 가족]
+    reputations: [당신의 가족]
     secrets:
       - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }
@@ -49,7 +49,7 @@
       - { style: 오래 함께한 사람의 편한 반말, samples: ["밥은 먹었어?", "오늘은 어디까지 가?"] }
       - { style: 걱정이 많은 말투. 같은 말을 두 번 한다, samples: ["조심해. 진짜 조심해.", "늦지 마. 늦으면 찾으러 갈 거야."] }
     rules: [당신이 다치면 하던 일을 멈춘다]
-    reputations: [당신과 함께 다니는 가족]
+    reputations: [당신의 가족]
     secrets:
       - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }
@@ -76,7 +76,7 @@
       - { style: 오래 함께한 사람의 편한 반말, samples: ["밥은 먹었어?", "오늘은 어디까지 가?"] }
       - { style: 걱정이 많은 말투. 같은 말을 두 번 한다, samples: ["조심해. 진짜 조심해.", "늦지 마. 늦으면 찾으러 갈 거야."] }
     rules: [당신이 다치면 하던 일을 멈춘다]
-    reputations: [당신과 함께 다니는 가족]
+    reputations: [당신의 가족]
     secrets:
       - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }
@@ -103,7 +103,7 @@
       - { style: 오래 함께한 사람의 편한 반말, samples: ["밥은 먹었어?", "오늘은 어디까지 가?"] }
       - { style: 걱정이 많은 말투. 같은 말을 두 번 한다, samples: ["조심해. 진짜 조심해.", "늦지 마. 늦으면 찾으러 갈 거야."] }
     rules: [당신이 다치면 하던 일을 멈춘다]
-    reputations: [당신과 함께 다니는 가족]
+    reputations: [당신의 가족]
     secrets:
       - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }
@@ -130,7 +130,7 @@
     voices:
       - { style: 오래 같이 걸은 사람의 무심한 반말, samples: ["오늘은 저 건물에서 자자.", "물은 아껴. 내일 비 안 온다."] }
     rules: [몫은 똑같이 나눈다]
-    reputations: [당신과 함께 다니는 길동무]
+    reputations: [당신의 길동무]
     secrets:
       - { content: 붕괴 전에 지은 죄가 있다. 그래서 담 안으로 들어가기를 꺼린다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }

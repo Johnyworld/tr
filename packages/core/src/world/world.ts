@@ -371,10 +371,12 @@ ${this.sceneForGm()}` };
     for (const s of changed) sent.sections.set(s.key, s.text);
     for (const k of gone) sent.sections.delete(k);
     // 비어 있는 덩어리는 목록에 넣지 않는다 (플레이 테스트 12: 내용 없는 "재난"이 목록에 나왔다)
-    const same = sections.filter((s) => !changed.includes(s) && s.text.trim() !== "").map((s) => SCENE_SECTION_LABELS[s.key] ?? s.key);
+    // 열린 이야기 없이 즉흥 이야기 자리만 있으면 그 이름으로 (PT15: 열린 이야기가 없는데 "진행 중인 이야기"가 그대로라고 나왔다)
+    const label = (k: string) => (k === "storylet" && !state.activeStorylet ? "즉흥 이야기 자리" : SCENE_SECTION_LABELS[k] ?? k);
+    const same = sections.filter((s) => !changed.includes(s) && s.text.trim() !== "").map((s) => label(s.key));
     return [
       ...changed.map((s) => personDiff(s.key, prev.get(s.key), s.text)),
-      ...(gone.length ? [`(이제 없음: ${gone.map((k) => SCENE_SECTION_LABELS[k] ?? k).join(", ")})`] : []),
+      ...(gone.length ? [`(이제 없음: ${gone.map((k) => label(k)).join(", ")})`] : []),
       ...(same.length ? [`(그대로라 다시 싣지 않음: ${same.join(", ")}. 전체가 필요하면 get_scene)`] : []),
     ].join("\n\n");
   }

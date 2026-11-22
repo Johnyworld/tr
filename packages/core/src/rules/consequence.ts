@@ -13,7 +13,7 @@ import { josa } from "../text.ts";
 import { absenceExcused } from "./blame.ts";
 import type { GameState } from "../game/state.ts";
 import { disposition } from "../sim/war.ts";
-import { recordDeed } from "../engine/reputationTools.ts";
+import { recordDeed, recordDeedIfSeen } from "../engine/reputationTools.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { dayOf } from "./time.ts";
 import { ownedBy } from "./home.ts";
@@ -78,8 +78,10 @@ export function onSpottedAtHome(ctx: ToolContext): string[] {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   if (!me?.factionId || !state.playerZone || !ownedBy(state, state.playerZone, me.factionId)) return [];
-  recordDeed(ctx, { summary: "우리 땅에서 수상한 짓을 하다 들켰다", tags: ["disobedience"], severity: 1, privacy: "semi_private", noisy: true });
-  return ["누군가 수상한 낌새를 보았다 (명령 불복종으로 남았다)."];
+  // 본 사람이 있을 때만 들킨 것이다 (PT15 졸병: 아무도 없는 창고에서 "들켰다"가 남았다)
+  const { deed, visible } = recordDeedIfSeen(ctx, { summary: "우리 땅에서 수상한 짓을 하다 들켰다", tags: ["disobedience"], severity: 1, privacy: "semi_private", noisy: true });
+  if (!deed) return ["숨는 데는 서툴렀지만 다행히 본 사람이 없는 것 같다."];
+  return [visible.length ? `${visible.join(", ")}에게 수상한 낌새를 들켰다 (명령 불복종으로 남았다).` : "누군가 수상한 낌새를 보았다 (명령 불복종으로 남았다)."];
 }
 
 /** 위협 이야기(겁을 주는 이야기·매복)를 실패하면 위협 배역이 장면에 남는다 */

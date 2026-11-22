@@ -72,9 +72,12 @@ export function returnArmory(ctx: ToolContext, missionId: string, options: { exc
   store.append({ type: "armory_returned", missionId, returned });
   autoEquip(ctx, me.id);
   const spent = Object.entries(loan).filter(([id, q]) => content.items[id]?.kind === "ammo" && (returned[id] ?? 0) < q);
-  const parts = [`빌린 장비를 무기고에 반납했다${Object.keys(returned).length ? ` (${Object.entries(returned).map(([id, q]) => `${nameOf(content, id)} ×${q}`).join(", ")})` : ""}.${spent.length ? ` 쓴 ${spent.map(([id]) => nameOf(content, id)).join(", ")}은 따지지 않는다.` : ""}`];
+  // 돌려준 것이 없으면 "반납했다"고 하지 않는다 (PT15 졸병: 소총·탄을 모두 빼앗겼는데 "반납했다"). 빼앗긴 탄을 "쓴 것"으로 적지 않는다
+  const backText = Object.keys(returned).length ? `빌린 장비를 무기고에 반납했다 (${Object.entries(returned).map(([id, q]) => `${nameOf(content, id)} ×${q}`).join(", ")}).` : "";
+  const spentText = spent.length ? `${options.excused ? "빼앗기거나 쓴" : "쓴"} ${spent.map(([id]) => nameOf(content, id)).join(", ")}은 따지지 않는다.` : "";
+  const parts = [[backText, spentText].filter(Boolean).join(" ")].filter(Boolean);
   if (lost.length && options.excused) {
-    parts.push(`${josa(lost.join(", "), "은/는")} 붙잡혔을 때 빼앗겼다. 탓하지 않는다.`);
+    parts.push(`${backText ? "" : "돌려줄 것이 없다. "}${josa(lost.join(", "), "은/는")} 붙잡혔을 때 빼앗겼다. 탓하지 않는다.`);
   } else if (lost.length) {
     store.append({ type: "merit_awarded", characterId: me.id, delta: -1, reason: `빌린 장비를 잃어버렸다: ${lost.join(", ")}` });
     parts.push(`${josa(lost.join(", "), "을/를")} 돌려주지 못했다. 공적 -1.`);

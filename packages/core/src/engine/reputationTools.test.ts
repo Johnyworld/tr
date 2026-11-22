@@ -40,7 +40,8 @@ describe("행적 기록", () => {
     expect(out.visible).toEqual([]); // 화면·GM에 보내는 목격자 목록에는 없다
     // 플레이어가 느끼는 태도는 그 인물을 만나기 전까지 바뀌지 않는다
     expect(store.getState().relations.npc_leader?.player?.trust).toBeLessThan(0);
-    expect(store.getState().perceived.npc_leader).toBeUndefined();
+    // 직속 상관은 처음부터 태도를 알지만(PT15), 숨어서 본 일로 바뀐 진짜 관계는 다시 만나기 전까지 드러나지 않는다
+    expect(store.getState().perceived.npc_leader?.trust ?? 0).toBe(0);
     executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, ctx);
     expect(store.getState().perceived.npc_leader?.trust).toBeLessThan(0);
   });

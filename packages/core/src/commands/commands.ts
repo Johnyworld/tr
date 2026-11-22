@@ -209,7 +209,8 @@ const map: CommandDef = {
       ...(z.preparations.length ? [`  설치해 둔 것: ${z.preparations.join(", ")}`] : []),
       "",
       "맞닿은 구역 (이동 30분~1시간)",
-      ...z.adjacent.map((a) => `  ${a.name} · ${a.owner}`),
+      // 맞닿은 곳이 없으면 비워 두지 않는다 (PT15 섬: 제목만 있고 비어 있었다)
+      ...(z.adjacent.length ? z.adjacent.map((a) => `  ${a.name} · ${a.owner}`) : [`  없음${z.crossings.length ? "" : " (걸어서 나갈 길이 없다)"}`]),
       ...(z.crossings.length ? ["", "건너는 길 (배, 들어서 안다)", ...z.crossings.map((c) => `  ${c.name} · ${c.owner}`)] : []),
       "",
       // 가 본 곳 (12-201). 채팅에서는 글자 그림 대신 목록 (12-239, 플레이 테스트 13: 글자 그림이 읽히지 않았다). 그림 지도는 상태 화면의 지도 탭
@@ -218,7 +219,7 @@ const map: CommandDef = {
         const owner = knownOwner(ctx.state, ctx.content, id);
         const ownerName = owner ? (ctx.content.factions[owner]?.name ?? owner) : "주인 없음";
         const adj = neighbors(ctx.content, id).map((n) => ctx.content.locations[n]?.name ?? n).join(", ");
-        return `  ${ctx.content.locations[id]?.name ?? id} · ${ownerName} · ${adj}`;
+        return `  ${[ctx.content.locations[id]?.name ?? id, ownerName, adj].filter(Boolean).join(" · ")}`;
       }),
     ].join("\n");
   },

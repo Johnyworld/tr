@@ -177,7 +177,8 @@ export function afterAttack(ctx: ToolContext, plan: AttackPlan, outcome: CheckOu
   else if (plan.weapon && (store.getState().characters[me.id]?.wear[plan.weapon] ?? 0) > wearBefore) {
     const item = content.items[plan.weapon]!;
     const left = (item.durability ?? 0) - (store.getState().characters[me.id]!.wear[plan.weapon] ?? 0);
-    lines.push(`빗맞아 ${josa(item.name, "이/가")} 엉뚱한 데를 쳤다. 날이 상했다 (내구도 ${left}/${item.durability}).`);
+    // 날이 없는 무기도 있다 (PT15 분대장: 소총 개머리판으로 쳤는데 "날이 상했다")
+    lines.push(`빗맞아 ${josa(item.name, "이/가")} 엉뚱한 데를 쳤다. 어딘가 상했다 (내구도 ${left}/${item.durability}).`);
   }
   return { lines, displays: [] };
 }

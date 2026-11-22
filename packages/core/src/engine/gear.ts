@@ -287,17 +287,17 @@ function priceFactor(content: Content, state: GameState, npcId: string): number 
   const sameFaction = !!state.characters[npcId]?.factionId && state.characters[npcId]?.factionId === state.characters[state.playerId]?.factionId;
   const markup = sameFaction ? 1 : (content.npcs[npcId]?.merchant?.markup ?? 1);
   const r = state.relations[npcId]?.[state.playerId] ?? NEUTRAL_RELATION;
-  const rel = r.trust >= 2 || r.affection >= 2 ? 0.85 : r.trust <= -1 ? 1.25 : 1;
+  const rel = r.trust >= 4 || r.affection >= 4 ? 0.85 : r.trust <= -2 ? 1.25 : 1;
   return markup * rel;
 }
 
 /** 값이 왜 그런지 한 줄 (F2: 흥정이 틀어진 뒤 값이 오른 까닭이 보이지 않았다) */
 function priceReason(state: GameState, npcId: string, name: string): string | null {
   const r = state.relations[npcId]?.[state.playerId] ?? NEUTRAL_RELATION;
-  if (r.trust <= -1) return `${josa(name, "은/는")} 당신을 믿지 않아 값을 더 부른다.`;
+  if (r.trust <= -2) return `${josa(name, "은/는")} 당신을 믿지 않아 값을 더 부른다.`;
   // 깎아 주는 까닭을 관계대로 (플레이 테스트 12: 처음 만난 사람이 호감만으로 깎아 주는데 "믿는 사이"라고 했다)
-  if (r.trust >= 2) return `${josa(name, "은/는")} 믿는 사이라 값을 깎아 준다.`;
-  if (r.affection >= 2) return `${josa(name, "은/는")} 당신이 마음에 들어 값을 깎아 준다.`;
+  if (r.trust >= 4) return `${josa(name, "은/는")} 믿는 사이라 값을 깎아 준다.`;
+  if (r.affection >= 4) return `${josa(name, "은/는")} 당신이 마음에 들어 값을 깎아 준다.`;
   return null;
 }
 

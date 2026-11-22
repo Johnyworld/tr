@@ -33,7 +33,7 @@
   secret:
     content: 지난겨울 동상으로 오른손 검지와 중지에 감각이 없다. 방아쇠를 제대로 당기지 못한다. 들키면 전투조에서 빠질까 봐 숨긴다
     reveal_when: 사격 연습이나 교전 직후, 둘만 있을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 1, agility: 0, vitality: 2, senses: 1, nerve: 1, charm: -1, intellect: 0 }
   skills: { fight: 2, shoot: 0, endure: 1, survival: 1, intimidate: 1, sense_danger: 1 }
   start_inventory: [crowbar, water_bottle]
@@ -84,7 +84,7 @@
   secret:
     content: 딸 노은비가 붉은연합 거점에 살아 있다. 나루상단 심부름꾼 편으로 몰래 편지를 주고받고, 겨울이 오기 전에 딸을 데리러 가려고 한다
     reveal_when: 편지를 들키거나, 딸 이야기를 먼저 꺼내 줄 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: -1, vitality: 1, senses: 2, nerve: 1, charm: 0, intellect: 1 }
   skills: { survival: 2, scavenge: 1, sense_danger: 1, mechanics: 1, history: 0 }
   start_inventory: [water_bottle, cigarettes]
@@ -123,7 +123,7 @@
   secret:
     content: 며칠 전 새벽 망루에서 한도윤이 혼자 자루 여러 개를 옛 기계실습실로 옮기는 것을 봤다. 무엇인지는 모르고, 아직 아무에게도 말하지 않았다
     reveal_when: 배급이 줄어 분대가 굶을 때, 분대장이 규칙을 지키는 사람이라고 믿게 됐을 때
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: 1, charm: -1, intellect: 0 }
   skills: { shoot: 2, stealth: 1, sense_danger: 1, endure: 0 }
   start_inventory: [old_rifle, binoculars]
@@ -161,7 +161,7 @@
   secret:
     content: 거점에 오기 전 석 달 동안 붉은연합 거점 부엌에서 일했다. 도망쳐 나왔지만 들키면 첩자로 몰려 쫓겨날까 봐 숨긴다
     reveal_when: 붉은 완장을 보고 겁에 질렸을 때, 분대장이 끝까지 감싸 주겠다고 할 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 2, vitality: 0, senses: 1, nerve: -1, charm: 1, intellect: 1 }
   skills: { stealth: 2, scavenge: 1, sense_danger: 0, fight: -1 }
   start_inventory: [kitchen_knife, dry_ration]

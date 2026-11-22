@@ -13,8 +13,9 @@ const choice = { name: "서진", gender: "female" as const, abilities: null, por
 const open = (mature = true, rng: () => number = () => 0.99) =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-love-")), content, rngFactory: () => rng }).create("mcp", "role_a_grunt", choice, undefined, undefined, { mature });
 type W = ReturnType<typeof open>;
+/** 관계를 옛 눈금(±5)으로 적고 두 배로 쌓는다 (12-251: 관계 ±10) */
 const like = (w: W, from: string, to: string, affection: number, trust = 3) =>
-  w.ctx().store.append({ type: "relation_changed", from, to, delta: { trust, affection, respect: 0 }, reason: "test" });
+  w.ctx().store.append({ type: "relation_changed", from, to, delta: { trust: trust * 2, affection: affection * 2, respect: 0 }, reason: "test" });
 const enter = (w: W, id: string) => { if (!w.state().scene.present.includes(id)) w.ctx().store.append({ type: "npc_entered", npcId: id } as never); };
 /** 주인공(여성)에게 끌리는 성인 남성 둘 */
 const men = (w: W) =>

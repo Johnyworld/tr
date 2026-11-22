@@ -22,11 +22,14 @@ describe("균형 G", () => {
     expect(lines.length).toBeGreaterThan(0);
   });
 
-  it("붉은연합: 점호 시각을 자면서 넘기면 불복종 행적이 남는다", () => {
+  it("붉은연합: 거점에서 자면 점호 시각에 동료가 깨우고, 다시 자면 불복종 행적이 남는다 (12-251)", () => {
     const w = open("role_c_raider");
     const before = Object.values(w.state().deeds).length;
     w.state().characters[w.state().playerId]!.conditions.fatigue = "weary"; // 지쳐 있으면 오래 잔다 (E4)
-    w.executeTool("take_action", { intent: "잔다", activity: { kind: "sleep", until: "dawn" } });
+    const first = w.executeTool("take_action", { intent: "잔다", activity: { kind: "sleep", until: "dawn" } });
+    expect(JSON.stringify(first)).toContain("점호 시각이라 동료가 깨웠다");
+    expect(Object.values(w.state().deeds).slice(before).some((d) => d.summary.includes("점호"))).toBe(false);
+    w.executeTool("take_action", { intent: "다시 잔다", activity: { kind: "sleep", until: "dawn" } });
     const deeds = Object.values(w.state().deeds).slice(before);
     expect(deeds.some((d) => d.summary.includes("점호"))).toBe(true);
   });

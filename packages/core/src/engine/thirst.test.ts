@@ -63,7 +63,7 @@ describe("갈증", () => {
   it("물이 나지 않는 곳에서는 마실 수 없고, 목도 안 마르고 빈 물병도 없으면 언급하지 않는다", () => {
     const { w, me } = open();
     me().conditions.thirst = "parched";
-    w.state().playerZone = "old_town";
+    w.state().playerZone = "hospital_ruins"; // 12-251: 물 뜰 곳(stream)이 없는 마른 구역
     expect(drinkWater(w.ctx()).ok).toBe(false);
     expect(describePlayerState(w.state(), w.content)).not.toContain("물이 충분하다");
     w.state().playerZone = "riverside";

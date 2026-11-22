@@ -27,7 +27,7 @@
     rules: [자기가 걸어온 길 이름을 끝까지 말하지 않는다, 먹을 것을 받으면 바깥 소문 하나로 갚는다]
     reputations: [고속도로로 들어온 떠돌이, 바깥에서 왔다는 사람, 휴게소에 며칠 묵다 가는 나그네]
     secrets:
-      - { content: 함께 걸어온 일행을 길에서 잃었다. 어떻게 잃었는지는 말하지 않는다, reveal_when: 같은 불 앞에서 밤을 넘긴 뒤, min_trust: 3 }
-      - { content: 바깥에서 무슨 일이 있었는지 실은 본 것이 거의 없다. 대부분 숨어서 걸었다, reveal_when: 바깥 이야기를 거듭 캐물었을 때, min_trust: 2 }
+      - { content: 함께 걸어온 일행을 길에서 잃었다. 어떻게 잃었는지는 말하지 않는다, reveal_when: 같은 불 앞에서 밤을 넘긴 뒤, min_trust: 6 }
+      - { content: 바깥에서 무슨 일이 있었는지 실은 본 것이 거의 없다. 대부분 숨어서 걸었다, reveal_when: 바깥 이야기를 거듭 캐물었을 때, min_trust: 4 }
   ties: { chance: 0.15, kinds: [sibling, parent, child, spouse, friend] }
   appears: { zones: [rest_stop] }

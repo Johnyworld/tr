@@ -35,7 +35,7 @@
   secret:
     content: 지난겨울 물결 때 엄태석은 죽지 않았다. 다리를 물려 배수로에 쓰러졌고, 그를 업으면 넷이 다 죽는다고 판단해 두고 왔다. 지도부와 분대에는 이미 숨이 끊겨 있었다고 보고했다. 붕대 감은 손가락은 그때 태석이 놓지 않던 손을 떼다 다친 것이다
     reveal_when: 원칙을 지키다 사람을 잃어 본 사람에게, 밤에 막사 밖에서 둘만 있을 때. 또는 엄태주가 형의 마지막을 정면으로 물을 때
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 0 }
   skills: { shoot: 1, tactics: 2, sense_danger: 1, carpentry: 1, endure: 1, maintenance: 1 }
   start_inventory: [old_rifle, radio, cigarettes]
@@ -77,7 +77,7 @@
   secret:
     content: 밤에 신옥란 간부가 의무실 약장에 해열제와 항생제를 몰래 넣는 것을 두 번 봤다. 장부에 없는 약이다. 덕분에 살린 사람이 있어서 아무에게도 말하지 않았다
     reveal_when: 약이 없어 누군가 죽어 가는 자리에 함께 있었던 사람에게
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 2 }
   skills: { first_aid: 2, infected_lore: 1, scavenge: 1 }
   start_inventory: [medkit, water_bottle]
@@ -154,14 +154,14 @@
   secret:
     content: 봄에 버들마을 지하 교실에서 길수아와 몰래 혼례를 올렸다. 분대에는 알리지 않았다. 버들마을이 연합을 깨면 막사를 빠져나가 아내 곁으로 갈 생각이다
     reveal_when: 버들마을을 함께 지켜 본 사람에게, 또는 버들마을을 치자는 이야기가 나왔을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 0 }
   skills: { survival: 2, stealth: 1, shoot: 1, carpentry: 1, hunt: 1 }
   start_inventory: [old_rifle, blanket]
   playable: true
   zone: a_base
   ties:
-    - { to: pb_sua, kind: spouse, secret: { reveal_when: 버들마을을 함께 지켜 본 사람에게 밤에 쪽문 근처에서 들켰을 때, min_trust: 3 } }
+    - { to: pb_sua, kind: spouse, secret: { reveal_when: 버들마을을 함께 지켜 본 사람에게 밤에 쪽문 근처에서 들켰을 때, min_trust: 6 } }
 
 - id: pa_yeonhui
   name: 차연희
@@ -196,7 +196,7 @@
   secret:
     content: 붉은연합 약탈조에 친동생 차동팔이 있다. 열흘에 한 번쯤 장터에서 몰래 만나, 창고에서 빼낸 통조림을 건네고 대신 붉은연합 안의 소식을 듣는다. 거점에서 가장 무거운 잘못인 "남의 몫에 손대기"를 하고 있다는 것을 안다
     reveal_when: 창고 뒷문에서 들켰을 때, 들킨 상대가 바로 알리지 않고 이유를 물을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: 1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 1 }
   skills: { deceive: 2, persuade: 1, scavenge: 1, stealth: 1 }
   start_inventory: [ledger, canned_food, trade_token]
@@ -204,7 +204,7 @@
   zone: a_base
   # 적대 무리에 갈라진 남매 (기획서 7.10)
   ties:
-    - { to: c_dongpal, kind: sibling, secret: { reveal_when: "창고 뒷문에서 들켰을 때, 들킨 상대가 바로 알리지 않고 이유를 물을 때", min_trust: 3 } }
+    - { to: c_dongpal, kind: sibling, secret: { reveal_when: "창고 뒷문에서 들켰을 때, 들킨 상대가 바로 알리지 않고 이유를 물을 때", min_trust: 6 } }
 
 - id: pa_okran
   name: 신옥란
@@ -238,11 +238,11 @@
   secret:
     content: 하얀매 대표 서은영이 붕괴 때 헤어진 친딸이다. 딸은 "약은 공짜로 주지 않는다"는 규칙을 어머니에게도 지킨다. 그래서 발전기 연료를 조금씩 빼돌려 장터에서 해열제와 항생제로 바꾸고, 밤에 의무실 약장에 장부 없이 넣는다
     reveal_when: 원칙과 규칙 사이에서 원칙을 고른 적 있는 사람에게, 발전기실에서 둘만 있을 때
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 0, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 2 }
   skills: { mechanics: 2, carpentry: 2, persuade: 1, history: 1 }
   start_inventory: [wire_roll, ledger, crowbar]
   playable: false
   zone: a_base
   ties:
-    - { to: d_eunyoung, kind: parent, secret: { reveal_when: "원칙과 규칙 사이에서 원칙을 고른 적 있는 사람에게, 발전기실에서 둘만 있을 때", min_trust: 4 } }
+    - { to: d_eunyoung, kind: parent, secret: { reveal_when: "원칙과 규칙 사이에서 원칙을 고른 적 있는 사람에게, 발전기실에서 둘만 있을 때", min_trust: 8 } }

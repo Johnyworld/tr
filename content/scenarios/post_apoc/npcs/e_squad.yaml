@@ -37,7 +37,7 @@
   secret:
     content: 두 해째 톨게이트 도적 떼에게 짐에서 조금씩 덜어 낸 물과 통조림을 "통행료"로 내 왔다. 그래서 그의 짐마차는 털리지 않았다. 차문석이 그것을 알고 끊게 한 다음 번 길에서 짐마차가 털렸고 차문석이 죽었다. 그 뒤로 몰래 다시 내고 있다
     reveal_when: 길에서 그가 맨 뒤에 처져 무언가 두고 오는 것을 분대장이 보고, 둘만 있을 때
-    min_trust: 2
+    min_trust: 4
   stats: { strength: 0, agility: -1, vitality: 1, senses: 2, nerve: 1, charm: 0, intellect: 1 }
   skills: { survival: 2, sense_danger: 2, deceive: 1, history: 1 }
   start_inventory: [trade_token, binoculars, water_bottle]
@@ -75,7 +75,7 @@
   secret:
     content: 버들마을 경비병이었다. 이 년 전 겨울 밤 경계 때 담을 넘던 그림자를 쐈는데, 마을 사람이던 열네 살 아이였다. 그날 밤 마을을 나왔고, 마을은 아직 그 일을 잊지 않았다
     reveal_when: 버들마을 정문 앞에서 그가 고개를 숙이고 있는 것을 보고, 분대장이 이유를 묻지 않고 기다려 줄 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: 1, charm: -1, intellect: 0 }
   skills: { shoot: 2, stealth: 1, sense_danger: 1, survival: 1 }
   start_inventory: [crossbow, bolts, bolts, water_bottle]
@@ -113,7 +113,7 @@
   secret:
     content: 붉은연합 약탈조에서 달아난 징집병이다. 귓불의 구멍은 조 표식 고리를 뜯어낸 자국이다. 붉은연합은 그가 강에 빠져 죽은 줄 안다. 탁봉수는 그를 숨겨 주는 값까지 빚에 얹었다
     reveal_when: 붉은연합 물류창고에서 누군가 그를 알아보았을 때, 또는 분대장이 붉은 완장 앞에서 그를 감싸 주었을 때
-    min_trust: 2
+    min_trust: 4
   stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: -1, charm: 0, intellect: 0 }
   skills: { fight: 1, stealth: 1, scavenge: 1, sense_danger: 1 }
   start_inventory: [pipe_spear, water_bottle, dry_ration]
@@ -151,7 +151,7 @@
   secret:
     content: 남편이 죽자 탁봉수는 잃은 짐마차 값을 남편 빚에 얹고, 그 빚을 통째로 그에게 넘겼다. 평생 짐을 져도 못 갚는 양이다. 다음 고속도로 휴게소 짐 부리는 날, 짐마차 하나를 끌고 고속도로 바깥으로 달아날 생각이다
     reveal_when: 장부나 빚 이야기가 나오고, 분대장이 탁봉수보다 자기 편이라고 믿을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 1, agility: 1, vitality: 1, senses: 0, nerve: 2, charm: 0, intellect: 0 }
   skills: { shoot: 2, tactics: 1, endure: 1, persuade: 1 }
   start_inventory: [shotgun, shells, leather_jacket]

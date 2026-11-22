@@ -81,7 +81,7 @@ export function isAcquaintanceMemory(fact: string): boolean {
 
 /**
  * 주인공이 그 인물의 평판(소개)을 아는가: 이름을 알고, 원래 알던 사이(같은 무리, 놀이 중에 이름을 들은 기억이 없음)이거나
- * 사이가 가까워졌을 때(신뢰·호감 2 이상, *임시*). 만난 지 한 시간 된 사람의 지난 삶까지 보이지 않게 (PT14, 원칙 4)
+ * 사이가 가까워졌을 때(신뢰·호감 4 이상, *임시*). 만난 지 한 시간 된 사람의 지난 삶까지 보이지 않게 (PT14, 원칙 4)
  */
 export function knowsReputation(state: GameState, content: Content, id: string): boolean {
   const c = state.characters[id];
@@ -89,7 +89,7 @@ export function knowsReputation(state: GameState, content: Content, id: string):
   const me = state.characters[state.playerId];
   if (me?.factionId && c.factionId === me.factionId) return true;
   const r = state.perceived[id];
-  if (r && (r.trust >= 2 || r.affection >= 2)) return true;
+  if (r && (r.trust >= 4 || r.affection >= 4)) return true;
   const heardName = (state.beliefs[state.playerId] ?? []).some((b) => b.fact.includes(`의 이름은 ${c.name}`));
   return !heardName;
 }

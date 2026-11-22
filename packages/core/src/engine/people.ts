@@ -28,7 +28,7 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome }
 /** 관계(신뢰·호감·존중 절댓값의 합)가 이만큼이면 자란다 */
 const PROMOTE_AT = 4;
 /** 동적인 숨은 관계의 털어놓는 조건 */
-const DYNAMIC_SECRET = { reveal_when: "둘만 있을 때, 그 사람 이야기가 나오면", min_trust: 2 };
+const DYNAMIC_SECRET = { reveal_when: "둘만 있을 때, 그 사람 이야기가 나오면", min_trust: 4 };
 
 type Profile = { want: string; fear: string; reputation: string; voice: { style: string; samples: string[] }; rules: string[]; secret: { content: string; reveal_when: string; min_trust: number } | null };
 

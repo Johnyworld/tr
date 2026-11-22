@@ -493,6 +493,9 @@ function checkReferences(content: Content): string[] {
   }
   problems.push(...checkStorylets(content));
   problems.push(...checkNpcBodies(content));
+  problems.push(...checkResolveSpine(content));
+  // 장소마다 묘사 한 줄 (12-251)
+  for (const loc of Object.values(content.locations)) for (const p of loc.places) if (!p.description) problems.push(`locations.${loc.id}.places.${p.id}: 묘사(description)가 없다`);
   const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));
   for (const m of Object.values(content.missions)) {
     if (m.advances && !plans.includes(m.advances.clock)) problems.push(`missions.${m.id}.advances: 알 수 없는 세력 클락 ${m.advances.clock}`);
@@ -542,12 +545,49 @@ export function checkNpcBodies(content: Content): string[] {
   return problems;
 }
 
+/**
+ * 다짐의 줄기 이야기 (12-251, 플레이 테스트 14: 섬의 "의회 저장고"가 조건을 채운 밤에 이야기 간격에 막혀 열리지 않았다).
+ * 시나리오의 다짐이 진실 알기(check beliefs)이면, 그 시나리오에만 있는 이야기 가운데 그 진실을 믿음으로 주는 것은 꼭 열리는 이야기(essential)여야 한다
+ */
+export function checkResolveSpine(content: Content): string[] {
+  const problems: string[] = [];
+  const facts = (v: unknown, out: string[] = []): string[] => {
+    if (Array.isArray(v)) for (const x of v) facts(x, out);
+    else if (v && typeof v === "object") {
+      const o = v as Record<string, unknown>;
+      if (o.belief && typeof o.belief === "object" && typeof (o.belief as { fact?: unknown }).fact === "string") out.push((o.belief as { fact: string }).fact);
+      for (const x of Object.values(o)) facts(x, out);
+    }
+    return out;
+  };
+  for (const role of Object.values(content.roles)) {
+    const r = role.resolve;
+    const kind = r ? content.scenario.resolve?.kinds.find((k) => k.id === r.kind) : undefined;
+    if (!r?.target || kind?.check !== "beliefs") continue;
+    const words = r.target.split("|").filter(Boolean);
+    // 그 시나리오에만 있는 이야기만 (여럿이 함께 쓰는 공통 이야기를 꼭 열리게 하면 다른 시나리오의 간격이 무너진다)
+    const tags = new Set(role.storylet_tags.filter((t) => Object.values(content.roles).filter((o) => o.storylet_tags.includes(t)).length === 1));
+    for (const st of Object.values(content.storylets)) {
+      if (!st.tags.some((t) => tags.has(t)) || st.essential) continue;
+      if (facts(st.choices).some((f) => words.some((w) => f.includes(w)))) problems.push(`storylets.${st.id}: ${role.id}의 다짐(진실 알기)을 이루는 이야기다. essential: true로 둔다 (간격·하루 상한에 막히지 않게)`);
+    }
+  }
+  return problems;
+}
+
 export function checkStorylets(content: Content): string[] {
   const problems: string[] = [];
   const clocks = new Set(Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id)));
   const harmLevels = new Set(content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)?.levels.map((l) => l.id) ?? []);
   for (const s of Object.values(content.storylets)) {
     const where = `storylets.${s.id}`;
+    // 장소 조건과 앞 이야기 조건이 가리키는 것이 있는지 (12-251)
+    if (s.when.places) {
+      const known = new Set((s.when.zones ?? []).flatMap((z) => (content.locations[z]?.places ?? []).map((p) => p.id)));
+      if (!s.when.zones?.length) problems.push(`${where}.when.places: 구역(when.zones)을 함께 적는다`);
+      for (const p of s.when.places) if (s.when.zones?.length && !known.has(p)) problems.push(`${where}.when.places: ${s.when.zones.join("·")}에 없는 장소 ${p}`);
+    }
+    if (s.when.after_storylet && !content.storylets[s.when.after_storylet.id]) problems.push(`${where}.when.after_storylet: 없는 이야기 ${s.when.after_storylet.id}`);
     const castKeys = new Set(Object.keys(s.cast));
     // 배역 자리 뒤에 조사를 직접 적지 않는다: 받침에 따라 틀린다 (플레이 테스트 13: "늙은 그물꾼다", "{green}이"). {key:이/가}로 쓴다
     {

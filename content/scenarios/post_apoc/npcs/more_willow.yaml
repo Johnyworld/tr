@@ -38,7 +38,7 @@
   secret:
     content: 아들 남민호는 살아 있다. 첫 겨울, 열병 난 누이를 살리겠다며 마을 약 상자를 들고 하얀매로 달아났고 누이는 끝내 죽었다. 마을은 아들을 약 도둑으로 기억하고 죽은 줄 안다. "부품을 찾으러" 나가는 날 시립병원 앞에서 아들을 만난다
     reveal_when: 잃은 식구 이야기를 털어놓은 사람에게, 단지 밖에서 둘만 있을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 1, agility: -1, vitality: 2, senses: 1, nerve: 0, charm: -1, intellect: 1 }
   skills: { carpentry: 2, mechanics: 1, survival: 1, endure: 1 }
   start_inventory: [wire_roll, crowbar, water_bottle]
@@ -46,7 +46,7 @@
   zone: b_base
   # 하얀매에 있는 아들 (숨은 관계, 기획서 7.10)
   ties:
-    - { to: d_minho, kind: parent, secret: { reveal_when: "잃은 식구 이야기를 털어놓은 사람에게, 단지 밖에서 둘만 있을 때", min_trust: 3 } }
+    - { to: d_minho, kind: parent, secret: { reveal_when: "잃은 식구 이야기를 털어놓은 사람에게, 단지 밖에서 둘만 있을 때", min_trust: 6 } }
 
 - id: pb_yeongja
   name: 함영자
@@ -80,7 +80,7 @@
   secret:
     content: 청솔형제단에 넘기는 텃밭 몫을 저울로 조금씩 덜어 왔다. 덜어 낸 것을 장터에 팔아 첫 봄에 씨앗과 소금을 사느라 마을 이름으로 진 빚을 갚는다. 맹석규가 알면서 눈감아 준다
     reveal_when: 저울 앞에서 덜어 내는 것을 들킨 뒤, 상대가 마을 빚 사정을 들어 줄 때
-    min_trust: 2
+    min_trust: 4
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 2, intellect: 1 }
   skills: { persuade: 2, deceive: 1, survival: 1, scavenge: 1, taming: 1 }
   start_inventory: [trade_token, ledger, dry_ration]
@@ -119,7 +119,7 @@
   secret:
     content: 붉은연합 위원장 국혜란과 붕괴 전 공단에서 함께 일한 옛 동료다. 첫 편지를 장터에서 받아 대표에게 건넨 것도, 사자가 쪽문으로 들어오던 밤 대표실까지 데려간 것도 자기다. 혜란이라면 약속을 지킨다고 믿는다
     reveal_when: 우물이 마른다는 셈을 함께 들여다보고 청솔형제단의 약조로는 답이 없다는 데 고개를 끄덕인 사람에게
-    min_trust: 4
+    min_trust: 8
   stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 2 }
   skills: { persuade: 2, history: 1, mechanics: 1, deceive: 1 }
   start_inventory: [ledger, radio]
@@ -127,7 +127,7 @@
   zone: b_base
   # 붉은연합 위원장의 옛 동료 (숨은 관계)
   ties:
-    - { to: c_hyeran, kind: friend, secret: { reveal_when: "우물이 마른다는 셈을 함께 들여다보고 청솔형제단의 약조로는 답이 없다는 데 고개를 끄덕인 사람에게", min_trust: 4 } }
+    - { to: c_hyeran, kind: friend, secret: { reveal_when: "우물이 마른다는 셈을 함께 들여다보고 청솔형제단의 약조로는 답이 없다는 데 고개를 끄덕인 사람에게", min_trust: 8 } }
 
 - id: pb_sua
   name: 길수아
@@ -160,7 +160,7 @@
   secret:
     content: 청솔형제단의 왕기범과 몰래 혼례를 올렸고 아이를 가졌다. 남편에게는 아직 말하지 못했다. 배가 고파 염재혁에게서 붉은연합 통조림을 받았고, 그 값으로 쪽문 당번 시간을 한 번 알려 주었다
     reveal_when: 밤 쪽문 당번 때 함께 서 준 사람이 아이 이야기를 눈치챘을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: 1, vitality: 0, senses: 2, nerve: 0, charm: 0, intellect: 0 }
   skills: { shoot: 1, sense_danger: 2, stealth: 1 }
   start_inventory: [old_rifle, blanket]
@@ -199,7 +199,7 @@
   secret:
     content: 사자가 들어오던 밤을 옥상에서 다 봤다. 옥상에 올라간 게 들킬까 봐, 그리고 배동철 아저씨가 다칠까 봐 아무에게도 말하지 않았다. 대신 그날부터 맹석규 간부를 몰래 따라다닌다
     reveal_when: 옥상에서 들켰는데 혼내지 않고 덮어 준 사람에게
-    min_trust: 2
+    min_trust: 4
   stats: { strength: -1, agility: 2, vitality: 0, senses: 2, nerve: -1, charm: 1, intellect: 0 }
   skills: { stealth: 2, sense_danger: 1, scavenge: 1 }
   start_inventory: [water_bottle, binoculars]

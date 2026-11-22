@@ -47,8 +47,8 @@ export function negotiationFactors(state: GameState, content: Content, mine: str
   if (theirsN > 0 && ours / theirsN >= 1.5) out.push({ label: "우리가 더 세다", value: 1 });
   else if (ours > 0 && ours / Math.max(1, theirsN) <= 0.67) out.push({ label: "그쪽이 더 세다", value: -1 });
   const trust = (state.relations[envoy]?.[state.playerId] ?? NEUTRAL_RELATION).trust;
-  if (trust >= 2) out.push({ label: "협상 상대가 당신을 믿는다", value: 1 });
-  else if (trust <= -2) out.push({ label: "협상 상대가 당신을 믿지 않는다", value: -1 });
+  if (trust >= 4) out.push({ label: "협상 상대가 당신을 믿는다", value: 1 });
+  else if (trust <= -4) out.push({ label: "협상 상대가 당신을 믿지 않는다", value: -1 });
   return out;
 }
 

@@ -151,7 +151,7 @@
   when:
     resolve: { kinds: [debt], stage_gte: 2 }
   cast:
-    friend: { faction: own, here: true, trust_gte: 1 }
+    friend: { faction: own, here: true, trust_gte: 2 }
   setup: "{friend:이/가} 머뭇거리다 말을 꺼낸다. 아이가 아프다고, 약을 사야 하는데 자기 이름으로는 더 빌릴 수가 없다고. 당신 이름이면 장부꾼이 한 줄 더 적어 줄 거라고."
   ai_direction: "빚을 거의 털어 가는 사람에게 오는 시험이다. 거절도 도와주는 것도 옳을 수 있다. 빚이 늘어나는 양은 코드가 정한다. {friend}의 사정은 거짓이 아니다."
   choices:

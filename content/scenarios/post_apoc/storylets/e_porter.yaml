@@ -354,7 +354,7 @@
     day_gte: 3
     flags_none: [e_second_ledger_seen]
   cast:
-    clerk: { ids: [e_sora], known: true, trust_gte: 1 }
+    clerk: { ids: [e_sora], known: true, trust_gte: 2 }
   setup: >-
     창고 다락에서 {clerk:이/가} 목도리에 싼 장부 두 권 가운데 얇은 쪽을 내민다.
     "읽지 말고 들고만 있어 주세요. 오늘 밤만. 누가 다락을 뒤졌어요."

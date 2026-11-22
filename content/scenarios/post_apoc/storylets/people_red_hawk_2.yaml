@@ -435,7 +435,7 @@
     day_gte: 5
     flags_none: [pr2_flag_done]
   cast:
-    sarge: { ids: [pc_taegyu], trust_gte: 2 }
+    sarge: { ids: [pc_taegyu], trust_gte: 4 }
   setup: >-
     거점 담 그늘. {sarge:이/가} 동쪽 지도를 무릎에 펴 놓고 있다. 초소 표시가 아니라 그 앞의 도랑과 담 밑마다 손톱자국이 패어 있다.
     당신을 보고도 지도를 접지 않는다. "공세 날 너 어디 서는지 알아?"

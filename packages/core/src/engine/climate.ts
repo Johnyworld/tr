@@ -115,11 +115,6 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
     value += c.fire!.warmth;
     parts.push(`${stove ? "난로" : "모닥불"} ${signed(c.fire!.warmth)}`);
   }
-  // 젖은 옷 (12-121, 12-186): 불 곁이 아니면 체감이 떨어진다
-  if (c.wet && !fireHere && (state.wet?.[me.id] ?? 0) > 0) {
-    value -= c.wet.degrees;
-    parts.push(`젖은 옷 ${signed(-c.wet.degrees)}`);
-  }
   // 옷차림: 입은 것(worn)과, 자거나 쉴 때 덮는 것(resting). 종류마다 가장 따뜻한 하나
   const best = (when: "worn" | "resting", have: (id: string) => boolean) => {
     let top: { id: string; degrees: number } | null = null;
@@ -148,6 +143,12 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
     value -= trait;
     // 어느 트레잇 때문인지 적는다 (플레이 테스트 11: 설명 없는 "체질 -3")
     parts.push(`체질(${coldTraits.map((t) => t.label).join("·")}) ${signed(-trait)}`);
+  }
+  // 젖은 옷 (12-121, 12-186): 불 곁이 아니면 체감이 떨어진다. 옷차림·체질까지 셈한 체감으로 세기를 정한다 (12-251)
+  if (c.wet && !fireHere && (state.wet?.[me.id] ?? 0) > 0) {
+    const d = wetDegrees(c, value);
+    value -= d;
+    parts.push(`젖은 옷 ${signed(-d)}`);
   }
   // 분배 (12-128): 그 거점 무리의 연료 방침만큼 불 땐 거처가 덜(더) 따뜻하다
   const floor = c.heated + (zone && state.zones[zone]?.owner ? policyEffects(content, state.factions[state.zones[zone]!.owner!]).heated : 0);
@@ -215,7 +216,8 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
     if (c.wet) {
       const weather = dayOf(t) === dayOf(state.time) ? weatherNow(ctx.content.scenario, state) : null;
       if (!f.indoor && weather && c.wet.weather.includes(weather.id) && !wearsWaterproof(ctx, me.id)) wetLeft = Math.round(c.wet.fire_hours * 60);
-      else if (wetLeft > 0 && f.warm) wetLeft = Math.max(0, wetLeft - (end - t));
+      // 불 곁이면 fire_hours, 지붕 아래면 roof_hours에 마른다 (12-251: 빗속 섬에서 사흘 내내 젖어 있었다)
+      else if (wetLeft > 0 && (f.warm || f.indoor)) wetLeft = Math.max(0, Math.round(wetLeft - (end - t) * (f.warm ? 1 : c.wet.fire_hours / c.wet.roof_hours)));
     }
     const hours = (end - t) / 60;
     if (f.value < c.comfort) {
@@ -256,8 +258,8 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
   if (wetLeft !== wetBefore && !ctx.store.getState().characters[me.id]?.dead) {
     const name = playerCalls(ctx.store.getState(), ctx.content, me.id);
     if (wetBefore <= 0) displays.push(...soak(ctx, me.id, "비를 맞았다"));
-    else if (wetLeft <= 0) displays.push(dryOff(ctx, me.id, name, "불기 곁에서 말렸다"));
-    else ctx.store.append({ type: "wet_set", characterId: me.id, left: wetLeft, cause: "불기에 말리는 중" });
+    else if (wetLeft <= 0) displays.push(dryOff(ctx, me.id, name, warmest?.warm || coldest?.warm ? "불기 곁에서 말렸다" : "지붕 아래에서 말렸다"));
+    else ctx.store.append({ type: "wet_set", characterId: me.id, left: wetLeft, cause: "말리는 중" });
   }
   return displays;
 }
@@ -277,7 +279,7 @@ export function soak(ctx: ToolContext, who: string, cause: string, splash = fals
   const was = (ctx.store.getState().wet?.[who] ?? 0) > 0;
   ctx.store.append({ type: "wet_set", characterId: who, left: Math.round(wet.fire_hours * 60), cause });
   if (was) return [];
-  return [{ type: "harm", targetName: playerCalls(ctx.store.getState(), ctx.content, who), trackLabel: "옷", severityLabel: cause, fatal: false, fromLabel: "마름", toLabel: "젖음", cause: `${cause}. 마를 때까지 체감 -${wet.degrees}°. 시간으로는 마르지 않는다: 불 곁이나 불 땐 실내에서 ${wet.fire_hours}시간, 또는 갈아입을 옷이 있는 곳(우리 거점·거처·옷이 남은 폐허)에서 갈아입는다` }];
+  return [{ type: "harm", targetName: playerCalls(ctx.store.getState(), ctx.content, who), trackLabel: "옷", severityLabel: cause, fatal: false, fromLabel: "마름", toLabel: "젖음", cause: `${cause}. 마를 때까지 체감이 ${wet.degrees.mild}~${wet.degrees.cold}° 떨어진다 (추울수록 크다). 바깥에서는 마르지 않는다: 불 곁이나 불 땐 실내에서 ${wet.fire_hours}시간, 지붕 아래에서 ${wet.roof_hours}시간, 또는 갈아입을 옷이 있는 곳(우리 거점·거처·옷이 남은 폐허)에서 갈아입는다` }];
 }
 
 function dryOff(ctx: ToolContext, who: string, name: string, by: string): ToolDisplayEvent {
@@ -349,6 +351,12 @@ export function describeTemperature(content: Content, state: GameState): string 
   );
 }
 
+/** 젖은 옷이 떨어뜨리는 도 (12-251): 젖기 전 체감이 추울수록 크다 */
+export function wetDegrees(c: NonNullable<ReturnType<typeof climateOf>>, before: number): number {
+  const d = c.wet!.degrees;
+  return before < c.comfort ? d.cold : before < c.warm ? d.cool : d.mild;
+}
+
 /** 젖은 옷이면 GM 기온 줄에 붙는 말 (12-186) */
 function wetNote(content: Content, state: GameState): string {
   const wet = climateOf(content)?.wet;
@@ -358,5 +366,8 @@ function wetNote(content: Content, state: GameState): string {
   const zone = state.playerZone;
   const byFire = !!zone && (state.fires?.[zone] ?? 0) > state.time;
   if (byFire) return `. 옷이 젖어 있다 (불 곁이라 체감에는 들지 않고 마르는 중: ${Math.ceil(left / 60)}시간 더)`;
-  return `. 옷이 젖어 있다 (체감 -${wet.degrees}°, 시간으로는 마르지 않는다: 불 곁이나 불 땐 실내에서 ${Math.ceil(left / 60)}시간 더, 또는 ${clothesHere(content, state) ? "여기서 갈아입을 수 있다 (take_action.change_clothes)" : "갈아입을 옷이 있는 곳에서 갈아입기"})`;
+  const f = feelsLike(content, state, "rest");
+  const d = f?.parts.find((p) => p.startsWith("젖은 옷"))?.replace("젖은 옷 ", "") ?? "";
+  const roof = Math.ceil((left / 60) * (wet.roof_hours / wet.fire_hours));
+  return `. 옷이 젖어 있다 (체감 ${d}°, 바깥에서는 마르지 않는다: 불 곁이나 불 땐 실내에서 ${Math.ceil(left / 60)}시간, 지붕 아래에서 ${roof}시간 더, 또는 ${clothesHere(content, state) ? "여기서 갈아입을 수 있다 (take_action.change_clothes)" : "갈아입을 옷이 있는 곳에서 갈아입기"})`;
 }

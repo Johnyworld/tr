@@ -326,7 +326,7 @@ const handlePrisoner = defineTool({
     const roll = (moves: readonly string[]) => {
       if (!input.approach || !input.stat || !moves.includes(input.approach)) return { error: `approach는 ${moves.join("/")} 중 하나, stat은 그 스킬의 능력.` } as const;
       const trust = state.relations[t.id]?.[me.id]?.trust ?? 0;
-      const difficulty = trust >= 2 ? "easy" : trust <= -2 ? "hard" : "normal";
+      const difficulty = trust >= 4 ? "easy" : trust <= -4 ? "hard" : "normal";
       const r = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty, intent: `포로 ${name}` }, ctx);
       return r.ok ? ({ outcome: r.outcome, display: r.display } as const) : ({ error: r.error } as const);
     };

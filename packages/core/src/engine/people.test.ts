@@ -52,7 +52,7 @@ describe("인물 사이의 관계 (기획서 7.10)", () => {
     w.executeTool("npc_presence", { npc_id: "a_jiho", action: "enter" });
     expect(w.sceneForGm()).not.toContain("숨은 관계");
     expect(w.executeTool("reveal_tie", { npc_id: "a_jiho", other: "a_jeongbin" }).ok).toBe(false);
-    w.ctx().store.append({ type: "relation_changed", from: "a_jiho", to: "player", delta: { trust: 3, affection: 0, respect: 0 }, reason: "test" });
+    w.ctx().store.append({ type: "relation_changed", from: "a_jiho", to: "player", delta: { trust: 6, affection: 0, respect: 0 }, reason: "test" });
     expect(w.sceneForGm()).toContain("털어놓을 수 있는 숨은 관계");
     const r = w.executeTool("reveal_tie", { npc_id: "a_jiho", other: "a_jeongbin" });
     expect(r.ok, r.ok ? "" : r.error).toBe(true);

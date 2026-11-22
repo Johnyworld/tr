@@ -43,9 +43,9 @@ squad_mates: [c_cm_dahye, c_cm_beomsu]
 # 두 해를 함께 버틴 일곱. 관계가 높은 편에서 시작한다. 한재호가 가장 친한 친구
 start_bonds:
   ids: [c_cm_jaeho, c_cm_dahye, c_cm_beomsu, c_cm_yunho, c_cm_gitaek, c_cm_sunae, c_cm_minji]
-  trust: [1, 3]
-  affection: [1, 3]
-  respect: [0, 2]
+  trust: [2, 6]
+  affection: [2, 6]
+  respect: [0, 4]
   best: c_cm_jaeho
 missions: [c_quota_old_town, c_tower_watch, c_willow_shakedown, c_riverside_fuel, c_field_raid, c_overpass_haul, c_east_probe, c_prison_guard, c_deserter_hunt, occ_soldier_cleaning, occ_soldier_drill]
 # c_comrades: 여덟 동료의 이야기, red_life: 붉은연합의 일상, world: 도시의 일

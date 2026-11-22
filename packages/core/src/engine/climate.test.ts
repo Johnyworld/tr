@@ -4,7 +4,7 @@ import { InMemoryGameStore } from "../game/store.ts";
 import { dayOf, MINUTES_PER_DAY, SEGMENT_START_HOUR } from "../rules/time.ts";
 import { initialWarWorld } from "../sim/war.ts";
 import { seasonAt } from "../sim/season.ts";
-import { exposeToCold, feelsLike, outsideTemp } from "./climate.ts";
+import { exposeToCold, feelsLike, outsideTemp, wetDegrees } from "./climate.ts";
 import { autoEquip } from "./gear.ts";
 import { executeTool } from "./tools.ts";
 import { fireStorylet } from "./storyletTools.ts";
@@ -146,7 +146,7 @@ describe("기온", () => {
     expect(at("c_base").parts.some((p) => p.startsWith("불 땐 거처"))).toBe(false); // 붉은연합은 적
   });
 
-  it("비 오는 날 바깥에 있으면 옷이 젖는다. 시간으로는 마르지 않고, 불 곁에서 두 시간이면 마른다 (12-121, 12-186)", () => {
+  it("비 오는 날 바깥에 있으면 옷이 젖는다. 바깥에서는 마르지 않고, 지붕 아래 네 시간·불 곁 두 시간이면 마른다 (12-121, 12-186, 12-251)", () => {
     const { store, ctx, me } = setup({ hour: SEGMENT_START_HOUR.day + 1 });
     const s = store.getState();
     s.weather = { day: dayOf(s.time), id: "rain" };
@@ -154,20 +154,28 @@ describe("기온", () => {
     const shown = exposeToCold(ctx, "search", s.time, s.time + 60);
     expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60);
     expect(shown.some((d) => d.type === "harm" && d.trackLabel === "옷" && d.toLabel === "젖음")).toBe(true);
-    // 비가 그치고 한나절이 지나도 젖어 있다 (12-195: 냉기 기준이 70으로 무거워져, 젖은 채 바깥에서 하루를 버티면 얼어 죽는다)
+    // 비가 그쳐도 바깥에서는 마르지 않는다
     store.getState().weather = null;
-    exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 6 * 60);
+    exposeToCold(ctx, "search", store.getState().time, store.getState().time + 6 * 60);
     store.getState().time += 6 * 60;
     expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60);
-    expect(feelsLike(content, store.getState(), "rest")!.parts).toContain(`젖은 옷 -${wet.degrees}`);
-    // 불 곁에서 한 시간이면 반쯤, 두 시간이면 마른다
+    expect(feelsLike(content, store.getState(), "search")!.parts.some((p) => p.startsWith("젖은 옷 -"))).toBe(true);
+    // 지붕 아래 두 시간이면 반쯤
+    exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 120);
+    store.getState().time += 120;
+    expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60 / 2);
+    // 불 곁 한 시간이면 나머지가 마른다
     store.getState().fires[store.getState().playerZone!] = store.getState().time + 240;
-    exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 60);
-    store.getState().time += 60;
-    expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60 - 60);
     const dried = exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 60);
     expect(store.getState().wet[me().id]).toBeUndefined();
     expect(dried.some((d) => d.type === "heal" && d.trackLabel === "옷")).toBe(true);
+  });
+
+  it("젖은 옷은 추운 날일수록 체감을 더 떨어뜨린다 (12-251)", () => {
+    const c = content.scenario.body!.cold!.climate!;
+    expect(wetDegrees(c, c.comfort - 1)).toBe(c.wet!.degrees.cold);
+    expect(wetDegrees(c, c.warm - 1)).toBe(c.wet!.degrees.cool);
+    expect(wetDegrees(c, c.warm + 5)).toBe(c.wet!.degrees.mild);
   });
 
   it("갈아입을 옷이 있는 곳에서만 갈아입어 마른다 (12-186)", () => {

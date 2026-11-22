@@ -63,7 +63,8 @@ describe("거점 손보기", () => {
 
   it("빗물받이를 지으면 그곳이 물이 나는 곳이 된다", () => {
     const w = home();
-    expect(waterHere(content, w.state())).toBeNull();
+    // 고가도로에는 끓이지 않은 물을 뜰 개천만 있다 (12-251). 빗물받이를 지으면 그 구역의 물이 된다
+    expect(waterHere(content, w.state())).toHaveProperty("where");
     give(w, "cloth", 2);
     give(w, "scrap_metal", 1);
     give(w, "duct_tape", 1);

@@ -174,7 +174,7 @@ const assignMission = defineTool({
     const collects = Object.entries(template.collects ?? {});
     const cargoLine =
       (cargo.length ? `\n짐을 받았다: ${cargo.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")} (맡은 짐이다. 임무 자리에서 일을 하면 넘긴다)` : "") +
-      (collects.length ? `\n받아 올 값: ${collects.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")} (짐을 넘기면 상대가 건넨다. 보고 때 상관에게 넘긴다)` : "");
+      (collects.length ? `\n받아 올 값: ${collects.map(([id, q]) => `${ctx.content.items[id]?.name ?? id} ×${q}`).join(", ")} (${cargo.length ? "짐을 넘기면" : "임무 판정에 성공하면"} 상대가 건넨다. 보고 때 상관에게 넘겨야 완수, 지니지 않았으면 일부 완수)` : "");
     // 2인 1조: 같은 무리 동료 하나가 짝으로 붙는다 (기획서 7.9)
     const buddy = template.buddy ? assignBuddy(ctx, mission.id, commander.id) : null;
     // 작전이면 무기고가 무기·탄약을 빌려준다 (기획서 4.8)

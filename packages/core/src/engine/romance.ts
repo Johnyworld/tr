@@ -132,7 +132,7 @@ export function onLoverDeath(ctx: ToolContext, id: string): void {
 }
 
 /** 주인공 카드의 연인·배우자 관계에 맞춘 처음 마음 (플레이 테스트 13) */
-const BOUND_LOVER = { affection: 3, trust: 2 };
+const BOUND_LOVER = { affection: 6, trust: 4 };
 
 /**
  * 주인공이 된 사람의 연인·배우자 관계 (카드의 ties)를 진짜 연인으로 맞춘다 (플레이 테스트 13, 시작할 때와 이어받을 때):

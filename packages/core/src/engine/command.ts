@@ -308,7 +308,7 @@ export const councilPropose = defineTool({
 
     // 상관이 나를 믿으면 쉽고, 못 믿으면 어렵다
     const trust = (state.relations[chair]?.[state.playerId] ?? NEUTRAL_RELATION).trust;
-    const difficulty = trust >= 2 ? "easy" : trust <= -2 ? "hard" : "normal";
+    const difficulty = trust >= 4 ? "easy" : trust <= -4 ? "hard" : "normal";
     const check = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty, intent: input.intent }, ctx);
     if (!check.ok) return check;
     const outcome = check.outcome;

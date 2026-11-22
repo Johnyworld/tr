@@ -236,6 +236,8 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
         return `${c.id} ${maskUnknownNames(state, content, fillStorylet(c.label, vars), { story: true })}${tag}`;
       })
       .join(" / ")}`,
+    // 이야기 대사는 뜻만 빌리고 그 인물의 말투로 (12-251, 플레이 테스트 14·13: 이야기 대사가 인물 화법을 덮어썼다). 이미 나눈 이야기면 이어지는 말로
+    "  상황의 대사는 뜻만 따르고, 말은 그 인물의 말투(카드의 말씨·성격)로 바꿔 한다. 이 사람과 이미 나눈 이야기라면 처음 하는 말처럼 되풀이하지 말고 이어지는 말로 한다.",
     "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 모른 척하기로 하면 다음 take_action에 ignore_story: true (효과 없이 지나간다). 이야기를 둔 채 자리를 옮기거나 시간을 들이는 일(잠·기다림·보초·수색·일·치료)과 임무 받기·보고는 거절된다. 플레이어가 두고 가기로 했으면 ignore_story: true를 넣는다 (옮기면 외면하는 선택지로 풀린다).",
   ];
   return lines.join("\n");

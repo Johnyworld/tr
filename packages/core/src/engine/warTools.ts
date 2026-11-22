@@ -1,4 +1,4 @@
-import { knownOwner } from "../rules/knowledge.ts";
+import { knownCrossings, knownOwner } from "../rules/knowledge.ts";
 import { heldOf } from "../rules/held.ts";
 import { runDisasters } from "./disasters.ts";
 import { runAgendas } from "./agenda.ts";
@@ -268,6 +268,8 @@ export function zoneOutlook(state: GameState, content: Content) {
     description: loc.description,
     owner: owner(zoneId),
     adjacent: neighbors(content, zoneId).map((id) => ({ id, name: content.locations[id]?.name ?? id, owner: owner(id) })),
+    /** 들어서 아는 건너는 길 (12-251, 공통 규칙 7): 배로 건넌다. 표가 없으면 판정을 걸고 몰래 */
+    crossings: knownCrossings(state, content, zoneId).map((id) => ({ id, name: content.locations[id]?.name ?? id, owner: owner(id), label: content.locations[id]!.crossing!.attempt.label })),
     preparations: (state.preparations[zoneId] ?? []).map(prepLabel),
     /** 플레이어 무리에 적대하는 세력의 구역인지 */
     hostile: (() => {
@@ -286,6 +288,7 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
   const zoneLines = z
     ? [
         `현재 구역: ${z.name} (${z.id}, ${z.owner}) · 인접 구역(move_to): ${z.adjacent.map((a) => `${a.id} ${a.name}(${a.owner})`).join(", ")}` +
+          (z.crossings.length ? ` · 건너는 길(move_to, 표가 없으면 ${z.crossings.map((c) => c.label).join("·")}): ${z.crossings.map((c) => `${c.id} ${c.name}(${c.owner})`).join(", ")}` : "") +
           (z.preparations.length ? ` · 설치해 둔 준비물: ${z.preparations.join(", ")}` : ""),
         ...(z.hostile ? ["  여기는 적대 세력의 땅이다. 들키면 공격받을 수 있다. 위험한 행동은 판정과 몸의 위험을 선언한다."] : []),
       ]

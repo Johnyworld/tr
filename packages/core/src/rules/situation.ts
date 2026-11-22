@@ -42,6 +42,17 @@ export function situationOf(state: GameState, content: Content): Situation {
   return "awake";
 }
 
+/** 연습 대련을 할 만한 몸인가: storylet_pacing.practice_max의 단계를 넘지 않았다 */
+export function fitForPractice(state: GameState, content: Content): boolean {
+  const me = state.characters[state.playerId];
+  if (!me) return false;
+  return Object.entries(content.scenario.storylet_pacing.practice_max).every(([track, max]) => {
+    const levels = content.scenario.condition_tracks.find((t) => t.id === track)?.levels ?? [];
+    const at = levels.findIndex((l) => l.id === me.conditions[track]);
+    return at <= levels.findIndex((l) => l.id === max);
+  });
+}
+
 /** 이 이야기가 지금 처지에 맞는가 */
 export function storyFits(s: StoryletContent, state: GameState, content: Content, situation: Situation = situationOf(state, content)): boolean {
   const captivityTag = content.scenario.captivity?.tag;
@@ -52,6 +63,8 @@ export function storyFits(s: StoryletContent, state: GameState, content: Content
     const held = state.characters ? playerHeld(state) : null;
     return !held?.quarantine || !!s.when.captors?.includes(held.by);
   }
+  // 연습 대련은 몸이 성할 때만 (12-251, storylet_pacing.practice_max)
+  if (s.practice && !fitForPractice(state, content)) return false;
   if (s.situations?.length) return s.situations.includes(situation);
   switch (situation) {
     case "lying":

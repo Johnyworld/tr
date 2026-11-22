@@ -18,6 +18,8 @@
   briefing: 붉은연합 물류창고에 가서 지난번 통조림 값을 탄으로 받아 오세요. 저쪽 장부랑 우리 장부가 상자 하나라도 다르면 그 자리에서 맞추고요. 웃으면서요, 간부님.
   giver_rank: leader
   deadline_hours: 16
+  # 받아 낸 탄은 손에 들어온다. 보고 때 건네야 완수 (12-251)
+  collects: { rifle_rounds: 3 }
   requirements:
     - activity: travel
       minutes: 60

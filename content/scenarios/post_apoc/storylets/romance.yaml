@@ -653,7 +653,7 @@
     segments: [evening, night]
   cast:
     pest: { recall: rm_menace }
-    help: { faction: own, known: true, trust_gte: 1, optional: true }
+    help: { faction: own, known: true, trust_gte: 2, optional: true }
   setup: 불 꺼진 통로를 지난다. 뒤에서 발소리가 따라온다. 멈추면 멈춘다. 모퉁이에서 {pest:이/가} 앞을 막고 손목을 잡는다. "그동안 못 들은 척했잖아."
   ai_direction: 말로 끝나지 않을 수 있는 자리다. 위험을 분명히 알린다. 판정은 주인공이 어떻게 빠져나가는지와 무엇을 대가로 치르는지(다친 곳, 떨어뜨린 물건, 흔들린 마음)만 정한다. 최악이어도 장면은 붙잡힌 손을 뿌리치고 빠져나온 데서 끊고, 그 뒤를 다룬다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
   choices:
@@ -1075,7 +1075,7 @@
     segments: [evening, night]
   cast:
     who: { recall: rm_menace, enter: false, optional: true }
-    friend: { known: true, trust_gte: 2, keep: rm_confidant }
+    friend: { known: true, trust_gte: 4, keep: rm_confidant }
   setup: '{friend:이/가} 먹다 남긴 죽 그릇을 내밀며 옆에 앉는다. "요새 얼굴이 왜 그래. 말하기 싫으면 말고."'
   ai_direction: 이 사람은 주인공을 믿는다. 들으면 화를 내고, 그 화는 주인공이 아니라 그자를 향한다. 탓하거나 왜 그랬냐고 묻지 않는다. 털어놓은 만큼 주인공의 마음이 가벼워지고, 이 사람은 그자를 다르게 본다.
   choices:

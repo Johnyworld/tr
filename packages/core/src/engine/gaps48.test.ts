@@ -51,9 +51,13 @@ describe("마음", () => {
     shakeNerves(w.ctx(), 2, "test", false);
     expect(me().conditions.nerves).toBe("low");
     expect(sleepNerves({ ...w.ctx(), rng: () => 0.2 }, 3 * 60)).toBeNull(); // 3시간은 푹 잔 게 아니다
-    expect(sleepNerves({ ...w.ctx(), rng: () => 0.3 }, 7 * 60)).toBeNull(); // 25%를 넘었다
+    expect(sleepNerves({ ...w.ctx(), rng: () => 0.3 }, 7 * 60)?.line).toContain("마음: 그대로"); // 25%를 넘었다: 까닭을 한 줄
+    expect(me().conditions.nerves).toBe("low");
     expect(sleepNerves({ ...w.ctx(), rng: () => 0.2 }, 7 * 60)?.line).toContain("푹 잤다");
     expect(me().conditions.nerves).toBe("shaken");
+    // 심란함은 굴리지 않고 풀린다 (12-251)
+    expect(sleepNerves({ ...w.ctx(), rng: () => 0.99 }, 7 * 60)?.line).toContain("푹 잤다");
+    expect(me().conditions.nerves).toBe("steady");
   });
 
   it("허기짐·추움으로는 막히지 않고, 굶주림·오한이면 가라앉지 않는다", () => {

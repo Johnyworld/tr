@@ -38,7 +38,7 @@
   repeatable: true
   cooldown_days: 8
   cast:
-    them: { agenda_half: true, here: true, trust_gte: 1 }
+    them: { agenda_half: true, here: true, trust_gte: 2 }
   setup: "{them:이/가} 주위를 살피고 낮게 말한다. \"너한테만 하는 말이야.\" 그리고 오래 품어 온 일을 꺼낸다."
   ai_direction: "{them:이/가} 털어놓는 일: {agenda}. 주인공이 돕거나 말리거나 위에 알리는 것은 플레이어의 선택. 돕는 것이 그 사람을 위하는 길인지는 일에 따라 다르다 (빼돌리는 약, 탈영, 복수). 결과의 숫자는 시스템이 정한다."
   choices:
@@ -77,7 +77,7 @@
   when:
     segments: [evening, night]
   cast:
-    them: { agenda_half: true, here: true, trust_gte: 2 }
+    them: { agenda_half: true, here: true, trust_gte: 4 }
   setup: "{them:이/가} 짐을 꾸리고 있다. 아니면 무언가를 결심한 얼굴이다. 오늘 밤이 지나면 늦을 것 같다."
   ai_direction: "{them}의 일({agenda})이 거의 끝에 와 있다. 이 밤에 붙잡거나 등을 밀어 줄 수 있다. 무엇이 옳은지 GM이 정하지 않는다."
   choices:

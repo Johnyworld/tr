@@ -32,7 +32,7 @@
   secret:
     content: 하재문의 열이 오른 사흘째 밤, 격리실 철문 당번이 자기였다. 수간호사가 주사기를 들고 들어갔다가 혼자 나왔고, 대표는 그날 밤 일을 아무에게도 말하지 말라고 했다. 그 뒤로 치료실에 들어가지 못한다
     reveal_when: 격리실 일로 함께 밤을 새우거나, 누군가 열이 올라 같은 결정을 앞뒀을 때 둘만 있다면
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: -1, charm: 1, intellect: 2 }
   skills: { first_aid: 2, infected_lore: 1, scavenge: 1 }
   start_inventory: [bandage, bandage, water_bottle]
@@ -73,7 +73,7 @@
   secret:
     content: 장날 전날 밤마다 간부 도상필의 부탁으로 진료소 쪽문 빗장을 풀어 둔다. 수고비로 받은 통조림과 담배는 버들마을에 맡긴 손녀에게 보낸다
     reveal_when: 쪽문 일로 몰렸을 때 둘만 있다면, 또는 손녀 이야기를 진심으로 물어 준 사람에게
-    min_trust: 2
+    min_trust: 4
   stats: { strength: 1, agility: -1, vitality: 1, senses: 1, nerve: -1, charm: 1, intellect: 0 }
   skills: { survival: 1, first_aid: 1, endure: 2, history: 1, athletics: 1 }
   start_inventory: [cigarettes, water_bottle]

@@ -7,6 +7,8 @@
 
 - id: tv_gate
   title: 청솔형제단의 정문
+  # 튜토리얼 안내는 자는 사람을 깨우지 않는다 (12-251)
+  wakes: false
   urgent: true
   tags: [tutorial_visitor]
   when:
@@ -70,6 +72,8 @@
 # 정문에서 돌아섰거나 거절당했으면, 하루 지나 다시 찾아갈 수 있다
 - id: tv_gate_again
   title: 다시 정문 앞에서
+  # 튜토리얼 안내는 자는 사람을 깨우지 않는다 (12-251)
+  wakes: false
   # 급한 이야기로 둔다: 다친 몸(급한 이야기만 열리는 때)이면 다시 들어갈 길이 막혔다 (플레이 테스트 11)
   urgent: true
   tags: [tutorial_visitor]
@@ -79,6 +83,8 @@
     factions: [none]
     zones: [a_base]
     flags_all: [tv_gate_refused]
+    # "하룻밤 담 밖에서" 지켜본 뒤 (12-251)
+    after_storylet: { id: tv_gate, hours: 12 }
   cast:
     guard: { ids: [a_taeho] }
   setup: "다시 정문 앞. 망루의 초병이 당신을 알아본다. 쪽문이 열리고 {guard:이/가} 팔짱을 낀 채 나온다. \"또 왔군. 이번엔 무슨 얘길 들고 왔지.\""
@@ -107,6 +113,8 @@
 # 받아들여진 뒤: 생활 안내 (공용 숙소, 규칙, 일주일)
 - id: tv_settle
   title: 형제단의 첫날
+  # 튜토리얼 안내는 자는 사람을 깨우지 않는다 (12-251)
+  wakes: false
   urgent: true
   tags: [tutorial_visitor]
   when:
@@ -141,6 +149,8 @@
 # 버들마을 사람: 가족의 이름을 안다
 - id: tv_family_news
   title: 그 이름을 아는 사람
+  # 튜토리얼 안내는 자는 사람을 깨우지 않는다 (12-251)
+  wakes: false
   urgent: true
   tags: [tutorial_visitor]
   when:
@@ -171,6 +181,8 @@
 # 단서 없이 버들마을에 들어왔으면: 가족을 수소문한다 (하루에 한 번까지)
 - id: tv_family_search
   title: 단지 안에서 가족을 찾는다
+  # 튜토리얼 안내는 자는 사람을 깨우지 않는다 (12-251)
+  wakes: false
   tags: [tutorial_visitor]
   repeatable: true
   cooldown_days: 1
@@ -218,6 +230,8 @@
 # 재회: 단서를 얻고 버들마을에 있으면 가족이 나타난다. 가족이 장면에 들어오면 클리어 목표가 찬다
 - id: tv_reunion
   title: 다시 만난 사람들
+  # 튜토리얼 안내는 자는 사람을 깨우지 않는다 (12-251)
+  wakes: false
   urgent: true
   # 튜토리얼 엔딩이라 하루 상한에 막히지 않는다 (플레이 테스트 12)
   essential: true

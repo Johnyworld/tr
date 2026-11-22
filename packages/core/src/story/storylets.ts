@@ -32,7 +32,7 @@ import { seasonAt } from "../sim/season.ts";
 import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
 import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
-import { storyPlaceFits } from "../rules/place.ts";
+import { storyPlaceFits, storyPlaces, storyPlacesFit } from "../rules/place.ts";
 import { nearby, whereIs } from "../rules/place.ts";
 
 /**
@@ -117,6 +117,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => role.affection_lte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).affection <= role.affection_lte)
     .filter((c) => !role.not_companion || !state.companions.includes(c.id))
     .filter((c) => !role.adult || isAdult(content, c))
+    .filter((c) => role.age_lte === undefined || (c.age !== null && c.age !== undefined && c.age <= role.age_lte))
     .filter((c) => !role.blackmailed || (state.blackmails ?? []).some((b) => b.npcId === c.id && b.by === state.playerId && b.grudge))
     .filter((c) => role.distrusted_gte === undefined || standingInFaction(state, content, c.id).distrust >= role.distrusted_gte)
     .map((c) => c.id)
@@ -327,6 +328,12 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   // 지붕 아래·바깥 (공통 규칙 15): 실내 거처에서 모닥불 이야기가, 정문 밖에서 약제실 이야기가 열리지 않게.
   // 장소를 정하지 않았으면(구역에 막 들어선 자리) 거르지 않는다: 이야기가 그 자리로 데려간다
   if (w.indoor !== undefined && !storyPlaceFits(state, content, w.indoor)) return false;
+  if (w.after_storylet) {
+    const last = state.storyletLog[w.after_storylet.id]?.lastFiredAt;
+    if (last === undefined || at - last < w.after_storylet.hours * 60) return false;
+  }
+  // 이야기가 말하는 장소와 지금 장소가 다르면 열지 않는다 (12-251)
+  if (!storyPlacesFit(state, content, w.places, [storylet.setup, ...(storylet.variants ?? [])].join(" "))) return false;
   if (w.companions_lte !== undefined && state.companions.length > w.companions_lte) return false;
   if (w.companions_gte !== undefined && state.companions.length < w.companions_gte) return false;
   if (w.own_territory !== undefined) {
@@ -528,6 +535,10 @@ export function pacingBlocks(state: GameState, content: Content, s: StoryletCont
   if (p.threat_per_day && isThreat(content, s) && fired.filter(([id]) => content.storylets[id] && isThreat(content, content.storylets[id]!)).length >= p.threat_per_day) return true;
   const road = content.scenario.travel?.tag;
   if (p.road_per_day && road && s.tags.includes(road) && fired.filter(([id]) => content.storylets[id]?.tags.includes(road)).length >= p.road_per_day) return true;
+  // 같은 장소를 말하는 이야기는 하루에 하나 (12-251, 플레이 테스트 14: 우물 이야기 셋이 이틀 사이에 이어졌다)
+  const textOf = (x: StoryletContent) => [x.setup, ...(x.variants ?? [])].join(" ");
+  const mine = storyPlaces(state, content, s.when.places, textOf(s));
+  if (mine.length && fired.some(([id]) => id !== s.id && content.storylets[id] && storyPlaces(state, content, content.storylets[id]!.when.places, textOf(content.storylets[id]!)).some((pl) => mine.includes(pl)))) return true;
   if (p.same_threat_gap_days) {
     const mine = threatTags(content, s);
     if (mine.length && Object.entries(state.storyletLog).some(([id, log]) => id !== s.id && at - log.lastFiredAt < p.same_threat_gap_days * MINUTES_PER_DAY && content.storylets[id] && threatTags(content, content.storylets[id]!).some((t) => mine.includes(t)))) return true;
@@ -611,6 +622,8 @@ export function storyletAllowed(state: GameState, content: Content, s: StoryletC
   if (s.bedside && !options.urgentOnly && inCrisis(state, content)) {
     return state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt || at - state.lastStoryletAt >= storyletGapMinutes(content, state.lastStoryletAt);
   }
+  // 깨우지 않는 이야기는 자는 동안 열지 않는다 (12-251)
+  if (options.urgentOnly && !s.wakes) return false;
   // 꼭 열려야 하는 이야기는 급한 이야기의 하루 상한에도 막히지 않는다 (플레이 테스트 13: 튜토리얼 재회가 17시간 막혔다)
   if (s.essential) return true;
   if (s.urgent) return urgentAllowed(state, content, at);

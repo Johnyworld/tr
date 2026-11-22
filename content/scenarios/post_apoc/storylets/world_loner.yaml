@@ -141,7 +141,7 @@
     segments: [day, evening]
     flags_all: [wl_minho_partner]
   cast:
-    scav: { ids: [d_minho], trust_gte: 1 }
+    scav: { ids: [d_minho], trust_gte: 2 }
   setup: "{scav:이/가} 다시 나타나 배낭을 내려놓는다. \"진료소에 손이 하나 빈다. 수습 하나가 물렸어. 약 찾는 눈이 있으면 대표가 받아 줄 거다. 떠돌이로 겨울 넘기는 것보다는 낫지.\""
   ai_direction: 남민호의 말은 진심이다. 하얀매는 중립이라 들어가면 어느 무리와도 싸우지 않지만, 진료소 규칙(격리, 약값)을 따라야 한다. 들어가면 주민이 된다.
   choices:

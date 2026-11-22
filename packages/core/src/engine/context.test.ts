@@ -96,7 +96,7 @@ describe("정보 필터: 평판", () => {
   it("목격자가 장면에 들어오면 그 인물의 지식과 태도로 반영된다", () => {
     const state = applyEvent(withDeed("npc_leader"), { type: "npc_entered", npcId: "npc_leader" });
     const prompt = describePlayerState(state, TEST_CONTENT);
-    expect(prompt).toContain("신뢰 -2(냉담)");
+    expect(prompt).toContain("신뢰 -2(보통)"); // 12-251: 관계 ±10에서 -2는 아직 보통
     expect(prompt).toContain("창고에서 통조림을 훔쳤다 (직접 봄)");
   });
 

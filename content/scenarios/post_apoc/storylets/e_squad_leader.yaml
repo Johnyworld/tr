@@ -367,7 +367,7 @@
     day_gte: 4
     flags_none: [es_okseon_done]
   cast:
-    widow: { ids: [e_okseon], trust_gte: 1 }
+    widow: { ids: [e_okseon], trust_gte: 2 }
   setup: >-
     소식 칠판 앞, {widow:이/가} 고속도로 바깥 소식이 적힌 줄을 손가락으로 따라 읽는다. 당신이 다가오자 돌아보지 않고 묻는다.
     "분대장. 다음 짐 부리는 날에 짐마차 하나가 바퀴가 빠져서 영영 안 돌아오면, 그거 분대장 장부에 얼마나 올라?"

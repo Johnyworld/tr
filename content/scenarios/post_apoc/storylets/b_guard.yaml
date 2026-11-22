@@ -162,7 +162,7 @@
     day_gte: 4
     flags_all: [b_told_seungmin]
   cast:
-    liaison: { ids: [b_seungmin], known: true, trust_gte: 1 }
+    liaison: { ids: [b_seungmin], known: true, trust_gte: 2 }
     leader: { ids: [b_hyunwoo], enter: false }
   setup: "{liaison:이/가} 관리사무소 뒤에서 기다리고 있다가 수첩을 펼친다. \"경비병, 부탁이 있습니다. 대표 사무실에 밤에 드나드는 사람, 본 대로만 여기 적어 주십시오. 연합을 위한 일입니다.\""
   ai_direction: "{liaison}의 수첩은 청솔형제단 간부에게 넘어간다. 그는 대표 {leader:이/가} 연합을 깰 경우 청솔형제단이 먼저 손을 쓰게 하려 한다. 이 의도는 말하지 않는다. 거절해도 위협하지 않지만 이름을 수첩에 적는 것은 보여 준다."
@@ -239,7 +239,7 @@
     flags_all: [b_well_failing]
     flags_none: [b_well_told]
   cast:
-    keeper: { ids: [b_sunrye], known: true, trust_gte: 1 }
+    keeper: { ids: [b_sunrye], known: true, trust_gte: 2 }
   setup: 관리사무소 지하, {keeper:이/가} 씨앗 자루 옆에 쪼그려 앉아 손가락을 꼽는다. "이대로 퍼 쓰면 아랫단 우물은 한겨울 전에 말러. 대표한테만 말했어. 대표는 아무한테도 말하지 말라더라."
   ai_direction: "{keeper}의 셈은 맞다. 대표 장현우는 물 때문에 붉은연합 쪽 이야기를 듣고 있다(붉은연합은 물이 넉넉하다). 이 연결은 {keeper}도 모르니 직접 말하지 않는다."
   choices:
@@ -418,7 +418,7 @@
     day_gte: 4
     flags_all: [b_mina_letter]
   cast:
-    mina: { ids: [b_mina], known: true, trust_gte: 2 }
+    mina: { ids: [b_mina], known: true, trust_gte: 4 }
   setup: 옥상 망루에서 {mina:이/가} 한참 말없이 구시가 쪽을 보다가 입을 연다. "넘어가자는 놈들, 누군지 알아. 근데 말하면 지호가 다쳐. 청솔 쪽에서 버들마을 사람 동생이라고 가만두겠냐."
   ai_direction: "{mina:은/는} 동생의 안전을 약속받으면 이름을 말한다. 이름 가운데 염재혁이 있다. 약속이 거짓이라고 느끼면 입을 닫는다."
   choices:

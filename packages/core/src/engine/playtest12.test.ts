@@ -384,7 +384,8 @@ describe("플레이 테스트 12: 설계 정한 것", () => {
     const r = w.state().resolves?.[me];
     expect(r?.kind).toBe("debt");
     ctx.store.append({ type: "debt_changed", characterId: me, factionId: r!.target!, delta: -1 });
-    w.executeTool("take_action", act({ activity: { kind: "wait", until: null } }));
+    // 첫 이야기가 1시간 뒤부터 열린다 (12-251): 열린 이야기는 두고 기다린다
+    w.executeTool("take_action", act({ activity: { kind: "wait", until: null }, ignore_story: !!w.state().activeStorylet }));
     expect(w.state().resolves?.[me]?.stage).toBeGreaterThan(0);
   });
 

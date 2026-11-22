@@ -195,7 +195,7 @@
     day_gte: 3
     flags_none: [c_sora_confided, c_sora_caught]
   cast:
-    sora: { ids: [c_sora], known: true, trust_gte: 1 }
+    sora: { ids: [c_sora], known: true, trust_gte: 2 }
   setup: "감시탑 아래 배수로 쪽에서 {sora:이/가} 무언가를 비닐에 싸 돌 틈에 밀어 넣다가 당신과 눈이 마주친다. 한참 말이 없다가, 낮게 묻는다. \"…밤나무골 얘기, 들은 적 있어요?\""
   ai_direction: "{sora:은/는} 남긴 배급을 모아 두고 있다. 어머니가 버들마을에 있다는 이야기를 하고, 겨울 전에 넘어갈 거라고 털어놓는다. 물류창고 경비조의 고석진이 길을 안다는 것도. 함께 가자고는 하지 않는다. 다만 감시탑 교대 시간을 알려 줄 수 있느냐고 묻는다."
   choices:

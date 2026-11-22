@@ -37,7 +37,7 @@
   secret:
     content: 첫 겨울, 여덟 명은 원래 아홉이었다. 감염체 떼에 쫓길 때 발을 다친 윤서를 두고 가자고 정한 사람이 한재호였다. 동료들에게는 윤서가 물려서 어쩔 수 없었다고 말했다. "강한 자만 살아남는다"는 말은 그날부터 했다
     reveal_when: 주인공과 단둘이, 동료 하나가 크게 다치거나 죽을 뻔한 날 밤
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 2, agility: 1, vitality: 1, senses: 0, nerve: 2, charm: 1, intellect: 0 }
   skills: { fight: 2, tactics: 1, intimidate: 1, endure: 1, leadership: 1 }
   start_inventory: [c_armband, sawn_shotgun, shells, shells, padded_armor]
@@ -150,7 +150,7 @@
   secret:
     content: 수용소의 청솔형제단 포로 가운데 열두 살 아이가 있다. 아이는 붉은연합이 사람을 잡아먹는다고 들었다며 윤호를 보고 울었다. 그날부터 윤호는 어느 쪽 말도 믿지 않는다. 몰래 아이에게 먹을 것을 넣어 준다
     reveal_when: 주인공이 수용소 이야기를 먼저 꺼내고, 둘만 있을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 2 }
   skills: { sense_danger: 1, persuade: 1, history: 1, insight: 1, fight: 0 }
   start_inventory: [c_armband, kitchen_knife]

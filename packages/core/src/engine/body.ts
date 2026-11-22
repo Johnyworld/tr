@@ -461,10 +461,10 @@ type ThirstRules = NonNullable<NonNullable<Content["scenario"]["body"]>["thirst"
 
 /**
  * 지금 있는 곳의 물 (12-97).
- * - spring: 물이 나는 바깥 구역(강·우물·정수장). 마음껏 마시고 채운다
+ * - spring: 물이 나는 바깥 구역(강·우물·정수장), 또는 끓이지 않은 물을 뜰 곳(location.stream, where). 마음껏 마시고 채운다
  * - supply: 우리 거점(우리 땅이면서 거점). 무리의 물 보급을 받는다: 넉넉하면 full, 하루치도 안 남으면 limited(조금만), 바닥이거나 배급 권한이 없으면 refused
  */
-export type WaterSource = { kind: "spring" | "supply"; grant: "full" | "limited" | "refused" };
+export type WaterSource = { kind: "spring" | "supply"; grant: "full" | "limited" | "refused"; where?: string };
 
 export function waterHere(content: Content, state: GameState): WaterSource | null {
   const rules = content.scenario.body?.thirst;
@@ -481,7 +481,9 @@ export function waterHere(content: Content, state: GameState): WaterSource | nul
     const days = daysOfStock(content, own, rules.resource);
     return { kind: "supply", grant: days >= rules.min_days ? "full" : (own.resources[rules.resource] ?? 0) >= 1 ? "limited" : "refused" };
   }
-  return (content.locations[zone]?.yields[rules.resource] ?? 0) > 0 ? { kind: "spring", grant: "full" } : null;
+  if ((content.locations[zone]?.yields[rules.resource] ?? 0) > 0) return { kind: "spring", grant: "full" };
+  // 끓이지 않은 물을 뜰 곳 (12-251): 개천·빗물 고인 곳
+  return loc?.stream ? { kind: "spring", grant: "full", where: loc.stream } : null;
 }
 
 type WaterResult = { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string };
@@ -756,9 +758,14 @@ export function sleepNerves(ctx: ToolContext, slept: number): Change | null {
   const me = state.characters[state.playerId];
   if (!nerves || !rule || !me || me.dead || slept < rule.min_hours * 60) return null;
   if (levelIndex(ctx, state, me.id, nerves.track) <= 0) return null;
-  if (severe(ctx, me, ctx.content.scenario.body?.hunger?.track) || severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return null;
+  // 가라앉지 않았으면 까닭을 한 줄 (12-251, 플레이 테스트 14: 잠 결과에 마음이 왜 그대로인지 보이지 않았다)
+  const level = me.conditions[nerves.track];
+  const stay = (why: string): Change => ({ line: `마음: 그대로 (${why})`, display: null, died: false });
+  if (severe(ctx, me, ctx.content.scenario.body?.hunger?.track)) return stay("굶주려 푹 쉬지 못했다");
+  if (severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return stay("추위에 떨어 푹 쉬지 못했다");
   const { mine, company } = safety(state, me);
+  const sure = !!level && rule.sure.includes(level);
   const chance = (mine || company ? rule.safe : rule.unsafe) + nerves.recover.per_point * steadyStat(ctx, me);
-  if (ctx.rng() >= chance) return null;
+  if (!sure && ctx.rng() >= chance) return stay(mine || company ? "푹 잤지만 마음이 아직 가라앉지 않았다" : "낯선 곳에서 혼자 자 마음이 아직 가라앉지 않았다");
   return changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 푹 잤다" : company ? "곁에 사람을 두고 푹 잤다" : "모처럼 푹 잤다");
 }

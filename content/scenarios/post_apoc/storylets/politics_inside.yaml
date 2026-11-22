@@ -313,7 +313,7 @@
     flags_none: [pol_after_seen]
     segments: [morning, day, evening]
   cast:
-    friend: { known: true, trust_gte: 2 }
+    friend: { known: true, trust_gte: 4 }
   setup: '담 밖에서 맞는 첫날이다. 짐은 가볍고 갈 곳은 정해지지 않았다. 무너진 담 그늘에서 누가 손짓한다. {friend:이다/다}. 주위를 살피며 보따리 하나를 내민다. "나는 너 안 믿는 사람 아니야. 몸조심해."'
   ai_direction: "{friend:은/는} 아직 주인공을 믿는다. 옛 무리 사람이면 들키면 곤란해지는 걸 알면서 왔다. 다시 무리로 돌아갈 길은 열어 두지 않는다 (지금은). 짧고 조용하게."
   choices:

@@ -39,6 +39,8 @@
   giver_rank: squad_leader
   repays_debt: 2
   deadline_hours: 14
+  # 받아 낸 물값은 물건으로 손에 들어온다. 보고 때 건네야 완수 (12-251)
+  collects: { potato: 2 }
   requirements:
     - activity: talk
       minutes: 30

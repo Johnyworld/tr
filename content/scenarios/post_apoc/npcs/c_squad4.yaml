@@ -32,7 +32,7 @@
   secret:
     content: 청솔형제단에 친여동생 권예진이 있다. 붕괴 때 서로 다른 무리로 흩어졌다. 수용소의 청솔 포로에게서 동생 소식을 들으려고 한다
     reveal_when: 조장이 조원을 위해 마경수에게 맞선 뒤, 둘만 있을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 2, agility: 0, vitality: 2, senses: 0, nerve: 1, charm: -1, intellect: -1 }
   skills: { fight: 2, intimidate: 2, endure: 1 }
   start_inventory: [crowbar, c_armband]
@@ -40,7 +40,7 @@
   zone: c_warehouse
   # 적대 무리에 갈라진 남매 (기획서 7.10)
   ties:
-    - { to: a_yejin, kind: sibling, secret: { reveal_when: "조장이 조원을 위해 마경수에게 맞선 뒤, 둘만 있을 때", min_trust: 3 } }
+    - { to: a_yejin, kind: sibling, secret: { reveal_when: "조장이 조원을 위해 마경수에게 맞선 뒤, 둘만 있을 때", min_trust: 6 } }
 
 - id: c_areum
   name: 진아름
@@ -106,7 +106,7 @@
   secret:
     content: 규율반에 사조의 말을 옮긴다. 담 안에 남는 값이다. 전 조장의 "사고"도 그의 보고에서 시작됐다
     reveal_when: 저녁에 규율반 천막 근처에서 마주쳤을 때, 또는 목숨이 걸렸을 때
-    min_trust: 2
+    min_trust: 4
   stats: { strength: 0, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 1 }
   skills: { sense_danger: 2, deceive: 1, endure: 1 }
   start_inventory: [c_armband, cigarettes]

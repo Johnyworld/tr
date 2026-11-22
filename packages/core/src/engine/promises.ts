@@ -252,7 +252,7 @@ export function runAsksDaily(ctx: ToolContext): void {
       const where = whereIs(state, content, n.id)?.zone;
       const myBase = Object.values(content.locations).find((l) => l.kind === "base" && !!state.characters[me]?.factionId && ownedBy(state, l.id, state.characters[me]?.factionId))?.id;
       if (!where || ![state.playerZone, state.homes?.[me], myBase].includes(where)) return false;
-      if ((state.relations[n.id]?.[me]?.trust ?? 0) < -1) return false;
+      if ((state.relations[n.id]?.[me]?.trust ?? 0) < -2) return false;
       return !fromAsks.some((p) => p.to === n.id);
     })
     .flatMap((n) => (n.favors ?? []).filter((x) => !asked.has(`${n.id}|${x.id}`) && (state.characters[n.id]?.inventory[x.item.id] ?? 0) < x.item.quantity).map((x) => ({ npc: n.id, ask: x })))

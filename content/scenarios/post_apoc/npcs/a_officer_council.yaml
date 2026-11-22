@@ -32,7 +32,7 @@
   secret:
     content: 지난달 강변에서 서기철 분대가 물결에 휩쓸린 날, 길을 강변 쪽으로 바꾸라고 무전으로 지시한 사람이 자기다. 붉은연합 정찰조를 쫓게 하려던 것이었다. 회의에는 보고하지 않았다
     reveal_when: 서기철의 죽음을 캐는 사람이 그를 몰아붙이지 않고 같은 편으로 다가올 때, 둘만 있을 때
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 0 }
   skills: { tactics: 2, shoot: 1, intimidate: 1, fight: 1 }
   start_inventory: [old_rifle, radio]
@@ -69,7 +69,7 @@
   secret:
     content: 장터에서 붉은연합 간부 마경수를 두 번 따로 만났다. 청솔형제단이 동쪽 초소를 내주면 거점은 건드리지 않겠다는 말을 들었고, 아직 최선희에게 전하지 않았다. 일이 틀어지면 몇 사람을 데리고 넘어갈 생각도 한다
     reveal_when: 무리가 이 겨울을 넘기지 못할 거라고 함께 인정하는 사람에게, 둘만 있을 때
-    min_trust: 4
+    min_trust: 8
   stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 2, intellect: 2 }
   skills: { persuade: 2, deceive: 1, history: 2 }
   start_inventory: [ledger, cigarettes]
@@ -106,7 +106,7 @@
   secret:
     content: 밤에 보급 창고에서 한도윤이 자루를 손수레로 옮기는 것을 두 번 봤다. 대장 사본에는 그 자루가 없다. 무서워서 아무에게도 말하지 않았고, 날짜만 몰래 적어 두었다
     reveal_when: 장부와 창고가 맞지 않는다는 이야기를 먼저 꺼낸 사람이 그녀를 지켜 주겠다고 할 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: -1, charm: 0, intellect: 2 }
   skills: { history: 1, scavenge: 1, sense_danger: 1, insight: 1 }
   start_inventory: [ledger]

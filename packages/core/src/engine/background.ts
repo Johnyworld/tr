@@ -61,7 +61,7 @@ function applyHistoryParts(ctx: ToolContext, parts: readonly HistoryPart[]): { p
       } else if (!knows(me, person)) store.append({ type: "name_learned", characterId: me, targetId: person });
       if (part.kind === "enemy" && part.knows_you) {
         if (!knows(person, me)) store.append({ type: "name_learned", characterId: person, targetId: me });
-        store.append({ type: "relation_changed", from: person, to: me, delta: { trust: -2, affection: -1, respect: 0 }, reason: "지난 일 (배경)" });
+        store.append({ type: "relation_changed", from: person, to: me, delta: { trust: -4, affection: -2, respect: 0 }, reason: "지난 일 (배경)" });
       }
     }
     if (part.kind === "kin_alive") {
@@ -238,7 +238,7 @@ export function applyStartBonds(ctx: ToolContext, role: RoleContent | undefined)
   const me = store.getState().playerId;
   for (const id of b.ids) {
     if (!store.getState().characters[id]) continue;
-    const extra = id === b.best ? 1 : 0;
+    const extra = id === b.best ? 2 : 0;
     store.append({
       type: "relation_changed",
       from: id,

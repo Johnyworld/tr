@@ -14,7 +14,7 @@ import { runAfterTimeAdvance } from "./turnStart.ts";
  */
 const storyletSchema = createContentSchemas(TEST_SCENARIO).storylet;
 
-function content(storylets: unknown[], pacing = { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {} as Record<string, string>, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 }): Content {
+function content(storylets: unknown[], pacing = { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {} as Record<string, string>, practice_max: {} as Record<string, string>, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 }): Content {
   const c = structuredClone(TEST_CONTENT);
   for (const f of Object.values(c.factions)) {
     f.aggression = 0;
@@ -46,7 +46,7 @@ const chat = {
 
 describe("플레이 테스트 2회차 회귀", () => {
   it("P1: 세계를 열자마자 이야기가 끼어들지 않는다 (first_after_hours)", () => {
-    const env = setup(content([chat], { min_gap_hours: 6, expire_hours: 3, first_after_hours: 2, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {}, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 }));
+    const env = setup(content([chat], { min_gap_hours: 6, expire_hours: 3, first_after_hours: 2, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {}, practice_max: {}, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 }));
     expect(env.store.getState().activeStorylet).toBeNull();
     executeTool("take_action", act({ activity: { kind: "work", until: null } }), env.ctx);
     expect(env.store.getState().activeStorylet?.id).toBe("chat");

@@ -38,14 +38,14 @@
   secret:
     content: 그 겨울 문 밖에서 아내와 딸을 잃었다. 청솔형제단 순찰조가 지날 때마다 숨어서 다리를 저는 수염 난 사내를 찾는다. 찾으면 무엇을 할지는 자기도 모른다
     reveal_when: 같은 불가에서 밤을 함께 넘긴 뒤, 무리 이야기가 나왔을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 1, agility: 0, vitality: 2, senses: 1, nerve: 1, charm: -1, intellect: 0 }
   skills: { survival: 2, scavenge: 2, stealth: 1, endure: 1, fight: 1, improvise: 2, hunt: 1 }
   start_inventory: [blanket, kitchen_knife, dry_ration]
   playable: true
   roams: [old_town, riverside, hospital_ruins]
   ties:
-    - { to: a_mansu, kind: rival, secret: { reveal_when: "붕괴 첫겨울 청솔 거점의 문 이야기를 둘 다 들은 뒤", min_trust: 4 } }
+    - { to: a_mansu, kind: rival, secret: { reveal_when: "붕괴 첫겨울 청솔 거점의 문 이야기를 둘 다 들은 뒤", min_trust: 8 } }
 
 - id: lone_bora
   name: 금보라
@@ -82,15 +82,15 @@
   secret:
     content: 수용소에서 도망치던 밤, 열쇠 꾸러미를 찬 늙은 간수 노필수가 배수로 쪽 문을 잠그지 않고 등을 돌렸다. 일부러였는지 모른다. 그 빚을 갚고 싶지만 다가가면 그가 다친다
     reveal_when: 붉은연합 수용소나 포로 이야기가 나왔을 때, 둘만 있으면
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: 2, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 0 }
   skills: { stealth: 2, fight: 1, shoot: 1, sense_danger: 1, survival: 1, improvise: 1, hunt: 1 }
   start_inventory: [kitchen_knife, wire_roll, water_bottle]
   playable: true
   roams: [riverside, old_town, hospital_ruins]
   ties:
-    - { to: c_dongpal, kind: rival, secret: { reveal_when: "붉은연합 규율반의 밀고자 이야기가 나왔을 때", min_trust: 3 } }
-    - { to: c_pilsu, kind: friend, secret: { reveal_when: "물류창고 수용소에서 도망친 밤 이야기를 털어놓을 때", min_trust: 4 } }
+    - { to: c_dongpal, kind: rival, secret: { reveal_when: "붉은연합 규율반의 밀고자 이야기가 나왔을 때", min_trust: 6 } }
+    - { to: c_pilsu, kind: friend, secret: { reveal_when: "물류창고 수용소에서 도망친 밤 이야기를 털어놓을 때", min_trust: 8 } }
   agenda:
     - id: who_informed
       label: 탈영하던 밤 쪽지를 넣은 사람을 알아낸다
@@ -141,14 +141,14 @@
   secret:
     content: 배가 바위틈에 닿기 직전 묶인 손을 바위에 비벼 풀고 밤바다에 뛰어내렸다. 같이 실린 사람 셋은 뛰지 못했다. 섬의 잔치 국에 무엇이 들었는지, 이제는 안다고 생각한다
     reveal_when: 여울섬이나 바다 건너 낙원 이야기가 나왔을 때, 그를 먹이고 재워 준 사람에게
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 0, agility: 2, vitality: 1, senses: 1, nerve: 0, charm: 1, intellect: 0 }
   skills: { survival: 1, stealth: 1, scavenge: 1, sense_danger: 1 }
   start_inventory: [water_bottle]
   playable: true
   roams: [riverside, old_town, hospital_ruins]
   ties:
-    - { to: y_dabin, kind: friend, secret: { reveal_when: "여울섬 이야기를 털어놓고 단짝 이름이 나왔을 때", min_trust: 3 } }
+    - { to: y_dabin, kind: friend, secret: { reveal_when: "여울섬 이야기를 털어놓고 단짝 이름이 나왔을 때", min_trust: 6 } }
   agenda:
     - id: warn_friend
       label: 섬에 남은 단짝에게 도망치라고 전하러 간다
@@ -194,14 +194,14 @@
   secret:
     content: 붉은연합 규율반 서기 우상옥이 아들이다. 보름에 한 번쯤 밤에 몰래 배급을 들고 온다. 아들은 어머니 앞에서만 말이 많아져서, 간부 마경수의 이름 옆에 물음표를 쳐 두었다는 이야기까지 해 버렸다
     reveal_when: 아들을 해치지 않을 사람이라고 믿게 됐을 때, 보일러실에서 둘만 있으면
-    min_trust: 4
+    min_trust: 8
   stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 1 }
   skills: { survival: 1, first_aid: 1, persuade: 1, history: 1 }
   start_inventory: [blanket, canned_food]
   playable: false
   zone: old_town
   ties:
-    - { to: c_sangok, kind: parent, secret: { reveal_when: "아들이 보일러실에 다녀가는 것을 들킨 뒤", min_trust: 3 } }
+    - { to: c_sangok, kind: parent, secret: { reveal_when: "아들이 보일러실에 다녀가는 것을 들킨 뒤", min_trust: 6 } }
 
 - id: lone_taesik
   name: 공덕배
@@ -235,14 +235,14 @@
   secret:
     content: 아들 공민재는 열이 오르지 않은 채 그 병동에 갇혀 죽었다. 문에 걸려 있던 자물쇠를 아직 목에 걸고 다닌다. 그날 병동에 흰 가운 입은 사람들이 드나들었다는 것까지는 안다. 그래서 하얀매에서 오는 사람에게만은 이름표를 보여 주지 않는다
     reveal_when: 병원 마당의 무덤을 함께 판 뒤, 자물쇠에 대해 물으면
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 1, agility: -1, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 1 }
   skills: { endure: 2, scavenge: 1, infected_lore: 2, carpentry: 1, history: 1 }
   start_inventory: [crowbar, water_bottle]
   playable: true
   zone: hospital_ruins
   ties:
-    - { to: d_minho, kind: friend, secret: { reveal_when: "병원 안 수색 이야기가 나왔을 때", min_trust: 2 } }
+    - { to: d_minho, kind: friend, secret: { reveal_when: "병원 안 수색 이야기가 나왔을 때", min_trust: 4 } }
 
 - id: lone_youngja
   name: 두옥분
@@ -280,7 +280,7 @@
   secret:
     content: 붕괴 첫해 왼쪽 어깨를 물렸다. 그 자리를 불에 달군 낫으로 지졌고, 열이 사흘 오르다 내렸다. 흉터를 보면 어느 무리든 자기를 격리하거나 내쫓을 것이다. 그래서 자식들 앞에 나서지 못하고 경작조 편에 지호에게 약초만 보낸다
     reveal_when: 열병을 함께 앓고 난 뒤처럼 목숨을 맡길 만큼 믿게 됐을 때
-    min_trust: 5
+    min_trust: 10
   stats: { strength: 0, agility: 0, vitality: 2, senses: 1, nerve: 1, charm: 1, intellect: 0 }
   skills: { first_aid: 2, survival: 2, scavenge: 1, deceive: 1 }
   start_inventory: [fever_reducer, kitchen_knife, dry_ration]
@@ -288,9 +288,9 @@
   healer: true
   zone: south_fields
   ties:
-    - { to: a_jiho, kind: child, secret: { reveal_when: "오지호 이야기를 하다 눈시울이 붉어질 때", min_trust: 3 } }
-    - { to: a_jeongbin, kind: child, secret: { reveal_when: "실종된 청솔 정찰조 이야기가 나올 때", min_trust: 4 } }
-    - { to: b_mina, kind: child, secret: { reveal_when: "주근깨 난 버들마을 경비병 이야기가 나올 때", min_trust: 4 } }
+    - { to: a_jiho, kind: child, secret: { reveal_when: "오지호 이야기를 하다 눈시울이 붉어질 때", min_trust: 6 } }
+    - { to: a_jeongbin, kind: child, secret: { reveal_when: "실종된 청솔 정찰조 이야기가 나올 때", min_trust: 8 } }
+    - { to: b_mina, kind: child, secret: { reveal_when: "주근깨 난 버들마을 경비병 이야기가 나올 때", min_trust: 8 } }
 
 # ── 유랑상인 ──
 - id: lone_changju
@@ -328,7 +328,7 @@
   secret:
     content: 나루상단 우두머리 탁봉수의 부탁으로 청솔형제단 동쪽 초소의 지도를 그려 주었다. 초소 경비 교대 시간이 적힌 쪽지와 한 봉투에 들어가 붉은연합으로 갔다는 것을 나중에야 알았다. 그 지도의 원본이 아직 지도통 안에 있다
     reveal_when: 동쪽 초소나 나루상단과 붉은연합의 거래 이야기가 나왔을 때, 값을 넉넉히 치르면
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 0, vitality: 0, senses: 2, nerve: 0, charm: 1, intellect: 2 }
   skills: { history: 2, scavenge: 1, persuade: 1, sense_danger: 1, survival: 1 }
   start_inventory: [binoculars, ledger, cigarettes, flashlight, flashlight, toolkit, moto_helmet]
@@ -337,7 +337,7 @@
   playable: false
   roams: [old_town, riverside, e_market, b_base, hospital_ruins]
   ties:
-    - { to: e_sora, kind: friend, secret: { reveal_when: "나루상단의 두 번째 장부 이야기가 나왔을 때", min_trust: 3 } }
+    - { to: e_sora, kind: friend, secret: { reveal_when: "나루상단의 두 번째 장부 이야기가 나왔을 때", min_trust: 6 } }
 
 - id: lone_guman
   name: 봉구만
@@ -374,7 +374,7 @@
   secret:
     content: 청솔형제단의 늙은 간부 봉재석이 친형이다. 붕괴 때 형이 지키던 거점에 받아 달라고 찾아갔다가 약을 빼돌린 일로 쫓겨났다. 그 뒤로 장터에서 형이 붉은연합 간부 마경수와 따로 만나는 것을 두 번 봤다. 아무에게도 말하지 않았다. 형을 팔 값을 아직 정하지 못했다
     reveal_when: 청솔형제단 간부들 이야기가 나왔을 때, 술이나 약값을 넉넉히 쳐 준 사람에게
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 0, agility: -1, vitality: 1, senses: 1, nerve: 1, charm: 2, intellect: 1 }
   skills: { first_aid: 2, deceive: 2, persuade: 1, infected_lore: 1 }
   start_inventory: [medkit, fever_reducer, antibiotics, cigarettes, bandage, bandage]
@@ -384,7 +384,7 @@
   healer: true
   roams: [old_town, riverside, e_market, b_base, d_clinic, water_plant]
   ties:
-    - { to: a_jaeseok, kind: sibling, secret: { reveal_when: "봉재석의 이름이 나오고 둘만 있을 때", min_trust: 3 } }
+    - { to: a_jaeseok, kind: sibling, secret: { reveal_when: "봉재석의 이름이 나오고 둘만 있을 때", min_trust: 6 } }
 
 - id: lone_eunsuk
   name: 강은숙
@@ -420,7 +420,7 @@
   secret:
     content: 청솔 분대장 강태호가 친오빠다. 정찰조가 사라진 날 강변 언덕에서 탄피를 줍다가, 오빠가 혼자 뒤로 빠지는 것과 붉은연합이 정찰조 둘을 산 채로 끌고 물류창고 쪽으로 가는 것을 봤다. 청솔에 알리면 오빠가 끝난다. 그래서 아무에게도 말하지 않았다
     reveal_when: 실종된 청솔 정찰조나 강태호 이야기가 나왔을 때, 둘만 있으면
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 1, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: 0, intellect: 1 }
   skills: { shoot: 2, mechanics: 2, persuade: 1, sense_danger: 1, maintenance: 2 }
   start_inventory: [old_rifle, trade_token, water_bottle, rifle_rounds, rifle_rounds, shells, shells, casings, gunpowder]
@@ -429,4 +429,4 @@
   playable: true
   roams: [riverside, old_town, e_market, water_plant, b_base, south_fields]
   ties:
-    - { to: a_taeho, kind: sibling, secret: { reveal_when: "강태호의 이름이 나오고 둘만 있을 때", min_trust: 3 } }
+    - { to: a_taeho, kind: sibling, secret: { reveal_when: "강태호의 이름이 나오고 둘만 있을 때", min_trust: 6 } }

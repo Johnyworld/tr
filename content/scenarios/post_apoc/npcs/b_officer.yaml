@@ -33,7 +33,7 @@
   secret:
     content: 지난번 붉은연합 사자가 다녀간 다음 날, 딸 수진이가 붉은연합 쪽에 살아 있다는 쪽지를 받았다. 연합이 깨지면 딸을 돌려받을 수 있다고 믿고, 회의에서 청솔 몫 이야기가 나올 때마다 일부러 언성을 높인다
     reveal_when: 잃은 식구 이야기를 털어놓으며 함께 울어 준 사람에게, 103동 계단에서 둘만 있을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: -1, vitality: 1, senses: 1, nerve: 2, charm: 1, intellect: 0 }
   skills: { persuade: 1, intimidate: 1, survival: 1 }
   start_inventory: [blanket, canned_food]
@@ -71,7 +71,7 @@
   secret:
     content: 표승민의 부탁으로 회의록 사본을 한 장씩 베껴 그에게 건넨다. 연합을 지키는 데 쓴다고 들었고, 대표에게는 말하지 않았다
     reveal_when: 회의록을 고쳐 적으라고 하지 않고, 보초 명단에서 이름을 빼 주겠다고 약속한 사람에게
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 0, charm: 1, intellect: 2 }
   skills: { stealth: 1, history: 1, sense_danger: 1 }
   start_inventory: [ledger]

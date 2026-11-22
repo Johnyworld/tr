@@ -31,9 +31,9 @@
     rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
     reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
     secrets:
-      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
-      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
-      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 6 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 4 }
   ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
   appears: { zone_owner: [none] }
 
@@ -62,9 +62,9 @@
     rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
     reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
     secrets:
-      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
-      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
-      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 6 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 4 }
   ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
   appears: { zone_owner: [none] }
 
@@ -92,9 +92,9 @@
     rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
     reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
     secrets:
-      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
-      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
-      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 6 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 4 }
   ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
   appears: { zone_owner: [none] }
 
@@ -126,9 +126,9 @@
     rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
     reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
     secrets:
-      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
-      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
-      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 6 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 4 }
   ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
   appears: { zone_owner: [none] }
 - id: stray_dog

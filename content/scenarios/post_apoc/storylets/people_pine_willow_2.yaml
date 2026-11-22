@@ -80,7 +80,7 @@
     flags_any: [pp2_drain_found, pp2_drain_told]
     flags_none: [pp2_smoke_done]
   cast:
-    leader: { ids: [pa_jinman], trust_gte: 2 }
+    leader: { ids: [pa_jinman], trust_gte: 4 }
     young: { ids: [pa_taeju], enter: false }
   setup: 자정이 넘은 막사 뒤. {leader:이/가} 혼자 쪼그려 앉아 담배를 피운다. 붕대 감은 왼손이 떨려 불이 자꾸 꺼진다. 당신을 보고도 일어나지 않는다. "태주랑 배수로 얘기했냐."
   ai_direction: "{leader:은/는} 엄태석을 산 채로 두고 왔다. 업으면 넷이 다 죽는다고 판단했고, 손을 놓지 않는 태석의 손가락을 떼다 자기 손을 다쳤다. 그 뒤 '버리지 않는다'를 누구보다 많이 말해 왔다. 원칙을 지키다 사람을 잃어 본 사람에게만, 둘만 있는 밤에 털어놓는다. 캐묻기만 하면 판정으로 갈린다. 털어놓은 뒤에도 {young}에게 직접 말할 용기는 아직 없다."
@@ -390,7 +390,7 @@
     flags_none: [pp2_desertion_done]
     day_gte: 6
   cast:
-    groom: { ids: [pa_gibeom], trust_gte: 2 }
+    groom: { ids: [pa_gibeom], trust_gte: 4 }
     bride: { ids: [pb_sua], enter: false }
   setup: "{groom:이/가} 장갑 속에서 철사 반지를 꺼내 손가락에 끼웠다 뺐다 한다. \"버들마을에 붉은 사람들 드나드는 거 다 알아요. 연합 깨지면 위에서 저보고 거기다 총 겨누라고 하겠죠. 그 전에 나갈 거예요. 같이 갈 길을 좀 봐 주실래요.\""
   ai_direction: "{groom:은/는} 아내 {bride:과/와} 함께 도시를 떠날 생각이다. {bride}의 임신을 주인공이 알고 있다면 말해 줄 수 있다 (GM이 Belief State로 확인한다). 아이 이야기를 들으면 {groom:은/는} 떠날 마음이 굳는다. 붉은연합은 연합이 깨지면 버들마을 사람들을 노역조로 나눌 생각이지만, 이 장면의 누구도 그것을 모른다. 남으라고 설득하려면 버들마을이 연합에 남을 이유를 함께 만들어야 한다."
@@ -515,7 +515,7 @@
     flags_all: [pp_rooftop_done]
     flags_none: [pp2_tailing_done]
   cast:
-    boy: { ids: [pb_yunjae], trust_gte: 1 }
+    boy: { ids: [pb_yunjae], trust_gte: 2 }
     clerk: { ids: [pb_seokgyu] }
     chair: { ids: [c_hyeran], enter: false }
   setup: 관리사무소 창 밑에 까까머리가 쪼그리고 있다. 당신을 보자 손가락을 입에 댄다. 창 안에서 안경 쓴 간부가 장부 사이에 접힌 종이를 펴 들고 한참 읽는다. 아이가 속삭인다. "저거 또 왔어요. 장터 갔다 오는 날마다 저래."

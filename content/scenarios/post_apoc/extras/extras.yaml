@@ -29,8 +29,8 @@
     rules: [완장을 만지작거리며 말한다, 지도부 이야기가 나오면 주위를 살핀다]
     reputations: [붉은연합에서 두 해를 버틴 사람, 할당량을 한 번도 못 채운 적 없다는 사람, 징집되어 온 지 얼마 안 된 사람]
     secrets:
-      - { content: 탈영할 날을 세고 있다. 담 밑에 마른 빵을 숨겨 두었다, reveal_when: 둘만 있고 규율반이 멀 때, min_trust: 3 }
-      - { content: 청솔형제단 쪽에 몰래 소식을 흘린 적이 있다. 돈이 아니라 가족 때문이었다, reveal_when: 목숨을 구해 준 뒤, min_trust: 3 }
+      - { content: 탈영할 날을 세고 있다. 담 밑에 마른 빵을 숨겨 두었다, reveal_when: 둘만 있고 규율반이 멀 때, min_trust: 6 }
+      - { content: 청솔형제단 쪽에 몰래 소식을 흘린 적이 있다. 돈이 아니라 가족 때문이었다, reveal_when: 목숨을 구해 준 뒤, min_trust: 6 }
   ties: { chance: 0.25, kinds: [sibling, parent, child, friend] }
   appears: { zones: [c_base, c_warehouse] }
 
@@ -63,8 +63,8 @@
     rules: [완장을 만지작거리며 말한다, 지도부 이야기가 나오면 주위를 살핀다]
     reputations: [붉은연합에서 두 해를 버틴 사람, 할당량을 한 번도 못 채운 적 없다는 사람, 징집되어 온 지 얼마 안 된 사람]
     secrets:
-      - { content: 탈영할 날을 세고 있다. 담 밑에 마른 빵을 숨겨 두었다, reveal_when: 둘만 있고 규율반이 멀 때, min_trust: 3 }
-      - { content: 청솔형제단 쪽에 몰래 소식을 흘린 적이 있다. 돈이 아니라 가족 때문이었다, reveal_when: 목숨을 구해 준 뒤, min_trust: 3 }
+      - { content: 탈영할 날을 세고 있다. 담 밑에 마른 빵을 숨겨 두었다, reveal_when: 둘만 있고 규율반이 멀 때, min_trust: 6 }
+      - { content: 청솔형제단 쪽에 몰래 소식을 흘린 적이 있다. 돈이 아니라 가족 때문이었다, reveal_when: 목숨을 구해 준 뒤, min_trust: 6 }
   ties: { chance: 0.25, kinds: [sibling, parent, child, friend] }
   appears: { zones: [c_base, c_warehouse] }
 
@@ -95,8 +95,8 @@
     rules: [완장을 만지작거리며 말한다, 지도부 이야기가 나오면 주위를 살핀다]
     reputations: [붉은연합에서 두 해를 버틴 사람, 할당량을 한 번도 못 채운 적 없다는 사람, 징집되어 온 지 얼마 안 된 사람]
     secrets:
-      - { content: 탈영할 날을 세고 있다. 담 밑에 마른 빵을 숨겨 두었다, reveal_when: 둘만 있고 규율반이 멀 때, min_trust: 3 }
-      - { content: 청솔형제단 쪽에 몰래 소식을 흘린 적이 있다. 돈이 아니라 가족 때문이었다, reveal_when: 목숨을 구해 준 뒤, min_trust: 3 }
+      - { content: 탈영할 날을 세고 있다. 담 밑에 마른 빵을 숨겨 두었다, reveal_when: 둘만 있고 규율반이 멀 때, min_trust: 6 }
+      - { content: 청솔형제단 쪽에 몰래 소식을 흘린 적이 있다. 돈이 아니라 가족 때문이었다, reveal_when: 목숨을 구해 준 뒤, min_trust: 6 }
   ties: { chance: 0.25, kinds: [sibling, parent, child, friend] }
   appears: { zone_owner: [none, other] }
 
@@ -126,9 +126,9 @@
     rules: [먹을 것을 받으면 반드시 무언가로 갚으려 한다, 무리 이야기를 꺼내면 말을 돌린다]
     reputations: [이 근방을 떠도는 사람, 몇 번 마주친 낯익은 떠돌이, 어느 무리에도 끼지 않으려는 사람]
     secrets:
-      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 3 }
-      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
-      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 2 }
+      - { content: 예전에 어느 무리에서 물건을 훔쳐 쫓겨났다, reveal_when: 그 무리 이야기가 나올 때, min_trust: 6 }
+      - { content: 함께 다니던 사람을 물결 속에 두고 혼자 도망쳤다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
+      - { content: 아이 하나를 몰래 먹여 살리고 있다, reveal_when: 먹을 것을 나눠 받은 뒤, min_trust: 4 }
   ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
   appears: { zone_owner: [none, own] }
 
@@ -158,7 +158,7 @@
     rules: [무엇이든 값으로 말한다, 짐 끈을 자꾸 다시 묶는다]
     reputations: [장터를 오가는 짐꾼, 빚을 지고 상단에 들어온 사람]
     secrets:
-      - { content: 짐에서 조금씩 빼돌려 따로 모아 둔다, reveal_when: 빚 이야기를 하다가, min_trust: 3 }
+      - { content: 짐에서 조금씩 빼돌려 따로 모아 둔다, reveal_when: 빚 이야기를 하다가, min_trust: 6 }
   ties: { chance: 0.25, kinds: [sibling, friend, rival] }
   appears: { zones: [e_market, water_plant, riverside, old_town] }
 
@@ -185,7 +185,7 @@
     rules: [마을 사람 이름은 다 안다, 낯선 사람에게 먼저 물을 권한다]
     reputations: [버들마을에서 나고 자란 사람, 정문 경비를 오래 선 사람]
     secrets:
-      - { content: 붉은연합 사자에게서 담배를 받은 적이 있다. 아무 말도 안 했다고 믿는다, reveal_when: 둘만 있을 때, min_trust: 3 }
+      - { content: 붉은연합 사자에게서 담배를 받은 적이 있다. 아무 말도 안 했다고 믿는다, reveal_when: 둘만 있을 때, min_trust: 6 }
   ties: { chance: 0.3, kinds: [sibling, parent, child, spouse, friend] }
   appears: { zones: [b_base, south_fields, old_town] }
 
@@ -213,5 +213,5 @@
     rules: [바깥 사람에게 먼저 먹을 것을 권한다, 내보내진 사람 이야기가 나오면 말을 돌린다]
     reputations: [섬에서 태어나 자란 주민, 첫 겨울 뒤에 받아들여진 주민]
     secrets:
-      - { content: 지난겨울 내보내진 이웃의 신발을 의회 저장고 뒤에서 봤다. 아무에게도 말하지 않았다, reveal_when: 둘만 있고 내보내진 사람 이야기가 나올 때, min_trust: 3 }
+      - { content: 지난겨울 내보내진 이웃의 신발을 의회 저장고 뒤에서 봤다. 아무에게도 말하지 않았다, reveal_when: 둘만 있고 내보내진 사람 이야기가 나올 때, min_trust: 6 }
   appears: { zones: [yeoul_isle] }

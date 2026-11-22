@@ -1218,7 +1218,7 @@ export const scenarioFileSchema = z
       })
       .optional(),
     /**
-     * 뇌물과 협박 (12-153). bribe: 값은 prices[계급](없으면 default) × (1 − greed_step × 욕심 가치관), 주인공을 믿으면(신뢰 +2) ×trusted.
+     * 뇌물과 협박 (12-153). bribe: 값은 prices[계급](없으면 default) × (1 − greed_step × 욕심 가치관), 주인공을 믿으면(신뢰 +4) ×trusted.
      * 정직 가치관(scruple)이 refuse_at 이상이고 욕심이 0 이하인 사람은 값과 상관없이 거절한다. 모자라면(절반 이상) move로 판정.
      * blackmail: 협박 판정의 행동
      */
@@ -1502,11 +1502,19 @@ export const scenarioFileSchema = z
                   .strictObject({ items: z.record(id, z.number().positive()), warmth: z.number().positive(), noise: z.number().int().min(0).default(0), stove: z.number().min(1).default(3) })
                   .optional(),
                 /**
-                 * 젖은 옷 (12-121, 12-186): weather 날씨에 바깥에 있었거나 이야기 효과 soak로 젖으면 마를 때까지 체감 -degrees.
-                 * 시간으로는 마르지 않는다. 불 곁(모닥불·난로)에 fire_hours 있거나, 갈아입을 옷이 있는 곳에서 갈아입어야(take_action.change_clothes) 마른다.
+                 * 젖은 옷 (12-121, 12-186): weather 날씨에 바깥에 있었거나 이야기 효과 soak로 젖으면 마를 때까지 체감이 떨어진다.
+                 * 떨어지는 도는 젖기 전 체감에 따라 (12-251): comfort보다 낮으면 cold, warm보다 낮으면 cool, 그 위는 mild.
+                 * 바깥에서는 마르지 않는다. 불 곁(모닥불·난로)에 fire_hours, 지붕 아래에 roof_hours 있거나, 갈아입을 옷이 있는 곳에서 갈아입으면(take_action.change_clothes) 마른다.
                  * 불 곁에 있는 동안은 빼지 않는다
                  */
-                wet: z.strictObject({ weather: z.array(id).default([]), degrees: z.number().positive(), fire_hours: z.number().positive() }).optional(),
+                wet: z
+                  .strictObject({
+                    weather: z.array(id).default([]),
+                    degrees: z.strictObject({ cold: z.number().positive(), cool: z.number().positive(), mild: z.number().positive() }),
+                    fire_hours: z.number().positive(),
+                    roof_hours: z.number().positive(),
+                  })
+                  .optional(),
               })
               .optional(),
           })
@@ -1539,9 +1547,9 @@ export const scenarioFileSchema = z
             recover: z.strictObject({ chance: z.number().min(0).max(1), per_point: z.number().min(0).max(1), safe: z.number().min(0).max(1).default(0) }),
             /**
              * 푹 자면 가라앉는다: 끊기지 않고 min_hours 이상 자고 나면 한 단계 가라앉을 확률 (안전한 곳 safe, 아니면 unsafe, 능력 1당 recover.per_point 더).
-             * 하루마다 가라앉는 것과 따로 굴린다. 굶주림·오한 이상이면 없다
+             * 하루마다 가라앉는 것과 따로 굴린다. 굶주림·오한 이상이면 없다. sure: 이 단계면 굴리지 않고 가라앉는다 (12-251: 심란함이 사흘 갔다)
              */
-            sleep: z.strictObject({ min_hours: z.number().positive(), safe: z.number().min(0).max(1), unsafe: z.number().min(0).max(1) }).optional(),
+            sleep: z.strictObject({ min_hours: z.number().positive(), safe: z.number().min(0).max(1), unsafe: z.number().min(0).max(1), sure: z.array(id).default([]) }).optional(),
           })
           .optional(),
         /**
@@ -1712,6 +1720,8 @@ export const scenarioFileSchema = z
         urgent_per_day: z.number().int().min(0).default(0),
         /** 주인공의 몸이 이 단계 이상이면(상태 트랙 → 단계) 급한 이야기만 연다 (위급할 때 보통 이야기·길 위의 일이 끼어들지 않게) */
         urgent_only_when: z.record(id, id).default({}),
+        /** 연습 대련 이야기(storylet.practice)는 이 상태 트랙들이 이 단계를 넘으면 열지 않는다 (12-251, 플레이 테스트 14: 업혀 돌아온 직후 대련) */
+        practice_max: z.record(id, id).default({}),
         /**
          * 하루 상한 (플레이 테스트 11, D1~D3. 0이면 없음): 모든 이야기(급한 것 포함) per_day, 다치게 하는 이야기(공포·매복·감염체 배역) threat_per_day,
          * 길 위의 일 road_per_day. 같은 위협(공포 태그·감염체)을 가진 이야기끼리는 same_threat_gap_days 떨어진다. 임무 자리의 이야기(when.mission)는 세지 않는다
@@ -1721,7 +1731,7 @@ export const scenarioFileSchema = z
         road_per_day: z.number().int().min(0).default(0),
         same_threat_gap_days: z.number().min(0).default(0),
       })
-      .default({ min_gap_hours: 6, expire_hours: 3, first_after_hours: 2, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {}, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 }),
+      .default({ min_gap_hours: 6, expire_hours: 3, first_after_hours: 2, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {}, practice_max: {}, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 }),
   })
   .superRefine((s, ctx) => {
     const problem = (message: string) => ctx.addIssue({ code: "custom", message });
@@ -1763,6 +1773,11 @@ export const scenarioFileSchema = z
     if (s.charm && !s.stats.some((x) => x.id === s.charm!.ability)) problem(`charm.ability: 알 수 없는 능력 ${s.charm.ability}`);
     for (const [role, move] of Object.entries(s.move_roles)) {
       if (move && !moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);
+    }
+    for (const [track, level] of Object.entries(s.storylet_pacing.practice_max)) {
+      const t = s.condition_tracks.find((x) => x.id === track);
+      if (!t) problem(`storylet_pacing.practice_max: 알 수 없는 상태 트랙 ${track}`);
+      else if (!t.levels.some((l) => l.id === level)) problem(`storylet_pacing.practice_max.${track}: 알 수 없는 단계 ${level}`);
     }
     for (const [track, level] of Object.entries(s.storylet_pacing.urgent_only_when)) {
       const t = s.condition_tracks.find((x) => x.id === track);

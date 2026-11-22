@@ -34,7 +34,7 @@
   secret:
     content: 수술 뒤 떨림을 멎게 하려고 약제실의 진통제를 몰래 맞는다. 문기순의 장부가 맞지 않는 까닭 중 하나가 자기라는 걸 안다
     reveal_when: 저녁에 잠긴 수술실 문 앞에서 기다렸을 때, 또는 수술 중 손이 떨리는 것을 본 사람이 둘만 있을 때 물었을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 1, vitality: -1, senses: 2, nerve: 1, charm: 0, intellect: 2 }
   skills: { first_aid: 2, infected_lore: 1, endure: 1, surgery: 1 }
   start_inventory: [medkit, kitchen_knife]
@@ -93,7 +93,7 @@
   secret:
     content: 윤채원이 약을 들고 진료소를 떠나던 밤, 약제실 문을 열어 준 사람이 자기다. 윤채원 혼자 다 뒤집어쓰고 쫓겨났고, 자기 이름은 끝까지 대지 않았다
     reveal_when: 윤채원 이야기가 나왔을 때 둘만 있다면, 또는 약제실 열쇠를 두고 누군가 의심받을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 1, vitality: 0, senses: 1, nerve: 0, charm: 1, intellect: 2 }
   skills: { first_aid: 1, scavenge: 1, infected_lore: 1, history: 1 }
   start_inventory: [antibiotics, antibiotics, fever_reducer, serum]
@@ -102,7 +102,7 @@
   zone: d_clinic
   # 쫓겨난 간호사와 그를 보낸 사람 (기획서 7.10)
   ties:
-    - { to: a_chaewon, kind: friend, secret: { reveal_when: "윤채원 이야기가 나왔을 때 둘만 있다면", min_trust: 3 } }
+    - { to: a_chaewon, kind: friend, secret: { reveal_when: "윤채원 이야기가 나왔을 때 둘만 있다면", min_trust: 6 } }
     - { to: d_gisun, kind: friend }
 
 - id: pd_manseok
@@ -137,7 +137,7 @@
   secret:
     content: 탈영한 적이 없다. 그날 밤 보초였을 뿐인데 이름이 본보기 명단에 올라 광장에서 맞고 담 밖에 버려졌다. 석중기에게 갚을 날을 기다린다
     reveal_when: 붉은연합 이야기가 나온 저녁, 진료소 마당 벤치에서
-    min_trust: 2
+    min_trust: 4
   stats: { strength: 1, agility: -1, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 0 }
   skills: { endure: 2, intimidate: 1, sense_danger: 1 }
   start_inventory: [crowbar, blanket]
@@ -145,7 +145,7 @@
   zone: d_clinic
   # 광장에서 친 사람과 맞은 사람 (기획서 7.10)
   ties:
-    - { to: pc_junggi, kind: rival, secret: { reveal_when: "붉은연합 이야기가 나온 저녁, 진료소 마당 벤치에서", min_trust: 2 } }
+    - { to: pc_junggi, kind: rival, secret: { reveal_when: "붉은연합 이야기가 나온 저녁, 진료소 마당 벤치에서", min_trust: 4 } }
 
 - id: pd_dahyeon
   name: 위다현
@@ -178,7 +178,7 @@
   secret:
     content: 나루상단 짐꾼 배철구가 남편이다. 진료소에는 혼자 몸이라고 하고 들어왔다. 남편이 진료소 약을 붉은연합 보초에게 판다는 걸 알면서, 장날 전날 뒷담에서 남편을 만난다
     reveal_when: 장날 전날 저녁 진료소 뒷담에서 마주쳤을 때, 또는 약 도둑 이야기가 진료소에 돌기 시작했을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: 0, vitality: 0, senses: 1, nerve: 0, charm: 2, intellect: 1 }
   skills: { first_aid: 1, persuade: 2, deceive: 1 }
   start_inventory: [fever_reducer, water_bottle]
@@ -187,7 +187,7 @@
   zone: d_clinic
   # 상단 짐꾼과 숨긴 혼인 (기획서 7.10)
   ties:
-    - { to: e_cheolgu, kind: spouse, secret: { reveal_when: "장날 전날 저녁 진료소 뒷담에서 마주쳤을 때", min_trust: 3 } }
+    - { to: e_cheolgu, kind: spouse, secret: { reveal_when: "장날 전날 저녁 진료소 뒷담에서 마주쳤을 때", min_trust: 6 } }
   agenda:
     - id: husband_found_out
       label: 남편이 하는 일이 들통날 날이 다가온다
@@ -230,7 +230,7 @@
   secret:
     content: 붉은연합 취사반장 옥금자의 딸이다. 반년 전 어머니가 쓰레기 수레에 숨겨 거점 밖으로 내보냈다. 붉은연합 명부에는 실종으로 적혀 있고, 붙잡히면 탈영병이다
     reveal_when: 붉은연합 거점 부엌 이야기가 나왔을 때, 또는 어머니 소식을 가져온 사람에게
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: 1, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 1 }
   skills: { first_aid: 1, stealth: 1, survival: 1 }
   start_inventory: [kitchen_knife, medkit]
@@ -239,7 +239,7 @@
   zone: d_clinic
   # 무리를 가로지른 모녀
   ties:
-    - { to: pc_sundeok, kind: child, secret: { reveal_when: "붉은연합 거점 부엌 이야기가 나왔을 때, 또는 어머니 소식을 가져온 사람에게", min_trust: 3 } }
+    - { to: pc_sundeok, kind: child, secret: { reveal_when: "붉은연합 거점 부엌 이야기가 나왔을 때, 또는 어머니 소식을 가져온 사람에게", min_trust: 6 } }
   agenda:
     - id: word_to_mother
       label: 어머니에게 살아 있다는 말을 전할 길을 찾는다

@@ -47,8 +47,8 @@ describe("관계 변화량", () => {
     expect(Math.min(big.trust, big.affection, big.respect)).toBeGreaterThanOrEqual(-3);
   });
 
-  it("관계는 -5 ~ +5 안에 머문다", () => {
-    expect(applyRelationDelta({ ...NEUTRAL_RELATION, trust: 4 }, { trust: 3, affection: 0, respect: 0 }).trust).toBe(5);
+  it("관계는 -10 ~ +10 안에 머문다 (12-251)", () => {
+    expect(applyRelationDelta({ ...NEUTRAL_RELATION, trust: 9 }, { trust: 3, affection: 0, respect: 0 }).trust).toBe(10);
   });
 });
 

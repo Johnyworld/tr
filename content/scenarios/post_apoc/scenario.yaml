@@ -500,7 +500,7 @@ growth:
   raise_costs: [1, 2, 3]
   # 가르침 (4.2.1): 그 스킬이 +1 이상인 사람(신뢰 1 이상) 곁에서 8시간을 채우면 전문 기술을 배운다 (-1).
   # 다른 무리면 물건으로 값 5 (신뢰 2 이상이면 공짜). 치료사의 값과 같은 틀
-  teaching: { hours: 8, min_skill: 1, min_trust: 1, fee: 5, free_trust: 2 }
+  teaching: { hours: 8, min_skill: 1, min_trust: 2, fee: 5, free_trust: 4 }
   # 버팀: 몸·마음이 한 단계 나빠질 때 피할 확률 (*임시*). 레벨 2~5는 4%씩, 6~10은 3%씩, 11~15는 2%씩, 16~20은 1%씩, 21~30은 0.5%씩
   # (레벨 5에 16%, 10에 31%, 15에 41%, 20에 46%, 30에 51%)
   resilience:
@@ -555,8 +555,8 @@ traits:
   - { id: aching_wound, label: 쑤시는 옛 상처, kind: negative, selectable: false, description: "궂은 날이면 옛 상처가 쑤신다 (추위 노출 +1)", acting: 날이 흐리면 옛 상처 자리를 문지른다, effects: { cold: 1 } }
   # 술·약 (12-157): 술꾼은 고를 수 있다. 진통제 의존·각성제 중독은 쓰다 보면 붙는다 (body.dependence). 끝 단계를 며칠 버티면 끊는다
   - { id: drinker, label: 술꾼, kind: negative, cost: 1, description: "하루 한 병을 마신다. 술이 떨어지면 안절부절하다 손이 떨린다 (판정 -1, -2). 열흘을 버티면 끊는다", acting: 해가 지면 병을 찾고 술이 들어가면 말이 많아진다, effects: { habit: { items: [soju, moonshine], track: craving_drink, start: 2, quit_days: 10 } } }
-  - { id: pill_habit, label: 진통제 의존, kind: negative, selectable: false, description: "하루 한 번 진통제를 먹는다. 떨어지면 안절부절하다 금단이 온다 (판정 -1, -2). 이레를 버티면 끊는다", acting: 아프지 않아도 약통을 흔들어 남은 알을 센다, effects: { habit: { items: [painkiller, morphine], track: craving_pills, quit_days: 7 } } }
-  - { id: stim_habit, label: 각성제 중독, kind: negative, selectable: false, description: "하루 한 번 각성제를 한다. 떨어지면 처지다 금단이 온다 (판정 -1, -2). 보름을 버티면 끊는다", acting: 눈 밑이 검고 말이 빨라졌다가 갑자기 멍해진다, effects: { habit: { items: [stimulant], track: craving_stim, quit_days: 14 } } }
+  - { id: pill_habit, label: 진통제 의존, kind: negative, selectable: false, description: "하루 한 번 진통제를 먹는다. 떨어지면 안절부절하다 금단이 온다 (판정 -1, -2). 사흘을 버티면 끊는다", acting: 아프지 않아도 약통을 흔들어 남은 알을 센다, effects: { habit: { items: [painkiller, morphine], track: craving_pills, quit_days: 3 } } }
+  - { id: stim_habit, label: 각성제 중독, kind: negative, selectable: false, description: "하루 한 번 각성제를 한다. 떨어지면 처지다 금단이 온다 (판정 -1, -2). 이레를 버티면 끊는다", acting: 눈 밑이 검고 말이 빨라졌다가 갑자기 멍해진다, effects: { habit: { items: [stimulant], track: craving_stim, quit_days: 7 } } }
   - { id: ugly, label: 험악한 인상, kind: negative, cost: 1, visible: true, description: 첫인상이 나쁘다 (외모 -1), acting: 사람들이 첫눈에 경계한다, opposites: [beautiful, attractive], effects: { looks: -1 } }
   # ── 성격 (0) ──
   - { id: warm, label: 다정함, kind: personality, visible: true, description: 남을 살뜰히 챙긴다, acting: 말끝이 부드럽고 먼저 안부를 묻는다, opposites: [cold], persona: { warmth: 2 } }
@@ -1038,7 +1038,7 @@ recovery:
   # 감염은 치료사도 떼지 못한다 (혈청뿐, body.infection.cure)
   healer: { harm: 1, disease: 1, bleeding: 3 }
   # 치료사의 재료와 값 (플레이 테스트 11): 치료마다 치료사 무리의 의약품 1. 다른 무리·무소속은 물건으로 값 3 (치료사의 신뢰 2 이상이면 공짜)
-  healer_cost: { resource: medicine, fee: 3, free_trust: 2 }
+  healer_cost: { resource: medicine, fee: 3, free_trust: 4 }
   # 무리의 돌봄 (12-52): 의무병 한 사람이 하루 두 명까지, 무리의 의약품으로 부상 한 단계에 1. 감염은 떼지 못한다
   faction_care: { occupations: [medic, nurse, doctor], resource: medicine, per_medic: 2 }
   # 주인공이 아이템 없이 남을 돌보는 조건: 의무병이거나 응급처치 +1 이상
@@ -1055,10 +1055,10 @@ content_rating: { tag: mature, adult_age: 18 }
 # 연애 (12-58): 둘 다 성인일 때만 (수위와 상관없다. 수위는 잠자리·성적 위협만 가린다). 끌림은 인물마다 (npcs의 attracted_to, 없으면 이 비율로 인물 id에서)
 romance:
   orientation: { other: 0.75, both: 0.15, same: 0.07, none: 0.03 }
-  interest_affection: 3
+  interest_affection: 6
   # 나이 차가 15살을 넘으면 마음이 생기지 않는다 (12-195)
   age_gap: 15
-  accept: { affection: 4, trust: 2 }
+  accept: { affection: 8, trust: 4 }
   flirt_moves: [persuade, deceive]
   grief_nerves: 2
 
@@ -1256,7 +1256,7 @@ facilities:
 # 유품과 이어지는 끈 (12-158, *임시*): 죽은 주인공과 관계(앙숙 빼고)가 있거나 호감이 이 이상이면 가까운 사람.
 # 가까운 사람이 뒤를 이으면 사물함·거처의 짐을 물려받고, 이야기에서 그를 기억하는 배역(mourner)이 된다
 legacy:
-  close_affection: 3
+  close_affection: 6
 
 # 다짐 (12-164, *임시*): 주인공의 큰 줄기. 시나리오(역할의 resolve, 없으면 배경)가 주거나 이야기가 건넨다. 한 번에 하나.
 # 이루면 경험치 12(초반엔 두 레벨쯤, 중반부터는 한 레벨 안쪽)와 마음 한 단계 회복, 꺾이면 마음 한 단계 악화. 갚기는 스스로 내려놓을 수 있다 (내려놓아도 이룬 것으로 친다)
@@ -1341,10 +1341,13 @@ storylet_pacing:
   min_gap_hours: 6
   max_gap_hours: 12
   expire_hours: 3
-  first_after_hours: 2
+  # 첫 이야기는 시작 1시간 뒤부터 (12-251, 플레이 테스트 14: 튜토리얼 정문 이야기가 도착 2시간 25분 뒤에 열렸다)
+  first_after_hours: 1
   min_any_gap_hours: 2
   urgent_per_day: 2
   urgent_only_when: { bleeding: bleeding, harm: critical }
+  # 연습 대련은 경상까지만 (12-251, 플레이 테스트 14: 업혀 돌아온 직후 대련을 청받았다)
+  practice_max: { harm: light }
   # 플레이 테스트 11 (D1~D3): 하루 2~5개, 대부분 위협이라 페널티가 겹쳤다. 이동마다 길 위의 일, 감염체 무리가 사흘에 세 번
   per_day: 0
   threat_per_day: 1
@@ -1663,8 +1666,8 @@ body:
   infection:
     track: infection
     # 감염체에게 입은 상처 종류별 감염 확률 (*임시*). 둔기·그 밖(살갗이 안 찢김)은 감염되지 않는다
-    # 플레이 테스트 11: 할큄·베임은 낮추고, 물리면 끝 (막는 것은 방어구뿐)
-    chance: { claw: 0.1, cut: 0.25, pierce: 0.25, bite: 1 }
+    # 플레이 테스트 11: 할큄·베임은 낮추고, 물리면 끝 (막는 것은 방어구뿐). 12-251: 물림 1 → 0.6 (플레이 테스트 14: 첫날 물려 판이 막혔다)
+    chance: { claw: 0.1, cut: 0.25, pierce: 0.25, bite: 0.6 }
     # 하나 먹으면 하루 동안 감염이 절반 속도로 퍼진다
     slow: [antibiotics]
     # 감염을 떼는 유일한 약. 잠복에도 듣는다
@@ -1705,9 +1708,10 @@ body:
       # 모닥불: 연료 → 타는 시간. 곁에 있으면 +10°, 피우면 그 구역 소음 +1 (연기와 불빛)
       # 땔감 한 단은 하룻밤 (12-186, 4 → 8시간)
       fire: { items: { firewood: 8, planks: 3, fuel_bottle: 2 }, warmth: 10, noise: 1 }
-      # 젖은 옷 (12-121, 12-186, *임시*): 비 오는 날 바깥에 있었거나 강·하수구에 빠지면 마를 때까지 체감 -10. 시간으로는 마르지 않는다.
-      # 불 곁(모닥불·난로)에서 2시간, 또는 갈아입을 옷이 있는 곳(우리 거점·내 거처·location.clothes)에서 갈아입으면 마른다
-      wet: { weather: [rain], degrees: 10, fire_hours: 2 }
+      # 젖은 옷 (12-121, 12-186, *임시*): 비 오는 날 바깥에 있었거나 강·하수구에 빠지면 마를 때까지 체감이 떨어진다.
+      # 젖기 전 체감이 8° 밑이면 -10, 15° 밑이면 -6, 그 위면 -3 (12-251, 플레이 테스트 14: 여름비에도 -10이라 섬 사흘 내내 오한).
+      # 바깥에서는 마르지 않는다. 불 곁(모닥불·난로)에서 2시간, 지붕 아래에서 4시간, 또는 갈아입을 옷이 있는 곳(우리 거점·내 거처·location.clothes)에서 갈아입으면 마른다
+      wet: { weather: [rain], degrees: { cold: 10, cool: 6, mild: 3 }, fire_hours: 2, roof_hours: 4 }
   # 질병: 하루마다 확률. 굶주림·추위·무리의 물 부족마다 더하고, 체력 1당 25% 덜 걸린다
   disease:
     track: disease
@@ -1727,8 +1731,9 @@ body:
     heavy_harm: 1
     witness_death: 1
     recover: { chance: 0.15, per_point: 0.1, safe: 0.2 }
-    # 끊기지 않고 6시간 넘게 푹 자면 한 번 더: 우리 땅이나 동행 곁이면 50%, 아니면 25% (냉정 1당 +10%, *임시*)
-    sleep: { min_hours: 6, safe: 0.5, unsafe: 0.25 }
+    # 끊기지 않고 6시간 넘게 푹 자면 한 번 더: 우리 땅이나 동행 곁이면 50%, 아니면 25% (냉정 1당 +10%, *임시*).
+    # 심란함은 푹 자면 굴리지 않고 풀린다 (12-251, 플레이 테스트 14: 12시간을 자고도 사흘 갔다)
+    sleep: { min_hours: 6, safe: 0.5, unsafe: 0.25, sure: [shaken] }
   # 공포 (12-95, *임시*): 계기의 단계 + 어둠 1 - 동행 1 ± 트레잇. 마음 다잡기로 버틴다 (12-220).
   # 위협이 없으면 1시간마다 한 단계 가라앉고, 자고 나면 평정. 다잡지 못하고 공황에 이르면 마음 +1, 마음이 미칠 것 같음 이상이면 한 단계 더
   fear:

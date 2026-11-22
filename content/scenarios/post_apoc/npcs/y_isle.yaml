@@ -29,14 +29,14 @@
   secret:
     content: 첫 겨울, 굶어 죽어 가던 섬에서 처음 인육을 먹자고 한 사람이 자신이다. 지금은 먹을 것이 넘쳐도 겨울 잔치를 그만두지 않는다. 그 맛이 의회를 묶어 둔다고 믿는다
     reveal_when: 겨울 잔치에 함께 앉은 뒤, 둘만 있을 때
-    min_trust: 4
+    min_trust: 8
   stats: { strength: -1, agility: -1, vitality: 0, senses: 1, nerve: 2, charm: 2, intellect: 1 }
   skills: { persuade: 2, deceive: 2, tactics: 1, leadership: 1 }
   start_inventory: [radio, ledger]
   playable: false
   zone: yeoul_isle
   ties:
-    - { to: y_cheonsu, kind: spouse, secret: { reveal_when: 의회 사람들만 있을 때, min_trust: 3 } }
+    - { to: y_cheonsu, kind: spouse, secret: { reveal_when: 의회 사람들만 있을 때, min_trust: 6 } }
 
 - id: y_cheonsu
   name: 백천수
@@ -67,7 +67,7 @@
   secret:
     content: 쓸모 없다고 적은 사람들을 직접 저장고로 데려간다. 내보내는 배는 섬을 한 바퀴 돌아 저장고 뒤에 닿는다
     reveal_when: 겨울 잔치에 함께 앉은 뒤
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 0, agility: 0, vitality: 1, senses: 2, nerve: 2, charm: 0, intellect: 2 }
   skills: { sense_danger: 2, intimidate: 1, first_aid: 1, deceive: 1, insight: 2 }
   start_inventory: [ledger, kitchen_knife]
@@ -101,7 +101,7 @@
   secret:
     content: 내보낸다던 사람들이 섬을 떠나지 않았다는 것을 장부로 안다. 의회 저장고에서 무엇을 하는지 짐작한다. 딸을 데리고 도망칠 밤배를 몰래 준비한다
     reveal_when: 둘만 있고 딸 이야기가 나왔을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 0, intellect: 2 }
   skills: { scavenge: 1, survival: 1, history: 1, deceive: 1 }
   start_inventory: [ledger, water_bottle]
@@ -168,7 +168,7 @@
   secret:
     content: 밤에 떠나는 "내보내는 배"를 자기가 직접 띄운다. 배가 어디에 닿는지는 모르고, 묻지 않기로 했다
     reveal_when: 내보내진 사람 이야기가 나오고, 상대가 의회에 일러바치지 않을 사람이라고 믿을 때
-    min_trust: 2
+    min_trust: 4
   stats: { strength: 2, agility: 0, vitality: 1, senses: 1, nerve: 1, charm: -1, intellect: 0 }
   skills: { shoot: 2, fight: 1, intimidate: 1, sense_danger: 1, maintenance: 2, tactics: 1, swim: 1 }
   start_inventory: [old_rifle]
@@ -236,7 +236,7 @@
   secret:
     content: 잔치 고기 국에서 사람 손가락 마디를 건진 적이 있다. 그 뒤로 국을 먹지 않는다. 의회 저장고 뒤쪽 바위길을 안다
     reveal_when: 밤에 부두에서 둘만 있을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: -1, vitality: 1, senses: 2, nerve: 1, charm: 1, intellect: 0 }
   skills: { first_aid: 1, sense_danger: 1, fishing: 2, swim: 1 }
   start_inventory: [kitchen_knife, medkit]

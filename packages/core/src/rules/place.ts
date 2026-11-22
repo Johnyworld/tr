@@ -17,7 +17,7 @@ import { ownedBy } from "./home.ts";
 import { heldOf, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
 
-export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean };
+export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean; description?: string };
 
 /**
  * 구역에 막 들어선 자리(장소를 정하지 않은 자리)로 돌아가는 place_to 값.
@@ -28,7 +28,7 @@ export const ENTRY_PLACE = "entry";
 /** 이 구역의 장소들 (콘텐츠 + 즉흥) */
 export function placesIn(state: GameState, content: Content, zone: string | null | undefined): Place[] {
   if (!zone) return [];
-  const fixed = (content.locations[zone]?.places ?? []).map((p) => ({ id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, jail: p.jail }));
+  const fixed = (content.locations[zone]?.places ?? []).map((p) => ({ id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, jail: p.jail, description: p.description }));
   const spawned = Object.entries(state.spawnedPlaces ?? {})
     .filter(([, p]) => p.zone === zone)
     .map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[] }));
@@ -61,6 +61,23 @@ export function placeIndoor(state: GameState, content: Content): boolean | null 
 export function storyPlaceFits(state: GameState, content: Content, indoor: boolean): boolean {
   const here = placeIndoor(state, content);
   return here === null || here === indoor;
+}
+
+/**
+ * 이야기의 장소가 지금 자리에 맞는가 (12-251, 플레이 테스트 14: 경비실에서 "우물가", 격리실에서 약제실·부엌 장면).
+ * places를 적었으면 그 장소, 아니면 이야기 글에 나오는 지금 구역의 장소 이름·aliases. 글이 장소를 말하지 않거나
+ * 장소를 정하지 않은 자리(막 들어선 자리)·즉흥 장소에 있으면 거르지 않는다 (이야기가 그 자리로 데려간다)
+ */
+export function storyPlacesFit(state: GameState, content: Content, places: readonly string[] | undefined, text: string): boolean {
+  const here = currentPlace(state, content);
+  if (!here || here.spawned) return true;
+  const named = storyPlaces(state, content, places, text);
+  return !named.length || named.includes(here.id);
+}
+
+/** 이야기가 말하는 지금 구역의 장소 (places를 적었으면 그것, 아니면 글에 나오는 장소 이름·aliases) */
+export function storyPlaces(state: GameState, content: Content, places: readonly string[] | undefined, text: string): string[] {
+  return places ? [...places] : placesIn(state, content, state.playerZone).filter((p) => !p.spawned && [p.name, ...p.aliases].some((a) => text.includes(a))).map((p) => p.id);
 }
 
 /** 지금 있는 곳의 이름 (장소, 없으면 구역) */

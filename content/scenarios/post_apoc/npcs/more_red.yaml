@@ -36,7 +36,7 @@
   secret:
     content: 지난봄 탈영하려던 사람은 조카였다. 조카 대신 그날 보초였던 구만석의 이름을 본보기 명단에 적었고, 직접 쳤다. 조카는 그 뒤 공세 연습에서 죽었다
     reveal_when: 광장에서 몽둥이를 든 뒤 둘만 남은 밤, 주인공이 본보기를 대신 맞아 주었거나 그 이름을 입에 올렸을 때
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 2, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 0 }
   skills: { fight: 2, intimidate: 2, sense_danger: 1 }
   start_inventory: [crowbar, c_armband, cigarettes]
@@ -90,7 +90,7 @@
   secret:
     content: 정찰병 고석진과 몰래 만난다. 겨울 전에 함께 빠져나가기로 했고, 수용소 교대 시간을 그에게 알려 주었다
     reveal_when: 감시탑 아래에서 저녁에 마주쳤을 때, 또는 고석진이 붙잡혔다는 말을 들었을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 0, agility: 1, vitality: 0, senses: 2, nerve: 0, charm: 0, intellect: 1 }
   skills: { sense_danger: 1, stealth: 1, shoot: 1 }
   start_inventory: [c_armband, old_rifle, water_bottle]
@@ -98,7 +98,7 @@
   zone: c_warehouse
   ties:
     - { to: pc_junggi, kind: child }
-    - { to: c_seokjin, kind: friend, secret: { reveal_when: "감시탑 아래에서 저녁에 마주쳤을 때", min_trust: 3 } }
+    - { to: c_seokjin, kind: friend, secret: { reveal_when: "감시탑 아래에서 저녁에 마주쳤을 때", min_trust: 6 } }
 
 - id: pc_sundeok
   name: 옥금자
@@ -132,7 +132,7 @@
   secret:
     content: 반년 전 딸 은솔을 쓰레기 수레에 숨겨 배수로로 내보냈다. 지난달에는 같은 길로 부엌 아이 문하늘을 내보냈다. 규율반 명부에는 둘 다 실종으로 적혀 있다
     reveal_when: 주인공이 부엌 아이를 감싸 주는 것을 본 뒤, 저녁 부엌 뒷방에서
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 1, agility: -1, vitality: 2, senses: 0, nerve: 1, charm: 1, intellect: 0 }
   skills: { survival: 1, persuade: 1, deceive: 1, endure: 1 }
   start_inventory: [kitchen_knife, dry_ration, c_armband]
@@ -140,7 +140,7 @@
   zone: c_base
   # 붉은연합 부엌에서 빼낸 아이 (기획서 7.10)
   ties:
-    - { to: a_haneul, kind: friend, secret: { reveal_when: "문하늘이 붉은연합 부엌 이야기를 꺼냈을 때, 또는 옥금자이 주인공을 믿게 된 뒤", min_trust: 3 } }
+    - { to: a_haneul, kind: friend, secret: { reveal_when: "문하늘이 붉은연합 부엌 이야기를 꺼냈을 때, 또는 옥금자이 주인공을 믿게 된 뒤", min_trust: 6 } }
   agenda:
     - id: kitchen_kids
       label: 부엌 아이들을 하나씩 배수로 밖으로 내보낸다
@@ -193,7 +193,7 @@
   secret:
     content: 붕괴 전 가람초등학교 교사였다. 버들마을의 진은지와 같은 학교에서 일했다. 사자로 다녀온 다음 날 지하 교실 문 앞에 해열제를 두고 온 것은 위원회 몫이 아니라 자기 몫이었다
     reveal_when: 버들마을 이야기를 하다 아이들 얘기가 나왔을 때, 위원회 천막 밖에서 둘만 있을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 0, vitality: 0, senses: 0, nerve: 1, charm: 2, intellect: 2 }
   skills: { persuade: 2, history: 1, deceive: 1 }
   start_inventory: [c_armband, ledger, fever_reducer]
@@ -201,7 +201,7 @@
   zone: c_base
   # 무리를 가로지른 옛 동료 (기획서 7.10)
   ties:
-    - { to: b_eunji, kind: friend, secret: { reveal_when: "버들마을 지하 교실 이야기가 나왔을 때, 둘 중 하나가 해열제 이야기를 꺼내면", min_trust: 3 } }
+    - { to: b_eunji, kind: friend, secret: { reveal_when: "버들마을 지하 교실 이야기가 나왔을 때, 둘 중 하나가 해열제 이야기를 꺼내면", min_trust: 6 } }
 
 - id: pc_dooman
   name: 용두만
@@ -235,7 +235,7 @@
   secret:
     content: 수용소 안에서 들은 말을 마경수에게 옮긴다. 붉은 완장을 약속받았다. 밤나무골 사람 둘이 그의 말 한마디로 광장에 섰다
     reveal_when: 저녁에 마경수 천막 앞에서 마주쳤을 때, 또는 목숨이 걸렸을 때
-    min_trust: 2
+    min_trust: 4
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: -1, charm: 1, intellect: 1 }
   skills: { deceive: 2, endure: 1, carpentry: 1 }
   start_inventory: [crowbar, cigarettes]
@@ -274,7 +274,7 @@
   secret:
     content: 공세 날 벌조를 이끌고 청솔형제단 동쪽 초소에 손을 들고 넘어갈 생각이다. 벌조원 몇에게만 귀띔했다
     reveal_when: 벌조원 하나를 함께 살려 낸 뒤, 거점 담 그늘에서 저녁에
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: 1, charm: 0, intellect: 1 }
   skills: { tactics: 2, shoot: 1, first_aid: 1, sense_danger: 1 }
   start_inventory: [old_rifle, c_armband, binoculars]

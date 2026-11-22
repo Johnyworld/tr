@@ -1106,6 +1106,21 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
         store.append({ type: "cargo_set", missionId: m.id, items: cargo });
         if (collects.length) lines.push(`값을 받았다: ${collects.map(([id, q]) => `${content.items[id]?.name ?? id} ×${q}`).join(", ")} (상관에게 넘길 것이다. 보고 때 모자라면 일부 완수까지).`);
       });
+      // 걷기 (12-251, 플레이 테스트 14 짐꾼: 빚을 받아 숨기고 "못 받았다"고 해도 완수였다): 넘길 짐 없이 받아 오는 일감은
+      // 임무 판정이 이 행동으로 채워지면 상대가 값을 건넨다. 보고 때 건네야 완수, 지니지 않았으면(숨기거나 쓰면) 일부 완수까지
+      const collects = Object.entries(content.missions[m.templateId]?.collects ?? {});
+      const before = start.missions[m.id];
+      const now = store.getState().missions[m.id]!;
+      const justMet = m.requirements.some((r, i) => "check" in r && (before?.progress[i] ?? 0) < 1 && (now.progress[i] ?? 0) >= 1);
+      if (collects.length && !m.requirements.some((r) => "deliver" in r) && justMet) {
+        const cargo = { ...cargoOf(store.getState(), m.id) };
+        for (const [id, q] of collects) {
+          store.append({ type: "item_granted", to: start.playerId, itemId: id, quantity: q });
+          cargo[id] = (cargo[id] ?? 0) + q;
+        }
+        store.append({ type: "cargo_set", missionId: m.id, items: cargo });
+        lines.push(`받아 냈다: ${collects.map(([id, q]) => `${content.items[id]?.name ?? id} ×${q}`).join(", ")} (보고 때 상관에게 건네야 완수다. 건네지 않고 가지면 일부 완수에 그친다).`);
+      }
     }
   }
   // 물일 임무 (E3): 임무 자리에서 그 일을 하면 옷이 젖는다. 방수복을 입으면 젖지 않는다
@@ -1137,10 +1152,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     lines.push(...calm.lines);
     displays.push(...calm.displays);
     const rested = time.interrupted ? null : sleepNerves(ctx, store.getState().time - start.time);
-    if (rested?.display) {
-      lines.push(rested.line);
-      displays.push(rested.display);
-    }
+    if (rested) lines.push(rested.line);
+    if (rested?.display) displays.push(rested.display);
   }
   // 감염체가 몰려든 구역에서 오래 머물면 마주칠 수 있다: 들어설 때와 같은 확률로 한 번 (플레이 테스트 13: 몰려든 강변에서 4시간 보초·8시간 야영에 아무 일도 없었다)
   if (!input.move_to && !!input.activity && LONG_IN_THREAT.includes(input.activity.kind) && !store.getState().activeStorylet && !store.getState().battle && store.getState().playerZone && !playerHeld(store.getState())) {
@@ -1306,16 +1319,30 @@ function lastCheckId(ctx: ToolContext): string {
   return checks[checks.length - 1]!.checkId;
 }
 
-/** 점호를 자면서 넘겼는가 (G2, 무리 문화 roll_call). 넘겼으면 상관에게 알려지는 작은 불복종 행적 */
-function missedRollCall(ctx: ToolContext, from: number, to: number) {
+/** 지금 자리에서 지켜야 하는 점호 시간대 (무리 문화 roll_call, 우리 거점에서 갇히지 않았을 때만) */
+function rollCallSegments(ctx: ToolContext): TimeSegment[] {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   const segments = me?.factionId ? ctx.content.factions[me.factionId]?.culture?.roll_call : undefined;
-  if (!me || !segments?.length || heldOf(me) || !ownedBy(state, state.playerZone ?? "", me.factionId)) return;
-  // 점호 시각에 딱 깨면 나간 것으로 친다 (플레이 테스트 12: 04:00에 깼는데 놓친 것으로 셌다)
-  const missed = segments.filter((seg) => nextSegmentStart(from, seg) < to);
+  if (!me || !segments?.length || heldOf(me) || !ownedBy(state, state.playerZone ?? "", me.factionId)) return [];
+  return segments;
+}
+
+/** from 뒤 처음 오는 점호 시각 (없으면 null). 자는 주인공을 동료가 이때 깨운다 (12-251) */
+function rollCallAt(ctx: ToolContext, from: number): number | null {
+  const calls = rollCallSegments(ctx).map((seg) => nextSegmentStart(from, seg));
+  return calls.length ? Math.min(...calls) : null;
+}
+
+/** 점호를 자면서 넘겼는가 (G2, 무리 문화 roll_call). 넘겼으면 상관에게 알려지는 작은 불복종 행적 */
+function missedRollCall(ctx: ToolContext, from: number, to: number) {
+  const segments = rollCallSegments(ctx);
+  if (!segments.length || to <= from) return;
+  // 점호 시각에 딱 깨면 나간 것으로 친다 (플레이 테스트 12: 04:00에 깼는데 놓친 것으로 셌다).
+  // 점호에 깨워졌는데 그 자리에서 다시 자면 빠진 것이다 (12-251)
+  const missed = segments.filter((seg) => nextSegmentStart(from, seg) < to || nextSegmentStart(from - 1, seg) === from);
   if (!missed.length) return;
-  const commander = commanderIdOf(state, ctx.content);
+  const commander = commanderIdOf(ctx.store.getState(), ctx.content);
   recordDeed(
     ctx,
     { summary: `${missed.map((m) => SEGMENT_LABELS[m]).join("·")} 점호에 자느라 나오지 않았다`, tags: ["disobedience"], severity: 1, privacy: "public", noisy: false },
@@ -1527,7 +1554,13 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     // 피곤하지 않은 잠의 상한은 이어진 잠 전체로 센다 (깬 지 얼마 안 돼 다시 잤으면 앞의 잠부터)
     const chainFrom = activity === "sleep" ? sleepChainStart(state, from) : from;
     sleepFrom = chainFrom;
-    const target = Math.min(wanted, Math.max(from + 30, chainFrom + cap));
+    let target = Math.min(wanted, Math.max(from + 30, chainFrom + cap));
+    // 점호가 있는 무리의 거점에서 자면 점호 시각에 동료가 깨운다 (12-251, 플레이 테스트 14: "아침까지"가 새벽 점호를 넘겨 불복종이 쌓였다)
+    const call = activity === "sleep" ? rollCallAt(ctx, from) : null;
+    if (call !== null && call < target) {
+      target = call;
+      sleepNote = `점호 시각이라 동료가 깨웠다. 더 자면 점호에 빠진 것으로 친다.`;
+    }
     plannedEnd = target;
     capped = wanted > target;
     restedCap = capped && activity === "sleep" && rested;
@@ -1566,7 +1599,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       const nightFrom = sleepChainStart(state, from);
       const healed = healFromSleep(ctx, nightFrom, to);
       extra.push(...healed);
-      if (!healed.length) sleepNote = sleepHealBlocker(ctx, nightFrom, to);
+      if (!healed.length) sleepNote = [sleepNote, sleepHealBlocker(ctx, nightFrom, to)].filter(Boolean).join("\n") || null;
     }
     // 점호 (G2): 무리의 점호 시각을 자면서 넘기면 작은 불복종 행적이 남는다 (한 번 잠에 한 번)
     if (activity === "sleep") missedRollCall(ctx, from, to);

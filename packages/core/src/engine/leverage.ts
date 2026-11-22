@@ -75,7 +75,7 @@ export function bribePrice(content: Content, state: GameState, npcId: string): n
   const greed = values[rules.greed] ?? 0;
   const base = rules.prices[c.rank] ?? rules.prices.default ?? 5;
   const trust = (state.relations[npcId]?.[state.playerId] ?? NEUTRAL_RELATION).trust;
-  return Math.max(1, Math.round(base * Math.max(0.2, 1 - rules.greed_step * greed) * (trust >= 2 ? rules.trusted : 1)));
+  return Math.max(1, Math.round(base * Math.max(0.2, 1 - rules.greed_step * greed) * (trust >= 4 ? rules.trusted : 1)));
 }
 
 const bribeTool = defineTool({

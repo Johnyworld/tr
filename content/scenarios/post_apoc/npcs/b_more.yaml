@@ -34,7 +34,7 @@
   secret:
     content: 지난주 밤, 대표의 명령으로 붉은연합의 사자를 북쪽 쪽문으로 몰래 들여보낸 사람이 자기다. 무슨 이야기가 오갔는지는 듣지 못했다
     reveal_when: 단지 식구를 지키려는 마음을 함께 확인한 사람에게, 경비실에서 둘만 있을 때
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 1, agility: 0, vitality: 1, senses: 2, nerve: 1, charm: 0, intellect: -1 }
   skills: { sense_danger: 2, shoot: 1, fight: 1, intimidate: 1, carpentry: 1, maintenance: 1, tactics: 1 }
   start_inventory: [radio, old_rifle]
@@ -77,7 +77,7 @@
   secret:
     content: 지금처럼 퍼 쓰면 아랫단 우물은 한겨울 전에 마른다고 셈해 두었다. 대표에게만 말했고, 대표는 아무에게도 말하지 말라고 했다
     reveal_when: 우물 일을 함께 거들며 믿음을 쌓은 사람이 물이 왜 줄었는지 물을 때
-    min_trust: 2
+    min_trust: 4
   stats: { strength: -1, agility: -1, vitality: 2, senses: 1, nerve: 1, charm: 0, intellect: 1 }
   skills: { survival: 2, carpentry: 1, first_aid: 0 }
   start_inventory: [water_bottle, ledger]
@@ -118,7 +118,7 @@
   secret:
     content: 붉은연합의 사자에게서 통조림과 담배를 받고, 쪽문 경비 교대 시간을 알려 주었다. 다른 경비병 몇에게도 같은 것을 돌리고 있다
     reveal_when: 어머니와 여동생을 지켜 주겠다는 약속을 믿을 수 있을 때
-    min_trust: 3
+    min_trust: 6
   stats: { strength: 1, agility: 2, vitality: 0, senses: 0, nerve: -1, charm: 1, intellect: 0 }
   skills: { fight: 1, shoot: 1, stealth: 1 }
   start_inventory: [canned_food, cigarettes, kitchen_knife]
@@ -156,7 +156,7 @@
   secret:
     content: 붉은연합의 사자가 다녀간 다음 날, 지하 교실 문 앞에 아이들 몫이라며 해열제 한 통이 놓여 있었다. 누가 두고 갔는지 알면서 받았다
     reveal_when: 아이들을 위해 위험을 무릅쓴 적 있는 사람에게
-    min_trust: 3
+    min_trust: 6
   stats: { strength: -1, agility: 0, vitality: -1, senses: 1, nerve: 1, charm: 2, intellect: 2 }
   skills: { persuade: 1, first_aid: 1, history: 1, leadership: 1 }
   start_inventory: [fever_reducer, ledger]
@@ -194,7 +194,7 @@
   secret:
     content: 대표 장현우의 동태를 청솔형제단 간부에게 몰래 알리고 있다. 대표가 연합을 깨면 청솔형제단이 먼저 손을 쓰게 하려는 것이다
     reveal_when: 연합을 지키는 일에 함께하겠다고 행동으로 보인 사람에게
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: 0, intellect: 2 }
   skills: { tactics: 1, persuade: 1, history: 1, shoot: 1 }
   start_inventory: [radio, ledger]

@@ -178,10 +178,10 @@ export function createContentSchemas(s: Scenario) {
     start_bonds: z
       .strictObject({
         ids: z.array(contentIdSchema).min(1),
-        trust: z.tuple([z.number().int(), z.number().int()]).default([1, 2]),
-        affection: z.tuple([z.number().int(), z.number().int()]).default([1, 2]),
-        respect: z.tuple([z.number().int(), z.number().int()]).default([0, 1]),
-        /** 이 중 한 사람(가장 가까운 친구)은 축마다 하나씩 더 */
+        trust: z.tuple([z.number().int(), z.number().int()]).default([2, 4]),
+        affection: z.tuple([z.number().int(), z.number().int()]).default([2, 4]),
+        respect: z.tuple([z.number().int(), z.number().int()]).default([0, 2]),
+        /** 이 중 한 사람(가장 가까운 친구)은 축마다 둘씩 더 (12-251: 관계 ±10) */
         best: contentIdSchema.optional(),
       })
       .optional(),
@@ -191,7 +191,7 @@ export function createContentSchemas(s: Scenario) {
         zone: contentIdSchema,
         count: z.tuple([z.number().int().min(1), z.number().int().min(1)]).default([2, 3]),
         /** 가족과 주인공이 서로를 보는 관계 (축마다, 관계의 범위 안) */
-        bond: z.strictObject({ trust: z.number().int(), affection: z.number().int(), respect: z.number().int() }).default({ trust: 5, affection: 5, respect: 4 }),
+        bond: z.strictObject({ trust: z.number().int(), affection: z.number().int(), respect: z.number().int() }).default({ trust: 10, affection: 10, respect: 8 }),
       })
       .optional(),
     /** 정해진 능력 (특별한 역할·테스트용). 없으면 시나리오의 ability_array를 무작위로 섞는다 — 능력은 계급과 무관하다 */
@@ -288,7 +288,7 @@ export function createContentSchemas(s: Scenario) {
         z.strictObject({
           to: contentIdSchema,
           kind: z.enum(TIE_KINDS),
-          secret: z.strictObject({ reveal_when: z.string().min(1), min_trust: z.number().int().min(1).max(5) }).optional(),
+          secret: z.strictObject({ reveal_when: z.string().min(1), min_trust: z.number().int().min(1).max(10) }).optional(),
         }),
       )
       .optional(),
@@ -299,7 +299,7 @@ export function createContentSchemas(s: Scenario) {
         /** 공개 상황 (GM이 판단하는 서술 조건) */
         reveal_when: z.string().min(1),
         /** 공개에 필요한 이 인물의 플레이어에 대한 신뢰 (코드가 검사) */
-        min_trust: z.number().int().min(1).max(5),
+        min_trust: z.number().int().min(1).max(10),
       })
       .optional(),
     stats: createStatsSchema(s),
@@ -582,6 +582,8 @@ export function createContentSchemas(s: Scenario) {
           name: z.string().min(1),
           indoor: z.boolean(),
           aliases: z.array(z.string().min(1)).default([]),
+          /** 묘사 한 줄 (12-251, 플레이 테스트 14: 섬 장소에 GM이 그릴 재료가 없었다). 월드 팩에서는 content:check가 빠짐을 잡는다 */
+          description: z.string().min(1).optional(),
           /** 붙잡은 사람을 가두는 곳 (PT14: 붙잡히면 그 무리의 가두는 장소가 있는 구역, 그 장소에 갇힌다) */
           jail: z.boolean().default(false),
         }),
@@ -597,6 +599,8 @@ export function createContentSchemas(s: Scenario) {
       .strictObject({
         from: z.array(contentIdSchema).min(1),
         pass_flags: z.array(contentIdSchema).default([]),
+        /** 이 길을 들어서 안다 (12-251): 이 플래그 중 하나가 있으면 상태·?지도에 건너는 길로 보인다. 비면 보이지 않는다 (스스로는 모른다) */
+        heard_flags: z.array(contentIdSchema).default([]),
         attempt: z.strictObject({ moves: z.array(z.string()).min(1), label: z.string().min(1) }),
       })
       .optional(),
@@ -606,6 +610,8 @@ export function createContentSchemas(s: Scenario) {
     yields: resourceAmounts.default({}),
     /** 거점처럼 물 보급을 받는 곳 (플레이 테스트 11, E5: 취사 천막까지 있는 물류창고에 물이 없었다). 주인이 우리 무리일 때만 */
     water_supply: z.boolean().optional(),
+    /** 끓이지 않은 물을 뜰 곳 (12-251, 플레이 테스트 14: 무소속이 물을 찾을 길이 없었다): 개천·빗물 고인 곳 같은 이름. 무리의 물 산출은 없고, 누구나 떠 마신다 (끓이지 않은 물) */
+    stream: z.string().min(1).optional(),
     /** 수색하면 나올 수 있는 것 (기획서 4.7). modifier: 수색 판정 보정 (털린 곳 -1, 넉넉한 곳 +1, 12-220), items: 무게로 고른다 */
     loot: z
       .strictObject({
@@ -798,9 +804,11 @@ export function createContentSchemas(s: Scenario) {
     trust_gte: z.number().int().optional(),
     /** 어른만 (월드의 성인 나이 이상. 부모·보호자 자리에 아이가 들지 않게) */
     adult: z.boolean().optional(),
+    /** 이 나이 이하만 (12-251, 플레이 테스트 14: 49세 고참이 신병 이야기의 신병이 됐다) */
+    age_lte: z.number().int().min(1).optional(),
     /** 주인공에게 협박당해 되갚을 마음을 품은 사람만 (12-153) */
     blackmailed: z.boolean().optional(),
-    /** 같은 무리의 이름 있는 사람 가운데 이 사람을 믿지 않는(신뢰 -2 이하) 사람이 이만큼 이상 (12-152: 재판·불신임) */
+    /** 같은 무리의 이름 있는 사람 가운데 이 사람을 믿지 않는(신뢰 -4 이하) 사람이 이만큼 이상 (12-152: 재판·불신임) */
     distrusted_gte: z.number().int().min(1).optional(),
     /** 주인공에게 복수를 다짐한 사람만 (12-135: 주인공이 죽인 사람의 가족·친구) */
     vendetta: z.boolean().optional(),
@@ -910,6 +918,8 @@ export function createContentSchemas(s: Scenario) {
     urgent: z.boolean().default(false),
     /** 꼭 열려야 하는 이야기 (플레이 테스트 12: 튜토리얼 엔딩이 하루 상한에 막혔다). 하루 상한·위협 상한에 막히지 않는다 */
     essential: z.boolean().default(false),
+    /** 자는 주인공을 깨워 열 수 있는가 (12-251, 플레이 테스트 14: 튜토리얼 안내가 자정에 잠을 깨웠다). false면 깨어 있을 때만 */
+    wakes: z.boolean().default(true),
     /** 누워 있는 동안의 이야기 (플레이 테스트 11, D4): 몸이 위급해 급한 이야기만 열릴 때도 열린다 (문병, 간호, 침상의 소식) */
     bedside: z.boolean().optional(),
     /** 적의 매복 (12-177): 열리면 주인공은 매복당한 것이다 (다음 판정 하나가 불리하다, 실패하면 혼란) */
@@ -942,6 +952,13 @@ export function createContentSchemas(s: Scenario) {
         activities_none: z.array(z.enum(ACTIVITIES)).min(1).optional(),
         /** 지붕 아래(true)·바깥(false)에서만 (12-244, 공통 규칙 15). 장소가 없으면 구역의 cover로 */
         indoor: z.boolean().optional(),
+        /**
+         * 이 장소에서만 (12-251, 공통 규칙 15). 구역 장소의 id. 적지 않으면 이야기 글(setup·variants)에 나오는 지금 구역의 장소 이름·aliases로 정한다.
+         * 장소를 정하지 않은 자리(막 들어선 자리)에서는 거르지 않는다
+         */
+        places: z.array(contentIdSchema).min(1).optional(),
+        /** 이 이야기가 열린 지 이만큼 지난 뒤에만 (12-251, 플레이 테스트 14: "하룻밤 담 밖에서" 2시간 뒤 다시 정문 이야기) */
+        after_storylet: z.strictObject({ id: contentIdSchema, hours: z.number().positive() }).optional(),
         /** 곁의 동행 수 (플레이 테스트 11: 동행이 있는데 "혼자 걷기엔 험해") */
         companions_lte: z.number().int().min(0).optional(),
         companions_gte: z.number().int().min(1).optional(),
@@ -973,9 +990,9 @@ export function createContentSchemas(s: Scenario) {
         road_danger_lte: z.number().int().min(0).max(3).optional(),
         /** 야영의 이야기 (12-148, 태그 camp): 지켜보는 밤(깨어 있거나 보초를 설 동행이 있다)일 때만 (true) / 아무도 지키지 않고 잠든 밤일 때만 (false) */
         camp_watched: z.boolean().optional(),
-        /** 무리 안의 신망 (12-152): 같은 무리의 이름 있는 사람 가운데 주인공을 믿지 않는(신뢰 -2 이하) 사람이 이만큼 이상 */
+        /** 무리 안의 신망 (12-152): 같은 무리의 이름 있는 사람 가운데 주인공을 믿지 않는(신뢰 -4 이하) 사람이 이만큼 이상 */
         own_distrust_gte: z.number().int().min(1).optional(),
-        /** 주인공을 믿는(신뢰 +2 이상) 같은 무리 사람이 이만큼 이상 */
+        /** 주인공을 믿는(신뢰 +4 이상) 같은 무리 사람이 이만큼 이상 */
         own_trust_gte: z.number().int().min(1).optional(),
         /** 지금 구역의 위험(위험과 감염체 압력 중 높은 쪽)이 이 이상 / 이하 (야영의 이야기) */
         camp_danger_gte: z.number().int().min(0).max(3).optional(),
@@ -1128,7 +1145,7 @@ export function createContentSchemas(s: Scenario) {
           .min(1),
         rules: z.array(z.string().min(1)).default([]),
         reputations: z.array(z.string().min(1)).min(1),
-        secrets: z.array(z.strictObject({ content: z.string().min(1), reveal_when: z.string().min(1), min_trust: z.number().int().min(1).max(5) })).default([]),
+        secrets: z.array(z.strictObject({ content: z.string().min(1), reveal_when: z.string().min(1), min_trust: z.number().int().min(1).max(10) })).default([]),
       })
       .optional(),
     /** 자랄 때 이 확률로 이름 있는 인물과 이어진다 (kinds 중 하나, 상대는 나이가 맞는 사람) */

@@ -34,6 +34,8 @@
   briefing: 장부에 기한이 지난 외상이 쌓였다. 찾아가서 받을 것을 받아 오고, 못 받으면 언제 받을지 날짜라도 받아 온다. 사람들 앞에서 망신 주지는 마라. 손님은 또 와야 한다.
   giver_rank: officer
   deadline_hours: 12
+  # 받아 낸 외상은 물건으로 손에 들어온다. 보고 때 건네야 완수 (12-251)
+  collects: { canned_food: 1 }
   requirements:
     - activity: talk
       minutes: 30

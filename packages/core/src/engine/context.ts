@@ -538,7 +538,7 @@ function describePlaces(state: GameState, content: Content): string {
   const known = new Set([...(state.known[state.playerId] ?? []), ...(state.met[state.playerId] ?? [])]);
   const line = (p: (typeof places)[number]) => {
     const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id));
-    return `- ${p.id} ${p.name} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""})${p.id === here?.id ? " ← 지금 여기" : ""}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
+    return `- ${p.id} ${p.name} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : ""}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
   };
   return [
     `지금 있는 곳: ${here ? `${here.name} (${here.indoor ? "실내" : "바깥"})` : "구역에 막 들어선 자리 (장소를 정하지 않았다)"}. 같은 구역 안의 다른 장소로는 take_action place_to (5분). 목록에 없는 곳은 spawn_place로 만든다`,
@@ -639,7 +639,7 @@ function describeWater(state: GameState, content: Content): string {
     return `물: 우리 거점이다. 서술에서 "물 보급을 받아야 할 것 같다"고 한 번 언급한다${empties.length ? ` (${empties.join("·")}이 비어 있다)` : ""}. 플레이어가 보급을 받겠다고 하면 take_action.refill (마시기까지 한다. 마시기만 하면 drink). 창고 사정에 따라 보급 담당이 조금만 주거나 거절할 수 있다 (시스템이 정한다)`;
   }
   const dirty = rules.dirty ? (fireHere(state) ? " 불이 피어 있어 끓여 마실 수 있다." : " 끓이지 않은 물이다 (불을 피우면 끓여 마신다. 그냥 마시면 탈이 날 수 있다는 것을 서술에 비춘다)") : "";
-  return `물: 이곳에는 물이 충분하다.${dirty}${empties.length ? ` 서술에서 "빈 물병을 가지고 있으니 물을 채우면 될 것 같다"고 한 번 언급한다.` : " 물이 흐르는 모습을 장면에 묘사한다."} 플레이어가 마시겠다고 하면 take_action.drink, 채우겠다고 하면 refill. 저절로 마시거나 채우지 않는다`;
+  return `물: ${source.where ? `${source.where}에서 물을 뜰 수 있다.` : "이곳에는 물이 충분하다."}${dirty}${empties.length ? ` 서술에서 "빈 물병을 가지고 있으니 물을 채우면 될 것 같다"고 한 번 언급한다.` : " 물이 흐르는 모습을 장면에 묘사한다."} 플레이어가 마시겠다고 하면 take_action.drink, 채우겠다고 하면 refill. 저절로 마시거나 채우지 않는다`;
 }
 
 /** 이 구역에 놓아 둔 덫 (12-131). 걸렸는지는 거둬 봐야 안다 */

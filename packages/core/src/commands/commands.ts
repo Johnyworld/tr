@@ -82,7 +82,7 @@ function clockLine(state: GameState) {
   return `${dayOf(state.time)}일차 · ${hhmm} · ${SEGMENT_LABELS[segmentOf(state.time)]} · ${free ? "" : "복무 "}${days}일째`;
 }
 
-/** 관계 축 하나를 게이지로 (-5 ~ +5를 0 ~ 10으로) */
+/** 관계 축 하나를 게이지로 (-10 ~ +10을 0 ~ 20으로) */
 function relationGauge(value: number) {
   return gauge(value - RELATION_MIN, RELATION_MAX - RELATION_MIN);
 }
@@ -210,6 +210,7 @@ const map: CommandDef = {
       "",
       "맞닿은 구역 (이동 30분~1시간)",
       ...z.adjacent.map((a) => `  ${a.name} · ${a.owner}`),
+      ...(z.crossings.length ? ["", "건너는 길 (배, 들어서 안다)", ...z.crossings.map((c) => `  ${c.name} · ${c.owner}`)] : []),
       "",
       // 가 본 곳 (12-201). 채팅에서는 글자 그림 대신 목록 (12-239, 플레이 테스트 13: 글자 그림이 읽히지 않았다). 그림 지도는 상태 화면의 지도 탭
       "가 본 곳 (주인은 본 대로 · 맞닿은 곳)",

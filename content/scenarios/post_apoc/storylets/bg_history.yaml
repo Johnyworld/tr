@@ -691,7 +691,7 @@
     day_gte: 7
     segments: [night]
   cast:
-    friend: { known: true, faction: own, trust_gte: 1, optional: true }
+    friend: { known: true, faction: own, trust_gte: 2, optional: true }
   setup: "잠이 오지 않는다. 손가락으로 날을 꼽아 보니 그 일이 있던 무렵이다. 그날도 이렇게 밤이 길었다."
   ai_direction: 잃은 사람들을 떠올리는 밤이다. 무엇을 잃었는지는 주인공의 기억(지난 일)에 있다. 감상적으로 늘어놓지 말고 몸의 감각 몇 개로. 곁에 아는 사람이 있으면 말을 꺼낼 수 있다 (그 사람도 잃은 사람이 있을 수 있다, 프로필에서).
   choices:

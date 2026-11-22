@@ -180,7 +180,7 @@
     own_territory: true
     segments: [evening, night]
   cast:
-    boss: { commander: true, ids: [a_taeho], trust_gte: 1 }
+    boss: { commander: true, ids: [a_taeho], trust_gte: 2 }
   setup: "{boss:이/가} 사람 없는 구석으로 부른다. \"물류창고 이야기, 어디서 들었나. 확실한가.\""
   ai_direction: 강태호는 실종된 정찰조를 두고 후퇴한 일을 지금도 짊어지고 있다. 구출을 원하지만 대표의 허락 없이는 움직일 수 없다.
   choices:

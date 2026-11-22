@@ -19,7 +19,7 @@ describe("시작할 때 원래 알던 사이", () => {
     expect(family.length).toBeGreaterThan(0);
     for (const id of family) {
       expect(s.scene.present).not.toContain(id);
-      expect(s.perceived[id]).toEqual({ trust: 5, affection: 5, respect: 4 });
+      expect(s.perceived[id]).toEqual({ trust: 10, affection: 10, respect: 8 });
     }
   });
 });

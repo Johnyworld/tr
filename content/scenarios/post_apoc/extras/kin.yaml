@@ -24,7 +24,7 @@
     rules: [당신이 다치면 하던 일을 멈춘다]
     reputations: [당신과 함께 다니는 가족]
     secrets:
-      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }
 
 - id: kin_elder
@@ -51,7 +51,7 @@
     rules: [당신이 다치면 하던 일을 멈춘다]
     reputations: [당신과 함께 다니는 가족]
     secrets:
-      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }
 
 - id: kin_sibling
@@ -78,7 +78,7 @@
     rules: [당신이 다치면 하던 일을 멈춘다]
     reputations: [당신과 함께 다니는 가족]
     secrets:
-      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }
 
 - id: kin_partner
@@ -105,7 +105,7 @@
     rules: [당신이 다치면 하던 일을 멈춘다]
     reputations: [당신과 함께 다니는 가족]
     secrets:
-      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }
 
 # 떠돌이의 소규모 무리 (12-77): 피가 섞이지 않은 동료. 길 위에서 만나 같이 버텨 온 사람
@@ -132,5 +132,5 @@
     rules: [몫은 똑같이 나눈다]
     reputations: [당신과 함께 다니는 길동무]
     secrets:
-      - { content: 붕괴 전에 지은 죄가 있다. 그래서 담 안으로 들어가기를 꺼린다, reveal_when: 밤에 둘만 있을 때, min_trust: 3 }
+      - { content: 붕괴 전에 지은 죄가 있다. 그래서 담 안으로 들어가기를 꺼린다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }

@@ -37,7 +37,7 @@
   secret:
     content: 붕괴 첫 달 시립병원 응급실에서, 물린 환자들이 있는 병동 문을 밖에서 잠그고 나왔다. 안에는 아직 열이 오르지 않은 사람도 있었다
     reveal_when: 격리실 일로 함께 밤을 새운 수습에게, 그 수습이 같은 결정을 내려야 할 때
-    min_trust: 4
+    min_trust: 8
   stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: -1, intellect: 1 }
   skills: { first_aid: 2, infected_lore: 2, endure: 1, intimidate: 1, surgery: 1 }
   start_inventory: [medkit, fever_reducer]
@@ -81,7 +81,7 @@
   secret:
     content: 장날 전날 밤마다 약제실 뒷문으로 항생제와 진통제를 빼내 나루상단 사람에게 넘긴다. 받은 탄약과 통조림은 강변 공장 지대의 무너진 보일러실에 쌓아 두었다
     reveal_when: 빼돌리는 현장을 들켜 대표에게 알려질 처지가 되었을 때, 입막음 값을 흥정하려고
-    min_trust: 2
+    min_trust: 4
   stats: { strength: 0, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 2, intellect: 1 }
   skills: { persuade: 2, deceive: 2, first_aid: 0, history: 1, insight: 1 }
   start_inventory: [ledger, antibiotics, cigarettes]
@@ -123,7 +123,7 @@
   secret:
     content: 사흘 전 구시가에서 약을 찾다가 감염체의 손톱에 손목을 긁혔다. 격리실에 들어가기 싫어서 붕대로 가리고 아무에게도 말하지 않았다
     reveal_when: 붕대 아래를 보여 달라고 둘만 있을 때 다정하게 물으면
-    min_trust: 2
+    min_trust: 4
   stats: { strength: -1, agility: 2, vitality: 0, senses: 1, nerve: -1, charm: 1, intellect: 1 }
   skills: { first_aid: 1, persuade: 1, scavenge: 1 }
   start_inventory: [medkit, water_bottle]

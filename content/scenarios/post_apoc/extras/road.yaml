@@ -46,8 +46,8 @@
     rules: [길에서 먹을 것을 받으면 길 정보로 갚는다, 어느 무리에 속했었는지는 말하지 않는다]
     reputations: [이 길 저 길을 오가는 떠돌이, 길을 잘 아는 사람]
     secrets:
-      - { content: 어느 무리의 장부에 빚이 올라 있어 그 무리 땅을 피해 다닌다, reveal_when: 그 무리 땅 가까이 갈 때, min_trust: 2 }
-      - { content: 길에서 만난 사람의 짐을 들고 달아난 적이 있다, reveal_when: 밤에 불가에서, min_trust: 3 }
+      - { content: 어느 무리의 장부에 빚이 올라 있어 그 무리 땅을 피해 다닌다, reveal_when: 그 무리 땅 가까이 갈 때, min_trust: 4 }
+      - { content: 길에서 만난 사람의 짐을 들고 달아난 적이 있다, reveal_when: 밤에 불가에서, min_trust: 6 }
   ties: { chance: 0.2, kinds: [sibling, friend] }
   appears: { zones: [] }
 
@@ -74,6 +74,6 @@
     rules: [어디서 도망쳤는지는 믿기 전까지 말하지 않는다]
     reputations: [어디선가 도망쳐 온 사람, 쫓기는 사람]
     secrets:
-      - { content: 붙잡혀 일하던 곳에서 감독의 물건을 들고 나왔다, reveal_when: 숨겨 준 뒤 둘만 남았을 때, min_trust: 2 }
+      - { content: 붙잡혀 일하던 곳에서 감독의 물건을 들고 나왔다, reveal_when: 숨겨 준 뒤 둘만 남았을 때, min_trust: 4 }
   ties: { chance: 0.2, kinds: [sibling, child, spouse] }
   appears: { zones: [] }

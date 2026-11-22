@@ -33,8 +33,8 @@
     rules: [담벼락에 분필로 표시를 남긴다, 물을 마시기 전에 옆 사람에게 먼저 권한다]
     reputations: [동쪽 초소를 몇 번이고 지켜 낸 사람, 수색 때마다 남의 짐까지 지고 오는 사람, 첫 해부터 공업고에 있던 사람]
     secrets:
-      - { content: "수색 중에 다친 동료를 한 번 두고 왔다. 아무도 모른다고 믿는다", reveal_when: "둘만 있고 \"버리지 않는다\"는 말이 나왔을 때", min_trust: 3 }
-      - { content: "창고 뒷문이 잠기지 않는 것을 알면서 말하지 않았다. 배고픈 아이들이 드나들어서다", reveal_when: "창고 이야기가 나왔을 때", min_trust: 2 }
+      - { content: "수색 중에 다친 동료를 한 번 두고 왔다. 아무도 모른다고 믿는다", reveal_when: "둘만 있고 \"버리지 않는다\"는 말이 나왔을 때", min_trust: 6 }
+      - { content: "창고 뒷문이 잠기지 않는 것을 알면서 말하지 않았다. 배고픈 아이들이 드나들어서다", reveal_when: "창고 이야기가 나왔을 때", min_trust: 4 }
   ties: { chance: 0.3, kinds: [sibling, friend, rival] }
   appears: { zones: [a_base, a_east_post, south_fields, old_town, riverside, overpass] }
 
@@ -64,7 +64,7 @@
     rules: [남의 발에 밟힌 싹을 손으로 다시 세운다, 처음 보는 사람에게도 먹을 것을 쥐여 준다]
     reputations: [남쪽 텃밭을 처음 일군 사람, 씨앗을 가장 많이 모아 둔 사람]
     secrets:
-      - { content: "씨앗 봉투 몇 개를 창고 장부에 올리지 않고 따로 숨겨 두었다. 무리가 무너져도 다시 심으려고", reveal_when: "무리의 앞날이 어둡다는 말이 나왔을 때", min_trust: 3 }
+      - { content: "씨앗 봉투 몇 개를 창고 장부에 올리지 않고 따로 숨겨 두었다. 무리가 무너져도 다시 심으려고", reveal_when: "무리의 앞날이 어둡다는 말이 나왔을 때", min_trust: 6 }
   ties: { chance: 0.35, kinds: [parent, child, spouse, friend] }
   appears: { zones: [south_fields, a_base] }
 
@@ -94,7 +94,7 @@
     rules: [벽을 보면 손바닥으로 두드려 본다, 쓰다 남은 못을 주워 주머니에 넣는다]
     reputations: [남쪽 담을 열 번도 넘게 다시 쌓은 사람, 공업고 실습실 공구를 다 아는 사람]
     secrets:
-      - { content: "지난번 무너진 담은 자기가 판자를 아끼느라 대충 메운 곳이었다", reveal_when: "담이 무너진 이야기가 나왔을 때", min_trust: 3 }
+      - { content: "지난번 무너진 담은 자기가 판자를 아끼느라 대충 메운 곳이었다", reveal_when: "담이 무너진 이야기가 나왔을 때", min_trust: 6 }
   ties: { chance: 0.3, kinds: [sibling, friend, rival] }
   appears: { zones: [a_base, a_east_post, south_fields] }
 
@@ -127,7 +127,7 @@
     rules: [누구든 들어오기 전에 상처부터 확인한다, 총구를 사람 쪽으로 두지 않는다]
     reputations: [격리실 문을 지키는 사람, 붉은연합 간부도 돌려보낸 적 있다는 사람]
     secrets:
-      - { content: "아는 사람 하나가 물린 걸 알면서 격리실에 넣지 않고 하루 숨겨 준 적이 있다. 그 사람은 결국 변했다", reveal_when: "격리실 규칙을 두고 다툴 때", min_trust: 3 }
+      - { content: "아는 사람 하나가 물린 걸 알면서 격리실에 넣지 않고 하루 숨겨 준 적이 있다. 그 사람은 결국 변했다", reveal_when: "격리실 규칙을 두고 다툴 때", min_trust: 6 }
   ties: { chance: 0.25, kinds: [sibling, friend] }
   appears: { zones: [d_clinic, hospital_ruins] }
 
@@ -158,7 +158,7 @@
     rules: [다친 곳을 보면 손이 먼저 간다, 약 이야기를 할 때는 목소리를 낮춘다]
     reputations: [진료소에서 가장 오래 버틴 조무사, 값을 못 낸 아이를 몰래 돌본다는 소문이 있는 사람]
     secrets:
-      - { content: "장부에 적힌 것보다 붕대와 해열제를 조금씩 더 써서, 값을 못 내는 사람들에게 몰래 쓴다", reveal_when: "약값 이야기가 나왔을 때", min_trust: 3 }
+      - { content: "장부에 적힌 것보다 붕대와 해열제를 조금씩 더 써서, 값을 못 내는 사람들에게 몰래 쓴다", reveal_when: "약값 이야기가 나왔을 때", min_trust: 6 }
   ties: { chance: 0.3, kinds: [sibling, parent, friend] }
   appears: { zones: [d_clinic] }
 
@@ -191,7 +191,7 @@
     rules: [상자를 몸에서 떼지 않는다, 쉬는 동안에도 갈 길 쪽을 보고 앉는다]
     reputations: [진료소와 장터 사이를 가장 빨리 오가는 아이, 상자를 한 번도 잃지 않았다는 심부름꾼]
     secrets:
-      - { content: "상자 하나를 길에서 잃어버리고 빈 상자를 대신 갖다 놓은 적이 있다", reveal_when: "배달 이야기가 나왔을 때", min_trust: 2 }
+      - { content: "상자 하나를 길에서 잃어버리고 빈 상자를 대신 갖다 놓은 적이 있다", reveal_when: "배달 이야기가 나왔을 때", min_trust: 4 }
   ties: { chance: 0.3, kinds: [sibling, parent, friend] }
   appears: { zones: [d_clinic, old_town, e_market, hospital_ruins] }
 
@@ -222,7 +222,7 @@
     rules: [이웃 이름과 동 호수를 붙여 부른다, 들은 말을 한 번 더 옮긴다]
     reputations: [단지 소식을 가장 먼저 아는 사람, 우물 당번을 빼먹은 적 없는 사람]
     secrets:
-      - { content: "붉은연합 쪽 사람이 넘긴 쌀 한 자루를 받았다. 회유에 넘어간 건 아니라고 스스로 다짐한다", reveal_when: "붉은연합의 회유 이야기가 나왔을 때", min_trust: 3 }
+      - { content: "붉은연합 쪽 사람이 넘긴 쌀 한 자루를 받았다. 회유에 넘어간 건 아니라고 스스로 다짐한다", reveal_when: "붉은연합의 회유 이야기가 나왔을 때", min_trust: 6 }
   ties: { chance: 0.4, kinds: [parent, child, spouse, sibling, friend] }
   # 물 긷거나 채집하러 구시가·남쪽 밭에도 나온다 (12-240, A10: 구시가 통행세 대상을 피난민 틀로 들여 소속이 떠돌이로 나왔다)
   appears: { zones: [b_base, old_town, south_fields] }
@@ -253,7 +253,7 @@
     rules: [말하기 전에 주위를 한 바퀴 둘러본다, 본 것과 들은 것을 꼭 나눠서 말한다]
     reputations: [붉은연합 순찰 시각을 외우는 사람, 한 번도 들키지 않았다는 정찰대원]
     secrets:
-      - { content: "붉은연합 보초 하나와 담배를 나누며 서로 못 본 척하기로 했다", reveal_when: "둘만 있고 붉은연합 보초 이야기가 나왔을 때", min_trust: 3 }
+      - { content: "붉은연합 보초 하나와 담배를 나누며 서로 못 본 척하기로 했다", reveal_when: "둘만 있고 붉은연합 보초 이야기가 나왔을 때", min_trust: 6 }
   ties: { chance: 0.3, kinds: [sibling, friend, rival] }
   appears: { zones: [b_base, old_town, overpass, riverside] }
 
@@ -285,7 +285,7 @@
     rules: [짐마차에서 열 걸음 넘게 떨어지지 않는다, 공짜로는 아무것도 해 주지 않는다]
     reputations: [매복을 세 번 뚫었다는 호위대원, 값만 맞으면 어느 편 짐이든 지킨다는 사람]
     secrets:
-      - { content: "붉은연합 약탈조에게 짐마차가 지나는 시각을 판 적이 있다. 그날 자기 짐마차만 무사했다", reveal_when: "매복 이야기가 나왔을 때", min_trust: 3 }
+      - { content: "붉은연합 약탈조에게 짐마차가 지나는 시각을 판 적이 있다. 그날 자기 짐마차만 무사했다", reveal_when: "매복 이야기가 나왔을 때", min_trust: 6 }
   ties: { chance: 0.2, kinds: [sibling, friend, rival] }
   appears: { zones: [e_market, water_plant, rest_stop, riverside, old_town] }
 
@@ -315,7 +315,7 @@
     rules: [물병을 받으면 냄새부터 맡는다, 값을 깎으면 웃으면서 물을 덜 담는다]
     reputations: [정수장 펌프 소리만 듣고 고장을 안다는 사람, 물값을 가장 비싸게 부르는 장수]
     secrets:
-      - { content: "끓이지 않은 강물을 끓인 물이라고 팔 때가 있다", reveal_when: "배탈 난 사람 이야기가 나왔을 때", min_trust: 2 }
+      - { content: "끓이지 않은 강물을 끓인 물이라고 팔 때가 있다", reveal_when: "배탈 난 사람 이야기가 나왔을 때", min_trust: 4 }
   ties: { chance: 0.3, kinds: [parent, child, sibling, friend] }
   appears: { zones: [water_plant, e_market] }
 
@@ -349,7 +349,7 @@
     rules: [물때를 입속으로 센다, 섬 안 사정을 물으면 날씨 이야기로 돌린다]
     reputations: [여울섬과 뭍 사이를 오가는 몇 안 되는 사람, 누구도 배에 몰래 태우지 않는다는 뱃사공]
     secrets:
-      - { content: "의회가 뭍으로 내보낸 사람들을 자기 배로 실어 날랐다. 그 사람들이 어디서 내렸는지 안다", reveal_when: "섬에서 나간 사람 이야기가 나왔을 때", min_trust: 4 }
+      - { content: "의회가 뭍으로 내보낸 사람들을 자기 배로 실어 날랐다. 그 사람들이 어디서 내렸는지 안다", reveal_when: "섬에서 나간 사람 이야기가 나왔을 때", min_trust: 8 }
   ties: { chance: 0.25, kinds: [sibling, spouse, friend] }
   appears: { zones: [riverside, yeoul_isle] }
 
@@ -380,7 +380,7 @@
     rules: [말하기 전에 막사 쪽을 한 번 본다, 예전 무리 이름은 입에 올리지 않는다]
     reputations: [작은 무리와 함께 흡수된 사람, 배급 줄에서 아이들 몫을 챙기는 사람]
     secrets:
-      - { content: "예전 무리 사람들끼리 밤에 몰래 모여 떠날 날을 이야기한다", reveal_when: "둘만 있고 규율반이 멀 때", min_trust: 4 }
+      - { content: "예전 무리 사람들끼리 밤에 몰래 모여 떠날 날을 이야기한다", reveal_when: "둘만 있고 규율반이 멀 때", min_trust: 8 }
   ties: { chance: 0.4, kinds: [parent, child, sibling, spouse, friend] }
   appears: { zones: [c_base, c_warehouse] }
 
@@ -411,7 +411,7 @@
     rules: [이름을 들으면 수첩에 적는다, 먼저 웃지 않는다]
     reputations: [쪽지 상자를 맡은 사람, 이 사람이 다녀간 막사에서는 꼭 한 명이 사라진다는 사람]
     secrets:
-      - { content: "명부에서 동생 이름 하나를 몰래 지웠다. 동생은 탈영을 준비하고 있다", reveal_when: "탈영 이야기가 나왔을 때", min_trust: 4 }
+      - { content: "명부에서 동생 이름 하나를 몰래 지웠다. 동생은 탈영을 준비하고 있다", reveal_when: "탈영 이야기가 나왔을 때", min_trust: 8 }
   ties: { chance: 0.25, kinds: [sibling, friend, rival] }
   appears: { zones: [c_base, c_warehouse] }
 
@@ -441,7 +441,7 @@
     rules: [쉬는 틈에도 손을 놀린다, 공단 출신이면 위원회를 감싸고 흡수된 사람이면 입을 다문다]
     reputations: [공단 시절부터 용접기를 잡은 사람, 감시탑 철판을 다 붙였다는 노역조원]
     secrets:
-      - { content: "공세용 철판 몇 장을 일부러 얇게 붙였다. 앞줄에 설 사람들이 흡수된 사람들이라서", reveal_when: "공세 이야기가 나왔을 때", min_trust: 3 }
+      - { content: "공세용 철판 몇 장을 일부러 얇게 붙였다. 앞줄에 설 사람들이 흡수된 사람들이라서", reveal_when: "공세 이야기가 나왔을 때", min_trust: 6 }
   ties: { chance: 0.35, kinds: [parent, child, sibling, friend] }
   appears: { zones: [c_base, c_warehouse] }
 
@@ -472,7 +472,7 @@
     rules: [성당 문을 지날 때 고개를 숙인다, 낯선 사람에게도 먼저 물을 권한다]
     reputations: [종탑 아래에서 가장 오래 산 사람, 장례 때마다 무덤을 파는 사람]
     secrets:
-      - { content: "종탑 위에 무리 사람들 몰래 총 한 자루를 숨겨 두었다. 신부도 모른다", reveal_when: "누군가 성당을 위협한다는 말이 나왔을 때", min_trust: 3 }
+      - { content: "종탑 위에 무리 사람들 몰래 총 한 자루를 숨겨 두었다. 신부도 모른다", reveal_when: "누군가 성당을 위협한다는 말이 나왔을 때", min_trust: 6 }
   ties: { chance: 0.35, kinds: [parent, child, sibling, friend] }
   appears: { zones: [cathedral] }
 
@@ -502,7 +502,7 @@
     rules: [모르는 것은 모른다고 말한다, 책을 바닥에 내려놓는 사람을 그냥 두지 않는다]
     reputations: [캠퍼스 도서관에 처음부터 남은 사람, 하얀매 의사도 가끔 물으러 온다는 사람]
     secrets:
-      - { content: "약대 실험실에서 해열제를 몇 번 만들어 냈다. 무리들이 알면 캠퍼스가 끝장날까 봐 숨긴다", reveal_when: "약 이야기가 나오고 그 사람이 무리 편이 아니라고 믿을 때", min_trust: 4 }
+      - { content: "약대 실험실에서 해열제를 몇 번 만들어 냈다. 무리들이 알면 캠퍼스가 끝장날까 봐 숨긴다", reveal_when: "약 이야기가 나오고 그 사람이 무리 편이 아니라고 믿을 때", min_trust: 8 }
   ties: { chance: 0.2, kinds: [child, friend, rival] }
   appears: { zones: [campus] }
 
@@ -534,6 +534,6 @@
     rules: [섬에 대한 나쁜 말이 나오면 화제를 돌린다, 들은 것은 저녁에 의회 회관으로 가져간다]
     reputations: [새로 온 사람을 가장 먼저 반기는 사람, 의회 사람들과 가깝다는 주민]
     secrets:
-      - { content: "뭍으로 내보낸 이웃의 신발을 의회 저장고 근처에서 본 적이 있다. 그 뒤로 저장고 쪽을 보지 않는다", reveal_when: "섬에서 나간 사람 이야기가 나오고 둘만 있을 때", min_trust: 4 }
+      - { content: "뭍으로 내보낸 이웃의 신발을 의회 저장고 근처에서 본 적이 있다. 그 뒤로 저장고 쪽을 보지 않는다", reveal_when: "섬에서 나간 사람 이야기가 나오고 둘만 있을 때", min_trust: 8 }
   ties: { chance: 0.25, kinds: [spouse, sibling, friend] }
   appears: { zones: [yeoul_isle] }

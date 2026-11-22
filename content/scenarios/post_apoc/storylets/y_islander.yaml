@@ -103,7 +103,7 @@
     day_gte: 3
     flags_none: [y_bones_done]
   cast:
-    old: { ids: [y_bokman], trust_gte: 2 }
+    old: { ids: [y_bokman], trust_gte: 4 }
   setup: "{old:이/가} 등불도 없이 섬 뒤쪽 바위길로 앞장선다. 의회 저장고 굴뚝이 바위 너머로 보인다. 노인이 바위틈 하나를 가리키고 고개를 돌린다."
   ai_direction: 바위틈에는 물살에 떠밀려 온 뼈가 있다. 사람의 것이다. 추복만은 아무것도 설명하지 않는다. 장면은 담담하게, 자세히 묘사하지 않는다.
   choices:
@@ -121,6 +121,8 @@
 
 - id: y_storehouse
   title: 의회 저장고
+  # 다짐의 줄기라 꼭 열린다 (12-251, 플레이 테스트 14: 조건을 채운 밤에 이야기 간격에 막혔다)
+  essential: true
   tags: [y_islander]
   when:
     zones: [yeoul_isle]
@@ -211,7 +213,7 @@
     flags_all: [y_feast_seen]
     flags_none: [y_boat_done]
   cast:
-    keeper: { ids: [y_miok], trust_gte: 1 }
+    keeper: { ids: [y_miok], trust_gte: 2 }
     girl: { ids: [y_haesol] }
   setup: "{keeper:이/가} 그물 창고 뒤에서 당신을 기다린다. 옆에 {girl:이/가} 영문도 모른 채 하품을 한다. \"작은 배를 하나 숨겨 뒀어요. 다음 썰물에 해솔이를 데리고 나갑니다. 노 저을 사람이 하나 더 있으면… 둘 다 살 수 있어요.\""
   ai_direction: 윤미옥은 딸을 겨울 잔치에서 지키려 한다. 함께 가면 섬을 나가는 표(y_leave_pass)가 생기고 두 사람이 강변까지 동행한다. 의회에 알리면 윤미옥은 저장고로 간다. 섬을 나가도 의회는 잊지 않는다.

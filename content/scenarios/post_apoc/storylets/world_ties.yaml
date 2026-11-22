@@ -8,7 +8,7 @@
     segments: [evening, night]
     day_gte: 3
   cast:
-    asker: { faction: own, known: true, trust_gte: 2 }
+    asker: { faction: own, known: true, trust_gte: 4 }
     kin: { tie: { of: asker, kinds: [sibling, parent, child, spouse], cross: true }, enter: false }
   setup: "{asker:이/가} 주위를 살피고 접힌 쪽지를 내민다. \"이거… 저쪽 무리에 있는 {kin}에게 전해 줄 수 있어? 내 가족이야. 아무한테도 말하지 마.\""
   ai_direction: 쪽지에는 안부뿐이다. 하지만 적대 무리에 가족이 있다는 것이 알려지면 이 사람은 의심받는다. 전해 주려면 그쪽 땅에 들어가야 한다. 거절해도 이 사람은 원망하지 않지만, 윗선에 알리면 끝이다.

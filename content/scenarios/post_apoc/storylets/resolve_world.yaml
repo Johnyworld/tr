@@ -247,7 +247,7 @@
   when:
     resolve: { kinds: [atone], stage_gte: 1 }
   cast:
-    wronged: { faction: own, here: true, trust_gte: -5 }
+    wronged: { faction: own, here: true, trust_gte: -10 }
   setup: "{wronged:이/가} 혼자 있다. 당신을 가장 믿지 않는 사람 중 하나다. 지금이 아니면 말할 기회가 없을 것 같다."
   ai_direction: "{wronged:은/는} 쉽게 받아 주지 않는다. 사과의 진심은 판정이 아니라 플레이어의 말로, 받아들이는지는 판정으로."
   choices:

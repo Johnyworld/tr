@@ -15,7 +15,7 @@ const me = (w: World) => w.state().characters[w.state().playerId]!;
 /** 같은 무리 사람 n명이 주인공을 믿지 않게 */
 function distrustMe(w: World, n: number) {
   const peers = factionPeers(w.state(), content, me(w).id).slice(0, n);
-  for (const id of peers) expect(w.runCheat(`~relation ${id} trust -3`).ok).toBe(true);
+  for (const id of peers) expect(w.runCheat(`~relation ${id} trust -5`).ok).toBe(true);
   return peers;
 }
 const fire = (w: World, id: string) => expect(w.runCheat(`~storylet ${id}`).ok).toBe(true);
@@ -44,7 +44,7 @@ describe("무리 안의 신망", () => {
     expect(castCandidates(w.state(), content, role)).toHaveLength(0);
     const [target, ...others] = factionPeers(w.state(), content, me(w).id);
     // 다른 두 사람이 target을 믿지 않게 (이야기 효과와 같은 이벤트)
-    for (const id of others.slice(0, 2)) w.state().relations[id] = { ...(w.state().relations[id] ?? {}), [target!]: { trust: -3, affection: 0, respect: 0 } };
+    for (const id of others.slice(0, 2)) w.state().relations[id] = { ...(w.state().relations[id] ?? {}), [target!]: { trust: -5, affection: 0, respect: 0 } };
     expect(castCandidates(w.state(), content, role)).toContain(target);
   });
 });

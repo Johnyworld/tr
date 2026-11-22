@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 84;
+export const SAVE_SCHEMA_VERSION = 85;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -2236,6 +2236,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!zone) return next;
       swapGround(next, spotKey(zone, event.from), spotKey(zone, event.to));
       next.playerPlace = event.to;
+      // 자리를 옮기면 무너진 자세도 풀린다 (12-251, 플레이 테스트 14: 장소를 옮겨도 다음 판정에 남았다)
+      if (event.to !== state.playerPlace) next.offBalanceUntil = null;
       for (const id of next.scene.present) perceive(next, id);
       const along = event.with ?? [];
       next.scene = { ...next.scene, present: next.scene.present.filter((id) => next.companions.includes(id) || along.includes(id)) };
@@ -2282,6 +2284,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         });
       }
       next.playerZone = event.to;
+      next.offBalanceUntil = null;
       {
         const seen = next.visited[next.playerId] ?? [];
         if (!seen.includes(event.to)) next.visited = { ...next.visited, [next.playerId]: [...seen, event.to] };

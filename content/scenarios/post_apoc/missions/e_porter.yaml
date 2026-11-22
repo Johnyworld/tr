@@ -60,6 +60,8 @@
   briefing: 문소라의 장부에 기한이 지난 이름이 있다. 찾아가서 받을 것을 받아 온다. 사람들 앞에서 빚 이야기는 하지 않는다.
   giver_rank: squad_leader
   deadline_hours: 12
+  # 받아 낸 빚은 물건으로 손에 들어온다. 보고 때 건네야 완수 (12-251, 플레이 테스트 14: 숨기고 "못 받았다"고 해도 완수였다)
+  collects: { dried_fish: 2 }
   requirements:
     - activity: talk
       minutes: 30

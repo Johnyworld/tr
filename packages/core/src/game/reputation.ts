@@ -15,8 +15,9 @@ export const RELATION_AXES = ["trust", "affection", "respect"] as const;
 export type RelationAxis = (typeof RELATION_AXES)[number];
 export const RELATION_AXIS_LABELS: Record<RelationAxis, string> = { trust: "신뢰", affection: "호감", respect: "존중" };
 
-export const RELATION_MIN = -5;
-export const RELATION_MAX = 5;
+// 관계 범위 (12-251): ±5 → ±10. 기준(문턱·말 표현·시작값)은 두 배로, 이야기·행동이 주는 변화량은 그대로라 관계가 두 배 느리게 오른다
+export const RELATION_MIN = -10;
+export const RELATION_MAX = 10;
 
 const relationValue = z.number().int().min(RELATION_MIN).max(RELATION_MAX);
 export const relationSchema = z.strictObject({ trust: relationValue, affection: relationValue, respect: relationValue });
@@ -41,9 +42,10 @@ export function applyRelationDelta(relation: Relation, delta: RelationDelta): Re
 
 /** 관계 수치의 말 표현 */
 export function relationLabel(value: number): string {
-  if (value <= -3) return "적대";
-  if (value <= -1) return "냉담";
-  if (value === 0) return "보통";
+  // 첫인상(±2 안쪽)은 "보통"으로 읽힌다 (12-251, 플레이 테스트 14: 같은 마을 사람이 냉담에서 시작했다)
+  if (value <= -6) return "적대";
+  if (value <= -3) return "냉담";
+  if (value < 3) return "보통";
   // 각별은 가장 높은 값에서만 (플레이 테스트 12: 첫 만남에 +3으로 각별이 됐다)
   if (value < RELATION_MAX) return "호의";
   return "각별";

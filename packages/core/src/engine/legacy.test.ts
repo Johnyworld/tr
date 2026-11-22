@@ -28,7 +28,7 @@ function setup(affection: number) {
 
 describe("유품과 이어지는 끈", () => {
   it("가까운 사람이 뒤를 이으면 앞사람의 사물함 짐을 물려받는다", () => {
-    const { w, first, friend } = setup(4);
+    const { w, first, friend } = setup(8);
     const zone = Object.keys(w.state().stashes[first] ?? {})[0]!;
     const r = w.chooseNextCharacter(friend);
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
@@ -45,7 +45,7 @@ describe("유품과 이어지는 끈", () => {
   });
 
   it("앞사람과 가까웠던 사람은 그를 기억하는 배역이 되고, {departed}가 그를 가리킨다", () => {
-    const { w, first, friend } = setup(4);
+    const { w, first, friend } = setup(8);
     const fresh = w.successionOptions().find((o) => o.id.startsWith("new:"));
     expect(fresh).toBeTruthy();
     expect(w.chooseNextCharacter(fresh!.id).ok).toBe(true);
@@ -68,7 +68,7 @@ describe("장례 (12-163)", () => {
     const [dead, friend] = [comrades[0]!.id, comrades[1]!.id];
     expect(w.runCheat("~time day").ok).toBe(true);
     expect(conditionsMet(w.state(), full, rites, w.state().time)).toBe(false);
-    w.ctx().store.append({ type: "relation_changed", from: friend, to: dead, delta: { trust: 0, affection: 4, respect: 0 }, reason: "테스트" });
+    w.ctx().store.append({ type: "relation_changed", from: friend, to: dead, delta: { trust: 0, affection: 8, respect: 0 }, reason: "테스트" });
     expect(w.runCheat(`~kill ${dead}`).ok).toBe(true);
     // 유해는 도구 실행 전후로 남는다 (치트는 도구 밖이라 직접 남긴다)
     w.ctx().store.append({ type: "remains_left", remains: { of: dead, holder: `remains_${dead}`, zone: w.state().playerZone!, diedAt: w.state().time, buriedAt: null, marker: null } });

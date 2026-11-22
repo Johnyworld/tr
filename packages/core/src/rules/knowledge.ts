@@ -2,7 +2,7 @@
  * 공통 규칙 7: 주인공은 본 것만 안다 (docs/design.md "공통 규칙", 원칙 4).
  *
  * 화면·GM 상태에 싣는 "주인공이 아는 대로"의 판단은 여기서만 한다:
- * 땅 주인(state.zoneSeen은 rules/knowledge.test.ts가 이 모듈 밖에서 읽지 못하게 막는다), 처음 보는 사람의 인간관계.
+ * 땅 주인(state.zoneSeen은 rules/knowledge.test.ts가 이 모듈 밖에서 읽지 못하게 막는다), 처음 보는 사람의 인간관계, 들어서 아는 건너는 길.
  */
 import type { Content } from "../content/schemas.ts";
 import { hasMet } from "../game/acquaintance.ts";
@@ -17,6 +17,17 @@ export function knownOwner(state: GameState, content: Content, zone: string): st
   const seen = zone in (state.zoneSeen ?? {}) ? state.zoneSeen[zone]! : (content.locations[zone]?.owner ?? null);
   const mine = state.characters[state.playerId]?.factionId ?? null;
   return zone === state.playerZone || (!!mine && (now === mine || seen === mine)) ? now : seen;
+}
+
+/**
+ * 주인공이 아는 건너는 길 (12-251, 플레이 테스트 14: 섬에서 나갈 길이 어디에도 없었다): 지금 구역에서 배로 건너갈 수 있는 곳 가운데
+ * 이야기로 들어 안 곳(crossing.heard_flags 중 하나가 있다)만. 스스로는 모른다
+ */
+export function knownCrossings(state: GameState, content: Content, zone: string): string[] {
+  const flags = new Set(state.flags[state.playerId] ?? []);
+  return Object.entries(content.locations)
+    .filter(([, loc]) => !!loc.crossing?.from.includes(zone) && loc.crossing.heard_flags.some((f) => flags.has(f)))
+    .map(([id]) => id);
 }
 
 /** 이 두 사람의 관계를 주인공이 알 수 있는가: 둘 다 만난 적이 있어야 한다 (주인공 자신과의 관계는 늘 안다, 플레이 테스트 13) */

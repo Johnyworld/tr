@@ -111,7 +111,7 @@ describe("이야기 빈도 (12-191)", () => {
     const log = Object.fromEntries(urgent.map((u) => [u.id, { fired: 1, lastFiredAt: s.time }]));
     expect(urgentAllowed({ ...s, storyletLog: log }, real, s.time + 60)).toBe(false);
     expect(urgentAllowed({ ...s, storyletLog: {} }, real, s.time + 60)).toBe(true);
-    // 앞 이야기와 2시간 안이면 급한 것만
-    expect(storyletWindow({ ...s, lastStoryletAt: later - 60 }, real, later)).toBe("urgent_only");
+    // 앞 이야기와 2시간 안이면 급한 위협만 (12-254, 공통 규칙 17)
+    expect(storyletWindow({ ...s, lastStoryletAt: later - 60 }, real, later)).toBe("threat_only");
   });
 });

@@ -27,6 +27,8 @@ import { changeCondition, shakeNerves } from "./body.ts";
 import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, storyletOf } from "../story/storylets.ts";
+import { justHadStory, storyText } from "../rules/storySlot.ts";
+import { storyPlaceOnEntry } from "../rules/place.ts";
 import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
@@ -171,6 +173,10 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     cast,
     expiresAt: state.time + Math.round(content.scenario.storylet_pacing.expire_hours * 60),
   });
+  // 막 들어선 자리에서 열린 이야기가 이 구역의 장소 하나를 말하면 그 장소로 옮겨 둔다 (12-254, 공통 규칙 15 storyPlaceOnEntry).
+  // 장면의 사람은 함께 간다 (PT15 튜토리얼: "동의 계단 앞"으로 열린 재회 이야기 뒤 place_to가 열린 이야기 때문에 거절됐다)
+  const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet));
+  if (spot) store.append({ type: "place_moved", from: null, to: spot, with: [...store.getState().scene.present] });
   // 배역은 장면에 들어온다
   for (const [key, id] of Object.entries(cast)) {
     if (!storylet.cast[key]?.enter) continue;
@@ -239,7 +245,7 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
       .join(" / ")}`,
     // 이야기 대사는 뜻만 빌리고 그 인물의 말투로 (12-251, 플레이 테스트 14·13: 이야기 대사가 인물 화법을 덮어썼다). 이미 나눈 이야기면 이어지는 말로
     "  상황의 대사는 뜻만 따르고, 말은 그 인물의 말투(카드의 말씨·성격)로 바꿔 한다. 이 사람과 이미 나눈 이야기라면 처음 하는 말처럼 되풀이하지 말고 이어지는 말로 한다.",
-    "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 모른 척하기로 하면 다음 take_action에 ignore_story: true (효과 없이 지나간다). 이야기를 둔 채 자리를 옮기거나 시간을 들이는 일(잠·기다림·보초·수색·일·치료)과 임무 받기·보고는 거절된다. 플레이어가 두고 가기로 했으면 ignore_story: true를 넣는다 (옮기면 외면하는 선택지로 풀린다).",
+    "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 모른 척하기로 하면 다음 take_action에 ignore_story: true (효과 없이 지나간다). 이야기를 둔 채 자리를 옮기거나 시간을 들이는 일(잠·기다림·보초·수색·일·치료)과 임무 받기·보고는 거절된다. 먹고 마시는 짧은 일은 이야기 중에도 된다. 플레이어가 두고 가기로 했으면 ignore_story: true를 넣는다 (옮기면 외면하는 선택지로 풀린다).",
   ];
   return lines.join("\n");
 }
@@ -1097,8 +1103,7 @@ export function runRoadEvent(ctx: ToolContext, risk = 1): ToolDisplayEvent[] {
   const state = store.getState();
   if (!travel || !state.lastRoute || state.activeStorylet || state.battle) return [];
   // 위급할 때나 앞 이야기가 막 열렸을 때는 길 위의 일도 열지 않는다 (12-191)
-  const gap = content.scenario.storylet_pacing.min_any_gap_hours * 60;
-  if (inCrisis(state, content) || (state.lastStoryletAt !== null && state.lastStoryletAt >= state.runStartedAt && state.time - state.lastStoryletAt < gap)) return [];
+  if (inCrisis(state, content) || justHadStory(state, content)) return [];
   // 탈 것으로 빨리 지나가면 길 위의 일이 덜 생긴다 (12-137)
   // 원인 있는 만남 (12-242): 그 길 끝의 최근 교전·들킨 일로 한 단계 오른다
   const cause = routeCause(state, content);

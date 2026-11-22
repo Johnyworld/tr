@@ -11,6 +11,8 @@
   wakes: false
   urgent: true
   tags: [tutorial_visitor]
+  # 도착하면 꼭 마주치는 자리 (12-254, 공통 규칙 17: 즉흥 이야기 자리나 앞 이야기의 최소 간격에 막히지 않게)
+  essential: true
   when:
     factions: [none]
     zones: [a_base]
@@ -186,6 +188,8 @@
   tags: [tutorial_visitor]
   repeatable: true
   cooldown_days: 1
+  # 튜토리얼 줄기 (12-254, PT15: 안내대로 버들마을에 갔는데 간격에 막히고 누렁이 이야기가 대신 열렸다)
+  essential: true
   when:
     zones: [b_base]
     flags_all: [bg_family_lost]

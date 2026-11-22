@@ -6,6 +6,8 @@
 - id: y_soup
   title: 고기 국
   tags: [y_islander]
+  # 줄기 첫 이야기 (12-254, PT15 섬: 도시 공통 이야기와 간격에 이틀 막혀 장부로 가는 길이 닫혔다)
+  essential: true
   when:
     zones: [yeoul_isle]
     segments: [evening]
@@ -63,6 +65,8 @@
 - id: y_miok_ledger
   title: 맞지 않는 장부
   tags: [y_islander]
+  # 줄기 가운데 고리: 고기 국 → 장부 → 의회 저장고 (12-254, content:check 줄기 앞단)
+  essential: true
   when:
     zones: [yeoul_isle]
     segments: [day, evening]

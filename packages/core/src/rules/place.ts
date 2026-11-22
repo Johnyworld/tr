@@ -75,6 +75,15 @@ export function storyPlacesFit(state: GameState, content: Content, places: reado
   return !named.length || named.includes(here.id);
 }
 
+/**
+ * 막 들어선 자리(장소 없음)에서 열린 이야기가 지금 구역의 장소 하나를 말하면 그 장소 (12-254). 갇혔거나 이미 장소에 있거나 여럿·없으면 null
+ */
+export function storyPlaceOnEntry(state: GameState, content: Content, places: readonly string[] | undefined, text: string): string | null {
+  if (state.playerPlace || heldOf(state.characters[state.playerId])) return null;
+  const named = storyPlaces(state, content, places, text);
+  return named.length === 1 ? named[0]! : null;
+}
+
 /** 이야기가 말하는 지금 구역의 장소 (places를 적었으면 그것, 아니면 글에 나오는 장소 이름·aliases) */
 export function storyPlaces(state: GameState, content: Content, places: readonly string[] | undefined, text: string): string[] {
   return places ? [...places] : placesIn(state, content, state.playerZone).filter((p) => !p.spawned && [p.name, ...p.aliases].some((a) => text.includes(a))).map((p) => p.id);

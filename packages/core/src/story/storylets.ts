@@ -34,6 +34,8 @@ import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
 import { storyPlaceFits, storyPlaces, storyPlacesFit } from "../rules/place.ts";
 import { nearby, whereIs } from "../rules/place.ts";
+import { bedsideGapPassed, inCrisis, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
+export { inCrisis, isThreat, pacingBlocks, storyletGapMinutes, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 
 /**
  * 스토리렛 엔진 (기획서 10.3). 조건과 배역은 코드가 판정한다.
@@ -335,7 +337,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (last === undefined || at - last < w.after_storylet.hours * 60) return false;
   }
   // 이야기가 말하는 장소와 지금 장소가 다르면 열지 않는다 (12-251)
-  if (!storyPlacesFit(state, content, w.places, [storylet.setup, ...(storylet.variants ?? [])].join(" "))) return false;
+  if (!storyPlacesFit(state, content, w.places, storyText(storylet))) return false;
   if (w.companions_lte !== undefined && state.companions.length > w.companions_lte) return false;
   if (w.companions_gte !== undefined && state.companions.length < w.companions_gte) return false;
   if (w.own_territory !== undefined) {
@@ -513,107 +515,22 @@ function hasRealChoice(state: GameState, content: Content, s: StoryletContent): 
   return doable.length >= 2 || doable.some((c) => !!c.check);
 }
 
-/** 이 이야기가 주는 위협 (공포 태그와, 감염체 배역이면 infected). 같은 위협끼리 간격을 둔다 (D3) */
-export function threatTags(content: Content, s: StoryletContent): string[] {
-  const infected = Object.values(s.cast).some((r) => "extra" in r && !!r.extra && content.extras[r.extra]?.kind === "infected");
-  return [...new Set([...(s.fright_tags ?? []), ...(infected ? ["infected"] : [])])];
-}
-
-/** 다치게 하는 이야기인가 (D1): 공포가 오르거나, 매복이거나, 감염체가 나온다 */
-export function isThreat(content: Content, s: StoryletContent): boolean {
-  return (s.fright ?? 0) > 0 || !!s.ambush || threatTags(content, s).includes("infected");
-}
 
 /**
- * 하루 상한과 같은 위협의 간격 (플레이 테스트 11, D1~D3: 하루 2~5개, 대부분 위협, 감염체 무리가 사흘에 세 번).
- * 임무 자리의 이야기(when.mission)는 임무를 마치는 길이라, 꼭 열려야 하는 이야기(essential)는 엔딩 같은 것이라 막지 않는다
- */
-export function pacingBlocks(state: GameState, content: Content, s: StoryletContent, at: GameTime): boolean {
-  const p = content.scenario.storylet_pacing;
-  if (s.when.mission || s.essential) return false;
-  const today = dayOf(at);
-  const fired = Object.entries(state.storyletLog).filter(([id, log]) => dayOf(log.lastFiredAt) === today && !content.storylets[id]?.when.mission);
-  if (p.per_day && fired.length >= p.per_day) return true;
-  if (p.threat_per_day && isThreat(content, s) && fired.filter(([id]) => content.storylets[id] && isThreat(content, content.storylets[id]!)).length >= p.threat_per_day) return true;
-  const road = content.scenario.travel?.tag;
-  if (p.road_per_day && road && s.tags.includes(road) && fired.filter(([id]) => content.storylets[id]?.tags.includes(road)).length >= p.road_per_day) return true;
-  // 같은 장소를 말하는 이야기는 하루에 하나 (12-251, 플레이 테스트 14: 우물 이야기 셋이 이틀 사이에 이어졌다)
-  const textOf = (x: StoryletContent) => [x.setup, ...(x.variants ?? [])].join(" ");
-  const mine = storyPlaces(state, content, s.when.places, textOf(s));
-  if (mine.length && fired.some(([id]) => id !== s.id && content.storylets[id] && storyPlaces(state, content, content.storylets[id]!.when.places, textOf(content.storylets[id]!)).some((pl) => mine.includes(pl)))) return true;
-  if (p.same_threat_gap_days) {
-    const mine = threatTags(content, s);
-    if (mine.length && Object.entries(state.storyletLog).some(([id, log]) => id !== s.id && at - log.lastFiredAt < p.same_threat_gap_days * MINUTES_PER_DAY && content.storylets[id] && threatTags(content, content.storylets[id]!).some((t) => mine.includes(t)))) return true;
-  }
-  return false;
-}
-
-/**
- * 이야기를 열 수 있는 때: open(아무 이야기나) / urgent_only(이야기 사이 간격 안이지만 급한 일은 연다) / closed.
+ * 이야기를 열 수 있는 때 (공통 규칙 17의 등급 바닥을 이름으로): open(아무 이야기나) / urgent_only(급한 이야기만) / threat_only(급한 위협만) / closed.
  * 급한 이야기(urgent)는 그 자리·그 시각에만 맞는 일이 많아, 간격 때문에 놓치지 않게 한다
  */
-export function storyletWindow(state: GameState, content: Content, at: GameTime): "open" | "urgent_only" | "closed" {
-  // 잠입 중에는 다른 이야기가 끼어들지 않는다 (12-154)
-  if (state.activeStorylet || state.battle || state.infiltration) return "closed";
-  const pacing = content.scenario.storylet_pacing;
-  // 지금 캐릭터의 이야기가 막 시작됐으면 조금 기다린다
-  if (at - state.runStartedAt < pacing.first_after_hours * 60) return "closed";
-  const fresh = state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt;
-  const held = playerHeld(state);
-  if (held && !fresh) {
-    // 갇힌 동안 (플레이 테스트 13: 갇혀 열 시간 넘게 아무 일도 없었다): 갇힌 뒤 첫 이야기는 1시간이 지나면, 그다음은 간격의 절반
-    const last = state.lastStoryletAt!;
-    const since = held.since ?? last;
-    if (last < since) return at - since >= HELD_FIRST_STORY_MINUTES ? "open" : "urgent_only";
-    return at - last >= storyletGapMinutes(content, last) / 2 ? "open" : "urgent_only";
-  }
-  // 이야기가 몰리지 않게 (12-191): 앞 이야기와 가까우면 급한 이야기만 (급한 것은 하루 상한으로 막는다)
-  if (!fresh && at - state.lastStoryletAt! < pacing.min_any_gap_hours * 60) return "urgent_only";
-  // 위급하면 급한 이야기만 (12-191). 탐험 중에 무엇이 열리는지는 처지 규칙이 정한다 (공통 규칙 4)
-  if (inCrisis(state, content)) return "urgent_only";
-  if (fresh) return "open";
-  return at - state.lastStoryletAt! >= storyletGapMinutes(content, state.lastStoryletAt!) ? "open" : "urgent_only";
+export type StoryWindow = "open" | "urgent_only" | "threat_only" | "closed";
+export function storyletWindow(state: GameState, content: Content, at: GameTime): StoryWindow {
+  const floor = storySlotFloor(state, content, at);
+  if (floor === null) return "closed";
+  return floor <= STORY_TIERS.common ? "open" : floor <= STORY_TIERS.urgent ? "urgent_only" : "threat_only";
 }
 
-/**
- * 앞 이야기 뒤 다음 이야기까지의 간격 (분). max_gap_hours가 있으면 min~max 사이에서 앞 이야기의 시각으로 정한다
- * (난수를 쓰지 않아 같은 세이브는 늘 같은 간격이다)
- */
-/** 갇힌 뒤 첫 이야기까지 (분) */
-const HELD_FIRST_STORY_MINUTES = 60;
+const WINDOW_FLOOR: Record<Exclude<StoryWindow, "closed">, number> = { open: STORY_TIERS.common, urgent_only: STORY_TIERS.urgent, threat_only: STORY_TIERS.urgent_threat };
 
-export function storyletGapMinutes(content: Content, lastAt: GameTime): number {
-  const p = content.scenario.storylet_pacing;
-  const min = p.min_gap_hours * 60;
-  if (p.max_gap_hours === undefined || p.max_gap_hours <= p.min_gap_hours) return min;
-  const h = (Math.imul(lastAt + 0x9e37, 2654435761) >>> 0) / 2 ** 32;
-  return Math.round(min + h * (p.max_gap_hours * 60 - min));
-}
-
-/** 주인공의 몸이 위급한가 (storylet_pacing.urgent_only_when): 그동안은 급한 이야기만 연다 (12-191) */
-export function inCrisis(state: GameState, content: Content): boolean {
-  const me = state.characters[state.playerId];
-  // 갇힌 몸은 감옥 이야기가 유일한 길이다: 위급해도 막지 않는다 (B5, 플레이 테스트 9: 치명상인 포로가 51시간 멈췄다)
-  if (!me || heldOf(me)) return false;
-  return Object.entries(content.scenario.storylet_pacing.urgent_only_when).some(([track, from]) => {
-    const levels = content.scenario.condition_tracks.find((t) => t.id === track)?.levels ?? [];
-    const at = levels.findIndex((l) => l.id === me.conditions[track]);
-    const min = levels.findIndex((l) => l.id === from);
-    return at >= 0 && min >= 0 && at >= min;
-  });
-}
-
-/** 오늘 급한 이야기를 더 열 수 있는가 (storylet_pacing.urgent_per_day, 12-191) */
-export function urgentAllowed(state: GameState, content: Content, at: GameTime): boolean {
-  const cap = content.scenario.storylet_pacing.urgent_per_day;
-  if (!cap) return true;
-  const today = dayOf(at);
-  const fired = Object.entries(state.storyletLog).filter(([id, log]) => content.storylets[id]?.urgent && dayOf(log.lastFiredAt) === today).length;
-  return fired < cap;
-}
-
-/** 이 이야기를 지금 열 수 있는가: 급한 이야기는 하루 상한까지, 나머지는 창이 열렸을 때 */
-export function storyletAllowed(state: GameState, content: Content, s: StoryletContent, window: "open" | "urgent_only" | "closed", at: GameTime, options: { urgentOnly?: boolean } = {}): boolean {
+/** 이 이야기를 지금 열 수 있는가: 등급이 자리의 바닥 이상이고, 급한 이야기는 하루 상한까지 (공통 규칙 17) */
+export function storyletAllowed(state: GameState, content: Content, s: StoryletContent, window: StoryWindow, at: GameTime, options: { urgentOnly?: boolean } = {}): boolean {
   if (window === "closed") return false;
   // 한밤에 막 잠에서 깬 때는 급한 이야기, 누워 있는 동안의 이야기, 깨어나는 장면(activities에 sleep)만 (플레이 테스트 12: 00~03시에 막 깬 사람에게 "모닥불 곁에 앉아", "당신 차례가 온다").
   // 아침에 깬 것은 하루의 시작이라 막지 않는다 (새벽 솥 같은 아침 일). 야영·길 위의 일은 태그로 따로 열려 여기를 거치지 않는다
@@ -621,15 +538,16 @@ export function storyletAllowed(state: GameState, content: Content, s: StoryletC
   const wokeThisNight = state.lastWokeAt !== null && segmentOf(at) === "night" && segmentOf(state.lastWokeAt) === "night" && at - state.lastWokeAt < 8 * 60;
   if (wokeThisNight && !s.urgent && !s.bedside && !s.when.activities?.includes("sleep")) return false;
   // 누워 있는 동안의 이야기는 위급할 때도 연다 (D4). 다만 이야기 사이 간격은 지킨다
-  if (s.bedside && !options.urgentOnly && inCrisis(state, content)) {
-    return state.lastStoryletAt === null || state.lastStoryletAt < state.runStartedAt || at - state.lastStoryletAt >= storyletGapMinutes(content, state.lastStoryletAt);
-  }
+  if (s.bedside && !options.urgentOnly && inCrisis(state, content)) return bedsideGapPassed(state, content, at);
   // 깨우지 않는 이야기는 자는 동안 열지 않는다 (12-251)
   if (options.urgentOnly && !s.wakes) return false;
+  const tier = STORY_TIERS[storyTier(content, s)];
+  if (tier < WINDOW_FLOOR[window]) return false;
   // 꼭 열려야 하는 이야기는 급한 이야기의 하루 상한에도 막히지 않는다 (플레이 테스트 13: 튜토리얼 재회가 17시간 막혔다)
   if (s.essential) return true;
   if (s.urgent) return urgentAllowed(state, content, at);
-  return !options.urgentOnly && window === "open";
+  // 자는 동안에는 급한 이야기만
+  return !options.urgentOnly;
 }
 
 /** 임무를 하는 동안 그 자리에 묶인 이야기는 이만큼 자주 고른다 (플레이 테스트 11, G4: 수용소 경비 4시간에 아무 일도 없었다) */

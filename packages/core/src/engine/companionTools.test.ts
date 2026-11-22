@@ -34,7 +34,7 @@ function cheat(w: World, input: string) {
   expect(r.ok, r.ok ? "" : r.error).toBe(true);
 }
 function move(w: World, to: string) {
-  const r = w.executeTool("take_action", act("간다", { move_to: to }));
+  const r = w.executeTool("take_action", act("간다", { move_to: to, ignore_story: true }));
   expect(r.ok, r.ok ? "" : r.error).toBe(true);
   return r.ok ? r.resultText : "";
 }

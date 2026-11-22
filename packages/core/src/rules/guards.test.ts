@@ -63,6 +63,10 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
     expect(offenders(/\.(playerPlace|spawnedPlaces|npcStays)\b/, ["game/state.ts", "rules/place.ts"])).toEqual([]);
   });
 
+  it("규칙 17 (이야기의 자리): 이야기 간격 상태는 rules/storySlot.ts로만 읽는다", () => {
+    expect(offenders(/\.lastStoryletAt\b/, ["game/state.ts", "rules/storySlot.ts"])).toEqual([]);
+  });
+
   it("규칙 15 (장소): 인물의 구역은 rules/place.ts의 whereIs로만 묻는다", () => {
     expect(offenders(/\bnpcZoneAt\(/, ["game/whereabouts.ts", "rules/place.ts"])).toEqual([]);
   });

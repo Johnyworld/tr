@@ -551,6 +551,15 @@ export function checkNpcBodies(content: Content): string[] {
  */
 export function checkResolveSpine(content: Content): string[] {
   const problems: string[] = [];
+  const flagsSet = (v: unknown, out: string[] = []): string[] => {
+    if (Array.isArray(v)) for (const x of v) flagsSet(x, out);
+    else if (v && typeof v === "object") {
+      const o = v as Record<string, unknown>;
+      if (typeof o.set_flag === "string") out.push(o.set_flag);
+      for (const x of Object.values(o)) flagsSet(x, out);
+    }
+    return out;
+  };
   const facts = (v: unknown, out: string[] = []): string[] => {
     if (Array.isArray(v)) for (const x of v) facts(x, out);
     else if (v && typeof v === "object") {
@@ -567,9 +576,17 @@ export function checkResolveSpine(content: Content): string[] {
     const words = r.target.split("|").filter(Boolean);
     // 그 시나리오에만 있는 이야기만 (여럿이 함께 쓰는 공통 이야기를 꼭 열리게 하면 다른 시나리오의 간격이 무너진다)
     const tags = new Set(role.storylet_tags.filter((t) => Object.values(content.roles).filter((o) => o.storylet_tags.includes(t)).length === 1));
-    for (const st of Object.values(content.storylets)) {
-      if (!st.tags.some((t) => tags.has(t)) || st.essential) continue;
-      if (facts(st.choices).some((f) => words.some((w) => f.includes(w)))) problems.push(`storylets.${st.id}: ${role.id}의 다짐(진실 알기)을 이루는 이야기다. essential: true로 둔다 (간격·하루 상한에 막히지 않게)`);
+    const mine = Object.values(content.storylets).filter((st) => st.tags.some((t) => tags.has(t)));
+    const spine = mine.filter((st) => facts(st.choices).some((f) => words.some((w) => f.includes(w))));
+    for (const st of spine) if (!st.essential) problems.push(`storylets.${st.id}: ${role.id}의 다짐(진실 알기)을 이루는 이야기다. essential: true로 둔다 (간격·하루 상한에 막히지 않게)`);
+    // 줄기 이야기의 앞단 (12-254, PT15 섬: 장부의 조건 플래그를 주는 이야기가 이틀 동안 하나도 열리지 않았다): 조건 플래그를 주는 이야기 가운데 꼭 열리는 것이 있어야 한다
+    const essentialSets = (flag: string) => mine.some((o) => o.essential && flagsSet(o.choices).includes(flag));
+    const setBySomeStory = (flag: string) => mine.some((o) => flagsSet(o.choices).includes(flag));
+    for (const st of spine) {
+      const all = (st.when.flags_all ?? []).filter(setBySomeStory);
+      const any = (st.when.flags_any ?? []).filter(setBySomeStory);
+      for (const f of all) if (!essentialSets(f)) problems.push(`storylets.${st.id}: 줄기 이야기의 조건 ${f}를 주는 이야기 가운데 essential이 없다 (앞단이 간격에 막히면 줄기가 닫힌다)`);
+      if (any.length && !any.some(essentialSets)) problems.push(`storylets.${st.id}: 줄기 이야기의 조건(flags_any: ${any.join(", ")})을 주는 이야기 가운데 essential이 하나도 없다`);
     }
   }
   return problems;

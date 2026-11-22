@@ -129,6 +129,8 @@
   title: 입도 심사
   tags: [world]
   urgent: true
+  # 도착하면 꼭 마주치는 자리 (12-254, 공통 규칙 17: 즉흥 이야기 자리나 앞 이야기의 최소 간격에 막히지 않게)
+  essential: true
   when:
     zones: [yeoul_isle]
     flags_none: [y_landed]

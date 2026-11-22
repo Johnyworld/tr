@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 87;
+export const SAVE_SCHEMA_VERSION = 88;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -521,6 +521,8 @@ export function createGameSchemas(s: Scenario) {
     nextMissionNo: z.number().int().positive(),
     /** 지금 캐릭터의 런이 시작된 시각 (복무 기간 계산) */
     runStartedAt: z.number().int(),
+    /** 지금 캐릭터가 시작한 구역 (시작 장면 대기는 이 구역에서만, 공통 규칙 17, 12-254) */
+    runStartZone: z.string().nullable().default(null),
     /** 행적. 숨은 목격자가 들어 있으므로 UI·프롬프트로 그대로 보내지 않는다 */
     deeds: z.record(z.string(), deedSchema),
     /** NPC가 어떤 행적을 어떤 출처로 알고 있는지: npcId → deedId → source */
@@ -1291,6 +1293,7 @@ export const EMPTY_STATE: GameState = {
   offers: null,
   nextMissionNo: 1,
   runStartedAt: START_TIME,
+  runStartZone: null,
   deeds: {},
   deedKnowledge: {},
   relations: {},
@@ -2283,6 +2286,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.spawnedPlaces = { ...next.spawnedPlaces, [event.id]: { zone: event.zone, name: event.name, indoor: event.indoor, owner: event.owner } };
       return next;
     case "zone_moved": {
+      // 시작하는 시각에 놓인 구역이 시작한 구역이다 (새 세계·이어받기)
+      if (state.time === state.runStartedAt) next.runStartZone = event.to;
       for (const b of Object.values(next.bonds)) if (b.apart?.zone && b.apart.zone === event.from) b.apart.left = true;
       // 우리 땅을 떠난 시각 (공통 규칙 3의 자리 비움)
       const mine = next.characters[next.playerId]?.factionId;
@@ -2439,6 +2444,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (successor.dead) throw new Error(`사망한 인물: ${successor.id}`);
       next.playerId = successor.id;
       next.runStartedAt = state.time;
+      next.runStartZone = next.playerZone;
       // 앞 주인공이 잃은 상관의 믿음은 물려받지 않는다 (플레이 테스트 12: 계승한 주인공의 진급이 막혔다)
       next.trustDroppedAt = {};
       next.trustDroppedWhy = {};

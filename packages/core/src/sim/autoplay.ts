@@ -439,6 +439,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       const task = pick(rng, command.squad_tasks);
       const member = pick(rng, squad);
       if (!s.scene.present.includes(member)) tool("npc_presence", { npc_id: member, action: "enter" });
+      // 들이자 곁에 서는 분대원(떨어져 있던 동행이 합류)도 있다: 그러면 따라오라는 명령은 필요 없다
+      if (task.kind === "follow" && world.state().companions.includes(member)) continue;
       const zone = task.needs_zone && s.playerZone ? pick(rng, [s.playerZone, ...neighbors(content, s.playerZone)]) : null;
       const out = tool("squad_order", { members: [member], task: task.id, zone });
       if (out.ok) stats.squadOrders++;

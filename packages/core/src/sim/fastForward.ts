@@ -59,11 +59,14 @@ export function fastForward(options: {
   rng: Rng;
   checks: readonly InterruptCheck[];
   tickMinutes?: number;
+  /** 틱과 상관없이 꼭 멈춰 검사할 시각 (이야기의 자리가 열리는 때, 공통 규칙 17) */
+  stops?: readonly GameTime[];
 }): FastForwardResult {
-  const { state, start, until, rng, checks, tickMinutes = 60 } = options;
+  const { state, start, until, rng, checks, tickMinutes = 60, stops = [] } = options;
   let time = start;
   while (time < until) {
-    const next = Math.min(time + tickMinutes, until);
+    const stop = stops.find((t) => t > time);
+    const next = Math.min(time + tickMinutes, until, stop ?? Infinity);
     // 틱 시스템(NPC 일과, 세력 시뮬레이션 등)은 생기면 여기서 돌린다
     for (const check of checks) {
       const interrupt = check({ state, from: time, to: next, rng });

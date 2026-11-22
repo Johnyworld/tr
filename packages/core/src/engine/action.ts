@@ -68,6 +68,7 @@ import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.
 import { bleedFromHarm, woundKind } from "./bleeding.ts";
 import { scarFromHarm } from "./scars.ts";
 import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle } from "./storyletTools.ts";
+import { slotOpensBetween } from "../rules/storySlot.ts";
 import { choiceAvailable, storyletOf } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -1588,7 +1589,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     for (;;) {
       const midnight = dayOf(cursor) * MINUTES_PER_DAY;
       const segmentEnd = Math.min(target, midnight);
-      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, checks: createInterruptChecks(content.scenario, [createCampCheck(content, activity, deep), createStoryletCheck(content, { asleep: activity === "sleep", activity })]) });
+      const stops = slotOpensBetween(store.getState(), content, cursor, segmentEnd);
+      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, stops, checks: createInterruptChecks(content.scenario, [createCampCheck(content, activity, deep), createStoryletCheck(content, { asleep: activity === "sleep", activity })]) });
       store.append({
         type: "time_advanced",
         activity,

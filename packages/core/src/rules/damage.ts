@@ -67,6 +67,22 @@ export function reduceHarm(ctx: ToolContext, input: HarmInput): { steps: number;
 /** 다치게 한 한 단계마다 맞은 사람이 주인공을 보는 마음 (12-257) */
 export const HURT_RESENTMENT = { affection: -2, trust: -1 } as const;
 
+/** 당한 사람의 마음: 주인공이 그 사람에게 한 무거운 짓(시나리오 offense 태그)을 그 사람이 보았을 때 (12-261) */
+export const WRONGED_RESENTMENT = { affection: -2, trust: -2 } as const;
+
+/**
+ * 당한 사람은 가치관과 상관없이 원망한다 (12-261, PT16 분대장: 주머니를 털다 들킨 상대의 신뢰가 정직 -2 가치관 때문에 +1이 됐다).
+ * 행동의 대상(target)이 그 짓을 보았고 짓이 시나리오의 offense 태그(도둑질·잔혹·배신)이면. 알릴 줄 (아니면 null)
+ */
+export function wrongedResentment(ctx: ToolContext, targetId: string | null, tags: readonly string[], seen: boolean): string | null {
+  const state = ctx.store.getState();
+  const target = targetId ? state.characters[targetId] : undefined;
+  const offense = ctx.content.scenario.offense?.tags ?? [];
+  if (!target || !targetId || !seen || target.dead || targetId === state.playerId || isCreature(ctx.content, target) || !tags.some((t) => offense.includes(t as never))) return null;
+  ctx.store.append({ type: "relation_changed", from: targetId, to: state.playerId, delta: { ...WRONGED_RESENTMENT, respect: 0 }, reason: "당했다" });
+  return `${josa(playerCalls(state, ctx.content, targetId), "은/는")} 당한 일로 주인공을 원망한다 (호감 ${WRONGED_RESENTMENT.affection}, 신뢰 ${WRONGED_RESENTMENT.trust}).`;
+}
+
 /**
  * 주인공이 사람을 다치게 하면 맞은 사람의 호감·신뢰가 내려간다 (12-257, PT15 졸병: 방망이로 친 동료의 마음이 그대로라 편지 한 통에 상쇄됐다).
  * 동물·감염체는 마음을 셈하지 않는다. 알릴 줄 (바뀌지 않았으면 null)

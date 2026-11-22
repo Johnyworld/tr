@@ -117,7 +117,8 @@ export function recentSetback(
   if (commanderId && (state.trustDroppedAt?.[commanderId] ?? -Infinity) >= since) {
     const at = state.trustDroppedAt![commanderId]!;
     const why = state.trustDroppedWhy?.[commanderId];
-    return `최근 ${PROMOTION.recentDays}일 사이 상관의 믿음을 잃은 일이 있다 (${Math.floor(at / MINUTES_PER_DAY) + 1}일차${why ? `: ${why}` : ""})`;
+    // 까닭에 이미 날짜가 있으면 그것만 (12-261, PT16 졸병: "(4일차: 2일차의 일 — …)")
+    return `최근 ${PROMOTION.recentDays}일 사이 상관의 믿음을 잃은 일이 있다 (${why && /\d+일차/.test(why) ? why : `${Math.floor(at / MINUTES_PER_DAY) + 1}일차${why ? `: ${why}` : ""}`})`;
   }
   return null;
 }
@@ -336,4 +337,15 @@ export function idleDays(state: { time: GameTime; runStartedAt: GameTime; missio
     .filter((m) => m.assigneeId === characterId && (m.status === "completed" || m.status === "partial"))
     .reduce((t, m) => Math.max(t, m.assignedAt), state.runStartedAt);
   return Math.floor((state.time - last) / MINUTES_PER_DAY);
+}
+
+/**
+ * 이 스킬의 판정이 진행 중인 임무의 요건이면 그 임무 id (임무 장소에서만). 잠입처럼 도구가 굴리는 판정도 임무로 센다
+ * (12-261, PT16 졸병: 잠입의 은밀·수색이 "붉은연합 보급 털기"로 세지지 않았다)
+ */
+export function missionForCheck(state: import("../game/state.ts").GameState, move: string): string | null {
+  const m = activeMissionOf(state.missions, state.playerId);
+  if (!m || heldOf(state.characters[state.playerId])) return null;
+  if (!atMissionPlace(m, state.playerZone, state.zones, state.factions)) return null;
+  return m.requirements.some((r) => "check" in r && (r.check === move || !!r.alts?.includes(move))) ? m.id : null;
 }

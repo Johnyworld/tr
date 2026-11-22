@@ -380,6 +380,15 @@ export function gmToolSpecs(s: Scenario): ToolSpec[] {
 /** 의식불명 등 스스로 아무것도 못 하는 동안에도 쓰는 tool: 시간 흐르기·돌봄(take_action이 가린다), 누가 오고 가는 것, 묘비명, 설정 */
 const WHILE_INCAPACITATED = new Set(["take_action", "npc_presence", "spawn_extra", "write_epitaph", "set_content_options"]);
 
+/**
+ * 인자가 틀렸을 때 붙일 안내 "이 도구(이름)의 인자: …" (12-260). 맞으면 null.
+ * core가 검사할 때와 MCP 어댑터가 SDK 검증 오류를 받았을 때 함께 쓴다 (12-261, PT16: SDK가 먼저 거절해 안내가 한 번도 안 붙었다)
+ */
+export function argsHelp(name: string, schema: z.ZodType, input: unknown): string | null {
+  const parsed = schema.safeParse(input ?? {});
+  return parsed.success ? null : `이 도구(${name})의 인자: ${argsHint(schema, parsed.error.issues[0]?.path[0])}`;
+}
+
 /** 도구 인자의 모양을 한 줄로 (칸 이름, 빼도 되는 칸은 ?, 고를 수 있는 값). 너무 길면 한 단계만 */
 export function argsHint(schema: z.ZodType, focus?: PropertyKey): string {
   const full = describeArg(schema, 0, 3);
@@ -426,6 +435,11 @@ function noteHeldSeen(ctx: ToolContext): void {
   const zone = state.playerZone;
   if (!zone) return;
   const topics = new Set((state.beliefs[state.playerId] ?? []).map((b) => b.topic));
+  // 풀려난 사람을 장면에서 보면 "붙잡혀 있다" 기억을 지운다 (12-261, PT16 졸병: 함께 탈출한 뒤에도 남았다)
+  for (const id of state.scene.present) {
+    if (heldOf(state.characters[id])) continue;
+    for (const b of state.beliefs[state.playerId] ?? []) if (b.topic?.startsWith(`held_seen:${id}@`)) ctx.store.append({ type: "belief_dropped", characterId: state.playerId, beliefId: b.id });
+  }
   for (const id of state.scene.present) {
     const c = state.characters[id];
     const held = heldOf(c);
@@ -453,7 +467,7 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   const parsed = tool.schema.safeParse(input);
   if (!parsed.success) {
     // 인자 이름을 오류로 하나씩 배우지 않게 이 도구의 인자를 함께 알린다 (12-260, PT15 섬: 34회 중 6회를 인자 오류로 버렸다)
-    return { ok: false, error: `입력이 올바르지 않습니다: ${z.prettifyError(parsed.error)}\n이 도구(${name})의 인자: ${argsHint(tool.schema, parsed.error.issues[0]?.path[0])}` };
+    return { ok: false, error: `입력이 올바르지 않습니다: ${z.prettifyError(parsed.error)}\n${argsHelp(name, tool.schema, input)}` };
   }
   // 같은 장소에 있는 사람을 부르면 장면에 들인다 (12-253): 들이는 것은 도구가 실패해도 그대로다 (그 사람은 거기 있었다)
   const entered = name === "npc_presence" || name === "spawn_extra" ? [] : enterIfHere(ctx, mentionedIds(parsed.data));

@@ -1,6 +1,8 @@
 import type { HistoryPart } from "../game/background.ts";
 import { describeHistoryPart, historyFlags } from "../game/background.ts";
 import { sentence } from "../text.ts";
+// 지난 일은 세계가 열리기 전의 일이다: 다음 날 "어제"로 보이지 않게 (12-261, PT16 졸병)
+import { START_TIME } from "../rules/time.ts";
 import { createExtraCharacter } from "./extras.ts";
 import type { ToolContext } from "./toolkit.ts";
 import type { RoleContent } from "../content/schemas.ts";
@@ -48,7 +50,7 @@ function applyHistoryParts(ctx: ToolContext, parts: readonly HistoryPart[]): { p
     store.append({
       type: "belief_added",
       characterId: me,
-      belief: { id: `b_${state.nextBeliefNo}`, fact: sentence(describeHistoryPart(content, part, true)), source: "seen", accuracy: "exact", learnedAt: state.time },
+      belief: { id: `b_${state.nextBeliefNo}`, fact: sentence(describeHistoryPart(content, part, true)), source: "seen", accuracy: "exact", learnedAt: Math.min(state.time, START_TIME - 1) },
     });
     const person = part.kind === "loss" ? part.by : part.kind === "enemy" ? part.target : null;
     // 같은 사람이 부품 여럿에 나올 수 있다 (가족을 죽인 자이자 원수): 이미 아는 이름은 다시 배우지 않는다
@@ -193,7 +195,8 @@ export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined):
     const s = store.getState();
     const id = `ex_${s.nextExtraNo}`;
     const label = memberLabel(content, { me: { age: me.age ?? role!.age, gender: me.gender ?? "" } }, m);
-    const character = createExtraCharacter(content, t, { id, label, zone: family.zone, time: s.time, usedNames, name: m.name, age: m.age, gender: m.gender, usedLooks }, rng);
+    const made = createExtraCharacter(content, t, { id, label, zone: family.zone, time: s.time, usedNames, name: m.name, age: m.age, gender: m.gender, usedLooks }, rng);
+    const character = family.place && made.extra ? { ...made, extra: { ...made.extra, place: family.place } } : made;
     if (character.extra?.look) usedLooks.add(character.extra.look);
     // 그 구역 무리에 받아들여져 산다 (그 무리 사람들이 안다)
     const settled = groupRules(content)?.settled_rank;

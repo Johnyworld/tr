@@ -17,7 +17,7 @@ import { type FeeChoice, planHealerPay, payHealer } from "./fee.ts";
 import { needsSurgery, canOperate, surgeonRoll, operate } from "./surgery.ts";
 import { ownedBy } from "../../rules/home.ts";
 import { quarantineAfterCare } from "./quarantine.ts";
-import { nearby, whereIs } from "../../rules/place.ts";
+import { hereWithMe, nearby, whereIs } from "../../rules/place.ts";
 /**
  * 이 환자를 돌볼 장면의 치료사 (12-256): GM이 고른 사람(treatment.healer)이 있으면 그 사람, 아니면 수술감이면 수술할 줄 아는 사람,
  * 그 밖에는 지혈 솜씨가 가장 좋은 사람 (PT15 분대장: 수술할 줄 아는 윤채원이 곁에 있는데 장면의 첫 치료사를 골라 "수술을 할 줄 몰라")
@@ -33,6 +33,12 @@ export function healerFor(ctx: ToolContext, patient: string, chosen: string | nu
   const move = ctx.content.scenario.wounds?.staunch_move;
   const skill = (id: string) => (move ? effectiveSkill(ctx.content, state.characters[id]!, move) : 0);
   return [...all].sort((a, b) => skill(b) - skill(a) || all.indexOf(a) - all.indexOf(b))[0] ?? null;
+}
+
+/** 같은 장소에 있을 치료사 (장면에 없는 사람). 치료를 부르면 장면에 들인다 (12-261, PT16 분대장: 의무실의 두 치료사를 못 찾았다) */
+export function healersHere(ctx: ToolContext): string[] {
+  const state = ctx.store.getState();
+  return Object.values(ctx.content.npcs).filter((n) => n.healer && !state.characters[n.id]?.dead && hereWithMe(state, ctx.content, n.id)).map((n) => n.id);
 }
 
 /** 이 구역에서 수술할 줄 아는 치료사 (장면에 없는 사람도. 알려 주기용) */

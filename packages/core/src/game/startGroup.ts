@@ -123,7 +123,12 @@ export function makeFamily(content: Content, me: StartGroup["me"], count: number
     const kind = groupRules(content)!.relations.find((r) => r.id === m.relation)?.kind;
     const from = groupRules(content)!.surname_from;
     const keeps = kind === "spouse" || (kind === "parent" && (from ? m.gender !== from : group.members.some((x) => x.relation === m.relation)));
-    if (family && !keeps && m.name.length >= 2) m.name = family + m.name.slice(1);
+    if (family && !keeps && m.name.length >= 2) {
+      m.name = family + m.name.slice(1);
+      // 성을 바꾸니 같은 이름이 생길 수 있다: 이름 부분을 다시 고른다 (12-261)
+      const pool = content.scenario.names?.given[m.gender] ?? Object.values(content.scenario.names?.given ?? {}).flat();
+      for (let tries = 0; taken.has(m.name) && pool.length && tries < 20; tries++) m.name = family + pool[Math.floor(rng() * pool.length)]!;
+    }
     taken.add(m.name);
     group.members.push(m);
   }

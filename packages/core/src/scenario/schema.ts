@@ -483,7 +483,13 @@ export const scenarioFileSchema = z
      * 우리 무리 안의 무거운 짓 (12-257, 공통 규칙 3): 이 태그 가운데 하나를 단 무게 min_severity 이상의 행적을 우리 무리 사람이 보았으면,
      * within_days 안에 when.own_offense 이야기(규율 회의)가 열린다. 없으면 무리 안의 벌이 없다
      */
-    offense: z.strictObject({ tags: z.array(id).min(1), min_severity: z.number().int().min(1).max(3), within_days: z.number().int().min(1) }).optional(),
+    /**
+     * 이야기 글 검사 (content:check, 12-261, PT16 네 판: 지하 보일러실에서 "안개 속의 발소리", 낮에 깨어 있는데 "등이 차가워서 깬다").
+     * outdoor: 이 말이 글에 있으면 바깥에서만 열린다(when.indoor: false 또는 장소). waking: 이 말이 있으면 잠·쉬는 중에만(when.activities)
+     */
+    story_lint: z.strictObject({ outdoor: z.array(z.string().min(1)).default([]), waking: z.array(z.string().min(1)).default([]) }).optional(),
+    /** notice_minutes: 짓이 상관 귀에 닿는 시간. 그 사이 한 짓은 한 회의에서 함께 다룬다 (12-261, PT16 졸병: 20분 만에 같은 회의가 또 열렸다) */
+    offense: z.strictObject({ tags: z.array(id).min(1), min_severity: z.number().int().min(1).max(3), within_days: z.number().int().min(1), notice_minutes: z.number().int().min(0).default(60) }).optional(),
     discipline: z
       .record(
         id,

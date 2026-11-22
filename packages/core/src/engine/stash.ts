@@ -2,7 +2,7 @@ import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
-import type { GameState } from "../game/state.ts";
+import { SCENE_HOLDER, type GameState } from "../game/state.ts";
 import { josa } from "../text.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem } from "./gear.ts";
 import { defineTool, type ToolContext, type ToolOutcome } from "./toolkit.ts";
@@ -121,7 +121,7 @@ export function settleHome(ctx: ToolContext): { ok: true; lines: string[] } | { 
 
 /**
  * 시작할 때 짐이 한도를 넘으면 무거운 것부터 사물함·거처에 넣어 둔다 (12-259, PT15 섬: 14.6/12kg으로 시작해 은밀·근접전 -1).
- * 걸친 것과 짐을 더 들게 해 주는 것(배낭)은 남긴다. 넣을 자리가 없으면 그대로 (content:check가 잡는다). 넣은 것의 목록을 돌려준다
+ * 걸친 것과 짐을 더 들게 해 주는 것(배낭)은 남긴다. 넣을 자리가 없으면 시작 자리 바닥에 둔다(다시 와서 가져갈 수 있다). 넣은 것의 목록을 돌려준다
  */
 export function stowStartingLoad(ctx: ToolContext): string[] {
   const { store, content } = ctx;
@@ -129,7 +129,7 @@ export function stowStartingLoad(ctx: ToolContext): string[] {
   const state = store.getState();
   const me = state.characters[state.playerId];
   const place = stashPlace(content, state);
-  if (!me || !place || carriedWeight(content, me) <= carryCapacity(content, me, state)) return [];
+  if (!me || carriedWeight(content, me) <= carryCapacity(content, me, state)) return [];
   const loose = Object.keys(me.inventory)
     .filter((id) => looseCount(me, id) > 0 && !content.items[id]?.carry_bonus)
     .sort((a, b) => (content.items[b]?.weight ?? 0.5) - (content.items[a]?.weight ?? 0.5));
@@ -138,7 +138,9 @@ export function stowStartingLoad(ctx: ToolContext): string[] {
     const now = store.getState().characters[me.id]!;
     if (carriedWeight(content, now) <= carryCapacity(content, now, store.getState())) break;
     const n = looseCount(now, id);
-    store.append({ type: "item_stashed", characterId: me.id, zone: place.zone, itemId: id, quantity: n, direction: "put" });
+    // 넣을 사물함·거처가 없으면 시작 자리에 내려 둔다 (12-261, PT16 튜토리얼: 무리 없는 방문자가 8.5/8kg으로 시작)
+    if (place) store.append({ type: "item_stashed", characterId: me.id, zone: place.zone, itemId: id, quantity: n, direction: "put" });
+    else store.append({ type: "item_transferred", from: me.id, to: SCENE_HOLDER, itemId: id, quantity: n });
     stowed.push(`${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`);
   }
   return stowed;

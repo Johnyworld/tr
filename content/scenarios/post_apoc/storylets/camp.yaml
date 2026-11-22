@@ -305,6 +305,8 @@
   fright: 2
   fright_tags: [dark]
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    activities: [sleep]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     camp_watched: false
@@ -361,6 +363,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    activities: [sleep]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     camp_watched: false
@@ -443,6 +447,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    activities: [sleep]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     weather: [rain]

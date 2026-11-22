@@ -44,6 +44,19 @@ const action = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+describe("MCP 인자 안내 (12-261)", () => {
+  it("SDK가 거절한 틀린 인자에도 그 도구의 인자 모양이 붙는다", async () => {
+    const { call } = await connect(REAL_CONTENT);
+    const bad = await call("assign_mission", { mission: "x" });
+    expect(bad.isError).toBe(true);
+    expect(bad.text).toContain("이 도구(assign_mission)의 인자: { template_id: string");
+    const nested = await call("take_action", { intent: "행동", check: { move: "fight" } });
+    expect(nested.isError).toBe(true);
+    expect(nested.text).toContain("이 도구(take_action)의 인자:");
+    expect(nested.text).toContain("\ncheck: {");
+  });
+});
+
 describe("MCP tool", () => {
   it("턴 단위 tool과 run_command 하나만 연다 (정보용 개별 tool은 없다)", async () => {
     const { client } = await connect();

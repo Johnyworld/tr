@@ -10,6 +10,7 @@
  * 설정 굴림의 기록은 이 모듈로만 읽는다 (rules/guards.test.ts).
  */
 import { josa } from "../text.ts";
+import { isCreature } from "../game/kinds.ts";
 import { rollPlayerCheck } from "../engine/checks.ts";
 import { shakeNerves } from "../engine/body.ts";
 import type { ToolContext, ToolDisplayEvent } from "../engine/toolkit.ts";
@@ -46,13 +47,19 @@ export function againstSetting(ctx: ToolContext, settingId: string): SettingRoll
   const who = `${item.confirm ?? item.name} ${me.name}`;
   // 판정 줄에는 스킬 이름(버티기)만 나와 무슨 굴림인지 몰랐다 (PT14): 설정을 거스르는 마음의 굴림임을 먼저 밝힌다
   const head = `(${josa(item.name, "을/를")} 거스르는 마음의 굴림)`;
-  // 무엇을 했는지 동사로 (12-260, PT15 졸병·섬: "뜻대로 하지만"이 설정을 지킨 건지 꺾은 건지 읽히지 않았다)
-  if (roll.outcome === "success") return { ok: true, proceed: true, lines: [head, `${josa(who, "은/는")} ${josa(item.name, "을/를")} 누르고 그 행동을 해낸다.`], displays: [roll.display] };
+  // 무엇을 했는지 동사로 (12-260). 꾸밈말(confirm)과 설정 이름이 겹치지 않게 이름만 쓴다 (12-261, PT16: "모질지 못한 하람은 모질지 못하다를 누르고")
+  const against = settingObject(item.name);
+  if (roll.outcome === "success") return { ok: true, proceed: true, lines: [head, `${josa(me.name, "은/는")} ${against} 누르고 그 행동을 해낸다.`], displays: [roll.display] };
   if (roll.outcome === "partial") {
     const shaken = shakeNerves(ctx, 1, `${josa(item.name, "을/를")} 거슬렀다`, false);
-    return { ok: true, proceed: true, lines: [head, `${josa(who, "은/는")} ${josa(item.name, "을/를")} 꺾고 그 행동을 한다. 마음이 흔들린다.`, ...shaken.lines], displays: [roll.display, ...shaken.displays] };
+    return { ok: true, proceed: true, lines: [head, `${josa(me.name, "은/는")} ${against} 꺾고 그 행동을 한다. 마음이 흔들린다.`, ...shaken.lines], displays: [roll.display, ...shaken.displays] };
   }
   return { ok: true, proceed: false, lines: [head, `${josa(who, "은/는")} 끝내 하지 못한다: 그 행동은 일어나지 않았다. GM은 행동을 바꿔 서술하고 까닭(${item.name})을 짧게 알린다.`], displays: [roll.display] };
+}
+
+/** 설정을 목적어로: 문장으로 된 이름("무리를 팔지 않는다")은 "~는 마음을", 낱말("복종")은 "복종을" */
+function settingObject(name: string): string {
+  return /다$/.test(name) ? `${name}는 마음을` : josa(name, "을/를");
 }
 
 /** 설정의 주인 쪽 카드 줄 (연기 카드, 주인공·NPC 공통). 주인공이면 비밀의 사실과 아는 사람, 거스를 때의 안내까지 */
@@ -82,6 +89,11 @@ export function settingLines(content: { scenario: ToolContext["content"]["scenar
     );
   }
   return lines;
+}
+
+/** 이번 턴 설정 거스르기에 꺾였는가: 그 행동은 일어나지 않았다 (12-261) */
+export function settingBrokeThisTurn(state: ReturnType<ToolContext["store"]["getState"]>): boolean {
+  return Object.values(state.settingRolls ?? {}).some((r) => !r.won && r.turn === state.turn);
 }
 
 /** 이 사람의 비밀을 아는 사람들 (털어놓은 상대와 그 자리에 있던 사람) */
@@ -117,7 +129,8 @@ export function tellPlayerSecret(ctx: ToolContext, listenerId: string): { ok: tr
   if (!secret?.fact) return { ok: false, error: "주인공에게는 털어놓을 비밀(설정)이 없다." };
   if (!state.scene.present.includes(listenerId)) return { ok: false, error: "장면에 없는 인물입니다." };
   const already = secretKnownBy(state, state.playerId);
-  const told = state.scene.present.filter((id) => id !== state.playerId && !already.includes(id) && !!state.characters[id] && !state.characters[id].dead);
+  // 동물·감염체는 알아듣지 못한다 (12-261, PT16 튜토리얼: 곁의 누렁이가 "비밀을 아는 사람"이 됐다)
+  const told = state.scene.present.filter((id) => id !== state.playerId && !already.includes(id) && !!state.characters[id] && !state.characters[id].dead && !isCreature(ctx.content, state.characters[id]));
   if (!told.includes(listenerId)) return { ok: false, error: "그 인물은 이미 당신의 비밀을 안다." };
   ctx.store.append({ type: "secret_told", owner: state.playerId, to: told });
   return { ok: true, fact: secret.fact, told };

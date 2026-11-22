@@ -69,7 +69,7 @@ export function planHealerPay(ctx: ToolContext, healerId: string, choice: FeeCho
     }
   }
   // 값을 받지 않은 까닭
-  const waived = cost.fee <= 0 || pay.size ? null : heldOf(player) ? "붙잡힌 몸이라 값을 받지 않았다" : player.factionId && player.factionId === healer.factionId ? "같은 무리라 값을 받지 않았다" : "믿는 사이라 값을 받지 않았다";
+  const waived = cost.fee <= 0 || pay.size ? null : player.factionId && player.factionId === healer.factionId ? "같은 무리라 값을 받지 않았다" : heldOf(player) ? "붙잡힌 몸이라 값을 받지 않았다" : "믿는 사이라 값을 받지 않았다";
   return { ok: true, plan: { carried, fromStock: atBase && faction ? healer.factionId : null, pay, waived } };
 }
 

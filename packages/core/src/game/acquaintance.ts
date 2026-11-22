@@ -104,13 +104,19 @@ const ALIAS_PARTICLES: Record<string, JosaPair> = { 은: "은/는", 는: "은/�
 export function withKnownNames(state: GameState, content: Content, fact: string): string {
   if (isAcquaintanceMemory(fact)) return fact;
   let out = fact;
-  for (const id of state.known[state.playerId] ?? []) {
-    const c = state.characters[id];
-    if (!c || id === state.playerId) continue;
+  const known = (state.known[state.playerId] ?? []).filter((id) => state.characters[id] && id !== state.playerId);
+  // 같은 호칭을 쓰는 사람이 여럿이면(형제자매 둘) 누구인지 모르니 바꾸지 않는다 (12-261)
+  const aliasCount = new Map<string, number>();
+  for (const id of known) aliasCount.set(aliasOf(state, content, id), (aliasCount.get(aliasOf(state, content, id)) ?? 0) + 1);
+  for (const id of known) {
+    const c = state.characters[id]!;
     const alias = aliasOf(state, content, id);
+    if ((aliasCount.get(alias) ?? 0) > 1) continue;
     if (!alias || alias === c.name || !out.includes(alias)) continue;
     const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    out = out.replace(new RegExp(`${escaped}(은|는|을|를|과|와|(?:이|가)(?!다))?`, "g"), (_m, p?: string) => (p ? josa(c.name, ALIAS_PARTICLES[p]!) : c.name));
+    const named = c.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // 호칭 바로 뒤에 이름이 이미 있으면("아버지 임재석") 그대로 둔다 (12-261, PT16 튜토리얼: "임재석 임재석")
+    out = out.replace(new RegExp(`${escaped}(?!\\s*${named})(은|는|을|를|과|와|(?:이|가)(?!다))?`, "g"), (_m, p?: string) => (p ? josa(c.name, ALIAS_PARTICLES[p]!) : c.name));
   }
   return out;
 }

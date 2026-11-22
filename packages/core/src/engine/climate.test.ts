@@ -15,7 +15,10 @@ const content = loadRealContent();
 const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });
 
 /** 겨울 어느 날 hour시, zone에 있는 주인공 (날씨 없음, 동행 없음, 트레잇 없음, 빈손) */
-function setup(opts: { hour?: number; zone?: string; role?: string; season?: string; quiet?: boolean } = {}) {
+/** 이 구역의 실내 장소 (막 들어선 자리는 바깥이다, 12-261) */
+const indoorOf = (zone: string) => content.locations[zone]?.places.find((p) => p.indoor && !p.jail)?.id ?? null;
+
+function setup(opts: { hour?: number; zone?: string; role?: string; season?: string; quiet?: boolean; entry?: boolean } = {}) {
   // quiet: 이야기·끼어들기 없이 시간만 흐른다
   const c = opts.quiet ? { ...content, storylets: {} } : content;
   const store = new InMemoryGameStore([createWorldEvent(c, opts.role ?? "role_l_wanderer", "world_cold", () => 0.5)]);
@@ -26,6 +29,8 @@ function setup(opts: { hour?: number; zone?: string; role?: string; season?: str
   state.time = day * MINUTES_PER_DAY + (opts.hour ?? 12) * 60;
   state.weather = null;
   state.playerZone = opts.zone ?? "old_town";
+  // 지붕 아래에서 쉬는 셈은 실내 장소에서 (막 들어선 자리는 바깥이다, 12-261)
+  state.playerPlace = opts.entry ? null : indoorOf(state.playerZone);
   const me = () => store.getState().characters[store.getState().playerId]!;
   me().traits = [];
   me().inventory = {};
@@ -48,9 +53,11 @@ describe("기온", () => {
   });
 
   it("체감: 실내는 바깥보다 따뜻하고, 방한복은 입어야, 담요는 자거나 쉴 때만", () => {
-    const { store, me } = setup();
+    const { store, me } = setup({ entry: true });
     const out = feelsLike(content, store.getState(), "search")!;
+    store.getState().playerPlace = indoorOf("old_town");
     const inside = feelsLike(content, store.getState(), "rest")!;
+    store.getState().playerPlace = null;
     expect(inside.value).toBeGreaterThan(out.value);
     expect(inside.indoor).toBe(true);
     me().inventory.coat = 1;
@@ -61,6 +68,7 @@ describe("기온", () => {
     expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value + coat);
     me().inventory.blanket = 1;
     expect(feelsLike(content, store.getState(), "search")!.value).toBe(out.value + coat);
+    store.getState().playerPlace = indoorOf("old_town");
     expect(feelsLike(content, store.getState(), "sleep")!.value).toBe(inside.value + coat + blanket);
   });
 
@@ -149,7 +157,7 @@ describe("기온", () => {
   });
 
   it("비 오는 날 바깥에 있으면 옷이 젖는다. 바깥에서는 마르지 않고, 지붕 아래 네 시간·불 곁 두 시간이면 마른다 (12-121, 12-186, 12-251)", () => {
-    const { store, ctx, me } = setup({ hour: SEGMENT_START_HOUR.day + 1 });
+    const { store, ctx, me } = setup({ hour: SEGMENT_START_HOUR.day + 1, entry: true });
     const s = store.getState();
     s.weather = { day: dayOf(s.time), id: "rain" };
     const wet = content.scenario.body!.cold!.climate!.wet!;
@@ -163,6 +171,7 @@ describe("기온", () => {
     expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60);
     expect(feelsLike(content, store.getState(), "search")!.parts.some((p) => p.startsWith("젖은 옷 -"))).toBe(true);
     // 지붕 아래 두 시간이면 반쯤
+    store.getState().playerPlace = indoorOf("old_town");
     exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 120);
     store.getState().time += 120;
     expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60 / 2);
@@ -233,6 +242,7 @@ describe("기온", () => {
     expect(f.parts.some((p) => p.startsWith("피난처의 난로"))).toBe(true);
     expect(f.value).toBe(content.scenario.body!.cold!.climate!.sanctuary);
     // 바깥에서 보초를 서면 그대로 춥다
+    store.getState().playerPlace = null;
     expect(feelsLike(content, store.getState(), "guard_duty")!.parts.some((p) => p.startsWith("피난처의 난로"))).toBe(false);
   });
 });

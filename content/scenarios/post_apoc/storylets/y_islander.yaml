@@ -29,6 +29,8 @@
       label: 노인을 따라 나간다
       effects:
         - set_flag: y_soup_done
+        # 가장 캐묻는 선택이 진실 줄기를 열어야 한다 (12-261, PT16 섬: follow만 y_looking을 안 줘 장부가 늦게 열렸다)
+        - set_flag: y_looking
         - relation: { who: old, axis: trust, delta: 1 }
         - belief: { fact: "추복만이 고기 국을 바다에 쏟았다. 왜냐고 묻자 '먹지 마라. 그냥 먹지 마라'고만 했다", source: seen }
     - id: skip

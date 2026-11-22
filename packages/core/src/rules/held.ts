@@ -55,3 +55,10 @@ export function heldSeenZone(state: { playerId: string; beliefs: Record<string, 
   const seen = (state.beliefs[state.playerId] ?? []).filter((b) => b.topic?.startsWith(prefix));
   return seen.length ? seen.at(-1)!.topic!.slice(prefix.length) : null;
 }
+
+/** 주인공이 우리 무리의 벌로 갇혀 있는가 (12-257 confineByOwn). 적에게 붙잡힌 것과 글·이야기가 다르다 (12-261, PT16 졸병) */
+export function heldByOwn(state: { playerId: string; characters: Record<string, { captive?: Held | null; factionId?: string } | undefined> }): boolean {
+  const me = state.characters[state.playerId];
+  const held = heldOf(me);
+  return !!held && !!me?.factionId && held.by === me.factionId;
+}

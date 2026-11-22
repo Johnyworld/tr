@@ -82,6 +82,8 @@
   fright_tags: [infected]
   tags: [world]
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    indoor: false
     weather: [fog]
     own_territory: false
     # 플레이 테스트 12: 진료소 간이침상에서, 버들마을 거점 정문 앞에서 "물결"이 지나갔다. 담 안(거점)에서는 열지 않는다

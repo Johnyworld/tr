@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 91;
+export const SAVE_SCHEMA_VERSION = 92;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -313,7 +313,7 @@ export function createGameSchemas(s: Scenario) {
     /** 설정을 거스른 굴림 (설정 id → 자리·시각·이겨 냈나, 공통 규칙 16). 같은 장면에서 같은 설정은 한 번 */
     /** 주인공·인물의 비밀(설정)을 아는 사람 (주인 id → 아는 사람들, 공통 규칙 16) */
     secretKnownBy: z.record(z.string(), z.array(z.string())).default({}),
-    settingRolls: z.record(z.string(), z.strictObject({ spot: z.string(), at: z.number().int(), won: z.boolean() })).default({}),
+    settingRolls: z.record(z.string(), z.strictObject({ spot: z.string(), at: z.number().int(), won: z.boolean(), turn: z.number().int().optional() })).default({}),
     /** 구역마다 오늘의 소음 (기획서 4.8) */
     zoneNoise: z.record(z.string(), z.strictObject({ day: z.number().int(), level: z.number().int() })).default({}),
     /** 소리를 듣고 몰려오는 감염체 (infestation.swarm_hours): 구역 → 그날 소리(day)에 몰려드는 시각(at), 이미 왔는지(done) */
@@ -1993,7 +1993,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     }
     case "setting_rolled":
-      next.settingRolls = { ...(next.settingRolls ?? {}), [event.setting]: { spot: event.spot, at: state.time, won: event.won } };
+      next.settingRolls = { ...(next.settingRolls ?? {}), [event.setting]: { spot: event.spot, at: state.time, won: event.won, turn: state.turn } };
       return next;
     case "npc_spared":
       next.sparedOnce = [...(next.sparedOnce ?? []), event.npcId];

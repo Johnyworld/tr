@@ -66,6 +66,7 @@ export { acquireLock, readLock, isProcessAlive, WorldLockedError, type LockInfo 
 export { buildGmGuide } from "./engine/prompt.ts";
 export { describePlayerState } from "./engine/context.ts";
 export {
+  argsHelp,
   executeTool,
   gmToolSpecs,
   gmTools,

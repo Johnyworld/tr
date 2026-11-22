@@ -47,7 +47,8 @@ describe("1. ?상태와 GM 상태의 스킬 값은 같다 (공통 규칙 12)", (
     const out = status(env.state());
     expect(out).toContain(`${label} ${sense >= 0 ? "+" : ""}${sense} (트레잇 +1)`);
     // GM 상태도 같은 값
-    expect(describePlayerState(env.state(), content)).toContain(`${label}(sense_danger) ${sense >= 0 ? "+" : ""}${sense}`);
+    expect(describePlayerState(env.state(), content)).toContain(`${label}(sense_danger·`);
+    expect(describePlayerState(env.state(), content)).toMatch(new RegExp(`${label}\\(sense_danger·[^)]*\\) ${sense >= 0 ? "\\+" : ""}${sense}`));
   });
 
   it("진급 조건의 복무 날짜는 시계와 같은 셈이다 (1일째 → '복무 1일째')", () => {
@@ -63,7 +64,7 @@ describe("1. ?상태와 GM 상태의 스킬 값은 같다 (공통 규칙 12)", (
     env.store.append({ type: "deed_recorded", deed: { id: "d_1", actorId: st.playerId, summary: "접골사에게 거짓말했다", tags: ["deceit"], severity: 2, at: st.time, witnesses: [], searched: false } });
     env.store.append({ type: "time_advanced", activity: "rest", from: st.time, to: st.time + MINUTES_PER_DAY });
     env.store.append({ type: "deed_learned", deedId: "d_1", npcId: boss, source: "rumor", delta: { trust: -1, affection: 0, respect: 0 } });
-    expect(recentSetback(env.state(), st.playerId, boss)).toContain("(2일차: 1일차의 일 — 접골사에게 거짓말했다)");
+    expect(recentSetback(env.state(), st.playerId, boss)).toContain("(1일차의 일 — 접골사에게 거짓말했다)");
   });
 });
 

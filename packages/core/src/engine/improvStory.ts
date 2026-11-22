@@ -10,6 +10,7 @@ import type { Scenario } from "../scenario/schema.ts";
 import { moveLabel } from "../scenario/scenario.ts";
 import { learned } from "../rules/skill.ts";
 import { situationOf } from "../rules/situation.ts";
+import { peopleAt, whereIs } from "../rules/place.ts";
 import { inCrisis, isThreat, storyletGapMinutes } from "../story/storylets.ts";
 import { josa } from "../text.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
@@ -104,7 +105,14 @@ export function describeImprovSlotForGm(state: GameState, content: Content): str
   if (!slot || !rule || state.activeStorylet || !slotUsable(state, content)) return "";
   const people = castable(state).map((id) => `${playerCalls(state, content, id)}(${id})`);
   // 곁에 사람이 없으면 한 줄만 (12-260, PT15 섬: 혼자 자는 동안 보상·대가 설명이 9시간 실렸다). 사람이 생기면 전체를 싣는다
-  if (!people.length) return `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 곁에 사람이 없다. 사람을 만나면(장면에 들이거나 spawn_extra) 쓸 수 있다.`;
+  if (!people.length) {
+    // 이 장소에 있을 사람이 있으면 부르면 된다 (12-261, PT16 졸병: 막사에 열다섯이 있는데 "곁에 사람이 없다")
+    const here = whereIs(state, content, state.playerId);
+    const nearby = here?.place ? peopleAt(state, content, here.zone, here.place).length : 0;
+    return nearby
+      ? `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 장면에 사람이 없다. 이 장소에 있을 사람 ${nearby}명 가운데 누구를 target으로 부르거나 장면에 들이면 쓸 수 있다.`
+      : `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 곁에 사람이 없다. 사람을 만나면(장면에 들이거나 spawn_extra) 쓸 수 있다.`;
+  }
   const track = content.scenario.condition_tracks.find((t) => t.id === rule.costs.body.track)?.label ?? rule.costs.body.track;
   return [
     `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 반복되는 이야기 대신 장면에 맞는 작은 이야기를 improvise_storylet로 지어 열 수 있다. 지금 장면이 맞지 않으면(할 일이 뚜렷하다, 막 이야기가 끝났다, 혼자 쉬는 중) 맞는 순간까지 기다렸다 써도 된다. 쓰지 않으면 지나간다.`,

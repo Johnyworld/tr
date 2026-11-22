@@ -12,6 +12,7 @@ import { weatherNow } from "../sim/weather.ts";
 import { advanceTime } from "./action.ts";
 import { capturePlayer } from "./captivity.ts";
 import { rollPlayerCheck } from "./checks.ts";
+import { missionForCheck } from "../game/missions.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { applyEffect, hostileZone, runTagEvent } from "./storyletTools.ts";
 import { roadStorylets } from "../story/storylets.ts";
@@ -148,7 +149,7 @@ const infiltrate = defineTool({
     if (input.action === "advance") {
       if (inf.depth >= deepest) return { ok: false, error: `이미 가장 깊은 곳(${depthLabel(deepest)})이다. act로 목표를 한다.` };
       const m = moveOf(content.scenario, r.move)!;
-      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(depthLabel(inf.depth + 1), "으로/로")} 숨어든다` }, ctx);
+      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(depthLabel(inf.depth + 1), "으로/로")} 숨어든다` }, ctx, { forMission: missionForCheck(ctx.store.getState(), r.move) });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -170,7 +171,7 @@ const infiltrate = defineTool({
 
     if (input.action === "listen") {
       const m = moveOf(content.scenario, r.listen)!;
-      const check = rollPlayerCheck({ move: r.listen, stat: m.stats[0]!, difficulty: "normal", intent: "멈춰서 낌새를 살핀다" }, ctx);
+      const check = rollPlayerCheck({ move: r.listen, stat: m.stats[0]!, difficulty: "normal", intent: "멈춰서 낌새를 살핀다" }, ctx, { forMission: missionForCheck(ctx.store.getState(), r.listen) });
       if (!check.ok) return check;
       const extra = step(ctx);
       const alarm = store.getState().infiltration!.alarm;
@@ -185,7 +186,7 @@ const infiltrate = defineTool({
       if (inf.done) return { ok: false, error: "목표는 이미 했다. 빠져나온다." };
       const goal = r.goals.find((g) => g.id === inf.goal)!;
       const m = moveOf(content.scenario, goal.move)!;
-      const check = rollPlayerCheck({ move: goal.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: goal.label }, ctx);
+      const check = rollPlayerCheck({ move: goal.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: goal.label }, ctx, { forMission: missionForCheck(ctx.store.getState(), goal.move) });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -219,7 +220,7 @@ const infiltrate = defineTool({
     }
     const m = moveOf(content.scenario, r.move)!;
     const harder = (inf.depth >= deepest ? 1 : 0) + (caught ? 1 : 0);
-    const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, harder), intent: "빠져나온다" }, ctx);
+    const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, harder), intent: "빠져나온다" }, ctx, { forMission: missionForCheck(ctx.store.getState(), r.move) });
     if (!check.ok) return check;
     store.append({ type: "infiltration_ended", how: check.outcome === "miss" ? "caught" : "out" });
     if (check.outcome === "success") return { ok: true, resultText: "빠져나왔다. 잠입은 끝났다. 이 결과대로 서술하라.", display: check.display, extra };

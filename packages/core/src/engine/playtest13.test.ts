@@ -1,3 +1,4 @@
+import { npcPlaceAt } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -237,7 +238,12 @@ describe("플레이 테스트 13의 남은 버그", () => {
     w.ctx().store.append({ type: "condition_changed", targetId: w.state().playerId, track: "fatigue", from: "rested", to: "drowsy", fatal: false, by: "daily", cause: "테스트", day: 1, harmTrack: false });
     const r = w.executeTool("take_action", act({ activity: { kind: "sleep", until: "night" }, ignore_story: true }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
-    if (w.state().time - 0 > 0 && !(r.ok && r.resultText.includes("끊겼다"))) expect(w.state().scene.present).not.toContain(commander);
+    // 일과상 이 자리가 제자리인 사람은 남는다 (12-261)
+    const home = npcPlaceAt(w.state(), content, commander) === w.state().playerPlace;
+    if (!(r.ok && r.resultText.includes("끊겼다"))) {
+      if (home) expect(w.state().scene.present).toContain(commander);
+      else expect(w.state().scene.present).not.toContain(commander);
+    }
   });
 
   it("적대하는 땅에서 드러내 놓고 말을 거는 것은 숨기 판정을 요구하지 않는다", () => {

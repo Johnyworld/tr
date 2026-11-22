@@ -398,16 +398,7 @@ function checkReferences(content: Content): string[] {
     }
   }
   for (const role of Object.values(content.roles)) {
-    // 사물함이 없는 역할(무리 없이 시작)은 시작 짐(역할 + 가장 무거운 과거 배경)이 근력 0의 한도를 넘지 않는다 (12-259). 무리가 있으면 넘는 것은 사물함에 넣고 시작한다
-    const carry = content.scenario.gear?.carry;
-    if (carry && !role.faction) {
-      const weigh = (ids: readonly string[]) => ids.reduce((n, id) => n + (content.items[id]?.weight ?? 0.5), 0);
-      const pasts = content.scenario.creation?.pasts ?? [];
-      const worst = Math.max(0, ...pasts.map((p) => weigh(p.items.filter((i) => !role.start_inventory.includes(i)))));
-      const bonus = Math.max(0, ...role.start_inventory.map((id) => content.items[id]?.carry_bonus ?? 0));
-      const load = weigh(role.start_inventory) + worst;
-      if (load > carry.base + bonus) problems.push(`roles.${role.id}: 무리 없이 시작하는데 시작 짐이 한도를 넘을 수 있다 (${load.toFixed(1)}/${carry.base + bonus}kg, 넣어 둘 사물함이 없다)`);
-    }
+    if (role.family?.place && !(content.locations[role.family.zone]?.places ?? []).some((p) => p.id === role.family!.place)) problems.push(`roles.${role.id}.family.place: ${role.family.zone}에 없는 장소 ${role.family.place}`);
     // 시작 장소 (12-259): 시작 구역의 장소여야 하고, 시작 장면 글이 장소를 여럿 말하면 적어 둔다
     if (role.start_location && content.locations[role.start_location]) {
       const places = content.locations[role.start_location]!.places;
@@ -635,6 +626,15 @@ export function checkStorylets(content: Content): string[] {
       const known = new Set((s.when.zones ?? []).flatMap((z) => (content.locations[z]?.places ?? []).map((p) => p.id)));
       if (!s.when.zones?.length) problems.push(`${where}.when.places: 구역(when.zones)을 함께 적는다`);
       for (const p of s.when.places) if (s.when.zones?.length && !known.has(p)) problems.push(`${where}.when.places: ${s.when.zones.join("·")}에 없는 장소 ${p}`);
+    }
+    // 이야기 글이 자리·때를 말하면 조건도 맞춘다 (12-261)
+    {
+      const lint = content.scenario.story_lint;
+      const text = [s.title, s.setup, ...(s.variants ?? [])].join("\n");
+      const out = (lint?.outdoor ?? []).find((w) => text.includes(w));
+      if (out && s.when.indoor !== false && !s.when.places) problems.push(`${where}: 글이 바깥("${out}")을 말하는데 실내에서도 열린다. when.indoor: false 또는 when.places`);
+      const wake = (lint?.waking ?? []).find((w) => text.includes(w));
+      if (wake && !(s.when.activities?.length && s.when.activities.every((a) => a === "sleep" || a === "rest"))) problems.push(`${where}: 글이 잠에서 깨는 장면("${wake}")인데 깨어 있을 때도 열린다. when.activities: [sleep]`);
     }
     // 갇힌 사람이 배역인 이야기의 글이 가두는 곳이 아닌 장소를 말하면, 그 장소에서만 열린다 (12-259, PT15 튜토리얼: 포로 탈출 "창고 쪽"이 보급 창고)
     if (Object.values(s.cast).some((role) => role.captive && role.enter !== false) && !s.when.places) {

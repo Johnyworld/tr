@@ -1,6 +1,6 @@
 import { situationOf, storyFits } from "../rules/situation.ts";
 import { preferRested, resting } from "../rules/rest.ts";
-import { heldOf, playerHeld } from "../rules/held.ts";
+import { heldOf, playerHeld, heldByOwn } from "../rules/held.ts";
 import { disasterNear } from "../engine/disasters.ts";
 import { agendaOf, agendaShowing } from "../engine/agenda.ts";
 import { currentResolve, resolveTargetName, resolveText } from "../engine/resolve.ts";
@@ -282,6 +282,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.factions && !w.factions.includes(player.factionId || "none")) return false;
   if (w.has_lover !== undefined && (loversOf(state, content, player.id).length > 0) !== w.has_lover) return false;
   if (w.captors && (!heldOf(player) || !w.captors.includes(heldOf(player)!.by))) return false;
+  // 갇힌 동안의 이야기는 적에게 붙잡혔을 때만: 우리 무리의 벌로 갇혔으면 열지 않는다 (12-261, PT16 졸병: "우리 무리에 내가 여기 있다고 전해 달라")
+  if (w.captors && heldByOwn(state)) return false;
   if (w.captive_days_gte !== undefined && (!heldOf(player) || at - (heldOf(player)!.since ?? at) < w.captive_days_gte * MINUTES_PER_DAY)) return false;
   if (w.own_people_captive !== undefined) {
     const any = !!player.factionId && Object.values(state.characters).some((c) => c.id !== player.id && !c.dead && c.factionId === player.factionId && heldOf(c) && heldOf(c)!.by !== player.factionId);

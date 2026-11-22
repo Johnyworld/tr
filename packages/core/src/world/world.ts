@@ -52,7 +52,7 @@ const SCENE_SECTION_LABELS: Record<string, string> = {
   disaster: "재난",
   facilities: "시설",
   sheet: "능력·스킬·트레잇",
-  culture: "무리의 문화·권한",
+  culture: "무리의 문화·특권",
   battle: "전투·매복·포로",
   romance: "눈길·연인",
   diplomacy: "외교",
@@ -385,10 +385,12 @@ ${this.sceneForGm()}` };
     // 비어 있는 덩어리는 목록에 넣지 않는다 (플레이 테스트 12: 내용 없는 "재난"이 목록에 나왔다)
     // 열린 이야기 없이 즉흥 이야기 자리만 있으면 그 이름으로 (PT15: 열린 이야기가 없는데 "진행 중인 이야기"가 그대로라고 나왔다)
     const label = (k: string) => (k === "storylet" && !state.activeStorylet ? "즉흥 이야기 자리" : SCENE_SECTION_LABELS[k] ?? k);
+    // 사라진 덩어리는 보낸 때의 글로 이름을 정한다 (12-261, PT16: 방금 끝난 이야기가 "이제 없음: 즉흥 이야기 자리"로 나왔다)
+    const goneLabel = (k: string) => (k === "storylet" ? ((prev.get(k) ?? "").trimStart().startsWith("즉흥 이야기 자리") ? "즉흥 이야기 자리" : (SCENE_SECTION_LABELS[k] ?? k)) : (SCENE_SECTION_LABELS[k] ?? k));
     const same = sections.filter((s) => !changed.includes(s) && s.text.trim() !== "").map((s) => label(s.key));
     return [
       ...changed.map((s) => personDiff(s.key, prev.get(s.key), s.text)),
-      ...(gone.length ? [`(이제 없음: ${gone.map((k) => label(k)).join(", ")})`] : []),
+      ...(gone.length ? [`(이제 없음: ${gone.map((k) => goneLabel(k)).join(", ")})`] : []),
       ...(same.length ? [`(그대로라 다시 싣지 않음: ${same.join(", ")}. 전체가 필요하면 get_scene)`] : []),
     ].join("\n\n");
   }
@@ -613,5 +615,5 @@ function personDiff(key: string, before: string | undefined, now: string): strin
   const units = split(now);
   const fresh = units.filter((u, i) => i === 0 || !old.has(u));
   const same = units.length - fresh.length;
-  return same > 0 ? [...fresh, `(그대로인 ${same}${key === "present" ? "명의 카드" : "줄"}은 다시 싣지 않음. 전체가 필요하면 get_scene)`].join(key === "present" ? "\n\n" : "\n") : now;
+  return same > 0 ? [...fresh, `(그대로인 ${same}${key === "present" ? "명의 카드는" : "줄은"} 다시 싣지 않음. 전체가 필요하면 get_scene)`].join(key === "present" ? "\n\n" : "\n") : now;
 }

@@ -42,7 +42,7 @@ describe("표시 (12-260)", () => {
   it("즉흥 이야기 자리는 곁에 사람이 없으면 한 줄만", () => {
     const w = world("role_y_islander");
     w.ctx().store.append({ type: "improv_slot_opened", expiresAt: w.state().time + 600 });
-    const s = { ...w.state(), scene: { ...w.state().scene, present: [] }, companions: [] };
+    const s = { ...w.state(), playerPlace: null, scene: { ...w.state().scene, present: [] }, companions: [] };
     const line = describeImprovSlotForGm(s, content);
     expect(line).toContain("곁에 사람이 없다");
     expect(line.split("\n")).toHaveLength(1);

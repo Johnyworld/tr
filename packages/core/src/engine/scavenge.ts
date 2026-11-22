@@ -1,4 +1,5 @@
 import { searchSpot } from "../rules/place.ts";
+import { ownedBy } from "../rules/home.ts";
 import { itemResource } from "./market.ts";
 import { findRuin } from "./exploration.ts";
 import { effectiveSkill } from "./traits.ts";
@@ -28,9 +29,12 @@ export function scavengeParts(ctx: ToolContext): Part[] {
   if (!zone || !loot) return [];
   const lore = content.scenario.search_lore;
   const known = lore && effectiveSkill(content, state.characters[state.playerId]!, lore.skill) >= 1;
+  // 우리 거점은 털린 폐허가 아니다: 구역의 넉넉함을 셈하지 않는다 (12-261, PT16 분대장·졸병: 우리 보급 창고에 "-1(털린 구역)")
+  const me = state.characters[state.playerId];
+  const ownBase = content.locations[zone]?.kind === "base" && !!me?.factionId && ownedBy(state, zone, me.factionId);
   return [
     // 판정 줄만 보고 까닭을 알게 (플레이 테스트 14: "+1(넉넉한 곳) +1(역사)"가 무슨 뜻인지 몰랐다)
-    { label: loot.modifier > 0 ? "뒤질 거리가 많은 구역" : "털린 구역", value: loot.modifier },
+    { label: loot.modifier > 0 ? "뒤질 거리가 많은 구역" : "털린 구역", value: ownBase ? 0 : loot.modifier },
     { label: "오늘 다시 뒤짐", value: -searchedToday(state, searchSpot(state) ?? zone) },
     ...(lore && known ? [{ label: `${moveLabel(content.scenario, lore.skill)}: 옛 건물 쓰임을 앎`, value: lore.bonus }] : []),
   ].filter((p) => p.value !== 0);

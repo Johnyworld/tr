@@ -192,7 +192,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
         : []),
       ...settingLines(content, state, player, { player: true, name: (id) => headingAs(state, content, player.id, id) }),
       `능력: ${stats}`,
-      `스킬 (판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}. ${unlearnedNote(scenario)}): ${scenario.moves.map((m) => `${m.label}(${m.id}) ${shownSkill(content, player, m.id) === null ? "못 함" : signed(shownSkill(content, player, m.id)!)}`).join(", ")}`,
+      `스킬 (이름(id·쓸 수 있는 능력), 판정 보정 = 능력 + 스킬, 최대 ${signed(scenario.ranges.cap)}. ${unlearnedNote(scenario)}): ${scenario.moves.map((m) => `${m.label}(${m.id}·${m.stats.map((st) => scenario.stats.find((x) => x.id === st)?.label ?? st).join("/")}) ${shownSkill(content, player, m.id) === null ? "못 함" : signed(shownSkill(content, player, m.id)!)}`).join(", ")}`,
       `난이도 보정: ${difficulty}`,
     ].join("\n")],
     ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content), ...describeAmbush(content, state)].filter(Boolean).join("\n")],

@@ -194,6 +194,8 @@ export function createContentSchemas(s: Scenario) {
     family: z
       .strictObject({
         zone: contentIdSchema,
+        /** 가족이 사는 장소 (12-261, PT16 튜토리얼: 재회 뒤 시간대가 지나자 부모가 어느 장소 목록에도 없었다) */
+        place: contentIdSchema.optional(),
         count: z.tuple([z.number().int().min(1), z.number().int().min(1)]).default([2, 3]),
         /** 가족과 주인공이 서로를 보는 관계 (축마다, 관계의 범위 안) */
         bond: z.strictObject({ trust: z.number().int(), affection: z.number().int(), respect: z.number().int() }).default({ trust: 10, affection: 10, respect: 8 }),
@@ -591,6 +593,8 @@ export function createContentSchemas(s: Scenario) {
           description: z.string().min(1).optional(),
           /** 붙잡은 사람을 가두는 곳 (PT14: 붙잡히면 그 무리의 가두는 장소가 있는 구역, 그 장소에 갇힌다) */
           jail: z.boolean().default(false),
+          /** 걸어 들어갈 수 있는 물가 (바다·갯가·강가, 12-261). 마시는 물(water)과 따로 */
+          wade: z.boolean().optional(),
         }),
       )
       .default([]),

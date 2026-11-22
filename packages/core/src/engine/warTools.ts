@@ -1,5 +1,5 @@
 import { knownCrossings, knownOwner } from "../rules/knowledge.ts";
-import { heldOf } from "../rules/held.ts";
+import { heldByOwn, heldOf } from "../rules/held.ts";
 import { runDisasters } from "./disasters.ts";
 import { runAgendas } from "./agenda.ts";
 import { breakFacilities, runFacilitiesDaily } from "./facilities.ts";
@@ -307,7 +307,7 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
     : [];
   if (!o.own) return [...zoneLines, ...(content.scenario.seasons ? [`계절: ${seasonLabel(seasonAt(content.scenario, state.time))}`] : [])].join("\n");
   // 갇혀 있으면 우리 무리의 사정·수군거림·계획을 모른다 (플레이 테스트 12: 적 감옥에서 우리 공세 결과와 사상자 수가 보였다)
-  if (heldOf(state.characters[state.playerId])) {
+  if (heldOf(state.characters[state.playerId]) && !heldByOwn(state)) {
     return [
       ...zoneLines,
       `무리 사정: 갇혀 있어 ${o.own.name}의 요즘 사정은 모른다 (붙잡히기 전에 들은 것과 감옥에서 들리는 말뿐).`,

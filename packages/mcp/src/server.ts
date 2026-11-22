@@ -1,6 +1,7 @@
 import { McpServer, type RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
+  argsHelp,
   buildGmGuide,
   isCommand,
   CharacterChoiceError,
@@ -92,6 +93,20 @@ export function createMcpServer(
   /** 세계를 열기 전(목록·새 게임)에 쓰는 기본 월드 */
   const defaultContent = manager.content;
   const server = new McpServer({ name: "trpg", version: "0.0.0" });
+  // SDK가 인자를 먼저 검증해 core의 인자 안내가 닿지 않는다: SDK 검증 오류에 같은 안내를 붙인다 (12-261, PT16 네 판)
+  {
+    const sdk = server as unknown as { validateToolInput(tool: { inputSchema?: unknown }, args: unknown, name: string): Promise<unknown> };
+    const validate = sdk.validateToolInput.bind(server);
+    sdk.validateToolInput = async (tool, args, name) => {
+      try {
+        return await validate(tool, args, name);
+      } catch (err) {
+        const help = tool.inputSchema && err instanceof Error ? argsHelp(name, tool.inputSchema as Parameters<typeof argsHelp>[1], args) : null;
+        if (help && err instanceof Error) err.message = `${err.message}\n${help}`;
+        throw err;
+      }
+    };
+  }
   let world: GameWorld | null = null;
 
   const rng = options.rng ?? createSeededRng(Math.floor(Math.random() * 2 ** 31));

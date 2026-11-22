@@ -23,7 +23,17 @@ import type { Scenario } from "../scenario/schema.ts";
 import { ACTIVITY_COSTS, ACTIVITY_LABELS, dayOf, formatDuration, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { Content, MissionRequirement } from "../content/schemas.ts";
 import { baseOf } from "./captivity.ts";
-import { whereLabel } from "../rules/place.ts";
+import { hereWithMe, whereLabel } from "../rules/place.ts";
+import { enterScene } from "./extras.ts";
+
+/** 상관이 장면에 있는가. 같은 장소에 있으면 장면에 들인다 (12-261, 공통 규칙 15. PT16 분대장·섬: 막사에 있는 상관을 매번 따로 들였다) */
+function meetHere(ctx: ToolContext, id: string): boolean {
+  const state = ctx.store.getState();
+  if (state.scene.present.includes(id)) return true;
+  if (!hereWithMe(state, ctx.content, id)) return false;
+  enterScene(ctx, id);
+  return true;
+}
 import type { GameState } from "../game/state.ts";
 import {
   activeMissionOf,
@@ -131,8 +141,9 @@ const assignMission = defineTool({
     { const open = storyOpenError(ctx); if (open) return { ok: false, error: open }; }
     const commander = commanderOf(state, ctx);
     if (!commander) return { ok: false, error: "임무를 내릴 상관이 없습니다." };
-    if (!state.scene.present.includes(commander.id)) {
-      return { ok: false, error: `임무는 상관(${commander.name})이 직접 내린다. 먼저 npc_presence로 등장시키세요.` };
+    if (!meetHere(ctx, commander.id)) {
+      const where = whereLabel(state, ctx.content, commander.id);
+      return { ok: false, error: `임무는 상관(${commander.name})이 직접 내린다. ${where ? `지금 ${where}. ` : ""}그곳으로 가거나 npc_presence로 등장시키세요.` };
     }
     const current = activeMissionOf(state.missions, player.id);
     if (current) return { ok: false, error: `이미 수행 중인 임무가 있습니다: ${current.title}` };
@@ -208,6 +219,8 @@ const reportMission = defineTool({
     "다시 해 볼 수 있는 판정 조건이 남았으면 한 번 되묻는다: 그래도 보고하면 final: true.",
   schema: z.strictObject({
     final: z.boolean().default(false).describe("다시 해 볼 수 있는 조건이 남았는데도 지금 보고하면 true (플레이어가 그만두기로 했을 때)"),
+    // 찾아온 물건 가운데 무엇을 건넬지 (12-261, PT16 분대장: 찾은 진통제 대신 포상으로 받은 붕대를 건넸다)
+    items: z.array(z.string()).default([]).describe("찾아오기 임무에서 먼저 건넬 소지품 id (임무에서 찾은 것). 비우면 시스템이 고른다"),
   }),
   run(input, ctx) {
     const state = ctx.store.getState();
@@ -226,8 +239,9 @@ const reportMission = defineTool({
       }
     }
     const giver = state.characters[mission.giverId];
-    if (!giver || !state.scene.present.includes(giver.id)) {
-      return { ok: false, error: `보고는 임무를 준 ${giver?.name ?? "상관"}에게 직접 한다. 먼저 npc_presence로 등장시키세요.` };
+    if (!giver || !meetHere(ctx, giver.id)) {
+      const where = giver ? whereLabel(state, ctx.content, giver.id) : null;
+      return { ok: false, error: `보고는 임무를 준 ${giver?.name ?? "상관"}에게 직접 한다. ${where ? `지금 ${where}. ` : ""}그곳으로 가거나 npc_presence로 등장시키세요.` };
     }
 
     // 찾아오기 (플레이 테스트 11): 지닌 물건 가운데 그 자원에 속하는 것을 상관에게 건넨다. 모자라면 건네지 않고 미충족
@@ -235,7 +249,9 @@ const reportMission = defineTool({
     mission.requirements.forEach((r, i) => {
       if (!("bring" in r) || isRequirementMet(r, mission.progress[i] ?? 0)) return;
       const inv = ctx.store.getState().characters[state.playerId]!.inventory;
-      const matching = Object.entries(inv).filter(([id, q]) => q > 0 && itemResource(ctx.content, id) === r.bring);
+      const matching = Object.entries(inv)
+        .filter(([id, q]) => q > 0 && itemResource(ctx.content, id) === r.bring)
+        .sort(([a], [b]) => Number(input.items.includes(b)) - Number(input.items.includes(a)));
       if (matching.reduce((n, [, q]) => n + q, 0) < r.quantity) return;
       let left = r.quantity;
       for (const [id, q] of matching) {
@@ -337,7 +353,7 @@ const reportMission = defineTool({
       ...(learns ? [`알게 된 것 (임무로 확인했다, 상관에게도 보고했다): ${learns}`] : []),
       ...(short ? ["받아 올 값이 모자라 일부 완수까지다."] : []),
       ...unmetLines(ctx.content.scenario, reported),
-      ...(supplies && !party && result.outcome !== "failed" ? ["혼자 나간 일이라 무리 창고에 따로 든 것은 없다. 찾은 것은 소지품에 그대로 있다."] : []),
+      ...(supplies && !party && result.outcome !== "failed" ? ["무리 창고에 따로 든 것은 없다. 찾은 것은 소지품에 그대로 있다 (분대를 보내지 않은 일)."] : []),
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
       // 주인공이 실제로 찾은 물건과는 따로 셈한다 (플레이 테스트 11: 약을 못 찾았는데 "구해 온 의약품"이라고 했다)
       ...(supplied.length

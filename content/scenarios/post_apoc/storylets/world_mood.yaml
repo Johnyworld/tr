@@ -165,6 +165,8 @@
   cooldown_days: 4
   # 감염체가 평소보다 몰려들었을 때만 (12-123)
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    activities: [sleep]
     own_territory: true
     zone_overrun: true
     segments: [night, dawn]

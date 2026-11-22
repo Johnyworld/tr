@@ -74,6 +74,8 @@ export function createCharacterSchema(s: Scenario) {
         label: z.string(),
         look: z.string(),
         zone: z.string().nullable(),
+        /** 머무는 장소 (가족의 집, 만난 자리, 12-261). 없으면 구역 어딘가 */
+        place: z.string().nullable().optional(),
         /** 마지막으로 엮인 시각. GM 상태의 "이 구역에서 엮인 인물" 목록은 최근 것부터 몇 명만 보여 준다 */
         lastSeenAt: z.number().int(),
         /** 변이한 감염체면 누구였는지 (12-117). 호칭은 보는 사람이 그 사람 이름을 아는지로 정한다 */

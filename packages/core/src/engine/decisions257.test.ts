@@ -60,6 +60,9 @@ describe("규율 회의 (12-257, 공통 규칙 3)", () => {
     expect(ownOffense(w.state(), content)).toBeNull();
     const r = w.executeTool("take_action", act({ intent: "창고에서 통조림을 슬쩍한다", deed: { summary: "무리 창고에서 통조림을 훔쳤다", tags: ["theft"], severity: 2, privacy: "semi_private", noisy: false, condition: "always" } }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    // 짓이 상관 귀에 닿는 데 한 시간 (12-261)
+    expect(ownOffense(w.state(), content)).toBeNull();
+    w.executeTool("take_action", act({ activity: { kind: "wait", until: null, hours: 1 } }));
     expect(ownOffense(w.state(), content)).not.toBeNull();
     expect(conditionsMet(w.state(), content, content.storylets.disc_c_council!, w.state().time)).toBe(true);
     expect(conditionsMet(w.state(), content, content.storylets.disc_a_council!, w.state().time)).toBe(false);

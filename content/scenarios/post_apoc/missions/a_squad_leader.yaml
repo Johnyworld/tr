@@ -42,7 +42,7 @@
   where: south_fields
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
-  briefing: 밤새 남쪽 텃밭을 지킨다. 마지막 배추를 노리는 좀도둑과 담장 틈으로 들어오는 감염체를 막는다. 불은 피우지 않는다.
+  briefing: 밤에 몇 시간 남쪽 텃밭을 지킨다. 마지막 배추를 노리는 좀도둑과 담장 틈으로 들어오는 감염체를 막는다. 불은 피우지 않는다.
   giver_rank: officer
   deadline_hours: 14
   requirements:

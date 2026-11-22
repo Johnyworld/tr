@@ -100,7 +100,7 @@ describe("임무 수행과 보고", () => {
     executeTool("take_action", { intent: "행동", check: null, deed: null, target: null, narration_summary: null, for_mission: true, activity: { kind: "guard_duty", until: null } }, env.ctx);
     // 혼자 나간 일은 창고에 따로 들지 않는다 (플레이 테스트 12). 짝이 있으면 든다
     const out = executeTool("report_mission", {}, env.ctx);
-    expect(out.ok && out.resultText).toContain("혼자 나간 일이라");
+    expect(out.ok && out.resultText).toContain("분대를 보내지 않은 일");
     expect(food()).toBe(before);
   });
 

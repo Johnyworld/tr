@@ -48,6 +48,8 @@ describe("분배 방침", () => {
     s.time = day * MINUTES_PER_DAY + 2 * 60;
     s.weather = null;
     s.playerZone = "a_base";
+    // 불 땐 거처는 실내 장소에서 (막 들어선 자리는 바깥이다, 12-261)
+    s.playerPlace = "barracks";
     const heated = content.scenario.body!.cold!.climate!.heated;
     expect(feelsLike(content, s, "sleep")!.value).toBeGreaterThanOrEqual(heated);
     s.factions.faction_a!.policy = { fuel: "save" };

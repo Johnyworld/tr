@@ -105,7 +105,7 @@
   description: 물과 연료를 얻을 수 있어 무리들이 자주 부딪치는 곳. 밤에는 물결이 잦다.
   kind: zone
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: factory, name: "공장 건물 안", indoor: true, description: "지붕 반쯤 남은 공장 건물. 녹슨 기계 사이로 바람이 운다", aliases: ["공장"] }, { id: bank, name: "강가", indoor: false, description: "갈대와 자갈이 섞인 강가. 물소리가 다른 소리를 덮는다", aliases: ["강가", "강변 수풀", "갈대밭", "나루"] }, { id: pumphouse_cellar, name: "옛 양수장 지하", indoor: true, description: "발목까지 물이 찬 양수장 지하. 어둡고 울린다", aliases: ["양수장"] }]
+  places: [{ id: factory, name: "공장 건물 안", indoor: true, description: "지붕 반쯤 남은 공장 건물. 녹슨 기계 사이로 바람이 운다", aliases: ["공장"] }, { id: bank, name: "강가", indoor: false, wade: true, description: "갈대와 자갈이 섞인 강가. 물소리가 다른 소리를 덮는다", aliases: ["강가", "강변 수풀", "갈대밭", "나루"] }, { id: pumphouse_cellar, name: "옛 양수장 지하", indoor: true, description: "발목까지 물이 찬 양수장 지하. 어둡고 울린다", aliases: ["양수장"] }]
   cover: 4
   danger: 2
   owner: null
@@ -218,7 +218,7 @@
   description: 강 하류의 옛 휴게소. 정해진 날에 상인들이 모인다.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: stalls, name: "장터 좌판·천막", indoor: false, description: "천막 좌판이 줄지은 장터. 흥정 소리가 그치지 않는다", aliases: ["장터", "천막", "망루", "뒷골목"] }, { id: pawnshop, name: "전당포·장부석", indoor: true, description: "전당포와 장부석. 빚과 맡긴 물건이 여기 적힌다", aliases: ["전당포", "장부석", "장부 맞추기", "빚 걷기", "다락", "매점"] }, { id: bunkhouse, name: "호위·짐꾼 막사", indoor: true, description: "호위와 짐꾼이 자는 막사. 짐 냄새와 담배 연기", aliases: ["호위 막사", "짐꾼 막사"] }, { id: wagon_yard, name: "짐마차 마당", indoor: false, description: "짐마차와 수레가 서는 마당. 바퀴 자국이 깊다", aliases: ["짐 싣기", "짐마차", "출발 준비", "호위조 점검", "마구간", "화살 손질"] }, { id: landing, name: "선착장", indoor: false, description: "나룻배가 닿는 선착장. 밧줄과 물통이 쌓였다", aliases: ["선착장", "나루"] }, { id: lockup, name: "전당포 지하실", indoor: true, description: "전당포 지하실. 빚진 사람을 가두기도 한다", aliases: ["전당포 지하", "빚쟁이 방"], jail: true }]
+  places: [{ id: stalls, name: "장터 좌판·천막", indoor: false, description: "천막 좌판이 줄지은 장터. 흥정 소리가 그치지 않는다", aliases: ["장터", "천막", "망루", "뒷골목"] }, { id: pawnshop, name: "전당포·장부석", indoor: true, description: "전당포와 장부석. 빚과 맡긴 물건이 여기 적힌다", aliases: ["전당포", "장부석", "장부 맞추기", "빚 걷기", "다락", "매점"] }, { id: bunkhouse, name: "호위·짐꾼 막사", indoor: true, description: "호위와 짐꾼이 자는 막사. 짐 냄새와 담배 연기", aliases: ["호위 막사", "짐꾼 막사"] }, { id: wagon_yard, name: "짐마차 마당", indoor: false, description: "짐마차와 수레가 서는 마당. 바퀴 자국이 깊다", aliases: ["짐 싣기", "짐마차", "출발 준비", "호위조 점검", "마구간", "화살 손질"] }, { id: landing, name: "선착장", indoor: false, wade: true, description: "나룻배가 닿는 선착장. 밧줄과 물통이 쌓였다", aliases: ["선착장", "나루"] }, { id: lockup, name: "전당포 지하실", indoor: true, description: "전당포 지하실. 빚진 사람을 가두기도 한다", aliases: ["전당포 지하", "빚쟁이 방"], jail: true }]
   cover: 6
   danger: 0
   owner: faction_e
@@ -321,7 +321,7 @@
   description: 강 하구에서 배로 반나절 건너는 섬. 돌담과 망루, 텃밭과 양식장, 탄약 공방이 있다. 부두에는 늘 무장한 경비가 선다.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: council_hall, name: "의회 회관·식당", indoor: true, description: "의회 회관과 식당. 긴 탁자와 저장고로 통하는 뒷문", aliases: ["의회", "식당", "부엌", "저장고", "학당", "약방"] }, { id: quarters, name: "관사·숙소", indoor: true, description: "관사와 숙소. 돌담 안쪽이라 바람이 덜하다", aliases: ["관사", "숙소", "경비 막사", "침상"] }, { id: dock, name: "부두·검역 막사", indoor: false, description: "부두와 검역 막사. 뭍에서 온 사람은 여기서 멈춘다", aliases: ["부두", "검역", "등대"] }, { id: farm_shore, name: "양식장·텃밭·바닷가", indoor: false, description: "양식장과 텃밭, 갯바위가 이어진 바닷가", aliases: ["양식장", "텃밭", "바닷가", "해안 순찰", "그물 창고", "움막"] }, { id: lockup, name: "등대 밑 창고", indoor: true, description: "등대 밑 돌 창고. 파도 소리만 들린다", aliases: ["등대 창고", "등대 밑"], jail: true }]
+  places: [{ id: council_hall, name: "의회 회관·식당", indoor: true, description: "의회 회관과 식당. 긴 탁자와 저장고로 통하는 뒷문", aliases: ["의회", "식당", "부엌", "저장고", "학당", "약방"] }, { id: quarters, name: "관사·숙소", indoor: true, description: "관사와 숙소. 돌담 안쪽이라 바람이 덜하다", aliases: ["관사", "숙소", "경비 막사", "침상"] }, { id: dock, name: "부두·검역 막사", indoor: false, wade: true, description: "부두와 검역 막사. 뭍에서 온 사람은 여기서 멈춘다", aliases: ["부두", "검역", "등대"] }, { id: farm_shore, name: "양식장·텃밭·바닷가", indoor: false, wade: true, description: "양식장과 텃밭, 갯바위가 이어진 바닷가", aliases: ["양식장", "텃밭", "바닷가", "해안 순찰", "그물 창고", "움막"] }, { id: lockup, name: "등대 밑 창고", indoor: true, description: "등대 밑 돌 창고. 파도 소리만 들린다", aliases: ["등대 창고", "등대 밑"], jail: true }]
   cover: 7
   danger: 1
   owner: faction_y

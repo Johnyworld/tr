@@ -1,6 +1,7 @@
 import { formatDuration, routeMinutes } from "../rules/time.ts";
 import { onCaptured } from "../rules/consequence.ts";
-import { heldOf } from "../rules/held.ts";
+import { heldByOwn, heldOf } from "../rules/held.ts";
+import { formatTime } from "../rules/time.ts";
 import { z } from "zod";
 import { isCreature } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -94,7 +95,7 @@ export function releasePlayer(ctx: ToolContext, returned: boolean): string | nul
   // 빼앗긴 것을 적는다 (플레이 테스트 13: "그곳에 두고 왔다" 한 줄이라 무엇을 잃었는지 몰랐다)
   const taken = Object.entries(state.deposits[`held:${held.by}`] ?? {}).filter(([, n]) => n > 0).map(([id, n]) => `${ctx.content.items[id]?.name ?? id} ×${n}`);
   ctx.store.append({ type: "player_released", returned });
-  if (returned) return `풀려났다. 빼앗겼던 것을 돌려받았다${taken.length ? ` (${taken.join(", ")})` : ""}.`;
+  if (returned) return taken.length ? `풀려났다. 빼앗겼던 것을 돌려받았다 (${taken.join(", ")}).` : "풀려났다.";
   return `빠져나왔다. 빼앗긴 것은 그곳에 두고 왔다${taken.length ? `: ${taken.join(", ")}` : ""}.${taken.length ? " 맨손이면 우리 거점의 무기고가 근접 무기 하나를 내준다." : ""}`;
 }
 
@@ -214,7 +215,11 @@ export function describeCaptivityForGm(state: GameState, content: Content): stri
   const me = state.characters[state.playerId];
   if (!me) return "";
   const lines: string[] = [];
-  if (heldOf(me)) {
+  if (heldOf(me) && heldByOwn(state)) {
+    // 우리 무리의 벌 (12-261, PT16 졸병: "무기와 탄은 빼앗겼다"·탈출 안내가 그대로 나왔다)
+    const h = heldOf(me)!;
+    lines.push(`주인공은 우리 무리(${content.factions[h.by]?.name ?? h.by})의 벌로 ${content.locations[h.zone]?.name ?? h.zone}에 갇혀 있다.${h.releaseAt ? ` ${formatTime(h.releaseAt)}에 풀린다.` : ""} 지닌 것은 그대로다. 달아나면 무리의 벌을 어긴 것이다. 갇힌 동안 적의 포로 이야기는 열리지 않는다.`);
+  } else if (heldOf(me)) {
     const c = rules(content);
     lines.push(
       `주인공은 갇혀 있다: ${content.factions[heldOf(me)!.by]?.name ?? heldOf(me)!.by}의 ${content.locations[heldOf(me)!.zone]?.name ?? heldOf(me)!.zone}. ` +

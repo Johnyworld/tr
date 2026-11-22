@@ -1,4 +1,5 @@
 import { confineByOwn } from "./care/quarantine.ts";
+import { settingBrokeThisTurn } from "../rules/self.ts";
 import { blameSuspended } from "../rules/blame.ts";
 import { leaveMissionsBehind } from "./missionTools.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
@@ -179,7 +180,17 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
   // 부르는 이야기(12-260)는 다른 장소에 있어도 불려 간다. 그때 장면의 사람은 그 자리에 남는다 (동행은 함께)
   const before = whereIs(store.getState(), content, store.getState().playerId)?.place ?? null;
   const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons);
-  if (spot) store.append({ type: "place_moved", from: before, to: spot, with: before ? [] : [...store.getState().scene.present] });
+  if (spot) {
+    const left = before ? store.getState().scene.present.filter((id) => !store.getState().companions.includes(id)) : [];
+    store.append({ type: "place_moved", from: before, to: spot, with: before ? [] : [...store.getState().scene.present] });
+    // 불려 간 것을 결과 글에 알린다 (12-261, PT16 분대장·졸병: 장소가 바뀐 것을 상태로만 알았다)
+    if (before) {
+      const started = displays.find((d) => d.type === "storylet" && d.event === "started");
+      const place = placeById(store.getState(), content, spot)?.name ?? spot;
+      const names = left.map((id) => playerCalls(store.getState(), content, id));
+      if (started?.type === "storylet") started.note = `${josa(place, "으로/로")} 불려 갔다${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다, 동행은 함께)` : ""}.`;
+    }
+  }
   // 배역은 장면에 들어온다
   for (const [key, id] of Object.entries(cast)) {
     if (!storylet.cast[key]?.enter) continue;
@@ -236,7 +247,11 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
     `  상황: ${maskUnknownNames(state, content, fillStorylet(storySetup(state, a.storylet), vars), { story: true })}`,
     ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${maskUnknownNames(state, content, fillStorylet(a.storylet.ai_direction, vars), { story: true })}`] : []),
     // 등장 인물은 이미 장면에 있다 (12-253, PT15 튜토리얼: 다시 npc_presence enter를 불러 오류). 이야기가 끝나도 남는다
-    `  등장 (이미 장면에 있다. 이야기가 끝나도 남는다): ${Object.entries(a.cast).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
+    // 장면에 들어오지 않는 배역(글에만 나오는 사람)은 따로 (12-261, PT16 섬: 뭍에 있는 오빠가 "이미 장면에 있다")
+    `  등장 (이미 장면에 있다. 이야기가 끝나도 남는다): ${Object.entries(a.cast).filter(([k, id]) => a.storylet.cast[k]?.enter !== false || state.scene.present.includes(id)).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
+    ...(Object.entries(a.cast).some(([k, id]) => a.storylet.cast[k]?.enter === false && !state.scene.present.includes(id))
+      ? [`  글에만 나오는 사람 (장면에 없다): ${Object.entries(a.cast).filter(([k, id]) => a.storylet.cast[k]?.enter === false && !state.scene.present.includes(id)).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ")}`]
+      : []),
     `  선택지 (resolve_storylet): ${a.storylet.choices
       .filter((c) => choiceAvailable(state, c, a.cast))
       // 배우지 않은 전문 기술의 선택지는 미리 "못 함"으로 (플레이 테스트 12: 고르면 거절돼 남는 길이 하나뿐인 줄 몰랐다)
@@ -275,6 +290,10 @@ export const resolveStorylet = defineTool({
     const choice = a.storylet.choices.find((c) => c.id === input.choice_id);
     const open = a.storylet.choices.filter((c) => choiceAvailable(state, c, a.cast));
     if (!choice || !open.includes(choice)) return { ok: false, error: `고를 수 없는 선택지: ${input.choice_id} (가능: ${open.map((c) => c.id).join(", ")})` };
+    // 이번 턴 설정 거스르기에 꺾였으면 그 행동은 일어나지 않았다 (12-261, 공통 규칙 16. PT16 분대장: 꺾였는데 "대든다"가 풀렸다)
+    if (settingBrokeThisTurn(state)) {
+      return { ok: false, error: "이번 턴의 행동은 설정 거스르기에 꺾여 일어나지 않았다. 그 선택지로 풀 수 없다: 다른 선택지를 고르거나 다른 행동으로 잇는다." };
+    }
     // 얼굴을 보고 하는 선택지 (12-259, 공통 규칙 15): 상대가 같은 장소에 있으면 장면에 들이고, 같은 구역의 다른 장소에 있으면
     // 그 장소로 가서 만난다. 다른 구역이거나 어디 있는지 모르면 고를 수 없다
     let met: string | null = null;

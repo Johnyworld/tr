@@ -76,6 +76,7 @@ import { choiceAvailable, storyletOf } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
 import { sleepChainStart } from "../game/state.ts";
+import { healersHere } from "./care/kinds.ts";
 import { applyTreatment, type FeeChoice, drinkWater, healFromSleep, sleepHealBlocker, itemUseProblem, maybeInfect, refillWater, treatmentProblem, useItem, wadeIn } from "./body.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
@@ -83,8 +84,9 @@ import { cargoOf } from "../rules/entrusted.ts";
 import { ownedBy } from "../rules/home.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
-import { hurtResentment, reduceHarm } from "../rules/damage.ts";
-import { comesAlong, currentPlace, ENTRY_PLACE, peopleAt, placeTarget, placesIn, type Place } from "../rules/place.ts";
+import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
+import { enterScene } from "./extras.ts";
+import { comesAlong, currentPlace, ENTRY_PLACE, peopleAt, placeTarget, placesIn, whereIs, npcPlaceAt, type Place } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -397,9 +399,10 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved
   const from = currentPlace(s0, content)?.id ?? null;
   const ground = Object.keys(s0.scene.items).length > 0;
   const left = s0.scene.present.filter((id) => !along.includes(id) && !s0.companions.includes(id));
-  const mates = s0.scene.present.filter((id) => s0.companions.includes(id) && !along.includes(id));
+  // 동행은 먼저 동행으로 적는다 (12-261, PT16 분대장: follow로 붙인 분대원을 "가던 참이라 같이 왔다"로 적었다)
+  const mates = s0.scene.present.filter((id) => s0.companions.includes(id));
   // 그곳에 있을 사람이라 같이 온 사람과 이번 행동으로 데려온 사람을 나눠 적는다 (PT15 졸병: target이 없는데 "함께 왔다: 강태호")
-  const bound = along.filter((id) => !involved.includes(id));
+  const bound = along.filter((id) => !involved.includes(id) && !s0.companions.includes(id));
   store.append({ type: "place_moved", from, to: to?.id ?? null, ...(along.length ? { with: along } : {}) });
   store.append({ type: "time_advanced", activity: "brief", from: store.getState().time, to: store.getState().time + PLACE_MOVE_MINUTES });
   const s = store.getState();
@@ -409,7 +412,7 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved
   return [
     where,
     mates.length ? `동행도 함께 왔다: ${calls(mates)}.` : "",
-    along.length > bound.length ? `함께 왔다: ${calls(along.filter((id) => !bound.includes(id)))}.` : "",
+    along.some((id) => !bound.includes(id) && !s0.companions.includes(id)) ? `함께 왔다: ${calls(along.filter((id) => !bound.includes(id) && !s0.companions.includes(id)))}.` : "",
     bound.length ? `${calls(bound)}도 그곳으로 가던 참이라 같이 왔다.` : "",
     left.length ? `원래 자리에 남았다: ${calls(left)} (함께 데려가려면 with).` : "",
     // 막 들어선 자리에 둔 물건은 그 자리에 남는다 (돌아갈 수 있게 알린다)
@@ -506,7 +509,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       };
     }
   }
-  if (input.target && !start.scene.present.includes(input.target)) {
+  // 옮겨 가는 장소에 있을 사람은 옮긴 뒤 장면에 들인다 (12-261, 공통 규칙 15. PT16 세 판: "막사로 가서 한태경에게"가 "장면에 없다")
+  const atDest = (id: string) => {
+    if (input.place_to === null || input.place_to === ENTRY_PLACE || start.characters[id]?.dead) return false;
+    const w = whereIs(start, content, id);
+    return !!w && w.zone === start.playerZone && w.place === input.place_to;
+  };
+  const arriving = [input.target, input.check?.opponent].filter((id): id is string => !!id && !start.scene.present.includes(id) && atDest(id));
+  if (input.target && !start.scene.present.includes(input.target) && !arriving.includes(input.target)) {
     // 호칭으로 (플레이 테스트 12: 오류 문구에 id가 나왔다). id는 괄호로 함께 둬 GM이 고칠 수 있게
     const who = start.characters[input.target] ? `${playerCalls(start, content, input.target)}(${input.target})` : input.target;
     return { ok: false, error: `${josa(who, "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
@@ -667,7 +677,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (unknownTag) return { ok: false, error: `알 수 없는 fright_tags: ${unknownTag} (가능: ${fearTagIds(scenario).join(", ") || "없음"})` };
   if (input.check?.opponent) {
     const o = start.characters[input.check.opponent];
-    if (!o || o.dead || !start.scene.present.includes(input.check.opponent)) return { ok: false, error: `맞서는 상대 ${josa(input.check.opponent, "은/는")} 장면에 없다. check.opponent는 장면에 있는 인물 id다.` };
+    if (!o || o.dead || (!start.scene.present.includes(input.check.opponent) && !arriving.includes(input.check.opponent))) return { ok: false, error: `맞서는 상대 ${josa(input.check.opponent, "은/는")} 장면에 없다. check.opponent는 장면에 있는 인물 id다.` };
   }
 
   // 장소 옮기기 (12-244, 공통 규칙 15): 같은 구역 안에서 5분. 길 위의 일은 없다. 옮긴 장소에서 이번 행동을 한다
@@ -747,6 +757,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (input.use_item && (player.inventory[input.use_item] ?? 0) < 1) {
     return { ok: false, error: `${josa(content.items[input.use_item]?.name ?? input.use_item, "이/가")} 없다. 가진 물건만 쓴다 (상태의 소지품).` };
   }
+  // 물건 없이 치료를 부르면 같은 장소의 치료사를 장면에 들인다 (12-261, 공통 규칙 15)
+  if (input.treatment && !input.treatment.item) for (const id of healersHere(ctx)) enterScene(ctx, id);
   // 할 수 없는 일은 판정·시간 전에 막는다 (플레이 테스트 11: 쓸 필요 없는 붕대, 치료사 아닌 사람의 치료, 거점 안 사냥이 판정과 30분을 쓴 뒤 거절됐다)
   {
     const fuel = !!input.use_item && !!scenario.body?.cold?.climate?.fire?.items[input.use_item];
@@ -768,6 +780,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 
   // 장소 옮기기: 거절할 일을 모두 거른 뒤에 옮긴다 (막힌 행동의 이동·시간이 남지 않게)
   if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along, placeMove.involved));
+  for (const id of arriving) {
+    if (store.getState().scene.present.includes(id)) continue;
+    enterScene(ctx, id);
+    lines.push(`(옮긴 자리에 있던 ${josa(playerCalls(store.getState(), content, id), "을/를")} 장면에 들였다)`);
+  }
 
   // 열린 이야기가 요구하는 판정일 때만 이야기가 걸린 판정이다 (플레이 테스트 13: 길 위 이야기가 열린 사이 위험 없는 5분 경계로 레벨이 올랐다)
   const storyCheck = !!start.activeStorylet && !!input.check && !!storyletOf(start, content, start.activeStorylet.id)?.choices.some((c) => c.check === input.check!.move);
@@ -1062,11 +1079,13 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       const fooled = deceived ? store.getState().scene.present.filter((id) => !companionsNow.has(id)) : undefined;
       const { deed, visible } = recordDeed(ctx, { ...input.deed, byGm: true }, undefined, fooled);
       const fooledNames = (fooled ?? []).map((id) => playerCalls(store.getState(), content, id));
+      const wronged = wrongedResentment(ctx, input.target, deed.tags, deed.witnesses.some((w) => w.npcId === input.target));
       lines.push(
         `행적 ${deed.id} 기록: ${sentence(deed.summary)} ` +
           (fooledNames.length > 0 ? `${josa(fooledNames.join(", "), "은/는")} 속아 넘어가 거짓인 줄 모른다 (이 행적을 알지 못한다). ` : "") +
           (visible.length > 0 ? `장면에 있던 ${josa(visible.join(", "), "이/가")} 보았다. 그들의 반응을 서술에 반영하라.` : fooledNames.length > 0 ? "" : "장면에 아무도 없었다.") +
-          (deceived ? "" : " 숨은 목격자가 있었는지는 아무도 모른다."),
+          (deceived ? "" : " 숨은 목격자가 있었는지는 아무도 모른다.") +
+          (wronged ? ` ${wronged}` : ""),
       );
       displays.push({
         type: "deed",
@@ -1110,7 +1129,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const hours = input.activity?.hours ?? null;
   // 장소를 옮긴 턴의 잠깐 행동(판정 없는 것)은 옮기는 5분에 들어간다 (12-255, PT15 섬: 옮겨 가 한마디에 10분)
   const inMove = !!placeMove && activity === "brief" && !input.check && !inBattle;
-  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure, inMove ? 0 : activity === "work" && hours ? hours * 60 : null, hours);
+  // 임무 작업은 hours 없이 걸면 임무에 남은 만큼 한다 (12-261, PT16 섬: 남은 4시간인데 기본 2시간만 했다)
+  const workMinutes = activity === "work" ? (hours ? hours * 60 : missionWorkLeft(store.getState(), forMission)) : null;
+  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure, inMove ? 0 : workMinutes, hours);
   // 배달 (F5): 임무 자리에서 임무 일을 하면 지닌 짐을 넘긴다
   if (forMission && !input.move_to) {
     const m = store.getState().missions[forMission];
@@ -1166,10 +1187,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     }
   }
   // 물일 임무 (E3): 임무 자리에서 그 일을 하면 옷이 젖는다. 방수복을 입으면 젖지 않는다
+  const workSoaked: ToolDisplayEvent[] = [];
   if (forMission && !input.move_to && activity !== "brief") {
     const m = store.getState().missions[forMission];
     if (m && content.missions[m.templateId]?.wets && atMissionPlace(m, store.getState().playerZone, store.getState().zones, store.getState().factions)) {
-      displays.push(...soak(ctx, start.playerId, "물일을 하다 옷이 젖었다", true));
+      workSoaked.push(...soak(ctx, start.playerId, "물일을 하다 옷이 젖었다", true));
+      displays.push(...workSoaked);
     }
   }
   // 판정의 대가·빗나감·탈출의 기다림으로 더 쓴 시간까지 첫 줄에 합쳐 알린다 (플레이 테스트 12·13: "5분 경과. 현재 11:25"인데 35분이 지났다)
@@ -1187,6 +1210,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (input.lesson && !inBattle) lines.push(...applyLesson(ctx, input.lesson, store.getState().time - timeBefore));
   displays.push(...time.extra);
   lines.push(...bodyLines(time.extra));
+  // 물일로 젖은 것도 결과 글에 (12-261, PT16 섬: 상태의 기온 줄에만 나왔다)
+  lines.push(...bodyLines(workSoaked));
   // 긴 활동이 자정을 넘으며 생긴 일(분대 보고, 동행이 떠남, 임무 기한, 어긴 약속)도 글로 알린다 (플레이 테스트 11: 잠든 사이의 분대 보고가 빠졌다)
   lines.push(...worldLines(time.extra));
   // 자고 나면 공포가 가라앉고 (12-95), 끊기지 않고 푹 자면 마음도 가라앉을 수 있다
@@ -1294,7 +1319,7 @@ export function worldLines(displays: readonly ToolDisplayEvent[]): string[] {
       lines.push(`${display.title}: ${display.detail}. 보고 내용은 상태의 '분대' 섹션에 있다. 분대원이 돌아와(또는 전령으로) 보고하는 장면을 짧게 서술한다. 보고에 없는 것을 지어내지 않는다.`);
     } else if (display.type === "mission") lines.push(`임무 ${display.title}: ${display.detail}.`);
     if (display.type === "storylet" && display.event === "started") {
-      lines.push(`새 이야기가 시작됐다: "${display.title}". 상태의 '진행 중인 이야기'를 보고 장면으로 연출하라.`);
+      lines.push(`새 이야기가 시작됐다: "${display.title}".${display.note ? ` ${display.note}` : ""} 상태의 '진행 중인 이야기'를 보고 장면으로 연출하라.`);
     }
     // 시간이 흘러 지나간 이야기도 알린다 (플레이 테스트 13: 잠·휴식 사이에 이야기가 말없이 사라졌다)
     if (display.type === "storylet" && display.event === "expired") {
@@ -1581,6 +1606,14 @@ function planRide(ctx: ToolContext, itemId: string, blocked: boolean):
 const MAX_SLEEP_MINUTES = 16 * 60;
 
 /** exposure: 추위·젖음을 따질 때의 활동 (사냥·낚시는 activity가 무엇이든 바깥 일이다) */
+/** 임무에 남은 작업 시간 (분, 5분 단위로 올림, 30분 이상). 임무 작업이 아니면 null */
+function missionWorkLeft(state: GameState, forMission: string | null): number | null {
+  const m = forMission ? state.missions[forMission] : undefined;
+  if (!m) return null;
+  const left = m.requirements.flatMap((r, i) => ("activity" in r && r.activity === "work" ? [r.minutes - (m.progress[i] ?? 0)] : [])).filter((n) => n > 0);
+  return left.length ? Math.max(30, Math.ceil(Math.max(...left) / 5) * 5) : null;
+}
+
 export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSegment | null, forMission: string | null = null, speed = 1, dest: string | null = null, exposure: Activity = activity, fixedMinutes: number | null = null, hours: number | null = null) {
   const { store, rng, content } = ctx;
   const state = store.getState();
@@ -1682,7 +1715,10 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     if (activity === "sleep" && to - from >= SCENE_CLEAR_SLEEP_MINUTES && !heldOf(store.getState().characters[state.playerId])) {
       const s2 = store.getState();
       const keep = new Set(activeCompanions(s2));
-      const gone = s2.scene.present.filter((id) => !keep.has(id) && !heldOf(s2.characters[id]) && !s2.characters[id]?.dead && !(s2.activeStorylet && Object.values(s2.activeStorylet.cast ?? {}).includes(id)));
+      // 일과상 이 자리가 제자리인 사람은 그대로 둔다 (12-261, PT16 섬: 같은 숙소에서 자는 짝이 "자리를 떴다")
+      const myPlace = whereIs(s2, content, s2.playerId)?.place ?? null;
+      const homeHere = (id: string) => !!myPlace && !!content.npcs[id] && npcPlaceAt(s2, content, id) === myPlace;
+      const gone = s2.scene.present.filter((id) => !keep.has(id) && !homeHere(id) && !heldOf(s2.characters[id]) && !s2.characters[id]?.dead && !(s2.activeStorylet && Object.values(s2.activeStorylet.cast ?? {}).includes(id)));
       for (const id of gone) store.append({ type: "npc_left", npcId: id });
       const named = gone.filter((id) => !!content.npcs[id]).map((id) => playerCalls(s2, content, id));
       if (named.length) sleepNote = [sleepNote, `자는 사이 ${named.join(", ")}${josa(named.at(-1)!, "은/는").slice(named.at(-1)!.length)} 제 할 일로 자리를 떴다 (장면에서 빠졌다).`].filter(Boolean).join("\n");

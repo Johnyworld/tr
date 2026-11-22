@@ -44,7 +44,7 @@
           - set_flag: tv_gate_met
           - set_flag: tv_gate_refused
           - relation: { who: guard, axis: trust, delta: -1 }
-          - belief: { fact: "청솔형제단 정문에서 오늘은 안 된다는 말을 들었다. 하룻밤 담 밖에서 지켜보겠다고 했다", source: report }
+          - belief: { fact: "청솔형제단 정문에서 오늘은 안 된다는 말을 들었다. 하룻밤 담 밖에서 지켜보겠다고 했다", source: seen }
     - id: show_skill
       label: 할 줄 아는 일을 보여 주겠다고 한다
       check: survival
@@ -63,7 +63,7 @@
         miss:
           - set_flag: tv_gate_met
           - set_flag: tv_gate_refused
-          - belief: { fact: "청솔형제단 정문에서 오늘은 안 된다는 말을 들었다. 손이 떨려 보였던 모양이다", source: report }
+          - belief: { fact: "청솔형제단 정문에서 오늘은 안 된다는 말을 들었다. 손이 떨려 보였던 모양이다", source: seen }
     - id: back_off
       label: 아직은 믿을 수 없다며 물러난다
       effects:
@@ -108,6 +108,32 @@
           - belief: { fact: "청솔형제단이 마지못해 나를 받아 주었다. 일주일 동안 지켜보겠다고 했다", source: seen }
         miss:
           - belief: { fact: "청솔형제단은 이번에도 문을 열지 않았다", source: seen }
+    # 다시 찾아온 날에는 말 말고도 길이 있다 (12-261, PT16 튜토리얼: 교섭 세 번 실패로 끝내 못 들어갔다)
+    - id: show_skill
+      label: 할 줄 아는 일을 보여 주겠다고 한다
+      check: survival
+      outcomes:
+        success:
+          - clear_flag: tv_gate_refused
+          - join_faction: { faction: faction_a, grace_days: 7 }
+          - relation: { who: guard, axis: respect, delta: 1 }
+          - set_flag: tv_accepted
+          - belief: { fact: "다시 찾아가 담 밖에서 버틴 솜씨를 보여 주자 청솔형제단이 나를 받아 주었다", source: seen }
+        partial:
+          - clear_flag: tv_gate_refused
+          - join_faction: { faction: faction_a, grace_days: 7 }
+          - set_flag: tv_accepted
+          - belief: { fact: "청솔형제단이 마지못해 나를 받아 주었다. 쓸모는 두고 보겠다고 했다", source: seen }
+        miss:
+          - belief: { fact: "청솔형제단은 이번에도 문을 열지 않았다", source: seen }
+    - id: offer_food
+      label: 가진 먹을 것을 내놓으며 한 입이라도 보태겠다고 한다
+      effects:
+        - take_item: { item: dry_ration, quantity: 1 }
+        - clear_flag: tv_gate_refused
+        - join_faction: { faction: faction_a, grace_days: 7 }
+        - set_flag: tv_accepted
+        - belief: { fact: "비상식량 하나를 내놓자 청솔형제단이 문을 열어 주었다. 먹을 것을 보태는 사람은 쫓아내지 않는다고 했다", source: seen }
     - id: leave
       label: 오늘은 그냥 돌아선다
       effects: []
@@ -138,15 +164,15 @@
       effects:
         - set_flag: tv_settled
         - relation: { who: host, axis: affection, delta: 1 }
-        - belief: { fact: "청솔형제단 거점의 규칙: 거점 안에서 총을 함부로 쏘지 않는다, 배급은 하루 한 번 식당에서, 남의 몫에 손대지 않는다", source: report }
-        - belief: { fact: "대표는 일주일 동안 적응 삼아 자유롭게 지내라고 했다. 그 뒤에 할 일을 정한다", source: report }
+        - belief: { fact: "청솔형제단 거점의 규칙: 거점 안에서 총을 함부로 쏘지 않는다, 배급은 하루 한 번 식당에서, 남의 몫에 손대지 않는다", source: seen }
+        - belief: { fact: "대표는 일주일 동안 적응 삼아 자유롭게 지내라고 했다. 그 뒤에 할 일을 정한다", source: seen }
     - id: ask_family
       label: 가족의 이름을 대며 본 적 있는지 묻는다
       effects:
         - set_flag: tv_settled
-        - belief: { fact: "청솔형제단 거점에는 가족의 이름을 아는 사람이 없다. 정복자 할머니는 버들마을 사람들에게 물어보라고 했다", source: report }
-        - belief: { fact: "청솔형제단 거점의 규칙: 거점 안에서 총을 함부로 쏘지 않는다, 배급은 하루 한 번 식당에서, 남의 몫에 손대지 않는다", source: report }
-        - belief: { fact: "대표는 일주일 동안 적응 삼아 자유롭게 지내라고 했다. 그 뒤에 할 일을 정한다", source: report }
+        - belief: { fact: "청솔형제단 거점에는 가족의 이름을 아는 사람이 없다. 정복자 할머니는 버들마을 사람들에게 물어보라고 했다", source: seen }
+        - belief: { fact: "청솔형제단 거점의 규칙: 거점 안에서 총을 함부로 쏘지 않는다, 배급은 하루 한 번 식당에서, 남의 몫에 손대지 않는다", source: seen }
+        - belief: { fact: "대표는 일주일 동안 적응 삼아 자유롭게 지내라고 했다. 그 뒤에 할 일을 정한다", source: seen }
 
 # 버들마을 사람: 가족의 이름을 안다
 - id: tv_family_news
@@ -175,12 +201,12 @@
       effects:
         - set_flag: tv_family_known
         - relation: { who: villager, axis: affection, delta: 1 }
-        - belief: { fact: "가족이 살아 있다. 버들마을(청솔형제단 거점 서쪽의 옛 아파트 단지)에 산다고 버들마을 사람에게 들었다", source: report }
+        - belief: { fact: "가족이 살아 있다. 버들마을(청솔형제단 거점 서쪽의 옛 아파트 단지)에 산다고 버들마을 사람에게 들었다", source: seen }
     - id: doubt
       label: 정말인지 몇 번이고 되묻는다
       effects:
         - set_flag: tv_family_known
-        - belief: { fact: "버들마을 사람이 가족의 이름과 생김새를 맞혔다. 가족이 버들마을에 산다", source: report }
+        - belief: { fact: "버들마을 사람이 가족의 이름과 생김새를 맞혔다. 가족이 버들마을에 산다", source: seen }
 
 # 단서 없이 버들마을에 들어왔으면: 가족을 수소문한다 (하루에 한 번까지)
 - id: tv_family_search
@@ -210,10 +236,10 @@
         success:
           - set_flag: tv_family_where
           - relation: { who: resident, axis: affection, delta: 1 }
-          - belief: { fact: "가족이 버들마을에 산다. 단지 사람이 사는 동을 알려 주었다", source: report }
+          - belief: { fact: "가족이 버들마을에 산다. 단지 사람이 사는 동을 알려 주었다", source: seen }
         partial:
           - set_flag: tv_family_where
-          - belief: { fact: "가족이 버들마을에 산다고 한다. 단지 사람은 경계하며 동만 손으로 가리켰다", source: report }
+          - belief: { fact: "가족이 버들마을에 산다고 한다. 단지 사람은 경계하며 동만 손으로 가리켰다", source: seen }
         miss:
           - relation: { who: resident, axis: trust, delta: -1 }
           - belief: { fact: "버들마을 사람은 낯선 사람에게 단지 사람 일을 말해 주지 않았다. 다른 날 다시 물어볼 수 있다", source: seen }

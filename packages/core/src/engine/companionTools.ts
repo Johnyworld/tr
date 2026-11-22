@@ -125,9 +125,10 @@ export function releaseBuddies(ctx: ToolContext, missionId: string): string[] {
   for (const [id, b] of Object.entries(state.bonds ?? {})) {
     if (b.missionId !== missionId || (!state.companions.includes(id) && !b.apart)) continue;
     ctx.store.append({ type: "companion_left", characterId: id, reason: "임무가 끝났다" });
-    if (ctx.store.getState().scene.present.includes(id)) ctx.store.append({ type: "npc_left", npcId: id });
+    // 보고한 자리에서는 장면에 남는다: 자리를 옮기면 제 일로 돌아간다 (12-261, PT16 섬: 보고하자마자 사라져 같은 턴의 말이 거절됐다)
+    const stays = !b.apart && ctx.store.getState().scene.present.includes(id);
     // 남겨 둔 짝이면 그 자리에서 돌아간다 (12-240, A8: 망루 아래 남긴 짝이 사라지는지 기다리는지 알 수 없었다)
-    lines.push(b.kind === "buddy" ? `짝이던 ${josa(playerCalls(state, ctx.content, id), "은/는")} ${b.apart ? "남겨 둔 자리에서 " : ""}자기 자리로 돌아간다.` : `임무로 데려온 ${josa(playerCalls(state, ctx.content, id), "은/는")} 무리에 넘겼다. 더는 따라다니지 않는다.`);
+    lines.push(b.kind === "buddy" ? `짝이던 ${josa(playerCalls(state, ctx.content, id), "은/는")} ${b.apart ? "남겨 둔 자리에서 " : ""}자기 자리로 돌아간다${stays ? " (지금은 장면에 남아 있다. 자리를 옮기면 따라오지 않는다)" : ""}.` : `임무로 데려온 ${josa(playerCalls(state, ctx.content, id), "은/는")} 무리에 넘겼다. 더는 따라다니지 않는다.`);
   }
   return lines;
 }

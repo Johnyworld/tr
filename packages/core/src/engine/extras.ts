@@ -102,6 +102,9 @@ const spawnExtra = defineTool({
   schema: z.strictObject({
     template: z.string().describe("엑스트라 틀 id"),
     label: z.string().min(1).max(30).describe("서술에서 부르는 호칭 (예: 엽총 든 보초)"),
+    // 서술에서 이미 정한 성별·나이를 맞춘다 (12-261, PT16 섬: "젊은 여자"로 부른 피난민이 남성 28세로 만들어졌다)
+    gender: z.string().nullable().default(null).describe("서술에서 이미 드러난 성별 id (시나리오의 성별). 정하지 않았으면 null"),
+    age: z.number().int().min(1).max(95).nullable().default(null).describe("서술에서 이미 드러난 나이. 정하지 않았으면 null (틀의 나이 범위 밖이면 범위 끝으로)"),
   }),
   run(input, ctx) {
     const { store, content, rng } = ctx;
@@ -111,15 +114,22 @@ const spawnExtra = defineTool({
     const player = state.characters[state.playerId];
     if (!player || player.dead) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
     const id = `ex_${state.nextExtraNo}`;
+    const genders = content.scenario.creation?.genders.map((g) => g.id) ?? [];
+    if (input.gender && genders.length && !genders.includes(input.gender)) return { ok: false, error: `알 수 없는 성별: ${input.gender} (가능: ${genders.join(", ")})` };
+    if (input.gender && template.gender && template.gender !== input.gender) return { ok: false, error: `${input.template} 틀은 성별이 정해져 있다 (${template.gender}).` };
     const usedNames = new Set(Object.values(state.characters).map((c) => c.name));
-    const character = createExtraCharacter(content, template, { id, label: input.label, zone: state.playerZone, time: state.time, usedNames }, rng);
+    // 같은 틀의 다른 엑스트라와 겉모습이 겹치지 않게 (12-261, PT16 섬)
+    const usedLooks = new Set(Object.values(state.characters).flatMap((c) => (c.extra ? [c.extra.look] : [])));
+    const [lo, hi] = template.age;
+    const age = input.age == null ? undefined : Math.min(hi, Math.max(lo, input.age));
+    const character = createExtraCharacter(content, template, { id, label: input.label, zone: state.playerZone, time: state.time, usedNames, usedLooks, ...(input.gender ? { gender: input.gender } : {}), ...(age !== undefined ? { age } : {}) }, rng);
     store.append({ type: "extra_spawned", character });
     noteFirstMeeting(ctx, id);
     const items = Object.entries(character.inventory).map(([i, q]) => `${content.items[i]?.name ?? i}(${i}) ×${q}`);
     return {
       ok: true,
       resultText:
-        `${josa(input.label, "이/가")} 장면에 들어왔다 (id: ${id}${templateKind(template) === "person" ? `, ${rankName(content, character.factionId, character.rank)}` : ""}). 겉모습: ${character.extra!.look}. ` +
+        `${josa(input.label, "이/가")} 장면에 들어왔다 (id: ${id}${templateKind(template) === "person" ? `, ${rankName(content, character.factionId, character.rank)}${character.gender ? ` · ${content.scenario.creation?.genders.find((g) => g.id === character.gender)?.label ?? character.gender}` : ""} · ${character.age}세` : ""}). 겉모습: ${character.extra!.look}. ` +
         (template.kind === "infected"
           ? `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 감염체다: 판정의 상대(target·opponent)가 되고, 말이 통하지 않으며 행적을 보지 않는다. 이것에게 다칠 위험에는 감염 위험이 저절로 붙는다.`
           : `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 이 인물은 이제 판정 대상(target)이 되고 행적을 본다.${templateKind(template) === "person" ? " 이름은 아직 모른다." : ""}`),

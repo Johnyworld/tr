@@ -14,7 +14,7 @@
   title: 옥상 망루 야간 감시
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
-  briefing: 102동 옥상 망루에서 밤새 단지 바깥을 살핀다. 구시가 쪽 감염체와 쪽문 근처의 움직임을 놓치지 않는다. 불은 켜지 않는다.
+  briefing: 102동 옥상 망루에서 밤에 몇 시간 단지 바깥을 살핀다. 구시가 쪽 감염체와 쪽문 근처의 움직임을 놓치지 않는다. 불은 켜지 않는다.
   giver_rank: squad_leader
   deadline_hours: 14
   requirements:

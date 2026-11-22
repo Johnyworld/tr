@@ -11,6 +11,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    indoor: false
     zones: [yeoul_isle]
     factions: [faction_y]
     segments: [dawn, morning]
@@ -259,6 +261,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    indoor: false
     zones: [yeoul_isle]
     factions: [faction_y]
     segments: [dawn, morning]
@@ -405,6 +409,8 @@
   repeatable: true
   cooldown_days: 10
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    indoor: false
     zones: [yeoul_isle]
     factions: [faction_y]
     weather: [rain, snow, cold_snap]
@@ -743,6 +749,8 @@
   fright: 1
   fright_tags: [infected, water]
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    indoor: false
     zones: [yeoul_isle]
     factions: [faction_y]
     segments: [dawn, morning]

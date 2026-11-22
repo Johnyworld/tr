@@ -473,6 +473,8 @@
   repeatable: true
   cooldown_days: 12
   when:
+    # 글에 맞춘 자리·때 (12-261, content:check story_lint)
+    activities: [sleep, rest]
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     zone_owner: [none]

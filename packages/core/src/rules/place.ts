@@ -17,7 +17,7 @@ import { ownedBy } from "./home.ts";
 import { heldOf, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
 
-export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean; description?: string };
+export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean; wade?: boolean; description?: string };
 
 /**
  * 구역에 막 들어선 자리(장소를 정하지 않은 자리)로 돌아가는 place_to 값.
@@ -28,7 +28,7 @@ export const ENTRY_PLACE = "entry";
 /** 이 구역의 장소들 (콘텐츠 + 즉흥) */
 export function placesIn(state: GameState, content: Content, zone: string | null | undefined): Place[] {
   if (!zone) return [];
-  const fixed = (content.locations[zone]?.places ?? []).map((p) => ({ id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, jail: p.jail, description: p.description }));
+  const fixed = (content.locations[zone]?.places ?? []).map((p) => ({ id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, jail: p.jail, wade: p.wade, description: p.description }));
   const spawned = Object.entries(state.spawnedPlaces ?? {})
     .filter(([, p]) => p.zone === zone)
     .map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[] }));
@@ -120,7 +120,8 @@ export function npcPlaceAt(state: GameState, content: Content, id: string, time:
   // 그 시간대 칸이 비면 바로 앞 시간대의 자리에 그대로 있다 (12-253, PT15 분대장: 아침 칸이 빈 분대원이 어느 장소에도 없었다)
   const said = routineSaid(npc.routine, segment);
   if (!said) return null;
-  const hit = places.find((p) => said.includes(p.name) || p.aliases.some((a) => said.includes(a)));
+  // 일과로는 가두는 곳에 두지 않는다: 갇힌 사람은 whereIs가 갇힌 곳에 둔다 (12-261, PT16 졸병: 구해 온 정찰조가 포로 때 일과 "수용소"로 우리 수용소에 있었다)
+  const hit = places.find((p) => !p.jail && (said.includes(p.name) || p.aliases.some((a) => said.includes(a))));
   return hit?.id ?? null;
 }
 
@@ -152,7 +153,13 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   // 두고 온 자리에 머무는 사람 (12-253): 그 시간대가 끝날 때까지
   const stay = state.npcStays?.[id];
   if (stay && stay.until > time) return { zone: stay.zone, place: stay.place };
-  if (c.extra) return { zone: c.extra.zone, place: null };
+  // 떨어져 기다리는 동행은 그 자리에 (12-261, PT16 분대장: 막사에 남긴 동행이 보급 창고의 "있을 사람"에 떴다)
+  const apart = state.companions.includes(id) ? state.bonds[id]?.apart : undefined;
+  if (apart) return { zone: apart.zone, place: apart.place ?? null };
+  // 분대 일을 나간 사람은 그 구역 어딘가 (일과 자리에 두지 않는다)
+  const order = state.squadOrders?.[id];
+  if (order) return { zone: order.zone, place: null };
+  if (c.extra) return { zone: c.extra.zone, place: c.extra.place ?? null };
   const npc = content.npcs[id];
   return npc ? { zone: npcZoneAt(npc, time) ?? null, place: npcPlaceAt(state, content, id, time) } : null;
 }
@@ -280,9 +287,9 @@ export function shelterAt(content: Content, state: GameState, activity: string, 
   if (activity === "travel") return { indoor: false, cover: 0 };
   const atPlace = placeIndoor(state, content);
   if (atPlace !== null) return { indoor: atPlace, cover: atPlace && zoneCover <= 0 ? PLACE_COVER : zoneCover };
-  // 다른 무리 거점에 막 들어선 자리는 담 밖 문 앞이다 (12-260, PT15 튜토리얼: 정문 이야기 전인데 "실내 +7")
-  const owner = zone ? state.zones[zone]?.owner : null;
-  if (zone && content.locations[zone]?.kind === "base" && owner && owner !== me?.factionId) return { indoor: false, cover: 0 };
+  // 장소가 있는 구역에 막 들어선 자리는 길바닥이다: 바깥 (12-261, PT16 졸병·튜토리얼: 구시가 막 들어선 자리가 "실내 +4").
+  // 다른 무리 거점이면 담 밖 문 앞 (12-260)
+  if (placesIn(state, content, zone).length) return { indoor: false, cover: 0 };
   const sheltered = !!zone && (state.homes?.[who] === zone || (content.locations[zone]?.kind === "base" && !!me?.factionId && ownedBy(state, zone, me.factionId)));
   const outdoorWork = !!c?.outdoor.includes(activity as never);
   return { indoor: zoneCover > 0 && (!outdoorWork || (activity === "search" && sheltered)), cover: zoneCover };

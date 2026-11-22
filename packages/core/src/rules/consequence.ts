@@ -109,7 +109,7 @@ export function ownOffense(state: GameState, content: Content, at: number = stat
   const handled = Math.max(-Infinity, ...Object.entries(state.storyletLog).filter(([id]) => content.storylets[id]?.when.own_offense).map(([, log]) => log.lastFiredAt));
   const deed = Object.values(state.deeds)
     .filter((d) => d.actorId === me.id && d.severity >= rule.min_severity && d.tags.some((t) => rule.tags.includes(t)))
-    .filter((d) => d.at > handled && at - d.at <= rule.within_days * 24 * 60)
+    .filter((d) => d.at > handled && at - d.at <= rule.within_days * 24 * 60 && at - d.at >= rule.notice_minutes)
     .find((d) => d.witnesses.some((w) => {
       const c = state.characters[w.npcId];
       return !!c && !c.dead && c.factionId === me.factionId;

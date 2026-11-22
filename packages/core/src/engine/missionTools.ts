@@ -470,7 +470,9 @@ export function leaveMissionsBehind(ctx: ToolContext, onlyLeftBehind = false): {
         { npcId: mission.giverId, source: "report" },
       );
     }
-    const tail = [returnArmory(ctx, mission.id, { excused: true }), ...releaseBuddies(ctx, mission.id)].filter((l): l is string => !!l);
+    const returned = returnArmory(ctx, mission.id, { excused: true });
+    // 빌린 장비는 무리를 떠나기 전에 돌려준다 (사용자 결정): GM은 반납하는 장면을 짧게 연출한다
+    const tail = [returned ? `${returned} (떠나기 전에 빌린 장비를 무기고에 돌려주는 장면을 짧게 서술한다)` : null, ...releaseBuddies(ctx, mission.id)].filter((l): l is string => !!l);
     lines.push(`${name}에서 받은 임무 "${mission.title}"는 거기서 끝났다 (예전 무리의 기록으로만 남고, 지금 무리의 공적·불복종에는 들지 않는다).${tail.map((l) => ` ${l}`).join("")}`);
     displays.push({ type: "mission", event: "expired", title: mission.title, detail: "무리를 떠나 끝남", merit: 0 });
   }

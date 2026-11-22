@@ -8,6 +8,8 @@ import { eligibleStorylets } from "../story/storylets.ts";
 import { checkStorylets } from "../content/loader.ts";
 import { createTestWorld, loadRealContent, TEST_CONTENT, TEST_SCENARIO } from "../testing.ts";
 import { describePlayerState } from "./context.ts";
+import { changeCondition } from "./body.ts";
+import { harmTrack } from "../scenario/scenario.ts";
 import { executeTool } from "./tools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 
@@ -487,5 +489,32 @@ describe("있으면 쓰는 배역 (optional, 12-45)", () => {
     const problems = checkStorylets(c as Content);
     expect(problems.join("\n")).toContain("상황·연출에 쓸 수 없다");
     expect(problems.join("\n")).toContain("when.cast에 적는다");
+  });
+});
+
+describe("판정 피해와 이야기 피해 (사용자 결정, PT14 신병 T75)", () => {
+  const brawl = {
+    id: "brawl",
+    title: "멱살",
+    cast: { boss: { commander: true } },
+    setup: "{boss:이/가} 덤빈다.",
+    choices: [{ id: "hit", label: "맞받아친다", check: "persuade", outcomes: { success: [{ npc_hurt: { who: "boss", steps: 2 } }], partial: [{ npc_hurt: { who: "boss", steps: 2 } }], miss: [{ npc_hurt: { who: "boss", steps: 2 } }] } }],
+  };
+  const harm = (env: ReturnType<typeof setup>, id: string) => env.store.getState().characters[id]!.conditions[env.content.scenario.harm_track]!;
+
+  it("같은 판정으로 이미 입힌 피해만큼 이야기의 피해를 빼서, 더하지 않고 큰 쪽만 남는다", () => {
+    const env = setup([brawl]);
+    const boss = env.store.getState().activeStorylet!.cast.boss!;
+    const r = executeTool("take_action", act({ intent: "맞받아친다", check: { move: "persuade", stat: "persuasion", difficulty: "normal", harm_on_failure: "none", harm_cause: "" } }), env.ctx);
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    const checkId = Object.values(env.store.getState().checks).at(-1)!.checkId;
+    // 판정으로 한 단계 입힌 것으로 둔다 (공격 판정의 hitTarget이 남기는 기록)
+    changeCondition(env.ctx, boss, env.content.scenario.harm_track, 1, "attack", "맞받아쳤다");
+    env.store.append({ type: "check_harm_dealt", checkId, targetId: boss, steps: 1 });
+    const afterHit = harm(env, boss);
+    expect(executeTool("resolve_storylet", { choice_id: "hit" }, env.ctx).ok).toBe(true);
+    // 이야기는 두 단계지만 이미 한 단계를 입혔으니 한 단계만 더 (모두 두 단계)
+    const levels = harmTrack(env.content.scenario).levels.map((l) => l.id);
+    expect(levels.indexOf(harm(env, boss)) - levels.indexOf(afterHit)).toBe(1);
   });
 });

@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 83;
+export const SAVE_SCHEMA_VERSION = 84;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -279,6 +279,8 @@ export function createGameSchemas(s: Scenario) {
     outcome: checkOutcomeSchema,
     /** 이 판정의 대가로 이미 피해를 적용했는지 */
     harmApplied: z.boolean(),
+    /** 이 판정으로 남에게 입힌 피해 (인물 id → 단계). 같은 판정으로 푼 이야기가 같은 사람을 또 다치게 하면 더하지 않고 큰 쪽만 (사용자 결정, PT14 신병 T75) */
+    dealt: z.record(z.string(), z.number().int().positive()).optional(),
   });
 
   /** 세계의 진짜 상태 (World State). 콘텐츠(아이템 정의 등)는 넣지 않고 id로만 참조한다 */
@@ -806,6 +808,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("ration_missed"), day: z.number().int().nullable() }),
     /** 판정의 대가를 다치는 대신 다른 것(시간)으로 치렀다: 그 판정을 이어받는 이야기는 "다친다"를 겹쳐 붙이지 않는다 (플레이 테스트 12) */
     z.strictObject({ type: z.literal("check_cost_paid"), checkId: z.string() }),
+    /** 판정으로 상대에게 피해를 입혔다 (이야기의 같은 피해를 겹치지 않게) */
+    z.strictObject({ type: z.literal("check_harm_dealt"), checkId: z.string(), targetId: z.string(), steps: z.number().int().positive() }),
     z.strictObject({ type: z.literal("swarm_set"), zone: z.string(), day: z.number().int(), at: z.number().int(), done: z.boolean(), met: z.boolean().optional() }),
     /** 구역의 감염체 압력이 바뀌었다 (12-112): 소음·시체로 오르고, 소탕으로 내리고, 날이 가며 기준값으로 돌아간다 */
     z.strictObject({ type: z.literal("infestation_changed"), zone: z.string(), level: z.number().int().min(0).max(3), cause: z.string() }),
@@ -1487,6 +1491,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "check_cost_paid":
       mustGet(next.checks, event.checkId, "판정").harmApplied = true;
       return next;
+    case "check_harm_dealt": {
+      const check = mustGet(next.checks, event.checkId, "판정");
+      check.dealt = { ...(check.dealt ?? {}), [event.targetId]: (check.dealt?.[event.targetId] ?? 0) + event.steps };
+      return next;
+    }
     case "mission_spotted": {
       const m = next.missions[event.missionId];
       if (m) m.spotted = true;

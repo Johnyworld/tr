@@ -159,6 +159,19 @@ describe("플레이 테스트 14: 판정 보정", () => {
     expect(r2.ok && r2.display.line).toContain(playerCalls(w.state(), content, foe));
   });
 
+  it("with로 함께하는 사람은 target이어도 맞서는 상대가 아니고, 잘하면 판정을 돕는다 (여울섬 T71: 같이 숨은 설다빈)", () => {
+    const w = world("role_a_grunt");
+    const tpl = Object.entries(content.extras).find(([, t]) => t.kind !== "infected" && t.kind !== "animal")![0];
+    expect(w.executeTool("spawn_extra", { template: tpl, label: "같이 숨는 사람" }).ok).toBe(true);
+    const mate = w.state().scene.present.find((x) => x.startsWith("ex_"))!;
+    w.state().characters[mate]!.skills.stealth = 2;
+    const alone = rollPlayerCheck({ move: "stealth", stat: "agility", difficulty: "normal", intent: "숨는다" }, w.ctx(), { target: mate });
+    expect(alone.ok && alone.display.line).toContain("상대가");
+    const together = rollPlayerCheck({ move: "stealth", stat: "agility", difficulty: "normal", intent: "숨는다" }, w.ctx(), { target: mate, allies: [mate] });
+    expect(together.ok && together.display.line).not.toContain("상대가");
+    expect(together.ok && together.display.line).toContain("도움");
+  });
+
   it("뒤지며 굴린 수색 아닌 판정에는 수색할 곳의 보정이 붙지 않는다", () => {
     // 분대장 T24: 생존 판정에 "+1(넉넉한 곳) +1(역사)"
     const w = world("role_a_grunt");

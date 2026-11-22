@@ -31,7 +31,7 @@ import { describeTemperature, feelsLike, frostOmen } from "./climate.ts";
 import { troubleLine } from "./factionTalk.ts";
 import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
-import { knowsDeath, playerCalls } from "../game/acquaintance.ts";
+import { knowsDeath, knowsReputation, playerCalls } from "../game/acquaintance.ts";
 import { describeRomanceForGm } from "./romance.ts";
 import { describeCaptivityForGm } from "./captivity.ts";
 import { describeHistoryPart, type HistoryPart } from "../game/background.ts";
@@ -495,9 +495,11 @@ function describeKnownPeople(state: GameState, content: Content): string {
       const npc = content.npcs[id];
       // 행방을 모르는 사람(붙잡혀 있다)의 지금 모습은 모른다 (플레이 테스트 11: "손목에 끈 자국")
       const unseen = !!heldOf(character) && state.playerZone !== heldOf(character)!.zone;
-      if (detailed.has(id)) lines.push(`${head(id)}: ${npc ? (unseen ? npc.reputation : `${npc.look} ${npc.reputation}`) : unseen ? "" : (character.extra?.look ?? "")}`);
+      // 평판은 아는 사이에만 (원칙 4, 사용자 결정: 플레이어 화면 ?인물과 같은 기준, 플레이 테스트 14)
+      const rep = npc && knowsReputation(state, content, id) ? npc.reputation : "";
+      if (detailed.has(id)) lines.push(`${head(id)}: ${npc ? (unseen ? rep : `${npc.look} ${rep}`.trim()) : unseen ? "" : (character.extra?.look ?? "")}`.replace(/: $/, ""));
       // 관계가 생겼거나 상태가 있는 사람은 한 줄, 아무 일 없는 사람은 이름만 모은다
-      else if (depth(id) > 0 || heldOf(character) || (character.dead && knowsDeath(state, content, id)) || character.away || !npc) lines.push(`${head(id)}${npc ? `: ${shortNote(npc.reputation)}` : ""}`);
+      else if (depth(id) > 0 || heldOf(character) || (character.dead && knowsDeath(state, content, id)) || character.away || !npc) lines.push(`${head(id)}${rep ? `: ${shortNote(rep)}` : ""}`);
       else rest.push(`${headingAs(state, content, viewer, id)}(${id})`);
     }
     blocks.push(

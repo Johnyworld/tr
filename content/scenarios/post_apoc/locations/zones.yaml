@@ -166,7 +166,7 @@
   description: 청솔형제단 거점 서쪽의 옛 아파트 단지.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: office, name: "관리사무소", indoor: true, aliases: ["관리사무소", "지하 교실", "회의", "배급", "대표실", "사무실", "마을 회관", "약초 창고"] }, { id: blocks, name: "101~103동 집·계단", indoor: true, aliases: ["101동", "102동", "103동", "계단", "집", "숙소", "단지 부엌", "귀가"] }, { id: rooftop_watch, name: "102동 옥상 망루", indoor: false, aliases: ["옥상"] }, { id: gate, name: "정문·경비실·쪽문", indoor: false, aliases: ["정문", "경비실", "쪽문", "단지 순찰", "거점 순찰"] }, { id: yard, name: "단지 텃밭·우물", indoor: false, aliases: ["텃밭", "우물"] }]
+  places: [{ id: office, name: "관리사무소", indoor: true, aliases: ["관리사무소", "지하 교실", "회의", "배급", "대표실", "사무실", "마을 회관", "약초 창고"] }, { id: blocks, name: "101~103동 집·계단", indoor: true, aliases: ["101동", "102동", "103동", "계단", "집", "숙소", "단지 부엌", "귀가"] }, { id: rooftop_watch, name: "102동 옥상 망루", indoor: false, aliases: ["옥상"] }, { id: gate, name: "정문·경비실·쪽문", indoor: false, aliases: ["정문", "경비실", "쪽문", "단지 순찰", "거점 순찰"] }, { id: yard, name: "단지 텃밭·우물", indoor: false, aliases: ["텃밭", "우물"] }, { id: lockup, name: "관리동 지하 가두는 방", indoor: true, aliases: ["가두는 방", "지하 가두는 방"], jail: true }]
   cover: 7
   danger: 0
   owner: faction_b
@@ -189,7 +189,7 @@
   description: 옛 보건소 건물. 약을 구하려는 사람들이 찾아온다.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: ward, name: "치료실·수술실", indoor: true, aliases: ["치료실", "수술실", "진료", "문진"] }, { id: pharmacy, name: "약제실", indoor: true, aliases: ["약제실", "장부", "약 나누기"] }, { id: quarantine, name: "격리실", indoor: true, aliases: ["격리실"] }, { id: lodging, name: "숙소·부엌", indoor: true, aliases: ["숙소", "자기 방", "진료소 부엌", "뒷방"] }, { id: director_room, name: "대표의 방", indoor: true, aliases: ["대표의 방"] }, { id: gate, name: "정문·접수대·마당", indoor: false, aliases: ["정문", "접수대", "문진 줄", "거래 손님", "마당", "벤치", "빨래", "들것"] }, { id: back_wall, name: "뒷담·쪽문", indoor: false, aliases: ["담장 순찰", "쪽문", "뒷담"] }]
+  places: [{ id: ward, name: "치료실·수술실", indoor: true, aliases: ["치료실", "수술실", "진료", "문진"] }, { id: pharmacy, name: "약제실", indoor: true, aliases: ["약제실", "장부", "약 나누기"] }, { id: quarantine, name: "격리실", indoor: true, aliases: ["격리실"] }, { id: lodging, name: "숙소·부엌", indoor: true, aliases: ["숙소", "자기 방", "진료소 부엌", "뒷방"] }, { id: director_room, name: "대표의 방", indoor: true, aliases: ["대표의 방"] }, { id: gate, name: "정문·접수대·마당", indoor: false, aliases: ["정문", "접수대", "문진 줄", "거래 손님", "마당", "벤치", "빨래", "들것"] }, { id: back_wall, name: "뒷담·쪽문", indoor: false, aliases: ["담장 순찰", "쪽문", "뒷담"] }, { id: lockup, name: "잠긴 뒤창고", indoor: true, aliases: ["잠긴 창고", "뒤창고"], jail: true }]
   cover: 7
   danger: 0
   owner: faction_d
@@ -210,7 +210,7 @@
   description: 강 하류의 옛 휴게소. 정해진 날에 상인들이 모인다.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: stalls, name: "장터 좌판·천막", indoor: false, aliases: ["장터", "천막", "망루", "뒷골목"] }, { id: pawnshop, name: "전당포·장부석", indoor: true, aliases: ["전당포", "장부석", "장부 맞추기", "빚 걷기", "다락", "매점"] }, { id: bunkhouse, name: "호위·짐꾼 막사", indoor: true, aliases: ["호위 막사", "짐꾼 막사"] }, { id: wagon_yard, name: "짐마차 마당", indoor: false, aliases: ["짐 싣기", "짐마차", "출발 준비", "호위조 점검", "마구간", "화살 손질"] }, { id: landing, name: "선착장", indoor: false, aliases: ["선착장", "나루"] }]
+  places: [{ id: stalls, name: "장터 좌판·천막", indoor: false, aliases: ["장터", "천막", "망루", "뒷골목"] }, { id: pawnshop, name: "전당포·장부석", indoor: true, aliases: ["전당포", "장부석", "장부 맞추기", "빚 걷기", "다락", "매점"] }, { id: bunkhouse, name: "호위·짐꾼 막사", indoor: true, aliases: ["호위 막사", "짐꾼 막사"] }, { id: wagon_yard, name: "짐마차 마당", indoor: false, aliases: ["짐 싣기", "짐마차", "출발 준비", "호위조 점검", "마구간", "화살 손질"] }, { id: landing, name: "선착장", indoor: false, aliases: ["선착장", "나루"] }, { id: lockup, name: "전당포 지하실", indoor: true, aliases: ["전당포 지하", "빚쟁이 방"], jail: true }]
   cover: 6
   danger: 0
   owner: faction_e
@@ -311,7 +311,7 @@
   description: 강 하구에서 배로 반나절 건너는 섬. 돌담과 망루, 텃밭과 양식장, 탄약 공방이 있다. 부두에는 늘 무장한 경비가 선다.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: council_hall, name: "의회 회관·식당", indoor: true, aliases: ["의회", "식당", "부엌", "저장고", "학당", "약방"] }, { id: quarters, name: "관사·숙소", indoor: true, aliases: ["관사", "숙소", "경비 막사", "침상"] }, { id: dock, name: "부두·검역 막사", indoor: false, aliases: ["부두", "검역", "등대"] }, { id: farm_shore, name: "양식장·텃밭·바닷가", indoor: false, aliases: ["양식장", "텃밭", "바닷가", "해안 순찰", "그물 창고", "움막"] }]
+  places: [{ id: council_hall, name: "의회 회관·식당", indoor: true, aliases: ["의회", "식당", "부엌", "저장고", "학당", "약방"] }, { id: quarters, name: "관사·숙소", indoor: true, aliases: ["관사", "숙소", "경비 막사", "침상"] }, { id: dock, name: "부두·검역 막사", indoor: false, aliases: ["부두", "검역", "등대"] }, { id: farm_shore, name: "양식장·텃밭·바닷가", indoor: false, aliases: ["양식장", "텃밭", "바닷가", "해안 순찰", "그물 창고", "움막"] }, { id: lockup, name: "등대 밑 창고", indoor: true, aliases: ["등대 창고", "등대 밑"], jail: true }]
   cover: 7
   danger: 1
   owner: faction_y

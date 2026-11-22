@@ -1,3 +1,4 @@
+import { routeMinutes } from "../rules/time.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -115,12 +116,12 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
     expect(out.ok).toBe(false);
     expect(currentPlace(w.state(), content)).toBeNull();
     expect(w.state().time).toBe(t);
-    const stray = w.executeTool("take_action", act({ place_to: "yard", place_with: ["c_cm_jaeho"] }));
+    const stray = w.executeTool("take_action", act({ place_to: "yard", with: ["c_cm_jaeho"] }));
     expect(stray.ok ? "" : stray.error).toContain("장면에 없다");
     expect(currentPlace(w.state(), content)).toBeNull();
   });
 
-  it("짐꾼 T1: 옮겨 가는 장소가 제자리인 사람과 place_with로 데려간 사람은 남고, 나머지는 원래 자리에 남는다", () => {
+  it("짐꾼 T1: 옮겨 가는 장소가 제자리인 사람과 with로 데려간 사람은 남고, 나머지는 원래 자리에 남는다", () => {
     const w = world("role_c_comrades");
     const s = w.state();
     // 창고 마당이 지금 제자리인 사람과 아닌 사람
@@ -129,7 +130,7 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
     const others = ids.filter((id) => npcPlaceAt(s, content, id) !== "yard").slice(0, 2);
     expect(home && others.length === 2).toBeTruthy();
     for (const id of [home!, ...others]) expect(w.executeTool("npc_presence", { npc_id: id, action: "enter" }).ok).toBe(true);
-    const out = w.executeTool("take_action", act({ place_to: "yard", place_with: [others[0]] }));
+    const out = w.executeTool("take_action", act({ place_to: "yard", with: [others[0]] }));
     expect(out.ok, out.ok ? "" : out.error).toBe(true);
     expect(w.state().scene.present).toEqual(expect.arrayContaining([home!, others[0]!]));
     expect(w.state().scene.present).not.toContain(others[1]);
@@ -195,7 +196,11 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
     w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "old_town" });
     expect(jailFor(w.state(), content, "faction_c", "old_town")).toEqual({ zone: "c_base", place: "cells" });
     w.ctx().store.append({ type: "item_granted", to: w.state().playerId, itemId: "binoculars", quantity: 1 });
+    const before = w.state().time;
     const line = capturePlayer(w.ctx(), "faction_c");
+    // 다른 구역으로 끌려가면 그 길의 시간이 흐른다 (사용자 결정)
+    expect(w.state().time - before).toBe(routeMinutes("old_town", "c_base"));
+    expect(line).toContain("동안 끌려가");
     expect(line).toContain(`빼앗긴 것: `);
     expect(line).toContain(content.items.binoculars!.name);
     expect(line).toContain("철망 감방");

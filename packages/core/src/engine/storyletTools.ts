@@ -279,6 +279,21 @@ export const resolveStorylet = defineTool({
       effects = choice.outcomes![check.outcome];
       // 그 판정에서 이미 다쳤으면 이야기의 "다친다"는 겹쳐 붙이지 않는다 (플레이 테스트 8: 판정 한 번 실패로 두 단계, 의식불명 → 죽음)
       if (check.harmApplied) effects = effects.filter((e) => !("wound" in e));
+      // 그 판정으로 이미 남을 다치게 했으면 이야기의 "다치게 한다"는 큰 쪽만 남긴다 (사용자 결정, PT14 신병 T75: 근접전 경상 위에 이야기 피해가 더해졌다)
+      const dealt = check.dealt ?? {};
+      if (Object.keys(dealt).length) {
+        const kept: typeof effects = [];
+        for (const e of effects) {
+          if (!("npc_hurt" in e)) {
+            kept.push(e);
+            continue;
+          }
+          const id = whoOf(ctx, e.npc_hurt.who, a.cast);
+          const rest = e.npc_hurt.steps - (id ? (dealt[id] ?? 0) : 0);
+          if (rest > 0) kept.push({ npc_hurt: { ...e.npc_hurt, steps: rest } });
+        }
+        effects = kept;
+      }
     }
     // 내놓을 물건이 없으면 고를 수 없다 (거래 선택지)
     const player = state.characters[state.playerId]!;

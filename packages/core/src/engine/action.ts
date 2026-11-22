@@ -230,10 +230,10 @@ export function createTakeActionSchema(s: Scenario) {
       .nullable()
       .default(null)
       .describe(`이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 구역에 막 들어선 자리로 돌아가면 "${ENTRY_PLACE}". 5분이 든다. 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null`),
-    place_with: z
+    with: z
       .array(z.string())
       .default([])
-      .describe("place_to와 함께: 동행 말고 같이 옮겨 가는 장면의 인물 id (업거나 부축해 데려가는 사람, 같이 걷는 사람, 쫓아오는 것). 이번 행동의 상대(target·check.opponent·치료 대상)와 그 장소가 제자리인 사람은 넣지 않아도 남는다. 나머지 장면의 인물은 원래 자리에 남는다"),
+      .describe("이번 행동을 함께하는 장면의 인물 id (같이 숨는 사람, 같이 싸우는 사람, 업거나 부축해 데려가는 사람, 같이 걷는 사람). target은 행동을 하는 대상이고, with는 곁에서 함께하는 사람이다. with의 사람은 맞서는 상대가 되지 않고, 그 일을 잘하면 판정을 돕고(+1, 한 사람), place_to와 함께면 같이 옮겨 간다. 동행·분대는 넣지 않아도 내 편이다. 아니면 []"),
     prepare: z
       .string()
       .nullable()
@@ -395,7 +395,7 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[]): string 
   return [
     where,
     along.length ? `함께 왔다: ${calls(along)}.` : "",
-    left.length ? `원래 자리에 남았다: ${calls(left)} (함께 데려가려면 place_with).` : "",
+    left.length ? `원래 자리에 남았다: ${calls(left)} (함께 데려가려면 with).` : "",
     // 막 들어선 자리에 둔 물건은 그 자리에 남는다 (돌아갈 수 있게 알린다)
     from === null && ground ? `막 들어선 자리에 둔 물건은 그 자리에 남았다 (다시 가려면 place_to: ${ENTRY_PLACE}).` : "",
     people.length ? `지금 이곳에 있을 사람: ${calls(people)} (장면에 들이려면 npc_presence).` : "",
@@ -659,14 +659,13 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       const here = placesIn(start, content, start.playerZone).map((p) => `${p.id}(${p.name})`).join(", ");
       return { ok: false, error: `이 구역에 그런 장소가 없다: ${input.place_to}. 이 구역의 장소: ${here || "없음"}, ${ENTRY_PLACE}(구역에 막 들어선 자리). 콘텐츠에 없는 곳이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
     }
-    const stray = input.place_with.find((id) => !start.scene.present.includes(id));
-    if (stray) return { ok: false, error: `place_with의 ${josa(start.characters[stray] ? `${playerCalls(start, content, stray)}(${stray})` : stray, "은/는")} 장면에 없다. 함께 옮겨 가는 사람은 장면에 있는 인물이다 (시간은 흐르지 않았다).` };
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)
-    const involved = [input.target, input.check?.opponent, input.treatment?.target, ...input.place_with].filter((id): id is string => !!id);
+    const involved = [input.target, input.check?.opponent, input.treatment?.target, ...input.with].filter((id): id is string => !!id);
     if ((to?.id ?? null) !== (currentPlace(start, content)?.id ?? null)) placeMove = { to, along: comesAlong(start, content, to?.id ?? null, involved) };
-  } else if (input.place_with.length) {
-    return { ok: false, error: "place_with는 place_to와 함께만 쓴다 (시간은 흐르지 않았다)." };
   }
+  // 함께하는 사람은 장면에 있어야 한다 (공통 규칙 8의 내 편, 사용자 결정 PT14: target 말고 with)
+  const strayWith = input.with.find((id) => !start.scene.present.includes(id) || id === start.playerId);
+  if (strayWith) return { ok: false, error: `with의 ${josa(start.characters[strayWith] ? `${playerCalls(start, content, strayWith)}(${strayWith})` : strayWith, "은/는")} 장면에 없다. 함께하는 사람은 장면에 있는 인물이다 (시간은 흐르지 않았다).` };
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
   const settingDisplays: ToolDisplayEvent[] = [];
   // 설정 거스르기 (공통 규칙 16): 굴려서 해내지 못하면 이 행동은 일어나지 않는다 (장소 옮기기도, PT14)
@@ -752,7 +751,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       ctx,
       // 응급처치로 피를 멎게 하는 것은 누구나 한다 (배우지 않았으면 미숙 -1, 플레이 테스트 12: 붕대로도 지혈하지 못했다)
       // 수색·먹을 것 구하기의 상황 보정 (12-220): 곳의 넉넉함, 다시 뒤짐. 들킬까 숨는 판정(exposed)에는 붙이지 않는다
-      { target: input.target, forMission, noTools: !!input.train, forage: input.forage, purpose: input.treatment ? "staunch" : null, dest: escapeAttempt ? null : input.move_to,
+      { target: input.target, allies: input.with, forMission, noTools: !!input.train, forage: input.forage, purpose: input.treatment ? "staunch" : null, dest: escapeAttempt ? null : input.move_to,
         // 치료 판정은 쓰는 물건의 보정만 (플레이 테스트 12: 붕대를 썼는데 "+1(구급상자)", 물건 없이도 붙었다)
         // 치료 없이 건 응급처치 판정도 도구 없이 (플레이 테스트 13: treatment 없는 응급처치에 "+1(붕대)")
         ...(input.treatment ? { toolItem: input.treatment.item ?? null } : input.check.move === scenario.wounds?.staunch_move ? { toolItem: null } : {}),
@@ -1278,6 +1277,8 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
   const steps = outcome === "success" ? (severity === "heavy" ? 2 : 1) : outcome === "partial" ? 1 : 0;
   if (steps === 0) return { lines: [`${josa(called, "은/는")} 다치지 않았다.`], displays };
   const change = changeCondition(ctx, targetId, ctx.content.scenario.harm_track, steps, "attack", cause);
+  // 이 판정으로 입힌 피해를 남긴다: 같은 판정으로 푸는 이야기가 같은 사람을 또 다치게 하면 큰 쪽만 (PT14)
+  if (change) ctx.store.append({ type: "check_harm_dealt", checkId: lastCheckId(ctx), targetId, steps });
   if (change?.line) lines.push(change.line);
   if (change?.display) displays.push(change.display);
   // 무기가 낸 상처에서 피가 난다 (12-91)

@@ -31,17 +31,22 @@ export function peopleHere(state: GameState, content: Content): string[] {
 }
 
 /**
- * 내 편: 함께 다니는 동행, 주인공의 분대, 같은 분대 동료 (플레이 테스트 14: 구해 주는 분대원을 target으로 두자 맞서는 상대로 셌다).
+ * 내 편: 함께 다니는 동행, 주인공의 분대, 같은 분대 동료, 이번 행동을 함께하는 사람(take_action.with, 사용자 결정 PT14) (플레이 테스트 14: 구해 주는 분대원을 target으로 두자 맞서는 상대로 셌다).
  * target으로 들어와도 판정의 상대가 아니다. 내 편과 맞서려면 check.opponent로 분명히 한다
  */
-export function onMySide(state: GameState, content: Content, id: string): boolean {
-  return activeCompanions(state).includes(id) || squadMembers(state, content).includes(id) || (roleOf(content, state)?.squad_mates ?? []).includes(id);
+export function onMySide(state: GameState, content: Content, id: string, allies: readonly string[] = []): boolean {
+  return allies.includes(id) || activeCompanions(state).includes(id) || squadMembers(state, content).includes(id) || (roleOf(content, state)?.squad_mates ?? []).includes(id);
 }
 
 /** 이 판정을 도울 사람: 그 스킬이 1 이상인 곁의 사람 가운데 가장 잘하는 사람. 없으면 null */
-export function helperFor(state: GameState, content: Content, move: string): { id: string; bonus: number } | null {
+export function helperFor(state: GameState, content: Content, move: string, allies: readonly string[] = []): { id: string; bonus: number } | null {
   let best: { id: string; skill: number } | null = null;
-  for (const id of peopleHere(state, content)) {
+  // 곁의 사람과 이번 행동을 함께하는 사람(with, 의식이 있는 사람만)
+  const withHere = allies.filter((id) => {
+    const c = state.characters[id];
+    return !!c && !c.dead && !isCreature(content, c) && !incapacitatingSymptom(content.scenario, c) && state.scene.present.includes(id);
+  });
+  for (const id of [...new Set([...peopleHere(state, content), ...withHere])]) {
     const skill = effectiveSkill(content, state.characters[id]!, move);
     if (skill >= 1 && (!best || skill > best.skill)) best = { id, skill };
   }
@@ -88,4 +93,17 @@ export function protectedFromWorld(state: GameState, content: Content, id: strin
   if (Object.values(state.activeStorylet?.cast ?? {}).includes(id)) return true;
   const top = content.scenario.rank_ladder.reduce((a, b) => (b.level > a.level ? b : a)).id;
   return c.rank === top;
+}
+
+/**
+ * 이 사람과 말을 주고받을 수 있는가 (약속·뇌물·협박 같은 말의 도구가 함께 쓴다). 안 되면 까닭.
+ * 중상이어도 의식이 있으면 말은 한다 (사용자 결정, 플레이 테스트 14: 다리를 판자로 묶은 실종자가 "대답할 수 없는 상태"였다).
+ * 의식을 잃었을 때(의식장애 같은 증상)만 막는다
+ */
+export function talkProblem(state: GameState, content: Content, id: string, verb: string): string | null {
+  const c = state.characters[id];
+  if (!c || c.dead || id === state.playerId || !state.scene.present.includes(id)) return "그 사람이 장면에 없다.";
+  if (isCreature(content, c)) return `사람에게만 ${verb}.`;
+  if (incapacitatingSymptom(content.scenario, c)) return "그 사람은 의식이 없어 대답할 수 없다.";
+  return null;
 }

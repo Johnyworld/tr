@@ -1,3 +1,4 @@
+import { talkProblem } from "../rules/company.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -8,7 +9,6 @@ import { TIE_LABELS, tiesOf } from "../game/ties.ts";
 import { dayOf } from "../rules/time.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { josa } from "../text.ts";
-import { isIncapacitated } from "./body.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { valuesOf } from "./extras.ts";
 import { equippedItem } from "./gear.ts";
@@ -60,13 +60,8 @@ export function leverageLines(state: GameState, content: Content, npcId: string)
   return lines;
 }
 
-function present(state: GameState, content: Content, id: string): string | null {
-  const c = state.characters[id];
-  if (!c || c.dead || id === state.playerId || !state.scene.present.includes(id)) return "그 사람이 장면에 없다.";
-  if (isCreature(content, c)) return "사람에게만 쓴다.";
-  if (isIncapacitated(content, c)) return "그 사람은 지금 대답할 수 없는 상태다.";
-  return null;
-}
+/** 말을 주고받을 수 있는가 (공통 규칙 8) */
+const present = (state: GameState, content: Content, id: string): string | null => talkProblem(state, content, id, "쓴다");
 
 const relate = (ctx: ToolContext, from: string, d: Partial<Record<"trust" | "affection" | "respect", number>>, reason: string) =>
   ctx.store.append({ type: "relation_changed", from, to: ctx.store.getState().playerId, delta: { trust: d.trust ?? 0, affection: d.affection ?? 0, respect: d.respect ?? 0 }, reason });

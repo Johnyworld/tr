@@ -1,3 +1,4 @@
+import { formatDuration, routeMinutes } from "../rules/time.ts";
 import { onCaptured } from "../rules/consequence.ts";
 import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
@@ -66,10 +67,16 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
   const taken = Object.entries(held).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`);
   // 붙잡힌 결과는 공통 규칙 3 (rules/consequence.ts): 들키지 않기 임무, 침입 행적, 그 무리의 태도
   const spotted = onCaptured(ctx, by).join(" ");
+  // 다른 구역으로 끌려가면 그 길의 이동 시간이 흐른다 (사용자 결정, 플레이 테스트 14: 물류창고에서 붙잡혔는데 0분 만에 거점에 갇혔다)
+  const dragged = state.playerZone && where !== state.playerZone ? routeMinutes(state.playerZone, where) : 0;
+  if (dragged > 0) {
+    const now = store.getState().time;
+    store.append({ type: "time_advanced", activity: "travel", from: now, to: now + dragged });
+  }
   store.append({ type: "player_captured", by, zone: where, held, place: jail.place });
   const name = content.factions[by]!.name;
   const cell = jail.place ? jailIn(content, where)?.name : null;
-  const fact = sentence(`${cause}. ${name}에 붙잡혀 ${content.locations[where]?.name ?? where}${cell ? `의 ${cell}` : ""}에 갇혔다`);
+  const fact = sentence(`${cause}. ${name}에 붙잡혀 ${dragged > 0 ? `${formatDuration(dragged)} 동안 끌려가 ` : ""}${content.locations[where]?.name ?? where}${cell ? `의 ${cell}` : ""}에 갇혔다`);
   store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${store.getState().nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time } });
   return (
     // 빼앗긴 것을 하나하나 적는다 (PT14 경비: "무기와 탄"이라 했는데 쌍안경·손전등도 사라졌다)

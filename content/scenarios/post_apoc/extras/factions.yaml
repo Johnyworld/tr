@@ -535,6 +535,34 @@
   ties: { chance: 0.2, kinds: [child, friend, rival] }
   appears: { zones: [campus] }
 
+# ── 여울섬: 검역 막사의 피난민 (12-259, PT15 섬: 막사 사람을 들이면 섬 분대원이 됐다) ──
+
+- id: y_quarantine_waiter
+  label: 검역 막사의 피난민
+  faction: null
+  rank: loner
+  age: [8, 70]
+  looks:
+    - 뭍에서 건너온 피난민. 젖은 보따리를 무릎에 끌어안고 부두 쪽만 본다
+    - 담요를 뒤집어쓴 피난민. 심사관이 지나갈 때마다 자세를 고쳐 앉는다
+  stats: { vitality: [-1, 0], senses: [0, 1], charm: [0, 1] }
+  skills: { survival: 1, swim: 0 }
+  traits: [timid, weary, eager, frail, guarded, warm]
+  trait_count: 2
+  inventory:
+    - { item: blanket, chance: 0.5 }
+    - { item: cloth, chance: 0.3 }
+  values: { self_interest: 1, loyalty: 0, mercy: 1 }
+  profile:
+    wants: [심사를 통과해 섬에 받아들여지는 것, 뭍에 두고 온 식구를 데려오는 것, 하루 한 끼라도 따뜻한 국을 먹는 것]
+    fears: [심사에서 떨어져 뭍으로 돌려보내지는 것, 기침 소리가 들키는 것, 밤배]
+    voices:
+      - { style: 조심스러운 존댓말. 섬 사람에게는 말끝을 흐린다, samples: ["언제쯤 들어갈 수 있을까요?", "저 일 잘해요. 뭐든 할 수 있어요."] }
+    rules: [섬 사람에게 먼저 고개를 숙인다, 아픈 티를 내지 않는다]
+    reputations: [며칠째 검역 막사에서 심사를 기다리는 사람]
+  ties: { chance: 0.4, kinds: [parent, child, sibling] }
+  appears: { zones: [yeoul_isle] }
+
 # ── 여울섬: 의회의 눈 ──
 
 - id: y_watcher

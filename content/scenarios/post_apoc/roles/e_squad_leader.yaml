@@ -31,6 +31,7 @@ age: 32
 start_skills: {}
 start_inventory: [trade_token, shotgun, shells, shells, shells, water_bottle, cigarettes, coat]
 start_location: e_market
+start_place: wagon_yard
 access: [ration, mission_board]
 beliefs_preset: e_squad_leader_start
 # 호위대 분대 넷, 직속 상관, 장터와 정수장의 주요 인물, 휴게소 칠판지기

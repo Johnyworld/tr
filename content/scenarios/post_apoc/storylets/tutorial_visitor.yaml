@@ -125,7 +125,7 @@
     flags_none: [tv_settled]
   cast:
     host: { ids: [a_bokja] }
-  setup: "{host:이/가} 국자를 허리에 꽂은 채 앞장선다. 복도를 따라 칠판이 그대로 남은 교실들이 이어진다. \"여기가 공용 숙소야. 책상 붙여서 침대 만들었어. 밥은 하루 한 번, 식당에서. 줄 서.\""
+  setup: "{host:이/가} 국자를 허리에 꽂은 채 앞장선다. \"따라와, 숙소부터 보여 줄게.\" 칠판이 그대로 남은 교실들 쪽을 턱으로 가리킨다. \"저기가 공용 숙소야. 책상 붙여서 침대 만들었어. 밥은 하루 한 번, 식당에서. 줄 서.\""
   ai_direction: >-
     정복자 할머니가 거점을 안내한다: 교실을 고친 공용 숙소(빈 자리 하나를 내준다), 식당과 배급(하루 한 번), 물탱크, 남쪽 담(자주 무너진다).
     생활 규칙 세 가지: 거점 안에서 총을 함부로 쏘지 않는다, 배급은 하루 한 번, 남의 몫에 손대는 것이 가장 무거운 잘못이다.
@@ -157,6 +157,8 @@
   tags: [tutorial_visitor]
   when:
     zones: [a_base, old_town, e_market]
+    # 다른 무리 사람이 있을 만한 바깥 자리에서만 (PT15 튜토리얼: 새벽 청솔 막사에 버들마을 동대표가 다가왔다)
+    places: [mess, yard_gate, alleys, stalls, wagon_yard, landing]
     flags_all: [bg_family_lost, tv_settled]
     flags_none: [tv_family_known, tv_family_where]
   cast:

@@ -6,14 +6,14 @@ import { HURT_RESENTMENT } from "../rules/damage.ts";
 import { ownOffense } from "../rules/consequence.ts";
 import { heldOf } from "../rules/held.ts";
 import { conditionsMet } from "../story/storylets.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, atEntry } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { PROMOTION } from "../game/missions.ts";
 
 /** 플레이 테스트 15 파트 5 (12-257): 무리 안의 벌·관계 */
 const content = loadRealContent();
 const choice = { name: "서진", gender: "female" as const, abilities: null, portrait: null, traits: [] };
-const world = (roleId: string, roll = 0.5) => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-257-")), content, rngFactory: () => () => roll }).create("mcp", roleId, choice);
+const world = (roleId: string, roll = 0.5) => atEntry(new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-257-")), content, rngFactory: () => () => roll }).create("mcp", roleId, choice));
 const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true, ...input });
 const rel = (w: ReturnType<typeof world>, from: string) => w.state().relations[from]?.[w.state().playerId] ?? { trust: 0, affection: 0, respect: 0 };
 const mateOf = (w: ReturnType<typeof world>) => Object.values(content.npcs).find((n) => n.faction === w.state().characters[w.state().playerId]!.factionId && n.zone === w.state().playerZone && !n.healer && n.id !== content.roles[w.state().roleId]?.commander)!.id;

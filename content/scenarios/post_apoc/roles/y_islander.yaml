@@ -29,6 +29,7 @@ resolve: { kind: truth, target: "섬을 떠나지 않았다|사람을 먹는다"
 start_skills: {}
 start_inventory: [harpoon_gun, harpoons, harpoons, harpoons, old_rifle, rifle_rounds, rifle_rounds, rifle_rounds, rifle_rounds, leather_jacket, water_bottle, canned_food, fishing_kit]
 start_location: yeoul_isle
+start_place: dock
 access: [ration, mission_board]
 beliefs_preset: y_islander_start
 known_npcs: [y_suja, y_cheonsu, y_miok, y_haesol, y_gangho, y_dabin, y_bokman]

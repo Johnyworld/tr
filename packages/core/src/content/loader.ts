@@ -320,6 +320,12 @@ function checkReferences(content: Content): string[] {
       type === "season" ? (content.scenario.seasons?.list ?? []).some((x) => x.id === target) : true;
     return ok ? null : `다짐 ${kindId}의 대상을 모른다: ${target}`;
   };
+  // 성을 물려주는 부모의 성별은 시나리오의 성별이어야 한다 (12-259)
+  {
+    const from = content.scenario.custom_start?.group?.surname_from;
+    const genders = content.scenario.creation?.genders.map((g) => g.id) ?? [];
+    if (from && !genders.includes(from)) problems.push(`custom_start.group.surname_from: 없는 성별 ${from}`);
+  }
   for (const role of Object.values(content.roles)) {
     if (!role.resolve) continue;
     const bad = resolveTargetOk(role.resolve.kind, role.resolve.target, new Set());
@@ -386,6 +392,23 @@ function checkReferences(content: Content): string[] {
     }
   }
   for (const role of Object.values(content.roles)) {
+    // 사물함이 없는 역할(무리 없이 시작)은 시작 짐(역할 + 가장 무거운 과거 배경)이 근력 0의 한도를 넘지 않는다 (12-259). 무리가 있으면 넘는 것은 사물함에 넣고 시작한다
+    const carry = content.scenario.gear?.carry;
+    if (carry && !role.faction) {
+      const weigh = (ids: readonly string[]) => ids.reduce((n, id) => n + (content.items[id]?.weight ?? 0.5), 0);
+      const pasts = content.scenario.creation?.pasts ?? [];
+      const worst = Math.max(0, ...pasts.map((p) => weigh(p.items.filter((i) => !role.start_inventory.includes(i)))));
+      const bonus = Math.max(0, ...role.start_inventory.map((id) => content.items[id]?.carry_bonus ?? 0));
+      const load = weigh(role.start_inventory) + worst;
+      if (load > carry.base + bonus) problems.push(`roles.${role.id}: 무리 없이 시작하는데 시작 짐이 한도를 넘을 수 있다 (${load.toFixed(1)}/${carry.base + bonus}kg, 넣어 둘 사물함이 없다)`);
+    }
+    // 시작 장소 (12-259): 시작 구역의 장소여야 하고, 시작 장면 글이 장소를 여럿 말하면 적어 둔다
+    if (role.start_location && content.locations[role.start_location]) {
+      const places = content.locations[role.start_location]!.places;
+      if (role.start_place && !places.some((p) => p.id === role.start_place)) problems.push(`roles.${role.id}.start_place: ${role.start_location}에 없는 장소 ${role.start_place}`);
+      const named = places.filter((p) => [p.name, ...p.aliases].some((a) => role.opening_scene.includes(a)));
+      if (!role.start_place && named.length > 1) problems.push(`roles.${role.id}: 시작 장면 글이 장소를 여럿 말한다 (${named.map((p) => p.id).join(", ")}). start_place로 시작 장소를 정한다`);
+    }
     if (role.start_location && Object.keys(content.locations).length && !content.locations[role.start_location]) {
       problems.push(`roles.${role.id}: 알 수 없는 시작 구역 ${role.start_location}`);
     }
@@ -607,8 +630,18 @@ export function checkStorylets(content: Content): string[] {
       if (!s.when.zones?.length) problems.push(`${where}.when.places: 구역(when.zones)을 함께 적는다`);
       for (const p of s.when.places) if (s.when.zones?.length && !known.has(p)) problems.push(`${where}.when.places: ${s.when.zones.join("·")}에 없는 장소 ${p}`);
     }
+    // 갇힌 사람이 배역인 이야기의 글이 가두는 곳이 아닌 장소를 말하면, 그 장소에서만 열린다 (12-259, PT15 튜토리얼: 포로 탈출 "창고 쪽"이 보급 창고)
+    if (Object.values(s.cast).some((role) => role.captive && role.enter !== false) && !s.when.places) {
+      const text = [s.title, s.setup, ...(s.variants ?? [])].join("\n");
+      const zones = s.when.zones ?? Object.keys(content.locations);
+      for (const z of zones) {
+        const bad = (content.locations[z]?.places ?? []).filter((p) => !p.jail && [p.name, ...p.aliases].some((a) => text.includes(a)));
+        for (const p of bad) problems.push(`${where}: 갇힌 사람이 배역인데 글이 ${z}의 가두는 곳이 아닌 장소 "${p.name}"를 말한다 (그 장소에서만 열린다)`);
+      }
+    }
     if (s.when.after_storylet && !content.storylets[s.when.after_storylet.id]) problems.push(`${where}.when.after_storylet: 없는 이야기 ${s.when.after_storylet.id}`);
     const castKeys = new Set(Object.keys(s.cast));
+    for (const c of s.choices) if (c.meets && !castKeys.has(c.meets)) problems.push(`${where}.choices.${c.id}.meets: 없는 배역 ${c.meets}`);
     // 배역 자리 뒤에 조사를 직접 적지 않는다: 받침에 따라 틀린다 (플레이 테스트 13: "늙은 그물꾼다", "{green}이"). {key:이/가}로 쓴다
     {
       const texts = [s.setup, ...(s.variants ?? []), s.ai_direction ?? "", ...s.choices.map((c) => c.label), JSON.stringify(s.choices)];

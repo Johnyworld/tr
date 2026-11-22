@@ -2,7 +2,7 @@ import { isCreature } from "../game/kinds.ts";
 import { traitsOf } from "./traits.ts";
 import { dayOf } from "../rules/time.ts";
 import { isFirstAidItem } from "./care/kinds.ts";
-import { heldOf } from "../rules/held.ts";
+import { heldOf, heldSeenTopic } from "../rules/held.ts";
 import { storyletOf } from "../story/storylets.ts";
 import { marketValue } from "./market.ts";
 import { RESOLVE_TOOLS } from "./resolve.ts";
@@ -380,6 +380,26 @@ export function gmToolSpecs(s: Scenario): ToolSpec[] {
 /** 의식불명 등 스스로 아무것도 못 하는 동안에도 쓰는 tool: 시간 흐르기·돌봄(take_action이 가린다), 누가 오고 가는 것, 묘비명, 설정 */
 const WHILE_INCAPACITATED = new Set(["take_action", "npc_presence", "spawn_extra", "write_epitaph", "set_content_options"]);
 
+/** 장면에 있는 갇힌 사람을 본 기억을 남긴다 (12-259): 그 구역에서 그 사람을 처음 볼 때 한 번 */
+function noteHeldSeen(ctx: ToolContext): void {
+  const state = ctx.store.getState();
+  const zone = state.playerZone;
+  if (!zone) return;
+  const topics = new Set((state.beliefs[state.playerId] ?? []).map((b) => b.topic));
+  for (const id of state.scene.present) {
+    const c = state.characters[id];
+    const held = heldOf(c);
+    if (!c || c.dead || !held || held.zone !== zone || topics.has(heldSeenTopic(id, zone))) continue;
+    const now = ctx.store.getState();
+    const where = ctx.content.locations[zone]?.name ?? zone;
+    ctx.store.append({
+      type: "belief_added",
+      characterId: now.playerId,
+      belief: { id: `b_${now.nextBeliefNo}`, fact: `${josa(playerCalls(now, ctx.content, id), "은/는")} ${where}에 붙잡혀 있다`, source: "seen", accuracy: "exact", learnedAt: now.time, topic: heldSeenTopic(id, zone) },
+    });
+  }
+}
+
 export function executeTool(name: string, input: unknown, ctx: ToolContext): ToolOutcome {
   const tool = gmTools(ctx.content.scenario).find((t) => t.name === name);
   if (!tool) return { ok: false, error: `알 수 없는 tool: ${name}` };
@@ -415,6 +435,8 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   }
   // 이번에 죽은 사람은 그 자리에 유해를 남긴다 (12-130)
   leaveRemainsForNewDeaths(ctx, living);
+  // 장면에서 본 갇힌 사람은 어디 붙잡혀 있는지 기억한다 (12-259, 공통 규칙 1)
+  noteHeldSeen(ctx);
   // 짐이 한도를 넘으면 창고를 한 번 알린다 (12-149)
   const hint = outcome.ok ? [stashHint(ctx), storyStillOpen(state, name, ctx)].filter(Boolean).join("\n") : null;
   const hinted = hint && outcome.ok ? { ...outcome, resultText: [outcome.resultText, hint].filter(Boolean).join("\n") } : outcome;

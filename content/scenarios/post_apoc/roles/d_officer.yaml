@@ -28,6 +28,7 @@ resolve: { kind: truth, target: "피를 뽑|혈청을 만", n: 1, text: 항생�
 start_skills: {}
 start_inventory: [ledger, medkit, fever_reducer, coat, radio]
 start_location: d_clinic
+start_place: director_room
 access: [ration, mission_board, treatment_room]
 beliefs_preset: d_officer_start
 # 회의에 앉는 사람들, 진료소의 손, 그리고 약을 사러 오는 무리의 얼굴들

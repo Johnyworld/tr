@@ -34,6 +34,7 @@ resolve: { kind: rise, target: "squad_leader", text: 정찰대 분대장이 된�
 start_skills: {}
 start_inventory: [baseball_bat, kitchen_knife, water_bottle, binoculars]
 start_location: b_base
+start_place: rooftop_watch
 access: [ration, mission_board]
 beliefs_preset: b_guard
 # 시작할 때 알고 있는 인물 (단지의 주요 인물과 같은 첫째 분대, 경비조)

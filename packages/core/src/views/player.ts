@@ -1,4 +1,4 @@
-import { heldOf } from "../rules/held.ts";
+import { heldOf, heldSeenZone } from "../rules/held.ts";
 import { buildMapView, type MapView } from "./map.ts";
 import { resolveLine } from "../engine/resolve.ts";
 import { pledges } from "../engine/promises.ts";
@@ -15,7 +15,7 @@ import { personProfile, type PersonProfile } from "./person.ts";
 import { factionPolicy } from "../sim/war.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
 import { disciplineOf } from "../game/culture.ts";
-import { headingAs, knowsDeath, playerCalls } from "../game/acquaintance.ts";
+import { headingAs, knowsDeath, playerCalls, withKnownNames } from "../game/acquaintance.ts";
 import {
   activeMissionOf,
   isRequirementMet,
@@ -505,9 +505,9 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         // 동물은 계급이 없다 (호칭에 이미 "동물"). 연고(가족·길동무)도 계급 대신 이름 옆의 부르는 말로 (떠돌이 계급 "혼자"를 붙이지 않는다)
         rankLabel: isCreature(content, npc) || bondOf(state, content, id)?.kind === "kin" ? "" : rankName(content, npc.factionId, npc.rank),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
-        conditionLabel: npc.dead && knowsDeath(state, content, npc.id) ? "사망" : npc.away ? "떠남" : heldOf(npc) ? (state.playerZone === heldOf(npc)!.zone ? "붙잡혀 있음" : "행방 모름") : changed(npc) ? changedConditions(npc) : null,
+        conditionLabel: npc.dead && knowsDeath(state, content, npc.id) ? "사망" : npc.away ? "떠남" : heldOf(npc) ? (state.playerZone === heldOf(npc)!.zone ? "붙잡혀 있음" : heldSeenZone(state, npc.id) ? `${content.locations[heldSeenZone(state, npc.id)!]?.name}에 붙잡혀 있음` : "행방 모름") : changed(npc) ? changedConditions(npc) : null,
         states: npc.dead ? [] : symptomViews(scenario, npc),
-        note: npc.dead ? null : npc.away ? "떠남" : heldOf(npc) ? (state.playerZone === heldOf(npc)!.zone ? "붙잡혀 있음" : "행방 모름") : null,
+        note: npc.dead ? null : npc.away ? "떠남" : heldOf(npc) ? (state.playerZone === heldOf(npc)!.zone ? "붙잡혀 있음" : heldSeenZone(state, npc.id) ? `${content.locations[heldSeenZone(state, npc.id)!]?.name}에 붙잡혀 있음` : "행방 모름") : null,
         dead: npc.dead,
         bond: !npc.dead && state.companions.includes(id) ? (() => {
           const b = bondOf(state, content, id);
@@ -631,7 +631,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     beliefs: (state.beliefs[state.playerId] ?? [])
       .map((b) => ({
         id: b.id,
-        fact: b.fact,
+        fact: withKnownNames(state, content, b.fact),
         sourceLabel: BELIEF_SOURCE_LABELS[b.source],
         learnedLabel: `${formatAgo(state.time, b.learnedAt)} · ${formatTime(b.learnedAt)}`,
       }))

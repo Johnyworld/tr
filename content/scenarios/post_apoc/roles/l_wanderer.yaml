@@ -31,6 +31,7 @@ start_skills: {}
 # 땔감 한 단 (12-186): 일주일 뒤 겨울이 온다. 불로 밤을 넘기는 법을 처음부터 쥐여 준다
 start_inventory: [pipe_spear, leather_jacket, blanket, water_bottle, dry_ration, firewood]
 start_location: old_town
+start_place: shops
 access: []
 known_npcs: []
 missions: []

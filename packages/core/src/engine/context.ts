@@ -1,5 +1,5 @@
 import { staunchHelper } from "../rules/company.ts";
-import { heldOf, pausedWhileHeld } from "../rules/held.ts";
+import { heldOf, heldSeenZone, pausedWhileHeld } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
 import { josa } from "../text.ts";
 import { describeDisaster } from "./disasters.ts";
@@ -32,7 +32,7 @@ import { describeTemperature, feelsLike, frostOmen } from "./climate.ts";
 import { troubleLine } from "./factionTalk.ts";
 import { rankName } from "../game/ranks.ts";
 import { attracted, romanceAllowed } from "./romance.ts";
-import { knowsDeath, knowsReputation, playerCalls } from "../game/acquaintance.ts";
+import { knowsDeath, knowsReputation, playerCalls, withKnownNames } from "../game/acquaintance.ts";
 import { describeRomanceForGm } from "./romance.ts";
 import { describeCaptivityForGm } from "./captivity.ts";
 import { describeHistoryPart, type HistoryPart } from "../game/background.ts";
@@ -447,7 +447,10 @@ function statusNote(content: Content, character: Character, state?: GameState): 
   if (heldOf(character) && !character.dead) {
     const me = state?.characters[state.playerId];
     const sees = !!state && state.playerZone === heldOf(character)!.zone && (!!heldOf(me) || state.scene.present.includes(character.id) || (!!me?.factionId && ownedBy(state, state.playerZone, me.factionId)));
-    return sees ? " · 여기 붙잡혀 있다" : " · 행방 모름";
+    if (sees) return " · 여기 붙잡혀 있다";
+    // 갇힌 것을 그 자리에서 본 적 있으면 그 기억대로 (12-259)
+    const seen = state ? heldSeenZone(state, character.id) : null;
+    return seen ? ` · ${content.locations[seen]?.name ?? seen}에 붙잡혀 있는 것을 봤다` : " · 행방 모름";
   }
   if (character.dead) return !state || knowsDeath(state, content, character.id) ? " · 사망" : "";
   // 장면에 없는 사람의 지금 몸 상태(허기 등)는 주인공이 모른다 (플레이 테스트 8). 장면에 들어오면 카드에 붙는다
@@ -606,7 +609,7 @@ function describeBeliefs(state: GameState, content: Content): string {
   const about = all.filter((b) => !recent.has(b.id) && names.some((n) => b.fact.includes(n))).slice(-MAX_BELIEFS_IN_PROMPT + RECENT_BELIEFS_IN_PROMPT);
   const shown = all.filter((b) => recent.has(b.id) || about.includes(b));
   // 알게 된 때를 붙인다 (12-178): 사흘 전에 본 병력은 지금과 다를 수 있다
-  const lines = shown.map((b) => `- [${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}] ${b.fact}`);
+  const lines = shown.map((b) => `- [${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}] ${withKnownNames(state, content, b.fact)}`);
   const rest = all.length - shown.length;
   // 실을 것이 없으면 머리줄 없이 한 줄로 (플레이 테스트 12: 항목 없는 머리줄이 남았다)
   if (lines.length === 0) return `(당신이 알고 있다고 믿는 것 ${rest}개는 지금 장면과 멀다. 필요하면 recall로 찾는다)`;

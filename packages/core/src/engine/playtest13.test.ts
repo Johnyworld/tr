@@ -12,7 +12,7 @@ import { pickCast, storyletAllowed, storyletWindow } from "../story/storylets.ts
 import { disposition } from "../sim/war.ts";
 import { capturePlayer, releasePlayer } from "./captivity.ts";
 import { issueSpare } from "./armory.ts";
-import { loadRealContent } from "../testing.ts";
+import { atEntry, loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { maybeInfect } from "./body.ts";
 import { helperFor, shareHarmWith } from "../rules/company.ts";
@@ -104,7 +104,7 @@ describe("플레이 테스트 13 버그", () => {
   });
 
   it("바닥에 내려놓은 물건은 그 구역에 남는다", () => {
-    const w = world("role_a_grunt");
+    const w = atEntry(world("role_a_grunt")); // 막 들어선 자리에 내려놓는다 (장소에 둔 물건은 그 장소에, 12-244)
     const ctx = w.ctx();
     const here = w.state().playerZone!;
     const next = content.locations[here]!.adjacent[0]!;

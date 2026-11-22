@@ -19,7 +19,7 @@
   rewards:
     every: 6
     items:
-      - { id: cigarettes, qty: 1, line: "분대장이 아껴 둔 담배 한 갑을 손에 쥐여 준다" }
+      - { id: cigarettes, qty: 1, line: "상관이 아껴 둔 담배 한 갑을 손에 쥐여 준다" }
       - { id: canned_food, qty: 2, line: "회의에서 이름이 불리고, 식당에서 통조림 두 개를 더 받는다" }
       - { id: bandage, qty: 2, line: "의무실에서 붕대 두 롤을 챙겨 준다. 다음엔 덜 다치라는 말과 함께" }
   culture:

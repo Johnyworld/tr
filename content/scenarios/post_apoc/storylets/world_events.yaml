@@ -419,6 +419,8 @@
   when:
     activities_none: [sleep, guard_duty]
     own_territory: false
+    # 바깥에서만 (PT15 튜토리얼: 버들마을 아파트 계단 안에서 누렁이가 지켜봤다)
+    indoor: false
     segments: [morning, day, evening]
     flags_none: [w_dog_fed]
     animal_companion: false

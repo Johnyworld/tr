@@ -17,6 +17,8 @@
   choices:
     - id: deliver
       label: 봉한 그대로 {friend}에게 건넨다
+      # 오지호가 있는 곳에 가서 건넨다 (12-259)
+      meets: friend
       effects:
         - relation: { who: friend, axis: trust, delta: 2 }
         - relation: { who: friend, axis: affection, delta: 1 }

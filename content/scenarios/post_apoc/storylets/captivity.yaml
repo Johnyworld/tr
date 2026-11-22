@@ -24,7 +24,7 @@
       - { from: captor, to: own, lte: -1 }
   cast:
     officer: { faction: captor, ranks: [squad_leader, officer] }
-  setup: '창 없는 방, 쇠 책상, 펼친 장부. {officer:이/가} 펜 끝으로 빈칸을 두드린다. "이름. 소속. 분대. 그리고 너희 쪽이 다음에 어디로 오는지. 말로 하지 말고 숫자로."'
+  setup: '철망 앞에 쇠 책상을 끌어다 놓고 장부를 펼쳤다. {officer:이/가} 펜 끝으로 빈칸을 두드린다. "이름. 소속. 분대. 그리고 너희 쪽이 다음에 어디로 오는지. 말로 하지 말고 숫자로."'
   ai_direction: 규율반은 소리를 지르지 않는다. 받아 적을 뿐이다. 털어놓은 것은 장부째 위원회로 올라간다. 거짓말이 들키면 배급부터 끊긴다. 주인공이 실제로 아는 것은 그 믿음 목록 안에서만 말한다. 지어낸 숫자를 말하면 그것이 거짓말 선택지다.
   choices:
     - id: talk_a
@@ -863,7 +863,7 @@
     segments: [night]
   cast:
     prisoner: { captive: true }
-  setup: '밤 보초를 서는데 창고 쪽 창살에서 낮은 목소리가 난다. {prisoner:이다/다}. "물 좀. 아니, 그보다 말 좀 해. 하루 종일 벽만 봤어."'
+  setup: '밤 보초를 서는데 가둬 둔 곳의 창살에서 낮은 목소리가 난다. {prisoner:이다/다}. "물 좀. 아니, 그보다 말 좀 해. 하루 종일 벽만 봤어."'
   ai_direction: 사람 대 사람의 장면이다. 붙잡혀 온 사람은 집 걱정, 남은 사람 걱정을 한다. 이 사람이 아는 비밀은 여기서 나오지 않는다 (심문은 handle_prisoner). 다만 여기서 쌓은 신뢰는 다음 심문과 회유를 쉽게 만든다. 포로와 오래 말하는 것을 동료가 보면 말이 돈다.
   choices:
     - id: talk
@@ -983,8 +983,9 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market]
     segments: [night, dawn]
   cast:
-    prisoner: { captive: true }
-  setup: 새벽, 창고 쪽에서 쇠 긁는 소리가 난다. {prisoner:이/가} 창살 하나를 반쯤 뽑아냈다. 손바닥이 피투성이다. 눈이 마주친다. 둘 다 숨을 멈춘다.
+    # 창살을 뽑느라 손바닥이 찢겼다 (12-259, PT15 튜토리얼: 글은 "피투성이"인데 부상 이상 없음)
+    prisoner: { captive: true, starts: { harm: light } }
+  setup: 새벽, 가둬 둔 곳 쪽에서 쇠 긁는 소리가 난다. {prisoner:이/가} 창살 하나를 반쯤 뽑아냈다. 손바닥이 피투성이다. 눈이 마주친다. 둘 다 숨을 멈춘다.
   ai_direction: 이 사람은 오늘 밤이 아니면 기회가 없다고 믿는다. 싸울 힘은 거의 없다. 놓아주면 아무도 모를 수 있지만, 아침에 빈 창살을 보면 누가 보초였는지 따진다.
   choices:
     - id: alarm
@@ -1064,7 +1065,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market]
   cast:
     ours: { captive: true, faction: own, keep: cp_ours }
-  setup: 창고 뒤편 창살 안에서 누가 우리 무리의 암구호를 속삭인다. {ours:이다/다}. 싸움에서 끌려간 뒤로 소식이 끊겼던. 얼굴이 반쪽이 됐다.
+  setup: 가둬 둔 곳의 창살 안에서 누가 우리 무리의 암구호를 속삭인다. {ours:이다/다}. 싸움에서 끌려간 뒤로 소식이 끊겼던. 얼굴이 반쪽이 됐다.
   ai_direction: 여기는 남의 거점 한가운데다. 경비가 가깝다. 지금 꺼내려 들면 판정 하나에 둘 다 걸린다. 실패하면 주인공도 붙잡힐 수 있다 (코드가 정한다). 물러나 다시 오면 준비할 시간이 생긴다.
   choices:
     - id: now
@@ -1111,7 +1112,7 @@
   cast:
     ours: { captive: true, faction: own, keep: cp_ours }
     guard: { faction: zone_owner, ranks: [grunt, staff], optional: true }
-  setup: 약속대로 다시 왔다. 교대 직전이라 창고 앞이 비어 있다. 창살 안에서 {ours:이/가} 몸을 일으킨다. 이번엔 준비할 시간이 있었다.
+  setup: 약속대로 다시 왔다. 교대 직전이라 가둬 둔 곳 앞이 비어 있다. 창살 안에서 {ours:이/가} 몸을 일으킨다. 이번엔 준비할 시간이 있었다.
   ai_direction: 주인공이 가진 것(철사, 쇠지렛대, 열쇠 꾸러미)이 있으면 자물쇠 쪽이 쉽다. 소란을 피우면 경비는 그쪽으로 가지만 거점 전체가 깬다. 이 무리의 보초 하나는 담배 몇 갑이면 눈을 감는 사람이다 (있을 때만).
   choices:
     - id: lock

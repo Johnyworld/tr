@@ -144,7 +144,7 @@
           - set_flag: os_rookie_drilled
           - companion_join: { who: rookie, kind: purpose, until: { hours: 72 } }
           - relation: { who: rookie, axis: affection, delta: -2 }
-          - belief: { fact: "맡겨진 사람을 몰아붙였더니 나중에 혼자 울고 있었다", source: seen }
+          - belief: { fact: "맡겨진 사람을 몰아붙였다. 입술을 깨물고 고개를 숙인 채 대꾸가 없었다", source: seen }
     - id: go_easy
       label: 첫날은 밥부터 같이 먹고, 바깥 얘기를 해 준다
       effects:

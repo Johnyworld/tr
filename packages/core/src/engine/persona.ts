@@ -6,7 +6,7 @@ import { josa } from "../text.ts";
 // 성격 줄은 GM이 그대로 옮긴다: 주인공이 이름을 모르는 인물은 호칭으로 (원칙 4, PT14)
 import { playerCalls } from "../game/acquaintance.ts";
 import { traitsOf } from "./traits.ts";
-import { worthPassing } from "../rules/news.ts";
+import { hearsay, worthPassing } from "../rules/news.ts";
 import type { ToolContext } from "./toolkit.ts";
 
 /**
@@ -240,13 +240,14 @@ export function rollHear(ctx: ToolContext, targetId: string | null): { line: str
   // 지키는 것(keeps)은 수다에 흘리지 않는다 (플레이 테스트 12)
   const kept = new Set(ctx.content.npcs[target.id]?.keeps ?? []);
   // 옮길 만한 사실만: 주인공 자신에 대한 말, 만남·이름 기억은 얻어듣지 않는다 (공통 규칙 14, PT14)
-  const theirs = (state.beliefs[target.id] ?? []).filter((b) => !mine.has(b.fact) && !kept.has(b.fact) && worthPassing(state, b, "player"));
+  // 남이 아는 것은 "~라고 들었다"로 옮긴다 (12-259, 공통 규칙 14 hearsay)
+  const theirs = (state.beliefs[target.id] ?? []).filter((b) => !mine.has(b.fact) && !mine.has(hearsay(b.fact)) && !kept.has(b.fact) && worthPassing(state, b, "player"));
   if (!theirs.length) return null;
   const fact = theirs[Math.floor(ctx.rng() * theirs.length)]!;
   ctx.store.append({
     type: "belief_added",
     characterId: me.id,
-    belief: { id: `b_${state.nextBeliefNo}`, fact: fact.fact, source: "report", accuracy: fact.accuracy, learnedAt: state.time, ...(fact.topic ? { topic: fact.topic } : {}) },
+    belief: { id: `b_${state.nextBeliefNo}`, fact: hearsay(fact.fact), source: "report", accuracy: fact.accuracy, learnedAt: state.time, ...(fact.topic ? { topic: fact.topic } : {}) },
   });
-  return { line: persona(axis, v, `말이 오가다 ${josa(playerCalls(state, ctx.content, target.id), "이/가")} 묻지 않은 말까지 했다: "${fact.fact}"`), fact: fact.fact };
+  return { line: persona(axis, v, `말이 오가다 ${josa(playerCalls(state, ctx.content, target.id), "이/가")} 묻지 않은 말까지 했다 · 알게 된 것: "${hearsay(fact.fact)}"`), fact: hearsay(fact.fact) };
 }

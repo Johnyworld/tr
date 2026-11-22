@@ -1,3 +1,4 @@
+import { josa, type JosaPair } from "../text.ts";
 import { rankName } from "./ranks.ts";
 import { isCreature, kindOf, KIND_LABELS } from "./kinds.ts";
 import type { Content } from "../content/schemas.ts";
@@ -92,4 +93,24 @@ export function knowsReputation(state: GameState, content: Content, id: string):
   if (r && (r.trust >= 4 || r.affection >= 4)) return true;
   const heardName = (state.beliefs[state.playerId] ?? []).some((b) => b.fact.includes(`의 이름은 ${c.name}`));
   return !heardName;
+}
+
+const ALIAS_PARTICLES: Record<string, JosaPair> = { 은: "은/는", 는: "은/는", 이: "이/가", 가: "이/가", 을: "을/를", 를: "을/를", 과: "과/와", 와: "과/와" };
+
+/**
+ * 믿음 글을 보여 줄 때 이름을 알게 된 사람의 호칭을 지금 아는 이름으로 바꾼다 (12-259, PT15 튜토리얼: 강태호 이름을 안 뒤에도
+ * "귀가 반쯤 없는 분대장은 …"). 기록은 그대로 두고 보여 주는 글만. 만남·이름 기억은 호칭과 이름을 잇는 글이라 그대로
+ */
+export function withKnownNames(state: GameState, content: Content, fact: string): string {
+  if (isAcquaintanceMemory(fact)) return fact;
+  let out = fact;
+  for (const id of state.known[state.playerId] ?? []) {
+    const c = state.characters[id];
+    if (!c || id === state.playerId) continue;
+    const alias = aliasOf(state, content, id);
+    if (!alias || alias === c.name || !out.includes(alias)) continue;
+    const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    out = out.replace(new RegExp(`${escaped}(은|는|을|를|과|와|(?:이|가)(?!다))?`, "g"), (_m, p?: string) => (p ? josa(c.name, ALIAS_PARTICLES[p]!) : c.name));
+  }
+  return out;
 }

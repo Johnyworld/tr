@@ -5,7 +5,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, atEntry } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { createSeededRng } from "../rng.ts";
 import { currentPlace, ENTRY_PLACE, guardedHere, hereWithMe, jailFor, nearby, npcPlaceAt, placeIndoor, placesIn, shelterAt, storyPlaceFits, whereIs } from "../rules/place.ts";
@@ -15,7 +15,9 @@ import { feelsLike } from "./climate.ts";
 
 const content = loadRealContent();
 const choice = { name: "서진", gender: "female" as const, abilities: null, portrait: null, traits: [] };
-const world = (roleId: string) => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-place-")), content, rngFactory: () => createSeededRng(5) }).create("mcp", roleId, choice);
+const startWorld = (roleId: string) => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-place-")), content, rngFactory: () => createSeededRng(5) }).create("mcp", roleId, choice);
+// 막 들어선 자리에서 시작 (12-259 시작 장소 이전의 전제)
+const world = (roleId: string) => atEntry(startWorld(roleId));
 const act = (input: Record<string, unknown>) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });
 
 describe("구역 안의 장소 (12-244, 공통 규칙 15)", () => {

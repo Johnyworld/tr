@@ -9,14 +9,14 @@ import { knownCrossings } from "../rules/knowledge.ts";
 import { storyPlacesFit } from "../rules/place.ts";
 import { fitForPractice } from "../rules/situation.ts";
 import { castCandidates, conditionsMet, pacingBlocks, storyletAllowed } from "../story/storylets.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, atEntry } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { waterHere } from "./body.ts";
 
 /** 플레이 테스트 14 뒤 정한 것 (12-251) */
 const content = loadRealContent();
 const choice = { name: "서진", gender: "female" as const, abilities: null, portrait: null, traits: [] };
-const world = (roleId: string, roll = 0.5) => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-251-")), content, rngFactory: () => () => roll }).create("mcp", roleId, choice);
+const world = (roleId: string, roll = 0.5) => atEntry(new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-251-")), content, rngFactory: () => () => roll }).create("mcp", roleId, choice));
 const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });
 const story = (base: StoryletContent, patch: Partial<StoryletContent> & { when?: Partial<StoryletContent["when"]> }): StoryletContent => ({ ...base, ...patch, when: { ...base.when, ...(patch.when ?? {}) } }) as StoryletContent;
 

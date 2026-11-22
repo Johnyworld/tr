@@ -138,7 +138,7 @@
   look: 무릎까지 오는 검은 고무 앞치마, 팔뚝에 붉은 완장을 떼어 낸 자국이 하얗게 남았다. 손을 하루에도 몇 번씩 바닷물에 씻는다.
   reputation: 의회 저장고를 지키는 사람. 말이 없고 사람들이 피한다. 저장고 굴뚝 연기가 오르는 날에는 그도 보이지 않는다.
   want: 저장고 열쇠를 누군가에게 넘기고 바다로 나가는 것
-  fear: 저장고 일을 그만두는 순간 자기가 그 안으로 들어가는 것
+  fear: 저장고 일을 그만두면 자기도 뭍으로 내보내지는 것
   values: { discipline: 2, loyalty: -1, mercy: 0, honesty: 0, self_interest: 1 }
   traits: [cold, weary, cautious]
   voice:

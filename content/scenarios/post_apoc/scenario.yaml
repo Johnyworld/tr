@@ -472,6 +472,8 @@ custom_start:
     # 부모·자식은 많아야 38살 차이, 무리에 사는 가족은 그 무리의 주민 (12-239)
     parent_max_gap: 38
     settled_rank: staff
+    # 아버지의 성을 형제자매·자식이 따른다 (12-259)
+    surname_from: male
     relations:
       # 결혼·자식 (12-195): 배우자는 주인공 24세부터, 자식은 28세부터(18살 이상 차이). 찾는 가족에서는 나이가 돼도 확률로만 (부모·형제가 기본)
       - { id: spouse, label: 배우자, kind: spouse, max: 1, age: [18, 75], labels: { male: 남편, female: 아내 }, min_me_age: 24, chance: 0.5 }

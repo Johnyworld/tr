@@ -3,13 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, atEntry } from "../testing.ts";
 import { factionPeers, standingInFaction } from "../game/politics.ts";
 import { conditionsMet, castCandidates } from "../story/storylets.ts";
 
 /** 무리 안의 정치 (12-152) */
 const content = loadRealContent();
-const make = (role = "role_a_grunt") => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-politics-")), content, rngFactory: () => () => 0.5 }).create("mcp", role);
+const make = (role = "role_a_grunt") => atEntry(new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-politics-")), content, rngFactory: () => () => 0.5 }).create("mcp", role));
 type World = ReturnType<typeof make>;
 const me = (w: World) => w.state().characters[w.state().playerId]!;
 /** 같은 무리 사람 n명이 주인공을 믿지 않게 */

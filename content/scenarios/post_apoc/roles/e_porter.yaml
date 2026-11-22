@@ -29,6 +29,7 @@ age: 26
 start_skills: {}
 start_inventory: [trade_token, water_bottle, cigarettes, crowbar, rifle_rounds, rifle_rounds]
 start_location: e_market
+start_place: wagon_yard
 access: [ration, mission_board]
 beliefs_preset: e_porter
 known_npcs: [e_okhee, e_bongsu, e_yuri, e_cheolgu, e_sora, e_deoksu, e_hana]

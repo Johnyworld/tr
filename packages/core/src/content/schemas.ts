@@ -140,6 +140,11 @@ export function createContentSchemas(s: Scenario) {
     /** 시작 장면. 화면에 먼저 보여 주고 GM 프롬프트에도 넣는다 */
     opening_scene: z.string().min(1),
     /**
+     * 시작 구역 안의 시작 장소 (12-259). 없으면 시작 장면 글이 그 구역의 장소 하나만 말할 때 그 장소, 아니면 막 들어선 자리.
+     * 글이 장소를 여럿 말하면 적는다 (content:check)
+     */
+    start_place: contentIdSchema.optional(),
+    /**
      * 새 게임의 시나리오 (기획서 12.4.1). order가 있으면 월드를 고른 뒤의 시나리오 목록에 그 순서로 보인다.
      * order가 없는 역할은 목록에 없고, 무리에 들거나 다음 캐릭터로 이어 갈 때 그 자리의 규칙(상관·임무·이야기)으로만 쓴다
      */
@@ -896,6 +901,11 @@ export function createContentSchemas(s: Scenario) {
           factions: z.array(z.string().min(1)).optional(),
         })
         .optional(),
+      /**
+       * 얼굴을 보고 하는 선택지의 상대 배역 (12-259, PT15 졸병: 장면에 없는 오지호에게 편지를 "건넸다"). 그 배역이 장면에 없으면
+       * 같은 구역에 있을 때 그 장소로 가서(장소를 모르면 찾아가) 장면에 들이고, 다른 구역이면 고를 수 없다
+       */
+      meets: contentIdSchema.optional(),
       /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */
       check: idEnum(moveIds(s)).optional(),
       effects: z.array(storyletEffect).default([]),

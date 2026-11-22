@@ -29,7 +29,7 @@ import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, storyletOf } from "../story/storylets.ts";
 import { justHadStory, storyText } from "../rules/storySlot.ts";
-import { storyPlaceOnEntry } from "../rules/place.ts";
+import { hereWithMe, placeById, storyPlaceOnEntry, whereIs, whereLabel } from "../rules/place.ts";
 import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
@@ -273,6 +273,27 @@ export const resolveStorylet = defineTool({
     const choice = a.storylet.choices.find((c) => c.id === input.choice_id);
     const open = a.storylet.choices.filter((c) => choiceAvailable(state, c, a.cast));
     if (!choice || !open.includes(choice)) return { ok: false, error: `고를 수 없는 선택지: ${input.choice_id} (가능: ${open.map((c) => c.id).join(", ")})` };
+    // 얼굴을 보고 하는 선택지 (12-259, 공통 규칙 15): 상대가 같은 장소에 있으면 장면에 들이고, 같은 구역의 다른 장소에 있으면
+    // 그 장소로 가서 만난다. 다른 구역이거나 어디 있는지 모르면 고를 수 없다
+    let met: string | null = null;
+    if (choice.meets) {
+      const who = a.cast[choice.meets];
+      const c = who ? state.characters[who] : undefined;
+      if (who && c && !c.dead && !state.scene.present.includes(who)) {
+        const w = whereIs(state, ctx.content, who);
+        const name = playerCalls(state, ctx.content, who);
+        if (!hereWithMe(state, ctx.content, who)) {
+          if (!w || w.zone !== state.playerZone || heldOf(c) || heldOf(state.characters[state.playerId])) {
+            const where = whereLabel(state, ctx.content, who);
+            return { ok: false, error: `${josa(name, "이/가")} 이 근처에 없어 이 선택지는 고를 수 없다${where ? ` (지금 ${where})` : ""}. 다른 선택지로 푼다.` };
+          }
+          // 장소를 알면 그리로 가고, 모르면(구역 어딘가) 찾아가 만난 것으로 (자리는 그대로)
+          if (w.place) ctx.store.append({ type: "place_moved", from: whereIs(state, ctx.content, state.playerId)?.place ?? null, to: w.place });
+          met = w.place ? `${josa(name, "이/가")} 있는 ${josa(placeById(ctx.store.getState(), ctx.content, w.place)?.name ?? w.place, "으로/로")} 가서 만났다.` : `${josa(name, "을/를")} 찾아가 만났다.`;
+        }
+        enterScene(ctx, who);
+      }
+    }
     let outcome: CheckOutcome | null = null;
     let effects = choice.effects;
     if (choice.check) {
@@ -320,6 +341,7 @@ export const resolveStorylet = defineTool({
     const lines: string[] = [
       `이야기 "${storyTitle(state, ctx.content, a.storylet)}": ${improvised ? `플레이어의 방법으로 즉흥으로 풀었다 (${moveLabel(ctx.content.scenario, input.improvised_move!)} 판정, "${maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}"의 결과를 따른다)` : maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`,
     ];
+    if (met) lines.push(met);
     const extra: ToolDisplayEvent[] = [];
     for (const effect of effects) {
       const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title, { judged: outcome !== null });

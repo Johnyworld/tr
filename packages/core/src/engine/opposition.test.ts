@@ -17,6 +17,8 @@ function setup(hour = 12) {
   const s = store.getState();
   s.time = Math.floor(s.time / MINUTES_PER_DAY) * MINUTES_PER_DAY + hour * 60;
   s.weather = null;
+  // 구역을 미리 정해 둔다 (첫 도구에서 시작 장소로 옮기면 장면에 세운 사람이 그 자리에 남는다, 12-259)
+  s.playerZone = content.roles.role_l_wanderer!.start_location!;
   s.companions = [];
   s.scene.present = [];
   const me = s.characters[s.playerId]!;

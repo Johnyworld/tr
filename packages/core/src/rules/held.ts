@@ -42,3 +42,16 @@ export function pausedWhileHeld(state: Parameters<typeof playerHeld>[0], _what: 
 export function lastFreedAt(state: { lastFreedAt?: number | null }): number | null {
   return state.lastFreedAt ?? null;
 }
+
+/**
+ * 갇힌 사람을 그 자리에서 본 기억의 주제 (12-259, PT15 졸병: 수용소에서 본 남궁혁이 거점에 돌아오자 "행방 모름"이 됐다).
+ * 갇힌 인물이 장면에 있으면 "[직접 봄] ○○은 ○○에 붙잡혀 있다" 믿음을 남기고, 그 자리를 떠난 뒤에도 아는 인물 줄은 그 믿음으로 보인다
+ */
+export const heldSeenTopic = (id: string, zone: string) => `held_seen:${id}@${zone}`;
+
+/** 주인공이 마지막으로 이 사람이 갇혀 있는 것을 본 구역 (본 적 없으면 null) */
+export function heldSeenZone(state: { playerId: string; beliefs: Record<string, readonly { topic?: string | undefined }[] | undefined> }, id: string): string | null {
+  const prefix = `held_seen:${id}@`;
+  const seen = (state.beliefs[state.playerId] ?? []).filter((b) => b.topic?.startsWith(prefix));
+  return seen.length ? seen.at(-1)!.topic!.slice(prefix.length) : null;
+}

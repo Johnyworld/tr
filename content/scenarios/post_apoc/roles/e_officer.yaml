@@ -30,6 +30,7 @@ resolve: { kind: truth, target: "피를 뽑|혈청을 만", n: 1, text: 장부 �
 start_skills: {}
 start_inventory: [ledger, notebook, pen, trade_token, pistol, pistol_rounds, pistol_rounds, coat, cigarettes]
 start_location: e_market
+start_place: pawnshop
 access: [ration, mission_board]
 beliefs_preset: e_officer_start
 # 상단 지도부와 장부·짐마차·거래선 둘레, 그리고 거래 상대의 간부들

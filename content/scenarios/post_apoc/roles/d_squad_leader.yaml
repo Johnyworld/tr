@@ -34,6 +34,7 @@ resolve: { kind: protect, target: "d_eunyoung", n: 40, text: 서은영 대표를
 start_skills: {}
 start_inventory: [pistol, pistol_rounds, crowbar, radio, flashlight, bandage, water_bottle]
 start_location: d_clinic
+start_place: gate
 access: [ration, mission_board]
 beliefs_preset: d_squad_leader_start
 # 수비대 넷, 대표, 진료소의 손들, 격리실 문지기

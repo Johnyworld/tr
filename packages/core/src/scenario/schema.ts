@@ -443,6 +443,8 @@ export const scenarioFileSchema = z
             parent_gap: z.number().int().min(0).default(18),
             /** 부모·자식의 나이 차 상한 (12-239, 플레이 테스트 13: 25살 주인공의 아버지가 79살) */
             parent_max_gap: z.number().int().min(1).optional(),
+            /** 성을 물려주는 부모의 성별 (12-259, PT15 튜토리얼: 어머니 양미영·아버지 황승우·여동생 한미숙). 형제자매·자식도 이 성을 따른다. 없으면 먼저 정해진 부모 */
+            surname_from: z.string().min(1).optional(),
             /** 무리에 사는 가족의 계급 (12-239: 버들마을에 사는 부모가 "버들마을 떠돌이"로 보였다) */
             settled_rank: id.optional(),
             relations: z

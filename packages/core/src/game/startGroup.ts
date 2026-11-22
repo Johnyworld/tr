@@ -103,8 +103,8 @@ export function memberTemplate(content: Content, m: GroupMember): string {
 export const FAMILY_KINDS = ["parent", "sibling", "spouse", "child"] as const;
 
 /**
- * 주인공의 가족 count명 (주인공 나이에 맞는 관계만). 형제자매·자식과 부모 중 한 사람은 주인공의 성을 따른다 (다른 부모와 배우자는 제 성).
- * surname: 주인공의 성 (한 글자). 없으면 이름 그대로
+ * 주인공의 가족 count명 (주인공 나이에 맞는 관계만). 형제자매·자식과 부모 중 한 사람(surname_from 성별, 없으면 먼저 정해진 부모)은 주인공의 성을 따른다 (다른 부모와 배우자는 제 성).
+ * surname: 주인공의 성 (한 글자). 없으면 가족이 함께 쓸 성을 하나 뽑는다 (12-259)
  */
 export function makeFamily(content: Content, me: StartGroup["me"], count: number, rng: Rng, surname: string | null, used: ReadonlySet<string> = new Set()): GroupMember[] {
   const group: StartGroup = { me, members: [] };
@@ -114,12 +114,16 @@ export function makeFamily(content: Content, me: StartGroup["me"], count: number
     const rel = groupRules(content)!.relations.find((r) => r.kind === k);
     return !rel || rel.chance === undefined || rng() < rel.chance;
   });
+  // 주인공 이름에 성이 없으면(이름만 적었으면) 가족이 함께 쓸 성 하나를 정한다 (12-259)
+  const surnames = content.scenario.names?.surnames ?? [];
+  const family = surname ?? (surnames.length ? surnames[Math.floor(rng() * surnames.length)]! : null);
   for (let i = 0; i < count; i++) {
     const m = randomMember(content, group, rng, taken, kinds);
     if (!m) break;
     const kind = groupRules(content)!.relations.find((r) => r.id === m.relation)?.kind;
-    const keeps = kind === "spouse" || (kind === "parent" && group.members.some((x) => x.relation === m.relation));
-    if (surname && !keeps && m.name.length >= 2) m.name = surname + m.name.slice(1);
+    const from = groupRules(content)!.surname_from;
+    const keeps = kind === "spouse" || (kind === "parent" && (from ? m.gender !== from : group.members.some((x) => x.relation === m.relation)));
+    if (family && !keeps && m.name.length >= 2) m.name = family + m.name.slice(1);
     taken.add(m.name);
     group.members.push(m);
   }

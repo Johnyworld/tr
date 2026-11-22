@@ -34,6 +34,7 @@ resolve: { kind: protect, target: "c_cm_dahye", n: 40, text: 오래 함께 버�
 start_skills: {}
 start_inventory: [c_armband, crowbar, water_bottle, padded_armor]
 start_location: c_warehouse
+start_place: yard
 access: [ration, mission_board]
 beliefs_preset: c_comrades_start
 known_npcs: [c_cm_jaeho, c_cm_dahye, c_cm_beomsu, c_cm_yunho, c_cm_gitaek, c_cm_sunae, c_cm_minji, c_gyeongsu, c_hyeran, c_sangok, c_pilsu]

@@ -45,8 +45,8 @@
   gender: male
   start_captive: { by: faction_c, zone: c_warehouse }
   # 플레이 테스트 14: 카드는 "정강이를 판자로 묶었다·열에 들뜬 눈"인데 부상 이상 없음이라 응급처치가 거절됐다.
-  # 경상(중상이면 무력화돼 말도 못 한다)과 고열. 갇힌 동안은 저절로 낫지 않는다
-  starts: { harm: light, disease: sick }
+  # 중상과 고열 (12-259, PT15 졸병: 판자로 묶은 정강이에 경상이었다. 중상이어도 말은 한다). 갇힌 동안은 저절로 낫지 않는다
+  starts: { harm: serious, disease: sick }
   look: 왼쪽 정강이를 판자로 묶어 두었다. 열에 들뜬 눈이 번들거린다. 수염이 제멋대로 자랐다.
   reputation: 지난달 실종된 청솔형제단 정찰조의 조장. 다리를 다쳤다는 말이 마지막 소식이었다.
   want: 막내만이라도 살려 보내는 것

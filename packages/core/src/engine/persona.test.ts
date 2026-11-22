@@ -127,7 +127,7 @@ describe("성격 축", () => {
     for (const b of env.store.getState().beliefs[npc.id] ?? []) if (b.fact !== "북쪽 다리 밑에 배가 한 척 묶여 있다" && !mine().includes(b.fact)) env.ctx.store.append({ type: "belief_added", characterId: env.me().id, belief: { ...b, id: `b_${env.store.getState().nextBeliefNo}` } });
     const heard = rollHear(env.ctx, npc.id);
     expect(heard?.line).toContain("🎭 수다스러움 2: 말이 오가다");
-    expect(mine()).toContain("북쪽 다리 밑에 배가 한 척 묶여 있다");
+    expect(mine()).toContain("북쪽 다리 밑에 배가 한 척 묶여 있다고 들었다");
     // 더 들을 것이 없으면 아무 일 없다. 과묵하면 굴리지 않는다
     expect(rollHear(env.ctx, npc.id)).toBeNull();
     env.me().persona = { talk: -1 };

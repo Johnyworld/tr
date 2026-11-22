@@ -1,4 +1,4 @@
-import { heldOf } from "../rules/held.ts";
+import { heldOf, heldSeenZone } from "../rules/held.ts";
 import { maskUnknownNames } from "../engine/storyletTools.ts";
 import { visitedZones } from "../views/map.ts";
 import { knownOwner } from "../rules/knowledge.ts";
@@ -9,7 +9,7 @@ import { rankName } from "../game/ranks.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { memoAccess } from "../game/memo.ts";
 import { josa } from "../text.ts";
-import { headingAs, knowsDeath, playerCalls } from "../game/acquaintance.ts";
+import { headingAs, knowsDeath, playerCalls, withKnownNames } from "../game/acquaintance.ts";
 import { traitLabels } from "../engine/traits.ts";
 import { growthLine } from "../engine/growth.ts";
 import { skillLines } from "../rules/skill.ts";
@@ -270,7 +270,7 @@ const people: CommandDef = {
           const shown = present.get(id);
           const here = state.scene.present.includes(id) ? ` · 함께 있음${shown?.conditionLabel ? ` (${shown.conditionLabel})` : ""}` : "";
           const attitude = state.perceived[id] ? `신뢰 ${relationLabel(r.trust)} · 호감 ${relationLabel(r.affection)} · 존중 ${relationLabel(r.respect)}` : "아직 만나 보지 않음";
-          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead && knowsDeath(state, content, id) ? " · 사망" : c.away ? " · 떠남" : heldOf(c) ? (state.playerZone === heldOf(c)!.zone ? " · 여기 붙잡혀 있음" : " · 행방 모름") : ""}${here}  (${attitude})`;
+          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead && knowsDeath(state, content, id) ? " · 사망" : c.away ? " · 떠남" : heldOf(c) ? (state.playerZone === heldOf(c)!.zone ? " · 여기 붙잡혀 있음" : heldSeenZone(state, id) ? ` · ${content.locations[heldSeenZone(state, id)!]?.name}에 붙잡혀 있는 것을 봤음` : " · 행방 모름") : ""}${here}  (${attitude})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,
@@ -324,7 +324,7 @@ const factions: CommandDef = {
     for (const f of o.others) lines.push(`${f.name}  [${f.stance}] ${f.size}`, `  ${f.public}`);
     const news = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.topic === WAR_TOPIC || b.topic === WAR_INTEL_TOPIC).slice(-5).reverse();
     lines.push("", "최근 전황 (들은 것)");
-    lines.push(...(news.length ? news.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)} · ${formatTime(b.learnedAt)} · ${BELIEF_SOURCE_LABELS[b.source]}] ${b.fact}`) : ["  들은 소식이 없습니다."]));
+    lines.push(...(news.length ? news.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)} · ${formatTime(b.learnedAt)} · ${BELIEF_SOURCE_LABELS[b.source]}] ${withKnownNames(ctx.state, ctx.content, b.fact)}`) : ["  들은 소식이 없습니다."]));
     return lines.join("\n");
   },
 };
@@ -396,7 +396,7 @@ const rumors: CommandDef = {
   run(ctx) {
     // 소식(무리 안에서 전해 들은 것)과 소문을 함께 (12-238, 플레이 테스트 13: 우리 공세 결과가 소식이라 ?소문에 없었다)
     const heard = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.source === "rumor" || b.source === "report").slice(-12).reverse();
-    return [header("소문"), ...(heard.length ? heard.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)}] (${BELIEF_SOURCE_LABELS[b.source]}) ${b.fact}`) : ["  들은 소식·소문이 없습니다."])].join("\n");
+    return [header("소문"), ...(heard.length ? heard.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)}] (${BELIEF_SOURCE_LABELS[b.source]}) ${withKnownNames(ctx.state, ctx.content, b.fact)}`) : ["  들은 소식·소문이 없습니다."])].join("\n");
   },
 };
 

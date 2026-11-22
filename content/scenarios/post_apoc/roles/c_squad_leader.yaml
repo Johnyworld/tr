@@ -33,6 +33,7 @@ resolve: { kind: protect, target: "c_areum", n: 40, text: 조원 진아름을 �
 start_skills: {}
 start_inventory: [c_armband, sawn_shotgun, shells, shells, shells, radio, padded_armor]
 start_location: c_warehouse
+start_place: yard
 access: [ration, mission_board]
 beliefs_preset: c_squad_leader_start
 known_npcs: [c_muyeol, c_areum, c_changsik, c_seokjin, c_gyeongsu, c_cheolgu, c_dongpal, c_sora, c_sangok, c_hyeran, c_pilsu]

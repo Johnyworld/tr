@@ -7,6 +7,8 @@ import { runPromisesDaily } from "./promises.ts";
 import { runDailyFood } from "./forage.ts";
 import { lootRemainsDaily } from "./remains.ts";
 import { roleOf } from "../game/state.ts";
+import { storyPlaceOnEntry } from "../rules/place.ts";
+import { stowStartingLoad } from "./stash.ts";
 import { endExpiredTruces } from "./diplomacy.ts";
 import { runResidentBodies } from "./residents.ts";
 import { infestationDay } from "../game/infestation.ts";
@@ -59,7 +61,11 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
   if (!content.scenario.war || Object.keys(content.factions).length === 0) return [];
   ensurePlayerZone(ctx);
   const today = dayOf(store.getState().time);
-  if (initFactions(ctx)) return [];
+  if (initFactions(ctx)) {
+    // 시작 짐이 한도를 넘으면 무거운 것부터 사물함에 (12-259)
+    stowStartingLoad(ctx);
+    return [];
+  }
   const last = store.getState().lastWarDay ?? today;
   const displays: ToolDisplayEvent[] = [];
   for (let day = Math.max(last + 1, today - MAX_CATCH_UP_DAYS + 1); day <= today; day++) {
@@ -139,7 +145,13 @@ function ensurePlayerZone(ctx: ToolContext) {
     (start && ctx.content.locations[start] ? start : null) ??
     Object.values(ctx.content.locations).find((l) => l.kind === "base" && l.owner === player.factionId)?.id ??
     null;
-  if (zone) ctx.store.append({ type: "zone_moved", from: null, to: zone });
+  if (!zone) return;
+  ctx.store.append({ type: "zone_moved", from: null, to: zone });
+  // 역할의 시작 장소(start_place), 없으면 시작 장면 글이 이 구역의 장소 하나를 말할 때 처음부터 그 장소에 둔다 (12-259, 공통 규칙 15 storyPlaceOnEntry,
+  // PT15 분대장: "보급 창고 앞"으로 시작했는데 구역에 막 들어선 자리였다)
+  const role = roleOf(ctx.content, ctx.store.getState());
+  const spot = role?.start_place && role.start_location === zone ? role.start_place : role?.opening_scene ? storyPlaceOnEntry(ctx.store.getState(), ctx.content, undefined, role.opening_scene) : null;
+  if (spot) ctx.store.append({ type: "place_moved", from: null, to: spot });
 }
 
 /** 교전 소식을 플레이어의 믿음으로 남긴다 (공통 규칙 14) */

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
-import { loadRealContent } from "../testing.ts";
+import { atEntry, loadRealContent } from "../testing.ts";
 
 const content = loadRealContent();
 // 날을 넘기는 데 쓴다: 잇달아 자면 이어진 잠이라 피곤하지 않으면 깨어 있게 된다 (플레이 테스트 13), 그래서 기다린다
@@ -13,7 +13,7 @@ const sleep = { intent: "기다린다", check: null, activity: { kind: "wait", u
 
 function medicWorld() {
   const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-npcbody-")), content, rngFactory: () => createSeededRng(6) });
-  const w = m.create("mcp", "role_d_medic");
+  const w = atEntry(m.create("mcp", "role_d_medic"));
   w.ctx().store.append({ type: "flag_set", characterId: "player", flag: "d_sori_secret" });
   return w;
 }

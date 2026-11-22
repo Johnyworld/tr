@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
 import type { GameWorld } from "../world/world.ts";
-import { loadRealContent } from "../testing.ts";
+import { atEntry, loadRealContent } from "../testing.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
@@ -81,7 +81,8 @@ describe("플레이 테스트 8", () => {
   });
 
   it("B13: 함께 다니는 동물이 있으면 '따라오는 누렁이'가 열리지 않는다", () => {
-    const w = make("role_l_wanderer", 0.99, real);
+    // 무너진 상가 2층(실내)에서 시작하니 바깥 자리로 (누렁이는 바깥에서만, 12-259)
+    const w = atEntry(make("role_l_wanderer", 0.99, real));
     const s = w.state();
     const day = s.time - (s.time % 1440) + 30 * 1440 + 10 * 60; // 거점 밖, 낮
     expect(s.companions.length).toBeGreaterThan(0); // 떠돌이는 누렁이와 시작한다

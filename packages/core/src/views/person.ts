@@ -1,6 +1,6 @@
 import type { Content } from "../content/schemas.ts";
 import { traitLabels } from "../engine/traits.ts";
-import { aliasOf, headingAs, isAcquaintanceMemory, knowsName, knowsReputation } from "../game/acquaintance.ts";
+import { aliasOf, headingAs, isAcquaintanceMemory, knowsName, knowsReputation, withKnownNames } from "../game/acquaintance.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { NEUTRAL_RELATION, RELATION_AXES, RELATION_AXIS_LABELS, relationLabel } from "../game/reputation.ts";
 import type { GameState } from "../game/state.ts";
@@ -49,7 +49,7 @@ export function personProfile(state: GameState, content: Content, id: string): P
       // 만남·이름 기억은 머리(이름·호칭)와 겉모습이 이미 보여 준다: "이름은 모른다"가 이름을 안 뒤에도 남았다 (PT14)
       .filter((b) => !isAcquaintanceMemory(b.fact) && ((named && b.fact.includes(c.name)) || b.fact.includes(alias)))
       .slice(-5)
-      .map((b) => ({ source: `${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}`, fact: b.fact })),
+      .map((b) => ({ source: `${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}`, fact: withKnownNames(state, content, b.fact) })),
     offers: met ? personFactLines(personFacts(state, content, id, false)).map((l) => l.replace(" (take_action.lesson)", "")) : [],
   };
 }

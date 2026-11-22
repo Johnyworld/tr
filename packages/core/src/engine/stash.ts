@@ -119,6 +119,31 @@ export function settleHome(ctx: ToolContext): { ok: true; lines: string[] } | { 
   return { ok: true, lines: [`${josa(zoneName(content, state.playerZone!), "을/를")} 거처로 삼았다. 여기에 물건을 맡겨 둘 수 있다.${left}`] };
 }
 
+/**
+ * 시작할 때 짐이 한도를 넘으면 무거운 것부터 사물함·거처에 넣어 둔다 (12-259, PT15 섬: 14.6/12kg으로 시작해 은밀·근접전 -1).
+ * 걸친 것과 짐을 더 들게 해 주는 것(배낭)은 남긴다. 넣을 자리가 없으면 그대로 (content:check가 잡는다). 넣은 것의 목록을 돌려준다
+ */
+export function stowStartingLoad(ctx: ToolContext): string[] {
+  const { store, content } = ctx;
+  if (!content.scenario.gear) return [];
+  const state = store.getState();
+  const me = state.characters[state.playerId];
+  const place = stashPlace(content, state);
+  if (!me || !place || carriedWeight(content, me) <= carryCapacity(content, me, state)) return [];
+  const loose = Object.keys(me.inventory)
+    .filter((id) => looseCount(me, id) > 0 && !content.items[id]?.carry_bonus)
+    .sort((a, b) => (content.items[b]?.weight ?? 0.5) - (content.items[a]?.weight ?? 0.5));
+  const stowed: string[] = [];
+  for (const id of loose) {
+    const now = store.getState().characters[me.id]!;
+    if (carriedWeight(content, now) <= carryCapacity(content, now, store.getState())) break;
+    const n = looseCount(now, id);
+    store.append({ type: "item_stashed", characterId: me.id, zone: place.zone, itemId: id, quantity: n, direction: "put" });
+    stowed.push(`${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`);
+  }
+  return stowed;
+}
+
 export const stashTool = defineTool({
   name: "stash",
   description:

@@ -4,14 +4,14 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
 import { conditionsMet } from "../story/storylets.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, atEntry } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { fireStorylet } from "./storyletTools.ts";
 import { executeTool } from "./tools.ts";
 
 /** 무리 안의 갈등 (12-134): 사기가 가라앉으면 탈영·도둑·주먹다짐·반란 모의가 열린다 */
 const content = loadRealContent();
-const open = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-cf-")), content, rngFactory: () => createSeededRng(3) }).create("mcp", "role_a_grunt");
+const open = () => atEntry(new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-cf-")), content, rngFactory: () => createSeededRng(3) }).create("mcp", "role_a_grunt"));
 const morning = (t: number) => t - (t % 1440) + 8 * 60;
 
 describe("무리 안의 갈등", () => {

@@ -16,6 +16,8 @@
   when:
     factions: [none]
     zones: [a_base]
+    # 담 밖 정문 앞 초소에서 (PT20 튜토리얼: 글의 "정문"·"쪽문"이 담 안 운동장 별칭에 걸려 담 안에서만 열렸다)
+    places: [checkpoint]
     flags_none: [tv_gate_met]
   cast:
     guard: { ids: [a_taeho] }
@@ -84,6 +86,7 @@
   when:
     factions: [none]
     zones: [a_base]
+    places: [checkpoint]
     flags_all: [tv_gate_refused]
     # "하룻밤 담 밖에서" 지켜본 뒤 (12-251)
     after_storylet: { id: tv_gate, hours: 12 }

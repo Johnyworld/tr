@@ -30,7 +30,9 @@ describe("균형 F", () => {
     expect(me().inventory.rope).toBe(2);
     expect(entrusted(store.getState()).rope).toBe(2);
     executeTool("take_action", act({ move_to: "a_post", activity: null }), ctx);
-    const done = executeTool("take_action", act({}), ctx);
+    // 받는 사람이 있어야 넘긴다 (PT20, 설계 목록 5-2)
+    executeTool("npc_presence", { npc_id: "npc_stranger", action: "enter" }, ctx);
+    const done = executeTool("take_action", act({ target: "npc_stranger" }), ctx);
     expect(done.ok && done.resultText).toContain("짐을 넘겼다");
     expect(done.ok && done.resultText).toContain("값을 받았다");
     expect(me().inventory.rope ?? 0).toBe(0);

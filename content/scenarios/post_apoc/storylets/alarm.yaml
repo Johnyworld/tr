@@ -19,6 +19,7 @@
   choices:
     - id: flee
       label: 담 그늘로 몸을 날려 달아난다
+      escapes: true
       check: athletics
       outcomes:
         success:
@@ -27,7 +28,7 @@
         partial:
           - wound: { steps: 1, cause: 달아나다 철조망에 걸렸다, kind: cut }
           - faction_relation: { from: faction_a, to: own, delta: -1, mutual: false }
-          - belief: { fact: "{zone}에서 청솔형제단 보초를 따돌렸지만 철조망에 살이 찢겼다", source: seen }
+          - belief: { fact: "{zone}에서 청솔형제단 보초를 철조망 너머로 가까스로 따돌렸다", source: seen }
         miss:
           - capture_player: { by: faction_a }
           - belief: { fact: "{zone}에서 달아나다 청솔형제단 분대에 붙잡혔다", source: seen }
@@ -72,6 +73,7 @@
   choices:
     - id: flee
       label: 울타리를 넘어 밭 사이로 달아난다
+      escapes: true
       check: athletics
       outcomes:
         success:
@@ -80,7 +82,7 @@
         partial:
           - wound: { steps: 1, cause: 울타리를 넘다 떨어졌다 }
           - faction_relation: { from: faction_b, to: own, delta: -1, mutual: false }
-          - belief: { fact: "버들마을 울타리를 넘어 달아나다 떨어져 다쳤다", source: seen }
+          - belief: { fact: "버들마을 울타리를 넘어 가까스로 달아났다", source: seen }
         miss:
           - capture_player: { by: faction_b }
           - belief: { fact: "버들마을에서 달아나다 마을 사람들에게 둘러싸여 붙잡혔다", source: seen }
@@ -124,6 +126,7 @@
   choices:
     - id: flee
       label: 총구를 피해 컨테이너 사이로 뛴다
+      escapes: true
       check: athletics
       outcomes:
         success:
@@ -132,7 +135,7 @@
         partial:
           - wound: { steps: 1, cause: 등 뒤에서 날아온 붉은연합 보초의 총알이 스쳤다, kind: gunshot }
           - faction_relation: { from: faction_c, to: own, delta: -1, mutual: false }
-          - belief: { fact: "{zone}에서 붉은연합 보초의 총알이 스쳤다. 그래도 빠져나왔다", source: seen }
+          - belief: { fact: "{zone}에서 붉은연합 보초의 총알을 등 뒤에 두고 가까스로 빠져나왔다", source: seen }
         miss:
           - capture_player: { by: faction_c }
           - belief: { fact: "{zone}에서 붉은연합 보초의 총구를 벗어나지 못하고 붙잡혔다", source: seen }
@@ -178,6 +181,7 @@
   choices:
     - id: flee
       label: 복도 끝 창문으로 몸을 던진다
+      escapes: true
       check: athletics
       outcomes:
         success:
@@ -186,7 +190,7 @@
         partial:
           - wound: { steps: 1, cause: 진료소 창문 유리에 베였다, kind: cut }
           - faction_relation: { from: faction_d, to: own, delta: -1, mutual: false }
-          - belief: { fact: "하얀매 진료소 창문으로 빠져나오다 유리에 베였다", source: seen }
+          - belief: { fact: "하얀매 진료소 창문으로 가까스로 빠져나왔다", source: seen }
         miss:
           - capture_player: { by: faction_d }
           - belief: { fact: "하얀매 진료소에서 달아나다 수비대에 붙잡혔다", source: seen }
@@ -230,6 +234,7 @@
   choices:
     - id: flee
       label: 천막과 수레 사이로 빠져 달아난다
+      escapes: true
       check: athletics
       outcomes:
         success:
@@ -238,7 +243,7 @@
         partial:
           - wound: { steps: 1, cause: 쫓아온 나루상단 호위대원에게 얻어맞았다 }
           - faction_relation: { from: faction_e, to: own, delta: -1, mutual: false }
-          - belief: { fact: "{zone}에서 달아나다 나루상단 호위대원에게 얻어맞았다", source: seen }
+          - belief: { fact: "{zone}에서 나루상단 호위대원에게 쫓기다 가까스로 달아났다", source: seen }
         miss:
           - capture_player: { by: faction_e }
           - belief: { fact: "{zone}에서 달아나다 나루상단 호위대에 붙잡혔다", source: seen }
@@ -287,6 +292,7 @@
   choices:
     - id: flee
       label: 골목을 돌아 물가 쪽으로 숨어든다
+      escapes: true
       check: stealth
       outcomes:
         success:
@@ -295,7 +301,7 @@
         partial:
           - wound: { steps: 1, cause: 젖은 바위에서 미끄러졌다 }
           - faction_relation: { from: faction_y, to: own, delta: -1, mutual: false }
-          - belief: { fact: "여울섬 물가로 숨어들다 바위에서 미끄러졌다", source: seen }
+          - belief: { fact: "여울섬 물가 바위를 타고 가까스로 빠져나왔다", source: seen }
         miss:
           - capture_player: { by: faction_y }
           - belief: { fact: "여울섬에서 숨을 곳을 찾지 못하고 섬 사람들에게 둘러싸였다", source: seen }
@@ -339,6 +345,7 @@
   choices:
     - id: flee
       label: 왔던 길로 몸을 돌려 뛴다
+      escapes: true
       check: athletics
       outcomes:
         success:
@@ -347,7 +354,7 @@
         partial:
           - wound: { steps: 1, cause: 순찰조를 피해 달아나다 무너진 벽에 부딪혔다 }
           - faction_relation: { from: zone_owner, to: own, delta: -1, mutual: false }
-          - belief: { fact: "{zone}에서 순찰조를 따돌렸지만 달아나다 다쳤다", source: seen }
+          - belief: { fact: "{zone}에서 순찰조를 가까스로 따돌렸다", source: seen }
         miss:
           - capture_player: { by: zone_owner }
           - belief: { fact: "{zone}에서 달아나다 순찰조에 붙잡혔다", source: seen }

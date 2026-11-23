@@ -1,3 +1,4 @@
+import { activeCompanions } from "../game/companions.ts";
 import { storyletOf } from "../story/storylets.ts";
 import { restDays } from "../rules/rest.ts";
 import { capturedDuringMission, graceExcuse, missionExcuse } from "../rules/blame.ts";
@@ -59,7 +60,7 @@ import {
   commanderOf as commanderIdOf,
 } from "../game/missions.ts";
 import { defineTool, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
-import { recordDeed } from "./reputationTools.ts";
+import { recordDeed, learn } from "./reputationTools.ts";
 import { grantRewards } from "./rewards.ts";
 import { itemResource } from "./market.ts";
 import { cargoOf, entrustedHeld } from "../rules/entrusted.ts";
@@ -152,7 +153,7 @@ const assignMission = defineTool({
     if (!commander) return { ok: false, error: "임무를 내릴 상관이 없습니다." };
     if (!meetHere(ctx, commander.id)) {
       const where = whereLabel(state, ctx.content, commander.id);
-      return { ok: false, error: `임무는 상관(${commander.name})이 직접 내린다. ${where ? `지금 ${where}. ` : ""}그곳으로 가거나 npc_presence로 등장시키세요.` };
+      return { ok: false, error: `임무는 상관(${commander.name})이 직접 내린다. ${where ? `지금 ${where}. ` : ""}그곳으로 가거나 npc_presence로 들인다.` };
     }
     const current = activeMissionOf(state.missions, player.id);
     if (current) return { ok: false, error: `이미 수행 중인 임무가 있습니다: ${current.title}` };
@@ -251,7 +252,7 @@ const reportMission = defineTool({
     const giver = state.characters[mission.giverId];
     if (!giver || !meetHere(ctx, giver.id)) {
       const where = giver ? whereLabel(state, ctx.content, giver.id) : null;
-      return { ok: false, error: `보고는 임무를 준 ${giver?.name ?? "상관"}에게 직접 한다. ${where ? `지금 ${where}. ` : ""}그곳으로 가거나 npc_presence로 등장시키세요.` };
+      return { ok: false, error: `보고는 임무를 준 ${giver?.name ?? "상관"}에게 직접 한다. ${where ? `지금 ${where}. ` : ""}그곳으로 가거나 npc_presence로 들인다.` };
     }
 
     // 찾아오기 (플레이 테스트 11): 지닌 물건 가운데 그 자원에 속하는 것을 상관에게 건넨다. 모자라면 건네지 않고 미충족
@@ -295,12 +296,14 @@ const reportMission = defineTool({
     const risky = reported.requirements.some((r) => "check" in r);
     if (result.outcome === "success" && risky) {
       // 상관은 그 자리에 없었다. 보고로 듣는다 (플레이 테스트 11: 다른 구역에서 한 일이 "직접 봄"으로 남았다)
-      recordDeed(
+      const { deed } = recordDeed(
         ctx,
         { summary: `임무 완수: ${mission.title}`, tags: ["diligence"], severity: 1, privacy: "public", noisy: false },
         // 하루 한 사람 축마다 +1까지라 빠르게 쌓이지는 않는다 (플레이 테스트 11, C6에서 존중만으로 줄였던 것을 13에서 되돌림)
         { npcId: giver.id, source: "report", only: ["trust", "respect"] },
       );
+      // 함께 다닌 동행(짝·분대원)은 그 일을 직접 봤다 (PT20 분대장: 함께 일하고 보고 자리에도 있던 분대원이 "(소문)"으로 알았다)
+      for (const id of activeCompanions(ctx.store.getState())) if (id !== giver.id) learn(ctx, deed, id, "seen", ["trust", "respect"]);
     }
     // 빚 갚는 일감: 임무를 준 무리에 진 빚이 준다 (기획서 9.10)
     const repay = ctx.content.missions[mission.templateId]?.repays_debt;

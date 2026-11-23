@@ -8,6 +8,9 @@
   when:
     day_gte: 7
     seasons: [winter]
+    # 눈 오는 날 바깥에서만 (PT20 분대장: 흐린 날 실내 막사에서 "첫눈이 내렸다"). 거점 안의 첫눈(fs_first_snow)과는 한 번만
+    weather: [snow]
+    indoor: false
     segments: [dawn, morning, day]
     activities_none: [sleep, combat]
     flags_none: [lt_first_snow_done]

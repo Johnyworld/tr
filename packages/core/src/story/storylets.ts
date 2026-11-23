@@ -33,7 +33,7 @@ import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
 import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
 import {storyPlaceFits, storyPlaces, storyPlacesFit, fireLitHere } from "../rules/place.ts";
-import { nearby, whereIs } from "../rules/place.ts";
+import { inZone, nearby, routineAway, whereIs } from "../rules/place.ts";
 import { ownOffense } from "../rules/consequence.ts";
 import { bedsideGapPassed, inCrisis, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 export { inCrisis, isThreat, pacingBlocks, storyletGapMinutes, threatTags, urgentAllowed } from "../rules/storySlot.ts";
@@ -119,12 +119,19 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => role.trust_lte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).trust <= role.trust_lte)
     .filter((c) => role.affection_lte === undefined || (state.relations[c.id]?.[state.playerId] ?? NEUTRAL_RELATION).affection <= role.affection_lte)
     .filter((c) => !role.not_companion || !state.companions.includes(c.id))
+    .filter((c) => !role.not_squad || !squadIds(state, content).includes(c.id))
     .filter((c) => !role.adult || isAdult(content, c))
     .filter((c) => role.age_lte === undefined || (c.age !== null && c.age !== undefined && c.age <= role.age_lte))
     .filter((c) => !role.blackmailed || (state.blackmails ?? []).some((b) => b.npcId === c.id && b.by === state.playerId && b.grudge))
     .filter((c) => role.distrusted_gte === undefined || standingInFaction(state, content, c.id).distrust >= role.distrusted_gte)
     .map((c) => c.id)
     .sort();
+}
+
+/** 주인공의 분대원·같은 분대 (진급해서 꾸린 분대, 역할의 squad·squad_mates) */
+function squadIds(state: GameState, content: Content): string[] {
+  const role = roleOf(content, state);
+  return [...(state.squad ?? []), ...(role?.squad ?? []), ...(role?.squad_mates ?? [])];
 }
 
 /** 몸 상태 조건: 단계 순서로 at_least 이상, at_most 이하 */
@@ -223,15 +230,19 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
       cast[key] = `${EXTRA_CAST_PREFIX}${role.extra}`;
       continue;
     }
-    const all = castCandidates(state, content, role, cast).filter((id) => !used.has(id));
+    // 장면에 들어오는 배역에서 일과상 구역 밖에 나가 있는 사람은 뺀다 (PT20 졸병: 낮에 왕복 나간 사람이 초소 이야기에 들어왔다, 공통 규칙 15 routineAway).
+    // 부르는 이야기(summons)는 주인공이 그 사람에게 가므로, 사람을 정해 둔 배역(ids: 오가는 심부름꾼 등)은 글이 그 사람을 부르므로 거르지 않는다
+    const all = castCandidates(state, content, role, cast).filter((id) => !used.has(id) && (!role.enter || !!role.ids || !!storylet.when.summons || state.scene.present.includes(id) || !routineAway(state, content, id)));
     if (all.length === 0) {
       if (role.optional) continue; // 있으면 쓰는 배역: 비워 둔다
       return null;
     }
     // 지금 장소에 있는(있을) 사람이 후보에 있으면 그중에서 (12-253, PT15 섬: 그물 창고의 사람이 부두 이야기에 끌려왔다)
     const near = all.filter((id) => state.scene.present.includes(id) || state.companions.includes(id) || nearby(state, content, id));
+    // 같은 장소가 없으면 같은 구역 사람 먼저 (PT20 졸병: 초소 이야기에 거점 창고 경비가 끌려왔다)
+    const zone = near.length ? near : all.filter((id) => inZone(state, content, id));
     // 최근에 배역으로 나온 사람은 다른 후보가 있으면 쉰다 (공통 규칙 5, 플레이 테스트 13: 윤해솔이 사흘에 네 이야기)
-    const options = preferRested(near.length ? near : all, (id) => resting(content, "cast", state.castUsedAt?.[id], state.time));
+    const options = preferRested(zone.length ? zone : all, (id) => resting(content, "cast", state.castUsedAt?.[id], state.time));
     const id = rng ? options[Math.floor(rng() * options.length)]! : options[0]!;
     cast[key] = id;
     used.add(id);

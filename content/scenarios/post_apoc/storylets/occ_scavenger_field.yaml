@@ -117,9 +117,10 @@
     segments: [morning, day]
     flags_none: [os_rookie_drilled, os_rookie_soft, os_rookie_dropped]
   cast:
-    boss: { commander: true }
+    # 상관이 지금 이 구역에 있을 때만 (PT20 분대장: 거점 창고의 상관을 동쪽 초소로 끌어왔다)
+    boss: { commander: true, here: true }
     # 무너진 시대라 신병 나이는 넓게, 40대 고참만 뺀다 (12-251, 플레이 테스트 14: 49세 고참이 신병이 됐다)
-    rookie: { faction: own, ranks: [grunt], age_lte: 39, keep: os_rookie }
+    rookie: { faction: own, ranks: [grunt], age_lte: 39, not_squad: true, keep: os_rookie }
   setup: "{boss:이/가} {rookie:을/를} 데리고 와 당신 앞에 세운다. 오늘부터 당신 옆에 붙이겠다고 한다. 총 쥐는 게 아직 서툴다고, 바깥에서 살아 돌아오게 만들라고, 못 하겠으면 지금 말하라고. {rookie:이/가} 어색하게 경례 비슷한 것을 한다."
   ai_direction: 이 사람은 총보다 다른 일을 더 오래 해 왔다. 겁은 많지만 시키는 것은 끝까지 한다. 고참이 된 사람이 신병을 맡는 것은 당연한 일이고, 맡은 사람이 죽으면 그 무게도 맡은 사람에게 온다.
   choices:

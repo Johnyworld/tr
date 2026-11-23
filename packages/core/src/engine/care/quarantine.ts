@@ -10,7 +10,7 @@
 import { josa } from "../../text.ts";
 import { heldOf } from "../../rules/held.ts";
 import { ownedBy } from "../../rules/home.ts";
-import { jailFor } from "../../rules/place.ts";
+import { jailFor, quarantineIn, jailIn } from "../../rules/place.ts";
 import { MINUTES_PER_DAY } from "../../rules/time.ts";
 import type { ToolContext } from "../toolkit.ts";
 import { shownIndex } from "../body.ts";
@@ -29,7 +29,9 @@ export function quarantineAfterCare(ctx: ToolContext, factionId: string | null |
   if (ctx.content.locations[zone]?.kind !== "base" || !ownedBy(state, zone, factionId)) return null;
   const at = state.exposedAt?.[me.id];
   if (at === undefined || state.time - at > days * MINUTES_PER_DAY) return null;
-  ctx.store.append({ type: "player_captured", by: factionId, zone, held: {}, quarantine: true });
+  // 격리 장소로 옮긴다 (PT20 의무병: "격리실에 들였다"인데 사흘 내내 치료실이었다). 없으면 가두는 곳, 그것도 없으면 지금 자리
+  const spot = quarantineIn(ctx.content, zone)?.id ?? jailIn(ctx.content, zone)?.id;
+  ctx.store.append({ type: "player_captured", by: factionId, zone, held: {}, quarantine: true, ...(spot ? { place: spot } : {}) });
   const name = ctx.content.factions[factionId]?.name ?? factionId;
   const fact = `감염체에게 다친 상처를 보고 ${josa(name, "이/가")} 격리실에 들였다. ${days}일 동안 나가지 못한다 (그사이 열이 오르면 내릴 때까지)`;
   ctx.store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${ctx.store.getState().nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: state.time } });

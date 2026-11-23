@@ -86,7 +86,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import {comesAlong, currentPlace, peopleAt, placeById, placeTarget, placesIn, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace } from "../rules/place.ts";
+import {comesAlong, currentPlace, nearestRoad, peopleAt, placeById, placeTarget, placesIn, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -441,6 +441,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (!player) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
   if (player.dead) return { ok: false, error: "캐릭터가 사망했습니다." };
   // 마시기·채우기는 지금 있는 곳의 물로 한다: 이동과 함께 오면 출발지에서 물을 찾았다 (플레이 테스트 11)
+  // 적 땅에서는 길에서만 구역을 떠난다 (PT20 분대장: 달아난 뒤 적 거점 지휘소에서 곧장 구역을 떠났다). 갇힌 채 달아나는 탈출·전투·잠입은 그 장치가 맡는다
+  if (input.move_to && !heldOf(player) && !start.battle && !start.infiltration && hostileHere(ctx)) {
+    const here = currentPlace(start, content);
+    if (here && !here.road) {
+      const road = nearestRoad(start, content);
+      return { ok: false, error: `적 땅에서는 길로 나가야 구역을 떠날 수 있다. 먼저 place_to로 ${road ? `${placeById(start, content, road)?.name ?? road}(${road}) 쪽으로` : "길로"} 나간다 (적 땅은 이웃 장소로 한 칸씩, 시간은 흐르지 않았다).` };
+    }
+  }
   if (input.move_to && input.refill) return { ok: false, error: "이동과 물 채우기는 한 번에 하지 않는다. 먼저 옮긴 뒤, 도착한 곳에서 refill을 따로 한다 (시간은 흐르지 않았다)." };
   // 진행 중인 이야기를 두고 떠나거나 오래 머물면 결과 없이 사라졌다 (플레이 테스트 11: 깔린 동료를 두고 갔는데 아무 일 없었다).
   // 외면하는 선택지(leave·ignore 등, 판정 없는 것)가 있으면 그것을 고른 것으로 풀고, 없으면 지나갔다고 분명히 알린다
@@ -519,7 +527,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     return !!w && w.zone === start.playerZone && w.place === input.place_to;
   };
   // 옮겨 가는 장소의 치료사도 (12-262, PT17 분대장·졸병: place_to와 치료를 한 턴에 하면 치료사를 못 찾았다)
-  const destHealers = input.treatment && !input.treatment.item && input.place_to ? Object.values(content.npcs).filter((n) => n.healer && !start.scene.present.includes(n.id) && atDest(n.id)).map((n) => n.id) : [];
+  // 치료할 사람을 target으로 두면 그 사람이 치료한다 (PT20 의무병: target으로 청한 권정숙 대신 다른 치료사가 치료했다)
+  const chosenHealer = input.treatment ? (input.treatment.healer ?? (input.target && content.npcs[input.target]?.healer ? input.target : null)) : null;
+  const destHealers = input.treatment && !input.treatment.item && input.place_to ? healersHere(ctx, chosenHealer, (id) => !start.scene.present.includes(id) && atDest(id)) : [];
   // with로 함께할 사람도 옮겨 가는 장소에 있으면 들인다 (12-268, PT18 섬: target은 되는데 with는 "장면에 없다")
   const arriving = [input.target, input.check?.opponent, ...input.with, ...destHealers].filter((id): id is string => !!id && !start.scene.present.includes(id) && atDest(id));
   if (input.target && !start.scene.present.includes(input.target) && !arriving.includes(input.target)) {
@@ -535,10 +545,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       return { ok: false, error: `이미 ${SEGMENT_LABELS[input.activity.until]}이다. 기다림은 다음 시간대까지로 정한다 (지금 그대로 두면 하루를 넘긴다). 몇 시간만 하려면 until 대신 hours.` };
     }
     if (input.activity.until && !(cost.kind === "long" && cost.allowUntil)) {
-      return { ok: false, error: `${input.activity.kind}에는 until을 쓸 수 없습니다. null을 넣으세요.${HOURS_ACTIVITIES.includes(input.activity.kind) ? " 길이를 정하려면 hours." : ""}` };
+      return { ok: false, error: `${input.activity.kind}에는 until을 쓸 수 없다. null을 넣는다.${HOURS_ACTIVITIES.includes(input.activity.kind) ? " 길이를 정하려면 hours." : ""}` };
     }
     if (input.activity.hours && !HOURS_ACTIVITIES.includes(input.activity.kind)) {
-      return { ok: false, error: `${input.activity.kind}에는 hours를 쓸 수 없습니다 (정해진 길이다). null을 넣으세요.` };
+      return { ok: false, error: `${input.activity.kind}에는 hours를 쓸 수 없다 (정해진 길이다). null을 넣는다.` };
     }
     if (input.activity.hours && input.activity.until) return { ok: false, error: "until과 hours는 하나만 쓴다." };
   }
@@ -776,7 +786,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     return { ok: false, error: `${josa(content.items[input.use_item]?.name ?? input.use_item, "이/가")} 없다. 가진 물건만 쓴다 (상태의 소지품).` };
   }
   // 물건 없이 치료를 부르면 같은 장소의 치료사를 장면에 들인다 (12-261, 공통 규칙 15)
-  const healersIn = input.treatment && !input.treatment.item && !input.place_to ? healersHere(ctx) : [];
+  const healersIn = input.treatment && !input.treatment.item && !input.place_to && !start.scene.present.some((id) => content.npcs[id]?.healer) ? healersHere(ctx, chosenHealer) : [];
   for (const id of healersIn) enterScene(ctx, id);
   if (healersIn.length) lines.push(`(같은 장소에 있던 ${healersIn.map((id) => playerCalls(store.getState(), content, id)).join(", ")}${josa(playerCalls(store.getState(), content, healersIn.at(-1)!), "을/를").slice(playerCalls(store.getState(), content, healersIn.at(-1)!).length)} 장면에 들였다)`);
   // 할 수 없는 일은 판정·시간 전에 막는다 (플레이 테스트 11: 쓸 필요 없는 붕대, 치료사 아닌 사람의 치료, 거점 안 사냥이 판정과 30분을 쓴 뒤 거절됐다)
@@ -784,7 +794,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const fuel = !!input.use_item && !!scenario.body?.cold?.climate?.fire?.items[input.use_item];
     const problem =
       (input.use_item && !fuel ? itemUseProblem(ctx, input.use_item) : null) ??
-      (input.treatment && !destHealers.length ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay), input.treatment.healer) : null) ??
+      (input.treatment && !destHealers.length ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay), chosenHealer) : null) ??
       (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null) ??
       (input.trap ? trapProblem(ctx, input.trap) : null);
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
@@ -1056,7 +1066,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 
   // 1-1-1. 치료 (낫는 정도는 시스템이 정한다)
   for (const [request, run] of [
-    [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null, feeChoice(input.treatment!.pay) ?? "default", input.treatment!.healer)],
+    [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null, feeChoice(input.treatment!.pay) ?? "default", chosenHealer)],
     [input.use_item, () => useItem(ctx, input.use_item!)],
     [input.drink || null, () => drinkWater(ctx)],
     [input.refill || null, () => refillWater(ctx)],
@@ -1195,13 +1205,17 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
           lines.push(`판정이 빗나가 짐은 넘기지 못했다: ${content.items[r.deliver]?.name ?? r.deliver} ${held ? `×${held}는 아직 맡은 짐으로 지니고 있다` : "은 지금 지니고 있지 않다"}.`);
           return;
         }
+        // 받는 사람에게만 넘긴다 (설계 목록 5-2, PT18·19·20 세 판: 임무 장소로 옮기기만 해도, 상대 없는 경계 판정에도 짐이 넘어갔다)
+        if (!receiver) {
+          lines.push(`짐은 아직 지니고 있다: ${content.items[r.deliver]?.name ?? r.deliver}. 받을 사람을 target으로 두고 건네는 행동(대화·교섭)을 하면 넘어간다.`);
+          return;
+        }
         const have = store.getState().characters[start.playerId]!.inventory[r.deliver] ?? 0;
         if (have < r.quantity) {
           lines.push(`넘길 짐이 모자란다: ${content.items[r.deliver]?.name ?? r.deliver} ${have}/${r.quantity}.`);
           return;
         }
-        if (receiver) store.append({ type: "item_transferred", from: start.playerId, to: receiver, itemId: r.deliver, quantity: r.quantity });
-        else store.append({ type: "item_consumed", holder: start.playerId, itemId: r.deliver, quantity: r.quantity });
+        store.append({ type: "item_transferred", from: start.playerId, to: receiver, itemId: r.deliver, quantity: r.quantity });
         store.append({ type: "mission_requirement_met", missionId: m.id, index: i });
         lines.push(`짐을 넘겼다: ${content.items[r.deliver]?.name ?? r.deliver} ×${r.quantity}${receiver ? ` (${josa(playerCalls(s0, content, receiver), "이/가")} 받았다)` : ""}.`);
         // 맡은 짐 기록을 줄이고, 받아 올 값을 상대가 건넨다 (공통 규칙 10, 12-237: 대금이 현장에서 오가지 않았다)
@@ -1250,7 +1264,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const [first0, ...rest] = time.text.split("\n");
     // 실패한 탈출은 이동이 아니다 (플레이 테스트 13: "이동: 45분 경과 … 빠져나가지 못했다")
     const first = escapeAttempt && outcome === "miss" ? first0!.replace(/^이동:/, "달아나다 붙잡혀 끌려옴:") : first0;
-    if (inMove && spent === 0) lines.push(`${ACTIVITY_LABELS.brief}: 장소를 옮기는 ${PLACE_MOVE_MINUTES}분에 들어갔다. 현재 ${formatTime(store.getState().time)}.`);
+    // 옮기는 시간은 칸 수대로라 실제 걸린 시간으로 적는다 (PT20 네 판: 10~20분인데 "5분에 들어갔다")
+    if (inMove && spent === 0) lines.push(`${ACTIVITY_LABELS.brief}: 장소를 옮기는 시간에 들어갔다. 현재 ${formatTime(store.getState().time)}.`);
     else lines.push(total > spent ? [first!.replace(/ 경과\. 현재/, ` + 앞서 쓴 ${formatDuration(total - spent)} = 모두 ${formatDuration(total)} 경과. 현재`), ...rest].join("\n") : time.text);
   }
   if (input.activity || input.move_to) displays.push(time.display);

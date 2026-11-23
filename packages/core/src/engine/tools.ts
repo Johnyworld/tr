@@ -104,7 +104,7 @@ const transferItem = defineTool({
     for (const holder of [input.from, input.to]) {
       // 이 구역의 묻히지 않은 유해도 뒤질 수 있다 (12-130)
       const reachable = holder === SCENE_HOLDER || holder === state.playerId || state.scene.present.includes(holder) || remainsHere(state).some((r) => r.holder === holder);
-      if (!reachable) return { ok: false, error: `${josa(holderName(state, content, holder), "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
+      if (!reachable) return { ok: false, error: `${josa(holderName(state, content, holder), "은/는")} 지금 장면에 없다. 먼저 npc_presence로 들인다.` };
     }
     // 진행 중인 이야기의 배역에게, 그 이야기 선택지가 내놓게 하는 물건을 먼저 건네면 선택지가 잠긴다 (플레이 테스트 11: 담요를 덮어 준 뒤 "고를 수 없는 선택지")
     const story = state.activeStorylet;
@@ -117,6 +117,11 @@ const transferItem = defineTool({
       const m = activeMissionOf(state.missions, state.playerId);
       if (m && (cargoOf(state, m.id)[input.item_id] ?? 0) > 0 && m.requirements.some((r, i) => "deliver" in r && r.deliver === input.item_id && (m.progress[i] ?? 0) < 1)) {
         return { ok: false, error: `${josa(content.items[input.item_id]?.name ?? input.item_id, "은/는")} 임무로 맡은 짐이다. 넘기는 것은 임무 자리에서 그 사람을 target으로 한 판정(take_action)으로 한다: 판정이 맞으면 짐이 그 사람에게 넘어간다.` };
+      }
+      // 받아 온 값을 상관에게 건네는 것은 보고가 한다 (PT20 튜토리얼: 보고 직전에 건넸더니 "일부 완수"에 물건은 상관 주머니에 남았다)
+      const collects = m ? (content.missions[m.templateId]?.collects ?? {}) : {};
+      if (m && input.to === m.giverId && (cargoOf(state, m.id)[input.item_id] ?? 0) > 0 && collects[input.item_id]) {
+        return { ok: false, error: `${josa(content.items[input.item_id]?.name ?? input.item_id, "은/는")} 받아 온 값이다. 따로 건네지 않는다: report_mission으로 보고하면 상관에게 넘어가 무리 창고에 들어간다 (시간은 흐르지 않았다).` };
       }
     }
     const fromInv = findHolderInventory(state, input.from);
@@ -270,7 +275,7 @@ const npcPresence = defineTool({
       ok: true,
       resultText:
         input.action === "enter"
-          ? `${josa(name, "이/가")} 장면에 들어왔다. 이 인물의 프로필은 다음 턴 상태에 나타난다. 지금은 외모와 말투만 반영해 서술하라: ${look}${where}` +
+          ? `${josa(name, "이/가")} 장면에 들어왔다. 이 인물의 프로필은 다음 턴 상태에 나타난다. 지금은 외모와 말투만 반영해 서술하라: ${look}${where && !/[.!?…。]$/.test(look.trim()) ? "." : ""}${where}` +
             // 같은 턴에 흥정·부탁·배우기를 할 수 있게 요약을 바로 (사람 정보, 12-241)
             personFactLines(personFacts(store.getState(), content, character.id, true)).map((l) => `\n${l}`).join("")
           : `${josa(name, "이/가")} 장면을 떠났다.`,

@@ -473,7 +473,8 @@ function describeKnownPeople(state: GameState, content: Content): string {
     // 이 구역 사람, 진행 중인 이야기의 배역, 상관은 겉모습·평판까지. 나머지는 한 줄 (토큰, 기획서 11.6). 장면에 들어오면 카드 전체가 붙는다
     const commander = commanderOf(state, content);
     const cast = new Set(Object.values(state.activeStorylet?.cast ?? {}));
-    const near = (id: string) => id === commander || cast.has(id) || inZone(state, content, id);
+    // 갇힌 사람은 그곳에 있다고 알 때만 이 구역 사람으로 친다 (PT20 분대장: 갇힌 정찰조장의 줄이 그 구역에 들어설 때만 길어져 위치가 새어 나갔다)
+    const near = (id: string) => id === commander || cast.has(id) || (inZone(state, content, id) && (!heldOf(state.characters[id]) || state.scene.present.includes(id) || heldSeenZone(state, id) === state.playerZone));
     // 겉모습·평판까지 싣는 사람은 몇 명만 (12-61, 토큰): 상관·이야기 배역·배경의 사람·연인은 늘, 이 구역의 나머지는 관계가 깊은 순으로 KNOWN_DETAILED까지
     const always = new Set<string>([...(commander ? [commander] : []), ...cast, ...state.background.flatMap((e) => [e.characterId, e.part.kind === "enemy" ? e.part.target : e.part.kind === "loss" ? e.part.by : null].filter((x): x is string => !!x))]);
     for (const r of Object.values(state.romances ?? {})) if (r.stage === "lovers" && (r.a === viewer || r.b === viewer)) always.add(r.a === viewer ? r.b : r.a);
@@ -544,7 +545,12 @@ function describePlaces(state: GameState, content: Content): string {
   const line = (p: (typeof places)[number]) => {
     // 갇힌 사람은 그 자리에 있는 것을 주인공이 알 때만 (12-262, PT16·PT17 졸병: 적 거점에 막 들어서자 행방 모를 실종자의 자리가 보였다)
     // 집이 있는 아는 사람(가족 등)은 그 사람을 직접 만난 뒤에만: 어디 사는지는 이야기로 알게 된다 (12-267, PT19 튜토리얼: 수소문 전에 버들마을 목록이 부모의 동을 보여 줬다)
-    const homeUnknown = (id: string) => !!state.characters[id]?.extra?.place && state.perceived[id] === undefined && p.id !== here?.id;
+    // 이 판에서 직접 본 뒤에만 집을 안다 (마지막으로 본 때가 판을 시작한 때보다 뒤): perceived·met은 세계를 만들 때 가족 관계로 미리 채워진다
+    // (PT20 튜토리얼: 12-267 고침이 실제 시작 흐름에서 듣지 않았다)
+    const homeUnknown = (id: string) => {
+      const extra = state.characters[id]?.extra;
+      return !!extra?.place && (extra.lastSeenAt ?? 0) <= state.runStartedAt && p.id !== here?.id;
+    };
     const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && !homeUnknown(id) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
     // 이웃과 길 (장소 개편): 이웃은 5분, 길은 이어지는 구역
     const toZones = p.road && p.to.length ? `, 길: ${p.to.map((z) => content.locations[z]?.name ?? z).join("·")} 쪽` : "";

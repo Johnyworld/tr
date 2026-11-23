@@ -26,7 +26,8 @@ import { hereWithMe, nearby, whereIs } from "../../rules/place.ts";
 export function healerFor(ctx: ToolContext, patient: string, chosen: string | null = null): string | null {
   const state = ctx.store.getState();
   // 움직일 수 있는 치료사만: 죽거나 기절했거나 갇힌 치료사는 돌보지 못한다 (공통 규칙 8, 12-269)
-  const all = state.scene.present.filter((id) => ctx.content.npcs[id]?.healer && id !== patient && ableNow(state, ctx.content, id));
+  // 크게 다친 치료사(임무를 못 할 만큼, scenario.mission_unfit_from)는 남을 돌보지 않는다 (PT20 의무병: 30분 전 수술받은 중상 치료사가 치료했다)
+  const all = state.scene.present.filter((id) => ctx.content.npcs[id]?.healer && id !== patient && ableNow(state, ctx.content, id) && !tooHurt(ctx, id));
   if (chosen) return all.includes(chosen) ? chosen : null;
   if (needsSurgery(ctx, patient)) {
     const cut = all.find((id) => canOperate(ctx, id));
@@ -37,10 +38,26 @@ export function healerFor(ctx: ToolContext, patient: string, chosen: string | nu
   return [...all].sort((a, b) => skill(b) - skill(a) || all.indexOf(a) - all.indexOf(b))[0] ?? null;
 }
 
-/** 같은 장소에 있을 치료사 (장면에 없는 사람). 치료를 부르면 장면에 들인다 (12-261, PT16 분대장: 의무실의 두 치료사를 못 찾았다) */
-export function healersHere(ctx: ToolContext): string[] {
+/** 크게 다쳤는가 (부상이 scenario.mission_unfit_from 이상) */
+function tooHurt(ctx: ToolContext, id: string): boolean {
+  const harm = harmTrack(ctx.content.scenario);
+  const from = ctx.content.scenario.mission_unfit_from;
+  const at = (lv: string | undefined) => harm.levels.findIndex((l) => l.id === lv);
+  return !!from && at(from) >= 0 && at(ctx.store.getState().characters[id]?.conditions[harm.id]) >= at(from);
+}
+
+/**
+ * 같은 장소에 있을 치료사 가운데 장면에 들일 한 사람 (12-261, PT16 분대장: 의무실의 두 치료사를 못 찾았다).
+ * 고른 사람(chosen: treatment.healer나 target)이 있으면 그 사람, 아니면 지혈 솜씨가 가장 좋은 사람 하나만 (PT20 졸병·분대장: 치료하지 않는 사람까지 들였다)
+ */
+export function healersHere(ctx: ToolContext, chosen: string | null = null, at: (id: string) => boolean = (id) => hereWithMe(ctx.store.getState(), ctx.content, id)): string[] {
   const state = ctx.store.getState();
-  return Object.values(ctx.content.npcs).filter((n) => n.healer && !state.characters[n.id]?.dead && hereWithMe(state, ctx.content, n.id)).map((n) => n.id);
+  const all = Object.values(ctx.content.npcs).filter((n) => n.healer && !state.characters[n.id]?.dead && ableNow(state, ctx.content, n.id) && !tooHurt(ctx, n.id) && at(n.id)).map((n) => n.id);
+  if (chosen && all.includes(chosen)) return [chosen];
+  const move = ctx.content.scenario.wounds?.staunch_move;
+  const skill = (id: string) => (move ? effectiveSkill(ctx.content, state.characters[id]!, move) : 0);
+  const best = [...all].sort((a, b) => skill(b) - skill(a))[0];
+  return best ? [best] : [];
 }
 
 /** 이 구역에서 수술할 줄 아는 치료사 (장면에 없는 사람도. 알려 주기용) */

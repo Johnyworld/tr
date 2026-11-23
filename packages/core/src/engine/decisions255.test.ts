@@ -40,7 +40,7 @@ describe("활동의 길이 (12-255)", () => {
     expect(work.ok, work.ok ? "" : work.error).toBe(true);
     if (!(work.ok && work.resultText.includes("끊겼다"))) expect(w.state().time - t1).toBe(180);
     const eat = w.executeTool("take_action", act({ activity: { kind: "eat", until: null, hours: 1 } }));
-    expect(eat.ok ? "" : eat.error).toContain("hours를 쓸 수 없습니다");
+    expect(eat.ok ? "" : eat.error).toContain("hours를 쓸 수 없다");
     const both = w.executeTool("take_action", act({ activity: { kind: "wait", until: "night", hours: 1 } }));
     expect(both.ok ? "" : both.error).toContain("하나만");
   });
@@ -51,7 +51,7 @@ describe("활동의 길이 (12-255)", () => {
     const r = w.executeTool("take_action", act({ intent: "운동장으로 나가 둘러본다", place_to: "yard_gate" }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().time - t0).toBe(5);
-    expect(r.ok && r.resultText).toContain("옮기는 5분에 들어갔다");
+    expect(r.ok && r.resultText).toContain("옮기는 시간에 들어갔다");
   });
 
   it("피곤하지 않은데 낮에 자면 낮잠으로 끝난다", () => {

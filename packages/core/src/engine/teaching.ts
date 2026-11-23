@@ -8,7 +8,7 @@ import { learned } from "../rules/skill.ts";
 /**
  * 가르침 (기획서 4.2.1): 전문 기술은 판정이 아니라 배워서 얻는다.
  * 그 스킬이 growth.teaching.min_skill 이상이고 신뢰가 min_trust 이상인 사람 곁에서 take_action.lesson으로 hours시간을 채우면
- * 배운 상태(스킬 최저값)가 된다. 여러 번에 나눠도 된다. 가르치는 사람이 다른 무리면 처음 배울 때 물건으로 값 fee (신뢰 free_trust 이상이면 공짜)
+ * 배운 상태(스킬 최저값)가 된다. 여러 번에 나눠도 된다. 처음 배울 때 물건으로 값 fee: 신뢰 free_trust 이상이면 공짜, 같은 무리는 min_trust 이상이면 공짜
  */
 export type LessonInput = { teacher: string; skill: string };
 

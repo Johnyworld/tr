@@ -31,7 +31,7 @@ import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, storyletOf } from "../story/storylets.ts";
 import { justHadStory, storyText } from "../rules/storySlot.ts";
-import {hereWithMe, placeById, storyPlaceOnEntry, whereIs, whereLabel, currentPlace, arrivalPlace } from "../rules/place.ts";
+import {hereWithMe, placeById, storyPlaceOnEntry, whereIs, whereLabel, currentPlace, arrivalPlace, nearestRoad } from "../rules/place.ts";
 import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
@@ -154,6 +154,9 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     const usedLooks = new Set(Object.values(now.characters).flatMap((c) => (c.extra ? [c.extra.look] : [])));
     store.append({ type: "extra_spawned", character: createExtraCharacter(content, template, { id: extraId, label, zone: now.playerZone, time: now.time, usedNames, usedLooks }, rng) });
     cast[key] = extraId;
+    // 같이 갇힌 사람: 주인공을 가둔 무리의 포로로 (갇힘이 남기는 사람, 시간대가 바뀌어도 장면에 남는다)
+    const held = heldOf(store.getState().characters[store.getState().playerId]);
+    if (storylet.cast[key]?.fellow_captive && held) captureNpc(ctx, extraId, held.by, held.zone);
   }
   // 이야기가 말하는 몸 상태를 진짜로 (플레이 테스트 12: "다리가 깔렸다", "굶었다"인데 상태는 멀쩡했다). 이미 더 나쁘면 그대로
   for (const [key, id] of Object.entries(cast)) {
@@ -186,12 +189,14 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
   if (spot) {
     // 함께 불려 오는 배역은 남은 사람이 아니다 (12-265, PT18 분대장: 회의의 상관을 "그 자리에 남았다"고 적었다)
     const coming = new Set(Object.entries(cast).filter(([key]) => storylet.cast[key]?.enter).map(([, id]) => id));
-    const left = before ? store.getState().scene.present.filter((id) => !store.getState().companions.includes(id) && !coming.has(id)) : [];
+    // 길(구역에 막 들어온 자리)에서 데려갈 때는 장면의 사람도 함께 간다 (PT20 졸병: 맞서던 약탈자가 말없이 빠졌다). 부르는 이야기로 다른 장소에서 불려 갈 때만 남는다
+    const fromRoad = !before || !!placeById(store.getState(), content, before)?.road;
+    const left = fromRoad ? [] : store.getState().scene.present.filter((id) => !store.getState().companions.includes(id) && !coming.has(id));
     const withCompany = activeCompanions(store.getState()).length > 0;
-    store.append({ type: "place_moved", from: before, to: spot, with: before ? [] : [...store.getState().scene.present] });
+    store.append({ type: "place_moved", from: before, to: spot, with: fromRoad ? [...store.getState().scene.present] : [] });
     // 불려 간 것을 결과 글에 알린다 (12-261, PT16 분대장·졸병: 장소가 바뀐 것을 상태로만 알았다)
     // (12-261 고침이 돌지 않았다: started 표시는 부르는 쪽이 나중에 넣는다. 그래서 따로 "moved" 표시로, PT17)
-    if (before) {
+    if (before && !fromRoad) {
       const place = placeById(store.getState(), content, spot)?.name ?? spot;
       const names = left.map((id) => playerCalls(store.getState(), content, id));
       displays.push({ type: "storylet", event: "moved", title: storyTitle(store.getState(), content, storylet), detail: place, note: `${josa(place, "으로/로")} 불려 갔다${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다${withCompany ? ", 동행은 함께" : ""})` : withCompany ? " (동행은 함께)" : ""}.` });
@@ -381,6 +386,16 @@ export const resolveStorylet = defineTool({
         lines.push(`${josa(to.name, "으로/로")} 옮겼다.`);
       }
     }
+    // 달아나기: 빗나가지 않으면 가장 가까운 길로 빠져나간다. 쫓던 배역은 그 자리에 남는다 (공통 규칙 15 nearestRoad)
+    if (choice.escapes && outcome !== "miss") {
+      const now = ctx.store.getState();
+      const from = currentPlace(now, ctx.content)?.id ?? null;
+      const road = nearestRoad(now, ctx.content);
+      if (road && road !== from) {
+        ctx.store.append({ type: "place_moved", from, to: road });
+        lines.push(`${josa(placeById(ctx.store.getState(), ctx.content, road)?.name ?? road, "으로/로")} 빠져나왔다. 쫓던 사람들은 뒤에 남았다.`);
+      }
+    }
     const extra: ToolDisplayEvent[] = [];
     for (const effect of effects) {
       const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title, { judged: outcome !== null });
@@ -411,7 +426,9 @@ export const resolveStorylet = defineTool({
     // 위협 이야기(겁을 주는 이야기·매복)를 실패하면 위협이 남았음을 알린다 (플레이 테스트 13: 들켰는데 아무 일도 없었다)
     if (!effects.some((e) => "join_faction" in e) && threatStaysOnMiss(ctx.content, a.storylet.id, outcome)) {
       const now = ctx.store.getState();
-      const stayed = Object.values(a.cast).filter((id) => now.scene.present.includes(id) && !now.companions.includes(id) && !now.characters[id]?.dead).map((id) => playerCalls(now, ctx.content, id));
+      // 맞설 상대만: 같은 무리 사람·동행은 위협이 아니다 (PT20 의무병: "꺼진 바닥"에서 구하려던 동료를 "위협은 그대로"로 알렸다)
+      const mine = now.characters[now.playerId]?.factionId ?? null;
+      const stayed = Object.values(a.cast).filter((id) => now.scene.present.includes(id) && !now.companions.includes(id) && !now.characters[id]?.dead && !(mine && now.characters[id]?.factionId === mine)).map((id) => playerCalls(now, ctx.content, id));
       if (stayed.length) lines.push(`위협은 그대로 장면에 남았다: ${stayed.join(", ")}. 다음 행동에서 맞서거나(target) 달아나는(move_to + 판정) 장면으로 잇는다.`);
     }
     // 이야기 해결 중에 죽었으면 (쓰러진 사이 붙잡히거나 죽임 등) 다음 행동에서야 알게 하지 않는다

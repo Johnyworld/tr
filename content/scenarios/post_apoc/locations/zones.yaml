@@ -268,7 +268,7 @@
   places:
     - { id: ward, name: "치료실·수술실", indoor: true, description: "침상과 수술대가 있는 치료실. 등불 아래 기구가 번쩍인다", aliases: ["치료실", "수술실", "진료", "문진"] }
     - { id: pharmacy, name: "약제실", indoor: true, description: "잠긴 약장과 장부가 있는 약제실", aliases: ["약제실", "장부", "약 나누기"] }
-    - { id: quarantine, name: "격리실", indoor: true, description: "비닐 막을 친 격리실. 안쪽 기침 소리가 새어 나온다", aliases: ["격리실"] }
+    - { id: quarantine, name: "격리실", indoor: true, description: "비닐 막을 친 격리실. 안쪽 기침 소리가 새어 나온다", aliases: ["격리실"], quarantine_room: true }
     - { id: lodging, name: "숙소·부엌", indoor: true, description: "식구들이 자고 먹는 숙소와 부엌", aliases: ["숙소", "자기 방", "진료소 부엌", "뒷방"] }
     - { id: director_room, name: "대표의 방", indoor: true, description: "대표의 방. 서류와 지도가 책상을 덮었다", aliases: ["대표의 방"] }
     - { id: gate, name: "정문·접수대·마당", indoor: false, description: "정문과 접수대, 기다리는 사람들이 앉는 마당", aliases: ["정문", "접수대", "문진 줄", "거래 손님", "마당", "벤치", "빨래", "들것"], near: [ward, pharmacy, lodging, quarantine, director_room], gate: true }

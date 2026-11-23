@@ -14,8 +14,8 @@ import type { Content } from "../content/schemas.ts";
 import { roleOf, type GameState } from "../game/state.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
-import {ownedBy, baseOfNow } from "./home.ts";
-import { heldOf, pausedWhileHeld } from "./held.ts";
+import {ownedBy, baseOfNow, hostileLand } from "./home.ts";
+import { heldOf, inQuarantine, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
 import { isCreature } from "../game/kinds.ts";
 
@@ -170,7 +170,10 @@ export function storyPlaceOnEntry(state: GameState, content: Content, places: re
   const here = currentPlace(state, content);
   if ((here && !here.road && !summons) || heldOf(state.characters[state.playerId])) return null;
   const named = storyPlaces(state, content, places, text, indoor);
-  return named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
+  const spot = named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
+  // 적 땅에서는 이야기가 담 안(더 깊은 곳)으로 데려가지 않는다: 들킨 자리에서 열린다 (PT20 졸병: 담 밖 길에서 열린 경보 "망루의 확성기"가 감시탑·담으로 옮겼다)
+  if (spot && hostileLand(state, content, state.playerZone) && (depthAt(state, content, spot) ?? 0) > (depthAt(state, content) ?? 0)) return null;
+  return spot;
 }
 
 /**
@@ -310,7 +313,7 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   if (id === state.playerId) return { zone: state.playerZone, place: state.playerPlace };
   // 갇힌 사람은 그 구역의 가두는 장소에 (없으면 구역 어딘가)
   const held = heldOf(c);
-  if (held) return { zone: held.zone, place: jailIn(content, held.zone)?.id ?? arrivalPlace(state, content, held.zone) };
+  if (held) return { zone: held.zone, place: (inQuarantine(c) ? quarantineIn(content, held.zone)?.id : undefined) ?? jailIn(content, held.zone)?.id ?? arrivalPlace(state, content, held.zone) };
   if (c.dead || c.away) return null;
   if (state.scene.present.includes(id) || (state.companions.includes(id) && !state.bonds[id]?.apart)) return { zone: state.playerZone, place: state.playerPlace };
   // 두고 온 자리에 머무는 사람 (12-253): 그 시간대가 끝날 때까지
@@ -388,6 +391,12 @@ export function atWaitingSpot(state: GameState, apart: { zone: string | null; pl
   if (!apart.zone || apart.zone !== state.playerZone) return false;
   // 기다리라고 둔 장소로 와야 합류한다. 막 들어선 자리에 둔 사람은 막 들어선 자리에서 (12-268, PT18 분대장: 막사에 둔 막내가 정문에서 합류했다)
   return (apart.place ?? null) === state.playerPlace;
+}
+
+/** 이 구역의 격리 장소 (콘텐츠 places의 quarantine_room) */
+export function quarantineIn(content: Content, zone: string | null | undefined): { id: string; name: string } | null {
+  const p = zone ? content.locations[zone]?.places.find((x) => x.quarantine_room) : undefined;
+  return p ? { id: p.id, name: p.name } : null;
 }
 
 /** 이 구역의 가두는 장소 (콘텐츠 places의 jail) */

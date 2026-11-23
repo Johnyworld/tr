@@ -594,6 +594,8 @@ export function createContentSchemas(s: Scenario) {
           description: z.string().min(1).optional(),
           /** 붙잡은 사람을 가두는 곳 (PT14: 붙잡히면 그 무리의 가두는 장소가 있는 구역, 그 장소에 갇힌다) */
           jail: z.boolean().default(false),
+          /** 격리하는 곳 (PT20 의무병: 격리됐는데 치료실에 남았다). 없으면 가두는 곳 */
+          quarantine_room: z.boolean().optional(),
           /** 걸어 들어갈 수 있는 물가 (바다·갯가·강가, 12-261). 마시는 물(water)과 따로 */
           wade: z.boolean().optional(),
           /** 이웃 장소 (장소 개편, docs/places-v2-plan.md). 한쪽에만 적어도 로더가 양쪽으로 맞춘다 */
@@ -817,6 +819,8 @@ export function createContentSchemas(s: Scenario) {
     /** 이 인물의 플레이어에 대한 신뢰 하한 */
     /** 플레이 테스트 12: 곁에 함께 다니는 사람은 빼고 ("빈 침상"이 곁의 분대원을 없다고 썼다), 주인공을 덜 믿거나 덜 아끼는 사람만 ("누운 사람의 몫"의 날 선 사람이 다정한 사람으로 뽑혔다) */
     not_companion: z.boolean().optional(),
+    /** 주인공의 분대원·같은 분대는 빼고 (PT20 분대장: 신병 이야기가 이미 사수인 분대원을 "총이 서툰 신병"으로 썼다) */
+    not_squad: z.boolean().optional(),
     trust_lte: z.number().int().optional(),
     affection_lte: z.number().int().optional(),
     trust_gte: z.number().int().optional(),
@@ -842,6 +846,8 @@ export function createContentSchemas(s: Scenario) {
     stance: z.enum(["fan", "anti"]).optional(),
     /** 발동할 때 장면에 들어온다 */
     enter: z.boolean().default(true),
+    /** 이름 없는 배역(extra)을 주인공을 가둔 무리의 포로로 만든다: 같이 갇힌 사람 (PT19·PT20 졸병: "같은 방 사람"이 시간대가 바뀌자 철망 밖으로 "자리를 떴다") */
+    fellow_captive: z.boolean().optional(),
     /** 이 배역이 무리의 대표다: 몇 명인지 (2 이상이면 이 배역과 맞서는 판정에 -1, 플레이 테스트 13) */
     crowd: z.number().int().min(2).max(20).optional(),
     /** 이 인물의 몸 상태 (기획서 7.7): track의 단계가 at_least 이상, at_most 이하 (단계 id). 진짜 상태로 본다 (연출은 GM 전용) */
@@ -920,6 +926,8 @@ export function createContentSchemas(s: Scenario) {
       meets: contentIdSchema.optional(),
       /** 이 선택지로 주인공이 옮겨 가는 지금 구역의 장소 (따라 나가기 등, 12-262). 장면의 배역은 함께 간다 */
       goes_to: contentIdSchema.optional(),
+      /** 달아나기 (PT20 졸병·튜토리얼·분대장: 달아나기에 성공해도 그 자리에 쫓던 사람과 남았다): 판정이 빗나가지 않으면 가장 가까운 길로 빠져나가고 배역은 그 자리에 남는다 */
+      escapes: z.boolean().optional(),
       /** 이 선택지 뒤 장면을 떠나는 배역 (어디론가 들어갔다·떠났다, 12-262. PT17 섬: 저장고로 들어간 사람이 장면에 남아 짝이 됐다) */
       leaves: z.array(contentIdSchema).optional(),
       /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */

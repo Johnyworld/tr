@@ -70,7 +70,12 @@ describe("규율 회의 (12-261)", () => {
     w.executeTool("take_action", act({ deed: theft }));
     expect(ownOffense(w.state(), content)).toBeNull();
     w.executeTool("take_action", act({ deed: { ...theft, summary: "또 훔쳤다" } }));
-    w.executeTool("take_action", act({ activity: { kind: "wait", until: null, hours: 1 } }));
+    // 짓이 끝난 때부터 한 시간 (설계 목록 2-1, 12-280). 기다림이 이야기로 끊길 수 있어 넉넉히
+    const ended = Math.max(...Object.values(w.state().deeds).map((d) => d.endedAt ?? d.at));
+    for (let i = 0; i < 6 && w.state().time < ended + 60; i++) {
+      w.state().activeStorylet = null;
+      w.executeTool("take_action", act({ activity: { kind: "wait", until: null, hours: 1 } }));
+    }
     expect(ownOffense(w.state(), content)).not.toBeNull();
   });
 });

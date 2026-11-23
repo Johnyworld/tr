@@ -24,6 +24,7 @@
     - id: accept
       label: 잘못을 인정하고 벌을 받는다
       effects:
+        - return_stolen: true
         - body: { track: hunger, delta: 1 }
         - merit: -1
         - relation: { who: boss, axis: trust, delta: 1 }
@@ -74,6 +75,7 @@
     - id: accept
       label: 이웃들 앞에서 사과하고 몫이 줄어드는 것을 받아들인다
       effects:
+        - return_stolen: true
         - body: { track: hunger, delta: 1 }
         - relation: { who: boss, axis: trust, delta: 1 }
     - id: excuse
@@ -123,6 +125,7 @@
     - id: accept
       label: 고개를 숙이고 본보기가 된다
       effects:
+        - return_stolen: true
         - capture_player: { by: own, days: 1 }
         - merit: -1
         - relation: { who: boss, axis: respect, delta: 1 }
@@ -175,6 +178,7 @@
     - id: accept
       label: 격리실 당직을 받아들인다
       effects:
+        - return_stolen: true
         - capture_player: { by: own, days: 1 }
         - relation: { who: boss, axis: trust, delta: 1 }
     - id: excuse
@@ -224,6 +228,7 @@
     - id: accept
       label: 장부에 빚으로 올리는 것을 받아들인다
       effects:
+        - return_stolen: true
         - debt: { faction: faction_e, delta: 5 }
         - relation: { who: boss, axis: trust, delta: 1 }
     - id: excuse
@@ -273,6 +278,7 @@
     - id: accept
       label: 하루 굶는 것을 받아들인다
       effects:
+        - return_stolen: true
         - body: { track: hunger, delta: 2 }
         - relation: { who: boss, axis: trust, delta: 1 }
     - id: excuse

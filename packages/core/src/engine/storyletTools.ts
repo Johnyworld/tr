@@ -518,6 +518,22 @@ export function applyEffect(
   const { store, content } = ctx;
   const state = store.getState();
   const playerId = state.playerId;
+  if ("return_stolen" in effect) {
+    // 가장 최근의, 아직 돌려놓지 않은 도둑질 (규율 회의가 다루는 짓)
+    const now = store.getState();
+    const deed = Object.values(now.deeds).filter((d) => d.actorId === now.playerId && d.items && !d.returned).sort((a, b) => b.at - a.at)[0];
+    if (!deed) return {};
+    const inv = now.characters[now.playerId]?.inventory ?? {};
+    const back: string[] = [];
+    for (const [id, q] of Object.entries(deed.items!)) {
+      const n = Math.min(q, inv[id] ?? 0);
+      if (n <= 0) continue;
+      store.append({ type: "item_consumed", holder: now.playerId, itemId: id, quantity: n });
+      back.push(`${content.items[id]?.name ?? id} ×${n}`);
+    }
+    store.append({ type: "deed_returned", deedId: deed.id });
+    return { line: back.length ? `훔친 것을 돌려놓았다: ${back.join(", ")}.` : "훔친 것은 이미 손에 남아 있지 않았다." };
+  }
   if ("set_flag" in effect) {
     store.append({ type: "flag_set", characterId: playerId, flag: effect.set_flag });
     return {};

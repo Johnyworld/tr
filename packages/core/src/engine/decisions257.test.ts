@@ -62,10 +62,15 @@ describe("규율 회의 (12-257, 공통 규칙 3)", () => {
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     // 짓이 상관 귀에 닿는 데 한 시간 (12-261)
     expect(ownOffense(w.state(), content)).toBeNull();
-    w.executeTool("take_action", act({ activity: { kind: "wait", until: null, hours: 1 } }));
-    expect(ownOffense(w.state(), content)).not.toBeNull();
-    expect(conditionsMet(w.state(), content, content.storylets.disc_c_council!, w.state().time)).toBe(true);
-    expect(conditionsMet(w.state(), content, content.storylets.disc_a_council!, w.state().time)).toBe(false);
+    // 짓이 끝난 때부터 한 시간 (설계 목록 2-1, 12-280). 기다림이 이야기로 끊길 수 있어 넉넉히
+    const ended = Math.max(...Object.values(w.state().deeds).map((d) => d.endedAt ?? d.at));
+    expect(ended).toBeGreaterThan(Object.values(w.state().deeds)[0]!.at);
+    expect(ownOffense(w.state(), content, ended + 59)).toBeNull();
+    expect(ownOffense(w.state(), content, ended + 60)).not.toBeNull();
+    expect(conditionsMet(w.state(), content, content.storylets.disc_c_council!, ended + 60)).toBe(true);
+    expect(conditionsMet(w.state(), content, content.storylets.disc_a_council!, ended + 60)).toBe(false);
+    w.runCheat("~time +1h");
+    w.state().activeStorylet = null;
     w.runCheat("~storylet disc_c_council");
     expect(ownOffense(w.state(), content)).toBeNull();
     const res = w.executeTool("resolve_storylet", { choice_id: "accept" });

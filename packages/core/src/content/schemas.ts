@@ -644,6 +644,8 @@ export function createContentSchemas(s: Scenario) {
   const storyletEffect = z.union([
     z.strictObject({ set_flag: contentIdSchema }),
     z.strictObject({ clear_flag: contentIdSchema }),
+    /** 벌을 받아들이면 도둑질로 가져온 물건을 돌려놓는다 (설계 목록 2-4, 규율 회의). 이미 써 버린 것은 남은 만큼 */
+    z.strictObject({ return_stolen: z.literal(true) }),
     /** 배역(또는 commander)이 플레이어를 보는 관계 */
     z.strictObject({ relation: z.strictObject({ who: z.string().min(1), axis: z.enum(RELATION_AXES), delta: z.number().int().min(-3).max(3) }) }),
     /** 두 배역 사이의 관계 (from이 to를 보는 마음). 주인공 말고 NPC끼리 (기획서 7.10) */

@@ -429,7 +429,28 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const a = ctx.store.getState().activeStorylet;
   const s = a ? storyletOf(ctx.store.getState(), ctx.content, a.id) : undefined;
   const practice = !!s?.practice && !!input.check && s.choices.some((c) => c.check === input.check!.move);
-  return withoutWear(practice, () => takeActionInner(input, ctx));
+  const before = ctx.store.getState();
+  const result = withoutWear(practice, () => takeActionInner(input, ctx));
+  if (result.ok) settleDeeds(ctx, before);
+  return result;
+}
+
+/**
+ * 이번 행동이 남긴 주인공의 짓에 끝난 때와 가져온 물건을 적는다 (설계 목록 2-1·2-4): 규율 회의는 끝난 때부터 세고,
+ * 도둑질(시나리오 offense의 theft 등)로 소지품에 새로 들어온 물건은 벌을 받아들이면 돌려놓는다
+ */
+function settleDeeds(ctx: ToolContext, before: GameState): void {
+  const now = ctx.store.getState();
+  const fresh = Object.values(now.deeds).filter((d) => d.actorId === now.playerId && !before.deeds[d.id] && !d.fabricatedBy);
+  if (!fresh.length) return;
+  const offense = new Set<string>(ctx.content.scenario.offense?.tags ?? []);
+  const was = before.characters[before.playerId]?.inventory ?? {};
+  const is = now.characters[now.playerId]?.inventory ?? {};
+  const gained = Object.fromEntries(Object.entries(is).map(([id, q]) => [id, q - (was[id] ?? 0)] as const).filter(([, d]) => d > 0));
+  for (const d of fresh) {
+    const theft = d.tags.some((t) => offense.has(t) && t === "theft");
+    ctx.store.append({ type: "deed_settled", deedId: d.id, endedAt: now.time, ...(theft && Object.keys(gained).length ? { items: gained } : {}) });
+  }
 }
 
 function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionResult {

@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 96;
+export const SAVE_SCHEMA_VERSION = 97;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -937,6 +937,9 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("squad_set"), members: z.array(z.string()) }),
     z.strictObject({ type: z.literal("squad_joined"), characterId: z.string() }),
     z.strictObject({ type: z.literal("deed_recorded"), deed: deedSchema }),
+    /** 짓이 끝난 때와 가져온 물건 (설계 목록 2-1·2-4) */
+    z.strictObject({ type: z.literal("deed_settled"), deedId: z.string(), endedAt: z.number().int(), items: z.record(z.string(), z.number().int().positive()).optional() }),
+    z.strictObject({ type: z.literal("deed_returned"), deedId: z.string() }),
     z.strictObject({
       type: z.literal("deed_learned"),
       deedId: z.string(),
@@ -2240,6 +2243,16 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
           next.disobedienceAt = { ...next.disobedienceAt, [assignee.id]: state.time };
         }
       }
+      break;
+    }
+    case "deed_settled": {
+      const deed = mustGet(next.deeds, event.deedId, "행적");
+      deed.endedAt = event.endedAt;
+      if (event.items && Object.keys(event.items).length) deed.items = { ...event.items };
+      break;
+    }
+    case "deed_returned": {
+      mustGet(next.deeds, event.deedId, "행적").returned = true;
       break;
     }
     case "deed_recorded": {

@@ -13,6 +13,7 @@ import { playerCalls } from "../game/acquaintance.ts";
 import { josa } from "../text.ts";
 import { absenceExcused } from "./blame.ts";
 import { heldOf } from "./held.ts";
+import { harmTrack } from "../scenario/scenario.ts";
 import type { GameState } from "../game/state.ts";
 import { disposition } from "../sim/war.ts";
 import { recordDeed, recordDeedIfSeen } from "../engine/reputationTools.ts";
@@ -97,6 +98,18 @@ export function ownerOf(state: GameState, zone: string | null): string | null {
   return zone ? (state.zones[zone]?.owner ?? null) : null;
 }
 
+/** 크게 다쳤거나(부상이 scenario.mission_unfit_from 이상) 피를 흘리는가 */
+function badlyHurt(content: Content, me: { conditions: Record<string, string | undefined> }): boolean {
+  const harm = harmTrack(content.scenario);
+  const from = content.scenario.mission_unfit_from;
+  const at = (lv: string | undefined) => harm.levels.findIndex((l) => l.id === lv);
+  if (from && at(from) >= 0 && at(me.conditions[harm.id]) >= at(from)) return true;
+  const bleed = content.scenario.wounds?.track;
+  if (!bleed) return false;
+  const levels = content.scenario.condition_tracks.find((t) => t.id === bleed)?.levels ?? [];
+  return levels.findIndex((l) => l.id === me.conditions[bleed]) > 0;
+}
+
 /**
  * 아직 다뤄지지 않은, 우리 무리 사람이 본 무거운 짓 (12-257, 시나리오 offense). 없으면 null.
  * 무리에 들어 있고 갇히지 않았을 때만. 규율 회의(when.own_offense 이야기)가 한 번 열리면 그 앞의 짓은 다뤄진 것이다
@@ -106,10 +119,13 @@ export function ownOffense(state: GameState, content: Content, at: number = stat
   const rule = content.scenario.offense;
   const me = state.characters[state.playerId];
   if (!rule || !me || me.dead || !me.factionId || heldOf(me)) return null;
+  // 크게 다쳤거나 피를 흘리면 치료가 먼저다 (설계 목록 2-1, PT16·17 졸병: 중상으로 돌아온 순간 회의가 열렸다)
+  if (badlyHurt(content, me)) return null;
   const handled = Math.max(-Infinity, ...Object.entries(state.storyletLog).filter(([id]) => content.storylets[id]?.when.own_offense).map(([, log]) => log.lastFiredAt));
   const deed = Object.values(state.deeds)
     .filter((d) => d.actorId === me.id && d.severity >= rule.min_severity && d.tags.some((t) => rule.tags.includes(t)))
-    .filter((d) => d.at > handled && at - d.at <= rule.within_days * 24 * 60 && at - d.at >= rule.notice_minutes)
+    // 상관 귀에 닿는 시간은 짓이 끝난 때부터 센다 (설계 목록 2-1: 두 시간 걸린 도둑질이 끝나자마자 회의가 열렸다)
+    .filter((d) => d.at > handled && at - d.at <= rule.within_days * 24 * 60 && at - (d.endedAt ?? d.at) >= rule.notice_minutes)
     .find((d) => d.witnesses.some((w) => {
       const c = state.characters[w.npcId];
       return !!c && !c.dead && c.factionId === me.factionId;

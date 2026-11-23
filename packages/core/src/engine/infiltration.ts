@@ -1,6 +1,7 @@
 import { stakesOf } from "../rules/stakes.ts";
 import { onSpotted } from "../rules/consequence.ts";
 import { heldOf, heldSeenZone } from "../rules/held.ts";
+import { currentPlace, depthAt, jailIn, placeById, placesAtDepth } from "../rules/place.ts";
 import { josa } from "../text.ts";
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
@@ -110,17 +111,45 @@ function goalEffects(content: Content, goalId: string, captive: string | null, h
   return effects;
 }
 
+/**
+ * 잠입으로 숨어들 다음 깊이의 장소 (B③). 장소가 없는 구역이면 null(깊이만 센다), 고를 수 없으면 오류 글.
+ * 갇힌 사람 풀어 주기는 가장 깊은 곳이 가두는 곳이다
+ */
+function nextPlace(state: GameState, content: Content, depth: number, goalId: string, asked: string | null): { id: string; name: string } | null | string {
+  if (depthAt(state, content) === null) return null;
+  const deepest = rules(content)!.depths.length - 1;
+  const goal = rules(content)!.goals.find((g) => g.id === goalId);
+  const jail = jailIn(content, state.playerZone);
+  const options = placesAtDepth(state, content, depth).filter((p) => (depth === deepest && goal?.release ? p.id === jail?.id : !p.jail));
+  if (!options.length) return null;
+  const list = options.map((p) => `${p.id}(${p.name})`).join(", ");
+  if (asked) {
+    const hit = options.find((p) => p.id === asked);
+    if (!hit) return `${placeById(state, content, asked)?.name ?? asked}에는 지금 숨어들 수 없다. 다음 깊이의 장소: ${list} (시간은 흐르지 않았다).`;
+    return hit;
+  }
+  if (options.length === 1) return options[0]!;
+  return `어디로 숨어들지 place로 고른다: ${list} (시간은 흐르지 않았다).`;
+}
+
+/** 빠져나오면 막 들어선 자리(담 밖)로 (B③) */
+function backToEntry(ctx: ToolContext): void {
+  const here = currentPlace(ctx.store.getState(), ctx.content);
+  if (here) ctx.store.append({ type: "place_moved", from: here.id, to: null });
+}
+
 const infiltrate = defineTool({
   name: "infiltrate",
   description:
     "잠입 장면 (전투 장면과 같은 틀). 다른 무리의 땅에서 몰래 들어가 목표를 하고 나온다. 결과는 시스템이 정한다. " +
-    "start(goal): 시작한다. advance: 한 칸 더 깊이 들어간다 (은밀 판정). " +
-    "act: 가장 깊은 곳에서 목표를 한다. listen: 멈춰서 낌새를 살핀다 (들켰는지 대략 안다). leave: 빠져나온다. " +
+    "start(goal): 시작한다 (지금 장소의 깊이에서: 막 들어선 자리 = 담 밖, 바깥 장소 = 담 안, 실내 장소 = 깊은 곳). advance(place): 한 칸 더 깊이, 그 깊이의 장소로 숨어든다 (은밀 판정). " +
+    "act: 가장 깊은 곳에서 목표를 한다. listen: 멈춰서 낌새를 살핀다 (들켰는지 대략 안다). leave: 빠져나온다 (막 들어선 자리로). 잠입 중에는 take_action.place_to로 옮기지 않는다. " +
     "한 번에 한 걸음, 걸음마다 시간이 흐른다. 경보 숫자는 GM도 모른다: 상태의 '잠입 중'에 나온 낌새로만 연출한다. 들키면 빠지기만 된다. " +
     "판정은 이 도구가 굴린다: take_action으로 따로 판정하지 않는다 (12-240: 따로 굴린 은밀 판정이 헛것이 됐다).",
   schema: z.strictObject({
     action: z.enum(["start", "advance", "act", "listen", "leave"]),
     goal: z.string().nullable().default(null).describe("start일 때 목표 id (상태의 '잠입할 수 있는 목표'). 아니면 null"),
+    place: z.string().nullable().default(null).describe("advance일 때 숨어들 장소 id (상태의 '잠입 중'에 나온 다음 깊이의 장소). 하나뿐이거나 갇힌 사람 풀어 주기의 가두는 곳이면 null로 둔다"),
   }),
   run(input, ctx): ToolOutcome {
     const { store, content } = ctx;
@@ -143,7 +172,10 @@ const infiltrate = defineTool({
       if (!goal) return { ok: false, error: `목표: ${r.goals.map((g) => `${g.id}(${g.label})`).join(", ")}` };
       if (goal.release && !captiveHere(state, state.playerZone!, owner)) return { ok: false, error: "이 구역에는 그 무리가 가둔 사람이 없다 (캐릭터가 아는 한)." };
       store.append({ type: "infiltration_started", zone: state.playerZone!, owner, goal: goal.id });
-      return { ok: true, resultText: `잠입을 시작했다: ${content.factions[owner]?.name ?? owner}의 ${content.locations[state.playerZone!]?.name ?? state.playerZone} — 목표: ${goal.label}. 지금은 ${depthLabel(0)}. 한 걸음씩 연출하라.`, display };
+      // 지금 장소의 깊이에서 시작한다 (B③, 공통 규칙 15 depthAt: 수용소 안에서 시작해도 "담 밖"이었다)
+      const from = depthAt(state, content) ?? 0;
+      if (from > 0) store.append({ type: "infiltration_changed", depth: from, alarm: 0, done: false });
+      return { ok: true, resultText: `잠입을 시작했다: ${content.factions[owner]?.name ?? owner}의 ${content.locations[state.playerZone!]?.name ?? state.playerZone} — 목표: ${goal.label}. 지금은 ${depthLabel(from)}. 한 걸음씩 연출하라.`, display };
     }
     if (!inf) return { ok: false, error: "잠입 중이 아니다. start로 시작한다." };
     if (state.playerZone !== inf.zone) {
@@ -155,6 +187,9 @@ const infiltrate = defineTool({
 
     if (input.action === "advance") {
       if (inf.depth >= deepest) return { ok: false, error: `이미 가장 깊은 곳(${depthLabel(deepest)})이다. act로 목표를 한다.` };
+      // 장소가 있는 구역이면 다음 깊이의 장소로 숨어든다: 잠입 깊이와 지금 장소가 늘 같다 (B③)
+      const next = nextPlace(state, content, inf.depth + 1, inf.goal, input.place);
+      if (typeof next === "string") return { ok: false, error: next };
       const m = moveOf(content.scenario, r.move)!;
       const advanceMission = missionForCheck(ctx.store.getState(), r.move);
       const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(depthLabel(inf.depth + 1), "으로/로")} 숨어든다` }, ctx, { stakes: stakesOf({ exposed: true }), forMission: advanceMission });
@@ -167,7 +202,8 @@ const infiltrate = defineTool({
         lines.push(`${josa(depthLabel(inf.depth + 1), "으로/로")} 가려다 발소리가 가까워 한 걸음 물러나 숨었다. 들키지는 않았다. 아직 ${depthLabel(inf.depth)} (낌새가 짙다: 한 번 더 어긋나면 들킨다).`);
       } else if (check.outcome !== "miss") {
         store.append({ type: "infiltration_changed", depth: inf.depth + 1, alarm: inf.alarm, done: inf.done });
-        lines.push(`${josa(depthLabel(inf.depth + 1), "으로/로")} 들어갔다.`);
+        if (next) store.append({ type: "place_moved", from: currentPlace(store.getState(), content)?.id ?? null, to: next.id });
+        lines.push(`${josa(depthLabel(inf.depth + 1), "으로/로")} 들어갔다${next ? `: ${next.name}` : ""}.`);
         if (check.outcome === "partial") lines.push(...raiseAlarm(ctx, 1));
       } else {
         lines.push(`${josa(depthLabel(inf.depth + 1), "으로/로")} 가는 길을 찾지 못했다. 아직 ${depthLabel(inf.depth)}.`);
@@ -237,6 +273,7 @@ const infiltrate = defineTool({
     const extra = step(ctx);
     if (inf.alarm === 0) {
       store.append({ type: "infiltration_ended", how: "out" });
+      backToEntry(ctx);
       return { ok: true, resultText: "아무도 모르게 빠져나왔다. 잠입은 끝났다.", display, extra };
     }
     const m = moveOf(content.scenario, r.move)!;
@@ -245,6 +282,7 @@ const infiltrate = defineTool({
     const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, harder), intent: "빠져나온다" }, ctx, { stakes: stakesOf({ exposed: true }), forMission: leaveMission });
     if (!check.ok) return check;
     store.append({ type: "infiltration_ended", how: check.outcome === "miss" ? "caught" : "out" });
+    if (check.outcome !== "miss") backToEntry(ctx);
     const counted = missionNote(ctx, leaveMission).map((l) => ` ${l}`).join("");
     if (check.outcome === "success") return { ok: true, resultText: `빠져나왔다. 잠입은 끝났다.${counted} 이 결과대로 서술하라.`, display: check.display, extra };
     if (check.outcome === "partial") {
@@ -274,9 +312,11 @@ export function describeInfiltration(content: Content, state: GameState): string
   const deepest = r.depths.length - 1;
   const cue = alarmCue(inf.alarm);
   const can = inf.alarm >= ALARM_MAX ? "leave" : [inf.depth < deepest ? "advance" : null, inf.depth >= deepest && !inf.done ? "act" : null, "listen", "leave"].filter(Boolean).join(" · ");
+  const ahead = inf.depth < deepest && inf.alarm < ALARM_MAX ? placesAtDepth(state, content, inf.depth + 1).filter((p) => (inf.depth + 1 === deepest && goal?.release ? p.jail : !p.jail)) : [];
   return [
     `잠입 중: ${content.factions[inf.owner]?.name ?? inf.owner}의 ${content.locations[inf.zone]?.name ?? inf.zone} — 지금 ${r.depths[inf.depth]} (${inf.depth + 1}/${r.depths.length}), 목표: ${goal?.label ?? inf.goal}${inf.done ? " (해냈다)" : ""}`,
     `  낌새: ${cue ?? "보이고 들리는 이상한 것은 없다 (들켰는지는 모른다)"}`,
-    `  할 수 있는 것 (infiltrate): ${can}. 장면 밖으로 옮기거나 오래 쉬지 않는다`,
+    `  할 수 있는 것 (infiltrate): ${can}. 장면 밖으로 옮기거나 오래 쉬지 않는다 (place_to 대신 advance·leave)`,
+    ...(ahead.length ? [`  다음 깊이의 장소 (advance place): ${ahead.map((p) => `${p.id} ${p.name}`).join(" / ")}`] : []),
   ];
 }

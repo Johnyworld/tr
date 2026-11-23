@@ -86,7 +86,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import {comesAlong, currentPlace, ENTRY_PLACE, peopleAt, placeTarget, placesIn, whereIs, npcPlaceAt, type Place, whereLabel } from "../rules/place.ts";
+import {comesAlong, currentPlace, depthAt, ENTRY_PLACE, peopleAt, placeTarget, placesAtDepth, placesIn, whereIs, npcPlaceAt, type Place, whereLabel } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -689,11 +689,22 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   let placeMove: { to: Place | null; along: string[]; involved: string[] } | null = null;
   if (input.place_to !== null) {
     if (input.move_to) return { ok: false, error: "구역을 옮기는 move_to와 장소를 옮기는 place_to는 함께 쓰지 않는다. 구역을 옮긴 뒤 다음 행동에서 장소를 고른다 (시간은 흐르지 않았다)." };
-    if (start.battle || start.infiltration || heldOf(player)) return { ok: false, error: "지금은 장소를 옮길 수 없다 (전투·잠입 중이거나 갇혀 있다). 시간은 흐르지 않았다." };
+    // 잠입 중에는 잠입으로만 들고 난다: 잠입 깊이와 지금 장소가 늘 같다 (B③)
+    if (start.infiltration) return { ok: false, error: "잠입 중에는 장소를 옮기지 않는다. 더 깊이는 infiltrate advance(place), 나가려면 infiltrate leave (시간은 흐르지 않았다)." };
+    if (start.battle || heldOf(player)) return { ok: false, error: "지금은 장소를 옮길 수 없다 (전투 중이거나 갇혀 있다). 시간은 흐르지 않았다." };
     const to = placeTarget(start, content, input.place_to);
     if (to === undefined) {
       const here = placesIn(start, content, start.playerZone).map((p) => `${p.id}(${p.name})`).join(", ");
       return { ok: false, error: `이 구역에 그런 장소가 없다: ${input.place_to}. 이 구역의 장소: ${here || "없음"}, ${ENTRY_PLACE}(구역에 막 들어선 자리). 콘텐츠에 없는 곳이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
+    }
+    // 적 땅에서 드러내 놓고 옮기면 한 깊이씩만 (B③, PT16~19 졸병: 담 밖에서 수용소 철망 앞까지 곧장 갔다). 지나는 장소마다 그곳 사람이 알아볼 수 있다 (12-271)
+    if (hostileHere(ctx)) {
+      const now = depthAt(start, content);
+      const then = depthAt(start, content, to?.id ?? null);
+      if (now !== null && then !== null && Math.abs(then - now) > 1) {
+        const via = placesAtDepth(start, content, now + Math.sign(then - now)).filter((p) => !p.jail).map((p) => `${p.id}(${p.name})`).join(", ");
+        return { ok: false, error: `적 땅에서는 한 깊이씩 지나간다: ${to?.name ?? "막 들어선 자리"}로 가려면 먼저 ${via || "막 들어선 자리"}를 거친다. 몰래 가려면 infiltrate (시간은 흐르지 않았다).` };
+      }
     }
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)
     // 따돌리려는 은밀의 상대는 함께 가지 않는다: 실패하면 쫓아온다 (PT15 분대장: 따돌리려던 감염체가 판정 전에 "함께 왔다")
@@ -1745,6 +1756,11 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       // 활동 도중의 이야기는 끼어들기 검사(createStoryletCheck)가 활동을 끊고 연다
       extra.push(...runAfterTimeAdvance(ctx, { storylets: false }));
       if (store.getState().battle) break;
+      // 하루 처리에서 시간이 흘렀으면(자는 사이 쓰러져 끌려감 등) 그 활동은 거기서 끝난다 (12-273, 자동 플레이: 잠을 이어 가다 "시간이 어긋납니다")
+      if (store.getState().time !== cursor) {
+        cursor = store.getState().time;
+        break;
+      }
     }
     to = cursor;
     if (activity === "sleep" && to - from >= (content.scenario.body?.fatigue?.min_sleep_hours ?? 0) * 60) extra.push(...exposeToFatigue(ctx, "sleep", from, to));

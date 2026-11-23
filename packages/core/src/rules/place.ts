@@ -122,6 +122,24 @@ export function storyPlaces(state: GameState, content: Content, places: readonly
     .map((p) => p.id);
 }
 
+/**
+ * 잠입 깊이로 치는 자리 (B③ 2026-11-23, PT16~19 졸병: 수용소 안인데 잠입은 "담 밖", 장소 옮기기 한 번이면 수용소까지).
+ * 막 들어선 자리 0, 바깥 장소 1(담 안), 실내 장소는 가장 깊은 곳. 깊이 칸은 시나리오의 infiltration.depths.
+ * 장소가 없는 구역은 null (잠입이 깊이만 따로 센다)
+ */
+export function depthAt(state: GameState, content: Content, placeId: string | null = state.playerPlace): number | null {
+  if (!placesIn(state, content, state.playerZone).length) return null;
+  const deepest = Math.max(0, (content.scenario.infiltration?.depths.length ?? 1) - 1);
+  const place = placeById(state, content, placeId);
+  if (!place) return 0;
+  return place.indoor ? deepest : Math.min(1, deepest);
+}
+
+/** 이 깊이의 장소들 (지금 구역, 가두는 곳 포함). 막 들어선 자리(0)는 장소가 아니라 빈 목록 */
+export function placesAtDepth(state: GameState, content: Content, depth: number): Place[] {
+  return placesIn(state, content, state.playerZone).filter((p) => depthAt(state, content, p.id) === depth);
+}
+
 /** 수색 횟수를 세는 자리: 장소가 있으면 구역@장소, 없으면 구역 (12-258, PT15 튜토리얼: 매장을 뒤진 뒤 창고에서 "오늘 다시 뒤짐") */
 export function searchSpot(state: GameState): string | null {
   if (!state.playerZone) return null;

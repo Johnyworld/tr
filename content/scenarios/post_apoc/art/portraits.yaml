@@ -911,3 +911,60 @@ faces:
     colorize: true
     subject: >-
       a big heavyset stout korean man in his early thirties with a calm dignified gentle look, broad round face, neatly combed short black hair, kind steady eyes, composed serious expression, wearing a clean but worn dark wool coat over a buttoned shirt
+
+  # 5:5 가르마 웨이브 여신머리 미인 한 사람을 구도만 바꿔 여러 장 (사진을 참고했지만 실존 인물과 똑같지 않게 글 묘사로만 그린다)
+  # 같은 묘사로 후보를 뽑아 사진과 가까운 것을 살렸다 (--adopt). 처음 묘사(나이 들어 보이고 올림머리가 섞였다)와
+  # 더 앳되고 머리를 풀어 내린 묘사 두 가지다
+  d_f47:
+    style: D
+    gender: female
+    seed: 2654
+    zoom: 1.12
+    colorize: true
+    subject: >-
+      a stunningly beautiful young korean woman in her early twenties with a soft feminine korean actress look, smooth slim oval face with a small pointed v-line chin, soft youthful cheeks, large almond-shaped double-lidded eyes, softly arched brows, small slim nose, full soft lips in a gentle sweet closed-lip smile, flawless smooth skin, her long glossy black hair worn loose and down, parted exactly in the middle, falling in soft big loose waves past her shoulders on both sides, small silver hoop earrings, wearing a worn cobalt blue jacket with an open collar
+  d_f48:
+    style: D
+    gender: female
+    seed: 2601
+    colorize: true
+    subject: >-
+      a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves flowing down past her shoulders on both sides, small silver hoop earrings, serene faint closed-lip smile, wearing a worn cobalt blue wrap jacket
+  d_f49:
+    style: D
+    gender: female
+    seed: 2661
+    zoom: 1.1
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and glancing toward the viewer, a stunningly beautiful young korean woman in her early twenties with a soft feminine korean actress look, smooth slim oval face with a small pointed v-line chin, soft youthful cheeks, large almond-shaped double-lidded eyes, softly arched brows, small slim nose, full soft lips in a gentle sweet closed-lip smile, flawless smooth skin, her long glossy black hair worn loose and down, parted exactly in the middle, falling in soft big loose waves past her shoulders on both sides, small silver hoop earrings, wearing a worn cobalt blue jacket with an open collar
+  d_f50:
+    style: D
+    gender: female
+    seed: 2634
+    colorize: true
+    subject: >-
+      chin slightly lowered, eyes looking up at the viewer, head tilted slightly to one side, a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves flowing down past her shoulders on both sides, small silver hoop earrings, calm gentle expression, wearing a worn cobalt blue wrap jacket
+  d_f51:
+    style: D
+    gender: female
+    seed: 2603
+    colorize: true
+    subject: >-
+      a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves flowing down past her shoulders on both sides, small silver hoop earrings, serene faint closed-lip smile, wearing a worn cobalt blue wrap jacket
+  d_f52:
+    style: D
+    gender: female
+    seed: 2644
+    colorize: true
+    subject: >-
+      medium shot showing her head, shoulders and upper body with the ruined city around her, a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves, the waves swept forward over one shoulder, small silver hoop earrings, soft warm smile, wearing a worn cobalt blue wrap jacket
+  d_f53:
+    style: D
+    gender: female
+    seed: 2653
+    zoom: 1.15
+    colorize: true
+    subject: >-
+      a stunningly beautiful young korean woman in her early twenties with a soft feminine korean actress look, smooth slim oval face with a small pointed v-line chin, soft youthful cheeks, large almond-shaped double-lidded eyes, softly arched brows, small slim nose, full soft lips in a gentle sweet closed-lip smile, flawless smooth skin, her long glossy black hair worn loose and down, parted exactly in the middle, falling in soft big loose waves past her shoulders on both sides, small silver hoop earrings, wearing a worn cobalt blue jacket with an open collar

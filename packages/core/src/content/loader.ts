@@ -32,6 +32,33 @@ type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions" | "factions" | "
  * - 한 파일에 객체 하나 또는 목록을 둘 수 있다. 종류별 폴더가 없으면 빈 목록으로 본다
  * - 문제는 한 번에 모아서 보고한다 (첫 오류에서 멈추지 않음)
  */
+/**
+ * 구역의 장소 그래프 (장소 개편): 길이 하나는 있고, 이웃 구역마다 그리로 가는 길이 있고, 길에서 모든 장소에 닿고,
+ * 담 있는 구역(gate)에서 실내 장소가 담을 거치지 않고 닿지 않는다(담 구멍)
+ */
+export function checkZonePlaces(content: Content, zoneId: string): string[] {
+  const problems: string[] = [];
+  const l = content.locations[zoneId]!;
+  const where = `locations.${zoneId}.places`;
+  const roads = l.places.filter((p) => p.road);
+  if (!roads.length) return [`${where}: 길(road)이 없다. 구역에 들어오면 도착할 길을 하나 이상 둔다`];
+  const linked = new Set<string>([...(l.adjacent ?? []), ...Object.values(content.locations).filter((o) => o.adjacent?.includes(zoneId)).map((o) => o.id), ...(l.crossing?.from ?? []), ...Object.values(content.locations).filter((o) => o.crossing?.from.includes(zoneId)).map((o) => o.id)]);
+  for (const z of linked) if (!roads.some((r) => r.to.includes(z))) problems.push(`${where}: ${z}로 가는 길(to)이 없다`);
+  for (const r of roads) for (const z of r.to) if (!linked.has(z)) problems.push(`${where}.${r.id}.to: 이어지지 않은 구역 ${z}`);
+  const byId = new Map(l.places.map((p) => [p.id, p]));
+  const seen = new Set(roads.map((r) => r.id));
+  const queue = [...seen];
+  while (queue.length) for (const n of byId.get(queue.shift()!)?.near ?? []) if (!seen.has(n)) { seen.add(n); queue.push(n); }
+  for (const p of l.places) if (!seen.has(p.id)) problems.push(`${where}.${p.id}: 길에서 닿지 않는다 (near로 잇는다)`);
+  if (l.places.some((p) => p.gate)) {
+    const outside = new Set(roads.map((r) => r.id));
+    const q2 = [...outside];
+    while (q2.length) for (const n of byId.get(q2.shift()!)?.near ?? []) if (!outside.has(n) && !byId.get(n)?.gate) { outside.add(n); q2.push(n); }
+    for (const p of l.places) if (p.indoor && !p.road && outside.has(p.id)) problems.push(`${where}.${p.id}: 담(gate)을 거치지 않고 닿는 실내 장소다 (담 구멍)`);
+  }
+  return problems;
+}
+
 /** 이웃을 양쪽으로 맞춘다 (장소 개편): A가 B를 이웃으로 적으면 B도 A의 이웃 */
 function linkPlaces(content: Content): void {
   for (const l of Object.values(content.locations)) {
@@ -823,6 +850,7 @@ export function checkStorylets(content: Content): string[] {
       for (const z of p.to ?? []) if (!content.locations[z]) problems.push(`locations.${l.id}.places.${p.id}.to: 알 수 없는 구역 ${z}`);
       if (p.to?.length && !p.road) problems.push(`locations.${l.id}.places.${p.id}: 길이 아닌데 to가 있다 (road: true)`);
     }
+    problems.push(...checkZonePlaces(content, l.id));
   }
   // 부탁 물건은 세계 어딘가에서 구할 수 있어야 한다: 장사꾼이 들여오거나 뒤져서 나온다 (12-239)
   for (const n of Object.values(content.npcs)) {

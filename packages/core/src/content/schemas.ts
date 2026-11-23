@@ -601,6 +601,8 @@ export function createContentSchemas(s: Scenario) {
           /** 구역 안의 길: 구역에 들어오면 길에 도착한다. to = 이 길로 이어지는 구역 */
           road: z.boolean().default(false),
           to: z.array(contentIdSchema).default([]),
+          /** 담을 지나 처음 닿는 곳 (장소 개편): 잠입 깊이를 여기서 센다. 길에서 gate를 거치지 않고 닿는 곳은 담 밖 */
+          gate: z.boolean().default(false),
         }),
       )
       .default([]),

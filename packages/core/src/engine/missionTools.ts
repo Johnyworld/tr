@@ -610,8 +610,10 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   const active = activeMissionOf(state.missions, player.id);
   // 무소속은 복무·공적·불복종이 없다
   // 무리에 들 때 맡은 일 (플레이 테스트 11: "버들마을 경비병"으로 들었는데 복무 줄은 "정찰대원"뿐이었다)
-  const joinedAs = state.customRole && player.factionId && state.customRole.rank === player.rank && !state.customRole.label.includes(rankName(ctx.content, player.factionId, player.rank)) ? ` (맡은 일: ${state.customRole.label})` : "";
-  const lines = [player.factionId ? `복무: ${rankName(ctx.content, player.factionId, player.rank)}${joinedAs} · 공적 ${player.merit} · 임무 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
+  // 맡은 일을 앞에, 계급을 괄호로 (설계 목록 10-7, PT17·18: "수색대원 (맡은 일: 청솔형제단 분대원)"이 거꾸로 읽혔다)
+  const joined = !!state.customRole && !!player.factionId && state.customRole.rank === player.rank && !state.customRole.label.includes(rankName(ctx.content, player.factionId, player.rank));
+  const service = player.factionId ? (joined ? `${state.customRole!.label} (계급: ${rankName(ctx.content, player.factionId, player.rank)})` : rankName(ctx.content, player.factionId, player.rank)) : "";
+  const lines = [player.factionId ? `복무: ${service} · 공적 ${player.merit} · 임무 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
   // 상관이 지금 어디 있는지 (12-253, PT15 분대장: 보급 창고에 있을 상관을 교무실에 불러 임무를 받았다)
   const boss = player.factionId ? commanderIdOf(state, ctx.content) : null;
   const bossAt = boss ? whereLabel(state, ctx.content, boss) : null;

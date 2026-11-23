@@ -421,13 +421,15 @@ export function argsHint(schema: z.ZodType, focus?: PropertyKey): string {
 
 type ZodDefLike = { type: string; innerType?: z.ZodType; entries?: Record<string, unknown>; values?: unknown[]; shape?: Record<string, z.ZodType>; element?: z.ZodType; options?: z.ZodType[] };
 const defOf = (s: z.ZodType) => (s as unknown as { _zod: { def: ZodDefLike } })._zod.def;
-const optionalArg = (s: z.ZodType): boolean => ["optional", "default", "nullable"].includes(defOf(s).type);
+/** 빼도 되는 칸 (?): optional·default만. null을 받는지는 타입 쪽에 "| null"로 따로 (설계 목록 10-6, PT17·18: ?만 보고 null을 넣었다가 거절됐다) */
+const optionalArg = (s: z.ZodType): boolean => ["optional", "default"].includes(defOf(s).type);
 
 function describeArg(s: z.ZodType, depth: number, max: number): string {
   const d = defOf(s);
   switch (d.type) {
-    case "optional":
     case "nullable":
+      return d.innerType ? `${describeArg(d.innerType, depth, max)} | null` : "null";
+    case "optional":
     case "default":
     case "readonly":
     case "pipe":

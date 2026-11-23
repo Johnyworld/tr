@@ -797,6 +797,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (heard) displays.push({ type: "belief", fact: heard.fact, sourceLabel: BELIEF_SOURCE_LABELS.report });
     const moments = [blowup, leaked, heard?.line ?? null].filter((x): x is string => !!x);
     if (moments.length) lines.push("성격 줄 (서술 끝에 그대로 옮겨 적는다. 플레이어가 말하지 않은 반응이니 그 장면을 연출한다):", ...moments.map((m) => `\`${m}\``));
+    // 이야기할 사람이 없다 (설계 목록 10-2, PT16 튜토리얼: 빈 장면에서 talk가 그대로 흘렀다)
+    const alone = store.getState().scene.present.length === 0;
+    if (talk && alone && !input.broadcast) lines.push("장면에 아무도 없다: 혼잣말로 서술하거나, 이야기할 사람을 npc_presence로 들인 뒤 다시 한다.");
   }
 
   // 0. 겁먹을 일이 드러났으면 공포부터 (이번 판정에 바로 붙는다, 12-95)
@@ -970,7 +973,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       // 상대의 몫은 맞서 싸우는 판정에서만 (흥정·설득의 target에 근접전 실력이 붙었다, 플레이 테스트 8)
       const fightMoves = content.scenario.opposition?.harm?.moves ?? [];
       const opponent = input.check.opponent ?? (fightMoves.includes(input.check.move) ? input.target : null) ?? null;
-      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, input.check.harm_cause || input.intent, opponent, input.check.harm_kind ?? null, input.activity && ["search", "work", "guard_duty", "rest", "wait"].includes(input.activity.kind) ? { activity: input.activity.kind as Activity, forMission } : null, !!opponent || !!input.target || inBattle || (!!start.activeStorylet && !!content.storylets[start.activeStorylet.id]?.urgent));
+      // 까닭을 비웠으면 코드가 짧게 (설계 목록 10-4, PT18 분대장: 피해 줄에 intent 원문이 통째로 나왔다)
+      const harmCause = input.check.harm_cause || (opponent && start.characters[opponent] ? `${playerCalls(start, content, opponent)}에게 당했다` : `${moveLabel(scenario, input.check.move)} 중에 다쳤다`);
+      const harm = applyHarm(ctx, roll.checkId, input.check.harm_on_failure, harmCause, opponent, input.check.harm_kind ?? null, input.activity && ["search", "work", "guard_duty", "rest", "wait"].includes(input.activity.kind) ? { activity: input.activity.kind as Activity, forMission } : null, !!opponent || !!input.target || inBattle || (!!start.activeStorylet && !!content.storylets[start.activeStorylet.id]?.urgent));
       lines.push(harm.text);
       displays.push(harm.display);
       // 방어구·버팀으로 다치지 않았으면 피도 흉터도 마음의 흔들림도 감염도 없다 (플레이 테스트 8: "다치지 않았다" + 긁힘)
@@ -989,7 +994,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       // 크게 다치면 마음도 흔들린다 (12-48)
       const nerves = ctx.content.scenario.body?.nerves;
       if (!harm.fatal && hurt && nerves && input.check.harm_on_failure === "heavy") {
-        const shaken = shakeNerves(ctx, nerves.heavy_harm, `다쳤다: ${input.check.harm_cause || input.intent}`);
+        const shaken = shakeNerves(ctx, nerves.heavy_harm, `다쳤다: ${harmCause}`);
         lines.push(...shaken.lines);
         displays.push(...shaken.displays);
       }
@@ -1005,7 +1010,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       if (harm.fatal) {
         // 연대기 기록 (전투 중이면 그 자리를 원인에 붙인다), 남은 전투는 코드가 굴린다
         const battle = store.getState().battle;
-        recordDeath(ctx, input.check.harm_cause || input.intent, battle ? (content.locations[battle.zone]?.name ?? battle.zone) + " 전투" : null);
+        recordDeath(ctx, harmCause, battle ? (content.locations[battle.zone]?.name ?? battle.zone) + " 전투" : null);
         if (battle) {
           const end = endBattle(ctx, false);
           lines.push(...end.lines.filter((l) => !l.startsWith("결과에 맞게")));

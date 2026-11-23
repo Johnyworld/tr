@@ -151,7 +151,8 @@ export function pacingBlocks(state: GameState, content: Content, s: StoryletCont
   if (mine.length) {
     const rank = STORY_TIERS[storyTier(content, s)];
     const rival = (o: StoryletContent) => STORY_TIERS[storyTier(content, o)] >= rank && storyPlaces(state, content, o.when.places, storyText(o), storyIndoor(o.when)).some((pl) => mine.includes(pl));
-    if (fired.some(([id]) => id !== s.id && content.storylets[id] && rival(content.storylets[id]!))) return true;
+    // 바로 앞 이야기를 잇는 후속(after_storylet)은 그 앞 이야기가 쓴 장소라도 막지 않는다 (설계 목록 10-1, PT16·19·20 튜토리얼: 정문 재시도가 다음 날 새벽에야)
+    if (fired.some(([id]) => id !== s.id && id !== s.when.after_storylet?.id && content.storylets[id] && rival(content.storylets[id]!))) return true;
   }
   if (p.same_threat_gap_days) {
     const tags = threatTags(content, s);

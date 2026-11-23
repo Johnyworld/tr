@@ -162,7 +162,6 @@
       outcomes:
         success:
           - overhear: { faction: other, source: report }
-          - belief: { fact: "{to} 앞에서 만난 피난민들에게 그들이 지나온 길의 사정을 들었다", source: report }
         partial:
           - belief: { fact: "피난민들은 지나온 길에 대해 말을 아꼈다. 어딘가에서 싸움이 났다는 것만 들었다", source: rumor }
         miss:

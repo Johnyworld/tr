@@ -264,7 +264,7 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
   return [
     animal
       ? `### ${headingAs(state, content, player.id, c.id)} (${c.id})`
-      : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}${occupationTitle(content, c) ? ` · ${occupationTitle(content, c)}` : ""}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
+      : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${kinTitle(state, content, c.id)}${occupationTitle(content, c) ? ` · ${occupationTitle(content, c)}` : ""}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
     `겉모습: ${ex.look}`,
     `상태: ${describeConditions(content.scenario, c)} / ${carriedLabel(state, player, c.id)}: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
     template?.kind === "infected"
@@ -491,7 +491,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
       const gender = genderOf(content.scenario, character.gender ?? npc?.gender ?? null);
-      return `- ${headingAs(state, content, viewer, id)} (${id}) · ${rankName(content, character.factionId, character.rank)}${gender}${statusNote(content, character, state)}`;
+      return `- ${headingAs(state, content, viewer, id)} (${id}) · ${state.family?.includes(id) ? kinTitle(state, content, id) : rankName(content, character.factionId, character.rank)}${gender}${statusNote(content, character, state)}`;
     };
     const lines: string[] = [];
     const rest: string[] = [];
@@ -534,6 +534,14 @@ function rotate(id: string, day: number): number {
   let h = day * 2654435761;
   for (const ch of id) h = ((h ^ ch.charCodeAt(0)) * 16777619) >>> 0;
   return h;
+}
+
+/** 사람 카드의 직함: 무리와 계급, 주인공이 찾는 가족이면 관계를 앞에 (설계 목록 10-7, PT17·18 튜토리얼: 가족 카드가 "주민"·"버들마을 주민"으로 달랐다) */
+function kinTitle(state: GameState, content: Content, id: string): string {
+  const c = state.characters[id]!;
+  const rank = `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}`;
+  const kin = state.family?.includes(id) ? c.extra?.label : null;
+  return kin ? `${kin} (${rank})` : rank;
 }
 
 /** 이 구역의 장소 (공통 규칙 15): 지금 있는 곳과 옮겨 갈 수 있는 곳, 그곳에 있을 아는 사람.

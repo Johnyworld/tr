@@ -63,7 +63,7 @@ const SCENE_SECTION_LABELS: Record<string, string> = {
   deeds: "최근 행적",
   present: "함께 있는 인물",
   known: "알고 있는 인물",
-  zone_people: "이 구역의 낯선 사람",
+  zone_people: "이 구역의 장소·낯선 사람",
   zone_extras: "이 구역에서 엮인 인물",
   templates: "엑스트라 틀",
   beliefs: "알고 있다고 믿는 것",

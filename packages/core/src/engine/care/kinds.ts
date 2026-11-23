@@ -1,3 +1,4 @@
+import { ableNow } from "../../rules/company.ts";
 import { CARE_BY, careUsedToday } from "./slots.ts";
 /** 치료 (kinds): engine/body.ts에서 떼어 냈다 (docs/design.md 12-236) */
 import { heldOf } from "../../rules/held.ts";
@@ -24,7 +25,8 @@ import { hereWithMe, nearby, whereIs } from "../../rules/place.ts";
  */
 export function healerFor(ctx: ToolContext, patient: string, chosen: string | null = null): string | null {
   const state = ctx.store.getState();
-  const all = state.scene.present.filter((id) => ctx.content.npcs[id]?.healer && id !== patient);
+  // 움직일 수 있는 치료사만: 죽거나 기절했거나 갇힌 치료사는 돌보지 못한다 (공통 규칙 8, 12-269)
+  const all = state.scene.present.filter((id) => ctx.content.npcs[id]?.healer && id !== patient && ableNow(state, ctx.content, id));
   if (chosen) return all.includes(chosen) ? chosen : null;
   if (needsSurgery(ctx, patient)) {
     const cut = all.find((id) => canOperate(ctx, id));

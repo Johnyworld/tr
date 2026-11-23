@@ -65,7 +65,7 @@ import { recordDeed } from "./reputationTools.ts";
 import { leveragesOn } from "./leverage.ts";
 import { commanderOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, DEATH_GUIDE } from "./toolkit.ts";
-import { onOwnLand, ownedBy } from "../rules/home.ts";
+import {onOwnLand, ownedBy, baseOfNow, hostileLand } from "../rules/home.ts";
 import { reduceHarm } from "../rules/damage.ts";
 import { learned } from "../rules/skill.ts";
 import { routeCause } from "./felt.ts";
@@ -798,7 +798,7 @@ export function applyEffect(
           .filter((z) => !ownedBy(store.getState(), z, captor))
           .sort((a, b) => Number(ownedBy(store.getState(), b, me.factionId)) - Number(ownedBy(store.getState(), a, me.factionId)) || a.localeCompare(b))[0]
       : undefined;
-    const home = effect.release_player.home ? Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id : out;
+    const home = effect.release_player.home ? (baseOfNow(store.getState(), content, me.factionId) ?? out) : out;
     if (home && home !== store.getState().playerZone) store.append({ type: "zone_moved", from: store.getState().playerZone, to: home });
     return { line: `${line ?? "풀려났다."}${home ? ` ${josa(content.locations[home]?.name ?? home, "으로/로")} 돌아왔다.` : ""}` };
   }
@@ -815,7 +815,7 @@ export function applyEffect(
   if ("cultivate" in effect) {
     const me = state.characters[playerId]!;
     const zone =
-      effect.cultivate.where === "base" ? Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id : state.playerZone;
+      effect.cultivate.where === "base" ? (baseOfNow(state, content, me.factionId) ?? undefined) : state.playerZone;
     if (!zone || !me.factionId || !ownedBy(state, zone, me.factionId)) return {};
     store.append({ type: "zone_boosted", zone, resource: effect.cultivate.resource, delta: effect.cultivate.delta });
     return { line: `${content.locations[zone]?.name ?? zone}에서 나는 것이 늘 것이다 (빼앗기면 사라진다).` };
@@ -1066,7 +1066,7 @@ export function applyEffect(
     if (!id || !npc || npc.dead || npc.away || heldOf(npc) || id === playerId) return {};
     const by = factionRef(state, effect.npc_capture.by);
     if (!content.factions[by]) return {};
-    const zone = effect.npc_capture.zone ?? Object.values(content.locations).find((l) => l.owner === by && l.kind === "base")?.id;
+    const zone = effect.npc_capture.zone ?? baseOfNow(state, content, by) ?? undefined;
     if (!zone) return {};
     captureNpc(ctx, id, by, zone);
     const name = playerCalls(state, content, id);
@@ -1277,7 +1277,8 @@ export function raiseAlarm(ctx: ToolContext): ToolDisplayEvent[] {
   if (pausedWhileHeld(state, "alarm")) return [];
   if (!hostileHere(ctx)) return [];
   const out = runTagEvent(ctx, rule.tag);
-  const spotted = out.length ? onSpotted(ctx, state.zones[state.playerZone ?? ""]?.owner ?? null).join(" ") || null : null;
+  // 들킨 결과(공통 규칙 3)는 경보 이야기가 열렸든 아니든 남는다 (12-269, 우회 점검: 경보 이야기가 쉬는 중이면 들켜도 아무 일이 없었다)
+  const spotted = onSpotted(ctx, state.zones[state.playerZone ?? ""]?.owner ?? null).join(" ") || null;
   if (spotted) out.push({ type: "belief", fact: "들켰다. 들키지 않아야 하는 임무였다", sourceLabel: BELIEF_SOURCE_LABELS.seen, note: spotted });
   return out;
 }
@@ -1288,13 +1289,7 @@ export function hostileHere(ctx: ToolContext): boolean {
 }
 
 export function hostileZone(state: GameState, content: Content): boolean {
-  const zone = state.playerZone;
-  const owner = zone ? state.zones[zone]?.owner : null;
-  const mine = state.characters[state.playerId]?.factionId ?? null;
-  if (!owner || owner === mine) return false;
-  if (mine) return (state.factions[owner]?.disposition?.[mine] ?? 0) < 0;
-  // 무소속: 낯선 사람을 잡아가는 무리(helpless.prey_on_strangers)나 현상금을 건 무리의 땅만 (플레이 테스트 13: 중립 장터·마을에서 말 걸기에도 숨기 판정을 요구하고, 붉은연합 창고는 안전했다)
-  return !!content.scenario.helpless?.prey_on_strangers.includes(owner) || (state.bounties ?? []).includes(owner);
+  return hostileLand(state, content, state.playerZone);
 }
 
 

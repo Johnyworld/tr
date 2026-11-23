@@ -743,7 +743,10 @@ export function roadStorylets(state: GameState, content: Content, tag: string, a
     .filter((s) => s.tags.includes(tag))
     .filter((s) => {
       const log = state.storyletLog[s.id];
-      return !log || (s.repeatable && at - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY);
+      if (!log) return true;
+      // 무리마다의 경보 이야기는 이 길(raiseAlarm → runTagEvent)로도 쉬는 날수를 지킨다 (공통 규칙 5, 12-269 우회 점검)
+      if (content.scenario.alarm && s.tags.includes(content.scenario.alarm.tag) && !!s.when.owners?.length && resting(content, "alarm", log.lastFiredAt, at)) return false;
+      return s.repeatable && at - log.lastFiredAt >= s.cooldown_days * MINUTES_PER_DAY;
     })
     .filter((s) => conditionsMet(state, content, s, at))
     .filter((s) => options.pacing === false || !pacingBlocks(state, content, s, at))

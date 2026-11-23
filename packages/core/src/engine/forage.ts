@@ -1,3 +1,4 @@
+import { ableNow } from "../rules/company.ts";
 import { fireLitHere } from "../rules/place.ts";
 import { preservesHere } from "./facilities.ts";
 import type { CheckOutcome } from "../rules/check.ts";
@@ -83,7 +84,7 @@ export function forage(ctx: ToolContext, kindId: string, outcome: CheckOutcome |
   // 함께 다니는 개가 몰이를 돕는다: 하나 더
   const helper = state.companions.find((id) => {
     const c = state.characters[id];
-    return c && !c.dead && !!c.extra && kind.companions.includes(c.extra.template);
+    return c && ableNow(state, ctx.content, id) && state.scene.present.includes(id) && !!c.extra && kind.companions.includes(c.extra.template);
   });
   let rolls = foundCount(outcome);
   if (helper && rolls > 0) rolls += 1;

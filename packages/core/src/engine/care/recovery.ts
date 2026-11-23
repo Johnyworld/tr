@@ -1,5 +1,5 @@
 /** 치료 (recovery): engine/body.ts에서 떼어 냈다 (docs/design.md 12-236) */
-import { heldOf } from "../../rules/held.ts";
+import { heldOf, inQuarantine } from "../../rules/held.ts";
 import { policyEffects } from "../../sim/war.ts";
 import { fatigueBlocksRecovery } from "../fatigue.ts";
 import type { GameState } from "../../game/state.ts";
@@ -162,7 +162,7 @@ export function runCaptorCare(ctx: ToolContext): ToolDisplayEvent[] {
   const state = store.getState();
   const me = state.characters[state.playerId];
   const held = heldOf(me);
-  if (!recovery || !me || me.dead || !held || held.quarantine) return [];
+  if (!recovery || !me || me.dead || !held || inQuarantine(me)) return [];
   const harm = harmTrack(content.scenario);
   if (levelIndex(ctx, state, me.id, harm.id) <= 0 || careUsedToday(state, content, me.id, "healer")) return [];
   // 갇힌 구역의 치료사 먼저, 없으면 그 무리의 다른 치료사를 불러온다 (붉은연합의 치료사는 물류창고에 있다)

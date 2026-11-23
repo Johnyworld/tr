@@ -6,7 +6,7 @@ import { joinRole } from "../game/customStart.ts";
 import { createSeededRng, type Rng } from "../rng.ts";
 import { initialWarWorld, rationLevel, simulateWarDay } from "../sim/war.ts";
 import { WorldManager } from "../world/manager.ts";
-import { squadFollowBonus, squadMembers } from "./command.ts";
+import { squadMembers } from "./command.ts";
 import { loadRealContent, teachSkills } from "../testing.ts";
 
 const content = loadRealContent();
@@ -80,14 +80,11 @@ describe("분대 명령 (기획서 9.11)", () => {
     w.close();
   });
 
-  it("곁에 둔 분대원은 따라오고, 싸움 판정에 보정을 준다", () => {
+  it("곁에 둔 분대원은 따라온다 (판정 도움은 공통 규칙 8 helperFor)", () => {
     const w = open("role_a_squad_leader");
     w.executeTool("npc_presence", { npc_id: "a_yejin", action: "enter" });
-    expect(squadFollowBonus(w.state(), w.content, "shoot")).toBe(0);
     expect(w.executeTool("squad_order", { members: ["a_yejin"], task: "follow", zone: null }).ok).toBe(true);
     expect(w.state().companions).toContain("a_yejin");
-    expect(squadFollowBonus(w.state(), w.content, "shoot")).toBe(1);
-    expect(squadFollowBonus(w.state(), w.content, "persuade")).toBe(0);
     w.executeTool("take_action", act("동쪽 초소로 간다", { move_to: "a_east_post" }));
     expect(w.state().scene.present).toContain("a_yejin");
     w.close();

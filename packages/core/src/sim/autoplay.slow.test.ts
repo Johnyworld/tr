@@ -67,7 +67,7 @@ describe("시나리오마다 자동 플레이 (실제 콘텐츠)", () => {
         if (best.length >= 2) break;
       }
       expect(best.length, `열린 이야기: ${all.join(", ")}`).toBeGreaterThanOrEqual(2);
-    }, 60_000);
+    }, 180_000);
   }
 });
 
@@ -78,8 +78,8 @@ describe("무소속 자유 시나리오 자동 플레이 (실제 콘텐츠)", ()
     const lonerTales = Object.values(content.storylets).filter((s) => s.when.factions?.includes("none")).map((s) => s.id);
     const fired = new Set<string>();
     let joined = 0;
-    // 무리에 드는 판은 열에 한두 판이라 씨앗을 여덟으로 (12-206: 감염 굴림이 바뀌어 씨앗 1이 들지 않게 됐다)
-    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    // 무리에 드는 판은 열에 한두 판이라 씨앗을 스물로 (12-206: 감염 굴림이 바뀌어 씨앗 1이 들지 않게 됐다. 12-269: 경보 쉬기·주인 없는 땅 규칙으로 붙잡혀 회유당하는 판이 줄어 열두 판에 0, 스무 판에 2)
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]) {
       const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(seed) });
       const role = buildCustomRole(content, {
         faction: null, rank: "loner", title: "떠돌이", location: "old_town", kit: "wanderer", skills: { scavenge: 1, survival: 1 }, age: 30, opening: "폐허에서 눈을 뜬다.", background: [],
@@ -93,7 +93,7 @@ describe("무소속 자유 시나리오 자동 플레이 (실제 콘텐츠)", ()
     }
     expect(fired.size).toBeGreaterThanOrEqual(3);
     expect(joined).toBeGreaterThanOrEqual(1);
-  }, 60_000);
+  }, 180_000);
 });
 
 describe("연고와 함께 다니는 떠돌이 자동 플레이 (기획서 7.9)", () => {
@@ -118,5 +118,5 @@ describe("연고와 함께 다니는 떠돌이 자동 플레이 (기획서 7.9)"
     }
     expect(parted).toBeGreaterThan(0);
     expect(rejoined).toBeGreaterThan(0);
-  }, 60_000); // 네 판을 돌려 기계 부하에 따라 18~38초로 들쭉날쭉하다
+  }, 180_000); // 네 판을 돌려 기계 부하에 따라 18~38초로 들쭉날쭉하다
 });

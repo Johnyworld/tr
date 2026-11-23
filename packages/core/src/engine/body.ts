@@ -1,6 +1,8 @@
+import { atStake, NO_STAKES } from "../rules/stakes.ts";
+import { companyHere } from "../rules/company.ts";
 import { soak } from "./climate.ts";
 import { currentPlace, placeIndoor } from "../rules/place.ts";
-import { heldOf, pausedWhileHeld } from "../rules/held.ts";
+import { heldKind, heldOf, inQuarantine, pausedWhileHeld } from "../rules/held.ts";
 import { idleDays } from "../game/missions.ts";
 import { waterFacilityHere } from "./facilities.ts";
 import { drinkDirty, fireHere } from "./forage.ts";
@@ -70,7 +72,7 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
   // 갇힌 동안 허기는 바닥(captivity.hunger_floor)보다 나빠지지 않는다: 이야기 효과도 같다 (12-265, PT17·PT18 졸병: "할당량" 실패로 기아)
   const floorId = ctx.content.scenario.captivity?.hunger_floor;
   const held = heldOf(character);
-  if (steps > 0 && floorId && held && !held.quarantine && by !== "cheat" && trackId === ctx.content.scenario.body?.hunger?.track) {
+  if (steps > 0 && floorId && held && !inQuarantine(character) && by !== "cheat" && trackId === ctx.content.scenario.body?.hunger?.track) {
     const floor = track.levels.findIndex((l) => l.id === floorId);
     if (floor >= 0) nextIndex = Math.min(nextIndex, Math.max(index, floor));
   }
@@ -318,9 +320,12 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     // 배급 권한이 있어야 무리의 배급을 받는다 (역할의 access, 기획서 9.9)
     // 갇혀 있으면 우리 무리의 배급을 못 받는다 (붙잡은 쪽이 겨우 먹인다, 12-55)
     // 격리는 먹이는 쪽이 끼니를 제대로 준다 (12-238): 붙잡힌 것으로 치지 않는다
-    const captive = !!heldOf(player()!) && !heldOf(player()!)!.quarantine;
+    // 적에게 붙잡혔을 때만 겨우 먹인다. 우리 무리의 벌은 우리 배급, 격리는 그쪽이 먹인다 (12-269, 공통 규칙 1 heldKind)
+    const kind = heldKind(state);
+    const captive = kind === "enemy";
     // 배급은 우리 땅에서 받는다: 자정에 우리 땅 밖이면 미루고, 그날 거점에 닿으면 받는다 (공통 규칙 11, 12-238: 성당 지하에서 밤을 보내도 배급을 먹은 셈이었다)
-    const away = !captive && hasAccess(content, state, "ration") && !!player()!.factionId && !onOwnLand(state);
+    // 격리는 남의 땅이어도 미루지 않는다
+    const away = !captive && kind !== "quarantine" && hasAccess(content, state, "ration") && !!player()!.factionId && !onOwnLand(state);
     const own = !captive && !away && hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
     // 쓸모 (G1): 무리의 문화가 일하지 않는 입을 줄이면, 임무를 끝내지 않은 날이 쌓인 사람의 배급이 한 단계 내려간다
     const idleRule = own ? content.factions[player()!.factionId!]?.culture?.idle_ration_days : undefined;
@@ -713,7 +718,7 @@ export function steadyRoll(ctx: ToolContext, steps: number, cause: string): Stea
   const me = state.characters[state.playerId];
   // 정신을 잃었으면 다잡을 수 없다 (굴리지 않는다)
   if (!rule || !me || me.dead || steps <= 0 || incapacitatingSymptom(ctx.content.scenario, me)) return { steps, outcome: null, displays: [] };
-  const roll = rollPlayerCheck({ move: rule.move, stat: rule.stat, difficulty: "normal", intent: `마음을 다잡는다 (${cause})` }, ctx, { reaction: true, purpose: "reaction" });
+  const roll = rollPlayerCheck({ move: rule.move, stat: rule.stat, difficulty: "normal", intent: `마음을 다잡는다 (${cause})` }, ctx, { reaction: true, purpose: "reaction", stakes: atStake(NO_STAKES).stake });
   if (!roll.ok) return { steps, outcome: null, displays: [] };
   const left = roll.outcome === "success" ? 0 : roll.outcome === "partial" ? Math.max(1, steps - 1) : steps;
   return { steps: left, outcome: roll.outcome, displays: [roll.display] };
@@ -755,7 +760,7 @@ export function runDailyNerves(ctx: ToolContext): ToolDisplayEvent[] {
   if (!nerves || !me || me.dead) return [];
   if (levelIndex(ctx, state, me.id, nerves.track) <= 0) return [];
   if (severe(ctx, me, ctx.content.scenario.body?.hunger?.track) || severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return [];
-  const { mine, company } = safety(state, me);
+  const { mine, company } = safety(ctx.content, state, me);
   const chance = nerves.recover.chance + nerves.recover.per_point * steadyStat(ctx, me) + (mine || company ? nerves.recover.safe : 0);
   if (ctx.rng() >= chance) return [];
   const c = changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 하루를 보냈다" : company ? "곁에 사람이 있었다" : "하루를 버텨 냈다");
@@ -769,10 +774,11 @@ function steadyStat(ctx: ToolContext, me: Character): number {
 }
 
 /** 마음이 쉬는 곳: 우리 땅이거나 곁에 동행이 있다 */
-function safety(state: GameState, me: Character): { mine: boolean; company: boolean } {
+function safety(content: Content, state: GameState, me: Character): { mine: boolean; company: boolean } {
   return {
     mine: !!state.playerZone && !!me.factionId && ownedBy(state, state.playerZone, me.factionId),
-    company: state.companions.length > 0,
+    // 곁에서 움직일 수 있는 동행만 (공통 규칙 8, 12-269: 갇히거나 죽은 동행, 끌고 가는 포로도 셌다)
+    company: companyHere(state, content).length > 0,
   };
 }
 
@@ -792,7 +798,7 @@ export function sleepNerves(ctx: ToolContext, slept: number): Change | null {
   const stay = (why: string): Change => ({ line: `마음: 그대로 (${why})`, display: null, died: false });
   if (severe(ctx, me, ctx.content.scenario.body?.hunger?.track)) return stay("굶주려 푹 쉬지 못했다");
   if (severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return stay("추위에 떨어 푹 쉬지 못했다");
-  const { mine, company } = safety(state, me);
+  const { mine, company } = safety(ctx.content, state, me);
   const sure = !!level && rule.sure.includes(level);
   const chance = (mine || company ? rule.safe : rule.unsafe) + nerves.recover.per_point * steadyStat(ctx, me);
   if (!sure && ctx.rng() >= chance) return stay(mine || company ? "푹 잤지만 마음이 아직 가라앉지 않았다" : "낯선 곳에서 혼자 자 마음이 아직 가라앉지 않았다");

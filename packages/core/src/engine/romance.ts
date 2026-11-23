@@ -1,3 +1,4 @@
+import { stakesOf } from "../rules/stakes.ts";
 import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import { isCreature } from "../game/kinds.ts";
@@ -209,7 +210,7 @@ const romanceTool = defineTool({
       const day = dayOf(state.time);
       if (state.flirtDay?.[t] === day) return { ok: false, error: "오늘은 이미 다가갔다. 하루에 한 번." };
       if (!input.approach || !input.stat || !r.flirt_moves.includes(input.approach)) return { ok: false, error: `approach는 ${r.flirt_moves.join("/")} 중 하나, stat은 그 스킬의 능력.` };
-      const roll = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty: "normal", intent: `${name}에게 다가간다` }, ctx);
+      const roll = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty: "normal", intent: `${name}에게 다가간다` }, ctx, { stakes: stakesOf({ opponent: true }) });
       if (!roll.ok) return roll;
       display = roll.display;
       store.append({ type: "flirted", target: t, day });

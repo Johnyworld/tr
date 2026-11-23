@@ -1,3 +1,4 @@
+import { hearNews } from "../rules/news.ts";
 import { heldOf } from "../rules/held.ts";
 import type { Content, NpcContent } from "../content/schemas.ts";
 import { hasMet, playerCalls } from "../game/acquaintance.ts";
@@ -77,9 +78,8 @@ function finish(ctx: ToolContext, npcId: string, a: Agenda): ToolDisplayEvent[] 
   const self = now.characters[npcId];
   const knows = (now.known[now.playerId] ?? []).includes(npcId) || (!!me?.factionId && me.factionId === state.characters[npcId]?.factionId);
   if (me && !me.dead && self && knows) {
-    const fact = sentence(fill(a.news, vars));
-    store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: now.time } });
-    displays.push({ type: "belief", fact, sourceLabel: "소식" });
+    // 공통 규칙 14 (12-269): 우리 무리 사람의 일은 소식, 아는 남의 무리 사람은 소문 확률, 갇혀 있으면 닿지 않는다
+    displays.push(...hearNews(ctx, { fact: sentence(fill(a.news, vars)), factions: [self.factionId], person: npcId }));
   }
   return displays;
 }

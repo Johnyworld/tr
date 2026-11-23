@@ -1,3 +1,4 @@
+import { stakesOf } from "../rules/stakes.ts";
 import { foundCount } from "./scavenge.ts";
 import { heldOf } from "../rules/held.ts";
 import { seasonAt } from "../sim/season.ts";
@@ -120,7 +121,7 @@ export const squadOrder = defineTool({
     if (!squad.length) return { ok: false, error: "지휘할 분대가 없다. 분대 명령은 분대를 맡은 사람만 내린다." };
     const role = roleOf(content, state);
     // 무리 거점도 거점이다 (플레이 테스트 11: 시작 구역이 물류창고인 역할은 붉은연합 거점에서도 "장면에 없다"였다)
-    const home = state.characters[state.playerId]?.factionId ? baseOf(content, state.characters[state.playerId]!.factionId) : undefined;
+    const home = state.characters[state.playerId]?.factionId ? baseOf(state, content, state.characters[state.playerId]!.factionId) : undefined;
     const atBase = (!!role?.start_location && state.playerZone === role.start_location) || (!!home && state.playerZone === home);
     let zone = state.playerZone ?? role?.start_location ?? "";
     if (task.needs_zone) {
@@ -314,7 +315,7 @@ export const councilPropose = defineTool({
     // 상관이 나를 믿으면 쉽고, 못 믿으면 어렵다
     const trust = (state.relations[chair]?.[state.playerId] ?? NEUTRAL_RELATION).trust;
     const difficulty = trust >= 4 ? "easy" : trust <= -4 ? "hard" : "normal";
-    const check = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty, intent: input.intent }, ctx);
+    const check = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty, intent: input.intent }, ctx, { stakes: stakesOf({ activity: true }) });
     if (!check.ok) return check;
     const outcome = check.outcome;
     const blockedUntil = outcome === "miss" ? state.time + COUNCIL_BLOCK_MINUTES : state.time;
@@ -415,10 +416,3 @@ export function describePolicyForGm(state: GameState, content: Content): string 
   return lines.join("\n");
 }
 
-/** 곁에 둔 분대원이 주는 판정 보정 (동행 보정과 같은 자리) */
-export function squadFollowBonus(state: GameState, content: Content, move: string): number {
-  const bonus = content.scenario.command?.follow_bonus[move] ?? 0;
-  if (!bonus) return 0;
-  const squad = new Set(squadMembers(state, content));
-  return state.companions.some((id) => squad.has(id) && state.scene.present.includes(id)) ? bonus : 0;
-}

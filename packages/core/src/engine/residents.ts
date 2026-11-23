@@ -1,3 +1,4 @@
+import { baseOfNow } from "../rules/home.ts";
 import { heldOf } from "../rules/held.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
@@ -59,7 +60,8 @@ export function runResidentBodies(ctx: ToolContext, day: number = dayOf(ctx.stor
       if (delta !== 0) show(c.id, changeCondition(ctx, c.id, hunger, delta, "daily", delta < 0 ? `배급 (${level.label})` : `배급 부족 (${level.label})`)?.display);
     }
     if (cold && climate && cold.shelter && outside && rules.cold_max) {
-      const base = Object.values(content.locations).find((l) => l.owner === c.factionId && l.kind === "base");
+      const baseId = baseOfNow(state, content, c.factionId);
+      const base = baseId ? content.locations[baseId] : undefined;
       const heated = daysOfStock(content, faction, cold.shelter.resource) >= cold.shelter.min_days;
       const indoor = outside.value + (base?.cover ?? 0);
       const now = Math.max(0, indexOf(content, cold.track, c.conditions[cold.track]));

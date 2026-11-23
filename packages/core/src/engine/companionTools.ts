@@ -1,3 +1,4 @@
+import { stakesOf } from "../rules/stakes.ts";
 import { heldOf } from "../rules/held.ts";
 import { atWaitingSpot, currentPlace } from "../rules/place.ts";
 import { z } from "zod";
@@ -252,7 +253,7 @@ const companionCrossroads = defineTool({
       return { ok: true, resultText: `${josa(name, "은/는")} 기다렸다는 듯 남는다. 이제 함께 다니는 사이다 (연고).`, display: { type: "presence", npcName: `${name} · 연고`, action: "enter" } };
     }
     if (!input.move || !input.stat) return { ok: false, error: "떠나려는 사람을 붙잡으려면 판정이 필요하다 (move, stat)." };
-    const check = rollPlayerCheck({ move: input.move, stat: input.stat, difficulty: "normal", intent: `${josa(name, "을/를")} 붙잡는다` }, ctx, { target: input.target });
+    const check = rollPlayerCheck({ move: input.move, stat: input.stat, difficulty: "normal", intent: `${josa(name, "을/를")} 붙잡는다` }, ctx, { stakes: stakesOf({ opponent: true }), target: input.target });
     if (!check.ok) return check;
     const lines = [`판정: ${CHECK_OUTCOME_LABELS[check.outcome]}`];
     if (check.outcome === "success") {

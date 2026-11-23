@@ -148,14 +148,14 @@ describe("플레이 테스트 14: 판정 보정", () => {
     const w = world("role_a_squad_leader");
     const mate = content.roles.role_a_squad_leader!.squad![0]!;
     w.ctx().store.append({ type: "companion_joined", characterId: mate, kind: "squad" } as never);
-    const r = rollPlayerCheck({ move: "fight", stat: "strength", difficulty: "normal", intent: "끌어내린다" }, w.ctx(), { target: mate });
+    const r = rollPlayerCheck({ move: "fight", stat: "strength", difficulty: "normal", intent: "끌어내린다" }, w.ctx(), { target: mate, stakes: true });
     expect(r.ok).toBe(true);
     expect(r.ok && r.display.line).not.toMatch(/상대가|의 근접전/);
     // 내 편이 아닌 사람은 그대로 상대다
     const tpl = Object.entries(content.extras).find(([, t]) => t.kind !== "infected" && t.kind !== "animal")![0];
     expect(w.executeTool("spawn_extra", { template: tpl, label: "덤비는 사람" }).ok).toBe(true);
     const foe = w.state().scene.present.find((x) => x.startsWith("ex_"))!;
-    const r2 = rollPlayerCheck({ move: "fight", stat: "strength", difficulty: "normal", intent: "친다" }, w.ctx(), { target: foe });
+    const r2 = rollPlayerCheck({ move: "fight", stat: "strength", difficulty: "normal", intent: "친다" }, w.ctx(), { target: foe, stakes: true });
     expect(r2.ok && r2.display.line).toContain(playerCalls(w.state(), content, foe));
   });
 
@@ -165,9 +165,9 @@ describe("플레이 테스트 14: 판정 보정", () => {
     expect(w.executeTool("spawn_extra", { template: tpl, label: "같이 숨는 사람" }).ok).toBe(true);
     const mate = w.state().scene.present.find((x) => x.startsWith("ex_"))!;
     w.state().characters[mate]!.skills.stealth = 2;
-    const alone = rollPlayerCheck({ move: "stealth", stat: "agility", difficulty: "normal", intent: "숨는다" }, w.ctx(), { target: mate });
+    const alone = rollPlayerCheck({ move: "stealth", stat: "agility", difficulty: "normal", intent: "숨는다" }, w.ctx(), { target: mate, stakes: true });
     expect(alone.ok && alone.display.line).toContain("상대가");
-    const together = rollPlayerCheck({ move: "stealth", stat: "agility", difficulty: "normal", intent: "숨는다" }, w.ctx(), { target: mate, allies: [mate] });
+    const together = rollPlayerCheck({ move: "stealth", stat: "agility", difficulty: "normal", intent: "숨는다" }, w.ctx(), { target: mate, allies: [mate], stakes: true });
     expect(together.ok && together.display.line).not.toContain("상대가");
     expect(together.ok && together.display.line).toContain("도움");
   });

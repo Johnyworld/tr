@@ -1,3 +1,4 @@
+import { baseOfNow } from "../rules/home.ts";
 import { knowsTieBetween } from "../rules/knowledge.ts";
 import { heldOf } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
@@ -265,7 +266,7 @@ function spawnAvenger(ctx: ToolContext, deadId: string, witnessed: boolean): voi
   const pick = options[Math.floor(rng() * options.length)];
   if (!pick) return;
   const age = Math.max(16, base + pick.gap[0] + Math.floor(rng() * (pick.gap[1] - pick.gap[0] + 1)));
-  const home = Object.values(content.locations).find((l) => l.kind === "base" && l.owner === dead.factionId)?.id ?? dead.extra?.zone ?? state.playerZone;
+  const home = baseOfNow(state, content, dead.factionId) ?? dead.extra?.zone ?? state.playerZone;
   const id = `ex_${state.nextExtraNo}`;
   const usedNames = new Set(Object.values(state.characters).map((c) => c.name));
   const avenger = createExtraCharacter(content, template, { id, label: template.label, zone: home ?? null, time: state.time, usedNames }, rng);

@@ -47,3 +47,11 @@ export function atStake(f: StakeFacts): { stake: boolean; why: string[] } {
   if (f.travel === "hostile") why.push("적 땅 드나들기");
   return { stake: why.length > 0, why };
 }
+
+/** 아무것도 걸리지 않은 사실 (부르는 쪽이 걸린 것만 켠다, 12-269: 판정 도구마다 stakes를 꼭 정하게) */
+export const NO_STAKES: StakeFacts = { harm: false, opponent: false, mission: false, storyChoice: false, battle: false, treatment: false, travel: "none", exposed: false, gathering: false, activity: false };
+
+/** 걸린 것만 적어 묻는다: stakesOf({ opponent: true }) */
+export function stakesOf(f: Partial<StakeFacts>): boolean {
+  return atStake({ ...NO_STAKES, ...f }).stake;
+}

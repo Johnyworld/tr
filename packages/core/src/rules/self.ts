@@ -1,3 +1,4 @@
+import { atStake, NO_STAKES } from "./stakes.ts";
 /**
  * 공통 규칙 16: 자기다움 (docs/design.md "공통 규칙", 4.6.4, 12-246).
  *
@@ -40,7 +41,7 @@ export function againstSetting(ctx: ToolContext, settingId: string): SettingRoll
   if (sameScene && !before.won) return { ok: true, proceed: false, lines: [`${josa(`${item.confirm ?? item.name} ${me.name}`, "은/는")} 이 장면에서 이미 꺾였다: 그 행동을 하지 못한다. 다른 행동으로 바꿔 서술하라 (다시 굴리지 않는다).`], displays: [] };
   const rule = s.body?.steady;
   if (!rule) return { ok: true, proceed: true, lines: [], displays: [] };
-  const roll = rollPlayerCheck({ move: rule.move, stat: rule.stat, difficulty: "normal", intent: `${josa(item.name, "을/를")} 거스른다` }, ctx, { reaction: true, purpose: "reaction" });
+  const roll = rollPlayerCheck({ move: rule.move, stat: rule.stat, difficulty: "normal", intent: `${josa(item.name, "을/를")} 거스른다` }, ctx, { reaction: true, purpose: "reaction", stakes: atStake(NO_STAKES).stake });
   if (!roll.ok) return roll;
   const won = roll.outcome !== "miss";
   ctx.store.append({ type: "setting_rolled", setting: settingId, spot, won });

@@ -1,3 +1,4 @@
+import { hearNews } from "../rules/news.ts";
 import { heldOf } from "../rules/held.ts";
 import { maybeCaptureAfterDefeat } from "./captivity.ts";
 import { helplessAfterBattle } from "./helpless.ts";
@@ -231,13 +232,8 @@ function reportClash(ctx: ToolContext, clash: Clash): ToolDisplayEvent[] {
   const player = state.characters[state.playerId];
   if (!player || player.dead) return [];
   if (clash.attacker !== player.factionId && clash.defender !== player.factionId) return [];
-  const fact = describeClash(ctx.content, clash);
-  ctx.store.append({
-    type: "belief_added",
-    characterId: state.playerId,
-    belief: { id: `b_${state.nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: state.time, topic: WAR_TOPIC },
-  });
-  return [{ type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS.report }];
+  // 소식은 공통 규칙 14로: 갇혀 있으면 닿지 않는다 (12-269, 우회 점검: 12-243이 고친 버그가 이 길에 남았다)
+  return hearNews(ctx, { fact: describeClash(ctx.content, clash), factions: [clash.attacker, clash.defender], topic: WAR_TOPIC });
 }
 
 // ── 문구 ───────────────────────────────────────────

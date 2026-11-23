@@ -71,7 +71,7 @@ describe("플레이 테스트 15", () => {
     const mate = "a_jiho";
     w.executeTool("npc_presence", { npc_id: mate, action: "enter" });
     const steady = content.scenario.body!.steady!;
-    const r = rollPlayerCheck({ move: steady.move, stat: steady.stat, difficulty: "normal", intent: "거스른다" }, w.ctx(), { reaction: true, purpose: "reaction", allies: [mate] });
+    const r = rollPlayerCheck({ move: steady.move, stat: steady.stat, difficulty: "normal", intent: "거스른다" }, w.ctx(), { reaction: true, purpose: "reaction", allies: [mate], stakes: true });
     expect(r.ok).toBe(true);
     expect(r.ok && r.display.line).not.toContain("도움");
   });

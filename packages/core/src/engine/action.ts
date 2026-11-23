@@ -1,4 +1,4 @@
-import { heldOf } from "../rules/held.ts";
+import {heldOf, heldKind } from "../rules/held.ts";
 import { applyBuild, planBuild } from "./facilities.ts";
 import { applyTrain, planTrain } from "./training.ts";
 import { applyLesson, planLesson } from "./teaching.ts";
@@ -1275,10 +1275,17 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (input.move_to && !time.interrupted && !sweptBack && !escapeFailed) {
     if (escapeAttempt) {
       const captor = heldOf(start.characters[start.playerId])?.by;
+      const kind = heldKind(start);
       const freed = releasePlayer(ctx, false);
       if (freed) lines.push(freed);
+      // 우리 무리의 벌·격리에서 달아난 것은 용기가 아니다 (12-269, 우회 점검)
+      if (captor && kind !== "enemy") {
+        const what = kind === "own" ? "무리의 벌을 피해 갇힌 곳에서 달아났다" : `${content.factions[captor]?.name ?? captor}의 격리를 깨고 달아났다`;
+        recordDeed(ctx, { summary: what, tags: ["disobedience"], severity: kind === "own" ? 2 : 1, privacy: "semi_private", noisy: true });
+        lines.push(`달아난 일은 행적으로 남았다 ([명령 불복종] ${what}). 같은 일을 deed로 따로 남기지 않는다.`);
+      }
       // 달아난 일은 붙잡았던 무리에 남는다 (플레이 테스트 12)
-      if (captor) {
+      if (captor && kind === "enemy") {
         recordDeed(ctx, { summary: `${content.factions[captor]?.name ?? captor}에 갇혀 있다 달아났다`, tags: ["bravery"], severity: 1, privacy: "semi_private", noisy: true });
         // GM이 같은 일을 deed로 또 남기지 않게 (플레이 테스트 13: "감옥을 부수고 탈옥했다"가 따로 쌓였다)
         lines.push("탈출은 행적으로 남았다 ([용기] 갇혀 있다 달아났다). 같은 일을 deed로 따로 남기지 않는다.");
@@ -1449,6 +1456,9 @@ function rollCallAt(ctx: ToolContext, from: number): number | null {
 function missedRollCall(ctx: ToolContext, from: number, to: number) {
   const segments = rollCallSegments(ctx);
   if (!segments.length || to <= from) return;
+  // 쓰러져 있던 사람은 점호에 못 나온 것을 탓하지 않는다 (공통 규칙 2, 12-269 우회 점검: 의식을 잃은 채 sleep으로 시간을 흘려도 불복종이 남았다)
+  const me = ctx.store.getState().characters[ctx.store.getState().playerId];
+  if (!me || incapacitatingSymptom(ctx.content.scenario, me) || isIncapacitated(ctx.content, me)) return;
   // 점호 시각에 딱 깨면 나간 것으로 친다 (플레이 테스트 12: 04:00에 깼는데 놓친 것으로 셌다).
   // 점호에 깨워졌는데 그 자리에서 다시 자면 빠진 것이다 (12-251)
   const missed = segments.filter((seg) => nextSegmentStart(from, seg) < to || nextSegmentStart(from - 1, seg) === from);

@@ -1,3 +1,5 @@
+import { stakesOf } from "../rules/stakes.ts";
+import { ableNow } from "../rules/company.ts";
 import { heldOf } from "../rules/held.ts";
 import { profileOf } from "./people.ts";
 import { fameOf } from "../game/fame.ts";
@@ -132,7 +134,8 @@ function recordDeedIf(
   } else {
     // 동물·감염체는 행적을 보고 옮기지 않는다 (12-111)
     const scenario = ctx.content.scenario;
-    for (const npcId of state.scene.present) if (!isCreature(ctx.content, state.characters[npcId]) && !fooled?.includes(npcId) && sceneSees(state, scenario.move_roles.stealth, npcId)) witnesses.push({ npcId, hidden: false });
+    // 볼 수 있는 사람만: 죽은 사람·기절한 사람·갇힌 사람은 보지 못한다 (공통 규칙 7·8, 12-269 우회 점검: 기절시킨 경비가 "보았다"로 경보를 울렸다)
+    for (const npcId of state.scene.present) if (!isCreature(ctx.content, state.characters[npcId]) && ableNow(state, ctx.content, npcId) && !fooled?.includes(npcId) && sceneSees(state, scenario.move_roles.stealth, npcId)) witnesses.push({ npcId, hidden: false });
     const stealth = stealthThisTurn(state, scenario.move_roles.stealth);
     const notice = noticeMove(ctx);
     for (const character of fooled ? [] : Object.values(state.characters)) {
@@ -208,6 +211,7 @@ const lookForWitnesses = defineTool({
         intent: "누가 보지 않았는지 주변을 살핀다",
       },
       ctx,
+      { stakes: stakesOf({ activity: true }) },
     );
     if (!check.ok) return check;
     ctx.store.append({ type: "witnesses_searched", deedId: deed.id });
@@ -327,7 +331,7 @@ const spreadRumor = defineTool({
     if (!knowsName(state, me.id, target.id)) return { ok: false, error: "이름을 아는 사람에게만 누명을 씌울 수 있다." };
     const listeners = state.scene.present.filter((id) => {
       const c = state.characters[id];
-      return id !== target.id && c && !c.dead && !isCreature(content, c) && !isIncapacitated(content, c);
+      return id !== target.id && c && !isCreature(content, c) && ableNow(state, content, id) && !isIncapacitated(content, c);
     });
     if (!listeners.length) return { ok: false, error: "들을 사람이 없다. 장면에 누명을 쓸 사람 말고 다른 사람이 있어야 한다." };
     const today = dayOf(state.time);
@@ -344,7 +348,7 @@ const spreadRumor = defineTool({
     const check = rollPlayerCheck(
       { move, stat: m.stats[0]!, difficulty: hard ? "hard" : "normal", intent: `${playerCalls(state, content, target.id)}에 대해 지어낸 말을 퍼뜨린다` },
       ctx,
-      { target: listeners[0]! },
+      { target: listeners[0]!, stakes: stakesOf({ opponent: true }) },
     );
     if (!check.ok) return check;
     const who = playerCalls(state, content, target.id);

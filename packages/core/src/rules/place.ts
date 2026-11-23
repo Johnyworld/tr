@@ -13,7 +13,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
-import { ownedBy } from "./home.ts";
+import {ownedBy, baseOfNow } from "./home.ts";
 import { heldOf, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
 
@@ -244,7 +244,7 @@ export function jailIn(content: Content, zone: string | null | undefined): { id:
 export function jailFor(state: GameState, content: Content, faction: string, caughtZone: string | null): { zone: string; place: string | null } | null {
   const own = (z: string) => ownedBy(state, z, faction);
   if (caughtZone && own(caughtZone) && jailIn(content, caughtZone)) return { zone: caughtZone, place: jailIn(content, caughtZone)!.id };
-  const base = Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")?.id;
+  const base = baseOfNow(state, content, faction) ?? undefined;
   const lands = Object.keys(content.locations).filter((z) => own(z) && jailIn(content, z)).sort((a, b) => (a === base ? -1 : b === base ? 1 : a.localeCompare(b)));
   if (lands[0]) return { zone: lands[0], place: jailIn(content, lands[0])!.id };
   return base ? { zone: base, place: null } : null;

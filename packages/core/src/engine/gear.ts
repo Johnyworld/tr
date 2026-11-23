@@ -1,3 +1,4 @@
+import { stakesOf } from "../rules/stakes.ts";
 import { heldOf } from "../rules/held.ts";
 import { animalCarry } from "../game/companions.ts";
 import { effectiveSkill } from "./traits.ts";
@@ -340,7 +341,7 @@ const barterTool = defineTool({
       if (!input.move || !input.stat || (moves.length && !moves.includes(input.move))) {
         return { ok: false, error: `값이 조금 모자란다 (${giving}/${asking}). 흥정하려면 move·stat (${moves.join("/") || "교섭"})을 넣는다. 아니면 더 얹는다.` };
       }
-      const check = rollPlayerCheck({ move: input.move, stat: input.stat, difficulty: "normal", intent: `${josa(name, "과/와")} 흥정한다` }, ctx, { target: input.npc_id });
+      const check = rollPlayerCheck({ move: input.move, stat: input.stat, difficulty: "normal", intent: `${josa(name, "과/와")} 흥정한다` }, ctx, { stakes: stakesOf({ opponent: true }), target: input.npc_id });
       if (!check.ok) return check;
       display = check.display;
       lines.push(`흥정 판정: ${CHECK_OUTCOME_LABELS[check.outcome]}`);

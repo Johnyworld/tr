@@ -82,4 +82,25 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
   it("규칙 7 (본 대로): 주인공이 본 땅 주인은 rules/knowledge.ts로만 읽는다", () => {
     expect(offenders(/\bzoneSeen\b/, ["game/state.ts", "rules/knowledge.ts"])).toEqual([]);
   });
+
+  it("규칙 1 (갇힘): 격리인지는 rules/held.ts(heldKind·inQuarantine)로만 묻는다 (12-269)", () => {
+    expect(offenders(/\.quarantine\b/, ["game/state.ts", "rules/held.ts", "rules/situation.ts", "engine/care/quarantine.ts"])).toEqual([]);
+  });
+
+  it("규칙 11 (우리 땅): 무리의 거점은 지금 주인으로 찾는다 — rules/home.ts의 baseOfNow (12-269)", () => {
+    expect(offenders(/owner === [^&|]*&& [a-z]+\.kind === "base"|kind === "base" && [a-z]+\.owner ===/, ["rules/home.ts", "game/customStart.ts", "sim/autoplay.ts"])).toEqual([]);
+  });
+
+  it("규칙 11 (우리 땅): 적 땅인지는 rules/home.ts의 hostileLand로만 정한다 (12-269)", () => {
+    // 배경 만들기(background.ts)는 무리를 고르는 일이라 땅과 상관없다
+    expect(offenders(/disposition\?\.\[mine\]|<= HOSTILE;?\s*$/, ["rules/home.ts", "engine/background.ts"])).toEqual([]);
+  });
+
+  it("규칙 8 (곁의 사람): 곁에 동행이 있는지는 rules/company.ts(companyHere)로 묻는다 (12-269)", () => {
+    expect(offenders(/activeCompanions\([a-zA-Z0-9]*\)\.length|\bstate\.companions\.length\s*>\s*0/, ["rules/company.ts"])).toEqual([]);
+  });
+
+  it("규칙 14 (소식이 닿는 길): 교전 소식은 rules/news.ts의 hearNews로 (12-269). 눈앞의 고백·이름처럼 직접 들은 말은 여기 들지 않는다", () => {
+    expect(offenders(/source: "report"[^}]*topic: WAR_TOPIC/, ["rules/news.ts"])).toEqual([]);
+  });
 });

@@ -311,12 +311,8 @@ export function switchCharacter(
   for (const { clash, at } of now.recentClashes) {
     if (now.time - at > MINUTES_PER_DAY) continue;
     if (clash.attacker !== heir.factionId && clash.defender !== heir.factionId) continue;
-    const s = store.getState();
-    store.append({
-      type: "belief_added",
-      characterId: s.playerId,
-      belief: { id: `b_${s.nextBeliefNo}`, fact: describeClash(content, clash), source: "report", accuracy: "approximate", learnedAt: s.time, topic: WAR_TOPIC },
-    });
+    // 이어받는 인물이 갇혀 있으면 닿지 않는다 (공통 규칙 14, 12-269)
+    hearNews(ctx, { fact: describeClash(content, clash), factions: [clash.attacker, clash.defender], topic: WAR_TOPIC });
   }
   // 이전 캐릭터들의 행적: 이어받는 인물이 직접 보거나 들은 것은 언제 일이든 기억한다.
   // 아무것도 모르는 최근 사망자는 가장 큰 행적 하나가 소문으로 돈다

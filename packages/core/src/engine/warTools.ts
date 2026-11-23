@@ -23,7 +23,7 @@ import { runDailyBody, runDailyNpcBody, runNpcRecovery } from "./body.ts";
 import { seasonAt, seasonLabel, seasonOfDay } from "../sim/season.ts";
 import { fill, josa, sentence } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
-import { ownedBy } from "../rules/home.ts";
+import {ownedBy, hostileLand, baseOfNow } from "../rules/home.ts";
 import { onOwnLand } from "../rules/home.ts";
 import { casualtiesToPeople } from "./felt.ts";
 import { hearNews } from "../rules/news.ts";
@@ -138,7 +138,7 @@ function ensurePlayerZone(ctx: ToolContext) {
   const start = roleOf(ctx.content, state)?.start_location;
   const zone =
     (start && ctx.content.locations[start] ? start : null) ??
-    Object.values(ctx.content.locations).find((l) => l.kind === "base" && l.owner === player.factionId)?.id ??
+    baseOfNow(state, ctx.content, player.factionId) ??
     null;
   if (!zone) return;
   ctx.store.append({ type: "zone_moved", from: null, to: zone });
@@ -279,11 +279,8 @@ export function zoneOutlook(state: GameState, content: Content) {
     crossings: knownCrossings(state, content, zoneId).map((id) => ({ id, name: content.locations[id]?.name ?? id, owner: owner(id), label: content.locations[id]!.crossing!.attempt.label })),
     preparations: (state.preparations[zoneId] ?? []).map(prepLabel),
     /** 플레이어 무리에 적대하는 세력의 구역인지 */
-    hostile: (() => {
-      const owner = state.zones[zoneId]?.owner;
-      const mine = state.characters[state.playerId]?.factionId;
-      return !!owner && !!mine && owner !== mine && disposition(content, mine, owner, state) <= HOSTILE;
-    })(),
+    // 적 땅은 공통 규칙 11 하나로 (12-269: 경보는 걸리는데 GM 화면은 적 땅이 아니라고 했다)
+    hostile: hostileLand(state, content, zoneId),
   };
 }
 

@@ -1,3 +1,4 @@
+import { stakesOf } from "../rules/stakes.ts";
 import { heldOf } from "../rules/held.ts";
 import { isInfected } from "../game/kinds.ts";
 import { activeMissionOf } from "../game/missions.ts";
@@ -177,7 +178,7 @@ const explore = defineTool({
       if (state.battle) return { ok: false, error: "전투 중이다. 먼저 싸우거나 물러난다." };
       if (ex.depth >= last) return { ok: false, error: `이미 가장 깊은 곳(${label(last)})이다.` };
       const m = moveOf(content.scenario, r.move)!;
-      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: difficultyAt(ex.depth + 1, last), intent: `${josa(label(ex.depth + 1), "으로/로")} 내려간다` }, ctx);
+      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: difficultyAt(ex.depth + 1, last), intent: `${josa(label(ex.depth + 1), "으로/로")} 내려간다` }, ctx, { stakes: stakesOf({ activity: true }) });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -199,7 +200,7 @@ const explore = defineTool({
       if (state.battle) return { ok: false, error: "전투 중이다." };
       if (ex.searched.includes(ex.depth)) return { ok: false, error: `${josa(label(ex.depth), "은/는")} 이미 뒤졌다. 더 내려가거나 나온다.` };
       const m = moveOf(content.scenario, r.search_move)!;
-      const check = rollPlayerCheck({ move: r.search_move, stat: m.stats[0]!, difficulty: "normal", intent: `${josa(label(ex.depth), "을/를")} 뒤진다` }, ctx);
+      const check = rollPlayerCheck({ move: r.search_move, stat: m.stats[0]!, difficulty: "normal", intent: `${josa(label(ex.depth), "을/를")} 뒤진다` }, ctx, { stakes: stakesOf({ activity: true }) });
       if (!check.ok) return check;
       const extra = step(ctx, true);
       const now = store.getState().exploration!;
@@ -234,7 +235,7 @@ const explore = defineTool({
       return { ok: true, resultText: [`${ruin.label}에서 나왔다. 탐험은 끝났다.`, ...left].join("\n"), display, extra };
     }
     const m = moveOf(content.scenario, r.move)!;
-    const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: ex.depth >= last ? "hard" : "normal", intent: "서둘러 빠져나온다" }, ctx);
+    const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: ex.depth >= last ? "hard" : "normal", intent: "서둘러 빠져나온다" }, ctx, { stakes: stakesOf({ activity: true }) });
     if (!check.ok) return check;
     const lines = [`${ruin.label}에서 빠져나왔다. 탐험은 끝났다.`];
     if (check.outcome === "miss") {

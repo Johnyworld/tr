@@ -1,3 +1,5 @@
+import { stakesOf } from "../rules/stakes.ts";
+import { hearNews } from "../rules/news.ts";
 import { heldOf } from "../rules/held.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
@@ -93,7 +95,7 @@ const negotiate = defineTool({
 
     const factors = negotiationFactors(state, content, mine, theirs, envoy.id);
     const sum = Math.max(-2, Math.min(2, factors.reduce((n, f) => n + f.value, 0)));
-    const check = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty: DIFFICULTY[sum + 2]!, intent: input.intent }, ctx);
+    const check = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty: DIFFICULTY[sum + 2]!, intent: input.intent }, ctx, { stakes: stakesOf({ opponent: true }) });
     if (!check.ok) return check;
     const outcome = check.outcome;
     const envoyName = playerCalls(state, content, envoy.id);
@@ -161,9 +163,8 @@ export function endExpiredTruces(ctx: ToolContext): ToolDisplayEvent[] {
     if (me && (p.a === me.factionId || p.b === me.factionId)) {
       const other = p.a === me.factionId ? p.b : p.a;
       const fact = `${josa(factionName(content, other), "과/와")}의 휴전이 끝났다`;
-      const s = store.getState();
-      store.append({ type: "belief_added", characterId: s.playerId, belief: { id: `b_${s.nextBeliefNo}`, fact, source: "report", accuracy: "exact", learnedAt: s.time } });
-      displays.push({ type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS.report });
+      // 공통 규칙 14 (12-269): 갇혀 있으면 닿지 않는다
+      displays.push(...hearNews(ctx, { fact, factions: [p.a, p.b], accuracy: "exact" }));
     }
   }
   return displays;

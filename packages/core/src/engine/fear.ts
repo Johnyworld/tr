@@ -1,3 +1,4 @@
+import { companyHere } from "../rules/company.ts";
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
 import { storyletOf } from "../story/storylets.ts";
 import { josa } from "../text.ts";
@@ -62,7 +63,8 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
 
   let steps = base + (phobia ? 1 : 0);
   if (dark) steps += f.dark.steps;
-  if (activeCompanions(state).length > 0) steps -= f.companion;
+  // 곁에서 움직일 수 있는 동행만 (공통 규칙 8, 12-269)
+  if (companyHere(state, ctx.content).length > 0) steps -= f.companion;
   steps += traitsOf(ctx.content, me).reduce((n, t) => n + (t.effects.fear ?? 0), 0);
   const nerves = ctx.content.scenario.body?.nerves;
   if (f.nerves_from && nerves) {

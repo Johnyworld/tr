@@ -131,3 +131,17 @@ export function talkProblem(state: GameState, content: Content, id: string, verb
   if (incapacitatingSymptom(content.scenario, c)) return "그 사람은 의식이 없어 대답할 수 없다.";
   return null;
 }
+
+/**
+ * 곁에서 말을 주고받고 일을 할 수 있는 사람인가 (12-269, 우회 점검: 목격자·치료사·곁의 동행을 저마다 골라 죽은 사람·기절한 사람·갇힌 사람이 섞였다).
+ * 살아 있고, 스스로 움직일 수 있고(의식불명 증상 없음), 갇혀 있지 않은 사람. 동물·감염체인지는 부르는 쪽이 따로 본다
+ */
+export function ableNow(state: GameState, content: Content, id: string): boolean {
+  const c = state.characters[id];
+  return !!c && !c.dead && !c.away && !heldOf(c) && !incapacitatingSymptom(content.scenario, c);
+}
+
+/** 곁에 있는 동행 (공포가 가라앉고 마음이 쉬는 몫): 장면에 있고 움직일 수 있는 동행. 끌고 가는 포로는 빼고 */
+export function companyHere(state: GameState, content: Content): string[] {
+  return activeCompanions(state).filter((id) => state.bonds[id]?.kind !== "prisoner" && ableNow(state, content, id));
+}

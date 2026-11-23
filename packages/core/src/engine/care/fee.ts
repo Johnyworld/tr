@@ -27,7 +27,7 @@ export function planHealerPay(ctx: ToolContext, healerId: string, choice: FeeCho
   const faction = healer.factionId ? state.factions[healer.factionId] : undefined;
   const label = ctx.content.scenario.resources.find((r) => r.id === cost.resource)?.label ?? cost.resource;
   // 거점 밖에서는 창고가 아니라 지닌 약을 쓴다: 치료사 본인 먼저, 그다음 곁의 같은 무리 사람 (값싼 것부터)
-  const atBase = !!healer.factionId && state.playerZone === baseOf(ctx.content, healer.factionId);
+  const atBase = !!healer.factionId && state.playerZone === baseOf(state, ctx.content, healer.factionId);
   let carried: HealerPay["carried"] = null;
   if (!atBase) {
     const holders = [healerId, ...state.scene.present.filter((id) => id !== healerId && id !== player.id && !!healer.factionId && state.characters[id]?.factionId === healer.factionId && !state.characters[id]?.dead)];

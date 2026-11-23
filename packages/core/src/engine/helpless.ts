@@ -95,7 +95,8 @@ export function runHelpless(ctx: ToolContext, actionStartedAt?: number): ToolDis
   if (biter) return bitten(ctx, biter);
 
   // 장면에 아무도 없다: 구역 주인 무리의 사람이 찾아낼 수 있다
-  const owner = state.zones[zone]?.owner ?? content.locations[zone]?.owner ?? null;
+  // 지금 주인만: 주인 없는 땅이면 아무도 찾지 않는다 (공통 규칙 11, 12-269)
+  const owner = state.zones[zone]?.owner ?? null;
   const side = owner ? factionSide(ctx, owner) : null;
   if (owner && side && ctx.rng() < rules.found_chance) {
     return side === "ally" ? byFaction(ctx, owner) : byEnemies(ctx, [], owner);
@@ -161,7 +162,7 @@ function byAllies(ctx: ToolContext, allies: Character[]): ToolDisplayEvent[] {
   const me = state.characters[state.playerId]!;
   // 동행이 아닌 다른 무리 사람이면 자기 무리 거점으로 데려간다 (같은 무리면 우리 거점으로)
   const carrier = allies.find((c) => c.factionId && !state.companions.includes(c.id));
-  const base = carrier ? baseOf(ctx.content, carrier.factionId) : undefined;
+  const base = carrier ? baseOf(ctx.store.getState(), ctx.content, carrier.factionId) : undefined;
   const name = playerCalls(state, ctx.content, allies[0]!.id);
   const known = (state.known[me.id] ?? []).includes(allies[0]!.id);
   const who = known ? name : "누군가";
@@ -178,7 +179,7 @@ function byAllies(ctx: ToolContext, allies: Character[]): ToolDisplayEvent[] {
 /** 장면에 없던 구역 주인 무리(우리 편)의 사람이 찾아냈다 */
 function byFaction(ctx: ToolContext, factionId: string): ToolDisplayEvent[] {
   const state = ctx.store.getState();
-  const base = baseOf(ctx.content, factionId);
+  const base = baseOf(ctx.store.getState(), ctx.content, factionId);
   const name = ctx.content.factions[factionId]?.name ?? factionId;
   ctx.store.append({ type: "helpless_resolved", outcome: base && base !== state.playerZone ? "carried" : "tended", by: factionId });
   if (base && base !== state.playerZone) {

@@ -1,6 +1,7 @@
+import { stakesOf } from "../rules/stakes.ts";
 import { formatDuration, routeMinutes } from "../rules/time.ts";
 import { onCaptured } from "../rules/consequence.ts";
-import { heldByOwn, heldOf } from "../rules/held.ts";
+import {heldByOwn, heldOf, heldKind } from "../rules/held.ts";
 import { formatTime } from "../rules/time.ts";
 import { z } from "zod";
 import { isCreature } from "../game/kinds.ts";
@@ -19,7 +20,7 @@ import { recordDeed } from "./reputationTools.ts";
 import { TROUBLE_TOPIC, troublesOf } from "./factionTalk.ts";
 import { activeMissionOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
-import { ownedBy } from "../rules/home.ts";
+import {ownedBy, baseOfNow } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
 import { hearNews } from "../rules/news.ts";
 import { protectedFromWorld } from "../rules/company.ts";
@@ -35,7 +36,8 @@ import { currentPlace, jailFor, jailIn } from "../rules/place.ts";
  */
 
 const rules = (content: Content) => content.scenario.captivity;
-export const baseOf = (content: Content, faction: string) => Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")?.id;
+/** 그 무리의 지금 거점 (공통 규칙 11 baseOfNow) */
+export const baseOf = (state: GameState, content: Content, faction: string | null | undefined) => baseOfNow(state, content, faction) ?? undefined;
 
 /**
  * 주인공이 붙잡힌다. 갇히는 곳은 zone이 있으면 그 구역(가두는 장소가 있으면 그 장소),
@@ -144,7 +146,7 @@ export function maybeCaptureAfterDefeat(ctx: ToolContext, enemy: string): { line
     const caught = capturePlayer(ctx, enemy, undefined, "싸움에 지고 쓰러진 채로 끌려갔다");
     return { lines: caught ? [caught] : [], displays: [] };
   }
-  const roll = rollPlayerCheck({ move: flee.move, stat: flee.stat, difficulty: "normal", intent: "진 싸움터에서 빠져나간다" }, ctx);
+  const roll = rollPlayerCheck({ move: flee.move, stat: flee.stat, difficulty: "normal", intent: "진 싸움터에서 빠져나간다" }, ctx, { stakes: stakesOf({ battle: true }) });
   if (!roll.ok) return none;
   const displays: ToolDisplayEvent[] = [roll.display];
   if (roll.outcome === "miss") {
@@ -201,7 +203,7 @@ export function warCaptures(ctx: ToolContext, clashes: readonly Clash[]): ToolDi
       .filter((ch) => !c.war_capture_ranks.length || c.war_capture_ranks.includes(ch.rank))
       .sort((a, b) => a.id.localeCompare(b.id));
     const taken = pool[Math.floor(ctx.rng() * pool.length)];
-    const zone = baseOf(ctx.content, winner);
+    const zone = baseOf(ctx.store.getState(), ctx.content, winner);
     if (!taken || !zone) continue;
     captureNpc(ctx, taken.id, winner, zone);
     // 우리 무리 사람이 끌려갔으면 소식으로, 남의 무리면 만난 사람만 소문으로 (공통 규칙 14). 이름을 아는 사람만
@@ -229,11 +231,16 @@ export function describeCaptivityForGm(state: GameState, content: Content): stri
   const me = state.characters[state.playerId];
   if (!me) return "";
   const lines: string[] = [];
-  if (heldOf(me) && heldByOwn(state)) {
+  const kind = heldKind(state);
+  if (kind === "quarantine") {
+    // 격리 (12-238): 빼앗긴 것도 탈출 안내도 없다 (12-269, 우회 점검: 적의 포로 글이 나왔다)
+    const h = heldOf(me)!;
+    lines.push(`주인공은 ${content.factions[h.by]?.name ?? h.by}의 격리로 ${content.locations[h.zone]?.name ?? h.zone}에 있다.${h.releaseAt ? ` ${formatTime(h.releaseAt)}에 풀린다.` : ""} 지닌 것은 그대로고 끼니는 그쪽이 준다. 달아나면 격리를 깬 것이다.`);
+  } else if (kind === "own") {
     // 우리 무리의 벌 (12-261, PT16 졸병: "무기와 탄은 빼앗겼다"·탈출 안내가 그대로 나왔다)
     const h = heldOf(me)!;
     lines.push(`주인공은 우리 무리(${content.factions[h.by]?.name ?? h.by})의 벌로 ${content.locations[h.zone]?.name ?? h.zone}에 갇혀 있다.${h.releaseAt ? ` ${formatTime(h.releaseAt)}에 풀린다.` : ""} 지닌 것은 그대로다. 달아나면 무리의 벌을 어긴 것이다. 갇힌 동안 적의 포로 이야기는 열리지 않는다.`);
-  } else if (heldOf(me)) {
+  } else if (kind === "enemy") {
     const c = rules(content);
     lines.push(
       `주인공은 갇혀 있다: ${content.factions[heldOf(me)!.by]?.name ?? heldOf(me)!.by}의 ${content.locations[heldOf(me)!.zone]?.name ?? heldOf(me)!.zone}. ` +
@@ -346,7 +353,7 @@ const handlePrisoner = defineTool({
       if (!input.approach || !input.stat || !moves.includes(input.approach)) return { error: `approach는 ${moves.join("/")} 중 하나, stat은 그 스킬의 능력.` } as const;
       const trust = state.relations[t.id]?.[me.id]?.trust ?? 0;
       const difficulty = trust >= 4 ? "easy" : trust <= -4 ? "hard" : "normal";
-      const r = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty, intent: `포로 ${name}` }, ctx);
+      const r = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty, intent: `포로 ${name}` }, ctx, { stakes: stakesOf({ opponent: true }) });
       return r.ok ? ({ outcome: r.outcome, display: r.display } as const) : ({ error: r.error } as const);
     };
     const lines: string[] = [];

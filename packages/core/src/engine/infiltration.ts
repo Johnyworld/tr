@@ -1,3 +1,4 @@
+import { stakesOf } from "../rules/stakes.ts";
 import { onSpotted } from "../rules/consequence.ts";
 import { heldOf, heldSeenZone } from "../rules/held.ts";
 import { josa } from "../text.ts";
@@ -156,7 +157,7 @@ const infiltrate = defineTool({
       if (inf.depth >= deepest) return { ok: false, error: `이미 가장 깊은 곳(${depthLabel(deepest)})이다. act로 목표를 한다.` };
       const m = moveOf(content.scenario, r.move)!;
       const advanceMission = missionForCheck(ctx.store.getState(), r.move);
-      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(depthLabel(inf.depth + 1), "으로/로")} 숨어든다` }, ctx, { forMission: advanceMission });
+      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(depthLabel(inf.depth + 1), "으로/로")} 숨어든다` }, ctx, { stakes: stakesOf({ exposed: true }), forMission: advanceMission });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -179,7 +180,7 @@ const infiltrate = defineTool({
 
     if (input.action === "listen") {
       const m = moveOf(content.scenario, r.listen)!;
-      const check = rollPlayerCheck({ move: r.listen, stat: m.stats[0]!, difficulty: "normal", intent: "멈춰서 낌새를 살핀다" }, ctx, { forMission: missionForCheck(ctx.store.getState(), r.listen) });
+      const check = rollPlayerCheck({ move: r.listen, stat: m.stats[0]!, difficulty: "normal", intent: "멈춰서 낌새를 살핀다" }, ctx, { stakes: stakesOf({ exposed: true }), forMission: missionForCheck(ctx.store.getState(), r.listen) });
       if (!check.ok) return check;
       const extra = step(ctx);
       const alarm = store.getState().infiltration!.alarm;
@@ -195,7 +196,7 @@ const infiltrate = defineTool({
       const goal = r.goals.find((g) => g.id === inf.goal)!;
       const m = moveOf(content.scenario, goal.move)!;
       const goalMission = missionForCheck(ctx.store.getState(), goal.move);
-      const check = rollPlayerCheck({ move: goal.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: goal.label }, ctx, { forMission: goalMission });
+      const check = rollPlayerCheck({ move: goal.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: goal.label }, ctx, { stakes: stakesOf({ exposed: true }), forMission: goalMission });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -241,7 +242,7 @@ const infiltrate = defineTool({
     const m = moveOf(content.scenario, r.move)!;
     const harder = (inf.depth >= deepest ? 1 : 0) + (caught ? 1 : 0);
     const leaveMission = missionForCheck(ctx.store.getState(), r.move);
-    const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, harder), intent: "빠져나온다" }, ctx, { forMission: leaveMission });
+    const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, harder), intent: "빠져나온다" }, ctx, { stakes: stakesOf({ exposed: true }), forMission: leaveMission });
     if (!check.ok) return check;
     store.append({ type: "infiltration_ended", how: check.outcome === "miss" ? "caught" : "out" });
     const counted = missionNote(ctx, leaveMission).map((l) => ` ${l}`).join("");

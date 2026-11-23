@@ -35,7 +35,8 @@ describe("공통 규칙 6: 걸린 판정", () => {
       readFileSync(file, "utf8")
         .split("\n")
         .forEach((line, i) => {
-          if (/\bstakes:(?!\s*atStake\()/.test(line) && !/stakes\?:\s*boolean/.test(line)) offenders.push(`${rel}:${i + 1}`);
+          // atStake·stakesOf(규칙 6의 함수)로만. 판정 함수의 인자 모양(stakes: boolean)은 빼고 (12-269: stakes를 꼭 넘기게 했다)
+          if (/\bstakes:(?!\s*(atStake|stakesOf)\()/.test(line) && !/stakes\??:\s*boolean/.test(line)) offenders.push(`${rel}:${i + 1}`);
         });
     }
     expect(offenders).toEqual([]);

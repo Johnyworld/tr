@@ -63,7 +63,7 @@ import { recordDeed } from "./reputationTools.ts";
 import { grantRewards } from "./rewards.ts";
 import { itemResource } from "./market.ts";
 import { cargoOf, entrustedHeld } from "../rules/entrusted.ts";
-import { ownedBy } from "../rules/home.ts";
+import {ownedBy, baseOfNow } from "../rules/home.ts";
 import { storyTitle } from "./storyletTools.ts";
 import { learned } from "../rules/skill.ts";
 
@@ -102,16 +102,16 @@ export function describeMission(s: Scenario, mission: MissionInstance): string {
 }
 
 /** 임무 템플릿의 where를 이 판의 장소로 (배정할 때 정해 둔다) */
-export function missionPlace(content: Content, where: string | undefined, factionId: string | null): MissionInstance["place"] {
+export function missionPlace(state: GameState, content: Content, where: string | undefined, factionId: string | null): MissionInstance["place"] {
   if (!where) return null;
   const zoneName = (id: string) => content.locations[id]?.name ?? id;
   if (where === "outside") {
-    const base = factionId ? baseOf(content, factionId) : undefined;
+    const base = factionId ? baseOf(state, content, factionId) : undefined;
     return base ? { zone: null, notZone: base, enemyOf: null, label: `${zoneName(base)} 밖` } : null;
   }
   // 거점과 맞닿은 곳 (12-237: 쪽문 밖 발자국을 쫓는데 쪽문 앞에서 한 일은 세지 않았다)
   if (where === "near") {
-    const base = factionId ? baseOf(content, factionId) : undefined;
+    const base = factionId ? baseOf(state, content, factionId) : undefined;
     return base ? { zone: null, notZone: null, enemyOf: null, zones: [base, ...neighbors(content, base)], label: `${josa(zoneName(base), "과/와")} 맞닿은 곳` } : null;
   }
   if (where === "enemy") return factionId ? { zone: null, notZone: null, enemyOf: factionId, label: "적대하는 무리의 땅" } : null;
@@ -181,7 +181,7 @@ const assignMission = defineTool({
         const group = ctx.content.scenario.mission_move_groups.find((g) => g.includes(r.check));
         return group ? { ...r, alts: group.filter((m) => m !== r.check) } : r;
       }),
-      place: missionPlace(ctx.content, template.where, player.factionId),
+      place: missionPlace(ctx.store.getState(), ctx.content, template.where, player.factionId),
       progress: template.requirements.map(() => 0),
       fails: template.requirements.map(() => 0),
       ...(template.unseen ? { unseen: true } : {}),
@@ -319,7 +319,7 @@ const reportMission = defineTool({
     }
     // 담을 메우는 일감은 그 무리 거점을 보강한다 (12-48)
     const fortifies = ctx.content.missions[mission.templateId]?.fortifies;
-    const base = Object.values(ctx.content.locations).find((l) => l.owner === lender && l.kind === "base")?.id;
+    const base = baseOfNow(ctx.store.getState(), ctx.content, lender);
     const fortSteps = fortifies ? (result.outcome === "success" ? fortifies : result.outcome === "partial" ? Math.trunc(fortifies / 2) : 0) : 0;
     if (fortSteps > 0 && base && ownedBy(ctx.store.getState(), base, lender)) ctx.store.append({ type: "zone_fortified", zone: base, delta: fortSteps });
     // 소탕 일감은 그 무리 땅에서 감염체가 가장 많이 몰려든 곳을 쓸어 낸다 (12-120). 일부 완수는 절반
@@ -446,7 +446,7 @@ const abandonMission = defineTool({
 function travelAllowance(ctx: ToolContext, where: string | null | undefined, factionId: string | null): number {
   const state = ctx.store.getState();
   const start = state.playerZone;
-  const place = missionPlace(ctx.content, where ?? undefined, factionId);
+  const place = missionPlace(ctx.store.getState(), ctx.content, where ?? undefined, factionId);
   if (!start || !place) return 0;
   const probe = { place } as MissionInstance;
   const seen = new Set([start]);

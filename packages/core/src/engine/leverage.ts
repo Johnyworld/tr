@@ -1,3 +1,4 @@
+import { stakesOf } from "../rules/stakes.ts";
 import { talkProblem } from "../rules/company.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
@@ -118,7 +119,7 @@ const bribeTool = defineTool({
     let display: ToolDisplayEvent = { type: "time", activityLabel: "뇌물", durationLabel: "", fromLabel: "", toLabel: "" };
     if (!accepted && offered * 2 >= price) {
       const m = moveOf(content.scenario, rules.move)!;
-      const check = rollPlayerCheck({ move: rules.move, stat: m.stats[0]!, difficulty: "normal", intent: `${who}에게 뇌물을 내밀며 부탁한다` }, ctx, { target: input.npc_id });
+      const check = rollPlayerCheck({ move: rules.move, stat: m.stats[0]!, difficulty: "normal", intent: `${who}에게 뇌물을 내밀며 부탁한다` }, ctx, { stakes: stakesOf({ opponent: true }), target: input.npc_id });
       if (!check.ok) return check;
       accepted = check.outcome !== "miss";
       checkLine = `판정 ${check.checkId}: ${check.display.outcomeLabel}. `;
@@ -203,7 +204,7 @@ const blackmailTool = defineTool({
     const last = state.blackmails.find((b) => b.npcId === input.npc_id && b.by === me);
     if (last && dayOf(state.time) - dayOf(last.at) < DEMAND_EVERY_DAYS) return { ok: false, error: `${josa(who, "은/는")} 오늘 이미 다그쳤다.` };
     const m = moveOf(content.scenario, rules.move)!;
-    const check = rollPlayerCheck({ move: rules.move, stat: m.stats[0]!, difficulty: "normal", intent: `${who}의 약점을 쥐고 요구한다` }, ctx, { target: input.npc_id });
+    const check = rollPlayerCheck({ move: rules.move, stat: m.stats[0]!, difficulty: "normal", intent: `${who}의 약점을 쥐고 요구한다` }, ctx, { stakes: stakesOf({ opponent: true }), target: input.npc_id });
     if (!check.ok) return check;
     let text: string;
     if (check.outcome === "success") {

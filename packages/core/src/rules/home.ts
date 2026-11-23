@@ -46,3 +46,26 @@ export function myPeopleLiveHere(state: GameState, content: Content, zone: strin
 }
 
 const KIN: readonly string[] = ["parent", "child", "sibling", "spouse"];
+
+/**
+ * 이 무리의 지금 거점 (12-269, 우회 점검: 콘텐츠의 처음 주인으로 찾아, 거점이 함락되면 "집으로 돌아왔다"가 적의 거점이었다).
+ * 거점(kind base) 가운데 지금 그 무리 것인 곳. 없으면 null
+ */
+export function baseOfNow(state: Zones, content: Content, factionId: string | null | undefined): string | null {
+  if (!factionId) return null;
+  // 땅 주인이 아직 정해지지 않은 세계(만드는 중)는 콘텐츠의 처음 주인으로
+  const ownerOf = (id: string, first: string | null | undefined) => (state.zones[id] ? state.zones[id]!.owner : (first ?? null));
+  return Object.values(content.locations).find((l) => l.kind === "base" && ownerOf(l.id, l.owner) === factionId)?.id ?? null;
+}
+
+/**
+ * 이 구역이 주인공을 적대하는 땅인가 (12-269, 우회 점검: 경보·잠입·GM 화면이 "적 땅"을 세 가지로 정했다).
+ * 땅 주인이 주인공 무리를 나쁘게 보면(태도 0 미만) 적 땅. 무소속이면 낯선 사람을 잡아가는 무리나 현상금을 건 무리의 땅
+ */
+export function hostileLand(state: GameState, content: Content, zone: string | null | undefined): boolean {
+  const owner = zone ? state.zones[zone]?.owner : null;
+  const mine = state.characters[state.playerId]?.factionId ?? null;
+  if (!owner || owner === mine) return false;
+  if (mine) return (state.factions[owner]?.disposition?.[mine] ?? 0) < 0;
+  return !!content.scenario.helpless?.prey_on_strangers.includes(owner) || (state.bounties ?? []).includes(owner);
+}

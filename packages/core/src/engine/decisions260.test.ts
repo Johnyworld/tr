@@ -33,7 +33,7 @@ describe("판정 줄·설정 거스르기 (12-260)", () => {
   it("닥친 일에 버티는 판정은 줄에 까닭을 붙인다", () => {
     const w = world("role_a_grunt");
     const steady = content.scenario.body!.steady!;
-    const r = rollPlayerCheck({ move: steady.move, stat: steady.stat, difficulty: "normal", intent: "마음을 다잡는다 (밤길)" }, w.ctx(), { reaction: true, purpose: "reaction" });
+    const r = rollPlayerCheck({ move: steady.move, stat: steady.stat, difficulty: "normal", intent: "마음을 다잡는다 (밤길)" }, w.ctx(), { reaction: true, purpose: "reaction", stakes: true });
     expect(r.ok && r.display.line).toContain("· 마음을 다잡는다 (밤길):");
   });
 });

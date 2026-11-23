@@ -62,3 +62,23 @@ export function heldByOwn(state: { playerId: string; characters: Record<string, 
   const held = heldOf(me);
   return !!held && !!me?.factionId && held.by === me.factionId;
 }
+
+/**
+ * 주인공이 어떻게 갇혀 있는가 (12-269, 우회 점검: 부르는 쪽이 quarantine 표시를 직접 읽어 격리·벌을 적의 포로처럼 다뤘다).
+ * - enemy: 다른 무리에 붙잡힘 (빼앗김·겨우 먹임·탈출은 용기)
+ * - own: 우리 무리의 벌 (지닌 것 그대로, 우리 배급, 달아나면 벌을 어김)
+ * - quarantine: 치료사 무리의 격리 (지닌 것 그대로, 그쪽이 먹임)
+ * 갇혀 있지 않으면 null
+ */
+export type HeldKind = "enemy" | "own" | "quarantine";
+export function heldKind(state: Parameters<typeof heldByOwn>[0]): HeldKind | null {
+  const held = playerHeld(state);
+  if (!held) return null;
+  if (held.quarantine) return "quarantine";
+  return heldByOwn(state) ? "own" : "enemy";
+}
+
+/** 그 사람이 격리로 갇혀 있는가 (주인공이 아닌 사람 포함) */
+export function inQuarantine(c: { captive?: Held | null } | null | undefined): boolean {
+  return !!heldOf(c)?.quarantine;
+}

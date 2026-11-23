@@ -1524,7 +1524,6 @@ const LONG_IN_THREAT = ["sleep", "wait", "guard_duty", "rest", "search", "work"]
 const MAX_HARM_STEPS = 2;
 
 /** 이만큼(분) 넘게 자면 동행이 아닌 사람은 장면에서 빠진다 */
-const SCENE_CLEAR_SLEEP_MINUTES = 4 * 60;
 
 /** 판정 결과에 따른 피해 (원칙 3: 사망은 부상 트랙과 판정 결과로만) */
 function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, cause: string, opponentId: string | null = null, kind: string | null = null, spend: { activity: Activity; forMission: string | null } | null = null, fightLike = false) {
@@ -1775,19 +1774,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     }
     // 점호 (G2): 무리의 점호 시각을 자면서 넘기면 작은 불복종 행적이 남는다 (한 번 잠에 한 번)
     if (activity === "sleep") missedRollCall(ctx, from, to);
-    // 긴 잠 뒤에는 동행이 아닌 사람은 제 할 일로 흩어진다 (플레이 테스트 13: 밤새 자고 나도 어제 들인 의무병이 장면에 남았다)
-    // 갇혀 있어도 그렇다: 같이 갇힌 사람만 남는다 (12-265, PT18 졸병: 조장·짐꾼·보초·돌려보낸 구출자가 엿새 동안 수용소 장면에 쌓였다)
-    if (activity === "sleep" && to - from >= SCENE_CLEAR_SLEEP_MINUTES) {
-      const s2 = store.getState();
-      const keep = new Set(activeCompanions(s2));
-      // 일과상 이 자리가 제자리인 사람은 그대로 둔다 (12-261, PT16 섬: 같은 숙소에서 자는 짝이 "자리를 떴다")
-      const myPlace = whereIs(s2, content, s2.playerId)?.place ?? null;
-      const homeHere = (id: string) => !!myPlace && !!content.npcs[id] && npcPlaceAt(s2, content, id) === myPlace;
-      const gone = s2.scene.present.filter((id) => !keep.has(id) && !homeHere(id) && !heldOf(s2.characters[id]) && !s2.characters[id]?.dead && !(s2.activeStorylet && Object.values(s2.activeStorylet.cast ?? {}).includes(id)));
-      for (const id of gone) store.append({ type: "npc_left", npcId: id });
-      const named = gone.filter((id) => !!content.npcs[id]).map((id) => playerCalls(s2, content, id));
-      if (named.length) sleepNote = [sleepNote, `자는 사이 ${named.join(", ")}${josa(named.at(-1)!, "은/는").slice(named.at(-1)!.length)} 제 할 일로 자리를 떴다 (장면에서 빠졌다).`].filter(Boolean).join("\n");
-    }
+    // 긴 잠 뒤에 흩어지는 사람은 시간대가 바뀔 때 장면을 비우는 규칙이 맡는다 (B④, 공통 규칙 15 sceneLeavesAt)
   } else {
     // 이동은 길마다 정해진 시간, 짐이 무거우면 15분 더 (12-239)
     const me = state.characters[state.playerId];

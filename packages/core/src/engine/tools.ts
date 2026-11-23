@@ -70,7 +70,7 @@ import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { PLACE_TOOLS } from "./placeTools.ts";
-import { hereWithMe, npcPlaceAt, placeById, sharesPlace, routineAway } from "../rules/place.ts";
+import { hereWithMe, npcPlaceAt, placeById, sharesPlace, routineAway, sceneLeavesAt } from "../rules/place.ts";
 import { zoneOf } from "../rules/place.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
@@ -502,6 +502,20 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
       outcome = { ...outcome, resultText: [outcome.resultText, ...lines].filter(Boolean).join("\n"), extra: [...(outcome.extra ?? []), ...after] };
     }
   }
+  // 시간대가 바뀌면 장면을 비운다 (B④, 공통 규칙 15 sceneLeavesAt). 이번 행동이 겨눈 사람은 남는다
+  if (ctx.store.getState().time > state.time) {
+    // 치료를 받았으면 장면의 치료사도 이번 행동의 상대다
+    const treated = !!(parsed.data as { treatment?: unknown }).treatment;
+    const healers = treated ? state.scene.present.filter((id) => !!ctx.content.npcs[id]?.healer) : [];
+    const gone = sceneLeavesAt(ctx.store.getState(), ctx.content, state.time, [...mentionedIds(parsed.data), ...healers]);
+    if (gone.length) {
+      const s2 = ctx.store.getState();
+      for (const id of gone) ctx.store.append({ type: "npc_left", npcId: id });
+      const names = gone.map((id) => playerCalls(s2, ctx.content, id));
+      const note = `시간이 흘러 ${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 제 할 일로 자리를 떴다 (장면에서 빠졌다).`;
+      if (outcome.ok) outcome = { ...outcome, resultText: [outcome.resultText, note].filter(Boolean).join("\n") };
+    }
+  }
   // 시간 없이 우리 거점에 닿았으면(이야기로 풀려나 돌아옴 등) 그날 못 받은 배급을 지금 받는다. 다음 행동이 거절돼도 말없이 바뀌지 않게 (12-265, PT18 졸병)
   if (outcome.ok && ctx.store.getState().playerZone !== state.playerZone) {
     const late = runLateRation(ctx);
@@ -551,9 +565,9 @@ function mentionedIds(input: unknown): string[] {
   const ids: string[] = [];
   for (const k of ID_KEYS) if (typeof o[k] === "string") ids.push(o[k] as string);
   for (const k of ["with", "place_with"]) if (Array.isArray(o[k])) ids.push(...(o[k] as unknown[]).filter((x): x is string => typeof x === "string"));
-  for (const k of ["check", "treatment"]) {
+  for (const k of ["check", "treatment", "lesson"]) {
     const sub = o[k] as Record<string, unknown> | null | undefined;
-    if (sub && typeof sub === "object") for (const kk of ["opponent", "target", "healer"]) if (typeof sub[kk] === "string") ids.push(sub[kk] as string);
+    if (sub && typeof sub === "object") for (const kk of ["opponent", "target", "healer", "teacher"]) if (typeof sub[kk] === "string") ids.push(sub[kk] as string);
   }
   return [...new Set(ids)];
 }

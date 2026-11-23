@@ -17,6 +17,7 @@ import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
 import {ownedBy, baseOfNow } from "./home.ts";
 import { heldOf, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
+import { isCreature } from "../game/kinds.ts";
 
 export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean; wade?: boolean; description?: string; near: readonly string[]; road: boolean; to: readonly string[]; gate: boolean };
 
@@ -50,11 +51,12 @@ export function roadsIn(state: GameState, content: Content, zone: string | null 
 
 /**
  * 구역에 들어올 때 도착하는 길 (장소 개편: "막 들어선 자리"를 대신한다): 떠나온 구역으로 이어지는 길, 없으면 첫 길.
- * 장소가 없는 구역이면 null
+ * 길이 없는 구역이면 null
  */
 export function arrivalPlace(state: GameState, content: Content, to: string, from: string | null = null): string | null {
   const roads = roadsIn(state, content, to);
-  return (roads.find((r) => !!from && r.to.includes(from)) ?? roads[0] ?? placesIn(state, content, to)[0])?.id ?? null;
+  // 길이 없는 구역(다른 월드 팩·테스트)은 예전처럼 장소를 정하지 않는다
+  return (roads.find((r) => !!from && r.to.includes(from)) ?? roads[0])?.id ?? null;
 }
 
 /** 이웃 장소 id (콘텐츠 near + 즉흥 장소) */
@@ -435,6 +437,36 @@ export function whereLabel(state: GameState, content: Content, id: string): stri
 export function inZone(state: GameState, content: Content, id: string): boolean {
   const w = whereIs(state, content, id);
   return !!w && !!w.zone && w.zone === state.playerZone;
+}
+
+/** 시간대 열쇠 (날 × 시간대): 둘이 다르면 시간대가 바뀌었다 */
+function segmentKey(time: number): number {
+  return Math.floor(time / 1440) * TIME_SEGMENTS.length + TIME_SEGMENTS.indexOf(segmentOf(time));
+}
+
+/**
+ * 시간대가 바뀌면 장면을 비운다 (B④ 2026-11-23, 장소 개편 위에서. PT12 떠돌이: 새벽에 들인 할머니가 다음 날 새벽까지 "함께 있는 인물",
+ * PT17 섬: 저장고로 들어간 배역이 부두 장면에 남아 임무 짝이 됐다). 긴 잠 뒤에 흩어지던 규칙(12-261·12-265)을 이것으로 합친다.
+ * 남는 사람: 곁의 동행, 진행 중인 이야기의 배역, 갇힌 사람(함께 갇힌 사람), 새 시간대 자리가 지금 장소인 사람(일과·집),
+ * 이번 행동이 겨눈 사람(involved), 사람이 아닌 것(감염체·짐승: 위협은 공통 규칙 4의 몫). 새 시간대 일과가 구역 밖이면 빠진다.
+ * 전투·잠입 중이면 비우지 않는다. 돌려주는 것: 장면에서 뺄 사람
+ */
+export function sceneLeavesAt(state: GameState, content: Content, from: number, involved: readonly string[] = []): string[] {
+  // 장소를 모르면(장소가 없는 구역) 누가 제자리인지 몰라 비우지 않는다
+  if (segmentKey(from) === segmentKey(state.time) || state.battle || state.infiltration || !state.playerPlace) return [];
+  const companions = new Set(state.companions.filter((id) => !state.bonds[id]?.apart));
+  const cast = new Set(Object.values(state.activeStorylet?.cast ?? {}));
+  return state.scene.present.filter((id) => {
+    const c = state.characters[id];
+    if (!c || c.dead || companions.has(id) || cast.has(id) || heldOf(c) || involved.includes(id)) return false;
+    if (c.extra && !content.npcs[id]) {
+      // 이름 없는 사람: 사람이 아닌 것은 남고, 집이 이 장소면 남는다
+      if (isCreature(content, c)) return false;
+      return !(c.extra.place && c.extra.place === state.playerPlace);
+    }
+    if (routineAway(state, content, id)) return true;
+    return !(state.playerPlace && npcPlaceAt(state, content, id) === state.playerPlace);
+  });
 }
 
 /** 이 인물이 주인공과 같은 장소에 있는가 (장소가 없는 구역이면 같은 구역이면 그렇다) */

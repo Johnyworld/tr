@@ -12,6 +12,10 @@ import { bleedingBlocksRecovery } from "../bleeding.ts";
 import { type ToolContext, type ToolDisplayEvent } from "../toolkit.ts";
 import { changeCondition, isIncapacitated, type Change, levelIndex } from "../body.ts";
 import { quarantineAfterCare } from "./quarantine.ts";
+import { careUsedToday } from "./slots.ts";
+import { canOperate, needsSurgery, operate, surgeonRoll } from "./surgery.ts";
+import { whereIs } from "../../rules/place.ts";
+import { playerCalls } from "../../game/acquaintance.ts";
 /** 저절로 낫기 (부상 트랙). 시간이 흐른 뒤마다 부른다 */
 export function runNaturalRecovery(ctx: ToolContext): ToolDisplayEvent[] {
   const recovery = ctx.content.scenario.recovery;
@@ -143,4 +147,35 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
     }
   }
   return displays;
+}
+
+/**
+ * 붙잡은 쪽의 치료 (12-263, PT17 졸병: 적의 수용소에서 상처가 끝내 아물지 않아 탈출 판정이 -8까지 갔다).
+ * 쓸 데 있는 포로는 살려 둔다: 붙잡은 무리의 치료사(갇힌 구역의 사람 먼저)가 하루 한 번 주인공을 돌본다.
+ * 치료사의 치료와 같은 규칙이다: 부상 한 단계 (수술감이면 수술할 줄 아는 사람만, 그 무리 땅이라 실패해도 덧나지 않는다), 붙잡은 무리의 의약품 1.
+ * 그 무리에 치료사가 없거나 의약품이 떨어졌으면 돌보지 않는다 (피는 bleeding의 "붙잡은 쪽이 상처를 묶었다"가 멎게 한다)
+ */
+export function runCaptorCare(ctx: ToolContext): ToolDisplayEvent[] {
+  const { store, content } = ctx;
+  const recovery = content.scenario.recovery;
+  const state = store.getState();
+  const me = state.characters[state.playerId];
+  const held = heldOf(me);
+  if (!recovery || !me || me.dead || !held || held.quarantine) return [];
+  const harm = harmTrack(content.scenario);
+  if (levelIndex(ctx, state, me.id, harm.id) <= 0 || careUsedToday(state, content, me.id, "healer")) return [];
+  // 갇힌 구역의 치료사 먼저, 없으면 그 무리의 다른 치료사를 불러온다 (붉은연합의 치료사는 물류창고에 있다)
+  const near = (id: string) => (whereIs(state, content, id)?.zone === state.playerZone ? 0 : 1);
+  const healers = Object.values(content.npcs)
+    .filter((n) => n.healer && state.characters[n.id]?.factionId === held.by && !state.characters[n.id]?.dead && !heldOf(state.characters[n.id]))
+    .map((n) => n.id)
+    .sort((a, b) => near(a) - near(b));
+  const cutting = needsSurgery(ctx, me.id);
+  const healer = cutting ? (healers.find((id) => canOperate(ctx, id)) ?? null) : (healers[0] ?? null);
+  const resource = recovery.healer_cost?.resource ?? recovery.faction_care?.resource;
+  if (!healer || (resource && (state.factions[held.by]?.resources[resource] ?? 0) < 1)) return [];
+  if (resource) store.append({ type: "faction_resource_changed", factionId: held.by, resource, delta: -1 });
+  if (cutting) return operate(ctx, me.id, surgeonRoll(ctx, healer).outcome, `붙잡은 쪽 치료사 ${playerCalls(state, content, healer)}`, true).displays;
+  const c = changeCondition(ctx, me.id, harm.id, -1, "healer", `붙잡은 쪽 치료사 ${playerCalls(state, content, healer)}의 치료 (쓸 데 있는 포로는 살려 둔다)`);
+  return c?.display ? [c.display] : [];
 }

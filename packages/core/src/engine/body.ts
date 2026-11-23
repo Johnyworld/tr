@@ -31,8 +31,8 @@ export { type FeeChoice, planHealerPay, keptForLiving, payableCount, pickFee, pa
 import { type FeeChoice, planHealerPay, keptForLiving, payableCount, pickFee, payHealer } from "./care/fee.ts";
 export { needsSurgery, canOperate, surgeonRoll, operate } from "./care/surgery.ts";
 import { needsSurgery, canOperate, surgeonRoll, operate } from "./care/surgery.ts";
-export { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery } from "./care/recovery.ts";
-import { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery } from "./care/recovery.ts";
+export { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery, runCaptorCare } from "./care/recovery.ts";
+import { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery, runCaptorCare } from "./care/recovery.ts";
 import { ownCount } from "../rules/entrusted.ts";
 import { onOwnLand, ownedBy } from "../rules/home.ts";
 import { resist } from "../rules/damage.ts";
@@ -353,6 +353,8 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     }
   }
   if (body.thirst && push(dailyThirst(ctx, body.thirst))) return displays;
+  // 갇혀 있으면 붙잡은 쪽 치료사가 돌본다 (12-263)
+  displays.push(...runCaptorCare(ctx));
   for (const c of dailyHabits(ctx)) push(c);
   if (body.infection) {
     const state = ctx.store.getState();

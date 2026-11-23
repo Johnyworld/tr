@@ -6,7 +6,7 @@
 #    - 하얀매: 격리실 cp_d_quarantine → (cp_d_complied) cp_d_discharge
 #    - 나루상단: 빚 장부 cp_e_ledger, 짐수레 cp_e_cart
 #    - 어디서든: 같은 방 사람 cp_cellmate, 간수 cp_guard_friend (keep: cp_guard) → (cp_guard_close) cp_guard_door,
-#      드나드는 짐꾼 cp_word_out(반복) → (cp_word_sent) cp_rescue_word, 몸값·맞교환 cp_ransom, 갇힌 밤 cp_long_night(반복)
+#      드나드는 짐꾼 cp_word_out(반복) 또는 우리 무리가 붙잡힌 것을 봄(captivity.known_flag, 12-264) → (cp_word_sent) cp_rescue_word, 몸값·맞교환 cp_ransom, 갇힌 밤 cp_long_night(반복)
 # 2. 우리 무리가 가둔 포로 (tags: [world], 우리 거점): cp_prisoner_whisper, cp_prisoner_kin, cp_prisoner_bullied, cp_prisoner_breakout, cp_prisoner_accident
 #    실제로 다루는 것(심문·회유·석방·몸값·노역)은 GM tool handle_prisoner. 이야기는 그 주변의 사람과 선택
 # 3. 붙잡혀 간 우리 사람 (tags: [world], 다른 무리의 거점): cp_ours_found (keep: cp_ours) → (cp_ours_promise) cp_ours_breakout → (cp_ours_freed) cp_ours_home
@@ -525,7 +525,7 @@
   title: 같은 방 사람
   tags: [captivity]
   when:
-    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [evening, night]
   cast:
     mate: { extra: refugee, label: 같은 방 사람, keep: cp_mate }
@@ -564,7 +564,7 @@
   title: 밤 당번
   tags: [captivity]
   when:
-    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [night]
   cast:
     guard: { faction: captor, ranks: [grunt, staff], keep: cp_guard }
@@ -656,7 +656,7 @@
   repeatable: true
   cooldown_days: 3
   when:
-    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [morning, day]
   cast:
     carrier: { extra: e_porter, label: 드나드는 짐꾼 }
@@ -690,9 +690,10 @@
   tags: [captivity]
   urgent: true
   when:
-    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [night]
     flags_all: [cp_word_sent]
+    captive_days_gte: 1
   cast:
     rescuer: { faction: own, ranks: [grunt, squad_leader] }
   setup: 자정이 넘어 벽 바깥에서 돌을 두 번 두드리는 소리. 낮은 휘파람. 익숙한 목소리가 이름을 부른다. {rescuer:이다/다}. 소식이 닿았다.
@@ -730,7 +731,7 @@
   tags: [captivity]
   when:
     dispositions: [{ from: captor, to: own, gte: -2 }]
-    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
     segments: [day]
     day_gte: 3
@@ -787,7 +788,7 @@
   repeatable: true
   cooldown_days: 2
   when:
-    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [night]
   setup: 바닥에서 냉기가 올라온다. 멀리서 개가 짖고, 어딘가에서 누가 밤새 기침을 한다. 벽에 그어 둔 줄이 몇 개였는지 헷갈린다.
   ai_direction: 시간이 흐른다는 것만으로도 사람이 닳는다. 짧게. 이 밤에 무엇을 붙드느냐가 선택이다.
@@ -826,7 +827,7 @@
   cooldown_days: 2
   weight: 1.5
   when:
-    captors: [faction_a, faction_b, faction_c, faction_d, faction_e]
+    captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     captive_days_gte: 1
     segments: [night, dawn]
   setup: 교대 시간이 지났는데 다음 사람이 오지 않는다. 문 앞의 의자가 비었다. 멀리서 누가 술에 취해 노래를 부르고, 그쪽으로 발소리가 몰려간다. 지금이 아니면 한동안 오지 않을 틈이다.

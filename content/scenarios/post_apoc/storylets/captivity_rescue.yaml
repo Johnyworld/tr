@@ -94,7 +94,7 @@
   essential: true
   when:
     captive_days_gte: 5
-    has_faction: true
+    in_faction: true
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
   setup: 아침에 문이 열린다. 밥때가 아니다. 당번이 턱으로 바깥을 가리킨다. "너희 쪽에서 값을 냈다. 탄 상자 하나. 너 하나 값으로는 후하지."
   ai_direction: 우리 무리가 짐꾼을 통해 붙잡힌 곳을 알아내고 탄약으로 몸값을 치렀다. 몸값은 코드가 무리의 탄약에서 뺀다. 빼앗긴 것은 돌려받는다. 돌아가면 무리는 반기면서도 그 값을 기억한다. 주인공을 데려온 것이 누구의 뜻이었는지는 지어내지 않는다.
@@ -119,7 +119,7 @@
   essential: true
   when:
     captive_days_gte: 5
-    has_faction: false
+    in_faction: false
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
   setup: '한밤에 끌려 나온다. 눈을 가린 천 너머로 당번의 목소리가 들린다. "값 낼 사람도 없고, 부릴 데도 없고. 입 하나 줄이자."'
   ai_direction: 무리 없는 포로는 붙잡은 쪽에 먹일 값만 드는 입이다. 죽이지 않고 땅 끝에 내다 버린다 (이야기는 사람을 죽이지 않는다). 빼앗긴 것은 돌려받지 못한다. 내다 버린 곳은 코드가 정한 맞닿은 구역이다.

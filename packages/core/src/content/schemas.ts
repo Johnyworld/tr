@@ -1003,7 +1003,7 @@ export function createContentSchemas(s: Scenario) {
         /** 주인공이 갇힌 지 이만큼(일) 지났다 (12-56) */
         captive_days_gte: z.number().min(0).optional(),
         /** 주인공이 무리에 들어 있다/없다 (12-263: 오래 갇힌 날 우리 무리가 데려오는지, 붙잡은 쪽이 내다 버리는지) */
-        has_faction: z.boolean().optional(),
+        in_faction: z.boolean().optional(),
         /** 우리 무리 사람이 다른 무리에 붙잡혀 있는지 (어디인지는 몰라도, 12-55) */
         own_people_captive: z.boolean().optional(),
         /** 플레이어의 직분 (none = 직분 없음, 기획서 12.6) */

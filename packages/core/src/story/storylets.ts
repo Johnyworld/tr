@@ -285,7 +285,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   // 갇힌 동안의 이야기는 적에게 붙잡혔을 때만: 우리 무리의 벌로 갇혔으면 열지 않는다 (12-261, PT16 졸병: "우리 무리에 내가 여기 있다고 전해 달라")
   if (w.captors && heldByOwn(state)) return false;
   if (w.captive_days_gte !== undefined && (!heldOf(player) || at - (heldOf(player)!.since ?? at) < w.captive_days_gte * MINUTES_PER_DAY)) return false;
-  if (w.has_faction !== undefined && !!player.factionId !== w.has_faction) return false;
+  if (w.in_faction !== undefined && !!player.factionId !== w.in_faction) return false;
   if (w.own_people_captive !== undefined) {
     const any = !!player.factionId && Object.values(state.characters).some((c) => c.id !== player.id && !c.dead && c.factionId === player.factionId && heldOf(c) && heldOf(c)!.by !== player.factionId);
     if (any !== w.own_people_captive) return false;

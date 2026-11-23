@@ -1088,6 +1088,8 @@ captivity:
   escape_hours: [1, 4]
   # 갇힌 동안 허기는 굶주림까지만 (붙잡은 쪽이 겨우 먹인다)
   hunger_floor: starving
+  # 우리 무리가 붙잡힌 것을 알면 (곁에서 본 사람·혼자 돌아간 짝) 구하러 오는 이야기(벽 너머의 신호)가 열린다 (12-264). 짐꾼에게 소식을 맡겨도 같은 플래그
+  known_flag: cp_word_sent
   upkeep: { resource: food, amount: 1 }
   labor: { resource: food, amount: 2 }
   ransom: { resource: ammo, amount: 8 }

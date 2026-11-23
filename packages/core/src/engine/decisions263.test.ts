@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { heldOf } from "../rules/held.ts";
+import { whereIs } from "../rules/place.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
@@ -61,5 +62,37 @@ describe("오래 갇힌 날의 출구 (12-263)", () => {
     expect(heldOf(w.state().characters[w.state().playerId])).toBeFalsy();
     expect(w.state().playerZone).toBe("a_base");
     expect(w.state().factions.faction_a!.resources.ammo ?? 0).toBeLessThan(ammo);
+  });
+});
+
+describe("구하러 오는 이야기 (12-264)", () => {
+  const rescue = (w: ReturnType<typeof make>, days: number) => {
+    const s = w.state();
+    let at = s.time + days * 24 * 60;
+    while (Math.floor((at % (24 * 60)) / 60) !== 1) at += 60; // 새벽 1시 (밤)
+    return eligibleStorylets(s, content, at).some((x) => x.id === "cp_rescue_word");
+  };
+
+  it("우리 무리 사람이 곁에서 붙잡히는 것을 봤으면 하루 뒤 밤에 열린다", () => {
+    const w = make("role_a_grunt");
+    const mate = Object.values(content.npcs).find((n) => n.faction === "faction_a" && whereIs(w.state(), content, n.id)?.zone === w.state().playerZone)!.id;
+    w.executeTool("npc_presence", { npc_id: mate, action: "enter" });
+    expect(w.state().scene.present).toContain(mate);
+    capturePlayer(w.ctx(), "faction_c");
+    expect(rescue(w, 0)).toBe(false);
+    expect(rescue(w, 1)).toBe(true);
+  });
+
+  it("아무도 못 봤으면 열리지 않고, 풀려나면 플래그를 걷는다", () => {
+    const w = make("role_a_grunt");
+    for (const id of [...w.state().scene.present]) w.executeTool("npc_presence", { npc_id: id, action: "leave" });
+    capturePlayer(w.ctx(), "faction_c");
+    expect(rescue(w, 1)).toBe(false);
+
+    const seen = make("role_a_grunt");
+    capturePlayer(seen.ctx(), "faction_c");
+    seen.runCheat("~storylet cp_long_ransom");
+    seen.executeTool("resolve_storylet", { choice_id: "go_home" });
+    expect(seen.state().flags[seen.state().playerId] ?? []).not.toContain(content.scenario.captivity!.known_flag);
   });
 });

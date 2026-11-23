@@ -923,6 +923,8 @@ export const scenarioFileSchema = z
         escape_hours: z.tuple([z.number().min(0), z.number().min(0)]).optional(),
         /** 갇힌 동안 허기가 이 단계보다 더 나빠지지 않는다 (붙잡은 쪽이 겨우 먹인다) */
         hunger_floor: id.optional(),
+        /** 우리 무리가 붙잡힌 것을 알면 주인공에게 세우는 플래그 (곁에서 본 우리 무리 사람이나 혼자 돌아간 짝이 알린다, 12-264). 풀려나면 걷는다 */
+        known_flag: id.optional(),
         /** 포로 하나를 하루 먹이는 데 드는 붙잡은 무리의 자원 */
         upkeep: z.strictObject({ resource: id, amount: z.number().min(0) }),
         /** 노역에 부리면 하루에 붙잡은 무리가 얻는 자원 */

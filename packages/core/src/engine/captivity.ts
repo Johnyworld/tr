@@ -84,6 +84,9 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
     store.append({ type: "time_advanced", activity: "travel", from: now, to: now + dragged });
   }
   store.append({ type: "player_captured", by, zone: where, held, place: jail.place });
+  // 우리 무리가 붙잡힌 것을 안다: 곁에서 본 우리 무리 사람, 혼자 돌아가 알리는 짝 (12-264, PT17 졸병: 짝이 돌아가 알렸는데 구하러 오는 이야기가 짐꾼 판정에만 걸려 있었다)
+  const told = !!me.factionId && (state.scene.present.some((id) => id !== me.id && state.characters[id]?.factionId === me.factionId && !state.characters[id]?.dead && !heldOf(state.characters[id])) || state.companions.some((id) => state.bonds[id]?.kind === "buddy"));
+  if (told && c.known_flag) store.append({ type: "flag_set", characterId: me.id, flag: c.known_flag });
   const name = content.factions[by]!.name;
   const cell = jail.place ? jailIn(content, where)?.name : null;
   const fact = sentence(`${cause}. ${name}에 붙잡혀 ${dragged > 0 ? `${formatDuration(dragged)} 동안 끌려가 ` : ""}${content.locations[where]?.name ?? where}${cell ? `의 ${cell}` : ""}에 갇혔다`);
@@ -104,6 +107,8 @@ export function releasePlayer(ctx: ToolContext, returned: boolean): string | nul
   // 빼앗긴 것을 적는다 (플레이 테스트 13: "그곳에 두고 왔다" 한 줄이라 무엇을 잃었는지 몰랐다)
   const taken = Object.entries(state.deposits[`held:${held.by}`] ?? {}).filter(([, n]) => n > 0).map(([id, n]) => `${ctx.content.items[id]?.name ?? id} ×${n}`);
   ctx.store.append({ type: "player_released", returned });
+  const known = rules(ctx.content)?.known_flag;
+  if (known && (ctx.store.getState().flags[state.playerId] ?? []).includes(known)) ctx.store.append({ type: "flag_cleared", characterId: state.playerId, flag: known });
   if (returned) return taken.length ? `풀려났다. 빼앗겼던 것을 돌려받았다 (${taken.join(", ")}).` : "풀려났다.";
   return `빠져나왔다. 빼앗긴 것은 그곳에 두고 왔다${taken.length ? `: ${taken.join(", ")}` : ""}.${taken.length ? " 맨손이면 우리 거점의 무기고가 근접 무기 하나를 내준다." : ""}`;
 }

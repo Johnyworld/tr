@@ -70,3 +70,16 @@ describe("장소의 사람 (12-271)", () => {
     expect(watchers(s, content, undefined, true).length).toBeGreaterThan(watchers(s, content).length);
   });
 });
+
+describe("막 들어선 자리의 숨은 목격자 (12-272)", () => {
+  it("다른 장소로 정해진 사람은 막 들어선 자리의 일을 보지 못한다", () => {
+    const w = make(0.0001);
+    w.executeTool("take_action", act({ place_to: "entry" }));
+    const s = w.state();
+    expect(s.playerPlace).toBeNull();
+    const placed = Object.keys(content.npcs).filter((id) => { const at = whereIs(s, content, id); return at?.zone === s.playerZone && !!at.place && !s.scene.present.includes(id); });
+    expect(placed.length).toBeGreaterThan(0);
+    const { deed } = recordDeed(w.ctx(), { summary: "정문 앞에서 통조림을 챙겼다", tags: ["theft"], severity: 1, privacy: "public", noisy: true });
+    expect(deed!.witnesses.filter((x) => x.hidden).some((x) => placed.includes(x.npcId))).toBe(false);
+  });
+});

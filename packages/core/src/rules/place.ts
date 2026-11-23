@@ -302,9 +302,11 @@ export function inZone(state: GameState, content: Content, id: string): boolean 
   return !!w && !!w.zone && w.zone === state.playerZone;
 }
 
-/** 이 인물이 주인공과 같은 장소에 있을 만한가: 주인공이 장소를 정하지 않았거나, 인물의 장소가 정해지지 않았으면(구역 어딘가) 그렇다 */
+/**
+ * 이 인물이 주인공과 같은 장소에 있을 만한가: 인물의 장소가 정해지지 않았으면(구역 어딘가) 그렇고, 정해졌으면 주인공과 같은 장소일 때만.
+ * 주인공이 막 들어선 자리(장소 없음)에 있으면 장소가 정해진 사람은 다른 데 있다 (12-272: 막 들어선 자리는 바깥 길바닥인데 막사 안의 사람까지 숨은 목격자로 굴렸다)
+ */
 export function sharesPlace(state: GameState, content: Content, id: string): boolean {
-  if (!state.playerPlace) return true;
   const at = whereIs(state, content, id)?.place ?? npcPlaceAt(state, content, id);
   return at === null || at === state.playerPlace;
 }

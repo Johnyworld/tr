@@ -8,7 +8,7 @@ import { fastForward } from "../sim/fastForward.ts";
 import { storyletAllowed, storyletWindow } from "../story/storylets.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
-import { storyPlaceOnEntry, storyPlaces } from "./place.ts";
+import { storySummonsTo, storyPlaces } from "./place.ts";
 import { pacingBlocks, slotOpensBetween, storyletGapMinutes, storyText, storyTier } from "./storySlot.ts";
 
 const content = loadRealContent();
@@ -71,15 +71,13 @@ describe("공통 규칙 17: 이야기의 자리 (12-254)", () => {
     expect(storyPlaces(s, content, st.when.places, storyText(st))).toContain("farm_shore");
   });
 
-  it("길(구역에 막 들어온 자리)에서 이야기가 장소 하나를 말하면 그 장소, 길 아닌 장소에 있거나 여럿이면 없음", () => {
+  it("이야기는 주인공을 옮기지 않는다: 부르는 이야기만 그 장소 하나로 (이동 기획)", () => {
     const w = world("role_y_islander");
-    const s = { ...w.state(), playerZone: "yeoul_isle", playerPlace: "dock", justArrived: true };
-    expect(storyPlaceOnEntry(s, content, ["quarters"], "")).toBe("quarters");
-    // 구역 안에서 길로 나선 것은 막 들어온 것이 아니다 (PT21), 길 위의 이야기도 옮기지 않는다
-    expect(storyPlaceOnEntry({ ...s, justArrived: false }, content, ["quarters"], "")).toBeNull();
-    expect(storyPlaceOnEntry(s, content, ["quarters"], "", false, undefined, true)).toBeNull();
-    expect(storyPlaceOnEntry({ ...s, playerPlace: "quarters" }, content, ["farm_shore"], "")).toBeNull();
-    expect(storyPlaceOnEntry(s, content, ["quarters", "farm_shore"], "")).toBeNull();
+    const s = { ...w.state(), playerZone: "yeoul_isle", playerPlace: "dock" };
+    expect(storySummonsTo(s, content, ["quarters"], "", false)).toBeNull();
+    expect(storySummonsTo(s, content, ["quarters"], "", true)).toBe("quarters");
+    expect(storySummonsTo({ ...s, playerPlace: "quarters" }, content, ["quarters"], "", true)).toBeNull();
+    expect(storySummonsTo(s, content, ["quarters", "farm_shore"], "", true)).toBeNull();
   });
 
   it("빨리감기는 자리가 열리는 시각에 꼭 멈춰 검사한다 (한 시간씩 건너뛰어 늦게 열리지 않게)", () => {

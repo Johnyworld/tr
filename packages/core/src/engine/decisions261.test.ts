@@ -76,6 +76,7 @@ describe("규율 회의 (12-261)", () => {
       w.state().activeStorylet = null;
       w.executeTool("take_action", act({ activity: { kind: "wait", until: null, hours: 1 } }));
     }
-    expect(ownOffense(w.state(), content)).not.toBeNull();
+    // 회의가 열렸거나(부르는 이야기는 어디서든 연다) 아직 회의를 기다린다
+    expect(!!w.state().storyletLog.disc_c_council || ownOffense(w.state(), content) !== null).toBe(true);
   });
 });

@@ -1,3 +1,4 @@
+import { atSpot, spotHere } from "../rules/place.ts";
 import { heldOf } from "../rules/held.ts";
 import type { Character } from "../game/character.ts";
 import { aliasOf, knowsName } from "../game/acquaintance.ts";
@@ -58,13 +59,15 @@ export function leaveRemainsForNewDeaths(ctx: ToolContext, before: Set<string>):
     if (!of) continue;
     const zone = placeOf(ctx, state, c);
     if (!zone) continue;
-    ctx.store.append({ type: "remains_left", remains: { of, holder: id, zone, diedAt: state.time, buriedAt: null, marker: null } });
+    // 주인공 곁에서 죽었으면 그 자리 (공통 규칙 15 spotHere)
+    const spot = zone === state.playerZone ? spotHere(state) : null;
+    ctx.store.append({ type: "remains_left", remains: { of, holder: id, zone, diedAt: state.time, buriedAt: null, marker: null, spot } });
   }
 }
 
 /** 지금 구역에 묻히지 않은 유해 (그 짐에 손이 닿는다) */
 export function remainsHere(state: GameState): Remains[] {
-  return state.remains.filter((r) => r.zone === state.playerZone && r.buriedAt === null);
+  return state.remains.filter((r) => r.zone === state.playerZone && r.buriedAt === null && atSpot(state, r.spot));
 }
 
 /** 지금 구역의 무덤 */

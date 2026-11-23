@@ -71,7 +71,7 @@ describe("장례 (12-163)", () => {
     w.ctx().store.append({ type: "relation_changed", from: friend, to: dead, delta: { trust: 0, affection: 8, respect: 0 }, reason: "테스트" });
     expect(w.runCheat(`~kill ${dead}`).ok).toBe(true);
     // 유해는 도구 실행 전후로 남는다 (치트는 도구 밖이라 직접 남긴다)
-    w.ctx().store.append({ type: "remains_left", remains: { of: dead, holder: `remains_${dead}`, zone: w.state().playerZone!, diedAt: w.state().time, buriedAt: null, marker: null } });
+    w.ctx().store.append({ type: "remains_left", remains: { of: dead, holder: `remains_${dead}`, zone: w.state().playerZone!, diedAt: w.state().time, buriedAt: null, marker: null, spot: null } });
     const s = w.state();
     expect(conditionsMet(s, full, rites, s.time)).toBe(true);
     const role = { bereaved: true } as Parameters<typeof castCandidates>[2];

@@ -7,7 +7,7 @@ import { runPromisesDaily } from "./promises.ts";
 import { runDailyFood } from "./forage.ts";
 import { lootRemainsDaily } from "./remains.ts";
 import { roleOf } from "../game/state.ts";
-import { storyPlaceOnEntry, arrivalPlace } from "../rules/place.ts";
+import { openingPlace, arrivalPlace, movePlayer } from "../rules/place.ts";
 import { endExpiredTruces } from "./diplomacy.ts";
 import { runResidentBodies } from "./residents.ts";
 import { infestationDay } from "../game/infestation.ts";
@@ -141,12 +141,12 @@ function ensurePlayerZone(ctx: ToolContext) {
     baseOfNow(state, ctx.content, player.factionId) ??
     null;
   if (!zone) return;
-  ctx.store.append({ type: "zone_moved", from: null, to: zone, place: arrivalPlace(state, ctx.content, zone) });
-  // 역할의 시작 장소(start_place), 없으면 시작 장면 글이 이 구역의 장소 하나를 말할 때 처음부터 그 장소에 둔다 (12-259, 공통 규칙 15 storyPlaceOnEntry,
+  movePlayer(ctx, { zone, place: arrivalPlace(state, ctx.content, zone) }, "start");
+  // 역할의 시작 장소(start_place), 없으면 시작 장면 글이 이 구역의 장소 하나를 말할 때 처음부터 그 장소에 둔다 (12-259, 공통 규칙 15 openingPlace,
   // PT15 분대장: "보급 창고 앞"으로 시작했는데 구역에 막 들어선 자리였다)
   const role = roleOf(ctx.content, ctx.store.getState());
-  const spot = role?.start_place && role.start_location === zone ? role.start_place : role?.opening_scene ? storyPlaceOnEntry(ctx.store.getState(), ctx.content, undefined, role.opening_scene) : null;
-  if (spot) ctx.store.append({ type: "place_moved", from: null, to: spot });
+  const spot = role?.start_place && role.start_location === zone ? role.start_place : role?.opening_scene ? openingPlace(ctx.store.getState(), ctx.content, role.opening_scene) : null;
+  if (spot) movePlayer(ctx, { zone, place: spot }, "start");
 }
 
 /** 교전 소식을 플레이어의 믿음으로 남긴다 (공통 규칙 14) */

@@ -20,7 +20,7 @@ import { josa, sentence } from "../text.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
 import { hearNews } from "../rules/news.ts";
-import { zoneOf, arrivalPlace } from "../rules/place.ts";
+import { zoneOf, arrivalPlace, currentPlace, movePlayer, whereIs } from "../rules/place.ts";
 
 /**
  * 사망과 계승 (기획서 3.1, 3.2).
@@ -270,8 +270,9 @@ export function switchCharacter(
     // 그 사람과 이어진 사람(가족·친구 등)도 안다 (B14, 플레이 테스트 9: 카드에 친구로 적힌 사람의 이름을 몰랐다)
     for (const t of tiesOf(state, content, choice)) if (t.other !== previous.id && state.characters[t.other] && !comrades.includes(t.other)) comrades.push(t.other);
     store.append({ type: "character_switched", characterId: choice, known: comrades, roleId: seat.role.id, ...(seat.custom ? { customRole: seat.role } : {}), scenarioRole: "" });
-    // 그 사람이 있던 곳에서 이어 간다
-    if (zone && content.locations[zone]) store.append({ type: "zone_moved", from: null, to: zone, place: arrivalPlace(store.getState(), content, zone) });
+    // 그 사람이 있던 곳에서 이어 간다: 곁에 있었으면 그 자리, 아니면 그 사람이 지금 있을 자리(일과), 모르면 구역의 길 (공통 규칙 15 movePlayer, PT22 하얀매)
+    const place = there ? currentPlace(state, content)?.id ?? null : (whereIs(state, content, choice)?.place ?? null);
+    if (zone && content.locations[zone]) movePlayer(ctx, { zone, place: place ?? arrivalPlace(store.getState(), content, zone) }, "inherit");
   }
 
   // 이어받은 사람의 연인·배우자는 진짜 연인이다 (플레이 테스트 13)

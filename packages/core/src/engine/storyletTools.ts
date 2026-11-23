@@ -31,7 +31,7 @@ import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, storyletOf } from "../story/storylets.ts";
 import { justHadStory, storyText } from "../rules/storySlot.ts";
-import {hereWithMe, placeById, storyIndoor, storyPlaceOnEntry, whereIs, whereLabel, currentPlace, arrivalPlace, nearestRoad, knowsPlace, placeHint, PLACE_HINT_RUMOR_CHANCE } from "../rules/place.ts";
+import {hereWithMe, placeById, storyIndoor, storySummonsTo, movePlayer, STEP_MINUTES, stepsBetween, whereIs, whereLabel, currentPlace, arrivalPlace, nearestRoad, knowsPlace, placeHint, PLACE_HINT_RUMOR_CHANCE } from "../rules/place.ts";
 import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
@@ -181,28 +181,17 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     cast,
     expiresAt: state.time + Math.round(content.scenario.storylet_pacing.expire_hours * 60),
   });
-  // 막 들어선 자리에서 열린 이야기가 이 구역의 장소 하나를 말하면 그 장소로 옮겨 둔다 (12-254, 공통 규칙 15 storyPlaceOnEntry).
-  // 장면의 사람은 함께 간다 (PT15 튜토리얼: "동의 계단 앞"으로 열린 재회 이야기 뒤 place_to가 열린 이야기 때문에 거절됐다)
-  // 부르는 이야기(12-260)는 다른 장소에 있어도 불려 간다. 그때 장면의 사람은 그 자리에 남는다 (동행은 함께)
-  const before = whereIs(store.getState(), content, store.getState().playerId)?.place ?? null;
-  const roadTag = content.scenario.travel?.tag;
-  const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons, storyIndoor(storylet.when), !!roadTag && storylet.tags.includes(roadTag));
+  // 이야기는 주인공을 옮기지 않는다. 부르는 이야기(12-260)만 그 장소로 불려 간다 (공통 규칙 15 movePlayer, 이동 기획)
+  // 그때 장면의 사람은 그 자리에 남는다 (동행은 함께). 함께 불려 오는 배역은 남은 사람이 아니다 (12-265)
+  const spot = storySummonsTo(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons, storyIndoor(storylet.when));
   if (spot) {
-    // 함께 불려 오는 배역은 남은 사람이 아니다 (12-265, PT18 분대장: 회의의 상관을 "그 자리에 남았다"고 적었다)
     const coming = new Set(Object.entries(cast).filter(([key]) => storylet.cast[key]?.enter).map(([, id]) => id));
-    // 길(구역에 막 들어온 자리)에서 데려갈 때는 장면의 사람도 함께 간다 (PT20 졸병: 맞서던 약탈자가 말없이 빠졌다). 부르는 이야기로 다른 장소에서 불려 갈 때만 남는다
-    const fromRoad = !before || !!placeById(store.getState(), content, before)?.road;
-    const left = fromRoad ? [] : store.getState().scene.present.filter((id) => !store.getState().companions.includes(id) && !coming.has(id));
+    const left = store.getState().scene.present.filter((id) => !store.getState().companions.includes(id) && !coming.has(id));
     const withCompany = activeCompanions(store.getState()).length > 0;
-    store.append({ type: "place_moved", from: before, to: spot, with: fromRoad ? [...store.getState().scene.present] : [] });
-    // 불려 간 것을 결과 글에 알린다 (12-261, PT16 분대장·졸병: 장소가 바뀐 것을 상태로만 알았다)
-    // (12-261 고침이 돌지 않았다: started 표시는 부르는 쪽이 나중에 넣는다. 그래서 따로 "moved" 표시로, PT17)
-    // 길에서 데려갈 때도 알린다 (PT21 튜토리얼: 정문으로 옮겨진 것이 결과에 없었다)
-    if (before) {
-      const place = placeById(store.getState(), content, spot)?.name ?? spot;
-      const names = left.map((id) => playerCalls(store.getState(), content, id));
-      displays.push({ type: "storylet", event: "moved", title: storyTitle(store.getState(), content, storylet), detail: place, note: `${josa(place, "으로/로")} ${fromRoad ? "옮겨졌다 (이야기가 열린 자리)" : "불려 갔다"}${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다${withCompany ? ", 동행은 함께" : ""})` : withCompany ? " (동행은 함께)" : ""}.` });
-    }
+    const moved = movePlayer(ctx, { zone: store.getState().playerZone!, place: spot }, "summoned");
+    const names = left.map((id) => playerCalls(store.getState(), content, id));
+    const place = placeById(store.getState(), content, spot)?.name ?? spot;
+    displays.push({ type: "storylet", event: "moved", title: storyTitle(store.getState(), content, storylet), detail: place, note: `${moved ?? `${josa(place, "으로/로")} 불려 갔다.`}${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다${withCompany ? ", 동행은 함께" : ""})` : withCompany ? " (동행은 함께)" : ""}` });
   }
   // 배역은 장면에 들어온다
   for (const [key, id] of Object.entries(cast)) {
@@ -276,7 +265,7 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
       .join(" / ")}`,
     // 이야기 대사는 뜻만 빌리고 그 인물의 말투로 (12-251, 플레이 테스트 14·13: 이야기 대사가 인물 화법을 덮어썼다). 이미 나눈 이야기면 이어지는 말로
     "  상황의 대사는 뜻만 따르고, 말은 그 인물의 말투(카드의 말씨·성격)로 바꿔 한다. 이 사람과 이미 나눈 이야기라면 처음 하는 말처럼 되풀이하지 말고 이어지는 말로 한다.",
-    "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 모른 척하기로 하면 다음 take_action에 ignore_story: true (효과 없이 지나간다). 이야기를 둔 채 자리를 옮기거나 시간을 들이는 일(잠·기다림·보초·수색·일·치료)과 임무 받기·보고는 거절된다. 먹고 마시는 짧은 일은 이야기 중에도 된다. 플레이어가 두고 가기로 했으면 ignore_story: true를 넣는다 (옮기면 외면하는 선택지로 풀린다).",
+    "  이 상황을 장면으로 연출하고, 플레이어가 어느 쪽을 택했는지 분명해지면 resolve_storylet을 호출한다. 결과(효과)를 미리 말하거나 지어내지 않는다. 플레이어가 모른 척하기로 하면 다음 take_action에 ignore_story: true (효과 없이 지나간다). 이야기를 둔 채 자리를 옮기거나 시간을 들이는 일(잠·기다림·보초·수색·일·치료)과 임무 받기·보고는 거절된다. 먹고 마시는 짧은 일은 이야기 중에도 된다. 플레이어가 두고 가기로 했으면 ignore_story: true를 넣는다. 판정을 걸고 물러나거나 달아나 다른 장소로 옮기면(place_to + check), 맞으면 상대는 남고 이야기는 외면으로 풀리며, 빗나가면 쫓아온다.",
   ];
   return lines.join("\n");
 }
@@ -323,7 +312,8 @@ export const resolveStorylet = defineTool({
             return { ok: false, error: `${josa(name, "이/가")} 이 근처에 없어 이 선택지는 고를 수 없다${where ? ` (지금 ${where})` : ""}. 다른 선택지로 푼다.` };
           }
           // 장소를 알면 그리로 가고, 모르면(구역 어딘가) 찾아가 만난 것으로 (자리는 그대로)
-          if (w.place) ctx.store.append({ type: "place_moved", from: whereIs(state, ctx.content, state.playerId)?.place ?? null, to: w.place });
+          // 찾아가는 것은 걸어서 (공통 규칙 15 movePlayer): 칸 수만큼 시간이 든다
+          if (w.place) movePlayer(ctx, { zone: state.playerZone!, place: w.place }, "walk", { minutes: STEP_MINUTES * Math.max(1, Math.min(6, stepsBetween(state, ctx.content, currentPlace(state, ctx.content)?.id ?? null, w.place))) });
           met = w.place ? `${josa(name, "이/가")} 있는 ${josa(placeById(ctx.store.getState(), ctx.content, w.place)?.name ?? w.place, "으로/로")} 가서 만났다.` : `${josa(name, "을/를")} 찾아가 만났다.`;
         }
         enterScene(ctx, who);
@@ -384,7 +374,7 @@ export const resolveStorylet = defineTool({
       const to = placeById(now, ctx.content, choice.goes_to);
       const from = whereIs(now, ctx.content, now.playerId)?.place ?? null;
       if (to && to.id !== from) {
-        ctx.store.append({ type: "place_moved", from, to: to.id, with: Object.values(a.cast).filter((id) => now.scene.present.includes(id)) });
+        movePlayer(ctx, { zone: now.playerZone!, place: to.id }, "sent", { with: Object.values(a.cast).filter((id) => now.scene.present.includes(id)) });
         lines.push(`${josa(to.name, "으로/로")} 옮겼다.`);
       }
     }
@@ -394,7 +384,7 @@ export const resolveStorylet = defineTool({
       const from = currentPlace(now, ctx.content)?.id ?? null;
       const road = nearestRoad(now, ctx.content);
       if (road && road !== from) {
-        ctx.store.append({ type: "place_moved", from, to: road });
+        movePlayer(ctx, { zone: ctx.store.getState().playerZone!, place: road }, "escape");
         lines.push(`${josa(placeById(ctx.store.getState(), ctx.content, road)?.name ?? road, "으로/로")} 빠져나왔다. 쫓던 사람들은 뒤에 남았다.`);
       }
     }
@@ -849,7 +839,7 @@ export function applyEffect(
           .sort((a, b) => Number(ownedBy(store.getState(), b, me.factionId)) - Number(ownedBy(store.getState(), a, me.factionId)) || a.localeCompare(b))[0]
       : undefined;
     const home = effect.release_player.home ? (baseOfNow(store.getState(), content, me.factionId) ?? out) : out;
-    if (home && home !== store.getState().playerZone) store.append({ type: "zone_moved", from: store.getState().playerZone, to: home, place: arrivalPlace(store.getState(), content, home, store.getState().playerZone) });
+    if (home && home !== store.getState().playerZone) movePlayer(ctx, { zone: home }, "released");
     return { line: `${line ?? "풀려났다."}${home ? ` ${josa(content.locations[home]?.name ?? home, "으로/로")} 돌아왔다.` : ""}` };
   }
   if ("deposit_weapons" in effect) {
@@ -999,7 +989,7 @@ export function applyEffect(
     // 갇힌 곳에서 다른 곳으로 옮겨지면 빠져나온 것이다 (빼앗긴 것은 두고 온다, 12-55)
     if (heldOf(state.characters[playerId]) && content.locations[to] && state.playerZone !== to) releasePlayer(ctx, false);
     if (!content.locations[to] || state.playerZone === to) return {};
-    store.append({ type: "zone_moved", from: state.playerZone, to, place: arrivalPlace(state, content, to, state.playerZone) });
+    movePlayer(ctx, { zone: to }, "sent");
     return { line: `${josa(content.locations[to]!.name, "으로/로")} 옮겨졌다. 함께 있던 인물은 따라오지 않는다.` };
   }
   if ("reveal_tie" in effect) {

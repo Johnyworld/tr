@@ -11,7 +11,8 @@ import { createWorldEvent } from "./game/state.ts";
 import { InMemoryGameStore } from "./game/store.ts";
 import { InMemoryRepository } from "./persistence/repository.ts";
 import { GameWorld } from "./world/world.ts";
-import { whereIs, arrivalPlace, placesIn } from "./rules/place.ts";
+import { whereIs, arrivalPlace, placesIn, movePlayer, storyIndoor, storyOpenPlaces } from "./rules/place.ts";
+import { storyText } from "./rules/storySlot.ts";
 import { runAfterTimeAdvance } from "./engine/turnStart.ts";
 import { createSeededRng, type Rng } from "./rng.ts";
 import type { PlayMode } from "./engine/log.ts";
@@ -499,8 +500,7 @@ export function atEntry<T extends GameWorld>(w: T): T {
   const s = w.state();
   const place = whereIs(s, w.ctx().content, s.playerId)?.place ?? null;
   const road = s.playerZone ? arrivalPlace(s, w.ctx().content, s.playerZone) : null;
-  // 막 들어와 도착한 길로 (state.justArrived): 구역 이동으로 적는다
-  if (road && place !== road) w.ctx().store.append({ type: "zone_moved", from: s.playerZone, to: s.playerZone!, place: road });
+  if (road && place !== road) movePlayer(w.ctx(), { zone: s.playerZone!, place: road }, "cheat");
   return w;
 }
 
@@ -508,4 +508,15 @@ export function atEntry<T extends GameWorld>(w: T): T {
 export function knowAllPlaces(w: { state(): import("./game/state.ts").GameState; ctx(): { store: { append(e: import("./game/state.ts").GameEvent): unknown } } }, content: Content, zone: string | null = w.state().playerZone): void {
   if (!zone) return;
   for (const p of placesIn(w.state(), content, zone)) w.ctx().store.append({ type: "place_learned", zone, place: p.id });
+}
+
+/** 테스트에서 주인공을 이 이야기가 열릴 수 있는 장소로 옮긴다 (이동 기획: 이야기는 주인공이 이미 있는 자리에서만 열린다) */
+export function atStoryPlace<T extends GameWorld>(w: T, storyletId: string): T {
+  const content = w.ctx().content;
+  const s = content.storylets[storyletId];
+  const zone = w.state().playerZone;
+  if (!s || !zone) return w;
+  const spot = storyOpenPlaces(w.state(), content, zone, { ...s.when, indoor: storyIndoor(s.when) }, storyText(s))[0];
+  if (spot) movePlayer(w.ctx(), { zone, place: spot }, "cheat");
+  return w;
 }

@@ -563,6 +563,7 @@ function checkReferences(content: Content): string[] {
   problems.push(...checkNpcAliases(content));
   problems.push(...checkRuinPlaces(content));
   problems.push(...checkEmptyNews(content));
+  problems.push(...checkCastFates(content));
   problems.push(...checkStoryWhereWhen(content));
   problems.push(...checkResolveSpine(content));
   // 무리 안의 무거운 짓 태그는 행적 태그여야 한다 (12-257: 틀리면 규율 회의가 말없이 열리지 않는다)
@@ -661,6 +662,24 @@ export function checkEmptyNews(content: Content): string[] {
     for (const list of [ch.effects, ...Object.values(ch.outcomes ?? {})]) {
       if (!list?.some((e) => "overhear" in e)) continue;
       for (const e of list) if ("belief" in e && empty.test(e.belief.fact.trim())) problems.push(`storylets.${s.id}.${ch.id}: overhear와 함께 내용 없는 믿음 "${e.belief.fact}" (들은 내용은 overhear가 남긴다)`);
+    }
+  }
+  return problems;
+}
+
+/**
+ * 연출 글이 배역의 처지가 바뀐다고 말하면(도망쳤다·떠났다·끌려갔다) 선택지 효과로 그 처지를 바꾼다: 아니면 일과대로 원래 자리에 돌아간다
+ * (이동 기획 C, PT21 졸병: 투항한 정찰병이 세 시간 뒤 물류창고 담에 그대로 있었다)
+ */
+export function checkCastFates(content: Content): string[] {
+  const problems: string[] = [];
+  const re = /\{(\w+)[^}]*\}[^.\n]{0,40}?(도망쳤|도망친|탈영|떠났|떠난다|끌려갔|끌려간)/g;
+  for (const s of Object.values(content.storylets)) {
+    const effects = JSON.stringify(s.choices);
+    for (const m of [s.ai_direction ?? "", s.setup].join(" ").matchAll(re)) {
+      const key = m[1]!;
+      if (!s.cast[key]) continue;
+      if (!new RegExp(`"(npc_depart|npc_capture|npc_release|companion_join)":\\{"who":"${key}"`).test(effects)) problems.push(`storylets.${s.id}: 글은 {${key}}의 처지가 바뀐다고 하는데("${m[0].slice(0, 30)}…") 선택지에 npc_depart·npc_capture 같은 효과가 없다`);
     }
   }
   return problems;

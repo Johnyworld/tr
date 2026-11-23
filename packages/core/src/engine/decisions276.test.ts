@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { storyPlaceOnEntry, whereIs } from "../rules/place.ts";
+import { storySummonsTo, whereIs } from "../rules/place.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { quarantineAfterCare } from "./care/quarantine.ts";
@@ -20,7 +20,7 @@ describe("PT20 뒤 고칠 것 (12-276)", () => {
     const w = make("role_a_grunt");
     w.runCheat("~goto c_warehouse");
     // 담 밖 길에서 글이 "망루"(감시탑·담, gate)를 말해도 데려가지 않는다
-    expect(storyPlaceOnEntry(w.state(), content, undefined, "망루 위에서 확성기가 지직거린다")).toBeNull();
+    expect(storySummonsTo(w.state(), content, undefined, "망루 위에서 확성기가 지직거린다", false)).toBeNull();
     expect(content.storylets.tv_gate!.when.places).toEqual(["checkpoint"]);
   });
 

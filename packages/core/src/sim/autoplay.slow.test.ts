@@ -19,7 +19,8 @@ describe("랜덤 자동 플레이 (실제 콘텐츠)", () => {
     const stats = autoplay(world, content, createSeededRng(70), 400);
     world.close();
     expect(stats.errors).toEqual([]);
-    expect(stats.days).toBeGreaterThanOrEqual(10); // 인물이 늘면 무작위 순서가 바뀌어 하루쯤 오간다 (12-236: 치료사 둘을 더하자 11 → 10)
+    // 인물이 늘면 무작위 순서가 바뀌어 하루쯤 오간다 (12-236: 치료사 둘을 더하자 11 → 10). 이동 기획(12-287) 뒤로는 구역 안을 돌아다니는 행동(5분)이 섞여 8
+    expect(stats.days).toBeGreaterThanOrEqual(7);
     expect(Object.keys(stats.storyletsFired).length).toBeGreaterThanOrEqual(8);
     // 반복 이야기 자리를 즉흥 이야기가 채운다 (12-247). 대역 이야기로 오류 없이 풀린다
     expect(stats.storyletsFired["(즉흥)"] ?? 0).toBeGreaterThan(0);

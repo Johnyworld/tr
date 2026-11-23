@@ -1,4 +1,4 @@
-import { arrivalPlace } from "../rules/place.ts";
+import { arrivalPlace, movePlayer } from "../rules/place.ts";
 import { josa } from "../text.ts";
 import { facilitiesAt } from "../engine/facilities.ts";
 import { leaveRemainsForNewDeaths, livingIds } from "../engine/remains.ts";
@@ -180,7 +180,7 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         const zone = args[0];
         if (!zone || !content.locations[zone]) return { ok: false, error: `~goto 구역 — ${Object.keys(content.locations).join(", ")}` };
         if (state.battle) return { ok: false, error: "전투 중에는 옮길 수 없다." };
-        store.append({ type: "zone_moved", from: state.playerZone, to: zone, place: arrivalPlace(state, content, zone, state.playerZone) });
+        movePlayer(ctx, { zone }, "cheat");
         return { ok: true, text: `${josa(content.locations[zone]!.name, "으로/로")} 옮겼다.` };
       }
       case "time": {

@@ -80,6 +80,7 @@ describe("유해", () => {
     s().characters.a_taeho!.inventory = { cigarettes: 2 };
     killTaeho();
     s().playerZone = s().remains[0]!.zone;
+    s().remains[0]!.spot = null; // 자리를 보지 않는 테스트 (유해 자리는 decisions287)
     // 바깥 이야기라 그 구역의 길에서 본다 (12-279 실내외)
     w.ctx().store.append({ type: "place_moved", from: s().playerPlace, to: arrivalPlace(s(), content, s().playerZone!) });
     const me = s().characters[s().playerId]!;
@@ -107,6 +108,7 @@ describe("유해", () => {
     const { w, s, killTaeho } = open();
     killTaeho();
     s().playerZone = s().remains[0]!.zone;
+    s().remains[0]!.spot = null; // 자리를 보지 않는 테스트 (유해 자리는 decisions287)
     // 바깥 이야기라 그 구역의 길에서 본다 (12-279 실내외)
     w.ctx().store.append({ type: "place_moved", from: s().playerPlace, to: arrivalPlace(s(), content, s().playerZone!) });
     const pack = content.storylets.lg_familiar_pack!;

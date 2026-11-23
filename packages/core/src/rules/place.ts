@@ -19,6 +19,8 @@ import {ownedBy, baseOfNow, hostileLand, onOwnLand } from "./home.ts";
 import { heldOf, inQuarantine, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
 import { isCreature } from "../game/kinds.ts";
+import type { ToolContext } from "../engine/toolkit.ts";
+import { routeMinutes } from "./time.ts";
 
 export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean; wade?: boolean; description?: string; near: readonly string[]; road: boolean; to: readonly string[]; gate: boolean };
 
@@ -142,17 +144,16 @@ export function storyIndoor(when: { indoor?: boolean | "any" }): boolean | undef
 export type StoryWhere = { places?: readonly string[]; indoor?: boolean; summons?: boolean };
 
 /**
- * 실내(true)·바깥(false) 이야기가 지금 자리에 맞는가 (지금 장소의 실내외).
- * 길에 있을 때(구역에 막 들어왔을 때) 글이 그 구역의 실내 장소 하나를 말하는 실내 이야기는 연다: 그 장소로 데려간다 (storyPlaceOnEntry, B①).
- * 장소가 없는 구역은 거르지 않는다
+ * 실내(true)·바깥(false) 이야기가 지금 자리에 맞는가 (지금 장소의 실내외). 부르는 이야기는 그 장소로 불려 가니 장소의 실내외로 본다.
+ * 이야기는 주인공을 옮기지 않는다 (이동 기획): 길에서 실내 이야기를 열어 데려가던 것(B①)은 없앴다. 장소가 없는 구역은 거르지 않는다
  */
 export function storyPlaceFits(state: GameState, content: Content, indoor: boolean, where: StoryWhere = {}, text = ""): boolean {
   const here = currentPlace(state, content);
   if (!here) return true;
   if (here.indoor === indoor) return true;
-  if (!here.road || !indoor) return false;
+  if (!where.summons) return false;
   const named = storyPlaces(state, content, where.places, text, indoor);
-  return named.length === 1 && !!placeById(state, content, named[0])?.indoor;
+  return named.length === 1 && placeById(state, content, named[0])?.indoor === indoor;
 }
 
 /**
@@ -162,26 +163,26 @@ export function storyPlaceFits(state: GameState, content: Content, indoor: boole
  */
 export function storyPlacesFit(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean): boolean {
   const here = currentPlace(state, content);
-  // 부르는 이야기는 어디서든 연다: 그 장소로 데려간다 (12-260). 길은 막 들어온 때만 어디서든 (PT21)
-  if (!here || here.spawned || (here.road && state.justArrived) || summons) return true;
+  // 부르는 이야기는 어디서든 연다: 그 장소로 데려간다 (12-260). 그 밖의 이야기는 주인공이 이미 있는 자리에서만 연다 (공통 규칙 15, 이동 기획: 이야기는 주인공을 옮기지 않는다)
+  if (!here || here.spawned || summons) return true;
   const named = storyPlaces(state, content, places, text, indoor);
   return !named.length || named.includes(here.id);
 }
 
 /**
- * 길(구역에 막 들어와 도착한 자리, state.justArrived)에서 열린 이야기가 지금 구역의 장소 하나를 말하면 그 장소 (12-254). 갇혔거나 길이 아닌 장소에 있거나 여럿·없으면 null.
- * 부르는 이야기(summons, 12-260)는 다른 장소에 있어도 그 장소로 (이미 거기 있으면 null)
+ * 이야기가 주인공을 데려갈 곳: 부르는 이야기(summons, 12-260)만, 그 이야기의 장소 하나로 (이미 거기 있거나 갇혔으면 null).
+ * 그 밖의 이야기는 주인공을 옮기지 않는다 (이동 기획, PT20~22: 이야기가 글의 낱말에 맞춰 주인공을 정문·골목·담 안으로 옮겼다)
  */
-export function storyPlaceOnEntry(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean, roadStory = false): string | null {
-  const here = currentPlace(state, content);
-  // 길 위의 이야기(도착하기 전 장면)는 옮기지 않는다. 길에서 데려가는 것은 구역에 막 들어와 도착한 길에 그대로 있을 때만 (PT21 분대장·튜토리얼)
-  if (roadStory && !summons) return null;
-  if ((here && !(here.road && state.justArrived) && !summons) || heldOf(state.characters[state.playerId])) return null;
+export function storySummonsTo(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons: boolean, indoor?: boolean): string | null {
+  if (!summons || heldOf(state.characters[state.playerId])) return null;
   const named = storyPlaces(state, content, places, text, indoor);
-  const spot = named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
-  // 적 땅에서는 이야기가 담 안(더 깊은 곳)으로 데려가지 않는다: 들킨 자리에서 열린다 (PT20 졸병: 담 밖 길에서 열린 경보 "망루의 확성기"가 감시탑·담으로 옮겼다)
-  if (spot && hostileLand(state, content, state.playerZone) && (depthAt(state, content, spot) ?? 0) > (depthAt(state, content) ?? 0)) return null;
-  return spot;
+  return named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
+}
+
+/** 시작 장면 글이 이 구역의 장소 하나를 말하면 그 장소 (세계를 열 때 처음 놓을 자리, 12-259) */
+export function openingPlace(state: GameState, content: Content, text: string): string | null {
+  const named = storyPlaces(state, content, undefined, text);
+  return named.length === 1 ? named[0]! : null;
 }
 
 /**
@@ -644,4 +645,71 @@ export function placeHint(state: GameState, content: Content, zone: string, plac
   const walled = placesIn(state, content, zone).some((x) => x.gate);
   const d = depthAt(state, content, p.id, zone);
   return [anchor ? `${josa(anchor.name, "과/와")} 이어진 곳` : null, p.indoor ? "건물 안" : "바깥", walled && d !== null ? depths[d] : null].filter(Boolean).join(", ");
+}
+
+/** 장소 사이 한 칸을 옮기는 시간 (장소 개편: 이웃 5분, 한 칸 멀 때마다 5분) */
+export const STEP_MINUTES = 5;
+
+/**
+ * 주인공이 옮겨지는 까닭 (공통 규칙 15 movePlayer). walk: 걸어서(place_to), travel: 구역 이동(move_to), start: 세계를 열 때,
+ * summoned: 부르는 이야기, captured: 붙잡혀 끌려감, carried: 쓰러져 업혀 감, escape: 달아나 가장 가까운 길로, infiltrate: 잠입으로 숨어듦·빠짐,
+ * released: 풀려나 돌아감, sent: 이야기가 보냄, inherit: 계승해 이어 감, cheat: 치트
+ */
+export type MoveReason = "walk" | "travel" | "start" | "summoned" | "captured" | "carried" | "escape" | "infiltrate" | "released" | "sent" | "inherit" | "cheat";
+
+/**
+ * 주인공 이동은 이 함수 하나로 (공통 규칙 15, PT20~22: 이야기·업혀 감·계승이 저마다 장소를 바꿔 순간이동이 되풀이됐다).
+ * - 구역이 바뀌면 zone_moved(도착 장소는 주어진 장소, 없으면 떠나온 쪽 길), 같은 구역이면 place_moved
+ * - with: 함께 옮기는 사람 (동행은 리듀서가 늘 데려간다). 판정의 상대·이야기 배역은 넣지 않는다: 빗나가면 부르는 쪽이 쫓아오게 한다
+ * - 시간: minutes를 주면 그만큼 흐른다 (걸어서·구역 이동은 부르는 쪽이 활동으로 셈한다). 불려 감·업혀 감은 길이만큼 든다
+ * - 돌려주는 줄: 플레이어가 고르지 않은 이동(불려 감·끌려감·업혀 감·보냄)은 결과에 알린다
+ * 이 함수 밖에서 place_moved·zone_moved를 직접 남기면 rules/guards.test.ts가 실패한다
+ */
+export function movePlayer(ctx: ToolContext, to: { zone: string; place?: string | null }, reason: MoveReason, opts: { with?: readonly string[]; minutes?: number } = {}): string | null {
+  const { store, content } = ctx;
+  const s = store.getState();
+  const from = s.playerZone;
+  const fromPlace = s.playerPlace;
+  const along = opts.with?.length ? { with: [...opts.with] } : {};
+  if (from !== to.zone || from === null) {
+    const place = to.place !== undefined && to.place !== null ? to.place : arrivalPlace(s, content, to.zone, from);
+    store.append({ type: "zone_moved", from, to: to.zone, place, ...along });
+  } else if ((to.place ?? null) !== fromPlace) {
+    store.append({ type: "place_moved", from: fromPlace, to: to.place ?? null, ...along });
+  } else return null;
+  // 고르지 않은 이동에 드는 시간 (불려 감·업혀 감): 같은 구역이면 칸 수, 다른 구역이면 길 (PT21 하얀매: 업혀 구역 둘을 5분에)
+  const minutes = opts.minutes ?? (reason === "summoned" ? STEP_MINUTES * Math.max(1, Number.isFinite(stepsBetween(s, content, fromPlace, to.place ?? null)) ? stepsBetween(s, content, fromPlace, to.place ?? null) : 1) : reason === "carried" && from && from !== to.zone ? routeMinutes(from, to.zone) : 0);
+  if (minutes > 0) {
+    const now = store.getState().time;
+    store.append({ type: "time_advanced", activity: reason === "carried" ? "travel" : "brief", from: now, to: now + minutes });
+  }
+  const now = store.getState();
+  const where = placeById(now, content, now.playerPlace)?.name ?? content.locations[now.playerZone ?? ""]?.name ?? "";
+  if (reason === "summoned") return `${josa(where, "으로/로")} 불려 갔다${minutes ? ` (${minutes}분)` : ""}.`;
+  if (reason === "carried") return `업혀 ${josa(content.locations[to.zone]?.name ?? where, "으로/로")} 옮겨졌다${minutes ? ` (${minutes}분)` : ""}.`;
+  if (reason === "sent") return `${josa(where, "으로/로")} 옮겨졌다.`;
+  return null;
+}
+
+/**
+ * 이 이야기가 이 구역에서 열릴 수 있는 장소 (이동 기획: 이야기는 주인공이 이미 있는 자리에서만 열린다).
+ * 장소 조건(places·글의 장소 이름)과 실내외가 맞는 곳. 장소가 없는 구역이면 [null]. content:check와 테스트가 쓴다
+ */
+export function storyOpenPlaces(state: GameState, content: Content, zone: string, where: StoryWhere, text: string): (string | null)[] {
+  const places = placesIn(state, content, zone);
+  if (!places.length) return [null];
+  return places.filter((p) => {
+    const at = { ...state, playerZone: zone, playerPlace: p.id } as GameState;
+    return (where.indoor === undefined || storyPlaceFits(at, content, where.indoor, where, text)) && storyPlacesFit(at, content, where.places, text, !!where.summons, where.indoor);
+  }).map((p) => p.id);
+}
+
+/** 주인공이 지금 있는 자리 (유해 등 구역 안 자리를 적을 때): 숨은 곳을 탐험 중이면 "ruin:<id>", 아니면 장소 id */
+export function spotHere(state: GameState): string | null {
+  return state.exploration ? `ruin:${state.exploration.ruin}` : state.playerPlace;
+}
+
+/** 그 자리에 주인공이 있는가 (자리를 적지 않았으면 구역 어디서나) */
+export function atSpot(state: GameState, spot: string | null | undefined): boolean {
+  return !spot || spot === spotHere(state);
 }

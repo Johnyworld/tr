@@ -103,4 +103,8 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
   it("규칙 14 (소식이 닿는 길): 교전 소식은 rules/news.ts의 hearNews로 (12-269). 눈앞의 고백·이름처럼 직접 들은 말은 여기 들지 않는다", () => {
     expect(offenders(/source: "report"[^}]*topic: WAR_TOPIC/, ["rules/news.ts"])).toEqual([]);
   });
+
+  it("규칙 15 (장소): 주인공 이동은 rules/place.ts의 movePlayer로만 (이동 기획, PT20~22 순간이동). 붙잡힘·격리(player_captured)는 공통 규칙 1이 맡는다", () => {
+    expect(offenders(/type: "(place_moved|zone_moved)"/, ["rules/place.ts"])).toEqual([]);
+  });
 });

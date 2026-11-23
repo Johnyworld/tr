@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 100;
+export const SAVE_SCHEMA_VERSION = 101;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -217,6 +217,8 @@ export const remainsSchema = z.strictObject({
   diedAt: z.number().int(),
   buriedAt: z.number().int().nullable(),
   marker: z.string().nullable(),
+  /** 구역 안의 자리 (장소 id, 숨은 곳이면 "ruin:<id>"). 뒤지기·묻기는 그 자리에서만 (PT22 하얀매: 닿지 못한 지하의 시신을 바깥 길에서 뒤졌다). 없으면 구역 어디서나 */
+  spot: z.string().nullable().default(null),
 });
 export type Remains = z.infer<typeof remainsSchema>;
 
@@ -484,8 +486,6 @@ export function createGameSchemas(s: Scenario) {
     visited: z.record(z.string(), z.array(z.string())).default({}),
     /** 캐릭터마다 있어 본 장소 ("구역:장소", 설계 목록 C-1). 모르는 장소는 GM에게도 '알 수 없는 문'으로만 보인다 (공통 규칙 15 knowsPlace) */
     knownPlaces: z.record(z.string(), z.array(z.string())).default({}),
-    /** 구역에 들어와 도착한 길에 그대로 있는가 (PT21: 구역 안에서 길로 나선 것을 "막 들어옴"으로 봐 이야기가 정문으로 데려갔다). 장소를 옮기면 false */
-    justArrived: z.boolean().default(false),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
     lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
@@ -1280,7 +1280,6 @@ export const EMPTY_STATE: GameState = {
   deposits: {},
   visited: {},
   knownPlaces: {},
-  justArrived: false,
   background: [],
   companions: [],
   bonds: {},
@@ -1427,12 +1426,16 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
   }
   // 바뀐 부분만 새로 만든다 (구조 공유, 기획서 11.6). 이전 상태는 그대로 남는다
   const out = produce(state, (next: GameState) => reduce(state, next, event) as GameState | undefined);
-  // 있어 본 장소는 안다 (설계 목록 C-1): 어떤 일로 옮겨졌든(걸어서·이야기·붙잡힘·잠입) 그 자리에 놓이면 기록한다
+  // 있어 본 장소는 안다 (설계 목록 C-1): 어떤 일로 옮겨졌든(걸어서·이야기·붙잡힘·잠입) 그 자리에 놓이면 기록한다.
+  // 함께 있던 사람(동행·장면 사람)도 그곳을 안다: 그 사람을 이어받으면 아는 곳이다 (PT22 하얀매: 함께 간 병원을 계승한 동료가 몰랐다)
   if (!out.playerZone || !out.playerPlace || !out.playerId) return out;
   const key = `${out.playerZone}:${out.playerPlace}`;
-  if ((out.knownPlaces?.[out.playerId] ?? []).includes(key)) return out;
+  const who = [out.playerId, ...out.companions, ...out.scene.present].filter((id) => !(out.knownPlaces?.[id] ?? []).includes(key));
+  if (!who.length) return out;
   return produce(out, (next: GameState) => {
-    next.knownPlaces = { ...(next.knownPlaces ?? {}), [out.playerId]: [...(next.knownPlaces?.[out.playerId] ?? []), key] };
+    const known = { ...(next.knownPlaces ?? {}) };
+    for (const id of who) known[id] = [...(known[id] ?? []), key];
+    next.knownPlaces = known;
   });
 }
 
@@ -1875,8 +1878,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!(next.resolveSeeded ?? []).includes(event.characterId)) next.resolveSeeded = [...(next.resolveSeeded ?? []), event.characterId];
       return next;
     case "ruin_found": {
-      const had = next.ruinsFound?.[event.characterId] ?? [];
-      if (!had.includes(event.ruin)) next.ruinsFound = { ...(next.ruinsFound ?? {}), [event.characterId]: [...had, event.ruin] };
+      // 곁의 동행·장면 사람도 함께 찾았다 (PT22 하얀매: 이어받은 동료가 함께 찾은 지하 약제실을 몰랐다)
+      const found = { ...(next.ruinsFound ?? {}) };
+      for (const id of [event.characterId, ...(event.characterId === state.playerId ? [...state.companions, ...state.scene.present] : [])]) {
+        const had = found[id] ?? [];
+        if (!had.includes(event.ruin)) found[id] = [...had, event.ruin];
+      }
+      next.ruinsFound = found;
       return next;
     }
     case "exploration_started":
@@ -2347,7 +2355,6 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!zone) return next;
       swapGround(next, spotKey(zone, event.from), spotKey(zone, event.to));
       next.playerPlace = event.to;
-      next.justArrived = false;
       // 자리를 옮기면 무너진 자세도 풀린다 (12-251, 플레이 테스트 14: 장소를 옮겨도 다음 판정에 남았다)
       if (event.to !== state.playerPlace) next.offBalanceUntil = null;
       for (const id of next.scene.present) perceive(next, id);
@@ -2381,11 +2388,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.from !== event.to) {
         swapGround(next, event.from === null ? null : spotKey(event.from, state.playerPlace), spotKey(event.to, event.place ?? null));
         next.playerPlace = event.place ?? null;
-        next.justArrived = true;
-      } else if (event.place !== undefined && event.place !== null) {
-        next.playerPlace = event.place;
-        next.justArrived = true;
-      }
+      } else if (event.place !== undefined && event.place !== null) next.playerPlace = event.place;
       // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)
       next.infiltration = null;
       next.exploration = null;
@@ -2547,8 +2550,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         acquaint(next, successor.id, id, true);
         acquaint(next, id, successor.id, true);
       }
-      // 장면과 플레이어 기준 상태를 새로 시작한다 (새 캐릭터는 다른 곳에서 하루를 시작한다)
-      next.scene.present = [];
+      // 장면과 플레이어 기준 상태를 새로 시작한다 (새 캐릭터는 다른 곳에서 하루를 시작한다).
+      // 이어받는 사람이 그 장면에 있었으면 장면은 그대로 이어진다: 맞붙은 감염체도 그 자리에 (PT22 하얀매: 지하에서 이어받았는데 바깥 길에 혼자 섰다)
+      next.scene.present = state.scene.present.includes(successor.id) ? state.scene.present.filter((id) => id !== successor.id && id !== state.playerId) : [];
       next.perceived = {};
       // 동행은 죽은 사람을 따라다녔다. 다음 캐릭터는 새로 사귄다 (기획서 7.8).
       // 이름 없는 동행(동물·연고)은 죽은 그 자리에 남아, 다음 주인공이 그곳에서 만날 수 있다 (12-239, 플레이 테스트 13: 누렁이가 주인이 죽은 뒤 어디에도 없었다)

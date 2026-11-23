@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
 import { conditionsMet } from "../story/storylets.ts";
-import { loadRealContent, atEntry } from "../testing.ts";
+import { loadRealContent, atEntry, atStoryPlace } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { fireStorylet } from "./storyletTools.ts";
 import { executeTool } from "./tools.ts";
@@ -16,7 +16,7 @@ const morning = (t: number) => t - (t % 1440) + 8 * 60;
 
 describe("무리 안의 갈등", () => {
   it("탈영은 사기가 -2 이하일 때만 열리고, 보내 주면 무리의 사람 수가 넷 준다", () => {
-    const w = open();
+    const w = atStoryPlace(open(), "cf_deserters");
     const s = content.storylets.cf_deserters!;
     const f = () => w.state().factions[w.state().characters[w.state().playerId]!.factionId]!;
     f().morale = 0;

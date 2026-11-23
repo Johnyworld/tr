@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
-import { loadRealContent, atEntry } from "../testing.ts";
+import { loadRealContent, atEntry, atStoryPlace } from "../testing.ts";
 import { factionPeers, standingInFaction } from "../game/politics.ts";
 import { conditionsMet, castCandidates } from "../story/storylets.ts";
 
@@ -34,6 +34,7 @@ describe("무리 안의 신망", () => {
     const trial = content.storylets.pol_trial_low!;
     expect(conditionsMet(w.state(), content, trial, w.state().time)).toBe(false);
     distrustMe(w, 3);
+    atStoryPlace(w, "pol_trial_low");
     // 시간대 조건은 빼고 본다
     expect(conditionsMet(w.state(), content, { ...trial, when: { ...trial.when, segments: undefined } }, w.state().time)).toBe(true);
   });

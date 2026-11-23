@@ -27,8 +27,9 @@ describe("장소 맞추기 (12-270)", () => {
     const s = { ...make().state(), playerZone: "a_base", playerPlace: "to_old_town" };
     expect(storyPlaceFits(s, content, false)).toBe(true);
     expect(storyPlaceFits(s, content, true, {}, "누군가 문을 두드린다")).toBe(false);
-    // 실내 장소 하나를 말하면 그리로 데려간다
-    expect(storyPlaceFits(s, content, true, {}, "의무실 침대에서 신음이 들린다")).toBe(true);
+    // 실내 장소를 말해도 데려가지 않는다 (이동 기획: 이야기는 주인공을 옮기지 않는다). 부르는 이야기만 그 장소로
+    expect(storyPlaceFits(s, content, true, {}, "의무실 침대에서 신음이 들린다")).toBe(false);
+    expect(storyPlaceFits(s, content, true, { summons: true }, "의무실 침대에서 신음이 들린다")).toBe(true);
     // 길이 아닌 바깥 장소에서는 데려가지 않는다
     expect(storyPlaceFits({ ...s, playerPlace: "yard_gate" }, content, true, {}, "의무실 침대에서 신음이 들린다")).toBe(false);
   });

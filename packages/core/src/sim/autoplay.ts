@@ -6,6 +6,8 @@ import { isCreature } from "../game/kinds.ts";
 import { incapacitatingSymptom, raiseCost } from "../scenario/scenario.ts";
 import { canUseSkill } from "../engine/traits.ts";
 import type { Content } from "../content/schemas.ts";
+import type { GameState } from "../game/state.ts";
+import { hostileLand } from "../rules/home.ts";
 import type { Rng } from "../rng.ts";
 import { neighbors } from "./war.ts";
 import { choiceAvailable, storyletOf } from "../story/storylets.ts";
@@ -14,7 +16,7 @@ import { sitsOnCouncil, squadMembers } from "../engine/command.ts";
 import { battleConfig, effectBlocker } from "./battle.ts";
 import type { GameWorld } from "../world/world.ts";
 import { learned } from "../rules/skill.ts";
-import {nearby, fireLitHere } from "../rules/place.ts";
+import {nearby, fireLitHere, currentPlace, knowsPlace, placesIn, unknownDoors } from "../rules/place.ts";
 
 /**
  * 랜덤 자동 플레이 (기획서 17: 막힘과 밸런스 점검). LLM 없이 tool만 무작위로 부른다.
@@ -65,6 +67,18 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     let out = world.executeTool(name, input);
     // 이야기를 둔 채 같은 자리에서 오래 걸리는 일은 거절된다 (플레이 테스트 13): GM처럼 모른 척하고 다시 한다
     if (!out.ok && name === "take_action" && out.error.includes("ignore_story")) out = world.executeTool(name, { ...(input as object), ignore_story: true });
+    // 적 땅에서는 길로 나가야 구역을 떠난다: GM처럼 가장 가까운 길로 한 칸씩 나간 뒤 다시 한다 (이동 기획 뒤 돌아다니다 담 안에 있을 수 있다)
+    for (let i = 0; i < 6 && !out.ok && name === "take_action" && out.error.includes("길로 나가야"); i++) {
+      const road = /place_to로 [^(]*\(([a-z0-9_]+)\)/.exec(out.error)?.[1];
+      if (!road) break;
+      const step = world.executeTool("take_action", { ...base, intent: "길로 나간다", place_to: road, ignore_story: true });
+      if (!step.ok) {
+        const via = /먼저 ([a-z0-9_]+)\(/.exec(step.error)?.[1];
+        if (!via || !world.executeTool("take_action", { ...base, intent: "한 칸 나간다", place_to: via, ignore_story: true }).ok) break;
+        continue;
+      }
+      out = world.executeTool(name, input);
+    }
     // 이야기가 열려 있으면 임무를 받거나 보고하기 전에 먼저 받는다 (12-240): GM처럼 모른 척하고 다시 한다
     if (!out.ok && name !== "take_action" && out.error.includes("ignore_story")) {
       world.executeTool("take_action", { ...base, intent: "이야기를 두고 간다", ignore_story: true });
@@ -346,12 +360,16 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       const wet = !!s.playerZone && !!content.scenario.body?.thirst && (content.locations[s.playerZone]?.yields[content.scenario.body.thirst.resource] ?? 0) > 0;
       const survival = moves.find((m) => m.id === content.scenario.foraging?.move);
       let act: Record<string, unknown> | null = null;
+      // 적 땅에서는 돌아다니지 않는다 (들킬 일만 는다)
+      const walk = !s.infiltration && !s.exploration && !s.activeStorylet && !hostileLand(s, content, s.playerZone) && rng() < 0.35 ? walkTarget(s, content, rng) : null;
       if (cure && infection && shown(infection.track) > 0) act = { intent: "혈청을 맞는다", use_item: cure };
       else if (hunger && shown(hunger) > 0 && usable(hunger).length && rng() < 0.7) act = { intent: "먹는다", use_item: usable(hunger)[0] };
       else if (thirst && shown(thirst) > 0 && usable(thirst).length && rng() < 0.7) act = { intent: "물병을 마신다", use_item: usable(thirst)[0] };
       else if (shown("craving") > 0 && usable("craving").length) act = { intent: "담배를 피운다", use_item: usable("craving")[0] };
       else if (cold && shown(cold) > 0 && fuelHere && !fireLit && rng() < 0.6) act = { intent: "불을 피운다", use_item: fuelHere };
       else if (remainsHere(s).length && rng() < 0.3) act = { intent: "묻어 준다", bury: { who: remainsHere(s)[0]!.holder, words: null } };
+      // 구역 안을 돌아다닌다 (이동 기획: 이야기는 주인공이 이미 있는 자리에서만 열린다). 이웃 칸으로, 모르는 곳은 문 번호로
+      else if (walk) act = { intent: "자리를 옮긴다", place_to: walk };
       else if (trapReady && rng() < 0.6) act = { intent: "덫을 거둔다", trap: "check" };
       else if (trapItem && has(trapItem) && can(content.scenario.foraging?.trap?.move) && !atBase && !trapHere && rng() < 0.06) act = { intent: "덫을 놓는다", trap: "set" };
       else if (content.scenario.foraging && !atBase && rng() < 0.06) {
@@ -540,4 +558,14 @@ function nextStep(content: Content, from: string, to: string): string | null {
   let step = to;
   while (prev.get(step) !== from) step = prev.get(step)!;
   return step;
+}
+
+/** 돌아다닐 곳 하나: 이 구역의 아는 장소(가두는 곳 빼고) 아무 데나, 또는 지금 자리의 모르는 문 */
+function walkTarget(s: GameState, content: Content, rng: () => number): string | null {
+  const here = currentPlace(s, content);
+  if (!here) return null;
+  const known = placesIn(s, content, s.playerZone).filter((p) => p.id !== here.id && !p.jail && knowsPlace(s, content, s.playerZone, p.id)).map((p) => p.id);
+  const doors = unknownDoors(s, content).filter((p) => !p.jail).map((_, i) => `문${i + 1}`);
+  const options = [...known, ...doors];
+  return options.length ? options[Math.floor(rng() * options.length)]! : null;
 }

@@ -6,7 +6,7 @@ import { createSeededRng, type Rng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem, gearModifiers } from "./gear.ts";
-import { loadRealContent, teachSkills } from "../testing.ts";
+import { atStoryPlace, loadRealContent, teachSkills } from "../testing.ts";
 
 /** 물건 (기획서 4.8) */
 const content = loadRealContent();
@@ -56,6 +56,7 @@ describe("무기와 탄약", () => {
     expect(me(w).inventory.rifle_rounds ?? 0).toBe(before - 1);
     expect(r.ok && r.resultText).toContain("총소리가 멀리 퍼졌다");
     expect(w.state().zoneNoise.old_town?.level).toBeGreaterThanOrEqual(2);
+    atStoryPlace(w, "wg_gunshot_wave");
     expect(eligibleStorylets(w.state(), w.content).map((s) => s.id)).toContain("wg_gunshot_wave");
   });
 

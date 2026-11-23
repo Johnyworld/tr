@@ -86,7 +86,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import {comesAlong, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace } from "../rules/place.ts";
+import {comesAlong, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -405,7 +405,7 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved
   const bound = along.filter((id) => !involved.includes(id) && !s0.companions.includes(id));
   // 모르던 곳에 들어서면 그곳이 무엇인지 알게 된다 (설계 목록 C-1)
   const fresh = !!to && !knowsPlace(s0, content, s0.playerZone, to.id);
-  store.append({ type: "place_moved", from, to: to?.id ?? null, ...(along.length ? { with: along } : {}) });
+  movePlayer(ctx, { zone: s0.playerZone!, place: to?.id ?? null }, "walk", { with: along });
   // 이웃 장소 5분, 한 칸 더 멀 때마다 5분 (장소 개편)
   const steps = stepsBetween(s0, content, from, to?.id ?? null);
   const minutes = PLACE_MOVE_MINUTES * (Number.isFinite(steps) ? Math.max(1, steps) : 1);
@@ -507,25 +507,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 길 위의 일은 도착하기 전의 장면이다: 판정 없이 다른 일을 하면 길에서 두고 온 것으로 친다 (플레이 테스트 11: 붉은연합 순찰조원이 우리 거점 장면에 남아 목격자가 됐다)
   const roadTag = scenario.travel?.tag;
   // 판정을 걸어도 길 위 장면과 상관없는 긴 일(수색·일 등)이면 두고 온 것이다 (플레이 테스트 12: 매복자가 장면에 남은 채 역 안을 두 시간 뒤졌다)
-  const onRoad = !!roadTag && !!start.activeStorylet && !!storyletOf(start, content, start.activeStorylet.id)?.tags.includes(roadTag) && ((!input.check && !!input.deed) || (!!input.activity && !["talk", "brief"].includes(input.activity.kind)));
+  // 길 위 장면을 둔 채 구역 안 다른 장소로 옮겨도 두고 온 것이다 (PT22 하얀매: "벌어지는 상처"가 치료실에서 풀렸다)
+  const onRoad = !!roadTag && !!start.activeStorylet && !!storyletOf(start, content, start.activeStorylet.id)?.tags.includes(roadTag) && ((!input.check && !!input.deed) || (!!input.activity && !["talk", "brief"].includes(input.activity.kind)) || input.place_to !== null);
   const leftLines: string[] = [];
   // 갇힌 채 옮겨 가기(탈출)는 자리를 뜨는 것이 아니다: 실패하면 그대로, 성공하면 옮겨 갈 때 닫힌다 (플레이 테스트 13: 실패한 탈출이 포섭 이야기를 닫았다)
   const escaping = !!input.move_to && !!heldOf(player);
   if (ignoredLine) leftLines.push(ignoredLine);
   // 자리를 뜨는 것(옮겨 가기)과 길 위 장면을 두고 하는 일만 외면 선택지로 푼다
-  if (store.getState().activeStorylet && (!!input.move_to || onRoad) && !escaping && !isIncapacitated(ctx.content, player)) {
-    const s = storyletOf(start, content, start.activeStorylet!.id);
-    const pick = s?.choices.find((c) => WALK_AWAY_CHOICES.includes(c.id) && !c.check && choiceAvailable(start, c, start.activeStorylet!.cast));
-    const r = pick ? withoutBlame("walked_away", () => resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx)) : null;
-    // 따옴표 안 말에 맞춰 조사 (플레이 테스트 13: "낯선 손님의 공책"를)
-    const quoted = (t: string) => `"${t}"${josa(t, "을/를").slice(t.length)}`;
-    if (r?.ok) leftLines.push(`(이야기 ${quoted(storyTitle(start, ctx.content, s!))} 두고 자리를 떠, ${quoted(pick!.label)} 고른 것으로 처리했다)`, r.resultText ?? "");
-    else {
-      endActiveStorylet(ctx, "외면하고 떠났다");
-      const title = s ? storyTitle(start, ctx.content, s) : start.activeStorylet!.id;
-      leftLines.push(`이야기 "${title}"${josa(title, "을/를").slice(title.length)} 외면하고 자리를 떴다. 그 일은 그대로 지나갔다 (이야기 속 사람들은 그것을 기억할 수 있다).`);
-    }
-  }
+  if (store.getState().activeStorylet && (!!input.move_to || onRoad) && !escaping && !isIncapacitated(ctx.content, player)) leftLines.push(...walkAwayFromStory(ctx, start));
   // 혼란은 그 자리의 일이다: 자리를 옮기거나 오래 쉬면 가신다 (플레이 테스트 11: 매복의 혼란이 14시간 잠 뒤 판정에 붙었다)
   if (long && isConfused(start, start.playerId)) store.append({ type: "confusion_changed", characterId: start.playerId, on: false });
   // 잠입 중 (12-154): 옮기거나 오래 머물지 않는다. 잠입은 infiltrate로 (빠지기부터)
@@ -744,10 +733,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     }
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)
     // 따돌리려는 은밀의 상대는 함께 가지 않는다: 실패하면 쫓아온다 (PT15 분대장: 따돌리려던 감염체가 판정 전에 "함께 왔다")
-    const evading = !!input.check?.opponent && input.check.move === scenario.move_roles.stealth;
-    // 이야기가 열린 채 옮기면(판정이 붙은 이동) 장면의 이야기 배역도 따라온다 (12-262, PT17 분대장: 감염체 배역이 원래 자리에 남았다)
-    const storyCast = start.activeStorylet && !input.ignore_story && !evading ? Object.values(start.activeStorylet.cast ?? {}).filter((id) => start.scene.present.includes(id)) : [];
-    const involved = [input.target, evading ? null : input.check?.opponent, input.treatment?.target, ...input.with, ...storyCast].filter((id): id is string => !!id);
+    // 판정을 건 이동(물러나기·달아나기)의 상대와 이야기 배역은 옮길 때 따라오지 않는다: 판정이 빗나가면 그때 쫓아온다 (PT22 분대장·졸병: 물러나기에 성공했는데 감염체가 "함께 왔다")
+    const involved = [input.target, input.treatment?.target, ...input.with].filter((id): id is string => !!id && id !== input.check?.opponent);
     if ((to?.id ?? null) !== (currentPlace(start, content)?.id ?? null)) placeMove = { to, along: comesAlong(start, content, to?.id ?? null, involved), involved };
   }
   // 함께하는 사람은 장면에 있어야 한다 (공통 규칙 8의 내 편, 사용자 결정 PT14: target 말고 with)
@@ -900,6 +887,16 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       return { ok: false, error: roll.error };
     }
     outcome = roll.outcome;
+    // 옮겨 간 뒤 쫓아오는 것 (공통 규칙 15): 판정이 빗나가면 상대·이야기 배역이 따라오고, 맞으면 남는다. 남겨 두고 왔으면 열린 이야기는 외면으로 풀린다
+    if (placeMove) {
+      const live = store.getState().activeStorylet;
+      const cast = live ? Object.values(live.cast ?? {}) : [];
+      const pursuers = [...new Set([input.check.opponent, ...cast].filter((id): id is string => !!id && start.scene.present.includes(id) && !store.getState().scene.present.includes(id) && !store.getState().characters[id]?.dead))];
+      if (roll.outcome === "miss" && pursuers.length) {
+        for (const id of pursuers) enterScene(ctx, id);
+        lines.push(`쫓아왔다: ${pursuers.map((id) => playerCalls(store.getState(), content, id)).join(", ")}.`);
+      } else if (live && pursuers.length) lines.push(...walkAwayFromStory(ctx, start));
+    }
     // 위험의 무게와 결과로 나뉜 상처 종류 (플레이 테스트 11: 가벼운 위험은 찢김, 무거운 위험에 지면 물림, 대가 있는 성공이면 할큄). GM이 고른 종류가 먼저다
     {
       const foeId = input.check.opponent ?? input.target ?? null;
@@ -1370,7 +1367,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const deposited = start.playerZone ? store.getState().deposits?.[start.playerZone] : undefined;
     leaveAmbush(ctx);
     const alongZone = comesAlong(start, content, null, input.with);
-    store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to, place: arrivalPlace(start, content, input.move_to, start.playerZone), ...(alongZone.length ? { with: alongZone } : {}) });
+    movePlayer(ctx, { zone: input.move_to, place: arrivalPlace(start, content, input.move_to, start.playerZone) }, "travel", { with: alongZone });
     if (deposited) lines.push(`맡겨 둔 것을 돌려받고 떠났다: ${Object.entries(deposited).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ")}.`);
     // 끌고 온 포로: 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다 (12-55)
     lines.push(...deliverPrisoners(ctx));
@@ -1907,4 +1904,20 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       ...(interrupt ? { interruptDetail: interrupt.detail } : {}),
     },
   };
+}
+
+/** 열린 이야기를 두고 자리를 떴다: 외면 선택지가 있으면 그것으로, 없으면 외면하고 떠난 것으로 (공통 규칙 17 "이야기의 자리") */
+function walkAwayFromStory(ctx: ToolContext, start: GameState): string[] {
+  const { store, content } = ctx;
+  const live = store.getState().activeStorylet;
+  if (!live) return [];
+  const s = storyletOf(start, content, live.id);
+  const pick = s?.choices.find((c) => WALK_AWAY_CHOICES.includes(c.id) && !c.check && choiceAvailable(start, c, live.cast));
+  const r = pick ? withoutBlame("walked_away", () => resolveStorylet.run({ choice_id: pick.id, improvised_move: null }, ctx)) : null;
+  // 따옴표 안 말에 맞춰 조사 (플레이 테스트 13: "낯선 손님의 공책"를)
+  const quoted = (t: string) => `"${t}"${josa(t, "을/를").slice(t.length)}`;
+  if (r?.ok) return [`(이야기 ${quoted(storyTitle(start, content, s!))} 두고 자리를 떠, ${quoted(pick!.label)} 고른 것으로 처리했다)`, r.resultText ?? ""];
+  endActiveStorylet(ctx, "외면하고 떠났다");
+  const title = s ? storyTitle(start, content, s) : live.id;
+  return [`이야기 "${title}"${josa(title, "을/를").slice(title.length)} 외면하고 자리를 떴다. 그 일은 그대로 지나갔다 (이야기 속 사람들은 그것을 기억할 수 있다).`];
 }

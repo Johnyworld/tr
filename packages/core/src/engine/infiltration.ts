@@ -1,7 +1,7 @@
 import { stakesOf } from "../rules/stakes.ts";
 import { onSpotted } from "../rules/consequence.ts";
 import { heldOf, heldSeenTopic, heldSeenZone, welcomeRescued } from "../rules/held.ts";
-import { currentPlace, depthAt, doorLabel, knowsPlace, nearestRoad, peopleAt, placeById, resolvePlace, unknownDoors, whereIs, type Place } from "../rules/place.ts";
+import { currentPlace, depthAt, doorLabel, movePlayer, knowsPlace, nearestRoad, peopleAt, placeById, resolvePlace, unknownDoors, whereIs, type Place } from "../rules/place.ts";
 import { josa } from "../text.ts";
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
@@ -203,7 +203,7 @@ function noteCaptivesHere(ctx: ToolContext): string[] {
 function backToEntry(ctx: ToolContext): void {
   const here = currentPlace(ctx.store.getState(), ctx.content);
   const road = nearestRoad(ctx.store.getState(), ctx.content);
-  if (here && road && road !== here.id) ctx.store.append({ type: "place_moved", from: here.id, to: road });
+  if (here && road && road !== here.id) movePlayer(ctx, { zone: ctx.store.getState().playerZone!, place: road }, "infiltrate");
 }
 
 const infiltrate = defineTool({
@@ -273,7 +273,7 @@ const infiltrate = defineTool({
         lines.push(`${next ? (fresh ? "그 문 너머로" : josa(next.name, "으로/로")) : josa(depthLabel(toDepth), "으로/로")} 가려다 발소리가 가까워 한 걸음 물러나 숨었다. 들키지는 않았다. 아직 ${depthLabel(inf.depth)} (낌새가 짙다: 한 번 더 어긋나면 들킨다).`);
       } else if (check.outcome !== "miss") {
         store.append({ type: "infiltration_changed", depth: toDepth, alarm: inf.alarm, done: inf.done });
-        if (next) store.append({ type: "place_moved", from: currentPlace(store.getState(), content)?.id ?? null, to: next.id });
+        if (next) movePlayer(ctx, { zone: store.getState().playerZone!, place: next.id }, "infiltrate");
         lines.push(`${toDepth > inf.depth ? `${josa(depthLabel(toDepth), "으로/로")} 들어갔다` : `${depthLabel(toDepth)}에서 자리를 옮겼다`}${next ? `: ${next.name}` : ""}.`);
         if (next && fresh) lines.push(`처음 들어선 곳이다: ${next.id} ${next.name}${next.description ? ` (${next.description})` : ""}. 이제 이곳을 안다.`);
         if (next) {

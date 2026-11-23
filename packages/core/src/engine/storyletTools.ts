@@ -31,7 +31,7 @@ import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, storyletOf } from "../story/storylets.ts";
 import { justHadStory, storyText } from "../rules/storySlot.ts";
-import {hereWithMe, placeById, storyPlaceOnEntry, whereIs, whereLabel, currentPlace } from "../rules/place.ts";
+import {hereWithMe, placeById, storyPlaceOnEntry, whereIs, whereLabel, currentPlace, arrivalPlace } from "../rules/place.ts";
 import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
@@ -799,7 +799,7 @@ export function applyEffect(
           .sort((a, b) => Number(ownedBy(store.getState(), b, me.factionId)) - Number(ownedBy(store.getState(), a, me.factionId)) || a.localeCompare(b))[0]
       : undefined;
     const home = effect.release_player.home ? (baseOfNow(store.getState(), content, me.factionId) ?? out) : out;
-    if (home && home !== store.getState().playerZone) store.append({ type: "zone_moved", from: store.getState().playerZone, to: home });
+    if (home && home !== store.getState().playerZone) store.append({ type: "zone_moved", from: store.getState().playerZone, to: home, place: arrivalPlace(store.getState(), content, home, store.getState().playerZone) });
     return { line: `${line ?? "풀려났다."}${home ? ` ${josa(content.locations[home]?.name ?? home, "으로/로")} 돌아왔다.` : ""}` };
   }
   if ("deposit_weapons" in effect) {
@@ -949,7 +949,7 @@ export function applyEffect(
     // 갇힌 곳에서 다른 곳으로 옮겨지면 빠져나온 것이다 (빼앗긴 것은 두고 온다, 12-55)
     if (heldOf(state.characters[playerId]) && content.locations[to] && state.playerZone !== to) releasePlayer(ctx, false);
     if (!content.locations[to] || state.playerZone === to) return {};
-    store.append({ type: "zone_moved", from: state.playerZone, to });
+    store.append({ type: "zone_moved", from: state.playerZone, to, place: arrivalPlace(state, content, to, state.playerZone) });
     return { line: `${josa(content.locations[to]!.name, "으로/로")} 옮겨졌다. 함께 있던 인물은 따라오지 않는다.` };
   }
   if ("reveal_tie" in effect) {

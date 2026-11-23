@@ -546,10 +546,13 @@ function describePlaces(state: GameState, content: Content): string {
     // 집이 있는 아는 사람(가족 등)은 그 사람을 직접 만난 뒤에만: 어디 사는지는 이야기로 알게 된다 (12-267, PT19 튜토리얼: 수소문 전에 버들마을 목록이 부모의 동을 보여 줬다)
     const homeUnknown = (id: string) => !!state.characters[id]?.extra?.place && state.perceived[id] === undefined && p.id !== here?.id;
     const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && !homeUnknown(id) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
-    return `- ${p.id} ${p.name} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : ""}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
+    // 이웃과 길 (장소 개편): 이웃은 5분, 길은 이어지는 구역
+    const toZones = p.road && p.to.length ? `, 길: ${p.to.map((z) => content.locations[z]?.name ?? z).join("·")} 쪽` : "";
+    const nearLine = here && here.near.includes(p.id) ? " · 이웃" : "";
+    return `- ${p.id} ${p.name} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""}${toZones})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : nearLine}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
   };
   return [
-    `지금 있는 곳: ${here ? `${here.name} (${here.indoor ? "실내" : "바깥"})` : "구역에 막 들어선 자리 (장소를 정하지 않았다)"}. 같은 구역 안의 다른 장소로는 take_action place_to (5분). 목록에 없는 곳은 spawn_place로 만든다`,
+    `지금 있는 곳: ${here ? `${here.name} (${here.indoor ? "실내" : "바깥"}${here.road ? ", 구역에 드나드는 길" : ""})` : "장소를 모른다"}. 같은 구역 안의 다른 장소로는 take_action place_to (이웃 5분, 한 칸 멀 때마다 5분). 목록에 없는 곳은 spawn_place로 만든다 (지금 자리의 이웃이 된다)`,
     "이 구역의 장소 (그곳에 있을 아는 사람):",
     ...places.map(line),
   ].join("\n");

@@ -34,7 +34,7 @@ import { isIncapacitated } from "./body.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { tellPlayerSecret } from "../rules/self.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
-import {sharesPlace, whereIs, zoneOf, hereWithMe, peopleHere } from "../rules/place.ts";
+import { closeness, whereIs, hereWithMe, peopleHere } from "../rules/place.ts";
 
 export type DeedInput = {
   summary: string;
@@ -184,16 +184,11 @@ function recordDeedIf(
       // (12-268, PT18·PT19 졸병: 적 지휘소의 정비공·장교 엑스트라가 장면에 없으면 절대 보지 못했다)
       if (state.scene.present.includes(character.id) || isCreature(ctx.content, character)) continue;
       if (!ctx.content.npcs[character.id] && !hereWithMe(state, ctx.content, character.id)) continue;
-      // 숨은 목격자는 그 시각 같은 구역에 있던 사람만 (기획서 8.2 "근처"). 전에는 세계 어디에 있든 굴려,
-      // 다른 무리 거점의 약사가 우리 거점 안의 일을 "직접 봄"으로 알았다 (플레이 테스트 8)
-      // (어디 있는지 모르는 인물이나 구역이 없는 장면은 예전처럼 굴린다)
-      const where = zoneOf(state, ctx.content, character.id);
-      if (state.playerZone && where && where !== state.playerZone) continue;
-      // 같은 구역이어도 다른 장소에 있을 사람은 보지 못한다 (공통 규칙 15, PT14: 장터 반대편·다른 장소의 사람이 "직접 봄")
-      if (!sharesPlace(state, ctx.content, character.id)) continue;
-      // 같은 장소에 있다고 정해진 사람은 두 배로 본다 (B② 2026-11-23, PT16·17 졸병: 창고에 있을 사람 여섯인데 장면의 하나만 보았다).
-      // 장소를 모르는 "구역 어딘가"의 사람은 그대로
-      const chance = noticeChance(ctx, character, input.privacy, input.noisy, stealth) * (hereWithMe(state, ctx.content, character.id) ? SAME_PLACE_FACTOR : 1);
+      // 숨은 목격자는 근처에 있던 사람만 (장소 개편): 같은 장소 두 배, 이웃 장소 그대로, 그 밖은 보지 못한다.
+      // 전에는 같은 구역이면 "구역 어딘가"로 굴려 다른 무리 거점의 약사가 우리 거점 안의 일을 "직접 봄"으로 알았다 (플레이 테스트 8, PT14, 12-272)
+      const near = closeness(state, ctx.content, character.id);
+      if (!near) continue;
+      const chance = noticeChance(ctx, character, input.privacy, input.noisy, stealth) * (near === 2 ? SAME_PLACE_FACTOR : 1);
       if (ctx.rng() < chance) witnesses.push({ npcId: character.id, hidden: true });
     }
   }

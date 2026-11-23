@@ -1,3 +1,4 @@
+import { arrivalPlace } from "../rules/place.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { infestationOf } from "../game/infestation.ts";
@@ -168,7 +169,7 @@ function byAllies(ctx: ToolContext, allies: Character[]): ToolDisplayEvent[] {
   const who = known ? name : "누군가";
   if (carrier && base && base !== state.playerZone) {
     ctx.store.append({ type: "helpless_resolved", outcome: "carried", by: carrier.id });
-    ctx.store.append({ type: "zone_moved", from: state.playerZone, to: base });
+    ctx.store.append({ type: "zone_moved", from: state.playerZone, to: base, place: arrivalPlace(state, ctx.content, base, state.playerZone) });
     const place = ctx.content.locations[base]?.name ?? base;
     return [...tend(ctx, `${who}의 돌봄`), remember(ctx, `정신을 잃은 사이 ${josa(who, "이/가")} ${place}까지 옮겨 돌봐 주었다`)];
   }
@@ -183,7 +184,7 @@ function byFaction(ctx: ToolContext, factionId: string): ToolDisplayEvent[] {
   const name = ctx.content.factions[factionId]?.name ?? factionId;
   ctx.store.append({ type: "helpless_resolved", outcome: base && base !== state.playerZone ? "carried" : "tended", by: factionId });
   if (base && base !== state.playerZone) {
-    ctx.store.append({ type: "zone_moved", from: state.playerZone, to: base });
+    ctx.store.append({ type: "zone_moved", from: state.playerZone, to: base, place: arrivalPlace(state, ctx.content, base, state.playerZone) });
     return [...tend(ctx, `${name} 사람들의 돌봄`), remember(ctx, `정신을 잃은 사이 ${name} 사람들이 찾아내 ${ctx.content.locations[base]?.name ?? base}까지 옮겨 주었다`)];
   }
   return [...tend(ctx, `${name} 사람들의 돌봄`), remember(ctx, `정신을 잃은 사이 ${name} 사람들이 찾아내 돌봐 주었다`)];

@@ -98,10 +98,10 @@ describe("부르는 이야기·남의 거점 문 앞 (12-260)", () => {
     expect(w.state().playerPlace).toBe("yard");
   });
 
-  it("다른 무리 거점에 막 들어선 자리는 바깥이다", () => {
+  it("다른 무리 거점에 막 들어오면 길(바깥)에 도착한다", () => {
     const w = world("role_t_visitor");
     w.runCheat("~goto a_base");
-    expect(w.state().playerPlace).toBeNull();
+    expect(content.locations.a_base!.places.find((p) => p.id === w.state().playerPlace)?.road).toBe(true);
     expect(shelterAt(content, w.state(), "rest").indoor).toBe(false);
   });
 });

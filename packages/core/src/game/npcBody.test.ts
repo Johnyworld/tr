@@ -29,8 +29,8 @@ describe("NPC의 몸 (기획서 7.7)", () => {
     // 잠복 이틀 → 추움 (하루에 한 단계, 첫 증상부터 열이 오르는 이야기가 열린다, 12-74·12-109)
     for (let i = 0; i < 20 && Math.floor(w.state().time / 1440) + 1 < day0 + 2; i++) w.executeTool("take_action", { ...sleep, activity: { kind: "wait", until: i % 2 ? "morning" : "night" } });
     expect(w.state().characters.d_sori!.conditions.infection).toBe("chill");
-    // 그동안 열린 이야기가 주인공을 약제실 같은 장소로 옮겨 뒀을 수 있다 (12-254): 숙소 이야기를 보려고 막 들어선 자리로
-    w.executeTool("take_action", { ...sleep, activity: null, place_to: "entry" });
+    // 그동안 열린 이야기가 주인공을 약제실 같은 장소로 옮겨 뒀을 수 있다 (12-254): 숙소 이야기를 보려고 숙소로
+    w.executeTool("take_action", { ...sleep, activity: null, place_to: "lodging" });
     expect(ids(w, dawnOf(w, 5))).toContain("d_sori_fever");
     expect(ids(w, morningOf(7))).not.toContain("d_sori_clear");
     w.close();

@@ -71,12 +71,12 @@ describe("공통 규칙 17: 이야기의 자리 (12-254)", () => {
     expect(storyPlaces(s, content, st.when.places, storyText(st))).toContain("farm_shore");
   });
 
-  it("막 들어선 자리에서 이야기가 장소 하나를 말하면 그 장소, 이미 장소에 있거나 여럿이면 없음", () => {
+  it("길(구역에 막 들어온 자리)에서 이야기가 장소 하나를 말하면 그 장소, 길 아닌 장소에 있거나 여럿이면 없음", () => {
     const w = world("role_y_islander");
-    const s = { ...w.state(), playerPlace: null };
-    expect(storyPlaceOnEntry(s, content, ["dock"], "")).toBe("dock");
-    expect(storyPlaceOnEntry({ ...s, playerPlace: "dock" }, content, ["farm_shore"], "")).toBeNull();
-    expect(storyPlaceOnEntry(s, content, ["dock", "farm_shore"], "")).toBeNull();
+    const s = { ...w.state(), playerZone: "yeoul_isle", playerPlace: "dock" };
+    expect(storyPlaceOnEntry(s, content, ["quarters"], "")).toBe("quarters");
+    expect(storyPlaceOnEntry({ ...s, playerPlace: "quarters" }, content, ["farm_shore"], "")).toBeNull();
+    expect(storyPlaceOnEntry(s, content, ["quarters", "farm_shore"], "")).toBeNull();
   });
 
   it("빨리감기는 자리가 열리는 시각에 꼭 멈춰 검사한다 (한 시간씩 건너뛰어 늦게 열리지 않게)", () => {

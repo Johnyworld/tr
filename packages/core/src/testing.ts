@@ -11,7 +11,7 @@ import { createWorldEvent } from "./game/state.ts";
 import { InMemoryGameStore } from "./game/store.ts";
 import { InMemoryRepository } from "./persistence/repository.ts";
 import { GameWorld } from "./world/world.ts";
-import { whereIs } from "./rules/place.ts";
+import { whereIs, arrivalPlace } from "./rules/place.ts";
 import { runAfterTimeAdvance } from "./engine/turnStart.ts";
 import { createSeededRng, type Rng } from "./rng.ts";
 import type { PlayMode } from "./engine/log.ts";
@@ -492,11 +492,13 @@ export function teachSkills(world: GameWorld, skills: string[] | Record<string, 
 }
 
 /**
- * 시작 장소(12-259) 대신 구역에 막 들어선 자리에서 시작한다. 시작 장소가 생기기 전에 쓴 테스트가
- * 장소를 정하지 않은 자리를 전제로 할 때 (장소 거르기를 받지 않는 자리)
+ * 시작 장소(12-259) 대신 구역의 길(구역에 막 들어온 자리, 장소 개편)에서 시작한다. 시작 장소가 생기기 전에 쓴 테스트가
+ * 장소 거르기를 받지 않는 자리를 전제로 할 때
  */
 export function atEntry<T extends GameWorld>(w: T): T {
-  const place = whereIs(w.state(), w.ctx().content, w.state().playerId)?.place ?? null;
-  if (place) w.ctx().store.append({ type: "place_moved", from: place, to: null });
+  const s = w.state();
+  const place = whereIs(s, w.ctx().content, s.playerId)?.place ?? null;
+  const road = s.playerZone ? arrivalPlace(s, w.ctx().content, s.playerZone) : null;
+  if (road && place !== road) w.ctx().store.append({ type: "place_moved", from: place, to: road });
   return w;
 }

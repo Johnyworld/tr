@@ -73,8 +73,11 @@ describe("잠시 떨어짐 (기획서 7.9)", () => {
     expect(w.state().scene.present).not.toContain(kin);
     expect(w.executeTool("npc_presence", { npc_id: kin, action: "enter" }).ok).toBe(false);
     expect(w.sceneForGm()).toContain("떨어져 있는 동행");
+    const waiting = w.state().bonds[kin!]?.apart?.place ?? null;
     const back = move(w, "old_town");
-    expect(back).toContain("다시 합류했다");
+    // 돌아온 길이 기다리는 장소가 아니면 그 장소로 가야 합류한다 (장소 개편: 구역에 들어오면 떠나온 쪽 길)
+    const joined = w.state().playerPlace === waiting ? back : (() => { const r = w.executeTool("take_action", act("간다", { place_to: waiting, ignore_story: true })); return r.ok ? r.resultText : r.error; })();
+    expect(joined).toContain("다시 합류했다");
     expect(w.state().companions).toContain(kin);
     expect(w.state().bonds[kin!]?.apart).toBeUndefined();
     w.close();

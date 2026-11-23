@@ -1,3 +1,4 @@
+import { fireSpot } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -91,7 +92,7 @@ describe("야영", () => {
     const state = w.state();
     const site = campSite(content, state)!;
     const plain = campChance(content, state, { ...site, ownLand: false }, state.time);
-    const lit = { ...state, fires: { old_town: state.time + 600 } };
+    const lit = { ...state, fires: { [fireSpot(state)!]: state.time + 600 } };
     expect(campChance(content, lit, { ...site, ownLand: false }, state.time)).toBeCloseTo(plain * 1.5);
     expect(campChance(content, state, { ...site, ownLand: true }, state.time)).toBeCloseTo(plain * 0.5);
   });

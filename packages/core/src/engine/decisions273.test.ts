@@ -18,21 +18,26 @@ const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check:
 const go = (w: ReturnType<typeof make>, action: string, goal: string | null = null, place: string | null = null) => w.executeTool("infiltrate", { action, goal, place });
 
 describe("잠입 깊이와 장소 (12-273)", () => {
-  it("깊이는 장소에서: 막 들어선 자리 담 밖, 바깥 장소 담 안, 실내 장소 깊은 곳", () => {
+  it("깊이는 gate로: 담을 지나기 전 0, 담 문 1, 그 너머 2. 담 없는 구역은 길에서 몇 칸", () => {
     const s = make().state();
-    expect(depthAt(s, content, null)).toBe(0);
+    expect(depthAt(s, content, "to_south")).toBe(0);
+    expect(depthAt(s, content, "checkpoint_3")).toBe(0);
+    expect(depthAt(s, content, "container_gap")).toBe(0);
     expect(depthAt(s, content, "yard")).toBe(1);
+    expect(depthAt(s, content, "wall")).toBe(1);
     expect(depthAt(s, content, "stockade")).toBe(2);
-    const bare = Object.keys(content.locations).find((z) => !content.locations[z]!.places.length)!;
-    expect(depthAt({ ...s, playerZone: bare }, content, null)).toBeNull();
+    const town = { ...s, playerZone: "old_town" };
+    expect(depthAt(town, content, "to_east")).toBe(0);
+    expect(depthAt(town, content, "crossroads")).toBe(1);
+    expect(depthAt(town, content, "basement")).toBe(2);
   });
 
-  it("적 땅에서 드러내 놓고는 한 깊이씩만 옮긴다", () => {
+  it("적 땅에서 드러내 놓고는 이웃 장소로 한 칸씩만 옮긴다", () => {
     const w = make();
     const jump = w.executeTool("take_action", act({ place_to: "stockade" }));
     expect(jump.ok).toBe(false);
-    expect(!jump.ok && jump.error).toContain("한 깊이씩");
-    expect(w.state().playerPlace).toBeNull();
+    expect(!jump.ok && jump.error).toContain("한 칸씩");
+    expect(content.locations.c_warehouse!.places.find((p) => p.id === w.state().playerPlace)?.road).toBe(true);
   });
 
   it("잠입은 지금 장소의 깊이에서 시작하고, 잠입 중에는 place_to를 막는다", () => {
@@ -51,7 +56,7 @@ describe("잠입 깊이와 장소 (12-273)", () => {
     w.ctx().store.append({ type: "belief_added", characterId: w.state().playerId, belief: { id: `b_${w.state().nextBeliefNo}`, fact: "수용소에 갇혀 있다", source: "seen", accuracy: "exact", learnedAt: w.state().time, topic: heldSeenTopic(captive, "c_warehouse") } });
     w.ctx().store.append({ type: "place_moved", from: null, to: "yard" });
     expect(go(w, "start", "free").ok).toBe(true);
-    go(w, "advance");
+    go(w, "advance", null, "stockade");
     expect(w.state().playerPlace).toBe("stockade");
   });
 });

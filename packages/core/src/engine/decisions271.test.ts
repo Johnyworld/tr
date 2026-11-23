@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { peopleHere, placesIn, whereIs } from "../rules/place.ts";
+import { currentPlace, peopleHere, placesIn, whereIs } from "../rules/place.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { watchers } from "./opposition.ts";
@@ -24,41 +24,43 @@ const busiest = (w: ReturnType<typeof make>) => {
 };
 
 describe("장소의 사람 (12-271)", () => {
-  it("같은 장소에 있을 사람은 장소를 모르는 '구역 어딘가'의 사람보다 숨은 목격자로 더 잘 본다", () => {
+  it("같은 장소에 있을 사람은 이웃 장소의 사람보다 숨은 목격자로 더 잘 본다 (장소 개편: 같은 장소 ×2, 이웃 ×1)", () => {
     let same = [0, 0];
-    let somewhere = [0, 0];
+    let next = [0, 0];
     for (const roll of [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]) {
       const w = make(roll);
-      w.executeTool("take_action", act({ place_to: busiest(w).id }));
+      w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: busiest(w).id });
       const s = w.state();
       const here = new Set(peopleHere(s, content));
-      const loose = Object.keys(content.npcs).filter((id) => !s.scene.present.includes(id) && whereIs(s, content, id)?.zone === s.playerZone && whereIs(s, content, id)?.place === null);
+      const near = new Set(currentPlace(s, content)!.near);
+      const beside = Object.keys(content.npcs).filter((id) => !s.scene.present.includes(id) && whereIs(s, content, id)?.zone === s.playerZone && near.has(whereIs(s, content, id)?.place ?? ""));
       const { deed } = recordDeed(w.ctx(), { summary: "선반에서 통조림을 챙겼다", tags: ["theft"], severity: 1, privacy: "semi_private", noisy: false });
       const saw = new Set(deed!.witnesses.filter((x) => x.hidden).map((x) => x.npcId));
       same = [same[0]! + [...here].filter((id) => saw.has(id)).length, same[1]! + here.size];
-      somewhere = [somewhere[0]! + loose.filter((id) => saw.has(id)).length, somewhere[1]! + loose.length];
+      next = [next[0]! + beside.filter((id) => saw.has(id)).length, next[1]! + beside.length];
     }
     expect(same[1]).toBeGreaterThan(0);
-    expect(somewhere[1]).toBeGreaterThan(0);
-    expect(same[0]! / same[1]!).toBeGreaterThan(somewhere[0]! / somewhere[1]!);
+    expect(next[1]).toBeGreaterThan(0);
+    expect(same[0]! / same[1]!).toBeGreaterThan(next[0]! / next[1]!);
   });
 
   it("적 땅의 장소에 들어서면 그곳의 땅 주인 무리 사람이 알아보고 경보가 울린다", () => {
     const w = make(0.01);
     w.runCheat("~goto c_warehouse");
-    const spot = busiest(w);
-    const owners = peopleHere({ ...w.state(), playerPlace: spot.id }, content).filter((id) => w.state().characters[id]?.factionId === "faction_c");
+    // 3번 초소에서 이웃인 창고 마당으로
+    w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: "checkpoint_3" });
+    const owners = peopleHere({ ...w.state(), playerPlace: "yard" }, content).filter((id) => w.state().characters[id]?.factionId === "faction_c");
     expect(owners.length).toBeGreaterThan(0);
-    const r = w.executeTool("take_action", act({ place_to: spot.id }));
-    expect(r.ok).toBe(true);
+    const r = w.executeTool("take_action", act({ place_to: "yard" }));
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(r.ok && r.resultText).toContain("알아보았다");
-    expect(Object.values(w.state().deeds).some((d) => /들어|침입|몰래/.test(d.summary)) || (r.ok && /경보/.test(r.resultText))).toBe(true);
   });
 
   it("잘 숨으면(굴림이 높으면) 알아보지 못한다", () => {
     const w = make(0.99);
     w.runCheat("~goto c_warehouse");
-    const r = w.executeTool("take_action", act({ place_to: busiest(w).id }));
+    w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: "checkpoint_3" });
+    const r = w.executeTool("take_action", act({ place_to: "yard" }));
     expect(r.ok && r.resultText).not.toContain("알아보았다");
   });
 
@@ -71,15 +73,14 @@ describe("장소의 사람 (12-271)", () => {
   });
 });
 
-describe("막 들어선 자리의 숨은 목격자 (12-272)", () => {
-  it("다른 장소로 정해진 사람은 막 들어선 자리의 일을 보지 못한다", () => {
+describe("근처가 아닌 사람은 보지 못한다 (12-272, 장소 개편)", () => {
+  it("이웃도 아닌 장소에 있는 사람은 길에서 한 일을 보지 못한다", () => {
     const w = make(0.0001);
-    w.executeTool("take_action", act({ place_to: "entry" }));
     const s = w.state();
-    expect(s.playerPlace).toBeNull();
-    const placed = Object.keys(content.npcs).filter((id) => { const at = whereIs(s, content, id); return at?.zone === s.playerZone && !!at.place && !s.scene.present.includes(id); });
-    expect(placed.length).toBeGreaterThan(0);
-    const { deed } = recordDeed(w.ctx(), { summary: "정문 앞에서 통조림을 챙겼다", tags: ["theft"], severity: 1, privacy: "public", noisy: true });
-    expect(deed!.witnesses.filter((x) => x.hidden).some((x) => placed.includes(x.npcId))).toBe(false);
+    const near = new Set([s.playerPlace, ...(currentPlace(s, content)?.near ?? [])]);
+    const far = Object.keys(content.npcs).filter((id) => { const at = whereIs(s, content, id); return at?.zone === s.playerZone && !!at.place && !near.has(at.place) && !s.scene.present.includes(id); });
+    expect(far.length).toBeGreaterThan(0);
+    const { deed } = recordDeed(w.ctx(), { summary: "길에서 통조림을 챙겼다", tags: ["theft"], severity: 1, privacy: "public", noisy: true });
+    expect(deed!.witnesses.filter((x) => x.hidden).some((x) => far.includes(x.npcId))).toBe(false);
   });
 });

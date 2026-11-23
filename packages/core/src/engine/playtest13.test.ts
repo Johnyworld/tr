@@ -1,3 +1,4 @@
+import { arrivalPlace } from "../rules/place.ts";
 import { npcPlaceAt } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -111,9 +112,11 @@ describe("플레이 테스트 13 버그", () => {
     const next = content.locations[here]!.adjacent[0]!;
     const item = Object.keys(w.state().characters[w.state().playerId]!.inventory)[0]!;
     expect(w.executeTool("transfer_item", { from: w.state().playerId, to: "scene", item_id: item, quantity: 1 }).ok).toBe(true);
-    ctx.store.append({ type: "zone_moved", from: here, to: next });
+    const road = w.state().playerPlace;
+    ctx.store.append({ type: "zone_moved", from: here, to: next, place: arrivalPlace(w.state(), content, next, here) });
     expect(w.state().scene.items[item] ?? 0).toBe(0);
-    ctx.store.append({ type: "zone_moved", from: next, to: here });
+    // 돌아오면 떠나온 쪽 길에 도착한다: 물건을 둔 그 길로 돌아오면 거기 있다 (장소 개편)
+    ctx.store.append({ type: "zone_moved", from: next, to: here, place: road });
     expect(w.state().scene.items[item]).toBe(1);
   });
 

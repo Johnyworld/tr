@@ -86,7 +86,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import {comesAlong, currentPlace, depthAt, ENTRY_PLACE, peopleAt, placeTarget, placesAtDepth, placesIn, whereIs, npcPlaceAt, type Place, whereLabel } from "../rules/place.ts";
+import {comesAlong, currentPlace, peopleAt, placeById, placeTarget, placesIn, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -237,7 +237,7 @@ export function createTakeActionSchema(s: Scenario) {
       .string()
       .nullable()
       .default(null)
-      .describe(`이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 구역에 막 들어선 자리로 돌아가면 "${ENTRY_PLACE}". 5분이 든다. 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null`),
+      .describe(`이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 구역 밖으로 나가는 길(road)도 장소다. 이웃 장소는 5분, 한 칸 더 멀 때마다 5분. 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null`),
     with: z
       .array(z.string())
       .default([])
@@ -404,11 +404,14 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved
   // 그곳에 있을 사람이라 같이 온 사람과 이번 행동으로 데려온 사람을 나눠 적는다 (PT15 졸병: target이 없는데 "함께 왔다: 강태호")
   const bound = along.filter((id) => !involved.includes(id) && !s0.companions.includes(id));
   store.append({ type: "place_moved", from, to: to?.id ?? null, ...(along.length ? { with: along } : {}) });
-  store.append({ type: "time_advanced", activity: "brief", from: store.getState().time, to: store.getState().time + PLACE_MOVE_MINUTES });
+  // 이웃 장소 5분, 한 칸 더 멀 때마다 5분 (장소 개편)
+  const steps = stepsBetween(s0, content, from, to?.id ?? null);
+  const minutes = PLACE_MOVE_MINUTES * (Number.isFinite(steps) ? Math.max(1, steps) : 1);
+  store.append({ type: "time_advanced", activity: "brief", from: store.getState().time, to: store.getState().time + minutes });
   const s = store.getState();
   const calls = (ids: string[]) => ids.map((id) => `${playerCalls(s, content, id)}(${id})`).join(", ");
   const people = to ? peopleAt(s, content, s.playerZone, to.id) : [];
-  const where = to ? `${josa(to.name, "으로/로")} 옮겼다 (${to.indoor ? "실내" : "바깥"}, ${PLACE_MOVE_MINUTES}분).` : `구역에 막 들어선 자리로 돌아왔다 (${PLACE_MOVE_MINUTES}분).`;
+  const where = to ? `${josa(to.name, "으로/로")} 옮겼다 (${to.indoor ? "실내" : "바깥"}${to.road ? ", 길" : ""}, ${minutes}분).` : `옮겼다 (${minutes}분).`;
   return [
     where,
     mates.length ? `동행도 함께 왔다: ${calls(mates)}.` : "",
@@ -416,7 +419,7 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved
     bound.length ? `${calls(bound)}도 그곳으로 가던 참이라 같이 왔다.` : "",
     left.length ? `원래 자리에 남았다: ${calls(left)} (함께 데려가려면 with).` : "",
     // 막 들어선 자리에 둔 물건은 그 자리에 남는다 (돌아갈 수 있게 알린다)
-    from === null && ground ? `막 들어선 자리에 둔 물건은 그 자리에 남았다 (다시 가려면 place_to: ${ENTRY_PLACE}).` : "",
+    ground && from ? `바닥에 둔 물건은 그 자리에 남았다 (다시 가려면 place_to: ${from}).` : "",
     people.length ? `지금 이곳에 있을 사람: ${calls(people)} (장면에 들이려면 npc_presence).` : "",
   ].filter(Boolean).join(" ");
 }
@@ -511,12 +514,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
   // 옮겨 가는 장소에 있을 사람은 옮긴 뒤 장면에 들인다 (12-261, 공통 규칙 15. PT16 세 판: "막사로 가서 한태경에게"가 "장면에 없다")
   const atDest = (id: string) => {
-    if (input.place_to === null || input.place_to === ENTRY_PLACE || start.characters[id]?.dead) return false;
+    if (input.place_to === null || start.characters[id]?.dead) return false;
     const w = whereIs(start, content, id);
     return !!w && w.zone === start.playerZone && w.place === input.place_to;
   };
   // 옮겨 가는 장소의 치료사도 (12-262, PT17 분대장·졸병: place_to와 치료를 한 턴에 하면 치료사를 못 찾았다)
-  const destHealers = input.treatment && !input.treatment.item && input.place_to && input.place_to !== ENTRY_PLACE ? Object.values(content.npcs).filter((n) => n.healer && !start.scene.present.includes(n.id) && atDest(n.id)).map((n) => n.id) : [];
+  const destHealers = input.treatment && !input.treatment.item && input.place_to ? Object.values(content.npcs).filter((n) => n.healer && !start.scene.present.includes(n.id) && atDest(n.id)).map((n) => n.id) : [];
   // with로 함께할 사람도 옮겨 가는 장소에 있으면 들인다 (12-268, PT18 섬: target은 되는데 with는 "장면에 없다")
   const arriving = [input.target, input.check?.opponent, ...input.with, ...destHealers].filter((id): id is string => !!id && !start.scene.present.includes(id) && atDest(id));
   if (input.target && !start.scene.present.includes(input.target) && !arriving.includes(input.target)) {
@@ -695,16 +698,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const to = placeTarget(start, content, input.place_to);
     if (to === undefined) {
       const here = placesIn(start, content, start.playerZone).map((p) => `${p.id}(${p.name})`).join(", ");
-      return { ok: false, error: `이 구역에 그런 장소가 없다: ${input.place_to}. 이 구역의 장소: ${here || "없음"}, ${ENTRY_PLACE}(구역에 막 들어선 자리). 콘텐츠에 없는 곳이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
+      return { ok: false, error: `이 구역에 그런 장소가 없다: ${input.place_to}. 이 구역의 장소: ${here || "없음"}. 콘텐츠에 없는 곳이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
     }
-    // 적 땅에서 드러내 놓고 옮기면 한 깊이씩만 (B③, PT16~19 졸병: 담 밖에서 수용소 철망 앞까지 곧장 갔다). 지나는 장소마다 그곳 사람이 알아볼 수 있다 (12-271)
-    if (hostileHere(ctx)) {
-      const now = depthAt(start, content);
-      const then = depthAt(start, content, to?.id ?? null);
-      if (now !== null && then !== null && Math.abs(then - now) > 1) {
-        const via = placesAtDepth(start, content, now + Math.sign(then - now)).filter((p) => !p.jail).map((p) => `${p.id}(${p.name})`).join(", ");
-        return { ok: false, error: `적 땅에서는 한 깊이씩 지나간다: ${to?.name ?? "막 들어선 자리"}로 가려면 먼저 ${via || "막 들어선 자리"}를 거친다. 몰래 가려면 infiltrate (시간은 흐르지 않았다).` };
-      }
+    // 적 땅에서 드러내 놓고 옮기면 이웃 장소로 한 칸씩만 (B③ 12-273, 장소 개편에서 이웃으로. PT16~19 졸병: 담 밖에서 수용소 철망 앞까지 곧장 갔다).
+    // 지나는 장소마다 그곳 사람이 알아볼 수 있다 (12-271)
+    const herePlace = currentPlace(start, content);
+    if (hostileHere(ctx) && herePlace && stepsBetween(start, content, herePlace.id, to.id) > 1) {
+      const via = herePlace.near.map((id) => placeById(start, content, id)).filter((p): p is Place => !!p && !p.jail).map((p) => `${p.id}(${p.name})`).join(", ");
+      return { ok: false, error: `적 땅에서는 이웃 장소로 한 칸씩 지나간다: ${to.name}로 가려면 먼저 ${via || "이웃 장소"}를 거친다. 몰래 가려면 infiltrate (시간은 흐르지 않았다).` };
     }
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)
     // 따돌리려는 은밀의 상대는 함께 가지 않는다: 실패하면 쫓아온다 (PT15 분대장: 따돌리려던 감염체가 판정 전에 "함께 왔다")
@@ -1314,7 +1315,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const deposited = start.playerZone ? store.getState().deposits?.[start.playerZone] : undefined;
     leaveAmbush(ctx);
     const alongZone = comesAlong(start, content, null, input.with);
-    store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to, ...(alongZone.length ? { with: alongZone } : {}) });
+    store.append({ type: "zone_moved", from: start.playerZone, to: input.move_to, place: arrivalPlace(start, content, input.move_to, start.playerZone), ...(alongZone.length ? { with: alongZone } : {}) });
     if (deposited) lines.push(`맡겨 둔 것을 돌려받고 떠났다: ${Object.entries(deposited).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ")}.`);
     // 끌고 온 포로: 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다 (12-55)
     lines.push(...deliverPrisoners(ctx));

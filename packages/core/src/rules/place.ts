@@ -3,36 +3,34 @@
  *
  * 구역 > 장소 두 단계. 어디에 있는지, 그곳이 지붕 아래인지, 누가 그곳에 있는지는 여기서 정한다.
  * - 장소: 구역의 콘텐츠 장소(모두가 쓰는 곳) + GM이 즉흥으로 만든 장소(개인 거처·화장실 등, 세이브에 남는다)
- * - 장소를 정하지 않았으면(null) 구역에 막 들어선 자리다. 실내외는 구역의 cover로 정하던 대로
- * - 장소가 있으면 실내외는 장소의 indoor로 (플레이 테스트: "정문 앞 처마인데 실내 +7", "야영인데 실내 +4")
+ * - 장소 개편 (docs/places-v2-plan.md): 장소 사이는 이웃 목록(near), 구역 안의 길도 장소다. 구역에 들어오면 길에 도착한다.
+ *   장소가 늘 정해진다. 장소가 하나도 없는 구역(다른 월드 팩·테스트)만 null이고, 그때는 구역의 cover로 정한다
+ * - 실내외는 장소의 indoor로 (플레이 테스트: "정문 앞 처마인데 실내 +7", "야영인데 실내 +4")
  * - 인물이 있는 장소: 일과(routine)의 그 시간대 말이 장소 이름·aliases와 맞으면 그 장소. 밤에는 자기 거처(주인 있는 즉흥 장소)
  * - 처음엔 수색표·땅 주인·전투·잠입은 구역 단위 그대로
  * 지금 장소와 즉흥 장소는 이 모듈로만 읽는다 (rules/guards.test.ts).
  */
 import type { Content } from "../content/schemas.ts";
-import type { GameState } from "../game/state.ts";
+import { roleOf, type GameState } from "../game/state.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
 import {ownedBy, baseOfNow } from "./home.ts";
 import { heldOf, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
 
-export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean; wade?: boolean; description?: string };
-
-/**
- * 구역에 막 들어선 자리(장소를 정하지 않은 자리)로 돌아가는 place_to 값.
- * 그 자리에 내려놓은 물건은 그 자리에 남는다 (PT14 방문자: 장소를 정하기 전에 계단 앞에 던진 창을 다시 찾을 길이 없었다)
- */
-export const ENTRY_PLACE = "entry";
+export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean; wade?: boolean; description?: string; near: readonly string[]; road: boolean; to: readonly string[]; gate: boolean };
 
 /** 이 구역의 장소들 (콘텐츠 + 즉흥) */
 export function placesIn(state: GameState, content: Content, zone: string | null | undefined): Place[] {
   if (!zone) return [];
-  const fixed = (content.locations[zone]?.places ?? []).map((p) => ({ id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, jail: p.jail, wade: p.wade, description: p.description }));
-  const spawned = Object.entries(state.spawnedPlaces ?? {})
-    .filter(([, p]) => p.zone === zone)
-    .map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[] }));
-  return [...fixed, ...spawned];
+  const spawned = Object.entries(state.spawnedPlaces ?? {}).filter(([, p]) => p.zone === zone);
+  // 즉흥 장소는 만든 자리의 이웃이다 (장소 개편)
+  const fixed = (content.locations[zone]?.places ?? []).map((p) => ({
+    id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, jail: p.jail, wade: p.wade, description: p.description,
+    near: [...(p.near ?? []), ...spawned.filter(([, x]) => x.at === p.id).map(([id]) => id)], road: !!p.road, to: p.to ?? [], gate: !!p.gate,
+  }));
+  const extra = spawned.map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[], near: p.at ? [p.at] : [], road: false, to: [] as string[], gate: false }));
+  return [...fixed, ...extra];
 }
 
 /** 장소 하나 (지금 구역에서) */
@@ -40,11 +38,71 @@ export function placeById(state: GameState, content: Content, id: string | null 
   return id ? (placesIn(state, content, zone).find((p) => p.id === id) ?? null) : null;
 }
 
-/** place_to 값이 가리키는 곳: 장소, 구역에 막 들어선 자리(null, ENTRY_PLACE), 이 구역에 없으면 undefined */
-export function placeTarget(state: GameState, content: Content, id: string): Place | null | undefined {
-  const place = placeById(state, content, id);
-  if (place) return place;
-  return id === ENTRY_PLACE ? null : undefined;
+/** place_to 값이 가리키는 장소 (이 구역에 없으면 undefined) */
+export function placeTarget(state: GameState, content: Content, id: string): Place | undefined {
+  return placeById(state, content, id) ?? undefined;
+}
+
+/** 이 구역의 길 (구역에 들어오면 도착하는 곳) */
+export function roadsIn(state: GameState, content: Content, zone: string | null | undefined): Place[] {
+  return placesIn(state, content, zone).filter((p) => p.road);
+}
+
+/**
+ * 구역에 들어올 때 도착하는 길 (장소 개편: "막 들어선 자리"를 대신한다): 떠나온 구역으로 이어지는 길, 없으면 첫 길.
+ * 장소가 없는 구역이면 null
+ */
+export function arrivalPlace(state: GameState, content: Content, to: string, from: string | null = null): string | null {
+  const roads = roadsIn(state, content, to);
+  return (roads.find((r) => !!from && r.to.includes(from)) ?? roads[0] ?? placesIn(state, content, to)[0])?.id ?? null;
+}
+
+/** 이웃 장소 id (콘텐츠 near + 즉흥 장소) */
+export function neighborsOf(state: GameState, content: Content, id: string, zone: string | null | undefined = state.playerZone): string[] {
+  return [...(placeById(state, content, id, zone)?.near ?? [])];
+}
+
+/** 같은 구역의 두 장소 사이 칸수 (이웃 1, 닿지 않으면 Infinity) */
+export function stepsBetween(state: GameState, content: Content, from: string | null, to: string | null, zone: string | null | undefined = state.playerZone): number {
+  if (from === to) return 0;
+  if (!from || !to) return 1;
+  const places = new Map(placesIn(state, content, zone).map((p) => [p.id, p]));
+  const dist = new Map([[from, 0]]);
+  const queue = [from];
+  while (queue.length) {
+    const at = queue.shift()!;
+    for (const n of places.get(at)?.near ?? []) {
+      if (dist.has(n)) continue;
+      dist.set(n, dist.get(at)! + 1);
+      if (n === to) return dist.get(n)!;
+      queue.push(n);
+    }
+  }
+  return Infinity;
+}
+
+/** 지금 장소에서 가장 가까운 길 (빠져나올 때) */
+export function nearestRoad(state: GameState, content: Content): string | null {
+  const roads = roadsIn(state, content, state.playerZone);
+  if (!roads.length) return null;
+  return roads.map((r) => ({ id: r.id, d: stepsBetween(state, content, state.playerPlace, r.id) })).sort((a, b) => a.d - b.d)[0]!.id;
+}
+
+/**
+ * 장면 밖 사람이 주인공 곁에 얼마나 가까운가 (장소 개편, 숨은 목격자): 같은 장소 2, 이웃 장소 1, 그 밖 0.
+ * 장소가 없는 구역이면 같은 구역 사람을 1로 본다
+ */
+export function closeness(state: GameState, content: Content, id: string): 0 | 1 | 2 {
+  const w = whereIs(state, content, id);
+  if (!w) return 0;
+  // 구역이 없는 장면(세계를 막 만든 테스트 등)은 누구든 이웃만큼. 구역 밖에 나간 사람(zone 없음)은 보지 못한다
+  if (!state.playerZone) return 1;
+  if (!w.zone) return 0;
+  if (w.zone !== state.playerZone) return 0;
+  // 장소를 모르면(장소 없는 구역, 장소를 정하기 전 테스트 세계) 같은 구역 사람은 이웃만큼 본다
+  if (!state.playerPlace || !w.place) return 1;
+  if (w.place === state.playerPlace) return 2;
+  return neighborsOf(state, content, state.playerPlace).includes(w.place) ? 1 : 0;
 }
 
 /** 주인공이 지금 있는 장소 (정하지 않았으면 null) */
@@ -76,14 +134,15 @@ export function placeIndoor(state: GameState, content: Content): boolean | null 
 export type StoryWhere = { places?: readonly string[]; indoor?: boolean; summons?: boolean };
 
 /**
- * 실내(true)·바깥(false) 이야기가 지금 자리에 맞는가.
- * 장소가 있는 구역에 막 들어선 자리는 길바닥이라 바깥이다 (shelterAt과 같다, B① 2026-11-23: 막 들어선 자리에서 실내 조건이 늘 통과했다).
- * 다만 글이 그 구역의 실내 장소 하나를 말하는 실내 이야기는 연다: 그 장소로 데려간다 (storyPlaceOnEntry). 장소가 없는 구역은 거르지 않는다
+ * 실내(true)·바깥(false) 이야기가 지금 자리에 맞는가 (지금 장소의 실내외).
+ * 길에 있을 때(구역에 막 들어왔을 때) 글이 그 구역의 실내 장소 하나를 말하는 실내 이야기는 연다: 그 장소로 데려간다 (storyPlaceOnEntry, B①).
+ * 장소가 없는 구역은 거르지 않는다
  */
 export function storyPlaceFits(state: GameState, content: Content, indoor: boolean, where: StoryWhere = {}, text = ""): boolean {
-  const here = placeIndoor(state, content);
-  if (here !== null) return here === indoor;
-  if (!placesIn(state, content, state.playerZone).length || !indoor) return true;
+  const here = currentPlace(state, content);
+  if (!here) return true;
+  if (here.indoor === indoor) return true;
+  if (!here.road || !indoor) return false;
   const named = storyPlaces(state, content, where.places, text, indoor);
   return named.length === 1 && !!placeById(state, content, named[0])?.indoor;
 }
@@ -91,22 +150,23 @@ export function storyPlaceFits(state: GameState, content: Content, indoor: boole
 /**
  * 이야기의 장소가 지금 자리에 맞는가 (12-251, 플레이 테스트 14: 경비실에서 "우물가", 격리실에서 약제실·부엌 장면).
  * places를 적었으면 그 장소, 아니면 이야기 글에 나오는 지금 구역의 장소 이름·aliases. 글이 장소를 말하지 않거나
- * 장소를 정하지 않은 자리(막 들어선 자리)·즉흥 장소에 있으면 거르지 않는다 (이야기가 그 자리로 데려간다)
+ * 길(구역에 막 들어온 자리)·즉흥 장소에 있으면 거르지 않는다 (이야기가 그 자리로 데려간다)
  */
 export function storyPlacesFit(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean): boolean {
   const here = currentPlace(state, content);
   // 부르는 이야기는 어디서든 연다: 그 장소로 데려간다 (12-260)
-  if (!here || here.spawned || summons) return true;
+  if (!here || here.spawned || here.road || summons) return true;
   const named = storyPlaces(state, content, places, text, indoor);
   return !named.length || named.includes(here.id);
 }
 
 /**
- * 막 들어선 자리(장소 없음)에서 열린 이야기가 지금 구역의 장소 하나를 말하면 그 장소 (12-254). 갇혔거나 이미 장소에 있거나 여럿·없으면 null.
+ * 길(구역에 막 들어온 자리)에서 열린 이야기가 지금 구역의 장소 하나를 말하면 그 장소 (12-254). 갇혔거나 길이 아닌 장소에 있거나 여럿·없으면 null.
  * 부르는 이야기(summons, 12-260)는 다른 장소에 있어도 그 장소로 (이미 거기 있으면 null)
  */
 export function storyPlaceOnEntry(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean): string | null {
-  if ((state.playerPlace && !summons) || heldOf(state.characters[state.playerId])) return null;
+  const here = currentPlace(state, content);
+  if ((here && !here.road && !summons) || heldOf(state.characters[state.playerId])) return null;
   const named = storyPlaces(state, content, places, text, indoor);
   return named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
 }
@@ -123,19 +183,49 @@ export function storyPlaces(state: GameState, content: Content, places: readonly
 }
 
 /**
- * 잠입 깊이로 치는 자리 (B③ 2026-11-23, PT16~19 졸병: 수용소 안인데 잠입은 "담 밖", 장소 옮기기 한 번이면 수용소까지).
- * 막 들어선 자리 0, 바깥 장소 1(담 안), 실내 장소는 가장 깊은 곳. 깊이 칸은 시나리오의 infiltration.depths.
+ * 잠입 깊이 (B③ 12-273, 장소 개편에서 gate로): 담 있는 구역(gate 장소가 있는 구역)은 길에서 gate를 거치지 않고 닿는 곳 0(담 밖),
+ * gate 1(담 안), gate 너머는 1 + gate에서 몇 칸. 담 없는 구역은 길에서 몇 칸. 가장 깊은 칸(infiltration.depths)에서 멈춘다.
  * 장소가 없는 구역은 null (잠입이 깊이만 따로 센다)
  */
 export function depthAt(state: GameState, content: Content, placeId: string | null = state.playerPlace): number | null {
-  if (!placesIn(state, content, state.playerZone).length) return null;
+  const places = placesIn(state, content, state.playerZone);
+  if (!places.length) return null;
   const deepest = Math.max(0, (content.scenario.infiltration?.depths.length ?? 1) - 1);
-  const place = placeById(state, content, placeId);
-  if (!place) return 0;
-  return place.indoor ? deepest : Math.min(1, deepest);
+  const byId = new Map(places.map((p) => [p.id, p]));
+  const walled = places.some((p) => p.gate);
+  // 담 있는 구역: 길에서 gate를 거치지 않고 닿는 곳이 0, 거기 맞닿은 gate가 1, 그 너머는 한 칸씩
+  const depth = new Map<string, number>();
+  const spread = (from: string[], start: number, pass: (p: Place) => boolean) => {
+    const queue = from.filter((id) => !depth.has(id));
+    for (const id of queue) depth.set(id, start);
+    while (queue.length) {
+      const at = queue.shift()!;
+      for (const n of byId.get(at)?.near ?? []) {
+        const next = byId.get(n);
+        if (!next || depth.has(n) || !pass(next)) continue;
+        depth.set(n, depth.get(at)! + (walled ? 0 : 1));
+        queue.push(n);
+      }
+    }
+  };
+  const roads = places.filter((p) => p.road).map((p) => p.id);
+  if (!walled) spread(roads, 0, () => true);
+  else {
+    spread(roads, 0, (p) => !p.gate);
+    const gates = places.filter((p) => p.gate && p.near.some((n) => depth.get(n) === 0)).map((p) => p.id);
+    // gate 너머는 칸마다 하나씩
+    const queue = gates.filter((id) => !depth.has(id));
+    for (const id of queue) depth.set(id, 1);
+    while (queue.length) {
+      const at = queue.shift()!;
+      for (const n of byId.get(at)?.near ?? []) if (!depth.has(n)) { depth.set(n, depth.get(at)! + 1); queue.push(n); }
+    }
+  }
+  const d = placeId ? depth.get(placeId) : 0;
+  return Math.min(deepest, d ?? deepest);
 }
 
-/** 이 깊이의 장소들 (지금 구역, 가두는 곳 포함). 막 들어선 자리(0)는 장소가 아니라 빈 목록 */
+/** 이 깊이의 장소들 (지금 구역, 가두는 곳 포함) */
 export function placesAtDepth(state: GameState, content: Content, depth: number): Place[] {
   return placesIn(state, content, state.playerZone).filter((p) => depthAt(state, content, p.id) === depth);
 }
@@ -178,6 +268,24 @@ export function placeSaid<P extends { name: string; aliases: readonly string[]; 
   return places.find((p) => !p.jail && (said.includes(p.name) || p.aliases.some((a) => said.includes(a))));
 }
 
+/**
+ * 이 인물이 지금 일과상 구역 밖에 나가 있는가 (장소 개편 A안): 그 시간대 일과 말에 구역 밖 말(story_lint.routine_away)이 있고
+ * 그 구역의 장소로 정해지지 않으면 그 말을 돌려준다. 떠도는 사람, 주인공의 분대원·같은 분대는 늘 구역에 있다
+ */
+export function routineAway(state: GameState, content: Content, id: string, time: number = state.time): string | null {
+  const npc = content.npcs[id];
+  if (!npc || npc.roams?.length) return null;
+  const role = roleOf(content, state);
+  const squad = [...(state.squad ?? []), ...(role?.squad ?? []), ...(role?.squad_mates ?? [])];
+  if (squad.includes(id)) return null;
+  const said = routineSaid(npc.routine, segmentOf(time));
+  if (!said) return null;
+  const away = content.scenario.story_lint?.routine_away ?? [];
+  if (!away.some((w) => said.includes(w))) return null;
+  const zone = npcZoneAt(npc, time);
+  return placeSaid(placesIn(state, content, zone), said) ? null : said;
+}
+
 /** 일과의 그 시간대 말. 칸이 비면 앞 시간대로 거슬러 올라간다 (하루를 한 바퀴까지) */
 function routineSaid(routine: Partial<Record<TimeSegment, string>> | undefined, segment: TimeSegment): string | undefined {
   if (!routine) return undefined;
@@ -200,7 +308,7 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   if (id === state.playerId) return { zone: state.playerZone, place: state.playerPlace };
   // 갇힌 사람은 그 구역의 가두는 장소에 (없으면 구역 어딘가)
   const held = heldOf(c);
-  if (held) return { zone: held.zone, place: jailIn(content, held.zone)?.id ?? null };
+  if (held) return { zone: held.zone, place: jailIn(content, held.zone)?.id ?? arrivalPlace(state, content, held.zone) };
   if (c.dead || c.away) return null;
   if (state.scene.present.includes(id) || (state.companions.includes(id) && !state.bonds[id]?.apart)) return { zone: state.playerZone, place: state.playerPlace };
   // 두고 온 자리에 머무는 사람 (12-253): 그 시간대가 끝날 때까지
@@ -210,12 +318,19 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   // (PT17: companions일 때만 봐서 돌지 않았다. companion_parted가 companions에서 뺀다)
   const apart = state.bonds[id]?.apart;
   if (apart) return { zone: apart.zone, place: apart.place ?? null };
-  // 분대 일을 나간 사람은 그 구역 어딘가 (일과 자리에 두지 않는다)
+  // 분대 일을 나간 사람은 그 구역의 길에 (일과 자리에 두지 않는다, 장소 개편: "구역 어딘가"는 없다)
   const order = state.squadOrders?.[id];
-  if (order) return { zone: order.zone, place: null };
-  if (c.extra) return { zone: c.extra.zone, place: c.extra.place ?? null };
+  if (order) return { zone: order.zone, place: arrivalPlace(state, content, order.zone) };
+  // 엑스트라는 머무는 장소, 없으면 마지막으로 본 구역의 길
+  if (c.extra) return { zone: c.extra.zone, place: c.extra.place ?? (c.extra.zone ? arrivalPlace(state, content, c.extra.zone) : null) };
   const npc = content.npcs[id];
-  return npc ? { zone: npcZoneAt(npc, time) ?? null, place: npcPlaceAt(state, content, id, time) } : null;
+  if (!npc) return null;
+  // 일과가 구역 밖에 나간 시간이면 구역에 없다 (장소 개편 A안, docs/place-unknown-plan.md: 털이·정찰 나간 사람이 거점 안 일을 숨은 목격자로 봤다).
+  // 주인공의 분대원은 주인공이 내리는 분대 일을 따르므로 뺀다
+  if (routineAway(state, content, id, time)) return { zone: null, place: null };
+  // 일과로 장소가 정해지지 않으면(떠도는 사람 등) 그 구역의 길
+  const zone = npcZoneAt(npc, time) ?? null;
+  return { zone, place: npcPlaceAt(state, content, id, time) ?? (zone ? arrivalPlace(state, content, zone) : null) };
 }
 
 /** 이 인물의 구역 (죽었거나 떠났어도 일과·마지막 자리로: 유해·변이가 남는 곳) */
@@ -290,7 +405,7 @@ export function jailFor(state: GameState, content: Content, faction: string, cau
   const base = baseOfNow(state, content, faction) ?? undefined;
   const lands = Object.keys(content.locations).filter((z) => own(z) && jailIn(content, z)).sort((a, b) => (a === base ? -1 : b === base ? 1 : a.localeCompare(b)));
   if (lands[0]) return { zone: lands[0], place: jailIn(content, lands[0])!.id };
-  return base ? { zone: base, place: null } : null;
+  return base ? { zone: base, place: arrivalPlace(state, content, base) } : null;
 }
 
 /**
@@ -298,7 +413,7 @@ export function jailFor(state: GameState, content: Content, faction: string, cau
  * (12-253, PT15: 장소 목록에 "지금 여기"로 보이는 사람을 target·with로 부르자 "장면에 없다" 오류로 실행이 버려졌다)
  */
 export function hereWithMe(state: GameState, content: Content, id: string): boolean {
-  if (!state.playerPlace || state.scene.present.includes(id)) return false;
+  if (!state.playerPlace || id === state.playerId || state.scene.present.includes(id)) return false;
   const w = whereIs(state, content, id);
   return !!w && w.zone === state.playerZone && w.place === state.playerPlace;
 }
@@ -307,6 +422,8 @@ export function hereWithMe(state: GameState, content: Content, id: string): bool
 export function whereLabel(state: GameState, content: Content, id: string): string | null {
   if (state.scene.present.includes(id)) return "곁에 (장면에 있다)";
   const w = whereIs(state, content, id);
+  const out = routineAway(state, content, id);
+  if (out && w && !w.zone) return `나가 있다 (일과: ${out})`;
   if (!w || !w.zone) return null;
   const zoneName = content.locations[w.zone]?.name ?? w.zone;
   const place = placeById(state, content, w.place, w.zone);
@@ -320,13 +437,10 @@ export function inZone(state: GameState, content: Content, id: string): boolean 
   return !!w && !!w.zone && w.zone === state.playerZone;
 }
 
-/**
- * 이 인물이 주인공과 같은 장소에 있을 만한가: 인물의 장소가 정해지지 않았으면(구역 어딘가) 그렇고, 정해졌으면 주인공과 같은 장소일 때만.
- * 주인공이 막 들어선 자리(장소 없음)에 있으면 장소가 정해진 사람은 다른 데 있다 (12-272: 막 들어선 자리는 바깥 길바닥인데 막사 안의 사람까지 숨은 목격자로 굴렸다)
- */
+/** 이 인물이 주인공과 같은 장소에 있는가 (장소가 없는 구역이면 같은 구역이면 그렇다) */
 export function sharesPlace(state: GameState, content: Content, id: string): boolean {
-  const at = whereIs(state, content, id)?.place ?? npcPlaceAt(state, content, id);
-  return at === null || at === state.playerPlace;
+  const at = whereIs(state, content, id)?.place ?? null;
+  return at === state.playerPlace;
 }
 
 /** 즉흥 장소의 새 id */
@@ -351,8 +465,7 @@ export function shelterAt(content: Content, state: GameState, activity: string, 
   if (activity === "travel") return { indoor: false, cover: 0 };
   const atPlace = placeIndoor(state, content);
   if (atPlace !== null) return { indoor: atPlace, cover: atPlace && zoneCover <= 0 ? PLACE_COVER : zoneCover };
-  // 장소가 있는 구역에 막 들어선 자리는 길바닥이다: 바깥 (12-261, PT16 졸병·튜토리얼: 구시가 막 들어선 자리가 "실내 +4").
-  // 다른 무리 거점이면 담 밖 문 앞 (12-260)
+  // 장소가 있는 구역인데 장소를 모르면 길바닥이다: 바깥 (12-261)
   if (placesIn(state, content, zone).length) return { indoor: false, cover: 0 };
   const sheltered = !!zone && (state.homes?.[who] === zone || (content.locations[zone]?.kind === "base" && !!me?.factionId && ownedBy(state, zone, me.factionId)));
   const outdoorWork = !!c?.outdoor.includes(activity as never);

@@ -47,7 +47,8 @@ describe("수색으로 물건 찾기", () => {
     });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.resultText).toMatch(/찾아 챙겼다|찾지 못했다/);
-    expect(w.state().zoneSearches.hospital_ruins?.count).toBe(1);
+    // 수색 뒤 열린 이야기가 다른 장소로 데려갈 수 있다: 뒤진 자리(구역@장소)에 한 번
+    expect(Object.entries(w.state().zoneSearches).filter(([k]) => k.startsWith("hospital_ruins")).map(([, v]) => v.count)).toEqual([1]);
     w.close();
   });
 });

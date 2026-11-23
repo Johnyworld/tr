@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 import { josa } from "../text.ts";
-import { nextPlaceId, placesIn } from "../rules/place.ts";
+import { nextPlaceId, placesIn , currentPlace } from "../rules/place.ts";
 import { defineTool } from "./toolkit.ts";
 
 const spawnPlace = defineTool({
@@ -26,7 +26,8 @@ const spawnPlace = defineTool({
     const same = placesIn(state, ctx.content, zone).find((p) => p.name === input.name.trim());
     if (same) return { ok: true, resultText: `${josa(same.name, "은/는")} 이미 있다: ${same.id} (${same.indoor ? "실내" : "바깥"}). 옮겨 가려면 take_action place_to: "${same.id}".`, display: { type: "time", activityLabel: "장소", durationLabel: "", fromLabel: "", toLabel: "" }, silent: true };
     const id = nextPlaceId(state);
-    ctx.store.append({ type: "place_spawned", id, zone, name: input.name.trim(), indoor: input.indoor, owner: input.owner });
+    // 만든 자리의 이웃이 된다 (장소 개편)
+    ctx.store.append({ type: "place_spawned", id, zone, name: input.name.trim(), indoor: input.indoor, owner: input.owner, at: currentPlace(state, ctx.content)?.id ?? null });
     return {
       ok: true,
       resultText: `장소를 만들었다: ${id} (${input.name.trim()}, ${input.indoor ? "실내" : "바깥"}${input.owner ? `, ${input.owner}의 거처` : ""}). 옮겨 가려면 take_action place_to: "${id}".`,

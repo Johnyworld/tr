@@ -1,7 +1,7 @@
 import { stakesOf } from "../rules/stakes.ts";
 import { onSpotted } from "../rules/consequence.ts";
 import { heldOf, heldSeenZone } from "../rules/held.ts";
-import { currentPlace, depthAt, jailIn, placeById, placesAtDepth } from "../rules/place.ts";
+import { currentPlace, depthAt, nearestRoad, placeById, placesAtDepth } from "../rules/place.ts";
 import { josa } from "../text.ts";
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
@@ -116,11 +116,13 @@ function goalEffects(content: Content, goalId: string, captive: string | null, h
  * 갇힌 사람 풀어 주기는 가장 깊은 곳이 가두는 곳이다
  */
 function nextPlace(state: GameState, content: Content, depth: number, goalId: string, asked: string | null): { id: string; name: string } | null | string {
-  if (depthAt(state, content) === null) return null;
-  const deepest = rules(content)!.depths.length - 1;
+  const here = currentPlace(state, content);
+  if (depthAt(state, content) === null || !here) return null;
   const goal = rules(content)!.goals.find((g) => g.id === goalId);
-  const jail = jailIn(content, state.playerZone);
-  const options = placesAtDepth(state, content, depth).filter((p) => (depth === deepest && goal?.release ? p.id === jail?.id : !p.jail));
+  // 이웃으로 닿는 곳만 (장소 개편): 지금 깊이의 장소를 따라 숨어 가다(담 밖 둘레길 → 초소) 닿는 한 칸 더 깊은 장소.
+  // 가두는 곳은 갇힌 사람 풀어 주기일 때만
+  const near = new Set(frontier(state, content, here.id, depth - 1));
+  const options = placesAtDepth(state, content, depth).filter((p) => near.has(p.id) && (!p.jail || !!goal?.release));
   if (!options.length) return null;
   const list = options.map((p) => `${p.id}(${p.name})`).join(", ");
   if (asked) {
@@ -132,18 +134,34 @@ function nextPlace(state: GameState, content: Content, depth: number, goalId: st
   return `어디로 숨어들지 place로 고른다: ${list} (시간은 흐르지 않았다).`;
 }
 
-/** 빠져나오면 막 들어선 자리(담 밖)로 (B③) */
+/** 지금 깊이(depth)의 장소를 따라 닿는 곳의 이웃 (잠입으로 숨어들 수 있는 곳) */
+function frontier(state: GameState, content: Content, from: string, depth: number): string[] {
+  const seen = new Set([from]);
+  const queue = [from];
+  const out = new Set<string>();
+  while (queue.length) {
+    const at = queue.shift()!;
+    for (const n of placeById(state, content, at)?.near ?? []) {
+      out.add(n);
+      if (!seen.has(n) && depthAt(state, content, n) === depth) { seen.add(n); queue.push(n); }
+    }
+  }
+  return [...out];
+}
+
+/** 빠져나오면 가장 가까운 길로 (B③, 장소 개편) */
 function backToEntry(ctx: ToolContext): void {
   const here = currentPlace(ctx.store.getState(), ctx.content);
-  if (here) ctx.store.append({ type: "place_moved", from: here.id, to: null });
+  const road = nearestRoad(ctx.store.getState(), ctx.content);
+  if (here && road && road !== here.id) ctx.store.append({ type: "place_moved", from: here.id, to: road });
 }
 
 const infiltrate = defineTool({
   name: "infiltrate",
   description:
     "잠입 장면 (전투 장면과 같은 틀). 다른 무리의 땅에서 몰래 들어가 목표를 하고 나온다. 결과는 시스템이 정한다. " +
-    "start(goal): 시작한다 (지금 장소의 깊이에서: 막 들어선 자리 = 담 밖, 바깥 장소 = 담 안, 실내 장소 = 깊은 곳). advance(place): 한 칸 더 깊이, 그 깊이의 장소로 숨어든다 (은밀 판정). " +
-    "act: 가장 깊은 곳에서 목표를 한다. listen: 멈춰서 낌새를 살핀다 (들켰는지 대략 안다). leave: 빠져나온다 (막 들어선 자리로). 잠입 중에는 take_action.place_to로 옮기지 않는다. " +
+    "start(goal): 시작한다 (지금 장소의 깊이에서: 담 있는 구역은 담을 지나기 전 = 담 밖, 담 문(gate) = 담 안, 그 너머 = 깊은 곳. 담 없는 구역은 길에서 몇 칸). advance(place): 한 칸 더 깊은 이웃 장소로 숨어든다 (은밀 판정). " +
+    "act: 가장 깊은 곳에서 목표를 한다. listen: 멈춰서 낌새를 살핀다 (들켰는지 대략 안다). leave: 빠져나온다 (가장 가까운 길로). 잠입 중에는 take_action.place_to로 옮기지 않는다. " +
     "한 번에 한 걸음, 걸음마다 시간이 흐른다. 경보 숫자는 GM도 모른다: 상태의 '잠입 중'에 나온 낌새로만 연출한다. 들키면 빠지기만 된다. " +
     "판정은 이 도구가 굴린다: take_action으로 따로 판정하지 않는다 (12-240: 따로 굴린 은밀 판정이 헛것이 됐다).",
   schema: z.strictObject({
@@ -312,7 +330,9 @@ export function describeInfiltration(content: Content, state: GameState): string
   const deepest = r.depths.length - 1;
   const cue = alarmCue(inf.alarm);
   const can = inf.alarm >= ALARM_MAX ? "leave" : [inf.depth < deepest ? "advance" : null, inf.depth >= deepest && !inf.done ? "act" : null, "listen", "leave"].filter(Boolean).join(" · ");
-  const ahead = inf.depth < deepest && inf.alarm < ALARM_MAX ? placesAtDepth(state, content, inf.depth + 1).filter((p) => (inf.depth + 1 === deepest && goal?.release ? p.jail : !p.jail)) : [];
+  const here = currentPlace(state, content);
+  const near = new Set(here ? frontier(state, content, here.id, inf.depth) : []);
+  const ahead = inf.depth < deepest && inf.alarm < ALARM_MAX ? placesAtDepth(state, content, inf.depth + 1).filter((p) => near.has(p.id) && (!p.jail || !!goal?.release)) : [];
   return [
     `잠입 중: ${content.factions[inf.owner]?.name ?? inf.owner}의 ${content.locations[inf.zone]?.name ?? inf.zone} — 지금 ${r.depths[inf.depth]} (${inf.depth + 1}/${r.depths.length}), 목표: ${goal?.label ?? inf.goal}${inf.done ? " (해냈다)" : ""}`,
     `  낌새: ${cue ?? "보이고 들리는 이상한 것은 없다 (들켰는지는 모른다)"}`,

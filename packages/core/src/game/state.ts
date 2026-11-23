@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 95;
+export const SAVE_SCHEMA_VERSION = 96;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -328,7 +328,7 @@ export function createGameSchemas(s: Scenario) {
     /** 구역 안에서 지금 있는 장소 (12-244, 공통 규칙 15). null이면 구역의 장소를 정하지 않은 곳 (들어선 자리) */
     playerPlace: z.string().nullable().default(null),
     /** GM이 즉흥으로 만든 장소 (장소 id → 구역·이름·실내·주인). 세이브에 남아 다시 쓴다 */
-    spawnedPlaces: z.record(z.string(), z.strictObject({ zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable() })).default({}),
+    spawnedPlaces: z.record(z.string(), z.strictObject({ zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable(), at: z.string().nullable().default(null) })).default({}),
     /**
      * 머무는 자리 (12-253, 공통 규칙 15): 장면에 있다가 주인공이 두고 떠난 인물은 그 시간대가 끝날 때(until)까지 그 자리에 있다.
      * 그 뒤엔 일과로 돌아간다 (PT15: 교무실에 부른 상관이 주인공이 나가자마자 일과의 보급 창고로 순간이동했다). 읽기는 rules/place.ts로만
@@ -967,12 +967,12 @@ export function createGameSchemas(s: Scenario) {
       /** 플레이어가 낄 수 있어 미뤄 둔 교전 */
       scheduled: z.array(pendingClashSchema).default([]),
     }),
-    z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string(), with: z.array(z.string()).optional() }),
+    z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string(), with: z.array(z.string()).optional(), /** 도착하는 장소 (장소 개편: 길). 장소가 없는 구역이면 null */ place: z.string().nullable().optional() }),
     /** 같은 구역 안에서 장소를 옮겼다 (12-244). null이면 구역의 장소를 정하지 않은 곳 */
     // with: 동행 말고 함께 옮겨 가는 장면의 인물 (공통 규칙 15 comesAlong)
     z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable(), with: z.array(z.string()).optional() }),
     /** GM이 즉흥 장소를 만들었다 (12-244) */
-    z.strictObject({ type: z.literal("place_spawned"), id: z.string(), zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable() }),
+    z.strictObject({ type: z.literal("place_spawned"), id: z.string(), zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable(), at: z.string().nullable().optional() }),
     z.strictObject({ type: z.literal("weather_set"), day: z.number().int(), weatherId: z.string() }),
     z.strictObject({ type: z.literal("weather_forecast"), day: z.number().int(), weatherId: z.string() }),
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
@@ -2321,7 +2321,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     }
     case "place_spawned":
-      next.spawnedPlaces = { ...next.spawnedPlaces, [event.id]: { zone: event.zone, name: event.name, indoor: event.indoor, owner: event.owner } };
+      next.spawnedPlaces = { ...next.spawnedPlaces, [event.id]: { zone: event.zone, name: event.name, indoor: event.indoor, owner: event.owner, at: event.at ?? null } };
       return next;
     case "zone_moved": {
       // 시작하는 시각에 놓인 구역이 시작한 구역이다 (새 세계·이어받기)
@@ -2333,9 +2333,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.zoneSeen = { ...next.zoneSeen, [event.to]: next.zones[event.to]?.owner ?? null };
       // 바닥의 물건은 그 구역에 남기고, 가는 구역에 남아 있던 것을 장면에 둔다
       if (event.from !== event.to) {
-        swapGround(next, event.from === null ? null : spotKey(event.from, state.playerPlace), spotKey(event.to, null));
-        next.playerPlace = null;
-      }
+        swapGround(next, event.from === null ? null : spotKey(event.from, state.playerPlace), spotKey(event.to, event.place ?? null));
+        next.playerPlace = event.place ?? null;
+      } else if (event.place !== undefined && event.place !== null) next.playerPlace = event.place;
       // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)
       next.infiltration = null;
       next.exploration = null;

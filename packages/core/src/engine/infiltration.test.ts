@@ -27,11 +27,12 @@ describe("잠입", () => {
     const w = make(0.99);
     const food = w.state().factions.faction_c!.resources.food!;
     expect(go(w, "start", "steal").ok).toBe(true);
-    // 담 안의 장소가 여럿이면 고른다 (B③)
-    expect(text(go(w, "advance"))).toContain("place로 고른다");
-    const first = go(w, "advance", null, "yard");
+    // 길에서 담 밖을 따라 닿는 담 안은 창고 마당 하나 (장소 개편: gate)
+    const first = go(w, "advance");
     expect(text(first)).toContain("판정 줄");
     expect(w.state().playerPlace).toBe("yard");
+    // 깊은 곳은 여럿이라 고른다 (B③)
+    expect(text(go(w, "advance"))).toContain("place로 고른다");
     go(w, "advance", null, "command");
     expect(w.state().infiltration?.depth).toBe(2);
     expect(w.state().playerPlace).toBe("command");
@@ -41,7 +42,7 @@ describe("잠입", () => {
     expect(w.state().characters[w.state().playerId]!.inventory.canned_food ?? 0).toBeGreaterThanOrEqual(2);
     expect(text(go(w, "leave"))).toContain("아무도 모르게");
     expect(w.state().infiltration).toBeNull();
-    expect(w.state().playerPlace).toBeNull();
+    expect(w.state().playerPlace).toBe("to_south"); // 가장 가까운 길로 빠져나온다
   });
 
   it("잠입 중에는 다른 구역으로 옮기지 못한다", () => {

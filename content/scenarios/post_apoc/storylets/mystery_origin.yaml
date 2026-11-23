@@ -114,6 +114,7 @@
   tags: [world]
   when:
     zones: [rest_stop]
+    indoor: false
     segments: [morning, day, evening]
     flags_all: [og_ledger]
     flags_none: [og_truth]

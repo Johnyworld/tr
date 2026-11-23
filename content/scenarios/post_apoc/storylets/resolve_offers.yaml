@@ -9,6 +9,7 @@
   when:
     funeral: true
     segments: [morning, day, evening]
+    indoor: "any"
   setup: "{deceased}의 몸은 아직 그가 쓰러진 곳에 있다고 한다. 거기까지 갈 사람은 없다는 말이 오간다."
   ai_direction: "가는 길이 위험하다는 것을 다들 안다. 누구도 가라고 하지 않는다. 다짐은 주인공이 스스로 하는 것이다."
   choices:
@@ -26,6 +27,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    indoor: "any"
     own_people_captive: true
     own_territory: true
   cast:
@@ -46,6 +48,8 @@
   tags: [world]
   repeatable: true
   cooldown_days: 8
+  when:
+    indoor: "any"
   cast:
     sick: { companion: {}, condition: { track: infection, at_least: chill }, enter: false }
   setup: "{sick}의 이마가 뜨겁다. 물린 자리를 소매로 가리고 아무것도 아니라고 한다. 아무것도 아닌 게 아니라는 걸 둘 다 안다."
@@ -67,6 +71,7 @@
   when:
     has_items: [radio]
     segments: [night]
+    indoor: "any"
   setup: "잡음 사이로 여자 목소리가 같은 말을 되풀이한다. \"…남쪽 섬… 받아 준다… 쓸모 있는 사람은…\" 그리고 끊긴다."
   ai_direction: "섬이 정말 낙원인지 주인공은 모른다. 다만 이 도시를 벗어날 길이 있다는 것만으로 무언가 달라진다."
   choices:
@@ -85,6 +90,7 @@
   cooldown_days: 12
   when:
     segments: [evening, night]
+    indoor: "any"
   cast:
     dear: { romance: suitor, here: true }
   setup: "{dear:이/가} 무심한 척 곁에 앉아 먹을 것을 조금 덜어 건넨다. 눈이 마주치자 먼저 고개를 돌린다."
@@ -105,6 +111,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    indoor: "any"
     own_territory: true
     own_distrust_gte: 2
   setup: "당신이 다가가면 사람들 사이에 한 칸씩 틈이 벌어진다. 수군거림이 등 뒤에서 멎었다가 다시 시작된다."

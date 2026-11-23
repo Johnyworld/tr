@@ -12,6 +12,7 @@
   when:
     resolve: { kinds: [find], stage: 0 }
     segments: [morning, day, evening]
+    indoor: "any"
   cast:
     porter: { extra: e_porter, label: 등짐을 진 상단 짐꾼 }
   setup: "{porter:이/가} 등짐을 내려놓고 물을 마신다. 상단 짐을 지고 이 도시의 구역을 다 돌아다닌 사람이다. 얼굴 하나 이름 하나를 기억하는 게 밥벌이라고 웃는다."
@@ -40,6 +41,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: false
     resolve: { kinds: [find], stage_gte: 2 }
   cast:
     sought: { resolve_target: true, enter: false }
@@ -74,6 +76,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: "any"
     resolve: { kinds: [rescue], stage_gte: 1, stage_lte: 2 }
   cast:
     held: { resolve_target: true, enter: false, captive_anywhere: true }
@@ -107,6 +110,7 @@
   when:
     resolve: { kinds: [rescue], stage: 1 }
     segments: [evening, night]
+    indoor: "any"
   cast:
     held: { resolve_target: true, enter: false, captive_anywhere: true }
   setup: "{held:이/가} 갇힌 쪽에서 교대하고 내려온 보초가 불 옆에 주저앉는다. 말할 사람이 고팠던 얼굴이다. 술병이 반쯤 비었다."
@@ -133,6 +137,7 @@
   tags: [world]
   repeatable: false
   when:
+    indoor: "any"
     resolve: { kinds: [rescue], stage_gte: 2 }
   cast:
     held: { resolve_target: true, enter: false, captive_anywhere: true }
@@ -159,6 +164,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: "any"
     resolve: { kinds: [cure], stage: 1 }
   cast:
     orderly: { extra: d_orderly, label: 진료소 뒷문에서 담배를 피우는 간호조무사 }
@@ -189,6 +195,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: "any"
     resolve: { kinds: [cure], stage_gte: 2 }
   cast:
     broker: { extra: e_escort, label: 말수 적은 상단 호위 }
@@ -230,6 +237,7 @@
   when:
     resolve: { kinds: [protect], stage_lte: 1 }
     segments: [evening, night]
+    indoor: true
   cast:
     ward: { resolve_target: true, enter: false }
   setup: "벽 너머로 목소리 둘이 지나간다. {ward}의 이름이 나온다. 다음에 험한 일이 생기면 누구를 앞에 세울지 이야기하는 중이다."
@@ -265,6 +273,7 @@
   when:
     resolve: { kinds: [protect], stage_gte: 2 }
     segments: [morning, day, evening]
+    indoor: "any"
   cast:
     ward: { resolve_target: true, here: true }
   setup: "언제까지 곁에 붙어 있을 수는 없다. {ward:은/는} 붕대를 거꾸로 감고 있다. 그걸 보는 순간 생각이 든다. 내가 없을 때 이 사람은 어떻게 버티지."
@@ -296,6 +305,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: "any"
     resolve: { kinds: [repay], stage: 0 }
   cast:
     savior: { resolve_target: true, enter: false }
@@ -325,6 +335,7 @@
   when:
     resolve: { kinds: [repay], stage: 1 }
     segments: [morning, day]
+    indoor: "any"
   cast:
     savior: { resolve_target: true, here: true }
   setup: "{savior:이/가} 혼자서 무거운 것을 옮기고 있다. 무너진 담의 돌인지, 물통인지. 허리를 펴다 당신을 보고 손사래를 친다. 괜찮다고."
@@ -352,6 +363,7 @@
   tags: [world]
   repeatable: false
   when:
+    indoor: "any"
     resolve: { kinds: [repay], stage_gte: 2 }
   cast:
     savior: { resolve_target: true, here: true }
@@ -378,6 +390,7 @@
   when:
     resolve: { kinds: [heart], stage: 0 }
     segments: [day, evening]
+    indoor: "any"
   cast:
     dear: { resolve_target: true, here: true }
   setup: "{dear:이/가} 혼자 앉아 무언가를 고치고 있다. 옆자리가 비어 있다. 지금이 아니면 또 인사만 하고 지나칠 것 같다."
@@ -413,6 +426,7 @@
   when:
     resolve: { kinds: [heart], stage: 1 }
     segments: [evening, night]
+    indoor: "any"
   cast:
     dear: { resolve_target: true, here: true }
   setup: "앉을 자리가 좁다. {dear:이/가} 옆으로 조금 비켜 앉는다. 어깨가 닿을 듯 말 듯하다. 밤이 춥다."
@@ -440,6 +454,7 @@
   when:
     resolve: { kinds: [heart], stage_gte: 2 }
     segments: [night]
+    indoor: true
   cast:
     dear: { resolve_target: true, here: true }
   setup: "{dear:이/가} 잠들지 못하고 천장을 본다. \"요즘 무서워. 뭘 가지면 잃을 것도 생기잖아.\" 무엇을 말하는지 둘 다 안다."
@@ -467,6 +482,7 @@
   when:
     resolve: { kinds: [bury], stage: 0 }
     segments: [day, evening]
+    indoor: "any"
   cast:
     elder: { extra: drifter_elder, label: 먼 길을 걸어온 늙은 떠돌이 }
   setup: "{elder:이/가} 신발을 벗어 발을 주무른다. 어디서 오는 길이냐고 묻자 {target:이/가} 쓰러진 쪽 이름을 댄다."
@@ -494,6 +510,7 @@
   when:
     resolve: { kinds: [bury], stage_gte: 1 }
     segments: [evening, night]
+    indoor: "any"
   setup: "밤이 길다. 손이 심심해서인지 마음이 무거워서인지, 손에 잡힌 나뭇조각을 만지작거린다. 묻어 줄 때 꽂아 둘 것이 있어야 할 것 같다."
   ai_direction: "{target:을/를} 떠올리는 조용한 장면이다. 슬픔을 과장하지 않는다. 묻는 것은 유해가 있는 곳에서 take_action.bury로 한다."
   choices:
@@ -521,6 +538,7 @@
   when:
     resolve: { kinds: [bury], stage_gte: 2 }
     segments: [morning, day]
+    indoor: "any"
   setup: "{target:이/가} 있는 곳까지 가는 길목에 감염체가 몰려 있다는 말이 돈다. 큰길로 가면 걸리고, 돌아가면 하루가 더 든다."
   ai_direction: "길을 살피는 장면이다. 실제로 가는 것은 이동(take_action)으로 하고, 길의 위험은 코드가 정한다. 판정 결과만큼만 안전한 길을 안다."
   choices:

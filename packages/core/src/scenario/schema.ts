@@ -490,7 +490,8 @@ export const scenarioFileSchema = z
     /** 같은 틀의 겉모습을 다 썼을 때 덧붙여 사람을 가르는 표시 (12-265) */
     extra_marks: z.array(z.string().min(1)).default([]),
     /** routine_away: 일과 한 칸이 구역 밖에 나간 시간이라는 말 (B①: 일과 검사는 그 구역 장소로 정해지거나 이 말이 있어야 한다) */
-    story_lint: z.strictObject({ outdoor: z.array(z.string().min(1)).default([]), waking: z.array(z.string().min(1)).default([]), knows_endings: z.array(z.string().min(1)).default([]), routine_away: z.array(z.string().min(1)).default([]) }).optional(),
+    /** segments: 시간대 → 그 시간대를 말하는 낱말 (설계 목록 6-5: 글이 그 시간대를 말하면 when.segments가 그 시간대 안이어야 한다) */
+    story_lint: z.strictObject({ outdoor: z.array(z.string().min(1)).default([]), waking: z.array(z.string().min(1)).default([]), knows_endings: z.array(z.string().min(1)).default([]), routine_away: z.array(z.string().min(1)).default([]), segments: z.partialRecord(z.enum(TIME_SEGMENTS), z.array(z.string().min(1))).default({}) }).optional(),
     /** notice_minutes: 짓이 상관 귀에 닿는 시간. 그 사이 한 짓은 한 회의에서 함께 다룬다 (12-261, PT16 졸병: 20분 만에 같은 회의가 또 열렸다) */
     offense: z.strictObject({ tags: z.array(id).min(1), min_severity: z.number().int().min(1).max(3), within_days: z.number().int().min(1), notice_minutes: z.number().int().min(0).default(60) }).optional(),
     discipline: z

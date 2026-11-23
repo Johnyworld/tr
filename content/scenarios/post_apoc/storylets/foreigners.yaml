@@ -6,6 +6,8 @@
   title: 공책에 적는 이름
   tags: [world]
   when:
+    indoor: false
+    places: [yard_gate]
     zones: [a_base]
     segments: [evening, night]
     day_gte: 2
@@ -68,6 +70,8 @@
   title: 사격장의 교관
   tags: [world]
   when:
+    indoor: false
+    places: [wall]
     has_items_any: [old_rifle, shotgun, sawn_shotgun, pistol]
     zones: [c_base]
     segments: [morning, day]
@@ -99,6 +103,7 @@
   title: 기름이 남은 화물차
   tags: [world]
   when:
+    indoor: "any"
     zones: [rest_stop, e_market]
     segments: [day, evening]
   cast:
@@ -129,6 +134,7 @@
   title: 그물 창고의 기도
   tags: [world]
   when:
+    indoor: "any"
     zones: [yeoul_isle]
     segments: [evening, night]
   cast:

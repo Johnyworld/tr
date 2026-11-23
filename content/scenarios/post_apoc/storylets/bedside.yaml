@@ -11,6 +11,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: "any"
     # 플레이 테스트 12: 정문 보초를 서는 중에 "상관의 문병". 누워 있는 동안의 이야기는 서서 하는 일 중에는 열지 않는다
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
@@ -47,6 +48,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    indoor: "any"
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     own_territory: true
@@ -87,6 +89,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: "any"
     activities_none: [guard_duty, work, search, travel, combat]
     conditions_at_least: { bleeding: bleeding }
     own_territory: true
@@ -135,6 +138,7 @@
   repeatable: true
   cooldown_days: 12
   when:
+    indoor: true
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     own_territory: true
@@ -179,6 +183,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    indoor: true
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     own_territory: true
@@ -219,6 +224,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    indoor: "any"
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     own_territory: true
@@ -272,6 +278,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    indoor: "any"
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     zones: [yeoul_isle]
@@ -322,6 +329,7 @@
   repeatable: true
   cooldown_days: 12
   when:
+    indoor: true
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
   setup: "통증 사이로 잠깐 정신이 가라앉는다. 꿈속은 무너지기 전이다. 불 켜진 부엌, 라디오 소리, 누군가 당신 이름을 부른다. 대답하려는데 목소리가 나오지 않는다."
@@ -358,6 +366,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    indoor: "any"
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
   cast:
@@ -397,6 +406,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    indoor: "any"
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
   cast:
@@ -430,6 +440,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    indoor: "any"
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     zone_owner: [none]
@@ -473,6 +484,7 @@
   repeatable: true
   cooldown_days: 12
   when:
+    indoor: "any"
     # 글에 맞춘 자리·때 (12-261, content:check story_lint)
     activities: [sleep, rest]
     activities_none: [guard_duty, work, search, travel, combat]
@@ -530,6 +542,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    indoor: "any"
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     factions: [none]

@@ -13,6 +13,7 @@
     zone_owner: [own, other]
     resolve: { kinds: [revenge], stage: 0 }
     segments: [evening, night]
+    indoor: "any"
   cast:
     foe: { resolve_target: true, enter: false }
   setup: "술 냄새 나는 목소리들 사이에서 누군가 {foe} 이야기를 꺼낸다. 고개를 돌리자 말하던 사람이 입을 다문다."
@@ -48,6 +49,7 @@
   when:
     resolve: { kinds: [revenge], stage: 1 }
     segments: [morning, day, evening]
+    indoor: false
   cast:
     foe: { resolve_target: true, enter: false }
   setup: "길 건너 폐허 사이로 낯익은 걸음걸이가 지나간다. {foe:이다/다}. 혼자가 아니다. 이쪽은 아직 들키지 않았다."
@@ -77,6 +79,7 @@
   tags: [world]
   repeatable: false
   when:
+    indoor: "any"
     resolve: { kinds: [revenge], stage_gte: 2 }
   cast:
     foe: { resolve_target: true, enter: false }
@@ -99,6 +102,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: "any"
     resolve: { kinds: [revenge], stage_gte: 2 }
   cast:
     foe: { resolve_target: true, here: true }
@@ -124,6 +128,7 @@
   when:
     resolve: { kinds: [find], stage: 0 }
     segments: [morning, day]
+    indoor: "any"
   setup: "무너진 벽 한 면에 이름과 날짜가 빼곡하다. 살아 있다고, 어디로 간다고 적어 둔 사람들의 벽이다."
   ai_direction: "{target}의 이름이 있을 수도, 없을 수도 있다 (판정대로). 이름이 있어도 날짜는 오래됐다."
   choices:
@@ -148,6 +153,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: "any"
     resolve: { kinds: [find], stage: 1 }
   cast:
     seen: { resolve_target: true, enter: false }
@@ -181,6 +187,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: "any"
     resolve: { kinds: [rescue], stage: 0 }
   cast:
     held: { resolve_target: true, enter: false, captive_anywhere: true }
@@ -207,6 +214,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: "any"
     resolve: { kinds: [cure], stage: 0 }
   setup: "{zone}에서 마주친 행상 하나가 낮게 말한다. 하얀매 말고도 혈청이 나오는 곳이 있다고. 다만 값은 사람 목숨만큼이라고."
   ai_direction: "혈청은 아주 귀하다. 나루상단 사람이 섬에서 들여온다는 말, 옛 연구동 지하에 남았다는 말 (탐험 12-162). 지어낸 위치를 덧붙이지 않는다."
@@ -234,6 +242,7 @@
   when:
     resolve: { kinds: [cure] }
     segments: [night]
+    indoor: "any"
   cast:
     sick: { resolve_target: true, here: true, condition: { track: infection, at_least: fever } }
   setup: "{sick}의 숨이 거칠다. 밤새 열에 들떠 누군가의 이름을 부른다. 시간이 많지 않다는 것을 둘 다 안다."
@@ -257,6 +266,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: "any"
     resolve: { kinds: [protect] }
   cast:
     ward: { resolve_target: true, here: true }
@@ -288,6 +298,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: "any"
     resolve: { kinds: [protect] }
     seasons: [winter]
   cast:
@@ -321,6 +332,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: "any"
     resolve: { kinds: [repay] }
   cast:
     savior: { resolve_target: true, here: true }
@@ -347,6 +359,7 @@
   when:
     resolve: { kinds: [heart] }
     segments: [evening, night]
+    indoor: "any"
   cast:
     dear: { resolve_target: true, here: true }
   setup: "{dear:이/가} 무언가를 만지작거리다 당신 손에 쥐여 준다. 깎다 만 나무 조각이다. 무엇인지는 말하지 않는다."
@@ -370,6 +383,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: "any"
     resolve: { kinds: [bury], stage: 0 }
   setup: "{target:이/가} 쓰러진 곳을 아는 사람이 있다. 가는 길은 감염체가 깔려 있고, 짐을 지고 돌아오기는 더 어렵다."
   ai_direction: "유해는 상태의 '묻히지 않은 유해'에 있으면 그곳이다. 가서 take_action.bury로 묻는다. 길의 위험은 그 구역의 위험대로."

@@ -11,6 +11,7 @@
   tags: [y_islander]
   when:
     zones: [yeoul_isle]
+    indoor: "any"
     segments: [day]
     # 플레이 테스트 12: 검역 막사를 지키는 중에 수업을 막 끝낸 선생과 아이들이 나왔다. 보초를 서는 동안에는 열지 않는다
     activities_none: [guard_duty]
@@ -70,6 +71,7 @@
   tags: [y_islander]
   when:
     zones: [yeoul_isle]
+    indoor: "any"
     segments: [morning]
     # 플레이 테스트 12: 망루 당번 중에 "경비조도 불려 와 줄에 선다". 보초를 서는 동안에는 열지 않는다
     activities_none: [guard_duty]
@@ -120,6 +122,7 @@
   tags: [y_islander]
   when:
     zones: [yeoul_isle]
+    indoor: true
     segments: [evening]
     day_gte: 3
     flags_none: [y2_table_done]
@@ -231,6 +234,8 @@
   tags: [y_islander]
   when:
     zones: [yeoul_isle]
+    places: [dock]
+    indoor: false
     segments: [night]
     day_gte: 5
     flags_any: [y_rocks_seen, y_feast_seen, pt_draught_known, y2_rockpath_known]
@@ -296,6 +301,7 @@
   tags: [y_islander]
   when:
     zones: [yeoul_isle]
+    indoor: "any"
     segments: [evening, night]
     day_gte: 8
     flags_all: [y_feast_seen]

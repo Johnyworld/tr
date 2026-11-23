@@ -9,6 +9,8 @@
   when:
     zones: [cathedral]
     segments: [evening, night]
+    indoor: true
+    places: [bell_tower]
     occupations_not: [preacher]
   cast:
     keeper: { extra: cathedral_refugee, label: 종지기 노인 }
@@ -39,6 +41,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [evening]
+    indoor: "any"
   cast:
     pious: { faction: own, here: true }
     # 이름난 윗사람(의장, 간부)은 배식 줄에서 빈정대는 자리에 넣지 않는다 (플레이 테스트 11)
@@ -71,6 +74,7 @@
   when:
     own_territory: true
     segments: [dawn, morning]
+    indoor: "any"
     # 바깥으로 나갈 일이 있을 때만 (플레이 테스트 11: 임무도 없는 새벽에 "돌아와서 돌려줘")
     mission_active: true
   cast:
@@ -98,6 +102,7 @@
   when:
     zones: [rest_stop, overpass, south_fields, riverside]
     segments: [morning, day]
+    indoor: false
   cast:
     pilgrim: { extra: highway_traveler, label: 나무 십자가를 멘 사람 }
   setup: "도로 한가운데를 {pilgrim:이/가} 걸어온다. 등에 사람 키만 한 나무 십자가를 묶었다. 뒤로 서넛이 따른다. 무기는 아무도 없다. \"남쪽으로 갑니다. 물 한 모금만 얻을 수 있을까요.\""
@@ -131,6 +136,7 @@
   when:
     zones: [e_market, old_town, cathedral, rest_stop]
     segments: [day, evening]
+    indoor: false
   cast:
     preacher: { extra: refugee, label: 흰 띠를 두른 사람 }
   setup: "길 한쪽에 사람들이 모였다. 이마에 흰 띠를 두른 {preacher:이/가} 상자 위에 서 있다. \"물린 자들은 벌을 받은 겁니다. 죄 없는 사람은 변하지 않아요. 우리한테 오면 깨끗해집니다.\" 듣는 사람 중에 감염으로 가족을 잃은 얼굴들이 보인다."

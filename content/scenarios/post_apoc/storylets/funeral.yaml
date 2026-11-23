@@ -9,6 +9,7 @@
   cooldown_days: 4
   when:
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    indoor: "any"
     funeral: true
     own_territory: true
     segments: [morning, day, evening]
@@ -46,6 +47,7 @@
   when:
     funeral: true
     segments: [evening, night]
+    indoor: "any"
   cast:
     kin: { bereaved: true, here: true }
   setup: "{kin:이/가} 혼자 앉아 {deceased}의 물건을 하나씩 만지작거린다. 칼집, 낡은 장갑, 반쯤 남은 담뱃갑. 당신을 보고도 손을 멈추지 않는다."
@@ -84,6 +86,7 @@
   cooldown_days: 4
   when:
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    indoor: "any"
     funeral: true
     own_territory: true
     segments: [morning, evening]

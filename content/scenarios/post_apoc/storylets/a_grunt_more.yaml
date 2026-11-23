@@ -7,6 +7,7 @@
   tags: [squad_life]
   when:
     own_territory: true
+    indoor: "any"
     segments: [day, evening]
     day_gte: 2
   cast:
@@ -38,6 +39,7 @@
   tags: [grunt]
   when:
     zones: [a_east_post, riverside, old_town]
+    indoor: false
     segments: [night, dawn]
     day_gte: 3
   cast:
@@ -111,6 +113,7 @@
   tags: [grunt]
   when:
     zones: [e_market]
+    indoor: "any"
   cast:
     trader: { ids: [e_bongsu] }
   setup: 금니를 드러낸 상인이 손짓한다. "형님, 담배 있으시죠? 한 갑이면 항생제 한 줄. 요새 이 값 없습니다."
@@ -141,6 +144,8 @@
   tags: [grunt]
   when:
     zones: [hospital_ruins]
+    indoor: true
+    places: [lobby]
     segments: [morning, day]
   cast:
     scav: { ids: [d_minho] }
@@ -180,6 +185,7 @@
     flags_all: [scouts_captured]
     flags_none: [rescue_discussed]
     own_territory: true
+    indoor: "any"
     segments: [evening, night]
   cast:
     boss: { commander: true, ids: [a_taeho], trust_gte: 2 }
@@ -320,6 +326,8 @@
   cooldown_days: 3
   when:
     zones: [a_base]
+    indoor: true
+    places: [barracks]
     segments: [evening, night]
   cast:
     host: { faction: own, ranks: [grunt], known: true }
@@ -351,6 +359,8 @@
   cooldown_days: 4
   when:
     zones: [a_base]
+    indoor: true
+    places: [barracks]
     segments: [morning]
   cast:
     officer: { ids: [a_doyun] }
@@ -379,6 +389,8 @@
   cooldown_days: 2
   when:
     zones: [a_base]
+    indoor: true
+    places: [mess]
     segments: [morning, evening]
   cast:
     cook: { ids: [a_bokja] }
@@ -403,6 +415,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: "any"
     own_territory: true
     harm_at_least: light
   cast:
@@ -424,6 +437,7 @@
   repeatable: true
   cooldown_days: 14  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다. 12-195: 2주에 두 번 나와 14일
   when:
+    indoor: "any"
     own_territory: true
     day_gte: 2
   cast:
@@ -465,6 +479,7 @@
   cooldown_days: 2
   when:
     zones: [e_market, water_plant]
+    indoor: "any"
   cast:
     runner: { ids: [e_yuri] }
   setup: "빨간 털모자를 쓴 심부름꾼이 배낭을 내리며 요새 강변 소식을 늘어놓는다. 담배 한 개비면 더 말해 주겠단다."
@@ -488,6 +503,7 @@
   weight: 0.6
   when:
     zones: [old_town, hospital_ruins, riverside]
+    indoor: false
     segments: [morning, day, evening]
   setup: 무너진 잔해 틈에 반쯤 묻힌 배낭이 보인다. 끈 하나가 바람에 흔들린다.
   ai_direction: 주인은 오래전에 죽었다. 콘크리트가 아직 불안하게 걸려 있다.
@@ -513,6 +529,7 @@
   cooldown_days: 2
   when:
     zones: [a_east_post]
+    indoor: false
     segments: [morning, day]
   setup: 고가도로 위로 붉은 완장을 찬 순찰조가 지나간다. 이쪽은 아직 보지 못했다.
   ai_direction: 서너 명이다. 무언가를 재고 있는 것처럼 초소 쪽을 자주 본다.
@@ -550,6 +567,7 @@
   when:
     seasons: [winter]
     zones: [a_base]
+    indoor: false
     segments: [morning, day]
   cast:
     clerk: { ids: [a_doyun] }
@@ -581,6 +599,7 @@
   weight: 0.5
   when:
     zones: [old_town, hospital_ruins]
+    indoor: false
     segments: [morning, day]
   setup: 셔터가 무릎 높이까지 내려간 약국이 있다. 안쪽 진열대 몇 칸이 아직 쓰러지지 않았다.
   ai_direction: 안은 어둡고 바닥에 유리 조각이 깔렸다. 기어 들어가야 한다.

@@ -8,6 +8,7 @@
   cooldown_days: 6
   when:
     zones: [e_market, old_town, rest_stop, cathedral]
+    indoor: false
     segments: [morning, day]
   cast:
     kid: { extra: drifter_child, label: 심부름하는 아이 }
@@ -45,6 +46,7 @@
   cooldown_days: 9
   when:
     zones: [a_base, b_base, c_base, d_clinic, e_market]
+    indoor: false
     own_territory: true
     segments: [morning, day]
   cast:
@@ -79,6 +81,7 @@
   when:
     zone_owner: [none]
     segments: [morning, day, evening]
+    indoor: false
   cast:
     kid: { extra: drifter_child, label: 따라오는 아이, keep: ch_follower_kid }
   setup: "한참 전부터 발소리 하나가 당신 걸음에 맞춰 멈췄다 걷는다. 돌아보면 {kid:이/가} 폐차 뒤로 숨는다. 가방도 신발도 없다. 다시 걸으면 또 따라온다."
@@ -108,6 +111,7 @@
   cooldown_days: 10
   when:
     zones: [a_base, b_base, c_base, d_clinic, e_market]
+    indoor: false
     own_territory: true
     segments: [day, evening]
   cast:
@@ -139,6 +143,7 @@
   cooldown_days: 12
   when:
     zones: [cathedral, old_town, rest_stop, e_market, d_clinic]
+    indoor: "any"
   cast:
     mother: { extra: refugee, label: 아이 업은 사람 }
   setup: "{mother:이/가} 등에 업은 아이를 고쳐 업으며 사람마다 붙잡고 묻는다. \"약 있으면… 열이 사흘째 안 내려요.\" 아이 볼이 빨갛고 숨이 얕다. 당신 차례가 온다."

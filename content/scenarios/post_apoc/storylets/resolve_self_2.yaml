@@ -11,6 +11,7 @@
   when:
     resolve: { kinds: [journey], stage_gte: 1 }
     zones: [riverside, water_plant]
+    indoor: false
     segments: [dawn, evening]
   setup: "물가에 쪼그려 앉아 떠내려가는 나뭇가지를 눈으로 좇는다. 건너편 어딘가가 {target:이다/다}. 물은 생각보다 빠르고 차다."
   variants:
@@ -43,6 +44,7 @@
   when:
     resolve: { kinds: [journey], stage_gte: 2 }
     segments: [day, evening]
+    indoor: "any"
   cast:
     porter: { extra: e_porter, label: 동전패를 목에 건 짐꾼 }
   setup: "{porter:이/가} 짐을 내려놓고 물을 들이켠다. 안 가 본 데가 없다는 사람이다. {target} 이야기를 꺼내자 웃음을 거두고 당신을 위아래로 훑어본다. \"거기? 가는 것보다 받아 주느냐가 문제지.\""
@@ -76,6 +78,7 @@
   when:
     resolve: { kinds: [truth], stage: 0 }
     segments: [morning, day, evening]
+    indoor: "any"
   cast:
     scarred: { extra: refugee, label: 팔에 오래된 물린 자국이 있는 사람 }
   setup: "{scarred:이/가} 소매를 걷어 물을 뜬다. 팔뚝에 이빨 자국이 하얗게 아물어 있다. 물리고 열이 오르지 않은 사람은 드물다. 눈이 마주치자 황급히 소매를 내린다."
@@ -105,6 +108,7 @@
   cooldown_days: 6
   when:
     zones: [e_market, water_plant, rest_stop]
+    indoor: "any"
     resolve: { kinds: [truth], stage_gte: 2 }
     segments: [evening, night]
   setup: "장터 뒤 천막에 나루상단의 선적 장부가 펼쳐진 채 놓여 있다. 장부를 지키던 사람은 술자리에 불려 갔다. 등잔 불빛에 강으로 나가는 짐과 들어오는 짐의 칸이 보인다."
@@ -146,6 +150,7 @@
   when:
     resolve: { kinds: [quit], stage: 0 }
     segments: [morning]
+    indoor: "any"
   setup: "깨진 유리 조각에 얼굴이 비친다. 눈 밑이 거뭇하고 입술이 갈라졌다. 어젯밤 무엇을 얼마나 했는지 잘 기억나지 않는다."
   variants:
     - "아침에 눈을 뜨자마자 손이 먼저 배낭을 더듬는다. 그 손을 한참 내려다본다."
@@ -168,6 +173,7 @@
   when:
     resolve: { kinds: [quit], stage_gte: 1 }
     segments: [evening, night]
+    indoor: "any"
   cast:
     giver: { extra: road_wanderer, label: 불가의 떠돌이 }
   setup: "{giver:이/가} 불가에서 자리를 내주며 품에서 뭔가를 꺼낸다. \"추운데 한 모금 해. 아니면 이거라도. 아픈 데 듣는 거야.\" 아무 뜻 없는 호의다. 그래서 더 어렵다."
@@ -204,7 +210,8 @@
   cooldown_days: 3
   when:
     resolve: { kinds: [quit], stage_gte: 2 }
-    segments: [night]
+    segments: [dawn]
+    indoor: "any"
   setup: "온몸이 젖은 솜 같다. 식은땀이 나는데 춥다. 귀에서 쉬지 않고 무언가가 울린다. 이 밤만 넘기면 된다고 몇 번째 되뇌는지 모르겠다."
   variants:
     - "새벽이 오지 않는다. 벽을 긁던 손톱이 갈라졌다. 누가 문을 두드리는 것 같아 돌아보면 아무도 없다."
@@ -242,6 +249,7 @@
     resolve: { kinds: [endure], stage: 0 }
     seasons: [autumn, winter]
     segments: [morning, day]
+    indoor: false
   setup: "아침 공기가 코끝을 찌른다. 쌓아 둔 땔감은 생각보다 낮다. 무너진 집들 사이에 아직 마른 나무가 남아 있을지도 모른다."
   ai_direction: "버텨 내는 것은 계절이 지나도록 살아 있는 것이다 (코드). 이 장면은 그 계절을 날 채비를 하는 순간. 땔감의 양을 숫자로 정해 주지 않는다."
   choices:
@@ -278,6 +286,7 @@
     resolve: { kinds: [endure], stage_gte: 1 }
     seasons: [winter]
     segments: [night]
+    indoor: true
   setup: "바람이 벽 틈으로 칼처럼 들어온다. 물통 겉에 살얼음이 낀다. 숨을 쉴 때마다 하얀 김이 나고, 발가락 감각이 점점 멀어진다."
   variants:
     - "한밤에 불이 사그라들었다. 누군가 기침을 하다 멈춘다. 다시 불을 살리지 않으면 아침이 멀다."
@@ -313,6 +322,7 @@
     resolve: { kinds: [endure], stage_gte: 2 }
     seasons: [winter]
     segments: [morning, day]
+    indoor: "any"
   setup: "처마 끝 고드름에서 물방울이 하나 떨어진다. 또 하나. 겨울이 다 간 것은 아니지만 오늘 햇빛은 어제와 다르다."
   ai_direction: "고비를 넘기고 있다는 느낌의 장면. 계절이 끝났다고 정하지 않는다 (계절은 코드의 날짜로 바뀐다). 아직 남은 날이 있다."
   choices:
@@ -340,6 +350,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: "any"
     resolve: { kinds: [explore], stage: 0 }
   cast:
     dweller: { extra: subway_dweller, label: 옷에 흙물이 밴 사람 }
@@ -370,6 +381,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: "any"
     resolve: { kinds: [explore], stage_gte: 1 }
   cast:
     scholar: { extra: campus_scholar, label: 책 보따리를 진 사람 }
@@ -401,6 +413,7 @@
   when:
     resolve: { kinds: [explore], stage_gte: 2 }
     segments: [morning, day]
+    indoor: false
   setup: "무너진 벽마다 분필 자국이 있다. 세모, 가위표, 화살표. 폐허를 뒤지는 사람들이 서로에게 남기는 표시다. 어떤 세모는 아래를 향해 있다."
   variants:
     - "셔터에 숯으로 그은 표시가 있다. 아래를 가리키는 세모 옆에 누군가 해골을 그려 놓았다."
@@ -432,6 +445,7 @@
   when:
     resolve: { kinds: [homecoming], stage: 0 }
     segments: [dawn]
+    indoor: true
   setup: "꿈에서 부엌 창으로 햇빛이 들었다. 냄비 끓는 소리, 누군가 이름을 부르는 소리. 눈을 뜨자 곰팡이 핀 천장이다. 냄새만 아직 코에 남아 있다."
   ai_direction: "{target}의 집 꿈이다. 집이 지금 어떤지는 가 봐야 안다. 꿈속 사람이 누구인지는 플레이어가 정하게 둔다."
   choices:
@@ -453,6 +467,7 @@
   when:
     resolve: { kinds: [homecoming], stage_gte: 1 }
     segments: [day, evening]
+    indoor: "any"
   cast:
     neighbor: { extra: refugee, label: 같은 동네에 살았다는 사람 }
   setup: "{neighbor:이/가} 옛 동네 이름을 댄다. {target:이다/다}. 무너지기 전 그곳의 시장 골목, 문 닫은 목욕탕, 놀이터의 녹슨 미끄럼틀. 둘 다 한동안 말이 없다."
@@ -484,6 +499,7 @@
   when:
     resolve: { kinds: [homecoming], stage_gte: 2, near_target: true }
     segments: [dawn, morning]
+    indoor: false
   setup: "높은 데 올라 {target} 쪽을 내려다본다. 낯익은 지붕선이 무너진 채로 남아 있다. 저 아래 어디쯤이 집이다. 가는 길에 무엇이 있을지는 여기서 다 보이지 않는다."
   variants:
     - "{target}까지 이어진 길이 무너진 건물들 사이로 끊겼다 이어진다. 저 너머다."

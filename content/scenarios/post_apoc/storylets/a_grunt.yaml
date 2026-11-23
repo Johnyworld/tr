@@ -47,6 +47,7 @@
   when:
     own_territory: true
     segments: [evening, night]
+    indoor: "any"
   cast:
     mansu: { ids: [a_mansu], known: true, trust_gte: 2 }
   setup: "{mansu:이/가} 담배를 비벼 끄더니 품에서 기름종이에 싼 묵직한 덩어리를 꺼내 보인다. \"언젠가 쓸 데가 있을 거다.\""
@@ -82,6 +83,7 @@
   when:
     own_territory: true
     segments: [night, dawn]
+    indoor: "any"
     day_gte: 3
     clock_gte: { c_east_offensive: 6 }
     flags_none: [deserted]
@@ -126,6 +128,7 @@
   tags: [grunt]
   when:
     zones: [a_east_post, a_base]
+    indoor: false
     clock_gte: { c_east_offensive: 7 }
   cast:
     lookout: { ids: [a_seoyeon], known: true }
@@ -154,6 +157,8 @@
   when:
     zones: [a_base]
     segments: [morning, day, evening]
+    indoor: true
+    places: [mess]
     own_food_days_lte: 14
   cast:
     grunt: { faction: own, ranks: [grunt], known: true }
@@ -189,6 +194,7 @@
   cooldown_days: 2
   when:
     zones: [a_base]
+    indoor: "any"
     war_news_within_hours: 24
   cast:
     medic: { ids: [a_chaewon] }
@@ -212,6 +218,7 @@
   when:
     own_territory: true
     segments: [day, evening]
+    indoor: "any"
   cast:
     talker: { faction: own, ranks: [grunt], known: true }
   # 플레이 테스트 12: 주인공에게 담배가 없는데 "담배 한 대를 빌리며"
@@ -241,6 +248,7 @@
   when:
     zones: [a_east_post]
     segments: [night]
+    indoor: false
   setup: 초소 아래 어둠 속에서 쇠붙이를 끄는 소리가 났다가 멎는다. 감염체 걸음은 아니다.
   # 되풀이될 때 차례로 쓰는 다른 상황 문장 (12-139)
   variants:

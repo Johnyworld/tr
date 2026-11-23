@@ -15,6 +15,8 @@
   tags: [b_squad_leader]
   when:
     zones: [b_base]
+    indoor: false
+    places: [gate]
     segments: [dawn, morning, day]
     flags_none: [b_sl_mustered]
   cast:
@@ -54,6 +56,7 @@
   weight: 2
   when:
     zones: [old_town]
+    indoor: false
     segments: [morning, day, evening]
     day_gte: 2
     flags_none: [b_sl_notebook_done]
@@ -144,6 +147,7 @@
   tags: [b_squad_leader]
   when:
     zones: [e_market, south_fields, old_town]
+    indoor: false
     segments: [morning, day, evening]
     day_gte: 2
     flags_none: [b_sl_ditch_done]
@@ -238,6 +242,7 @@
   title: 배낭 바닥의 붉은 천
   tags: [b_squad_leader]
   when:
+    indoor: false
     segments: [morning, day, evening]
     day_gte: 2
     flags_none: [b_sl_haesol_seen]
@@ -283,7 +288,8 @@
   tags: [b_squad_leader]
   when:
     zones: [b_base]
-    segments: [evening, night]
+    indoor: false
+    segments: [evening]
     day_gte: 4
     flags_all: [b_sl_haesol_seen]
     flags_none: [b_sl_envoy_done]
@@ -340,6 +346,7 @@
   tags: [b_squad_leader]
   when:
     zones: [old_town, hospital_ruins, riverside, water_plant, south_fields]
+    indoor: false
     segments: [day, evening, night]
     day_gte: 3
     flags_none: [b_sl_freeze_seen]
@@ -438,6 +445,7 @@
   tags: [b_squad_leader]
   when:
     zones: [old_town]
+    indoor: false
     segments: [morning, day]
     day_gte: 4
     flags_none: [b_sl_cellar_done]

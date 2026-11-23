@@ -7,6 +7,7 @@
   cooldown_days: 8
   when:
     facility_here: coop
+    indoor: false
     segments: [night, dawn]
   setup: "닭장 쪽에서 날개 퍼덕이는 소리가 터진다. 어둠 속에 낮고 긴 몸뚱이 하나가 철사 틈에 주둥이를 들이밀고 있다."
   ai_direction: 족제비다. 사람을 보면 달아나지만 닭 한 마리는 물고 가려 한다. 쫓을지, 닭장을 손볼지는 플레이어가 정한다.
@@ -35,6 +36,7 @@
   cooldown_days: 7
   when:
     facility_here: goat_pen
+    indoor: false
     segments: [evening, night]
   setup: "염소가 멈추지 않고 운다. 끈을 당기며 담 쪽을 보고, 발굽으로 땅을 찬다. 그 울음이 조용한 밤에 멀리까지 퍼진다."
   ai_direction: 염소는 담 너머에서 무언가 냄새를 맡았다. 울음은 무언가를 부를 수도 있다. 달래면 조용해진다.
@@ -69,6 +71,7 @@
   cooldown_days: 10
   when:
     facility_here: coop
+    indoor: false
     segments: [morning, day]
   cast:
     kid: { extra: drifter_child, label: 달걀 든 아이, keep: egg_thief }

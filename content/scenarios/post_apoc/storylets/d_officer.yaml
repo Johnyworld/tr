@@ -129,6 +129,8 @@
   when:
     factions: [faction_d]
     zones: [d_clinic]
+    places: [gate]
+    indoor: false
     segments: [morning, day, evening]
     day_gte: 1
     flags_none: [do_queue_done]
@@ -239,6 +241,8 @@
   when:
     factions: [faction_d]
     zones: [d_clinic]
+    places: [back_wall]
+    indoor: false
     segments: [night]
     day_gte: 3
     flags_all: [do_gap_seen]
@@ -354,6 +358,7 @@
   when:
     factions: [faction_d]
     segments: [morning, day, evening]
+    indoor: "any"
     day_gte: 2
     flags_none: [do_pine_letter_done]
   cast:
@@ -405,6 +410,7 @@
   when:
     factions: [faction_d]
     segments: [morning, day, evening]
+    indoor: "any"
     day_gte: 3
     flags_none: [do_red_answered]
   cast:
@@ -477,6 +483,7 @@
   when:
     factions: [faction_d]
     zones: [d_clinic]
+    indoor: true
     segments: [evening]
     flags_none: [do_lean_spoken]
     clock_gte: { d_lean: 14 }
@@ -530,6 +537,7 @@
   when:
     own_territory: true
     segments: [morning, day]
+    indoor: true
     day_gte: 4
     own_policy: { ration: [cut] }
   cast:

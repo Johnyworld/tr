@@ -6,6 +6,7 @@
   title: 바다 건너 낙원
   tags: [world]
   when:
+    indoor: "any"
     segments: [evening, night]
     day_gte: 2
     zone_owner: [none, own]
@@ -30,6 +31,7 @@
   tags: [world]
   when:
     zones: [riverside, water_plant]
+    indoor: false
     segments: [evening, night]
     day_gte: 3
     flags_none: [y_passage, y_landed]
@@ -66,6 +68,7 @@
   tags: [world]
   when:
     zones: [e_market, water_plant]
+    indoor: "any"
     segments: [morning, day]
     day_gte: 5
     flags_none: [y_passage, y_landed]
@@ -95,6 +98,7 @@
   tags: [world]
   when:
     zones: [riverside, water_plant]
+    indoor: false
     segments: [morning, day]
     day_gte: 4
     flags_none: [wy_drift_done]
@@ -133,6 +137,8 @@
   essential: true
   when:
     zones: [yeoul_isle]
+    indoor: false
+    places: [dock]
     flags_none: [y_landed]
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e, none]
   cast:

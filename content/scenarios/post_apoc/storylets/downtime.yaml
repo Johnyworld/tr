@@ -8,6 +8,7 @@
   cooldown_days: 4
   when:
     own_territory: true
+    indoor: "any"
     segments: [evening, night]
   cast:
     dealer: { faction: own, here: true }
@@ -46,6 +47,7 @@
   cooldown_days: 6
   when:
     campfire: true
+    indoor: "any"
     segments: [evening, night]
   cast:
     teller: { companion: {}, enter: false }
@@ -74,6 +76,7 @@
   cooldown_days: 7
   when:
     own_territory: true
+    indoor: true
     segments: [evening]
   cast:
     rival: { faction: own, here: true }
@@ -107,6 +110,7 @@
   when:
     own_territory: true
     # 제목대로 해 질 녘에만 (플레이 테스트 11: 14시에 열렸다)
+    indoor: false
     segments: [evening]
   cast:
     partner: { faction: own, here: true }
@@ -137,6 +141,7 @@
   cooldown_days: 6
   when:
     own_territory: true
+    indoor: true
     segments: [night]
   # 플레이 테스트 12: 밀고가 들켜 신뢰가 떨어진 바로 그날 밤 그 사람이 술판을 열었다. 주인공을 믿지 않는 사람은 술을 돌리지 않는다
   cast:
@@ -169,6 +174,7 @@
   cooldown_days: 8
   when:
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    indoor: "any"
     own_territory: true
     segments: [day, evening]
   cast:
@@ -192,6 +198,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    indoor: "any"
     segments: [evening, night]
   cast:
     mate: { companion: { kinds: [buddy, squad, kin, purpose] }, enter: false }
@@ -214,6 +221,7 @@
   repeatable: true
   cooldown_days: 9
   when:
+    indoor: false
     segments: [night]
     weather: [clear]
   cast:

@@ -15,6 +15,7 @@
   when:
     has_items_any: [old_rifle, shotgun, pistol, sawn_shotgun]
     own_territory: true
+    indoor: "any"
     segments: [dawn, morning]
     day_gte: 2
   cast:
@@ -70,6 +71,7 @@
   when:
     has_items_any: [old_rifle, shotgun, pistol, sawn_shotgun]
     own_territory: true
+    indoor: true
     segments: [night]
     day_gte: 4
     conditions_at_least: { nerves: shaken }
@@ -114,6 +116,7 @@
   when:
     occupation_step_gte: 1
     own_territory: true
+    indoor: "any"
     segments: [morning, day]
     flags_none: [os_rookie_drilled, os_rookie_soft, os_rookie_dropped]
   cast:
@@ -168,6 +171,7 @@
   urgent: true
   when:
     zone_owner: [none, other]
+    indoor: false
     segments: [morning, day, evening]
     flags_any: [os_rookie_drilled, os_rookie_soft]
     flags_none: [os_first_fire_done]
@@ -243,6 +247,7 @@
   when:
     occupation_step_gte: 1
     zone_owner: [none, other]
+    indoor: false
     segments: [morning, day, evening]
   cast:
     boss: { commander: true, enter: false }
@@ -301,6 +306,7 @@
   when:
     occupation_step_gte: 1
     own_territory: true
+    indoor: "any"
     segments: [evening]
   cast:
     boss: { commander: true }
@@ -357,6 +363,7 @@
   when:
     occupation_step_gte: 1
     own_territory: true
+    indoor: true
     segments: [evening, night]
     day_gte: 6
   cast:
@@ -405,6 +412,7 @@
     factions: [faction_c]
     occupation_step_gte: 1
     own_territory: true
+    indoor: false
     segments: [evening, night]
     flags_none: [os_red_ears_done]
   cast:

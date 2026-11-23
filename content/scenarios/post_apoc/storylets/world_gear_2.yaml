@@ -12,6 +12,7 @@
   tags: [world]
   when:
     zones: [a_base, b_base, c_base]
+    indoor: "any"
     factions: [faction_a, faction_b, faction_c]
     zone_owner: [own]
     # 플레이 테스트 12: 08:20에 "새벽 점호 전". 아침에만 열고 상황도 아침 점호로 쓴다
@@ -71,6 +72,7 @@
   tags: [world]
   when:
     zones: [a_base, b_base, c_base]
+    indoor: false
     factions: [faction_a, faction_b, faction_c]
     zone_owner: [own]
     segments: [evening, night]
@@ -132,6 +134,7 @@
   tags: [world]
   when:
     zones: [a_base, b_base, c_base]
+    indoor: false
     factions: [faction_a, faction_b, faction_c]
     zone_owner: [own]
     segments: [morning, day]
@@ -199,6 +202,7 @@
   cooldown_days: 5
   when:
     zones: [e_market, water_plant]
+    indoor: true
     segments: [morning, day, evening]
     day_gte: 2
   cast:
@@ -245,6 +249,7 @@
   tags: [world]
   when:
     zones: [riverside, old_town, e_market, water_plant, b_base, south_fields]
+    indoor: false
     segments: [morning, day]
     day_gte: 5
     flags_none: [wg2_burst_done]
@@ -309,6 +314,7 @@
   tags: [world]
   when:
     zones: [riverside, old_town, e_market, water_plant, b_base, south_fields, hospital_ruins]
+    indoor: "any"
     segments: [morning, day, evening]
     day_gte: 3
     flags_none: [wg2_map_done]
@@ -371,6 +377,7 @@
   tags: [world]
   when:
     zones: [old_town]
+    indoor: true
     segments: [morning, day, evening]
     flags_all: [wg2_station_map]
     flags_none: [wg2_locker_done]
@@ -434,6 +441,7 @@
   repeatable: true
   cooldown_days: 14  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다. 12-195: 2주에 두 번 나와 14일
   when:
+    indoor: false
     activities_none: [sleep]
     zone_owner: [none, other]
     day_gte: 2
@@ -487,6 +495,7 @@
   tags: [world]
   when:
     zones: [a_base, b_base, c_base]
+    indoor: "any"
     factions: [faction_a, faction_b, faction_c]
     zone_owner: [own]
     segments: [evening, night]
@@ -565,6 +574,7 @@
   cooldown_days: 5
   when:
     zones: [a_base, b_base, c_base, d_clinic, e_market]
+    indoor: false
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
     zone_owner: [own]
     segments: [night]

@@ -9,6 +9,7 @@
   title: 저 사람이다
   tags: [world]
   when:
+    indoor: false
     zone_owner: [none, other]
     flags_any: [bg_enemy_person, bg_culprit_known]
     flags_none: [bg_enemy_seen]
@@ -49,6 +50,7 @@
   title: 같은 불 앞에서
   tags: [world]
   when:
+    indoor: true
     zone_owner: [none, other]
     flags_all: [bg_enemy_seen]
     flags_none: [bg_enemy_close, bg_enemy_let_go]
@@ -108,6 +110,7 @@
   tags: [world]
   urgent: true
   when:
+    indoor: false
     zone_owner: [none, other]
     flags_all: [bg_enemy_close]
     flags_none: [bg_enemy_settled, bg_enemy_let_go]
@@ -182,6 +185,7 @@
   title: 그 사람의 식구
   tags: [world]
   when:
+    indoor: "any"
     flags_all: [bg_enemy_seen]
     day_gte: 5
     segments: [morning, day]
@@ -230,6 +234,7 @@
   title: 알아보는 눈
   tags: [world]
   when:
+    indoor: "any"
     flags_all: [bg_hunted]
     flags_none: [bg_enemy_person]
     day_gte: 3
@@ -278,6 +283,7 @@
   title: 너를 묻고 다니는 사람
   tags: [world]
   when:
+    indoor: "any"
     flags_all: [bg_hunted]
     flags_any: [bg_enemy_person, bg_hunted_seen]
     day_gte: 5
@@ -359,6 +365,7 @@
   title: 발이 느린 식구
   tags: [world]
   when:
+    indoor: false
     flags_all: [bg_kin_alive]
     day_gte: 4
     segments: [morning, day]
@@ -390,6 +397,7 @@
   title: 여기 남고 싶어
   tags: [world]
   when:
+    indoor: "any"
     flags_all: [bg_kin_alive]
     flags_none: [bg_kin_stays]
     zones: [b_base]
@@ -437,6 +445,7 @@
   title: 닮은 사람을 봤다는 말
   tags: [world]
   when:
+    indoor: "any"
     flags_all: [bg_seeking]
     flags_none: [bg_seek_found, bg_seek_heard]
     day_gte: 3
@@ -469,6 +478,7 @@
   title: 그 얼굴을 아는 떠돌이
   tags: [world]
   when:
+    indoor: "any"
     flags_all: [bg_seeking, bg_seek_heard]
     flags_none: [bg_seek_found, bg_seek_witnessed]
     day_gte: 6
@@ -505,6 +515,7 @@
   tags: [world]
   urgent: true
   when:
+    indoor: "any"
     flags_all: [bg_seeking]
     flags_none: [bg_seek_found]
     day_gte: 3
@@ -550,6 +561,7 @@
   title: 묵은 장부
   tags: [world]
   when:
+    indoor: "any"
     flags_all: [bg_debt_faction_e]
     flags_none: [bg_debt_found_me]
     debt_gte: { faction_e: 1 }
@@ -632,6 +644,7 @@
   title: 같은 막사에서 자던 얼굴
   tags: [world]
   when:
+    indoor: "any"
     flags_all: [bg_deserter_faction_c]
     flags_none: [bg_deserter_met]
     day_gte: 4
@@ -687,6 +700,7 @@
   title: 그날 무렵
   tags: [world]
   when:
+    indoor: true
     flags_all: [bg_loss]
     flags_none: [bg_loss_day_kept]
     day_gte: 7
@@ -757,10 +771,11 @@
   title: 같은 날을 겪은 사람
   tags: [world]
   when:
+    indoor: "any"
     flags_all: [bg_loss]
     flags_none: [bg_loss_same_met]
     day_gte: 5
-    segments: [evening, night]
+    segments: [night]
   cast:
     other: { extra: refugee, label: 불가의 피난민 }
   setup: "곁에 자리를 잡은 {other:이/가} 자기 이야기를 한다. 한밤에 들이닥친 사람들, 불, 흩어진 식구. 듣다 보니 당신이 아는 날과 겹친다."

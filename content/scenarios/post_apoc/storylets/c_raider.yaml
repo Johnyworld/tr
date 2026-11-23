@@ -11,6 +11,7 @@
   tags: [c_raider]
   when:
     zones: [c_base]
+    indoor: false
     # 아침 점호 뒤, 들어온 첫머리에만 (플레이 테스트 11: 04시에 "점호가 끝나자", 임무 둘을 끝낸 뒤에 "오늘부터")
     segments: [morning]
     day_lte: 2
@@ -40,6 +41,7 @@
   tags: [c_raider]
   when:
     zones: [c_warehouse]
+    indoor: false
     flags_none: [c_prisoners_seen]
   cast:
     jailer: { ids: [c_pilsu] }
@@ -70,6 +72,7 @@
   tags: [c_raider]
   when:
     zones: [c_warehouse]
+    indoor: false
     segments: [evening, night, dawn]
     flags_all: [c_prisoners_seen]
     flags_none: [c_prisoner_message, c_prisoner_refused]
@@ -228,6 +231,8 @@
   urgent: true
   when:
     zones: [c_base]
+    places: [wall]
+    indoor: false
     segments: [night, dawn]
     flags_all: [c_sora_help]
     flags_none: [c_sora_gone, c_sora_caught]
@@ -277,6 +282,8 @@
   tags: [red_life]
   when:
     zones: [c_base]
+    places: [wall]
+    indoor: false
     segments: [dawn, morning]
     flags_all: [c_sora_gone]
     flags_none: [c_hunt_done]
@@ -322,6 +329,8 @@
   tags: [red_life]
   when:
     zones: [c_base]
+    places: [yard]
+    indoor: false
     segments: [evening]
     flags_all: [c_sora_caught]
     flags_none: [c_sora_punished]
@@ -357,6 +366,7 @@
   tags: [red_life]
   when:
     zones: [c_base]
+    indoor: false
     segments: [day, evening]
     day_gte: 2
     flags_none: [c_informant, c_informant_refused]
@@ -398,6 +408,7 @@
   tags: [red_life]
   when:
     zones: [c_base]
+    indoor: false
     segments: [evening, night]
     day_gte: 3
     flags_none: [c_dongpal_exposed, c_dongpal_missed]
@@ -479,6 +490,7 @@
   cooldown_days: 3
   when:
     zones: [c_base]
+    indoor: "any"
     segments: [evening]
   cast:
     mate: { faction: own, ranks: [grunt], known: true }
@@ -517,6 +529,7 @@
   cooldown_days: 3
   when:
     zones: [old_town, riverside, south_fields]
+    indoor: true
     segments: [morning, day, evening]
   setup: 털던 집 다락 판자 아래에서 숨소리가 난다. 판자 틈으로 여자 하나와 아이 둘이 몸을 웅크린 것이 보인다. 여자 품에 통조림 몇 개가 안겨 있다.
   ai_direction: 여자는 어느 무리에도 속하지 않은 떠돌이다. 통조림이 이 식구의 전부다. 같이 온 조원이 있다면 아래층에 있어 아직 모른다. 할당량은 모자라다.
@@ -552,6 +565,8 @@
   cooldown_days: 3
   when:
     zones: [c_base]
+    places: [kitchen]
+    indoor: true
     segments: [morning, evening]
   cast:
     absorbed: { faction: own, ranks: [grunt], known: true }

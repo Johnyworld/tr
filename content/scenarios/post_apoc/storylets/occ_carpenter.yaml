@@ -15,6 +15,7 @@
   tags: [occ_carpenter]
   when:
     own_territory: true
+    indoor: false
     segments: [evening, night]
     day_gte: 2
     flags_none: [occ_carp_wave_done]
@@ -71,7 +72,8 @@
   when:
     weather: [rain]
     own_territory: true
-    segments: [morning, day]
+    indoor: "any"
+    segments: [morning]
     day_gte: 3
     flags_none: [occ_carp_roof_done]
   cast:
@@ -127,6 +129,7 @@
   cooldown_days: 6
   when:
     own_territory: true
+    indoor: true
     segments: [evening]
     day_gte: 4
     flags_none: [occ_carp_coffin_done]
@@ -178,7 +181,7 @@
   when:
     indoor: false
     own_territory: true
-    segments: [dawn, night]
+    segments: [dawn]
     day_gte: 3
     flags_none: [occ_carp_thief_seen]
   cast:
@@ -229,6 +232,7 @@
   title: 판자가 가는 곳
   tags: [occ_carpenter]
   when:
+    indoor: "any"
     segments: [evening, night]
     flags_all: [occ_carp_thief_talk]
     flags_none: [occ_carp_thief_done]
@@ -283,6 +287,7 @@
   when:
     factions: [faction_c]
     own_territory: true
+    indoor: true
     segments: [morning, day]
     day_gte: 2
     flags_none: [occ_carp_cage_done]
@@ -337,6 +342,7 @@
   when:
     own_territory: true
     factions: [faction_c]
+    indoor: true
     segments: [morning, day, evening]
     flags_all: [occ_carp_weak_cage]
     flags_none: [occ_carp_inspect_done]
@@ -379,6 +385,8 @@
   cooldown_days: 5
   when:
     zones: [b_base]
+    indoor: true
+    places: [blocks]
     factions: [faction_b]
     own_territory: true
     segments: [morning, day]
@@ -432,6 +440,7 @@
   when:
     occupation_step_gte: 1
     own_territory: true
+    indoor: false
     segments: [morning, day]
     flags_none: [occ_carp_tower_done]
   cast:
@@ -487,6 +496,7 @@
   when:
     occupation_step_gte: 2
     own_territory: true
+    indoor: "any"
     segments: [morning, day, evening]
     flags_none: [occ_carp_plan_done]
   cast:
@@ -550,6 +560,7 @@
   when:
     occupation_step_gte: 2
     own_territory: true
+    indoor: false
     segments: [morning, day]
     flags_all: [occ_carp_wall_mine]
     flags_none: [occ_carp_blame_done]

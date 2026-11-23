@@ -52,7 +52,8 @@
   tags: [clinic_life]
   when:
     zones: [d_clinic]
-    segments: [night, dawn]
+    segments: [night]
+    indoor: "any"
     flags_all: [d_theft_traced]
     flags_none: [d_theft_exposed, d_bribed]
   cast:
@@ -155,6 +156,7 @@
   when:
     zones: [d_clinic]
     segments: [evening, night]
+    indoor: "any"
     flags_all: [d_bribed]
     flags_none: [d_errand_done]
   cast:
@@ -265,7 +267,7 @@
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [d_clinic]
-    segments: [night, dawn]
+    segments: [dawn]
     day_gte: 4
     flags_all: [d_sori_secret]
     flags_none: [d_sori_resolved]
@@ -668,6 +670,7 @@
   when:
     zones: [d_clinic]
     segments: [morning, day, evening]
+    indoor: "any"
   setup: 문진 줄 끝에서 여윈 여자가 아이를 안고 울먹인다. 아이 이마가 뜨겁다. 내놓을 것은 단추 몇 개뿐이다. 하얀매는 {scarce:이/가} 모자라고, 약값은 정해져 있다.
   ai_direction: 여자는 어느 무리에도 속하지 않은 떠돌이다. 진료소 사람들이 지켜본다. 공짜로 주면 내일 줄이 두 배가 된다는 것을 다들 안다.
   choices:

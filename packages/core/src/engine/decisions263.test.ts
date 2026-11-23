@@ -48,7 +48,9 @@ describe("오래 갇힌 날의 출구 (12-263)", () => {
 
     const visitor = make("role_t_visitor", { name: "민재", gender: "male" });
     capturePlayer(visitor.ctx(), "faction_c");
-    expect(ids(visitor)).toContain("cp_long_mouth");
+    // 내다 버리는 이야기는 한밤에 (12-279 시간대 낱말 검사)
+    const night = at - (at % 1440) + 23 * 60;
+    expect(eligibleStorylets(visitor.state(), content, night).map((s) => s.id)).toContain("cp_long_mouth");
     expect(ids(visitor)).not.toContain("cp_long_ransom");
   });
 

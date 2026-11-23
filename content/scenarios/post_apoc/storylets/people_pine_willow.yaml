@@ -7,6 +7,7 @@
   tags: [world]
   when:
     zones: [a_base]
+    indoor: false
     segments: [night]
     factions: [faction_a]
     day_gte: 3
@@ -56,6 +57,8 @@
   tags: [world]
   when:
     zones: [south_fields]
+    places: [field]
+    indoor: false
     segments: [morning, day]
     day_gte: 2
     flags_none: [pp_scale_done]
@@ -103,6 +106,8 @@
   tags: [world]
   when:
     zones: [b_base]
+    places: [yard]
+    indoor: false
     segments: [dawn, morning]
     day_gte: 3
     flags_none: [pp_well_done]
@@ -156,6 +161,8 @@
   tags: [world]
   when:
     zones: [b_base]
+    places: [rooftop_watch]
+    indoor: false
     segments: [evening, night]
     day_gte: 2
     flags_none: [pp_rooftop_done]

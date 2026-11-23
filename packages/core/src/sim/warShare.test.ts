@@ -1,3 +1,4 @@
+import { arrivalPlace } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -33,6 +34,7 @@ describe("전쟁에 돌리는 몫", () => {
     const story = content.storylets.wg_noise_patrol!;
     const cZone = Object.values(content.locations).find((l) => s.zones[l.id]?.owner === "faction_c")!.id;
     s.playerZone = cZone;
+    s.playerPlace = arrivalPlace(s, content, cZone);
     const day = dayOf(s.time);
     expect(conditionsMet(s, content, story, s.time)).toBe(false);
     s.zoneNoise[cZone] = { day, level: 2 };

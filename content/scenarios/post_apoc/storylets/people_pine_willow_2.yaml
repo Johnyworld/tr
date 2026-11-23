@@ -14,6 +14,7 @@
   tags: [world]
   when:
     zones: [south_fields]
+    indoor: false
     segments: [evening]
     factions: [faction_a]
     day_gte: 3
@@ -75,6 +76,7 @@
   tags: [world]
   when:
     zones: [a_base]
+    indoor: false
     segments: [night]
     factions: [faction_a]
     flags_any: [pp2_drain_found, pp2_drain_told]
@@ -126,6 +128,7 @@
   tags: [world]
   when:
     zones: [a_base, south_fields]
+    indoor: "any"
     segments: [evening, night]
     factions: [faction_a]
     flags_any: [pp2_jinman_confessed, pp2_jinman_hinted]
@@ -208,6 +211,8 @@
   tags: [world]
   when:
     zones: [e_market]
+    places: [stalls]
+    indoor: false
     segments: [morning, day]
     factions: [faction_a]
     flags_all: [pp_back_door_done]
@@ -272,6 +277,7 @@
   tags: [world]
   when:
     zones: [a_base]
+    indoor: true
     segments: [night]
     factions: [faction_a]
     day_gte: 4
@@ -386,6 +392,7 @@
   tags: [world]
   when:
     zones: [a_base, south_fields, b_base]
+    indoor: "any"
     segments: [evening, night]
     flags_any: [pp2_gate_covered, pp2_sua_told]
     flags_none: [pp2_desertion_done]
@@ -457,6 +464,7 @@
   tags: [world]
   when:
     zones: [hospital_ruins]
+    indoor: false
     segments: [morning, day]
     day_gte: 3
     flags_none: [pp2_hospital_done]
@@ -512,6 +520,7 @@
   tags: [world]
   when:
     zones: [b_base]
+    indoor: false
     segments: [evening]
     flags_all: [pp_rooftop_done]
     flags_none: [pp2_tailing_done]

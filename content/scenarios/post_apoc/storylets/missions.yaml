@@ -8,6 +8,7 @@
   repeatable: true
   weight: 20
   when:
+    indoor: false
     mission: [c_deserter_hunt]
   cast:
     runner: { extra: c_raider, label: 담을 넘은 조원, enter: true, starts: { hunger: hungry } }
@@ -61,6 +62,7 @@
   repeatable: true
   weight: 20
   when:
+    indoor: true
     mission: [d_riverside_wounded]
   cast:
     hurt: { extra: refugee, label: 다리를 다친 사람, enter: true, starts: { harm: serious, bleeding: bleeding } }
@@ -95,6 +97,7 @@
   repeatable: true
   weight: 20
   when:
+    indoor: true
     mission: [d_willow_house_call]
   cast:
     sick: { extra: b_villager, label: 앓아누운 버들마을 사람, enter: true, starts: { disease: sick } }
@@ -121,6 +124,7 @@
   repeatable: true
   weight: 20
   when:
+    indoor: true
     mission: [do_pine_ward]
   cast:
     sick: { extra: a_field_hand, label: 의무실에 누운 청솔 사람, enter: true }

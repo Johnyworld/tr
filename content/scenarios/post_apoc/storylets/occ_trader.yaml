@@ -15,6 +15,7 @@
   tags: [occ_trader]
   when:
     segments: [morning, day, evening]
+    indoor: false
     day_gte: 2
     flags_none: [occ_tr_forger_seen, occ_tr_coin_taken]
   cast:
@@ -59,6 +60,8 @@
   when:
     zones: [e_market]
     segments: [morning, day]
+    indoor: false
+    places: [stalls]
     day_gte: 3
     flags_all: [occ_tr_forger_seen]
     flags_none: [occ_tr_forger_done]
@@ -126,6 +129,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle, rest_stop, water_plant]
     zone_owner: [other]
     segments: [morning, day]
+    indoor: false
   cast:
     seller: { extra: e_porter, label: 남의 장터 좌판 주인 }
   setup: >-
@@ -166,6 +170,7 @@
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
     zone_owner: [own]
     segments: [evening, night]
+    indoor: false
     day_gte: 4
     flags_none: [occ_tr_side_deal, occ_tr_side_refused]
   cast:
@@ -281,6 +286,7 @@
   tags: [occ_trader]
   when:
     segments: [morning, day, evening]
+    indoor: "any"
     day_gte: 2
     flags_none: [occ_tr_credit_given, occ_tr_credit_refused]
   cast:
@@ -323,6 +329,7 @@
   tags: [occ_trader]
   when:
     segments: [morning, day]
+    indoor: "any"
     day_gte: 5
     flags_all: [occ_tr_credit_given]
     flags_none: [occ_tr_debtor_done, occ_tr_paper_sold]
@@ -363,6 +370,7 @@
   when:
     zones: [e_market, water_plant]
     segments: [morning, day, evening]
+    indoor: true
     occupation_step_gte: 1
     flags_none: [occ_tr_paper_done]
   cast:
@@ -428,6 +436,7 @@
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
     zone_owner: [own]
     segments: [day, evening]
+    indoor: "any"
     occupation_step_gte: 2
   cast:
     boss: { commander: true }
@@ -474,6 +483,7 @@
     factions: [faction_e]
     zones: [e_market]
     segments: [evening]
+    indoor: "any"
     day_gte: 3
     flags_none: [occ_tr_e_ledger_done]
   cast:
@@ -587,6 +597,7 @@
   when:
     factions: [none]
     segments: [morning, day]
+    indoor: false
     day_gte: 5
     flags_all: [occ_tr_peddler_saved]
     flags_none: [occ_tr_peddler_done]

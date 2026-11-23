@@ -11,6 +11,7 @@
   title: 지하상가의 연기
   tags: [world]
   when:
+    indoor: false
     factions: [none]
     zones: [old_town, riverside]
     segments: [evening, night]
@@ -53,6 +54,7 @@
   title: 배수로의 물탱크
   tags: [world]
   when:
+    indoor: false
     factions: [none]
     zones: [riverside, old_town]
     segments: [morning, day]
@@ -88,6 +90,7 @@
   title: 냄비 하나의 저녁
   tags: [world]
   when:
+    indoor: true
     factions: [none]
     zones: [old_town, riverside]
     segments: [evening]
@@ -123,9 +126,10 @@
   urgent: true
   tags: [world]
   when:
+    indoor: "any"
     factions: [none]
     zones: [old_town, riverside]
-    segments: [night, dawn]
+    segments: [dawn]
     day_gte: 6
     flags_all: [wa_band_supper]
   cast:
@@ -173,6 +177,7 @@
   urgent: true
   tags: [world]
   when:
+    indoor: false
     factions: [none]
     zones: [old_town, riverside]
     segments: [evening, night]
@@ -236,6 +241,7 @@
   fright_tags: [enclosed]
   tags: [world]
   when:
+    indoor: "any"
     factions: [none]
     zone_owner: [none]
     segments: [morning, day, evening]
@@ -279,6 +285,8 @@
   title: 바깥 사람 일거리
   tags: [world]
   when:
+    indoor: true
+    places: [pawnshop]
     factions: [none]
     zones: [e_market]
     segments: [morning, day]
@@ -303,6 +311,7 @@
   title: 옛 양수장의 상자
   tags: [world]
   when:
+    indoor: false
     factions: [none]
     zones: [riverside]
     segments: [morning, day]
@@ -335,6 +344,8 @@
   title: 물값 독촉장
   tags: [world]
   when:
+    indoor: false
+    places: [gate]
     factions: [none]
     zones: [b_base]
     segments: [morning, day]
@@ -371,6 +382,7 @@
   title: 짐꾼의 아들
   tags: [world]
   when:
+    indoor: true
     factions: [none]
     zones: [hospital_ruins]
     segments: [morning, day]
@@ -409,6 +421,7 @@
   title: 이름 없는 의뢰
   tags: [world]
   when:
+    indoor: "any"
     factions: [none]
     zones: [e_market]
     segments: [evening]
@@ -453,6 +466,7 @@
   title: 깡통 속 쪽지
   tags: [world]
   when:
+    indoor: false
     factions: [none]
     segments: [evening, night]
     flags_all: [wa_sealed_read]
@@ -489,6 +503,7 @@
   title: 공책의 마지막 장
   tags: [world]
   when:
+    indoor: "any"
     factions: [none]
     zones: [e_market]
     segments: [morning, day]
@@ -516,6 +531,7 @@
   urgent: true
   tags: [world]
   when:
+    indoor: "any"
     factions: [none]
     zone_owner: [none]
     segments: [evening, night]
@@ -565,6 +581,8 @@
   title: 전파사의 목소리
   tags: [world]
   when:
+    indoor: true
+    places: [shops]
     factions: [none]
     zones: [old_town]
     segments: [evening, night]
@@ -588,6 +606,7 @@
   title: 밤의 주파수
   tags: [world]
   when:
+    indoor: "any"
     factions: [none]
     segments: [night]
     weather: [clear, overcast, fog, snow, cold_snap]
@@ -614,6 +633,7 @@
   title: 옥상의 무전수
   tags: [world]
   when:
+    indoor: false
     factions: [none]
     zones: [hospital_ruins]
     segments: [morning, day]
@@ -659,6 +679,7 @@
   title: 이어 읽는 목소리
   tags: [world]
   when:
+    indoor: "any"
     factions: [none]
     segments: [night]
     day_gte: 6

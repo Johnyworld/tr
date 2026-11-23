@@ -153,6 +153,7 @@
   when:
     factions: [faction_a]
     zones: [a_base]
+    indoor: "any"
     flags_none: [tv_settled]
   cast:
     host: { ids: [a_bokja] }
@@ -225,6 +226,8 @@
   essential: true
   when:
     zones: [b_base]
+    indoor: false
+    places: [yard]
     flags_all: [bg_family_lost]
     flags_none: [tv_family_known, tv_family_where]
   cast:
@@ -275,6 +278,7 @@
   tags: [tutorial_visitor]
   when:
     zones: [b_base]
+    indoor: false
     flags_all: [bg_family_lost]
     flags_any: [tv_family_known, tv_family_where]
     flags_none: [tv_reunited]

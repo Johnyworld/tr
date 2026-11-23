@@ -14,6 +14,7 @@
     ranks: [officer]
     day_gte: 4
     segments: [morning, day]
+    indoor: true
   setup: 정문 초소에서 사람을 보냈다. 문 앞에 피난민 일곱이 와 있다. 노인 둘, 아이 셋, 젊은 남녀 하나씩. 짐은 거의 없고 신발이 다 해졌다. 지도부가 결정을 기다린다. 다들 창고 장부를 한 번씩 본다.
   ai_direction: 받아들이면 무리의 입이 늘고(창고가 빨리 준다) 일손도 는다(텃밭·수색). 노인과 아이는 일손이 못 된다. 그 가운데 물린 사람이 섞였는지는 살펴봐야 안다. 지도부 사람들의 의견이 갈린다 (원칙대로 받아야 한다는 사람, 창고부터 보라는 사람).
   choices:
@@ -57,6 +58,7 @@
     own_territory: true
     # 여울섬은 정문이 없다 (플레이 테스트 11)
     zones: [a_base, b_base, c_base, d_clinic, e_market]
+    indoor: false
     ranks: [grunt, staff, squad_leader]
     day_gte: 4
     segments: [morning, day, evening]
@@ -100,6 +102,7 @@
   when:
     own_territory: true
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    indoor: false
     flags_all: [rf_taken_in]
     segments: [evening, night]
   setup: 받아들인 피난민 가운데 한 사람이 밤마다 담 쪽 창고 근처를 서성인다. 오늘은 초소 교대 시각을 손가락으로 세는 것 같았다.

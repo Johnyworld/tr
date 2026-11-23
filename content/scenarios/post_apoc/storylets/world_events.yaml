@@ -16,6 +16,7 @@
   cooldown_days: 6
   when:
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    indoor: false
     weather: [cold_snap]
     segments: [evening, night]
     own_territory: true
@@ -52,6 +53,7 @@
   when:
     weather: [snow]
     segments: [dawn, morning]
+    indoor: false
   setup: 밤새 내린 눈 위로 발자국 한 줄이 {zone} 가장자리를 따라 이어진다. 사람 발 모양이다. 그런데 맨발이다.
   ai_direction: 무리에서 떨어진 감염체 하나의 발자국이다. 따라가면 가까운 지하 주차장 입구에서 끊긴다. 처음에는 확정하지 말고 이상함만 보인다.
   choices:
@@ -125,6 +127,7 @@
   cooldown_days: 5
   when:
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    indoor: true
     weather: [rain]
     own_territory: true
     segments: [evening, night]
@@ -162,6 +165,7 @@
   cooldown_days: 10  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   when:
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
+    indoor: "any"
     own_territory: true
     segments: [night]
   setup: 담장 너머로 물결이 지나간다. 철판에 어깨가 스치는 소리, 수십 개의 발 끄는 소리. 담 안의 모두가 숨을 죽였는데, 어디선가 아이 하나가 울기 시작한다.
@@ -202,6 +206,7 @@
   when:
     # 여울섬은 정문도 보초도 없다: 섬의 사람 받기는 섬 이야기가 맡는다 (플레이 테스트 11)
     zones: [a_base, b_base, c_base, d_clinic, e_market]
+    indoor: false
     own_territory: true
     segments: [morning, day]
     day_gte: 2
@@ -237,6 +242,7 @@
   tags: [world]
   when:
     zones: [riverside, water_plant, e_market]
+    indoor: false
     segments: [morning, day]
   setup: 물통을 든 사람들이 모여 서서 목소리를 낮춘다. 하류 다리 밑에 밤마다 불을 끈 배 한 척이 와서 선다고. 누구 배인지는 아무도 모른다고.
   ai_direction: 소문의 진위는 정해져 있지 않다. 셋 건너 들은 말이다. 확정하지 않는다. 묻는 사람이 너무 캐면 다들 입을 닫는다.
@@ -305,6 +311,7 @@
   tags: [world]
   when:
     segments: [morning, day]
+    indoor: "any"
     flags_all: [w_child_found]
   setup: '낯선 여자가 당신을 찾아왔다. 손에 작은 운동화 한 짝을 들고 있다. "버스에서 우리 애 찾아 준 분 맞죠."'
   ai_direction: 아이 엄마다. 아이는 무사하다. 가진 게 많지 않지만 빚지고는 못 산다는 사람이다. 받지 않으면 대신 자기가 들은 소식을 하나 알려 준다.
@@ -395,6 +402,7 @@
   when:
     zone_owner: [none]
     segments: [morning, day]
+    indoor: true
   setup: "{zone}의 무너진 편의점 창고. 천장 석고판 하나가 다른 것보다 새것이다. 누군가 손댄 자리다."
   ai_direction: 천장 위에 누군가 숨겨 둔 꾸러미가 있다. 숨긴 사람은 돌아오지 않았다. 석고판을 뜯으면 먼지와 소리가 난다. 근처 지하에 감염체가 있다.
   choices:
@@ -462,6 +470,7 @@
     animal_companion: true
     own_territory: false
     segments: [evening, night]
+    indoor: false
     flags_all: [w_dog_fed]
   cast:
     dog: { recall: the_dog, enter: false }
@@ -493,6 +502,7 @@
   when:
     has_items: [radio]
     segments: [night]
+    indoor: "any"
     flags_none: [w_heard_broadcast]
   setup: 무전기 잡음 사이로 사람 목소리가 섞인다. 여자 목소리. 숫자를 천천히 읽는다. 셋, 일곱, 둘. 그리고 날씨. "내일 남쪽은 맑음." 다시 잡음.
   ai_direction: 방송의 출처는 정해져 있지 않다. 밤마다 같은 시각에 되풀이된다. 가람시 무리들이 쓰는 주파수가 아니다. 확정하지 않는다.
@@ -519,6 +529,7 @@
   when:
     has_items: [radio]
     segments: [night]
+    indoor: "any"
     day_gte: 6
     flags_all: [w_heard_broadcast]
   setup: '같은 주파수, 같은 여자 목소리. 이번에는 숫자 대신 말을 한다. "...듣는 사람 있으면, 하류 다리. 보름날 밤." 그리고 처음으로 방송이 중간에 뚝 끊긴다.'

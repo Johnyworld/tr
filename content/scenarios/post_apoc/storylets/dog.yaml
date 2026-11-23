@@ -8,6 +8,7 @@
   when:
     companion_trick: sniff
     own_territory: false
+    indoor: false
     segments: [morning, day, evening]
   cast:
     dog: { companion: { kinds: [animal] }, enter: false }
@@ -39,6 +40,7 @@
   when:
     companion_trick: bite
     own_territory: false
+    indoor: false
     segments: [evening, night]
   cast:
     dog: { companion: { kinds: [animal] }, enter: false }
@@ -69,6 +71,7 @@
   cooldown_days: 10
   when:
     companion_trick: pack
+    indoor: false
     segments: [day, evening]
   cast:
     dog: { companion: { kinds: [animal] }, enter: false }

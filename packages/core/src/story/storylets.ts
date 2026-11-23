@@ -33,7 +33,7 @@ import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
 import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
 import {storyPlaceFits, storyPlaces, storyPlacesFit, fireLitHere } from "../rules/place.ts";
-import { inZone, nearby, routineAway, whereIs } from "../rules/place.ts";
+import { inZone, nearby, routineAway, storyIndoor, whereIs } from "../rules/place.ts";
 import { ownOffense } from "../rules/consequence.ts";
 import { bedsideGapPassed, inCrisis, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 export { inCrisis, isThreat, pacingBlocks, storyletGapMinutes, threatTags, urgentAllowed } from "../rules/storySlot.ts";
@@ -346,7 +346,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.activities_none?.includes(doing as never)) return false;
   // 지붕 아래·바깥 (공통 규칙 15): 실내 거처에서 모닥불 이야기가, 정문 밖에서 약제실 이야기가 열리지 않게.
   // 장소가 있는 구역에 막 들어선 자리는 바깥이다. 글이 실내 장소 하나를 말하면 그리로 데려간다 (B①)
-  if (w.indoor !== undefined && !storyPlaceFits(state, content, w.indoor, w, storyText(storylet))) return false;
+  const indoor = storyIndoor(w);
+  if (indoor !== undefined && !storyPlaceFits(state, content, indoor, { ...w, indoor }, storyText(storylet))) return false;
   // 규율 회의 (12-257, 공통 규칙 3)
   if (w.own_offense && !ownOffense(state, content, at)) return false;
   if (w.after_storylet) {
@@ -354,7 +355,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (last === undefined || at - last < w.after_storylet.hours * 60) return false;
   }
   // 이야기가 말하는 장소와 지금 장소가 다르면 열지 않는다 (12-251)
-  if (!storyPlacesFit(state, content, w.places, storyText(storylet), !!w.summons, w.indoor)) return false;
+  if (!storyPlacesFit(state, content, w.places, storyText(storylet), !!w.summons, indoor)) return false;
   if (w.companions_lte !== undefined && state.companions.length > w.companions_lte) return false;
   if (w.companions_gte !== undefined && state.companions.length < w.companions_gte) return false;
   if (w.own_territory !== undefined) {
@@ -418,6 +419,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const track = harmTrack(content.scenario);
     const index = (id: string | undefined) => track.levels.findIndex((l) => l.id === id);
     if (index(player.conditions[track.id]) < index(w.harm_at_least)) return false;
+  }
+  if (w.harm_at_most) {
+    const track = harmTrack(content.scenario);
+    const index = (id: string | undefined) => Math.max(0, track.levels.findIndex((l) => l.id === id));
+    if (index(player.conditions[track.id]) > index(w.harm_at_most)) return false;
   }
   for (const [trackId, levelId] of Object.entries(w.conditions_at_least ?? {})) {
     const levels = content.scenario.condition_tracks.find((t) => t.id === trackId)?.levels ?? [];

@@ -19,6 +19,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [dawn, morning]
+    indoor: true
     own_food_days_lte: 9
   cast:
     boss: { commander: true, enter: false }
@@ -61,6 +62,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [morning, day]
+    indoor: true
     day_gte: 3
   cast:
     boss: { commander: true }
@@ -114,6 +116,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [morning, evening]
+    indoor: "any"
     day_gte: 2
     flags_none: [occ_cook_ladle_done]
   cast:
@@ -154,6 +157,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
+    indoor: true
     flags_all: [occ_cook_ladle_given]
     flags_none: [occ_cook_ladle_judged]
   cast:
@@ -208,6 +212,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [evening, night]
+    indoor: true
     day_gte: 3
   cast:
     talker: { faction: own, keep: occ_cook_talker }
@@ -261,6 +266,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
+    indoor: true
     war_news_within_hours: 24
   cast:
     mourner: { faction: own, keep: occ_cook_mourner }
@@ -305,6 +311,7 @@
   when:
     zone_owner: [own]
     segments: [morning, evening]
+    indoor: true
   cast:
     prisoner: { captive: true }
     boss: { commander: true, enter: false }
@@ -354,6 +361,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [dawn, morning]
+    indoor: true
     occupation_step_gte: 1
     day_gte: 4
     flags_none: [occ_cook_rat_known, occ_cook_rat_done]
@@ -396,6 +404,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
+    indoor: false
     occupation_step_gte: 1
     flags_all: [occ_cook_rat_known]
     flags_none: [occ_cook_rat_done]
@@ -456,6 +465,7 @@
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
+    indoor: true
     occupation_step_gte: 2
     own_food_days_lte: 12
   cast:
@@ -530,6 +540,8 @@
     factions: [faction_c]
     own_territory: true
     segments: [morning, evening]
+    indoor: true
+    places: [kitchen]
     day_gte: 2
   cast:
     officer: { faction: own, ranks: [squad_leader, officer] }
@@ -633,6 +645,8 @@
     factions: [faction_a]
     own_territory: true
     segments: [evening]
+    indoor: true
+    places: [mess]
     day_gte: 3
     flags_none: [occ_cook_pine_line_done]
   cast:

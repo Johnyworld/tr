@@ -1,3 +1,4 @@
+import { arrivalPlace } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -128,6 +129,8 @@ describe("다짐의 단계 (12-164)", () => {
     look(w);
     const { conditionsMet, castCandidates, storyletVars } = await import("../story/storylets.ts");
     expect(w.runCheat("~time evening").ok).toBe(true);
+    // 바깥 이야기라 길에서 본다 (12-279 실내외)
+    w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: arrivalPlace(w.state(), full, w.state().playerZone!) });
     const rumor = full.storylets.rp_revenge_rumor!;
     const glimpse = full.storylets.rp_revenge_glimpse!;
     expect(conditionsMet(w.state(), full, rumor, w.state().time)).toBe(true);

@@ -12,6 +12,7 @@
   # 상관이 행상대장 주옥희일 때만 (호위대원 시나리오의 첫 짐)
   tags: [e_porter]
   when:
+    indoor: "any"
     zones: [e_market]
     segments: [dawn, morning]
   cast:
@@ -115,6 +116,7 @@
   title: 물가의 쪽지
   tags: [e_porter]
   when:
+    indoor: false
     own_territory: true
     segments: [evening, night]
     day_gte: 3
@@ -217,6 +219,7 @@
   title: 펌프의 쇳소리
   tags: [caravan_life]
   when:
+    indoor: false
     zones: [water_plant]
     segments: [dawn, evening]
     day_gte: 2
@@ -349,6 +352,7 @@
   title: 다락의 얇은 장부
   tags: [e_porter]
   when:
+    indoor: true
     own_territory: true
     segments: [evening, night]
     day_gte: 3
@@ -381,6 +385,7 @@
   title: 보급 간부의 물음
   tags: [e_porter]
   when:
+    indoor: "any"
     zones: [a_base]
     flags_all: [e_second_ledger_seen]
     flags_none: [e_ledger_sold]
@@ -427,6 +432,7 @@
   title: 밀랍으로 봉한 꾸러미
   tags: [e_porter]
   when:
+    indoor: "any"
     own_territory: true
     segments: [evening, night]
     day_gte: 4
@@ -492,6 +498,7 @@
   title: 두 겹 바닥 물통
   tags: [caravan_life]
   when:
+    indoor: "any"
     own_territory: true
     segments: [evening, night]
     day_gte: 2
@@ -532,6 +539,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: "any"
     zones: [water_plant]
     segments: [dawn, morning, evening]
   cast:
@@ -580,6 +588,7 @@
   repeatable: true
   cooldown_days: 5  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   when:
+    indoor: true
     segments: [day, evening]
     day_gte: 2
   cast:
@@ -619,6 +628,8 @@
   repeatable: true
   cooldown_days: 2
   when:
+    indoor: false
+    places: [stalls]
     zones: [e_market]
     segments: [morning, day]
   setup: >-

@@ -13,6 +13,8 @@
   tags: [world]
   when:
     zones: [subway_hub]
+    indoor: true
+    places: [platform]
     flags_none: [zo1_sub_met]
   cast:
     keeper: { extra: subway_dweller, label: 승강장 사람, keep: zo1_sub_keeper }
@@ -59,6 +61,7 @@
   tags: [world]
   when:
     zones: [subway_hub]
+    indoor: true
     segments: [morning, day, evening]
   cast:
     stuck: { extra: refugee, label: 셔터 너머의 사람, keep: zo1_sub_stuck }
@@ -114,6 +117,7 @@
   tags: [world]
   when:
     zones: [subway_hub]
+    indoor: true
     segments: [morning, day, evening]
     flags_all: [zo1_sub_stuck_waiting]
     flags_none: [zo1_sub_rescued, zo1_sub_stuck_done]
@@ -167,6 +171,8 @@
   tags: [world]
   when:
     zones: [subway_hub]
+    indoor: true
+    places: [platform]
     segments: [morning, day, evening]
     flags_any: [zo1_sub_tunnel_told, zo1_ml_den_shown]
     flags_none: [zo1_tunnel_walked]
@@ -226,6 +232,7 @@
   tags: [world]
   when:
     zones: [subway_hub]
+    indoor: true
     day_gte: 3
   cast: {}
   setup: 역무실 유리벽 안쪽에 매직으로 쓴 이름이 빼곡하다. 날짜가 붙은 것, 줄이 그어진 것, 옆에 '위에 있음'이라고 쓴 것. 벽 끝으로 갈수록 글씨가 급해지고, 마지막 몇 줄은 날짜가 없다. 바닥에 담요 더미가 아직 사람 모양으로 굳어 있다.
@@ -267,6 +274,8 @@
   tags: [world]
   when:
     zones: [subway_hub]
+    indoor: true
+    places: [platform]
     segments: [evening, night]
     flags_all: [zo1_sub_welcome]
   cast:
@@ -320,6 +329,8 @@
   tags: [world]
   when:
     zones: [power_plant]
+    indoor: true
+    places: [turbine_hall]
     segments: [morning, day]
     flags_none: [zo1_pp_met]
   cast:
@@ -364,6 +375,8 @@
   tags: [world]
   when:
     zones: [power_plant]
+    indoor: true
+    places: [turbine_hall]
     segments: [evening, night]
     flags_all: [zo1_pp_wire_given]
     day_gte: 4
@@ -429,6 +442,8 @@
   tags: [world]
   when:
     zones: [power_plant]
+    indoor: false
+    places: [coal_yard]
     segments: [morning, day]
     factions: [none, faction_a, faction_b, faction_d, faction_e]
   cast:
@@ -491,6 +506,8 @@
   tags: [world]
   when:
     zones: [power_plant]
+    indoor: false
+    places: [coal_yard]
     segments: [dawn, morning, evening]
     factions: [none, faction_b, faction_d, faction_e]
   cast:
@@ -543,6 +560,8 @@
   tags: [world]
   when:
     zones: [power_plant]
+    indoor: false
+    places: [chimney]
     factions: [faction_a]
     segments: [dawn, morning]
     flags_none: [zo1_pp_flag_done]
@@ -598,6 +617,8 @@
   tags: [world]
   when:
     zones: [power_plant]
+    indoor: false
+    places: [chimney]
     factions: [faction_c]
     segments: [dawn, morning, day]
     flags_none: [zo1_pp_flag_done]
@@ -638,6 +659,8 @@
   tags: [world]
   when:
     zones: [prison]
+    indoor: false
+    places: [outer_gate]
     flags_none: [zo1_pr_inside]
   cast: {}
   setup: 교도소 담은 생각보다 높다. 철조망 위에 옷가지와 마른 무언가가 걸려 있다. 정문은 안쪽에서 버스 두 대로 막혔고, 버스 옆구리에 페인트로 쓴 글씨가 반쯤 지워져 있다. '우리 땅 — 들어오면 쏜다.' 그 밑에 다른 손으로 덧쓴 글씨. '아무도 없음.'
@@ -690,6 +713,8 @@
   tags: [world]
   when:
     zones: [prison]
+    indoor: true
+    places: [admin]
     flags_all: [zo1_pr_inside]
     flags_none: [zo1_pr_armory_opened]
   cast: {}
@@ -737,6 +762,8 @@
   tags: [world]
   when:
     zones: [prison]
+    indoor: true
+    places: [cellblock]
     flags_all: [zo1_pr_inside]
     flags_none: [zo1_pr_cell_done]
   cast:
@@ -793,6 +820,7 @@
   tags: [world]
   when:
     zones: [prison, power_plant]
+    indoor: false
     factions: [none, faction_a, faction_b, faction_d, faction_e]
     flags_any: [zo1_pr_freed, zo1_pr_armory_seen]
     flags_none: [zo1_pr_patrol_done]
@@ -853,6 +881,7 @@
   tags: [world]
   when:
     flags_all: [zo1_pr_freed]
+    indoor: "any"
     segments: [evening, night]
   cast:
     inmate: { recall: zo1_pr_inmate }
@@ -882,6 +911,7 @@
   title: 위원회가 교도소를 원한다
   tags: [world]
   when:
+    indoor: "any"
     factions: [faction_c]
     flags_any: [zo1_pr_armory_seen, zo1_pr_armory_opened]
     flags_none: [zo1_pr_reported]
@@ -923,6 +953,7 @@
   tags: [world]
   when:
     zones: [mall_ruins]
+    indoor: true
     segments: [morning, day]
   cast: {}
   setup: 매장은 뼈만 남았다. 계산대 위로 쇼핑 카트가 탑처럼 쌓여 있다. 그 너머 창고 쪽, 지붕이 내려앉은 콘크리트 판 사이로 쓰러지지 않은 선반이 보인다. 판 하나가 선반에 기대 겨우 서 있다. 그 아래로 기어 들어가면 손이 닿는다.
@@ -975,6 +1006,8 @@
   tags: [world]
   when:
     zones: [mall_ruins]
+    indoor: true
+    places: [sales_floor]
     flags_none: [zo1_ml_trap_found]
   cast: {}
   setup: 계산대 사이 통로, 발목 높이에 무언가 반짝인다. 낚싯줄이다. 줄을 따라가면 천장에 매단 장바구니 안에 깡통과 유리병이 가득하다. 줄 반대쪽 끝은 진열대 밑 구멍으로 들어간다. 구멍 앞 먼지에 작은 신발 자국이 있다.
@@ -1027,6 +1060,8 @@
   tags: [world]
   when:
     zones: [mall_ruins]
+    indoor: true
+    places: [sales_floor]
     segments: [morning, day, evening]
     factions: [none, faction_a, faction_d, faction_e]
   cast:
@@ -1090,6 +1125,8 @@
   tags: [world]
   when:
     zones: [mall_ruins]
+    indoor: true
+    places: [sales_floor]
     flags_any: [zo1_ml_trap_found, zo1_ml_shelf_seen]
     flags_none: [zo1_ml_kid_met]
   cast:
@@ -1146,6 +1183,8 @@
   tags: [world]
   when:
     zones: [mall_ruins]
+    indoor: true
+    places: [stockroom]
     flags_all: [zo1_ml_kids_fed]
     flags_none: [zo1_ml_den_shown]
   cast:
@@ -1196,6 +1235,8 @@
   tags: [world]
   when:
     zones: [mall_ruins]
+    indoor: true
+    places: [stockroom]
     flags_any: [zo1_tunnel_mall, zo1_ml_den_shown]
     flags_none: [zo1_ml_cold_store_done]
   cast:

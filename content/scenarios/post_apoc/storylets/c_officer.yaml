@@ -21,6 +21,8 @@
   weight: 2
   tags: [c_officer, council]
   when:
+    indoor: true
+    places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day]
@@ -147,6 +149,7 @@
   title: 서명 칸 셋
   tags: [c_officer]
   when:
+    indoor: "any"
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day, evening]
@@ -201,6 +204,7 @@
   title: 지워진 이름
   tags: [c_officer]
   when:
+    indoor: false
     factions: [faction_c]
     zones: [c_base, c_warehouse]
     segments: [evening, night]
@@ -251,6 +255,8 @@
   title: 명부의 물음표
   tags: [c_officer]
   when:
+    indoor: true
+    places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [evening, night]
@@ -352,6 +358,7 @@
   urgent: true
   tags: [c_officer]
   when:
+    indoor: false
     factions: [faction_c]
     zones: [c_warehouse]
     segments: [night, dawn]
@@ -414,6 +421,8 @@
   title: 장갑을 벗는 날
   tags: [c_officer]
   when:
+    indoor: true
+    places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day]
@@ -503,6 +512,7 @@
   title: 쪽문에 들고 갈 것
   tags: [c_officer]
   when:
+    indoor: true
     factions: [faction_c]
     zones: [c_base]
     segments: [evening, night]
@@ -568,6 +578,8 @@
   title: 금니의 셈
   tags: [c_officer, council]
   when:
+    indoor: true
+    places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day]
@@ -634,6 +646,8 @@
   title: 맨 앞줄의 이름
   tags: [c_officer, council]
   when:
+    indoor: true
+    places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day]
@@ -693,6 +707,7 @@
   title: 솥 앞에서 정하지 않게
   tags: [c_officer, council]
   when:
+    indoor: true
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day]

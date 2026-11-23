@@ -179,7 +179,7 @@
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     camp_watched: true
-    segments: [night, dawn]
+    segments: [dawn]
   cast:
     mate: { companion: { kinds: [buddy, squad, purpose, kin] } }
   setup: "새벽 어스름에 눈을 뜨니, 보초를 서던 {mate:이/가} 벽에 기댄 채 고개를 떨구고 있다. 그리고 야영지 둘레의 흙 위에, 어젯밤에는 없던 발자국이 한 바퀴 돌아 나가 있다."
@@ -363,6 +363,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    segments: [dawn]
     # 글에 맞춘 자리·때 (12-261, content:check story_lint)
     activities: [sleep]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)

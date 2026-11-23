@@ -9,6 +9,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: "any"
     own_territory: true
     segments: [morning, evening]
   cast:
@@ -51,6 +52,7 @@
   cooldown_days: 8
   weight: 2
   when:
+    indoor: false
     own_territory: true
     segments: [night]
     ranks: [grunt, squad_leader]
@@ -106,6 +108,7 @@
   repeatable: true
   cooldown_days: 15
   when:
+    indoor: true
     own_territory: true
     segments: [morning, day]
   cast:

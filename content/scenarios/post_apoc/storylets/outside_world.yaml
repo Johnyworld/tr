@@ -14,6 +14,7 @@
   when:
     day_gte: 15
     segments: [morning, day]
+    indoor: false
   setup: "멀리서 낯선 소리가 난다. 기계 소리. 고개를 들면 남쪽 하늘에 작은 비행기 하나가 낮게 떠 있다. 프로펠러 하나, 회색 동체. 도시 위를 크게 한 바퀴 돌고, 강 쪽에서 한 번 더 낮게 내려온다."
   variants:
     - "그 소리가 다시 온다. 이번에는 둘이다. 회색 비행기 두 대가 남쪽에서 와 강을 따라 올라가며 무언가를 세듯 천천히 돈다. 거점 지붕마다 사람들이 올라가 손을 흔든다."
@@ -64,6 +65,7 @@
     day_gte: 40
     segments: [day, evening]
     zones: [old_town, riverside, hospital_ruins, overpass, south_fields, mall_ruins, subway_hub]
+    indoor: false
   setup: "비행기 소리가 지나간 뒤 하늘에 하얀 것이 핀다. 낙하산이다. 국방색 상자 하나가 흔들리며 내려와 몇 블록 너머 무너진 지붕 위에 걸린다. 사방에서 사람들이 고개를 든다. 저쪽 골목에서도 누가 뛰기 시작한다."
   variants:
     - "낙하산 둘이 내려온다. 하나는 강으로 떨어져 떠내려가고, 하나는 가까운 공터에 박힌다. 바람에 끌린 하얀 천이 땅을 쓸며 펄럭인다. 멀리서 호루라기 소리."
@@ -123,6 +125,7 @@
   title: 찍힌 번호
   tags: [world]
   when:
+    indoor: "any"
     has_items: [mil_serum]
     flags_none: [ow_ampoule]
   setup: 상자에서 나온 혈청 앰플 바닥에 번호가 눈에 띈다. 손글씨가 아니다. 기계로 반듯하게 찍었다. "GH-R 0412 · 채혈 3차".
@@ -141,7 +144,8 @@
     flags_all: [ow_leaflet]
     own_territory: true
     day_gte: 50
-    segments: [evening, night]
+    segments: [evening]
+    indoor: "any"
   cast:
     leaver: { faction: own, ranks: [grunt] }
   setup: '저녁 무렵 {leaver:이/가} 짐을 싸고 있다. 곁에 몇이 더 있다. 손에 하얀 전단이 들려 있다. "가람항이 다시 열렸대. 배가 온대. 여기서 또 겨울을 날 바에야." 다른 사람들이 당신을 본다.'
@@ -187,6 +191,7 @@
     factions: [none]
     zones: [rest_stop, riverside, old_town]
     segments: [morning, day]
+    indoor: false
   setup: 고속도로 쪽으로 사람들이 줄지어 간다. 수레, 아이를 업은 사람, 지팡이를 짚은 노인. 손마다 하얀 전단. 행렬 맨 앞의 남자가 당신을 보고 손짓한다. "같이 가요. 배가 온대요. 혼자 다니는 사람은 더 반겨 준대요."
   ai_direction: 전단을 믿고 남쪽 집결지로 가는 피난민들이다. 떠돌이인 주인공도 함께 가자고 한다. 주인공이 도시를 떠나는 선택은 이 게임에 없다 (따라가면 하루쯤 걷다 돌아오는 것으로 연출한다). 이들에게서 길 이야기를 듣거나, 먹을 것을 나누거나, 붙잡을 수 있다. 이들이 어떻게 됐는지는 알 수 없다.
   choices:
@@ -227,6 +232,8 @@
     flags_none: [ow_south_truth]
     zones: [rest_stop]
     segments: [day, evening]
+    indoor: false
+    places: [canopy]
     day_gte: 70
   cast:
     walker: { extra: highway_traveler, label: 남쪽에서 올라온 사람, keep: ow_walker }
@@ -263,6 +270,7 @@
     flags_all: [ow_plane]
     day_gte: 30
     segments: [night]
+    indoor: false
   setup: 남쪽 하늘 낮은 곳에 붉은 빛이 셋 떠오른다. 조명탄이다. 천천히 내려앉으며 구름 밑을 물들이고, 한참 뒤에 아주 먼 데서 둔한 소리가 하나 굴러온다.
   ai_direction: 가람항 쪽이다. 무슨 신호인지는 정하지 않는다 (배가 닿았다, 떠난다, 무언가를 쏘았다). 주인공이 집결지 이야기를 안다면 배를 떠올린다. 장면은 짧게.
   choices:

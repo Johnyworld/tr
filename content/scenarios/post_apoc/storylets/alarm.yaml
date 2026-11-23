@@ -10,6 +10,7 @@
   # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
   cooldown_days: 1
   when:
+    indoor: false
     zone_owner: [other]
     owners: [faction_a]
   cast:
@@ -64,6 +65,7 @@
   # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
   cooldown_days: 1
   when:
+    indoor: false
     zone_owner: [other]
     owners: [faction_b]
   cast:
@@ -117,6 +119,7 @@
   # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
   cooldown_days: 1
   when:
+    indoor: false
     zone_owner: [other]
     owners: [faction_c]
   cast:
@@ -172,6 +175,7 @@
   # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
   cooldown_days: 1
   when:
+    indoor: true
     zone_owner: [other]
     owners: [faction_d]
   cast:
@@ -225,6 +229,7 @@
   # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
   cooldown_days: 1
   when:
+    indoor: false
     zone_owner: [other]
     owners: [faction_e]
   cast:
@@ -283,6 +288,7 @@
   # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
   cooldown_days: 1
   when:
+    indoor: false
     zone_owner: [other]
     owners: [faction_y]
   cast:
@@ -336,6 +342,7 @@
   repeatable: true
   cooldown_days: 1
   when:
+    indoor: "any"
     zone_owner: [other]
   cast:
     patrol: { faction: zone_owner, ranks: [grunt, squad_leader] }

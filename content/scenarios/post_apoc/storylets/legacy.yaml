@@ -8,6 +8,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    indoor: false
     predecessor_here: remains
     segments: [morning, day, evening]
   setup: 무너진 담 아래에 누군가 쓰러져 있다. 며칠은 된 것 같다. 등에 멘 배낭의 끈이 낡았지만 단단히 매여 있다.
@@ -31,6 +32,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    indoor: false
     predecessor_here: grave
     segments: [morning, day]
   setup: 돌무더기로 덮은 무덤 하나. 그 위에 아직 시들지 않은 들꽃 한 줌이 놓여 있다. 누군가 다녀간 지 얼마 안 됐다.
@@ -51,6 +53,7 @@
   repeatable: true
   cooldown_days: 14
   when:
+    indoor: false
     predecessor_here: grave
     segments: [evening, night]
     own_territory: false
@@ -81,6 +84,7 @@
   repeatable: true
   cooldown_days: 12
   when:
+    indoor: "any"
     segments: [evening, night]
   cast:
     friend: { mourner: true, here: true }
@@ -105,6 +109,7 @@
   title: 맡겨 둔 것
   tags: [world]
   when:
+    indoor: "any"
     segments: [morning, day, evening]
   cast:
     friend: { mourner: true, here: true }
@@ -129,6 +134,7 @@
   repeatable: true
   cooldown_days: 15
   when:
+    indoor: "any"
     segments: [day, evening]
   cast:
     friend: { mourner: true, here: true }

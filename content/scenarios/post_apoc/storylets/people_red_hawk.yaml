@@ -11,6 +11,8 @@
     factions: [faction_c]
     zones: [c_base]
     segments: [morning]
+    indoor: false
+    places: [yard]
     day_gte: 3
     flags_none: [pr_square_done]
   cast:
@@ -62,6 +64,7 @@
     factions: [faction_c]
     zones: [c_base]
     segments: [evening]
+    indoor: "any"
     day_gte: 4
     flags_none: [pr_bundle_carried, pr_bundle_refused, pr_bundle_reported]
   cast:
@@ -94,6 +97,8 @@
   when:
     zones: [d_clinic]
     segments: [morning, day, evening]
+    indoor: true
+    places: [ward]
     flags_all: [pr_bundle_carried]
     flags_none: [pr_bundle_delivered]
   cast:
@@ -139,6 +144,8 @@
     factions: [faction_d]
     zones: [d_clinic]
     segments: [morning, day]
+    indoor: false
+    places: [gate]
     day_gte: 3
     flags_none: [pr_queue_done]
   cast:

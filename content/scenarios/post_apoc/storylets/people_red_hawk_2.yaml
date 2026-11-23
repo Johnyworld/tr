@@ -11,6 +11,8 @@
   title: 벤치의 목발
   tags: [world]
   when:
+    indoor: false
+    places: [gate]
     zones: [d_clinic]
     segments: [evening]
     day_gte: 3
@@ -67,6 +69,7 @@
   title: 셋 셀 동안
   tags: [red_life]
   when:
+    indoor: true
     factions: [faction_c]
     zones: [c_base]
     segments: [night]
@@ -138,6 +141,8 @@
   title: 배수로의 두 사람
   tags: [red_life]
   when:
+    indoor: false
+    places: [wall]
     factions: [faction_c]
     zones: [c_base]
     segments: [evening]
@@ -205,6 +210,8 @@
   tags: [red_life]
   urgent: true
   when:
+    indoor: false
+    places: [wall]
     factions: [faction_c]
     zones: [c_base]
     segments: [night]
@@ -323,6 +330,7 @@
   title: 페인트 묻은 약통
   tags: [red_life]
   when:
+    indoor: false
     factions: [faction_c]
     zones: [c_base]
     segments: [evening]
@@ -384,6 +392,8 @@
   title: 계단 맨 아래 문
   tags: [world]
   when:
+    indoor: true
+    places: [office]
     zones: [b_base]
     segments: [morning, day, evening]
     flags_all: [pr2_fever_given]
@@ -493,6 +503,8 @@
   title: 잠기는 날
   tags: [clinic_life]
   when:
+    indoor: true
+    places: [pharmacy]
     factions: [faction_d]
     zones: [d_clinic]
     segments: [evening]

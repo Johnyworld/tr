@@ -10,6 +10,7 @@
   when:
     factions: [faction_y]
     zones: [yeoul_isle]
+    indoor: "any"
     idle_days_gte: 3
   cast:
     examiner: { ids: [y_cheonsu] }

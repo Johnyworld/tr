@@ -12,6 +12,7 @@
   when:
     zones: [old_town, hospital_ruins]
     segments: [morning, day]
+    indoor: false
     day_gte: 2
     flags_none: [wc_elder_met]
   cast:
@@ -41,6 +42,7 @@
   when:
     zones: [old_town, riverside, hospital_ruins]
     segments: [morning, day]
+    indoor: false
     day_gte: 3
     flags_none: [wc_partner_met]
   cast:
@@ -64,6 +66,7 @@
   tags: [world]
   when:
     segments: [day, evening]
+    indoor: true
   cast:
     partner: { companion: { kinds: [purpose], templates: [drifter_young] } }
   setup: "{partner:이/가} 뒤지던 방에서 서랍을 닫는 소리가 조금 빠르다. 돌아선 그의 점퍼 주머니가 아까보다 불룩하다. 눈이 마주치자 {partner:은/는} 먼저 웃는다."
@@ -98,6 +101,7 @@
   tags: [world]
   when:
     segments: [morning, day]
+    indoor: "any"
     day_gte: 2
   cast:
     kin: { companion: { kinds: [kin], templates: [kin_sibling, kin_partner] } }
@@ -125,6 +129,7 @@
   tags: [world]
   when:
     segments: [evening, night]
+    indoor: "any"
     day_gte: 3
     own_territory: false
   cast:
@@ -152,6 +157,7 @@
   tags: [world]
   when:
     segments: [night]
+    indoor: true
   cast:
     kin: { companion: { kinds: [kin], templates: [kin_young] } }
   setup: "담요를 나눠 덮은 {kin:이/가} 천장을 보며 묻는다. \"이거 언제 끝나? 겨울 지나면 끝나? 끝나면 우리 집에 갈 수 있어?\""
@@ -178,6 +184,7 @@
   tags: [world]
   when:
     segments: [day, evening, night]
+    indoor: "any"
   cast:
     buddy: { companion: { kinds: [buddy] } }
   setup: "잠깐 숨을 고르는 동안 {buddy:이/가} 낮게 묻는다. \"너는 무서울 때 어떻게 해? 나는 손이 안 멈춰.\" 그의 손끝이 무릎 위에서 떨린다."

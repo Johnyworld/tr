@@ -14,6 +14,7 @@
   when:
     factions: [faction_a, faction_c, faction_d, faction_e, none]
     day_gte: 6
+    indoor: "any"
     segments: [morning, day, evening]
     clock_gte: { b_waver: 15 }
     dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
@@ -45,6 +46,8 @@
   when:
     factions: [faction_b]
     zones: [b_base]
+    indoor: true
+    places: [office]
     segments: [evening, night]
     clock_gte: { b_waver: 15 }
     dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
@@ -93,6 +96,7 @@
   when:
     factions: [faction_a]
     own_territory: true
+    indoor: "any"
     segments: [morning, day]
     clock_gte: { b_waver: 18 }
     dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
@@ -130,6 +134,7 @@
   when:
     factions: [faction_c]
     own_territory: true
+    indoor: "any"
     segments: [evening, night]
     clock_gte: { b_waver: 12 }
     dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
@@ -177,6 +182,8 @@
     factions: [faction_a]
     own_territory: true
     zones: [a_base]
+    indoor: false
+    places: [yard_gate]
     segments: [morning, day]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -216,6 +223,7 @@
   when:
     factions: [faction_a]
     own_territory: true
+    indoor: false
     segments: [evening, night, dawn]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -257,6 +265,8 @@
   when:
     factions: [faction_b]
     zones: [b_base]
+    indoor: "any"
+    places: [gate]
     segments: [night, dawn]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -295,6 +305,8 @@
   when:
     factions: [faction_b]
     zones: [b_base]
+    indoor: false
+    places: [yard]
     segments: [morning, day]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -345,6 +357,7 @@
   when:
     factions: [faction_c]
     own_territory: true
+    indoor: false
     segments: [morning, day]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -382,6 +395,7 @@
   when:
     factions: [faction_e]
     own_territory: true
+    indoor: "any"
     segments: [evening, night]
     clock_gte: { e_side: 18 }
     dispositions: [{ from: faction_e, to: faction_c, lte: 1 }, { from: faction_e, to: faction_a, lte: 1 }]
@@ -428,6 +442,7 @@
   when:
     factions: [faction_a, faction_b, faction_d, none]
     zones: [water_plant, e_market]
+    indoor: false
     dispositions: [{ from: faction_e, to: faction_c, gte: 2 }]
   cast:
     porter: { extra: e_porter, label: 물값을 받는 짐꾼 }
@@ -466,6 +481,7 @@
   when:
     factions: [faction_e]
     zones: [water_plant]
+    indoor: false
     segments: [dawn, morning]
     dispositions: [{ from: faction_e, to: faction_c, gte: 2 }]
   cast:

@@ -9,6 +9,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: "any"
     resolve: { kinds: [rise], stage: 1 }
     own_territory: true
   cast:
@@ -43,6 +44,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    indoor: true
     resolve: { kinds: [rise], stage_gte: 2 }
     own_territory: true
   cast:
@@ -82,6 +84,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: true
     own_territory: true
     resolve: { kinds: [debt], stage: 0 }
     debt_gte: { own: 1 }
@@ -110,6 +113,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: "any"
     resolve: { kinds: [debt], stage: 1 }
     debt_gte: { own: 1 }
     own_territory: true
@@ -149,6 +153,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    indoor: "any"
     resolve: { kinds: [debt], stage_gte: 2 }
   cast:
     friend: { faction: own, here: true, trust_gte: 2 }
@@ -179,6 +184,7 @@
     resolve: { kinds: [peace], stage: 1 }
     zone_owner: [none]
     segments: [morning, day]
+    indoor: false
   setup: "누구의 땅도 아닌 {zone}. 물이든 주운 것이든 바꾸려는 사람들이 한 줄로 섰다. 서로 다른 완장을 찼다. 눈은 마주치지 않지만 아무도 총을 꺼내지 않는다."
   ai_direction: "싸우는 무리 사람들도 여기서는 줄을 선다. 이 장면은 휴전이 사람들 사이에서는 이미 조금씩 있다는 것을 보는 순간. 휴전 자체는 간부의 협상(negotiate, 9.14)으로만 맺어진다."
   choices:
@@ -205,6 +211,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    indoor: "any"
     resolve: { kinds: [peace], stage_gte: 2 }
     own_territory: true
   cast:
@@ -243,6 +250,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: "any"
     resolve: { kinds: [topple], stage: 0 }
     zone_owner: [none, other]
   setup: "부서진 문짝에 {target}의 표식이 긁혀 있다. 안은 털렸고, 바닥에 끌려간 자국이 길게 나 있다."
@@ -269,6 +277,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: "any"
     resolve: { kinds: [topple], stage: 1 }
     own_territory: true
   cast:
@@ -299,7 +308,8 @@
   cooldown_days: 5
   when:
     resolve: { kinds: [topple], stage_gte: 2 }
-    segments: [evening, night]
+    segments: [night]
+    indoor: "any"
     has_items_any: [radio, binoculars]
   setup: "밤이 깊다. {target} 쪽에서 불빛이 깜박이고, 잡음 사이로 낯선 목소리가 끊어졌다 이어진다."
   ai_direction: "엿들은 것은 overhear로 코드가 진짜 상태에서 고른다. {target}의 계획을 GM이 지어내지 않는다. 오래 지켜보면 몸이 축난다."
@@ -338,6 +348,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: "any"
     resolve: { kinds: [reclaim], stage: 0 }
   cast:
     old: { extra: refugee, label: 그 땅에 살던 사람 }
@@ -365,6 +376,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: "any"
     resolve: { kinds: [reclaim], stage: 1 }
     own_territory: true
   cast:
@@ -405,6 +417,7 @@
   when:
     resolve: { kinds: [reclaim], stage_gte: 2, near_target: true }
     segments: [night, dawn]
+    indoor: false
   setup: "{target}의 담이 멀지 않다. 예전엔 저 담 안에서 밥을 먹고 잠을 잤다. 지금은 남의 보초가 담 위를 오간다."
   ai_direction: "담 안을 들여다보는 것뿐이다. 혼자 땅을 되찾을 수는 없다 (반격, 9.7). 들키면 소리가 나고 보초가 쏜다. 엿본 것은 overhear로."
   choices:
@@ -435,6 +448,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: "any"
     resolve: { kinds: [recognition], stage: 0 }
     own_territory: true
   setup: "누가 하다 만 일이 한쪽에 쌓여 있다. 어디서부터 꼬였는지 아무도 모르고, 다들 못 본 척 지나간다. 당신 일과 가까운 일이다."
@@ -461,6 +475,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: "any"
     resolve: { kinds: [recognition], stage: 1 }
     own_territory: true
   cast:
@@ -491,6 +506,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    indoor: "any"
     resolve: { kinds: [recognition], stage_gte: 2 }
     own_territory: true
   setup: "문간에 낯선 사람이 서 있다. 다른 무리에서 왔다고 한다. \"이 일은 당신한테 맡기라던데.\" 당신 이름을 정확히 안다."
@@ -523,6 +539,7 @@
     resolve: { kinds: [atone], stage: 0 }
     own_territory: true
     segments: [evening]
+    indoor: "any"
   setup: "저녁 배식 자리. 다들 당신이 한 일을 안다. 아무도 꺼내지 않을 뿐이다. 숟가락 소리만 들린다."
   ai_direction: "주인공이 무엇을 잘못했는지는 배경과 행적대로. 지어내지 않는다. 말로 믿음이 돌아오지는 않는다. 이 장면은 숨기지 않기로 하는 순간."
   choices:
@@ -545,6 +562,7 @@
     resolve: { kinds: [atone], stage_gte: 2 }
     own_territory: true
     segments: [evening, night]
+    indoor: "any"
   cast:
     tired: { faction: own, here: true }
   setup: "{tired:이/가} 사흘째 밤 보초다. 눈이 반쯤 감겨 있다. 당신을 믿지 않는 사람 중 하나라는 것도 안다."

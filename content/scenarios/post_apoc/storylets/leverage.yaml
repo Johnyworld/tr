@@ -10,9 +10,10 @@
   repeatable: true
   cooldown_days: 12
   when:
+    indoor: false
     own_territory: true
     own_people_captive: true
-    segments: [morning, day]
+    segments: [morning]
   cast:
     lost: { captive_anywhere: true, faction: own, known: true, enter: false }
   setup: '아침에 정문 철망에 쪽지가 꽂혀 있다. 비닐에 싸여 있고, 머리카락 한 줌이 같이 묶였다. "{lost:을/를} 돌려받고 싶으면 탄약 한 상자를 다리 밑에 두고 가라. 사흘 준다." 쪽지를 읽은 사람들이 지도부 쪽을 본다.'
@@ -58,6 +59,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: false
     zone_owner: [other]
     segments: [morning, day, evening, night]
   cast:
@@ -118,6 +120,7 @@
   repeatable: true
   cooldown_days: 20
   when:
+    indoor: "any"
     segments: [day, evening, night]
   cast:
     avenger: { blackmailed: true }

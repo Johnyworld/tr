@@ -985,8 +985,11 @@ export function createContentSchemas(s: Scenario) {
         /** 이야기가 열릴 때 주인공이 하던 일 (플레이 테스트 11: 자는 사람에게 "서 있지 말고", 보초 서는 사람에게 "걸으면 따라온다") */
         activities: z.array(z.enum(ACTIVITIES)).min(1).optional(),
         activities_none: z.array(z.enum(ACTIVITIES)).min(1).optional(),
-        /** 지붕 아래(true)·바깥(false)에서만 (12-244, 공통 규칙 15). 장소가 없으면 구역의 cover로 */
-        indoor: z.boolean().optional(),
+        /**
+         * 지붕 아래(true)·바깥(false)에서만, 어디서나("any") (12-244, 공통 규칙 15). 모든 이야기가 꼭 적는다 (설계 목록 6-3, content:check:
+         * 낱말 목록으로 바깥 글을 잡아 오던 것이 판마다 새 낱말로 빠져나갔다)
+         */
+        indoor: z.union([z.boolean(), z.literal("any")]).optional(),
         /**
          * 이 장소에서만 (12-251, 공통 규칙 15). 구역 장소의 id. 적지 않으면 이야기 글(setup·variants)에 나오는 지금 구역의 장소 이름·aliases로 정한다.
          * 장소를 정하지 않은 자리(막 들어선 자리)에서는 거르지 않는다
@@ -1089,6 +1092,8 @@ export function createContentSchemas(s: Scenario) {
         own_food_days_lte: z.number().optional(),
         /** 부상 트랙이 이 단계 이상 */
         harm_at_least: z.string().optional(),
+        /** 부상 트랙이 이 단계 이하 (설계 목록 6-6: 치명상인 포로에게 노역 할당량) */
+        harm_at_most: z.string().optional(),
         /** 몸 상태 트랙이 이 단계 이상 (트랙 id → 단계 id. 숨은 단계는 보지 않는다) */
         conditions_at_least: z.record(z.string(), z.string()).optional(),
         mission_active: z.boolean().optional(),

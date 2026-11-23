@@ -11,6 +11,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: false
     zone_overrun: true
     zone_owner: [none, other]
   cast:
@@ -66,6 +67,7 @@
   cooldown_days: 5
   weight: 0.6
   when:
+    indoor: false
     zone_overrun: true
     zone_infested_gte: 2
     zone_owner: [none, other]
@@ -127,6 +129,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: false
     zone_overrun: true
     zone_owner: [own]
   cast:

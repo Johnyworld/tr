@@ -9,6 +9,7 @@
   title: 앰플 바닥의 글씨
   tags: [world]
   when:
+    indoor: "any"
     has_items: [serum]
     segments: [day, evening, night]
     flags_none: [ms_lot]
@@ -93,6 +94,8 @@
   title: 하류 다리 밑의 배
   tags: [world]
   when:
+    indoor: false
+    places: [bank]
     zones: [riverside]
     segments: [evening, night]
     flags_all: [ms_island]

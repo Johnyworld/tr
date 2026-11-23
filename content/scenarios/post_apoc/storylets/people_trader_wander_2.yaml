@@ -8,6 +8,7 @@
   title: 사진 속 얼굴
   tags: [world]
   when:
+    indoor: false
     zones: [e_market, riverside, water_plant]
     segments: [evening]
     day_gte: 4
@@ -65,6 +66,7 @@
   title: 물때 위의 키
   tags: [world]
   when:
+    indoor: false
     zones: [water_plant, e_market]
     segments: [night]
     day_gte: 7
@@ -147,6 +149,7 @@
   title: 통조림 자루
   tags: [world]
   when:
+    indoor: false
     zones: [water_plant, e_market]
     segments: [evening, night]
     day_gte: 4
@@ -268,6 +271,7 @@
   title: 덫에 걸린 붉은 완장
   tags: [world]
   when:
+    indoor: false
     zones: [riverside]
     segments: [dawn, morning]
     day_gte: 4
@@ -320,6 +324,7 @@
   title: 지도통의 원본
   tags: [world]
   when:
+    indoor: true
     zones: [old_town, riverside, e_market, b_base, hospital_ruins]
     segments: [evening, night]
     day_gte: 5

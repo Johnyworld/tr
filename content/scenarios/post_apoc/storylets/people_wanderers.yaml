@@ -6,6 +6,7 @@
   tags: [world]
   when:
     zones: [old_town, riverside, hospital_ruins]
+    indoor: false
     segments: [evening, night]
     day_gte: 2
   cast:
@@ -44,6 +45,7 @@
   tags: [world]
   when:
     zones: [riverside, old_town, hospital_ruins]
+    indoor: false
     segments: [morning, day, evening]
     day_gte: 3
   cast:
@@ -84,6 +86,7 @@
   tags: [world]
   when:
     zones: [old_town]
+    indoor: false
     segments: [evening, night]
     day_gte: 3
   cast:
@@ -130,6 +133,7 @@
   tags: [world]
   when:
     zones: [riverside, old_town, e_market, water_plant, b_base, south_fields]
+    indoor: false
     segments: [morning, day]
     day_gte: 4
   cast:

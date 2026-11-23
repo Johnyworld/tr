@@ -13,6 +13,7 @@
   when:
     factions: [none]
     zone_owner: [other]
+    indoor: false
     segments: [morning, day]
   cast:
     boss: { faction: zone_owner, here: true }
@@ -108,6 +109,7 @@
   when:
     factions: [none]
     zone_owner: [other]
+    indoor: "any"
     segments: [day, evening]
     day_gte: 3
   cast:
@@ -137,7 +139,8 @@
   when:
     factions: [none]
     zone_owner: [other]
-    segments: [evening, night]
+    indoor: false
+    segments: [evening]
     activities_none: [sleep, combat]
   cast:
     host: { faction: zone_owner, here: true }
@@ -171,6 +174,7 @@
   when:
     factions: [none]
     zone_owner: [other]
+    indoor: "any"
     segments: [morning, day, evening]
   cast:
     local: { faction: zone_owner, here: true }
@@ -240,6 +244,7 @@
   when:
     factions: [none]
     zone_owner: [other]
+    indoor: false
     segments: [day]
   setup: "이 땅 아이 둘이 아까부터 멀찍이 따라온다. 돌아보면 담 뒤로 숨고, 걸으면 또 따라온다. 결국 하나가 용기를 내 묻는다. \"아저씨는 어디서 왔어요? 바깥엔 진짜 아무도 없어요?\""
   ai_direction: 무리 안에서 자란 아이들에게 떠돌이는 신기한 구경거리다. 어른이 보면 아이들을 불러들인다. 아이들은 떠돌이의 바깥 이야기를 다음 날 다른 아이들에게 부풀려 옮긴다. 호칭은 주인공의 성별과 나이에 맞게 바꾼다.
@@ -265,6 +270,7 @@
   when:
     factions: [none]
     zone_owner: [other]
+    indoor: "any"
     segments: [dawn, morning, day]
     day_gte: 2
   cast:
@@ -302,6 +308,7 @@
   when:
     factions: [none]
     owners: [faction_a]
+    indoor: true
     segments: [evening]
   cast:
     brother: { faction: faction_a, here: true }
@@ -328,6 +335,7 @@
   when:
     factions: [none]
     owners: [faction_a]
+    indoor: false
     segments: [morning, day]
   cast:
     crew: { extra: a_wall_crew, label: 담장 보수조 }
@@ -358,6 +366,7 @@
   when:
     factions: [none]
     owners: [faction_b]
+    indoor: false
     segments: [morning, day]
   cast:
     auntie: { extra: b_villager, label: 우물가 이웃 }
@@ -383,6 +392,7 @@
   when:
     factions: [none]
     owners: [faction_b]
+    indoor: "any"
     segments: [evening, night]
   cast:
     guard: { extra: b_guard, label: 당번 서는 이웃 }
@@ -415,6 +425,7 @@
   when:
     factions: [none]
     owners: [faction_c]
+    indoor: "any"
     segments: [morning, day, evening]
   cast:
     clerk: { extra: c_discipline, label: 규율반원 }
@@ -453,6 +464,7 @@
   when:
     factions: [none]
     owners: [faction_c]
+    indoor: false
     segments: [morning, day]
   cast:
     laborer: { extra: c_laborer, label: 노역조 }
@@ -486,6 +498,7 @@
   when:
     factions: [none]
     owners: [faction_d]
+    indoor: false
     segments: [morning, day]
   cast:
     orderly: { extra: d_orderly, label: 간호조무사 }
@@ -523,6 +536,7 @@
   when:
     factions: [none]
     owners: [faction_e]
+    indoor: "any"
     segments: [day, evening]
   cast:
     merchant: { extra: e_water_seller, label: 상단 장사꾼 }
@@ -562,6 +576,7 @@
   when:
     factions: [none]
     owners: [faction_e]
+    indoor: false
     segments: [evening, night]
   cast:
     porter: { extra: e_porter, label: 상단 짐꾼 }

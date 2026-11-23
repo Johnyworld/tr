@@ -67,6 +67,7 @@
   when:
     zones: [b_base]
     segments: [evening, night]
+    indoor: "any"
     day_gte: 3
     flags_all: [b_envoy_seen]
     flags_none: [b_jaehyuk_exposed]
@@ -114,6 +115,8 @@
   when:
     zones: [b_base]
     segments: [night]
+    indoor: false
+    places: [rooftop_watch]
     day_gte: 5
     flags_all: [b_took_bribe]
     flags_none: [b_jaehyuk_exposed]
@@ -159,6 +162,7 @@
   when:
     zones: [b_base]
     segments: [evening, night]
+    indoor: false
     day_gte: 4
     flags_all: [b_told_seungmin]
   cast:
@@ -200,6 +204,8 @@
     activities_none: [sleep]
     zones: [b_base]
     segments: [dawn, morning]
+    indoor: false
+    places: [yard]
     day_gte: 2
     flags_none: [b_well_failing]
   cast:
@@ -281,6 +287,7 @@
   when:
     zones: [b_base, south_fields]
     segments: [morning, day]
+    indoor: false
     day_gte: 3
   cast:
     clerk: { ids: [a_doyun] }
@@ -382,6 +389,7 @@
   when:
     zones: [b_base]
     segments: [day, evening]
+    indoor: "any"
     day_gte: 2
     flags_none: [b_mina_letter]
   cast:
@@ -529,6 +537,7 @@
   when:
     own_territory: true
     segments: [evening, night]
+    indoor: false
     day_gte: 3
   cast:
     talker: { faction: own, ranks: [grunt, staff], known: true }

@@ -16,6 +16,7 @@
   when:
     own_territory: true
     segments: [evening, night]
+    indoor: true
     day_gte: 2
   cast:
     young: { faction: own, ranks: [grunt] }
@@ -75,6 +76,7 @@
   when:
     own_territory: true
     segments: [evening, night]
+    indoor: "any"
     day_gte: 3
     flags_none: [om_scratch_hidden, om_scratch_reported]
   cast:
@@ -132,6 +134,7 @@
   when:
     own_territory: true
     segments: [night, dawn]
+    indoor: true
     flags_all: [om_scratch_hidden]
     flags_none: [om_scratch_done]
   cast:
@@ -186,6 +189,7 @@
     factions: [faction_a, faction_b, faction_d, faction_e]
     own_territory: true
     segments: [morning, day, evening]
+    indoor: true
     day_gte: 4
     flags_none: [om_enemy_cot_done]
   cast:
@@ -251,6 +255,7 @@
     factions: [faction_c]
     own_territory: true
     segments: [morning, day, evening]
+    indoor: true
     day_gte: 4
     flags_none: [om_enemy_cot_done]
   cast:
@@ -316,6 +321,7 @@
     occupation_step_gte: 1
     own_territory: true
     segments: [evening, night]
+    indoor: "any"
   cast:
     asker: { faction: own, ranks: [squad_leader, staff], known: true }
   setup: 이제 약장 열쇠는 당신 허리에 걸려 있다. 밤늦게 {asker:이/가} 찾아와 목소리를 낮춘다. "내일 우리 조가 멀리 나가. 진통제랑 붕대, 조금만 더 챙겨 줘. 남들 몫까지는 안 바래. 돌아오면 갚을게."
@@ -352,6 +358,7 @@
     occupation_step_gte: 1
     own_territory: true
     segments: [evening]
+    indoor: "any"
     day_gte: 5
   cast:
     boss: { commander: true }
@@ -397,6 +404,7 @@
     occupation_step_gte: 2
     own_territory: true
     segments: [morning, day]
+    indoor: true
     flags_none: [om_dose_rule_set]
   cast:
     boss: { faction: own, ranks: [officer] }
@@ -504,6 +512,7 @@
     factions: [none]
     zone_owner: [none]
     segments: [morning, day]
+    indoor: "any"
     day_gte: 4
     flags_all: [om_road_name]
     flags_none: [om_road_messenger_done]

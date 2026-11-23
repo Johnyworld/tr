@@ -79,6 +79,8 @@
   when:
     zones: [c_warehouse]
     segments: [morning, evening]
+    indoor: true
+    places: [barracks]
   cast:
     cook: { ids: [c_cm_sunae] }
   setup: "배식 줄. {cook:이/가} 국자로 당신 그릇을 툭 친다. 건더기가 하나 더 들어 있다. \"얘, 너 요즘 얼굴이 못쓰겠다. 잠은 자니?\" 뒤에 선 낯선 조원이 그릇을 들여다보고 혀를 찬다."
@@ -101,6 +103,7 @@
   when:
     zones: [c_warehouse, c_base]
     segments: [evening, night]
+    indoor: false
     flags_none: [cm_minji_doubt_heard]
   cast:
     medic: { ids: [c_cm_minji] }
@@ -133,6 +136,7 @@
   when:
     zones: [c_warehouse]
     segments: [morning, evening]
+    indoor: "any"
     flags_all: [cm_minji_doubt_heard]
     flags_none: [cm_yunho_child_seen]
   cast:
@@ -176,6 +180,7 @@
   tags: [c_comrades]
   when:
     segments: [night, dawn]
+    indoor: false
     zone_owner: [none]
   # 플레이 테스트 12: 혼자 야영하던 자리에 조장과 하범수가 약탈하러 나타났다. 둘 다 지금 곁(장면)에 있을 때만 연다
   cast:

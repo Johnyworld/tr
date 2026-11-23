@@ -14,6 +14,8 @@
   tags: [a_officer]
   when:
     zones: [a_base]
+    indoor: true
+    places: [staff_room]
     segments: [morning, day]
     flags_none: [a_of_council_done]
   cast:
@@ -63,6 +65,8 @@
   tags: [a_officer]
   when:
     zones: [a_base]
+    indoor: true
+    places: [staff_room]
     own_territory: true
     segments: [day, evening]
     day_gte: 2
@@ -147,6 +151,8 @@
   tags: [a_officer]
   when:
     zones: [a_base]
+    indoor: true
+    places: [staff_room]
     own_territory: true
     segments: [morning, day, evening]
     flags_all: [a_of_saw_sacks]
@@ -203,6 +209,8 @@
   tags: [a_officer]
   when:
     zones: [a_base]
+    indoor: true
+    places: [staff_room]
     segments: [morning, day]
     day_gte: 2
     flags_none: [a_of_b_asked]
@@ -261,6 +269,8 @@
   tags: [a_officer]
   when:
     zones: [a_base]
+    indoor: true
+    places: [staff_room]
     own_territory: true
     segments: [evening, night]
     day_gte: 3
@@ -462,6 +472,7 @@
   urgent: true
   tags: [a_officer]
   when:
+    indoor: "any"
     own_territory: true
     clock_gte: { c_east_offensive: 6 }
     flags_none: [a_of_east_decided]

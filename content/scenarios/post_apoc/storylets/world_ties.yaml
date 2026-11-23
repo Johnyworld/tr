@@ -5,6 +5,7 @@
   title: 저쪽에 있는 사람
   tags: [world]
   when:
+    indoor: "any"
     segments: [evening, night]
     day_gte: 3
   cast:
@@ -37,6 +38,7 @@
   title: 닮은 얼굴
   tags: [world]
   when:
+    indoor: "any"
     segments: [morning, day, evening]
     zone_owner: [none, other]
     day_gte: 4

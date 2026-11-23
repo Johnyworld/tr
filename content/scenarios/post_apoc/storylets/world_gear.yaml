@@ -13,6 +13,7 @@
   repeatable: true
   cooldown_days: 1
   when:
+    indoor: false
     zone_noise_gte: 2
     zone_owner: [none, other]
   setup: "총소리의 메아리가 채 가시기도 전에, 골목 끝 그늘에서 무언가 몸을 일으킨다. 하나, 둘, 그리고 더. 발을 끄는 소리가 이쪽으로 모인다. {zone}의 물결이 깼다."
@@ -64,6 +65,7 @@
   cooldown_days: 2
   weight: 2
   when:
+    indoor: false
     zone_noise_gte: 2
     zone_owner: [other]
   cast:

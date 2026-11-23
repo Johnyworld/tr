@@ -8,6 +8,7 @@
   repeatable: true
   cooldown_days: 20
   when:
+    indoor: false
     disaster: { phase: omen, kinds: [fire] }
     weather: [clear, overcast, cold_snap]
   setup: "바람이 세다. 공기가 바삭할 만큼 말랐다. 곳곳에 쌓인 기름통과 땔감 더미가 자꾸 눈에 밟힌다."
@@ -38,6 +39,8 @@
   repeatable: true
   cooldown_days: 20
   when:
+    segments: [dawn, morning]
+    indoor: false
     disaster: { phase: struck, kinds: [fire] }
   setup: "{disaster_zone}에서 아직 연기가 오른다. 사람들이 젖은 담요로 남은 불씨를 두드리고, 누군가 이름을 부르며 잿더미를 뒤진다."
   ai_direction: "큰불이 지나갔다. 잃은 것은 시스템이 정한 대로 (상태의 무리 형편). 사람을 찾는 장면, 남은 것을 건지는 장면."
@@ -71,6 +74,7 @@
   repeatable: true
   cooldown_days: 20
   when:
+    indoor: false
     disaster: { phase: omen, kinds: [flood] }
   setup: "요 며칠 비가 잦았다. 불어난 강물이 다리 밑을 핥고, 하수구에서 물이 거꾸로 솟는다."
   ai_direction: "물이 어디까지 오를지는 모른다. 낮은 곳의 짐과 사람을 높은 곳으로 옮기면 피해가 준다."
@@ -98,6 +102,7 @@
   repeatable: true
   cooldown_days: 20
   when:
+    indoor: false
     disaster: { phase: struck, kinds: [flood] }
   setup: "{disaster_zone}의 물이 빠지고 진흙이 남았다. 떠내려온 것들이 담장에 걸려 있다. 사람의 것도, 아닌 것도."
   ai_direction: "물이 더러워졌다 (끓이지 않은 물 12-131). 진흙 속에 쓸 것과 쓰면 안 될 것이 섞여 있다."
@@ -125,6 +130,7 @@
   repeatable: true
   cooldown_days: 20
   when:
+    indoor: false
     disaster: { phase: omen, kinds: [horde] }
   setup: "쥐 떼가 한쪽으로 몰려간다. 들개들이 꼬리를 말고 반대편으로 달린다. 밤마다 먼 데서 여럿이 우는 소리가 들린다."
   ai_direction: "무엇이 오는지 정확히는 모른다. 감염체를 아는 사람이면 떼가 움직인다는 것을 짐작한다. 담을 손보거나 길목을 막으면 피해가 준다."
@@ -156,6 +162,7 @@
   repeatable: true
   cooldown_days: 20
   when:
+    indoor: false
     disaster: { phase: struck, kinds: [horde] }
   setup: "{disaster_zone}의 담 한쪽이 무너졌다. 바닥에 끌린 자국이 길게 나 있다. 아직 근처를 떠도는 것들이 있다."
   ai_direction: "떼는 지나갔지만 낙오한 것들이 남았다 (그 구역의 감염체 압력은 시스템대로). 마주치면 spawn_extra로 감염체 틀을."
@@ -183,6 +190,8 @@
   repeatable: true
   cooldown_days: 20
   when:
+    segments: [day]
+    indoor: false
     disaster: { phase: omen, kinds: [cold] }
   setup: "하늘이 낮게 내려앉았다. 한낮에도 서리가 녹지 않고, 물통에 살얼음이 낀다. 늙은 사람들이 무릎을 문지르며 큰 추위가 온다고 한다."
   ai_direction: "며칠 뒤 한파가 온다 (도시 전체). 땔감을 모으고 사람을 한데 재울 준비를 하면 피해가 준다."
@@ -210,6 +219,7 @@
   cooldown_days: 20
   when:
     disaster: { phase: struck, kinds: [cold] }
+    indoor: true
     segments: [morning]
   setup: "간밤에 깨어나지 못한 사람이 있다. 담요 밖으로 나온 얼굴이 하얗다. 살아남은 사람들이 말없이 땔감 더미를 본다."
   ai_direction: "한파가 이어진다 (날씨는 시스템대로). 땔감을 두고 다툼이 생기기 쉽다. 누가 더 가져가는지 다들 본다."
@@ -233,6 +243,7 @@
   repeatable: true
   cooldown_days: 20
   when:
+    indoor: "any"
     disaster: { phase: omen, kinds: [plague] }
   setup: "피난민 막사에서 밤새 기침이 끊이지 않는다. 열이 오른 아이가 둘이라는 말이 돈다. 사람들이 그쪽을 피해 다닌다."
   ai_direction: "돌림병이 번지려 한다. 아픈 사람을 따로 두고 물을 끓이면 덜 번진다. 따로 두자는 말은 차갑게 들릴 수 있다."
@@ -261,6 +272,7 @@
   repeatable: true
   cooldown_days: 20
   when:
+    indoor: "any"
     disaster: { phase: struck, kinds: [plague] }
   setup: "막사 하나에 천을 둘러 막았다. 안에서 누군가 물을 달라고 한다. 들어가는 사람은 없다."
   ai_direction: "돌림병이 번졌다 (앓는 사람은 시스템대로, 주인공도 걸릴 수 있다). 들어가 돌보면 걸릴 위험이 있다."

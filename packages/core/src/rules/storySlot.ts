@@ -19,7 +19,7 @@
 import type { Content, StoryletContent } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { heldOf, playerHeld } from "./held.ts";
-import { storyPlaces } from "./place.ts";
+import { storyIndoor, storyPlaces } from "./place.ts";
 import { dayOf, MINUTES_PER_DAY, SEGMENT_START_HOUR, TIME_SEGMENTS, type GameTime } from "./time.ts";
 
 /** 이야기의 등급. 숫자가 클수록 높다 */
@@ -147,10 +147,10 @@ export function pacingBlocks(state: GameState, content: Content, s: StoryletCont
   if (p.threat_per_day && isThreat(content, s) && fired.filter(([id]) => content.storylets[id] && isThreat(content, content.storylets[id]!)).length >= p.threat_per_day) return true;
   const road = content.scenario.travel?.tag;
   if (p.road_per_day && road && s.tags.includes(road) && fired.filter(([id]) => content.storylets[id]?.tags.includes(road)).length >= p.road_per_day) return true;
-  const mine = storyPlaces(state, content, s.when.places, storyText(s), s.when.indoor);
+  const mine = storyPlaces(state, content, s.when.places, storyText(s), storyIndoor(s.when));
   if (mine.length) {
     const rank = STORY_TIERS[storyTier(content, s)];
-    const rival = (o: StoryletContent) => STORY_TIERS[storyTier(content, o)] >= rank && storyPlaces(state, content, o.when.places, storyText(o), o.when.indoor).some((pl) => mine.includes(pl));
+    const rival = (o: StoryletContent) => STORY_TIERS[storyTier(content, o)] >= rank && storyPlaces(state, content, o.when.places, storyText(o), storyIndoor(o.when)).some((pl) => mine.includes(pl));
     if (fired.some(([id]) => id !== s.id && content.storylets[id] && rival(content.storylets[id]!))) return true;
   }
   if (p.same_threat_gap_days) {

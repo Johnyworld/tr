@@ -21,6 +21,7 @@
     zones: [e_market, water_plant]
     factions: [faction_e]
     segments: [morning, day, evening]
+    indoor: true
     flags_none: [eo_cargo_decided]
   cast:
     boss: { commander: true }
@@ -79,6 +80,7 @@
   when:
     zones: [e_market, water_plant]
     segments: [morning, day, evening]
+    indoor: "any"
     day_gte: 2
     flags_none: [eo_red_contract_done]
   cast:
@@ -137,6 +139,7 @@
   when:
     zones: [e_market, water_plant, riverside, a_base]
     segments: [day, evening]
+    indoor: "any"
     day_gte: 4
     flags_none: [eo_pine_credit_done]
   cast:
@@ -197,6 +200,7 @@
     zones: [e_market, water_plant]
     factions: [faction_e]
     segments: [morning, day]
+    indoor: "any"
     day_gte: 2
     flags_none: [eo_water_trade_done]
   cast:
@@ -248,6 +252,7 @@
   when:
     zones: [e_market, water_plant]
     segments: [morning, day, evening]
+    indoor: "any"
     flags_none: [eo_papers_done]
   cast:
     pawn: { ids: [pe_sundeok] }
@@ -296,7 +301,8 @@
   tags: [e_officer]
   when:
     zones: [e_market, water_plant]
-    segments: [day, evening]
+    segments: [evening]
+    indoor: "any"
     day_gte: 2
     flags_none: [eo_isle_lines_seen]
   cast:
@@ -342,6 +348,7 @@
   when:
     zones: [e_market, water_plant, riverside]
     segments: [evening, night]
+    indoor: "any"
     day_gte: 4
     flags_any: [eo_isle_lines_seen, eo_debt_paper_seen, eo_sold_papers]
     flags_none: [eo_manifest_done]
@@ -397,6 +404,7 @@
   when:
     zones: [e_market, water_plant]
     segments: [evening, night]
+    indoor: false
     day_gte: 5
     flags_any: [eo_signed_manifest, eo_struck_people, eo_manifest_delayed]
     flags_none: [eo_taesik_done]
@@ -463,6 +471,7 @@
   when:
     zones: [e_market, water_plant]
     segments: [morning, day]
+    indoor: "any"
     flags_any: [eo_struck_people, eo_debts_rewritten, eo_sundeok_stopped]
     flags_none: [eo_shortfall_done]
   cast:
@@ -517,6 +526,7 @@
   when:
     zones: [e_market, water_plant]
     segments: [morning, day, evening]
+    indoor: "any"
     flags_none: [eo_second_ledger_done]
     dispositions: [{ from: own, to: faction_c, gte: 2 }]
   cast:

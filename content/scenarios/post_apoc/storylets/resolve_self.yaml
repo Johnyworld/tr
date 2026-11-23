@@ -37,6 +37,7 @@
   cooldown_days: 6
   when:
     resolve: { kinds: [journey], stage_gte: 1 }
+    indoor: "any"
     segments: [evening, night]
   setup: "짐을 몇 번이나 풀었다 쌌다. 가져갈 것과 두고 갈 것. 두고 갈 사람들."
   ai_direction: "떠나는 것은 무엇을 두고 가는 일이기도 하다. 곁의 사람들(동행, 무리)이 눈치챌 수 있다."
@@ -59,6 +60,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: false
     resolve: { kinds: [truth] }
   setup: "찢어진 장부 한 장이 바람에 굴러온다. 숫자와 날짜, 그리고 '버티는 사람'이라는 글자가 반쯤 지워져 있다."
   ai_direction: "혈청 미스터리(10.6)의 조각. 무엇인지 정해 주지 않는다. 판정 결과만큼만 읽힌다. 믿음으로 남은 것이 쌓이면 다짐이 이뤄진다."
@@ -84,6 +86,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: "any"
     resolve: { kinds: [truth], stage_gte: 1 }
   setup: "혈청 이야기만 나오면 입을 다무는 사람이 있다. 오늘은 술에 취해 혼잣말을 한다. \"섬에 간 사람들… 피를…\""
   ai_direction: "이 사람은 진실의 한 조각을 안다 (여울섬이 버틴 사람의 피로 혈청을 만든다). 다 말하지 않는다. 판정 결과만큼만."
@@ -108,6 +111,7 @@
   cooldown_days: 3
   when:
     resolve: { kinds: [quit] }
+    indoor: "any"
     segments: [night]
   setup: "자려고 누웠는데 손이 떨린다. 배낭 바닥에 하나 남은 것이 있다는 걸 몸이 먼저 안다."
   ai_direction: "끊는 것은 금단의 끝 단계를 버티는 것이다 (버릇의 끊기, 12-157). 이 밤을 넘기는지는 플레이어의 선택. 쓰면 그만큼 처음으로 돌아간다."
@@ -140,6 +144,7 @@
   cooldown_days: 5
   when:
     resolve: { kinds: [endure] }
+    indoor: true
     segments: [evening]
   setup: "누군가 벽에 그어 둔 줄을 센다. 이 계절이 며칠 남았는지. 다들 그 숫자를 모르는 척하면서 귀를 기울인다."
   ai_direction: "버텨 내는 것은 날짜가 지나는 것이다 (코드가 계절로 정한다). 이 장면은 모두의 마음을 붙잡는 순간."
@@ -168,6 +173,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: "any"
     resolve: { kinds: [explore] }
   setup: "누군가 버린 시내 지도에 볼펜으로 동그라미가 여럿 쳐져 있다. 몇 개는 X로 지워졌고, 몇 개는 아직이다."
   ai_direction: "숨은 곳은 그 구역을 뒤지다 찾는다 (탐험 12-162). 지도의 동그라미는 어느 구역을 뒤질지 알려 줄 뿐이다. 위치를 지어내지 않는다."
@@ -191,6 +197,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: false
     resolve: { kinds: [homecoming], stage: 0 }
   setup: "어느 골목 어귀의 간판 하나가 눈에 들어온다. 무너지기 전 매일 지나던 길과 닮았다. 아니, 그 길이다."
   ai_direction: "{target}의 집으로 가는 길이 떠오른다. 그곳이 어떻게 됐는지는 가 봐야 안다. 기억과 지금의 폐허를 겹쳐 그린다."

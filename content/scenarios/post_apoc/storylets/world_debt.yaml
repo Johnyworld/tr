@@ -8,6 +8,8 @@
   tags: [world]
   when:
     zones: [e_market]
+    places: [stalls]
+    indoor: false
     segments: [morning, day]
     debt_lte: { faction_e: 20 }
   cast:
@@ -31,6 +33,7 @@
     debt_gte: { faction_e: 8 }
     day_gte: 5
     segments: [day, evening]
+    indoor: false
   cast:
     clerk: { ids: [e_sora] }
   setup: "{clerk:이/가} 장부를 품에 안고 길을 막는다. \"당신 이름 옆 줄이 길어. 이번 주 안에 반은 갚아. 물건이든 일이든.\""
@@ -71,6 +74,7 @@
     day_gte: 7
     zone_owner: [none, other]
     segments: [evening, night]
+    indoor: false
   cast:
     collector: { extra: e_porter, label: 빚 받으러 온 짐꾼 }
   setup: 길모퉁이에서 어깨가 넓은 짐꾼 둘이 앞을 막는다. 앞에 선 {collector:이/가} 손바닥에 장부 한 장을 펴 보인다. 당신 이름이 적혀 있다. "사장님이 안부 전하래. 오늘 얼마나 가져왔어?"

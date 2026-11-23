@@ -10,6 +10,7 @@
     own_territory: true
     own_people_captive: true
     segments: [evening]
+    indoor: true
   cast:
     lost: { captive_anywhere: true, faction: own, known: true, enter: false, keep: cp_hunt }
     boss: { commander: true, optional: true }
@@ -51,6 +52,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: true
     captive_days_gte: 4
   setup: 벽에 손톱으로 그은 줄이 늘었다. 처음 며칠은 줄마다 날짜를 적었는데, 이제는 세지 않는다. 밥이 오는 시각과 당번이 바뀌는 시각만 몸이 기억한다.
   ai_direction: 오래 갇히면 사람은 둘 중 하나가 된다. 틈을 찾는 사람, 틈을 찾지 않는 사람. 위험은 판정 전에 선언한다. 실패한 탈출은 다치고 감시가 심해진다 (이야기는 사람을 죽이지 않는다).
@@ -93,6 +95,7 @@
   tags: [captivity]
   essential: true
   when:
+    indoor: true
     captive_days_gte: 5
     in_faction: true
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
@@ -118,6 +121,8 @@
   tags: [captivity]
   essential: true
   when:
+    segments: [night]
+    indoor: "any"
     captive_days_gte: 5
     in_faction: false
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]

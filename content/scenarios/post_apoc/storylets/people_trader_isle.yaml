@@ -7,6 +7,7 @@
   title: 겉봉이 한 번 뜯긴 편지
   tags: [world]
   when:
+    indoor: "any"
     zones: [e_market, water_plant]
     segments: [dawn, morning, evening]
     day_gte: 3
@@ -57,6 +58,7 @@
   title: 손이 묶인 짐
   tags: [world]
   when:
+    indoor: false
     zones: [e_market, water_plant]
     segments: [evening, night]
     day_gte: 6
@@ -115,6 +117,7 @@
   title: 부엌 아가씨의 빈 그릇
   tags: [y_islander]
   when:
+    indoor: "any"
     zones: [yeoul_isle]
     segments: [evening]
     day_gte: 2
@@ -160,6 +163,8 @@
   title: 뱃멀미 약
   tags: [y_islander]
   when:
+    indoor: true
+    places: [council_hall]
     zones: [yeoul_isle]
     segments: [evening, night]
     day_gte: 3

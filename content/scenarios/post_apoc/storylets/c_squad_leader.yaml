@@ -11,6 +11,8 @@
   tags: [c_squad_leader]
   when:
     zones: [c_warehouse]
+    places: [yard]
+    indoor: false
     segments: [dawn, morning]
     flags_none: [c_sl_rolled]
   cast:
@@ -43,6 +45,7 @@
   tags: [c_squad_leader]
   when:
     zones: [c_warehouse, c_base]
+    indoor: "any"
     segments: [morning, day]
     day_gte: 3
     flags_none: [c_sl_front_decided]
@@ -90,6 +93,7 @@
   when:
     own_territory: true
     segments: [evening]
+    indoor: false
     day_gte: 2
     flags_none: [c_sl_changsik_seen]
   cast:
@@ -121,6 +125,7 @@
   when:
     own_territory: true
     segments: [night]
+    indoor: false
     flags_all: [c_sl_changsik_known]
     flags_none: [c_sl_changsik_done]
   cast:
@@ -163,6 +168,7 @@
   when:
     own_territory: true
     segments: [evening, night]
+    indoor: false
     day_gte: 3
     flags_none: [c_sl_seokjin_done]
   cast:
@@ -206,6 +212,7 @@
   tags: [c_squad_leader]
   when:
     zones: [c_warehouse]
+    indoor: false
     segments: [evening, night]
     day_gte: 4
     flags_none: [c_sl_muyeol_done]

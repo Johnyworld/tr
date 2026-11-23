@@ -8,6 +8,7 @@
   cooldown_days: 5
   when:
     has_items: [radio]
+    indoor: "any"
     segments: [evening, night]
   setup: "잡음 사이로 낮은 목소리가 짧게 끊어 말한다. 호출 부호, 숫자, \"교대\", \"북쪽 담\". 우리 무리 목소리가 아니다."
   ai_direction: "어느 무리인지는 엿들은 결과대로만 (판정 성공이면 대략 알아듣는다). 들은 것은 단편이다. 지어낸 계획을 덧붙이지 않는다."
@@ -33,6 +34,7 @@
   cooldown_days: 7
   when:
     has_items: [radio]
+    indoor: "any"
     segments: [night]
   setup: "주파수 하나에서 노래가 나온다. 테이프가 늘어나 음이 군데군데 처진, 붕괴 전 가요다. 노래가 끝나면 누군가 다시 처음부터 튼다."
   ai_direction: "트는 사람은 끝까지 말하지 않는다. 어디선가 누군가 살아서 매일 밤 같은 노래를 튼다는 것만. 가사를 인용하지 말고 분위기와 기억으로만."
@@ -55,6 +57,7 @@
   cooldown_days: 10
   when:
     has_items: [radio]
+    indoor: "any"
     segments: [evening, night]
   setup: "\"…누구 듣는 사람… 다리가 부러졌고… 물이 하루치…\" 숨이 가쁜 목소리가 위치를 말하다 잡음에 묻힌다."
   ai_direction: "진짜 조난자일 수도, 사람을 꾀는 미끼일 수도 있다 (정하지 않는다. 찾아가면 그때 장면으로 spawn_extra). 위치는 대략의 방향만."
@@ -81,6 +84,7 @@
   cooldown_days: 9
   when:
     has_items: [radio]
+    indoor: "any"
     segments: [night]
   setup: "같은 시각, 같은 주파수. 남자 목소리가 숫자 다섯 개씩을 천천히 읽고, \"이상\"으로 끝낸다. 사흘째 같은 시간이다."
   ai_direction: "섬의 여자(혈청 미스터리)와는 다른 목소리다. 무엇인지 정해 주지 않는다. 적어 두면 나중에 무엇과 맞춰 볼 수 있을 것처럼만."
@@ -109,6 +113,7 @@
   when:
     has_items: [radio]
     own_territory: false
+    indoor: "any"
     segments: [day, evening]
   setup: "익숙한 호출 부호가 들린다. 우리 거점의 무전 담당이 바깥에 나간 사람들을 하나씩 부르고 있다. 대답하는 목소리가 생각보다 적다."
   ai_direction: "무리에 속하지 않은 주인공이면 남의 무리 망을 엿듣는 장면으로 바꿔 연출한다. 대답하지 않는 이름들에 대해 아무도 말하지 않는다."

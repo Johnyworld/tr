@@ -14,6 +14,8 @@
   title: 경비 인원을 보낼까
   tags: [b_officer]
   when:
+    indoor: true
+    places: [office]
     zones: [b_base]
     segments: [morning, day]
     flags_none: [bo_council_done]
@@ -173,6 +175,8 @@
   title: 숫자로 보면
   tags: [b_officer]
   when:
+    indoor: true
+    places: [office]
     zones: [b_base]
     segments: [evening, night]
     day_gte: 2
@@ -232,6 +236,8 @@
   title: 대표실의 등잔
   tags: [b_officer]
   when:
+    indoor: true
+    places: [office]
     zones: [b_base]
     segments: [evening, night]
     day_gte: 3
@@ -286,8 +292,9 @@
   urgent: true
   tags: [b_officer]
   when:
+    indoor: true
     zones: [b_base]
-    segments: [night, dawn]
+    segments: [night]
     day_gte: 4
     flags_any: [bo_leader_done, bo_seokgyu_open]
     flags_none: [bo_envoy_done]
@@ -345,6 +352,7 @@
   title: 저울 위의 겨울
   tags: [b_officer]
   when:
+    indoor: "any"
     zones: [b_base, south_fields]
     segments: [morning, day]
     day_gte: 2
@@ -395,6 +403,7 @@
   title: 쪽문을 닫을까
   tags: [b_officer]
   when:
+    indoor: true
     zones: [b_base]
     segments: [evening, night]
     day_gte: 3
@@ -505,6 +514,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: true
     own_territory: true
     segments: [morning, day, evening]
     day_gte: 2

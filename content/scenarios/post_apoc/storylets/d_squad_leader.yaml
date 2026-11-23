@@ -13,6 +13,7 @@
   title: 초소의 교대표
   tags: [d_squad_leader]
   when:
+    indoor: "any"
     zones: [d_clinic]
     segments: [dawn, morning]
     flags_none: [d_sl_mustered]
@@ -230,6 +231,7 @@
   title: 손녀의 통조림
   tags: [d_squad_leader]
   when:
+    indoor: false
     zones: [d_clinic]
     segments: [evening, night]
     flags_all: [d_sl_deokgu_paid]
@@ -324,6 +326,8 @@
   title: 골목의 청솔 정찰병
   tags: [d_squad_leader]
   when:
+    indoor: false
+    places: [alleys]
     zones: [old_town]
     segments: [day, evening]
     day_gte: 2

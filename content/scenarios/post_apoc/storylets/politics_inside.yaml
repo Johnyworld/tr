@@ -16,6 +16,7 @@
     own_territory: true
     own_distrust_gte: 3
     ranks: [grunt, staff]
+    indoor: "any"
     segments: [morning, day, evening]
   cast:
     judge: { faction: own, ranks: [leader, officer] }
@@ -60,6 +61,7 @@
     own_territory: true
     own_distrust_gte: 3
     ranks: [squad_leader, officer]
+    indoor: "any"
     segments: [morning, day, evening]
   cast:
     judge: { faction: own, ranks: [leader] }
@@ -96,6 +98,7 @@
   cooldown_days: 15
   when:
     own_territory: true
+    indoor: true
     segments: [day, evening]
   cast:
     accused: { faction: own, ranks: [grunt, squad_leader, officer], distrusted_gte: 3 }
@@ -143,6 +146,7 @@
   when:
     own_territory: true
     own_morale_lte: 0
+    indoor: true
     segments: [evening, night]
   cast:
     leader: { faction: own, ranks: [leader], distrusted_gte: 3 }
@@ -204,6 +208,7 @@
   when:
     own_territory: true
     own_morale_lte: -2
+    indoor: false
     segments: [night]
   cast:
     leader: { faction: own, ranks: [leader], distrusted_gte: 2 }
@@ -270,6 +275,7 @@
     own_territory: true
     own_trust_gte: 6
     ranks: [officer]
+    indoor: "any"
     segments: [evening]
   cast:
     leader: { faction: own, ranks: [leader] }

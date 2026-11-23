@@ -13,7 +13,9 @@
   tags: [e_squad_leader]
   when:
     zones: [e_market]
-    segments: [dawn, morning]
+    places: [wagon_yard]
+    indoor: false
+    segments: [dawn]
     flags_none: [es_mustered]
   cast:
     widow: { ids: [e_okseon] }
@@ -142,6 +144,7 @@
   tags: [e_squad_leader]
   when:
     segments: [evening, night]
+    indoor: false
     flags_all: [es_toll_known]
     flags_none: [es_toll_done]
   cast:
@@ -266,6 +269,8 @@
   tags: [e_squad_leader]
   when:
     zones: [b_base]
+    places: [gate_front]
+    indoor: false
     segments: [morning, day, evening]
     flags_none: [es_eunchae_done]
   cast:
@@ -304,6 +309,8 @@
   tags: [e_squad_leader]
   when:
     zones: [c_warehouse]
+    places: [yard]
+    indoor: false
     segments: [morning, day, evening]
     flags_none: [es_dongju_done]
   cast:
@@ -363,6 +370,7 @@
   tags: [e_squad_leader]
   when:
     zones: [rest_stop, e_market]
+    indoor: "any"
     segments: [evening, night]
     day_gte: 4
     flags_none: [es_okseon_done]
@@ -420,6 +428,7 @@
   tags: [e_squad_leader]
   when:
     zones: [c_warehouse]
+    indoor: "any"
     segments: [morning, day, evening]
     day_gte: 3
     flags_none: [es_red_offer_done]
@@ -461,6 +470,7 @@
   tags: [e_squad_leader]
   when:
     zones: [e_market, water_plant]
+    indoor: false
     segments: [evening, night]
     day_gte: 5
     flags_none: [es_boat_done]

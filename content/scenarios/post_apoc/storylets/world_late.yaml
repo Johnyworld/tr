@@ -39,6 +39,7 @@
   when:
     day_gte: 8
     segments: [evening, night]
+    indoor: "any"
     activities_none: [combat]
     flags_none: [lt_tally_done]
   setup: "자리를 잡고 앉은 벽에 누군가 날짜를 센 금이 빼곡하다. 다섯 개씩 묶은 금이 줄줄이 이어지다, 어느 날 뚝 끊겼다. 끊긴 자리 옆에 작은 글씨로 '내일은 남쪽으로'라고 적혀 있다."
@@ -93,6 +94,7 @@
   when:
     day_gte: 10
     segments: [dawn, morning]
+    indoor: "any"
     flags_none: [lt_ache_done]
   setup: "아침에 몸을 일으키는데 어딘가 뻐근하다. 다친 적도 없는 데가 쑤신다. 무릎, 허리, 어깨. 매일 걷고, 들고, 웅크려 자고, 추위에 떤 날들이 몸 어딘가에 쌓였다."
   ai_direction: 극적인 부상이 아니라 버틴 날들의 무게다. 흉터나 지난 상처가 있으면 그 자리가 먼저 쑤신다 (캐릭터 시트에 맞게). 몸을 돌보는 시간을 내는지, 그냥 일어나는지는 주인공이 정한다.
@@ -115,6 +117,7 @@
     day_gte: 11
     zone_owner: [none]
     segments: [morning, day]
+    indoor: "any"
     flags_none: [lt_house_done]
   setup: "처음 지날 때만 해도 창에 천을 걸고 굴뚝에 연기가 오르던 집이다. 오늘은 문이 활짝 열려 있다. 안에는 엎어진 냄비, 반쯤 싼 짐, 벽에 걸린 아이 키 눈금. 사람은 없다."
   ai_direction: 이 집 사람들은 떠났거나, 끌려갔거나, 무언가를 피해 달아났다 (흔적으로만 비춘다. 서두른 짐, 피는 없음). 무엇이 남았는지는 수색 판정대로. 주인공이 처음 이 도시에 왔을 때와 지금이 다르다는 것을 보여 준다.
@@ -155,7 +158,8 @@
   when:
     day_gte: 12
     own_territory: true
-    segments: [morning, day, evening]
+    segments: [morning]
+    indoor: "any"
     flags_none: [lt_newborn_done]
   cast:
     parent: { faction: own, here: true, adult: true }
@@ -188,6 +192,7 @@
     day_gte: 13
     own_territory: true
     segments: [day, evening]
+    indoor: "any"
     flags_none: [lt_newcomer_done]
   cast:
     rookie: { extra: refugee, label: 갓 들어온 신참 }
@@ -219,6 +224,7 @@
     day_gte: 15
     seasons: [winter]
     segments: [night]
+    indoor: "any"
     activities_none: [combat]
     flags_none: [lt_deep_winter_done]
   setup: "가장 추운 밤이다. 숨을 쉬면 콧속이 언다. 멀리서 무언가 갈라지는 소리가 난다. 얼어붙은 수도관이 터지는 소리다. 이 도시 어딘가에서는 오늘 밤 불을 못 피운 사람들이 잠든 채 깨어나지 못할 것이다."
@@ -249,6 +255,7 @@
   when:
     day_gte: 16
     segments: [day, evening]
+    indoor: "any"
     flags_none: [lt_known_name_done]
   cast:
     talker: { extra: highway_traveler, label: 처음 보는 사람 }
@@ -276,6 +283,7 @@
   when:
     day_gte: 17
     zones: [e_market, rest_stop, water_plant]
+    indoor: "any"
     segments: [morning, day]
     flags_none: [lt_prices_done]
   cast:
@@ -302,6 +310,7 @@
     day_gte: 18
     zone_owner: [none]
     segments: [dawn, evening, night]
+    indoor: false
     activities_none: [sleep]
     flags_none: [lt_dog_pack_done]
   cast:
@@ -344,6 +353,7 @@
   title: 부치지 못한 편지
   tags: [world]
   when:
+    indoor: true
     day_gte: 20
     zone_owner: [none]
     activities: [search, brief, wait]
@@ -374,6 +384,7 @@
     day_gte: 22
     own_territory: true
     segments: [evening]
+    indoor: false
     flags_none: [lt_names_done]
   cast:
     carver: { faction: own, here: true }
@@ -402,6 +413,7 @@
   when:
     day_gte: 25
     segments: [day]
+    indoor: false
     weather: [clear]
     activities_none: [sleep, combat]
     flags_none: [lt_thaw_done]
@@ -427,6 +439,7 @@
     day_gte: 28
     seasons: [spring]
     segments: [morning, day]
+    indoor: false
     flags_none: [lt_seed_done]
   setup: "무너진 보도블록 틈에서 초록색이 올라왔다. 이름 모를 풀이다. 겨울 내내 아무것도 없던 땅이다. 그 옆에 누군가 돌멩이로 작은 테두리를 둘러 놓았다."
   ai_direction: 봄이다. 사람들은 씨앗과 텃밭 이야기를 시작한다. 겨울을 넘긴 것만으로 주인공은 많은 사람보다 강하다. 앞으로 무엇을 할지, 무엇을 심을지 생각하는 장면이다.
@@ -459,6 +472,7 @@
     factions: [none]
     companions_lte: 0
     segments: [evening, night]
+    indoor: "any"
     activities_none: [combat]
     flags_none: [lt_loner_count_done]
   setup: "오늘 하루 아무와도 말하지 않았다. 생각해 보니 어제도 그랬다. 목소리를 내 보려다 낯선 쉰 소리에 놀란다. 혼자 지낸 날을 손가락으로 세다가 그만둔다."
@@ -488,6 +502,7 @@
     factions: [none]
     zone_owner: [other]
     segments: [morning, day, evening]
+    indoor: false
     flags_none: [lt_regular_done]
   cast:
     local: { faction: zone_owner, here: true }

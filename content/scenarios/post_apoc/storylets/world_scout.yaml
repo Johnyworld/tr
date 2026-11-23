@@ -7,6 +7,7 @@
   title: 마경수의 담배
   tags: [world]
   when:
+    indoor: false
     factions: [faction_a, faction_b, faction_e]
     merit_gte: 9
     day_gte: 5
@@ -52,6 +53,7 @@
   title: 낯선 손님의 공책
   tags: [world]
   when:
+    indoor: "any"
     factions: [faction_b, faction_d, faction_e]
     merit_gte: 9
     day_gte: 5
@@ -85,6 +87,7 @@
   title: 금니의 셈
   tags: [world]
   when:
+    indoor: true
     factions: [faction_a, faction_b, faction_c, faction_d]
     merit_gte: 9
     day_gte: 6
@@ -119,6 +122,7 @@
   title: 진료소의 편지
   tags: [world]
   when:
+    indoor: "any"
     factions: [faction_a, faction_b, faction_c, faction_e]
     merit_gte: 9
     day_gte: 6
@@ -149,6 +153,7 @@
   title: 대표의 다림질한 셔츠
   tags: [world]
   when:
+    indoor: "any"
     factions: [faction_a, faction_e]
     merit_gte: 9
     day_gte: 5

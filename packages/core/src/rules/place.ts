@@ -132,6 +132,11 @@ export function placeIndoor(state: GameState, content: Content): boolean | null 
   return currentPlace(state, content)?.indoor ?? null;
 }
 
+/** 이야기의 실내외 조건: true 실내, false 바깥, undefined 어디서나 ("any"도 어디서나) */
+export function storyIndoor(when: { indoor?: boolean | "any" }): boolean | undefined {
+  return when.indoor === "any" ? undefined : when.indoor;
+}
+
 /** 이야기의 장소 조건 (when.places·when.indoor·when.summons)과 글 */
 export type StoryWhere = { places?: readonly string[]; indoor?: boolean; summons?: boolean };
 

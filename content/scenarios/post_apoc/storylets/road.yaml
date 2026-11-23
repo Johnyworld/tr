@@ -15,6 +15,7 @@
   weight: 0.8
   when:
     road_danger_lte: 1
+    indoor: false
     segments: [morning, day, evening]
   cast:
     dog: { extra: road_dog, label: 목줄 끊긴 개, keep: road_dog }
@@ -98,6 +99,7 @@
   cooldown_days: 5
   when:
     road_danger_lte: 1
+    indoor: false
     segments: [morning, day, evening]
   setup: "{to} 쪽을 가리키는 녹슨 도로 표지판 밑에 손수레 하나가 모로 넘어져 있다. 바퀴 하나가 빠졌고, 덮개 비닐이 바람에 펄럭인다. 주인은 보이지 않는다. 표지판 기둥에는 누군가 숯으로 글씨를 적어 놓았고, 그 위에 또 다른 손이 덧쓰고, 줄을 긋고, 화살표를 그렸다. 가장 새것으로 보이는 글씨는 아직 번지지 않았다."
   ai_direction: 낙서는 이 길을 오간 사람들의 경고와 안부다 (누구 찾음, 어디 물 있음, 어디로 가지 마라). GM은 이 길과 {to}에 맞는 것으로 한두 줄 지어 보여 준다. 다만 낙서는 믿을 수 없다. 가장 새 글씨는 진짜 경고일 수도, 길목에 사람을 몰아넣으려는 수작일 수도 있다. 판정으로 가늠한다. 숫자(몇 명, 며칠)는 적지 않는다. 수레 주인은 바퀴가 빠지자 들 수 있는 것만 들고 갔고, 덮개 밑에 남은 것이 조금 있다. 수레를 뒤지다 무너뜨리면 {to} 쪽까지 쇳소리가 퍼진다. 주인이 돌아오는 장면은 지어내지 않는다.
@@ -141,6 +143,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: false
     segments: [morning, day, evening]
   cast:
     head: { extra: refugee, label: 행렬 맨 앞의 피난민 }
@@ -188,6 +191,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    indoor: false
     day_gte: 2
   cast:
     runner: { extra: road_runner, label: 쫓기는 사람, keep: road_runner }
@@ -233,6 +237,7 @@
   cooldown_days: 7
   when:
     companions_lte: 0
+    indoor: false
     segments: [morning, day, evening]
   cast:
     walker: { extra: road_wanderer, label: 길동무 떠돌이, keep: road_wanderer }
@@ -266,6 +271,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: false
     factions: [faction_a, faction_b, faction_d, faction_e, faction_y]
     dispositions:
       - { from: faction_c, to: own, lte: -1 }
@@ -329,6 +335,7 @@
   cooldown_days: 5  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   weight: 1.3
   when:
+    indoor: false
     road_danger_gte: 2
   setup: "{to:을/를} 백 걸음쯤 앞두고, 길이 꺾이는 곳 너머에서 소리가 난다. 발을 끄는 소리, 이빨 부딪치는 소리. 무너진 버스 유리창 너머로 감염체 여럿이 길 한복판에 모여 무언가를 뜯고 있다. 아직 이쪽을 보지 못했다."
   # 되풀이될 때 차례로 쓰는 다른 상황 문장 (12-139)
@@ -473,6 +480,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: false
     road_touches: [riverside, water_plant, subway_hub, mall_ruins]
   setup: "{to:으로/로} 가는 지름길인 지하차도가 물에 잠겼다. 검은 물이 허리께까지 고였고, 물 위에 기름띠가 무지개처럼 떠 있다. 저 끝 출구의 빛이 물에 비친다. 돌아가면 길이 훨씬 멀다."
   ai_direction: 물은 고인 지 오래돼 썩었다. 물 밑에는 무엇이 가라앉아 있는지 보이지 않는다 (부서진 차, 철근, 드물게 가라앉은 감염체). 위험은 판정 전에 선언한다. 젖으면 춥고, 상처가 있으면 덧날 수 있다. 질병은 코드가 굴린다.
@@ -513,6 +521,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    indoor: false
     road_touches: [riverside, power_plant, c_warehouse, a_east_post, rest_stop]
   setup: "{to:으로/로} 건너가는 고가 다리 가운데가 내려앉았다. 끊어진 자리 사이를 누가 철근과 판자로 이어 놓았다. 판자 밑으로 강물인지 도로인지 까마득하다. 바람이 불 때마다 판자가 삐걱거린다."
   ai_direction: 판자 다리는 누군가 쓰려고 이어 놓은 것이고, 몇 번은 버틴다. 위험은 판정 전에 선언한다 (떨어질 뻔하다, 짐을 놓칠 수 있다). 이야기는 사람을 죽이지 않는다. 떨어지는 결과를 지어내지 않고, 실패는 몸과 마음의 효과로만. 목공 도구가 있으면 판자를 고쳐 놓을 수 있다 (다음 사람이 쓴다).
@@ -562,6 +571,7 @@
   repeatable: true
   cooldown_days: 8
   when:
+    indoor: true
     road_touches: [subway_hub]
   setup: "선로를 따라 걷는 터널 안. 환기구로 드는 희미한 빛에 젖은 벽이 번들거린다. 벽마다 분필로 그린 표식이 있다. 동그라미, 가위표, 숫자, 이름. {to} 쪽 출구가 가까워질 즈음, 뒤쪽 어둠에서 자갈 구르는 소리가 난다. 한 번. 그리고 조용하다."
   ai_direction: 첫 겨울 환승역에서 물결이 일었다. 벽의 표식은 그때 피난민들이 서로에게 남긴 것이다 (어디는 막혔다, 누구는 살아서 어디로 갔다). 뒤의 소리는 쥐일 수도, 터널에 사는 사람일 수도, 감염체일 수도 있다. GM이 정하되 이 장면에서는 모습을 보이지 않는다. 위험은 판정 전에 선언한다.
@@ -602,6 +612,7 @@
   cooldown_days: 6
   when:
     road_touches: [rest_stop]
+    indoor: false
     segments: [dawn, morning, day, evening]
   setup: "휴게소로 이어지는 고속도로. 붕괴 첫 주에 도시를 빠져나가려던 차들이 그대로 멈춰 있다. 몇 킬로미터째 차 지붕과 지붕 사이를 걷는다. 앞 유리마다 먼지가 앉았고, 어떤 차는 문이 열려 있고, 어떤 차는 아직 안에서 잠겨 있다."
   ai_direction: 차들은 거의 다 털렸다. 연료 탱크 몇 개에는 아직 기름이 남았다. 잠긴 차 안의 일은 담담하게만 쓴다. 도로 끝 휴게소 쪽에서 나루상단의 짐 행렬이나 바깥에서 들어오는 떠돌이를 볼 수 있다 (바깥 소식은 소문으로).
@@ -639,6 +650,7 @@
   cooldown_days: 5
   when:
     road_touches: [water_plant]
+    indoor: false
     segments: [dawn, morning, day]
   cast:
     porter: { extra: e_porter, label: 물지게 진 짐꾼 }
@@ -678,6 +690,7 @@
   title: 담 밑의 쪽지
   tags: [road]
   when:
+    indoor: false
     road_touches: [prison]
     flags_none: [rd_prison_note]
     day_gte: 2
@@ -707,6 +720,7 @@
   title: 담 너머의 대답
   tags: [road]
   when:
+    indoor: false
     road_touches: [prison]
     flags_all: [rd_prison_note]
     flags_none: [rd_prison_answered]
@@ -754,7 +768,8 @@
   repeatable: true
   cooldown_days: 5  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   when:
-    segments: [night, dawn]
+    indoor: false
+    segments: [night]
   setup: "달도 없는 밤길. {to}의 윤곽이 하늘보다 조금 더 검게 보인다. 몇 걸음마다 멈추면, 뒤에서도 발소리가 멈춘다. 다시 걸으면 다시 따라온다. 거리는 좁혀지지도 벌어지지도 않는다."
   # 되풀이될 때 차례로 쓰는 다른 상황 문장 (12-139)
   variants:
@@ -886,6 +901,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: false
     has_items_any: [planks, scrap_metal, fuel_bottle, carpentry_kit, toolkit]
   setup: "짐이 무겁다. {from:을/를} 나설 때는 몰랐는데, {to:을/를} 앞에 두고 어깨가 먼저 비명을 지른다. 배낭 멜빵 한쪽이 실밥 터지는 소리를 낸다. 숨을 고를 때마다 짐이 조금씩 더 무거워진다."
   ai_direction: 무거운 짐을 진 채 오래 걸었다. 멜빵이 끊어지면 짐을 안고 걸어야 한다. 짐을 덜어 길가에 숨겨 두면 나중에 찾으러 올 수 있다 (GM은 숨긴 자리를 기억한다. 다른 사람이 찾아갈 수도 있다). 판정은 몸으로 버티는 것이다.
@@ -968,6 +984,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: false
     road_danger_gte: 1
   cast:
     mate: { companion: { kinds: [buddy, squad, purpose, kin] } }
@@ -1012,6 +1029,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: false
     flags_all: [bg_hunted]
     day_gte: 2
   setup: "{to:으로/로} 들어가는 길목의 기둥에 종이 한 장이 못으로 박혀 있다. 비에 반쯤 번졌다. 사람을 찾는다는 글이다. 그 밑에 적힌 생김새가, 읽을수록 당신과 닮았다. 종이 밑의 못은 아직 녹슬지 않았다."

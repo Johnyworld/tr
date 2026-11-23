@@ -9,6 +9,8 @@
   # 줄기 첫 이야기 (12-254, PT15 섬: 도시 공통 이야기와 간격에 이틀 막혀 장부로 가는 길이 닫혔다)
   essential: true
   when:
+    indoor: true
+    places: [council_hall]
     zones: [yeoul_isle]
     segments: [evening]
     # 플레이 테스트 12: 보초·잠복 중에 "식당에 고기 국이 나온다". 보초를 서는 동안에는 열지 않는다
@@ -44,6 +46,7 @@
   title: 보이지 않은 배
   tags: [y_islander]
   when:
+    indoor: "any"
     zones: [yeoul_isle]
     segments: [night, dawn]
     day_gte: 2
@@ -72,6 +75,7 @@
   # 줄기 가운데 고리: 고기 국 → 장부 → 의회 저장고 (12-254, content:check 줄기 앞단)
   essential: true
   when:
+    indoor: "any"
     zones: [yeoul_isle]
     segments: [day, evening]
     day_gte: 3
@@ -95,8 +99,9 @@
           - set_flag: y_ledger_done
           - set_flag: y_ledger_seen
           - belief: { fact: "창고 장부의 '내보낸 사람' 칸 옆에 배 기록이 비어 있었다. 다 읽기 전에 발소리가 났다", source: seen }
+        # 읽어 내지 못한 것은 주인공 몫이다: 믿음은 그대로 (설계 목록 6-2, PT18·19 섬: 다시 열릴 때마다 신뢰가 깎여 줄기 뒤쪽이 멀어졌다)
         miss:
-          - relation: { who: keeper, axis: trust, delta: -1 }
+          - belief: { fact: "윤미옥이 펼쳐 둔 장부의 숫자를 다 맞추지 못했다. 다시 볼 틈이 올지 모른다", source: seen }
     - id: close
       label: 장부를 덮어 둔다
       effects:
@@ -106,6 +111,8 @@
   title: 바위틈
   tags: [y_islander]
   when:
+    indoor: false
+    places: [farm_shore]
     zones: [yeoul_isle]
     segments: [night]
     day_gte: 3
@@ -133,6 +140,7 @@
   essential: true
   tags: [y_islander]
   when:
+    indoor: false
     zones: [yeoul_isle]
     segments: [night]
     flags_any: [y_ledger_seen, y_rocks_seen]
@@ -173,6 +181,7 @@
   essential: true
   tags: [y_islander]
   when:
+    indoor: "any"
     zones: [yeoul_isle]
     segments: [evening, night]
     day_gte: 6
@@ -216,6 +225,8 @@
   title: 밤배
   tags: [y_islander]
   when:
+    indoor: false
+    places: [farm_shore]
     zones: [yeoul_isle]
     segments: [night]
     flags_all: [y_feast_seen]
@@ -257,6 +268,8 @@
   tags: [y_islander]
   urgent: true
   when:
+    indoor: true
+    places: [quarters]
     zones: [yeoul_isle]
     segments: [night]
     flags_all: [y_suspected]
@@ -317,6 +330,7 @@
   title: 잔치의 손님
   tags: [y_islander]
   when:
+    indoor: "any"
     zones: [yeoul_isle]
     segments: [day, evening]
     day_gte: 7

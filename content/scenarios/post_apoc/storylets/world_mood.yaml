@@ -11,6 +11,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: true
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_food_days_lte: 7
@@ -51,6 +52,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: "any"
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_food_days_lte: 10
@@ -87,6 +89,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: "any"
     own_territory: true
     own_morale_lte: -2
     segments: [evening, night]
@@ -132,6 +135,7 @@
   repeatable: true
   cooldown_days: 5
   when:
+    indoor: false
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     own_morale_lte: -1
@@ -165,6 +169,7 @@
   cooldown_days: 4
   # 감염체가 평소보다 몰려들었을 때만 (12-123)
   when:
+    indoor: true
     # 글에 맞춘 자리·때 (12-261, content:check story_lint)
     activities: [sleep]
     own_territory: true
@@ -200,6 +205,7 @@
   cooldown_days: 6
   # 감염체가 평소보다 몰려들었을 때만 (12-123)
   when:
+    indoor: false
     own_territory: true
     zone_overrun: true
     segments: [morning]
@@ -238,9 +244,10 @@
   repeatable: true
   cooldown_days: 2
   when:
+    indoor: "any"
     own_territory: true
     zone_noise_gte: 2
-    segments: [evening, night]
+    segments: [evening]
   setup: 낮에 울린 총소리가 아직 귀에 남아 있다. 해가 지자 담 너머 공터 끝에 그림자가 하나둘 선다. 다가오지는 않는다. 망루의 보초가 손전등을 껐다 켠다.
   ai_direction: 총소리가 무언가를 불렀다. 그림자가 몇인지, 감염체인지는 아직 확실하지 않다. 오늘 밤 더 소리를 내면 모여들 수 있다. 정체를 확정하지 않고 대응을 기다린다.
   choices:

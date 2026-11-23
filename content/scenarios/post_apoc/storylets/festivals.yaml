@@ -9,6 +9,7 @@
   repeatable: true
   cooldown_days: 60
   when:
+    indoor: false
     own_territory: true
     seasons: [autumn]
     segments: [evening]
@@ -39,6 +40,7 @@
   repeatable: true
   cooldown_days: 60
   when:
+    indoor: false
     own_territory: true
     seasons: [winter]
     weather: [snow]
@@ -80,6 +82,7 @@
   repeatable: true
   cooldown_days: 60
   when:
+    indoor: false
     own_territory: true
     seasons: [spring]
     segments: [morning, day]
@@ -103,9 +106,10 @@
   repeatable: true
   cooldown_days: 60
   when:
+    indoor: false
     own_territory: true
     seasons: [summer]
-    segments: [evening, night]
+    segments: [evening]
   setup: 여름 끝 무렵, 붕괴가 시작된 철이다. 해가 지자 누가 먼저랄 것 없이 마당에 초를 내놓는다. 한 사람씩 일어나 붕괴 뒤로 잃은 사람의 이름을 부른다. 대답은 없고, 다음 사람이 일어난다.
   ai_direction: 무리마다 이 밤을 부르는 이름이 다르지만 하는 일은 같다. 이름을 부르는 사람의 목소리, 끝내 일어나지 못하는 사람을 그린다. 주인공이 잃은 사람(지난 일, 가족, 유해와 무덤)이 있으면 그 이름이 떠오른다.
   choices:
@@ -127,6 +131,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: false
     own_territory: true
     segments: [evening, night]
     has_items: [cigarettes]

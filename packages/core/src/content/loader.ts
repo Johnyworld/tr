@@ -560,6 +560,7 @@ function checkReferences(content: Content): string[] {
   problems.push(...checkStorylets(content));
   problems.push(...checkNpcBodies(content));
   problems.push(...checkNpcRoutines(content));
+  problems.push(...checkStoryWhereWhen(content));
   problems.push(...checkResolveSpine(content));
   // 무리 안의 무거운 짓 태그는 행적 태그여야 한다 (12-257: 틀리면 규율 회의가 말없이 열리지 않는다)
   for (const t of content.scenario.offense?.tags ?? []) if (!(DEED_TAGS as readonly string[]).includes(t)) problems.push(`scenario.offense.tags: 행적 태그가 아니다: ${t} (있는 것: ${DEED_TAGS.join(", ")})`);
@@ -681,6 +682,30 @@ export function checkResolveSpine(content: Content): string[] {
   return problems;
 }
 
+/**
+ * 이야기의 자리·때 검사 (설계 목록 6-3·6-5): 모든 이야기는 실내외(when.indoor: true·false·"any")나 장소(when.places)를 적는다.
+ * 글(제목·상황·변형)이 시간대 낱말(story_lint.segments)을 말하면 when.segments가 그 시간대 안이어야 한다
+ */
+export function checkStoryWhereWhen(content: Content): string[] {
+  const problems: string[] = [];
+  const words = content.scenario.story_lint?.segments ?? {};
+  for (const s of Object.values(content.storylets)) {
+    const where = `storylets.${s.id}`;
+    if (s.when.indoor === undefined && !s.when.places) problems.push(`${where}: when.indoor(true·false·"any")나 when.places를 적는다`);
+    // 따옴표 안의 말은 다른 때를 가리킬 수 있어 보지 않는다 ("물때가 내일 새벽이야")
+    const text = [s.title, s.setup, ...(s.variants ?? [])].join("\n").replace(/"[^"]*"|“[^”]*”|'[^']*'/g, "");
+    const said = (Object.entries(words) as [string, string[]][]).filter(([, ws]) => ws.some((w) => text.includes(w)));
+    if (!said.length) continue;
+    const allowed = new Set(said.map(([seg]) => seg));
+    const open = s.when.segments ?? [];
+    if (!open.length || open.some((seg) => !allowed.has(seg))) {
+      const hit = said.map(([seg, ws]) => `${seg}("${ws.find((w) => text.includes(w))}")`).join(", ");
+      problems.push(`${where}: 글이 ${hit}를 말하는데 다른 시간대에도 열린다 (when.segments: [${[...allowed].join(", ")}] 또는 글을 고친다)`);
+    }
+  }
+  return problems;
+}
+
 export function checkStorylets(content: Content): string[] {
   const problems: string[] = [];
   const clocks = new Set(Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id)));
@@ -755,6 +780,7 @@ export function checkStorylets(content: Content): string[] {
       if (!content.scenario.condition_tracks.find((x) => x.id === t)?.levels.some((x) => x.id === l)) problems.push(`${where}.when.conditions_at_least: 알 수 없는 트랙·단계 ${t}.${l}`);
     }
     if (s.when.harm_at_least && !harmLevels.has(s.when.harm_at_least)) problems.push(`${where}.when: 알 수 없는 부상 단계 ${s.when.harm_at_least}`);
+    if (s.when.harm_at_most && !harmLevels.has(s.when.harm_at_most)) problems.push(`${where}.when: 알 수 없는 부상 단계 ${s.when.harm_at_most}`);
     const ids = s.choices.map((c) => c.id);
     if (new Set(ids).size !== ids.length) problems.push(`${where}: 선택지 id가 겹친다`);
     // 문장의 자리는 배역 이름이나 zone·scarce만 쓸 수 있다. victim은 복수 배역(vendetta)이 있을 때만 (12-135)

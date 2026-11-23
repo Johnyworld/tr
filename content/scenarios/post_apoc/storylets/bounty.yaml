@@ -12,6 +12,7 @@
     bounty: true
     own_territory: false
     segments: [morning, day]
+    indoor: false
   setup: 무너진 버스 정류장 기둥에 종이 한 장이 못으로 박혀 있다. 숯으로 그린 얼굴, 그 아래 "{bounty_by}. 산 채로면 두 배." 얼굴은 서툴지만 흉터 자리가 맞다.
   ai_direction: 벽보는 {bounty_by:이/가} 붙였다. 값이 얼마인지는 적혀 있지 않다(지어내지 않는다). 지나가던 사람이 벽보와 주인공 얼굴을 번갈아 볼 수 있다.
   choices:
@@ -34,6 +35,7 @@
     bounty: true
     own_territory: false
     segments: [evening, night]
+    indoor: false
   cast:
     hunter: { extra: bounty_hunter, label: 현상금 사냥꾼 }
   setup: '{hunter:이/가} 길 한가운데 서서 접은 벽보를 펴 보인다. "{bounty_by}에서 너 데려오면 값을 쳐 준대. 산 채로면 두 배라. 나는 두 배가 좋은데."'
@@ -83,6 +85,8 @@
   when:
     bounty: true
     zones: [e_market]
+    places: [stalls]
+    indoor: false
     segments: [day, evening]
   setup: 장터 천막 뒤, 주판을 튕기던 상단 중개인이 눈짓을 한다. "{bounty_by} 장부에서 네 이름 지워 줄 수 있어. 공짜는 아니고. 그쪽도 값을 받으면 조용해지거든."
   ai_direction: 나루상단은 무리들 사이의 빚과 값을 맞춰 주는 장사도 한다. 값을 치르면 {bounty_by}에 그만한 것이 넘어가고 현상금이 거둬진다 (코드가 정한다). 중개인은 어느 편도 아니다.

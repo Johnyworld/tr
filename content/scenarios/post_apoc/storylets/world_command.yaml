@@ -11,6 +11,7 @@
   when:
     own_territory: true
     segments: [morning, day]
+    indoor: true
     day_gte: 3
     own_food_days_lte: 25
     own_policy: { ration: [normal, extra] }
@@ -60,6 +61,7 @@
   when:
     own_territory: true
     segments: [morning, day]
+    indoor: true
     day_gte: 5
     own_policy: { stance: [normal, defend] }
   cast:
@@ -102,6 +104,7 @@
   tags: [command]
   when:
     segments: [morning, day, evening]
+    indoor: "any"
     day_gte: 2
   cast:
     eager: { faction: own, ranks: [grunt], known: true }
@@ -137,6 +140,7 @@
   tags: [command]
   when:
     segments: [evening, night]
+    indoor: "any"
     day_gte: 3
   cast:
     teller: { faction: own, ranks: [grunt], known: true }
@@ -176,6 +180,7 @@
   when:
     own_territory: true
     segments: [day, evening]
+    indoor: "any"
     own_policy: { ration: [cut] }
   cast:
     grumbler: { faction: own, ranks: [grunt, staff] }
@@ -212,6 +217,7 @@
   when:
     own_territory: true
     segments: [evening]
+    indoor: true
     own_policy: { ration: [extra] }
   cast:
     cook: { faction: own, ranks: [grunt, staff] }
@@ -238,6 +244,7 @@
   when:
     own_territory: true
     segments: [dawn, morning]
+    indoor: false
     own_policy: { stance: [attack] }
   cast:
     leaving: { faction: own, ranks: [grunt, squad_leader], known: true }

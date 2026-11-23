@@ -18,6 +18,7 @@
   title: 규율반의 장부
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_c]
     # 플레이 테스트 12: 붉은연합과 중립인 하얀매 진료소 경비에게 "너희 쪽이 다음에 어디로 오는지". 붉은연합이 주인공의 무리를 적으로 볼 때만 연다
     dispositions:
@@ -80,6 +81,9 @@
   repeatable: true
   cooldown_days: 2
   when:
+    # 몸을 쓰는 노역은 크게 다친 포로에게 열지 않는다 (설계 목록 6-6, PT17·18·20 졸병: 치명상인 포로에게 "할당량")
+    harm_at_most: light
+    indoor: "any"
     captors: [faction_c]
     segments: [morning, day]
   cast:
@@ -135,6 +139,7 @@
   title: 광장의 본보기
   tags: [captivity]
   when:
+    indoor: "any"
     captors: [faction_c]
     segments: [morning]
   cast:
@@ -178,6 +183,7 @@
   title: 붉은 완장
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_c]
     segments: [day, evening]
   # 플레이 테스트 12: 신뢰 -2인 벌조장이 진심으로 영입을 제안했고, 노역을 한 적 없는 사람에게 "계속 고철이나 나르든가"
@@ -216,6 +222,7 @@
   title: 죽 한 그릇
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_a]
   cast:
     leader: { faction: captor, ranks: [squad_leader, officer] }
@@ -274,6 +281,7 @@
   title: 식당 줄
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_a]
     flags_any: [cp_a_talked, cp_a_respect]
   cast:
@@ -322,6 +330,7 @@
   title: 문밖의 회의
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_b]
   cast:
     guard: { extra: b_guard, label: 경비 당번 }
@@ -372,6 +381,7 @@
   title: 격리실
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_d]
   cast:
     doc: { faction: captor }
@@ -409,6 +419,8 @@
   title: 퇴실 장부
   tags: [captivity]
   when:
+    segments: [morning]
+    indoor: true
     captors: [faction_d]
     flags_all: [cp_d_complied]
   cast:
@@ -442,6 +454,7 @@
   title: 장부의 한 줄
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_e]
   cast:
     boss: { faction: captor, ranks: [squad_leader, officer, leader] }
@@ -481,6 +494,7 @@
   title: 짐수레 밑
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_e]
     segments: [dawn, morning]
   cast:
@@ -525,6 +539,7 @@
   title: 같은 방 사람
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [evening, night]
   cast:
@@ -564,6 +579,7 @@
   title: 밤 당번
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [night]
   cast:
@@ -596,6 +612,7 @@
   title: 걸지 않은 자물쇠
   tags: [captivity]
   when:
+    indoor: true
     captors: [faction_a, faction_b, faction_c, faction_d]
     segments: [night, dawn]
     flags_all: [cp_guard_close]
@@ -656,6 +673,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: true
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [morning, day]
   cast:
@@ -690,6 +708,7 @@
   tags: [captivity]
   urgent: true
   when:
+    indoor: true
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [night]
     flags_all: [cp_word_sent]
@@ -731,6 +750,7 @@
   title: 탁자 건너의 셈
   tags: [captivity]
   when:
+    indoor: true
     dispositions: [{ from: captor, to: own, gte: -2 }]
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
@@ -789,6 +809,7 @@
   repeatable: true
   cooldown_days: 2
   when:
+    indoor: true
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [night]
   setup: 바닥에서 냉기가 올라온다. 멀리서 개가 짖고, 어딘가에서 누가 밤새 기침을 한다. 벽에 그어 둔 줄이 몇 개였는지 헷갈린다.
@@ -828,6 +849,7 @@
   cooldown_days: 2
   weight: 1.5
   when:
+    indoor: true
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     captive_days_gte: 1
     segments: [night, dawn]
@@ -860,6 +882,7 @@
   title: 창살 너머의 목소리
   tags: [world]
   when:
+    indoor: true
     zone_owner: [own]
     zones: [a_base, b_base, c_base, d_clinic, e_market]
     segments: [night]
@@ -894,6 +917,7 @@
   title: 하얀 천을 묶은 막대
   tags: [world]
   when:
+    indoor: false
     zone_owner: [own]
     zones: [a_base, b_base, c_base, d_clinic, e_market]
     segments: [day, evening]
@@ -930,6 +954,7 @@
   title: 창살 사이의 막대
   tags: [world]
   when:
+    indoor: true
     zone_owner: [own]
     zones: [a_base, b_base, c_base, d_clinic, e_market]
     segments: [evening, night]
@@ -981,9 +1006,10 @@
   tags: [world]
   urgent: true
   when:
+    indoor: true
     zone_owner: [own]
     zones: [a_base, b_base, c_base, d_clinic, e_market]
-    segments: [night, dawn]
+    segments: [dawn]
   cast:
     # 창살을 뽑느라 손바닥이 찢겼다 (12-259, PT15 튜토리얼: 글은 "피투성이"인데 부상 이상 없음)
     prisoner: { captive: true, starts: { harm: light } }
@@ -1022,6 +1048,7 @@
   title: 무너진 더미
   tags: [world]
   when:
+    indoor: false
     zone_owner: [own]
     zones: [a_base, b_base, c_base, d_clinic, e_market]
     segments: [morning, day]
@@ -1063,6 +1090,7 @@
   title: 창살 안의 암구호
   tags: [world]
   when:
+    indoor: true
     zone_owner: [other]
     zones: [a_base, b_base, c_base, d_clinic, e_market]
   cast:
@@ -1106,6 +1134,7 @@
   tags: [world]
   urgent: true
   when:
+    indoor: true
     zone_owner: [other]
     zones: [a_base, b_base, c_base, d_clinic, e_market]
     segments: [night, dawn]
@@ -1176,6 +1205,7 @@
   title: 돌아온 사람의 그릇
   tags: [world]
   when:
+    indoor: "any"
     zone_owner: [own]
     flags_all: [cp_ours_freed]
     segments: [morning, evening]

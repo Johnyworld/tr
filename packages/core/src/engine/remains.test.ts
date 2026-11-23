@@ -1,3 +1,4 @@
+import { arrivalPlace } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -79,6 +80,8 @@ describe("유해", () => {
     s().characters.a_taeho!.inventory = { cigarettes: 2 };
     killTaeho();
     s().playerZone = s().remains[0]!.zone;
+    // 바깥 이야기라 그 구역의 길에서 본다 (12-279 실내외)
+    w.ctx().store.append({ type: "place_moved", from: s().playerPlace, to: arrivalPlace(s(), content, s().playerZone!) });
     const me = s().characters[s().playerId]!;
     s().factions[me.factionId]!.morale = 0;
     const out = executeTool("take_action", act({ bury: { who: "a_taeho", words: "끝까지 초소를 지켰다" } }), w.ctx());
@@ -104,6 +107,8 @@ describe("유해", () => {
     const { w, s, killTaeho } = open();
     killTaeho();
     s().playerZone = s().remains[0]!.zone;
+    // 바깥 이야기라 그 구역의 길에서 본다 (12-279 실내외)
+    w.ctx().store.append({ type: "place_moved", from: s().playerPlace, to: arrivalPlace(s(), content, s().playerZone!) });
     const pack = content.storylets.lg_familiar_pack!;
     const flowers = content.storylets.lg_flowers!;
     const at = s().time - (s().time % 1440) + 10 * 60; // 오전

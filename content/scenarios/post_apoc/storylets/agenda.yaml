@@ -5,6 +5,8 @@
 - id: ag_noticed
   title: 눈에 걸리는 사람
   tags: [world]
+  when:
+    indoor: "any"
   repeatable: true
   cooldown_days: 6
   cast:
@@ -35,6 +37,8 @@
 - id: ag_crossroads
   title: 털어놓은 사람
   tags: [world]
+  when:
+    indoor: "any"
   repeatable: true
   cooldown_days: 8
   cast:
@@ -76,6 +80,7 @@
   cooldown_days: 10
   when:
     segments: [evening, night]
+    indoor: "any"
   cast:
     them: { agenda_half: true, here: true, trust_gte: 4 }
   setup: "{them:이/가} 짐을 꾸리고 있다. 아니면 무언가를 결심한 얼굴이다. 오늘 밤이 지나면 늦을 것 같다."

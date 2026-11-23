@@ -10,6 +10,7 @@
   repeatable: true
   cooldown_days: 10
   when:
+    indoor: "any"
     segments: [morning, day, evening]
   cast:
     avenger: { vendetta: true, faction: other, enter: false }
@@ -38,6 +39,7 @@
   cooldown_days: 7
   weight: 2
   when:
+    indoor: false
     segments: [evening, night]
     own_territory: false
   cast:

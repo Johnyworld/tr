@@ -13,6 +13,7 @@
   when:
     zones: [a_base]
     segments: [morning, day]
+    indoor: false
     # 분대를 넘겨받은 첫머리의 장면 (플레이 테스트 11: 7일차에 열려 "첫 보초"가 어긋났다)
     day_lte: 3
     flags_none: [a_sl_mustered]
@@ -105,6 +106,7 @@
     zones: [a_base]
     own_territory: true
     segments: [evening, night]
+    indoor: false
     flags_all: [a_sl_saw_hand]
     flags_none: [a_sl_hand_decided]
   cast:
@@ -187,6 +189,8 @@
     zones: [a_base]
     own_territory: true
     segments: [night, dawn]
+    indoor: true
+    places: [barracks]
     day_gte: 4
     flags_all: [a_sl_letter_seen]
     flags_none: [a_sl_byungchul_settled]
@@ -252,6 +256,8 @@
     zones: [a_base]
     own_territory: true
     segments: [morning, day, evening]
+    indoor: true
+    places: [storehouse]
     day_gte: 3
     flags_none: [a_sl_haneul_noticed]
   cast:
@@ -307,6 +313,8 @@
     zones: [a_base]
     own_territory: true
     segments: [evening]
+    indoor: true
+    places: [mess]
     day_gte: 5
     flags_all: [a_sl_haneul_noticed]
   cast:
@@ -348,6 +356,8 @@
   when:
     zones: [a_base]
     segments: [evening]
+    indoor: true
+    places: [mess]
     day_gte: 2
   cast:
     comrade: { ids: [a_jiho, a_seoyeon, a_mansu], known: true }
@@ -388,6 +398,7 @@
   when:
     zones: [a_base]
     segments: [morning, evening]
+    indoor: "any"
     own_food_days_lte: 10
   cast:
     counter: { ids: [a_yejin] }
@@ -419,6 +430,7 @@
   when:
     own_territory: true
     segments: [morning, day]
+    indoor: "any"
     day_gte: 3
     mission_active: false
   cast:
@@ -458,6 +470,7 @@
   when:
     own_territory: true
     segments: [night]
+    indoor: true
     own_morale_lte: 0
   cast:
     grunt: { faction: own, ranks: [grunt], known: true }
@@ -496,7 +509,8 @@
   when:
     own_territory: false
     mission_active: true
-    segments: [day, evening]
+    segments: [evening]
+    indoor: "any"
   cast:
     stuck: { companion: { kinds: [squad, buddy] }, starts: { harm: light } }
   setup: "{zone}에서 돌아오는 길, 무너진 바닥 틈에 {stuck}의 다리가 끼었다. 콘크리트 덩이가 정강이를 누르고 있다. 해가 기울고, 어딘가에서 유리 깨지는 소리가 난다."

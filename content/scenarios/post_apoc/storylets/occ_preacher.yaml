@@ -18,6 +18,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    indoor: false
     own_territory: true
     segments: [morning, day]
     war_news_within_hours: 48
@@ -61,6 +62,7 @@
   repeatable: true
   cooldown_days: 9
   when:
+    indoor: "any"
     own_territory: true
     segments: [evening, night]
     day_gte: 3
@@ -116,6 +118,7 @@
   title: 무엇을 들었나
   tags: [occ_preacher]
   when:
+    indoor: true
     own_territory: true
     segments: [morning, day]
     flags_all: [occ_pr_confession_heard]
@@ -166,6 +169,7 @@
   tags: [occ_preacher]
   urgent: true
   when:
+    indoor: "any"
     zone_owner: [own]
     segments: [evening, night, dawn]
     day_gte: 4
@@ -278,6 +282,7 @@
   title: 흰 천의 예언자
   tags: [occ_preacher]
   when:
+    indoor: false
     zone_owner: [none, own]
     segments: [day, evening]
     day_gte: 5
@@ -324,6 +329,7 @@
   title: 강 건너의 잔치
   tags: [occ_preacher]
   when:
+    indoor: false
     segments: [day, evening]
     day_gte: 8
     flags_any: [occ_pr_prophet_talked, occ_pr_prophet_shamed]
@@ -372,6 +378,7 @@
   title: 위원회 위에는
   tags: [occ_preacher]
   when:
+    indoor: false
     factions: [faction_c]
     own_territory: true
     segments: [evening, night]
@@ -429,6 +436,7 @@
   repeatable: true
   cooldown_days: 7
   when:
+    indoor: true
     own_territory: true
     segments: [evening]
     occupation_step_gte: 1
@@ -487,6 +495,7 @@
   repeatable: true
   cooldown_days: 12
   when:
+    indoor: false
     own_territory: true
     segments: [dawn, morning]
     occupation_step_gte: 2
@@ -535,6 +544,7 @@
   repeatable: true
   cooldown_days: 6
   when:
+    indoor: false
     factions: [none]
     zone_owner: [none]
     segments: [evening, night]
@@ -633,6 +643,7 @@
   title: 우리한테 와서 기도해 주시오
   tags: [occ_preacher]
   when:
+    indoor: "any"
     factions: [none]
     segments: [day, evening]
     day_gte: 6

@@ -32,6 +32,17 @@ type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions" | "factions" | "
  * - 한 파일에 객체 하나 또는 목록을 둘 수 있다. 종류별 폴더가 없으면 빈 목록으로 본다
  * - 문제는 한 번에 모아서 보고한다 (첫 오류에서 멈추지 않음)
  */
+/** 이웃을 양쪽으로 맞춘다 (장소 개편): A가 B를 이웃으로 적으면 B도 A의 이웃 */
+function linkPlaces(content: Content): void {
+  for (const l of Object.values(content.locations)) {
+    const byId = new Map(l.places.map((p) => [p.id, p]));
+    for (const p of l.places) for (const n of p.near) {
+      const other = byId.get(n);
+      if (other && n !== p.id && !other.near.includes(p.id)) other.near = [...other.near, p.id];
+    }
+  }
+}
+
 export function loadContent(contentDir: string): Content {
   let scenario;
   try {
@@ -96,6 +107,7 @@ export function loadContent(contentDir: string): Content {
     if (err instanceof LoreFormatError) problems.push(err.message);
     else throw err;
   }
+  linkPlaces(content);
   if (problems.length > 0) throw new ContentError(problems);
   return content;
 }
@@ -805,6 +817,12 @@ export function checkStorylets(content: Content): string[] {
   for (const l of Object.values(content.locations)) {
     const ids = l.places.map((p) => p.id);
     for (const id of new Set(ids)) if (ids.filter((x) => x === id).length > 1) problems.push(`locations.${l.id}.places: 장소 id ${id}가 겹친다`);
+    // 이웃과 길 (장소 개편): 없는 장소·구역, 길이 아닌데 to
+    for (const p of l.places) {
+      for (const n of p.near ?? []) if (!ids.includes(n) || n === p.id) problems.push(`locations.${l.id}.places.${p.id}.near: ${n === p.id ? "자기 자신" : `이 구역에 없는 장소 ${n}`}`);
+      for (const z of p.to ?? []) if (!content.locations[z]) problems.push(`locations.${l.id}.places.${p.id}.to: 알 수 없는 구역 ${z}`);
+      if (p.to?.length && !p.road) problems.push(`locations.${l.id}.places.${p.id}: 길이 아닌데 to가 있다 (road: true)`);
+    }
   }
   // 부탁 물건은 세계 어딘가에서 구할 수 있어야 한다: 장사꾼이 들여오거나 뒤져서 나온다 (12-239)
   for (const n of Object.values(content.npcs)) {

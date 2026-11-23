@@ -431,7 +431,7 @@ export const TEST_CONTENT: Content = {
     },
   },
   locations: {
-    a_home: { id: "a_home", name: "우리 거점", description: "거점", kind: "base", owner: "faction_a", danger: 1, places: [{ id: "hall", name: "회관", indoor: true, aliases: ["회관"], jail: false }, { id: "yard", name: "마당", indoor: false, aliases: [], jail: false }], adjacent: ["a_post", "wild"], yields: { food: 10 } },
+    a_home: { id: "a_home", name: "우리 거점", description: "거점", kind: "base", owner: "faction_a", danger: 1, places: [{ id: "hall", name: "회관", indoor: true, aliases: ["회관"], jail: false, near: [], road: false, to: [] }, { id: "yard", name: "마당", indoor: false, aliases: [], jail: false, near: [], road: false, to: [] }], adjacent: ["a_post", "wild"], yields: { food: 10 } },
     a_post: { id: "a_post", name: "초소", description: "초소", kind: "zone", owner: "faction_a", danger: 1, places: [], adjacent: ["c_home"], yields: {} },
     c_home: { id: "c_home", name: "C 거점", description: "C", kind: "base", owner: "faction_c", danger: 1, places: [], adjacent: ["wild"], yields: { food: 50 } },
     wild: { id: "wild", name: "빈 땅", description: "빈 땅", kind: "zone", owner: null, danger: 1, places: [], adjacent: [], yields: {} },

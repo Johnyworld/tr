@@ -596,6 +596,11 @@ export function createContentSchemas(s: Scenario) {
           jail: z.boolean().default(false),
           /** 걸어 들어갈 수 있는 물가 (바다·갯가·강가, 12-261). 마시는 물(water)과 따로 */
           wade: z.boolean().optional(),
+          /** 이웃 장소 (장소 개편, docs/places-v2-plan.md). 한쪽에만 적어도 로더가 양쪽으로 맞춘다 */
+          near: z.array(contentIdSchema).default([]),
+          /** 구역 안의 길: 구역에 들어오면 길에 도착한다. to = 이 길로 이어지는 구역 */
+          road: z.boolean().default(false),
+          to: z.array(contentIdSchema).default([]),
         }),
       )
       .default([]),

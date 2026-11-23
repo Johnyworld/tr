@@ -77,6 +77,11 @@ function step(ctx: ToolContext): ToolDisplayEvent[] {
   return advanceTime(ctx, "brief", null, null, minutes / 5).extra;
 }
 
+/** 잠입 중이면 경보를 올린다 (설계 목록 C-1 2단계: 놓아준 포로가 알린다). 잠입 중이 아니면 아무것도 없다 */
+export function alarmIfInfiltrating(ctx: ToolContext, by: number): string[] {
+  return ctx.store.getState().infiltration ? raiseAlarm(ctx, by) : [];
+}
+
 /** 경보를 올린다. 3에 닿으면 들킨 일(그 무리와의 사이, 행적)을 남긴다 */
 function raiseAlarm(ctx: ToolContext, by: number): string[] {
   const state = ctx.store.getState();
@@ -151,10 +156,22 @@ export function crowdStep(state: GameState, content: Content, place: Place | nul
   return n === 0 ? -1 : n >= 3 ? 1 : 0;
 }
 
+/** 지금 자리에 있는 사람 (장면에 든 사람과 그곳에 있을 사람, 동행·갇힌 사람 빼고): 몰래 붙잡을 수 있는지 본다 */
+function othersHere(state: GameState, content: Content): string[] {
+  const here = currentPlace(state, content);
+  if (!here) return [];
+  const ids = new Set([...state.scene.present, ...peopleAt(state, content, state.playerZone, here.id)]);
+  return [...ids].filter((id) => id !== state.playerId && !state.companions.includes(id) && !heldOf(state.characters[id]) && !state.characters[id]?.dead);
+}
+
 /** 이 자리에 갇혀 있는 그 무리의 포로 (우리 무리 사람이 먼저). 장소가 없는 구역이면 구역의 포로 */
-function captiveAt(state: GameState, content: Content, zone: string, owner: string): string | null {
+function captiveAt(state: GameState, content: Content, zone: string, owner: string, want: string | null = null): string | null {
   const here = currentPlace(state, content);
   if (!here) return captiveHere(state, zone, owner);
+  if (want) {
+    const w = whereIs(state, content, want);
+    return heldOf(state.characters[want])?.by === owner && !state.characters[want]!.dead && w?.zone === zone && w.place === here.id ? want : null;
+  }
   const me = state.characters[state.playerId]!;
   const list = Object.values(state.characters).filter((c) => !c.dead && heldOf(c)?.by === owner && c.id !== me.id && whereIs(state, content, c.id)?.zone === zone && whereIs(state, content, c.id)?.place === here.id);
   list.sort((a, b) => Number(b.factionId === me.factionId) - Number(a.factionId === me.factionId) || a.id.localeCompare(b.id));
@@ -193,12 +210,13 @@ const infiltrate = defineTool({
   description:
     "잠입 장면 (전투 장면과 같은 틀). 다른 무리의 땅에서 몰래 들어가 목표를 하고 나온다. 결과는 시스템이 정한다. " +
     "start(goal): 시작한다 (지금 장소의 깊이에서: 담 있는 구역은 담을 지나기 전 = 담 밖, 담 문(gate) = 담 안, 그 너머 = 깊은 곳. 담 없는 구역은 길에서 몇 칸). advance(place): 이웃 장소로 숨어든다 (같은 깊이로 옆걸음하거나 한 칸 더 깊이, 은밀 판정. 사람이 많은 곳일수록 어렵다). 목록을 플레이어에게 보여 주고 고르게 한다. " +
-    "act: 가장 깊은 곳에서 목표를 한다 (갇힌 사람 풀어 주기는 그 사람이 갇힌 자리에서). listen: 멈춰서 낌새를 살핀다 (들켰는지 대략 안다). leave: 빠져나온다 (가장 가까운 길로). 잠입 중에는 take_action.place_to로 옮기지 않는다. " +
+    "act: 가장 깊은 곳에서 목표를 한다 (갇힌 사람 풀어 주기는 그 사람이 갇힌 자리에서, 여럿이면 target). grab(target): 지금 자리에 혼자 있는 사람을 몰래 붙잡는다 (은밀 판정). 붙잡으면 끌고 다니는 포로가 되고 handle_prisoner로 심문·놓아주기·기절·죽이기를 한다. listen: 멈춰서 낌새를 살핀다 (들켰는지 대략 안다). leave: 빠져나온다 (가장 가까운 길로). 잠입 중에는 take_action.place_to로 옮기지 않는다. " +
     "한 번에 한 걸음, 걸음마다 시간이 흐른다. 경보 숫자는 GM도 모른다: 상태의 '잠입 중'에 나온 낌새로만 연출한다. 들키면 빠지기만 된다. " +
     "판정은 이 도구가 굴린다: take_action으로 따로 판정하지 않는다 (12-240: 따로 굴린 은밀 판정이 헛것이 됐다).",
   schema: z.strictObject({
-    action: z.enum(["start", "advance", "act", "listen", "leave"]),
+    action: z.enum(["start", "advance", "act", "listen", "grab", "leave"]),
     goal: z.string().nullable().default(null).describe("start일 때 목표 id (상태의 '잠입할 수 있는 목표'). act에서 목표를 바꿀 때도 (숨어든 곳에서 갇힌 사람을 찾았을 때). 아니면 null"),
+    target: z.string().nullable().default(null).describe("grab일 때 몰래 붙잡을 사람 id (지금 자리에 혼자 있는 사람). act로 갇힌 사람을 풀어 줄 때 여럿이면 누구를. 아니면 null"),
     place: z.string().nullable().default(null).describe("advance일 때 숨어들 곳 (상태의 '잠입 중'에 나온 목록: 아는 곳은 장소 id, 모르는 곳은 '문1'처럼). 하나뿐이면 null"),
   }),
   run(input, ctx): ToolOutcome {
@@ -273,6 +291,33 @@ const infiltrate = defineTool({
       return { ok: true, resultText: [...lines, ...(cue ? [`낌새: ${cue}`] : []), "이 결과대로 서술하라."].join("\n"), display: check.display, extra };
     }
 
+    if (input.action === "grab") {
+      // 몰래 붙잡기 (설계 목록 C-1 2단계): 지금 자리에 혼자 있는 이름 있는 사람만. 붙잡으면 끌고 다니는 포로 (심문·처리는 handle_prisoner)
+      const here = currentPlace(state, content);
+      if (!here) return { ok: false, error: "장소가 없는 구역에서는 몰래 붙잡지 못한다." };
+      const there = othersHere(state, content);
+      if (!input.target || !there.includes(input.target)) return { ok: false, error: `붙잡을 사람(target)은 지금 이 자리에 있는 사람이다: ${there.map((id) => `${playerCalls(state, content, id)}(${id})`).join(", ") || "아무도 없다"} (시간은 흐르지 않았다).` };
+      if (there.length > 1) return { ok: false, error: "여럿이 있는 자리에서는 몰래 붙잡지 못한다. 혼자 남을 때를 기다리거나 다른 곳으로 (시간은 흐르지 않았다)." };
+      const name = playerCalls(state, content, input.target);
+      const m = moveOf(content.scenario, r.move)!;
+      const grabMission = missionForCheck(ctx.store.getState(), r.move);
+      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(name, "을/를")} 몰래 붙잡는다` }, ctx, { stakes: stakesOf({ exposed: true }), forMission: grabMission });
+      if (!check.ok) return check;
+      const extra = step(ctx);
+      const lines: string[] = [];
+      if (check.outcome !== "miss") {
+        store.append({ type: "companion_joined", characterId: input.target, kind: "prisoner" });
+        lines.push(`${josa(name, "을/를")} 소리 없이 붙잡아 입을 막았다. 끌고 다니는 포로다 (handle_prisoner로 심문하고, 놓아주거나 기절시켜 두거나 죽인다).`);
+        if (check.outcome === "partial") lines.push("버둥거리는 소리가 났다.", ...raiseAlarm(ctx, 1));
+      } else {
+        lines.push(`${josa(name, "을/를")} 놓쳤다. 소리를 지른다.`);
+        lines.push(...raiseAlarm(ctx, 2));
+      }
+      lines.push(...missionNote(ctx, grabMission));
+      const cue = alarmCue(store.getState().infiltration?.alarm ?? 0);
+      return { ok: true, resultText: [...lines, ...(cue ? [`낌새: ${cue}`] : []), "이 결과대로 서술하라."].join("\n"), display: check.display, extra };
+    }
+
     if (input.action === "listen") {
       const m = moveOf(content.scenario, r.listen)!;
       const check = rollPlayerCheck({ move: r.listen, stat: m.stats[0]!, difficulty: "normal", intent: "멈춰서 낌새를 살핀다" }, ctx, { stakes: stakesOf({ exposed: true }), forMission: missionForCheck(ctx.store.getState(), r.listen) });
@@ -292,7 +337,7 @@ const infiltrate = defineTool({
       if (!goal) return { ok: false, error: `목표: ${r.goals.map((g) => `${g.id}(${g.label})`).join(", ")}` };
       // 갇힌 사람 풀어 주기는 그 사람이 갇힌 자리에서 (설계 목록 C-1: 수용소를 저절로 골라 주지 않는다). 다른 목표는 가장 깊은 곳에서
       if (goal.release) {
-        if (!captiveAt(state, content, inf.zone, inf.owner)) return { ok: false, error: "여기에는 풀어 줄 사람이 갇혀 있지 않다. 갇힌 곳을 찾아 숨어든다 (시간은 흐르지 않았다)." };
+        if (!captiveAt(state, content, inf.zone, inf.owner, input.target)) return { ok: false, error: `${input.target ? "그 사람은 여기 갇혀 있지 않다" : "여기에는 풀어 줄 사람이 갇혀 있지 않다"}. 갇힌 곳을 찾아 숨어든다 (시간은 흐르지 않았다).` };
       } else if (inf.depth < deepest) return { ok: false, error: `목표는 가장 깊은 곳(${depthLabel(deepest)})에서 한다. 지금은 ${depthLabel(inf.depth)}.` };
       const m = moveOf(content.scenario, goal.move)!;
       const goalMission = missionForCheck(ctx.store.getState(), goal.move);
@@ -302,7 +347,7 @@ const infiltrate = defineTool({
       const lines: string[] = [];
       if (goalMission) lines.push(`(임무 "${ctx.store.getState().missions[goalMission]?.title ?? goalMission}"의 요건과 맞는 판정이라 임무로 셌다)`);
       if (check.outcome !== "miss") {
-        const captive = goal.release ? captiveAt(store.getState(), content, inf.zone, inf.owner) : null;
+        const captive = goal.release ? captiveAt(store.getState(), content, inf.zone, inf.owner, input.target) : null;
         for (const effect of goalEffects(content, goal.id, captive, check.outcome === "partial")) {
           const out = applyEffect(ctx, effect, captive ? { captive } : {}, {}, `잠입: ${goal.label}`);
           if (out.line) lines.push(out.line);
@@ -379,7 +424,8 @@ export function describeInfiltration(content: Content, state: GameState): string
   const options = inf.alarm < ALARM_MAX ? moveOptions(state, content, inf.depth) : [];
   const freeHere = !inf.done && !!captiveAt(state, content, inf.zone, inf.owner);
   const canAct = !inf.done && (inf.depth >= deepest || freeHere);
-  const can = inf.alarm >= ALARM_MAX ? "leave" : [options.length || (!here && inf.depth < deepest) ? "advance" : null, canAct ? "act" : null, "listen", "leave"].filter(Boolean).join(" · ");
+  const alone = othersHere(state, content);
+  const can = inf.alarm >= ALARM_MAX ? "leave" : [options.length || (!here && inf.depth < deepest) ? "advance" : null, canAct ? "act" : null, alone.length === 1 ? `grab(${alone[0]}, 혼자 있다)` : null, "listen", "leave"].filter(Boolean).join(" · ");
   const depthLabel = (d: number) => r.depths[Math.min(d, r.depths.length - 1)]!;
   const release = r.goals.find((g) => g.release);
   return [

@@ -31,7 +31,7 @@ import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, storyletOf } from "../story/storylets.ts";
 import { justHadStory, storyText } from "../rules/storySlot.ts";
-import {hereWithMe, placeById, storyIndoor, storyPlaceOnEntry, whereIs, whereLabel, currentPlace, arrivalPlace, nearestRoad } from "../rules/place.ts";
+import {hereWithMe, placeById, storyIndoor, storyPlaceOnEntry, whereIs, whereLabel, currentPlace, arrivalPlace, nearestRoad, knowsPlace, placeHint, PLACE_HINT_RUMOR_CHANCE } from "../rules/place.ts";
 import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
@@ -806,7 +806,15 @@ export function applyEffect(
     if (!id || !heldOf(c)) return {};
     const fact = sentence(`${josa(playerCalls(state, content, id), "은/는")} ${content.factions[heldOf(c)!.by]?.name ?? heldOf(c)!.by}의 ${content.locations[heldOf(c)!.zone]?.name ?? heldOf(c)!.zone}에 갇혀 있다고 한다`);
     store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.locate.source, accuracy: "approximate", learnedAt: state.time, topic: heldSeenTopic(id, heldOf(c)!.zone) } });
-    return { line: `알게 된 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.locate.source] } };
+    // 갇힌 곳의 어림 단편 (설계 목록 C-1 2단계): 상관·포로에게 들은 것은 늘, 소문은 운 좋으면. 정확한 자리는 직접 보거나 심문해야 안다
+    const held = heldOf(c)!;
+    const at = whereIs(state, content, id);
+    const hintable = at?.zone === held.zone && !!at.place && !knowsPlace(state, content, held.zone, at.place);
+    const lucky = effect.locate.source !== "rumor" || ctx.rng() < PLACE_HINT_RUMOR_CHANCE;
+    const hint = hintable && lucky ? placeHint(state, content, held.zone, at!.place!) : null;
+    const hintFact = hint ? sentence(`${josa(playerCalls(state, content, id), "이/가")} 갇힌 곳은 ${hint}이라고 한다`) : null;
+    if (hintFact) store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${store.getState().nextBeliefNo}`, fact: hintFact, source: effect.locate.source, accuracy: "approximate", learnedAt: state.time } });
+    return { line: `알게 된 것: ${fact}${hintFact ? ` ${hintFact}` : ""}`, display: { type: "belief", fact: hintFact ? `${fact} ${hintFact}` : fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.locate.source] } };
   }
   if ("capture_player" in effect) {
     const by = factionRef(state, effect.capture_player.by);

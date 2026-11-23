@@ -14,6 +14,7 @@ import type { Content } from "../content/schemas.ts";
 import { roleOf, type GameState } from "../game/state.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
+import { josa } from "../text.ts";
 import {ownedBy, baseOfNow, hostileLand, onOwnLand } from "./home.ts";
 import { heldOf, inQuarantine, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
@@ -624,3 +625,21 @@ export function welcomedAsGuest(content: Content, state: GameState): boolean {
   return regard >= shelter.guests;
 }
 
+
+/** 소문(rumor)으로 갇힌 곳의 어림 단편까지 들을 확률 (설계 목록 C-1 2단계: 운 좋으면). 상관·포로에게 들은 것(report)은 늘 */
+export const PLACE_HINT_RUMOR_CHANCE = 1 / 3;
+
+/**
+ * 장소의 어림 단편 (설계 목록 C-1 2단계): 이웃 하나(주인공이 아는 곳 먼저), 실내외, 담 안팎. 이름·id는 주지 않는다.
+ * 그 이웃에 가면 같은 쪽(건물 안·바깥)의 문 가운데 하나다: 어느 문인지는 플레이어가 짐작한다
+ */
+export function placeHint(state: GameState, content: Content, zone: string, placeId: string): string | null {
+  const p = placeById(state, content, placeId, zone);
+  if (!p) return null;
+  const near = p.near.map((id) => placeById(state, content, id, zone)).filter((x): x is Place => !!x);
+  const anchor = near.find((x) => knowsPlace(state, content, zone, x.id)) ?? near[0];
+  const depths = content.scenario.infiltration?.depths ?? [];
+  const walled = placesIn(state, content, zone).some((x) => x.gate);
+  const d = depthAt(state, content, p.id, zone);
+  return [anchor ? `${josa(anchor.name, "과/와")} 이어진 곳` : null, p.indoor ? "건물 안" : "바깥", walled && d !== null ? depths[d] : null].filter(Boolean).join(", ");
+}

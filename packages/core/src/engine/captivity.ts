@@ -24,7 +24,10 @@ import {ownedBy, baseOfNow } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
 import { hearNews } from "../rules/news.ts";
 import { protectedFromWorld } from "../rules/company.ts";
-import { currentPlace, jailFor, jailIn } from "../rules/place.ts";
+import { currentPlace, jailFor, jailIn, knowsPlace, placeById, unknownDoors, whereIs } from "../rules/place.ts";
+import { againstSetting } from "../rules/self.ts";
+import { changeCondition } from "./body.ts";
+import { alarmIfInfiltrating } from "./infiltration.ts";
 
 /**
  * 포로 (기획서 7.6, 12-55).
@@ -289,6 +292,36 @@ function confessions(state: GameState, content: Content, meId: string, t: { id: 
 }
 
 /**
+ * 심문으로 털어놓는 장소 (설계 목록 C-1 2단계): 그 사람 무리가 가둔 사람의 정확한 자리, 남는 몫은 그 무리 땅이면 지금 자리의 문 너머.
+ * 주인공이 그 장소를 알게 된다 (place_learned). 성공이면 갇힌 자리 모두와 문 둘까지, 대가 있는 성공이면 하나
+ */
+function placeConfessions(ctx: ToolContext, t: Character, full: boolean): string[] {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const lines: string[] = [];
+  const learn = (zone: string, place: string, line: string) => {
+    store.append({ type: "place_learned", zone, place });
+    lines.push(line);
+  };
+  for (const c of Object.values(state.characters)) {
+    if (!full && lines.length) break;
+    const held = heldOf(c);
+    if (c.dead || c.id === state.playerId || !held || held.by !== t.factionId) continue;
+    const at = whereIs(state, content, c.id);
+    if (!at?.zone || !at.place || knowsPlace(state, content, at.zone, at.place)) continue;
+    const p = placeById(state, content, at.place, at.zone);
+    if (p) learn(at.zone, p.id, `털어놓은 것: ${josa(playerCalls(state, content, c.id), "은/는")} ${content.locations[at.zone]?.name ?? at.zone}의 ${p.name}(${p.id})에 갇혀 있다.`);
+  }
+  if (state.playerZone && ownedBy(state, state.playerZone, t.factionId)) {
+    const limit = full ? 2 : lines.length ? 0 : 1;
+    const here = currentPlace(state, content);
+    // 문 번호는 알게 되면 바뀌니 이름으로 적는다
+    for (const p of unknownDoors(store.getState(), content).slice(0, limit)) learn(state.playerZone, p.id, `털어놓은 것: ${here ? `${here.name} 옆` : "이 근처"}에 ${p.name}(${p.id})${p.indoor ? "" : " (바깥)"}이 있다.`);
+  }
+  return lines;
+}
+
+/**
  * 쓰러뜨린 사람을 묶어 포로로 끌고 간다 (12-55, 12-184부터 handle_prisoner bind). 장면에 있고 크게 다친(중상 이상) 사람만.
  * 함께 다니며 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다. 무소속이면 끌고만 다닌다
  */
@@ -315,7 +348,7 @@ function bindPrisoner(input: { target: string }, ctx: ToolContext): ToolOutcome 
   };
 }
 
-const ACTIONS = ["bind", "interrogate", "recruit", "release", "ransom", "labor"] as const;
+const ACTIONS = ["bind", "interrogate", "recruit", "release", "ransom", "labor", "knock_out", "kill"] as const;
 
 const handlePrisoner = defineTool({
   name: "handle_prisoner",
@@ -323,12 +356,14 @@ const handlePrisoner = defineTool({
     "포로를 붙잡고 다룬다 (12-55). bind: 쓰러뜨린 사람(장면에 있고 중상 이상)을 묶어 끌고 간다. 우리 무리의 거점에 닿으면 우리 무리의 포로가 되고, 무소속이면 끌고만 다닌다. 죽이는 길이 아니다. " +
     "나머지는 우리 무리가 여기 가둔 포로(GM 상태의 '우리 무리가 여기 가둔 포로')나 끌고 다니는 포로에게: " +
     "interrogate 심문 (approach: 위협이나 교섭 스킬, 그 사람이 아는 것에서 시스템이 고른다), recruit 회유 (우리 무리로), release 풀어 준다, " +
-    "ransom 몸값·맞교환 (그 무리에 우리 사람이 갇혀 있으면 맞바꾼다), labor 노역에 부린다/그만 부린다. 결과는 시스템이 정한다. 처형하는 길은 없다.",
+    "ransom 몸값·맞교환 (그 무리에 우리 사람이 갇혀 있으면 맞바꾼다), labor 노역에 부린다/그만 부린다. " +
+    "끌고 다니는 포로는 그 자리에서 knock_out 기절시켜 두고 간다 (얼굴을 본 사람으로 행적이 남는다), kill 죽인다 (무거운 행적, 플레이어가 분명히 그러겠다고 할 때만. 설정을 거스르면 against_setting). 잠입 중에 놓아주면 그 사람이 알린다. 결과는 시스템이 정한다.",
   schema: z.strictObject({
     target: z.string(),
     action: z.enum(ACTIONS),
     approach: z.string().nullable().default(null).describe("심문·회유에 쓰는 스킬 id (아니면 null)"),
     stat: z.string().nullable().default(null).describe("그 스킬에 쓰는 능력 id (아니면 null)"),
+    against_setting: z.string().nullable().default(null).describe("이 처리가 주인공의 설정(이상·금기·결점)을 거스르면 그 설정 id (take_action과 같다). 아니면 null"),
   }),
   run(input, ctx): ToolOutcome {
     const { store, content } = ctx;
@@ -344,10 +379,20 @@ const handlePrisoner = defineTool({
       return { ok: false, error: "여기 우리 무리가 가둔 포로도, 끌고 다니는 포로도 아니다." };
     }
     if (!t) return { ok: false, error: "없는 사람이다." };
-    if (towed && input.action !== "interrogate" && input.action !== "release") {
-      return { ok: false, error: "끌고 다니는 포로는 그 자리에서 심문하거나 풀어 줄 수만 있다. 회유·몸값·노역은 우리 거점에 데려간 뒤에." };
+    if (towed && !["interrogate", "release", "knock_out", "kill"].includes(input.action)) {
+      return { ok: false, error: "끌고 다니는 포로는 그 자리에서 심문하거나, 풀어 주거나, 기절시켜 두거나, 죽일 수만 있다. 회유·몸값·노역은 우리 거점에 데려간 뒤에." };
     }
+    if (!towed && (input.action === "knock_out" || input.action === "kill")) return { ok: false, error: "기절시켜 두거나 죽이는 것은 끌고 다니는 포로에게만 (그 자리에서)." };
     const name = playerCalls(state, content, t.id);
+    const settingLines: string[] = [];
+    let settingDisplays: ToolDisplayEvent[] = [];
+    if (input.against_setting) {
+      const r = againstSetting(ctx, input.against_setting);
+      if (!r.ok) return { ok: false, error: r.error };
+      settingLines.push(...r.lines);
+      settingDisplays = r.displays;
+      if (!r.proceed) return { ok: true, resultText: settingLines.join("\n"), display: settingDisplays[0] ?? { type: "presence", npcName: name, action: "enter" }, extra: settingDisplays.slice(1) };
+    }
     const theirs = t.factionId;
     const roll = (moves: readonly string[]) => {
       if (!input.approach || !input.stat || !moves.includes(input.approach)) return { error: `approach는 ${moves.join("/")} 중 하나, stat은 그 스킬의 능력.` } as const;
@@ -379,7 +424,10 @@ const handlePrisoner = defineTool({
           });
           lines.push(`털어놓은 것: ${b.fact}`);
         }
-        if (take.length === 0) lines.push("털어놓았지만 새로 알게 된 것은 없다.");
+        // 장소도 털어놓는다 (설계 목록 C-1 2단계)
+        const places = placeConfessions(ctx, t, r.outcome === "success");
+        lines.push(...places);
+        if (take.length === 0 && places.length === 0) lines.push("털어놓았지만 새로 알게 된 것은 없다.");
       } else lines.push(`${josa(name, "은/는")} 입을 다물었다.`);
     } else if (input.action === "recruit") {
       const r = roll([c.recruit_move]);
@@ -404,6 +452,22 @@ const handlePrisoner = defineTool({
       }
       const { deed } = recordDeed(ctx, { summary: `포로 ${josa(name, "을/를")} 풀어 주었다`, tags: ["mercy"], severity: 1, privacy: "semi_private", noisy: false });
       lines.push(`${josa(name, "을/를")} 풀어 주었다. ${deed.summary}.`);
+      // 잠입 중에 놓아주면 그 사람이 곧장 알린다 (설계 목록 C-1 2단계)
+      if (towed && t.factionId === store.getState().infiltration?.owner) lines.push(`${josa(name, "이/가")} 달려가 알린다.`, ...alarmIfInfiltrating(ctx, 2));
+    } else if (input.action === "knock_out") {
+      // 기절시켜 두고 간다: 깨어나면 얼굴을 본 사람이다 (행적의 목격자, 관계)
+      store.append({ type: "companion_left", characterId: t.id, reason: "기절시켜 두고 감" });
+      store.append({ type: "npc_left", npcId: t.id });
+      store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: -2, affection: -1, respect: 0 }, reason: "붙잡혀 기절했다" });
+      const { deed } = recordDeed(ctx, { summary: `${josa(name, "을/를")} 붙잡아 기절시키고 두고 갔다`, tags: ["trespass"], severity: 1, privacy: "private", noisy: false }, { npcId: t.id, source: "seen" });
+      lines.push(`${josa(name, "을/를")} 기절시켜 두고 왔다. 깨어나면 주인공의 얼굴을 기억한다 (${deed.summary}).`);
+    } else if (input.action === "kill") {
+      // 죽인다: 상처 트랙의 끝으로 코드가 정한다 (원칙 3: 사망은 상태 트랙의 끝으로만). 무거운 행적, 숨은 목격자는 행적 규칙대로
+      store.append({ type: "companion_left", characterId: t.id, reason: "죽임" });
+      const track = harmTrack(content.scenario);
+      changeCondition(ctx, t.id, track.id, track.levels.length, "player", "붙잡혀 죽임을 당했다");
+      const { deed } = recordDeed(ctx, { summary: `붙잡은 ${josa(name, "을/를")} 죽였다`, tags: ["cruelty"], severity: 3, privacy: "private", noisy: false });
+      lines.push(`${josa(name, "을/를")} 죽였다. ${deed.summary}.`);
     } else if (input.action === "ransom") {
       if (!theirs || !state.factions[theirs] || theirs === me.factionId) return { ok: false, error: "몸값을 낼 무리가 없다." };
       if (disposition(content, theirs, me.factionId, state) <= -3) return { ok: false, error: "그 무리는 우리와 말도 섞지 않는다. 몸값도 맞교환도 없다." };
@@ -428,7 +492,7 @@ const handlePrisoner = defineTool({
       lines.push(labor ? `${josa(name, "을/를")} 노역에 부린다. 무리가 날마다 조금 얻는다.` : `${name}의 노역을 멈췄다.`);
     }
     lines.push("이 결과에 맞게 장면을 서술한다. 숫자와 털어놓은 내용을 바꾸지 않는다.");
-    return { ok: true, resultText: lines.join("\n"), display };
+    return { ok: true, resultText: [...settingLines, ...lines].join("\n"), display, ...(settingDisplays.length ? { extra: settingDisplays } : {}) };
   },
 });
 

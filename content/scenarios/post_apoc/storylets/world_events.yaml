@@ -265,6 +265,8 @@
     zone_owner: [none]
     segments: [day, evening]
     flags_none: [w_child_found]
+    # 버스는 바깥에 있다 (12-267, PT19 튜토리얼: 상가 지하에서 열렸다)
+    indoor: false
   setup: 뒤집힌 버스 안에서 무언가 움직인다. 깨진 창 너머로 작은 등이 보인다. 아이다. 일곱 살쯤. 무릎을 끌어안고 소리 없이 운다. 운동화 한 짝이 없다.
   ai_direction: 아이는 어제 엄마와 물을 길으러 나왔다가 감염체 물결에 쫓겨 엄마와 흩어졌다. 엄마는 살아서 가까운 거점에 있다. 아이는 겁에 질려 말을 잘 못 하고, 큰 소리를 내면 운다. 해가 지면 이 근처는 위험하다.
   choices:
@@ -275,7 +277,7 @@
         - delay: 90
         - set_flag: w_child_found
         - deed: { summary: 폐허의 뒤집힌 버스에서 길 잃은 아이를 데려왔다, tags: [mercy], severity: 1, privacy: public }
-        - belief: { fact: 뒤집힌 버스에서 아이를 찾아 데려왔다. 엄마와 물을 길으러 나왔다가 흩어졌다고 한다, source: report }
+        - belief: { fact: 뒤집힌 버스에서 아이를 찾아 업고 사람 있는 곳에 데려다 맡겼다. 엄마와 물을 길으러 나왔다가 흩어졌다고 아이가 말했다, source: seen }
     - id: calm_ask
       label: 쪼그려 앉아 이름과 엄마를 묻는다
       check: insight
@@ -283,7 +285,7 @@
         success:
           - set_flag: w_child_found
           - deed: { summary: 길 잃은 아이를 달래 엄마에게 가는 길을 찾아 주었다, tags: [mercy], severity: 1, privacy: semi_private }
-          - belief: { fact: 아이는 엄마와 물을 길으러 나왔다가 감염체 떼에 쫓겨 흩어졌다고 했다. 엄마가 있는 곳까지 데려다주었다, source: report }
+          - belief: { fact: 아이는 엄마와 물을 길으러 나왔다가 감염체 떼에 쫓겨 흩어졌다고 했다. 엄마가 있는 곳까지 데려다주었다, source: seen }
         partial:
           # 대가 있는 성공: 이름만 겨우 말해서 한참을 업고 헤맨다 (아이를 둔 채 끝나지 않게, 플레이 테스트 4)
           - delay: 120

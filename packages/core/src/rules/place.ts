@@ -52,6 +52,21 @@ export function currentPlace(state: GameState, content: Content): Place | null {
   return placeById(state, content, state.playerPlace);
 }
 
+/**
+ * 불이 붙는 자리 (12-267, PT19 튜토리얼: 담 밖에 피운 모닥불이 담 안 식당까지 데웠다): 장소가 있으면 구역과 장소, 막 들어선 자리·장소 없는 구역은 구역.
+ * 불(state.fires)은 이 열쇠로 적고 읽는다
+ */
+export function fireSpot(state: GameState): string | null {
+  if (!state.playerZone) return null;
+  return state.playerPlace ? `${state.playerZone}@${state.playerPlace}` : state.playerZone;
+}
+
+/** 지금 자리에 불이 타고 있는가 */
+export function fireLitHere(state: GameState, at: number = state.time): boolean {
+  const spot = fireSpot(state);
+  return !!spot && (state.fires?.[spot] ?? 0) > at;
+}
+
 /** 지금 있는 곳이 지붕 아래인가: 장소가 있으면 그 장소, 없으면 null (구역의 cover로 정한다) */
 export function placeIndoor(state: GameState, content: Content): boolean | null {
   return currentPlace(state, content)?.indoor ?? null;

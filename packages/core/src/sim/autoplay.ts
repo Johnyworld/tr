@@ -14,7 +14,7 @@ import { sitsOnCouncil, squadMembers } from "../engine/command.ts";
 import { battleConfig, effectBlocker } from "./battle.ts";
 import type { GameWorld } from "../world/world.ts";
 import { learned } from "../rules/skill.ts";
-import { nearby } from "../rules/place.ts";
+import {nearby, fireLitHere } from "../rules/place.ts";
 
 /**
  * 랜덤 자동 플레이 (기획서 17: 막힘과 밸런스 점검). LLM 없이 tool만 무작위로 부른다.
@@ -337,7 +337,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       const hunger = content.scenario.body?.hunger?.track;
       const fireItems = Object.keys(content.scenario.body?.cold?.climate?.fire?.items ?? {});
       const fuelHere = fireItems.find(has);
-      const fireLit = !!s.playerZone && (s.fires[s.playerZone] ?? 0) > s.time;
+      const fireLit = fireLitHere(s);
       const atBase = !!s.playerZone && content.locations[s.playerZone]?.kind === "base";
       const trapHere = !!s.playerZone && s.traps.some((t) => t.zone === s.playerZone);
       // 덫은 하루가 지나야 걸린다: 놓은 지 하루 넘은 것만 거둔다

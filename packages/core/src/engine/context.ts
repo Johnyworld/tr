@@ -498,7 +498,8 @@ function describeKnownPeople(state: GameState, content: Content): string {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
       // 행방을 모르는 사람(붙잡혀 있다)의 지금 모습은 모른다 (플레이 테스트 11: "손목에 끈 자국")
-      const unseen = !!heldOf(character) && state.playerZone !== heldOf(character)!.zone;
+      // 같은 구역에 들어서도 장면에서 보기 전에는 모른다 (12-267, PT19 분대장: 물류창고에 막 들어서자 수용소에 있는 둘의 끈 자국·판자가 실렸다)
+      const unseen = !!heldOf(character) && !state.scene.present.includes(id);
       // 평판은 아는 사이에만 (원칙 4, 사용자 결정: 플레이어 화면 ?인물과 같은 기준, 플레이 테스트 14)
       const rep = npc && knowsReputation(state, content, id) ? npc.reputation : "";
       if (detailed.has(id)) lines.push(`${head(id)}: ${npc ? (unseen ? rep : `${npc.look} ${rep}`.trim()) : unseen ? "" : (character.extra?.look ?? "")}`.replace(/: $/, ""));
@@ -542,7 +543,9 @@ function describePlaces(state: GameState, content: Content): string {
   const known = new Set([...(state.known[state.playerId] ?? []), ...(state.met[state.playerId] ?? [])]);
   const line = (p: (typeof places)[number]) => {
     // 갇힌 사람은 그 자리에 있는 것을 주인공이 알 때만 (12-262, PT16·PT17 졸병: 적 거점에 막 들어서자 행방 모를 실종자의 자리가 보였다)
-    const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
+    // 집이 있는 아는 사람(가족 등)은 그 사람을 직접 만난 뒤에만: 어디 사는지는 이야기로 알게 된다 (12-267, PT19 튜토리얼: 수소문 전에 버들마을 목록이 부모의 동을 보여 줬다)
+    const homeUnknown = (id: string) => !!state.characters[id]?.extra?.place && state.perceived[id] === undefined && p.id !== here?.id;
+    const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && !homeUnknown(id) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
     return `- ${p.id} ${p.name} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : ""}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
   };
   return [

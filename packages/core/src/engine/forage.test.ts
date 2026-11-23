@@ -1,3 +1,4 @@
+import { fireSpot } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -141,7 +142,7 @@ describe("끓이지 않은 물", () => {
 
     const safe = open(0);
     safe.s().playerZone = "riverside";
-    safe.s().fires.riverside = safe.s().time + 60;
+    safe.s().fires[fireSpot(safe.s())!] = safe.s().time + 60;
     safe.me().conditions.thirst = "parched";
     const r = drinkWater(safe.w.ctx());
     expect(r.ok && r.lines.join()).toContain("끓여");

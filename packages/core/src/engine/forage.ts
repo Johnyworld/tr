@@ -1,3 +1,4 @@
+import { fireLitHere } from "../rules/place.ts";
 import { preservesHere } from "./facilities.ts";
 import type { CheckOutcome } from "../rules/check.ts";
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
@@ -18,8 +19,7 @@ type Result = { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok
 
 /** 지금 구역에 불이 피어 있다 (끓여 마실 수 있다) */
 export function fireHere(state: ReturnType<ToolContext["store"]["getState"]>): boolean {
-  const zone = state.playerZone;
-  return !!zone && (state.fires[zone] ?? 0) > state.time;
+  return fireLitHere(state);
 }
 
 /** 물이 나는 구역인가 (갈증 자원이 나는 곳) */

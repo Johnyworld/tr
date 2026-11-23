@@ -1,3 +1,4 @@
+import { fireSpot } from "../rules/place.ts";
 import { describe, expect, it } from "vitest";
 import { createWorldEvent } from "../game/state.ts";
 import { InMemoryGameStore } from "../game/store.ts";
@@ -87,7 +88,7 @@ describe("기온", () => {
     const cold = me().conditions.cold;
     // 모닥불 곁의 실내에서 쉰다
     store.getState().playerZone = "old_town";
-    store.getState().fires.old_town = t + 20 * 60;
+    store.getState().fires[fireSpot(store.getState())!] = t + 20 * 60;
     me().inventory.blanket = 1;
     exposeToCold(ctx, "rest", t + 8 * 60, t + 14 * 60);
     expect(me().conditions.cold).not.toBe(cold);
@@ -121,7 +122,7 @@ describe("기온", () => {
     expect(out.ok).toBe(true);
     if (out.ok) expect(out.resultText).toContain("불을 피웠다");
     expect(me().inventory.firewood ?? 0).toBe(0);
-    expect(store.getState().fires.old_town).toBeGreaterThan(store.getState().time);
+    expect(store.getState().fires[fireSpot(store.getState())!]).toBeGreaterThan(store.getState().time);
     expect(feelsLike(content, store.getState(), "rest")!.parts.join()).toContain("모닥불");
     expect(feelsLike(content, store.getState(), "rest")!.value).toBeGreaterThanOrEqual(before + 9);
     expect(store.getState().zoneNoise.old_town?.level).toBeGreaterThan(0);
@@ -176,7 +177,7 @@ describe("기온", () => {
     store.getState().time += 120;
     expect(store.getState().wet[me().id]).toBe(wet.fire_hours * 60 / 2);
     // 불 곁 한 시간이면 나머지가 마른다
-    store.getState().fires[store.getState().playerZone!] = store.getState().time + 240;
+    store.getState().fires[fireSpot(store.getState())!] = store.getState().time + 240;
     const dried = exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 60);
     expect(store.getState().wet[me().id]).toBeUndefined();
     expect(dried.some((d) => d.type === "heal" && d.trackLabel === "옷")).toBe(true);

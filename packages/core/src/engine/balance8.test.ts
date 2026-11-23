@@ -1,3 +1,4 @@
+import { fireSpot } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -92,7 +93,7 @@ describe("몸 (12-190)", () => {
     expect(feelsLike(real, w.state(), "rest")!.parts.some((p) => p.startsWith("난로"))).toBe(false);
     const r = act(w, { use_item: "firewood" });
     expect(r.ok && r.resultText).toContain("난로에");
-    expect((w.state().fires[zone] ?? 0) - w.state().time).toBeGreaterThan(20 * 60);
+    expect((w.state().fires[fireSpot(w.state())!] ?? 0) - w.state().time).toBeGreaterThan(20 * 60);
     expect(feelsLike(real, w.state(), "rest")!.parts.some((p) => p.startsWith("난로"))).toBe(true);
   });
 });

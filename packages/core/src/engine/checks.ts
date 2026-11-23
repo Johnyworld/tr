@@ -162,6 +162,7 @@ export function rollPlayerCheck(
     ...(opponent ? { opponent } : {}),
     ...(options.forMission ? { forMission: options.forMission } : {}),
     ...(options.story ? { story: true } : {}),
+    ...(options.reaction ? { reaction: true } : {}),
     ...(options.dest ? { dest: options.dest } : {}),
   });
 

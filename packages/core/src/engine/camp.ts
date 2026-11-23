@@ -13,7 +13,7 @@ import type { InterruptCheck } from "../sim/fastForward.ts";
 import { fillStorylet, pickCast, pickStorylet, roadStorylets, storyletVars } from "../story/storylets.ts";
 import { fireStorylet, storySetup, storyTitle, maskUnknownNames } from "./storyletTools.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
-import { guardedHere } from "../rules/place.ts";
+import {guardedHere, fireLitHere } from "../rules/place.ts";
 
 /**
  * 야영과 불침번 (기획서 4.5.6, 12-148).
@@ -92,7 +92,7 @@ export function campWatched(content: Content, state: GameState, activity: Activi
 /** 시간당 확률 */
 export function campChance(content: Content, state: GameState, site: CampSite, at: GameTime): number {
   const camp = content.scenario.camp!;
-  const fire = !!state.playerZone && (state.fires[state.playerZone] ?? 0) > at;
+  const fire = fireLitHere(state, at);
   // 바리케이드 (12-167)
   return (camp.chance[site.danger] ?? 0) * (fire ? camp.fire : 1) * (site.ownLand ? camp.own_land : 1) * campFactor(content, state, state.playerZone);
 }
@@ -155,7 +155,7 @@ export function describeCamp(content: Content, state: GameState): string | null 
   const site = campSite(content, state);
   if (!site) return null;
   const watchers = campWatchers(content, state).map((id) => playerCalls(state, content, id));
-  const fire = !!state.playerZone && (state.fires[state.playerZone] ?? 0) > state.time;
+  const fire = fireLitHere(state);
   const deep = deepSleepReason(content, state);
   // 남의 거점 안이면 담도 순찰도 있다: 그 무리의 것이다. 우리 땅이면 담은 없어도 우리 순찰이 돈다 (플레이 테스트 12: 적 거점에서 "담과 순찰이 없다", 우리 땅에서 두 말이 한 줄에)
   const loc = state.playerZone ? content.locations[state.playerZone] : undefined;

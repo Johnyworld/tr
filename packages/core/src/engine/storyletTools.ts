@@ -329,7 +329,8 @@ export const resolveStorylet = defineTool({
       const move = input.improvised_move ?? choice.check;
       if (!ctx.content.scenario.moves.some((m) => m.id === move)) return { ok: false, error: `알 수 없는 스킬: ${move}` };
       const check = Object.values(state.checks)
-        .filter((c) => c.turn === state.turn && c.actorId === state.playerId && c.move === move)
+        // 시스템이 굴린 버티는 판정(공포 등)은 빼고 주인공이 한 판정만 (12-267, PT19 분대장: 공포 버티기 실패가 "버틴다" 선택지의 결과가 됐다)
+        .filter((c) => c.turn === state.turn && c.actorId === state.playerId && c.move === move && !c.reaction)
         .at(-1);
       if (!check) {
         return { ok: false, error: `이 선택지는 이번 턴 take_action에서 ${moveLabel(ctx.content.scenario, move)}(${move}) 판정을 먼저 해야 한다.` };

@@ -15,7 +15,7 @@ import { changeCondition } from "./body.ts";
 import { traitsOf } from "./traits.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { atOwnBase, myPeopleLiveHere, ownedBy } from "../rules/home.ts";
-import { shelterAt, welcomedAsGuest } from "../rules/place.ts";
+import {shelterAt, welcomedAsGuest, fireLitHere, fireSpot } from "../rules/place.ts";
 export { welcomedAsGuest } from "../rules/place.ts";
 
 /**
@@ -110,7 +110,7 @@ export function feelsLike(content: Content, state: GameState, activity: Activity
   }
   // 불: 지핀 불이 타는 동안. 난로(12-167)가 있는 구역이면 난로 안의 불이라 실내에서만 따뜻하다 (12-190: 꺼지지 않는 불이 아니다)
   const stove = !!zone && stoveAt(content, state, zone);
-  const fireHere = !!zone && !!c.fire && (state.fires[zone] ?? 0) > time && (!stove || indoor);
+  const fireHere = !!zone && !!c.fire && fireLitHere(state, time) && (!stove || indoor);
   if (fireHere) {
     value += c.fire!.warmth;
     parts.push(`${stove ? "난로" : "모닥불"} ${signed(c.fire!.warmth)}`);
@@ -326,9 +326,10 @@ export function lightFire(ctx: ToolContext, item: string): { ok: true; lines: st
   if ((me.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(name, "이/가")} 없다.` };
   // 난로가 있으면 같은 땔감이 오래 탄다 (12-190)
   const stove = stoveAt(ctx.content, state, zone);
-  const until = Math.max(state.time, state.fires[zone] ?? 0) + Math.round(hours * (stove ? fire.stove : 1) * 60);
+  const spot = fireSpot(state) ?? zone;
+  const until = Math.max(state.time, state.fires[spot] ?? 0) + Math.round(hours * (stove ? fire.stove : 1) * 60);
   ctx.store.append({ type: "item_consumed", holder: me.id, itemId: item, quantity: 1 });
-  ctx.store.append({ type: "fire_lit", zone, until, itemId: item });
+  ctx.store.append({ type: "fire_lit", zone: spot, until, itemId: item });
   if (fire.noise > 0) ctx.store.append({ type: "noise_made", zone, level: fire.noise, day: dayOf(state.time) });
   const hoursLeft = Math.round(((until - state.time) / 60) * 10) / 10;
   return {
@@ -345,7 +346,8 @@ export function lightFire(ctx: ToolContext, item: string): { ok: true; lines: st
 export function describeTemperature(content: Content, state: GameState): string | null {
   const f = feelsLike(content, state, "rest");
   if (!f) return null;
-  const fireLeft = state.playerZone ? (state.fires[state.playerZone] ?? 0) - state.time : 0;
+  const spot = fireSpot(state);
+  const fireLeft = spot ? (state.fires[spot] ?? 0) - state.time : 0;
   return (
     `바깥 ${f.outside.value}° (${f.outside.segmentLabel}${f.outside.weatherLabel ? `·${f.outside.weatherLabel}` : ""}), ` +
     `여기서 쉬면 체감 ${f.value}° (${f.parts.join(", ")})` +
@@ -380,8 +382,7 @@ function wetNote(content: Content, state: GameState): string {
   const left = state.wet?.[state.playerId] ?? 0;
   if (!wet || left <= 0) return "";
   // 불 곁이면 체감에서 빼고 마르는 중이라고 (플레이 테스트 12: 체감 합에 젖은 옷이 빠졌는데 이 줄은 -10°라고 했다)
-  const zone = state.playerZone;
-  const byFire = !!zone && (state.fires?.[zone] ?? 0) > state.time;
+  const byFire = fireLitHere(state);
   if (byFire) return `. 옷이 젖어 있다 (불 곁이라 체감에는 들지 않고 마르는 중: ${hoursText(left)} 더)`;
   const f = feelsLike(content, state, "rest");
   const d = f?.parts.find((p) => p.startsWith("젖은 옷"))?.replace("젖은 옷 ", "") ?? "";

@@ -32,7 +32,7 @@ import { seasonAt } from "../sim/season.ts";
 import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
 import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
-import { storyPlaceFits, storyPlaces, storyPlacesFit } from "../rules/place.ts";
+import {storyPlaceFits, storyPlaces, storyPlacesFit, fireLitHere } from "../rules/place.ts";
 import { nearby, whereIs } from "../rules/place.ts";
 import { ownOffense } from "../rules/consequence.ts";
 import { bedsideGapPassed, inCrisis, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
@@ -298,7 +298,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.companion_trick && !companionKnows(state, content, w.companion_trick)) return false;
   if (w.animal_companion !== undefined && activeCompanions(state).some((id) => kindOf(content, state.characters[id]) === "animal") !== w.animal_companion) return false;
   if (w.facility_here && !(state.playerZone && (state.facilities?.[state.playerZone] ?? []).includes(w.facility_here))) return false;
-  if (w.campfire !== undefined && ((!!state.playerZone && (state.fires[state.playerZone] ?? 0) > at) !== w.campfire)) return false;
+  if (w.campfire !== undefined && fireLitHere(state, at) !== w.campfire) return false;
   if (w.camp_danger_gte !== undefined || w.camp_danger_lte !== undefined) {
     const zone = state.playerZone;
     const danger = zone ? Math.max(content.locations[zone]?.danger ?? 0, infestationOf(content, state, zone)) : 0;

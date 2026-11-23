@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 94;
+export const SAVE_SCHEMA_VERSION = 95;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -278,6 +278,8 @@ export function createGameSchemas(s: Scenario) {
     target: z.string().optional(),
     /** 맞선 상대 (은밀이 대가 있는 성공이면 이 사람만 본다, PT15) */
     opponent: z.string().optional(),
+    /** 시스템이 굴린 버티는 판정 (12-267) */
+    reaction: z.boolean().optional(),
     outcome: checkOutcomeSchema,
     /** 이 판정의 대가로 이미 피해를 적용했는지 */
     harmApplied: z.boolean(),
@@ -1167,6 +1169,8 @@ export function createGameSchemas(s: Scenario) {
       dest: z.string().optional(),
       /** 이야기 선택지 판정: 성공하면 임무로 세고, 빗나가도 임무 빗나감으로 세지 않는다 (12-258) */
       story: z.boolean().optional(),
+      /** 닥친 일에 버티는 판정(공포·마음 다잡기 등, 시스템이 굴림). 이야기 선택지의 판정으로 쓰지 않는다 (12-267) */
+      reaction: z.boolean().optional(),
     }),
     z.strictObject({
       type: z.literal("harm_applied"),
@@ -2152,6 +2156,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         move: event.move,
         ...(event.target ? { target: event.target } : {}),
         ...(event.opponent ? { opponent: event.opponent } : {}),
+        ...(event.reaction ? { reaction: true } : {}),
         outcome: event.outcome,
         harmApplied: false,
         at: state.time,

@@ -86,7 +86,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import { comesAlong, currentPlace, ENTRY_PLACE, peopleAt, placeTarget, placesIn, whereIs, npcPlaceAt, type Place } from "../rules/place.ts";
+import {comesAlong, currentPlace, ENTRY_PLACE, peopleAt, placeTarget, placesIn, whereIs, npcPlaceAt, type Place, whereLabel } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -517,11 +517,13 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   };
   // 옮겨 가는 장소의 치료사도 (12-262, PT17 분대장·졸병: place_to와 치료를 한 턴에 하면 치료사를 못 찾았다)
   const destHealers = input.treatment && !input.treatment.item && input.place_to && input.place_to !== ENTRY_PLACE ? Object.values(content.npcs).filter((n) => n.healer && !start.scene.present.includes(n.id) && atDest(n.id)).map((n) => n.id) : [];
-  const arriving = [input.target, input.check?.opponent, ...destHealers].filter((id): id is string => !!id && !start.scene.present.includes(id) && atDest(id));
+  // with로 함께할 사람도 옮겨 가는 장소에 있으면 들인다 (12-268, PT18 섬: target은 되는데 with는 "장면에 없다")
+  const arriving = [input.target, input.check?.opponent, ...input.with, ...destHealers].filter((id): id is string => !!id && !start.scene.present.includes(id) && atDest(id));
   if (input.target && !start.scene.present.includes(input.target) && !arriving.includes(input.target)) {
     // 호칭으로 (플레이 테스트 12: 오류 문구에 id가 나왔다). id는 괄호로 함께 둬 GM이 고칠 수 있게
     const who = start.characters[input.target] ? `${playerCalls(start, content, input.target)}(${input.target})` : input.target;
-    return { ok: false, error: `${josa(who, "은/는")} 지금 장면에 없습니다. 먼저 npc_presence로 등장시키세요.` };
+    const where = whereLabel(start, content, input.target);
+    return { ok: false, error: `${josa(who, "은/는")} 지금 장면에 없다${input.place_to ? ` (옮겨 가는 곳에도 없다${where ? `. 지금 ${where}` : ""})` : ""}. 먼저 npc_presence로 들이거나 그 사람이 있는 곳으로 간다 (시간은 흐르지 않았다).` };
   }
   if (input.activity) {
     const cost = ACTIVITY_COSTS[input.activity.kind];
@@ -702,7 +704,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if ((to?.id ?? null) !== (currentPlace(start, content)?.id ?? null)) placeMove = { to, along: comesAlong(start, content, to?.id ?? null, involved), involved };
   }
   // 함께하는 사람은 장면에 있어야 한다 (공통 규칙 8의 내 편, 사용자 결정 PT14: target 말고 with)
-  const strayWith = input.with.find((id) => !start.scene.present.includes(id) || id === start.playerId);
+  const strayWith = input.with.find((id) => (!start.scene.present.includes(id) && !arriving.includes(id)) || id === start.playerId);
   if (strayWith) return { ok: false, error: `with의 ${josa(start.characters[strayWith] ? `${playerCalls(start, content, strayWith)}(${strayWith})` : strayWith, "은/는")} 장면에 없다. 함께하는 사람은 장면에 있는 인물이다 (시간은 흐르지 않았다).` };
   // 구역을 옮길 때 with의 사람은 함께 간다 (PT15). 갇힌 사람은 내가 함께 갇혀 달아날 때만 데려간다
   const lockedWith = input.move_to && !heldOf(player) ? input.with.find((id) => !!heldOf(start.characters[id])) : undefined;

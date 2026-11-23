@@ -120,7 +120,8 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
     expect(out.ok).toBe(false);
     expect(currentPlace(w.state(), content)).toBeNull();
     expect(w.state().time).toBe(t);
-    const stray = w.executeTool("take_action", act({ place_to: "yard", with: ["c_cm_jaeho"] }));
+    // 옮겨 가는 곳에 있는 사람은 with로 부를 수 있다 (12-268). 다른 구역 사람은 거절
+    const stray = w.executeTool("take_action", act({ place_to: "yard", with: ["a_taeho"] }));
     expect(stray.ok ? "" : stray.error).toContain("장면에 없다");
     expect(currentPlace(w.state(), content)).toBeNull();
   });
@@ -251,7 +252,7 @@ describe("머무는 자리 (12-253, 공통 규칙 15)", () => {
     const s = w.state();
     const id = Object.values(content.npcs).find((n) => n.zone === "c_warehouse" && !s.characters[n.id]?.dead && !s.scene.present.includes(n.id) && whereIs(s, content, n.id)?.place && whereIs(s, content, n.id)?.place !== "yard")!.id;
     const out = w.executeTool("take_action", act({ intent: "말을 건다", target: id }));
-    expect(out.ok ? "" : out.error).toContain("장면에 없습니다");
+    expect(out.ok ? "" : out.error).toContain("장면에 없다");
   });
 
   it("일과 칸이 빈 시간대는 앞 시간대의 자리에 있다 (임동욱: 아침 칸이 비고 새벽은 창고 앞 보초)", () => {

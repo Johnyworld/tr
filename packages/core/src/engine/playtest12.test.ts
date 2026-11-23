@@ -141,8 +141,15 @@ describe("플레이 테스트 12: 동행·덫·문구", () => {
     w.executeTool("companion_part", { target: buddy, how: "wait", hours: null });
     runCompanions(w.ctx());
     expect(w.state().companions).not.toContain(buddy);
+    const spot = w.state().bonds[buddy]?.apart?.place ?? null;
     store.append({ type: "zone_moved", from: zone, to: other });
     store.append({ type: "zone_moved", from: other, to: zone });
+    // 기다리라고 둔 장소로 와야 합류한다 (12-268)
+    if (spot) {
+      runCompanions(w.ctx());
+      expect(w.state().companions).not.toContain(buddy);
+      w.executeTool("take_action", { intent: "돌아간다", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true, place_to: spot });
+    }
     runCompanions(w.ctx());
     expect(w.state().companions).toContain(buddy);
   });

@@ -58,7 +58,7 @@ export function runCompanions(ctx: ToolContext): ToolDisplayEvent[] {
         continue;
       }
       if (heldOf(state.characters[state.playerId])) continue;
-      // 기다리던 자리로 돌아오면 (같은 구역의 그 장소, 또는 구역에 다시 들어섰을 때)
+      // 기다리던 자리로 돌아오면 (같은 구역의 그 장소. 막 들어선 자리에 뒀으면 구역에 다시 들어섰을 때)
       if (atWaitingSpot(state, bond.apart) && state.bonds[id]?.apart?.left !== false) {
         store.append({ type: "companion_rejoined", characterId: id });
         out.push(note(name, "enter", `${josa(name, "이/가")} 기다리던 ${content.locations[bond.apart.zone ?? ""]?.name ?? bond.apart.zone}에서 다시 합류했다. 다시 만나는 장면을 짧게 서술한다.`));
@@ -177,7 +177,7 @@ export function addStartCompanions(ctx: ToolContext, role: RoleContent | undefin
 const companionPart = defineTool({
   name: "companion_part",
   description:
-    "동행과 잠시 떨어지거나 헤어진다 (기획서 7.9). 플레이어가 그렇게 하기로 했을 때만. how: wait 지금 구역에 남아 기다린다(그 구역에 다시 오면 저절로 합류), " +
+    "동행과 잠시 떨어지거나 헤어진다 (기획서 7.9). 플레이어가 그렇게 하기로 했을 때만. how: wait 지금 자리에 남아 기다린다(그 자리에 다시 오면 저절로 합류), " +
     "errand 볼일을 보러 갔다가 hours 뒤 돌아온다, end 헤어진다(함께 다니는 이유가 끝난다). 함께 다니게 되는 것은 이야기의 결과로만 생긴다.",
   schema: z.strictObject({
     target: z.string().describe("동행의 id"),
@@ -211,7 +211,7 @@ const companionPart = defineTool({
       const at = spot ? `${content.locations[state.playerZone]?.name ?? state.playerZone}의 ${spot.name}` : (content.locations[state.playerZone]?.name ?? state.playerZone);
       return {
         ok: true,
-        resultText: `${josa(name, "은/는")} ${at}에 남아 기다린다. 이 자리를 떠났다가 다시 오면(다른 구역에 갔다 이 구역에 돌아와도) 합류한다. 그 전에 다시 데려가려면 npc_presence enter. 남겨 두는 장면을 서술한다.`,
+        resultText: `${josa(name, "은/는")} ${at}에 남아 기다린다. 이 자리를 떠났다가 이 자리로 다시 오면 합류한다. 그 전에 다시 데려가려면 npc_presence enter. 남겨 두는 장면을 서술한다.`,
         display: { type: "presence", npcName: `${name} · 기다림`, action: "leave" },
       };
     }

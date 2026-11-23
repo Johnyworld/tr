@@ -251,7 +251,8 @@ const npcPresence = defineTool({
     }
     const look = npc ? `${npc.look} 말투: ${npc.voice.style}` : extra!.look;
     // 보통 다른 구역에 있는 사람이면 알린다 (플레이 테스트 13: 거점의 상관이 강변 장면에 들어왔다). 동행·이야기 배역·갇힌 사람은 빼고
-    const s1 = store.getState();
+    // 들이기 전의 상태로 본다: 장면에 들면 그 사람은 주인공 곁에 있는 것으로 나와 이 경고가 한 번도 안 나왔다 (12-268)
+    const s1 = state;
     const home = npc && input.action === "enter" ? (zoneOf(s1, content, character.id) ?? undefined) : undefined;
     const away = !!home && home !== s1.playerZone && !s1.companions.includes(character.id) && !heldOf(character) && !Object.values(s1.activeStorylet?.cast ?? {}).includes(character.id);
     // 같은 구역이어도 다른 장소에 있을 사람이면 알린다 (공통 규칙 15)

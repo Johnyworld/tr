@@ -31,7 +31,7 @@ import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, storyletOf } from "../story/storylets.ts";
 import { justHadStory, storyText } from "../rules/storySlot.ts";
-import { hereWithMe, placeById, storyPlaceOnEntry, whereIs, whereLabel } from "../rules/place.ts";
+import {hereWithMe, placeById, storyPlaceOnEntry, whereIs, whereLabel, currentPlace } from "../rules/place.ts";
 import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
 import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
@@ -1026,8 +1026,9 @@ export function applyEffect(
     const name = playerCalls(state, content, id);
     if (!effect.companion_part.hours) {
       if (!state.playerZone) return {};
-      store.append({ type: "companion_parted", characterId: id, zone: state.playerZone, until: null });
-      return { line: `${josa(name, "은/는")} ${content.locations[state.playerZone]?.name ?? state.playerZone}에 남아 기다린다. 이 구역에 다시 오면 합류한다.` };
+      const spot = currentPlace(state, content);
+      store.append({ type: "companion_parted", characterId: id, zone: state.playerZone, until: null, place: spot?.id ?? null });
+      return { line: `${josa(name, "은/는")} ${spot ? `${content.locations[state.playerZone]?.name ?? state.playerZone}의 ${spot.name}` : (content.locations[state.playerZone]?.name ?? state.playerZone)}에 남아 기다린다. 그 자리에 다시 오면 합류한다.` };
     }
     const until = state.time + effect.companion_part.hours * 60;
     store.append({ type: "companion_parted", characterId: id, zone: null, until });

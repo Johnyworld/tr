@@ -31,7 +31,7 @@ import { isIncapacitated } from "./body.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { tellPlayerSecret } from "../rules/self.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
-import { sharesPlace, whereIs, zoneOf } from "../rules/place.ts";
+import {sharesPlace, whereIs, zoneOf, hereWithMe } from "../rules/place.ts";
 
 export type DeedInput = {
   summary: string;
@@ -137,7 +137,10 @@ function recordDeedIf(
     const notice = noticeMove(ctx);
     for (const character of fooled ? [] : Object.values(state.characters)) {
       if (character.id === state.playerId || character.dead || character.away || heldOf(character)) continue;
-      if (state.scene.present.includes(character.id) || !ctx.content.npcs[character.id]) continue;
+      // 엑스트라는 같은 장소에 있다고 정해진 사람만 (집·머무는 자리): 어디 있는지 모르는 엑스트라는 굴리지 않는다
+      // (12-268, PT18·PT19 졸병: 적 지휘소의 정비공·장교 엑스트라가 장면에 없으면 절대 보지 못했다)
+      if (state.scene.present.includes(character.id) || isCreature(ctx.content, character)) continue;
+      if (!ctx.content.npcs[character.id] && !hereWithMe(state, ctx.content, character.id)) continue;
       // 숨은 목격자는 그 시각 같은 구역에 있던 사람만 (기획서 8.2 "근처"). 전에는 세계 어디에 있든 굴려,
       // 다른 무리 거점의 약사가 우리 거점 안의 일을 "직접 봄"으로 알았다 (플레이 테스트 8)
       // (어디 있는지 모르는 인물이나 구역이 없는 장면은 예전처럼 굴린다)

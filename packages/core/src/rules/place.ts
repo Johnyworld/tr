@@ -226,7 +226,8 @@ export function comesAlong(state: GameState, content: Content, to: string | null
  */
 export function atWaitingSpot(state: GameState, apart: { zone: string | null; place?: string | null }): boolean {
   if (!apart.zone || apart.zone !== state.playerZone) return false;
-  return state.playerPlace === null || (apart.place ?? null) === state.playerPlace;
+  // 기다리라고 둔 장소로 와야 합류한다. 막 들어선 자리에 둔 사람은 막 들어선 자리에서 (12-268, PT18 분대장: 막사에 둔 막내가 정문에서 합류했다)
+  return (apart.place ?? null) === state.playerPlace;
 }
 
 /** 이 구역의 가두는 장소 (콘텐츠 places의 jail) */

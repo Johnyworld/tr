@@ -513,7 +513,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
     );
   }
   if (faces.length > 0) {
-    const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!, state)}${(heldOf(state.characters[id]!) && state.playerZone !== heldOf(state.characters[id]!)!.zone) ? "" : `: ${content.npcs[id]!.look}`}`);
+    const lines = faces.map((id) => `- ${headingAs(state, content, viewer, id)} (${id})${statusNote(content, state.characters[id]!, state)}${(heldOf(state.characters[id]!) && !state.scene.present.includes(id)) ? "" : `: ${content.npcs[id]!.look}`}`);
     blocks.push(`얼굴만 아는 인물 (이름은 모른다. 지금 장면에는 없다):\n${lines.join("\n")}`);
   }
   return blocks.join("\n\n");

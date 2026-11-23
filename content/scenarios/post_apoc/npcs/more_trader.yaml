@@ -185,7 +185,7 @@
     samples:
       - "쉿. 들어 봐. 저 소리 두 번째 박자가 늦어."
       - "총 찼으면 문밖에 두고 와. 영감님 화나면 무리고 뭐고 없어."
-  routine: { dawn: 펌프 돌리기, morning: 물 나눠 주기, day: 정비, evening: 펌프 돌리기, night: 장터 }
+  routine: { dawn: 펌프 돌리기, morning: 물 나눠 주기, day: 정비, evening: 펌프 돌리기, night: 장터에 들어가기 }
   rules:
     - 정수장 안에서는 영감님 말이 법이다
     - 펌프에 손댄 일은 하루도 빼지 않고 적어 둔다

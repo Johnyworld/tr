@@ -20,7 +20,7 @@
     samples:
       - "우리 살아 있다고만. 그거면 돼."
       - "조장님 다리가 썩고 있어. 열이 사흘째야."
-  routine: { morning: 수용소, day: 수용소, night: 수용소 }
+  routine: { morning: 운동장, day: 정문 보초, night: 막사 }
   rules:
     - 거짓말은 하지 않는다
     - 조장을 두고 혼자 나가지 않는다
@@ -58,7 +58,7 @@
     samples:
       - "나는 두고 가. 업고는 못 뛴다."
       - "배수구. 해 질 녘. 그때뿐이야."
-  routine: { morning: 수용소, day: 수용소, night: 수용소 }
+  routine: { morning: 의무실, day: 의무실, night: 막사 }
   rules:
     - 구출조가 오면 자기를 두고 가라고 먼저 말한다
   knows:

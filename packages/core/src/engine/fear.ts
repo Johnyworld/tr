@@ -4,7 +4,7 @@ import { storyletOf } from "../story/storylets.ts";
 import { josa } from "../text.ts";
 import { activeCompanions } from "../game/companions.ts";
 import type { GameState } from "../game/state.ts";
-import { segmentOf } from "../rules/time.ts";
+import { darkHere } from "../rules/place.ts";
 import { incapacitatingSymptom, trackOf } from "../scenario/scenario.ts";
 import { changeCondition, shakeNerves, steadyRoll } from "./body.ts";
 import { traitsOf } from "./traits.ts";
@@ -49,7 +49,8 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
   const me = state.characters[state.playerId];
   if (!f || !me || me.dead) return EMPTY;
   if (incapacitatingSymptom(ctx.content.scenario, me)) return EMPTY; // 정신을 잃은 사람은 겁먹지 않는다
-  const dark = f.dark.segments.includes(segmentOf(state.time));
+  // 불 켠 지붕 아래는 어둡지 않다 (공통 규칙 15 darkHere, B①)
+  const dark = darkHere(state, ctx.content, f.dark.segments);
   // 공포증 (12-103): 무서워하는 것이 계기에 있으면 한 단계 더. 보통 사람에게 무섭지 않은 것(base 0)이어도 온다
   const fears = new Set(traitsOf(ctx.content, me).flatMap((t) => t.effects.phobia ?? []));
   const phobia = [...tags, ...(dark ? ["dark"] : [])].some((t) => fears.has(t));

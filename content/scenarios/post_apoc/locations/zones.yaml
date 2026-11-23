@@ -9,7 +9,7 @@
   description: 옛 공업고등학교. 운동장 담을 모래주머니와 철판으로 보강했다.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: staff_room, name: "교무실", indoor: true, description: "칠판에 지도와 근무표가 붙은 옛 교무실. 지도부가 모여 앉는다", aliases: ["교무실", "지도부 회의"] }, { id: infirmary, name: "의무실", indoor: true, description: "보건실 침대 넷과 약장 하나. 소독약 냄새가 밴다", aliases: ["의무실"] }, { id: barracks, name: "막사", indoor: true, description: "교실 바닥에 매트와 담요를 깐 숙소. 젖은 양말이 줄에 걸려 있다", aliases: ["막사", "간부 숙소", "침상"] }, { id: mess, name: "식당 천막", indoor: true, description: "운동장 한쪽, 방수포를 덧댄 큰 천막 아래 솥과 긴 탁자", aliases: ["식당 천막", "배식", "배급 줄", "불 피우기"] }, { id: storehouse, name: "보급 창고·무기고", indoor: true, description: "자물쇠 채운 옛 창고. 상자와 자루, 총기 거치대가 줄지어 있다", aliases: ["보급 창고", "창고", "무기고", "발전기실", "공작실", "총기 손질"] }, { id: yard_gate, name: "운동장·정문·담장", indoor: false, description: "흙바닥 운동장과 철판 덧댄 정문, 담장 위 망루", aliases: ["정문", "운동장", "담장", "망루", "거점 순회", "모닥불"] }, { id: stockade, name: "수용소", indoor: true, description: "체육 창고에 철망을 친 우리. 바닥이 차다", aliases: ["수용소"], jail: true }]
+  places: [{ id: staff_room, name: "교무실", indoor: true, description: "칠판에 지도와 근무표가 붙은 옛 교무실. 지도부가 모여 앉는다", aliases: ["교무실", "지도부 회의"] }, { id: infirmary, name: "의무실", indoor: true, description: "보건실 침대 넷과 약장 하나. 소독약 냄새가 밴다", aliases: ["의무실"] }, { id: barracks, name: "막사", indoor: true, description: "교실 바닥에 매트와 담요를 깐 숙소. 젖은 양말이 줄에 걸려 있다", aliases: ["막사", "간부 숙소", "침상"] }, { id: mess, name: "식당 천막", indoor: true, description: "운동장 한쪽, 방수포를 덧댄 큰 천막 아래 솥과 긴 탁자", aliases: ["식당 천막", "배식", "배급 줄", "불 피우기"] }, { id: storehouse, name: "보급 창고·무기고", indoor: true, description: "자물쇠 채운 옛 창고. 상자와 자루, 총기 거치대가 줄지어 있다", aliases: ["보급 창고", "창고", "무기고", "발전기실", "공작실", "총기 손질"] }, { id: yard_gate, name: "운동장·정문·담장", indoor: false, description: "흙바닥 운동장과 철판 덧댄 정문, 담장 위 망루", aliases: ["정문", "운동장", "담장", "망루", "거점 순회", "모닥불", "보초 보조", "분대 훈련", "쪽문"] }, { id: stockade, name: "수용소", indoor: true, description: "체육 창고에 철망을 친 우리. 바닥이 차다", aliases: ["수용소"], jail: true }]
   cover: 7
   danger: 0
   owner: faction_a
@@ -55,7 +55,7 @@
   description: 북쪽 고가도로 너머의 옛 물류창고 단지. 붉은연합이 차지하고 있다.
   kind: zone
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: yard, name: "창고 마당", indoor: false, description: "트럭이 서 있던 넓은 콘크리트 마당. 숨을 곳이 적다", aliases: ["물류창고 마당", "마당", "불가", "점호", "약탈조 출발", "광장"] }, { id: barracks, name: "막사·취사 천막", indoor: true, description: "창고 칸막이 안 이층 침대와 취사 천막. 기름 냄새가 밴다", aliases: ["막사", "취사 천막", "식당 천막", "배급 줄"] }, { id: stockade, name: "수용소", indoor: true, description: "화물 칸을 철망으로 막은 수용소. 노역에 끌려 나갈 때만 문이 열린다", aliases: ["수용소", "노역조"], jail: true }, { id: command, name: "지휘소·정비소", indoor: true, description: "유리창 깨진 사무실과 정비소. 무전기와 공구가 널려 있다", aliases: ["지휘소", "정비소", "치료실"] }, { id: wall, name: "감시탑·담", indoor: false, description: "컨테이너를 쌓은 담과 감시탑. 탐조등이 밤마다 돈다", aliases: ["감시탑", "담 보초", "경비 초소"] }]
+  places: [{ id: yard, name: "창고 마당", indoor: false, description: "트럭이 서 있던 넓은 콘크리트 마당. 숨을 곳이 적다", aliases: ["물류창고 마당", "마당", "불가", "점호", "약탈조 출발", "광장", "검수", "연습장", "참호", "바깥 창고"] }, { id: barracks, name: "막사·취사 천막", indoor: true, description: "창고 칸막이 안 이층 침대와 취사 천막. 기름 냄새가 밴다", aliases: ["막사", "취사 천막", "식당 천막", "배급 줄", "배식"] }, { id: stockade, name: "수용소", indoor: true, description: "화물 칸을 철망으로 막은 수용소. 노역에 끌려 나갈 때만 문이 열린다", aliases: ["수용소", "노역조"], jail: true }, { id: command, name: "지휘소·정비소", indoor: true, description: "유리창 깨진 사무실과 정비소. 무전기와 공구가 널려 있다", aliases: ["지휘소", "정비소", "치료실", "마경수 천막", "규율반 천막"] }, { id: wall, name: "감시탑·담", indoor: false, description: "컨테이너를 쌓은 담과 감시탑. 탐조등이 밤마다 돈다", aliases: ["감시탑", "담 보초", "경비 초소", "망루", "바깥문", "담 근처", "수용소 순찰", "물류창고 경비"] }]
   cover: 5
   danger: 2
   # 끓이지 않은 물을 뜰 곳 (12-251)
@@ -86,7 +86,7 @@
   description: 도시 동쪽의 옛 공단. 높은 담과 감시탑이 있다.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: barracks, name: "막사", indoor: true, description: "공장 기숙사 방마다 침상이 빽빽하다. 규율반 순찰이 잦다", aliases: ["막사", "점호", "화투판"] }, { id: office_block, name: "사무동·규율반", indoor: true, description: "사무동 이층. 규율반 장부와 심문실이 있다", aliases: ["사무동", "위원회", "규율반", "명부"] }, { id: kitchen, name: "부엌·배급 줄", indoor: true, description: "큰 솥이 끓는 부엌과 배급 줄. 줄에서 말소리가 낮다", aliases: ["부엌", "배급 줄", "배식"] }, { id: yard, name: "광장·창고 앞", indoor: false, description: "점호와 본보기가 열리는 광장. 창고 문이 마주 보인다", aliases: ["광장", "검수", "쓰레기 수레", "약탈조 출발"] }, { id: wall, name: "담·감시탑·사격장", indoor: false, description: "철조망 담과 감시탑, 담 밑 사격장. 총소리가 잦다", aliases: ["담벼락", "담 그늘", "사격장", "감시탑"] }, { id: armory, name: "무기고", indoor: true, description: "쇠문 두 겹의 무기고. 열쇠는 간부만 지닌다", aliases: ["무기고"] }, { id: cells, name: "철망 감방", indoor: true, description: "철망으로 칸을 나눈 감방. 서로 얼굴이 보인다", aliases: ["감방", "철망 감방"], jail: true }]
+  places: [{ id: barracks, name: "막사", indoor: true, description: "공장 기숙사 방마다 침상이 빽빽하다. 규율반 순찰이 잦다", aliases: ["막사", "점호", "화투판"] }, { id: office_block, name: "사무동·규율반", indoor: true, description: "사무동 이층. 규율반 장부와 심문실이 있다", aliases: ["사무동", "위원회", "규율반", "명부"] }, { id: kitchen, name: "부엌·배급 줄", indoor: true, description: "큰 솥이 끓는 부엌과 배급 줄. 줄에서 말소리가 낮다", aliases: ["부엌", "배급 줄", "배식"] }, { id: yard, name: "광장·창고 앞", indoor: false, description: "점호와 본보기가 열리는 광장. 창고 문이 마주 보인다", aliases: ["광장", "검수", "쓰레기 수레", "약탈조 출발"] }, { id: wall, name: "담·감시탑·사격장", indoor: false, description: "철조망 담과 감시탑, 담 밑 사격장. 총소리가 잦다", aliases: ["담벼락", "담 그늘", "사격장", "감시탑", "망루", "연습장"] }, { id: armory, name: "무기고", indoor: true, description: "쇠문 두 겹의 무기고. 열쇠는 간부만 지닌다", aliases: ["무기고"] }, { id: cells, name: "철망 감방", indoor: true, description: "철망으로 칸을 나눈 감방. 서로 얼굴이 보인다", aliases: ["감방", "철망 감방"], jail: true }]
   cover: 7
   danger: 1
   owner: faction_c
@@ -174,7 +174,7 @@
   description: 청솔형제단 거점 서쪽의 옛 아파트 단지.
   kind: base
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: office, name: "관리사무소", indoor: true, description: "관리사무소. 마을 장부와 회의 탁자가 있다", aliases: ["관리사무소", "지하 교실", "회의", "배급", "대표실", "사무실", "마을 회관", "약초 창고"] }, { id: blocks, name: "101~103동 집·계단", indoor: true, description: "101~103동 아파트 집과 계단. 집마다 문패와 빨래가 걸렸다", aliases: ["101동", "102동", "103동", "계단", "집", "숙소", "단지 부엌", "귀가"] }, { id: rooftop_watch, name: "102동 옥상 망루", indoor: false, description: "102동 옥상 망루. 단지 전체와 담 밖이 내려다보인다", aliases: ["옥상"] }, { id: gate, name: "정문·경비실·쪽문", indoor: false, description: "단지 정문과 경비실, 쪽문. 드나드는 사람을 여기서 본다", aliases: ["정문", "경비실", "쪽문", "단지 순찰", "거점 순찰"] }, { id: yard, name: "단지 텃밭·우물", indoor: false, description: "놀이터를 갈아엎은 텃밭과 두레박 우물", aliases: ["텃밭", "우물"] }, { id: lockup, name: "관리동 지하 가두는 방", indoor: true, description: "관리동 지하 창고를 막은 방. 빛이 거의 들지 않는다", aliases: ["가두는 방", "지하 가두는 방"], jail: true }]
+  places: [{ id: office, name: "관리사무소", indoor: true, description: "관리사무소. 마을 장부와 회의 탁자가 있다", aliases: ["관리사무소", "지하 교실", "회의", "배급", "대표실", "사무실", "마을 회관", "약초 창고"] }, { id: blocks, name: "101~103동 집·계단", indoor: true, description: "101~103동 아파트 집과 계단. 집마다 문패와 빨래가 걸렸다", aliases: ["101동", "102동", "103동", "계단", "집", "숙소", "단지 부엌", "귀가", "막사"] }, { id: rooftop_watch, name: "102동 옥상 망루", indoor: false, description: "102동 옥상 망루. 단지 전체와 담 밖이 내려다보인다", aliases: ["옥상"] }, { id: gate, name: "정문·경비실·쪽문", indoor: false, description: "단지 정문과 경비실, 쪽문. 드나드는 사람을 여기서 본다", aliases: ["정문", "경비실", "쪽문", "단지 순찰", "거점 순찰"] }, { id: yard, name: "단지 텃밭·우물", indoor: false, description: "놀이터를 갈아엎은 텃밭과 두레박 우물", aliases: ["텃밭", "우물"] }, { id: lockup, name: "관리동 지하 가두는 방", indoor: true, description: "관리동 지하 창고를 막은 방. 빛이 거의 들지 않는다", aliases: ["가두는 방", "지하 가두는 방"], jail: true }]
   cover: 7
   danger: 0
   owner: faction_b
@@ -244,7 +244,7 @@
   description: 첫 해에 가장 먼저 무너진 병원. 지하 약제실은 아직 다 털리지 않았다는 말이 있다. 감염체가 많다.
   kind: zone
   # 구역 안의 장소 (12-244, docs/places-plan.md). aliases: 인물 일과에서 이 장소를 가리키는 말
-  places: [{ id: lobby, name: "입구·응급실", indoor: true, description: "무너진 접수대와 응급실 침대. 바닥에 마른 핏자국", aliases: ["병원 입구", "응급실", "접수대"] }, { id: stairs_basement, name: "비상계단·지하 약제실", indoor: true, description: "어두운 비상계단과 그 아래 지하 약제실", aliases: ["비상계단", "지하", "약제실"] }, { id: yard, name: "병원 마당", indoor: false, description: "구급차가 녹슨 병원 마당. 잡초가 무릎까지 자랐다", aliases: ["병원 마당", "무덤"] }]
+  places: [{ id: lobby, name: "입구·응급실", indoor: true, description: "무너진 접수대와 응급실 침대. 바닥에 마른 핏자국", aliases: ["병원 입구", "응급실", "접수대", "장례식장"] }, { id: stairs_basement, name: "비상계단·지하 약제실", indoor: true, description: "어두운 비상계단과 그 아래 지하 약제실", aliases: ["비상계단", "지하", "약제실"] }, { id: yard, name: "병원 마당", indoor: false, description: "구급차가 녹슨 병원 마당. 잡초가 무릎까지 자랐다", aliases: ["병원 마당", "무덤"] }]
   cover: 4
   danger: 3
   owner: null

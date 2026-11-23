@@ -1,4 +1,5 @@
 import { josa } from "../text.ts";
+import { placeSaid } from "../rules/place.ts";
 import { DEED_TAGS } from "../game/reputation.ts";
 import { RESOLVE_TARGET } from "../scenario/schema.ts";
 import { checkHistory } from "../game/background.ts";
@@ -519,6 +520,7 @@ function checkReferences(content: Content): string[] {
   }
   problems.push(...checkStorylets(content));
   problems.push(...checkNpcBodies(content));
+  problems.push(...checkNpcRoutines(content));
   problems.push(...checkResolveSpine(content));
   // 무리 안의 무거운 짓 태그는 행적 태그여야 한다 (12-257: 틀리면 규율 회의가 말없이 열리지 않는다)
   for (const t of content.scenario.offense?.tags ?? []) if (!(DEED_TAGS as readonly string[]).includes(t)) problems.push(`scenario.offense.tags: 행적 태그가 아니다: ${t} (있는 것: ${DEED_TAGS.join(", ")})`);
@@ -568,6 +570,26 @@ export function checkNpcBodies(content: Content): string[] {
     for (const [t, words] of Object.entries(content.scenario.card_body_words ?? {})) {
       const hit = `${n.alias} ${n.look}`.match(new RegExp(words));
       if (hit && !n.starts?.[t]) problems.push(`npcs.${n.id}: 카드 글에 "${hit[0]}"인데 시작 상태(starts.${t})가 없다`);
+    }
+  }
+  return problems;
+}
+
+/**
+ * 인물 일과의 자리 (B① 2026-11-23, PT19: 일과 74줄이 장소로 정해지지 않아 "구역 어딘가"로 떴다).
+ * 떠돌지 않는 인물의 일과 한 칸은 그 구역의 장소(이름·aliases, 가두는 곳 빼고)로 정해지거나, 구역 밖에 나간 시간이라는 말(story_lint.routine_away)이 있어야 한다.
+ * 장소가 없는 구역과 떠도는 인물(roams)은 보지 않는다
+ */
+export function checkNpcRoutines(content: Content): string[] {
+  const problems: string[] = [];
+  const away = content.scenario.story_lint?.routine_away ?? [];
+  for (const n of Object.values(content.npcs)) {
+    if (n.roams?.length || !n.zone) continue;
+    const places = content.locations[n.zone]?.places ?? [];
+    if (!places.length) continue;
+    for (const [segment, said] of Object.entries(n.routine ?? {})) {
+      if (!said || placeSaid(places, said) || away.some((w) => said.includes(w))) continue;
+      problems.push(`npcs.${n.id}.routine.${segment}: "${said}"가 ${n.zone}의 장소로 정해지지 않는다 (장소 이름·aliases를 쓰거나, 구역 밖이면 story_lint.routine_away의 말로)`);
     }
   }
   return problems;

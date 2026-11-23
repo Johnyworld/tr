@@ -72,10 +72,20 @@ export function placeIndoor(state: GameState, content: Content): boolean | null 
   return currentPlace(state, content)?.indoor ?? null;
 }
 
-/** 실내(true)·바깥(false) 이야기가 지금 자리에 맞는가: 장소를 정하지 않았으면 늘 맞다 (이야기가 그 자리로 데려간다) */
-export function storyPlaceFits(state: GameState, content: Content, indoor: boolean): boolean {
+/** 이야기의 장소 조건 (when.places·when.indoor·when.summons)과 글 */
+export type StoryWhere = { places?: readonly string[]; indoor?: boolean; summons?: boolean };
+
+/**
+ * 실내(true)·바깥(false) 이야기가 지금 자리에 맞는가.
+ * 장소가 있는 구역에 막 들어선 자리는 길바닥이라 바깥이다 (shelterAt과 같다, B① 2026-11-23: 막 들어선 자리에서 실내 조건이 늘 통과했다).
+ * 다만 글이 그 구역의 실내 장소 하나를 말하는 실내 이야기는 연다: 그 장소로 데려간다 (storyPlaceOnEntry). 장소가 없는 구역은 거르지 않는다
+ */
+export function storyPlaceFits(state: GameState, content: Content, indoor: boolean, where: StoryWhere = {}, text = ""): boolean {
   const here = placeIndoor(state, content);
-  return here === null || here === indoor;
+  if (here !== null) return here === indoor;
+  if (!placesIn(state, content, state.playerZone).length || !indoor) return true;
+  const named = storyPlaces(state, content, where.places, text, indoor);
+  return named.length === 1 && !!placeById(state, content, named[0])?.indoor;
 }
 
 /**
@@ -83,11 +93,11 @@ export function storyPlaceFits(state: GameState, content: Content, indoor: boole
  * places를 적었으면 그 장소, 아니면 이야기 글에 나오는 지금 구역의 장소 이름·aliases. 글이 장소를 말하지 않거나
  * 장소를 정하지 않은 자리(막 들어선 자리)·즉흥 장소에 있으면 거르지 않는다 (이야기가 그 자리로 데려간다)
  */
-export function storyPlacesFit(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false): boolean {
+export function storyPlacesFit(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean): boolean {
   const here = currentPlace(state, content);
   // 부르는 이야기는 어디서든 연다: 그 장소로 데려간다 (12-260)
   if (!here || here.spawned || summons) return true;
-  const named = storyPlaces(state, content, places, text);
+  const named = storyPlaces(state, content, places, text, indoor);
   return !named.length || named.includes(here.id);
 }
 
@@ -95,15 +105,21 @@ export function storyPlacesFit(state: GameState, content: Content, places: reado
  * 막 들어선 자리(장소 없음)에서 열린 이야기가 지금 구역의 장소 하나를 말하면 그 장소 (12-254). 갇혔거나 이미 장소에 있거나 여럿·없으면 null.
  * 부르는 이야기(summons, 12-260)는 다른 장소에 있어도 그 장소로 (이미 거기 있으면 null)
  */
-export function storyPlaceOnEntry(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false): string | null {
+export function storyPlaceOnEntry(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean): string | null {
   if ((state.playerPlace && !summons) || heldOf(state.characters[state.playerId])) return null;
-  const named = storyPlaces(state, content, places, text);
+  const named = storyPlaces(state, content, places, text, indoor);
   return named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
 }
 
-/** 이야기가 말하는 지금 구역의 장소 (places를 적었으면 그것, 아니면 글에 나오는 장소 이름·aliases) */
-export function storyPlaces(state: GameState, content: Content, places: readonly string[] | undefined, text: string): string[] {
-  return places ? [...places] : placesIn(state, content, state.playerZone).filter((p) => !p.spawned && [p.name, ...p.aliases].some((a) => text.includes(a))).map((p) => p.id);
+/**
+ * 이야기가 말하는 지금 구역의 장소 (places를 적었으면 그것, 아니면 글에 나오는 장소 이름·aliases).
+ * 글자로 맞춘 장소는 이야기의 실내외(indoor)와 같아야 한다 (B① 2026-11-23: 바위 위 이야기 "저장고 아래 바위"가 실내 식당의 별칭 "저장고"와 맞았다)
+ */
+export function storyPlaces(state: GameState, content: Content, places: readonly string[] | undefined, text: string, indoor?: boolean): string[] {
+  if (places) return [...places];
+  return placesIn(state, content, state.playerZone)
+    .filter((p) => !p.spawned && (indoor === undefined || p.indoor === indoor) && [p.name, ...p.aliases].some((a) => text.includes(a)))
+    .map((p) => p.id);
 }
 
 /** 수색 횟수를 세는 자리: 장소가 있으면 구역@장소, 없으면 구역 (12-258, PT15 튜토리얼: 매장을 뒤진 뒤 창고에서 "오늘 다시 뒤짐") */
@@ -136,8 +152,12 @@ export function npcPlaceAt(state: GameState, content: Content, id: string, time:
   const said = routineSaid(npc.routine, segment);
   if (!said) return null;
   // 일과로는 가두는 곳에 두지 않는다: 갇힌 사람은 whereIs가 갇힌 곳에 둔다 (12-261, PT16 졸병: 구해 온 정찰조가 포로 때 일과 "수용소"로 우리 수용소에 있었다)
-  const hit = places.find((p) => !p.jail && (said.includes(p.name) || p.aliases.some((a) => said.includes(a))));
-  return hit?.id ?? null;
+  return placeSaid(places, said)?.id ?? null;
+}
+
+/** 일과 한 칸의 말이 가리키는 장소 (이름·aliases, 가두는 곳은 뺀다). content:check의 일과 검사도 이것으로 본다 */
+export function placeSaid<P extends { name: string; aliases: readonly string[]; jail?: boolean }>(places: readonly P[], said: string): P | undefined {
+  return places.find((p) => !p.jail && (said.includes(p.name) || p.aliases.some((a) => said.includes(a))));
 }
 
 /** 일과의 그 시간대 말. 칸이 비면 앞 시간대로 거슬러 올라간다 (하루를 한 바퀴까지) */
@@ -312,6 +332,24 @@ export function shelterAt(content: Content, state: GameState, activity: string, 
   const sheltered = !!zone && (state.homes?.[who] === zone || (content.locations[zone]?.kind === "base" && !!me?.factionId && ownedBy(state, zone, me.factionId)));
   const outdoorWork = !!c?.outdoor.includes(activity as never);
   return { indoor: zoneCover > 0 && (!outdoorWork || (activity === "search" && sheltered)), cover: zoneCover };
+}
+
+/**
+ * 어두운가 (B① 2026-11-23, PT19: 불 땐 숙소 안 새벽에도 "어둠 +1"): 어두운 시간대(segments)이고, 불이 타는 지붕 아래가 아니면.
+ * 숨기의 어둠 보정(opposition.dark)과 어둠 공포(fear.dark)가 이것으로 본다
+ */
+export function darkHere(state: GameState, content: Content, segments: readonly TimeSegment[]): boolean {
+  if (!segments.includes(segmentOf(state.time))) return false;
+  return !(shelterAt(content, state, "rest").indoor && fireLitHere(state));
+}
+
+/**
+ * 불빛이 쓸모 있는가 (B①, PT19: 한낮 바깥 수색에도 손전등 +1): 어둡거나 지붕 아래. 도구의 only.dark가 이것으로 본다.
+ * 어두운 시간대는 시나리오의 opposition.dark
+ */
+export function needsLight(state: GameState, content: Content): boolean {
+  const segments = content.scenario.opposition?.dark?.segments ?? [];
+  return darkHere(state, content, segments) || shelterAt(content, state, "rest").indoor;
 }
 
 /**

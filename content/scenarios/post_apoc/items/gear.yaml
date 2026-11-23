@@ -205,7 +205,7 @@
   kind: tool
   weight: 0.4
   value: 6
-  tool: { bonus: { scavenge: 1 } }
+  tool: { bonus: { scavenge: 1 }, only: { dark: true } }
 - id: fishing_kit
   name: 낚시 도구
   description: 낚싯줄과 바늘 몇 개, 접는 낚싯대. 물가에서 먹을 것을 구할 때 좋다.

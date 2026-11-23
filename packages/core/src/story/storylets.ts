@@ -334,8 +334,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (w.activities && !w.activities.includes(doing as never)) return false;
   if (w.activities_none?.includes(doing as never)) return false;
   // 지붕 아래·바깥 (공통 규칙 15): 실내 거처에서 모닥불 이야기가, 정문 밖에서 약제실 이야기가 열리지 않게.
-  // 장소를 정하지 않았으면(구역에 막 들어선 자리) 거르지 않는다: 이야기가 그 자리로 데려간다
-  if (w.indoor !== undefined && !storyPlaceFits(state, content, w.indoor)) return false;
+  // 장소가 있는 구역에 막 들어선 자리는 바깥이다. 글이 실내 장소 하나를 말하면 그리로 데려간다 (B①)
+  if (w.indoor !== undefined && !storyPlaceFits(state, content, w.indoor, w, storyText(storylet))) return false;
   // 규율 회의 (12-257, 공통 규칙 3)
   if (w.own_offense && !ownOffense(state, content, at)) return false;
   if (w.after_storylet) {
@@ -343,7 +343,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (last === undefined || at - last < w.after_storylet.hours * 60) return false;
   }
   // 이야기가 말하는 장소와 지금 장소가 다르면 열지 않는다 (12-251)
-  if (!storyPlacesFit(state, content, w.places, storyText(storylet), !!w.summons)) return false;
+  if (!storyPlacesFit(state, content, w.places, storyText(storylet), !!w.summons, w.indoor)) return false;
   if (w.companions_lte !== undefined && state.companions.length > w.companions_lte) return false;
   if (w.companions_gte !== undefined && state.companions.length < w.companions_gte) return false;
   if (w.own_territory !== undefined) {

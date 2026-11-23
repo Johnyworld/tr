@@ -182,7 +182,7 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
   // 장면의 사람은 함께 간다 (PT15 튜토리얼: "동의 계단 앞"으로 열린 재회 이야기 뒤 place_to가 열린 이야기 때문에 거절됐다)
   // 부르는 이야기(12-260)는 다른 장소에 있어도 불려 간다. 그때 장면의 사람은 그 자리에 남는다 (동행은 함께)
   const before = whereIs(store.getState(), content, store.getState().playerId)?.place ?? null;
-  const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons);
+  const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons, storylet.when.indoor);
   if (spot) {
     // 함께 불려 오는 배역은 남은 사람이 아니다 (12-265, PT18 분대장: 회의의 상관을 "그 자리에 남았다"고 적었다)
     const coming = new Set(Object.entries(cast).filter(([key]) => storylet.cast[key]?.enter).map(([, id]) => id));

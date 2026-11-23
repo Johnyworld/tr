@@ -77,7 +77,8 @@ export const itemContentSchema = z.strictObject({
     .strictObject({
       bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)),
       forage: z.array(contentIdSchema).optional(),
-      only: z.strictObject({ distances: z.array(z.string()).optional(), activities: z.array(z.string()).optional() }).optional(),
+      /** dark: 어둡거나(opposition.dark 시간대, 불 켠 실내 빼고) 지붕 아래일 때만 (손전등, B①) */
+      only: z.strictObject({ distances: z.array(z.string()).optional(), activities: z.array(z.string()).optional(), dark: z.boolean().optional() }).optional(),
     })
     .optional(),
   /** 몇 번 닳으면 망가지는지, 망가지면 남는 것 */

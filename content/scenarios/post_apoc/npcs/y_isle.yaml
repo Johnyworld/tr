@@ -92,7 +92,7 @@
     samples:
       - "물때표 보세요. 그 시간에 나가면 못 돌아옵니다."
       - "장부에 없는 건 없는 겁니다. 그렇게 알고 계세요."
-  routine: { dawn: 창고, day: 창고, evening: 의회 회관, night: 관사 }
+  routine: { dawn: 저장고, day: 저장고, evening: 의회 회관, night: 관사 }
   rules:
     - 창고 열쇠는 아무에게도 맡기지 않는다
     - 딸을 저녁 이후 혼자 두지 않는다

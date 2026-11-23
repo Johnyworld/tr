@@ -1,3 +1,4 @@
+import { sleptSince } from "../../game/state.ts";
 /** 치료 (recovery): engine/body.ts에서 떼어 냈다 (docs/design.md 12-236) */
 import { heldOf, inQuarantine } from "../../rules/held.ts";
 import { policyEffects } from "../../sim/war.ts";
@@ -66,12 +67,13 @@ export function sleepHealBlocker(ctx: ToolContext, from: number, to: number): st
   const track = harmTrack(ctx.content.scenario);
   const index = levelIndex(ctx, state, me.id, track.id);
   if (index <= 0) return null;
-  if (to - from < rule.min_hours * 60) return `${rule.min_hours}시간 넘게 자지 못해 상처가 아물지 않았다.`;
+  const since = state.recovery.lastChangeAt[me.id] ?? state.runStartedAt;
+  // 지난 24시간, 상처가 마지막으로 바뀐 뒤 잔 시간을 더한다 (설계 목록 3-2: 쪼개 자도 된다, 한 번 쓴 잠은 다시 세지 않는다)
+  const slept = sleptSince(state, since, to);
+  if (slept < rule.min_hours * 60) return since > from ? "자는 사이 상처가 바뀌어 아물지 않았다." : `상처가 바뀐 뒤 지난 하루 동안 잔 시간이 ${Math.floor(slept / 60)}시간뿐이라 아물지 않았다 (${rule.min_hours}시간을 채우면 나눠 자도 된다).`;
   if (bleedingBlocksRecovery(ctx, me)) return "피가 멎지 않아 상처가 아물지 않았다.";
   const max = track.levels.findIndex((l) => l.id === rule.max_level);
   if (index > max) return "이만한 상처는 잠만으로 아물지 않는다. 치료사의 치료나 수술이 있어야 한다.";
-  const since = state.recovery.lastChangeAt[me.id] ?? state.runStartedAt;
-  if (since > from) return "자는 사이 상처가 바뀌어 아물지 않았다.";
   const slow = rule.slow[track.levels[index]!.id];
   if (slow !== undefined && dayOf(to) - dayOf(since) < slow) return `이 상처는 마지막으로 바뀐 뒤 ${slow}일은 지나야 자고 나서 한 단계 아문다.`;
   return null;
@@ -79,7 +81,7 @@ export function sleepHealBlocker(ctx: ToolContext, from: number, to: number): st
 
 export function healFromSleep(ctx: ToolContext, from: number, to: number): ToolDisplayEvent[] {
   const rule = ctx.content.scenario.recovery?.sleep_heal;
-  if (!rule || to - from < rule.min_hours * 60) return [];
+  if (!rule) return [];
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   if (!me || me.dead || bleedingBlocksRecovery(ctx, me)) return [];
@@ -88,7 +90,8 @@ export function healFromSleep(ctx: ToolContext, from: number, to: number): ToolD
   const max = track.levels.findIndex((l) => l.id === rule.max_level);
   if (index <= 0 || index > max) return [];
   const since = state.recovery.lastChangeAt[me.id] ?? state.runStartedAt;
-  if (since > from) return []; // 자는 사이 다쳤다
+  // 상처가 바뀐 뒤(새로 다쳤거나 아문 뒤) 지난 24시간 동안 잔 시간이 6시간이면 (설계 목록 3-2). 한 번 쓴 잠은 다시 세지 않는다
+  if (sleptSince(state, since, to) < rule.min_hours * 60) return [];
   const slow = rule.slow[track.levels[index]!.id];
   // 날짜로 센다: 1일차에 다쳤으면 3일차 아침에 깬 잠에서 아문다 (12-266, 분으로 세면 04:00에 깨어 하룻밤 더 걸렸다)
   if (slow !== undefined && dayOf(to) - dayOf(since) < slow) return [];

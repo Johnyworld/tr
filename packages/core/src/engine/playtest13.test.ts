@@ -712,6 +712,7 @@ describe("균형: 몸·잠 (플레이 테스트 13 뒤 정한 것)", () => {
     const second = t0 + 150;
     ctx.store.append({ type: "time_advanced", activity: "wait", from: s.time, to: second });
     expect(sleepChainStart(w.state(), second)).toBe(t0);
+    ctx.store.append({ type: "time_advanced", activity: "sleep", from: second, to: second + 345 });
     expect(healFromSleep(ctx, sleepChainStart(w.state(), second), second + 345).length).toBeGreaterThan(0);
   });
 });

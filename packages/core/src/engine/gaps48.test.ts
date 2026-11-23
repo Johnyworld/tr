@@ -50,12 +50,19 @@ describe("마음", () => {
     w.state().companions = [];
     shakeNerves(w.ctx(), 2, "test", false);
     expect(me().conditions.nerves).toBe("low");
+    // 잔 시간은 지난 하루의 합으로 본다 (설계 목록 3-1·3-2, 12-281)
+    const nap = (h: number) => w.ctx().store.append({ type: "time_advanced", activity: "sleep", from: w.state().time, to: w.state().time + h * 60 });
+    nap(3);
     expect(sleepNerves({ ...w.ctx(), rng: () => 0.2 }, 3 * 60)).toBeNull(); // 3시간은 푹 잔 게 아니다
-    expect(sleepNerves({ ...w.ctx(), rng: () => 0.3 }, 7 * 60)?.line).toContain("마음: 그대로"); // 25%를 넘었다: 까닭을 한 줄
+    nap(4); // 나눠 자도 합이 7시간
+    expect(sleepNerves({ ...w.ctx(), rng: () => 0.3 }, 4 * 60)?.line).toContain("마음: 그대로"); // 25%를 넘었다: 까닭을 한 줄
     expect(me().conditions.nerves).toBe("low");
-    expect(sleepNerves({ ...w.ctx(), rng: () => 0.2 }, 7 * 60)?.line).toContain("푹 잤다");
+    expect(sleepNerves({ ...w.ctx(), rng: () => 0.2 }, 4 * 60)?.line).toContain("푹 잤다");
     expect(me().conditions.nerves).toBe("shaken");
+    // 한 번 쓴 잠은 다시 세지 않는다
+    expect(sleepNerves({ ...w.ctx(), rng: () => 0.99 }, 0)).toBeNull();
     // 심란함은 굴리지 않고 풀린다 (12-251)
+    nap(7);
     expect(sleepNerves({ ...w.ctx(), rng: () => 0.99 }, 7 * 60)?.line).toContain("푹 잤다");
     expect(me().conditions.nerves).toBe("steady");
   });

@@ -13,7 +13,7 @@ import { josa } from "../text.ts";
 import type { Rng } from "../rng.ts";
 import { CHECK_OUTCOMES, difficultySchema } from "../rules/check.ts";
 import { harmSeveritySchema } from "../rules/harm.ts";
-import { activitySchema, dayOf, segmentEnd, START_TIME } from "../rules/time.ts";
+import { activitySchema, dayOf, MINUTES_PER_DAY, segmentEnd, START_TIME } from "../rules/time.ts";
 import { interruptSchema } from "../sim/fastForward.ts";
 import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
 import { idEnum, type Scenario } from "../scenario/schema.ts";
@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 97;
+export const SAVE_SCHEMA_VERSION = 98;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -592,6 +592,10 @@ export function createGameSchemas(s: Scenario) {
     lastWokeAt: z.number().int().nullable().default(null),
     /** 지난 잠(이어진 잠 전체)이 시작된 시각 */
     lastSleptFrom: z.number().int().nullable().default(null),
+    /** 최근 하루의 잠 (설계 목록 3-1·3-2: 푹 잔 것은 지난 24시간 동안 잔 시간을 더해 본다. 쪼개 자도 된다) */
+    sleepLog: z.array(z.strictObject({ from: z.number().int(), to: z.number().int() })).default([]),
+    /** 잠으로 마음이 마지막으로 가라앉은 때 (그 앞의 잠은 다시 세지 않는다) */
+    nervesSleepSpentAt: z.number().int().nullable().default(null),
     /** 주인공이 우리 땅을 떠난 시각 (돌아오면 지운다) */
     leftHomeAt: z.number().int().nullable().default(null),
     /** 사람이 마지막으로 이야기 배역으로 나온 시각 (같은 사람이 이야기마다 나오지 않게) */
@@ -856,6 +860,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("helpless_resolved"), outcome: z.enum(["tended", "carried", "captured", "killed", "bitten", "none"]), by: z.string().nullable() }),
     z.strictObject({ type: z.literal("helpless_cleared") }),
     /** 출혈이 부상을 키웠다: 그 트랙의 시계를 다시 센다 (12-91) */
+    z.strictObject({ type: z.literal("nerves_sleep_spent") }),
     z.strictObject({ type: z.literal("track_clock_reset"), characterId: z.string(), track: z.string() }),
     /** 숨은 관계를 털어놓았다 */
     z.strictObject({ type: z.literal("tie_revealed"), key: z.string() }),
@@ -1345,6 +1350,8 @@ export const EMPTY_STATE: GameState = {
   lastActivity: null,
   lastWokeAt: null,
   lastSleptFrom: null,
+  sleepLog: [],
+  nervesSleepSpentAt: null,
   leftHomeAt: null,
   castUsedAt: {},
   spareIssuedAt: null,
@@ -1626,6 +1633,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "helpless_cleared":
       next.helplessAt = null;
+      break;
+    case "nerves_sleep_spent":
+      next.nervesSleepSpentAt = state.time;
       break;
     case "track_clock_reset":
       next.recovery.trackAt = { ...next.recovery.trackAt, [`${event.characterId}:${event.track}`]: state.time };
@@ -2185,6 +2195,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         // 깬 지 얼마 안 돼 다시 자면 앞의 잠에 이어진다 (플레이 테스트 13: 끊긴 잠 두 조각이 각각 6시간이 안 돼 상처가 아물지 않았다)
         next.lastSleptFrom = sleepChainStart(state, event.from);
         next.lastWokeAt = event.to;
+        next.sleepLog = [...(state.sleepLog ?? []).filter((s) => s.to > event.to - MINUTES_PER_DAY), { from: event.from, to: event.to }];
       }
       {
         const mission = activeMissionOf(next.missions, state.playerId);
@@ -2978,6 +2989,12 @@ export function createWorldEvent(
 export const SLEEP_CHAIN_MINUTES = 60;
 
 /** from에 시작하는 잠이 이어지는 잠의 시작 시각 (이어지지 않으면 from) */
+/** since부터 now까지(지난 24시간 안) 잔 시간 (분) */
+export function sleptSince(state: { sleepLog?: readonly { from: number; to: number }[] }, since: number, now: number): number {
+  const start = Math.max(since, now - MINUTES_PER_DAY);
+  return (state.sleepLog ?? []).reduce((n, s) => n + Math.max(0, Math.min(s.to, now) - Math.max(s.from, start)), 0);
+}
+
 export function sleepChainStart(state: { lastWokeAt: number | null; lastSleptFrom: number | null }, from: number): number {
   return state.lastWokeAt !== null && state.lastSleptFrom !== null && from >= state.lastWokeAt && from - state.lastWokeAt < SLEEP_CHAIN_MINUTES ? state.lastSleptFrom : from;
 }

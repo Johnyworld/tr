@@ -1,3 +1,4 @@
+import { sleptSince } from "../game/state.ts";
 import { atStake, NO_STAKES } from "../rules/stakes.ts";
 import { companyHere } from "../rules/company.ts";
 import { soak } from "./climate.ts";
@@ -791,16 +792,20 @@ export function sleepNerves(ctx: ToolContext, slept: number): Change | null {
   const rule = nerves?.sleep;
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
-  if (!nerves || !rule || !me || me.dead || slept < rule.min_hours * 60) return null;
+  void slept;
+  // 지난 24시간, 마지막으로 잠으로 가라앉은 뒤 잔 시간을 더한다 (설계 목록 3-1·3-2: 쪼개 자도 되고, 한 번 쓴 잠은 다시 세지 않는다)
+  if (!nerves || !rule || !me || me.dead || sleptSince(state, state.nervesSleepSpentAt ?? state.runStartedAt, state.time) < rule.min_hours * 60) return null;
   if (levelIndex(ctx, state, me.id, nerves.track) <= 0) return null;
   // 가라앉지 않았으면 까닭을 한 줄 (12-251, 플레이 테스트 14: 잠 결과에 마음이 왜 그대로인지 보이지 않았다)
   const level = me.conditions[nerves.track];
   const stay = (why: string): Change => ({ line: `마음: 그대로 (${why})`, display: null, died: false });
-  if (severe(ctx, me, ctx.content.scenario.body?.hunger?.track)) return stay("굶주려 푹 쉬지 못했다");
-  if (severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return stay("추위에 떨어 푹 쉬지 못했다");
-  const { mine, company } = safety(ctx.content, state, me);
+  // 반드시 풀리는 단계(심란함·멘탈붕괴)는 굶주림·추위가 막지 않는다 (설계 목록 3-1: 갇힌 엿새 동안 멘탈붕괴가 그대로였다)
   const sure = !!level && rule.sure.includes(level);
+  if (!sure && severe(ctx, me, ctx.content.scenario.body?.hunger?.track)) return stay("굶주려 푹 쉬지 못했다");
+  if (!sure && severe(ctx, me, ctx.content.scenario.body?.cold?.track)) return stay("추위에 떨어 푹 쉬지 못했다");
+  const { mine, company } = safety(ctx.content, state, me);
   const chance = (mine || company ? rule.safe : rule.unsafe) + nerves.recover.per_point * steadyStat(ctx, me);
   if (!sure && ctx.rng() >= chance) return stay(mine || company ? "푹 잤지만 마음이 아직 가라앉지 않았다" : "낯선 곳에서 혼자 자 마음이 아직 가라앉지 않았다");
+  ctx.store.append({ type: "nerves_sleep_spent" });
   return changeCondition(ctx, me.id, nerves.track, -1, "nerves", mine ? "익숙한 담 안에서 푹 잤다" : company ? "곁에 사람을 두고 푹 잤다" : "모처럼 푹 잤다");
 }

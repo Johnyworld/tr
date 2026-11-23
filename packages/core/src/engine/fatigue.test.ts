@@ -87,7 +87,7 @@ describe("피로", () => {
     // 상처는 푹 잔 밤에 아문다 (플레이 테스트 11, A1)
     const from = store.getState().time;
     exposeToFatigue(ctx, "sleep", from, from + 6 * H);
-    store.getState().time = from + 6 * H;
+    store.append({ type: "time_advanced", activity: "sleep", from, to: from + 6 * H });
     healFromSleep(ctx, from, from + 6 * H);
     expect(me().conditions.harm).toBe("none");
   });

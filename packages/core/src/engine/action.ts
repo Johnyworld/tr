@@ -62,7 +62,7 @@ import { idEnum, type Scenario } from "../scenario/schema.ts";
 import { conditionPenalty, harmTrack, levelOf, moveIds, statIds, worsen } from "../scenario/scenario.ts";
 import { createInterruptChecks, fastForward } from "../sim/fastForward.ts";
 import { rollPlayerCheck } from "./checks.ts";
-import { recordDeed } from "./reputationTools.ts";
+import { recordDeed, spottedEntering } from "./reputationTools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { SQUAD_REPORT_PREFIX } from "./command.ts";
 import { activeMissionOf, atMissionPlace, commanderOf as commanderIdOf, MISSION_CHECK_TRIES, MISSION_FAIL_MINUTES } from "../game/missions.ts";
@@ -1115,7 +1115,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       if (deed.witnesses.some((w) => ofOwner(w.npcId))) ownerSaw = true;
     }
   }
+  // 적 땅의 장소에 들어서면 그 장소의 땅 주인 무리 사람이 알아볼 수 있다 (B②). 잠입 중이면 잠입 장치가 맡는다
+  let spottedBy: string[] = [];
+  if (!ownerSaw && hostileOwner && placeMove?.to) {
+    spottedBy = spottedEntering(ctx, hostileOwner);
+    if (spottedBy.length) ownerSaw = true;
+  }
   if (ownerSaw && hostileOwner) {
+    if (spottedBy.length) lines.push(`${placeMove!.to!.name}에 들어서자 그곳에 있던 ${josa(spottedBy.map((id) => playerCalls(store.getState(), content, id)).join(", "), "이/가")} 알아보았다.`);
     for (const d of raiseAlarm(ctx)) {
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`${content.factions[hostileOwner]?.name ?? hostileOwner} 사람이 보았다. 경보가 울린다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);

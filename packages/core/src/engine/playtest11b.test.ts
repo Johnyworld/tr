@@ -207,10 +207,10 @@ describe("플레이 테스트 11 원문의 버그", () => {
     const s = env.store.getState();
     for (const id of ["npc_leader", "npc_stranger"]) env.store.append({ type: "npc_entered", npcId: id });
     const after = env.store.getState();
-    expect(watchers(after)).toEqual(expect.arrayContaining(["npc_leader", "npc_stranger"]));
+    expect(watchers(after, env.ctx.content)).toEqual(expect.arrayContaining(["npc_leader", "npc_stranger"]));
     const foe = after.characters.npc_stranger!;
-    expect(watchers(after, foe)).not.toContain("npc_leader");
-    expect(watchers(after, foe)).toContain("npc_stranger");
+    expect(watchers(after, env.ctx.content, foe)).not.toContain("npc_leader");
+    expect(watchers(after, env.ctx.content, foe)).toContain("npc_stranger");
     expect(s.playerId).toBeTruthy();
   });
 

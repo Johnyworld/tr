@@ -4,9 +4,10 @@ import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
-import { darkHere } from "../rules/place.ts";
+import { darkHere, peopleHere } from "../rules/place.ts";
+import { ableNow } from "../rules/company.ts";
 import { weatherNow } from "../sim/weather.ts";
-import { isInfected } from "../game/kinds.ts";
+import { isCreature, isInfected } from "../game/kinds.ts";
 import { isIncapacitated } from "./body.ts";
 import { isConfused } from "./ambush.ts";
 import { opposedLabel } from "../rules/skill.ts";
@@ -53,7 +54,7 @@ export function oppositionParts(content: Content, state: GameState, moveId: stri
     parts.push({ label: opposedLabel(value, label, playerCalls(state, content, opponent.id)), value });
   }
   if (r.crowd?.moves.includes(moveId)) {
-    const eyes = watchers(state, opponent).length;
+    const eyes = watchers(state, content, opponent, moveId === content.scenario.move_roles.stealth).length;
     const value = -r.crowd.at.filter((n) => eyes >= n).length;
     // 수는 보이지 않는다 (플레이 테스트 11: "지켜보는 눈 3"이 아직 서술되지 않은 감염체 셋을 드러냈다)
     if (value) parts.push({ label: "지켜보는 눈", value });
@@ -106,10 +107,13 @@ export function heavyWeapon(content: Content, c: Character, move?: string): stri
 /**
  * 숨는 것을 볼 수 있는 사람. 무리 밖의 상대에게서 숨을 때는 우리 무리 사람(아군)은 세지 않는다 (플레이 테스트 11: 적 초소를 상대로 한 은밀에 곁의 조원 셋이 눈으로 셌다)
  */
-export function watchers(state: GameState, opponent?: Character): string[] {
+export function watchers(state: GameState, content: Content, opponent?: Character, placeToo = false): string[] {
   const own = state.characters[state.playerId]?.factionId ?? null;
   const allyOnly = !!opponent && !!own && opponent.factionId !== own;
-  return state.scene.present.filter(
+  // 숨을 때는 같은 장소에 있을 사람도 눈이다 (B②, 공통 규칙 15 peopleHere). 장소를 옮기는 턴이면 판정 전에 옮겨 있어 도착한 장소의 사람이다.
+  // 장면 밖 사람은 움직일 수 있는 사람만 (공통 규칙 8 ableNow). 속이기는 말을 듣는 장면의 사람만 센다
+  const placed = !placeToo ? [] : peopleHere(state, content).filter((id) => ableNow(state, content, id) && !isCreature(content, state.characters[id]));
+  return [...state.scene.present, ...placed].filter(
     (id) => id !== state.playerId && !state.characters[id]?.dead && !state.companions.includes(id) && !(allyOnly && state.characters[id]?.factionId === own),
   );
 }

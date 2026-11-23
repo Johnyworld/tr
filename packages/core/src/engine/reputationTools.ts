@@ -14,6 +14,7 @@ import { z } from "zod";
 import { dayOf } from "../rules/time.ts";
 import type { BeliefSource } from "../game/belief.ts";
 import type { GameState } from "../game/state.ts";
+import type { Character } from "../game/character.ts";
 import {
   computeRelationDelta,
   DEED_TAG_LABELS,
@@ -33,7 +34,7 @@ import { isIncapacitated } from "./body.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { tellPlayerSecret } from "../rules/self.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
-import {sharesPlace, whereIs, zoneOf, hereWithMe } from "../rules/place.ts";
+import {sharesPlace, whereIs, zoneOf, hereWithMe, peopleHere } from "../rules/place.ts";
 
 export type DeedInput = {
   summary: string;
@@ -63,6 +64,46 @@ function sceneSees(state: GameState, stealthMove: string, npcId: string): boolea
   if (stealth === "success") return false;
   if (stealth !== "partial") return true;
   return Object.values(state.checks).some((c) => c.turn === state.turn && c.actorId === state.playerId && c.move === stealthMove && (c.opponent === npcId || c.target === npcId));
+}
+
+/** 같은 장소에 있는 숨은 목격자의 배수 (B②). 상한은 MAX_NOTICE */
+export const SAME_PLACE_FACTOR = 2;
+const MAX_NOTICE = 0.95;
+
+/** 장면 밖 한 사람이 지금 주인공이 하는 일을 알아차릴 확률 (숨은 목격자·장소에 들어설 때 같이 쓴다) */
+function noticeChance(ctx: ToolContext, character: Character, privacy: Privacy, noisy: boolean, stealth: "success" | "partial" | "miss" | null): number {
+  const state = ctx.store.getState();
+  const scenario = ctx.content.scenario;
+  const notice = noticeMove(ctx);
+  return Math.min(
+    MAX_NOTICE,
+    hiddenWitnessChance({
+      privacy,
+      time: state.time,
+      noisy,
+      // 그 인물의 주의력: 감각 능력 + 경계 스킬 (상한까지)
+      senseStat: Math.min(scenario.ranges.cap, (character.stats[notice.stats[0]!] ?? 0) + effectiveSkill(ctx.content, character, notice.id)),
+      // 트레잇: 목격하는 쪽의 주의력, 하는 쪽이 눈에 띄는지
+      traitFactor: alertnessFactor(ctx.content, character) * noticedFactor(ctx.content, state.characters[state.playerId]!),
+      stealth,
+      visibility: weatherNow(scenario, state)?.visibility ?? 1,
+    }),
+  );
+}
+
+/**
+ * 적 땅의 장소에 들어서자 그곳의 땅 주인 무리 사람이 알아보았는가 (B②, PT19 졸병: 대낮에 마당을 가로질러 수용소 철망 앞까지 가도 그 자리의 다섯이 보지 않았다).
+ * 그 장소에 있을 사람(장면 밖) 가운데 그 무리이고 움직일 수 있는 사람이 드러난 곳(public)으로 한 번씩 굴린다. 이번 턴 은밀이 성공·대가 있는 성공이면 덜 본다.
+ * 본 사람 id를 돌려준다 (경보는 부르는 쪽이 연다)
+ */
+export function spottedEntering(ctx: ToolContext, owner: string): string[] {
+  const state = ctx.store.getState();
+  const stealth = stealthThisTurn(state, ctx.content.scenario.move_roles.stealth);
+  return peopleHere(state, ctx.content).filter((id) => {
+    const c = state.characters[id];
+    if (!c || c.factionId !== owner || isCreature(ctx.content, c) || !ableNow(state, ctx.content, id)) return false;
+    return ctx.rng() < noticeChance(ctx, c, "public", false, stealth);
+  });
 }
 
 /** 낌새를 알아차리는 행동 (시나리오의 move_roles.notice). 첫 번째 능력치를 쓴다 */
@@ -137,7 +178,6 @@ function recordDeedIf(
     // 볼 수 있는 사람만: 죽은 사람·기절한 사람·갇힌 사람은 보지 못한다 (공통 규칙 7·8, 12-269 우회 점검: 기절시킨 경비가 "보았다"로 경보를 울렸다)
     for (const npcId of state.scene.present) if (!isCreature(ctx.content, state.characters[npcId]) && ableNow(state, ctx.content, npcId) && !fooled?.includes(npcId) && sceneSees(state, scenario.move_roles.stealth, npcId)) witnesses.push({ npcId, hidden: false });
     const stealth = stealthThisTurn(state, scenario.move_roles.stealth);
-    const notice = noticeMove(ctx);
     for (const character of fooled ? [] : Object.values(state.characters)) {
       if (character.id === state.playerId || character.dead || character.away || heldOf(character)) continue;
       // 엑스트라는 같은 장소에 있다고 정해진 사람만 (집·머무는 자리): 어디 있는지 모르는 엑스트라는 굴리지 않는다
@@ -151,20 +191,9 @@ function recordDeedIf(
       if (state.playerZone && where && where !== state.playerZone) continue;
       // 같은 구역이어도 다른 장소에 있을 사람은 보지 못한다 (공통 규칙 15, PT14: 장터 반대편·다른 장소의 사람이 "직접 봄")
       if (!sharesPlace(state, ctx.content, character.id)) continue;
-      const chance = hiddenWitnessChance({
-        privacy: input.privacy,
-        time: state.time,
-        noisy: input.noisy,
-        // 그 인물의 주의력: 감각 능력 + 경계 스킬 (상한까지)
-        senseStat: Math.min(
-          scenario.ranges.cap,
-          (character.stats[notice.stats[0]!] ?? 0) + effectiveSkill(ctx.content, character, notice.id),
-        ),
-        // 트레잇: 목격하는 쪽의 주의력, 하는 쪽이 눈에 띄는지
-        traitFactor: alertnessFactor(ctx.content, character) * noticedFactor(ctx.content, state.characters[state.playerId]!),
-        stealth,
-        visibility: weatherNow(scenario, state)?.visibility ?? 1,
-      });
+      // 같은 장소에 있다고 정해진 사람은 두 배로 본다 (B② 2026-11-23, PT16·17 졸병: 창고에 있을 사람 여섯인데 장면의 하나만 보았다).
+      // 장소를 모르는 "구역 어딘가"의 사람은 그대로
+      const chance = noticeChance(ctx, character, input.privacy, input.noisy, stealth) * (hereWithMe(state, ctx.content, character.id) ? SAME_PLACE_FACTOR : 1);
       if (ctx.rng() < chance) witnesses.push({ npcId: character.id, hidden: true });
     }
   }

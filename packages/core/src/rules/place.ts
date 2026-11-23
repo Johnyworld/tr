@@ -231,6 +231,11 @@ export function peopleAt(state: GameState, content: Content, zone: string | null
   });
 }
 
+/** 주인공이 지금 있는 장소에 있을 사람 (장면의 사람은 뺀다). 장소를 정하지 않았으면(막 들어선 자리) 없다 (B②) */
+export function peopleHere(state: GameState, content: Content): string[] {
+  return state.playerPlace ? peopleAt(state, content, state.playerZone, state.playerPlace) : [];
+}
+
 /**
  * 장소를 옮길 때 함께 가는 장면의 인물 (PT14: 데려가던 다친 동료, 같이 걷던 사람, 그 장소가 제자리인 사람이 매번 장면에서 빠졌다).
  * 곁의 동행은 늘 따라온다(리듀서). 그 밖에는 이번 행동이 겨누는 사람과 GM이 함께 간다고 넣은 사람(with: 업거나 부축하는 사람, 같이 걷는 사람, 쫓아오는 것),

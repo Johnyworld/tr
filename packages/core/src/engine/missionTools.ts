@@ -23,6 +23,9 @@ import { moveLabel } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
 import { ACTIVITY_COSTS, ACTIVITY_LABELS, dayOf, formatDuration, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { Content, MissionRequirement } from "../content/schemas.ts";
+import { moveOf } from "../scenario/scenario.ts";
+import { effectiveSkill } from "./traits.ts";
+import type { Character } from "../game/character.ts";
 import { baseOf } from "./captivity.ts";
 import { hereWithMe, whereLabel } from "../rules/place.ts";
 import { enterScene } from "./extras.ts";
@@ -103,9 +106,11 @@ export function describeMission(s: Scenario, mission: MissionInstance): string {
 }
 
 /** 임무 템플릿의 where를 이 판의 장소로 (배정할 때 정해 둔다) */
-export function missionPlace(state: GameState, content: Content, where: string | undefined, factionId: string | null): MissionInstance["place"] {
+export function missionPlace(state: GameState, content: Content, where: string | readonly string[] | undefined, factionId: string | null): MissionInstance["place"] {
   if (!where) return null;
   const zoneName = (id: string) => content.locations[id]?.name ?? id;
+  // 구역 목록 (설계 목록 5-4): 그 가운데 어디서든
+  if (typeof where !== "string") return { zone: null, notZone: null, enemyOf: null, zones: [...where], label: where.map(zoneName).join("·") };
   if (where === "outside") {
     const base = factionId ? baseOf(state, content, factionId) : undefined;
     return base ? { zone: null, notZone: base, enemyOf: null, label: `${zoneName(base)} 밖` } : null;
@@ -117,6 +122,14 @@ export function missionPlace(state: GameState, content: Content, where: string |
   }
   if (where === "enemy") return factionId ? { zone: null, notZone: null, enemyOf: factionId, label: "적대하는 무리의 땅" } : null;
   return { zone: where, notZone: null, enemyOf: null, label: zoneName(where) };
+}
+
+/** 이 판정의 보정(가장 나은 능력 + 쓰는 스킬)이 음수인가 (설계 목록 5-3) */
+function weakAt(content: Content, me: Character, move: string): boolean {
+  const m = moveOf(content.scenario, move);
+  if (!m) return false;
+  const ability = Math.max(...m.stats.map((st) => me.stats[st] ?? 0));
+  return ability + effectiveSkill(content, me, move) < 0;
 }
 
 /** 이야기가 열려 있으면 임무를 받거나 보고하기 전에 먼저 받는다 (12-240, A1: 같은 묶음의 보고가 이야기보다 먼저 끝났다) */
@@ -340,7 +353,9 @@ const reportMission = defineTool({
     const supplies = ctx.content.missions[mission.templateId]?.supplies;
     // 같이 나선 사람(임무 짝)이 있거나 구해 온 것을 건넸을 때만 (플레이 테스트 12: 혼자 빈손으로 왔는데 창고가 늘었다)
     // 건네기 조건이 있는 일감도 실제로 건넨 것이 있어야 한다 (플레이 테스트 13: 빈손 일부 완수에 창고가 늘었다)
-    const party = Object.values(ctx.store.getState().bonds ?? {}).some((b) => b.kind === "buddy" && b.missionId === mission.id) || handed.length > 0;
+    // 손으로 하는 일(work, 그물 걷기·물 긷기)은 주인공이 한 일 자체가 산출이다 (설계 목록 5-1, PT16~18 섬: 혼자 그물을 걷었는데 "분대를 보내지 않은 일")
+    const handiwork = reported.requirements.some((r) => "activity" in r && r.activity === "work");
+    const party = Object.values(ctx.store.getState().bonds ?? {}).some((b) => b.kind === "buddy" && b.missionId === mission.id) || handed.length > 0 || handiwork;
     if (supplies && party && result.outcome !== "failed" && ctx.store.getState().factions[lender]) {
       for (const [resource, amount] of Object.entries(supplies)) {
         const delta = result.outcome === "success" ? amount! : Math.trunc(amount! / 2);
@@ -354,7 +369,9 @@ const reportMission = defineTool({
     const occNote = occ?.missions.includes(mission.templateId) && result.outcome === "success" ? changeStanding(ctx, mission.assigneeId, 1, `일감: ${mission.title}`) : null;
     // 완수하면 알게 되는 것 (12-237)
     const learns = result.outcome === "success" ? ctx.content.missions[mission.templateId]?.learns : undefined;
-    if (learns) {
+    // 현장에서 이미 알았으면 보고만 한다 (설계 목록 5-5)
+    const knewInField = !!learns && (ctx.store.getState().beliefs[mission.assigneeId] ?? []).some((b) => b.fact === learns);
+    if (learns && !knewInField) {
       const now = ctx.store.getState();
       ctx.store.append({ type: "belief_added", characterId: mission.assigneeId, belief: { id: `b_${now.nextBeliefNo}`, fact: learns, source: "seen", accuracy: "exact", learnedAt: now.time } });
     }
@@ -363,7 +380,7 @@ const reportMission = defineTool({
       `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       ...(handed.length ? [`구해 온 것을 상관에게 건넸다: ${handed.join(", ")}`] : []),
       ...(returned.length ? [`맡은 짐·받아 온 값을 상관에게 넘겼다: ${returned.join(", ")}`] : []),
-      ...(learns ? [`알게 된 것 (임무로 확인했다, 상관에게도 보고했다): ${learns}`] : []),
+      ...(learns ? [knewInField ? `현장에서 알게 된 것을 상관에게 보고했다: ${learns}` : `알게 된 것 (임무로 확인했다, 상관에게도 보고했다): ${learns}`] : []),
       ...(short ? ["받아 올 값이 모자라 일부 완수까지다."] : []),
       ...unmetLines(ctx.content.scenario, reported),
       ...(supplies && !party && result.outcome !== "failed" ? ["무리 창고에 따로 든 것은 없다 (분대를 보내지 않은 일)."] : []),
@@ -371,7 +388,9 @@ const reportMission = defineTool({
       // 주인공이 실제로 찾은 물건과는 따로 셈한다 (플레이 테스트 11: 약을 못 찾았는데 "구해 온 의약품"이라고 했다)
       ...(supplied.length
         ? [
-            mission.requirements.some((r) => "bring" in r)
+            handiwork
+              ? `주인공이 한 일의 몫으로 무리 창고의 ${josa(supplied.join("·"), "이/가")} 조금 늘었다.`
+              : mission.requirements.some((r) => "bring" in r)
               ? `이 일감의 몫으로 무리 창고의 ${josa(supplied.join("·"), "이/가")} 조금 늘었다 (건넨 것과 같이 나선 사람들의 몫까지 장부에 셈한 것).`
               : `이 일감의 몫으로 무리 창고의 ${josa(supplied.join("·"), "이/가")} 조금 늘었다 (같이 나선 사람들의 몫까지 장부에 셈한 것. 주인공이 찾은 물건은 소지품에 그대로 있고, 내놓을지는 플레이어가 정한다).`,
           ]
@@ -446,7 +465,7 @@ const abandonMission = defineTool({
  * 기한에 얹는 오가는 시간 (플레이 테스트 12: 첫 임무가 이동 + 4시간 보초 + 빗나감으로 기한을 넘겨 진급이 막혔다).
  * 지금 구역에서 임무 자리까지 가장 짧은 길의 구역 수 × 이동 한 번의 가장 긴 시간, 오가는 것으로 두 배
  */
-function travelAllowance(ctx: ToolContext, where: string | null | undefined, factionId: string | null): number {
+function travelAllowance(ctx: ToolContext, where: string | readonly string[] | null | undefined, factionId: string | null): number {
   const state = ctx.store.getState();
   const start = state.playerZone;
   const place = missionPlace(ctx.store.getState(), ctx.content, where ?? undefined, factionId);
@@ -575,7 +594,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const at = (lv: string | undefined) => harm.levels.findIndex((l) => l.id === lv);
     const unfit = !!me && !!unfitFrom && at(me.conditions[harm.id]) >= at(unfitFrom) && at(unfitFrom) >= 0;
     const safeOnly = (state.missionGraceUntil ?? 0) > state.time || unfit;
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learned(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content), safeOnly);
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learned(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content), safeOnly, (move) => !!me && weakAt(ctx.content, me, move));
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;
@@ -651,4 +670,17 @@ function routeBetween(content: ToolContext["content"], from: string, to: string)
     }
   }
   return null;
+}
+
+/**
+ * 임무 조건을 다 채운 그 자리에서 알게 되는 것 (설계 목록 5-5, PT18 분대장: 짐꾼 흔적을 보고 때 처음 들었다).
+ * 보고 때는 "보고했다"로만. 이번에 알게 됐으면 결과 글 한 줄
+ */
+export function fieldLearns(ctx: ToolContext): string | null {
+  const state = ctx.store.getState();
+  const mission = activeMissionOf(state.missions, state.playerId);
+  const learns = mission && mission.metAt !== undefined ? ctx.content.missions[mission.templateId]?.learns : undefined;
+  if (!learns || (state.beliefs[state.playerId] ?? []).some((b) => b.fact === learns)) return null;
+  ctx.store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${state.nextBeliefNo}`, fact: learns, source: "seen", accuracy: "exact", learnedAt: state.time } });
+  return `알게 된 것 (임무 현장에서, 조건을 다 채웠다): ${learns}. 이것을 장면에 서술하라. 보고는 상관에게 report_mission.`;
 }

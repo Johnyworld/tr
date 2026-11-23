@@ -236,7 +236,7 @@ export function checkPromotion(
 
 /** 오늘의 임무 후보를 고른다. 이미 오늘 골랐으면 null */
 /** 위험 임무: 무기고가 무기를 빌려주는 작전이거나 적 땅에서 하는 일 (12-239) */
-export function riskyMission(m: { armed?: boolean | undefined; where?: string | undefined }): boolean {
+export function riskyMission(m: { armed?: boolean | undefined; where?: string | readonly string[] | undefined }): boolean {
   return !!m.armed || m.where === "enemy";
 }
 
@@ -260,6 +260,8 @@ export function pickDailyOffers(
   recent: readonly string[] = [],
   /** 위험 임무(작전·적 땅)를 내지 않는다: 막 들어온 유예, 중상 이상 (12-239) */
   safeOnly = false,
+  /** 받을 사람에게 보정이 음수인 판정인지 (설계 목록 5-3, PT16·17 섬: 스킬 -1인 새 식구에게 판정 두 개짜리). 다른 후보가 있으면 뒤로 미룬다 */
+  weakAt?: (move: string) => boolean,
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
@@ -276,13 +278,14 @@ export function pickDailyOffers(
     .filter((id) => {
       const where = content.missions[id]!.where;
       if (!lost?.factionId || !where || where === "outside" || where === "near" || where === "enemy") return true;
-      return content.locations[where]?.owner !== lost.factionId || lost.owners[where]?.owner === lost.factionId;
+      return (Array.isArray(where) ? where : [where]).every((z) => content.locations[z]?.owner !== lost.factionId || lost.owners[z]?.owner === lost.factionId);
     });
   if (pool.length === 0) return null;
   const picked: string[] = [];
   const count = Math.min(OFFERS_PER_DAY, pool.length);
   // 최근에 받은 일감은 다른 후보가 있으면 쉰다 (공통 규칙 5)
-  const fresh = preferRested(pool, (id) => recent.includes(id));
+  const weak = (id: string) => !!weakAt && content.missions[id]!.requirements.some((r) => "check" in r && weakAt(r.check));
+  const fresh = preferRested(pool, (id) => recent.includes(id) || weak(id));
   const stale = pool.filter((id) => !fresh.includes(id));
   // 하나는 늘 역할 일감에서, 직분 일감은 하루 하나까지 (플레이 테스트 13: 한 통에서 뽑아 상단 일감 8종 중 3종만 나왔다)
   const own = new Set(content.roles[roleId]?.missions ?? []);

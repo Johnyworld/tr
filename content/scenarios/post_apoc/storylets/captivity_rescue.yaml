@@ -113,7 +113,6 @@
       effects:
         - faction_resource: { faction: own, resource: ammo, delta: -8 }
         - release_player: { returned: true, home: true }
-        - merit: -1
         - belief: { fact: 우리 무리가 탄약 여덟 발로 몸값을 치르고 나를 데려왔다. 그 값을 갚기로 마음먹었다, source: seen }
 
 - id: cp_long_mouth

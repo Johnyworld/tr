@@ -421,7 +421,8 @@ export function createContentSchemas(s: Scenario) {
      * 임무를 해야 하는 곳 (플레이 테스트 4). 그 자리에서 한 판정·활동만 진행으로 센다. 없으면 어디서든 (거점 안의 일).
      * 구역 id, outside(우리 거점 밖 어디든), enemy(적대하는 무리의 땅)
      */
-    where: z.union([z.literal("outside"), z.literal("near"), z.literal("enemy"), contentIdSchema]).optional(),
+    /** 구역 목록이면 그 가운데 어디서든 (설계 목록 5-4: 가는 길의 강변에서 조심하라는 일) */
+    where: z.union([z.literal("outside"), z.literal("near"), z.literal("enemy"), contentIdSchema, z.array(contentIdSchema).min(2)]).optional(),
     /** 완수하면 알게 되는 것 (12-237: 따라가 보기·알아 오기 임무의 결과를 GM이 지어내야 했다). 주인공의 믿음으로 남는다 */
     learns: z.string().min(1).max(200).optional(),
     /** 들키지 않기가 조건인 일 (플레이 테스트 13): 임무 중에 경보가 울리거나 붙잡히면 조건을 채웠어도 일부 완수까지 */

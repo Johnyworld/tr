@@ -53,7 +53,7 @@ import { findHolderInventory, SCENE_HOLDER, type GameEvent, type GameState } fro
 import { defineTool, signed, STRICT_UNSUPPORTED_KEYS, type ToolContext, type ToolDisplayEvent, type ToolOutcome, type ToolSpec } from "./toolkit.ts";
 
 export { STRICT_UNSUPPORTED_KEYS } from "./toolkit.ts";
-import { MISSION_TOOLS } from "./missionTools.ts";
+import { fieldLearns, MISSION_TOOLS } from "./missionTools.ts";
 import { COMMAND_TOOLS } from "./command.ts";
 import { COMPANION_TOOLS, isAwayCompanion } from "./companionTools.ts";
 import { REPUTATION_TOOLS } from "./reputationTools.ts";
@@ -532,8 +532,10 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
   leaveRemainsForNewDeaths(ctx, living);
   // 장면에서 본 갇힌 사람은 어디 붙잡혀 있는지 기억한다 (12-259, 공통 규칙 1)
   noteHeldSeen(ctx);
+  // 임무 조건을 다 채운 자리에서 알게 되는 것 (설계 목록 5-5)
+  const field = outcome.ok ? fieldLearns(ctx) : null;
   // 짐이 한도를 넘으면 창고를 한 번 알린다 (12-149)
-  const hint = outcome.ok ? [stashHint(ctx), storyStillOpen(state, name, ctx)].filter(Boolean).join("\n") : null;
+  const hint = outcome.ok ? [field, stashHint(ctx), storyStillOpen(state, name, ctx)].filter(Boolean).join("\n") : null;
   const hinted = hint && outcome.ok ? { ...outcome, resultText: [outcome.resultText, hint].filter(Boolean).join("\n") } : outcome;
   return withCheckLines(withFear(hinted, fearAfterTool(ctx, before)), takeReactionChecks(ctx.store));
 }

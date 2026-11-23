@@ -157,9 +157,14 @@ access_labels:
 offense: { tags: [theft, cruelty, betrayal], min_severity: 2, within_days: 3, notice_minutes: 60 }
 
 # 이야기 글 검사 (content:check, 12-261): 바깥을 말하는 글은 바깥에서만, 잠에서 깨는 글은 잠·쉬는 중에만
+# 같은 틀 엑스트라의 겉모습을 다 썼을 때 덧붙이는 표시 (12-265, PT17·PT18: 둘·셋이 똑같이 보였다)
+extra_marks: [왼쪽 눈썹에 흉터가 있다, 손등에 더러운 붕대를 감았다, 신발이 짝짝이다, 앞니 하나가 없다, 목에 빨간 천을 둘렀다, 오른쪽 다리를 조금 전다, 머리를 짧게 밀었다, 손가락 하나가 없다]
+
 story_lint:
-  outdoor: [자갈밭, 갈대밭, 안개 속, 빗속, 갯바위, 길가]
+  outdoor: [자갈밭, 갈대밭, 안개 속, 빗속, 갯바위, 길가, 담 그늘]
   waking: [소리에 눈을 뜬다, 냄새에 눈을 뜬다, 소리에 깬다, 차가워서 깬다, 잠결에]
+  # 인물이 아는 것(knows)은 들은 사람이 알게 되는 내용 그 자체로 쓴다. 항목 이름("~위치", "~교대 시간")이면 GM이 내용을 지어내야 한다 (12-265, PT17·PT18 튜토리얼)
+  knows_endings: [위치, 시간, 시각, 곳, 길, 경로, 방법]
 
 # 무리의 규율 단계 (기획서 9.9). 무리마다 factions의 culture.discipline으로 고른다 (*임시* 수치)
 # abandon/expire_merit: 임무를 버리거나 놓쳤을 때의 공적, counts_disobedience: 불복종으로 치는지,
@@ -590,7 +595,7 @@ traits:
   - { id: timid, label: 소심함, kind: personality, visible: true, description: 눈치를 많이 본다, acting: 말을 더듬고 눈을 피한다, persona: { talk: -1 } }
   - { id: eager, label: 열성적, kind: personality, visible: true, description: 뭐든 해 보겠다고 나선다, acting: 먼저 손을 들고 들떠 있다, opposites: [weary], persona: { impulse: 1 } }
   - { id: weary, label: 지침, kind: personality, visible: true, description: 오래 버텨 지쳐 있다, acting: 한숨이 잦고 말이 느리다, opposites: [eager] }
-  - { id: motherly, label: 어머니 같음, kind: personality, visible: true, description: 잔소리와 챙김이 함께 온다, acting: 밥은 먹었냐고 묻고 잔소리를 한다, persona: { warmth: 2, talk: 1 } }
+  - { id: motherly, label: 살뜰히 챙김, kind: personality, visible: true, description: 잔소리와 챙김이 함께 온다, acting: 밥은 먹었냐고 묻고 잔소리를 한다, persona: { warmth: 2, talk: 1 } }
   - { id: talkative, label: 수다쟁이, kind: personality, visible: true, description: 들은 이야기를 잘 옮긴다 (소문 2배), acting: 묻지 않은 소식까지 늘어놓는다, effects: { rumor: 2 }, persona: { talk: 2 } }
   - { id: flirt, label: 이성편력, kind: personality, visible: false, description: 이성에게 쉽게 끌리고 이성의 설득·거짓말에 약하다, acting: 이성 앞에서 말이 많아지고 허세를 부린다, effects: { attraction: { moves: [persuade, deceive] } } }
 

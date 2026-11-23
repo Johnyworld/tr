@@ -29,7 +29,7 @@ export function personFacts(state: GameState, content: Content, id: string, forG
 export function personFactLines(f: PersonFacts): string[] {
   return [
     ...(f.sells.length ? [`파는 물건: ${f.sells.join(", ")}`] : []),
-    ...(f.asks.length ? [`꺼낼 부탁: ${f.asks.join(", ")}`] : []),
+    ...(f.asks.length ? [`꺼낼 부탁: ${f.asks.join(", ")} (받으면 promise accept, 그 물건을 transfer_item으로 건네면 받아 주고 지킨 것)`] : []),
     ...(f.teaches.length ? [`가르칠 수 있는 것: ${f.teaches.join(", ")} (take_action.lesson)`] : []),
   ];
 }

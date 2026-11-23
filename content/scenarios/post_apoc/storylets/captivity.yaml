@@ -696,7 +696,7 @@
     captive_days_gte: 1
   cast:
     rescuer: { faction: own, ranks: [grunt, squad_leader] }
-  setup: 자정이 넘어 벽 바깥에서 돌을 두 번 두드리는 소리. 낮은 휘파람. 익숙한 목소리가 이름을 부른다. {rescuer:이다/다}. 소식이 닿았다.
+  setup: 밤이 깊어 벽 바깥에서 돌을 두 번 두드리는 소리. 낮은 휘파람. 누군가 낮게 이름을 부른다. 우리 무리의 {rescuer:이다/다}. 소식이 닿았다.
   ai_direction: 구하러 온 사람은 많지 않다. 경비가 돌아오기 전 몇 분뿐이다. 실패하면 구하러 온 사람이 붙잡힐 수 있다. 판정과 결과로만 정한다.
   choices:
     - id: go
@@ -721,6 +721,7 @@
           - belief: { fact: "담을 넘기 전에 경비에게 들켰다. {rescuer:이/가} 나 대신 붙잡혔다", source: seen }
     - id: wave_off
       label: 경비가 너무 많다고 돌려보낸다
+      leaves: [rescuer]
       effects:
         - clear_flag: cp_word_sent
         - relation: { who: rescuer, axis: respect, delta: 1 }

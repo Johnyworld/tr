@@ -213,6 +213,7 @@
   title: 문 위의 사내
   tags: [world]
   when:
+    indoor: false
     zones: [old_town, riverside]
     segments: [evening, night]
     day_gte: 5

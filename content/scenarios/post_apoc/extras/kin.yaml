@@ -33,7 +33,7 @@
   age: [56, 74]
   looks:
     - 무릎이 성치 않아 천천히 걷는 노인. 주머니에 꼭 사탕 하나를 넣고 다닌다
-    - 붕괴 전 사진 한 장을 비닐에 싸서 목에 건 노인. 말수가 적다
+    - 붕괴 전 사진 한 장을 비닐에 싸서 목에 건 노인. 말하다가도 그 사진을 만지작거린다
   stats: { strength: [-1, -1], vitality: [-1, 0], senses: [0, 1], intellect: [1, 1], nerve: [0, 1] }
   skills: { first_aid: 1, history: 1, survival: 1 }
   traits: [patient, motherly, weary, frail, principled]

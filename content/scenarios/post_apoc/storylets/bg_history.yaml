@@ -311,6 +311,7 @@
   title: 그 무리의 부상자
   tags: [world]
   when:
+    indoor: false
     flags_any: [bg_enemy, bg_loss]
     day_gte: 4
     zone_owner: [none]

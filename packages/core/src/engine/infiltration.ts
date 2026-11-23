@@ -1,5 +1,5 @@
 import { onSpotted } from "../rules/consequence.ts";
-import { heldOf } from "../rules/held.ts";
+import { heldOf, heldSeenZone } from "../rules/held.ts";
 import { josa } from "../text.ts";
 import { z } from "zod";
 import type { Content, StoryletEffect } from "../content/schemas.ts";
@@ -49,8 +49,9 @@ function ownerHere(state: GameState): string | null {
 /** 그 구역에 그 무리가 가둔 사람 (우리 무리 사람이 먼저) */
 function captiveHere(state: GameState, zone: string, owner: string): string | null {
   const me = state.characters[state.playerId]!;
-  // 캐릭터가 아는 포로만: 만난 적이 있거나 우리 무리 사람 (플레이 테스트 12: 담 밖에서 "갇힌 사람 풀어 주기"가 바로 떴다)
-  const list = Object.values(state.characters).filter((c) => !c.dead && heldOf(c) && heldOf(c)!.by === owner && heldOf(c)!.zone === zone && c.id !== me.id && (hasMet(state, me.id, c.id) || (!!me.factionId && c.factionId === me.factionId)));
+  // 캐릭터가 여기 갇혀 있다고 아는 포로만: 그곳에서 봤거나 소식으로 안 사람 (공통 규칙 15의 장소 목록과 같은 규칙)
+  // (플레이 테스트 12: 담 밖에서 "갇힌 사람 풀어 주기"가 바로 떴다. 12-265, PT18 졸병: 행방 모르는 우리 무리 사람이 목표로 드러났다)
+  const list = Object.values(state.characters).filter((c) => !c.dead && heldOf(c) && heldOf(c)!.by === owner && heldOf(c)!.zone === zone && c.id !== me.id && heldSeenZone(state, c.id) === zone);
   list.sort((a, b) => Number(b.factionId === me.factionId) - Number(a.factionId === me.factionId) || a.id.localeCompare(b.id));
   return list[0]?.id ?? null;
 }
@@ -62,6 +63,11 @@ function alarmCue(alarm: number): string | null {
   return null;
 }
 
+
+/** 판정이 임무로 셌으면 한 줄 (12-265, PT17·PT18 졸병: act에만 붙고 숨어들기·살피기·빠져나오기에는 없었다) */
+function missionNote(ctx: ToolContext, missionId: string | null | undefined): string[] {
+  return missionId ? [`(임무 "${ctx.store.getState().missions[missionId]?.title ?? missionId}"의 요건과 맞는 판정이라 임무로 셌다)`] : [];
+}
 
 /** 한 걸음의 시간 */
 function step(ctx: ToolContext): ToolDisplayEvent[] {
@@ -149,7 +155,8 @@ const infiltrate = defineTool({
     if (input.action === "advance") {
       if (inf.depth >= deepest) return { ok: false, error: `이미 가장 깊은 곳(${depthLabel(deepest)})이다. act로 목표를 한다.` };
       const m = moveOf(content.scenario, r.move)!;
-      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(depthLabel(inf.depth + 1), "으로/로")} 숨어든다` }, ctx, { forMission: missionForCheck(ctx.store.getState(), r.move) });
+      const advanceMission = missionForCheck(ctx.store.getState(), r.move);
+      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(depthLabel(inf.depth + 1), "으로/로")} 숨어든다` }, ctx, { forMission: advanceMission });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -165,6 +172,7 @@ const infiltrate = defineTool({
         lines.push(`${josa(depthLabel(inf.depth + 1), "으로/로")} 가는 길을 찾지 못했다. 아직 ${depthLabel(inf.depth)}.`);
         lines.push(...raiseAlarm(ctx, 2));
       }
+      lines.push(...missionNote(ctx, advanceMission));
       const cue = alarmCue(store.getState().infiltration?.alarm ?? 0);
       return { ok: true, resultText: [...lines, ...(cue ? [`낌새: ${cue}`] : []), "이 결과대로 서술하라."].join("\n"), display: check.display, extra };
     }
@@ -201,12 +209,13 @@ const infiltrate = defineTool({
         }
         // 풀어 준 사람과는 얼굴을 마주했다: 만난 사이가 되고 고마워한다 (12-262, PT16·PT17 졸병: "아직 직접 만나 본 적이 없다")
         if (captive && goal.release) {
+          // 얼굴을 마주했으니 아는 마음(perceived)도 갱신한다: 같은 무리 사람은 처음부터 met이라 들고 나기를 건너뛰었다 (12-265, PT18 졸병)
           const s1 = store.getState();
-          if (!(s1.met[s1.playerId] ?? []).includes(captive) && !s1.scene.present.includes(captive) && !s1.characters[captive]?.dead) {
+          if (!hasMet(s1, s1.playerId, captive) && !s1.scene.present.includes(captive) && !s1.characters[captive]?.dead) {
             store.append({ type: "npc_entered", npcId: captive });
             store.append({ type: "npc_left", npcId: captive });
           }
-          store.append({ type: "relation_changed", from: captive, to: s1.playerId, delta: { trust: 2, affection: 2, respect: 0 }, reason: "갇힌 곳에서 꺼내 줬다" });
+          store.append({ type: "relation_changed", from: captive, to: s1.playerId, delta: { trust: 2, affection: 2, respect: 0 }, reason: "갇힌 곳에서 꺼내 줬다", known: true });
         }
         const now = store.getState().infiltration!;
         store.append({ type: "infiltration_changed", depth: now.depth, alarm: now.alarm, done: true });
@@ -231,12 +240,14 @@ const infiltrate = defineTool({
     }
     const m = moveOf(content.scenario, r.move)!;
     const harder = (inf.depth >= deepest ? 1 : 0) + (caught ? 1 : 0);
-    const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, harder), intent: "빠져나온다" }, ctx, { forMission: missionForCheck(ctx.store.getState(), r.move) });
+    const leaveMission = missionForCheck(ctx.store.getState(), r.move);
+    const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, harder), intent: "빠져나온다" }, ctx, { forMission: leaveMission });
     if (!check.ok) return check;
     store.append({ type: "infiltration_ended", how: check.outcome === "miss" ? "caught" : "out" });
-    if (check.outcome === "success") return { ok: true, resultText: "빠져나왔다. 잠입은 끝났다. 이 결과대로 서술하라.", display: check.display, extra };
+    const counted = missionNote(ctx, leaveMission).map((l) => ` ${l}`).join("");
+    if (check.outcome === "success") return { ok: true, resultText: `빠져나왔다. 잠입은 끝났다.${counted} 이 결과대로 서술하라.`, display: check.display, extra };
     if (check.outcome === "partial") {
-      return { ok: true, resultText: "빠져나왔지만 아슬아슬했다: 등 뒤로 고함이 쫓아왔다 (얼굴을 봤을지 모른다). 잠입은 끝났다. 이 결과대로 서술하라.", display: check.display, extra };
+      return { ok: true, resultText: `빠져나왔지만 아슬아슬했다: 등 뒤로 고함이 쫓아왔다 (얼굴을 봤을지 모른다). 잠입은 끝났다.${counted} 이 결과대로 서술하라.`, display: check.display, extra };
     }
     const taken = capturePlayer(ctx, inf.owner, inf.zone, "잠입하다 붙잡혔다");
     return { ok: true, resultText: `빠져나오지 못했다. ${taken ?? "붙잡혔다."} 이 결과대로 서술하라.`, display: check.display, extra };

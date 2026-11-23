@@ -20,7 +20,7 @@ import { PEOPLE_TOOLS } from "./people.ts";
 import { josa } from "../text.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
-import { isIncapacitated } from "./body.ts";
+import { isIncapacitated, runLateRation } from "./body.ts";
 import { enterScene, EXTRA_TOOLS } from "./extras.ts";
 import { z } from "zod";
 import {
@@ -496,6 +496,11 @@ export function executeTool(name: string, input: unknown, ctx: ToolContext): Too
       const lines = [...bodyLines(after), ...worldLines(after)];
       outcome = { ...outcome, resultText: [outcome.resultText, ...lines].filter(Boolean).join("\n"), extra: [...(outcome.extra ?? []), ...after] };
     }
+  }
+  // 시간 없이 우리 거점에 닿았으면(이야기로 풀려나 돌아옴 등) 그날 못 받은 배급을 지금 받는다. 다음 행동이 거절돼도 말없이 바뀌지 않게 (12-265, PT18 졸병)
+  if (outcome.ok && ctx.store.getState().playerZone !== state.playerZone) {
+    const late = runLateRation(ctx);
+    if (late.length) outcome = { ...outcome, resultText: [outcome.resultText, ...bodyLines(late)].filter(Boolean).join("\n"), extra: [...(outcome.extra ?? []), ...late] };
   }
   // 이번에 죽은 사람은 그 자리에 유해를 남긴다 (12-130)
   leaveRemainsForNewDeaths(ctx, living);

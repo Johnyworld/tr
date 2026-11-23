@@ -143,6 +143,12 @@ export function stowStartingLoad(ctx: ToolContext): string[] {
     else store.append({ type: "item_transferred", from: me.id, to: SCENE_HOLDER, itemId: id, quantity: n });
     stowed.push(`${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`);
   }
+  // 무엇을 어디 두었는지 주인공이 안다 (12-265, PT18 튜토리얼: 내려놓은 담요를 아무도 몰랐다)
+  if (stowed.length) {
+    const s1 = store.getState();
+    const where = place ? "사물함" : "처음 선 자리의 바닥";
+    store.append({ type: "belief_added", characterId: me.id, belief: { id: `b_${s1.nextBeliefNo}`, fact: `짐이 무거워 ${stowed.join(", ")}${josa(stowed.at(-1)!, "을/를").slice(stowed.at(-1)!.length)} ${where}에 두었다`, source: "seen", accuracy: "exact", learnedAt: s1.time } });
+  }
   return stowed;
 }
 

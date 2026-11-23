@@ -71,7 +71,7 @@ export function promiseLines(state: GameState, content: Content, to?: string): s
   const asked = askedPromises(state, to).flatMap((p) => {
     const c = askContent(content, p);
     if (!c) return [];
-    return [`이 인물이 꺼낼 부탁 ${p.id} (장면에서 자연스럽게 꺼낸다. 플레이어가 받으면 promise accept, 거절하면 decline): "${c.ask}" — ${describe(content, { what: "", item: c.item }).trim()}, ${c.days}일 안에${sourcesNote(content, c.item)}`];
+    return [`이 인물이 꺼낼 부탁 ${p.id} (장면에서 자연스럽게 꺼낸다. 플레이어가 받으면 promise accept, 거절하면 decline. 그 물건을 transfer_item으로 바로 건네면 받아 주고 지킨 것이다): "${c.ask}" — ${describe(content, { what: "", item: c.item }).trim()}, ${c.days}일 안에${sourcesNote(content, c.item)}`];
   });
   return [...open, ...asked];
 }
@@ -189,7 +189,17 @@ export function keepByGift(ctx: ToolContext, to: string, itemId: string, quantit
   if (!rules(ctx.content)) return [];
   const state = ctx.store.getState();
   const p = openPromises(state).find((x) => x.to === to && x.item?.id === itemId && x.item.quantity <= quantity);
-  return p ? settleKept(ctx, p) : [];
+  if (p) return settleKept(ctx, p);
+  // 아직 받는다고 답하지 않은 부탁이라도, 그 물건을 건넸으면 받아 주고 지킨 것이다 (12-265, PT18 분대장: 탄 한 발을 건넸는데 부탁이 그대로 남았다)
+  const asked = askedPromises(state, to).find((x) => {
+    const c = askContent(ctx.content, x);
+    return !!c && c.item.id === itemId && c.item.quantity <= quantity;
+  });
+  const c = asked ? askContent(ctx.content, asked) : undefined;
+  if (!asked || !c) return [];
+  ctx.store.append({ type: "promise_accepted", id: asked.id, what: c.ask, due: dayOf(state.time) + c.days, item: { id: c.item.id, quantity: c.item.quantity } });
+  const now = openPromises(ctx.store.getState()).find((x) => x.id === asked.id);
+  return now ? settleKept(ctx, now) : [];
 }
 
 export const PROMISE_TOOLS = [promiseTool] as const;

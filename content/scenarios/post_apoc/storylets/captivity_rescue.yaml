@@ -96,7 +96,7 @@
     captive_days_gte: 5
     in_faction: true
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
-  setup: 아침에 문이 열린다. 밥때가 아니다. 당번이 턱으로 바깥을 가리킨다. "너희 쪽에서 값을 냈다. 탄 상자 하나. 너 하나 값으로는 후하지."
+  setup: 문이 열린다. 밥때가 아니다. 당번이 턱으로 바깥을 가리킨다. "너희 쪽에서 값을 냈다. 탄 여덟 발. 너 하나 값으로는 후하지."
   ai_direction: 우리 무리가 짐꾼을 통해 붙잡힌 곳을 알아내고 탄약으로 몸값을 치렀다. 몸값은 코드가 무리의 탄약에서 뺀다. 빼앗긴 것은 돌려받는다. 돌아가면 무리는 반기면서도 그 값을 기억한다. 주인공을 데려온 것이 누구의 뜻이었는지는 지어내지 않는다.
   choices:
     - id: go_home

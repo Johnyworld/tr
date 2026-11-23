@@ -429,6 +429,7 @@
   title: 엎드릴 자리
   tags: [red_life]
   when:
+    indoor: false
     factions: [faction_c]
     zones: [c_base]
     segments: [evening]

@@ -487,7 +487,9 @@ export const scenarioFileSchema = z
      * 이야기 글 검사 (content:check, 12-261, PT16 네 판: 지하 보일러실에서 "안개 속의 발소리", 낮에 깨어 있는데 "등이 차가워서 깬다").
      * outdoor: 이 말이 글에 있으면 바깥에서만 열린다(when.indoor: false 또는 장소). waking: 이 말이 있으면 잠·쉬는 중에만(when.activities)
      */
-    story_lint: z.strictObject({ outdoor: z.array(z.string().min(1)).default([]), waking: z.array(z.string().min(1)).default([]) }).optional(),
+    /** 같은 틀의 겉모습을 다 썼을 때 덧붙여 사람을 가르는 표시 (12-265) */
+    extra_marks: z.array(z.string().min(1)).default([]),
+    story_lint: z.strictObject({ outdoor: z.array(z.string().min(1)).default([]), waking: z.array(z.string().min(1)).default([]), knows_endings: z.array(z.string().min(1)).default([]) }).optional(),
     /** notice_minutes: 짓이 상관 귀에 닿는 시간. 그 사이 한 짓은 한 회의에서 함께 다룬다 (12-261, PT16 졸병: 20분 만에 같은 회의가 또 열렸다) */
     offense: z.strictObject({ tags: z.array(id).min(1), min_severity: z.number().int().min(1).max(3), within_days: z.number().int().min(1), notice_minutes: z.number().int().min(0).default(60) }).optional(),
     discipline: z

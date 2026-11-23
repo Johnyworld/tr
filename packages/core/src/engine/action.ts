@@ -1082,7 +1082,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       // 속이기가 먹혔으면(거짓말 판정의 성공·대가 있는 성공) 장면의 사람은 속아 넘어가 행적을 알지 못한다. 함께 다니는 사람(동행)은 참을 안다 (PT14)
       const deceived = !!input.check && input.check.move === scenario.move_roles.deceive && (outcome === "success" || outcome === "partial");
       const companionsNow = new Set(activeCompanions(store.getState()));
-      const fooled = deceived ? store.getState().scene.present.filter((id) => !companionsNow.has(id)) : undefined;
+      // 속는 사람은 거짓말을 들은 상대(opponent, 없으면 target)다. 상대를 정하지 않았으면 장면의 사람 가운데 함께하는 사람(with·동행)을 뺀 사람
+      // (12-265, PT18 섬: 감싸 준 당사자까지 "속아 넘어가" 의리 행적을 몰랐다)
+      const dupe = input.check?.opponent ?? input.target ?? null;
+      const together = new Set([...companionsNow, ...(input.with ?? [])]);
+      const fooled = deceived ? store.getState().scene.present.filter((id) => (dupe ? id === dupe : !together.has(id))) : undefined;
       // 당한 사람은 가치관으로 마음이 오르지 않는다 (12-262, PT17 분대장: 원망 -2에 가치관 +1이 섞여 -1)
       const offenseTags = scenario.offense?.tags ?? [];
       const victim = input.target && input.deed.tags.some((t) => offenseTags.includes(t as never)) ? input.target : null;
@@ -1724,7 +1728,8 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     // 점호 (G2): 무리의 점호 시각을 자면서 넘기면 작은 불복종 행적이 남는다 (한 번 잠에 한 번)
     if (activity === "sleep") missedRollCall(ctx, from, to);
     // 긴 잠 뒤에는 동행이 아닌 사람은 제 할 일로 흩어진다 (플레이 테스트 13: 밤새 자고 나도 어제 들인 의무병이 장면에 남았다)
-    if (activity === "sleep" && to - from >= SCENE_CLEAR_SLEEP_MINUTES && !heldOf(store.getState().characters[state.playerId])) {
+    // 갇혀 있어도 그렇다: 같이 갇힌 사람만 남는다 (12-265, PT18 졸병: 조장·짐꾼·보초·돌려보낸 구출자가 엿새 동안 수용소 장면에 쌓였다)
+    if (activity === "sleep" && to - from >= SCENE_CLEAR_SLEEP_MINUTES) {
       const s2 = store.getState();
       const keep = new Set(activeCompanions(s2));
       // 일과상 이 자리가 제자리인 사람은 그대로 둔다 (12-261, PT16 섬: 같은 숙소에서 자는 짝이 "자리를 떴다")

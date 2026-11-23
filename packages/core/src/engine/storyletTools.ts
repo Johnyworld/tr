@@ -1,8 +1,9 @@
+import { activeCompanions } from "../game/companions.ts";
 import { confineByOwn } from "./care/quarantine.ts";
 import { settingBrokeThisTurn } from "../rules/self.ts";
 import { blameSuspended } from "../rules/blame.ts";
 import { leaveMissionsBehind } from "./missionTools.ts";
-import { heldOf, pausedWhileHeld } from "../rules/held.ts";
+import { heldOf, pausedWhileHeld, heldSeenTopic } from "../rules/held.ts";
 import { bleedFromHarm } from "./bleeding.ts";
 import { equippedItem, wearItem } from "./gear.ts";
 import { carriedCount, itemCarriers } from "../game/companions.ts";
@@ -183,14 +184,17 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
   const before = whereIs(store.getState(), content, store.getState().playerId)?.place ?? null;
   const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons);
   if (spot) {
-    const left = before ? store.getState().scene.present.filter((id) => !store.getState().companions.includes(id)) : [];
+    // 함께 불려 오는 배역은 남은 사람이 아니다 (12-265, PT18 분대장: 회의의 상관을 "그 자리에 남았다"고 적었다)
+    const coming = new Set(Object.entries(cast).filter(([key]) => storylet.cast[key]?.enter).map(([, id]) => id));
+    const left = before ? store.getState().scene.present.filter((id) => !store.getState().companions.includes(id) && !coming.has(id)) : [];
+    const withCompany = activeCompanions(store.getState()).length > 0;
     store.append({ type: "place_moved", from: before, to: spot, with: before ? [] : [...store.getState().scene.present] });
     // 불려 간 것을 결과 글에 알린다 (12-261, PT16 분대장·졸병: 장소가 바뀐 것을 상태로만 알았다)
     // (12-261 고침이 돌지 않았다: started 표시는 부르는 쪽이 나중에 넣는다. 그래서 따로 "moved" 표시로, PT17)
     if (before) {
       const place = placeById(store.getState(), content, spot)?.name ?? spot;
       const names = left.map((id) => playerCalls(store.getState(), content, id));
-      displays.push({ type: "storylet", event: "moved", title: storyTitle(store.getState(), content, storylet), detail: place, note: `${josa(place, "으로/로")} 불려 갔다${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다, 동행은 함께)` : ""}.` });
+      displays.push({ type: "storylet", event: "moved", title: storyTitle(store.getState(), content, storylet), detail: place, note: `${josa(place, "으로/로")} 불려 갔다${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다${withCompany ? ", 동행은 함께" : ""})` : withCompany ? " (동행은 함께)" : ""}.` });
     }
   }
   // 배역은 장면에 들어온다
@@ -767,7 +771,7 @@ export function applyEffect(
     const c = id ? state.characters[id] : undefined;
     if (!id || !heldOf(c)) return {};
     const fact = sentence(`${josa(playerCalls(state, content, id), "은/는")} ${content.factions[heldOf(c)!.by]?.name ?? heldOf(c)!.by}의 ${content.locations[heldOf(c)!.zone]?.name ?? heldOf(c)!.zone}에 갇혀 있다고 한다`);
-    store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.locate.source, accuracy: "approximate", learnedAt: state.time } });
+    store.append({ type: "belief_added", characterId: playerId, belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.locate.source, accuracy: "approximate", learnedAt: state.time, topic: heldSeenTopic(id, heldOf(c)!.zone) } });
     return { line: `알게 된 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.locate.source] } };
   }
   if ("capture_player" in effect) {

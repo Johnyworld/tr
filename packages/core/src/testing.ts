@@ -45,6 +45,7 @@ export const TEST_SCENARIO: Scenario = {
   ],
   origins: [],
   move_roles: { notice: "sense_danger", stealth: "stealth" },
+  extra_marks: [],
   ranges: { ability: { min: -1, max: 3 }, skill: { min: -1, max: 2 }, cap: 4 },
   renamed: { abilities: {} },
   names: { surnames: ["김", "이"], given: { male: ["민준", "도윤"], female: ["서연", "지아"] } },

@@ -66,7 +66,14 @@ export function changeCondition(ctx: ToolContext, characterId: string, trackId: 
     }
     steps = r.steps;
   }
-  const nextIndex = Math.max(0, Math.min(track.levels.length - 1, index + steps));
+  let nextIndex = Math.max(0, Math.min(track.levels.length - 1, index + steps));
+  // 갇힌 동안 허기는 바닥(captivity.hunger_floor)보다 나빠지지 않는다: 이야기 효과도 같다 (12-265, PT17·PT18 졸병: "할당량" 실패로 기아)
+  const floorId = ctx.content.scenario.captivity?.hunger_floor;
+  const held = heldOf(character);
+  if (steps > 0 && floorId && held && !held.quarantine && by !== "cheat" && trackId === ctx.content.scenario.body?.hunger?.track) {
+    const floor = track.levels.findIndex((l) => l.id === floorId);
+    if (floor >= 0) nextIndex = Math.min(nextIndex, Math.max(index, floor));
+  }
   if (nextIndex === index) return null;
   const from = track.levels[index]!;
   const to = track.levels[nextIndex]!;

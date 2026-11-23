@@ -308,6 +308,7 @@
   title: 담 밖의 첫날
   tags: [world]
   when:
+    indoor: false
     factions: [none]
     flags_all: [pol_expelled]
     flags_none: [pol_after_seen]

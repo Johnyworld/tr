@@ -59,7 +59,7 @@ export function createExtraCharacter(
     traits,
     conditions: initialConditions(s),
     inventory,
-    extra: { template: template.id, label: input.label, look: lookFor(template, gender, rng, input.usedLooks), zone: input.zone, lastSeenAt: input.time },
+    extra: { template: template.id, label: input.label, look: lookFor(template, gender, rng, input.usedLooks, content.scenario.extra_marks), zone: input.zone, lastSeenAt: input.time },
     // 성적 위협은 틀이 정한 확률로 (12-59). 틀에 없으면 굴리지 않는다
     menace: template.menace && rng() < template.menace.chance ? template.menace.kind : null,
     // 출신과 말씨 (12-142): 사람만
@@ -247,11 +247,15 @@ export function describeExtraTemplates(state: GameState, content: Content): stri
 
 /** 성별에 맞는 겉모습 하나 (성별이 적힌 겉모습은 그 성별일 때만) */
 /** used: 이미 쓴 겉모습은 피한다 (플레이 테스트 12: 한 가족의 두 어머니가 같은 문장이었다) */
-function lookFor(template: ExtraContent, gender: string | null, rng: Rng, used?: ReadonlySet<string>): string {
+function lookFor(template: ExtraContent, gender: string | null, rng: Rng, used?: ReadonlySet<string>, marks: readonly string[] = []): string {
   const text = (l: (typeof template.looks)[number]) => (typeof l === "string" ? l : l.text);
   const all = template.looks.filter((l) => typeof l === "string" || l.gender === gender);
   const fresh = all.filter((l) => !used?.has(text(l)));
   const fits = fresh.length ? fresh : all;
   const l = pick(rng, fits.length ? fits : template.looks);
-  return typeof l === "string" ? l : l.text;
+  const base = typeof l === "string" ? l : l.text;
+  if (fresh.length || !used?.has(base)) return base;
+  // 틀의 겉모습을 다 썼으면 눈에 띄는 표시 하나를 덧붙여 가른다 (12-265, PT17·PT18: 같은 틀 둘·셋이 똑같은 겉모습)
+  const mark = marks.find((m) => !used.has(`${base}. ${m}`));
+  return mark ? `${base}. ${mark}` : base;
 }

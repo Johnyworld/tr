@@ -328,6 +328,7 @@
   title: 쪽문 그늘의 두 사람
   tags: [world]
   when:
+    indoor: false
     zones: [b_base]
     segments: [night]
     day_gte: 3

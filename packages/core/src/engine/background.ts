@@ -228,7 +228,7 @@ export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined):
   store.append({
     type: "belief_added",
     characterId: s.playerId,
-    belief: { id: `b_${s.nextBeliefNo}`, fact: `가족(${labels.join(", ")})${LOST_FAMILY_FACT}`, source: "seen", accuracy: "exact", learnedAt: s.time },
+    belief: { id: `b_${s.nextBeliefNo}`, fact: `가족(${labels.join(", ")})${LOST_FAMILY_FACT}`, source: "seen", accuracy: "exact", learnedAt: Math.min(s.time, START_TIME - 1) },
   });
 }
 

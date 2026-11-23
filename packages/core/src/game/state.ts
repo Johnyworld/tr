@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 93;
+export const SAVE_SCHEMA_VERSION = 94;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -1384,7 +1384,12 @@ function swapGround(next: GameState, from: string | null, to: string) {
   const ground = { ...next.groundItems };
   if (from !== null && Object.keys(next.scene.items).length) ground[from] = { ...next.scene.items };
   else if (from !== null) delete ground[from];
-  next.scene = { ...next.scene, items: { ...(ground[to] ?? {}) } };
+  // 아직 구역이 없던 장면(세계를 막 만든 때)에 내려놓은 것은 처음 들어서는 구역의 바닥에 그대로 둔다
+  // (12-265, PT18 튜토리얼: 세계 만들기에서 내려놓은 시작 짐 담요가 첫 이동에서 사라졌다)
+  const carried = from === null ? next.scene.items : {};
+  const items: Record<string, number> = { ...(ground[to] ?? {}) };
+  for (const [id, n] of Object.entries(carried)) items[id] = (items[id] ?? 0) + n;
+  next.scene = { ...next.scene, items };
   delete ground[to];
   next.groundItems = ground;
 }
@@ -2516,8 +2521,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "storylet_fired": {
       if (state.activeStorylet) throw new Error("이미 진행 중인 스토리렛이 있습니다.");
       next.activeStorylet = { id: event.storyletId, cast: { ...event.cast }, firedAt: state.time, expiresAt: event.expiresAt, ...(event.improvised ? { improvised: event.improvised } : {}) };
-      // 이야기가 열리면 즉흥 자리는 닫힌다 (GM이 채웠거나, 급한 이야기가 먼저 왔다)
-      next.improvSlot = null;
+      // GM이 즉흥 자리를 채웠으면 닫는다. 다른 이야기(규율 회의 등)가 먼저 와도 자리는 기한까지 남아, 그 이야기가 끝난 뒤 쓸 수 있다
+      // (12-265, PT17·PT18 분대장: 상태엔 13:47까지라 했는데 회의가 열린 뒤 알림 없이 사라졌다)
+      if (event.improvised) next.improvSlot = null;
       const log = (next.storyletLog[event.storyletId] ??= { fired: 0, lastFiredAt: state.time });
       log.fired += 1;
       log.lastFiredAt = state.time;

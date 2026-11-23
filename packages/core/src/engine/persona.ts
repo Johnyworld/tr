@@ -210,9 +210,11 @@ export function rollLeak(ctx: ToolContext, targetId: string | null): string | nu
   const axis = ctx.content.scenario.persona!.axes.find((a) => a.id === rule.axis)!;
   const v = personaOf(ctx.content, me)[rule.axis] ?? 0;
   if (v <= 0 || ctx.rng() >= rule.chance[v - 1]!) return null;
-  const theirs = new Set((state.beliefs[target.id] ?? []).map((b) => b.fact));
+  // 그 사람이 이미 아는 것, 그 사람에게서 들은 것은 되돌려 말하지 않는다 (12-265, PT18 튜토리얼: 상인에게서 들은 소문을 상인에게 "들은 것"으로 알렸다)
+  const name = playerCalls(state, ctx.content, target.id);
+  const theirs = new Set((state.beliefs[target.id] ?? []).flatMap((b) => [b.fact, hearsay(b.fact), hearsay(b.fact, name)]));
   // 옮길 만한 사실만 (만남·이름 기억, 지난 삶은 빼고, 공통 규칙 14)
-  const mine = (state.beliefs[me.id] ?? []).filter((b) => !theirs.has(b.fact) && worthPassing(state, b, "npc"));
+  const mine = (state.beliefs[me.id] ?? []).filter((b) => !theirs.has(b.fact) && !b.fact.startsWith(`${name}에게서`) && worthPassing(state, b, "npc"));
   if (!mine.length) return null;
   const fact = mine[Math.floor(ctx.rng() * mine.length)]!;
   ctx.store.append({
@@ -251,5 +253,5 @@ export function rollHear(ctx: ToolContext, targetId: string | null): { line: str
     characterId: me.id,
     belief: { id: `b_${state.nextBeliefNo}`, fact: heard, source: "seen", accuracy: fact.accuracy, learnedAt: state.time, ...(fact.topic ? { topic: fact.topic } : {}) },
   });
-  return { line: persona(axis, v, `말이 오가다 ${josa(playerCalls(state, ctx.content, target.id), "이/가")} 묻지 않은 말까지 했다 · 알게 된 것: "${heard}"`), fact: heard };
+  return { line: persona(axis, v, `말이 오가다 ${josa(playerCalls(state, ctx.content, target.id), "이/가")} 한 가지를 더 털어놓았다 · 알게 된 것: "${heard}"`), fact: heard };
 }

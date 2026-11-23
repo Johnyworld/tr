@@ -144,6 +144,8 @@
   # 튜토리얼 안내는 자는 사람을 깨우지 않는다 (12-251)
   wakes: false
   urgent: true
+  # 받아들여진 날 열린다: 하루 급한 이야기 상한에 막혀 막사에서 하룻밤 잔 뒤 "숙소부터 보여 줄게"로 열렸다 (12-265, PT17·PT18 튜토리얼)
+  essential: true
   tags: [tutorial_visitor]
   when:
     factions: [faction_a]

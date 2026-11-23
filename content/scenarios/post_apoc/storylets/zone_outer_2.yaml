@@ -162,6 +162,7 @@
   title: 뒷담의 속삭임
   tags: [world]
   when:
+    indoor: false
     zones: [cathedral]
     segments: [evening, night]
     occupations_not: [preacher]

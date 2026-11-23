@@ -168,6 +168,11 @@ function checkReferences(content: Content): string[] {
       if (!content.npcs[t.to]) problems.push(`npcs.${npc.id}.ties: 알 수 없는 인물 ${t.to}`);
       if (t.to === npc.id) problems.push(`npcs.${npc.id}.ties: 자기 자신과는 이을 수 없다`);
     }
+    // 인물이 아는 것이 항목 이름이면 내용이 없다 (12-265, PT17·PT18 튜토리얼: "마지막 무전 위치"를 GM이 지어내야 했다)
+    for (const k of npc.knows ?? []) {
+      const end = (content.scenario.story_lint?.knows_endings ?? []).find((e) => k.trim().endsWith(e));
+      if (end) problems.push(`npcs.${npc.id}.knows: "${k}"는 항목 이름이다 ("${end}"로 끝남). 들은 사람이 알게 되는 내용 그 자체로 쓴다`);
+    }
   }
   for (const st of Object.values(content.storylets)) {
     const keys = Object.keys(st.cast);

@@ -61,6 +61,7 @@
   repeatable: true
   cooldown_days: 4
   when:
+    indoor: false
     factions: [none]
     zone_owner: [other]
     segments: [day, evening]
@@ -199,6 +200,7 @@
   repeatable: true
   cooldown_days: 3
   when:
+    indoor: false
     factions: [none]
     zone_owner: [other]
     segments: [day, evening]

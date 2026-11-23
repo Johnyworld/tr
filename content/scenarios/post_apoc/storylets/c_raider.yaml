@@ -429,6 +429,7 @@
   title: 앞니 빠진 웃음
   tags: [red_life]
   when:
+    indoor: false
     own_territory: true
     segments: [day, evening, night]
     flags_all: [c_dongpal_exposed]

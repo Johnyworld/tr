@@ -363,7 +363,7 @@ const reportMission = defineTool({
       ...(learns ? [`알게 된 것 (임무로 확인했다, 상관에게도 보고했다): ${learns}`] : []),
       ...(short ? ["받아 올 값이 모자라 일부 완수까지다."] : []),
       ...unmetLines(ctx.content.scenario, reported),
-      ...(supplies && !party && result.outcome !== "failed" ? ["무리 창고에 따로 든 것은 없다. 찾은 것은 소지품에 그대로 있다 (분대를 보내지 않은 일)."] : []),
+      ...(supplies && !party && result.outcome !== "failed" ? ["무리 창고에 따로 든 것은 없다 (분대를 보내지 않은 일)."] : []),
       `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
       // 주인공이 실제로 찾은 물건과는 따로 셈한다 (플레이 테스트 11: 약을 못 찾았는데 "구해 온 의약품"이라고 했다)
       ...(supplied.length

@@ -42,14 +42,16 @@ export function onMySide(state: GameState, content: Content, id: string, allies:
 }
 
 /** 이 판정을 도울 사람: 그 스킬이 1 이상인 곁의 사람 가운데 가장 잘하는 사람. 없으면 null */
-export function helperFor(state: GameState, content: Content, move: string, allies: readonly string[] = []): { id: string; bonus: number } | null {
+export function helperFor(state: GameState, content: Content, move: string, allies: readonly string[] = [], exclude: readonly (string | null | undefined)[] = []): { id: string; bonus: number } | null {
   let best: { id: string; skill: number } | null = null;
+  // 이번 행동의 상대, 함께하지(with) 않는 대상은 돕지 않는다 (12-265, PT18 분대장: 맞는 임동욱이 때리는 판정을 "도움 +1")
+  const out = new Set(exclude.filter((x): x is string => !!x));
   // 곁의 사람과 이번 행동을 함께하는 사람(with, 의식이 있는 사람만)
   const withHere = allies.filter((id) => {
     const c = state.characters[id];
-    return !!c && !c.dead && !isCreature(content, c) && !incapacitatingSymptom(content.scenario, c) && state.scene.present.includes(id);
+    return !!c && !c.dead && !isCreature(content, c) && !incapacitatingSymptom(content.scenario, c) && state.scene.present.includes(id) && !out.has(id);
   });
-  for (const id of [...new Set([...peopleHere(state, content), ...withHere])]) {
+  for (const id of [...new Set([...peopleHere(state, content), ...withHere])].filter((id) => !out.has(id))) {
     const skill = effectiveSkill(content, state.characters[id]!, move);
     if (skill >= 1 && (!best || skill > best.skill)) best = { id, skill };
   }

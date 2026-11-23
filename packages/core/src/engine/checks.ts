@@ -95,7 +95,7 @@ export function rollPlayerCheck(
   const companion = actor.id === state.playerId ? companionSkillMod(state, content, input.move) : 0;
   // 곁의 사람이 돕는다 (공통 규칙 8, rules/company.ts)
   // 마음의 굴림(마음 다잡기·설정 거스르기)은 혼자 한다 (PT15 분대장: 자존심을 거스르는 굴림에 맞선 사람이 "도움 +1"을 줬다)
-  const helper = actor.id === state.playerId && !options.reaction ? helperFor(state, content, input.move, options.allies ?? []) : null;
+  const helper = actor.id === state.playerId && !options.reaction ? helperFor(state, content, input.move, options.allies ?? [], [input.opponent, options.target && !(options.allies ?? []).includes(options.target) ? options.target : null]) : null;
   const squad = helper?.bonus ?? 0;
   const skill = base + traitSkillMod(content, actor, input.move) + Math.max(companion, squad);
   // 손에 든 무기·지닌 도구의 보정은 상한 안에서, 방어구·짐의 불리함은 따로 (기획서 4.8)
@@ -168,6 +168,11 @@ export function rollPlayerCheck(
   // 걸린 것이 없는 판정은 경험치가 없다 (플레이 테스트 12: 5분짜리 판정을 되풀이해 레벨을 올렸다)
   const growthNote = options.reaction || options.stakes === false ? null : gainCheckXp({ store, rng, content }, actor.id, roll.outcome);
   const ambushNotes = options.reaction ? [] : afterCheckAmbush({ store, rng, content }, input.move, opponent, roll.outcome, state);
+  // with에 넣었는데 아무도 돕지 못했으면 까닭을 한 줄 (12-265, PT17·PT18 섬: 함께한 사람이 운동 판정을 안 도왔는데 줄이 없었다)
+  const together = (options.allies ?? []).filter((id) => state.scene.present.includes(id) && id !== input.opponent);
+  if (!options.reaction && together.length && !helper && companion === 0) {
+    ambushNotes.push(`(함께한 ${together.map((id) => playerCalls(state, content, id)).join(", ")}${josa(playerCalls(state, content, together.at(-1)!), "은/는").slice(playerCalls(state, content, together.at(-1)!).length)} ${move.label}에 솜씨가 없어 판정을 돕지 못했다)`);
+  }
 
   const display: CheckDisplay = {
     type: "check",

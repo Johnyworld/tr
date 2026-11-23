@@ -86,14 +86,14 @@ describe("잠입 2단계 (12-283)", () => {
     expect(v.state().infiltration?.alarm ?? 3).toBeGreaterThanOrEqual(before + 2);
   });
 
-  it("여럿이 있는 자리에서는 몰래 붙잡지 못한다", () => {
+  it("곁에 셋 이상이 더 있는 자리에서는 몰래 붙잡지 못한다 (PT21: 둘까지는 어렵게)", () => {
     const w = make();
     w.runCheat("~goto c_warehouse");
     w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: "yard" });
     inf(w, "start", { goal: "steal" });
     const s = w.state();
     const there = peopleAt(s, content, "c_warehouse", "yard").filter((id) => !s.characters[id]?.captive);
-    if (there.length > 1) expect(inf(w, "grab", { target: there[0] }).ok).toBe(false);
+    if (there.length > 3) expect(inf(w, "grab", { target: there[0] }).ok).toBe(false);
     expect(inf(w, "grab", { target: "nobody" }).ok).toBe(false);
   });
 });

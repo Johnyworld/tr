@@ -499,7 +499,8 @@ export function atEntry<T extends GameWorld>(w: T): T {
   const s = w.state();
   const place = whereIs(s, w.ctx().content, s.playerId)?.place ?? null;
   const road = s.playerZone ? arrivalPlace(s, w.ctx().content, s.playerZone) : null;
-  if (road && place !== road) w.ctx().store.append({ type: "place_moved", from: place, to: road });
+  // 막 들어와 도착한 길로 (state.justArrived): 구역 이동으로 적는다
+  if (road && place !== road) w.ctx().store.append({ type: "zone_moved", from: s.playerZone, to: s.playerZone!, place: road });
   return w;
 }
 

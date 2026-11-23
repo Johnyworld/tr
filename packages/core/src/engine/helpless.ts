@@ -8,6 +8,7 @@ import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
 import { harmTrack, incapacitatingSymptom } from "../scenario/scenario.ts";
+import { ableNow } from "../rules/company.ts";
 import { disposition } from "../sim/war.ts";
 import { josa, sentence } from "../text.ts";
 import { changeCondition, maybeInfect } from "./body.ts";
@@ -86,14 +87,15 @@ export function runHelpless(ctx: ToolContext, actionStartedAt?: number): ToolDis
   const people = state.scene.present
     .map((id) => state.characters[id])
     .filter((c): c is Character => !!c && !c.dead && !c.away && !heldOf(c) && c.id !== me.id && !isAnimal(ctx, c));
-  const allies = people.filter((c) => sideOf(ctx, c) === "ally");
+  // 돌보거나 지켜 줄 수 있는 우리 편은 스스로 움직일 수 있는 사람만 (공통 규칙 8 ableNow)
+  const allies = people.filter((c) => sideOf(ctx, c) === "ally" && ableNow(state, content, c.id));
   const hostiles = people.filter((c) => sideOf(ctx, c) === "hostile");
+  // 곁의 감염체도 맞설 상대로 센다 (PT21 하얀매: 감염체가 맞붙어 있는데 중상 동료가 곧장 옮겨 갔다)
+  const biters = infectedFoes(content, state);
 
   if (hostiles.length > 0 && hostiles.length >= allies.length) return byEnemies(ctx, hostiles, hostiles.find((c) => c.factionId)?.factionId ?? null);
+  if (biters.length > 0 && biters.length >= allies.length) return bitten(ctx, biters[0]!);
   if (allies.length > 0) return byAllies(ctx, allies);
-  // 곁에 감염체가 있고 지켜 줄 사람이 없으면 반드시 물린다 (12-111)
-  const biter = infectedFoes(content, state)[0];
-  if (biter) return bitten(ctx, biter);
 
   // 장면에 아무도 없다: 구역 주인 무리의 사람이 찾아낼 수 있다
   // 지금 주인만: 주인 없는 땅이면 아무도 찾지 않는다 (공통 규칙 11, 12-269)
@@ -162,7 +164,10 @@ function byAllies(ctx: ToolContext, allies: Character[]): ToolDisplayEvent[] {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId]!;
   // 동행이 아닌 다른 무리 사람이면 자기 무리 거점으로 데려간다 (같은 무리면 우리 거점으로)
-  const carrier = allies.find((c) => c.factionId && !state.companions.includes(c.id));
+  // 업고 다른 구역까지 옮기는 사람은 크게 다치지 않은 사람만 (PT21 하얀매: 중상인 동료가 구역 둘을 업고 갔다). 아니면 곁에서 돌본다
+  const harm = harmTrack(ctx.content.scenario);
+  const sound = (c: Character) => harm.levels.findIndex((l) => l.id === c.conditions[harm.id]) < 2;
+  const carrier = allies.find((c) => c.factionId && !state.companions.includes(c.id) && sound(c));
   const base = carrier ? baseOf(ctx.store.getState(), ctx.content, carrier.factionId) : undefined;
   const name = playerCalls(state, ctx.content, allies[0]!.id);
   const known = (state.known[me.id] ?? []).includes(allies[0]!.id);

@@ -6,6 +6,10 @@
  * 쓰는 곳은 세이브의 기록(game/state.ts의 리듀서)만 직접 고친다.
  */
 
+import type { ToolContext } from "../engine/toolkit.ts";
+import { hasMet, playerCalls } from "../game/acquaintance.ts";
+import { josa } from "../text.ts";
+
 /** 갇힌 사람의 기록 (붙잡은 무리, 갇힌 구역, 노역, 갇힌 시각, 탈출 실패로 쌓인 감시, 우리 무리의 격리, 저절로 풀리는 시각(우리 무리의 벌, 12-257)) */
 export type Held = { by: string; zone: string; labor?: boolean | undefined; since?: number | undefined; watch?: number | undefined; quarantine?: boolean | undefined; releaseAt?: number | undefined };
 
@@ -81,4 +85,27 @@ export function heldKind(state: Parameters<typeof heldByOwn>[0]): HeldKind | nul
 /** 그 사람이 격리로 갇혀 있는가 (주인공이 아닌 사람 포함) */
 export function inQuarantine(c: { captive?: Held | null } | null | undefined): boolean {
   return !!heldOf(c)?.quarantine;
+}
+
+/**
+ * 갇힌 곳에서 꺼내 온 사람 (설계 목록 2-12, PT20·PT21 졸병: 탈출로 데려온 동료에게 관계·공적·무리 반응이 없었다).
+ * 잠입으로 풀어 주든 함께 달아나든 여기로: 얼굴을 마주했으니 만난 사이, 고마워한다(신뢰·호감 +2), 우리 무리 사람이면 공적 +1
+ */
+export function welcomeRescued(ctx: ToolContext, ids: readonly string[]): string[] {
+  const lines: string[] = [];
+  for (const id of ids) {
+    const s = ctx.store.getState();
+    const c = s.characters[id];
+    if (!c || c.dead || id === s.playerId) continue;
+    // 같은 무리 사람은 처음부터 met이라 들고 나기를 건너뛰었다: 아는 마음(perceived)도 갱신한다 (12-265, PT18 졸병)
+    if (!hasMet(s, s.playerId, id) && !s.scene.present.includes(id)) {
+      ctx.store.append({ type: "npc_entered", npcId: id });
+      ctx.store.append({ type: "npc_left", npcId: id });
+    }
+    ctx.store.append({ type: "relation_changed", from: id, to: s.playerId, delta: { trust: 2, affection: 2, respect: 0 }, reason: "갇힌 곳에서 꺼내 줬다", known: true });
+    const mine = s.characters[s.playerId]?.factionId;
+    if (mine && c.factionId === mine) ctx.store.append({ type: "merit_awarded", characterId: s.playerId, delta: 1, reason: `갇힌 ${playerCalls(s, ctx.content, id)}을 데려왔다` });
+    lines.push(`${josa(playerCalls(s, ctx.content, id), "이/가")} 고마워한다 (신뢰·호감 +2${mine && c.factionId === mine ? ", 우리 무리 사람이라 공적 +1" : ""}).`);
+  }
+  return lines;
 }

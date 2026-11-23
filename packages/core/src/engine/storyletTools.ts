@@ -185,7 +185,8 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
   // 장면의 사람은 함께 간다 (PT15 튜토리얼: "동의 계단 앞"으로 열린 재회 이야기 뒤 place_to가 열린 이야기 때문에 거절됐다)
   // 부르는 이야기(12-260)는 다른 장소에 있어도 불려 간다. 그때 장면의 사람은 그 자리에 남는다 (동행은 함께)
   const before = whereIs(store.getState(), content, store.getState().playerId)?.place ?? null;
-  const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons, storyIndoor(storylet.when));
+  const roadTag = content.scenario.travel?.tag;
+  const spot = storyPlaceOnEntry(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons, storyIndoor(storylet.when), !!roadTag && storylet.tags.includes(roadTag));
   if (spot) {
     // 함께 불려 오는 배역은 남은 사람이 아니다 (12-265, PT18 분대장: 회의의 상관을 "그 자리에 남았다"고 적었다)
     const coming = new Set(Object.entries(cast).filter(([key]) => storylet.cast[key]?.enter).map(([, id]) => id));
@@ -196,10 +197,11 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     store.append({ type: "place_moved", from: before, to: spot, with: fromRoad ? [...store.getState().scene.present] : [] });
     // 불려 간 것을 결과 글에 알린다 (12-261, PT16 분대장·졸병: 장소가 바뀐 것을 상태로만 알았다)
     // (12-261 고침이 돌지 않았다: started 표시는 부르는 쪽이 나중에 넣는다. 그래서 따로 "moved" 표시로, PT17)
-    if (before && !fromRoad) {
+    // 길에서 데려갈 때도 알린다 (PT21 튜토리얼: 정문으로 옮겨진 것이 결과에 없었다)
+    if (before) {
       const place = placeById(store.getState(), content, spot)?.name ?? spot;
       const names = left.map((id) => playerCalls(store.getState(), content, id));
-      displays.push({ type: "storylet", event: "moved", title: storyTitle(store.getState(), content, storylet), detail: place, note: `${josa(place, "으로/로")} 불려 갔다${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다${withCompany ? ", 동행은 함께" : ""})` : withCompany ? " (동행은 함께)" : ""}.` });
+      displays.push({ type: "storylet", event: "moved", title: storyTitle(store.getState(), content, storylet), detail: place, note: `${josa(place, "으로/로")} ${fromRoad ? "옮겨졌다 (이야기가 열린 자리)" : "불려 갔다"}${names.length ? ` (${names.join(", ")}${josa(names.at(-1)!, "은/는").slice(names.at(-1)!.length)} 그 자리에 남았다${withCompany ? ", 동행은 함께" : ""})` : withCompany ? " (동행은 함께)" : ""}.` });
     }
   }
   // 배역은 장면에 들어온다
@@ -799,6 +801,13 @@ export function applyEffect(
     const bleed = c?.display && effect.wound.kind ? bleedFromHarm(ctx, playerId, effect.wound.kind, steps === 1) : null;
     const line = [c?.line, bleed?.line].filter(Boolean).join(" ");
     return line ? { line, display: c?.display ?? undefined } : {};
+  }
+  if ("learn_place" in effect) {
+    const zone = effect.learn_place.zone ?? state.playerZone;
+    const place = zone ? placeById(state, content, effect.learn_place.place, zone) : null;
+    if (!zone || !place || knowsPlace(state, content, zone, place.id)) return {};
+    store.append({ type: "place_learned", zone, place: place.id });
+    return { line: `알게 된 곳: ${place.name}` };
   }
   if ("locate" in effect) {
     const id = whoOf(ctx, effect.locate.who, cast);

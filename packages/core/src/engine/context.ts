@@ -72,6 +72,7 @@ import { ownedBy } from "../rules/home.ts";
 import { pastGiven, shownSkill, unlearnedNote } from "../rules/skill.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { tracesHere } from "./felt.ts";
+import { maskUnknownIds } from "../rules/knowledge.ts";
 import { currentPlace, depthAt, doorLabel, homeHidden, knowsPlace, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
 import { inZone, nearby, whereIs } from "../rules/place.ts";
 
@@ -215,7 +216,8 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["templates", describeExtraTemplates(state, content)],
     ["beliefs", describeBeliefs(state, content)],
   ];
-  return sections.filter(([, text]) => !!text).map(([key, text]) => ({ key, text }));
+  // 이름 모르는 사람의 id는 겉 id로 (공통 규칙 7, PT21)
+  return sections.filter(([, text]) => !!text).map(([key, text]) => ({ key, text: maskUnknownIds(text, state, content) }));
 }
 
 /** 이번 턴의 user 메시지. 상태와 입력을 구분해 넣는다 */
@@ -562,8 +564,9 @@ function describePlaces(state: GameState, content: Content): string {
     const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && (p.id === here?.id || !homeHidden(state, id)) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
     // 이웃과 길 (장소 개편): 이웃은 5분, 길은 이어지는 구역
     const toZones = p.road && p.to.length ? `, 길: ${p.to.map((z) => content.locations[z]?.name ?? z).join("·")} 쪽` : "";
-    const nearLine = here && here.near.includes(p.id) ? " · 이웃" : "";
-    return `- ${p.id} ${p.name}${wallOf(p)} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""}${toZones})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : nearLine}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
+    // "· 이웃: 이름들"이 "이웃이 그 사람"으로 읽혔다 (PT20·PT21 세 판): 이웃 칸과 사람을 나눠 적는다
+    const nearLine = here && here.near.includes(p.id) ? " (이웃 칸)" : "";
+    return `- ${p.id} ${p.name}${wallOf(p)} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""}${toZones})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : nearLine}${people.length ? ` — 있을 사람: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
   };
   const doors = unknownDoors(state, content);
   const hidden = all.length - places.length - doors.length;

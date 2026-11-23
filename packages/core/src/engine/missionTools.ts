@@ -355,7 +355,9 @@ const reportMission = defineTool({
     // 건네기 조건이 있는 일감도 실제로 건넨 것이 있어야 한다 (플레이 테스트 13: 빈손 일부 완수에 창고가 늘었다)
     // 손으로 하는 일(work, 그물 걷기·물 긷기)은 주인공이 한 일 자체가 산출이다 (설계 목록 5-1, PT16~18 섬: 혼자 그물을 걷었는데 "분대를 보내지 않은 일")
     const handiwork = reported.requirements.some((r) => "activity" in r && r.activity === "work");
-    const party = Object.values(ctx.store.getState().bonds ?? {}).some((b) => b.kind === "buddy" && b.missionId === mission.id) || handed.length > 0 || handiwork;
+    // 분대를 데리고 직접 이끈 일도 같이 나선 사람이 있는 일이다 (PT21 분대장: 이끈 수색에 "분대를 보내지 않은 일")
+    const led = activeCompanions(ctx.store.getState()).some((id) => ctx.store.getState().bonds[id]?.kind === "squad");
+    const party = Object.values(ctx.store.getState().bonds ?? {}).some((b) => b.kind === "buddy" && b.missionId === mission.id) || handed.length > 0 || handiwork || led;
     if (supplies && party && result.outcome !== "failed" && ctx.store.getState().factions[lender]) {
       for (const [resource, amount] of Object.entries(supplies)) {
         const delta = result.outcome === "success" ? amount! : Math.trunc(amount! / 2);

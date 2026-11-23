@@ -78,7 +78,9 @@ describe("플레이 테스트 15", () => {
 
   it("부모는 젊어도 부모 틀이다 (4-4 튜토리얼: 53세 아버지가 형제자매 틀)", () => {
     const rules = content.scenario.custom_start!.group!;
-    expect(memberTemplate(content, { relation: "parent", name: "황승우", age: 53, gender: "male" })).toBe(rules.templates.elder);
+    // 늙지 않은 부모는 부모 틀(겉모습은 중년), 늙은 부모는 늙은 가족 틀 (PT21)
+    expect(memberTemplate(content, { relation: "parent", name: "황승우", age: 53, gender: "male" })).toBe(rules.templates.parent);
+    expect(memberTemplate(content, { relation: "parent", name: "황승우", age: 60, gender: "male" })).toBe(rules.templates.elder);
   });
 
   it("붙잡힌 인물은 무기를 빼앗긴다 (4-4 튜토리얼: 수용소 포로가 쇠지렛대를 지녔다)", () => {

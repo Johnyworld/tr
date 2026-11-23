@@ -1,3 +1,4 @@
+import { maskedId } from "../rules/knowledge.ts";
 import { describe, expect, it } from "vitest";
 import type { Content } from "../content/schemas.ts";
 import { createWorldEvent } from "../game/state.ts";
@@ -64,7 +65,8 @@ describe("엑스트라", () => {
     const env = setup();
     executeTool("npc_presence", { npc_id: "npc_stranger", action: "enter" }, env.ctx);
     const before = describePlayerState(env.store.getState(), env.content);
-    expect(before).toContain("망토 두른 상인 (이름 모름) (npc_stranger)");
+    // 이름 모르는 사람의 id는 겉 id로 (공통 규칙 7, PT21)
+    expect(before).toContain(`망토 두른 상인 (이름 모름) (${maskedId("npc_stranger")})`);
     expect(before).not.toContain("낯선이");
     expect(executeTool("learn_name", { target: "npc_stranger", who: "target" }, env.ctx).ok).toBe(true);
     expect(env.store.getState().known.npc_stranger).toContain("player");
@@ -83,7 +85,7 @@ describe("엑스트라", () => {
     executeTool("npc_presence", { npc_id: "npc_stranger", action: "leave" }, env.ctx);
     const prompt = describePlayerState(env.store.getState(), env.content);
     expect(prompt).toContain("얼굴만 아는 인물");
-    expect(prompt).toContain("- 망토 두른 상인 (이름 모름) (npc_stranger): 망토를 두른 상인");
+    expect(prompt).toContain(`- 망토 두른 상인 (이름 모름) (${maskedId("npc_stranger")}): 망토를 두른 상인`);
     expect(prompt).not.toContain("E의 상인");
     expect(prompt).not.toContain("낯선이");
   });

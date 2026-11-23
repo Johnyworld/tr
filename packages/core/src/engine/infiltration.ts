@@ -1,6 +1,6 @@
 import { stakesOf } from "../rules/stakes.ts";
 import { onSpotted } from "../rules/consequence.ts";
-import { heldOf, heldSeenTopic, heldSeenZone } from "../rules/held.ts";
+import { heldOf, heldSeenTopic, heldSeenZone, welcomeRescued } from "../rules/held.ts";
 import { currentPlace, depthAt, doorLabel, knowsPlace, nearestRoad, peopleAt, placeById, resolvePlace, unknownDoors, whereIs, type Place } from "../rules/place.ts";
 import { josa } from "../text.ts";
 import { z } from "zod";
@@ -117,13 +117,14 @@ function goalEffects(content: Content, goalId: string, captive: string | null, h
 }
 
 /**
- * 잠입으로 옮겨 갈 수 있는 곳 (B③, 설계 목록 C-1): 지금 자리의 이웃 가운데 같은 깊이나 한 칸 더 깊은 곳. 길은 빼고 (나가기는 leave).
+ * 잠입으로 옮겨 갈 수 있는 곳 (B③, 설계 목록 C-1): 지금 자리의 이웃 가운데 한 칸 얕은 곳·같은 깊이·한 칸 더 깊은 곳. 길은 빼고 (나가기는 leave).
  * 플레이어가 이 목록에서 고른다. 모르는 곳은 '문N'으로만 보인다. 장소가 없는 구역이면 빈 목록 (깊이만 센다)
  */
 function moveOptions(state: GameState, content: Content, depth: number): Place[] {
   const here = currentPlace(state, content);
   if (depthAt(state, content) === null || !here) return [];
-  return here.near.map((id) => placeById(state, content, id)).filter((p): p is Place => !!p && !p.road && [depth, depth + 1].includes(depthAt(state, content, p.id) ?? -1));
+  // 한 칸 물러나기도 (PT21 졸병: 가장 깊은 곳에서 문을 잘못 고르면 빠져나와 처음부터 다시 해야 했다)
+  return here.near.map((id) => placeById(state, content, id)).filter((p): p is Place => !!p && !p.road && [depth - 1, depth, depth + 1].includes(depthAt(state, content, p.id) ?? -99));
 }
 
 /** 목록 한 칸: 아는 곳은 "id 이름 (깊이)", 모르는 곳은 문 번호 */
@@ -210,13 +211,13 @@ const infiltrate = defineTool({
   description:
     "잠입 장면 (전투 장면과 같은 틀). 다른 무리의 땅에서 몰래 들어가 목표를 하고 나온다. 결과는 시스템이 정한다. " +
     "start(goal): 시작한다 (지금 장소의 깊이에서: 담 있는 구역은 담을 지나기 전 = 담 밖, 담 문(gate) = 담 안, 그 너머 = 깊은 곳. 담 없는 구역은 길에서 몇 칸). advance(place): 이웃 장소로 숨어든다 (같은 깊이로 옆걸음하거나 한 칸 더 깊이, 은밀 판정. 사람이 많은 곳일수록 어렵다). 목록을 플레이어에게 보여 주고 고르게 한다. " +
-    "act: 가장 깊은 곳에서 목표를 한다 (갇힌 사람 풀어 주기는 그 사람이 갇힌 자리에서, 여럿이면 target). grab(target): 지금 자리에 혼자 있는 사람을 몰래 붙잡는다 (은밀 판정). 붙잡으면 끌고 다니는 포로가 되고 handle_prisoner로 심문·놓아주기·기절·죽이기를 한다. listen: 멈춰서 낌새를 살핀다 (들켰는지 대략 안다). leave: 빠져나온다 (가장 가까운 길로). 잠입 중에는 take_action.place_to로 옮기지 않는다. " +
+    "act: 가장 깊은 곳에서 목표를 한다 (갇힌 사람 풀어 주기는 그 사람이 갇힌 자리에서, 여럿이면 target). grab(target): 지금 자리의 사람을 몰래 붙잡는다 (은밀 판정, 곁에 다른 사람이 있으면 그 수만큼 어렵고 셋 이상이면 못 한다). 붙잡으면 끌고 다니는 포로가 되고 handle_prisoner로 심문·놓아주기·기절·죽이기를 한다. listen: 멈춰서 낌새를 살핀다 (들켰는지 대략 안다). leave: 빠져나온다 (가장 가까운 길로). 잠입 중에는 take_action.place_to로 옮기지 않는다. " +
     "한 번에 한 걸음, 걸음마다 시간이 흐른다. 경보 숫자는 GM도 모른다: 상태의 '잠입 중'에 나온 낌새로만 연출한다. 들키면 빠지기만 된다. " +
     "판정은 이 도구가 굴린다: take_action으로 따로 판정하지 않는다 (12-240: 따로 굴린 은밀 판정이 헛것이 됐다).",
   schema: z.strictObject({
     action: z.enum(["start", "advance", "act", "listen", "grab", "leave"]),
     goal: z.string().nullable().default(null).describe("start일 때 목표 id (상태의 '잠입할 수 있는 목표'). act에서 목표를 바꿀 때도 (숨어든 곳에서 갇힌 사람을 찾았을 때). 아니면 null"),
-    target: z.string().nullable().default(null).describe("grab일 때 몰래 붙잡을 사람 id (지금 자리에 혼자 있는 사람). act로 갇힌 사람을 풀어 줄 때 여럿이면 누구를. 아니면 null"),
+    target: z.string().nullable().default(null).describe("grab일 때 몰래 붙잡을 사람 id (지금 자리에 있는 사람). act로 갇힌 사람을 풀어 줄 때 여럿이면 누구를. 아니면 null"),
     place: z.string().nullable().default(null).describe("advance일 때 숨어들 곳 (상태의 '잠입 중'에 나온 목록: 아는 곳은 장소 id, 모르는 곳은 '문1'처럼). 하나뿐이면 null"),
   }),
   run(input, ctx): ToolOutcome {
@@ -297,11 +298,13 @@ const infiltrate = defineTool({
       if (!here) return { ok: false, error: "장소가 없는 구역에서는 몰래 붙잡지 못한다." };
       const there = othersHere(state, content);
       if (!input.target || !there.includes(input.target)) return { ok: false, error: `붙잡을 사람(target)은 지금 이 자리에 있는 사람이다: ${there.map((id) => `${playerCalls(state, content, id)}(${id})`).join(", ") || "아무도 없다"} (시간은 흐르지 않았다).` };
-      if (there.length > 1) return { ok: false, error: "여럿이 있는 자리에서는 몰래 붙잡지 못한다. 혼자 남을 때를 기다리거나 다른 곳으로 (시간은 흐르지 않았다)." };
+      // 곁에 다른 사람이 있으면 그 수만큼 어렵다, 셋 이상이면 못 한다 (PT21 졸병: 혼자인 사람만 붙잡을 수 있어 거점에서 한 번도 못 했다)
+      const watchers = there.length - 1;
+      if (watchers > 2) return { ok: false, error: `곁에 ${watchers}명이 더 있어 몰래 붙잡지 못한다. 사람이 줄 때를 기다리거나 다른 곳으로 (시간은 흐르지 않았다).` };
       const name = playerCalls(state, content, input.target);
       const m = moveOf(content.scenario, r.move)!;
       const grabMission = missionForCheck(ctx.store.getState(), r.move);
-      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: `${josa(name, "을/를")} 몰래 붙잡는다` }, ctx, { stakes: stakesOf({ exposed: true }), forMission: grabMission });
+      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, watchers), intent: `${josa(name, "을/를")} 몰래 붙잡는다${watchers ? ` (곁에 ${watchers}명)` : ""}` }, ctx, { stakes: stakesOf({ exposed: true }), forMission: grabMission });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -354,15 +357,8 @@ const infiltrate = defineTool({
           if (out.display) extra.push(out.display);
         }
         // 풀어 준 사람과는 얼굴을 마주했다: 만난 사이가 되고 고마워한다 (12-262, PT16·PT17 졸병: "아직 직접 만나 본 적이 없다")
-        if (captive && goal.release) {
-          // 얼굴을 마주했으니 아는 마음(perceived)도 갱신한다: 같은 무리 사람은 처음부터 met이라 들고 나기를 건너뛰었다 (12-265, PT18 졸병)
-          const s1 = store.getState();
-          if (!hasMet(s1, s1.playerId, captive) && !s1.scene.present.includes(captive) && !s1.characters[captive]?.dead) {
-            store.append({ type: "npc_entered", npcId: captive });
-            store.append({ type: "npc_left", npcId: captive });
-          }
-          store.append({ type: "relation_changed", from: captive, to: s1.playerId, delta: { trust: 2, affection: 2, respect: 0 }, reason: "갇힌 곳에서 꺼내 줬다", known: true });
-        }
+        // 꺼내 온 사람의 반응은 공통 규칙 1 (welcomeRescued)
+        if (captive && goal.release) lines.push(...welcomeRescued(ctx, [captive]));
         const now = store.getState().infiltration!;
         store.append({ type: "infiltration_changed", depth: now.depth, alarm: now.alarm, done: true });
         lines.unshift(`${goal.label}: 해냈다${check.outcome === "partial" ? " (다 하지는 못했다)" : ""}.${captive && goal.release ? ` ${josa(playerCalls(store.getState(), content, captive), "을/를")} 풀어 냈다.` : ""}`);
@@ -424,8 +420,8 @@ export function describeInfiltration(content: Content, state: GameState): string
   const options = inf.alarm < ALARM_MAX ? moveOptions(state, content, inf.depth) : [];
   const freeHere = !inf.done && !!captiveAt(state, content, inf.zone, inf.owner);
   const canAct = !inf.done && (inf.depth >= deepest || freeHere);
-  const alone = othersHere(state, content);
-  const can = inf.alarm >= ALARM_MAX ? "leave" : [options.length || (!here && inf.depth < deepest) ? "advance" : null, canAct ? "act" : null, alone.length === 1 ? `grab(${alone[0]}, 혼자 있다)` : null, "listen", "leave"].filter(Boolean).join(" · ");
+  const here2 = othersHere(state, content);
+  const can = inf.alarm >= ALARM_MAX ? "leave" : [options.length || (!here && inf.depth < deepest) ? "advance" : null, canAct ? "act" : null, here2.length && here2.length <= 3 ? `grab(target: ${here2.join("/")}${here2.length > 1 ? `, 곁에 ${here2.length - 1}명이라 어렵다` : ", 혼자 있다"})` : null, "listen", "leave"].filter(Boolean).join(" · ");
   const depthLabel = (d: number) => r.depths[Math.min(d, r.depths.length - 1)]!;
   const release = r.goals.find((g) => g.release);
   return [

@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 99;
+export const SAVE_SCHEMA_VERSION = 100;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -484,6 +484,8 @@ export function createGameSchemas(s: Scenario) {
     visited: z.record(z.string(), z.array(z.string())).default({}),
     /** 캐릭터마다 있어 본 장소 ("구역:장소", 설계 목록 C-1). 모르는 장소는 GM에게도 '알 수 없는 문'으로만 보인다 (공통 규칙 15 knowsPlace) */
     knownPlaces: z.record(z.string(), z.array(z.string())).default({}),
+    /** 구역에 들어와 도착한 길에 그대로 있는가 (PT21: 구역 안에서 길로 나선 것을 "막 들어옴"으로 봐 이야기가 정문으로 데려갔다). 장소를 옮기면 false */
+    justArrived: z.boolean().default(false),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
     lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
@@ -1278,6 +1280,7 @@ export const EMPTY_STATE: GameState = {
   deposits: {},
   visited: {},
   knownPlaces: {},
+  justArrived: false,
   background: [],
   companions: [],
   bonds: {},
@@ -2344,6 +2347,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!zone) return next;
       swapGround(next, spotKey(zone, event.from), spotKey(zone, event.to));
       next.playerPlace = event.to;
+      next.justArrived = false;
       // 자리를 옮기면 무너진 자세도 풀린다 (12-251, 플레이 테스트 14: 장소를 옮겨도 다음 판정에 남았다)
       if (event.to !== state.playerPlace) next.offBalanceUntil = null;
       for (const id of next.scene.present) perceive(next, id);
@@ -2377,7 +2381,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.from !== event.to) {
         swapGround(next, event.from === null ? null : spotKey(event.from, state.playerPlace), spotKey(event.to, event.place ?? null));
         next.playerPlace = event.place ?? null;
-      } else if (event.place !== undefined && event.place !== null) next.playerPlace = event.place;
+        next.justArrived = true;
+      } else if (event.place !== undefined && event.place !== null) {
+        next.playerPlace = event.place;
+        next.justArrived = true;
+      }
       // 잠입하던 곳을 떠나면 잠입은 끝난다 (12-154)
       next.infiltration = null;
       next.exploration = null;

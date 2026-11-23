@@ -162,19 +162,21 @@ export function storyPlaceFits(state: GameState, content: Content, indoor: boole
  */
 export function storyPlacesFit(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean): boolean {
   const here = currentPlace(state, content);
-  // 부르는 이야기는 어디서든 연다: 그 장소로 데려간다 (12-260)
-  if (!here || here.spawned || here.road || summons) return true;
+  // 부르는 이야기는 어디서든 연다: 그 장소로 데려간다 (12-260). 길은 막 들어온 때만 어디서든 (PT21)
+  if (!here || here.spawned || (here.road && state.justArrived) || summons) return true;
   const named = storyPlaces(state, content, places, text, indoor);
   return !named.length || named.includes(here.id);
 }
 
 /**
- * 길(구역에 막 들어온 자리)에서 열린 이야기가 지금 구역의 장소 하나를 말하면 그 장소 (12-254). 갇혔거나 길이 아닌 장소에 있거나 여럿·없으면 null.
+ * 길(구역에 막 들어와 도착한 자리, state.justArrived)에서 열린 이야기가 지금 구역의 장소 하나를 말하면 그 장소 (12-254). 갇혔거나 길이 아닌 장소에 있거나 여럿·없으면 null.
  * 부르는 이야기(summons, 12-260)는 다른 장소에 있어도 그 장소로 (이미 거기 있으면 null)
  */
-export function storyPlaceOnEntry(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean): string | null {
+export function storyPlaceOnEntry(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean, roadStory = false): string | null {
   const here = currentPlace(state, content);
-  if ((here && !here.road && !summons) || heldOf(state.characters[state.playerId])) return null;
+  // 길 위의 이야기(도착하기 전 장면)는 옮기지 않는다. 길에서 데려가는 것은 구역에 막 들어와 도착한 길에 그대로 있을 때만 (PT21 분대장·튜토리얼)
+  if (roadStory && !summons) return null;
+  if ((here && !(here.road && state.justArrived) && !summons) || heldOf(state.characters[state.playerId])) return null;
   const named = storyPlaces(state, content, places, text, indoor);
   const spot = named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
   // 적 땅에서는 이야기가 담 안(더 깊은 곳)으로 데려가지 않는다: 들킨 자리에서 열린다 (PT20 졸병: 담 밖 길에서 열린 경보 "망루의 확성기"가 감시탑·담으로 옮겼다)

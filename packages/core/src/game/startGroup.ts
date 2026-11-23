@@ -93,7 +93,8 @@ export function memberTemplate(content: Content, m: GroupMember): string {
   const t = rules.templates;
   if (m.age < rules.young_below) return t.young;
   // 부모는 나이가 젊어도 부모 틀 (PT15 튜토리얼: 53세 아버지가 형제자매 틀이라 말투가 동생과 같았다)
-  if (m.age >= rules.elder_from || rel?.kind === "parent") return t.elder;
+  if (m.age >= rules.elder_from) return t.elder;
+  if (rel?.kind === "parent") return t.parent ?? t.elder;
   if (rel?.kind === "spouse") return t.partner;
   if (rel?.kind === "other") return t.other;
   return t.adult;

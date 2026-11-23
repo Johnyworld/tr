@@ -121,6 +121,8 @@ export const scenarioFileSchema = z
     }),
     /** 수색을 돕는 지식 (옛 지도·건물 용도를 안다): 이 스킬을 1 이상 익혔으면 수색 판정에 bonus (상한 밖의 상황 보정, 12-220) */
     search_lore: z.strictObject({ skill: id, bonus: z.number().int().min(0).max(2) }).optional(),
+    /** 말로 캐물어 알아내는 판정 (설계 목록 7-1, PT21: 눈치로 캐물을 때 "아는 것" 안내가 없었다). 맞으면 상대가 아는 것을 남기는 길을 알린다 */
+    ask_moves: z.array(id).optional(),
     /**
      * 캐릭터 생성 (12-6): 능력은 포인트 구매. 모두 0에서 시작해 points를 나눠 쓴다.
      * cost: 능력 값 → 드는 포인트 (음수면 돌려받는다), max_low: 기본값보다 낮출 수 있는 능력 수. genders: 고를 수 있는 성별
@@ -468,7 +470,8 @@ export const scenarioFileSchema = z
             sibling_labels: z
               .strictObject({ older: z.record(z.string(), z.record(z.string(), z.string().min(1))), younger: z.record(z.string(), z.string().min(1)) })
               .optional(),
-            templates: z.strictObject({ young: id, elder: id, adult: id, partner: id, other: id }),
+            /** parent: elder_from 아래 나이의 부모 (PT20·PT21 튜토리얼: 49·53세 부모가 늙은 가족 틀이라 "노인"이었다). 없으면 elder */
+            templates: z.strictObject({ young: id, elder: id, adult: id, partner: id, other: id, parent: id.optional() }),
             young_below: z.number().int().default(16),
             elder_from: z.number().int().default(55),
           })
@@ -1823,6 +1826,7 @@ export const scenarioFileSchema = z
       }
     }
     if (s.search_lore && !moves.has(s.search_lore.skill)) problem(`search_lore: 알 수 없는 스킬 ${s.search_lore.skill}`);
+    for (const m of s.ask_moves ?? []) if (!moves.has(m)) problem(`ask_moves: 알 수 없는 스킬 ${m}`);
     // 마음 다잡기 (12-220): 마음·공포 규칙이 있으면 있어야 하고, 능력은 그 행동이 쓰는 것이어야 한다
     if ((s.body?.nerves || s.body?.fear) && !s.body?.steady) problem("body.steady: 마음·공포 규칙에는 마음 다잡기 판정이 있어야 한다");
     if (s.body?.steady) {

@@ -717,6 +717,8 @@ export function createContentSchemas(s: Scenario) {
     /** 그 사람의 복수 다짐이 풀린다 (12-135: 화해, 대가를 치름, 결판) */
     z.strictObject({ settle_vendetta: z.strictObject({ who: z.string().min(1) }) }),
     /** 붙잡힌 배역이 어디 갇혔는지 주인공이 알게 된다 (진짜 상태에서 코드가 채운다, 12-56) */
+    /** 장소를 알게 된다 (설계 목록 C-1, PT21 튜토리얼: 재회한 뒤에도 가족 집이 모르는 곳이었다). zone이 없으면 지금 구역 */
+    z.strictObject({ learn_place: z.strictObject({ place: contentIdSchema, zone: contentIdSchema.optional() }) }),
     z.strictObject({ locate: z.strictObject({ who: z.string().min(1), source: z.enum(["seen", "report", "rumor"]).default("report") }) }),
     /** 주인공이 붙잡힌다 (12-55): by 무리(own 외에 zone_owner 등 별칭), zone이 없으면 그 무리의 거점에 갇힌다 */
     /** days: 우리 무리가 벌로 가둘 때(by: own) 며칠 뒤 저절로 풀린다 (12-257). 빼앗는 것도 무리 사이가 나빠지는 것도 없다 */

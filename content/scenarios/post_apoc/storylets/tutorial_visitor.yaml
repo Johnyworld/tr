@@ -279,6 +279,8 @@
   when:
     zones: [b_base]
     indoor: false
+    # 동 계단 앞은 단지 안 텃밭·우물 자리 (PT21 튜토리얼: 담 밖 길에서 열려 글과 어긋났다)
+    places: [yard]
     flags_all: [bg_family_lost]
     flags_any: [tv_family_known, tv_family_where]
     flags_none: [tv_reunited]
@@ -293,16 +295,19 @@
       label: 계단을 뛰어 올라간다
       effects:
         - set_flag: tv_reunited
+        - learn_place: { place: blocks }
         - relation: { who: kin, axis: affection, delta: 1 }
     - id: call
       label: 그 자리에 서서 이름을 부른다
       effects:
         - set_flag: tv_reunited
+        - learn_place: { place: blocks }
         - relation: { who: kin, axis: affection, delta: 1 }
     # 함께 다니는 것은 데려가겠다고 할 때만 (12-239, 플레이 테스트 13: 재회하자마자 저절로 동행이 됐다)
     - id: take_along
       label: 이제 곁에 있겠다고, 함께 가자고 한다
       effects:
         - set_flag: tv_reunited
+        - learn_place: { place: blocks }
         - relation: { who: kin, axis: affection, delta: 1 }
         - companion_join: { who: kin, kind: kin }

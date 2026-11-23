@@ -41,7 +41,8 @@ describe("잠입", () => {
     go(w, "advance", null, `문${unknownDoors(w.state(), content).findIndex((p) => p.id === "command") + 1}`);
     expect(w.state().infiltration?.depth).toBe(2);
     expect(w.state().playerPlace).toBe("command");
-    expect(go(w, "advance").ok).toBe(false); // 더 깊은 곳은 없다
+    // 더 깊은 곳은 없고, 한 칸 물러나 창고 마당으로는 갈 수 있다 (PT21)
+    expect(w.sceneForGm()).toMatch(/숨어들 수 있는 곳[^\n]*yard/);
     expect(go(w, "act").ok).toBe(true);
     expect(w.state().factions.faction_c!.resources.food).toBe(food - 10);
     expect(w.state().characters[w.state().playerId]!.inventory.canned_food ?? 0).toBeGreaterThanOrEqual(2);

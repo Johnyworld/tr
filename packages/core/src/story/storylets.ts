@@ -272,9 +272,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (!player || player.dead) return false;
   // 성인 주제: 세계의 수위가 켜져 있고 주인공이 성인일 때만 (12-57)
   if (isMature(content, storylet) && (!state.options?.mature || !isAdult(content, player))) return false;
-  // 외딴곳에서는 그곳을 직접 적은 공통 이야기만 (기획서 9.12)
+  // 외딴곳에서는 그곳을 직접 적은 공통 이야기만 (기획서 9.12). 그 외딴곳 무리만 받는 이야기(factions가 그 땅 주인뿐)도 그곳 이야기다
+  // (PT21 섬: 여울섬 규율 회의 disc_y_council이 factions: [faction_y]인데 zones가 없어 섬에서 열리지 않았다)
   const here = state.playerZone ? content.locations[state.playerZone] : undefined;
-  if (here?.isolated && storylet.tags.includes(WORLD_TAG) && !w.zones?.includes(here.id)) return false;
+  const islanders = !!here?.owner && !!w.factions?.length && w.factions.every((f) => f === here.owner);
+  if (here?.isolated && storylet.tags.includes(WORLD_TAG) && !w.zones?.includes(here.id) && !islanders) return false;
   const own = state.factions[player.factionId];
   if (w.ranks && !w.ranks.includes(player.rank)) return false;
   // 다짐을 건네는 이야기는 다짐이 없을 때만 (12-199: 품은 다짐은 덮어쓰지 않는다)

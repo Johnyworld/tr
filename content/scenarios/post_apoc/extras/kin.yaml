@@ -54,6 +54,32 @@
       - { content: 몸이 생각보다 나쁘다. 당신이 걱정할까 봐 숨긴다, reveal_when: 밤에 둘만 있을 때, min_trust: 6 }
   appears: { zones: [] }
 
+# 아직 늙지 않은 부모 (elder_from 아래). 말투·바람은 늙은 가족과 같고 몸은 중년 (PT20·PT21 튜토리얼)
+- id: kin_parent
+  label: 부모
+  rank: loner
+  age: [40, 55]
+  looks:
+    - 흰머리가 섞이기 시작한 중년. 손마디가 굵고 늘 무언가를 고치거나 꿰매고 있다
+    - 눈가 주름이 깊은 중년. 말끝마다 자식 걱정이 묻어난다
+  stats: { strength: [0, 0], vitality: [0, 0], senses: [0, 1], intellect: [0, 1], nerve: [0, 1] }
+  skills: { first_aid: 1, history: 1, survival: 1 }
+  traits: [patient, motherly, weary, principled]
+  trait_count: 2
+  inventory:
+    - { item: blanket, chance: 0.4 }
+    - { item: fever_reducer, chance: 0.2 }
+  values: { mercy: 2, honesty: 1, loyalty: 2 }
+  profile:
+    wants: [당신과 함께 겨울을 넘기는 것, 짐이 되지 않는 것, 붕괴 전처럼 한 지붕 아래 사는 것]
+    fears: [당신을 잃는 것, 혼자 남는 것, 열병]
+    voices:
+      - { style: 오래 함께한 사람의 편한 반말, samples: ["밥은 먹었어?", "오늘은 어디까지 가?"] }
+      - { style: 걱정이 많은 말투. 같은 말을 두 번 한다, samples: ["조심해. 진짜 조심해.", "늦지 마. 늦으면 찾으러 갈 거야."] }
+    rules: [당신이 다치면 하던 일을 멈춘다]
+    reputations: [당신의 가족]
+  appears: { zones: [] }
+
 - id: kin_sibling
   label: 형제자매
   rank: loner

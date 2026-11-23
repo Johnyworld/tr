@@ -107,7 +107,7 @@
 
 - id: pd_manseok
   name: 구만석
-  alias: 목발 짚은 격리실 문지기
+  alias: 목발 짚은 외다리 문지기
   faction: faction_d
   rank: grunt
   occupation: guard

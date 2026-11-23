@@ -1,4 +1,4 @@
-import {heldOf, heldKind } from "../rules/held.ts";
+import {heldOf, heldKind, welcomeRescued } from "../rules/held.ts";
 import { applyBuild, planBuild } from "./facilities.ts";
 import { applyTrain, planTrain } from "./training.ts";
 import { applyLesson, planLesson } from "./teaching.ts";
@@ -848,6 +848,17 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const storyCheck = !!start.activeStorylet && !!input.check && !!storyletOf(start, content, start.activeStorylet.id)?.choices.some((c) => c.check === input.check!.move);
   // 1. 판정과 선언한 위험
   if (input.check) {
+    // 탈출은 빈틈을 기다리는 데 시간이 든다 (플레이 테스트 12). 기다린 뒤의 시각(어둠·시간대)으로 굴린다 (PT21 졸병·하얀매: 아침 탈출에 +1(어둠))
+    const wait = escapeAttempt ? scenario.captivity?.escape_hours : undefined;
+    if (wait) {
+      const now = store.getState().time;
+      // 5분 단위 (플레이 테스트 13: 그 뒤 시각이 :01·:31로 어긋났다)
+      const minutes = Math.round(((wait[0] + ctx.rng() * Math.max(0, wait[1] - wait[0])) * 60) / 5) * 5;
+      if (minutes > 0) {
+        store.append({ type: "time_advanced", activity: "wait", from: now, to: now + minutes });
+        lines.push(`빈틈을 기다리느라 ${formatDuration(minutes)}이 걸렸다.`);
+      }
+    }
     const roll = rollPlayerCheck(
       { move: input.check.move, stat: input.check.stat, difficulty: input.ambush ? ambushDifficulty(input.check.difficulty) : input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
       ctx,
@@ -902,17 +913,6 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     // 이 행동의 판정이 결과의 첫 줄이다 (앞서 굴린 마음 다잡기보다 앞에, 12-220).
     // 설정을 거스르는 굴림만은 그 앞에: 굴려서 해내야 이 행동을 한다 (PT15 섬: 본문은 거스르기가 먼저인데 판정 줄은 위협 → 버티기)
     displays.splice(settingDisplays.length, 0, roll.display);
-    // 탈출은 빈틈을 기다리는 데 시간이 든다 (플레이 테스트 12)
-    const wait = escapeAttempt ? scenario.captivity?.escape_hours : undefined;
-    if (wait) {
-      const now = store.getState().time;
-      // 5분 단위 (플레이 테스트 13: 그 뒤 시각이 :01·:31로 어긋났다)
-      const minutes = Math.round(((wait[0] + ctx.rng() * Math.max(0, wait[1] - wait[0])) * 60) / 5) * 5;
-      if (minutes > 0) {
-        store.append({ type: "time_advanced", activity: "wait", from: now, to: now + minutes });
-        lines.push(`빈틈을 기다리느라 ${formatDuration(minutes)}이 걸렸다.`);
-      }
-    }
     // 임무 판정이 빗나가면 30분을 더 쓴다 (플레이 테스트 11, C2: 5분마다 다시 굴려 채웠다). 같은 조건은 세 번 빗나가면 닫힌다
     {
       const m = forMission ? store.getState().missions[forMission] : undefined;
@@ -1132,11 +1132,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 
   // 말로 묻는 판정이 맞으면 상대가 아는 것을 남기는 길을 알린다 (설계 목록 7-1, PT16·17 섬: 교섭이 성공해도 남는 것이 없었다).
   // 무엇을 물었는지는 코드가 모르므로 고르지 않는다. 말로 하는 스킬은 시나리오의 opposition.mindless.refuses
-  if (input.check && input.target && outcome && outcome !== "miss" && (scenario.opposition?.mindless?.refuses ?? []).includes(input.check.move)) {
+  if (input.check && input.target && outcome && outcome !== "miss" && (scenario.ask_moves ?? scenario.opposition?.mindless?.refuses ?? []).includes(input.check.move)) {
     const npc = content.npcs[input.target];
     const mine = new Set((store.getState().beliefs[start.playerId] ?? []).map((b) => b.fact));
     const unknown = npc ? (store.getState().beliefs[input.target] ?? []).filter((b) => !npc.keeps.includes(b.fact) && !mine.has(b.fact)) : [];
-    if (unknown.length) lines.push(`(${josa(playerCalls(store.getState(), content, input.target), "이/가")} 물은 것을 안다면, 그 사람 카드의 "아는 것"에서 골라 add_belief(source: report)로 남긴다)`);
+    // 부탁·보고하는 판정에도 붙어 헷갈렸다 (PT21 세 판): 무엇을 물으려던 판정일 때만이라고 밝힌다
+    if (unknown.length) lines.push(`(무엇을 캐물으려던 판정이었고 ${josa(playerCalls(store.getState(), content, input.target), "이/가")} 그것을 안다면, 그 사람 카드의 "아는 것"에서 골라 add_belief(source: report)로 남긴다. 부탁·보고였으면 넘긴다)`);
   }
   // 2. 행적과 목격자
   // 적대하는 땅에서 그 땅 주인 무리 사람이 봤으면(행적의 목격자, 공격받은 사람) 그 자리에서 경보가 울린다 (12-266, 사용자 결정. PT16~18 졸병: 대낮에 적 지휘소를 뒤지고 장교를 쳐도 아무 일이 없었다)
@@ -1377,7 +1378,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const came = activeCompanions(store.getState()).map((id) => playerCalls(store.getState(), content, id));
     const brought = alongZone.filter((id) => store.getState().scene.present.includes(id) && !store.getState().companions.includes(id)).map((id) => playerCalls(store.getState(), content, id));
     const leftBehind = start.scene.present.filter((id) => !alongZone.includes(id) && !start.companions.includes(id)).length > 0;
+    // 함께 달아나 갇힌 곳에서 꺼내 온 사람 (공통 규칙 1 welcomeRescued, 설계 목록 2-12)
+    const rescued = escapeAttempt ? alongZone.filter((id) => !!heldOf(start.characters[id]) && !heldOf(store.getState().characters[id])) : [];
     lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.${came.length ? ` 동행(${came.join(", ")})은 함께 왔다.` : ""}${brought.length ? ` 함께 데려왔다: ${brought.join(", ")}${escapeAttempt ? " (함께 달아났다)" : ""}.` : ""}${leftBehind ? " 그 밖에 함께 있던 인물은 따라오지 않는다 (데려가려면 with, 같이 왔다면 npc_presence로 다시 등장시킨다)." : ""}`);
+    lines.push(...welcomeRescued(ctx, rescued));
     if (rideUsed) {
       lines.push(`${josa(rideUsed.name, "을/를")} 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 몇 시간 안에 무언가 몰려들 수 있다." : ""}`);
       if (rideUsed.noise) store.append({ type: "noise_made", zone: input.move_to, level: rideUsed.noise, day: dayOf(store.getState().time) });
@@ -1761,9 +1765,9 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     const sleepCap = activity === "sleep" ? sleepCapMinutes({ rested, hurt, lyingDownAt: from, maxMinutes: MAX_SLEEP_MINUTES, restedHours: fatigue?.rested_sleep_hours ?? 12, napHours: fatigue?.min_sleep_hours ?? 3 }) : null;
     napped = !!sleepCap?.nap;
     const cap = sleepCap ? sleepCap.minutes : MAX_FAST_FORWARD_MINUTES;
-    // 임무 보초는 요건을 채우면 끝난다 (until을 걸지 않았으면)
+    // 임무 활동은 요건을 채우면 끝난다 (until을 걸지 않았으면). 시간을 세는 요건이 있는 활동이면 무엇이든 (PT20·PT21 의무병: 치료·수색은 30분씩이었다)
     const missionLeft = (() => {
-      if (until || !forMission || !["guard_duty", "wait", "rest", "work"].includes(activity)) return null;
+      if (until || !forMission || activity === "sleep" || activity === "travel") return null;
       const m = state.missions[forMission];
       if (!m) return null;
       const left = m.requirements.flatMap((r, i) => ("activity" in r && r.activity === activity ? [r.minutes - (m.progress[i] ?? 0)] : [])).filter((n) => n > 0);

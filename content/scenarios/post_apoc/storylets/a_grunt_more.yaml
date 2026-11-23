@@ -50,6 +50,8 @@
     - id: capture
       label: 포로로 잡아 상관에게 데려간다
       effects:
+        # 이야기의 결과대로 그 사람의 처지가 바뀐다 (PT21 졸병: 투항자가 세 시간 뒤 물류창고 담에 그대로 있었다)
+        - npc_capture: { who: deserter, by: own }
         - merit: 2
         - relation: { who: commander, axis: respect, delta: 1 }
         - deed: { summary: 붉은연합에서 넘어온 병사를 포로로 잡아 넘겼다, tags: [diligence], severity: 2, privacy: semi_private }
@@ -62,19 +64,19 @@
           - clock: { id: a_counteroffensive, delta: 2 }
           - relation: { who: deserter, axis: trust, delta: 2 }
           - belief: { fact: "{deserter}에게 들었다: 물류창고 수용소에 청솔형제단 정찰조 셋이 살아 있다. 그중 하나는 오씨 성이다", source: report }
+          - npc_depart: { who: deserter }
         partial:
           - belief: { fact: "{deserter:은/는} 물류창고에 누군가 갇혀 있다는 말만 흘렸다", source: report }
+          - npc_depart: { who: deserter }
         miss:
           - relation: { who: deserter, axis: trust, delta: -1 }
+          - npc_depart: { who: deserter }
     - id: let_go
       label: 못 본 걸로 하고 보내 준다
       effects:
         - relation: { who: deserter, axis: trust, delta: 3 }
+        - npc_depart: { who: deserter }
         - deed: { summary: 붉은연합의 탈영병을 몰래 보내 주었다, tags: [mercy, enemy_sympathy], severity: 2, privacy: private }
-    - id: kill
-      label: 그 자리에서 처리한다
-      effects:
-        - deed: { summary: 손을 든 붉은연합의 탈영병을 죽였다, tags: [cruelty], severity: 3, privacy: semi_private }
 
 - id: b_gate_sister
   title: 버들마을 정문의 경비병

@@ -5,6 +5,7 @@ import { traitsOf } from "./traits.ts";
 import { dayOf } from "../rules/time.ts";
 import { isFirstAidItem } from "./care/kinds.ts";
 import { heldOf, heldSeenTopic } from "../rules/held.ts";
+import { maskUnknownIds, unmaskIds } from "../rules/knowledge.ts";
 import { storyletOf } from "../story/storylets.ts";
 import { marketValue } from "./market.ts";
 import { RESOLVE_TOOLS } from "./resolve.ts";
@@ -477,7 +478,17 @@ function noteHeldSeen(ctx: ToolContext): void {
   }
 }
 
+/**
+ * 도구 실행. 이름 모르는 사람의 겉 id는 실제 id로 받고, 결과 글의 그 사람 id는 겉 id로 돌려준다 (공통 규칙 7, PT21)
+ */
 export function executeTool(name: string, input: unknown, ctx: ToolContext): ToolOutcome {
+  const out = runTool(name, unmaskIds(input, ctx.content), ctx);
+  const state = ctx.store.getState();
+  if (!state.playerId) return out;
+  return out.ok ? { ...out, ...(out.resultText ? { resultText: maskUnknownIds(out.resultText, state, ctx.content) } : {}) } : { ...out, error: maskUnknownIds(out.error, state, ctx.content) };
+}
+
+function runTool(name: string, input: unknown, ctx: ToolContext): ToolOutcome {
   const tool = gmTools(ctx.content.scenario).find((t) => t.name === name);
   if (!tool) return { ok: false, error: `알 수 없는 tool: ${name}` };
   // 의식불명 등 스스로 아무것도 못 하는 동안은 플레이어의 행동이 되는 tool을 막는다 (시간 흐르기·돌봄은 take_action, 장면 정리 일부만)
@@ -586,6 +597,8 @@ function mentionedIds(input: unknown): string[] {
 /** 같은 장소에 있는 사람이면 장면에 들인다 (공통 규칙 15 hereWithMe). 들인 사람의 호칭 */
 function enterIfHere(ctx: ToolContext, ids: readonly string[]): string[] {
   const out: string[] = [];
+  // 숨어 있는 동안(잠입)은 부른 사람을 장면에 들이지 않는다: 들키면 그때 든다 (PT21 졸병: grab이 거절됐는데 그 사람이 장면에 들어왔다)
+  if (ctx.store.getState().infiltration) return out;
   for (const id of ids) {
     const state = ctx.store.getState();
     const c = state.characters[id];

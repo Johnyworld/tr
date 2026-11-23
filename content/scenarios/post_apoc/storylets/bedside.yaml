@@ -34,7 +34,6 @@
       effects:
         - relation: { who: mate, axis: trust, delta: 1 }
         - overhear: { faction: other, source: report }
-        - belief: { fact: "누워 있는 동안 {mate}에게서 바깥 소식을 들었다", source: report }
     - id: send_off
       label: 할 일 하러 가라고 등을 떠민다
       effects:
@@ -203,7 +202,6 @@
       effects:
         - relation: { who: mate, axis: trust, delta: 1 }
         - overhear: { faction: enemy, source: report }
-        - belief: { fact: "내 몫의 일을 대신 나갔던 {mate}에게서 바깥에서 본 것을 들었다", source: report }
     - id: joke
       label: 덕분에 푹 쉰다고 놀린다
       check: persuade

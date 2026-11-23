@@ -58,7 +58,7 @@
 
 - id: pc_yuna
   name: 석유나
-  alias: 수용소 담에 기댄 짧은 머리 경비
+  alias: 귀 밑에서 머리를 일자로 자른 경비
   faction: faction_c
   rank: grunt
   occupation: scavenger
@@ -205,7 +205,7 @@
 
 - id: pc_dooman
   name: 용두만
-  alias: 붉은 완장 대신 흰 천을 감은 노역조장
+  alias: 붉은 완장 대신 흰 천을 감은 일꾼 우두머리
   faction: faction_c
   rank: grunt
   occupation: scavenger

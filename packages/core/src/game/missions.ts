@@ -284,18 +284,23 @@ export function pickDailyOffers(
   const picked: string[] = [];
   const count = Math.min(OFFERS_PER_DAY, pool.length);
   // 최근에 받은 일감은 다른 후보가 있으면 쉰다 (공통 규칙 5)
+  // 약한 일감(받을 사람의 보정이 음수인 판정이 든 것)은 최근에 한 일감보다도 뒤다 (설계 목록 5-3, PT21 섬: 같은 통에서 무작위로 뽑혔다)
   const weak = (id: string) => !!weakAt && content.missions[id]!.requirements.some((r) => "check" in r && weakAt(r.check));
-  const fresh = preferRested(pool, (id) => recent.includes(id) || weak(id));
-  const stale = pool.filter((id) => !fresh.includes(id));
+  const strong = pool.filter((id) => !weak(id));
+  const fresh = preferRested(strong, (id) => recent.includes(id));
+  const stale = strong.filter((id) => !fresh.includes(id));
+  const weakest = pool.filter(weak);
   // 하나는 늘 역할 일감에서, 직분 일감은 하루 하나까지 (플레이 테스트 13: 한 통에서 뽑아 상단 일감 8종 중 3종만 나왔다)
+  // 역할 일감이 모두 약하면 그 몫을 고집하지 않는다 (PT21 분대장: 안전 모드에서 통솔 -3인 분대 훈련만 이틀 내리)
   const own = new Set(content.roles[roleId]?.missions ?? []);
   const isExtra = (id: string) => !own.has(id) && extra.includes(id);
-  const allowed = (id: string) => (picked.length === 0 && pool.some((x) => !isExtra(x)) ? !isExtra(id) : !isExtra(id) || !picked.some(isExtra));
+  const roleFirst = pool.some((x) => !isExtra(x) && !weak(x));
+  const allowed = (id: string) => (picked.length === 0 && roleFirst ? !isExtra(id) : !isExtra(id) || !picked.some(isExtra));
   while (picked.length < count) {
-    // 역할·직분 몫이 쉬기보다 먼저다: 쉬는 일감밖에 없으면 쉬는 역할 일감을 다시 낸다
-    const choice = [fresh.filter(allowed), stale.filter(allowed), fresh, stale].find((c) => c.length)!;
+    // 역할·직분 몫이 쉬기보다 먼저다: 쉬는 일감밖에 없으면 쉬는 역할 일감을 다시 낸다. 약한 일감은 맨 뒤
+    const choice = [fresh.filter(allowed), stale.filter(allowed), fresh, stale, weakest.filter(allowed), weakest].find((c) => c.length)!;
     const id = choice[Math.floor(rng() * choice.length)]!;
-    for (const list of [fresh, stale]) if (list.includes(id)) list.splice(list.indexOf(id), 1);
+    for (const list of [fresh, stale, weakest]) if (list.includes(id)) list.splice(list.indexOf(id), 1);
     picked.push(id);
   }
   return { day, templateIds: picked };

@@ -560,6 +560,9 @@ function checkReferences(content: Content): string[] {
   problems.push(...checkStorylets(content));
   problems.push(...checkNpcBodies(content));
   problems.push(...checkNpcRoutines(content));
+  problems.push(...checkNpcAliases(content));
+  problems.push(...checkRuinPlaces(content));
+  problems.push(...checkEmptyNews(content));
   problems.push(...checkStoryWhereWhen(content));
   problems.push(...checkResolveSpine(content));
   // 무리 안의 무거운 짓 태그는 행적 태그여야 한다 (12-257: 틀리면 규율 회의가 말없이 열리지 않는다)
@@ -620,6 +623,49 @@ export function checkNpcBodies(content: Content): string[] {
  * 떠돌지 않는 인물의 일과 한 칸은 그 구역의 장소(이름·aliases, 가두는 곳 빼고)로 정해지거나, 구역 밖에 나간 시간이라는 말(story_lint.routine_away)이 있어야 한다.
  * 장소가 없는 구역과 떠도는 인물(roams)은 보지 않는다
  */
+/**
+ * 인물 별칭(이름 모를 때 부르는 말)에 가두는 곳·격리실 이름을 쓰지 않는다 (PT21 졸병: "수용소 담에 기댄 경비"가 아직 모르는 수용소를 드러냈다, 설계 목록 C-1)
+ */
+export function checkNpcAliases(content: Content): string[] {
+  const words = new Set<string>();
+  for (const l of Object.values(content.locations)) for (const p of l.places ?? []) if (p.jail || p.quarantine_room) for (const w of [p.name, ...(p.aliases ?? [])]) if (w.length >= 2) words.add(w);
+  const problems: string[] = [];
+  for (const n of Object.values(content.npcs)) {
+    const hit = [...words].find((w) => n.alias?.includes(w));
+    if (hit) problems.push(`npcs.${n.id}.alias: 가두는 곳 이름 "${hit}"이 들어 있다 (이름 모를 때 장소가 드러난다). 겉모습으로 쓴다`);
+  }
+  return problems;
+}
+
+/**
+ * 탐험할 숨은 곳(ruins)은 구역의 장소와 이름이 겹치지 않는다: 장소는 누구나 아는 곳, 숨은 곳은 뒤져야 찾는 곳 (PT21 하얀매: "비상계단·지하 약제실"에 서서 "지하 약제실"을 새로 찾았다)
+ */
+export function checkRuinPlaces(content: Content): string[] {
+  const problems: string[] = [];
+  for (const r of content.scenario.exploration?.ruins ?? []) {
+    for (const p of content.locations[r.zone]?.places ?? []) {
+      const part = p.name.split("·").map((x) => x.trim()).find((x) => x.length >= 3 && r.label.includes(x));
+      if (part) problems.push(`exploration.ruins.${r.id}: 숨은 곳 "${r.label}"이 장소 ${p.id}("${p.name}")와 겹친다. 장소는 입구까지만 적는다`);
+    }
+  }
+  return problems;
+}
+
+/**
+ * 소식 효과(overhear)와 함께 내용 없는 믿음("소식을 들었다")을 두지 않는다: 들은 내용은 overhear가 남긴다 (설계 목록 10-8, PT18·PT21: "알게 된 것"이 빈 줄이었다)
+ */
+export function checkEmptyNews(content: Content): string[] {
+  const problems: string[] = [];
+  const empty = /(소식|사정|본 것)을 들었다$/;
+  for (const s of Object.values(content.storylets)) for (const ch of s.choices) {
+    for (const list of [ch.effects, ...Object.values(ch.outcomes ?? {})]) {
+      if (!list?.some((e) => "overhear" in e)) continue;
+      for (const e of list) if ("belief" in e && empty.test(e.belief.fact.trim())) problems.push(`storylets.${s.id}.${ch.id}: overhear와 함께 내용 없는 믿음 "${e.belief.fact}" (들은 내용은 overhear가 남긴다)`);
+    }
+  }
+  return problems;
+}
+
 export function checkNpcRoutines(content: Content): string[] {
   const problems: string[] = [];
   const away = content.scenario.story_lint?.routine_away ?? [];

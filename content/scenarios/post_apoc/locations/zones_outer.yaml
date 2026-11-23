@@ -69,7 +69,7 @@
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
     - { id: cellblock, name: "감방동", indoor: true, description: "철창이 끝없이 이어진 감방동", aliases: ["감방"], jail: true }
-    - { id: admin, name: "행정동·무기고", indoor: true, description: "행정동과 비어 버린 무기고", aliases: ["행정동", "무기고"] }
+    - { id: admin, name: "행정동", indoor: true, description: "행정동. 안쪽 무기고 철문은 굳게 닫혀 있다 (그 안은 뒤져야 찾는다)", aliases: ["행정동", "무기고 철문", "무기고"] }
     - { id: yard, name: "운동장·담", indoor: false, description: "높은 담에 둘러싸인 운동장", aliases: ["운동장", "담"], near: [admin, cellblock], gate: true }
     - { id: to_power_plant, name: "발전소 가는 길", indoor: false, description: "동쪽 발전소로 가는 길", near: [outer_gate], road: true, to: [power_plant] }
     - { id: to_red_base, name: "붉은연합 거점 가는 길", indoor: false, description: "남쪽 붉은연합 거점으로 가는 길", near: [outer_gate], road: true, to: [c_base] }

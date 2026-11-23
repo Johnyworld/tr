@@ -17,7 +17,7 @@ import { againstSetting, rollBlowup, rollHear, rollLeak } from "../rules/self.ts
 import { exposeToCold, changeClothes, soak } from "./climate.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
-import { hostileHere, hostileZone, runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
+import { hostileHere, hostileZone, raiseAlarm, runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
 import { atStake } from "../rules/stakes.ts";
 import { shareHarmWith } from "../rules/company.ts";
 import { onSpottedAtHome } from "../rules/consequence.ts";
@@ -1076,6 +1076,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 2. 행적과 목격자
+  // 적대하는 땅에서 그 땅 주인 무리 사람이 봤으면(행적의 목격자, 공격받은 사람) 그 자리에서 경보가 울린다 (12-266, 사용자 결정. PT16~18 졸병: 대낮에 적 지휘소를 뒤지고 장교를 쳐도 아무 일이 없었다)
+  const hostileOwner = !inBattle && !start.infiltration && !heldOf(start.characters[start.playerId]) && hostileHere(ctx) ? (start.zones[start.playerZone ?? ""]?.owner ?? null) : null;
+  const ofOwner = (id: string | null | undefined) => !!id && !!hostileOwner && store.getState().characters[id]?.factionId === hostileOwner && !store.getState().characters[id]?.dead;
+  let ownerSaw = !!input.check && (scenario.gear?.attack_moves.includes(input.check.move) ?? false) && [input.target, input.check.opponent].some((id) => ofOwner(id) && store.getState().scene.present.includes(id!));
   if (input.deed) {
     const happened = input.deed.condition === "always" || outcome === null || outcome !== "miss";
     if (happened) {
@@ -1106,6 +1110,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
         tagLabels: deed.tags.map((t) => DEED_TAG_LABELS[t]),
         visibleWitnesses: visible,
       });
+      if (deed.witnesses.some((w) => ofOwner(w.npcId))) ownerSaw = true;
+    }
+  }
+  if (ownerSaw && hostileOwner) {
+    for (const d of raiseAlarm(ctx)) {
+      displays.push(d);
+      if (d.type === "storylet" && d.event === "started") lines.push(`${content.factions[hostileOwner]?.name ?? hostileOwner} 사람이 보았다. 경보가 울린다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);
+      else if (d.type === "belief" && d.note) lines.push(d.note);
     }
   }
 

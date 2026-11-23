@@ -6,7 +6,7 @@ import type { GameState } from "../../game/state.ts";
 import type { Content } from "../../content/schemas.ts";
 import type { Character } from "../../game/character.ts";
 import { bodyTraits } from "../traits.ts";
-import { MINUTES_PER_DAY } from "../../rules/time.ts";
+import { dayOf, MINUTES_PER_DAY } from "../../rules/time.ts";
 import { harmTrack } from "../../scenario/scenario.ts";
 import { bleedingBlocksRecovery } from "../bleeding.ts";
 import { type ToolContext, type ToolDisplayEvent } from "../toolkit.ts";
@@ -73,7 +73,7 @@ export function sleepHealBlocker(ctx: ToolContext, from: number, to: number): st
   const since = state.recovery.lastChangeAt[me.id] ?? state.runStartedAt;
   if (since > from) return "자는 사이 상처가 바뀌어 아물지 않았다.";
   const slow = rule.slow[track.levels[index]!.id];
-  if (slow !== undefined && to - since < slow * MINUTES_PER_DAY) return `깊은 상처라 마지막으로 다친 뒤 ${slow}일은 지나야 자고 나서 아물기 시작한다.`;
+  if (slow !== undefined && dayOf(to) - dayOf(since) < slow) return `이 상처는 마지막으로 바뀐 뒤 ${slow}일은 지나야 자고 나서 한 단계 아문다.`;
   return null;
 }
 
@@ -90,7 +90,8 @@ export function healFromSleep(ctx: ToolContext, from: number, to: number): ToolD
   const since = state.recovery.lastChangeAt[me.id] ?? state.runStartedAt;
   if (since > from) return []; // 자는 사이 다쳤다
   const slow = rule.slow[track.levels[index]!.id];
-  if (slow !== undefined && to - since < slow * MINUTES_PER_DAY) return [];
+  // 날짜로 센다: 1일차에 다쳤으면 3일차 아침에 깬 잠에서 아문다 (12-266, 분으로 세면 04:00에 깨어 하룻밤 더 걸렸다)
+  if (slow !== undefined && dayOf(to) - dayOf(since) < slow) return [];
   const c = changeCondition(ctx, me.id, track.id, -1, "rest", "푹 자고 나니 상처가 조금 아물었다");
   return c?.display ? [c.display] : [];
 }

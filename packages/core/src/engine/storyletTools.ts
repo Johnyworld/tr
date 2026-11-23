@@ -1263,6 +1263,13 @@ export function runInfestedArrival(ctx: ToolContext, zone: string, options: { at
 export function runAlarm(ctx: ToolContext, move: string): ToolDisplayEvent[] {
   const rule = ctx.content.scenario.alarm;
   if (!rule || !rule.moves.includes(move)) return [];
+  return raiseAlarm(ctx);
+}
+
+/** 적대하는 땅에서 들켰다: 경보 이야기(scenario.alarm.tag)를 연다. 이동 판정의 실패(runAlarm)와, 그 땅 주인 무리 사람이 본 행적·공격(12-266)이 부른다 */
+export function raiseAlarm(ctx: ToolContext): ToolDisplayEvent[] {
+  const rule = ctx.content.scenario.alarm;
+  if (!rule) return [];
   const state = ctx.store.getState();
   // 갇혀 있으면 경보 대신 다시 끌려온다 (플레이 테스트 12: 탈출 실패에 "다시 끌려왔다"와 경보 이야기가 함께 열렸다)
   if (pausedWhileHeld(state, "alarm")) return [];

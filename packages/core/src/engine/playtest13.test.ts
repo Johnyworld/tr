@@ -700,7 +700,8 @@ describe("균형: 몸·잠 (플레이 테스트 13 뒤 정한 것)", () => {
     const me = w.state().playerId;
     const harm = content.scenario.harm_track;
     ctx.store.append({ type: "condition_changed", targetId: me, track: harm, from: "none", to: "light", fatal: false, by: "enemy", cause: "테스트", day: 1, harmTrack: true });
-    const t0 = w.state().time + 60;
+    // 경상은 다친 뒤 이틀이 지나야 잠으로 아문다 (12-266)
+    const t0 = w.state().time + 2 * 24 * 60 + 60;
     ctx.store.append({ type: "time_advanced", activity: "wait", from: w.state().time, to: t0 });
     ctx.store.append({ type: "time_advanced", activity: "sleep", from: t0, to: t0 + 135 });
     const s = w.state();

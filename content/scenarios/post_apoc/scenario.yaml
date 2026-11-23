@@ -1047,7 +1047,8 @@ recovery:
   # 중상까지는 저절로 낫는다. 치명상은 치료가 필요하다 (NPC의 하루 단위 회복)
   # 주인공은 푹 잔 밤에 낫는다 (플레이 테스트 11, A1): 6시간 이상 자면 피가 멎어 있고 자는 사이 새로 다치지 않았을 때 한 단계. 치명상은 이틀에 한 번
   # 치명상·의식장애(impaired)도 이틀에 한 번 (플레이 테스트 11: 약탈조 판이 닷새 동안 의식장애에 묶여 급한 이야기만 열렸다)
-  sleep_heal: { min_hours: 6, max_level: impaired, slow: { critical: 2, impaired: 2 } }
+  # 경상·중상은 이틀, 치명상·의식장애는 사흘에 한 번 (12-266, 사용자 결정. PT16~18 분대장: 중상이 치료 한 번과 하룻밤 잠으로 다 나았다)
+  sleep_heal: { min_hours: 6, max_level: impaired, slow: { light: 2, serious: 2, critical: 3, impaired: 3 } }
   natural_max_level: serious
   # 의식불명에 이만큼(시간) 머물면 정신이 든다 (의식장애로 한 단계). 그사이 더 다치면 다시 센다 (*임시*)
   wake_hours: 6

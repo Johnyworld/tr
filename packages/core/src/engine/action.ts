@@ -1100,6 +1100,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     displays.push(...round.displays);
   }
 
+  // 말로 묻는 판정이 맞으면 상대가 아는 것을 남기는 길을 알린다 (설계 목록 7-1, PT16·17 섬: 교섭이 성공해도 남는 것이 없었다).
+  // 무엇을 물었는지는 코드가 모르므로 고르지 않는다. 말로 하는 스킬은 시나리오의 opposition.mindless.refuses
+  if (input.check && input.target && outcome && outcome !== "miss" && (scenario.opposition?.mindless?.refuses ?? []).includes(input.check.move)) {
+    const npc = content.npcs[input.target];
+    const mine = new Set((store.getState().beliefs[start.playerId] ?? []).map((b) => b.fact));
+    const unknown = npc ? (store.getState().beliefs[input.target] ?? []).filter((b) => !npc.keeps.includes(b.fact) && !mine.has(b.fact)) : [];
+    if (unknown.length) lines.push(`(${josa(playerCalls(store.getState(), content, input.target), "이/가")} 물은 것을 안다면, 그 사람 카드의 "아는 것"에서 골라 add_belief(source: report)로 남긴다)`);
+  }
   // 2. 행적과 목격자
   // 적대하는 땅에서 그 땅 주인 무리 사람이 봤으면(행적의 목격자, 공격받은 사람) 그 자리에서 경보가 울린다 (12-266, 사용자 결정. PT16~18 졸병: 대낮에 적 지휘소를 뒤지고 장교를 쳐도 아무 일이 없었다)
   const hostileOwner = !inBattle && !start.infiltration && !heldOf(start.characters[start.playerId]) && hostileHere(ctx) ? (start.zones[start.playerZone ?? ""]?.owner ?? null) : null;

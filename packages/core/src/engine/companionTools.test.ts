@@ -162,7 +162,7 @@ describe("목적 동행과 갈림길", () => {
     const [kin] = w.state().companions;
     const partner = joinBy(w, "wc_salvage_partner", "team");
     const store = w.ctx().store;
-    for (const id of [kin!, partner]) store.append({ type: "relation_changed", from: id, to: "player", delta: { trust: -2, affection: 0, respect: 0 }, reason: "test" });
+    for (const id of [kin!, partner]) store.append({ type: "relation_changed", from: id, to: "player", delta: { trust: -3, affection: 0, respect: 0 }, reason: "test" });
     w.executeTool("take_action", act("둘러본다"));
     expect(w.state().companions).not.toContain(partner);
     expect(w.state().companions).toContain(kin);

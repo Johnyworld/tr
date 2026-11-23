@@ -25,9 +25,9 @@ const CROSSROADS_MINUTES = 12 * 60;
 const EXTEND_MINUTES = 48 * 60;
 /** 신뢰+호감이 이 이상이면 갈림길에서 남고 싶어 한다 */
 const STAY_AT = 3;
-/** 이 신뢰 이하면 떠난다 (연고는 KIN_LEAVE_AT) */
-export const LEAVE_AT = -2;
-export const KIN_LEAVE_AT = -3;
+/** 이 신뢰 이하면 떠난다 (연고는 KIN_LEAVE_AT). 화면 글 "냉담"(-3)부터 (설계 목록 7-4: -2는 "보통"으로 보이는데 떠났다) */
+export const LEAVE_AT = -3;
+export const KIN_LEAVE_AT = -4;
 
 /** GM 문장으로 실을 동행 소식 (presence 표시의 note) */
 function note(npcName: string, action: "enter" | "leave", text: string): ToolDisplayEvent {

@@ -258,13 +258,17 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
         const levelUp = gainMeritXp(ctx, state.playerId, merit);
         if (levelUp) lines.push(levelUp);
       }
+      // 위험한 일을 맡기고 해내면 믿음도 쌓인다 (설계 목록 7-4, PT16~20: 신뢰가 내려가기만 했다)
       if (task.dangerous && !half) {
-        store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: 0, affection: 0, respect: 1 }, reason: "위험한 일을 맡기고 해냈다" });
+        store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: 1, affection: 0, respect: 1 }, reason: "위험한 일을 맡기고 해냈다" });
       }
     } else {
-      if (task.dangerous) changeCondition(ctx, id, s.harm_track, 1, "분대 명령", `${task.label} 중 다침`);
-      store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: -1, affection: 0, respect: 0 }, reason: "분대장이 맡긴 일이 틀어졌다" });
-      lines.push("일이 틀어져 분대장을 믿는 마음이 조금 줄었다");
+      // 운으로 빗나간 것은 탓하지 않는다: 위험한 데 보내 다쳤을 때만 믿음이 준다 (설계 목록 7-4, PT20 긴 판: 운으로 -1씩 쌓여 7일 동안 따라나서기를 거부)
+      if (task.dangerous) {
+        changeCondition(ctx, id, s.harm_track, 1, "분대 명령", `${task.label} 중 다침`);
+        store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: -1, affection: 0, respect: 0 }, reason: "위험한 일에 보내 다쳤다" });
+        lines.push("다쳐서 돌아와 분대장을 믿는 마음이 조금 줄었다");
+      }
     }
 
     const after = store.getState().characters[id]!;

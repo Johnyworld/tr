@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { heldOf } from "../rules/held.ts";
 import { fireLitHere } from "../rules/place.ts";
-import { loadRealContent } from "../testing.ts";
+import { knowAllPlaces, loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 
 /** 플레이 테스트 19 뒤 고친 것 (12-267). 실제 경로(세계 만들기·도구 호출)로 본다 */
@@ -12,10 +12,7 @@ const content = loadRealContent();
 const make = (roleId: string, extra: Record<string, unknown> = {}) =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-267-")), content, rngFactory: () => () => 0.5 }).create("mcp", roleId, { name: "서진", gender: "female", abilities: null, portrait: null, traits: [], ...extra } as never);
 const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true, ...input });
-const sceneText = (w: ReturnType<typeof make>) => {
-  const r = w.executeTool("get_scene", {});
-  return r.ok ? (r.resultText ?? "") : r.error;
-};
+const sceneText = (w: ReturnType<typeof make>) => w.sceneForGm();
 
 describe("정보 누설 (12-267)", () => {
   it("갇힌 사람이 있는 구역에 들어서도 그 사람의 지금 모습은 장면에서 보기 전에는 실리지 않는다", () => {
@@ -49,6 +46,7 @@ describe("판정·불 (12-267)", () => {
   it("막 들어선 자리에 피운 불은 같은 구역의 다른 장소를 데우지 않는다", () => {
     const w = make("role_t_visitor", { name: "민재", gender: "male" });
     w.runCheat("~goto a_base");
+    knowAllPlaces(w, content);
     w.runCheat("~give firewood 1");
     const lit = w.executeTool("take_action", act({ use_item: "firewood" }));
     expect(lit.ok, lit.ok ? "" : lit.error).toBe(true);

@@ -70,7 +70,7 @@ import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { PLACE_TOOLS } from "./placeTools.ts";
-import { hereWithMe, npcPlaceAt, placeById, sharesPlace, routineAway, sceneLeavesAt } from "../rules/place.ts";
+import { hereWithMe, npcPlaceAt, placeById, sharesPlace, routineAway, sceneLeavesAt, knowsPlace } from "../rules/place.ts";
 import { zoneOf } from "../rules/place.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
@@ -269,7 +269,9 @@ const npcPresence = defineTool({
       : away
       ? ` 이 사람은 보통 지금 ${content.locations[home!]?.name ?? home}에 있다: 여기 와 있는 까닭을 서술하라 (상관이 장면에 들어온 것이 아니라 주인공이 찾아갔다면 그 구역으로 옮겨 가야 한다).`
       : elsewhere
-        ? ` 이 사람은 보통 지금 ${elsewhere.name}(${elsewhere.id})에 있다: 이리로 온 까닭을 서술하거나, 주인공이 찾아갔다면 place_to로 그곳에 옮겨 간다.`
+        ? knowsPlace(s1, content, s1.playerZone, elsewhere.id)
+          ? ` 이 사람은 보통 지금 ${elsewhere.name}(${elsewhere.id})에 있다: 이리로 온 까닭을 서술하거나, 주인공이 찾아갔다면 place_to로 그곳에 옮겨 간다.`
+          : ` 이 사람은 보통 지금 이 구역의 다른 곳(주인공이 모르는 곳)에 있다: 이리로 온 까닭을 서술하라. 그 자리는 알려 주지 않는다.`
         : "";
     return {
       ok: true,

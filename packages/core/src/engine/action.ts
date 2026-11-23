@@ -86,7 +86,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import {comesAlong, currentPlace, nearestRoad, peopleAt, placeById, placeTarget, placesIn, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace } from "../rules/place.ts";
+import {comesAlong, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -237,7 +237,7 @@ export function createTakeActionSchema(s: Scenario) {
       .string()
       .nullable()
       .default(null)
-      .describe(`이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 구역 밖으로 나가는 길(road)도 장소다. 이웃 장소는 5분, 한 칸 더 멀 때마다 5분. 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null`),
+      .describe(`이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 주인공이 모르는 곳은 상태의 '문1'처럼 문 번호로 (들어서면 그곳을 안다). 구역 밖으로 나가는 길(road)도 장소다. 이웃 장소는 5분, 한 칸 더 멀 때마다 5분. 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null`),
     with: z
       .array(z.string())
       .default([])
@@ -403,6 +403,8 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved
   const mates = s0.scene.present.filter((id) => s0.companions.includes(id));
   // 그곳에 있을 사람이라 같이 온 사람과 이번 행동으로 데려온 사람을 나눠 적는다 (PT15 졸병: target이 없는데 "함께 왔다: 강태호")
   const bound = along.filter((id) => !involved.includes(id) && !s0.companions.includes(id));
+  // 모르던 곳에 들어서면 그곳이 무엇인지 알게 된다 (설계 목록 C-1)
+  const fresh = !!to && !knowsPlace(s0, content, s0.playerZone, to.id);
   store.append({ type: "place_moved", from, to: to?.id ?? null, ...(along.length ? { with: along } : {}) });
   // 이웃 장소 5분, 한 칸 더 멀 때마다 5분 (장소 개편)
   const steps = stepsBetween(s0, content, from, to?.id ?? null);
@@ -414,6 +416,7 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved
   const where = to ? `${josa(to.name, "으로/로")} 옮겼다 (${to.indoor ? "실내" : "바깥"}${to.road ? ", 길" : ""}, ${minutes}분).` : `옮겼다 (${minutes}분).`;
   return [
     where,
+    fresh && to ? `처음 들어선 곳이다: ${to.id} ${to.name}${to.description ? ` (${to.description})` : ""}. 이제 이곳을 안다.` : "",
     mates.length ? `동행도 함께 왔다: ${calls(mates)}.` : "",
     along.some((id) => !bound.includes(id) && !s0.companions.includes(id)) ? `함께 왔다: ${calls(along.filter((id) => !bound.includes(id) && !s0.companions.includes(id)))}.` : "",
     bound.length ? `${calls(bound)}도 그곳으로 가던 참이라 같이 왔다.` : "",
@@ -726,16 +729,17 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     // 잠입 중에는 잠입으로만 들고 난다: 잠입 깊이와 지금 장소가 늘 같다 (B③)
     if (start.infiltration) return { ok: false, error: "잠입 중에는 장소를 옮기지 않는다. 더 깊이는 infiltrate advance(place), 나가려면 infiltrate leave (시간은 흐르지 않았다)." };
     if (start.battle || heldOf(player)) return { ok: false, error: "지금은 장소를 옮길 수 없다 (전투 중이거나 갇혀 있다). 시간은 흐르지 않았다." };
-    const to = placeTarget(start, content, input.place_to);
+    // 아는 장소나 지금 자리의 '문N'만 (설계 목록 C-1): 모르는 장소의 id를 넣어 보는 우회로를 막는다
+    const to = resolvePlace(start, content, input.place_to);
     if (to === undefined) {
-      const here = placesIn(start, content, start.playerZone).map((p) => `${p.id}(${p.name})`).join(", ");
-      return { ok: false, error: `이 구역에 그런 장소가 없다: ${input.place_to}. 이 구역의 장소: ${here || "없음"}. 콘텐츠에 없는 곳이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
+      return { ok: false, error: `주인공이 아는 장소가 아니다: ${input.place_to}. 갈 수 있는 곳: ${placeChoices(start, content) || "없음"}. 모르는 곳은 문을 지나 찾아가고, 콘텐츠에 없는 곳(누구의 방·화장실 등)이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
     }
     // 적 땅에서 드러내 놓고 옮기면 이웃 장소로 한 칸씩만 (B③ 12-273, 장소 개편에서 이웃으로. PT16~19 졸병: 담 밖에서 수용소 철망 앞까지 곧장 갔다).
     // 지나는 장소마다 그곳 사람이 알아볼 수 있다 (12-271)
     const herePlace = currentPlace(start, content);
     if (hostileHere(ctx) && herePlace && stepsBetween(start, content, herePlace.id, to.id) > 1) {
-      const via = herePlace.near.map((id) => placeById(start, content, id)).filter((p): p is Place => !!p && !p.jail).map((p) => `${p.id}(${p.name})`).join(", ");
+      const doors = unknownDoors(start, content);
+      const via = herePlace.near.map((id) => placeById(start, content, id)).filter((p): p is Place => !!p && !p.jail).map((p) => (doors.some((d) => d.id === p.id) ? doorLabel(p, doors.findIndex((d) => d.id === p.id)) : `${p.id}(${p.name})`)).join(", ");
       return { ok: false, error: `적 땅에서는 이웃 장소로 한 칸씩 지나간다: ${to.name}로 가려면 먼저 ${via || "이웃 장소"}를 거친다. 몰래 가려면 infiltrate (시간은 흐르지 않았다).` };
     }
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)

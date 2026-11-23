@@ -14,7 +14,7 @@ import type { Content } from "../content/schemas.ts";
 import { roleOf, type GameState } from "../game/state.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
-import {ownedBy, baseOfNow, hostileLand } from "./home.ts";
+import {ownedBy, baseOfNow, hostileLand, onOwnLand } from "./home.ts";
 import { heldOf, inQuarantine, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
 import { isCreature } from "../game/kinds.ts";
@@ -197,8 +197,8 @@ export function storyPlaces(state: GameState, content: Content, places: readonly
  * gate 1(담 안), gate 너머는 1 + gate에서 몇 칸. 담 없는 구역은 길에서 몇 칸. 가장 깊은 칸(infiltration.depths)에서 멈춘다.
  * 장소가 없는 구역은 null (잠입이 깊이만 따로 센다)
  */
-export function depthAt(state: GameState, content: Content, placeId: string | null = state.playerPlace): number | null {
-  const places = placesIn(state, content, state.playerZone);
+export function depthAt(state: GameState, content: Content, placeId: string | null = state.playerPlace, zone: string | null = state.playerZone): number | null {
+  const places = placesIn(state, content, zone);
   if (!places.length) return null;
   const deepest = Math.max(0, (content.scenario.infiltration?.depths.length ?? 1) - 1);
   const byId = new Map(places.map((p) => [p.id, p]));
@@ -434,7 +434,8 @@ export function hereWithMe(state: GameState, content: Content, id: string): bool
   return !!w && w.zone === state.playerZone && w.place === state.playerPlace;
 }
 
-/** 이 인물이 지금 있을 곳의 이름: 장소, 장소를 모르면 "구역 어딘가", 장면에 있으면 "곁에" (GM 상태의 상관 줄, 12-253) */
+/** 이 인물이 지금 있을 곳의 이름: 장소, 장소를 모르면 "구역 어딘가", 장면에 있으면 "곁에" (GM 상태의 상관 줄, 12-253).
+ * 주인공이 모르는 장소(설계 목록 C-1)나 아직 찾지 못한 집이면 장소 이름 대신 "구역 어딘가" */
 export function whereLabel(state: GameState, content: Content, id: string): string | null {
   if (state.scene.present.includes(id)) return "곁에 (장면에 있다)";
   const w = whereIs(state, content, id);
@@ -442,9 +443,65 @@ export function whereLabel(state: GameState, content: Content, id: string): stri
   if (out && w && !w.zone) return `나가 있다 (일과: ${out})`;
   if (!w || !w.zone) return null;
   const zoneName = content.locations[w.zone]?.name ?? w.zone;
-  const place = placeById(state, content, w.place, w.zone);
   const sameZone = w.zone === state.playerZone;
-  return place ? (sameZone ? place.name : `${zoneName}의 ${place.name}`) : `${zoneName} 어딘가`;
+  const shown = !homeHidden(state, id) && knowsPlace(state, content, w.zone, w.place);
+  const place = shown ? placeById(state, content, w.place, w.zone) : null;
+  return place ? (sameZone ? place.name : `${zoneName}의 ${place.name}`) : sameZone ? "이 구역 어딘가" : `${zoneName} 어딘가`;
+}
+
+/**
+ * 집이 있는 아는 사람(가족 등)의 집은 이 판에서 그 사람을 직접 본 뒤에만 안다 (12-267, PT20 튜토리얼).
+ * perceived·met은 세계를 만들 때 가족 관계로 미리 채워지니, 마지막으로 본 때가 판을 시작한 때보다 뒤인지로 본다
+ */
+export function homeHidden(state: GameState, id: string): boolean {
+  const extra = state.characters[id]?.extra;
+  return !!extra?.place && (extra.lastSeenAt ?? 0) <= state.runStartedAt;
+}
+
+/**
+ * 주인공이 아는 장소인가 (설계 목록 C-1). 모르는 장소는 GM에게도 이름·id·그곳 사람 없이 '알 수 없는 문'으로만 보인다 (원칙 4).
+ * - 늘 안다: 구역의 길(road)과 담 문(gate), 즉흥 장소(GM이 그 자리에서 만든 곳), 우리 무리 땅의 모든 곳
+ * - 담 밖(깊이 0)은 밖에서 보이니 안다. 담 없는 구역은 길만
+ * - 있어 본 곳 (state.knownPlaces, 어떤 일로 옮겨졌든)
+ */
+export function knowsPlace(state: GameState, content: Content, zone: string | null | undefined, placeId: string | null | undefined): boolean {
+  if (!zone || !placeId) return true;
+  if (zone === state.playerZone && placeId === state.playerPlace) return true;
+  const p = placeById(state, content, placeId, zone);
+  if (!p) return false;
+  if (p.road || p.gate || p.spawned) return true;
+  if (onOwnLand(state, zone)) return true;
+  if ((state.knownPlaces?.[state.playerId] ?? []).includes(`${zone}:${placeId}`)) return true;
+  return depthAt(state, content, placeId, zone) === 0;
+}
+
+/** 지금 자리의 이웃 가운데 모르는 곳: '알 수 없는 문 1, 2…' (이웃 목록 순서, 같은 자리면 늘 같은 번호) */
+export function unknownDoors(state: GameState, content: Content): Place[] {
+  const here = currentPlace(state, content);
+  if (!here) return [];
+  return here.near.map((id) => placeById(state, content, id)).filter((p): p is Place => !!p && !knowsPlace(state, content, state.playerZone, p.id));
+}
+
+/** 문 하나의 표기: 문 번호와, 눈으로 보이는 것(건물로 드는 문인지 바깥으로 이어지는지)만 */
+export function doorLabel(p: Place, i: number): string {
+  return `문${i + 1} (알 수 없는 곳, ${p.indoor ? "건물 안으로" : "바깥으로"})`;
+}
+
+/**
+ * place_to·infiltrate의 장소 입력: 아는 장소 id, 또는 지금 자리의 '문N'. 모르는 장소의 id는 받지 않는다 (id를 넣어 보는 우회로를 막는다).
+ * 못 찾으면 undefined
+ */
+export function resolvePlace(state: GameState, content: Content, input: string): Place | undefined {
+  const door = /^(?:문|door)\s*(\d+)$/i.exec(input.trim());
+  if (door) return unknownDoors(state, content)[Number(door[1]) - 1];
+  const p = placeById(state, content, input.trim());
+  return p && knowsPlace(state, content, state.playerZone, p.id) ? p : undefined;
+}
+
+/** 옮겨 갈 수 있다고 GM에게 보일 장소 목록: 아는 장소 "id(이름)"와 지금 자리의 문 */
+export function placeChoices(state: GameState, content: Content): string {
+  const known = placesIn(state, content, state.playerZone).filter((p) => knowsPlace(state, content, state.playerZone, p.id)).map((p) => `${p.id}(${p.name})`);
+  return [...known, ...unknownDoors(state, content).map(doorLabel)].join(", ");
 }
 
 /** 이 인물이 주인공과 같은 구역에 있는가 (장소는 보지 않는다) */

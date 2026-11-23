@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 98;
+export const SAVE_SCHEMA_VERSION = 99;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -482,6 +482,8 @@ export function createGameSchemas(s: Scenario) {
     deposits: z.record(z.string(), z.record(z.string(), z.number().int().positive())).default({}),
     /** 캐릭터마다 가 본 구역 (12-201: 지도에 가 본 곳만 그린다). 구역 이동에서 모은다 */
     visited: z.record(z.string(), z.array(z.string())).default({}),
+    /** 캐릭터마다 있어 본 장소 ("구역:장소", 설계 목록 C-1). 모르는 장소는 GM에게도 '알 수 없는 문'으로만 보인다 (공통 규칙 15 knowsPlace) */
+    knownPlaces: z.record(z.string(), z.array(z.string())).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
     lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
@@ -978,6 +980,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string(), with: z.array(z.string()).optional(), /** 도착하는 장소 (장소 개편: 길). 장소가 없는 구역이면 null */ place: z.string().nullable().optional() }),
     /** 같은 구역 안에서 장소를 옮겼다 (12-244). null이면 구역의 장소를 정하지 않은 곳 */
     // with: 동행 말고 함께 옮겨 가는 장면의 인물 (공통 규칙 15 comesAlong)
+    /** 가 보지 않고 장소를 알게 됐다 (설계 목록 C-1: 들은 단편·테스트). 있어 본 곳은 applyEvent가 저절로 기록한다 */
+    z.strictObject({ type: z.literal("place_learned"), zone: z.string(), place: z.string() }),
     z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable(), with: z.array(z.string()).optional() }),
     /** GM이 즉흥 장소를 만들었다 (12-244) */
     z.strictObject({ type: z.literal("place_spawned"), id: z.string(), zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable(), at: z.string().nullable().optional() }),
@@ -1273,6 +1277,7 @@ export const EMPTY_STATE: GameState = {
   flirtDay: {},
   deposits: {},
   visited: {},
+  knownPlaces: {},
   background: [],
   companions: [],
   bonds: {},
@@ -1418,7 +1423,14 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     throw new Error(`세계가 만들어지기 전에 ${event.type} 이벤트를 적용할 수 없습니다.`);
   }
   // 바뀐 부분만 새로 만든다 (구조 공유, 기획서 11.6). 이전 상태는 그대로 남는다
-  return produce(state, (next: GameState) => reduce(state, next, event) as GameState | undefined);
+  const out = produce(state, (next: GameState) => reduce(state, next, event) as GameState | undefined);
+  // 있어 본 장소는 안다 (설계 목록 C-1): 어떤 일로 옮겨졌든(걸어서·이야기·붙잡힘·잠입) 그 자리에 놓이면 기록한다
+  if (!out.playerZone || !out.playerPlace || !out.playerId) return out;
+  const key = `${out.playerZone}:${out.playerPlace}`;
+  if ((out.knownPlaces?.[out.playerId] ?? []).includes(key)) return out;
+  return produce(out, (next: GameState) => {
+    next.knownPlaces = { ...(next.knownPlaces ?? {}), [out.playerId]: [...(next.knownPlaces?.[out.playerId] ?? []), key] };
+  });
 }
 
 function reduce(state: GameState, next: GameState, event: GameEvent): GameState | void {
@@ -2342,6 +2354,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.scene = { ...next.scene, present: next.scene.present.filter(keep) };
       // 같은 구역의 한 장소에 남겨 둔 동행: 그 장소를 떠나면 돌아왔을 때 합류한다
       for (const b of Object.values(next.bonds)) if (b.apart?.zone === zone && (b.apart.place ?? null) === event.from) b.apart.left = true;
+      return next;
+    }
+    case "place_learned": {
+      const key = `${event.zone}:${event.place}`;
+      const mine = next.knownPlaces[next.playerId] ?? [];
+      if (!mine.includes(key)) next.knownPlaces = { ...next.knownPlaces, [next.playerId]: [...mine, key] };
       return next;
     }
     case "place_spawned":

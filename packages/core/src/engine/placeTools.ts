@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 import { josa } from "../text.ts";
-import { nextPlaceId, placesIn , currentPlace } from "../rules/place.ts";
+import { nextPlaceId, placesIn, currentPlace, knowsPlace, placeChoices } from "../rules/place.ts";
 import { defineTool } from "./toolkit.ts";
 
 const spawnPlace = defineTool({
@@ -23,7 +23,11 @@ const spawnPlace = defineTool({
     const zone = state.playerZone;
     if (!zone) return { ok: false, error: "지금 구역이 없다." };
     if (input.owner && !state.characters[input.owner]) return { ok: false, error: `알 수 없는 인물: ${input.owner}` };
-    const same = placesIn(state, ctx.content, zone).find((p) => p.name === input.name.trim());
+    const same = placesIn(state, ctx.content, zone).find((p) => p.name === input.name.trim() || p.aliases.includes(input.name.trim()));
+    // 주인공이 모르는 콘텐츠 장소와 이름이 같으면 id를 알려 주지 않는다 (설계 목록 C-1: 이름을 넣어 보는 우회로)
+    if (same && !knowsPlace(state, ctx.content, zone, same.id)) {
+      return { ok: false, error: `이 구역에 그런 곳이 있는지 주인공은 아직 모른다. 지어내지 말고, 상태의 '알 수 없는 문'을 지나 찾아가거나 물어서 알아낸다: ${placeChoices(state, ctx.content)}` };
+    }
     if (same) return { ok: true, resultText: `${josa(same.name, "은/는")} 이미 있다: ${same.id} (${same.indoor ? "실내" : "바깥"}). 옮겨 가려면 take_action place_to: "${same.id}".`, display: { type: "time", activityLabel: "장소", durationLabel: "", fromLabel: "", toLabel: "" }, silent: true };
     const id = nextPlaceId(state);
     // 만든 자리의 이웃이 된다 (장소 개편)

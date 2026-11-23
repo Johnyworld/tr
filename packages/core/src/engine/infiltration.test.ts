@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
+import { unknownDoors } from "../rules/place.ts";
 import { loadRealContent } from "../testing.ts";
 
 /** 잠입 장면 (12-154) */
@@ -27,13 +28,17 @@ describe("잠입", () => {
     const w = make(0.99);
     const food = w.state().factions.faction_c!.resources.food!;
     expect(go(w, "start", "steal").ok).toBe(true);
-    // 길에서 담 밖을 따라 닿는 담 안은 창고 마당 하나 (장소 개편: gate)
+    // 이웃으로 한 칸씩 (설계 목록 C-1): 길 → 담 밖 3번 초소 → 담 문 창고 마당
     const first = go(w, "advance");
     expect(text(first)).toContain("판정 줄");
+    expect(w.state().playerPlace).toBe("checkpoint_3");
+    go(w, "advance");
     expect(w.state().playerPlace).toBe("yard");
-    // 깊은 곳은 여럿이라 고른다 (B③)
-    expect(text(go(w, "advance"))).toContain("place로 고른다");
-    go(w, "advance", null, "command");
+    // 깊은 곳은 여럿이라 고른다 (B③). 모르는 곳은 문 번호로만 보인다
+    const choose = text(go(w, "advance"));
+    expect(choose).toContain("place로 고른다");
+    expect(choose).not.toContain("command");
+    go(w, "advance", null, `문${unknownDoors(w.state(), content).findIndex((p) => p.id === "command") + 1}`);
     expect(w.state().infiltration?.depth).toBe(2);
     expect(w.state().playerPlace).toBe("command");
     expect(go(w, "advance").ok).toBe(false); // 더 깊은 곳은 없다
@@ -55,11 +60,11 @@ describe("잠입", () => {
   it("거듭 실패하면 들키고, 그 뒤로는 빠지기만 되고, 빠지다 실패하면 붙잡힌다", () => {
     const w = make(0);
     go(w, "start", "steal");
-    go(w, "advance", null, "yard");
+    go(w, "advance");
     expect(w.state().infiltration?.alarm).toBe(2);
-    const caughtText = text(go(w, "advance", null, "yard"));
+    const caughtText = text(go(w, "advance"));
     expect(caughtText).toContain("들켰다");
-    expect(go(w, "advance", null, "yard").ok).toBe(false);
+    expect(go(w, "advance").ok).toBe(false);
     go(w, "leave");
     expect(w.state().infiltration).toBeNull();
     expect(w.state().characters[w.state().playerId]!.captive?.by).toBe("faction_c");

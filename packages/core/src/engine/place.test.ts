@@ -5,7 +5,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadRealContent, atEntry } from "../testing.ts";
+import { knowAllPlaces, loadRealContent, atEntry } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { createSeededRng } from "../rng.ts";
 import { currentPlace, guardedHere, hereWithMe, jailFor, nearby, npcPlaceAt, placeIndoor, placesIn, shelterAt, storyPlaceFits, whereIs } from "../rules/place.ts";
@@ -84,6 +84,7 @@ describe("구역 안의 장소 (12-244, 공통 규칙 15)", () => {
     expect(guardedHere(content, w.state())).toBe(true);
     expect(campSite(content, w.state())).toBeNull();
     w.ctx().store.append({ type: "zone_moved", from: "a_base", to: "old_town" });
+    knowAllPlaces(w, content);
     w.executeTool("take_action", act({ place_to: "shops", ignore_story: true }));
     expect(shelterAt(content, w.state(), "sleep").indoor).toBe(true);
     expect(guardedHere(content, w.state())).toBe(false);
@@ -147,6 +148,7 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
     const dog = w.state().companions[0];
     expect(dog).toBeTruthy();
     const zone = w.state().playerZone!;
+    knowAllPlaces(w, content);
     const [p1, p2] = placesIn(w.state(), content, zone);
     expect(p1 && p2).toBeTruthy();
     w.executeTool("take_action", act({ place_to: p1!.id, ignore_story: true }));

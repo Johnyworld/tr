@@ -11,7 +11,7 @@ import { createWorldEvent } from "./game/state.ts";
 import { InMemoryGameStore } from "./game/store.ts";
 import { InMemoryRepository } from "./persistence/repository.ts";
 import { GameWorld } from "./world/world.ts";
-import { whereIs, arrivalPlace } from "./rules/place.ts";
+import { whereIs, arrivalPlace, placesIn } from "./rules/place.ts";
 import { runAfterTimeAdvance } from "./engine/turnStart.ts";
 import { createSeededRng, type Rng } from "./rng.ts";
 import type { PlayMode } from "./engine/log.ts";
@@ -501,4 +501,10 @@ export function atEntry<T extends GameWorld>(w: T): T {
   const road = s.playerZone ? arrivalPlace(s, w.ctx().content, s.playerZone) : null;
   if (road && place !== road) w.ctx().store.append({ type: "place_moved", from: place, to: road });
   return w;
+}
+
+/** 테스트에서 주인공이 그 구역의 장소를 모두 아는 것으로 한다 (설계 목록 C-1의 모르는 장소를 다루지 않는 테스트) */
+export function knowAllPlaces(w: { state(): import("./game/state.ts").GameState; ctx(): { store: { append(e: import("./game/state.ts").GameEvent): unknown } } }, content: Content, zone: string | null = w.state().playerZone): void {
+  if (!zone) return;
+  for (const p of placesIn(w.state(), content, zone)) w.ctx().store.append({ type: "place_learned", zone, place: p.id });
 }

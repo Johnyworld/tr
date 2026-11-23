@@ -270,7 +270,7 @@ const people: CommandDef = {
           const shown = present.get(id);
           const here = state.scene.present.includes(id) ? ` · 함께 있음${shown?.conditionLabel ? ` (${shown.conditionLabel})` : ""}` : "";
           const attitude = state.perceived[id] ? `신뢰 ${relationLabel(r.trust)} · 호감 ${relationLabel(r.affection)} · 존중 ${relationLabel(r.respect)}` : "아직 만나 보지 않음";
-          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead && knowsDeath(state, content, id) ? " · 사망" : c.away ? " · 떠남" : heldOf(c) ? (state.playerZone === heldOf(c)!.zone ? " · 여기 붙잡혀 있음" : heldSeenZone(state, id) ? ` · ${content.locations[heldSeenZone(state, id)!]?.name}에 붙잡혀 있는 것을 봤음` : " · 행방 모름") : ""}${here}  (${attitude})`;
+          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead && knowsDeath(state, content, id) ? " · 사망" : c.away ? " · 떠남" : heldOf(c) ? (state.playerZone === heldOf(c)!.zone && heldSeenZone(state, id) === state.playerZone ? " · 여기 붙잡혀 있음" : heldSeenZone(state, id) ? ` · ${content.locations[heldSeenZone(state, id)!]?.name}에 붙잡혀 있는 것을 봤음` : " · 행방 모름") : ""}${here}  (${attitude})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,

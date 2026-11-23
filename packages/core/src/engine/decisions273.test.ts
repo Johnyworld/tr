@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { depthAt } from "../rules/place.ts";
+import { depthAt, unknownDoors } from "../rules/place.ts";
 import { heldSeenTopic } from "../rules/held.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
@@ -34,6 +34,7 @@ describe("잠입 깊이와 장소 (12-273)", () => {
 
   it("적 땅에서 드러내 놓고는 이웃 장소로 한 칸씩만 옮긴다", () => {
     const w = make();
+    w.ctx().store.append({ type: "place_learned", zone: "c_warehouse", place: "stockade" });
     const jump = w.executeTool("take_action", act({ place_to: "stockade" }));
     expect(jump.ok).toBe(false);
     expect(!jump.ok && jump.error).toContain("한 칸씩");
@@ -56,7 +57,10 @@ describe("잠입 깊이와 장소 (12-273)", () => {
     w.ctx().store.append({ type: "belief_added", characterId: w.state().playerId, belief: { id: `b_${w.state().nextBeliefNo}`, fact: "수용소에 갇혀 있다", source: "seen", accuracy: "exact", learnedAt: w.state().time, topic: heldSeenTopic(captive, "c_warehouse") } });
     w.ctx().store.append({ type: "place_moved", from: null, to: "yard" });
     expect(go(w, "start", "free").ok).toBe(true);
-    go(w, "advance", null, "stockade");
+    // 수용소는 모르는 곳이라 문으로만 고른다 (설계 목록 C-1)
+    const door = unknownDoors(w.state(), content).findIndex((p) => p.id === "stockade") + 1;
+    expect(door).toBeGreaterThan(0);
+    go(w, "advance", null, `문${door}`);
     expect(w.state().playerPlace).toBe("stockade");
   });
 });

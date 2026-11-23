@@ -72,7 +72,7 @@ import { ownedBy } from "../rules/home.ts";
 import { pastGiven, shownSkill, unlearnedNote } from "../rules/skill.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { tracesHere } from "./felt.ts";
-import { currentPlace, peopleAt, placesIn, sharesPlace } from "../rules/place.ts";
+import { currentPlace, depthAt, doorLabel, homeHidden, knowsPlace, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
 import { inZone, nearby, whereIs } from "../rules/place.ts";
 
 /**
@@ -536,31 +536,40 @@ function rotate(id: string, day: number): number {
   return h;
 }
 
-/** 이 구역의 장소 (공통 규칙 15): 지금 있는 곳과 옮겨 갈 수 있는 곳, 그곳에 있을 아는 사람 */
+/** 이 구역의 장소 (공통 규칙 15): 지금 있는 곳과 옮겨 갈 수 있는 곳, 그곳에 있을 아는 사람.
+ * 주인공이 아는 장소만 싣고, 모르는 이웃은 '알 수 없는 문'으로 (설계 목록 C-1, 원칙 4) */
 function describePlaces(state: GameState, content: Content): string {
-  const places = placesIn(state, content, state.playerZone);
-  if (!places.length) return "";
+  const all = placesIn(state, content, state.playerZone);
+  if (!all.length) return "";
+  const places = all.filter((p) => knowsPlace(state, content, state.playerZone, p.id));
   const here = currentPlace(state, content);
   const known = new Set([...(state.known[state.playerId] ?? []), ...(state.met[state.playerId] ?? [])]);
+  // 담 있는 구역이면 장소마다 담 밖·담 문·담 안 (설계 목록 1-6, PT20 튜토리얼: 초소가 담 밖인지 몰랐다)
+  const walled = all.some((p) => p.gate);
+  const depthNames = content.scenario.infiltration?.depths ?? [];
+  const wallOf = (p: (typeof all)[number]) => (walled && depthNames.length ? ` [${depthNames[depthAt(state, content, p.id) ?? 0] ?? ""}]` : "");
   const line = (p: (typeof places)[number]) => {
     // 갇힌 사람은 그 자리에 있는 것을 주인공이 알 때만 (12-262, PT16·PT17 졸병: 적 거점에 막 들어서자 행방 모를 실종자의 자리가 보였다)
-    // 집이 있는 아는 사람(가족 등)은 그 사람을 직접 만난 뒤에만: 어디 사는지는 이야기로 알게 된다 (12-267, PT19 튜토리얼: 수소문 전에 버들마을 목록이 부모의 동을 보여 줬다)
-    // 이 판에서 직접 본 뒤에만 집을 안다 (마지막으로 본 때가 판을 시작한 때보다 뒤): perceived·met은 세계를 만들 때 가족 관계로 미리 채워진다
-    // (PT20 튜토리얼: 12-267 고침이 실제 시작 흐름에서 듣지 않았다)
-    const homeUnknown = (id: string) => {
-      const extra = state.characters[id]?.extra;
-      return !!extra?.place && (extra.lastSeenAt ?? 0) <= state.runStartedAt && p.id !== here?.id;
-    };
-    const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && !homeUnknown(id) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
+    // 집이 있는 아는 사람(가족 등)은 이 판에서 직접 본 뒤에만 (12-267, PT19·PT20 튜토리얼, 공통 규칙 15 homeHidden)
+    const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && (p.id === here?.id || !homeHidden(state, id)) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
     // 이웃과 길 (장소 개편): 이웃은 5분, 길은 이어지는 구역
     const toZones = p.road && p.to.length ? `, 길: ${p.to.map((z) => content.locations[z]?.name ?? z).join("·")} 쪽` : "";
     const nearLine = here && here.near.includes(p.id) ? " · 이웃" : "";
-    return `- ${p.id} ${p.name} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""}${toZones})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : nearLine}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
+    return `- ${p.id} ${p.name}${wallOf(p)} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""}${toZones})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : nearLine}${people.length ? `: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
   };
+  const doors = unknownDoors(state, content);
+  const hidden = all.length - places.length - doors.length;
   return [
     `지금 있는 곳: ${here ? `${here.name} (${here.indoor ? "실내" : "바깥"}${here.road ? ", 구역에 드나드는 길" : ""})` : "장소를 모른다"}. 같은 구역 안의 다른 장소로는 take_action place_to (이웃 5분, 한 칸 멀 때마다 5분). 목록에 없는 곳은 spawn_place로 만든다 (지금 자리의 이웃이 된다)`,
-    "이 구역의 장소 (그곳에 있을 아는 사람):",
+    "이 구역의 장소 (주인공이 아는 곳, 그곳에 있을 아는 사람):",
     ...places.map(line),
+    ...(doors.length
+      ? [
+          `지금 자리에서 이어지는 모르는 곳 (place_to에 "문1"처럼. 들어가 봐야 무엇이 있는지 안다. 플레이어에게 보이는 대로 묘사하고 이름·쓰임을 지어내지 않는다):`,
+          ...doors.map((p, i) => `- ${doorLabel(p, i)}`),
+        ]
+      : []),
+    ...(hidden > 0 ? ["(이 구역에는 주인공이 아직 모르는 곳이 더 있다. 모르는 곳을 spawn_place로 만들어 대신하지 않는다: 문을 지나 찾아간다)"] : []),
   ].join("\n");
 }
 

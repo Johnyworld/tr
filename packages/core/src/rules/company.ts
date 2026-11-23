@@ -51,7 +51,11 @@ export function helperFor(state: GameState, content: Content, move: string, alli
     const c = state.characters[id];
     return !!c && !c.dead && !isCreature(content, c) && !incapacitatingSymptom(content.scenario, c) && state.scene.present.includes(id) && !out.has(id);
   });
-  for (const id of [...new Set([...peopleHere(state, content), ...withHere])].filter((id) => !out.has(id))) {
+  // 돕는 사람은 그 일을 함께하는 사람만: with와 곁의 동행 (설계 목록 4-1, PT19·PT20: 같은 장소에 있기만 한 사람·시키지 않은 동행이 도왔다).
+  // 몰래 하는 일(시나리오의 은밀)은 시킨 사람(with)만. 움직일 수 없는 사람은 돕지 않는다
+  const stealthy = move === content.scenario.move_roles.stealth;
+  const mates = stealthy ? [] : companyHere(state, content).filter((id) => state.scene.present.includes(id) && !isCreature(content, state.characters[id]));
+  for (const id of [...new Set([...mates, ...withHere])].filter((id) => !out.has(id) && ableNow(state, content, id))) {
     const skill = effectiveSkill(content, state.characters[id]!, move);
     if (skill >= 1 && (!best || skill > best.skill)) best = { id, skill };
   }
@@ -59,6 +63,15 @@ export function helperFor(state: GameState, content: Content, move: string, alli
   // 맞서 싸우는 판정(시나리오의 attack_moves)은 with로 함께 싸우는 사람이 스킬이 없어도 숫자로 돕는다 (12-256, PT15 분대장: 분대원 셋을 with에 넣었는데 감염체 하나에 치명상)
   const fighting = content.scenario.gear?.attack_moves.includes(move) ?? false;
   return fighting && withHere[0] ? { id: withHere[0], bonus: 1 } : null;
+}
+
+/**
+ * 함께 싸우는 내 편의 수 (설계 목록 4-1, PT16~20 분대장: 분대 여섯이 감염체 셋에 "수에 밀림"을 받았다): 이번 행동의 with와 곁의 동행 가운데
+ * 장면에 있고 움직일 수 있는 사람(짐승도 센다). 수에 밀림은 맞서는 수에서 이 수를 뺀 것으로 센다
+ */
+export function fightingAllies(state: GameState, content: Content, allies: readonly string[] = [], exclude: readonly (string | null | undefined)[] = []): string[] {
+  const out = new Set(exclude.filter((x): x is string => !!x));
+  return [...new Set([...activeCompanions(state), ...allies])].filter((id) => id !== state.playerId && !out.has(id) && state.scene.present.includes(id) && ableNow(state, content, id) && state.bonds[id]?.kind !== "prisoner");
 }
 
 /**
@@ -77,11 +90,19 @@ export function staunchHelper(state: GameState, content: Content, bleeder: strin
   return { id, blocked: !!state.battle || threatInScene(state, content).length > 0 };
 }
 
-/** 피해 1단계를 대신 받을 곁의 사람: 치명상 아래인 사람 동행 (먼저 들어온 사람부터). 없으면 null */
+/**
+ * 피해 1단계를 대신 받을 곁의 사람: 장면에 있는 동행과 같은 무리 사람 가운데 움직일 수 있고 치명상 아래인 사람 (먼저 들어온 사람부터). 없으면 null.
+ * (같은 장소에 있기만 한 장면 밖 사람이 막아서던 것을 고침, 설계 목록 4-1·4-2)
+ */
 export function shareHarmWith(state: GameState, content: Content): string | null {
   const track = harmTrack(content.scenario);
   const critical = track.levels.findIndex((l) => l.id === content.scenario.recovery?.surgery?.from);
-  for (const id of peopleHere(state, content)) {
+  const mine = state.characters[state.playerId]?.factionId ?? null;
+  const side = state.scene.present.filter((id) => {
+    const c = state.characters[id];
+    return !!c && !isCreature(content, c) && ableNow(state, content, id) && (activeCompanions(state).includes(id) || (!!mine && c.factionId === mine));
+  });
+  for (const id of side) {
     const at = track.levels.findIndex((l) => l.id === state.characters[id]!.conditions[track.id]);
     if (critical < 0 || at < critical - 1) return id;
   }

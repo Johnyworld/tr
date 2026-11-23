@@ -5,7 +5,7 @@ import { playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
 import { darkHere, peopleHere } from "../rules/place.ts";
-import { ableNow } from "../rules/company.ts";
+import { ableNow, fightingAllies } from "../rules/company.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { isCreature, isInfected } from "../game/kinds.ts";
 import { isIncapacitated } from "./body.ts";
@@ -39,7 +39,7 @@ export function opposeModifier(score: number): number {
 }
 
 /** 판정에 붙는 상대·상황 보정의 내역 (0인 것은 빼고) */
-export function oppositionParts(content: Content, state: GameState, moveId: string, opponentId: string | null, distance?: string | null): Part[] {
+export function oppositionParts(content: Content, state: GameState, moveId: string, opponentId: string | null, distance?: string | null, allies: readonly string[] = []): Part[] {
   const r = rules(content);
   if (!r) return [];
   const parts: Part[] = [];
@@ -63,8 +63,10 @@ export function oppositionParts(content: Content, state: GameState, moveId: stri
   const outnumbered = r.mindless?.outnumbered;
   if (outnumbered?.moves.includes(moveId)) {
     const pack = infectedFoes(content, state).length;
-    const value = -outnumbered.at.filter((n) => pack >= n).length;
-    if (value) parts.push({ label: `감염체 ${pack}`, value });
+    // 함께 싸우는 내 편 수만큼 덜어 낸다 (설계 목록 4-1, 공통 규칙 8 fightingAllies)
+    const side = fightingAllies(state, content, allies, [opponentId]).filter((id) => !isInfected(content, state.characters[id])).length;
+    const value = -outnumbered.at.filter((n) => pack - side >= n).length;
+    if (value) parts.push({ label: side ? `감염체 ${pack} 대 우리 ${side + 1}` : `감염체 ${pack}`, value });
   }
   // 거리 (12-121): 숨을 때 상대가 멀면 쉽고 가까우면 어렵다
   if (r.distance?.moves.includes(moveId) && distance) {

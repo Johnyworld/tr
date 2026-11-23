@@ -132,7 +132,7 @@ export function rollPlayerCheck(
   const opponent = input.opponent ?? (cooperative || (options.target && onMySide(state, content, options.target, options.allies ?? [])) ? null : options.target) ?? null;
   // 매복·매복당함·혼란 (12-177)도 상황 보정이다
   const against = [
-    ...oppositionParts(content, state, input.move, opponent, input.distance),
+    ...oppositionParts(content, state, input.move, opponent, input.distance, options.allies ?? []),
     ...(options.reaction ? [] : ambushParts(content, state, input.move, opponent)),
     ...(options.situation ?? []),
     // 여럿이 막아섰다 (플레이 테스트 13: 넷이 막아섰는데 한 사람과만 맞섰다): 이야기 배역의 crowd

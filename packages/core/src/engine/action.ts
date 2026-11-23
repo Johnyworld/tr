@@ -848,8 +848,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
         // 수색할 곳의 보정은 찾을 거리를 정하는 수색 판정에만 (플레이 테스트 14: 뒤지며 굴린 생존 판정에 "+1(넉넉한 곳) +1(역사)")
         situation: [
           ...(exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? (!scenario.exploration?.search_move || input.check.move === scenario.exploration.search_move ? scavengeParts(ctx) : []) : input.forage ? forageParts(ctx, input.forage) : []),
-          // 방금 빗나간 상대에게 같은 스킬로 다시 하는 임무 판정은 한 단계 어렵다 (12-258, PT15 섬: 위협 실패 5분 뒤 같은 상대에게 다시 위협해 성공)
-          ...(forMission && !storyCheck && justMissedAgainst(start, input.check.move, input.check.opponent ?? input.target) ? [{ label: "방금 빗나간 상대", value: -1 }] : []),
+          // 방금 빗나간 상대에게 같은 스킬로 다시 하는 임무 판정은 한 단계 어렵다 (12-258, PT15 섬: 위협 실패 5분 뒤 같은 상대에게 다시 위협해 성공).
+          // 맞서는 상대(opponent)에게만: 시범을 보이는 내 편 대상(target)에게는 붙지 않는다 (설계 목록 4-3, PT16·17 분대장)
+          ...(forMission && !storyCheck && justMissedAgainst(start, input.check.move, input.check.opponent) ? [{ label: "방금 빗나간 상대", value: -1 }] : []),
         ],
         story: storyCheck,
       },
@@ -1462,7 +1463,7 @@ function hitTarget(ctx: ToolContext, targetId: string, severity: "light" | "heav
 /** 이 상대에게 이 스킬로 한 시간 안에 빗나간 판정이 있는가 (12-258) */
 function justMissedAgainst(state: GameState, move: string, who: string | null | undefined): boolean {
   if (!who) return false;
-  return Object.values(state.checks).some((c) => c.actorId === state.playerId && c.move === move && c.outcome === "miss" && (c.opponent ?? c.target) === who && c.at !== undefined && state.time - c.at <= RETRY_WINDOW_MINUTES);
+  return Object.values(state.checks).some((c) => c.actorId === state.playerId && c.move === move && c.outcome === "miss" && c.opponent === who && c.at !== undefined && state.time - c.at <= RETRY_WINDOW_MINUTES);
 }
 const RETRY_WINDOW_MINUTES = 60;
 

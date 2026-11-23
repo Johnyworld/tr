@@ -56,9 +56,11 @@ export function reduceHarm(ctx: ToolContext, input: HarmInput): { steps: number;
     const state = ctx.store.getState();
     const mate = shareHarmWith(state, ctx.content);
     if (mate) {
+      const before = steps;
       steps -= 1;
       const hurtLine = input.hurt(mate, 1, `${input.cause} (막아서다)`);
-      lines.push(`${josa(playerCalls(state, ctx.content, mate), "이/가")} 막아서다 대신 다쳤다.${hurtLine ? ` ${hurtLine}` : ""}`);
+      // 몫을 밝힌다 (설계 목록 4-2, PT16~20 다섯 판: 대신 받았는데 주인공도 다친 것처럼 읽혔다)
+      lines.push(`${josa(playerCalls(state, ctx.content, mate), "이/가")} 막아서다 한 단계를 대신 받았다: 원래 ${before}단계였는데 당신은 ${steps}단계만 다친다.${hurtLine ? ` ${hurtLine}` : ""}`);
     }
   }
   return { steps, armored: absorbed.steps <= 0, lines };

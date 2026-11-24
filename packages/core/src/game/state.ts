@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 102;
+export const SAVE_SCHEMA_VERSION = 103;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -589,7 +589,8 @@ export function createGameSchemas(s: Scenario) {
       .default(null),
     lastStoryletAt: z.number().int().nullable().default(null),
     /** 열려 있는 즉흥 이야기 자리 (12-247): 이때까지 GM이 improvise_storylet로 채울 수 있다 */
-    improvSlot: z.strictObject({ openedAt: z.number().int(), expiresAt: z.number().int() }).nullable().default(null),
+    /** prevLast: 자리를 열기 전의 앞 이야기 시각. 쓰지 않고 닫히면 간격을 그때로 돌린다 (PT23: 쓰지 않은 즉흥 자리가 반나절을 막았다) */
+    improvSlot: z.strictObject({ openedAt: z.number().int(), expiresAt: z.number().int(), prevLast: z.number().int().nullable().optional() }).nullable().default(null),
     /** 마지막으로 즉흥 이야기 자리가 열린 때 (하루 상한) */
     lastImprovSlotAt: z.number().int().nullable().default(null),
     /** 주인공이 마지막으로 한 일 (이야기 조건 when.activities, 플레이 테스트 11). 이전 세이브는 null */
@@ -1063,7 +1064,7 @@ export function createGameSchemas(s: Scenario) {
     }),
     /** 즉흥 이야기 자리가 열렸다·닫혔다 (12-247) */
     z.strictObject({ type: z.literal("improv_slot_opened"), expiresAt: z.number().int() }),
-    z.strictObject({ type: z.literal("improv_slot_closed") }),
+    z.strictObject({ type: z.literal("improv_slot_closed"), /** 쓰지 않고 닫혔다 (기한이 지남) */ unused: z.boolean().optional() }),
     z.strictObject({
       type: z.literal("storylet_resolved"),
       storyletId: z.string(),
@@ -2606,11 +2607,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     }
     case "improv_slot_opened":
-      next.improvSlot = { openedAt: state.time, expiresAt: event.expiresAt };
+      next.improvSlot = { openedAt: state.time, expiresAt: event.expiresAt, prevLast: state.lastStoryletAt };
       next.lastImprovSlotAt = state.time;
       next.lastStoryletAt = state.time;
       break;
     case "improv_slot_closed":
+      // 쓰지 않은 즉흥 자리는 이야기 사이 간격을 잡지 않는다: 앞 이야기 시각으로 돌린다 (PT23 졸병: 오후 자리가 다음 날 새벽까지 간격을 잡았다)
+      if (event.unused && state.improvSlot && state.lastStoryletAt === state.improvSlot.openedAt) next.lastStoryletAt = state.improvSlot.prevLast ?? null;
       next.improvSlot = null;
       break;
     case "storylet_resolved":

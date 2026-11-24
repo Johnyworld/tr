@@ -58,11 +58,11 @@ export function shouldImprovise(state: GameState, content: Content, s: StoryletC
 
 /**
  * 즉흥 이야기 자리를 연다. 이야기 사이 간격도 센다 (state의 improv_slot_opened).
- * 자리는 다음 이야기가 열릴 때까지 열려 있다: GM이 장면에 맞는 순간(사람을 만나거나, 쉬며 말을 나눌 때)을 고른다
+ * 자리는 열린 이야기와 같은 기한(expire_hours)만큼 열려 있다: GM이 장면에 맞는 순간을 고른다. 쓰지 않고 지나가면 간격을 잡지 않는다 (PT23)
  */
 export function openImprovSlot(ctx: ToolContext): ToolDisplayEvent[] {
   const state = ctx.store.getState();
-  ctx.store.append({ type: "improv_slot_opened", expiresAt: state.time + storyletGapMinutes(ctx.content, state.time) });
+  ctx.store.append({ type: "improv_slot_opened", expiresAt: state.time + Math.round(ctx.content.scenario.storylet_pacing.expire_hours * 60) });
   return [{ type: "storylet", event: "improv", title: "즉흥 이야기 자리", detail: "GM이 장면에 맞는 순간에 작은 이야기를 지을 수 있다" }];
 }
 
@@ -87,7 +87,7 @@ function slotDead(state: GameState, content: Content): boolean {
 /** 기한이 지났거나 더는 쓸 수 없는 자리는 닫는다 */
 export function lapseImprovSlot(ctx: ToolContext): void {
   const state = ctx.store.getState();
-  if (state.improvSlot && slotDead(state, ctx.content)) ctx.store.append({ type: "improv_slot_closed" });
+  if (state.improvSlot && slotDead(state, ctx.content)) ctx.store.append({ type: "improv_slot_closed", unused: true });
 }
 
 /** 배역으로 쓸 수 있는 사람: 지금 장면에 있거나 곁의 동행 (원칙 4: 주인공 앞에 있는 사람만) */

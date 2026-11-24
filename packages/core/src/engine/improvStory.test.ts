@@ -134,11 +134,11 @@ describe("즉흥 이야기 자리", () => {
     expect(shouldImprovise(s, c, c.storylets.chatter!, later)).toBe(false);
   });
 
-  it("자리는 다음 이야기가 열릴 때까지 열려 있고(GM이 맞는 순간을 고른다), 쓰지 않으면 닫힌다", () => {
+  it("자리는 열린 이야기와 같은 기한만큼 열려 있고(GM이 맞는 순간을 고른다), 쓰지 않으면 닫힌다 (12-290)", () => {
     const env = setup();
     toSlot(env);
     const slot = env.store.getState().improvSlot!;
-    expect(slot.expiresAt - slot.openedAt).toBeGreaterThanOrEqual(6 * 60); // 이야기 사이 간격 (이야기 기한 3시간보다 길다)
+    expect(slot.expiresAt - slot.openedAt).toBe(Math.round(env.content.scenario.storylet_pacing.expire_hours * 60));
     for (let i = 0; i < 8 && env.store.getState().improvSlot; i++) executeTool("take_action", act({ activity: { kind: "rest", until: null } }), env.ctx);
     expect(env.store.getState().improvSlot).toBeNull();
     expect(executeTool("improvise_storylet", { title: "t", setup: "s", cast: [], choices: twoChoices }, env.ctx).ok).toBe(false);

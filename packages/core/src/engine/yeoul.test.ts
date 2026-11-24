@@ -63,7 +63,7 @@ describe("건너가기", () => {
     expect(light.ok).toBe(false);
     const harm = () => w.state().characters.player!.conditions[w.content.scenario.harm_track];
     const before = harm();
-    const r = w.executeTool("take_action", act("밤바다로 배를 띄운다", { move_to: "yeoul_isle", check: crossCheck }));
+    const r = w.executeTool("take_action", act("밤바다로 배를 띄운다", { move_to: "yeoul_isle", check: crossCheck, ignore_story: true }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(r.ok && r.resultText).toContain("닿지 못하고 되돌아왔다");
     expect(w.state().playerZone).toBe("riverside");
@@ -74,7 +74,7 @@ describe("건너가기", () => {
   it("건너는 데 성공하면 섬에 닿고, 해금이 모든 판의 기록에 남고, 입도 심사가 열린다 (주사위가 늘 6)", () => {
     const dir = mkdtempSync(join(tmpdir(), "trpg-y-"));
     const { w } = atRiverside(dir, () => () => 0.999);
-    const r = w.executeTool("take_action", act("밤바다로 배를 띄운다", { move_to: "yeoul_isle", check: crossCheck }));
+    const r = w.executeTool("take_action", act("밤바다로 배를 띄운다", { move_to: "yeoul_isle", check: crossCheck, ignore_story: true }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().playerZone).toBe("yeoul_isle");
     expect(r.ok && r.resultText).toContain("시나리오 「여울섬의 새 식구」를 플레이할 수 있습니다");

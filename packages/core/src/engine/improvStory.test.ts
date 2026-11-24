@@ -41,7 +41,6 @@ function content(storylets: unknown[]): Content {
     ],
   } as (typeof c.scenario.condition_tracks)[number]);
   c.scenario.improv = {
-    seen_times: 1,
     gap_hours: 20,
     item_kinds: { gear: "도구", water: "물" },
     rewards: {

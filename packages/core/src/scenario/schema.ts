@@ -1019,12 +1019,11 @@ export const scenarioFileSchema = z
      */
     radio_call: z.strictObject({ item: id, tag: id, chance: z.number().min(0).max(1) }).optional(),
     /**
-     * 즉흥 이야기 (12-247, 기획서 10.5.5): 반복 템플릿(이미 seen_times번 이상 열린 것, 0이면 처음이어도)이 골리면 그 자리를 GM이 지은 이야기로 바꾼다 (앞 자리와 gap_hours 떨어진다: 하루 하나쯤).
+     * 즉흥 이야기 (12-247, 기획서 10.5.5): 반복 템플릿이 골리면 (앞 즉흥 자리 뒤에 쓰인 이야기가 한 편 열린 뒤에만: 번갈아, 12-306) 그 자리를 GM이 지은 이야기로 바꾼다 (앞 자리와 gap_hours 떨어진다: 하루 하나쯤).
      * GM은 보상 등급·종류만 고르고 숫자는 여기서 정한다 (원칙 2)
      */
     improv: z
       .strictObject({
-        seen_times: z.number().int().min(0),
         gap_hours: z.number().min(0),
         /** 보상 물건의 갈래 (id → 이름). GM은 이야기에 맞는 갈래를 고르고, 물건은 그 갈래의 등급 목록에서 코드가 고른다 */
         item_kinds: z.record(id, z.string().min(1)),

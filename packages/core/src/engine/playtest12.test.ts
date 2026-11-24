@@ -192,10 +192,11 @@ describe("플레이 테스트 12: 동행·덫·문구", () => {
 });
 
 describe("플레이 테스트 12 뒤 정한 것", () => {
-  it("이야기 사이 간격은 앞 이야기마다 6~12시간 사이로 정해진다", () => {
+  it("이야기 사이 간격은 앞 이야기마다 min~max 시간 사이로 정해진다 (12-306: 4~8시간)", () => {
+    const { min_gap_hours: lo, max_gap_hours: hi } = content.scenario.storylet_pacing;
     const gaps = Array.from({ length: 50 }, (_, i) => storyletGapMinutes(content, 1000 + i * 137));
-    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(6 * 60);
-    expect(Math.max(...gaps)).toBeLessThanOrEqual(12 * 60);
+    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(lo * 60);
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(hi! * 60);
     expect(new Set(gaps).size).toBeGreaterThan(5);
   });
 

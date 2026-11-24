@@ -66,6 +66,16 @@ function zoneNow(state: GameState, content: Content, id: string): string | null 
   return whereIs(state, content, id)?.zone ?? null;
 }
 
+/**
+ * 분대 명령으로 밖에 나간 사람인가: 구역을 정해 보낸 일(수색·정찰·호위 등)만. 거점 안 보초·쉬기는 그 자리에 있으니 배역에 남는다
+ * (12-306, PT28 분대장: 쉬거나 보초 서는 분대원까지 빠져 시나리오 이야기가 0편)
+ */
+function sentOnOrder(state: GameState, content: Content, id: string): boolean {
+  const order = state.squadOrders?.[id];
+  if (!order) return false;
+  return !!content.scenario.command?.squad_tasks.find((t) => t.id === order.task)?.needs_zone;
+}
+
 export function castCandidates(state: GameState, content: Content, role: CastRole, picked: Record<string, string> = {}): string[] {
   const player = state.characters[state.playerId];
   if (!player) return [];
@@ -86,7 +96,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
   }
   return Object.values(state.characters)
     // 이름 없는 인물은 자란 사람만, 다만 위협 배역은 이 구역의 이름 없는 인물도 (12-60)
-    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && (content.npcs[c.id] || c.profile || (role.menace && c.extra?.zone === state.playerZone)) && !state.squadOrders?.[c.id] && !isAwayCompanion(state, c.id))
+    .filter((c) => c.id !== state.playerId && !c.dead && !c.away && (content.npcs[c.id] || c.profile || (role.menace && c.extra?.zone === state.playerZone)) && !sentOnOrder(state, content, c.id) && !isAwayCompanion(state, c.id))
     // 찾는 가족은 가족 이야기에서만 나온다 (플레이 테스트 11: 연애 이야기가 찾던 남편을 데려와 튜토리얼이 끝났다)
     .filter((c) => !state.family.includes(c.id) || !!role.ids?.includes(c.id))
     // 그 배역과 이어진 사람 (기획서 7.10: 적의 가족을 만나는 이야기)

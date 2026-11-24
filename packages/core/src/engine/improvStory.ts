@@ -44,15 +44,17 @@ export function hasPlotRole(s: StoryletContent): boolean {
   return s.choices.some((c) => [...c.effects, ...Object.values(c.outcomes ?? {}).flat()].some((e) => Object.keys(e).some((k) => PLOT_EFFECTS.has(k))));
 }
 
-/** 이 이야기를 여는 대신 즉흥 이야기 자리를 열까: 채우기용 반복 템플릿이고(이미 seen_times번 이상 본 것), 세계의 위험(급한 것·위협·임무 자리·갇힌 동안)도 줄거리 몫도 아니고, 앞 자리와 떨어졌을 때 */
+/** 이 이야기를 여는 대신 즉흥 이야기 자리를 열까: 채우기용 반복 템플릿이고(앞 즉흥 자리 뒤에 쓰인 이야기가 한 편 열린 뒤), 세계의 위험(급한 것·위협·임무 자리·갇힌 동안)도 줄거리 몫도 아니고, 앞 자리와 떨어졌을 때 */
 export function shouldImprovise(state: GameState, content: Content, s: StoryletContent, at: GameTime): boolean {
   const rule = content.scenario.improv;
   if (!rule || !s.repeatable || s.urgent || s.essential || s.bedside || s.when.mission || isThreat(content, s) || hasPlotRole(s)) return false;
   // 깨어 있을 때만 (공통 규칙 4: 갇힘·누움·탐험·잠입·전투·위협 앞은 그 처지의 이야기 몫)
   const captivity = content.scenario.captivity?.tag;
   if (situationOf(state, content) !== "awake" || (captivity && s.tags.includes(captivity))) return false;
-  const log = state.storyletLog[s.id];
-  if ((log?.fired ?? 0) < rule.seen_times) return false;
+  // 쓰인 이야기와 번갈아 (12-306, PT28 세 판: seen_times 0이라 처음 뽑힌 이야기가 줄줄이 즉흥 자리로 바뀌었다.
+  // 1로 올리면 쉬는 날이 긴 반복 이야기를 두 번 보기 어려워 즉흥 자리가 거의 안 열린다): 앞 즉흥 자리(없으면 판의 시작) 뒤에 쓰인 이야기가 한 편 열린 뒤에만
+  const since = state.lastImprovSlotAt ?? -Infinity;
+  if (!Object.values(state.storyletLog).some((l) => l.lastFiredAt > since)) return false;
   return state.lastImprovSlotAt === null || at - state.lastImprovSlotAt >= rule.gap_hours * 60;
 }
 

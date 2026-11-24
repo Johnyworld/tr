@@ -1410,9 +1410,9 @@ relation_gain: { window_days: 3, daily_cap: 1, heavy: [rescue, saved_life, squad
 crossed: { fond_affection: 4, grudge_trust: -4, harm_stops_before: critical }
 
 storylet_pacing:
-  # 이야기 사이 간격: 앞 이야기마다 6~12시간 사이로 (플레이 테스트 12: 하루 상한이 자정에 풀려 00시대에 몰렸다 → 하루 상한 대신 간격)
-  min_gap_hours: 6
-  max_gap_hours: 12
+  # 이야기 사이 간격: 앞 이야기마다 4~8시간 사이로 (플레이 테스트 12: 하루 상한이 자정에 풀려 00시대에 몰렸다 → 하루 상한 대신 간격. 12-306: 6~12시간이 거점 이야기 밀도의 천장이라 줄임, PT26~29)
+  min_gap_hours: 4
+  max_gap_hours: 8
   expire_hours: 3
   # 첫 이야기는 시작 1시간 뒤부터 (12-251, 플레이 테스트 14: 튜토리얼 정문 이야기가 도착 2시간 25분 뒤에 열렸다)
   first_after_hours: 1
@@ -1599,12 +1599,11 @@ ambush: { move: stealth, hours: 12, attack_moves: [fight, shoot], bonus: 2, part
 # 무전 송출 (12-173, *임시*): 무전기로 하루 한 번 열린 주파수에 부르면 이 확률로 응답 이야기(storylets/radio_call.yaml)가 열린다
 radio_call: { item: radio, tag: radio_call, chance: 0.6 }
 
-# 즉흥 이야기 (12-247, *임시*): 반복 이야기(템플릿)가 골리면 그 자리를 GM이 지은 이야기로 바꾼다. seen_times는 그 이야기를 이미 본 횟수의 하한 (0이면 처음이어도).
+# 즉흥 이야기 (12-247, *임시*): 반복 이야기(템플릿)가 골리면 그 자리를 GM이 지은 이야기로 바꾼다. 쓰인 이야기와 번갈아: 앞 즉흥 자리 뒤에 쓰인 이야기가 한 편 열린 뒤에만 (12-306).
 # 줄거리 몫이 있는 이야기(다짐·플래그·장례·세계를 움직이는 효과)는 바꾸지 않는다: 바뀔 수 있는 것은 채우기용 138개.
-# 앞 자리와 20시간 떨어진다. 자동 플레이 80일 안팎: 이야기의 10% 안팎이 즉흥 (이야기가 892개라 같은 이야기가 다시 골리는 일은 드물어 seen_times는 0)
+# 앞 자리와 20시간 떨어진다. 자동 플레이 80일 안팎: 이야기의 10% 안팎이 즉흥
 # GM은 보상 등급(작음·보통)과 종류(물건·관계·공적), 대가 종류만 고른다. 물건은 등급 목록에서 코드가 고른다
 improv:
-  seen_times: 0
   gap_hours: 20
   # 보상 물건의 갈래: GM이 이야기에 맞는 갈래를 고르고, 물건은 그 갈래의 등급 목록에서 고른다
   item_kinds: { food: 먹을 것, medicine: 약·붕대, ammo: 탄약, material: 재료·연료, trade: 담배 (맞바꿀 것) }

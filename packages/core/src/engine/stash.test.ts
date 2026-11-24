@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
-import { loadRealContent } from "../testing.ts";
+import { stepToRoad, loadRealContent } from "../testing.ts";
 import { buildPlayerView } from "../views/player.ts";
 
 /** 내 물건 보관 (12-149) */
@@ -11,7 +11,7 @@ const content = { ...loadRealContent(), storylets: {} };
 const make = (role = "role_a_grunt") => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-stash-")), content, rngFactory: () => () => 0.99 }).create("mcp", role);
 type World = ReturnType<typeof make>;
 const go = (w: World, to: string) =>
-  w.executeTool("take_action", { intent: "이동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, move_to: to });
+  (stepToRoad(w, to), w.executeTool("take_action", { intent: "이동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, move_to: to }));
 const stash = (w: World, action: string, items: { item_id: string; quantity: number }[] = []) => w.executeTool("stash", { action, items });
 const me = (w: World) => w.state().characters[w.state().playerId]!;
 const give = (w: World, item: string, n: number) => expect(w.runCheat(`~give ${item} ${n}`).ok).toBe(true);

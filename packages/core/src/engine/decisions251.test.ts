@@ -9,7 +9,7 @@ import { knownCrossings } from "../rules/knowledge.ts";
 import { storyPlacesFit } from "../rules/place.ts";
 import { fitForPractice } from "../rules/situation.ts";
 import { castCandidates, conditionsMet, pacingBlocks, storyletAllowed } from "../story/storylets.ts";
-import { loadRealContent, atEntry } from "../testing.ts";
+import { loadRealContent, atEntry, stepToRoad } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { waterHere } from "./body.ts";
 
@@ -142,8 +142,10 @@ describe("도구·콘텐츠 (12-251)", () => {
       const got = w.executeTool("assign_mission", { template_id: "e_debt_run" });
       expect(got.ok, got.ok ? "" : got.error).toBe(true);
       // 12-302: 장터와 강변 사이에 길목(강둑 나루길)이 생겼다
+      stepToRoad(w, "ferry_levee");
       w.executeTool("take_action", act({ move_to: "ferry_levee", for_mission: true }));
       w.state().activeStorylet = null;
+      stepToRoad(w, "riverside");
       const go = w.executeTool("take_action", act({ move_to: "riverside", for_mission: true }));
       expect(go.ok, go.ok ? "" : go.error).toBe(true);
       w.state().activeStorylet = null;

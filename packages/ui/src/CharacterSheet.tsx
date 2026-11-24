@@ -357,7 +357,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
           </section>
             </>
           ),
-          map: <MapPanel map={player.map ?? null} />,
+          map: <MapPanel map={player.map ?? null} placeMap={player.placeMap ?? null} />,
           memo: player.memo ? <MemoPanel text={player.memo.text} /> : null,
         }}
       </SheetTabs>

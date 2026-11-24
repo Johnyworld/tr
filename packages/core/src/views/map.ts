@@ -1,6 +1,7 @@
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { neighbors } from "../sim/war.ts";
+import { currentPlace, depthAt, directionTo, knowsPlace, knowsZone, placeCoord, placesIn, unknownDoors } from "../rules/place.ts";
 
 /**
  * 지도 (12-201): 주인공이 아는 만큼만.
@@ -50,6 +51,87 @@ export function buildMapView(state: GameState, content: Content): MapView | null
     }
   }
   return { nodes, edges };
+}
+
+/**
+ * 구역 안 지도 (12-304, docs/map-expansion-plan.md 3단계): 주인공이 아는 장소는 이름, 지금 자리 표시, 길에는 이어지는 구역(가 본 적 없으면 흐리게).
+ * 모르는 장소는 지금 자리에서 이어지는 문만 "?"로 넣고 그 너머는 넣지 않는다 (원칙 4, 공통 규칙 15 knowsPlace). 사람·이야기는 넣지 않는다
+ */
+export type PlaceMapNode = {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  state: "here" | "known" | "door";
+  indoor: boolean;
+  /** 담 안 (담 있는 구역에서 깊이 1 이상) */
+  inside: boolean;
+  /** 길이면 이어지는 구역: 이름과 가 본 적 있는지 */
+  roads: { name: string; known: boolean }[];
+  /** 지금 자리에서 본 방향 */
+  direction: string | null;
+};
+export type PlaceMapView = { zone: string; zoneName: string; nodes: PlaceMapNode[]; edges: [string, string][] };
+
+export function buildPlaceMapView(state: GameState, content: Content): PlaceMapView | null {
+  const zone = state.playerZone;
+  if (!zone) return null;
+  const all = placesIn(state, content, zone);
+  if (!all.length) return null;
+  const here = currentPlace(state, content);
+  const walled = all.some((p) => p.gate);
+  const known = all.filter((p) => knowsPlace(state, content, zone, p.id));
+  const doors = unknownDoors(state, content);
+  const node = (p: (typeof all)[number], kind: PlaceMapNode["state"], i = 0): PlaceMapNode => {
+    const c = placeCoord(state, content, p.id, zone) ?? { x: 50, y: 50 };
+    return {
+      id: kind === "door" ? `door${i + 1}` : p.id,
+      name: kind === "door" ? `문${i + 1}` : p.name,
+      x: c.x,
+      y: c.y,
+      state: kind,
+      indoor: p.indoor,
+      inside: walled && kind !== "door" && (depthAt(state, content, p.id, zone) ?? 0) >= 1,
+      roads: kind === "door" || !p.road ? [] : p.to.map((z) => ({ name: content.locations[z]?.name ?? z, known: knowsZone(state, content, z) })),
+      direction: here && p.id !== here.id ? directionTo(state, content, here.id, p.id, zone) : null,
+    };
+  };
+  const nodes = [...known.map((p) => node(p, p.id === here?.id ? "here" : "known")), ...doors.map((p, i) => node(p, "door", i))];
+  const ids = new Map<string, string>([...known.map((p) => [p.id, p.id] as const), ...doors.map((p, i) => [p.id, `door${i + 1}`] as const)]);
+  const edges: [string, string][] = [];
+  const seen = new Set<string>();
+  for (const p of known) {
+    for (const n of p.near) {
+      // 문은 지금 자리와만 잇는다 (그 너머는 그리지 않는다)
+      if (!ids.has(n) || (doors.some((d) => d.id === n) && p.id !== here?.id)) continue;
+      const a = ids.get(p.id)!;
+      const b = ids.get(n)!;
+      const k = [a, b].sort().join("|");
+      if (seen.has(k)) continue;
+      seen.add(k);
+      edges.push([a, b]);
+    }
+  }
+  return { zone, zoneName: content.locations[zone]?.name ?? zone, nodes, edges };
+}
+
+/** ?지도의 구역 안 글 목록 (12-304): ★ 지금 자리 — 이웃들, [담 밖]·[담 안], 길은 이어지는 구역. 글자 그림은 쓰지 않는다 */
+export function placeListLines(state: GameState, content: Content): string[] {
+  const view = buildPlaceMapView(state, content);
+  if (!view) return [];
+  const byId = new Map(view.nodes.map((n) => [n.id, n]));
+  const neighborsOf = (id: string) => view.edges.filter(([a, b]) => a === id || b === id).map(([a, b]) => byId.get(a === id ? b : a)!).filter(Boolean);
+  const walled = view.nodes.some((n) => n.inside);
+  return view.nodes
+    .filter((n) => n.state !== "door")
+    .sort((a, b) => Number(b.state === "here") - Number(a.state === "here"))
+    .map((n) => {
+      const wall = walled ? (n.inside ? " [담 안]" : " [담 밖]") : "";
+      const road = n.roads.length ? ` · 길: ${n.roads.map((r) => (r.known ? r.name : `${r.name}(처음)`)).join("·")} 쪽` : "";
+      const near = neighborsOf(n.id).map((m) => (m.state === "door" ? `?${m.name}` : m.name));
+      const where = n.state === "here" ? "★ " : n.direction ? `${n.direction} ` : "";
+      return `  ${where}${n.name}${wall}${road}${near.length ? ` — ${near.join(", ")}` : ""}`;
+    });
 }
 
 /** 글자 하나의 화면 폭: 한글·전각은 2칸 */

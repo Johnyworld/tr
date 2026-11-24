@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
 import type { GameWorld } from "../world/world.ts";
-import { loadRealContent } from "../testing.ts";
+import { stepToRoad, loadRealContent } from "../testing.ts";
 import { afterCheckAmbush } from "./ambush.ts";
 import { oppositionParts } from "./opposition.ts";
 
@@ -43,6 +43,7 @@ describe("내 매복", () => {
     expect(miss.state().ambush).toBeNull();
     act(w, { ambush: true, check: chk("stealth", "agility") });
     const next = real.locations[w.state().playerZone!]!.adjacent[0]!;
+    stepToRoad(w, next);
     act(w, { move_to: next });
     expect(w.state().ambush).toBeNull();
   });

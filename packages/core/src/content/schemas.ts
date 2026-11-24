@@ -596,6 +596,8 @@ export function createContentSchemas(s: Scenario) {
           name: z.string().min(1),
           indoor: z.boolean(),
           aliases: z.array(z.string().min(1)).default([]),
+          /** 구역 안 지도 좌표 (12-304, 0~100, 위가 북쪽). 없으면 담 깊이로 층을 나눠 저절로 놓는다 (placeCoord) */
+          map: z.strictObject({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) }).optional(),
           /** 장소 종류 1~2개 (공통 규칙 15, 12-300): 이야기의 when.place_kinds가 이것으로 자리를 고른다. 월드 팩에서는 content:check가 빠짐을 잡는다 */
           kinds: z.array(contentIdSchema).max(2).default([]),
           /** 묘사 한 줄 (12-251, 플레이 테스트 14: 섬 장소에 GM이 그릴 재료가 없었다). 월드 팩에서는 content:check가 빠짐을 잡는다 */

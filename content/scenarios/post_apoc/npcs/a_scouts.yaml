@@ -20,7 +20,7 @@
     samples:
       - "우리 살아 있다고만. 그거면 돼."
       - "조장님 다리가 썩고 있어. 열이 사흘째야."
-  routine: { morning: 운동장, day: 정문 보초, night: 막사 }
+  routine: { morning: 강당 체력 단련, day: 정문 보초, night: 막사 }
   rules:
     - 거짓말은 하지 않는다
     - 조장을 두고 혼자 나가지 않는다

@@ -3692,6 +3692,15 @@ button.persona-btn:not(:disabled):hover {
 .map-key { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--text); }
 .map-key.here { background: var(--accent); }
 .map-key.seen { background: transparent; border: 1px dashed var(--border-hover); }
+/* 구역 안 지도 (12-304) */
+.place-map { margin-bottom: 12px; }
+.place-map-title { margin: 0 0 4px; font-size: 13px; color: var(--heading); }
+.place-wall { fill: none; stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 3; }
+.map-node.place rect { fill: var(--text); stroke: var(--bg); stroke-width: 2; }
+.map-node.place.here rect { fill: var(--accent); stroke: var(--heading); }
+.map-node.place.seen rect { fill: var(--bg); stroke: var(--border-hover); stroke-dasharray: 2 2; stroke-width: 1; }
+.place-road { fill: var(--muted); font-size: 11px; }
+.place-road.faint { opacity: 0.5; }
 
 /* 캐릭터 시트의 성격 표: 만들 때와 같은 모양, 누를 수 없다 */
 .persona-table.readonly {

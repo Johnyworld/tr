@@ -75,7 +75,7 @@ import { pastGiven, shownSkill, unlearnedNote } from "../rules/skill.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { tracesHere } from "./felt.ts";
 import { maskUnknownIds } from "../rules/knowledge.ts";
-import { currentPlace, depthAt, doorLabel, homeHidden, knowsPlace, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
+import { currentPlace, depthAt, directionTo, doorLabel, homeHidden, knowsPlace, knowsZone, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
 import { inZone, nearby, whereIs } from "../rules/place.ts";
 import { beliefText, deedText, matureCard, MENACE_COVER, shownOccupationTitle, toneDownLine } from "../rules/lens.ts";
 
@@ -577,21 +577,24 @@ function describePlaces(state: GameState, content: Content): string {
     // 집이 있는 아는 사람(가족 등)은 이 판에서 직접 본 뒤에만 (12-267, PT19·PT20 튜토리얼, 공통 규칙 15 homeHidden)
     const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && (p.id === here?.id || !homeHidden(state, id)) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
     // 이웃과 길 (장소 개편): 이웃은 5분, 길은 이어지는 구역
-    const toZones = p.road && p.to.length ? `, 길: ${p.to.map((z) => content.locations[z]?.name ?? z).join("·")} 쪽` : "";
+    // 처음 가는 구역은 이 길에서만 떠난다 (12-304, knowsZone)
+    const toZones = p.road && p.to.length ? `, 길: ${p.to.map((z) => `${content.locations[z]?.name ?? z}${knowsZone(state, content, z) ? "" : "(처음 가는 곳: 이 길에서)"}`).join("·")} 쪽` : "";
+    // 지금 자리에서 본 방향 (12-304, 장소 좌표의 8방위)
+    const dir = here && p.id !== here.id ? directionTo(state, content, here.id, p.id) : null;
     // "· 이웃: 이름들"이 "이웃이 그 사람"으로 읽혔다 (PT20·PT21 세 판): 이웃 칸과 사람을 나눠 적는다
     const nearLine = here && here.near.includes(p.id) ? " (이웃 칸)" : "";
-    return `- ${p.id} ${p.name}${wallOf(p)} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""}${toZones})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : nearLine}${people.length ? ` — 있을 사람: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
+    return `- ${dir ? `${dir}: ` : ""}${p.id} ${p.name}${wallOf(p)} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""}${toZones})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : nearLine}${people.length ? ` — 있을 사람: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
   };
   const doors = unknownDoors(state, content);
   const hidden = all.length - places.length - doors.length;
   return [
-    `지금 있는 곳: ${here ? `${here.name} (${here.indoor ? "실내" : "바깥"}${here.road ? ", 구역에 드나드는 길" : ""})` : "장소를 모른다"}. 같은 구역 안의 다른 장소로는 take_action place_to (이웃 5분, 한 칸 멀 때마다 5분). 목록에 없는 곳은 spawn_place로 만든다 (지금 자리의 이웃이 된다)`,
+    `지금 있는 곳: ${here ? `${here.name} (${here.indoor ? "실내" : "바깥"}${here.road ? ", 구역에 드나드는 길" : ""})` : "장소를 모른다"}. 같은 구역 안의 다른 장소로는 take_action place_to (이웃 5분, 한 칸 멀 때마다 5분). 목록에 없는 곳은 spawn_place로 만든다 (지금 자리의 이웃이 된다). 방향(북쪽·남동쪽 등)은 지금 자리에서 본 것이다: 방향과 보이는 모습으로 묘사하고, 모르는 곳의 이름·쓰임은 지어내지 않는다. 처음 가는 구역은 그 구역으로 가는 길에 서 있어야 떠난다`,
     "이 구역의 장소 (주인공이 아는 곳, 그곳에 있을 아는 사람):",
     ...places.map(line),
     ...(doors.length
       ? [
           `지금 자리에서 이어지는 모르는 곳 (place_to에 "문1"처럼. 들어가 봐야 무엇이 있는지 안다. 플레이어에게 보이는 대로 묘사하고 이름·쓰임을 지어내지 않는다):`,
-          ...doors.map((p, i) => `- ${doorLabel(p, i)}`),
+          ...doors.map((p, i) => `- ${here ? `${directionTo(state, content, here.id, p.id) ?? "곁"}: ` : ""}${doorLabel(p, i)}`),
         ]
       : []),
     ...(hidden > 0 ? ["(이 구역에는 주인공이 아직 모르는 곳이 더 있다. 모르는 곳을 spawn_place로 만들어 대신하지 않는다: 문을 지나 찾아간다)"] : []),

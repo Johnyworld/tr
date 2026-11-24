@@ -47,7 +47,7 @@ describe("모르는 장소 (12-282)", () => {
     // 떠나도 안다
     w.ctx().store.append({ type: "place_moved", from: "command", to: "yard" });
     expect(knowsPlace(w.state(), content, "c_warehouse", "command")).toBe(true);
-    expect(sceneText(w)).toContain("- command");
+    expect(sceneText(w)).toMatch(/- (\S+쪽: )?command/); // 12-304: 방향이 앞에 붙는다
   });
 
   it("모르는 장소에 있는 사람의 자리는 '이 구역 어딘가'로만", () => {

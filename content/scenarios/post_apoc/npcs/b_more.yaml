@@ -221,7 +221,7 @@
     samples:
       - "아가, 손 치워 봐. 이 정도면 안 죽어. 겁먹는 게 더 탈이야."
       - "칼 대는 건 진료소 가서 해. 나는 덧나지만 않게 해 줄게."
-  routine: { dawn: 텃밭, morning: 약초 창고, day: 약초 창고, evening: 마을 회관, night: 집 }
+  routine: { dawn: 텃밭, morning: 1층 약초방, day: 1층 약초방, evening: 마을 회관, night: 집 }
   rules:
     - 다친 사람이면 어느 무리든 먼저 본다
     - 칼을 대야 하는 상처는 손대지 않고 진료소로 보낸다

@@ -6,7 +6,7 @@ import { createSeededRng, type Rng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
 import { carriedWeight, carryCapacity, encumbrance, equippedItem, gearModifiers } from "./gear.ts";
-import { atStoryPlace, loadRealContent, teachSkills } from "../testing.ts";
+import { stepToRoad, atStoryPlace, loadRealContent, teachSkills } from "../testing.ts";
 
 /** 물건 (기획서 4.8) */
 const content = loadRealContent();
@@ -110,6 +110,7 @@ describe("무게", () => {
     expect(encumbrance(w.content, me(w))).toBe(2);
     expect(w.executeTool("take_action", act("구시가로 간다", { move_to: "old_town", ignore_story: true })).ok).toBe(false);
     expect(w.executeTool("transfer_item", { from: "player", to: "scene", item_id: "scrap_metal", quantity: 10 }).ok).toBe(true);
+    stepToRoad(w, "old_town");
     expect(w.executeTool("take_action", act("구시가로 간다", { move_to: "old_town", ignore_story: true })).ok).toBe(true);
   });
 });

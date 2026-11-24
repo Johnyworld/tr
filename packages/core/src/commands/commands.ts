@@ -1,6 +1,6 @@
 import { heldOf, heldSeenZone } from "../rules/held.ts";
 import { maskUnknownNames } from "../engine/storyletTools.ts";
-import { visitedZones } from "../views/map.ts";
+import { placeListLines, visitedZones } from "../views/map.ts";
 import { knownOwner } from "../rules/knowledge.ts";
 import { neighbors } from "../sim/war.ts";
 import { resolveLine } from "../engine/resolve.ts";
@@ -209,8 +209,13 @@ const map: CommandDef = {
       `현재  ${z.name} · ${z.owner}`,
       `  ${z.description}`,
       ...(z.preparations.length ? [`  설치해 둔 것: ${z.preparations.join(", ")}`] : []),
+      // 구역 안 (12-304): 아는 장소만, 지금 자리의 모르는 문은 ?
+      ...(() => {
+        const lines = placeListLines(ctx.state, ctx.content);
+        return lines.length ? ["", "이 구역 안 (★ 지금 자리, 방향은 지금 자리에서 · 이웃)", ...lines] : [];
+      })(),
       "",
-      "맞닿은 구역 (이동 30분~1시간)",
+      "맞닿은 구역 (이동 30분~1시간, 처음 가는 곳은 그 길에서)",
       // 맞닿은 곳이 없으면 비워 두지 않는다 (PT15 섬: 제목만 있고 비어 있었다)
       ...(z.adjacent.length ? z.adjacent.map((a) => `  ${a.name} · ${a.owner}`) : [`  없음${z.crossings.length ? "" : " (걸어서 나갈 길이 없다)"}`]),
       ...(z.crossings.length ? ["", "건너는 길 (배, 들어서 안다)", ...z.crossings.map((c) => `  ${c.name} · ${c.owner}`)] : []),

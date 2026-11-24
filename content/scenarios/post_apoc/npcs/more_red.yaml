@@ -178,7 +178,7 @@
     samples:
       - "위원회는 누구도 굶기지 않습니다. 할당량이 그 약속입니다."
       - "…담에 쓴 글씨는 비 오면 지워져요. 다시 쓰면 그만이고."
-  routine: { dawn: 막사, morning: 광장 포고, day: 거점 담벼락, evening: 위원회 천막, night: 막사 }
+  routine: { dawn: 막사, morning: 광장 포고, day: 정비 공장 잡일, evening: 위원회 천막, night: 막사 }
   rules:
     - 포고를 읽을 때는 종이를 보지 않는다. 다 외운다
     - 아이들 앞에서는 구호를 읽지 않는다

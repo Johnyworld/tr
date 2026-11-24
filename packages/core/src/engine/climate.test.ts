@@ -74,7 +74,8 @@ describe("기온", () => {
   });
 
   it("덮을 곳이 없는 구역은 쉬어도 바깥", () => {
-    const { store } = setup({ zone: "overpass" });
+    // 12-304: 고가도로에 실내 장소(고가 옆 상가)가 생겨 실내가 없는 길목 강둑 북길로
+    const { store } = setup({ zone: "north_levee" });
     const f = feelsLike(content, store.getState(), "sleep")!;
     expect(f.indoor).toBe(false);
     expect(f.value).toBe(outsideTemp(content, store.getState())!.value);

@@ -86,7 +86,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import {comesAlong, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
+import {comesAlong, directionTo, knowsZone, roadTo, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -700,6 +700,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       return { ok: false, error: `${josa(input.move_to, "은/는")} 지금 구역과 맞닿아 있지 않다. 인접 구역: ${here ? neighbors(content, here).join(", ") : "없음"}` };
     }
     if (input.activity) return { ok: false, error: "이동하는 턴에는 activity를 null로 둔다 (이동 시간은 시스템이 정한다)." };
+    // 처음 가는 구역은 그 구역으로 가는 길에 서 있어야 간다 (12-304, 공통 규칙 15 knowsZone). 탈출·달아나기(판정을 건 이동)는 예외
+    const road = roadTo(start, content, input.move_to);
+    const at = currentPlace(start, content);
+    if (!escapeAttempt && !input.check && road && at && at.id !== road.id && !knowsZone(start, content, input.move_to)) {
+      return { ok: false, error: `${josa(dest.name, "은/는")} 처음 가는 곳이라 그 길로 나가야 떠날 수 있다. 먼저 place_to로 ${road.name}(${road.id}) 쪽으로 나간다 (${directionTo(start, content, at.id, road.id) ?? "가까운 쪽"}, 시간은 흐르지 않았다).` };
+    }
     if (crossing && !neighbors(content, here).includes(input.move_to)) {
       const flags = new Set(start.flags[start.playerId] ?? []);
       if (!crossing.pass_flags.some((f) => flags.has(f))) {
@@ -1889,7 +1895,12 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   } else {
     // 이동은 길마다 정해진 시간, 짐이 무거우면 15분 더 (12-239)
     const me = state.characters[state.playerId];
-    const base = activity === "travel" && dest && state.playerZone ? routeMinutes(state.playerZone, dest, content) + (me && encumbrance(content, me, state) > 0 ? 15 : 0) : null;
+    // 아는 구역은 어디서든 선언 한 번으로 가지만, 그 구역 가는 길까지 걷는 칸 수만큼 더 든다 (12-304, 칸마다 5분)
+    const road = activity === "travel" && dest && state.playerZone ? roadTo(state, content, dest) : null;
+    const at = currentPlace(state, content);
+    const walk = road && at && road.id !== at.id ? stepsBetween(state, content, at.id, road.id) : 0;
+    const toRoad = Number.isFinite(walk) ? walk * PLACE_MOVE_MINUTES : 0;
+    const base = activity === "travel" && dest && state.playerZone ? routeMinutes(state.playerZone, dest, content) + toRoad + (me && encumbrance(content, me, state) > 0 ? 15 : 0) : null;
     // 짧은 활동(수색 등)도 임무 요건이 남은 만큼만 (PT22 분대장: 30분 남았는데 1시간 30분)
     const left = missionMinutesLeft(state, forMission, activity);
     to = from + (fixedMinutes ?? (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round((left ?? base ?? rollActivityMinutes(cost, rng)) * speed))));

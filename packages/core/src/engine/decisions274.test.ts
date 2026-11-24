@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { arrivalPlace, closeness, currentPlace, depthAt, placesIn, routineAway, stepsBetween, whereIs, whereLabel } from "../rules/place.ts";
 import { segmentOf } from "../rules/time.ts";
 import type { GameState } from "../game/state.ts";
-import { loadRealContent } from "../testing.ts";
+import { stepToRoad, loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 
 /** 장소 개편 (12-274, docs/places-v2-plan.md): 길에 도착, 이웃 칸수, gate 깊이, 근처 목격, 구역 밖 일과. 실제 콘텐츠로 본다 */
@@ -25,6 +25,7 @@ describe("장소 개편 (12-274)", () => {
     for (const zone of Object.keys(content.locations)) expect(placesIn(w.state(), content, zone).some((p) => p.road), zone).toBe(true);
     expect(arrivalPlace(w.state(), content, "a_base", "old_town")).toBe("to_old_town");
     expect(arrivalPlace(w.state(), content, "a_base", "riverside")).toBe("to_riverside");
+    stepToRoad(w, "old_town");
     w.executeTool("take_action", act({ move_to: "old_town" }));
     expect(w.state().playerZone).toBe("old_town");
     expect(currentPlace(w.state(), content)?.id).toBe("to_east");

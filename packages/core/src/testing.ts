@@ -11,7 +11,7 @@ import { createWorldEvent } from "./game/state.ts";
 import { InMemoryGameStore } from "./game/store.ts";
 import { InMemoryRepository } from "./persistence/repository.ts";
 import { GameWorld } from "./world/world.ts";
-import { whereIs, arrivalPlace, placesIn, movePlayer, storyIndoor, storyOpenPlaces } from "./rules/place.ts";
+import { whereIs, arrivalPlace, placesIn, movePlayer, storyIndoor, storyOpenPlaces, currentPlace, knowsZone, roadTo } from "./rules/place.ts";
 import { storyText } from "./rules/storySlot.ts";
 import { runAfterTimeAdvance } from "./engine/turnStart.ts";
 import { createSeededRng, type Rng } from "./rng.ts";
@@ -486,6 +486,15 @@ export function loadRealContent(): Content {
  * 테스트 주인공(또는 who)에게 스킬을 가르친다 (4.2.1: 적히지 않은 전문 기술은 판정할 수 없다).
  * 값을 주지 않으면 월드 팩의 스킬 최솟값(-1)으로 배운 상태가 된다. 이미 그보다 높으면 그대로 둔다
  */
+/** 처음 가는 구역이면 그 구역으로 가는 길까지 먼저 걷는다 (12-304: 처음 가는 구역은 그 길에서만 떠난다). 테스트의 구역 이동 앞에 쓴다 */
+export function stepToRoad(world: GameWorld, zone: string): void {
+  const s = world.state();
+  const road = roadTo(s, world.content, zone);
+  const at = currentPlace(s, world.content);
+  if (!road || !at || at.id === road.id || knowsZone(s, world.content, zone)) return;
+  world.executeTool("take_action", { intent: "길로 나간다", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, place_to: road.id, ignore_story: true });
+}
+
 export function teachSkills(world: GameWorld, skills: string[] | Record<string, number>, who = world.state().playerId) {
   const min = world.ctx().content.scenario.ranges.skill.min;
   const entries = Array.isArray(skills) ? skills.map((s) => [s, min] as const) : Object.entries(skills);

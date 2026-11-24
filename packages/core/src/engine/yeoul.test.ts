@@ -8,7 +8,7 @@ import { answerNewGame, describeNewGameStep, newGameDraft } from "../game/newGam
 import { createSeededRng, type Rng } from "../rng.ts";
 import { initialWarWorld, simulateWarDay } from "../sim/war.ts";
 import { WorldManager } from "../world/manager.ts";
-import { loadRealContent } from "../testing.ts";
+import { stepToRoad, loadRealContent } from "../testing.ts";
 
 /** 여울섬: 닫힌 낙원 (기획서 9.12) */
 const content = loadRealContent();
@@ -96,6 +96,7 @@ describe("건너가기", () => {
   it("건너는 표가 있으면 위험 없이 건너고, 섬에서 나오는 길도 같다", () => {
     const { w } = atRiverside(mkdtempSync(join(tmpdir(), "trpg-y-")));
     w.ctx().store.append({ type: "flag_set", characterId: "player", flag: "y_passage" });
+    stepToRoad(w, "yeoul_isle");
     expect(w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle", ignore_story: true })).ok).toBe(true);
     expect(w.state().playerZone).toBe("yeoul_isle");
     // 섬의 허락 없이 나가려면 다시 위험한 시도 (y_passage는 들어가는 표다)
@@ -113,6 +114,7 @@ describe("해금은 모든 판에 남는다", () => {
     const dir = mkdtempSync(join(tmpdir(), "trpg-y-"));
     const { w } = atRiverside(dir);
     w.ctx().store.append({ type: "flag_set", characterId: "player", flag: "y_passage" });
+    stepToRoad(w, "yeoul_isle");
     w.executeTool("take_action", act("거래선을 탄다", { move_to: "yeoul_isle", ignore_story: true }));
     w.close();
     const m = new WorldManager({ savesDir: dir, content, rngFactory: () => createSeededRng(4) });

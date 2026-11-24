@@ -8,7 +8,7 @@ import { createSeededRng } from "../rng.ts";
 import { castCandidates } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
 import { onPersonDeath } from "./people.ts";
-import { loadRealContent } from "../testing.ts";
+import { stepToRoad, loadRealContent } from "../testing.ts";
 
 const content = loadRealContent();
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
@@ -125,6 +125,7 @@ describe("상황에 맞는 등장", () => {
     const atBase = w.sceneForGm();
     expect(atBase).not.toContain("drifter_young");
     expect(atBase).not.toContain("kin_young");
+    stepToRoad(w, "old_town");
     w.executeTool("take_action", act("구시가로 간다", { move_to: "old_town" }));
     const outside = w.sceneForGm();
     expect(outside).toContain("drifter_young");

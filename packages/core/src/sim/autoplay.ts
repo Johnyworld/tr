@@ -68,14 +68,18 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     // 이야기를 둔 채 같은 자리에서 오래 걸리는 일은 거절된다 (플레이 테스트 13): GM처럼 모른 척하고 다시 한다
     if (!out.ok && name === "take_action" && out.error.includes("ignore_story")) out = world.executeTool(name, { ...(input as object), ignore_story: true });
     // 적 땅에서는 길로 나가야 구역을 떠난다: GM처럼 가장 가까운 길로 한 칸씩 나간 뒤 다시 한다 (이동 기획 뒤 돌아다니다 담 안에 있을 수 있다)
-    for (let i = 0; i < 6 && !out.ok && name === "take_action" && out.error.includes("길로 나가야"); i++) {
+    // 처음 가는 구역도 그 길에서만 떠난다 (12-304). 장소가 늘어 거절 글을 따라 여섯 번으로는 모자랐다: 장소 이웃을 따라 길까지 한 칸씩 걷는다
+    for (let i = 0; i < 3 && !out.ok && name === "take_action" && out.error.includes("길로 나가야"); i++) {
       const road = /place_to로 [^(]*\(([a-z0-9_]+)\)/.exec(out.error)?.[1];
       if (!road) break;
-      const step = world.executeTool("take_action", { ...base, intent: "길로 나간다", place_to: road, ignore_story: true });
-      if (!step.ok) {
-        const via = /먼저 ([a-z0-9_]+)\(/.exec(step.error)?.[1];
-        if (!via || !world.executeTool("take_action", { ...base, intent: "한 칸 나간다", place_to: via, ignore_story: true }).ok) break;
-        continue;
+      // 먼저 길로 바로 (우리 땅·아는 땅은 여러 칸을 한 번에 걷는다), 안 되면 이웃을 따라 한 칸씩 (모르는 칸은 문 번호로)
+      const direct = world.executeTool("take_action", { ...base, intent: "길로 나간다", place_to: road, ignore_story: true });
+      if (!direct.ok) {
+        for (const step of pathTo(world, road)) {
+          const s0 = world.state();
+          const label = knowsPlace(s0, world.content, s0.playerZone, step) ? step : `문${unknownDoors(s0, world.content).findIndex((p) => p.id === step) + 1}`;
+          if (label === "문0" || !world.executeTool("take_action", { ...base, intent: "한 칸 나간다", place_to: label, ignore_story: true }).ok) break;
+        }
       }
       out = world.executeTool(name, input);
     }
@@ -570,4 +574,23 @@ function walkTarget(s: GameState, content: Content, rng: () => number): string |
   const doors = unknownDoors(s, content).filter((p) => !p.jail).map((_, i) => `문${i + 1}`);
   const options = [...known, ...doors];
   return options.length ? options[Math.floor(rng() * options.length)]! : null;
+}
+
+/** 지금 자리에서 그 장소까지 이웃을 따라가는 길 (지금 자리는 빼고, 그 장소까지). 못 가면 그 장소 하나 */
+function pathTo(world: GameWorld, target: string): string[] {
+  const state = world.state();
+  const places = new Map(placesIn(state, world.content, state.playerZone).map((p) => [p.id, p]));
+  const from = currentPlace(state, world.content)?.id ?? null;
+  if (!from || !places.has(from) || !places.has(target)) return [target];
+  const prev = new Map<string, string | null>([[from, null]]);
+  const queue = [from];
+  while (queue.length) {
+    const at = queue.shift()!;
+    if (at === target) break;
+    for (const n of places.get(at)?.near ?? []) if (!prev.has(n) && places.has(n)) (prev.set(n, at), queue.push(n));
+  }
+  if (!prev.has(target)) return [target];
+  const path: string[] = [];
+  for (let at: string | null = target; at && at !== from; at = prev.get(at) ?? null) path.unshift(at);
+  return path;
 }

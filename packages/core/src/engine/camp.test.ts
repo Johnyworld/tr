@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createContentSchemas } from "../content/schemas.ts";
 import { WorldManager } from "../world/manager.ts";
-import { loadRealContent } from "../testing.ts";
+import { stepToRoad, loadRealContent } from "../testing.ts";
 import { campChance, campSite, describeCamp } from "./camp.ts";
 
 /** 야영과 불침번 (12-148) */
@@ -33,7 +33,7 @@ const make = (roll: number) =>
 type World = ReturnType<typeof make>;
 const act = (w: World, extra: Record<string, unknown>) =>
   w.executeTool("take_action", { intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
-const go = (w: World, to: string) => act(w, { intent: "이동", move_to: to });
+const go = (w: World, to: string) => (stepToRoad(w, to), act(w, { intent: "이동", move_to: to }));
 const spend = (w: World, kind: string) => act(w, { intent: kind, activity: { kind, until: null } });
 
 describe("야영", () => {

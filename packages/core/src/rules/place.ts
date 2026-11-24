@@ -24,7 +24,7 @@ import { isCreature } from "../game/kinds.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { routeMinutes } from "./time.ts";
 
-export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; kinds: readonly string[]; jail?: boolean; wade?: boolean; description?: string; near: readonly string[]; road: boolean; to: readonly string[]; gate: boolean };
+export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; kinds: readonly string[]; map?: { x: number; y: number }; jail?: boolean; wade?: boolean; description?: string; near: readonly string[]; road: boolean; to: readonly string[]; gate: boolean };
 
 /** 장소 종류 (12-300): 콘텐츠의 kinds에 길(road)·가두는 곳(jail) 표시를 더한다 */
 export function kindsOf(p: { kinds?: readonly string[]; road?: boolean; jail?: boolean }): string[] {
@@ -37,7 +37,7 @@ export function placesIn(state: GameState, content: Content, zone: string | null
   const spawned = Object.entries(state.spawnedPlaces ?? {}).filter(([, p]) => p.zone === zone);
   // 즉흥 장소는 만든 자리의 이웃이다 (장소 개편)
   const fixed = (content.locations[zone]?.places ?? []).map((p) => ({
-    id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, kinds: kindsOf(p), jail: p.jail, wade: p.wade, description: p.description,
+    id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, kinds: kindsOf(p), ...(p.map ? { map: p.map } : {}), jail: p.jail, wade: p.wade, description: p.description,
     near: [...(p.near ?? []), ...spawned.filter(([, x]) => x.at === p.id).map(([id]) => id)], road: !!p.road, to: p.to ?? [], gate: !!p.gate,
   }));
   const extra = spawned.map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[], kinds: [] as string[], near: p.at ? [p.at] : [], road: false, to: [] as string[], gate: false }));
@@ -281,6 +281,57 @@ export function depthAt(state: GameState, content: Content, placeId: string | nu
   }
   const d = placeId ? depth.get(placeId) : 0;
   return Math.min(deepest, d ?? deepest);
+}
+
+/**
+ * 구역 안 지도 좌표 (12-304, 공통 규칙 15): 콘텐츠의 map, 없으면 담 깊이로 층을 나눠 저절로 놓는다
+ * (길은 아래, 깊을수록 위. 같은 층은 id 순으로 가로로 벌린다). 즉흥 장소는 만든 자리 곁에
+ */
+export function placeCoord(state: GameState, content: Content, placeId: string, zone: string | null = state.playerZone): { x: number; y: number } | null {
+  const places = placesIn(state, content, zone);
+  const p = places.find((x) => x.id === placeId);
+  if (!p) return null;
+  if (p.map) return p.map;
+  if (p.spawned) {
+    const at = p.near[0] ? placeCoord(state, content, p.near[0], zone) : null;
+    return at ? { x: Math.min(100, at.x + 6), y: Math.max(0, at.y - 6) } : { x: 50, y: 50 };
+  }
+  const depth = depthAt(state, content, p.id, zone) ?? 0;
+  const layer = places.filter((x) => !x.spawned && !x.map && (depthAt(state, content, x.id, zone) ?? 0) === depth).map((x) => x.id).sort();
+  const i = layer.indexOf(p.id);
+  return { x: Math.round(((i + 1) / (layer.length + 1)) * 100), y: Math.max(5, 90 - depth * 25) };
+}
+
+const DIRECTIONS = ["동쪽", "북동쪽", "북쪽", "북서쪽", "서쪽", "남서쪽", "남쪽", "남동쪽"] as const;
+
+/** 지금 자리에서 그 장소가 있는 8방위 (12-304). 같은 자리거나 좌표가 겹치면 null. 바라보는 쪽 상태가 없어 시계 방향은 쓰지 않는다 */
+export function directionTo(state: GameState, content: Content, from: string | null, to: string, zone: string | null = state.playerZone): string | null {
+  if (!from || from === to) return null;
+  const a = placeCoord(state, content, from, zone);
+  const b = placeCoord(state, content, to, zone);
+  if (!a || !b) return null;
+  const dx = b.x - a.x;
+  const dy = a.y - b.y; // 위가 북쪽
+  if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return null;
+  const sector = Math.round(Math.atan2(dy, dx) / (Math.PI / 4));
+  return DIRECTIONS[(sector + 8) % 8]!;
+}
+
+/** 지금 구역에서 그 구역으로 이어지는 길 장소 (12-304) */
+export function roadTo(state: GameState, content: Content, zone: string): Place | null {
+  return placesIn(state, content, state.playerZone).find((p) => p.road && p.to.includes(zone)) ?? null;
+}
+
+/**
+ * 아는 구역인가 (12-304, 이동 규칙): 가 본 구역, 우리 무리 땅, 시작 구역. 소문으로 들은 구역은 아니다.
+ * 아는 구역은 어디서든 선언 한 번으로 가고(그 길까지 걷는 칸 수만큼 시간이 더 든다), 처음 가는 구역은 그 구역으로 가는 길에 서 있어야 간다
+ */
+export function knowsZone(state: GameState, content: Content, zone: string): boolean {
+  const me = state.characters[state.playerId];
+  if ((state.visited[state.playerId] ?? []).includes(zone)) return true;
+  if (me?.factionId && ownedBy(state, zone, me.factionId)) return true;
+  const role = roleOf(content, state);
+  return role?.start_location === zone;
 }
 
 /** 이 깊이의 장소들 (지금 구역, 가두는 곳 포함) */

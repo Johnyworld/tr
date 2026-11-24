@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { buildCustomRole, checkCustomStart, type CustomStartInput } from "../game/customStart.ts";
 import { createSeededRng, type Rng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
-import { loadRealContent, teachSkills } from "../testing.ts";
+import { stepToRoad, loadRealContent, teachSkills } from "../testing.ts";
 
 const content = loadRealContent();
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
@@ -34,6 +34,7 @@ function cheat(w: World, input: string) {
   expect(r.ok, r.ok ? "" : r.error).toBe(true);
 }
 function move(w: World, to: string) {
+  stepToRoad(w, to);
   const r = w.executeTool("take_action", act("간다", { move_to: to, ignore_story: true }));
   expect(r.ok, r.ok ? "" : r.error).toBe(true);
   return r.ok ? r.resultText : "";

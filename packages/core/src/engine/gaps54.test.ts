@@ -8,7 +8,7 @@ import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
 import { fireStorylet } from "./storyletTools.ts";
 import { executeTool } from "./tools.ts";
-import { loadRealContent } from "../testing.ts";
+import { stepToRoad, loadRealContent } from "../testing.ts";
 
 /** 12-54: 맡기기, 산출 늘리기, 배우기, 시간 쓰기, 지금 구역의 주인, 남겨 둔 사람 */
 const base = loadRealContent();
@@ -21,7 +21,7 @@ const resolveWith = (w: ReturnType<typeof open>, effects: unknown[]) => {
   return executeTool("resolve_storylet", { choice_id: "a" }, ctx);
 };
 const go = (w: ReturnType<typeof open>, to: string) =>
-  w.executeTool("take_action", { intent: "이동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, move_to: to });
+  (stepToRoad(w, to), w.executeTool("take_action", { intent: "이동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, move_to: to }));
 
 describe("12-54 빈틈", () => {
   it("무기를 맡기면 손에서 빠지고, 그 구역을 떠날 때 돌려받는다", () => {

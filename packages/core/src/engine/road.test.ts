@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createContentSchemas } from "../content/schemas.ts";
 import { WorldManager } from "../world/manager.ts";
-import { loadRealContent } from "../testing.ts";
+import { stepToRoad, loadRealContent } from "../testing.ts";
 
 /** 길 위의 일과 피난처 (12-53) */
 const base = loadRealContent();
@@ -18,7 +18,7 @@ const road = createContentSchemas(base.scenario).storylet.parse({
 });
 const content = { ...base, storylets: { road_test: road } };
 const go = (w: ReturnType<WorldManager["create"]>, to: string) =>
-  w.executeTool("take_action", { intent: "이동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, move_to: to });
+  (stepToRoad(w, to), w.executeTool("take_action", { intent: "이동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, move_to: to }));
 
 describe("길 위의 일", () => {
   it("구역을 옮기면 길의 위험만큼 확률로 길 위의 이야기가 열리고, {from} {to}가 채워진다", () => {

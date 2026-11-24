@@ -113,7 +113,8 @@ describe("포로를 잡고 다룬다", () => {
     expect(w.executeTool("handle_prisoner", { target: "c_seokjin", action: "labor", approach: null, stat: null }).ok).toBe(false);
     const ask = w.executeTool("handle_prisoner", { target: "c_seokjin", action: "interrogate", approach: "insight", stat: "senses" });
     expect(ask.ok && ask.resultText).toContain("포로의 말로는");
-    const heard = w.state().beliefs[w.state().playerId]!.at(-1)!;
+    // 심문은 장소도 털어놓아 뒤에 믿음이 더 붙을 수 있다 (12-283·PT23): 무리 형편 믿음을 찾는다
+    const heard = w.state().beliefs[w.state().playerId]!.find((b) => b.fact.includes("포로의 말로는"))!;
     expect(heard.fact).toContain("분위기");
     expect(heard.accuracy).toBe("approximate");
     const free = w.executeTool("handle_prisoner", { target: "c_seokjin", action: "release", approach: null, stat: null });

@@ -46,7 +46,7 @@
   cast:
     jailer: { ids: [c_pilsu] }
   setup: "물류창고 뒤편, 허리 굽은 간수가 물통 두 개를 들고 쩔쩔맨다. 열쇠 꾸러미가 짤랑거린다. \"이거 하나만 들어 줘. 안쪽까지 갈 것도 없어. 바깥문 창살 앞에만 놓으면 돼.\""
-  ai_direction: 바깥문 창살 너머에 청솔형제단 정찰병 셋이 있다. 하나는 다리를 다쳐 누워 있다. 수척하지만 살아 있다. {jailer:은/는} 이 일을 시킨 사람이 아무도 없다는 걸 말하지 않는다. 지금 보는 사람은 없다.
+  ai_direction: 바깥문 창살 너머에 청솔형제단 정찰병들이 있다. 하나는 다리를 다쳐 누워 있다. 수척하지만 살아 있다. {jailer:은/는} 이 일을 시킨 사람이 아무도 없다는 걸 말하지 않는다. 지금 보는 사람은 없다.
   choices:
     - id: carry
       label: 물통을 들어 창살 앞까지 함께 간다
@@ -54,7 +54,7 @@
         - set_flag: c_prisoners_seen
         - set_flag: scouts_captured
         - relation: { who: jailer, axis: trust, delta: 1 }
-        - belief: { fact: "물류창고 수용소 창살 너머에 청솔형제단 정찰병 셋이 갇혀 있다. 하나는 다리를 다쳐 누워 있었다", source: seen }
+        - belief: { fact: "물류창고 수용소 창살 너머에 청솔형제단 정찰병들이 갇혀 있다. 하나는 다리를 다쳐 누워 있었다", source: seen }
     - id: report
       label: 간수가 포로에게 몰래 물을 준다고 규율반에 알린다
       effects:

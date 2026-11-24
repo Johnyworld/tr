@@ -1237,6 +1237,8 @@ export function createContentSchemas(s: Scenario) {
       .optional(),
     /** 장면에 나타나면 주인공의 공포가 오르는 단계 (12-95). 한꺼번에 셋 이상 나타나면 한 단계 더 */
     fearsome: z.number().int().min(0).max(3).optional(),
+    /** 쫓아오지 못한다 (기어다니는 것 등): 판정 걸고 물러나다 빗나가도 따라오지 않는다 (PT22·PT23: 허리 아래가 뭉개진 감염체가 망루까지 쫓아왔다) */
+    slow: z.boolean().optional(),
     /** 무엇이 부른 공포인지 (예: infected, dog). fearsome이 0이어도 그것이 무서운 사람(트레잇 phobia)에게는 공포가 온다 */
     fright_tags: z.array(contentIdSchema).optional(),
   });

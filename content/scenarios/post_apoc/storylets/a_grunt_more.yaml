@@ -63,7 +63,7 @@
           - set_flag: scouts_captured
           - clock: { id: a_counteroffensive, delta: 2 }
           - relation: { who: deserter, axis: trust, delta: 2 }
-          - belief: { fact: "{deserter}에게 들었다: 물류창고 수용소에 청솔형제단 정찰조 셋이 살아 있다. 그중 하나는 오씨 성이다", source: report }
+          - belief: { fact: "{deserter}에게 들었다: 물류창고 수용소에 청솔형제단 정찰조가 살아 있다. 그중 하나는 오씨 성이다", source: report }
           - npc_depart: { who: deserter }
         partial:
           - belief: { fact: "{deserter:은/는} 물류창고에 누군가 갇혀 있다는 말만 흘렸다", source: report }

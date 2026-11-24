@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 101;
+export const SAVE_SCHEMA_VERSION = 102;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -486,6 +486,8 @@ export function createGameSchemas(s: Scenario) {
     visited: z.record(z.string(), z.array(z.string())).default({}),
     /** 캐릭터마다 있어 본 장소 ("구역:장소", 설계 목록 C-1). 모르는 장소는 GM에게도 '알 수 없는 문'으로만 보인다 (공통 규칙 15 knowsPlace) */
     knownPlaces: z.record(z.string(), z.array(z.string())).default({}),
+    /** 기절시켜 둔 사람 → 깨어나는 시각 (PT23 졸병: 기절시킨 간수가 멀쩡히 남아 다시 붙잡혔다). 그때까지 보지도 움직이지도 못한다 (공통 규칙 8 ableNow) */
+    knockedOut: z.record(z.string(), z.number().int()).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
     lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
@@ -698,7 +700,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("home_settled"), characterId: z.string(), zone: z.string() }),
     /** 잠입을 시작했다 / 상태가 바뀌었다 / 끝났다 (12-154) */
     z.strictObject({ type: z.literal("infiltration_started"), zone: z.string(), owner: z.string(), goal: z.string() }),
-    z.strictObject({ type: z.literal("infiltration_changed"), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean() }),
+    z.strictObject({ type: z.literal("infiltration_changed"), depth: z.number().int().min(0), alarm: z.number().int().min(0).max(3), done: z.boolean(), /** 그 자리에서 바꾼 목표 (PT23) */ goal: z.string().optional() }),
     z.strictObject({ type: z.literal("infiltration_ended"), how: z.enum(["out", "caught", "gone"]) }),
     /** 얼굴만 안다 (이름은 모른다): 배경의 원수처럼 장면 밖에서 아는 얼굴 */
     z.strictObject({ type: z.literal("face_known"), characterId: z.string(), targetId: z.string() }),
@@ -984,6 +986,7 @@ export function createGameSchemas(s: Scenario) {
     // with: 동행 말고 함께 옮겨 가는 장면의 인물 (공통 규칙 15 comesAlong)
     /** 가 보지 않고 장소를 알게 됐다 (설계 목록 C-1: 들은 단편·테스트). 있어 본 곳은 applyEvent가 저절로 기록한다 */
     z.strictObject({ type: z.literal("place_learned"), zone: z.string(), place: z.string() }),
+    z.strictObject({ type: z.literal("npc_knocked_out"), npcId: z.string(), until: z.number().int() }),
     z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable(), with: z.array(z.string()).optional() }),
     /** GM이 즉흥 장소를 만들었다 (12-244) */
     z.strictObject({ type: z.literal("place_spawned"), id: z.string(), zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable(), at: z.string().nullable().optional() }),
@@ -1280,6 +1283,7 @@ export const EMPTY_STATE: GameState = {
   deposits: {},
   visited: {},
   knownPlaces: {},
+  knockedOut: {},
   background: [],
   companions: [],
   bonds: {},
@@ -1799,7 +1803,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.infiltration = { zone: event.zone, owner: event.owner, goal: event.goal, depth: 0, alarm: 0, done: false, since: state.time };
       return next;
     case "infiltration_changed":
-      if (next.infiltration) next.infiltration = { ...next.infiltration, depth: event.depth, alarm: event.alarm, done: event.done };
+      if (next.infiltration) next.infiltration = { ...next.infiltration, depth: event.depth, alarm: event.alarm, done: event.done, ...(event.goal ? { goal: event.goal } : {}) };
       return next;
     case "infiltration_ended":
       next.infiltration = null;
@@ -2367,6 +2371,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       for (const b of Object.values(next.bonds)) if (b.apart?.zone === zone && (b.apart.place ?? null) === event.from) b.apart.left = true;
       return next;
     }
+    case "npc_knocked_out":
+      next.knockedOut = { ...(next.knockedOut ?? {}), [event.npcId]: event.until };
+      return next;
     case "place_learned": {
       const key = `${event.zone}:${event.place}`;
       const mine = next.knownPlaces[next.playerId] ?? [];
@@ -2553,7 +2560,14 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       // 장면과 플레이어 기준 상태를 새로 시작한다 (새 캐릭터는 다른 곳에서 하루를 시작한다).
       // 이어받는 사람이 그 장면에 있었으면 장면은 그대로 이어진다: 맞붙은 감염체도 그 자리에 (PT22 하얀매: 지하에서 이어받았는데 바깥 길에 혼자 섰다)
       next.scene.present = state.scene.present.includes(successor.id) ? state.scene.present.filter((id) => id !== successor.id && id !== state.playerId) : [];
+      // 이어받는 사람이 곁에 있었으면 앞 주인공을 만난 사이다 (PT23 졸병·하얀매: 구해 준 사람·함께 싸운 사람을 "만나 본 적 없다")
+      const beside = state.scene.present.includes(successor.id) || state.companions.includes(successor.id);
+      if (beside) acquaint(next, successor.id, state.playerId, true);
+      // 만난 사람의 마음은 이어받는 사람이 아는 대로 (만남 기록에서), 가 본 구역은 아는 장소에서 (함께 다닌 곳)
       next.perceived = {};
+      for (const id of next.met[successor.id] ?? []) if (next.characters[id]) next.perceived[id] = { ...(next.relations[id]?.[successor.id] ?? NEUTRAL_RELATION) };
+      const zones = [...new Set((next.knownPlaces?.[successor.id] ?? []).map((k) => k.split(":")[0]!))];
+      next.visited = { ...next.visited, [successor.id]: [...new Set([...(next.visited[successor.id] ?? []), ...zones])] };
       // 동행은 죽은 사람을 따라다녔다. 다음 캐릭터는 새로 사귄다 (기획서 7.8).
       // 이름 없는 동행(동물·연고)은 죽은 그 자리에 남아, 다음 주인공이 그곳에서 만날 수 있다 (12-239, 플레이 테스트 13: 누렁이가 주인이 죽은 뒤 어디에도 없었다)
       for (const id of state.companions) {

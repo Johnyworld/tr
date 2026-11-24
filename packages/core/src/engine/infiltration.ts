@@ -20,6 +20,7 @@ import { recordDeed } from "./reputationTools.ts";
 import { applyEffect, hostileZone, runTagEvent } from "./storyletTools.ts";
 import { roadStorylets } from "../story/storylets.ts";
 import { enterScene } from "./extras.ts";
+import { ableNow } from "../rules/company.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
@@ -167,7 +168,7 @@ function othersHere(state: GameState, content: Content): string[] {
   const here = currentPlace(state, content);
   if (!here) return [];
   const ids = new Set([...state.scene.present, ...peopleAt(state, content, state.playerZone, here.id)]);
-  return [...ids].filter((id) => id !== state.playerId && !state.companions.includes(id) && !heldOf(state.characters[id]) && !state.characters[id]?.dead);
+  return [...ids].filter((id) => id !== state.playerId && !state.companions.includes(id) && ableNow(state, content, id));
 }
 
 /** 이 자리에 갇혀 있는 그 무리의 포로 (우리 무리 사람이 먼저). 장소가 없는 구역이면 구역의 포로 */
@@ -365,7 +366,10 @@ const infiltrate = defineTool({
         // 꺼내 온 사람의 반응은 공통 규칙 1 (welcomeRescued)
         if (captive && goal.release) lines.push(...welcomeRescued(ctx, [captive]));
         const now = store.getState().infiltration!;
-        store.append({ type: "infiltration_changed", depth: now.depth, alarm: now.alarm, done: true });
+        // 바꾼 목표로 해낸 것으로 남긴다 (PT23 졸병: 엿듣기로 들어가 구출했는데 "엿듣기 (해냈다)")
+        store.append({ type: "infiltration_changed", depth: now.depth, alarm: now.alarm, done: true, ...(goal.id !== now.goal ? { goal: goal.id } : {}) });
+        // 갇힌 사람을 빼낸 일은 행적으로 남는다 (연대기·소문, PT23 졸병: 잠입 구출이 어디에도 남지 않았다). 빼낸 사람이 본 사람이다
+        if (captive && goal.release) recordDeed(ctx, { summary: `갇혀 있던 ${josa(playerCalls(store.getState(), content, captive), "을/를")} 몰래 빼냈다`, tags: ["bravery"], severity: 2, privacy: "private", noisy: false }, { npcId: captive, source: "seen" });
         lines.unshift(`${goal.label}: 해냈다${check.outcome === "partial" ? " (다 하지는 못했다)" : ""}.${captive && goal.release ? ` ${josa(playerCalls(store.getState(), content, captive), "을/를")} 풀어 냈다.` : ""}`);
         // 대가 있는 성공은 들킴이 아니다: 낌새가 짙어도 들키기 직전에서 멈춘다 (플레이 테스트 13)
         if (check.outcome === "partial" && now.alarm + 1 >= ALARM_MAX) lines.push("들킬 뻔했다. 숨을 죽여 넘겼다 (낌새가 짙다: 한 번 더 어긋나면 들킨다).");

@@ -79,6 +79,11 @@ export function runHelpless(ctx: ToolContext, actionStartedAt?: number): ToolDis
     if (state.helplessAt !== null) store.append({ type: "helpless_cleared" });
     return [];
   }
+  // 이미 쓰러짐을 처리했어도, 의식이 없는 동안 곁의 움직일 수 있는 우리 편은 피를 멎게 한다 (PT23 하얀매: 응급처치 아는 동료 둘이 1시간 30분 동안 아무것도 안 해 피를 흘려 죽었다)
+  if (state.helplessAt !== null && !state.battle && !pausedWhileHeld(state, "helpless") && state.playerZone) {
+    const helpers = state.scene.present.map((id) => state.characters[id]).filter((c): c is Character => !!c && !isAnimal(ctx, c) && sideOf(ctx, c) === "ally" && ableNow(state, content, c.id));
+    if (helpers.length > infectedFoes(content, state).length) return stopBleeding(ctx, me.id, `${playerCalls(state, content, helpers[0]!.id)}의 지혈`);
+  }
   if (state.helplessAt !== null || state.battle || pausedWhileHeld(state, "helpless") || !state.playerZone) return [];
   // 이 행동에서 막 쓰러졌으면 무슨 일이 생길지는 다음에 시간이 흐를 때 정한다: 쓰러진 그 5분 안에 죽지 않게 (플레이 테스트 13)
   if (actionStartedAt !== undefined && (state.recovery.lastChangeAt[me.id] ?? -Infinity) >= actionStartedAt) return [];

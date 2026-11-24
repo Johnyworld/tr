@@ -89,8 +89,9 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     // 그 배역과 이어진 사람 (기획서 7.10: 적의 가족을 만나는 이야기)
     .filter((c) => !role.tie || tiesOf(state, content, picked[role.tie.of] ?? "").some((t) => t.other === c.id && (!role.tie!.kinds || role.tie!.kinds.includes(t.kind))))
     .filter((c) => !role.tie?.cross || c.factionId !== state.characters[picked[role.tie.of] ?? ""]?.factionId)
-    // 포로는 captive: true인 배역만, 그리고 그 구역에서만 (갇힌 곳에서 마주친다)
-    .filter((c) => (role.captive_anywhere ? !!heldOf(c) : role.captive ? !!heldOf(c) && heldOf(c)!.zone === state.playerZone : !heldOf(c)))
+    // 포로는 captive: true인 배역만, 그리고 그 구역에서만 (갇힌 곳에서 마주친다). 장면에 들이는 배역이면 같은 장소에 있을 때만
+    // (PT23 분대장: 수용소에 갇힌 포로의 이야기가 막사에서 열려 포로가 막사에 남았다)
+    .filter((c) => (role.captive_anywhere ? !!heldOf(c) : role.captive ? !!heldOf(c) && heldOf(c)!.zone === state.playerZone && (role.enter === false || nearby(state, content, c.id)) : !heldOf(c)))
     .filter((c) => !role.condition || bodyMatches(content, c.conditions[role.condition.track], role.condition))
     .filter((c) => !role.ids || role.ids.includes(c.id))
     .filter((c) => !role.stance || stanceOf(state, content, c.id) === role.stance)

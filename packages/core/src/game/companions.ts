@@ -1,3 +1,4 @@
+import { playerCalls } from "./acquaintance.ts";
 import { heldOf } from "../rules/held.ts";
 import { placeById } from "../rules/place.ts";
 import { josa } from "../text.ts";
@@ -127,10 +128,8 @@ function describeTricks(state: GameState, content: Content, id: string): string 
 }
 
 export function describeCompanions(state: GameState, content: Content): string {
-  const name = (id: string) => {
-    const c = state.characters[id]!;
-    return c.extra?.label && !(state.known[state.playerId] ?? []).includes(id) ? aliasOf(state, content, id) : c.name;
-  };
+  // 이름을 모르면 이름 있는 인물도 호칭으로 (PT23 졸병: 끌고 다니는 포로의 진짜 이름이 동행 줄에 나왔다)
+  const name = (id: string) => playerCalls(state, content, id);
   const lines: string[] = [];
   const list = activeCompanions(state);
   if (list.length) {

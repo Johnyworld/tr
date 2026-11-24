@@ -39,6 +39,9 @@ export function issueArmory(ctx: ToolContext, mission: MissionInstance): string 
     const own = Object.keys(locker).find((i) => (locker[i] ?? 0) > 0 && content.items[i]?.weapon?.ammo === ammo);
     if (!own) continue;
     store.append({ type: "item_stashed", characterId: me.id, zone: state.playerZone!, itemId: own, quantity: 1, direction: "take" });
+    // "사물함에 두었다"는 기억은 이제 맞지 않는다 (PT23 섬)
+    const itemName = content.items[own]?.name ?? own;
+    for (const b of store.getState().beliefs[me.id] ?? []) if (b.fact.includes(itemName) && b.fact.includes("사물함에 두었다")) store.append({ type: "belief_dropped", characterId: me.id, beliefId: b.id });
     carriedAmmo.add(ammo);
     fromLocker.push(content.items[own]?.name ?? own);
   }

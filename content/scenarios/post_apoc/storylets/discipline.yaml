@@ -16,6 +16,9 @@
     own_offense: true
     # 상관이 불러 간다: 어느 장소에서든 열리고 글의 장소로 옮긴다 (12-260)
     summons: true
+    # 불려 가는 자리 (이동 기획: 부르는 이야기만 주인공을 옮긴다. 장소 하나로 정해 둔다, PT22·PT23 섬)
+    zones: [a_base]
+    places: [staff_room]
   cast:
     boss: { commander: true }
   setup: "{boss:이/가} 당신을 부른다. \"본 사람이 있다. 형제단에서 그런 짓은 그냥 넘어가지 않아.\" 교무실 문이 닫히고, 다른 간부 하나가 팔짱을 낀 채 벽에 기대 선다."
@@ -67,6 +70,9 @@
     own_offense: true
     # 상관이 불러 간다: 어느 장소에서든 열리고 글의 장소로 옮긴다 (12-260)
     summons: true
+    # 불려 가는 자리 (이동 기획: 부르는 이야기만 주인공을 옮긴다. 장소 하나로 정해 둔다, PT22·PT23 섬)
+    zones: [b_base]
+    places: [yard]
   cast:
     boss: { commander: true }
   setup: "놀이터 벤치에 동대표들이 모여 있다. {boss:이/가} 손짓해 당신을 앉힌다. \"말로 하자. 다들 들었으니까.\" 빨래를 널던 사람들이 손을 멈추고 이쪽을 본다."
@@ -117,6 +123,9 @@
     own_offense: true
     # 상관이 불러 간다: 어느 장소에서든 열리고 글의 장소로 옮긴다 (12-260)
     summons: true
+    # 불려 가는 자리 (이동 기획: 부르는 이야기만 주인공을 옮긴다. 장소 하나로 정해 둔다, PT22·PT23 섬)
+    zones: [c_base]
+    places: [yard]
   cast:
     boss: { commander: true }
   setup: "확성기가 당신의 이름을 부른다. 광장 한가운데 {boss:이/가} 서 있고, 조원들이 줄지어 둘러싼다. \"규율을 어긴 자는 모두 앞에서 답한다.\""
@@ -170,6 +179,9 @@
     own_offense: true
     # 상관이 불러 간다: 어느 장소에서든 열리고 글의 장소로 옮긴다 (12-260)
     summons: true
+    # 불려 가는 자리 (이동 기획: 부르는 이야기만 주인공을 옮긴다. 장소 하나로 정해 둔다, PT22·PT23 섬)
+    zones: [d_clinic]
+    places: [pharmacy]
   cast:
     boss: { commander: true }
   setup: "{boss:이/가} 소독약 냄새가 나는 복도 끝으로 당신을 부른다. 장부를 덮으며 말한다. \"여기는 사람을 살리는 곳이야. 그걸 잊은 사람은 일을 나눠 받을 수 없어.\""
@@ -220,6 +232,9 @@
     own_offense: true
     # 상관이 불러 간다: 어느 장소에서든 열리고 글의 장소로 옮긴다 (12-260)
     summons: true
+    # 불려 가는 자리 (이동 기획: 부르는 이야기만 주인공을 옮긴다. 장소 하나로 정해 둔다, PT22·PT23 섬)
+    zones: [e_market]
+    places: [pawnshop]
   cast:
     boss: { commander: true }
   setup: "{boss:이/가} 두꺼운 장부를 펼쳐 당신 이름 옆에 무언가를 적는다. \"상단은 손해를 잊지 않아. 갚든지, 나가든지.\""
@@ -270,6 +285,9 @@
     own_offense: true
     # 상관이 불러 간다: 어느 장소에서든 열리고 글의 장소로 옮긴다 (12-260)
     summons: true
+    # 불려 가는 자리 (이동 기획: 부르는 이야기만 주인공을 옮긴다. 장소 하나로 정해 둔다, PT22·PT23 섬)
+    zones: [yeoul_isle]
+    places: [stone_wall]
   cast:
     boss: { commander: true }
   setup: "회관 문 앞에서 {boss:이/가} 기다리고 있다. \"의회가 들었어. 섬은 입 하나도 아깝게 여기는 곳이야.\" 안에서 숟가락 소리가 멎는다."

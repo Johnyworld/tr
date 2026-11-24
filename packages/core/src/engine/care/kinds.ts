@@ -8,7 +8,7 @@ import type { Content } from "../../content/schemas.ts";
 import type { Character } from "../../game/character.ts";
 import { effectiveSkill } from "../traits.ts";
 import { dayOf } from "../../rules/time.ts";
-import { harmTrack } from "../../scenario/scenario.ts";
+import { harmTrack, trackOf } from "../../scenario/scenario.ts";
 import { josa } from "../../text.ts";
 import { stopBleeding } from "../bleeding.ts";
 import { type CheckOutcome } from "../../rules/check.ts";
@@ -163,6 +163,10 @@ export function applyTreatment(
   // 감염체에게 다친 상처를 그 무리의 치료사가 보면 격리한다 (12-238)
   const isolated = quarantineAfterCare(ctx, state.characters[healer]?.factionId);
   if (isolated) lines.push(isolated);
+  // 감염은 상처 치료로 낫지 않는다: 치료사가 알아본 것을 알린다 (PT23 튜토리얼·하얀매: 감염 때문에 받은 치료인데 결과에 감염 이야기가 없었다)
+  const infection = ctx.content.scenario.body?.infection;
+  const sick = infection ? ctx.store.getState().characters[patient]?.conditions[infection.track] : undefined;
+  if (infection && sick && sick !== trackOf(ctx.content.scenario, infection.track).levels[0]!.id) lines.push(`${josa(name, "은/는")} 감염 기운을 알아봤다: 상처 치료로는 낫지 않는다 (${infection.cure.map((i) => ctx.content.items[i]?.name ?? i).join("·")}이 든다).`);
   return { ok: true, lines, displays };
 }
 

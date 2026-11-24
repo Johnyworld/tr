@@ -1,7 +1,7 @@
 import { stakesOf } from "../rules/stakes.ts";
 import { formatDuration, routeMinutes } from "../rules/time.ts";
 import { onCaptured } from "../rules/consequence.ts";
-import {heldByOwn, heldOf, heldKind } from "../rules/held.ts";
+import {heldByOwn, heldOf, heldKind, heldSeenTopic } from "../rules/held.ts";
 import { formatTime } from "../rules/time.ts";
 import { z } from "zod";
 import { isCreature } from "../game/kinds.ts";
@@ -26,7 +26,7 @@ import { hearNews } from "../rules/news.ts";
 import { protectedFromWorld } from "../rules/company.ts";
 import { currentPlace, jailFor, jailIn, knowsPlace, placeById, unknownDoors, whereIs } from "../rules/place.ts";
 import { againstSetting } from "../rules/self.ts";
-import { changeCondition } from "./body.ts";
+import { changeCondition, isIncapacitated } from "./body.ts";
 import { alarmIfInfiltrating } from "./infiltration.ts";
 
 /**
@@ -310,7 +310,13 @@ function placeConfessions(ctx: ToolContext, t: Character, full: boolean): string
     const at = whereIs(state, content, c.id);
     if (!at?.zone || !at.place || knowsPlace(state, content, at.zone, at.place)) continue;
     const p = placeById(state, content, at.place, at.zone);
-    if (p) learn(at.zone, p.id, `털어놓은 것: ${josa(playerCalls(state, content, c.id), "은/는")} ${content.locations[at.zone]?.name ?? at.zone}의 ${p.name}(${p.id})에 갇혀 있다.`);
+    if (!p) continue;
+    learn(at.zone, p.id, `털어놓은 것: ${josa(playerCalls(state, content, c.id), "은/는")} ${content.locations[at.zone]?.name ?? at.zone}의 ${p.name}(${p.id})에 갇혀 있다.`);
+    // 어디 갇혔는지 알게 됐다: 풀어 주기 목표가 열린다 (PT23 졸병: 심문으로 수용소를 알아도 직접 봐야 열렸다)
+    const s1 = store.getState();
+    if (!(s1.beliefs[s1.playerId] ?? []).some((b) => b.topic === heldSeenTopic(c.id, at.zone!))) {
+      store.append({ type: "belief_added", characterId: s1.playerId, belief: { id: `b_${s1.nextBeliefNo}`, fact: `${josa(playerCalls(s1, content, c.id), "은/는")} ${content.locations[at.zone]?.name ?? at.zone}의 ${p.name}에 갇혀 있다`, source: "report", accuracy: "exact", learnedAt: s1.time, topic: heldSeenTopic(c.id, at.zone) } });
+    }
   }
   if (state.playerZone && ownedBy(state, state.playerZone, t.factionId)) {
     const limit = full ? 2 : lines.length ? 0 : 1;
@@ -375,14 +381,16 @@ const handlePrisoner = defineTool({
     if (input.action === "bind") return bindPrisoner(input, ctx);
     // 끌고 다니는 포로 (12-178): 거점에 닿기 전에도 그 자리에서 캐묻거나 풀어 줄 수 있다
     const towed = !!t && !t.dead && state.companions.includes(t.id) && state.bonds[t.id]?.kind === "prisoner";
-    if (!towed && (!t || t.dead || !heldOf(t) || !me.factionId || heldOf(t)!.by !== me.factionId || heldOf(t)!.zone !== state.playerZone)) {
+    // 장면에 쓰러져(무력화) 있는 사람·감염체는 그 자리에서 끝내거나(kill) 기절시켜 둘(knock_out) 수 있다 (PT23 분대장: "판정 없이 끝내라"는 안내에 끝낼 길이 없었다)
+    const downed = !!t && !t.dead && !towed && state.scene.present.includes(t.id) && !state.companions.includes(t.id) && isIncapacitated(content, t) && (input.action === "kill" || (input.action === "knock_out" && !isCreature(content, t)));
+    if (!towed && !downed && (!t || t.dead || !heldOf(t) || !me.factionId || heldOf(t)!.by !== me.factionId || heldOf(t)!.zone !== state.playerZone)) {
       return { ok: false, error: "여기 우리 무리가 가둔 포로도, 끌고 다니는 포로도 아니다." };
     }
     if (!t) return { ok: false, error: "없는 사람이다." };
     if (towed && !["interrogate", "release", "knock_out", "kill"].includes(input.action)) {
       return { ok: false, error: "끌고 다니는 포로는 그 자리에서 심문하거나, 풀어 주거나, 기절시켜 두거나, 죽일 수만 있다. 회유·몸값·노역은 우리 거점에 데려간 뒤에." };
     }
-    if (!towed && (input.action === "knock_out" || input.action === "kill")) return { ok: false, error: "기절시켜 두거나 죽이는 것은 끌고 다니는 포로에게만 (그 자리에서)." };
+    if (!towed && !downed && (input.action === "knock_out" || input.action === "kill")) return { ok: false, error: "기절시켜 두거나 죽이는 것은 끌고 다니는 포로나 장면에 쓰러진 상대에게만 (그 자리에서)." };
     const name = playerCalls(state, content, t.id);
     const settingLines: string[] = [];
     let settingDisplays: ToolDisplayEvent[] = [];
@@ -456,18 +464,24 @@ const handlePrisoner = defineTool({
       if (towed && t.factionId === store.getState().infiltration?.owner) lines.push(`${josa(name, "이/가")} 달려가 알린다.`, ...alarmIfInfiltrating(ctx, 2));
     } else if (input.action === "knock_out") {
       // 기절시켜 두고 간다: 깨어나면 얼굴을 본 사람이다 (행적의 목격자, 관계)
-      store.append({ type: "companion_left", characterId: t.id, reason: "기절시켜 두고 감" });
+      if (towed) store.append({ type: "companion_left", characterId: t.id, reason: "기절시켜 두고 감" });
       store.append({ type: "npc_left", npcId: t.id });
+      // 네 시간쯤 깨어나지 못한다: 그동안 보지도 움직이지도 못한다 (공통 규칙 8 ableNow)
+      store.append({ type: "npc_knocked_out", npcId: t.id, until: store.getState().time + 240 });
       store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: -2, affection: -1, respect: 0 }, reason: "붙잡혀 기절했다" });
-      const { deed } = recordDeed(ctx, { summary: `${josa(name, "을/를")} 붙잡아 기절시키고 두고 갔다`, tags: ["trespass"], severity: 1, privacy: "private", noisy: false }, { npcId: t.id, source: "seen" });
-      lines.push(`${josa(name, "을/를")} 기절시켜 두고 왔다. 깨어나면 주인공의 얼굴을 기억한다 (${deed.summary}).`);
+      recordDeed(ctx, { summary: `${josa(name, "을/를")} 붙잡아 기절시키고 두고 갔다`, tags: ["trespass"], severity: 1, privacy: "private", noisy: false }, { npcId: t.id, source: "seen" });
+      lines.push(`${josa(name, "을/를")} 기절시켜 두고 왔다. 몇 시간은 깨어나지 못하고, 깨어나면 주인공의 얼굴을 기억한다.`);
     } else if (input.action === "kill") {
       // 죽인다: 상처 트랙의 끝으로 코드가 정한다 (원칙 3: 사망은 상태 트랙의 끝으로만). 무거운 행적, 숨은 목격자는 행적 규칙대로
-      store.append({ type: "companion_left", characterId: t.id, reason: "죽임" });
+      if (towed) store.append({ type: "companion_left", characterId: t.id, reason: "죽임" });
       const track = harmTrack(content.scenario);
-      changeCondition(ctx, t.id, track.id, track.levels.length, "player", "붙잡혀 죽임을 당했다");
-      const { deed } = recordDeed(ctx, { summary: `붙잡은 ${josa(name, "을/를")} 죽였다`, tags: ["cruelty"], severity: 3, privacy: "private", noisy: false });
-      lines.push(`${josa(name, "을/를")} 죽였다. ${deed.summary}.`);
+      changeCondition(ctx, t.id, track.id, track.levels.length, "player", towed ? "붙잡혀 죽임을 당했다" : "쓰러진 채 숨이 끊겼다");
+      // 감염체를 끝내는 것은 행적이 아니다. 쓰러진 사람·묶인 포로를 죽이는 것은 무거운 행적
+      if (isCreature(content, t)) lines.push(`${josa(name, "을/를")} 끝냈다.`);
+      else {
+        const { deed } = recordDeed(ctx, { summary: `${towed ? "붙잡은" : "쓰러진"} ${josa(name, "을/를")} 죽였다`, tags: ["cruelty"], severity: 3, privacy: "private", noisy: false });
+        lines.push(`${josa(name, "을/를")} 죽였다. ${deed.summary}.`);
+      }
     } else if (input.action === "ransom") {
       if (!theirs || !state.factions[theirs] || theirs === me.factionId) return { ok: false, error: "몸값을 낼 무리가 없다." };
       if (disposition(content, theirs, me.factionId, state) <= -3) return { ok: false, error: "그 무리는 우리와 말도 섞지 않는다. 몸값도 맞교환도 없다." };

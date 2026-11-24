@@ -103,6 +103,8 @@ export function welcomeRescued(ctx: ToolContext, ids: readonly string[]): string
       ctx.store.append({ type: "npc_left", npcId: id });
     }
     ctx.store.append({ type: "relation_changed", from: id, to: s.playerId, delta: { trust: 2, affection: 2, respect: 0 }, reason: "갇힌 곳에서 꺼내 줬다", known: true });
+    // 꺼내 왔으니 "붙잡혀 있다"는 기억을 지운다 (PT21·PT23 졸병: 구해 낸 사람을 계속 붙잡혀 있다고 믿었다)
+    for (const b of ctx.store.getState().beliefs[s.playerId] ?? []) if (b.topic?.startsWith(`held_seen:${id}@`)) ctx.store.append({ type: "belief_dropped", characterId: s.playerId, beliefId: b.id });
     const mine = s.characters[s.playerId]?.factionId;
     if (mine && c.factionId === mine) ctx.store.append({ type: "merit_awarded", characterId: s.playerId, delta: 1, reason: `갇힌 ${playerCalls(s, ctx.content, id)}을 데려왔다` });
     lines.push(`${josa(playerCalls(s, ctx.content, id), "이/가")} 고마워한다 (신뢰·호감 +2${mine && c.factionId === mine ? ", 우리 무리 사람이라 공적 +1" : ""}).`);

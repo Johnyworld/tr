@@ -393,12 +393,13 @@ export const PLACE_MOVE_MINUTES = 5;
  * 같은 구역 안의 장소로 옮긴다 (공통 규칙 15). along: 동행 말고 함께 가는 장면의 인물 (comesAlong).
  * 바닥의 물건은 장소마다 남는다. 돌려줄 한 줄
  */
-function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved: readonly string[] = []): string {
+function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved: readonly string[] = [], pending: readonly string[] = []): string {
   const { store, content } = ctx;
   const s0 = store.getState();
   const from = currentPlace(s0, content)?.id ?? null;
   const ground = Object.keys(s0.scene.items).length > 0;
-  const left = s0.scene.present.filter((id) => !along.includes(id) && !s0.companions.includes(id));
+  // 판정이 정할 사람(물러나는 상대·이야기 배역)은 판정 뒤에 "떨쳐 냈다·쫓아왔다"로 알린다 (PT23 분대장: "남았다"와 "쫓아왔다"가 함께 나왔다)
+  const left = s0.scene.present.filter((id) => !along.includes(id) && !s0.companions.includes(id) && !pending.includes(id));
   // 동행은 먼저 동행으로 적는다 (12-261, PT16 분대장: follow로 붙인 분대원을 "가던 참이라 같이 왔다"로 적었다)
   const mates = s0.scene.present.filter((id) => s0.companions.includes(id));
   // 그곳에 있을 사람이라 같이 온 사람과 이번 행동으로 데려온 사람을 나눠 적는다 (PT15 졸병: target이 없는데 "함께 왔다: 강태호")
@@ -508,7 +509,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const roadTag = scenario.travel?.tag;
   // 판정을 걸어도 길 위 장면과 상관없는 긴 일(수색·일 등)이면 두고 온 것이다 (플레이 테스트 12: 매복자가 장면에 남은 채 역 안을 두 시간 뒤졌다)
   // 길 위 장면을 둔 채 구역 안 다른 장소로 옮겨도 두고 온 것이다 (PT22 하얀매: "벌어지는 상처"가 치료실에서 풀렸다)
-  const onRoad = !!roadTag && !!start.activeStorylet && !!storyletOf(start, content, start.activeStorylet.id)?.tags.includes(roadTag) && ((!input.check && !!input.deed) || (!!input.activity && !["talk", "brief"].includes(input.activity.kind)) || input.place_to !== null);
+  const onRoad = !!roadTag && !!start.activeStorylet && !!storyletOf(start, content, start.activeStorylet.id)?.tags.includes(roadTag) && ((!input.check && !!input.deed) || (!!input.activity && !["talk", "brief"].includes(input.activity.kind)) || (input.place_to !== null && !input.check));
   const leftLines: string[] = [];
   // 갇힌 채 옮겨 가기(탈출)는 자리를 뜨는 것이 아니다: 실패하면 그대로, 성공하면 옮겨 갈 때 닫힌다 (플레이 테스트 13: 실패한 탈출이 포섭 이야기를 닫았다)
   const escaping = !!input.move_to && !!heldOf(player);
@@ -710,7 +711,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const fightMoves = scenario.opposition?.harm?.moves ?? [];
     const foeId = input.check?.opponent ?? (input.check && fightMoves.includes(input.check.move) ? input.target : null);
     const foe = foeId ? start.characters[foeId] : undefined;
-    if (foe && !foe.dead && isIncapacitated(content, foe)) return { ok: false, error: `${josa(playerCalls(start, content, foe.id), "은/는")} 이미 무력화돼 맞서지 못한다. 끝내는 것은 판정 없이 서술하고(target만), 지닌 것은 transfer_item으로 뒤진다 (시간은 흐르지 않았다).` };
+    if (foe && !foe.dead && isIncapacitated(content, foe)) return { ok: false, error: `${josa(playerCalls(start, content, foe.id), "은/는")} 이미 무력화돼 맞서지 못한다. 끝내려면 handle_prisoner(action: kill, 사람이면 knock_out도), 지닌 것은 transfer_item으로 뒤진다 (시간은 흐르지 않았다).` };
   }
   if (input.check?.opponent) {
     const o = start.characters[input.check.opponent];
@@ -831,7 +832,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 장소 옮기기: 거절할 일을 모두 거른 뒤에 옮긴다 (막힌 행동의 이동·시간이 남지 않게)
-  if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along, placeMove.involved));
+  if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along, placeMove.involved, input.check ? [input.check.opponent, ...Object.values(start.activeStorylet?.cast ?? {})].filter((id): id is string => !!id) : []));
   for (const id of arriving) {
     if (store.getState().scene.present.includes(id)) continue;
     enterScene(ctx, id);
@@ -898,11 +899,20 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (placeMove) {
       const live = store.getState().activeStorylet;
       const cast = live ? Object.values(live.cast ?? {}) : [];
-      const pursuers = [...new Set([input.check.opponent, ...cast].filter((id): id is string => !!id && start.scene.present.includes(id) && !store.getState().scene.present.includes(id) && !store.getState().characters[id]?.dead))];
+      // 쓰러졌거나 기어다니는 것(엑스트라 틀 slow)은 쫓아오지 못한다 (PT22·PT23)
+      const canChase = (id: string) => {
+        const c = store.getState().characters[id];
+        return !!c && !c.dead && !isIncapacitated(content, c) && !content.extras[c.extra?.template ?? ""]?.slow;
+      };
+      const pursuers = [...new Set([input.check.opponent, ...cast].filter((id): id is string => !!id && start.scene.present.includes(id) && !store.getState().scene.present.includes(id) && canChase(id)))];
       if (roll.outcome === "miss" && pursuers.length) {
         for (const id of pursuers) enterScene(ctx, id);
         lines.push(`쫓아왔다: ${pursuers.map((id) => playerCalls(store.getState(), content, id)).join(", ")}.`);
-      } else if (live && pursuers.length) lines.push(...walkAwayFromStory(ctx, start));
+      } else {
+        const behind = [input.check.opponent, ...cast].filter((id): id is string => !!id && start.scene.present.includes(id) && !store.getState().scene.present.includes(id));
+        if (behind.length) lines.push(`떨쳐 내고 왔다: ${[...new Set(behind)].map((id) => playerCalls(store.getState(), content, id)).join(", ")} (원래 자리에 남았다).`);
+        if (live && behind.length) lines.push(...walkAwayFromStory(ctx, start));
+      }
     }
     // 위험의 무게와 결과로 나뉜 상처 종류 (플레이 테스트 11: 가벼운 위험은 찢김, 무거운 위험에 지면 물림, 대가 있는 성공이면 할큄). GM이 고른 종류가 먼저다
     {

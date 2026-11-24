@@ -30,6 +30,8 @@
 - id: infected_crawler
   label: 기어다니는 감염체
   kind: infected
+  # 기어다녀 쫓아오지 못한다 (물러나기 판정이 빗나가도 따라오지 않는다)
+  slow: true
   wound: claw
   fearsome: 1
   rank: loner

@@ -108,7 +108,7 @@
   doesnt_know:
     - 나루상단의 탁봉수가 청솔형제단 초소 정보를 붉은연합에 팔았다
   secret:
-    content: 물류창고 수용소에 청솔형제단의 정찰조 셋이 갇혀 있다. 그중 하나는 오씨 성을 쓴다
+    content: 물류창고 수용소에 청솔형제단의 정찰조가 갇혀 있다. 그중 하나는 오씨 성을 쓴다
     reveal_when: 목숨을 살려 주겠다는 약속을 믿을 수 있을 때
     min_trust: 4
   stats: { strength: 0, agility: 2, vitality: 0, senses: 2, nerve: -1, charm: 0, intellect: 0 }

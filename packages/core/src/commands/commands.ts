@@ -77,7 +77,8 @@ function roleLabelOf(ctx: CommandContext) {
 function clockLine(state: GameState) {
   const m = minuteOfDay(state.time);
   const hhmm = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-  const days = daysServed(state.time, state.runStartedAt) + 1;
+  // 날짜로 센다 (PT22·PT23 섬: 4일차 새벽에 "복무 3일째"였다)
+  const days = dayOf(state.time) - dayOf(state.runStartedAt) + 1;
   const free = !state.characters[state.playerId]?.factionId;
   return `${dayOf(state.time)}일차 · ${hhmm} · ${SEGMENT_LABELS[segmentOf(state.time)]} · ${free ? "" : "복무 "}${days}일째`;
 }

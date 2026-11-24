@@ -17,7 +17,7 @@ import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
 import { setResolve, stepResolve } from "./resolve.ts";
 import { captureNpc, capturePlayer, releasePlayer } from "./captivity.ts";
-import { onSpotted, threatStaysOnMiss } from "../rules/consequence.ts";
+import { onSpotted, ownOffense, threatStaysOnMiss } from "../rules/consequence.ts";
 import { rankName } from "../game/ranks.ts";
 import { exposeToFatigue } from "./fatigue.ts";
 import { barrierRise, baseInfestation, infestationOf } from "../game/infestation.ts";
@@ -61,7 +61,7 @@ import {
   storyletWindow,
 } from "../story/storylets.ts";
 import { josa, sentence, type JosaPair } from "../text.ts";
-import { recordDeed } from "./reputationTools.ts";
+import { learn, recordDeed } from "./reputationTools.ts";
 import { leveragesOn } from "./leverage.ts";
 import { commanderOf } from "../game/missions.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, DEATH_GUIDE } from "./toolkit.ts";
@@ -181,6 +181,13 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     cast,
     expiresAt: state.time + Math.round(content.scenario.storylet_pacing.expire_hours * 60),
   });
+  // 규율 회의(own_offense)를 여는 상관은 다루는 짓을 보고로 안다 (PT23 섬: 판결한 상관이 그 도둑질을 몰랐는데 판결을 받아들이자 신뢰가 올랐다)
+  if (storylet.when.own_offense) {
+    // 이야기가 열리기 전의 상태로 본다 (열리면 회의가 다룬 것으로 쳐 짓이 사라진다)
+    const offense = ownOffense(state, content);
+    const deed = offense ? store.getState().deeds[offense.deedId] : undefined;
+    if (deed) for (const [key, id] of Object.entries(cast)) if (storylet.cast[key]?.commander && !store.getState().deedKnowledge[id]?.[deed.id]) learn(ctx, deed, id, "report");
+  }
   // 이야기는 주인공을 옮기지 않는다. 부르는 이야기(12-260)만 그 장소로 불려 간다 (공통 규칙 15 movePlayer, 이동 기획)
   // 그때 장면의 사람은 그 자리에 남는다 (동행은 함께). 함께 불려 오는 배역은 남은 사람이 아니다 (12-265)
   const spot = storySummonsTo(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons, storyIndoor(storylet.when));

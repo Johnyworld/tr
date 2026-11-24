@@ -159,6 +159,8 @@ export function talkProblem(state: GameState, content: Content, id: string, verb
  */
 export function ableNow(state: GameState, content: Content, id: string): boolean {
   const c = state.characters[id];
+  // 기절시켜 둔 사람은 깨어날 때까지 (PT23 졸병)
+  if ((state.knockedOut?.[id] ?? -Infinity) > state.time) return false;
   return !!c && !c.dead && !c.away && !heldOf(c) && !incapacitatingSymptom(content.scenario, c);
 }
 

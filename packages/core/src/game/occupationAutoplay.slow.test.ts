@@ -40,7 +40,8 @@ describe("직분 자동 플레이", () => {
       // 12-238: 배급을 우리 땅에서만 받게 하자 동선이 바뀌어 두 판 모두에서 빠졌다. 바뀌기 전에도 두 판 중 한 판에 하나뿐이었다)
       const tag = `occ_${occupation}`;
       let seen = false;
-      for (const seed of [3, 9, 15, 21]) {
+      // 이동 기획(12-287) 뒤로는 이야기가 주인공이 있는 자리에서만 열려 여섯 판 중 하나에서 본다 (요리사: 시드 27·33에서 열림)
+      for (const seed of [3, 9, 15, 21, 27, 33]) {
         const w = open({ ...cook, faction, rank, occupation, location });
         const stats = autoplay(w, w.content, createSeededRng(seed), 500);
         w.close();
@@ -48,6 +49,6 @@ describe("직분 자동 플레이", () => {
         seen ||= Object.keys(stats.storyletsFired).some((id) => content.storylets[id]?.tags.includes(tag));
       }
       expect(seen).toBe(true);
-    }, 120_000); // 판 넷 (12-238)이라 다른 느린 테스트와 함께 돌면 60초를 넘긴다 (12-241)
+    }, 180_000); // 판 여섯이라 다른 느린 테스트와 함께 돌면 60초를 넘긴다 (12-241)
   }
 });

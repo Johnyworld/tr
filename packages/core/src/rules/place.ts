@@ -152,8 +152,8 @@ export function storyPlaceFits(state: GameState, content: Content, indoor: boole
   if (!here) return true;
   if (here.indoor === indoor) return true;
   if (!where.summons) return false;
-  const named = storyPlaces(state, content, where.places, text, indoor);
-  return named.length === 1 && placeById(state, content, named[0])?.indoor === indoor;
+  // 부르는 이야기는 불려 갈 장소가 있으면 어디서든 연다 (그 장소의 실내외는 보지 않는다)
+  return storyPlaces(state, content, where.places, text).length === 1;
 }
 
 /**
@@ -175,7 +175,9 @@ export function storyPlacesFit(state: GameState, content: Content, places: reado
  */
 export function storySummonsTo(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons: boolean, indoor?: boolean): string | null {
   if (!summons || heldOf(state.characters[state.playerId])) return null;
-  const named = storyPlaces(state, content, places, text, indoor);
+  // 부르는 이야기의 장소는 실내외로 거르지 않는다: 불려 가는 곳이 실내든 바깥이든 그리로 (PT22·PT23 섬: 바깥 회의가 실내 회관을 빼 불러 가지 않았다)
+  void indoor;
+  const named = storyPlaces(state, content, places, text);
   return named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
 }
 
@@ -529,6 +531,8 @@ function segmentKey(time: number): number {
 export function sceneLeavesAt(state: GameState, content: Content, from: number, involved: readonly string[] = []): string[] {
   // 장소를 모르면(장소가 없는 구역) 누가 제자리인지 몰라 비우지 않는다
   if (segmentKey(from) === segmentKey(state.time) || state.battle || state.infiltration || !state.playerPlace) return [];
+  // 주인공이 쓰러져 있거나 죽었으면 곁의 사람은 떠나지 않는다 (PT23 하얀매: 죽은 행동에서 시간대가 바뀌어 곁의 동료가 계승 전에 빠졌다)
+  if (state.characters[state.playerId]?.dead || state.helplessAt !== null) return [];
   const companions = new Set(state.companions.filter((id) => !state.bonds[id]?.apart));
   const cast = new Set(Object.values(state.activeStorylet?.cast ?? {}));
   return state.scene.present.filter((id) => {
@@ -539,6 +543,9 @@ export function sceneLeavesAt(state: GameState, content: Content, from: number, 
       if (isCreature(content, c)) return false;
       return !(c.extra.place && c.extra.place === state.playerPlace);
     }
+    // 다른 구역에서 주인공과 함께 온 사람은 여기 제 할 일이 없다: 남는다 (PT23 하얀매: 병원에 데려온 동료가 10분 대화 사이 "제 할 일로 자리를 떴다")
+    const npc = content.npcs[id];
+    if (npc && npcZoneAt(npc, state.time) !== state.playerZone) return false;
     if (routineAway(state, content, id)) return true;
     return !(state.playerPlace && npcPlaceAt(state, content, id) === state.playerPlace);
   });

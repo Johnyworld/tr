@@ -100,7 +100,8 @@ describe("화면에서 한 일 알리기", () => {
     expect(worn.ok && worn.text).not.toContain("상태 화면에서 한 일");
     const scene = w.sceneForGm();
     expect(scene).toContain("상태 화면에서 한 일");
-    expect(scene).toMatch(/사물함에 넣었다: 담요/);
+    expect(scene).toMatch(/맡긴 곳에 넣었다: 담요/);
+    expect(scene).toContain("가죽 재킷 걸침");
     expect(w.sceneForGm()).not.toContain("상태 화면에서 한 일");
     w.close();
   });
@@ -111,6 +112,36 @@ describe("화면에서 한 일 알리기", () => {
     expect(w.equip({ itemId: "leather_jacket" }).ok).toBe(true);
     const out = w.executeTool("equip", { item_id: null, slot: w.playerView().gear!.armor.find((g) => g.id === "leather_jacket")!.slot });
     expect(out.ok && out.resultText).toContain("상태 화면에서 한 일");
+    w.close();
+  });
+});
+
+describe("화면에서 한 일은 바뀐 것만", () => {
+  it("넣었다 다시 꺼낸 것은 알리지 않고, 아무것도 안 바뀌면 줄이 없다", () => {
+    const w = open(null);
+    w.sceneForGm();
+    w.runCheat("~give blanket");
+    w.runCheat("~give leather_jacket");
+    expect(w.moveStash({ direction: "put", itemId: "blanket", quantity: 1 }).ok).toBe(true);
+    expect(w.moveStash({ direction: "take", itemId: "blanket", quantity: 1 }).ok).toBe(true);
+    expect(w.sceneForGm()).not.toContain("상태 화면에서 한 일");
+    expect(w.moveStash({ direction: "put", itemId: "blanket", quantity: 1 }).ok).toBe(true);
+    expect(w.moveStash({ direction: "put", itemId: "leather_jacket", quantity: 1 }).ok).toBe(true);
+    expect(w.moveStash({ direction: "take", itemId: "leather_jacket", quantity: 1 }).ok).toBe(true);
+    const note = w.sceneForGm().split("\n\n")[0]!;
+    expect(note).toMatch(/넣었다: 담요\./);
+    expect(note).not.toContain("가죽 재킷");
+    w.close();
+  });
+
+  it("GM tool이 바꾼 것은 화면에서 한 일로 섞이지 않는다", () => {
+    const w = open(null);
+    w.runCheat("~give blanket");
+    w.runCheat("~give leather_jacket");
+    expect(w.moveStash({ direction: "put", itemId: "blanket", quantity: 1 }).ok).toBe(true);
+    const out = w.executeTool("equip", { item_id: "leather_jacket", slot: null });
+    expect(out.ok && out.resultText).toContain("넣었다: 담요");
+    expect(out.ok && out.resultText.split("\n")[0]).not.toContain("걸침");
     w.close();
   });
 });

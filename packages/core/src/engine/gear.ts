@@ -26,7 +26,8 @@ import { changeRelation } from "../rules/regard.ts";
 export const DEFAULT_WEIGHT = 0.5;
 export const DEFAULT_VALUE = 1;
 type Item = Content["items"][string];
-type Slot = "weapon" | "body" | "head" | "arms" | "outer";
+export const GEAR_SLOTS = ["weapon", "body", "head", "arms", "outer"] as const;
+type Slot = (typeof GEAR_SLOTS)[number];
 const ARMOR_SLOTS = ["body", "head", "arms", "outer"] as const;
 
 export const itemOf = (content: Content, id: string | null | undefined): Item | undefined => (id ? content.items[id] : undefined);

@@ -337,7 +337,7 @@
     day_gte: 4
     flags_none: [pr2_fever_given, pr2_fever_refused]
   cast:
-    herald: { ids: [pc_jongho] }
+    herald: { comes: true, ids: [pc_jongho] }
     teacher: { ids: [b_eunji], enter: false }
   setup: >-
     위원회 천막 뒤. 낮에 광장에서 포고를 읽던 {herald:이/가} 연설 때와 다른 낮은 목소리로 당신을 부른다.

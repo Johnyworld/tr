@@ -28,8 +28,10 @@
       check: stealth
       outcomes:
         success:
+          - threat_passes: true
           - belief: { fact: "{zone}에서 총소리를 듣고 온 물결을 피해 빠져나왔다", source: seen }
         partial:
+          - threat_passes: true
           - body: { track: cold, delta: 1 }
           - soak: true
           - belief: { fact: "물결을 피해 하수구로 빠져나왔다. 온몸이 젖었다", source: seen }
@@ -40,6 +42,7 @@
       check: endure
       outcomes:
         success:
+          - threat_passes: true
           - merit: 1
           - belief: { fact: "{zone}의 좁은 문간에서 물결이 지나갈 때까지 버텼다", source: seen }
         partial:
@@ -49,6 +52,7 @@
     - id: hide
       label: 무너진 차 밑으로 기어들어 숨을 죽인다
       effects:
+        - threat_passes: true
         - body: { track: cold, delta: 1 }
         - belief: { fact: "{zone}에서 물결이 지나갈 때까지 차 밑에 숨어 있었다", source: seen }
 

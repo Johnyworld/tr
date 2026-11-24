@@ -33,6 +33,7 @@
       check: stealth
       outcomes:
         success:
+          - threat_passes: true
           - belief: { fact: "{zone}에서 감염체 하나가 냄새를 맡으며 지나갔다. 숨죽여 보냈다", source: seen }
         partial:
           - body: { track: nerves, delta: 1 }
@@ -349,6 +350,7 @@
       check: stealth
       outcomes:
         success:
+          - threat_passes: true
           - body: { track: nerves, delta: 1 }
           - belief: { fact: "{zone}에서 자다 감염체가 곁을 핥고 지나갔다. 숨을 멈추고 버텼다", source: seen }
         partial:

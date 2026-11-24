@@ -134,7 +134,7 @@
     day_gte: 2
     flags_none: [bo_well_seen]
   cast:
-    keeper: { ids: [b_sunrye] }
+    keeper: { comes: true, ids: [b_sunrye] }
   setup: '아랫단 우물가. {keeper:이/가} 두레박 줄을 손목에 감았다 풀며 당신을 부른다. "간부, 이리 와 봐. 줄 좀 같이 잡아." 젖은 줄에 숯으로 그은 금이 여럿이다. 금과 금 사이가 한 뼘씩이다.'
   ai_direction: "{keeper:은/는} 아랫단 우물이 지금처럼 퍼 쓰면 한겨울 전에 마른다고 셈해 두었다. 대표에게만 말했고 대표가 입을 막았다. 간부에게는 털어놓고 싶지만 대표의 말을 어기는 것이 마음에 걸린다. 다그치면 줄만 보여 주고 입을 닫는다. 우물이 마른다는 것이 마을에 퍼지면 붉은연합 쪽으로 기우는 말이 커진다."
   choices:
@@ -245,7 +245,7 @@
     flags_none: [bo_leader_done]
     dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
   cast:
-    leader: { ids: [b_hyunwoo] }
+    leader: { comes: true, ids: [b_hyunwoo] }
   setup: '{leader:이/가} 대표실로 당신을 부른다. 문을 닫고 등잔 심지를 낮춘다. 다림질한 셔츠 소매가 오늘은 걷혀 있다. "간부님. 솔직히 묻겠습니다. 청솔이 이 겨울을 넘깁니까. 우리가 그 배에 같이 타 있어도 됩니까."'
   ai_direction: "{leader:은/는} 지난주 붉은연합의 사자를 몰래 만났고, 연합을 깨면 버들마을을 건드리지 않겠다는 제안에 아직 답하지 않았다. 그 사실은 신뢰가 깊어지기 전에는 털어놓지 않는다. 간부의 대답을 무겁게 듣고 질문으로 되묻는다. 간부가 우물 셈을 알고 있다면(bo_well_known) 그 이야기를 꺼낼 때 대표의 얼굴이 굳는다. 붉은연합 지도부가 실은 버들마을을 받아들일 생각이 없다는 것은 대표도 모른다."
   choices:
@@ -462,7 +462,7 @@
     flags_none: [bo_break_done]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
-    pine: { ids: [a_doyun, a_taeho, a_jeonghun] }
+    pine: { comes: true, ids: [a_doyun, a_taeho, a_jeonghun] }
     gatekeeper: { ids: [b_dongcheol], enter: false }
   setup: '버들마을이 연합에서 발을 뺐다는 말이 돈 지 하루. 정문 철망 밖에 청솔형제단 사람들이 빈 탄통을 들고 서 있다. {pine:이/가} 철망 너머로 당신을 부른다. "약조가 끝났으면 빌려 간 탄은 돌려주셔야지요. 우리도 다음 싸움에 쓸 게 없습니다."'
   ai_direction: 청솔형제단은 배신당했다고 여기지만 아직 총을 겨누지는 않는다. 탄을 돌려주면 단지의 문이 얇아지고 붉은연합 앞에서 빈손이 된다. 돌려주지 않으면 청솔과의 사이는 돌이킬 수 없이 틀어진다. 배동철은 철망 뒤에서 간부의 말을 기다린다. 양은 코드가 정했다.

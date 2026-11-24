@@ -13,6 +13,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import { runStorylets, runSwarms } from "./storyletTools.ts";
 import { runLateRation, runNaturalRecovery, runWearOff } from "./body.ts";
 import { runHelpless } from "./helpless.ts";
+import { leaveRemainsForNewDeaths, livingIds } from "./remains.ts";
 import { runBleeding } from "./bleeding.ts";
 import { runFearDecay } from "./fear.ts";
 import { rollWeather } from "../sim/weather.ts";
@@ -62,6 +63,8 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
     const me = s.characters[s.playerId];
     if (s.activeStorylet && me && !me.dead && incapacitatingSymptom(ctx.content.scenario, me)) ctx.store.append({ type: "storylet_expired", storyletId: s.activeStorylet.id });
   }
+  // 이 안에서 죽은 사람의 유해도 남긴다: 세션 시작의 의식불명 처리는 도구 감싸기 밖이다 (12-293, PT25 하얀매: 물려 죽은 주인공의 짐이 사라졌다)
+  const living = livingIds(ctx.store.getState());
   // 의식불명 중 곁의 사람이 할 일 (12-90): 돌봄·옮김·붙잡힘·죽임·감염체
   // 곁의 사람이 먼저 (쓰러진 그 자리에 있던 사람이 지혈부터 한다), 그다음 피를 흘린 만큼 부상이 커진다. 긁힘은 저절로 멎는다 (12-91)
   const helpless = runHelpless(ctx, options.actionStartedAt);
@@ -96,5 +99,6 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   // 술·진통제·각성제 기운이 빠진다 (12-157)
   const worn = runWearOff(ctx);
   caughtUp.set(ctx.store, ctx.store.getState().time);
+  leaveRemainsForNewDeaths(ctx, living);
   return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...swarms, ...storylets, ...healed, ...calmed, ...worn];
 }

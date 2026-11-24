@@ -565,6 +565,7 @@ function checkReferences(content: Content): string[] {
   problems.push(...checkEmptyNews(content));
   problems.push(...checkCastFates(content));
   problems.push(...checkRequests(content));
+  problems.push(...checkThreatPasses(content));
   problems.push(...checkStoryWhereWhen(content));
   problems.push(...checkResolveSpine(content));
   // 무리 안의 무거운 짓 태그는 행적 태그여야 한다 (12-257: 틀리면 규율 회의가 말없이 열리지 않는다)
@@ -648,6 +649,28 @@ export function checkRuinPlaces(content: Content): string[] {
     for (const p of content.locations[r.zone]?.places ?? []) {
       const part = p.name.split("·").map((x) => x.trim()).find((x) => x.length >= 3 && r.label.includes(x));
       if (part) problems.push(`exploration.ruins.${r.id}: 숨은 곳 "${r.label}"이 장소 ${p.id}("${p.name}")와 겹친다. 장소는 입구까지만 적는다`);
+    }
+  }
+  return problems;
+}
+
+/**
+ * 감염체·짐승 배역이 장면에 들어오는 이야기에서, 결과 글이 위협을 지나 보냈다·피해 빠져나왔다고 하면 threat_passes(또는 put_down)를 둔다 (12-293).
+ * 아니면 "지나갔다"는 믿음과 "곁에 서 있다"는 장면이 엇갈린다 (PT25 분대장)
+ */
+export function checkThreatPasses(content: Content): string[] {
+  const problems: string[] = [];
+  const passed = /지나갈 때까지|지나갔|지나가길|피해 (빠져|돌아)|따돌|떨쳐/;
+  for (const s of Object.values(content.storylets)) {
+    const creatures = Object.values(s.cast).some((r) => r.extra && r.enter !== false && ["infected", "animal"].includes(content.extras[r.extra]?.kind ?? "person"));
+    if (!creatures) continue;
+    for (const ch of s.choices) {
+      for (const [label, list] of [["effects", ch.effects], ...Object.entries(ch.outcomes ?? {})] as const) {
+        if (!list?.length) continue;
+        const says = list.some((e) => "belief" in e && passed.test(e.belief.fact));
+        const done = list.some((e) => "threat_passes" in e || "put_down" in e) || (ch.leaves?.length ?? 0) > 0 || (!ch.check && list.some((e) => "delay" in e));
+        if (says && !done) problems.push(`storylets.${s.id}.${ch.id}.${label}: 위협이 지나갔다는 결과인데 감염체·짐승 배역이 장면에 남는다 (threat_passes: true)`);
+      }
     }
   }
   return problems;

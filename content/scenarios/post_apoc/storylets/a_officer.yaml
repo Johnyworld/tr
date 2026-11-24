@@ -158,7 +158,7 @@
     flags_all: [a_of_saw_sacks]
     flags_none: [a_of_sacks_settled]
   cast:
-    ledger: { ids: [a_doyun] }
+    ledger: { comes: true, ids: [a_doyun] }
   setup: '{ledger:이/가} 빈 교무실로 당신을 부른다. 장부 두 권을 나란히 펼쳐 둔다. 한 권은 회의에서 보던 것이고, 다른 한 권은 처음 보는 것이다. "보셨으니 숫자도 보셔야지요. 대표께서는 배급을 줄이지 않으십니다. 이대로면 정월에 솥이 빕니다."'
   ai_direction: 한도윤은 협박하지 않는다. 자기 셈이 맞다고 믿고, 참모가 같은 편이 되길 바란다. 숨긴 양은 겨울 막바지 몇 주를 버틸 만큼이다. 회의에 공개하면 무리는 그 식량을 다시 쓰게 되지만 한도윤은 회의 안에서 힘을 잃는다. 덮으면 둘 사이에 비밀이 생긴다.
   choices:

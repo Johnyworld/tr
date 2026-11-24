@@ -545,6 +545,7 @@
       check: stealth
       outcomes:
         success:
+          - threat_passes: true
           - set_flag: es_underpass_done
           - merit: 1
           - belief: { fact: "바퀴에 천을 감고 굴다리를 숨죽여 지나갔다. 감염체들은 끝까지 벽만 보고 있었다", source: seen }

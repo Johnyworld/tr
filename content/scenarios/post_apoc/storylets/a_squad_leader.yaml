@@ -110,7 +110,7 @@
     flags_all: [a_sl_saw_hand]
     flags_none: [a_sl_hand_decided]
   cast:
-    dongwook: { ids: [a_dongwook] }
+    dongwook: { comes: true, ids: [a_dongwook] }
   setup: '{dongwook:이/가} 막사 뒤로 불러낸다. "내 손 얘기, 간부한테 할 거야? 하려면 해. 대신 창고에 처박지는 마. 그럴 거면 차라리 내보내."'
   ai_direction: 임동욱에게 전투조에서 빠지는 것은 버려지는 것과 같다. 그는 왼손으로 쏘는 연습을 몰래 해 왔다. 동정하는 기색을 보이면 화를 낸다.
   choices:

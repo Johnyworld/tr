@@ -668,6 +668,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ npc_hurt: z.strictObject({ who: z.string().min(1), steps: z.number().int().min(1).max(2) }) }),
     /** 감염체를 쓰러뜨린다 (플레이 테스트 11). 사람에게는 아무 일도 없다 (원칙 3) */
     z.strictObject({ put_down: z.strictObject({ who: z.string().min(1) }) }),
+    /** 위협이 지나갔다·떨쳐 냈다: 장면의 감염체·짐승 배역이 장면을 떠난다 (12-293, PT25 분대장: 숨어서 물결이 지나갔다는데 감염체 셋이 곁에 남았다) */
+    z.strictObject({ threat_passes: z.literal(true) }),
     /** 배역 NPC의 계급을 바꾼다 (지도부 교체·강등) */
     z.strictObject({ npc_rank: z.strictObject({ who: z.string().min(1), rank: idEnum(rankIds(s)) }) }),
     z.strictObject({ belief: z.strictObject({ fact: z.string().min(1).max(300), source: beliefSourceSchema.default("seen") }) }),

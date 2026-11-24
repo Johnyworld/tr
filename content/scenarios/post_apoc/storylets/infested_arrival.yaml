@@ -31,8 +31,10 @@
       check: stealth
       outcomes:
         success:
+          - threat_passes: true
           - belief: { fact: "{zone}에 몰린 감염체 뒤로 소리 없이 지나갔다", source: seen }
         partial:
+          - threat_passes: true
           - body: { track: nerves, delta: 1 }
           - belief: { fact: "{zone}의 감염체 뒤를 지나다 하나가 고개를 돌렸다. 숨을 참고 버텨 겨우 지나갔다", source: seen }
         miss:
@@ -94,6 +96,7 @@
       check: sense_danger
       outcomes:
         success:
+          - threat_passes: true
           - delay: 60
           - belief: { fact: "{zone}의 감염체 물결이 발밑으로 지나갈 때까지 숨어 기다렸다", source: seen }
         partial:

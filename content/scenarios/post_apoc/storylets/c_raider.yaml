@@ -149,7 +149,7 @@
     flags_none: [c_example_done]
     clock_gte: { c_east_offensive: 5 }
   cast:
-    officer: { ids: [c_gyeongsu] }
+    officer: { comes: true, ids: [c_gyeongsu] }
   setup: "{officer:이/가} 장갑을 고쳐 끼며 경비조를 수용소 앞마당에 모은다. 포로 하나가 무릎 꿇린 채 끌려 나와 있다. {officer:이/가} 당신을 손짓해 부른다. \"신입. 공세 전에 다들 봐 둬야 할 게 있어. 네가 해.\""
   ai_direction: 마경수는 경비조의 충성을 시험하는 것이다. 죽이라는 게 아니라 모두 앞에서 때리라는 것이다. 포로는 다리를 다친 청솔형제단 정찰병이다. 고통을 자세히 묘사하지 않는다. 마경수의 상냥한 목소리, 조원들이 고개를 돌리는 모습, 간수 노필수의 굳은 얼굴에 초점을 둔다.
   choices:
@@ -371,7 +371,7 @@
     day_gte: 2
     flags_none: [c_informant, c_informant_refused]
   cast:
-    clerk: { ids: [c_sangok] }
+    clerk: { comes: true, ids: [c_sangok] }
   setup: "{clerk:이/가} 막사 앞에서 당신을 불러 세운다. 안경을 닦으며 명부를 넘긴다. \"신입이시죠. 이름이 아직 깨끗하네요. 깨끗하게 남는 방법이 하나 있습니다. 조에서 들은 말을 가끔 저한테 옮겨 주시면 됩니다.\""
   ai_direction: 우상옥은 대가로 공세 명단에서 빼 주거나 배급을 더 주겠다고 돌려 말한다. 거절해도 위협하지 않지만, 거절한 사람의 이름도 명부에 남는다는 걸 흘린다. 이 대화를 다른 조원이 보았는지는 알 수 없다.
   choices:

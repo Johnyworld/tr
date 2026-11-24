@@ -175,7 +175,7 @@ function backgroundCast(state: GameState, content: Content, kind: "enemy" | "ene
 export const EXTRA_CAST_PREFIX = "@extra:";
 
 /** 배역을 고른다. 한 사람이 두 배역을 맡지 않는다. 채울 수 없으면 null */
-export function pickCast(state: GameState, content: Content, storylet: StoryletContent, rng: Rng | null): Record<string, string> | null {
+export function pickCast(state: GameState, content: Content, storylet: StoryletContent, rng: Rng | null, at: number = state.time): Record<string, string> | null {
   const cast: Record<string, string> = {};
   // 성인 주제 이야기는 배역도 모두 성인이어야 한다 (12-57)
   const adultOk = (id: string) => !isMature(content, storylet) || isAdult(content, state.characters[id]);
@@ -235,14 +235,18 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
     // 장면에 들어오는 배역에서 일과상 구역 밖에 나가 있는 사람은 뺀다 (PT20 졸병: 낮에 왕복 나간 사람이 초소 이야기에 들어왔다, 공통 규칙 15 routineAway).
     // 부르는 이야기(summons)는 주인공이 그 사람에게 가므로, 사람을 정해 둔 배역(ids: 오가는 심부름꾼 등)은 글이 그 사람을 부르므로 거르지 않는다
     // 장면에 들어오는 배역은 지금 그 자리에 있을 사람만 (공통 규칙 15 castHere, 12-292). 문병(bedside)은 찾아오는 이야기다.
-    // 부르는 이야기(summons)는 주인공이 그 사람에게 가고, 사람을 정해 둔 배역(ids)은 글이 그 사람을 부르므로 거르지 않는다 (일과상 구역 밖만 뺀다)
-    const placed = role.enter && !role.ids && !storylet.when.summons && !role.captive;
-    const comes: boolean | "afar" = role.afar ? "afar" : !!role.comes || !!storylet.bedside;
+    // 사람을 정해 둔 배역(ids)도 자리 규칙을 탄다: 다른 구역에서는 끌어오지 않는다 (12-293, PT25 섬·튜토리얼·졸병).
+    // 거르지 않는 것: 부르는 이야기(summons, 주인공이 그 사람에게 간다), 꼭 열려야 하는 이야기(essential, 시나리오 줄기), 갇힌 사람 배역
+    const placed = role.enter && !storylet.when.summons && !role.captive && !storylet.essential;
+    // 사람을 정해 둔 배역(ids)은 그 사람의 이야기다: 같은 구역이면 찾아온다 (같은 장소로만 좁히면 인물 줄기가 거의 안 열린다)
+    const comes: boolean | "afar" | "zone" = role.afar ? "afar" : role.comes || storylet.bedside ? true : role.ids ? "zone" : false;
     const all = castCandidates(state, content, role, cast).filter(
       (id) =>
         !used.has(id) &&
         (!role.enter || !!role.ids || !!storylet.when.summons || state.scene.present.includes(id) || !routineAway(state, content, id)) &&
-        (!placed || castHere(state, content, id, comes, ableNow(state, content, id))),
+        (!placed || castHere(state, content, id, comes, ableNow(state, content, id), at)) &&
+        // 찾아오는 배역은 지금 곁에 없던 사람이다 (12-293, PT25 분대장: "흙투성이 신발로 들어와"에 내내 곁에 누워 있던 동행이 뽑혔다)
+        (!role.comes || (!state.scene.present.includes(id) && !state.companions.includes(id))),
     );
     if (all.length === 0) {
       if (role.optional) continue; // 있으면 쓰는 배역: 비워 둔다
@@ -533,7 +537,7 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
     })
     .filter((s) => conditionsMet(state, content, s, at))
     .filter((s) => !pacingBlocks(state, content, s, at))
-    .filter((s) => pickCast(state, content, s, null) !== null)
+    .filter((s) => pickCast(state, content, s, null, at) !== null)
     .filter((s) => s.essential || hasRealChoice(state, content, s))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
@@ -780,7 +784,7 @@ export function roadStorylets(state: GameState, content: Content, tag: string, a
     })
     .filter((s) => conditionsMet(state, content, s, at))
     .filter((s) => options.pacing === false || !pacingBlocks(state, content, s, at))
-    .filter((s) => pickCast(state, content, s, null) !== null);
+    .filter((s) => pickCast(state, content, s, null, at) !== null);
 }
 
 /** 이 id의 이야기: 콘텐츠의 것, 아니면 진행 중인 즉흥 이야기 (12-247, GM이 지었고 상태에만 있다) */

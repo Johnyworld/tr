@@ -641,6 +641,11 @@ export function applyEffect(
     const change = changeCondition(ctx, id, track.id, steps, "이야기", reason);
     return change?.line && store.getState().scene.present.includes(id) ? { line: change.line, display: change.display ?? undefined } : {};
   }
+  if ("threat_passes" in effect) {
+    const gone = Object.values(cast).filter((id) => { const c = state.characters[id]; return !!c && !c.dead && isCreature(content, c) && state.scene.present.includes(id); });
+    for (const id of gone) ctx.store.append({ type: "npc_left", npcId: id });
+    return gone.length ? { line: `${gone.map((id) => playerCalls(ctx.store.getState(), content, id)).join(", ")}${josa(playerCalls(ctx.store.getState(), content, gone.at(-1)!), "은/는").slice(-1)} 지나가 장면을 떠났다.` } : {};
+  }
   if ("put_down" in effect) {
     // 감염체만 이야기로 쓰러뜨린다. 사람은 원칙 3대로 죽지 않는다 (플레이 테스트 11: "소리 없이 처리한다"가 성공했는데 감염체가 경상으로 남았다)
     const id = whoOf(ctx, effect.put_down.who, cast);

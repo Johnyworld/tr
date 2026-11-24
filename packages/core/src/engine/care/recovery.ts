@@ -1,3 +1,4 @@
+import { baseOfNow } from "../../rules/home.ts";
 import { sleptSince } from "../../game/state.ts";
 /** 치료 (recovery): engine/body.ts에서 떼어 냈다 (docs/design.md 12-236) */
 import { heldOf, inQuarantine } from "../../rules/held.ts";
@@ -130,7 +131,9 @@ export function runNpcRecovery(ctx: ToolContext): ToolDisplayEvent[] {
   const care = recovery.faction_care;
   if (!care) return displays;
   for (const factionId of Object.keys(store.getState().factions)) {
-    const members = npcs().filter((c) => c.factionId === factionId && !heldOf(c));
+    // 무리 의무실은 거점에 와 있는 사람만 돌본다 (12-293, PT25 졸병: 탈출해 우리 초소에 막 닿은 동료가 "무리 의무실의 치료"로 나았다)
+    const base = baseOfNow(store.getState(), content, factionId);
+    const members = npcs().filter((c) => c.factionId === factionId && !heldOf(c) && (!base || whereIs(store.getState(), content, c.id)?.zone === base));
     const medics = members.filter((c) => !!c.occupation && care.occupations.includes(c.occupation.id) && !isIncapacitated(content, c)).length;
     // 분배 (12-128): 의약품을 아끼면 덜, 아낌없이 쓰면 더 돌본다
     let slots = Math.round(medics * care.per_medic * policyEffects(content, store.getState().factions[factionId]).care);

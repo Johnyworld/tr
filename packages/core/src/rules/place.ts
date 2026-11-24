@@ -528,16 +528,21 @@ export function inZone(state: GameState, content: Content, id: string): boolean 
 
 /**
  * 이야기 배역이 장면에 들어올 수 있는가 (12-292, PT20~24 매 회차: 의무실 치료사가 담 밖 길 이야기에, 운동장의 동료가 다른 구역 건물에 깔려 나왔다).
- * 장면·곁의 사람은 늘. 그 밖에는 같은 장소에 있을 사람만. 찾아오는 배역(comes: 문병·부르러 옴·순찰)은 같은 구역에서 스스로 움직일 수 있으면 (able).
+ * 장면·곁의 사람은 늘. 그 밖에는 같은 장소에 있을 사람만. 찾아오는 배역(comes: 문병·부르러 옴·순찰)은 같은 구역에서 스스로 움직일 수 있으면 (able),
+ * 사람을 정해 둔 배역(zone, 12-293)은 같은 구역이면.
  * 다른 구역에서는 끌어오지 않는다 (멀리서 오는 배역 afar만: 갇힌 주인공을 구하러 온 사람)
  */
-export function castHere(state: GameState, content: Content, id: string, comes: boolean | "afar", able: boolean): boolean {
+export function castHere(state: GameState, content: Content, id: string, comes: boolean | "afar" | "zone", able: boolean, at: number = state.time): boolean {
   if (state.scene.present.includes(id) || (state.companions.includes(id) && !state.bonds[id]?.apart)) return true;
   if (comes === "afar") return able;
-  const w = whereIs(state, content, id);
+  const w = whereIs(state, content, id, at);
+  // 사람을 정해 둔 배역은 그 사람이 사는 구역(일과 구역)이면 된다: 일과상 잠시 나가 있어도 그 사람의 이야기다 (하얀매 진료소 사람들)
+  const npc = content.npcs[id];
+  if (comes === "zone" && npc && !w?.zone && !heldOf(state.characters[id]) && npcZoneAt(npc, at) === state.playerZone) return true;
   if (!w?.zone || w.zone !== state.playerZone) return false;
   if (!state.playerPlace || !w.place || w.place === state.playerPlace) return true;
-  return comes && able;
+  // zone: 사람을 정해 둔 배역(ids)은 같은 구역이면 된다 (몸 조건은 이야기의 condition이 본다)
+  return comes === "zone" || (comes === true && able);
 }
 
 /**

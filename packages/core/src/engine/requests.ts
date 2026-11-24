@@ -7,7 +7,7 @@ import type { GameState } from "../game/state.ts";
 import type { Rng } from "../rng.ts";
 import { talkProblem } from "../rules/company.ts";
 import { hostileLand, ownedBy } from "../rules/home.ts";
-import { inZone, keepingPlaceOf, knowsPlace, placeById, placeHint, placesIn, whereIs } from "../rules/place.ts";
+import { currentPlace, inZone, keepingPlaceOf, knowsPlace, stepsBetween, placeById, placeHint, placesIn, whereIs } from "../rules/place.ts";
 import { activeRequest, offeredQuests, questOf, questProgress, questTopic, type Quest, type QuestKind } from "../rules/request.ts";
 import { dayOf } from "../rules/time.ts";
 import { attemptValue, bestStatOf } from "../rules/skill.ts";
@@ -68,12 +68,20 @@ function giverRule(state: GameState, content: Content, id: string): Giver | null
   );
 }
 
-/** 목표를 둘 장소: 길·가두는 곳·격리실이 아닌 곳 (없으면 길) */
+/**
+ * 목표를 둘 장소: 길·가두는 곳이 아니고, 구역에 들어선 길에서 두 칸 이상 안쪽 (12-293, PT24·25: 사람 찾기가 늘 어귀 첫 문이었다).
+ * 주인공이 지금 서 있는 곳은 뺀다 (PT25 분대장: 목표가 서 있던 상가에 놓였다). 그런 곳이 없으면 가장 먼 곳
+ */
 function targetPlace(state: GameState, content: Content, zone: string, rng: Rng): string | null {
   const all = placesIn(state, content, zone).filter((p) => !p.spawned);
-  const inner = all.filter((p) => !p.road && !p.jail);
-  const pool = inner.length ? inner : all;
-  return pool.length ? pick(rng, pool).id : null;
+  const roads = all.filter((p) => p.road).map((p) => p.id);
+  const inner = all.filter((p) => !p.road && !p.jail && !(zone === state.playerZone && p.id === currentPlace(state, content)?.id));
+  if (!inner.length) return all.length ? pick(rng, all).id : null;
+  const depth = (id: string) => (roads.length ? Math.min(...roads.map((r) => stepsBetween(state, content, r, id, zone))) : 0);
+  const deep = inner.filter((p) => depth(p.id) >= 2);
+  if (deep.length) return pick(rng, deep).id;
+  const far = Math.max(...inner.map((p) => depth(p.id)));
+  return pick(rng, inner.filter((p) => depth(p.id) === far)).id;
 }
 
 /** 의뢰 하나를 만든다 (아직 받지 않음: 목표 엑스트라는 받을 때 둔다) */
@@ -103,15 +111,17 @@ function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng
       const lootIn = (zs: typeof near) =>
         zs.flatMap((z) =>
           (content.locations[z.zone]?.loot?.items ?? [])
-            .filter((i) => i.weight >= r.kinds.fetch.min_weight && (!rule.items || rule.items.includes(i.item)) && !(me?.inventory[i.item] ?? 0))
+            .filter((i) => i.weight >= r.kinds.fetch.min_weight && (!rule.items || rule.items.includes(i.item)) && !(me?.inventory[i.item] ?? 0) && !stashed(state, i.item) && !(state.characters[giverId]?.inventory[i.item] ?? 0))
             .map((i) => ({ ...z, item: i.item })),
         );
-      const free = lootIn(near.filter((z) => !state.zones[z.zone]?.owner || ownedBy(state, z.zone, giverFaction)));
-      const found = free.length ? free : lootIn(near);
+      // 주인 없는 땅 먼저, 없으면 의뢰인 무리 땅(섬), 그래도 없으면 근처 어디든 (PT25 졸병: 우리 초소를 뒤지라는 찾아오기)
+      const wildLoot = lootIn(near.filter((z) => !state.zones[z.zone]?.owner));
+      const ownLoot = lootIn(near.filter((z) => ownedBy(state, z.zone, giverFaction)));
+      const found = wildLoot.length ? wildLoot : ownLoot.length ? ownLoot : lootIn(near);
       if (!found.length) continue;
       const f = pick(rng, found);
       const qty = between(rng, r.kinds.fetch.quantity);
-      return { what: `${content.items[f.item]?.name ?? f.item} ${qty}개를 구해 온다`, item: { id: f.item, quantity: qty }, goal: { kind, template: null, target: null, zone: f.zone, place: null, hops: f.hops, pay: payFor(content, kind, f.zone, f.hops, rng), delivered: 0 } };
+      return { what: `${content.items[f.item]?.name ?? f.item} ${qty}개를 구해 온다`, item: { id: f.item, quantity: qty }, goal: { kind, template: null, target: null, zone: f.zone, place: null, hops: f.hops, pay: payFor(content, kind, f.zone, f.hops, rng), delivered: 0, days: between(rng, r.days) + f.hops * r.per_hop_days } };
     }
     if (!wild.length || (kind !== "find" && !canFight)) continue;
     const templates = r.kinds[kind].templates.filter((t) => !!content.extras[t]);
@@ -120,9 +130,14 @@ function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng
     const z = pick(rng, wild);
     const label = content.extras[template]!.label;
     const verb = kind === "find" ? "찾는다" : kind === "capture" ? "산 채로 붙잡아 묶어 온다" : "처치한다";
-    return { what: `${josa(label, "을/를")} ${verb}`, item: null, goal: { kind, template, target: null, zone: z.zone, place: targetPlace(state, content, z.zone, rng), hops: z.hops, pay: payFor(content, kind, z.zone, z.hops, rng), delivered: 0 } };
+    return { what: `${josa(label, "을/를")} ${verb}`, item: null, goal: { kind, template, target: null, zone: z.zone, place: targetPlace(state, content, z.zone, rng), hops: z.hops, pay: payFor(content, kind, z.zone, z.hops, rng), delivered: 0, days: between(rng, r.days) + z.hops * r.per_hop_days } };
   }
   return null;
+}
+
+/** 주인공의 사물함·거처에 이미 있는가 (PT25 섬: 사물함의 토마토로 0분에 끝났다) */
+function stashed(state: GameState, item: string): boolean {
+  return Object.values(state.stashes?.[state.playerId] ?? {}).some((items) => (items[item] ?? 0) > 0);
 }
 
 function payFor(content: Content, kind: QuestKind, zone: string, hops: number, rng: Rng): Quest["pay"] {
@@ -212,7 +227,7 @@ const requestTool = defineTool({
       const busy = activeRequest(state);
       if (busy) return { ok: false, error: `진행 중인 의뢰가 이미 있다 (${busy.id}). 의뢰는 한 번에 하나다. 그만두려면 request abandon (신뢰가 깎인다).` };
       const q = questOf(p)!;
-      const days = between(rng, r.days) + q.hops * r.per_hop_days;
+      const days = q.days || between(rng, r.days) + q.hops * r.per_hop_days;
       const target = q.template ? placeTarget(ctx, q) : null;
       store.append({ type: "request_accepted", id: p.id, due: today + days, target });
       const now = store.getState();
@@ -224,7 +239,7 @@ const requestTool = defineTool({
         ok: true,
         resultText:
           `${who}의 의뢰를 받았다 (${p.id}, ${kindLabel(content, q.kind)}, ${days}일 안에): ${p.what}.\n` +
-          (q.kind === "fetch" ? `구할 만한 곳: ${[where, ...itemSources(content, p.item!.id).slice(0, 2)].join(", ")}. 물건을 ${who}에게 건네면 해낸 것이다 (transfer_item 또는 request report).` : `있는 곳 (${josa(who, "이/가")} 아는 만큼): ${where}.${t?.extra ? ` 생김새: ${t.extra.look}.` : ""} ${q.kind === "find" ? "찾아 만나면 해낸 것이다 (데려오면 보수 +${r.reward.brought}). 그 뒤 의뢰인에게 request report." : q.kind === "capture" ? "쓰러뜨려 handle_prisoner bind로 묶어 의뢰인 앞으로 끌고 와 request report. 죽이면 실패다." : "처치한 뒤 의뢰인에게 request report."}`) +
+          (q.kind === "fetch" ? `구할 만한 곳: ${[where, ...itemSources(content, p.item!.id).slice(0, 2)].join(", ")}. 물건을 ${who}에게 건네면 해낸 것이다 (transfer_item 또는 request report).` : `있는 곳 (${josa(who, "이/가")} 아는 만큼): ${where}.${t?.extra ? ` 생김새: ${t.extra.look}.` : ""} ${q.kind === "find" ? `찾아 만나면 해낸 것이다 (데려오면 보수 +${r.reward.brought}). 그 뒤 의뢰인에게 request report.` : q.kind === "capture" ? "쓰러뜨려 handle_prisoner bind로 묶어 의뢰인 앞으로 끌고 와 request report. 죽이면 실패다." : "처치한 뒤 의뢰인에게 request report."}`) +
           `\n보수: ${payLabel(content, q)}. 기한을 넘기면 ${josa(who, "이/가")} 실망한다 (신뢰가 깎인다). 이 결과대로 ${who}의 말투로 일을 맡기는 장면을 서술하라. 목표의 이름·장소를 지어내지 않는다.`,
         display: QUIET,
       };
@@ -256,10 +271,15 @@ const requestTool = defineTool({
       store.append({ type: "extra_rehomed", characterId: target, zone: at.zone, place: at.place });
       lines.push(`데려온 ${josa(playerCalls(state, content, target), "은/는")} 이제 ${playerCalls(state, content, p.to)} 곁에 머문다.`);
     }
-    if (prog.brought && target && q.kind === "capture" && at?.zone) {
-      if (giver.factionId) captureNpc(ctx, target, giver.factionId, at.zone);
-      else store.append({ type: "npc_departed", npcId: target, toFaction: null });
-      lines.push(`끌고 온 ${josa(playerCalls(state, content, target), "을/를")} ${josa(playerCalls(state, content, p.to), "이/가")} 넘겨받았다.`);
+    if (prog.brought && target && q.kind === "capture") {
+      // 넘겨받아 가두는 것은 의뢰인 무리의 땅에서만: 들판에서 보고하면 포로는 그대로 끌고 다닌다 (12-293, PT25 분대장: 구시가 길에서 보고하자 포로가 거점 수용소로 순간이동)
+      if (giver.factionId && state.playerZone && ownedBy(state, state.playerZone, giver.factionId)) {
+        captureNpc(ctx, target, giver.factionId, state.playerZone);
+        lines.push(`끌고 온 ${josa(playerCalls(state, content, target), "을/를")} ${josa(playerCalls(state, content, p.to), "이/가")} 넘겨받아 가뒀다.`);
+      } else if (!giver.factionId) {
+        store.append({ type: "npc_departed", npcId: target, toFaction: null });
+        lines.push(`끌고 온 ${josa(playerCalls(state, content, target), "을/를")} ${josa(playerCalls(state, content, p.to), "이/가")} 넘겨받아 데려갔다.`);
+      } else lines.push(`${josa(playerCalls(state, content, target), "은/는")} 아직 묶인 채 당신이 끌고 간다. 거점에 닿으면 가둔다.`);
     }
     const extra = prog.brought && q.kind === "find" ? r.reward.brought : 0;
     return { ok: true, resultText: [...settleKept(ctx, p, extra), ...lines].join("\n"), display: QUIET };
@@ -284,11 +304,10 @@ function placeTarget(ctx: ToolContext, q: Quest): string | null {
 function offerText(state: GameState, content: Content, who: string, p: GameState["promises"][number]): string {
   const q = questOf(p)!;
   const r = content.scenario.requests!;
-  const [lo, hi] = r.days;
-  const extraDays = q.hops * r.per_hop_days;
+  const days = q.days || `${r.days[0] + q.hops * r.per_hop_days}~${r.days[1] + q.hops * r.per_hop_days}`;
   return (
     `${josa(who, "이/가")} 맡길 일 (${p.id}, ${kindLabel(content, q.kind)}): ${p.what}. ${q.kind === "fetch" ? "구할 만한 곳" : "있는 곳"}: ${questWhere(state, content, q)}. ` +
-    `기한 ${lo + extraDays}~${hi + extraDays}일, 보수 ${payLabel(content, q)}.\n` +
+    `기한 ${days}일, 보수 ${payLabel(content, q)}.\n` +
     `${who}의 말투로 일거리를 꺼내는 장면을 서술하고, 플레이어가 받으면 request accept, 거절하면 decline (오늘 안에 답한다). 목표의 이름·장소·보수를 지어내지 않는다.`
   );
 }

@@ -53,7 +53,7 @@
     indoor: false
     day_gte: 3
   cast:
-    boss: { ids: [c_cheolgu] }
+    boss: { afar: true, ids: [c_cheolgu] }
   setup: '{zone}의 길목에서 붉은 완장 넷이 길을 막는다. {boss:이/가} 쇠지렛대로 손바닥을 툭툭 친다. "여긴 우리 길이야. 지나가려면 내놔. 아니면 우리 조에 들어오든가. 할당량 채울 손은 늘 모자라니까."'
   ai_direction: 염철구의 약탈조다. 내놓으면 보내 주고, 들어오겠다면 데려간다. 맞서면 넷을 상대해야 한다. 도망은 이 동네 지리를 알면 가능하다. 위험은 판정으로만 정한다.
   choices:

@@ -52,7 +52,7 @@
     day_gte: 2
     flags_none: [y_friend_done]
   cast:
-    friend: { ids: [y_dabin] }
+    friend: { comes: true, ids: [y_dabin] }
   setup: "{friend:이/가} 곁에 다가와 속삭인다. \"지원이가 내보내진 밤, 내가 부두 당번이었어. 근데 배가 안 떠났어. 진짜로. 한 척도.\""
   ai_direction: 설다빈의 단짝 지원은 쓸모가 다했다며 "뭍으로 내보내졌다". 그날 밤 부두에서 배가 떠나지 않은 것은 사실이다. 설다빈은 그것만 안다. 배가 어디서 떠나 어디에 닿는지는 이 이야기에서 드러나지 않는다 (다른 이야기와 인물의 비밀로만).
   choices:
@@ -277,7 +277,7 @@
     flags_all: [y_suspected]
     flags_none: [y_summons_done, y_feasted]
   cast:
-    guard: { ids: [y_gangho] }
+    guard: { comes: true, ids: [y_gangho] }
   # 플레이 테스트 12: 01:50에 "자정". 밤 내내 열리니 시각을 말하지 않는다
   setup: "한밤, 막사 문이 열린다. {guard:이/가} 등불을 들고 서 있다. 뒤에 경비 둘. \"의회가 부른다. 지금.\" 그의 눈이 당신을 피한다."
   ai_direction: 의회는 의심 가는 사람을 저장고로 부른다. 따라가면 심사관 앞에 선다 (거기서의 일은 판정으로). 진강호는 이 일이 싫지만 거역하지 못한다. 도망치려면 판정이 필요하고, 위험은 판정 전에 선언한다.

@@ -530,7 +530,7 @@
     flags_none: [eo_second_ledger_done]
     dispositions: [{ from: own, to: faction_c, gte: 2 }]
   cast:
-    clerk: { ids: [e_sora] }
+    clerk: { comes: true, ids: [e_sora] }
     boss: { commander: true, enter: false }
   setup: '새 물값 판이 걸렸다. 청솔과 버들 칸의 값이 붉은연합 칸보다 높다. 상단이 붉은 쪽으로 기울었다는 말이 돈다. {clerk:이/가} 장부를 목도리에 싸서 품에 안고 다가와 목소리를 낮춘다. "간부님. 제가 따로 적어 둔 게 있어요. 이게 붉은 쪽 손에 들어가면 저는 끝이에요."'
   ai_direction: 문소라는 탁봉수 몰래 두 번째 장부를 써 왔다. 상단이 어느 무리에 무엇을 팔았는지, 정보까지 적혀 있다. 그중에 탁봉수가 청솔형제단 동쪽 초소의 경비 교대 시간을 붉은연합에 팔고 탄약 두 상자를 받은 줄이 있다. 상단이 붉은 쪽에 붙으면 이 장부는 문소라의 목숨값이 된다. 지켜 줄 사람을 찾는 것이다. 간부가 이것을 어떻게 쓰느냐에 따라 상단 안의 자리가 바뀐다.

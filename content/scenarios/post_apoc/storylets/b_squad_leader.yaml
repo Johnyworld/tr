@@ -101,7 +101,7 @@
     flags_none: [b_sl_two_orders_done]
   cast:
     boss: { commander: true }
-    keeper: { ids: [b_dongcheol] }
+    keeper: { comes: true, ids: [b_dongcheol] }
   setup: '해 질 녘 정문. {boss:은/는} 오늘 밤 청솔형제단 정찰조와 합동 정찰을 나가기로 약조해 두었다며 군용 수첩을 펼친다. 그때 {keeper:이/가} 열쇠 꾸러미를 짤랑이며 다가와 낮게 말한다. "대표님 말씀이다. 오늘 밤 정찰대는 단지 안에 있으래. 이유는 묻지 말고."'
   ai_direction: 대표 장현우는 오늘 밤 쪽문으로 손님을 들일 생각이다. 정찰대가 밖에 있으면 볼 수 있다. 배동철은 이유를 모른 척하지만 짐작은 한다. 표승민은 연합의 약조를 앞세운다. 어느 쪽을 따르든 다른 쪽이 기억한다. 둘 다 플레이어 앞에서 서로를 탓하지는 않는다.
   choices:

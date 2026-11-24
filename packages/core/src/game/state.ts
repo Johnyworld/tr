@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 105;
+export const SAVE_SCHEMA_VERSION = 106;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -118,6 +118,8 @@ export const questSchema = z.strictObject({
   pay: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
   /** 찾아오기: 의뢰인에게 이미 건넨 수 (나눠 건네도 센다, 12-292) */
   delivered: z.number().int().min(0).default(0),
+  /** 기한 날수: 내놓을 때 정한다 (받을 때 같은 날수, 12-293. 0이면 받을 때 굴린다) */
+  days: z.number().int().min(0).default(0),
 });
 
 export const bondUntilSchema = z.strictObject({

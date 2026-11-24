@@ -490,8 +490,8 @@
     segments: [morning, day, evening]
     day_gte: 2
   cast:
-    patient: { faction: faction_c, ranks: [grunt], starts: { harm: serious, bleeding: bleeding } }
-    guard: { ids: [d_dojin] }
+    patient: { afar: true, faction: faction_c, ranks: [grunt], starts: { harm: serious, bleeding: bleeding } }
+    guard: { comes: true, ids: [d_dojin] }
   setup: 치료대 위에 붉은 완장을 찬 {patient:이/가} 허벅지에 파편이 박힌 채 누워 있다. 정문에서 {guard:이/가} 들어와 낮게 말한다. "밖에 청솔형제단 사람 둘이 와 있어. 저 사람 넘기라는데. 지난주에 자기 동료 쏜 놈이래."
   ai_direction: 하얀매의 원칙은 소속을 가리지 않고 치료하는 것이다. 청솔형제단 사람들은 무장했지만 진료소 담 안에서 총을 쏠 생각은 없다. 넘기면 붉은연합이 이 일을 기억한다. 수간호사는 지금 다른 환자를 꿰매느라 손이 없다.
   choices:
@@ -592,7 +592,7 @@
     segments: [day, evening]
     day_gte: 3
   cast:
-    courier: { ids: [e_yuri] }
+    courier: { afar: true, ids: [e_yuri] }
     nurse: { ids: [a_chaewon], enter: false }
   setup: "빨간 털모자를 쓴 심부름꾼이 정문 옆에서 손짓한다. 청솔형제단 의무실에서 {nurse:이/가} 보낸 쪽지라며 내민다. \"대표님 말고, 진료소 일 거드는 수비대원한테 주랬어요.\" 쪽지에는 항생제 한 줄만 보내 달라고, 아이가 열이 난다고 적혀 있다."
   ai_direction: 윤채원은 예전에 하얀매 간호사였고, 감염된 아이를 살리려고 약을 들고 나갔다가 쫓겨났다. 하얀매 사람들은 그 일을 함부로 입에 올리지 않는다. 대표 서은영은 그 이름에 민감하다. {courier:은/는} 담배 한 개비를 바란다.

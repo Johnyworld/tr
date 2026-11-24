@@ -393,7 +393,7 @@
     day_gte: 2
     flags_none: [b_mina_letter]
   cast:
-    mina: { ids: [b_mina], known: true }
+    mina: { comes: true, ids: [b_mina], known: true }
   setup: 저쪽에서 {mina:이/가} 당신을 찾아와 접은 종이 한 장을 내민다. "청솔 거점 갈 일 있으면 이거 지호한테 좀. 심부름꾼한테 맡겼는데 못 찾았대. 뜯어보지 마라."
   ai_direction: 편지에는 버들마을 안에서 붉은연합으로 넘어가자는 말이 돈다는 것과, 무슨 일이 생기면 청솔형제단에 남으라는 당부가 적혀 있다. {mina:은/는} 그 내용이 문제가 될 수 있다는 것을 알면서도 썼다.
   choices:

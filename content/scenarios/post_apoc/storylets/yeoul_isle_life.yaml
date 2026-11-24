@@ -998,7 +998,7 @@
     indoor: true
     factions: [faction_y]
   cast:
-    chief: { ids: [y_gangho] }
+    chief: { comes: true, ids: [y_gangho] }
   setup: "{chief:이/가} 문틀을 꽉 채우고 서 있다가 들어와 침상 곁에 말린 생선 한 마리를 둔다. \"네 당번은 내가 섰다.\" 잠깐 말을 고르다 덧붙인다. \"의회에서 물으면 곧 일어난다고 해. 알았지? 곧.\""
   ai_direction: 진강호는 무뚝뚝하지만 자기 조원을 아낀다. 오래 누워 있는 사람이 어떻게 되는지 그는 정확히 모른다. 다만 오래 누운 사람이 섬에 남지 않았다는 것은 안다.
   choices:

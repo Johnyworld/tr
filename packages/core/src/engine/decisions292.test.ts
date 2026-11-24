@@ -24,10 +24,10 @@ function giverHere(w: W, pick: (id: string) => boolean = () => true): string {
   return id;
 }
 
-function offer(w: W, giver: string, quest: Omit<Quest, "target" | "hops" | "pay" | "delivered">, item: { id: string; quantity: number } | null = null): string {
+function offer(w: W, giver: string, quest: Omit<Quest, "target" | "hops" | "pay" | "delivered" | "days">, item: { id: string; quantity: number } | null = null): string {
   const s = w.state();
   const id = `p_${(s.promises ?? []).length + 1}`;
-  w.ctx().store.append({ type: "request_offered", id, by: s.playerId, to: giver, what: "시험 의뢰", due: Math.floor(s.time / 1440) + 1, item, quest: { ...quest, target: null, hops: 1, delivered: 0, pay: { id: "canned_food", quantity: 2 } } });
+  w.ctx().store.append({ type: "request_offered", id, by: s.playerId, to: giver, what: "시험 의뢰", due: Math.floor(s.time / 1440) + 1, item, quest: { ...quest, target: null, hops: 1, delivered: 0, days: 0, pay: { id: "canned_food", quantity: 2 } } });
   return id;
 }
 

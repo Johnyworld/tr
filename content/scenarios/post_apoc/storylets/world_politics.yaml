@@ -227,7 +227,7 @@
     segments: [evening, night, dawn]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
-    mina: { ids: [b_mina] }
+    mina: { comes: true, ids: [b_mina] }
     boss: { commander: true, enter: false }
   setup: >-
     철조망 너머 어둠에서 낮은 목소리가 이름을 부른다. 손에 붕대를 감은 {mina:이/가} 배낭 하나만 메고 쪼그려 앉아 있다.

@@ -360,6 +360,18 @@ ${this.sceneForGm()}` };
 
   /** GM에게 보여 줄 현재 장면 (정보 필터 적용) */
   /** 장면 정보 전체. 이번 세션의 GM이 받은 것으로 기억한다 (다음부터 바뀐 것만 보낼 기준) */
+  #openingNotes: string[] = [];
+  /** 세계를 열 때 처리한 일 (지난번 뒤에 일어난 일) */
+  setOpeningNotes(lines: readonly string[]): void {
+    this.#openingNotes = [...lines];
+  }
+  /** 세계를 열 때 처리한 일을 한 번 꺼낸다 */
+  takeOpeningNotes(): string[] {
+    const out = this.#openingNotes;
+    this.#openingNotes = [];
+    return out;
+  }
+
   sceneForGm(): string {
     const sections = describePlayerSections(this.state(), this.content);
     this.#rememberScene(sections);

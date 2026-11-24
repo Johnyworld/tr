@@ -12,7 +12,8 @@
   when:
     resolve: { kinds: [find], stage: 0 }
     segments: [morning, day, evening]
-    indoor: "any"
+    # 짐꾼은 길에서 만난다 (PT22 튜토리얼: 다른 무리 막사 안에 나왔다)
+    indoor: false
   cast:
     porter: { extra: e_porter, label: 등짐을 진 상단 짐꾼 }
   setup: "{porter:이/가} 등짐을 내려놓고 물을 마신다. 상단 짐을 지고 이 도시의 구역을 다 돌아다닌 사람이다. 얼굴 하나 이름 하나를 기억하는 게 밥벌이라고 웃는다."

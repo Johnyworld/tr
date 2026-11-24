@@ -30,6 +30,18 @@ export function issueArmory(ctx: ToolContext, mission: MissionInstance): string 
   const items: Record<string, number> = {};
   // 지닌 총이 쓰는 탄 (12-258, PT15 섬: 작살총을 "쏠 수 있는 총"으로 쳐 소총은 안 주고 소총탄만 줬다)
   const carriedAmmo = new Set(Object.keys(me.inventory).filter((i) => (me.inventory[i] ?? 0) > 0).map((i) => content.items[i]?.weapon?.ammo).filter((a): a is string => !!a));
+  // 여기 사물함에 그 탄을 쓰는 총이 있으면 그것을 챙겨 간다: 무기고가 같은 총을 또 내주지 않는다 (PT21·PT22 섬: 짐이 한도를 넘었다)
+  const fromLocker: string[] = [];
+  const locker = state.playerZone ? (state.stashes?.[me.id]?.[state.playerZone] ?? {}) : {};
+  for (const [id, want] of Object.entries(armory.items)) {
+    const ammo = content.items[id]?.weapon?.ammo;
+    if (!ammo || carriedAmmo.has(ammo) || want <= 0) continue;
+    const own = Object.keys(locker).find((i) => (locker[i] ?? 0) > 0 && content.items[i]?.weapon?.ammo === ammo);
+    if (!own) continue;
+    store.append({ type: "item_stashed", characterId: me.id, zone: state.playerZone!, itemId: own, quantity: 1, direction: "take" });
+    carriedAmmo.add(ammo);
+    fromLocker.push(content.items[own]?.name ?? own);
+  }
   // 총은 그 탄을 쓰는 총을 지니지 않았을 때만 빌려준다
   for (const [id, want] of Object.entries(armory.items)) {
     const ammo = content.items[id]?.weapon?.ammo;
@@ -45,7 +57,8 @@ export function issueArmory(ctx: ToolContext, mission: MissionInstance): string 
     const short = want - (me.inventory[id] ?? 0);
     if (short > 0) items[id] = short;
   }
-  if (!Object.keys(items).length) return null;
+  const lockerLine = fromLocker.length ? `사물함에서 ${josa(fromLocker.join(", "), "을/를")} 챙겼다.` : "";
+  if (!Object.keys(items).length) return lockerLine || null;
   const cost = ammoShort ? 0 : armory.ammo_cost;
   store.append({ type: "armory_issued", missionId: mission.id, factionId: me.factionId, items, resource: war?.ammo ?? "", cost });
   // 받은 총을 손에 든다 (지금 든 것이 총이 아니면)
@@ -58,7 +71,7 @@ export function issueArmory(ctx: ToolContext, mission: MissionInstance): string 
   const list = Object.entries(items).map(([id, q]) => `${nameOf(content, id)} ×${q}`).join(", ");
   // 손의 무기를 바꿨으면 알린다 (플레이 테스트 11: 쥐여 준 총 탓에 근접 판정이 말없이 맨손이 됐다)
   const hand = swapped ? ` ${josa(nameOf(content, gun!), "을/를")} 손에 들었다${held ? ` (${josa(nameOf(content, held), "은/는")} 소지품에 있다. 근접전에 쓰려면 equip)` : ""}.` : "";
-  return `무기고에서 ${josa(list, "을/를")} 내줬다 (임무가 끝나면 반납한다).${hand}${ammoShort ? " 무리 창고에 탄약이 모자라 탄약은 받지 못했다." : ""}`;
+  return `${lockerLine ? `${lockerLine} ` : ""}무기고에서 ${josa(list, "을/를")} 내줬다 (임무가 끝나면 반납한다).${hand}${ammoShort ? " 무리 창고에 탄약이 모자라 탄약은 받지 못했다." : ""}`;
 }
 
 /** 임무가 끝날 때: 빌린 것을 거둬들인다. 잃어버린 무기가 있으면 공적이 깎인다 */

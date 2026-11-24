@@ -256,20 +256,20 @@ function spreadInfection(ctx: ToolContext, characterId: string, day: number): Ch
   return infection.worst_harm > 0 ? changeCondition(ctx, characterId, ctx.content.scenario.harm_track, infection.worst_harm, "infection", "감염") : null;
 }
 
-/** 감염체에게 다쳤을 때 감염되는지 (상처 종류별 확률, 12-106). kind가 없으면 가장 위험한 종류(물려 뜯김 같은)로 본다 */
-export function maybeInfect(ctx: ToolContext, kind: string | null): Change | null {
+/** 감염체에게 다쳤을 때 감염되는지 (상처 종류별 확률, 12-106). kind가 없으면 가장 위험한 종류(물려 뜯김 같은)로 본다. who: 다친 사람 (막아선 동료도, PT22 하얀매) */
+export function maybeInfect(ctx: ToolContext, kind: string | null, who: string = ctx.store.getState().playerId): Change | null {
   const infection = ctx.content.scenario.body?.infection;
   if (!infection) return null;
   const chance = kind ? (infection.chance[kind] ?? 0) : Math.max(0, ...Object.values(infection.chance));
   if (chance <= 0) return null;
   // 다친 것 자체가 격리의 근거다 (감염이 됐는지와 따로, 12-238)
-  ctx.store.append({ type: "infection_exposed", characterId: ctx.store.getState().playerId });
+  ctx.store.append({ type: "infection_exposed", characterId: who });
   const state = ctx.store.getState();
-  if (levelIndex(ctx, state, state.playerId, infection.track) > 0) return null;
-  const me = state.characters[state.playerId];
+  if (levelIndex(ctx, state, who, infection.track) > 0) return null;
+  const me = state.characters[who];
   const factor = me ? bodyTraits(ctx.content, me).infection : 1;
   if (ctx.rng() >= Math.min(1, chance * factor)) return null;
-  return changeCondition(ctx, state.playerId, infection.track, 1, "infection", "감염체에게 입은 상처");
+  return changeCondition(ctx, who, infection.track, 1, "infection", "감염체에게 입은 상처");
 }
 
 /** 갇혀서 못 받은 그날 배급을 우리 거점에 닿으면 받는다 (플레이 테스트 13) */

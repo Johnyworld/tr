@@ -88,3 +88,12 @@ export function pastGiven(content: Content, pastId: string | null | undefined): 
 export function cannotAttempt(label: string): string {
   return `${josa(label, "은/는")} 배우지 않아 할 수 없는 전문 기술이다. 판정하지 않는다: 배운 사람에게 맡기거나, 그 스킬을 익힌 사람에게 배운다(take_action.lesson). 할 수 없는 일로 서술한다.`;
 }
+
+/**
+ * 그 스킬로 굴릴 때 주인공에게 가장 나은 능력 (공통 규칙 12). 도구가 능력을 고를 때 첫 능력만 쓰지 않는다
+ * (PT21·PT22 하얀매: 수색을 감각 +1로 굴렸는데 지능 +2였다)
+ */
+export function bestStatOf(state: { playerId: string; characters: Record<string, { stats: Record<string, number> } | undefined> }, move: { stats: readonly string[] }): string {
+  const me = state.characters[state.playerId];
+  return [...move.stats].sort((a, b) => (me?.stats[b] ?? 0) - (me?.stats[a] ?? 0))[0]!;
+}

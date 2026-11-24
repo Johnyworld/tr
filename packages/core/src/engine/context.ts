@@ -538,12 +538,11 @@ function rotate(id: string, day: number): number {
   return h;
 }
 
-/** 사람 카드의 직함: 무리와 계급, 주인공이 찾는 가족이면 관계를 앞에 (설계 목록 10-7, PT17·18 튜토리얼: 가족 카드가 "주민"·"버들마을 주민"으로 달랐다) */
+/** 사람 카드의 직함: 무리와 계급 (설계 목록 10-7, PT17·18 튜토리얼: 가족 카드가 "주민"·"버들마을 주민"으로 달랐다).
+ * 가족 관계는 이름 뒤 호칭(headingAs)에 이미 있다: 두 번 쓰지 않는다 (PT22 튜토리얼) */
 function kinTitle(state: GameState, content: Content, id: string): string {
   const c = state.characters[id]!;
-  const rank = `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}`;
-  const kin = state.family?.includes(id) ? c.extra?.label : null;
-  return kin ? `${kin} (${rank})` : rank;
+  return `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}`;
 }
 
 /** 이 구역의 장소 (공통 규칙 15): 지금 있는 곳과 옮겨 갈 수 있는 곳, 그곳에 있을 아는 사람.

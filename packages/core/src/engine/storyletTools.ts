@@ -519,9 +519,17 @@ export function applyEffect(
     const back: string[] = [];
     for (const [id, q] of Object.entries(deed.items!)) {
       const n = Math.min(q, inv[id] ?? 0);
-      if (n <= 0) continue;
-      store.append({ type: "item_consumed", holder: now.playerId, itemId: id, quantity: n });
-      back.push(`${content.items[id]?.name ?? id} ×${n}`);
+      if (n > 0) store.append({ type: "item_consumed", holder: now.playerId, itemId: id, quantity: n });
+      // 손에 모자라면 사물함에 넣어 둔 것도 꺼내 돌려놓는다 (PT22 섬: 사물함의 통조림이 남았는데 다 돌려놓은 것으로 닫혔다)
+      let left = q - n;
+      for (const [zone, items] of Object.entries(store.getState().stashes?.[now.playerId] ?? {})) {
+        const m = Math.min(left, items[id] ?? 0);
+        if (m <= 0) continue;
+        store.append({ type: "item_stashed", characterId: now.playerId, zone, itemId: id, quantity: m, direction: "take" });
+        store.append({ type: "item_consumed", holder: now.playerId, itemId: id, quantity: m });
+        left -= m;
+      }
+      if (q - left > 0) back.push(`${content.items[id]?.name ?? id} ×${q - left}`);
     }
     store.append({ type: "deed_returned", deedId: deed.id });
     return { line: back.length ? `훔친 것을 돌려놓았다: ${back.join(", ")}.` : "훔친 것은 이미 손에 남아 있지 않았다." };

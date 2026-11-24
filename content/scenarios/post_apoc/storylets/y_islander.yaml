@@ -142,10 +142,12 @@
   when:
     indoor: false
     zones: [yeoul_isle]
+    # 회관 저장고 뒷문은 돌담 문 쪽 바깥 (PT21·PT22 섬: 양식장·부두에서 열렸다)
+    places: [stone_wall]
     segments: [night]
     flags_any: [y_ledger_seen, y_rocks_seen]
     flags_none: [y_feast_seen, y_storehouse_tried]
-  setup: "자정 무렵, 의회 저장고 뒷문의 자물쇠가 걸려 있지 않다. 안에서 칼 가는 소리가 멎었다 다시 난다. 굴뚝 연기에서 고기 굽는 냄새가 난다."
+  setup: "밤늦게, 의회 저장고 뒷문의 자물쇠가 걸려 있지 않다. 안에서 칼 가는 소리가 멎었다 다시 난다. 굴뚝 연기에서 고기 굽는 냄새가 난다."
   ai_direction: 저장고 안에는 의회 상층이 인육을 먹는다는 진실이 있다. 숨어 들어가는 데 성공해야 드러난다. 들키면 의회가 당신을 의심한다. 위험은 판정으로만. 본 것은 담담하게, 잔혹한 묘사를 늘어놓지 않는다.
   choices:
     - id: sneak

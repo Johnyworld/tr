@@ -150,13 +150,14 @@ function finish(ctx: ToolContext, r: Resolve, outcome: ResolveOutcome): { line: 
   if (outcome === "broken") {
     const c = changeCondition(ctx, me, rule.relief_track, 1, "resolve", "꺾인 다짐");
     if (c?.display) displays.push(c.display);
-    return { line: `(다짐이 꺾였다: ${resolveText(state, ctx.content, r)}. 이 상실을 장면에 담는다. 이야기가 새 다짐을 건넬 수 있다)`, displays };
+    return { line: `(다짐이 꺾였다: ${resolveText(state, ctx.content, r)}. 이 상실을 장면에 담는다. 이야기가 새 다짐을 건넬 수 있다)${c?.line ? ` ${c.line}` : ""}`, displays };
   }
   const level = gainResolveXp(ctx, me, rule.xp);
   const c = changeCondition(ctx, me, rule.relief_track, -1, "resolve", "이룬 다짐");
   if (c?.display) displays.push(c.display);
   const how = outcome === "let_go" ? "내려놓았다" : outcome === "by_others" ? "이뤘다 (남의 손으로)" : "이뤘다";
-  return { line: `(다짐을 ${how}: ${resolveText(state, ctx.content, r)}. 이 순간을 이번 장면의 무게 중심으로 연출한다.${level ? ` ${level}` : ""})`, displays };
+  // 마음이 가라앉은 것도 결과에 (PT21·PT22 섬: 표시만 있고 글에 없어 "우울함"으로 오른 줄만 보였다)
+  return { line: `(다짐을 ${how}: ${resolveText(state, ctx.content, r)}. 이 순간을 이번 장면의 무게 중심으로 연출한다.${level ? ` ${level}` : ""})${c?.line ? ` ${c.line}` : ""}`, displays };
 }
 
 /** tool이 끝날 때마다: 지금 다짐을 이뤘는지·꺾였는지 본다. 무리·구역 다짐이면 그 전투에 낀 것을 기억한다 */

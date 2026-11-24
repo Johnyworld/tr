@@ -28,6 +28,9 @@ export class CharacterChoiceError extends Error {
 }
 import type { PlayMode } from "../engine/log.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
+import { bodyLines, worldLines } from "../engine/action.ts";
+import type { ToolDisplayEvent } from "../engine/toolkit.ts";
+const eventLines = (displays: readonly ToolDisplayEvent[]) => [...bodyLines(displays), ...worldLines(displays)];
 import { acquireLock, isProcessAlive, readLock, WorldLockedError, type LockInfo } from "../persistence/lock.ts";
 import { archiveSave, SaveFormatError, SqliteRepository } from "../persistence/sqlite.ts";
 import { formatTime } from "../rules/time.ts";
@@ -297,7 +300,8 @@ export class WorldManager {
       // 이미 있는 세계: 시간이 흐른 뒤의 처리를 한 번 맞춘다. 시간이 그대로라 보통은 아무 일도 없고,
       // 이전 단계의 세이브라면 새로 생긴 상태(세력 등)를 채운다
       // 이야기는 열지 않는다: 세계를 열 때 열린 이야기는 결과에 실리지 않아 보이지 않았다 (플레이 테스트 11, 튜토리얼 정문). 다음 행동에서 연다
-      if (world.state().worldId) runAfterTimeAdvance(world.ctx(), { storylets: false });
+      // 그때 일어난 일(쓰러진 사이 끌려감·죽음 등)은 세션을 열 때 GM에게 알린다 (PT21·PT22 하얀매: "부상: 사망"만 보였다)
+      if (world.state().worldId) world.setOpeningNotes(eventLines(runAfterTimeAdvance(world.ctx(), { storylets: false })));
       return world;
     } catch (err) {
       release();

@@ -395,6 +395,8 @@
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [d_clinic]
+    # 글은 진료소 부엌 (PT22: 치료실에서 열렸다)
+    places: [lodging]
     segments: [evening]
     flags_none: [d_pharmacy_map]
   cast:

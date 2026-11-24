@@ -1,3 +1,4 @@
+import { bestStatOf } from "../rules/skill.ts";
 import { stakesOf } from "../rules/stakes.ts";
 import { ableNow } from "../rules/company.ts";
 import { heldOf } from "../rules/held.ts";
@@ -370,7 +371,7 @@ const spreadRumor = defineTool({
     const hard = listeners.some((id) => close.has(id));
     const m = moveOf(content.scenario, move)!;
     const check = rollPlayerCheck(
-      { move, stat: m.stats[0]!, difficulty: hard ? "hard" : "normal", intent: `${playerCalls(state, content, target.id)}에 대해 지어낸 말을 퍼뜨린다` },
+      { move, stat: bestStatOf(ctx.store.getState(), m), difficulty: hard ? "hard" : "normal", intent: `${playerCalls(state, content, target.id)}에 대해 지어낸 말을 퍼뜨린다` },
       ctx,
       { target: listeners[0]!, stakes: stakesOf({ opponent: true }) },
     );

@@ -1443,10 +1443,11 @@ exploration:
     - id: hospital_basement
       zone: hospital_ruins
       label: 옛 병원 지하 약제실
-      hint: 무너진 응급실 뒤 계단이 지하로 내려간다. 문에 '약제부' 글씨가 반쯤 남았다
+      # 장소(비상계단·엘리베이터 문)와 인물들이 아는 길(계단은 무너졌고 엘리베이터 통로로)에 맞춘다 (PT21·PT22 하얀매)
+      hint: 무너진 비상계단 옆, 비틀린 엘리베이터 문 안 통로로 밧줄을 타고 내려간다. 아래 문에 '약제부' 글씨가 반쯤 남았다
       mood: 깨진 형광등, 뒤집힌 침대, 소독약 냄새가 아직 희미하게 남은 복도
       hazard: 무너진 천장 판에 깔렸다
-      depths: [지하 계단, 기록실 복도, 약제실 금고]
+      depths: [엘리베이터 통로 밑, 기록실 복도, 약제실 금고]
       loot:
         - [{ item: bandage, weight: 2, qty: [1, 2] }, { item: fever_reducer, weight: 1, qty: [1, 1] }, { item: cloth, weight: 1, qty: [1, 2] }]
         - [{ item: painkiller, weight: 2, qty: [1, 2] }, { item: antibiotics, weight: 1, qty: [1, 1] }, { item: medkit, weight: 1, qty: [1, 1] }]

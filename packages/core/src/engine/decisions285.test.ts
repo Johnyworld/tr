@@ -48,10 +48,12 @@ describe("GM 안내·표시 (12-285)", () => {
     expect(hint).toContain("c?: string | null");
   });
 
-  it("찾는 가족의 카드에는 관계가 앞에 나온다 (10-7)", () => {
+  it("찾는 가족의 카드에는 관계가 이름 뒤에 한 번만 나온다 (10-7, PT22)", () => {
     const w = make("role_t_visitor");
     const kin = w.state().family[0]!;
     const label = w.state().characters[kin]!.extra!.label;
-    expect(w.sceneForGm()).toContain(`${label} (`);
+    const line = w.sceneForGm().split("\n").find((l) => l.includes(`(${label})`)) ?? "";
+    expect(line).toContain(`(${label})`);
+    expect(line.split(label).length - 1).toBe(1);
   });
 });

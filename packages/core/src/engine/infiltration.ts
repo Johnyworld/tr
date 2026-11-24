@@ -1,3 +1,4 @@
+import { bestStatOf } from "../rules/skill.ts";
 import { stakesOf } from "../rules/stakes.ts";
 import { onSpotted } from "../rules/consequence.ts";
 import { heldOf, heldSeenTopic, heldSeenZone, welcomeRescued } from "../rules/held.ts";
@@ -18,6 +19,7 @@ import { missionForCheck } from "../game/missions.ts";
 import { recordDeed } from "./reputationTools.ts";
 import { applyEffect, hostileZone, runTagEvent } from "./storyletTools.ts";
 import { roadStorylets } from "../story/storylets.ts";
+import { enterScene } from "./extras.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
@@ -82,13 +84,16 @@ export function alarmIfInfiltrating(ctx: ToolContext, by: number): string[] {
   return ctx.store.getState().infiltration ? raiseAlarm(ctx, by) : [];
 }
 
-/** 경보를 올린다. 3에 닿으면 들킨 일(그 무리와의 사이, 행적)을 남긴다 */
-function raiseAlarm(ctx: ToolContext, by: number): string[] {
+/** 경보를 올린다. 3에 닿으면 들킨 일(그 무리와의 사이, 행적)을 남긴다. seenBy: 들킨 상대 (들키면 그 사람이 장면에 든다) */
+function raiseAlarm(ctx: ToolContext, by: number, seenBy: string | null = null): string[] {
   const state = ctx.store.getState();
   const inf = state.infiltration!;
   const alarm = Math.min(ALARM_MAX, inf.alarm + by);
   ctx.store.append({ type: "infiltration_changed", depth: inf.depth, alarm, done: inf.done });
   if (alarm < ALARM_MAX || inf.alarm >= ALARM_MAX) return [];
+  // 들켰다: 숨어 있던 동안 들이지 않던 그 자리 사람이 이제 장면에 든다 (PT22 졸병: grab에 실패해 "들켰다"인데 아무도 없었다)
+  const seen = seenBy ? [seenBy] : othersHere(state, ctx.content).slice(0, 1);
+  for (const id of seen) if (!ctx.store.getState().scene.present.includes(id) && !ctx.store.getState().characters[id]?.dead) enterScene(ctx, id);
   applyEffect(ctx, { faction_relation: { from: "zone_owner", to: "own", delta: -1, mutual: false } } as StoryletEffect, {}, {}, "잠입하다 들켰다");
   // 들킨 결과는 공통 규칙 3 (침입 행적, 들키지 않기 임무)
   onSpotted(ctx, inf.owner);
@@ -263,7 +268,7 @@ const infiltrate = defineTool({
       const fresh = !!next && !knowsPlace(state, content, state.playerZone, next.id);
       const m = moveOf(content.scenario, r.move)!;
       const advanceMission = missionForCheck(ctx.store.getState(), r.move);
-      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, crowdStep(state, content, next)), intent: `${josa(depthLabel(toDepth), "으로/로")} 숨어든다` }, ctx, { stakes: stakesOf({ exposed: true }), forMission: advanceMission });
+      const check = rollPlayerCheck({ move: r.move, stat: bestStatOf(ctx.store.getState(), m), difficulty: stealthDifficulty(content, state, crowdStep(state, content, next)), intent: `${josa(depthLabel(toDepth), "으로/로")} 숨어든다` }, ctx, { stakes: stakesOf({ exposed: true }), forMission: advanceMission });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -304,7 +309,7 @@ const infiltrate = defineTool({
       const name = playerCalls(state, content, input.target);
       const m = moveOf(content.scenario, r.move)!;
       const grabMission = missionForCheck(ctx.store.getState(), r.move);
-      const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, watchers), intent: `${josa(name, "을/를")} 몰래 붙잡는다${watchers ? ` (곁에 ${watchers}명)` : ""}` }, ctx, { stakes: stakesOf({ exposed: true }), forMission: grabMission });
+      const check = rollPlayerCheck({ move: r.move, stat: bestStatOf(ctx.store.getState(), m), difficulty: stealthDifficulty(content, state, watchers), intent: `${josa(name, "을/를")} 몰래 붙잡는다${watchers ? ` (곁에 ${watchers}명)` : ""}` }, ctx, { stakes: stakesOf({ exposed: true }), forMission: grabMission });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -314,7 +319,7 @@ const infiltrate = defineTool({
         if (check.outcome === "partial") lines.push("버둥거리는 소리가 났다.", ...raiseAlarm(ctx, 1));
       } else {
         lines.push(`${josa(name, "을/를")} 놓쳤다. 소리를 지른다.`);
-        lines.push(...raiseAlarm(ctx, 2));
+        lines.push(...raiseAlarm(ctx, 2, input.target));
       }
       lines.push(...missionNote(ctx, grabMission));
       const cue = alarmCue(store.getState().infiltration?.alarm ?? 0);
@@ -323,7 +328,7 @@ const infiltrate = defineTool({
 
     if (input.action === "listen") {
       const m = moveOf(content.scenario, r.listen)!;
-      const check = rollPlayerCheck({ move: r.listen, stat: m.stats[0]!, difficulty: "normal", intent: "멈춰서 낌새를 살핀다" }, ctx, { stakes: stakesOf({ exposed: true }), forMission: missionForCheck(ctx.store.getState(), r.listen) });
+      const check = rollPlayerCheck({ move: r.listen, stat: bestStatOf(ctx.store.getState(), m), difficulty: "normal", intent: "멈춰서 낌새를 살핀다" }, ctx, { stakes: stakesOf({ exposed: true }), forMission: missionForCheck(ctx.store.getState(), r.listen) });
       if (!check.ok) return check;
       const extra = step(ctx);
       const alarm = store.getState().infiltration!.alarm;
@@ -344,7 +349,7 @@ const infiltrate = defineTool({
       } else if (inf.depth < deepest) return { ok: false, error: `목표는 가장 깊은 곳(${depthLabel(deepest)})에서 한다. 지금은 ${depthLabel(inf.depth)}.` };
       const m = moveOf(content.scenario, goal.move)!;
       const goalMission = missionForCheck(ctx.store.getState(), goal.move);
-      const check = rollPlayerCheck({ move: goal.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state), intent: goal.label }, ctx, { stakes: stakesOf({ exposed: true }), forMission: goalMission });
+      const check = rollPlayerCheck({ move: goal.move, stat: bestStatOf(ctx.store.getState(), m), difficulty: stealthDifficulty(content, state), intent: goal.label }, ctx, { stakes: stakesOf({ exposed: true }), forMission: goalMission });
       if (!check.ok) return check;
       const extra = step(ctx);
       const lines: string[] = [];
@@ -384,7 +389,7 @@ const infiltrate = defineTool({
     const m = moveOf(content.scenario, r.move)!;
     const harder = (inf.depth >= deepest ? 1 : 0) + (caught ? 1 : 0);
     const leaveMission = missionForCheck(ctx.store.getState(), r.move);
-    const check = rollPlayerCheck({ move: r.move, stat: m.stats[0]!, difficulty: stealthDifficulty(content, state, harder), intent: "빠져나온다" }, ctx, { stakes: stakesOf({ exposed: true }), forMission: leaveMission });
+    const check = rollPlayerCheck({ move: r.move, stat: bestStatOf(ctx.store.getState(), m), difficulty: stealthDifficulty(content, state, harder), intent: "빠져나온다" }, ctx, { stakes: stakesOf({ exposed: true }), forMission: leaveMission });
     if (!check.ok) return check;
     store.append({ type: "infiltration_ended", how: check.outcome === "miss" ? "caught" : "out" });
     if (check.outcome !== "miss") backToEntry(ctx);

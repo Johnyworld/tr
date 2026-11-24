@@ -333,7 +333,7 @@
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
     - { id: lobby, name: "입구·응급실", indoor: true, description: "무너진 접수대와 응급실 침대. 바닥에 마른 핏자국", aliases: ["병원 입구", "응급실", "접수대"], near: [stairs_basement] }
-    - { id: stairs_basement, name: "비상계단", indoor: true, description: "어두운 비상계단. 지하로 내려가는 문 앞에 무너진 천장 판이 쌓였다 (그 아래 숨은 곳은 뒤져야 찾는다)", aliases: ["비상계단", "계단참"] }
+    - { id: stairs_basement, name: "비상계단·엘리베이터 문", indoor: true, description: "지하로 가는 비상계단은 무너졌다. 옆 엘리베이터 문이 비틀려 열려 있다 (그 통로 아래 숨은 곳은 뒤져야 찾는다)", aliases: ["비상계단", "계단참", "엘리베이터"] }
     - { id: yard, name: "병원 마당", indoor: false, description: "구급차가 녹슨 병원 마당. 잡초가 무릎까지 자랐다", aliases: ["병원 마당", "무덤"], near: [lobby, annex] }
     - { id: to_old_town, name: "구시가 가는 길", indoor: false, description: "동쪽 구시가로 가는 길. 구급차가 뒤집혀 있다", near: [yard], road: true, to: [old_town] }
     - { id: to_clinic, name: "진료소 가는 길", indoor: false, description: "남쪽 진료소로 가는 길. 하얀 천을 매단 말뚝이 길을 알린다", near: [yard], road: true, to: [d_clinic] }

@@ -705,6 +705,13 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 
   const unknownTag = input.fright_tags.find((t) => !fearTagIds(scenario).includes(t));
   if (unknownTag) return { ok: false, error: `알 수 없는 fright_tags: ${unknownTag} (가능: ${fearTagIds(scenario).join(", ") || "없음"})` };
+  // 무력화된 상대는 더 맞서지 못한다: 맞서는 판정을 받지 않는다 (PT22 하얀매: 무력화된 감염체를 다시 치다 빗나가자 그것이 상대의 몫을 얹어 치명상을 냈다)
+  {
+    const fightMoves = scenario.opposition?.harm?.moves ?? [];
+    const foeId = input.check?.opponent ?? (input.check && fightMoves.includes(input.check.move) ? input.target : null);
+    const foe = foeId ? start.characters[foeId] : undefined;
+    if (foe && !foe.dead && isIncapacitated(content, foe)) return { ok: false, error: `${josa(playerCalls(start, content, foe.id), "은/는")} 이미 무력화돼 맞서지 못한다. 끝내는 것은 판정 없이 서술하고(target만), 지닌 것은 transfer_item으로 뒤진다 (시간은 흐르지 않았다).` };
+  }
   if (input.check?.opponent) {
     const o = start.characters[input.check.opponent];
     if (!o || o.dead || (!start.scene.present.includes(input.check.opponent) && !arriving.includes(input.check.opponent))) return { ok: false, error: `맞서는 상대 ${josa(input.check.opponent, "은/는")} 장면에 없다. check.opponent는 장면에 있는 인물 id다.` };
@@ -1129,7 +1136,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 
   // 말로 묻는 판정이 맞으면 상대가 아는 것을 남기는 길을 알린다 (설계 목록 7-1, PT16·17 섬: 교섭이 성공해도 남는 것이 없었다).
   // 무엇을 물었는지는 코드가 모르므로 고르지 않는다. 말로 하는 스킬은 시나리오의 opposition.mindless.refuses
-  if (input.check && input.target && outcome && outcome !== "miss" && (scenario.ask_moves ?? scenario.opposition?.mindless?.refuses ?? []).includes(input.check.move)) {
+  // 맞서는 판정(둘러대기·위협으로 맞섬)은 캐묻는 것이 아니다 (PT22 졸병)
+  if (input.check && input.target && !input.check.opponent && outcome && outcome !== "miss" && (scenario.ask_moves ?? scenario.opposition?.mindless?.refuses ?? []).includes(input.check.move)) {
     const npc = content.npcs[input.target];
     const mine = new Set((store.getState().beliefs[start.playerId] ?? []).map((b) => b.fact));
     const unknown = npc ? (store.getState().beliefs[input.target] ?? []).filter((b) => !npc.keeps.includes(b.fact) && !mine.has(b.fact)) : [];
@@ -1141,7 +1149,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const hostileOwner = !inBattle && !start.infiltration && !heldOf(start.characters[start.playerId]) && hostileHere(ctx) ? (start.zones[start.playerZone ?? ""]?.owner ?? null) : null;
   const ofOwner = (id: string | null | undefined) => !!id && !!hostileOwner && store.getState().characters[id]?.factionId === hostileOwner && !store.getState().characters[id]?.dead;
   let ownerSaw = !!input.check && (scenario.gear?.attack_moves.includes(input.check.move) ?? false) && [input.target, input.check.opponent].some((id) => ofOwner(id) && store.getState().scene.present.includes(id!));
-  if (input.deed) {
+  // 탈출은 코드가 행적으로 남긴다: GM이 같은 일을 deed로 또 남기지 않게 받지 않는다 (PT22 졸병: 같은 탈출이 행적 둘·소문 둘로 겹쳤다)
+  if (input.deed && escapeAttempt) lines.push("(탈출은 시스템이 행적으로 남긴다: 넣은 deed는 따로 남기지 않았다)");
+  if (input.deed && !escapeAttempt) {
     const happened = input.deed.condition === "always" || outcome === null || outcome !== "miss";
     if (happened) {
       // 속이기가 먹혔으면(거짓말 판정의 성공·대가 있는 성공) 장면의 사람은 속아 넘어가 행적을 알지 못한다. 함께 다니는 사람(동행)은 참을 안다 (PT14)
@@ -1637,7 +1647,13 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
     shareable: !!opponentId || fightLike,
     cause,
     track: track.id,
-    hurt: (who, n, why) => changeCondition(ctx, who, track.id, n, "enemy", why)?.line ?? null,
+    hurt: (who, n, why) => {
+      const line = changeCondition(ctx, who, track.id, n, "enemy", why)?.line ?? null;
+      // 감염체의 상처를 막아선 사람도 감염될 수 있다 (PT22 하얀매: 무는 감염체를 몸으로 받았는데 감염도 격리도 없었다). 살갗이 찢기는 상처일 때만
+      const foe = opponentId ? ctx.store.getState().characters[opponentId] : undefined;
+      if (foe && isInfected(content, foe) && (!content.scenario.wounds || !!woundKind(ctx, kind)?.bleeds)) maybeInfect(ctx, kind, who);
+      return line;
+    },
   });
   const absorbed = { steps: reduced.armored ? 0 : raw, lines: reduced.lines };
   if (against) absorbed.lines.unshift(`${against.line}.`);
@@ -1763,13 +1779,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     napped = !!sleepCap?.nap;
     const cap = sleepCap ? sleepCap.minutes : MAX_FAST_FORWARD_MINUTES;
     // 임무 활동은 요건을 채우면 끝난다 (until을 걸지 않았으면). 시간을 세는 요건이 있는 활동이면 무엇이든 (PT20·PT21 의무병: 치료·수색은 30분씩이었다)
-    const missionLeft = (() => {
-      if (until || !forMission || activity === "sleep" || activity === "travel") return null;
-      const m = state.missions[forMission];
-      if (!m) return null;
-      const left = m.requirements.flatMap((r, i) => ("activity" in r && r.activity === activity ? [r.minutes - (m.progress[i] ?? 0)] : [])).filter((n) => n > 0);
-      return left.length ? Math.max(30, Math.ceil(Math.max(...left) / 5) * 5) : null;
-    })();
+    const missionLeft = until ? null : missionMinutesLeft(state, forMission, activity);
     const wanted = activityTarget({ from, until: cost.allowUntil ? until : null, hours, missionLeft: hours ? null : missionLeft, defaultMinutes: cost.minutes });
     // 피곤하지 않은 잠의 상한은 이어진 잠 전체로 센다 (깬 지 얼마 안 돼 다시 잤으면 앞의 잠부터)
     const chainFrom = activity === "sleep" ? sleepChainStart(state, from) : from;
@@ -1834,7 +1844,9 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
     // 이동은 길마다 정해진 시간, 짐이 무거우면 15분 더 (12-239)
     const me = state.characters[state.playerId];
     const base = activity === "travel" && dest && state.playerZone ? routeMinutes(state.playerZone, dest) + (me && encumbrance(content, me, state) > 0 ? 15 : 0) : null;
-    to = from + (fixedMinutes ?? (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round((base ?? rollActivityMinutes(cost, rng)) * speed))));
+    // 짧은 활동(수색 등)도 임무 요건이 남은 만큼만 (PT22 분대장: 30분 남았는데 1시간 30분)
+    const left = missionMinutesLeft(state, forMission, activity);
+    to = from + (fixedMinutes ?? (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round((left ?? base ?? rollActivityMinutes(cost, rng)) * speed))));
     // 0분이면 시간이 흐르지 않는다 (장소 옮기기에 들어간 잠깐 행동)
     if (to > from) {
       store.append({
@@ -1920,4 +1932,16 @@ function walkAwayFromStory(ctx: ToolContext, start: GameState): string[] {
   endActiveStorylet(ctx, "외면하고 떠났다");
   const title = s ? storyTitle(start, content, s) : live.id;
   return [`이야기 "${title}"${josa(title, "을/를").slice(title.length)} 외면하고 자리를 떴다. 그 일은 그대로 지나갔다 (이야기 속 사람들은 그것을 기억할 수 있다).`];
+}
+
+/**
+ * 임무 활동은 요건이 남은 만큼만 (until·hours를 걸지 않았으면). 시간을 세는 요건이 있는 활동이면 무엇이든, 5분 단위로 올림
+ * (PT20·PT21 의무병: 치료·수색은 30분씩, PT22: 25분 남았는데 30분)
+ */
+function missionMinutesLeft(state: GameState, forMission: string | null | undefined, activity: Activity): number | null {
+  if (!forMission || activity === "sleep" || activity === "travel") return null;
+  const m = state.missions[forMission];
+  if (!m) return null;
+  const left = m.requirements.flatMap((r, i) => ("activity" in r && r.activity === activity ? [r.minutes - (m.progress[i] ?? 0)] : [])).filter((n) => n > 0);
+  return left.length ? Math.max(5, Math.ceil(Math.max(...left) / 5) * 5) : null;
 }

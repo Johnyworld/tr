@@ -51,14 +51,14 @@
     - { id: watchtower, name: "망루", indoor: false, kinds: [watch], description: "모래주머니를 쌓은 나무 망루. 바람이 그대로 들이친다", aliases: ["망루"], near: [bunker] }
     - { id: bunker, name: "초소 안·창고", indoor: true, kinds: [sleep, store], description: "콘크리트 초소 안. 난로 하나와 탄 상자, 좁은 침상", aliases: ["동쪽 초소", "초소", "창고"] }
     - { id: to_base, name: "거점 가는 길", indoor: false, description: "청솔형제단 거점으로 돌아가는 길. 초소에서 끝까지 내려다보인다", near: [trench, watchtower], road: true, to: [a_base] }
-    - { id: to_warehouse, name: "물류창고 가는 비탈", indoor: false, description: "고가도로 쪽으로 내려가는 자갈 비탈. 붉은연합 땅이 가깝다", near: [trench], road: true, to: [c_warehouse] }
+    - { id: to_warehouse, name: "철길 둑 가는 비탈", indoor: false, description: "철길 둑으로 올라가는 자갈 비탈. 둑 너머가 붉은연합 땅이다", near: [trench], road: true, to: [rail_embankment] }
     - { id: trench, name: "모래주머니 참호", indoor: false, kinds: [watch], description: "초소 앞에 판 얕은 참호. 모래주머니 사이로 총구를 낸다", near: [watchtower, bunker] }
   cover: 3
   danger: 2
   # 끓이지 않은 물을 뜰 곳 (12-251)
   stream: "초소 옆 빗물받이 드럼통"
   owner: faction_a
-  adjacent: [c_warehouse]
+  adjacent: [rail_embankment]
   loot:
     modifier: -1
     items:
@@ -80,7 +80,7 @@
     - { id: stockade, name: "수용소", indoor: true, description: "화물 칸을 철망으로 막은 수용소. 노역에 끌려 나갈 때만 문이 열린다", aliases: ["수용소", "노역조"], jail: true }
     - { id: command, name: "지휘소·정비소", indoor: true, kinds: [command, work], description: "유리창 깨진 사무실과 정비소. 무전기와 공구가 널려 있다", aliases: ["지휘소", "정비소", "치료실", "마경수 천막", "규율반 천막"] }
     - { id: wall, name: "감시탑·담", indoor: false, kinds: [watch, gate], description: "컨테이너를 쌓은 담과 감시탑. 탐조등이 밤마다 돈다", aliases: ["감시탑", "담 보초", "경비 초소", "망루", "바깥문", "담 근처", "수용소 순찰", "물류창고 경비"], gate: true }
-    - { id: to_south, name: "초소·강변 가는 고가 밑 길", indoor: false, description: "고가도로 밑을 지나 남쪽으로 가는 길. 기둥 그늘이 길다", near: [checkpoint_3], road: true, to: [a_east_post, riverside] }
+    - { id: to_south, name: "철길 둑·강둑 가는 고가 밑 길", indoor: false, description: "고가도로 밑을 지나 남쪽 철길 둑과 강둑으로 가는 길. 기둥 그늘이 길다", near: [checkpoint_3], road: true, to: [rail_embankment, north_levee] }
     - { id: to_west, name: "붉은연합 거점 가는 길", indoor: false, description: "붉은연합 거점으로 가는 길. 트럭이 오가며 판 바퀴 자국", near: [checkpoint_3], road: true, to: [c_base] }
     - { id: to_north, name: "발전소 가는 길", indoor: false, description: "북쪽 발전소로 가는 길. 굴뚝이 길 끝에 섰다", near: [container_gap], road: true, to: [power_plant] }
     - { id: checkpoint_3, name: "3번 초소", indoor: false, kinds: [gate], description: "정문 앞 검문소. 붉은 완장들이 드나드는 짐을 센다", aliases: ["3번 초소", "정문 검문"], near: [yard] }
@@ -90,7 +90,7 @@
   # 끓이지 않은 물을 뜰 곳 (12-251)
   stream: "하역장 배수로에 고인 물"
   owner: faction_c
-  adjacent: [c_base, riverside]
+  adjacent: [c_base]
   yields: { food: 30, fuel: 5 }
   # 취사 천막과 물탱크가 있다: 붉은연합 사람은 여기서도 물 보급을 받는다 (플레이 테스트 11, E5)
   water_supply: true
@@ -124,14 +124,14 @@
     - { id: armory, name: "무기고", indoor: true, kinds: [store], description: "쇠문 두 겹의 무기고. 열쇠는 간부만 지닌다", aliases: ["무기고"] }
     - { id: cells, name: "철망 감방", indoor: true, description: "철망으로 칸을 나눈 감방. 서로 얼굴이 보인다", aliases: ["감방", "철망 감방"], jail: true }
     - { id: to_warehouse, name: "물류창고 가는 길", indoor: false, description: "동쪽 물류창고로 가는 길. 트럭이 줄지어 다닌다", near: [checkpoint_1], road: true, to: [c_warehouse] }
-    - { id: to_old_town, name: "구시가 가는 길", indoor: false, description: "남서쪽 구시가로 내려가는 길. 약탈조가 오가는 길이다", near: [checkpoint_1], road: true, to: [old_town] }
+    - { id: to_old_town, name: "붉은 다리 가는 길", indoor: false, description: "남쪽 붉은 다리로 내려가는 길. 약탈조가 오가는 길이다", near: [checkpoint_1], road: true, to: [red_bridge] }
     - { id: to_prison, name: "교도소 가는 길", indoor: false, description: "북쪽 교도소로 가는 길. 높은 담이 멀리 보인다", near: [range_fence], road: true, to: [prison] }
     - { id: checkpoint_1, name: "1번 초소", indoor: false, kinds: [gate], description: "철조망 정문 앞 초소. 규율반이 드나드는 사람을 적는다", aliases: ["1번 초소"], near: [yard] }
     - { id: range_fence, name: "사격장 철조망 밖", indoor: false, kinds: [field], description: "사격장 철조망 바깥 둔덕. 총소리가 가까이서 울린다", near: [wall] }
   cover: 7
   danger: 1
   owner: faction_c
-  adjacent: [old_town]
+  adjacent: []
   yields: { food: 150, water: 185, fuel: 20 }
   loot:
     modifier: -1
@@ -151,14 +151,14 @@
     - { id: bank, name: "강가", indoor: false, kinds: [field], description: "갈대와 자갈이 섞인 강가. 물소리가 다른 소리를 덮는다", aliases: ["강가", "강변 수풀", "갈대밭", "나루"], near: [pumphouse_cellar], wade: true }
     - { id: pumphouse_cellar, name: "옛 양수장 지하", indoor: true, kinds: [ruin], description: "발목까지 물이 찬 양수장 지하. 어둡고 울린다", aliases: ["양수장"] }
     - { id: to_west, name: "청솔·환승역·고가 가는 공단 길", indoor: false, description: "공장 담 사이로 난 서쪽 길. 녹슨 지게차가 길가에 섰다", near: [factory_gate], road: true, to: [a_base, subway_hub, overpass] }
-    - { id: to_north, name: "물류창고·발전소 가는 둑길", indoor: false, description: "강을 끼고 북쪽으로 가는 둑길. 멀리 굴뚝이 보인다", near: [factory_gate, bank], road: true, to: [c_warehouse, power_plant] }
-    - { id: to_south, name: "장터·정수장 가는 강둑길", indoor: false, description: "하류로 내려가는 강둑길. 갈대가 길을 덮는다", near: [bank], road: true, to: [e_market, water_plant] }
+    - { id: to_north, name: "강둑 북길·발전소 가는 둑길", indoor: false, description: "강을 끼고 북쪽으로 가는 둑길. 멀리 굴뚝이 보인다", near: [factory_gate, bank], road: true, to: [north_levee, power_plant] }
+    - { id: to_south, name: "나루길·정수장 가는 강둑길", indoor: false, description: "하류로 내려가는 강둑길. 갈대가 길을 덮는다", near: [bank], road: true, to: [ferry_levee, water_plant] }
     - { id: ferry, name: "여울섬 나룻배 대는 곳", indoor: false, description: "말뚝에 밧줄 자국이 남은 물가. 섬으로 건너는 배가 여기 닿는다", near: [bank], road: true, to: [yeoul_isle], wade: true }
     - { id: factory_gate, name: "공장 정문·트럭 차고", indoor: false, kinds: [street], description: "공장 정문과 지붕만 남은 트럭 차고. 기름통이 굴러다닌다", near: [factory] }
   cover: 4
   danger: 2
   owner: null
-  adjacent: [e_market]
+  adjacent: []
   # 섬에서 몰래 나오는 길 (기획서 9.12): 섬의 허락(y_leave_pass)이 없으면 경비를 피해 밤배를 훔쳐 탄다
   crossing:
     from: [yeoul_isle]
@@ -194,8 +194,8 @@
     - { id: shops, name: "상가·약국 안", indoor: true, kinds: [ruin], description: "셔터가 반쯤 내려간 상가와 약국. 유리 조각이 바닥에 깔렸다", aliases: ["상가", "약국"], near: [basement] }
     - { id: boiler_room, name: "목욕탕 보일러실", indoor: true, kinds: [ruin], description: "옛 목욕탕 지하 보일러실. 아직 온기가 조금 남는다", aliases: ["보일러실", "목욕탕"] }
     - { id: basement, name: "상가 지하", indoor: true, kinds: [ruin], description: "상가 지하. 천장이 낮고 썩은 물 냄새가 난다", aliases: ["지하"] }
-    - { id: to_east, name: "청솔·붉은연합·고가 가는 길", indoor: false, description: "동쪽으로 뻗은 큰길. 버려진 차를 밀어 길을 냈다", near: [crossroads, alleys], road: true, to: [a_base, c_base, overpass] }
-    - { id: to_west, name: "병원·진료소·버들마을 가는 길", indoor: false, description: "서쪽 큰길. 무너진 간판이 길을 반쯤 막았다", near: [crossroads], road: true, to: [hospital_ruins, d_clinic, b_base] }
+    - { id: to_east, name: "청솔·붉은 다리·고가 가는 길", indoor: false, description: "동쪽으로 뻗은 큰길. 버려진 차를 밀어 길을 냈다", near: [crossroads, alleys], road: true, to: [a_base, red_bridge, overpass] }
+    - { id: to_west, name: "병원·진료소·아파트 뒷길 가는 길", indoor: false, description: "서쪽 큰길. 무너진 간판이 길을 반쯤 막았다", near: [crossroads], road: true, to: [hospital_ruins, d_clinic, apt_backroad] }
     - { id: hill_steps, name: "성당 가는 언덕 계단", indoor: false, description: "언덕 위 성당으로 오르는 돌계단. 꼭대기에 종탑이 보인다", near: [crossroads], road: true, to: [cathedral] }
     - { id: subway_entrance, name: "지하철 입구", indoor: false, description: "셔터가 뜯긴 지하철 입구. 계단 아래로 찬 바람이 올라온다", near: [crossroads], road: true, to: [subway_hub] }
     - { id: crossroads, name: "시장 앞 네거리", indoor: false, kinds: [street], description: "뒤집힌 버스가 가로누운 네거리. 사방이 트여 몸이 드러난다", aliases: ["네거리"], near: [alleys] }
@@ -204,7 +204,7 @@
   # 끓이지 않은 물을 뜰 곳 (12-251)
   stream: "구시가를 가로지르는 개천"
   owner: null
-  adjacent: [b_base, d_clinic]
+  adjacent: [d_clinic]
   yields: { food: 15, ammo: 3, medicine: 1 }
   loot:
     modifier: 1
@@ -239,7 +239,7 @@
     - { id: gate, name: "정문·경비실", indoor: false, kinds: [gate], description: "단지 정문과 경비실, 쪽문. 드나드는 사람을 여기서 본다", aliases: ["정문", "경비실", "단지 순찰", "거점 순찰"], near: [office, blocks, yard], gate: true }
     - { id: yard, name: "단지 텃밭·우물", indoor: false, kinds: [yard, field], description: "놀이터를 갈아엎은 텃밭과 두레박 우물", aliases: ["텃밭", "우물", "쪽문"], near: [blocks], gate: true }
     - { id: lockup, name: "관리동 지하 가두는 방", indoor: true, description: "관리동 지하 창고를 막은 방. 빛이 거의 들지 않는다", aliases: ["가두는 방", "지하 가두는 방"], jail: true }
-    - { id: to_north, name: "청솔·구시가·성당 가는 길", indoor: false, description: "단지 북쪽으로 나가는 길. 정문 망루에서 훤히 보인다", near: [gate_front], road: true, to: [a_base, old_town, cathedral] }
+    - { id: to_north, name: "청솔·아파트 뒷길·성당 가는 길", indoor: false, description: "단지 북쪽으로 나가는 길. 정문 망루에서 훤히 보인다", near: [gate_front], road: true, to: [a_base, apt_backroad, cathedral] }
     - { id: to_east, name: "텃밭·마트 가는 길", indoor: false, description: "동쪽 텃밭과 마트로 가는 길. 수레바퀴 자국이 났다", near: [gate_front, side_lane], road: true, to: [south_fields, mall_ruins] }
     - { id: gate_front, name: "정문 앞 검문 줄", indoor: false, kinds: [gate, street], description: "정문 앞에 줄을 세우는 자리. 경비가 짐과 얼굴을 본다", near: [gate] }
     - { id: side_lane, name: "쪽문 밖 골목", indoor: false, kinds: [street], description: "단지 담과 상가 사이 좁은 골목. 쪽문이 텃밭으로 열린다", near: [yard] }
@@ -304,7 +304,7 @@
     - { id: wagon_yard, name: "짐마차 마당", indoor: false, kinds: [yard], description: "짐마차와 수레가 서는 마당. 바퀴 자국이 깊다", aliases: ["짐 싣기", "짐마차", "출발 준비", "호위조 점검", "마구간", "화살 손질"], near: [bunkhouse] }
     - { id: landing, name: "선착장", indoor: false, kinds: [field], description: "나룻배가 닿는 선착장. 밧줄과 물통이 쌓였다", aliases: ["선착장", "나루"], wade: true }
     - { id: lockup, name: "전당포 지하실", indoor: true, description: "전당포 지하실. 빚진 사람을 가두기도 한다", aliases: ["전당포 지하", "빚쟁이 방"], jail: true }
-    - { id: to_north, name: "강변·휴게소 가는 큰길", indoor: false, description: "장터에서 북쪽으로 나가는 큰길. 짐마차가 줄지어 나간다", near: [stalls, wagon_yard], road: true, to: [riverside, rest_stop] }
+    - { id: to_north, name: "나루길·휴게소 가는 큰길", indoor: false, description: "장터에서 북쪽으로 나가는 큰길. 짐마차가 줄지어 나간다", near: [stalls, wagon_yard], road: true, to: [ferry_levee, rest_stop] }
     - { id: to_water_plant, name: "정수장 가는 강둑 오솔길", indoor: false, description: "강둑을 따라 정수장으로 가는 오솔길. 물지게꾼이 다닌다", near: [landing], road: true, to: [water_plant] }
   cover: 6
   danger: 0

@@ -79,6 +79,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       }
       out = world.executeTool(name, input);
     }
+    // 길로 나간 뒤 다시 한 행동이 막 열린 이야기에 막혔으면 한 번 더 모른 척한다 (12-302: 길목 매복이 길에서 열렸다)
+    if (!out.ok && name === "take_action" && out.error.includes("ignore_story")) out = world.executeTool(name, { ...(input as object), ignore_story: true });
     // 이야기가 열려 있으면 임무를 받거나 보고하기 전에 먼저 받는다 (12-240): GM처럼 모른 척하고 다시 한다
     if (!out.ok && name !== "take_action" && out.error.includes("ignore_story")) {
       world.executeTool("take_action", { ...base, intent: "이야기를 두고 간다", ignore_story: true });

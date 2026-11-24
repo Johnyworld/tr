@@ -85,7 +85,7 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
   // 붙잡힌 결과는 공통 규칙 3 (rules/consequence.ts): 들키지 않기 임무, 침입 행적, 그 무리의 태도
   const spotted = onCaptured(ctx, by).join(" ");
   // 다른 구역으로 끌려가면 그 길의 이동 시간이 흐른다 (사용자 결정, 플레이 테스트 14: 물류창고에서 붙잡혔는데 0분 만에 거점에 갇혔다)
-  const dragged = state.playerZone && where !== state.playerZone ? routeMinutes(state.playerZone, where) : 0;
+  const dragged = state.playerZone && where !== state.playerZone ? routeMinutes(state.playerZone, where, ctx.content) : 0;
   if (dragged > 0) {
     const now = store.getState().time;
     store.append({ type: "time_advanced", activity: "travel", from: now, to: now + dragged });

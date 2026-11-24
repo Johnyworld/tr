@@ -5,10 +5,12 @@ import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
 import { autoplay } from "../sim/autoplay.ts";
 import { WorldManager } from "../world/manager.ts";
+import { peopleAt, placesIn } from "../rules/place.ts";
+import { eligibleStorylets } from "../story/storylets.ts";
 import { buildCustomRole, type CustomStartInput } from "./customStart.ts";
 import { loadRealContent } from "../testing.ts";
 
-/** 직분마다 실제 콘텐츠로 자동 플레이를 돌려 직분 이야기가 열리는지 본다 (기획서 12.6). 느려서 `pnpm test:slow`에서만 돈다 */
+/** 직분마다 실제 콘텐츠로 자동 플레이를 돌려 오류가 없는지, 직분 이야기가 열릴 자리가 있는지 본다 (기획서 12.6). 느려서 `pnpm test:slow`에서만 돈다 */
 const content = loadRealContent();
 const cook: CustomStartInput = {
   faction: "faction_a",
@@ -34,24 +36,34 @@ describe("직분 자동 플레이", () => {
     ["mechanic", "faction_e", "staff"],
     ["trader", null, "loner"],
   ] as const) {
-    it(`${occupation}: 오류 없이 돌고, 직분 이야기가 열린다`, () => {
+    it(`${occupation}: 오류 없이 돌고, 직분 이야기가 열릴 자리가 있다`, () => {
       const location = faction ? Object.values(content.locations).find((l) => l.owner === faction && l.kind === "base")!.id : "old_town";
-      // 직분 이야기는 첫 주인공이 살아 있는 동안만 열린다. 시드에 따라 일찍 죽거나 거점 밖을 떠돌면 못 볼 수 있어 네 판 중 하나에서 본다 (이야기 간격 6~12시간, 플레이 테스트 12.
-      // 12-238: 배급을 우리 땅에서만 받게 하자 동선이 바뀌어 두 판 모두에서 빠졌다. 바뀌기 전에도 두 판 중 한 판에 하나뿐이었다)
       const tag = `occ_${occupation}`;
-      let seen = false;
-      // 이동 기획(12-287) 뒤로는 이야기가 주인공이 있는 자리에서만 열려 여섯 판 중 하나에서 본다 (요리사: 시드 27·33에서 열림)
-      // 12-300: 장소 종류 뒤 길이 바뀌어 처음 여덟 판에서 빠졌다 (요리사 이야기가 열리는 자리는 그대로이거나 넓어졌고, 바꾸기 전에도 여덟 판 중 두세 판).
-      // 판을 늘리되 한 번 보면 멈춘다
-      for (const seed of [3, 9, 15, 21, 27, 33, 39, 45, 51, 57, 63, 69, 75, 81, 87, 93]) {
-        if (seen) break;
+      // 자동 플레이는 오류 없이 도는지만 본다. 직분 이야기가 실제로 열렸는지는 판의 운에 너무 기댄다:
+      // 12-302 뒤 요리사는 스무 판 모두에서 직분 이야기를 못 봤다. 길어진 길에서 임무 기한을 넘겨 갇히고, 탈출에 실패해 쓰러져 3~11일째에 죽어 (첫 주인공만 직분 이야기를 본다)
+      // 길목 전에도 열두 판에 두 판꼴이었다 (12-238·12-287·12-300에서 판 수만 늘려 왔다)
+      for (const seed of [3, 9, 15]) {
         const w = open({ ...cook, faction, rank, occupation, location });
         const stats = autoplay(w, w.content, createSeededRng(seed), 500);
         w.close();
         expect(stats.errors).toEqual([]);
-        seen ||= Object.keys(stats.storyletsFired).some((id) => content.storylets[id]?.tags.includes(tag));
       }
-      expect(seen).toBe(true);
-    }, 300_000); // 판이 많아(한 번 보면 멈춤) 다른 느린 테스트와 함께 돌면 오래 걸린다. 판 여섯이라 다른 느린 테스트와 함께 돌면 60초를 넘긴다 (12-241)
+      // 직분 이야기가 열릴 수 있는가: 새 세계에서 이틀째·사흘째 하루 동안, 구역의 장소마다 그 자리에 있을 사람을 장면에 두고 자격을 본다
+      const w = open({ ...cook, faction, rank, occupation, location });
+      const s0 = w.state();
+      let found: string | null = null;
+      for (const zone of Object.keys(content.locations)) {
+        for (const place of placesIn(s0, w.content, zone)) {
+          for (let t = 1440; t < 3 * 1440 && !found; t += 120) {
+            const st = { ...s0, time: t, playerZone: zone, playerPlace: place.id, activeStorylet: null, scene: { ...s0.scene, present: peopleAt({ ...s0, time: t }, w.content, zone, place.id) } };
+            found = eligibleStorylets(st, w.content, t).find((x) => x.tags.includes(tag))?.id ?? null;
+          }
+          if (found) break;
+        }
+        if (found) break;
+      }
+      w.close();
+      expect(found, `${tag} 이야기가 열릴 자리가 없다`).not.toBeNull();
+    }, 300_000);
   }
 });

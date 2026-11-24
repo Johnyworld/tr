@@ -502,7 +502,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 자리를 옮기는 것도 같다 (12-240, A1: 이야기가 열린 결과 뒤 같은 턴에 묶어 보낸 이동이 이야기를 외면한 것으로 처리됐다). 판정을 건 행동(맞서기·달아나기)은 이야기 안의 일이다
   // 스스로 움직일 수 없을 때(의식불명)만 막지 않는다. 중상(무력화 문턱)은 걷고 싸우므로 막는다 (12-292, PT24 분대장·섬: 중상이면 이야기를 두고 떠나도 말없이 사라졌다).
   // 구역 이동(move_to)은 판정을 붙여도 막는다: 판정 걸고 물러나기는 place_to다 (PT24 졸병: 깔린 동료를 두고 은밀 판정 이동으로 떠났는데 외면 결과가 없었다)
-  if (start.activeStorylet && (!input.check || !!input.move_to) && !input.ignore_story && (!!input.move_to || !!input.place_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !incapacitatingSymptom(scenario, player) && !heldOf(player)) {
+  // 매복(몸이 붙들린 이야기)은 판정을 걸고 뿌리쳐 달아나는 것이 이야기 안의 일이다: 막지 않는다 (12-302: 아래 매복 규칙은 ignore_story를 막고 이 규칙은 move_to를 막아 달아날 길이 없었다)
+  const ambushEscape = !!input.move_to && !!input.check && !!start.activeStorylet && !!storyletOf(start, content, start.activeStorylet.id)?.ambush;
+  if (start.activeStorylet && !ambushEscape && (!input.check || !!input.move_to) && !input.ignore_story && (!!input.move_to || !!input.place_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !incapacitatingSymptom(scenario, player) && !heldOf(player)) {
     const s0 = storyletOf(start, content, start.activeStorylet.id);
     const openTitle = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
     return { ok: false, error: `이야기 "${openTitle}"${josa(openTitle, "이/가").slice(openTitle.length)} 열려 있다. 먼저 장면으로 연출하고 플레이어의 선택을 받는다: resolve_storylet으로 고르거나, 플레이어가 두고 다른 일(자리 옮기기 포함)을 하기로 했으면 ignore_story: true를 함께 넣는다 (시간은 흐르지 않았다).` };
@@ -1887,7 +1889,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   } else {
     // 이동은 길마다 정해진 시간, 짐이 무거우면 15분 더 (12-239)
     const me = state.characters[state.playerId];
-    const base = activity === "travel" && dest && state.playerZone ? routeMinutes(state.playerZone, dest) + (me && encumbrance(content, me, state) > 0 ? 15 : 0) : null;
+    const base = activity === "travel" && dest && state.playerZone ? routeMinutes(state.playerZone, dest, content) + (me && encumbrance(content, me, state) > 0 ? 15 : 0) : null;
     // 짧은 활동(수색 등)도 임무 요건이 남은 만큼만 (PT22 분대장: 30분 남았는데 1시간 30분)
     const left = missionMinutesLeft(state, forMission, activity);
     to = from + (fixedMinutes ?? (activity === "combat" ? (content.scenario.battle?.round_minutes ?? ACTIVITY_COSTS.combat.minutes) : Math.max(MIN_TURN_MINUTES, Math.round((left ?? base ?? rollActivityMinutes(cost, rng)) * speed))));

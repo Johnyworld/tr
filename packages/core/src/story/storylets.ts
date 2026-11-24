@@ -363,6 +363,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if ((d.gte !== undefined && v < d.gte) || (d.lte !== undefined && v > d.lte)) return false;
   }
   if (w.zones && (!state.playerZone || !w.zones.includes(state.playerZone))) return false;
+  if (w.zone_kinds && (!state.playerZone || !w.zone_kinds.includes(content.locations[state.playerZone]?.kind ?? "zone"))) return false;
   if (w.zones_none && state.playerZone && w.zones_none.includes(state.playerZone)) return false;
   const doing = state.lastActivity ?? "brief";
   if (w.activities && !w.activities.includes(doing as never)) return false;

@@ -1792,6 +1792,8 @@ export const scenarioFileSchema = z
      * road·jail은 장소의 road·jail 표시로 저절로 붙는다
      */
     place_kinds: z.array(z.strictObject({ id, label: z.string().min(1) })).default([]),
+    /** 길목(구역 kind corridor)을 지나는 이동 시간 (12-302): 한 칸 늘어난 만큼 하루 소모가 무겁지 않게 다른 길(travel 1~2시간)보다 짧게 */
+    corridor_travel_minutes: z.number().int().positive().default(60),
     relation_gain: z
       .strictObject({
         window_days: z.number().min(0).default(3),

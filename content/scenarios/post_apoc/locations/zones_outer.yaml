@@ -261,3 +261,123 @@
       - { item: scrap_metal, weight: 2, qty: [1, 1] }
       - { item: cigarettes, weight: 1, qty: [1, 2] }
       - { item: moonshine, weight: 1, qty: [1, 1] }
+
+# ── 길목 (12-302, docs/map-expansion-plan.md 2단계) ──────────────────────
+# 거점과 거점 사이에 끼운 짧은 길. 주인 없음, 장소는 길 둘 + 바깥 장소 1~2. 지나는 이동은 scenario.corridor_travel_minutes(약 1시간).
+# 이야기는 길 위 이야기(travel)·수색·감염체가 주로 채우고, 새 이야기는 when.zone_kinds: [corridor]로 길목마다 따로 쓰지 않는다
+
+- id: rail_embankment
+  name: 철길 둑
+  map: { x: 69.1, y: 28.9, label: 철길 둑 }
+  description: 동쪽 초소와 물류창고 사이를 가르는 녹슨 철길 둑. 청솔형제단과 붉은연합이 서로를 가장 가까이 보는 정면이다. 둑 위에 서면 양쪽 담이 다 보인다.
+  kind: corridor
+  places:
+    - { id: to_post, name: "동쪽 초소 가는 둑 아래 길", indoor: false, description: "둑 남쪽 아래로 초소까지 이어지는 자갈길. 모래주머니 몇 개가 굴러다닌다", near: [rail_cut], road: true, to: [a_east_post] }
+    - { id: to_warehouse, name: "물류창고 가는 건널목", indoor: false, description: "차단봉이 부러진 건널목. 북쪽으로 물류창고 담이 보인다", near: [rail_cut], road: true, to: [c_warehouse] }
+    - { id: rail_cut, name: "끊긴 철길 위", indoor: false, kinds: [street], description: "침목이 빠진 철길. 둑이 높아 몸이 그대로 드러난다", aliases: ["철길", "둑 위"], near: [signal_hut] }
+    - { id: signal_hut, name: "무너진 신호소", indoor: true, kinds: [ruin], description: "지붕이 반쯤 내려앉은 신호소. 창으로 양쪽 길이 다 보인다", aliases: ["신호소"] }
+  cover: 2
+  owner: null
+  danger: 2
+  adjacent: [a_east_post, c_warehouse]
+  loot:
+    modifier: -1
+    items:
+      - { item: scrap_metal, weight: 3, qty: [1, 2] }
+      - { item: wire_roll, weight: 2, qty: [1, 1] }
+      - { item: rifle_rounds, weight: 1, qty: [1, 1] }
+      - { item: firewood, weight: 2, qty: [1, 2] }
+      - { item: cigarettes, weight: 1, qty: [1, 1] }
+
+- id: north_levee
+  name: 강둑 북길
+  map: { x: 78.0, y: 36.5, label: 강둑 북길 }
+  description: 강을 끼고 강변 공장 지대에서 물류창고로 올라가는 둑길. 둑 아래로 강물이 느리고, 수문 몇 개가 녹슬어 닫혀 있다.
+  kind: corridor
+  places:
+    - { id: to_riverside, name: "강변 공장 가는 둑길", indoor: false, description: "남쪽 공장 굴뚝 쪽으로 내려가는 둑길", near: [levee_top], road: true, to: [riverside] }
+    - { id: to_warehouse, name: "물류창고 가는 둑 끝", indoor: false, description: "둑이 끝나고 고가도로 밑으로 들어가는 길. 물류창고 감시탑 불빛이 닿는다", near: [levee_top], road: true, to: [c_warehouse] }
+    - { id: levee_top, name: "둑 위", indoor: false, kinds: [street], description: "풀이 무릎까지 자란 둑 위. 강바람이 세다", aliases: ["둑 위", "둑길"], near: [sluice] }
+    - { id: sluice, name: "녹슨 수문 밑", indoor: false, kinds: [field], description: "닫힌 수문 아래 물웅덩이. 강가로 내려설 수 있다", aliases: ["수문"], wade: true }
+  cover: 0
+  owner: null
+  danger: 2
+  stream: "둑 아래 강물"
+  adjacent: [riverside, c_warehouse]
+  loot:
+    modifier: -1
+    items:
+      - { item: firewood, weight: 3, qty: [1, 2] }
+      - { item: water_bottle, weight: 2, qty: [1, 1] }
+      - { item: scrap_metal, weight: 2, qty: [1, 1] }
+      - { item: fishing_kit, weight: 1, qty: [1, 1] }
+
+- id: red_bridge
+  name: 붉은 다리
+  map: { x: 41.9, y: 36.5, label: 붉은 다리 }
+  description: 구시가에서 붉은연합 거점으로 건너는 다리. 난간에 붉은 천이 묶여 있다. 붉은연합 거점의 앞마당이라 약탈조가 자주 오간다.
+  kind: corridor
+  places:
+    - { id: to_old_town, name: "구시가 가는 다리 남쪽 끝", indoor: false, description: "다리가 끝나고 구시가 큰길로 이어진다. 버려진 버스가 길을 반쯤 막았다", near: [bridge_span], road: true, to: [old_town] }
+    - { id: to_red_base, name: "붉은연합 거점 가는 다리 북쪽 끝", indoor: false, description: "다리 북쪽 끝. 붉은 천을 맨 말뚝이 줄지어 섰다", near: [bridge_span], road: true, to: [c_base] }
+    - { id: bridge_span, name: "다리 위", indoor: false, kinds: [street], description: "차선이 갈라진 다리 위. 숨을 곳이 버려진 차뿐이다", aliases: ["다리 위", "난간"], near: [under_bridge] }
+    - { id: under_bridge, name: "다리 밑", indoor: false, kinds: [field], description: "다리 그늘 아래 마른 하천 바닥. 불 피운 자국이 여럿이다", aliases: ["다리 밑"] }
+  cover: 1
+  owner: null
+  danger: 2
+  adjacent: [old_town, c_base]
+  loot:
+    modifier: -1
+    items:
+      - { item: scrap_metal, weight: 2, qty: [1, 1] }
+      - { item: firewood, weight: 2, qty: [1, 2] }
+      - { item: cigarettes, weight: 2, qty: [1, 2] }
+      - { item: moonshine, weight: 1, qty: [1, 1] }
+      - { item: duct_tape, weight: 1, qty: [1, 1] }
+
+- id: ferry_levee
+  name: 강둑 나루길
+  map: { x: 87.5, y: 67.3, label: 나루길 }
+  description: 강변 공장 지대에서 나루상단 장터로 내려가는 강둑길. 갈대가 길을 덮고, 짐마차 바퀴 자국이 깊다.
+  kind: corridor
+  places:
+    - { id: to_riverside, name: "강변 공장 가는 강둑", indoor: false, description: "북쪽 공장 지대로 올라가는 강둑", near: [reed_path], road: true, to: [riverside] }
+    - { id: to_market, name: "장터 가는 강둑 끝", indoor: false, description: "남쪽 장터 천막이 보이기 시작하는 강둑 끝", near: [reed_path, toll_booth], road: true, to: [e_market] }
+    - { id: reed_path, name: "갈대밭 길", indoor: false, kinds: [field], description: "키보다 높은 갈대 사이로 난 길. 물가가 가깝다", aliases: ["갈대밭"], wade: true }
+    - { id: toll_booth, name: "무너진 매표소", indoor: true, kinds: [ruin], description: "옛 유원지 매표소. 유리가 깨졌지만 지붕은 남았다", aliases: ["매표소"] }
+  cover: 3
+  owner: null
+  danger: 1
+  stream: "강둑 아래 강물"
+  adjacent: [riverside, e_market]
+  loot:
+    modifier: 0
+    items:
+      - { item: firewood, weight: 3, qty: [1, 2] }
+      - { item: water_bottle, weight: 2, qty: [1, 1] }
+      - { item: dried_fish, weight: 1, qty: [1, 1] }
+      - { item: cloth, weight: 2, qty: [1, 1] }
+      - { item: scrap_metal, weight: 1, qty: [1, 1] }
+
+- id: apt_backroad
+  name: 아파트 뒷길
+  map: { x: 25.8, y: 67.3, label: 뒷길 }
+  description: 구시가에서 버들마을로 가는 아파트 단지 뒤편 길. 빈 동들이 늘어서 창마다 커튼이 흔들린다.
+  kind: corridor
+  places:
+    - { id: to_old_town, name: "구시가 가는 뒷길 입구", indoor: false, description: "구시가 쪽으로 열린 뒷길 입구. 무너진 담 사이로 큰길이 보인다", near: [backyard], road: true, to: [old_town] }
+    - { id: to_willow, name: "버들마을 가는 뒷길 끝", indoor: false, description: "버들마을 정문 망루가 보이는 뒷길 끝. 텃밭 냄새가 난다", near: [backyard, empty_block], road: true, to: [b_base] }
+    - { id: backyard, name: "아파트 뒷마당", indoor: false, kinds: [street], description: "빨랫줄이 끊어진 뒷마당. 놀이터 미끄럼틀이 녹슬었다", aliases: ["뒷마당", "놀이터"] }
+    - { id: empty_block, name: "빈 동 일층 상가", indoor: true, kinds: [ruin], description: "셔터가 반쯤 열린 일층 상가. 안쪽 계단이 위층으로 이어진다", aliases: ["빈 동", "일층 상가"] }
+  cover: 4
+  owner: null
+  danger: 1
+  adjacent: [old_town, b_base]
+  loot:
+    modifier: 0
+    items:
+      - { item: blanket, weight: 2, qty: [1, 1] }
+      - { item: canned_food, weight: 2, qty: [1, 1] }
+      - { item: cloth, weight: 2, qty: [1, 1] }
+      - { item: firewood, weight: 2, qty: [1, 2] }
+      - { item: duct_tape, weight: 1, qty: [1, 1] }

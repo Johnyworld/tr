@@ -41,7 +41,7 @@ describe("PT22 뒤 고친 것 (12-288)", () => {
     capturePlayer(w.ctx(), "faction_c", "c_warehouse", "테스트");
     const before = Object.keys(w.state().deeds).length;
     const move = "stealth";
-    const r = w.executeTool("take_action", act({ move_to: "riverside", check: { move, stat: moveOf(content.scenario, move)!.stats[0], difficulty: "normal", harm_on_failure: "heavy", harm_cause: "붙잡힘", harm_kind: "blunt" }, deed: { summary: "수용소를 빠져나왔다", tags: ["bravery"], severity: 1, privacy: "semi_private", noisy: false, condition: "on_success" } }));
+    const r = w.executeTool("take_action", act({ move_to: "north_levee", check: { move, stat: moveOf(content.scenario, move)!.stats[0], difficulty: "normal", harm_on_failure: "heavy", harm_cause: "붙잡힘", harm_kind: "blunt" }, deed: { summary: "수용소를 빠져나왔다", tags: ["bravery"], severity: 1, privacy: "semi_private", noisy: false, condition: "on_success" } }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(r.ok && r.resultText).toContain("따로 남기지 않았다");
     expect(Object.keys(w.state().deeds).length).toBe(before + 1);

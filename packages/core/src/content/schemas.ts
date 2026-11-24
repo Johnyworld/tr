@@ -572,7 +572,8 @@ export function createContentSchemas(s: Scenario) {
     name: z.string().min(1),
     description: z.string().min(1),
     /** base: 거점 (습격은 받지만 빼앗기지 않는다, MVP) */
-    kind: z.enum(["base", "zone"]),
+    /** base 거점, zone 그 밖, corridor 길목 (12-302, 맵 늘리기 2단계: 거점과 거점 사이에 끼운 짧은 길. 지나는 이동이 짧다) */
+    kind: z.enum(["base", "zone", "corridor"]),
     /** 시작 소유 세력. 없으면 누구의 땅도 아니다 */
     owner: contentIdSchema.nullable().default(null),
     adjacent: z.array(contentIdSchema).default([]),
@@ -1003,6 +1004,8 @@ export function createContentSchemas(s: Scenario) {
         level_gte: z.number().int().optional(),
         /** 플레이어가 있는 구역 */
         zones: z.array(contentIdSchema).optional(),
+        /** 플레이어가 있는 구역의 종류 (12-302): 길목 공통 이야기는 [corridor]로 적어 길목마다 따로 쓰지 않는다 */
+        zone_kinds: z.array(z.enum(["base", "zone", "corridor"])).min(1).optional(),
         /** 이 구역들에 있지 않을 때만 (플레이 테스트 11: 고향 동네에 와 있는데 "옛 동네 소식") */
         zones_none: z.array(contentIdSchema).optional(),
         /** 이야기가 열릴 때 주인공이 하던 일 (플레이 테스트 11: 자는 사람에게 "서 있지 말고", 보초 서는 사람에게 "걸으면 따라온다") */

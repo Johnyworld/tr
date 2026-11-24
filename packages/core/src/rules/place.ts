@@ -791,7 +791,7 @@ export function movePlayer(ctx: ToolContext, to: { zone: string; place?: string 
   } else return null;
   // 고르지 않은 이동에 드는 시간 (불려 감·업혀 감): 같은 구역이면 칸 수, 다른 구역이면 길 (PT21 하얀매: 업혀 구역 둘을 5분에)
   // 이야기가 보내는 자리(goes_to)도 걷는 칸 수만큼 (PT26·27 섬 "고기 국": 0분 만에 부두)
-  const minutes = opts.minutes ?? (reason === "summoned" || reason === "sent" ? STEP_MINUTES * Math.max(1, Number.isFinite(stepsBetween(s, content, fromPlace, to.place ?? null)) ? stepsBetween(s, content, fromPlace, to.place ?? null) : 1) : reason === "carried" && from && from !== to.zone ? routeMinutes(from, to.zone) : 0);
+  const minutes = opts.minutes ?? (reason === "summoned" || reason === "sent" ? STEP_MINUTES * Math.max(1, Number.isFinite(stepsBetween(s, content, fromPlace, to.place ?? null)) ? stepsBetween(s, content, fromPlace, to.place ?? null) : 1) : reason === "carried" && from && from !== to.zone ? routeMinutes(from, to.zone, content) : 0);
   if (minutes > 0) {
     const now = store.getState().time;
     store.append({ type: "time_advanced", activity: reason === "carried" ? "travel" : "brief", from: now, to: now + minutes });

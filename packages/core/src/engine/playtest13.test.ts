@@ -443,7 +443,9 @@ describe("무리 생활 (12-238)", () => {
     const w = world("role_c_comrades");
     const ctx = w.ctx();
     ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: "c_warehouse" });
-    w.state().pendingClashes.push({ id: "battle_t", kind: "assault", attacker: "faction_c", defender: "faction_a", zone: "a_east_post", at: w.state().time - 5 });
+    // 12-302: 물류창고와 동쪽 초소 사이에 길목(철길 둑)이 생겼다. 청솔이 차지한 철길 둑을 친다
+    w.state().zones.rail_embankment!.owner = "faction_a";
+    w.state().pendingClashes.push({ id: "battle_t", kind: "assault", attacker: "faction_c", defender: "faction_a", zone: "rail_embankment", at: w.state().time - 5 });
     const out = w.executeTool("take_action", act({ intent: "거점으로 간다", move_to: "c_base", activity: null }));
     expect(out.ok, out.ok ? "" : out.error).toBe(true);
     expect(out.ok && out.resultText).toContain("떠나기 전에 교전이 벌어졌다");

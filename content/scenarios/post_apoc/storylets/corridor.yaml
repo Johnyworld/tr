@@ -1,0 +1,379 @@
+# 길목 공통 이야기 (12-302, 맵 늘리기 2단계): 거점과 거점 사이에 끼운 짧은 길(구역 kind corridor)에서 열린다
+# - when.zone_kinds: [corridor]로 다섯 길목 어디서나 맞게 쓴다. 특정 길목의 이름·지형은 글에 쓰지 않고 {zone}으로
+# - 길목의 장소 종류는 road(길 둘)·street·field·ruin뿐이다. ruin이 없는 길목도 있다
+# - 길목은 주인 없는 땅이다. 어느 무리를 가정하지 않고, 공적(merit)과 무리 사기는 쓰지 않는다
+# - 이야기는 사람을 죽이지 않는다 (원칙 3). 맞붙으면 GM이 전투로 넘기고 위험을 먼저 선언한다
+
+- id: cr_toll_rope
+  title: 길을 막은 밧줄
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  weight: 0.8
+  when:
+    zone_kinds: [corridor]
+    indoor: false
+    place_kinds: [road]
+    segments: [morning, day, evening]
+  cast:
+    boss: { extra: drifter_leader, label: 밧줄 곁에 앉은 떠돌이 }
+    kid: { extra: drifter_young, label: 깡통을 든 젊은 떠돌이 }
+  setup: "{zone}의 길 한가운데에 밧줄 하나가 무릎 높이로 매여 있다. 양쪽 끝은 녹슨 기둥과 넘어진 수레에 묶였다. {boss:이/가} 수레 그늘에 앉아 당신을 보고, {kid:이/가} 찌그러진 깡통을 흔들며 다가온다. 깡통 안에서 무언가 달그락거린다. \"지나가는 값이야. 많이는 안 받아.\""
+  ai_direction: 두 무리 땅 사이 아무도 지키지 않는 길에 자리를 잡은 떠돌이들이다. 담배나 먹을 것 한 줌을 받으면 밧줄을 내려 준다. 덤불 속에 한둘이 더 있는 것처럼 굴지만 사실은 둘뿐이다 (드러내지 않는다. 판정으로 가늠하게 한다). 싸우자고 들면 물러서는 척하다 뒤에서 돌을 던진다. 값은 효과에 적힌 것만 받는다. 다른 값을 지어 부르지 않는다.
+  choices:
+    - id: pay
+      label: 담배를 깡통에 넣고 지나간다
+      effects:
+        - take_item: { item: cigarettes }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - belief: { fact: "{zone}의 길에 떠돌이들이 밧줄을 치고 지나가는 값을 받는다. 담배를 내고 지나갔다", source: seen }
+    - id: talk_down
+      label: 나도 빈손이라고, 다음에 지날 때 갚겠다고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - relation: { who: boss, axis: affection, delta: 1 }
+          - belief: { fact: "{zone}에서 길을 막은 떠돌이 우두머리가 외상으로 밧줄을 내려 주었다. 다음에 지날 때 기억하겠다고 했다", source: seen }
+        partial:
+          - take_item: { item: cigarettes }
+          - belief: { fact: "{zone}의 떠돌이들은 외상은 안 된다며 담배를 받고서야 밧줄을 내렸다", source: seen }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "{zone}에서 길을 막은 떠돌이들이 말을 듣지 않았다. 돌아가는 길을 찾아야 했다", source: seen }
+    - id: stare_down
+      label: 밧줄을 끊고, 덤빌 테면 덤비라고 노려본다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: boss, axis: respect, delta: 1 }
+          - relation: { who: kid, axis: trust, delta: -1 }
+          - deed: { summary: "{zone}에서 통행세를 받던 떠돌이들의 밧줄을 끊고 지나갔다", tags: [bravery], severity: 1, privacy: semi_private }
+          - belief: { fact: "{zone}의 떠돌이들은 둘뿐이었다. 밧줄을 끊자 길을 비켜섰다", source: seen }
+        partial:
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - belief: { fact: "{zone}에서 밧줄을 끊고 지나왔다. 떠돌이 우두머리가 등 뒤에서 얼굴을 기억해 두겠다고 했다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 통행세를 받던 떠돌이가 던진 돌에 맞았다 }
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - belief: { fact: "{zone}에서 떠돌이들의 밧줄을 끊고 가다 등 뒤에서 날아온 돌에 맞았다", source: seen }
+    - id: go_around
+      label: 길을 버리고 옆으로 돌아서 간다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 밧줄 친 길을 피해 옆으로 돌아 지나왔다. 떠돌이들은 눈치채지 못했다", source: seen }
+        partial:
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: "{zone}의 밧줄 친 길을 피해 한참을 돌아왔다", source: seen }
+        miss:
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "{zone}에서 밧줄을 피해 돌아가다 떠돌이들에게 들켰다. 비웃는 소리가 따라왔다", source: seen }
+
+- id: cr_passerby
+  title: 마주 오는 사람
+  tags: [world]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    zone_kinds: [corridor]
+    indoor: false
+    place_kinds: [road]
+    segments: [morning, day, evening]
+  cast:
+    walker: { extra: road_wanderer, label: 마주 오는 떠돌이 }
+  setup: "{zone}의 길 저편에서 누가 걸어온다. 당신을 보자 걸음을 늦추고, 손을 몸에서 떼어 빈손을 보인다. 길이 좁아 서로 비켜 가려면 어깨가 스칠 만큼 가까이 지나야 한다. {walker:이/가} 먼저 입을 연다. \"그쪽에서 오는 길이오? 거긴 요즘 어떻소.\""
+  ai_direction: 두 무리 땅 사이를 오가는 떠돌이다. 해칠 생각은 없고, 저쪽 소식과 이쪽 소식을 바꾸고 싶어 한다. 이 사람이 전하는 소식은 들은 것이라 틀릴 수 있다 (GM은 주인공의 믿음에 있는 것과 소문으로만 말하고, 사실을 지어 박지 않는다). 말을 아끼면 고개만 끄덕이고 지나간다. 짐을 노리면 떠돌이는 지팡이를 고쳐 쥔다.
+  choices:
+    - id: swap_news
+      label: 내가 지나온 쪽 이야기를 해 주고 저쪽 이야기를 듣는다
+      check: insight
+      outcomes:
+        success:
+          - relation: { who: walker, axis: affection, delta: 1 }
+          - belief: { fact: "{zone}에서 마주친 떠돌이와 길 소식을 바꿨다. 그 사람 말은 겪은 것과 들은 것이 섞여 있었고, 어느 쪽이 어느 쪽인지 가려 들을 수 있었다", source: report }
+        partial:
+          - relation: { who: walker, axis: affection, delta: 1 }
+          - belief: { fact: "{zone}에서 마주친 떠돌이가 저쪽 길 이야기를 해 주었다. 얼마나 맞는 말인지는 모르겠다", source: rumor }
+        miss:
+          - belief: { fact: "{zone}에서 마주친 떠돌이와 이야기를 나눴다. 내 쪽 이야기만 실컷 하고 들은 건 별로 없다", source: rumor }
+    - id: share_water
+      label: 입술이 튼 걸 보고 물을 한 모금 나눠 준다
+      effects:
+        - take_item: { item: water_bottle }
+        - relation: { who: walker, axis: trust, delta: 2 }
+        - deed: { summary: "{zone}에서 마주친 떠돌이에게 물을 나눠 주었다", tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "{zone}의 길에서 마주친 떠돌이에게 물을 나눠 주었다. 다음에 만나면 갚겠다고 했다", source: seen }
+    - id: keep_distance
+      label: 대꾸하지 않고 길 가장자리로 비켜 지나간다
+      effects:
+        - belief: { fact: "{zone}에서 떠돌이 하나와 말없이 엇갈려 지나갔다", source: seen }
+
+- id: cr_chalk_marks
+  title: 담벼락의 표식
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    zone_kinds: [corridor]
+    indoor: false
+    place_kinds: [street]
+    segments: [morning, day, evening]
+  setup: "{zone}의 길가, 허리 높이쯤에 분필과 숯으로 그린 표식들이 겹쳐 있다. 동그라미에 가위표, 화살표 셋, 물방울 같은 그림, 그 밑에 누가 손톱으로 긁어 쓴 글씨 한 줄. 돌멩이 밑에 접힌 종이쪽지 하나가 끼워져 있다. 가장 위의 분필 자국은 아직 비에 씻기지 않았다."
+  ai_direction: 이 길을 오가는 떠돌이와 짐꾼이 서로에게 남기는 표식이다 (물 있음, 사람 사나움, 감염체, 돌아가라 같은 뜻). GM은 지금 구역과 이웃 구역에 맞는 것으로 지어 보이되, 숫자(몇 명, 며칠)는 적지 않는다. 쪽지는 누군가 누구를 찾는 글이다. 누구인지는 주인공이 아는 사람이 아니면 이름 없이 둔다. 표식이 다 믿을 만한 것은 아니다. 남의 짐을 노리는 사람이 길을 꾀어내려고 그린 것도 섞여 있다.
+  choices:
+    - id: read
+      label: 표식을 하나하나 짚어 가며 무슨 뜻인지 가늠한다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "{zone} 길가의 떠돌이 표식을 읽었다. 가장 새 표식은 이 근처에 사나운 사람이 있다는 경고였고, 물 그림은 오래된 것이었다", source: seen }
+        partial:
+          - belief: { fact: "{zone} 길가에 떠돌이들의 표식이 겹쳐 있었다. 경고인 것 같은데 무슨 경고인지는 다 알아보지 못했다", source: rumor }
+        miss:
+          - belief: { fact: "{zone} 길가의 표식은 이 근처가 안전하다는 뜻 같았다", source: rumor }
+    - id: read_note
+      label: 돌 밑의 쪽지를 펼쳐 읽고 제자리에 끼워 둔다
+      effects:
+        - belief: { fact: "{zone} 길가 돌 밑에 누가 사람을 찾는 쪽지를 남겨 두었다. 언제 어디서 기다리겠다는 말이 적혀 있었다. 다시 접어 끼워 두었다", source: seen }
+    - id: add_mark
+      label: 숯을 주워 내가 지나온 길의 사정을 표식으로 덧그린다
+      effects:
+        - deed: { summary: "{zone} 길가에 다음 사람을 위한 표식을 남겼다", tags: [mercy], severity: 1, privacy: private }
+        - belief: { fact: "{zone} 길가에 내가 지나온 길의 사정을 표식으로 남겼다. 누가 읽을지는 모른다", source: seen }
+    - id: smear
+      label: 표식을 문질러 지우고 쪽지는 주머니에 넣는다
+      effects:
+        - give_item: { item: notebook }
+        - deed: { summary: "{zone} 길가에 떠돌이들이 남긴 표식을 지우고 쪽지를 가져갔다", tags: [selfishness], severity: 1, privacy: private }
+
+- id: cr_dropped_pack
+  title: 버려진 짐
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    zone_kinds: [corridor]
+    indoor: false
+    place_kinds: [field, street]
+    segments: [dawn, morning, day, evening]
+  setup: "{zone}의 길에서 몇 걸음 벗어난 풀숲에 등짐 하나가 엎어져 있다. 어깨끈 하나가 끊겼고, 입구가 반쯤 열려 안의 것이 비죽 나와 있다. 둘레의 풀이 넓게 눌렸다. 무언가를 끌고 간 자국이 길 쪽으로 이어지다 흐려진다."
+  ai_direction: 짐 주인은 이 길에서 무언가에 쫓겨 짐을 버리고 달아났다 (사람인지 감염체인지는 처음에 확정하지 않는다. 눌린 풀과 끌린 자국만 보인다). 주인이 어떻게 됐는지는 지어내지 않는다. 짐 안에는 살림살이가 있고, 쓸 만한 것은 효과에 적힌 것뿐이다. 오래 뒤지면 소리가 난다. 짐을 돌려줄 사람은 지금 여기 없다.
+  choices:
+    - id: search
+      label: 몸을 낮추고 짐을 뒤진다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: canned_food }
+          - give_item: { item: bandage }
+          - belief: { fact: "{zone}의 풀숲에 버려진 짐에서 통조림과 붕대를 찾았다. 주인은 무언가에 쫓겨 짐을 버린 것 같았다", source: seen }
+        partial:
+          - give_item: { item: cloth }
+          - belief: { fact: "{zone}에 버려진 짐은 누가 먼저 뒤진 뒤였다. 천 쪼가리만 건졌다", source: seen }
+        miss:
+          - zone_noise: 1
+          - belief: { fact: "{zone}에서 버려진 짐을 뒤지다 안에 든 냄비가 굴러 떨어져 소리가 크게 났다", source: seen }
+    - id: track
+      label: 짐은 두고, 끌린 자국을 따라 무슨 일이 있었는지 본다
+      check: survival
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 끌린 자국을 따라가 보았다. 짐 주인은 길 쪽으로 달아났고, 뒤쫓던 것은 길에서 방향을 잃었다. 자국으로 보아 이 길에 무엇이 다니는지 짐작이 갔다", source: seen }
+        partial:
+          - belief: { fact: "{zone}의 끌린 자국은 길에 닿자 흐려졌다. 짐 주인이 어떻게 됐는지는 모르겠다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}의 끌린 자국을 따라가다 풀숲 속에서 길을 잃을 뻔했다. 무언가 지켜보는 기분이 가시지 않았다", source: seen }
+    - id: leave
+      label: 남의 짐이다. 손대지 않고 지나간다
+      effects:
+        - belief: { fact: "{zone}의 풀숲에 누가 짐을 버리고 달아난 흔적이 있었다. 손대지 않았다", source: seen }
+
+- id: cr_open_ground
+  title: 몸을 가릴 데 없는 길
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  weight: 0.8
+  when:
+    zone_kinds: [corridor]
+    indoor: false
+    place_kinds: [street]
+    segments: [morning, day]
+  setup: "{zone}에서 길이 높아지며 사방이 트인다. 양쪽 땅이 다 내려다보이는 대신, 양쪽에서도 당신이 다 보인다. 가릴 것이라고는 군데군데 넘어진 잔해뿐이다. 멀리서 유리 같은 것이 한 번 반짝이고 다시 보이지 않는다."
+  ai_direction: 두 무리 땅 사이 트인 길이라 양쪽 망루나 이 길을 지키는 누군가가 지나는 사람을 볼 수 있다. 반짝인 것이 쌍안경인지 조준경인지 깨진 유리인지는 확정하지 않는다. 몸을 낮춰 지나거나 서둘러 건너거나 해가 질 때까지 기다릴 수 있다. 위험(총알이 날아올 수 있다)은 판정 전에 선언한다. 쏜 사람이 누구인지는 드러내지 않는다.
+  choices:
+    - id: crawl
+      label: 잔해에서 잔해로 몸을 낮춰 건너간다
+      check: stealth
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 트인 길을 잔해 뒤에 숨어 가며 건넜다. 아무도 보지 못한 것 같다", source: seen }
+        partial:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}의 트인 길을 기어서 건넜다. 중간에 반짝이던 것이 다시 이쪽을 향했다. 누가 봤는지는 모른다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 트인 길을 건너다 어디선가 날아온 총알이 스쳤다, kind: gunshot }
+          - belief: { fact: "{zone}의 트인 길을 건너다 총알이 스쳤다. 어디서 쐈는지 보지 못했다", source: seen }
+    - id: dash
+      label: 숨을 한 번 고르고 단숨에 달려 건넌다
+      check: athletics
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 트인 길을 단숨에 달려 건넜다", source: seen }
+        partial:
+          - body: { track: hunger, delta: 1 }
+          - belief: { fact: "{zone}의 트인 길을 달려 건넜다. 등 뒤에서 무언가 땅에 박히는 소리가 났다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: 트인 길을 달려 건너다 잔해에 걸려 넘어졌다 }
+          - belief: { fact: "{zone}의 트인 길을 달리다 넘어졌다. 한참을 엎드린 채 기다렸다", source: seen }
+    - id: wait
+      label: 잔해 그늘에 숨어 저쪽을 오래 지켜본다
+      check: sense_danger
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 트인 길을 오래 지켜봤다. 반짝이던 것이 어느 쪽에서 언제 이쪽을 향하는지 알 것 같았다. 그 틈에 건넜다", source: seen }
+        partial:
+          - belief: { fact: "{zone}의 트인 길을 지켜보며 한참을 기다렸다. 아무 일도 없었지만 누가 보고 있는지는 끝내 알 수 없었다", source: seen }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에서 잔해 그늘에 엎드려 기다리는 내내 누가 보고 있다는 생각이 떠나지 않았다", source: seen }
+
+- id: cr_ruin_rest
+  title: 무너진 건물 안의 손님
+  tags: [world]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    zone_kinds: [corridor]
+    indoor: true
+    place_kinds: [ruin]
+    segments: [day, evening, night]
+  cast:
+    guest: { extra: refugee, label: 구석에 웅크린 피난민 }
+  setup: "{zone}의 무너진 건물 안, 깨진 창 아래 구석에 누가 먼저 자리를 잡았다. 젖은 신발을 벗어 벽에 기대 세워 두고, {guest:이/가} 무릎을 끌어안은 채 이쪽을 본다. 바닥에 꺼진 모닥불 재가 있고, 기침 소리가 낮게 이어진다. \"자리는 넓어요. 그냥 쉬어 가세요.\""
+  ai_direction: 두 무리 땅 사이를 건너던 피난민이다. 어느 무리에도 들지 못했고, 발이 젖고 몸에 열이 있어 하루 이틀 이 건물에서 쉬고 있다. 감염은 아니다 (물린 자국 없음, 주인공이 살피면 알 수 있다). 짐이랄 것은 거의 없다. 주인공을 두려워하지만 내색하지 않으려 한다. 무엇을 빼앗으면 막지 못한다.
+  choices:
+    - id: share_food
+      label: 마른 식량을 반 나눠 주고 곁에서 잠깐 쉰다
+      effects:
+        - take_item: { item: dry_ration }
+        - relation: { who: guest, axis: trust, delta: 2 }
+        - relation: { who: guest, axis: affection, delta: 1 }
+        - deed: { summary: "{zone}의 무너진 건물에서 앓는 피난민에게 먹을 것을 나눠 주었다", tags: [mercy], severity: 1, privacy: semi_private }
+        - belief: { fact: "{zone}의 무너진 건물 안에서 앓는 피난민과 먹을 것을 나눴다. 갈 곳을 묻자 아직 정하지 못했다고 했다", source: seen }
+    - id: tend
+      label: 젖은 발과 열을 살펴 준다
+      check: first_aid
+      outcomes:
+        success:
+          - npc_heal: { who: guest, steps: 1 }
+          - relation: { who: guest, axis: trust, delta: 2 }
+          - deed: { summary: "{zone}에서 앓는 피난민을 돌봐 주었다", tags: [mercy], severity: 1, privacy: semi_private }
+          - belief: { fact: "{zone}의 무너진 건물에서 앓는 피난민의 발을 말리고 열을 살폈다. 물린 자국은 없었다", source: seen }
+        partial:
+          - relation: { who: guest, axis: trust, delta: 1 }
+          - belief: { fact: "{zone}의 피난민을 살폈다. 감염은 아니지만 열이 쉽게 내릴 것 같지 않았다", source: seen }
+        miss:
+          - belief: { fact: "{zone}의 피난민을 살피려 했지만 손을 대자 겁을 먹고 몸을 웅크렸다", source: seen }
+    - id: rob
+      label: 피난민의 보따리를 끌어와 쓸 만한 것을 챙긴다
+      effects:
+        - give_item: { item: blanket }
+        - relation: { who: guest, axis: trust, delta: -3 }
+        - deed: { summary: "{zone}의 무너진 건물에서 앓는 피난민의 담요를 빼앗았다", tags: [cruelty, theft], severity: 1, privacy: semi_private }
+    - id: leave
+      label: 고개만 끄덕이고 다른 구석에서 숨을 돌린 뒤 떠난다
+      effects:
+        - belief: { fact: "{zone}의 무너진 건물 안에 앓는 피난민 하나가 쉬고 있었다", source: seen }
+
+- id: cr_patrol_traces
+  title: 엇갈린 순찰의 흔적
+  tags: [world]
+  repeatable: true
+  cooldown_days: 8
+  when:
+    zone_kinds: [corridor]
+    indoor: false
+    place_kinds: [road, street]
+    segments: [dawn, morning, day]
+  setup: "{zone}의 길바닥에 탄피가 흩어져 있다. 한쪽에 몰려 있고, 몇 걸음 떨어진 맞은편에도 또 한 무더기. 그 사이 땅에 검게 마른 핏자국이 길게 끌려 있다. 쓰러진 사람은 없다. 누가 데려갔거나, 제 발로 갔다."
+  ai_direction: 어젯밤이나 새벽에 이 길을 지나던 두 무리의 순찰이 서로 마주쳐 짧게 총을 주고받은 자리다. 어느 무리인지는 주인공이 아는 것(믿음) 밖으로 확정하지 않는다. 판정을 잘하면 양쪽이 어느 방향에서 왔다가 어디로 물러났는지, 다친 쪽이 어느 쪽인지 정도만 읽힌다. 몇 명이었는지, 누가 죽었는지는 지어내지 않는다. 쓸 만한 것은 효과에 적힌 것뿐이다.
+  choices:
+    - id: read_signs
+      label: 탄피와 발자국을 짚어 가며 무슨 일이 있었는지 읽는다
+      check: tactics
+      outcomes:
+        success:
+          - belief: { fact: "{zone}의 길에서 두 쪽 순찰이 마주쳐 총을 주고받은 흔적을 읽었다. 양쪽 다 왔던 쪽으로 물러났고, 다친 사람은 끌려서 한쪽으로 갔다", source: seen }
+        partial:
+          - belief: { fact: "{zone}의 길에서 총격이 있었다. 양쪽에서 쏜 것만은 분명하다", source: seen }
+        miss:
+          - belief: { fact: "{zone}의 길에서 누가 총을 쏜 흔적을 봤다. 무슨 일이었는지는 알아보지 못했다", source: rumor }
+    - id: gather
+      label: 쓸 만한 탄피를 주워 모은다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: casings, quantity: 2 }
+        partial:
+          - give_item: { item: casings }
+        miss:
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}의 길에서 탄피를 줍다 맞은편 길 너머에서 사람 소리를 들었다. 서둘러 자리를 떴다", source: seen }
+    - id: move_on
+      label: 아직 누가 근처에 있을지 모른다. 서둘러 지나간다
+      effects:
+        - belief: { fact: "{zone}의 길에 순찰끼리 총을 주고받은 흔적이 있었다. 이 길이 요즘 시끄럽다", source: seen }
+
+- id: cr_lone_infected
+  title: 길 위를 헤매는 것
+  fright: 1
+  tags: [world]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    zone_kinds: [corridor]
+    indoor: false
+    place_kinds: [field, street, road]
+    segments: [evening, night, dawn]
+  cast:
+    biter: { extra: infected_crawler, label: 길섶을 기는 감염체 }
+  setup: "{zone}의 어스름 속에서 무언가 길섶을 긁는 소리가 난다. 반쯤 꺾인 다리를 끌며 감염체 하나가 기어 나온다. 아직 당신을 보지 못했다. 고개를 땅에 박다시피 하고, 어느 땅에서 흘러왔는지 모를 몸을 이리저리 끈다. 총을 쏘면 길 양쪽 어디서든 듣는다."
+  ai_direction: 무리에서 떨어진 감염체 하나다. 빠르지 않고 쫓아오지 못한다. 칼이나 둔기로 조용히 처리할 수 있고, 피해 갈 수도 있다. 맞붙으면 배역을 target·opponent로 두고 위험을 먼저 선언한다. 총소리는 길 양쪽 땅까지 들린다.
+  choices:
+    - id: put_down
+      label: 등 뒤로 다가가 소리 없이 처리한다
+      check: fight
+      outcomes:
+        success:
+          - put_down: { who: biter }
+          - deed: { summary: "{zone}의 길에서 헤매던 감염체를 조용히 처리했다", tags: [bravery], severity: 1, privacy: private }
+          - belief: { fact: "{zone}의 길섶을 기던 감염체를 소리 없이 처리했다", source: seen }
+        partial:
+          - put_down: { who: biter }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에서 감염체를 처리했다. 마지막에 손톱이 소매를 긁고 지나갔다", source: seen }
+        miss:
+          - zone_noise: 1
+          - belief: { fact: "{zone}에서 감염체에게 다가가다 들켰다. 그것이 내지르는 소리가 길 양쪽으로 퍼졌다", source: seen }
+    - id: slip_past
+      label: 길 반대편으로 붙어 숨죽이고 지나간다
+      check: stealth
+      outcomes:
+        success:
+          - threat_passes: true
+          - belief: { fact: "{zone}의 길섶에서 기는 감염체 곁을 들키지 않고 지나왔다", source: seen }
+        partial:
+          - threat_passes: true
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "{zone}에서 감염체가 고개를 들어 이쪽을 봤다. 쫓아오지는 못했다", source: seen }
+        miss:
+          - belief: { fact: "{zone}에서 감염체 곁을 지나다 들켰다. 그것이 길을 막고 기어 온다", source: seen }
+    - id: shoot
+      label: 쏜다
+      when: { has_items_any: [old_rifle, shotgun, pistol, sawn_shotgun, crossbow] }
+      effects:
+        - put_down: { who: biter }
+        - zone_noise: 2
+        - belief: { fact: "{zone}에서 감염체를 쏘아 쓰러뜨렸다. 총소리가 길 양쪽 땅까지 울렸다", source: seen }

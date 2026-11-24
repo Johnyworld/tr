@@ -141,6 +141,9 @@ describe("도구·콘텐츠 (12-251)", () => {
       w.ctx().store.append({ type: "missions_offered", day: Math.floor(w.state().time / 1440) + 1, templateIds: ["e_debt_run"] });
       const got = w.executeTool("assign_mission", { template_id: "e_debt_run" });
       expect(got.ok, got.ok ? "" : got.error).toBe(true);
+      // 12-302: 장터와 강변 사이에 길목(강둑 나루길)이 생겼다
+      w.executeTool("take_action", act({ move_to: "ferry_levee", for_mission: true }));
+      w.state().activeStorylet = null;
       const go = w.executeTool("take_action", act({ move_to: "riverside", for_mission: true }));
       expect(go.ok, go.ok ? "" : go.error).toBe(true);
       w.state().activeStorylet = null;
@@ -156,6 +159,8 @@ describe("도구·콘텐츠 (12-251)", () => {
       }
       const m = Object.values(w.state().missions).at(-1)!;
       expect(m.requirements.every((_, i) => (m.progress[i] ?? 0) >= 1), JSON.stringify(m.progress)).toBe(true);
+      w.state().activeStorylet = null;
+      w.executeTool("take_action", act({ move_to: "ferry_levee" }));
       w.state().activeStorylet = null;
       w.executeTool("take_action", act({ move_to: "e_market" }));
       w.state().activeStorylet = null;

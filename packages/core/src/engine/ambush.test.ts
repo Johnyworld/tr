@@ -82,6 +82,18 @@ describe("적의 매복", () => {
     expect(w.state().confused).not.toContain(w.state().playerId);
   });
 
+  it("매복 이야기가 열린 채 판정을 걸고 다른 구역으로 달아날 수 있다 (12-302: 두 규칙이 서로 막았다)", () => {
+    const w = make(0.99);
+    expect(w.runCheat("~storylet rd_raider_ambush").ok).toBe(true);
+    expect(w.state().activeStorylet).not.toBeNull();
+    const next = real.locations[w.state().playerZone!]!.adjacent[0] ?? Object.values(real.locations).find((l) => l.adjacent.includes(w.state().playerZone!))!.id;
+    // 판정 없이 걸어 나가거나 모른 척하면 막힌다
+    expect(act(w, { move_to: next }).ok).toBe(false);
+    expect(act(w, { move_to: next, ignore_story: true }).ok).toBe(false);
+    const r = act(w, { move_to: next, check: chk("athletics", "agility") });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+  });
+
   it("냄새 맡기를 배운 개가 곁에 있으면 미리 알아챈다", () => {
     const w = make(0.99);
     let dog = w.state().companions.find((id) => w.state().characters[id]?.extra?.template === "stray_dog");

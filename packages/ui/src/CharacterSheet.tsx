@@ -323,6 +323,10 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
               </ol>
             )}
           </section>
+            </>
+          ),
+          memory: (
+            <>
           {player.deeds.length > 0 && (
             <section className="beliefs deeds">
               <details open>

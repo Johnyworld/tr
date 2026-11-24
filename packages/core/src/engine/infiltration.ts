@@ -168,7 +168,9 @@ function othersHere(state: GameState, content: Content): string[] {
   const here = currentPlace(state, content);
   if (!here) return [];
   const ids = new Set([...state.scene.present, ...peopleAt(state, content, state.playerZone, here.id)]);
-  return [...ids].filter((id) => id !== state.playerId && !state.companions.includes(id) && ableNow(state, content, id));
+  // 떨어져 기다리는 동행과 우리 무리 사람도 뺀다 (12-294, PT26 졸병: 길목에 기다리게 둔 짝이 grab 대상으로 떴다)
+  const mine = state.characters[state.playerId]?.factionId;
+  return [...ids].filter((id) => id !== state.playerId && !state.companions.includes(id) && !state.bonds[id] && !(mine && state.characters[id]?.factionId === mine) && ableNow(state, content, id));
 }
 
 /** 이 자리에 갇혀 있는 그 무리의 포로 (우리 무리 사람이 먼저). 장소가 없는 구역이면 구역의 포로 */

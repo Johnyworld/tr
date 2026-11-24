@@ -132,7 +132,8 @@ const choiceInput = z.strictObject({
   reward_kind: z.enum(["item", "relation", "merit"]).nullable().default(null).describe("보상 종류. reward가 none이면 null"),
   reward_item: z.string().nullable().default(null).describe("item 보상: 물건의 갈래 (상태의 '즉흥 이야기 자리'에 적힌 것). 이야기에서 나올 만한 것으로"),
   reward_who: z.string().nullable().default(null).describe("relation 보상: 마음이 오르는 배역 key"),
-  reward_axis: z.enum(RELATION_AXES).default("trust").describe("relation 보상의 축"),
+  // null도 받는다 (12-294, PT25·26: 다른 칸은 null이 되는데 이것만 거절됐다)
+  reward_axis: z.enum(RELATION_AXES).nullable().default("trust").describe("relation 보상의 축 (null이면 trust)"),
   cost: z.enum(["none", "relation", "noise", "time", "body", "give"]).default("none").describe("대가 종류"),
   cost_item: z.string().nullable().default(null).describe("give 대가: 주인공이 내주는 소지품 id (하나)"),
   cost_who: z.string().nullable().default(null).describe("relation 대가: 신뢰가 떨어지는 배역 key"),
@@ -149,7 +150,7 @@ function rewardEffects(rule: Improv, c: ChoiceInput, tier: Tier, rng: Rng): Stor
     const pick = list[Math.floor(rng() * list.length)]!;
     return [{ give_item: { item: pick.item, quantity: pick.quantity } }];
   }
-  if (c.reward_kind === "relation") return [{ relation: { who: c.reward_who!, axis: c.reward_axis, delta: r.relation } }];
+  if (c.reward_kind === "relation") return [{ relation: { who: c.reward_who!, axis: c.reward_axis ?? "trust", delta: r.relation } }];
   return r.merit > 0 ? [{ merit: r.merit }] : [];
 }
 

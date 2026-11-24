@@ -107,20 +107,26 @@ function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng
     if (kind === "fetch") {
       // 남의 땅을 뒤지는 일(도둑질)이 되지 않게 주인 없는 구역·의뢰인 무리 땅부터 (없으면 근처 어디든)
       const giverFaction = state.characters[giverId]?.factionId;
-      // 수색표에서 흔한 것만(드문 것은 찾다 막힌다, PT24 분대장 모르핀), 이미 지닌 것은 빼고(받자마자 건네 끝났다, PT24 하얀매 붕대)
+      // 수색표에서 몫이 min_share 이상인 것만, 흔할수록 자주 (12-294, PT24 모르핀·PT26 섬 사과·토마토: 드문 것은 찾다 막힌다).
+      // 지금 지닌 것, 의뢰인이 지닌 것, 사물함만으로 다 채울 수 있는 것은 뺀다 (받자마자 끝난다)
+      const [qLo, qHi] = r.kinds.fetch.quantity;
       const lootIn = (zs: typeof near) =>
-        zs.flatMap((z) =>
-          (content.locations[z.zone]?.loot?.items ?? [])
-            .filter((i) => i.weight >= r.kinds.fetch.min_weight && (!rule.items || rule.items.includes(i.item)) && !(me?.inventory[i.item] ?? 0) && !stashed(state, i.item) && !(state.characters[giverId]?.inventory[i.item] ?? 0))
-            .map((i) => ({ ...z, item: i.item })),
-        );
+        zs.flatMap((z) => {
+          const table = content.locations[z.zone]?.loot?.items ?? [];
+          const total = table.reduce((n, i) => n + i.weight, 0) || 1;
+          return table
+            .map((i) => ({ ...z, item: i.item, share: i.weight / total }))
+            .filter((i) => i.share >= r.kinds.fetch.min_share && (!rule.items || rule.items.includes(i.item)) && !(me?.inventory[i.item] ?? 0) && stashed(state, i.item) < qHi && !(state.characters[giverId]?.inventory[i.item] ?? 0));
+        });
       // 주인 없는 땅 먼저, 없으면 의뢰인 무리 땅(섬), 그래도 없으면 근처 어디든 (PT25 졸병: 우리 초소를 뒤지라는 찾아오기)
       const wildLoot = lootIn(near.filter((z) => !state.zones[z.zone]?.owner));
       const ownLoot = lootIn(near.filter((z) => ownedBy(state, z.zone, giverFaction)));
       const found = wildLoot.length ? wildLoot : ownLoot.length ? ownLoot : lootIn(near);
       if (!found.length) continue;
-      const f = pick(rng, found);
-      const qty = between(rng, r.kinds.fetch.quantity);
+      let roll = rng() * found.reduce((n, x) => n + x.share, 0);
+      const f = found.find((x) => (roll -= x.share) < 0) ?? found[found.length - 1]!;
+      // 덜 흔한 것은 하나만
+      const qty = Math.max(qLo, Math.min(f.share < r.kinds.fetch.min_share * 2 ? 1 : qHi, between(rng, [qLo, qHi])), stashed(state, f.item) + 1);
       return { what: `${content.items[f.item]?.name ?? f.item} ${qty}개를 구해 온다`, item: { id: f.item, quantity: qty }, goal: { kind, template: null, target: null, zone: f.zone, place: null, hops: f.hops, pay: payFor(content, kind, f.zone, f.hops, rng), delivered: 0, days: between(rng, r.days) + f.hops * r.per_hop_days } };
     }
     if (!wild.length || (kind !== "find" && !canFight)) continue;
@@ -135,9 +141,9 @@ function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng
   return null;
 }
 
-/** 주인공의 사물함·거처에 이미 있는가 (PT25 섬: 사물함의 토마토로 0분에 끝났다) */
-function stashed(state: GameState, item: string): boolean {
-  return Object.values(state.stashes?.[state.playerId] ?? {}).some((items) => (items[item] ?? 0) > 0);
+/** 주인공의 사물함·거처에 있는 수 (PT25 섬: 사물함의 토마토로 0분에 끝났다) */
+function stashed(state: GameState, item: string): number {
+  return Object.values(state.stashes?.[state.playerId] ?? {}).reduce((n, items) => n + (items[item] ?? 0), 0);
 }
 
 function payFor(content: Content, kind: QuestKind, zone: string, hops: number, rng: Rng): Quest["pay"] {
@@ -267,9 +273,13 @@ const requestTool = defineTool({
     const target = q.target;
     const giver = state.characters[p.to]!;
     const at = keepingPlaceOf(state, content, p.to);
-    if (prog.brought && target && q.kind === "find" && at?.zone) {
-      store.append({ type: "extra_rehomed", characterId: target, zone: at.zone, place: at.place });
+    // 데려온 사람이 의뢰인 곁에 머무는 것은 의뢰인의 땅(사는 구역)에서 보고할 때만 (12-294, PT26 분대장: 들판에서 보고하자 거점 창고로 순간이동)
+    const home = !!at?.zone && (at.zone === state.playerZone || (!!giver.factionId && !!state.playerZone && ownedBy(state, state.playerZone, giver.factionId)));
+    if (prog.brought && target && q.kind === "find" && at?.zone && home) {
+      store.append({ type: "extra_rehomed", characterId: target, zone: state.playerZone!, place: at.zone === state.playerZone ? at.place : null });
       lines.push(`데려온 ${josa(playerCalls(state, content, target), "은/는")} 이제 ${playerCalls(state, content, p.to)} 곁에 머문다.`);
+    } else if (prog.brought && target && q.kind === "find") {
+      lines.push(`${josa(playerCalls(state, content, target), "은/는")} 아직 당신 곁에 있다. 의뢰인의 땅까지 함께 가면 그곳에 머문다 (지금은 데려온 보수 없이 소식만 전한 것으로 친다).`);
     }
     if (prog.brought && target && q.kind === "capture") {
       // 넘겨받아 가두는 것은 의뢰인 무리의 땅에서만: 들판에서 보고하면 포로는 그대로 끌고 다닌다 (12-293, PT25 분대장: 구시가 길에서 보고하자 포로가 거점 수용소로 순간이동)
@@ -281,7 +291,7 @@ const requestTool = defineTool({
         lines.push(`끌고 온 ${josa(playerCalls(state, content, target), "을/를")} ${josa(playerCalls(state, content, p.to), "이/가")} 넘겨받아 데려갔다.`);
       } else lines.push(`${josa(playerCalls(state, content, target), "은/는")} 아직 묶인 채 당신이 끌고 간다. 거점에 닿으면 가둔다.`);
     }
-    const extra = prog.brought && q.kind === "find" ? r.reward.brought : 0;
+    const extra = prog.brought && q.kind === "find" && home ? r.reward.brought : 0;
     return { ok: true, resultText: [...settleKept(ctx, p, extra), ...lines].join("\n"), display: QUIET };
   },
 });

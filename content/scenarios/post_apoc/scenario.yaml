@@ -1425,14 +1425,14 @@ promises:
 # 진행 중인 의뢰는 한 번에 하나 (인물이 먼저 꺼낸 부탁 promises.asks를 받은 것도 센다). 임무와는 따로
 # reach: 의뢰인 구역에서 길로 몇 구역 안에 목표를 둔다. days + 한 구역 멀 때마다 per_hop_days가 기한
 # givers: 위에서부터 처음 맞는 줄 (merchant·healer: 장사꾼·치료사, skills: 이 중 하나가 min_skill 이상, 조건 없으면 누구나)
-# fight: 싸움 의뢰는 주인공이 근접전·사격 중 하나로 능력+스킬 min 이상일 때만. fetch.min_weight: 수색표에서 그 무게 이상인 물건만
+# fight: 싸움 의뢰는 주인공이 근접전·사격 중 하나로 능력+스킬 min 이상일 때만. fetch.min_share: 수색표에서 그만한 몫 이상인 물건만 (흔할수록 자주)
 # reward: 보수 물건 수 = base[종류] + 거리 × per_hop + 목표 구역 위험 × per_danger (사람을 데려오면 brought만큼 더)
 requests:
   reach: 2
   days: [2, 3]
   per_hop_days: 1
   kinds:
-    fetch: { label: 찾아오기, quantity: [1, 2], min_weight: 1 }
+    fetch: { label: 찾아오기, quantity: [1, 2], min_share: 0.12 }
     find: { label: 사람 찾기, templates: [missing_person] }
     capture: { label: 붙잡아 오기, templates: [outlaw] }
     kill: { label: 처치하기, templates: [infected_hungry, feral_dog, outlaw] }

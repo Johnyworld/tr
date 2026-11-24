@@ -46,6 +46,11 @@ export const questDelivered = (p: PromiseRecord): number => p.quest?.delivered ?
 /** 이 의뢰를 받을 때 남긴 믿음의 열쇠 (끝나면 내려놓는다) */
 export const questTopic = (id: string) => `request:${id}`;
 
+/** 이 사람을 처치하라고 맡긴 의뢰인 (진행 중인 처치하기의 목표면) */
+export function killQuestGiver(state: GameState, id: string): string | null {
+  return (state.promises ?? []).find((p) => p.status === "open" && p.quest?.kind === "kill" && p.quest.target === id)?.to ?? null;
+}
+
 export type QuestProgress = { done: boolean; brought: boolean; left: string };
 
 /**

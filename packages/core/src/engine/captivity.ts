@@ -24,6 +24,7 @@ import {ownedBy, baseOfNow } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
 import { hearNews } from "../rules/news.ts";
 import { protectedFromWorld } from "../rules/company.ts";
+import { killQuestGiver } from "../rules/request.ts";
 import { currentPlace, jailFor, jailIn, knowsPlace, placeById, unknownDoors, whereIs } from "../rules/place.ts";
 import { againstSetting } from "../rules/self.ts";
 import { changeCondition, isIncapacitated } from "./body.ts";
@@ -478,7 +479,12 @@ const handlePrisoner = defineTool({
       changeCondition(ctx, t.id, track.id, track.levels.length, "player", towed ? "붙잡혀 죽임을 당했다" : "쓰러진 채 숨이 끊겼다");
       // 감염체를 끝내는 것은 행적이 아니다. 쓰러진 사람·묶인 포로를 죽이는 것은 무거운 행적
       if (isCreature(content, t)) lines.push(`${josa(name, "을/를")} 끝냈다.`);
-      else {
+      else if (killQuestGiver(state, t.id)) {
+        // 처치하기 의뢰의 목표(무법자)를 끝냈다: 맡긴 일이라 무거운 잔혹이 아니고, 의뢰인은 이미 보수로 반응한다 (12-294, PT26 분대장: 의뢰를 해냈는데 잔혹 행적·규율 회의·수용소)
+        const giver = killQuestGiver(state, t.id)!;
+        const { deed } = recordDeed(ctx, { summary: `맡은 의뢰대로 쓰러진 ${josa(name, "을/를")} 끝냈다`, tags: ["cruelty"], severity: 1, privacy: "private", noisy: false }, { npcId: giver, source: "report", only: "none" });
+        lines.push(`${josa(name, "을/를")} 죽였다. ${deed.summary}.`);
+      } else {
         const { deed } = recordDeed(ctx, { summary: `${towed ? "붙잡은" : "쓰러진"} ${josa(name, "을/를")} 죽였다`, tags: ["cruelty"], severity: 3, privacy: "private", noisy: false });
         lines.push(`${josa(name, "을/를")} 죽였다. ${deed.summary}.`);
       }

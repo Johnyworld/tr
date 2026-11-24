@@ -15,6 +15,7 @@ import { roleOf, type GameState } from "../game/state.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
 import { josa } from "../text.ts";
+import { hasMet, knowsName } from "../game/acquaintance.ts";
 import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.ts";
 import {ownedBy, baseOfNow, hostileLand, onOwnLand } from "./home.ts";
 import { heldOf, inQuarantine, pausedWhileHeld } from "./held.ts";
@@ -458,8 +459,11 @@ export function whereLabel(state: GameState, content: Content, id: string): stri
   const out = routineAway(state, content, id);
   if (out && w && !w.zone) return `나가 있다 (일과: ${out})`;
   if (!w || !w.zone) return null;
-  const zoneName = content.locations[w.zone]?.name ?? w.zone;
   const sameZone = w.zone === state.playerZone;
+  // 이름도 모르고 만난 적도 없는 사람의 행방, 가 보지 않은 구역의 이름은 알려 주지 않는다 (12-294, PT26 하얀매 [정보 누설]: 장면에 없는 약장수가 "지금 정수장의 강변 가는 둑길")
+  if (!hasMet(state, state.playerId, id) && !knowsName(state, state.playerId, id)) return null;
+  const visited = sameZone || (state.visited[state.playerId] ?? []).includes(w.zone);
+  const zoneName = visited ? (content.locations[w.zone]?.name ?? w.zone) : "다른 구역";
   const shown = !homeHidden(state, id) && knowsPlace(state, content, w.zone, w.place);
   const place = shown ? placeById(state, content, w.place, w.zone) : null;
   return place ? (sameZone ? place.name : `${zoneName}의 ${place.name}`) : sameZone ? "이 구역 어딘가" : `${zoneName} 어딘가`;

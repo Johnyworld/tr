@@ -447,6 +447,9 @@
     day_gte: 2
     equipped: [old_rifle]
     has_items: [rifle_rounds]
+  # 12-294: 다가오는 것이 배역으로 없어 "그것이 바로 뒤에 있다"를 GM이 지어야 했다 (PT24~26)
+  cast:
+    thing: { extra: infected_hungry, label: 비틀거리며 다가오는 것, enter: true }
   setup: "{zone}의 무너진 담 너머에서 무언가 비틀거리며 나온다. 소총을 들어 노리쇠를 당기는데 딸깍, 반쯤 열린 채 멈춘다. 질 나쁜 탄 하나가 약실에 비스듬히 걸렸다. 그것이 쇳소리를 듣고 이쪽으로 고개를 돌린다."
   # 되풀이될 때 차례로 쓰는 다른 상황 문장 (12-139)
   variants:
@@ -472,6 +475,7 @@
       check: fight
       outcomes:
         success:
+          - put_down: { who: thing }
           - belief: { fact: "{zone}에서 걸린 총의 개머리판으로 그것을 쓰러뜨렸다. 소리는 나지 않았다", source: seen }
         partial:
           - belief: { fact: "{zone}에서 개머리판으로 밀어냈지만 그것은 아직 일어나려 한다", source: seen }
@@ -482,8 +486,10 @@
       check: stealth
       outcomes:
         success:
+          - threat_passes: true
           - belief: { fact: "{zone}에서 총이 걸린 채로 그것을 따돌리고 빠져나왔다", source: seen }
         partial:
+          - threat_passes: true
           - body: { track: cold, delta: 1 }
           - soak: true
           - belief: { fact: "{zone}에서 물웅덩이를 기어 그것을 따돌렸다. 온몸이 젖었다", source: seen }

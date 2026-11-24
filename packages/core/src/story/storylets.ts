@@ -583,6 +583,8 @@ export function storyletAllowed(state: GameState, content: Content, s: StoryletC
   if (s.bedside && !options.urgentOnly && inCrisis(state, content)) return bedsideGapPassed(state, content, at);
   // 깨우지 않는 이야기는 자는 동안 열지 않는다 (12-251)
   if (options.urgentOnly && !s.wakes) return false;
+  // 임무 자리의 이야기(when.mission)는 임무의 결과 조건을 채우는 길이라 간격 바닥에 막히지 않는다 (12-294, PT26 하얀매: 30분 전 길 위의 일이 연 최소 간격에 막혀 부상자 수습이 일부 완수)
+  if (s.when.mission && !options.urgentOnly) return true;
   const tier = STORY_TIERS[storyTier(content, s)];
   if (tier < WINDOW_FLOOR[window]) return false;
   // 꼭 열려야 하는 이야기는 급한 이야기의 하루 상한에도 막히지 않는다 (플레이 테스트 13: 튜토리얼 재회가 17시간 막혔다)

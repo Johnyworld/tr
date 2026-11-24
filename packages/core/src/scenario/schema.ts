@@ -1272,8 +1272,8 @@ export const scenarioFileSchema = z
         days: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
         per_hop_days: z.number().int().min(0).default(1),
         kinds: z.strictObject({
-          /** min_weight: 수색표에서 이 무게 이상인 물건만 (드문 물건은 찾다 막힌다, PT24 분대장 모르핀) */
-          fetch: z.strictObject({ label: z.string().min(1), quantity: z.tuple([z.number().int().min(1), z.number().int().min(1)]), min_weight: z.number().min(0).default(1) }),
+          /** min_share: 수색표에서 차지하는 몫이 이 이상인 물건만, 흔할수록 자주 (드문 물건은 찾다 막힌다, PT24 모르핀·PT26 섬). 몫이 두 배 미만이면 하나만 */
+          fetch: z.strictObject({ label: z.string().min(1), quantity: z.tuple([z.number().int().min(1), z.number().int().min(1)]), min_share: z.number().min(0).max(1).default(0.12) }),
           find: z.strictObject({ label: z.string().min(1), templates: z.array(id).min(1) }),
           capture: z.strictObject({ label: z.string().min(1), templates: z.array(id).min(1) }),
           kill: z.strictObject({ label: z.string().min(1), templates: z.array(id).min(1) }),

@@ -1051,7 +1051,10 @@ export function applyEffect(
     const from = player.factionId ? (content.roles[state.roleId]?.label ?? content.factions[player.factionId]?.name ?? "") : "무소속";
     // 붙잡은 무리에 들면 더는 포로가 아니다 (빼앗긴 것도 돌려받는다, 12-55)
     if (heldOf(player)) releasePlayer(ctx, heldOf(player)!.by === faction);
-    const role = joinRole(content, faction, rank, { age: player.age, title, occupation: player.occupation?.id ?? null });
+    const made = joinRole(content, faction, rank, { age: player.age, title, occupation: player.occupation?.id ?? null });
+    // 새로 든 사람은 무리 사람들 이름을 아직 모른다: 들어가며 이름을 듣는 상관만 서로 안다. 나머지는 만나서 이름을 듣는다 (learn_name).
+    // 처음부터 그 무리에 있던 시나리오·계승과 다르다 (방문자가 무리에 든 뒤 처음 본 의무실 보조가 이름으로 나왔다)
+    const role = { ...made, known_npcs: made.commander ? [made.commander] : [] };
     // 예전 무리의 임무는 거기서 끝난다: 새 무리 임무를 막거나 새 무리 규율로 벌하지 않게 (플레이 테스트 14, 방문자 T51~T63)
     const left = leaveMissionsBehind(ctx);
     // 그 무리에서 처음 듣는 사정: 같은 계급 시나리오의 시작 지식 (다른 계급의 지식은 주지 않는다)
